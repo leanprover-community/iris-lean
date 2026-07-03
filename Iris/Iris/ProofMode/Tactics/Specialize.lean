@@ -141,7 +141,7 @@ TODO: This also needs to check that there are no modality addition patterns in `
 @[rocq_alias intro_pat_intuitionistic, rocq_alias use_tac_specialize_intuitionistic_helper]
 def iCasesPat.should_try_dup_context (pat : iCasesPat) : Bool :=
   match pat with
-  | .intuitionistic _ | .pure _ | .rewrite _ => true
+  | .intuitionistic _ _ | .pure _ _ | .rewrite _ _ => true
   | _ => false
 
 /-- Specialize a proposition `A` by applying a sequence of specialization patterns.

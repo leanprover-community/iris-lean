@@ -26,44 +26,50 @@ syntax ">" icasesPat : icasesPat
 syntax "←" : icasesPat
 syntax "→" : icasesPat
 
--- TODO: attach syntax to iCasesPat such that one can use withRef to
--- associate the errors with the right part of the syntax
 inductive iCasesPat
-  | one (name : TSyntax ``binderIdent)
-  | clear
-  | frame
-  | conjunction (args : List iCasesPat)
-  | disjunction (args : List iCasesPat)
-  | pure           (pat : TSyntax ``binderIdent)
-  | intuitionistic (pat : iCasesPat)
-  | spatial        (pat : iCasesPat)
-  | mod            (pat : iCasesPat)
-  | rewrite (forward : Bool)
+  | one (ref : Syntax) (name : TSyntax ``binderIdent)
+  | clear (ref : Syntax)
+  | frame (ref : Syntax)
+  | conjunction (ref : Syntax) (args : List iCasesPat)
+  | disjunction (ref : Syntax) (args : List iCasesPat)
+  | pure (ref : Syntax) (pat : TSyntax ``binderIdent)
+  | intuitionistic (ref : Syntax) (pat : iCasesPat)
+  | spatial (ref : Syntax) (pat : iCasesPat)
+  | mod (ref : Syntax) (pat : iCasesPat)
+  | rewrite (ref : Syntax) (forward : Bool)
   deriving Repr, Inhabited
+
+def iCasesPat.ref : iCasesPat → Syntax
+  | .one r _ | .clear r | .frame r | .conjunction r _ | .disjunction r _
+  | .pure r _ | .intuitionistic r _ | .spatial r _ | .mod r _ | .rewrite r _ => r
 
 partial def iCasesPat.parse (pat : TSyntax `icasesPat) : MacroM iCasesPat := do
   match go ⟨← expandMacros pat⟩ with
   | none => Macro.throwUnsupported
   | some pat => return pat
 where
-  go : TSyntax `icasesPat → Option iCasesPat
-  | `(icasesPat| $name:binderIdent) => some <| .one name
-  | `(icasesPat| -) => some <| .clear
-  | `(icasesPat| $) => some <| .frame
-  | `(icasesPat| ⟨$[$args],*⟩) => args.mapM goAlts |>.map (.conjunction ·.toList)
-  | `(icasesPat| %$pat:binderIdent) => some <| .pure pat
-  | `(icasesPat| #$pat) => go pat |>.map .intuitionistic
-  | `(icasesPat| ∗$pat) => go pat |>.map .spatial
-  | `(icasesPat| >$pat) => go pat |>.map .mod
-  | `(icasesPat| ($pat)) => goAlts pat
-  | `(icasesPat| ←) => some <| .rewrite false
-  | `(icasesPat| →) => some <| .rewrite true
-  | _ => none
-  goAlts : TSyntax ``icasesPatAlts → Option iCasesPat
-  | `(icasesPatAlts| $args|*) =>
-    match args.getElems with
-    | #[arg] => go arg
-    | args   => args.mapM go |>.map (.disjunction ·.toList)
-  | _ => none
+  go (stx : TSyntax `icasesPat) : Option iCasesPat :=
+    let ref := stx.raw
+    match ref with
+    | `(icasesPat| $name:binderIdent) => some <| .one ref name
+    | `(icasesPat| -) => some <| .clear ref
+    | `(icasesPat| $) => some <| .frame ref
+    | `(icasesPat| ⟨$[$args],*⟩) => args.mapM goAlts |>.map (.conjunction ref ·.toList)
+    | `(icasesPat| %$pat:binderIdent) => some <| .pure ref pat
+    | `(icasesPat| #$pat) => go pat |>.map <| .intuitionistic ref
+    | `(icasesPat| ∗$pat) => go pat |>.map <| .spatial ref
+    | `(icasesPat| >$pat) => go pat |>.map <| .mod ref
+    | `(icasesPat| ($pat)) => goAlts pat
+    | `(icasesPat| ←) => some <| .rewrite ref false
+    | `(icasesPat| →) => some <| .rewrite ref true
+    | _ => none
+  goAlts (stx : TSyntax ``icasesPatAlts) : Option iCasesPat :=
+    let ref := stx.raw
+    match stx with
+    | `(icasesPatAlts| $args|*) =>
+      match args.getElems with
+      | #[arg] => go arg
+      | args   => args.mapM go |>.map (.disjunction ref ·.toList)
+    | _ => none
 
 end Iris.ProofMode

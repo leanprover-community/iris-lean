@@ -126,7 +126,7 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
         match instFromWand, instFromImp, instPersistent with
         -- Introduction of a wand premise or a pure premise, if possible
         | some _, _, _ | _, some _, some _ =>
-          iIntroCore hyps Q ((ref, .intro (.one (← `(binderIdent| _)))) :: (ref, .allwand) :: pats) tacName k
+          iIntroCore hyps Q ((ref, .intro (.one ref (← `(binderIdent| _)))) :: (ref, .allwand) :: pats) tacName k
         | _, _, _ =>
           -- No more universally quantified variable or premise to be introduced
           iIntroCore hyps Q pats tacName k
@@ -152,27 +152,27 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       | ⟨true, s⟩ :: selPats =>
         let res ← s.resolveOne hyps >>= iFrame hyps Q
         res.finish (iIntroCore · · ((ref, .clear selPats) :: pats) tacName k)
-    | .intro (.rewrite direction) =>
+    | .intro (.rewrite _ direction) =>
       iIntroCoreForallIntro ref none Q tacName none <|
         fun x B => iCasesPureRewrite hyps B x direction tacName (iIntroCore · · pats tacName k)
-    | .intro (.pure n) =>
+    | .intro (.pure _ n) =>
       iIntroCoreForallIntro ref n Q tacName none (fun _ B => iIntroCore hyps B pats tacName k)
     | .intro pat =>
       let A1 ← mkFreshExprMVarQ q($prop)
       let A2 ← mkFreshExprMVarQ q($prop)
       let fromImp ← ProofModeM.trySynthInstanceQ q(FromImp $Q $A1 $A2)
-      if let (.clear, some _) := (pat, fromImp) then
+      if let (.clear _, some _) := (pat, fromImp) then
         let pf ← iIntroCore hyps A2 pats tacName k
         return q(imp_intro_drop (Q := $Q) $pf)
       else
       let B ← mkFreshExprMVarQ q($prop)
       match pat, fromImp with
-      | .intuitionistic pat, some _ =>
+      | .intuitionistic _ pat, some _ =>
         let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPersistently false $A1 $B)
           | throwError "{tacName}: {A1} not persistent"
         let pf ← iCasesCore hyps A2 pat q(true) B tacName (iIntroCore · · pats tacName k)
         return q(imp_intro_intuitionistic (Q := $Q) $pf)
-      | .intuitionistic pat, none =>
+      | .intuitionistic _ pat, none =>
         let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $Q .out $A1 $A2)
           | throwError "{tacName}: {Q} not a wand"
         let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPersistently false $A1 $B)

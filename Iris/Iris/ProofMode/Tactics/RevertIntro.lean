@@ -29,11 +29,11 @@ def iRevertIntro
     | {kind := .pure id, ..} => do
       let name ← Lean.mkIdent <$> id.getUserName
       let ident ← `(binderIdent| $name:ident)
-      return (name, .intro <| .pure ident)
+      return (name, .intro <| .pure ident ident)
     | {kind := .ipm ivar, ..} =>  do
       let name ← Lean.mkIdent <$> (hyps.getUserName? ivar).getM
       let ident ← `(binderIdent| $name:ident)
-      return (name, .intro <| (if ivar.persistent? then .intuitionistic else id) <| .one ident)
+      return (name, .intro <| (if ivar.persistent? then .intuitionistic ident else id) <| .one ident ident)
   trace[irevertintro] s!"Calling `iRevertIntro` with {names.map (·.1)} on context {←ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
   iRevertCore hs hyps goal fun hyps goal => do
   k hyps goal fun hyps goal => do
