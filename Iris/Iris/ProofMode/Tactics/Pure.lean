@@ -61,6 +61,30 @@ def iPureCore {prop : Q(Type u)} (_bi : Q(BI $prop))
         | throwError "ipure: {A} is not affine and the goal not absorbing"
       return q(pure_elim_spatial (A:=$A) $pf $f)
 
+def iPureIntroCore {u} {prop : Q(Type u)} (_bi : Q(BI $prop))
+    (e goal : Q($prop)) (tacName : String) :
+    ProofModeM <| Q($e ⊢ $goal) × MVarId := do
+  let b : Q(Bool) ← mkFreshExprMVarQ q(Bool)
+  let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
+  let .some h ← ProofModeM.trySynthInstanceQ q(FromPure $b $goal .out $φ)
+  | throwError "{tacName}: {goal} is not pure"
+  let m : Q($φ) ← mkFreshExprSyntheticOpaqueMVar (← instantiateMVars φ)
+
+  let pf : Q($e ⊢ $goal) ← do
+    match ← whnf b with
+    | .const ``true _ =>
+      have : $b =Q true := ⟨⟩
+      let .some _ ← trySynthInstanceQ q(Affine $e)
+        | throwError "{tacName}: context is not affine"
+      pure q(pure_intro_affine (P := $e) (Q := $goal) $h $m)
+    | .const ``false _ =>
+      have : $b =Q false := ⟨⟩
+      pure q(pure_intro_spatial (P := $e) (Q := $goal) $h $m)
+    -- the following indicates a bug in the typeclass instances that generate b
+    | _ => throwError "{tacName}: bug in typeclass instances, cannot reduce {b} to true or false"
+
+  return ⟨pf, m.mvarId!⟩
+
 /--
   `ipure H` moves a pure hypothesis `H` from the Iris context into the regular
   Lean context.
@@ -90,26 +114,10 @@ elab "iempintro" : tactic => do
   `ipureintro` turns a goal of the form `⌜φ⌝` into the Lean goal `φ`.
 -/
 elab "ipureintro" : tactic => do
-  ProofModeM.runTactic λ mvar { e, goal, .. } => do
-
-  let b : Q(Bool) ← mkFreshExprMVarQ q(Bool)
-  let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
-  let .some h ← ProofModeM.trySynthInstanceQ q(FromPure $b $goal .out $φ)
-    | throwError "ipureintro: {goal} is not pure"
-  let m : Q($φ) ← mkFreshExprMVar (← instantiateMVars φ)
-  addMVarGoal m.mvarId!
-
-  match ← whnf b with
-  | .const ``true _ =>
-    have : $b =Q true := ⟨⟩
-    let .some _ ← trySynthInstanceQ q(Affine $e)
-      | throwError "ipureintro: context is not affine"
-    mvar.assign q(pure_intro_affine (P := $e) (Q := $goal) $h $m)
-  | .const ``false _ =>
-    have : $b =Q false := ⟨⟩
-    mvar.assign q(pure_intro_spatial (P := $e) (Q := $goal) $h $m)
-  -- the following indicates a bug in the typeclass instances that generate b
-  | _ => throwError "ipureintro: bug in typeclass instances, cannot reduce {b} to true or false"
+  ProofModeM.runTactic λ mvar { bi, e, goal, .. } => do
+    let ⟨pf, m⟩ ← iPureIntroCore bi e goal "ipureintro"
+    addMVarGoal m
+    mvar.assign pf
 
 -- TODO: what is the best lean automation tactic to call here?
 -- `assumption` is necessary if the goal contains mvars
