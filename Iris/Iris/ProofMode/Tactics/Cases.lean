@@ -80,12 +80,13 @@ private def iCasesExists {prop : Q(Type u)} (bi : Q(BI $prop)) (pat : TSyntax `r
   let α : Q(Sort v) ← mkFreshExprMVarQ q(Sort v)
   let Φ : Q($α → $prop) ← mkFreshExprMVarQ q($α → $prop)
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoExists $A $Φ)
-    | throwError "{tacName}: {A} is not an existential quantifier"
+  | throwError "{tacName}: {A} is not an existential quantifier"
   let pf : Q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) ←
     iPureDestruct q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) pat fun g => do
       let B : Q($prop) ← mkFreshExprMVarQ q($prop)
-      let .true ← isDefEq (← g.getType) q($P ∗ □?$p $B ⊢ $goal)
-        | throwError "{tacName}: unexpected goal {goal} after intro pattern"
+      let eq ← isDefEq (← g.getType) q($P ∗ □?$p $B ⊢ $goal)
+      if !eq then
+        throwError "{tacName}: unexpected goal {goal} after intro pattern"
       k (Expr.headBeta (← instantiateMVars B))
   return q(exists_elim' $pf)
 

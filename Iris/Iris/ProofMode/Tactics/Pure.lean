@@ -40,6 +40,10 @@ theorem pure_intro_spatial [BI PROP] {Q : PROP} {φ : Prop}
 public meta section
 open Lean Elab Tactic Meta Qq
 
+/--
+  Apply a destruction pattern for pure hypotheses with `k` being a function
+  to be applied to subgoals generated after the destruction.
+-/
 def iPureDestruct (ty : Q(Prop)) (pat : TSyntax `rcasesPat)
     (k : MVarId → ProofModeM Expr) : ProofModeM Q($ty) := do
   let m : Q($ty) ← mkFreshExprSyntheticOpaqueMVar ty
