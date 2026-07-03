@@ -111,8 +111,10 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     let ⟨Q', _⟩ ← Lean.Meta.dsimp Q simpCtx #[← Simp.getSimprocs]
     iIntroCore hyps Q' pats k
   | (ref, .simptrivial) :: pats =>
+    withRef ref do
     iIntroCore hyps Q ((ref, .simp) :: (ref, .trivial) :: pats) k
   | (ref, .all) :: pats =>
+    withRef ref do
     let ⟨n, _⟩ ← getFreshName (← `(binderIdent| _))
     iIntroCoreForallIntro ref n Q
       -- No more universally quantified variable to be introduced
@@ -120,6 +122,7 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       -- Introduction of a universally quantified variable
       (do mkLambdaFVars #[·] <|← iIntroCore hyps · ((ref, .all) :: pats) k)
   | (ref, .allwand) :: pats =>
+    withRef ref do
     let ⟨n, _⟩ ← getFreshName (← `(binderIdent| _))
     let k' : ProofModeM Q($P ⊢ $Q) := do
       let A1 ← mkFreshExprMVarQ q($prop)
@@ -173,10 +176,12 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       let res ← s.resolveOne hyps >>= iFrame hyps Q
       res.finish (iIntroCore · · ((ref, .clear selPats) :: pats) k)
   | (ref, .intro (.rewrite direction)) :: pats =>
+    withRef ref do
     let ⟨n, _⟩ ← getFreshName (← `(binderIdent| _))
     iIntroCoreForallIntro ref n Q none <|
       fun x B => do mkLambdaFVars #[x] <|← iCasesPureRewrite hyps B x direction (iIntroCore · · pats k)
   | (ref, .intro (.pure n)) :: pats =>
+    withRef ref do
     let ⟨n, _⟩ ← getFreshName n
     iIntroCoreForallIntro ref n Q none <|
       (do mkLambdaFVars #[·] <|← iIntroCore hyps · pats k)
