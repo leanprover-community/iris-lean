@@ -314,6 +314,12 @@ example [BI PROP] (P Q : PROP) : ⊢ □ P -∗ □ Q -∗ ⌜n = n⌝ := by
   iintro - - !%
   rfl
 
+/- Tests `iintro` with pure introduction failure -/
+/-- error: iintro: Q is not pure -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : P ⊢ Q := by
+  iintro HP !%
+
 /-- Tests `iintro` with introduction patterns coming after `!%` -/
 example {ϕ : Prop} [BI PROP] : ⊢@{PROP} ⌜⌜ϕ⌝ ⊢@{PROP} ⌜ϕ⌝⌝ := by
   iintro !% %_ !%

@@ -142,25 +142,11 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       (do mkLambdaFVars #[·] <|← iIntroCore hyps · ((ref, .allwand) :: pats) k)
   | (ref, .pureintro) :: pats =>
     withRef ref do
-    let b ← mkFreshExprMVarQ q(Bool)
-    let ϕ ← mkFreshExprMVarQ q(Prop)
-    let some inst ← ProofModeM.trySynthInstanceQ q(FromPure $b $Q .out $ϕ)
-    | throwError "iintro: {Q} is not pure"
-    let m : Q($ϕ) ← mkFreshExprSyntheticOpaqueMVar (← instantiateMVars ϕ)
-    let pf ← do match ← whnf b with
-    | .const ``true _ =>
-      have : $b =Q true := ⟨⟩
-      let .some _ ← trySynthInstanceQ q(Affine $P)
-      | throwError "iintro: unable to introduce a pure goal as the context is not affine"
-      pure q(pure_intro_affine (Q := $Q) $inst $m)
-    | .const ``false _ =>
-      have : $b =Q false := ⟨⟩
-      pure q(pure_intro_spatial (Q := $Q) $inst $m)
-    | _ => throwError "iintro: bug in typeclass instances, cannot reduce {b} to true or false"
+    let ⟨pf, m⟩ ← iPureIntroCore bi P Q "iintro"
     if pats.isEmpty then
-      addMVarGoal m.mvarId!
+      addMVarGoal m
     else
-      let ⟨newM, g⟩ ← startProofMode m.mvarId!
+      let ⟨newM, g⟩ ← startProofMode m
       let pf' ← newM.withContext <| iIntroCore g.hyps g.goal pats k
       newM.assign pf'
     return pf
