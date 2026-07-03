@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Sergei Stepanenko, Xiaoyang Lu
+Authors: Sergei Stepanenko, Xiaoyang Lu, Zongyuan Liu
 -/
 module
 
@@ -52,8 +52,7 @@ def box_own_prop (γ : SliceName) (P : IProp GF) : IProp GF :=
 
 instance box_own_prop_persistent (γ : SliceName) (P : IProp GF) :
     Persistent (box_own_prop γ P) := by
-  unfold box_own_prop
-  infer_instance
+  unfold box_own_prop; infer_instance
 
 @[rocq_alias box_own_prop_contractive]
 instance box_own_prop_contractive (γ : SliceName) : Contractive (box_own_prop (GF := GF) γ) :=
@@ -94,14 +93,13 @@ instance slice_contractive (N : Namespace) (γ : SliceName) : Contractive (slice
 @[rocq_alias slice_persistent]
 instance slice_persistent (N : Namespace) (γ : SliceName) (P : IProp GF) :
     Persistent (slice N γ P) := by
-  unfold slice
-  infer_instance
+  unfold slice; infer_instance
 
 @[rocq_alias box_contractive]
 instance box_contractive {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     (N : Namespace) (f : M Bool) : Contractive (box (GF := GF) N f) :=
-  ⟨fun {_ _ _} h => exists_ne
-    fun _ => sep_ne.ne (Contractive.distLater_dist fun m hm => (internalEq.ne_l _).ne (h m hm)) Dist.rfl⟩
+  ⟨fun {_ _ _} h => exists_ne fun _ => sep_ne.ne
+    (Contractive.distLater_dist fun _ hm => (internalEq.ne_l _).ne (h _ hm)) Dist.rfl⟩
 
 @[rocq_alias box_ne]
 instance box_ne {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
@@ -120,7 +118,7 @@ theorem box_own_auth_agree {γ : SliceName} {b1 b2 : Bool} :
 theorem box_own_auth_update {γ : SliceName} {b1 b2: Bool} (b3 : Bool) :
     box_own_auth (GF := GF) γ (●E (⟨b1⟩ : BoolO)) ∗ box_own_auth γ (◯E ⟨b2⟩) ==∗
     box_own_auth γ (●E ⟨b3⟩) ∗ box_own_auth γ (◯E ⟨b3⟩) := by
-  simp only [ box_own_auth, ← iOwn_op.to_eq]
+  simp only [box_own_auth, ← iOwn_op.to_eq]
   iapply iOwn_update (Update.prod _ ExclAuth.update (Update.id (x := none)))
 
 @[rocq_alias box_own_agree]
@@ -131,6 +129,7 @@ theorem box_own_agree (γ : SliceName) (Q1 Q2 : IProp GF) :
   icases iOwn_cmraValid $$ H with H
   icases (prod_validI _).mp $$ H with ⟨-, H⟩
   rw [option_validI.to_eq, ←(later_equivI ..).to_eq, ←(agree_equivI ..).to_eq]
+  -- TODO: Goal display is broken
   exact (agree_op_invI ..)
 
 @[rocq_alias box_alloc]
@@ -138,7 +137,7 @@ theorem box_alloc {M : Type _ → Type _} [LawfulFiniteMap M SliceName] (N : Nam
     ⊢ box (GF := GF) N (∅ : M Bool) iprop(emp) := by
   unfold box
   iexists (fun _ => iprop(True))
-  simp only [Algebra.BigOpM.bigOpM_empty]; itrivial
+  simp only [bigSepM_empty.to_eq]; itrivial
 
 @[rocq_alias slice_insert_empty]
 theorem slice_insert_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
@@ -148,10 +147,8 @@ theorem slice_insert_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
       slice N γ Q ∗ ▷?q box N (insert f γ false) iprop(Q ∗ P) := by
   unfold box
   iintro ⟨%Φ, #Heq, H⟩
-  imod (iOwn_alloc_cofinite (F := BoxF)
-      ((((●E (⟨false⟩ : BoolO)), none) • ((◯E (⟨false⟩ : BoolO)), none)) •
-        (UCMRA.unit, some (toAgree (Later.next Q))))
-      ((toList f).map Prod.fst)) with ⟨%γ, %Hγ, Hown⟩
+  imod (iOwn_alloc_cofinite (F := BoxF) ((((●E (⟨false⟩ : BoolO)), none) • ((◯E (⟨false⟩ : BoolO)), none)) •
+        (UCMRA.unit, some (toAgree (Later.next Q)))) ((toList f).map Prod.fst)) with ⟨%γ, %Hγ, Hown⟩
   · exact ⟨ExclAuth.valid, Agree.toAgree_valid⟩
   have hfresh : get? f γ = none := by
     rw [Option.eq_none_iff_forall_not_mem]
@@ -159,18 +156,14 @@ theorem slice_insert_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   icases iOwn_op $$ Hown with ⟨⟨Hauth, Hfrag⟩, #Hprop⟩
   imod inv_alloc N E (slice_inv γ Q) $$ [Hauth] with #Hinv
   · inext
-    simp only [slice_inv, box_own_auth]
-    iexists false
-    simp only [Bool.false_eq_true, if_false]
-    iframe
+    unfold slice_inv box_own_auth; iexists false
+    simp only [Bool.false_eq_true, if_false]; iframe
   imodintro
   iexists γ
-  simp only [slice]
-  iframe %hfresh Hinv
-  isplitl [Hprop]
-  · simp only [box_own_prop]; iframe Hprop
+  unfold slice; iframe %hfresh Hinv
+  isplit
+  · unfold box_own_prop; iframe Hprop
   iexists (fun γ'' => if γ'' = γ then Q else Φ γ'')
-  simp only []
   inext
   isplit
   · inext
@@ -179,8 +172,7 @@ theorem slice_insert_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     rw [(bigSepM_fn_insert_key hfresh).to_eq]; exact internalEq.refl
   · rw [(bigSepM_fn_insert (g := fun k b P' =>
         iprop% box_own_auth k (◯E (⟨b⟩ : BoolO)) ∗ box_own_prop k P' ∗ inv N (slice_inv k P')) hfresh).to_eq]
-    simp only [box_own_prop, box_own_auth]
-    iframe H Hfrag Hprop Hinv
+    unfold box_own_prop box_own_auth; iframe H Hfrag Hprop Hinv
 
 @[rocq_alias slice_delete_empty]
 theorem slice_delete_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
@@ -202,9 +194,9 @@ theorem slice_delete_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   isplit
   · inext
     irewrite [Heq']
-    · exact ⟨fun _ _ _ H => (NonExpansive₂.ne_right internalEq P).ne ((sep_ne.ne_left _ _).ne H)⟩
+    · exact ⟨fun _ _ _ H => (NonExpansive₂.ne_right _ _).ne ((sep_ne.ne_left _ _).ne H)⟩
     irewrite [Heq]
-    · exact ⟨fun _ _ _ H => (NonExpansive₂.ne_left internalEq _).ne H⟩
+    · exact internalEq.ne_l _
     iapply prop_ext
     iclear Hprop Hinv Hprop' Hsliceinv
     imodintro
@@ -222,13 +214,11 @@ theorem slice_fill {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   iintro ⟨⟨#Hprop, #Hinv⟩, HQ, %Φ, #Heq, Hbig⟩
   icases bigSepM_laterN $$ Hbig with Hbig
   icases bigSepM_delete Hf $$ Hbig with ⟨⟨Hfrag, Hprop', Hsliceinv⟩, Hbig⟩
-  have hq : q.toNat ≤ 1 := by cases q <;> simp
   imod inv_acc HE $$ Hinv with ⟨Hsinv, Hclose⟩
-  unfold slice_inv
-  icases Hsinv with ⟨%b, >Hauth, Hb⟩
+  unfold slice_inv; icases Hsinv with ⟨%b, >Hauth, Hb⟩
   icases Hfrag with >Hfrag
   imod box_own_auth_update true $$ [$Hauth $Hfrag] with ⟨Hauth, Hfrag⟩
-  imod Hclose $$ [Hauth HQ]
+  imod Hclose $$ [Hauth HQ] with ⟨-⟩
   · inext; iexists true; simp only [if_true]; iframe
   imodintro
   icases bigSepM_laterN $$ Hbig with Hbig
@@ -248,20 +238,18 @@ theorem slice_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     |={E}=> ▷ Q ∗ (▷?q box N (insert f γ false) P) := by
   unfold slice box
   iintro ⟨⟨#Hprop, #Hinv⟩, %Φ, #Heq, Hbig⟩
-  icases bigSepM_laterN $$ Hbig with Hbig
+  simp only [bigSepM_laterN.to_eq]
   icases bigSepM_delete Hf $$ Hbig with ⟨⟨Hfrag, Hprop', Hsliceinv⟩, Hbig⟩
-  have hq : q.toNat ≤ 1 := by cases q <;> simp
   imod inv_acc HE $$ Hinv with ⟨Hsinv, Hclose⟩
   unfold slice_inv
   icases Hsinv with ⟨%b, >Hauth, Hb⟩
   icases Hfrag with >Hfrag
   ihave %hb := box_own_auth_agree $$ [$Hauth $Hfrag]; subst hb
-  simp only [if_true]
   imod box_own_auth_update false $$ [$Hauth $Hfrag] with ⟨Hauth, Hfrag⟩
   imod Hclose $$ [Hauth]
   · inext; iexists false; simp only [Bool.false_eq_true, if_false]; iframe
   imodintro
-  iframe Hb
+  simp only [if_true]; iframe Hb
   iexists Φ
   icases bigSepM_laterN $$ Hbig with Hbig
   inext
@@ -283,13 +271,7 @@ theorem slice_insert_full {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   iframe %Hfresh Hslice
   imod slice_fill HE (get?_insert_eq rfl) $$ [$Hslice $HQ $Hbox] with Hbox
   imodintro
-  have hbox : box N (insert (insert f γ false) γ true) iprop(Q ∗ P) ⊣⊢
-      box N (insert f γ true) iprop(Q ∗ P) := by
-    refine exists_congr fun Φ => ?_
-    rw [(bigSepM_eqv_of_perm LawfulPartialMap.insert_insert_same).to_eq,
-      (bigSepM_eqv_of_perm LawfulPartialMap.insert_insert_same).to_eq]
-    exact .rfl
-  rw [← hbox.to_eq]
+  simp only [box, (bigSepM_eqv_of_perm LawfulPartialMap.insert_insert_same).to_eq]
   itrivial
 
 @[rocq_alias slice_delete_full]
@@ -304,17 +286,12 @@ theorem slice_delete_full {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   imod slice_empty HE Hf $$ [$Hslice $Hbox] with ⟨HQ, Hbox⟩
   imod slice_delete_empty (get?_insert_eq rfl) $$ [$Hslice $Hbox] with ⟨%P', #Heq, Hbox⟩
   iexists P'
-  imodintro
   iframe HQ Heq
   have hdel : delete (insert f γ false) γ ≡ₘ delete f γ := fun j => by
     by_cases h : γ = j
-    · rw [get?_delete_eq h, get?_delete_eq h]
-    · rw [get?_delete_ne h, get?_delete_ne h, get?_insert_ne h]
-  have hbox : box N (delete (insert f γ false) γ) P' ⊣⊢ box N (delete f γ) P' := by
-    refine exists_congr fun Φ => ?_
-    rw [(bigSepM_eqv_of_perm hdel).to_eq, (bigSepM_eqv_of_perm hdel).to_eq]
-    exact .rfl
-  rw [← hbox.to_eq]
+    · simp only [get?_delete_eq h]
+    · simp only [get?_delete_ne h, get?_insert_ne h]
+  simp only [box, (bigSepM_eqv_of_perm hdel).to_eq]
   itrivial
 
 @[rocq_alias box_fill]
@@ -341,8 +318,7 @@ theorem box_fill {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     imodintro
     iintro %k %v %Heq ⟨⟨Hγ', #HγΦ, #Hinv⟩, H⟩
     imod inv_acc HE $$ Hinv with ⟨Hsinv, Hclose⟩
-    simp only [slice_inv]
-    icases Hsinv with ⟨%b, >Hauth, Hb⟩
+    unfold slice_inv; icases Hsinv with ⟨%b, >Hauth, Hb⟩
     imod box_own_auth_update true $$ [$Hauth $Hγ'] with ⟨Hauth, Hfrag⟩
     imod Hclose $$ [Hauth H]
     · inext; iexists true; simp only [↓reduceIte]; iframe Hauth H
@@ -366,15 +342,13 @@ theorem box_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     iintro %k %v %Heq ⟨Hγ', #HγΦ, #Hinv⟩
     have Heq' : v = true := Hall k v Heq; subst v
     imod inv_acc HE $$ Hinv with ⟨Hsinv, Hclose⟩
-    simp only [slice_inv]
-    icases Hsinv with ⟨%b, >Hauth, Hb⟩
+    unfold slice_inv; icases Hsinv with ⟨%b, >Hauth, Hb⟩
     ihave %hb := box_own_auth_agree $$ [$Hauth $Hγ']; subst hb
-    simp only [if_true]
     imod box_own_auth_update false $$ [$Hauth $Hγ'] with ⟨Hauth, Hfrag⟩
     imod Hclose $$ [Hauth]
     · inext; iexists false; simp only [Bool.false_eq_true, if_false]; iframe
     imodintro
-    iframe Hb HγΦ Hfrag Hinv
+    simp only [if_true]; iframe Hb HγΦ Hfrag Hinv
   · imodintro
     isplitl [HΦ]
     · icases bigSepM_later $$ HΦ with HΦ
@@ -385,8 +359,7 @@ theorem box_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
       rw [(bigSepM_map (Φ := fun k _ => Φ k)).to_eq]
       isplit
       · inext; itrivial
-      · rw [bigSepM_map.to_eq]
-        iframe H
+      · rw [bigSepM_map.to_eq]; itrivial
 
 @[rocq_alias slice_iff]
 theorem slice_iff {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
@@ -458,9 +431,8 @@ theorem slice_split {M : Type _ → Type _} [LawfulFiniteMap M SliceName] [Decid
       iapply internalEq.symm
       irewrite [HeqP]
       · exact ⟨fun _ _ _ H => (NonExpansive₂.ne_left internalEq _).ne H⟩
-      rw [←sep_assoc.to_eq, (sep_comm (P := Q1)).to_eq]
-      itrivial
-    · iexact Hbox
+      rw [←sep_assoc.to_eq, (sep_comm (P := Q1)).to_eq]; itrivial
+    · itrivial
   · iintro ⟨Hslice, Hbox⟩
     imod slice_delete_full HE Hf $$ [$Hslice $Hbox] with ⟨%Pold, ⟨HQ1, HQ2⟩, #HeqP, Hbox⟩
     imod slice_insert_full HE $$ [$HQ1 $Hbox] with ⟨%γ1, %Hfresh1, Hslice1, Hbox⟩
@@ -508,7 +480,7 @@ theorem slice_combine {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
       · exact ⟨fun _ _ _ H => (NonExpansive₂.ne_left internalEq _).ne ((sep_ne.ne_right _ _).ne H)⟩
       rw [sep_assoc.to_eq]
       itrivial
-    · iexact Hbox
+    · itrivial
   · iintro ⟨Hslice1, Hslice2, Hbox⟩
     imod slice_delete_full HE Hf1 $$ [$Hslice1 $Hbox] with ⟨%Pold1, HQ1, #HeqP1, Hbox⟩
     imod slice_delete_full HE Hf2' $$ [$Hslice2 $Hbox] with ⟨%Pold2, HQ2, #HeqP2, Hbox⟩
