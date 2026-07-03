@@ -15,7 +15,7 @@ meta import Iris.Std.RocqPorting
 namespace Iris.COFE.OFunctor
 open OFE
 
-variable {F : ∀ α β [OFE α] [OFE β], Type u} [OFunctorContractive F]
+variable {F : ∀ α β [COFE α] [COFE β], Type u} [OFunctorContractive F]
 variable [∀ α [COFE α], IsCOFE (F α α)]
 variable [inh : Inhabited (F (ULift Unit) (ULift Unit))]
 

@@ -171,6 +171,80 @@ variable (Φ : Val → PROP)
 
 end TestWP
 
+section TestTexanTriple
+
+set_option linter.unusedVariables false
+
+variable (PROP Expr : Type _) (A : Type _)
+variable [Wp PROP Expr Nat A]
+variable [Wp PROP Expr Nat Stuckness]
+variable [BI PROP]
+
+variable (e : Expr)(s : A)(E : CoPset)
+variable (P Q : PROP)
+
+/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x y, Q → Φ (x + y)) -∗ WP e @ s ; E {{ Φ }} ) : PROP -/
+#guard_msgs in #check {{ P }} e @ s ; E {{ x y , RET (x+y) ; Q }}
+
+/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x y, Q → Φ (x + y)) -∗ WP e @ E {{ Φ }} ) : PROP -/
+#guard_msgs in #check {{ P }} e @ E {{ x y , RET (x+y) ; Q }}
+
+/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x y, Q → Φ (x + y)) -∗ WP e @ E ? {{ Φ }} ) : PROP -/
+#guard_msgs in #check {{ P }} e @ E ? {{ x y , RET (x+y) ; Q }}
+
+/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x y, Q → Φ (x + y)) -∗ WP e {{ Φ }} ) : PROP -/
+#guard_msgs in #check {{ P }} e {{ x y , RET (x+y) ; Q }}
+
+/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x y, Q → Φ (x + y)) -∗ WP e ? {{ Φ }} ) : PROP -/
+#guard_msgs in #check {{ P }} e ? {{ x y , RET (x+y) ; Q }}
+
+/-- info: iprop(∀ Φ, P -∗ ▷ (Q → Φ 0) -∗ WP e @ s ; E {{ Φ }} ) : PROP -/
+#guard_msgs in #check {{ P }} e @ s ; E {{ RET 0 ; Q }}
+
+/-- info: iprop(∀ Φ, P -∗ ▷ (Q → Φ 0) -∗ WP e @ E {{ Φ }} ) : PROP -/
+#guard_msgs in #check {{ P }} e @ E {{ RET 0 ; Q }}
+
+/-- info: iprop(∀ Φ, P -∗ ▷ (Q → Φ 0) -∗ WP e @ E ? {{ Φ }} ) : PROP -/
+#guard_msgs in #check {{ P }} e @ E ? {{ RET 0 ; Q }}
+
+/-- info: iprop(∀ Φ, P -∗ ▷ (Q → Φ 0) -∗ WP e {{ Φ }} ) : PROP -/
+#guard_msgs in #check {{ P }} e {{ RET 0 ; Q }}
+
+/-- info: iprop(∀ Φ, P -∗ ▷ (Q → Φ 0) -∗ WP e ? {{ Φ }} ) : PROP -/
+#guard_msgs in #check {{ P }} e ? {{ RET 0 ; Q }}
+
+/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x y, Q → Φ (x + y)) -∗ WP e @ s ; E {{ Φ }} ) : PROP -/
+#guard_msgs in #check ⦃ P ⦄ e @ s ; E ⦃ x y , RET (x+y) ; Q ⦄
+
+/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x y, Q → Φ (x + y)) -∗ WP e @ E {{ Φ }} ) : PROP -/
+#guard_msgs in #check ⦃ P ⦄ e @ E ⦃ x y , RET (x+y) ; Q ⦄
+
+/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x y, Q → Φ (x + y)) -∗ WP e @ E ? {{ Φ }} ) : PROP -/
+#guard_msgs in #check ⦃ P ⦄ e @ E ? ⦃ x y , RET (x+y) ; Q ⦄
+
+/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x y, Q → Φ (x + y)) -∗ WP e {{ Φ }} ) : PROP -/
+#guard_msgs in #check ⦃ P ⦄ e ⦃ x y , RET (x+y) ; Q ⦄
+
+/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x y, Q → Φ (x + y)) -∗ WP e ? {{ Φ }} ) : PROP -/
+#guard_msgs in #check ⦃ P ⦄ e ? ⦃ x y , RET (x+y) ; Q ⦄
+
+/-- info: iprop(∀ Φ, P -∗ ▷ (Q → Φ 0) -∗ WP e @ s ; E {{ Φ }} ) : PROP -/
+#guard_msgs in #check ⦃ P ⦄ e @ s ; E ⦃ RET 0 ; Q ⦄
+
+/-- info: iprop(∀ Φ, P -∗ ▷ (Q → Φ 0) -∗ WP e @ E {{ Φ }} ) : PROP -/
+#guard_msgs in #check ⦃ P ⦄ e @ E ⦃ RET 0 ; Q ⦄
+
+/-- info: iprop(∀ Φ, P -∗ ▷ (Q → Φ 0) -∗ WP e @ E ? {{ Φ }} ) : PROP -/
+#guard_msgs in #check ⦃ P ⦄ e @ E ? ⦃ RET 0 ; Q ⦄
+
+/-- info: iprop(∀ Φ, P -∗ ▷ (Q → Φ 0) -∗ WP e {{ Φ }} ) : PROP -/
+#guard_msgs in #check ⦃ P ⦄ e ⦃ RET 0 ; Q ⦄
+
+/-- info: iprop(∀ Φ, P -∗ ▷ (Q → Φ 0) -∗ WP e ? {{ Φ }} ) : PROP -/
+#guard_msgs in #check ⦃ P ⦄ e ? ⦃ RET 0 ; Q ⦄
+
+end TestTexanTriple
+
 section HeapLangTestWP
 set_option linter.unusedVariables false
 
@@ -204,3 +278,43 @@ variable (E : CoPset) (Φ : Val → PROP) (P : PROP)
 #guard_msgs in #check (WP hl(#1) {{ v, ⌜v = hl_val(#1)⌝ }} : PROP)
 
 end HeapLangTestWP
+
+section HeapLangTestTexanTriple
+set_option linter.unusedVariables false
+
+open Iris.HeapLang
+
+variable (PROP : Type _) [BI PROP]
+variable [Wp PROP Exp Val Stuckness]
+variable (E : CoPset) (P Q : PROP)
+
+/-- info: iprop(∀ Φ, P -∗ ▷ (Q → Φ hl_val(#1)) -∗ WP hl(#1) {{ Φ }} ) : PROP -/
+#guard_msgs in #check {{ P }} hl(#1) {{ RET hl_val(#1); Q }}
+/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x, Q → Φ x) -∗ WP hl((#1 + #2)) {{ Φ }} ) : PROP -/
+#guard_msgs in #check {{ P }} hl(#1 + #2) {{ x, RET x; Q }}
+/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x, Q → Φ x) -∗ WP hl((#1 < #2)) {{ Φ }} ) : PROP -/
+#guard_msgs in #check {{ P }} hl(#1 < #2) {{ x, RET x; Q }}
+/--
+info: iprop(∀ Φ, P -∗ (▷ ∀ x, Q → Φ x) -∗ WP hl(if (#0 < #1) then #1 else #2) {{ Φ }} ) : PROP
+-/
+#guard_msgs in #check {{ P }} hl(if #0 < #1 then #1 else #2) {{ x, RET x; Q }}
+/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x, Q → Φ x) -∗ WP hl((λ x, x)) {{ Φ }} ) : PROP -/
+#guard_msgs in #check {{ P }} hl(λ x, x) {{ x, RET x; Q }}
+/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x, Q → Φ x) -∗ WP hl((rec f x := f x)) {{ Φ }} ) : PROP -/
+#guard_msgs in #check {{ P }} hl(rec f x := f x) {{ x, RET x; Q }}
+/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x, Q → Φ x) -∗ WP hl(#1; #2) {{ Φ }} ) : PROP -/
+#guard_msgs in #check {{ P }} hl(#1; #2) {{ x, RET x; Q }}
+/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x, Q → Φ x) -∗ WP hl((#1, #2)) {{ Φ }} ) : PROP -/
+#guard_msgs in #check {{ P }} hl((#1, #2)) {{ x, RET x; Q }}
+/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x, Q → Φ x) -∗ WP hl(ref(#0)) {{ Φ }} ) : PROP -/
+#guard_msgs in #check {{ P }} hl(ref(#0)) {{ x, RET x; Q }}
+/--
+info: iprop(∀ Φ, P -∗ (▷ ∀ x, Q → Φ x) -∗ WP hl(if (#1 < #2) then (#1 + #1) else #0) {{ Φ }} ) : PROP
+-/
+#guard_msgs in #check {{ P }} hl(if #1 < #2 then #1 + #1 else #0) {{ x, RET x; Q }}
+/-- info: iprop(∀ Φ, P -∗ (▷ ∀ v, ⌜v = hl_val(#1)⌝ → Φ v) -∗ WP hl(#1) {{ Φ }} ) : PROP -/
+#guard_msgs in #check ({{ P }} hl(#1) {{ v, RET v; ⌜v = hl_val(#1)⌝ }} : PROP)
+
+end HeapLangTestTexanTriple
+
+

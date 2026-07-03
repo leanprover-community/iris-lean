@@ -248,6 +248,96 @@ theorem Equiv.to_eq {α} [OFE α] [Leibniz α] {x y : α} (h : x ≡ y) : x = y 
   ⟨eq_of_eqv, .of_eq⟩
 export OFE.Leibniz (leibniz)
 
+/-- The setoid on `X` identifying points that agree at every step index:
+`x ≈ y ↔ ∀ n, dist n x y`. -/
+@[reducible]
+def QuotientO {X : Type u} (dist : Nat → X → X → Prop) (heqv : ∀ {n}, Equivalence (dist n)) :
+    Setoid X where
+  r x y := ∀ n, dist n x y
+  iseqv :=
+    ⟨fun _ _ => heqv.refl _,
+     fun h n => heqv.symm (h n),
+     fun h₁ h₂ n => heqv.trans (h₁ n) (h₂ n)⟩
+
+/--
+EXPERIMENT: Explicit use of quotients to force quotiented (by Equiv) OFE to be Leibniz by
+quotienting by propositional equality.
+https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Evaluating.20a.20specialization.20to.20Leibnize.20OFE.27s/with/606745235
+
+Build a `Leibniz` OFE from a step-indexed distance `dist` satisfying the OFE distance axioms
+by quotienting the carrier `X` by the OFE equivalence `fun x y => ∀ n, dist n x y`. -/
+@[reducible] def mkQuotient {X : Type u} (dist : Nat → X → X → Prop)
+    (heqv : ∀ {n}, Equivalence (dist n))
+    (hlt : ∀ {n m : Nat} {x y : X}, dist n x y → m < n → dist m x y) :
+    OFE (Quotient (QuotientO dist heqv)) :=
+  letI D : Nat → Quotient (QuotientO dist heqv) → Quotient (QuotientO dist heqv) → Prop :=
+    fun n => Quotient.lift₂ (dist n) fun _ _ _ _ hac hbd => propext
+      ⟨fun h => heqv.trans (heqv.trans (heqv.symm (hac n)) h) (hbd n),
+       fun h => heqv.trans (heqv.trans (hac n) h) (heqv.symm (hbd n))⟩
+  { Dist := D
+    Equiv x y := ∀ n, D n x y
+    dist_eqv := by
+      refine ⟨Quotient.ind fun a => heqv.refl a, fun {x y} h => ?_, fun {x y z} h₁ h₂ => ?_⟩
+      · induction x, y using Quotient.ind₂ with | _ a b => exact heqv.symm h
+      · induction x, y using Quotient.ind₂ with | _ a b =>
+          induction z using Quotient.ind with | _ c => exact heqv.trans h₁ h₂
+    equiv_dist := .rfl
+    dist_lt := fun {n x y m} h hlt' => by
+      induction x, y using Quotient.ind₂ with | _ a b => exact hlt h hlt' }
+
+theorem mkQuotient_leibniz {X : Type u} (dist : Nat → X → X → Prop)
+    (heqv : ∀ {n}, Equivalence (dist n))
+    (hlt : ∀ {n m : Nat} {x y : X}, dist n x y → m < n → dist m x y) :
+    @Leibniz _ (mkQuotient dist heqv hlt) :=
+  letI := mkQuotient dist heqv hlt
+  { eq_of_eqv := fun {x y} h => by
+      induction x, y using Quotient.ind₂ with | _ a b => exact Quotient.sound h }
+
+namespace mkQuotient
+
+variable {X : Type u} {dist : Nat → X → X → Prop} {heqv : ∀ {n}, Equivalence (dist n)}
+
+@[reducible] def mk (x : X) : Quotient (QuotientO dist heqv) := Quotient.mk _ x
+
+@[elab_as_elim] theorem ind {motive : Quotient (QuotientO dist heqv) → Prop}
+    (h : ∀ x : X, motive (mk x)) (q : Quotient (QuotientO dist heqv)) : motive q :=
+  Quotient.ind h q
+
+theorem sound {x y : X} (h : ∀ n, dist n x y) :
+    (mk x : Quotient (QuotientO dist heqv)) = mk y := Quotient.sound h
+
+theorem mk_eq {x y : X} :
+    (mk x : Quotient (QuotientO dist heqv)) = mk y ↔ ∀ n, dist n x y :=
+  ⟨Quotient.exact, sound⟩
+
+@[reducible] def lift {β : Sort v} (f : X → β)
+    (resp : ∀ x y, (∀ n, dist n x y) → f x = f y) :
+    Quotient (QuotientO dist heqv) → β := Quotient.lift f resp
+
+@[simp] theorem lift_mk {β : Sort v} (f : X → β) (resp) (x : X) :
+    lift (dist := dist) (heqv := heqv) f resp (mk x) = f x := rfl
+
+@[reducible] def lift₂ {β : Sort v} (f : X → X → β)
+    (resp : ∀ a b c d, (∀ n, dist n a c) → (∀ n, dist n b d) → f a b = f c d) :
+    Quotient (QuotientO dist heqv) → Quotient (QuotientO dist heqv) → β := Quotient.lift₂ f resp
+
+@[simp] theorem lift₂_mk {β : Sort v} (f : X → X → β) (resp) (x y : X) :
+    lift₂ (dist := dist) (heqv := heqv) f resp (mk x) (mk y) = f x y := rfl
+
+@[reducible] def map {X' : Type u'} {dist' : Nat → X' → X' → Prop} {heqv' : ∀ {n}, Equivalence (dist' n)}
+    (f : X → X') (hf : ∀ n x y, dist n x y → dist' n (f x) (f y)) :
+    Quotient (QuotientO dist heqv) → Quotient (QuotientO dist' heqv') :=
+  Quotient.lift (fun x => mk (f x)) (fun _ _ h => Quotient.sound fun n => hf n _ _ (h n))
+
+@[simp] theorem map_mk {X' : Type u'} {dist' : Nat → X' → X' → Prop}
+    {heqv' : ∀ {n}, Equivalence (dist' n)} (f : X → X') (hf) (x : X) :
+    map (dist := dist) (heqv := heqv) (dist' := dist') (heqv' := heqv') f hf (mk x) = mk (f x) := rfl
+
+theorem dist_mk {hlt : ∀ {n m : Nat} {x y : X}, dist n x y → m < n → dist m x y}
+    {n} {x y : X} : (mkQuotient dist heqv hlt).Dist n (mk x) (mk y) ↔ dist n x y := Iff.rfl
+
+end mkQuotient
+
 /-- A morphism between OFEs, written `α -n> β`, is defined to be a function that is
 non-expansive. -/
 @[ext, rocq_alias ofe_mor] structure Hom (α β : Type _) [OFE α] [OFE β] where
@@ -1108,30 +1198,27 @@ instance {P : α → Type _} [∀ x, OFE (P x)] [∀ x, IsCOFE (P x)] : IsCOFE (
     exact hequiv
 #rocq_ignore sigT_compl "Local Compl definition; folded into Lean's IsCOFE instance."
 
-abbrev OFunctorPre := ∀ α β [OFE α] [OFE β], Type _
+abbrev OFunctorPre := ∀ α β [COFE α] [COFE β], Type _
 #rocq_ignore oFunctor_apply "Definition for application of an `oFunctor`; subsumed by `OFunctorPre` in Lean."
 
 @[rocq_alias oFunctor]
 class OFunctor (F : OFunctorPre) where
-  -- EXPERIMENT: Replacing COFE in this definition with OFE
-  -- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/OFunctor.20definition
-  -- cofe [COFE α] [COFE β] : OFE (F α β)
-  cofe [OFE α] [OFE β] : OFE (F α β)
-  map [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
+  ofe [COFE α] [COFE β] : OFE (F α β)
+  map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -n> F α₂ β₂
-  map_ne [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
+  map_ne [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     NonExpansive₂ (@map α₁ α₂ β₁ β₂ _ _ _ _)
-  map_id [OFE α] [OFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x ≡ x
-  map_comp [OFE α₁] [OFE α₂] [OFE α₃] [OFE β₁] [OFE β₂] [OFE β₃]
+  map_id [COFE α] [COFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x ≡ x
+  map_comp [COFE α₁] [COFE α₂] [COFE α₃] [COFE β₁] [COFE β₂] [COFE β₃]
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x ≡ map g g' (map f f' x)
 
 @[rocq_alias oFunctorContractive]
 class OFunctorContractive (F : OFunctorPre) extends OFunctor F where
-  map_contractive [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
+  map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
-attribute [reducible, instance] OFunctor.cofe
+attribute [reducible, instance] OFunctor.ofe
 
 end COFE
 
@@ -1167,7 +1254,7 @@ abbrev DiscreteFunOF {C : Type _} (F : C → OFunctorPre) : OFunctorPre :=
 @[rocq_alias discrete_funOF]
 instance oFunctor_discreteFunOF {C} (F : C → OFunctorPre) [∀ c, OFunctor (F c)] :
     OFunctor (DiscreteFunOF F) where
-  cofe := _
+  ofe := _
   map f₁ f₂ := mapCodHom fun _ => OFunctor.map f₁ f₂
   map_ne.ne _ _ _ Hx _ _ Hy _ _ := OFunctor.map_ne.ne Hx Hy ..
   map_id _ _ := OFunctor.map_id ..
@@ -1242,7 +1329,7 @@ variable (F : OFunctorPre)
 
 @[rocq_alias optionOF]
 instance oFunctorOption [OFunctor F] : OFunctor (OptionOF F) where
-  cofe := _
+  ofe := _
   map f g := optionMap (OFunctor.map f g)
   map_ne.ne _ _ _ Hx _ _ Hy z := by
     cases z <;> simp [optionMap, Dist, Option.Forall₂]
@@ -1302,7 +1389,7 @@ abbrev ProdOF (F1 F2 : OFunctorPre) : OFunctorPre := fun A B => (F1 A B) × (F2 
 open OFunctor in
 @[rocq_alias prodOF]
 instance instOFunctorProdOF [OFunctor F1] [OFunctor F2] : OFunctor (ProdOF F1 F2) where
-  cofe := inferInstance
+  ofe := inferInstance
   map f g := Prod.mapO (map f g) (map f g)
   map_ne.ne _ _ _ Hx _ _ Hy _ := ⟨map_ne.ne Hx Hy _, map_ne.ne Hx Hy _⟩
   map_id _ := ⟨map_id _, map_id _⟩
@@ -1358,7 +1445,7 @@ abbrev SumOF (F1 F2 : OFunctorPre) : OFunctorPre := fun A B => (F1 A B) ⊕ (F2 
 open OFunctor in
 @[rocq_alias sumOF]
 instance instOFunctorSumOF [OFunctor F1] [OFunctor F2] : OFunctor (SumOF F1 F2) where
-  cofe := inferInstance
+  ofe := inferInstance
   map f g := Sum.mapO (map f g) (map f g)
   map_ne.ne _ _ _ Hx _ _ Hy x := match x with
     | .inl _ => dist_inl (map_ne.ne Hx Hy _)
@@ -1396,7 +1483,7 @@ abbrev SigmaOF (F : A → OFunctorPre) : OFunctorPre :=
 open OFunctor in
 @[rocq_alias sigTOF]
 instance instOFunctorSigmaOF {F : A → OFunctorPre} [∀ a, OFunctor (F a)] : OFunctor (SigmaOF F) where
-  cofe := inferInstance
+  ofe := inferInstance
   map f g := Sigma.mapO (fun _ => map f g)
   map_ne.ne _ _ _ Hx _ _ Hy := NonExpansive.ne (fun _ => map_ne.ne Hx Hy)
   map_id _ _ := ⟨rfl, (map_id _).dist⟩
@@ -1417,15 +1504,15 @@ open COFE
 abbrev constOF (B : Type) : OFunctorPre := fun _ _ _ _ => B
 
 @[rocq_alias constOF]
-instance oFunctorConstOF [OFE B] : OFunctor (constOF B) where
-  cofe := _
+instance oFunctorConstOF [COFE B] : OFunctor (constOF B) where
+  ofe := _
   map _ _ := ⟨id, id_ne⟩
   map_ne := by intros; constructor; simp
   map_id := by simp
   map_comp := by simp
 
 @[rocq_alias constOF_contractive]
-instance OFunctor.constOF_contractive [OFE B] : OFunctorContractive (constOF B) where
+instance OFunctor.constOF_contractive [COFE B] : OFunctorContractive (constOF B) where
   map_contractive.1 := by simp [OFunctor.map]
 
 end constOF
@@ -1434,12 +1521,12 @@ section IdOF
 
 open COFE
 
-abbrev IdOF : OFunctorPre := fun (_ : Type _) (B : Type _) (_ : OFE _) (_ : OFE B) => B
+abbrev IdOF : OFunctorPre := fun (_ : Type _) (B : Type _) (_ : COFE _) (_ : COFE B) => B
 
 open OFunctor in
 @[rocq_alias idOF]
 instance : OFunctor IdOF where
-  cofe := inferInstance
+  ofe := inferInstance
   map _ g := g
   map_ne.ne _ _ _ _ _ _ Hy := Hy
   map_id _ := .rfl
@@ -1467,12 +1554,12 @@ instance instNonExpansive₂HomMap :
     (NonExpansive.ne (f := y₁) (NonExpansive.ne (f := f) (Hx g))).trans (Hy _)
 
 abbrev HomOF (F1 F2 : OFunctorPre) [OFunctor F1] [OFunctor F2] : OFunctorPre :=
-  fun (A : Type _) (B : Type _) (_ : OFE A) (_ : OFE B) => @F1 B A _ _ -n> @F2 A B _ _
+  fun (A : Type _) (B : Type _) (_ : COFE A) (_ : COFE B) => @F1 B A _ _ -n> @F2 A B _ _
 
 open OFunctor in
 @[rocq_alias ofe_morOF]
 instance instOFunctorHomOF [OFunctor F1] [OFunctor F2] : OFunctor (HomOF F1 F2) where
-  cofe := inferInstance
+  ofe := inferInstance
   map f g := Hom.map (map (F := F1) g f) (map (F := F2) f g)
   map_ne.ne _ _ _ Hf _ _ Hg := NonExpansive₂.ne (map_ne.ne Hg Hf) (map_ne.ne Hf Hg)
   map_id {_ _ _ _ _} _ := (map_id _).trans (NonExpansive.eqv (map_id _))
@@ -1796,7 +1883,7 @@ variable (F : OFunctorPre)
 
 @[rocq_alias laterOF]
 instance instOFunctorLater [OFunctor F] : OFunctor (LaterOF F) where
-  cofe := _
+  ofe := _
   map f g := laterMap (OFunctor.map f g)
   map_ne.ne _ _ _ Hx _ _ Hy _ _ := (OFunctor.map_ne.ne Hx Hy _).lt
   map_id _ := OFunctor.map_id _
@@ -1815,10 +1902,10 @@ open COFE
 -- EXPERIMENT: Threading of Leibniz property through the recursive domain equation solver
 -- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Bi-entailment.20and.20generalized.20rewriting/with/565019365
 class LeibnizPreservingOFunctor (F : OFunctorPre) [OFunctor F] where
-  preserves_leibniz [OFE α] [OFE β] [Leibniz α] [Leibniz β] : Leibniz (F α β)
+  preserves_leibniz [COFE α] [COFE β] [Leibniz α] [Leibniz β] : Leibniz (F α β)
 
 instance LeibnizPreservingOFunctor.out {F : OFunctorPre} [OFunctor F] [LeibnizPreservingOFunctor F]
-    [OFE α] [OFE β] [Leibniz α] [Leibniz β] : Leibniz (F α β) where
+    [COFE α] [COFE β] [Leibniz α] [Leibniz β] : Leibniz (F α β) where
   eq_of_eqv {x y} hequiv := by
     haveI := LeibnizPreservingOFunctor.preserves_leibniz (F := F) (α := α) (β := β)
     exact eq_of_eqv hequiv
@@ -1828,7 +1915,7 @@ instance instLeibnizPreservingOFunctorLaterOF [OFunctor F] [LeibnizPreservingOFu
   preserves_leibniz :=
     ⟨fun {x y} hequiv => match x, y with | ⟨_⟩, ⟨_⟩ => Later.next.inj (eq_of_eqv hequiv)⟩
 
-instance instLeibnizPreservingOFunctorConstOF [OFE T] [Leibniz T] :
+instance instLeibnizPreservingOFunctorConstOF [COFE T] [Leibniz T] :
     LeibnizPreservingOFunctor (constOF T) where
   preserves_leibniz := ⟨fun hequiv => by simp only [leibniz] at hequiv; exact hequiv⟩
 

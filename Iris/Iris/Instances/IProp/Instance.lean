@@ -21,20 +21,20 @@ open COFE Std CMRA
 theorem IProp.ext {P Q : IProp GF} : P ⊣⊢ Q → P = Q := OFE.Leibniz.eq_of_eqv ∘ BI.equiv_iff.mpr
 
 /-- Apply an OFunctor at a fixed type -/
-abbrev COFE.OFunctorPre.ap (F : OFunctorPre) (T : Type _) [OFE T] :=
+abbrev COFE.OFunctorPre.ap (F : OFunctorPre) (T : Type _) [COFE T] :=
   F T T
 
 /-- Apply a list of OFunctors at a fixed type and index -/
-abbrev BundledGFunctors.api (FF : BundledGFunctors) (τ : GType) (T : Type _) [OFE T] :=
+abbrev BundledGFunctors.api (FF : BundledGFunctors) (τ : GType) (T : Type _) [COFE T] :=
   FF τ |>.fst |>.ap T
 
 /-- Transport an OFunctorPre application along equality of the OFunctorPre.  -/
-def transpAp {F1 F2 : OFunctorPre} (H : F1 = F2) {T} [OFE T] : F1.ap T = F2.ap T :=
+def transpAp {F1 F2 : OFunctorPre} (H : F1 = F2) {T} [COFE T] : F1.ap T = F2.ap T :=
   congrArg (OFunctorPre.ap · T) H
 
 section TranspAp
 
-variable [RF₁ : RFunctorContractive F₁] [RF₂ : RFunctorContractive F₂] [OFE T]
+variable [RF₁ : RFunctorContractive F₁] [RF₂ : RFunctorContractive F₂] [COFE T]
 
 theorem OFE.transpAp_eqv_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x y : F₁.ap T} (H : x ≡{n}≡ y) :
     (transpAp h_fun).mp x ≡{n}≡ (transpAp h_fun).mp y := by
@@ -80,23 +80,23 @@ def ElemG.transpMap (E : ElemG GF F) T [OFE T] : (GF E.τ).fst = F :=
 def ElemG.transpClass (E : ElemG GF F) T [OFE T] : (GF E.τ).snd ≍ I :=
   Sigma.mk.inj E.transp |>.2
 
-def ElemG.bundle (E : ElemG GF F) [OFE T] : F.ap T → GF.api E.τ T :=
+def ElemG.bundle (E : ElemG GF F) [COFE T] : F.ap T → GF.api E.τ T :=
   transpAp (E.transpMap T) |>.mpr
 
-def ElemG.unbundle (E : ElemG GF F) [OFE T] : GF.api E.τ T → F.ap T :=
+def ElemG.unbundle (E : ElemG GF F) [COFE T] : GF.api E.τ T → F.ap T :=
   transpAp (E.transpMap T) |>.mp
 
-theorem ElemG.bundle_unbundle (E : ElemG GF F) [OFE T] (x : GF.api E.τ T) :
+theorem ElemG.bundle_unbundle (E : ElemG GF F) [COFE T] (x : GF.api E.τ T) :
     E.bundle (E.unbundle x) ≡ x := by simp [bundle, unbundle]
 
-theorem ElemG.unbundle_bundle (E : ElemG GF F) [OFE T] (x : F.ap T) :
+theorem ElemG.unbundle_bundle (E : ElemG GF F) [COFE T] (x : F.ap T) :
     E.unbundle (E.bundle x) ≡ x := by simp [bundle, unbundle]
 
-instance ElemG.bundle.ne {E : ElemG GF F} [OFE T] :
+instance ElemG.bundle.ne {E : ElemG GF F} [COFE T] :
     OFE.NonExpansive (E.bundle (T := T)) where
   ne {_ _ _} := OFE.transpAp_eqv_mp (E.transpMap T).symm (E.transpClass T).symm
 
-instance ElemG.unbundle.ne {E : ElemG GF F} [OFE T] :
+instance ElemG.unbundle.ne {E : ElemG GF F} [COFE T] :
     OFE.NonExpansive (E.unbundle (T := T)) where
   ne {_ _ _} H := OFE.transpAp_eqv_mp (E.transpMap T) (E.transpClass T) H
 
