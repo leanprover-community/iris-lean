@@ -53,19 +53,19 @@ def iPureDestruct (ty : Q(Prop)) (pat : TSyntax `rcasesPat)
   instantiateMVars m
 
 def iPureCore {prop : Q(Type u)} (_bi : Q(BI $prop))
-    (P P' : Q($prop)) (p : Q(Bool)) (A Q : Q($prop))
-    (purePat : TSyntax `rcasesPat) (pf : Q($P ⊣⊢ $P' ∗ □?$p $A))
+    (P P' : Q($prop)) (p : Q(Bool)) (A Q : Q($prop)) (purePat : TSyntax `rcasesPat)
+    (pf : Q($P ⊣⊢ $P' ∗ □?$p $A)) (tacName : String)
     (k : ProofModeM Q($P' ⊢ $Q)) : ProofModeM Q($P ⊢ $Q) := do
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPure $A $φ)
-    | throwError "ipure: {A} is not pure"
+    | throwError "{tacName}: {A} is not pure"
   let f ← iPureDestruct q($φ → ($P' ⊢ $Q)) purePat <| fun _ => k
   match matchBool p with
   | .inl _ =>
     return (q(pure_elim_intuitionistic $pf $f))
   | .inr _ =>
     let .some _ ← trySynthInstanceQ q(TCOr (Affine $A) (Absorbing $Q))
-      | throwError "ipure: {A} is not affine and the goal not absorbing"
+      | throwError "{tacName}: {A} is not affine and the goal not absorbing"
     return q(pure_elim_spatial (A := $A) $pf $f)
 
 def iPureIntroCore {u} {prop : Q(Type u)} (_bi : Q(BI $prop))
@@ -102,7 +102,7 @@ elab "ipure " colGt hyp:ident : tactic => do
   let ivar ← hyps.findWithInfo hyp
   let ⟨e', hyps', _, out', p, _, pf⟩ := hyps.remove true ivar
 
-  let pf ← iPureCore bi e e' p out' goal (← `(rcasesPat| $hyp:ident)) pf <| addBIGoal hyps' goal
+  let pf ← iPureCore bi e e' p out' goal (← `(rcasesPat| $hyp:ident)) pf "ipure" <| addBIGoal hyps' goal
 
   mvar.assign pf
 
@@ -116,7 +116,7 @@ elab "ipure " colGt hyp:ident " as " pat:rcasesPat : tactic => do
   let ivar ← hyps.findWithInfo hyp
   let ⟨e', hyps', _, out', p, _, pf⟩ := hyps.remove true ivar
 
-  let pf ← iPureCore bi e e' p out' goal pat pf <| addBIGoal hyps' goal
+  let pf ← iPureCore bi e e' p out' goal pat pf "ipure" <| addBIGoal hyps' goal
 
   mvar.assign pf
 

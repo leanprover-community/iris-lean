@@ -2759,12 +2759,20 @@ example {GF m n} [LcGS .hasLC GF] :
   icombine H1 H2 H3 H4 as Hnew
   iexact Hnew
 
-/-- Tests `icombine` for combining two tokens -/
+/-- Tests `icombine` for combining two tokens. -/
 example {GF} [TokenG GF] {γ} :
     ⊢@{IProp GF} token γ -∗ token γ -∗ False := by
   iintro H1 H2
   icombine H1 H2 gives H
   iexact H
+
+/- Tests `icombine` with an invalid destruction pattern. -/
+/-- error: icombine: cannot destruct iprop(<absorb> <affine> (P ∗ Q)) -/
+#guard_msgs in
+example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
+    ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <absorb> <affine> (P ∗ Q) ∗ <pers> R := by
+  iintro HP HQ
+  icombine HP HQ as ⟨HNew1, _⟩ gives HNew2
 
 end icombine
 

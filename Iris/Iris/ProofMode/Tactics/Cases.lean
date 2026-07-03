@@ -268,7 +268,7 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
       (iCasesCore hyps goal (.disjunction ref args) p · tacName k)
 
   | .pure _ arg =>
-    iPureCore bi q(iprop($P ∗ □?$p $A)) P p A goal arg q(.rfl) <| k hyps goal
+    iPureCore bi q(iprop($P ∗ □?$p $A)) P p A goal arg q(.rfl) tacName <| k hyps goal
 
   | .intuitionistic _ arg =>
     iCasesIntuitionistic bi p P A goal tacName (iCasesCore hyps goal arg q(true) · tacName k)
@@ -283,7 +283,7 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
   | .rewrite _ forward => do
       let name ← mkFreshUserName .anonymous
       let ident := mkIdent name
-      iPureCore bi q(iprop($P ∗ □?$p $A)) P p A goal (← `(rcasesPat| $ident:ident)) q(.rfl) do
+      iPureCore bi q(iprop($P ∗ □?$p $A)) P p A goal (← `(rcasesPat| $ident:ident)) q(.rfl) tacName do
         let some ldecl := (← getLCtx).findFromUserName? name
         | throwError "{tacName}: unable to find the introduced pure hypothesis"
         iCasesPureRewrite hyps goal ldecl.toExpr forward tacName k
