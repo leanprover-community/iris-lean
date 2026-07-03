@@ -16,6 +16,39 @@ public meta import Lean.Meta.Tactic.TryThis
 
 namespace Iris.ProofMode
 
+public section
+open BI
+
+/--
+  This theorem is used for updating the proof in `InductionState` as `addIHs`
+  iterates through the list of induction hypotheses and introduces them from
+  the regular Lean context into the intuitionistic context.
+
+  The initial set of hypotheses that exist in the Iris context after applying
+  Lean's built-in induction step is represented by `P`. Since the spatial
+  context is empty (that is, all hypotheses exist in intuitionistic context),
+  `P ⊢ □ P` must hold.
+
+  The proposition `Q` represents these initial hypotheses as well as induction
+  hypotheses introduced into the intuitionistic context up until the most
+  recent `addIHs` iteration. At every iteration of `addIHs`, an induction
+  hypothesis `R` is obtained upon type class synthesis with `IntoIH`. The proof
+  for `InductionState` is obtained using this theorem accordingly.
+-/
+@[rocq_alias tac_revert_ih]
+theorem revert_IH [BI PROP] {P Q R : PROP} {φ}
+    (ih : φ)
+    (h1 : P ⊢ □ P)
+    (h2 : P ⊢ Q)
+    (inst : IntoIH φ P R) :
+    P ⊢ (Q ∗ □ R) := calc
+  _ ⊢ □ P         := h1
+  _ ⊢ □ P ∗ □ P   := intuitionistically_sep_dup.mp
+  _ ⊢ □ P ∗ □ □ P := sep_mono_right intuitionistically_idem.mpr
+  _ ⊢ □ P ∗ □ R   := sep_mono_right <| intuitionistically_mono <| inst.into_ih ih
+  _ ⊢ □ Q ∗ □ R   := sep_mono_left <| intuitionistically_mono h2
+  _ ⊢ Q ∗ □ R     := sep_mono_left intuitionistically_elim
+
 public meta section
 open BI Std Lean Elab Tactic Meta Qq Parser.Tactic
 
@@ -82,36 +115,6 @@ private def parseInductionAlts (altsSyntax : TSyntax `Lean.Parser.Tactic.inducti
         | _ => throwErrorAt l "iinduction: invalid syntax"
     return ⟨tac, parsedAlts, none, altsSyntax⟩
   | _ => throwErrorAt altsSyntax "iinduction: invalid syntax"
-
-/--
-  This theorem is used for updating the proof in `InductionState` as `addIHs`
-  iterates through the list of induction hypotheses and introduces them from
-  the regular Lean context into the intuitionistic context.
-
-  The initial set of hypotheses that exist in the Iris context after applying
-  Lean's built-in induction step is represented by `P`. Since the spatial
-  context is empty (that is, all hypotheses exist in intuitionistic context),
-  `P ⊢ □ P` must hold.
-
-  The proposition `Q` represents these initial hypotheses as well as induction
-  hypotheses introduced into the intuitionistic context up until the most
-  recent `addIHs` iteration. At every iteration of `addIHs`, an induction
-  hypothesis `R` is obtained upon type class synthesis with `IntoIH`. The proof
-  for `InductionState` is obtained using this theorem accordingly.
--/
-@[rocq_alias tac_revert_ih]
-theorem revert_IH [BI PROP] {P Q R : PROP} {φ}
-    (ih : φ)
-    (h1 : P ⊢ □ P)
-    (h2 : P ⊢ Q)
-    (inst : IntoIH φ P R) :
-    P ⊢ (Q ∗ □ R) := calc
-  _ ⊢ □ P         := h1
-  _ ⊢ □ P ∗ □ P   := intuitionistically_sep_dup.mp
-  _ ⊢ □ P ∗ □ □ P := sep_mono_right intuitionistically_idem.mpr
-  _ ⊢ □ P ∗ □ R   := sep_mono_right <| intuitionistically_mono <| inst.into_ih ih
-  _ ⊢ □ Q ∗ □ R   := sep_mono_left <| intuitionistically_mono h2
-  _ ⊢ Q ∗ □ R     := sep_mono_left intuitionistically_elim
 
 /--
   Designed to be a mutable state such that `newHyps` contains induction
