@@ -20,13 +20,25 @@ syntax ("!" noWs)? selPat : selPatFrame
 declare_syntax_cat introPat
 
 syntax icasesPat : introPat
+/-- Introduce a modality, analogous to applying `imodintro`. -/
 syntax "!>" : introPat
+/-- Try to solve the goal using `itrivial`. -/
 syntax "//" : introPat
+/-- Apply simplification. -/
 syntax "/=" : introPat
+/-- Apply simplifcation (`/=`) and try solving the goal (`//`). -/
 syntax "//=" : introPat
+/-- Introduce all universal quantifiers. -/
 syntax "*" : introPat
+/-- Introduce all universal quantifiers, pure arrows and wands. -/
 syntax "**" : introPat
+/-- Introduces a pure proof goal, analogous to applying `ipureintro`. -/
 syntax "!%" : introPat
+/--
+  Given selection patterns `spats`, the introduction pattern `{ spats }`
+  *clears* the hypotheses chosen by `spats`. Prefix an element in the selection
+  patterns with `!` to *frame* the hypotheses instead.
+-/
 syntax "{" (colGt ppSpace selPatFrame)* ppSpace "}" : introPat
 
 @[rocq_alias intro_pat]

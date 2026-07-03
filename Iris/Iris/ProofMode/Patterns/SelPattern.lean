@@ -15,9 +15,13 @@ open Lean Meta Std
 declare_syntax_cat selPat
 
 syntax ident : selPat
+/-- Choose all hypothesis from the pure context. -/
 syntax "%" : selPat
+/-- Choose a specific hypothesis from the pure context. -/
 syntax "%" noWs ident : selPat
+/-- Choose all hypotheses in the intuitionistic context. -/
 syntax "#" : selPat
+/-- Choose all hypotheses in the spatial context. -/
 syntax "∗" : selPat
 
 @[rocq_alias sel_pat]

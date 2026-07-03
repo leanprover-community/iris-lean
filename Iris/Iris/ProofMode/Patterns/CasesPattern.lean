@@ -15,15 +15,28 @@ open Lean
 declare_syntax_cat icasesPat
 syntax icasesPatAlts := sepBy1(icasesPat, " | ")
 syntax binderIdent : icasesPat
+/-- Drop the hypothesis. -/
 syntax "-" : icasesPat
+/-- Frame the hypothesis and cancel it against the goal. -/
 syntax "$" : icasesPat
+/--
+  Destruct a (separating) conjunction or existential; an existential variable is
+  bound with `%x` where `x` is the name for it.
+-/
 syntax "⟨" icasesPatAlts,* "⟩" : icasesPat
+/-- Destruct a disjunction, one goal per disjunct. -/
 syntax "(" icasesPatAlts ")" : icasesPat
+/-- Move the hypothesis to the pure Lean context and give it a name. -/
 syntax "%" binderIdent : icasesPat
+/-- Move the hypothesis to the intuitionistic context and destruct the proposition. -/
 syntax "#" icasesPat : icasesPat
+/-- Move the hypothesis to the spatial context and destruct the proposition. -/
 syntax "∗" icasesPat : icasesPat
+/-- Eliminate the modality at the top of the hypothesis and destruct the remaining proposition. -/
 syntax ">" icasesPat : icasesPat
+/-- Introduce a pure equality and use it for rewriting in the backward direction. -/
 syntax "←" : icasesPat
+/-- Introduce a pure equality and use it for rewriting in the forward direction. -/
 syntax "→" : icasesPat
 
 inductive iCasesPat
