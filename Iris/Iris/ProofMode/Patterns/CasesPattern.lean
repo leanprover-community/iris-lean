@@ -27,13 +27,13 @@ syntax "⟨" icasesPatAlts,* "⟩" : icasesPat
 /-- Destruct a disjunction, one goal per disjunct. -/
 syntax "(" icasesPatAlts ")" : icasesPat
 /-- Move the hypothesis to the pure Lean context and give it a name. -/
-syntax "%" noWs rcasesPat : icasesPat
+syntax "%" rcasesPat : icasesPat
 /-- Move the hypothesis to the intuitionistic context and destruct the proposition. -/
-syntax "#" noWs icasesPat : icasesPat
+syntax "#" icasesPat : icasesPat
 /-- Move the hypothesis to the spatial context and destruct the proposition. -/
-syntax "∗" noWs icasesPat : icasesPat
+syntax "∗" icasesPat : icasesPat
 /-- Eliminate the modality at the top of the hypothesis and destruct the remaining proposition. -/
-syntax ">" noWs icasesPat : icasesPat
+syntax ">" icasesPat : icasesPat
 /-- Introduce a pure equality and use it for rewriting in the backward direction. -/
 syntax "←" : icasesPat
 /-- Introduce a pure equality and use it for rewriting in the forward direction. -/
