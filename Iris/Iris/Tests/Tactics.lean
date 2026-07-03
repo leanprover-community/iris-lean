@@ -1806,13 +1806,23 @@ example [BI PROP] (m n : Nat) (a b c : Prop) :
 
 /-
   Tests `icases` with a case destruction pattern for rewriting but the
-  hypothesis is not a pure equality
+  hypothesis is not a pure equality.
 -/
 /-- error: Invalid rewrite argument: Expected an equality or iff proof or
-definition name, but `✝` is a proof of
+definition name, but `a✝` is a proof of
   P -/
 #guard_msgs in
 example [BI PROP] (P : Prop) : ⊢@{PROP} ⌜P⌝ -∗ True := by
+  iintro HP
+  icases HP with →
+
+/-
+  Tests `icases` with a case destruction pattern for rewriting but the
+  hypothesis is not a pure hypothesis.
+-/
+/-- error: icases: P is not pure -/
+#guard_msgs in
+example [BI PROP] (P : PROP) : ⊢@{PROP} P -∗ True := by
   iintro HP
   icases HP with →
 

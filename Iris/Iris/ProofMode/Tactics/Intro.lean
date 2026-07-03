@@ -154,7 +154,7 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
         res.finish (iIntroCore · · ((ref, .clear selPats) :: pats) tacName k)
     | .intro (.rewrite _ direction) =>
       iIntroCoreForallIntro ref none Q tacName none <|
-        fun x B => iCasesPureRewrite hyps B x direction tacName (iIntroCore · · pats tacName k)
+        fun x B => iPureRewriteCoreAux hyps B x direction tacName (iIntroCore · · pats tacName k)
     | .intro (.pure _ pat) =>
       let v ← mkFreshLevelMVar
       let α ← mkFreshExprMVarQ q(Sort v)
