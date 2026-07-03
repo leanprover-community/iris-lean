@@ -63,7 +63,7 @@ open Lean Elab Tactic Meta Qq BI Std
   `.all` and `.allwand`.
 -/
 private def iIntroCoreForallIntro {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
-    {P : Q($prop)} (ref : Syntax) (n : Name) (Q : Q($prop))
+    {P : Q($prop)} (ref : Syntax) (n : Name) (Q : Q($prop)) (tacName : String)
     (k' : Option <| ProofModeM Q($P ⊢ $Q))
     (k : Expr → Q($prop) → ProofModeM Expr) :
     ProofModeM Q($P ⊢ $Q) := do
@@ -73,7 +73,7 @@ private def iIntroCoreForallIntro {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     let Φ ← mkFreshExprMVarQ q($α → $prop)
     match ← ProofModeM.trySynthInstanceQ q(FromForall $Q $Φ), k' with
     | none, none =>
-      throwError "iintro: {Q} cannot be turned into a universal quantifier or pure hypothesis"
+      throwError "{tacName}: {Q} cannot be turned into a universal quantifier or pure hypothesis"
     | none, some k' => k'
     | some _, _ =>
       withLocalDeclDQ n α fun x => do
@@ -91,36 +91,36 @@ This function returns the proof of `P ⊢ Q` to be assigned. The new context is 
 `goals` directly by the tactic.
 -/
 partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
-  {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List (Syntax × IntroPat))
+  {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List (Syntax × IntroPat)) (tacName : String)
   (k : ∀ {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}, Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
     ProofModeM (Q($P ⊢ $Q)) := do
   match pats with
   | [] => k hyps Q
   | (ref, .modintro) :: pats =>
     withRef ref do
-    iModIntroCore hyps Q (← `(_)) (iIntroCore · · pats k)
+    iModIntroCore hyps Q (← `(_)) tacName (iIntroCore · · pats tacName k)
   | (ref, .trivial) :: pats =>
     withRef ref do
     if let some r ← iTrivial hyps Q then
       return r
     else
-      iIntroCore hyps Q pats k
+      iIntroCore hyps Q pats tacName k
   | (ref, .simp) :: pats =>
     withRef ref do
     let simpCtx ← Simp.mkContext (simpTheorems := #[← getSimpTheorems])
     let ⟨Q', _⟩ ← Lean.Meta.dsimp Q simpCtx #[← Simp.getSimprocs]
-    iIntroCore hyps Q' pats k
+    iIntroCore hyps Q' pats tacName k
   | (ref, .simptrivial) :: pats =>
     withRef ref do
-    iIntroCore hyps Q ((ref, .simp) :: (ref, .trivial) :: pats) k
+    iIntroCore hyps Q ((ref, .simp) :: (ref, .trivial) :: pats) tacName k
   | (ref, .all) :: pats =>
     withRef ref do
     let ⟨n, _⟩ ← getFreshName (← `(binderIdent| _))
-    iIntroCoreForallIntro ref n Q
+    iIntroCoreForallIntro ref n Q tacName
       -- No more universally quantified variable to be introduced
-      (iIntroCore hyps Q pats k)
+      (iIntroCore hyps Q pats tacName k)
       -- Introduction of a universally quantified variable
-      (do mkLambdaFVars #[·] <|← iIntroCore hyps · ((ref, .all) :: pats) k)
+      (do mkLambdaFVars #[·] <|← iIntroCore hyps · ((ref, .all) :: pats) tacName k)
   | (ref, .allwand) :: pats =>
     withRef ref do
     let ⟨n, _⟩ ← getFreshName (← `(binderIdent| _))
@@ -133,80 +133,81 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       match instFromWand, instFromImp, instPersistent with
       -- Introduction of a wand premise or a pure premise, if possible
       | some _, _, _ | _, some _, some _ =>
-        iIntroCore hyps Q ((ref, .intro (.one (← `(binderIdent| _)))) :: (ref, .allwand) :: pats) k
+        iIntroCore hyps Q ((ref, .intro (.one (← `(binderIdent| _)))) :: (ref, .allwand) :: pats) tacName k
       | _, _, _ =>
         -- No more universally quantified variable or premise to be introduced
-        iIntroCore hyps Q pats k
-    iIntroCoreForallIntro ref n Q k'
+        iIntroCore hyps Q pats tacName k
+    iIntroCoreForallIntro ref n Q tacName k'
       -- Introduction of a universally quantified variable
-      (do mkLambdaFVars #[·] <|← iIntroCore hyps · ((ref, .allwand) :: pats) k)
+      (do mkLambdaFVars #[·] <|← iIntroCore hyps · ((ref, .allwand) :: pats) tacName k)
   | (ref, .pureintro) :: pats =>
     withRef ref do
-    let ⟨pf, m⟩ ← iPureIntroCore bi P Q "iintro"
+    let ⟨pf, m⟩ ← iPureIntroCore bi P Q tacName
     if pats.isEmpty then
       addMVarGoal m
     else
       let ⟨newM, g⟩ ← startProofMode m
-      let pf' ← newM.withContext <| iIntroCore g.hyps g.goal pats k
+      let pf' ← newM.withContext <| iIntroCore g.hyps g.goal pats tacName k
       newM.assign pf'
     return pf
   | (ref, .clear selPats) :: pats =>
     withRef ref do
     match selPats with
-    | [] => iIntroCore hyps Q pats k
+    | [] => iIntroCore hyps Q pats tacName k
     | ⟨false, s⟩ :: selPats =>
       iClearCore hyps Q [s]
         fun hyps' goal' fvars => withoutFVars (u := 0) fvars
-          <| iIntroCore hyps' goal' ((ref, .clear selPats) :: pats) k
+          <| iIntroCore hyps' goal' ((ref, .clear selPats) :: pats) tacName k
     | ⟨true, s⟩ :: selPats =>
       let res ← s.resolveOne hyps >>= iFrame hyps Q
-      res.finish (iIntroCore · · ((ref, .clear selPats) :: pats) k)
+      res.finish (iIntroCore · · ((ref, .clear selPats) :: pats) tacName k)
   | (ref, .intro (.rewrite direction)) :: pats =>
     withRef ref do
     let ⟨n, _⟩ ← getFreshName (← `(binderIdent| _))
-    iIntroCoreForallIntro ref n Q none <|
-      fun x B => do mkLambdaFVars #[x] <|← iCasesPureRewrite hyps B x direction (iIntroCore · · pats k)
+    iIntroCoreForallIntro ref n Q tacName none <|
+      fun x B => do mkLambdaFVars #[x] <|←
+        iCasesPureRewrite hyps B x direction tacName (iIntroCore · · pats tacName k)
   | (ref, .intro (.pure n)) :: pats =>
     withRef ref do
     let ⟨n, _⟩ ← getFreshName n
-    iIntroCoreForallIntro ref n Q none <|
-      (do mkLambdaFVars #[·] <|← iIntroCore hyps · pats k)
+    iIntroCoreForallIntro ref n Q tacName none <|
+      (do mkLambdaFVars #[·] <|← iIntroCore hyps · pats tacName k)
   | (ref, .intro pat) :: pats =>
     withRef ref do
     let A1 ← mkFreshExprMVarQ q($prop)
     let A2 ← mkFreshExprMVarQ q($prop)
     let fromImp ← ProofModeM.trySynthInstanceQ q(FromImp $Q $A1 $A2)
     if let (.clear, some _) := (pat, fromImp) then
-      let pf ← iIntroCore hyps A2 pats k
+      let pf ← iIntroCore hyps A2 pats tacName k
       return q(imp_intro_drop (Q := $Q) $pf)
     else
     let B ← mkFreshExprMVarQ q($prop)
     match pat, fromImp with
     | .intuitionistic pat, some _ =>
       let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPersistently false $A1 $B)
-        | throwError "iintro: {A1} not persistent"
-      let pf ← iCasesCore hyps A2 pat q(true) B (iIntroCore · · pats k)
+        | throwError "{tacName}: {A1} not persistent"
+      let pf ← iCasesCore hyps A2 pat q(true) B tacName (iIntroCore · · pats tacName k)
       return q(imp_intro_intuitionistic (Q := $Q) $pf)
     | .intuitionistic pat, none =>
       let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $Q .out $A1 $A2)
-        | throwError "iintro: {Q} not a wand"
+        | throwError "{tacName}: {Q} not a wand"
       let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPersistently false $A1 $B)
-        | throwError "iintro: {A1} not persistent"
+        | throwError "{tacName}: {A1} not persistent"
       let .some _ ← trySynthInstanceQ q(TCOr (Affine $A1) (Absorbing $A2))
-        | throwError "iintro: {A1} not affine and the goal not absorbing"
-      let pf ← iCasesCore hyps A2 pat q(true) B (iIntroCore · · pats k)
+        | throwError "{tacName}: {A1} not affine and the goal not absorbing"
+      let pf ← iCasesCore hyps A2 pat q(true) B tacName (iIntroCore · · pats tacName k)
       return q(wand_intro_intuitionistic (A1 := $A1) (Q := $Q) $pf)
     | _, some _ =>
       -- should always succeed
       let _ ← ProofModeM.synthInstanceQ q(FromAffinely $B $A1)
       let .some _ ← trySynthInstanceQ q(TCOr (Persistent $A1) (Intuitionistic $P))
-        | throwError "iintro: {A1} is not persistent and spatial context is non-empty"
-      let pf ← iCasesCore hyps A2 pat q(false) B (iIntroCore · · pats k)
+        | throwError "{tacName}: {A1} is not persistent and spatial context is non-empty"
+      let pf ← iCasesCore hyps A2 pat q(false) B tacName (iIntroCore · · pats tacName k)
       return q(imp_intro_spatial (Q := $Q) $pf)
     | _, none =>
       let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $Q .out $A1 $A2)
-        | throwError "iintro: {Q} not a wand"
-      let pf ← iCasesCore hyps A2 pat q(false) A1 (iIntroCore · · pats k)
+        | throwError "{tacName}: {Q} not a wand"
+      let pf ← iCasesCore hyps A2 pat q(false) A1 tacName (iIntroCore · · pats tacName k)
       return q(wand_intro_spatial (A1 := $A1) (Q := $Q) $pf)
 
 /--
@@ -217,6 +218,6 @@ elab "iintro " pats:(colGt ppSpace introPat)* : tactic => do
   let pats ← liftMacroM <| pats.mapM <| IntroPat.parse
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-  let pf ← iIntroCore hyps goal pats.toList
+  let pf ← iIntroCore hyps goal pats.toList "iintro"
 
   mvar.assign pf

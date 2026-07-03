@@ -40,5 +40,5 @@ elab "ihave " colGt pat:icasesPat " : " P:term " $$ " spat:specPat : tactic => d
   let P ← elabTermEnsuringTypeQ (← `(iprop($P))) prop
   --  establish `P` with `spat`
   let ⟨_, hyps', p, A, pf⟩ ← iSpecializeCore hyps q(true) q(iprop($P -∗ $P)) [spat] (try_dup_context := pat.should_try_dup_context)
-  let pf2 ← iCasesCore hyps' goal pat p A
+  let pf2 ← iCasesCore hyps' goal pat p A "ihave"
   mvar.assign q(ihave_assert (($pf).trans $pf2))

@@ -231,7 +231,7 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
     let hs ← iCombineParseSelPats hyps patSels
     let st ← iCombineCore hs hyps goal
 
-    let pf ← iCasesCore st.newHyps goal pat q($(st.p)) st.outAs addBIGoal
+    let pf ← iCasesCore st.newHyps goal pat q($(st.p)) st.outAs "icombine"
     mvar.assign q($(st.pfAs).trans $pf)
 
 /--
@@ -253,7 +253,7 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
 
     match st.outGives, st.pfGives with
     | some outGives, pfGives =>
-      let pf ← iCasesCore hyps goal pat q(true) outGives addBIGoal
+      let pf ← iCasesCore hyps goal pat q(true) outGives "icombine"
       mvar.assign q($(pfGives).trans $pf)
     | none, _ => throwNoInstanceForGives
 
@@ -283,6 +283,6 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
     match st.outGives, st.pfGives with
     | some outGives, pfGives =>
       let pf ← iCasesCore st.newHyps goal (.conjunction [pat1, .intuitionistic pat2])
-        q($st.p) q(iprop($st.outAs ∗ □ $outGives)) addBIGoal
+        q($st.p) q(iprop($st.outAs ∗ □ $outGives)) "icombine"
       mvar.assign q(combine_as_gives $st.pfAs $pfGives $pf)
     | none, _ => throwNoInstanceForGives

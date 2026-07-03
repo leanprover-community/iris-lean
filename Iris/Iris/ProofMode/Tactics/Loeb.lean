@@ -23,15 +23,15 @@ elab "iloeb" " as " colGt IH:binderIdent " generalizing " hs:(colGt ppSpace selP
   let pats ← Elab.liftMacroM <| SelPat.parse hs
   ProofModeM.runTactic fun mvid {hyps, goal, ..} => do
     let targets : List SelTarget ← SelPat.resolve hyps (pats ++ [.spatial])
-    let expr ← iRevertIntro hyps goal targets fun {prop _ _} hyps goal k => do
+    let expr ← iRevertIntro hyps goal targets "iloeb" fun {prop _ _} hyps goal k => do
       let some _ ← ProofModeM.trySynthInstanceQ q(BI.BILoeb $prop)
         | throwError m!"iloeb: no `{←ppExpr q(BI.BILoeb $prop)}` instance found"
       let pf := q(BI.loeb_wand_intuitionistically (P := $goal))
       let pf' ← do
         -- We have applied BI.loeb_wand_intuitionistically
         let goal := q(iprop(□ (□ ▷ $goal -∗ $goal)))
-        iModIntroCore hyps goal (← `(_)) fun hyps goal => do
-        iIntroCore hyps goal [(IH, .intro <| .intuitionistic <| .one IH)] k
+        iModIntroCore hyps goal (← `(_)) "iloeb" fun hyps goal => do
+        iIntroCore hyps goal [(IH, .intro <| .intuitionistic <| .one IH)] "iloeb" k
       return q($(pf').trans $pf)
 
     mvid.assign expr
