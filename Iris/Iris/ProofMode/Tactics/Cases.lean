@@ -205,22 +205,19 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
   withRef pat.ref do
   match pat with
   | .one _ name => do
-    -- TODO: use Hyps.addWithInfo here?
-    let (name, ref) ← getFreshName name
-    let ivar ← mkFreshIVarId (isTrue p)
-    addHypInfo ref name ivar prop A (isBinder := true)
-    let hyp := .mkHyp bi name ivar p A
-    if let .emp _ := hyps then pure q(of_emp_sep $(← k hyp goal))
-    else k (.mkSep hyps hyp) goal
+    let ⟨_, _, hyps', pfEq⟩ ← Hyps.addWithInfo bi name p A hyps
+    let pf ← k hyps' goal
+    return q($(pfEq).mp.trans $pf)
 
   | .clear _ =>
     let pf ← iClearCoreOne bi q(iprop($P ∗ □?$p $A)) P p A goal q(.rfl) tacName
     pure q($pf $(← k hyps goal))
 
   | .frame _ =>
-    let ⟨ivar, hyps'⟩ ← Hyps.addWithInfo bi (← `(binderIdent | _)) p A hyps
+    let ⟨ivar, _, hyps', pfEq⟩ ← Hyps.addWithInfo bi (← `(binderIdent | _)) p A hyps
     let res ← iFrame hyps' goal [⟨.ipm ivar, true⟩]
-    res.finish k
+    let pf ← res.finish k
+    return q($(pfEq).mp.trans $pf)
 
   | .conjunction _ [arg] | .disjunction _ [arg] =>
     iCasesCore hyps goal arg p A tacName k

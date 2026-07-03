@@ -140,12 +140,13 @@ def Hyps.mkHyp {prop : Q(Type u)} (bi : Q(BI $prop))
     (name : Name) (ivar : IVarId) (p : Q(Bool)) (ty : Q($prop)) (e := q(iprop(□?$p $ty))) : Hyps bi e :=
   .hyp (mkIntuitionisticIf bi p (mkNameAnnotation name ivar ty)) name ivar p ty ⟨⟩
 
--- TODO: should this ensure that adding a hypothesis to emp creates a
--- hyp node instead of a sep node?
 def Hyps.add {prop : Q(Type u)} (bi : Q(BI $prop))
     (name : Name) (ivar : IVarId) (p : Q(Bool)) (ty : Q($prop)) {e} (h : Hyps bi e)
-    : Hyps bi q(iprop($e ∗ □?$p $ty)) :=
-  Hyps.mkSep h (.mkHyp bi name ivar p ty)
+    : (e' : Q($prop)) × Hyps bi e' × Q(iprop($e ∗ □?$p $ty ⊣⊢ $e')) :=
+  match h with
+  -- Adding a hypothesis to `emp` creates a `.hyp` node instead of a `.sep` node
+  | .emp _ => ⟨_, .mkHyp bi name ivar p ty, q(emp_sep)⟩
+  | _ => ⟨_, .mkSep h (.mkHyp bi name ivar p ty), q(.rfl)⟩
 
 partial def parseHyps? {prop : Q(Type u)} (bi : Q(BI $prop)) (expr : Expr) :
     Option ((s : Q($prop)) × Hyps bi s) := do
@@ -533,9 +534,9 @@ def Hyps.findWithInfo {u prop bi} (hyps : @Hyps u prop bi s) (name : Ident) : Me
 /-- Hyps.addWithInfo should be used by tactics that introduce a hypothesis based on the name given by the user. -/
 def Hyps.addWithInfo {prop : Q(Type u)} (bi : Q(BI $prop))
     (name : TSyntax ``binderIdent) (p : Q(Bool)) (ty : Q($prop)) {e} (h : Hyps bi e)
-    : MetaM (IVarId × Hyps bi q(iprop($e ∗ □?$p $ty))) := do
+    : MetaM (IVarId × (e' : Q($prop)) × Hyps bi e' × Q(iprop($e ∗ □?$p $ty ⊣⊢ $e'))) := do
   let ivar' ← mkFreshIVarId (isTrue p)
   let (nameTo, nameRef) ← getFreshName name
   addHypInfo nameRef nameTo ivar' prop ty (isBinder := true)
-  let hyps := Hyps.add bi nameTo ivar' p ty h
-  return ⟨ivar', hyps⟩
+  let ⟨e', hyps, pf⟩ := Hyps.add bi nameTo ivar' p ty h
+  return ⟨ivar', e', hyps, pf⟩

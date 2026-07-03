@@ -194,6 +194,6 @@ elab "ispecialize " colGt pmt:pmTerm : tactic => do
     | throwError "ispecialize: cannot find argument"
 
   let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p out pmt.spats
-  let hyps''' := Hyps.add bi name ivar pb B hyps''
+  let ⟨_, hyps''', pfEq⟩ := Hyps.add bi name ivar pb B hyps''
   let pf'' ← addBIGoal hyps''' goal
-  mvar.assign q(($pf).1.trans <| $(pf').trans <| $pf'')
+  mvar.assign q(($pf).1.trans <| $(pf').trans <| $(pfEq).mp.trans $pf'')
