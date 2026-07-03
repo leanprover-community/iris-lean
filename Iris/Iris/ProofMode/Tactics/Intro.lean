@@ -63,10 +63,11 @@ open Lean Elab Tactic Meta Qq BI Std
   `.all` and `.allwand`.
 -/
 private def iIntroCoreForallIntro {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
-    {P : Q($prop)} (ref : Syntax) (n : Name) (Q : Q($prop)) (tacName : String)
-    (k' : Option <| ProofModeM Q($P ⊢ $Q))
-    (k : Expr → Q($prop) → ProofModeM Expr) :
+    {P : Q($prop)} (ref : Syntax) (n : Option <| TSyntax ``binderIdent)
+    (Q : Q($prop)) (tacName : String) (k' : Option <| ProofModeM Q($P ⊢ $Q))
+    (k : Q($prop) → (B : Q($prop)) → ProofModeM Q($P ⊢ $B)) :
     ProofModeM Q($P ⊢ $Q) := do
+  let ⟨n, _⟩ ← getFreshName <| n.getD (← `(binderIdent| _))
   withRef ref do
     let v ← mkFreshLevelMVar
     let α ← mkFreshExprMVarQ q(Sort v)
@@ -79,8 +80,7 @@ private def iIntroCoreForallIntro {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       withLocalDeclDQ n α fun x => do
         addLocalVarInfo ref (← getLCtx) x α
         have B : Q($prop) := Expr.headBeta q($Φ $x)
-        have : $B =Q $Φ $x := ⟨⟩
-        let pf : Q(∀ x, $P ⊢ $Φ x) ← k x B
+        let pf : Q(∀ x, $P ⊢ $Φ x) ← mkLambdaFVars #[x] <|← k x B
         return q(from_forall_intro $pf)
 
 /--
@@ -115,15 +115,13 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     iIntroCore hyps Q ((ref, .simp) :: (ref, .trivial) :: pats) tacName k
   | (ref, .all) :: pats =>
     withRef ref do
-    let ⟨n, _⟩ ← getFreshName (← `(binderIdent| _))
-    iIntroCoreForallIntro ref n Q tacName
+    iIntroCoreForallIntro ref none Q tacName
       -- No more universally quantified variable to be introduced
       (iIntroCore hyps Q pats tacName k)
       -- Introduction of a universally quantified variable
-      (do mkLambdaFVars #[·] <|← iIntroCore hyps · ((ref, .all) :: pats) tacName k)
+      (fun _ B => iIntroCore hyps B ((ref, .all) :: pats) tacName k)
   | (ref, .allwand) :: pats =>
     withRef ref do
-    let ⟨n, _⟩ ← getFreshName (← `(binderIdent| _))
     let k' : ProofModeM Q($P ⊢ $Q) := do
       let A1 ← mkFreshExprMVarQ q($prop)
       let A2 ← mkFreshExprMVarQ q($prop)
@@ -137,9 +135,9 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       | _, _, _ =>
         -- No more universally quantified variable or premise to be introduced
         iIntroCore hyps Q pats tacName k
-    iIntroCoreForallIntro ref n Q tacName k'
-      -- Introduction of a universally quantified variable
-      (do mkLambdaFVars #[·] <|← iIntroCore hyps · ((ref, .allwand) :: pats) tacName k)
+    -- Introduction of a universally quantified variable
+    iIntroCoreForallIntro ref none Q tacName k'
+      (fun _ B => iIntroCore hyps B ((ref, .allwand) :: pats) tacName k)
   | (ref, .pureintro) :: pats =>
     withRef ref do
     let ⟨pf, m⟩ ← iPureIntroCore bi P Q tacName
@@ -163,15 +161,11 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       res.finish (iIntroCore · · ((ref, .clear selPats) :: pats) tacName k)
   | (ref, .intro (.rewrite direction)) :: pats =>
     withRef ref do
-    let ⟨n, _⟩ ← getFreshName (← `(binderIdent| _))
-    iIntroCoreForallIntro ref n Q tacName none <|
-      fun x B => do mkLambdaFVars #[x] <|←
-        iCasesPureRewrite hyps B x direction tacName (iIntroCore · · pats tacName k)
+    iIntroCoreForallIntro ref none Q tacName none <|
+      fun x B => iCasesPureRewrite hyps B x direction tacName (iIntroCore · · pats tacName k)
   | (ref, .intro (.pure n)) :: pats =>
     withRef ref do
-    let ⟨n, _⟩ ← getFreshName n
-    iIntroCoreForallIntro ref n Q tacName none <|
-      (do mkLambdaFVars #[·] <|← iIntroCore hyps · pats tacName k)
+    iIntroCoreForallIntro ref n Q tacName none (fun _ B => iIntroCore hyps B pats tacName k)
   | (ref, .intro pat) :: pats =>
     withRef ref do
     let A1 ← mkFreshExprMVarQ q($prop)
