@@ -23,11 +23,11 @@ declare_syntax_cat specPat
 
 syntax ident : specPat
 syntax "%" term:max : specPat
-syntax "[" frameIdent* optional("//") "]" optional(" as " ident) : specPat
-syntax "[" "-" frameIdent* optional("//") "]" optional(" as " ident) : specPat
-syntax "[>" frameIdent* optional("//") "]" optional(" as " ident) : specPat
-syntax "[>" "-" frameIdent* optional("//") "]" optional(" as " ident) : specPat
-syntax "[#" frameIdent* optional("//") "]" optional(" as " ident) : specPat
+syntax "[" (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
+syntax "[" "-" (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
+syntax "[>" (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
+syntax "[>" "-" (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
+syntax "[#" (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
 syntax "[" "$" "]" : specPat
 syntax "[>" "$" "]" : specPat
 syntax "[#" "$" "]" : specPat
