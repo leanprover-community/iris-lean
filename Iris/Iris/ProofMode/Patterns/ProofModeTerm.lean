@@ -14,9 +14,12 @@ namespace Iris.ProofMode
 open Lean
 
 declare_syntax_cat pmTerm
-
-syntax term : pmTerm
-syntax term colGt " $$ " (colGt specPat)+ : pmTerm
+/--
+  The proof mode term `H $$ spat₁ … spatₙ` refers to `H`, a hypothesis or a
+  Lean term whose conclusion is an entailment, with the specialisation patterns
+  `spat₁ … spatₙ` applied to its premises.
+-/
+syntax term (colGt " $$ " (colGt ppSpace specPat)+)? : pmTerm
 
 @[rocq_alias iTrm]
 structure PMTerm where
