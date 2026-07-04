@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2023 Mario Carneiro. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mario Carneiro
+Authors: Mario Carneiro, Sebastian Graf
 -/
 module
 
@@ -1685,6 +1685,37 @@ theorem OFE.ContractiveHom.fixpoint_ind [COFE α] [Inhabited α] (f : α -c> α)
     induction n with
     | zero => exact Hind (Nat.repeat f.f 0 x) Hbase
     | succ _ IH => apply Hind (Nat.repeat f.f _ x) IH
+
+/-- The Banach fixpoint packed together with its unfolding equation as a single opaque
+value. Being opaque, it is a stuck constant for definitional-equality checks in both the
+elaborator and the kernel, which keeps the approximation chain underlying `fixpoint`
+sealed. -/
+opaque fixpointP [COFE α] [Inhabited α] (f : α → α) [Contractive f] : { x : α // x ≡ f x } :=
+  ⟨fixpoint f, fixpoint_unfold f.toContractiveHom⟩
+
+/-- The Banach fixpoint as a definitionally stuck constant. It is equivalent to `fixpoint`
+(`fastFixpoint_eqv`), and uniqueness of Banach fixpoints transports the `fixpoint` API. -/
+def fastFixpoint [COFE α] [Inhabited α] (f : α → α) [Contractive f] : α := (fixpointP f).val
+
+nonrec abbrev OFE.ContractiveHom.fastFixpoint [COFE α] [Inhabited α] (f : α -c> α) : α :=
+  fastFixpoint f.f
+
+theorem fastFixpoint_unfold [COFE α] [Inhabited α] (f : α -c> α) :
+    fastFixpoint f ≡ f (fastFixpoint f) :=
+  (fixpointP f).property
+
+theorem fastFixpoint_eqv [COFE α] [Inhabited α] (f : α -c> α) :
+    fastFixpoint f ≡ fixpoint f :=
+  fixpoint_unique (fastFixpoint_unfold f)
+
+theorem fastFixpoint_unique [COFE α] [Inhabited α] {f : α -c> α} {x : α} (H : x ≡ f x) :
+    x ≡ fastFixpoint f :=
+  (fixpoint_unique H).trans (fastFixpoint_eqv f).symm
+
+instance OFE.ContractiveHom.fastFixpoint_ne [COFE α] [Inhabited α] :
+    NonExpansive (ContractiveHom.fastFixpoint (α := α)) where
+  ne _ f g H :=
+    ((fastFixpoint_eqv f).dist.trans (fixpoint_ne.ne H)).trans (fastFixpoint_eqv g).dist.symm
 
 end Fixpoint
 
