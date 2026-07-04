@@ -26,28 +26,19 @@ syntax ident : specPat
 syntax "%" term:max : specPat
 /--
   `[ H₁ … Hₙ ]` generates a subgoal for the premise with `H₁ … Hₙ` as the
-  specified hypotheses.
-  `[ H₁ … Hₙ // ]` attempts to solve the subgoal using `itrivial`.
+  hypotheses chosen for the context of the subgoal. `[- H₁ … Hₙ ]` is analogous
+  with all but `H₁ … Hₙ` as the chosen hypotheses. `[ H₁ … Hₙ ]` and
+  `[- H₁ … Hₙ // ]` attempt to solve the subgoal using `itrivial`.
 -/
-syntax "[" (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
-/--
-  `[- H₁ … Hₙ ]` generates a subgoal for the premise with all but `H₁ … Hₙ`
-  as the specified hypotheses.
-  `[- H₁ … Hₙ // ]` attempts to solve the subgoal using `itrivial`.
--/
-syntax "[" "-" (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
+syntax "[" ("-")? (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
 /--
   `[> H₁ … Hₙ ]` generates a subgoal for the premise with `H₁ … Hₙ` as the
-  specified hypotheses with the subgoal wrapped in a modality.
-  `[> H₁ … Hₙ // ]` attempts to solve the subgoal using `itrivial`.
+  hypotheses chosen for the context of the subgoal wrapped in a modality.
+  `[> H₁ … Hₙ ]` is analogous with all but `H₁ … Hₙ` as the chosen hypotheses.
+  `[ H₁ … Hₙ // ]` and `[> H₁ … Hₙ // ]` also attempt to solve the subgoal
+  using `itrivial`.
 -/
-syntax "[>" (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
-/--
-  `[> H₁ … Hₙ ]` generates a subgoal for the premise with all but `H₁ … Hₙ` as the
-  specified hypotheses with the subgoal wrapped in a modality.
-  `[> H₁ … Hₙ // ]` attempts to solve the subgoal using `itrivial`.
--/
-syntax "[>" "-" (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
+syntax "[>" ("-")? (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
 /--
   `[# H₁ … Hₙ ]` generates a subgoal for the persistent premise
   with all hypotheses in the context available for the subgoal.
@@ -55,7 +46,7 @@ syntax "[>" "-" (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt id
 -/
 syntax "[#" (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
 /--
-  `[$]` solves the subgoal by framing, first with spatial hypotheses,
+  `[$]` solves the subgoal by framing, first with spatial hypotheses, and
   then with intuitionistic hypotheses. Spatial hypotheses that are not framed
   are carried over to the subsequent goal.
 -/
@@ -125,18 +116,12 @@ where
   go : TSyntax `specPat → Option SpecPat
   | `(specPat| $name:ident) => some <| .ident name
   | `(specPat| % $term:term) => some <| .pure term
-  | `(specPat| [$[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
+  | `(specPat| [$[-%$negTk]? $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
     let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .spatial, negate := false, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
-  | `(specPat| [- $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
+    some <| .goal {kind := .spatial, negate := negTk.isSome, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
+  | `(specPat| [> $[-%$negTk]? $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
     let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .spatial, negate := true, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
-  | `(specPat| [> $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
-    let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .modal, negate := false, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
-  | `(specPat| [> - $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
-    let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .modal, negate := true, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
+    some <| .goal {kind := .modal, negate := negTk.isSome, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
   | `(specPat| [# $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
     let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
     some <| .goal {kind := .intuitionistic, negate := false, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
