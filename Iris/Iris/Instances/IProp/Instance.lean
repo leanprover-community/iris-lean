@@ -18,7 +18,7 @@ namespace Iris
 open COFE Std CMRA
 
 @[ext]
-theorem IProp.ext {P Q : IProp GF} : P ⊣⊢ Q → P = Q := OFE.Leibniz.eq_of_eqv ∘ BI.equiv_iff.mpr
+theorem IProp.ext {P Q : IProp GF} : P ⊣⊢ Q → P = Q := OFE.Equiv.to_eq ∘ BI.equiv_iff.mpr
 
 /-- Apply an OFunctor at a fixed type -/
 abbrev COFE.OFunctorPre.ap (F : OFunctorPre) (T : Type _) [COFE T] :=
@@ -47,8 +47,8 @@ theorem OFE.transpAp_op_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x y
 theorem OFE.transpAp_pcore_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x : F₁ T T} :
     (CMRA.pcore x).map (transpAp h_fun).mp ≡ CMRA.pcore ((transpAp h_fun).mp x) := by
   cases h_fun; cases eq_of_heq h_inst
-  simp [Equiv, Option.Forall₂]
-  cases CMRA.pcore x <;> simp [Equiv.rfl]
+  simp [Equiv]
+  cases CMRA.pcore x <;> simp
 
 theorem OFE.transpAp_validN_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x : F₁ T T} (H : ✓{n} x) :
     ✓{n} ((transpAp h_fun).mp x) := by
@@ -174,15 +174,17 @@ def IProp.foldi : FF.api τ (IPre FF) -n> FF.api τ (IProp FF) :=
 
 @[rocq_alias inG_unfold_fold]
 theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) ≡ x := by
+  refine OFE.equiv_dist.mpr fun n => ?_
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm ?_
-  refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x)
-  apply OFunctor.map_ne.eqv <;> intro _ <;> simp [IProp.unfold, IProp.fold]
+  refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
+  apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold]
 
 @[rocq_alias inG_fold_unfold]
 theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) ≡ x := by
+  refine OFE.equiv_dist.mpr fun n => ?_
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm ?_
-  refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x)
-  apply OFunctor.map_ne.eqv <;> intro _ <;> simp [IProp.unfold, IProp.fold, -OFE.leibniz]
+  refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
+  apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold]
 
 theorem IProp.unfoldi_discreteE {v : FF.api τ (IProp FF)} (hv : OFE.DiscreteE v) :
     OFE.DiscreteE (unfoldi.f v) where
@@ -263,6 +265,7 @@ instance : OFE.NonExpansive (iSingleton F γ (GF := GF)) where
 
 @[rocq_alias iRes_singleton_op]
 theorem iSingleton_op (x y : F.ap (IProp GF)) : (iSingleton F γ x) • iSingleton F γ y ≡ iSingleton F γ (x • y) := by
+  refine OFE.equiv_dist.mpr fun n => ?_
   intro τ' γ'
   simp only [iSingleton]
   split
@@ -270,8 +273,9 @@ theorem iSingleton_op (x y : F.ap (IProp GF)) : (iSingleton F γ x) • iSinglet
     subst h; simp only [CMRA.op, optionOp]
     by_cases heq : γ' = γ
     · subst heq
-      simp only [iSingleton, ↓reduceDIte, GenMap.singleton_map_in, some_eqv_some]
-      exact ((RFunctor.map (fold GF) (unfold GF)).op _ _).symm.trans (NonExpansive.eqv (bundle_op x y).symm)
+      simp only [iSingleton, ↓reduceDIte, GenMap.singleton_map_in, some_dist_some]
+      exact (((RFunctor.map (fold GF) (unfold GF)).op _ _).symm.trans
+        (NonExpansive.eqv (bundle_op x y).symm)).dist
     · simp only [iSingleton, ↓reduceDIte, singleton_map_none heq]; rfl
   next h => simp [iSingleton, h, CMRA.op, GenMap.empty_map_lookup]
 
@@ -314,8 +318,8 @@ theorem unfoldi_bundle_coreId {a : F.ap (IProp GF)} [CMRA.CoreId a] :
 
 @[rocq_alias iRes_singleton_core_id]
 instance {a : F.ap (IProp GF)} [CMRA.CoreId a] : CMRA.CoreId (iSingleton F γ a) where
-  core_id τ' γ' := by
-    show CMRA.core ((iSingleton F γ a τ').car γ') ≡ (iSingleton F γ a τ').car γ'
+  core_id n τ' γ' := by
+    show CMRA.core ((iSingleton F γ a τ').car γ') ≡{n}≡ (iSingleton F γ a τ').car γ'
     simp only [iSingleton]
     split
     next h =>
@@ -323,7 +327,7 @@ instance {a : F.ap (IProp GF)} [CMRA.CoreId a] : CMRA.CoreId (iSingleton F γ a)
       by_cases heq : γ' = γ
       · subst heq
         simp only [GenMap.singleton_map_in, CMRA.core, optionCore, CMRA.pcore, Option.bind]
-        exact unfoldi_bundle_coreId.core_id
+        exact unfoldi_bundle_coreId.core_id.dist
       · simp [singleton_map_none heq, CMRA.core, optionCore, CMRA.pcore]
     next => simp [GenMap.empty_map_lookup, CMRA.core, optionCore, CMRA.pcore]
 
@@ -445,7 +449,9 @@ theorem iSingleton_op_validN_at_γ {a : F.ap (IProp GF)} (Hv : ✓{n} mf) :
 @[rocq_alias iRes_singleton_discrete]
 instance iSingleton_discreteE {v : F.ap (IProp GF)} [OFE.DiscreteE v] :
     OFE.DiscreteE (iSingleton F γ v) where
-  discrete {w} H τ := by
+  discrete {w} H := by
+    refine OFE.equiv_dist.mpr fun n => ?_
+    intro τ
     simp only [iSingleton] at ⊢
     split
     next h =>
@@ -456,18 +462,18 @@ instance iSingleton_discreteE {v : F.ap (IProp GF)} [OFE.DiscreteE v] :
         rw [GenMap.singleton_map_in] at Hk ⊢
         rcases hw : (w E.τ).car k with _ | x <;> rw [hw] at Hk
         · exact Hk
-        · simp only [OFE.Equiv] at ⊢
+        · refine some_dist_some.mpr (OFE.Equiv.dist ?_)
           refine (NonExpansive.eqv ?_).trans (IProp.unfoldi_foldi x)
           refine (NonExpansive.eqv ?_).trans (ElemG.bundle_unbundle E _)
           refine OFE.DiscreteE.discrete ?_
           refine (ElemG.unbundle_bundle E v).dist.symm.trans ?_
           refine NonExpansive.ne <| (IProp.foldi_unfoldi _).dist.symm.trans (NonExpansive.ne Hk)
       · rw [GenMap.singleton_map_none hk] at Hk ⊢
-        exact Option.none_is_discrete.discrete Hk
+        exact (Option.none_is_discrete.discrete Hk).dist
     next h =>
       intro k; have Hk := (H τ) k
       simp [iSingleton, dif_neg h, GenMap.empty_map_lookup] at Hk ⊢
-      exact Option.none_is_discrete.discrete Hk
+      exact (Option.none_is_discrete.discrete Hk).dist
 
 end iSingleton
 

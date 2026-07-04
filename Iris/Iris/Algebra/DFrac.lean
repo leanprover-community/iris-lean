@@ -30,9 +30,8 @@ inductive DFrac where
 #rocq_ignore DfracOwn_inj "Not needed"
 #rocq_ignore DfracBoth_inj "Not needed"
 
-@[simp] instance : COFE DFrac := COFE.ofDiscrete _ Eq_Equivalence
-instance : OFE.Leibniz DFrac := ⟨(·)⟩
-instance : OFE.Discrete DFrac := ⟨congrArg id⟩
+@[simp] instance : COFE DFrac := COFE.ofDiscrete _
+instance : OFE.Discrete DFrac := ⟨fun h _ => h⟩
 #rocq_ignore dfracO "Use DFrac type with typeclass inference"
 
 namespace DFrac
@@ -80,8 +79,8 @@ instance instCMRADFrac : CMRA DFrac where
   valid_iff_validN := ⟨fun x _ => x, fun x => x 0⟩
   validN_succ := id
   validN_op_left {_} := by rintro ⟨⟩ ⟨⟩ <;> simp [valid, op] <;> grind
-  assoc := by rintro ⟨⟩ ⟨⟩ ⟨⟩ <;> simp [op] <;> grind
-  comm := by rintro ⟨⟩ ⟨⟩ <;> simp [op] <;> grind
+  assoc := by rintro ⟨⟩ ⟨⟩ ⟨⟩ <;> simp [op] <;> exact OFE.Equiv.of_eq (by grind)
+  comm := by rintro ⟨⟩ ⟨⟩ <;> simp [op] <;> exact OFE.Equiv.of_eq (by grind)
   pcore_op_left := by rintro ⟨⟩ ⟨⟩ <;> simp [op, pcore]
   pcore_idem := by rintro ⟨⟩ ⟨⟩ <;> simp [pcore]
   pcore_op_mono := by
@@ -89,27 +88,7 @@ instance instCMRADFrac : CMRA DFrac where
     · intro z
       exists discard
       rcases z with z|_|z <;> simp [op]
-  extend {_} := by -- x y z} Hx Hxyz := by
-    rintro (x|_|x)
-    · rintro (y|_|y) (z|_|z) Hx Hxyz <;> simp [op] at Hxyz
-      all_goals have Hxyz' := discrete Hxyz <;> simp at Hxyz'
-      exists own y, own z
-    · rintro (y|_|y) (z|_|z) Hx Hxyz <;> simp [op] at Hxyz
-      any_goals have Hxyz' := discrete Hxyz <;> simp at Hxyz'
-      exists discard, discard
-    · rintro (y|_|y) (z|_|z) Hx Hxyz <;> simp [op] at Hxyz
-      any_goals have Hxyz' := discrete Hxyz <;> simp at Hxyz'
-      · exists own x, discard
-        obtain rfl : x = y := Subtype.ext Hxyz'
-        exact ⟨.rfl, .rfl, .rfl⟩
-      · exists own y, ownDiscard z
-      · exists discard, own x
-        obtain rfl : x = z := Subtype.ext Hxyz'
-        exact ⟨.rfl, .rfl, .rfl⟩
-      · exists discard, ownDiscard x
-      · exists ownDiscard y, own z
-      · exists ownDiscard x, discard
-      · exists ownDiscard y, ownDiscard z
+  extend _ Hxyz := ⟨_, _, discrete Hxyz, .rfl, .rfl⟩
 
 @[rocq_alias dfrac_full_exclusive]
 instance own_whole_exclusive : CMRA.Exclusive (α := DFrac) (own 1) where
@@ -138,7 +117,7 @@ instance one_exclusive_right [CMRA V] {v : V} : CMRA.Exclusive (v, own (One.one 
 instance {f : Qp} : CMRA.Cancelable (own f) where
   cancelableN {_} := by
     rintro (a|_|a) (b|_|b) <;> simp [CMRA.ValidN, CMRA.op, op] <;> intro H Hxyz
-    any_goals have Hxyz' := discrete Hxyz <;> simp at Hxyz'
+    any_goals have Hxyz' := (discrete Hxyz).to_eq <;> simp at Hxyz'
     · exact congrArg own (Subtype.ext (by grind))
     · exact absurd Hxyz' (by have := b.2; grind)
     · exact absurd Hxyz' (by have := a.2; grind)
@@ -150,7 +129,7 @@ instance {f : Qp} : CMRA.IdFree (own f) where
     rintro (y|_|y) <;>
       simp [CMRA.ValidN, CMRA.op, op] <;>
       intro H Hxyz <;>
-      any_goals have Hxyz' := discrete Hxyz <;>
+      any_goals have Hxyz' := (discrete Hxyz).to_eq <;>
       simp at Hxyz'
     exact absurd Hxyz' (by have := y.2; grind)
 
@@ -178,7 +157,7 @@ theorem valid_own_op_discard {q : Qp} : ✓ own q • discard ↔ q.val < 1 := b
 instance : CMRA.Discrete DFrac where
   discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
 
-theorem is_discrete {q : DFrac} : OFE.DiscreteE q := ⟨congrArg id⟩
+theorem is_discrete {q : DFrac} : OFE.DiscreteE q := ⟨fun h _ => h⟩
 
 @[rocq_alias dfrac_discarded_core_id]
 instance : CMRA.CoreId (DFrac.discard) where
@@ -244,12 +223,12 @@ theorem discard_included : (discard : DFrac) ≼ discard := ⟨discard, .rfl⟩
 @[rocq_alias dfrac_own_included]
 theorem own_included {p q : Qp} : own p ≼ own q ↔ ∃ r, q = p + r := by
   refine ⟨fun ⟨z, hz⟩ => ?_, fun ⟨r, hr⟩ => ⟨own r, hr ▸ .rfl⟩⟩
-  rcases z with (r|_|r) <;> simp [CMRA.op, op] at hz
+  rcases z with (r|_|r) <;> replace hz := hz.to_eq <;> simp [CMRA.op, op] at hz
   exact ⟨r, Qp.ext_iff.mpr hz⟩
 
 @[rocq_alias dfrac_is_op]
 instance isOp_dfrac_own {q q1 q2 : Qp} [h : IsOp io1 q io2 q1 io3 q2] :
     IsOp io1 (own q) io2 (own q1) io3 (own q2) where
-  is_op := by rw [h.is_op]; rfl
+  is_op := by rw [h.is_op.to_eq]; rfl
 
 end DFrac

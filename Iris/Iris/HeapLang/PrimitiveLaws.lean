@@ -43,8 +43,8 @@ def HeapLangS : BundledGFunctors
   | 1 => ⟨constOF (DisjointLeibnizSet CoPset), by infer_instance⟩
   | 2 => ⟨constOF (DisjointLeibnizSet PosSet), by infer_instance⟩
   | 3 => ⟨Auth.AuthURF (constOF Credit), by infer_instance⟩
-  | 4 => ⟨constOF (HeapView Loc (Agree (LeibnizO (Option Val))) HeapF), by infer_instance⟩
-  | 5 => ⟨constOF (HeapView Loc (Agree (LeibnizO GName)) HeapF), by infer_instance⟩
+  | 4 => ⟨constOF (HeapView Loc (Agree (DiscreteO (Option Val))) HeapF), by infer_instance⟩
+  | 5 => ⟨constOF (HeapView Loc (Agree (DiscreteO GName)) HeapF), by infer_instance⟩
   | 6 => ⟨constOF MetaUR, by infer_instance⟩
   | _ => ⟨constOF Unit, by infer_instance⟩
 
@@ -76,11 +76,11 @@ theorem heap_adequacy [HeapLangGpreS .hasLC GF] (e : Exp) σ (φ : Val → Prop)
   intro inst κs
   imod iOwn_alloc (E := GhostMapG.elem (K := Loc) (V := Option Val) (H := HeapF))
     (HeapView.Auth (H := HeapF) (.own 1)
-      (Std.PartialMap.map (fun v : Option Val => toAgree (LeibnizO.mk v)) σ.heap))
+      (Std.PartialMap.map (fun v : Option Val => toAgree (DiscreteO.mk v)) σ.heap))
     HeapView.auth_one_valid with ⟨%γh, Hh⟩
   imod iOwn_alloc (E := GhostMapG.elem (K := Loc) (V := GName) (H := HeapF))
     (HeapView.Auth (H := HeapF) (.own 1)
-      (Std.PartialMap.map (fun g : GName => toAgree (LeibnizO.mk g))
+      (Std.PartialMap.map (fun g : GName => toAgree (DiscreteO.mk g))
         (∅ : HeapF GName)))
     HeapView.auth_one_valid with ⟨%γm, Hm⟩
   letI _ : HeapLangGS .hasLC GF := ⟨⟨γh, γm⟩⟩

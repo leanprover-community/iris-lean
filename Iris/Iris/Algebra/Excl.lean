@@ -49,17 +49,10 @@ theorem dist_eqv [OFE α] {n} : Equivalence (Excl.Dist (α := α) n) where
 
 @[rocq_alias exclO]
 instance [OFE α] : OFE (Excl α) where
-  Equiv := Excl.Equiv
   Dist := Excl.Dist
   dist_eqv
-  equiv_dist {x y} := by
-    constructor
-    · intro h n
-      cases x <;> cases y <;> simp at *
-      exact Equiv.dist h
-    · intro h
-      cases x <;> cases y <;> simp at *
-      exact equiv_dist.mpr h
+  eq_dist {x y} := by
+    cases x <;> cases y <;> simp [Excl.Dist] <;> exact eq_dist
   dist_lt {n x y m} hn hlt := by
     cases x <;> cases y <;> simp at *
     exact Dist.lt hn hlt
@@ -82,25 +75,25 @@ theorem ne_match [OFE α] {B : Type _} [OFE B]
 @[rocq_alias excl_ofe_discrete]
 instance [OFE α] [Discrete α] : Discrete (Excl α) where
   discrete_0 {x y} h' := by
-    cases x <;> cases y <;> try exact h'
-    exact discrete_0 (α := α) h'
-
-@[rocq_alias excl_leibniz]
-instance [OFE α] [Leibniz α] : Leibniz (Excl α) where
-  eq_of_eqv {x y} h' := by
-    cases x <;> cases y <;> try trivial
-    exact congrArg excl (eq_of_eqv h')
+    cases x <;> cases y
+    · exact discrete_0 (α := α) h'
+    · exact h'.elim
+    · exact h'.elim
+    · exact .rfl
 
 @[rocq_alias Excl_discrete]
 instance [OFE α] {a : α} [h : DiscreteE a] : DiscreteE (excl a) where
   discrete {x} h' := by
     cases x
     · exact h.discrete h'
-    · exact h'
+    · exact h'.elim
 
 @[rocq_alias ExclInvalid_discrete]
 instance [OFE α] : DiscreteE (@invalid α) where
-  discrete {x} h := by cases x <;> exact h
+  discrete {x} h := by
+    cases x
+    · exact h.elim
+    · exact .rfl
 
 /- Adapted from the corresponding definitions for [Option]. -/
 /- This could be simplified if there was an isomorphism lemma for [COFE]s in [OFE.lean]. -/
@@ -163,9 +156,8 @@ instance [OFE α] : CMRA (Excl α) where
 @[rocq_alias excl_included]
 theorem inc_iff [OFE α] {x y : Excl α} : x ≼ y ↔ y = invalid := by
   constructor
-  · intro h
-    rcases h with ⟨z, hz⟩
-    cases x <;> cases y <;> trivial
+  · rintro ⟨z, hz⟩
+    exact hz.to_eq
   · intro h
     exists invalid
     exact Equiv.of_eq h
@@ -173,7 +165,7 @@ theorem inc_iff [OFE α] {x y : Excl α} : x ≼ y ↔ y = invalid := by
 @[rocq_alias excl_includedN]
 theorem incN_iff [OFE α] {x y : Excl α} (n) : x ≼{n} y ↔ y = invalid := by
   constructor
-  · intro ⟨z, hz⟩; cases x <;> cases y <;> trivial
+  · intro ⟨z, hz⟩; cases x <;> cases y <;> first | rfl | exact hz.elim
   · rintro rfl; exists invalid
 
 @[rocq_alias Excl_inj]
@@ -191,7 +183,7 @@ theorem excl_included [OFE α] {a b : α} :
   refine ⟨fun ⟨z, hz⟩ => ?_, fun h => ⟨none, OFE.some_eqv_some.mpr (show excl b ≡ excl a from h.symm)⟩⟩
   rcases z with _|z
   · exact (OFE.some_eqv_some.mp hz : excl b ≡ excl a).symm
-  · exact (OFE.some_eqv_some.mp hz : excl b ≡ invalid).elim
+  · exact ((OFE.some_eqv_some.mp hz : excl b ≡ invalid) 0).elim
 
 @[rocq_alias Excl_includedN]
 theorem excl_includedN [OFE α] {a b : α} {n} :

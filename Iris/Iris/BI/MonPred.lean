@@ -96,13 +96,14 @@ variable {I : BiIndex} {PROP : Type _} [BI PROP]
 (Rocq `monPredO`). -/
 @[rocq_alias monPredO]
 instance : OFE (MonPred I PROP) where
-  Equiv P Q := ∀ i, P.monPred_at i ≡ Q.monPred_at i
   Dist n P Q := ∀ i, P.monPred_at i ≡{n}≡ Q.monPred_at i
   dist_eqv :=
     { refl _ _ := dist_eqv.refl _
       symm h i := dist_eqv.symm (h i)
       trans h1 h2 i := dist_eqv.trans (h1 i) (h2 i) }
-  equiv_dist {_ _} := by simp only [equiv_dist]; exact forall_comm
+  eq_dist {P Q} := by
+    refine ⟨fun h _ _ => h ▸ .rfl, fun h => ?_⟩
+    exact MonPred.ext fun i => eq_dist.mpr fun n => h n i
   dist_lt h1 h2 i := dist_lt (h1 i) h2
 
 #rocq_ignore monPred_ofe_mixin "Rocq mixin record; subsumed by the OFE instance."
@@ -376,7 +377,7 @@ theorem entails_at {P Q : MonPred I PROP} :
 
 @[rocq_alias monPred_at_equiv]
 theorem equiv_at {P Q : MonPred I PROP} :
-    (P ≡ Q) ↔ ∀ i, P.monPred_at i ≡ Q.monPred_at i := Iff.rfl
+    (P ≡ Q) ↔ ∀ i, P.monPred_at i ≡ Q.monPred_at i := forall_comm
 
 @[rocq_alias monPred_at_dist]
 theorem dist_at {n : Nat} {P Q : MonPred I PROP} :

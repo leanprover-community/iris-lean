@@ -110,13 +110,16 @@ def later (P : SiProp) : SiProp where
 def entails (P Q : SiProp) : Prop := ∀ n, P.holds n → Q.holds n
 
 instance : OFE SiProp where
-  Equiv P Q := ∀ {n}, P.holds n ↔ Q.holds n
   Dist n P Q := ∀ {m}, m ≤ n → (P.holds m ↔ Q.holds m)
   dist_eqv.refl _ _ _ := Iff.rfl
   dist_eqv.symm h _ hle := (h hle).symm
   dist_eqv.trans h₁ h₂ _ hle := (h₁ hle).trans (h₂ hle)
-  equiv_dist.mp heq _ _ _ := heq
-  equiv_dist.mpr h n := h n .refl
+  eq_dist {P Q} := by
+    refine ⟨?_, fun h => ?_⟩
+    · rintro rfl _ _ _; exact Iff.rfl
+    · obtain ⟨ph, hp⟩ := P; obtain ⟨qh, _⟩ := Q
+      have : ph = qh := funext fun n => propext (h n .refl)
+      subst this; rfl
   dist_lt h _ _ _ := h (by omega)
 
 #rocq_ignore siProp_ofe_mixin "Not needed in Lean."
@@ -159,8 +162,8 @@ instance : Std.Preorder (BIBase.Entails (PROP := SiProp)) where
 @[rocq_alias siPropI]
 instance instBI : BI SiProp where
   entails_preorder := inferInstance
-  equiv_iff.mp heq := ⟨fun _ => heq.mp, fun _ => heq.mpr⟩
-  equiv_iff.mpr H n := ⟨H.1 n, H.2 n⟩
+  equiv_iff.mp heq := ⟨fun n hP => (heq n .refl).mp hP, fun n hQ => (heq n .refl).mpr hQ⟩
+  equiv_iff.mpr H _ _ _ := ⟨H.1 _, H.2 _⟩
   and_ne.ne _ _ _ h₁ _ _ h₂ m h := ⟨.imp (h₁ h).mp (h₂ h).mp, .imp (h₁ h).mpr (h₂ h).mpr⟩
   or_ne.ne _ _ _ h₁ _ _ h₂ m h := ⟨.imp (h₁ h).mp (h₂ h).mp, .imp (h₁ h).mpr (h₂ h).mpr⟩
   imp_ne.ne _ _ _ h₁ _ _ h₂ m hle := {
