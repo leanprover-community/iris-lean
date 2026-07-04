@@ -1,12 +1,12 @@
 /-
 Copyright (c) 2025 Oliver Soeser. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Oliver Soeser, Zongyuan Liu, Yunsong Yang, Michael Sammler
+Authors: Oliver Soeser, Zongyuan Liu, Yunsong Yang, Michael Sammler, Alvin Tang
 -/
 module
 
 public import Lean.Syntax
-meta import Iris.Std.RocqPorting
+public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -22,14 +22,47 @@ syntax ident : frameIdent
 declare_syntax_cat specPat
 
 syntax ident : specPat
+/-- Use a proof or a tactic sequence to match a pure hypothesis in the premise. -/
 syntax "%" term:max : specPat
+/--
+  `[ H₁ … Hₙ ]` generates a subgoal for the premise with `H₁ … Hₙ` as the
+  specified hypotheses.
+  `[ H₁ … Hₙ // ]` attempts to solve the subgoal using `itrivial`.
+-/
 syntax "[" (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
+/--
+  `[- H₁ … Hₙ ]` generates a subgoal for the premise with all but `H₁ … Hₙ`
+  as the specified hypotheses.
+  `[- H₁ … Hₙ // ]` attempts to solve the subgoal using `itrivial`.
+-/
 syntax "[" "-" (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
+/--
+  `[> H₁ … Hₙ ]` generates a subgoal for the premise with `H₁ … Hₙ` as the
+  specified hypotheses with the subgoal wrapped in a modality.
+  `[> H₁ … Hₙ // ]` attempts to solve the subgoal using `itrivial`.
+-/
 syntax "[>" (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
+/--
+  `[> H₁ … Hₙ ]` generates a subgoal for the premise with all but `H₁ … Hₙ` as the
+  specified hypotheses with the subgoal wrapped in a modality.
+  `[> H₁ … Hₙ // ]` attempts to solve the subgoal using `itrivial`.
+-/
 syntax "[>" "-" (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
+/--
+  `[# H₁ … Hₙ ]` generates a subgoal for the persistent premise
+  with all hypotheses in the context available for the subgoal.
+  `[# H₁ … Hₙ // ]` attempts to solve the subgoal using `itrivial`.
+-/
 syntax "[#" (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
+/--
+  `[$]` solves the subgoal by framing, first with spatial hypotheses,
+  then with intuitionistic hypotheses. Spatial hypotheses that are not framed
+  are carried over to the subsequent goal.
+-/
 syntax "[" "$" "]" : specPat
+/-- `[>$]` solves the subgoal by wrapping the premise with the modality and then by framing. -/
 syntax "[>" "$" "]" : specPat
+/-- `[#$]` solves the subgoal for the persistent premise by framing. -/
 syntax "[#" "$" "]" : specPat
 
 @[rocq_alias goal_kind]
