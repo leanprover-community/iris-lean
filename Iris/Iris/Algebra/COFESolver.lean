@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 Mario Carneiro. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mario Carneiro
+Authors: Mario Carneiro, Sebastian Graf
 -/
 module
 
@@ -252,7 +252,7 @@ def unfoldChain (X : Tower F) : Chain (F (Tower F) (Tower F)) where
         (map_comp ..).dist.symm.trans <|
         (map_ne.ne (·.down.dist) (fun Y => (Tower.embed_up Y).dist) _).trans ih
 
-def Tower.iso : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
+def Tower.isoAux : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
   hom.f X := {
     val n := (down F n).comp (map (Tower.embed _) (Tower.proj _)) X
     down {n} := (down ..).ne.eqv <|
@@ -295,6 +295,8 @@ def Tower.iso : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
     refine (map_ne.ne (fun Y => ?_) (fun Y => ?_) _).trans (map_id _).dist
     · exact ((Tower.embed _).ne.1 Y.up).trans (Y.embed_self.le (by omega))
     · exact ((Tower.embed _).ne.1 Y.down.dist).trans Y.embed_self
+
+opaque Tower.iso : OFE.Iso (F (Tower F) (Tower F)) (Tower F) := Tower.isoAux
 
 end Fix.Impl
 open Fix.Impl
