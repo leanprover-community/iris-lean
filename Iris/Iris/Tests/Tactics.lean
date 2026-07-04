@@ -1292,6 +1292,15 @@ example [BI PROP] (P Q : PROP) :
   · rfl
   iexact H
 
+/-- Tests `ispecialize` with subgoals excluding specified hypotheses -/
+example [BI PROP] (P1 P2 P3 Q : PROP) : P1 -∗ P2 -∗ P3 -∗ (P1 -∗ P2 -∗ P3 -∗ Q) -∗ Q := by
+  iintro HP1 HP2 HP3 HPQ
+  ispecialize HPQ $$ [- HP2 HP3] [- HP3] [-]
+  · iexact HP1
+  · iexact HP2
+  · iexact HP3
+  iexact HPQ
+
 end specialize
 
 -- split
