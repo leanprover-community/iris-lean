@@ -1,6 +1,5 @@
 module
 
-public import Iris.Tests.Fixpoint
 public import Iris.Tests.Instances
 public import Iris.Tests.InstancesImport
 public import Iris.Tests.Notation

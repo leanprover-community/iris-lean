@@ -1624,10 +1624,30 @@ def Fixpoint.chain [OFE α] [Inhabited α] (f : α → α) [Contractive f] : Cha
     intro _ Hm
     exact (IH H).le (Nat.le_of_lt_succ Hm)
 
+/-- The chain construction of the Banach fixpoint. `fixpointP` packages it, together with
+its unfolding equation, behind an opaque constant. -/
+def fixpointAux [COFE α] [Inhabited α] (f : α → α) [Contractive f] : α :=
+  COFE.compl <| Fixpoint.chain f
+
+theorem fixpointAux_unfold [COFE α] [Inhabited α] (f : α -c> α) :
+    fixpointAux f ≡ f (fixpointAux f) := by
+  refine equiv_dist.mpr fun n => ?_
+  apply COFE.conv_compl.trans
+  refine .trans ?_ (NonExpansive.ne COFE.conv_compl.symm)
+  induction n with
+  | zero => exact Contractive.zero f.f
+  | succ _ IH => exact (Contractive.succ f.f IH.symm).symm
+
+/-- The Banach fixpoint packed together with its unfolding equation as a single opaque
+value. Being opaque, it is a stuck constant for definitional-equality checks in both the
+elaborator and the kernel, which keeps the approximation chain of `fixpointAux` sealed. -/
+opaque fixpointP [COFE α] [Inhabited α] (f : α → α) [Contractive f] : { x : α // x ≡ f x } :=
+  ⟨fixpointAux f, fixpointAux_unfold f.toContractiveHom⟩
+
 /-- Fixpoints inside of a COFE -/
 @[rocq_alias fixpoint]
 def fixpoint [COFE α] [Inhabited α] (f : α → α) [Contractive f] : α :=
-  COFE.compl <| Fixpoint.chain f
+  (fixpointP f).val
 #rocq_ignore fixpoint_def "Use fixpoint"
 #rocq_ignore fixpoint_aux "Use fixpoint"
 #rocq_ignore fixpoint_unseal "fixpoint is unsealed by default"
@@ -1636,13 +1656,8 @@ nonrec abbrev OFE.ContractiveHom.fixpoint [COFE α] [Inhabited α] (f : α -c> �
 
 @[rocq_alias fixpoint_unfold]
 theorem fixpoint_unfold [COFE α] [Inhabited α] (f : α -c> α) :
-    fixpoint f ≡ f (fixpoint f) := by
-  refine equiv_dist.mpr fun n => ?_
-  apply COFE.conv_compl.trans
-  refine .trans ?_ (NonExpansive.ne COFE.conv_compl.symm)
-  induction n with
-  | zero => exact Contractive.zero f.f
-  | succ _ IH => exact (Contractive.succ f.f IH.symm).symm
+    fixpoint f ≡ f (fixpoint f) :=
+  (fixpointP f).property
 
 @[rocq_alias fixpoint_unique]
 theorem fixpoint_unique [COFE α] [Inhabited α] {f : α -c> α} {x : α} (H : x ≡ f x) :
@@ -1656,11 +1671,11 @@ theorem fixpoint_unique [COFE α] [Inhabited α] {f : α -c> α} {x : α} (H : x
 instance OFE.ContractiveHom.fixpoint_ne [COFE α] [Inhabited α] :
     NonExpansive (ContractiveHom.fixpoint (α := α)) where
   ne n f1 f2 H := by
-    apply COFE.conv_compl.trans
-    refine .trans ?_ COFE.conv_compl.symm
     induction n with
-    | zero => exact H _
-    | succ _ IH => exact (H _).trans <| Contractive.succ _ <| IH <| Dist.lt H (Nat.lt_add_one _)
+      refine (fixpoint_unfold f1).dist.trans <|
+        ((H _).trans ?_).trans (fixpoint_unfold f2).dist.symm
+    | zero => exact Contractive.zero f2.f
+    | succ _ IH => exact Contractive.succ f2.f <| IH <| Dist.lt H (Nat.lt_add_one _)
 
 @[elab_as_elim, rocq_alias fixpoint_ind]
 theorem OFE.ContractiveHom.fixpoint_ind [COFE α] [Inhabited α] (f : α -c> α)
@@ -1685,37 +1700,6 @@ theorem OFE.ContractiveHom.fixpoint_ind [COFE α] [Inhabited α] (f : α -c> α)
     induction n with
     | zero => exact Hind (Nat.repeat f.f 0 x) Hbase
     | succ _ IH => apply Hind (Nat.repeat f.f _ x) IH
-
-/-- The Banach fixpoint packed together with its unfolding equation as a single opaque
-value. Being opaque, it is a stuck constant for definitional-equality checks in both the
-elaborator and the kernel, which keeps the approximation chain underlying `fixpoint`
-sealed. -/
-opaque fixpointP [COFE α] [Inhabited α] (f : α → α) [Contractive f] : { x : α // x ≡ f x } :=
-  ⟨fixpoint f, fixpoint_unfold f.toContractiveHom⟩
-
-/-- The Banach fixpoint as a definitionally stuck constant. It is equivalent to `fixpoint`
-(`fastFixpoint_eqv`), and uniqueness of Banach fixpoints transports the `fixpoint` API. -/
-def fastFixpoint [COFE α] [Inhabited α] (f : α → α) [Contractive f] : α := (fixpointP f).val
-
-nonrec abbrev OFE.ContractiveHom.fastFixpoint [COFE α] [Inhabited α] (f : α -c> α) : α :=
-  fastFixpoint f.f
-
-theorem fastFixpoint_unfold [COFE α] [Inhabited α] (f : α -c> α) :
-    fastFixpoint f ≡ f (fastFixpoint f) :=
-  (fixpointP f).property
-
-theorem fastFixpoint_eqv [COFE α] [Inhabited α] (f : α -c> α) :
-    fastFixpoint f ≡ fixpoint f :=
-  fixpoint_unique (fastFixpoint_unfold f)
-
-theorem fastFixpoint_unique [COFE α] [Inhabited α] {f : α -c> α} {x : α} (H : x ≡ f x) :
-    x ≡ fastFixpoint f :=
-  (fixpoint_unique H).trans (fastFixpoint_eqv f).symm
-
-instance OFE.ContractiveHom.fastFixpoint_ne [COFE α] [Inhabited α] :
-    NonExpansive (ContractiveHom.fastFixpoint (α := α)) where
-  ne _ f g H :=
-    ((fastFixpoint_eqv f).dist.trans (fixpoint_ne.ne H)).trans (fastFixpoint_eqv g).dist.symm
 
 end Fixpoint
 
