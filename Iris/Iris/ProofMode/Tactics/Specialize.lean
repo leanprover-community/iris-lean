@@ -41,7 +41,7 @@ theorem specialize_wand_autoframe_spatial [BI PROP] {q : Bool} {A1 A2 A3 Q P1 : 
   h1.trans <| (sep_mono_left h2).trans <| sep_assoc.1.trans
     (sep_mono_right ((sep_mono_right inst.into_wand).trans wand_elim_right))
 
-theorem specialize_wand_autoframe_persistent [BI PROP] {q : Bool} {A1 A2 Q P1' : PROP} P1 P2
+theorem specialize_wand_persistent [BI PROP] {q : Bool} {A1 A2 Q P1' : PROP} P1 P2
     (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊢ P1')
     [inst1 : IntoAbsorbingly P1' P1] [inst2 : Persistent P1]
     [inst3 : IntoWand q true Q .out P1 .out P2] :
@@ -106,17 +106,14 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig : Q($pro
     let α : Q(Sort v) ← mkFreshExprMVarQ q(Sort v)
     let Φ : Q($α → $prop) ← mkFreshExprMVarQ q($α → $prop)
     let some _ ← ProofModeM.trySynthInstanceQ q(IntoForall $out $Φ)
-      | throwError "ispecialize: {out} is not a lean premise"
+    | throwError "ispecialize: {out} is not a Lean premise"
     let x ← elabTermEnsuringTypeQ (u := .succ .zero) t α
     have out' : Q($prop) := Expr.headBeta q($Φ $x)
     have : $out' =Q $Φ $x := ⟨⟩
     let newMVarIds ← getMVarsNoDelayed x
     for mvar in newMVarIds do addMVarGoal mvar
     return { e, hyps, p, out := out', pf := q(specialize_forall $pf $x) }
-  | .goal { kind, negate, trivial, frame := f, hyps := hs } g => do
-    if kind != .spatial then
-      -- TODO
-      throwError "ispecialize: only spatial kind is supported at the moment"
+  | .goal { kind := .spatial, negate, trivial, frame := f, hyps := hs } g => do
     let mut ivars : IVarIdSet := {}
     for name in hs do
       ivars := ivars.insert (← hyps.findWithInfo name)
@@ -132,17 +129,45 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig : Q($pro
     let out₁ ← mkFreshExprMVarQ prop
     let out₂ ← mkFreshExprMVarQ prop
     let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
-      | throwError m!"ispecialize: {out} is not a wand"
+    | throwError m!"ispecialize: {out} is not a wand"
     let res ← iFrame bi _ hypsr' out₁ (frameIVars.map (⟨.ipm ·, true⟩))
     let pf'' ← res.finish λ hyps goal => do
       if trivial then
         let some r ← iTrivial hyps goal
-          | throwError "ispecialize: itrivial could not solve {← ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
+        | throwError "ispecialize: itrivial could not solve {← ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
         return r
       else
         addBIGoal hyps goal g
     let pf := q(specialize_wand_subgoal $out₂ $pf $pf' $pf'')
     return { hyps := hypsl', p := q(false), out := out₂, pf }
+  | .goal { kind := .persistent, trivial, frame := f, hyps := hs, .. } g => do
+    if !hs.isEmpty then
+      throwError "ispecialize: the subgoal for the persistent premise should not consume hypotheses"
+    let out₁ ← mkFreshExprMVarQ prop
+    let out₂ ← mkFreshExprMVarQ prop
+    let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p true $out .out $out₁ .out $out₂)
+    | throwError m!"ispecialize: {out} is not a wand"
+    let some _ ← ProofModeM.trySynthInstanceQ q(Persistent $out₁)
+    | throwError m!"ispecialize: {out₁} is not persistent"
+    let out₁' ← mkFreshExprMVarQ prop
+    let some _ ← ProofModeM.trySynthInstanceQ q(IntoAbsorbingly $out₁' $out₁)
+    | throwError m!"ispecialize: type class synthesis failed for {out₁} with IntoAbsorbingly"
+    let mut frameIVars : List IVarId := []
+    for name in f do
+      frameIVars := (← hyps.findWithInfo name) :: frameIVars
+    frameIVars := frameIVars.reverse
+    let res ← iFrame bi _ hyps out₁' (frameIVars.map (⟨.ipm ·, true⟩))
+    let pf' ← res.finish λ hyps goal => do
+      if trivial then
+        let some r ← iTrivial hyps goal
+        | throwError "ispecialize: itrivial could not solve {← ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
+        return r
+      else
+        addBIGoal hyps goal g
+    return { hyps, p, out := out₂,
+             pf := q(specialize_wand_persistent $out₁ $out₂ $pf $pf') }
+  | .goal { kind := .modal, .. } _ =>
+    throwError "ispecialize: framing with the modal kind is not supported at the moment"
   | .autoframe .spatial => do
     let out₁ ← mkFreshExprMVarQ prop
     let out₂ ← mkFreshExprMVarQ prop
@@ -168,7 +193,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig : Q($pro
       | throwError "ispecialize: unable to solve premise by framing"
       return pf
     return { hyps, p, out := out₂,
-              pf := q(specialize_wand_autoframe_persistent $out₁ $out₂ $pf $pf') }
+              pf := q(specialize_wand_persistent $out₁ $out₂ $pf $pf') }
   | .autoframe .modal =>
     throwError m!"ispecialize: autoframe with the modal kind is not supported at the moment"
 
@@ -202,8 +227,10 @@ A tuple containing:
 - `B`: Resulting proposition after applying all patterns
 - `pf`: Proof of `hyps ∗ □?pa A ⊢ hyps' ∗ □?pb B`, =`hyps ∗ □?pa A ⊢ hyps ∗ □ B` if context duplication succeeds
 -/
-def iSpecializeCore {e} (hyps : @Hyps u prop bi e) (pa : Q(Bool)) (A : Q($prop)) (spats : List SpecPat) (try_dup_context : Bool := false) :
-  ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) × Q($e ∗ □?$pa $A ⊢ $e' ∗ □?$pb $B)) := do
+def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (hyps : Hyps bi e) (pa : Q(Bool)) (A : Q($prop))
+    (spats : List SpecPat) (try_dup_context : Bool := false) :
+    ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) × Q($e ∗ □?$pa $A ⊢ $e' ∗ □?$pb $B)) := do
   let state := { hyps, out := A, p := pa, pf := q(.rfl), .. }
   let ⟨hyps', pb, B, pf⟩ ← spats.foldlM processWand state
   if try_dup_context then

@@ -661,7 +661,7 @@ example [BI PROP] (Q : α → PROP) (a b : α) : (∀ x, ∀ y, ⌜x = a⌝ -∗
   iintro H
   iapply H $$ %_ %b %rfl
 
-/-- error: ispecialize: iprop(P a -∗ Q b) is not a lean premise -/
+/-- error: ispecialize: iprop(P a -∗ Q b) is not a Lean premise -/
 #guard_msgs in
 example [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
@@ -1318,6 +1318,45 @@ example [BI PROP] (φ : Prop) (Q : PROP) :
   ispecialize HPQ1 $$ [#$]
   ispecialize HPQ2 $$ [#$]
   iframe
+
+/- Tests `ispecialize` with autoframing, but the premise is not persistent. -/
+/-- error: ispecialize: P is not persistent -/
+#guard_msgs in
+example [BI PROP] (φ : Prop) (P Q : PROP) :
+    P -∗ (P -∗ Q) -∗ True := by
+  iintro HP HPQ
+  ispecialize HPQ $$ [#$]
+
+/-- Tests `ispecialize` for a persistent premise with chosen hypotheses for the subgoal. -/
+example [BI PROP] (P1 P2 P3 Q : PROP) :
+    <pers> P1 -∗ <pers> P2 -∗ <pers> P3 -∗
+    ((<pers> P1 ∗ <pers> P2) -∗ Q) -∗
+    ((<pers> P1 ∗ <pers> P3) -∗ Q) -∗
+    <pers> P1 ∗ <pers> P2 ∗ <pers> P3 ∗ Q ∗ Q := by
+  iintro HP1 HP2 HP3 HPQ12 HPQ13
+  ispecialize HPQ12 $$ [# $HP1]
+  · iexact HP2
+  ispecialize HPQ13 $$ [# $HP1 $HP3]
+  iframe
+
+/-
+  Tests `ispecialize` for handling a persistent premise, except that the
+  premise is not persistent.
+-/
+/-- error: ispecialize: P is not persistent -/
+#guard_msgs in
+example [BI PROP] (φ : Prop) (P Q : PROP) :
+    P -∗ (P -∗ Q) -∗ True := by
+  iintro HP HPQ
+  ispecialize HPQ $$ [# $HP]
+
+/- Tests `ispecialize` with hypotheses chosen to be consumed for a persistent premise. -/
+/-- error: ispecialize: the subgoal for the persistent premise should not consume hypotheses -/
+#guard_msgs in
+example [BI PROP] (φ : Prop) (P Q : PROP) :
+    <pers> P -∗ (<pers> P -∗ Q) -∗ True := by
+  iintro HP HPQ
+  ispecialize HPQ $$ [# HP]
 
 end specialize
 
