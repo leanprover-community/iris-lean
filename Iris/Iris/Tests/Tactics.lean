@@ -1301,6 +1301,13 @@ example [BI PROP] (P1 P2 P3 Q : PROP) : P1 -∗ P2 -∗ P3 -∗ (P1 -∗ P2 -∗
   · iexact HP3
   iexact HPQ
 
+/-- Tests `ispecialize` with autoframing for the intuitionistic kind -/
+example [BI PROP] (P1 P2 P3 Q : PROP) :
+    □ P1 -∗ <pers> P2 -∗ □ P3 -∗ (□ P1 -∗ <pers> P2 -∗ <pers> P3 -∗ Q) -∗ Q := by
+  iintro #HP1 HP2 #HP3 HPQ
+  ispecialize HPQ $$ [#$] [$] [#$]
+  iexact HPQ
+
 end specialize
 
 -- split
