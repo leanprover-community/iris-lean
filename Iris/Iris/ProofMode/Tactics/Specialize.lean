@@ -17,10 +17,10 @@ public section
 open BI
 
 theorem specialize_wand [BI PROP] {q p : Bool} {A1 A2 A3 Q P1 P2 : PROP}
-    (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊣⊢ A3 ∗ □?p P1)
+    (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊢ A3 ∗ □?p P1)
     [h3 : IntoWand q p Q .in P1 .out P2] :
     A1 ⊢ A3 ∗ □?(p && q) P2 := by
-  refine h1.trans <| (sep_mono_left h2.1).trans <| sep_assoc.1.trans (sep_mono_right ?_)
+  refine h1.trans <| (sep_mono_left h2).trans <| sep_assoc.1.trans (sep_mono_right ?_)
   cases p with
   | false => exact (sep_mono_right h3.1).trans <| wand_elim_right
   | true => exact
@@ -103,7 +103,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig : Q($pro
     let out₂ ← mkFreshExprMVarQ prop
     let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p $p1 $out .in $out₁' .out $out₂) |
       throwError m!"ispecialize: cannot instantiate {out} with {out₁'}"
-    let pf := q(specialize_wand $pf $pf')
+    let pf := q(specialize_wand $pf $(pf').mp)
     return { hyps := hyps', p := p2, out := out₂, pf }
   | .ident i spats =>
     let ivar ← hyps.findWithInfo i
@@ -115,7 +115,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig : Q($pro
     let out₂ ← mkFreshExprMVarQ prop
     let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p $pB $out .in $B .out $out₂) |
       throwError m!"ispecialize: cannot instantiate {out} with {B}"
-    return { hyps := hyps'', p := p2, out := out₂, pf := q(sorry) }
+    return { hyps := hyps'', p := p2, out := out₂, pf := q(specialize_wand $pf ($(pf').mp.trans $pfNest)) }
   | .pure t => do
     let v ← mkFreshLevelMVar
     let α : Q(Sort v) ← mkFreshExprMVarQ q(Sort v)
