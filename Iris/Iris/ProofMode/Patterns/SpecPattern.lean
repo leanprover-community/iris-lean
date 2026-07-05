@@ -62,7 +62,7 @@ inductive SpecGoalKind
   -- TODO: implement
   | modal
   -- TODO: implement
-  | intuitionistic
+  | persistent
   deriving Repr, Inhabited, BEq
 
 @[rocq_alias spec_goal]
@@ -124,8 +124,8 @@ where
     some <| .goal {kind := .modal, negate := negTk.isSome, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
   | `(specPat| [# $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
     let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .intuitionistic, negate := false, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
+    some <| .goal {kind := .persistent, negate := false, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
   | `(specPat| [$]) => some <| .autoframe .spatial
-  | `(specPat| [# $]) => some <| .autoframe .intuitionistic
+  | `(specPat| [# $]) => some <| .autoframe .persistent
   | `(specPat| [> $]) => some <| .autoframe .modal
   | _ => none

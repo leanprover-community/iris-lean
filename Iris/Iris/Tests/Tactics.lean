@@ -1308,6 +1308,17 @@ example [BI PROP] (P1 P2 P3 Q : PROP) :
   ispecialize HPQ $$ [#$] [$] [#$]
   iexact HPQ
 
+/--
+  Tests `ispecialize` with autoframing with a persistent hypothesis in the
+  spatial context used twice.
+-/
+example [BI PROP] (φ : Prop) (Q : PROP) :
+    ⌜φ⌝ -∗ (⌜φ⌝ -∗ Q) -∗ (⌜φ⌝ -∗ Q) -∗ ⌜φ⌝ ∗ Q ∗ Q := by
+  iintro HP1 HPQ1 HPQ2
+  ispecialize HPQ1 $$ [#$]
+  ispecialize HPQ2 $$ [#$]
+  iframe
+
 end specialize
 
 -- split

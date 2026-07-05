@@ -35,11 +35,19 @@ theorem specialize_wand_subgoal [BI PROP] {q : Bool} {A1 A2 A3 A4 Q P1 : PROP} P
   refine h1.trans <| (sep_mono_left h2.1).trans <| sep_assoc.1.trans (sep_mono_right ((sep_mono_left h3).trans ?_))
   exact (sep_mono_right inst.1).trans wand_elim_right
 
-theorem specialize_wand_autoframe [BI PROP] {q : Bool} {A1 A2 A3 Q P1 : PROP} P2
+theorem specialize_wand_autoframe_spatial [BI PROP] {q : Bool} {A1 A2 A3 Q P1 : PROP} P2
      (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊢ A3 ∗ P1)
      [inst : IntoWand q false Q .out P1 .out P2] : A1 ⊢ A3 ∗ P2 :=
   h1.trans <| (sep_mono_left h2).trans <| sep_assoc.1.trans
     (sep_mono_right ((sep_mono_right inst.into_wand).trans wand_elim_right))
+
+theorem specialize_wand_autoframe_persistent [BI PROP] {q : Bool} {A1 A2 Q P1' : PROP} P1 P2
+    (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊢ P1')
+    [inst1 : IntoAbsorbingly P1' P1] [inst2 : Persistent P1]
+    [inst3 : IntoWand q true Q .out P1 .out P2] :
+    A1 ⊢ A2 ∗ □?q P2 := calc
+  _ ⊢ A2 ∗ □?q Q := h1
+  _ ⊢ A2 ∗ □?q P2 := sorry
 
 theorem specialize_forall [BI PROP] {p : Bool} {A1 A2 P : PROP} {α : Sort _} {Φ : α → PROP}
     [inst : IntoForall P Φ] (h : A1 ⊢ A2 ∗ □?p P) (a : α) : A1 ⊢ A2 ∗ □?p (Φ a) := by
@@ -59,7 +67,7 @@ public meta section
 open Lean Elab Tactic Meta Qq Std
 
 structure SpecializeState {prop : Q(Type u)} (bi : Q(BI $prop)) (orig : Q($prop)) where
-  (e : Q($prop)) (hyps : Hyps bi e) (p : Q(Bool)) (out : Q($prop))
+  {e : Q($prop)} (hyps : Hyps bi e) (p : Q(Bool)) (out : Q($prop))
   pf : Q($orig ⊢ $e ∗ □?$p $out)
 
 private def processWand :
@@ -75,7 +83,7 @@ private def processWand :
     let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p $p1 $out .in $out₁' .out $out₂) |
       throwError m!"ispecialize: cannot instantiate {out} with {out₁'}"
     let pf := q(specialize_wand $pf $pf')
-    return { e := e', hyps := hyps', p := p2, out := out₂, pf }
+    return { hyps := hyps', p := p2, out := out₂, pf }
   | { e, hyps, p, out, pf, .. }, .pure t => do
     let v ← mkFreshLevelMVar
     let α : Q(Sort v) ← mkFreshExprMVarQ q(Sort v)
@@ -117,7 +125,7 @@ private def processWand :
       else
         addBIGoal hyps goal g
     let pf := q(specialize_wand_subgoal $out₂ $pf $pf' $pf'')
-    return { e := el', hyps := hypsl', p := q(false), out := out₂, pf }
+    return { hyps := hypsl', p := q(false), out := out₂, pf }
   | { hyps, p, out, pf, .. }, .autoframe .spatial => do
     let out₁ ← mkFreshExprMVarQ prop
     let out₂ ← mkFreshExprMVarQ prop
@@ -125,15 +133,25 @@ private def processWand :
       | throwError m!"ispecialize: {out} is not a wand"
     let res ← iFrame bi _ hyps out₁ (← SelPat.resolve hyps [.spatial, .intuitionistic])
     let ⟨_, hyps', pf'⟩ ← res.finishClose
-    return { e := _, hyps := hyps', p := q(false), out := out₂, pf := q(specialize_wand_autoframe $out₂ $pf $pf') }
-  | { hyps, p, out, pf, .. }, .autoframe .intuitionistic => do
+    return { hyps := hyps', p := q(false), out := out₂,
+             pf := q(specialize_wand_autoframe_spatial $out₂ $pf $pf') }
+  | { hyps, p, out, pf, .. }, .autoframe .persistent => do
       let out₁ ← mkFreshExprMVarQ prop
       let out₂ ← mkFreshExprMVarQ prop
-      let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
-        | throwError m!"ispecialize: {out} is not a wand"
-      let res ← iFrame bi _ hyps out₁ (← SelPat.resolve hyps [.spatial, .intuitionistic])
-      let ⟨_, hyps', pf'⟩ ← res.finishClose
-      return { e := _, hyps := hyps', p := q(false), out := out₂, pf := q(specialize_wand_autoframe $out₂ $pf $pf') }
+      let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p true $out .out $out₁ .out $out₂)
+      | throwError m!"ispecialize: {out} is not a wand"
+      let some _ ← ProofModeM.trySynthInstanceQ q(Persistent $out₁)
+      | throwError m!"ispecialize: {out₁} is not persistent"
+      let out₁' ← mkFreshExprMVarQ prop
+      let some _ ← ProofModeM.trySynthInstanceQ q(IntoAbsorbingly $out₁' $out₁)
+      | throwError m!"ispecialize: type class synthessis failed for {out₁} with IntoAbsorbingly"
+      let res ← iFrame bi _ hyps out₁' (← SelPat.resolve hyps [.spatial, .intuitionistic])
+      let pf' ← res.finish <| fun hyps goal => do
+        let some pf ← iTrivial hyps goal
+        | throwError "ispecialize: unable to solve premise by framing"
+        return pf
+      return { hyps, p, out := out₂,
+               pf := q(specialize_wand_autoframe_persistent $out₁ $out₂ $pf $pf') }
   | { hyps, p, out, pf, .. }, .autoframe .modal => do
       throwError m!"ispecialize: autoframe with the modal kind is not supported at the moment"
 
@@ -170,7 +188,7 @@ A tuple containing:
 def iSpecializeCore {e} (hyps : @Hyps u prop bi e) (pa : Q(Bool)) (A : Q($prop)) (spats : List SpecPat) (try_dup_context : Bool := false) :
   ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) × Q($e ∗ □?$pa $A ⊢ $e' ∗ □?$pb $B)) := do
   let state := { hyps, out := A, p := pa, pf := q(.rfl), .. }
-  let ⟨_, hyps', pb, B, pf⟩ ← spats.foldlM processWand state
+  let ⟨hyps', pb, B, pf⟩ ← spats.foldlM processWand state
   if try_dup_context then
     -- context duplication succeeds if `B` is persistent, and `A` is persistent or affine
     let B' : Q($prop) ← mkFreshExprMVarQ q($prop)
