@@ -573,7 +573,7 @@ instance (priority := default + 30) intoAbsorbingly_true [BI PROP] :
     IntoAbsorbingly (PROP := PROP) iprop(True) emp where
   into_absorbingly := absorbingly_emp.2
 
-@[rocq_alias into_absorbingly_absorbing]
+@[ipm_backtrack, rocq_alias into_absorbingly_absorbing]
 instance (priority := default + 20) intoAbsorbingly_absorbing [BI PROP] (P : PROP) [Absorbing P] :
     IntoAbsorbingly P P where
   into_absorbingly := absorbing_absorbingly.2
