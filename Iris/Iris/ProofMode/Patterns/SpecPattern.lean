@@ -59,9 +59,7 @@ syntax "[#" "$" "]" : specPat
 @[rocq_alias goal_kind]
 inductive SpecGoalKind
   | spatial
-  -- TODO: implement
-  | modal
-  -- TODO: implement
+  | modal  -- TODO: implement `.autoframe` and `.goal` for the modal kind in `processWand`
   | persistent
   deriving Repr, Inhabited, BEq
 
