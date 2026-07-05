@@ -1358,13 +1358,12 @@ example [BI PROP] (φ : Prop) (P Q : PROP) :
   iintro HP HPQ
   ispecialize HPQ $$ [# HP]
 
-/- TODO: tests `ispecialize` with nested specialisation patterns. -/
-/-- error: ispecialize: nested specialisation patterns are not yet supported -/
-#guard_msgs in
-example [BI PROP] (P Q R : PROP) : ⊢ (P -∗ Q) -∗ (Q -∗ R) -∗ P -∗ R := by
-  iintro HPQ HQR HP
-  ispecialize HQR $$ (HPQ $$ HP)
-  iexact HQR
+/- Tests `ispecialize` with nested specialisation patterns. -/
+example [BI PROP] (P Q R S T : PROP) :
+    ⊢ (P -∗ <pers> T -∗ Q) -∗ (Q -∗ <pers> T -∗ R) -∗ (R -∗ S) -∗ P -∗ <pers> T -∗ S := by
+  iintro HPTQ HQTR HRS HP HT
+  ispecialize HRS $$ (HQTR $$ (HPTQ $$ HP [# $HT]) [HT //])
+  iassumption
 
 end specialize
 

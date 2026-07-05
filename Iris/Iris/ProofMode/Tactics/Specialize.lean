@@ -81,9 +81,11 @@ theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B B'}
 public meta section
 open Lean Elab Tactic Meta Qq Std
 
-private structure SpecializeState {prop : Q(Type u)} {bi : Q(BI $prop)} (orig : Q($prop)) where
+structure SpecializeState {prop : Q(Type u)} {bi : Q(BI $prop)} (orig : Q($prop)) where
   {e : Q($prop)} (hyps : Hyps bi e) (p : Q(Bool)) (out : Q($prop))
   pf : Q($orig ⊢ $e ∗ □?$p $out)
+
+mutual
 
 private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig : Q($prop)}
     (specState : @SpecializeState u prop bi orig) (spat : Syntax × SpecPat) :
@@ -103,7 +105,17 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig : Q($pro
       throwError m!"ispecialize: cannot instantiate {out} with {out₁'}"
     let pf := q(specialize_wand $pf $pf')
     return { hyps := hyps', p := p2, out := out₂, pf }
-  | .ident _ _ => throwError "ispecialize: nested specialisation patterns are not yet supported"
+  | .ident i spats =>
+    let ivar ← hyps.findWithInfo i
+    let ⟨_, hyps', out₁, out₁', p1, _, pf'⟩ := hyps.remove false ivar
+    let ⟨_, hyps'', pB, B, pfNest⟩ ← iSpecializeCore hyps' p1 out₁' spats
+    let p2 := if pB.constName! == ``true then p else q(false)
+    have : $out₁ =Q iprop(□?$p1 $out₁') := ⟨⟩
+    have : $p2 =Q ($pB && $p) := ⟨⟩
+    let out₂ ← mkFreshExprMVarQ prop
+    let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p $pB $out .in $B .out $out₂) |
+      throwError m!"ispecialize: cannot instantiate {out} with {B}"
+    return { hyps := hyps'', p := p2, out := out₂, pf := q(sorry) }
   | .pure t => do
     let v ← mkFreshLevelMVar
     let α : Q(Sort v) ← mkFreshExprMVarQ q(Sort v)
@@ -200,20 +212,6 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig : Q($pro
   | .autoframe .modal =>
     throwError m!"ispecialize: autoframe with the modal kind is not supported at the moment"
 
-/-- `iCasesPat.should_try_dup_context` determines when iSpecializeCore should try to duplicate the separation context.
-The duplication only works if the conclusion of the specialization is persistent.
-
-TODO: Should this also return true for lists of intuitionistic patterns? (check in Rocq)
-
-TODO: This also needs to check that there are no modality addition patterns in `pat` once they are implemented.
--/
-@[rocq_alias intro_pat_intuitionistic, rocq_alias use_tac_specialize_intuitionistic_helper]
-def iCasesPat.should_try_dup_context (pat : iCasesPat) : Bool :=
-  match pat with
-  | .intuitionistic _ => true
-  | .pure _ => true
-  | _ => false
-
 /-- Specialize a proposition `A` by applying a sequence of specialization patterns.
 
 ## Parameters
@@ -250,6 +248,22 @@ def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     let some af ← af | return ⟨_, hyps', pb, B, pf⟩
     return ⟨_, hyps, q(true), B', q(specialize_dup_context $pf $af)⟩
   return ⟨_, hyps', pb, B, pf⟩
+
+end
+
+/-- `iCasesPat.should_try_dup_context` determines when iSpecializeCore should try to duplicate the separation context.
+The duplication only works if the conclusion of the specialization is persistent.
+
+TODO: Should this also return true for lists of intuitionistic patterns? (check in Rocq)
+
+TODO: This also needs to check that there are no modality addition patterns in `pat` once they are implemented.
+-/
+@[rocq_alias intro_pat_intuitionistic, rocq_alias use_tac_specialize_intuitionistic_helper]
+def iCasesPat.should_try_dup_context (pat : iCasesPat) : Bool :=
+  match pat with
+  | .intuitionistic _ => true
+  | .pure _ => true
+  | _ => false
 
 /--
   `ispecialize pmt` specialises a hypothesis according to `pmt : pmTerm`.
