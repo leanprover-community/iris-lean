@@ -118,11 +118,7 @@ private def processWand :
         addBIGoal hyps goal g
     let pf := q(specialize_wand_subgoal $out₂ $pf $pf' $pf'')
     return { e := el', hyps := hypsl', p := q(false), out := out₂, pf }
-
-  | { hyps, p, out, pf, .. }, .autoframe kind => do
-    if kind != .spatial then
-      -- TODO
-      throwError "ispecialize: only spatial kind is supported at the moment"
+  | { hyps, p, out, pf, .. }, .autoframe .spatial => do
     let out₁ ← mkFreshExprMVarQ prop
     let out₂ ← mkFreshExprMVarQ prop
     let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
@@ -130,6 +126,16 @@ private def processWand :
     let res ← iFrame bi _ hyps out₁ (← SelPat.resolve hyps [.spatial, .intuitionistic])
     let ⟨_, hyps', pf'⟩ ← res.finishClose
     return { e := _, hyps := hyps', p := q(false), out := out₂, pf := q(specialize_wand_autoframe $out₂ $pf $pf') }
+  | { hyps, p, out, pf, .. }, .autoframe .intuitionistic => do
+      let out₁ ← mkFreshExprMVarQ prop
+      let out₂ ← mkFreshExprMVarQ prop
+      let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
+        | throwError m!"ispecialize: {out} is not a wand"
+      let res ← iFrame bi _ hyps out₁ (← SelPat.resolve hyps [.spatial, .intuitionistic])
+      let ⟨_, hyps', pf'⟩ ← res.finishClose
+      return { e := _, hyps := hyps', p := q(false), out := out₂, pf := q(specialize_wand_autoframe $out₂ $pf $pf') }
+  | { hyps, p, out, pf, .. }, .autoframe .modal => do
+      throwError m!"ispecialize: autoframe with the modal kind is not supported at the moment"
 
 /-- `iCasesPat.should_try_dup_context` determines when iSpecializeCore should try to duplicate the separation context.
 The duplication only works if the conclusion of the specialization is persistent.
