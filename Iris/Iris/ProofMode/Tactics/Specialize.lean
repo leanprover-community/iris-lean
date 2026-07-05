@@ -92,7 +92,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig : Q($pro
   let ⟨ref, spat⟩ := spat
   withRef ref do
   match spat with
-  | .ident i => do
+  | .ident i [] => do
     let ivar ← hyps.findWithInfo i
     let ⟨_, hyps', out₁, out₁', p1, _, pf'⟩ := hyps.remove false ivar
     let p2 := if p1.constName! == ``true then p else q(false)
@@ -103,6 +103,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig : Q($pro
       throwError m!"ispecialize: cannot instantiate {out} with {out₁'}"
     let pf := q(specialize_wand $pf $pf')
     return { hyps := hyps', p := p2, out := out₂, pf }
+  | .ident _ _ => throwError "ispecialize: nested specialisation patterns are not yet supported"
   | .pure t => do
     let v ← mkFreshLevelMVar
     let α : Q(Sort v) ← mkFreshExprMVarQ q(Sort v)

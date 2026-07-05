@@ -55,6 +55,12 @@ syntax "[" "$" "]" : specPat
 syntax "[>" "$" "]" : specPat
 /-- `[#$]` solves the subgoal for the persistent premise by framing. -/
 syntax "[#" "$" "]" : specPat
+/--
+  `(H spat₁ … spatₙ)` specialises the hypothesis `H` with the specialisation
+  patterns `spat₁ … spatₙ` before the resultant hypothesis is itself used for
+  matching a premise.
+-/
+syntax "(" colGt ident "$$" (colGt ppSpace specPat)+ ppSpace ")" : specPat
 
 @[rocq_alias goal_kind]
 inductive SpecGoalKind
@@ -75,7 +81,7 @@ deriving Repr, Inhabited
 -- see https://gitlab.mpi-sws.org/iris/iris/-/blob/master/iris/proofmode/spec_patterns.v?ref_type=heads#L15
 @[rocq_alias spec_pat]
 inductive SpecPat
-  | ident (name : Ident)
+  | ident (name : Ident) (recursiveSpecPats : List <| Syntax × SpecPat)
   | pure (t : Term)
   | goal (goal : SpecGoal) (goalName : Name)
   | autoframe (goal : SpecGoalKind)
@@ -106,13 +112,20 @@ def FrameIdent.parse : TSyntax `frameIdent → (Ident ⊕ Ident)
     else .inl default -- should not happen
 
 @[rocq_alias spec_pat.parse]
-def SpecPat.parse (term : Syntax) : MacroM (Syntax × SpecPat) := do
-  match go ⟨← expandMacros term⟩ with
-  | none => Macro.throwUnsupported
-  | some pat => return ⟨term, pat⟩
+partial def SpecPat.parse (term : Syntax) : MacroM (Syntax × SpecPat) := do
+  let stx ← expandMacros term
+  match stx with
+  -- Recursive call for nested specialisation patterns
+  | `(specPat| ($name:ident $$ $[$spats:specPat]*)) =>
+      let nested ← spats.toList.mapM (SpecPat.parse ·.raw)
+      return ⟨term, .ident name nested⟩
+  | _ =>
+    match go ⟨stx⟩ with
+    | none => Macro.throwUnsupported
+    | some pat => return ⟨term, pat⟩
 where
   go : TSyntax `specPat → Option SpecPat
-  | `(specPat| $name:ident) => some <| .ident name
+  | `(specPat| $name:ident) => some <| .ident name []
   | `(specPat| % $term:term) => some <| .pure term
   | `(specPat| [$[-%$negTk]? $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
     let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;

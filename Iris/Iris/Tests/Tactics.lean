@@ -1358,6 +1358,14 @@ example [BI PROP] (φ : Prop) (P Q : PROP) :
   iintro HP HPQ
   ispecialize HPQ $$ [# HP]
 
+/- TODO: tests `ispecialize` with nested specialisation patterns. -/
+/-- error: ispecialize: nested specialisation patterns are not yet supported -/
+#guard_msgs in
+example [BI PROP] (P Q R : PROP) : ⊢ (P -∗ Q) -∗ (Q -∗ R) -∗ P -∗ R := by
+  iintro HPQ HQR HP
+  ispecialize HQR $$ (HPQ $$ HP)
+  iexact HQR
+
 end specialize
 
 -- split
