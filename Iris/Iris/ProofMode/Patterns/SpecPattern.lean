@@ -56,7 +56,7 @@ syntax "[>" "$" "]" : specPat
 /-- `[#$]` solves the subgoal for the persistent premise by framing. -/
 syntax "[#" "$" "]" : specPat
 /--
-  `(H spat₁ … spatₙ)` specialises the hypothesis `H` with the specialisation
+  `(H $$ spat₁ … spatₙ)` specialises the hypothesis `H` with the specialisation
   patterns `spat₁ … spatₙ` before the resultant hypothesis is itself used for
   matching a premise.
 -/

@@ -82,7 +82,7 @@ import Iris.Std.RocqPorting
 
 #rocq_concept proofmode "Specialization Patterns" missing ""
 #rocq_concept proofmode "Specialization Patterns" "SIdent (pattern: H)" ported "pattern: H"
-#rocq_concept proofmode "Specialization Patterns" "Nested (pattern: (H spat ...))" missing ""
+#rocq_concept proofmode "Specialization Patterns" "Nested (pattern: (H spat ...))" ported "pattern: (H $$ spat₁ ... spatₙ)"
 #rocq_concept proofmode "Specialization Patterns" "SPureGoal (pattern: [%])" ported "pattern: %"
 #rocq_concept proofmode "Specialization Patterns" "SGoal (Kind: Spatial) (pattern: [H1 ...])" ported "pattern: [H1 ...]"
 #rocq_concept proofmode "Specialization Patterns" "SGoal (Kind: Intuitionistic) (pattern: [#H1 ...])" ported "pattern: [#H1 ...]"
