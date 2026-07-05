@@ -45,9 +45,24 @@ theorem specialize_wand_autoframe_persistent [BI PROP] {q : Bool} {A1 A2 Q P1' :
     (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊢ P1')
     [inst1 : IntoAbsorbingly P1' P1] [inst2 : Persistent P1]
     [inst3 : IntoWand q true Q .out P1 .out P2] :
-    A1 ⊢ A2 ∗ □?q P2 := calc
-  _ ⊢ A2 ∗ □?q Q := h1
-  _ ⊢ A2 ∗ □?q P2 := sorry
+    A1 ⊢ A2 ∗ □?q P2 :=
+  have h3 : □ P1 ∗ □?q Q ⊢ □?q P2 := by cases q with
+  | false => exact (sep_mono_right inst3.into_wand).trans wand_elim_right
+  | true => calc
+    _ ⊢ □ □ P1 ∗ □ □ Q          := sep_mono intuitionistically_idem.mpr intuitionistically_idem.mpr
+    _ ⊢ □ (□ P1 ∗ □ Q)          := intuitionistically_sep_mpr
+    _ ⊢ □ (□ P1 ∗ (□ P1 -∗ P2)) := intuitionistically_mono <| sep_mono_right <| inst3.into_wand
+    _ ⊢ □?true P2               := intuitionistically_mono wand_elim_right
+  calc
+    _ ⊢ A2 ∗ □?q Q                        := h1
+    _ ⊢ (A2 ∧ A2) ∗ □?q Q                 := sep_mono_left <| and_intro .rfl .rfl
+    _ ⊢ (A2 ∧ P1') ∗ □?q Q                := sep_mono_left <| and_mono_right h2
+    _ ⊢ (A2 ∧ <absorb> P1) ∗ □?q Q        := sep_mono_left <| and_mono_right into_absorbingly
+    _ ⊢ (A2 ∧ <absorb> <pers> P1) ∗ □?q Q := sep_mono_left <| and_mono_right <| absorbingly_mono Persistent.persistent
+    _ ⊢ (A2 ∧ <pers> P1) ∗ □?q Q          := sep_mono_left <| and_mono_right <| absorbingly_persistently.mp
+    _ ⊢ (A2 ∗ □ P1) ∗ □?q Q               := sep_mono_left persistently_and_intuitionistically_sep_right.mp
+    _ ⊢ A2 ∗ □ P1 ∗ □?q Q                 := sep_assoc.mp
+    _ ⊢ A2 ∗ □?q P2                       := sep_mono_right h3
 
 theorem specialize_forall [BI PROP] {p : Bool} {A1 A2 P : PROP} {α : Sort _} {Φ : α → PROP}
     [inst : IntoForall P Φ] (h : A1 ⊢ A2 ∗ □?p P) (a : α) : A1 ⊢ A2 ∗ □?p (Φ a) := by
@@ -74,7 +89,7 @@ private def processWand :
     @SpecializeState u prop bi orig → SpecPat → ProofModeM (SpecializeState bi orig)
   | { hyps, p, out, pf, .. }, .ident i => do
     let ivar ← hyps.findWithInfo i
-    let ⟨e', hyps', out₁, out₁', p1, _, pf'⟩ := hyps.remove false ivar
+    let ⟨_, hyps', out₁, out₁', p1, _, pf'⟩ := hyps.remove false ivar
     let p2 := if p1.constName! == ``true then p else q(false)
     have : $out₁ =Q iprop(□?$p1 $out₁') := ⟨⟩
     have : $p2 =Q ($p1 && $p) := ⟨⟩
@@ -110,7 +125,7 @@ private def processWand :
       if ivars.contains ivar then
         throwError "ispecialize: {name} used twice"
     frameIVars := frameIVars.reverse
-    let ⟨el', _, hypsl', hypsr', pf'⟩ := Hyps.split bi
+    let ⟨_, _, hypsl', hypsr', pf'⟩ := Hyps.split bi
       (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
     let out₁ ← mkFreshExprMVarQ prop
     let out₂ ← mkFreshExprMVarQ prop
@@ -152,7 +167,7 @@ private def processWand :
         return pf
       return { hyps, p, out := out₂,
                pf := q(specialize_wand_autoframe_persistent $out₁ $out₂ $pf $pf') }
-  | { hyps, p, out, pf, .. }, .autoframe .modal => do
+  | { .. }, .autoframe .modal => do
       throwError m!"ispecialize: autoframe with the modal kind is not supported at the moment"
 
 /-- `iCasesPat.should_try_dup_context` determines when iSpecializeCore should try to duplicate the separation context.
