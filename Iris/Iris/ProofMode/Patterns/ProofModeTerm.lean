@@ -24,7 +24,7 @@ syntax term (colGt " $$ " (colGt ppSpace specPat)+)? : pmTerm
 @[rocq_alias iTrm]
 structure PMTerm where
   term : Term
-  spats : List SpecPat
+  spats : List (Syntax × SpecPat)
   deriving Repr, Inhabited
 
 partial def PMTerm.parse (term : Syntax) : MacroM PMTerm := do
@@ -33,7 +33,7 @@ partial def PMTerm.parse (term : Syntax) : MacroM PMTerm := do
   | `(pmTerm| $trm:term $$ $[$spats:specPat]*) => return ⟨trm, ← parseSpats spats⟩
   | _ => Macro.throwUnsupported
 where
-  parseSpats (spats : TSyntaxArray `specPat) : MacroM (List SpecPat) :=
+  parseSpats (spats : TSyntaxArray `specPat) : MacroM (List (Syntax × SpecPat)) :=
       return (← spats.toList.mapM fun pat => SpecPat.parse pat.raw)
 
 def PMTerm.is_nontrivial (pmt : PMTerm) : Bool := !pmt.spats.isEmpty

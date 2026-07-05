@@ -108,10 +108,10 @@ def FrameIdent.parse : TSyntax `frameIdent → (Ident ⊕ Ident)
     else .inl default -- should not happen
 
 @[rocq_alias spec_pat.parse]
-def SpecPat.parse (pat : Syntax) : MacroM SpecPat := do
-  match go ⟨← expandMacros pat⟩ with
+def SpecPat.parse (term : Syntax) : MacroM (Syntax × SpecPat) := do
+  match go ⟨← expandMacros term⟩ with
   | none => Macro.throwUnsupported
-  | some pat => return pat
+  | some pat => return ⟨term, pat⟩
 where
   go : TSyntax `specPat → Option SpecPat
   | `(specPat| $name:ident) => some <| .ident name

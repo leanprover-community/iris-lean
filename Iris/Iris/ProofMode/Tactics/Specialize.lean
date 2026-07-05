@@ -86,9 +86,11 @@ private structure SpecializeState {prop : Q(Type u)} {bi : Q(BI $prop)} (orig : 
   pf : Q($orig ⊢ $e ∗ □?$p $out)
 
 private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig : Q($prop)}
-    (specState : @SpecializeState u prop bi orig) (spat : SpecPat) :
+    (specState : @SpecializeState u prop bi orig) (spat : Syntax × SpecPat) :
     ProofModeM (@SpecializeState u prop bi orig) := do
   let { e, hyps, p, out, pf } := specState
+  let ⟨ref, spat⟩ := spat
+  withRef ref do
   match spat with
   | .ident i => do
     let ivar ← hyps.findWithInfo i
@@ -229,7 +231,7 @@ A tuple containing:
 -/
 def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (pa : Q(Bool)) (A : Q($prop))
-    (spats : List SpecPat) (try_dup_context : Bool := false) :
+    (spats : List (Syntax × SpecPat)) (try_dup_context : Bool := false) :
     ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) × Q($e ∗ □?$pa $A ⊢ $e' ∗ □?$pb $B)) := do
   let state := { hyps, out := A, p := pa, pf := q(.rfl), .. }
   let ⟨hyps', pb, B, pf⟩ ← spats.foldlM processWand state

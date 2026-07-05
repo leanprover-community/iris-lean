@@ -40,7 +40,9 @@ Apply a hypothesis `A` to the `goal` by eliminating the wands recursively
 ## Returns
 The proof of `hyps ∗ □?p A ⊢ goal`
 -/
-private partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps : Hyps bi e) (p : Q(Bool)) (A : Q($prop)) (goal : Q($prop)) : ProofModeM Q($e ∗ □?$p $A ⊢ $goal) := do
+private partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (hyps : Hyps bi e) (p : Q(Bool)) (A : Q($prop)) (goal : Q($prop)) :
+    ProofModeM Q($e ∗ □?$p $A ⊢ $goal) := do
   let B ← mkFreshExprMVarQ q($prop)
   -- if `A := ?B -∗ goal`, add `B` as a new subgoal and conclude `goal`
   if let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $A .out $B .in $goal) then
@@ -49,7 +51,7 @@ private partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps :
 
   -- otherwise, if `A` has the form `?P -∗ ?B`, create a subgoal for `P` and continue with ?B
   let some ⟨_, hyps', pb, B, pf⟩ ← try? <| iSpecializeCore hyps p A
-    [.goal {kind := .spatial, negate := false, trivial := false, frame := [], hyps := []} .anonymous]
+    [⟨← getRef, .goal {kind := .spatial, negate := false, trivial := false, frame := [], hyps := []} .anonymous⟩]
     | throwError m!"iapply: cannot apply {A} to {goal}"
   let pf' ← iApplyCore hyps' pb B goal
   return q($(pf).trans $pf')
