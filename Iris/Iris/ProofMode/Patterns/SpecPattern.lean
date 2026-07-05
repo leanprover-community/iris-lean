@@ -40,9 +40,10 @@ syntax "[" ("-")? (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt 
 -/
 syntax "[>" ("-")? (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
 /--
-  `[# H₁ … Hₙ ]` generates a subgoal for the persistent premise
-  with all hypotheses in the context available for the subgoal.
-  `[# H₁ … Hₙ // ]` attempts to solve the subgoal using `itrivial`.
+  `[# $H₁ … $Hₙ ]` generates a subgoal for the persistent premise
+  with all hypotheses in the context available for the subgoal. The hypotheses
+  `$H₁ … $Hₙ` are framed.
+  `[# $H₁ … $Hₙ // ]` further attempts to solve the subgoal using `itrivial`.
 -/
 syntax "[#" (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
 /--
