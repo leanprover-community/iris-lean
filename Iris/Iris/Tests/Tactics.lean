@@ -1358,11 +1358,19 @@ example [BI PROP] (φ : Prop) (P Q : PROP) :
   iintro HP HPQ
   ispecialize HPQ $$ [# HP]
 
-/- Tests `ispecialize` with nested specialisation patterns. -/
+/-- Tests `ispecialize` with nested specialisation patterns. -/
 example [BI PROP] (P Q R S T : PROP) :
     ⊢ (P -∗ <pers> T -∗ Q) -∗ (Q -∗ <pers> T -∗ R) -∗ (R -∗ S) -∗ P -∗ <pers> T -∗ S := by
   iintro HPTQ HQTR HRS HP HT
   ispecialize HRS $$ (HQTR $$ (HPTQ $$ HP [# $HT]) [HT //])
+  iassumption
+
+/-- Tests `ispecialize` with `.autoframe .modal` using the type class instance `addModal_bupd`. -/
+example [BI PROP] [BIUpdate PROP] (P Q : PROP) :
+    ⊢ (P -∗ Q) -∗ (|==> P) -∗ (|==> Q) := by
+  iintro HPQ HP
+  ispecialize HPQ $$ [>$]
+  imodintro
   iassumption
 
 end specialize
