@@ -27,7 +27,8 @@ theorem specialize_wand [BI PROP] {q p : Bool} {A1 A2 A3 Q P1 P2 : PROP}
     (sep_mono intuitionisticallyIf_intutitionistically.mpr intuitionisticallyIf_idem.mpr).trans <|
     intuitionisticallyIf_sep_mpr.trans <| intuitionisticallyIf_mono <| (wand_elim_swap inst.into_wand)
 
-theorem specialize_wand_cont [BI PROP] {q p : Bool} {A1 A2 A3 Q P1 P2 : PROP}
+theorem specialize_wand_cont [BI PROP] {q p : Bool}
+    {A1 A2 A3 Q P1 P2 goal : PROP}
     (inst : IntoWand q p Q .in P1 .out P2)
     (h1 : (A2 ∗ □?q Q ⊢ goal) → A1 ⊢ goal) (h2 : A2 ⊢ A3 ∗ □?p P1)
     (h3 : A3 ∗ □?(p && q) P2 ⊢ goal) :
@@ -48,7 +49,8 @@ theorem specialize_wand_subgoal [BI PROP] {q : Bool} {A1 A2 A3 A4 Q P1 : PROP} P
   refine h1.trans <| (sep_mono_left h2.1).trans <| sep_assoc.1.trans (sep_mono_right ((sep_mono_left h3).trans ?_))
   exact (sep_mono_right inst.1).trans wand_elim_right
 
-theorem specialize_wand_subgoal_cont [BI PROP] {q : Bool} {A1 A2 A3 A4 Q P1 : PROP} P2
+theorem specialize_wand_subgoal_cont [BI PROP] {q : Bool}
+    {A1 A2 A3 A4 Q P1 goal : PROP} P2
     (inst : IntoWand q false Q .out P1 .out P2)
     (h1 : (A2 ∗ □?q Q ⊢ goal) → A1 ⊢ goal) (h2 : A2 ⊣⊢ A3 ∗ A4) (h3 : A4 ⊢ P1)
     (h4 : A3 ∗ P2 ⊢ goal) : A1 ⊢ goal := by
@@ -64,7 +66,7 @@ theorem specialize_wand_autoframe_spatial [BI PROP] {q : Bool}
     (sep_mono_right ((sep_mono_right inst.into_wand).trans wand_elim_right))
 
 theorem specialize_wand_autoframe_spatial_cont [BI PROP] {q : Bool}
-    {A1 A2 A3 Q P1 : PROP} P2
+    {A1 A2 A3 Q P1 goal : PROP} P2
     (inst : IntoWand q false Q .out P1 .out P2)
     (h1 : (A2 ∗ □?q Q ⊢ goal) → A1 ⊢ goal) (h2 : A2 ⊢ A3 ∗ P1) (h3 : A3 ∗ P2 ⊢ goal) :
     A1 ⊢ goal := by
@@ -72,7 +74,8 @@ theorem specialize_wand_autoframe_spatial_cont [BI PROP] {q : Bool}
   exact (sep_mono_left h2).trans <| sep_assoc.1.trans
     (sep_mono_right ((sep_mono_right inst.into_wand).trans wand_elim_right))
 
-theorem specialize_wand_persistent [BI PROP] {q : Bool} {A1 A2 Q P1' : PROP} P1 P2
+theorem specialize_wand_persistent [BI PROP] {q : Bool}
+    {A1 A2 Q P1' : PROP} P1 P2
     (inst3 : IntoWand q true Q .out P1 .out P2) (inst2 : Persistent P1)
     (inst1 : IntoAbsorbingly P1' P1)
     (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊢ P1') :
@@ -95,7 +98,8 @@ theorem specialize_wand_persistent [BI PROP] {q : Bool} {A1 A2 Q P1' : PROP} P1 
     _ ⊢ A2 ∗ □ P1 ∗ □?q Q                 := sep_assoc.mp
     _ ⊢ A2 ∗ □?q P2                       := sep_mono_right h3
 
-theorem specialize_wand_persistent_cont [BI PROP] {q : Bool} {A1 A2 Q P1' : PROP} P1 P2
+theorem specialize_wand_persistent_cont [BI PROP] {q : Bool}
+    {A1 A2 Q P1' goal : PROP} P1 P2
     (inst3 : IntoWand q true Q .out P1 .out P2) (inst2 : Persistent P1)
     (inst1 : IntoAbsorbingly P1' P1)
     (h1 : (A2 ∗ □?q Q ⊢ goal) → A1 ⊢ goal) (h2 : A2 ⊢ P1') (h3 : A2 ∗ □?q P2 ⊢ goal) :
@@ -122,7 +126,7 @@ theorem specialize_forall [BI PROP] {p : Bool} {A1 A2 P : PROP} {α : Sort _} {�
     (inst : IntoForall P Φ) (h : A1 ⊢ A2 ∗ □?p P) (a : α) : A1 ⊢ A2 ∗ □?p (Φ a) := by
   refine h.trans <| sep_mono_right <| intuitionisticallyIf_mono <| inst.into_forall.trans (forall_elim a)
 
-theorem specialize_forall_cont [BI PROP] {p : Bool} {A1 A2 P : PROP} {α : Sort _} {Φ : α → PROP}
+theorem specialize_forall_cont [BI PROP] {p : Bool} {A1 A2 P goal : PROP} {α : Sort _} {Φ : α → PROP}
     (inst : IntoForall P Φ) (h : (A2 ∗ □?p P ⊢ goal) → A1 ⊢ goal) (a : α)
     (h2 : A2 ∗ □?p (Φ a) ⊢ goal) : A1 ⊢ goal := by
   refine h (Entails.trans ?_ h2)
@@ -146,6 +150,7 @@ structure SpecializeState {prop : Q(Type u)} {bi : Q(BI $prop)} (orig goal : Q($
   (pfCont : Q(($e ∗ □?$p $out ⊢ $goal) → $orig ⊢ $goal))
   pf : Option Q($orig ⊢ $e ∗ □?$p $out)
 
+set_option maxHeartbeats 300000 in
 mutual
 
 private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q($prop)}
@@ -170,7 +175,8 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
   | .ident i spats =>
     let ivar ← hyps.findWithInfo i
     let ⟨_, hyps', out₁, out₁', p1, _, pf'⟩ := hyps.remove false ivar
-    let ⟨_, hyps'', pB, B, pfNest⟩ ← iSpecializeCore hyps' p1 out₁' goal spats
+    let ⟨_, hyps'', pB, B, _, some pfNest⟩ ← iSpecializeCore hyps' p1 out₁' goal spats
+    | throwError "ispecialize: nested specialisation pattern is not supported with modality handling"
     let p2 := if pB.constName! == ``true then p else q(false)
     have : $out₁ =Q iprop(□?$p1 $out₁') := ⟨⟩
     have : $p2 =Q ($pB && $p) := ⟨⟩
@@ -311,23 +317,29 @@ A tuple containing:
 def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (pa : Q(Bool)) (A : Q($prop)) (goal : Q($prop))
     (spats : List (Syntax × SpecPat)) (try_dup_context : Bool := false) :
-    ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) × Q($e ∗ □?$pa $A ⊢ $e' ∗ □?$pb $B)) := do
-  let state : SpecializeState _ goal := { hyps, out := A, p := pa, pf := q(.rfl), .. }
-  let ⟨hyps', pb, B, pf⟩ ← spats.foldlM processWand state
+    ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) ×
+      Q(($e' ∗ □?$pb $B ⊢ $goal) → $e ∗ □?$pa $A ⊢ $goal) ×
+      Option Q($e ∗ □?$pa $A ⊢ $e' ∗ □?$pb $B)) := do
+  let state : SpecializeState _ goal := { hyps, out := A, p := pa, pfCont := q(id), pf := some q(.rfl) }
+  let ⟨hyps', pb, B, pfCont, pf⟩ ← spats.foldlM processWand state
   if try_dup_context then
+    let pf ← do match pf with
+    | some pf => pure pf
+    | none => throwError "ispecialize: unable to duplicate context"
     -- context duplication succeeds if `B` is persistent, and `A` is persistent or affine
     let B' : Q($prop) ← mkFreshExprMVarQ q($prop)
     let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPersistently $pb $B $B')
-      | return ⟨_, hyps', pb, B, pf⟩
+    | return ⟨_, hyps', pb, B, q($(pf).trans), some q($pf)⟩
     have af : MetaM (Option Q($pa = true ∨ Affine $A)) :=
       match matchBool pa with
       | .inl _ => return some q(.inl (.refl _))
       | .inr _ => do
         let .some h ← trySynthInstanceQ q(Affine $A) | return none
         return some q(.inr $h)
-    let some af ← af | return ⟨_, hyps', pb, B, pf⟩
-    return ⟨_, hyps, q(true), B', q(specialize_dup_context $pf $af)⟩
-  return ⟨_, hyps', pb, B, pf⟩
+    let some af ← af | return ⟨_, hyps', pb, B, q($(pf).trans), pf⟩
+    return ⟨_, hyps, q(true), B', q((specialize_dup_context $pf $af).trans), some q(specialize_dup_context $pf $af)⟩
+  else
+    return ⟨_, hyps', pb, B, pfCont, pf⟩
 
 end
 
@@ -359,7 +371,7 @@ elab "ispecialize " colGt pmt:pmTerm : tactic => do
     hyps.removeG true λ name ivar' _ _ => if ivar == ivar' then some name else none
     | throwError "ispecialize: cannot find argument"
 
-  let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p out goal pmt.spats
+  let ⟨_, hyps'', pb, B, pf', _⟩ ← iSpecializeCore hyps' p out goal pmt.spats
   let hyps''' := Hyps.add bi name ivar pb B hyps''
   let pf'' ← addBIGoal hyps''' goal
-  mvar.assign q(($pf).1.trans <| $(pf').trans <| $pf'')
+  mvar.assign q(($pf).1.trans <| $pf' $pf'')
