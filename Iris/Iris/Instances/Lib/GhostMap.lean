@@ -86,7 +86,7 @@ instance ghost_map_elem_fractional (γ : GName) (k : K) (v : V) :
 @[rocq_alias ghost_map_elem_as_fractional]
 instance (γ : GName) (k : K) (v : V) : AsFractional (PROP := IProp GF) (γ ↪◯MAP[k]{.own q} v)
     (fun q => γ ↪◯MAP[k]{.own q} v) q where
-  as_fractional := IProp.ext_iff.mp rfl
+  as_fractional := BIBase.BiEntails.of_eq rfl
   as_fractional_fractional := ghost_map_elem_fractional γ k v
 
 @[rocq_alias ghost_map_elems_unseal]
@@ -263,7 +263,7 @@ instance ghost_map_auth_fractional (m : H V) :
 @[rocq_alias ghost_map_auth_as_fractional]
 instance (γ : GName) (m : H V) (q : Qp) :
     AsFractional (PROP := IProp GF) (γ ↪●MAP{.own q} m) (fun q => γ ↪●MAP{.own q} m) q where
-  as_fractional := IProp.ext_iff.mp rfl
+  as_fractional := BIBase.BiEntails.of_eq rfl
   as_fractional_fractional := ghost_map_auth_fractional m
 
 @[rocq_alias ghost_map_auth_valid]

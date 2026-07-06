@@ -10,18 +10,17 @@ public import Iris.Algebra.COFESolver
 @[expose] public section
 
 /-!
-Since `≡` coincides with `=` in every `OFE` on this branch (`OFE.eq_dist`), the
-fold/unfold isomorphisms of the recursive domain equation solver's fixed point can
-be stated as propositional equalities (`=`) rather than mere OFE equivalences
-(`≡`); see `Dom.unfold_fold` and `Dom.fold_unfold`.
+Every OFE is Leibniz, so the fold/unfold isomorphisms of the recursive domain equation solver's
+fixed point can be stated as propositional equalities rather than OFE equivalences.
+See `Dom.unfold_fold` and `Dom.fold_unfold`.
 
 `DomF` is a concrete example: a domain for a simple language with values, errors,
 delayed computations, and function values. Its fixed point `Dom V E` satisfies
-`Dom V E ≅ V ⊕ E ⊕ Later(Dom V E) ⊕ Later(Dom V E -n> Dom V E)` propositionally,
+`Dom V E ≅ V ⊕ E ⊕ Later(Dom V E) ⊕ Later(Dom V E -n> Dom V E)` up to propositional equality,
 for any OFEs `V` and `E`.
 
 This should provide better support for rewriting by relying on the default Lean
-tactics.
+tactics for simplification/rewriting.
 -/
 section Fix
 open Iris OFE COFE
