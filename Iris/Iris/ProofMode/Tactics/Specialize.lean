@@ -142,6 +142,11 @@ theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B B'}
     · cases h2 <;> subst_eqs <;> apply sep_elim_left
     · apply h.trans $ (sep_mono_right (persistentlyIf_of_intuitionisticallyIf.trans into_persistently)).trans sep_elim_right
 
+theorem specialize_modal [BI PROP] {e e' goal R P1 P1' P2 : PROP} {p : Bool}
+    (h1 : e ⊢ e' ∗ P1') (h2 : e' ∗ P2 ⊢ goal)
+    (inst1 : AddModal P1' P1 goal) (inst2 : IntoWand p false R .out P1 .out P2) :
+    e ∗ □?p R ⊢ goal := sorry
+
 public meta section
 open Lean Elab Tactic Meta Qq Std
 
@@ -255,7 +260,6 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let pfCont := q(specialize_wand_persistent_cont $out₁ $out₂ $inst1 $inst2 $inst3 $pfCont $pf')
     let pf := pf.bind (fun pf => some q(specialize_wand_persistent $out₁ $out₂ $inst1 $inst2 $inst3 $pf $pf'))
     return { hyps, p, out := out₂, pfCont, pf }
-
   | .goal { kind := .modal, .. } _ =>
     throwError "ispecialize: framing with the modal kind is not supported at the moment"
   | .autoframe .spatial => do
@@ -289,14 +293,15 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
   | .autoframe .modal =>
     let out₁ ← mkFreshExprMVarQ prop
     let out₂ ← mkFreshExprMVarQ prop
-    let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
+    let some inst1 ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
     | throwError m!"ispecialize: {out} is not a wand"
     let out₁' ← mkFreshExprMVarQ prop
-    let some _ ← ProofModeM.trySynthInstanceQ q(AddModal $out₁' $out₁ $goal)
+    let some inst2 ← ProofModeM.trySynthInstanceQ q(AddModal $out₁' $out₁ $goal)
     | throwError m!"ispecialize: AddModal type class synthesis failed with {out₁} and {goal}"
     let res ← iFrame bi _ hyps out₁' (← SelPat.resolve hyps [.spatial, .intuitionistic])
     let ⟨_, hyps', pf'⟩ ← res.finishClose
-    return { hyps := hyps', p := q(false), out := out₂, pfCont := q(sorry), pf := none }
+    let pfCont := q(fun pf => $pfCont (specialize_modal $pf' pf $inst2 $inst1))
+    return { hyps := hyps', p := q(false), out := out₂, pfCont := q($pfCont), pf := none }
 
 /-- Specialize a proposition `A` by applying a sequence of specialization patterns.
 
