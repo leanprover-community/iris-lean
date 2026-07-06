@@ -272,7 +272,7 @@ elab "icases" keep:("+keep ")? colGt pmt:pmTerm " with " colGt pat:icasesPat : t
   -- process pattern
   let pf2 ← iCasesCore bi hyps goal pat p A
 
-  mvar.assign q(($pf).trans $pf2)
+  mvar.assign q($pf $pf2)
 
 /--
   `imod pmt with pat` eliminates the modality at the top of `pmt : pmTerm` into
