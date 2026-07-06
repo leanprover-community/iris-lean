@@ -237,7 +237,7 @@ def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   if try_dup_context then
     -- context duplication succeeds if `B` is persistent, and `A` is persistent or affine
     let B' : Q($prop) ← mkFreshExprMVarQ q($prop)
-    let .some _ ← trySynthInstanceQ q(IntoPersistently $pb $B $B')
+    let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPersistently $pb $B $B')
       | return ⟨_, hyps', pb, B, pf⟩
     have af : MetaM (Option Q($pa = true ∨ Affine $A)) :=
       match matchBool pa with
