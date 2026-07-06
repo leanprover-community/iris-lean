@@ -44,7 +44,7 @@ theorem bigSepM_eqv_of_perm {Φ : K → V → PROP} {m₁ m₂ : M V} (h : m₁ 
 /-- A `bigSepM` over the empty map is `emp`. -/
 theorem bigSepM_eqv_empty {Φ : K → V → PROP} {m : M V} (h : m = ∅) :
     ([∗map] k ↦ v ∈ m, Φ k v) ⊣⊢ emp := by
-  rw [h]; exact bigSepM_empty
+  simp [h]
 
 @[rocq_alias big_sepM_singleton]
 theorem bigSepM_singleton {Φ : K → V → PROP} {i : K} {x : V} :
@@ -438,8 +438,7 @@ theorem bigSepM_union [DecidableEq K] {Φ : K → V → PROP} {m₁ m₂ : M V} 
 theorem bigSepM_subseteq [DecidableEq K] {Φ : K → V → PROP} {m₁ m₂ : M V}
     [∀ k v, Affine (Φ k v)] (h : m₂ ⊆ m₁) :
     ([∗map] k ↦ x ∈ m₁, Φ k x) ⊢ [∗map] k ↦ x ∈ m₂, Φ k x :=
-  (equiv_iff.mp <| bigOpM_eqv_of_perm Φ <| equiv_iff_eq.mpr <| union_difference_cancel h).2.trans <|
-  (bigSepM_union disjoint_difference_right).1.trans sep_elim_left
+  union_difference_cancel h ▸ (bigSepM_union disjoint_difference_right).1.trans sep_elim_left
 
 -- FIXME: Refactor for readability
 @[rocq_alias big_sepM_lookup_acc_impl]

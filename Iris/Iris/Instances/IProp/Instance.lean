@@ -848,9 +848,9 @@ theorem bigOpL_iOwn {B : Type _} (γ : GName) (f : Nat → B → F.ap (IProp GF)
 @[rocq_alias big_opM_own]
 theorem bigOpM_iOwn {K : Type _} {M : Type _ → Type _} {B : Type _} [LawfulFiniteMap M K]
     [DecidableEq K] (γ : GName) (g : K → B → F.ap (IProp GF)) (m : M B) :
-    ¬ m ≡ₘ (∅ : M B) →
+    ¬ m = (∅ : M B) →
     iOwn γ ([^ CMRA.op map] k ↦ x ∈ m, g k x) ⊣⊢ [∗map] k ↦ x ∈ m, iOwn γ (g k x) :=
-  fun h => BigOpM.bigOpM_weak_hom g m (fun he => h (equiv_iff_eq.mpr he))
+  fun h => BigOpM.bigOpM_weak_hom g m (fun he => h he)
 
 @[rocq_alias big_opS_own]
 theorem bigOpS_iOwn {B : Type _} {S : Type _} [LawfulFiniteSet S B] (γ : GName)

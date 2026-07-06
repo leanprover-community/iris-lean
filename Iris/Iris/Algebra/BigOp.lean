@@ -313,9 +313,9 @@ theorem bigOpM_insert_eqv (Φ : K → V → M) {m : M' V} {i : K} (x : V) (hi : 
 
 @[rocq_alias big_opM_delete]
 theorem bigOpM_delete_eqv (Φ : K → V → M) {m : M' V} {i : K} {x : V} (hi : get? m i = some x) :
-    ([^ op map] k ↦ v ∈ m, Φ k v) ≡ op (Φ i x) ([^ op map] k ↦ v ∈ delete m i, Φ k v) :=
-  (bigOpM_eqv_of_perm Φ (equiv_iff_eq.mpr (insert_delete_cancel hi).symm)).trans
-    (bigOpM_insert_eqv Φ _ (get?_delete_eq rfl))
+    ([^ op map] k ↦ v ∈ m, Φ k v) ≡ op (Φ i x) ([^ op map] k ↦ v ∈ delete m i, Φ k v) := by
+  rw [congrArg (bigOpM op fun k v => Φ k v) (insert_delete_cancel hi).symm]
+  exact bigOpM_insert_eqv Φ _ (get?_delete_eq rfl)
 
 open Classical in
 @[rocq_alias big_opM_gen_proper_2]
@@ -431,8 +431,7 @@ theorem bigOpM_filterMap_eqv (Φ : K → V → M) (m : M' V) (hinj : Function.In
 theorem bigOpM_insert_delete_eqv (Φ : K → V → M) (m : M' V) (i : K) (x : V) :
     ([^ op map] k ↦ v ∈ insert m i x, Φ k v) ≡
     op (Φ i x) ([^ op map] k ↦ v ∈ delete m i, Φ k v) :=
-  (bigOpM_eqv_of_perm _ (equiv_iff_eq.mpr insert_delete.symm)).trans
-    (bigOpM_insert_eqv _ _ (get?_delete_eq rfl))
+  insert_delete (M := M').symm ▸ (bigOpM_insert_eqv _ _ (get?_delete_eq rfl))
 
 @[rocq_alias big_opM_insert_override]
 theorem bigOpM_insert_override_eqv {Φ : K → A → M} {m : M' A}
@@ -474,13 +473,13 @@ theorem toList_union_perm [DecidableEq K] {m1 m2 : M' V} (hdisj : m1 ##ₘ m2) :
     · exact (fun h => absurd (toList_get.mp h2) (by simp [h]))
   · rw [List.mem_append]
     refine ⟨fun h => ?_, fun h => ?_⟩
-    · have hg : get? (PartialMap.union m1 m2) k = some v := toList_get.mp h
+    · have hg : get? (m1 ∪ m2) k = some v := toList_get.mp h
       rw [get?_union] at hg
       cases hm1 : get? m1 k <;> simp_all [Option.orElse]
       · exact .inr (toList_get.mpr hg)
       · exact .inl (toList_get.mpr hm1)
     · refine toList_get.mpr ?_
-      show get? (PartialMap.union m1 m2) k = some v
+      show get? (m1 ∪ m2) k = some v
       rw [get?_union]
       rcases h with h | h
       · simp [toList_get.mp h, Option.orElse]

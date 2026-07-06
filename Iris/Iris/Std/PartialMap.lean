@@ -643,10 +643,10 @@ theorem disjoint_difference_right {m₁ m₂ : M V} :
   cases h_in_diff
 
 theorem union_difference_cancel {m₁ m₂ : M V} (h : m₂ ⊆ m₁) :
-    union m₂ (m₁ \ m₂) = m₁ := by
+    m₂ ∪ (m₁ \ m₂) = m₁ := by
   apply equiv_iff_eq.mp
   intro k
-  simp only [PartialMap.union, get?_merge, get?_difference]
+  simp only [Union.union, PartialMap.union, get?_merge, get?_difference]
   cases hm2 : get? m₂ k with
   | none =>
     cases get? m₁ k <;> simp [Option.merge]
@@ -655,39 +655,40 @@ theorem union_difference_cancel {m₁ m₂ : M V} (h : m₂ ⊆ m₁) :
     exact (h k v hm2).symm
 
 theorem get?_union {m₁ m₂ : M V} {k : K} :
-    get? (union m₁ m₂) k = (get? m₁ k).orElse (fun _ => get? m₂ k) := by
-  simp only [PartialMap.union, get?_merge]
+    get? (m₁ ∪ m₂) k = (get? m₁ k).orElse (fun _ => get? m₂ k) := by
+  simp only [Union.union, PartialMap.union, get?_merge]
   cases get? m₁ k <;> cases get? m₂ k <;> simp [Option.merge, Option.orElse]
 
 theorem get?_union_none {m₁ m₂ : M V} {i : K} :
-    get? (union m₁ m₂) i = none ↔ get? m₁ i = none ∧ get? m₂ i = none := by
+    get? (m₁ ∪ m₂) i = none ↔ get? m₁ i = none ∧ get? m₂ i = none := by
   rw [get?_union]
   cases h1 : get? m₁ i <;> cases h2 : get? m₂ i <;> simp [Option.orElse]
 
 theorem union_equiv {m₁ m₁' m₂ m₂' : M V}
-    (h₁ : m₁ = m₁') (h₂ : m₂ = m₂') : union m₁ m₂ = union m₁' m₂' := by
+    (h₁ : m₁ = m₁') (h₂ : m₂ = m₂') : m₁ ∪ m₂ = m₁' ∪ m₂' := by
   rw [h₁, h₂]
 
-theorem union_empty_right {m : M V} : union m (∅ : M V) = m := by
+theorem union_empty_right {m : M V} : m ∪ (∅ : M V) = m := by
   apply equiv_iff_eq.mp
   intro k
   rw [get?_union, get?_empty]
   cases get? m k <;> rfl
 
-theorem union_empty_left {m : M V} : union (∅ : M V) m = m := by
+theorem union_empty_left {m : M V} : (∅ : M V) ∪ m = m := by
   apply equiv_iff_eq.mp
   intro k
   rw [get?_union, get?_empty]
   rfl
 
 theorem union_insert_left {m₁ m₂ : M V} {i : K} {x : V} :
-    insert (union m₁ m₂) i x = union (insert m₁ i x) m₂ := by
+    insert (m₁ ∪ m₂) i x = insert m₁ i x ∪ m₂ := by
   apply equiv_iff_eq.mp
   intro k
   by_cases hik : i = k
   · subst hik
-    cases h : get? m₂ i <;> simp [get?_insert_eq rfl, PartialMap.union, get?_merge, Option.merge, h]
-  · simp [get?_insert_ne hik, PartialMap.union, get?_merge]
+    cases h : get? m₂ i <;>
+      simp [get?_insert_eq rfl, Union.union, PartialMap.union, get?_merge, Option.merge, h]
+  · simp [get?_insert_ne hik, Union.union, PartialMap.union, get?_merge]
 
 theorem get?_map {f : V → V'} {m : M V} {k : K} :
     get? (PartialMap.map f m) k = (get? m k).map f := by
