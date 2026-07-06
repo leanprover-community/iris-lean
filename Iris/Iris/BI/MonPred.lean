@@ -1257,7 +1257,6 @@ open Iris.BI.BigSepL Iris.BI.BigSepM Iris.BI.BigSepS
     MonoidHomomorphism op₁ op₂ u₁ u₂ (· ≡ ·) (fun P : MonPred I PROP => P.monPred_at i) where
   rel_refl := .rfl
   rel_trans := .trans
-  rel_proper ha hb := ⟨fun h => ha.symm.trans (h.trans hb), fun h => ha.trans (h.trans hb.symm)⟩
   op_proper ha hb := MonoidOps.op_proper ha hb
   map_ne := monPred_at_ne i
   map_op := hop
@@ -1333,9 +1332,6 @@ instance monPred_objectively_monoid_sep_entails_homomorphism :
       (flip Entails) MonPred.objectively where
   rel_refl {a} := show a ⊢ a from BIBase.Entails.rfl
   rel_trans {a b c} h1 h2 := BIBase.Entails.trans (show c ⊢ b from h2) (show b ⊢ a from h1)
-  rel_proper H G :=
-    ⟨fun J => BIBase.Entails.trans (equiv_iff.1 G).mpr (BIBase.Entails.trans J (equiv_iff.1 H).mp),
-     fun J => BIBase.Entails.trans (equiv_iff.1 G).mp (BIBase.Entails.trans J (equiv_iff.1 H).mpr)⟩
   op_proper {a a' b b'} h1 h2 := sep_mono (show a' ⊢ a from h1) (show b' ⊢ b from h2)
   map_ne := monPred_objectively_ne
   map_op := fun {x y} => monPred_objectively_sep_2 x y

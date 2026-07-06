@@ -325,7 +325,6 @@ instance embed_timeless [BiEmbedLater PROP1 PROP2] (P : PROP1) [Timeless P] :
     MonoidHomomorphism op₁ op₂ u₁ u₂ (· ≡ ·) (embed (A := PROP1) (B := PROP2)) where
   rel_refl := .rfl
   rel_trans := .trans
-  rel_proper ha hb := ⟨fun h => ha.symm.trans (h.trans hb), fun h => ha.trans (h.trans hb.symm)⟩
   op_proper ha hb := MonoidOps.op_proper ha hb
   map_ne := embed_ne
   map_op := hop
@@ -349,8 +348,6 @@ instance embed_sep_entails_homomorphism :
       (flip Entails) (embed (A := PROP1) (B := PROP2)) where
   rel_refl := .rfl
   rel_trans := flip .trans
-  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp),
-                     fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
   op_proper := sep_mono
   map_ne := embed_ne
   map_op := fun {x y} => (embed_sep x y).mpr

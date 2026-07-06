@@ -432,7 +432,6 @@ instance plainly_sep_weak_homomorphism [BIPositive PROP][BIAffine PROP] :
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
-  rel_proper := BIBase.BiEntails.proper
   op_proper aa' bb' := equiv_iff.1 (sep_ne.eqv (equiv_iff.2 aa') (equiv_iff.2 bb'))
   map_ne := inferInstance
   map_op := plainly_sep
@@ -442,7 +441,6 @@ instance plainly_and_weak_homomorphism :
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
-  rel_proper := BIBase.BiEntails.proper
   op_proper aa' bb' := equiv_iff.1 (and_ne.eqv (equiv_iff.2 aa') (equiv_iff.2 bb'))
   map_ne := inferInstance
   map_op := plainly_and
@@ -452,7 +450,6 @@ instance plainly_or_weak_homomorphism [SbiEmpValidExist PROP] :
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
-  rel_proper := BIBase.BiEntails.proper
   op_proper aa' bb' := equiv_iff.1 (or_ne.eqv (equiv_iff.2 aa') (equiv_iff.2 bb'))
   map_ne := inferInstance
   map_op := plainly_or
@@ -475,8 +472,6 @@ instance plainly_sep_entails_weak_homomorphism :
       (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := flip .trans
-  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp),
-                     fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
   op_proper := sep_mono
   map_ne := inferInstance
   map_op := plainly_sep_2
@@ -487,8 +482,6 @@ instance plainly_sep_entails_homomorphism [BIAffine PROP] :
       (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := flip .trans
-  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp),
-                     fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
   op_proper := sep_mono
   map_ne := inferInstance
   map_op := plainly_sep_2

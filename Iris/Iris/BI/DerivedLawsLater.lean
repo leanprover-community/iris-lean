@@ -193,8 +193,6 @@ instance bi_later_monoid_sep_entails_weak_homomorphism :
     Iris.Algebra.WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (flip Entails) later where
   rel_refl := .rfl
   rel_trans := flip .trans
-  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp),
-                     fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
   op_proper := sep_mono
   map_ne := BI.later_ne
   map_op := later_sep.mpr
@@ -204,8 +202,6 @@ instance bi_later_monoid_sep_entails_homomorphism :
     Iris.Algebra.MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (flip Entails) later where
   rel_refl := .rfl
   rel_trans := flip .trans
-  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp),
-                     fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
   op_proper := sep_mono
   map_ne := BI.later_ne
   map_op := later_sep.mpr
@@ -444,8 +440,6 @@ instance bi_laterN_sep_entails_weak_homomorphism (n : Nat) :
       (iprop(▷^[n] · )) where
   rel_refl := .rfl
   rel_trans := flip .trans
-  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp),
-                     fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
   op_proper := sep_mono
   map_ne := laterN_ne n
   map_op := (laterN_sep n).mpr
@@ -456,8 +450,6 @@ instance bi_laterN_sep_entails_homomorphism (n : Nat) :
       (iprop(▷^[n] · )) where
   rel_refl := .rfl
   rel_trans := flip .trans
-  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp),
-                     fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
   op_proper := sep_mono
   map_ne := laterN_ne n
   map_op := (laterN_sep n).mpr
@@ -645,8 +637,6 @@ instance bi_except0_sep_entails_weak_homomorphism :
       (iprop(◇ ·)) where
   rel_refl := .rfl
   rel_trans := flip .trans
-  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp),
-                     fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
   op_proper := sep_mono
   map_ne := except0_ne
   map_op := except0_sep.mpr
@@ -657,8 +647,6 @@ instance bi_except0_sep_entails_homomorphism :
       (iprop(◇ ·)) where
   rel_refl := .rfl
   rel_trans := flip .trans
-  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp),
-                     fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
   op_proper := sep_mono
   map_ne := except0_ne
   map_op := except0_sep.mpr

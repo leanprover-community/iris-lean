@@ -835,7 +835,6 @@ instance iOwn_cmra_sep_homomorphism (γ : GName) :
       UCMRA.unit iprop(emp) BiEntails (iOwn γ) where
   rel_refl := .rfl
   rel_trans := .trans
-  rel_proper := BIBase.BiEntails.proper
   op_proper aa' bb' := equiv_iff.1 (sep_ne.eqv (equiv_iff.2 aa') (equiv_iff.2 bb'))
   map_ne := iOwn_ne
   map_op := iOwn_op
@@ -866,9 +865,6 @@ instance iOwn_cmra_sep_entails_homomorphism (γ : GName) :
       UCMRA.unit iprop(emp) Entails (iOwn γ) where
   rel_refl := .rfl
   rel_trans := .trans
-  rel_proper ha hb :=
-    ⟨fun h => (equiv_iff.1 ha).mpr.trans <| h.trans (equiv_iff.1 hb).mp,
-     fun h => (equiv_iff.1 ha).mp.trans <| h.trans (equiv_iff.1 hb).mpr⟩
   op_proper := sep_mono
   map_ne := iOwn_ne
   map_op := iOwn_op.mp
