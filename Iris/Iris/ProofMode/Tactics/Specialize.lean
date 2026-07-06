@@ -145,7 +145,13 @@ theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B B'}
 theorem specialize_modal [BI PROP] {e e' goal R P1 P1' P2 : PROP} {p : Bool}
     (h1 : e ⊢ e' ∗ P1') (h2 : e' ∗ P2 ⊢ goal)
     (inst1 : AddModal P1' P1 goal) (inst2 : IntoWand p false R .out P1 .out P2) :
-    e ∗ □?p R ⊢ goal := sorry
+    e ∗ □?p R ⊢ goal := calc
+  _ ⊢ (e' ∗ P1') ∗ □?p R                := sep_mono_left h1
+  _ ⊢ P1' ∗ (e' ∗ □?p R)                := sep_assoc.mp.trans sep_left_comm.mp
+  _ ⊢ P1' ∗ (e' ∗ (P1 -∗ P2))           := sep_mono_right (sep_mono_right inst2.into_wand)
+  _ ⊢ P1' ∗ ((P2 -∗ goal) ∗ (P1 -∗ P2)) := sep_mono_right (sep_mono_left (wand_intro h2))
+  _ ⊢ P1' ∗ (P1 -∗ goal)                := sep_mono_right (sep_comm.mp.trans wand_trans)
+  _ ⊢ goal                              := inst1.add_modal
 
 public meta section
 open Lean Elab Tactic Meta Qq Std
