@@ -362,10 +362,8 @@ def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
       Option Q($e ∗ □?$pa $A ⊢ $e' ∗ □?$pb $B)) := do
   let state : SpecializeState _ goal := { hyps, out := A, p := pa, pfCont := q(id), pf := some q(.rfl) }
   let ⟨hyps', pb, B, pfCont, pf⟩ ← spats.foldlM processWand state
-  if try_dup_context then
-    let pf ← do match pf with
-    | some pf => pure pf
-    | none => throwError "ispecialize: unable to duplicate context"
+  match try_dup_context, pf with
+  | true, some pf =>
     -- context duplication succeeds if `B` is persistent, and `A` is persistent or affine
     let B' : Q($prop) ← mkFreshExprMVarQ q($prop)
     let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPersistently $pb $B $B')
@@ -378,8 +376,7 @@ def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
         return some q(.inr $h)
     let some af ← af | return ⟨_, hyps', pb, B, q($(pf).trans), pf⟩
     return ⟨_, hyps, q(true), B', q((specialize_dup_context $pf $af).trans), some q(specialize_dup_context $pf $af)⟩
-  else
-    return ⟨_, hyps', pb, B, pfCont, pf⟩
+  | _, _ => return ⟨_, hyps', pb, B, pfCont, pf⟩
 
 end
 
