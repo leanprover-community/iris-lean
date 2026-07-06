@@ -88,6 +88,11 @@ instance elimModal_bupd p (P Q : PROP) :
   elim_modal _ := (sep_mono_left intuitionisticallyIf_elim).trans <|
     bupd_frame_right.trans <| (BIUpdate.mono wand_elim_right).trans BIUpdate.trans
 
+@[rocq_alias add_modal_bupd]
+instance addModal_bupd (P Q : PROP) :
+    AddModal iprop(|==> P) P iprop(|==> Q) where
+  add_modal := bupd_wand_right.trans bupd_trans
+
 end BIBasicUpdate
 
 section SBIBasicUpdate
