@@ -266,8 +266,37 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let pfCont := q(specialize_wand_persistent_cont $out₁ $out₂ $inst1 $inst2 $inst3 $pfCont $pf')
     let pf := pf.bind (fun pf => some q(specialize_wand_persistent $out₁ $out₂ $inst1 $inst2 $inst3 $pf $pf'))
     return { hyps, p, out := out₂, pfCont, pf }
-  | .goal { kind := .modal, .. } _ =>
-    throwError "ispecialize: framing with the modal kind is not supported at the moment"
+  | .goal { kind := .modal, negate, trivial, frame := f, hyps := hs, .. } g =>
+    let mut ivars : IVarIdSet := {}
+    for name in hs do
+      ivars := ivars.insert (← hyps.findWithInfo name)
+    let mut frameIVars : List IVarId := []
+    for name in f do
+      let ivar ← hyps.findWithInfo name
+      frameIVars := ivar :: frameIVars
+      if ivars.contains ivar then
+        throwError "ispecialize: {name} used twice"
+    frameIVars := frameIVars.reverse
+    let ⟨_, _, hypsl', hypsr', pf'⟩ := Hyps.split bi
+      (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
+    let out₁ ← mkFreshExprMVarQ prop
+    let out₂ ← mkFreshExprMVarQ prop
+    let some inst1 ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
+    | throwError m!"ispecialize: {out} is not a wand"
+    let out₁' ← mkFreshExprMVarQ prop
+    let some inst2 ← ProofModeM.trySynthInstanceQ q(AddModal $out₁' $out₁ $goal)
+    | throwError "ispecialize: AddModal type class synthesis failed with {out₁} and {goal}"
+    let res ← iFrame bi _ hypsr' out₁' (frameIVars.map (⟨.ipm ·, true⟩))
+    let pf'' ← res.finish λ hyps goal => do
+      if trivial then
+        let some r ← iTrivial hyps goal
+        | throwError "ispecialize: itrivial could not solve {← ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
+        return r
+      else
+        addBIGoal hyps goal g
+    let h := q($(pf').mp.trans (sep_mono_right $pf''))
+    let pfCont := q(fun pf => $pfCont (specialize_modal $h pf $inst2 $inst1))
+    return { hyps := hypsl', p := q(false), out := out₂, pfCont, pf := none }
   | .autoframe .spatial => do
     let out₁ ← mkFreshExprMVarQ prop
     let out₂ ← mkFreshExprMVarQ prop
