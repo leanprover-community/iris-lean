@@ -1375,7 +1375,8 @@ example [BI PROP] [BIUpdate PROP] (P Q : PROP) :
 
 /--
   Tests `ispecialize` with the handling of the modality using the type class
-  instance `addModal_bupd`. The subgoal is manually solved. -/
+  instance `addModal_bupd`. The subgoal is manually solved.
+-/
 example [BI PROP] [BIUpdate PROP] (P Q : PROP) :
     ⊢ (P -∗ Q) -∗ (|==> P) -∗ (|==> Q) := by
   iintro HPQ HP
