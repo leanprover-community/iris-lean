@@ -36,7 +36,7 @@ abbrev InvMapF := HeapViewURF (H := InvMap) (AgreeRF (LaterOF IdOF))
 @[rocq_alias wsatGS.wsatGpreS]
 class WsatGpreS (GF : BundledGFunctors) where
   inv : ElemG GF InvMapF
-  enabled : ElemG GF (constOF (DisjointLeibnizSet CoPset))
+  enabled : ElemG GF (constOF CoPsetDisjL)
   disabled : ElemG GF (constOF (DisjointLeibnizSet PosSet))
 
 attribute [reducible, instance] WsatGpreS.inv
@@ -122,7 +122,7 @@ theorem ownE_disjoint {E1 E2} : ownE E1 ∗ ownE E2 ⊢@{IProp GF} ⌜E1 ## E2�
   · unfold ownE
     isplitl [H1] <;> iassumption
   ihave H := iOwn_cmraValid $$ H
-  icases internalCmraValid_discrete (A := DisjointLeibnizSet CoPset) $$ H with %H
+  icases internalCmraValid_discrete (A := CoPsetDisjL) $$ H with %H
   ipureintro
   exact valid_op_iff_disj.mp H
 

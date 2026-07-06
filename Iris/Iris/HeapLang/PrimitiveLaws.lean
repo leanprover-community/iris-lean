@@ -40,7 +40,7 @@ instance HeapLang [HeapLangGS hlc GF] : IrisGS_gen hlc Exp GF where
 
 def HeapLangS : BundledGFunctors
   | 0 => ⟨InvMapF, by infer_instance⟩
-  | 1 => ⟨constOF (DisjointLeibnizSet CoPset), by infer_instance⟩
+  | 1 => ⟨constOF CoPsetDisjL, by infer_instance⟩
   | 2 => ⟨constOF (DisjointLeibnizSet PosSet), by infer_instance⟩
   | 3 => ⟨Auth.AuthURF (constOF Credit), by infer_instance⟩
   | 4 => ⟨constOF (HeapView Loc (Agree (LeibnizO (Option Val))) HeapF), by infer_instance⟩
