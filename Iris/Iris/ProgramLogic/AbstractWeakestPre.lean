@@ -116,8 +116,7 @@ theorem inv_open_maybe_ectxlang_inv (e : Expr) (E : CoPset) (N : Namespace)
   imod H $$ HP with (⟨%K, %e', %He, %Hat, %Hred, H⟩|⟨HP, H⟩)
   · imodintro
     ileft
-    iexists K
-    iexists e'
+    iexists K, e'
     iframe %He %Hat %Hred
     iapply IWP.wp_wand $$ H
     iintro %v ⟨HP, Hwp⟩
@@ -129,29 +128,24 @@ theorem inv_open_maybe_ectxlang_inv (e : Expr) (E : CoPset) (N : Namespace)
 
 end EctxLanguage
 
-/-! ### Instances of the abstract classes for iris-lean's real `Wp`. -/
+/-! ### Instances of the abstract classes for iris-lean's generic `Wp`. -/
 
 section IrisWP
 
 variable {Expr State Obs Val : Type _} [Language Expr State Obs Val]
 variable {GF : BundledGFunctors} {HLC : HasLC} [IrisGS_gen HLC Expr GF]
 
-/-- iris-lean's standard `WP` satisfies the abstract 5-law class. -/
 instance WP_lawful_abstract :
-    LawfulAbstractWP (Expr := Expr) (Val := Val)
-      (Wp.wp (PROP := IProp GF) Stuckness.NotStuck) where
+    LawfulAbstractWP (Expr := Expr) (Val := Val) (Wp.wp (PROP := IProp GF) Stuckness.NotStuck) where
   fupd_wp := fupd_wp
   wp_fupd := wp_fupd
   wp_value := wp_value_fupd'
   wp_wand := wp_wand
   wp_atomic _ := wp_atomic
 
-/-- iris-lean's standard `WP` also satisfies the bind class for ectx
-languages. -/
 instance WP_bind_abstract : BindAbstractWP (Expr := Expr) (Val := Val)
       (Wp.wp (PROP := IProp GF) Stuckness.NotStuck) where
   wp_bind := ⟨wp_bind _, wp_bind_inv _⟩
-
 
 -- TODO: Any idea how to get rid of the istops?
 
@@ -219,8 +213,7 @@ theorem wp_inv_open_maybe (e : Expr) (E₁ E₂ : CoPset) (Φ : Val → IProp GF
   imod H with (⟨%K, %e', %Hctx, %He, %Hato, H⟩| H);
   · rcases Hv' : toVal e' with (_|v')
     · exfalso
-      have h1 := Hctx.toVal_eq_none_fill Hv'
-      rw [← He] at h1
+      have h1 := He.symm ▸ Hctx.toVal_eq_none_fill Hv'
       simp at h1
     · rw [← coe_of_toVal_eq_some Hv']
       have hKv : K (↑v' : Expr) = ↑v := by rw [coe_of_toVal_eq_some Hv']; exact He.symm
