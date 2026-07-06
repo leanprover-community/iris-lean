@@ -1,6 +1,7 @@
 /-
 Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Sergei Stepanenko, Zongyuan Liu
 -/
 module
 
@@ -10,6 +11,7 @@ public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.Updates
 public import Iris.Std.GenSets
 public import Iris.Std.Infinite
+public import Iris.Std.CoPset
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
@@ -353,4 +355,55 @@ theorem included_iff_subset (X Y : S) : valid X ≼ valid Y ↔ X ⊆ Y := by
     · exact .inl H
     · exact .inr ⟨H1, H⟩
 
+@[rocq_alias coPset_opM]
+theorem opM_union (X : LeibnizSet S) (mY : Option (LeibnizSet S)) :
+    X •? mY = X • mY.getD (valid ∅) := by
+  cases mY <;> simp [op?, op, union_empty_right]
+
+@[rocq_alias coPset_update]
+theorem update (X Y : S) : valid X ~~> valid Y :=
+  fun _ _ _ => trivial
+
+@[rocq_alias coPset_local_update]
+theorem localUpdate (X Y X' : S) (H : X ⊆ X') :
+    (valid X, valid Y) ~l~> (valid X', valid X') := by
+  refine (LocalUpdate.discrete ..).mpr fun mz _ e => ⟨trivial, ?_⟩
+  match mz with
+  | none => rfl
+  | some (.valid Z) =>
+    simp only [op?, op, leibniz, valid.injEq] at e ⊢
+    have hZ : Z ⊆ X' := subset_trans union_subset_right (e ▸ H)
+    rw [union_comm, union_subset_absorption hZ]
+
 end LeibnizSet
+
+/-! ## The coPset CMRAs
+
+The two resource algebras over sets of positives (`CoPset`) from iris-rocq's `algebra/coPset.v`,
+obtained as instances of the generic set-CMRA construction above.
+-/
+
+/-- The union CMRA over `CoPset`: every element is valid and composition is set union. -/
+@[rocq_alias coPsetO, rocq_alias coPsetR, rocq_alias coPsetUR]
+abbrev CoPsetL := LeibnizSet CoPset
+
+#rocq_ignore coPset_valid_instance "Provided by the `CMRA (LeibnizSet S)` instance."
+#rocq_ignore coPset_unit_instance "Provided by the `UCMRA (LeibnizSet S)` instance."
+#rocq_ignore coPset_op_instance "Provided by the `CMRA (LeibnizSet S)` instance."
+#rocq_ignore coPset_pcore_instance "Provided by the `CMRA (LeibnizSet S)` instance."
+#rocq_ignore coPset_ra_mixin "Provided by the `CMRA (LeibnizSet S)` instance."
+#rocq_ignore coPset_cmra_discrete "Provided by the generic `CMRA.Discrete (LeibnizSet S)` instance."
+#rocq_ignore coPset_ucmra_mixin "Provided by the `UCMRA (LeibnizSet S)` instance."
+
+/-- The disjoint union CMRA over `CoPset`: composition of two sets is valid only when they are
+disjoint, tracked through the `DisjointLeibnizSet` error element. -/
+@[rocq_alias coPset_disj, rocq_alias coPset_disjO, rocq_alias coPset_disjR, rocq_alias coPset_disjUR]
+abbrev CoPsetDisjL := DisjointLeibnizSet CoPset
+
+#rocq_ignore coPset_disj_valid_instance "Provided by the `CMRA (DisjointLeibnizSet S)` instance."
+#rocq_ignore coPset_disj_unit_instance "Provided by the `UCMRA (DisjointLeibnizSet S)` instance."
+#rocq_ignore coPset_disj_op_instance "Provided by the `CMRA (DisjointLeibnizSet S)` instance."
+#rocq_ignore coPset_disj_pcore_instance "Provided by the `CMRA (DisjointLeibnizSet S)` instance."
+#rocq_ignore coPset_disj_ra_mixin "Provided by the `CMRA (DisjointLeibnizSet S)` instance."
+#rocq_ignore coPset_disj_cmra_discrete "Provided by `CMRA.Discrete (DisjointLeibnizSet S)`."
+#rocq_ignore coPset_disj_ucmra_mixin "Provided by the `UCMRA (DisjointLeibnizSet S)` instance."
