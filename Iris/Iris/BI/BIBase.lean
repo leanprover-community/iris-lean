@@ -283,7 +283,7 @@ def affinelyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <af
 def absorbinglyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <absorb> P else P)
 @[rocq_alias bi_intuitionistically_if]
 def intuitionisticallyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then □ P else P)
-def laterIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(▷^[p.toNat] P)
+@[reducible] def laterIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(▷^[p.toNat] P)
 
 macro_rules
   | `(iprop(<pers>?$p $P))   => ``(persistentlyIf $p iprop($P))
