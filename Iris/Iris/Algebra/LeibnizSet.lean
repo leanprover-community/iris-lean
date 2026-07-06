@@ -10,6 +10,7 @@ public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.Updates
 public import Iris.Std.GenSets
 public import Iris.Std.Infinite
+meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -142,6 +143,7 @@ theorem mem_iff_of_valid_union {x y : DisjointLeibnizSet S} (v : ✓ x • y) (a
 theorem mem_iff_of_validN_union {x y : DisjointLeibnizSet S} (v : ✓{n} x • y) (a : A) :
     a ∈ x • y ↔ a ∈ x ∨ a ∈ y := mem_iff_of_valid_union v a
 
+@[rocq_alias coPset_disj_included]
 theorem included_iff_subset {X Y : S} : valid X ≼ valid Y ↔ X ⊆ Y := by
   refine ⟨?_, ?_⟩
   · rintro ⟨(Z|_), HZ⟩
@@ -158,13 +160,16 @@ theorem included_iff_subset {X Y : S} : valid X ≼ valid Y ↔ X ⊆ Y := by
     ext p; rw [mem_union, mem_diff]
     refine ⟨by grind, (·.casesOn (Hsub _) (·.left))⟩
 
+@[rocq_alias coPset_disj_union]
 theorem disj_op_union {X Y : S} (Hdisj : X ## Y) :
     (valid X) • (valid Y) ≡ valid (X ∪ Y) := by
   simp [op, Hdisj]
 
+@[rocq_alias coPset_disj_valid_op]
 theorem valid_op_iff_disj {X Y : S} : ✓ ((valid X) • (valid Y)) ↔ X ## Y := by
   by_cases H : X ## Y <;> simp [H, op, Valid]
 
+@[rocq_alias coPset_disj_valid_inv_l]
 theorem valid_inv_l {X : S} {Y : DisjointLeibnizSet S} :
     ✓ (valid X) • Y → ∃ Y', Y = valid Y' ∧ X ## Y' := by
   simp only [op, Valid]
@@ -321,12 +326,19 @@ instance : UCMRA (LeibnizSet S) where
   unit_left_id := by simp [op, union_empty_left]
   pcore_unit := by simp [pcore, pcore]
 
+instance instDiscreteLeibnizSet : CMRA.Discrete (LeibnizSet S) where
+  discrete_0 := id
+  discrete_valid := id
+
+@[rocq_alias coPset_op]
 theorem op_union (X Y : S) : (valid X) • (valid Y) ≡ valid (X ∪ Y) := by simp [op]
 
+@[rocq_alias coPset_core]
 theorem core_equiv (X : LeibnizSet S) : core X ≡ X := by
   change (pcore X).getD X ≡ X
   simp [pcore]
 
+@[rocq_alias coPset_included]
 theorem included_iff_subset (X Y : S) : valid X ≼ valid Y ↔ X ⊆ Y := by
   simp only [Included, op]
   refine ⟨fun ⟨_, H⟩ => ?_, fun Hsub => ?_⟩
