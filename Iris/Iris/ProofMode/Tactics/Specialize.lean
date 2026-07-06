@@ -187,7 +187,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig : Q($pro
     let out₁ ← mkFreshExprMVarQ prop
     let out₂ ← mkFreshExprMVarQ prop
     let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
-      | throwError m!"ispecialize: {out} is not a wand"
+    | throwError m!"ispecialize: {out} is not a wand"
     let res ← iFrame bi _ hyps out₁ (← SelPat.resolve hyps [.spatial, .intuitionistic])
     let ⟨_, hyps', pf'⟩ ← res.finishClose
     return { hyps := hyps', p := q(false), out := out₂,
@@ -210,7 +210,16 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig : Q($pro
     return { hyps, p, out := out₂,
               pf := q(specialize_wand_persistent $out₁ $out₂ $pf $pf') }
   | .autoframe .modal =>
-    throwError m!"ispecialize: autoframe with the modal kind is not supported at the moment"
+    let out₁ ← mkFreshExprMVarQ prop
+    let out₂ ← mkFreshExprMVarQ prop
+    let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
+    | throwError m!"ispecialize: {out} is not a wand"
+    let out₁' ← mkFreshExprMVarQ prop
+    let some _ ← ProofModeM.trySynthInstanceQ q(AddModal $out₁' $out₁ $out₂)
+    | throwError m!"ispecialize: AddModal type class synthesis failed with {out₁} and {out₂}"
+    let res ← iFrame bi _ hyps out₁' (← SelPat.resolve hyps [.spatial, .intuitionistic])
+    let ⟨_, hyps', pf'⟩ ← res.finishClose
+    return { hyps := hyps', p := q(false), out := out₂, pf := q(sorry) }
 
 /-- Specialize a proposition `A` by applying a sequence of specialization patterns.
 
