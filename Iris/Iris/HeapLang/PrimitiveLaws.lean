@@ -112,11 +112,10 @@ theorem heap_adequacy [HeapLangGpreS .hasLC GF] (e : Exp) σ (φ : Val → Prop)
   imodintro
   iexists (fun σ κs => iprop% Iris.genHeapInterp σ.heap ∗ Iris.prophMapInterp κs σ.usedProphId)
   iexists (fun _ => iprop(True))
-  specialize @Hwp _
   simp only []
-  -- NOTE: iframe %Hwp does not work here
-  isplitl [Hh Hm Hproph] <;> try · exact Hwp
-  iframe
+  -- NOTE: iframe %(@Hwp _) does not work here
+  ihave #Hwp := (@Hwp _)
+  iframe Hwp Hproph
   simp only [Iris.genHeapInterp]
   iexists (∅ : HeapF GName)
   unfold ghost_map_auth
@@ -398,8 +397,6 @@ theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v
   ipureintro; simp [toVal]
   rfl
 
--- TODO: Here
-
 theorem wp_free {l : Loc} {v : Val} :
     ▷ (l ↦ some v) ⊢ WP hl(free(#l)) @ s; E {{ v'', ⌜v'' = hl_val(#())⌝ ∗ l ↦ none }} := by
   iintro >Hpt
@@ -506,12 +503,6 @@ theorem wp_faa {l : Loc} {i1 i2 : Int} :
   iframe Hpt
   ipureintro; simp [toVal]; rfl
 
-theorem usedProph_insert_eq {ps : Std.ExtTreeSet ProphId compare} {p : ProphId} :
-    ps.insert p = ({p} ∪ ps : Std.ExtTreeSet ProphId compare) := by
-  refine Std.ExtTreeSet.ext_mem fun x => ?_
-  rw [Std.ExtTreeSet.mem_insert, Std.ExtTreeSet.mem_union_iff, Iris.Std.LawfulSet.mem_singleton]
-  grind
-
 theorem wp_new_proph :
     ⊢ WP hl(newProph()) @ s; E {{ v, ∃ p, ∃ pvs, ⌜v = .lit (.prophecy p)⌝ ∗ proph p pvs }} := by
   iapply wp_lift_atomic_step rfl
@@ -537,7 +528,8 @@ theorem wp_new_proph :
   simp only [stateInterp]
   iframe Hσ
   isplitl [Hproph']
-  · rw [show {p'} ∪ σ₁.usedProphId = σ₁.usedProphId.insert p' from usedProph_insert_eq.symm]
+  · rw [show σ₁.usedProphId.insert p' = {p'} ∪ σ₁.usedProphId by
+        ext x; simp [Std.ExtTreeSet.mem_insert, Std.ExtTreeSet.mem_union_iff]]
     iexact Hproph'
   isplitl [Htok]
   · iexists hl_val(#(BaseLit.prophecy p'))
@@ -611,6 +603,20 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
     · iapply (stateInterp_split σ₂ (ns + 1) obs' (nt + eₜ.length)).mpr $$ [$]
     iapply wp_value'
     iapply HΦ $$ %pvs'' %hpvs'_eq Hele
+
+theorem wp_resolve {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × Val)}
+    (hatom : Language.Atomic Language.Atomicity.StronglyAtomic e) (hne : toVal e = none) :
+    proph p pvs -∗
+    WP e @ s; E {{ r, ∀ pvs', ⌜pvs = (r, w) :: pvs'⌝ -∗ proph p pvs' -∗ Φ r }} -∗
+    WP hl(resolve(&e, v(#p), v(&w))) @ s; E {{ Φ }} := by
+  iintro Hp WPe
+  iapply wp_resolve_strong hatom hne $$ Hp
+  iintro Hp
+  iapply wp_wand $$ WPe
+  iintro %r Hcont
+  iexists pvs
+  iframe Hp
+  iexact Hcont
 
 end Lifting
 

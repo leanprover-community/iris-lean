@@ -13,6 +13,106 @@ This file provides introduction rules (BI entailments) for (some) CMRA operation
 
 -- TODO: Need sbi_unfold to make these proofs less horrific
 namespace Iris
+
+section prod
+
+open BI Std BIBase.BiEntails
+
+@[rocq_alias prod_validI]
+theorem prod_validI [Sbi PROP] [CMRA A] [CMRA B] (x : A × B) :
+    internalCmraValid x ⊣⊢@{PROP} internalCmraValid x.1 ∧ internalCmraValid x.2 := by
+  simp only [internalCmraValid]
+  refine .trans ?_ siPure_and
+  refine siPure_mono_bi ?_
+  cases x with | mk x1 x2 =>
+  exact ⟨fun _ => id, fun _ => id⟩
+
+@[rocq_alias prod_includedI]
+theorem prod_includedI [Sbi PROP] [CMRA A] [CMRA B] (x y : A × B) :
+    internalCmraIncluded x y ⊣⊢@{PROP} internalCmraIncluded x.1 y.1 ∧ internalCmraIncluded x.2 y.2 := by
+  simp only [internalCmraIncluded,  internalEq]
+  refine .trans (siPure_mono_bi ?_) siPure_and
+  refine siPure_exist.symm.trans ?_
+  refine .trans ?_ (and_congr_left siPure_exist)
+  refine .trans ?_ (and_congr_right siPure_exist)
+  refine .trans (siPure_mono_bi ?_) siPure_and
+  cases x with | mk x1 x2 =>
+  cases y with | mk y1 y2 =>
+  simp only [CMRA.op, Prod.op]
+  constructor
+  · rintro n ⟨P, ⟨w, rfl⟩, hP⟩
+    exact ⟨⟨_, ⟨w.fst, rfl⟩, hP.1⟩, ⟨_, ⟨w.snd, rfl⟩, hP.2⟩⟩
+  · rintro n ⟨⟨P1, ⟨w1, rfl⟩, hP1⟩, ⟨P2, ⟨w2, rfl⟩, hP2⟩⟩
+    exact ⟨_, ⟨(w1, w2), rfl⟩, hP1, hP2⟩
+
+end prod
+
+section option
+
+open BI Std BIBase.BiEntails
+
+@[rocq_alias option_validI]
+theorem option_validI [Sbi PROP] [CMRA A] {mx : Option A} :
+  internalCmraValid mx ⊣⊢@{PROP} mx.elim iprop(True) internalCmraValid :=
+  match mx with
+  | none => ⟨true_intro, internalCmraValid_intro trivial⟩
+  | some _ => .rfl
+
+@[rocq_alias option_includedI]
+theorem option_includedI [Sbi PROP] [CMRA A] {mx my : Option A} :
+  internalCmraIncluded mx my ⊣⊢@{PROP}
+    match mx, my with
+      | some x, some y => iprop((internalCmraIncluded x y) ∨ (internalEq x y))
+      | none, _ => iprop(True)
+      | some _, none => iprop(False) := by
+  rcases mx with _ | x <;> rcases my with _ | y
+  · exact ⟨true_intro, internalCmraIncluded_intro (Option.inc_iff.mpr (.inl rfl))⟩
+  · exact ⟨true_intro, internalCmraIncluded_intro (Option.inc_iff.mpr (.inl rfl))⟩
+  · refine ⟨?_, false_elim⟩
+    refine .trans (siPure_mono ?_) siPure_pure.mp
+    rintro n ⟨_, ⟨c, rfl⟩, hc⟩
+    rcases c with _ | c <;> exact hc
+  · simp only [internalCmraIncluded, internalEq]
+    refine .trans (siPure_mono_bi ⟨fun n h => ?_, fun n h => ?_⟩) siPure_or
+    · obtain ⟨_, ⟨c, rfl⟩, hc⟩ := h
+      rcases Option.some_incN_some_iff.mp ⟨c, hc⟩ with heqv | ⟨c, hc⟩
+      · exact .inr heqv
+      · exact .inl ⟨_, ⟨c, rfl⟩, hc⟩
+    · have ⟨c, hc⟩ : (some x : Option A) ≼{n} some y := by
+        rcases h with ⟨_, ⟨c, rfl⟩, hc⟩ | heqv
+        · exact Option.some_incN_some_iff.mpr (.inr ⟨c, hc⟩)
+        · exact Option.some_incN_some_iff.mpr (.inl heqv)
+      exact ⟨_, ⟨c, rfl⟩, hc⟩
+
+@[rocq_alias option_included_totalI]
+theorem option_included_totalI [Sbi PROP] [CMRA A] [CMRA.IsTotal A] {mx my : Option A} :
+  internalCmraIncluded mx my ⊣⊢@{PROP}
+    match mx, my with
+      | some x, some y => internalCmraIncluded x y
+      | none, _ => iprop(True)
+      | some _, none => iprop(False) := by
+  rcases mx with _ | x <;> rcases my with _ | y
+  · exact ⟨true_intro, internalCmraIncluded_intro (Option.inc_iff.mpr (.inl rfl))⟩
+  · exact ⟨true_intro, internalCmraIncluded_intro (Option.inc_iff.mpr (.inl rfl))⟩
+  · refine ⟨?_, false_elim⟩
+    refine .trans (siPure_mono ?_) siPure_pure.mp
+    rintro n ⟨_, ⟨c, rfl⟩, hc⟩
+    rcases c with _ | c <;> exact hc
+  · refine siPure_mono_bi ⟨fun n h => ?_, fun n h => ?_⟩
+    · obtain ⟨_, ⟨c, rfl⟩, hc⟩ := h
+      obtain ⟨c, hc⟩ := Option.some_incN_some_iff_is_total.mp ⟨c, hc⟩
+      exact ⟨_, ⟨c, rfl⟩, hc⟩
+    · obtain ⟨_, ⟨c, rfl⟩, hc⟩ := h
+      obtain ⟨c, hc⟩ := Option.some_incN_some_iff_is_total.mpr ⟨c, hc⟩
+      exact ⟨_, ⟨c, rfl⟩, hc⟩
+
+@[rocq_alias Some_included_totalI]
+theorem Some_included_totalI [Sbi PROP] [CMRA A] [CMRA.IsTotal A] {x y : A} :
+  internalCmraIncluded (some x) (some y) ⊣⊢@{PROP} internalCmraIncluded x y :=
+  option_included_totalI
+
+end option
+
 section heap_view
 
 open HeapView BI Std PartialMap LawfulPartialMap BIBase.BiEntails
@@ -122,20 +222,20 @@ open Iris BI Agree OFE
 variable [Sbi PROP] [OFE A]
 
 @[rocq_alias agree_equivI]
-theorem agree_equivI (a b : A) : internalEq (toAgree a) (toAgree b) ⊣⊢@{PROP} internalEq a b := by
+theorem agree_equivI {a b : A} : internalEq (toAgree a) (toAgree b) ⊣⊢@{PROP} internalEq a b := by
   refine ⟨siPure_mono fun _ => Agree.toAgree_injN, ?_⟩
   refine siPure_mono fun n => ?_
   apply NonExpansive.ne
 
 @[rocq_alias agree_op_invI]
-theorem agree_op_invI (x y : Agree A) : internalCmraValid (x • y) ⊢@{PROP} internalEq x y :=
+theorem agree_op_invI {x y : Agree A} : internalCmraValid (x • y) ⊢@{PROP} internalEq x y :=
   siPure_mono (fun _ => op_invN)
 
 @[rocq_alias to_agree_validI]
 theorem toAgree_validI (a : A) :
     ⊢@{PROP} internalCmraValid (toAgree a) := by
   refine internalCmraValid_intro fun n => ?_
-  simp [validN, toAgree]
+  simp
 
 @[rocq_alias to_agree_op_validI]
 theorem toAgree_op_validI (a b : A) :
@@ -161,7 +261,7 @@ theorem agree_op_equiv_toAgreeI (x y : Agree A) (a : A) :
   have H1 : internalEq (x • y) (toAgree a) ⊢@{PROP} internalEq x y := by
     refine absorbingly_internalEq (x • y) (toAgree a) |>.mpr.trans ?_
     refine (absorbingly_mono ?_).trans absorbing
-    refine internalEq.rewrite' internalCmraValid internalEq.symm ?_ |>.trans (agree_op_invI x y)
+    refine internalEq.rewrite' internalCmraValid internalEq.symm ?_ |>.trans agree_op_invI
     refine emp_sep.2.trans ?_
     refine (sep_mono_left (toAgree_validI a)) |>.trans ?_
     exact sep_elim_left

@@ -37,7 +37,7 @@ section const_agree
 abbrev γ : GType := 1
 
 @[simp]
-def MyAg (S : String) : (Option (Agree (LeibnizO String))) := some ⟨[⟨S⟩], by simp⟩
+def MyAg (S : String) : (Option (Agree (LeibnizO String))) := some (toAgree ⟨S⟩)
 
 theorem MyR_always_invalid (S₁ S₂ : String) (Hne : S₁ ≠ S₂) (n : Nat) : ¬✓{n} MyAg S₁ • MyAg S₂ := by
   simp only [CMRA.ValidN, CMRA.op, MyAg, optionValidN, optionOp]

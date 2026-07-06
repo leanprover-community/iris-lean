@@ -1785,11 +1785,22 @@ theorem incN_iff {n} (a a' : α) (b b' : β) :
     · exact ⟨y, Option.dist_of_some_dist_some hb⟩
 
 @[rocq_alias prod_cmra_discrete]
-instance [CMRA.Discrete α] [CMRA.Discrete β]: CMRA.Discrete (α × β) where
+instance instCmraDistreteProd [CMRA.Discrete α] [CMRA.Discrete β] : CMRA.Discrete (α × β) where
   discrete_valid := by
     rintro ⟨_, _⟩
     simp [CMRA.ValidN]
     exact (⟨CMRA.discrete_valid ·, CMRA.discrete_valid ·⟩)
+
+@[rocq_alias pair_core_id]
+instance instCoreIdPair {x : α} {y : β} [CMRA.CoreId x] [CMRA.CoreId y] : CMRA.CoreId (α := α × β) ⟨x, y⟩ where
+  core_id := by
+    refine (equiv_dist.mpr (fun _ => ?_))
+    simp only [CMRA.pcore, pcore]
+    haveI : NonExpansive (fun b : β => some (x, b)) := ⟨fun _ _ _ H => some_dist_some.mpr (dist_prod_ext .rfl H)⟩
+    haveI : NonExpansive ((fun a : α => (CMRA.pcore y).bind fun b : β => pure (a, b))) :=
+      ⟨fun _ _ _ H => Option.bind_dist (fun _ => some_dist_some.mpr ⟨H, .rfl⟩)⟩
+    refine ((Option.bind_fun_ne (fun a : α => (CMRA.pcore y).bind fun b => pure (a, b))).ne CMRA.CoreId.core_id.dist).trans ?_
+    exact ((Option.bind_fun_ne (fun b : β => some (x, b))).ne CMRA.CoreId.core_id.dist).trans .rfl
 
 end Prod
 
