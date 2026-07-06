@@ -149,12 +149,12 @@ variable {dp dq : DFrac} {n : Nat} {m1 m2 : H V} {k : K} {v1 v2 : V}
 theorem auth_dfrac_op_eqv : Auth (dp • dq) m1 ≡ Auth dp m1 • Auth dq m1 :=
   View.auth_op_auth_eqv
 
-/-- An `Auth` inclusion follows from a pointwise map equivalence on the underlying heap.
+/-- An `Auth` inclusion follows from a map equality on the underlying heap.
 This is the workhorse for proofs that rewrite the authoritative map along identities like
 `PartialMap.map_insert`, `map_delete`, or `map_union`. -/
-theorem auth_inc_of_pmap_eqv (dq : DFrac) (h : PartialMap.equiv m1 m2) :
-    Auth (H := H) dq m1 ≼ Auth dq m2 :=
-  CMRA.inc_of_inc_of_eqv .rfl (OFE.NonExpansive.eqv (OFE.Equiv.of_eq (equiv_iff_eq.mp h)))
+theorem auth_inc_of_map_eq (dq : DFrac) (h : m1 = m2) :
+    Auth dq m1 ≼ Auth dq m2 :=
+  CMRA.inc_of_inc_of_eqv .rfl (OFE.NonExpansive.eqv (OFE.Equiv.of_eq h))
 
 theorem dist_of_validN_auth_op : ✓{n} Auth dp m1 • Auth dq m2 → m1 ≡{n}≡ m2 :=
   dist_of_validN_auth
@@ -622,17 +622,16 @@ theorem update_big_replace (m m0 m1 : H V)
     rw [bigOpM_frag_empty]
     refine Update.equiv_left CMRA.comm ?_
     refine Update.equiv_left UCMRA.unit_left_id.symm ?_
-    have Heq : equiv m1 ∅ := by
-      intro j; have h := congrFun Hdom j; simp [dom, get?_empty] at h; exact h.trans (get?_empty j).symm
-    refine Update.equiv_right (CMRA.op_right_eqv _ (BigOpM.bigOpM_eqv_of_perm _ Heq.symm)) ?_
+    have Heq : m1 = ∅ := by
+      apply equiv_iff_eq.mp; intro j; have h := congrFun Hdom.symm j
+      simp [dom, get?_empty] at h; simp [get?_empty, h]
+    refine Heq.symm ▸ Update.equiv_right (CMRA.op_right_eqv _ .rfl) ?_
     simp only [BigOpM.bigOpM_empty]
     refine Update.equiv_right CMRA.comm ?_
     refine Update.equiv_right UCMRA.unit_left_id.symm ?_
     refine Update.equiv_left ?_ .id
     refine OFE.NonExpansive.eqv ?_
-    exact eqv_of_Equiv (fun j => by
-      have h : get? m1 j = none := (Heq j).trans (get?_empty j);
-      change get? (PartialMap.union m1 m) j = get? m j; simp [PartialMap.union, get?_merge, h])
+    rw [union_empty_left]
   | hins k v m2 Hm2 IH =>
     intro m1 Hdom Hall
     refine Update.equiv_left (CMRA.op_right_eqv _ (BigOpM.bigOpM_insert_eqv _ _ Hm2).symm) ?_
@@ -662,9 +661,7 @@ theorem update_big_replace (m m0 m1 : H V)
           cases get? m k <;> rfl
         · rw [get?_insert_ne hjk]; simp [PartialMap.union, get?_merge, get?_delete_ne hjk])
     · refine .trans ?_ (BigOpM.bigOpM_insert_eqv _ _ ?_)
-      · refine BigOpM.bigOpM_eqv_of_perm _ ?_
-        intro j; by_cases hjk : k = j; subst hjk; rw [get?_insert_eq rfl]; exact Hin
-        rw [get?_insert_ne hjk, get?_delete_ne hjk]
+      · exact ((insert_delete_cancel Hin).symm ▸ .rfl)
       · exact get?_delete_eq rfl
 
 -- TODO: golf
@@ -681,8 +678,8 @@ theorem update_big_alloc (m1 m2 : H V) dq
       refine inc_of_inc_of_eqv .rfl ?_
       refine CMRA.comm.trans ?_
       refine UCMRA.unit_left_id.trans ?_
-      refine OFE.NonExpansive.eqv ?_
-      exact OFE.Equiv.of_eq union_empty_left
+      rw [union_empty_left]
+      rfl
     | hins k v m2 Hm2 IH =>
       have Hall' : all (fun k v => ✓ v) m2 := by exact all_of_all_insert _ Hm2 Hall
       have Hdisj' : m2 ##ₘ m1 := by
@@ -691,7 +688,6 @@ theorem update_big_alloc (m1 m2 : H V) dq
       have IH := IH m1 Hdisj' Hall'
       refine IH.trans ?_
       have Hms : get? (m2 ∪ m1) k = none := by
-        change get? (PartialMap.union m2 m1) k = none
         rw [get?_union_none]
         exact ⟨Hm2, Option.not_isSome_iff_eq_none.mp (fun h => Hdisj k ⟨by simp [get?_insert_eq rfl], h⟩)⟩
       have Hv := all_insert_of_all _ Hall
@@ -700,8 +696,8 @@ theorem update_big_alloc (m1 m2 : H V) dq
       refine (Update.equiv_left CMRA.assoc ?_)
       refine Update.op ?_ ?_
       · refine Update.equiv_left ?_ .id
-        refine OFE.NonExpansive.eqv ?_
-        exact OFE.Equiv.of_eq union_insert_left.symm
+        rw [← union_insert_left]
+        rfl
       · refine Update.equiv_left ?_ .id
         exact BigOpM.bigOpM_insert_eqv _ _ Hm2
 
