@@ -112,11 +112,11 @@ end rule
 end IRewrite
 
 private def iRewriteCore {prop : Q(Type u)} {bi : Q(BI $prop)}
-    {e} (hyps : Hyps bi e) (rule : IRewrite.Rule)
+    {e} (hyps : Hyps bi e) (goal : Q($prop)) (rule : IRewrite.Rule)
     (target : Q($prop))
     (occs : Occurrences := Occurrences.all) :
     ProofModeM ((target' : Q($prop)) × Q($e ⊢ <pers> ($target ∗-∗ $target'))) := do
-  let ⟨_, _, _, eq, pf⟩ ← iHave hyps rule.term true
+  let ⟨_, _, _, eq, pf⟩ ← iHave hyps goal rule.term true
 
   let .some sbi ← trySynthInstanceQ q(Sbi $prop)
     | throwError "irewrite: could not synthesize Sbi instance"
@@ -164,7 +164,7 @@ def iRewriteGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
     {e} (hyps : Hyps bi e) (rule : IRewrite.Rule) (goal : Q($prop))
     (occs : Occurrences := Occurrences.all) :
     ProofModeM Q($e ⊢ $goal) := do
-  let ⟨goal', pf⟩ ← iRewriteCore hyps rule goal (occs := occs)
+  let ⟨goal', pf⟩ ← iRewriteCore hyps goal rule goal (occs := occs)
   let pf' ← addBIGoal hyps q($goal')
   return q(rewrite_tac_goal $pf $pf')
 
@@ -174,7 +174,7 @@ def iRewriteHyp {prop : Q(Type u)} {bi : Q(BI $prop)}
     (occs : Occurrences := Occurrences.all) :
     ProofModeM ((e' : _) × Hyps bi e' × Q($e ⊢ $e')) := do
   let some r ← hyps.replace ivar λ _ _ ty => do
-    let ⟨ty', pf⟩ ← iRewriteCore hyps rule ty (occs := occs)
+    let ⟨ty', pf⟩ ← iRewriteCore hyps ty rule ty (occs := occs)
     return ⟨ty', q(rewrite_tac_hyp $pf)⟩
     | throwError "irewrite: cannot find hyp" -- should never happen
   return r

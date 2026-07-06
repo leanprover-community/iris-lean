@@ -88,11 +88,11 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
 
     return ⟨_, hyps, q(true), hyp, q(have_asEmpValid $val)⟩
 
-def iHave {e} (hyps : @Hyps u prop bi e)
+def iHave {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
   (pmt : PMTerm) (keep : Bool) (try_dup_context : Bool := false) :
   ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) × (out : Q($prop)) × Q($e ⊢ $e' ∗ □?$p $out)) := do
   -- assert `term` as hypothesis `A`
   let ⟨_, hyps', p, A, pf⟩ ← iHaveCore hyps pmt.term keep
   -- specialize `A` with `spats`
-  let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p A pmt.spats (try_dup_context := try_dup_context)
+  let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p A goal pmt.spats (try_dup_context := try_dup_context)
   return ⟨_, hyps'', pb, B, q($(pf).trans $pf')⟩

@@ -81,15 +81,15 @@ theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B B'}
 public meta section
 open Lean Elab Tactic Meta Qq Std
 
-structure SpecializeState {prop : Q(Type u)} {bi : Q(BI $prop)} (orig : Q($prop)) where
+structure SpecializeState {prop : Q(Type u)} {bi : Q(BI $prop)} (orig goal : Q($prop)) where
   {e : Q($prop)} (hyps : Hyps bi e) (p : Q(Bool)) (out : Q($prop))
   pf : Q($orig ⊢ $e ∗ □?$p $out)
 
 mutual
 
-private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig : Q($prop)}
-    (specState : @SpecializeState u prop bi orig) (spat : Syntax × SpecPat) :
-    ProofModeM (@SpecializeState u prop bi orig) := do
+private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q($prop)}
+    (specState : @SpecializeState u prop bi orig goal) (spat : Syntax × SpecPat) :
+    ProofModeM (@SpecializeState u prop bi orig goal) := do
   let { e, hyps, p, out, pf } := specState
   let ⟨ref, spat⟩ := spat
   withRef ref do
@@ -108,7 +108,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig : Q($pro
   | .ident i spats =>
     let ivar ← hyps.findWithInfo i
     let ⟨_, hyps', out₁, out₁', p1, _, pf'⟩ := hyps.remove false ivar
-    let ⟨_, hyps'', pB, B, pfNest⟩ ← iSpecializeCore hyps' p1 out₁' spats
+    let ⟨_, hyps'', pB, B, pfNest⟩ ← iSpecializeCore hyps' p1 out₁' goal spats
     let p2 := if pB.constName! == ``true then p else q(false)
     have : $out₁ =Q iprop(□?$p1 $out₁') := ⟨⟩
     have : $p2 =Q ($pB && $p) := ⟨⟩
@@ -215,8 +215,8 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig : Q($pro
     let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
     | throwError m!"ispecialize: {out} is not a wand"
     let out₁' ← mkFreshExprMVarQ prop
-    let some _ ← ProofModeM.trySynthInstanceQ q(AddModal $out₁' $out₁ $out₂)
-    | throwError m!"ispecialize: AddModal type class synthesis failed with {out₁} and {out₂}"
+    let some _ ← ProofModeM.trySynthInstanceQ q(AddModal $out₁' $out₁ $goal)
+    | throwError m!"ispecialize: AddModal type class synthesis failed with {out₁} and {goal}"
     let res ← iFrame bi _ hyps out₁' (← SelPat.resolve hyps [.spatial, .intuitionistic])
     let ⟨_, hyps', pf'⟩ ← res.finishClose
     return { hyps := hyps', p := q(false), out := out₂, pf := q(sorry) }
@@ -238,10 +238,10 @@ A tuple containing:
 - `pf`: Proof of `hyps ∗ □?pa A ⊢ hyps' ∗ □?pb B`, =`hyps ∗ □?pa A ⊢ hyps ∗ □ B` if context duplication succeeds
 -/
 def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
-    (hyps : Hyps bi e) (pa : Q(Bool)) (A : Q($prop))
+    (hyps : Hyps bi e) (pa : Q(Bool)) (A : Q($prop)) (goal : Q($prop))
     (spats : List (Syntax × SpecPat)) (try_dup_context : Bool := false) :
     ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) × Q($e ∗ □?$pa $A ⊢ $e' ∗ □?$pb $B)) := do
-  let state := { hyps, out := A, p := pa, pf := q(.rfl), .. }
+  let state : SpecializeState _ goal := { hyps, out := A, p := pa, pf := q(.rfl), .. }
   let ⟨hyps', pb, B, pf⟩ ← spats.foldlM processWand state
   if try_dup_context then
     -- context duplication succeeds if `B` is persistent, and `A` is persistent or affine
@@ -288,7 +288,7 @@ elab "ispecialize " colGt pmt:pmTerm : tactic => do
     hyps.removeG true λ name ivar' _ _ => if ivar == ivar' then some name else none
     | throwError "ispecialize: cannot find argument"
 
-  let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p out pmt.spats
+  let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p out goal pmt.spats
   let hyps''' := Hyps.add bi name ivar pb B hyps''
   let pf'' ← addBIGoal hyps''' goal
   mvar.assign q(($pf).1.trans <| $(pf').trans <| $pf'')

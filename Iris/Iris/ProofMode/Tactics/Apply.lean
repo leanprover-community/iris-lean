@@ -50,7 +50,7 @@ private partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
      return q(apply $pf)
 
   -- otherwise, if `A` has the form `?P -∗ ?B`, create a subgoal for `P` and continue with ?B
-  let some ⟨_, hyps', pb, B, pf⟩ ← try? <| iSpecializeCore hyps p A
+  let some ⟨_, hyps', pb, B, pf⟩ ← try? <| iSpecializeCore hyps p A goal
     [⟨← getRef, .goal {kind := .spatial, negate := false, trivial := false, frame := [], hyps := []} .anonymous⟩]
     | throwError m!"iapply: cannot apply {A} to {goal}"
   let pf' ← iApplyCore hyps' pb B goal
@@ -72,7 +72,7 @@ elab "iapply " colGt pmt:pmTerm : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
   -- elaborate the proof mode term `pmt` to the hypothesis `out`
-  let ⟨e, hyps', p, out, pf⟩ ← iHave hyps pmt true
+  let ⟨e, hyps', p, out, pf⟩ ← iHave hyps goal pmt true
   -- if `□?p out` directly matches goal, behave like `iexact`
   if let some _ ← ProofModeM.trySynthInstanceQ q(FromAssumption $p .in $out $goal) then
     -- ensure the context can be discarded
