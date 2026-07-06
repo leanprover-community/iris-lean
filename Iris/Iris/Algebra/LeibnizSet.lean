@@ -377,11 +377,9 @@ theorem localUpdate (X Y X' : S) (H : X ⊆ X') :
 
 end LeibnizSet
 
-/-! ## The coPset CMRAs
+/-! ## The CoPset CMRAs
 
-The two resource algebras over sets of positives (`CoPset`) from iris-rocq's `algebra/coPset.v`,
-obtained as instances of the generic set-CMRA construction above.
--/
+The two resource algebras over `CoPset`, obtained as instances of the generic set-CMRA construction above. -/
 
 /-- The union CMRA over `CoPset`: every element is valid and composition is set union. -/
 @[rocq_alias coPsetO, rocq_alias coPsetR, rocq_alias coPsetUR]
