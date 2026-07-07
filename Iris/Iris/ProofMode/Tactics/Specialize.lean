@@ -16,36 +16,10 @@ namespace Iris.ProofMode
 public section
 open BI
 
-theorem specialize_wand [BI PROP] {q p : Bool} {A1 A2 A3 Q P1 P2 : PROP}
-    (inst : IntoWand q p Q .in P1 .out P2)
-    (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊢ A3 ∗ □?p P1) :
-    A1 ⊢ A3 ∗ □?(p && q) P2 := by
-  refine h1.trans <| (sep_mono_left h2).trans <| sep_assoc.mp.trans (sep_mono_right ?_)
-  cases p with
-  | false => exact (sep_mono_right inst.into_wand).trans <| wand_elim_right
-  | true => exact
-    (sep_mono intuitionisticallyIf_intutitionistically.mpr intuitionisticallyIf_idem.mpr).trans <|
-    intuitionisticallyIf_sep_mpr.trans <| intuitionisticallyIf_mono <| (wand_elim_swap inst.into_wand)
-
-theorem specialize_wand_cont [BI PROP] {q p : Bool}
-    {A1 A2 A3 Q P1 P2 goal : PROP}
-    (inst : IntoWand q p Q .in P1 .out P2)
-    (h1 : (A2 ∗ □?q Q ⊢ goal) → A1 ⊢ goal) (h2 : A2 ⊢ A3 ∗ □?p P1)
-    (h3 : A3 ∗ □?(p && q) P2 ⊢ goal) :
-    A1 ⊢ goal := by
-  refine h1 (Entails.trans ?_ h3)
-  refine (sep_mono_left h2).trans <| sep_assoc.1.trans (sep_mono_right ?_)
-  cases p with
-  | false => exact (sep_mono_right inst.into_wand).trans <| wand_elim_right
-  | true => exact
-    (sep_mono intuitionisticallyIf_intutitionistically.mpr intuitionisticallyIf_idem.mpr).trans <|
-    intuitionisticallyIf_sep_mpr.trans <| intuitionisticallyIf_mono <| (wand_elim_swap inst.into_wand)
-
-theorem specialize_wand_nested [BI PROP] {q p : Bool} {C B out out₂ goal : PROP}
-    (inst : IntoWand q p out .in B .out out₂)
-    (k : C ∗ □?(p && q) out₂ ⊢ goal) :
-    C ∗ □?p B ⊢ ((□?q out) -∗ goal) := by
-  refine wand_intro (sep_assoc.mp.trans <| (sep_mono_right ?_).trans k)
+theorem specialize_wand_step [BI PROP] {q p : Bool} {A Q P1 P2 : PROP}
+    (inst : IntoWand q p Q .in P1 .out P2) :
+    (A ∗ □?p P1) ∗ □?q Q ⊢ A ∗ □?(p && q) P2 := by
+  refine sep_assoc.mp.trans (sep_mono_right ?_)
   cases p with
   | false => exact (sep_mono_right inst.into_wand).trans wand_elim_right
   | true => exact
@@ -221,14 +195,13 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let out₂ ← mkFreshExprMVarQ prop
     let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $pB $out .in $B .out $out₂)
     | throwError m!"ispecialize: cannot instantiate {out} with {B}"
-    let pfCont ← do match pfNest with
+    match pfNest with
+    | none =>
+      let pfCont := q(fun pf => $pfCont (wand_elim_left_trans ($(pf').mp.trans ($pfContNest (wand_intro ((specialize_wand_step $inst).trans pf))))))
+      return { hyps := hyps'', p := p2, out := out₂, pfCont, pf := none }
     | some pfNest =>
-      pure q(specialize_wand_cont $inst $pfCont ($(pf').mp.trans $pfNest))
-    | none => pure q(fun pf =>
-        $pfCont (wand_elim_left_trans ($(pf').mp.trans ($pfContNest (specialize_wand_nested $inst pf)))))
-    let pf := pfNest.bind (fun pfNest =>
-      pf.bind (fun pf => some q(specialize_wand $inst $pf ($(pf').mp.trans $pfNest))))
-    return { hyps := hyps'', p := p2, out := out₂, pfCont, pf }
+      let pfStep := q((sep_mono_left ($(pf').mp.trans $pfNest)).trans (specialize_wand_step $inst))
+      return specState.update hyps'' p2 out₂ pfStep
   | .pure t => do
     let v ← mkFreshLevelMVar
     let α : Q(Sort v) ← mkFreshExprMVarQ q(Sort v)
