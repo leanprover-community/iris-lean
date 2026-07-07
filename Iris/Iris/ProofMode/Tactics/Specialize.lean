@@ -143,6 +143,20 @@ private def synthIntoWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     | throwError m!"ispecialize: {out} is not a wand"
   return ⟨out₁, out₂, inst⟩
 
+private def findFrameIVars {u}  {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (hyps : Hyps bi e) (hs : List Ident) (f : List Ident) :
+    ProofModeM <| IVarIdSet × List IVarId := do
+  let mut ivars : IVarIdSet := {}
+  for name in hs do
+    ivars := ivars.insert (← hyps.findWithInfo name)
+  let mut frameIVars : List IVarId := []
+  for name in f do
+    let ivar ← hyps.findWithInfo name
+    frameIVars := ivar :: frameIVars
+    if ivars.contains ivar then
+      throwError "ispecialize: {name} used twice"
+  return ⟨ivars, frameIVars.reverse⟩
+
 mutual
 
 private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q($prop)}
@@ -183,16 +197,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let pfStep : Q($e ∗ □?$p $out ⊢ $e ∗ □?$p $Φ $x) := q(specialize_forall_step (A2 := $e) (p := $p) $inst $x)
     return specState.update hyps p out' pfStep
   | .goal { kind := .spatial, negate, trivial, frame := f, hyps := hs } g => do
-    let mut ivars : IVarIdSet := {}
-    for name in hs do
-      ivars := ivars.insert (← hyps.findWithInfo name)
-    let mut frameIVars : List IVarId := []
-    for name in f do
-      let ivar ← hyps.findWithInfo name
-      frameIVars := ivar :: frameIVars
-      if ivars.contains ivar then
-        throwError "ispecialize: {name} used twice"
-    frameIVars := frameIVars.reverse
+    let ⟨ivars, frameIVars⟩ ← findFrameIVars hyps hs f
     let ⟨_, _, hypsl', hypsr', pf'⟩ := Hyps.split bi
       (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
     let ⟨out₁, out₂, inst⟩ ← synthIntoWand p out false
@@ -230,16 +235,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let pfStep := q(specialize_wand_persistent_step $out₁ $out₂ $inst1 $inst2 $inst3 $pf')
     return specState.update hyps p out₂ pfStep
   | .goal { kind := .modal, negate, trivial, frame := f, hyps := hs, .. } g =>
-    let mut ivars : IVarIdSet := {}
-    for name in hs do
-      ivars := ivars.insert (← hyps.findWithInfo name)
-    let mut frameIVars : List IVarId := []
-    for name in f do
-      let ivar ← hyps.findWithInfo name
-      frameIVars := ivar :: frameIVars
-      if ivars.contains ivar then
-        throwError "ispecialize: {name} used twice"
-    frameIVars := frameIVars.reverse
+    let ⟨ivars, frameIVars⟩ ← findFrameIVars hyps hs f
     let ⟨_, _, hypsl', hypsr', pf'⟩ := Hyps.split bi
       (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
     let ⟨out₁, out₂, inst1⟩ ← synthIntoWand p out false
