@@ -403,6 +403,10 @@ instance laterN_persistent (n : Nat) (P : PROP) [Persistent P] :
   | zero => assumption
   | succ n _ => exact later_persistent
 
+instance instPersistentLaterIf [BI PROP] (P : PROP) [Persistent P] (p : Bool) :
+    Persistent iprop(▷?p P) := by
+  cases p <;> simp [BIBase.laterIf] <;> infer_instance
+
 @[rocq_alias bi.laterN_absorbing]
 instance laterN_absorbing (n : Nat) (P : PROP) [Absorbing P] :
     Absorbing iprop(▷^[n] P) := by
