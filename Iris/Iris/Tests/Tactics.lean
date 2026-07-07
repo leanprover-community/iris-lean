@@ -855,6 +855,17 @@ example [BI PROP] (P Q : PROP) (h : P ⊢ □ Q) : ⊢ P -∗ P ∗ Q := by
   · iexact HP
   · iexact HQ
 
+/--
+  Tests `ihave` with the specialisation pattern involving modalities.
+  Despite `try_dup_context` being `true`, the context is not duplicated.
+-/
+example [BI PROP] [BIAffine PROP] [BIUpdate PROP] (P : PROP) [Persistent P] :
+    |==> P ⊢ |==> P := by
+  iintro HP
+  ihave #HP : P $$ [> HP //]
+  imodintro
+  iexact HP
+
 end ihave
 
 -- ex falso
