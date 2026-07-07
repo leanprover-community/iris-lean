@@ -53,7 +53,7 @@ open HeapView One DFrac Agree LeibnizO
 
 /- Define an OFunctor for the heap. Fractions are concretely `Qp`. -/
 abbrev F1 : OFunctorPre :=
-  constOF <| HeapView Nat (Agree (LeibnizO String)) Iris.Std.AssocList
+  constOF <| HeapView Nat (Agree (LeibnizO String)) (Std.ExtTreeMap Nat · compare)
 
 /- Our OFunctor is present in the global list of OFunctors. -/
 variable {GF} [ElemG GF F1]

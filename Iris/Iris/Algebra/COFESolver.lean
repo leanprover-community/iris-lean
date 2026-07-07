@@ -35,16 +35,20 @@ instance instA (n) : COFE (A F n) := (A' F n).2
 #rocq_ignore solver.A_cofe "Inference succeeds automatically via `instA`/`instA'`"
 
 variable (F) in
-mutual
+/-- The section/retraction pair at every level, computed by a single recursion so
+that evaluating either component at level `k` costs `O(k)` (the naive mutual
+recursion recomputes both branches at every level, which is `2^k`). -/
+def updown : ∀ k, (A F k -n> A F (k+1)) × (A F (k+1) -n> A F k)
+  | 0 => (⟨fun _ => inh.default, ⟨fun _ _ _ _ => .rfl⟩⟩, ⟨fun _ => ⟨()⟩, ⟨fun _ _ _ _ => .rfl⟩⟩)
+  | k+1 => let (u, d) := updown k; (map d u, map u d)
+
+variable (F) in
 @[rocq_alias solver.f]
-def up : ∀ k, A F k -n> A F (k+1)
-  | 0 => ⟨fun _ => inh.default, ⟨fun _ _ _ _ => .rfl⟩⟩
-  | k+1 => map (down k) (up k)
+def up (k : Nat) : A F k -n> A F (k+1) := (updown F k).1
+
+variable (F) in
 -- rocq_alias solver.g
-def down : ∀ k, A F (k+1) -n> A F k
-  | 0 => ⟨fun _ => ⟨()⟩, ⟨fun _ _ _ _ => .rfl⟩⟩
-  | k+1 => map (up k) (down k)
-end
+def down (k : Nat) : A F (k+1) -n> A F k := (updown F k).2
 
 #rocq_ignore solver.f_S "Not needed"
 #rocq_ignore solver.g_S "Not needed"
