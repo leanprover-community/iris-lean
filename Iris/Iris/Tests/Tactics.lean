@@ -1108,14 +1108,13 @@ example [BI PROP] (Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
 
 -- Test `ispecialize` with failing `//`
 /--
-error: ispecialize: itrivial could not solve ⏎
+error: ispecialize: itrivial could not solve
 ⊢ False
 -/
 #guard_msgs in
 example [BI PROP] (Q : PROP) : ⊢ (False -∗ Q) -∗ Q := by
   iintro HQ
   ispecialize HQ $$ [//]
-
 
 /-- Tests `ispecialize` with named subgoal -/
 example [BI PROP] (Q : PROP) : P ⊢ (⌜True⌝ -∗ P -∗ ⌜True⌝ -∗ Q) -∗ Q := by

@@ -133,16 +133,6 @@ private def SpecializeState.update {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     pfCont := q(fun pf => $(st.pfCont) ($(pfCont).trans pf)),
     pf := st.pf.map (fun pf => q($(pf).trans $pfCont)) }
 
-private def synthIntoWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
-    (p : Q(Bool)) (out : Q($prop)) (persistent : Bool) :
-    ProofModeM <| (out₁ : Q($prop)) × (out₂ : Q($prop)) ×
-      Q(IntoWand $p $persistent $out .out $out₁ .out $out₂) := do
-  let out₁ ← mkFreshExprMVarQ prop
-  let out₂ ← mkFreshExprMVarQ prop
-  let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $persistent $out .out $out₁ .out $out₂)
-    | throwError m!"ispecialize: {out} is not a wand"
-  return ⟨out₁, out₂, inst⟩
-
 private def findFrameIVars {u}  {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (hs : List Ident) (f : List Ident) :
     ProofModeM <| IVarIdSet × List IVarId := do
@@ -169,6 +159,33 @@ private def finishFrameSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     else match g with
     | none => addBIGoal hyps goal
     | some g => addBIGoal hyps goal g
+
+private def synthIntoWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
+    (p : Q(Bool)) (out : Q($prop)) (persistent : Bool) :
+    ProofModeM <| (out₁ : Q($prop)) × (out₂ : Q($prop)) ×
+      Q(IntoWand $p $persistent $out .out $out₁ .out $out₂) := do
+  let out₁ ← mkFreshExprMVarQ prop
+  let out₂ ← mkFreshExprMVarQ prop
+  let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $persistent $out .out $out₁ .out $out₂)
+    | throwError m!"ispecialize: {out} is not a wand"
+  return ⟨out₁, out₂, inst⟩
+
+private def synthIntoWandPersistent {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
+    (p : Q(Bool)) (out : Q($prop)) :
+    ProofModeM ((out₁ : Q($prop)) × (out₂ : Q($prop)) × (out₁' : Q($prop)) ×
+      Q(IntoWand «$p» true «$out» InOut.out «$out₁» InOut.out «$out₂») ×
+      Q(Persistent $out₁) ×
+      Q(IntoAbsorbingly $out₁' $out₁)) := do
+  let out₁ ← mkFreshExprMVarQ prop
+  let out₂ ← mkFreshExprMVarQ prop
+  let some inst1 ← ProofModeM.trySynthInstanceQ q(IntoWand $p true $out .out $out₁ .out $out₂)
+    | throwError m!"ispecialize: {out} is not a wand"
+  let some inst2 ← ProofModeM.trySynthInstanceQ q(Persistent $out₁)
+  | throwError m!"ispecialize: {out₁} is not persistent"
+  let out₁' ← mkFreshExprMVarQ prop
+  let some inst3 ← ProofModeM.trySynthInstanceQ q(IntoAbsorbingly $out₁' $out₁)
+  | throwError m!"ispecialize: IntoAbsorbingly type class synthesis failed with {out₁}"
+  pure ⟨out₁, out₂, out₁', inst1, inst2, inst3⟩
 
 mutual
 
@@ -222,12 +239,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
   | .goal { kind := .persistent, trivial, frame := f, hyps := hs, .. } g => do
     if !hs.isEmpty then
       throwError "ispecialize: the subgoal for the persistent premise should not consume hypotheses"
-    let ⟨out₁, out₂, inst1⟩  ← synthIntoWand p out true
-    let some inst2 ← ProofModeM.trySynthInstanceQ q(Persistent $out₁)
-    | throwError m!"ispecialize: {out₁} is not persistent"
-    let out₁' ← mkFreshExprMVarQ prop
-    let some inst3 ← ProofModeM.trySynthInstanceQ q(IntoAbsorbingly $out₁' $out₁)
-    | throwError m!"ispecialize: IntoAbsorbingly type class synthesis failed with {out₁}"
+    let ⟨out₁, out₂, out₁', inst1, inst2, inst3⟩ ← synthIntoWandPersistent p out
     let ⟨_, frameIVars⟩ ← findFrameIVars hyps [] f
     let res ← iFrame bi _ hyps out₁' (frameIVars.map (⟨.ipm ·, true⟩))
     let pf' ← finishFrameSubgoal trivial g res
@@ -253,12 +265,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let pfStep := q(specialize_wand_autoframe_spatial_step $out₂ $inst $pf')
     return specState.update hyps' q(false) out₂ pfStep
   | .autoframe .persistent =>
-    let ⟨out₁, out₂, inst1⟩ ← synthIntoWand p out true
-    let some inst2 ← ProofModeM.trySynthInstanceQ q(Persistent $out₁)
-    | throwError m!"ispecialize: {out₁} is not persistent"
-    let out₁' ← mkFreshExprMVarQ prop
-    let some inst3 ← ProofModeM.trySynthInstanceQ q(IntoAbsorbingly $out₁' $out₁)
-    | throwError m!"ispecialize: IntoAbsorbingly type class synthesis failed with {out₁}"
+    let ⟨out₁, out₂, out₁', inst1, inst2, inst3⟩ ← synthIntoWandPersistent p out
     let res ← iFrame bi _ hyps out₁' (← SelPat.resolve hyps [.spatial, .intuitionistic])
     let pf' ← finishFrameSubgoal true none res
     let pfStep := q(specialize_wand_persistent_step $out₁ $out₂ $inst1 $inst2 $inst3 $pf')
@@ -310,7 +317,9 @@ def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
         let .some h ← trySynthInstanceQ q(Affine $A) | return none
         return some q(.inr $h)
     let some af ← af | return ⟨_, hyps', pb, B, q($(pf).trans), some q($pf)⟩
-    return ⟨_, hyps, q(true), B', q((specialize_dup_context $pf $af).trans), some q(specialize_dup_context $pf $af)⟩
+    return ⟨_, hyps, q(true), B',
+            q((specialize_dup_context $pf $af).trans),
+            some q(specialize_dup_context $pf $af)⟩
   | _, _ => return ⟨_, hyps', pb, B, pfCont, pf⟩
 
 end
