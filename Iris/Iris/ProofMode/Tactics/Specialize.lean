@@ -147,6 +147,8 @@ private def synthIntoWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
   let out₂ ← mkFreshExprMVarQ prop
   let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $persistent $out .out $out₁ .out $out₂)
     | throwError m!"ispecialize: {out} is not a wand"
+  let out₁ : Q($prop) ← instantiateMVars out₁
+  let out₂ : Q($prop) ← instantiateMVars out₂
   return ⟨out₁, out₂, inst⟩
 
 /-- Used by the cases `.autoframe` and `.goal` in `processWand` with the `.persistent` kind. -/
@@ -156,16 +158,14 @@ private def synthIntoWandPersistent {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       Q(IntoWand $p true $out .out $out₁ .out $out₂) ×
       Q(Persistent $out₁) ×
       Q(IntoAbsorbingly $out₁' $out₁)) := do
-  let out₁ ← mkFreshExprMVarQ prop
-  let out₂ ← mkFreshExprMVarQ prop
-  let some inst1 ← ProofModeM.trySynthInstanceQ q(IntoWand $p true $out .out $out₁ .out $out₂)
-    | throwError m!"ispecialize: {out} is not a wand"
+  let ⟨out₁, out₂, inst1⟩ : (out₁ : Q($prop)) × (out₂ : Q($prop)) ×
+    Q(IntoWand $p true $out .out $out₁ .out $out₂) ← @synthIntoWand u prop bi p out true
   let some inst2 ← ProofModeM.trySynthInstanceQ q(Persistent $out₁)
   | throwError m!"ispecialize: {out₁} is not persistent"
   let out₁' ← mkFreshExprMVarQ prop
   let some inst3 ← ProofModeM.trySynthInstanceQ q(IntoAbsorbingly $out₁' $out₁)
   | throwError m!"ispecialize: IntoAbsorbingly type class synthesis failed with {out₁}"
-  pure ⟨out₁, out₂, out₁', inst1, inst2, inst3⟩
+  return ⟨out₁, out₂, out₁', inst1, inst2, inst3⟩
 
 /-- Used by the cases `.autoframe` and `.goal` in `processWand` with the `.modal` kind. -/
 private def synthIntoWandModal {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
@@ -173,10 +173,8 @@ private def synthIntoWandModal {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     ProofModeM ((out₁ : Q($prop)) × (out₂ : Q($prop)) × (out₁' : Q($prop)) ×
       Q(IntoWand $p false $out .out $out₁ .out $out₂) ×
       Q(AddModal $out₁' $out₁ $goal)) := do
-  let out₁ ← mkFreshExprMVarQ prop
-  let out₂ ← mkFreshExprMVarQ prop
-  let some inst1 ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
-    | throwError m!"ispecialize: {out} is not a wand"
+  let ⟨out₁, out₂, inst1⟩ : (out₁ : Q($prop)) × (out₂ : Q($prop)) ×
+    Q(IntoWand $p false $out .out $out₁ .out $out₂) ← @synthIntoWand u prop bi  p out false
   let out₁' ← mkFreshExprMVarQ prop
   let some inst2 ← ProofModeM.trySynthInstanceQ q(AddModal $out₁' $out₁ $goal)
     | throwError m!"ispecialize: AddModal type class synthesis failed with {out₁} and {goal}"
@@ -191,6 +189,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
   let ⟨ref, spat⟩ := spat
   withRef ref do
   match spat with
+  -- A hypothesis name, possibly with nested specialisation patterns
   | .ident i spats =>
     let ivar ← hyps.findWithInfo i
     let ⟨_, hyps', out₁, out₁', p1, _, pf'⟩ := hyps.remove false ivar
@@ -212,6 +211,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     | some pfNest =>
       let pfStep := q((sep_mono_left ($(pf').mp.trans $pfNest)).trans (specialize_wand $inst))
       return specState.update hyps'' p2 out₂ pfStep
+  -- A pure Lean hypothesis
   | .pure t => do
     let v ← mkFreshLevelMVar
     let α : Q(Sort v) ← mkFreshExprMVarQ q(Sort v)
@@ -225,6 +225,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let pfStep : Q($e ∗ □?$p $out ⊢ $e ∗ □?$p $Φ $x) :=
       q(specialize_forall (A2 := $e) (p := $p) $inst $x)
     return specState.update hyps p out' pfStep
+  -- Subgoal with `[ H₁ … Hₙ ]` or `[- H₁ … Hₙ ]`
   | .goal { kind := .spatial, negate, trivial, frame := f, hyps := hs } g => do
     let ⟨ivars, frameIVars⟩ ← findFrameIVars hyps hs f
     let ⟨_, _, hypsl', hypsr', pf'⟩ := Hyps.split bi
@@ -233,6 +234,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let pf'' ← finishFrameSubgoal hypsr' out₁ trivial g frameIVars
     let pfStep := q(specialize_wand_subgoal $out₂ $inst $pf' $pf'')
     return specState.update hypsl' q(false) out₂ pfStep
+  -- Subgoal with `[# H₁ … Hₙ ]` or `[#- H₁ … Hₙ ]`
   | .goal { kind := .persistent, trivial, frame := f, hyps := hs, .. } g => do
     if !hs.isEmpty then
       throwError "ispecialize: the subgoal for the persistent premise should not consume hypotheses"
@@ -241,6 +243,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let pf' ← finishFrameSubgoal hyps out₁' trivial g frameIVars
     let pfStep := q(specialize_wand_persistent $out₁ $out₂ $inst1 $inst2 $inst3 $pf')
     return specState.update hyps p out₂ pfStep
+  -- Subgoal with `[> H₁ … Hₙ ]` or `[>- H₁ … Hₙ ]`
   | .goal { kind := .modal, negate, trivial, frame := f, hyps := hs, .. } g =>
     let ⟨ivars, frameIVars⟩ ← findFrameIVars hyps hs f
     let ⟨_, _, hypsl', hypsr', pf'⟩ := Hyps.split bi
@@ -250,17 +253,20 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let h := q($(pf').mp.trans (sep_mono_right $pf''))
     let pfCont := q(fun pf => $pfCont (specialize_modal $h pf $inst1 $inst2))
     return { hyps := hypsl', p := q(false), out := out₂, pfCont, pf := none }
+  -- Auto-framing with `[$]`
   | .autoframe .spatial => do
     let ⟨out₁, out₂, inst⟩ ← synthIntoWand p out false
     let res ← iFrame bi _ hyps out₁ (← SelPat.resolve hyps [.spatial, .intuitionistic])
     let ⟨_, hyps', pf'⟩ ← res.finishClose
     let pfStep := q(specialize_wand_autoframe_spatial $out₂ $inst $pf')
     return specState.update hyps' q(false) out₂ pfStep
+  -- Auto-framing with `[#$]`
   | .autoframe .persistent =>
     let ⟨out₁, out₂, out₁', inst1, inst2, inst3⟩ ← synthIntoWandPersistent p out
     let pf' ← finishFrameSubgoal hyps out₁' true none none
     let pfStep := q(specialize_wand_persistent $out₁ $out₂ $inst1 $inst2 $inst3 $pf')
     return specState.update hyps p out₂ pfStep
+  -- Auto-framing with `[>$]`
   | .autoframe .modal =>
     let ⟨out₁, out₂, out₁', inst1, inst2⟩ ← synthIntoWandModal p out goal
     let res ← iFrame bi _ hyps out₁' (← SelPat.resolve hyps [.spatial, .intuitionistic])
@@ -294,7 +300,7 @@ def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   let ⟨hyps', pb, B, pfCont, pf⟩ ← spats.foldlM processWand state
   match try_dup_context, pf with
   | true, some pf =>
-    -- context duplication succeeds if `B` is persistent, and `A` is persistent or affine
+    -- Duplicate context if `B` is persistent and `A` is persistent/affine
     let B' : Q($prop) ← mkFreshExprMVarQ q($prop)
     let af ← do match matchBool pa with
     | .inl _ => pure <| some q(Or.inl (.refl $pa))
@@ -303,10 +309,13 @@ def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
       pure <| some q(Or.inr (a := $pa = true) $h)
     let inst ← ProofModeM.trySynthInstanceQ q(IntoPersistently $pb $B $B')
     match inst, af with
+    -- Context duplication does not succeed
     | none, _ | _, none => return ⟨_, hyps', pb, B, q($(pf).trans), some q($pf)⟩
+    -- Context duplication succeeds
     | some _, some af =>
       return ⟨_, hyps, q(true), B', q((specialize_dup_context $pf $af).trans),
               some q(specialize_dup_context $pf $af)⟩
+  -- No request to duplicate the context, or the `.modal` kind is involved
   | _, _ => return ⟨_, hyps', pb, B, pfCont, pf⟩
 
 end
