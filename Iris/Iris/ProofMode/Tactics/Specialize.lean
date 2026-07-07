@@ -147,18 +147,20 @@ private def findFrameIVars {u}  {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
       throwError "ispecialize: {name} used twice"
   return ⟨ivars, frameIVars.reverse⟩
 
-private def finishFrameSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
-    {e goal : Q($prop)} (trivial : Bool) (g : Option Name)
-    (res : FrameResult bi e goal) : ProofModeM Q($e ⊢ $goal) := do
+private def finishFrameSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (hyps : Hyps bi e) (goal : Q($prop)) (trivial : Bool) (g : Option Name)
+    (frameIVars : Option <| List IVarId) : ProofModeM Q($e ⊢ $goal) := do
+  let targets ← do match frameIVars with
+  | none => SelPat.resolve hyps [.spatial, .intuitionistic]
+  | some frameIVars => pure (frameIVars.map (⟨.ipm ·, true⟩))
+  let res ← iFrame bi _ hyps goal targets
   res.finish λ hyps goal => do
     if trivial then
       let some r ← iTrivial hyps goal
       | throwError "ispecialize: itrivial could not solve\
           {← ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
       return r
-    else match g with
-    | none => addBIGoal hyps goal
-    | some g => addBIGoal hyps goal g
+    else addBIGoal hyps goal <| g.getD .anonymous
 
 private def synthIntoWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     (p : Q(Bool)) (out : Q($prop)) (persistent : Bool) :
@@ -213,7 +215,8 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
   | .ident i spats =>
     let ivar ← hyps.findWithInfo i
     let ⟨_, hyps', out₁, out₁', p1, _, pf'⟩ := hyps.remove false ivar
-    let ⟨_, hyps'', pB, B, pfContNest, pfNest⟩ ← iSpecializeCore hyps' p1 out₁' q(iprop(□?$p $out -∗ $goal)) spats
+    let ⟨_, hyps'', pB, B, pfContNest, pfNest⟩ ←
+      iSpecializeCore hyps' p1 out₁' q(iprop(□?$p $out -∗ $goal)) spats
     let p2 := if pB.constName! == ``true then p else q(false)
     let out₂ ← mkFreshExprMVarQ prop
     let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $pB $out .in $B .out $out₂)
@@ -236,15 +239,15 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     have out' : Q($prop) := Expr.headBeta q($Φ $x)
     let newMVarIds ← getMVarsNoDelayed x
     for mvar in newMVarIds do addMVarGoal mvar
-    let pfStep : Q($e ∗ □?$p $out ⊢ $e ∗ □?$p $Φ $x) := q(specialize_forall_step (A2 := $e) (p := $p) $inst $x)
+    let pfStep : Q($e ∗ □?$p $out ⊢ $e ∗ □?$p $Φ $x) :=
+      q(specialize_forall_step (A2 := $e) (p := $p) $inst $x)
     return specState.update hyps p out' pfStep
   | .goal { kind := .spatial, negate, trivial, frame := f, hyps := hs } g => do
     let ⟨ivars, frameIVars⟩ ← findFrameIVars hyps hs f
     let ⟨_, _, hypsl', hypsr', pf'⟩ := Hyps.split bi
       (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
     let ⟨out₁, out₂, inst⟩ ← synthIntoWand p out false
-    let res ← iFrame bi _ hypsr' out₁ (frameIVars.map (⟨.ipm ·, true⟩))
-    let pf'' ← finishFrameSubgoal trivial g res
+    let pf'' ← finishFrameSubgoal hypsr' out₁ trivial g frameIVars
     let pfStep := q(specialize_wand_subgoal_step $out₂ $inst $pf' $pf'')
     return specState.update hypsl' q(false) out₂ pfStep
   | .goal { kind := .persistent, trivial, frame := f, hyps := hs, .. } g => do
@@ -252,8 +255,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
       throwError "ispecialize: the subgoal for the persistent premise should not consume hypotheses"
     let ⟨out₁, out₂, out₁', inst1, inst2, inst3⟩ ← synthIntoWandPersistent p out
     let ⟨_, frameIVars⟩ ← findFrameIVars hyps [] f
-    let res ← iFrame bi _ hyps out₁' (frameIVars.map (⟨.ipm ·, true⟩))
-    let pf' ← finishFrameSubgoal trivial g res
+    let pf' ← finishFrameSubgoal hyps out₁' trivial g frameIVars
     let pfStep := q(specialize_wand_persistent_step $out₁ $out₂ $inst1 $inst2 $inst3 $pf')
     return specState.update hyps p out₂ pfStep
   | .goal { kind := .modal, negate, trivial, frame := f, hyps := hs, .. } g =>
@@ -261,8 +263,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let ⟨_, _, hypsl', hypsr', pf'⟩ := Hyps.split bi
       (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
     let ⟨out₁, out₂, out₁', inst1, inst2⟩ ← synthIntoWandModal p out goal
-    let res ← iFrame bi _ hypsr' out₁' (frameIVars.map (⟨.ipm ·, true⟩))
-    let pf'' ← finishFrameSubgoal trivial g res
+    let pf'' ← finishFrameSubgoal hypsr' out₁' trivial g frameIVars
     let h := q($(pf').mp.trans (sep_mono_right $pf''))
     let pfCont := q(fun pf => $pfCont (specialize_modal $h pf $inst1 $inst2))
     return { hyps := hypsl', p := q(false), out := out₂, pfCont, pf := none }
@@ -274,8 +275,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     return specState.update hyps' q(false) out₂ pfStep
   | .autoframe .persistent =>
     let ⟨out₁, out₂, out₁', inst1, inst2, inst3⟩ ← synthIntoWandPersistent p out
-    let res ← iFrame bi _ hyps out₁' (← SelPat.resolve hyps [.spatial, .intuitionistic])
-    let pf' ← finishFrameSubgoal true none res
+    let pf' ← finishFrameSubgoal hyps out₁' true none none
     let pfStep := q(specialize_wand_persistent_step $out₁ $out₂ $inst1 $inst2 $inst3 $pf')
     return specState.update hyps p out₂ pfStep
   | .autoframe .modal =>
