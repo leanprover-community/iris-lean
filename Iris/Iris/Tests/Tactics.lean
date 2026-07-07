@@ -866,6 +866,14 @@ example [BI PROP] [BIAffine PROP] [BIUpdate PROP] (P : PROP) [Persistent P] :
   imodintro
   iexact HP
 
+/-- Tests `ihave` with the specialisation pattern involving auto-framing with modalities. -/
+example [BI PROP] [BIAffine PROP] [BIUpdate PROP] (P : PROP) [Persistent P] :
+    |==> P ⊢ |==> P := by
+  iintro HP
+  ihave #HP : P $$ [>$]
+  imodintro
+  iexact HP
+
 end ihave
 
 -- ex falso
