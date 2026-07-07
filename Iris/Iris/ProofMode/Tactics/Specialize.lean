@@ -16,6 +16,57 @@ namespace Iris.ProofMode
 public section
 open BI
 
+theorem specialize_wand_step [BI PROP] {q p : Bool} {A2 A3 Q P1 P2 : PROP}
+    (inst : IntoWand q p Q .in P1 .out P2)
+    (h2 : A2 ⊢ A3 ∗ □?p P1) :
+    A2 ∗ □?q Q ⊢ A3 ∗ □?(p && q) P2 := by
+  refine (sep_mono_left h2).trans <| sep_assoc.1.trans (sep_mono_right ?_)
+  cases p with
+  | false => exact (sep_mono_right inst.into_wand).trans <| wand_elim_right
+  | true => exact
+    (sep_mono intuitionisticallyIf_intutitionistically.mpr intuitionisticallyIf_idem.mpr).trans <|
+    intuitionisticallyIf_sep_mpr.trans <| intuitionisticallyIf_mono <| (wand_elim_swap inst.into_wand)
+
+-- TODO: if q is true and A1 is persistent, this proof can guarantee □ P2 instead of P2
+-- see https://gitlab.mpi-sws.org/iris/iris/-/blob/846ed45bed6951035c6204fef365d9a344022ae6/iris/proofmode/coq_tactics.v#L336
+theorem specialize_wand_subgoal_step [BI PROP] {q : Bool} {A2 A3 A4 Q P1 : PROP} P2
+    (inst : IntoWand q false Q .out P1 .out P2)
+    (h2 : A2 ⊣⊢ A3 ∗ A4) (h3 : A4 ⊢ P1) : A2 ∗ □?q Q ⊢ A3 ∗ P2 := by
+  refine (sep_mono_left h2.1).trans <| sep_assoc.1.trans
+    (sep_mono_right ((sep_mono_left h3).trans ?_))
+  exact (sep_mono_right inst.1).trans wand_elim_right
+
+theorem specialize_wand_autoframe_spatial_step [BI PROP] {q : Bool} {A2 A3 Q P1 : PROP} P2
+    (inst : IntoWand q false Q .out P1 .out P2)
+    (h2 : A2 ⊢ A3 ∗ P1) : A2 ∗ □?q Q ⊢ A3 ∗ P2 :=
+  (sep_mono_left h2).trans <| sep_assoc.1.trans
+    (sep_mono_right ((sep_mono_right inst.into_wand).trans wand_elim_right))
+
+theorem specialize_wand_persistent_step [BI PROP] {q : Bool} {A2 Q P1' : PROP} P1 P2
+    (inst3 : IntoWand q true Q .out P1 .out P2) (inst2 : Persistent P1)
+    (inst1 : IntoAbsorbingly P1' P1)
+    (h2 : A2 ⊢ P1') : A2 ∗ □?q Q ⊢ A2 ∗ □?q P2 := by
+  have h4 : □ P1 ∗ □?q Q ⊢ □?q P2 := by cases q with
+  | false => exact (sep_mono_right inst3.into_wand).trans wand_elim_right
+  | true => calc
+    _ ⊢ □ □ P1 ∗ □ □ Q          := sep_mono intuitionistically_idem.mpr intuitionistically_idem.mpr
+    _ ⊢ □ (□ P1 ∗ □ Q)          := intuitionistically_sep_mpr
+    _ ⊢ □ (□ P1 ∗ (□ P1 -∗ P2)) := intuitionistically_mono <| sep_mono_right <| inst3.into_wand
+    _ ⊢ □?true P2               := intuitionistically_mono wand_elim_right
+  calc
+    _ ⊢ (A2 ∧ A2) ∗ □?q Q                 := sep_mono_left <| and_intro .rfl .rfl
+    _ ⊢ (A2 ∧ P1') ∗ □?q Q                := sep_mono_left <| and_mono_right h2
+    _ ⊢ (A2 ∧ <absorb> P1) ∗ □?q Q        := sep_mono_left <| and_mono_right into_absorbingly
+    _ ⊢ (A2 ∧ <absorb> <pers> P1) ∗ □?q Q := sep_mono_left <| and_mono_right <| absorbingly_mono Persistent.persistent
+    _ ⊢ (A2 ∧ <pers> P1) ∗ □?q Q          := sep_mono_left <| and_mono_right <| absorbingly_persistently.mp
+    _ ⊢ (A2 ∗ □ P1) ∗ □?q Q               := sep_mono_left persistently_and_intuitionistically_sep_right.mp
+    _ ⊢ A2 ∗ □ P1 ∗ □?q Q                 := sep_assoc.mp
+    _ ⊢ A2 ∗ □?q P2                       := sep_mono_right h4
+
+theorem specialize_forall_step [BI PROP] {p : Bool} {A2 P : PROP} {α : Sort _} {Φ : α → PROP}
+    (inst : IntoForall P Φ) (a : α) : A2 ∗ □?p P ⊢ A2 ∗ □?p (Φ a) :=
+  sep_mono_right <| intuitionisticallyIf_mono <| inst.into_forall.trans (forall_elim a)
+
 theorem specialize_wand [BI PROP] {q p : Bool} {A1 A2 A3 Q P1 P2 : PROP}
     (inst : IntoWand q p Q .in P1 .out P2)
     (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊢ A3 ∗ □?p P1) :
@@ -52,97 +103,6 @@ theorem specialize_wand_nested_cont [BI PROP] {q p : Bool} {C B out out₂ goal 
     (sep_mono intuitionisticallyIf_intutitionistically.mpr intuitionisticallyIf_idem.mpr).trans <|
     intuitionisticallyIf_sep_mpr.trans <| intuitionisticallyIf_mono <| (wand_elim_swap inst.into_wand)
 
--- TODO: if q is true and A1 is persistent, this proof can guarantee □ P2 instead of P2
--- see https://gitlab.mpi-sws.org/iris/iris/-/blob/846ed45bed6951035c6204fef365d9a344022ae6/iris/proofmode/coq_tactics.v#L336
-theorem specialize_wand_subgoal [BI PROP] {q : Bool} {A1 A2 A3 A4 Q P1 : PROP} P2
-    (inst : IntoWand q false Q .out P1 .out P2)
-    (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊣⊢ A3 ∗ A4) (h3 : A4 ⊢ P1) : A1 ⊢ A3 ∗ P2 := by
-  refine h1.trans <| (sep_mono_left h2.1).trans <| sep_assoc.1.trans (sep_mono_right ((sep_mono_left h3).trans ?_))
-  exact (sep_mono_right inst.1).trans wand_elim_right
-
-theorem specialize_wand_subgoal_cont [BI PROP] {q : Bool}
-    {A1 A2 A3 A4 Q P1 goal : PROP} P2
-    (inst : IntoWand q false Q .out P1 .out P2)
-    (h1 : (A2 ∗ □?q Q ⊢ goal) → A1 ⊢ goal) (h2 : A2 ⊣⊢ A3 ∗ A4) (h3 : A4 ⊢ P1)
-    (h4 : A3 ∗ P2 ⊢ goal) : A1 ⊢ goal := by
-  refine h1 (Entails.trans ?_ h4)
-  refine (sep_mono_left h2.1).trans <| sep_assoc.1.trans (sep_mono_right ((sep_mono_left h3).trans ?_))
-  exact (sep_mono_right inst.1).trans wand_elim_right
-
-theorem specialize_wand_autoframe_spatial [BI PROP] {q : Bool}
-    {A1 A2 A3 Q P1 : PROP} P2
-    (inst : IntoWand q false Q .out P1 .out P2)
-    (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊢ A3 ∗ P1) : A1 ⊢ A3 ∗ P2 :=
-  h1.trans <| (sep_mono_left h2).trans <| sep_assoc.1.trans
-    (sep_mono_right ((sep_mono_right inst.into_wand).trans wand_elim_right))
-
-theorem specialize_wand_autoframe_spatial_cont [BI PROP] {q : Bool}
-    {A1 A2 A3 Q P1 goal : PROP} P2
-    (inst : IntoWand q false Q .out P1 .out P2)
-    (h1 : (A2 ∗ □?q Q ⊢ goal) → A1 ⊢ goal) (h2 : A2 ⊢ A3 ∗ P1) (h3 : A3 ∗ P2 ⊢ goal) :
-    A1 ⊢ goal := by
-  refine h1 (Entails.trans ?_ h3)
-  exact (sep_mono_left h2).trans <| sep_assoc.1.trans
-    (sep_mono_right ((sep_mono_right inst.into_wand).trans wand_elim_right))
-
-theorem specialize_wand_persistent [BI PROP] {q : Bool}
-    {A1 A2 Q P1' : PROP} P1 P2
-    (inst3 : IntoWand q true Q .out P1 .out P2) (inst2 : Persistent P1)
-    (inst1 : IntoAbsorbingly P1' P1)
-    (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊢ P1') :
-    A1 ⊢ A2 ∗ □?q P2 :=
-  have h3 : □ P1 ∗ □?q Q ⊢ □?q P2 := by cases q with
-  | false => exact (sep_mono_right inst3.into_wand).trans wand_elim_right
-  | true => calc
-    _ ⊢ □ □ P1 ∗ □ □ Q          := sep_mono intuitionistically_idem.mpr intuitionistically_idem.mpr
-    _ ⊢ □ (□ P1 ∗ □ Q)          := intuitionistically_sep_mpr
-    _ ⊢ □ (□ P1 ∗ (□ P1 -∗ P2)) := intuitionistically_mono <| sep_mono_right <| inst3.into_wand
-    _ ⊢ □?true P2               := intuitionistically_mono wand_elim_right
-  calc
-    _ ⊢ A2 ∗ □?q Q                        := h1
-    _ ⊢ (A2 ∧ A2) ∗ □?q Q                 := sep_mono_left <| and_intro .rfl .rfl
-    _ ⊢ (A2 ∧ P1') ∗ □?q Q                := sep_mono_left <| and_mono_right h2
-    _ ⊢ (A2 ∧ <absorb> P1) ∗ □?q Q        := sep_mono_left <| and_mono_right into_absorbingly
-    _ ⊢ (A2 ∧ <absorb> <pers> P1) ∗ □?q Q := sep_mono_left <| and_mono_right <| absorbingly_mono Persistent.persistent
-    _ ⊢ (A2 ∧ <pers> P1) ∗ □?q Q          := sep_mono_left <| and_mono_right <| absorbingly_persistently.mp
-    _ ⊢ (A2 ∗ □ P1) ∗ □?q Q               := sep_mono_left persistently_and_intuitionistically_sep_right.mp
-    _ ⊢ A2 ∗ □ P1 ∗ □?q Q                 := sep_assoc.mp
-    _ ⊢ A2 ∗ □?q P2                       := sep_mono_right h3
-
-theorem specialize_wand_persistent_cont [BI PROP] {q : Bool}
-    {A1 A2 Q P1' goal : PROP} P1 P2
-    (inst3 : IntoWand q true Q .out P1 .out P2) (inst2 : Persistent P1)
-    (inst1 : IntoAbsorbingly P1' P1)
-    (h1 : (A2 ∗ □?q Q ⊢ goal) → A1 ⊢ goal) (h2 : A2 ⊢ P1') (h3 : A2 ∗ □?q P2 ⊢ goal) :
-    A1 ⊢ goal := by
-  refine h1 (Entails.trans ?_ h3)
-  have h4 : □ P1 ∗ □?q Q ⊢ □?q P2 := by cases q with
-  | false => exact (sep_mono_right inst3.into_wand).trans wand_elim_right
-  | true => calc
-    _ ⊢ □ □ P1 ∗ □ □ Q          := sep_mono intuitionistically_idem.mpr intuitionistically_idem.mpr
-    _ ⊢ □ (□ P1 ∗ □ Q)          := intuitionistically_sep_mpr
-    _ ⊢ □ (□ P1 ∗ (□ P1 -∗ P2)) := intuitionistically_mono <| sep_mono_right <| inst3.into_wand
-    _ ⊢ □?true P2               := intuitionistically_mono wand_elim_right
-  calc
-    _ ⊢ (A2 ∧ A2) ∗ □?q Q                 := sep_mono_left <| and_intro .rfl .rfl
-    _ ⊢ (A2 ∧ P1') ∗ □?q Q                := sep_mono_left <| and_mono_right h2
-    _ ⊢ (A2 ∧ <absorb> P1) ∗ □?q Q        := sep_mono_left <| and_mono_right into_absorbingly
-    _ ⊢ (A2 ∧ <absorb> <pers> P1) ∗ □?q Q := sep_mono_left <| and_mono_right <| absorbingly_mono Persistent.persistent
-    _ ⊢ (A2 ∧ <pers> P1) ∗ □?q Q          := sep_mono_left <| and_mono_right <| absorbingly_persistently.mp
-    _ ⊢ (A2 ∗ □ P1) ∗ □?q Q               := sep_mono_left persistently_and_intuitionistically_sep_right.mp
-    _ ⊢ A2 ∗ □ P1 ∗ □?q Q                 := sep_assoc.mp
-    _ ⊢ A2 ∗ □?q P2                       := sep_mono_right h4
-
-theorem specialize_forall [BI PROP] {p : Bool} {A1 A2 P : PROP} {α : Sort _} {Φ : α → PROP}
-    (inst : IntoForall P Φ) (h : A1 ⊢ A2 ∗ □?p P) (a : α) : A1 ⊢ A2 ∗ □?p (Φ a) := by
-  refine h.trans <| sep_mono_right <| intuitionisticallyIf_mono <| inst.into_forall.trans (forall_elim a)
-
-theorem specialize_forall_cont [BI PROP] {p : Bool} {A1 A2 P goal : PROP} {α : Sort _} {Φ : α → PROP}
-    (inst : IntoForall P Φ) (h : (A2 ∗ □?p P ⊢ goal) → A1 ⊢ goal) (a : α)
-    (h2 : A2 ∗ □?p (Φ a) ⊢ goal) : A1 ⊢ goal := by
-  refine h (Entails.trans ?_ h2)
-  refine sep_mono_right <| intuitionisticallyIf_mono <| inst.into_forall.trans (forall_elim a)
-
 theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B B'}
   (h : P ∗ □?pa A ⊢ P' ∗ □?pb B)
   (h2 : pa = true ∨ Affine A)
@@ -172,6 +132,15 @@ structure SpecializeState {prop : Q(Type u)} {bi : Q(BI $prop)} (orig goal : Q($
   (pfCont : Q(($e ∗ □?$p $out ⊢ $goal) → $orig ⊢ $goal))
   pf : Option Q($orig ⊢ $e ∗ □?$p $out)
 
+private def SpecializeState.update {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
+    {orig goal : Q($prop)} (st : @SpecializeState u prop bi orig goal)
+    {e' : Q($prop)} (hyps' : Hyps bi e') (p' : Q(Bool)) (out' : Q($prop))
+    (pfCont : Q($(st.e) ∗ □?$(st.p) $(st.out) ⊢ $e' ∗ □?$p' $out')) :
+    @SpecializeState u prop bi orig goal :=
+  { hyps := hyps', p := p', out := out',
+    pfCont := q(fun pf => $(st.pfCont) ($(pfCont).trans pf)),
+    pf := st.pf.map (fun pf => q($(pf).trans $pfCont)) }
+
 set_option maxHeartbeats 300000 in
 mutual
 
@@ -191,9 +160,8 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let out₂ ← mkFreshExprMVarQ prop
     let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $p1 $out .in $out₁' .out $out₂)
     | throwError m!"ispecialize: cannot instantiate {out} with {out₁'}"
-    let pfCont := q(specialize_wand_cont $inst $pfCont $(pf').mp)
-    let pf := pf.bind (fun pf => some q(specialize_wand $inst $pf $(pf').mp))
-    return { hyps := hyps', p := p2, out := out₂, pfCont, pf }
+    let pfStep := q(specialize_wand_step $inst $(pf').mp)
+    return specState.update hyps' p2 out₂ pfStep
   | .ident i spats =>
     let ivar ← hyps.findWithInfo i
     let ⟨_, hyps', out₁, out₁', p1, _, pf'⟩ := hyps.remove false ivar
@@ -222,9 +190,8 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     have : $out' =Q $Φ $x := ⟨⟩
     let newMVarIds ← getMVarsNoDelayed x
     for mvar in newMVarIds do addMVarGoal mvar
-    let pfCont := q(specialize_forall_cont $inst $pfCont $x)
-    let pf := pf.bind (fun pf => some q(specialize_forall $inst $pf $x))
-    return { e, hyps, p, out := out', pfCont, pf }
+    let pfStep : Q($e ∗ □?$p $out ⊢ $e ∗ □?$p $Φ $x) := q(specialize_forall_step (A2 := $e) (p := $p) $inst $x)
+    return specState.update hyps p out' pfStep
   | .goal { kind := .spatial, negate, trivial, frame := f, hyps := hs } g => do
     let mut ivars : IVarIdSet := {}
     for name in hs do
@@ -250,9 +217,8 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
         return r
       else
         addBIGoal hyps goal g
-    let pfCont := q(specialize_wand_subgoal_cont $out₂ $inst $pfCont $pf' $pf'')
-    let pf := pf.bind (fun pf => some q(specialize_wand_subgoal $out₂ $inst $pf $pf' $pf''))
-    return { hyps := hypsl', p := q(false), out := out₂, pfCont, pf }
+    let pfStep := q(specialize_wand_subgoal_step $out₂ $inst $pf' $pf'')
+    return specState.update hypsl' q(false) out₂ pfStep
   | .goal { kind := .persistent, trivial, frame := f, hyps := hs, .. } g => do
     if !hs.isEmpty then
       throwError "ispecialize: the subgoal for the persistent premise should not consume hypotheses"
@@ -277,9 +243,8 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
         return r
       else
         addBIGoal hyps goal g
-    let pfCont := q(specialize_wand_persistent_cont $out₁ $out₂ $inst1 $inst2 $inst3 $pfCont $pf')
-    let pf := pf.bind (fun pf => some q(specialize_wand_persistent $out₁ $out₂ $inst1 $inst2 $inst3 $pf $pf'))
-    return { hyps, p, out := out₂, pfCont, pf }
+    let pfStep := q(specialize_wand_persistent_step $out₁ $out₂ $inst1 $inst2 $inst3 $pf')
+    return specState.update hyps p out₂ pfStep
   | .goal { kind := .modal, negate, trivial, frame := f, hyps := hs, .. } g =>
     let mut ivars : IVarIdSet := {}
     for name in hs do
@@ -318,9 +283,8 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     | throwError m!"ispecialize: {out} is not a wand"
     let res ← iFrame bi _ hyps out₁ (← SelPat.resolve hyps [.spatial, .intuitionistic])
     let ⟨_, hyps', pf'⟩ ← res.finishClose
-    let pfCont := q(specialize_wand_autoframe_spatial_cont $out₂ $inst $pfCont $pf')
-    let pf := pf.bind (fun pf => some q(specialize_wand_autoframe_spatial $out₂ $inst $pf $pf'))
-    return { hyps := hyps', p := q(false), out := out₂, pfCont, pf }
+    let pfStep := q(specialize_wand_autoframe_spatial_step $out₂ $inst $pf')
+    return specState.update hyps' q(false) out₂ pfStep
   | .autoframe .persistent =>
     let out₁ ← mkFreshExprMVarQ prop
     let out₂ ← mkFreshExprMVarQ prop
@@ -336,9 +300,8 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
       let some pf ← iTrivial hyps goal
       | throwError "ispecialize: unable to solve premise by framing"
       return pf
-    let pfCont := q(specialize_wand_persistent_cont $out₁ $out₂ $inst1 $inst2 $inst3 $pfCont $pf')
-    let pf := pf.bind (fun pf => some q(specialize_wand_persistent $out₁ $out₂ $inst1 $inst2 $inst3 $pf $pf'))
-    return { hyps, p, out := out₂, pfCont, pf }
+    let pfStep := q(specialize_wand_persistent_step $out₁ $out₂ $inst1 $inst2 $inst3 $pf')
+    return specState.update hyps p out₂ pfStep
   | .autoframe .modal =>
     let out₁ ← mkFreshExprMVarQ prop
     let out₂ ← mkFreshExprMVarQ prop
