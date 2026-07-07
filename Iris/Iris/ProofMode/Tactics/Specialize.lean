@@ -321,10 +321,11 @@ def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
       | .inr _ => do
         let .some h ← trySynthInstanceQ q(Affine $A) | return none
         return some q(.inr $h)
-    let some af ← af | return ⟨_, hyps', pb, B, q($(pf).trans), some q($pf)⟩
-    return ⟨_, hyps, q(true), B',
-            q((specialize_dup_context $pf $af).trans),
-            some q(specialize_dup_context $pf $af)⟩
+    match ← af with
+    | none => return ⟨_, hyps', pb, B, q($(pf).trans), some q($pf)⟩
+    | some af =>
+      return ⟨_, hyps, q(true), B', q((specialize_dup_context $pf $af).trans),
+              some q(specialize_dup_context $pf $af)⟩
   | _, _ => return ⟨_, hyps', pb, B, pfCont, pf⟩
 
 end
