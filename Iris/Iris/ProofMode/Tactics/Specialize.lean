@@ -93,25 +93,28 @@ theorem specialize_wand_nested_cont [BI PROP] {q p : Bool} {C B out out₂ goal 
     intuitionisticallyIf_sep_mpr.trans <| intuitionisticallyIf_mono <| (wand_elim_swap inst.into_wand)
 
 theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B B'}
-  (h : P ∗ □?pa A ⊢ P' ∗ □?pb B)
-  (h2 : pa = true ∨ Affine A)
-  [IntoPersistently pb B B']
-  : P ∗ □?pa A ⊢ P ∗ □ B' := by
-    apply Entails.trans _ persistently_and_intuitionistically_sep_right.1
-    apply and_intro
-    · cases h2 <;> subst_eqs <;> apply sep_elim_left
-    · apply h.trans $ (sep_mono_right (persistentlyIf_of_intuitionisticallyIf.trans into_persistently)).trans sep_elim_right
+    (h : P ∗ □?pa A ⊢ P' ∗ □?pb B)
+    (h2 : pa = true ∨ Affine A)
+    [IntoPersistently pb B B'] :
+    P ∗ □?pa A ⊢ P ∗ □ B' := by
+  apply Entails.trans _ persistently_and_intuitionistically_sep_right.1
+  apply and_intro
+  · cases h2 <;> subst_eqs <;> apply sep_elim_left
+  · apply h.trans <|
+      (sep_mono_right (persistentlyIf_of_intuitionisticallyIf.trans into_persistently)).trans <|
+      sep_elim_right
 
 theorem specialize_modal [BI PROP] {e e' goal R P1 P1' P2 : PROP} {p : Bool}
     (h1 : e ⊢ e' ∗ P1') (h2 : e' ∗ P2 ⊢ goal)
-    (inst1 : AddModal P1' P1 goal) (inst2 : IntoWand p false R .out P1 .out P2) :
+    (inst1 : IntoWand p false R .out P1 .out P2)
+    (inst2 : AddModal P1' P1 goal) :
     e ∗ □?p R ⊢ goal := calc
   _ ⊢ (e' ∗ P1') ∗ □?p R                := sep_mono_left h1
   _ ⊢ P1' ∗ (e' ∗ □?p R)                := sep_assoc.mp.trans sep_left_comm.mp
-  _ ⊢ P1' ∗ (e' ∗ (P1 -∗ P2))           := sep_mono_right (sep_mono_right inst2.into_wand)
+  _ ⊢ P1' ∗ (e' ∗ (P1 -∗ P2))           := sep_mono_right (sep_mono_right inst1.into_wand)
   _ ⊢ P1' ∗ ((P2 -∗ goal) ∗ (P1 -∗ P2)) := sep_mono_right (sep_mono_left (wand_intro h2))
   _ ⊢ P1' ∗ (P1 -∗ goal)                := sep_mono_right (sep_comm.mp.trans wand_trans)
-  _ ⊢ goal                              := inst1.add_modal
+  _ ⊢ goal                              := inst2.add_modal
 
 public meta section
 open Lean Elab Tactic Meta Qq Std
@@ -140,7 +143,6 @@ private def synthIntoWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     | throwError m!"ispecialize: {out} is not a wand"
   return ⟨out₁, out₂, inst⟩
 
-set_option maxHeartbeats 300000 in
 mutual
 
 private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q($prop)}
@@ -212,7 +214,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     | throwError m!"ispecialize: {out₁} is not persistent"
     let out₁' ← mkFreshExprMVarQ prop
     let some inst3 ← ProofModeM.trySynthInstanceQ q(IntoAbsorbingly $out₁' $out₁)
-    | throwError m!"ispecialize: type class synthesis failed for {out₁} with IntoAbsorbingly"
+    | throwError m!"ispecialize: IntoAbsorbingly type class synthesis failed with {out₁}"
     let mut frameIVars : List IVarId := []
     for name in f do
       frameIVars := (← hyps.findWithInfo name) :: frameIVars
@@ -253,7 +255,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
       else
         addBIGoal hyps goal g
     let h := q($(pf').mp.trans (sep_mono_right $pf''))
-    let pfCont := q(fun pf => $pfCont (specialize_modal $h pf $inst2 $inst1))
+    let pfCont := q(fun pf => $pfCont (specialize_modal $h pf $inst1 $inst2))
     return { hyps := hypsl', p := q(false), out := out₂, pfCont, pf := none }
   | .autoframe .spatial => do
     let ⟨out₁, out₂, inst⟩ ← synthIntoWand p out false
@@ -282,7 +284,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     | throwError m!"ispecialize: AddModal type class synthesis failed with {out₁} and {goal}"
     let res ← iFrame bi _ hyps out₁' (← SelPat.resolve hyps [.spatial, .intuitionistic])
     let ⟨_, hyps', pf'⟩ ← res.finishClose
-    let pfCont := q(fun pf => $pfCont (specialize_modal $pf' pf $inst2 $inst1))
+    let pfCont := q(fun pf => $pfCont (specialize_modal $pf' pf $inst1 $inst2))
     return { hyps := hyps', p := q(false), out := out₂, pfCont := q($pfCont), pf := none }
 
 /-- Specialize a proposition `A` by applying a sequence of specialization patterns.
