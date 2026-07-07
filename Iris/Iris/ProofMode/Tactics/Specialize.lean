@@ -269,7 +269,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let res ← iFrame bi _ hyps out₁' (← SelPat.resolve hyps [.spatial, .intuitionistic])
     let pf' ← res.finish <| fun hyps goal => do
       let some pf ← iTrivial hyps goal
-      | throwError "ispecialize: unable to solve premise by framing"
+      | throwError "ispecialize: itrivial could not solve {← ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
       return pf
     let pfStep := q(specialize_wand_persistent_step $out₁ $out₂ $inst1 $inst2 $inst3 $pf')
     return specState.update hyps p out₂ pfStep
