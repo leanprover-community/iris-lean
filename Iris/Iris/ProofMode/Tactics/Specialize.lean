@@ -16,17 +16,6 @@ namespace Iris.ProofMode
 public section
 open BI
 
-theorem specialize_wand_step [BI PROP] {q p : Bool} {A2 A3 Q P1 P2 : PROP}
-    (inst : IntoWand q p Q .in P1 .out P2)
-    (h2 : A2 ⊢ A3 ∗ □?p P1) :
-    A2 ∗ □?q Q ⊢ A3 ∗ □?(p && q) P2 := by
-  refine (sep_mono_left h2).trans <| sep_assoc.1.trans (sep_mono_right ?_)
-  cases p with
-  | false => exact (sep_mono_right inst.into_wand).trans <| wand_elim_right
-  | true => exact
-    (sep_mono intuitionisticallyIf_intutitionistically.mpr intuitionisticallyIf_idem.mpr).trans <|
-    intuitionisticallyIf_sep_mpr.trans <| intuitionisticallyIf_mono <| (wand_elim_swap inst.into_wand)
-
 -- TODO: if q is true and A1 is persistent, this proof can guarantee □ P2 instead of P2
 -- see https://gitlab.mpi-sws.org/iris/iris/-/blob/846ed45bed6951035c6204fef365d9a344022ae6/iris/proofmode/coq_tactics.v#L336
 theorem specialize_wand_subgoal_step [BI PROP] {q : Bool} {A2 A3 A4 Q P1 : PROP} P2
@@ -151,17 +140,6 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
   let ⟨ref, spat⟩ := spat
   withRef ref do
   match spat with
-  | .ident i [] => do
-    let ivar ← hyps.findWithInfo i
-    let ⟨_, hyps', out₁, out₁', p1, _, pf'⟩ := hyps.remove false ivar
-    let p2 := if p1.constName! == ``true then p else q(false)
-    have : $out₁ =Q iprop(□?$p1 $out₁') := ⟨⟩
-    have : $p2 =Q ($p1 && $p) := ⟨⟩
-    let out₂ ← mkFreshExprMVarQ prop
-    let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $p1 $out .in $out₁' .out $out₂)
-    | throwError m!"ispecialize: cannot instantiate {out} with {out₁'}"
-    let pfStep := q(specialize_wand_step $inst $(pf').mp)
-    return specState.update hyps' p2 out₂ pfStep
   | .ident i spats =>
     let ivar ← hyps.findWithInfo i
     let ⟨_, hyps', out₁, out₁', p1, _, pf'⟩ := hyps.remove false ivar
