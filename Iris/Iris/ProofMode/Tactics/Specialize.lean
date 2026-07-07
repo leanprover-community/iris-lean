@@ -173,7 +173,7 @@ private def synthIntoWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
 private def synthIntoWandPersistent {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     (p : Q(Bool)) (out : Q($prop)) :
     ProofModeM ((out₁ : Q($prop)) × (out₂ : Q($prop)) × (out₁' : Q($prop)) ×
-      Q(IntoWand «$p» true «$out» InOut.out «$out₁» InOut.out «$out₂») ×
+      Q(IntoWand $p true $out .out $out₁ .out $out₂) ×
       Q(Persistent $out₁) ×
       Q(IntoAbsorbingly $out₁' $out₁)) := do
   let out₁ ← mkFreshExprMVarQ prop
@@ -186,6 +186,20 @@ private def synthIntoWandPersistent {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
   let some inst3 ← ProofModeM.trySynthInstanceQ q(IntoAbsorbingly $out₁' $out₁)
   | throwError m!"ispecialize: IntoAbsorbingly type class synthesis failed with {out₁}"
   pure ⟨out₁, out₂, out₁', inst1, inst2, inst3⟩
+
+private def synthIntoWandModal {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
+    (p : Q(Bool)) (out goal : Q($prop)) :
+    ProofModeM ((out₁ : Q($prop)) × (out₂ : Q($prop)) × (out₁' : Q($prop)) ×
+      Q(IntoWand $p false $out .out $out₁ .out $out₂) ×
+      Q(AddModal $out₁' $out₁ $goal)) := do
+  let out₁ ← mkFreshExprMVarQ prop
+  let out₂ ← mkFreshExprMVarQ prop
+  let some inst1 ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
+    | throwError m!"ispecialize: {out} is not a wand"
+  let out₁' ← mkFreshExprMVarQ prop
+  let some inst2 ← ProofModeM.trySynthInstanceQ q(AddModal $out₁' $out₁ $goal)
+    | throwError m!"ispecialize: AddModal type class synthesis failed with {out₁} and {goal}"
+  pure ⟨out₁, out₂, out₁', inst1, inst2⟩
 
 mutual
 
@@ -201,8 +215,6 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let ⟨_, hyps', out₁, out₁', p1, _, pf'⟩ := hyps.remove false ivar
     let ⟨_, hyps'', pB, B, pfContNest, pfNest⟩ ← iSpecializeCore hyps' p1 out₁' q(iprop(□?$p $out -∗ $goal)) spats
     let p2 := if pB.constName! == ``true then p else q(false)
-    have : $out₁ =Q iprop(□?$p1 $out₁') := ⟨⟩
-    have : $p2 =Q ($pB && $p) := ⟨⟩
     let out₂ ← mkFreshExprMVarQ prop
     let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $pB $out .in $B .out $out₂)
     | throwError m!"ispecialize: cannot instantiate {out} with {B}"
@@ -222,7 +234,6 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     | throwError "ispecialize: {out} is not a Lean premise"
     let x ← elabTermEnsuringTypeQ (u := .succ .zero) t α
     have out' : Q($prop) := Expr.headBeta q($Φ $x)
-    have : $out' =Q $Φ $x := ⟨⟩
     let newMVarIds ← getMVarsNoDelayed x
     for mvar in newMVarIds do addMVarGoal mvar
     let pfStep : Q($e ∗ □?$p $out ⊢ $e ∗ □?$p $Φ $x) := q(specialize_forall_step (A2 := $e) (p := $p) $inst $x)
@@ -249,10 +260,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let ⟨ivars, frameIVars⟩ ← findFrameIVars hyps hs f
     let ⟨_, _, hypsl', hypsr', pf'⟩ := Hyps.split bi
       (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
-    let ⟨out₁, out₂, inst1⟩ ← synthIntoWand p out false
-    let out₁' ← mkFreshExprMVarQ prop
-    let some inst2 ← ProofModeM.trySynthInstanceQ q(AddModal $out₁' $out₁ $goal)
-    | throwError "ispecialize: AddModal type class synthesis failed with {out₁} and {goal}"
+    let ⟨out₁, out₂, out₁', inst1, inst2⟩ ← synthIntoWandModal p out goal
     let res ← iFrame bi _ hypsr' out₁' (frameIVars.map (⟨.ipm ·, true⟩))
     let pf'' ← finishFrameSubgoal trivial g res
     let h := q($(pf').mp.trans (sep_mono_right $pf''))
@@ -271,10 +279,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let pfStep := q(specialize_wand_persistent_step $out₁ $out₂ $inst1 $inst2 $inst3 $pf')
     return specState.update hyps p out₂ pfStep
   | .autoframe .modal =>
-    let ⟨out₁, out₂, inst1⟩ ← synthIntoWand p out false
-    let out₁' ← mkFreshExprMVarQ prop
-    let some inst2 ← ProofModeM.trySynthInstanceQ q(AddModal $out₁' $out₁ $goal)
-    | throwError m!"ispecialize: AddModal type class synthesis failed with {out₁} and {goal}"
+    let ⟨out₁, out₂, out₁', inst1, inst2⟩ ← synthIntoWandModal p out goal
     let res ← iFrame bi _ hyps out₁' (← SelPat.resolve hyps [.spatial, .intuitionistic])
     let ⟨_, hyps', pf'⟩ ← res.finishClose
     let pfCont := q(fun pf => $pfCont (specialize_modal $pf' pf $inst1 $inst2))
