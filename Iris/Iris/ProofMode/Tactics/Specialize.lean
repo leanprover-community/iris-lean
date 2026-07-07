@@ -192,7 +192,8 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let pfCont ← do match pfNest with
     | some pfNest =>
       pure q(specialize_wand_cont $inst $pfCont ($(pf').mp.trans $pfNest))
-    | none => pure q(fun pf => $pfCont (wand_elim_left_trans ($(pf').mp.trans ($pfContNest (specialize_wand_nested_cont $inst pf)))))
+    | none => pure q(fun pf =>
+        $pfCont (wand_elim_left_trans ($(pf').mp.trans ($pfContNest (specialize_wand_nested_cont $inst pf)))))
     let pf := pfNest.bind (fun pfNest =>
       pf.bind (fun pf => some q(specialize_wand $inst $pf ($(pf').mp.trans $pfNest))))
     return { hyps := hyps'', p := p2, out := out₂, pfCont, pf }
@@ -227,10 +228,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let out₁' ← mkFreshExprMVarQ prop
     let some inst3 ← ProofModeM.trySynthInstanceQ q(IntoAbsorbingly $out₁' $out₁)
     | throwError m!"ispecialize: IntoAbsorbingly type class synthesis failed with {out₁}"
-    let mut frameIVars : List IVarId := []
-    for name in f do
-      frameIVars := (← hyps.findWithInfo name) :: frameIVars
-    frameIVars := frameIVars.reverse
+    let ⟨_, frameIVars⟩ ← findFrameIVars hyps [] f
     let res ← iFrame bi _ hyps out₁' (frameIVars.map (⟨.ipm ·, true⟩))
     let pf' ← finishFrameSubgoal trivial g res
     let pfStep := q(specialize_wand_persistent_step $out₁ $out₂ $inst1 $inst2 $inst3 $pf')
@@ -260,7 +258,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     | throwError m!"ispecialize: {out₁} is not persistent"
     let out₁' ← mkFreshExprMVarQ prop
     let some inst3 ← ProofModeM.trySynthInstanceQ q(IntoAbsorbingly $out₁' $out₁)
-    | throwError m!"ispecialize: type class synthessis failed for {out₁} with IntoAbsorbingly"
+    | throwError m!"ispecialize: IntoAbsorbingly type class synthesis failed with {out₁}"
     let res ← iFrame bi _ hyps out₁' (← SelPat.resolve hyps [.spatial, .intuitionistic])
     let pf' ← finishFrameSubgoal true none res
     let pfStep := q(specialize_wand_persistent_step $out₁ $out₂ $inst1 $inst2 $inst3 $pf')
