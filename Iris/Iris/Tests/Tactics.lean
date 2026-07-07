@@ -1385,6 +1385,28 @@ example [BI PROP] [BIUpdate PROP] (P Q : PROP) :
   · imodintro
     iassumption
 
+/--
+  Tests `ispecialize` with the handling of the modality, nested patterns and
+  the use of the type class instance `addModal_wand`.
+-/
+example [BI PROP] [BIUpdate PROP] (P Q R : PROP) :
+    ⊢ (P -∗ R) -∗ (Q -∗ P) -∗ (|==> Q) -∗ (|==> R) := by
+  iintro HPR HQP HQ
+  ispecialize HPR $$ (HQP $$ [> HQ //])
+  imodintro
+  iassumption
+
+/--
+  Tests `ispecialize` with the auto-framing with modality, nested patterns and
+  the use of the type class instance `addModal_wand`.
+-/
+example [BI PROP] [BIUpdate PROP] (P Q R : PROP) :
+    ⊢ (P -∗ R) -∗ (Q -∗ P) -∗ (|==> Q) -∗ (|==> R) := by
+  iintro HPR HQP HQ
+  ispecialize HPR $$ (HQP $$ [>$])
+  imodintro
+  iassumption
+
 end specialize
 
 -- split

@@ -41,6 +41,17 @@ theorem specialize_wand_cont [BI PROP] {q p : Bool}
     (sep_mono intuitionisticallyIf_intutitionistically.mpr intuitionisticallyIf_idem.mpr).trans <|
     intuitionisticallyIf_sep_mpr.trans <| intuitionisticallyIf_mono <| (wand_elim_swap inst.into_wand)
 
+theorem specialize_wand_nested_cont [BI PROP] {q p : Bool} {C B out out₂ goal : PROP}
+    (inst : IntoWand q p out .in B .out out₂)
+    (k : C ∗ □?(p && q) out₂ ⊢ goal) :
+    C ∗ □?p B ⊢ ((□?q out) -∗ goal) := by
+  refine wand_intro (sep_assoc.mp.trans <| (sep_mono_right ?_).trans k)
+  cases p with
+  | false => exact (sep_mono_right inst.into_wand).trans wand_elim_right
+  | true => exact
+    (sep_mono intuitionisticallyIf_intutitionistically.mpr intuitionisticallyIf_idem.mpr).trans <|
+    intuitionisticallyIf_sep_mpr.trans <| intuitionisticallyIf_mono <| (wand_elim_swap inst.into_wand)
+
 -- TODO: if q is true and A1 is persistent, this proof can guarantee □ P2 instead of P2
 -- see https://gitlab.mpi-sws.org/iris/iris/-/blob/846ed45bed6951035c6204fef365d9a344022ae6/iris/proofmode/coq_tactics.v#L336
 theorem specialize_wand_subgoal [BI PROP] {q : Bool} {A1 A2 A3 A4 Q P1 : PROP} P2
@@ -178,24 +189,27 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     have : $out₁ =Q iprop(□?$p1 $out₁') := ⟨⟩
     have : $p2 =Q ($p1 && $p) := ⟨⟩
     let out₂ ← mkFreshExprMVarQ prop
-    let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $p1 $out .in $out₁' .out $out₂) |
-      throwError m!"ispecialize: cannot instantiate {out} with {out₁'}"
+    let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $p1 $out .in $out₁' .out $out₂)
+    | throwError m!"ispecialize: cannot instantiate {out} with {out₁'}"
     let pfCont := q(specialize_wand_cont $inst $pfCont $(pf').mp)
     let pf := pf.bind (fun pf => some q(specialize_wand $inst $pf $(pf').mp))
     return { hyps := hyps', p := p2, out := out₂, pfCont, pf }
   | .ident i spats =>
     let ivar ← hyps.findWithInfo i
     let ⟨_, hyps', out₁, out₁', p1, _, pf'⟩ := hyps.remove false ivar
-    let ⟨_, hyps'', pB, B, _, some pfNest⟩ ← iSpecializeCore hyps' p1 out₁' goal spats
-    | throwError "ispecialize: nested specialisation pattern is not supported with modality handling"
+    let ⟨_, hyps'', pB, B, pfContNest, pfNest⟩ ← iSpecializeCore hyps' p1 out₁' q(iprop(□?$p $out -∗ $goal)) spats
     let p2 := if pB.constName! == ``true then p else q(false)
     have : $out₁ =Q iprop(□?$p1 $out₁') := ⟨⟩
     have : $p2 =Q ($pB && $p) := ⟨⟩
     let out₂ ← mkFreshExprMVarQ prop
-    let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $pB $out .in $B .out $out₂) |
-      throwError m!"ispecialize: cannot instantiate {out} with {B}"
-    let pfCont := q(specialize_wand_cont $inst $pfCont ($(pf').mp.trans $pfNest))
-    let pf := pf.bind (fun pf => some q(specialize_wand $inst $pf ($(pf').mp.trans $pfNest)))
+    let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $pB $out .in $B .out $out₂)
+    | throwError m!"ispecialize: cannot instantiate {out} with {B}"
+    let pfCont ← do match pfNest with
+    | some pfNest =>
+      pure q(specialize_wand_cont $inst $pfCont ($(pf').mp.trans $pfNest))
+    | none => pure q(fun pf => $pfCont (wand_elim_left_trans ($(pf').mp.trans ($pfContNest (specialize_wand_nested_cont $inst pf)))))
+    let pf := pfNest.bind (fun pfNest =>
+      pf.bind (fun pf => some q(specialize_wand $inst $pf ($(pf').mp.trans $pfNest))))
     return { hyps := hyps'', p := p2, out := out₂, pfCont, pf }
   | .pure t => do
     let v ← mkFreshLevelMVar
