@@ -98,6 +98,7 @@ structure SpecializeState {prop : Q(Type u)} {bi : Q(BI $prop)} (orig goal : Q($
   (pfCont : Q(($e ∗ □?$p $out ⊢ $goal) → $orig ⊢ $goal))
   pf : Option Q($orig ⊢ $e ∗ □?$p $out)
 
+/-- Used in all cases in `processWand` except those involving the `.modal` kind -/
 private def SpecializeState.update {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     {orig goal : Q($prop)} (st : @SpecializeState u prop bi orig goal)
     {e' : Q($prop)} (hyps' : Hyps bi e') (p' : Q(Bool)) (out' : Q($prop))
@@ -107,6 +108,7 @@ private def SpecializeState.update {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     pfCont := q(fun pf => $(st.pfCont) ($(pfCont).trans pf)),
     pf := st.pf.map (fun pf => q($(pf).trans $pfCont)) }
 
+/-- Used by all `.goal` cases in `processWand`. -/
 private def findFrameIVars {u}  {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (hs : List Ident) (f : List Ident) :
     ProofModeM <| IVarIdSet × List IVarId := do
@@ -121,6 +123,7 @@ private def findFrameIVars {u}  {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
       throwError "ispecialize: {name} used twice"
   return ⟨ivars, frameIVars.reverse⟩
 
+/-- Used by all `.goal` cases and the `.autoframe persistent` case in `processWand`. -/
 private def finishFrameSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (trivial : Bool) (g : Option Name)
     (frameIVars : Option <| List IVarId) : ProofModeM Q($e ⊢ $goal) := do
@@ -146,6 +149,7 @@ private def synthIntoWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     | throwError m!"ispecialize: {out} is not a wand"
   return ⟨out₁, out₂, inst⟩
 
+/-- Used by the cases `.autoframe` and `.goal` in `processWand` with the `.persistent` kind. -/
 private def synthIntoWandPersistent {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     (p : Q(Bool)) (out : Q($prop)) :
     ProofModeM ((out₁ : Q($prop)) × (out₂ : Q($prop)) × (out₁' : Q($prop)) ×
@@ -163,6 +167,7 @@ private def synthIntoWandPersistent {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
   | throwError m!"ispecialize: IntoAbsorbingly type class synthesis failed with {out₁}"
   pure ⟨out₁, out₂, out₁', inst1, inst2, inst3⟩
 
+/-- Used by the cases `.autoframe` and `.goal` in `processWand` with the `.modal` kind. -/
 private def synthIntoWandModal {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     (p : Q(Bool)) (out goal : Q($prop)) :
     ProofModeM ((out₁ : Q($prop)) × (out₂ : Q($prop)) × (out₁' : Q($prop)) ×
