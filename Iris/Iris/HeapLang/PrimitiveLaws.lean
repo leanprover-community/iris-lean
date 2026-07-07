@@ -67,7 +67,7 @@ def HeapLangS : BundledGFunctors
   | 4 => ⟨constOF (HeapView Loc (Agree (DiscreteO (Option Val))) HeapF), by infer_instance⟩
   | 5 => ⟨constOF (HeapView Loc (Agree (DiscreteO GName)) HeapF), by infer_instance⟩
   | 6 => ⟨constOF MetaUR, by infer_instance⟩
-  | 7 => ⟨constOF (HeapView ProphId (Agree (LeibnizO (List (Val × Val)))) ProphMapF),
+  | 7 => ⟨constOF (HeapView ProphId (Agree (DiscreteO (List (Val × Val)))) ProphMapF),
           by infer_instance⟩
   | _ => ⟨constOF Unit, by infer_instance⟩
 
