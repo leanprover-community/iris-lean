@@ -30,7 +30,7 @@ syntax "%" term:max : specPat
   with all but `H₁ … Hₙ` as the chosen hypotheses. `[ H₁ … Hₙ ]` and
   `[- H₁ … Hₙ // ]` attempt to solve the subgoal using `itrivial`.
 -/
-syntax "[" ("-")? (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
+syntax "[" ("-")? (colGt ppSpace frameIdent)* (" //")? " ]" (" as " colGt ident)? : specPat
 /--
   `[> H₁ … Hₙ ]` generates a subgoal for the premise with `H₁ … Hₙ` as the
   hypotheses chosen for the context of the subgoal wrapped in a modality.
@@ -38,14 +38,14 @@ syntax "[" ("-")? (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt 
   `[ H₁ … Hₙ // ]` and `[> H₁ … Hₙ // ]` also attempt to solve the subgoal
   using `itrivial`.
 -/
-syntax "[>" ("-")? (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
+syntax "[>" ("-")? (colGt ppSpace frameIdent)* (" //")? " ]" (" as " colGt ident)? : specPat
 /--
   `[# $H₁ … $Hₙ ]` generates a subgoal for the persistent premise
   with all hypotheses in the context available for the subgoal. The hypotheses
   `$H₁ … $Hₙ` are framed.
   `[# $H₁ … $Hₙ // ]` further attempts to solve the subgoal using `itrivial`.
 -/
-syntax "[#" (colGt ppSpace frameIdent)* ("//")? ppSpace "]" (" as " colGt ident)? : specPat
+syntax "[#" (colGt ppSpace frameIdent)* (" //")? " ]" (" as " colGt ident)? : specPat
 /--
   `[$]` solves the subgoal by framing, first with spatial hypotheses, and
   then with intuitionistic hypotheses. Spatial hypotheses that are not framed
@@ -61,7 +61,7 @@ syntax "[#" "$" "]" : specPat
   patterns `spat₁ … spatₙ` before the resultant hypothesis is itself used for
   matching a premise.
 -/
-syntax "(" colGt ident "$$" (colGt ppSpace specPat)+ ppSpace ")" : specPat
+syntax "(" colGt ident colGt " $$ " (colGt ppSpace specPat)+ ")" : specPat
 
 @[rocq_alias goal_kind]
 inductive SpecGoalKind
