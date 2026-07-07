@@ -190,7 +190,12 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let ivar ← hyps.findWithInfo i
     let ⟨_, hyps', out₁, out₁', p1, _, pf'⟩ := hyps.remove false ivar
     let ⟨_, hyps'', pB, B, pfContNest, pfNest⟩ ←
-      iSpecializeCore hyps' p1 out₁' q(iprop(□?$p $out -∗ $goal)) spats
+      if spats.isEmpty then
+        -- No nested specialisation patterns
+        pure ⟨_, hyps', p1, out₁', q(id), some q(.rfl)⟩
+      else
+        -- There are nested specialisation patterns, requires recursive calls
+        iSpecializeCore hyps' p1 out₁' q(iprop(□?$p $out -∗ $goal)) spats
     let p2 := if pB.constName! == ``true then p else q(false)
     let out₂ ← mkFreshExprMVarQ prop
     let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $pB $out .in $B .out $out₂)
