@@ -16,7 +16,7 @@ namespace Iris.ProofMode
 public section
 open BI
 
-theorem specialize_wand_step [BI PROP] {q p : Bool} {A Q P1 P2 : PROP}
+theorem specialize_wand [BI PROP] {q p : Bool} {A Q P1 P2 : PROP}
     (inst : IntoWand q p Q .in P1 .out P2) :
     (A ∗ □?p P1) ∗ □?q Q ⊢ A ∗ □?(p && q) P2 := by
   refine sep_assoc.mp.trans (sep_mono_right ?_)
@@ -28,20 +28,20 @@ theorem specialize_wand_step [BI PROP] {q p : Bool} {A Q P1 P2 : PROP}
 
 -- TODO: if q is true and A1 is persistent, this proof can guarantee □ P2 instead of P2
 -- see https://gitlab.mpi-sws.org/iris/iris/-/blob/846ed45bed6951035c6204fef365d9a344022ae6/iris/proofmode/coq_tactics.v#L336
-theorem specialize_wand_subgoal_step [BI PROP] {q : Bool} {A2 A3 A4 Q P1 : PROP} P2
+theorem specialize_wand_subgoal [BI PROP] {q : Bool} {A2 A3 A4 Q P1 : PROP} P2
     (inst : IntoWand q false Q .out P1 .out P2)
     (h2 : A2 ⊣⊢ A3 ∗ A4) (h3 : A4 ⊢ P1) : A2 ∗ □?q Q ⊢ A3 ∗ P2 := by
   refine (sep_mono_left h2.1).trans <| sep_assoc.1.trans
     (sep_mono_right ((sep_mono_left h3).trans ?_))
   exact (sep_mono_right inst.1).trans wand_elim_right
 
-theorem specialize_wand_autoframe_spatial_step [BI PROP] {q : Bool} {A2 A3 Q P1 : PROP} P2
+theorem specialize_wand_autoframe_spatial [BI PROP] {q : Bool} {A2 A3 Q P1 : PROP} P2
     (inst : IntoWand q false Q .out P1 .out P2)
     (h2 : A2 ⊢ A3 ∗ P1) : A2 ∗ □?q Q ⊢ A3 ∗ P2 :=
   (sep_mono_left h2).trans <| sep_assoc.1.trans
     (sep_mono_right ((sep_mono_right inst.into_wand).trans wand_elim_right))
 
-theorem specialize_wand_persistent_step [BI PROP] {q : Bool} {A2 Q P1' : PROP} P1 P2
+theorem specialize_wand_persistent [BI PROP] {q : Bool} {A2 Q P1' : PROP} P1 P2
     (inst3 : IntoWand q true Q .out P1 .out P2) (inst2 : Persistent P1)
     (inst1 : IntoAbsorbingly P1' P1)
     (h2 : A2 ⊢ P1') : A2 ∗ □?q Q ⊢ A2 ∗ □?q P2 := by
@@ -62,7 +62,7 @@ theorem specialize_wand_persistent_step [BI PROP] {q : Bool} {A2 Q P1' : PROP} P
     _ ⊢ A2 ∗ □ P1 ∗ □?q Q                 := sep_assoc.mp
     _ ⊢ A2 ∗ □?q P2                       := sep_mono_right h4
 
-theorem specialize_forall_step [BI PROP] {p : Bool} {A2 P : PROP} {α : Sort _} {Φ : α → PROP}
+theorem specialize_forall [BI PROP] {p : Bool} {A2 P : PROP} {α : Sort _} {Φ : α → PROP}
     (inst : IntoForall P Φ) (a : α) : A2 ∗ □?p P ⊢ A2 ∗ □?p (Φ a) :=
   sep_mono_right <| intuitionisticallyIf_mono <| inst.into_forall.trans (forall_elim a)
 
@@ -197,10 +197,10 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     | throwError m!"ispecialize: cannot instantiate {out} with {B}"
     match pfNest with
     | none =>
-      let pfCont := q(fun pf => $pfCont (wand_elim_left_trans ($(pf').mp.trans ($pfContNest (wand_intro ((specialize_wand_step $inst).trans pf))))))
+      let pfCont := q(fun pf => $pfCont (wand_elim_left_trans ($(pf').mp.trans ($pfContNest (wand_intro ((specialize_wand $inst).trans pf))))))
       return { hyps := hyps'', p := p2, out := out₂, pfCont, pf := none }
     | some pfNest =>
-      let pfStep := q((sep_mono_left ($(pf').mp.trans $pfNest)).trans (specialize_wand_step $inst))
+      let pfStep := q((sep_mono_left ($(pf').mp.trans $pfNest)).trans (specialize_wand $inst))
       return specState.update hyps'' p2 out₂ pfStep
   | .pure t => do
     let v ← mkFreshLevelMVar
@@ -213,7 +213,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let newMVarIds ← getMVarsNoDelayed x
     for mvar in newMVarIds do addMVarGoal mvar
     let pfStep : Q($e ∗ □?$p $out ⊢ $e ∗ □?$p $Φ $x) :=
-      q(specialize_forall_step (A2 := $e) (p := $p) $inst $x)
+      q(specialize_forall (A2 := $e) (p := $p) $inst $x)
     return specState.update hyps p out' pfStep
   | .goal { kind := .spatial, negate, trivial, frame := f, hyps := hs } g => do
     let ⟨ivars, frameIVars⟩ ← findFrameIVars hyps hs f
@@ -221,7 +221,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
       (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
     let ⟨out₁, out₂, inst⟩ ← synthIntoWand p out false
     let pf'' ← finishFrameSubgoal hypsr' out₁ trivial g frameIVars
-    let pfStep := q(specialize_wand_subgoal_step $out₂ $inst $pf' $pf'')
+    let pfStep := q(specialize_wand_subgoal $out₂ $inst $pf' $pf'')
     return specState.update hypsl' q(false) out₂ pfStep
   | .goal { kind := .persistent, trivial, frame := f, hyps := hs, .. } g => do
     if !hs.isEmpty then
@@ -229,7 +229,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let ⟨out₁, out₂, out₁', inst1, inst2, inst3⟩ ← synthIntoWandPersistent p out
     let ⟨_, frameIVars⟩ ← findFrameIVars hyps [] f
     let pf' ← finishFrameSubgoal hyps out₁' trivial g frameIVars
-    let pfStep := q(specialize_wand_persistent_step $out₁ $out₂ $inst1 $inst2 $inst3 $pf')
+    let pfStep := q(specialize_wand_persistent $out₁ $out₂ $inst1 $inst2 $inst3 $pf')
     return specState.update hyps p out₂ pfStep
   | .goal { kind := .modal, negate, trivial, frame := f, hyps := hs, .. } g =>
     let ⟨ivars, frameIVars⟩ ← findFrameIVars hyps hs f
@@ -244,12 +244,12 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let ⟨out₁, out₂, inst⟩ ← synthIntoWand p out false
     let res ← iFrame bi _ hyps out₁ (← SelPat.resolve hyps [.spatial, .intuitionistic])
     let ⟨_, hyps', pf'⟩ ← res.finishClose
-    let pfStep := q(specialize_wand_autoframe_spatial_step $out₂ $inst $pf')
+    let pfStep := q(specialize_wand_autoframe_spatial $out₂ $inst $pf')
     return specState.update hyps' q(false) out₂ pfStep
   | .autoframe .persistent =>
     let ⟨out₁, out₂, out₁', inst1, inst2, inst3⟩ ← synthIntoWandPersistent p out
     let pf' ← finishFrameSubgoal hyps out₁' true none none
-    let pfStep := q(specialize_wand_persistent_step $out₁ $out₂ $inst1 $inst2 $inst3 $pf')
+    let pfStep := q(specialize_wand_persistent $out₁ $out₂ $inst1 $inst2 $inst3 $pf')
     return specState.update hyps p out₂ pfStep
   | .autoframe .modal =>
     let ⟨out₁, out₂, out₁', inst1, inst2⟩ ← synthIntoWandModal p out goal
