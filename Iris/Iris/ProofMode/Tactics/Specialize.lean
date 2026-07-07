@@ -313,17 +313,15 @@ def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   | true, some pf =>
     -- context duplication succeeds if `B` is persistent, and `A` is persistent or affine
     let B' : Q($prop) ← mkFreshExprMVarQ q($prop)
-    let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPersistently $pb $B $B')
-    | return ⟨_, hyps', pb, B, q($(pf).trans), some q($pf)⟩
-    have af : MetaM (Option Q($pa = true ∨ Affine $A)) :=
-      match matchBool pa with
-      | .inl _ => return some q(.inl (.refl _))
-      | .inr _ => do
-        let .some h ← trySynthInstanceQ q(Affine $A) | return none
-        return some q(.inr $h)
-    match ← af with
-    | none => return ⟨_, hyps', pb, B, q($(pf).trans), some q($pf)⟩
-    | some af =>
+    let af ← do match matchBool pa with
+    | .inl _ => pure <| some q(Or.inl (.refl $pa))
+    | .inr _ => do
+      let .some h ← trySynthInstanceQ q(Affine $A) | pure none
+      pure <| some q(Or.inr (a := $pa = true) $h)
+    let inst ← ProofModeM.trySynthInstanceQ q(IntoPersistently $pb $B $B')
+    match inst, af with
+    | none, _ | _, none => return ⟨_, hyps', pb, B, q($(pf).trans), some q($pf)⟩
+    | some _, some af =>
       return ⟨_, hyps, q(true), B', q((specialize_dup_context $pf $af).trans),
               some q(specialize_dup_context $pf $af)⟩
   | _, _ => return ⟨_, hyps', pb, B, pfCont, pf⟩
