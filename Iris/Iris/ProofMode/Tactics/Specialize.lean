@@ -157,6 +157,19 @@ private def findFrameIVars {u}  {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
       throwError "ispecialize: {name} used twice"
   return ⟨ivars, frameIVars.reverse⟩
 
+private def finishFrameSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
+    {e goal : Q($prop)} (trivial : Bool) (g : Option Name)
+    (res : FrameResult bi e goal) : ProofModeM Q($e ⊢ $goal) := do
+  res.finish λ hyps goal => do
+    if trivial then
+      let some r ← iTrivial hyps goal
+      | throwError "ispecialize: itrivial could not solve\
+          {← ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
+      return r
+    else match g with
+    | none => addBIGoal hyps goal
+    | some g => addBIGoal hyps goal g
+
 mutual
 
 private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q($prop)}
@@ -202,13 +215,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
       (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
     let ⟨out₁, out₂, inst⟩ ← synthIntoWand p out false
     let res ← iFrame bi _ hypsr' out₁ (frameIVars.map (⟨.ipm ·, true⟩))
-    let pf'' ← res.finish λ hyps goal => do
-      if trivial then
-        let some r ← iTrivial hyps goal
-        | throwError "ispecialize: itrivial could not solve {← ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
-        return r
-      else
-        addBIGoal hyps goal g
+    let pf'' ← finishFrameSubgoal trivial g res
     let pfStep := q(specialize_wand_subgoal_step $out₂ $inst $pf' $pf'')
     return specState.update hypsl' q(false) out₂ pfStep
   | .goal { kind := .persistent, trivial, frame := f, hyps := hs, .. } g => do
@@ -225,13 +232,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
       frameIVars := (← hyps.findWithInfo name) :: frameIVars
     frameIVars := frameIVars.reverse
     let res ← iFrame bi _ hyps out₁' (frameIVars.map (⟨.ipm ·, true⟩))
-    let pf' ← res.finish λ hyps goal => do
-      if trivial then
-        let some r ← iTrivial hyps goal
-        | throwError "ispecialize: itrivial could not solve {← ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
-        return r
-      else
-        addBIGoal hyps goal g
+    let pf' ← finishFrameSubgoal trivial g res
     let pfStep := q(specialize_wand_persistent_step $out₁ $out₂ $inst1 $inst2 $inst3 $pf')
     return specState.update hyps p out₂ pfStep
   | .goal { kind := .modal, negate, trivial, frame := f, hyps := hs, .. } g =>
@@ -243,13 +244,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let some inst2 ← ProofModeM.trySynthInstanceQ q(AddModal $out₁' $out₁ $goal)
     | throwError "ispecialize: AddModal type class synthesis failed with {out₁} and {goal}"
     let res ← iFrame bi _ hypsr' out₁' (frameIVars.map (⟨.ipm ·, true⟩))
-    let pf'' ← res.finish λ hyps goal => do
-      if trivial then
-        let some r ← iTrivial hyps goal
-        | throwError "ispecialize: itrivial could not solve {← ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
-        return r
-      else
-        addBIGoal hyps goal g
+    let pf'' ← finishFrameSubgoal trivial g res
     let h := q($(pf').mp.trans (sep_mono_right $pf''))
     let pfCont := q(fun pf => $pfCont (specialize_modal $h pf $inst1 $inst2))
     return { hyps := hypsl', p := q(false), out := out₂, pfCont, pf := none }
@@ -267,10 +262,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let some inst3 ← ProofModeM.trySynthInstanceQ q(IntoAbsorbingly $out₁' $out₁)
     | throwError m!"ispecialize: type class synthessis failed for {out₁} with IntoAbsorbingly"
     let res ← iFrame bi _ hyps out₁' (← SelPat.resolve hyps [.spatial, .intuitionistic])
-    let pf' ← res.finish <| fun hyps goal => do
-      let some pf ← iTrivial hyps goal
-      | throwError "ispecialize: itrivial could not solve {← ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
-      return pf
+    let pf' ← finishFrameSubgoal true none res
     let pfStep := q(specialize_wand_persistent_step $out₁ $out₂ $inst1 $inst2 $inst3 $pf')
     return specState.update hyps p out₂ pfStep
   | .autoframe .modal =>
