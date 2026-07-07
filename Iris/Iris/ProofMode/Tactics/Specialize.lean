@@ -123,6 +123,16 @@ private def findFrameIVars {u}  {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
       throwError "ispecialize: {name} used twice"
   return ⟨ivars, frameIVars.reverse⟩
 
+/-- Used by the `.goal` cases with the `.spatial` or `.modal` kind. -/
+private def splitFrameHyps {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (hyps : Hyps bi e) (hs f : List Ident) (negate : Bool) :
+    ProofModeM <| (el : Q($prop)) × (er : Q($prop)) ×
+      Hyps bi el × Hyps bi er × Q($e ⊣⊢ $el ∗ $er) × List IVarId := do
+  let ⟨ivars, frameIVars⟩ ← findFrameIVars hyps hs f
+  let ⟨_, _, hypsl', hypsr', pf'⟩ := Hyps.split bi
+    (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
+  return ⟨_, _, hypsl', hypsr', pf', frameIVars⟩
+
 /-- Used by all `.goal` cases and the `.autoframe persistent` case in `processWand`. -/
 private def finishFrameSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (trivial : Bool) (g : Option Name)
@@ -227,9 +237,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     return specState.update hyps p out' pfStep
   -- Subgoal with `[ H₁ … Hₙ ]` or `[- H₁ … Hₙ ]`
   | .goal { kind := .spatial, negate, trivial, frame := f, hyps := hs } g => do
-    let ⟨ivars, frameIVars⟩ ← findFrameIVars hyps hs f
-    let ⟨_, _, hypsl', hypsr', pf'⟩ := Hyps.split bi
-      (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
+    let ⟨_, _, hypsl', hypsr', pf', frameIVars⟩ ← splitFrameHyps hyps hs f negate
     let ⟨out₁, out₂, inst⟩ ← synthIntoWand p out false
     let pf'' ← finishFrameSubgoal hypsr' out₁ trivial g frameIVars
     let pfStep := q(specialize_wand_subgoal $out₂ $inst $pf' $pf'')
@@ -245,9 +253,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     return specState.update hyps p out₂ pfStep
   -- Subgoal with `[> H₁ … Hₙ ]` or `[>- H₁ … Hₙ ]`
   | .goal { kind := .modal, negate, trivial, frame := f, hyps := hs, .. } g =>
-    let ⟨ivars, frameIVars⟩ ← findFrameIVars hyps hs f
-    let ⟨_, _, hypsl', hypsr', pf'⟩ := Hyps.split bi
-      (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
+    let ⟨_, _, hypsl', hypsr', pf', frameIVars⟩ ← splitFrameHyps hyps hs f negate
     let ⟨out₁, out₂, out₁', inst1, inst2⟩ ← synthIntoWandModal p out goal
     let pf'' ← finishFrameSubgoal hypsr' out₁' trivial g frameIVars
     let h := q($(pf').mp.trans (sep_mono_right $pf''))
