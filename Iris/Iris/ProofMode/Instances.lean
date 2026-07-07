@@ -321,12 +321,12 @@ instance intoAnd_and_affine_r [BI PROP] (P P' Q : PROP) [Affine Q]
   into_and := (and_mono_right (affine_affinely _).2).trans <|
     affinely_and_right.1.trans <| affinely_and.1.trans <| and_mono h.1 (affine_affinely _).1
 
-@[rocq_alias into_and_sep]
+@[ipm_backtrack, rocq_alias into_and_sep]
 instance intoAnd_sep [BI PROP] [BIPositive PROP] (P Q : PROP) :
     IntoAnd true iprop(P ∗ Q) P Q where
   into_and := intuitionistically_sep.1.trans <| and_sep_intuitionistically.2.trans <| intuitionistically_and.2
 
-@[rocq_alias into_and_sep_affine]
+@[ipm_backtrack, rocq_alias into_and_sep_affine]
 instance intoAnd_sep_affine (p : Bool) [BI PROP] (P Q : PROP)
     [TCOr (Affine P) (Absorbing Q)] [TCOr (Affine Q) (Absorbing P)] :
     IntoAnd p iprop(P ∗ Q) P Q where

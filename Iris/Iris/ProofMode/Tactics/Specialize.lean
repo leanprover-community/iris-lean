@@ -394,14 +394,15 @@ def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 
 end
 
-/-- `iCasesPat.should_try_dup_context` determines when iSpecializeCore should try to duplicate the separation context.
+/--
+`iCasesPat.should_try_dup_context` determines when iSpecializeCore should try to
+duplicate the separation context.
 The duplication only works if the conclusion of the specialization is persistent.
-
-TODO: Should this also return true for lists of intuitionistic patterns? (check in Rocq)
 -/
 @[rocq_alias intro_pat_intuitionistic, rocq_alias use_tac_specialize_intuitionistic_helper]
-def iCasesPat.should_try_dup_context (pat : iCasesPat) : Bool :=
+partial def iCasesPat.should_try_dup_context (pat : iCasesPat) : Bool :=
   match pat with
+  | .conjunction args | .disjunction args => args.all (·.should_try_dup_context)
   | .intuitionistic _ => true
   | .pure _ => true
   | _ => false

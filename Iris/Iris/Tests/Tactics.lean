@@ -874,6 +874,17 @@ example [BI PROP] [BIAffine PROP] [BIUpdate PROP] (P : PROP) [Persistent P] :
   imodintro
   iexact HP
 
+/--
+  Tests `ihave` with a destruction pattern involving a conjunction of
+  intuitionistic hypotheses.
+-/
+example [BI PROP] (P Q1 Q2 : PROP) [Persistent Q1] [Persistent Q2] :
+    ⊢ P -∗ (P -∗ □ Q1 ∗ □ Q2) -∗ P ∗ (P -∗ □ Q1 ∗ □ Q2) := by
+  iintro HP HPQ
+  ihave ⟨#HQ1, #HQ2⟩ : □ Q1 ∗ □ Q2 $$ [HP HPQ]
+  · iapply HPQ $$ HP
+  · isplitl [HP] <;> iassumption
+
 end ihave
 
 -- ex falso
