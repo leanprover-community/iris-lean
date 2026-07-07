@@ -1305,7 +1305,7 @@ example [BI PROP] (P1 P2 P3 Q : PROP) : P1 -∗ P2 -∗ P3 -∗ (P1 -∗ P2 -∗
 example [BI PROP] (P1 P2 P3 Q : PROP) :
     □ P1 -∗ <pers> P2 -∗ □ P3 -∗ (□ P1 -∗ <pers> P2 -∗ <pers> P3 -∗ Q) -∗ Q := by
   iintro #HP1 HP2 #HP3 HPQ
-  ispecialize HPQ $$ [#$] [$] [#$]
+  ispecialize HPQ $$ [# $] [$] [# $]
   iexact HPQ
 
 /--
@@ -1315,8 +1315,8 @@ example [BI PROP] (P1 P2 P3 Q : PROP) :
 example [BI PROP] (φ : Prop) (Q : PROP) :
     ⌜φ⌝ -∗ (⌜φ⌝ -∗ Q) -∗ (⌜φ⌝ -∗ Q) -∗ ⌜φ⌝ ∗ Q ∗ Q := by
   iintro HP1 HPQ1 HPQ2
-  ispecialize HPQ1 $$ [#$]
-  ispecialize HPQ2 $$ [#$]
+  ispecialize HPQ1 $$ [# $]
+  ispecialize HPQ2 $$ [# $]
   iframe
 
 /- Tests `ispecialize` with autoframing, but the premise is not persistent. -/
@@ -1325,7 +1325,7 @@ example [BI PROP] (φ : Prop) (Q : PROP) :
 example [BI PROP] (φ : Prop) (P Q : PROP) :
     P -∗ (P -∗ Q) -∗ True := by
   iintro HP HPQ
-  ispecialize HPQ $$ [#$]
+  ispecialize HPQ $$ [# $]
 
 /-- Tests `ispecialize` for a persistent premise with chosen hypotheses for the subgoal. -/
 example [BI PROP] (P1 P2 P3 Q : PROP) :
@@ -1369,7 +1369,7 @@ example [BI PROP] (P Q R S T : PROP) :
 example [BI PROP] [BIUpdate PROP] (P Q : PROP) :
     ⊢ (P -∗ Q) -∗ (|==> P) -∗ (|==> Q) := by
   iintro HPQ HP
-  ispecialize HPQ $$ [>$]
+  ispecialize HPQ $$ [> $]
   imodintro
   iassumption
 
@@ -1403,7 +1403,7 @@ example [BI PROP] [BIUpdate PROP] (P Q R : PROP) :
 example [BI PROP] [BIUpdate PROP] (P Q R : PROP) :
     ⊢ (P -∗ R) -∗ (Q -∗ P) -∗ (|==> Q) -∗ (|==> R) := by
   iintro HPR HQP HQ
-  ispecialize HPR $$ (HQP $$ [>$])
+  ispecialize HPR $$ (HQP $$ [> $])
   imodintro
   iassumption
 

@@ -66,7 +66,7 @@ syntax "(" colGt ident "$$" (colGt ppSpace specPat)+ ppSpace ")" : specPat
 @[rocq_alias goal_kind]
 inductive SpecGoalKind
   | spatial
-  | modal  -- TODO: implement `.autoframe` and `.goal` for the modal kind in `processWand`
+  | modal
   | persistent
   deriving Repr, Inhabited, BEq
 
