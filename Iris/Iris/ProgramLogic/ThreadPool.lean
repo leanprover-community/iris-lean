@@ -232,7 +232,7 @@ public theorem tpInv_new_threads (efs tp : List Expr) :
     iframe
     ipureintro
     intro n
-    show get? (PartialMap.union (FiniteMap.map_seq tp.length efs) m) n = (tp ++ efs)[n]?
+    show get? (FiniteMap.map_seq tp.length efs ∪ m) n = (tp ++ efs)[n]?
     rw [LawfulPartialMap.get?_union, LawfulFiniteMap.get?_map_seq, He n]
     rcases Nat.lt_or_ge n tp.length with h | h
     · rw [if_neg (by omega), List.getElem?_append_left h]; rfl
@@ -252,6 +252,7 @@ public theorem tpInv_set (C : List Expr) :
     exact get?_empty
   imodintro
   simp
+  iframe
 
 end ghost
 

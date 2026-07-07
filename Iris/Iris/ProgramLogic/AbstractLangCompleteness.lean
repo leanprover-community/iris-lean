@@ -151,7 +151,7 @@ theorem weakestpre_completeness
   have Hn' : ⊤ \ nclose completenessN ⊆ ⊤ := Std.LawfulSet.diff_subset_left
   iapply IAO.inv_open_maybe (E₂ := ⊤ \ nclose completenessN) _ _ _ Hn'
   unfold isCcfg
-  imod CancelableInvariant.acc _ _ _ _ _ Hn $$ [$] [$] with ⟨>Hinv2, Hq, Hclose⟩
+  imod CancelableInvariant.acc Hn $$ [$] [$] with ⟨>Hinv2, Hq, Hclose⟩
   unfold cfgInv
   icases Hinv2 with ⟨%cfg, Hheap, HtpInv, %Hx⟩
   rcases Hx with ⟨Hsafe, Hreach⟩
@@ -250,7 +250,7 @@ theorem weakestpre_completeness
       iapply H
       inext
       iintro %e₂ %efs H
-      imod CancelableInvariant.acc _ _ _ _ _ Hn $$ [$] [$] with ⟨>Hinv2, Hq, Hclose⟩
+      imod CancelableInvariant.acc Hn $$ [$] [$] with ⟨>Hinv2, Hq, Hclose⟩
       icases Hinv2 with ⟨%cfg2, Hheap, Htpinv, %Hsafe2, %Hreach2⟩
       -- Use the step-producer `H` against the freshly-opened invariant content.
       imod H $$ [Hheap Htpinv] with ⟨%κ, %σ1', %Hprim, He, Htpinv, Hhp⟩
@@ -336,8 +336,8 @@ theorem weakestpre_sem_completeness
     $$ Hccfg Hq He0
   iapply LWP.wp_wand $$ Hwp
   iintro %v ⟨Hv, %q', Hq', _⟩
-  imod (CancelableInvariant.acc ⊤ completenessN γ q'
-    (cfgInv (wp := wp) ([e], σ) .doesFork) Hn0) $$ Hinv Hq' with ⟨>Hinv2, Hq', Hclose2⟩
+  imod (CancelableInvariant.acc (E := ⊤) (N := completenessN) (γ := γ) (p := q')
+    (P := cfgInv (wp := wp) ([e], σ) .doesFork) Hn0) $$ Hinv Hq' with ⟨>Hinv2, Hq', Hclose2⟩
   unfold cfgInv
   icases Hinv2 with ⟨%cfg, Hheap, Htpinv, %Hsafe2, %Hreach2⟩
   ihave %Hlu := tpInv_lookup $$ Htpinv Hv
