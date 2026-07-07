@@ -861,11 +861,19 @@ instance elimModal_absorbingly_here [BI PROP] p (P Q : PROP) [Absorbing Q] :
 instance addModal_wand [BI PROP] (P P' Q R : PROP) [h : AddModal P P' Q] :
     AddModal P P' iprop(R -∗ Q) where
   add_modal := by
+    have h1 : (P' -∗ R -∗ Q) ∗ R ⊢ P' -∗ Q := by
+      apply wand_intro
+      calc
+        _ ⊢ (P' -∗ R -∗ Q) ∗ R ∗ P'   := sep_assoc.mp
+        _ ⊢ (P' -∗ R -∗ Q) ∗ P' ∗ R   := sep_mono_right sep_comm.mp
+        _ ⊢ ((P' -∗ R -∗ Q) ∗ P') ∗ R := sep_assoc.mpr
+        _ ⊢ (R -∗ Q) ∗ R              := sep_mono_left wand_elim_left
+        _ ⊢ Q                         := wand_elim_left
     apply wand_intro
     calc
-      (P ∗ (P' -∗ R -∗ Q)) ∗ R ⊢ P ∗ (P' -∗ R -∗ Q) ∗ R := sep_assoc.mp
-      _ ⊢ P ∗ (P' -∗ Q) := sorry
-      _ ⊢ Q := h.add_modal
+      _ ⊢ P ∗ (P' -∗ R -∗ Q) ∗ R := sep_assoc.mp
+      _ ⊢ P ∗ (P' -∗ Q)          := sep_mono_right h1
+      _ ⊢ Q                      := h.add_modal
 
 -- CombineSepAs
 @[rocq_alias maybe_combine_sep_as_default]
