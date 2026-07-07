@@ -16,6 +16,42 @@ namespace Iris.ProofMode
 public section
 open BI
 
+theorem specialize_wand [BI PROP] {q p : Bool} {A1 A2 A3 Q P1 P2 : PROP}
+    (inst : IntoWand q p Q .in P1 .out P2)
+    (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊢ A3 ∗ □?p P1) :
+    A1 ⊢ A3 ∗ □?(p && q) P2 := by
+  refine h1.trans <| (sep_mono_left h2).trans <| sep_assoc.mp.trans (sep_mono_right ?_)
+  cases p with
+  | false => exact (sep_mono_right inst.into_wand).trans <| wand_elim_right
+  | true => exact
+    (sep_mono intuitionisticallyIf_intutitionistically.mpr intuitionisticallyIf_idem.mpr).trans <|
+    intuitionisticallyIf_sep_mpr.trans <| intuitionisticallyIf_mono <| (wand_elim_swap inst.into_wand)
+
+theorem specialize_wand_cont [BI PROP] {q p : Bool}
+    {A1 A2 A3 Q P1 P2 goal : PROP}
+    (inst : IntoWand q p Q .in P1 .out P2)
+    (h1 : (A2 ∗ □?q Q ⊢ goal) → A1 ⊢ goal) (h2 : A2 ⊢ A3 ∗ □?p P1)
+    (h3 : A3 ∗ □?(p && q) P2 ⊢ goal) :
+    A1 ⊢ goal := by
+  refine h1 (Entails.trans ?_ h3)
+  refine (sep_mono_left h2).trans <| sep_assoc.1.trans (sep_mono_right ?_)
+  cases p with
+  | false => exact (sep_mono_right inst.into_wand).trans <| wand_elim_right
+  | true => exact
+    (sep_mono intuitionisticallyIf_intutitionistically.mpr intuitionisticallyIf_idem.mpr).trans <|
+    intuitionisticallyIf_sep_mpr.trans <| intuitionisticallyIf_mono <| (wand_elim_swap inst.into_wand)
+
+theorem specialize_wand_nested [BI PROP] {q p : Bool} {C B out out₂ goal : PROP}
+    (inst : IntoWand q p out .in B .out out₂)
+    (k : C ∗ □?(p && q) out₂ ⊢ goal) :
+    C ∗ □?p B ⊢ ((□?q out) -∗ goal) := by
+  refine wand_intro (sep_assoc.mp.trans <| (sep_mono_right ?_).trans k)
+  cases p with
+  | false => exact (sep_mono_right inst.into_wand).trans wand_elim_right
+  | true => exact
+    (sep_mono intuitionisticallyIf_intutitionistically.mpr intuitionisticallyIf_idem.mpr).trans <|
+    intuitionisticallyIf_sep_mpr.trans <| intuitionisticallyIf_mono <| (wand_elim_swap inst.into_wand)
+
 -- TODO: if q is true and A1 is persistent, this proof can guarantee □ P2 instead of P2
 -- see https://gitlab.mpi-sws.org/iris/iris/-/blob/846ed45bed6951035c6204fef365d9a344022ae6/iris/proofmode/coq_tactics.v#L336
 theorem specialize_wand_subgoal_step [BI PROP] {q : Bool} {A2 A3 A4 Q P1 : PROP} P2
@@ -55,42 +91,6 @@ theorem specialize_wand_persistent_step [BI PROP] {q : Bool} {A2 Q P1' : PROP} P
 theorem specialize_forall_step [BI PROP] {p : Bool} {A2 P : PROP} {α : Sort _} {Φ : α → PROP}
     (inst : IntoForall P Φ) (a : α) : A2 ∗ □?p P ⊢ A2 ∗ □?p (Φ a) :=
   sep_mono_right <| intuitionisticallyIf_mono <| inst.into_forall.trans (forall_elim a)
-
-theorem specialize_wand [BI PROP] {q p : Bool} {A1 A2 A3 Q P1 P2 : PROP}
-    (inst : IntoWand q p Q .in P1 .out P2)
-    (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊢ A3 ∗ □?p P1) :
-    A1 ⊢ A3 ∗ □?(p && q) P2 := by
-  refine h1.trans <| (sep_mono_left h2).trans <| sep_assoc.mp.trans (sep_mono_right ?_)
-  cases p with
-  | false => exact (sep_mono_right inst.into_wand).trans <| wand_elim_right
-  | true => exact
-    (sep_mono intuitionisticallyIf_intutitionistically.mpr intuitionisticallyIf_idem.mpr).trans <|
-    intuitionisticallyIf_sep_mpr.trans <| intuitionisticallyIf_mono <| (wand_elim_swap inst.into_wand)
-
-theorem specialize_wand_cont [BI PROP] {q p : Bool}
-    {A1 A2 A3 Q P1 P2 goal : PROP}
-    (inst : IntoWand q p Q .in P1 .out P2)
-    (h1 : (A2 ∗ □?q Q ⊢ goal) → A1 ⊢ goal) (h2 : A2 ⊢ A3 ∗ □?p P1)
-    (h3 : A3 ∗ □?(p && q) P2 ⊢ goal) :
-    A1 ⊢ goal := by
-  refine h1 (Entails.trans ?_ h3)
-  refine (sep_mono_left h2).trans <| sep_assoc.1.trans (sep_mono_right ?_)
-  cases p with
-  | false => exact (sep_mono_right inst.into_wand).trans <| wand_elim_right
-  | true => exact
-    (sep_mono intuitionisticallyIf_intutitionistically.mpr intuitionisticallyIf_idem.mpr).trans <|
-    intuitionisticallyIf_sep_mpr.trans <| intuitionisticallyIf_mono <| (wand_elim_swap inst.into_wand)
-
-theorem specialize_wand_nested_cont [BI PROP] {q p : Bool} {C B out out₂ goal : PROP}
-    (inst : IntoWand q p out .in B .out out₂)
-    (k : C ∗ □?(p && q) out₂ ⊢ goal) :
-    C ∗ □?p B ⊢ ((□?q out) -∗ goal) := by
-  refine wand_intro (sep_assoc.mp.trans <| (sep_mono_right ?_).trans k)
-  cases p with
-  | false => exact (sep_mono_right inst.into_wand).trans wand_elim_right
-  | true => exact
-    (sep_mono intuitionisticallyIf_intutitionistically.mpr intuitionisticallyIf_idem.mpr).trans <|
-    intuitionisticallyIf_sep_mpr.trans <| intuitionisticallyIf_mono <| (wand_elim_swap inst.into_wand)
 
 theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B B'}
     (h : P ∗ □?pa A ⊢ P' ∗ □?pb B)
@@ -225,7 +225,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     | some pfNest =>
       pure q(specialize_wand_cont $inst $pfCont ($(pf').mp.trans $pfNest))
     | none => pure q(fun pf =>
-        $pfCont (wand_elim_left_trans ($(pf').mp.trans ($pfContNest (specialize_wand_nested_cont $inst pf)))))
+        $pfCont (wand_elim_left_trans ($(pf').mp.trans ($pfContNest (specialize_wand_nested $inst pf)))))
     let pf := pfNest.bind (fun pfNest =>
       pf.bind (fun pf => some q(specialize_wand $inst $pf ($(pf').mp.trans $pfNest))))
     return { hyps := hyps'', p := p2, out := out₂, pfCont, pf }
