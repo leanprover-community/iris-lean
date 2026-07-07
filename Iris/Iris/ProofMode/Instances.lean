@@ -856,6 +856,17 @@ instance elimModal_absorbingly_here [BI PROP] p (P Q : PROP) [Absorbing Q] :
   ElimModal True p false iprop(<absorb> P) P Q Q where
   elim_modal _ := (sep_mono_left intuitionisticallyIf_elim).trans $ absorbingly_sep_left.1.trans $ absorbing_absorbingly.1.trans wand_elim_right
 
+-- AddModal
+@[rocq_alias add_modal_wand]
+instance addModal_wand [BI PROP] (P P' Q R : PROP) [h : AddModal P P' Q] :
+    AddModal P P' iprop(R -∗ Q) where
+  add_modal := by
+    apply wand_intro
+    calc
+      (P ∗ (P' -∗ R -∗ Q)) ∗ R ⊢ P ∗ (P' -∗ R -∗ Q) ∗ R := sep_assoc.mp
+      _ ⊢ P ∗ (P' -∗ Q) := sorry
+      _ ⊢ Q := h.add_modal
+
 -- CombineSepAs
 @[rocq_alias maybe_combine_sep_as_default]
 instance (priority := default - 20) combineSepAs_default [BI PROP] (P Q : PROP) :
