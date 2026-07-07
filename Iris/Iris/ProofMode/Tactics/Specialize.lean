@@ -95,7 +95,9 @@ open Lean Elab Tactic Meta Qq Std
 
 structure SpecializeState {prop : Q(Type u)} {bi : Q(BI $prop)} (orig goal : Q($prop)) where
   {e : Q($prop)} (hyps : Hyps bi e) (p : Q(Bool)) (out : Q($prop))
+  -- A weaker proposition than `pf`, applicable even when the `.modal` kind is involved
   (pfCont : Q(($e ∗ □?$p $out ⊢ $goal) → $orig ⊢ $goal))
+  -- Holds when the `.modal` kind is not involved, cannot duplicate context if `pf = none`
   pf : Option Q($orig ⊢ $e ∗ □?$p $out)
 
 /-- Used in all cases in `processWand` except those involving the `.modal` kind -/
@@ -110,17 +112,16 @@ private def SpecializeState.update {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
 
 /-- Used by all `.goal` cases in `processWand`. -/
 private def findFrameIVars {u}  {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
-    (hyps : Hyps bi e) (hs : List Ident) (f : List Ident) :
-    ProofModeM <| IVarIdSet × List IVarId := do
-  let mut ivars : IVarIdSet := {}
-  for name in hs do
-    ivars := ivars.insert (← hyps.findWithInfo name)
+    (hyps : Hyps bi e) (hs f : List Ident) : ProofModeM <| IVarIdSet × List IVarId := do
+  -- Hypotheses to be included in the subgoal
+  let ivars ← hs.foldlM (return ·.insert <| ← hyps.findWithInfo ·) {}
+  -- Hypotheses to be framed
   let mut frameIVars : List IVarId := []
   for name in f do
     let ivar ← hyps.findWithInfo name
-    frameIVars := ivar :: frameIVars
     if ivars.contains ivar then
       throwError "ispecialize: {name} used twice"
+    frameIVars := ivar :: frameIVars
   return ⟨ivars, frameIVars.reverse⟩
 
 /-- Used by the `.goal` cases with the `.spatial` or `.modal` kind. -/
@@ -216,7 +217,8 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     | throwError m!"ispecialize: cannot instantiate {out} with {B}"
     match pfNest with
     | none =>
-      let pfCont := q(fun pf => $pfCont (wand_elim_left_trans ($(pf').mp.trans ($pfContNest (wand_intro ((specialize_wand $inst).trans pf))))))
+      let pfCont := q(fun pf => $pfCont (wand_elim_left_trans
+        ($(pf').mp.trans ($pfContNest (wand_intro ((specialize_wand $inst).trans pf))))))
       return { hyps := hyps'', p := p2, out := out₂, pfCont, pf := none }
     | some pfNest =>
       let pfStep := q((sep_mono_left ($(pf').mp.trans $pfNest)).trans (specialize_wand $inst))
@@ -228,7 +230,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let Φ : Q($α → $prop) ← mkFreshExprMVarQ q($α → $prop)
     let some inst ← ProofModeM.trySynthInstanceQ q(IntoForall $out $Φ)
     | throwError "ispecialize: {out} is not a Lean premise"
-    let x ← elabTermEnsuringTypeQ (u := .succ .zero) t α
+    let x ← elabTermEnsuringTypeQ t α
     have out' : Q($prop) := Expr.headBeta q($Φ $x)
     let newMVarIds ← getMVarsNoDelayed x
     for mvar in newMVarIds do addMVarGoal mvar
@@ -302,7 +304,8 @@ def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) ×
       Q(($e' ∗ □?$pb $B ⊢ $goal) → $e ∗ □?$pa $A ⊢ $goal) ×
       Option Q($e ∗ □?$pa $A ⊢ $e' ∗ □?$pb $B)) := do
-  let state : SpecializeState _ goal := { hyps, out := A, p := pa, pfCont := q(id), pf := some q(.rfl) }
+  let state : SpecializeState _ goal :=
+    { hyps, out := A, p := pa, pfCont := q(id), pf := some q(.rfl) }
   let ⟨hyps', pb, B, pfCont, pf⟩ ← spats.foldlM processWand state
   match try_dup_context, pf with
   | true, some pf =>
