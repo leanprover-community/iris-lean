@@ -271,7 +271,7 @@ theorem slice_insert_full {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   iframe %Hfresh Hslice
   imod slice_fill HE (get?_insert_eq rfl) $$ [$Hslice $HQ $Hbox] with Hbox
   imodintro
-  simp only [box, (bigSepM_eqv_of_perm LawfulPartialMap.insert_insert_same).to_eq]
+  simp only [box, LawfulPartialMap.insert_insert_same]
   itrivial
 
 @[rocq_alias slice_delete_full]

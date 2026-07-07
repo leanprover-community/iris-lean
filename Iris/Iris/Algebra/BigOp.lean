@@ -313,9 +313,9 @@ theorem bigOpM_insert_eqv (Φ : K → V → M) {m : M' V} {i : K} (x : V) (hi : 
 
 @[rocq_alias big_opM_delete]
 theorem bigOpM_delete_eqv (Φ : K → V → M) {m : M' V} {i : K} {x : V} (hi : get? m i = some x) :
-    ([^ op map] k ↦ v ∈ m, Φ k v) ≡ op (Φ i x) ([^ op map] k ↦ v ∈ delete m i, Φ k v) :=
-  (bigOpM_eqv_of_perm Φ (insert_delete_cancel hi · |>.symm)).trans
-    (bigOpM_insert_eqv Φ _ (get?_delete_eq rfl))
+    ([^ op map] k ↦ v ∈ m, Φ k v) ≡ op (Φ i x) ([^ op map] k ↦ v ∈ delete m i, Φ k v) := by
+  rw [congrArg (bigOpM op fun k v => Φ k v) (insert_delete_cancel hi).symm]
+  exact bigOpM_insert_eqv Φ _ (get?_delete_eq rfl)
 
 open Classical in
 @[rocq_alias big_opM_gen_proper_2]
@@ -333,15 +333,11 @@ theorem bigOpM_gen_proper_2 {A : Type _} {B : Type _} {R : M → M → Prop}
     R ([^ op map] k ↦ x ∈ m1', Φ k x) ([^ op map] k ↦ x ∈ m2', Ψ k x)
   suffices h : P m1 from h m2 hdom hf
   apply LawfulFiniteMap.induction_on (P := P)
-  · intro m₁ m₂ heq hP m2' hdom' hf'
-    refine hR_eqv.trans (hR_sub (bigOpM_eqv_of_perm Φ heq).symm) ?_
-    exact hP m2' (fun k => heq k ▸ hdom' k) (hf' <| (heq _) ▸ ·)
   · show P (∅ : M' A)
     intro m2' hdom' _
     rw [bigOpM_empty]
-    refine hR_sub <| (bigOpM_eqv_of_perm Ψ ?_).trans (.of_eq (bigOpM_empty Ψ)) |>.symm
-    refine eq_empty_iff.mpr fun k => ?_
-    simpa [show get? (∅ : M' A) k = none from get?_empty k] using hdom' k
+    refine hR_sub <| (bigOpM_eqv_of_perm Ψ fun k => ?_).trans (.of_eq (bigOpM_empty Ψ)) |>.symm
+    simpa [get?_empty] using hdom' k
   · intro k x1 m1' hm1'k IH m2' hdom' hf'
     obtain ⟨x2, hm2k⟩ := Option.isSome_iff_exists.mp <| by
       simpa [get?_insert_eq (k := k) rfl] using (hdom' k).symm
@@ -435,8 +431,7 @@ theorem bigOpM_filterMap_eqv (Φ : K → V → M) (m : M' V) (hinj : Function.In
 theorem bigOpM_insert_delete_eqv (Φ : K → V → M) (m : M' V) (i : K) (x : V) :
     ([^ op map] k ↦ v ∈ insert m i x, Φ k v) ≡
     op (Φ i x) ([^ op map] k ↦ v ∈ delete m i, Φ k v) :=
-  (bigOpM_eqv_of_perm _ (insert_delete · |>.symm)).trans
-    (bigOpM_insert_eqv _ _ (get?_delete_eq rfl))
+  insert_delete (M := M').symm ▸ (bigOpM_insert_eqv _ _ (get?_delete_eq rfl))
 
 @[rocq_alias big_opM_insert_override]
 theorem bigOpM_insert_override_eqv {Φ : K → A → M} {m : M' A}
@@ -478,13 +473,13 @@ theorem toList_union_perm [DecidableEq K] {m1 m2 : M' V} (hdisj : m1 ##ₘ m2) :
     · exact (fun h => absurd (toList_get.mp h2) (by simp [h]))
   · rw [List.mem_append]
     refine ⟨fun h => ?_, fun h => ?_⟩
-    · have hg : get? (PartialMap.union m1 m2) k = some v := toList_get.mp h
+    · have hg : get? (m1 ∪ m2) k = some v := toList_get.mp h
       rw [get?_union] at hg
       cases hm1 : get? m1 k <;> simp_all [Option.orElse]
       · exact .inr (toList_get.mpr hg)
       · exact .inl (toList_get.mpr hm1)
     · refine toList_get.mpr ?_
-      show get? (PartialMap.union m1 m2) k = some v
+      show get? (m1 ∪ m2) k = some v
       rw [get?_union]
       rcases h with h | h
       · simp [toList_get.mp h, Option.orElse]
@@ -551,13 +546,13 @@ theorem bigOpM_hom  [ι : MonoidHomomorphism op₁ op₂ unit₁ unit₂ R h] (f
 
 @[rocq_alias big_opM_commute1]
 theorem bigOpM_weak_hom [DecidableEq K] [ι : WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R h]
-    (f : K → A → M₁) (m : M' A) (Hne : ¬ m ≡ₘ ∅) :
+    (f : K → A → M₁) (m : M' A) (Hne : ¬ m = ∅) :
     R (h ([^op₁ map] k↦x ∈ m, f k x)) ([^op₂ map] k↦x ∈ m, h (f k x)) := by
   refine bigOpL_hom_weak (H := ι) _ ?_
   refine fun Hk => Hne ?_
-  refine .trans LawfulFiniteMap.ofList_toList.symm ?_
-  rw [show (LawfulFiniteMap.toList m) = [] from List.nil_eq.mpr Hk |>.symm]
-  exact .trans (congrFun rfl) (congrFun rfl )
+  rw [← LawfulFiniteMap.ofList_toList (m := m),
+      show (LawfulFiniteMap.toList m) = [] from List.nil_eq.mpr Hk |>.symm]
+  rfl
 
 #rocq_ignore big_opM_ne' "Use bigOpM_dist"
 #rocq_ignore big_opM_proper' "Use bigOpM_eqv"

@@ -297,9 +297,7 @@ theorem ownI_alloc [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
     · suffices Hi : insert (liftInv I) j (toAgree (invariant_unfold P)) = liftInv (insert I j P) by
         rw [Hi]
         iexact Hown
-      refine ExtensionalPartialMap.equiv_iff_eq.mp fun k => ?_
-      simp only [get?_insert, get?_map, Option.map_map]
-      by_cases h : j = k <;> simp [h]
+      simp only [liftInv, map_insert]
     · iapply bigSepM_insert (x := P) Hget $$ [Hmap HProp HD]
       isplitl [HProp HD]
       · rw [HEQ]
@@ -340,9 +338,7 @@ theorem ownI_alloc_open [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
     · suffices Hi : Std.insert (liftInv I) j (toAgree (invariant_unfold P)) = liftInv (Std.insert I j P) by
         rw [Hi]
         iexact Hown
-      refine ExtensionalPartialMap.equiv_iff_eq.mp fun k => ?_
-      simp only [get?_insert, get?_map, Option.map_map]
-      by_cases h : j = k <;> simp [h]
+      simp only [liftInv, map_insert]
     · iapply bigSepM_insert (x := P) Hget $$ [Hmap HE]
       isplitl [HE]
       · iright; iassumption
@@ -371,8 +367,7 @@ theorem wsat_alloc [WP : WsatGpreS GF] :
     isplitl
     · iclear Hd
       have H : liftInv (∅ : InvMap (IProp GF)) = ∅ := by
-        refine ExtensionalPartialMap.equiv_iff_eq.mp fun _ => ?_
-        simp [get?_map, get?_empty]
+        simp only [liftInv, map_empty]
       rw [invMap, H]
       iassumption
     · iapply bigSepM_empty
