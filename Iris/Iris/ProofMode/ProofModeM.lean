@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Michael Sammler, Zongyuan Liu, Yunsong Yang
+Authors: Michael Sammler, Zongyuan Liu, Yunsong Yang, Alvin Tang
 -/
 module
 
