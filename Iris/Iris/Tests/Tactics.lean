@@ -1400,7 +1400,7 @@ example [BI PROP] (P Q R S T : PROP) :
   Tests `ispecialize` with `.autoframe .modal` using the type class instance
   `addModal_bupd` and `addModal_fupd`.
 -/
-example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] (P Q R S : PROP) :
+example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] (P Q R S : PROP) (E : CoPset) :
     ⊢ (P -∗ Q) -∗ (R -∗ S) -∗ (|==> P) -∗ (|={E}=> R) -∗ (|==> Q) ∗ (|={E}=> S) := by
   iintro HPQ HRS HP HR
   isplitl [HPQ HP]
@@ -1416,7 +1416,7 @@ example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] (P Q R S : PROP) :
 example [BI PROP] [BIUpdate PROP]
     (P : PROP) (Q : Nat → PROP) (R S : PROP) [Timeless R] :
     ⊢ (P -∗ (∀ x, Q x)) -∗ (|==> P) -∗ (R -∗ S) -∗ (▷ R) -∗
-    (∀ x, |==> Q x) ∗ (▷ S) := by
+      (∀ x, |==> Q x) ∗ (▷ S) := by
   iintro HPQ HP HRS HR
   isplitl [HPQ HP]
   · ispecialize HPQ $$ [>$]
