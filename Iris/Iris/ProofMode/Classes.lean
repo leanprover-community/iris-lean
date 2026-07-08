@@ -34,7 +34,7 @@ class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop) (_ : InOut) (PROP : semi
 theorem asEmpValid_1 {PROP} [bi : BI PROP] {φ : Prop} (P : PROP) [AsEmpValid .into φ .in PROP .in bi P]
 : φ → ⊢ P := (AsEmpValid.as_emp_valid .in .in).1 rfl
 @[rocq_alias as_emp_valid_2]
-theorem asEmpValid_2 {PROP} [bi : BI PROP] {P: PROP} (io : InOut)
+theorem asEmpValid_2 {PROP} [bi : BI PROP] {P: PROP} {io : InOut}
     (φ : Prop) (inst : AsEmpValid .from φ io PROP .out bi P) : (⊢ P) → φ :=
   (AsEmpValid.as_emp_valid io .out).2 rfl
 

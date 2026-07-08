@@ -109,28 +109,45 @@ def ProofModeM.synthInstanceQ (α : Q(Sort v)) : ProofModeM Q($α) := do
   return e
 
 /-- Initialize proof mode for a metavariable, converting it to an Iris goal. -/
-def startProofMode (mvar : MVarId) : MetaM (MVarId × IrisGoal) := mvar.withContext do
+def startProofMode (mvar : MVarId) (customProp : Option Expr := none) :
+    MetaM (MVarId × IrisGoal) := mvar.withContext do
   -- parse goal
   let goal ← instantiateMVars <| ← mvar.getType
 
   -- check if already in proof mode
   if let some irisGoal := parseIrisGoal? goal then
-    return (mvar, irisGoal)
+    match customProp with
+    | none =>
+      return (mvar, irisGoal)
+    | some customProp =>
+      let eq ← isDefEq irisGoal.prop customProp
+      if !eq then
+        throwError "istart: currently in the Iris Proof Mode with {irisGoal.prop} rather than {customProp}"
+      return (mvar, irisGoal)
 
   let some goal ← checkTypeQ goal q(Prop)
     | throwError "type mismatch\n{← mkHasTypeButIsExpectedMsg (← inferType goal) q(Prop)}"
   let u ← mkFreshLevelMVar
   let prop ← mkFreshExprMVarQ q(Type u)
+
+  if let some p := customProp then
+    unless ← isDefEq prop p do
+      throwError "istart: {p} is not a valid BI instance type"
+
   let P ← mkFreshExprMVarQ q($prop)
   let bi ← mkFreshExprMVarQ q(BI $prop)
-  let .some (_, mvars) ← ProofMode.trySynthInstanceQ q(AsEmpValid .from $goal .out $prop .out $bi $P)
-    | throwError "istart: {goal} is not an emp valid"
+
+  let io : Q(InOut) := if customProp.isSome then q(.in) else q(.out)
+
+  let .some (inst, mvars) ←
+    ProofMode.trySynthInstanceQ q(AsEmpValid .from $goal $io $prop .out $bi $P)
+  | throwError "istart: {goal} is not an emp valid"
   if !mvars.isEmpty then throwError "istart does not support creating mvars"
 
   let irisGoal := { u, prop, bi, hyps := .mkEmp bi, goal := P, .. }
   let subgoal : Quoted q(⊢ $P) ←
     mkFreshExprSyntheticOpaqueMVar (IrisGoal.toExpr irisGoal) (← mvar.getTag)
-  mvar.assign q(asEmpValid_2 $goal $subgoal)
+  mvar.assign q(asEmpValid_2 $goal $inst $subgoal)
   pure (subgoal.mvarId!, irisGoal)
 
 /-- Run a ProofModeM computation on the main goal, ordering resulting goals with dependencies last. -/
