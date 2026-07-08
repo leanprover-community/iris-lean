@@ -329,7 +329,7 @@ instance (priority := default + 10) addModal_later_except_0 [BI PROP] (P Q : PRO
     _ ⊢ ◇ Q                 := except0_idem.mp
 
 @[rocq_alias add_modal_later]
-instance addModal_later (priority := default + 10) [BI PROP] (P Q : PROP) [h : Timeless P] :
+instance (priority := default + 10) addModal_later [BI PROP] (P Q : PROP) [h : Timeless P] :
     AddModal iprop(▷ P) P iprop(▷ Q) where
   add_modal := calc
     _ ⊢ ◇ P ∗ (P -∗ ▷ Q)   := sep_mono_left h.timeless
