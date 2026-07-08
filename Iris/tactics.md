@@ -5,6 +5,7 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 ## Proof Mode Management
 
 - `istart` — Start the proof mode. (Most tactics start the proof mode automatically.)
+- `istart` *prop* — Start the proof mode, specifying the BI instance *prop*.
 - `istop` — Stop the proof mode, turning the goal back into a plain entailment.
 
 ## Context Management

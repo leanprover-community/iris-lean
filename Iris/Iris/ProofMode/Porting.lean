@@ -15,7 +15,7 @@ import Iris.Std.RocqPorting
 #rocq_concept proofmode "Tactics" missing "tactics"
 #rocq_concept proofmode "Tactics" "iSolveSideCondition" ported "iSolveSideconditionAt"
 #rocq_concept proofmode "Tactics" "iStartProof (basic)" ported "istart"
-#rocq_concept proofmode "Tactics" "iStartProof (with bi specified)" missing ""
+#rocq_concept proofmode "Tactics" "iStartProof (with bi specified)" ported "istart"
 #rocq_concept proofmode "Tactics" "iStopProof" ported "istop"
 #rocq_concept proofmode "Tactics" "iRename" ported "irename"
 #rocq_concept proofmode "Tactics" "iClear" ported "iclear"
