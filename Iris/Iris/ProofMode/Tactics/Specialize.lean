@@ -22,9 +22,11 @@ theorem specialize_wand [BI PROP] {q p : Bool} {A Q P1 P2 : PROP}
   refine sep_assoc.mp.trans (sep_mono_right ?_)
   cases p with
   | false => exact (sep_mono_right inst.into_wand).trans wand_elim_right
-  | true => exact
-    (sep_mono intuitionisticallyIf_intutitionistically.mpr intuitionisticallyIf_idem.mpr).trans <|
-    intuitionisticallyIf_sep_mpr.trans <| intuitionisticallyIf_mono <| (wand_elim_swap inst.into_wand)
+  | true => calc
+    _ ⊢ □?q □ P1 ∗ □?q Q     := sep_mono_left intuitionisticallyIf_intutitionistically.mpr
+    _ ⊢ □?q □ P1 ∗ □?q □?q Q := sep_mono_right intuitionisticallyIf_idem.mpr
+    _ ⊢ □?q (□ P1 ∗ □?q Q)   := intuitionisticallyIf_sep_mpr
+    _ ⊢ □?q P2               := intuitionisticallyIf_mono <| wand_elim_swap inst.into_wand
 
 -- TODO: if q is true and A1 is persistent, this proof can guarantee □ P2 instead of P2
 -- see https://gitlab.mpi-sws.org/iris/iris/-/blob/846ed45bed6951035c6204fef365d9a344022ae6/iris/proofmode/coq_tactics.v#L336
@@ -217,22 +219,24 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
   | .ident i spats =>
     let ivar ← hyps.findWithInfo i
     let ⟨_, hyps', out₁, out₁', p1, _, pf'⟩ := hyps.remove false ivar
-    let ⟨_, hyps'', pB, B, pfContNest, pfNest⟩ ←
+    let ⟨_, hyps'', pNest, outNest, pfContNest, pfNest⟩ ←
       if spats.isEmpty then
         -- No nested specialisation patterns
         pure ⟨_, hyps', p1, out₁', q(id), some q(.rfl)⟩
       else
         -- There are nested specialisation patterns, requires recursive calls
         iSpecializeCore hyps' p1 out₁' q(iprop(□?$p $out -∗ $goal)) spats
-    let p2 := if pB.constName! == ``true then p else q(false)
+    let p2 := if pNest.constName! == ``true then p else q(false)
     let out₂ ← mkFreshExprMVarQ prop
-    let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $pB $out .in $B .out $out₂)
-    | throwError m!"ispecialize: cannot instantiate {out} with {B}"
+    let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $pNest $out .in $outNest .out $out₂)
+    | throwError m!"ispecialize: IntoWand type class synthesis failed with {out} with {outNest}"
     match pfNest with
+    -- Nested specialisation pattern involves the `.modal` kind
     | none =>
       let pfCont := q(fun pf => $pfCont (wand_elim_left_trans
         ($(pf').mp.trans ($pfContNest (wand_intro ((specialize_wand $inst).trans pf))))))
       return { hyps := hyps'', p := p2, out := out₂, pfCont, pf := none }
+    -- Nested specialisation pattern does not involve the `.modal` kind, or no nested pattern
     | some pfNest =>
       let pfStep := q((sep_mono_left ($(pf').mp.trans $pfNest)).trans (specialize_wand $inst))
       return specState.update hyps'' p2 out₂ pfStep
@@ -293,7 +297,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let res ← iFrame bi hyps out₁' (← SelPat.resolve hyps [.spatial, .intuitionistic])
     let ⟨_, hyps', pf'⟩ ← res.finishClose
     let pfCont := q(fun pf => $pfCont (specialize_modal $pf' pf $inst1 $inst2))
-    return { hyps := hyps', p := q(false), out := out₂, pfCont := q($pfCont), pf := none }
+    return { hyps := hyps', p := q(false), out := out₂, pfCont, pf := none }
 
 /-- Specialize a proposition `A` by applying a sequence of specialization patterns.
 
@@ -335,8 +339,8 @@ def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     | none, _ | _, none => return ⟨_, hyps', pb, B, q($(pf).trans), some q($pf)⟩
     -- Context duplication succeeds
     | some _, some af =>
-      return ⟨_, hyps, q(true), B', q((specialize_dup_context $pf $af).trans),
-              some q(specialize_dup_context $pf $af)⟩
+      let pf := q(specialize_dup_context $pf $af)
+      return ⟨_, hyps, q(true), B', q($(pf).trans), some q($pf)⟩
   -- No request to duplicate the context, or the `.modal` kind is involved
   | _, _ => return ⟨_, hyps', pb, B, pfCont, pf⟩
 
@@ -361,15 +365,15 @@ partial def iCasesPat.should_try_dup_context (pat : iCasesPat) : Bool :=
 elab "ispecialize " colGt pmt:pmTerm : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
   ProofModeM.runTactic λ mvar { bi, hyps, goal, .. } => do
-  -- hypothesis must be in the context, otherwise use ihave
+  -- Hypothesis must be in the context, otherwise use `ihave`
   let name := ⟨pmt.term⟩
   let some ivar ← try? <| hyps.findWithInfo name
-    | throwError "{name} should be a hypothesis, use ihave instead"
+    | throwError "ispecialize: {name} should be a hypothesis, use ihave instead"
   let some ⟨name, _, hyps', _, out, p, _, pf⟩ := Id.run <|
     hyps.removeG true λ name ivar' _ _ => if ivar == ivar' then some name else none
-    | throwError "ispecialize: cannot find argument"
+    | throwError "ispecialize: cannot find argument {name}"
 
   let ⟨_, hyps'', pb, B, pf', _⟩ ← iSpecializeCore hyps' p out goal pmt.spats
   let hyps''' := Hyps.add bi name ivar pb B hyps''
   let pf'' ← addBIGoal hyps''' goal
-  mvar.assign q(($pf).1.trans <| $pf' $pf'')
+  mvar.assign q(($pf).mp.trans <| $pf' $pf'')
