@@ -39,9 +39,10 @@ theorem specialize_wand_subgoal [BI PROP] {q : Bool} {A2 A3 A4 Q P1 : PROP} P2
 
 theorem specialize_wand_autoframe_spatial [BI PROP] {q : Bool} {A2 A3 Q P1 : PROP} P2
     (inst : IntoWand q false Q .out P1 .out P2)
-    (h2 : A2 ⊢ A3 ∗ P1) : A2 ∗ □?q Q ⊢ A3 ∗ P2 :=
-  (sep_mono_left h2).trans <| sep_assoc.mp.trans
-    (sep_mono_right ((sep_mono_right inst.into_wand).trans wand_elim_right))
+    (h2 : A2 ⊢ A3 ∗ P1) : A2 ∗ □?q Q ⊢ A3 ∗ P2 := calc
+  _ ⊢ (A3 ∗ P1) ∗ □?q Q := sep_mono_left h2
+  _ ⊢ A3 ∗ P1 ∗ □?q Q   := sep_assoc.mp
+  _ ⊢ A3 ∗ P2           := sep_mono_right <| (sep_mono_right inst.into_wand).trans wand_elim_right
 
 theorem specialize_wand_persistent [BI PROP] {q : Bool} {A2 Q P1' : PROP} P1 P2
     (inst1 : IntoWand q true Q .out P1 .out P2) (inst2 : Persistent P1)
@@ -72,12 +73,13 @@ theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B B'}
     (h2 : pa = true ∨ Affine A)
     [IntoPersistently pb B B'] :
     P ∗ □?pa A ⊢ P ∗ □ B' := by
-  apply Entails.trans _ persistently_and_intuitionistically_sep_right.1
+  apply Entails.trans _ persistently_and_intuitionistically_sep_right.mp
   apply and_intro
   · cases h2 <;> subst_eqs <;> apply sep_elim_left
-  · apply h1.trans <|
-      (sep_mono_right (persistentlyIf_of_intuitionisticallyIf.trans into_persistently)).trans <|
-      sep_elim_right
+  · calc
+      _ ⊢ P' ∗ □?pb B    := h1
+      _ ⊢ P' ∗ <pers> B' := sep_mono_right <| persistentlyIf_of_intuitionisticallyIf.trans into_persistently
+      _ ⊢ <pers> B'      := sep_elim_right
 
 theorem specialize_modal [BI PROP] {e e' goal R P1 P1' P2 : PROP} {p : Bool}
     (h1 : e ⊢ e' ∗ P1') (h2 : e' ∗ P2 ⊢ goal)
