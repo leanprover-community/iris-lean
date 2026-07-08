@@ -51,6 +51,12 @@ instance fromImp_imp [BI PROP] (P1 P2 : PROP) : FromImp iprop(P1 → P2) P1 P2 :
 @[rocq_alias from_wand_wand]
 instance fromWand_wand [BI PROP] (P1 P2 : PROP) : FromWand iprop(P1 -∗ P2) io P1 P2 := ⟨.rfl⟩
 
+-- FromWandM
+@[rocq_alias from_wand_wandM]
+instance fromWand_wandM [BI PROP] (mP1 : Option PROP) (P2 : PROP) :
+    FromWand iprop(mP1 -∗? P2) io (mP1.getD emp) P2 where
+  from_wand := wandM_sound.mpr
+
 -- IntoWand
 #rocq_ignore into_wand_wand' "IntoWand' is not used in Lean"
 #rocq_ignore into_wand_impl' "IntoWand' is not used in Lean"
@@ -60,6 +66,13 @@ instance fromWand_wand [BI PROP] (P1 P2 : PROP) : FromWand iprop(P1 -∗ P2) io 
 instance intoWand_wand (p q : Bool) [BI PROP] (P Q P' : PROP) [h : FromAssumption q ioP P P'] :
     IntoWand p q iprop(P' -∗ Q) ioP P ioQ Q where
   into_wand := (intuitionisticallyIf_mono <| wand_mono_left h.1).trans intuitionisticallyIf_elim
+
+@[rocq_alias into_wand_wandM]
+instance intoWand_wandM (p q : Bool) [BI PROP] (mP' : Option PROP) (P Q : PROP)
+    [h : FromAssumption q ioP P (mP'.getD emp)] :
+    IntoWand p q iprop(mP' -∗? Q) ioP P ioQ Q where
+  into_wand := (intuitionisticallyIf_mono wandM_sound.mp).trans <|
+    (intuitionisticallyIf_mono <| wand_mono_left h.1).trans intuitionisticallyIf_elim
 
 -- TODO: compare this with into_wand_impl_false_false, into_wand_impl_false_true, ... in Rocq
 instance intoWand_imp_false [BI PROP] (P Q P' : PROP) [Absorbing P'] [Absorbing iprop(P' → Q)]
