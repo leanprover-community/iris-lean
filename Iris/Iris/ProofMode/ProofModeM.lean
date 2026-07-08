@@ -136,19 +136,21 @@ def startProofMode (mvar : MVarId) (customProp : Option Expr := none) :
 
   let P ← mkFreshExprMVarQ q($prop)
   let bi ← mkFreshExprMVarQ q(BI $prop)
-
   let io : Q(InOut) := if customProp.isSome then q(.in) else q(.out)
+  let synthResult ← ProofMode.trySynthInstanceQ q(AsEmpValid .from $goal $io $prop .out $bi $P)
 
-  let .some (inst, mvars) ←
-    ProofMode.trySynthInstanceQ q(AsEmpValid .from $goal $io $prop .out $bi $P)
-  | throwError "istart: {goal} is not an emp valid"
-  if !mvars.isEmpty then throwError "istart does not support creating mvars"
-
-  let irisGoal := { u, prop, bi, hyps := .mkEmp bi, goal := P, .. }
-  let subgoal : Quoted q(⊢ $P) ←
-    mkFreshExprSyntheticOpaqueMVar (IrisGoal.toExpr irisGoal) (← mvar.getTag)
-  mvar.assign q(asEmpValid_2 $goal $inst $subgoal)
-  pure (subgoal.mvarId!, irisGoal)
+  match synthResult, customProp with
+  | .some (inst, mvars), _ =>
+    if !mvars.isEmpty then throwError "istart does not support creating mvars"
+    let irisGoal := { u, prop, bi, hyps := .mkEmp bi, goal := P, .. }
+    let subgoal : Quoted q(⊢ $P) ←
+      mkFreshExprSyntheticOpaqueMVar (IrisGoal.toExpr irisGoal) (← mvar.getTag)
+    mvar.assign q(asEmpValid_2 $goal $inst $subgoal)
+    pure (subgoal.mvarId!, irisGoal)
+  | _, none =>
+    throwError "istart: {goal} is not an emp valid"
+  | _, some _ =>
+    throwError "istart: {goal} is not an emp valid in {customProp}"
 
 /-- Run a ProofModeM computation on the main goal, ordering resulting goals with dependencies last. -/
 def ProofModeM.runTactic (x : MVarId → IrisGoal → ProofModeM α) (s : ProofModeM.State := {}) : TacticM α := do
