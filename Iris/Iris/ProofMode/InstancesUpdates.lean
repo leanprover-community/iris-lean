@@ -205,6 +205,16 @@ instance (priority := low) elimModal_fupd_fupd_wrongMask p E0 E1 E2 E3 (P Q : PR
       p false iprop(|={E1,E2}=> P) iprop(False) iprop(|={E0,E3}=> Q) iprop(False) where
   elim_modal h := by cases h
 
+@[rocq_alias add_modal_fupd]
+instance addModal_fupd E1 E2 (P Q : PROP) :
+    AddModal iprop(|={E1}=> P) P iprop(|={E1,E2}=> Q) where
+  add_modal := by
+    calc
+      _ ⊢ (P ={E1, E2}=∗ Q) ∗ (|={E1}=> P)    := sep_comm.mp
+      _ ⊢ |={E1}=> ((P -∗ |={E1,E2}=> Q) ∗ P) := fupd_frame_left
+      _ ⊢ |={E1}=> (|={E1,E2}=> Q)            := BIFUpdate.mono wand_elim_left
+      _ ⊢ |={E1, E2}=> Q                      := BIFUpdate.trans
+
 end BIFancyUpdate
 
 section SBIFancyUpdate
