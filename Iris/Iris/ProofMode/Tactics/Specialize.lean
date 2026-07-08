@@ -31,50 +31,49 @@ theorem specialize_wand [BI PROP] {q p : Bool} {A Q P1 P2 : PROP}
 theorem specialize_wand_subgoal [BI PROP] {q : Bool} {A2 A3 A4 Q P1 : PROP} P2
     (inst : IntoWand q false Q .out P1 .out P2)
     (h2 : A2 ⊣⊢ A3 ∗ A4) (h3 : A4 ⊢ P1) : A2 ∗ □?q Q ⊢ A3 ∗ P2 := by
-  refine (sep_mono_left h2.1).trans <| sep_assoc.1.trans
+  refine (sep_mono_left h2.mp).trans <| sep_assoc.mp.trans
     (sep_mono_right ((sep_mono_left h3).trans ?_))
-  exact (sep_mono_right inst.1).trans wand_elim_right
+  exact (sep_mono_right inst.into_wand).trans wand_elim_right
 
 theorem specialize_wand_autoframe_spatial [BI PROP] {q : Bool} {A2 A3 Q P1 : PROP} P2
     (inst : IntoWand q false Q .out P1 .out P2)
     (h2 : A2 ⊢ A3 ∗ P1) : A2 ∗ □?q Q ⊢ A3 ∗ P2 :=
-  (sep_mono_left h2).trans <| sep_assoc.1.trans
+  (sep_mono_left h2).trans <| sep_assoc.mp.trans
     (sep_mono_right ((sep_mono_right inst.into_wand).trans wand_elim_right))
 
 theorem specialize_wand_persistent [BI PROP] {q : Bool} {A2 Q P1' : PROP} P1 P2
-    (inst3 : IntoWand q true Q .out P1 .out P2) (inst2 : Persistent P1)
-    (inst1 : IntoAbsorbingly P1' P1)
-    (h2 : A2 ⊢ P1') : A2 ∗ □?q Q ⊢ A2 ∗ □?q P2 := by
-  have h4 : □ P1 ∗ □?q Q ⊢ □?q P2 := by cases q with
-  | false => exact (sep_mono_right inst3.into_wand).trans wand_elim_right
+    (inst1 : IntoWand q true Q .out P1 .out P2) (inst2 : Persistent P1)
+    (inst3 : IntoAbsorbingly P1' P1) (h1 : A2 ⊢ P1') : A2 ∗ □?q Q ⊢ A2 ∗ □?q P2 := by
+  have h2 : □ P1 ∗ □?q Q ⊢ □?q P2 := by cases q with
+  | false => exact (sep_mono_right inst1.into_wand).trans wand_elim_right
   | true => calc
     _ ⊢ □ □ P1 ∗ □ □ Q          := sep_mono intuitionistically_idem.mpr intuitionistically_idem.mpr
     _ ⊢ □ (□ P1 ∗ □ Q)          := intuitionistically_sep_mpr
-    _ ⊢ □ (□ P1 ∗ (□ P1 -∗ P2)) := intuitionistically_mono <| sep_mono_right <| inst3.into_wand
+    _ ⊢ □ (□ P1 ∗ (□ P1 -∗ P2)) := intuitionistically_mono <| sep_mono_right <| inst1.into_wand
     _ ⊢ □?true P2               := intuitionistically_mono wand_elim_right
   calc
     _ ⊢ (A2 ∧ A2) ∗ □?q Q                 := sep_mono_left <| and_intro .rfl .rfl
-    _ ⊢ (A2 ∧ P1') ∗ □?q Q                := sep_mono_left <| and_mono_right h2
+    _ ⊢ (A2 ∧ P1') ∗ □?q Q                := sep_mono_left <| and_mono_right h1
     _ ⊢ (A2 ∧ <absorb> P1) ∗ □?q Q        := sep_mono_left <| and_mono_right into_absorbingly
     _ ⊢ (A2 ∧ <absorb> <pers> P1) ∗ □?q Q := sep_mono_left <| and_mono_right <| absorbingly_mono Persistent.persistent
     _ ⊢ (A2 ∧ <pers> P1) ∗ □?q Q          := sep_mono_left <| and_mono_right <| absorbingly_persistently.mp
     _ ⊢ (A2 ∗ □ P1) ∗ □?q Q               := sep_mono_left persistently_and_intuitionistically_sep_right.mp
     _ ⊢ A2 ∗ □ P1 ∗ □?q Q                 := sep_assoc.mp
-    _ ⊢ A2 ∗ □?q P2                       := sep_mono_right h4
+    _ ⊢ A2 ∗ □?q P2                       := sep_mono_right h2
 
 theorem specialize_forall [BI PROP] {p : Bool} {A2 P : PROP} {α : Sort _} {Φ : α → PROP}
     (inst : IntoForall P Φ) (a : α) : A2 ∗ □?p P ⊢ A2 ∗ □?p (Φ a) :=
   sep_mono_right <| intuitionisticallyIf_mono <| inst.into_forall.trans (forall_elim a)
 
 theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B B'}
-    (h : P ∗ □?pa A ⊢ P' ∗ □?pb B)
+    (h1 : P ∗ □?pa A ⊢ P' ∗ □?pb B)
     (h2 : pa = true ∨ Affine A)
     [IntoPersistently pb B B'] :
     P ∗ □?pa A ⊢ P ∗ □ B' := by
   apply Entails.trans _ persistently_and_intuitionistically_sep_right.1
   apply and_intro
   · cases h2 <;> subst_eqs <;> apply sep_elim_left
-  · apply h.trans <|
+  · apply h1.trans <|
       (sep_mono_right (persistentlyIf_of_intuitionisticallyIf.trans into_persistently)).trans <|
       sep_elim_right
 
@@ -100,48 +99,64 @@ structure SpecializeState {prop : Q(Type u)} {bi : Q(BI $prop)} (orig goal : Q($
   -- Holds when the `.modal` kind is not involved, cannot duplicate context if `pf = none`
   pf : Option Q($orig ⊢ $e ∗ □?$p $out)
 
-/-- Used in all cases in `processWand` except those involving the `.modal` kind -/
+/--
+  Updates a `SpecializeState` instance by one iteration.
+  Used in all cases in `processWand` except those involving the `.modal` kind.
+-/
 private def SpecializeState.update {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     {orig goal : Q($prop)} (st : @SpecializeState u prop bi orig goal)
     {e' : Q($prop)} (hyps' : Hyps bi e') (p' : Q(Bool)) (out' : Q($prop))
-    (pfCont : Q($(st.e) ∗ □?$(st.p) $(st.out) ⊢ $e' ∗ □?$p' $out')) :
+    (pfStep : Q($(st.e) ∗ □?$(st.p) $(st.out) ⊢ $e' ∗ □?$p' $out')) :
     @SpecializeState u prop bi orig goal :=
   { hyps := hyps', p := p', out := out',
-    pfCont := q(fun pf => $(st.pfCont) ($(pfCont).trans pf)),
-    pf := st.pf.map (fun pf => q($(pf).trans $pfCont)) }
+    pfCont := q(fun pf => $(st.pfCont) ($(pfStep).trans pf)),
+    pf := st.pf.map (fun pf => q($(pf).trans $pfStep)) }
 
-/-- Used by all `.goal` cases in `processWand`. -/
+/--
+  Returns `IVarId` values of hypotheses to be included in a subgoal and those to be framed.
+  Used by all `.goal` cases in `processWand`.
+-/
 private def findFrameIVars {u}  {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
-    (hyps : Hyps bi e) (hs f : List Ident) : ProofModeM <| IVarIdSet × List IVarId := do
+    (hyps : Hyps bi e) (subgoalIdents frameIdents : List Ident) :
+    ProofModeM <| IVarIdSet × List IVarId := do
   -- Hypotheses to be included in the subgoal
-  let ivars ← hs.foldlM (return ·.insert <| ← hyps.findWithInfo ·) {}
+  let subgoalIVars ← subgoalIdents.foldlM (return ·.insert <| ← hyps.findWithInfo ·) {}
   -- Hypotheses to be framed
   let mut frameIVars : List IVarId := []
-  for name in f do
-    let ivar ← hyps.findWithInfo name
-    if ivars.contains ivar then
-      throwError "ispecialize: {name} used twice"
+  for i in frameIdents do
+    let ivar ← hyps.findWithInfo i
+    if subgoalIVars.contains ivar then
+      throwError "ispecialize: {i} used twice"
     frameIVars := ivar :: frameIVars
-  return ⟨ivars, frameIVars.reverse⟩
+  return ⟨subgoalIVars, frameIVars.reverse⟩
 
-/-- Used by the `.goal` cases with the `.spatial` or `.modal` kind. -/
+/--
+  Split hypotheses into those to be included in a subgoal and those to be framed.
+  Used by the `.goal` cases with the `.spatial` or `.modal` kind.
+-/
 private def splitFrameHyps {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
-    (hyps : Hyps bi e) (hs f : List Ident) (negate : Bool) :
+    (hyps : Hyps bi e) (subgoalIdents frameIdents : List Ident) (negate : Bool) :
     ProofModeM <| (el : Q($prop)) × (er : Q($prop)) ×
       Hyps bi el × Hyps bi er × Q($e ⊣⊢ $el ∗ $er) × List IVarId := do
-  let ⟨ivars, frameIVars⟩ ← findFrameIVars hyps hs f
-  let ⟨_, _, hypsl', hypsr', pf'⟩ := Hyps.split bi
+  let ⟨ivars, frameIVars⟩ ← findFrameIVars hyps subgoalIdents frameIdents
+  let ⟨el, er, hypsl, hypsr, pf⟩ := Hyps.split bi
     (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
-  return ⟨_, _, hypsl', hypsr', pf', frameIVars⟩
+  return ⟨el, er, hypsl, hypsr, pf, frameIVars⟩
 
-/-- Used by all `.goal` cases and the `.autoframe persistent` case in `processWand`. -/
+/--
+  Applying framing and then solve the goal using `itrivial` (when `trivial` is
+  `true`) or add the goal into the proof state (when `trivial` is `false`).
+  Used by all `.goal` cases and the `.autoframe persistent` case in `processWand`.
+-/
 private def finishFrameSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (trivial : Bool) (g : Option Name)
     (frameIVars : Option <| List IVarId) : ProofModeM Q($e ⊢ $goal) := do
   let targets ← do match frameIVars with
+  -- For auto-framing
   | none => SelPat.resolve hyps [.spatial, .intuitionistic]
+  -- For framing with the specified hypotheses
   | some frameIVars => pure (frameIVars.map (⟨.ipm ·, true⟩))
-  let res ← iFrame bi _ hyps goal targets
+  let res ← iFrame bi hyps goal targets
   res.finish λ hyps goal => do
     if trivial then
       let some r ← iTrivial hyps goal
@@ -158,8 +173,6 @@ private def synthIntoWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
   let out₂ ← mkFreshExprMVarQ prop
   let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $persistent $out .out $out₁ .out $out₂)
     | throwError m!"ispecialize: {out} is not a wand"
-  let out₁ : Q($prop) ← instantiateMVars out₁
-  let out₂ : Q($prop) ← instantiateMVars out₂
   return ⟨out₁, out₂, inst⟩
 
 /-- Used by the cases `.autoframe` and `.goal` in `processWand` with the `.persistent` kind. -/
@@ -169,14 +182,14 @@ private def synthIntoWandPersistent {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       Q(IntoWand $p true $out .out $out₁ .out $out₂) ×
       Q(Persistent $out₁) ×
       Q(IntoAbsorbingly $out₁' $out₁)) := do
-  let ⟨out₁, out₂, inst1⟩ : (out₁ : Q($prop)) × (out₂ : Q($prop)) ×
+  let ⟨out₁, out₂, instWand⟩ : (out₁ : Q($prop)) × (out₂ : Q($prop)) ×
     Q(IntoWand $p true $out .out $out₁ .out $out₂) ← @synthIntoWand u prop bi p out true
-  let some inst2 ← ProofModeM.trySynthInstanceQ q(Persistent $out₁)
+  let some intoPers ← ProofModeM.trySynthInstanceQ q(Persistent $out₁)
   | throwError m!"ispecialize: {out₁} is not persistent"
   let out₁' ← mkFreshExprMVarQ prop
-  let some inst3 ← ProofModeM.trySynthInstanceQ q(IntoAbsorbingly $out₁' $out₁)
+  let some instAbsorb ← ProofModeM.trySynthInstanceQ q(IntoAbsorbingly $out₁' $out₁)
   | throwError m!"ispecialize: IntoAbsorbingly type class synthesis failed with {out₁}"
-  return ⟨out₁, out₂, out₁', inst1, inst2, inst3⟩
+  return ⟨out₁, out₂, out₁', instWand, intoPers, instAbsorb⟩
 
 /-- Used by the cases `.autoframe` and `.goal` in `processWand` with the `.modal` kind. -/
 private def synthIntoWandModal {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
@@ -184,12 +197,12 @@ private def synthIntoWandModal {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     ProofModeM ((out₁ : Q($prop)) × (out₂ : Q($prop)) × (out₁' : Q($prop)) ×
       Q(IntoWand $p false $out .out $out₁ .out $out₂) ×
       Q(AddModal $out₁' $out₁ $goal)) := do
-  let ⟨out₁, out₂, inst1⟩ : (out₁ : Q($prop)) × (out₂ : Q($prop)) ×
-    Q(IntoWand $p false $out .out $out₁ .out $out₂) ← @synthIntoWand u prop bi  p out false
+  let ⟨out₁, out₂, instWand⟩ : (out₁ : Q($prop)) × (out₂ : Q($prop)) ×
+    Q(IntoWand $p false $out .out $out₁ .out $out₂) ← @synthIntoWand u prop bi p out false
   let out₁' ← mkFreshExprMVarQ prop
-  let some inst2 ← ProofModeM.trySynthInstanceQ q(AddModal $out₁' $out₁ $goal)
+  let some instModal ← ProofModeM.trySynthInstanceQ q(AddModal $out₁' $out₁ $goal)
     | throwError m!"ispecialize: AddModal type class synthesis failed with {out₁} and {goal}"
-  pure ⟨out₁, out₂, out₁', inst1, inst2⟩
+  pure ⟨out₁, out₂, out₁', instWand, instModal⟩
 
 mutual
 
@@ -264,7 +277,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
   -- Auto-framing with `[$]`
   | .autoframe .spatial => do
     let ⟨out₁, out₂, inst⟩ ← synthIntoWand p out false
-    let res ← iFrame bi _ hyps out₁ (← SelPat.resolve hyps [.spatial, .intuitionistic])
+    let res ← iFrame bi hyps out₁ (← SelPat.resolve hyps [.spatial, .intuitionistic])
     let ⟨_, hyps', pf'⟩ ← res.finishClose
     let pfStep := q(specialize_wand_autoframe_spatial $out₂ $inst $pf')
     return specState.update hyps' q(false) out₂ pfStep
@@ -277,7 +290,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
   -- Auto-framing with `[>$]`
   | .autoframe .modal =>
     let ⟨out₁, out₂, out₁', inst1, inst2⟩ ← synthIntoWandModal p out goal
-    let res ← iFrame bi _ hyps out₁' (← SelPat.resolve hyps [.spatial, .intuitionistic])
+    let res ← iFrame bi hyps out₁' (← SelPat.resolve hyps [.spatial, .intuitionistic])
     let ⟨_, hyps', pf'⟩ ← res.finishClose
     let pfCont := q(fun pf => $pfCont (specialize_modal $pf' pf $inst1 $inst2))
     return { hyps := hyps', p := q(false), out := out₂, pfCont := q($pfCont), pf := none }
