@@ -10,12 +10,14 @@ public import Iris.ProofMode
 public import Iris.Instances.IProp
 public import Iris.Instances.Lib.LaterCredits
 public import Iris.Instances.Lib.Token
+public import Iris.ProgramLogic.Language
+public import Iris.ProgramLogic.WeakestPre
 public import Iris.Algebra.CMRA
 
 @[expose] public section
 
 namespace Iris.Tests
-open BI CMRA DFrac
+open BI CMRA DFrac ProgramLogic
 
 /- This file contains tests with various scenarios for all available tactics. -/
 
@@ -1408,6 +1410,34 @@ example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] (P Q R S : PROP) :
   · ispecialize HRS $$ [>$]
     imodintro
     iassumption
+
+/-- Tests `ispecialize` for its use of the type class instance `add_modal_forall`,
+  `add_modal_bupd` and `add_modal_later`. -/
+example [BI PROP] [BIUpdate PROP]
+    (P : PROP) (Q : Nat → PROP) (R S : PROP) [Timeless R] :
+    ⊢ (P -∗ (∀ x, Q x)) -∗ (|==> P) -∗ (R -∗ S) -∗ (▷ R) -∗
+    (∀ x, |==> Q x) ∗ (▷ S) := by
+  iintro HPQ HP HRS HR
+  isplitl [HPQ HP]
+  · ispecialize HPQ $$ [>$]
+    iintro %x
+    ispecialize HPQ $$ %x
+    imodintro
+    iassumption
+  · ispecialize HRS $$ [> HR]
+    · imod HR
+      iassumption
+    · inext
+      iassumption
+
+/-- Tests `ispecialize` for its use of the type class instance `add_modal_fupd_wp`. -/
+example {hlc : HasLC} {Expr State Obs Val : Type _} [Language Expr State Obs Val]
+    {GF : BundledGFunctors} [IrisGS_gen hlc Expr GF]
+    (s : Stuckness) (E : CoPset) (e : Expr) (P : IProp GF) (Φ : Val → IProp GF) :
+    ⊢ (P -∗ WP e @ s ; E {{ Φ }}) -∗ (|={E}=> P) -∗ WP e @ s ; E {{ Φ }} := by
+  iintro HPQ HP
+  ispecialize HPQ $$ [>$]
+  iassumption
 
 /--
   Tests `ispecialize` with the handling of the modality using the type class
