@@ -1518,8 +1518,6 @@ example [BI PROP] [BIUpdate PROP] (P Q : PROP) :
 
 end specialize
 
-/-
-
 -- split
 namespace split
 
@@ -3002,5 +3000,3 @@ example (P Q : PROP) :
   iloeb as IH
 
 end iloeb
-
--/
