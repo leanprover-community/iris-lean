@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2023 Mario Carneiro. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mario Carneiro
+Authors: Mario Carneiro, Sebastian Graf
 -/
 module
 
@@ -248,6 +248,96 @@ theorem Equiv.to_eq {α} [OFE α] [Leibniz α] {x y : α} (h : x ≡ y) : x = y 
   ⟨eq_of_eqv, .of_eq⟩
 export OFE.Leibniz (leibniz)
 
+/-- The setoid on `X` identifying points that agree at every step index:
+`x ≈ y ↔ ∀ n, dist n x y`. -/
+@[reducible]
+def QuotientO {X : Type u} (dist : Nat → X → X → Prop) (heqv : ∀ {n}, Equivalence (dist n)) :
+    Setoid X where
+  r x y := ∀ n, dist n x y
+  iseqv :=
+    ⟨fun _ _ => heqv.refl _,
+     fun h n => heqv.symm (h n),
+     fun h₁ h₂ n => heqv.trans (h₁ n) (h₂ n)⟩
+
+/--
+EXPERIMENT: Explicit use of quotients to force quotiented (by Equiv) OFE to be Leibniz by
+quotienting by propositional equality.
+https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Evaluating.20a.20specialization.20to.20Leibnize.20OFE.27s/with/606745235
+
+Build a `Leibniz` OFE from a step-indexed distance `dist` satisfying the OFE distance axioms
+by quotienting the carrier `X` by the OFE equivalence `fun x y => ∀ n, dist n x y`. -/
+@[reducible] def mkQuotient {X : Type u} (dist : Nat → X → X → Prop)
+    (heqv : ∀ {n}, Equivalence (dist n))
+    (hlt : ∀ {n m : Nat} {x y : X}, dist n x y → m < n → dist m x y) :
+    OFE (Quotient (QuotientO dist heqv)) :=
+  letI D : Nat → Quotient (QuotientO dist heqv) → Quotient (QuotientO dist heqv) → Prop :=
+    fun n => Quotient.lift₂ (dist n) fun _ _ _ _ hac hbd => propext
+      ⟨fun h => heqv.trans (heqv.trans (heqv.symm (hac n)) h) (hbd n),
+       fun h => heqv.trans (heqv.trans (hac n) h) (heqv.symm (hbd n))⟩
+  { Dist := D
+    Equiv x y := ∀ n, D n x y
+    dist_eqv := by
+      refine ⟨Quotient.ind fun a => heqv.refl a, fun {x y} h => ?_, fun {x y z} h₁ h₂ => ?_⟩
+      · induction x, y using Quotient.ind₂ with | _ a b => exact heqv.symm h
+      · induction x, y using Quotient.ind₂ with | _ a b =>
+          induction z using Quotient.ind with | _ c => exact heqv.trans h₁ h₂
+    equiv_dist := .rfl
+    dist_lt := fun {n x y m} h hlt' => by
+      induction x, y using Quotient.ind₂ with | _ a b => exact hlt h hlt' }
+
+theorem mkQuotient_leibniz {X : Type u} (dist : Nat → X → X → Prop)
+    (heqv : ∀ {n}, Equivalence (dist n))
+    (hlt : ∀ {n m : Nat} {x y : X}, dist n x y → m < n → dist m x y) :
+    @Leibniz _ (mkQuotient dist heqv hlt) :=
+  letI := mkQuotient dist heqv hlt
+  { eq_of_eqv := fun {x y} h => by
+      induction x, y using Quotient.ind₂ with | _ a b => exact Quotient.sound h }
+
+namespace mkQuotient
+
+variable {X : Type u} {dist : Nat → X → X → Prop} {heqv : ∀ {n}, Equivalence (dist n)}
+
+@[reducible] def mk (x : X) : Quotient (QuotientO dist heqv) := Quotient.mk _ x
+
+@[elab_as_elim] theorem ind {motive : Quotient (QuotientO dist heqv) → Prop}
+    (h : ∀ x : X, motive (mk x)) (q : Quotient (QuotientO dist heqv)) : motive q :=
+  Quotient.ind h q
+
+theorem sound {x y : X} (h : ∀ n, dist n x y) :
+    (mk x : Quotient (QuotientO dist heqv)) = mk y := Quotient.sound h
+
+theorem mk_eq {x y : X} :
+    (mk x : Quotient (QuotientO dist heqv)) = mk y ↔ ∀ n, dist n x y :=
+  ⟨Quotient.exact, sound⟩
+
+@[reducible] def lift {β : Sort v} (f : X → β)
+    (resp : ∀ x y, (∀ n, dist n x y) → f x = f y) :
+    Quotient (QuotientO dist heqv) → β := Quotient.lift f resp
+
+@[simp] theorem lift_mk {β : Sort v} (f : X → β) (resp) (x : X) :
+    lift (dist := dist) (heqv := heqv) f resp (mk x) = f x := rfl
+
+@[reducible] def lift₂ {β : Sort v} (f : X → X → β)
+    (resp : ∀ a b c d, (∀ n, dist n a c) → (∀ n, dist n b d) → f a b = f c d) :
+    Quotient (QuotientO dist heqv) → Quotient (QuotientO dist heqv) → β := Quotient.lift₂ f resp
+
+@[simp] theorem lift₂_mk {β : Sort v} (f : X → X → β) (resp) (x y : X) :
+    lift₂ (dist := dist) (heqv := heqv) f resp (mk x) (mk y) = f x y := rfl
+
+@[reducible] def map {X' : Type u'} {dist' : Nat → X' → X' → Prop} {heqv' : ∀ {n}, Equivalence (dist' n)}
+    (f : X → X') (hf : ∀ n x y, dist n x y → dist' n (f x) (f y)) :
+    Quotient (QuotientO dist heqv) → Quotient (QuotientO dist' heqv') :=
+  Quotient.lift (fun x => mk (f x)) (fun _ _ h => Quotient.sound fun n => hf n _ _ (h n))
+
+@[simp] theorem map_mk {X' : Type u'} {dist' : Nat → X' → X' → Prop}
+    {heqv' : ∀ {n}, Equivalence (dist' n)} (f : X → X') (hf) (x : X) :
+    map (dist := dist) (heqv := heqv) (dist' := dist') (heqv' := heqv') f hf (mk x) = mk (f x) := rfl
+
+theorem dist_mk {hlt : ∀ {n m : Nat} {x y : X}, dist n x y → m < n → dist m x y}
+    {n} {x y : X} : (mkQuotient dist heqv hlt).Dist n (mk x) (mk y) ↔ dist n x y := Iff.rfl
+
+end mkQuotient
+
 /-- A morphism between OFEs, written `α -n> β`, is defined to be a function that is
 non-expansive. -/
 @[ext, rocq_alias ofe_mor] structure Hom (α β : Type _) [OFE α] [OFE β] where
@@ -439,6 +529,21 @@ instance Option.merge_ne [OFE α] {op : α → α → α} [NonExpansive₂ op] :
   ne n x1 x2 Hx y1 y2 Hy := by
     rcases x1, x2, y1, y2 with ⟨_|_, _|_, _|_, _|_⟩ <;> simp_all
     exact NonExpansive₂.ne Hx Hy
+
+instance Option.bind_fun_ne [OFE α] [OFE β] (f : α → Option β) [NonExpansive f] : NonExpansive (flip Option.bind f) where
+  ne _ _ x2 Hx := match x2 with
+    | some _ => (dist_some Hx).choose_spec.left ▸ (NonExpansive.ne (f := f) (dist_some Hx).choose_spec.right.symm)
+    | none => (dist_none.mp Hx).symm ▸ .rfl
+
+theorem Option.bind_dist [OFE α] [OFE β] {x : Option α} {f g : α → Option β} (H : ∀ x, f x ≡{n}≡ g x) : Option.bind x f ≡{n}≡ Option.bind x g :=
+  match x with
+  | some _ => H _
+  | none => .rfl
+
+theorem Option.bind_equiv [OFE α] [OFE β] {x : Option α} {f g : α → Option β} (H : ∀ x, f x ≡ g x) : Option.bind x f ≡ Option.bind x g :=
+  match x with
+  | some _ => H _
+  | none => .rfl
 
 abbrev OFEFun {α : Type _} (β : α → Type _) := ∀ a, OFE (β a)
 
@@ -1534,10 +1639,30 @@ def Fixpoint.chain [OFE α] [Inhabited α] (f : α → α) [Contractive f] : Cha
     intro _ Hm
     exact (IH H).le (Nat.le_of_lt_succ Hm)
 
+/-- The chain construction of the Banach fixpoint. `fixpointP` packages it, together with
+its unfolding equation, behind an opaque constant. -/
+def fixpointAux [COFE α] [Inhabited α] (f : α → α) [Contractive f] : α :=
+  COFE.compl <| Fixpoint.chain f
+
+theorem fixpointAux_unfold [COFE α] [Inhabited α] (f : α -c> α) :
+    fixpointAux f ≡ f (fixpointAux f) := by
+  refine equiv_dist.mpr fun n => ?_
+  apply COFE.conv_compl.trans
+  refine .trans ?_ (NonExpansive.ne COFE.conv_compl.symm)
+  induction n with
+  | zero => exact Contractive.zero f.f
+  | succ _ IH => exact (Contractive.succ f.f IH.symm).symm
+
+/-- The Banach fixpoint packed together with its unfolding equation as a single opaque
+value. Being opaque, it is a stuck constant for definitional-equality checks in both the
+elaborator and the kernel, which keeps the approximation chain of `fixpointAux` sealed. -/
+opaque fixpointP [COFE α] [Inhabited α] (f : α → α) [Contractive f] : { x : α // x ≡ f x } :=
+  ⟨fixpointAux f, fixpointAux_unfold f.toContractiveHom⟩
+
 /-- Fixpoints inside of a COFE -/
 @[rocq_alias fixpoint]
 def fixpoint [COFE α] [Inhabited α] (f : α → α) [Contractive f] : α :=
-  COFE.compl <| Fixpoint.chain f
+  (fixpointP f).val
 #rocq_ignore fixpoint_def "Use fixpoint"
 #rocq_ignore fixpoint_aux "Use fixpoint"
 #rocq_ignore fixpoint_unseal "fixpoint is unsealed by default"
@@ -1546,13 +1671,8 @@ nonrec abbrev OFE.ContractiveHom.fixpoint [COFE α] [Inhabited α] (f : α -c> �
 
 @[rocq_alias fixpoint_unfold]
 theorem fixpoint_unfold [COFE α] [Inhabited α] (f : α -c> α) :
-    fixpoint f ≡ f (fixpoint f) := by
-  refine equiv_dist.mpr fun n => ?_
-  apply COFE.conv_compl.trans
-  refine .trans ?_ (NonExpansive.ne COFE.conv_compl.symm)
-  induction n with
-  | zero => exact Contractive.zero f.f
-  | succ _ IH => exact (Contractive.succ f.f IH.symm).symm
+    fixpoint f ≡ f (fixpoint f) :=
+  (fixpointP f).property
 
 @[rocq_alias fixpoint_unique]
 theorem fixpoint_unique [COFE α] [Inhabited α] {f : α -c> α} {x : α} (H : x ≡ f x) :
@@ -1566,11 +1686,11 @@ theorem fixpoint_unique [COFE α] [Inhabited α] {f : α -c> α} {x : α} (H : x
 instance OFE.ContractiveHom.fixpoint_ne [COFE α] [Inhabited α] :
     NonExpansive (ContractiveHom.fixpoint (α := α)) where
   ne n f1 f2 H := by
-    apply COFE.conv_compl.trans
-    refine .trans ?_ COFE.conv_compl.symm
     induction n with
-    | zero => exact H _
-    | succ _ IH => exact (H _).trans <| Contractive.succ _ <| IH <| Dist.lt H (Nat.lt_add_one _)
+      refine (fixpoint_unfold f1).dist.trans <|
+        ((H _).trans ?_).trans (fixpoint_unfold f2).dist.symm
+    | zero => exact Contractive.zero f2.f
+    | succ _ IH => exact Contractive.succ f2.f <| IH <| Dist.lt H (Nat.lt_add_one _)
 
 @[elab_as_elim, rocq_alias fixpoint_ind]
 theorem OFE.ContractiveHom.fixpoint_ind [COFE α] [Inhabited α] (f : α -c> α)

@@ -688,13 +688,6 @@ instance bigSepM_plain {K} [DecidableEq K] {M A} [ι : LawfulFiniteMap M K] (Φ 
     Plain ([∗map] k↦x ∈ m, Φ k x) where
   plain := by
     induction m using Iris.Std.LawfulFiniteMap.induction_on
-    case hequiv m₁ m₂ m₁m₂ H =>
-      have h : iprop([∗map] k ↦ x ∈ m₁, Φ k x) ≡ [∗map] k ↦ x ∈ m₂, Φ k x :=
-          Algebra.BigOpM.bigOpM_eqv_of_perm (M' := M) _ m₁m₂
-      calc iprop([∗map] k ↦ x ∈ m₂, Φ k x)
-        _ ⊣⊢ [∗map] k ↦ x ∈ m₁, Φ k x := BI.equiv_iff.1 h |>.symm
-        _  ⊢ ■ [∗map] k ↦ x ∈ m₁, Φ k x := H
-        _ ⊣⊢ ■ [∗map] k ↦ x ∈ m₂, Φ k x := .ofMono plainly_mono <| BI.equiv_iff.1 h
     case hemp =>
       simp only [Algebra.BigOpM.bigOpM_empty, plain]
     case hins k v m get?_m_k IH=>
