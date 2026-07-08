@@ -388,10 +388,11 @@ theorem initHeap_heap_eq {σ : State} {l : Loc} {n : Int} {v : Option Val} :
   intro k
   show get? (M := HeapF) ((List.range n.toNat).foldl
       (fun h (i : Nat) => Std.insert (M := HeapF) h (l + (i : Int)) v) σ.heap) k = _
-  rw [get?_foldl_insert, Iris.Std.LawfulPartialMap.get?_union, get?_allocCells]
+  rw [get?_foldl_insert]
+  simp only [Iris.Std.PartialMap.union, Iris.Std.LawfulPartialMap.get?_merge, get?_allocCells]
   by_cases hex : ∃ i, i < n.toNat ∧ k = l + (i : Int)
-  · simp only [if_pos hex, Option.orElse]
-  · simp only [if_neg hex, Option.orElse]
+  · simp only [if_pos hex]; cases get? (M := HeapF) σ.heap k <;> rfl
+  · simp only [if_neg hex]; cases get? (M := HeapF) σ.heap k <;> rfl
 
 theorem allocCells_disjoint {l : Loc} {n : Int} {v : Val} {m : HeapF (Option Val)}
     (hf : ∀ i : Int, 0 ≤ i → i < n → get? (M := HeapF) m (l + i) = none) :
@@ -434,6 +435,16 @@ private theorem coPset_top_ne_empty : (⊤ : CoPset) ≠ ∅ := by
   have hm : Pos.xH ∈ (⊤ : CoPset) := CoPset.mem_full
   rw [h] at hm
   exact CoPset.mem_empty hm
+
+/-- Inserting a prophecy id into the used-id set is the same as unioning in the
+singleton, phrased for the native `ExtTreeSet.insert`. -/
+theorem usedProph_insert_eq {ps : Std.ExtTreeSet ProphId compare} {p : ProphId} :
+    ps.insert p = ({p} ∪ ps : Std.ExtTreeSet ProphId compare) := by
+  apply Std.ExtTreeSet.ext_mem
+  intro x
+  rw [Std.ExtTreeSet.mem_union_iff, Std.ExtTreeSet.mem_insert,
+    Iris.Std.mem_singleton_extTreeSet, Std.LawfulEqCmp.compare_eq_iff_eq]
+  exact ⟨fun h => h.imp Eq.symm id, fun h => h.imp Eq.symm id⟩
 
 /-- The heap-only completeness equation: case analysis on the base step. Mirrors
 `wp_base_completeness` in `case_studies/heaplang/completeness_generic.v`. -/
