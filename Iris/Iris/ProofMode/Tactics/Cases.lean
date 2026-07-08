@@ -5,7 +5,7 @@ Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang
 -/
 module
 
-meta import Iris.ProofMode.Patterns.ProofModeTerm
+meta import Iris.ProofMode.Patterns.SpecPattern
 meta import Iris.ProofMode.Patterns.CasesPattern
 public meta import Iris.ProofMode.Tactics.Mod
 public meta import Iris.ProofMode.Tactics.Pure

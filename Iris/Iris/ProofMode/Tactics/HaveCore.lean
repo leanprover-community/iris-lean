@@ -7,7 +7,7 @@ module
 
 import Iris.BI
 import Iris.ProofMode.Classes
-public meta import Iris.ProofMode.Patterns.ProofModeTerm
+public meta import Iris.ProofMode.Patterns.SpecPattern
 public meta import Iris.ProofMode.Tactics.Basic
 public meta import Iris.ProofMode.Tactics.Specialize
 

@@ -20,6 +20,7 @@ syntax ident : frameIdent
 -- syntax "$" ident : frameIdent
 
 declare_syntax_cat specPat
+declare_syntax_cat pmTerm
 
 syntax ident : specPat
 /-- Use a proof or a tactic sequence to match a pure hypothesis in the premise. -/
@@ -61,7 +62,13 @@ syntax "[#" "$" "]" : specPat
   patterns `spat₁ … spatₙ` before the resultant hypothesis is itself used for
   matching a premise.
 -/
-syntax "(" colGt ident colGt " $$ " (colGt ppSpace specPat)+ ")" : specPat
+syntax "(" pmTerm ")" : specPat
+/--
+  The proof mode term `H $$ spat₁ … spatₙ` refers to `H`, a hypothesis or a
+  Lean term whose conclusion is an entailment, with the specialisation patterns
+  `spat₁ … spatₙ` applied to its premises.
+-/
+syntax term (colGt " $$ " (colGt ppSpace specPat)+)? : pmTerm
 
 @[rocq_alias goal_kind]
 inductive SpecGoalKind
@@ -79,7 +86,6 @@ structure SpecGoal where
   hyps : List Ident
 deriving Repr, Inhabited
 
--- see https://gitlab.mpi-sws.org/iris/iris/-/blob/master/iris/proofmode/spec_patterns.v?ref_type=heads#L15
 @[rocq_alias spec_pat]
 inductive SpecPat
   | ident (name : Ident) (recursiveSpecPats : List <| Syntax × SpecPat)
@@ -107,23 +113,34 @@ def SpecPat.isModal : SpecPat → Bool
 def FrameIdent.parse : TSyntax `frameIdent → (Ident ⊕ Ident)
   | `(frameIdent| $name:ident) => .inl name
   | e =>
-    -- Antiquotations start with $, so if we find one, it is a framing assumption
+    -- Antiquotations start with `$`, so if we find one, it is a framing assumption
     if e.raw.isAntiquot then
       .inr ⟨e.raw.getAntiquotTerm⟩
     else .inl default -- should not happen
+
+@[rocq_alias iTrm]
+structure PMTerm where
+  term : Term
+  spats : List (Syntax × SpecPat)
+  deriving Repr, Inhabited
+
+def PMTerm.is_nontrivial (pmt : PMTerm) : Bool := !pmt.spats.isEmpty
+
+mutual
 
 @[rocq_alias spec_pat.parse]
 partial def SpecPat.parse (term : Syntax) : MacroM (Syntax × SpecPat) := do
   let stx ← expandMacros term
   match stx with
-  -- Recursive call for nested specialisation patterns
-  | `(specPat| ($name:ident $$ $[$spats:specPat]*)) =>
-      let nested ← spats.toList.mapM (SpecPat.parse ·.raw)
-      return ⟨term, .ident name nested⟩
+  -- Recursive parsing for nested specialisation patterns
+  | `(specPat| ( $pmt:pmTerm )) =>
+    let pmt ← PMTerm.parse pmt
+    return ⟨term, .ident ⟨pmt.term⟩ pmt.spats⟩
+  -- No nested specialisation pattern involved
   | _ =>
     match go ⟨stx⟩ with
-    | none => Macro.throwUnsupported
     | some pat => return ⟨term, pat⟩
+    | none => Macro.throwUnsupported
 where
   go : TSyntax `specPat → Option SpecPat
   | `(specPat| $name:ident) => some <| .ident name []
@@ -141,3 +158,14 @@ where
   | `(specPat| [# $]) => some <| .autoframe .persistent
   | `(specPat| [> $]) => some <| .autoframe .modal
   | _ => none
+
+partial def PMTerm.parse (term : Syntax) : MacroM PMTerm := do
+  match ← expandMacros term with
+  | `(pmTerm| $trm:term) => return ⟨trm, []⟩
+  | `(pmTerm| $trm:term $$ $[$spats:specPat]*) => return ⟨trm, ← parseSpats spats⟩
+  | _ => Macro.throwUnsupported
+where
+  parseSpats (spats : TSyntaxArray `specPat) : MacroM (List (Syntax × SpecPat)) :=
+      return (← spats.toList.mapM fun pat => SpecPat.parse pat.raw)
+
+end

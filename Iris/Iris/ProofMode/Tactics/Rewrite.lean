@@ -9,7 +9,7 @@ public import Iris.BI.InternalEq
 public import Iris.ProofMode.Classes
 public import Iris.Std.TC
 public import Iris.ProofMode.ProofModeM
-public meta import Iris.ProofMode.Patterns.ProofModeTerm
+public meta import Iris.ProofMode.Patterns.SpecPattern
 public meta import Iris.ProofMode.Tactics.HaveCore
 meta import Lean.Parser.Tactic
 
