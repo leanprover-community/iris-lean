@@ -1508,6 +1508,14 @@ example [BI PROP] (P Q : PROP) : P ⊢ Q := by
   iintro HP
   ispecialize HP $$ %(0 : Nat)
 
+/-- Tests `ispecialize` with a specialisation pattern naming the subgoal. -/
+example [BI PROP] [BIUpdate PROP] (P Q : PROP) :
+    ⊢ (P -∗ Q) -∗ (|==> P) -∗ (|==> Q) := by
+  iintro HPQ HP
+  ispecialize HPQ $$ [> HP] as subgoal
+  case subgoal => iassumption
+  imodintro; iassumption
+
 end specialize
 
 /-
