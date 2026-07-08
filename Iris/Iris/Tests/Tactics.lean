@@ -1394,13 +1394,20 @@ example [BI PROP] (P Q R S T : PROP) :
   ispecialize HRS $$ (HQTR $$ (HPTQ $$ HP [# $HT]) [HT //])
   iassumption
 
-/-- Tests `ispecialize` with `.autoframe .modal` using the type class instance `addModal_bupd`. -/
-example [BI PROP] [BIUpdate PROP] (P Q : PROP) :
-    ⊢ (P -∗ Q) -∗ (|==> P) -∗ (|==> Q) := by
-  iintro HPQ HP
-  ispecialize HPQ $$ [> $]
-  imodintro
-  iassumption
+/--
+  Tests `ispecialize` with `.autoframe .modal` using the type class instance
+  `addModal_bupd` and `addModal_fupd`.
+-/
+example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] (P Q R S : PROP) :
+    ⊢ (P -∗ Q) -∗ (R -∗ S) -∗ (|==> P) -∗ (|={E}=> R) -∗ (|==> Q) ∗ (|={E}=> S) := by
+  iintro HPQ HRS HP HR
+  isplitl [HPQ HP]
+  · ispecialize HPQ $$ [>$]
+    imodintro
+    iassumption
+  · ispecialize HRS $$ [>$]
+    imodintro
+    iassumption
 
 /--
   Tests `ispecialize` with the handling of the modality using the type class
@@ -1472,6 +1479,8 @@ example [BI PROP] (P Q : PROP) : P ⊢ Q := by
   ispecialize HP $$ %(0 : Nat)
 
 end specialize
+
+/-
 
 -- split
 namespace split
@@ -2955,3 +2964,5 @@ example (P Q : PROP) :
   iloeb as IH
 
 end iloeb
+
+-/
