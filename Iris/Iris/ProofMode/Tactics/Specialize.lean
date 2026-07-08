@@ -37,6 +37,25 @@ theorem specialize_wand_subgoal [BI PROP] {q : Bool} {A2 A3 A4 Q P1 : PROP} P2
     (sep_mono_right ((sep_mono_left h3).trans ?_))
   exact (sep_mono_right inst.into_wand).trans wand_elim_right
 
+theorem specialize_wand_nest [BI PROP] {e e' e'' out out1' Q out2 : PROP}
+    {p p1 q : Bool} (inst : IntoWand p q out .in Q .out out2)
+    (h1 : e ⊣⊢ e' ∗ □?p1 out1') (h2 : e' ∗ □?p1 out1' ⊢ e'' ∗ □?q Q) :
+    e ∗ □?p out ⊢ e'' ∗ □?(q && p) out2 := calc
+  _ ⊢ (e'' ∗ □?q Q) ∗ □?p out := sep_mono_left <| h1.mp.trans h2
+  _ ⊢ e'' ∗ □?(q && p) out2   := specialize_wand inst
+
+theorem specialize_wand_nest_modal [BI PROP]
+    {orig e e' e'' goal out out1' Q out2 : PROP} {p p1 q : Bool}
+    (inst : IntoWand p q out .in Q .out out2)
+    (h1 : (e ∗ □?p out ⊢ goal) → orig ⊢ goal) (h2 : e ⊣⊢ e' ∗ □?p1 out1')
+    (h3 : (e'' ∗ □?q Q ⊢ □?p out -∗ goal) → e' ∗ □?p1 out1' ⊢ □?p out -∗ goal)
+    (h4 : e'' ∗ □?(q && p) out2 ⊢ goal) : orig ⊢ goal := by
+  apply h1
+  apply wand_elim_left_trans
+  calc
+    _ ⊢ e' ∗ □?p1 out1' := h2.mp
+    _ ⊢ □?p out -∗ goal := h3 <| wand_intro <| (specialize_wand inst).trans h4
+
 theorem specialize_wand_autoframe_spatial [BI PROP] {q : Bool} {A2 A3 Q P1 : PROP} P2
     (inst : IntoWand q false Q .out P1 .out P2)
     (h2 : A2 ⊢ A3 ∗ P1) : A2 ∗ □?q Q ⊢ A3 ∗ P2 := calc
@@ -45,34 +64,34 @@ theorem specialize_wand_autoframe_spatial [BI PROP] {q : Bool} {A2 A3 Q P1 : PRO
   _ ⊢ A3 ∗ P2           := sep_mono_right <| (sep_mono_right inst.into_wand).trans wand_elim_right
 
 theorem specialize_wand_persistent [BI PROP] {q : Bool} {A2 Q P1' : PROP} P1 P2
-    (inst1 : IntoWand q true Q .out P1 .out P2) (inst2 : Persistent P1)
-    (inst3 : IntoAbsorbingly P1' P1) (h1 : A2 ⊢ P1') : A2 ∗ □?q Q ⊢ A2 ∗ □?q P2 := by
+    (instWand : IntoWand q true Q .out P1 .out P2) (instPers : Persistent P1)
+    (instAbsorb : IntoAbsorbingly P1' P1) (h1 : A2 ⊢ P1') : A2 ∗ □?q Q ⊢ A2 ∗ □?q P2 := by
   have h2 : □ P1 ∗ □?q Q ⊢ □?q P2 := by cases q with
-  | false => exact (sep_mono_right inst1.into_wand).trans wand_elim_right
+  | false => exact (sep_mono_right instWand.into_wand).trans wand_elim_right
   | true => calc
     _ ⊢ □ □ P1 ∗ □ □ Q          := sep_mono intuitionistically_idem.mpr intuitionistically_idem.mpr
     _ ⊢ □ (□ P1 ∗ □ Q)          := intuitionistically_sep_mpr
-    _ ⊢ □ (□ P1 ∗ (□ P1 -∗ P2)) := intuitionistically_mono <| sep_mono_right <| inst1.into_wand
+    _ ⊢ □ (□ P1 ∗ (□ P1 -∗ P2)) := intuitionistically_mono <| sep_mono_right instWand.into_wand
     _ ⊢ □?true P2               := intuitionistically_mono wand_elim_right
+  have h3 : A2 ⊢ A2 ∗ □ P1 := calc
+    _ ⊢ (A2 ∧ A2)                 := and_intro .rfl .rfl
+    _ ⊢ (A2 ∧ P1')                := and_mono_right h1
+    _ ⊢ (A2 ∧ <absorb> P1)        := and_mono_right into_absorbingly
+    _ ⊢ (A2 ∧ <absorb> <pers> P1) := and_mono_right <| absorbingly_mono Persistent.persistent
+    _ ⊢ (A2 ∧ <pers> P1)          := and_mono_right absorbingly_persistently.mp
+    _ ⊢ (A2 ∗ □ P1)               := persistently_and_intuitionistically_sep_right.mp
   calc
-    _ ⊢ (A2 ∧ A2) ∗ □?q Q                 := sep_mono_left <| and_intro .rfl .rfl
-    _ ⊢ (A2 ∧ P1') ∗ □?q Q                := sep_mono_left <| and_mono_right h1
-    _ ⊢ (A2 ∧ <absorb> P1) ∗ □?q Q        := sep_mono_left <| and_mono_right into_absorbingly
-    _ ⊢ (A2 ∧ <absorb> <pers> P1) ∗ □?q Q := sep_mono_left <| and_mono_right <| absorbingly_mono Persistent.persistent
-    _ ⊢ (A2 ∧ <pers> P1) ∗ □?q Q          := sep_mono_left <| and_mono_right <| absorbingly_persistently.mp
-    _ ⊢ (A2 ∗ □ P1) ∗ □?q Q               := sep_mono_left persistently_and_intuitionistically_sep_right.mp
-    _ ⊢ A2 ∗ □ P1 ∗ □?q Q                 := sep_assoc.mp
-    _ ⊢ A2 ∗ □?q P2                       := sep_mono_right h2
+    _ ⊢ (A2 ∗ □ P1) ∗ □?q Q := sep_mono_left h3
+    _ ⊢ A2 ∗ □ P1 ∗ □?q Q   := sep_assoc.mp
+    _ ⊢ A2 ∗ □?q P2         := sep_mono_right h2
 
 theorem specialize_forall [BI PROP] {p : Bool} {A2 P : PROP} {α : Sort _} {Φ : α → PROP}
     (inst : IntoForall P Φ) (a : α) : A2 ∗ □?p P ⊢ A2 ∗ □?p (Φ a) :=
   sep_mono_right <| intuitionisticallyIf_mono <| inst.into_forall.trans (forall_elim a)
 
 theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B B'}
-    (h1 : P ∗ □?pa A ⊢ P' ∗ □?pb B)
-    (h2 : pa = true ∨ Affine A)
-    [IntoPersistently pb B B'] :
-    P ∗ □?pa A ⊢ P ∗ □ B' := by
+    (inst : IntoPersistently pb B B') (h1 : P ∗ □?pa A ⊢ P' ∗ □?pb B)
+    (h2 : pa = true ∨ Affine A) : P ∗ □?pa A ⊢ P ∗ □ B' := by
   apply Entails.trans _ persistently_and_intuitionistically_sep_right.mp
   apply and_intro
   · cases h2 <;> subst_eqs <;> apply sep_elim_left
@@ -83,15 +102,15 @@ theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B B'}
 
 theorem specialize_modal [BI PROP] {e e' goal R P1 P1' P2 : PROP} {p : Bool}
     (h1 : e ⊢ e' ∗ P1') (h2 : e' ∗ P2 ⊢ goal)
-    (inst1 : IntoWand p false R .out P1 .out P2)
-    (inst2 : AddModal P1' P1 goal) :
+    (instWand : IntoWand p false R .out P1 .out P2)
+    (instModal : AddModal P1' P1 goal) :
     e ∗ □?p R ⊢ goal := calc
   _ ⊢ (e' ∗ P1') ∗ □?p R                := sep_mono_left h1
   _ ⊢ P1' ∗ (e' ∗ □?p R)                := sep_assoc.mp.trans sep_left_comm.mp
-  _ ⊢ P1' ∗ (e' ∗ (P1 -∗ P2))           := sep_mono_right (sep_mono_right inst1.into_wand)
+  _ ⊢ P1' ∗ (e' ∗ (P1 -∗ P2))           := sep_mono_right (sep_mono_right instWand.into_wand)
   _ ⊢ P1' ∗ ((P2 -∗ goal) ∗ (P1 -∗ P2)) := sep_mono_right (sep_mono_left (wand_intro h2))
   _ ⊢ P1' ∗ (P1 -∗ goal)                := sep_mono_right (sep_comm.mp.trans wand_trans)
-  _ ⊢ goal                              := inst2.add_modal
+  _ ⊢ goal                              := instModal.add_modal
 
 public meta section
 open Lean Elab Tactic Meta Qq Std
@@ -171,42 +190,40 @@ private def finishFrameSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 
 private def synthIntoWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     (p : Q(Bool)) (out : Q($prop)) (persistent : Bool) :
-    ProofModeM <| (out₁ : Q($prop)) × (out₂ : Q($prop)) ×
-      Q(IntoWand $p $persistent $out .out $out₁ .out $out₂) := do
-  let out₁ ← mkFreshExprMVarQ prop
-  let out₂ ← mkFreshExprMVarQ prop
-  let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $persistent $out .out $out₁ .out $out₂)
+    ProofModeM <| (out1 : Q($prop)) × (out2 : Q($prop)) ×
+      Q(IntoWand $p $persistent $out .out $out1 .out $out2) := do
+  let out1 ← mkFreshExprMVarQ prop
+  let out2 ← mkFreshExprMVarQ prop
+  let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $persistent $out .out $out1 .out $out2)
     | throwError m!"ispecialize: {out} is not a wand"
-  return ⟨out₁, out₂, inst⟩
+  return ⟨out1, out2, inst⟩
 
 /-- Used by the cases `.autoframe` and `.goal` in `processWand` with the `.persistent` kind. -/
 private def synthIntoWandPersistent {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     (p : Q(Bool)) (out : Q($prop)) :
-    ProofModeM ((out₁ : Q($prop)) × (out₂ : Q($prop)) × (out₁' : Q($prop)) ×
-      Q(IntoWand $p true $out .out $out₁ .out $out₂) ×
-      Q(Persistent $out₁) ×
-      Q(IntoAbsorbingly $out₁' $out₁)) := do
-  let ⟨out₁, out₂, instWand⟩ : (out₁ : Q($prop)) × (out₂ : Q($prop)) ×
-    Q(IntoWand $p true $out .out $out₁ .out $out₂) ← @synthIntoWand u prop bi p out true
-  let some intoPers ← ProofModeM.trySynthInstanceQ q(Persistent $out₁)
-  | throwError m!"ispecialize: {out₁} is not persistent"
-  let out₁' ← mkFreshExprMVarQ prop
-  let some instAbsorb ← ProofModeM.trySynthInstanceQ q(IntoAbsorbingly $out₁' $out₁)
-  | throwError m!"ispecialize: IntoAbsorbingly type class synthesis failed with {out₁}"
-  return ⟨out₁, out₂, out₁', instWand, intoPers, instAbsorb⟩
+    ProofModeM ((out1 : Q($prop)) × (out2 : Q($prop)) × (out1' : Q($prop)) ×
+      Q(IntoWand $p true $out .out $out1 .out $out2) ×
+      Q(Persistent $out1) × Q(IntoAbsorbingly $out1' $out1)) := do
+  let ⟨out1, out2, instWand⟩ : (out1 : Q($prop)) × (out2 : Q($prop)) ×
+    Q(IntoWand $p true $out .out $out1 .out $out2) ← @synthIntoWand u prop bi p out true
+  let some intoPers ← ProofModeM.trySynthInstanceQ q(Persistent $out1)
+  | throwError m!"ispecialize: {out1} is not persistent"
+  let out1' ← mkFreshExprMVarQ prop
+  let some instAbsorb ← ProofModeM.trySynthInstanceQ q(IntoAbsorbingly $out1' $out1)
+  | throwError m!"ispecialize: IntoAbsorbingly type class synthesis failed with {out1}"
+  return ⟨out1, out2, out1', instWand, intoPers, instAbsorb⟩
 
 /-- Used by the cases `.autoframe` and `.goal` in `processWand` with the `.modal` kind. -/
 private def synthIntoWandModal {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     (p : Q(Bool)) (out goal : Q($prop)) :
-    ProofModeM ((out₁ : Q($prop)) × (out₂ : Q($prop)) × (out₁' : Q($prop)) ×
-      Q(IntoWand $p false $out .out $out₁ .out $out₂) ×
-      Q(AddModal $out₁' $out₁ $goal)) := do
-  let ⟨out₁, out₂, instWand⟩ : (out₁ : Q($prop)) × (out₂ : Q($prop)) ×
-    Q(IntoWand $p false $out .out $out₁ .out $out₂) ← @synthIntoWand u prop bi p out false
-  let out₁' ← mkFreshExprMVarQ prop
-  let some instModal ← ProofModeM.trySynthInstanceQ q(AddModal $out₁' $out₁ $goal)
-    | throwError m!"ispecialize: AddModal type class synthesis failed with {out₁} and {goal}"
-  pure ⟨out₁, out₂, out₁', instWand, instModal⟩
+    ProofModeM ((out1 : Q($prop)) × (out2 : Q($prop)) × (out1' : Q($prop)) ×
+      Q(IntoWand $p false $out .out $out1 .out $out2) × Q(AddModal $out1' $out1 $goal)) := do
+  let ⟨out1, out2, instWand⟩ : (out1 : Q($prop)) × (out2 : Q($prop)) ×
+    Q(IntoWand $p false $out .out $out1 .out $out2) ← @synthIntoWand u prop bi p out false
+  let out1' ← mkFreshExprMVarQ prop
+  let some instModal ← ProofModeM.trySynthInstanceQ q(AddModal $out1' $out1 $goal)
+    | throwError m!"ispecialize: AddModal type class synthesis failed with {out1} and {goal}"
+  pure ⟨out1, out2, out1', instWand, instModal⟩
 
 mutual
 
@@ -220,28 +237,27 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
   -- A hypothesis name, possibly with nested specialisation patterns
   | .ident i spats =>
     let ivar ← hyps.findWithInfo i
-    let ⟨_, hyps', out₁, out₁', p1, _, pf'⟩ := hyps.remove false ivar
+    let ⟨_, hyps', _, out1', p1, _, pf'⟩ := hyps.remove false ivar
     let ⟨_, hyps'', pNest, outNest, pfContNest, pfNest⟩ ←
       if spats.isEmpty then
         -- No nested specialisation patterns
-        pure ⟨_, hyps', p1, out₁', q(id), some q(.rfl)⟩
+        pure ⟨_, hyps', p1, out1', q(id), some q(.rfl)⟩
       else
         -- There are nested specialisation patterns, requires recursive calls
-        iSpecializeCore hyps' p1 out₁' q(iprop(□?$p $out -∗ $goal)) spats
+        iSpecializeCore hyps' p1 out1' q(iprop(□?$p $out -∗ $goal)) spats
     let p2 := if pNest.constName! == ``true then p else q(false)
-    let out₂ ← mkFreshExprMVarQ prop
-    let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $pNest $out .in $outNest .out $out₂)
+    let out2 ← mkFreshExprMVarQ prop
+    let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $pNest $out .in $outNest .out $out2)
     | throwError m!"ispecialize: IntoWand type class synthesis failed with {out} with {outNest}"
     match pfNest with
     -- Nested specialisation pattern involves the `.modal` kind
     | none =>
-      let pfCont := q(fun pf => $pfCont (wand_elim_left_trans
-        ($(pf').mp.trans ($pfContNest (wand_intro ((specialize_wand $inst).trans pf))))))
-      return { hyps := hyps'', p := p2, out := out₂, pfCont, pf := none }
+      let pfCont := q(specialize_wand_nest_modal $inst $pfCont $pf' $pfContNest)
+      return { hyps := hyps'', p := p2, out := out2, pfCont, pf := none }
     -- Nested specialisation pattern does not involve the `.modal` kind, or no nested pattern
     | some pfNest =>
-      let pfStep := q((sep_mono_left ($(pf').mp.trans $pfNest)).trans (specialize_wand $inst))
-      return specState.update hyps'' p2 out₂ pfStep
+      let pfStep := q(specialize_wand_nest $inst $pf' $pfNest)
+      return specState.update hyps'' p2 out2 pfStep
   -- A pure Lean hypothesis
   | .pure t => do
     let v ← mkFreshLevelMVar
@@ -258,48 +274,48 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     return specState.update hyps p out' pfStep
   -- Subgoal with `[ H₁ … Hₙ ]` or `[- H₁ … Hₙ ]`
   | .goal { kind := .spatial, negate, trivial, frame := f, hyps := hs } g => do
-    let ⟨_, _, hypsl', hypsr', pf', frameIVars⟩ ← splitFrameHyps hyps hs f negate
-    let ⟨out₁, out₂, inst⟩ ← synthIntoWand p out false
-    let pf'' ← finishFrameSubgoal hypsr' out₁ trivial g frameIVars
-    let pfStep := q(specialize_wand_subgoal $out₂ $inst $pf' $pf'')
-    return specState.update hypsl' q(false) out₂ pfStep
+    let ⟨_, _, hypsl, hypsr, pf', frameIVars⟩ ← splitFrameHyps hyps hs f negate
+    let ⟨out1, out2, inst⟩ ← synthIntoWand p out false
+    let pf'' ← finishFrameSubgoal hypsr out1 trivial g frameIVars
+    let pfStep := q(specialize_wand_subgoal $out2 $inst $pf' $pf'')
+    return specState.update hypsl q(false) out2 pfStep
   -- Subgoal with `[# H₁ … Hₙ ]` or `[#- H₁ … Hₙ ]`
   | .goal { kind := .persistent, trivial, frame := f, hyps := hs, .. } g => do
     if !hs.isEmpty then
       throwError "ispecialize: the subgoal for the persistent premise should not consume hypotheses"
-    let ⟨out₁, out₂, out₁', inst1, inst2, inst3⟩ ← synthIntoWandPersistent p out
+    let ⟨out1, out2, out1', instWand, instPers, instAbsorb⟩ ← synthIntoWandPersistent p out
     let ⟨_, frameIVars⟩ ← findFrameIVars hyps [] f
-    let pf' ← finishFrameSubgoal hyps out₁' trivial g frameIVars
-    let pfStep := q(specialize_wand_persistent $out₁ $out₂ $inst1 $inst2 $inst3 $pf')
-    return specState.update hyps p out₂ pfStep
+    let pf' ← finishFrameSubgoal hyps out1' trivial g frameIVars
+    let pfStep := q(specialize_wand_persistent $out1 $out2 $instWand $instPers $instAbsorb $pf')
+    return specState.update hyps p out2 pfStep
   -- Subgoal with `[> H₁ … Hₙ ]` or `[>- H₁ … Hₙ ]`
   | .goal { kind := .modal, negate, trivial, frame := f, hyps := hs, .. } g =>
     let ⟨_, _, hypsl', hypsr', pf', frameIVars⟩ ← splitFrameHyps hyps hs f negate
-    let ⟨out₁, out₂, out₁', inst1, inst2⟩ ← synthIntoWandModal p out goal
-    let pf'' ← finishFrameSubgoal hypsr' out₁' trivial g frameIVars
+    let ⟨out1, out2, out1', instWand, instModal⟩ ← synthIntoWandModal p out goal
+    let pf'' ← finishFrameSubgoal hypsr' out1' trivial g frameIVars
     let h := q($(pf').mp.trans (sep_mono_right $pf''))
-    let pfCont := q(fun pf => $pfCont (specialize_modal $h pf $inst1 $inst2))
-    return { hyps := hypsl', p := q(false), out := out₂, pfCont, pf := none }
+    let pfCont := q(fun pf => $pfCont (specialize_modal $h pf $instWand $instModal))
+    return { hyps := hypsl', p := q(false), out := out2, pfCont, pf := none }
   -- Auto-framing with `[$]`
   | .autoframe .spatial => do
-    let ⟨out₁, out₂, inst⟩ ← synthIntoWand p out false
-    let res ← iFrame bi hyps out₁ (← SelPat.resolve hyps [.spatial, .intuitionistic])
+    let ⟨out1, out2, inst⟩ ← synthIntoWand p out false
+    let res ← iFrame bi hyps out1 (← SelPat.resolve hyps [.spatial, .intuitionistic])
     let ⟨_, hyps', pf'⟩ ← res.finishClose
-    let pfStep := q(specialize_wand_autoframe_spatial $out₂ $inst $pf')
-    return specState.update hyps' q(false) out₂ pfStep
+    let pfStep := q(specialize_wand_autoframe_spatial $out2 $inst $pf')
+    return specState.update hyps' q(false) out2 pfStep
   -- Auto-framing with `[#$]`
   | .autoframe .persistent =>
-    let ⟨out₁, out₂, out₁', inst1, inst2, inst3⟩ ← synthIntoWandPersistent p out
-    let pf' ← finishFrameSubgoal hyps out₁' true none none
-    let pfStep := q(specialize_wand_persistent $out₁ $out₂ $inst1 $inst2 $inst3 $pf')
-    return specState.update hyps p out₂ pfStep
+    let ⟨out1, out2, out1', instWand, instPers, instAbsorb⟩ ← synthIntoWandPersistent p out
+    let pf' ← finishFrameSubgoal hyps out1' true none none
+    let pfStep := q(specialize_wand_persistent $out1 $out2 $instWand $instPers $instAbsorb $pf')
+    return specState.update hyps p out2 pfStep
   -- Auto-framing with `[>$]`
   | .autoframe .modal =>
-    let ⟨out₁, out₂, out₁', inst1, inst2⟩ ← synthIntoWandModal p out goal
-    let res ← iFrame bi hyps out₁' (← SelPat.resolve hyps [.spatial, .intuitionistic])
+    let ⟨out1, out2, out1', instWand, instModal⟩ ← synthIntoWandModal p out goal
+    let res ← iFrame bi hyps out1' (← SelPat.resolve hyps [.spatial, .intuitionistic])
     let ⟨_, hyps', pf'⟩ ← res.finishClose
-    let pfCont := q(fun pf => $pfCont (specialize_modal $pf' pf $inst1 $inst2))
-    return { hyps := hyps', p := q(false), out := out₂, pfCont, pf := none }
+    let pfCont := q(fun pf => $pfCont (specialize_modal $pf' pf $instWand $instModal))
+    return { hyps := hyps', p := q(false), out := out2, pfCont, pf := none }
 
 /-- Specialize a proposition `A` by applying a sequence of specialization patterns.
 
@@ -340,8 +356,8 @@ def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     -- Context duplication does not succeed
     | none, _ | _, none => return ⟨_, hyps', pb, B, q($(pf).trans), some q($pf)⟩
     -- Context duplication succeeds
-    | some _, some af =>
-      let pf := q(specialize_dup_context $pf $af)
+    | some inst, some af =>
+      let pf := q(specialize_dup_context $inst $pf $af)
       return ⟨_, hyps, q(true), B', q($(pf).trans), some q($pf)⟩
   -- No request to duplicate the context, or the `.modal` kind is involved
   | _, _ => return ⟨_, hyps', pb, B, pfCont, pf⟩
