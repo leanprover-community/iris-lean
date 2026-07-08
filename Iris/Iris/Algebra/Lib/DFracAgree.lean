@@ -34,6 +34,11 @@ variable {A : Type _} [OFE A]
 
 instance instLeibniz [Leibniz A] : Leibniz (DFracAgreeR A) := inferInstance
 
+instance dfrac_agree_mk_discard_coreId {A : Type _} [OFE A] (a : A) :
+    CoreId (DFracAgree.mk .discard a) := by
+  show CoreId (DFrac.discard, toAgree a)
+  infer_instance
+
 @[rocq_alias to_dfrac_agree_ne]
 instance mk_ne {d : DFrac} : NonExpansive (mk d : A → DFracAgreeR A) where
   ne _ _ _ h := ⟨.rfl, NonExpansive.ne (f := toAgree) h⟩

@@ -18,32 +18,6 @@ namespace Iris
 
 open BI CMRA Agree OFE UPred IProp Std ProofMode COFE
 
-/-! ## Internal validity of `dfrac_agree`
-
-These BI-level validity lemmas for the `dfrac_agree` camera live with `own` in Rocq's
-`algebra/dfrac_agree.v`; the Lean `DFracAgree` algebra lives below `BI`, so they are stated here. -/
-
-section validI
-variable [Sbi PROP] {A : Type _} [OFE A]
-
-@[rocq_alias dfrac_agree_validI]
-theorem dfrac_agree_validI (dq : DFrac) (x : A) :
-    internalCmraValid (DFracAgree.mk dq x) ⊣⊢@{PROP} ⌜✓ dq⌝ := by
-  refine (prod_validI (DFracAgree.mk dq x)).trans ⟨?_, ?_⟩
-  · exact and_elim_l.trans internalCmraValid_discrete.mp
-  · exact and_intro internalCmraValid_discrete.mpr
-      (sep_elim_emp_valid_left (toAgree_validI x) sep_elim_left)
-
-@[rocq_alias dfrac_agree_validI_2]
-theorem dfrac_agree_validI_2 (dq1 dq2 : DFrac) (x y : A) :
-    internalCmraValid (DFracAgree.mk dq1 x • DFracAgree.mk dq2 y) ⊣⊢@{PROP}
-      ⌜✓ (dq1 • dq2)⌝ ∧ internalEq x y :=
-  (prod_validI _).trans (and_congr internalCmraValid_discrete (toAgree_op_validI x y))
-
-end validI
-
-/-! ## Saved anything -/
-
 @[rocq_alias savedAnythingG]
 class SavedAnythingG (GF : BundledGFunctors) (F : OFunctorPre) [OFunctorContractive F] where
   elemG : ElemG GF (DFracAgree.DFracAgreeRF F)
@@ -61,11 +35,6 @@ def saved_anything_own {GF : BundledGFunctors} {F : OFunctorPre} [OFunctorContra
 section saved_anything
 
 variable {GF : BundledGFunctors} {F : OFunctorPre} [OFunctorContractive F] [SavedAnythingG GF F]
-
-instance dfrac_agree_mk_discard_coreId {A : Type _} [OFE A] (a : A) :
-    CoreId (DFracAgree.mk .discard a) := by
-  show CoreId (DFrac.discard, toAgree a)
-  infer_instance
 
 @[rocq_alias saved_anything_discarded_persistent]
 instance saved_anything_discarded_persistent (γ : GName) (x : F.ap (IProp GF)) :
