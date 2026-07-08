@@ -447,8 +447,7 @@ theorem iSingleton_op_validN_at_γ {a : F.ap (IProp GF)} (Hv : ✓{n} mf) :
 instance iSingleton_discreteE {v : F.ap (IProp GF)} [OFE.DiscreteE v] :
     OFE.DiscreteE (iSingleton F γ v) where
   discrete {w} H := by
-    refine OFE.equiv_dist.mpr fun n => ?_
-    intro τ
+    refine OFE.equiv_dist.mpr fun n τ => ?_
     simp only [iSingleton] at ⊢
     split
     next h =>

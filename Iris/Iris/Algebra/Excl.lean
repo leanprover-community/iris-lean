@@ -52,7 +52,7 @@ instance [OFE α] : OFE (Excl α) where
   Dist := Excl.Dist
   dist_eqv
   eq_dist {x y} := by
-    cases x <;> cases y <;> simp [Excl.Dist] <;> exact eq_dist
+    cases x <;> cases y <;> simp [Excl.Dist, eq_dist]
   dist_lt {n x y m} hn hlt := by
     cases x <;> cases y <;> simp at *
     exact Dist.lt hn hlt
@@ -80,6 +80,8 @@ instance [OFE α] [Discrete α] : Discrete (Excl α) where
     · exact h'.elim
     · exact h'.elim
     · exact .rfl
+
+#rocq_ignore excl_leibniz "Not needed"
 
 @[rocq_alias Excl_discrete]
 instance [OFE α] {a : α} [h : DiscreteE a] : DiscreteE (excl a) where

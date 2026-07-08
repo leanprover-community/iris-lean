@@ -96,17 +96,12 @@ instance : CMRA (DisjointLeibnizSet S) where
       exact hyz h |>.elim
   comm {x y} := by
     rcases x with (x|_) <;> rcases y with (y|_) <;> (try · simp)
-    refine Equiv.of_eq ?_
-    by_cases H : x ## y
-    · simp [H, disjoint_symm H, union_comm]
-    · have H' : ¬ y ## x := fun a => H (disjoint_symm a)
-      simp [H, H']
+    by_cases H : x ## y <;> grind only [Equiv.of_eq, disjoint_symm, union_comm]
   pcore_op_left {cx x} := by
     rcases x with (x|_) <;> rcases cx with (cx|_) <;> (try · simp)
     rintro ⟨⟩
     simp [disjoint_empty_left]
-  pcore_idem {x cx} := by
-    rcases x with (x|_) <;> rcases cx with (cx|_) <;> simp <;> rintro rfl <;> rfl
+  pcore_idem {x cx} := by grind only [Equiv.of_eq]
   pcore_op_mono {_ x} := by
     rcases x with (x|_) <;> rintro ⟨⟩ y
     exists (.valid ∅)
@@ -194,9 +189,7 @@ theorem localUpdate_dealloc {X Y : S} : (valid X, valid Y) ~l~> (valid (X \ Y), 
       refine Equiv.of_eq ?_
       simp only [op, disjoint_empty_left, ↓reduceIte, union_empty_left, valid.injEq]
       ext i
-      rw [mem_diff, mem_union]
-      specialize (Hdisj i)
-      grind
+      grind [Hdisj i, mem_diff, mem_union]
     · exact absurd heq.to_eq (by simp)
   · exact absurd heq.to_eq (by simp [op])
 

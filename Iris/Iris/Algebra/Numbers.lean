@@ -111,7 +111,7 @@ theorem included_iff {x y : α} : x ≼ y ↔ ∃ z, y = x + z := by
 /-- Sufficient condition for a local update on a LeftCancelAdd structure, such as (ℕ, +) -/
 theorem leftCancelAdd_local_update [LeftCancelAdd α] (h : add x y' = add x' y) :
     (x, y) ~l~> (x', y') := by
-  refine leibniz_discrete_unital_triv_local_update (fun _ => trivial) @fun z hz => ?_
+  refine discrete_unital_triv_local_update (fun _ => trivial) @fun z hz => ?_
   refine LeftCancelAdd.cancel_right (y := y) ?_
   calc
     add x' y = add x y' := h.symm
@@ -226,7 +226,7 @@ namespace PosCommMonoidLike
 
 open Iris Iris.OFE Add Zero One Associative Commutative LawfulLeftIdentity CMRA IdempotentOp
 
-variable [OFE α] [OFE.Discrete α]
+variable [OFE α] [Discrete α]
 variable [Add α] [Associative (add (α := α))] [Commutative (add (α := α))]
 variable [IdempotentOp (add (α := α))]
 
@@ -265,7 +265,7 @@ scoped instance [LeftCancelAdd α] {a : α} : Cancelable a where
 #rocq_ignore pos_cancelable "Use scoped Cancelable instance"
 
 scoped instance [IdentityFree α] {a : α} : CMRA.IdFree a where
-  id_free0_r _ _ h := IdentityFree.id_free (α := α) <| (discrete h).to_eq
+  id_free0_r _ _ h := IdentityFree.id_free <| (discrete h).to_eq
 #rocq_ignore pos_id_free "Use scoped IdentityFree instance"
 
 #rocq_ignore pos_op_add "Not needed"

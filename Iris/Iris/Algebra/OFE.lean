@@ -19,12 +19,7 @@ class OFE (α : Type _) where
   eq_dist : x = y ↔ ∀ n, Dist n x y
   dist_lt : Dist n x y → m < n → Dist m x y
 
-def OFE.Equiv [OFE α] (x y : α) : Prop := (∀ n, OFE.Dist n x y)
-theorem OFE.Equiv.to_eq [OFE α] {x y : α} (h : OFE.Equiv x y) : x = y := OFE.eq_dist.mpr h
-theorem OFE.equiv_dist [OFE α] {x y : α} : OFE.Equiv x y ↔ ∀ n, Dist n x y := .rfl
-
-theorem Eq_Equivalence {α : Type _} : Equivalence (@Eq α) :=
-  ⟨congrFun rfl, (Eq.symm ·), (· ▸ ·)⟩
+def OFE.Equiv [OFE α] (x y : α) : Prop := (∀ n, Dist n x y)
 
 #rocq_ignore OfeMixin "Use the OFE type class"
 #rocq_ignore ofe_mixin_of' "Not needed"
@@ -58,17 +53,20 @@ theorem Dist.le [OFE α] {m n} {x y : α} (h : x ≡{n}≡ y) (h' : m ≤ n) : x
 theorem Dist.trans [OFE α] {n} {x : α} : x ≡{n}≡ y → y ≡{n}≡ z → x ≡{n}≡ z := dist_eqv.3
 theorem Dist.of_eq [OFE α] {x y : α} : x = y → x ≡{n}≡ y := (· ▸ .rfl)
 
+theorem equiv_dist [OFE α] {x y : α} : x ≡ y ↔ ∀ n, x ≡{n}≡ y := .rfl
+
 @[rocq_alias ofe_equivalence]
 theorem equiv_eqv [ofe : OFE α] : Equivalence ofe.Equiv := by
   constructor
   · rintro x; rw [ofe.equiv_dist]; rintro n; exact Dist.rfl
-  · rintro x y; simp [ofe.equiv_dist]; rintro h n; exact Dist.symm (h n)
-  · rintro x y z; simp [ofe.equiv_dist]; rintro h₁ h₂ n; exact Dist.trans (h₁ n) (h₂ n)
+  · rintro x y; simp only [ofe.equiv_dist]; rintro h n; exact Dist.symm (h n)
+  · rintro x y z; simp only [ofe.equiv_dist]; rintro h₁ h₂ n; exact Dist.trans (h₁ n) (h₂ n)
 
 @[simp, refl] theorem Equiv.rfl [OFE α] {x : α} : x ≡ x := equiv_eqv.1 _
 @[symm] theorem Equiv.symm [OFE α] {x : α} : x ≡ y → y ≡ x := equiv_eqv.2
 theorem Equiv.trans [OFE α] {x : α} : x ≡ y → y ≡ z → x ≡ z := equiv_eqv.3
 theorem Equiv.dist [OFE α] {x : α} : x ≡ y → x ≡{n}≡ y := (equiv_dist.1 · _)
+theorem Equiv.to_eq [OFE α] {x y : α} (h : x ≡ y) : x = y := OFE.eq_dist.mpr h
 theorem Equiv.of_eq [OFE α] {x y : α} : x = y → x ≡ y := (· ▸ .rfl)
 
 instance [OFE α] : Trans OFE.Equiv OFE.Equiv (OFE.Equiv : α → α → Prop) where
@@ -189,7 +187,7 @@ instance [OFE α] [OFE β] {x : β} : Contractive (fun _ : α => x) where
 @[reducible, rocq_alias discrete_ofe_mixin]
 def ofDiscrete (α : Type _) : OFE α where
   Dist _ := Eq
-  dist_eqv := Eq_Equivalence
+  dist_eqv := ⟨congrFun rfl, (Eq.symm ·), (· ▸ ·)⟩
   eq_dist := (forall_const _).symm
   dist_lt h _ := h
 
@@ -429,7 +427,7 @@ theorem _root_.Option.Forall₂.equivalence {R : α → α → Prop}
 instance [OFE α] : OFE (Option α) where
   Dist n := Option.Forall₂ (Dist n)
   dist_eqv := Option.Forall₂.equivalence dist_eqv
-  eq_dist {x y} := by cases x <;> cases y <;> simp [Option.Forall₂] <;> apply eq_dist
+  eq_dist {x y} := by cases x <;> cases y <;> simp [Option.Forall₂, eq_dist]
   dist_lt {_ x y _} := by cases x <;> cases y <;> simp [Option.Forall₂]; apply dist_lt
 #rocq_ignore optionO "Use Option"
 #rocq_ignore option_dist "Local Dist instance; folded into Lean's OFE (Option α) instance."
@@ -536,7 +534,7 @@ instance [OFEFun (β : α → _)] : OFE ((x : α) → β x) where
     symm h _ := dist_eqv.symm (h _)
     trans h1 h2 _ := dist_eqv.trans (h1 _) (h2 _)
   }
-  eq_dist {_ _} := by rw [funext_iff]; simp only [eq_dist]; exact forall_comm
+  eq_dist {_ _} := by rw [funext_iff]; simpa only [eq_dist] using forall_comm
   dist_lt h1 h2 _ := dist_lt (h1 _) h2
 #rocq_ignore discrete_funO "Use a function type"
 #rocq_ignore discrete_fun "Lean uses `(x : α) → β x` directly with `OFEFun`."
@@ -1191,6 +1189,8 @@ end COFE
 instance : COFE (DiscreteO α) := COFE.ofDiscrete _
 
 instance {α : Type _} : OFE.Discrete (DiscreteO α) := ⟨fun h _ => h⟩
+
+#rocq_ignore leibnizO_leibniz "Not needed"
 
 theorem DiscreteO.eqv_inj {x y : α} (H : DiscreteO.mk x ≡ DiscreteO.mk y) : x = y :=
   show (DiscreteO.mk x).car = (DiscreteO.mk y).car from congrArg DiscreteO.car (H 0)

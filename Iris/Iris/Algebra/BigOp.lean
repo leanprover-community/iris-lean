@@ -272,7 +272,7 @@ theorem bigOpL_hom [H : MonoidHomomorphism op₁ op₂ unit₁ unit₂ R f] (Φ 
     R (f ([^ op₁ list] k ↦ x ∈ l, Φ k x)) ([^ op₂ list] k ↦ x ∈ l, f (Φ k x)) :=
   match l with
   | .nil => H.map_unit
-  | .cons _ _ => H.rel_trans H.map_op <| H.op_proper H.rel_refl <| (bigOpL_hom (H := H) _ _)
+  | .cons _ _ => H.rel_trans H.map_op <| H.op_proper H.rel_refl <| (bigOpL_hom _ _)
 
 /-- Weak monoid homomorphisms distribute over non-empty big ops. -/
 @[rocq_alias big_opL_commute1]

@@ -78,7 +78,7 @@ instance : OFE (Tower F) where
     symm h _ := dist_eqv.symm (h _)
     trans h1 h2 _ := dist_eqv.trans (h1 _) (h2 _)
   }
-  eq_dist {_ _} := by rw [Tower.ext_iff, funext_iff]; simp only [eq_dist]; exact forall_comm
+  eq_dist {_ _} := by rw [Tower.ext_iff, funext_iff]; simpa only [eq_dist] using forall_comm
   dist_lt h1 h2 _ := dist_lt (h1 _) h2
 
 #rocq_ignore solver.tower_equiv "Included in OFE (Tower F) instance"

@@ -1355,7 +1355,7 @@ instance cmraOption : CMRA (Option α) where
     rintro (_|x) <;> simp [Equiv]
     rcases H : pcore x with _|y <;> simp
     obtain ⟨z, Hz1, Hz2⟩ := equiv_some (pcore_idem H)
-    simp [Hz1]; exact Hz2
+    simpa only [Hz1]
   pcore_op_mono := by
     rintro (_|x) _ ⟨⟩ y <;> simp
     · exact ⟨_, .rfl⟩

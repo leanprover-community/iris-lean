@@ -19,7 +19,7 @@ section GenMap
 /-! ## GenMap
 
 The OFE over gmaps is equivalent to a non-dependent discrete function to an `Option` type with a
-`Leibniz` OFE of keys, and a finite number of allocated elements.
+OFE of keys, and a finite number of allocated elements.
 
 In this setting, the CMRA is always unital, and as a consequence the oFunctors do not require
 unitality in order to act as a `URFunctor(Contractive)`.
@@ -190,11 +190,11 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
   validN_op_left {n x y} := validN_op_left
   assoc {x y z} _ a := by
     cases _ : x.car a <;> cases _ : y.car a <;> cases _ : z.car a <;>
-      simp_all [op, optionOp]
+    simp_all [op, optionOp]
     exact assoc.dist
   comm {x y} _ a := by
     cases _ : x.car a <;> cases _ : y.car a <;>
-      simp_all [op, optionOp]
+    simp_all [op, optionOp]
     exact comm.dist
   pcore_op_left {x cx} H := by
     have hcx : cx.car = fun k => CMRA.core (x.car k) := by

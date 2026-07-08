@@ -196,7 +196,7 @@ set_option synthInstance.checkSynthOrder false in
 instance
   [hdp : IsOp io1 dp io2 dp1 io3 dp2]
   [hv : IsOp io1 v io2 v1 io3 v2] :
-  IsOp io1 (Frag (H:=H) k dp v) io2 (Frag (H:=H) k dp1 v1) io3 (Frag (H:=H) k dp2 v2) where
+  IsOp io1 (Frag k dp v) io2 (Frag k dp1 v1) io3 (Frag (H := H) k dp2 v2) where
   is_op := by
     rw [hdp.is_op.to_eq]
     exact (NonExpansive.eqv hv.is_op).trans frag_op_eqv
@@ -276,13 +276,12 @@ instance [Hdq : CoreId dq] [Hv1 : CoreId v1] : CoreId (Frag (H := H) k dq v1) wh
   core_id := by
     obtain ⟨H⟩ := Hdq
     simp [CMRA.pcore] at H
-    replace H := H.to_eq
     simp only [CMRA.pcore, View.Pcore, some_eqv_some]
     refine NonExpansive₂.eqv .rfl (singleton_core_eqv ?_)
     simp [CMRA.pcore, Prod.pcore]
     cases h : CMRA.pcore v1
     · exact not_none_eqv_some (h ▸ Hv1.core_id) |>.elim
-    · simp only [Option.bind_some, H]
+    · simp only [Option.bind_some, H.to_eq]
       exact OFE.some_eqv_some.mpr (NonExpansive₂.eqv .rfl (some_eqv_some.mp (h ▸ Hv1.core_id)))
 
 nonrec theorem frag_validN_iff : ✓{n} Frag (H := H) k dq v1 ↔ ✓ dq ∧ ✓{n} v1 :=

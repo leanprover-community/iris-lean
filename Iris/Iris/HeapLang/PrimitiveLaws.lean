@@ -101,14 +101,11 @@ theorem heap_adequacy [HeapLangGpreS .hasLC GF] (e : Exp) σ (φ : Val → Prop)
     adequate .NotStuck e σ (fun v _ => φ v) := by
   refine wp_adequacy (GF := GF) .NotStuck e σ φ ?_
   intro inst κs
-  imod iOwn_alloc (E := GhostMapG.elem (K := Loc) (V := Option Val) (H := HeapF))
-    (HeapView.Auth (H := HeapF) (.own 1)
+  imod iOwn_alloc (E := GhostMapG.elem) (HeapView.Auth (H := HeapF) (.own 1)
       (Std.PartialMap.map (fun v : Option Val => toAgree (DiscreteO.mk v)) σ.heap))
     HeapView.auth_one_valid with ⟨%γh, Hh⟩
-  imod iOwn_alloc (E := GhostMapG.elem (K := Loc) (V := GName) (H := HeapF))
-    (HeapView.Auth (H := HeapF) (.own 1)
-      (Std.PartialMap.map (fun g : GName => toAgree (DiscreteO.mk g))
-        (∅ : HeapF GName)))
+  imod iOwn_alloc (E := GhostMapG.elem) (HeapView.Auth (H := HeapF) (.own 1)
+      (Std.PartialMap.map (fun g : GName => toAgree (DiscreteO.mk g)) (∅ : HeapF GName)))
     HeapView.auth_one_valid with ⟨%γm, Hm⟩
   imod (ProphMap.init (H := ProphMapF) κs σ.usedProphId) with ⟨%Gproph, Hproph⟩
   letI instHeapLangGS : HeapLangGS .hasLC GF := ⟨⟨γh, γm⟩, Gproph⟩
