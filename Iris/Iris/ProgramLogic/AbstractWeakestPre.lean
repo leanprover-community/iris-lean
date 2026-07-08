@@ -147,8 +147,6 @@ instance WP_bind_abstract : BindAbstractWP (Expr := Expr) (Val := Val)
       (Wp.wp (PROP := IProp GF) Stuckness.NotStuck) where
   wp_bind := ⟨wp_bind _, wp_bind_inv _⟩
 
--- TODO: Any idea how to get rid of the istops?
-
 theorem wp_inv_open_maybe_of_not_val {e : Expr} {E₁ E₂ : CoPset} {Φ : Val → IProp GF}
     (Hnv : ToVal.toVal e = none) :
     (|={E₁, E₂}=>
@@ -162,16 +160,13 @@ theorem wp_inv_open_maybe_of_not_val {e : Expr} {E₁ E₂ : CoPset} {Φ : Val �
   simp only
   imod H with (⟨%K, %e', %Hctx, %Haux, %hato, Hwp⟩| >$)
   subst Haux
-  -- FIXME: Why does this exit the proofmode?
-  refine .trans wp_unfold.mp ?_
-  rw (occs := [1]) [wp.pre]
-  iintro Hwp
+  icases wp_unfold $$ Hwp with Hwp
+  unfold wp.pre
   rcases He' : toVal e' with (_|v'); rotate_left
   · imod Hwp; imod Hwp
-    istop
-    refine .trans wp_unfold.mp ?_
-    rw (occs := [1]) [wp.pre]
-    simp [coe_of_toVal_eq_some He', Hnv]
+    icases wp_unfold $$ Hwp with Hwp
+    simp only [wp.pre, coe_of_toVal_eq_some He', Hnv]
+    itrivial
   · dsimp only
     iintro %σ %n %κ %κs %n₂ Hσ
     imod Hwp $$ Hσ with ⟨%Hred, Hc⟩
@@ -185,11 +180,8 @@ theorem wp_inv_open_maybe_of_not_val {e : Expr} {E₁ E₂ : CoPset} {Φ : Val �
     iintro Hc
     imod Hc with ⟨Hst, Hwp, $⟩
     replace Hprim : PrimStep.Irreducible (e₂, σ₂) := hato.atomic Hprim
-    -- FIXME: Why does this exit the proofmode?
-    istop
-    refine .trans (BI.sep_mono .rfl wp_unfold.mp) ?_
-    rw (occs := [1]) [wp.pre]
-    iintro ⟨Hst, Hwp⟩
+    icases wp_unfold $$ Hwp with Hwp
+    unfold wp.pre
     rcases He₂' : toVal e₂ with (_|v₂) <;> dsimp only
     · imod Hwp $$ %_ %_ %κs %.nil [Hst] with ⟨%Hredu, H⟩
       · rw [List.append_nil κs]; iframe
