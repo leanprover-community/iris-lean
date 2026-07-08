@@ -56,13 +56,13 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
     let ⟨_, hyps, _, out', p, _, pf⟩ := hyps.remove (!keep) ivar
     return ⟨_, hyps, p, out', q($pf.1)⟩
   else
-    -- lean hypothesis
+    -- Lean hypothesis
     let val ← instantiateMVars <| ← elabTerm tm none (mayPostpone := true)
     let ty ← instantiateMVars <| ← inferType val
 
     let ⟨newMVars, _, _⟩ ← forallMetaTelescope ty
     let val := mkAppN val newMVars
-    -- TOOD: should we call postprocessAppMVars?
+    -- TODO: should we call postprocessAppMVars?
     let newMVarIds ← newMVars.map Expr.mvarId! |>.filterM fun mvarId => not <$> mvarId.isAssigned
     let otherMVarIds ← getMVarsNoDelayed val
     let otherMVarIds := otherMVarIds.filter (!newMVarIds.contains ·)
