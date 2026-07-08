@@ -116,23 +116,20 @@ def startProofMode (mvar : MVarId) (customProp : Option Expr := none) :
 
   -- check if already in proof mode
   if let some irisGoal := parseIrisGoal? goal then
-    match customProp with
-    | none =>
-      return (mvar, irisGoal)
-    | some customProp =>
+    customProp.forM <| fun customProp => do
       let eq ← isDefEq irisGoal.prop customProp
-      if !eq then
-        throwError "istart: currently in the Iris Proof Mode with {irisGoal.prop} rather than {customProp}"
-      return (mvar, irisGoal)
+      if !eq then throwError m!"istart: currently in the Iris Proof Mode with\
+        {irisGoal.prop} rather than {customProp}"
+    return (mvar, irisGoal)
 
   let some goal ← checkTypeQ goal q(Prop)
     | throwError "type mismatch\n{← mkHasTypeButIsExpectedMsg (← inferType goal) q(Prop)}"
   let u ← mkFreshLevelMVar
   let prop ← mkFreshExprMVarQ q(Type u)
 
-  if let some p := customProp then
-    unless ← isDefEq prop p do
-      throwError "istart: {p} is not a valid BI instance type"
+  customProp.forM <| fun customProp => do
+    let eq ← isDefEq prop customProp
+    if !eq then throwError "istart: {customProp} is not a valid BI instance type"
 
   let P ← mkFreshExprMVarQ q($prop)
   let bi ← mkFreshExprMVarQ q(BI $prop)
