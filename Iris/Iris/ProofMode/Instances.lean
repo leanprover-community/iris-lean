@@ -875,6 +875,14 @@ instance addModal_wand [BI PROP] (P P' Q R : PROP) [h : AddModal P P' Q] :
       _ ⊢ P ∗ (P' -∗ Q)          := sep_mono_right h1
       _ ⊢ Q                      := h.add_modal
 
+@[rocq_alias add_modal_forall]
+instance addModal_forall {A : Type} [BI PROP] (P P' : PROP) (Φ : A → PROP)
+    [h : ∀ x, AddModal P P' (Φ x)] : AddModal P P' iprop(∀ x, Φ x) where
+  add_modal := by
+    apply forall_intro
+    intro a
+    exact (sep_mono_right (wand_mono .rfl (forall_elim a))).trans (h a).add_modal
+
 -- CombineSepAs
 @[rocq_alias maybe_combine_sep_as_default]
 instance (priority := default - 20) combineSepAs_default [BI PROP] (P Q : PROP) :
