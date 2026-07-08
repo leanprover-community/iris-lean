@@ -1436,6 +1436,41 @@ example [BI PROP] [BIUpdate PROP] (P Q R : PROP) :
   imodintro
   iassumption
 
+/- Tests `ispecialize` with an invalid specialisation pattern (duplicated hypotheses). -/
+/-- error: ispecialize: HP used twice for framing -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
+  iintro HP HPQ
+  ispecialize HPQ $$ [$HP $HP]
+
+/- Tests `ispecialize` with an invalid specialisation pattern (duplicated hypotheses). -/
+/-- error: ispecialize: HP cannot be used for both the subgoal and framing -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
+  iintro HP HPQ
+  ispecialize HPQ $$ [HP $HP]
+
+/- Tests `ispecialize` with an invalid hypothesis choice. -/
+/-- error: ispecialize: P is not a wand -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : P ⊢ Q := by
+  iintro HP
+  ispecialize HP $$ [$]
+
+/- Tests `ispecialize` with an invalid specialisation pattern. -/
+/-- error: ispecialize: IntoWand type class synthesis failed with P and Q -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : P ⊢ Q -∗ Q := by
+  iintro HP HQ
+  ispecialize HP $$ HQ
+
+/- Tests `ispecialize` with an invalid specialisation pattern using pure hypotheses. -/
+/-- error: ispecialize: P is not a Lean premise -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : P ⊢ Q := by
+  iintro HP
+  ispecialize HP $$ %(0 : Nat)
+
 end specialize
 
 -- split

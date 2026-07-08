@@ -148,8 +148,10 @@ private def findFrameIVars {u}  {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   let mut frameIVars : List IVarId := []
   for i in frameIdents do
     let ivar ← hyps.findWithInfo i
+    if frameIVars.contains ivar then
+      throwError "ispecialize: {i} used twice for framing"
     if subgoalIVars.contains ivar then
-      throwError "ispecialize: {i} used twice"
+      throwError "ispecialize: {i} cannot be used for both the subgoal and framing"
     frameIVars := ivar :: frameIVars
   return ⟨subgoalIVars, frameIVars.reverse⟩
 
@@ -248,7 +250,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let p2 := if pNest.constName! == ``true then p else q(false)
     let out2 ← mkFreshExprMVarQ prop
     let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $pNest $out .in $outNest .out $out2)
-    | throwError m!"ispecialize: IntoWand type class synthesis failed with {out} with {outNest}"
+    | throwError m!"ispecialize: IntoWand type class synthesis failed with {out} and {outNest}"
     match pfNest with
     -- Nested specialisation pattern involves the `.modal` kind
     | none =>
