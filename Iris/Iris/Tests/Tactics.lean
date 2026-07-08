@@ -24,9 +24,47 @@ open BI CMRA DFrac
 example [BI PROP] (Q : PROP) (H : Q ⊢ Q) : Q ⊢ Q := by
   istart
   iintro _HQ
-  have HH: True := by trivial
+  have HH : True := by trivial
   istop
   exact H
+
+/-- Tests `istart` with a BI instance specified. -/
+example [BI PROP1] [BI PROP2] (P1 : PROP1) (P2 : PROP2)
+    (_ : ⊢@{PROP1} P1) : ⊢@{PROP2} P2 -∗ P2 := by
+  istart PROP2
+  iintro HP
+  iassumption
+
+/- Tests `istart` with the wrong BI instance specified. -/
+/-- error: istart: ⊢ P2 is not an emp valid in PROP1 -/
+#guard_msgs in
+example [BI PROP1] [BI PROP2] (P1 : PROP1) (P2 : PROP2)
+    (h : ⊢@{PROP1} P1) : ⊢@{PROP2} P2 := by
+  istart PROP1
+
+/- Tests `istart` with an invalid type specified as the BI instance. -/
+/-- error: istart: True is not a valid BI instance type -/
+#guard_msgs in
+example [BI PROP1] [BI PROP2] (P1 : PROP1) (P2 : PROP2)
+    (h : ⊢@{PROP1} P1) : ⊢@{PROP2} P2 := by
+  istart True
+
+/- Tests `istart` within the Iris Proof Mode. -/
+example [BI PROP1] [BI PROP2] (P1 : PROP1) (P2 : PROP2)
+    (_ : ⊢@{PROP1} P1) : ⊢@{PROP2} P2 -∗ P2 := by
+  iintro P2
+  istart PROP2
+  istart
+  istart PROP2
+  iassumption
+
+/- Tests `istart` within the Iris Proof Mode with the wrong BI instance specified. -/
+/-- error: istart: currently in the Iris Proof Mode with PROP2 rather than PROP1 -/
+#guard_msgs in
+example [BI PROP1] [BI PROP2] (P1 : PROP1) (P2 : PROP2)
+    (_ : ⊢@{PROP1} P1) : ⊢@{PROP2} P2 -∗ P2 := by
+  iintro P2
+  istart PROP1
 
 -- rename
 namespace rename

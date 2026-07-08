@@ -118,7 +118,7 @@ def startProofMode (mvar : MVarId) (customProp : Option Expr := none) :
   if let some irisGoal := parseIrisGoal? goal then
     customProp.forM <| fun customProp => do
       let eq ← isDefEq irisGoal.prop customProp
-      if !eq then throwError m!"istart: currently in the Iris Proof Mode with\
+      if !eq then throwError m!"istart: currently in the Iris Proof Mode with \
         {irisGoal.prop} rather than {customProp}"
     return (mvar, irisGoal)
 
