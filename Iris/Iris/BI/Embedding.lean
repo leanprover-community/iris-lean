@@ -401,14 +401,15 @@ theorem embed_big_sepS [BiEmbedEmp PROP1 PROP2] {S A : Type _} [LawfulFiniteSet 
   equiv_iff.mp (Iris.Algebra.BigOpS.hom embed_sep_homomorphism Φ X)
 
 @[rocq_alias embed_big_sepMS_2]
-theorem embed_big_sepMS_2 {MS A : Type _} [LawfulFiniteMultiSet MS A] (Φ : A → PROP1) (X : MS) :
-    ([∗mset] x ∈ X, (⎡Φ x⎤ : PROP2)) ⊢ ⎡[∗mset] x ∈ X, Φ x⎤ :=
+theorem embed_big_sepMS_2 {MS A : Type _} [LawfulFiniteMultiSet MS A]
+  (Φ : A → PROP1) (X : MS) :
+  ([∗mset] x ∈ X, (⎡Φ x⎤ : PROP2)) ⊢ ⎡[∗mset] x ∈ X, Φ x⎤ :=
   Iris.Algebra.BigOpMS.hom embed_sep_entails_homomorphism Φ X
 
 @[rocq_alias embed_big_sepMS]
 theorem embed_big_sepMS [BiEmbedEmp PROP1 PROP2] {MS A : Type _} [LawfulFiniteMultiSet MS A]
-    (Φ : A → PROP1) (X : MS) :
-    (⎡[∗mset] x ∈ X, Φ x⎤ : PROP2) ⊣⊢ [∗mset] x ∈ X, ⎡Φ x⎤ :=
+  (Φ : A → PROP1) (X : MS) :
+  (⎡[∗mset] x ∈ X, Φ x⎤ : PROP2) ⊣⊢ [∗mset] x ∈ X, ⎡Φ x⎤ :=
   equiv_iff.mp (Iris.Algebra.BigOpMS.hom embed_sep_homomorphism Φ X)
 
 end

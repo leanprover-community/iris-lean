@@ -30,17 +30,17 @@ namespace BigSepMS
 @[rocq_alias big_sepMS_mono]
 theorem bigSepMS_mono {Φ Ψ : A → PROP} {X : MS} (h : ∀ {x}, x ∈ X → Φ x ⊢ Ψ x) :
     ([∗mset] x ∈ X, Φ x) ⊢ [∗mset] x ∈ X, Ψ x :=
-  bigOpMS_gen_eqv _ .rfl sep_mono fun hy => h hy
+  bigOpMS_gen_eqv _ .rfl sep_mono h
 
 @[rocq_alias big_sepMS_ne]
 theorem bigSepMS_ne {Φ Ψ : A → PROP} {X : MS} {n : Nat} (h : ∀ {x}, x ∈ X → Φ x ≡{n}≡ Ψ x) :
     ([∗mset] x ∈ X, Φ x) ≡{n}≡ ([∗mset] x ∈ X, Ψ x) :=
-  bigOpMS_dist fun hy => h hy
+  bigOpMS_dist h
 
 @[rocq_alias big_sepMS_proper]
 theorem bigSepMS_proper {Φ Ψ : A → PROP} {X : MS} (h : ∀ {x}, x ∈ X → Φ x ≡ Ψ x) :
     ([∗mset] x ∈ X, Φ x) ≡ ([∗mset] x ∈ X, Ψ x) :=
-  bigOpMS_gen_eqv (· ≡ ·) .rfl MonoidOps.op_proper fun hy => h hy
+  bigOpMS_gen_eqv (· ≡ ·) .rfl MonoidOps.op_proper h
 
 theorem bigSepMS_eqv {Φ Ψ : A → PROP} {X : MS} (h : ∀ {x}, x ∈ X → Φ x ⊣⊢ Ψ x) :
     ([∗mset] x ∈ X, Φ x) ⊣⊢ ([∗mset] x ∈ X, Ψ x) :=
@@ -87,10 +87,6 @@ theorem bigSepMS_disjUnion {Φ : A → PROP} {X Y : MS} :
 theorem bigSepMS_insert {Φ : A → PROP} {X : MS} {x : A} :
     ([∗mset] y ∈ ({x} ⊎ X), Φ y) ⊣⊢ Φ x ∗ [∗mset] y ∈ X, Φ y :=
   equiv_iff.mp bigOpMS_insert
-
-private theorem mem_of_getElem? {i : Nat} {x : A} {X : MS}
-    (hget : (FiniteMultiSet.toList X)[i]? = some x) : x ∈ X :=
-  LawfulFiniteMultiSet.mem_toList.mp (List.mem_of_getElem? hget)
 
 @[rocq_alias big_sepMS_delete]
 theorem bigSepMS_delete {Φ : A → PROP} {X : MS} {x : A} (h : x ∈ X) :
@@ -156,11 +152,6 @@ theorem bigSepMS_sep {Φ Ψ : A → PROP} {X : MS} :
     ([∗mset] y ∈ X, Φ y ∗ Ψ y) ⊣⊢ ([∗mset] y ∈ X, Φ y) ∗ ([∗mset] y ∈ X, Ψ y) :=
   equiv_iff.mp bigOpMS_op_eqv
 
-@[deprecated "bigSepMS_sep.symm" (since := "26/04/07"), rocq_alias big_sepMS_sep_2]
-theorem bigSepMS_sep_symm {Φ Ψ : A → PROP} {X : MS} :
-    ([∗mset] y ∈ X, Φ y) ∗ ([∗mset] y ∈ X, Ψ y) ⊣⊢ [∗mset] y ∈ X, Φ y ∗ Ψ y :=
-  bigSepMS_sep.symm
-
 @[rocq_alias big_sepMS_and]
 theorem bigSepMS_and {Φ Ψ : A → PROP} {X : MS} :
     ([∗mset] y ∈ X, Φ y ∧ Ψ y) ⊢ ([∗mset] y ∈ X, Φ y) ∧ ([∗mset] y ∈ X, Ψ y) :=
@@ -191,7 +182,8 @@ theorem bigSepMS_pure_intro {φ : A → Prop} {X : MS} :
 @[rocq_alias big_sepMS_affinely_pure_2]
 theorem bigSepMS_affinely_pure_elim {φ : A → Prop} {X : MS} :
     (<affine> (⌜∀ y, y ∈ X → φ y⌝ : PROP)) ⊢ ([∗mset] y ∈ X, <affine> ⌜φ y⌝) :=
-  (affinely_mono <| pure_mono fun h _ x hget => h x (mem_of_getElem? hget)).trans <|
+  (affinely_mono <| pure_mono fun h _ x hget =>
+      h x (LawfulFiniteMultiSet.mem_toList.mp (List.mem_of_getElem? hget))).trans <|
   bigSepL_affinely_pure_elim.trans bigSepMS_elements.2
 
 @[rocq_alias big_sepMS_pure]
@@ -204,7 +196,8 @@ theorem bigSepMS_pure [BIAffine PROP] {φ : A → Prop} {X : MS} :
 theorem bigSepMS_intro {P : PROP} {Φ : A → PROP} {X : MS} [Intuitionistic P]
     (h : ∀ {x}, x ∈ X → P ⊢ Φ x) :
     P ⊢ [∗mset] x ∈ X, Φ x :=
-  (bigSepL_intro fun _ _ hget => h (mem_of_getElem? hget)).trans bigSepMS_elements.2
+  (bigSepL_intro fun _ _ hget =>
+    h (LawfulFiniteMultiSet.mem_toList.mp (List.mem_of_getElem? hget))).trans bigSepMS_elements.2
 
 @[rocq_alias big_sepMS_impl]
 theorem bigSepMS_impl {Φ Ψ : A → PROP} {X : MS} :
@@ -216,7 +209,7 @@ theorem bigSepMS_impl {Φ Ψ : A → PROP} {X : MS} :
     (forall_elim _).trans <| (imp_mono_left <| pure_mono fun _ => hx).trans true_imp.1
 
 @[rocq_alias big_sepMS_forall]
-theorem bigSepMS_forall [BIAffine PROP] {Φ : A → PROP} {X : MS} [hPers : ∀ x, Persistent (Φ x)] :
+theorem bigSepMS_forall [BIAffine PROP] {Φ : A → PROP} {X : MS} [∀ x, Persistent (Φ x)] :
     ([∗mset] x ∈ X, Φ x) ⊣⊢ (∀ x, ⌜x ∈ X⌝ → Φ x) := by
   refine ⟨forall_intro fun x => imp_intro_swap ?_, ?_⟩
   · refine pure_elim_left fun hmem => (bigSepMS_elem_of_acc hmem).trans ?_
@@ -228,8 +221,8 @@ theorem bigSepMS_forall [BIAffine PROP] {Φ : A → PROP} {X : MS} [hPers : ∀ 
       refine .trans ?_ bigSepMS_insert.2
       refine .trans (and_intro ?_ ?_) persistent_and_sep_mp
       · exact (forall_elim _).trans <|
-          (and_intro (pure_intro <| mem_disjUnion_iff.mpr <| .inl (mem_singleton_iff.mpr rfl)) .rfl).trans
-            imp_elim_right
+          (and_intro (pure_intro <| mem_disjUnion_iff.mpr <| .inl (mem_singleton_iff.mpr rfl))
+            .rfl).trans imp_elim_right
       · exact (forall_mono fun x => imp_mono_left
           (pure_mono fun hx => mem_disjUnion_iff.mpr <| .inr hx)).trans ih
 
