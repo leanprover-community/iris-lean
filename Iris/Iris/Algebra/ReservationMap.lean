@@ -39,7 +39,7 @@ in the future.
 @[rocq_alias reservation_map]
 structure ReservationMap (A : Type) (H : Type → Type) where
   data : H A
-  token : DisjointLeibnizSet CoPset
+  token : CoPsetDisjL
 
 def ReservationMap.mkData [LawfulPartialMap H Pos] (data : H A) :
     ReservationMap A H := .mk data ∅

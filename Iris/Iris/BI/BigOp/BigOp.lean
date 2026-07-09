@@ -104,6 +104,10 @@ open Iris.Algebra Iris.Std OFE BIBase
 abbrev bigSepS [BI PROP] {A : Type _} {S : Type _} [FiniteSet S A] (Φ : A → PROP) (s : S) : PROP :=
   bigOpS sep Φ s
 
+/-- Big separating conjunction over a finite multiset. -/
+abbrev bigSepMS [BI PROP] {A : Type _} {MS : Type _} [FiniteMultiSet MS A] (Φ : A → PROP) (X : MS) : PROP :=
+  bigOpMS sep Φ X
+
 end Set
 
 public meta section
@@ -142,6 +146,9 @@ syntax "[∧map] " ident " ↦ " ident " ∈ " term ", " term : term
 -- Notation for bigSepS
 syntax "[∗set] " ident " ∈ " term ", " term : term
 
+-- Notation for bigSepMS
+syntax "[∗mset] " ident " ∈ " term ", " term : term
+
 macro_rules
   | `([∗list] $x:ident ∈ $l, $P) => `(bigSepL (fun _ $x => $P) $l)
   | `([∗list] $k:ident ↦ $x:ident ∈ $l, $P) => `(bigSepL (fun $k $x => $P) $l)
@@ -156,6 +163,7 @@ macro_rules
   | `([∧map] $x:ident ∈ $m, $P) => `(bigAndM (fun _ $x => $P) $m)
   | `([∧map] $k:ident ↦ $x:ident ∈ $m, $P) => `(bigAndM (fun $k $x => $P) $m)
   | `([∗set] $x:ident ∈ $s, $P) => `(bigSepS (fun $x => $P) $s)
+  | `([∗mset] $x:ident ∈ $X, $P) => `(bigSepMS (fun $x => $P) $X)
 
 -- iprop macro rules
 macro_rules
@@ -172,6 +180,7 @@ macro_rules
   | `(iprop([∧map] $x:ident ∈ $m, $P)) => `(bigAndM (fun _ $x => iprop($P)) $m)
   | `(iprop([∧map] $k:ident ↦ $x:ident ∈ $m, $P)) => `(bigAndM (fun $k $x => iprop($P)) $m)
   | `(iprop([∗set] $x:ident ∈ $s, $P)) => `(bigSepS (fun $x => iprop($P)) $s)
+  | `(iprop([∗mset] $x:ident ∈ $X, $P)) => `(bigSepMS (fun $x => iprop($P)) $X)
 
 /-- Helper to delaborate a bigOpL-shaped lambda body into list notation.
     `opConst` is checked against the `op` argument; `mkWithIdx` / `mkNoIdx` build syntax. -/
