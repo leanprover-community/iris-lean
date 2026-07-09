@@ -11,6 +11,25 @@ public import Iris.ProofMode.Classes
 public import Iris.Std
 public meta import Iris.Std.Expr
 
+namespace Iris.ProofMode
+
+/--
+HACK:
+
+Identity wrapper used as a marker around top-level Iris hypotheses.
+This is to solve the issues that `rw` and `simp` may erase the metadata of a hypothesis,
+which is needed for the proof mode pretty-printer/parser to display the hypothesis correctly.
+
+The underlying issue is `rw`'s `kabstract`-based implementation: without a real head symbol,
+rewriting can abstract away the metadata wrapper and the pretty-printer/parser loses
+the named hypothesis.
+
+`IrisHyp` should be only inserted at the outermost level of Iris hypotheses.
+-/
+@[expose, reducible] public def IrisHyp {α : Sort u} (x : α) : α := x
+
+end Iris.ProofMode
+
 public meta section
 
 namespace Iris.ProofMode
@@ -36,13 +55,19 @@ def mkFreshIVarId [Monad m] [MonadNameGenerator m] (persistent? : Bool) : m IVar
 @[expose] def IVarIdSet := Std.TreeSet IVarId (Name.quickCmp ·.name ·.name)
   deriving Inhabited, EmptyCollection, Singleton
 
+def eraseIrisHypTerm (e : Expr) : Expr :=
+  if e.getAppFn.constName? == some ``IrisHyp then
+    e.getAppArgs.back!
+  else
+    e
+
 def parseName? : Expr → Option (Name × Name × Expr)
   | .mdata ⟨[(nameAnnotation, .ofName name), (ivarAnnotation, .ofName ivar)]⟩ e => do
-    some (name, ivar, e)
+    some (name, ivar, eraseIrisHypTerm e)
   | _ => none
 
-def mkNameAnnotation (name : Name)(ivar : IVarId) (e : Expr) : Expr :=
-  .mdata ⟨[(nameAnnotation, .ofName name), (ivarAnnotation, .ofName ivar.name)]⟩ e
+def mkNameAnnotation {prop : Q(Type u)} (name : Name) (ivar : IVarId) (e : Q($prop)) : Q($prop) :=
+  .mdata ⟨[(nameAnnotation, .ofName name), (ivarAnnotation, .ofName ivar.name)]⟩ q(IrisHyp $e)
 
 def getFreshName : TSyntax ``binderIdent → CoreM (Name × Syntax)
   | `(binderIdent| $name:ident) => pure (name.getId, name)
