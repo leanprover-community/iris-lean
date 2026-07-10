@@ -365,8 +365,7 @@ instance embed_sep_homomorphism [BiEmbedEmp PROP1 PROP2] :
 /-! ### Big separating conjunction
 
 Each is one application of the corresponding `big_op*_commute` to the `sep` monoid
-homomorphism. `embed_big_sepMS` (gmultiset) is omitted entirely —
-gmultiset big-ops are not yet ported in iris-lean. -/
+homomorphism. -/
 
 @[rocq_alias embed_big_sepL_2]
 theorem embed_big_sepL_2 {A : Type _} (Φ : Nat → A → PROP1) (l : List A) :
@@ -401,8 +400,17 @@ theorem embed_big_sepS [BiEmbedEmp PROP1 PROP2] {S A : Type _} [LawfulFiniteSet 
     (⎡[∗set] x ∈ X, Φ x⎤ : PROP2) ⊣⊢ [∗set] x ∈ X, ⎡Φ x⎤ :=
   equiv_iff.mp (Iris.Algebra.BigOpS.hom embed_sep_homomorphism Φ X)
 
-#rocq_ignore embed_big_sepMS "gmultiset big-ops are not yet ported in iris-lean (no BigSepMSet)."
-#rocq_ignore embed_big_sepMS_2 "gmultiset big-ops are not yet ported in iris-lean (no BigSepMSet)."
+@[rocq_alias embed_big_sepMS_2]
+theorem embed_big_sepMS_2 {MS A : Type _} [LawfulFiniteMultiSet MS A]
+  (Φ : A → PROP1) (X : MS) :
+  ([∗mset] x ∈ X, (⎡Φ x⎤ : PROP2)) ⊢ ⎡[∗mset] x ∈ X, Φ x⎤ :=
+  Iris.Algebra.BigOpMS.hom embed_sep_entails_homomorphism Φ X
+
+@[rocq_alias embed_big_sepMS]
+theorem embed_big_sepMS [BiEmbedEmp PROP1 PROP2] {MS A : Type _} [LawfulFiniteMultiSet MS A]
+  (Φ : A → PROP1) (X : MS) :
+  (⎡[∗mset] x ∈ X, Φ x⎤ : PROP2) ⊣⊢ [∗mset] x ∈ X, ⎡Φ x⎤ :=
+  equiv_iff.mp (Iris.Algebra.BigOpMS.hom embed_sep_homomorphism Φ X)
 
 end
 
