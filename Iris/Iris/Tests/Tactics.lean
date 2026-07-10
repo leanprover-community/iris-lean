@@ -2121,6 +2121,14 @@ example (E : CoPset) (P : IProp GF) : ⊢ □ £ 1 -∗ ▷ (|={E}=> P) -∗ |={
   iintro #Hcred HP
   inext credit: Hcred
 
+/- Tests `inext` with an `IProp GF` entailment where `InvGS GF` is not available. -/
+/-- error: inext: requires an InvGS (HasLC) context -/
+#guard_msgs in
+example [InvGS_gen .hasNoLC GF] (E : CoPset) (P : IProp GF) :
+    ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  inext credit: Hcred
+
 variable {Expr State Obs Val} [Λ : Language Expr State Obs Val]
 variable {GF : BundledGFunctors}
 variable [IrisGS_gen .hasLC Expr GF]
