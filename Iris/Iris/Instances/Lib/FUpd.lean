@@ -598,21 +598,20 @@ theorem tac_lc_add_laterN_split {GF : BundledGFunctors} [InvGS GF]
     (h3 : Q ⊢ goal) :
     iprop(P ∗ £ m) ⊢ goal := by
   subst h1
-  have h4 : ▷^[n] goal ∗ £ n ⊢ |={E}=> goal := by
-    have hlc : iprop(£ n ∗ ▷^[n] |={E}=> goal) ⊢ iprop(|={E}=> goal) :=
-      wand_entails ((lc_fupd_add_laterN n).trans wand_curry.mp)
-    exact sep_comm.mp.trans <|
-      (sep_mono_right (laterN_mono n fupd_intro)).trans hlc
-  calc
-    _ ⊢ P ∗ £ n ∗ £ newM                := sep_mono_right lc_split.mp
-    _ ⊢ P ∗ £ newM ∗ £ n                := sep_mono_right sep_comm.mp
-    _ ⊢ (P ∗ £ newM) ∗ £ n              := sep_assoc.mpr
-    _ ⊢ ▷^[n] Q ∗ £ n                  := sep_mono_left h2
-    _ ⊢ ▷^[n] goal ∗ £ n               := sep_mono_left <| laterN_mono n h3
-    _ ⊢ (|={E}=> goal)                  := h4
-    _ ⊢ (|={E}=> goal) ∗ True           := sep_true.mpr
-    _ ⊢ (|={E}=> goal) ∗ (goal -∗ goal) := sep_mono_right wand_rfl
-    _ ⊢ goal                            := inst.add_modal
+  iintro ⟨HP, Hcred⟩
+  iapply inst.add_modal
+  isplitl
+  · ihave Hcred := lc_split.mp $$ Hcred
+    icases Hcred with ⟨Hn, Hm⟩
+    icombine HP Hm as H
+    ihave H := h2 $$ H
+    iapply lc_fupd_add_laterN n $$ Hn
+    inext
+    imodintro
+    iapply h3
+    iassumption
+  · iintro Hgoal
+    iassumption
 
 elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
   let n := match n with | none => 1 | some n => n.raw.toNat
