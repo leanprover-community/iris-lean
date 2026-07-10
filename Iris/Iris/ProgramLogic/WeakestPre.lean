@@ -681,4 +681,11 @@ instance elimModalFupdWpAtomic_wrongMask :
     p false iprop(|={E₁,E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
   elim_modal := nofun
 
+@[rocq_alias add_modal_fupd_wp]
+instance addModalFupdWp : AddModal iprop(|={E}=> P) P (WP e @ s ; E {{ Φ }}) where
+  add_modal := by
+    iintro ⟨H1, H2⟩
+    imod H1
+    iapply H2 $$ H1
+
 end ProofModeClasses

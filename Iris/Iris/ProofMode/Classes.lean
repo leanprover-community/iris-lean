@@ -185,6 +185,19 @@ class ElimModal {PROP} [BI PROP] (φ : outParam $ Prop) (p : Bool) (p' : outPara
   elim_modal : φ → □?p P ∗ (□?p' P' -∗ Q') ⊢ Q
 export ElimModal (elim_modal)
 
+/--
+`AddModal` is used by `ispecialize` and `iassert` to add a modality to the
+goal corresponding to the premise/asserted proposition.
+-/
+@[ipm_class, rocq_alias AddModal]
+class AddModal {PROP} [BI PROP] (P : outParam $ PROP) (P' Q : PROP) where
+  add_modal : P ∗ (P' -∗ Q) ⊢ Q
+export AddModal (add_modal)
+
+@[rocq_alias add_modal_id]
+theorem addModal_id {PROP} [BI PROP] (P Q : PROP) : AddModal P P Q where
+  add_modal := wand_elim_right
+
 @[ipm_class, rocq_alias Frame]
 class Frame {PROP} [BI PROP] (p : Bool) (R P : PROP) (Q : outParam $ PROP) where
   frame : □?p R ∗ Q ⊢ P
