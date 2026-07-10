@@ -2,6 +2,7 @@ module
 
 public import Iris.Algebra.Agree
 public import Iris.Algebra.CMRA
+public import Iris.Algebra.CMRABigOp
 public import Iris.Algebra.COFESolver
 public import Iris.Algebra.DFrac
 public import Iris.Algebra.Excl
