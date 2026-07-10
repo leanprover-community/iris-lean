@@ -51,6 +51,8 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 - `imodintro` — Introduce the modality at the top of the goal (e.g. `□`, `<pers>`, `▷`, `|==>`), adjusting the context as required by the modality.
 - `imodintro` *sel* — Like `imodintro`, but only succeed if the modality matches the selector term *sel*, e.g. `imodintro (<pers> _)` or `imodintro (□ _)`.
 - `inext` — Introduce one or more later modalities; equivalent to `imodintro (▷^[_] _)`.
+- `inext` *n* `credit:` *H* — given a later credit hypothesis *H*, reduce the later credits by *n* and strip *n* later modalities from all hypotheses while the goal remains unchanged. This tactic requires the goal to be a fancy update modality and `InvGS GF` to hold.
+- `inext credit:` *H* — equivalent to `inext 1 credit:` *H*.
 - `imod` [*pmTerm*](#proof-mode-terms) `with` [*casesPat*](#cases-patterns) — Eliminate the modality at the top of [*pmTerm*](#proof-mode-terms) into the goal and destruct the result with [*casesPat*](#cases-patterns). Equivalent to `icases ... with >pat`.
 - `imod` [*pmTerm*](#proof-mode-terms) — Like above; if [*pmTerm*](#proof-mode-terms) is a hypothesis, its name is kept.
 
