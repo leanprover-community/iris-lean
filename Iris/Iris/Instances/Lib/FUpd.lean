@@ -585,7 +585,7 @@ end StepIndexed
 
 end Iris
 
-public meta section
+public section
 
 open Lean Elab Tactic Meta Qq Iris.BI Iris Iris.ProofMode
 
@@ -593,25 +593,23 @@ open Lean Elab Tactic Meta Qq Iris.BI Iris Iris.ProofMode
 theorem tac_lc_add_laterN_split {GF : BundledGFunctors} [InvGS GF]
     {n m newM : Nat} {E : CoPset} {P Q goal : IProp GF}
     (inst : AddModal iprop(|={E}=> goal) goal goal)
-    (h1 : m = n + newM)
-    (h2 : iprop(P ∗ £ newM) ⊢ ▷^[n] Q)
-    (h3 : Q ⊢ goal) :
+    (h1 : m = n + newM) (h2 : iprop(P ∗ £ newM) ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
     iprop(P ∗ £ m) ⊢ goal := by
   subst h1
   iintro ⟨HP, Hcred⟩
   iapply inst.add_modal
   isplitl
-  · ihave Hcred := lc_split.mp $$ Hcred
-    icases Hcred with ⟨Hn, Hm⟩
+  · icases lc_split.mp $$ Hcred with ⟨Hn, Hm⟩
     icombine HP Hm as H
     ihave H := h2 $$ H
     iapply lc_fupd_add_laterN n $$ Hn
     inext
     imodintro
-    iapply h3
-    iassumption
+    iapply h3 $$ H
   · iintro Hgoal
     iassumption
+
+public meta section
 
 elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
   let n := match n with | none => 1 | some n => n.raw.toNat
@@ -656,6 +654,8 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
     let hm : Q($m = $n + $newM) ← mkDecideProof q($m = $n + $newM)
     let pf'' : Q($e' ∗ $out ⊢ $goal) ← mkAppM ``tac_lc_add_laterN_split #[inst, hm, pfModAction, pf]
     mvar.assign q($(pfEq).mp.trans $pf'')
+
+end
 
 end
 
