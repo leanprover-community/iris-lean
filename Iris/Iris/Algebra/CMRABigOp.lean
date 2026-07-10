@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors:
+Authors: Markus de Medeiros
 -/
 module
 
@@ -17,10 +17,7 @@ public section
 
 variable {M : Type _} [CMRA M]
 
-/-! # Big operators over CMRAs
-
-Specializations of the abstract big operators to a CMRA's `Option`-lifted operation,
-where the monoid unit is `none`. -/
+/-! # Big operators over CMRAs -/
 
 variable {A : Type _}
 
