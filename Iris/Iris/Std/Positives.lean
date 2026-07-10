@@ -431,6 +431,11 @@ instance : Countable Pos where
   decode := some
   decode_encode _ := rfl
 
+instance : Countable Nat where
+  encode := ofNat
+  decode := some ∘ (toNat · - 1)
+  decode_encode _ := by simp [toNat_ofNat]
+
 instance : Pos.Countable Char where
   encode c := Pos.ofNat c.val.toNat
   decode p :=
