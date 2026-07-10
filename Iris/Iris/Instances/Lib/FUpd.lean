@@ -595,6 +595,7 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
   ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
     let ivar ← hyps.findWithInfo h
 
+    -- Search for the later credit hypothesis from the context
     let some ⟨⟨name, m⟩, e', hyps', out, out', p, _, pfEq⟩ ← hyps.removeG false <|
       fun name ivar' p ty => do
         if ivar != ivar' then return none
@@ -610,23 +611,27 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
           | _ => return none
     | throwError m!"inext: {h} is not a spatial later credit hypothesis"
 
-    if m < n then
-      throwError "inext: insufficient credits"
+    -- Ensure sufficient credits
+    if m < n then throwError "inext: insufficient credits"
 
     let g ← mkFreshExprMVarQ q($prop)
     let some inst ← ProofModeM.trySynthInstanceQ q(AddModal $g $goal $goal)
     | throwError "inext: AddModal type class synthesis failed {goal}"
 
+    -- Update the later credit hypothesis
     let newM : Q(Nat) := mkNatLit (m - n)
-    let newHyps := Hyps.add _ name ivar q(false) (mkApp out'.appFn! newM) hyps'
+
+    let newTy : Q($prop) := mkApp out'.appFn! newM
+    let newHyps : Hyps bi q(iprop($e' ∗ □?false $newTy)) := Hyps.add _ name ivar q(false) newTy hyps'
 
     let nQ : Q(Nat) := mkNatLit n
-
     let modality := q(@modality_laterN $prop $nQ $bi)
+    let ⟨_, newHyps', pf'⟩ ← iModAction newHyps modality
 
-    let ⟨_, newHyps', _⟩ ← iModAction newHyps modality
+    let pf ← addBIGoal newHyps' goal
 
-    let hgoal ← addBIGoal newHyps' goal
+    -- let pf'' : Q($e' ∗ $out ⊢ $goal) := sorry
+    -- mvar.assign q($(pfEq).mp.trans $pf'')
 
 end
 
