@@ -123,7 +123,7 @@ section Wp
 @[rocq_alias wp_unfold]
 theorem wp_unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E {{ Φ }} ⊣⊢ wp.pre s (Wp.wp (PROP := IProp GF) s) E e Φ :=
-  BI.equiv_iff.1 <| fixpoint_unfold (f := (wp.pre s).toContractiveHom) E e Φ
+  BI.equiv_iff.1 <| fun n => fixpoint_unfold (f := (wp.pre s).toContractiveHom) n E e Φ
 
 @[rocq_alias wp_ne]
 instance wp_ne {s : Stuckness} {E} {e : Expr} :

@@ -32,10 +32,10 @@ instance intoPure_internalEq [Sbi PROP] [OFE A] (a b : A)
   into_pure := discrete_eq_mp
 
 @[ipm_backtrack]
-instance (priority := default + 10) intoPure_internalEq_leibniz [Sbi PROP] [OFE A] [OFE.Leibniz A]
+instance (priority := default + 10) intoPure_internalEq_leibniz [Sbi PROP] [OFE A]
     (a b : A) [TCOr (OFE.DiscreteE a) (OFE.DiscreteE b)] :
     IntoPure (PROP := PROP) (internalEq a b) (a = b) where
-  into_pure := discrete_eq_mp.trans (pure_mono OFE.eq_of_eqv)
+  into_pure := discrete_eq_mp.trans (pure_mono OFE.Equiv.to_eq)
 
 @[rocq_alias from_modal_Next]
 instance fromModal_internalEq_next [Sbi PROP] [OFE A] (x y : A) :

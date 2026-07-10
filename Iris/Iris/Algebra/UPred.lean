@@ -64,15 +64,15 @@ open UPred
 
 @[rocq_alias uPredO]
 instance : OFE (UPred M) where
-  Equiv P Q := ∀ n (x : M), (p : ✓{n} x) → (P n ⟨x, p⟩ ↔ Q n ⟨x, p⟩)
   Dist n P Q := ∀ n' (x : M), n' ≤ n → (p : ✓{n'} x) → (P n' ⟨x, p⟩ ↔ Q n' ⟨x, p⟩)
   dist_eqv := {
     refl _ _ _ _ _ := .rfl
     symm H _ _ A B := (H _ _ A B).symm
     trans H1 H2 _ _ A B := (H1 _ _ A B).trans (H2 _ _ A B) }
-  equiv_dist := ⟨
-    fun Heqv _ _ _ _ Hvalid => Heqv _ _ Hvalid,
-    fun Hdist _ _ Hvalid => Hdist _ _ _ .refl Hvalid⟩
+  eq_dist {P Q} := by
+    refine ⟨fun h _ _ _ _ _ => h ▸ Iff.rfl, fun h => ?_⟩
+    ext n e
+    exact h n n e.val (Nat.le_refl n) e.property
   dist_lt Hdist Hlt _ _ Hle Hvalid :=
     Hdist _ _ (Nat.le_trans Hle (Nat.le_of_succ_le Hlt)) Hvalid
 
@@ -82,11 +82,6 @@ instance : OFE (UPred M) where
 #rocq_ignore uPred_dist "Not needed"
 #rocq_ignore uPred_ofe_mixin "Not needed"
 
-
-instance : OFE.Leibniz (UPred M) where
-  eq_of_eqv {x y} hequiv := by
-    ext n e
-    exact hequiv n e.val e.property
 
 @[rocq_alias uPred_ne]
 theorem uPred_ne {P : UPred M} {n} {m₁ m₂ : ValidAt M n} (H : (m₁ : M) ≡{n}≡ (m₂ : M)) : P n m₁ ↔ P n m₂ :=
@@ -136,10 +131,10 @@ instance [URFunctor F] : COFE.OFunctor (UPredOF F) where
   map_ne.ne _ _ _ Hx _ _ Hy _ _ z2 Hn _ := by
     simp only [uPred_map]
     exact uPred_ne <| URFunctor.map_ne.ne (Hy.le Hn) (Hx.le Hn) z2
-  map_id _ _ z _ := by
+  map_id _ _ _ z _ _ := by
     simp only [uPred_map]
     exact uPred_proper <| URFunctor.map_id z
-  map_comp f g f' g' _ _ H _ := by
+  map_comp f g f' g' _ _ _ H _ _ := by
     simp only [uPred_map]
     exact uPred_proper <| URFunctor.map_comp g' f' g f H
 
@@ -149,8 +144,5 @@ instance instUPredOFunctorContractive [URFunctorContractive F] : COFE.OFunctorCo
     refine uPred_ne (P := P) <|
       ((URFunctorContractive.map_contractive.1 (x := (x.snd, x.fst)) (y := (y.snd, y.fst))) ?_ a).le Hmn
     exact fun m Hm => ⟨(HKL m Hm).2, (HKL m Hm).1⟩
-
-instance [URFunctor F] : Leibniz.LeibnizPreservingOFunctor (UPredOF F) where
-  preserves_leibniz := inferInstance
 
 end UPred
