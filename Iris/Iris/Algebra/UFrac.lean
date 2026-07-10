@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors:
+Authors: Markus de Medeiros
 -/
 module
 
@@ -14,17 +14,13 @@ meta import Iris.Std.RocqPorting
 /-!
 # The UFrac CMRA
 
-Fractions with an unbounded validity, i.e. valid even if `> 1`.
-This follows Iris Rocq in fixing the underlying type of fractions to be `ℚ ∩ (0, ∞)`,
-sharing the `Qp` type used by `Frac`.
+A variant of the Frac CMRA with unbounded validity (>1).
 -/
 
 @[expose] public section
 
 namespace Iris
 
-/-- Fractions with unbounded validity. Wraps `Qp` so that it carries a distinct CMRA
-    instance (trivial validity) from `Frac`. -/
 @[rocq_alias ufrac]
 structure UFrac where
   frac : Qp
@@ -39,7 +35,6 @@ namespace UFrac
 #rocq_ignore ufrac_op_instance "Use CMRA instance"
 #rocq_ignore ufrac_pcore_instance "Use CMRA instance"
 #rocq_ignore ufrac_valid_instance "Use CMRA instance"
-#rocq_ignore ufrac_ra_mixin "Use CMRA instance"
 
 instance : COFE UFrac := COFE.ofDiscrete _ Eq_Equivalence
 instance : OFE.Leibniz UFrac := ⟨id⟩
