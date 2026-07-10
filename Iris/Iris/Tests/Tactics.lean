@@ -11,11 +11,13 @@ public import Iris.Instances.IProp
 public import Iris.Instances.Lib.LaterCredits
 public import Iris.Instances.Lib.Token
 public import Iris.Algebra.CMRA
+public import Iris.ProgramLogic.Language
+public import Iris.ProgramLogic.WeakestPre
 
 @[expose] public section
 
 namespace Iris.Tests
-open BI CMRA DFrac
+open BI CMRA DFrac ProgramLogic
 
 /- This file contains tests with various scenarios for all available tactics. -/
 
@@ -2073,6 +2075,51 @@ set_option pp.mvars false in
 example [BI PROP] (P : PROP) : P ⊢ P := by
   iintro HP
   inext
+
+/-- Tests `inext`. -/
+example [BI PROP] (P Q : PROP) : ⊢ ▷ P -∗ Q -∗ ▷ (P ∗ Q) := by
+  iintro HP HQ
+  inext
+  icombine HP HQ as HPQ
+  iassumption
+
+variable {hlc : HasLC} {GF : BundledGFunctors} [InvGS_gen hlc GF]
+
+/- Tests `inext` with later credits consumption. -/
+example (E : CoPset) (P : IProp GF) : ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  -- No later credits consumed, equivalent to a no-op
+  inext 0 credit: Hcred
+  -- One later credit is consumed by default when the amount is not specified
+  inext credit: Hcred
+  iclear Hcred
+  iassumption
+
+/- Tests `inext` with insufficient credits. -/
+/-- error: inext: insufficient credits -/
+#guard_msgs in
+example (E : CoPset) (P : IProp GF) : ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  inext 2 credit: Hcred
+
+/- Tests `inext` with multiple credits consumed at once. -/
+example (E : CoPset) (P : IProp GF) : ⊢ £ 3 -∗ ▷▷▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  inext 3 credit: Hcred
+  iclear Hcred  -- TODO: drop `£ 0` automatically
+  iassumption
+
+/-- error: inext: Hcred is not a spatial later credit hypothesis -/
+#guard_msgs in
+example (E : CoPset) (P : IProp GF) : ⊢ □ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  inext credit: Hcred
+
+/-- error: inext: Hcred is not in the spatial context -/
+#guard_msgs in
+example (E : CoPset) (P : IProp GF) : ⊢ □ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro #Hcred HP
+  inext credit: Hcred
 
 end inext
 

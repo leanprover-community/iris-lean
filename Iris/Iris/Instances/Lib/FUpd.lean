@@ -599,7 +599,8 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
       fun name ivar' p ty => do
         if ivar != ivar' then return none
         match matchBool p with
-        | .inl _ => return none
+        | .inl _ =>
+          throwError "inext: {h} is not in the spatial context"
         | .inr _ =>
           match_expr ty with
           | lc _ _ _ c =>
@@ -609,7 +610,7 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
           | _ => return none
     | throwError m!"inext: {h} is not a spatial later credit hypothesis"
 
-    if m ≤ n then
+    if m < n then
       throwError "inext: insufficient credits"
 
     let g ← mkFreshExprMVarQ q($prop)
