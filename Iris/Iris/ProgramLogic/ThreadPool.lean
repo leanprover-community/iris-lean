@@ -25,7 +25,8 @@ variable {Expr State Obs Val : Type _} [Λ : Language Expr State Obs Val]
 /-- Transitive closure of `primStep` with accumulated observations and forks. -/
 inductive PrimSteps : Expr → State → List Obs → Expr → State → List Expr → Prop where
   | once {e₁ σ₁ κ e₂ σ₂ efs} :
-      (e₁, σ₁) -<κ>-> (e₂, σ₂, efs) → PrimSteps e₁ σ₁ κ e₂ σ₂ efs
+      (e₁, σ₁) -<κ>-> (e₂, σ₂, efs) →
+      PrimSteps e₁ σ₁ κ e₂ σ₂ efs
   | next {e₁ σ₁ κ₁ e₂ σ₂ efs₁ κ₂ e₃ σ₃ efs₂} :
       (e₁, σ₁) -<κ₁>-> (e₂, σ₂, efs₁) →
       PrimSteps e₂ σ₂ κ₂ e₃ σ₃ efs₂ →

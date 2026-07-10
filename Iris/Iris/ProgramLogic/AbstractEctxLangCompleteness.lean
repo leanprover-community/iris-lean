@@ -43,11 +43,10 @@ public def ectxLangCompletenessStmt (wp : AbstractWP Expr Val GF)
   ((⌜Atomic .WeaklyAtomic e₁⌝ ∗
     (∀ Φ,
       (▷ ∀ κ v₂ σ' efs,
-        ⌜PrimStep.primStep (e₁, σ) κ ((ToVal.ofVal v₂ : Expr), σ', efs)⌝ -∗
+        ⌜PrimStep.primStep (e₁, σ) κ (ToVal.ofVal v₂, σ', efs)⌝ -∗
         isThread n (.own 1) (EvContext.fill K e₁) -∗
         tpInv C ==∗
-        (heap_inv ((C.set n (EvContext.fill K (ToVal.ofVal v₂))) ++ efs) σ' -∗
-          Φ v₂) ∗
+        (heap_inv ((C.set n (EvContext.fill K (ToVal.ofVal v₂))) ++ efs) σ' -∗ Φ v₂) ∗
         [∗list] _i ↦ etp ∈ efs, wp ⊤ etp (fun (_ : Val) => iprop(True))) -∗
       wp E e₁ Φ))
   ∨
@@ -97,12 +96,10 @@ theorem weakestpre_ectx_to_prim_completeness (n : Nat) (C : List Expr) (e₁ : E
   have Hbred : BaseStep.Reducible (e₁', σ) := ⟨κ, e₂', σ', efs, Hbase⟩
   have key := AEC.ectx_lang_completeness n C e₁' σ K E
   unfold ectxLangCompletenessStmt at key
-  imod key $$ %Hbred Htok [Hheap Htp]
-    with (⟨%Hatom, HH⟩ | ⟨Hheap, Htp, HH⟩)
-  · iframe Hheap Htp
-    ipureintro
-    exact Hsafe
-  · imodintro
+  imod key $$ %Hbred Htok [Hheap Htp] with (⟨%Hatom, HH⟩ | ⟨Hheap, Htp, HH⟩)
+  · iframe Hheap Htp %Hsafe
+  · clear key
+    imodintro
     ileft
     iexists (fill (Expr := Expr) K), e₁'
     have Hctx : Context (fill (Expr := Expr) K) := inferInstance
@@ -111,7 +108,8 @@ theorem weakestpre_ectx_to_prim_completeness (n : Nat) (C : List Expr) (e₁ : E
     iframe %Hctx %Heq %Hnv %Hatom
     iintro %Ψ Hpre
     iapply HH $$ Hpre
-  · imodintro
+  · clear key
+    imodintro
     iright
     iframe Hheap Htp
     iintro %Ψ Hc
@@ -126,9 +124,7 @@ theorem weakestpre_ectx_to_prim_completeness (n : Nat) (C : List Expr) (e₁ : E
             AEC.heap_inv (C₁.set n (fill (Expr := Expr) K e₂) ++ efs) σ₁') $$ [H]
     · iintro %σ₁ %C₁ ⟨Hi, Htp1, %Hs⟩
       imod H $$ [Hi Htp1] with ⟨%κ', %σ₁', %Hps, Htok2, Htp1', Hhp⟩
-      · iframe Hi Htp1
-        ipureintro
-        exact Hs
+      · iframe Hi Htp1 %Hs
       imodintro
       iexists κ', σ₁'
       iframe Htok2 Htp1' Hhp
@@ -136,9 +132,8 @@ theorem weakestpre_ectx_to_prim_completeness (n : Nat) (C : List Expr) (e₁ : E
       exact Hps.fill
     imod Hc $$ Hprem with ⟨Hwp, Hlist⟩
     imodintro
-    isplitl [Hwp]
-    · iapply (BWP.wp_bind (K := fill (Expr := Expr) K) (e := e₂) (Φ := Ψ)).2 $$ Hwp
-    · iexact Hlist
+    iframe
+    iapply (BWP.wp_bind (K := fill (Expr := Expr) K) (e := e₂) (Φ := Ψ)).2 $$ Hwp
 
 instance abstract_ectx_to_completeness :
     AbstractLangCompletenessGen wp where

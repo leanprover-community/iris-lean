@@ -96,10 +96,8 @@ instance isCcfg_persistent (Cini : List Expr × State) (f : Forking) (γ : GName
 
 omit [CInvG GF] in
 theorem bigSepL_const_congr {α β : Type _} {P : IProp GF} {l1 : List α} {l2 : List β}
-    (h : l1.length = l2.length) : ([∗list] _x ∈ l1, P) ⊣⊢ ([∗list] _x ∈ l2, P) := by
-  refine (BigSepL.bigSepL_replicate (l := l1) (P := P)).symm.trans
-    (BiEntails.trans ?_ (BigSepL.bigSepL_replicate (l := l2) (P := P)))
-  rw [h]; exact .rfl
+    (h : l1.length = l2.length) : ([∗list] _x ∈ l1, P) ⊣⊢ ([∗list] _x ∈ l2, P) :=
+  BigSepL.bigSepL_replicate.symm.trans (.trans (h ▸ .rfl) (BigSepL.bigSepL_replicate))
 
 theorem own_divide_forks {α : Type _} (γ : GName) (qc : Qp) (l : List α) :
     CancelableInvariant.own (GF := GF) γ qc ⊢
@@ -109,19 +107,16 @@ theorem own_divide_forks {α : Type _} (γ : GName) (qc : Qp) (l : List α) :
   have h := fractional_divide_equal
     (Φ := fun p : Qp => CancelableInvariant.own (GF := GF) γ p) qc l.length
   rw [List.replicate_succ'] at h
-  refine h.trans ((BigSepL.bigSepL_snoc (Φ := fun _ _ => CancelableInvariant.own (GF := GF) γ
-    ((qc.divide_even (l.length + 1) (Nat.succ_pos _)) : Qp))).1.trans
+  refine h.trans ((BigSepL.bigSepL_snoc).1.trans
     (sep_comm.1.trans (sep_mono_right (bigSepL_const_congr (by simp)).1)))
 
 theorem qp_div_ofPNat_succ_nil {α : Type _} (qc : Qp) {l : List α} (h : l = []) :
     qc.divide_even (l.length + 1) (Nat.succ_pos _) = qc := by
-  subst h
-  apply Subtype.ext
-  simp
-  grind
+  simp only [h, List.length_nil, Nat.zero_add]; grind
 
-theorem weakestpre_completeness
-    (Cini : List Expr × State) (f : Forking) (γ : GName) (q : Qp)
+-- Here
+
+theorem weakestpre_completeness (Cini : List Expr × State) (f : Forking) (γ : GName) (q : Qp)
     (n : Nat) (e : Expr) :
     isCcfg (TI := TI) (wp := wp) Cini f γ -∗
     CancelableInvariant.own γ q -∗
@@ -133,8 +128,7 @@ theorem weakestpre_completeness
   iloeb as IH generalizing %q %n %e
   iintro Hq He
   have Hn : nclose completenessN ⊆ ⊤ := fun _ _ => CoPset.mem_full
-  have Hn' : ⊤ \ nclose completenessN ⊆ ⊤ := Std.LawfulSet.diff_subset_left
-  iapply IAO.inv_open_maybe (E₂ := ⊤ \ nclose completenessN) _ _ _ Hn'
+  iapply IAO.inv_open_maybe (E₂ := ⊤ \ nclose completenessN) _ _ _ Std.LawfulSet.diff_subset_left
   unfold isCcfg
   imod CancelableInvariant.acc Hn $$ [$] [$] with ⟨>Hinv2, Hq, Hclose⟩
   unfold cfgInv
