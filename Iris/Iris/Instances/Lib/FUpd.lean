@@ -585,4 +585,48 @@ end StepIndexed
 
 end Iris
 
+public meta section
+
+open Lean Elab Tactic Meta Qq Iris Iris.ProofMode
+
+elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
+  let n := match n with | none => 1 | some n => n.raw.toNat
+
+  ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
+    let ivar ← hyps.findWithInfo h
+
+    let some ⟨⟨name, m⟩, e', hyps', out, out', p, _, pfEq⟩ ← hyps.removeG false <|
+      fun name ivar' p ty => do
+        if ivar != ivar' then return none
+        match matchBool p with
+        | .inl _ => return none
+        | .inr _ =>
+          match_expr ty with
+          | lc _ _ _ c =>
+            match c.nat? with
+            | none => throwError "inext: {c} is not a numeral"
+            | some m => return some (name, m)
+          | _ => return none
+    | throwError m!"inext: {h} is not a spatial later credit hypothesis"
+
+    if m ≤ n then
+      throwError "inext: insufficient credits"
+
+    let g ← mkFreshExprMVarQ q($prop)
+    let some inst ← ProofModeM.trySynthInstanceQ q(AddModal $g $goal $goal)
+    | throwError "inext: AddModal type class synthesis failed {goal}"
+
+    let newM : Q(Nat) := mkNatLit (m - n)
+    let newHyps := Hyps.add _ name ivar q(false) (mkApp out'.appFn! newM) hyps'
+
+    let nQ : Q(Nat) := mkNatLit n
+
+    let modality := q(@modality_laterN $prop $nQ $bi)
+
+    let ⟨_, newHyps', _⟩ ← iModAction newHyps modality
+
+    let hgoal ← addBIGoal newHyps' goal
+
+end
+
 end
