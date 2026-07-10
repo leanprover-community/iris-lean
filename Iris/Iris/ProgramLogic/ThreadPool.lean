@@ -37,21 +37,15 @@ inductive Forking where
   | doesFork
   | doesNotFork
 
-/-- Every thread in the pool is not stuck at the current state. -/
 def cfgNotStuck (C : List Expr × State) : Prop :=
   ∀ {e}, e ∈ C.1 → NotStuck (e, C.2)
 
-/-- If we declared the configuration `DoesNotFork`, every primitive step
-of every thread emits empty forks. -/
 def cfgForking (C : List Expr × State) (f : Forking) : Prop :=
   f = .doesNotFork → ∀ e ∈ C.1, ∀ {e' σ' κ efs}, (e, C.2) -<κ>-> (e', σ', efs) → efs = []
 
-/-- The configuration is safe under the given forking discipline:
-every reachable configuration is not stuck and respects the forking constraint. -/
 def cfgSafeForking (C : List Expr × State) (f : Forking) : Prop :=
   ∀ {C₂}, (C -·->ₜₚ* C₂) → cfgNotStuck C₂ ∧ cfgForking C₂ f
 
-/-- The configuration is safe: every reachable configuration is not stuck. -/
 def cfgSafe (C : List Expr × State) : Prop :=
   ∀ {C₂}, (C -·->ₜₚ* C₂) → cfgNotStuck C₂
 
@@ -170,25 +164,18 @@ public class TpinvGS (GF : BundledGFunctors) (Expr : Type _) (H : outParam <| Ty
 
 variable [TI : TpinvGS GF Expr H]
 
-/-- Thread `n` in the pool is the expression `e`. -/
 public def isThread (n : Nat) (dq : DFrac) (e : Expr) : IProp GF :=
   TI.tp_name ↪◯MAP[n]{dq} e
 
 notation k " ↪thread{" dq "} " v => isThread k dq v
 notation k " ↪thread " v => isThread k (DFrac.own 1) v
 
-/-- The initial thread-pool authority (empty pool). -/
 public def tpInvIni : IProp GF :=
   TI.tp_name ↪●MAP (∅ : H Expr)
 
-/-- The thread-pool invariant: the auth-side `ghost_map` agrees pointwise with
-the operational thread list `tp`. -/
 public def tpInv (tp : List Expr) : IProp GF := iprop%
   ∃ m : H Expr, ⌜∀ n, PartialMap.get? m n = tp[n]?⌝ ∗ TI.tp_name ↪●MAP m
 
-/-- `tpInv` is timeless: the ghost-map authority is over a discrete camera, and
-the rest is pure/existential. Needed to strip the later off invariant contents
-after opening (e.g. via `CancelableInvariant.acc`). -/
 public instance tpInv_timeless (tp : List Expr) : Iris.BI.Timeless (tpInv (TI := TI) tp) := by
   unfold tpInv; infer_instance
 
@@ -256,10 +243,7 @@ public theorem tpInv_set (C : List Expr) :
 
 end ghost
 
-/-! ### Allocation
-
-Allocates the empty thread-pool authority and exposes a `TpinvGS` instance
-parameterized by the freshly-chosen ghost name. -/
+/-! ### Allocation -/
 
 section alloc
 open Iris CMRA Std

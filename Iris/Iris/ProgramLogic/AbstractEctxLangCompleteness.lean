@@ -34,11 +34,6 @@ variable {GF : BundledGFunctors} {HLC : HasLC} [IrisGS_gen HLC Expr GF]
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]
 variable [TI : TpinvGS GF Expr H]
 
-/-- The body of the `ectx_lang_completeness` field of
-`AbstractEctxLangCompletenessGen`: for a base-reducible redex `e₁` under an
-evaluation context `K`, either `e₁` is weakly atomic and its post-step
-obligation discharges the WP, or the configuration reduces and the WP follows by
-binding under `K`. -/
 public def ectxLangCompletenessStmt (wp : AbstractWP Expr Val GF)
     (heap_inv : List Expr → State → IProp GF) (n : Nat) (C : List Expr) (e₁ : Expr) (σ : State)
     (K : Ectx) (E : CoPset) : IProp GF := iprop%
@@ -69,9 +64,6 @@ public def ectxLangCompletenessStmt (wp : AbstractWP Expr Val GF)
         ([∗list] _j ↦ etp ∈ efs, wp ⊤ etp (fun (_ : Val) => iprop(True)))) -∗
     wp ⊤ e₁ Ψ))
 
-/-- *Abstract ectx-completeness theory*: the ectx-language specialization of
-`AbstractLangCompletenessGen`. The soundness equation `ectx_lang_completeness`
-is phrased for base steps rather than prim steps. -/
 public class AbstractEctxLangCompletenessGen
     (wp : AbstractWP Expr Val GF) [BindAbstractWP wp] where
   heap_inv : List Expr → State → IProp GF
@@ -96,9 +88,6 @@ variable {wp : AbstractWP Expr Val GF}
 variable [BWP : BindAbstractWP wp]
 variable [AEC : AbstractEctxLangCompletenessGen wp]
 
-/-- Lift the ectx-level reduction soundness equation to a prim-level one: a prim
-step decomposes as a base step under some evaluation context `K`, so the
-ectx-level statement transfers to the prim level via `wp_bind`. -/
 theorem weakestpre_ectx_to_prim_completeness (n : Nat) (C : List Expr) (e₁ : Expr)
     (σ : State) (E : CoPset) :
     ⊢ abstractECTXLangComplete (TI := TI) wp AEC.heap_inv n C e₁ σ E := by
@@ -113,8 +102,7 @@ theorem weakestpre_ectx_to_prim_completeness (n : Nat) (C : List Expr) (e₁ : E
   · iframe Hheap Htp
     ipureintro
     exact Hsafe
-  · -- Atomic redex: package the context `fill K` and forward the magic premise.
-    imodintro
+  · imodintro
     ileft
     iexists (fill (Expr := Expr) K), e₁'
     have Hctx : Context (fill (Expr := Expr) K) := inferInstance
@@ -123,8 +111,7 @@ theorem weakestpre_ectx_to_prim_completeness (n : Nat) (C : List Expr) (e₁ : E
     iframe %Hctx %Heq %Hnv %Hatom
     iintro %Ψ Hpre
     iapply HH $$ Hpre
-  · -- Non-atomic redex: reduce the prim-level WP to the ectx-level one via `wp_bind`.
-    imodintro
+  · imodintro
     iright
     iframe Hheap Htp
     iintro %Ψ Hc
@@ -132,7 +119,6 @@ theorem weakestpre_ectx_to_prim_completeness (n : Nat) (C : List Expr) (e₁ : E
     iapply HH
     inext
     iintro %e₂ %efs H
-    -- Lift the ectx-level step `H` (on the redex `e₁'`) to a prim-level step under `fill K`.
     ihave Hprem : iprop(∀ σ₁ C₁,
         AEC.heap_inv C₁ σ₁ ∗ tpInv C₁ ∗ ⌜cfgSafe (C₁, σ₁)⌝ ={E}=∗
           ∃ κ σ₁', ⌜PrimSteps (fill (Expr := Expr) K e₁') σ₁ κ (fill (Expr := Expr) K e₂) σ₁' efs⌝ ∗
@@ -154,8 +140,6 @@ theorem weakestpre_ectx_to_prim_completeness (n : Nat) (C : List Expr) (e₁ : E
     · iapply (BWP.wp_bind (K := fill (Expr := Expr) K) (e := e₂) (Φ := Ψ)).2 $$ Hwp
     · iexact Hlist
 
-/-- Every `AbstractEctxLangCompletenessGen` gives an
-`AbstractLangCompletenessGen`. -/
 instance abstract_ectx_to_completeness :
     AbstractLangCompletenessGen wp where
   heap_inv := AEC.heap_inv

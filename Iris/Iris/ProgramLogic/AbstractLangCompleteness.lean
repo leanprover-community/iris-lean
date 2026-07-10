@@ -79,21 +79,14 @@ variable [CInvG GF]
 /-- Namespace under which the completeness invariant lives. -/
 public def completenessN : Namespace := nroot .@ (1 : Pos)
 
-/-- The configuration invariant: ownership of a current configuration
-(thread pool + state) reachable from the initial one, with the heap and
-thread-pool invariants. -/
 public def cfgInv (Cini : List Expr × State) (f : Forking) : IProp GF := iprop%
   ∃ cfg : List Expr × State,
     ACG.heap_inv cfg.1 cfg.2 ∗ tpInv cfg.1 ∗ ⌜cfgSafeForking cfg f⌝ ∗ ⌜Cini -·->ₜₚ* cfg⌝
 
-/-- `cfgInv` is timeless: `heap_inv` is timeless by the class field, `tpInv` by
-`tpInv_timeless`, and the reachability/safety conjunct is pure. This is what
-lets the later be stripped off the invariant contents after opening it. -/
 instance cfgInv_timeless (Cini : List Expr × State) (f : Forking) :
     Timeless (cfgInv (wp := wp) Cini f) := by
   unfold cfgInv; infer_instance
 
-/-- Cancelable invariant package wrapping `cfgInv`. -/
 public def isCcfg (Cini : List Expr × State) (f : Forking) (γ : GName) : IProp GF :=
   CancelableInvariant.cinv completenessN γ (cfgInv (wp := wp) Cini f)
 
@@ -102,18 +95,12 @@ instance isCcfg_persistent (Cini : List Expr × State) (f : Forking) (γ : GName
   unfold isCcfg; infer_instance
 
 omit [CInvG GF] in
-/-- A separating conjunction over a list with a constant body depends only on the
-list's length. -/
 theorem bigSepL_const_congr {α β : Type _} {P : IProp GF} {l1 : List α} {l2 : List β}
     (h : l1.length = l2.length) : ([∗list] _x ∈ l1, P) ⊣⊢ ([∗list] _x ∈ l2, P) := by
   refine (BigSepL.bigSepL_replicate (l := l1) (P := P)).symm.trans
     (BiEntails.trans ?_ (BigSepL.bigSepL_replicate (l := l2) (P := P)))
   rw [h]; exact .rfl
 
-/-- Split the cancelable-invariant fraction `own γ ⟨qc⟩` into `l.length + 1` equal
-pieces: one for the current thread, plus one piece per forked thread in `l`. The
-fraction type must support `n`-way division, hence the specialization to `Qp`.
-Mirrors `fractional_divide_n` in `framework/thread_pool.v`. -/
 theorem own_divide_forks {α : Type _} (γ : GName) (qc : Qp) (l : List α) :
     CancelableInvariant.own (GF := GF) γ qc ⊢
       CancelableInvariant.own γ (qc.divide_even (l.length + 1) (Nat.succ_pos _) : Qp) ∗
@@ -126,8 +113,6 @@ theorem own_divide_forks {α : Type _} (γ : GName) (qc : Qp) (l : List α) :
     ((qc.divide_even (l.length + 1) (Nat.succ_pos _)) : Qp))).1.trans
     (sep_comm.1.trans (sep_mono_right (bigSepL_const_congr (by simp)).1)))
 
-/-- When there are no forks (`l = []`), dividing by `l.length + 1 = 1` is the
-identity. This is the algebraic fact behind `f = doesNotFork → q = q'`. -/
 theorem qp_div_ofPNat_succ_nil {α : Type _} (qc : Qp) {l : List α} (h : l = []) :
     qc.divide_even (l.length + 1) (Nat.succ_pos _) = qc := by
   subst h
@@ -162,7 +147,6 @@ theorem weakestpre_completeness
     obtain rfl := (coe_of_toVal_eq_some Hv).symm; clear Hv
     imodintro
     ileft
-    -- TODO: Can iframe be improved to supply these directly?
     have Hframe1 : Context (Expr := Expr) id := by infer_instance
     have Hframe2 : (↑v : Expr) = id ↑v := rfl
     have Hframe3 : Atomic Atomicity.WeaklyAtomic (↑v : Expr) := val_atomic
@@ -194,15 +178,12 @@ theorem weakestpre_completeness
       iframe %Hctx %Heq %Hatom
       iapply H
       iintro !> %κ %v₂ %σ₂' %Hefs %Hbase He HtpInv
-      -- Divide the fraction `q` among the current thread and the `length Hefs` forks.
       icases own_divide_forks γ q Hefs $$ Hq with ⟨Hq, Hefsfrac⟩
-      -- Register the forked threads and update the current thread to `K ↑v₂`.
       imod (tpInv_update cfg.fst n e (K ↑v₂)) $$ HtpInv He with ⟨HtpInv, He⟩
       imod (tpInv_new_threads Hefs (cfg.fst.set n (K ↑v₂))) $$ HtpInv with ⟨HtpInv, Hefs_threads⟩
       imodintro
       isplitl [Hclose Hq He HtpInv]
-      · -- Current thread: close the invariant at the new configuration, then recurse.
-        iintro Hheap
+      · iintro Hheap
         have Hprim : (e, cfg.snd) -<κ>-> (K ↑v₂, σ₂', Hefs) := Heq ▸ Context.primStep_fill Hbase
         obtain ⟨Hsafe', Hnf⟩ := cfg_safeStep Hsafe Hlu Hprim
         imod Hclose $$ [Hheap HtpInv] with -
@@ -223,8 +204,7 @@ theorem weakestpre_completeness
         rw [← Hfork hnf]
         congr 1
         exact (qp_div_ofPNat_succ_nil q (Hnf hnf)).symm
-      · -- Forked threads: recurse on each, discarding the postcondition.
-        ihave Hcomb : iprop([∗list] k ↦ e' ∈ Hefs,
+      · ihave Hcomb : iprop([∗list] k ↦ e' ∈ Hefs,
             (((cfg.fst.set n (K ↑v₂)).length + k) ↪thread e') ∗
             CancelableInvariant.own γ
               (q.divide_even (Hefs.length + 1) (Nat.succ_pos _) : Qp))
@@ -252,12 +232,10 @@ theorem weakestpre_completeness
       iintro %e₂ %efs H
       imod CancelableInvariant.acc Hn $$ [$] [$] with ⟨>Hinv2, Hq, Hclose⟩
       icases Hinv2 with ⟨%cfg2, Hheap, Htpinv, %Hsafe2, %Hreach2⟩
-      -- Use the step-producer `H` against the freshly-opened invariant content.
       imod H $$ [Hheap Htpinv] with ⟨%κ, %σ1', %Hprim, He, Htpinv, Hhp⟩
       · iframe Hheap Htpinv
         ipureintro
         exact cfgSafe_of_cfgSafeForking Hsafe2
-      -- Divide the fraction and register the new threads.
       icases own_divide_forks γ q efs $$ Hq with ⟨Hq, Hefsfrac⟩
       ihave %Hlu2 := tpInv_lookup $$ Htpinv He
       obtain ⟨Hsafe2', Hforking2⟩ := cfg_safeSteps Hsafe2 Hlu2 Hprim
@@ -271,8 +249,7 @@ theorem weakestpre_completeness
         exact ⟨Hsafe2', Hreach2.trans (cfg_steps Hlu2 Hprim)⟩
       imodintro
       isplitl [Hq He]
-      · -- Current thread continues with `e₂`; recurse.
-        iapply LWP.wp_wand $$ [Hq He]
+      · iapply LWP.wp_wand $$ [Hq He]
         · iapply IH $$ Hq He
         iintro %v ⟨Hthread, %q', Hq', %Hfork⟩
         iframe Hthread
@@ -283,8 +260,7 @@ theorem weakestpre_completeness
         rw [← Hfork hnf]
         congr 1
         exact (qp_div_ofPNat_succ_nil q (Hforking2 hnf)).symm
-      · -- Forked threads: recurse on each, discarding the postcondition.
-        ihave Hcomb : iprop([∗list] k ↦ e' ∈ efs,
+      · ihave Hcomb : iprop([∗list] k ↦ e' ∈ efs,
             (((cfg2.fst.set n e₂).length + k) ↪thread e') ∗
             CancelableInvariant.own γ
               (q.divide_even (efs.length + 1) (Nat.succ_pos _) : Qp))
@@ -300,10 +276,7 @@ theorem weakestpre_completeness
         trivial
 
 
-/-- **Top-level theorem**: `adequate` gives a WP with a pure postcondition.
-This is the entry point consumed by the heap-lang case study. Stated on the
-generic `AbstractLangCompletenessGen`, carrying `[InvOpenAbstractWP wp]`
-(mirrors Rocq's `abstract_weakestpre_gen_magic` hypothesis). -/
+/-- `adequate` gives a WP with a pure postcondition from an `adequate` fact. -/
 theorem weakestpre_sem_completeness
     (e : Expr) (σ : State) (φ : Val → Prop)
     (Hade : adequate .NotStuck e σ (fun v _ => φ v)) :
@@ -354,7 +327,6 @@ theorem weakestpre_sem_completeness
     subst Hlu
     exact Hade.adequate_result rest σ2 v Hreach2
 
-/-- Strong nofork variant. -/
 theorem weakestpre_sem_completeness_nofork_strong
     (e : Expr) (σ : State) (φ : Val → State → Prop)
     (Hade : AdequateNoFork .NotStuck e σ (fun v σ' => φ v σ')) :
@@ -413,7 +385,6 @@ theorem weakestpre_sem_completeness_nofork_strong
     ipureintro
     exact Hade.result Hreach2
 
-/-- User-facing nofork variant. -/
 theorem weakestpre_sem_completeness_nofork
     (e : Expr) (σ : State) (φ : Val → State → Prop)
     (Hade : AdequateNoFork .NotStuck e σ (fun v σ' => φ v σ')) :
