@@ -38,7 +38,7 @@ section proof
 noncomputable def GF : BundledGFunctors := fun n =>
   match n with
   | 0  => ⟨InvMapF, by infer_instance⟩
-  | 1  => ⟨constOF (DisjointLeibnizSet CoPset), by infer_instance⟩
+  | 1  => ⟨constOF CoPsetDisjL, by infer_instance⟩
   | 2  => ⟨constOF (DisjointLeibnizSet PosSet), by infer_instance⟩
   | 3  => ⟨AuthURF (constOF Credit), by infer_instance⟩
   | _  => ⟨constOF Unit, by infer_instance⟩
@@ -62,7 +62,7 @@ example : True := by
   simp only [Nat.repeat]
   icases inv_alloc nroot ⊤ iprop(True) $$ [] with >#Hinv
   · itrivial
-  imod inv_acc ⊤ $$ Hinv with ⟨HP, Hcl⟩
+  imod inv_acc $$ Hinv with ⟨HP, Hcl⟩
   · rw [nclose_root]; exact subset_refl
   imod Hcl $$ HP with HP
   iapply fupd_mask_intro empty_subset

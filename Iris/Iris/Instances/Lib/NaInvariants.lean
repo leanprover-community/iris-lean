@@ -20,7 +20,7 @@ namespace Iris
 open BI CMRA OFE Iris Std LawfulSet DisjointLeibnizSet COFE
 
 abbrev NaInvF : OFunctorPre :=
-  ProdOF (constOF (DisjointLeibnizSet CoPset)) (constOF (DisjointLeibnizSet PosSet))
+  ProdOF (constOF CoPsetDisjL) (constOF (DisjointLeibnizSet PosSet))
 
 @[rocq_alias na_invG]
 class NaInvG (GF : BundledGFunctors) where
@@ -182,7 +182,7 @@ nonrec theorem inv_acc {p : NaInvPoolName} {E F : CoPset} {N : Namespace} {P : I
     iassumption
   icases (own_union disjoint_diff_right).mp $$ [HtokN] with ⟨Htoki, HtokNdi⟩
   · rw [← HNminusi]; iassumption
-  imod inv_acc _ _ _ HNE $$ Hinv with ⟨Hcontent, Hclose⟩
+  imod inv_acc HNE $$ Hinv with ⟨Hcontent, Hclose⟩
   icases Hcontent with (⟨HP, >Hdis⟩ | >Htoki2)
   · ihave Hreturn : ▷ (P ∗ iOwn (E := W.inv) p (.valid ∅, .valid {i}) ∨ own p {i}) $$ [Htoki]
     · inext; iright; iassumption
@@ -191,7 +191,7 @@ nonrec theorem inv_acc {p : NaInvPoolName} {E F : CoPset} {N : Namespace} {P : I
     isplitl [HP]; iassumption
     isplitl [HtokRest]; iassumption
     iintro ⟨HPret, HtokFret⟩
-    imod inv_acc _ _ _ HNE $$ Hinv with ⟨Hcontent2, Hclose2⟩
+    imod inv_acc HNE $$ Hinv with ⟨Hcontent2, Hclose2⟩
     icases Hcontent2 with (⟨_HPconflict, >Hdis2⟩ | >Htoki_back)
     · iexfalso
       ihave Hk := iOwn_op (E := W.inv) $$ [Hdis Hdis2]

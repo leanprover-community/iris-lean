@@ -41,10 +41,10 @@ theorem bigSepM_eqv_of_perm {Φ : K → V → PROP} {m₁ m₂ : M V} (h : m₁ 
     ([∗map] k ↦ v ∈ m₁, Φ k v) ⊣⊢ ([∗map] k ↦ v ∈ m₂, Φ k v) :=
   equiv_iff.mp (bigOpM_eqv_of_perm _ h)
 
-/-- A `bigSepM` over a map equivalent to the empty map is `emp`. -/
-theorem bigSepM_eqv_empty {Φ : K → V → PROP} {m : M V} (h : m ≡ₘ ∅) :
-    ([∗map] k ↦ v ∈ m, Φ k v) ⊣⊢ emp :=
-  (bigSepM_eqv_of_perm h).trans bigSepM_empty
+/-- A `bigSepM` over the empty map is `emp`. -/
+theorem bigSepM_eqv_empty {Φ : K → V → PROP} {m : M V} (h : m = ∅) :
+    ([∗map] k ↦ v ∈ m, Φ k v) ⊣⊢ emp := by
+  simp [h]
 
 @[rocq_alias big_sepM_singleton]
 theorem bigSepM_singleton {Φ : K → V → PROP} {i : K} {x : V} :
@@ -438,8 +438,7 @@ theorem bigSepM_union [DecidableEq K] {Φ : K → V → PROP} {m₁ m₂ : M V} 
 theorem bigSepM_subseteq [DecidableEq K] {Φ : K → V → PROP} {m₁ m₂ : M V}
     [∀ k v, Affine (Φ k v)] (h : m₂ ⊆ m₁) :
     ([∗map] k ↦ x ∈ m₁, Φ k x) ⊢ [∗map] k ↦ x ∈ m₂, Φ k x :=
-  (equiv_iff.mp <| bigOpM_eqv_of_perm Φ <| union_difference_cancel h).2.trans <|
-  (bigSepM_union disjoint_difference_right).1.trans sep_elim_left
+  union_difference_cancel h ▸ (bigSepM_union disjoint_difference_right).1.trans sep_elim_left
 
 -- FIXME: Refactor for readability
 @[rocq_alias big_sepM_lookup_acc_impl]
@@ -499,19 +498,7 @@ theorem bigSepM_impl_strong [DecidableEq K] {M₂ : Type _ → Type _} {V₂ : T
     ⊢ ([∗map] k ↦ y ∈ m₂, Ψ k y) ∗
       [∗map] k ↦ x ∈ filter (fun k _ => (get? m₂ k).isNone) m₁, Φ k x
   suffices P m₂ from this m₁
-  refine LawfulFiniteMap.induction_on (fun _ _ heq IH m₁ => ?hequiv) ?hemp ?hind m₂
-  case hequiv =>
-    refine (sep_mono_right ?_).trans <| (IH m₁).trans ?_
-    · refine intuitionistically_mono ?_
-      refine forall_mono fun k => ?_
-      refine forall_mono fun y => ?_
-      refine wand_mono_right ?_
-      refine imp_intro_swap ?_
-      refine pure_elim_left ?_
-      refine fun hget => pure_imp_elim (heq k ▸ hget)
-    refine sep_mono (equiv_iff.mp <| bigOpM_eqv_of_perm Ψ heq).1 ?_
-    refine (equiv_iff.mp <| bigOpM_eqv_of_perm Φ ?_).1
-    exact fun k => by cases get? m₁ k <;> simp [get?_filter, heq k]
+  refine LawfulFiniteMap.induction_on ?hemp ?hind m₂
   case hemp =>
     refine fun m₁ => ?_
     refine (sep_mono_right Affine.affine).trans ?_
@@ -568,8 +555,22 @@ theorem bigSepM_impl_strong [DecidableEq K] {M₂ : Type _ → Type _} {V₂ : T
       refine sep_mono_right <| sep_mono_right (equiv_iff.mp <| bigOpM_eqv_of_perm Φ fun k => ?_).2
       by_cases hki : i = k <;> simp_all [get?_filter, get?_insert, get?_delete]
 
--- TODO: `big_sepM_kmap` and `big_sepM_map_seq` require map operations
--- which are not yet available in `PartialMap`.
+-- TODO: `big_sepM_kmap` requires map operations which are not yet available in `PartialMap`.
+
+theorem bigSepM_map_seq {M' : Type _ → Type _} [LawfulFiniteMap M' Nat] {V : Type _}
+    {Φ : Nat → V → PROP} {start : Nat} {l : List V} :
+    ([∗map] k ↦ v ∈ FiniteMap.map_seq (M := M') start l, Φ k v) ⊣⊢
+    ([∗list] i ↦ v ∈ l, Φ (start + i) v) := by
+  induction l generalizing start with
+  | nil => simp [LawfulFiniteMap.map_seq_nil]
+  | cons v l ih =>
+      have Hget : get? (FiniteMap.map_seq (M := M') (start + 1) l) start = none := by
+        rw [LawfulFiniteMap.get?_map_seq, if_neg (by omega)]
+      rw [LawfulFiniteMap.map_seq_cons]
+      refine (bigSepM_insert Hget).trans (sep_congr .rfl ?_)
+      refine .trans (ih (start := start + 1)) ?_
+      refine .of_eq ?_
+      grind
 
 /-! ## Map–Set Interaction -/
 

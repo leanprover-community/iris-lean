@@ -159,6 +159,11 @@ syntax:100 "fork(" hl_exp  ")" : hl_exp
 /-- assert -/
 syntax:100 "assert(" hl_exp  ")" : hl_exp
 
+/-- prophecy operations -/
+syntax:100 "newProph()" : hl_exp
+syntax:100 "resolve(" hl_exp ", " hl_exp ", " hl_exp ")" : hl_exp
+syntax:100 "resolveProph(" hl_exp ", " hl_exp ")" : hl_exp
+
 /-- holes -/
 syntax "_" : hl_exp
 
@@ -265,6 +270,9 @@ macro_rules
   | `(hl(faa($e1, $e2))) => `(Exp.faa hl($e1) hl($e2))
   | `(hl(fork($e1))) => `(Exp.fork hl($e1))
   | `(hl(assert($e1))) => `(Exp.assert hl($e1))
+  | `(hl(newProph())) => `(Exp.newProph)
+  | `(hl(resolve($e1, $e2, $e3))) => `(Exp.resolve hl($e1) hl($e2) hl($e3))
+  | `(hl(resolveProph($e1, $e2))) => `(hl(resolve(#(); #(), $e1, $e2)))
 
 /-- delaborating Binders -/
 @[app_unexpander Binder.anon]
@@ -476,4 +484,18 @@ def unexpFork : Unexpander
 @[app_unexpander Exp.assert]
 def unexpAssert : Unexpander
   | `($_ $e1) => do `(hl(assert($(← unpackHLExp e1))))
+  | _ => throw ()
+
+@[app_unexpander Exp.newProph]
+def unexpNewProph : Unexpander
+  | `($_) => `(hl(newProph()))
+
+partial def unexpResolveProph : Term → UnexpandM Term
+  | `(hl(resolve(#(); #(), $e1, $e2))) => do `(hl(resolveProph($e1, $e2)))
+  | x => return x
+
+@[app_unexpander Exp.resolve]
+def unexpResolve : Unexpander
+  | `($_ $e1 $e2 $e3) => do
+    unexpResolveProph $ ← `(hl(resolve($(← unpackHLExp e1), $(← unpackHLExp e2), $(← unpackHLExp e3))))
   | _ => throw ()

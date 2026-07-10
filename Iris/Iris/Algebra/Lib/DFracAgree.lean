@@ -30,6 +30,8 @@ def mk [OFE A] (d : DFrac) (a : A) : DFracAgreeR A := (d, toAgree a)
 
 variable {A : Type _} [OFE A]
 
+instance instLeibniz [Leibniz A] : Leibniz (DFracAgreeR A) := inferInstance
+
 @[rocq_alias to_dfrac_agree_ne]
 instance mk_ne {d : DFrac} : NonExpansive (mk d : A → DFracAgreeR A) where
   ne _ _ _ h := ⟨.rfl, NonExpansive.ne (f := toAgree) h⟩
@@ -101,7 +103,7 @@ theorem includedN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
     exact ⟨(inc_iff_incN (α := DFrac) n).mpr ⟨zd, hd⟩, Agree.toAgree_includedN.mp ⟨za, ha⟩⟩
   · rintro ⟨hdinc, ha⟩
     obtain ⟨zd, hd⟩ := (inc_iff_incN (α := DFrac) n).mp hdinc
-    exact ⟨(zd, toAgree a₁), hd, (NonExpansive.ne ha.symm).trans (Equiv.dist Agree.idemp.symm)⟩
+    exact ⟨(zd, toAgree a₁), hd, (toAgree.ne.ne ha.symm).trans (Equiv.dist Agree.idemp.symm)⟩
 
 @[rocq_alias dfrac_agree_update_2]
 theorem update₂ {d₁ d₂ : DFrac} {a₁ a₂ a' : A} (hd : d₁ • d₂ = .own 1) :

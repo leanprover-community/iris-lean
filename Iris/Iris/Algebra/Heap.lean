@@ -72,9 +72,9 @@ instance Heap.instCOFE [LawfulPartialMap M K] [COFE V] : COFE (M V) where
 instance instDiscreteHeap [PartialMap M K] [OFE V] [Discrete V] : Discrete (M V) where
   discrete_0 h k := Discrete.discrete_0 (h k)
 
-instance instLeibnizHeap [ExtensionalPartialMap M K] [OFE V] [Leibniz V] : Leibniz (M V) where
+instance instLeibnizHeap [LawfulPartialMap M K] [OFE V] [Leibniz V] : Leibniz (M V) where
   eq_of_eqv h :=
-    ExtensionalPartialMap.equiv_iff_eq.mp (fun i => Leibniz.eq_of_eqv (h i))
+    LawfulPartialMap.equiv_iff_eq.mp (fun i => Leibniz.eq_of_eqv (h i))
 
 instance instDiscreteESingleton [LawfulPartialMap M K] [DecidableEq K] [OFE V] {v : V}
     [ha : DiscreteE v] {k : K} : DiscreteE (PartialMap.singleton (M := M) k v) where
@@ -637,7 +637,7 @@ abbrev PartialMapOF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
   fun A B _ _ => H (F A B)
 
 instance {F} [COFE.OFunctor F] : COFE.OFunctor (PartialMapOF H F) where
-  cofe := inferInstance
+  ofe := inferInstance
   map f g := mapO H (COFE.OFunctor.map f g)
   map_ne {_} _ _ _ _ _ _ _ := by
     constructor
