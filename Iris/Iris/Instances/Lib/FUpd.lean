@@ -587,7 +587,32 @@ end Iris
 
 public meta section
 
-open Lean Elab Tactic Meta Qq Iris Iris.ProofMode
+open Lean Elab Tactic Meta Qq Iris.BI Iris Iris.ProofMode
+
+@[rocq_alias tac_lc_add_laterN_split]
+theorem tac_lc_add_laterN_split {GF : BundledGFunctors} [InvGS GF]
+    {n m newM : Nat} {E : CoPset} {P Q goal : IProp GF}
+    (inst : AddModal iprop(|={E}=> goal) goal goal)
+    (h1 : m = n + newM)
+    (h2 : iprop(P ∗ £ newM) ⊢ ▷^[n] Q)
+    (h3 : Q ⊢ goal) :
+    iprop(P ∗ £ m) ⊢ goal := by
+  subst h1
+  have h4 : ▷^[n] goal ∗ £ n ⊢ |={E}=> goal := by
+    have hlc : iprop(£ n ∗ ▷^[n] |={E}=> goal) ⊢ iprop(|={E}=> goal) :=
+      wand_entails ((lc_fupd_add_laterN n).trans wand_curry.mp)
+    exact sep_comm.mp.trans <|
+      (sep_mono_right (laterN_mono n fupd_intro)).trans hlc
+  calc
+    _ ⊢ P ∗ £ n ∗ £ newM                := sep_mono_right lc_split.mp
+    _ ⊢ P ∗ £ newM ∗ £ n                := sep_mono_right sep_comm.mp
+    _ ⊢ (P ∗ £ newM) ∗ £ n              := sep_assoc.mpr
+    _ ⊢ ▷^[n] Q ∗ £ n                  := sep_mono_left h2
+    _ ⊢ ▷^[n] goal ∗ £ n               := sep_mono_left <| laterN_mono n h3
+    _ ⊢ (|={E}=> goal)                  := h4
+    _ ⊢ (|={E}=> goal) ∗ True           := sep_true.mpr
+    _ ⊢ (|={E}=> goal) ∗ (goal -∗ goal) := sep_mono_right wand_rfl
+    _ ⊢ goal                            := inst.add_modal
 
 elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
   let n := match n with | none => 1 | some n => n.raw.toNat
@@ -596,7 +621,7 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
     let ivar ← hyps.findWithInfo h
 
     -- Search for the later credit hypothesis from the context
-    let some ⟨⟨name, m⟩, e', hyps', out, out', p, _, pfEq⟩ ← hyps.removeG false <|
+    let some ⟨⟨name, m⟩, e', hyps', out, out', _, _, pfEq⟩ ← hyps.removeG false <|
       fun name ivar' p ty => do
         if ivar != ivar' then return none
         match matchBool p with
@@ -619,19 +644,19 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
     | throwError "inext: AddModal type class synthesis failed {goal}"
 
     -- Update the later credit hypothesis
-    let newM : Q(Nat) := mkNatLit (m - n)
-
-    let newTy : Q($prop) := mkApp out'.appFn! newM
+    let newM : Q(Credit) ← pure <| mkNatLit (m - n)
+    let newTy : Q($prop) ← pure <| mkApp out'.appFn! newM
     let newHyps : Hyps bi q(iprop($e' ∗ □?false $newTy)) := Hyps.add _ name ivar q(false) newTy hyps'
 
-    let nQ : Q(Nat) := mkNatLit n
-    let modality := q(@modality_laterN $prop $nQ $bi)
-    let ⟨_, newHyps', pf'⟩ ← iModAction newHyps modality
-
+    -- Generate the proof goal with the updated hypothesis
+    let n : Q(Credit) ← pure <| mkNatLit n
+    let modality := q(@modality_laterN $prop $n $bi)
+    let ⟨_, newHyps', pfModAction⟩ ← iModAction newHyps modality
     let pf ← addBIGoal newHyps' goal
 
-    -- let pf'' : Q($e' ∗ $out ⊢ $goal) := sorry
-    -- mvar.assign q($(pfEq).mp.trans $pf'')
+    let hm : Q($m = $n + $newM) ← mkDecideProof q($m = $n + $newM)
+    let pf'' : Q($e' ∗ $out ⊢ $goal) ← mkAppM ``tac_lc_add_laterN_split #[inst, hm, pfModAction, pf]
+    mvar.assign q($(pfEq).mp.trans $pf'')
 
 end
 

@@ -2083,7 +2083,7 @@ example [BI PROP] (P Q : PROP) : ⊢ ▷ P -∗ Q -∗ ▷ (P ∗ Q) := by
   icombine HP HQ as HPQ
   iassumption
 
-variable {hlc : HasLC} {GF : BundledGFunctors} [InvGS_gen hlc GF]
+variable {GF : BundledGFunctors} [InvGS GF]
 
 /- Tests `inext` with later credits consumption. -/
 example (E : CoPset) (P : IProp GF) : ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
