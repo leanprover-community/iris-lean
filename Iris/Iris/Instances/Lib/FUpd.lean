@@ -643,7 +643,7 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
     -- Update the later credit hypothesis
     let newM : Q(Credit) ← pure <| mkNatLit (m - n)
     let newTy : Q($prop) ← pure <| mkApp out'.appFn! newM
-    let newHyps : Hyps bi q(iprop($e' ∗ □?false $newTy)) := Hyps.add _ name ivar q(false) newTy hyps'
+    let newHyps := Hyps.add _ name ivar q(false) newTy hyps'
 
     -- Generate the proof goal with the updated hypothesis
     let n : Q(Credit) ← pure <| mkNatLit n
@@ -652,7 +652,8 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
     let pf ← addBIGoal newHyps' goal
 
     let hm : Q($m = $n + $newM) ← mkDecideProof q($m = $n + $newM)
-    let pf'' : Q($e' ∗ $out ⊢ $goal) ← mkAppM ``tac_lc_add_laterN_split #[inst, hm, pfModAction, pf]
+    let pf'' : Q($e' ∗ $out ⊢ $goal) ←
+      mkAppM ``tac_lc_add_laterN_split #[inst, hm, pfModAction, pf]
     mvar.assign q($(pfEq).mp.trans $pf'')
 
 end
