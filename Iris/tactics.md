@@ -33,7 +33,7 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 - `isplitl [`*H₁* ... *Hₙ*`]` — Split a separating conjunction (`∗`); the hypotheses *Hᵢ* go to the left goal, all remaining spatial hypotheses to the right.
 - `isplitr [`*H₁* ... *Hₙ*`]` — Like `isplitl`, but the listed hypotheses go to the right goal.
 - `isplitl` / `isplitr` — Split a separating conjunction, giving *all* spatial hypotheses to the left (`isplitl`) or right (`isplitr`) goal.
-- `iframe` [*selPats*](#selection-patterns) — Cancel the selected hypotheses against matching parts of the goal. Solves the goal completely if the leftover is `True` or `emp` (with affine context).
+- `iframe` [*selPats*](#selection-patterns) — Cancel the selected hypotheses against matching parts of the goal. Solves the goal completely if the leftover is `True` or `emp` (with affine context). One can use `set_option iris.frame.instantiateExists false` to disable the framing of existentially quantified propositions.
 - `iframe` — Equivalent to `iframe ∗` (frame all spatial hypotheses).
 - `icombine` [*selPats*](#selection-patterns) `as` [*casesPat*](#cases-patterns) — Combine the selected hypotheses into one using the `CombineSepAs` type class (defaults to `∗`) and destruct the result with [*casesPat*](#cases-patterns).
 - `icombine` [*selPats*](#selection-patterns) `gives` [*casesPat*](#cases-patterns) — Derive persistent information (e.g. validity of combined ghost state) from the selected hypotheses via `CombineSepGives`, keeping the originals.
