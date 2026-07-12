@@ -239,7 +239,7 @@ theorem frame_or [BI PROP] p (R P1 P2 Q1 Q2 Q' : PROP)
 end tactic_theorems
 
 meta section tactics
-open Lean
+open Lean Elab Meta Std
 
 /-- corresponds to the MaybeFrame typeclass in Rocq -/
 @[rocq_alias MaybeFrame', rocq_alias maybe_frame_frame]
@@ -356,4 +356,16 @@ def frameOr : SynthTactic := λ e => do
 
 @[ipm_tactic_instance Frame _ _ iprop(∃ _, _) _]
 def frameExist : SynthTactic := λ e => do
+  let_expr Frame prop bi p R P _ := e | return .continue
+  have u := e.getAppFn.constLevels![0]!
+  have prop : Q(Type u) := prop
+  have _bi : Q(BI $prop) := bi
+  have p : Q(Bool) := p
+  have R : Q($prop) := R
+  let_expr BI.exists _ _ α Φ := P | return .continue
+
+  let .sort v ← inferType α | return .continue
+  have α : Q(Sort v) := α
+  have Φ : Q($α → $prop) := Φ
+
   return .continue
