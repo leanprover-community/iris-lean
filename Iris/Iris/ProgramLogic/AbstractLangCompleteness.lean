@@ -114,8 +114,6 @@ theorem qp_div_ofPNat_succ_nil {α : Type _} (qc : Qp) {l : List α} (h : l = []
     qc.divide_even (l.length + 1) (Nat.succ_pos _) = qc := by
   simp only [h, List.length_nil, Nat.zero_add]; grind
 
--- Here
-
 theorem weakestpre_completeness (Cini : List Expr × State) (f : Forking) (γ : GName) (q : Qp)
     (n : Nat) (e : Expr) :
     isCcfg (TI := TI) (wp := wp) Cini f γ -∗
@@ -137,14 +135,15 @@ theorem weakestpre_completeness (Cini : List Expr × State) (f : Forking) (γ : 
   ihave %Hlu := tpInv_lookup $$ [$] [$]
   have ⟨HnotStuck, Hforking⟩ := Hsafe .refl
   rcases HnotStuck (List.mem_of_getElem? Hlu) with Hv|HnotStuck'
-  · replace ⟨v, Hv⟩ := Option.isSome_iff_exists.mp Hv
+  · iclear Hinv
+    replace ⟨v, Hv⟩ := Option.isSome_iff_exists.mp Hv
     obtain rfl := (coe_of_toVal_eq_some Hv).symm; clear Hv
     imodintro
     ileft
+    iexists id, v
     have Hframe1 : Context (Expr := Expr) id := by infer_instance
     have Hframe2 : (↑v : Expr) = id ↑v := rfl
     have Hframe3 : Atomic Atomicity.WeaklyAtomic (↑v : Expr) := val_atomic
-    iexists id, v
     iframe %Hframe1 %Hframe2 %Hframe3
     clear Hframe1 Hframe2 Hframe3
     simp only [id_eq]
@@ -166,7 +165,8 @@ theorem weakestpre_completeness (Cini : List Expr × State) (f : Forking) (γ : 
         with (⟨%K, %e₁, %Hctx, %Heq, %Hval, %Hatom, H⟩|⟨Hheap, Htpinv, H⟩)
     · have aux : cfgSafe (cfg.fst, cfg.snd) := cfgSafe_of_cfgSafeForking Hsafe
       iframe %aux Hheap HtpInv
-    · imodintro
+    · iclear Hinv
+      imodintro
       ileft
       iexists K, e₁
       iframe %Hctx %Heq %Hatom
@@ -269,10 +269,10 @@ theorem weakestpre_completeness (Cini : List Expr × State) (f : Forking) (γ : 
         ipureintro
         trivial
 
+-- Here
 
 /-- `adequate` gives a WP with a pure postcondition from an `adequate` fact. -/
-theorem weakestpre_sem_completeness
-    (e : Expr) (σ : State) (φ : Val → Prop)
+theorem weakestpre_sem_completeness (e : Expr) (σ : State) (φ : Val → Prop)
     (Hade : adequate .NotStuck e σ (fun v _ => φ v)) :
     ⊢ tpInvIni (TI := TI) -∗
       ACG.heap_inv [e] σ -∗
