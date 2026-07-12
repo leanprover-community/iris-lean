@@ -353,3 +353,7 @@ def frameOr : SynthTactic := λ e => do
       throwError "MakeOr should always succeed"
     return .success q(frame_or $p $R $P1 $P2 $Q1 $Q2 $Q')
   return .continue
+
+@[ipm_tactic_instance Frame _ _ iprop(∃ _, _) _]
+def frameExist : SynthTactic := λ e => do
+  return .continue
