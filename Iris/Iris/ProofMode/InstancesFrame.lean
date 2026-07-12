@@ -383,6 +383,12 @@ def frameOr : SynthTactic := λ e => do
     return .success q(frame_or $p $R $P1 $P2 $Q1 $Q2 $Q')
   return .continue
 
+def frameHereApplies {u : Level} {prop : Q(Type u)} (_bi : Q(BI $prop)) (R P : Q($prop)) :
+    MetaM Bool := withoutModifyingState do
+  if ← isDefEq P R then return true
+  let_expr BI.affinely _ _ R' := R | return false
+  isDefEq P R'
+
 @[ipm_tactic_instance Frame _ _ iprop(_ → _) _]
 def frameImp : SynthTactic := λ e => do
   let_expr Frame prop bi p R P _ := e | return .continue
@@ -392,6 +398,9 @@ def frameImp : SynthTactic := λ e => do
   have p : Q(Bool) := p
   have R : Q($prop) := R
   let_expr BI.imp _ _ P1 P2 := P | return .continue
+
+  -- `frame_here` has higher priority than this instance
+  if ← frameHereApplies bi R P then return .continue
 
   have P1 : Q($prop) := P1
   have P2 : Q($prop) := P2
@@ -420,6 +429,9 @@ def frameWand : SynthTactic := fun e => do
   have R : Q($prop) := R
   let_expr BI.wand _ _ P1 P2 := P.headBeta | return .continue
 
+  -- `frame_here` has higher priority than this instance
+  if ← frameHereApplies bi R P then return .continue
+
   have P1 : Q($prop) := P1
   have P2 : Q($prop) := P2
   let Q2 : Q($prop) ← mkFreshExprMVarQ q($prop)
@@ -436,6 +448,9 @@ def frameForall : SynthTactic := fun e => do
   have p : Q(Bool) := p
   have R : Q($prop) := R
   let_expr BI.forall _ _ α Φ := P | return .continue
+
+  -- `frame_here` has higher priority than this instance
+  if ← frameHereApplies bi R P then return .continue
 
   let .sort v ← inferType α | return .continue
   have α : Q(Sort v) := α
