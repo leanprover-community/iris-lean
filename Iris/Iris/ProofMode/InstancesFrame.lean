@@ -239,13 +239,13 @@ theorem frame_or [BI PROP] p (R P1 P2 Q1 Q2 Q' : PROP)
 @[rocq_alias frame_exist]
 theorem frame_exist [BI PROP] {α} (p : Bool) (R : PROP) (Φ : α → PROP)
     (a : α) (Q : PROP) (inst : Frame p R (Φ a) Q) :
-    Frame p R iprop(∃ x, Φ x) Q where
+    Frame p R iprop(BI.exists Φ) Q where
   frame := inst.frame.trans <| exists_intro a
 
 @[rocq_alias frame_exist_no_instantiate]
 theorem frame_exist_no_instantiate [BI PROP] {α} (p : Bool) (R : PROP) (Φ Ψ : α → PROP)
     (inst : ∀ a, Frame p R (Φ a) (Ψ a)) :
-    Frame p R iprop(∃ x, Φ x) iprop(∃ x, Ψ x) where
+    Frame p R iprop(BI.exists Φ) iprop(BI.exists Ψ) where
   frame := sep_exists_left.mp.trans <|
     exists_elim <| fun a => (inst a).frame.trans <| exists_intro a
 
@@ -381,6 +381,9 @@ def frameExist : SynthTactic := λ e => do
   have α : Q(Sort v) := α
   have Φ : Q($α → $prop) := Φ
 
+  -- Find the binder name so that it can be reused after framing
+  let bn := match Φ with | .lam n .. => n | _ => `x
+
   let a : Q($α) ← mkFreshExprMVarQ q($α)
   let G : Q($prop) ← mkFreshExprMVarQ q($prop)
   have body : Q($prop) := Expr.headBeta q($Φ $a)
@@ -397,8 +400,8 @@ def frameExist : SynthTactic := λ e => do
     -- For handling inner existential variables
     let G ← instantiateMVars G
     let inst ← instantiateMVars inst
-    have Ψ : Q($α → $prop) := .lam `a α (G.abstract #[a]) .default
-    have hAll : Q(∀ x, Frame $p $R ($Φ x) ($Ψ x)) := .lam `a α (inst.abstract #[a]) .default
+    have Ψ : Q($α → $prop) := .lam bn α (G.abstract #[a]) .default
+    have hAll : Q(∀ x, Frame $p $R ($Φ x) ($Ψ x)) := .lam bn α (inst.abstract #[a]) .default
     return .success q(frame_exist_no_instantiate $p $R $Φ $Ψ $hAll)
   else
     return .continue
