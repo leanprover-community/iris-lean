@@ -390,7 +390,15 @@ def frameExist : SynthTactic := λ e => do
 
   let a ← instantiateMVars a
   if !a.hasExprMVar then
+    -- Instantiate the existentially quantified variable with `a`
     have inst : Q(Frame $p $R ($Φ $a) $G) := inst
     return .success q(frame_exist $p $R $Φ $a $G $inst)
+  else if a.isMVar then
+    -- For handling inner existential variables
+    let G ← instantiateMVars G
+    let inst ← instantiateMVars inst
+    have Ψ : Q($α → $prop) := .lam `a α (G.abstract #[a]) .default
+    have hAll : Q(∀ x, Frame $p $R ($Φ x) ($Ψ x)) := .lam `a α (inst.abstract #[a]) .default
+    return .success q(frame_exist_no_instantiate $p $R $Φ $Ψ $hAll)
   else
     return .continue

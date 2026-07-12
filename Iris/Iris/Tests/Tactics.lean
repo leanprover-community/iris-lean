@@ -2385,10 +2385,24 @@ example [BI PROP] [BIAffine PROP] (Q : Nat → PROP) : (Q 0 ⊢ ∃ x, False ∨
   iframe
 
 /- Tests `iframe` with existential quantifiers -/
-example [BI PROP] {α} {β} (a : α) (b : β) (P : α → PROP) (Q : PROP) (R : β → PROP) :
-    ⊢ P a -∗ Q -∗ R b -∗ (∃ x, P x) ∗ Q ∗ (∃ x, R x) := by
-  iintro HP HQ HR
-  iframe
+example [BI PROP] {α} (a : α) {β} (b : β) (P : PROP)
+    (Q : α → PROP) (R : β → PROP) (S : PROP) :
+    ⊢ P -∗ Q a -∗ R b -∗ S -∗ ∃ n, Q n ∗ ∃ m, R m ∗ P ∗ S := by
+  iintro HP HQ HR HS
+  -- Instantiate the inner existential quantifier `m`
+  iframe HR
+  -- Keep the outer existential quantifier `n` around
+  iframe HP
+  -- Instantiate the outer existential quantifier `n`
+  iframe HQ
+  iassumption
+
+/- Tests `iframe` with multiple existential quantifiers framed at once -/
+example [BI PROP] {α} (a : α) {β} (b : β) (P : PROP)
+    (Q : α → PROP) (R : β → PROP) (S : PROP) :
+    ⊢ P -∗ Q a -∗ R b -∗ S -∗ ∃ n, Q n ∗ ∃ m, R m ∗ P ∗ S := by
+  iintro HP HQ HR HS
+  iframe HS HP HR HQ
 
 end iframe
 
