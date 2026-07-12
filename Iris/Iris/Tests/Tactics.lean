@@ -2411,6 +2411,15 @@ example [BI PROP] {α} (a : α) {β} (b : β) {γ} (c : γ)
   iintro HP HQ
   iframe
 
+/- Tests `iframe` with the framing of existential quantifiers disabled -/
+set_option iris.frame.instantiateExists false in
+example [BI PROP] {α} (a : α) (P : PROP) (Q : α → PROP) :
+    ⊢ P -∗ Q a -∗ ∃ n, P ∗ Q n := by
+  iintro HP HQ
+  iframe
+  iexists a
+  iassumption
+
 end iframe
 
 section icombine

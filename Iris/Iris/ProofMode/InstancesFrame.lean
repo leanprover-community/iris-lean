@@ -11,6 +11,17 @@ public import Iris.ProofMode.ClassesMake
 public meta import Iris.ProofMode.Expr
 public import Iris.Std.TC
 
+public meta section
+
+register_option iris.frame.instantiateExists : Bool := {
+  defValue := true
+  descr := "When set as `true`, `iframe` may instantiate existential \
+    quantifiers in the goal while framing. Set to false to restore the old\
+    behaviour of framing below existentials without instantiating them."
+}
+
+end
+
 @[expose] public section
 
 namespace Iris.ProofMode
@@ -253,6 +264,12 @@ end tactic_theorems
 
 meta section tactics
 open Lean Elab Meta Std
+
+def frameInstantiateExistsEnabled : MetaM Bool :=
+  return iris.frame.instantiateExists.get (← getOptions)
+
+def withFrameInstantiateExistsDisabled {α} (x : MetaM α) : MetaM α :=
+  withOptions (iris.frame.instantiateExists.set · false) x
 
 /-- corresponds to the MaybeFrame typeclass in Rocq -/
 @[rocq_alias MaybeFrame', rocq_alias maybe_frame_frame]
