@@ -16,8 +16,9 @@ public meta section
 register_option iris.frame.instantiateExists : Bool := {
   defValue := true
   descr := "When set as `true`, `iframe` may instantiate existential \
-    quantifiers in the goal while framing. Set to false to restore the old\
-    behaviour of framing below existentials without instantiating them."
+    quantifiers in the goal while framing. Set to `false` to allow framing \
+    below existential quantifiers without instantiating any existentially \
+    quantified variables."
 }
 
 end
