@@ -525,7 +525,6 @@ def frameExist : SynthTactic := λ e => do
     return .success q(frame_exist_no_instantiate $p $R $Φ $Ψ $inst)
 
 #rocq_ignore frame_exist_helper "Logic already handled in the metaprogram frameExist"
-#rocq_ignore FrameExistRequirements "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
 #rocq_ignore GatherEvarsEq "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
 #rocq_ignore TCCbnTele "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
 #rocq_ignore frame_texist "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
