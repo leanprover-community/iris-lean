@@ -907,6 +907,8 @@ instance addModal_forall {A : Type} [BI PROP] (P P' : PROP) (Φ : A → PROP)
     intro a
     exact (sep_mono_right (wand_mono .rfl (forall_elim a))).trans (h a).add_modal
 
+#rocq_ignore add_modal_tforall "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
+
 -- CombineSepAs
 @[rocq_alias maybe_combine_sep_as_default]
 instance (priority := default - 20) combineSepAs_default [BI PROP] (P Q : PROP) :
