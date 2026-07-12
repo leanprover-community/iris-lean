@@ -2404,6 +2404,12 @@ example [BI PROP] {α} (a : α) {β} (b : β) (P : PROP)
   iintro HP HQ HR HS
   iframe HS HP HR HQ
 
+/- Tests `iframe` with existential quantifers in various orders -/
+example [BI PROP] {α} (a : α) {β} (b : β) (P : α → β → PROP) (Q : β → α → γ → PROP) :
+    ⊢ P a b -∗ Q b a c -∗ ∃ x, ∃ y, (P x y ∗ ∃ z, Q y x z) := by
+  iintro HP HQ
+  iframe
+
 end iframe
 
 section icombine
