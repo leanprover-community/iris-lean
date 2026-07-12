@@ -69,11 +69,6 @@ instance frame_here_pure [BI PROP] {a : Bool} {φ : Prop} {Q : PROP}
     | @TCOr.l _ _ heq => by cases heq; refine h1.1
     | TCOr.r => (affinely_intro .rfl).trans <| affinely_affinelyIf.trans h1.1
 
-@[ipm_backtrack, rocq_alias frame_wand]
-instance frame_wand [BI PROP] p (R P1 P2 Q2 : PROP)
-    [h : Frame p R P2 Q2] : Frame p R iprop(P1 -∗ P2) iprop(P1 -∗ Q2) where
-  frame := wand_intro <| sep_assoc.1.trans <| (sep_mono_right wand_elim_left).trans h.frame
-
 @[ipm_backtrack, rocq_alias frame_affinely]
 instance frame_affinely [BI PROP] p (R P Q Q' : PROP)
     [hor : TCOr (TCEq p true) (QuickAffine R)]
@@ -117,41 +112,6 @@ instance frame_persistently [BI PROP] (R P Q Q' : PROP)
     persistently_sep_mpr.trans <|
     persistently_mono h1.frame
 
-@[ipm_backtrack, rocq_alias frame_forall]
-instance frame_forall {α} [BI PROP] p R (Φ Ψ : α → PROP)
--- TODO: add FrameInstantiateExistDisabled to the premise once supported
-    [h : ∀ a, Frame p R (Φ a) (Ψ a)] :
-    Frame p R iprop(∀ x, Φ x) iprop(∀ x, Ψ x) where
-  frame := forall_intro λ a => (sep_mono_right (forall_elim a)).trans (h a).1
-
-@[ipm_backtrack, rocq_alias frame_impl_persistent]
-instance frame_impl_persistent [BI PROP] (R P1 P2 Q2 : PROP)
-    [h : Frame true R P2 Q2] : Frame true R iprop(P1 → P2) iprop(P1 → Q2) where
-  frame := imp_intro <|
-    (and_mono_left persistently_and_intuitionistically_sep_left.2).trans <|
-    and_assoc.1.trans <|
-    (and_mono_right (and_comm.1.trans imp_elim_right)).trans <|
-    persistently_and_intuitionistically_sep_left.1.trans h.frame
-
-/-
-You may wonder why this uses [Persistent] and not [QuickPersistent].
-The reason is that [QuickPersistent] is not needed anywhere else, and even without [QuickPersistent],
-this instance avoids quadratic complexity: we usually use the [Quick*] classes to not traverse the
-same term over and over again, but here [P1] is encountered at most once. It is hence not worth adding
-a new typeclass just for this extremely rarely used instance.
--/
-@[ipm_backtrack, rocq_alias frame_impl]
-instance frame_impl [BI PROP] (R P1 P2 Q2 : PROP)
-    [hp : Persistent P1] [ha : QuickAbsorbing P1]
-    [h : Frame false R P2 Q2] : Frame false R iprop(P1 → P2) iprop(P1 → Q2) where
-  frame :=
-    have : Absorbing P1 := ha.quick_absorbing
-    imp_intro <|
-      persistent_and_affinely_sep_right.1.trans <|
-      sep_assoc.1.trans <|
-      (sep_mono_right (sep_comm.1.trans (persistent_and_affinely_sep_left.2.trans imp_elim_right))).trans <|
-      h.frame
-
 @[ipm_backtrack, rocq_alias frame_later]
 instance frame_later [BI PROP] p (R R' P Q Q' : PROP)
     [h1 : IntoLaterN true 1 R' R] [h2 : Frame p R P Q] [h3 : MakeLaterN 1 Q Q'] :
@@ -193,6 +153,45 @@ instance frame_except_0 [BI PROP] p (R P Q Q' : PROP)
 
 
 section tactic_theorems
+
+@[rocq_alias frame_wand]
+theorem frame_wand [BI PROP] p (R P1 P2 Q2 : PROP)
+    (h : Frame p R P2 Q2) : Frame p R iprop(P1 -∗ P2) iprop(P1 -∗ Q2) where
+  frame := wand_intro <| sep_assoc.1.trans <| (sep_mono_right wand_elim_left).trans h.frame
+
+@[rocq_alias frame_forall]
+theorem frame_forall {α} [BI PROP] p R (Φ Ψ : α → PROP)
+    (h : ∀ a, Frame p R (Φ a) (Ψ a)) :
+    Frame p R iprop(∀ x, Φ x) iprop(∀ x, Ψ x) where
+  frame := forall_intro λ a => (sep_mono_right (forall_elim a)).trans (h a).1
+
+@[rocq_alias frame_impl_persistent]
+theorem frame_impl_persistent [BI PROP] (R P1 P2 Q2 : PROP)
+    (h : Frame true R P2 Q2) : Frame true R iprop(P1 → P2) iprop(P1 → Q2) where
+  frame := imp_intro <|
+    (and_mono_left persistently_and_intuitionistically_sep_left.2).trans <|
+    and_assoc.1.trans <|
+    (and_mono_right (and_comm.1.trans imp_elim_right)).trans <|
+    persistently_and_intuitionistically_sep_left.1.trans h.frame
+
+/-
+You may wonder why this uses [Persistent] and not [QuickPersistent].
+The reason is that [QuickPersistent] is not needed anywhere else, and even without [QuickPersistent],
+this instance avoids quadratic complexity: we usually use the [Quick*] classes to not traverse the
+same term over and over again, but here [P1] is encountered at most once. It is hence not worth adding
+a new typeclass just for this extremely rarely used instance.
+-/
+@[rocq_alias frame_impl]
+theorem frame_impl [BI PROP] (R P1 P2 Q2 : PROP)
+    (hp : Persistent P1) (ha : QuickAbsorbing P1)
+    (h : Frame false R P2 Q2) : Frame false R iprop(P1 → P2) iprop(P1 → Q2) where
+  frame :=
+    have : Absorbing P1 := ha.quick_absorbing
+    imp_intro <|
+      persistent_and_affinely_sep_right.1.trans <|
+      sep_assoc.1.trans <|
+      (sep_mono_right (sep_comm.1.trans (persistent_and_affinely_sep_left.2.trans imp_elim_right))).trans <|
+      h.frame
 
 @[rocq_alias maybe_frame_default_persistent]
 theorem maybeFrame_default_persistent [BI PROP] (R P : PROP) :
@@ -384,6 +383,74 @@ def frameOr : SynthTactic := λ e => do
     return .success q(frame_or $p $R $P1 $P2 $Q1 $Q2 $Q')
   return .continue
 
+@[ipm_tactic_instance Frame _ _ iprop(_ → _) _]
+def frameImp : SynthTactic := λ e => do
+  let_expr Frame prop bi p R P _ := e | return .continue
+  have u := e.getAppFn.constLevels![0]!
+  have prop : Q(Type u) := prop
+  have _bi : Q(BI $prop) := bi
+  have p : Q(Bool) := p
+  have R : Q($prop) := R
+  let_expr BI.imp _ _ P1 P2 := P | return .continue
+
+  have P1 : Q($prop) := P1
+  have P2 : Q($prop) := P2
+
+  match matchBool p with
+  | .inl _ =>
+    let Q2 : Q($prop) ← mkFreshExprMVarQ q($prop)
+    let some inst ← withFrameInstantiateExistsDisabled <|
+      synthInstanceRecursiveQ q(Frame true $R $P2 $Q2) | return .continue
+    return .success q(frame_impl_persistent $R $P1 $P2 $Q2 $inst)
+  | .inr _ =>
+    let .some instPers ← trySynthInstanceQ q(Persistent $P1) | return .continue
+    let .some instAbsorb ← trySynthInstanceQ q(QuickAbsorbing $P1) | return .continue
+    let Q2 : Q($prop) ← mkFreshExprMVarQ q($prop)
+    let some inst ← withFrameInstantiateExistsDisabled <|
+      synthInstanceRecursiveQ q(Frame false $R $P2 $Q2) | return .continue
+    return .success q(frame_impl $R $P1 $P2 $Q2 $instPers $instAbsorb $inst)
+
+@[ipm_tactic_instance Frame _ _ iprop(_ -∗ _) _]
+def frameWand : SynthTactic := fun e => do
+  let_expr Frame prop bi p R P _ := e | return .continue
+  have u := e.getAppFn.constLevels![0]!
+  have prop : Q(Type u) := prop
+  have _bi : Q(BI $prop) := bi
+  have p : Q(Bool) := p
+  have R : Q($prop) := R
+  let_expr BI.wand _ _ P1 P2 := P.headBeta | return .continue
+
+  have P1 : Q($prop) := P1
+  have P2 : Q($prop) := P2
+  let Q2 : Q($prop) ← mkFreshExprMVarQ q($prop)
+  let some h ← withFrameInstantiateExistsDisabled <|
+    synthInstanceRecursiveQ q(Frame $p $R $P2 $Q2) | return .continue
+  return .success q(frame_wand $p $R $P1 $P2 $Q2 $h)
+
+@[ipm_tactic_instance Frame _ _ iprop(∀ _, _) _]
+def frameForall : SynthTactic := fun e => do
+  let_expr Frame prop bi p R P _ := e | return .continue
+  have u := e.getAppFn.constLevels![0]!
+  have prop : Q(Type u) := prop
+  have _bi : Q(BI $prop) := bi
+  have p : Q(Bool) := p
+  have R : Q($prop) := R
+  let_expr BI.forall _ _ α Φ := P | return .continue
+
+  let .sort v ← inferType α | return .continue
+  have α : Q(Sort v) := α
+  have Φ : Q($α → $prop) := Φ
+
+  let Ψ : Q($α → $prop) ← mkFreshExprMVarQ q($α → $prop)
+  let goalTy ← withLocalDeclDQ `a α fun a => do
+    have body : Q($prop) := Expr.headBeta q($Φ $a)
+    mkForallFVars #[a] q(Frame $p $R $body ($Ψ $a))
+
+  let some inst ← withFrameInstantiateExistsDisabled <|
+    synthInstanceRecursive goalTy | return .continue
+  let inst : Q(∀ a, Frame $p $R ($Φ a) ($Ψ a)) := inst
+  return .success q(frame_forall $p $R $Φ $Ψ $inst)
+
 @[ipm_tactic_instance Frame _ _ iprop(∃ _, _) _]
 def frameExist : SynthTactic := λ e => do
   let_expr Frame prop bi p R P _ := e | return .continue
@@ -414,14 +481,14 @@ def frameExist : SynthTactic := λ e => do
     let a ← instantiateMVars a
     if !a.hasExprMVar then
       -- Instantiate the existentially quantified variable with `a`
-      have inst : Q(Frame $p $R ($Φ $a) $G) := inst
+      let inst : Q(Frame $p $R ($Φ $a) $G) := inst
       return .success q(frame_exist $p $R $Φ $a $G $inst)
     else if a.isMVar then
       -- For handling inner existential variables
       let G ← instantiateMVars G
       let inst ← instantiateMVars inst
       have Ψ : Q($α → $prop) := .lam bn α (G.abstract #[a]) .default
-      have inst : Q(∀ x, Frame $p $R ($Φ x) ($Ψ x)) := .lam bn α (inst.abstract #[a]) .default
+      let inst : Q(∀ x, Frame $p $R ($Φ x) ($Ψ x)) := .lam bn α (inst.abstract #[a]) .default
       return .success q(frame_exist_no_instantiate $p $R $Φ $Ψ $inst)
     else
       return .continue
@@ -438,5 +505,5 @@ def frameExist : SynthTactic := λ e => do
     | return .continue
 
     have Ψ : Q($α → $prop) := Ψ
-    have inst : Q(∀ x, Frame $p $R ($Φ x) ($Ψ x)) := inst
+    let inst : Q(∀ x, Frame $p $R ($Φ x) ($Ψ x)) := inst
     return .success q(frame_exist_no_instantiate $p $R $Φ $Ψ $inst)

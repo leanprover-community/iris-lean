@@ -2438,6 +2438,13 @@ example [BI PROP] {α} (a : α) (P : α → PROP) :
   iintro HP
   iframe HP
 
+example [BI PROP] (P : PROP) : P ⊢ ∀ (x : Nat), ∃ n, ⌜n = x⌝ ∗ P := by
+  iintro HP
+  iframe HP
+  iintro %x
+  iexists x
+  ipureintro; rfl
+
 end iframe
 
 section icombine
