@@ -139,7 +139,6 @@ theorem own_inv_alloc (N : Namespace) (E : CoPset) (P : IProp GF) :
   · intro E; apply fresh_name
   · isplitl [Hw] <;> iassumption
   · imodintro; iframe
-    iexists i; iframe
     itrivial
 
 @[rocq_alias own_inv_alloc_open]
