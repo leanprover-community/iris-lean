@@ -236,6 +236,12 @@ theorem frame_or [BI PROP] p (R P1 P2 Q1 Q2 Q' : PROP)
     sep_or_left.1.trans <|
     or_mono h1.frame h2.frame
 
+@[rocq_alias frame_exist]
+theorem frame_exist [BI PROP] {α} (p : Bool) (R : PROP) (Φ : α → PROP)
+    (a : α) (Q : PROP) (inst : Frame p R (Φ a) Q) :
+    Frame p R iprop(∃ x, Φ x) Q where
+  frame := inst.frame.trans <| exists_intro a
+
 end tactic_theorems
 
 meta section tactics
@@ -368,4 +374,17 @@ def frameExist : SynthTactic := λ e => do
   have α : Q(Sort v) := α
   have Φ : Q($α → $prop) := Φ
 
-  return .continue
+  let a : Q($α) ← mkFreshExprMVarQ q($α)
+  let G : Q($prop) ← mkFreshExprMVarQ q($prop)
+
+  have body : Q($prop) := Expr.headBeta q($Φ $a)
+  let some inst ← synthInstanceRecursiveQ q(Frame $p $R $body $G)
+  | return .continue
+
+  let a' ← instantiateMVars a
+  if !a.hasExprMVar then
+    have w : Q($α) := a'
+    have inst : Q(Frame $p $R ($Φ $w) $G) := inst
+    return .success q(frame_exist $p $R $Φ $w $G $inst)
+  else
+    return .continue
