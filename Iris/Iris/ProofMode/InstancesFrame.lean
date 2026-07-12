@@ -381,9 +381,9 @@ def frameExist : SynthTactic := λ e => do
   let some inst ← synthInstanceRecursiveQ q(Frame $p $R $body $G)
   | return .continue
 
-  let a' ← instantiateMVars a
+  let a ← instantiateMVars a
   if !a.hasExprMVar then
-    have w : Q($α) := a'
+    have w : Q($α) := a
     have inst : Q(Frame $p $R ($Φ $w) $G) := inst
     return .success q(frame_exist $p $R $Φ $w $G $inst)
   else

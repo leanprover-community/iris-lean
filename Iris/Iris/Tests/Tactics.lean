@@ -2384,6 +2384,12 @@ example [BI PROP] [BIAffine PROP] (Q : Nat → PROP) : (Q 0 ⊢ ∃ x, False ∨
   iexists _
   iframe
 
+/- Tests `iframe` with existential quantifiers -/
+example [BI PROP] {α} {β} (a : α) (b : β) (P : α → PROP) (Q : PROP) (R : β → PROP) :
+    ⊢ P a -∗ Q -∗ R b -∗ (∃ x, P x) ∗ Q ∗ (∃ x, R x) := by
+  iintro HP HQ HR
+  iframe
+
 end iframe
 
 section icombine
