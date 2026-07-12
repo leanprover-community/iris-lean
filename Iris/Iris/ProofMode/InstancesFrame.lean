@@ -401,24 +401,42 @@ def frameExist : SynthTactic := λ e => do
   -- Find the binder name so that it can be reused after framing
   let bn := match Φ with | .lam n .. => n | _ => `x
 
-  let a : Q($α) ← mkFreshExprMVarQ q($α)
-  let G : Q($prop) ← mkFreshExprMVarQ q($prop)
-  have body : Q($prop) := Expr.headBeta q($Φ $a)
+  let option ← frameInstantiateExistsEnabled
+  if option then
+    -- `iris.frame.instantiateExists` set as `true`
+    let a : Q($α) ← mkFreshExprMVarQ q($α)
+    let G : Q($prop) ← mkFreshExprMVarQ q($prop)
+    have body : Q($prop) := Expr.headBeta q($Φ $a)
 
-  let some inst ← synthInstanceRecursiveQ q(Frame $p $R $body $G)
-  | return .continue
+    let some inst ← synthInstanceRecursiveQ q(Frame $p $R $body $G)
+    | return .continue
 
-  let a ← instantiateMVars a
-  if !a.hasExprMVar then
-    -- Instantiate the existentially quantified variable with `a`
-    have inst : Q(Frame $p $R ($Φ $a) $G) := inst
-    return .success q(frame_exist $p $R $Φ $a $G $inst)
-  else if a.isMVar then
-    -- For handling inner existential variables
-    let G ← instantiateMVars G
-    let inst ← instantiateMVars inst
-    have Ψ : Q($α → $prop) := .lam bn α (G.abstract #[a]) .default
-    have hAll : Q(∀ x, Frame $p $R ($Φ x) ($Ψ x)) := .lam bn α (inst.abstract #[a]) .default
-    return .success q(frame_exist_no_instantiate $p $R $Φ $Ψ $hAll)
+    let a ← instantiateMVars a
+    if !a.hasExprMVar then
+      -- Instantiate the existentially quantified variable with `a`
+      have inst : Q(Frame $p $R ($Φ $a) $G) := inst
+      return .success q(frame_exist $p $R $Φ $a $G $inst)
+    else if a.isMVar then
+      -- For handling inner existential variables
+      let G ← instantiateMVars G
+      let inst ← instantiateMVars inst
+      have Ψ : Q($α → $prop) := .lam bn α (G.abstract #[a]) .default
+      have inst : Q(∀ x, Frame $p $R ($Φ x) ($Ψ x)) := .lam bn α (inst.abstract #[a]) .default
+      return .success q(frame_exist_no_instantiate $p $R $Φ $Ψ $inst)
+    else
+      return .continue
   else
-    return .continue
+    -- `iris.frame.instantiateExists` set as `false`
+    let some ⟨Ψ, inst⟩ ← withLocalDeclDQ bn α fun a => do
+      let G : Q($prop) ← mkFreshExprMVarQ q($prop)
+      have body : Q($prop) := Expr.headBeta q($Φ $a)
+      let some inst ← synthInstanceRecursiveQ q(Frame $p $R $body $G)
+      | return none
+      let G ← instantiateMVars G
+      let inst ← instantiateMVars inst
+      return some (← mkLambdaFVars #[a] G, ← mkLambdaFVars #[a] inst)
+    | return .continue
+
+    have Ψ : Q($α → $prop) := Ψ
+    have inst : Q(∀ x, Frame $p $R ($Φ x) ($Ψ x)) := inst
+    return .success q(frame_exist_no_instantiate $p $R $Φ $Ψ $inst)

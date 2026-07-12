@@ -2411,14 +2411,32 @@ example [BI PROP] {α} (a : α) {β} (b : β) {γ} (c : γ)
   iintro HP HQ
   iframe
 
-/- Tests `iframe` with the framing of existential quantifiers disabled -/
+/-
+  Tests `iframe` with the framing of existential quantifiers disabled.
+  The tactic should succeed as `P`, which is under the existential
+  quantifier, can still be framed.
+-/
 set_option iris.frame.instantiateExists false in
-example [BI PROP] {α} (a : α) (P : PROP) (Q : α → PROP) :
-    ⊢ P -∗ Q a -∗ ∃ n, P ∗ Q n := by
-  iintro HP HQ
-  iframe
+example [BI PROP] {α} (a : α) (P : PROP) (Q R : α → PROP) (S : PROP) :
+    ⊢ P -∗ Q a -∗ R a -∗ S -∗ ∃ n, P ∗ Q n ∗ ∃ m, R m ∗ S := by
+  iintro HP HQ HR HS
+  iframe ∗
+  iexists a
+  iframe HQ
   iexists a
   iassumption
+
+/-
+  Tests `iframe` with the framing of existential quantifiers disabled.
+  Since nothing else can be framed, the tactic should fail.
+-/
+/-- error: iframe: cannot frame P a -/
+#guard_msgs in
+set_option iris.frame.instantiateExists false in
+example [BI PROP] {α} (a : α) (P : α → PROP) :
+    ⊢ P a -∗ ∃ n, P n := by
+  iintro HP
+  iframe HP
 
 end iframe
 
