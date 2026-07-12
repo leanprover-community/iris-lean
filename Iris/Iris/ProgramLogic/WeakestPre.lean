@@ -604,9 +604,9 @@ theorem wp_frame_wand {s : Stuckness} {E : CoPset} {e : Expr} {Φ :Val → IProp
 
 end Wp
 
-section ProofModeClasses
+meta section ProofModeClasses
 
-open ProofMode
+open ProofMode Lean Elab Meta Qq
 
 variable {hlc : outParam HasLC}
 variable {Expr State Obs Val : Type _}
@@ -614,18 +614,44 @@ variable [Λ : Language Expr State Obs Val]
 variable {GF : BundledGFunctors}
 variable [ι : IrisGS_gen hlc Expr GF]
 
-variable {s : Stuckness} {E : CoPset} {e : Expr} {v : Val} {Φ Ψ : Val → IProp GF} {P Q R : IProp GF}
-
 @[rocq_alias frame_wp]
-instance frameWp {p : Bool} [H : ∀ v, Frame p R (Φ v) (Ψ v)] :
-    -- TODO: move FrameInstantiateExistDisabled over the `FrameInstantiateExistDisabled` constant
-    -- Blocked by #390
-    -- see: https://github.com/leanprover-community/iris-lean/pull/393
+theorem frame_wp (p : Bool) (s : Stuckness) (E : CoPset) (e : Expr) (R : IProp GF) (Φ Ψ : Val → IProp GF)
+    (H : ∀ v, Frame p R (Φ v) (Ψ v)) :
     Frame p R (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Ψ }}) where
   frame := by
     refine wp_frame_l.trans ?_
     apply wp_mono
-    exact fun v => frame
+    exact fun v => (H v).frame
+
+@[ipm_tactic_instance Frame _ _ iprop(WP _ @ _ ; _ {{ _ }}) _]
+def frameWp : SynthTactic := fun goalExpr => do
+  let_expr Frame prop bi p R P _ := goalExpr | return .continue
+  have u := goalExpr.getAppFn.constLevels![0]!
+  have prop : Q(Type u) := prop
+  have _bi : Q(BI $prop) := bi
+  have p : Q(Bool) := p
+  have R : Q($prop) := R
+
+  let_expr Wp.wp _ _exprTy val _instA _instWp av coE wpe Φ := P
+  | return .continue
+
+  let ΨTy ← mkArrow val prop
+  let Ψ ← mkFreshExprMVar ΨTy
+
+  let goalTy ← withLocalDeclD `v val fun v => do
+    let body := (mkApp Φ v).headBeta
+    let inner ← mkAppM ``Frame #[p, R, body, mkApp Ψ v]
+    mkForallFVars #[v] inner
+
+  let some H ← withFrameInstantiateExistsDisabled <| synthInstanceRecursive goalTy
+  | return .continue
+
+  let Ψ ← instantiateMVars Ψ
+  let H ← instantiateMVars H
+  let inst ← mkAppM ``frame_wp #[p, av, coE, wpe, R, Φ, Ψ, H]
+  return .success inst
+
+variable {s : Stuckness} {E : CoPset} {e : Expr} {v : Val} {Φ Ψ : Val → IProp GF} {P Q R : IProp GF}
 
 @[rocq_alias is_except_0_wp]
 instance isExcept0Wp : IsExcept0 (WP e @ s ; E {{ Φ }}) where

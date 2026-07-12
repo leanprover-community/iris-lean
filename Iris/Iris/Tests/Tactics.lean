@@ -11,11 +11,13 @@ public import Iris.Instances.IProp
 public import Iris.Instances.Lib.LaterCredits
 public import Iris.Instances.Lib.Token
 public import Iris.Algebra.CMRA
+public import Iris.ProgramLogic.Language
+public import Iris.ProgramLogic.WeakestPre
 
 @[expose] public section
 
 namespace Iris.Tests
-open BI CMRA DFrac
+open BI CMRA DFrac ProgramLogic
 
 /- This file contains tests with various scenarios for all available tactics. -/
 
@@ -2438,12 +2440,26 @@ example [BI PROP] {α} (a : α) (P : α → PROP) :
   iintro HP
   iframe HP
 
+/- Tests `iframe` with an existential quantifier under a universal quantifier. -/
 example [BI PROP] (P : PROP) : P ⊢ ∀ (x : Nat), ∃ n, ⌜n = x⌝ ∗ P := by
   iintro HP
   iframe HP
   iintro %x
   iexists x
   ipureintro; rfl
+
+variable {hlc : outParam HasLC} {Expr State Obs Val} [Λ : Language Expr State Obs Val]
+variable {GF : BundledGFunctors}
+variable [IrisGS_gen hlc Expr GF]
+variable {s : Stuckness} {E : CoPset} {e : Expr} {v : Val} {Φ : Val → IProp GF}
+
+/- Tests `iframe` with the `Frame` type class instance `frameWp`. -/
+example [inst : Language.IntoVal e v] (P : IProp GF) :
+    P ∗ Φ v ⊢ WP e @ s ; E {{ w, P ∗ Φ w }} := by
+  iintro ⟨HP, HΦ⟩
+  iframe HP
+  iapply wp_value $$ HΦ
+  exact inst
 
 end iframe
 
