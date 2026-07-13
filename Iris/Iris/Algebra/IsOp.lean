@@ -33,19 +33,13 @@ class IsOp [CMRA α]
 abbrev IsOpMerge [CMRA α] (a b1 b2 : α) := IsOp .out a b1 b2
 abbrev IsOpSplit [CMRA α] (a b1 b2 : α) := IsOp .in a b1 b2
 
-set_option synthInstance.checkSynthOrder false in
-/--
-  Merging with `•` should have the lowest priority.
--/
+/-- Merging with `•` should have the lowest priority. -/
 @[rocq_alias is_op_op]
 instance (priority := default - 100) isOpMerge_op [CMRA α] (a b : α) :
     IsOpMerge (a • b) a b where
   is_op := .rfl
 
-set_option synthInstance.checkSynthOrder false in
-/--
-  Splitting with `•` should have the highest priority.
--/
+/-- Splitting with `•` should have the highest priority. -/
 @[rocq_alias is_op_lr_op]
 instance (priority := default + 100) isOpSplit_op [CMRA α] (a b : α) :
     IsOpSplit (a • b) a b where
@@ -64,14 +58,12 @@ instance isOp_pair [CMRA α] {io : InOut}
     IsOp io (a, a') (b1, b1') (b2, b2') where
   is_op := OFE.equiv_prod_ext h1.is_op h2.is_op
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_pair_core_id_l]
 instance isOp_pair_core_id_l [CMRA α] [CMRA β] {io : InOut}
     (a : α) (a' b1' b2' : β) [h1 : CoreId a] [h2 : IsOp io a' b1' b2'] :
     IsOp io (a, a') (a, b1') (a, b2') where
   is_op := OFE.equiv_prod_ext (op_self a).symm h2.is_op
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_pair_core_id_r]
 instance isOpMerge_pair_core_id_r [CMRA α] [CMRA β] {io : InOut}
     (a b1 b2 : α) (a' : β)

@@ -331,7 +331,6 @@ theorem auth_op_auth_eqv : (●V{dq1 • dq2} a : View R) ≡ (●V{dq1} a) • 
   NonExpansive₂.eqv (OFE.some_eqv_some.mpr (NonExpansive₂.eqv .rfl Agree.idemp.symm))
     UCMRA.unit_left_id.symm
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias view_auth_dfrac_is_op]
 instance isOp_view_auth_dfrac {dq dq1 dq2 : DFrac} {a : A}
     [h : IsOp io dq dq1 dq2] :
