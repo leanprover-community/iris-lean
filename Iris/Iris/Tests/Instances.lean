@@ -304,11 +304,11 @@ section issue_456
 -- test for https://github.com/leanprover-community/iris-lean/issues/456
 
 @[ipm_class]
-class C (_ : InOut) (a : semiOutParam Nat) (_ : InOut) (b : semiOutParam Nat) : Prop where
+class C (io : InOut) (a : semiOutParamPos io Nat) (b : semiOutParamNeg io Nat) : Prop where
 
-abbrev CMerge (a b : semiOutParam Nat) := C .out a .in b
+abbrev CMerge (a b : Nat) := C .out a b
 
-abbrev CSplit (a b : semiOutParam Nat) := C .in a .out b
+abbrev CSplit (a b : Nat) := C .in a b
 
 set_option synthInstance.checkSynthOrder false in
 instance instMerge (b : Nat) : CMerge (b + 1) b := ⟨⟩
