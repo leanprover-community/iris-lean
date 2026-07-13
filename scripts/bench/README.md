@@ -1,9 +1,9 @@
-# Cslib benchmark suite
+# Iris-lean benchmark suite
 
-This directory contains the cslib benchmark suite.
+This directory contains the iris-lean benchmark suite.
 It is built around [radar](github.com/leanprover/radar)
 and benchmark results can be viewed
-on the [Lean FRO radar instance](https://radar.lean-lang.org/repos/cslib).
+on the [Lean FRO radar instance](https://radar.lean-lang.org/repos/iris-lean).
 
 To execute the benchmark suite, run `scripts/bench/run` from the repo root.
 All measurements will be placed into `measurements.jsonl` in the repo root.
