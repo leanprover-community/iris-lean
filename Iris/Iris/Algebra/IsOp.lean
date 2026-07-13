@@ -33,22 +33,16 @@ class IsOp [CMRA α]
     (b2 : semiOutParamIPM (match direction with | .merge => .in | .split => .out) α) where
   is_op : a ≡ b1 • b2
 
-/--
-  Syntactic sugar for specifying whether `IsOp` is used for merging or splitting.
--/
-abbrev IsOpMerge [CMRA α] (a b1 b2 : α) := IsOp .merge a b1 b2
-abbrev IsOpSplit [CMRA α] (a b1 b2 : α) := IsOp .split a b1 b2
-
 /-- Merging with `•` should have the lowest priority. -/
 @[rocq_alias is_op_op]
 instance (priority := default - 100) isOpMerge_op [CMRA α] (a b : α) :
-    IsOpMerge (a • b) a b where
+    IsOp .merge (a • b) a b where
   is_op := .rfl
 
 /-- Splitting with `•` should have the highest priority. -/
 @[rocq_alias is_op_lr_op]
 instance (priority := default + 100) isOpSplit_op [CMRA α] (a b : α) :
-    IsOpSplit (a • b) a b where
+    IsOp .split (a • b) a b where
   is_op := .rfl
 
 /-

@@ -155,7 +155,7 @@ theorem Frac.valid_iff {p : Qp} : ✓ p ↔ p.val ≤ 1 := .rfl
 
 @[rocq_alias frac_is_op]
 instance (priority := default - 10) (q1 q2 : Qp) :
-    IsOpMerge (q1 + q2 : Qp) q1 q2 where
+    IsOp .merge (q1 + q2 : Qp) q1 q2 where
   is_op := .rfl
 
 @[rocq_alias is_op_frac]
