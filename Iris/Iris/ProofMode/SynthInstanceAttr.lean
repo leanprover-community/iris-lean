@@ -130,13 +130,13 @@ private def getIPMParamKinds? (env : Environment) (declName : Name) : Option (Ar
 
 /--
   Analogous to `semiOutParam`, with the explicit argument `_io` being an
-  `InOut` value, which determines whether this is is an input parameter or an
+  `InOut` value, which determines whether this is an input parameter or an
   output paramter for the purpose of type class synthesis.
 
   One can use `InOut.negate` to negate the `InOut` value.
 
-  This should be used instead of `semiOutParam` when the custom IPM type
-  class synthesiser is used.
+  This should be used instead of `semiOutParam` for any type class with
+  the annotation `ipm_class`.
 -/
 @[reducible, expose]
 def semiOutParamIPM (_io : InOut) (α : Sort u) : Sort u := semiOutParam α
@@ -192,13 +192,13 @@ def checkIPMSynthParams (type : Expr) : MetaM (Option (Array Nat)) := do
       let param := params[i]!
       let arg := args[i]!
 
-      let param : ParamKind ← match param with
+      let param ← match param with
       | .semiOut expr =>
-        let expr ← whnf (expr.instantiateRev (args.extract 0 i))
-        if expr.isAppOfArity ``InOut.in 0 then pure ParamKind.in
-        else if expr.isAppOfArity ``InOut.out 0 then pure ParamKind.out
-        else
-          throwError m!"error with expr: {expr}"
+        -- Reduce the `InOut` argument and determine whether it is `.in` or `.out`
+        let expr ← whnf <| expr.instantiateRev <| args.extract 0 i
+        if expr.isAppOfArity ``InOut.in 0 then pure .in
+        else if expr.isAppOfArity ``InOut.out 0 then pure .out
+        else throwError m!"unable to parse the Boolean expression {expr}"
       | p => pure p
 
       match param with
