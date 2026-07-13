@@ -178,8 +178,8 @@ Except MessageData (Array ParamKind) :=
           Except.error m!"invalid ipm_class, parameter #{params.size} is a `semiOutParamPos`/\
           `semiOutParamNeg` referencing parameter #{govIdx}, which is not an `InOut` parameter"
     else if d.isSemiOutParam then
-      Except.error m!"invalid ipm_class, parameter #{params.size+1} is a `semiOutParam` that is \
-      not preceded by an `InOut`"
+      Except.error m!"invalid ipm_class, parameter #{params.size+1} is a `semiOutParam`. Use \
+        `semiOutParamPos`/`semiOutParamNeg` instead"
     else if d.isAppOfArity ``InOut 0 then
       computeParamKinds (params.push .inout) b
     else
