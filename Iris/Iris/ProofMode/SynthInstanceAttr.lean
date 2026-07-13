@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Michael Sammler
+Authors: Michael Sammler, Alvin Tang
 -/
 module
 
@@ -123,7 +123,10 @@ private def getIPMParamKinds? (env : Environment) (declName : Name) : Option (Ar
   (ipmClassesExt.getState env).paramMap.find? declName
 
 /--
-  Analogous to `semiOutParam`, with the *negation* of the `InOut` value
+  Analogous to `semiOutParam`, with
+
+
+  with the *negation* of the `InOut` value
   indicating whether this is an input parameter or an output paramter for
   the purpose of type class synthesis.
 
@@ -131,27 +134,18 @@ private def getIPMParamKinds? (env : Environment) (declName : Name) : Option (Ar
   class synthesiser is used.
 -/
 @[reducible, expose]
-def semiOutParamPos (_io : InOut) (α : Sort u) : Sort u := α
-
-/--
-  Analogous to `semiOutParam`, with the *negation* of the `InOut` value
-  indicating whether this is an input parameter or an output paramter for
-  the purpose of type class synthesis.
-
-  This should be used instead of `semiOutParam` when the custom IPM type
-  class synthesiser is used.
--/
-@[reducible, expose]
-def semiOutParamNeg (_io : InOut) (α : Sort u) : Sort u := α
+def semiOutParamIPM (_io : InOut) (α : Sort u) (_negate : Bool := false) : Sort u := semiOutParam α
 
 /-- If `d` is `semiOutParam self α` or `semiOutParamNeg self α`, return `(negate, self)`. -/
-private def semiOutParamGoverning? (d : Expr) : Option (Bool × Expr) :=
-  if d.isAppOfArity ``semiOutParamPos 2 then
-    some (false, d.getAppArgs[0]!)
-  else if d.isAppOfArity ``semiOutParamNeg 2 then
-    some (true, d.getAppArgs[0]!)
-  else
-    none
+private def semiOutParamGoverning? (d : Expr) : Option <| Bool × Expr := do
+  if d.isAppOfArity ``semiOutParamIPM 3 then
+    let negate := d.getAppArgs[2]!
+    if negate.isConstOf ``Bool.true then
+      some (true, d.getAppArgs[0]!)
+    else if negate.isConstOf ``Bool.false then
+      some (false, d.getAppArgs[0]!)
+    else none
+  else none
 
 private partial def computeParamKinds (params : Array ParamKind) (type : Expr) :
 Except MessageData (Array ParamKind) :=
@@ -165,21 +159,21 @@ Except MessageData (Array ParamKind) :=
       computeParamKinds (params.push .out) b
     else if let some ⟨negate, self⟩ := semiOutParamGoverning? d then
       if !self.isBVar then
-        Except.error m!"invalid ipm_class, parameter #{params.size} is a `semiOutParamPos`/\
-        `semiOutParamNeg` whose governing argument is not a direct reference to an earlier parameter"
+        Except.error m!"invalid ipm_class, parameter #{params.size} is a `semiOutParamIPM` \
+        with the `InOut` argument not directly referencing to an earlier parameter"
       else if self.bvarIdx! ≥ params.size then
-        Except.error m!"invalid ipm_class, parameter #{params.size} is a `semiOutParamPos`/\
-        `semiOutParamNeg` with an out-of-range governing reference"
+        Except.error m!"invalid ipm_class, parameter #{params.size} is a `semiOutParamIPM` \
+        with an out-of-range governing reference"
       else
         let govIdx := params.size - 1 - self.bvarIdx!
         if params[govIdx]! matches .inout then
           computeParamKinds (params.push (.semiOut govIdx negate)) b
         else
-          Except.error m!"invalid ipm_class, parameter #{params.size} is a `semiOutParamPos`/\
-          `semiOutParamNeg` referencing parameter #{govIdx}, which is not an `InOut` parameter"
+          Except.error m!"invalid ipm_class, parameter #{params.size} is a `semiOutParamIPM` \
+          referencing parameter #{govIdx}, which is not an `InOut` parameter"
     else if d.isSemiOutParam then
-      Except.error m!"invalid ipm_class, parameter #{params.size+1} is a `semiOutParam`. Use \
-        `semiOutParamPos`/`semiOutParamNeg` instead"
+      Except.error m!"invalid ipm_class, parameter #{params.size + 1} is a `semiOutParam`. Use \
+        `semiOutParamIPM` instead"
     else if d.isAppOfArity ``InOut 0 then
       computeParamKinds (params.push .inout) b
     else

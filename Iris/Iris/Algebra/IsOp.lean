@@ -23,9 +23,8 @@ section IsOp
 -/
 @[ipm_class, rocq_alias IsOp, rocq_alias IsOp', rocq_alias IsOp'LR]
 class IsOp [CMRA α]
-    (io : InOut) (a : semiOutParamPos io α)
-    (b1 : semiOutParamNeg io α)
-    (b2 : semiOutParamNeg io α) where
+    (io : InOut) (a : semiOutParamIPM io α)
+    (b1 : semiOutParamIPM io α true) (b2 : semiOutParamIPM io α true) where
   is_op : a ≡ b1 • b2
 
 /--

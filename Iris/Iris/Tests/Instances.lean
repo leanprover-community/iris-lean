@@ -304,7 +304,7 @@ section issue_456
 -- test for https://github.com/leanprover-community/iris-lean/issues/456
 
 @[ipm_class]
-class C (io : InOut) (a : semiOutParamPos io Nat) (b : semiOutParamNeg io Nat) : Prop where
+class C (io : InOut) (a : semiOutParamIPM io Nat) (b : semiOutParamIPM io Nat true) : Prop where
 
 abbrev CMerge (a b : Nat) := C .out a b
 
@@ -328,25 +328,22 @@ instance instSplit (k : Nat) : CSplit (k + 1) k := ⟨⟩
 
 end issue_456
 
-section semiOutParam
+section semiOutParamIPM
 
-/--
-error: invalid ipm_class, parameter #2 is a `semiOutParam`.
-Use `semiOutParamPos`/`semiOutParamNeg` instead
--/
+/-- error: invalid ipm_class, parameter #2 is a `semiOutParam`. Use `semiOutParamIPM` instead -/
 #guard_msgs in
 @[ipm_class]
 class C1 (io : InOut) (a : semiOutParam Nat) : Prop where
 
 /--
-error: invalid ipm_class, parameter #2 is a `semiOutParamPos`/`semiOutParamNeg`
-whose governing argument is not a direct reference to an earlier parameter
+error: invalid ipm_class, parameter #2 is a `semiOutParamIPM` with the `InOut`
+argument not directly referencing to an earlier parameter
 -/
 #guard_msgs in
 @[ipm_class]
-class C2 {α} (a : α) (a : semiOutParamPos .in Nat) : Prop where
+class C2 {α} (a : α) (a : semiOutParamIPM .in Nat false) : Prop where
 
 /- The attribute `semiOutParam` is still relevant for regular type classes  -/
 class C3 (io : InOut) (a : semiOutParam Nat) : Prop where
 
-end semiOutParam
+end semiOutParamIPM
