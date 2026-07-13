@@ -123,7 +123,7 @@ def startProofMode (mvar : MVarId) : MetaM (MVarId × IrisGoal) := mvar.withCont
   let prop ← mkFreshExprMVarQ q(Type u)
   let P ← mkFreshExprMVarQ q($prop)
   let bi ← mkFreshExprMVarQ q(BI $prop)
-  let .some (_, mvars) ← ProofMode.trySynthInstanceQ q(AsEmpValid .from $goal .out $prop .out $bi $P)
+  let .some (_, mvars) ← ProofMode.trySynthInstanceQ q(AsEmpValid .from $goal .out $prop $bi $P)
     | throwError "istart: {goal} is not an emp valid"
   if !mvars.isEmpty then throwError "istart does not support creating mvars"
 

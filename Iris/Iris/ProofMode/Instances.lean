@@ -20,26 +20,26 @@ open Iris.BI Iris.Std
 @[rocq_alias as_emp_valid_emp_valid]
 instance (priority := default + 10) asEmpValidEmpValid
     [bi : BI PROP] d (P : PROP) :
-    AsEmpValid d (⊢ P) io1 PROP io2 bi P := ⟨by simp⟩
+    AsEmpValid d (⊢ P) io PROP bi P := ⟨by simp⟩
 
 @[rocq_alias as_emp_valid_entails]
 instance asEmpValid_entails [bi : BI PROP] d (P Q : PROP)
-: AsEmpValid d (P ⊢ Q) io1 PROP io2 bi iprop(P -∗ Q) where
+: AsEmpValid d (P ⊢ Q) io PROP bi iprop(P -∗ Q) where
   as_emp_valid := ⟨λ _ => entails_wand, λ _ => wand_entails⟩
 
 instance asEmpValid_bientails [bi : BI PROP] (P Q : PROP)
-: AsEmpValid d (P ⊣⊢ Q) io1 PROP io2 bi iprop(P ∗-∗ Q) where
+: AsEmpValid d (P ⊣⊢ Q) io PROP bi iprop(P ∗-∗ Q) where
   as_emp_valid := ⟨λ _ => equiv_wandIff, λ _ => wandIff_equiv⟩
 
 @[rocq_alias as_emp_valid_equiv]
 instance asEmpValid_equiv [bi : BI PROP] (P Q : PROP)
-: AsEmpValid d (P ≡ Q) io1 PROP io2 bi iprop(P ∗-∗ Q) where
+: AsEmpValid d (P ≡ Q) io PROP bi iprop(P ∗-∗ Q) where
   as_emp_valid := ⟨λ _ h => equiv_wandIff (equiv_iff.1 h), λ _ h => (equiv_iff.2 (wandIff_equiv h))⟩
 
 @[rocq_alias as_emp_valid_forall]
 instance asEmpValid_forall {α} [bi : BI PROP] (Φ : α → Prop) (P : α → PROP)
-  [hP : ∀ x, AsEmpValid d (Φ x) io1 PROP io2 bi iprop(P x)]
-: AsEmpValid d (∀ x, Φ x) io1 PROP io2 bi iprop(∀ x, P x) where
+  [hP : ∀ x, AsEmpValid d (Φ x) io PROP bi iprop(P x)]
+: AsEmpValid d (∀ x, Φ x) io PROP bi iprop(∀ x, P x) where
   as_emp_valid := ⟨λ hd h => forall_intro λ x => (hP x).1.1 hd (h x),
                    λ hd h x => (hP x).1.2 hd $ h.trans (forall_elim x)⟩
 
@@ -173,6 +173,7 @@ instance intoForall_persistently [BI PROP] [BIPersistentlyForall PROP] (P : PROP
     [h : IntoForall P Φ] : IntoForall iprop(<pers> P) (fun a => iprop(<pers> (Φ a))) where
   into_forall := (persistently_mono h.1).trans persistently_forall_mp
 
+set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias into_forall_wand_pure]
 instance intoForall_wand_pure [BI PROP] (P Q : PROP) Φ
     [h : FromPure a P .out Φ] : IntoForall iprop(P -∗ Q) (fun _ : Φ => Q) where
@@ -678,6 +679,7 @@ instance intoPure_pure_or (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
     [h1 : IntoPure P1 φ1] [h2 : IntoPure P2 φ2] : IntoPure iprop(P1 ∨ P2) (φ1 ∨ φ2) where
   into_pure := (or_mono h1.1 h2.1).trans pure_or.1
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_pure_pure_impl]
 instance intoPure_pure_imp (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
     [h1 : FromPure a P1 .out φ1] [or : TCOr (TCEq a false) (BIAffine PROP)] [h2 : IntoPure P2 φ2] : IntoPure iprop(P1 → P2) (φ1 → φ2) where

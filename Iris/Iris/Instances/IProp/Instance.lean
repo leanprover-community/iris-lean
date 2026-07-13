@@ -791,6 +791,7 @@ instance fromSep_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpSplit a b1 b2] :
     FromSep (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
   from_sep := iOwn_op.mpr.trans (equiv_iff.mp <| NonExpansive.eqv h.is_op).mpr
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias combine_sep_as_own]
 instance combineSepAs_iOwn {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpMerge a b1 b2] :
     CombineSepAs (iOwn γ b1) (iOwn γ b2) (iOwn γ a) where
