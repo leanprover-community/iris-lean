@@ -17,21 +17,27 @@ open CMRA ProofMode
 
 section IsOp
 
+inductive IsOp.Direction
+| merge
+| split
+
 /--
   A type class that allows merging `b1` and `b2` into `a` as well as
   to split `a` into `b1` and `b2`.
 -/
 @[ipm_class, rocq_alias IsOp, rocq_alias IsOp', rocq_alias IsOp'LR]
 class IsOp [CMRA α]
-    (io : InOut) (a : semiOutParamIPM io α)
-    (b1 : semiOutParamIPM io.negate α) (b2 : semiOutParamIPM io.negate α) where
+    (direction : IsOp.Direction)
+    (a : semiOutParamIPM (match direction with | .merge => .out | .split => .in) α)
+    (b1 : semiOutParamIPM (match direction with | .merge => .in | .split => .out) α)
+    (b2 : semiOutParamIPM (match direction with | .merge => .in | .split => .out) α) where
   is_op : a ≡ b1 • b2
 
 /--
   Syntactic sugar for specifying whether `IsOp` is used for merging or splitting.
 -/
-abbrev IsOpMerge [CMRA α] (a b1 b2 : α) := IsOp .out a b1 b2
-abbrev IsOpSplit [CMRA α] (a b1 b2 : α) := IsOp .in a b1 b2
+abbrev IsOpMerge [CMRA α] (a b1 b2 : α) := IsOp .merge a b1 b2
+abbrev IsOpSplit [CMRA α] (a b1 b2 : α) := IsOp .split a b1 b2
 
 /-- Merging with `•` should have the lowest priority. -/
 @[rocq_alias is_op_op]
@@ -52,29 +58,26 @@ instance (priority := default + 100) isOpSplit_op [CMRA α] (a b : α) :
 -/
 
 @[rocq_alias is_op_pair]
-instance isOp_pair [CMRA α] {io : InOut}
-    (a b1 b2 : α) (a' b1' b2' : α)
-    [h1 : IsOp io a b1 b2] [h2 : IsOp io a' b1' b2'] :
-    IsOp io (a, a') (b1, b1') (b2, b2') where
+instance isOp_pair [CMRA α] {d : IsOp.Direction} (a b1 b2 : α) (a' b1' b2' : α)
+    [h1 : IsOp d a b1 b2] [h2 : IsOp d a' b1' b2'] :
+    IsOp d (a, a') (b1, b1') (b2, b2') where
   is_op := OFE.equiv_prod_ext h1.is_op h2.is_op
 
 @[rocq_alias is_op_pair_core_id_l]
-instance isOp_pair_core_id_l [CMRA α] [CMRA β] {io : InOut}
-    (a : α) (a' b1' b2' : β) [h1 : CoreId a] [h2 : IsOp io a' b1' b2'] :
-    IsOp io (a, a') (a, b1') (a, b2') where
+instance isOp_pair_core_id_l [CMRA α] [CMRA β] {d : IsOp.Direction}
+    (a : α) (a' b1' b2' : β) [h1 : CoreId a] [h2 : IsOp d a' b1' b2'] :
+    IsOp d (a, a') (a, b1') (a, b2') where
   is_op := OFE.equiv_prod_ext (op_self a).symm h2.is_op
 
 @[rocq_alias is_op_pair_core_id_r]
-instance isOpMerge_pair_core_id_r [CMRA α] [CMRA β] {io : InOut}
-    (a b1 b2 : α) (a' : β)
-    [h1 : CoreId a'] [h2 : IsOp io a b1 b2] :
-    IsOp io (a, a') (b1, a') (b2, a') where
+instance isOpMerge_pair_core_id_r [CMRA α] [CMRA β] {d : IsOp.Direction}
+    (a b1 b2 : α) (a' : β) [h1 : CoreId a'] [h2 : IsOp d a b1 b2] :
+    IsOp d (a, a') (b1, a') (b2, a') where
   is_op := OFE.equiv_prod_ext h2.is_op (op_self a').symm
 
 @[rocq_alias is_op_Some]
-instance isOp_some [CMRA α] (a b1 b2 : α) {io : InOut}
-    [h : IsOp io a b1 b2] :
-    IsOp io (some a) (some b1) (some b2) where
+instance isOp_some [CMRA α] (a b1 b2 : α) {d : IsOp.Direction}
+    [h : IsOp d a b1 b2] : IsOp d (some a) (some b1) (some b2) where
   is_op := h.is_op
 
 end IsOp

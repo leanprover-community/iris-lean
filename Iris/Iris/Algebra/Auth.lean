@@ -138,8 +138,8 @@ nonrec theorem auth_dfrac_op {dq1 dq2 : DFrac} {a : A} :
   auth_op_auth_eqv
 
 @[rocq_alias auth_auth_dfrac_is_op]
-instance {dq dq1 dq2 : DFrac} {a : A} [h : IsOp io dq dq1 dq2] :
-    IsOp io (●{dq} a : Auth A) (●{dq1} a) (●{dq2} a) where
+instance {dq dq1 dq2 : DFrac} {a : A} [h : IsOp d dq dq1 dq2] :
+    IsOp d (●{dq} a : Auth A) (●{dq1} a) (●{dq2} a) where
   is_op := by
     rw [h.is_op.to_eq]
     apply auth_dfrac_op
@@ -180,8 +180,8 @@ nonrec instance {a : A} {b : A} [CoreId b] :
   instCoreIdOpAuthDiscardFrag
 
 @[rocq_alias auth_frag_is_op]
-instance {a b1 b2 : A} [h : IsOp io a b1 b2] :
-    IsOp io (◯ a : Auth A) (◯ b1) (◯ b2) where
+instance {a b1 b2 : A} [h : IsOp d a b1 b2] :
+    IsOp d (◯ a : Auth A) (◯ b1) (◯ b2) where
   is_op := NonExpansive₂.eqv .rfl h.is_op
 
 -- TODO: auth_frag_sep_homomorphism

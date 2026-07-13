@@ -227,8 +227,8 @@ theorem own_included {p q : Qp} : own p ≼ own q ↔ ∃ r, q = p + r := by
   exact ⟨r, Qp.ext_iff.mpr hz⟩
 
 @[rocq_alias dfrac_is_op]
-instance isOp_dfrac_own {q q1 q2 : Qp} [h : IsOp io q q1 q2] :
-    IsOp io (own q) (own q1) (own q2) where
+instance isOp_dfrac_own {q q1 q2 : Qp} [h : IsOp d q q1 q2] :
+    IsOp d (own q) (own q1) (own q2) where
   is_op := by rw [h.is_op.to_eq]; rfl
 
 end DFrac

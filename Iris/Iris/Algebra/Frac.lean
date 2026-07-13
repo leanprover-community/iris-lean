@@ -159,5 +159,5 @@ instance (priority := default - 10) (q1 q2 : Qp) :
   is_op := .rfl
 
 @[rocq_alias is_op_frac]
-instance (q : Qp) : IsOp io q q.half q.half where
+instance (q : Qp) : IsOp d q q.half q.half where
   is_op := by refine OFE.Equiv.of_eq (q.ext ?_); grind

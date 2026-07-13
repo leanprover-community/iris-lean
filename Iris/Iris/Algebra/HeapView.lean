@@ -192,11 +192,10 @@ theorem frag_op_eqv : Frag (H := H) k (dp • dq) (v1 • v2) ≡ Frag k dp v1 �
   refine .trans ?_ (eqv_of_Equiv <| Heap.singleton_op_singleton).symm
   exact .rfl
 
-set_option synthInstance.checkSynthOrder false in
 instance
-  [hdp : IsOp io dp dp1 dp2]
-  [hv : IsOp io v v1 v2] :
-  IsOp io (Frag k dp v) (Frag k dp1 v1) (Frag (H := H) k dp2 v2) where
+  [hdp : IsOp d dp dp1 dp2]
+  [hv : IsOp d v v1 v2] :
+  IsOp d (Frag k dp v) (Frag k dp1 v1) (Frag (H := H) k dp2 v2) where
   is_op := by
     rw [hdp.is_op.to_eq]
     exact (NonExpansive.eqv hv.is_op).trans frag_op_eqv

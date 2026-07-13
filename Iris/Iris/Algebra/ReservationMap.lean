@@ -390,9 +390,9 @@ theorem singleton_mono {k} {a b : A} (Hab : a ≼ b) : singleton (H := H) k a �
   ⟨singleton k z, (NonExpansive.eqv hz).trans (singleton_op k a z)⟩
 
 @[rocq_alias reservation_map_data_is_op]
-instance {io : ProofMode.InOut} {a b₁ b₂ : A} [hv : IsOp io a b₁ b₂] :
-    IsOp io (singleton (H := H) k a) (singleton k b₁) (singleton k b₂) where
-  is_op := .trans (NonExpansive.eqv hv.is_op ) (singleton_op k b₁ b₂)
+instance {d : IsOp.Direction} {a b₁ b₂ : A} [hv : IsOp d a b₁ b₂] :
+    IsOp d (singleton (H := H) k a) (singleton k b₁) (singleton k b₂) where
+  is_op := .trans (NonExpansive.eqv hv.is_op) (singleton_op k b₁ b₂)
 
 @[rocq_alias reservation_map_token_union]
 theorem token_union {e₁ e₂} (he : e₁ ## e₂) :

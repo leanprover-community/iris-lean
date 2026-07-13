@@ -512,7 +512,7 @@ theorem valid_included {x y : Agree α} : ✓ y → x ≼ y → x ≡ y := by
     _ ≡ x • z := .op_r <| op_inv <| (CMRA.valid_iff heq).mp hval
     _ ≡ y := heq.symm
 
-instance {x : Agree α} : IsOp io x x x where
+instance {x : Agree α} : IsOp d x x x where
   is_op := idemp.symm
 
 end Agree

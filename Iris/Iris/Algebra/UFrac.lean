@@ -95,7 +95,7 @@ instance {q : UFrac} : CMRA.IdFree q where
     have := b.frac.2; simp only [dist_iff, ext_iff, frac_op] at H; grind
 
 @[rocq_alias is_op_ufrac]
-instance (q : UFrac) : IsOp io q ⟨q.frac.half⟩ ⟨q.frac.half⟩ where
+instance (q : UFrac) : IsOp d q ⟨q.frac.half⟩ ⟨q.frac.half⟩ where
   is_op := OFE.Equiv.of_eq <| ext_iff.mpr (Qp.half_add_half q.frac).symm
 
 end UFrac
