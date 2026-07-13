@@ -21,6 +21,12 @@ inductive InOut where
   | in
   | out
 
+/-- `InOut.negate` converts `.in` into `.out`, and vice versa. -/
+@[reducible, expose]
+def InOut.negate : InOut → InOut
+  | .in => .out
+  | .out => .in
+
 /-- Marker for an unchecked input parameter. -/
 @[reducible, expose]
 def uncheckedInParam (α : Sort u) : Sort u := α
@@ -62,7 +68,7 @@ checking synthesis order checking, which is useful (though not perfect).)
 inductive ParamKind
   | in
   | out
-  | semiOut (idx : Nat) (negate : Bool)
+  | semiOut (expr : Expr)
   | uncheckedIn
   | inout
 deriving Inhabited
@@ -71,7 +77,7 @@ instance : ToString ParamKind where
   toString
     | .in => "in"
     | .out => "out"
-    | .semiOut idx negate => s!"semiOut {idx} {negate}"
+    | .semiOut expr => s!"semiOut {expr}"
     | .uncheckedIn => "uncheckedIn"
     | .inout => "inout"
 
@@ -123,28 +129,22 @@ private def getIPMParamKinds? (env : Environment) (declName : Name) : Option (Ar
   (ipmClassesExt.getState env).paramMap.find? declName
 
 /--
-  Analogous to `semiOutParam`, with
+  Analogous to `semiOutParam`, with the explicit argument `_io` being an
+  `InOut` value, which determines whether this is is an input parameter or an
+  output paramter for the purpose of type class synthesis.
 
-
-  with the *negation* of the `InOut` value
-  indicating whether this is an input parameter or an output paramter for
-  the purpose of type class synthesis.
+  One can use `InOut.negate` to negate the `InOut` value.
 
   This should be used instead of `semiOutParam` when the custom IPM type
   class synthesiser is used.
 -/
 @[reducible, expose]
-def semiOutParamIPM (_io : InOut) (α : Sort u) (_negate : Bool := false) : Sort u := semiOutParam α
+def semiOutParamIPM (_io : InOut) (α : Sort u) : Sort u := semiOutParam α
 
 /-- If `d` is `semiOutParam self α` or `semiOutParamNeg self α`, return `(negate, self)`. -/
-private def semiOutParamGoverning? (d : Expr) : Option <| Bool × Expr := do
-  if d.isAppOfArity ``semiOutParamIPM 3 then
-    let negate := d.getAppArgs[2]!
-    if negate.isConstOf ``Bool.true then
-      some (true, d.getAppArgs[0]!)
-    else if negate.isConstOf ``Bool.false then
-      some (false, d.getAppArgs[0]!)
-    else none
+private def semiOutParamGoverning? (d : Expr) : Option Expr := do
+  if d.isAppOfArity ``semiOutParamIPM 2 then
+      some d.getAppArgs[0]!
   else none
 
 private partial def computeParamKinds (params : Array ParamKind) (type : Expr) :
@@ -157,20 +157,8 @@ Except MessageData (Array ParamKind) :=
       computeParamKinds (params.push .uncheckedIn) b
     else if d.isOutParam then
       computeParamKinds (params.push .out) b
-    else if let some ⟨negate, self⟩ := semiOutParamGoverning? d then
-      if !self.isBVar then
-        Except.error m!"invalid ipm_class, parameter #{params.size} is a `semiOutParamIPM` \
-        with the `InOut` argument not directly referencing to an earlier parameter"
-      else if self.bvarIdx! ≥ params.size then
-        Except.error m!"invalid ipm_class, parameter #{params.size} is a `semiOutParamIPM` \
-        with an out-of-range governing reference"
-      else
-        let govIdx := params.size - 1 - self.bvarIdx!
-        if params[govIdx]! matches .inout then
-          computeParamKinds (params.push (.semiOut govIdx negate)) b
-        else
-          Except.error m!"invalid ipm_class, parameter #{params.size} is a `semiOutParamIPM` \
-          referencing parameter #{govIdx}, which is not an `InOut` parameter"
+    else if let some expr := semiOutParamGoverning? d then
+      computeParamKinds (params.push (.semiOut expr)) b
     else if d.isSemiOutParam then
       Except.error m!"invalid ipm_class, parameter #{params.size + 1} is a `semiOutParam`. Use \
         `semiOutParamIPM` instead"
@@ -204,10 +192,14 @@ def checkIPMSynthParams (type : Expr) : MetaM (Option (Array Nat)) := do
       let param := params[i]!
       let arg := args[i]!
 
-      let param : ParamKind := match param with
-      | .semiOut idx negate =>
-        if resolved[idx]! ^^ negate then ParamKind.in else ParamKind.out
-      | p => p
+      let param : ParamKind ← match param with
+      | .semiOut expr =>
+        let expr ← whnf (expr.instantiateRev (args.extract 0 i))
+        if expr.isAppOfArity ``InOut.in 0 then pure ParamKind.in
+        else if expr.isAppOfArity ``InOut.out 0 then pure ParamKind.out
+        else
+          throwError m!"error with expr: {expr}"
+      | p => pure p
 
       match param with
       | .uncheckedIn => pure ()
@@ -221,7 +213,7 @@ def checkIPMSynthParams (type : Expr) : MetaM (Option (Array Nat)) := do
           resolved := resolved.insert i false
         else
           throwError "parameter #{i} {arg} of {type} is an inout parameter that is not .in nor .out"
-      | .semiOut _ _ => unreachable!
+      | .semiOut _ => unreachable!
     return some mvarInputs
 
 syntax (name := ipm_class) "ipm_class" : attr

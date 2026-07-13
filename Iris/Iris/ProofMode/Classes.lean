@@ -27,18 +27,19 @@ inductive AsEmpValid.Direction where
   | from
 
 @[ipm_class, rocq_alias AsEmpValid]
-class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop) (io : InOut)
-    (PROP : semiOutParamIPM io $ Type _)
-    (bi : semiOutParamIPM io $ BI PROP) (P : outParam $ PROP) where
+class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop)
+    (PROP : semiOutParamIPM (match d with | .into => .in | .from => .out) $ Type _)
+    (bi : semiOutParamIPM (match d with | .into => .in | .from => .out) $ BI PROP)
+    (P : outParam $ PROP) where
   as_emp_valid : (d = .into → φ → ⊢ P) ∧ (d = .from → (⊢ P) → φ)
 
 @[rocq_alias as_emp_valid_1]
 theorem asEmpValid_1 {PROP} [bi : BI PROP] {φ : Prop} (P : PROP)
-    [inst : AsEmpValid .into φ .in PROP bi P] : φ → ⊢ P :=
+    [inst : AsEmpValid .into φ PROP bi P] : φ → ⊢ P :=
   inst.as_emp_valid.left rfl
 @[rocq_alias as_emp_valid_2]
 theorem asEmpValid_2 {PROP} [bi : BI PROP] {P: PROP} (φ : Prop)
-    [inst : AsEmpValid .from φ .out PROP bi P] : (⊢ P) → φ :=
+    [inst : AsEmpValid .from φ PROP bi P] : (⊢ P) → φ :=
   inst.as_emp_valid.right rfl
 
 /- Depending on the use case, type classes with the prefix `From` or `Into` are used. Type classes

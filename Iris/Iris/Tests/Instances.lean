@@ -304,7 +304,7 @@ section issue_456
 -- test for https://github.com/leanprover-community/iris-lean/issues/456
 
 @[ipm_class]
-class C (io : InOut) (a : semiOutParamIPM io Nat) (b : semiOutParamIPM io Nat true) : Prop where
+class C (io : InOut) (a : semiOutParamIPM io Nat) (b : semiOutParamIPM io.negate Nat) : Prop where
 
 abbrev CMerge (a b : Nat) := C .out a b
 
@@ -335,15 +335,15 @@ section semiOutParamIPM
 @[ipm_class]
 class C1 (io : InOut) (a : semiOutParam Nat) : Prop where
 
-/--
-error: invalid ipm_class, parameter #2 is a `semiOutParamIPM` with the `InOut`
-argument not directly referencing to an earlier parameter
--/
-#guard_msgs in
+/-- Tests `semiOutParamIPM` where the `InOut` value depends on another argument by pattern matching. -/
 @[ipm_class]
-class C2 {α} (a : α) (a : semiOutParamIPM .in Nat false) : Prop where
+class C2 (a : Bool) (a : semiOutParamIPM (match a with | false => .in | true => .out) Nat) : Prop where
+
+/-- Tests `semiOutParamIPM` where the `InOut` value depends on another argument by conditional branching. -/
+@[ipm_class]
+class C3 (a : Bool) (a : semiOutParamIPM (if a then .in else .out) Nat) : Prop where
 
 /- The attribute `semiOutParam` is still relevant for regular type classes  -/
-class C3 (io : InOut) (a : semiOutParam Nat) : Prop where
+class C4 (io : InOut) (a : semiOutParam Nat) : Prop where
 
 end semiOutParamIPM
