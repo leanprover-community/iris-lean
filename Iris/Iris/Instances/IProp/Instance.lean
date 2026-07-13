@@ -26,7 +26,7 @@ abbrev BundledGFunctors.api (FF : BundledGFunctors) (τ : GType) (T : Type _) [C
   FF τ |>.fst |>.ap T
 
 /-- Transport an OFunctorPre application along equality of the OFunctorPre.  -/
-def transpAp {F1 F2 : OFunctorPre} (H : F1 = F2) {T} [COFE T] : F1.ap T = F2.ap T :=
+theorem transpAp {F1 F2 : OFunctorPre} (H : F1 = F2) {T} [COFE T] : F1.ap T = F2.ap T :=
   congrArg (OFunctorPre.ap · T) H
 
 section TranspAp
@@ -71,10 +71,10 @@ open OFE
 
 variable [I : RFunctorContractive F]
 
-def ElemG.transpMap (E : ElemG GF F) T [OFE T] : (GF E.τ).fst = F :=
+theorem ElemG.transpMap (E : ElemG GF F) T [OFE T] : (GF E.τ).fst = F :=
   Sigma.mk.inj E.transp |>.1
 
-def ElemG.transpClass (E : ElemG GF F) T [OFE T] : (GF E.τ).snd ≍ I :=
+theorem ElemG.transpClass (E : ElemG GF F) T [OFE T] : (GF E.τ).snd ≍ I :=
   Sigma.mk.inj E.transp |>.2
 
 def ElemG.bundle (E : ElemG GF F) [COFE T] : F.ap T → GF.api E.τ T :=
