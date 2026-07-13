@@ -21,16 +21,25 @@ inductive IsOp.Direction
 | merge
 | split
 
+meta section
+
+@[reducible]
+def IsOp.Direction.mapToInOut (d : IsOp.Direction) : InOut :=
+  match d with
+  | merge => .out
+  | split => .in
+
+end
+
 /--
   A type class that allows merging `b1` and `b2` into `a` as well as
   to split `a` into `b1` and `b2`.
 -/
 @[ipm_class, rocq_alias IsOp, rocq_alias IsOp', rocq_alias IsOp'LR]
 class IsOp [CMRA α]
-    (direction : IsOp.Direction)
-    (a : semiOutParamIPM (match direction with | .merge => .out | .split => .in) α)
-    (b1 : semiOutParamIPM (match direction with | .merge => .in | .split => .out) α)
-    (b2 : semiOutParamIPM (match direction with | .merge => .in | .split => .out) α) where
+    (d : IsOp.Direction) (a : semiOutParamIPM d.mapToInOut α)
+    (b1 : semiOutParamIPM d.mapToInOut.negate α)
+    (b2 : semiOutParamIPM d.mapToInOut.negate α) where
   is_op : a ≡ b1 • b2
 
 /-- Merging with `•` should have the lowest priority. -/
