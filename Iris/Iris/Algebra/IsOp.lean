@@ -25,9 +25,7 @@ meta section
 
 @[reducible]
 def IsOp.Direction.mapToInOut (d : IsOp.Direction) : InOut :=
-  match d with
-  | merge => .out
-  | split => .in
+  match d with | merge => .out | split => .in
 
 end
 

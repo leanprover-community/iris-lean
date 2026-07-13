@@ -26,10 +26,18 @@ inductive AsEmpValid.Direction where
   | into
   | from
 
+meta section
+
+@[reducible]
+def AsEmpValid.Direction.mapToInOut (d : AsEmpValid.Direction) : InOut :=
+  match d with | .into => .in | .from => .out
+
+end
+
 @[ipm_class, rocq_alias AsEmpValid]
 class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop)
-    (PROP : semiOutParamIPM (match d with | .into => .in | .from => .out) $ Type _)
-    (bi : semiOutParamIPM (match d with | .into => .in | .from => .out) $ BI PROP)
+    (PROP : semiOutParamIPM d.mapToInOut $ Type _)
+    (bi : semiOutParamIPM d.mapToInOut $ BI PROP)
     (P : outParam $ PROP) where
   as_emp_valid : (d = .into → φ → ⊢ P) ∧ (d = .from → (⊢ P) → φ)
 
