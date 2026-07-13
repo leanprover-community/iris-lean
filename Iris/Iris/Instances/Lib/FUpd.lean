@@ -485,6 +485,7 @@ instance fromPure_fupd_finally (a : Bool) (E : CoPset) (P : IProp GF) (φ : Prop
     refine .trans ?_ (fupd_finally_intro E _)
     cases a <;> simp only [affinelyIf_false, affinelyIf_true] <;> exact Plain.plain
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias from_forall_fupd_pure]
 instance fromForall_fupd_pure {A : Type _} (E : CoPset) (P : IProp GF) (Φ : A → IProp GF)
     (φ : A → Prop) [h : FromForall P Φ] [hp : ∀ x, FromPure false (Φ x) .out (φ x)] :

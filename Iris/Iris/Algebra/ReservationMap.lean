@@ -389,10 +389,9 @@ theorem singleton_mono {k} {a b : A} (Hab : a ≼ b) : singleton (H := H) k a �
   let ⟨z, hz⟩ := Hab
   ⟨singleton k z, (NonExpansive.eqv hz).trans (singleton_op k a z)⟩
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias reservation_map_data_is_op]
-instance {ia ib₁ ib₂ : ProofMode.InOut} {a b₁ b₂ : A} [hv : IsOp ia a ib₁ b₁ ib₂ b₂] :
-    IsOp ia (singleton (H := H) k a) ib₁ (singleton k b₁) ib₂ (singleton k b₂) where
+instance {io : ProofMode.InOut} {a b₁ b₂ : A} [hv : IsOp io a b₁ b₂] :
+    IsOp io (singleton (H := H) k a) (singleton k b₁) (singleton k b₂) where
   is_op := .trans (NonExpansive.eqv hv.is_op ) (singleton_op k b₁ b₂)
 
 @[rocq_alias reservation_map_token_union]
