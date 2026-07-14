@@ -12,7 +12,7 @@ public import Iris.Std.Classes
 
 namespace Iris
 
-@[rocq_alias sidx]
+@[rocq_alias sidx, rocq_alias SIdxMixin]
 class SIdx (I : Type u) extends LT I, LE I, Zero I where
   succ : I → I
   lt_trans : ∀ {n m p : I}, n < m → m < p → n < p
@@ -30,22 +30,17 @@ scoped prefix:max "succᵢ" => SIdx.succ
 class SIdxFinite (I : Type u) [SIdx I] : Prop where
   finite_index : ∀ n : I, n = 0 ∨ ∃ m, n = succᵢ m
 
-#rocq_ignore SIdxMixin "Use the type class SIdx instead"
-
 namespace SIdx
 
 open Iris Std
 
 variable {I : Type u} [inst : SIdx I] {m n p : I}
 
-@[rocq_alias SIdx.nlt_0_r]
-theorem nlt_0_r (n : I) : ¬n < 0 := inst.not_lt_zero n
-
 @[rocq_alias SIdx.lt_succ_diag_r]
 theorem lt_succ_diag_r (n : I) : n < succᵢ n := inst.lt_succ_self n
 
-@[rocq_alias SIdx.le_succ_l_2]
-theorem le_succ_l_2 (h : n < m) : succᵢ n ≤ m := inst.succ_le_of_lt h
+@[rocq_alias SIdx.lt_succ_diag_r']
+theorem lt_succ_diag_r' (n : I) : n < succᵢ n := inst.lt_succ_diag_r n
 
 @[rocq_alias SIdx.inhabited]
 instance inhabited : Inhabited I where
@@ -62,7 +57,7 @@ theorem lt_asymm (h : n < m) : ¬m < n := by
   exact inst.lt_trans h h1
 
 @[rocq_alias SIdx.lt_strict]
-instance lt_struct : StrictOrder inst.lt where
+instance lt_strict : StrictOrder inst.lt where
   irrefl := by intro n; exact lt_irrefl n
   trans := inst.lt_trans
 
@@ -153,6 +148,9 @@ theorem le_neq : n < m ↔ n ≤ m ∧ n ≠ m := by
     apply h2
     exact le_antisymm h1 h3
 
+@[rocq_alias SIdx.le_succ_l_2]
+theorem le_succ_l_2 (h : n < m) : succᵢ n ≤ m := inst.succ_le_of_lt h
+
 @[rocq_alias SIdx.le_succ_l]
 theorem le_succ_l : succᵢ n ≤ m ↔ n < m := by
   constructor <;> intro h
@@ -180,6 +178,9 @@ theorem succ_lt_mono : n < m ↔ succᵢ n < succᵢ m := by
 @[rocq_alias SIdx.succ_inj]
 theorem succ_inj (h : succᵢ n = succᵢ m) : n = m := by
   apply le_antisymm <;> apply succ_le_mono.mpr <;> rw [h]
+
+@[rocq_alias SIdx.nlt_0_r]
+theorem nlt_0_r (n : I) : ¬n < 0 := inst.not_lt_zero n
 
 @[rocq_alias SIdx.nlt_succ_r]
 theorem nlt_succ_r : ¬ m < succᵢ n ↔ n < m := by
