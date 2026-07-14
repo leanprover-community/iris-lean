@@ -64,13 +64,21 @@ instance lt_irrefl : Irreflexive inst.lt where
 instance lt_struct : StrictOrder inst.lt where
   trans := inst.lt_trans
 
+instance le_refl : Reflexive inst.le where
+  refl := inst.le_lteq.mpr <| .inr rfl
+
+instance le_trans : Transitive inst.le where
+  trans := by
+    intro x y z hxy hyz
+    sorry
+
 instance le_antisymm : Antisymmetric Eq inst.le where
-  antisymm := sorry
+  antisymm := by
+    intro x y hxy hyx
+    sorry
 
 @[rocq_alias SIdx.le_po]
 instance le_po : PartialOrder inst.le where
-  refl := inst.le_lteq.mpr (.inr rfl)
-  trans := sorry
 
 @[rocq_alias SIdx.lt_le_incl]
 theorem lt_le_incl (h : n < m) : n ≤ m := by
@@ -83,7 +91,10 @@ theorem le_total : Total inst.le where
     sorry
 
 @[rocq_alias SIdx.lt_le_trans]
-theorem lt_le_trans (h1 : n < m) (h2 : m ≤ p) : n < p := by sorry
+theorem lt_le_trans (h1 : n < m) (h2 : m ≤ p) : n < p := by
+  rcases SIdx.le_lteq.mp h2 with (h2 | h2)
+  · exact SIdx.lt_trans h1 h2
+  · subst h2; exact h1
 
 @[rocq_alias SIdx.le_lt_trans]
 theorem le_lt_trans (h1 : n ≤ m) (h2 : m < p) : n < p := by sorry
