@@ -122,8 +122,6 @@ theorem le_lt_trans (h1 : n ≤ m) (h2 : m < p) : n < p := by
   · exact inst.lt_trans h1 h2
   · subst h1; assumption
 
--- instance succ_inj : Function.Injective Eq Eq (fun x => succᵢ x)
-
 @[rocq_alias SIdx.le_succ_diag_r]
 theorem le_succ_diag_r : n ≤ succᵢ n := by
   apply lt_le_incl
@@ -178,6 +176,10 @@ theorem succ_le_mono : n ≤ m ↔ succᵢ n ≤ succᵢ m := by
 @[rocq_alias SIdx.succ_lt_mono]
 theorem succ_lt_mono : n < m ↔ succᵢ n < succᵢ m := by
   rewrite [lt_succ_r, le_succ_l]; rfl
+
+@[rocq_alias SIdx.succ_inj]
+theorem succ_inj (h : succᵢ n = succᵢ m) : n = m := by
+  apply le_antisymm <;> apply succ_le_mono.mpr <;> rw [h]
 
 @[rocq_alias SIdx.nlt_succ_r]
 theorem nlt_succ_r : ¬ m < succᵢ n ↔ n < m := by
