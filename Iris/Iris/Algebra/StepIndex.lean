@@ -39,7 +39,7 @@ open Iris Std
 variable {I : Type u} [inst : SIdx I] {m n p : I}
 
 @[rocq_alias SIdx.nlt_0_r]
-theorem nlt_0_r : ¬n < 0 := inst.not_lt_zero n
+theorem nlt_0_r (n : I) : ¬n < 0 := inst.not_lt_zero n
 
 @[rocq_alias SIdx.lt_succ_diag_r]
 theorem lt_succ_diag_r (n : I) : n < succᵢ n := inst.lt_succ_self n
@@ -122,40 +122,12 @@ theorem le_lt_trans (h1 : n ≤ m) (h2 : m < p) : n < p := by
   · exact inst.lt_trans h1 h2
   · subst h1; assumption
 
-@[rocq_alias SIdx.le_succ_l]
-theorem le_succ_l : succᵢ n ≤ m ↔ n < m := by
-  constructor <;> intro h
-  · exact lt_le_trans (lt_succ_self n) h
-  · exact le_succ_l_2 h
-
-@[rocq_alias SIdx.lt_succ_r]
-theorem lt_succ_r : n < succᵢ m ↔ n ≤ m := by
-  constructor <;> intro h
-  · have b := le_succ_l_2 h
-    sorry
-  · exact le_lt_trans h <| lt_succ_diag_r m
-
-@[rocq_alias SIdx.succ_le_mono]
-theorem succ_le_mono : n ≤ m ↔ succᵢ n ≤ succᵢ m := by
-  rewrite [le_succ_l, lt_succ_r]; rfl
-
-@[rocq_alias SIdx.succ_lt_mono]
-theorem succ_lt_mono : n < m ↔ succᵢ n < succᵢ m := by
-  rewrite [lt_succ_r, le_succ_l]; rfl
-
 -- instance succ_inj : Function.Injective Eq Eq (fun x => succᵢ x)
 
 @[rocq_alias SIdx.le_succ_diag_r]
 theorem le_succ_diag_r : n ≤ succᵢ n := by
   apply lt_le_incl
   apply lt_succ_diag_r
-
-@[rocq_alias SIdx.neq_0_lt_0]
-theorem neq_0_lt_0 : n ≠ 0 ↔ 0 < n := by
-  constructor <;> intro h
-  · sorry
-  · have h1 := nlt_0_r (inst := inst) (n := 0)
-    sorry
 
 @[rocq_alias SIdx.le_ngt]
 theorem le_ngt : n ≤ m ↔ ¬ m < n := by
@@ -183,12 +155,36 @@ theorem le_neq : n < m ↔ n ≤ m ∧ n ≠ m := by
     apply h2
     exact le_antisymm h1 h3
 
+@[rocq_alias SIdx.le_succ_l]
+theorem le_succ_l : succᵢ n ≤ m ↔ n < m := by
+  constructor <;> intro h
+  · exact lt_le_trans (lt_succ_self n) h
+  · exact le_succ_l_2 h
+
+@[rocq_alias SIdx.lt_succ_r]
+theorem lt_succ_r : n < succᵢ m ↔ n ≤ m := by
+  constructor <;> intro h
+  · refine le_ngt.mpr ?_
+    intro h1
+    apply lt_irrefl n
+    apply lt_le_trans h
+    exact le_succ_l_2 h1
+  · exact le_lt_trans h <| lt_succ_diag_r m
+
+@[rocq_alias SIdx.succ_le_mono]
+theorem succ_le_mono : n ≤ m ↔ succᵢ n ≤ succᵢ m := by
+  rewrite [le_succ_l, lt_succ_r]; rfl
+
+@[rocq_alias SIdx.succ_lt_mono]
+theorem succ_lt_mono : n < m ↔ succᵢ n < succᵢ m := by
+  rewrite [lt_succ_r, le_succ_l]; rfl
+
 @[rocq_alias SIdx.nlt_succ_r]
 theorem nlt_succ_r : ¬ m < succᵢ n ↔ n < m := by
   rw [lt_succ_r, lt_nge]
 
 @[rocq_alias SIdx.le_0_l]
-theorem le_0_l : 0 ≤ n := le_ngt.mpr nlt_0_r
+theorem le_0_l : 0 ≤ n := le_ngt.mpr <| nlt_0_r n
 
 @[rocq_alias SIdx.le_0_r]
 theorem le_0_r : n ≤ 0 ↔ n = 0 := by
@@ -197,6 +193,16 @@ theorem le_0_r : n ≤ 0 ↔ n = 0 := by
     · assumption
     · exact le_0_l
   · subst h; rfl
+
+@[rocq_alias SIdx.neq_0_lt_0]
+theorem neq_0_lt_0 : n ≠ 0 ↔ 0 < n := by
+  constructor
+  · intro h
+    rcases lt_ge_cases n 0 with (h1 | h1)
+    · assumption
+    · exact absurd (le_0_r.mp h1) h
+  · rintro h rfl
+    exact inst.nlt_0_r 0 h
 
 @[rocq_alias neq_succ_0]
 theorem neq_succ_0 : succᵢ n ≠ 0 := neq_0_lt_0.mpr <| lt_succ_r.mpr le_0_l
