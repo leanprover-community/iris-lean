@@ -145,19 +145,35 @@ theorem neq_0_lt_0 : n ≠ 0 ↔ 0 < n := by
 theorem lt_ge_cases : n < m ∨ m ≤ n := sorry
 
 @[rocq_alias SIdx.le_gt_cases]
-theorem le_gt_cases : n ≤ m ∨ m < n := sorry
+theorem le_gt_cases : n ≤ m ∨ m < n := by
+  rcases lt_ge_cases (m := n) (n := m) with (h | h)
+  · right; assumption
+  · left; assumption
 
 @[rocq_alias SIdx.le_ngt]
-theorem le_ngt : n ≤ m ↔ ¬ m < n := sorry
+theorem le_ngt : n ≤ m ↔ ¬ m < n := by
+  constructor <;> intro h
+  · sorry
+  · rcases lt_ge_cases (m := n) (n := m) with (h1 | h1) <;> trivial
 
 @[rocq_alias SIdx.lt_nge]
-theorem lt_nge : n < m ↔ ¬ m ≤ n := sorry
+theorem lt_nge : n < m ↔ ¬ m ≤ n := by
+  constructor <;> intro h
+  · sorry
+  · rcases lt_ge_cases (m := m) (n := n) with (h1 | h1) <;> trivial
 
 @[rocq_alias SIdx.le_neq]
-theorem le_neq : n < m ↔ n ≤ m ∧ n ≠ m := sorry
+theorem le_neq : n < m ↔ n ≤ m ∧ n ≠ m := by
+  constructor <;> intro h
+  · sorry
+  · rcases h with ⟨h1, h2⟩
+    sorry
 
 @[rocq_alias SIdx.nlt_succ_r]
-theorem nlt_succ_r : ¬ m < succᵢ n ↔ n < m := sorry
+theorem nlt_succ_r : ¬ m < succᵢ n ↔ n < m := by
+  constructor <;> intro h
+  · sorry
+  · sorry
 
 @[rocq_alias SIdx.le_0_l]
 theorem le_0_l : 0 ≤ n := le_ngt.mpr nlt_0_r
