@@ -51,42 +51,48 @@ theorem le_succ_l_2 (h : n < m) : succᵢ n ≤ m := inst.succ_le_of_lt h
 instance inhabited : Inhabited I where
   default := 0
 
-instance lt_irrefl : Irreflexive inst.lt where
-  irrefl := by
-    intro n
-    induction n using lt_wf.induction with
-    | x_1 => assumption
-    | h x ih =>
-      apply ih
-      sorry
+theorem lt_irrefl (n : I) : ¬n < n := by
+  intro h
+  induction n using inst.lt_wf.induction with
+  | h n ih => apply ih n <;> exact h
+
+theorem lt_asymm (h : n < m) : ¬m < n := by
+  intro h1
+  apply lt_irrefl n
+  exact inst.lt_trans h h1
 
 @[rocq_alias SIdx.lt_strict]
 instance lt_struct : StrictOrder inst.lt where
+  irrefl := by intro n; exact lt_irrefl n
   trans := inst.lt_trans
-
-/-- For the `rfl` tactic. -/
-@[refl]
-theorem le_refl_thm : n ≤ n := inst.le_lteq.mpr <| .inr rfl
-
-instance le_refl : Reflexive inst.le where
-  refl := le_refl_thm
-
-instance le_trans : Transitive inst.le where
-  trans := by
-    intro x y z hxy hyz
-    sorry
-
-instance le_antisymm : Antisymmetric Eq inst.le where
-  antisymm := by
-    intro x y hxy hyx
-    sorry
-
-@[rocq_alias SIdx.le_po]
-instance le_po : PartialOrder inst.le where
 
 @[rocq_alias SIdx.lt_le_incl]
 theorem lt_le_incl (h : n < m) : n ≤ m := by
   apply le_lteq.mpr; left; assumption
+
+/-- For the `rfl` tactic. -/
+@[refl, simp]
+theorem le_refl : n ≤ n := inst.le_lteq.mpr <| .inr rfl
+
+theorem le_trans (h1 : n ≤ m) (h2 : m ≤ p) : n ≤ p := by
+  rcases le_lteq.mp h1 with (h1 | rfl)
+  · rcases le_lteq.mp h2 with (h2 | rfl)
+    · exact lt_le_incl <| inst.lt_trans h1 h2
+    · exact lt_le_incl h1
+  · assumption
+
+theorem le_antisymm (h1 : n ≤ m) (h2 : m ≤ n) : m = n := by
+  rcases le_lteq.mp h1 with (h1 | h1)
+  · rcases le_lteq.mp h2 with (h2 | h2)
+    · exact absurd (inst.lt_trans h1 h2) (lt_irrefl n)
+    · exact h2
+  · subst h1; rfl
+
+@[rocq_alias SIdx.le_po]
+instance le_po : PartialOrder inst.le where
+  refl := le_refl.refl
+  trans := le_trans.trans
+  antisymm := le_antisymm.antisymm
 
 @[rocq_alias SIdx.le_total]
 theorem le_total : Total inst.le where
