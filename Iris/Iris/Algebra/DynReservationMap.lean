@@ -231,10 +231,8 @@ instance instUCMRADynReservationMap: UCMRA (DynReservationMap A H) where
     refine validN_iff.mpr ⟨?_, ?_, ?_, fun i => ?_⟩
     · exact (Dist.validN h.left).mp (validN_data_of_validN v)
     · exact (Dist.validN h.right).mp (validN_token_of_validN v)
-    · have hinf := validN_infinite v
-      simp only [Infinite] at hinf ⊢
-      rw [← h.right]
-      exact hinf
+    · rw [Infinite, ← h.right]
+      exact validN_infinite v
     · cases (validN_disj v) i with
       | inl gn =>
         refine .inl <| ?_
@@ -284,10 +282,10 @@ instance instUCMRADynReservationMap: UCMRA (DynReservationMap A H) where
       exact (core_op x.data) n
     · simp [←Option.some_inj.mp h, op_token', core_token, core_op_L]
   pcore_idem {x cx} h := by
-    refine fun n => ⟨?_, ?_⟩
-    · simp only [←Option.some_inj.mp h, core_data]
-      exact (core_idem x.data) n
-    · simp [←Option.some_inj.mp h, core_token, core_idem_L]
+    cases Option.some_inj.mp h.symm
+    rcases x with ⟨xd, xt⟩
+    apply OFE.Equiv.of_eq
+    grind only [core, OFE.Equiv.to_eq, core_idem]
   pcore_op_mono {x cx} h y := by
     obtain ⟨z, hz⟩ := core_op_mono x.data y.data
     obtain ⟨w, hw⟩ := core_op_mono x.token y.token
@@ -336,9 +334,8 @@ instance [CMRA.Discrete A] : CMRA.Discrete (DynReservationMap A H) where
 
 @[rocq_alias dyn_reservation_map_data_core_id]
 instance instCoreIdSingleton {a : A} [CoreId a] : CoreId (mkData (H := H) k a) where
-  core_id := by
-    refine OFE.some_eqv_some.mpr fun n => ⟨?_, .rfl⟩
-    exact (core_eqv_self (PartialMap.singleton k a : H A)) n
+  core_id := OFE.Equiv.of_eq <| congrArg some <| congrArg (mk (token := ∅))
+    (core_eqv_self (PartialMap.singleton k a : H A)).to_eq
 
 theorem split_validN {x : DynReservationMap A H} (vx : ✓{n} x) :
     ∃ (d : H A) (t : CoPset), x ≡ mk d ∅ • mkToken t := by
@@ -373,8 +370,8 @@ theorem valid_token {e : CoPset} :
 
 @[rocq_alias dyn_reservation_map_data_op]
 theorem mkData_op k (a b : A) :
-    mkData (H := H) k (a • b) ≡ mkData k a • mkData k b := by
-  exact fun n => ⟨(fun i => Dist.of_eq (Heap.singleton_op_singleton i).symm),
+    mkData (H := H) k (a • b) ≡ mkData k a • mkData k b :=
+  fun _ => ⟨(fun i => Dist.of_eq (Heap.singleton_op_singleton i).symm),
     Dist.of_eq (pcore_op_right_L rfl).symm⟩
 
 @[rocq_alias dyn_reservation_map_data_mono]
@@ -442,7 +439,7 @@ theorem validN_data_op_token {n : Nat} {a : H A} {b : CoPset} (vd : ✓{n} a)
     show a • ∅ ≡ a from Algebra.MonoidOps.op_right_id
   have eo : ∅ • DisjointLeibnizSet.valid b = .valid b := pcore_op_left_L rfl
   refine validN_iff.mpr ⟨?_, ?_, ?_, fun i => ?_⟩
-  · exact validN_of_eqv abdp.symm vd
+  · exact abdp.symm.to_eq ▸ vd
   · simp [mkToken, eo, validN_set]
   · rw [Infinite, show (mk a ∅ • mkToken b).token = .valid b from pcore_op_left_L rfl]
     exact inf
@@ -457,10 +454,9 @@ theorem valid_op?_of_valid_mkData_op_data {a : A} {x : H A}
   | none => simpa [op?] using (validN_mkData (H := H) k a).mp (validN_op_left h)
   | some g =>
     simp only [op?]
-    have vdp := (validN_data_of_validN h) k
-    simp only [CMRA.op, mkData, op_data', Heap.op, get?_merge, Option.merge,
-      LawfulPartialMap.get?_singleton, ↓reduceIte, h'] at vdp
-    exact vdp
+    apply Option.some_validN.mp
+    simpa only [CMRA.op, mkData, op_data', Heap.op, get?_merge, Option.merge,
+      LawfulPartialMap.get?_singleton, ↓reduceIte, h'] using (validN_data_of_validN h) k
 
 theorem valid_mkData_op_data_of_valid_op? {a : A} {x : H A} (vx : ✓{n} x)
     (h : ✓{n} a •? get? x k) : ✓{n} mkData k a • mk x ∅ := by
@@ -501,23 +497,22 @@ theorem alloc {e k} {a : A} (hke : k ∈ e) (va : ✓ a) :
   | none => exact Valid.validN <| (valid_mkData k a).mpr va
   | some z =>
     have ⟨d, t, ze⟩ := split_validN (validN_op_right vo)
-    have vdt := validN_of_eqv ze (validN_op_right vo)
+    have vdt := ze.to_eq ▸ validN_op_right vo
     have vedt : ✓{n} mkToken e • (mk d ∅ • mkToken t) :=
-      validN_of_eqv (op_right_eqv _ ze) vo
+      (op_right_eqv _ ze).to_eq ▸ vo
     have disj : ∀ i : Pos, get? d i = none ∨ i ∉ e :=
       disj_of_validN_data_op_token
         (validN_of_eqv comm (validN_op_left (validN_of_eqv assoc vedt)))
-    refine validN_of_eqv (op_right_eqv _ ze.symm) ?_
-    refine validN_of_eqv CMRA.assoc.symm ?_
-    refine validN_of_eqv (op_left_eqv (mkToken t)
+    change ✓{n} mkData k a • z
+    rw [← (op_right_eqv _ ze.symm).to_eq, ← CMRA.assoc.symm.to_eq,
+      ← (op_left_eqv (mkToken t)
       (show mk ({[k := a]} • d) ∅ ≡ mkData k a • mk d ∅ from
-        fun n => ⟨.rfl, Dist.of_eq (pcore_op_right_L rfl).symm⟩)) ?_
+        fun n => ⟨.rfl, Dist.of_eq (pcore_op_right_L rfl).symm⟩)).to_eq]
     refine validN_data_op_token ?_ (infinite_data_op_token vdt) ?_
-    · have vd : ✓{n} d := validN_data_of_validN
-        (validN_op_left (validN_of_eqv comm (validN_op_left (validN_of_eqv assoc vedt))))
-      have vk : ✓{n} a •? get? d k :=
-        (disj k).elim (fun h => h ▸ Valid.validN va) (absurd hke)
-      exact validN_data_of_validN (valid_mkData_op_data_of_valid_op? vd vk)
+    · refine validN_data_of_validN <| valid_mkData_op_data_of_valid_op? ?_ ?_
+      · exact validN_data_of_validN
+          (validN_op_left (validN_of_eqv comm (validN_op_left (validN_of_eqv assoc vedt))))
+      · exact (disj k).elim (fun h => h ▸ Valid.validN va) (absurd hke)
     · simp only [CMRA.op, Heap.op, get?_merge, LawfulPartialMap.get?_singleton,
         Option.merge_eq_none_iff, ite_eq_right_iff, reduceCtorEq, imp_false]
       intro i
@@ -535,18 +530,17 @@ theorem updateP {P} {Q : DynReservationMap A H → Prop} k a (ap : a ~~>: P)
     exact ⟨_, apq y py, (validN_mkData k y).mpr vy⟩
   | some z =>
     obtain ⟨d, t, ze⟩ := split_validN (validN_op_right vaz)
-    have vdt := validN_of_eqv ze (validN_op_right vaz)
+    have vdt := ze.to_eq ▸ validN_op_right vaz
     obtain ⟨y, py, vy⟩ := ap n (get? d k)
       (valid_op?_of_valid_mkData_op_data
         (validN_op_left (validN_of_eqv CMRA.assoc
           (validN_of_eqv (op_right_eqv (mkData k a) ze) vaz))))
     refine ⟨mkData k y, apq y py, ?_⟩
     simp only [CMRA.op?] at vaz ⊢
-    refine validN_of_eqv (op_right_eqv (mkData k y) ze).symm ?_
-    refine validN_of_eqv CMRA.assoc.symm ?_
-    refine validN_of_eqv (op_left_eqv (mkToken t)
+    rw [← (op_right_eqv (mkData k y) ze).symm.to_eq, ← CMRA.assoc.symm.to_eq,
+      ← (op_left_eqv (mkToken t)
       (show mk ({[k := y]} • d) ∅ ≡ mkData k y • mk d ∅ from
-        fun n => ⟨.rfl, Dist.of_eq (pcore_op_right_L rfl).symm⟩)) ?_
+        fun n => ⟨.rfl, Dist.of_eq (pcore_op_right_L rfl).symm⟩)).to_eq]
     refine validN_data_op_token ?_ (infinite_data_op_token vdt) ?_
     · exact validN_data_of_validN <| valid_mkData_op_data_of_valid_op?
         (validN_data_of_validN (validN_op_left vdt)) vy
@@ -593,9 +587,9 @@ theorem reserve (Q : DynReservationMap A H → Prop)
           Dist.of_eq (pcore_op_left_L rfl).symm⟩), Heap.valid_empty.validN, top_infinite,
         fun i => .inl (get?_empty i)⟩
     | some z =>
-      have vz : ✓{n} z := validN_of_eqv (unit_left_id (x := z)) vo
+      have vz : ✓{n} z := (unit_left_id (x := z)).to_eq ▸ vo
       obtain ⟨mf, Ef, hze⟩ := split_validN vz
-      have vze := validN_of_eqv hze vz
+      have vze := hze.to_eq ▸ vz
       refine ⟨mf, Ef, (unit_left_id (x := z)).trans hze, ?_, ?_, ?_⟩
       · exact validN_data_of_validN (validN_op_left vze)
       · exact infinite_data_op_token vze
@@ -620,16 +614,14 @@ theorem reserve (Q : DynReservationMap A H → Prop)
       | some z => op_right_eqv (mkToken E₁) (unit_left_id (x := z)).symm).trans
         (op_right_eqv (mkToken E₁) hz)
   refine ⟨mkToken E₁, HQ E₁ hE₁inf, ?_⟩
-  refine validN_of_eqv hframe.symm ?_
   have hrearrange :
       (mkToken (H := H) (A := A) E₁) • ((mk mf ∅ : DynReservationMap A H) • mkToken Ef) ≡
         (mk mf ∅ : DynReservationMap A H) • (mkToken E₁ • mkToken Ef) :=
     CMRA.assoc.trans
       ((op_left_eqv (mkToken Ef) (CMRA.comm (x := mkToken E₁) (y := mk mf ∅))).trans
         CMRA.assoc.symm)
-  refine validN_of_eqv hrearrange.symm ?_
-  refine validN_of_eqv
-    (op_right_eqv (mk mf ∅ : DynReservationMap A H) (token_union hE₁Ef)) ?_
+  rw [← hframe.symm.to_eq, ← hrearrange.symm.to_eq,
+    ← (op_right_eqv (mk mf ∅ : DynReservationMap A H) (token_union hE₁Ef)).to_eq]
   refine validN_data_op_token vmf ?_ ?_
   · refine setInfinite_mono (fun i hi => ?_) hE₂inf
     have hiX := hEunion ▸ LawfulSet.mem_union.mpr (.inr hi)
@@ -643,9 +635,8 @@ theorem reserve (Q : DynReservationMap A H → Prop)
       cases LawfulSet.mem_union.mp hmem with
       | inl h₁ =>
         have hiX := hEunion ▸ LawfulSet.mem_union.mpr (.inl h₁)
-        have hnd : i ∉ domCoPset mf :=
-          fun hd => (LawfulSet.mem_diff.mp hiX).right (LawfulSet.mem_union.mpr (.inr hd))
-        exact Decidable.not_not.mp (mt mem_domCoPset.mpr hnd)
+        exact Decidable.not_not.mp <| mt mem_domCoPset.mpr fun hd =>
+          (LawfulSet.mem_diff.mp hiX).right (LawfulSet.mem_union.mpr (.inr hd))
       | inr hEf => exact (hdisj i).elim id fun h => absurd hEf h
     · exact .inr hmem
 
