@@ -30,17 +30,26 @@ scoped prefix:max "succᵢ" => SIdx.succ
 class SIdxFinite (I : Type u) [SIdx I] : Prop where
   finite_index : ∀ n : I, n = 0 ∨ ∃ m, n = succᵢ m
 
+#rocq_ignore lt_trans "Lifting of mixin properties not required as they are part of the type class"
+#rocq_ignore lt_wf "Lifting of mixin properties not required as they are part of the type class"
+#rocq_ignore lt_lteq "Lifting of mixin properties not required as they are part of the type class"
+#rocq_ignore lt_trichotomy "Lifting of mixin properties not required as they are part of the type class"
+#rocq_ignore le_lteq "Lifting of mixin properties not required as they are part of the type class"
+#rocq_ignore nlt_0_r "Lifting of mixin properties not required as they are part of the type class"
+#rocq_ignore lt_succ_diag_r "Lifting of mixin properties not required as they are part of the type class"
+#rocq_ignore le_succ_l_2 "Lifting of mixin properties not required as they are part of the type class"
+#rocq_ignore weak_case "Lifting of mixin properties not required as they are part of the type class"
+
 namespace SIdx
 
 open Iris Std
 
 variable {I : Type u} [inst : SIdx I] {m n p : I}
 
-@[rocq_alias SIdx.lt_succ_diag_r]
-theorem lt_succ_diag_r (n : I) : n < succᵢ n := inst.lt_succ_self n
-
 @[rocq_alias SIdx.lt_succ_diag_r']
-theorem lt_succ_diag_r' (n : I) : n < succᵢ n := inst.lt_succ_diag_r n
+theorem lt_succ_diag_r' (h : n = succᵢ m) : m < n := by
+  subst h
+  exact inst.lt_succ_self m
 
 @[rocq_alias SIdx.inhabited]
 instance inhabited : Inhabited I where
@@ -120,7 +129,7 @@ theorem le_lt_trans (h1 : n ≤ m) (h2 : m < p) : n < p := by
 @[rocq_alias SIdx.le_succ_diag_r]
 theorem le_succ_diag_r : n ≤ succᵢ n := by
   apply lt_le_incl
-  apply lt_succ_diag_r
+  apply inst.lt_succ_self
 
 @[rocq_alias SIdx.le_ngt]
 theorem le_ngt : n ≤ m ↔ ¬ m < n := by
@@ -148,14 +157,11 @@ theorem le_neq : n < m ↔ n ≤ m ∧ n ≠ m := by
     apply h2
     exact le_antisymm h1 h3
 
-@[rocq_alias SIdx.le_succ_l_2]
-theorem le_succ_l_2 (h : n < m) : succᵢ n ≤ m := inst.succ_le_of_lt h
-
 @[rocq_alias SIdx.le_succ_l]
 theorem le_succ_l : succᵢ n ≤ m ↔ n < m := by
   constructor <;> intro h
   · exact lt_le_trans (lt_succ_self n) h
-  · exact le_succ_l_2 h
+  · exact succ_le_of_lt h
 
 @[rocq_alias SIdx.lt_succ_r]
 theorem lt_succ_r : n < succᵢ m ↔ n ≤ m := by
@@ -164,8 +170,8 @@ theorem lt_succ_r : n < succᵢ m ↔ n ≤ m := by
     intro h1
     apply lt_irrefl n
     apply lt_le_trans h
-    exact le_succ_l_2 h1
-  · exact le_lt_trans h <| lt_succ_diag_r m
+    exact succ_le_of_lt h1
+  · exact le_lt_trans h <| inst.lt_succ_self m
 
 @[rocq_alias SIdx.succ_le_mono]
 theorem succ_le_mono : n ≤ m ↔ succᵢ n ≤ succᵢ m := by
@@ -179,15 +185,12 @@ theorem succ_lt_mono : n < m ↔ succᵢ n < succᵢ m := by
 theorem succ_inj (h : succᵢ n = succᵢ m) : n = m := by
   apply le_antisymm <;> apply succ_le_mono.mpr <;> rw [h]
 
-@[rocq_alias SIdx.nlt_0_r]
-theorem nlt_0_r (n : I) : ¬n < 0 := inst.not_lt_zero n
-
 @[rocq_alias SIdx.nlt_succ_r]
 theorem nlt_succ_r : ¬ m < succᵢ n ↔ n < m := by
   rw [lt_succ_r, lt_nge]
 
 @[rocq_alias SIdx.le_0_l]
-theorem le_0_l : 0 ≤ n := le_ngt.mpr <| nlt_0_r n
+theorem le_0_l : 0 ≤ n := le_ngt.mpr <| inst.not_lt_zero n
 
 @[rocq_alias SIdx.le_0_r]
 theorem le_0_r : n ≤ 0 ↔ n = 0 := by
@@ -205,7 +208,7 @@ theorem neq_0_lt_0 : n ≠ 0 ↔ 0 < n := by
     · assumption
     · exact absurd (le_0_r.mp h1) h
   · rintro h rfl
-    exact inst.nlt_0_r 0 h
+    exact inst.not_lt_zero 0 h
 
 @[rocq_alias neq_succ_0]
 theorem neq_succ_0 : succᵢ n ≠ 0 := neq_0_lt_0.mpr <| lt_succ_r.mpr le_0_l
@@ -213,8 +216,49 @@ theorem neq_succ_0 : succᵢ n ≠ 0 := neq_0_lt_0.mpr <| lt_succ_r.mpr le_0_l
 @[rocq_alias succ_neq]
 theorem succ_neq : n ≠ succᵢ n := by
   intro h
-  have hlt := inst.lt_succ_diag_r n
+  have hlt := inst.lt_succ_self n
   rw [← h] at hlt
   exact lt_irrefl n hlt
+
+@[rocq_alias SIdx.eq_dec]
+instance (priority := low) eqDec : DecidableEq I := fun n m =>
+  match inst.lt_trichotomyT n m with
+  | .inl h => by
+    apply isFalse
+    rintro rfl
+    exact lt_irrefl n h
+  | .inr (.inl h) => isTrue h
+  | .inr (.inr h) => by
+    apply isFalse
+    rintro rfl
+    exact lt_irrefl n h
+
+@[rocq_alias SIdx.lt_dec]
+instance (priority := low) (n m : I) : Decidable (n < m) :=
+  match inst.lt_trichotomyT n m with
+  | .inl h => isTrue h
+  | .inr (.inl h) => by
+    apply isFalse
+    rintro h'
+    subst h
+    exact lt_irrefl n h'
+  | .inr (.inr h) => by
+    apply isFalse
+    intro h'
+    exact lt_irrefl m <| inst.lt_trans h h'
+
+@[rocq_alias SIdx.le_dec]
+instance (priority := low) (n m : I) : Decidable (n ≤ m) :=
+  match inst.lt_trichotomyT n m with
+  | .inl h => by
+    apply isTrue
+    exact lt_le_incl h
+  | .inr (.inl h) => by
+    apply isTrue
+    exact le_lteq.mpr <| .inr h
+  | .inr (.inr h) => by
+    apply isFalse
+    intro h'
+    exact lt_irrefl m <| lt_le_trans h h'
 
 end SIdx
