@@ -828,8 +828,8 @@ theorem difference_infinite {X Y : S} :
   simp only [mem_diff]
   grind
 
-theorem setInfinite_mono {X Y : S} (H : X ⊆ Y) : setInfinite X → setInfinite Y := by
-  intro Hinf xs
+theorem setInfinite_mono {X Y : S} (H : X ⊆ Y) (Hinf : setInfinite X) : setInfinite Y := by
+  intro xs
   obtain ⟨x, Hx, Hxs⟩ := Hinf xs
   exact ⟨x, H x Hx, Hxs⟩
 
