@@ -102,8 +102,30 @@ theorem succ_lt_mono : n < m ↔ succᵢ n < succᵢ m := sorry
 
 -- instance succ_inj : Function.Injective Eq Eq (fun x => succᵢ x)
 
+@[rocq_alias SIdx.le_succ_diag_r]
 theorem le_succ_diag_r : n ≤ succᵢ n := by
   apply lt_le_incl
   apply lt_succ_diag_r
+
+@[rocq_alias SIdx.neq_0_lt_0]
+theorem neq_0_lt_0 : n ≠ 0 ↔ 0 < n := sorry
+
+@[rocq_alias SIdx.lt_ge_cases]
+theorem lt_ge_cases : n < m ∨ m ≤ n := sorry
+
+@[rocq_alias SIdx.le_gt_cases]
+theorem le_gt_cases : n ≤ m ∨ m < n := sorry
+
+@[rocq_alias SIdx.le_ngt]
+theorem le_ngt : n ≤ m ↔ ¬ m ≤ n := sorry
+
+@[rocq_alias SIdx.lt_nge]
+theorem lt_nge : n < m ↔ ¬ m ≤ n := sorry
+
+@[rocq_alias SIdx.le_neq]
+theorem le_neq : n < m ↔ n ≤ m ∧ n ≠ m := sorry
+
+@[rocq_alias SIdx.nlt_succ_r]
+theorem nlt_succ_r : ¬ m < succᵢ n ↔ n < m := sorry
 
 end SIdx
