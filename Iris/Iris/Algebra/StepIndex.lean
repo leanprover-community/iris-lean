@@ -72,7 +72,7 @@ theorem lt_le_incl (h : n < m) : n ≤ m := by
 
 /-- For the `rfl` tactic. -/
 @[refl, simp]
-theorem le_refl : n ≤ n := inst.le_lteq.mpr <| .inr rfl
+theorem le_refl : n ≤ n := by apply inst.le_lteq.mpr; right; rfl
 
 theorem le_trans (h1 : n ≤ m) (h2 : m ≤ p) : n ≤ p := by
   rcases le_lteq.mp h1 with (h1 | rfl)
@@ -81,35 +81,45 @@ theorem le_trans (h1 : n ≤ m) (h2 : m ≤ p) : n ≤ p := by
     · exact lt_le_incl h1
   · assumption
 
-theorem le_antisymm (h1 : n ≤ m) (h2 : m ≤ n) : m = n := by
-  rcases le_lteq.mp h1 with (h1 | h1)
-  · rcases le_lteq.mp h2 with (h2 | h2)
-    · exact absurd (inst.lt_trans h1 h2) (lt_irrefl n)
-    · exact h2
-  · subst h1; rfl
+theorem le_antisymm (h1 : m ≤ n) (h2 : n ≤ m) : m = n := by
+  rcases le_lteq.mp h2 with (h2 | h2)
+  · rcases le_lteq.mp h1 with (h1 | h1)
+    · exact absurd (inst.lt_trans h2 h1) (lt_irrefl n)
+    · exact h1
+  · subst h2; rfl
 
 @[rocq_alias SIdx.le_po]
 instance le_po : PartialOrder inst.le where
-  refl := le_refl.refl
-  trans := le_trans.trans
-  antisymm := le_antisymm.antisymm
+  refl := le_refl
+  trans := le_trans
+  antisymm := le_antisymm
+
+@[rocq_alias SIdx.lt_ge_cases]
+theorem lt_ge_cases (m n : I) : n < m ∨ m ≤ n := by
+  rcases inst.lt_trichotomyT n m with (h | h | h)
+  · left; exact h
+  · right; apply le_lteq.mpr; right; symm; assumption
+  · right; exact lt_le_incl h
+
+@[rocq_alias SIdx.le_gt_cases]
+theorem le_gt_cases (m n : I) : n ≤ m ∨ m < n := lt_ge_cases n m |>.symm
 
 @[rocq_alias SIdx.le_total]
-theorem le_total : Total inst.le where
-  total := by
-    intro x y
-    sorry
+theorem le_total : n ≤ m ∨ m ≤ n := by
+  rcases lt_ge_cases m n with (h | h)
+  · left; exact lt_le_incl h
+  · right; assumption
 
 @[rocq_alias SIdx.lt_le_trans]
 theorem lt_le_trans (h1 : n < m) (h2 : m ≤ p) : n < p := by
-  rcases SIdx.le_lteq.mp h2 with (h2 | h2)
-  · exact SIdx.lt_trans h1 h2
+  rcases inst.le_lteq.mp h2 with (h2 | h2)
+  · exact inst.lt_trans h1 h2
   · subst h2; assumption
 
 @[rocq_alias SIdx.le_lt_trans]
 theorem le_lt_trans (h1 : n ≤ m) (h2 : m < p) : n < p := by
-  rcases SIdx.le_lteq.mp h1 with (h1 | h1)
-  · exact SIdx.lt_trans h1 h2
+  rcases inst.le_lteq.mp h1 with (h1 | h1)
+  · exact inst.lt_trans h1 h2
   · subst h1; assumption
 
 @[rocq_alias SIdx.le_succ_l]
@@ -146,15 +156,6 @@ theorem neq_0_lt_0 : n ≠ 0 ↔ 0 < n := by
   · sorry
   · have h1 := nlt_0_r (inst := inst) (n := 0)
     sorry
-
-@[rocq_alias SIdx.lt_ge_cases]
-theorem lt_ge_cases : n < m ∨ m ≤ n := sorry
-
-@[rocq_alias SIdx.le_gt_cases]
-theorem le_gt_cases : n ≤ m ∨ m < n := by
-  rcases lt_ge_cases (m := n) (n := m) with (h | h)
-  · right; assumption
-  · left; assumption
 
 @[rocq_alias SIdx.le_ngt]
 theorem le_ngt : n ≤ m ↔ ¬ m < n := by
