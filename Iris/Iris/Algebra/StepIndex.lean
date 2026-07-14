@@ -27,18 +27,18 @@ class SIdx (I : Type u) extends LT I, LE I, Zero I where
 /-- The step-indexing successor operator. -/
 scoped prefix:max "succᵢ" => SIdx.succ
 
-class SIdxFinite (I : Type u) [SIdx I] : Prop where
+class SIdxFinite (I : Type u) [SIdx I] where
   finite_index : ∀ n : I, n = 0 ∨ ∃ m, n = succᵢ m
 
-#rocq_ignore lt_trans "Lifting of mixin properties not required as they are part of the type class"
-#rocq_ignore lt_wf "Lifting of mixin properties not required as they are part of the type class"
-#rocq_ignore lt_lteq "Lifting of mixin properties not required as they are part of the type class"
-#rocq_ignore lt_trichotomy "Lifting of mixin properties not required as they are part of the type class"
-#rocq_ignore le_lteq "Lifting of mixin properties not required as they are part of the type class"
-#rocq_ignore nlt_0_r "Lifting of mixin properties not required as they are part of the type class"
-#rocq_ignore lt_succ_diag_r "Lifting of mixin properties not required as they are part of the type class"
-#rocq_ignore le_succ_l_2 "Lifting of mixin properties not required as they are part of the type class"
-#rocq_ignore weak_case "Lifting of mixin properties not required as they are part of the type class"
+#rocq_ignore SIdx.t_trans "Lifting of mixin properties not required as they are part of the type class SIdx"
+#rocq_ignore SIdx.lt_wf "Lifting of mixin properties not required as they are part of the type class SIdx"
+#rocq_ignore SIdx.lt_lteq "Lifting of mixin properties not required as they are part of the type class SIdx"
+#rocq_ignore SIdx.lt_trichotomy "Lifting of mixin properties not required as they are part of the type class SIdx"
+#rocq_ignore SIdx.le_lteq "Lifting of mixin properties not required as they are part of the type class SIdx"
+#rocq_ignore SIdx.nlt_0_r "Lifting of mixin properties not required as they are part of the type class SIdx"
+#rocq_ignore SIdx.lt_succ_diag_r "Lifting of mixin properties not required as they are part of the type class SIdx"
+#rocq_ignore SIdx.le_succ_l_2 "Lifting of mixin properties not required as they are part of the type class SIdx"
+#rocq_ignore SIdx.weak_case "Lifting of mixin properties not required as they are part of the type class SIdx"
 
 namespace SIdx
 
@@ -260,5 +260,10 @@ instance (priority := low) (n m : I) : Decidable (n ≤ m) :=
     apply isFalse
     intro h'
     exact lt_irrefl m <| lt_le_trans h h'
+
+@[rocq_alias SIdx.limit]
+structure Limit (n : I) [SIdx I] where
+  succ_lt : ∀ m, m < n → succᵢ m < n
+  ne_zero : n ≠ 0
 
 end SIdx
