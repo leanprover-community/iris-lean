@@ -7,7 +7,6 @@ module
 
 public meta import Iris.ProofMode.Expr
 public import Iris.ProofMode.Classes
-public import Iris.ProofMode.InstancesInit
 
 public meta section
 
