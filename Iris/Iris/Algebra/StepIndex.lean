@@ -42,7 +42,7 @@ variable {I : Type u} [inst : SIdx I] {m n p : I}
 theorem nlt_0_r : ¬n < 0 := inst.not_lt_zero n
 
 @[rocq_alias SIdx.lt_succ_diag_r]
-theorem lt_succ_diag_r : n < succᵢ n := inst.lt_succ_self n
+theorem lt_succ_diag_r (n : I) : n < succᵢ n := inst.lt_succ_self n
 
 @[rocq_alias SIdx.le_succ_l_2]
 theorem le_succ_l_2 (h : n < m) : succᵢ n ≤ m := inst.succ_le_of_lt h
@@ -133,7 +133,7 @@ theorem lt_succ_r : n < succᵢ m ↔ n ≤ m := by
   constructor <;> intro h
   · have b := le_succ_l_2 h
     sorry
-  · exact le_lt_trans h lt_succ_diag_r
+  · exact le_lt_trans h <| lt_succ_diag_r m
 
 @[rocq_alias SIdx.succ_le_mono]
 theorem succ_le_mono : n ≤ m ↔ succᵢ n ≤ succᵢ m := by
@@ -159,28 +159,33 @@ theorem neq_0_lt_0 : n ≠ 0 ↔ 0 < n := by
 
 @[rocq_alias SIdx.le_ngt]
 theorem le_ngt : n ≤ m ↔ ¬ m < n := by
-  constructor <;> intro h
-  · sorry
-  · rcases lt_ge_cases (m := n) (n := m) with (h1 | h1) <;> trivial
+  constructor <;> intro h0
+  · intro h1
+    exact lt_irrefl m (lt_le_trans h1 h0)
+  · rcases lt_ge_cases n m <;> trivial
 
 @[rocq_alias SIdx.lt_nge]
 theorem lt_nge : n < m ↔ ¬ m ≤ n := by
-  constructor <;> intro h
-  · sorry
-  · rcases lt_ge_cases (m := m) (n := n) with (h1 | h1) <;> trivial
+  constructor <;> intro h0
+  · intro h1
+    exact lt_irrefl n <| lt_le_trans h0 h1
+  · rcases lt_ge_cases m n <;> trivial
 
 @[rocq_alias SIdx.le_neq]
 theorem le_neq : n < m ↔ n ≤ m ∧ n ≠ m := by
   constructor <;> intro h
-  · sorry
+  · refine ⟨lt_le_incl h, ?_⟩
+    rintro rfl
+    exact lt_irrefl n h
   · rcases h with ⟨h1, h2⟩
-    sorry
+    apply lt_nge.mpr
+    intro h3
+    apply h2
+    exact le_antisymm h1 h3
 
 @[rocq_alias SIdx.nlt_succ_r]
 theorem nlt_succ_r : ¬ m < succᵢ n ↔ n < m := by
-  constructor <;> intro h
-  · sorry
-  · sorry
+  rw [lt_succ_r, lt_nge]
 
 @[rocq_alias SIdx.le_0_l]
 theorem le_0_l : 0 ≤ n := le_ngt.mpr nlt_0_r
@@ -197,6 +202,10 @@ theorem le_0_r : n ≤ 0 ↔ n = 0 := by
 theorem neq_succ_0 : succᵢ n ≠ 0 := neq_0_lt_0.mpr <| lt_succ_r.mpr le_0_l
 
 @[rocq_alias succ_neq]
-theorem succ_neq : n ≠ succᵢ n := sorry
+theorem succ_neq : n ≠ succᵢ n := by
+  intro h
+  have hlt := inst.lt_succ_diag_r n
+  rw [← h] at hlt
+  exact lt_irrefl n hlt
 
 end SIdx
