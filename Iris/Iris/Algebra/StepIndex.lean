@@ -128,4 +128,16 @@ theorem le_neq : n < m ↔ n ≤ m ∧ n ≠ m := sorry
 @[rocq_alias SIdx.nlt_succ_r]
 theorem nlt_succ_r : ¬ m < succᵢ n ↔ n < m := sorry
 
+@[rocq_alias SIdx.le_0_l]
+theorem le_0_l : 0 ≤ n := sorry
+
+@[rocq_alias SIdx.le_0_r]
+theorem le_0_r : n ≤ 0 ↔ n = 0 := sorry
+
+@[rocq_alias neq_succ_0]
+theorem neq_succ_0 : succᵢ n ≠ 0 := sorry
+
+@[rocq_alias succ_neq]
+theorem succ_neq : n ≠ succᵢ n := sorry
+
 end SIdx
