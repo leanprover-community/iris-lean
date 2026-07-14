@@ -266,4 +266,29 @@ structure Limit (n : I) [SIdx I] where
   succ_lt : ∀ m, m < n → succᵢ m < n
   ne_zero : n ≠ 0
 
+@[simp, rocq_alias SIdx.limit_0]
+theorem limit_0 : ¬Limit (0 : I) := by
+  intro h
+  exact h.ne_zero rfl
+
+@[rocq_alias SIdx.limit_lt_0]
+theorem Limit.limit_lt_0 (h : Limit n) : 0 < n := neq_0_lt_0.mp h.ne_zero
+
+@[simp, rocq_alias SIdx.limit_S]
+theorem limit_S (n : I) : ¬Limit (succᵢ n) := by
+  intro h
+  apply lt_irrefl (succᵢ n)
+  apply h.succ_lt n
+  exact lt_succ_self n
+
+@[rocq_alias SIdx.limit_finite]
+theorem limit_finite [inst : SIdxFinite I] (n : I) : ¬Limit n := by
+  intro h
+  rcases SIdxFinite.finite_index n with (h0 | h0)
+  · exact h.ne_zero h0
+  · rcases h0 with ⟨m, hm⟩
+    apply limit_S m
+    subst hm
+    assumption
+
 end SIdx
