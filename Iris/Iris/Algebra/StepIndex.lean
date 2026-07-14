@@ -103,7 +103,10 @@ theorem le_lt_trans (h1 : n ≤ m) (h2 : m < p) : n < p := by
   · subst h1; assumption
 
 @[rocq_alias SIdx.le_succ_l]
-theorem le_succ_l : succᵢ n ≤ m ↔ n < m := sorry
+theorem le_succ_l : succᵢ n ≤ m ↔ n < m := by
+
+
+
 
 @[rocq_alias SIdx.lt_succ_r]
 theorem lt_succ_r : n < succᵢ m ↔ n ≤ m := sorry
@@ -131,7 +134,7 @@ theorem lt_ge_cases : n < m ∨ m ≤ n := sorry
 theorem le_gt_cases : n ≤ m ∨ m < n := sorry
 
 @[rocq_alias SIdx.le_ngt]
-theorem le_ngt : n ≤ m ↔ ¬ m ≤ n := sorry
+theorem le_ngt : n ≤ m ↔ ¬ m < n := sorry
 
 @[rocq_alias SIdx.lt_nge]
 theorem lt_nge : n < m ↔ ¬ m ≤ n := sorry
