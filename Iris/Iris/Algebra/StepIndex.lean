@@ -104,18 +104,24 @@ theorem le_lt_trans (h1 : n ≤ m) (h2 : m < p) : n < p := by
 
 @[rocq_alias SIdx.le_succ_l]
 theorem le_succ_l : succᵢ n ≤ m ↔ n < m := by
-
-
-
+  constructor <;> intro h
+  · exact lt_le_trans (lt_succ_self n) h
+  · exact le_succ_l_2 h
 
 @[rocq_alias SIdx.lt_succ_r]
-theorem lt_succ_r : n < succᵢ m ↔ n ≤ m := sorry
+theorem lt_succ_r : n < succᵢ m ↔ n ≤ m := by
+  constructor <;> intro h
+  · have b := le_succ_l_2 h
+    sorry
+  · exact le_lt_trans h lt_succ_diag_r
 
 @[rocq_alias SIdx.succ_le_mono]
-theorem succ_le_mono : n ≤ m ↔ succᵢ n ≤ succᵢ m := sorry
+theorem succ_le_mono : n ≤ m ↔ succᵢ n ≤ succᵢ m := by
+  rewrite [le_succ_l, lt_succ_r]; rfl
 
 @[rocq_alias SIdx.succ_lt_mono]
-theorem succ_lt_mono : n < m ↔ succᵢ n < succᵢ m := sorry
+theorem succ_lt_mono : n < m ↔ succᵢ n < succᵢ m := by
+  rewrite [lt_succ_r, le_succ_l]; rfl
 
 -- instance succ_inj : Function.Injective Eq Eq (fun x => succᵢ x)
 
