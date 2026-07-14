@@ -24,3 +24,14 @@ class SIdx (I : Type u) extends LT I, LE I, Zero I where
   weak_case : ∀ n : I, (Σ' m : I, n = succ m) ⊕' ∀ m : I, m < n → succ m < n
 
 #rocq_ignore SIdxMixin "Use the type class SIdx instead"
+
+namespace SIdx
+
+open Iris
+
+variable {I : Type u} [inst : SIdx I] {m n p : I}
+
+@[rocq_alias SIdx.nlt_0_r]
+theorem nlt_0_r : ¬n < 0 := inst.not_lt_zero n
+
+end SIdx
