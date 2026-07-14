@@ -64,8 +64,12 @@ instance lt_irrefl : Irreflexive inst.lt where
 instance lt_struct : StrictOrder inst.lt where
   trans := inst.lt_trans
 
+/-- For the `rfl` tactic. -/
+@[refl]
+theorem le_refl_thm : n ≤ n := inst.le_lteq.mpr <| .inr rfl
+
 instance le_refl : Reflexive inst.le where
-  refl := inst.le_lteq.mpr <| .inr rfl
+  refl := le_refl_thm
 
 instance le_trans : Transitive inst.le where
   trans := by
@@ -131,7 +135,11 @@ theorem le_succ_diag_r : n ≤ succᵢ n := by
   apply lt_succ_diag_r
 
 @[rocq_alias SIdx.neq_0_lt_0]
-theorem neq_0_lt_0 : n ≠ 0 ↔ 0 < n := sorry
+theorem neq_0_lt_0 : n ≠ 0 ↔ 0 < n := by
+  constructor <;> intro h
+  · sorry
+  · have h1 := nlt_0_r (inst := inst) (n := 0)
+    sorry
 
 @[rocq_alias SIdx.lt_ge_cases]
 theorem lt_ge_cases : n < m ∨ m ≤ n := sorry
@@ -152,13 +160,18 @@ theorem le_neq : n < m ↔ n ≤ m ∧ n ≠ m := sorry
 theorem nlt_succ_r : ¬ m < succᵢ n ↔ n < m := sorry
 
 @[rocq_alias SIdx.le_0_l]
-theorem le_0_l : 0 ≤ n := sorry
+theorem le_0_l : 0 ≤ n := le_ngt.mpr nlt_0_r
 
 @[rocq_alias SIdx.le_0_r]
-theorem le_0_r : n ≤ 0 ↔ n = 0 := sorry
+theorem le_0_r : n ≤ 0 ↔ n = 0 := by
+  constructor <;> intro h
+  · apply antisymm
+    · assumption
+    · exact le_0_l
+  · subst h; rfl
 
 @[rocq_alias neq_succ_0]
-theorem neq_succ_0 : succᵢ n ≠ 0 := sorry
+theorem neq_succ_0 : succᵢ n ≠ 0 := neq_0_lt_0.mpr <| lt_succ_r.mpr le_0_l
 
 @[rocq_alias succ_neq]
 theorem succ_neq : n ≠ succᵢ n := sorry
