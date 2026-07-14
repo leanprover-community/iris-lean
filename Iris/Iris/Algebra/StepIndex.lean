@@ -94,10 +94,13 @@ theorem le_total : Total inst.le where
 theorem lt_le_trans (h1 : n < m) (h2 : m ≤ p) : n < p := by
   rcases SIdx.le_lteq.mp h2 with (h2 | h2)
   · exact SIdx.lt_trans h1 h2
-  · subst h2; exact h1
+  · subst h2; assumption
 
 @[rocq_alias SIdx.le_lt_trans]
-theorem le_lt_trans (h1 : n ≤ m) (h2 : m < p) : n < p := by sorry
+theorem le_lt_trans (h1 : n ≤ m) (h2 : m < p) : n < p := by
+  rcases SIdx.le_lteq.mp h1 with (h1 | h1)
+  · exact SIdx.lt_trans h1 h2
+  · subst h1; assumption
 
 @[rocq_alias SIdx.le_succ_l]
 theorem le_succ_l : succᵢ n ≤ m ↔ n < m := sorry
