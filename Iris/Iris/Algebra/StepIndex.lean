@@ -6,6 +6,7 @@ Authors: Michael Sammler, Alvin Tang
 module
 
 public meta import Iris.Std.RocqPorting
+public import Iris.Std.Classes
 
 @[expose] public section
 
@@ -14,24 +15,95 @@ namespace Iris
 @[rocq_alias sidx]
 class SIdx (I : Type u) extends LT I, LE I, Zero I where
   succ : I → I
-  lt_trans : ∀ (n m p : I), n < m → m < p → n < p
+  lt_trans : ∀ {n m p : I}, n < m → m < p → n < p
   lt_wf : WellFounded ((· < ·) : I → I → Prop)
   lt_trichotomyT : ∀ n m : I, n < m ⊕' n = m ⊕' m < n
-  le_lteq : ∀ m n : I, n ≤ m ↔ n < m ∨ n = m
-  not_lt_zero : ∀ n : I, ¬n < Zero.zero
+  le_lteq : ∀ {m n : I}, n ≤ m ↔ n < m ∨ n = m
+  not_lt_zero : ∀ n : I, ¬n < 0
   lt_succ_self : ∀ n : I, n < succ n
-  succ_le_of_lt : ∀ n m : I, n < m → succ n ≤ m
+  succ_le_of_lt : ∀ {n m : I}, n < m → succ n ≤ m
   weak_case : ∀ n : I, (Σ' m : I, n = succ m) ⊕' ∀ m : I, m < n → succ m < n
+
+/-- The step-indexing successor operator. -/
+scoped prefix:max "succᵢ" => SIdx.succ
+
+class SIdxFinite (I : Type u) [SIdx I] : Prop where
+  finite_index : ∀ n : I, n = 0 ∨ ∃ m, n = succᵢ m
 
 #rocq_ignore SIdxMixin "Use the type class SIdx instead"
 
 namespace SIdx
 
-open Iris
+open Iris Std
 
 variable {I : Type u} [inst : SIdx I] {m n p : I}
 
 @[rocq_alias SIdx.nlt_0_r]
 theorem nlt_0_r : ¬n < 0 := inst.not_lt_zero n
+
+@[rocq_alias SIdx.lt_succ_diag_r]
+theorem lt_succ_diag_r : n < succᵢ n := inst.lt_succ_self n
+
+@[rocq_alias SIdx.le_succ_l_2]
+theorem le_succ_l_2 (h : n < m) : succᵢ n ≤ m := inst.succ_le_of_lt h
+
+@[rocq_alias SIdx.inhabited]
+instance inhabited : Inhabited I where
+  default := 0
+
+instance lt_irrefl : Irreflexive inst.lt where
+  irrefl := by
+    intro n
+    induction n using lt_wf.induction with
+    | x_1 => assumption
+    | h x ih =>
+      apply ih
+      sorry
+
+@[rocq_alias SIdx.lt_strict]
+instance lt_struct : StrictOrder inst.lt where
+  trans := inst.lt_trans
+
+instance le_antisymm : Antisymmetric Eq inst.le where
+  antisymm := sorry
+
+@[rocq_alias SIdx.le_po]
+instance le_po : PartialOrder inst.le where
+  refl := inst.le_lteq.mpr (.inr rfl)
+  trans := sorry
+
+@[rocq_alias SIdx.lt_le_incl]
+theorem lt_le_incl (h : n < m) : n ≤ m := by
+  apply le_lteq.mpr; left; assumption
+
+@[rocq_alias SIdx.le_total]
+theorem le_total : Total inst.le where
+  total := by
+    intro x y
+    sorry
+
+@[rocq_alias SIdx.lt_le_trans]
+theorem lt_le_trans (h1 : n < m) (h2 : m ≤ p) : n < p := by sorry
+
+@[rocq_alias SIdx.le_lt_trans]
+theorem le_lt_trans (h1 : n ≤ m) (h2 : m < p) : n < p := by sorry
+
+@[rocq_alias SIdx.le_succ_l]
+theorem le_succ_l : succᵢ n ≤ m ↔ n < m := sorry
+
+@[rocq_alias SIdx.lt_succ_r]
+theorem lt_succ_r : n < succᵢ m ↔ n ≤ m := sorry
+
+@[rocq_alias SIdx.succ_le_mono]
+theorem succ_le_mono : n ≤ m ↔ succᵢ n ≤ succᵢ m := sorry
+
+@[rocq_alias SIdx.succ_lt_mono]
+theorem succ_lt_mono : n < m ↔ succᵢ n < succᵢ m := sorry
+
+-- instance succ_inj : Function.Injective Eq Eq (fun x => succᵢ x)
+
+theorem le_succ_diag_r : n ≤ succᵢ n := by
+  apply lt_le_incl
+  apply lt_succ_diag_r
 
 end SIdx
