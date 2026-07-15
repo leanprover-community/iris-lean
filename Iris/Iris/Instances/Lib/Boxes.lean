@@ -19,7 +19,7 @@ namespace Iris
 
 open BI CMRA Agree OFE UPred IProp Std ProofMode COFE Auth ExclAuth Excl PartialMap BigSepM
 
-abbrev BoolO := LeibnizO Bool
+abbrev BoolO := DiscreteO Bool
 
 variable (GF : BundledGFunctors)
 
@@ -112,7 +112,7 @@ theorem box_own_auth_agree {γ : SliceName} {b1 b2 : Bool} :
   iintro H
   icases iOwn_cmraValid $$ H with H
   icases (prod_validI _).mp $$ H with ⟨%H, -⟩
-  ipureintro; exact LeibnizO.eqv_inj $ Iris.ExclAuth.agree_L H
+  ipureintro; exact DiscreteO.eqv_inj $ Iris.ExclAuth.agree H
 
 @[rocq_alias box_own_auth_update]
 theorem box_own_auth_update {γ : SliceName} {b1 b2: Bool} (b3 : Bool) :

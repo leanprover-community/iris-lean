@@ -283,11 +283,10 @@ instance : BI (UPred M) where
   entails_preorder := inferInstance
   equiv_iff {_ _} := by
     constructor <;> intro HE
-    · constructor <;> intro n ⟨x, Hv⟩ H <;> refine uPred_holds_ne ?_ .refl Hv Hv H
-      · exact fun n' x _ => HE.symm n' x
-      · exact fun n' x _ => HE n' x
-    · intro n m Hv
-      exact ⟨fun H => HE.1 _ ⟨_, Hv⟩ H, fun H => HE.2 _ ⟨_, Hv⟩ H⟩
+    · exact ⟨fun n ⟨x, Hv⟩ H => (HE n n x .refl Hv).mp H,
+             fun n ⟨x, Hv⟩ H => (HE n n x .refl Hv).mpr H⟩
+    · intro n n' x _ p
+      exact ⟨fun H => HE.1 n' ⟨x, p⟩ H, fun H => HE.2 n' ⟨x, p⟩ H⟩
   and_ne.ne _ _ _ H _ _ H' _ _ Hn' Hv' := by
     constructor <;> intro H <;> rcases H with ⟨H1, H2⟩
     · constructor

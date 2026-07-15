@@ -74,7 +74,6 @@ variable [UCMRA A]
 instance : OFE (Auth A) := View.instOFE
 instance : CMRA (Auth A) := View.instCMRA
 instance : UCMRA (Auth A) := View.instUCMRA
-instance instLeibniz [Leibniz A] : Leibniz (Auth A) := View.instLeibniz
 
 #rocq_ignore authO "Use the Auth type and View.instOFE typeclass"
 #rocq_ignore authR "Use the Auth type and View.instCMRA typeclass"
@@ -114,7 +113,7 @@ nonrec theorem auth_dist_inj {n : Nat} {dq1 dq2 : DFrac} {a1 a2 : A}
 
 @[rocq_alias auth_auth_inj]
 theorem auth_inj {dq1 dq2 : DFrac} {a1 a2 : A} (h : (●{dq1} a1) ≡ ●{dq2} a2) :
-    dq1 = dq2 ∧ a1 ≡ a2 := ⟨h.1.1, equiv_dist.mpr fun _ => dist_of_auth_dist h.dist⟩
+    dq1 = dq2 ∧ a1 ≡ a2 := ⟨auth_inj_frac (h 0), equiv_dist.mpr fun _ => dist_of_auth_dist h.dist⟩
 
 @[rocq_alias auth_frag_dist_inj]
 theorem frag_dist_inj {n : Nat} {b1 b2 : A} (h : (◯ b1 : Auth A) ≡{n}≡ ◯ b2) : b1 ≡{n}≡ b2 :=
@@ -143,7 +142,7 @@ set_option synthInstance.checkSynthOrder false in
 instance {dq dq1 dq2 : DFrac} [h : IsOp io1 dq io2 dq1 io3 dq2] :
     IsOp io1 (●{dq} a : Auth A) io2 (●{dq1} a) io3 (●{dq2} a) where
   is_op := by
-    rw [h.is_op]
+    rw [h.is_op.to_eq]
     apply auth_dfrac_op
 
 @[rocq_alias auth_frag_op]
@@ -184,7 +183,7 @@ nonrec instance {a : A} {b : A} [CoreId b] :
 @[rocq_alias auth_frag_is_op]
 instance {a b1 b2 : A} [h : IsOp io1 a io2 b1 io3 b2] :
     IsOp io1 (◯ a : Auth A) io2 (◯ b1) io3 (◯ b2) where
-  is_op := ⟨⟨⟩, h.is_op⟩
+  is_op := NonExpansive₂.eqv .rfl h.is_op
 
 -- TODO: auth_frag_sep_homomorphism
 
@@ -208,7 +207,7 @@ theorem auth_dfrac_op_inv {dq1 dq2 : DFrac} {a b : A}
   eqv_of_valid_auth h
 
 @[rocq_alias auth_auth_dfrac_op_inv_L]
-theorem auth_dfrac_op_inv_L [Leibniz A] {dq1 dq2 : DFrac} {a b : A}
+theorem auth_dfrac_op_inv_L {dq1 dq2 : DFrac} {a b : A}
     (h : ✓ ((●{dq1} a) • ●{dq2} b)) : a = b :=
   (auth_dfrac_op_inv h).to_eq
 

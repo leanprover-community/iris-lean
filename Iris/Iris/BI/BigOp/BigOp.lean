@@ -39,26 +39,24 @@ instance orMonoidOps [BI PROP] : MonoidOps (or (PROP := PROP)) iprop(False) wher
 /-! ## Homomorphism helpers for OFE equivalence -/
 
 /-- Build a `MonoidHomomorphism` for OFE equivalence from just the essential fields. -/
-@[reducible, expose] def MonoidHomomorphism.ofEquiv [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
+theorem MonoidHomomorphism.ofEquiv [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
     {u₁ u₂ : PROP} [MonoidOps op₁ u₁] [MonoidOps op₂ u₂] {f : PROP → PROP}
     (hne : NonExpansive f) (hop : ∀ {x y}, f (op₁ x y) ≡ op₂ (f x) (f y))
     (hunit : f u₁ ≡ u₂) : MonoidHomomorphism op₁ op₂ u₁ u₂ (· ≡ ·) f where
   rel_refl := .rfl
   rel_trans := .trans
-  rel_proper ha hb := ⟨fun h => ha.symm.trans (h.trans hb), fun h => ha.trans (h.trans hb.symm)⟩
   op_proper ha hb := MonoidOps.op_proper ha hb
   map_ne := hne
   map_op := hop
   map_unit := hunit
 
 /-- Build a `WeakMonoidHomomorphism` for OFE equivalence from just the essential fields. -/
-@[reducible, expose] def WeakMonoidHomomorphism.ofEquiv [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
+theorem WeakMonoidHomomorphism.ofEquiv [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
     {u₁ u₂ : PROP} [MonoidOps op₁ u₁] [MonoidOps op₂ u₂] {f : PROP → PROP}
     (hne : NonExpansive f) (hop : ∀ {x y}, f (op₁ x y) ≡ op₂ (f x) (f y)) :
     WeakMonoidHomomorphism op₁ op₂ u₁ u₂ (· ≡ ·) f where
   rel_refl := .rfl
   rel_trans := .trans
-  rel_proper ha hb := ⟨fun h => ha.symm.trans (h.trans hb), fun h => ha.trans (h.trans hb.symm)⟩
   op_proper ha hb := MonoidOps.op_proper ha hb
   map_ne := hne
   map_op := hop
@@ -458,8 +456,6 @@ instance bi_persistently_sep_entails_weak_homomorphism [BI PROP] :
     WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (flip Entails) persistently where
   rel_refl := .rfl
   rel_trans := flip .trans
-  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp),
-                     fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
   op_proper := sep_mono
   map_ne := BI.persistently_ne
   map_op := persistently_sep_mpr
@@ -469,8 +465,6 @@ instance bi_persistently_sep_entails_homomorphism [BI PROP] :
     MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (flip Entails) persistently where
   rel_refl := .rfl
   rel_trans := flip .trans
-  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp),
-                     fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
   op_proper := sep_mono
   map_ne := BI.persistently_ne
   map_op := persistently_sep_mpr
