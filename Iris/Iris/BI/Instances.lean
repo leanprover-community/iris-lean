@@ -9,7 +9,6 @@ public import Iris.BI.Classes
 public import Iris.BI.DerivedLaws
 public import Iris.BI.Extensions
 public import Iris.BI.BI
-public import Iris.Std.Classes
 
 @[expose] public section
 

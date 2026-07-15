@@ -5,7 +5,6 @@ Authors: Remy Seassau, Markus de Medeiros, Sergei Stepanenko
 -/
 module
 
-public import Iris.Std.Classes
 public import Iris.Std.Infinite
 
 @[expose] public section

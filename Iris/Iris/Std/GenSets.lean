@@ -5,7 +5,6 @@ Authors: Zongyuan Liu, Sergei Stepanenko
 -/
 module
 
-public import Iris.Std.Classes
 public import Iris.Std.Infinite
 import Batteries.Data.List.Perm
 import Iris.Std.List
@@ -68,9 +67,10 @@ instance : HasSubset S := ⟨fun S₁ S₂ => ∀ x, x ∈ S₁ → x ∈ S₂�
     is in `S₂` but they are not equal. -/
 instance : HasSSubset S := ⟨fun S₁ S₂ => S₁ ≠ S₂ ∧ ∀ x, x ∈ S₁ → x ∈ S₂⟩
 
+def Disjoint (S₁ S₂ : S) : Prop := ∀ x, ¬(x ∈ S₁ ∧ x ∈ S₂)
+
 /-- Two sets are disjoint if they share no common elements. -/
-instance : Disjoint S where
-  disjoint S₁ S₂ := ∀ x, ¬(x ∈ S₁ ∧ x ∈ S₂)
+infix:50 " ## " => Disjoint
 
 class FiniteSet (S : Type _) (A : outParam (Type _)) extends LawfulSet S A where
   toList : S → List A
@@ -371,13 +371,13 @@ instance : Trans (fun x y : S => x ⊆ y) (·⊆ ·) (·⊆ ·) where
 
 /-- Disjoint sets have empty intersection and vice versa. -/
 theorem disjoint_intersection {X Y : S} : X ## Y ↔ X ∩ Y = ∅ := by
-  simp only [Disjoint.disjoint]
+  simp only [Disjoint]
   exact ⟨fun H => by ext x; rw [mem_inter]; simp [H, mem_empty],
          fun H x => by rw [<-mem_inter, H]; exact mem_empty⟩
 
 /-- Disjointness is symmetric.  -/
 theorem disjoint_comm {s₁ s₂ : S} : s₁ ## s₂ ↔ s₂ ## s₁ := by
-  simp only [Disjoint.disjoint]
+  simp only [Disjoint]
   exact ⟨fun h x ⟨hx1, hx2⟩ => h x ⟨hx2, hx1⟩, fun h x ⟨hx1, hx2⟩ => h x ⟨hx2, hx1⟩⟩
 
 @[symm]
@@ -393,7 +393,7 @@ theorem disjoint_empty_right {s : S} : s ## ∅ := by
 
 /-- Singleton disjointness. -/
 theorem disjoint_singleton_left {s : S} {x : A} : {x} ## s ↔ x ∉ s := by
-  simp only [Disjoint.disjoint]
+  simp only [Disjoint]
   constructor
   · intro h hx; exact h x ⟨(mem_singleton.mpr rfl), hx⟩
   · intro h y ⟨hy1, hy2⟩; rw [mem_singleton] at hy1; subst hy1; exact h hy2
@@ -414,7 +414,7 @@ theorem disjoint_subset_right {s₁ s₂ t : S} : s₁ ⊆ s₂ → t ## s₂ �
 
 /-- Union is disjoint iff both parts are disjoint. -/
 theorem disjoint_union_left {s₁ s₂ t : S} : (s₁ ∪ s₂) ## t ↔ s₁ ## t ∧ s₂ ## t := by
-  simp only [Disjoint.disjoint]
+  simp only [Disjoint]
   constructor
   · intro h; constructor
     · exact fun x ⟨hx1, hx2⟩ => h x ⟨(mem_union.mpr (.inl hx1)), hx2⟩

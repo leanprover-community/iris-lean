@@ -6,7 +6,6 @@ Authors: Zongyuan Liu
 module
 
 public import Iris.Std.FromMathlib
-public import Iris.Std.Classes
 import Batteries.Data.List.Basic
 import Batteries.Data.List.Perm
 

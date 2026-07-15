@@ -9,7 +9,6 @@ public import Iris.BI.Classes
 public import Iris.BI.Extensions
 public import Iris.BI.BI
 public import Iris.Std.Nat
-public import Iris.Std.Classes
 public import Iris.Std.Rewrite
 public import Iris.Std.TC
 import Iris.Std.RocqPorting
@@ -24,8 +23,7 @@ open Iris.Std BI
 /- Necessary for `calc`-style proofs. -/
 instance entails_trans' [BI PROP] : Trans (α := PROP) Entails Entails Entails where
   trans h1 h2 := h1.trans h2
-instance entails_antisymm [BI PROP] : Antisymmetric (α := PROP) BiEntails Entails where
-  antisymm h1 h2 := ⟨h1, h2⟩
+
 #rocq_ignore bi.entails_proper "Derivable from _ne with NonExpansive.eqv."
 
 instance equiv_trans [BI PROP] : Trans (α := PROP) BiEntails BiEntails BiEntails where
@@ -209,13 +207,11 @@ theorem exists_mono [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ⊢ Ψ a) :
 theorem exists_congr [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ⊣⊢ Ψ a) : (∃ a, Φ a) ⊣⊢ ∃ a, Ψ a :=
   ⟨exists_mono fun a => (h a).1, exists_mono fun a => (h a).2⟩
 
-theorem and_self [BI PROP] {P : PROP} : P ∧ P ⊣⊢ P := ⟨and_elim_l, and_intro .rfl .rfl⟩
 @[rocq_alias bi.and_idem]
-instance [BI PROP] : Idempotent (α := PROP) BiEntails and := ⟨and_self⟩
+theorem and_self [BI PROP] {P : PROP} : P ∧ P ⊣⊢ P := ⟨and_elim_l, and_intro .rfl .rfl⟩
 
-theorem or_self [BI PROP] {P : PROP} : P ∨ P ⊣⊢ P := ⟨or_elim .rfl .rfl, or_intro_l⟩
 @[rocq_alias bi.or_idem]
-instance [BI PROP] : Idempotent (α := PROP) BiEntails or := ⟨or_self⟩
+theorem or_self [BI PROP] {P : PROP} : P ∨ P ⊣⊢ P := ⟨or_elim .rfl .rfl, or_intro_l⟩
 
 #rocq_ignore bi.and_mono' "Use and_mono"
 #rocq_ignore bi.and_flip_mono' "Use and_mono"
@@ -230,61 +226,48 @@ instance [BI PROP] : Idempotent (α := PROP) BiEntails or := ⟨or_self⟩
 
 @[rocq_alias bi.and_comm]
 theorem and_comm [BI PROP] {P Q : PROP} : P ∧ Q ⊣⊢ Q ∧ P := ⟨and_symm, and_symm⟩
-instance [BI PROP] : Commutative (α := PROP) BiEntails and := ⟨and_comm⟩
 
 @[rocq_alias bi.or_comm]
 theorem or_comm [BI PROP] {P Q : PROP} : P ∨ Q ⊣⊢ Q ∨ P := ⟨or_symm, or_symm⟩
-instance [BI PROP] : Commutative (α := PROP) BiEntails or := ⟨or_comm⟩
 
 @[rocq_alias bi.True_and]
 theorem true_and [BI PROP] {P : PROP} : True ∧ P ⊣⊢ P :=
   ⟨and_elim_r, and_intro (pure_intro trivial) .rfl⟩
-instance [BI PROP] : LeftId (· ⊣⊢@{PROP} ·) iprop(True) and := ⟨true_and⟩
 
 @[rocq_alias bi.and_True]
 theorem and_true [BI PROP] {P : PROP} : P ∧ True ⊣⊢ P := and_comm.trans true_and
-instance [BI PROP] : RightId (· ⊣⊢@{PROP} ·) iprop(True) and := ⟨and_true⟩
 
 @[rocq_alias bi.False_and]
 theorem false_and [BI PROP] {P : PROP} : False ∧ P ⊣⊢ False := ⟨and_elim_l, false_elim⟩
-instance [BI PROP] : LeftAbsorb (· ⊣⊢@{PROP} ·) iprop(False) and := ⟨false_and⟩
 
 @[rocq_alias bi.and_False]
 theorem and_false [BI PROP] {P : PROP} : P ∧ False ⊣⊢ False := and_comm.trans false_and
-instance [BI PROP] : RightAbsorb (· ⊣⊢@{PROP} ·) iprop(False) and := ⟨and_false⟩
 
 @[rocq_alias bi.True_or]
 theorem true_or [BI PROP] {P : PROP} : True ∨ P ⊣⊢ True := ⟨true_intro, or_intro_l⟩
-instance [BI PROP] : LeftAbsorb (· ⊣⊢@{PROP} ·) iprop(True) or := ⟨true_or⟩
 
 @[rocq_alias bi.or_True]
 theorem or_true [BI PROP] {P : PROP} : P ∨ True ⊣⊢ True := or_comm.trans true_or
-instance [BI PROP] : RightAbsorb (· ⊣⊢@{PROP} ·) iprop(True) or := ⟨or_true⟩
 
 @[rocq_alias bi.False_or]
 theorem false_or [BI PROP] {P : PROP} : False ∨ P ⊣⊢ P := ⟨or_elim false_elim .rfl, or_intro_r⟩
-instance [BI PROP] : LeftId (α := PROP) BiEntails iprop(False) or := ⟨false_or⟩
 
 @[rocq_alias bi.or_False]
 theorem or_false [BI PROP] {P : PROP} : P ∨ False ⊣⊢ P := or_comm.trans false_or
-instance [BI PROP] : RightId (α := PROP) BiEntails iprop(False) or := ⟨or_false⟩
 
 @[rocq_alias bi.and_assoc]
 theorem and_assoc [BI PROP] {P Q R : PROP} : (P ∧ Q) ∧ R ⊣⊢ P ∧ Q ∧ R :=
   ⟨and_intro (and_elim_left_trans and_elim_l) (and_mono_left and_elim_r),
    and_intro (and_mono_right and_elim_l) (and_elim_right_trans and_elim_r)⟩
-instance [BI PROP] : Associative (α := PROP) BiEntails and := ⟨and_assoc⟩
 
 @[rocq_alias bi.or_assoc]
 theorem or_assoc [BI PROP] {P Q R : PROP} : (P ∨ Q) ∨ R ⊣⊢ P ∨ Q ∨ R :=
   ⟨or_elim (or_mono_right or_intro_l) (or_intro_right_trans or_intro_r),
    or_elim (or_intro_left_trans or_intro_l) (or_mono_left or_intro_r)⟩
-instance [BI PROP] : Associative (α := PROP) BiEntails or := ⟨or_assoc⟩
 
 @[rocq_alias bi.True_impl]
 theorem true_imp [BI PROP] {P : PROP} : (True → P) ⊣⊢ P :=
   ⟨and_true.2.trans imp_elim_left, imp_intro and_elim_l⟩
-instance [BI PROP] : LeftId (· ⊣⊢@{PROP} ·) iprop(True) imp := ⟨true_imp⟩
 
 @[rocq_alias bi.impl_refl]
 theorem imp_self [BI PROP] {P Q : PROP} : Q ⊢ P → P := imp_intro and_elim_r
@@ -390,7 +373,7 @@ instance bi_and_monoid [BI PROP] : LawfulBigOp and (iprop(True) : PROP) BiEntail
   trans h1 h2 := h1.trans h2
   comm := and_comm
   assoc := and_assoc
-  left_id := left_id
+  left_id := true_and
   congr_l := and_congr_left
 
 /-! # BI -/
@@ -435,13 +418,11 @@ theorem wand_congr_right [BI PROP] {P Q Q' : PROP} (h : Q ⊣⊢ Q') : (P -∗ Q
 
 @[rocq_alias bi.sep_comm]
 theorem sep_comm [BI PROP] {P Q : PROP} : P ∗ Q ⊣⊢ Q ∗ P := ⟨sep_symm, sep_symm⟩
-instance [BI PROP] : Commutative (α := PROP) BiEntails sep := ⟨sep_comm⟩
 
 @[rocq_alias bi.sep_assoc]
 theorem sep_assoc [BI PROP] {P Q R : PROP} : (P ∗ Q) ∗ R ⊣⊢ P ∗ Q ∗ R :=
   ⟨sep_assoc_l, (sep_comm.trans <| sep_congr_left sep_comm).1.trans <|
     sep_assoc_l.trans (sep_comm.trans <| sep_congr_right sep_comm).2⟩
-instance [BI PROP] : Associative (α := PROP) BiEntails sep := ⟨sep_assoc⟩
 
 theorem sep_left_comm [BI PROP] {P Q R : PROP} : P ∗ Q ∗ R ⊣⊢ Q ∗ P ∗ R :=
   sep_assoc.symm.trans <| (sep_congr_left sep_comm).trans sep_assoc
@@ -452,12 +433,10 @@ theorem sep_right_comm [BI PROP] {P Q R : PROP} : (P ∗ Q) ∗ R ⊣⊢ (P ∗ 
 theorem sep_sep_sep_comm [BI PROP] {P Q R S : PROP} : (P ∗ Q) ∗ (R ∗ S) ⊣⊢ (P ∗ R) ∗ (Q ∗ S) :=
   sep_assoc.trans <| (sep_congr_right sep_left_comm).trans sep_assoc.symm
 
-@[rocq_alias bi.emp_sep]
-instance [BI PROP] : LeftId (α := PROP) BiEntails emp sep := ⟨emp_sep⟩
+#rocq_ignore bi.emp_sep "The type class LeftId in Lean is not general enough"
 
-theorem sep_emp [BI PROP] {P : PROP} : P ∗ emp ⊣⊢ P := sep_comm.trans emp_sep
 @[rocq_alias bi.sep_emp]
-instance [BI PROP] : RightId (α := PROP) BiEntails emp sep := ⟨sep_emp⟩
+theorem sep_emp [BI PROP] {P : PROP} : P ∗ emp ⊣⊢ P := sep_comm.trans emp_sep
 
 @[rocq_alias bi.bi_sep_monoid]
 instance bi_sep_monoid [BI PROP] : LawfulBigOp sep (emp : PROP) BiEntails where
@@ -466,7 +445,7 @@ instance bi_sep_monoid [BI PROP] : LawfulBigOp sep (emp : PROP) BiEntails where
   trans h1 h2 := h1.trans h2
   comm := sep_comm
   assoc := sep_assoc
-  left_id := left_id
+  left_id := emp_sep
   congr_l := sep_congr_left
 
 @[rocq_alias bi.True_sep_2]
@@ -487,16 +466,12 @@ theorem wand_elim_swap [BI PROP] {P Q R : PROP} (h : Q ⊢ P -∗ R) : P ∗ Q �
 @[rocq_alias bi.wand_elim_l]
 theorem wand_elim_left [BI PROP] {P Q : PROP} : (P -∗ Q) ∗ P ⊢ Q := wand_elim .rfl
 
+@[rocq_alias bi.False_sep]
 theorem false_sep [BI PROP] {P : PROP} : False ∗ P ⊣⊢ False :=
   ⟨(sep_mono_left (P' := iprop(P -∗ False)) false_elim).trans wand_elim_left, false_elim⟩
-@[rocq_alias bi.False_sep]
-instance [BI PROP] : LeftAbsorb (· ⊣⊢@{PROP} ·) iprop(False) sep where
-  left_absorb := false_sep
 
-theorem sep_false [BI PROP] {P : PROP} : P ∗ False ⊣⊢ False := sep_comm.trans false_sep
 @[rocq_alias bi.sep_False]
-instance [BI PROP] : RightAbsorb (· ⊣⊢@{PROP} ·) iprop(False) sep where
-  right_absorb := sep_false
+theorem sep_false [BI PROP] {P : PROP} : P ∗ False ⊣⊢ False := sep_comm.trans false_sep
 
 @[rocq_alias bi.wand_elim_r]
 theorem wand_elim_right [BI PROP] {P Q : PROP} : P ∗ (P -∗ Q) ⊢ Q := wand_elim_swap .rfl
@@ -1027,13 +1002,13 @@ theorem affinely_intro [BI PROP] {P Q : PROP} [Affine P] (h : P ⊢ Q) : P ⊢ <
 @[rocq_alias bi.emp_and]
 theorem emp_and [BI PROP] {P : PROP} [Affine P] : emp ∧ P ⊣⊢ P :=
   ⟨and_elim_r, and_intro affine .rfl⟩
-@[rocq_alias bi.emp_and']
-instance emp_and_biaffine [BI PROP] [BIAffine PROP] : LeftId (α := PROP) BiEntails emp and := ⟨emp_and⟩
+
+#rocq_ignore bi.emp_and' "The type class LeftId in Lean is not general enough"
 
 @[rocq_alias bi.and_emp]
 theorem and_emp [BI PROP] {P : PROP} [Affine P] : P ∧ emp ⊣⊢ P := and_comm.trans emp_and
-@[rocq_alias bi.and_emp']
-instance and_emp_biaffine [BI PROP] [BIAffine PROP] : RightId (α := PROP) BiEntails emp and := ⟨and_emp⟩
+
+#rocq_ignore bi.and_emp' "The type class RightId in Lean is not general enough"
 
 @[rocq_alias bi.emp_or]
 theorem emp_or [BI PROP] {P : PROP} [Affine P] : emp ∨ P ⊣⊢ emp := ⟨or_elim .rfl affine, or_intro_l⟩
@@ -1058,14 +1033,12 @@ instance [BI PROP] [BIAffine PROP] (P : PROP) : Absorbing P where
 
 @[rocq_alias bi.True_sep]
 theorem true_sep [BI PROP] {P : PROP} [Absorbing P] : True ∗ P ⊣⊢ P := ⟨absorbing, true_sep_mpr⟩
-instance [BI PROP] [BIAffine PROP] : LeftId (α := PROP) BiEntails iprop(True) sep := ⟨true_sep⟩
 
 @[rocq_alias bi.True_sep']
 theorem true_sep_flip [BI PROP] {P : PROP} [Absorbing P] : P ⊣⊢ True ∗ P := true_sep.symm
 
 @[rocq_alias bi.sep_True]
 theorem sep_true [BI PROP] {P : PROP} [Absorbing P] : P ∗ True ⊣⊢ P := sep_comm.trans true_sep
-instance [BI PROP] [BIAffine PROP] : RightId (α := PROP) BiEntails iprop(True) sep := ⟨sep_true⟩
 
 @[rocq_alias bi.sep_True']
 theorem sep_true_flip [BI PROP] {P : PROP} [Absorbing P] : P ⊣⊢ P ∗ True :=

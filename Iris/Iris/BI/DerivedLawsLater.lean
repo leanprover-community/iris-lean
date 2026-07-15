@@ -10,7 +10,6 @@ public import Iris.BI.Extensions
 public import Iris.BI.BI
 public import Iris.BI.DerivedLaws
 public import Iris.BI.BigOp.BigOp
-public import Iris.Std.Classes
 public import Iris.Std.Rewrite
 public import Iris.Std.TC
 public import Iris.Std.RocqPorting

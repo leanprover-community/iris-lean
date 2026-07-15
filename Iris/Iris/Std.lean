@@ -1,6 +1,5 @@
 module
 
-public import Iris.Std.Classes
 public import Iris.Std.Expr
 public import Iris.Std.HeapInstances
 public import Iris.Std.Infinite
