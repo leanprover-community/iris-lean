@@ -291,4 +291,81 @@ theorem limit_finite [inst : SIdxFinite I] (n : I) : ¬Limit n := by
     subst hm
     assumption
 
+@[rocq_alias SIdx.case]
+def case (n : I) : (n = 0) ⊕' (Σ' m, n = succᵢ m) ⊕' Limit n :=
+  if h : n = 0 then .inl h
+  else
+    match inst.weak_case n with
+    | .inl ⟨m, hm⟩ => .inr <| .inl ⟨m, hm⟩
+    | .inr hlim => .inr <| .inr ⟨hlim, h⟩
+
+@[rocq_alias SIdx.rec]
+def rec' {P : I → Sort v}
+    (s : P 0)
+    (f : ∀ n, P n → P (succᵢ n))
+    (lim : ∀ n, Limit n → (∀ m, m < n → P m) → P n) :
+    ∀ n, P n :=
+  WellFounded.fix inst.lt_wf fun n IH =>
+    match SIdx.case n with
+    | .inl EQ => EQ ▸ s
+    | .inr <| .inl ⟨m, EQ⟩ => EQ ▸ f m (IH m (lt_succ_diag_r' EQ))
+    | .inr <| .inr Hlim => lim n Hlim IH
+
+@[rocq_alias SIdx.rec_unfold]
+theorem rec_unfold {P : I → Sort v} (s : P 0) (f : ∀ n, P n → P (succᵢ n))
+    (lim : ∀ n, Limit n → (∀ m, m < n → P m) → P n) (n : I) :
+    rec' s f lim n =
+      match SIdx.case n with
+      | .inl EQ => EQ ▸ s
+      | .inr (.inl ⟨m, EQ⟩) => EQ ▸ f m (rec' s f lim m)
+      | .inr (.inr Hlim) => lim n Hlim (fun m _ => rec' s f lim m) :=
+  inst.lt_wf.fix_eq _ n
+
+@[rocq_alias SIdx.rec_zero]
+theorem rec_zero {P : I → Sort v} (s : P 0) (f : ∀ n, P n → P (succᵢ n))
+    (lim : ∀ n, Limit n → (∀ m, m < n → P m) → P n) :
+    rec' s f lim 0 = s := by
+  rw [rec_unfold s f lim 0]
+  cases SIdx.case (0 : I) with
+  | inl EQ => rfl
+  | inr h =>
+    cases h with
+    | inl h =>
+      let ⟨m, EQ⟩ := h
+      exact absurd EQ.symm neq_succ_0
+    | inr Hlim => exact absurd Hlim limit_0
+
+@[rocq_alias SIdx.rec_succ]
+theorem rec_succ {P : I → Sort v} (s : P 0) (f : ∀ n, P n → P (succᵢ n))
+    (lim : ∀ n, Limit n → (∀ m, m < n → P m) → P n) (n : I) :
+    rec' s f lim (succᵢ n) = f n (rec' s f lim n) := by
+  rw [rec_unfold s f lim (succᵢ n)]
+  cases SIdx.case (succᵢ n) with
+  | inl EQ => exact absurd EQ neq_succ_0
+  | inr h =>
+    cases h with
+    | inl h =>
+      obtain ⟨m, EQ⟩ := h
+      obtain rfl := succ_inj EQ
+      rfl
+    | inr Hlim => exact absurd Hlim (limit_S n)
+
+@[rocq_alias SIdx.rec_lim]
+theorem rec_lim {P : I → Sort v} (s : P 0) (f : ∀ n, P n → P (succᵢ n))
+    (lim : ∀ n, Limit n → (∀ m, m < n → P m) → P n) (n : I) (Hn : Limit n) :
+    rec' s f lim n = lim n Hn (fun m _ => rec' s f lim m) := by
+  rw [rec_unfold s f lim n]
+  cases SIdx.case n with
+  | inl EQ => exact absurd EQ Hn.ne_zero
+  | inr h =>
+    cases h with
+    | inl h =>
+      obtain ⟨m, EQ⟩ := h
+      exact absurd (EQ ▸ Hn) (limit_S m)
+    | inr Hlim => rfl
+
+#rocq_ignore rec_lim_ext
+  "Proof irrelevance already handled automatically by Lean for the theorems \
+  rec_zero, rec_succ and rec_elim"
+
 end SIdx
