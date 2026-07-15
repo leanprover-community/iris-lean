@@ -860,7 +860,7 @@ instance elimModal_absorbingly_here [BI PROP] p (P Q : PROP) [Absorbing Q] :
 @[rocq_alias maybe_combine_sep_as_default]
 instance (priority := default - 20) combineSepAs_default [BI PROP] (P Q : PROP) :
     CombineSepAs P Q iprop(P ∗ Q) where
-  combine_sep_as := refl
+  combine_sep_as := by rfl
 
 @[rocq_alias maybe_combine_sep_as_affinely]
 instance combineSepAs_affinely [BI PROP] (Q1 Q2 P : PROP)

@@ -135,7 +135,7 @@ where
 
   applyReflexivity (goal : MVarId) : TacticM Unit := do
     try
-      discard <| apply' goal ``refl
+      discard <| apply' goal ``Std.Refl.refl
     catch _ => pure ()
 
   go (goal : MVarId) (rule : TSyntax `term) : TacticM Bool := do

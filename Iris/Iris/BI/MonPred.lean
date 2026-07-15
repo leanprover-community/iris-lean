@@ -219,7 +219,7 @@ def imp (P Q : MonPred I PROP) : MonPred I PROP where
   monPred_at := MonPred.upclosed (fun i => iprop(P.monPred_at i → Q.monPred_at i))
   monPred_mono h :=
     forall_intro fun k => (forall_elim k).trans
-      (imp_mono_left (pure_mono fun hjk => Transitive.trans h hjk))
+      (imp_mono_left (pure_mono fun hjk => Trans.trans h hjk))
 
 #rocq_ignore monPred_defs.monPred_impl_def "Rocq unsealed definition body; use MonPred.imp."
 #rocq_ignore monPred_defs.monPred_impl_aux "Rocq sealing auxiliary definition."
@@ -279,7 +279,7 @@ def wand (P Q : MonPred I PROP) : MonPred I PROP where
   monPred_at := MonPred.upclosed (fun i => iprop(P.monPred_at i -∗ Q.monPred_at i))
   monPred_mono h :=
     forall_intro fun k => (forall_elim k).trans
-      (imp_mono_left (pure_mono fun hjk => Transitive.trans h hjk))
+      (imp_mono_left (pure_mono fun hjk => Trans.trans h hjk))
 
 #rocq_ignore monPred_defs.monPred_wand_def "Rocq unsealed definition body; use MonPred.wand."
 #rocq_ignore monPred_defs.monPred_wand_aux "Rocq sealing auxiliary definition."
@@ -310,7 +310,7 @@ def later (P : MonPred I PROP) : MonPred I PROP where
 @[rocq_alias monPred_defs.monPred_in]
 def monPred_in (j : I.car) : MonPred I PROP where
   monPred_at i := iprop(⌜I.rel j i⌝)
-  monPred_mono h := pure_mono fun hji => Transitive.trans hji h
+  monPred_mono h := pure_mono fun hji => Trans.trans hji h
 
 #rocq_ignore monPred_defs.monPred_in_def "Rocq unsealed definition body; use MonPred.monPred_in."
 #rocq_ignore monPred_defs.monPred_in_aux "Rocq sealing auxiliary definition."
@@ -393,7 +393,7 @@ mixins, packaged into `monPredI : bi`). -/
 @[rocq_alias monPredI]
 instance : BI (MonPred I PROP) where
   entails_preorder :=
-    { refl := entails_at.mpr fun _ => BIBase.Entails.rfl
+    { refl _ := entails_at.mpr fun _ => BIBase.Entails.rfl
       trans := fun h h' => entails_at.mpr fun i => (entails_at.mp h i).trans (entails_at.mp h' i) }
   equiv_iff := fun {P Q} =>
     ⟨fun h => ⟨entails_at.mpr fun i => (equiv_iff.mp (equiv_at.mp h i)).mp,
@@ -435,7 +435,7 @@ instance : BI (MonPred I PROP) where
       (P.monPred_mono hij).trans <| imp_intro (entails_at.mp h j)
   imp_elim {P Q R} h := entails_at.mpr fun i =>
     imp_elim <| (entails_at.mp h i).trans <|
-      (forall_elim i).trans <| pure_imp_elim (Reflexive.refl : I.rel i i)
+      (forall_elim i).trans <| pure_imp_elim (Std.Refl.refl i : I.rel i i)
   sForall_intro h := entails_at.mpr fun i =>
     MonPred.sForall_at_intro i fun q hΨ => entails_at.mp (h q hΨ) i
   sForall_elim h := entails_at.mpr fun i => MonPred.sForall_at_elim i h
@@ -453,7 +453,7 @@ instance : BI (MonPred I PROP) where
     exact (sep_mono_right (P.monPred_mono hij)).trans (sep_symm.trans (entails_at.mp h j))
   wand_elim {P Q R} h := entails_at.mpr fun i =>
     (sep_mono_left ((entails_at.mp h i).trans
-      ((forall_elim i).trans (pure_imp_elim (Reflexive.refl : I.rel i i))))).trans wand_elim_left
+      ((forall_elim i).trans (pure_imp_elim (Std.Refl.refl i : I.rel i i))))).trans wand_elim_left
   persistently_mono h := entails_at.mpr fun i => persistently_mono (entails_at.mp h i)
   persistently_idem_2 := entails_at.mpr fun i => persistently_idem_2
   persistently_emp_2 := entails_at.mpr fun i => persistently_emp_2
@@ -477,7 +477,7 @@ instance : BI (MonPred I PROP) where
     refine (MonPred.sForall_at_elim (q := MonPred.imp (MonPred.pure (Φ r)) (MonPred.later r))
         i ⟨r, rfl⟩).trans ?_
     refine (forall_elim i).trans ?_
-    exact (pure_imp_elim (Reflexive.refl : I.rel i i)).trans (pure_imp_elim hΦ)
+    exact (pure_imp_elim (Std.Refl.refl i : I.rel i i)).trans (pure_imp_elim hΦ)
   later_sExists_false := fun {Φ} => entails_at.mpr fun i => by
     refine later_sExists_false.trans (or_mono BIBase.Entails.rfl ?_)
     refine exists_elim fun p => pure_elim_left fun ⟨q, hΦ, hq⟩ => ?_
@@ -518,14 +518,14 @@ instance : BiEmbed PROP (MonPred I PROP) where
   emp_valid_inj _ h := entails_at.mp h (Inhabited.default : I.car)
   emp_2 := entails_at.mpr fun _ => .rfl
   impl_2 _ _ := entails_at.mpr fun i =>
-    (forall_elim i).trans (pure_imp_elim (Reflexive.refl : I.rel i i))
+    (forall_elim i).trans (pure_imp_elim (Std.Refl.refl i : I.rel i i))
   forall_2 := fun _Ψ {_} h => entails_at.mpr fun i =>
     sForall_intro fun P hΨ => entails_at.mp (h P hΨ) i
   exist_1 := fun _Ψ {_} h => entails_at.mpr fun i =>
     sExists_elim fun P hΨ => entails_at.mp (h P hΨ) i
   sep _ _ := BIBase.BiEntails.of_eq rfl
   wand_2 _ _ := entails_at.mpr fun i =>
-    (forall_elim i).trans (pure_imp_elim (Reflexive.refl : I.rel i i))
+    (forall_elim i).trans (pure_imp_elim (Std.Refl.refl i : I.rel i i))
   persistently _ := BIBase.BiEntails.of_eq rfl
 
 #rocq_ignore monPred_embedding_mixin "Rocq mixin record; subsumed by the BiEmbed instance."
@@ -627,7 +627,7 @@ instance [BIFUpdate PROP] : BIFUpdate (MonPred I PROP) where
   trans := entails_at.mpr fun _ => BIFUpdate.trans
   mask_frame_right_strong h := entails_at.mpr fun i =>
     (BIFUpdate.mono
-      (((forall_elim i).trans (pure_imp_elim (Reflexive.refl : I.rel i i))) : _ ⊢@{PROP} _)).trans
+      (((forall_elim i).trans (pure_imp_elim (Std.Refl.refl i : I.rel i i))) : _ ⊢@{PROP} _)).trans
       (BIFUpdate.mask_frame_right_strong h)
   frame_right := entails_at.mpr fun _ => fupd_frame_right
 
@@ -849,12 +849,12 @@ instance monPred_affine (P : MonPred I PROP) [∀ i, Affine (P.monPred_at i)] :
 @[rocq_alias monPred_impl_force]
 theorem monPred_impl_force (i : I.car) (P Q : MonPred I PROP) :
     (iprop(P → Q) : MonPred I PROP).monPred_at i ⊢ iprop(P.monPred_at i → Q.monPred_at i) :=
-  (forall_elim i).trans (pure_imp_elim (Reflexive.refl : I.rel i i))
+  (forall_elim i).trans (pure_imp_elim (Std.Refl.refl i : I.rel i i))
 
 @[rocq_alias monPred_wand_force]
 theorem monPred_wand_force (i : I.car) (P Q : MonPred I PROP) :
     (iprop(P -∗ Q) : MonPred I PROP).monPred_at i ⊢ iprop(P.monPred_at i -∗ Q.monPred_at i) :=
-  (forall_elim i).trans (pure_imp_elim (Reflexive.refl : I.rel i i))
+  (forall_elim i).trans (pure_imp_elim (Std.Refl.refl i : I.rel i i))
 
 /-! ### The `monPred_in` assertion -/
 
@@ -862,7 +862,7 @@ theorem monPred_wand_force (i : I.car) (P Q : MonPred I PROP) :
 theorem monPred_in_intro (P : MonPred I PROP) :
     P ⊢ iprop(∃ i, MonPred.monPred_in i ∧ ⎡P.monPred_at i⎤) :=
   entails_at.mpr fun j =>
-    (and_intro (pure_intro (Reflexive.refl : I.rel j j)) .rfl).trans <|
+    (and_intro (pure_intro (Std.Refl.refl j : I.rel j j)) .rfl).trans <|
       (exists_intro (Ψ := fun i =>
           (iprop(MonPred.monPred_in i ∧ ⎡P.monPred_at i⎤) : MonPred I PROP).monPred_at j) j).trans
         (monPred_at_exist j fun i => iprop(MonPred.monPred_in i ∧ ⎡P.monPred_at i⎤)).mpr
@@ -873,12 +873,12 @@ theorem monPred_in_elim (P : MonPred I PROP) (i : I.car) :
   entails_at.mpr fun j =>
     pure_elim (I.rel i j) .rfl fun hij =>
       forall_intro fun _k => imp_intro_swap <| pure_elim_left fun hjk =>
-        imp_intro <| and_elim_r.trans (P.monPred_mono (Transitive.trans hij hjk))
+        imp_intro <| and_elim_r.trans (P.monPred_mono (Trans.trans hij hjk))
 
 @[rocq_alias monPred_in_mono]
 theorem monPred_in_mono {i j : I.car} (h : I.rel j i) :
     (MonPred.monPred_in i : MonPred I PROP) ⊢ MonPred.monPred_in j :=
-  entails_at.mpr fun _ => pure_mono fun hik => Transitive.trans h hik
+  entails_at.mpr fun _ => pure_mono fun hik => Trans.trans h hik
 
 #rocq_ignore monPred_in_proper "Use monPred_in_mono."
 
@@ -944,7 +944,7 @@ instance impl_objective (P Q : MonPred I PROP) [Objective P] [Objective Q] :
     Objective (iprop(P → Q)) where
   objective_at i _j := forall_intro fun k => imp_intro <|
     and_elim_l.trans <|
-      (((forall_elim i).trans (pure_imp_elim (Reflexive.refl : I.rel i i))) : _ ⊢@{PROP} _).trans <|
+      (((forall_elim i).trans (pure_imp_elim (Std.Refl.refl i : I.rel i i))) : _ ⊢@{PROP} _).trans <|
       imp_mono (Objective.objective_at k i) (Objective.objective_at i k)
 
 @[rocq_alias wand_objective]
@@ -952,7 +952,7 @@ instance wand_objective (P Q : MonPred I PROP) [Objective P] [Objective Q] :
     Objective (iprop(P -∗ Q)) where
   objective_at i _j := forall_intro fun k => imp_intro <|
     and_elim_l.trans <|
-      (((forall_elim i).trans (pure_imp_elim (Reflexive.refl : I.rel i i))) : _ ⊢@{PROP} _).trans <|
+      (((forall_elim i).trans (pure_imp_elim (Std.Refl.refl i : I.rel i i))) : _ ⊢@{PROP} _).trans <|
       wand_mono (Objective.objective_at k i) (Objective.objective_at i k)
 
 @[rocq_alias forall_objective]
@@ -1449,7 +1449,7 @@ instance instSbiMonPred : Sbi (MonPred I PROP) where
       monPred_impl_force i (iprop(⌜Ψi q⌝)) (SiPure.siPure q : MonPred I PROP)
   persistently_imp_siPure {P Q} := entails_at.mpr fun i => by
     refine (forall_elim i).trans ?_
-    refine (pure_imp_elim (Reflexive.refl : I.rel i i)).trans ?_
+    refine (pure_imp_elim (Std.Refl.refl i : I.rel i i)).trans ?_
     refine persistently_imp_siPure.trans (persistently_mono ?_)
     refine forall_intro fun j => imp_intro <| pure_elim_right fun (hij : I.rel i j) => ?_
     exact imp_mono_right (Q.monPred_mono hij)

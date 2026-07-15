@@ -2026,7 +2026,7 @@ theorem intuitionisticallyIf_sep {p : Bool} [BI PROP] [BIPositive PROP] {P Q : P
 theorem intuitionisticallyIf_sep_conj {p1 p2 : Bool} [BI PROP] {P Q : PROP} :
   (□?p1 P ∗ □?p2 Q) ⊢ □?(p1 && p2) (P ∗ Q) :=
   match p1, p2 with
-  | false, false => refl
+  | false, false => by rfl
   | false, true  => sep_mono_right intuitionisticallyIf_elim
   | true,  false => sep_mono_left intuitionisticallyIf_elim
   | true,  true  => intuitionisticallyIf_sep_mpr

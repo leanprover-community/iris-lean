@@ -154,7 +154,7 @@ instance : BIBase SiProp where
 #rocq_ignore siProp_persistently "Included in BIBase instance."
 
 instance : Std.Preorder (BIBase.Entails (PROP := SiProp)) where
-  refl _ h := h
+  refl _ _ := id
   trans h₁ h₂ n h := h₂ n (h₁ n h)
 
 /-! ## BI instance -/

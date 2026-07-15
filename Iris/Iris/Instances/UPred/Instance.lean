@@ -267,7 +267,7 @@ instance : BIBase (UPred M) where
 
 @[rocq_alias uPred_primitive.entails_po]
 instance uPred_entails_preorder : Std.Preorder (Entails (PROP := UPred M)) where
-  refl _ _ H := H
+  refl _ _ _ H := H
   trans H1 H2 _ _ Hv := H2 _ _ <| H1 _ _ Hv
 
 @[rocq_alias uPred_primitive.entails_lim]
@@ -386,8 +386,8 @@ instance : BI (UPred M) where
     refine P.mono H ?_ .refl
     refine (incN_iff_right ?_).mpr (incN_refl _)
     exact (core_idem x.val).dist
-  persistently_emp_2 := Std.refl
-  persistently_and_2 := Std.refl
+  persistently_emp_2 := Std.Refl.refl emp
+  persistently_and_2 {P Q} := Std.Refl.refl iprop(<pers> P ∧ <pers> Q)
   persistently_sExists_1 _ _ := fun ⟨p, HΨ, H⟩ => by
     refine ⟨iprop(<pers> p), ⟨p, ?_⟩, H⟩
     ext; exact and_iff_right HΨ
