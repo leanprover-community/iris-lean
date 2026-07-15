@@ -761,8 +761,8 @@ theorem discrete_inc_l {x y : α} [HD : DiscreteE x] (Hv : ✓{0} y) (Hle : x �
 theorem discrete_inc_r {x y : α} [HD : DiscreteE y] : x ≼{0} y → x ≼ y
   | ⟨z, hz⟩ => ⟨z, HD.discrete hz⟩
 
-@[reducible, rocq_alias cmra_op_discrete]
-def discrete_op {x y : α} (Hv : ✓{0} x • y) [Hx : DiscreteE x] [Hy : DiscreteE y] :
+@[rocq_alias cmra_op_discrete]
+theorem discrete_op {x y : α} (Hv : ✓{0} x • y) [Hx : DiscreteE x] [Hy : DiscreteE y] :
     DiscreteE (x • y) where
   discrete h :=
     let ⟨_w, _t, wt, wx, ty⟩ := extend ((Dist.validN h).mp Hv) h.symm

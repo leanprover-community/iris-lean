@@ -991,7 +991,7 @@ theorem chain_none_const [OFE V] {c : Chain (Option V)} (H : c n = none) :
     exact (Hc Hnk).symm
 
 /-- If a chain of Option is ever some, it is the lift a chain by some. -/
-def chain_option_some [OFE V] {c : Chain (Option V)} (H : c n = some v) :
+theorem chain_option_some [OFE V] {c : Chain (Option V)} (H : c n = some v) :
     ∃ c' : Chain V, c = Chain.map ⟨some, OFE.Option.some.ne⟩ c' := by
   have HVc (k) : ∃ v', c k = some v' := by
     rcases h : c.chain k with (_|v')
@@ -1158,6 +1158,7 @@ instance {P : α → Type _} [∀ x, OFE (P x)] [∀ x, IsCOFE (P x)] : IsCOFE (
     exact hequiv
 #rocq_ignore sigT_compl "Local Compl definition; folded into Lean's IsCOFE instance."
 
+set_option linter.checkUnivs false in
 abbrev OFunctorPre := ∀ α β [COFE α] [COFE β], Type _
 #rocq_ignore oFunctor_apply "Definition for application of an `oFunctor`; subsumed by `OFunctorPre` in Lean."
 

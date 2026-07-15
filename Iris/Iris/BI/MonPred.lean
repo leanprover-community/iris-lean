@@ -1249,7 +1249,7 @@ section BigOp
 open Iris.Algebra Iris.Algebra.BigOpL Iris.Algebra.BigOpM
 open Iris.BI.BigSepL Iris.BI.BigSepM Iris.BI.BigSepS
 
-@[reducible] def monPred_at_hom {op₁ : MonPred I PROP → MonPred I PROP → MonPred I PROP}
+theorem monPred_at_hom {op₁ : MonPred I PROP → MonPred I PROP → MonPred I PROP}
     {op₂ : PROP → PROP → PROP} {u₁ : MonPred I PROP} {u₂ : PROP}
     [MonoidOps op₁ u₁] [MonoidOps op₂ u₂] (i : I.car)
     (hop : ∀ {x y}, (op₁ x y).monPred_at i ≡ op₂ (x.monPred_at i) (y.monPred_at i))
@@ -1337,8 +1337,8 @@ instance monPred_objectively_monoid_sep_entails_homomorphism :
   map_op := fun {x y} => monPred_objectively_sep_2 x y
   map_unit := monPred_objectively_emp.mpr
 
-@[reducible, rocq_alias monPred_objectively_monoid_sep_homomorphism]
-def monPred_objectively_monoid_sep_homomorphism {bot : I.car} [BiIndexBottom I bot] :
+@[rocq_alias monPred_objectively_monoid_sep_homomorphism]
+theorem monPred_objectively_monoid_sep_homomorphism {bot : I.car} [BiIndexBottom I bot] :
     MonoidHomomorphism (BIBase.sep (PROP := MonPred I PROP)) BIBase.sep BIBase.emp BIBase.emp
       (· ≡ ·) MonPred.objectively :=
   MonoidHomomorphism.ofEquiv monPred_objectively_ne
@@ -1560,8 +1560,8 @@ instance monPred_subjectively_plain (P : MonPred I PROP) [Plain P] :
 
 /-! ### `SbiEmpValidExist` for `MonPred` -/
 
-@[reducible, rocq_alias monPred_sbi_emp_valid_exist]
-def monPred_sbi_emp_valid_exist {bot : I.car} [BiIndexBottom I bot] [SbiEmpValidExist PROP] :
+@[rocq_alias monPred_sbi_emp_valid_exist]
+theorem monPred_sbi_emp_valid_exist {bot : I.car} [BiIndexBottom I bot] [SbiEmpValidExist PROP] :
     SbiEmpValidExist (MonPred I PROP) where
   siEmpValid_sExists_1 Ψ := by
     refine (siEmpValid_mono (forall_elim bot)).trans ?_

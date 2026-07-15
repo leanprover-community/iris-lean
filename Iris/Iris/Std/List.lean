@@ -42,8 +42,7 @@ theorem nodup_map_of_injective {B : Type _} {f : A → B} {l : List A}
     cases hinj heq.symm
     exact hnodup.1 hy
 
-@[expose, match_pattern]
-def Forall₂.append {l₁ l₁' l₂ l₂'} : List.Forall₂ R l₁ l₂ → List.Forall₂ R l₁' l₂' → List.Forall₂ R (l₁ ++ l₁') (l₂ ++ l₂')
+theorem Forall₂.append {l₁ l₁' l₂ l₂'} : List.Forall₂ R l₁ l₂ → List.Forall₂ R l₁' l₂' → List.Forall₂ R (l₁ ++ l₁') (l₂ ++ l₂')
   | .nil, h => h
   | .cons step rest, h => .cons step (append rest h)
 
