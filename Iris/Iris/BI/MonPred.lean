@@ -361,7 +361,7 @@ section Instances
 variable {I : BiIndex} {PROP : Type _} [BI PROP]
 
 instance : BIBase (MonPred I PROP) where
-  le            := MonPred.Entails
+  Entails       := MonPred.Entails
   emp           := MonPred.emp
   pure          := MonPred.pure
   and           := MonPred.and
@@ -395,9 +395,8 @@ theorem dist_at {n : Nat} {P Q : MonPred I PROP} :
 mixins, packaged into `monPredI : bi`). -/
 @[rocq_alias monPredI]
 instance : BI (MonPred I PROP) where
-  entails_preorder :=
-    { le_refl _ := entails_at.mpr fun _ => BIBase.Entails.rfl
-      le_trans := fun _ _ _ h h' => entails_at.mpr fun i => (entails_at.mp h i).trans (entails_at.mp h' i) }
+  entails_refl := entails_at.mpr fun _ => BIBase.Entails.rfl
+  entails_trans := fun h h' => entails_at.mpr fun i => (entails_at.mp h i).trans (entails_at.mp h' i)
   equiv_iff := fun {P Q} =>
     ⟨fun h => ⟨entails_at.mpr fun i => (equiv_iff.mp (equiv_at.mp h i)).mp,
               entails_at.mpr fun i => (equiv_iff.mp (equiv_at.mp h i)).mpr⟩,

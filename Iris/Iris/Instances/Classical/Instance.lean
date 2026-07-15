@@ -19,7 +19,7 @@ open Iris.BI Iris.Instances.Data Std
 abbrev HeapProp (Val : Type _) := State Val → Prop
 
 instance : BIBase (HeapProp Val) where
-  le P Q      := ∀ σ, P σ → Q σ
+  Entails P Q      := ∀ σ, P σ → Q σ
   emp            σ := σ = ∅
   pure φ         _ := φ
   and P Q        σ := P σ ∧ Q σ
@@ -32,7 +32,7 @@ instance : BIBase (HeapProp Val) where
   persistently P _ := P ∅
   later P        σ := P σ
 
-instance : Std.IsPreorder (HeapProp Val) where
+instance heapPropPreorder : Std.IsPreorder (HeapProp Val) where
   le_refl := by
     intro _ _ h
     exact h
@@ -45,7 +45,8 @@ instance : Std.IsPreorder (HeapProp Val) where
 instance : COFE (HeapProp Val) := COFE.ofDiscrete _
 
 instance : BI (HeapProp Val) where
-  entails_preorder := by infer_instance
+  entails_refl := heapPropPreorder.le_refl _
+  entails_trans := heapPropPreorder.le_trans _ _ _
   equiv_iff {P Q} := ⟨
     fun h => h.to_eq ▸ ⟨Std.IsPreorder.le_refl P, Std.IsPreorder.le_refl P⟩,
     fun ⟨h₁, h₂⟩ => OFE.Equiv.of_eq (funext fun σ => propext ⟨h₁ σ, h₂ σ⟩)

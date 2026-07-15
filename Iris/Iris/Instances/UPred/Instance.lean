@@ -233,7 +233,7 @@ instance bupd_ne : OFE.NonExpansive (bupd : UPred M → UPred M) where
       exact OFE.Dist.le Hx (Nat.le_trans Hk Hm)
 
 instance : BIBase (UPred M) where
-  le           := UPred.Entails
+  Entails      := UPred.Entails
   emp          := UPred.emp
   pure         := UPred.pure
   and          := UPred.and
@@ -280,7 +280,8 @@ theorem uPred_entails_lim {cP cQ : Chain (UPred M)} (H : ∀ n, cP n ⊢ cQ n) :
 
 @[rocq_alias uPredI]
 instance : BI (UPred M) where
-  entails_preorder := inferInstance
+  entails_refl := uPred_entails_preorder.le_refl _
+  entails_trans := uPred_entails_preorder.le_trans _ _ _
   equiv_iff {_ _} := by
     constructor <;> intro HE
     · exact ⟨fun n ⟨x, Hv⟩ H => (HE n n x .refl Hv).mp H,
@@ -386,8 +387,8 @@ instance : BI (UPred M) where
     refine P.mono H ?_ .refl
     refine (incN_iff_right ?_).mpr (incN_refl _)
     exact (core_idem x.val).dist
-  persistently_emp_2 := Std.IsPreorder.le_refl emp
-  persistently_and_2 {P Q} := Std.IsPreorder.le_refl iprop(<pers> P ∧ <pers> Q)
+  persistently_emp_2 := uPred_entails_preorder.le_refl emp
+  persistently_and_2 {P Q} := uPred_entails_preorder.le_refl iprop(<pers> P ∧ <pers> Q)
   persistently_sExists_1 _ _ := fun ⟨p, HΨ, H⟩ => by
     refine ⟨iprop(<pers> p), ⟨p, ?_⟩, H⟩
     ext; exact and_iff_right HΨ
