@@ -30,7 +30,7 @@ scoped prefix:max "succᵢ" => SIdx.succ
 class SIdxFinite (I : Type u) [SIdx I] where
   finite_index : ∀ n : I, n = 0 ∨ ∃ m, n = succᵢ m
 
-#rocq_ignore SIdx.t_trans "Lifting of mixin properties not required as they are part of the type class SIdx"
+#rocq_ignore SIdx.lt_trans "Lifting of mixin properties not required as they are part of the type class SIdx"
 #rocq_ignore SIdx.lt_wf "Lifting of mixin properties not required as they are part of the type class SIdx"
 #rocq_ignore SIdx.lt_lteq "Lifting of mixin properties not required as they are part of the type class SIdx"
 #rocq_ignore SIdx.lt_trichotomy "Lifting of mixin properties not required as they are part of the type class SIdx"
