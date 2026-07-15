@@ -233,7 +233,7 @@ instance bupd_ne : OFE.NonExpansive (bupd : UPred M → UPred M) where
       exact OFE.Dist.le Hx (Nat.le_trans Hk Hm)
 
 instance : BIBase (UPred M) where
-  Entails      := UPred.Entails
+  le           := UPred.Entails
   emp          := UPred.emp
   pure         := UPred.pure
   and          := UPred.and
@@ -266,9 +266,9 @@ instance : BIBase (UPred M) where
 #rocq_ignore uPred_primitive.uPred_unseal "No `Ltac unseal` rewrite is needed; nothing is sealed."
 
 @[rocq_alias uPred_primitive.entails_po]
-instance uPred_entails_preorder : Std.Preorder (Entails (PROP := UPred M)) where
-  refl _ _ _ H := H
-  trans H1 H2 _ _ Hv := H2 _ _ <| H1 _ _ Hv
+instance uPred_entails_preorder : Std.IsPreorder (UPred M) where
+  le_refl _ _ _ H := H
+  le_trans _ _ _ H1 H2 _ _ Hv := H2 _ _ <| H1 _ _ Hv
 
 @[rocq_alias uPred_primitive.entails_lim]
 theorem uPred_entails_lim {cP cQ : Chain (UPred M)} (H : ∀ n, cP n ⊢ cQ n) :
@@ -386,8 +386,8 @@ instance : BI (UPred M) where
     refine P.mono H ?_ .refl
     refine (incN_iff_right ?_).mpr (incN_refl _)
     exact (core_idem x.val).dist
-  persistently_emp_2 := Std.Refl.refl emp
-  persistently_and_2 {P Q} := Std.Refl.refl iprop(<pers> P ∧ <pers> Q)
+  persistently_emp_2 := Std.IsPreorder.le_refl emp
+  persistently_and_2 {P Q} := Std.IsPreorder.le_refl iprop(<pers> P ∧ <pers> Q)
   persistently_sExists_1 _ _ := fun ⟨p, HΨ, H⟩ => by
     refine ⟨iprop(<pers> p), ⟨p, ?_⟩, H⟩
     ext; exact and_iff_right HΨ

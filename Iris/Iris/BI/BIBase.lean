@@ -21,8 +21,8 @@ open Lean
 /--
 Require the definitions of the separation logic connectives and units on a carrier type `PROP`.
 -/
-class BIBase (PROP : Type u) where
-  Entails : PROP → PROP → Prop
+class BIBase (PROP : Type u) extends LE PROP where
+  -- Entails : LE PROP -- PROP → PROP → Prop
   emp : PROP
   pure : Prop → PROP
   and : PROP → PROP → PROP
@@ -34,6 +34,8 @@ class BIBase (PROP : Type u) where
   wand : PROP → PROP → PROP
   persistently : PROP → PROP
   later : PROP → PROP
+
+def BIBase.Entails [LE PROP] (P Q : PROP) : Prop := P ≤ Q
 
 namespace BIBase
 

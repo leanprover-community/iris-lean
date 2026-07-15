@@ -135,7 +135,7 @@ instance : IsCOFE SiProp where
 #rocq_ignore siProp_compl "Included in IsCOFE instance."
 
 instance : BIBase SiProp where
-  Entails := SiProp.entails
+  le := SiProp.entails
   emp := SiProp.pure True
   pure := SiProp.pure
   and := SiProp.and
@@ -153,9 +153,9 @@ instance : BIBase SiProp where
 #rocq_ignore siProp_wand "Included in BIBase instance."
 #rocq_ignore siProp_persistently "Included in BIBase instance."
 
-instance : Std.Preorder (BIBase.Entails (PROP := SiProp)) where
-  refl _ _ := id
-  trans h₁ h₂ n h := h₂ n (h₁ n h)
+instance : Std.IsPreorder SiProp where
+  le_refl _ _ := id
+  le_trans _ _ _ h₁ h₂ n h := h₂ n (h₁ n h)
 
 /-! ## BI instance -/
 

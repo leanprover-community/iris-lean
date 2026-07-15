@@ -22,7 +22,7 @@ theorem liftRel_eq : liftRel (@Eq α) A B ↔ A = B := by
 
 /-- Require that a separation logic with carrier type `PROP` fulfills all necessary axioms. -/
 class BI (PROP : Type _) extends COFE PROP, BI.BIBase PROP where
-  entails_preorder : Preorder Entails
+  entails_preorder : Std.IsPreorder PROP
   equiv_iff {P Q : PROP} : (P ≡ Q) ↔ P ⊣⊢ Q := by simp
 
   and_ne : OFE.NonExpansive₂ and
@@ -82,12 +82,15 @@ class BI (PROP : Type _) extends COFE PROP, BI.BIBase PROP where
 
 namespace BI
 
-attribute [reducible,instance] BI.entails_preorder
+attribute [instance] BI.entails_preorder
 
-theorem BIBase.Entails.trans [BI PROP] {P Q R : PROP} (h1 : P ⊢ Q) (h2 : Q ⊢ R) : P ⊢ R :=
-  Trans.trans h1 h2
+theorem BIBase.Entails.trans [BI PROP] {P Q R : PROP} (h1 : P ⊢ Q) (h2 : Q ⊢ R) : P ⊢ R := by
+  dsimp [BIBase.Entails] at *
+  exact Trans.trans h1 h2
 
-@[simp,refl] theorem BIBase.Entails.rfl [BI PROP] {P : PROP} : P ⊢ P := Std.Refl.refl P
+@[simp,refl] theorem BIBase.Entails.rfl [BI PROP] {P : PROP} : P ⊢ P := by
+  dsimp [BIBase.Entails] at *
+  exact Std.Refl.refl P
 
 theorem BIBase.Entails.of_eq [BI PROP] {P Q : PROP} (h : P = Q) : P ⊢ Q := h ▸ .rfl
 

@@ -19,9 +19,6 @@ export Top (top)
 
 notation "⊤" => top
 
-/-- Require that a relation `R` on `α` is a preorder, i.e. that it is reflexive and transitive. -/
-class Preorder (R : Relation α) extends Std.Refl R, Trans R R R
-
 /-- Require that a binary function `f` on `α` is idempotent in a relation `R` on `α`. -/
 class Idempotent (R : Relation α) (f : α → α → α) where
   idem {x : α} : R (f x x) x
