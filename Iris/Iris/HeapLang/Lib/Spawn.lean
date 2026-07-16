@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Zongyuan Liu
+Authors: Zongyuan Liu, Klaus Kraßnitzer
 -/
 module
 
@@ -73,10 +73,7 @@ theorem spawn_spec (Ψ : Val → IProp GF) (f : Val) :
       WP hl(&spawn &f) {{ Φ }} := by
   iintro !> %Φ Hf HΦ
   wp_rec
-  wp_bind ref(_)
-  wp_pures
-  iapply wp_alloc
-  iintro !> %l Hl
+  wp_alloc l as Hl
   imod token_alloc with ⟨%γ, Hγ⟩
   iapply fupd_wp
   imod inv_alloc N ⊤ (spawnInv γ l Ψ) $$ [Hl] with #Hinv
@@ -106,11 +103,10 @@ theorem spawn_spec (Ψ : Val → IProp GF) (f : Val) :
   unfold spawnInv
   icases Hpt with ⟨%_, Hl, _⟩
   imodintro
-  iapply wp_store $$ Hl
-  iintro !> Hpt
+  wp_store
   iapply Hclose
   inext
-  iexists _; iframe Hpt
+  iexists _; iframe Hl
   iright; iexists v; isplit
   · itrivial
   · iframe
@@ -131,8 +127,7 @@ theorem join_spec (Ψ : Val → IProp GF) (l : Loc) :
   unfold spawnInv
   icases Hpt with ⟨%lv, Hl, Hcond⟩
   imodintro
-  iapply wp_load $$ Hl
-  iintro !> Hl
+  wp_load
   icases Hcond with (%Heq | ⟨%w, %Heq, (HΨw | Hγ')⟩) <;> subst Heq
   · imod Hclose $$ [Hl]
     · inext
