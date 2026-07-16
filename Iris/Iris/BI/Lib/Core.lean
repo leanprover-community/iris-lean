@@ -104,20 +104,14 @@ theorem coreP_entails [BIPersistentlyForall PROP] (P Q : PROP) :
     iintro #HcQ
     iapply coreP_elim $$ HcQ
 
-theorem coreP_entails'_aux {P Q : PROP} [Affine P] :
-    (P ⊢ <pers> Q) → (P ⊢ □ Q) := by
-  iintro %h H
-  ihave H := (affine_affinely P).mpr $$ H
-  iapply affinely_mono h $$ H
-
 @[rocq_alias coreP_entails']
 theorem coreP_entails' [BIPersistentlyForall PROP] {P Q : PROP} [Affine P] :
     (coreP P ⊢ Q) ↔ (P ⊢ □ Q) := by
   constructor <;> intro h
-  · apply coreP_entails'_aux
-    apply coreP_entails P Q |>.mp
+  · apply affinely_intro
+    apply (coreP_entails P Q).mp
     exact affinely_elim.trans h
-  · exact affine_affinely _ |>.mpr.trans (coreP_entails P Q |>.mpr (h.trans affinely_elim))
+  · exact (affine_affinely _).mpr.trans ((coreP_entails P Q).mpr (h.trans affinely_elim))
 
 #rocq_ignore coreP_proper "No Proper type class in Lean"
 #rocq_ignore coreP_mono "No Proper type class in Lean"
