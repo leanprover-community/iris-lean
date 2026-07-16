@@ -72,15 +72,27 @@ theorem coreP_wand (P Q : PROP) : <affine> ■ (P -∗ Q) -∗ coreP P -∗ core
   iapply HPQ $$ HP
 
 @[rocq_alias coreP_elim]
-theorem coreP_elim (P : PROP) [inst : Persistent P] : coreP P -∗ P := by
+theorem coreP_elim (P : PROP) [Persistent P] : coreP P -∗ P := by
   unfold coreP
   iintro HCP
   iapply HCP
   · iintro !> !> #HP //
   · iintro !> !> HP //
 
+theorem coreP_entails_aux [BIPersistentlyForall PROP] {P Q : PROP}
+    (h : P ⊢ <pers> Q):
+    <affine> coreP P ⊢ <affine> coreP iprop(<pers> Q) := by
+  iintro #HP !>
+  unfold coreP
+  iintro %R #HR #HQR
+  ispecialize HP $$ %R HR
+  iapply HP
+  imodintro
+  iapply plainly_mono <| wand_mono h .rfl
+  iassumption
+
 @[rocq_alias coreP_entails]
-theorem coreP_entails [inst : BIPersistentlyForall PROP] (P Q : PROP) :
+theorem coreP_entails [BIPersistentlyForall PROP] (P Q : PROP) :
     (<affine> coreP P ⊢ Q) ↔ (P ⊢ <pers> Q) := by
   constructor <;> intro h
   · iintro HP
@@ -88,21 +100,7 @@ theorem coreP_entails [inst : BIPersistentlyForall PROP] (P Q : PROP) :
     imodintro
     iapply h
     iassumption
-  · have a : <affine> coreP P ⊢ <affine> coreP iprop(<pers> Q) := by
-      iintro #HP
-      imodintro
-      unfold coreP
-      iintro %R H1 H2
-      ispecialize HP $$ %R H1
-      iapply HP
-      iintuitionistic H2
-      imodintro
-      iapply plainly_mono
-      · apply wand_mono
-        apply h
-        apply BIBase.Entails.rfl
-      · iexact H2
-    iapply a.trans
+  · iapply (coreP_entails_aux h).trans
     iintro #HcQ
     iapply coreP_elim $$ HcQ
 
@@ -113,18 +111,13 @@ theorem coreP_entails'_aux {P Q : PROP} [Affine P] :
   iapply affinely_mono h $$ H
 
 @[rocq_alias coreP_entails']
-theorem coreP_entails' [BIPersistentlyForall PROP] {P Q : PROP} [inst : Affine P] :
+theorem coreP_entails' [BIPersistentlyForall PROP] {P Q : PROP} [Affine P] :
     (coreP P ⊢ Q) ↔ (P ⊢ □ Q) := by
-  have h1 := affine_affinely (coreP P)
-  have h2 := coreP_entails P Q
-  constructor
-  · intro h
-    apply coreP_entails'_aux
-    apply h2.mp
-    iintro HP
-    iapply h $$ HP
-  · intro h
-    apply h1.mpr.trans (h2.mpr (h.trans affinely_elim))
+  constructor <;> intro h
+  · apply coreP_entails'_aux
+    apply coreP_entails P Q |>.mp
+    exact affinely_elim.trans h
+  · exact affine_affinely _ |>.mpr.trans (coreP_entails P Q |>.mpr (h.trans affinely_elim))
 
 #rocq_ignore coreP_proper "No Proper type class in Lean"
 #rocq_ignore coreP_mono "No Proper type class in Lean"
