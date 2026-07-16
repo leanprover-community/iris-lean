@@ -29,6 +29,12 @@ variable [Sbi PROP] [CMRA A]
 @[rocq_alias internal_cmra_valid]
 def internalCmraValid (a : A) : PROP := siPure (cmraValid a)
 
+macro_rules
+| `(iprop(✓ $a)) => ``(internalCmraValid $a)
+
+delab_rule internalCmraValid
+| `($_ $a) => ``(iprop(✓ $a))
+
 @[rocq_alias internal_cmra_valid_ne]
 instance internalCmraValid_ne : NonExpansive (internalCmraValid (PROP := PROP) (A := A)) where
   ne _ _ _ h := siPure_ne.ne (instNonExpansiveCmraValid.ne h)
@@ -37,7 +43,7 @@ instance internalCmraValid_ne : NonExpansive (internalCmraValid (PROP := PROP) (
 
 @[rocq_alias internal_cmra_valid_intro]
 theorem internalCmraValid_intro {P : PROP} {a : A} (h : Valid a) :
-    P ⊢ internalCmraValid a :=
+    P ⊢ ✓ a :=
   calc (P : PROP)
     _ ⊢ True := true_intro
     _ ⊢ <si_pure> True := siPure_pure.mpr
