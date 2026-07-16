@@ -79,17 +79,20 @@ theorem coreP_elim (P : PROP) [Persistent P] : coreP P -∗ P := by
   · iintro !> !> #HP //
   · iintro !> !> HP //
 
-theorem coreP_entails_aux [BIPersistentlyForall PROP] {P Q : PROP}
-    (h : P ⊢ <pers> Q):
-    <affine> coreP P ⊢ <affine> coreP iprop(<pers> Q) := by
-  iintro #HP !>
+/- This is an instance of `Proper` in the Rocq version. -/
+@[rw_mono_rule, rocq_alias coreP_mono]
+theorem coreP_mono {P Q : PROP} (h : P ⊢ Q) : coreP P ⊢ coreP Q := by
   unfold coreP
-  iintro %R #HR #HQR
-  ispecialize HP $$ %R HR
-  iapply HP
+  iintro HPQ %R HR HQR
+  iapply HPQ $$ HR
   imodintro
   iapply plainly_mono <| wand_mono h .rfl
   iassumption
+
+/- This is an instance of `Proper` in the Rocq version. -/
+@[rocq_alias coreP_proper]
+theorem coreP_proper {P Q : PROP} (h : P ⊣⊢ Q) : coreP P ⊣⊢ coreP Q :=
+  BIBase.BiEntails.ofMono coreP_mono h
 
 @[rocq_alias coreP_entails]
 theorem coreP_entails [BIPersistentlyForall PROP] (P Q : PROP) :
@@ -100,7 +103,7 @@ theorem coreP_entails [BIPersistentlyForall PROP] (P Q : PROP) :
     imodintro
     iapply h
     iassumption
-  · iapply (coreP_entails_aux h).trans
+  · rw' [h] -- Same as `iapply (affinely_mono <| coreP_mono h).trans`
     iintro #HcQ
     iapply coreP_elim $$ HcQ
 
@@ -111,10 +114,9 @@ theorem coreP_entails' [BIPersistentlyForall PROP] {P Q : PROP} [Affine P] :
   · apply affinely_intro
     apply (coreP_entails P Q).mp
     exact affinely_elim.trans h
-  · exact (affine_affinely _).mpr.trans ((coreP_entails P Q).mpr (h.trans affinely_elim))
+  · rw' [h]
+    apply (wand_entails <| coreP_elim iprop(□ Q)).trans intuitionistically_elim
 
-#rocq_ignore coreP_proper "No Proper type class in Lean"
-#rocq_ignore coreP_mono "No Proper type class in Lean"
-#rocq_ignore coreP_flip_mono "No Proper type class in Lean"
+#rocq_ignore coreP_flip_mono "No `Proper` type class in Lean, `rw'` works both ways"
 
 end Core
