@@ -429,7 +429,7 @@ theorem embed_si_pure (Pi : SiProp) :
 
 @[rocq_alias embed_internal_eq]
 theorem embed_internal_eq {A : Type _} [OFE A] (x y : A) :
-    (embed (internalEq x y : P1) : P2) ⊣⊢ internalEq x y :=
+    (embed (iprop(x ≡ y) : P1) : P2) ⊣⊢ x ≡ y :=
   embed_si_pure (SiProp.internalEq x y)
 
 @[rocq_alias embed_plainly]
@@ -453,7 +453,7 @@ instance embed_plain (P : P1) [Plain P] : Plain (embed P : P2) where
 /-- `⎡·⎤` reflects internal equality. -/
 @[rocq_alias embed_internal_inj]
 theorem embed_internal_inj {P3 : Type _} [Sbi P3] (P Q : P1) :
-    (internalEq (embed P : P2) (embed Q) : P3) ⊢ internalEq P Q := by
+    ((embed P : P2) ≡ embed Q : P3) ⊢ P ≡ Q := by
   refine siPure_mono ?_
   refine (prop_ext_siEmpValid_equiv (embed P) (embed Q)).mp.trans ?_
   refine (siEmpValid_and.mp.trans ?_).trans (prop_ext_siEmpValid_equiv P Q).mpr

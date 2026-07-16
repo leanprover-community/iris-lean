@@ -117,7 +117,7 @@ section CmraIncluded
 variable [Sbi PROP] [CMRA A]
 
 @[rocq_alias internal_included]
-def internalCmraIncluded (a b : A) : PROP := siPure (∃ c, internalEq b (a • c))
+def internalCmraIncluded (a b : A) : PROP := siPure (∃ c, iprop(b ≡ (a • c)))
 
 macro_rules
   | `(iprop($a ≼ $b)) => ``(internalCmraIncluded $a $b)
@@ -169,7 +169,7 @@ theorem internalCmraIncluded_discrete {a b : A} [CMRA.Discrete A] :
   haveI : ∀ x : A, DiscreteE x := fun x => ⟨OFE.Discrete.discrete⟩
   refine ⟨?_, pure_elim' internalCmraIncluded_intro⟩
   calc internalCmraIncluded a b
-    _ ⊢ <si_pure> (∃ c, internalEq b (a • c)) := siPure_internalCmraIncluded.mp
+    _ ⊢ <si_pure> (∃ c, b ≡ (a • c)) := siPure_internalCmraIncluded.mp
     _ ⊢ <si_pure> (∃ c, ⌜b ≡ a • c⌝) := siPure_mono <| exists_mono fun _ => discrete_eq_mp
     _ ⊢ <si_pure> ⌜∃ c, b ≡ a • c⌝ := siPure_mono pure_exists.mp
     _ ⊢ ⌜∃ c, b ≡ a • c⌝ := siPure_pure.mp

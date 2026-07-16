@@ -62,7 +62,7 @@ theorem option_validI [Sbi PROP] [CMRA A] {mx : Option A} :
 theorem option_includedI [Sbi PROP] [CMRA A] {mx my : Option A} :
   mx ≼ my ⊣⊢@{PROP}
     match mx, my with
-      | some x, some y => iprop((x ≼ y) ∨ (internalEq x y))
+      | some x, some y => iprop((x ≼ y) ∨ (x ≡ y))
       | none, _ => iprop(True)
       | some _, none => iprop(False) := by
   rcases mx with _ | x <;> rcases my with _ | y
@@ -128,7 +128,7 @@ theorem auth_op_frag_validI [Sbi PROP] (dp : DFrac) (m : H V) k dq v :
   suffices H :
     (<si_pure> SiProp.cmraValid (HeapView.Auth dp m • Frag k dq v) ⊣⊢@{PROP}
     (<si_pure> ∃ x x_1, ⌜✓ dp⌝ ∧ ⌜get? m k = some x⌝ ∧ SiProp.cmraValid (x_1, x) ∧
-        ∃ c, internalEq (some (x_1, x)) (some (dq, v) • c))) by
+        ∃ c, some (x_1, x) ≡ some (dq, v) • c)) by
     simp only [internalCmraValid, internalCmraIncluded, H.to_eq, siPure_exist.to_eq,
       siPure_and.to_eq, siPure_pure.to_eq, BIBase.BiEntails.rfl]
   constructor
@@ -157,7 +157,7 @@ theorem auth_op_frag_validI [Sbi PROP] (dp : DFrac) (m : H V) k dq v :
 @[rocq_alias gmap_view_both_validI]
 theorem auth_op_frag_one_validI [Sbi PROP] (dp : DFrac) (m : H V) k v :
   ✓ (Auth dp m • Frag k (.own One.one) v) ⊣⊢@{PROP}
-    ⌜✓ dp⌝ ∧ ✓ v ∧ internalEq (get? m k) (.some v) := by
+    ⌜✓ dp⌝ ∧ ✓ v ∧ get? m k ≡ .some v := by
   simp only [internalCmraValid, internalEq, ←siPure_and.to_eq]
   rw [←siPure_pure.to_eq, ←siPure_and.to_eq]
   constructor
@@ -175,7 +175,7 @@ theorem auth_op_frag_validI_total [Sbi PROP] [CMRA.IsTotal V] (dp : DFrac) (m : 
       ✓ v' ∧ v ≼ v' := by
   suffices H : (<si_pure> SiProp.cmraValid (HeapView.Auth dp m • Frag k dq v) ⊢@{PROP}
       <si_pure> (∃ v', ⌜✓ dp⌝ ∧ ⌜✓ dq⌝ ∧ ⌜get? m k = some v'⌝ ∧ SiProp.cmraValid v' ∧
-        ∃ c, internalEq v' (v • c))) by
+        ∃ c, v' ≡ v • c)) by
     simp only [internalCmraValid, internalCmraIncluded, siPure_exist.to_eq, siPure_and.to_eq,
       siPure_pure.to_eq] at H ⊢
     exact H
@@ -210,13 +210,13 @@ open Iris BI Agree OFE
 variable [Sbi PROP] [OFE A]
 
 @[rocq_alias agree_equivI]
-theorem agree_equivI {a b : A} : internalEq (toAgree a) (toAgree b) ⊣⊢@{PROP} internalEq a b := by
+theorem agree_equivI {a b : A} : toAgree a ≡ toAgree b ⊣⊢@{PROP} a ≡ b := by
   refine ⟨siPure_mono fun _ => Agree.toAgree_injN, ?_⟩
   refine siPure_mono fun n => ?_
   apply NonExpansive.ne
 
 @[rocq_alias agree_op_invI]
-theorem agree_op_invI {x y : Agree A} : ✓ (x • y) ⊢@{PROP} internalEq x y :=
+theorem agree_op_invI {x y : Agree A} : ✓ (x • y) ⊢@{PROP} x ≡ y :=
   siPure_mono (fun _ => op_invN)
 
 @[rocq_alias to_agree_validI]
@@ -227,13 +227,13 @@ theorem toAgree_validI (a : A) :
 
 @[rocq_alias to_agree_op_validI]
 theorem toAgree_op_validI (a b : A) :
-    ✓ (toAgree a • toAgree b) ⊣⊢@{PROP} internalEq a b :=
+    ✓ (toAgree a • toAgree b) ⊣⊢@{PROP} a ≡ b :=
   ⟨siPure_mono fun _ => toAgree_op_validN_iff_dist.mp,
    siPure_mono fun _ => toAgree_op_validN_iff_dist.mpr⟩
 
 @[rocq_alias to_agree_uninjI]
 theorem toAgree_uninjI (x : Agree A) :
-    ✓ x ⊢@{PROP} ∃ a, internalEq (toAgree a) x := by
+    ✓ x ⊢@{PROP} ∃ a, toAgree a ≡ x := by
   refine .trans (siPure_mono fun n hvalid => ?_) siPure_exist.mp
   have ⟨a, heq⟩ := toAgree_uninjN hvalid
   apply SiProp.instBI.sExists_intro
@@ -245,19 +245,19 @@ theorem toAgree_uninjI (x : Agree A) :
 
 @[rocq_alias agree_op_equiv_to_agreeI]
 theorem agree_op_equiv_toAgreeI (x y : Agree A) (a : A) :
-    internalEq (x • y) (toAgree a) ⊢@{PROP} internalEq x y ∧ internalEq y (toAgree a) := by
-  have H1 : internalEq (x • y) (toAgree a) ⊢@{PROP} internalEq x y := by
+    x • y ≡ toAgree a ⊢@{PROP} x ≡ y ∧ y ≡ toAgree a := by
+  have H1 : x • y ≡ toAgree a ⊢@{PROP} x ≡ y := by
     refine absorbingly_internalEq (x • y) (toAgree a) |>.mpr.trans ?_
     refine (absorbingly_mono ?_).trans absorbing
     refine internalEq.rewrite' internalCmraValid internalEq.symm ?_ |>.trans agree_op_invI
     refine emp_sep.2.trans ?_
     refine (sep_mono_left (toAgree_validI a)) |>.trans ?_
     exact sep_elim_left
-  have H2 : internalEq (x • y) (toAgree a) ⊢@{PROP} internalEq x (toAgree a) := by
+  have H2 : x • y ≡ toAgree a ⊢@{PROP} x ≡ toAgree a := by
     letI : NonExpansive (x • ·) := CMRA.op_ne
-    have H21 : internalEq (x • y) (toAgree a) ⊢@{PROP} internalEq (x • x) (toAgree a) := by
+    have H21 : x • y ≡ toAgree a ⊢@{PROP} x • x ≡ toAgree a := by
       exact (and_intro (H1.trans (internalEq.of_internalEquiv_ne (x • ·))) .rfl).trans internalEq.trans
-    have H22 : internalEq (x • y) (toAgree a) ⊢@{PROP} internalEq (x • x) x := by
+    have H22 : x • y ≡ toAgree a ⊢@{PROP} x • x ≡ x := by
       exact emp_sep.2.trans (sep_mono_left (internalEq.of_equiv Agree.idemp)) |>.trans sep_elim_left
     refine (and_intro (H22.trans internalEq.symm) H21).trans internalEq.trans
   apply and_intro H1
@@ -265,7 +265,7 @@ theorem agree_op_equiv_toAgreeI (x y : Agree A) (a : A) :
 
 @[rocq_alias agree_includedI]
 theorem agree_includedI (x y : Agree A) :
-    x ≼ y ⊣⊢@{PROP} internalEq y (x • y) := by
+    x ≼ y ⊣⊢@{PROP} y ≡ x • y := by
   constructor
   · refine siPure_mono (exists_elim (fun c => ?_))
     exact (fun n Heq => (includedN.mp ⟨c, Heq⟩).trans op_commN)
@@ -274,7 +274,7 @@ theorem agree_includedI (x y : Agree A) :
 
 @[rocq_alias to_agree_includedI]
 theorem toAgree_includedI (a b : A) :
-    toAgree a ≼ toAgree b ⊣⊢@{PROP} internalEq a b := by
+    toAgree a ≼ toAgree b ⊣⊢@{PROP} a ≡ b := by
   constructor
   · refine siPure_mono (exists_elim (fun c => ?_))
     exact (fun n Heq => toAgree_includedN.mp ⟨c, Heq⟩)
@@ -306,7 +306,7 @@ theorem auth_validI (a : A) : ✓ (● a : Auth A) ⊣⊢@{PROP} ✓ a := by
 @[rocq_alias auth_auth_dfrac_op_validI]
 theorem auth_dfrac_op_validI (dq1 dq2 : DFrac) (a1 a2 : A) :
     ✓ ((●{dq1} a1) • (●{dq2} a2)) ⊣⊢@{PROP}
-      ⌜✓ (dq1 • dq2)⌝ ∧ internalEq a1 a2 ∧ ✓ a1 := by
+      ⌜✓ (dq1 • dq2)⌝ ∧ a1 ≡ a2 ∧ ✓ a1 := by
   simp only [←(and_congr_left siPure_pure).to_eq, internalEq, internalCmraValid
     , ←(siPure_and.trans (and_congr_right siPure_and)).to_eq]
   refine ⟨siPure_mono fun n => ?_, siPure_mono fun n => ?_⟩
