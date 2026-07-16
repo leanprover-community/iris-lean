@@ -55,7 +55,11 @@ instance coreP_ne : NonExpansive (coreP (PROP := PROP)) where
     unfold coreP
     refine forall_ne ?_
     intro R
-    sorry
+    apply wand_ne.ne
+    · rfl
+    · apply wand_ne.ne
+      · sorry
+      · rfl
 
 @[rocq_alias coreP_wand]
 theorem coreP_wand (P Q : PROP) : <affine> ■ (P -∗ Q) -∗ coreP P -∗ coreP Q := by
