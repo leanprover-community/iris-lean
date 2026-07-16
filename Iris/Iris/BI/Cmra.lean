@@ -30,10 +30,10 @@ variable [Sbi PROP] [CMRA A]
 def internalCmraValid (a : A) : PROP := siPure (cmraValid a)
 
 macro_rules
-| `(iprop(✓ $a)) => ``(internalCmraValid $a)
+  | `(iprop(✓ $a)) => ``(internalCmraValid $a)
 
 delab_rule internalCmraValid
-| `($_ $a) => ``(iprop(✓ $a))
+  | `($_ $a) => ``(iprop(✓ $a))
 
 @[rocq_alias internal_cmra_valid_ne]
 instance internalCmraValid_ne : NonExpansive (internalCmraValid (PROP := PROP) (A := A)) where
@@ -119,6 +119,12 @@ variable [Sbi PROP] [CMRA A]
 @[rocq_alias internal_included]
 def internalCmraIncluded (a b : A) : PROP := siPure (∃ c, internalEq b (a • c))
 
+macro_rules
+  | `(iprop($a ≼ $b)) => ``(internalCmraIncluded $a $b)
+
+delab_rule internalCmraIncluded
+  | `($_ $a $b) => ``(iprop($a ≼ $b))
+
 @[rocq_alias internal_included_nonexpansive]
 instance internalCmraIncluded_ne :
     NonExpansive₂ (internalCmraIncluded (PROP := PROP) (A := A)) where
@@ -130,36 +136,36 @@ instance internalCmraIncluded_ne :
 
 @[rocq_alias internal_included_intro]
 theorem internalCmraIncluded_intro {P : PROP} {a b : A} (h : a ≼ b) :
-    P ⊢ internalCmraIncluded a b := by
+    P ⊢ a ≼ b := by
   obtain ⟨c, hc⟩ := h
   calc (P : PROP)
     _ ⊢ True := true_intro
     _ ⊢ <si_pure> True := siPure_pure.mpr
-    _ ⊢ internalCmraIncluded a b := siPure_mono (BI.exists_intro_trans c (internalEq.of_equiv hc))
+    _ ⊢ a ≼ b := siPure_mono (BI.exists_intro_trans c (internalEq.of_equiv hc))
 
 @[rocq_alias si_pure_internal_included]
 theorem siPure_internalCmraIncluded {a b : A} :
-    <si_pure> internalCmraIncluded a b ⊣⊢@{PROP} internalCmraIncluded a b :=
+    <si_pure> a ≼ b ⊣⊢@{PROP} a ≼ b :=
   persistently_iff.symm.trans persistently_siPure
 
 @[rocq_alias persistently_internal_included]
 theorem persistently_internalCmraIncluded {a b : A} :
-    <pers> internalCmraIncluded a b ⊣⊢@{PROP} internalCmraIncluded a b :=
+    <pers> a ≼ b ⊣⊢@{PROP} a ≼ b :=
   persistently_siPure
 
 @[rocq_alias plainly_internal_included]
 theorem plainly_internalCmraIncluded {a b : A} :
-    ■ internalCmraIncluded a b ⊣⊢@{PROP} internalCmraIncluded a b :=
+    ■ a ≼ b ⊣⊢@{PROP} a ≼ b :=
   plainly_siPure
 
 @[rocq_alias intuitionistically_internal_included]
 theorem intuitionistically_internalCmraIncluded [BIAffine PROP] {a b : A} :
-    □ internalCmraIncluded a b ⊣⊢@{PROP} internalCmraIncluded a b :=
+    □ a ≼ b ⊣⊢@{PROP} a ≼ b :=
   intuitionistically_iff_persistently.trans persistently_internalCmraIncluded
 
 @[rocq_alias internal_included_discrete]
 theorem internalCmraIncluded_discrete {a b : A} [CMRA.Discrete A] :
-    internalCmraIncluded a b ⊣⊢@{PROP} ⌜a ≼ b⌝ := by
+    a ≼ b ⊣⊢@{PROP} ⌜a ≼ b⌝ := by
   haveI : ∀ x : A, DiscreteE x := fun x => ⟨OFE.Discrete.discrete⟩
   refine ⟨?_, pure_elim' internalCmraIncluded_intro⟩
   calc internalCmraIncluded a b
@@ -170,12 +176,12 @@ theorem internalCmraIncluded_discrete {a b : A} [CMRA.Discrete A] :
     _ ⊢ ⌜a ≼ b⌝ := pure_mono fun ⟨c, h⟩ => ⟨c, h⟩
 
 @[rocq_alias internal_included_refl]
-theorem internalCmraIncluded_refl {a : A} [IsTotal A] : ⊢@{PROP} internalCmraIncluded a a :=
+theorem internalCmraIncluded_refl {a : A} [IsTotal A] : ⊢@{PROP} a ≼ a :=
   internalCmraIncluded_intro .rfl
 
 @[rocq_alias internal_included_trans]
 theorem internalCmraIncluded_trans {a b c : A} :
-    ⊢@{PROP} internalCmraIncluded a b -∗ internalCmraIncluded b c -∗ internalCmraIncluded a c := by
+    ⊢@{PROP} a ≼ b -∗ b ≼ c -∗ a ≼ c := by
   refine BI.entails_wand (siPure_exist.mp.trans ?_)
   refine BI.exists_elim (fun a' => ?_)
   refine BI.wand_intro ((BI.sep_mono_right siPure_exist.mp).trans (BI.sep_exists_left.mp.trans ?_))
@@ -189,24 +195,24 @@ theorem internalCmraIncluded_trans {a b c : A} :
 
 @[rocq_alias internal_included_timeless]
 instance internalCmraIncluded_timeless {a b : A} [CMRA.Discrete A] :
-    Timeless (PROP := PROP) (internalCmraIncluded a b) := by
+    Timeless (PROP := PROP) iprop(a ≼ b) := by
   haveI : ∀ x : A, DiscreteE x := fun x => ⟨OFE.Discrete.discrete⟩
   unfold internalCmraIncluded
   infer_instance
 
 @[rocq_alias internal_included_plain]
 instance internalCmraIncluded_plain {a b : A} :
-    Plain (PROP := PROP) (internalCmraIncluded a b) where
+    Plain (PROP := PROP) iprop(a ≼ b) where
   plain := plainly_internalCmraIncluded.mpr
 
 @[rocq_alias internal_included_persistent]
 instance internalCmraIncluded_persistent {a b : A} :
-    Persistent (PROP := PROP) (internalCmraIncluded a b) where
+    Persistent (PROP := PROP) iprop(a ≼ b) where
   persistent := persistently_internalCmraIncluded.mpr
 
 @[rocq_alias internal_included_absorbing]
 instance internalCmraIncluded_absorbing {a b : A} :
-    Absorbing (PROP := PROP) (internalCmraIncluded a b) :=
+    Absorbing (PROP := PROP) iprop(a ≼ b) :=
   siPure_absorbing _
 
 end CmraIncluded

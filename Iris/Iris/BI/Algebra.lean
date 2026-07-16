@@ -29,8 +29,8 @@ theorem prod_validI [Sbi PROP] [CMRA A] [CMRA B] (x : A × B) :
 
 @[rocq_alias prod_includedI]
 theorem prod_includedI [Sbi PROP] [CMRA A] [CMRA B] (x y : A × B) :
-    internalCmraIncluded x y ⊣⊢@{PROP} internalCmraIncluded x.1 y.1 ∧ internalCmraIncluded x.2 y.2 := by
-  simp only [internalCmraIncluded,  internalEq]
+    x ≼ y ⊣⊢@{PROP} x.1 ≼ y.1 ∧ x.2 ≼ y.2 := by
+  simp only [internalCmraIncluded, internalEq]
   refine .trans (siPure_mono_bi ?_) siPure_and
   refine siPure_exist.symm.trans ?_
   refine .trans ?_ (and_congr_left siPure_exist)
@@ -60,9 +60,9 @@ theorem option_validI [Sbi PROP] [CMRA A] {mx : Option A} :
 
 @[rocq_alias option_includedI]
 theorem option_includedI [Sbi PROP] [CMRA A] {mx my : Option A} :
-  internalCmraIncluded mx my ⊣⊢@{PROP}
+  mx ≼ my ⊣⊢@{PROP}
     match mx, my with
-      | some x, some y => iprop((internalCmraIncluded x y) ∨ (internalEq x y))
+      | some x, some y => iprop((x ≼ y) ∨ (internalEq x y))
       | none, _ => iprop(True)
       | some _, none => iprop(False) := by
   rcases mx with _ | x <;> rcases my with _ | y
@@ -86,9 +86,9 @@ theorem option_includedI [Sbi PROP] [CMRA A] {mx my : Option A} :
 
 @[rocq_alias option_included_totalI]
 theorem option_included_totalI [Sbi PROP] [CMRA A] [CMRA.IsTotal A] {mx my : Option A} :
-  internalCmraIncluded mx my ⊣⊢@{PROP}
+  mx ≼ my ⊣⊢@{PROP}
     match mx, my with
-      | some x, some y => internalCmraIncluded x y
+      | some x, some y => iprop(x ≼ y)
       | none, _ => iprop(True)
       | some _, none => iprop(False) := by
   rcases mx with _ | x <;> rcases my with _ | y
@@ -108,7 +108,7 @@ theorem option_included_totalI [Sbi PROP] [CMRA A] [CMRA.IsTotal A] {mx my : Opt
 
 @[rocq_alias Some_included_totalI]
 theorem Some_included_totalI [Sbi PROP] [CMRA A] [CMRA.IsTotal A] {x y : A} :
-  internalCmraIncluded (some x) (some y) ⊣⊢@{PROP} internalCmraIncluded x y :=
+    some x ≼ some y ⊣⊢@{PROP} x ≼ y :=
   option_included_totalI
 
 end option
@@ -124,7 +124,7 @@ variable [LawfulPartialMap H K] [CMRA V]
 theorem auth_op_frag_validI [Sbi PROP] (dp : DFrac) (m : H V) k dq v :
   ✓ (Auth dp m • Frag k dq v) ⊣⊢@{PROP}
     ∃ v' dq', ⌜✓ dp⌝ ∧ ⌜get? m k = .some v'⌝ ∧ ✓ (dq', v') ∧
-      internalCmraIncluded (Option.some (dq, v)) (Option.some (dq', v')) := by
+      some (dq, v) ≼ some (dq', v') := by
   suffices H :
     (<si_pure> SiProp.cmraValid (HeapView.Auth dp m • Frag k dq v) ⊣⊢@{PROP}
     (<si_pure> ∃ x x_1, ⌜✓ dp⌝ ∧ ⌜get? m k = some x⌝ ∧ SiProp.cmraValid (x_1, x) ∧
@@ -172,7 +172,7 @@ theorem auth_op_frag_one_validI [Sbi PROP] (dp : DFrac) (m : H V) k v :
 theorem auth_op_frag_validI_total [Sbi PROP] [CMRA.IsTotal V] (dp : DFrac) (m : H V) k dq v :
   ✓ (Auth dp m • Frag k dq v) ⊢@{PROP}
     ∃ v', ⌜✓ dp⌝ ∧ ⌜✓ dq⌝ ∧ ⌜get? m k = .some v'⌝ ∧
-      ✓ v' ∧ internalCmraIncluded v v' := by
+      ✓ v' ∧ v ≼ v' := by
   suffices H : (<si_pure> SiProp.cmraValid (HeapView.Auth dp m • Frag k dq v) ⊢@{PROP}
       <si_pure> (∃ v', ⌜✓ dp⌝ ∧ ⌜✓ dq⌝ ∧ ⌜get? m k = some v'⌝ ∧ SiProp.cmraValid v' ∧
         ∃ c, internalEq v' (v • c))) by
@@ -265,7 +265,7 @@ theorem agree_op_equiv_toAgreeI (x y : Agree A) (a : A) :
 
 @[rocq_alias agree_includedI]
 theorem agree_includedI (x y : Agree A) :
-    internalCmraIncluded x y ⊣⊢@{PROP} internalEq y (x • y) := by
+    x ≼ y ⊣⊢@{PROP} internalEq y (x • y) := by
   constructor
   · refine siPure_mono (exists_elim (fun c => ?_))
     exact (fun n Heq => (includedN.mp ⟨c, Heq⟩).trans op_commN)
@@ -274,7 +274,7 @@ theorem agree_includedI (x y : Agree A) :
 
 @[rocq_alias to_agree_includedI]
 theorem toAgree_includedI (a b : A) :
-    internalCmraIncluded (toAgree a) (toAgree b) ⊣⊢@{PROP} internalEq a b := by
+    toAgree a ≼ toAgree b ⊣⊢@{PROP} internalEq a b := by
   constructor
   · refine siPure_mono (exists_elim (fun c => ?_))
     exact (fun n Heq => toAgree_includedN.mp ⟨c, Heq⟩)
@@ -321,7 +321,7 @@ theorem frag_validI (a : A) :
 @[rocq_alias auth_both_dfrac_validI]
 theorem both_dfrac_validI (dq : DFrac) (a b : A) :
     ✓ ((●{dq} a) • ◯ b) ⊣⊢@{PROP}
-    ⌜✓ dq⌝ ∧ internalCmraIncluded b a ∧ ✓ a := by
+    ⌜✓ dq⌝ ∧ b ≼ a ∧ ✓ a := by
   simp only [internalCmraValid, internalCmraIncluded, ←(and_congr siPure_pure siPure_and).to_eq]
   simp only [←siPure_and.to_eq, BI.and_exists_right.to_eq, BI.and_exists_left.to_eq]
   refine siPure_mono_bi ?_
@@ -338,7 +338,7 @@ theorem both_dfrac_validI (dq : DFrac) (a b : A) :
 @[rocq_alias auth_both_validI]
 theorem auth_both_validI (a b : A) :
     ✓ ((● a : Auth A) • ◯ b) ⊣⊢@{PROP}
-      internalCmraIncluded b a ∧ ✓ a := by
+      b ≼ a ∧ ✓ a := by
   simp only [internalCmraIncluded, internalCmraValid, ←siPure_and.to_eq, BI.and_exists_right.to_eq]
   refine siPure_mono_bi ?_
   simp only [SiProp.cmraValid, both_dfrac_validN]
