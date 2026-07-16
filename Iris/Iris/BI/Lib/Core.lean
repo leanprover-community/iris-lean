@@ -52,6 +52,9 @@ instance coreP_affine (P : PROP) [Affine P] : Affine (coreP P) where
 @[rocq_alias coreP_ne]
 instance coreP_ne : NonExpansive (coreP (PROP := PROP)) where
   ne n P Q H := by
+    unfold coreP
+    refine forall_ne ?_
+    intro R
     sorry
 
 @[rocq_alias coreP_wand]
@@ -108,5 +111,9 @@ theorem coreP_entails' [BIPersistentlyForall PROP] {P Q : PROP} [inst : Affine P
     · iintro !> !>
       sorry
     · sorry
+
+#rocq_ignore coreP_proper "No Proper type class in Lean"
+#rocq_ignore coreP_mono "No Proper type class in Lean"
+#rocq_ignore coreP_flip_mono "No Proper type class in Lean"
 
 end Core
