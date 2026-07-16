@@ -37,9 +37,9 @@ instance coreP_persistent [BIPersistentlyForall PROP] (P : PROP) : Persistent (c
     iintro #HQ
     iapply persistently_wand_affinely_plainly
     iintro #HPQ
-    ispecialize HC $$ %Q HQ
     iapply HQ
     iapply HC
+    iapply HQ
     iapply HPQ
 
 @[rocq_alias coreP_affine]
@@ -53,17 +53,14 @@ instance coreP_affine (P : PROP) [Affine P] : Affine (coreP P) where
 instance coreP_ne : NonExpansive (coreP (PROP := PROP)) where
   ne n P Q H := by
     unfold coreP
-    refine forall_ne ?_
+    apply forall_ne
     intro R
+    apply wand_ne.ne; rfl
     apply wand_ne.ne
+    · apply affinely_ne.ne
+      apply instPlainly_ne.ne
+      apply wand_ne.ne H; rfl
     · rfl
-    · apply wand_ne.ne
-      · apply affinely_ne.ne
-        apply instPlainly_ne.ne
-        apply wand_ne.ne
-        assumption
-        rfl
-      · rfl
 
 @[rocq_alias coreP_wand]
 theorem coreP_wand (P Q : PROP) : <affine> ■ (P -∗ Q) -∗ coreP P -∗ coreP Q := by
@@ -110,21 +107,10 @@ theorem coreP_entails [inst : BIPersistentlyForall PROP] (P Q : PROP) :
     iapply coreP_elim $$ HcQ
 
 theorem coreP_entails'_aux {P Q : PROP} [Affine P] :
-    (P ⊢ <pers> Q) ↔ (P ⊢ □ Q) := by
-  constructor
-  · have a := affine_affinely (PROP := PROP) P
-    intro h
-    iintro H
-    have a := a.mpr
-    ihave H := a $$ H
-    iintuitionistic h
-    ihave a := affinely_mono h
-    ispecialize a $$ H
-    iexact a
-  · intro h
-    iintro HP
-    ihave #HQ := h $$ HP
-    iexact HQ
+    (P ⊢ <pers> Q) → (P ⊢ □ Q) := by
+  iintro %h H
+  ihave H := (affine_affinely P).mpr $$ H
+  iapply affinely_mono h $$ H
 
 @[rocq_alias coreP_entails']
 theorem coreP_entails' [BIPersistentlyForall PROP] {P Q : PROP} [inst : Affine P] :
@@ -133,17 +119,12 @@ theorem coreP_entails' [BIPersistentlyForall PROP] {P Q : PROP} [inst : Affine P
   have h2 := coreP_entails P Q
   constructor
   · intro h
-    apply coreP_entails'_aux.mp
+    apply coreP_entails'_aux
     apply h2.mp
     iintro HP
-    ihave a := h $$ HP
-    iexact a
+    iapply h $$ HP
   · intro h
-    have hh := affinely_intro .rfl (P := coreP P)
-    have hhh := h.trans affinely_elim
-    have hhhh : <affine> coreP P ⊢ Q := h2.mpr hhh
-    apply h1.mpr.trans
-    apply hhhh
+    apply h1.mpr.trans (h2.mpr (h.trans affinely_elim))
 
 #rocq_ignore coreP_proper "No Proper type class in Lean"
 #rocq_ignore coreP_mono "No Proper type class in Lean"
