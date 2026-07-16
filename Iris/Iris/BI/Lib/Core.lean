@@ -109,23 +109,32 @@ theorem coreP_entails [inst : BIPersistentlyForall PROP] (P Q : PROP) :
     iintro #HcQ
     iapply coreP_elim $$ HcQ
 
+theorem coreP_entails'_aux {P Q : PROP} [Affine P] :
+    (P ⊢ <pers> Q) ↔ (P ⊢ □ Q) := by
+  constructor
+  · have a := affine_affinely (PROP := PROP) P
+    intro h
+    iintro H
+    have a := a.mpr
+    ihave H := a $$ H
+    iintuitionistic h
+    ihave a := affinely_mono h
+    ispecialize a $$ H
+    iexact a
+  · intro h
+    iintro HP
+    ihave #HQ := h $$ HP
+    iexact HQ
+
 @[rocq_alias coreP_entails']
 theorem coreP_entails' [BIPersistentlyForall PROP] {P Q : PROP} [inst : Affine P] :
     (coreP P ⊢ Q) ↔ (P ⊢ □ Q) := by
-  constructor <;> intro h
-  ihave H := affine_affinely (coreP P)
-  have HH := coreP_entails P (coreP P)
-  · iintro HP
-    ihave a := inst.affine $$ HP
-    unfold coreP at h
-    ihave H := h
-    sorry
-  · unfold coreP
-    iintro HP
-    iapply HP
-    · iintro !> !>
-      sorry
-    · sorry
+  have h1 := affine_affinely (coreP P)
+  have h2 := coreP_entails P Q
+
+
+
+  sorry
 
 #rocq_ignore coreP_proper "No Proper type class in Lean"
 #rocq_ignore coreP_mono "No Proper type class in Lean"
