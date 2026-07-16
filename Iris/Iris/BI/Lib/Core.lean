@@ -58,7 +58,11 @@ instance coreP_ne : NonExpansive (coreP (PROP := PROP)) where
     apply wand_ne.ne
     · rfl
     · apply wand_ne.ne
-      · sorry
+      · apply affinely_ne.ne
+        apply instPlainly_ne.ne
+        apply wand_ne.ne
+        assumption
+        rfl
       · rfl
 
 @[rocq_alias coreP_wand]
@@ -83,22 +87,18 @@ theorem coreP_entails [inst : BIPersistentlyForall PROP] {P Q : PROP} :
     (<affine> coreP P ⊢ Q) ↔ (P ⊢ <pers> Q) := by
   constructor <;> intro h
   · iintro HP
-    ihave HP := coreP_intro $$ HP
+    ihave #HP := coreP_intro $$ HP
+    unfold coreP
+    imodintro
+    iapply HP
+    · sorry
+    · sorry
+  · iintro #HP
+    ihave H := h
     unfold coreP
     iapply HP
-    · iintro !> !> #HQ //
-    · iintro !> !> HP
-      ihave #H := h
-      imodintro
-      iapply H
-      unfold coreP
-      iintro !> %A HH AA
-      sorry
-  · iintro HP
-    have b := inst.persistently_sForall_2
-    have a : Persistent P := sorry
-    ihave #HP := coreP_elim $$ HP
-    iapply h $$ HP
+    · sorry
+    · sorry
 
 @[rocq_alias coreP_entails']
 theorem coreP_entails' [BIPersistentlyForall PROP] {P Q : PROP} [inst : Affine P] :
