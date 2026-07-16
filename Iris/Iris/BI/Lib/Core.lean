@@ -83,27 +83,38 @@ theorem coreP_elim (P : PROP) [inst : Persistent P] : coreP P -∗ P := by
   · iintro !> !> HP //
 
 @[rocq_alias coreP_entails]
-theorem coreP_entails [inst : BIPersistentlyForall PROP] {P Q : PROP} :
+theorem coreP_entails [inst : BIPersistentlyForall PROP] (P Q : PROP) :
     (<affine> coreP P ⊢ Q) ↔ (P ⊢ <pers> Q) := by
   constructor <;> intro h
   · iintro HP
-    ihave #HP := coreP_intro $$ HP
-    unfold coreP
+    ihave #HPQ := coreP_intro $$ HP
     imodintro
-    iapply HP
-    · sorry
-    · sorry
-  · iintro #HP
-    ihave H := h
-    unfold coreP
-    iapply HP
-    · sorry
-    · sorry
+    iapply h
+    iassumption
+  · have a : <affine> coreP P ⊢ <affine> coreP iprop(<pers> Q) := by
+      iintro #HP
+      imodintro
+      unfold coreP
+      iintro %R H1 H2
+      ispecialize HP $$ %R H1
+      iapply HP
+      iintuitionistic H2
+      imodintro
+      iapply plainly_mono
+      · apply wand_mono
+        apply h
+        apply BIBase.Entails.rfl
+      · iexact H2
+    iapply a.trans
+    iintro #HcQ
+    iapply coreP_elim $$ HcQ
 
 @[rocq_alias coreP_entails']
 theorem coreP_entails' [BIPersistentlyForall PROP] {P Q : PROP} [inst : Affine P] :
     (coreP P ⊢ Q) ↔ (P ⊢ □ Q) := by
   constructor <;> intro h
+  ihave H := affine_affinely (coreP P)
+  have HH := coreP_entails P (coreP P)
   · iintro HP
     ihave a := inst.affine $$ HP
     unfold coreP at h
