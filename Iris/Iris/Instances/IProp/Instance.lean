@@ -516,19 +516,19 @@ theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ a1) : iOwn γ a1 ⊢ iOw
   next => simp [GenMap.empty_map_lookup]; exact Dist.op_l Dist.rfl
 
 @[rocq_alias own_valid]
-theorem iOwn_cmraValid {a : F.ap (IProp GF)} : iOwn γ a ⊢ internalCmraValid a :=
+theorem iOwn_cmraValid {a : F.ap (IProp GF)} : iOwn γ a ⊢ ✓ a :=
   (UPred.ownM_valid _).trans (internalCmraValid_entails.mpr fun _ => validN_of_iSingleton)
 
 @[rocq_alias own_valid_2]
 theorem iOwn_cmraValid_op {a1 a2 : F.ap (IProp GF)} :
-    iOwn γ a1 ∗ iOwn γ a2 ⊢ internalCmraValid (a1 • a2) :=
+    iOwn γ a1 ∗ iOwn γ a2 ⊢ ✓ (a1 • a2) :=
   iOwn_op.mpr.trans iOwn_cmraValid
 
 @[rocq_alias own_valid_r]
-theorem iOwn_valid_r {a : F.ap (IProp GF)} : iOwn γ a ⊢ iOwn γ a ∗ internalCmraValid a :=
+theorem iOwn_valid_r {a : F.ap (IProp GF)} : iOwn γ a ⊢ iOwn γ a ∗ ✓ a :=
   BI.persistent_entails_left iOwn_cmraValid
 @[rocq_alias own_valid_l]
-theorem iOwn_valid_l {a : F.ap (IProp GF)} : iOwn γ a ⊢ internalCmraValid a ∗ iOwn γ a :=
+theorem iOwn_valid_l {a : F.ap (IProp GF)} : iOwn γ a ⊢ ✓ a ∗ iOwn γ a :=
   BI.persistent_entails_right iOwn_cmraValid
 
 @[rocq_alias own_core_persistent]
@@ -798,7 +798,7 @@ instance combineSepAs_iOwn {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpMerge a b1 
 
 @[rocq_alias combine_sep_gives_own]
 instance combineSepGives_iOwn {γ} {a1 a2 : F.ap (IProp GF)} :
-    CombineSepGives (iOwn γ a1) (iOwn γ a2) (internalCmraValid (a1 • a2)) where
+    CombineSepGives (iOwn γ a1) (iOwn γ a2) iprop(✓ (a1 • a2)) where
   combine_sep_gives := iOwn_cmraValid_op
 
 set_option synthInstance.checkSynthOrder false in

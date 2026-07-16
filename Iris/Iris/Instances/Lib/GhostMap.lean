@@ -106,7 +106,7 @@ theorem ghost_map_elems_unseal [DecidableEq K] γ (m : H V) dq :
 
 @[rocq_alias ghost_map_elem_valid]
 theorem ghost_map_elem_valid (γ : GName) (k : K) (dq : DFrac) (v : V) :
-    (γ ↪◯MAP[k]{dq} v) ⊢@{IProp GF} internalCmraValid dq := by
+    (γ ↪◯MAP[k]{dq} v) ⊢@{IProp GF} ✓ dq := by
   refine iOwn_cmraValid.trans ?_
   iintro %h
   ipureintro
@@ -115,7 +115,7 @@ theorem ghost_map_elem_valid (γ : GName) (k : K) (dq : DFrac) (v : V) :
 @[rocq_alias ghost_map_elem_valid_2]
 theorem ghost_map_elem_valid_2 (γ : GName) (k : K) (dq1 dq2 : DFrac) (v1 v2 : V) :
     (γ ↪◯MAP[k]{dq1} v1) ∗ (γ ↪◯MAP[k]{dq2} v2) ⊢@{IProp GF}
-      internalCmraValid (dq1 • dq2) ∧ ⌜v1 = v2⌝ := by
+      ✓ (dq1 • dq2) ∧ ⌜v1 = v2⌝ := by
   unfold ghost_map_elem
   iintro ⟨H1, H2⟩
   icombine H1 H2 gives %H

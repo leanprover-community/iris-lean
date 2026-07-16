@@ -47,67 +47,67 @@ theorem internalCmraValid_intro {P : PROP} {a : A} (h : Valid a) :
   calc (P : PROP)
     _ ⊢ True := true_intro
     _ ⊢ <si_pure> True := siPure_pure.mpr
-    _ ⊢ internalCmraValid a := siPure_mono (cmraValid_intro h)
+    _ ⊢ ✓ a := siPure_mono (cmraValid_intro h)
 
 @[rocq_alias internal_cmra_valid_elim]
-theorem internalCmraValid_elim (a : A) : internalCmraValid a ⊢@{PROP} ⌜✓{0} a⌝ :=
+theorem internalCmraValid_elim (a : A) : ✓ a ⊢@{PROP} ⌜✓{0} a⌝ :=
   calc internalCmraValid a
     _ ⊢ <si_pure> ⌜✓{0} a⌝ := siPure_mono cmraValid_elim
     _ ⊢ ⌜✓{0} a⌝ := siPure_pure.mp
 
 @[rocq_alias internal_cmra_valid_weaken]
 theorem internalCmraValid_weaken {a b : A} :
-    internalCmraValid (a • b) ⊢@{PROP} internalCmraValid a :=
+    ✓ (a • b) ⊢@{PROP} ✓ a :=
   siPure_mono cmraValid_weaken
 
 @[rocq_alias internal_cmra_valid_entails]
 theorem internalCmraValid_entails [CMRA B] {a : A} {b : B} :
-    (internalCmraValid a ⊢@{PROP} internalCmraValid b) ↔ ∀ n, ✓{n} a → ✓{n} b :=
+    (✓ a ⊢@{PROP} ✓ b) ↔ ∀ n, ✓{n} a → ✓{n} b :=
   siPure_entails.trans cmraValid_entails_iff
 
 @[rocq_alias si_pure_internal_cmra_valid]
-theorem siPure_internalCmraValid {a : A} : <si_pure> cmraValid a ⊣⊢@{PROP} internalCmraValid a :=
+theorem siPure_internalCmraValid {a : A} : <si_pure> cmraValid a ⊣⊢@{PROP} ✓ a :=
   .rfl
 
 @[rocq_alias persistently_internal_cmra_valid]
 theorem persistently_internalCmraValid {a : A} :
-    <pers> internalCmraValid a ⊣⊢@{PROP} internalCmraValid a :=
+    <pers> ✓ a ⊣⊢@{PROP} ✓ a :=
   persistently_siPure
 
 @[rocq_alias plainly_internal_cmra_valid]
 theorem plainly_internalCmraValid (a : A) :
-    ■ internalCmraValid a ⊣⊢@{PROP} internalCmraValid a :=
+    ■ ✓ a ⊣⊢@{PROP} ✓ a :=
   plainly_siPure
 
 @[rocq_alias intuitionistically_internal_cmra_valid]
 theorem intuitionistically_internalCmraValid [BIAffine PROP] {a : A} :
-    □ internalCmraValid a ⊣⊢@{PROP} internalCmraValid a :=
+    □ ✓ a ⊣⊢@{PROP} ✓ a :=
   intuitionistically_iff_persistently.trans persistently_internalCmraValid
 
 @[rocq_alias internal_cmra_valid_discrete]
 theorem internalCmraValid_discrete [CMRA.Discrete A] {a : A} :
-    internalCmraValid a ⊣⊢@{PROP} ⌜✓ a⌝ :=
+    ✓ a ⊣⊢@{PROP} ⌜✓ a⌝ :=
   ⟨(internalCmraValid_elim a).trans <| pure_mono (discrete_valid ·),
    pure_elim' internalCmraValid_intro⟩
 
 @[rocq_alias internal_cmra_valid_persistent]
 instance internalCmraValid_persistent (a : A) :
-    Persistent (PROP := PROP) (internalCmraValid a) where
+    Persistent (PROP := PROP) iprop(✓ a) where
   persistent := persistently_internalCmraValid.mpr
 
 @[rocq_alias internal_cmra_valid_absorbing]
 instance internalCmraValid_absorbing (a : A) :
-    Absorbing (PROP := PROP) (internalCmraValid a) :=
+    Absorbing (PROP := PROP) iprop(✓ a) :=
   siPure_absorbing _
 
 @[rocq_alias internal_cmra_valid_plain]
 instance internalCmraValid_plain (a : A) :
-    Plain (PROP := PROP) (internalCmraValid a) where
+    Plain (PROP := PROP) iprop(✓ a) where
   plain := plainly_internalCmraValid a |>.mpr
 
 @[rocq_alias internal_cmra_valid_timeless]
 instance internalCmraValid_timeless [CMRA.Discrete A] (a : A) :
-    Timeless (PROP := PROP) (internalCmraValid a) := by
+    Timeless (PROP := PROP) iprop(✓ a) := by
   unfold internalCmraValid; infer_instance
 
 end CmraValid

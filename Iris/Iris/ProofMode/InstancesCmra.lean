@@ -20,12 +20,12 @@ variable {PROP} [Sbi PROP]
 
 @[rocq_alias into_pure_internal_cmra_valid]
 instance intoPure_internalCmraValid α [CMRA α] [CMRA.Discrete α] (a : α) :
-  IntoPure (PROP:=PROP) (internalCmraValid a) (✓ a) where
+  IntoPure (PROP:=PROP) iprop(✓ a) (✓ a) where
   into_pure := internalCmraValid_discrete.1
 
 @[rocq_alias from_pure_internal_cmra_valid]
 instance fromPure_internalCmraValid io α [CMRA α] (a : α) :
-  FromPure (PROP:=PROP) false (internalCmraValid a) io (✓ a) where
+  FromPure (PROP:=PROP) false iprop(✓ a) io (✓ a) where
   from_pure := BI.pure_elim' internalCmraValid_intro
 
 @[rocq_alias into_pure_internal_included]
