@@ -34,7 +34,7 @@ variable {GF : BundledGFunctors} {HLC : HasLC} [IrisGS_gen HLC Expr GF]
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]
 variable [TI : TpinvGS GF Expr H]
 
-public def ectxLangCompletenessStmt (wp : AbstractWP Expr Val GF)
+public abbrev ectxLangCompletenessStmt (wp : AbstractWP Expr Val GF)
     (heap_inv : List Expr → State → IProp GF) (n : Nat) (C : List Expr) (e₁ : Expr) (σ : State)
     (K : Ectx) (E : CoPset) : IProp GF := iprop%
   ⌜BaseStep.Reducible (e₁, σ)⌝ -∗
@@ -89,51 +89,46 @@ variable [AEC : AbstractEctxLangCompletenessGen wp]
 
 theorem weakestpre_ectx_to_prim_completeness (n : Nat) (C : List Expr) (e₁ : Expr)
     (σ : State) (E : CoPset) :
-    ⊢ abstractECTXLangComplete (TI := TI) wp AEC.heap_inv n C e₁ σ E := by
+    ⊢ abstractECTXLangComplete wp AEC.heap_inv n C e₁ σ E := by
   iintro %Hred Htok ⟨Hheap, Htp, %Hsafe⟩
   obtain ⟨κ, e', σ', efs, hstep⟩ := Hred
   obtain @⟨e₁', e₂', K, Hbase⟩ := hstep
   have Hbred : BaseStep.Reducible (e₁', σ) := ⟨κ, e₂', σ', efs, Hbase⟩
-  have key := AEC.ectx_lang_completeness n C e₁' σ K E
-  unfold ectxLangCompletenessStmt at key
-  imod key $$ %Hbred Htok [Hheap Htp] with (⟨%Hatom, HH⟩ | ⟨Hheap, Htp, HH⟩)
-  · iframe Hheap Htp %Hsafe
-  · clear key
-    imodintro
+  imod AEC.ectx_lang_completeness n C e₁' σ K E $$ %Hbred Htok [$Hheap $Htp //]
+    with (⟨%Hatom, HH⟩ | ⟨Hheap, Htp, HH⟩)
+  · imodintro
     ileft
-    iexists (fill (Expr := Expr) K), e₁'
+    iexists (fill K), e₁'
     have Hctx : Context (fill (Expr := Expr) K) := inferInstance
-    have Heq : fill (Expr := Expr) K e₁' = fill (Expr := Expr) K e₁' := rfl
+    have Heq : fill K e₁' = fill K e₁' := rfl
     have Hnv : ToVal.toVal e₁' = none := EctxLanguage.val_stuck Hbase
     iframe %Hctx %Heq %Hnv %Hatom
     iintro %Ψ Hpre
     iapply HH $$ Hpre
-  · clear key
-    imodintro
+  · imodintro
     iright
     iframe Hheap Htp
     iintro %Ψ Hc
-    iapply (BWP.wp_bind (K := fill (Expr := Expr) K) (e := e₁') (Φ := Ψ)).1
+    rw [← BWP.wp_bind.to_eq]
     iapply HH
     inext
     iintro %e₂ %efs H
     ihave Hprem : iprop(∀ σ₁ C₁,
         AEC.heap_inv C₁ σ₁ ∗ tpInv C₁ ∗ ⌜cfgSafe (C₁, σ₁)⌝ ={E}=∗
-          ∃ κ σ₁', ⌜PrimSteps (fill (Expr := Expr) K e₁') σ₁ κ (fill (Expr := Expr) K e₂) σ₁' efs⌝ ∗
-            (n ↪thread fill (Expr := Expr) K e₁') ∗ tpInv C₁ ∗
-            AEC.heap_inv (C₁.set n (fill (Expr := Expr) K e₂) ++ efs) σ₁') $$ [H]
+          ∃ κ σ₁', ⌜PrimSteps (fill K e₁') σ₁ κ (fill K e₂) σ₁' efs⌝ ∗
+            (n ↪thread fill K e₁') ∗ tpInv C₁ ∗
+            AEC.heap_inv (C₁.set n (fill K e₂) ++ efs) σ₁') $$ [H]
     · iintro %σ₁ %C₁ ⟨Hi, Htp1, %Hs⟩
-      imod H $$ [Hi Htp1] with ⟨%κ', %σ₁', %Hps, Htok2, Htp1', Hhp⟩
-      · iframe Hi Htp1 %Hs
+      imod H $$ [$Hi $Htp1 //] with ⟨%κ', %σ₁', %Hps, Htok2, Htp1', Hhp⟩
       imodintro
       iexists κ', σ₁'
       iframe Htok2 Htp1' Hhp
       ipureintro
       exact Hps.fill
-    imod Hc $$ Hprem with ⟨Hwp, Hlist⟩
+    imod Hc $$ Hprem with ⟨Hwp, $⟩
     imodintro
-    iframe
-    iapply (BWP.wp_bind (K := fill (Expr := Expr) K) (e := e₂) (Φ := Ψ)).2 $$ Hwp
+    rw [BWP.wp_bind.to_eq]
+    itrivial
 
 instance abstract_ectx_to_completeness :
     AbstractLangCompletenessGen wp where
