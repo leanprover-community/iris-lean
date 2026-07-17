@@ -59,7 +59,7 @@ theorem of_equiv {A : Type _} [OFE A] {P : PROP} {a b : A} (h : a ≡ b) :
   refl.trans (equiv_iff.mp (NonExpansive₂.eqv Equiv.rfl h)).1
 
 @[rocq_alias pure_internal_eq]
-theorem of_pure {A : Type _} [OFE A] {x y : A} : ⌜x ≡ y⌝ ⊢ (iprop(x ≡ y) : PROP) :=
+theorem of_pure {A : Type _} [OFE A] {x y : A} : ⌜x ≡ y⌝ ⊢@{PROP} iprop(x ≡ y) :=
   pure_elim' of_equiv
 
 @[rocq_alias internal_eq_rewrite]
@@ -119,7 +119,7 @@ theorem discrete_eq {A : Type _} [OFE A] {a b : A} [TCOr (DiscreteE a) (Discrete
 
 @[rocq_alias fun_extI]
 theorem fun_extI {A : Type _} {B : A → Type _} [OFEFun B] {f g : (x : A) → B x} :
-    (∀ x, (f x) ≡ (g x)) ⊢@{PROP} f ≡ g :=
+    (∀ x, f x ≡ g x) ⊢@{PROP} f ≡ g :=
   siPure_forall_mpr.trans <| siPure_mono (SiProp.fun_ext_internalEq f g)
 
 @[rocq_alias sig_equivI_1]

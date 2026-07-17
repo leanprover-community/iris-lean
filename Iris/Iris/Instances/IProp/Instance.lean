@@ -798,7 +798,7 @@ instance combineSepAs_iOwn {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpMerge a b1 
 
 @[rocq_alias combine_sep_gives_own]
 instance combineSepGives_iOwn {γ} {a1 a2 : F.ap (IProp GF)} :
-    CombineSepGives (iOwn γ a1) (iOwn γ a2) iprop(✓ (a1 • a2)) where
+    CombineSepGives (iOwn γ a1) (iOwn γ a2) iprop(✓ a1 • a2) where
   combine_sep_gives := iOwn_cmraValid_op
 
 set_option synthInstance.checkSynthOrder false in
