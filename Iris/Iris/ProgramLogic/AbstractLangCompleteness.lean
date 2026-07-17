@@ -249,8 +249,6 @@ theorem weakestpre_completeness {Cini : List Expr × State} {f : Forking} {γ : 
         iintro %v _
         itrivial
 
--- Here
-
 /-- `adequate` gives a WP with a pure postcondition from an `adequate` fact. -/
 theorem weakestpre_sem_completeness (e : Expr) (σ : State) (φ : Val → Prop)
     (Hade : adequate .NotStuck e σ (fun v _ => φ v)) :
