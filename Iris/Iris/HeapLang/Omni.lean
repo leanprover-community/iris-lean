@@ -7,26 +7,12 @@ module
 
 public import Iris.HeapLang.Instances
 public import Iris.ProgramLogic.Adequacy
-public import Iris.HeapLang.Do
+public import Std.Internal.Do.WP.Basic
 
 @[expose] public section
 namespace Iris.HeapLang
 
 open ProgramLogic PrimStep Language Language.Notation Lean.Order
-
-/-! ## `Prop` as a complete lattice (for the predicate-transformer order) -/
-
-instance : Lean.Order.PartialOrder Prop where
-  rel p q := p → q
-  rel_refl := id
-  rel_trans h1 h2 x := h2 (h1 x)
-  rel_antisymm h1 h2 := propext ⟨h1, h2⟩
-
-instance : Lean.Order.CompleteLattice Prop where
-  has_sup c := ⟨∃ p, c p ∧ p, by
-    intro x; constructor
-    · intro hsup z hcz hz; exact hsup ⟨z, hcz, hz⟩
-    · rintro h ⟨z, hcz, hz⟩; exact h z hcz hz⟩
 
 /-! ## Greatest fixpoint (dual of `Lean.Order.lfp`) -/
 
@@ -550,7 +536,7 @@ theorem wp_case_injR {v : Val} {e1 e2 σ Q} (hQ : wp (.app e2 (.ofVal v)) σ Q) 
   · exact fun hQ => .inl ⟨v, ToVal.toVal_coe v, hQ⟩
 
 open Lean.Order in
-instance instWPPreExp : WPPre Exp Val (State → Prop) _root_.EPost.nil where
+instance instWPPreExp : Std.Internal.Do.WP Exp Val (State → Prop) Std.Internal.Do.EPost.Nil where
   wpTrans e := ⟨fun Q _ σ => wp e σ Q⟩
   wp_trans_monotone e := by
     intro post post' _ _ _ hpost
