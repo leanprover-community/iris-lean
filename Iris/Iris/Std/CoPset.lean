@@ -371,6 +371,8 @@ theorem not_in_union {p} {X1 X2 : CoPset} : ¬ p ∈ X1 ∪ X2 <-> ¬ p ∈ X1 �
   · exact ⟨(Hu <| in_union.mpr <| .inl ·), (Hu <| in_union.mpr <| .inr ·)⟩
   · exact in_union.mp Hu |>.elim H1 H2
 
+@[refl] theorem subseteq_refl {X : CoPset} : X ⊆ X := λ _ => id
+
 theorem subseteq_trans {X Y Z : CoPset} (Hxy : X ⊆ Y) (Hyz : Y ⊆ Z) : X ⊆ Z :=
   fun p => (Hyz p) ∘ (Hxy p)
 

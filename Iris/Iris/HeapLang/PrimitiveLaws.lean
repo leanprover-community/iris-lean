@@ -605,7 +605,7 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
     iapply HΦ $$ %pvs'' %hpvs'_eq Hele
 
 theorem wp_resolve {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × Val)}
-    (hatom : Language.Atomic Language.Atomicity.StronglyAtomic e) (hne : toVal e = none) :
+    (hatom : Language.Atomic Language.Atomicity.StronglyAtomic e) (hne : toVal e = none := by decide) :
     proph p pvs -∗
     WP e @ s; E {{ r, ∀ pvs', ⌜pvs = (r, w) :: pvs'⌝ -∗ proph p pvs' -∗ Φ r }} -∗
     WP hl(resolve(&e, v(#p), v(&w))) @ s; E {{ Φ }} := by
@@ -617,6 +617,34 @@ theorem wp_resolve {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × Val)}
   iexists pvs
   iframe Hp
   iexact Hcont
+
+theorem wp_resolve_proph {p : ProphId} {w : Val} {pvs : List (Val × Val)} :
+    proph p pvs -∗
+    (∀ pvs', ⌜pvs = (hl_val(#()), w) :: pvs'⌝ -∗ proph p pvs' -∗ Φ hl_val(#())) -∗
+    WP hl(resolveProph(v(#p), v(&w))) @ s; E {{ Φ }} := by
+  iintro proph K
+  let Ki := ECtxItem.resolveL (ECtxItem.appL hl_val(#())) hl_val(#p) hl_val(&w)
+  have shape: hl(resolveProph(#p ,&w)) = fill (Expr := Exp) [Ki] hl(λ _, #()) := by
+    simp [fillItem, Ki, ECtxItem.fill]
+  rw [shape]
+  iapply wp_bind
+  iapply wp_pure_step_fupd (Hφ := ⟨⟩)
+  simp only [Nat.repeat, EctxItemLanguage.fill_cons, fillItem, ECtxItem.fill, EctxItemLanguage.fill_nil, wp_value_iff, Ki]
+  iintro !> !> !> _ !>
+  have hatom : Language.Atomic Language.Atomicity.StronglyAtomic hl((v(λ _, #())) #()) := by
+    constructor
+    intro σ _ _ _ _ h
+    apply prim_step_to_val_always_to_val (κsₐ := []) (σ₁ₐ := σ) ?next h
+    case next =>
+      apply ProgramLogic.EctxLanguage.primStep_of_baseStep
+      simp only [BaseStep.baseStep, val_to_ofVal]
+      constructor
+      rfl
+  iapply wp_resolve hatom (hne := by decide) $$ proph
+  iapply wp_rec rfl
+  simp only [Exp.subst, wp_value_iff]
+  iintro !> !>
+  iassumption
 
 end Lifting
 
