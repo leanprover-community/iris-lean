@@ -63,8 +63,8 @@ declare_syntax_cat wpPostcond
 -- example {a : PUnit.{i}} : PUnit.{i} := a
 --                      ^^
 -- see: https://github.com/leanprover-community/iris-lean/pull/393
-syntax " {" "{ " wpPostcondInner " }" "} " : wpPostcond
-syntax " [" "{ " wpPostcondInner " }" "] " : wpPostcond
+syntax " {" noWs "{ " wpPostcondInner " }" noWs "} " : wpPostcond
+syntax " [" noWs "{ " wpPostcondInner " }" noWs "] " : wpPostcond
 syntax " ⦃ " wpPostcondInner " ⦄ " : wpPostcond
 syntax " 〖 " wpPostcondInner " 〗 "  : wpPostcond
 
@@ -72,10 +72,10 @@ syntax (name := wp) "WP " wpExpr wpPostcond : term
 
 syntax texanPostcondInner := (ident+ ", ")? " RET " term:min "; " term:min
 declare_syntax_cat texanPostcond
-syntax " {" "{ " texanPostcondInner " }" "} " : texanPostcond
+syntax " {" noWs "{ " texanPostcondInner " }" noWs "} " : texanPostcond
 syntax " ⦃ " texanPostcondInner " ⦄ " : texanPostcond
 declare_syntax_cat texanPrecond
-syntax " {" "{ " term:min " }" "} " : texanPrecond
+syntax " {" noWs "{ " term:min " }" noWs "} " : texanPrecond
 syntax " ⦃ " term:min " ⦄ " : texanPrecond
 
 syntax (name := texanTriple) texanPrecond wpExpr texanPostcond : term
