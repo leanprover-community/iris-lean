@@ -40,7 +40,7 @@ instance : Std.IsPreorder Stuckness where
 @[simp] theorem le_MaybeStuck {s : Stuckness} : s ≤ MaybeStuck := by
   cases s <;> grind only [Stuckness, LE.le, instLE]
 
-@[simp] theorem NotSuck_le {s : Stuckness} : NotStuck ≤ s := by
+@[simp] theorem NotStuck_le {s : Stuckness} : NotStuck ≤ s := by
   cases s <;> grind only [Stuckness, LE.le, instLE]
 
 end Stuckness
