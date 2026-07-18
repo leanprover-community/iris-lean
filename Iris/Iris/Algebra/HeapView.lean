@@ -196,9 +196,9 @@ set_option synthInstance.checkSynthOrder false in
 instance
   [hdp : IsOp io1 dp io2 dp1 io3 dp2]
   [hv : IsOp io1 v io2 v1 io3 v2] :
-  IsOp io1 (Frag (H:=H) k dp v) io2 (Frag (H:=H) k dp1 v1) io3 (Frag (H:=H) k dp2 v2) where
+  IsOp io1 (Frag k dp v) io2 (Frag k dp1 v1) io3 (Frag (H := H) k dp2 v2) where
   is_op := by
-    rw [eq_of_eqv hdp.is_op]
+    rw [hdp.is_op.to_eq]
     exact (NonExpansive.eqv hv.is_op).trans frag_op_eqv
 
 theorem frag_add_op_eqv {q1 q2 : Qp} :
@@ -256,11 +256,11 @@ theorem auth_op_frag_valid_total_discrete_iff [IsTotal V] [CMRA.Discrete V]
   obtain ⟨v', dq', Hdp, Hl, Hv, Hi⟩ := auth_op_frag_discrete_valid_iff |>.mp H
   refine ⟨v', Hdp, ?_, Hl, Hv.2, ?_⟩
   · rcases Hi with ⟨(_|x), Hx⟩
-    · exact valid_of_eqv Hx.1 Hv.1
-    · exact Option.valid_of_inc_valid Hv.1 ⟨x.fst, Hx.1⟩
+    · exact valid_of_eqv (fun n => (some_eqv_some.mp Hx n).1) Hv.1
+    · exact Option.valid_of_inc_valid Hv.1 ⟨x.fst, fun n => (some_eqv_some.mp Hx n).1⟩
   · rcases Hi with ⟨(_|x), Hx⟩
-    · exact inc_of_inc_of_eqv (inc_refl _) Hx.2.symm
-    · rcases (⟨x.snd, Hx.2⟩ : some v1 ≼ some v') with ⟨(_|z), Hz⟩
+    · exact inc_of_inc_of_eqv (inc_refl _) (OFE.Equiv.symm fun n => (some_eqv_some.mp Hx n).2)
+    · rcases (⟨x.snd, fun n => (some_eqv_some.mp Hx n).2⟩ : some v1 ≼ some v') with ⟨(_|z), Hz⟩
       · exact inc_of_inc_of_eqv (inc_refl _) Hz.symm
       · exists z
 
@@ -277,12 +277,12 @@ instance [Hdq : CoreId dq] [Hv1 : CoreId v1] : CoreId (Frag (H := H) k dq v1) wh
     obtain ⟨H⟩ := Hdq
     simp [CMRA.pcore] at H
     simp only [CMRA.pcore, View.Pcore, some_eqv_some]
-    refine NonExpansive₂.eqv trivial (singleton_core_eqv ?_)
+    refine NonExpansive₂.eqv .rfl (singleton_core_eqv ?_)
     simp [CMRA.pcore, Prod.pcore]
     cases h : CMRA.pcore v1
     · exact not_none_eqv_some (h ▸ Hv1.core_id) |>.elim
-    · simp only [Option.bind_some, H]
-      exact ⟨rfl, some_eqv_some.mp (h ▸ Hv1.core_id)⟩
+    · simp only [Option.bind_some, H.to_eq]
+      exact OFE.some_eqv_some.mpr (NonExpansive₂.eqv .rfl (some_eqv_some.mp (h ▸ Hv1.core_id)))
 
 nonrec theorem frag_validN_iff : ✓{n} Frag (H := H) k dq v1 ↔ ✓ dq ∧ ✓{n} v1 :=
   frag_validN_iff.trans <| (HeapR.exists_iff_validN ..).trans singleton_validN_iff
@@ -564,8 +564,8 @@ instance {T} [RFunctor T] : URFunctor (HeapViewURF (H := H) T) where
       refine .trans ?_ (PartialMap.map_compose _ _ _ _)
       apply PartialMap.map_ext
       rw [Prod.map_comp_map]
-      apply (fun _ => Prod.map_ext _ _) <;> simp
-      exact (fun _ => RFunctor.map_comp _ _ _ _)
+      refine OFE.Equiv.of_eq (funext fun p => ?_)
+      exact Prod.ext rfl (RFunctor.map_comp _ _ _ _ p.2).to_eq
 
 instance {T} [RFunctorContractive T] : URFunctorContractive (HeapViewURF (H := H) T) where
   map_contractive.1 H _ := by

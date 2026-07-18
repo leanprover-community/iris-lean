@@ -173,7 +173,7 @@ theorem lc_fupd_add_laterN (n : Nat) {E : CoPset} {P : IProp GF} :
   induction n generalizing P with
   | zero =>
     iintro _ H
-    simp [BIBase.laterN]
+    dsimp only [BIBase.laterN, Nat.repeat]
     iexact H
   | succ n IH =>
     iintro Hf Hupd

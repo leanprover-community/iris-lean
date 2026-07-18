@@ -14,7 +14,7 @@ public import Batteries.Data.List.Lemmas
 namespace Iris.ProgramLogic
 
 open Iris.ProgramLogic.PrimStep
-open Language Language.Notation Relation FromMathlib FromMathlib.Relation.TransGen
+open Language Language.Notation Relation FromMathlib.Relation.TransGen
 
 @[expose] public section
 
@@ -25,7 +25,8 @@ variable {Expr State Obs Val : Type _} [Λ : Language Expr State Obs Val]
 /-- Transitive closure of `primStep` with accumulated observations and forks. -/
 inductive PrimSteps : Expr → State → List Obs → Expr → State → List Expr → Prop where
   | once {e₁ σ₁ κ e₂ σ₂ efs} :
-      (e₁, σ₁) -<κ>-> (e₂, σ₂, efs) → PrimSteps e₁ σ₁ κ e₂ σ₂ efs
+      (e₁, σ₁) -<κ>-> (e₂, σ₂, efs) →
+      PrimSteps e₁ σ₁ κ e₂ σ₂ efs
   | next {e₁ σ₁ κ₁ e₂ σ₂ efs₁ κ₂ e₃ σ₃ efs₂} :
       (e₁, σ₁) -<κ₁>-> (e₂, σ₂, efs₁) →
       PrimSteps e₂ σ₂ κ₂ e₃ σ₃ efs₂ →
@@ -37,21 +38,15 @@ inductive Forking where
   | doesFork
   | doesNotFork
 
-/-- Every thread in the pool is not stuck at the current state. -/
 def cfgNotStuck (C : List Expr × State) : Prop :=
   ∀ {e}, e ∈ C.1 → NotStuck (e, C.2)
 
-/-- If we declared the configuration `DoesNotFork`, every primitive step
-of every thread emits empty forks. -/
 def cfgForking (C : List Expr × State) (f : Forking) : Prop :=
   f = .doesNotFork → ∀ e ∈ C.1, ∀ {e' σ' κ efs}, (e, C.2) -<κ>-> (e', σ', efs) → efs = []
 
-/-- The configuration is safe under the given forking discipline:
-every reachable configuration is not stuck and respects the forking constraint. -/
 def cfgSafeForking (C : List Expr × State) (f : Forking) : Prop :=
   ∀ {C₂}, (C -·->ₜₚ* C₂) → cfgNotStuck C₂ ∧ cfgForking C₂ f
 
-/-- The configuration is safe: every reachable configuration is not stuck. -/
 def cfgSafe (C : List Expr × State) : Prop :=
   ∀ {C₂}, (C -·->ₜₚ* C₂) → cfgNotStuck C₂
 
@@ -137,7 +132,7 @@ theorem nSteps_one {ρ₁ ρ₂ : List Expr × State} {κ : List Obs}
     (H : ρ₁ -<κ>->ₜₚ ρ₂) : ρ₁ -<κ>->ₜₚ^[1] ρ₂ := by
   simpa using NSteps.cons H (.refl _)
 
-theorem nSteps_r {n} {ρ₁ ρ₂ ρ₃ : List Expr × State} {κ κs : List Obs}
+theorem nSteps_right {n} {ρ₁ ρ₂ ρ₃ : List Expr × State} {κ κs : List Obs}
     (H1 : ρ₁ -<κs>->ₜₚ^[n] ρ₂) (H2 : ρ₂ -<κ>->ₜₚ ρ₃) : ρ₁ -<(κs ++ κ)>->ₜₚ^[(n + 1)] ρ₃ :=
   nSteps_trans H1 (nSteps_one H2)
 
@@ -170,44 +165,33 @@ public class TpinvGS (GF : BundledGFunctors) (Expr : Type _) (H : outParam <| Ty
 
 variable [TI : TpinvGS GF Expr H]
 
-/-- Thread `n` in the pool is the expression `e`. -/
 public def isThread (n : Nat) (dq : DFrac) (e : Expr) : IProp GF :=
   TI.tp_name ↪◯MAP[n]{dq} e
 
 notation k " ↪thread{" dq "} " v => isThread k dq v
 notation k " ↪thread " v => isThread k (DFrac.own 1) v
 
-/-- The initial thread-pool authority (empty pool). -/
 public def tpInvIni : IProp GF :=
   TI.tp_name ↪●MAP (∅ : H Expr)
 
-/-- The thread-pool invariant: the auth-side `ghost_map` agrees pointwise with
-the operational thread list `tp`. -/
-public def tpInv (tp : List Expr) : IProp GF := iprop%
+public abbrev tpInv (tp : List Expr) : IProp GF := iprop%
   ∃ m : H Expr, ⌜∀ n, PartialMap.get? m n = tp[n]?⌝ ∗ TI.tp_name ↪●MAP m
-
-/-- `tpInv` is timeless: the ghost-map authority is over a discrete camera, and
-the rest is pure/existential. Needed to strip the later off invariant contents
-after opening (e.g. via `CancelableInvariant.acc`). -/
-public instance tpInv_timeless (tp : List Expr) : Iris.BI.Timeless (tpInv (TI := TI) tp) := by
-  unfold tpInv; infer_instance
 
 public theorem tpInv_lookup (tp : List Expr) (n : Nat) (e₁ : Expr) (dq : DFrac) :
     tpInv tp ⊢@{IProp GF} (n ↪thread{dq} e₁) -∗ ⌜tp[n]? = some e₁⌝ := by
-  unfold tpInv isThread
+  unfold isThread
   iintro ⟨%m, %He, Hauth⟩ Hfrag
   ihave %Hlookup := ghost_map_lookup $$ Hauth Hfrag
   ipureintro
   rw [← Hlookup, He _]
 
 public theorem tpInv_update (tp : List Expr) (n : Nat) (e₁ e₂ : Expr) :
-    tpInv tp ⊢@{IProp GF}
-    (n ↪thread e₁) ==∗ tpInv (tp.set n e₂) ∗ (n ↪thread e₂) := by
+    tpInv tp ⊢@{IProp GF} (n ↪thread e₁) ==∗ tpInv (tp.set n e₂) ∗ (n ↪thread e₂) := by
   iintro Hinv Hfrag
   ihave %Hlookup := tpInv_lookup $$ Hinv Hfrag
-  unfold tpInv isThread
+  unfold isThread
   ihave ⟨%m, %He, Hauth⟩ := Hinv
-  imod ghost_map_update (w := e₂) $$ Hauth Hfrag with ⟨Hauth, Hfrag⟩
+  imod ghost_map_update e₂ $$ Hauth Hfrag with ⟨Hauth, Hfrag⟩
   imodintro
   iframe
   iexists (Std.insert m n e₂)
@@ -216,7 +200,7 @@ public theorem tpInv_update (tp : List Expr) (n : Nat) (e₁ e₂ : Expr) :
 
 public theorem tpInv_new_threads (efs tp : List Expr) :
     ⊢@{IProp GF} tpInv tp ==∗ (tpInv (tp ++ efs) ∗ ([∗list] n ↦ e' ∈ efs, (tp.length + n) ↪thread e')) := by
-  unfold tpInv isThread
+  unfold isThread
   iintro ⟨%m, %He, Hauth⟩
   have Hdisj : PartialMap.disjoint (FiniteMap.map_seq (M := H) tp.length efs) m := by
     rw [PartialMap.disjoint_iff]
@@ -238,28 +222,24 @@ public theorem tpInv_new_threads (efs tp : List Expr) :
     · rw [if_neg (by omega), List.getElem?_append_left h]; rfl
     · rw [if_pos h, List.getElem?_append_right h, List.getElem?_eq_none h]
       cases efs[n - tp.length]? <;> rfl
-  · iapply (Iris.BI.BigSepM.bigSepM_map_seq).mp
-    iexact Hlist
+  · iapply (Iris.BI.BigSepM.bigSepM_map_seq) $$ Hlist
 
 public theorem tpInv_set (C : List Expr) :
-    ⊢@{IProp GF} tpInvIni (Expr := Expr) ==∗ tpInv C ∗ ([∗list] n ↦ e ∈ C, n ↪thread e) := by
+    tpInvIni (Expr := Expr) ==∗ tpInv (GF := GF) C ∗ ([∗list] n ↦ e ∈ C, n ↪thread e) := by
   iintro Hauth
   imod tpInv_new_threads C [] $$ [Hauth] with ⟨Hi, Hlist⟩
-  · unfold tpInvIni tpInv
+  · unfold tpInvIni
     iexists ∅
     iframe
     ipureintro
     exact get?_empty
   imodintro
-  simp
+  simp only [List.length_nil, Nat.zero_add, List.nil_append]
   iframe
 
 end ghost
 
-/-! ### Allocation
-
-Allocates the empty thread-pool authority and exposes a `TpinvGS` instance
-parameterized by the freshly-chosen ghost name. -/
+/-! ### Allocation -/
 
 section alloc
 open Iris CMRA Std
@@ -268,11 +248,10 @@ variable {GF : BundledGFunctors}
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]
 variable {Expr : Type _} [GhostMapG GF Nat Expr H]
 
-open Classical in
 public theorem tpInv_alloc :
     ⊢@{IProp GF} |==> ∃ γ,
       tpInvIni (Expr := Expr) (TI := { toGhostMapG := inferInstance, tp_name := γ }) := by
-  imod @ghost_map_alloc_empty _ Nat Expr H with ⟨%γ, H⟩
+  imod ghost_map_alloc_empty (H := H) with ⟨%γ, H⟩
   imodintro
   iexists γ
   unfold tpInvIni

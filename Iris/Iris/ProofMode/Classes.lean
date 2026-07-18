@@ -115,7 +115,7 @@ export IntoOr (into_or)
 
 @[ipm_class, rocq_alias IntoInternalEq]
 class IntoInternalEq {PROP} [BI PROP] [Sbi PROP] {A : outParam $ Type _} [ofe : outParam $ OFE A] (P : PROP) (x y : outParam A) where
-  into_internal_eq : P ⊢@{PROP} internalEq x y
+  into_internal_eq : P ⊢@{PROP} x ≡ y
 export IntoInternalEq (into_internal_eq)
 
 @[ipm_class, rocq_alias IntoPersistent]
