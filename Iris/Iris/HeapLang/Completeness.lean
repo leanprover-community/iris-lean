@@ -314,7 +314,7 @@ theorem usedProph_insert_eq {ps : Std.ExtTreeSet ProphId compare} {p : ProphId} 
     Std.mem_singleton_extTreeSet, Std.LawfulEqCmp.compare_eq_iff_eq]
   grind
 
-theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
+theorem wp_baseCompletenessGoal (e₁ : Exp) (σ : State) (E : CoPset)
     (Hred : BaseStep.Reducible (e₁, σ)) :
     heapInv (GF := GF) σ ⊢ iprop(|={E}=> baseCompletenessGoal e₁ σ E) := by
   iintro Hinv
@@ -454,18 +454,14 @@ theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
       iapply (equiv_iff.mp BigSepM.bigSepM_sep_eqv).2
       iframe
       iapply (BigSepM.bigSepM_mono_of_forall (fun {k vo} => pointsTo_heapCellPts k vo)) $$ Hnewpts
-
-  -- HERE
-
   | newProphS σ p hp =>
       imodintro
       ileft
-      have hatom : Atomic Atomicity.StronglyAtomic (Exp.newProph : Exp) :=
-        base_step_to_val_atomic Atomicity.StronglyAtomic (BaseStep.newProphS σ p hp)
-      iframe %hatom
+      isplit
+      · ipureintro
+        exact base_step_to_val_atomic Atomicity.StronglyAtomic (BaseStep.newProphS σ p hp)
       iintro %Φ Hstep
-      iapply wp_lift_atomic_step
-        (EctxLanguage.val_stuck (BaseStep.newProphS σ p hp))
+      iapply wp_lift_atomic_step (EctxLanguage.val_stuck (BaseStep.newProphS σ p hp))
       iintro %σ₁ %ns %obs %obs' %nt Hσ !>
       icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
       obtain ⟨pf, Hpf⟩ := Std.List.fresh σ₁.usedProphId.toList
@@ -485,8 +481,6 @@ theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
         fun hmem => Hp' (Std.ExtTreeSet.mem_iff_contains.symm.mp hmem)
       imod (ProphMap.new_proph p' σ₁.usedProphId obs' Hp'_mem) $$ Hproph
         with ⟨Hproph', Htok⟩
-      -- Destructure `heapInv σ` and derive that `p'` is fresh in `σ` via
-      -- `proph_exclusive` against `Hproph_inv`.
       icases Hinv with ⟨Hmap, Hproph_inv⟩
       ihave %Hfresh_σ : ⌜p' ∉ σ.usedProphId⌝ $$ [Hproph_inv Htok]
       · iintro %hmem
@@ -494,7 +488,6 @@ theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
         iapply proph_exclusive $$ Htok Htok'
       have Hfresh_σ_contains : ¬ σ.usedProphId.contains p' := fun hc =>
         Hfresh_σ (Std.ExtTreeSet.mem_iff_contains.symm.mpr hc)
-      -- Instantiate the magic premise with the `newProph` step from `σ` at `p'`.
       imod Hstep $$ [] with ⟨Hpost, _⟩
       · ipureintro
         exact EctxLanguage.primStep_of_baseStep (BaseStep.newProphS σ p' Hfresh_σ_contains)
@@ -505,31 +498,26 @@ theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
         rw [show ({p'} ∪ σ₁.usedProphId : Std.ExtTreeSet ProphId compare)
             = σ₁.usedProphId.insert p' from usedProph_insert_eq.symm]
         iexact Hproph'
-      isplitl [Hpost Hmap Hproph_inv Htok]
-      · iexists (.lit (.prophecy p'))
-        isplit
-        · ipureintro; simp [toVal]; rfl
-        iapply Hpost
-        simp only [heapInv]
-        isplitl [Hmap]
-        · iexact Hmap
-        · rw [usedProph_insert_eq (ps := σ.usedProphId) (p := p')]
-          have hdisj : ({p'} : Std.ExtTreeSet ProphId compare) ## σ.usedProphId := by
-            intro x ⟨h1, h2⟩
-            rw [Std.LawfulSet.mem_singleton] at h1
-            subst h1
-            exact Hfresh_σ h2
-          iapply (BigSepS.bigSepS_union hdisj).mpr
-          isplitl [Htok]
-          · iapply BigSepS.bigSepS_singleton.mpr
-            iexists (prophListResolves obs' p')
-            iexact Htok
-          · iexact Hproph_inv
-      · itrivial
+      iframe
+      iexists (.lit (.prophecy p'))
+      isplit; ipureintro; simp [toVal]; rfl
+      iapply Hpost
+      simp only [heapInv]
+      iframe
+      rw [usedProph_insert_eq (ps := σ.usedProphId) (p := p')]
+      have hdisj : ({p'} : Std.ExtTreeSet ProphId compare) ## σ.usedProphId := by
+        intro x ⟨h1, h2⟩
+        rw [Std.LawfulSet.mem_singleton] at h1
+        subst h1
+        exact Hfresh_σ h2
+      iapply (BigSepS.bigSepS_union hdisj).mpr
+      iframe
+      iapply BigSepS.bigSepS_singleton.mpr
+      iexists (prophListResolves obs' p')
+      iexact Htok
   | resolveS p v e σ w σ' κs ts hbase hp =>
-      -- Recurse on `hbase` for `e`, then lift through the `Resolve` wrapper.
       have IH : heapInv (GF := GF) σ ⊢ iprop(|={E}=> baseCompletenessGoal e σ E) :=
-        wp_base_completeness e σ E ⟨κs, _, _, _, hbase⟩
+        wp_baseCompletenessGoal e σ E ⟨κs, _, _, _, hbase⟩
       have hatom : Atomic Atomicity.StronglyAtomic
           (Exp.resolve e (.val (.lit (.prophecy p))) (.val w)) :=
         base_step_to_val_atomic Atomicity.StronglyAtomic
@@ -540,36 +528,32 @@ theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
       have hp_mem : p ∈ σ.usedProphId := Std.ExtTreeSet.mem_iff_contains.symm.mpr hp
       imodintro
       ileft
-      iframe %hatom
+      iframe %hatom; clear hatom
       iintro %Φ Hstep
       icases Hinv with ⟨Hmap, Hproph_inv⟩
-      icases BigSepS.bigSepS_elem_of_acc hp_mem $$ Hproph_inv
-        with ⟨⟨%pvs, Htok⟩, HcloseProph⟩
+      icases BigSepS.bigSepS_elem_of_acc hp_mem $$ Hproph_inv with ⟨⟨%pvs, Htok⟩, HcloseProph⟩
       iapply (wp_resolve_strong hatom_e hne_e) $$ Htok
       iintro Hele
-      ihave Hinv_full : iprop(heapInv σ) $$ [Hmap HcloseProph Hele]
+      ihave Hinv_full : heapInv σ $$ [Hmap HcloseProph Hele]
       · unfold heapInv
-        iframe Hmap
+        iframe
         iapply HcloseProph
         iexists pvs; iexact Hele
       ihave Hinner : iprop(|={E}=> baseCompletenessGoal e σ E) $$ [Hinv_full]
-      · iapply IH; iexact Hinv_full
+      · iapply IH $$ [$]
       iapply fupd_wp
       imod Hinner with H
       imodintro
-      icases H with (⟨_hatom_e', Hrst⟩ | ⟨Hinv_back, Hrst_nonatom⟩)
-      · -- Atomic disjunct: feed `Hrst` the resolve-strong post for `e`.
-        iapply Hrst
+      icases H with (⟨-, Hrst⟩ | ⟨Hinv_back, Hrst_nonatom⟩)
+      · iapply Hrst
         iintro !> %κ_e %v_e %σ_e %efs_e %Hprim_e
-        have Hbase_e : BaseStep e σ κ_e (.val v_e) σ_e efs_e :=
-          primStep_val_baseStep Hprim_e
+        have Hbase_e : BaseStep e σ κ_e (.val v_e) σ_e efs_e := primStep_val_baseStep Hprim_e
         imod Hstep $$ %_ %_ %_ %_ %(prim_step_resolve_of_inner (w := w) Hbase_e hp)
           with ⟨Hwp_outer, Hefs⟩
         imodintro
         iframe Hefs
         iintro ⟨Hmap_e, Hproph_inv_e⟩
-        have hp_mem_e : p ∈ σ_e.usedProphId :=
-          base_step_more_proph_ids Hbase_e p hp_mem
+        have hp_mem_e : p ∈ σ_e.usedProphId := base_step_more_proph_ids Hbase_e p hp_mem
         icases BigSepS.bigSepS_elem_of_acc hp_mem_e $$ Hproph_inv_e
           with ⟨⟨%pvs2, Hele2⟩, HcloseProph_e⟩
         iexists pvs2
@@ -581,51 +565,43 @@ theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
         iframe Hmap_e
         iapply HcloseProph_e
         iexists pvs''; iexact Hele2'
-      · -- Non-atomic disjunct: symmetric to the atomic case, plus extracting
-        -- the single prim step from the trajectory via `primSteps_atomic`.
-        iapply Hrst_nonatom
+      · iapply Hrst_nonatom
         iintro !> %e₂_e %efs_e Htraj_e
         imod Htraj_e $$ %_ Hinv_back with ⟨%κ_e, %σ_e, %Hprims, ⟨Hmap_e, Hproph_inv_e⟩⟩
-        obtain ⟨Hprim_e, hval_e⟩ :=
-          primSteps_atomic (e := e) hatom_e Hprims
+        obtain ⟨Hprim_e, hval_e⟩ := primSteps_atomic (e := e) hatom_e Hprims
         obtain ⟨v_e, rfl⟩ : ∃ v_e, e₂_e = Exp.val v_e := by
-          match e₂_e, hval_e with
-          | .val v_e, _ => exact ⟨v_e, rfl⟩
-        have Hbase_e : BaseStep e σ κ_e (.val v_e) σ_e efs_e :=
-          primStep_val_baseStep Hprim_e
+          match e₂_e, hval_e with | .val v_e, _ => exact ⟨v_e, rfl⟩
+        have Hbase_e : BaseStep e σ κ_e (.val v_e) σ_e efs_e := primStep_val_baseStep Hprim_e
         imod Hstep $$ %_ %_ %_ %_ %(prim_step_resolve_of_inner (w := w) Hbase_e hp)
           with ⟨Hwp_outer, Hefs⟩
         imodintro
-        have hp_mem_e : p ∈ σ_e.usedProphId :=
-          base_step_more_proph_ids Hbase_e p hp_mem
+        have hp_mem_e : p ∈ σ_e.usedProphId := base_step_more_proph_ids Hbase_e p hp_mem
         icases BigSepS.bigSepS_elem_of_acc hp_mem_e $$ Hproph_inv_e
           with ⟨⟨%pvs2, Hele2⟩, HcloseProph_e⟩
-        isplitl [Hele2 Hwp_outer Hmap_e HcloseProph_e]
-        · -- WP (Val v_e) {{ strong-post }} — apply wp_value', witness pvs2.
-          iapply wp_value'
-          iexists pvs2
-          iframe Hele2
-          iintro %pvs'' %heq Hele2'
-          subst heq
-          iapply Hwp_outer
-          unfold heapInv
-          iframe Hmap_e
-          iapply HcloseProph_e
-          iexists pvs''; iexact Hele2'
-        · iexact Hefs
+        iframe
+        iapply wp_value'
+        iexists pvs2
+        iframe Hele2
+        iintro %pvs'' %heq Hele2'
+        subst heq
+        iapply Hwp_outer
+        unfold heapInv
+        iframe Hmap_e
+        iapply HcloseProph_e
+        iexists pvs''
+        iexact Hele2'
 termination_by e₁
 
 section Framework
 
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat] [TpinvGS GF Exp H]
 
-theorem wp_base_completeness_actual
-    (n : Nat) (C : List Exp) (e₁ : Exp) (σ : State) (K : List ECtxItem) (E : CoPset) :
-    ⊢ ectxLangCompletenessStmt (Wp.wp (PROP := IProp GF) Stuckness.NotStuck)
+theorem wp_base_completeness {n C e₁ σ K E} :
+  ⊢@{IProp GF} ectxLangCompletenessStmt (Wp.wp Stuckness.NotStuck)
         (fun (_ : List Exp) (σ : State) => heapInv σ) n C e₁ σ K E := by
   unfold ectxLangCompletenessStmt
   iintro %Hred Htok ⟨Hheap, Htp, %Hsafe⟩
-  imod (wp_base_completeness e₁ σ E Hred) $$ Hheap with (⟨%Hatom, H⟩ | ⟨Hheap, H⟩)
+  imod (wp_baseCompletenessGoal e₁ σ E Hred) $$ Hheap with (⟨%Hatom, H⟩ | ⟨Hheap, H⟩)
   · -- Atomic redex.
     imodintro
     ileft
@@ -655,9 +631,9 @@ theorem wp_base_completeness_actual
 instance heap_lang_completeness :
     AbstractEctxLangCompletenessGen (Expr := Exp) (Ectx := List ECtxItem)
       (Wp.wp (PROP := IProp GF) Stuckness.NotStuck) where
-  heap_inv _C σ := heapInv σ
-  heap_inv_timeless _C σ := instTimeless_heapInv σ
-  ectx_lang_completeness n _C e₁ σ K E := wp_base_completeness_actual n _C e₁ σ K E
+  heap_inv _ := heapInv
+  heap_inv_timeless _ := instTimeless_heapInv
+  ectx_lang_completeness _ _ _ _ _ _ := wp_base_completeness
 
 end Framework
 
@@ -666,8 +642,7 @@ section Endpoint
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat] [GhostMapG GF Nat Exp H] [CInvG GF]
 include H
 
-theorem heap_lang_sem_completeness
-    (e : Exp) (σ : State) (φ : Val → Prop)
+theorem heap_lang_sem_completeness (e : Exp) (σ : State) (φ : Val → Prop)
     (Hade : adequate Stuckness.NotStuck e σ (fun v _ => φ v)) :
     ⊢ heapInv (GF := GF) σ -∗ WP e @ Stuckness.NotStuck; ⊤ {{ v, ⌜φ v⌝ }} := by
   iintro Hheap
@@ -677,8 +652,7 @@ theorem heap_lang_sem_completeness
     (wp := Wp.wp (PROP := IProp GF) Stuckness.NotStuck) e σ φ Hade $$ Hini Hheap
   iexact Hwp
 
-theorem heap_lang_sem_completeness_nofork
-    (e : Exp) (σ : State) (φ : Val → State → Prop)
+theorem heap_lang_sem_completeness_nofork (e : Exp) (σ : State) (φ : Val → State → Prop)
     (Hade : AdequateNoFork Stuckness.NotStuck e σ (fun v σ' => φ v σ')) :
     ⊢ heapInv (GF := GF) σ -∗
       WP e @ Stuckness.NotStuck; ⊤ {{ v, ∃ σ' : State, heapInv σ' ∗ ⌜φ v σ'⌝ }} := by
