@@ -24,7 +24,7 @@ def readCoin := hl_val%
     | some(v) => -- The prophecy has been resolved already
       v
 
-variable [HeapLangGS hlc GF]
+variable {hlc GF} [HeapLangGS hlc GF]
 
 section Proofs
 
@@ -46,37 +46,6 @@ def coin (cp : Val) (b : Bool) : IProp GF := iprop%
   ∃ (c : Loc) (p : ProphId) (vs : List (Val × Val)),
   ⌜ cp = hl_val((#c, #p)) ⌝ ∗ proph p vs ∗
   (c ↦ hl_val(some(#b)) ∨ (c ↦ hl_val(none()) ∗ ⌜ b = prophecyToBool vs ⌝))
-
-def coin2 (cp : Val) (b : Bool) : IProp GF := iprop%
-  ∃ (c : Loc) (p : ProphId) (vs : List (Val × Val)),
-  ⌜ cp = hl_val((#c, #p)) ⌝ ∗ proph p vs ∗ ∃ (v : Val), c ↦ v ∗
-  (⌜v = hl_val(some(#b)) ∨ (v = hl_val(none()) ∧ b = prophecyToBool vs )⌝)
-
-theorem coin_coin2 (cp : Val) (b : Bool) : coin (GF := GF) cp b = coin2 cp b := by
-  apply Iris.BI.BIBase.BiEntails.to_eq
-  unfold coin coin2
-  constructor
-  · refine BI.exists_mono fun c => ?_
-    refine BI.exists_mono fun p => ?_
-    refine BI.exists_mono fun vs => ?_
-    refine BI.sep_mono .rfl ?_
-    refine BI.sep_mono .rfl ?_
-    iintro ⟨_ | ⟨_, %_⟩⟩
-    · iexists _
-      iframe
-      itrivial
-    · iexists _
-      iframe
-      ipureintro
-      grind
-  · refine BI.exists_mono fun c => ?_
-    refine BI.exists_mono fun p => ?_
-    refine BI.exists_mono fun vs => ?_
-    refine BI.sep_mono .rfl ?_
-    refine BI.sep_mono .rfl ?_
-    iintro ⟨%v, Hc, (%eq | ⟨%eq, _⟩)⟩ <;> subst eq
-    · ileft; iframe
-    · iright; iframe
 
 theorem newCoin.spec : ⊢@{IProp GF}
     {{ True }} hl(&newCoin #()) {{ c b, RET c; coin c b }} := by
