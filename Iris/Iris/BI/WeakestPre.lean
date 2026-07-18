@@ -129,8 +129,9 @@ meta def wpTexanTriple : Lean.Macro
   | `(⦃ $P:term ⦄ $wpExpr ⦃ $[$[$xs:ident]* ,]? RET $pat ; $Q:term ⦄)
   | `({{ $P:term }} $wpExpr {{ $[$[$xs:ident]* ,]? RET $pat ; $Q:term }}) => do
     let k ← match xs with
-            | some xs => `(∀ $xs*, $Q:term → Φ $pat)
-            | none => `($Q:term → Φ $pat)
+            | some xs => 
+              `(iprop(∀ $xs*, $Q:term -∗ Φ $pat))
+            | none => `($Q:term -∗ Φ $pat)
     `(iprop(∀ Φ, $P -∗ ▷ $k -∗ (WP $wpExpr {{ Φ }})))
   | _ => Lean.Macro.throwUnsupported
 
