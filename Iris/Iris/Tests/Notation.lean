@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König
+Authors: Lars König, Alex Keizer
 -/
 module
 
@@ -112,6 +112,24 @@ variable [BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → 
 #guard_msgs in #check iprop(if p then □ P else P)
 /-- info: iprop(□ P) : PROP -/
 #guard_msgs in #check iprop((□ P : PROP))
+
+/--
+info: match p with
+| true => Ψ 1
+| false => iprop(False) : PROP
+-/
+#guard_msgs in #check iprop(match p with
+  | true => term(Ψ 1)
+  | false => False)
+
+/--
+info: match true with
+| true => iprop(P ∗ Q)
+| false => iprop(P ∗ Q) : PROP
+-/
+#guard_msgs in #check iprop(match (generalizing := false) (motive := Bool → PROP) true with
+  | true | false => P ∗ Q
+)
 
 /-! ## Derived Connectives -/
 
