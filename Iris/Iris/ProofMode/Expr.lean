@@ -20,6 +20,20 @@ open Lean Lean.Expr Lean.Meta Qq
 @[expose, match_pattern] def nameAnnotation := `name
 @[expose, match_pattern] def ivarAnnotation := `ivar
 
+/--
+Identity wrapper used as a marker around top-level Iris hypotheses.
+This is to solve the issues that `rw` and `simp` may erase the metadata of a hypothesis,
+which is needed for the proof mode pretty-printer/parser to display the hypothesis correctly.
+
+The underlying issue is `rw`'s `kabstract`-based implementation: without a real head symbol,
+rewriting can abstract away the metadata wrapper and the pretty-printer/parser loses
+the named hypothesis.
+
+`IrisHyp` should be only inserted at the outermost level of Iris hypotheses.
+See https://github.com/leanprover-community/iris-lean/issues/469
+-/
+@[expose, reducible] public def IrisHyp {α : Sort u} (x : α) : α := x
+
 structure IVarId where
   name : Name
   -- caches whether the ivar is persistent or not to allow
@@ -37,12 +51,14 @@ def mkFreshIVarId [Monad m] [MonadNameGenerator m] (persistent? : Bool) : m IVar
   deriving Inhabited, EmptyCollection, Singleton
 
 def parseName? : Expr → Option (Name × Name × Expr)
-  | .mdata ⟨[(nameAnnotation, .ofName name), (ivarAnnotation, .ofName ivar)]⟩ e => do
+  | .mdata ⟨[(nameAnnotation, .ofName name), (ivarAnnotation, .ofName ivar)]⟩ (.app (.app c _α) e) => do
+    if c.constName? != some ``IrisHyp then
+      failure
     some (name, ivar, e)
   | _ => none
 
-def mkNameAnnotation (name : Name)(ivar : IVarId) (e : Expr) : Expr :=
-  .mdata ⟨[(nameAnnotation, .ofName name), (ivarAnnotation, .ofName ivar.name)]⟩ e
+def mkNameAnnotation {prop : Q(Type u)} (name : Name) (ivar : IVarId) (e : Q($prop)) : Q($prop) :=
+  .mdata ⟨[(nameAnnotation, .ofName name), (ivarAnnotation, .ofName ivar.name)]⟩ q(IrisHyp $e)
 
 def getFreshName : TSyntax ``binderIdent → CoreM (Name × Syntax)
   | `(binderIdent| $name:ident) => pure (name.getId, name)

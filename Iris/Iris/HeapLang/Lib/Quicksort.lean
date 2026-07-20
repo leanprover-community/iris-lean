@@ -166,15 +166,15 @@ theorem partition_spec x l ls Φ :
   iintro Hl HΦ
   iloeb as IH generalizing %l %ls %Φ
   wp_rec; wp_pures
-  rw (occs:=[2]) [isList.eq_def]
+  rw [isList.eq_def]
   cases ls with
   | nil =>
-    dsimp only
+    simp only
     icases Hl with %hl; subst hl
     wp_pures; imodintro; simp
     iapply HΦ <;> simp [isList] <;> itrivial
   | cons hd ls =>
-    dsimp only
+    simp only
     icases Hl with ⟨%_, %tl, %hl, Hpt, Hl⟩; subst hl
     wp_pures
     wp_bind !_
@@ -215,7 +215,7 @@ theorem quicksort_spec l ls Φ :
   iintro Hl HΦ
   iloeb as IH generalizing %l %ls %Φ
   wp_rec
-  rw (occs:=[2]) [isList.eq_def]
+  rw [isList.eq_def]
   cases ls with
   | nil =>
     dsimp only

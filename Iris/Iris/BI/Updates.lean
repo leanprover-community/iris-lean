@@ -267,8 +267,6 @@ instance bupd_sep_homomorphism :
   Algebra.MonoidHomomorphism (M₁ := PROP) sep sep emp emp (flip Entails) bupd where
   rel_refl := .rfl
   rel_trans := flip .trans
-  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp)
-    , fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
   op_proper := sep_mono
   map_ne := BIUpdate.bupd_ne
   map_op := bupd_sep
@@ -470,12 +468,15 @@ instance fupd_sep_homomorphism E :
   Algebra.MonoidHomomorphism (M₁ := PROP) sep sep emp emp (flip Entails) (fupd E E) where
   rel_refl := .rfl
   rel_trans := flip .trans
-  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp)
-    , fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
   op_proper := sep_mono
   map_ne := BIFUpdate.ne
   map_op := fupd_sep
   map_unit := fupd_intro
+
+@[rocq_alias big_sepM_fupd]
+theorem BigSepM.bigSepM_fupd [LawfulFiniteMap M' K] E (Φ : K → V → PROP) (l : M' V) :
+    ([∗map] k↦x ∈ l, |={E}=> Φ k x) ⊢ |={E}=> [∗map] k↦x ∈ l, Φ k x :=
+    Algebra.BigOpM.bigOpM_hom (R := flip Entails) Φ l
 
 @[rocq_alias big_sepL_fupd]
 theorem BigSepL2.bigSepL_fupd {A : Type _} E (Φ : Nat → A → PROP) l :

@@ -44,24 +44,24 @@ instance : Std.Preorder (Entails (PROP := HeapProp Val)) where
     apply h_xy σ
     exact h_x
 
-instance : COFE (HeapProp Val) := COFE.ofDiscrete Eq equivalence_eq
+instance : COFE (HeapProp Val) := COFE.ofDiscrete _
 
 instance : BI (HeapProp Val) where
   entails_preorder := by infer_instance
   equiv_iff {P Q} := ⟨
-    fun h : P = Q => h ▸ ⟨refl, refl⟩,
-    fun ⟨h₁, h₂⟩ => funext fun σ => propext ⟨h₁ σ, h₂ σ⟩
+    fun h => h.to_eq ▸ ⟨refl, refl⟩,
+    fun ⟨h₁, h₂⟩ => OFE.Equiv.of_eq (funext fun σ => propext ⟨h₁ σ, h₂ σ⟩)
   ⟩
 
-  and_ne          := ⟨by rintro _ _ _ rfl _ _ rfl; rfl⟩
-  or_ne           := ⟨by rintro _ _ _ rfl _ _ rfl; rfl⟩
-  imp_ne          := ⟨by rintro _ _ _ rfl _ _ rfl; rfl⟩
-  sep_ne          := ⟨by rintro _ _ _ rfl _ _ rfl; rfl⟩
-  wand_ne         := ⟨by rintro _ _ _ rfl _ _ rfl; rfl⟩
-  persistently_ne := ⟨by rintro _ _ _ rfl; rfl⟩
-  later_ne        := ⟨by rintro _ _ _ rfl; rfl⟩
-  sForall_ne {_ P Q} h := liftRel_eq.1 h ▸ rfl
-  sExists_ne {_ P Q} h := liftRel_eq.1 h ▸ rfl
+  and_ne          := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩
+  or_ne           := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩
+  imp_ne          := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩
+  sep_ne          := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩
+  wand_ne         := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩
+  persistently_ne := ⟨by rintro _ _ _ h; exact (h : _ = _) ▸ rfl⟩
+  later_ne        := ⟨by rintro _ _ _ h; exact (h : _ = _) ▸ rfl⟩
+  sForall_ne {_ P Q} h := (liftRel_eq.1 (h : liftRel Eq P Q)) ▸ rfl
+  sExists_ne {_ P Q} h := (liftRel_eq.1 (h : liftRel Eq P Q)) ▸ rfl
 
   pure_intro h _ _ := h
   pure_elim' h_φP σ h_φ := h_φP h_φ σ ⟨⟩
