@@ -5,7 +5,6 @@ Authors: Zongyuan Liu
 -/
 module
 
-import Iris.Std.Positives
 public import Iris.Std.CoPset
 public import Iris.Std.GenSets
 public import Iris.Std.PartialMap
@@ -19,7 +18,7 @@ namespace Iris
 
 @[expose] public section
 
-open Iris Std PartialMap
+open Std PartialMap
 
 /-!
 The camera [DynReservationMap A H] over a camera [A] extends [LawfulPartialMap H Pos]
@@ -42,8 +41,8 @@ def DynReservationMap.mkData [LawfulPartialMap H Pos] (k : Pos) (a : A) :
 def DynReservationMap.mkToken [LawfulPartialMap H Pos] (e : CoPset) :
     DynReservationMap A H := .mk ∅ (.valid e)
 
-#rocq_ignore to_reservation_map "Not needed; the OFE/CMRA are built directly, not via an isomorphism"
-#rocq_ignore from_reservation_map "Not needed; the OFE/CMRA are built directly, not via an isomorphism"
+#rocq_ignore to_reservation_map "OFE/CMRA are built directly, not via an isomorphism"
+#rocq_ignore from_reservation_map "OFE/CMRA are built directly, not via an isomorphism"
 
 section OFE
 
@@ -216,7 +215,7 @@ theorem infinite_op_left {x y : DynReservationMap A H} (vt : ✓{n} (x.token •
 #rocq_ignore dyn_reservation_mapR "Derivable using UCMRA"
 
 @[rocq_alias dyn_reservation_mapUR]
-instance instUCMRADynReservationMap: UCMRA (DynReservationMap A H) where
+instance instUCMRADynReservationMap : UCMRA (DynReservationMap A H) where
   pcore := some ∘ core
   Valid := Valid
   ValidN := ValidN
@@ -399,22 +398,6 @@ theorem token_difference {e₁ e₂} (he : e₁ ⊆ e₂) :
   refine .trans ?_ (token_union LawfulSet.disjoint_diff_right)
   rw [LawfulSet.subset_union_diff he]
 
-@[rocq_alias dyn_reservation_map_token_valid_op]
-theorem valid_token_op {e₁ e₂} :
-    ✓ (mkToken (H := H) (A := A) e₁ • mkToken e₂) ↔
-      e₁ ## e₂ ∧ setInfinite ((⊤ : CoPset) \ (e₁ ∪ e₂)) := by
-  refine ⟨fun h => ⟨?_, ?_⟩, fun ⟨hdisj, hinf⟩ => ?_⟩
-  · exact valid_op_iff_disj.mp (valid_token_of_valid h)
-  · have hdisj := valid_op_iff_disj.mp (valid_token_of_valid h)
-    have hinf := valid_infinite h
-    have htok :
-        (mkToken (H := H) (A := A) e₁ • mkToken e₂).token = .valid (e₁ ∪ e₂) := by
-      show DisjointLeibnizSet.valid e₁ • DisjointLeibnizSet.valid e₂ = _
-      simp only [CMRA.op, hdisj, ↓reduceIte]
-    simp only [Infinite, htok] at hinf
-    exact hinf
-  · exact (Equiv.valid (token_union hdisj)).mp (valid_token.mpr hinf)
-
 theorem disj_of_validN_data_op_token {a : H A} {b : CoPset}
     (h : ✓{n} mk a ∅ • mkToken b) (i : Pos) : get? a i = none ∨ i ∉ b := by
   cases validN_disj h i with
@@ -477,17 +460,18 @@ theorem valid_mkData_op_data_of_valid_op? {a : A} {x : H A} (vx : ✓{n} x)
 
 theorem validN_token_op_iff_disj {e₁ e₂} :
     ✓{n} (mkToken (H := H) (A := A) e₁ • mkToken e₂) ↔
-      e₁ ## e₂ ∧ setInfinite ((⊤ : CoPset) \ (e₁ ∪ e₂)) where
-  mp h := ⟨valid_op_iff_disj.mp (validN_token_of_validN h), by
-    have hdisj := valid_op_iff_disj.mp (validN_token_of_validN h)
-    have hinf := validN_infinite h
-    have htok :
-        (mkToken (H := H) (A := A) e₁ • mkToken e₂).token = .valid (e₁ ∪ e₂) := by
-      show DisjointLeibnizSet.valid e₁ • DisjointLeibnizSet.valid e₂ = _
-      simp only [CMRA.op, hdisj, ↓reduceIte]
-    simp only [Infinite, htok] at hinf
-    exact hinf⟩
-  mpr := fun ⟨hdisj, hinf⟩ => validN_of_eqv (token_union hdisj) (valid_token.mpr hinf).validN
+      e₁ ## e₂ ∧ setInfinite ((⊤ : CoPset) \ (e₁ ∪ e₂)) := by
+  refine ⟨fun h => ⟨valid_op_iff_disj.mp (validN_token_of_validN h), ?_⟩,
+    fun ⟨hdisj, hinf⟩ => validN_of_eqv (token_union hdisj) (valid_token.mpr hinf).validN⟩
+  have hdisj := valid_op_iff_disj.mp (validN_token_of_validN h)
+  simpa only [Infinite, op_token', mkToken, CMRA.op, hdisj, ↓reduceIte] using validN_infinite h
+
+@[rocq_alias dyn_reservation_map_token_valid_op]
+theorem valid_token_op {e₁ e₂} :
+    ✓ (mkToken (H := H) (A := A) e₁ • mkToken e₂) ↔
+      e₁ ## e₂ ∧ setInfinite ((⊤ : CoPset) \ (e₁ ∪ e₂)) :=
+  ⟨fun h => (validN_token_op_iff_disj (n := 0)).mp h.validN,
+   fun h => valid_iff_validN.mpr fun _ => validN_token_op_iff_disj.mpr h⟩
 
 @[rocq_alias dyn_reservation_map_alloc]
 theorem alloc {e k} {a : A} (hke : k ∈ e) (va : ✓ a) :
@@ -595,7 +579,7 @@ theorem reserve (Q : DynReservationMap A H → Prop)
       · exact infinite_data_op_token vze
       · exact disj_of_validN_data_op_token vze
   obtain ⟨E₁, E₂, hEunion, hEdisj, hE₁inf, hE₂inf⟩ :=
-    CoPset.split_infinite ((⊤ : CoPset) \ (Ef ∪ domCoPset mf))
+    split_infinite ((⊤ : CoPset) \ (Ef ∪ domCoPset mf))
       (setInfinite_mono
         (fun i hi =>
           have ⟨hiTEf, hiD⟩ := LawfulSet.mem_diff.mp hi
@@ -642,7 +626,8 @@ theorem reserve (Q : DynReservationMap A H → Prop)
 
 @[rocq_alias dyn_reservation_map_reserve']
 theorem reserve' :
-    (UCMRA.unit : DynReservationMap A H) ~~>: fun x => ∃ e : CoPset, setInfinite e ∧ x = mkToken e :=
+    (UCMRA.unit : DynReservationMap A H) ~~>:
+      fun x => ∃ e : CoPset, setInfinite e ∧ x = mkToken e :=
   reserve _ fun e hinf => ⟨e, hinf, rfl⟩
 
 end

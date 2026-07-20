@@ -736,28 +736,28 @@ theorem set_to_coPset_finite {S : Type _} [LawfulFiniteSet S Pos] (X : S)
       simp only [LawfulSet.ofList_cons, LawfulSet.insert_union, isFinite_setFinite]
       exact LawfulSet.union_finite LawfulSet.singleton_finite (isFinite_setFinite.mp IH)
 
-theorem CoPset.splitLeft_disjoint_splitRight (X : CoPset) :
-    CoPset.splitLeft X ## CoPset.splitRight X :=
-  fun p ⟨hl, hr⟩ => CoPset.not_elemOf_leftRaw_and_rightRaw X.tree p ⟨hl, hr⟩
+theorem splitLeft_disjoint_splitRight (X : CoPset) :
+    splitLeft X ## splitRight X :=
+  fun p ⟨hl, hr⟩ => not_elemOf_leftRaw_and_rightRaw X.tree p ⟨hl, hr⟩
 
-theorem CoPset.splitLeft_infinite {X : CoPset} (h : LawfulSet.setInfinite X) :
-    LawfulSet.setInfinite (CoPset.splitLeft X) :=
+theorem splitLeft_infinite {X : CoPset} (h : LawfulSet.setInfinite X) :
+    LawfulSet.setInfinite (splitLeft X) :=
   not_isFinite_setInfinite.mp fun hf =>
     (not_isFinite_setInfinite.mpr h) (by
-      simp only [isFinite, CoPset.splitLeft, CoPset.isFinite_leftRaw] at hf; exact hf)
+      simp only [isFinite, splitLeft, isFinite_leftRaw] at hf; exact hf)
 
-theorem CoPset.splitRight_infinite {X : CoPset} (h : LawfulSet.setInfinite X) :
-    LawfulSet.setInfinite (CoPset.splitRight X) :=
+theorem splitRight_infinite {X : CoPset} (h : LawfulSet.setInfinite X) :
+    LawfulSet.setInfinite (splitRight X) :=
   not_isFinite_setInfinite.mp fun hf =>
     (not_isFinite_setInfinite.mpr h) (by
-      simp only [isFinite, CoPset.splitRight, CoPset.isFinite_rightRaw] at hf; exact hf)
+      simp only [isFinite, splitRight, isFinite_rightRaw] at hf; exact hf)
 
 /-- Every infinite `X : CoPset` splits into two disjoint parts whose union is `X`, both of which
 are again infinite. -/
-theorem CoPset.split_infinite (X : CoPset) (h : LawfulSet.setInfinite X) :
+theorem split_infinite (X : CoPset) (h : LawfulSet.setInfinite X) :
     ∃ E₁ E₂ : CoPset, E₁ ∪ E₂ = X ∧ E₁ ## E₂ ∧
       LawfulSet.setInfinite E₁ ∧ LawfulSet.setInfinite E₂ :=
-  ⟨CoPset.splitLeft X, CoPset.splitRight X, CoPset.splitLeft_union_splitRight X,
-   CoPset.splitLeft_disjoint_splitRight X, CoPset.splitLeft_infinite h, CoPset.splitRight_infinite h⟩
+  ⟨splitLeft X, splitRight X, splitLeft_union_splitRight X,
+   splitLeft_disjoint_splitRight X, splitLeft_infinite h, splitRight_infinite h⟩
 
 end Set
