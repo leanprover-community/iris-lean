@@ -37,17 +37,25 @@ private def iEvalOne {u} {prop : Q(Type u)} (bi : Q(BI $prop))
       | throwError m!"ieval: the goal is not Iris entailment upon applying the supplied tactic"
       return if isGoal then rhs else lhs
 
-  let pf : if isGoal then Q($newTy ⊢ $ty) else Q($ty ⊢ $newTy) ← match isGoal with
+  match isGoal with
   -- The tactic sequence results in the proof goal being *strengthened*
-  | true => mkFreshExprSyntheticOpaqueMVar q($newTy ⊢ $ty)
+  | true =>
+    let pf ← mkFreshExprSyntheticOpaqueMVar q($newTy ⊢ $ty)
+    match ← evalTacticAt tac pf.mvarId! with
+    | [] => pure ()
+    | [g] => g.assign (q(.rfl) : Q($newTy ⊢ $newTy))
+    | _ => throwError "ieval: the supplied tactic produces more than one subgoal"
+    let pf : Q($newTy ⊢ $ty) := pf
+    return ⟨newTy, pf⟩
   -- The tactic sequence results in the hypothesis being *weakened*
-  | false => mkFreshExprSyntheticOpaqueMVar q($ty ⊢ $newTy)
-  match ← evalTacticAt tac pf.mvarId! with
-  | [] => pure ()
-  | [g] => g.assign (q(.rfl) : Q($newTy ⊢ $newTy))
-  | _ => throwError "ieval: the supplied tactic produces more than one subgoal"
-
-  return ⟨newTy, pf⟩
+  | false =>
+    let pf ← mkFreshExprSyntheticOpaqueMVar q($ty ⊢ $newTy)
+    match ← evalTacticAt tac pf.mvarId! with
+    | [] => pure ()
+    | [g] => g.assign (q(.rfl) : Q($newTy ⊢ $newTy))
+    | _ => throwError "ieval: the supplied tactic produces more than one subgoal"
+    let pf : Q($ty ⊢ $newTy) := pf
+    return ⟨newTy, pf⟩
 
 /--
   Apply the tactic sequence `tac` to either the proof goal (when `selTargets`
