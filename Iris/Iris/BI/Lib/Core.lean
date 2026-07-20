@@ -18,7 +18,7 @@ open BI OFE
 
 @[rocq_alias coreP]
 def coreP [Sbi PROP] (P : PROP) : PROP :=
-  iprop(∀ Q, <affine> ■ (Q -∗ <pers> Q) -∗ <affine> ■ (P -∗ Q) -∗ Q)
+  iprop% ∀ Q, <affine> ■ (Q -∗ <pers> Q) -∗ <affine> ■ (P -∗ Q) -∗ Q
 
 variable [Sbi PROP]
 
@@ -51,16 +51,9 @@ instance coreP_affine (P : PROP) [Affine P] : Affine (coreP P) where
 
 @[rocq_alias coreP_ne]
 instance coreP_ne : NonExpansive (coreP (PROP := PROP)) where
-  ne n P Q H := by
-    unfold coreP
-    apply forall_ne
-    intro R
-    apply wand_ne.ne; rfl
-    apply wand_ne.ne
-    · apply affinely_ne.ne
-      apply instPlainly_ne.ne
-      apply wand_ne.ne H; rfl
-    · rfl
+  ne _ _ _ H :=
+    forall_ne fun _ => wand_ne.ne .rfl (wand_ne.ne
+      (affinely_ne.ne (instPlainly_ne.ne (wand_ne.ne H .rfl))) .rfl)
 
 @[rocq_alias coreP_wand]
 theorem coreP_wand (P Q : PROP) : <affine> ■ (P -∗ Q) -∗ coreP P -∗ coreP Q := by
@@ -86,13 +79,12 @@ theorem coreP_mono {P Q : PROP} (h : P ⊢ Q) : coreP P ⊢ coreP Q := by
   iintro HPQ %R HR HQR
   iapply HPQ $$ HR
   imodintro
-  iapply plainly_mono <| wand_mono h .rfl
-  iassumption
+  iapply plainly_mono <| wand_mono h .rfl $$ HQR
 
 /- This is an instance of `Proper` in the Rocq version. -/
 @[rocq_alias coreP_proper]
 theorem coreP_proper {P Q : PROP} (h : P ⊣⊢ Q) : coreP P ⊣⊢ coreP Q :=
-  BIBase.BiEntails.ofMono coreP_mono h
+  .ofMono coreP_mono h
 
 @[rocq_alias coreP_entails]
 theorem coreP_entails [BIPersistentlyForall PROP] (P Q : PROP) :
@@ -101,8 +93,7 @@ theorem coreP_entails [BIPersistentlyForall PROP] (P Q : PROP) :
   · iintro HP
     ihave #HPQ := coreP_intro $$ HP
     imodintro
-    iapply h
-    iassumption
+    iapply h $$ HPQ
   · rw' [h] -- Same as `iapply (affinely_mono <| coreP_mono h).trans`
     iintro #HcQ
     iapply coreP_elim $$ HcQ
@@ -111,11 +102,9 @@ theorem coreP_entails [BIPersistentlyForall PROP] (P Q : PROP) :
 theorem coreP_entails' [BIPersistentlyForall PROP] {P Q : PROP} [Affine P] :
     (coreP P ⊢ Q) ↔ (P ⊢ □ Q) := by
   constructor <;> intro h
-  · apply affinely_intro
-    apply (coreP_entails P Q).mp
-    exact affinely_elim.trans h
-  · rw' [h]
-    apply (wand_entails <| coreP_elim iprop(□ Q)).trans intuitionistically_elim
+  · exact affinely_intro <| (coreP_entails P Q).mp <| affinely_elim.trans h
+  · refine (coreP_mono h).trans ?_
+    exact (wand_entails <| coreP_elim iprop(□ Q)).trans intuitionistically_elim
 
 #rocq_ignore coreP_flip_mono "No `Proper` type class in Lean, `rw'` works both ways"
 
