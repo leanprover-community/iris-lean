@@ -26,7 +26,7 @@ abbrev BundledGFunctors.api (FF : BundledGFunctors) (τ : GType) (T : Type _) [C
   FF τ |>.fst |>.ap T
 
 /-- Transport an OFunctorPre application along equality of the OFunctorPre.  -/
-def transpAp {F1 F2 : OFunctorPre} (H : F1 = F2) {T} [COFE T] : F1.ap T = F2.ap T :=
+theorem transpAp {F1 F2 : OFunctorPre} (H : F1 = F2) {T} [COFE T] : F1.ap T = F2.ap T :=
   congrArg (OFunctorPre.ap · T) H
 
 section TranspAp
@@ -71,10 +71,10 @@ open OFE
 
 variable [I : RFunctorContractive F]
 
-def ElemG.transpMap (E : ElemG GF F) T [OFE T] : (GF E.τ).fst = F :=
+theorem ElemG.transpMap (E : ElemG GF F) T [OFE T] : (GF E.τ).fst = F :=
   Sigma.mk.inj E.transp |>.1
 
-def ElemG.transpClass (E : ElemG GF F) T [OFE T] : (GF E.τ).snd ≍ I :=
+theorem ElemG.transpClass (E : ElemG GF F) T [OFE T] : (GF E.τ).snd ≍ I :=
   Sigma.mk.inj E.transp |>.2
 
 def ElemG.bundle (E : ElemG GF F) [COFE T] : F.ap T → GF.api E.τ T :=
@@ -516,19 +516,19 @@ theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ a1) : iOwn γ a1 ⊢ iOw
   next => simp [GenMap.empty_map_lookup]; exact Dist.op_l Dist.rfl
 
 @[rocq_alias own_valid]
-theorem iOwn_cmraValid {a : F.ap (IProp GF)} : iOwn γ a ⊢ internalCmraValid a :=
+theorem iOwn_cmraValid {a : F.ap (IProp GF)} : iOwn γ a ⊢ ✓ a :=
   (UPred.ownM_valid _).trans (internalCmraValid_entails.mpr fun _ => validN_of_iSingleton)
 
 @[rocq_alias own_valid_2]
 theorem iOwn_cmraValid_op {a1 a2 : F.ap (IProp GF)} :
-    iOwn γ a1 ∗ iOwn γ a2 ⊢ internalCmraValid (a1 • a2) :=
+    iOwn γ a1 ∗ iOwn γ a2 ⊢ ✓ (a1 • a2) :=
   iOwn_op.mpr.trans iOwn_cmraValid
 
 @[rocq_alias own_valid_r]
-theorem iOwn_valid_r {a : F.ap (IProp GF)} : iOwn γ a ⊢ iOwn γ a ∗ internalCmraValid a :=
+theorem iOwn_valid_r {a : F.ap (IProp GF)} : iOwn γ a ⊢ iOwn γ a ∗ ✓ a :=
   BI.persistent_entails_left iOwn_cmraValid
 @[rocq_alias own_valid_l]
-theorem iOwn_valid_l {a : F.ap (IProp GF)} : iOwn γ a ⊢ internalCmraValid a ∗ iOwn γ a :=
+theorem iOwn_valid_l {a : F.ap (IProp GF)} : iOwn γ a ⊢ ✓ a ∗ iOwn γ a :=
   BI.persistent_entails_right iOwn_cmraValid
 
 @[rocq_alias own_core_persistent]
@@ -798,7 +798,7 @@ instance combineSepAs_iOwn {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpMerge a b1 
 
 @[rocq_alias combine_sep_gives_own]
 instance combineSepGives_iOwn {γ} {a1 a2 : F.ap (IProp GF)} :
-    CombineSepGives (iOwn γ a1) (iOwn γ a2) (internalCmraValid (a1 • a2)) where
+    CombineSepGives (iOwn γ a1) (iOwn γ a2) iprop(✓ a1 • a2) where
   combine_sep_gives := iOwn_cmraValid_op
 
 set_option synthInstance.checkSynthOrder false in

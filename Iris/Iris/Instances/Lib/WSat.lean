@@ -198,7 +198,7 @@ variable {GF : BundledGFunctors} [W : WsatGS GF]
 @[rocq_alias invariant_lookup]
 theorem invariant_lookup (I : InvMap (IProp GF)) (i : Pos) (P : IProp GF) :
     iOwn (E := W.inv) W.invariant_name (invMap I) ∗ ownI i P
-    ⊢@{IProp GF} ∃ Q, ⌜get? I i = .some Q⌝ ∗ ▷ internalEq Q P := by
+    ⊢@{IProp GF} ∃ Q, ⌜get? I i = .some Q⌝ ∗ ▷ (Q ≡ P) := by
   unfold ownI
   iintro H
   ihave H := iOwn_cmraValid_op $$ H

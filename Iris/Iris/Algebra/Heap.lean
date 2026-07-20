@@ -583,7 +583,7 @@ instance [OFE α] [OFE β] {f : α → β} [hne : OFE.NonExpansive f] : OFE.NonE
     cases get? m1 k <;> cases get? m2 k <;> simp
     apply OFE.NonExpansive.ne
 
-def map_id [OFE α] (a : H α):
+theorem map_id [OFE α] (a : H α) :
     PartialMap.map H id a ≡ a := by
   intro n x
   simp [PartialMap.map, get?_bindAlter, Option.bind]
@@ -593,19 +593,19 @@ def mapO [OFE α] [OFE β] (f : α -n> β) : OFE.Hom (H α) (H β) where
   f := map H f
   ne := inferInstance
 
-def map_ext [OFE α] [OFE β] {f g : α -> β} (heq : f ≡ g) : map H f m ≡ map H g m := by
+theorem map_ext [OFE α] [OFE β] {f g : α -> β} (heq : f ≡ g) : map H f m ≡ map H g m := by
   intro n k
   simp [map, get?_bindAlter, Option.bind]
   cases get? m k <;> simp
   exact heq _ _
 
-def map_ne [OFE α] [OFE β] (f g : α -> β) {heq : f ≡{n}≡ g} : map H f m ≡{n}≡ map H g m := by
+theorem map_ne [OFE α] [OFE β] (f g : α -> β) {heq : f ≡{n}≡ g} : map H f m ≡{n}≡ map H g m := by
   simp [OFE.Dist, Option.Forall₂, map, get?_bindAlter]
   intro k
   cases get? m k <;> simp
   exact heq _
 
-def map_compose [OFE α] [OFE β] [OFE γ] (f : α -> β) (g : β -> γ) m :
+theorem map_compose [OFE α] [OFE β] [OFE γ] (f : α -> β) (g : β -> γ) m :
     map H (g.comp f) m ≡ map H g (map H f m) := by
   intro n k
   simp [map, get?_bindAlter]
