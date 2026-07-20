@@ -179,10 +179,7 @@ end saved_anything
 
 /-! ## Saved propositions -/
 
-@[rocq_alias savedPropG]
 abbrev SavedPropG (GF : BundledGFunctors) := SavedAnythingG GF (LaterOF IdOF)
-
-#rocq_ignore «savedPropΣ» "Subsumed by BundledGFunctors typeclass synthesis"
 
 @[rocq_alias saved_prop_own]
 def saved_prop_own {GF : BundledGFunctors} [SavedPropG GF] (γ : GName) (dq : DFrac) (P : IProp GF) :
@@ -282,11 +279,8 @@ end saved_prop
 
 /-! ## Saved predicates -/
 
-@[rocq_alias savedPredG]
 abbrev SavedPredG (GF : BundledGFunctors) (A : Type _) :=
   SavedAnythingG GF (DiscreteFunOF (fun _ : A => LaterOF IdOF))
-
-#rocq_ignore «savedPredΣ» "Subsumed by BundledGFunctors typeclass synthesis"
 
 @[rocq_alias saved_pred_own]
 def saved_pred_own {GF : BundledGFunctors} {A : Type _} [SavedPredG GF A]
