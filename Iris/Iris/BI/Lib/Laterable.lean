@@ -215,4 +215,14 @@ theorem make_laterable_idemp [BI PROP] {Q : PROP} :
   · exact make_laterable_mono make_laterable_elim |>.trans make_laterable_except_0
   · exact make_laterable_intro'
 
+@[rocq_alias laterable_alt]
+theorem laterable_alt [BI PROP] {Q : PROP} : Laterable Q ↔ (Q ⊢ make_laterable Q) := by
+  constructor
+  · intros inst
+    apply make_laterable_intro'
+  · intro h
+    constructor
+    unfold make_laterable at h
+    assumption
+
 end Laterable
