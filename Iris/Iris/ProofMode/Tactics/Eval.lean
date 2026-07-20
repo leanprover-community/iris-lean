@@ -49,13 +49,6 @@ private def iEvalOne {u} {prop : Q(Type u)} (bi : Q(BI $prop))
 
   return ⟨newTy, pf⟩
 
-/-- Apply `tac` to the hypothesis `ty`, *weakening* it to `newTy`. -/
-private def iEvalHyp {u} {prop : Q(Type u)} (bi : Q(BI $prop))
-    (tac : TSyntax `Lean.Parser.Tactic.tacticSeq) (ty : Q($prop)) :
-    ProofModeM <| (newTy : Q($prop)) × Q($ty ⊢ $newTy) := do
-  let ⟨newTy, pf⟩ ← iEvalOne bi tac false ty
-  return ⟨newTy, pf⟩
-
 /--
   Apply the tactic sequence `tac` to either the proof goal (when `selTargets`
   is `none`) or the hypotheses in the context specified by the selection targets.
@@ -78,7 +71,9 @@ private def iEvalCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
       | .pure _ =>
         throwError "ieval: pure hypotheses in the selection pattern is not supported"
       | .ipm ivar =>
-        let some ⟨newE, newHyps, pf⟩ ← evalState.newHyps.evalReplace ivar (iEvalHyp bi tac ·)
+        let some ⟨newE, newHyps, pf⟩ ← evalState.newHyps.evalReplace ivar fun ty => do
+          let ⟨newTy, pf⟩ ← iEvalOne bi tac false ty
+          return ⟨newTy, (pf : Q($ty ⊢ $newTy))⟩
         | throwError m!"ieval: unable to find the hypothesis {ivar.name} in the context"
         pure { newE, newHyps, pf := q($(evalState.pf).trans $pf) }
     let pf' ← addBIGoal evalState.newHyps goal
