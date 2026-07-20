@@ -69,6 +69,10 @@ instance : Std.LawfulEqOrd ProphId where
     intros l₁ l₂; unfold compare; unfold instOrdProphId; simp;
     intros h; ext; assumption
 
+instance : InfiniteType ProphId where
+  enum n := .mk n
+  enum_inj n m := by grind
+
 inductive Binder where
   | anon
   | named (name : String)
@@ -175,10 +179,13 @@ instance : Coe Bool BaseLit where
 instance : Coe Loc BaseLit where
   coe l := .loc l
 
+instance : Coe ProphId BaseLit where
+  coe p := .prophecy p
+
 instance : Coe Unit BaseLit where
   coe _ := .unit
 
-attribute [coe] BaseLit.int BaseLit.bool BaseLit.loc
+attribute [coe] BaseLit.int BaseLit.bool BaseLit.loc BaseLit.prophecy
 
 def Exp.substStr (x : String) (v : Val) (e : Exp) : Exp :=
   match e with
@@ -225,17 +232,15 @@ def Val.compareSafe (v1 v2 : Val) : Bool :=
 section Derived
 def Exp.stuck : Exp := Exp.app (.ofVal $ .lit $ .int 0) (.ofVal $ .lit $ .int 0)
 
--- FIXME: Implicits
 @[simp]
-theorem Exp.stuck_subst x v : Exp.substStr x v Exp.stuck = Exp.stuck := by
+theorem Exp.stuck_subst {x v} : Exp.substStr x v Exp.stuck = Exp.stuck := by
   simp [Exp.stuck, Exp.substStr]
   simp only [substStr, ofVal]
 
 def Exp.assert (e : Exp) := Exp.if e (.ofVal $ .lit .unit) Exp.stuck
 
--- FIXME: Implicits
 @[simp]
-theorem Exp.assert_subst x v e:
+theorem Exp.assert_subst {x v} e :
     Exp.substStr x v (Exp.assert e) = Exp.assert (Exp.substStr x v e) := by
   simp [Exp.assert, Exp.substStr]
   simp only [substStr, ofVal]

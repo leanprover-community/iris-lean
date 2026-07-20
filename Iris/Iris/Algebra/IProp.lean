@@ -20,9 +20,11 @@ open COFE
 
 abbrev GType := Nat
 
+set_option linter.checkUnivs false in
 @[rocq_alias gFunctor]
 abbrev GFunctor := Σ F : OFunctorPre, RFunctorContractive F
 
+set_option linter.checkUnivs false in
 @[rocq_alias gFunctors]
 def BundledGFunctors := GType → GFunctor
 
