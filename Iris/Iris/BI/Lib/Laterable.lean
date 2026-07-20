@@ -14,7 +14,7 @@ public import Iris.ProofMode
 namespace Iris
 
 section Laterable
-open BI OFE
+open BI OFE ProofMode
 
 /-- Require that the proposition `P` is laterable. -/
 @[rocq_alias Laterable]
@@ -23,7 +23,7 @@ class Laterable [BI PROP] (P : PROP) where
 
 @[rocq_alias IntoLaterable]
 class IntoLaterable [BI PROP] (P : PROP) (Q : outParam PROP) where
-  into_laterable := P ⊢ Q
+  into_laterable : P ⊢ Q
   into_laterable_result_laterable : Laterable Q
 
 @[rocq_alias later_laterable]
@@ -204,7 +204,8 @@ theorem make_laterable_intro [BI PROP] {P Q : PROP} [inst : Laterable P] :
   iapply HPQ $$ HP
 
 @[rocq_alias make_laterable_intro']
-theorem make_laterable_intro' [BI PROP] {Q : PROP} [Laterable Q] : Q ⊢ make_laterable Q := by
+theorem make_laterable_intro' [BI PROP] {Q : PROP} [inst : Laterable Q] :
+    Q ⊢ make_laterable Q := by
   iapply make_laterable_intro
   iintro !> $
 
@@ -227,11 +228,37 @@ theorem laterable_alt [BI PROP] {Q : PROP} : Laterable Q ↔ (Q ⊢ make_laterab
 
 @[rocq_alias into_laterable_laterable]
 instance intoLaterable_laterable [BI PROP] {P : PROP} [Laterable P] : IntoLaterable P P where
+  into_laterable := .rfl
   into_laterable_result_laterable := by trivial
 
 @[rocq_alias into_laterable_fallback]
 instance (priority := default - 100) into_laterable_fallback [BI PROP] {P : PROP} :
     IntoLaterable P iprop(▷ P) where
+  into_laterable := later_intro
   into_laterable_result_laterable := later_laterable P
+
+@[rocq_alias modality_make_laterable, rocq_alias modality_make_laterable_mixin]
+def modality_make_laterable [BI PROP] [Timeless (emp : PROP)] : Modality PROP PROP where
+  M := make_laterable
+  action
+  | true => .id
+  | false => .transform <| fun P Q => Nonempty <| IntoLaterable P Q
+  spec
+  | true => fun P =>
+    make_laterable_intro' (inst := intuitionistic_laterable iprop(□ P))
+  | false => by
+    intro P Q ⟨inst⟩
+    exact inst.into_laterable.trans <| make_laterable_intro' (inst := inst.into_laterable_result_laterable)
+  emp := make_laterable_intro'
+  mono := make_laterable_mono
+  sep := make_laterable_sep
+
+@[rocq_alias from_modal_make_laterable]
+instance fromModal_make_laterable [BI PROP] [Timeless (emp : PROP)] (P : PROP) :
+    FromModal True modality_make_laterable (make_laterable P) (make_laterable P) P where
+  from_modal := by
+    iintro %_ HP
+    dsimp [modality_make_laterable, make_laterable]
+    iassumption
 
 end Laterable
