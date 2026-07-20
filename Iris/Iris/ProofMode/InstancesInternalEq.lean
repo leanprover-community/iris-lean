@@ -21,33 +21,33 @@ variable {PROP} [Sbi PROP]
 
 @[rocq_alias from_pure_internal_eq]
 instance fromPure_internalEq [Sbi PROP] [OFE A] (a b : A) :
-    FromPure (PROP := PROP) false (internalEq a b) io (a ≡ b) where
+    FromPure (PROP := PROP) false iprop(a ≡ b) io (a ≡ b) where
   from_pure := internalEq.of_pure
 
 
 @[ipm_backtrack, rocq_alias into_pure_eq]
 instance intoPure_internalEq [Sbi PROP] [OFE A] (a b : A)
     [TCOr (OFE.DiscreteE a) (OFE.DiscreteE b)] :
-    IntoPure (PROP := PROP) (internalEq a b) (a ≡ b) where
+    IntoPure (PROP := PROP) iprop(a ≡ b) (a ≡ b) where
   into_pure := discrete_eq_mp
 
 @[ipm_backtrack]
-instance (priority := default + 10) intoPure_internalEq_leibniz [Sbi PROP] [OFE A] [OFE.Leibniz A]
+instance (priority := default + 10) intoPure_internalEq_leibniz [Sbi PROP] [OFE A]
     (a b : A) [TCOr (OFE.DiscreteE a) (OFE.DiscreteE b)] :
-    IntoPure (PROP := PROP) (internalEq a b) (a = b) where
-  into_pure := discrete_eq_mp.trans (pure_mono OFE.eq_of_eqv)
+    IntoPure (PROP := PROP) iprop(a ≡ b) (a = b) where
+  into_pure := discrete_eq_mp.trans (pure_mono OFE.Equiv.to_eq)
 
 @[rocq_alias from_modal_Next]
 instance fromModal_internalEq_next [Sbi PROP] [OFE A] (x y : A) :
     FromModal (PROP1 := PROP) (PROP2 := PROP) True (modality_laterN 1)
-      iprop(▷ internalEq x y) (internalEq (Later.next x) (Later.next y)) (internalEq x y) where
+      iprop(▷ (x ≡ y)) iprop(Later.next x ≡ Later.next y) iprop(x ≡ y) where
   from_modal _ := later_equivI_mpr x y
 
 @[rocq_alias into_laterN_Next]
 instance intoLaterN_internalEq_next [Sbi PROP] [OFE A] (x y : A)
     only_head n n' [h : NatCancel n 1 n' 0] :
-    IntoLaterN (PROP := PROP) only_head n (internalEq (Later.next x) (Later.next y))
-      (internalEq x y) where
+    IntoLaterN (PROP := PROP) only_head n iprop(Later.next x ≡ Later.next y)
+      iprop(x ≡ y) where
   into_laterN := (later_equivI_mp x y).trans (by
     have hcancel : n' + 1 = n := by have := h.nat_cancel; omega
     rw [← hcancel]
@@ -56,7 +56,7 @@ instance intoLaterN_internalEq_next [Sbi PROP] [OFE A] (x y : A)
 -- IntoInternalEq
 @[rocq_alias into_internal_eq_internal_eq]
 instance intoInternalEq_internalEq [Sbi PROP] [OFE A] (x y : A) :
-    IntoInternalEq (PROP := PROP) (internalEq x y) x y where
+    IntoInternalEq (PROP := PROP) iprop(x ≡ y) x y where
   into_internal_eq := .rfl
 
 @[rocq_alias into_internal_eq_affinely]

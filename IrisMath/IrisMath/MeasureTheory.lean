@@ -13,23 +13,14 @@ open Iris ProbabilityTheory MeasureTheory
 
 variable {Ω : Type _} [MeasurableSpace Ω]
 
-/-- Real-valued random variable -/
-@[ext] structure RandomVariable (δ : Type _) (μ : Measure Ω) where
-  car : Ω → δ
+def aeSetoid (μ : Measure Ω) (δ : Type _) : Setoid (Ω → δ) where
+  r x y := x =ᵐ[μ] y
+  iseqv := ⟨fun _ => ae_eq_rfl, (Filter.EventuallyEq.symm ·), (ae_eq_trans · ·)⟩
 
-namespace RealRandomVariableMax
+def RandomVariable (δ : Type _) (μ : Measure Ω) : Type _ := Quotient (aeSetoid μ δ)
 
-variable {μ : Measure Ω} (δ : Type _)
-
-example : OFE (Ω → δ) where
-  Equiv x y := x =ᵐ[μ] y
-  Dist _ x y := x =ᵐ[μ] y
-  dist_eqv := {
-    refl _ := ae_eq_rfl
-    symm := (Filter.EventuallyEq.symm ·)
-    trans := (ae_eq_trans · ·)
-  }
-  equiv_dist := .symm <| forall_const _
-  dist_lt H _ := H
-
-end RealRandomVariableMax
+instance (δ : Type _) (μ : Measure Ω) : OFE (RandomVariable δ μ) where
+  Dist _ := (· = ·)
+  dist_eqv := eq_equivalence
+  eq_dist := (forall_const _).symm
+  dist_lt h _ := h
