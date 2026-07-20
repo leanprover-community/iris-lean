@@ -2926,7 +2926,7 @@ inductive NTree (α : Type)
 | node : α → List (NTree α) → NTree α
 
 @[induction_eliminator]
-def NTree.induction_principle {α} (p : NTree α → Prop) (h_leaf : p leaf)
+theorem NTree.induction_principle {α} (p : NTree α → Prop) (h_leaf : p leaf)
   (h_node : (x : α) → (ts : List (NTree α)) → (ih : ∀ t ∈ ts, p t) → p (node x ts)) :
   ∀ t : NTree α, p t :=
   @NTree.rec α p (λ ts => ∀ t ∈ ts, p t) h_leaf h_node (List.forall_mem_nil p)
@@ -2964,7 +2964,7 @@ inductive NTree.Rel {α β} (R : α → β → Prop) : NTree α → NTree β →
   | node : ∀ a b ts₁ ts₂, R a b → List.Forall₂ (Rel R) ts₁ ts₂ → Rel R (.node a ts₁) (.node b ts₂)
 
 @[induction_eliminator]
-def NTree.Rel.induction_principle {α β} {R : α → β → Prop}
+theorem NTree.Rel.induction_principle {α β} {R : α → β → Prop}
     (p : ∀ {t1 : NTree α} {t2 : NTree β}, NTree.Rel R t1 t2 → Prop)
     (h_base : p .leaf)
     (h_step : ∀ a b ts1 ts2 ra f2,
