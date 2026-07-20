@@ -1,12 +1,14 @@
 /-
-Copyright (c) 2026 Fernando Leal. All rights reserved.
+Copyright (c) 2026 Fernando Leal, Klaus Kraßnitzer. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Fernando Leal, Klaus Kraßnitzer
 -/
 module
 
 public import Iris.ProofMode
 public import Iris.HeapLang.Tactic
 public import Iris.HeapLang.Instances
+public import Iris.HeapLang.PrimitiveLaws
 public import Iris.ProgramLogic.WeakestPre
 public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.EctxLanguage
@@ -343,7 +345,7 @@ public theorem tac_wp_pure [ι : IrisGS_gen hlc Exp GF] {Δ Δ'} {s : Stuckness}
   refine .trans (BI.laterN_mono _ H) ?_
   iintro $ !> -; itrivial
 
-elab "wp_pure " colGt ppSpace focus:hl_exp : tactic =>
+elab "wp_pure " colGt ppSpace focus:hl_exp:10 : tactic =>
   ProofModeM.runTacticWp fun mvar {hyps, ι, s, E, e, Φ, ..} => do
     let focus ← elabTermEnsuringTypeQ (← `(hl($focus))) q(HeapLang.Exp)
     trace[wp_pure] m!"Focusing with {focus}"
@@ -374,6 +376,22 @@ macro "wp_pure" : tactic => `(tactic| wp_pure _)
 macro "wp_pures" : tactic => `(tactic| repeat wp_pure)
 
 macro "wp_rec" : tactic => `(tactic | (wp_bind _ _; iapply $(mkIdent `wp_rec):ident; rfl; imodintro; wp_finish))
+
+macro "wp_if" : tactic => `(tactic | wp_pure (if _ then _ else _))
+macro "wp_if_true" : tactic => `(tactic | wp_pure (if #true then _ else _))
+macro "wp_if_false" : tactic => `(tactic | wp_pure (if #false then _ else _))
+macro "wp_unop" : tactic => `(tactic | wp_pure (&(Exp.unop _ _)))
+macro "wp_binop" : tactic => `(tactic | wp_pure (&(Exp.binop _ _ _)))
+macro "wp_op" : tactic => `(tactic | first | wp_unop | wp_binop)
+macro "wp_lam" : tactic => `(tactic | wp_rec)
+macro "wp_let" : tactic => `(tactic | (wp_pure (rec _ &(.named _) := _); wp_lam))
+macro "wp_seq" : tactic => `(tactic | (wp_pure (rec _ _ := _); wp_lam))
+macro "wp_proj" : tactic => `(tactic | first | wp_pure (fst(_)) | wp_pure (snd(_)))
+macro "wp_case" : tactic => `(tactic | wp_pure (&(Exp.case _ _ _)))
+macro "wp_inj" : tactic => `(tactic | first | wp_pure (injl(_)) | wp_pure (injr(_)))
+macro "wp_pair" : tactic => `(tactic | wp_pure ((_, _)))
+macro "wp_closure" : tactic => `(tactic | wp_pure (rec &_ &_ := _))
+macro "wp_match" : tactic => `(tactic | (wp_case; wp_closure; wp_lam))
 
 initialize registerTraceClass `wp_bind
 initialize registerTraceClass `wp_pure
