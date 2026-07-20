@@ -276,11 +276,13 @@ def Tower.isoAux : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
     refine ((map_comp _ _ _ _ _).trans <| (map ..).ne.eqv (map_comp _ _ _ _ _)).symm.trans ?_
     refine .trans (y := map (upN F n) (downN F n) (X (k+n+1))) ?_ ?_
     · refine fun m => map_ne.eqv (fun m' Y => ?_) (fun m' Y => ?_) m _
-      · simp [Hom.comp, Tower.embed, Tower.proj, embed, (by omega : k ≤ k+n+1)]
+      · show (down F (k+n)).f ((embed : A F k -n> A F (k+n+1)).f Y) ≡{m'}≡ (upN F n).f Y
+        simp only [embed, dif_pos (show k ≤ k+n+1 by omega), Hom.comp]
         have {a e} : down F (k + n) (eqToHom e (upN F a Y)) ≡ upN F n Y := by
           cases Nat.add_left_cancel (k := n+1) e; exact (down_up _)
         exact this.dist
-      · simp [Hom.comp, Tower.embed, Tower.proj, embed, show ¬k+n+1 ≤ k by omega]
+      · show (embed : A F (k+n+1) -n> A F k).f ((up F (k+n)).f Y) ≡{m'}≡ (downN F n).f Y
+        simp only [embed, dif_neg (show ¬k+n+1 ≤ k by omega), Hom.comp, Function.comp_apply]
         have {a e} : downN F a (eqToHom e (up F (k + n) Y)) ≡ downN F n Y := by
           cases Nat.add_left_cancel (m := n+1) e; exact (downN ..).ne.eqv (down_up _)
         exact this.dist
