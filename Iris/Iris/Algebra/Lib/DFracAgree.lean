@@ -5,8 +5,8 @@ Authors: Markus de Medeiros
 -/
 module
 
-import Iris.Algebra.DFrac
-import Iris.Algebra.Agree
+public import Iris.Algebra.DFrac
+public import Iris.Algebra.Agree
 meta import Iris.Std.RocqPorting
 
 /-!
@@ -15,6 +15,8 @@ meta import Iris.Std.RocqPorting
 The product of the discardable fraction camera and the agree camera, bundled with
 convenience definitions and lemmas.
 -/
+
+@[expose] public section
 
 namespace Iris
 
@@ -29,6 +31,9 @@ abbrev DFracAgreeR (A : Type _) [OFE A] := DFrac × Agree A
 def mk [OFE A] (d : DFrac) (a : A) : DFracAgreeR A := (d, toAgree a)
 
 variable {A : Type _} [OFE A]
+
+instance mk_discarded_coreId {a : A} : CoreId (mk .discard a) :=
+  inferInstanceAs (CoreId (DFrac.discard, toAgree a))
 
 @[rocq_alias to_dfrac_agree_ne]
 instance mk_ne {d : DFrac} : NonExpansive (mk d : A → DFracAgreeR A) where
@@ -181,7 +186,7 @@ end Frac
 /-! ## Functors -/
 
 @[rocq_alias dfrac_agreeRF]
-abbrev DFracAgreeRF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
+abbrev DFracAgreeRF (T : COFE.OFunctorPre) [COFE.OFunctor T] : COFE.OFunctorPre :=
   ProdOF (constOF DFrac) (AgreeRF T)
 
 end DFracAgree
