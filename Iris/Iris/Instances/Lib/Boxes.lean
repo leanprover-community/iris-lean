@@ -129,7 +129,6 @@ theorem box_own_agree (γ : SliceName) (Q1 Q2 : IProp GF) :
   icases iOwn_cmraValid $$ H with H
   icases (prod_validI _).mp $$ H with ⟨-, H⟩
   rw [option_validI.to_eq, ←(later_equivI ..).to_eq, ←(agree_equivI ..).to_eq]
-  -- TODO: Goal display is broken
   exact (agree_op_invI ..)
 
 @[rocq_alias box_alloc]
