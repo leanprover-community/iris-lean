@@ -173,7 +173,7 @@ theorem lc_fupd_add_laterN (n : Nat) {E : CoPset} {P : IProp GF} :
   iintro Hf Hupd
   iinduction n with
   | zero =>
-    simp [BIBase.laterN]
+    dsimp only [BIBase.laterN, Nat.repeat]
     iexact Hupd
   | succ n IH =>
     icases Hf with ⟨H1, Hf⟩
