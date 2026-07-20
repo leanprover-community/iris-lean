@@ -318,14 +318,13 @@ instance embed_timeless [BiEmbedLater PROP1 PROP2] (P : PROP1) [Timeless P] :
 
 /-- Cross-type `MonoidHomomorphism` for `⎡·⎤` w.r.t. OFE equivalence (mirrors
 `MonoidHomomorphism.ofEquiv`, which is single-type). -/
-@[reducible] def mkEmbedHom {op₁ : PROP1 → PROP1 → PROP1} {op₂ : PROP2 → PROP2 → PROP2}
+theorem mkEmbedHom {op₁ : PROP1 → PROP1 → PROP1} {op₂ : PROP2 → PROP2 → PROP2}
     {u₁ : PROP1} {u₂ : PROP2} [MonoidOps op₁ u₁] [MonoidOps op₂ u₂]
     (hop : ∀ {x y}, (embed (op₁ x y) : PROP2) ≡ op₂ (embed x) (embed y))
     (hunit : (embed u₁ : PROP2) ≡ u₂) :
     MonoidHomomorphism op₁ op₂ u₁ u₂ (· ≡ ·) (embed (A := PROP1) (B := PROP2)) where
   rel_refl := .rfl
   rel_trans := .trans
-  rel_proper ha hb := ⟨fun h => ha.symm.trans (h.trans hb), fun h => ha.trans (h.trans hb.symm)⟩
   op_proper ha hb := MonoidOps.op_proper ha hb
   map_ne := embed_ne
   map_op := hop
@@ -349,8 +348,6 @@ instance embed_sep_entails_homomorphism :
       (flip Entails) (embed (A := PROP1) (B := PROP2)) where
   rel_refl := .rfl
   rel_trans := flip .trans
-  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp),
-                     fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
   op_proper := sep_mono
   map_ne := embed_ne
   map_op := fun {x y} => (embed_sep x y).mpr
@@ -432,7 +429,7 @@ theorem embed_si_pure (Pi : SiProp) :
 
 @[rocq_alias embed_internal_eq]
 theorem embed_internal_eq {A : Type _} [OFE A] (x y : A) :
-    (embed (internalEq x y : P1) : P2) ⊣⊢ internalEq x y :=
+    (embed (iprop(x ≡ y) : P1) : P2) ⊣⊢ x ≡ y :=
   embed_si_pure (SiProp.internalEq x y)
 
 @[rocq_alias embed_plainly]
@@ -456,7 +453,7 @@ instance embed_plain (P : P1) [Plain P] : Plain (embed P : P2) where
 /-- `⎡·⎤` reflects internal equality. -/
 @[rocq_alias embed_internal_inj]
 theorem embed_internal_inj {P3 : Type _} [Sbi P3] (P Q : P1) :
-    (internalEq (embed P : P2) (embed Q) : P3) ⊢ internalEq P Q := by
+    ((embed P : P2) ≡ embed Q : P3) ⊢ P ≡ Q := by
   refine siPure_mono ?_
   refine (prop_ext_siEmpValid_equiv (embed P) (embed Q)).mp.trans ?_
   refine (siEmpValid_and.mp.trans ?_).trans (prop_ext_siEmpValid_equiv P Q).mpr
@@ -517,8 +514,8 @@ def embedBiEmbed : BiEmbed PA PC :=
   }
 
 /-- `BiEmbedEmp` transfers along composition. -/
-@[reducible, rocq_alias embed_embed_emp]
-def embed_embed_emp [BiEmbedEmp PA PB] [BiEmbedEmp PB PC] :
+@[rocq_alias embed_embed_emp]
+theorem embed_embed_emp [BiEmbedEmp PA PB] [BiEmbedEmp PB PC] :
     @BiEmbedEmp PA PC _ _ (embedBiEmbed PB) :=
   letI : BiEmbed PA PC := embedBiEmbed PB
   { embed_emp_1 := (embed_mono (PROP1 := PB) (PROP2 := PC)
@@ -526,8 +523,8 @@ def embed_embed_emp [BiEmbedEmp PA PB] [BiEmbedEmp PB PC] :
       (BiEmbedEmp.embed_emp_1 (PROP1 := PB) (PROP2 := PC)) }
 
 /-- `BiEmbedLater` transfers along composition. -/
-@[reducible, rocq_alias embed_embed_later]
-def embed_embed_later [BiEmbedLater PA PB] [BiEmbedLater PB PC] :
+@[rocq_alias embed_embed_later]
+theorem embed_embed_later [BiEmbedLater PA PB] [BiEmbedLater PB PC] :
     @BiEmbedLater PA PC _ _ (embedBiEmbed PB) :=
   letI : BiEmbed PA PC := embedBiEmbed PB
   { embed_later := fun P => (embed_congr (PROP1 := PB) (PROP2 := PC)
@@ -535,8 +532,8 @@ def embed_embed_later [BiEmbedLater PA PB] [BiEmbedLater PB PC] :
       (BiEmbedLater.embed_later (PROP1 := PB) (PROP2 := PC) (embed (A := PA) (B := PB) P)) }
 
 /-- `BiEmbedBUpd` transfers along composition. -/
-@[reducible, rocq_alias embed_embed_bupd]
-def embed_embed_bupd [BIUpdate PA] [BIUpdate PB] [BIUpdate PC]
+@[rocq_alias embed_embed_bupd]
+theorem embed_embed_bupd [BIUpdate PA] [BIUpdate PB] [BIUpdate PC]
     [BiEmbedBUpd PA PB] [BiEmbedBUpd PB PC] :
     @BiEmbedBUpd PA PC _ _ (embedBiEmbed PB) _ _ :=
   letI : BiEmbed PA PC := embedBiEmbed PB
@@ -545,8 +542,8 @@ def embed_embed_bupd [BIUpdate PA] [BIUpdate PB] [BIUpdate PC]
       (BiEmbedBUpd.embed_bupd (PROP1 := PB) (PROP2 := PC) (embed (A := PA) (B := PB) P)) }
 
 /-- `BiEmbedFUpd` transfers along composition. -/
-@[reducible, rocq_alias embed_embed_fupd]
-def embed_embed_fupd [BIFUpdate PA] [BIFUpdate PB] [BIFUpdate PC]
+@[rocq_alias embed_embed_fupd]
+theorem embed_embed_fupd [BIFUpdate PA] [BIFUpdate PB] [BIFUpdate PC]
     [BiEmbedFUpd PA PB] [BiEmbedFUpd PB PC] :
     @BiEmbedFUpd PA PC _ _ (embedBiEmbed PB) _ _ :=
   letI : BiEmbed PA PC := embedBiEmbed PB
@@ -562,8 +559,8 @@ section
 variable {QA QB QC : Type _} [Sbi QA] [Sbi QB] [Sbi QC]
   [BiEmbed QA QB] [BiEmbed QB QC] [BiEmbedSbi QA QB] [BiEmbedSbi QB QC]
 
-@[reducible, rocq_alias embed_embed_sbi]
-def embed_embed_sbi : @BiEmbedSbi QA QC _ _ (embedBiEmbed QB) _ _ :=
+@[rocq_alias embed_embed_sbi]
+theorem embed_embed_sbi : @BiEmbedSbi QA QC _ _ (embedBiEmbed QB) _ _ :=
   letI : BiEmbed QA QC := embedBiEmbed QB
   { embed_si_emp_valid := fun P =>
       (BiEmbedSbi.embed_si_emp_valid (PROP1 := QB) (PROP2 := QC) (embed (A := QA) (B := QB) P)).trans

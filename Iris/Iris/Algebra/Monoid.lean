@@ -97,14 +97,21 @@ class WeakMonoidHomomorphism {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M�
   rel_refl : ∀ {a : M₂}, R a a
   /-- The relation is transitive -/
   rel_trans : ∀ {a b c : M₂}, R a b → R b c → R a c
-  /-- The relation is proper with respect to equivalence -/
-  rel_proper : ∀ {a a' b b' : M₂}, a ≡ a' → b ≡ b' → (R a b ↔ R a' b')
   /-- The operation is proper with respect to R -/
   op_proper : ∀ {a a' b b' : M₂}, R a a' → R b b' → R (op₂ a b) (op₂ a' b')
   /-- The function is non-expansive -/
   map_ne : NonExpansive f
   /-- The homomorphism property -/
   map_op : ∀ {x y}, R (f (op₁ x y)) (op₂ (f x) (f y))
+
+theorem WeakMonoidHomomorphism.rel_proper {M₁ : Type u} {M₂ : Type v}
+  [OFE M₁] [OFE M₂] {a a' b b' : M₂}
+  {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
+  [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
+  {R : M₂ → M₂ → Prop} {f : M₁ → M₂}
+  [WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R f] : a ≡ a' → b ≡ b' → (R a b ↔ R a' b') := by
+    intro Heq1 Heq2
+    rw [Heq1.to_eq, Heq2.to_eq]
 
 @[rocq_alias weak_monoid_homomorphism_proper]
 theorem weak_monoid_homomorphism_equiv [ OFE M₁] [OFE M₂]

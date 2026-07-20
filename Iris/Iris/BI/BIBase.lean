@@ -235,8 +235,7 @@ delab_rule intuitionistically
 syntax:max "▷^[" term:45 "]" term:40 : term
 
 @[rocq_alias bi_laterN]
-def laterN [BIBase PROP] (n : Nat) (P : PROP) : PROP :=
-  match n with | .zero => P | .succ n' => later <| laterN n' P
+def laterN [BIBase PROP] (n : Nat) (P : PROP) : PROP := n.repeat later P
 
 macro_rules
   | `(iprop(▷^[$n] $P))   => ``(laterN $n iprop($P))
