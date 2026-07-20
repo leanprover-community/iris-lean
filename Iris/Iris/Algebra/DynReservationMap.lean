@@ -20,6 +20,8 @@ namespace Iris
 
 open Std PartialMap
 
+universe u v
+
 /-!
 The camera [DynReservationMap A H] over a camera [A] extends [LawfulPartialMap H Pos]
 with a notion of "reservation tokens" for a (potentially infinite) set
@@ -29,9 +31,11 @@ allocating these tokens, including infinite sets of them.
 -/
 
 @[rocq_alias dyn_reservation_map]
-structure DynReservationMap (A : Type) (H : Type → Type) where
+structure DynReservationMap (A : Type u) (H : Type u → Type v) where
   data : H A
   token : DisjointLeibnizSet CoPset
+
+variable {A : Type u} {H : Type u → Type v}
 
 @[rocq_alias dyn_reservation_map_data]
 def DynReservationMap.mkData [LawfulPartialMap H Pos] (k : Pos) (a : A) :
