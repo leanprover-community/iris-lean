@@ -225,4 +225,13 @@ theorem laterable_alt [BI PROP] {Q : PROP} : Laterable Q ↔ (Q ⊢ make_laterab
     unfold make_laterable at h
     assumption
 
+@[rocq_alias into_laterable_laterable]
+instance intoLaterable_laterable [BI PROP] {P : PROP} [Laterable P] : IntoLaterable P P where
+  into_laterable_result_laterable := by trivial
+
+@[rocq_alias into_laterable_fallback]
+instance (priority := default - 100) into_laterable_fallback [BI PROP] {P : PROP} :
+    IntoLaterable P iprop(▷ P) where
+  into_laterable_result_laterable := later_laterable P
+
 end Laterable
