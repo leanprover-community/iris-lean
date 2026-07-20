@@ -11,7 +11,7 @@ public meta import Iris.ProofMode.ProofModeM
 namespace Iris.ProofMode
 
 public meta section
-open Lean Elab Tactic Meta Qq BI
+open Lean Elab Tactic Meta Qq BI Lean.Parser.Tactic
 
 /-- For iteratively applying the tactic sequences to selection targets in the context -/
 private structure EvalState {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (e : Q($prop)) where
@@ -98,16 +98,38 @@ elab "ieval " "(" tacs:tacticSeq ")" " in " spats:(colGt ppSpace selPat)+ : tact
     let pf ← iEvalCore hyps goal tacs selTargets
     mvar.assign pf
 
-/-- `isimp` applies `simp` to the proof goal. This is shorthand for `ieval (simp)`. -/
-macro "isimp" : tactic => `(tactic| ieval (simp))
-
 /--
+  `isimp` applies `simp` to the proof goal. This is shorthand for `ieval (simp)`.
+
   `isimp in spats` applies `simp` to the Iris hypotheses chosen by the
   selection pattern `spats`. Pure hypotheses are not supported by this tactic.
   This is shorthand for `ieval (simp) in spats`.
+
+  One can also use `isimp [h₁, h₂, …, hₙ]`, `isimp [*]` and
+  `isimp only [h₁, h₂, …, hₙ]` for the tactic behaviour corresponding to
+  `simp [h₁, h₂, …, hₙ]`, `simp [*]` and `simp only [h₁, h₂, …, hₙ]`,
+  respectively.
 -/
-macro "isimp" " in " spats:(colGt ppSpace selPat)+ : tactic =>
-  `(tactic| ieval (simp) in $spats*)
+syntax "isimp" optConfig (discharger)? (&" only")? (simpArgs)?
+  (" in " (colGt ppSpace selPat)+)? : tactic
+
+elab_rules : tactic
+  | `(tactic| isimp $cfg* $[$disch]?) => do
+    evalTactic (← `(tactic| ieval (simp $cfg* $[$disch]?)))
+  | `(tactic| isimp $cfg* $[$disch]? only) => do
+    evalTactic (← `(tactic| ieval (simp $cfg* $[$disch]? only)))
+  | `(tactic| isimp $cfg* $[$disch]? in $spats*) => do
+    evalTactic (← `(tactic| ieval (simp $cfg* $[$disch]?) in $spats*))
+  | `(tactic| isimp $cfg* $[$disch]? only in $spats*) => do
+    evalTactic (← `(tactic| ieval (simp $cfg* $[$disch]? only) in $spats*))
+  | `(tactic| isimp $cfg* $[$disch]? [$args,*]) => do
+    evalTactic (← `(tactic| ieval (simp $cfg* $[$disch]? [$args,*])))
+  | `(tactic| isimp $cfg* $[$disch]? only [$args,*]) => do
+    evalTactic (← `(tactic| ieval (simp $cfg* $[$disch]? only [$args,*])))
+  | `(tactic| isimp $cfg* $[$disch]? [$args,*] in $spats*) => do
+    evalTactic (← `(tactic| ieval (simp $cfg* $[$disch]? [$args,*]) in $spats*))
+  | `(tactic| isimp $cfg* $[$disch]? only [$args,*] in $spats*) => do
+    evalTactic (← `(tactic| ieval (simp $cfg* $[$disch]? only [$args,*]) in $spats*))
 
 /-- `iunfold hs` applies `unfold hs` to the proof goal. This is shorthand for `ieval (unfold)`. -/
 macro "iunfold " hs:ident,+ : tactic => `(tactic| ieval (unfold $hs*))

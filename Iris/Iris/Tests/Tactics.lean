@@ -2809,6 +2809,23 @@ example [BI PROP] {x y : Nat} : ⌜x = 0⌝ ⊢@{PROP} ⌜x = 0⌝ := by
   iintro #H
   isimp in H
 
+/-- Tests `isimp` with variants of `simp` -/
+example [BI PROP] {m n p q : Nat} (h1 : m = n + 1) (h2 : r = t) (h3 : s = t) :
+    ⌜p + q = q + p⌝ ⊢@{PROP} ⌜m - 1 = n⌝ ∗ ⌜r = s⌝ ∗ ⌜q + p = p + q⌝ := by
+  iintro H
+  isplitr
+  -- Simplification with a hypothesis
+  · isimp [h1]
+    itrivial
+  · isplitr
+    -- Simplification with all rules annotated with `[simp]` and all hypotheses
+    · isimp [*]
+      itrivial
+    -- Simplification only with specific rules
+    · isimp only [Nat.add_comm] in H
+      isimp only [Nat.add_comm]
+      iexact H
+
 private def def1 := 10
 private def def2 := def1
 
