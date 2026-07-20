@@ -555,6 +555,75 @@ def splitRight (X : CoPset) : CoPset := ⟨rightRaw X.tree, right_wf _⟩
 
 def split (X : CoPset) : CoPset × CoPset := (splitLeft X, splitRight X)
 
+theorem isFinite_node' (b : Bool) (l r : CoPsetRaw) :
+    CoPsetRaw.isFinite (CoPsetRaw.node' b l r)
+      = (CoPsetRaw.isFinite l && CoPsetRaw.isFinite r) := by
+  cases b <;> rcases l with ⟨⟨⟩⟩ | _ <;> rcases r with ⟨⟨⟩⟩ | _ <;>
+    simp [CoPsetRaw.node', CoPsetRaw.isFinite]
+
+theorem isFinite_leftRaw (t : CoPsetRaw) :
+    CoPsetRaw.isFinite (leftRaw t) = CoPsetRaw.isFinite t := by
+  induction t with
+  | leaf b => cases b <;> simp [leftRaw, CoPsetRaw.isFinite]
+  | node b l r IHl IHr => simp [leftRaw, isFinite_node', CoPsetRaw.isFinite, IHl, IHr]
+
+theorem isFinite_rightRaw (t : CoPsetRaw) :
+    CoPsetRaw.isFinite (rightRaw t) = CoPsetRaw.isFinite t := by
+  induction t with
+  | leaf b => cases b <;> simp [rightRaw, CoPsetRaw.isFinite]
+  | node b l r IHl IHr => simp [rightRaw, isFinite_node', CoPsetRaw.isFinite, IHl, IHr]
+
+theorem elemOf_leftRaw_imp (t : CoPsetRaw) (p : Pos) :
+    ElemOf p (leftRaw t) = true → ElemOf p t = true := by
+  induction t generalizing p with
+  | leaf b => cases b <;> cases p <;> simp [leftRaw, ElemOf]
+  | node b l r IHl IHr =>
+    cases p with
+    | xH => simp only [leftRaw, elem_of_node, ElemOf]; exact id
+    | xO p' => simp only [leftRaw, elem_of_node, ElemOf]; exact IHl _
+    | xI p' => simp only [leftRaw, elem_of_node, ElemOf]; exact IHr _
+
+theorem elemOf_rightRaw_imp (t : CoPsetRaw) (p : Pos) :
+    ElemOf p (rightRaw t) = true → ElemOf p t = true := by
+  induction t generalizing p with
+  | leaf b => cases b <;> cases p <;> simp [rightRaw, ElemOf]
+  | node b l r IHl IHr =>
+    cases p with
+    | xH => simp [rightRaw, elem_of_node, ElemOf]
+    | xO p' => simp only [rightRaw, elem_of_node, ElemOf]; exact IHl _
+    | xI p' => simp only [rightRaw, elem_of_node, ElemOf]; exact IHr _
+
+theorem elemOf_leftRaw_or_rightRaw (t : CoPsetRaw) (p : Pos) :
+    ElemOf p t = true → ElemOf p (leftRaw t) = true ∨ ElemOf p (rightRaw t) = true := by
+  induction t generalizing p with
+  | leaf b => cases b <;> cases p <;> simp [leftRaw, rightRaw, ElemOf]
+  | node b l r IHl IHr =>
+    cases p with
+    | xH => simp only [leftRaw, rightRaw, elem_of_node, ElemOf]; exact .inl
+    | xO p' => simp only [leftRaw, rightRaw, elem_of_node, ElemOf]; exact IHl _
+    | xI p' => simp only [leftRaw, rightRaw, elem_of_node, ElemOf]; exact IHr _
+
+theorem not_elemOf_leftRaw_and_rightRaw (t : CoPsetRaw) (p : Pos) :
+    ¬(ElemOf p (leftRaw t) = true ∧ ElemOf p (rightRaw t) = true) := by
+  induction t generalizing p with
+  | leaf b => cases b <;> cases p <;> simp [leftRaw, rightRaw, ElemOf]
+  | node b l r IHl IHr =>
+    cases p with
+    | xH => simp [leftRaw, rightRaw, elem_of_node, ElemOf]
+    | xO p' =>
+      simp only [leftRaw, rightRaw, elem_of_node, ElemOf]
+      exact fun ⟨h, hr⟩ => IHl _ ⟨h, hr⟩
+    | xI p' =>
+      simp only [leftRaw, rightRaw, elem_of_node, ElemOf]
+      exact fun ⟨h, hr⟩ => IHr _ ⟨h, hr⟩
+
+theorem splitLeft_union_splitRight (X : CoPset) : splitLeft X ∪ splitRight X = X := by
+  apply CoPset.ext
+  intro p
+  rw [in_union]
+  refine ⟨fun h => ?_, fun h => elemOf_leftRaw_or_rightRaw X.tree p h⟩
+  exact h.elim (elemOf_leftRaw_imp X.tree p) (elemOf_rightRaw_imp X.tree p)
+
 end CoPset
 
 section Instances
@@ -653,6 +722,11 @@ theorem isFinite_setFinite {X : CoPset} : isFinite X ↔ LawfulSet.setFinite X :
 theorem not_isFinite_setInfinite {X : CoPset} : ¬isFinite X ↔ LawfulSet.setInfinite X := by
   rw [isFinite_setFinite, LawfulSet.not_finite_infinite]
 
+theorem top_infinite : LawfulSet.setInfinite (⊤ : CoPset) :=
+  not_isFinite_setInfinite.mp (by
+    simp only [isFinite, Iris.Std.Top.top, full, CoPsetRaw.isFinite, Bool.not_true,
+      Bool.false_eq_true, not_false_eq_true])
+
 theorem set_to_coPset_finite {S : Type _} [LawfulFiniteSet S Pos] (X : S)
   : isFinite (set_to_coPset X) := by
     simp only [set_to_coPset]
@@ -661,5 +735,29 @@ theorem set_to_coPset_finite {S : Type _} [LawfulFiniteSet S Pos] (X : S)
     | cons x xs IH =>
       simp only [LawfulSet.ofList_cons, LawfulSet.insert_union, isFinite_setFinite]
       exact LawfulSet.union_finite LawfulSet.singleton_finite (isFinite_setFinite.mp IH)
+
+theorem splitLeft_disjoint_splitRight (X : CoPset) :
+    splitLeft X ## splitRight X :=
+  fun p ⟨hl, hr⟩ => not_elemOf_leftRaw_and_rightRaw X.tree p ⟨hl, hr⟩
+
+theorem splitLeft_infinite {X : CoPset} (h : LawfulSet.setInfinite X) :
+    LawfulSet.setInfinite (splitLeft X) :=
+  not_isFinite_setInfinite.mp fun hf =>
+    (not_isFinite_setInfinite.mpr h) (by
+      simp only [isFinite, splitLeft, isFinite_leftRaw] at hf; exact hf)
+
+theorem splitRight_infinite {X : CoPset} (h : LawfulSet.setInfinite X) :
+    LawfulSet.setInfinite (splitRight X) :=
+  not_isFinite_setInfinite.mp fun hf =>
+    (not_isFinite_setInfinite.mpr h) (by
+      simp only [isFinite, splitRight, isFinite_rightRaw] at hf; exact hf)
+
+/-- Every infinite `X : CoPset` splits into two disjoint parts whose union is `X`, both of which
+are again infinite. -/
+theorem split_infinite (X : CoPset) (h : LawfulSet.setInfinite X) :
+    ∃ E₁ E₂ : CoPset, E₁ ∪ E₂ = X ∧ E₁ ## E₂ ∧
+      LawfulSet.setInfinite E₁ ∧ LawfulSet.setInfinite E₂ :=
+  ⟨splitLeft X, splitRight X, splitLeft_union_splitRight X,
+   splitLeft_disjoint_splitRight X, splitLeft_infinite h, splitRight_infinite h⟩
 
 end Set

@@ -1469,7 +1469,7 @@ instance instSbiMonPred : Sbi (MonPred I PROP) where
         iprop(P.monPred_at i ∗-∗ Q.monPred_at i) := fun i =>
       and_mono (monPred_wand_force i P Q) (monPred_wand_force i Q P)
     have hstep : SiEmpValid.siEmpValid (iprop(∀ i, (iprop(P ∗-∗ Q) : MonPred I PROP).monPred_at i))
-        ⊢@{SiProp} ∀ i, internalEq (PROP := SiProp) (P.monPred_at i) (Q.monPred_at i) :=
+        ⊢@{SiProp} ∀ i, P.monPred_at i ≡ Q.monPred_at i :=
       siEmpValid_forall.mp.trans <| forall_mono fun i =>
         (siEmpValid_mono (hforce i)).trans (BI.prop_ext_siEmpValid_mpr _ _)
     refine hstep.trans ?_
@@ -1485,11 +1485,11 @@ instance instSbiMonPred : Sbi (MonPred I PROP) where
 @[rocq_alias monPred_internal_eq_unfold]
 theorem monPred_internal_eq_unfold {A : Type _} [OFE A] :
     (internalEq : A → A → MonPred I PROP) =
-      fun x y => (iprop(⎡(internalEq x y : PROP)⎤) : MonPred I PROP) := rfl
+      fun x y => (iprop(⎡(x ≡ y : PROP)⎤) : MonPred I PROP) := rfl
 
 @[rocq_alias monPred_at_internal_eq]
 theorem monPred_at_internal_eq {A : Type _} [OFE A] (i : I.car) (a b : A) :
-    (internalEq a b : MonPred I PROP).monPred_at i ⊣⊢ internalEq a b :=
+    (iprop(a ≡ b) : MonPred I PROP).monPred_at i ⊣⊢ a ≡ b :=
   BIBase.BiEntails.of_eq rfl
 
 @[rocq_alias monPred_at_plainly]
@@ -1507,7 +1507,7 @@ theorem monPred_at_plainly (i : I.car) (P : MonPred I PROP) :
 
 @[rocq_alias monPred_equivI]
 theorem monPred_equivI {PROP' : Type _} [Sbi PROP'] (P Q : MonPred I PROP) :
-    (internalEq P Q : PROP') ⊣⊢ iprop(∀ i, internalEq (P.monPred_at i) (Q.monPred_at i)) := by
+    (P ≡ Q : PROP') ⊣⊢ iprop(∀ i, P.monPred_at i ≡ Q.monPred_at i) := by
   refine ⟨?_, ?_⟩
   · refine forall_intro fun i => ?_
     letI _ := MonPred.monPred_at_ne (PROP := PROP) i
@@ -1525,7 +1525,7 @@ instance si_pure_objective (Pi : SiProp) : Objective (iprop(<si_pure> Pi) : MonP
 
 @[rocq_alias internal_eq_objective]
 instance internal_eq_objective {A : Type _} [OFE A] (x y : A) :
-    Objective (internalEq x y : MonPred I PROP) where
+    Objective (iprop(x ≡ y) : MonPred I PROP) where
   objective_at _ _ := .rfl
 
 @[rocq_alias plainly_objective]

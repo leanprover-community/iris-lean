@@ -397,7 +397,9 @@ instance laterN_persistent (n : Nat) (P : PROP) [Persistent P] :
     Persistent iprop(▷^[n] P) := by
   induction n with
   | zero => assumption
-  | succ n _ => exact later_persistent
+  | succ n _ =>
+    dsimp only [BIBase.laterN, Nat.repeat] at *
+    exact later_persistent
 
 instance instPersistentLaterIf [BI PROP] (P : PROP) [Persistent P] (p : Bool) :
     Persistent iprop(▷?p P) := by
@@ -408,7 +410,9 @@ instance laterN_absorbing (n : Nat) (P : PROP) [Absorbing P] :
     Absorbing iprop(▷^[n] P) := by
   induction n with
   | zero => assumption
-  | succ n _ => exact later_absorbing
+  | succ n _ =>
+    dsimp only [BIBase.laterN, Nat.repeat] at *
+    exact later_absorbing
 
 /-! ## LaterN as a monoid homomorphism -/
 

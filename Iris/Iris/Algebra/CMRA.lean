@@ -59,23 +59,30 @@ theorem pcore_op_mono_of_core_op_mono [OFE α] (op : α → α → α) (pcore : 
 namespace CMRA
 variable [CMRA α]
 
+/-- The CMRA composition operation. -/
 infix:60 " • " => op
 
+/-- The inclusion order on a CMRA. -/
 @[rocq_alias included]
 def Included (x y : α) : Prop := ∃ z, y ≡ x • z
+@[inherit_doc]
 infix:50 " ≼ " => Included
 
+/-- The step-indexed inclusion order on a CMRA. -/
 @[rocq_alias includedN]
 def IncludedN (n : Nat) (x y : α) : Prop := ∃ z, y ≡{n}≡ x • z
-notation:50 x " ≼{" n "} " y:51 => IncludedN n x y
+@[inherit_doc] notation:50 x " ≼{" n "} " y:51 => IncludedN n x y
 
+/-- The CMRA composition operation with an optional right argument. -/
 @[rocq_alias opM]
 def op? [CMRA α] (x : α) : Option α → α
   | some y => x • y
   | none => x
-infix:60 " •? " => op?
+@[inherit_doc] infix:60 " •? " => op?
 
+/-- The validity of a CMRA element. -/
 prefix:50 "✓ " => Valid
+/-- The step-indexed validity of a CMRA element. -/
 notation:50 "✓{" n "} " x:51 => ValidN n x
 
 @[rocq_alias CoreId]
