@@ -11,11 +11,16 @@ public import Iris.ProofMode.Classes
 public import Iris.Std
 public meta import Iris.Std.Expr
 
+public meta section
+
 namespace Iris.ProofMode
+open Iris.BI Iris.Std
+open Lean Lean.Expr Lean.Meta Qq
+
+@[expose, match_pattern] def nameAnnotation := `name
+@[expose, match_pattern] def ivarAnnotation := `ivar
 
 /--
-HACK:
-
 Identity wrapper used as a marker around top-level Iris hypotheses.
 This is to solve the issues that `rw` and `simp` may erase the metadata of a hypothesis,
 which is needed for the proof mode pretty-printer/parser to display the hypothesis correctly.
@@ -25,19 +30,9 @@ rewriting can abstract away the metadata wrapper and the pretty-printer/parser l
 the named hypothesis.
 
 `IrisHyp` should be only inserted at the outermost level of Iris hypotheses.
+See https://github.com/leanprover-community/iris-lean/issues/469
 -/
 @[expose, reducible] public def IrisHyp {α : Sort u} (x : α) : α := x
-
-end Iris.ProofMode
-
-public meta section
-
-namespace Iris.ProofMode
-open Iris.BI Iris.Std
-open Lean Lean.Expr Lean.Meta Qq
-
-@[expose, match_pattern] def nameAnnotation := `name
-@[expose, match_pattern] def ivarAnnotation := `ivar
 
 structure IVarId where
   name : Name
@@ -55,15 +50,11 @@ def mkFreshIVarId [Monad m] [MonadNameGenerator m] (persistent? : Bool) : m IVar
 @[expose] def IVarIdSet := Std.TreeSet IVarId (Name.quickCmp ·.name ·.name)
   deriving Inhabited, EmptyCollection, Singleton
 
-def eraseIrisHypTerm (e : Expr) : Expr :=
-  if e.getAppFn.constName? == some ``IrisHyp then
-    e.getAppArgs.back!
-  else
-    e
-
 def parseName? : Expr → Option (Name × Name × Expr)
-  | .mdata ⟨[(nameAnnotation, .ofName name), (ivarAnnotation, .ofName ivar)]⟩ e => do
-    some (name, ivar, eraseIrisHypTerm e)
+  | .mdata ⟨[(nameAnnotation, .ofName name), (ivarAnnotation, .ofName ivar)]⟩ (.app (.app c _α) e) => do
+    if c.constName? != some ``IrisHyp then
+      failure
+    some (name, ivar, e)
   | _ => none
 
 def mkNameAnnotation {prop : Q(Type u)} (name : Name) (ivar : IVarId) (e : Q($prop)) : Q($prop) :=
