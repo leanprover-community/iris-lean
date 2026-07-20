@@ -113,23 +113,17 @@ elab "ieval " "(" tacs:tacticSeq ")" " in " spats:(colGt ppSpace selPat)+ : tact
 syntax "isimp" optConfig (discharger)? (&" only")? (simpArgs)?
   (" in " (colGt ppSpace selPat)+)? : tactic
 
+private def elabSimp (simp : TSyntax `tactic)
+    (spats : Option (TSyntaxArray `selPat)) : TacticM Unit :=
+  match spats with
+  | none       => do evalTactic (← `(tactic| ieval ($simp:tactic)))
+  | some spats => do evalTactic (← `(tactic| ieval ($simp:tactic) in $spats*))
+
 elab_rules : tactic
-  | `(tactic| isimp $cfg* $[$disch]?) => do
-    evalTactic (← `(tactic| ieval (simp $cfg* $[$disch]?)))
-  | `(tactic| isimp $cfg* $[$disch]? only) => do
-    evalTactic (← `(tactic| ieval (simp $cfg* $[$disch]? only)))
-  | `(tactic| isimp $cfg* $[$disch]? in $spats*) => do
-    evalTactic (← `(tactic| ieval (simp $cfg* $[$disch]?) in $spats*))
-  | `(tactic| isimp $cfg* $[$disch]? only in $spats*) => do
-    evalTactic (← `(tactic| ieval (simp $cfg* $[$disch]? only) in $spats*))
-  | `(tactic| isimp $cfg* $[$disch]? [$args,*]) => do
-    evalTactic (← `(tactic| ieval (simp $cfg* $[$disch]? [$args,*])))
-  | `(tactic| isimp $cfg* $[$disch]? only [$args,*]) => do
-    evalTactic (← `(tactic| ieval (simp $cfg* $[$disch]? only [$args,*])))
-  | `(tactic| isimp $cfg* $[$disch]? [$args,*] in $spats*) => do
-    evalTactic (← `(tactic| ieval (simp $cfg* $[$disch]? [$args,*]) in $spats*))
-  | `(tactic| isimp $cfg* $[$disch]? only [$args,*] in $spats*) => do
-    evalTactic (← `(tactic| ieval (simp $cfg* $[$disch]? only [$args,*]) in $spats*))
+  | `(tactic| isimp $cfg* $[$disch]? $[[$args,*]]? $[in $spats*]?) => do
+      elabSimp (← `(tactic| simp $cfg* $[$disch]? $[[$args,*]]?)) spats
+  | `(tactic| isimp $cfg* $[$disch]? only $[[$args,*]]? $[in $spats*]?) => do
+      elabSimp (← `(tactic| simp $cfg* $[$disch]? only $[[$args,*]]?)) spats
 
 /-- `iunfold hs` applies `unfold hs` to the proof goal. This is shorthand for `ieval (unfold)`. -/
 macro "iunfold " hs:ident,+ : tactic => `(tactic| ieval (unfold $hs*))
