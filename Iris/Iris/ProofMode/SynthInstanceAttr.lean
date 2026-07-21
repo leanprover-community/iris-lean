@@ -141,8 +141,7 @@ private def getIPMParamKinds? (env : Environment) (declName : Name) : Option (Ar
 @[reducible, expose]
 def semiOutParamIPM (_io : InOut) (α : Sort u) : Sort u := semiOutParam α
 
-/-- If `d` is `semiOutParam self α` or `semiOutParamNeg self α`, return `(negate, self)`. -/
-private def semiOutParamGoverning? (d : Expr) : Option Expr := do
+private def semiOutParamExpr (d : Expr) : Option Expr := do
   if d.isAppOfArity ``semiOutParamIPM 2 then
       some d.getAppArgs[0]!
   else none
@@ -157,7 +156,7 @@ Except MessageData (Array ParamKind) :=
       computeParamKinds (params.push .uncheckedIn) b
     else if d.isOutParam then
       computeParamKinds (params.push .out) b
-    else if let some expr := semiOutParamGoverning? d then
+    else if let some expr := semiOutParamExpr d then
       computeParamKinds (params.push (.semiOut expr)) b
     else if d.isSemiOutParam then
       Except.error m!"invalid ipm_class, parameter #{params.size + 1} is a `semiOutParam`. Use \
