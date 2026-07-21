@@ -14,7 +14,7 @@ noncomputable section
 
 open Iris
 
-instance ordinalSIdx : SIdx Ordinal.{u} where
+instance ordinalSIdx : SIdx Ordinal where
   toLT := Ordinal.partialOrder.toLT
   toLE := Preorder.toLE
   toZero := Ordinal.zero
@@ -37,8 +37,8 @@ instance ordinalSIdx : SIdx Ordinal.{u} where
       .inr fun m hm => lt_of_le_of_ne (Order.succ_le_of_lt hm) fun he => h ⟨m, he.symm⟩
 
 @[reducible]
-def ordinalSubtypeSIdx (κ : Ordinal.{u}) (hκ : Order.IsSuccLimit κ) :
-    SIdx {o : Ordinal.{u} // o < κ} where
+def ordinalSubtypeSIdx (κ : Ordinal) (hκ : Order.IsSuccLimit κ) :
+    SIdx {o : Ordinal // o < κ} where
   toLT := Subtype.instLT
   toLE := Subtype.instLE
   toZero := by constructor; constructor; exact hκ.pos
@@ -68,8 +68,7 @@ def ordinalSubtypeSIdx (κ : Ordinal.{u}) (hκ : Order.IsSuccLimit κ) :
         lt_of_le_of_ne (Order.succ_le_of_lt hm : Order.succ m.val ≤ n.val)
           fun he => h ⟨m, he.symm⟩
 
-theorem limit_iff_isSuccLimit {o : Ordinal.{u}} :
-    SIdx.Limit o ↔ Order.IsSuccLimit o := by
+theorem limit_iff_isSuccLimit {o : Ordinal} : SIdx.Limit o ↔ Order.IsSuccLimit o := by
   constructor
   · intro h
     constructor
