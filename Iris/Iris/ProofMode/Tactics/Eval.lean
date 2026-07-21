@@ -20,8 +20,10 @@ private structure EvalState {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (e : Q($pr
   (pf : Q($e ⊢ $newE))
 
 /--
-  Apply the tactic sequence `tac` to transform `ty` into `newTy`, with the
-  Boolean value `isGoal` indicating whether `ty` is the proof goal.
+  Apply the tactic sequence `tac` to transform `ty`, which is strengthened when
+  it is the goal or weakened when it is a hypothesis in the context.
+  The function returns the new expression and a proof that the expression
+  is strengthened/weakened.
 -/
 private def iEvalOne {u} {prop : Q(Type u)} (bi : Q(BI $prop))
     (tac : TSyntax `Lean.Parser.Tactic.tacticSeq) (isGoal : Bool) (ty : Q($prop)) :
