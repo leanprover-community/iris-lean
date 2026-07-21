@@ -8,6 +8,7 @@ module
 public import Iris.ProofMode.Patterns.CasesPattern
 public import Iris.ProofMode.Patterns.SelPattern
 meta import Iris.Std.RocqPorting
+public import Lean.Syntax
 
 @[expose] public section
 
@@ -15,7 +16,11 @@ namespace Iris.ProofMode
 open Lean
 
 declare_syntax_cat selPatFrame
-syntax ("!" noWs)? selPat : selPatFrame
+syntax selPat : selPatFrame
+syntax "$%" : selPatFrame
+syntax "$%" noWs ident : selPatFrame
+syntax "$#" : selPatFrame
+syntax "$∗" : selPatFrame
 
 declare_syntax_cat introPat
 
@@ -67,7 +72,16 @@ partial def IntroPat.parse (term : Syntax) : MacroM (Syntax × IntroPat) := do
   | `(introPat| { $spats:selPatFrame* }) => return (term, .clear (← spats.toList.mapM parseSelPats))
   | _ => Macro.throwUnsupported
   where parseSelPats (spat : TSyntax `selPatFrame) : MacroM <| Bool × SelPat := do
-    return ⟨!spat.raw[0].getArgs.isEmpty, ← SelPat.parseOne ⟨spat.raw[1]⟩⟩
+    if spat.raw.isAntiquot then
+      return ⟨true, .ident ⟨spat.raw.getAntiquotTerm⟩⟩
+    else
+      match spat with
+      | `(selPatFrame| $spat:selPat) => return ⟨false, ← SelPat.parseOne spat⟩
+      | `(selPatFrame| $%$name:ident) => return ⟨true, .leanIdent name⟩
+      | `(selPatFrame| $%) => return ⟨true, .pure⟩
+      | `(selPatFrame| $#) => return ⟨true, .intuitionistic⟩
+      | `(selPatFrame| $∗) => return ⟨true, .spatial⟩
+      | _ => Macro.throwUnsupported
 
 #rocq_ignore gallina_ident "Not necessary in Lean"
 #rocq_ignore intro_pat.big_conj "Not necessary in Lean"

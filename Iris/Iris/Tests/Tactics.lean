@@ -328,8 +328,10 @@ example {ϕ : Prop} [BI PROP] : ⊢@{PROP} ⌜⌜ϕ⌝ ⊢@{PROP} ⌜ϕ⌝⌝ :=
 /-- Tests `iintro` with an introduction pattern for clearing and framing hypotheses (`{ selPats* }`) -/
 example [BI PROP] (P Q R S T : PROP) (ϕ : Prop) :
     ⊢ □ ⌜ϕ⌝ -∗ P -∗ Q -∗ <affine> R -∗ □ S -∗ □ T -∗ P ∗ Q ∗ T := by
-  iintro %hϕ HP HQ {!HP} HR #HS #HT {HR %hϕ %ϕ !# #}
+  iintro %hϕ HP HQ {$HP} HR #HS #HT {HR %hϕ %ϕ $# #}
   iexact HQ
+
+/-
 
 /-- Tests `iintro` with introduction patterns for rewriting pure equalities -/
 example [BI PROP] (m n : Nat) (a b c : Prop) :
@@ -2915,3 +2917,4 @@ example (P Q : PROP) :
   iloeb as IH
 
 end iloeb
+--/
