@@ -49,7 +49,6 @@ The parameters of a class declared with `ipm_class` are categorized into the fol
    or an output.
 4. uncheckedIn: These are parameters marked with `uncheckedInParam`. These behave like `in` parameters,
    but allow mvars to match terms (see below).
-5. inout: Parameters of type `InOut`, must appear before semiOut parameters (see above).
 
 The following constraints apply to the parameters:
 (In the following, semiOut parameters are treated as inputs if the preceding `InOut` is `in` and as
@@ -70,7 +69,6 @@ inductive ParamKind
   | out
   | semiOut (expr : Expr)
   | uncheckedIn
-  | inout
 deriving Inhabited
 
 instance : ToString ParamKind where
@@ -79,7 +77,6 @@ instance : ToString ParamKind where
     | .out => "out"
     | .semiOut expr => s!"semiOut {expr}"
     | .uncheckedIn => "uncheckedIn"
-    | .inout => "inout"
 
 section IPMClasses
 structure ClassEntry where
@@ -161,8 +158,6 @@ Except MessageData (Array ParamKind) :=
     else if d.isSemiOutParam then
       Except.error m!"invalid ipm_class, parameter #{params.size + 1} is a `semiOutParam`. Use \
         `semiOutParamIPM` instead"
-    else if d.isAppOfArity ``InOut 0 then
-      computeParamKinds (params.push .inout) b
     else
       computeParamKinds (params.push .in) b
   | _ => return params
@@ -184,7 +179,6 @@ def checkIPMSynthParams (type : Expr) : MetaM (Option (Array Nat)) := do
     if args.size != params.size then
       throwError "mismatched number of arguments"
 
-    let mut resolved : Std.HashMap Nat Bool := {}
     let mut mvarInputs := #[]
 
     for i in 0...args.size do
@@ -205,13 +199,6 @@ def checkIPMSynthParams (type : Expr) : MetaM (Option (Array Nat)) := do
       | .in => if arg.getAppFn.isMVar then mvarInputs := mvarInputs.push i
       | .out => if !arg.getAppFn.isMVar then
         throwError "parameter #{i} {arg} of {type} is an out parameter that is not an mvar"
-      | .inout =>
-        if arg.isAppOfArity ``InOut.in 0 then
-          resolved := resolved.insert i true
-        else if arg.isAppOfArity ``InOut.out 0 then
-          resolved := resolved.insert i false
-        else
-          throwError "parameter #{i} {arg} of {type} is an inout parameter that is not .in nor .out"
       | .semiOut _ => unreachable!
     return some mvarInputs
 
