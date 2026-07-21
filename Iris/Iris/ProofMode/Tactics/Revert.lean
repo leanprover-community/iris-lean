@@ -9,10 +9,20 @@ public import Iris.ProofMode.ClassesMake
 public meta import Iris.ProofMode.Patterns.SelPattern
 public meta import Iris.ProofMode.Tactics.Basic
 
+public meta import Iris.ProofMode.Tactics.Assumption
+public meta import Iris.ProofMode.Tactics.Cases
+public meta import Iris.ProofMode.Patterns.CasesPattern
+public meta import Lean.Meta.Tactic.TryThis
+
 namespace Iris.ProofMode
 
 public section
 open BI Std
+
+/- Syntax for `iinduction` and `iloeb` -/
+declare_syntax_cat generalizingSelPats
+syntax " generalizing " (ppSpace colGt selPat)* : generalizingSelPats
+syntax " generalizing! " (ppSpace colGt selPat)* : generalizingSelPats
 
 theorem wand_revert [BI PROP] {Δ Δ' P Q : PROP}
     (h1 : Δ ⊣⊢ Δ' ∗ P) (h2 : Δ' ⊢ P -∗ Q) : Δ ⊢ Q :=
@@ -88,14 +98,142 @@ private def RevertState.revertLeanHyp
   let ldecl ← st.hyps.checkRemovableFVar "irevert" f none st.reverted.contains
   let v : Level ← Meta.getLevel ldecl.type
   have α : Q(Sort v) := ldecl.type
-  if ← Meta.isProp α then
+  if (← Meta.isProp α) && !st.goal.containsFVar f then
     have φ : Q(Prop) := α
     st.revertLeanPropHyp f φ
   else
     st.revertLeanForallHyp f α
 
-def iRevertCore (targets : List SelTarget) {u : Level}{prop: Q(Type $u)}{bi : Q(BI $prop)}{e : Q($prop)}(hyps : Hyps bi e)(goal: Q($prop))
-  (k : ∀ {e : Q($prop)}, Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
+def getDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
+    (hyps : Hyps bi e)
+    (explicitTargets : List SelTarget)
+    (inductionTarget : Option FVarId)
+    (includeSpatialHyps : Bool) :
+    ProofModeM <| List (FVarId × FVarId) × List (Name × IVarId × FVarId) × Array FVarId := do
+  let explicitIrisIVarIds := explicitTargets.filterMap
+    (match ·.kind with | .ipm ivar => some ivar | _ => none)
+  let explicitPureFVars :=
+    explicitTargets.filterMap
+    (match ·.kind with | .pure f => some f | _ => none) |>.append <|
+      inductionTarget.elim [] (.singleton ·)
+
+  -- Pairs of `FVarId` values `(f1, f2)` indicating `f1` depends on `f2`.
+  let mut missingPureHyps : List (FVarId × FVarId) := []
+
+  -- Check forward dependency of pure hypotheses
+  for fvar in explicitPureFVars.eraseDups do
+    let fwdDeps ← collectForwardDeps #[mkFVar fvar] false
+    for dep in fwdDeps do
+      let depId := dep.fvarId!
+      -- Skip `x` itself and variables already included in `explicitPureFVars`
+      if depId != fvar && !explicitPureFVars.contains depId then
+        -- Record the missing hypothesis to be generalised, if not already included
+        if !missingPureHyps.any (·.fst == depId) then
+          missingPureHyps := missingPureHyps.cons (depId, fvar)
+  missingPureHyps := missingPureHyps.reverse
+
+  let allPureFVars := explicitPureFVars ++ missingPureHyps.map (·.fst)
+
+  let irisHypsToBeChecked :=
+    hyps.intuitionisticIVarIds ++
+    if includeSpatialHyps then hyps.spatialIVarIds else []
+  -- Check forward dependency of Iris hypotheses
+  let missingIrisHyps : List (Name × IVarId × FVarId) :=
+    irisHypsToBeChecked.filterMap fun ivar =>
+      if explicitIrisIVarIds.contains ivar then none
+      else hyps.getDecl? ivar >>= fun ⟨name, _, _, ty⟩ =>
+        (allPureFVars.find? (ty.containsFVar ·)).map (name, ivar, ·)
+
+  -- Missing pure hypotheses does not include the induction target itself
+  let allPureFVars := allPureFVars.eraseDups.filter <|
+    fun fvar => inductionTarget.all (fvar != ·)
+
+  -- Sort the pure Lean hypothesis according to the dependency
+  let allPureFVarsSorted ← getLCtx <&> (·.sortFVarsByContextOrder allPureFVars.toArray)
+
+  return ⟨missingPureHyps, missingIrisHyps, allPureFVarsSorted⟩
+
+def getCompleteSelTargets (explicitTargets : List SelTarget)
+    (missingIrisHyps : List (Name × IVarId × FVarId))
+    (allPureVarsSorted : Array FVarId) :
+    List SelTarget :=
+  let pureTargets := allPureVarsSorted.toList.map ({ kind := .pure ·, explicit := true})
+  let explicitIrisTargets := explicitTargets.filter <|
+    fun t => match t.kind with | .ipm _ => true | _ => false
+  let implicitIrisTargets := missingIrisHyps.map <|
+    fun ⟨_, ivar, _⟩ => { kind := .ipm ivar, explicit := false }
+  pureTargets ++ explicitIrisTargets ++ implicitIrisTargets
+
+/--
+  Throw an error if there exists hypotheses that are depend on any hypothesis
+  in `explicitTargets` but are not themselves in the list.
+
+  The value `inductionTarget` can optionally be supplied. In this case,
+  hypotheses dependent on it should also be generalised.
+-/
+def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
+    (tacticName : String) (hyps : Hyps bi e)
+    (explicitTargets : List SelTarget)
+    (inductionTarget : Option FVarId)
+    (selPats : TSyntaxArray `selPat)
+    (mkTacticExplicit mkTacticImplicit : TSyntaxArray `selPat → ProofModeM (TSyntax `tactic)) :
+    ProofModeM Unit := do
+  let ⟨missingPureHyps, missingIrisHyps, allPureFVarsSorted⟩ ←
+    getDependentHyps hyps explicitTargets inductionTarget true
+
+  -- Handle the printing of inaccessible names, if necessary
+  let ppHypName := fun name =>
+    if name.hasMacroScopes then
+      s!"`{name.eraseMacroScopes}` (inaccessible name)"
+    else s!"`{name.toString}`"
+
+  -- Add an error message if there exists some pure/Lean hypotheses that should also be generalised
+  if !missingPureHyps.isEmpty || !missingIrisHyps.isEmpty then
+    let leanLines ← missingPureHyps.mapM fun ⟨depId, srcId⟩ => do
+      let depDecl ← depId.getDecl
+      let srcDecl ← srcId.getDecl
+      return s!"• Lean hypothesis {ppHypName depDecl.userName} depends on {ppHypName srcDecl.userName}"
+    let irisLines ← missingIrisHyps.mapM fun ⟨depName, _, srcId⟩ => do
+      let srcDecl ← srcId.getDecl
+      return s!"• Iris hypothesis {ppHypName depName} depends on {ppHypName srcDecl.userName}"
+
+    let sortedPurePats : Array (TSyntax `selPat) ← allPureFVarsSorted.mapM fun fvarId => do
+      let decl ← fvarId.getDecl
+      let id := mkIdent <| .mkSimple decl.userName.toString
+      `(selPat| %$id:ident)
+
+    -- Build `selPat` syntax nodes for each missing item
+    let newIrisPats : Array (TSyntax `selPat) ←
+      missingIrisHyps.toArray.mapM fun ⟨name, _⟩ => `(selPat| $(mkIdent name):ident)
+
+    -- Check whether the new selecton pattern may contain any inaccessible names
+    let allNamesAccessible :=
+      (missingIrisHyps.all fun ⟨name, _, _⟩ => !name.hasMacroScopes) &&
+      !(← allPureFVarsSorted.anyM fun fvarId => do return (← fvarId.getDecl).userName.hasMacroScopes)
+
+    -- Find the old tactic syntax and generate the new one with missing hypotheses added
+    let oldTactic ← getRef
+
+    -- Suggest a fixed tactic with explicit generalisations
+    if allNamesAccessible then
+      let existingIrisPats := selPats.filter fun p =>
+        match p.raw with | `(selPat| %$_:ident) => false | _ => true
+      let extendedPats := sortedPurePats ++ existingIrisPats ++ newIrisPats
+      let newTactic ← mkTacticExplicit extendedPats
+      Lean.Meta.Tactic.TryThis.addSuggestion oldTactic newTactic
+
+    -- Suggest a fixed tactic with implicit generalisations
+    let newTactic ← mkTacticImplicit selPats
+    Lean.Meta.Tactic.TryThis.addSuggestion oldTactic newTactic
+
+    -- Log the error and attach the clickable suggestion
+    throwError m!"{tacticName}: The following hypotheses depend on variables in \
+      the `generalizing` clause but are not themselves included:\
+      \n{"\n".intercalate (leanLines ++ irisLines)}"
+
+def iRevertCore (targets : List SelTarget) {u : Level} {prop: Q(Type $u)}
+    {bi : Q(BI $prop)} {e : Q($prop)} (hyps : Hyps bi e) (goal: Q($prop))
+    (k : ∀ {e : Q($prop)}, Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
     ProofModeM Q($e ⊢ $goal) := do
   let init : RevertState e goal := { e, hyps, goal, pf := q(id) }
   let st ← targets.reverse.foldlM (init := init) fun st target => do
@@ -103,17 +241,46 @@ def iRevertCore (targets : List SelTarget) {u : Level}{prop: Q(Type $u)}{bi : Q(
       | .ipm ivar => st.revertProofModeHyp ivar
       | .pure fvar => st.revertLeanHyp fvar
 
-  let pf' : Q($(st.e) ⊢ $(st.goal)) ← withoutFVars (u:=0) st.reverted (k st.hyps st.goal)
+  let pf' : Q($(st.e) ⊢ $(st.goal)) ← withoutFVars (u := 0) st.reverted (k st.hyps st.goal)
   return q($(st.pf) $pf')
+
+syntax (name := irevert) "irevert " (colGt ppSpace selPat)+ : tactic
+syntax (name := irevert!) "irevert! " (colGt ppSpace selPat)+ : tactic
 
 /--
   `irevert pats` reverts the hypotheses specified by the selection pattern `pats`
-  from the Iris contexts back into the regular Lean context.
--/
-elab "irevert " pats:(colGt ppSpace selPat)+ : tactic => do
-  let pats ← liftMacroM <| SelPat.parse pats
+  from context back into the proof goal. Pure/Iris hypotheses
+  dependent on any hypothesis specified by `pats` must also themselves be
+  included in the selection pattern.
 
-  ProofModeM.runTactic fun mvar {hyps, goal, ..} => do
-    let targets ← SelPat.resolve hyps pats
-    let expr ← iRevertCore targets hyps goal
-    mvar.assign expr
+  `irevert! pats` is similar to `irevert pats`, except that pure/Iris hypotheses
+  dependent on any hypothesis specified by `pats` are automatically reverted.
+-/
+elab_rules : tactic
+  | `(tactic| irevert $pats:selPat*) => do
+    let parsedPats ← liftMacroM <| SelPat.parse pats
+
+    ProofModeM.runTactic fun mvar { hyps, goal, .. } => do
+      -- Parse the selection patterns provided by the tactic user
+      let targets ← SelPat.resolve hyps parsedPats
+
+      -- Check for dependencies with the hypotheses in the selection targets
+      checkDependentHyps "irevert" hyps targets none pats
+        (fun pats => `(tactic| irevert $pats*))
+        (fun pats => `(tactic| irevert! $pats*))
+
+      let expr ← iRevertCore targets hyps goal
+      mvar.assign expr
+  | `(tactic| irevert! $pats:selPat*) => do
+    let parsedPats ← liftMacroM <| SelPat.parse pats
+
+    ProofModeM.runTactic fun mvar { hyps, goal, .. } => do
+      -- Parse the selection patterns provided by the tactic user
+      let explicitTargets ← SelPat.resolve hyps parsedPats
+      -- Find all dependent hypotheses
+      let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ← getDependentHyps hyps explicitTargets none true
+      -- Obtain the selection targets, including dependent ones
+      let targets := getCompleteSelTargets explicitTargets missingIrisHyps allPureFVarsSorted
+
+      let expr ← iRevertCore targets hyps goal
+      mvar.assign expr

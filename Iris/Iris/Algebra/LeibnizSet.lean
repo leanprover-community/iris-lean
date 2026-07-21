@@ -29,12 +29,10 @@ inductive DisjointLeibnizSet (S : Type _) where
   | valid : S → DisjointLeibnizSet S
   | error : DisjointLeibnizSet S
 
-instance : COFE (DisjointLeibnizSet S) := COFE.ofDiscrete _ Eq_Equivalence
+instance : COFE (DisjointLeibnizSet S) := COFE.ofDiscrete _
 
 instance inst_disjointLeibnizSet_DiscreteE {S : Type _} (x : DisjointLeibnizSet S) :
-    DiscreteE x := ⟨id⟩
-
-instance : Leibniz (DisjointLeibnizSet S) := ⟨id⟩
+    DiscreteE x := ⟨fun h _ => h⟩
 
 instance instEmptyCollectionDisjointLeibnizSet [LawfulSet S A] :
     EmptyCollection (DisjointLeibnizSet S) where
@@ -60,8 +58,8 @@ theorem DisjointLeibnizSet.mem_of_eqv [LawfulSet S A] {a b : DisjointLeibnizSet 
     (eqv : a ≡ b) (mx : x ∈ a) : x ∈ b :=
   match a, b with
   | .error, _ => False.elim mx
-  | .valid _, .error => by simp at eqv
-  | .valid _, .valid _ => by simpa [← show _ = _ from eqv]
+  | .valid _, .error => absurd eqv.to_eq (by simp)
+  | .valid _, .valid _ => by simpa [← show _ = _ from eqv.to_eq]
 
 namespace DisjointLeibnizSet
 
@@ -74,15 +72,15 @@ instance : CMRA (DisjointLeibnizSet S) where
     | _, _ => error
   ValidN _ | valid _ => True | _ => False
   Valid | valid _ => True | _ => False
-  op_ne.ne _ _ _ H := by rw [H]
-  pcore_ne {_ _ _ cx} _ H := ⟨cx, H, rfl⟩
-  validN_ne H G := H ▸ G
+  op_ne.ne _ _ _ H := by rw [(H : _ = _)]
+  pcore_ne {_ _ _ cx} _ H := ⟨cx, H, .rfl⟩
+  validN_ne H G := (H : _ = _) ▸ G
   valid_iff_validN := ⟨(fun _ => ·), (· 0)⟩
   validN_succ := id
   validN_op_left {_ x y} := by rcases x <;> rcases y <;> simp
   assoc {x y z} := by
     rcases x with (x|_) <;> rcases y with (y|_) <;> rcases z with (z|_) <;> (try · simp)
-    simp only [leibniz]
+    refine Equiv.of_eq ?_
     by_cases hyz : y ## z <;> by_cases hxy : x ## y <;>
       by_cases hxyzL : x ## y ∪ z <;> by_cases hxyzR : x ∪ y ## z <;>
     all_goals simp only [hyz, hxy, hxyzL, hxyzR, ↓reduceIte, valid.injEq]
@@ -101,22 +99,20 @@ instance : CMRA (DisjointLeibnizSet S) where
       exact hyz h |>.elim
   comm {x y} := by
     rcases x with (x|_) <;> rcases y with (y|_) <;> (try · simp)
-    by_cases H : x ## y
-    · simp [H, disjoint_symm H, union_comm]
-    · simpa [H] using (H <| disjoint_symm ·)
+    by_cases H : x ## y <;> grind only [Equiv.of_eq, disjoint_symm, union_comm]
   pcore_op_left {cx x} := by
     rcases x with (x|_) <;> rcases cx with (cx|_) <;> (try · simp)
     rintro ⟨⟩
     simp [disjoint_empty_left]
-  pcore_idem {x cx} := by rcases x with (x|_) <;> rcases cx with (cx|_) <;> simp
+  pcore_idem {x cx} := by grind only [Equiv.of_eq]
   pcore_op_mono {_ x} := by
     rcases x with (x|_) <;> rintro ⟨⟩ y
     exists (.valid ∅)
     simp [disjoint_empty_left]
-  extend {_ _ y₁ y₂} _ h := ⟨y₁, y₂, ⟨h, rfl, rfl⟩⟩
+  extend {_ _ y₁ y₂} _ h := ⟨y₁, y₂, ⟨fun _ => h, .rfl, .rfl⟩⟩
 
 instance instDiscreteDisjointLeibnizSet : CMRA.Discrete (DisjointLeibnizSet S) where
-  discrete_0 := id
+  discrete_0 := fun h _ => h
   discrete_valid := id
 
 instance instUCMRADisjointLeibnizSet : UCMRA (DisjointLeibnizSet S) where
@@ -150,14 +146,15 @@ theorem included_iff_subset {X Y : S} : valid X ≼ valid Y ↔ X ⊆ Y := by
   refine ⟨?_, ?_⟩
   · rintro ⟨(Z|_), HZ⟩
     · by_cases H : X ## Z
-      · obtain rfl : Y = X ∪ Z := by simp_all [op]
+      · obtain rfl : Y = X ∪ Z := by have := HZ.to_eq; simp_all [op]
         exact fun _ => (mem_union.mpr <| .inl ·)
-      · simp [op, H] at HZ
-    · simp [op] at HZ
+      · exact absurd HZ.to_eq (by simp [op, H])
+    · exact absurd HZ.to_eq (by simp [op])
   · intro Hsub
     exists valid (Y \ X)
     suffices Y = X ∪ Y \ X by
       have H : X ## (Y \ X) := fun _ H => (mem_diff.mp H.2).right H.1
+      refine OFE.Equiv.of_eq ?_
       simpa [op, H]
     ext p; rw [mem_union, mem_diff]
     refine ⟨by grind, (·.casesOn (Hsub _) (·.left))⟩
@@ -194,22 +191,22 @@ theorem not_mem_of_mem_and_valid_op_right {x y : DisjointLeibnizSet S}
 theorem localUpdate_dealloc {X Y : S} : (valid X, valid Y) ~l~> (valid (X \ Y), valid ∅) := by
   refine LocalUpdate.total_valid fun vx vy inc => ?_
   refine (local_update_unital_discrete ..).mpr fun z hx heq => ⟨valid_mapN (fun _ _ => vx) vx, ?_⟩
-  rcases z with (z|_) <;> try · cases heq
-  by_cases Hdisj : Y ## z <;> simp only [Hdisj, ↓reduceIte, op, leibniz] at heq
-  · obtain ⟨rfl⟩ := valid.injEq _ _ ▸ heq
-    simp only [op, leibniz, disjoint_empty_left, ↓reduceIte, union_empty_left, valid.injEq] at ⊢
-    ext i
-    rw [mem_diff, mem_union]
-    specialize (Hdisj i)
-    grind
-  · cases heq
+  rcases z with (z|_)
+  · by_cases Hdisj : Y ## z <;> simp only [Hdisj, ↓reduceIte, op] at heq
+    · obtain rfl := valid.inj heq.to_eq
+      refine Equiv.of_eq ?_
+      simp only [op, disjoint_empty_left, ↓reduceIte, union_empty_left, valid.injEq]
+      ext i
+      grind [Hdisj i, mem_diff, mem_union]
+    · exact absurd heq.to_eq (by simp)
+  · exact absurd heq.to_eq (by simp [op])
 
 @[rocq_alias gset_disj_dealloc_empty_local_update]
 theorem localUpdate_dealloc_empty {X Z : S} :
     (valid Z • valid X, valid Z) ~l~> (valid X, valid ∅) := by
   refine LocalUpdate.total_valid fun Hdisj _ _ => ?_
   rw [valid_op_iff_disj] at Hdisj
-  rw [disj_op_union Hdisj]
+  rw [(disj_op_union Hdisj).to_eq]
   have Heq : X = (Z ∪ X) \ Z := by
     ext a; rw [mem_diff, mem_union]
     exact ⟨fun H => ⟨.inr H, (Hdisj a ⟨·, H⟩)⟩, fun H => H.1.casesOn (H.2 · |>.elim) id⟩
@@ -220,7 +217,7 @@ theorem localUpdate_dealloc_empty {X Z : S} :
 theorem localUpdate_op_l {X Y Z : S} :
     (valid Z • valid X, valid Z • valid Y) ~l~> (valid X, valid Y) := by
   suffices (valid Z • valid X, valid Z • valid Y) ~l~> (valid X, unit • valid Y) by
-    rwa [show UCMRA.unit • valid Y ≡ valid Y by apply unit_left_id] at this
+    rwa [(show UCMRA.unit • valid Y ≡ valid Y by apply unit_left_id).to_eq] at this
   exact LocalUpdate.op_frame _ _ _ _ _ localUpdate_dealloc_empty
 
 @[rocq_alias gset_disj_alloc_op_local_update]
@@ -233,13 +230,14 @@ theorem localUpdate_union_r_of_disj (X Y Z : S) (Hdisj : Z ## X) :
     (valid X, valid Y) ~l~> (valid (Z ∪ X), valid (Z ∪ Y)) := by
   refine LocalUpdate.total_valid fun vx vy inc => ?_
   have HdisjY : Z ## Y := fun a ⟨Hz, Hy⟩ => Hdisj a ⟨Hz, included_iff_subset.mp inc a Hy⟩
-  rw [←disj_op_union Hdisj, ←disj_op_union HdisjY]
+  rw [←(disj_op_union Hdisj).to_eq, ←(disj_op_union HdisjY).to_eq]
   exact localUpdate_op_r Hdisj
 
 @[rocq_alias gset_disj_alloc_empty_local_update]
 theorem localUpdate_alloc_empty_of_disj (X Z : S) (Hdisj : Z ## X) :
-    (valid X, valid ∅) ~l~> (valid (Z ∪ X), valid Z) := by
-  rw [show valid Z ≡ valid (Z ∪ ∅) by simp [union_empty_right]]
+    (valid X, valid ∅) ~l~>
+    (valid (Z ∪ X), valid Z) := by
+  rw [(show valid Z ≡ valid (Z ∪ ∅) by simp [union_empty_right]).to_eq]
   exact localUpdate_union_r_of_disj X ∅ Z Hdisj
 
 @[rocq_alias gset_disj_alloc_updateP_strong]
@@ -310,8 +308,7 @@ end DisjointLeibnizSet
 inductive LeibnizSet (S : Type _) where
   | valid (s : S)
 
-instance : COFE (LeibnizSet S) := COFE.ofDiscrete _ Eq_Equivalence
-instance : Leibniz (LeibnizSet S) := ⟨id⟩
+instance : COFE (LeibnizSet S) := COFE.ofDiscrete _
 
 namespace LeibnizSet
 
@@ -322,7 +319,7 @@ instance : CMRA (LeibnizSet S) where
   op | .valid x, valid y => valid (x ∪ y)
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ H := by rw [H]
+  op_ne.ne _ _ _ H := by rw [(H : _ = _)]
   pcore_ne {_ _ _} _ H1 H2 :=  ⟨_, rfl, .trans (.of_eq <| Option.some.injEq _ _ ▸ H2.symm) H1⟩
   validN_ne _ _ := by simp
   valid_iff_validN := by simp
@@ -333,7 +330,7 @@ instance : CMRA (LeibnizSet S) where
   pcore_op_left {_ _} := by rintro ⟨rfl⟩; simp [union_idem]
   pcore_idem := by simp
   pcore_op_mono {_ _} := by rintro ⟨rfl⟩ y; exists y
-  extend {_ _ _ _} _ := (⟨_, _, ⟨·, rfl, rfl⟩⟩)
+  extend {_ _ _ _} _ h := ⟨_, _, fun _ => h, .rfl, .rfl⟩
 
 instance : UCMRA (LeibnizSet S) where
   unit := valid ∅
@@ -342,7 +339,7 @@ instance : UCMRA (LeibnizSet S) where
   pcore_unit := by simp [pcore, pcore]
 
 instance instDiscreteLeibnizSet : CMRA.Discrete (LeibnizSet S) where
-  discrete_0 := id
+  discrete_0 := fun h _ => h
   discrete_valid := id
 
 @[rocq_alias gset_core_id]
@@ -360,7 +357,7 @@ theorem core_equiv (X : LeibnizSet S) : core X ≡ X := by
 theorem included_iff_subset (X Y : S) : valid X ≼ valid Y ↔ X ⊆ Y := by
   simp only [Included, op]
   refine ⟨fun ⟨_, H⟩ => ?_, fun Hsub => ?_⟩
-  · rcases H with ⟨rfl⟩
+  · obtain ⟨rfl⟩ := H.to_eq
     exact fun _ Hp => mem_union.mpr (.inl Hp)
   · exists valid (Y \ X)
     refine .of_eq ?_
@@ -387,9 +384,9 @@ theorem localUpdate (X Y X' : S) (H : X ⊆ X') :
   match mz with
   | none => rfl
   | some (.valid Z) =>
-    simp only [op?, op, leibniz, valid.injEq] at e ⊢
-    have hZ : Z ⊆ X' := subset_trans union_subset_right (e ▸ H)
-    rw [union_comm, union_subset_absorption hZ]
+    simp only [op?, op] at e ⊢
+    have hZ : Z ⊆ X' := subset_trans union_subset_right (valid.inj e.to_eq ▸ H)
+    exact Equiv.of_eq (by rw [union_comm, union_subset_absorption hZ])
 
 end LeibnizSet
 
