@@ -187,6 +187,7 @@ theorem auth_unpersist (n : MaxNat) :
   (●MN□ n : MonoNat) ~~>: (fun k => ∃ q, k = ●MN{DFrac.own q} n) :=
   Auth.auth_updateP_both_unpersist
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias mono_nat_auth_dfrac_is_op]
 instance {dq dq1 dq2 : DFrac} {n : MaxNat}
     [h : IsOp d dq dq1 dq2] :
