@@ -46,6 +46,7 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 - `ispecialize` [*pmTerm*](#proof-mode-terms) — Specialize a hypothesis according to [*pmTerm*](#proof-mode-terms).
 - `iexact` *H* — Solve the goal with the hypothesis *H*.
 - `iassumption` — Solve the goal with a matching hypothesis from the intuitionistic or spatial context.
+- `iaccu` — Given the goal is a metavariable, solve the goal by combining all hypotheses in the spatial context with the separating conjunction and unifying the metavariable with the combined proposition.
 
 ## Modalities
 

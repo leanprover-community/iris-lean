@@ -1,6 +1,7 @@
 /- A description of the tactics can be found in `tactics.md`. -/
 module
 
+public meta import Iris.ProofMode.Tactics.Accu
 public meta import Iris.ProofMode.Tactics.Apply
 public meta import Iris.ProofMode.Tactics.Assumption
 public meta import Iris.ProofMode.Tactics.Basic

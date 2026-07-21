@@ -205,6 +205,35 @@ partial def Hyps.intuitionisticIVarIds {u prop bi} :
   | _, .hyp _ _ ivar p _ _ => if isTrue p then [ivar] else []
   | _, .sep _ _ _ _ lhs rhs => lhs.intuitionisticIVarIds ++ rhs.intuitionisticIVarIds
 
+/--
+  Given any hypotheses `hyps` representing `e`, filter in all spatial hypotheses
+  and prove that `e` implies the set of spatial hypotheses.
+-/
+def Hyps.buildAccuProof {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (hyps : Hyps bi e) : (spatialProps : Q($prop)) × Q($e ⊢ $spatialProps) :=
+  let ⟨spatialProps, pf⟩ := buildAccuProofAux hyps (e' := q(iprop(emp))) q(iprop(emp)) q(.rfl)
+  let pf : Q($e ⊢ $spatialProps) := q(sep_emp.mpr.trans $pf)
+  ⟨spatialProps, pf⟩
+  where
+    buildAccuProofAux {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e e' : Q($prop)}
+      (hyps : Hyps bi e) (spatialProps : Q($prop)) (pf : Q($e' ⊢ $spatialProps)) :
+      (newSpatialProps : Q($prop)) × Q($e ∗ $e' ⊢ $newSpatialProps) :=
+    match hyps with
+    | .emp _ => ⟨spatialProps, q(emp_sep.mp.trans $pf)⟩
+    | .hyp _ _ _ p ty _ =>
+      match matchBool p with
+      | .inl _ =>
+        ⟨spatialProps, q((sep_mono_left intuitionistically_elim_emp).trans (emp_sep.mp.trans $pf))⟩
+      | .inr _ =>
+        if spatialProps == q(iprop(emp)) then
+          let pf : Q($e' ⊢ iprop(emp)) := pf
+          ⟨ty, q((sep_mono_right $pf).trans sep_emp.mp)⟩
+        else ⟨q(iprop($ty ∗ $spatialProps)), q(sep_mono_right $pf)⟩
+    | .sep _ _ _ _ lhs rhs =>
+      let ⟨spatialPropsR, pfR⟩ := buildAccuProofAux rhs spatialProps pf
+      let ⟨spatialPropsLR, pfLR⟩ := buildAccuProofAux lhs spatialPropsR pfR
+      ⟨q($spatialPropsLR), q(sep_assoc.mp.trans $pfLR)⟩
+
 variable (oldIVar : IVarId) (new : Name) {prop : Q(Type u)} {bi : Q(BI $prop)} in
 def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)
   | _, .emp _ => none
