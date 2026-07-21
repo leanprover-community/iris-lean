@@ -43,6 +43,13 @@ class AsEmpValid0 (d : AsEmpValid.Direction) (φ : Prop) (_ : InOut) (PROP : sem
     (_ : InOut) (bi : semiOutParam $ BI PROP) (P : outParam PROP) where
   as_emp_valid_0 : AsEmpValid d φ .in PROP .in bi P
 
+@[ipm_backtrack, rocq_alias as_emp_valid_0]
+instance asEmpValid_of_0 (d : AsEmpValid.Direction) (φ : Prop) (io1 io2 : InOut)
+    PROP (bi : BI PROP) (P : PROP)
+    [inst : AsEmpValid0 d φ io1 PROP io2 bi P] :
+    AsEmpValid d φ io1 PROP io2 bi P where
+  as_emp_valid := inst.as_emp_valid_0.as_emp_valid
+
 /- Depending on the use case, type classes with the prefix `From` or `Into` are used. Type classes
 with the prefix `From` are used to generate one or more propositions *from* which the original
 proposition can be derived. Type classes with the prefix `Into` are used to generate propositions

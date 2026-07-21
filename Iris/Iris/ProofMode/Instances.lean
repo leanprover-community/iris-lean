@@ -22,21 +22,22 @@ open Iris.BI Iris.Std
 @[rocq_alias as_emp_valid_emp_valid]
 instance (priority := default + 10) asEmpValidEmpValid
     [bi : BI PROP] d (P : PROP) :
-    AsEmpValid d (⊢ P) io1 PROP io2 bi P := ⟨by simp⟩
+    AsEmpValid0 d (⊢ P) io1 PROP io2 bi P where
+  as_emp_valid_0 := ⟨by simp⟩
 
 @[rocq_alias as_emp_valid_entails]
 instance asEmpValid_entails [bi : BI PROP] d (P Q : PROP)
-: AsEmpValid d (P ⊢ Q) io1 PROP io2 bi iprop(P -∗ Q) where
-  as_emp_valid := ⟨λ _ => entails_wand, λ _ => wand_entails⟩
+: AsEmpValid0 d (P ⊢ Q) io1 PROP io2 bi iprop(P -∗ Q) where
+  as_emp_valid_0 := ⟨λ _ => entails_wand, λ _ => wand_entails⟩
 
 instance asEmpValid_bientails [bi : BI PROP] (P Q : PROP)
-: AsEmpValid d (P ⊣⊢ Q) io1 PROP io2 bi iprop(P ∗-∗ Q) where
-  as_emp_valid := ⟨λ _ => equiv_wandIff, λ _ => wandIff_equiv⟩
+: AsEmpValid0 d (P ⊣⊢ Q) io1 PROP io2 bi iprop(P ∗-∗ Q) where
+  as_emp_valid_0 := ⟨λ _ => equiv_wandIff, λ _ => wandIff_equiv⟩
 
 @[rocq_alias as_emp_valid_equiv]
 instance asEmpValid_equiv [bi : BI PROP] (P Q : PROP)
-: AsEmpValid d (P ≡ Q) io1 PROP io2 bi iprop(P ∗-∗ Q) where
-  as_emp_valid := ⟨λ _ h => equiv_wandIff (equiv_iff.1 h), λ _ h => (equiv_iff.2 (wandIff_equiv h))⟩
+: AsEmpValid0 d (P ≡ Q) io1 PROP io2 bi iprop(P ∗-∗ Q) where
+  as_emp_valid_0 := ⟨λ _ h => equiv_wandIff (equiv_iff.1 h), λ _ h => (equiv_iff.2 (wandIff_equiv h))⟩
 
 @[rocq_alias as_emp_valid_forall]
 instance asEmpValid_forall {α} [bi : BI PROP] (Φ : α → Prop) (P : α → PROP)
