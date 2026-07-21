@@ -34,7 +34,7 @@ macro_rules
               $[$alts:matchAlt]*)) => do
         let alts ← alts.mapM <| fun
           | `(matchAltExpr| | $[$lhs]|* => $rhs) => `(matchAltExpr| | $[$lhs]|* => iprop($rhs))
-          | alt => return ⟨alt⟩
+          | _ => throwUnsupported
         `(match $[$g:generalizingParam]? $[$m:motive]? $[$x:matchDiscr],* with $[$alts:matchAlt]*)
 
 macro:max "iprop(" P:term " : " t:term ")" : term => `((iprop($P) : $t))
