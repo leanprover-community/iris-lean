@@ -94,6 +94,7 @@ instance {q : UFrac} : CMRA.IdFree q where
   id_free0_r b _ H := by
     have := b.frac.2; simp only [dist_iff, ext_iff, frac_op] at H; grind
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_ufrac]
 instance (q : UFrac) : IsOp d q ⟨q.frac.half⟩ ⟨q.frac.half⟩ where
   is_op := OFE.Equiv.of_eq <| ext_iff.mpr (Qp.half_add_half q.frac).symm

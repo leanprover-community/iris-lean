@@ -129,20 +129,8 @@ partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
         let some (mctx', subgoals) ← withAssignableSyntheticOpaque (SynthInstance.tryResolve mvar inst)
           | return (none, false)
         setMCtx mctx'
-        let mut pending := subgoals
-        let mut progress := true
-        while progress && !pending.isEmpty do
-          progress := false
-          let mut stillPending := []
-          for g in pending do
-            let mctxBefore ← getMCtx
-            if let some _ ← synthInstanceMainCore g then
-              progress := true
-            else
-              setMCtx mctxBefore
-              stillPending := stillPending.cons g
-          pending := stillPending
-        if !pending.isEmpty then return (none, true)
+        for g in subgoals do
+          let some _ ← synthInstanceMainCore g | return (none, true)
         return (some (), true)
       if res.isSome then
         return res

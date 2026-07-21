@@ -37,8 +37,8 @@ end
 
 @[ipm_class, rocq_alias AsEmpValid]
 class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop)
-    (PROP : semiOutParamIPM d.toInOut $ Type _)
-    (bi : semiOutParamIPM d.toInOut $ BI PROP)
+    (PROP : semiOutParamIPM d.toInOut (Type _))
+    (bi : semiOutParamIPM d.toInOut (BI PROP))
     (P : outParam $ PROP) where
   as_emp_valid : (d = .into → φ → ⊢ P) ∧ (d = .from → (⊢ P) → φ)
 

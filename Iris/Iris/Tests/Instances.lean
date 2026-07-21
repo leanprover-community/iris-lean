@@ -328,9 +328,9 @@ instance instSplit (k : Nat) : CSplit (k + 1) k := ⟨⟩
 
 end issue_456
 
-section semiOutParamIPM
+section semiOutParam
 
-/-- error: invalid ipm_class, parameter #2 is a `semiOutParam`. Use `semiOutParamIPM` instead -/
+/-- error: invalid ipm_class, `semiOutParam` used directly in parameter #2. Use `semiOutParamIPM` instead -/
 #guard_msgs in
 @[ipm_class]
 class C1 (io : InOut) (a : semiOutParam Nat) : Prop where
@@ -346,4 +346,9 @@ class C3 (a : Bool) (a : semiOutParamIPM (if a then .in else .out) Nat) : Prop w
 /- The attribute `semiOutParam` is still relevant for regular type classes  -/
 class C4 (io : InOut) (a : semiOutParam Nat) : Prop where
 
-end semiOutParamIPM
+/-- error: invalid ipm_class, `semiOutParamCore` used directly in parameter #2. Use `semiOutParamIPM` instead -/
+#guard_msgs in
+@[ipm_class]
+class C5 (io : InOut) (a : semiOutParamCore .in Nat) : Prop where
+
+end semiOutParam

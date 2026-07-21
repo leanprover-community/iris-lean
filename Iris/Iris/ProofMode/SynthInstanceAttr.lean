@@ -125,22 +125,28 @@ initialize ipmClassesExt :
 private def getIPMParamKinds? (env : Environment) (declName : Name) : Option (Array ParamKind) :=
   (ipmClassesExt.getState env).paramMap.find? declName
 
+@[reducible, expose]
+def semiOutParamCore (_io : InOut) (α : Sort u) : Sort u := α
+
 /--
-  Analogous to `semiOutParam`, with the explicit argument `_io` being an
-  `InOut` value, which determines whether this is an input parameter or an
-  output paramter for the purpose of type class synthesis.
+  The keyword `semiOutParamIPM` is analogous to `semiOutParam`, with
+  an `InOut` value as an explicit argument, which determines whether this is an
+  input parameter or an output paramter for the purpose of type class synthesis.
 
   One can use `InOut.negate` to negate the `InOut` value.
 
   This should be used instead of `semiOutParam` for any type class with
-  the annotation `ipm_class`.
+  the annotation `[ipm_class]`.
 -/
-@[reducible, expose]
-def semiOutParamIPM (_io : InOut) (α : Sort u) : Sort u := semiOutParam α
+macro "semiOutParamIPM" io:term:max α:term:max : term =>
+  `(semiOutParam (semiOutParamCore $io $α))
 
-private def semiOutParamExpr (d : Expr) : Option Expr := do
-  if d.isAppOfArity ``semiOutParamIPM 2 then
-      some d.getAppArgs[0]!
+private def parseSemiOutParamIPM (d : Expr) : Option Expr := do
+  if d.isAppOfArity ``semiOutParam 1 then
+    let expr := d.getAppArgs[0]!
+    if expr.isAppOfArity ``semiOutParamCore 2 then
+      some expr.getAppArgs[0]!
+    else none
   else none
 
 private partial def computeParamKinds (params : Array ParamKind) (type : Expr) :
@@ -153,11 +159,14 @@ Except MessageData (Array ParamKind) :=
       computeParamKinds (params.push .uncheckedIn) b
     else if d.isOutParam then
       computeParamKinds (params.push .out) b
-    else if let some expr := semiOutParamExpr d then
+    else if let some expr := parseSemiOutParamIPM d then
       computeParamKinds (params.push (.semiOut expr)) b
+    else if d.isAppOfArity ``semiOutParamCore 2 then
+      Except.error m!"invalid ipm_class, `semiOutParamCore` used directly \
+        in parameter #{params.size + 1}. Use `semiOutParamIPM` instead"
     else if d.isSemiOutParam then
-      Except.error m!"invalid ipm_class, parameter #{params.size + 1} is a `semiOutParam`. Use \
-        `semiOutParamIPM` instead"
+      Except.error m!"invalid ipm_class, `semiOutParam` used directly \
+        in parameter #{params.size + 1}. Use `semiOutParamIPM` instead"
     else
       computeParamKinds (params.push .in) b
   | _ => return params

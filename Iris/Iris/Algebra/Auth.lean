@@ -137,6 +137,7 @@ nonrec theorem auth_dfrac_op {dq1 dq2 : DFrac} {a : A} :
     (●{dq1 • dq2} a) ≡ (●{dq1} a) • (●{dq2} a) :=
   auth_op_auth_eqv
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias auth_auth_dfrac_is_op]
 instance {dq dq1 dq2 : DFrac} {a : A} [h : IsOp d dq dq1 dq2] :
     IsOp d (●{dq} a : Auth A) (●{dq1} a) (●{dq2} a) where

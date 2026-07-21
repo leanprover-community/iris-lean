@@ -389,6 +389,7 @@ theorem singleton_mono {k} {a b : A} (Hab : a ≼ b) : singleton (H := H) k a �
   let ⟨z, hz⟩ := Hab
   ⟨singleton k z, (NonExpansive.eqv hz).trans (singleton_op k a z)⟩
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias reservation_map_data_is_op]
 instance {d : IsOp.Direction} {a b₁ b₂ : A} [hv : IsOp d a b₁ b₂] :
     IsOp d (singleton (H := H) k a) (singleton k b₁) (singleton k b₂) where
