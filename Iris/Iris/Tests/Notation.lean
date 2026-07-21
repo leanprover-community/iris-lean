@@ -110,6 +110,8 @@ variable [BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → 
 
 /-- info: if p = true then iprop(□ P) else P : PROP -/
 #guard_msgs in #check iprop(if p then □ P else P)
+/-- info: iprop((if p = true then □ P else P) ∗ Q) : PROP -/
+#guard_msgs in #check iprop((if p then □ P else P) ∗ Q)
 /-- info: iprop(□ P) : PROP -/
 #guard_msgs in #check iprop((□ P : PROP))
 
@@ -119,6 +121,16 @@ info: match p with
 | false => iprop(False) : PROP
 -/
 #guard_msgs in #check iprop(match p with
+  | true => term(Ψ 1)
+  | false => False)
+
+/--
+info: iprop(□
+    match p with
+    | true => Ψ 1
+    | false => False) : PROP
+-/
+#guard_msgs in #check iprop(□ match p with
   | true => term(Ψ 1)
   | false => False)
 

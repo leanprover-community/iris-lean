@@ -56,7 +56,6 @@ partial def unpackIprop [Monad m] [MonadRef m] [MonadQuotation m] : Term → m T
     let e ← unpackIprop e
     `(if $c then $t else $e)
   | `(($P : $t))             => do ``(($(← unpackIprop P) : $t))
-  | `($t)                    => `($t:term)
   | `(match $[$g:generalizingParam]? $[$mot:motive]? $[$x:matchDiscr],* with $[$alts:matchAlt]*) => do
       -- The following type ascriptions look redundant, but, without them, the ``(match ...)`
       -- syntax quotation below fails with an error about types containing metavariables.
@@ -68,5 +67,7 @@ partial def unpackIprop [Monad m] [MonadRef m] [MonadQuotation m] : Term → m T
             `(matchAltExpr| | $[$lhs]|* => $rhs)
         | alt => return ⟨alt⟩
       `(match $[$g:generalizingParam]? $[$mot:motive]? $[$x:matchDiscr],* with $[$alts:matchAlt]*)
+  -- Fallback case
+  | `($t)                    => `($t:term)
 
 end Iris.BI
