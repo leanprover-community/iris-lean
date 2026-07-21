@@ -39,17 +39,11 @@ theorem asEmpValid_2 {PROP} [bi : BI PROP] {P: PROP} {io : InOut}
   (AsEmpValid.as_emp_valid io .out).2 rfl
 
 @[ipm_class, rocq_alias AsEmpValid0]
-class AsEmpValid0 (d : AsEmpValid.Direction) (φ : Prop) (_ : InOut) (PROP : semiOutParam $ Type _)
-    (_ : InOut) (bi : semiOutParam $ BI PROP) (P : outParam PROP) where
-  as_emp_valid_0 : AsEmpValid d φ .in PROP .in bi P
+class AsEmpValid0 (d : AsEmpValid.Direction) (φ : Prop) (io1 : InOut) (PROP : semiOutParam $ Type _)
+    (io2 : InOut) (bi : semiOutParam $ BI PROP) (P : outParam PROP) where
+  as_emp_valid_0 : AsEmpValid d φ io1 PROP io2 bi P
 
-/- Corresponds to the Rocq instance `as_emp_valid_0`. -/
-@[ipm_backtrack]
-instance asEmpValid_of_0 (d : AsEmpValid.Direction) (φ : Prop) (io1 io2 : InOut)
-    PROP (bi : BI PROP) (P : PROP)
-    [inst : AsEmpValid0 d φ io1 PROP io2 bi P] :
-    AsEmpValid d φ io1 PROP io2 bi P where
-  as_emp_valid := inst.as_emp_valid_0.as_emp_valid
+attribute [ipm_backtrack,instance] AsEmpValid0.as_emp_valid_0
 
 /- Depending on the use case, type classes with the prefix `From` or `Into` are used. Type classes
 with the prefix `From` are used to generate one or more propositions *from* which the original
