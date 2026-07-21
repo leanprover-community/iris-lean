@@ -35,9 +35,9 @@ end
 -/
 @[ipm_class, rocq_alias IsOp, rocq_alias IsOp', rocq_alias IsOp'LR]
 class IsOp [CMRA α]
-    (d : IsOp.Direction) (a : semiOutParamIPM d.mapToInOut α)
-    (b1 : semiOutParamIPM d.mapToInOut.negate α)
-    (b2 : semiOutParamIPM d.mapToInOut.negate α) where
+    (d : IsOp.Direction) (a : semiOutParam <| inOutParam d.mapToInOut α)
+    (b1 : semiOutParam <| inOutParam d.mapToInOut.negate α)
+    (b2 : semiOutParam <| inOutParam d.mapToInOut.negate α) where
   is_op : a ≡ b1 • b2
 
 set_option synthInstance.checkSynthOrder false in
