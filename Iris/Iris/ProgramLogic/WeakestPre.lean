@@ -431,7 +431,7 @@ theorem wp_bind (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E
     WP e @ s ; E {{v, WP (K (↑v : Val)) @ s ; E {{ Φ }} }} ⊢ WP (K e) @ s ; E {{ Φ }} := (wp_bind_iff K).1
 
 @[rocq_alias wp_bind_inv]
-def wp_bind_inv (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E : CoPset} {e : Expr}
+theorem wp_bind_inv (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E : CoPset} {e : Expr}
     {Φ : Val → IProp GF} :
    WP (K e) @ s ; E {{ Φ }} ⊢ WP e @ s ; E {{v, WP (K (↑v : Val)) @ s ; E {{ Φ }} }}  := (wp_bind_iff K).2
 

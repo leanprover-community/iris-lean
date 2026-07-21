@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König, Michael Sammler, Alvin Tang
+Authors: Lars König, Michael Sammler, Yunsong Yang, Alvin Tang
 -/
 module
 
@@ -128,7 +128,7 @@ export IntoOr (into_or)
 
 @[ipm_class, rocq_alias IntoInternalEq]
 class IntoInternalEq {PROP} [BI PROP] [Sbi PROP] {A : outParam $ Type _} [ofe : outParam $ OFE A] (P : PROP) (x y : outParam A) where
-  into_internal_eq : P ⊢@{PROP} internalEq x y
+  into_internal_eq : P ⊢@{PROP} x ≡ y
 export IntoInternalEq (into_internal_eq)
 
 @[ipm_class, rocq_alias IntoPersistent]
@@ -238,6 +238,15 @@ export CombineSepAs (combine_sep_as)
 class CombineSepGives [BI PROP] (P Q : PROP) (R : outParam PROP) where
   combine_sep_gives : P ∗ Q ⊢ <pers> R
 export CombineSepGives (combine_sep_gives)
+
+/-
+  `IntoIH φ P Q` describes how to turn a pure induction hypothesis `φ` into a proofmode
+  hypothesis `Q` under an intuitionistic BI context `□ P`.
+-/
+@[ipm_class, rocq_alias IntoIH]
+class IntoIH [BI PROP] (φ : Prop) (P : PROP) (Q : outParam PROP) where
+  into_ih : φ → □ P ⊢ Q
+export IntoIH (into_ih)
 
 #rocq_ignore elim_inv_tc_opaque "No tc_opaque in Lean"
 #rocq_ignore elim_modal_tc_opaque "No tc_opaque in Lean"
