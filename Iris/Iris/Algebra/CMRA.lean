@@ -59,23 +59,30 @@ theorem pcore_op_mono_of_core_op_mono [OFE α] (op : α → α → α) (pcore : 
 namespace CMRA
 variable [CMRA α]
 
+/-- The CMRA composition operation. -/
 infix:60 " • " => op
 
+/-- The inclusion order on a CMRA. -/
 @[rocq_alias included]
 def Included (x y : α) : Prop := ∃ z, y ≡ x • z
+@[inherit_doc]
 infix:50 " ≼ " => Included
 
+/-- The step-indexed inclusion order on a CMRA. -/
 @[rocq_alias includedN]
 def IncludedN (n : Nat) (x y : α) : Prop := ∃ z, y ≡{n}≡ x • z
-notation:50 x " ≼{" n "} " y:51 => IncludedN n x y
+@[inherit_doc] notation:50 x " ≼{" n "} " y:51 => IncludedN n x y
 
+/-- The CMRA composition operation with an optional right argument. -/
 @[rocq_alias opM]
 def op? [CMRA α] (x : α) : Option α → α
   | some y => x • y
   | none => x
-infix:60 " •? " => op?
+@[inherit_doc] infix:60 " •? " => op?
 
+/-- The validity of a CMRA element. -/
 prefix:50 "✓ " => Valid
+/-- The step-indexed validity of a CMRA element. -/
 notation:50 "✓{" n "} " x:51 => ValidN n x
 
 @[rocq_alias CoreId]
@@ -761,8 +768,8 @@ theorem discrete_inc_l {x y : α} [HD : DiscreteE x] (Hv : ✓{0} y) (Hle : x �
 theorem discrete_inc_r {x y : α} [HD : DiscreteE y] : x ≼{0} y → x ≼ y
   | ⟨z, hz⟩ => ⟨z, HD.discrete hz⟩
 
-@[reducible, rocq_alias cmra_op_discrete]
-def discrete_op {x y : α} (Hv : ✓{0} x • y) [Hx : DiscreteE x] [Hy : DiscreteE y] :
+@[rocq_alias cmra_op_discrete]
+theorem discrete_op {x y : α} (Hv : ✓{0} x • y) [Hx : DiscreteE x] [Hy : DiscreteE y] :
     DiscreteE (x • y) where
   discrete h :=
     let ⟨_w, _t, wt, wx, ty⟩ := extend ((Dist.validN h).mp Hv) h.symm

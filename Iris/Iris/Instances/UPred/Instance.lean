@@ -619,7 +619,7 @@ theorem plainly_eq_uPred_plainly (P : UPred M) : iprop(■ P) = UPred.plainly P 
 
 /-- The Sbi-derived `internalCmraValid` on UPred unfolds to `UPred.cmraValid`. -/
 theorem internalCmraValid_eq_uPred_cmraValid [CMRA A] (a : A) :
-    (internalCmraValid a : UPred M) = UPred.cmraValid a := rfl
+    iprop(✓ a : UPred M) = UPred.cmraValid a := rfl
 
 instance : BUpd (UPred M) := ⟨bupd⟩
 
