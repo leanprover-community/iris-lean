@@ -51,7 +51,7 @@ import Iris.Std.RocqPorting
 #rocq_concept proofmode "Tactics" "iCombine" ported "icombine"
 #rocq_concept proofmode "Tactics" "iIntros (basic)" ported "iintro"
 #rocq_concept proofmode "Tactics" "iIntros (all intro patterns)" missing ""
-#rocq_concept proofmode "Tactics" "iInduction" missing ""
+#rocq_concept proofmode "Tactics" "iInduction" ported "iinduction"
 #rocq_concept proofmode "Tactics" "iLöb" ported "iloeb"
 #rocq_concept proofmode "Tactics" "iAssert" ported "ihave _ : _"
 #rocq_concept proofmode "Tactics" "iRewrite" ported "irewrite"
