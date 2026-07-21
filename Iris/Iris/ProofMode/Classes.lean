@@ -43,7 +43,8 @@ class AsEmpValid0 (d : AsEmpValid.Direction) (φ : Prop) (_ : InOut) (PROP : sem
     (_ : InOut) (bi : semiOutParam $ BI PROP) (P : outParam PROP) where
   as_emp_valid_0 : AsEmpValid d φ .in PROP .in bi P
 
-@[ipm_backtrack, rocq_alias as_emp_valid_0]
+/- Corresponds to the Rocq instance `as_emp_valid_0`. -/
+@[ipm_backtrack]
 instance asEmpValid_of_0 (d : AsEmpValid.Direction) (φ : Prop) (io1 io2 : InOut)
     PROP (bi : BI PROP) (P : PROP)
     [inst : AsEmpValid0 d φ io1 PROP io2 bi P] :
