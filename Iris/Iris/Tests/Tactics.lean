@@ -66,6 +66,29 @@ example [BI PROP1] [BI PROP2] (P1 : PROP1) (P2 : PROP2)
   iintro P2
   istart PROP1
 
+/- Tests `istart` with BI specified and embedding involved. -/
+example [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] (P Q : PROP1)
+    (h : ⊢@{PROP1} P -∗ Q) : ⊢@{PROP1} P -∗ Q := by
+  istart PROP2
+  ihave H := h
+  iexact H
+
+/- Tests `istart` with embedding involved but an invalid BI specified. -/
+/-- error: istart: ⊢ P1 is not an emp valid in PROP3 -/
+#guard_msgs in
+example [BI PROP1] [BI PROP2] [BI PROP3] [BiEmbed PROP1 PROP2]
+  [BiEmbed PROP2 PROP3] (P1 : PROP1)
+    (h : ⊢@{PROP1} P1) : ⊢@{PROP1} P1 := by
+  istart PROP3
+
+/- Tests `istart` to ensure embedding is not used unless a BI is specified. -/
+/-- error: istart: currently in the Iris Proof Mode with PROP1 rather than PROP2 -/
+#guard_msgs in
+example [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+    (P1 : PROP1) (h : ⊢@{PROP1} P1) : ⊢@{PROP1} P1 := by
+  istart
+  istart PROP2
+
 -- rename
 namespace rename
 
