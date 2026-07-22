@@ -157,7 +157,7 @@ def startProofMode (mvar : MVarId) (customProp : Option Expr := none) :
   let P ← mkFreshExprMVarQ q($prop)
   let bi ← mkFreshExprMVarQ q(BI $prop)
   let io : Q(InOut) := if customProp.isSome then q(.in) else q(.out)
-  let synthResult ← ProofMode.trySynthInstanceQ q(AsEmpValid .from $goal $io $prop .out $bi $P)
+  let synthResult ← ProofMode.trySynthInstanceQ q(AsEmpValid .from $goal $io $prop $bi $P)
 
   match synthResult, customProp with
   | .some (inst, mvars), _ =>

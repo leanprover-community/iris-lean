@@ -18,8 +18,8 @@ set_option synthInstance.checkSynthOrder false in
 instance (priority := low) asEmpValid_embed
     {PROP1 PROP2} [bi1 : BI PROP1] [bi2 : BI PROP2] [BiEmbed PROP1 PROP2]
     (d : AsEmpValid.Direction) (φ : Prop) (P : PROP1)
-    [inst : AsEmpValid0 d φ io1 PROP1 io2 bi1 P] :
-    AsEmpValid d φ io1 PROP2 io2 bi2 (embed P) where
+    [inst : AsEmpValid0 d φ io PROP1 bi1 P] :
+    AsEmpValid d φ io PROP2 bi2 (embed P) where
   as_emp_valid := by
     constructor
     · intro hd hφ
