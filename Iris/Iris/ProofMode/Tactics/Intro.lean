@@ -82,8 +82,24 @@ private def iIntroCoreForallIntro {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       let pf : Q(∀ x, $P ⊢ $Φ x) ← mkLambdaFVars #[x] <|← k x B
       return q(from_forall_intro $pf)
 
+/-- Return `true` if there is a premise to introduce using `.allwand` (`**`). -/
+private def iIntroCoreAllWandCheck {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
+    (P Q : Q($prop)) : ProofModeM Bool := do
+  let A1 ← mkFreshExprMVarQ q($prop)
+  let A2 ← mkFreshExprMVarQ q($prop)
+
+  -- Check whether a wand premise can be introduced
+  let instFromWand ← ProofModeM.trySynthInstanceQ q(FromWand $Q .out $A1 $A2)
+  if instFromWand.isSome then return true
+
+  -- Check whether a pure premise can be introduced
+  let instFromImp ← ProofModeM.trySynthInstanceQ q(FromImp $Q $A1 $A2)
+  if instFromImp.isNone then return false
+  let instPersistent ← ProofModeM.trySynthInstanceQ q(TCOr (Persistent $A1) (Intuitionistic $P))
+  return instPersistent.isSome
+
 /--
-Introduce the hypothesis specified by `pats` into the context given by `P` (structured  as `hyps`).
+Introduce the hypothesis specified by `pats` into the context given by `P` (structured as `hyps`).
 The type of the current goal is given by `Q`.
 
 This function returns the proof of `P ⊢ Q` to be assigned. The new context is included in the
@@ -120,20 +136,12 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       -- Introduction of a universally quantified variable
       iIntroCoreForallIntro ref none Q tacName
         (some (do
-          let A1 ← mkFreshExprMVarQ q($prop)
-          let A2 ← mkFreshExprMVarQ q($prop)
-          let instFromImp ← ProofModeM.trySynthInstanceQ q(FromImp $Q $A1 $A2)
-          let instFromWand ← ProofModeM.trySynthInstanceQ q(FromWand $Q .out $A1 $A2)
-          let instPersistent ← ProofModeM.trySynthInstanceQ q(TCOr (Persistent $A1) (Intuitionistic $P))
-          match instFromWand, instFromImp, instPersistent with
           -- Introduction of a wand premise or a pure premise, if possible
-          | some _, _, _ | _, some _, some _ =>
+          if ← iIntroCoreAllWandCheck (bi := bi) P Q then
             iIntroCore hyps Q ((ref, .intro ⟨ref, (.one (← `(binderIdent| _)))⟩) ::
               (ref, .allwand) :: pats) tacName k
-          | _, _, _ =>
-            -- No more universally quantified variable or premise to be introduced
-            iIntroCore hyps Q pats tacName k)
-        )
+          -- No more universally quantified variable or premise to be introduced
+          else iIntroCore hyps Q pats tacName k))
         (fun _ B => iIntroCore hyps B ((ref, .allwand) :: pats) tacName k)
     | .pureintro =>
       let ⟨pf, m⟩ ← iPureIntroCore bi P Q tacName
