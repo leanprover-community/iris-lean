@@ -44,24 +44,21 @@ The parameters of a class declared with `ipm_class` are categorized into the fol
 1. in: This is the default for a parameter when not annotated in another way.
 2. out: These are parameters marked with `outParam`. These parameters must be mvars when starting
    typeclass search.
-3. semiOut: These are parameters marked with `semiOutParam`. The preceding parameter must be of type `InOut`.
-   The value of the `InOut` parameter decides whether the `semiOut` parameter is treated as an input
-   or an output.
+3. semiOut: These are parameters marked with `semiOutParamIPM`. The `InOut` argument of `semiOutParamIPM`
+   determines whether the semiOut parameter is treated as an input or an output.
 4. uncheckedIn: These are parameters marked with `uncheckedInParam`. These behave like `in` parameters,
    but allow mvars to match terms (see below).
 
 The following constraints apply to the parameters:
-(In the following, semiOut parameters are treated as inputs if the preceding `InOut` is `in` and as
-outputs if the `InOut` is `out`.)
-1. semiOut parameters must have a preceding `InOut` parameter.
-2. For each synthesis problem, all output parameters must be mvars.
-3. When an input parameter is a mvar, it is not considered to match an instance which does not have
+(In the following, semiOut parameters are treated as inputs according to the value of their `InOut` argument.)
+1. For each synthesis problem, all output parameters must be mvars.
+2. When an input parameter is a mvar, it is not considered to match an instance which does not have
 an mvar at the top-level. This is to prevent accidentally instantiating mvars. Note that this only
 applies for mvars the top-level (matching the behavior of Hint Mode : ! in Rocq), since this is the
 simplest version to implement and catches most (all?) of the cases.
-This check 3 is omitted for `uncheckedIn` parameters.
+This check 2 is omitted for `uncheckedIn` parameters.
 
-(We are reusing `outParam` and `semiOutParam` from the Lean TC infrastructure since this gives us
+(We are reusing `outParam` from the Lean TC infrastructure since this gives us
 checking synthesis order checking, which is useful (though not perfect).)
  -/
 inductive ParamKind
@@ -133,8 +130,6 @@ def semiOutParamCore (_io : InOut) (α : Sort u) : Sort u := α
   an `InOut` value as an explicit argument, which determines whether this is an
   input parameter or an output paramter for the purpose of type class synthesis.
 
-  One can use `InOut.negate` to negate the `InOut` value.
-
   This should be used instead of `semiOutParam` for any type class with
   the annotation `[ipm_class]`.
 -/
@@ -142,15 +137,12 @@ macro "semiOutParamIPM" io:term:max α:term:max : term =>
   `(semiOutParam (semiOutParamCore $io $α))
 
 private def parseInOutParam (d : Expr) : Option Expr := do
-  if d.isAppOfArity ``semiOutParam 1 then
-    let expr := d.getAppArgs[0]!
-    if expr.isAppOfArity ``semiOutParamCore 2 then
-      some expr.getAppArgs[0]!
-    else none
-  else none
+  if !d.isAppOfArity ``semiOutParam 1 then failure
+  let expr := d.getAppArgs[0]!
+  if !expr.isAppOfArity ``semiOutParamCore 2 then failure
+  some expr.getAppArgs[0]!
 
-private partial def computeParamKinds (params : Array ParamKind) (type : Expr) :
-Except MessageData (Array ParamKind) :=
+private partial def computeParamKinds (params : Array ParamKind) (type : Expr) : Except MessageData (Array ParamKind) :=
   match type with
   | .forallE _ d b _ =>
     -- we need to check this before outParam since `outParam (uncheckedInParam _)` should be
