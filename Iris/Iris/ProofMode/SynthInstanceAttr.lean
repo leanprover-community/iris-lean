@@ -126,12 +126,25 @@ private def getIPMParamKinds? (env : Environment) (declName : Name) : Option (Ar
   (ipmClassesExt.getState env).paramMap.find? declName
 
 @[reducible, expose]
-def inOutParam (_io : InOut) (α : Sort u) : Sort u := α
+def semiOutParamCore (_io : InOut) (α : Sort u) : Sort u := α
+
+/--
+  The keyword `semiOutParamIPM` is analogous to `semiOutParam`, with
+  an `InOut` value as an explicit argument, which determines whether this is an
+  input parameter or an output paramter for the purpose of type class synthesis.
+
+  One can use `InOut.negate` to negate the `InOut` value.
+
+  This should be used instead of `semiOutParam` for any type class with
+  the annotation `[ipm_class]`.
+-/
+macro "semiOutParamIPM" io:term:max α:term:max : term =>
+  `(semiOutParam (semiOutParamCore $io $α))
 
 private def parseInOutParam (d : Expr) : Option Expr := do
   if d.isAppOfArity ``semiOutParam 1 then
     let expr := d.getAppArgs[0]!
-    if expr.isAppOfArity ``inOutParam 2 then
+    if expr.isAppOfArity ``semiOutParamCore 2 then
       some expr.getAppArgs[0]!
     else none
   else none
@@ -148,13 +161,12 @@ Except MessageData (Array ParamKind) :=
       computeParamKinds (params.push .out) b
     else if let some expr := parseInOutParam d then
       computeParamKinds (params.push (.semiOut expr)) b
-    else if d.isAppOfArity ``inOutParam 2 then
-      Except.error m!"invalid ipm_class, `inOutParam` used in parameter \
-        #{params.size + 1} but not within `semiOutParam`. \
-        Use `semiOutParam (inOutParam …)` instead."
+    else if d.isAppOfArity ``semiOutParamCore 2 then
+      Except.error m!"invalid ipm_class, `semiOutParamCore` used directly \
+        in parameter #{params.size + 1}. Use `semiOutParamIPM` instead"
     else if d.isSemiOutParam then
-      Except.error m!"invalid ipm_class, `semiOutParam` used without `inOutParam` \
-        in parameter #{params.size + 1}. Use `semiOutParam (inOutParam …)` instead."
+      Except.error m!"invalid ipm_class, `semiOutParam` used directly \
+        in parameter #{params.size + 1}. Use `semiOutParamIPM` instead"
     else
       computeParamKinds (params.push .in) b
   | _ => return params

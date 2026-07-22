@@ -304,8 +304,7 @@ section issue_456
 -- test for https://github.com/leanprover-community/iris-lean/issues/456
 
 @[ipm_class]
-class C (io : InOut) (a : semiOutParam <| inOutParam io Nat)
-  (b : semiOutParam <| inOutParam io.negate Nat) : Prop where
+class C (io : InOut) (a : semiOutParamIPM io Nat) (b : semiOutParamIPM io.negate Nat) : Prop where
 
 abbrev CMerge (a b : Nat) := C .out a b
 
@@ -331,25 +330,25 @@ end issue_456
 
 section semiOutParam
 
-/-- error: invalid ipm_class, `semiOutParam` used without `inOutParam` in parameter #2. Use `semiOutParam (inOutParam …)` instead. -/
+/-- error: invalid ipm_class, `semiOutParam` used directly in parameter #2. Use `semiOutParamIPM` instead -/
 #guard_msgs in
 @[ipm_class]
 class C1 (io : InOut) (a : semiOutParam Nat) : Prop where
 
-/-- Tests `semiOutParam (inOutParam …)` where the `InOut` value depends on another argument by pattern matching. -/
+/-- Tests `semiOutParamIPM` where the `InOut` value depends on another argument by pattern matching. -/
 @[ipm_class]
-class C2 (a : Bool) (a : semiOutParam <| inOutParam (match a with | false => .in | true => .out) Nat) : Prop where
+class C2 (a : Bool) (a : semiOutParamIPM (match a with | false => .in | true => .out) Nat) : Prop where
 
-/-- Tests `semiOutParam (inOutParam …)` where the `InOut` value depends on another argument by conditional branching. -/
+/-- Tests `semiOutParamIPM` where the `InOut` value depends on another argument by conditional branching. -/
 @[ipm_class]
-class C3 (a : Bool) (a : semiOutParam <| inOutParam (if a then .in else .out) Nat) : Prop where
+class C3 (a : Bool) (a : semiOutParamIPM (if a then .in else .out) Nat) : Prop where
 
 /- The attribute `semiOutParam` is still relevant for regular type classes  -/
 class C4 (io : InOut) (a : semiOutParam Nat) : Prop where
 
-/-- error: invalid ipm_class, `inOutParam` used in parameter #2 but not within `semiOutParam`. Use `semiOutParam (inOutParam …)` instead. -/
+/-- error: invalid ipm_class, `semiOutParamCore` used directly in parameter #2. Use `semiOutParamIPM` instead -/
 #guard_msgs in
 @[ipm_class]
-class C5 (io : InOut) (a : inOutParam .in Nat) : Prop where
+class C5 (io : InOut) (a : semiOutParamCore .in Nat) : Prop where
 
 end semiOutParam

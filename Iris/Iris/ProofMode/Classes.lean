@@ -37,8 +37,8 @@ end
 
 @[ipm_class, rocq_alias AsEmpValid]
 class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop) io
-    (PROP : semiOutParam <| inOutParam io <| Type _)
-    (bi : semiOutParam <| inOutParam d.toInOut <| BI PROP)
+    (PROP : semiOutParamIPM io (Type _))
+    (bi : semiOutParamIPM d.toInOut (BI PROP))
     (P : outParam $ PROP) where
   as_emp_valid : (d = .into → φ → ⊢ P) ∧ (d = .from → (⊢ P) → φ)
 
@@ -73,7 +73,7 @@ export FromImp (from_imp)
 
 @[ipm_class, rocq_alias FromWand]
 class FromWand {PROP} [BI PROP] (P : PROP) (io : InOut)
-    (Q1 : semiOutParam <| inOutParam io PROP) (Q2 : outParam $ PROP) where
+    (Q1 : semiOutParamIPM io PROP) (Q2 : outParam $ PROP) where
   from_wand : (Q1 -∗ Q2) ⊢ P
 export FromWand (from_wand)
 
@@ -81,8 +81,8 @@ export FromWand (from_wand)
 
 @[ipm_class, rocq_alias IntoWand]
 class IntoWand {PROP} [BI PROP] (p q : Bool) (R : PROP)
-  (ioP : InOut) (P : semiOutParam <| inOutParam ioP PROP)
-  (ioQ : InOut) (Q : semiOutParam <| inOutParam ioQ PROP) where
+  (ioP : InOut) (P : semiOutParamIPM ioP PROP)
+  (ioQ : InOut) (Q : semiOutParamIPM ioQ PROP) where
   into_wand : □?p R ⊢ □?q P -∗ Q
 export IntoWand (into_wand)
 
@@ -158,7 +158,7 @@ export IntoAbsorbingly (into_absorbingly)
 
 @[ipm_class, rocq_alias FromAssumption, rocq_alias KnownLFromAssumption, rocq_alias KnownRFromAssumption]
 class FromAssumption {PROP} [BI PROP] (p : Bool) (ioP : InOut)
-    (P : semiOutParam <| inOutParam ioP PROP) (Q : PROP) where
+    (P : semiOutParamIPM ioP PROP) (Q : PROP) where
   from_assumption : □?p P ⊢ Q
 export FromAssumption (from_assumption)
 
@@ -171,7 +171,7 @@ export IntoPure (into_pure)
 
 @[ipm_class, rocq_alias FromPure, rocq_alias FromPureT]
 class FromPure {PROP} [BI PROP] (a : outParam $ Bool) (P : PROP) (ioφ : InOut)
-    (φ : semiOutParam <| inOutParam ioφ Prop) where
+    (φ : semiOutParamIPM ioφ Prop) where
   from_pure : <affine>?a ⌜φ⌝ ⊢ P
 export FromPure (from_pure)
 
