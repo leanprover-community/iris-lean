@@ -3555,4 +3555,4 @@ example [BI PROP] {P : PROP} {m n : Nat} {T : Nat → Prop}
   | zero
   | succ n IH => itrivial
 
-end iInduction
+end iinduction
