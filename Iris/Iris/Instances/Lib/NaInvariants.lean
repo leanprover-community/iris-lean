@@ -20,7 +20,7 @@ namespace Iris
 open BI CMRA OFE Iris Std LawfulSet DisjointLeibnizSet COFE
 
 abbrev NaInvF : OFunctorPre :=
-  ProdOF (constOF (DisjointLeibnizSet CoPset)) (constOF (DisjointLeibnizSet PosSet))
+  ProdOF (constOF CoPsetDisjL) (constOF (DisjointLeibnizSet PosSet))
 
 @[rocq_alias na_invG]
 class NaInvG (GF : BundledGFunctors) where
@@ -42,7 +42,7 @@ instance coreId_valid_empty_empty : CoreId ((valid (∅ : CoPset), valid (∅ : 
 
 instance isUnit_valid_empty_empty : IsUnit ((valid (∅ : CoPset), valid (∅ : PosSet))) where
   unit_valid := ⟨trivial, trivial⟩
-  unit_left_id := ⟨unit_left_id, unit_left_id⟩
+  unit_left_id := NonExpansive₂.eqv unit_left_id unit_left_id
   pcore_unit := coreId_valid_empty_empty.core_id
 
 namespace NonAtomicInvariant

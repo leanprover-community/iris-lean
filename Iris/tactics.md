@@ -5,6 +5,7 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 ## Proof Mode Management
 
 - `istart` — Start the proof mode. (Most tactics start the proof mode automatically.)
+- `istart` *prop* — Start the proof mode, specifying the BI instance *prop*.
 - `istop` — Stop the proof mode, turning the goal back into a plain entailment.
 
 ## Context Management
@@ -12,7 +13,8 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 - `irename` *H* `=>` *H'* — Rename the hypothesis *H* to *H'*.
 - `irename :` *term* `=>` *H'* — Rename the hypothesis whose statement matches *term* to *H'*.
 - `iclear` [*selPats*](#selection-patterns) — Discard the hypotheses selected by [*selPats*](#selection-patterns).
-- `irevert` [*selPats*](#selection-patterns) — Revert the selected hypotheses (proof mode or pure Lean hypotheses) into the goal.
+- `irevert` [*selPats*](#selection-patterns) — Revert the selected hypotheses (proof mode or pure Lean hypotheses) into the goal. An Iris hypothesis *H* in *selPats* is reverted as a wand premise. If a pure hypothesis *H* in *selPats* has a type `φ` such that `φ : Prop`, then *H* is reverted as a premise. If *x* in *selPats* has a type `α` such that `α` is non-`Prop`, then *x* is reverted as a universally quantified variable. For every hypothesis *H* being reverted, all hypotheses dependent on *H* must also be reverted.
+- `irevert!` [*selPats*](#selection-patterns) — similar to `irevert` [*selPats*](#selection-patterns), except that for every hypothesis in *selPats*, hypotheses dependent on *H* are also implicitly reverted.
 - `ipure` *H* — Move the pure hypothesis *H* into the Lean context.
 - `ipure` *H* `as` *rcasesPat* — Move the pure hypothesis *H* into the Lean context and destruct it with the `rcases` pattern.
 - `iintuitionistic` *H* — Move *H* to the intuitionistic context. Equivalent to `icases H with #H`.
@@ -46,6 +48,7 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 - `ispecialize` [*pmTerm*](#proof-mode-terms) — Specialize a hypothesis according to [*pmTerm*](#proof-mode-terms).
 - `iexact` *H* — Solve the goal with the hypothesis *H*.
 - `iassumption` — Solve the goal with a matching hypothesis from the intuitionistic or spatial context.
+- `iaccu` — Given the goal is a metavariable, solve the goal by combining all hypotheses in the spatial context with the separating conjunction and unifying the metavariable with the combined proposition.
 
 ## Modalities
 
@@ -58,7 +61,11 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 ## Rewriting and Induction
 
 - `irewrite [`*rules*`]` (`at` *H* | `at ⊢`)? — Rewrite with internal equalities (`≡`). Each rule is a [*pmTerm*](#proof-mode-terms), optionally prefixed with `←` for right-to-left rewriting. Rewrites in the goal by default or in hypothesis *H*. Supports `(occs := ...)` config. Example: `irewrite [← Heq $$ %b] at H`.
-- `iloeb as` *IH* (`generalizing` [*selPats*](#selection-patterns))? — Löb induction: adds the induction hypothesis *IH* (guarded by `▷`) to the intuitionistic context. All spatial hypotheses — plus anything selected by [*selPats*](#selection-patterns), including pure variables via `%x` — are generalized into the induction hypothesis.
+- `iloeb as` *IH* (`generalizing` [*selPats*](#selection-patterns))? — Löb induction: adds the induction hypothesis *IH* (guarded by `▷`) to the intuitionistic context. All spatial hypotheses — plus anything selected by [*selPats*](#selection-patterns), including pure variables via `%x` — are generalized into the induction hypothesis. For every hypothesis *H* in *selPats*, all hypotheses dependent on *H* must also be included in *selPats*.
+- `iloeb as` *IH* `generalizing!` [*selPats*](#selection-patterns) — same as `iloeb as` *IH* `generalizing` [*selPats*](#selection-patterns), except that for every hypothesis *H* in [*selPats*](#selection-patterns), all hypotheses dependent on *H* are implicitly also generalised.
+- `iinduction` *e* (`using` *r*)? (`with` (*tac*)? `|` *constr₁* `=>` *tac₁* `|` ... `|` *constrₙ* `=>` *tacₙ*)? — All spatial hypotheses, as well as pure/intuitionistic hypotheses dependent on *e*, are generalised and included as premises in the induction hypotheses. The induction principle is determined by the recursor name *r*, if given, or otherwise the default induction principle is chosen. The `with` clause enables alternative names to be given to variables and induction hypotheses. Each of *constr₁*, ..., *constrₙ* is the constructor name followed by the alternative names. Alternative names can be replaced with holes (`_`) for them to remain inaccessible. Each of *tac₁*, ..., *tacₙ* is either a tactic sequence for the induction subgoal or a hole (`_` or `?_`); the latter defers the induction subgoal. The tactic *tac* is optionally given, which is the first tactic applied to all induction subgoals.
+- `iinduction` *e* (`using` *r*)? `generalizing` [*selPats*](#selection-patterns) (`with` (*tac*)? `|` *constr₁* `=>` *tac₁* `|` ... `|` *constrₙ* `=>` *tacₙ*)? — Same as above, except that the hypotheses specified by [*selPats*](#selection-patterns) are also generalised. For every hypothesis *H* in [*selPats*](#selection-patterns), all hypotheses dependent on *H* or *e* must also be included in [*selPats*](#selection-patterns).
+- `iinduction` *e* (`using` *r*)? `generalizing!` [*selPats*](#selection-patterns) (`with` (*tac*)? `|` *constr₁* `=>` *tac₁* `|` ... `|` *constrₙ* `=>` *tacₙ*)? — Same as above, except that for every hypothesis *H* in *selPats*, hypotheses dependent on *H* or *e* are implicitly generalised.
 
 ## Solving Simple Goals
 

@@ -9,6 +9,8 @@ public import Iris.Algebra.Auth
 public import Iris.Algebra.Excl
 meta import Iris.Std.RocqPorting
 
+public section
+
 /-!
 # Exclusive Authoritative CMRA
 
@@ -26,16 +28,16 @@ namespace ExclAuth
 variable [OFE A]
 
 @[rocq_alias excl_authR]
-public abbrev ExclAuthR := Auth (Option (Excl A))
+abbrev ExclAuthR := Auth (Option (Excl A))
 
 @[rocq_alias excl_authUR]
-public abbrev ExclAuthUR := Auth (Option (Excl A))
+abbrev ExclAuthUR := Auth (Option (Excl A))
 
 @[rocq_alias excl_auth_auth]
-public abbrev auth (a : A) : ExclAuthR (A := A) := ● (some (excl a))
+abbrev auth (a : A) : ExclAuthR (A := A) := ● (some (excl a))
 
 @[rocq_alias excl_auth_frag]
-public abbrev frag (a : A) : ExclAuthR (A := A) := ◯ (some (excl a))
+abbrev frag (a : A) : ExclAuthR (A := A) := ◯ (some (excl a))
 
 scoped notation "●E " a => ExclAuth.auth a
 scoped notation "◯E " a => ExclAuth.frag a
@@ -79,7 +81,7 @@ theorem agree {a b : A} (h : ✓ (●E a) • ◯E b) : a ≡ b :=
   equiv_dist.mpr fun _ => agreeN (Valid.validN h)
 
 @[rocq_alias excl_auth_agree_L]
-theorem agree_L [Leibniz A] {a b : A} (h : ✓ (●E a) • ◯E b) : a = b :=
+theorem agree_L {a b : A} (h : ✓ (●E a) • ◯E b) : a = b :=
   (agree h).to_eq
 
 @[rocq_alias excl_auth_auth_op_validN]
