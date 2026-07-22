@@ -36,20 +36,27 @@ def AsEmpValid.Direction.toInOut : AsEmpValid.Direction → InOut
 end
 
 @[ipm_class, rocq_alias AsEmpValid]
-class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop)
-    (PROP : semiOutParam <| inOutParam d.toInOut (Type _))
+class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop) (io : InOut)
+    (PROP : semiOutParam <| inOutParam io (Type _))
     (bi : semiOutParam <| inOutParam d.toInOut (BI PROP))
     (P : outParam $ PROP) where
   as_emp_valid : (d = .into → φ → ⊢ P) ∧ (d = .from → (⊢ P) → φ)
-
 @[rocq_alias as_emp_valid_1]
 theorem asEmpValid_1 {PROP} [bi : BI PROP] {φ : Prop} (P : PROP)
-    [inst : AsEmpValid .into φ PROP bi P] : φ → ⊢ P :=
+    (inst : AsEmpValid .into φ io PROP bi P) : φ → ⊢ P :=
   inst.as_emp_valid.left rfl
 @[rocq_alias as_emp_valid_2]
 theorem asEmpValid_2 {PROP} [bi : BI PROP] {P: PROP} (φ : Prop)
-    [inst : AsEmpValid .from φ PROP bi P] : (⊢ P) → φ :=
+    (inst : AsEmpValid .from φ io PROP bi P) : (⊢ P) → φ :=
   inst.as_emp_valid.right rfl
+
+@[ipm_class, rocq_alias AsEmpValid0]
+class AsEmpValid0 (d : AsEmpValid.Direction) (φ : Prop) (io : InOut)
+    (PROP : semiOutParam $ inOutParam io <| Type _)
+    (bi : semiOutParam $ inOutParam d.toInOut <| BI PROP) (P : outParam PROP) where
+  as_emp_valid_0 : AsEmpValid d φ io PROP bi P
+
+attribute [ipm_backtrack,instance] AsEmpValid0.as_emp_valid_0
 
 /- Depending on the use case, type classes with the prefix `From` or `Into` are used. Type classes
 with the prefix `From` are used to generate one or more propositions *from* which the original
