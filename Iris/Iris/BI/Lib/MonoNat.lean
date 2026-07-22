@@ -74,7 +74,7 @@ instance {γ n} : Fractional (PROP := IProp GF) (fun q : Qp => γ ↪●MN{.own 
     rw [←iOwn_op.to_eq]
     refine BI.equiv_iff.mp ?_
     refine iOwn_ne.eqv ?_
-    exact (auth_dfrac_op (.own p) (.own q) _)
+    exact OFE.Equiv.of_eq (auth_dfrac_op (.own p) (.own q) _)
 
 @[rocq_alias mono_nat_auth_own_agree]
 theorem auth_own_agree (γ : GName) (dq1 dq2 : DFrac) (n1 n2 : MaxNat) :

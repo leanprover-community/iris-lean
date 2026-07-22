@@ -118,7 +118,8 @@ theorem Update.op_l {x y : α} : x • y ~~> x := fun _ _ => CMRA.validN_op_opM_
 theorem Update.op_r {x y : α} : x • y ~~> y := fun _ _ => CMRA.validN_op_opM_right
 
 @[rocq_alias cmra_update_included]
-theorem Update.included {x y : α} : x ≼ y → y ~~> x := fun ⟨_, ez⟩ => .equiv_left ez.symm .op_l
+theorem Update.included {x y : α} : x ≼ y → y ~~> x :=
+  fun ⟨_, ez⟩ => .equiv_left (OFE.Equiv.of_eq ez.symm) .op_l
 
 @[rocq_alias cmra_update_valid0]
 theorem Update.valid0 {x y : α} : (✓{0} x → x ~~> y) → x ~~> y :=

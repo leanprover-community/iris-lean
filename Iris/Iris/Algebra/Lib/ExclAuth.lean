@@ -77,12 +77,10 @@ theorem agreeN {a b : A} (h : ✓{n} (●E a) • ◯E b) : a ≡{n}≡ b :=
   dist_of_inc_exclusive (Auth.both_validN.mp h).1 trivial |>.symm
 
 @[rocq_alias excl_auth_agree]
-theorem agree {a b : A} (h : ✓ (●E a) • ◯E b) : a ≡ b :=
-  equiv_dist.mpr fun _ => agreeN (Valid.validN h)
+theorem agree {a b : A} (h : ✓ (●E a) • ◯E b) : a = b :=
+  OFE.Equiv.to_eq <| equiv_dist.mpr fun _ => agreeN (Valid.validN h)
 
-@[rocq_alias excl_auth_agree_L]
-theorem agree_L {a b : A} (h : ✓ (●E a) • ◯E b) : a = b :=
-  (agree h).to_eq
+#rocq_ignore excl_auth_agree_L "Use agree"
 
 @[rocq_alias excl_auth_auth_op_validN]
 theorem auth_op_validN {a b : A} : (✓{n} (●E a) • ●E b) ↔ False :=

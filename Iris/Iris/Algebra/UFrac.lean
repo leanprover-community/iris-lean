@@ -40,7 +40,6 @@ namespace UFrac
 instance : OFE.Discrete UFrac := ⟨fun h => h⟩
 
 @[simp] theorem dist_iff {n} {x y : UFrac} : x ≡{n}≡ y ↔ x = y := Iff.rfl
-@[simp] theorem equiv_iff {x y : UFrac} : x ≡ y ↔ x = y := ⟨OFE.Equiv.to_eq, OFE.Equiv.of_eq⟩
 
 @[rocq_alias ufracR]
 instance : CMRA UFrac where
@@ -54,8 +53,8 @@ instance : CMRA UFrac where
   valid_iff_validN := ⟨fun _ _ => trivial, fun _ => trivial⟩
   validN_succ := id
   validN_op_left _ := trivial
-  assoc := OFE.Equiv.of_eq <| ext_iff.mpr <| Subtype.ext (Rat.add_assoc ..).symm
-  comm := OFE.Equiv.of_eq <| ext_iff.mpr <| Subtype.ext (Rat.add_comm ..)
+  assoc := ext_iff.mpr <| Subtype.ext (Rat.add_assoc ..).symm
+  comm := ext_iff.mpr <| Subtype.ext (Rat.add_comm ..)
   pcore_op_left H := by rcases H
   pcore_idem H := by rcases H
   pcore_op_mono H := by rcases H
@@ -71,9 +70,9 @@ theorem op_eq (p q : UFrac) : p • q = ⟨p.frac + q.frac⟩ := rfl
 @[rocq_alias ufrac_included]
 theorem inc_iff {x y : UFrac} : x ≼ y ↔ x.frac < y.frac := by
   refine ⟨fun ⟨r, Hr⟩ => ?_, fun H => ?_⟩
-  · have := r.frac.2; simp only [equiv_iff, ext_iff, frac_op] at Hr; grind
+  · have := r.frac.2; simp only [ext_iff, frac_op] at Hr; grind
   · refine ⟨⟨⟨y.frac.val - x.frac.val, by grind⟩⟩, ?_⟩
-    simp only [equiv_iff, ext_iff, frac_op]; grind
+    simp only [ext_iff, frac_op]; grind
 
 @[rocq_alias ufrac_included_weak]
 theorem le_of_inc {x y : UFrac} (H : x ≼ y) : x.frac ≤ y.frac := by
@@ -97,6 +96,6 @@ instance {q : UFrac} : CMRA.IdFree q where
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_ufrac]
 instance (q : UFrac) : IsOp io1 q io2 ⟨q.frac.half⟩ io3 ⟨q.frac.half⟩ where
-  is_op := OFE.Equiv.of_eq <| ext_iff.mpr (Qp.half_add_half q.frac).symm
+  is_op := ext_iff.mpr (Qp.half_add_half q.frac).symm
 
 end UFrac

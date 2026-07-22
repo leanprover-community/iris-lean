@@ -211,7 +211,7 @@ theorem metaToken_union_1 {l : L} {E1 E2 : CoPset} (he : E1 ## E2) :
   unfold metaToken
   iintro ⟨%γm, #Hγm, Hm⟩
   -- TODO: why do we need to destruct in a second step?
-  icases (iOwn_ne.eqv (ReservationMap.token_union he).symm) $$ Hm with Hm
+  icases (iOwn_ne.eqv (OFE.Equiv.of_eq (ReservationMap.token_union he).symm)) $$ Hm with Hm
   icases Hm with ⟨Hm1, Hm2⟩
   isplitl [Hm1]
   · iexists γm
@@ -230,7 +230,7 @@ theorem metaToken_union_2 {l : L} {E1 E2 : CoPset} :
   have hdisj : E1 ## E2 := ReservationMap.valid_token_op_iff_disj.mp Hvalid
   iexists γm1
   iframe Hγm1
-  iapply (equiv_iff.mp (iOwn_ne.eqv (ReservationMap.token_union hdisj))).mpr
+  iapply (equiv_iff.mp (iOwn_ne.eqv (OFE.Equiv.of_eq (ReservationMap.token_union hdisj)))).mpr
   iapply iOwn_op
   iframe
 
@@ -287,7 +287,7 @@ theorem meta_agree {A : Type _} [Pos.Countable A] {l : L} {N : Namespace} {x1 x2
   subst Heq
   icombine Hm1 Hm2 gives %Hvalid
   ipureintro
-  rw [valid_iff (ReservationMap.singleton_op _ _ _).symm
+  rw [valid_iff (OFE.Equiv.of_eq (ReservationMap.singleton_op _ _ _).symm)
     , ReservationMap.valid_singleton, toAgree_op_valid_iff_eq] at Hvalid
   exact Pos.encode_inj (DiscreteO.eqv_inj Hvalid)
 

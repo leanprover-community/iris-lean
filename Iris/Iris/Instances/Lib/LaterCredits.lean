@@ -130,7 +130,7 @@ theorem lc_supply_bound {n m} : ⊢@{IProp GF} lc_supply m -∗ £ n -∗ ⌜n �
   ihave ⟨%H, H2⟩ := auth_both_validI m n $$ H
   ipureintro
   obtain ⟨k, hk⟩ := H
-  rw [hk.to_eq]
+  rw [hk]
   exact n.le_add_right k
 
 @[rocq_alias lc_decrease_supply]

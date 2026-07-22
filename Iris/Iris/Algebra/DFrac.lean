@@ -88,7 +88,7 @@ instance instCMRADFrac : CMRA DFrac where
     · intro z
       exists discard
       rcases z with z|_|z <;> simp [op]
-  extend _ Hxyz := ⟨_, _, OFE.Equiv.of_eq (discrete Hxyz), .rfl, .rfl⟩
+  extend _ Hxyz := ⟨_, _, discrete Hxyz, .rfl, .rfl⟩
 
 @[rocq_alias dfrac_full_exclusive]
 instance own_whole_exclusive : CMRA.Exclusive (α := DFrac) (own 1) where
@@ -144,7 +144,7 @@ theorem valid_op_own {dq : DFrac} {q : Qp} : ✓ dq • own q → q.val < 1 := b
 
 @[rocq_alias dfrac_valid_own_l]
 theorem valid_own_op {dq : DFrac} {q : Qp} : ✓ own q • dq → q.val < 1 :=
-  valid_op_own ∘ CMRA.valid_of_eqv (CMRA.comm (y := dq))
+  valid_op_own ∘ CMRA.valid_of_eqv (CMRA.comm' (y := dq))
 
 @[rocq_alias dfrac_valid_discarded]
 theorem valid_discard : ✓ (discard : DFrac) := by simp [CMRA.Valid, valid]
@@ -218,17 +218,17 @@ theorem valid_iff {dq : DFrac} : ✓ dq ↔
   cases dq <;> rfl
 
 @[rocq_alias dfrac_discarded_included]
-theorem discard_included : (discard : DFrac) ≼ discard := ⟨discard, .rfl⟩
+theorem discard_included : (discard : DFrac) ≼ discard := ⟨discard, rfl⟩
 
 @[rocq_alias dfrac_own_included]
 theorem own_included {p q : Qp} : own p ≼ own q ↔ ∃ r, q = p + r := by
-  refine ⟨fun ⟨z, hz⟩ => ?_, fun ⟨r, hr⟩ => ⟨own r, hr ▸ .rfl⟩⟩
-  rcases z with (r|_|r) <;> replace hz := hz.to_eq <;> simp [CMRA.op, op] at hz
+  refine ⟨fun ⟨z, hz⟩ => ?_, fun ⟨r, hr⟩ => ⟨own r, hr ▸ rfl⟩⟩
+  rcases z with (r|_|r) <;> simp [CMRA.op, op] at hz
   exact ⟨r, Qp.ext_iff.mpr hz⟩
 
 @[rocq_alias dfrac_is_op]
 instance isOp_dfrac_own {q q1 q2 : Qp} [h : IsOp io1 q io2 q1 io3 q2] :
     IsOp io1 (own q) io2 (own q1) io3 (own q2) where
-  is_op := by rw [h.is_op.to_eq]; rfl
+  is_op := by rw [h.is_op]; rfl
 
 end DFrac

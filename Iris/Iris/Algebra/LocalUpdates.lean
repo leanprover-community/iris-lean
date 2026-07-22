@@ -106,10 +106,10 @@ theorem LocalUpdate.core_id (x y z : α) [CMRA.CoreId y] (inc : y ≼ x) : (x, z
 
 @[rocq_alias local_update_discrete]
 theorem LocalUpdate.discrete [CMRA.Discrete α] (x y x' y' : α) :
-    (x, y) ~l~> (x', y') ↔ ∀ mz, ✓ x → x ≡ y •? mz → (✓ x' ∧ x' ≡ y' •? mz) := by
+    (x, y) ~l~> (x', y') ↔ ∀ mz, ✓ x → x ≡ y •? mz → (✓ x' ∧ x' = y' •? mz) := by
   refine ⟨fun h mz vx e => ?_, fun h n mz vx e => ?_⟩
   · have ⟨vx', e⟩ := h 0 mz vx.validN e.dist
-    exact ⟨CMRA.discrete_valid vx', OFE.Equiv.of_eq (OFE.discrete_0 e)⟩
+    exact ⟨CMRA.discrete_valid vx', OFE.discrete_0 e⟩
   · have ⟨vx', e'⟩ := h mz ((CMRA.valid_iff_validN' n).mpr vx) (OFE.Equiv.of_eq (OFE.discrete e))
     exact ⟨vx'.validN, e'.dist⟩
 
@@ -157,10 +157,10 @@ theorem local_update_unital {x y x' y' : α} :
 
 @[rocq_alias local_update_unital_discrete]
 theorem local_update_unital_discrete [CMRA.Discrete α] (x y x' y' : α) :
-    (x, y) ~l~> (x', y') ↔ ∀ z, ✓ x → x ≡ y • z → (✓ x' ∧ x' ≡ y' • z) where
+    (x, y) ~l~> (x', y') ↔ ∀ z, ✓ x → x ≡ y • z → (✓ x' ∧ x' = y' • z) where
   mp h z vx e :=
     have ⟨vx', e'⟩ := h 0 (some z) (CMRA.Valid.validN vx) e.dist
-    ⟨CMRA.discrete_valid vx', OFE.Equiv.of_eq (OFE.discrete_0 e')⟩
+    ⟨CMRA.discrete_valid vx', OFE.discrete_0 e'⟩
   mpr h := by
     refine local_update_unital.mpr fun n z vnx e => ?_
     have ⟨vx', e'⟩ := h z ((CMRA.valid_iff_validN' n).mpr vnx) (OFE.Equiv.of_eq (OFE.discrete e))
@@ -179,7 +179,7 @@ theorem discrete_unital_triv_local_update [CMRA.Discrete α]
     (H : ∀ {z : α}, x = y • z → x' = y' • z) :
     (x,y) ~l~> (x', y') := by
   refine (local_update_unital_discrete x y x' y').mpr fun _ _ He => ?_
-  refine ⟨Hv _, .of_eq <| H <| He.to_eq⟩
+  refine ⟨Hv _, H <| He.to_eq⟩
 
 end UCMRA
 

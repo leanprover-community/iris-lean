@@ -26,7 +26,7 @@ class IsOp [CMRA α]
     (_ : InOut) (a : semiOutParam α)
     (_ : InOut) (b1 : semiOutParam α)
     (_ : InOut) (b2 : semiOutParam α) where
-  is_op : a ≡ b1 • b2
+  is_op : a = b1 • b2
 
 /--
   Syntactic sugar for specifying whether `IsOp` is used for merging or splitting.
@@ -42,7 +42,7 @@ set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_op]
 instance (priority := default - 100) isOpMerge_op [CMRA α] (a b : α) :
     IsOpMerge (a • b) a b where
-  is_op := .rfl
+  is_op := rfl
 
 set_option synthInstance.checkSynthOrder false in
 /--
@@ -51,7 +51,7 @@ set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_lr_op]
 instance (priority := default + 100) isOpSplit_op [CMRA α] (a b : α) :
     IsOpSplit (a • b) a b where
-  is_op := .rfl
+  is_op := rfl
 
 /-
   The following type class instances were originally defined in terms of
@@ -64,14 +64,14 @@ instance isOp_pair [CMRA α] {ioa iob1 iob2 : InOut}
     (a b1 b2 : α) (a' b1' b2' : α)
     [h1 : IsOp ioa a iob1 b1 iob2 b2] [h2 : IsOp ioa a' iob1 b1' iob2 b2'] :
     IsOp ioa (a, a') iob1 (b1, b1') iob2 (b2, b2') where
-  is_op := OFE.Equiv.of_eq (OFE.equiv_prod_ext h1.is_op.to_eq h2.is_op.to_eq)
+  is_op := OFE.equiv_prod_ext h1.is_op h2.is_op
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_pair_core_id_l]
 instance isOp_pair_core_id_l [CMRA α] [CMRA β] {ioa iob1 iob2 : InOut}
     (a : α) (a' b1' b2' : β) [h1 : CoreId a] [h2 : IsOp ioa a' iob1 b1' iob2 b2'] :
     IsOp ioa (a, a') iob1 (a, b1') iob2 (a, b2') where
-  is_op := OFE.Equiv.of_eq (OFE.equiv_prod_ext (op_self a).symm.to_eq h2.is_op.to_eq)
+  is_op := OFE.equiv_prod_ext (op_self a).symm.to_eq h2.is_op
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_pair_core_id_r]
@@ -79,13 +79,13 @@ instance isOpMerge_pair_core_id_r [CMRA α] [CMRA β] {ioa iob1 iob2 : InOut}
     (a b1 b2 : α) (a' : β)
     [h1 : CoreId a'] [h2 : IsOp ioa a iob1 b1 iob2 b2] :
     IsOp ioa (a, a') iob1 (b1, a') iob2 (b2, a') where
-  is_op := OFE.Equiv.of_eq (OFE.equiv_prod_ext h2.is_op.to_eq (op_self a').symm.to_eq)
+  is_op := OFE.equiv_prod_ext h2.is_op (op_self a').symm.to_eq
 
 @[rocq_alias is_op_Some]
 instance isOp_some [CMRA α] (a b1 b2 : α) {ioa iob1 iob2 : InOut}
     [h : IsOp ioa a iob1 b1 iob2 b2] :
     IsOp ioa (some a) iob1 (some b1) iob2 (some b2) where
-  is_op := h.is_op
+  is_op := congrArg some h.is_op
 
 end IsOp
 

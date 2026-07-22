@@ -156,10 +156,12 @@ theorem extend_bound {n : Nat} {x : GenMap β}
     (∃ N, ∀ k, N ≤ k → (fun k => (F k).2.1) k = none) := by
   obtain ⟨N, hN⟩ := x.bound
   have aux : ∀ k, N ≤ k → ∀ (z₁ z₂ : Option β),
-      x.car k ≡ z₁ • z₂ → z₁ = none ∧ z₂ = none := by
+      x.car k = z₁ • z₂ → z₁ = none ∧ z₂ = none := by
     intro k hk z₁ z₂ hp1
-    have _ : none ≡ z₁ • z₂ := (hN k hk) ▸ hp1
-    cases z₁ <;> cases z₂ <;> simp_all [CMRA.op, optionOp, OFE.Equiv]
+    have h : none = z₁ • z₂ := (hN k hk) ▸ hp1
+    cases z₁ <;> cases z₂
+    · exact ⟨rfl, rfl⟩
+    all_goals exact absurd h (by simp [CMRA.op, optionOp])
   constructor
   · exact ⟨N, fun k hk => (aux k hk _ _ (CMRA.extend (Hv k) (He k)).2.2.1).1⟩
   · exact ⟨N, fun k hk => (aux k hk _ _ (CMRA.extend (Hv k) (He k)).2.2.1).2⟩
@@ -188,22 +190,22 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
     ⟨fun Hv n => Hv.validN, fun H => valid_iff_validN.mpr (H ·)⟩
   validN_succ {x n} := validN_succ
   validN_op_left {n x y} := validN_op_left
-  assoc {x y z} _ a := by
+  assoc {x y z} := Equiv.to_eq fun _ a => by
     cases _ : x.car a <;> cases _ : y.car a <;> cases _ : z.car a <;>
     simp_all [op, optionOp]
     exact assoc.dist
-  comm {x y} _ a := by
+  comm {x y} := Equiv.to_eq fun _ a => by
     cases _ : x.car a <;> cases _ : y.car a <;>
     simp_all [op, optionOp]
     exact comm.dist
-  pcore_op_left {x cx} H := by
+  pcore_op_left {x cx} H := Equiv.to_eq <| by
     have hcx : cx.car = fun k => CMRA.core (x.car k) := by
       simp [pcore_genmap] at H; exact (congrArg GenMap.car H).symm
     intro n k
     have H : cx.car k = CMRA.core (x.car k) := congrFun hcx k
     simp only [CMRA.op, optionOp, H]
     exact (core_op (x.car k)).dist
-  pcore_idem {x cx} H := by
+  pcore_idem {x cx} H := Equiv.to_eq <| by
     have hcx : cx.car = fun k => CMRA.core (x.car k) := by
       simp [pcore_genmap] at H; exact (congrArg GenMap.car H).symm
     simp only [pcore_genmap, OFE.Equiv]
@@ -216,7 +218,7 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
       simp [pcore_genmap] at H; exact (congrArg GenMap.car H).symm
     have hpc_fun : CMRA.pcore x.car = some cx.car := by rw [hcx]; rfl
     obtain ⟨cy, Hcy⟩ := pcore_op_mono hpc_fun y.car
-    refine ⟨⟨cy, ?_⟩, ?_⟩
+    refine ⟨⟨cy, ?_⟩, Equiv.to_eq ?_⟩
     · obtain ⟨N, hN⟩ := op_bound β x y
       refine ⟨N, fun k hk => ?_⟩
       have hxyk := hN k hk
@@ -224,12 +226,12 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
       cases hx : x.car k <;> cases hy : y.car k <;> simp_all
       have hcxy : CMRA.core (x.car • y.car) k = none := by
         simp [CMRA.core, CMRA.pcore, optionCore, hx, hy, CMRA.op, optionOp]
-      have hHeqk := Hcy 0 k
+      have hHeqk := (Equiv.of_eq Hcy) 0 k
       simp only [CMRA.core, CMRA.pcore, optionCore, CMRA.op, optionOp,
         hx, hy, Option.bind] at hHeqk
       cases hcy : cy k <;> simp_all
     · intro n k
-      have hHeqk := Hcy n k
+      have hHeqk := (Equiv.of_eq Hcy) n k
       simp [CMRA.core, CMRA.pcore, optionCore, CMRA.op, optionOp] at hHeqk ⊢
       exact hHeqk
   extend {n x y1 y2} := by
@@ -237,15 +239,15 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
     have eb := extend_bound β Hv H
     let F k := CMRA.extend (Hv k) (H k)
     exact ⟨⟨fun k => (F k).1, eb.1⟩, ⟨fun k => (F k).2.1, eb.2⟩,
-      fun _ k => ((F k).2.2.1).dist, fun k => (F k).2.2.2.1, fun k => (F k).2.2.2.2⟩
+      Equiv.to_eq fun _ k => ((F k).2.2.1).dist, fun k => (F k).2.2.2.1, fun k => (F k).2.2.2.2⟩
 
 instance instUCMRA_GenMap : UCMRA (GenMap β) where
   unit := GenMap.empty
   unit_valid _ := trivial
-  unit_left_id {x} k := by
+  unit_left_id {x} := Equiv.to_eq fun _ k => by
     simp only [CMRA.op, optionOp, empty]
     cases x.car k <;> simp
-  pcore_unit _ := by
+  pcore_unit := Equiv.to_eq fun _ => by
     refine OFE.some_dist_some.mpr fun k => ?_
     simp [empty, CMRA.core, CMRA.pcore, optionCore]
 
@@ -288,7 +290,8 @@ theorem GenMap.validN_singleton_map_in (x : Nat) (y : β) (n : Nat) :
 
 theorem GenMap.op_singleton_comm {mf : GenMap β} {x : Nat} (y : β)
     (H_free : IsFree mf.car x) :
-    GenMap.singleton x y • mf ≡ mf.alter x (some y) := by
+    GenMap.singleton x y • mf = mf.alter x (some y) := by
+  apply OFE.Equiv.to_eq
   intro n k
   simp only [IsFree] at H_free
   by_cases heq : k = x

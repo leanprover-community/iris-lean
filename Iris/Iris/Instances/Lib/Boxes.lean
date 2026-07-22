@@ -112,7 +112,7 @@ theorem box_own_auth_agree {γ : SliceName} {b1 b2 : Bool} :
   iintro H
   icases iOwn_cmraValid $$ H with H
   icases (prod_validI _).mp $$ H with ⟨%H, -⟩
-  ipureintro; exact DiscreteO.eqv_inj (Iris.ExclAuth.agree H).to_eq
+  ipureintro; exact DiscreteO.eqv_inj (Iris.ExclAuth.agree H)
 
 @[rocq_alias box_own_auth_update]
 theorem box_own_auth_update {γ : SliceName} {b1 b2: Bool} (b3 : Bool) :

@@ -45,8 +45,8 @@ instance [LawfulPartialMap M K] [OFE V] (k : K) : NonExpansive₂ (insert · k �
     · simp [get?_insert_eq h, Ht]
     · simp [get?_insert_ne h, Hv k']
 
-theorem eqv_of_Equiv [OFE V] [LawfulPartialMap M K] {t1 t2 : M V} (H : PartialMap.equiv t1 t2) : t1 ≡ t2 :=
-  fun _ k => Dist.of_eq (H k)
+theorem eqv_of_Equiv [OFE V] [LawfulPartialMap M K] {t1 t2 : M V} (H : PartialMap.equiv t1 t2) : t1 = t2 :=
+  Equiv.to_eq fun _ k => Dist.of_eq (H k)
 
 instance [LawfulPartialMap M K] [OFE V] (op : K → V → V → V) [∀ k, NonExpansive₂ (op k)] :
     NonExpansive₂ (merge (M := M) op) where
@@ -101,8 +101,8 @@ theorem singleton_dist [LawfulPartialMap M K] [DecidableEq K] [OFE V] {n : Nat} 
   split <;> simp [h]
 
 theorem singleton_equiv [LawfulPartialMap M K] [DecidableEq K] [OFE V] {x y : V} (h : x ≡ y) (k : K) :
-    PartialMap.singleton (M := M) k x ≡ PartialMap.singleton k y :=
-  fun _ => singleton_dist h.dist k
+    PartialMap.singleton (M := M) k x = PartialMap.singleton k y :=
+  Equiv.to_eq fun _ => singleton_dist h.dist k
 
 end OFE
 
@@ -139,16 +139,16 @@ theorem lookup_incN {n} {m1 m2 : M V} :
     cases get? m2 i <;> cases get? m1 i <;> cases f i <;> simp
 
 theorem lookup_inc {m1 m2 : M V} :
-    (∃ (z : M V), m2 ≡ op m1 z) ↔
-    ∀ i, (∃ z, (get? m2 i) ≡ (get? m1 i) • z) := by
+    (∃ (z : M V), m2 = op m1 z) ↔
+    ∀ i, (∃ z, (get? m2 i) = (get? m1 i) • z) := by
   refine ⟨fun ⟨z, Hz⟩ i => ?_, fun H => ?_⟩
   · refine ⟨get? z i, ?_⟩
-    refine .trans (get?_ne i |>.eqv Hz) ?_
+    refine .trans (congrArg (get? · i) Hz) ?_
     simp only [CMRA.op, op, get?_merge]
     cases get? m1 i <;> cases get? z i <;> simp
   · obtain ⟨f, Hf⟩ := Classical.axiomOfChoice H
     exists bindAlter (fun k _ => f k) m2
-    refine fun n i => ((Hf i).trans ?_).dist
+    refine OFE.Equiv.to_eq fun n i => ((Hf i).trans ?_).dist
     specialize Hf i; revert Hf
     simp [CMRA.op, optionOp, get?_merge, get?_bindAlter]
     cases get? m2 i <;> cases get? m1 i <;> cases f i <;> simp <;>
@@ -183,15 +183,15 @@ instance instStoreCMRA : CMRA (M V) where
     specialize H k; revert H
     simp only [op, get?_merge, Option.merge]
     cases get? x1 k <;> cases get? x2 k <;> simp [optionOp, CMRA.op]
-  assoc {x y z} _ k := by
+  assoc {x y z} := Equiv.to_eq fun _ k => by
     simp only [op, get?_merge]
     cases get? x k <;> cases get? y k <;> cases get? z k <;> simp
     exact assoc.dist
-  comm {x y} _ k := by
+  comm {x y} := Equiv.to_eq fun _ k => by
     simp [op, get?_merge]
     cases get? x k <;> cases get? y k <;> simp
     exact comm.dist
-  pcore_op_left {x cx} H _ k := by
+  pcore_op_left {x cx} H := Equiv.to_eq fun _ k => by
     simp only [← Option.getD_some (a := cx) (b := cx), op, get?_merge]
     cases Hcx : get? cx k <;> cases hx : get? x k <;>
       simp <;>
@@ -200,7 +200,7 @@ instance instStoreCMRA : CMRA (M V) where
       cases Hcx
     · refine (pcore_op_left ?_).dist
       simp [← Hcx, ← H, get?_bindAlter, hx]
-  pcore_idem {x cx} H := by
+  pcore_idem {x cx} H := Equiv.to_eq <| by
     simp only [pcore, Option.some.injEq] at H
     change (pcore cx |>.getD cx) ≡ cx
     simp only [pcore, ← H, Option.getD_some]
@@ -212,18 +212,18 @@ instance instStoreCMRA : CMRA (M V) where
   pcore_op_mono := by
     apply pcore_op_mono_of_core_op_mono
     rintro x cx y ⟨z, Hz⟩
-    suffices ∃ z, (pcore y |>.getD y) ≡ op (pcore x |>.getD x) z by
+    suffices ∃ z, (pcore y |>.getD y) = op (pcore x |>.getD x) z by
       rintro Hx
       simp only [pcore, Option.some.injEq, op, exists_eq_left']
       rcases this with ⟨z', Hz'⟩
       exists z'
-      refine .trans Hz' (fun n i => ?_)
+      refine .trans (OFE.Equiv.of_eq Hz') (fun n i => ?_)
       cases get? z' i <;> cases get? x i <;> simp_all
     refine lookup_inc.mpr (fun i => ?_)
     obtain ⟨v', Hv'⟩ : (core (get? x i)) ≼ (core (get? y i))  := by
       apply core_mono
       exists get? z i
-      have Hz := (get?_ne i).eqv Hz; revert Hz
+      have Hz := ((get?_ne i).eqv Hz).to_eq; revert Hz
       simp [CMRA.op, optionOp, get?_merge]
       cases get? x i <;> cases get? z i <;> simp_all
     exists v'
@@ -237,7 +237,7 @@ instance instStoreCMRA : CMRA (M V) where
     exists bindAlter (fun k (_ : V) => extendF k |>.fst) y1
     exists bindAlter (fun k (_ : V) => extendF k |>.snd.fst) y2
     simp [op]
-    refine ⟨fun _ i => ?_, fun i => ?_, fun i => ?_⟩
+    refine ⟨Equiv.to_eq fun _ i => ?_, fun i => ?_, fun i => ?_⟩
     all_goals rcases hF : extendF i with ⟨z1, z2, Hm, Hz1, Hz2⟩
     · refine Hm.dist.trans ?_
       simp [get?_merge, CMRA.op, optionOp, Option.merge, get?_bindAlter]
@@ -263,8 +263,8 @@ instance instStoreCMRA : CMRA (M V) where
 instance instStoreUCMRA : UCMRA (M V) where
   unit := unit
   unit_valid := by simp [CMRA.Valid, get?_empty]
-  unit_left_id _ k := by simp [CMRA.op, get?_merge, get?_empty]
-  pcore_unit _ := by
+  unit_left_id := OFE.Equiv.to_eq fun _ k => by simp [CMRA.op, get?_merge, get?_empty]
+  pcore_unit := OFE.Equiv.to_eq fun _ => by
     refine OFE.some_dist_some.mpr fun k => ?_
     simp [get?_bindAlter, get?_empty]
 
@@ -350,7 +350,7 @@ theorem insert_eq_singleton_op_singleton [IsoFunMap M K] {m : M V} (Hemp : get? 
     insert m i x = singleton i x • m :=
   IsoFunMap.ext (insert_equiv_singleton_op_singleton Hemp)
 
-theorem core_empty : core (∅ : M V) ≡ ∅ := by
+theorem core_empty : core (∅ : M V) = ∅ := OFE.Equiv.to_eq <| by
   intro n k
   simp [core, CMRA.pcore, get?_empty, get?_bindAlter]
 
@@ -367,7 +367,7 @@ theorem singleton_core_eq [IsoFunMap M K] {i : K} {x : V} {cx} (Hpcore : CMRA.pc
 
 open Classical in
 theorem singleton_core_eqv {i : K} {x : V} {cx} (Hpcore : CMRA.pcore x ≡ some cx) :
-    core (singleton i x : M V) ≡ singleton i cx := by
+    core (singleton i x : M V) = singleton i cx := OFE.Equiv.to_eq <| by
   intro n k
   simp [core, CMRA.pcore, get?_singleton, get?_bindAlter]
   split <;> first | exact Hpcore.dist | trivial
@@ -392,7 +392,7 @@ theorem singleton_op_singleton_eq [IsoFunMap M K] {i : K} {x y : V} :
   IsoFunMap.ext singleton_op_singleton
 
 instance {m : M V} [I : ∀ x : V, CoreId x] : CoreId m where
-  core_id _ := by
+  core_id := OFE.Equiv.to_eq fun _ => by
     refine OFE.some_dist_some.mpr fun k => ?_
     rw [get?_bindAlter]
     cases get? m k <;> simp
@@ -400,7 +400,7 @@ instance {m : M V} [I : ∀ x : V, CoreId x] : CoreId m where
 
 open Classical in
 instance [CoreId (x : V)] : CoreId (singleton i x : M V) where
-  core_id _ := by
+  core_id := OFE.Equiv.to_eq fun _ => by
     refine OFE.some_dist_some.mpr fun k => ?_
     simp [get?_bindAlter, get?_singleton]
     split <;> simp
@@ -440,9 +440,9 @@ theorem singleton_incN_iff {m : M V} :
 
 open Classical in
 theorem singleton_inc_iff {m : M V} :
-    (singleton i x) ≼ m ↔ ∃ y, (get? m i ≡ some y) ∧ some x ≼ some y := by
+    (singleton i x) ≼ m ↔ ∃ y, (get? m i = some y) ∧ some x ≼ some y := by
   refine ⟨fun ⟨z, Hz⟩ => ?_, fun ⟨y, Hy, z, Hz⟩ => ?_⟩
-  · replace Hz := (get?_ne i).eqv Hz; revert Hz
+  · replace Hz := congrArg (get? · i) Hz; revert Hz
     simp only [CMRA.op, Heap.op, get?_merge, get?_singleton_eq rfl]
     rcases get? z i with (_|v)
     · intro _
@@ -451,39 +451,38 @@ theorem singleton_inc_iff {m : M V} :
       exists v
   · cases z
     · exists (PartialMap.delete m i)
-      intros _ j
+      refine OFE.Equiv.to_eq fun _ j => ?_
       simp [CMRA.op, get?_merge, get?_singleton, get?_delete]
       split
       · rename_i h
         simp
-        refine ((h ▸ Hy).trans <| Hz.trans ?_).dist
+        refine ((OFE.Equiv.of_eq (h ▸ Hy)).trans <| (OFE.Equiv.of_eq Hz).trans ?_).dist
         simp [CMRA.op]
       · simp
     · rename_i z
       exists (PartialMap.insert m i z)
-      intros _ j
+      refine OFE.Equiv.to_eq fun _ j => ?_
       simp [CMRA.op, get?_merge, get?_singleton, get?_insert]
       split
       · rename_i h
         simp
-        refine ((h ▸ Hy).trans <| Hz.trans ?_).dist
+        refine ((OFE.Equiv.of_eq (h ▸ Hy)).trans <| (OFE.Equiv.of_eq Hz).trans ?_).dist
         simp [CMRA.op]
       · simp
 
 theorem exclusive_singleton_inc_iff {m : M V} (He : Exclusive x) (Hv : ✓ m) :
-    (singleton i x) ≼ m ↔ (get? m i ≡ some x) := by
+    (singleton i x) ≼ m ↔ (get? m i = some x) := by
   refine singleton_inc_iff.trans ⟨fun ⟨y, Hy, Hxy⟩ => ?_, fun _ => ?_⟩
-  · suffices x ≡ y by exact Hy.trans <| this.symm
-    exact Option.eqv_of_inc_exclusive Hxy <| valid_get?_valid Hv Hy
+  · suffices x ≡ y by exact Hy.trans <| OFE.some_eqv_some.mpr this.symm.to_eq
+    exact Option.eqv_of_inc_exclusive Hxy <| valid_get?_valid Hv (OFE.Equiv.of_eq Hy)
   · exists x
 
 theorem singleton_inc_singleton_iff : (singleton i x : M V) ≼ (singleton i y : M V) ↔ some x ≼ some y := by
   refine singleton_inc_iff.trans ⟨fun ⟨z, Hz, Hxz⟩ => ?_, fun H => ?_⟩
   · refine inc_of_inc_of_eqv Hxz ?_
-    refine .trans Hz.symm ?_
-    exact .of_eq <| get?_singleton_eq rfl
+    exact OFE.Equiv.of_eq <| Hz.symm.trans <| get?_singleton_eq rfl
   · refine ⟨y, ?_, H⟩
-    exact .of_eq <| get?_singleton_eq rfl
+    exact get?_singleton_eq rfl
 
 theorem total_singleton_inc_singleton_iff [IsTotal V] :
     (singleton i x : M V) ≼ (singleton i y) ↔ x ≼ y :=
@@ -588,7 +587,7 @@ instance [OFE α] [OFE β] {f : α → β} [hne : OFE.NonExpansive f] : OFE.NonE
     apply OFE.NonExpansive.ne
 
 theorem map_id [OFE α] (a : H α) :
-    PartialMap.map H id a ≡ a := by
+    PartialMap.map H id a = a := OFE.Equiv.to_eq <| by
   intro n x
   simp [PartialMap.map, get?_bindAlter, Option.bind]
   rcases get? a x <;> simp
@@ -597,7 +596,7 @@ def mapO [OFE α] [OFE β] (f : α -n> β) : OFE.Hom (H α) (H β) where
   f := map H f
   ne := inferInstance
 
-theorem map_ext [OFE α] [OFE β] {f g : α -> β} (heq : f ≡ g) : map H f m ≡ map H g m := by
+theorem map_ext [OFE α] [OFE β] {f g : α -> β} (heq : f ≡ g) : map H f m = map H g m := OFE.Equiv.to_eq <| by
   intro n k
   simp [map, get?_bindAlter, Option.bind]
   cases get? m k <;> simp
@@ -610,7 +609,7 @@ theorem map_ne [OFE α] [OFE β] (f g : α -> β) {heq : f ≡{n}≡ g} : map H 
   exact heq _
 
 theorem map_compose [OFE α] [OFE β] [OFE γ] (f : α -> β) (g : β -> γ) m :
-    map H (g.comp f) m ≡ map H g (map H f m) := by
+    map H (g.comp f) m = map H g (map H f m) := OFE.Equiv.to_eq <| by
   intro n k
   simp [map, get?_bindAlter]
   cases get? m k <;> simp
@@ -650,7 +649,7 @@ instance {F} [COFE.OFunctor F] : COFE.OFunctor (PartialMapOF H F) where
     intros _ _ _ _ _ _ _ _
     apply map_ne
     apply COFE.OFunctor.map_ne.ne <;> simp_all
-  map_id x := OFE.Equiv.to_eq <| by
+  map_id x := by
     refine .trans ?_ (map_id H x)
     apply map_ext
     exact fun _ a => (COFE.OFunctor.map_id a).dist
@@ -668,7 +667,7 @@ instance {F} [RFunctor F] : URFunctor (PartialMapOF H F) where
     intros _ _ _ _ _ _ _ _
     apply map_ne
     apply RFunctor.map_ne.ne <;> simp_all
-  map_id x := by
+  map_id x := OFE.Equiv.of_eq <| by
     refine .trans ?_ (map_id H x)
     apply map_ext
     exact fun _ a => (RFunctor.map_id a).dist

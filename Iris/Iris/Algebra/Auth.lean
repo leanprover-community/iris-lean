@@ -113,15 +113,16 @@ nonrec theorem auth_dist_inj {n : Nat} {dq1 dq2 : DFrac} {a1 a2 : A}
 
 @[rocq_alias auth_auth_inj]
 theorem auth_inj {dq1 dq2 : DFrac} {a1 a2 : A} (h : (●{dq1} a1) ≡ ●{dq2} a2) :
-    dq1 = dq2 ∧ a1 ≡ a2 := ⟨auth_inj_frac (h 0), equiv_dist.mpr fun _ => dist_of_auth_dist h.dist⟩
+    dq1 = dq2 ∧ a1 = a2 :=
+  ⟨auth_inj_frac (h 0), (equiv_dist.mpr fun _ => dist_of_auth_dist h.dist).to_eq⟩
 
 @[rocq_alias auth_frag_dist_inj]
 theorem frag_dist_inj {n : Nat} {b1 b2 : A} (h : (◯ b1 : Auth A) ≡{n}≡ ◯ b2) : b1 ≡{n}≡ b2 :=
   dist_of_frag_dist h
 
 @[rocq_alias auth_frag_inj]
-theorem frag_inj {b1 b2 : A} (h : (◯ b1 : Auth A) ≡ ◯ b2) : b1 ≡ b2 :=
-  equiv_dist.mpr fun _ => dist_of_frag_dist h.dist
+theorem frag_inj {b1 b2 : A} (h : (◯ b1 : Auth A) ≡ ◯ b2) : b1 = b2 :=
+  (equiv_dist.mpr fun _ => dist_of_frag_dist h.dist).to_eq
 
 @[rocq_alias auth_auth_discrete]
 nonrec instance auth_discrete {dq : DFrac} {a : A} [DiscreteE a] [DiscreteE (unit : A)] :
@@ -134,7 +135,7 @@ nonrec instance frag_discrete {a : A} [DiscreteE a] : DiscreteE (◯ a : Auth A)
 /-! ## Operations -/
 @[rocq_alias auth_auth_dfrac_op]
 nonrec theorem auth_dfrac_op {dq1 dq2 : DFrac} {a : A} :
-    (●{dq1 • dq2} a) ≡ (●{dq1} a) • (●{dq2} a) :=
+    (●{dq1 • dq2} a) = (●{dq1} a) • (●{dq2} a) :=
   auth_op_auth_eqv
 
 set_option synthInstance.checkSynthOrder false in
@@ -142,7 +143,7 @@ set_option synthInstance.checkSynthOrder false in
 instance {dq dq1 dq2 : DFrac} [h : IsOp io1 dq io2 dq1 io3 dq2] :
     IsOp io1 (●{dq} a : Auth A) io2 (●{dq1} a) io3 (●{dq2} a) where
   is_op := by
-    rw [h.is_op.to_eq]
+    rw [h.is_op]
     apply auth_dfrac_op
 
 @[rocq_alias auth_frag_op]
@@ -159,12 +160,12 @@ nonrec theorem frag_core {b : A} : core (◯ b : Auth A) = ◯ (core b) :=
 
 @[rocq_alias auth_both_core_discarded]
 theorem auth_both_core_discarded :
-    core ((●{.discard} a) • ◯ b : Auth A) ≡ (●{.discard} a) • ◯ (core b) :=
+    core ((●{.discard} a) • ◯ b : Auth A) = (●{.discard} a) • ◯ (core b) :=
   auth_discard_op_frag_core
 
 @[rocq_alias auth_both_core_frac]
 theorem auth_both_core_frac {q : Qp} {a b : A} :
-    core ((●{.own q} a) • ◯ b : Auth A) ≡ ◯ (core b) :=
+    core ((●{.own q} a) • ◯ b : Auth A) = ◯ (core b) :=
   auth_own_op_frag_core
 
 @[rocq_alias auth_auth_core_id]
@@ -183,7 +184,7 @@ nonrec instance {a : A} {b : A} [CoreId b] :
 @[rocq_alias auth_frag_is_op]
 instance {a b1 b2 : A} [h : IsOp io1 a io2 b1 io3 b2] :
     IsOp io1 (◯ a : Auth A) io2 (◯ b1) io3 (◯ b2) where
-  is_op := NonExpansive₂.eqv .rfl h.is_op
+  is_op := (congrArg frag h.is_op).trans frag_op
 
 -- TODO: auth_frag_sep_homomorphism
 
@@ -203,13 +204,10 @@ theorem auth_dfrac_op_invN {n : Nat} {dq1 dq2 : DFrac} {a b : A}
 
 @[rocq_alias auth_auth_dfrac_op_inv]
 theorem auth_dfrac_op_inv {dq1 dq2 : DFrac} {a b : A}
-    (h : ✓ ((●{dq1} a) • ●{dq2} b)) : a ≡ b :=
-  eqv_of_valid_auth h
-
-@[rocq_alias auth_auth_dfrac_op_inv_L]
-theorem auth_dfrac_op_inv_L {dq1 dq2 : DFrac} {a b : A}
     (h : ✓ ((●{dq1} a) • ●{dq2} b)) : a = b :=
-  (auth_dfrac_op_inv h).to_eq
+  eq_of_valid_auth h
+
+#rocq_ignore auth_auth_dfrac_op_inv_L "Use auth_dfrac_op_inv"
 
 
 @[rocq_alias auth_auth_dfrac_validN]
@@ -273,7 +271,7 @@ theorem auth_valid {a : A} : (✓ (● a : Auth A)) ↔ (✓ a) := by
 
 @[rocq_alias auth_auth_dfrac_op_valid]
 theorem auth_dfrac_op_valid {dq1 dq2 : DFrac} {a1 a2 : A} :
-    (✓ ((●{dq1} a1) • ●{dq2} a2)) ↔ (✓ (dq1 • dq2) ∧ a1 ≡ a2 ∧ ✓ a1) := by
+    (✓ ((●{dq1} a1) • ●{dq2} a2)) ↔ (✓ (dq1 • dq2) ∧ a1 = a2 ∧ ✓ a1) := by
   rw [auth_op_auth_valid_iff]
   constructor
   · exact fun ⟨hdq, ha, hr⟩ => ⟨hdq, ha, valid_iff_validN.mpr (hr · |>.2)⟩
@@ -353,7 +351,7 @@ theorem auth_dfrac_includedN {n : Nat} {dq1 dq2 : DFrac} {a1 a2 b : A} :
 
 @[rocq_alias auth_auth_dfrac_included]
 theorem auth_dfrac_included {dq1 dq2 : DFrac} {a1 a2 b : A} :
-    ((●{dq1} a1) ≼ ((●{dq2} a2) • ◯ b)) ↔ ((dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡ a2) :=
+    ((●{dq1} a1) ≼ ((●{dq2} a2) • ◯ b)) ↔ ((dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 = a2) :=
   auth_inc_auth_op_frag_iff
 
 @[rocq_alias auth_auth_includedN]
@@ -363,7 +361,7 @@ theorem auth_includedN {n : Nat} {a1 a2 b : A} :
 
 @[rocq_alias auth_auth_included]
 theorem auth_included {a1 a2 b : A} :
-    ((● a1 : Auth A) ≼ ((● a2) • ◯ b)) ↔ (a1 ≡ a2) :=
+    ((● a1 : Auth A) ≼ ((● a2) • ◯ b)) ↔ (a1 = a2) :=
   auth_one_inc_auth_one_op_frag_iff
 
 @[rocq_alias auth_frag_includedN]
@@ -386,7 +384,7 @@ theorem auth_both_dfrac_includedN {n : Nat} {dq1 dq2 : DFrac} {a1 a2 b1 b2 : A} 
 @[rocq_alias auth_both_dfrac_included]
 theorem auth_both_dfrac_included {dq1 dq2 : DFrac} {a1 a2 b1 b2 : A} :
     (((●{dq1} a1) • ◯ b1) ≼ ((●{dq2} a2) • ◯ b2)) ↔
-      ((dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡ a2 ∧ b1 ≼ b2) :=
+      ((dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 = a2 ∧ b1 ≼ b2) :=
   auth_op_frag_inc_auth_op_frag_iff
 
 @[rocq_alias auth_both_includedN]
@@ -396,7 +394,7 @@ theorem auth_both_includedN {n : Nat} {a1 a2 b1 b2 : A} :
 
 @[rocq_alias auth_both_included]
 theorem auth_both_included {a1 a2 b1 b2 : A} :
-    (((● a1 : Auth A) • ◯ b1) ≼ ((● a2) • ◯ b2)) ↔ (a1 ≡ a2 ∧ b1 ≼ b2) :=
+    (((● a1 : Auth A) • ◯ b1) ≼ ((● a2) • ◯ b2)) ↔ (a1 = a2 ∧ b1 ≼ b2) :=
   auth_one_op_frag_inc_auth_one_op_frag_iff
 
 /-! ## Updates -/
@@ -447,7 +445,7 @@ theorem auth_updateP_both_unpersist {a b : A} :
 theorem auth_update_dfrac_alloc {dq : DFrac} {a b : A} [CoreId b] (hb : b ≼ a) :
     (●{dq} a) ~~> (●{dq} a) • ◯ b := by
   refine auth_alloc fun n bf ⟨hinc, hv⟩ => ⟨?_, hv⟩
-  have hba : b • a ≡ a := comm.trans (op_core_left_of_inc hb)
+  have hba : b • a ≡ a := comm'.trans (op_core_left_of_inc hb)
   exact (incN_iff_right hba.dist).mp (op_monoN_right b hinc)
 
 @[rocq_alias auth_local_update]
@@ -477,11 +475,11 @@ instance instURFunctorAuthURF {T : COFE.OFunctorPre} [URFunctor T] :
   map_ne.ne a b c hx d e hy x :=
     map_ne _ (URFunctor.map_ne.ne hx hy) (URFunctor.map_ne.ne hx hy)
   map_id x := by
-    refine .trans ?_ (.of_eq <| map_id x)
+    refine .trans (.of_eq ?_) (.of_eq <| map_id x)
     apply map_ext <;> exact URFunctor.map_id
   map_comp f g f' g' x := by
     simp only [mapC]
-    refine .trans ?_ (.of_eq (map_compose' ..))
+    refine .trans (.of_eq ?_) (.of_eq (map_compose' ..))
     apply View.map_ext <;> exact URFunctor.map_comp f g f' g'
 
 @[rocq_alias authURF_contractive]
@@ -504,11 +502,12 @@ instance instRFunctorAuthRF {T : COFE.OFunctorPre} [URFunctor T] :
   map_ne.ne a b c hx d e hy x := by
     apply map_ne <;> exact URFunctor.map_ne.ne hx hy
   map_id x := by
-    refine .trans ?_ (.of_eq <| map_id x)
+    refine .trans (.of_eq ?_) (.of_eq <| map_id x)
     apply map_ext <;> exact URFunctor.map_id
   map_comp f g f' g' x := by
     simp only [mapC]
     rw [← map_compose']
+    refine .of_eq ?_
     apply map_ext <;> exact URFunctor.map_comp f g f' g'
 
 @[rocq_alias authRF_contractive]

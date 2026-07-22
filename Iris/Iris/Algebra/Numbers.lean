@@ -64,7 +64,7 @@ scoped instance : CMRA α where
     rintro ⟨rfl⟩ _
     exists zero
     rw [left_id (op := add) _]
-  extend _ h := ⟨_, _, Equiv.of_eq (discrete h), .rfl, .rfl⟩
+  extend _ h := ⟨_, _, discrete h, .rfl, .rfl⟩
 #rocq_ignore natR "Use Nat with scoped CMRA instance"
 #rocq_ignore ZR "Use Int with scoped CMRA instance"
 #rocq_ignore nat_ra_mixin "Not needed"
@@ -87,7 +87,7 @@ scoped instance : UCMRA α where
   unit := zero
   unit_valid := trivial
   unit_left_id := pcore_op_left rfl
-  pcore_unit := .symm .rfl
+  pcore_unit := rfl
 
 #rocq_ignore natUR "Use Nat with scoped UCMRA instance"
 #rocq_ignore ZUR "Use Int with scoped UCMRA instance"
@@ -106,7 +106,7 @@ scoped instance [LeftCancelAdd α] {a : α} : Cancelable a where
 theorem op_eq {x y : α} : x • y = x + y := rfl
 
 theorem included_iff {x y : α} : x ≼ y ↔ ∃ z, y = x + z := by
-  refine ⟨fun ⟨z, hz⟩ => ⟨z, hz.to_eq⟩, fun ⟨z, hz⟩ => ⟨z, .of_eq hz⟩⟩
+  refine ⟨fun ⟨z, hz⟩ => ⟨z, hz⟩, fun ⟨z, hz⟩ => ⟨z, hz⟩⟩
 
 /-- Sufficient condition for a local update on a LeftCancelAdd structure, such as (ℕ, +) -/
 theorem leftCancelAdd_local_update [LeftCancelAdd α] (h : add x y' = add x' y) :
@@ -155,12 +155,12 @@ scoped instance : CMRA α where
   comm {_ _} := by rw [comm (op := add)]
   pcore_op_left {_ _} := by
     rintro ⟨rfl⟩
-    refine .of_eq <| idempotent _
+    exact idempotent _
   pcore_idem := by simp
   pcore_op_mono {a b} := by
     rintro ⟨rfl⟩ z
     exists z
-  extend _ h := ⟨_, _, Equiv.of_eq (discrete h), .rfl, .rfl⟩
+  extend _ h := ⟨_, _, discrete h, .rfl, .rfl⟩
 
 #rocq_ignore max_nat "Use Nat with IdempotentOp max"
 #rocq_ignore min_nat "Uses Nat with IdempotentOp min"
@@ -202,8 +202,8 @@ scoped instance (a : α) : CMRA.CoreId a where
 scoped instance [LawfulLeftIdentity (add (α := α)) zero] : UCMRA α where
   unit := zero
   unit_valid := trivial
-  unit_left_id := .of_eq <| left_id _
-  pcore_unit := .symm .rfl
+  unit_left_id := left_id _
+  pcore_unit := rfl
 #rocq_ignore max_natUR "Use Nat with scoped UCMRA instance"
 #rocq_ignore max_nat_ucmra_mixin "Not needed"
 #rocq_ignore max_nat_unit_instance "Use UCMRA instance"
@@ -248,7 +248,7 @@ scoped instance : CMRA α where
   pcore_op_left {_ _} := by rintro ⟨rfl⟩
   pcore_idem := by simp
   pcore_op_mono {_ _} := by rintro ⟨rfl⟩
-  extend _ h := ⟨_, _, Equiv.of_eq (discrete h), .rfl, .rfl⟩
+  extend _ h := ⟨_, _, discrete h, .rfl, .rfl⟩
 #rocq_ignore positiveR "Use PNat with scoped CMRA instance"
 #rocq_ignore pos_ra_mixin "Not needed"
 #rocq_ignore pos_op_instance "Use CMRA instance"

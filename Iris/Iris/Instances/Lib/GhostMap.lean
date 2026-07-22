@@ -79,9 +79,9 @@ instance ghost_map_elem_fractional (γ : GName) (k : K) (v : V) :
     unfold ghost_map_elem
     refine .trans ?_ iOwn_op
     refine equiv_iff.mp ?_
-    refine .trans ?_ (iOwn_ne.eqv frag_add_op_eqv)
+    refine .trans ?_ (iOwn_ne.eqv (OFE.Equiv.of_eq frag_add_op_eqv))
     refine OFE.NonExpansive.eqv (OFE.NonExpansive.eqv ?_)
-    exact Agree.idemp.symm
+    exact OFE.Equiv.of_eq Agree.idemp.symm
 
 @[rocq_alias ghost_map_elem_as_fractional]
 instance (γ : GName) (k : K) (v : V) : AsFractional (PROP := IProp GF) (γ ↪◯MAP[k]{.own q} v)
@@ -257,7 +257,7 @@ instance ghost_map_auth_fractional (m : H V) :
     unfold ghost_map_auth
     refine .trans ?_ iOwn_op
     refine equiv_iff.mp ?_
-    refine .trans ?_ (iOwn_ne.eqv auth_dfrac_op_eqv)
+    refine .trans ?_ (iOwn_ne.eqv (OFE.Equiv.of_eq auth_dfrac_op_eqv))
     rfl
 
 @[rocq_alias ghost_map_auth_as_fractional]
@@ -284,13 +284,13 @@ theorem ghost_map_auth_valid_2 {γ} {dq1 dq2 : DFrac} {m1 m2 : H V} :
   ipureintro
   have ⟨h₁, h₂⟩ := auth_op_auth_valid_iff.mp G
   refine ⟨h₁, equiv_iff_eq.mp fun k => ?_⟩
-  have h : _ ≡ _ := fun n => h₂ n k
+  have h : _ ≡ _ := OFE.Equiv.of_eq (congrArg (fun m => get? m k) h₂)
   simp only [get?_map, Option.map] at h
   cases h₁ : get? m1 k <;> cases h₂ : get? m2 k <;> simp only [h₁, h₂] at h
   · rfl
   · exact (OFE.not_none_eqv_some h.to_eq).elim
   · exact (OFE.not_some_eqv_none h.to_eq).elim
-  · exact congrArg some (DiscreteO.eqv_inj (Agree.toAgree_inj h).to_eq)
+  · exact congrArg some (DiscreteO.eqv_inj (Agree.toAgree_inj h))
 
 @[rocq_alias ghost_map_auth_agree]
 theorem ghost_map_auth_agree γ (dq1 dq2 : DFrac) (m1 m2 : H V) :

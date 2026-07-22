@@ -67,7 +67,7 @@ protected def imp (P Q : UPred M) : UPred M where
     refine (uPred_ne (m₂ := ⟨(x₁.val • m₁) • m₂, Hx.validN.mp xP⟩) Hx).mpr (H _ ?_ ?_ ?_)
     · calc x₁.val ≡ x₁ • unit        := unit_right_id.symm
            _      ≼ x₁ • (m₁ • m₂)   := op_mono_right _ inc_unit
-           _      ≡ (x₁ • m₁) • m₂   := assoc
+           _      ≡ (x₁ • m₁) • m₂   := assoc'
     · exact Nat.le_trans Hnle Hn
     · exact (uPred_ne Hx).mp HP
 
@@ -672,10 +672,10 @@ theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 := by
       x.val ≡{n}≡ y1 • y2 := H
       _     ≡{n}≡ (m1 • w1) • (m2 • w2) := Hw1.op Hw2
       _     ≡{n}≡ m1 • (w1 • (m2 • w2)) := assoc.symm.dist
-      _     ≡{n}≡ m1 • ((m2 • w2) • w1) := comm.op_r.dist
-      _     ≡{n}≡ m1 • (m2 • (w2 • w1)) := assoc.symm.op_r.dist
+      _     ≡{n}≡ m1 • ((m2 • w2) • w1) := comm'.op_r.dist
+      _     ≡{n}≡ m1 • (m2 • (w2 • w1)) := assoc'.symm.op_r.dist
       _     ≡{n}≡ (m1 • m2) • (w2 • w1) := assoc.dist
-      _     ≡{n}≡ (m1 • m2) • (w1 • w2) := comm.op_r.dist
+      _     ≡{n}≡ (m1 • m2) • (w1 • w2) := comm'.op_r.dist
 
 theorem ownM_eqv {m1 m2 : M} (H : m1 ≡ m2) : ownM m1 ⊣⊢ ownM m2 :=
   ⟨fun _ _ => (incN_iff_left H.dist).mp, fun _ _ => (incN_iff_left H.dist).mpr⟩
@@ -732,7 +732,7 @@ theorem later_ownM (a : M) : ▷ ownM a ⊢ ∃ b, ownM b ∧ ▷ <si_pure> (SiP
   | n+1, x, ⟨y, hx⟩ => by
     let ⟨a', y', hx', ha', hy'⟩ := extend (validN_succ x.property) hx
     refine ⟨iprop(ownM a' ∧ ▷ <si_pure> (SiProp.internalEq a a')), ⟨a', rfl⟩, ?_, ?_⟩
-    · exact (incN_iff_right (OFE.equiv_dist.mp hx' (n + 1))).mpr (incN_op_left (n + 1) a' y')
+    · exact (incN_iff_right hx'.dist).mpr (incN_op_left (n + 1) a' y')
     · exact OFE.Dist.symm ha'
 
 theorem pure_soundness : iprop(True ⊢ (⌜P⌝ : UPred M)) → P :=
@@ -778,7 +778,7 @@ instance ownM_timeless (a : M) [OFE.DiscreteE a] : BI.Timeless (ownM a) where
     | 0, _, _ => .inl trivial
     | n+1, x, ⟨_, Hxy⟩ =>
       let ⟨_a', y', Hx, Ha', _⟩ := extend (validN_succ x.property) Hxy
-      .inr ⟨y', (Hx.trans (OFE.Equiv.of_eq (OFE.DiscreteE.discrete (Ha'.symm.le n.zero_le)).symm).op_l).dist⟩
+      .inr ⟨y', ((OFE.Equiv.of_eq Hx).trans (OFE.Equiv.of_eq (OFE.DiscreteE.discrete (Ha'.symm.le n.zero_le)).symm).op_l).dist⟩
 
 @[rocq_alias uPred.ownM_persistent]
 instance ownM_persistent (a : M) [CoreId a] : Persistent (ownM a) where

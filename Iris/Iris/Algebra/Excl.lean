@@ -159,10 +159,9 @@ instance [OFE α] : CMRA (Excl α) where
 theorem inc_iff [OFE α] {x y : Excl α} : x ≼ y ↔ y = invalid := by
   constructor
   · rintro ⟨z, hz⟩
-    exact hz.to_eq
+    exact hz
   · intro h
-    exists invalid
-    exact Equiv.of_eq h
+    exact ⟨invalid, h⟩
 
 @[rocq_alias excl_includedN]
 theorem incN_iff [OFE α] {x y : Excl α} (n) : x ≼{n} y ↔ y = invalid := by
@@ -171,8 +170,8 @@ theorem incN_iff [OFE α] {x y : Excl α} (n) : x ≼{n} y ↔ y = invalid := by
   · rintro rfl; exists invalid
 
 @[rocq_alias Excl_inj]
-theorem excl_inj [OFE α] {a b : α} (h : (some (excl a) : Option (Excl α)) ≡ some (excl b)) :
-    a ≡ b := h
+theorem excl_inj [OFE α] {a b : α} (h : (some (excl a) : Option (Excl α)) = some (excl b)) :
+    a = b := Excl.excl.inj (Option.some.inj h)
 
 @[rocq_alias Excl_dist_inj]
 theorem excl_dist_inj [OFE α] {a b : α} {n}
@@ -181,11 +180,12 @@ theorem excl_dist_inj [OFE α] {a b : α} {n}
 
 @[rocq_alias Excl_included]
 theorem excl_included [OFE α] {a b : α} :
-    (some (excl a) : Option (Excl α)) ≼ some (excl b) ↔ a ≡ b := by
-  refine ⟨fun ⟨z, hz⟩ => ?_, fun h => ⟨none, show excl b ≡ excl a from h.symm⟩⟩
+    (some (excl a) : Option (Excl α)) ≼ some (excl b) ↔ a = b := by
+  refine ⟨fun ⟨z, hz⟩ => ?_,
+    fun h => ⟨none, congrArg (fun x => some (excl x)) h.symm⟩⟩
   rcases z with _|z
-  · exact (hz : excl b ≡ excl a).symm
-  · exact ((hz : excl b ≡ invalid) 0).elim
+  · exact (excl_inj hz).symm
+  · exact (Equiv.of_eq hz 0).elim
 
 @[rocq_alias Excl_includedN]
 theorem excl_includedN [OFE α] {a b : α} {n} :
@@ -230,8 +230,8 @@ theorem map_comp (f : α → β) (g : β → γ) :
   cases x <;> simp
 
 @[rocq_alias excl_map_ext]
-theorem map_ext [OFE α] [OFE β] (f g : α → β) (h : ∀ x, f x ≡ g x) : map f x ≡ map g x := by
-  cases x; apply h _; simp
+theorem map_ext [OFE α] [OFE β] (f g : α → β) (h : ∀ x, f x = g x) : map f x = map g x := by
+  cases x <;> simp [h]
 
 @[rocq_alias excl_map_ne]
 theorem map_ne [OFE α] [OFE β] (f : α -n> β) : NonExpansive (map f) where

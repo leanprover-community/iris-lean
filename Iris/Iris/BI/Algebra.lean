@@ -258,7 +258,7 @@ theorem agree_op_equiv_toAgreeI (x y : Agree A) (a : A) :
     have H21 : x • y ≡ toAgree a ⊢@{PROP} x • x ≡ toAgree a := by
       exact (and_intro (H1.trans (internalEq.of_internalEquiv_ne (x • ·))) .rfl).trans internalEq.trans
     have H22 : x • y ≡ toAgree a ⊢@{PROP} x • x ≡ x := by
-      exact emp_sep.2.trans (sep_mono_left (internalEq.of_equiv Agree.idemp)) |>.trans sep_elim_left
+      exact emp_sep.2.trans (sep_mono_left (internalEq.of_equiv (OFE.Equiv.of_eq Agree.idemp))) |>.trans sep_elim_left
     refine (and_intro (H22.trans internalEq.symm) H21).trans internalEq.trans
   apply and_intro H1
   exact (and_intro (H1.trans internalEq.symm) H2).trans internalEq.trans
@@ -282,7 +282,7 @@ theorem toAgree_includedI (a b : A) :
     show SiProp.internalEq a b ⊢ (∃ c, SiProp.internalEq (toAgree b) (toAgree a • c))
     refine exists_intro_trans (toAgree a) ?_
     refine internalEq_entails.mpr fun n heq => ?_
-    exact (NonExpansive.ne heq.symm).trans (idemp.symm n)
+    exact (NonExpansive.ne heq.symm).trans (Dist.of_eq idemp.symm)
 
 end agree_inclusion
 
