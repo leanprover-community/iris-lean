@@ -60,13 +60,11 @@ instance frag_ne {q : Qp} : NonExpansive (frag q : A → UFracAuth) where
 
 @[rocq_alias ufrac_auth_auth_discrete]
 instance auth_discrete {q : Qp} {a : A} [DiscreteE a] : DiscreteE (●U{q} a : UFracAuth) :=
-  letI _ : DiscreteE (some ((⟨q⟩ : UFrac), a)) := some_is_discrete
   letI _ : DiscreteE (unit : Option (UFrac × A)) := none_is_discrete
   by infer_instance
 
 @[rocq_alias ufrac_auth_frag_discrete]
 instance frag_discrete {q : Qp} {a : A} [DiscreteE a] : DiscreteE (◯U{q} a : UFracAuth) :=
-  letI _ : DiscreteE (some ((⟨q⟩ : UFrac), a)) := some_is_discrete
   by infer_instance
 
 /-! ## Validity -/
@@ -90,8 +88,6 @@ theorem agreeN {n : Nat} {p : Qp} {a b : A} (h : ✓{n} ((●U{p} a : UFracAuth)
   | none => exact hmc.2
   | some (r, _) =>
     have hp : p = p + r.frac := UFrac.ext_iff.mp hmc.1
-    have hpv := congrArg Subtype.val hp
-    have := r.frac.2
     grind
 
 @[rocq_alias ufrac_auth_agree]
@@ -125,12 +121,12 @@ theorem included [CMRA.Discrete A] {q p : Qp} {a b : A}
 @[rocq_alias ufrac_auth_includedN_total]
 theorem includedN_total [IsTotal A] {n : Nat} {q p : Qp} {a b : A}
     (h : ✓{n} ((●U{p} a : UFracAuth) • ◯U{q} b)) : b ≼{n} a :=
-  some_incN_some_iff_is_total.mp (includedN h)
+  some_incN_some_iff_is_total.mp <| includedN h
 
 @[rocq_alias ufrac_auth_included_total]
 theorem included_total [CMRA.Discrete A] [IsTotal A] {q p : Qp} {a b : A}
     (h : ✓ ((●U{p} a : UFracAuth) • ◯U{q} b)) : b ≼ a :=
-  inc_of_some_inc_some (included h)
+  inc_of_some_inc_some <| included h
 
 /-! ## Auth-only validity -/
 
@@ -164,15 +160,11 @@ theorem frag_op {q1 q2 : Qp} {a1 a2 : A} :
 
 @[rocq_alias ufrac_auth_frag_op_validN]
 theorem frag_op_validN {n : Nat} {q1 q2 : Qp} {a b : A} :
-    (✓{n} ((◯U{q1} a : UFracAuth) • ◯U{q2} b)) ↔ ✓{n} (a • b) := by
-  show ✓{n} (◯U{q1 + q2} (a • b) : UFracAuth) ↔ _
-  exact frag_validN
+    (✓{n} ((◯U{q1} a : UFracAuth) • ◯U{q2} b)) ↔ ✓{n} (a • b) := frag_validN
 
 @[rocq_alias ufrac_auth_frag_op_valid]
 theorem frag_op_valid {q1 q2 : Qp} {a b : A} :
-    (✓ ((◯U{q1} a : UFracAuth) • ◯U{q2} b)) ↔ ✓ (a • b) := by
-  show ✓ (◯U{q1 + q2} (a • b) : UFracAuth) ↔ _
-  exact frag_valid
+    (✓ ((◯U{q1} a : UFracAuth) • ◯U{q2} b)) ↔ ✓ (a • b) := frag_valid
 
 /-! ## IsOp type class instances -/
 
@@ -196,19 +188,17 @@ instance isOp_ufrac_auth_core_id {q q1 q2 : Qp} {a : A}
 @[rocq_alias ufrac_auth_update]
 theorem update {p q : Qp} {a b a' b' : A} (h : (a, b) ~l~> (a', b')) :
     ((●U{p} a : UFracAuth) • ◯U{q} b) ~~> (●U{p} a') • ◯U{q} b' :=
-  auth_update (.option (.prod_2 _ _ h))
+  auth_update <| .option (.prod_2 _ _ h)
 
 @[rocq_alias ufrac_auth_update_surplus]
 theorem update_surplus {p q : Qp} {a b : A} (h : ✓ (a • b)) :
     (●U{p} a : UFracAuth) ~~> (●U{p + q} (a • b)) • ◯U{q} b := by
   refine Auth.auth_update_alloc (local_update_unital.mpr fun n mpa _ heq => ?_)
-  have hmpa : some ((⟨p⟩ : UFrac), a) ≡{n}≡ mpa :=
-    heq.trans (CMRA.unit_left_id_dist mpa)
-  have hop :
-      some ((⟨p + q⟩ : UFrac), a • b)
-        ≡{n}≡ some ((⟨q⟩ : UFrac), b) • some ((⟨p⟩ : UFrac), a) :=
-    ⟨(CMRA.comm (x := (⟨p⟩ : UFrac)) (y := ⟨q⟩)).dist, CMRA.op_commN⟩
-  exact ⟨⟨trivial, h.validN⟩, hop.trans hmpa.op_r⟩
+  refine ⟨⟨trivial, h.validN⟩, ?_⟩
+  have hop : some ((⟨p + q⟩ : UFrac), a • b) ≡{n}≡ some ((⟨q⟩ : UFrac), b) • some ((⟨p⟩ : UFrac), a) :=
+    ⟨CMRA.comm.dist, CMRA.op_commN⟩
+  refine hop.trans ?_
+  exact (heq.trans (CMRA.unit_left_id_dist mpa)).op_r
 
 @[rocq_alias ufrac_auth_update_surplus_cancel]
 theorem update_surplus_cancel {p q : Qp} {a b : A} (h : CMRA.Cancelable b) :
@@ -218,19 +208,14 @@ theorem update_surplus_cancel {p q : Qp} {a b : A} (h : CMRA.Cancelable b) :
   match mpa with
   | none =>
     have hp : p + q = q := UFrac.ext_iff.mp heq.1
-    have hpv := congrArg Subtype.val hp
-    have := p.2
     grind
   | some (p', a') =>
     have hpq : p + q = q + p'.frac := UFrac.ext_iff.mp heq.1
-    have hp : p = p'.frac := by
-      apply Subtype.ext
-      have hpqv := congrArg Subtype.val hpq
-      grind
-    have hv' := (OFE.Dist.validN (CMRA.op_commN (x := a) (y := b))).mp hv.2
-    have ha : a ≡{n}≡ a' := CMRA.cancelableN hv' (CMRA.op_commN.trans heq.2)
-    exact ⟨⟨trivial, CMRA.validN_op_left hv.2⟩,
-      ⟨OFE.Dist.of_eq (UFrac.ext_iff.mpr hp), ha⟩⟩
+    have hp : p = p'.frac := by grind
+    refine ⟨⟨trivial, CMRA.validN_op_left hv.2⟩, ?_⟩
+    refine ⟨OFE.Dist.of_eq (UFrac.ext_iff.mpr hp), ?_⟩
+    refine CMRA.cancelableN ?_ (CMRA.op_commN.trans heq.2)
+    exact (OFE.Dist.validN CMRA.op_commN).mp hv.2
 
 /-! ## Functors -/
 
