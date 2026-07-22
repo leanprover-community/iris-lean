@@ -117,21 +117,23 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
         -- Introduction of a universally quantified variable
         (fun _ B => iIntroCore hyps B ((ref, .all) :: pats) tacName k)
     | .allwand =>
-      let k' : ProofModeM Q($P ⊢ $Q) := do
-        let A1 ← mkFreshExprMVarQ q($prop)
-        let A2 ← mkFreshExprMVarQ q($prop)
-        let instFromImp ← ProofModeM.trySynthInstanceQ q(FromImp $Q $A1 $A2)
-        let instFromWand ← ProofModeM.trySynthInstanceQ q(FromWand $Q .out $A1 $A2)
-        let instPersistent ← ProofModeM.trySynthInstanceQ q(TCOr (Persistent $A1) (Intuitionistic $P))
-        match instFromWand, instFromImp, instPersistent with
-        -- Introduction of a wand premise or a pure premise, if possible
-        | some _, _, _ | _, some _, some _ =>
-          iIntroCore hyps Q ((ref, .intro ⟨ref, (.one (← `(binderIdent| _)))⟩) :: (ref, .allwand) :: pats) tacName k
-        | _, _, _ =>
-          -- No more universally quantified variable or premise to be introduced
-          iIntroCore hyps Q pats tacName k
       -- Introduction of a universally quantified variable
-      iIntroCoreForallIntro ref none Q tacName k'
+      iIntroCoreForallIntro ref none Q tacName
+        (some (do
+          let A1 ← mkFreshExprMVarQ q($prop)
+          let A2 ← mkFreshExprMVarQ q($prop)
+          let instFromImp ← ProofModeM.trySynthInstanceQ q(FromImp $Q $A1 $A2)
+          let instFromWand ← ProofModeM.trySynthInstanceQ q(FromWand $Q .out $A1 $A2)
+          let instPersistent ← ProofModeM.trySynthInstanceQ q(TCOr (Persistent $A1) (Intuitionistic $P))
+          match instFromWand, instFromImp, instPersistent with
+          -- Introduction of a wand premise or a pure premise, if possible
+          | some _, _, _ | _, some _, some _ =>
+            iIntroCore hyps Q ((ref, .intro ⟨ref, (.one (← `(binderIdent| _)))⟩) ::
+              (ref, .allwand) :: pats) tacName k
+          | _, _, _ =>
+            -- No more universally quantified variable or premise to be introduced
+            iIntroCore hyps Q pats tacName k)
+        )
         (fun _ B => iIntroCore hyps B ((ref, .allwand) :: pats) tacName k)
     | .pureintro =>
       let ⟨pf, m⟩ ← iPureIntroCore bi P Q tacName
