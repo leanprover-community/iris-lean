@@ -59,7 +59,7 @@ open Lean Elab Tactic Meta Qq BI Std
   which forces the reduction of `wandM` (`-∗?`), occurrences of `Option.getD`
   and pattern matching (`match … with …`).
 -/
-def pmReduce (e : Expr) : ProofModeM Expr := do
+private def reduceWandM (e : Expr) : ProofModeM Expr := do
   #[``BIBase.wandM, ``Option.getD].foldlM (·.addDeclToUnfold ·) {} >>=
   (Simp.mkContext {} #[·] (← getSimpCongrTheorems) >>= (Lean.Meta.dsimp e · <&> Prod.fst))
 
@@ -90,13 +90,13 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
   let hϕ ← iSolveSidecondition q($ϕ) false
 
   -- Simplify occurrences of `wandM`, `Option.getD`, pattern matching, etc.
-  let Pout' : Q($X → $prop) ← pmReduce Pout
-  let Q'' : Q($X → $prop) ← pmReduce Q'
+  let Pout' : Q($X → $prop) ← reduceWandM Pout
+  let Q'' : Q($X → $prop) ← reduceWandM Q'
 
   -- Add the new goal into the proof state upon applying the case destruction patterns
   match mPclose with
   | ~q(some $f) =>
-    let f' : Q($X → $prop) ← pmReduce f
+    let f' : Q($X → $prop) ← reduceWandM f
     let pf : Q(∀ x, $e'' ∗ $Pout x ∗ $f x ⊢ $Q' x) ←
       withLocalDeclDQ (← mkFreshUserName .anonymous) X fun x => do
         match closePat with
