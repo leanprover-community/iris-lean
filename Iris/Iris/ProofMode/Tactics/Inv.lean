@@ -130,14 +130,12 @@ syntax (name := iinv) "iinv " colGt term (" $$ " colGt ppSpace specPat)?
 /--
   `iinv H with casesPat` opens an invariant hypothesis `H` and uses the
   cases pattern `casesPat` to destruct the result without any additional
-  hypothesis for closing the invariant. The type class
-  `elimInv_acc_without_close` is used with this tactic.
+  hypothesis for closing the invariant.
 
   `iinv H with casesPat closePat` opens an invariant hypothesis `H`,
   uses the cases pattern `casesPat` to destruct the result and generates a
   hypothesis for closing the invariant, which is destructed by the cases
-  pattern `closePat`. The type class `elimInv_acc_with_close` is used with
-  this tactic.
+  pattern `closePat`.
 
   Furthermore, the following syntax is available.
   - `iinv N with casesPat`: similar to `iinv H with casesPat`, where
