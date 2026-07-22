@@ -24,7 +24,7 @@ inductive IsOp.Direction
 meta section
 
 @[reducible]
-def IsOp.Direction.mapToInOut (d : IsOp.Direction) : InOut :=
+def IsOp.Direction.toInOut (d : IsOp.Direction) : InOut :=
   match d with | merge => .out | split => .in
 
 end
@@ -35,9 +35,9 @@ end
 -/
 @[ipm_class, rocq_alias IsOp, rocq_alias IsOp', rocq_alias IsOp'LR]
 class IsOp [CMRA α]
-    (d : IsOp.Direction) (a : semiOutParam <| inOutParam d.mapToInOut α)
-    (b1 : semiOutParam <| inOutParam d.mapToInOut.negate α)
-    (b2 : semiOutParam <| inOutParam d.mapToInOut.negate α) where
+    (d : IsOp.Direction) (a : semiOutParam <| inOutParam d.toInOut α)
+    (b1 : semiOutParam <| inOutParam d.toInOut.negate α)
+    (b2 : semiOutParam <| inOutParam d.toInOut.negate α) where
   is_op : a ≡ b1 • b2
 
 set_option synthInstance.checkSynthOrder false in

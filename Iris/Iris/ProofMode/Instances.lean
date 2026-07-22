@@ -175,7 +175,6 @@ instance intoForall_persistently [BI PROP] [BIPersistentlyForall PROP] (P : PROP
     [h : IntoForall P Φ] : IntoForall iprop(<pers> P) (fun a => iprop(<pers> (Φ a))) where
   into_forall := (persistently_mono h.1).trans persistently_forall_mp
 
-set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias into_forall_wand_pure]
 instance intoForall_wand_pure [BI PROP] (P Q : PROP) Φ
     [h : FromPure a P .out Φ] : IntoForall iprop(P -∗ Q) (fun _ : Φ => Q) where
@@ -681,7 +680,6 @@ instance intoPure_pure_or (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
     [h1 : IntoPure P1 φ1] [h2 : IntoPure P2 φ2] : IntoPure iprop(P1 ∨ P2) (φ1 ∨ φ2) where
   into_pure := (or_mono h1.1 h2.1).trans pure_or.1
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_pure_pure_impl]
 instance intoPure_pure_imp (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
     [h1 : FromPure a P1 .out φ1] [or : TCOr (TCEq a false) (BIAffine PROP)] [h2 : IntoPure P2 φ2] : IntoPure iprop(P1 → P2) (φ1 → φ2) where

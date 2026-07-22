@@ -128,7 +128,7 @@ private def getIPMParamKinds? (env : Environment) (declName : Name) : Option (Ar
 @[reducible, expose]
 def inOutParam (_io : InOut) (α : Sort u) : Sort u := α
 
-private def parseSemiOutParamIPM (d : Expr) : Option Expr := do
+private def parseInOutParam (d : Expr) : Option Expr := do
   if d.isAppOfArity ``semiOutParam 1 then
     let expr := d.getAppArgs[0]!
     if expr.isAppOfArity ``inOutParam 2 then
@@ -146,7 +146,7 @@ Except MessageData (Array ParamKind) :=
       computeParamKinds (params.push .uncheckedIn) b
     else if d.isOutParam then
       computeParamKinds (params.push .out) b
-    else if let some expr := parseSemiOutParamIPM d then
+    else if let some expr := parseInOutParam d then
       computeParamKinds (params.push (.semiOut expr)) b
     else if d.isAppOfArity ``inOutParam 2 then
       Except.error m!"invalid ipm_class, `inOutParam` used in parameter \
