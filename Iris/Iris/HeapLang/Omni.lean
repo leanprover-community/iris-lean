@@ -1,8 +1,3 @@
-/-
-An omnisemantics (omni-WP) for a fragment of HeapLang, built as the greatest
-fixpoint of the safety functional over the language's `primStep`, and a bridge
-showing it produces an `adequate` (partial-correctness) predicate.
--/
 module
 
 public import Iris.HeapLang.Instances
@@ -38,17 +33,12 @@ theorem gfp_fix {f : α → α} (hm : monotone f) : gfp f = f (gfp f) :=
 
 end gfp
 
-/-! ## The omni-WP for HeapLang
-
-`WPArg := State → (Val → State → Prop) → Prop`, ordered pointwise (so it is a
-`CompleteLattice` via the `Prop` instance and pi-lifting), and `wp` is the gfp
-of the safety functional `wpF`. -/
+/-! ## The omni-WP for HeapLang -/
 
 abbrev WPArg := Exp → State → (Val → State → Prop) → Prop
 
-/-- One unfolding of the (sequential) safety predicate: either a value
-satisfying the post, or reducible and every successor is again safe. Forks are
-forbidden — this is the fork-free fragment, so every step has `efs = []`. -/
+/-- Weakest precondition functor
+This wp forbids forks. -/
 def wpF (r : WPArg) : WPArg := fun e σ Q =>
   (∃ v, ToVal.toVal e = some v ∧ Q v σ) ∨
   (Reducible (e, σ) ∧
@@ -71,18 +61,10 @@ theorem wp_unfold_apply {e σ Q} : wp e σ Q ↔ wpF wp e σ Q := by rw [← wp_
 
 /-- Coinduction principle: an invariant closed under `wpF` is below `wp`. -/
 theorem wp_coind (I : WPArg) (h : ∀ e σ Q, I e σ Q → wpF I e σ Q) :
-    ∀ e σ Q, I e σ Q → wp e σ Q :=
-  le_gfp (f := wpF) (x := I) h
+    ∀ e σ Q, I e σ Q → wp e σ Q := le_gfp (x := I) h
 
-/-! ## Adequacy bridge (fork-free fragment)
+/-! ## Adequacy (fork-free fragment) -/
 
-Since `wpF` forbids forks, a `wp`-safe singleton pool steps only to `wp`-safe
-singleton pools. Lifting this invariant along `-·->ₜₚ*` discharges the three
-`AdequateNoFork` obligations. -/
-
-/-- A `wp`-safe thread that steps stays `wp`-safe (and the step produces no
-forks). The new state `σ'` is the successor's state, so there is no
-interference to reason about. -/
 theorem wp_primStep {e σ Q κ e' σ' efs}
     (hwp : wp e σ Q) (hstep : (e, σ) -<κ>-> (e', σ', efs)) :
     efs = [] ∧ wp e' σ' Q := by
@@ -91,14 +73,12 @@ theorem wp_primStep {e σ Q κ e' σ' efs}
   · exact absurd (Language.val_stuck hstep) (by rw [hv]; exact Option.some_ne_none v)
   · exact hk κ e' σ' efs hstep
 
-/-- A `wp`-safe thread is not stuck. -/
 theorem wp_notStuck {e σ Q} (hwp : wp e σ Q) : NotStuck (e, σ) := by
   rw [wp_unfold_apply] at hwp
   rcases hwp with ⟨v, hv, _⟩ | ⟨hred, _⟩
   · exact .inl (by rw [hv]; exact rfl)
   · exact .inr hred
 
-/-- One pool step out of a `wp`-safe singleton lands on a `wp`-safe singleton. -/
 theorem wp_erasedStep {e σ Q t' σ'} (hwp : wp e σ Q)
     (hstep : ([e], σ) -·->ₜₚ (t', σ')) : ∃ e', t' = [e'] ∧ wp e' σ' Q := by
   obtain ⟨κ, hstep⟩ := hstep
@@ -106,14 +86,12 @@ theorem wp_erasedStep {e σ Q t' σ'} (hwp : wp e σ Q)
   cases hstep with
   | @atomic e₀ _ _ e' _ efs hbase t₁ t₂ =>
     obtain ⟨hpool, rfl⟩ := Prod.mk.injEq .. ▸ hsrc
-    -- [e] = t₁ ++ e₀ :: t₂ forces t₁ = t₂ = [] and e₀ = e
     rcases List.append_eq_cons_iff.mp hpool.symm with ⟨rfl, heq⟩ | ⟨a, _, hcontra⟩
     · obtain ⟨rfl, rfl⟩ := List.cons_eq_cons.mp heq
       obtain ⟨rfl, hwp'⟩ := wp_primStep hwp hbase
       exact ⟨e', by simp, hwp'⟩
     · exact absurd hcontra (by simp)
 
-/-- Reaching any pool from a `wp`-safe singleton keeps it a `wp`-safe singleton. -/
 theorem wp_reach {e σ Q} (hwp : wp e σ Q) :
     ∀ {p : List Exp × State}, ([e], σ) -·->ₜₚ* p → ∃ e', p.1 = [e'] ∧ wp e' p.2 Q := by
   intro p hreach
