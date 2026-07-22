@@ -84,8 +84,7 @@ private def iCasesExists {prop : Q(Type u)} {bi : Q(BI $prop)} (pat : TSyntax `r
   let pf : Q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) ←
     iPureCases q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) pat fun g => do
       let B : Q($prop) ← mkFreshExprMVarQ q($prop)
-      let eq ← isDefEq (← g.getType) q($P ∗ □?$p $B ⊢ $goal)
-      if !eq then
+      unless ← isDefEq (← g.getType) q($P ∗ □?$p $B ⊢ $goal) do
         throwError "{tacName}: unexpected goal {goal} after intro pattern"
       k (Expr.headBeta (← instantiateMVars B))
   return q(exists_elim' $pf)
