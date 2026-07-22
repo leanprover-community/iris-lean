@@ -54,8 +54,8 @@ theorem asEmpValid_2 {PROP} [bi : BI PROP] {P: PROP} (φ : Prop) {io}
 
 @[ipm_class, rocq_alias AsEmpValid0]
 class AsEmpValid0 (d : AsEmpValid.Direction) (φ : Prop) (io : InOut := d.toInOut)
-    (PROP : semiOutParam $ inOutParam io <| Type _)
-    (bi : semiOutParam $ inOutParam d.toInOut <| BI PROP) (P : outParam PROP) where
+    (PROP : semiOutParamIPM io (Type _))
+    (bi : semiOutParamIPM d.toInOut (BI PROP)) (P : outParam PROP) where
   as_emp_valid_0 : AsEmpValid d φ io PROP bi P
 
 attribute [ipm_backtrack,instance] AsEmpValid0.as_emp_valid_0
