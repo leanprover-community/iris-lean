@@ -90,25 +90,6 @@ instance instDiscreteFunInsertDiscrete (f : (a : ι) → β a) (x : ι)
 
 end OFE
 
-private theorem discrete_fun_validN_op_apply {ι : Type _} {β : ι → Type _}
-    [∀ i, UCMRA (β i)] {n : Nat} {f g : (a : ι) → β a}
-    (h : ✓{n} f • g) (a : ι) : ✓{n} f a • g a := h a
-
-private theorem discrete_fun_insert_validN_op_at {ι : Type _} [DecidableEq ι]
-    {β : ι → Type _} [∀ i, UCMRA (β i)] {n : Nat} {x : ι}
-    {y : β x} {f g : (a : ι) → β a}
-    (h : ✓{n} discreteFunInsert x y f • g) : ✓{n} y •? some (g x) := by
-  change ✓{n} y • g x
-  simpa only [discrete_fun_lookup_insert] using
-    discrete_fun_validN_op_apply h x
-
-private theorem discrete_fun_insert_validN_op_ne {ι : Type _} [DecidableEq ι]
-    {β : ι → Type _} [∀ i, UCMRA (β i)] {n : Nat} {x x' : ι}
-    {y : β x} {f g : (a : ι) → β a} (hxx' : x ≠ x')
-    (h : ✓{n} discreteFunInsert x y f • g) : ✓{n} f x' • g x' := by
-  simpa only [discrete_fun_lookup_insert_ne (h := hxx') ..] using
-    discrete_fun_validN_op_apply h x'
-
 section CMRA
 
 variable {ι : Type _} [DecidableEq ι] {β : ι → Type _}
@@ -198,8 +179,11 @@ theorem discrete_fun_insert_update_p (x : ι) (P : β x → Prop)
     (hQ : ∀ y₂, P y₂ → Q (discreteFunInsert x y₂ g)) :
     discreteFunInsert x y₁ g ~~>: Q := by
   refine UpdateP.total.mpr fun n gf hgf => ?_
+  change (∀ a, ✓{n} discreteFunInsert x y₁ g a • gf a) at hgf
   obtain ⟨y₂, hy₂, hvalid⟩ :=
-    hy n (some (gf x)) (discrete_fun_insert_validN_op_at hgf)
+    hy n (some (gf x)) (by
+      change ✓{n} y₁ • gf x
+      simpa only [discrete_fun_lookup_insert] using hgf x)
   refine ⟨discreteFunInsert x y₂ g, hQ y₂ hy₂, fun x' => ?_⟩
   change ✓{n} discreteFunInsert x y₂ g x' • gf x'
   by_cases hx'x : x' = x
@@ -207,7 +191,7 @@ theorem discrete_fun_insert_update_p (x : ι) (P : β x → Prop)
     rw [discrete_fun_lookup_insert]
     exact hvalid
   · simpa only [discrete_fun_lookup_insert_ne (h := Ne.symm hx'x) ..] using
-      discrete_fun_insert_validN_op_ne (Ne.symm hx'x) hgf
+      hgf x'
 
 @[rocq_alias discrete_fun_insert_updateP']
 theorem discrete_fun_insert_update_p' (x : ι) (P : β x → Prop)
