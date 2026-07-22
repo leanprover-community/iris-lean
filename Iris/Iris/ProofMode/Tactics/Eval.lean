@@ -32,7 +32,7 @@ private def iEvalOne {u} {prop : Q(Type u)} (bi : Q(BI $prop))
   let newTy : Q($prop) ←
     withLocalDeclDQ (← mkFreshUserName .anonymous) q($prop) fun newTy => do
       let m ← mkFreshExprSyntheticOpaqueMVar <|
-        match isGoal with | true => q($newTy ⊢ $ty) | false => q($ty ⊢ $newTy)
+        if isGoal then q($newTy ⊢ $ty) else q($ty ⊢ $newTy)
       let [g] ← evalTacticAt tac m.mvarId!
       | throwError "ieval: the supplied tactic does not produce exactly one subgoal"
       let some #[_, _, lhs, rhs] ← g.getType <&> (·.appM? ``Entails)
