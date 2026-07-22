@@ -119,10 +119,10 @@ private def iCasesSep {prop : Q(Type u)} (bi : Q(BI $prop))
     let goal' := q(iprop(□ $A2 -∗ $goal))
     let pf ← k1 hyps goal' A1 fun hyps goal' => do
       let goal'' ← mkFreshExprMVarQ q($prop)
-      let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $goal' .in iprop(□ $A2) $goal'')
+      let .some inst ← ProofModeM.trySynthInstanceQ q(FromWand $goal' .in iprop(□ $A2) $goal'')
         | throwError "icases: internal error: {goal'} is not a wand"
       let pf ← k2 hyps goal'' A2 k
-      return q((wand_intro $pf).trans (from_wand .in (Q1:=iprop(□ $A2))))
+      return q((wand_intro $pf).trans $(inst).from_wand)
     return q(and_elim_intuitionistic $pf)
   | .inr _ =>
     let .some _ ← ProofModeM.trySynthInstanceQ q(IntoSep $A $A1 $A2)
@@ -130,10 +130,10 @@ private def iCasesSep {prop : Q(Type u)} (bi : Q(BI $prop))
     let goal' := q(iprop($A2 -∗ $goal))
     let pf ← k1 hyps goal' A1 fun hyps goal' => do
       let goal'' ← mkFreshExprMVarQ q($prop)
-      let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $goal' .in $A2 $goal'')
+      let .some inst ← ProofModeM.trySynthInstanceQ q(FromWand $goal' .in $A2 $goal'')
         | throwError "icases: internal error: {goal'} is not a wand"
       let pf ← k2 hyps goal'' A2 k
-      return q((wand_intro $pf).trans (from_wand .in (Q1:=$A2)))
+      return q((wand_intro $pf).trans $(inst).from_wand)
     return q(sep_elim_spatial (A := $A) $pf)
 
 /-- Destruct a disjunction hypothesis [A] into two cases and continue separately on each branch. -/

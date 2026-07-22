@@ -282,7 +282,7 @@ theorem acc_one (E : CoPset) (N : Namespace) (γ : GName) (P : IProp GF) (Hsub :
     iapply own_one_l $$ Hγ Hγ'
 
 @[rocq_alias cinv_cancel]
-theorem cancel (E : CoPset) (N : Namespace) (γ : GName) (P : IProp GF) (Hsub : ↑N ⊆ E) :
+theorem cancel (E : CoPset) {N : Namespace} {γ : GName} {P : IProp GF} (Hsub : ↑N ⊆ E) :
     ⊢ cinv N γ P -∗ own γ (1 : Qp) ={E}=∗ ▷ P := by
   iintro #Hinv Hγ
   imod acc_one _ _ _ _ Hsub $$ Hinv Hγ with ⟨HP, -⟩
