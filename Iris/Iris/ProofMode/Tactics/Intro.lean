@@ -63,11 +63,10 @@ open Lean Elab Tactic Meta Qq BI Std
   `.all` and `.allwand`.
 -/
 private def iIntroCoreForallIntro {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
-    {P : Q($prop)} (ref : Syntax) (n : Option <| TSyntax ``binderIdent)
+    {P : Q($prop)} (pat : TSyntax `rcasesPat)
     (Q : Q($prop)) (tacName : String) (k' : Option <| ProofModeM Q($P ⊢ $Q))
-    (k : Q($prop) → (B : Q($prop)) → ProofModeM Q($P ⊢ $B)) :
+    (k : MVarId → (B : Q($prop)) → ProofModeM Q($P ⊢ $B)) :
     ProofModeM Q($P ⊢ $Q) := do
-  let ⟨n, _⟩ ← getFreshName <| n.getD (← `(binderIdent| _))
   let v ← mkFreshLevelMVar
   let α ← mkFreshExprMVarQ q(Sort v)
   let Φ ← mkFreshExprMVarQ q($α → $prop)
@@ -76,11 +75,12 @@ private def iIntroCoreForallIntro {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     throwError "{tacName}: {Q} cannot be turned into a universal quantifier or pure hypothesis"
   | none, some k' => k'
   | some _, _ =>
-    withLocalDeclDQ n α fun x => do
-      addLocalVarInfo ref (← getLCtx) x α
-      have B : Q($prop) := Expr.headBeta q($Φ $x)
-      let pf : Q(∀ x, $P ⊢ $Φ x) ← mkLambdaFVars #[x] <|← k x B
-      return q(from_forall_intro $pf)
+    let pf : Q(∀ x, $P ⊢ $Φ x) ← iPureCases q(∀ x, $P ⊢ $Φ x) pat fun g => g.withContext do
+      let B : Q($prop) ← mkFreshExprMVarQ q($prop)
+      unless ← isDefEq (← g.getType) q($P ⊢ $B) do
+        throwError "{tacName}: internal error: unexpected goal after intro pattern"
+      k g (Expr.headBeta (← instantiateMVars B))
+    return q(from_forall_intro (Q := $Q) $pf)
 
 /-- Return `true` if there is a premise to introduce using `.allwand` (`**`). -/
 private def iIntroCoreAllWandCheck {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
@@ -130,14 +130,14 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     | .simptrivial =>
       iIntroCore hyps Q ((ref, .simp) :: (ref, .trivial) :: pats) tacName k
     | .all =>
-      iIntroCoreForallIntro ref none Q tacName
+      iIntroCoreForallIntro (← `(rcasesPat| _)) Q tacName
         -- No more universally quantified variable to be introduced
         (iIntroCore hyps Q pats tacName k)
         -- Introduction of a universally quantified variable
         (fun _ B => iIntroCore hyps B ((ref, .all) :: pats) tacName k)
     | .allwand =>
       -- Introduction of a universally quantified variable
-      iIntroCoreForallIntro ref none Q tacName
+      iIntroCoreForallIntro (← `(rcasesPat| _)) Q tacName
         (some (do
           -- Introduction of a wand premise or a pure premise, if possible
           if ← iIntroCoreAllWandCheck (bi := bi) P Q then
@@ -166,20 +166,15 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
         let res ← s.resolveOne hyps >>= iFrame hyps Q
         res.finish (iIntroCore · · ((ref, .clear selPats) :: pats) tacName k)
     | .intro ⟨_, .rewrite direction⟩ =>
-      iIntroCoreForallIntro ref none Q tacName none <|
-        fun x B => iPureRewriteCoreAux hyps B x direction tacName (iIntroCore · · pats tacName k)
+      let ⟨n, _⟩ ← getFreshName (← `(binderIdent| _))
+      iIntroCoreForallIntro (← `(rcasesPat| $(mkIdent n):ident)) Q tacName none
+        fun g B => g.withContext do
+          let some ldecl := (← g.getDecl).lctx.findFromUserName? n
+            | throwError "{tacName}: internal error: rewrite hypothesis not found"
+          iPureRewriteCoreAux hyps B ldecl.toExpr direction tacName (iIntroCore · · pats tacName k)
     | .intro ⟨_, .pure pat⟩ =>
-      let v ← mkFreshLevelMVar
-      let α ← mkFreshExprMVarQ q(Sort v)
-      let Φ ← mkFreshExprMVarQ q($α → $prop)
-      let .some _ ← ProofModeM.trySynthInstanceQ q(FromForall $Q $Φ)
-      | throwError "{tacName}: {Q} cannot be turned into a universal quantifier or pure hypothesis"
-      let pf : Q(∀ x, $P ⊢ $Φ x) ← iPureCases q(∀ x, $P ⊢ $Φ x) pat fun g => do
-        let B : Q($prop) ← mkFreshExprMVarQ q($prop)
-        let eq ← isDefEq (← g.getType) q($P ⊢ $B)
-        if !eq then throwError "{tacName}: internal error: unexpected goal after intro pattern"
-        iIntroCore hyps (Expr.headBeta (← instantiateMVars B)) pats tacName k
-      return q(from_forall_intro (Q := $Q) $pf)
+      iIntroCoreForallIntro pat Q tacName none fun _ B =>
+        iIntroCore hyps B pats tacName k
     | .intro pat =>
       let A1 ← mkFreshExprMVarQ q($prop)
       let A2 ← mkFreshExprMVarQ q($prop)
