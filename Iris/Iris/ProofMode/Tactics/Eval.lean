@@ -61,7 +61,7 @@ private def iEvalCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   match selTargets with
   -- No selection pattern given, apply the tactics to the proof goal
   | none =>
-    let ⟨newGoal, (pf : Q($newGoal ⊢ $goal))⟩ ← iEvalOne bi tac true goal
+    let ⟨newGoal, (pf : Q($newGoal ⊢ $goal))⟩ ← iEvalOne (isGoal := true) bi tac goal
     let pf' ← addBIGoal hyps newGoal
     return q($(pf').trans $pf)
   -- Selection patterns given, apply the tactics to the chosen hypotheses
@@ -74,7 +74,7 @@ private def iEvalCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
         throwError "ieval: pure hypotheses in the selection pattern is not supported"
       | .ipm ivar =>
         let some ⟨newE, newHyps, pf⟩ ← evalState.newHyps.evalReplace ivar fun ty => do
-          let ⟨newTy, pf⟩ ← iEvalOne bi tac false ty
+          let ⟨newTy, pf⟩ ← iEvalOne (isGoal := false) bi tac ty
           return ⟨newTy, (pf : Q($ty ⊢ $newTy))⟩
         | throwError m!"ieval: unable to find the hypothesis {ivar.name} in the context"
         pure { newE, newHyps, pf := q($(evalState.pf).trans $pf) }
