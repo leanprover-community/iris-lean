@@ -283,7 +283,8 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
 
     match outGives, pfGives with
     | some outGives, pfGives =>
-      let pf ← iCasesCore st.newHyps goal (.conjunction pat1.ref [pat1, .intuitionistic pat2.ref pat2])
+      let pf ← iCasesCore st.newHyps goal
+        ⟨pat1.ref, (.conjunction [pat1.case, .intuitionistic pat2.case])⟩
         q($st.p) q(iprop($st.outAs ∗ □ $outGives)) "icombine"
       mvar.assign q(combine_as_gives $st.pfAs $pfGives $pf)
     | none, _ => throwNoInstanceForGives

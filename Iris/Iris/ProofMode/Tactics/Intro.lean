@@ -126,7 +126,7 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
         match instFromWand, instFromImp, instPersistent with
         -- Introduction of a wand premise or a pure premise, if possible
         | some _, _, _ | _, some _, some _ =>
-          iIntroCore hyps Q ((ref, .intro (.one ref (← `(binderIdent| _)))) :: (ref, .allwand) :: pats) tacName k
+          iIntroCore hyps Q ((ref, .intro ⟨ref, (.one (← `(binderIdent| _)))⟩) :: (ref, .allwand) :: pats) tacName k
         | _, _, _ =>
           -- No more universally quantified variable or premise to be introduced
           iIntroCore hyps Q pats tacName k
@@ -152,10 +152,10 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       | ⟨true, s⟩ :: selPats =>
         let res ← s.resolveOne hyps >>= iFrame hyps Q
         res.finish (iIntroCore · · ((ref, .clear selPats) :: pats) tacName k)
-    | .intro (.rewrite _ direction) =>
+    | .intro ⟨_, .rewrite direction⟩ =>
       iIntroCoreForallIntro ref none Q tacName none <|
         fun x B => iPureRewriteCoreAux hyps B x direction tacName (iIntroCore · · pats tacName k)
-    | .intro (.pure _ pat) =>
+    | .intro ⟨_, .pure pat⟩ =>
       let v ← mkFreshLevelMVar
       let α ← mkFreshExprMVarQ q(Sort v)
       let Φ ← mkFreshExprMVarQ q($α → $prop)
@@ -171,25 +171,25 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       let A1 ← mkFreshExprMVarQ q($prop)
       let A2 ← mkFreshExprMVarQ q($prop)
       let fromImp ← ProofModeM.trySynthInstanceQ q(FromImp $Q $A1 $A2)
-      if let (.clear _, some _) := (pat, fromImp) then
+      if let (.clear, some _) := (pat.case, fromImp) then
         let pf ← iIntroCore hyps A2 pats tacName k
         return q(imp_intro_drop (Q := $Q) $pf)
       else
       let B ← mkFreshExprMVarQ q($prop)
-      match pat, fromImp with
-      | .intuitionistic _ pat, some _ =>
+      match pat.case, fromImp with
+      | .intuitionistic p, some _ =>
         let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPersistently false $A1 $B)
           | throwError "{tacName}: {A1} not persistent"
-        let pf ← iCasesCore hyps A2 pat q(true) B tacName (iIntroCore · · pats tacName k)
+        let pf ← iCasesCore hyps A2 ⟨pat.ref, p⟩ q(true) B tacName (iIntroCore · · pats tacName k)
         return q(imp_intro_intuitionistic (Q := $Q) $pf)
-      | .intuitionistic _ pat, none =>
+      | .intuitionistic p, none =>
         let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $Q .out $A1 $A2)
           | throwError "{tacName}: {Q} not a wand"
         let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPersistently false $A1 $B)
           | throwError "{tacName}: {A1} not persistent"
         let .some _ ← trySynthInstanceQ q(TCOr (Affine $A1) (Absorbing $A2))
           | throwError "{tacName}: {A1} not affine and the goal not absorbing"
-        let pf ← iCasesCore hyps A2 pat q(true) B tacName (iIntroCore · · pats tacName k)
+        let pf ← iCasesCore hyps A2 ⟨pat.ref, p⟩ q(true) B tacName (iIntroCore · · pats tacName k)
         return q(wand_intro_intuitionistic (A1 := $A1) (Q := $Q) $pf)
       | _, some _ =>
         -- should always succeed

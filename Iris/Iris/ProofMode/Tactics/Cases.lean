@@ -203,61 +203,61 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
     (k : ∀ {P}, Hyps bi P → (goal' : Q($prop)) → ProofModeM Q($P ⊢ $goal') := addBIGoal) :
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) :=
   withRef pat.ref do
-  match pat with
-  | .one _ name => do
+  match pat.case with
+  | .one name => do
     let ⟨_, _, hyps', pfEq⟩ ← Hyps.addWithInfo bi name p A hyps
     let pf ← k hyps' goal
     return q($(pfEq).mp.trans $pf)
 
-  | .clear _ =>
+  | .clear =>
     let pf ← iClearCoreOne bi q(iprop($P ∗ □?$p $A)) P p A goal q(.rfl) tacName
     pure q($pf $(← k hyps goal))
 
-  | .frame _ =>
+  | .frame =>
     let ⟨ivar, _, hyps', pfEq⟩ ← Hyps.addWithInfo bi (← `(binderIdent | _)) p A hyps
     let res ← iFrame hyps' goal [⟨.ipm ivar, true⟩]
     let pf ← res.finish k
     return q($(pfEq).mp.trans $pf)
 
-  | .conjunction _ [arg] | .disjunction _ [arg] =>
-    iCasesCore hyps goal arg p A tacName k
+  | .conjunction [arg] | .disjunction [arg] =>
+    iCasesCore hyps goal ⟨pat.ref, arg⟩ p A tacName k
 
-  | .disjunction _ [] => throwUnsupportedSyntax
+  | .disjunction [] => throwUnsupportedSyntax
 
-  | .conjunction _ [] => iCasesEmptyConj bi hyps p A goal tacName
+  | .conjunction [] => iCasesEmptyConj bi hyps p A goal tacName
 
   -- pure conjunctions are always handled as existentials. There is `intoExist_and_pure` and
   -- `intoExist_sep_pure` to make this work as expected for pure assertions that are not explicit existentials.
-  | .conjunction ref (.pure _ arg :: args) =>
-    iCasesExists arg p P A goal tacName (iCasesCore hyps goal (.conjunction ref args) p · tacName k)
-  | .conjunction ref (arg :: args) =>
-    if arg matches .clear _ then
+  | .conjunction (.pure arg :: args) =>
+    iCasesExists arg p P A goal tacName (iCasesCore hyps goal ⟨pat.ref, (.conjunction args)⟩ p · tacName k)
+  | .conjunction (arg :: args) =>
+    if arg matches .clear then
       if let some pf ← iCasesAndLR bi p P A goal true λ B =>
-        iCasesCore hyps goal (.conjunction ref args) p B tacName  k then return pf
-    if args matches [.clear _] then
+        iCasesCore hyps goal ⟨pat.ref, (.conjunction args)⟩ p B tacName k then return pf
+    if args matches [.clear] then
       if let some pf ← iCasesAndLR bi p P A goal false λ B =>
-        iCasesCore hyps goal arg p B tacName k then return pf
-    iCasesSep hyps p A goal tacName k (iCasesCore · · arg p · tacName ·)
-      (iCasesCore · · (.conjunction ref args) p · tacName ·)
+        iCasesCore hyps goal ⟨pat.ref, arg⟩ p B tacName k then return pf
+    iCasesSep hyps p A goal tacName k (iCasesCore · · ⟨pat.ref, arg⟩ p · tacName ·)
+      (iCasesCore · · ⟨pat.ref, (.conjunction args)⟩ p · tacName ·)
 
-  | .disjunction ref (arg :: args) =>
-    iCasesOr p P A goal tacName (iCasesCore hyps goal arg p · tacName k)
-      (iCasesCore hyps goal (.disjunction ref args) p · tacName k)
+  | .disjunction (arg :: args) =>
+    iCasesOr p P A goal tacName (iCasesCore hyps goal ⟨pat.ref, arg⟩ p · tacName k)
+      (iCasesCore hyps goal ⟨pat.ref, (.disjunction args)⟩ p · tacName k)
 
-  | .pure _ arg =>
+  | .pure arg =>
     iPureCore q(iprop($P ∗ □?$p $A)) P p A goal arg q(.rfl) tacName <| k hyps goal
 
-  | .intuitionistic _ arg =>
-    iCasesIntuitionistic p P A goal tacName (iCasesCore hyps goal arg q(true) · tacName k)
+  | .intuitionistic arg =>
+    iCasesIntuitionistic p P A goal tacName (iCasesCore hyps goal ⟨pat.ref, arg⟩ q(true) · tacName k)
 
-  | .spatial _ arg =>
-    iCasesSpatial p P A goal (iCasesCore hyps goal arg q(false) · tacName k)
+  | .spatial arg =>
+    iCasesSpatial p P A goal (iCasesCore hyps goal ⟨pat.ref, arg⟩ q(false) · tacName k)
 
-  | .mod _ arg =>
+  | .mod arg =>
     iModCore bi P goal p A λ p' A goal' =>
-      iCasesCore hyps goal' arg p' A tacName k
+      iCasesCore hyps goal' ⟨pat.ref, arg⟩ p' A tacName k
 
-  | .rewrite _ forward =>
+  | .rewrite forward =>
     iPureRewriteCore hyps p A goal tacName forward q(.rfl) k
 
 /--

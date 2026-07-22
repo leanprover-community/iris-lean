@@ -57,7 +57,7 @@ inductive IntroPat
   | allwand
   | pureintro
   | clear (selPats : List <| Bool × SelPat)
-  deriving Repr, Inhabited
+  deriving Inhabited
 
 partial def IntroPat.parse (term : Syntax) : MacroM (Syntax × IntroPat) := do
   match ← expandMacros term with
