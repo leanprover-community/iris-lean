@@ -67,9 +67,10 @@ example [BI PROP1] [BI PROP2] (P1 : PROP1) (P2 : PROP2)
   istart PROP1
 
 /- Tests `istart` with BI specified and embedding involved. -/
-example [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] (P Q : PROP1)
-    (h : ⊢@{PROP1} P -∗ Q) : ⊢@{PROP1} P -∗ Q := by
+example [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] (P : PROP1)
+    (h : ⊢@{PROP1} P) : ⊢@{PROP1} P := by
   istart PROP2
+  guard_target = ProofMode.Entails' (PROP:=PROP2) _ iprop(⎡P⎤)
   ihave H := h
   iexact H
 
