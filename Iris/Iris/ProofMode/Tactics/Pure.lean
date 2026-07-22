@@ -154,10 +154,10 @@ elab "ipure " colGt hyp:ident : tactic => do
   mvar.assign pf
 
 /--
-  `ipure H as pat` moves a pure hypothesis `H` from the Iris context into the
+  `ipure H with pat` moves a pure hypothesis `H` from the Iris context into the
   regular Lean context and destructs it using the `rcases` destruction pattern.
 -/
-elab "ipure " colGt hyp:ident " as " pat:rcasesPat : tactic => do
+elab "ipure " colGt hyp:ident " with " pat:rcasesPat : tactic => do
   ProofModeM.runTactic λ mvar { e, hyps, goal, .. } => do
 
   let ivar ← hyps.findWithInfo hyp

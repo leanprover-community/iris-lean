@@ -1075,7 +1075,7 @@ example [BI PROP] (Q : PROP) : (⌜φ1⌝ ∧ <affine> ⌜φ2⌝) ⊢ Q -∗ Q :
 example [BI PROP] (Q : PROP) : (⌜φ1⌝ ∧ <affine> ⌜φ2⌝) ⊢ Q -∗ Q := by
   iintro Hφ
   iintro HQ
-  ipure Hφ as ⟨hφ1, -⟩
+  ipure Hφ with ⟨hφ1, -⟩
   iexact HQ
 
 /-- Tests `ipure` with implication containing pure -/
