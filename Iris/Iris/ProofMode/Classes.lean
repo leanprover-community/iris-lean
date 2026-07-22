@@ -37,14 +37,16 @@ end
 
 @[ipm_class, rocq_alias AsEmpValid]
 class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop) (io : InOut)
-    (PROP : semiOutParam <| inOutParam io (Type _))
-    (bi : semiOutParam <| inOutParam d.toInOut (BI PROP))
+    (PROP : semiOutParam <| inOutParam io <| Type _)
+    (bi : semiOutParam <| inOutParam d.toInOut <| BI PROP)
     (P : outParam $ PROP) where
   as_emp_valid : (d = .into → φ → ⊢ P) ∧ (d = .from → (⊢ P) → φ)
+
 @[rocq_alias as_emp_valid_1]
 theorem asEmpValid_1 {PROP} [bi : BI PROP] {φ : Prop} (P : PROP)
     (inst : AsEmpValid .into φ io PROP bi P) : φ → ⊢ P :=
   inst.as_emp_valid.left rfl
+
 @[rocq_alias as_emp_valid_2]
 theorem asEmpValid_2 {PROP} [bi : BI PROP] {P: PROP} (φ : Prop)
     (inst : AsEmpValid .from φ io PROP bi P) : (⊢ P) → φ :=
