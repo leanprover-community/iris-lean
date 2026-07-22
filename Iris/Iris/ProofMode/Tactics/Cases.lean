@@ -82,7 +82,7 @@ private def iCasesExists {prop : Q(Type u)} {bi : Q(BI $prop)} (pat : TSyntax `r
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoExists $A $Φ)
   | throwError "{tacName}: {A} is not an existential quantifier"
   let pf : Q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) ←
-    iPureDestruct q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) pat fun g => do
+    iPureCases q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) pat fun g => do
       let B : Q($prop) ← mkFreshExprMVarQ q($prop)
       let eq ← isDefEq (← g.getType) q($P ∗ □?$p $B ⊢ $goal)
       if !eq then
