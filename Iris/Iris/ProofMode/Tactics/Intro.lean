@@ -122,8 +122,11 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
         iIntroCore hyps Q pats tacName k
     | .simp =>
       let simpCtx ← Simp.mkContext (simpTheorems := #[← getSimpTheorems])
-      let ⟨Q', _⟩ ← Lean.Meta.dsimp Q simpCtx #[← Simp.getSimprocs]
-      iIntroCore hyps Q' pats tacName k
+      let ⟨res, _⟩ ← Lean.Meta.simp Q simpCtx #[← Simp.getSimprocs]
+      have Q' : Q($prop) := res.expr
+      let h : Q($Q = $Q') ← res.getProof
+      let pf ← iIntroCore hyps Q' pats tacName k
+      return q($h ▸ $pf)
     | .simptrivial =>
       iIntroCore hyps Q ((ref, .simp) :: (ref, .trivial) :: pats) tacName k
     | .all =>
