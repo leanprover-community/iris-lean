@@ -114,16 +114,6 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
         (mkLambdaFVars #[x] ·)
     return q(tac_inv_elim $inst $hϕ $pf $pfEq $pfPin)
 
-/-- Given a `Namespace` value, find a corresponding invariant hypothesis. -/
-private def findInvariantWithNamespace {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
-    (N : Q(Namespace)) (hyps : Hyps bi e) : ProofModeM <| Option IVarId := do
-  match hyps with
-  | .emp _ => return none
-  | .hyp _ _ ivar _ ty _ =>
-    return (← ProofModeM.trySynthInstanceQ q(IntoInv $ty $N)) <&> (fun _ => ivar)
-  | .sep _ _ _ _ lhs rhs =>
-    return (← findInvariantWithNamespace N rhs) <|> (← findInvariantWithNamespace N lhs)
-
 syntax (name := iinv) "iinv " colGt term (" $$ " colGt ppSpace specPat)?
     " with " colGt icasesPat (colGt icasesPat)? : tactic
 
@@ -160,9 +150,10 @@ elab_rules : tactic
       -- Namespace supplied by the user: use `IntoInv` to find the corresponding hypothesis
       | none =>
         let N ← elabTermEnsuringTypeQ t q(Namespace)
-        match ← findInvariantWithNamespace N hyps with
-        | some ivar => pure ivar
-        | none => throwError m!"iinv: invariant hypothesis with the namespace {N} not found"
+        let some (_, ivar, _, _) ← hyps.findM? fun _ _ _ ty =>
+            return (← ProofModeM.trySynthInstanceQ q(IntoInv $ty $N)).isSome
+          | throwError m!"iinv: invariant hypothesis with the namespace {N} not found"
+        pure ivar
 
       let pf ← iInvCore hyps goal ivar specPat casesPat closePat
       mvar.assign pf
