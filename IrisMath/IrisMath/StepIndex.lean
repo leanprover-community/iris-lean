@@ -69,8 +69,7 @@ def ordinalSubtypeSIdx (κ : Ordinal) (hκ : Order.IsSuccLimit κ) :
           fun he => h ⟨m, he.symm⟩
 
 @[reducible]
-def ordinalToTypeSIdx (κ : Ordinal) (hκ : Order.IsSuccLimit κ) :
-    SIdx (Ordinal.ToType κ) :=
+def ordinalToTypeSIdx (κ : Ordinal) (hκ : Order.IsSuccLimit κ) : SIdx κ.ToType :=
   haveI : Nonempty κ.ToType := Ordinal.nonempty_toType_iff.mpr hκ.pos.ne'
   letI : OrderBot κ.ToType := WellFoundedLT.toOrderBot κ.ToType
   haveI : NoMaxOrder κ.ToType := by
