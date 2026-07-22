@@ -19,15 +19,10 @@ export Top (top)
 
 notation "⊤" => top
 
-/-- Require that a relation `R` on `α` is reflexive. -/
+/-- Require that a relation `R` on `a` is reflexive. -/
 class Reflexive (R : Relation α) where
   refl {x : α} : R x x
 export Reflexive (refl)
-
-/-- Require that a relation `R` on `α` is irreflexive -/
-class Irreflexive (R : Relation α) where
-  irrefl {x : α} : ¬R x x
-export Irreflexive (irrefl)
 
 /-- Require that a relation `R` on `α` is transitive. -/
 class Transitive (R : Relation α) where
@@ -37,11 +32,6 @@ export Transitive (trans)
 /-- Require that a relation `R` on `α` is a preorder, i.e. that it is reflexive and transitive. -/
 class Preorder (R : Relation α) extends Reflexive R, Transitive R
 
-/-- Require that a relation `R` on `α` is a strict order, i.e. that it is irreflexive and transitive. -/
-class StrictOrder (R : Relation α) extends Irreflexive R, Transitive R
-
-class Total (R : Relation α) where
-  total {x y : α} : R x y ∨ R y x
 
 /-- Require that a binary function `f` on `α` is idempotent in a relation `R` on `α`. -/
 class Idempotent (R : Relation α) (f : α → α → α) where
@@ -82,9 +72,6 @@ export Associative (assoc)
 class Antisymmetric (R : Relation α) (S : outParam <| Relation α) where
   antisymm {x y : α} : (left : S x y) → (right : S y x) → R x y
 export Antisymmetric (antisymm)
-
-/-- A partial order is a pre-order with an antisymmetric relation -/
-class PartialOrder (R : Relation α) extends Preorder R, Antisymmetric Eq R
 
 class Disjoint (α : Type u) where
   disjoint : α -> α -> Prop

@@ -65,10 +65,7 @@ theorem lt_asymm (h : n < m) : ¬m < n := by
   apply lt_irrefl n
   exact inst.lt_trans h h1
 
-@[rocq_alias SIdx.lt_strict]
-instance lt_strict : StrictOrder inst.lt where
-  irrefl := by intro n; exact lt_irrefl n
-  trans := inst.lt_trans
+#rocq_ignore SIdx.lt_strict "A type class for strict orders is not yet available in Std"
 
 @[rocq_alias SIdx.lt_le_incl]
 theorem lt_le_incl (h : n < m) : n ≤ m := by
@@ -93,10 +90,10 @@ theorem le_antisymm (h1 : m ≤ n) (h2 : n ≤ m) : m = n := by
   · subst h2; rfl
 
 @[rocq_alias SIdx.le_po]
-instance le_po : PartialOrder inst.le where
-  refl := le_refl
-  trans := le_trans
-  antisymm := le_antisymm
+instance le_po : Std.IsPartialOrder I where
+  le_refl _ := le_refl
+  le_trans _ _ _ := le_trans
+  le_antisymm _ _ := le_antisymm
 
 @[rocq_alias SIdx.lt_ge_cases]
 theorem lt_ge_cases (m n : I) : n < m ∨ m ≤ n := by
@@ -195,7 +192,7 @@ theorem le_0_l : 0 ≤ n := le_ngt.mpr <| inst.not_lt_zero n
 @[rocq_alias SIdx.le_0_r]
 theorem le_0_r : n ≤ 0 ↔ n = 0 := by
   constructor <;> intro h
-  · apply antisymm
+  · apply le_antisymm
     · assumption
     · exact le_0_l
   · subst h; rfl
