@@ -306,10 +306,10 @@ end wp_free
 
 section wp_alloc
 
--- `alloc` produces a fresh `l ↦ some v`; `wp_alloc l as Hl` names both
+-- `alloc` produces a fresh `l ↦ some v`; `wp_alloc l with Hl` names both
 example {v : Val} :
     ⊢ WP hl(ref(&v)) @ s ; E {{ w, ∃ l : Loc, ⌜w = hl_val(#l)⌝ ∗ l ↦ some v }} := by
-  wp_alloc l as Hl
+  wp_alloc l with Hl
   imodintro
   iexists l
   isplit
@@ -399,7 +399,7 @@ example {l : Loc} {v1 : Val} :
         {{ w, (⌜w = hl_val((#1, #true))⌝ ∗ l ↦ some hl_val(#7)) ∨
               (⌜w = hl_val((#1, #false))⌝ ∗ l ↦ some hl_val(#1)) }} := by
   iintro Hl
-  wp_cmpxchg as Heq | Hne
+  wp_cmpxchg with Heq Hne
   · imodintro
     ileft
     iframe

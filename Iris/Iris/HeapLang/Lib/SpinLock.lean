@@ -90,7 +90,7 @@ theorem newlock_spec :
   iintro !> %Φ Hcont
   wp_rec
   imod token_alloc with ⟨%γ, Hγ⟩
-  wp_alloc l as Hpt
+  wp_alloc l with Hpt
   imodintro
   iapply Hcont
   iintro %R %E HR

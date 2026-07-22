@@ -42,7 +42,7 @@ theorem wp_landinsKnot (P : Val → IProp GF) (Q : Val → Val → IProp GF) (F 
   iintro !> %Φ ⟨#H, HP⟩ HQ
   wp_bind &landinsKnot _
   wp_rec
-  wp_alloc r as Hr
+  wp_alloc r with Hr
   wp_store
   wp_load
   imod inv_alloc landinN ⊤ _ $$ Hr with #Hinv

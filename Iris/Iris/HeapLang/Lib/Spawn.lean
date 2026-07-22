@@ -73,7 +73,7 @@ theorem spawn_spec (Ψ : Val → IProp GF) (f : Val) :
       WP hl(&spawn &f) {{ Φ }} := by
   iintro !> %Φ Hf HΦ
   wp_rec
-  wp_alloc l as Hl
+  wp_alloc l with Hl
   imod token_alloc with ⟨%γ, Hγ⟩
   iapply fupd_wp
   imod inv_alloc N ⊤ (spawnInv γ l Ψ) $$ [Hl] with #Hinv
