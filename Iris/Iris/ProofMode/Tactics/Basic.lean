@@ -30,7 +30,7 @@ def iSolveSidecondition (target : Q(Prop)) (failOnUnsolved := true) : ProofModeM
       throwError "{msg}"
   | _ =>
       let gs ← (observing? <|
-        evalTacticAt (← `(tactic | simp [*])) mvar.mvarId!) <&>
+        evalTacticAt (← `(tactic | and_intros <;> first | trivial | simp_all)) mvar.mvarId!) <&>
         (·.getD [mvar.mvarId!])
       if !gs.isEmpty then
         if failOnUnsolved then
