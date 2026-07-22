@@ -35,9 +35,9 @@ private def iEvalOne {u} {prop : Q(Type u)} (bi : Q(BI $prop))
   let m : Q($prop) ← mkFreshExprMVar q($prop)
   let pf ← mkFreshExprSyntheticOpaqueMVar <| if isGoal then q($m ⊢ $ty) else q($ty ⊢ $m)
   let [g] ← evalTacticAt tac pf.mvarId!
-  | throwError "ieval: the supplied tactic does not produce exactly one subgoal"
+    | throwError "ieval: the supplied tactic does not produce exactly one subgoal"
   let some #[_, _, lhs, rhs] ← g.getType <&> (·.appM? ``Entails)
-  | throwError "ieval: the goal is not Iris entailment upon applying the supplied tactic"
+    | throwError "ieval: the goal is not Iris entailment upon applying the supplied tactic"
   let newTy : Q($prop) := if isGoal then rhs else lhs
   m.mvarId!.assign newTy
   g.assign (q(.rfl) : Q($newTy ⊢ $newTy))
