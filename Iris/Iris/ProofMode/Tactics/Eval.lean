@@ -22,34 +22,26 @@ private structure EvalState {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (e : Q($pr
 /--
   Apply the tactic sequence `tac` to transform `ty`, which is strengthened when
   it is the goal or weakened when it is a hypothesis in the context.
+
+  When `isGoal` is `true`, the tactic sequence results in the proof goal being *strengthened*.
+  When `isGoal` is `false`, the tactic sequence results in the hypothesis being *weakened*.
+
   The function returns the new expression and a proof that the expression
   is strengthened/weakened.
 -/
 private def iEvalOne {u} {prop : Q(Type u)} (bi : Q(BI $prop))
     (tac : TSyntax `Lean.Parser.Tactic.tacticSeq) (isGoal : Bool) (ty : Q($prop)) :
     ProofModeM <| Q($prop) × Expr := do
-  -- Find the new proposition obtained upon applying the tactic sequence
-  let newTy : Q($prop) ←
-    withLocalDeclDQ (← mkFreshUserName .anonymous) q($prop) fun newTy => do
-      let m ← mkFreshExprSyntheticOpaqueMVar <|
-        if isGoal then q($newTy ⊢ $ty) else q($ty ⊢ $newTy)
-      let [g] ← evalTacticAt tac m.mvarId!
-      | throwError "ieval: the supplied tactic does not produce exactly one subgoal"
-      let some #[_, _, lhs, rhs] ← g.getType <&> (·.appM? ``Entails)
-      | throwError m!"ieval: the goal is not Iris entailment upon applying the supplied tactic"
-      return if isGoal then rhs else lhs
-
-  let pf ← match isGoal with
-  -- The tactic sequence results in the proof goal being *strengthened*
-  | true => mkFreshExprSyntheticOpaqueMVar q($newTy ⊢ $ty)
-  -- The tactic sequence results in the hypothesis being *weakened*
-  | false => mkFreshExprSyntheticOpaqueMVar q($ty ⊢ $newTy)
-  match ← evalTacticAt tac pf.mvarId! with
-  | [] => pure ()
-  | [g] => g.assign (q(.rfl) : Q($newTy ⊢ $newTy))
-  | _ => throwError "ieval: the supplied tactic produces more than one subgoal"
-
-  return ⟨newTy, pf⟩
+  let m : Q($prop) ← mkFreshExprMVar q($prop)
+  let pf ← mkFreshExprSyntheticOpaqueMVar <| if isGoal then q($m ⊢ $ty) else q($ty ⊢ $m)
+  let [g] ← evalTacticAt tac pf.mvarId!
+  | throwError "ieval: the supplied tactic does not produce exactly one subgoal"
+  let some #[_, _, lhs, rhs] ← g.getType <&> (·.appM? ``Entails)
+  | throwError "ieval: the goal is not Iris entailment upon applying the supplied tactic"
+  let newTy : Q($prop) := if isGoal then rhs else lhs
+  m.mvarId!.assign newTy
+  g.assign (q(.rfl) : Q($newTy ⊢ $newTy))
+  return ⟨m, pf⟩
 
 /--
   Apply the tactic sequence `tac` to either the proof goal (when `selTargets`
