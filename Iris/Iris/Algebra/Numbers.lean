@@ -50,7 +50,7 @@ scoped instance : CMRA α where
   op := add
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ h := by rw [(discrete h).to_eq]
+  op_ne.ne _ _ _ h := by rw [discrete h]
   pcore_ne _ := dist_some ∘ Dist.of_eq
   validN_ne _ _ := .intro
   valid_iff_validN := .symm <| forall_const Nat
@@ -64,7 +64,7 @@ scoped instance : CMRA α where
     rintro ⟨rfl⟩ _
     exists zero
     rw [left_id (op := add) _]
-  extend _ h := ⟨_, _, discrete h, .rfl, .rfl⟩
+  extend _ h := ⟨_, _, Equiv.of_eq (discrete h), .rfl, .rfl⟩
 #rocq_ignore natR "Use Nat with scoped CMRA instance"
 #rocq_ignore ZR "Use Int with scoped CMRA instance"
 #rocq_ignore nat_ra_mixin "Not needed"
@@ -97,7 +97,7 @@ scoped instance : UCMRA α where
 #rocq_ignore Z_unit_instance "Use UCMRA instance"
 
 scoped instance [LeftCancelAdd α] {a : α} : Cancelable a where
-  cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ Equiv.to_eq ∘ discrete
+  cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ discrete
 #rocq_ignore nat_cancelable "Use scoped Cancelable instance"
 #rocq_ignore Z_cancelable "Use scoped Cancelable instance"
 
@@ -143,10 +143,10 @@ scoped instance : CMRA α where
   op := add
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ h := by rw [(discrete h).to_eq]
+  op_ne.ne _ _ _ h := by rw [discrete h]
   pcore_ne {_ y _ _} h := by
     rintro ⟨rfl⟩
-    exact ⟨y, congrArg _ <| (discrete h.symm).to_eq, .rfl⟩
+    exact ⟨y, congrArg _ <| discrete h.symm, .rfl⟩
   validN_ne _ _ := .intro
   valid_iff_validN := .symm <| forall_const Nat
   validN_succ := (·)
@@ -160,7 +160,7 @@ scoped instance : CMRA α where
   pcore_op_mono {a b} := by
     rintro ⟨rfl⟩ z
     exists z
-  extend _ h := ⟨_, _, discrete h, .rfl, .rfl⟩
+  extend _ h := ⟨_, _, Equiv.of_eq (discrete h), .rfl, .rfl⟩
 
 #rocq_ignore max_nat "Use Nat with IdempotentOp max"
 #rocq_ignore min_nat "Uses Nat with IdempotentOp min"
@@ -210,7 +210,7 @@ scoped instance [LawfulLeftIdentity (add (α := α)) zero] : UCMRA α where
 #rocq_ignore max_Z_unit_instance "Use UCMRA instance"
 
 scoped instance [LeftCancelAdd α] {a : α} : Cancelable a where
-  cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ Equiv.to_eq ∘ discrete
+  cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ discrete
 
 omit [Zero α] in
 /-- The CMRA operation is `add` (which is `max`/`min` for max_nat/min_nat/max_Z). -/
@@ -237,7 +237,7 @@ scoped instance : CMRA α where
   op := add
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ h := by rw [(discrete h).to_eq]
+  op_ne.ne _ _ _ h := by rw [discrete h]
   pcore_ne _ := by rintro ⟨rfl⟩
   validN_ne _ _ := .intro
   valid_iff_validN := .symm <| forall_const Nat
@@ -248,7 +248,7 @@ scoped instance : CMRA α where
   pcore_op_left {_ _} := by rintro ⟨rfl⟩
   pcore_idem := by simp
   pcore_op_mono {_ _} := by rintro ⟨rfl⟩
-  extend _ h := ⟨_, _, discrete h, .rfl, .rfl⟩
+  extend _ h := ⟨_, _, Equiv.of_eq (discrete h), .rfl, .rfl⟩
 #rocq_ignore positiveR "Use PNat with scoped CMRA instance"
 #rocq_ignore pos_ra_mixin "Not needed"
 #rocq_ignore pos_op_instance "Use CMRA instance"
@@ -261,11 +261,11 @@ scoped instance : CMRA.Discrete α where
 #rocq_ignore pos_cmra_discrete "Use Discrete instance"
 
 scoped instance [LeftCancelAdd α] {a : α} : Cancelable a where
-  cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ Equiv.to_eq ∘ discrete
+  cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ discrete
 #rocq_ignore pos_cancelable "Use scoped Cancelable instance"
 
 scoped instance [IdentityFree α] {a : α} : CMRA.IdFree a where
-  id_free0_r _ _ h := IdentityFree.id_free <| (discrete h).to_eq
+  id_free0_r _ _ h := IdentityFree.id_free <| discrete h
 #rocq_ignore pos_id_free "Use scoped IdentityFree instance"
 
 #rocq_ignore pos_op_add "Not needed"

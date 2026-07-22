@@ -328,8 +328,8 @@ theorem sig_equiv_internalEq [OFE A] (P : A → Prop) (x y : { a : A // P a }) :
 theorem discrete_eq_internalEq [OFE A] (a b : A) [Idisc : Std.TCOr (DiscreteE a) (DiscreteE b)] :
     internalEq a b ⊢ ⌜a ≡ b⌝ := by
   cases Idisc with
-  | l => exact fun _ hab => DiscreteE.discrete (hab.le (Nat.zero_le _))
-  | r => exact fun _ hab => (DiscreteE.discrete (hab.le (Nat.zero_le _)).symm).symm
+  | l => exact fun _ hab => OFE.Equiv.of_eq (DiscreteE.discrete (hab.le (Nat.zero_le _)))
+  | r => exact fun _ hab => OFE.Equiv.of_eq (DiscreteE.discrete (hab.le (Nat.zero_le _)).symm).symm
 
 @[rocq_alias siProp_primitive.later_equivI_1]
 theorem later_equiv_internalEq_mp [OFE A] (x y : A) :

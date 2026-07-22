@@ -778,7 +778,7 @@ instance ownM_timeless (a : M) [OFE.DiscreteE a] : BI.Timeless (ownM a) where
     | 0, _, _ => .inl trivial
     | n+1, x, ⟨_, Hxy⟩ =>
       let ⟨_a', y', Hx, Ha', _⟩ := extend (validN_succ x.property) Hxy
-      .inr ⟨y', (Hx.trans (OFE.DiscreteE.discrete (Ha'.symm.le n.zero_le)).symm.op_l).dist⟩
+      .inr ⟨y', (Hx.trans (OFE.Equiv.of_eq (OFE.DiscreteE.discrete (Ha'.symm.le n.zero_le)).symm).op_l).dist⟩
 
 @[rocq_alias uPred.ownM_persistent]
 instance ownM_persistent (a : M) [CoreId a] : Persistent (ownM a) where

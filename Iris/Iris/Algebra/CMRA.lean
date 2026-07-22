@@ -382,9 +382,9 @@ theorem pcore_proper' {x y : α} (e : x ≡ y) : pcore x ≡ pcore y :=
 
 @[rocq_alias cmra_pcore_l']
 theorem pcore_op_left' {x : α} {cx} (e : pcore x ≡ some cx) : cx • x ≡ x :=
-  let ⟨z, pz, ez⟩ := equiv_some e
+  let ⟨z, pz, ez⟩ := equiv_some e.to_eq
   calc
-    cx • x ≡ z • x := op_left_eqv _ ez.symm
+    cx • x ≡ z • x := op_left_eqv _ (Equiv.of_eq ez.symm)
     _      ≡ x     := pcore_op_left pz
 
 @[rocq_alias cmra_pcore_r]
@@ -395,16 +395,16 @@ theorem pcore_op_right {x : α} {cx} (e : pcore x = some cx) : x • cx ≡ x :=
 
 @[rocq_alias cmra_pcore_r']
 theorem pcore_op_right' {x : α} {cx} (e : pcore x ≡ some cx) : x • cx ≡ x :=
-  let ⟨_, pz, ez⟩ := equiv_some e
-  (op_right_eqv x ez).symm.trans (pcore_op_right pz)
+  let ⟨_, pz, ez⟩ := equiv_some e.to_eq
+  (op_right_eqv x (Equiv.of_eq ez)).symm.trans (pcore_op_right pz)
 
 @[rocq_alias cmra_pcore_idemp']
 theorem pcore_idem' {x : α} {cx} (e : pcore x ≡ some cx) : pcore cx ≡ some cx :=
-  let ⟨y, py, (ey : y ≡ cx)⟩ := equiv_some e
+  let ⟨y, py, ey⟩ := equiv_some e.to_eq
   calc
-    pcore cx ≡ pcore y := pcore_proper' ey.symm
+    pcore cx ≡ pcore y := pcore_proper' (Equiv.of_eq ey.symm)
     _        ≡ some y  := pcore_idem py
-    _        ≡ some cx := ey
+    _        ≡ some cx := Equiv.of_eq (congrArg some ey)
 
 @[rocq_alias cmra_pcore_dup]
 theorem pcore_op_self {x : α} {cx} (e : pcore x = some cx) : cx • cx ≡ cx :=
@@ -412,9 +412,9 @@ theorem pcore_op_self {x : α} {cx} (e : pcore x = some cx) : cx • cx ≡ cx :
 
 @[rocq_alias cmra_pcore_dup']
 theorem pcore_op_self' {x : α} {cx} (e : pcore x ≡ some cx) : cx • cx ≡ cx :=
-  let ⟨z, pz, ez⟩ := equiv_some e
+  let ⟨z, pz, ez⟩ := equiv_some e.to_eq
   have : z • z ≡ z := pcore_op_right' (pcore_idem pz)
-  (ez.op ez).symm.trans (this.trans ez)
+  ((Equiv.of_eq ez).op (Equiv.of_eq ez)).symm.trans (this.trans (Equiv.of_eq ez))
 
 @[rocq_alias cmra_pcore_validN]
 theorem pcore_validN {n} {x : α} {cx} (e : pcore x = some cx) (v : ✓{n} x) : ✓{n} cx :=
@@ -593,15 +593,15 @@ theorem incN_op_right (n) (x y : α) : y ≼{n} x • y :=
 theorem pcore_mono {x y : α} : x ≼ y → pcore x = some cx → ∃ cy, pcore y = some cy ∧ cx ≼ cy
   | ⟨_, hw⟩, e =>
     have ⟨z, hz⟩ := pcore_op_mono e _
-    let ⟨t, ht, et⟩ := OFE.equiv_some ((NonExpansive.eqv hw).trans hz)
-    ⟨t, ht, z, et⟩
+    let ⟨t, ht, et⟩ := OFE.equiv_some ((NonExpansive.eqv hw).trans hz).to_eq
+    ⟨t, ht, z, Equiv.of_eq et⟩
 
 @[rocq_alias cmra_pcore_mono']
 theorem pcore_mono' {x y : α} {cx} (le : x ≼ y) (e : pcore x ≡ some cx) :
     ∃ cy, pcore y = some cy ∧ cx ≼ cy :=
-  let ⟨_, hw, ew⟩ := OFE.equiv_some e
+  let ⟨_, hw, ew⟩ := OFE.equiv_some e.to_eq
   have ⟨t, ht, z, et⟩ := pcore_mono le hw
-  ⟨t, ht, z, et.trans ew.op_l⟩
+  ⟨t, ht, z, et.trans (Equiv.of_eq ew).op_l⟩
 
 @[rocq_alias cmra_pcore_monoN']
 theorem pcore_monoN' {n} {x y : α} {cx} :
@@ -762,18 +762,18 @@ variable {α : Type _} [CMRA α]
 theorem discrete_inc_l {x y : α} [HD : DiscreteE x] (Hv : ✓{0} y) (Hle : x ≼{0} y) : x ≼ y :=
   have ⟨_, hz⟩ := Hle
   let ⟨_, t, wt, wx, _⟩ := extend Hv hz
-  ⟨t, wt.trans (Equiv.op_l (HD.discrete wx.symm).symm)⟩
+  ⟨t, wt.trans (Equiv.op_l (Equiv.of_eq (HD.discrete wx.symm).symm))⟩
 
 @[rocq_alias cmra_discrete_included_r]
 theorem discrete_inc_r {x y : α} [HD : DiscreteE y] : x ≼{0} y → x ≼ y
-  | ⟨z, hz⟩ => ⟨z, HD.discrete hz⟩
+  | ⟨z, hz⟩ => ⟨z, Equiv.of_eq (HD.discrete hz)⟩
 
 @[rocq_alias cmra_op_discrete]
 theorem discrete_op {x y : α} (Hv : ✓{0} x • y) [Hx : DiscreteE x] [Hy : DiscreteE y] :
     DiscreteE (x • y) where
   discrete h :=
     let ⟨_w, _t, wt, wx, ty⟩ := extend ((Dist.validN h).mp Hv) h.symm
-    ((Hx.discrete wx.symm).op (Hy.discrete ty.symm)).trans wt.symm
+    (((Equiv.of_eq (Hx.discrete wx.symm)).op (Equiv.of_eq (Hy.discrete ty.symm))).trans wt.symm).to_eq
 
 end discreteElements
 
@@ -791,7 +791,7 @@ theorem valid_0_iff_validN [Discrete α] (n) {x : α} : ✓{0} x ↔ ✓{n} x :=
 
 @[rocq_alias cmra_discrete_included_iff]
 theorem inc_iff_incN [OFE.Discrete α] (n) {x y : α} : x ≼ y ↔ x ≼{n} y :=
-  ⟨incN_of_inc _, fun ⟨z, hz⟩ => ⟨z, discrete hz⟩⟩
+  ⟨incN_of_inc _, fun ⟨z, hz⟩ => ⟨z, Equiv.of_eq (discrete hz)⟩⟩
 
 @[rocq_alias cmra_discrete_included_iff_0]
 theorem inc_0_iff_incN [OFE.Discrete α] (n) {x y : α} : x ≼{0} y ↔ x ≼{n} y :=
@@ -811,7 +811,7 @@ theorem cancelable {x y z : α} [Cancelable x] (v : ✓(x • y)) (e : x • y �
 @[rocq_alias discrete_cancelable]
 theorem discrete_cancelable {x : α} [Discrete α]
     (H : ∀ {y z : α}, ✓(x • y) → x • y ≡ x • z → y ≡ z) : Cancelable x where
-  cancelableN {n} {_ _} v e := (H ((valid_iff_validN' n).mpr v) (Discrete.discrete e)).dist
+  cancelableN {n} {_ _} v e := (H ((valid_iff_validN' n).mpr v) (Equiv.of_eq (Discrete.discrete e))).dist
 
 @[rocq_alias cancelable_op]
 instance cancelable_op {x y : α} [Cancelable x] [Cancelable y] : Cancelable (x • y) where
@@ -895,7 +895,7 @@ theorem id_free_l {x : α} [IdFree x] {y} (v : ✓ x) : ¬(y • x ≡ x) :=
 
 @[rocq_alias discrete_id_free]
 theorem discrete_id_free {x : α} [Discrete α] (H : ∀ y, ✓ x → ¬(x • y ≡ x)) : IdFree x where
-  id_free0_r y v h := H y (Discrete.discrete_valid v) (Discrete.discrete_0 h)
+  id_free0_r y v h := H y (Discrete.discrete_valid v) (Equiv.of_eq (Discrete.discrete_0 h))
 
 @[rocq_alias id_free_op_r]
 instance idFree_op_r {x y : α} [IdFree y] [Cancelable x] : IdFree (x • y) where
@@ -1094,11 +1094,11 @@ protected theorem Hom.core [CMRA β] (f : α -C> β) {x : α} : core (f x) ≡ f
     (pcore (f.f x)).getD (f.f x) ≡ f.f ((pcore x).getD x)
   from this (f.pcore x)
   match pcore x with
-  | none => intro h; simp [equiv_none.1 h.symm]
+  | none => intro h; simp [equiv_none.1 h.symm.to_eq]
   | some cx =>
     intro h
-    let ⟨s, hs, es⟩ := equiv_some h.symm
-    rw [hs]; exact es
+    let ⟨s, hs, es⟩ := equiv_some h.symm.to_eq
+    rw [hs]; exact Equiv.of_eq es
 
 @[rocq_alias cmra_morphism_mono]
 protected theorem Hom.mono [CMRA β] (f : α -C> β) {x₁ x₂ : α} : x₁ ≼ x₂ → f x₁ ≼ f x₂
@@ -1143,8 +1143,8 @@ instance RFunctor.toOFunctor [R : RFunctor F] : COFE.OFunctor F where
   ofe        := RFunctor.cmra.toOFE
   map a b    := (RFunctor.map a b).toHom
   map_ne.ne  := RFunctor.map_ne.ne
-  map_id     := RFunctor.map_id
-  map_comp   := RFunctor.map_comp
+  map_id x   := (RFunctor.map_id x).to_eq
+  map_comp f g f' g' x := (RFunctor.map_comp f g f' g' x).to_eq
 
 @[rocq_alias rFunctor_to_oFunctor_contractive]
 instance RFunctorContractive.toOFunctorContractive
@@ -1283,8 +1283,8 @@ instance urFunctorDiscreteFunOF {C} (F : C → COFE.OFunctorPre) [∀ c, URFunct
     op _ _ _ _ := ((URFunctor.map f g).op _ _).dist
   }
   map_ne.ne := COFE.OFunctor.map_ne.ne
-  map_id := COFE.OFunctor.map_id
-  map_comp := COFE.OFunctor.map_comp
+  map_id x := Equiv.of_eq (COFE.OFunctor.map_id x)
+  map_comp f g f' g' x := Equiv.of_eq (COFE.OFunctor.map_comp f g f' g' x)
 
 @[rocq_alias discrete_funURF_contractive]
 instance DiscreteFunOF_URFC {C} (F : C → COFE.OFunctorPre) [HURF : ∀ c, URFunctorContractive (F c)] :
@@ -1353,16 +1353,15 @@ instance cmraOption : CMRA (Option α) where
     rcases x, y with ⟨_|_, _|_⟩ <;> simp_all
     apply validN_op_left
   assoc {x y z} := by
-    rcases x, y, z with ⟨_|_, _|_, _|_⟩ <;> simp_all [assoc]
+    rcases x, y, z with ⟨_|_, _|_, _|_⟩ <;> first | rfl | exact assoc
   comm {x y} := by
-    rcases x, y with ⟨_|_, _|_⟩ <;> simp_all [comm]
+    rcases x, y with ⟨_|_, _|_⟩ <;> first | rfl | exact comm
   pcore_op_left {x cx} := by
-    rcases x, cx with ⟨_|_, _|_⟩ <;> simp_all [pcore_op_left]
+    rcases x, cx with ⟨_|_, _|_⟩ <;> simp_all <;> intro h <;> exact pcore_op_left h
   pcore_idem := by
     rintro (_|x) <;> simp [Equiv]
     rcases H : pcore x with _|y <;> simp
-    obtain ⟨z, Hz1, Hz2⟩ := equiv_some (pcore_idem H)
-    simpa only [Hz1]
+    exact pcore_idem H
   pcore_op_mono := by
     rintro (_|x) _ ⟨⟩ y <;> simp
     · exact ⟨_, .rfl⟩
@@ -1519,9 +1518,8 @@ theorem validN_op_unit {n} {x : Option α} (vx : ✓{n} x) : ✓{n} x • unit :
 theorem inc_iff {ma mb : Option α} :
     ma ≼ mb ↔ ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ (a ≡ b ∨ a ≼ b) := by
   refine ⟨fun ⟨mc, Hmc⟩ => ?_, ?_⟩
-  · rcases ma, mb, mc with ⟨_|_, _|_, _|_⟩ <;> simp_all [op]
-    · exact .inl Hmc.symm
-    · exact .inr ⟨_, Hmc⟩
+  · rcases ma, mb, mc with ⟨_|_, _|_, _|_⟩ <;> simp_all [op, equiv_iff_eq]
+    exact .inr ⟨_, .rfl⟩
   · rintro (H|⟨_, _, _, _, (H|⟨z, _⟩)⟩) <;> subst_eqs
     · exists mb
     · exists none; simp [op]; exact H.symm
@@ -1739,34 +1737,36 @@ instance cmraProd : CMRA (α × β) where
     · exact CMRA.valid_iff_validN.mpr fun n => (h n).right
   validN_succ {x n} := fun ⟨va, vb⟩ => ⟨CMRA.validN_succ va, CMRA.validN_succ vb⟩
   validN_op_left {n x y} := fun ⟨va, vb⟩ => ⟨CMRA.validN_op_left va, CMRA.validN_op_left vb⟩
-  assoc {x y z} := equiv_prod_ext CMRA.assoc CMRA.assoc
-  comm {x y} := equiv_prod_ext CMRA.comm CMRA.comm
+  assoc {x y z} := Equiv.of_eq (equiv_prod_ext CMRA.assoc.to_eq CMRA.assoc.to_eq)
+  comm {x y} := Equiv.of_eq (equiv_prod_ext CMRA.comm.to_eq CMRA.comm.to_eq)
   pcore_op_left {x cx} h :=
     let ⟨a, ha, ho⟩ := Option.bind_eq_some_iff.mp h
     let ⟨b, hb, hh⟩ := Option.bind_eq_some_iff.mp ho
-    (Option.some.inj hh) ▸ OFE.equiv_prod_ext (CMRA.pcore_op_left ha) (CMRA.pcore_op_left hb)
+    (Option.some.inj hh) ▸ Equiv.of_eq
+      (equiv_prod_ext (CMRA.pcore_op_left ha).to_eq (CMRA.pcore_op_left hb).to_eq)
   pcore_idem {x cx} h := by
     have ⟨cx₁, hcx₁, this⟩ := Option.bind_eq_some_iff.mp h
     have ⟨cx₂, hcx₂, hcx⟩ := Option.bind_eq_some_iff.mp this
-    have ⟨a, ha, ea⟩ := equiv_some (CMRA.pcore_idem hcx₁)
-    have ⟨b, hb, eb⟩ := equiv_some (CMRA.pcore_idem hcx₂)
-    have g : (a, b) ≡ (cx₁, cx₂) := equiv_prod_ext ea eb
+    have ⟨a, ha, ea⟩ := equiv_some (CMRA.pcore_idem hcx₁).to_eq
+    have ⟨b, hb, eb⟩ := equiv_some (CMRA.pcore_idem hcx₂).to_eq
+    have g : (a, b) ≡ (cx₁, cx₂) := Equiv.of_eq (equiv_prod_ext ea eb)
     rw [Option.some.inj hcx.symm]
-    simp [ha, hb, g, pcore]
+    simp only [ha, hb, pcore]
+    exact Equiv.of_eq (congrArg some g.to_eq)
   pcore_op_mono {x cx} h y := by
     have ⟨cx₁, hcx₁, this⟩ := Option.bind_eq_some_iff.mp h
     have ⟨cx₂, hcx₂, hcx⟩ := Option.bind_eq_some_iff.mp this
     have ⟨cy₁, hcy₁⟩ := CMRA.pcore_op_mono hcx₁ y.fst
     have ⟨cy₂, hcy₂⟩ := CMRA.pcore_op_mono hcx₂ y.snd
-    have ⟨a, ha, ea⟩ := equiv_some hcy₁
-    have ⟨b, hb, eb⟩ := equiv_some hcy₂
+    have ⟨a, ha, ea⟩ := equiv_some hcy₁.to_eq
+    have ⟨b, hb, eb⟩ := equiv_some hcy₂.to_eq
     unfold pcore
     rw [Option.some.inj hcx.symm, ha, hb]
-    exact ⟨(cy₁, cy₂), equiv_prod_ext ea eb⟩
+    exact ⟨(cy₁, cy₂), Equiv.of_eq (congrArg some (equiv_prod_ext ea eb))⟩
   extend {n x y₁ y₂} := fun ⟨vx₁, vx₂⟩ e =>
     let ⟨z₁, w₁, hx₁, hz₁, hw₁⟩ := CMRA.extend vx₁ (OFE.dist_fst e)
     let ⟨z₂, w₂, hx₂, hz₂, hw₂⟩ := CMRA.extend vx₂ (OFE.dist_snd e)
-    ⟨(z₁, z₂), (w₁, w₂), equiv_prod_ext hx₁ hx₂, ⟨hz₁, hz₂⟩, ⟨hw₁, hw₂⟩⟩
+    ⟨(z₁, z₂), (w₁, w₂), Equiv.of_eq (equiv_prod_ext hx₁.to_eq hx₂.to_eq), ⟨hz₁, hz₂⟩, ⟨hw₁, hw₂⟩⟩
 
 theorem valid_fst {x : α × β} (h : ✓ x) : ✓ x.fst := h.left
 theorem valid_snd {x : α × β} (h : ✓ x) : ✓ x.snd := h.right
@@ -1823,13 +1823,12 @@ def Prod.mapC (f : A -C> A') (g : B -C> B') : A × B -C> A' × B' where
     have h2 := Hom.pcore g x.snd
     have h1 := Hom.pcore f x.fst
     cases _ : CMRA.pcore x.fst
-    · cases _ : CMRA.pcore (f.f x.fst) <;> simp_all
+    · cases _ : CMRA.pcore (f.f x.fst) <;> simp_all [equiv_iff_eq]
     · cases _ : CMRA.pcore x.snd <;>
       cases _ : CMRA.pcore (f.f x.fst) <;>
       cases _ : CMRA.pcore (g.f x.snd) <;>
-      simp_all
-      exact equiv_prod_ext (Option.equiv_of_some_equiv_some h1) (Option.equiv_of_some_equiv_some h2)
-  op x y := equiv_prod_ext (f.op x.fst y.fst) (g.op x.snd y.snd)
+      simp_all [equiv_iff_eq]
+  op x y := Equiv.of_eq (equiv_prod_ext (f.op x.fst y.fst).to_eq (g.op x.snd y.snd).to_eq)
 
 end ProdMor
 
@@ -1842,8 +1841,9 @@ instance instRFunctorProdOF [RFunctor F1] [RFunctor F2] : RFunctor (ProdOF F1 F2
   map f g := Prod.mapC (map f g) (map f g)
   map_ne.ne _ _ _ Hx _ _ Hy _ :=
     Prod.map_ne (fun _ => map_ne.ne Hx Hy _) (fun _ => map_ne.ne Hx Hy _)
-  map_id _ := equiv_prod_ext (map_id _) (map_id _)
-  map_comp _ _ _ _ _ := equiv_prod_ext (map_comp _ _ _ _ _) (map_comp _ _ _ _ _)
+  map_id _ := Equiv.of_eq (equiv_prod_ext (map_id _).to_eq (map_id _).to_eq)
+  map_comp _ _ _ _ _ :=
+    Equiv.of_eq (equiv_prod_ext (map_comp _ _ _ _ _).to_eq (map_comp _ _ _ _ _).to_eq)
 
 @[rocq_alias prodRF_contractive]
 instance instRFunctorContractiveProdOF
@@ -1878,8 +1878,8 @@ instance urFunctorOptionOF [RFunctor F] : URFunctor (OptionOF F) where
       exact (RFunctor.map f g).op x y
   }
   map_ne.ne := COFE.OFunctor.map_ne.ne
-  map_id := COFE.OFunctor.map_id
-  map_comp := COFE.OFunctor.map_comp
+  map_id x := Equiv.of_eq (COFE.OFunctor.map_id x)
+  map_comp f g f' g' x := Equiv.of_eq (COFE.OFunctor.map_comp f g f' g' x)
 
 @[rocq_alias optionURF_contractive]
 instance urFunctorContractiveOptionOF

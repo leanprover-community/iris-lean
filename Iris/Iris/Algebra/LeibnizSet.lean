@@ -32,7 +32,7 @@ inductive DisjointLeibnizSet (S : Type _) where
 instance : COFE (DisjointLeibnizSet S) := COFE.ofDiscrete _
 
 instance inst_disjointLeibnizSet_DiscreteE {S : Type _} (x : DisjointLeibnizSet S) :
-    DiscreteE x := ⟨fun h _ => h⟩
+    DiscreteE x := ⟨fun h => h⟩
 
 instance instEmptyCollectionDisjointLeibnizSet [LawfulSet S A] :
     EmptyCollection (DisjointLeibnizSet S) where
@@ -112,7 +112,7 @@ instance : CMRA (DisjointLeibnizSet S) where
   extend {_ _ y₁ y₂} _ h := ⟨y₁, y₂, ⟨fun _ => h, .rfl, .rfl⟩⟩
 
 instance instDiscreteDisjointLeibnizSet : CMRA.Discrete (DisjointLeibnizSet S) where
-  discrete_0 := fun h _ => h
+  discrete_0 := fun h => h
   discrete_valid := id
 
 instance instUCMRADisjointLeibnizSet : UCMRA (DisjointLeibnizSet S) where
@@ -339,7 +339,7 @@ instance : UCMRA (LeibnizSet S) where
   pcore_unit := by simp [pcore, pcore]
 
 instance instDiscreteLeibnizSet : CMRA.Discrete (LeibnizSet S) where
-  discrete_0 := fun h _ => h
+  discrete_0 := fun h => h
   discrete_valid := id
 
 @[rocq_alias gset_core_id]

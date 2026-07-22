@@ -76,10 +76,10 @@ theorem ne_match [OFE α] {B : Type _} [OFE B]
 instance [OFE α] [Discrete α] : Discrete (Excl α) where
   discrete_0 {x y} h' := by
     cases x <;> cases y
-    · exact discrete_0 (α := α) h'
+    · exact congrArg excl (discrete_0 (α := α) h')
     · exact h'.elim
     · exact h'.elim
-    · exact .rfl
+    · rfl
 
 #rocq_ignore excl_leibniz "Not needed"
 
@@ -87,7 +87,7 @@ instance [OFE α] [Discrete α] : Discrete (Excl α) where
 instance [OFE α] {a : α} [h : DiscreteE a] : DiscreteE (excl a) where
   discrete {x} h' := by
     cases x
-    · exact h.discrete h'
+    · exact congrArg excl (h.discrete h')
     · exact h'.elim
 
 @[rocq_alias ExclInvalid_discrete]
@@ -95,7 +95,7 @@ instance [OFE α] : DiscreteE (@invalid α) where
   discrete {x} h := by
     cases x
     · exact h.elim
-    · exact .rfl
+    · rfl
 
 /- Adapted from the corresponding definitions for [Option]. -/
 /- This could be simplified if there was an isomorphism lemma for [COFE]s in [OFE.lean]. -/
@@ -172,7 +172,7 @@ theorem incN_iff [OFE α] {x y : Excl α} (n) : x ≼{n} y ↔ y = invalid := by
 
 @[rocq_alias Excl_inj]
 theorem excl_inj [OFE α] {a b : α} (h : (some (excl a) : Option (Excl α)) ≡ some (excl b)) :
-    a ≡ b := OFE.some_eqv_some.mp h
+    a ≡ b := h
 
 @[rocq_alias Excl_dist_inj]
 theorem excl_dist_inj [OFE α] {a b : α} {n}
@@ -182,10 +182,10 @@ theorem excl_dist_inj [OFE α] {a b : α} {n}
 @[rocq_alias Excl_included]
 theorem excl_included [OFE α] {a b : α} :
     (some (excl a) : Option (Excl α)) ≼ some (excl b) ↔ a ≡ b := by
-  refine ⟨fun ⟨z, hz⟩ => ?_, fun h => ⟨none, OFE.some_eqv_some.mpr (show excl b ≡ excl a from h.symm)⟩⟩
+  refine ⟨fun ⟨z, hz⟩ => ?_, fun h => ⟨none, show excl b ≡ excl a from h.symm⟩⟩
   rcases z with _|z
-  · exact (OFE.some_eqv_some.mp hz : excl b ≡ excl a).symm
-  · exact ((OFE.some_eqv_some.mp hz : excl b ≡ invalid) 0).elim
+  · exact (hz : excl b ≡ excl a).symm
+  · exact ((hz : excl b ≡ invalid) 0).elim
 
 @[rocq_alias Excl_includedN]
 theorem excl_includedN [OFE α] {a b : α} {n} :
@@ -275,11 +275,11 @@ instance {F} [COFE.OFunctor F] : RFunctor (ExclOF F) where
     | invalid => trivial
   map_id {_ _} _ _ x := by
     cases x
-    · apply COFE.OFunctor.map_id
+    · apply OFE.Equiv.of_eq; exact congrArg excl (COFE.OFunctor.map_id _)
     · trivial
   map_comp f g f' g' x := by
     cases x
-    · apply COFE.OFunctor.map_comp
+    · apply OFE.Equiv.of_eq; exact congrArg excl (COFE.OFunctor.map_comp _ _ _ _ _)
     · trivial
 
 @[rocq_alias exclRF_contractive]

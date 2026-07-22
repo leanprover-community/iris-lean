@@ -31,7 +31,7 @@ inductive DFrac where
 #rocq_ignore DfracBoth_inj "Not needed"
 
 @[simp] instance : COFE DFrac := COFE.ofDiscrete _
-instance : OFE.Discrete DFrac := ⟨fun h _ => h⟩
+instance : OFE.Discrete DFrac := ⟨fun h => h⟩
 #rocq_ignore dfracO "Use DFrac type with typeclass inference"
 
 namespace DFrac
@@ -88,7 +88,7 @@ instance instCMRADFrac : CMRA DFrac where
     · intro z
       exists discard
       rcases z with z|_|z <;> simp [op]
-  extend _ Hxyz := ⟨_, _, discrete Hxyz, .rfl, .rfl⟩
+  extend _ Hxyz := ⟨_, _, OFE.Equiv.of_eq (discrete Hxyz), .rfl, .rfl⟩
 
 @[rocq_alias dfrac_full_exclusive]
 instance own_whole_exclusive : CMRA.Exclusive (α := DFrac) (own 1) where
@@ -117,7 +117,7 @@ instance one_exclusive_right [CMRA V] {v : V} : CMRA.Exclusive (v, own (One.one 
 instance {f : Qp} : CMRA.Cancelable (own f) where
   cancelableN {_} := by
     rintro (a|_|a) (b|_|b) <;> simp [CMRA.ValidN, CMRA.op, op] <;> intro H Hxyz
-    any_goals have Hxyz' := (discrete Hxyz).to_eq <;> simp at Hxyz'
+    any_goals have Hxyz' := discrete Hxyz <;> simp at Hxyz'
     · exact congrArg own (Subtype.ext (by grind))
     · exact absurd Hxyz' (by have := b.2; grind)
     · exact absurd Hxyz' (by have := a.2; grind)
@@ -129,7 +129,7 @@ instance {f : Qp} : CMRA.IdFree (own f) where
     rintro (y|_|y) <;>
       simp [CMRA.ValidN, CMRA.op, op] <;>
       intro H Hxyz <;>
-      any_goals have Hxyz' := (discrete Hxyz).to_eq <;>
+      any_goals have Hxyz' := discrete Hxyz <;>
       simp at Hxyz'
     exact absurd Hxyz' (by have := y.2; grind)
 
@@ -157,7 +157,7 @@ theorem valid_own_op_discard {q : Qp} : ✓ own q • discard ↔ q.val < 1 := b
 instance : CMRA.Discrete DFrac where
   discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
 
-theorem is_discrete {q : DFrac} : OFE.DiscreteE q := ⟨fun h _ => h⟩
+theorem is_discrete {q : DFrac} : OFE.DiscreteE q := ⟨fun h => h⟩
 
 @[rocq_alias dfrac_discarded_core_id]
 instance : CMRA.CoreId (DFrac.discard) where

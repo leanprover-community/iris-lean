@@ -476,11 +476,11 @@ theorem idemp {x : Agree α} : x • x ≡ x := op_idemp
 
 @[rocq_alias agree_cmra_discrete]
 instance instCMRADiscrete [OFE.Discrete α] : CMRA.Discrete (Agree α) where
-  discrete_0 {x y} := x.ind fun _ => y.ind fun _ => Raw.discrete_0
+  discrete_0 {x y} := x.ind fun _ => y.ind fun _ h => OFE.Equiv.to_eq (Raw.discrete_0 h)
   discrete_valid {x} := x.ind fun _ => Raw.discrete_valid
 
 instance instDiscrete [OFE.Discrete α] : OFE.Discrete (Agree α) where
-  discrete_0 {x y} := x.ind fun _ => y.ind fun _ => Raw.discrete_0
+  discrete_0 {x y} := x.ind fun _ => y.ind fun _ h => OFE.Equiv.to_eq (Raw.discrete_0 h)
 
 @[rocq_alias agree_includedN]
 theorem includedN {x y : Agree α} : x ≼{n} y ↔ y ≡{n}≡ y • x := by
@@ -610,7 +610,7 @@ theorem toAgree_op_valid_iff_equiv {a : α} : ✓ (toAgree a • toAgree b) ↔ 
 
 @[rocq_alias to_agree_discrete]
 instance toAgree.is_discrete {a : α} [OFE.DiscreteE a] : OFE.DiscreteE (toAgree a) where
-  discrete {y} := y.ind fun _ h n => Raw.toAgree_discrete h n
+  discrete {y} := y.ind fun _ h => OFE.Equiv.to_eq (Raw.toAgree_discrete h)
 
 end Agree
 
@@ -708,11 +708,10 @@ instance {F} [COFE.OFunctor F] : RFunctor (AgreeRF F) where
   map_ne.ne _ _ _ Hx _ _ Hy _ := Agree.map_ne <| COFE.OFunctor.map_ne.ne Hx Hy
   map_id x := by
     conv => right; rw [← (Agree.map_id x)]
-    exact (Agree.map_id x) ▸ Agree.agree_map_ext COFE.OFunctor.map_id
+    exact (Agree.map_id x) ▸ Agree.agree_map_ext (fun a => OFE.Equiv.of_eq (COFE.OFunctor.map_id a))
   map_comp f g f' g' x := by
     rw [← Agree.map_compose]
-    apply Agree.agree_map_ext
-    apply COFE.OFunctor.map_comp
+    exact Agree.agree_map_ext (fun a => OFE.Equiv.of_eq (COFE.OFunctor.map_comp f g f' g' a))
 
 @[rocq_alias agreeRF_contractive]
 instance {F} [COFE.OFunctorContractive F] : RFunctorContractive (AgreeRF F) where

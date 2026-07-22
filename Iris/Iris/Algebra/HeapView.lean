@@ -256,11 +256,11 @@ theorem auth_op_frag_valid_total_discrete_iff [IsTotal V] [CMRA.Discrete V]
   obtain ⟨v', dq', Hdp, Hl, Hv, Hi⟩ := auth_op_frag_discrete_valid_iff |>.mp H
   refine ⟨v', Hdp, ?_, Hl, Hv.2, ?_⟩
   · rcases Hi with ⟨(_|x), Hx⟩
-    · exact valid_of_eqv (fun n => (some_eqv_some.mp Hx n).1) Hv.1
-    · exact Option.valid_of_inc_valid Hv.1 ⟨x.fst, fun n => (some_eqv_some.mp Hx n).1⟩
+    · exact valid_of_eqv (fun n => (Equiv.of_eq (some_eqv_some.mp Hx.to_eq) n).1) Hv.1
+    · exact Option.valid_of_inc_valid Hv.1 ⟨x.fst, fun n => (Equiv.of_eq (some_eqv_some.mp Hx.to_eq) n).1⟩
   · rcases Hi with ⟨(_|x), Hx⟩
-    · exact inc_of_inc_of_eqv (inc_refl _) (OFE.Equiv.symm fun n => (some_eqv_some.mp Hx n).2)
-    · rcases (⟨x.snd, fun n => (some_eqv_some.mp Hx n).2⟩ : some v1 ≼ some v') with ⟨(_|z), Hz⟩
+    · exact inc_of_inc_of_eqv (inc_refl _) (OFE.Equiv.symm fun n => (Equiv.of_eq (some_eqv_some.mp Hx.to_eq) n).2)
+    · rcases (⟨x.snd, fun n => (Equiv.of_eq (some_eqv_some.mp Hx.to_eq) n).2⟩ : some v1 ≼ some v') with ⟨(_|z), Hz⟩
       · exact inc_of_inc_of_eqv (inc_refl _) Hz.symm
       · exists z
 
@@ -276,13 +276,14 @@ instance [Hdq : CoreId dq] [Hv1 : CoreId v1] : CoreId (Frag (H := H) k dq v1) wh
   core_id := by
     obtain ⟨H⟩ := Hdq
     simp [CMRA.pcore] at H
-    simp only [CMRA.pcore, View.Pcore, some_eqv_some]
-    refine NonExpansive₂.eqv .rfl (singleton_core_eqv ?_)
+    simp only [CMRA.pcore, View.Pcore]
+    refine NonExpansive.eqv (f := some) (NonExpansive₂.eqv .rfl (singleton_core_eqv ?_))
     simp [CMRA.pcore, Prod.pcore]
     cases h : CMRA.pcore v1
-    · exact not_none_eqv_some (h ▸ Hv1.core_id) |>.elim
+    · exact OFE.not_none_eqv_some (h ▸ Hv1.core_id).to_eq |>.elim
     · simp only [Option.bind_some, H.to_eq]
-      exact OFE.some_eqv_some.mpr (NonExpansive₂.eqv .rfl (some_eqv_some.mp (h ▸ Hv1.core_id)))
+      exact Equiv.of_eq (OFE.some_eqv_some.mpr
+        (NonExpansive₂.eqv .rfl (Equiv.of_eq (OFE.some_eqv_some.mp (h ▸ Hv1.core_id).to_eq))).to_eq)
 
 nonrec theorem frag_validN_iff : ✓{n} Frag (H := H) k dq v1 ↔ ✓ dq ∧ ✓{n} v1 :=
   frag_validN_iff.trans <| (HeapR.exists_iff_validN ..).trans singleton_validN_iff
@@ -548,7 +549,7 @@ instance {T} [RFunctor T] : URFunctor (HeapViewURF (H := H) T) where
   map_id x := by
     rw (config := { occs := .pos [2] }) [<- (View.map_id x)]
     apply View.map_ext
-    · exact COFE.OFunctor.map_id (F := PartialMapOF H T)
+    · exact fun a => OFE.Equiv.of_eq (COFE.OFunctor.map_id (F := PartialMapOF H T) a)
     · intro b
       refine .trans ?_ (map_id _ b)
       refine equiv_dist.mpr (fun n => ?_)
@@ -623,7 +624,7 @@ theorem update_big_replace (m m0 m1 : H V)
     refine Update.equiv_left CMRA.comm ?_
     refine Update.equiv_left UCMRA.unit_left_id.symm ?_
     have Heq : m1 = ∅ := by
-      apply equiv_iff_eq.mp; intro j; have h := congrFun Hdom.symm j
+      apply Std.LawfulPartialMap.equiv_iff_eq.mp; intro j; have h := congrFun Hdom.symm j
       simp [dom, get?_empty] at h; simp [get?_empty, h]
     refine Heq.symm ▸ Update.equiv_right (CMRA.op_right_eqv _ .rfl) ?_
     simp only [BigOpM.bigOpM_empty]

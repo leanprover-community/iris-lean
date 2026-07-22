@@ -205,7 +205,7 @@ theorem auth_op_validN {a b : A} (h : ✓{n} (●F a : FracAuth) • ●F b) : F
 theorem auth_dfrac_op_valid {dq1 dq2 : DFrac} {a b : A} (h : ✓ (●F{dq1} a) • ●F{dq2} b) :
     ✓ (dq1 • dq2) ∧ a ≡ b := by
   rw [Auth.auth_dfrac_op_valid] at h
-  exact ⟨h.1, fun n => ((OFE.some_eqv_some.mp h.2.1) n).2⟩
+  exact ⟨h.1, fun n => ((Equiv.of_eq (OFE.some_eqv_some.mp h.2.1.to_eq)) n).2⟩
 
 @[rocq_alias frac_auth_auth_op_valid]
 theorem auth_op_valid {a b : A} (h : ✓ (●F a : FracAuth) • ●F b) : False :=
@@ -231,14 +231,16 @@ theorem frag_op_valid {q1 q2 : Qp} {a b : A} :
 instance isOp_frac_auth {q q1 q2 : Qp} {a1 a2 : A} {a : outParam A}
     [h1 : IsOp io1 q io2 q1 io3 q2] [h2 : IsOp io1 a io2 a1 io3 a2] :
     IsOp io1 (◯F{q} a) io2 (◯F{q1} a1) io3 (◯F{q2} a2) where
-  is_op := NonExpansive.eqv (OFE.some_eqv_some.mpr (NonExpansive₂.eqv h1.is_op h2.is_op))
+  is_op :=
+    NonExpansive.eqv (Equiv.of_eq (OFE.some_eqv_some.mpr (NonExpansive₂.eqv h1.is_op h2.is_op).to_eq))
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias frac_auth_is_op_core_id]
 instance isOp_frac_auth_core_id {q q1 q2 : Qp} {a : A}
     [h1 : CoreId a] [h2 : IsOp io1 q io2 q1 io3 q2] :
     IsOp io1 (◯F{q} a) io2 (◯F{q1} a) io3 (◯F{q2} a) where
-  is_op := NonExpansive.eqv (OFE.some_eqv_some.mpr (NonExpansive₂.eqv h2.is_op (op_self a).symm))
+  is_op := NonExpansive.eqv
+    (Equiv.of_eq (OFE.some_eqv_some.mpr (NonExpansive₂.eqv h2.is_op (op_self a).symm).to_eq))
 
 /-! ## Updates -/
 

@@ -289,7 +289,7 @@ theorem meta_agree {A : Type _} [Pos.Countable A] {l : L} {N : Namespace} {x1 x2
   ipureintro
   rw [valid_iff (ReservationMap.singleton_op _ _ _).symm
     , ReservationMap.valid_singleton, toAgree_op_valid_iff_eq] at Hvalid
-  exact Pos.encode_inj (DiscreteO.eqv_inj (OFE.Equiv.of_eq Hvalid))
+  exact Pos.encode_inj (DiscreteO.eqv_inj Hvalid)
 
 @[rocq_alias meta_set]
 theorem meta_set {A : Type _} [Pos.Countable A] {l : L} {E : CoPset} {N : Namespace} (x : A)

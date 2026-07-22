@@ -28,11 +28,11 @@ theorem LocalUpdate.id (x : α × α) : x ~l~> x := fun _ _ vx e => ⟨vx, e⟩
 
 theorem LocalUpdate.equiv_left {x y : α × α} (z : α × α) (h : x ≡ y) : x ~l~> z → y ~l~> z := by
   intro u n mw v e
-  refine u n mw ((OFE.Dist.validN (OFE.equiv_fst h).dist.symm).mp v) ?_
+  refine u n mw ((OFE.Dist.validN (OFE.equiv_fst h.to_eq).dist.symm).mp v) ?_
   calc
-    x.fst ≡{n}≡ y.fst       := (OFE.equiv_fst h).dist
+    x.fst ≡{n}≡ y.fst       := (OFE.equiv_fst h.to_eq).dist
     _     ≡{n}≡ y.snd •? mw := e
-    _     ≡{n}≡ x.snd •? mw := CMRA.opM_left_dist mw (OFE.equiv_snd h).dist.symm
+    _     ≡{n}≡ x.snd •? mw := CMRA.opM_left_dist mw (OFE.equiv_snd h.to_eq).dist.symm
 
 theorem LocalUpdate.equiv_right (x : α × α) {y z : α × α} (h : y ≡ z) : x ~l~> y → x ~l~> z := by
   intro u n mw v e
@@ -109,8 +109,8 @@ theorem LocalUpdate.discrete [CMRA.Discrete α] (x y x' y' : α) :
     (x, y) ~l~> (x', y') ↔ ∀ mz, ✓ x → x ≡ y •? mz → (✓ x' ∧ x' ≡ y' •? mz) := by
   refine ⟨fun h mz vx e => ?_, fun h n mz vx e => ?_⟩
   · have ⟨vx', e⟩ := h 0 mz vx.validN e.dist
-    exact ⟨CMRA.discrete_valid vx', OFE.discrete_0 e⟩
-  · have ⟨vx', e'⟩ := h mz ((CMRA.valid_iff_validN' n).mpr vx) (OFE.discrete e)
+    exact ⟨CMRA.discrete_valid vx', OFE.Equiv.of_eq (OFE.discrete_0 e)⟩
+  · have ⟨vx', e'⟩ := h mz ((CMRA.valid_iff_validN' n).mpr vx) (OFE.Equiv.of_eq (OFE.discrete e))
     exact ⟨vx'.validN, e'.dist⟩
 
 @[rocq_alias local_update_valid0]
@@ -160,15 +160,16 @@ theorem local_update_unital_discrete [CMRA.Discrete α] (x y x' y' : α) :
     (x, y) ~l~> (x', y') ↔ ∀ z, ✓ x → x ≡ y • z → (✓ x' ∧ x' ≡ y' • z) where
   mp h z vx e :=
     have ⟨vx', e'⟩ := h 0 (some z) (CMRA.Valid.validN vx) e.dist
-    ⟨CMRA.discrete_valid vx', OFE.discrete_0 e'⟩
+    ⟨CMRA.discrete_valid vx', OFE.Equiv.of_eq (OFE.discrete_0 e')⟩
   mpr h := by
     refine local_update_unital.mpr fun n z vnx e => ?_
-    have ⟨vx', e'⟩ := h z ((CMRA.valid_iff_validN' n).mpr vnx) (OFE.discrete e)
+    have ⟨vx', e'⟩ := h z ((CMRA.valid_iff_validN' n).mpr vnx) (OFE.Equiv.of_eq (OFE.discrete e))
     exact ⟨vx'.validN, e'.dist⟩
 
 @[rocq_alias cancel_local_update_unit]
 theorem cancel_local_update_unit (x y : α) [CMRA.Cancelable x] : (x • y, x) ~l~> (y, CMRA.unit) :=
-  have e : (x • y, x • CMRA.unit) ≡ (x • y, x) := OFE.equiv_prod_ext .rfl CMRA.unit_right_id
+  have e : (x • y, x • CMRA.unit) ≡ (x • y, x) :=
+    OFE.Equiv.of_eq (OFE.equiv_prod_ext rfl CMRA.unit_right_id.to_eq)
   .equiv_left _ e (.cancel x y CMRA.unit)
 
 /-- Necessary and sufficient condition for a local update on a unital discrete leibniz CMRA

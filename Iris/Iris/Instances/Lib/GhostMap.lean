@@ -286,9 +286,11 @@ theorem ghost_map_auth_valid_2 {γ} {dq1 dq2 : DFrac} {m1 m2 : H V} :
   refine ⟨h₁, equiv_iff_eq.mp fun k => ?_⟩
   have h : _ ≡ _ := fun n => h₂ n k
   simp only [get?_map, Option.map] at h
-  cases h₁ : get? m1 k <;> cases h₂ : get? m2 k <;>
-    grind [OFE.not_none_eqv_some, OFE.not_some_eqv_none,
-      → Agree.toAgree_inj, DiscreteO.eqv_inj, OFE.some_eqv_some, Option.some.injEq]
+  cases h₁ : get? m1 k <;> cases h₂ : get? m2 k <;> simp only [h₁, h₂] at h
+  · rfl
+  · exact (OFE.not_none_eqv_some h.to_eq).elim
+  · exact (OFE.not_some_eqv_none h.to_eq).elim
+  · exact congrArg some (DiscreteO.eqv_inj (Agree.toAgree_inj h).to_eq)
 
 @[rocq_alias ghost_map_auth_agree]
 theorem ghost_map_auth_agree γ (dq1 dq2 : DFrac) (m1 m2 : H V) :

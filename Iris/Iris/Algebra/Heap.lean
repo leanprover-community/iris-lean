@@ -71,11 +71,13 @@ instance Heap.instCOFE [LawfulPartialMap M K] [COFE V] : COFE (M V) where
     · exact IsCOFE.conv_compl
 
 instance instDiscreteHeap [LawfulPartialMap M K] [OFE V] [Discrete V] : Discrete (M V) where
-  discrete_0 h _ k := (Discrete.discrete_0 (h k)).dist
+  discrete_0 h := OFE.Equiv.to_eq <| by
+    intro _ k
+    exact (Discrete.discrete_0 (h k)).dist
 
 instance instDiscreteESingleton [LawfulPartialMap M K] [DecidableEq K] [OFE V] {v : V}
     [ha : DiscreteE v] {k : K} : DiscreteE (PartialMap.singleton (M := M) k v) where
-  discrete {y} h := by
+  discrete {y} h := OFE.Equiv.to_eq <| by
     intro n k'
     by_cases hh : k = k'
     · simp only [LawfulPartialMap.get?_singleton, hh, ↓reduceIte]
@@ -86,7 +88,7 @@ instance instDiscreteESingleton [LawfulPartialMap M K] [DecidableEq K] [OFE V] {
       simp [LawfulPartialMap.get?_singleton, hh, ↓reduceIte]
 
 instance instDiscreteEEmpty [LawfulPartialMap M K] [OFE V] : DiscreteE (∅ : M V) where
-  discrete {y} h := by
+  discrete {y} h := OFE.Equiv.to_eq <| by
     intro n k
     simp only [LawfulPartialMap.get?_empty]
     refine (DiscreteE.discrete (.trans ?_ (h k))).dist
@@ -149,7 +151,8 @@ theorem lookup_inc {m1 m2 : M V} :
     refine fun n i => ((Hf i).trans ?_).dist
     specialize Hf i; revert Hf
     simp [CMRA.op, optionOp, get?_merge, get?_bindAlter]
-    cases get? m2 i <;> cases get? m1 i <;> cases f i <;> simp
+    cases get? m2 i <;> cases get? m1 i <;> cases f i <;> simp <;>
+      exact fun h => (OFE.not_none_eqv_some h.to_eq).elim
 
 open OFE in
 instance instStoreCMRA : CMRA (M V) where
@@ -560,10 +563,11 @@ theorem inc_dom_inc {m1 m2 : M V} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (do
   unfold dom
   rcases lookup_inc.mp Hinc i with ⟨z, Hz⟩
   revert Hz
-  cases get? m1 i <;> cases get? m2 i <;> cases z <;> simp [CMRA.op, optionOp]
+  cases get? m1 i <;> cases get? m2 i <;> cases z <;> simp [CMRA.op, optionOp] <;>
+    exact fun h => (OFE.not_none_eqv_some h.to_eq).elim
 
 nonrec instance [HD : CMRA.Discrete V] [LawfulPartialMap M K] : Discrete (M V) where
-  discrete_0 {_ _} H := fun _ k => (OFE.Discrete.discrete_0 (H k)).dist
+  discrete_0 {_ _} H := OFE.Equiv.to_eq fun _ k => (OFE.Discrete.discrete_0 (H k)).dist
   discrete_valid {_} := (CMRA.Discrete.discrete_valid <| · ·)
 
 end Heap
@@ -646,11 +650,11 @@ instance {F} [COFE.OFunctor F] : COFE.OFunctor (PartialMapOF H F) where
     intros _ _ _ _ _ _ _ _
     apply map_ne
     apply COFE.OFunctor.map_ne.ne <;> simp_all
-  map_id x := by
+  map_id x := OFE.Equiv.to_eq <| by
     refine .trans ?_ (map_id H x)
     apply map_ext
     exact fun _ a => (COFE.OFunctor.map_id a).dist
-  map_comp f g f' g' m := by
+  map_comp f g f' g' m := OFE.Equiv.to_eq <| by
     simp [mapO, map]
     intro n x
     simp [get?_bindAlter]

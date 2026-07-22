@@ -129,8 +129,8 @@ theorem own_union {p : NaInvPoolName} {E1 E2 : CoPset} (Hdisj : E1 ## E2) :
     own (GF := GF) p (E1 ∪ E2) ⊣⊢ own p E1 ∗ own p E2 := by
   refine .trans ?_ iOwn_op
   refine BI.equiv_iff.mp (NonExpansive.eqv (f := iOwn (E := W.inv) p) ?_)
-  refine .symm <| equiv_prod_ext (disj_op_union Hdisj) ?_
-  refine .trans (disj_op_union disjoint_empty_left) ?_
+  refine .symm <| Equiv.of_eq (OFE.equiv_prod_ext (disj_op_union Hdisj).to_eq ?_)
+  refine Equiv.to_eq (.trans (disj_op_union disjoint_empty_left) ?_)
   exact .of_eq (by simp)
 
 @[rocq_alias na_own_acc]

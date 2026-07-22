@@ -86,13 +86,16 @@ theorem inr_injN [OFE α] [OFE β] {b b' : β} (h : inr (α := α) b ≡{n}≡ i
 @[rocq_alias csum_ofe_discrete]
 instance [OFE α] [OFE β] [OFE.Discrete α] [OFE.Discrete β] : OFE.Discrete (Csum α β) where
   discrete_0 {x y} h := by cases x <;> cases y <;>
-    first | exact discrete_0 (α := α) h | exact discrete_0 (α := β) h | trivial
+    first
+      | exact congrArg inl (discrete_0 (α := α) h)
+      | exact congrArg inr (discrete_0 (α := β) h)
+      | exact h.elim | trivial
 
 @[rocq_alias Cinl_discrete]
 instance [OFE α] [OFE β] {a : α} [DiscreteE a] : DiscreteE (inl (β := β) a) where
   discrete {x} h := by
     cases x with
-    | inl => exact DiscreteE.discrete (x := a) h
+    | inl => exact congrArg inl (DiscreteE.discrete (x := a) h)
     | inr => exact h.elim
     | invalid => exact h.elim
 
@@ -101,7 +104,7 @@ instance [OFE α] [OFE β] {b : β} [DiscreteE b] : DiscreteE (inr (α := α) b)
   discrete {x} h := by
     cases x with
     | inl => exact h.elim
-    | inr => exact DiscreteE.discrete (x := b) h
+    | inr => exact congrArg inr (DiscreteE.discrete (x := b) h)
     | invalid => exact h.elim
 
 instance [OFE α] [OFE β] : DiscreteE (@invalid α β) where
@@ -109,7 +112,7 @@ instance [OFE α] [OFE β] : DiscreteE (@invalid α β) where
     cases x with
     | inl => exact h.elim
     | inr => exact h.elim
-    | invalid => exact .rfl
+    | invalid => exact rfl
 
 /-! ## COFE -/
 
@@ -227,23 +230,23 @@ instance [CMRA α] [CMRA β] : CMRA (Csum α β) where
   pcore_idem {x cx} hpx := by cases x with
     | inl a =>
       obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq hpx
-      exact Option.map_forall₂ inl (CMRA.pcore_idem hpa)
+      exact Equiv.of_eq (Option.map_forall₂ inl (CMRA.pcore_idem hpa).to_eq)
     | inr b =>
       obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx
-      exact Option.map_forall₂ inr (CMRA.pcore_idem hpb)
+      exact Equiv.of_eq (Option.map_forall₂ inr (CMRA.pcore_idem hpb).to_eq)
     | invalid => simp only [Csum.pcore, Option.some.injEq] at hpx; exact hpx ▸ .rfl
   pcore_op_mono {x cx} hpx y := by cases x with
     | inl a =>
       obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq hpx; cases y with
       | inl a' =>
         obtain ⟨cy, hcy⟩ := CMRA.pcore_op_mono hpa a'
-        exact ⟨inl cy, Option.map_forall₂ inl hcy⟩
+        exact ⟨inl cy, Equiv.of_eq (Option.map_forall₂ inl hcy.to_eq)⟩
       | _ => exact ⟨invalid, .rfl⟩
     | inr b =>
       obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx; cases y with
       | inr b' =>
         obtain ⟨cy, hcy⟩ := CMRA.pcore_op_mono hpb b'
-        exact ⟨inr cy, Option.map_forall₂ inr hcy⟩
+        exact ⟨inr cy, Equiv.of_eq (Option.map_forall₂ inr hcy.to_eq)⟩
       | _ => exact ⟨invalid, .rfl⟩
     | invalid =>
       simp only [Csum.pcore, Option.some.injEq] at hpx; exact hpx ▸ ⟨invalid, .rfl⟩
@@ -284,11 +287,11 @@ instance [CMRA α] [CMRA β] [CMRA.Discrete α] [CMRA.Discrete β] : CMRA.Discre
 
 @[rocq_alias Cinl_core_id]
 instance [CMRA α] [CMRA β] {a : α} [CoreId a] : CoreId (inl (β := β) a) where
-  core_id := Option.map_forall₂ inl core_id
+  core_id := Equiv.of_eq (Option.map_forall₂ inl core_id.to_eq)
 
 @[rocq_alias Cinr_core_id]
 instance [CMRA α] [CMRA β] {b : β} [CoreId b] : CoreId (inr (α := α) b) where
-  core_id := Option.map_forall₂ inr core_id
+  core_id := Equiv.of_eq (Option.map_forall₂ inr core_id.to_eq)
 
 /-! ## Exclusive -/
 
@@ -559,14 +562,14 @@ def cMap [CMRA α] [CMRA α'] [CMRA β] [CMRA β']
       show (CMRA.pcore a).map (inl ∘ ⇑fa) ≡ _
       rw [show (CMRA.pcore a).map (inl ∘ ⇑fa) = ((CMRA.pcore a).map fa).map inl from
         (Option.map_map ..).symm]
-      exact Option.map_forall₂ inl (fa.pcore a)
+      exact Equiv.of_eq (Option.map_forall₂ inl (fa.pcore a).to_eq)
     | inr b =>
       show ((CMRA.pcore b).map inr).map (map fa fb) ≡ (CMRA.pcore (fb b)).map inr
       rw [Option.map_map]
       show (CMRA.pcore b).map (inr ∘ ⇑fb) ≡ _
       rw [show (CMRA.pcore b).map (inr ∘ ⇑fb) = ((CMRA.pcore b).map fb).map inr from
         (Option.map_map ..).symm]
-      exact Option.map_forall₂ inr (fb.pcore b)
+      exact Equiv.of_eq (Option.map_forall₂ inr (fb.pcore b).to_eq)
     | invalid => trivial
   op x y := by cases x <;> cases y <;> first | exact fa.op _ _ | exact fb.op _ _ | trivial
 

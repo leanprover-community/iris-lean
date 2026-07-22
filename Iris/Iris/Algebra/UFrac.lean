@@ -37,7 +37,7 @@ namespace UFrac
 #rocq_ignore ufrac_valid_instance "Use CMRA instance"
 
 @[simp] instance : COFE UFrac := COFE.ofDiscrete _
-instance : OFE.Discrete UFrac := ⟨fun h _ => h⟩
+instance : OFE.Discrete UFrac := ⟨fun h => h⟩
 
 @[simp] theorem dist_iff {n} {x y : UFrac} : x ≡{n}≡ y ↔ x = y := Iff.rfl
 @[simp] theorem equiv_iff {x y : UFrac} : x ≡ y ↔ x = y := ⟨OFE.Equiv.to_eq, OFE.Equiv.of_eq⟩
@@ -81,7 +81,7 @@ theorem le_of_inc {x y : UFrac} (H : x ≼ y) : x.frac ≤ y.frac := by
 
 @[rocq_alias ufrac_cmra_discrete]
 instance : CMRA.Discrete UFrac where
-  discrete_0 := fun h _ => h
+  discrete_0 := fun h => h
   discrete_valid := id
 
 @[rocq_alias ufrac_cancelable]

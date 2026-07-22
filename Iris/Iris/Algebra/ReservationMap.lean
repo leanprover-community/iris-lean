@@ -77,7 +77,9 @@ instance : OFE (ReservationMap A H) where
 
 @[rocq_alias reservation_map_ofe_discrete]
 instance instDiscreteReservationMap [Discrete A] : Discrete (ReservationMap A H) where
-  discrete_0 h := fun n => ⟨(discrete_0 h.left) n, (discrete_0 h.right) n⟩
+  discrete_0 h := OFE.Equiv.to_eq <| by
+    intro n
+    exact ⟨(discrete_0 h.left).dist, (discrete_0 h.right).dist⟩
 
 instance instNonExpansiveReservationMapData :
     NonExpansive (ReservationMap.mkData (H := H) (A := A)) where
@@ -93,7 +95,9 @@ instance instNonExpansiveReservationMapSingleton :
 @[rocq_alias ReservationMap_discrete]
 instance instDiscreteEReservationMapMk {a : H A} [DiscreteE a] :
     DiscreteE (ReservationMap.mk a b) where
-  discrete := fun h n => ⟨(DiscreteE.discrete h.1) n, (DiscreteE.discrete h.2) n⟩
+  discrete := fun h => OFE.Equiv.to_eq <| by
+    intro n
+    exact ⟨(DiscreteE.discrete h.1).dist, (DiscreteE.discrete h.2).dist⟩
 
 @[rocq_alias reservation_map_data_discrete]
 instance instDiscreteEReservationMapSingleton {a : A} [DiscreteE a] :
@@ -285,7 +289,7 @@ instance [CMRA.Discrete A] : CMRA.Discrete (ReservationMap A H) where
 
 instance instCoreIdSingleton {a : A} [CoreId a] : CoreId (singleton (H := H) k a) where
   core_id := by
-    refine OFE.some_eqv_some.mpr fun n => ⟨?_, .rfl⟩
+    refine fun n => OFE.some_dist_some.mpr ⟨?_, .rfl⟩
     exact (core_eqv_self (PartialMap.singleton k a : H A)) n
 
 theorem split_valid {x : ReservationMap A H} (vx : ✓ x) :

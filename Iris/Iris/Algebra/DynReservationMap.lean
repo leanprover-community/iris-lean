@@ -73,7 +73,9 @@ instance : OFE (DynReservationMap A H) where
 
 @[rocq_alias dyn_reservation_map_ofe_discrete]
 instance instDiscreteDynReservationMap [Discrete A] : Discrete (DynReservationMap A H) where
-  discrete_0 h := fun n => ⟨(discrete_0 h.left) n, (discrete_0 h.right) n⟩
+  discrete_0 h := OFE.Equiv.to_eq <| by
+    intro n
+    exact ⟨(discrete_0 h.left).dist, (discrete_0 h.right).dist⟩
 
 #rocq_ignore dyn_reservation_map_data_proper "Derivable using NonExpansive.eqv"
 
@@ -85,7 +87,9 @@ instance instNonExpansiveDynReservationMapSingleton :
 @[rocq_alias DynReservationMap_discrete]
 instance instDiscreteEDynReservationMapMk {a : H A} [DiscreteE a] :
     DiscreteE (DynReservationMap.mk a b) where
-  discrete := fun h n => ⟨(DiscreteE.discrete h.1) n, (DiscreteE.discrete h.2) n⟩
+  discrete := fun h => OFE.Equiv.to_eq <| by
+    intro n
+    exact ⟨(DiscreteE.discrete h.1).dist, (DiscreteE.discrete h.2).dist⟩
 
 @[rocq_alias dyn_reservation_map_data_discrete]
 instance instDiscreteEDynReservationMapSingleton {a : A} [DiscreteE a] :

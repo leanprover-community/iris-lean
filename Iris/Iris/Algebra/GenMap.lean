@@ -106,7 +106,7 @@ end OFE
 
 theorem GenMap.singleton_discreteE {v : β} [OFE β] [DiscreteE v] :
     DiscreteE (GenMap.singleton (β := β) k v) where
-  discrete {y} H := by
+  discrete {y} H := OFE.Equiv.to_eq <| by
     intro n γ'
     specialize H γ'
     simp only [GenMap.singleton, GenMap.alter, GenMap.empty, Iris.alter] at H ⊢
@@ -115,7 +115,7 @@ theorem GenMap.singleton_discreteE {v : β} [OFE β] [DiscreteE v] :
     · next hne => simp only [hne, ite_false] at H ⊢; exact (Option.none_is_discrete.discrete H).dist
 
 theorem GenMap.empty_discreteE [OFE β] : DiscreteE (GenMap.empty (β := β)) where
-  discrete {y} H := by
+  discrete {y} H := OFE.Equiv.to_eq <| by
     intro n γ'
     specialize H γ'
     simp only [GenMap.empty] at H ⊢
@@ -340,10 +340,12 @@ instance instOFunctor_GenMapOF (F : OFunctorPre) [OFunctor F] :
     simp only [OFE.Dist, Option.Forall₂, Option.map]
     cases _ : k.car γ <;> simp
     exact OFunctor.map_ne.ne Hx Hy _
-  map_id {α β _ _} x _ γ := by
+  map_id {α β _ _} x := OFE.Equiv.to_eq <| by
+    intro _ γ
     simp only [Option.map]; cases _ : x.car γ <;> simp
     exact (OFunctor.map_id _).dist
-  map_comp _ _ _ _ x _ γ := by
+  map_comp _ _ _ _ x := OFE.Equiv.to_eq <| by
+    intro _ γ
     simp only [Option.map]; cases _ : x.car γ <;> simp
     exact (OFunctor.map_comp _ _ _ _ _).dist
 
@@ -378,8 +380,8 @@ instance instURFunctor_GenMapOF (F : COFE.OFunctorPre) [RFunctor F] :
         simp_all [OFunctor.map, optionMap, OFE.Equiv]
   }
   map_ne.ne := OFunctor.map_ne.ne
-  map_id := OFunctor.map_id
-  map_comp := OFunctor.map_comp
+  map_id x := OFE.Equiv.of_eq (OFunctor.map_id x)
+  map_comp f g f' g' x := OFE.Equiv.of_eq (OFunctor.map_comp f g f' g' x)
 
 instance instURFunctorContractive_GenMapOF (F : COFE.OFunctorPre) [RFunctorContractive F] :
     URFunctorContractive (GenMapOF F) where

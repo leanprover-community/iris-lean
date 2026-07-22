@@ -131,10 +131,12 @@ instance [URFunctor F] : COFE.OFunctor (UPredOF F) where
   map_ne.ne _ _ _ Hx _ _ Hy _ _ z2 Hn _ := by
     simp only [uPred_map]
     exact uPred_ne <| URFunctor.map_ne.ne (Hy.le Hn) (Hx.le Hn) z2
-  map_id _ _ _ z _ _ := by
+  map_id x := OFE.Equiv.to_eq <| by
+    intro _ _ z _ _
     simp only [uPred_map]
     exact uPred_proper <| URFunctor.map_id z
-  map_comp f g f' g' _ _ _ H _ _ := by
+  map_comp f g f' g' x := OFE.Equiv.to_eq <| by
+    intro _ _ H _ _
     simp only [uPred_map]
     exact uPred_proper <| URFunctor.map_comp g' f' g f H
 

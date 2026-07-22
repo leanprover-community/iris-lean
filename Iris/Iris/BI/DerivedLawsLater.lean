@@ -248,7 +248,7 @@ instance later_contractive_bi_loeb [BILaterContractive PROP] : BILoeb PROP where
     let Flöb : PROP -c> PROP := { f := fun Q => iprop((▷ Q) → P), contractive := Hc }
     suffices HP : iprop(▷ (fixpoint Flöb) ⊢ P) by
       refine entails_impl_true.mp HP |>.trans ?_
-      refine equiv_iff.mp (fixpoint_unfold Flöb) |>.mpr |>.trans ?_
+      refine equiv_iff.mp (OFE.Equiv.of_eq (fixpoint_unfold Flöb)) |>.mpr |>.trans ?_
       exact later_intro.trans HP
     refine .trans ?_ ((later_mono HP).trans HP)
     suffices Hcut : later (fixpoint Flöb) ⊢ later (later (later (fixpoint Flöb))) → later (later P) by
@@ -257,7 +257,7 @@ instance later_contractive_bi_loeb [BILaterContractive PROP] : BILoeb PROP where
     refine .trans ?_ later_imp
     refine .trans ?_ later_intro
     refine equiv_iff.mp ?_ |>.mp
-    exact fixpoint_unfold Flöb
+    exact OFE.Equiv.of_eq (fixpoint_unfold Flöb)
 
 /-! # LaterN -/
 

@@ -100,10 +100,10 @@ instance ElemG.unbundle.ne {E : ElemG GF F} [COFE T] :
 omit I in
 theorem ElemG.bundle_discreteE {GF : BundledGFunctors} [RFunctorContractive F] (E : ElemG GF F)
     {v : F.ap (IProp GF)} [DiscreteE v] : DiscreteE (E.bundle v) where
-  discrete hz :=
+  discrete hz := OFE.Equiv.to_eq <|
     ((ElemG.bundle.ne (T := IProp GF)).eqv
-      (DiscreteE.discrete ((E.unbundle_bundle v).dist.symm.trans
-        ((ElemG.unbundle.ne (T := IProp GF)).ne hz)))).trans
+      (OFE.Equiv.of_eq (DiscreteE.discrete ((E.unbundle_bundle v).dist.symm.trans
+        ((ElemG.unbundle.ne (T := IProp GF)).ne hz))))).trans
       (E.bundle_unbundle _)
 
 theorem bundle_op {GF : BundledGFunctors} [E : ElemG GF F] (a2 ac : F.ap (IProp GF)) :
@@ -147,8 +147,9 @@ theorem ElemG.bundle_unit {GF F} [RFunctorContractive F] (E : ElemG GF F) {ε : 
      _ ≡ Option.map E.bundle (some ε) := by
         have h_pcore := ‹IsUnit ε›.pcore_unit
         rcases eqn : CMRA.pcore ε with (_ | c)
-        · simp [eqn] at h_pcore
-        · simp [Option.map, eqn] at h_pcore ⊢; exact NonExpansive.eqv h_pcore
+        · exact absurd (eqn ▸ h_pcore).to_eq OFE.not_none_eqv_some
+        · simp only [Option.map]
+          exact NonExpansive.eqv (f := some) (NonExpansive.eqv ((eqn ▸ h_pcore : some c ≡ some ε) : c ≡ ε))
      _ ≡ E.bundle ε := by rfl
 
 end ElemG
@@ -172,21 +173,21 @@ def IProp.foldi : FF.api τ (IPre FF) -n> FF.api τ (IProp FF) :=
 @[rocq_alias inG_unfold_fold]
 theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) ≡ x := by
   refine OFE.equiv_dist.mpr fun n => ?_
-  refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm ?_
+  refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm.dist ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
   apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold]
 
 @[rocq_alias inG_fold_unfold]
 theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) ≡ x := by
   refine OFE.equiv_dist.mpr fun n => ?_
-  refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm ?_
+  refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm.dist ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
   apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold]
 
 theorem IProp.unfoldi_discreteE {v : FF.api τ (IProp FF)} (hv : OFE.DiscreteE v) :
     OFE.DiscreteE (unfoldi.f v) where
-  discrete h := (OFE.NonExpansive.eqv (f := unfoldi.f) (hv.discrete
-    ((foldi_unfoldi v).dist.symm.trans (OFE.NonExpansive.ne h)))).trans (unfoldi_foldi _)
+  discrete h := OFE.Equiv.to_eq <| (OFE.NonExpansive.eqv (f := unfoldi.f) (OFE.Equiv.of_eq (hv.discrete
+    ((foldi_unfoldi v).dist.symm.trans (OFE.NonExpansive.ne h))))).trans (unfoldi_foldi _)
 
 theorem IProp.foldi_op (x y : FF.api τ (IPre FF)) : foldi (x • y) ≡ foldi x • foldi y :=
   RFunctor.map (IProp.unfold FF) (IProp.fold FF) |>.op _ _
@@ -227,7 +228,7 @@ theorem IProp.unfoldi_unit {τ : GType} {x : FF.api τ (IProp FF)} [IsUnit x] :
       _ ≡ (CMRA.pcore x).map unfoldi.f :=
         (RFunctor.map (IProp.fold FF) (IProp.unfold FF)).pcore x |>.symm
       _ ≡ (some x).map unfoldi.f :=
-        Option.map_forall₂ _ IsUnit.pcore_unit
+        OFE.Equiv.of_eq (Option.map_forall₂ _ IsUnit.pcore_unit.to_eq)
       _ ≡ some (unfoldi.f x) := by
         simp [Option.map, OFE.Equiv.rfl]
 
@@ -304,13 +305,13 @@ theorem unfoldi_bundle_coreId {a : F.ap (IProp GF)} [CMRA.CoreId a] :
     calc CMRA.pcore (E.bundle a)
       ≡ (CMRA.pcore a).map E.bundle :=
           (OFE.transpAp_pcore_mp (E.transpMap (F.ap (IProp GF))).symm (E.transpClass (F.ap (IProp GF))).symm).symm
-    _ ≡ (some a).map E.bundle := Option.map_forall₂ _ CMRA.CoreId.core_id
+    _ ≡ (some a).map E.bundle := OFE.Equiv.of_eq (Option.map_forall₂ _ CMRA.CoreId.core_id.to_eq)
     _ ≡ some (E.bundle a) := by rfl
   calc CMRA.pcore ((RFunctor.map (IProp.fold GF) (IProp.unfold GF)).toHom.f (E.bundle a))
     ≡ (CMRA.pcore (E.bundle a)).map (RFunctor.map (IProp.fold GF) (IProp.unfold GF)).toHom.f :=
       (RFunctor.map (IProp.fold GF) (IProp.unfold GF)).pcore (E.bundle a) |>.symm
   _ ≡ (some (E.bundle a)).map (RFunctor.map (IProp.fold GF) (IProp.unfold GF)).toHom.f :=
-    Option.map_forall₂ _ bundle_coreId.core_id
+    OFE.Equiv.of_eq (Option.map_forall₂ _ bundle_coreId.core_id.to_eq)
   _ ≡ some ((RFunctor.map (IProp.fold GF) (IProp.unfold GF)).toHom.f (E.bundle a)) := by rfl
 
 @[rocq_alias iRes_singleton_core_id]
@@ -447,7 +448,7 @@ theorem iSingleton_op_validN_at_γ {a : F.ap (IProp GF)} (Hv : ✓{n} mf) :
 instance iSingleton_discreteE {v : F.ap (IProp GF)} [OFE.DiscreteE v] :
     OFE.DiscreteE (iSingleton F γ v) where
   discrete {w} H := by
-    refine OFE.equiv_dist.mpr fun n τ => ?_
+    refine OFE.Equiv.to_eq (OFE.equiv_dist.mpr fun n τ => ?_)
     simp only [iSingleton] at ⊢
     split
     next h =>
@@ -461,7 +462,7 @@ instance iSingleton_discreteE {v : F.ap (IProp GF)} [OFE.DiscreteE v] :
         · refine some_dist_some.mpr (OFE.Equiv.dist ?_)
           refine (NonExpansive.eqv ?_).trans (IProp.unfoldi_foldi x)
           refine (NonExpansive.eqv ?_).trans (ElemG.bundle_unbundle E _)
-          refine OFE.DiscreteE.discrete ?_
+          refine OFE.Equiv.of_eq (OFE.DiscreteE.discrete ?_)
           refine (ElemG.unbundle_bundle E v).dist.symm.trans ?_
           refine NonExpansive.ne <| (IProp.foldi_unfoldi _).dist.symm.trans (NonExpansive.ne Hk)
       · rw [GenMap.singleton_map_none hk] at Hk ⊢

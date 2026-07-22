@@ -130,7 +130,7 @@ theorem Frac.le_of_inc {p q : Qp} (H : p ≼ q) : p ≤ q := by
 
 @[rocq_alias frac_cmra_discrete]
 instance instDiscreteQp : CMRA.Discrete Qp where
-  discrete_0 := fun h _ => h
+  discrete_0 := fun h => h
   discrete_valid := id
 
 @[rocq_alias frac_full_exclusive]

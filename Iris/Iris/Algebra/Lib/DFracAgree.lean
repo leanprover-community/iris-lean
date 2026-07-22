@@ -46,7 +46,9 @@ instance mk_exclusive {a : A} : Exclusive (mk (.own (1 : Qp)) a) := one_exclusiv
 
 @[rocq_alias to_dfrac_agree_discrete]
 instance mk_discrete {d : DFrac} {a : A} [DiscreteE a] : DiscreteE (mk d a) :=
-  ⟨fun h n => ⟨(is_discrete.discrete h.1) n, (Agree.toAgree.is_discrete.discrete h.2) n⟩⟩
+  ⟨fun h => OFE.Equiv.to_eq <| by
+    intro n
+    exact ⟨(is_discrete.discrete h.1).dist, (Agree.toAgree.is_discrete.discrete h.2).dist⟩⟩
 
 @[rocq_alias to_dfrac_agree_injN]
 theorem mk_injN {d₁ d₂ : DFrac} {a₁ a₂ : A} (h : mk d₁ a₁ ≡{n}≡ mk d₂ a₂) : d₁ ≡{n}≡ d₂ ∧ a₁ ≡{n}≡ a₂ :=

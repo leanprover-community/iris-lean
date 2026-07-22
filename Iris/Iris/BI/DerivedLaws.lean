@@ -2186,8 +2186,8 @@ theorem LimitPreserving.entails [BI PROP] [COFE A] (Φ Ψ : A → PROP) [Φne : 
     }
     refine fun c h' => ?_
     refine equiv_iff.1 ?_
-    refine LimitPreserving.equiv f g _ ?_
-    exact (equiv_iff.mpr <| h' ·)
+    refine OFE.Equiv.of_eq (LimitPreserving.equiv f g _ ?_)
+    exact fun n => (equiv_iff.mpr (h' n)).to_eq
 
 @[rocq_alias bi.limit_preserving_Persistent]
 instance limitPreserving_persistent [BI PROP] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
