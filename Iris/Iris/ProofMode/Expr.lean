@@ -480,6 +480,24 @@ def Hyps.replace : m (Option ((e' : Q($prop)) × Hyps bi e' × Q($e ⊢ $e'))) :
   let some ⟨_, hyps', pf⟩ ← hyps.replaceCore bi e ivar repl | return none
   return some ⟨_, hyps', q(replace_finish $pf)⟩
 
+def Hyps.evalReplace [Monad m] [MonadLiftT MetaM m]
+    {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (ivar : IVarId)
+    (repl : (ty : Q($prop)) → m ((ty' : Q($prop)) × Q($ty ⊢ $ty'))) :
+    ∀ {e}, Hyps bi e → m (Option ((e' : Q($prop)) × Hyps bi e' × Q($e ⊢ $e')))
+  | _, .emp _ => return none
+  | _, .hyp _ name ivar' p ty _ =>
+      if ivar == ivar' then do
+        let ⟨ty', h⟩ ← repl ty
+        return some ⟨_, .mkHyp bi name ivar p ty',
+                     q(intuitionisticallyIf_mono (p := $p) $h)⟩
+      else return none
+  | _, .sep _ _ _ _ lhs rhs => do
+      if let some ⟨_, lhs', h⟩ ← lhs.evalReplace ivar repl then
+        return some ⟨_, .mkSep lhs' rhs, q(sep_mono_left $h)⟩
+      if let some ⟨_, rhs', h⟩ ← rhs.evalReplace ivar repl then
+        return some ⟨_, .mkSep lhs rhs', q(sep_mono_right $h)⟩
+      return none
+
 end replace
 
 section dependency

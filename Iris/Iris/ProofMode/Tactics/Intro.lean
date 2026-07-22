@@ -29,9 +29,10 @@ theorem imp_intro_intuitionistic [BI PROP] {P Q A1 A2 B : PROP}
   exact (and_mono_right inst.1).trans <| persistently_and_intuitionistically_sep_right.1.trans h
 
 theorem wand_intro_intuitionistic [BI PROP] {P Q A1 A2 B : PROP}
-    [FromWand Q .out A1 A2] [inst : IntoPersistently false A1 B] [or : TCOr (Affine A1) (Absorbing A2)]
+    [instFromWand : FromWand Q .out A1 A2]
+    [inst : IntoPersistently false A1 B] [or : TCOr (Affine A1) (Absorbing A2)]
     (h : P ∗ □ B ⊢ A2) : P ⊢ Q := by
-  refine (wand_intro ?_).trans (from_wand .out (Q1:=A1))
+  refine (wand_intro ?_).trans instFromWand.from_wand
   exact match or with
   | TCOr.l => (sep_mono_right <| (affine_affinely A1).2.trans (affinely_mono inst.1)).trans h
   | TCOr.r => (sep_mono_right <| inst.1.trans absorbingly_intuitionistically.2).trans <|
@@ -49,7 +50,8 @@ theorem imp_intro_spatial [BI PROP] {P Q A1 A2 B : PROP}
     persistently_and_intuitionistically_sep_left.1.trans <| sep_mono_left intuitionistically_elim
 
 theorem wand_intro_spatial [BI PROP] {P Q A1 A2 : PROP}
-    [FromWand Q .out A1 A2] (h : P ∗ A1 ⊢ A2) : P ⊢ Q := (wand_intro h).trans (from_wand .out (Q1:=A1))
+    [inst : FromWand Q .out A1 A2] (h : P ∗ A1 ⊢ A2) : P ⊢ Q :=
+  (wand_intro h).trans inst.from_wand
 
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
