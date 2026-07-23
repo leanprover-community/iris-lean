@@ -173,7 +173,7 @@ instance bigSepL_timeless_inst [Timeless (emp : PROP)] {Φ : Nat → A → PROP}
 @[rocq_alias big_sepL_emp]
 theorem bigSepL_emp {l : List A} :
     ([∗list] _x ∈ l, (emp : PROP)) ⊣⊢ emp :=
-  equiv_iff.mp <| bigOpL_const_unit_eqv
+  equiv_iff.mp <| OFE.Equiv.of_eq bigOpL_const_unit_eqv
 
 @[rocq_alias big_sepL_sep]
 theorem bigSepL_sep_eqv {Φ Ψ : Nat → A → PROP} {l : List A} :
@@ -485,7 +485,8 @@ theorem bigSepL_comm {B : Type _} (Φ : Nat → A → Nat → B → PROP) (l₁ 
     ([∗list] k1↦x1 ∈ l₁, [∗list] k2↦x2 ∈ l₂, Φ k1 x1 k2 x2) ⊣⊢
       ([∗list] k2↦x2 ∈ l₂, [∗list] k1↦x1 ∈ l₁, Φ k1 x1 k2 x2) :=
   match l₁ with
-  | [] => ⟨(equiv_iff.mp bigOpL_const_unit_eqv).2, (equiv_iff.mp bigOpL_const_unit_eqv).1⟩
+  | [] => ⟨(equiv_iff.mp (OFE.Equiv.of_eq bigOpL_const_unit_eqv)).2,
+          (equiv_iff.mp (OFE.Equiv.of_eq bigOpL_const_unit_eqv)).1⟩
   | _ :: _ =>
     let ih := bigSepL_comm (fun i a j b => Φ (i + 1) a j b) _ l₂
     ⟨(sep_mono_right ih.1).trans (equiv_iff.mp (bigOpL_op_eqv _ _ _)).2,

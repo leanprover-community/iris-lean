@@ -290,7 +290,7 @@ theorem ghost_map_auth_valid_2 {γ} {dq1 dq2 : DFrac} {m1 m2 : H V} :
   · rfl
   · exact (OFE.not_none_eqv_some h.to_eq).elim
   · exact (OFE.not_some_eqv_none h.to_eq).elim
-  · exact congrArg some (DiscreteO.eqv_inj (Agree.toAgree_inj h))
+  · exact congrArg some (DiscreteO.eqv_inj (Agree.toAgree_inj (Option.some.inj h.to_eq)))
 
 @[rocq_alias ghost_map_auth_agree]
 theorem ghost_map_auth_agree γ (dq1 dq2 : DFrac) (m1 m2 : H V) :

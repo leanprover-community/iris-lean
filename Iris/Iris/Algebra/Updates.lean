@@ -199,8 +199,8 @@ theorem Update.discrete_total [CMRA.Discrete α] [CMRA.IsTotal α] :
 /-! ## Isomorphism -/
 @[rocq_alias iso_cmra_updateP]
 theorem UpdateP.iso
-    (gf : ∀ x, g (f x) ≡ x)
-    (g_op : ∀ y1 y2, g (y1 • y2) ≡ g y1 • g y2)
+    (gf : ∀ x, g (f x) = x)
+    (g_op : ∀ y1 y2, g (y1 • y2) = g y1 • g y2)
     (g_validN : ∀ n y, ✓{n} (g y) ↔ ✓{n} y)
     (uyp : y ~~>: P)
     (pq : ∀ y', P y' → Q (g y')) :
@@ -210,20 +210,19 @@ theorem UpdateP.iso
     match mz with
     | none => (g_validN n _).mp v
     | some z =>
-      have : g y • z ≡ g (y • f z) :=
-        (CMRA.op_right_eqv _ (gf z).symm).trans (g_op y (f z)).symm
+      have : g y • z = g (y • f z) := by rw [g_op, gf]
       (g_validN n _).mp (CMRA.validN_ne this.dist v)
   have ⟨x, px, vx⟩ := uyp n (mz.map f) this
-  have : g (x •? Option.map f mz) ≡ g x •? mz :=
+  have : g (x •? Option.map f mz) = g x •? mz :=
     match mz with
-    | none => OFE.Equiv.rfl
-    | some z => (g_op x (f z)).trans (CMRA.op_right_eqv (g x) (gf z))
+    | none => rfl
+    | some z => by simp only [Option.map_some, CMRA.op?, g_op, gf]
   exact ⟨g x, pq x px, CMRA.validN_ne this.dist ((g_validN n _).mpr vx)⟩
 
 @[rocq_alias iso_cmra_updateP']
 theorem UpdateP.iso'
-    (gf : ∀ x, g (f x) ≡ x)
-    (g_op : ∀ y1 y2, g (y1 • y2) ≡ g y1 • g y2)
+    (gf : ∀ x, g (f x) = x)
+    (g_op : ∀ y1 y2, g (y1 • y2) = g y1 • g y2)
     (g_validN : ∀ n y, ✓{n} (g y) ↔ ✓{n} y)
     (uyp : y ~~>: P) :
     g y ~~>: λ x ↦ ∃ y, x = g y ∧ P y :=

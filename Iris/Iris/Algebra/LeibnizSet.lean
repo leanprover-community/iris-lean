@@ -55,11 +55,7 @@ theorem DisjointLeibnizSet.exist_set_of_mem [LawfulSet S A] {x : DisjointLeibniz
   | .valid x' => ⟨x', rfl⟩
 
 theorem DisjointLeibnizSet.mem_of_eqv [LawfulSet S A] {a b : DisjointLeibnizSet S}
-    (eqv : a ≡ b) (mx : x ∈ a) : x ∈ b :=
-  match a, b with
-  | .error, _ => False.elim mx
-  | .valid _, .error => absurd eqv.to_eq (by simp)
-  | .valid _, .valid _ => by simpa [← show _ = _ from eqv.to_eq]
+    (eqv : a = b) (mx : x ∈ a) : x ∈ b := eqv ▸ mx
 
 namespace DisjointLeibnizSet
 
@@ -192,12 +188,12 @@ theorem localUpdate_dealloc {X Y : S} : (valid X, valid Y) ~l~> (valid (X \ Y), 
   refine (local_update_unital_discrete ..).mpr fun z hx heq => ⟨valid_mapN (fun _ _ => vx) vx, ?_⟩
   rcases z with (z|_)
   · by_cases Hdisj : Y ## z <;> simp only [Hdisj, ↓reduceIte, op] at heq
-    · obtain rfl := valid.inj heq.to_eq
+    · obtain rfl := valid.inj heq
       simp only [op, disjoint_empty_left, ↓reduceIte, union_empty_left, valid.injEq]
       ext i
       grind [Hdisj i, mem_diff, mem_union]
-    · exact absurd heq.to_eq (by simp)
-  · exact absurd heq.to_eq (by simp [op])
+    · exact absurd heq (by simp)
+  · exact absurd heq (by simp [op])
 
 @[rocq_alias gset_disj_dealloc_empty_local_update]
 theorem localUpdate_dealloc_empty {X Z : S} :
@@ -235,7 +231,7 @@ theorem localUpdate_union_r_of_disj (X Y Z : S) (Hdisj : Z ## X) :
 theorem localUpdate_alloc_empty_of_disj (X Z : S) (Hdisj : Z ## X) :
     (valid X, valid ∅) ~l~>
     (valid (Z ∪ X), valid Z) := by
-  rw [(show valid Z ≡ valid (Z ∪ ∅) by simp [union_empty_right]).to_eq]
+  rw [show valid Z = valid (Z ∪ ∅) by simp [union_empty_right]]
   exact localUpdate_union_r_of_disj X ∅ Z Hdisj
 
 @[rocq_alias gset_disj_alloc_updateP_strong]
@@ -382,7 +378,7 @@ theorem localUpdate (X Y X' : S) (H : X ⊆ X') :
   | none => rfl
   | some (.valid Z) =>
     simp only [op?, op] at e ⊢
-    have hZ : Z ⊆ X' := subset_trans union_subset_right (valid.inj e.to_eq ▸ H)
+    have hZ : Z ⊆ X' := subset_trans union_subset_right (valid.inj e ▸ H)
     rw [union_comm, union_subset_absorption hZ]
 
 end LeibnizSet

@@ -49,9 +49,9 @@ theorem op_proper [MonoidOps op unit] (ha : a ≡ a') (hb : b ≡ b') :
     op a b ≡ op a' b' := NonExpansive₂.eqv ha hb
 
 /-- Right identity follows from commutativity and left identity. -/
-@[simp, rocq_alias monoid_right_id]
-theorem op_right_id [MonoidOps op unit] : op a unit ≡ a :=
-  op_comm.trans op_left_id
+@[rocq_alias monoid_right_id]
+theorem op_right_id [MonoidOps op unit] : op a unit = a :=
+  (op_comm.trans op_left_id).to_eq
 
 /-- Congruence on the left argument. -/
 theorem op_congr_left [MonoidOps op unit] (h : a ≡ a') : op a b ≡ op a' b :=

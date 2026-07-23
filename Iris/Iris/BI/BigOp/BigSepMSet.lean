@@ -76,7 +76,7 @@ theorem bigSepMS_emp {X : MS} : ([∗mset] _x ∈ X, (emp : PROP)) ⊣⊢ emp :=
 
 @[rocq_alias big_sepMS_singleton]
 theorem bigSepMS_singleton {Φ : A → PROP} {x : A} : ([∗mset] y ∈ ({x} : MS), Φ y) ⊣⊢ Φ x :=
-  equiv_iff.mp bigOpMS_singleton
+  equiv_iff.mp (OFE.Equiv.of_eq bigOpMS_singleton)
 
 @[rocq_alias big_sepMS_disj_union]
 theorem bigSepMS_disjUnion {Φ : A → PROP} {X Y : MS} :

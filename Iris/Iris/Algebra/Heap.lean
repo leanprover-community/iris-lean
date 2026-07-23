@@ -299,7 +299,7 @@ theorem validN_get? {m : M V} (v : ✓{n} m) : ✓{n} get? m i :=
   | none => ⟨⟩
   | some z => show ✓{n} z from validN_get?_validN v (OFE.Dist.of_eq hh)
 
-theorem valid_get?_valid {m : M V} (Hv : ✓ m) (He : get? m i ≡ some x) : ✓ x :=
+theorem valid_get?_valid {m : M V} (Hv : ✓ m) (He : get? m i = some x) : ✓ x :=
   valid_iff_validN.mpr (fun _ => validN_get?_validN Hv.validN He.dist)
 
 theorem valid_get? {m : M V} (v : ✓ m) : ✓ get? m i :=
@@ -366,7 +366,7 @@ theorem singleton_core_eq [IsoFunMap M K] {i : K} {x : V} {cx} (Hpcore : CMRA.pc
   IsoFunMap.ext (core_singleton_equiv Hpcore)
 
 open Classical in
-theorem singleton_core_eqv {i : K} {x : V} {cx} (Hpcore : CMRA.pcore x ≡ some cx) :
+theorem singleton_core_eqv {i : K} {x : V} {cx} (Hpcore : CMRA.pcore x = some cx) :
     core (singleton i x : M V) = singleton i cx := OFE.Equiv.to_eq <| by
   intro n k
   simp [core, CMRA.pcore, get?_singleton, get?_bindAlter]
@@ -474,7 +474,7 @@ theorem exclusive_singleton_inc_iff {m : M V} (He : Exclusive x) (Hv : ✓ m) :
     (singleton i x) ≼ m ↔ (get? m i = some x) := by
   refine singleton_inc_iff.trans ⟨fun ⟨y, Hy, Hxy⟩ => ?_, fun _ => ?_⟩
   · suffices x ≡ y by exact Hy.trans <| OFE.some_eqv_some.mpr this.symm.to_eq
-    exact Option.eqv_of_inc_exclusive Hxy <| valid_get?_valid Hv (OFE.Equiv.of_eq Hy)
+    exact Option.eqv_of_inc_exclusive Hxy <| valid_get?_valid Hv Hy
   · exists x
 
 theorem singleton_inc_singleton_iff : (singleton i x : M V) ≼ (singleton i y : M V) ↔ some x ≼ some y := by

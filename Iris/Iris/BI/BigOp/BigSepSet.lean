@@ -74,7 +74,7 @@ theorem bigSepS_emp {X : S} : ([∗set] _x ∈ X, (emp : PROP)) ⊣⊢ emp :=
 
 @[rocq_alias big_sepS_singleton]
 theorem bigSepS_singleton {Φ : A → PROP} {x : A} : ([∗set] y ∈ ({x} : S), Φ y) ⊣⊢ Φ x :=
-  equiv_iff.mp bigOpS_singleton
+  equiv_iff.mp (OFE.Equiv.of_eq bigOpS_singleton)
 
 @[rocq_alias big_sepS_insert]
 theorem bigSepS_insert {Φ : A → PROP} {X : S} {x : A} (h : x ∉ X) :

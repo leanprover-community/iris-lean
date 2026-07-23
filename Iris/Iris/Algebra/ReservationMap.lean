@@ -304,7 +304,7 @@ theorem split_valid {x : ReservationMap A H} (vx : ✓ x) :
     apply OFE.Equiv.to_eq
     refine fun n => ⟨?_, ?_⟩
     · simp only [mkData, mkToken, op_data]
-      exact (Algebra.MonoidOps.op_right_id.symm) n
+      exact Algebra.MonoidOps.op_right_id.symm.dist
     · simp only [mkData, mkToken, op_token]
       exact Dist.of_eq (pcore_op_left_L rfl).symm
 
@@ -319,7 +319,7 @@ theorem split_validN {x : ReservationMap A H} (vx : ✓{n} x) :
   | .valid t =>
     refine ⟨xd, t, fun m => ⟨?_, ?_⟩⟩
     · simp only [mkData, mkToken, op_data]
-      exact (Algebra.MonoidOps.op_right_id.symm) m
+      exact Algebra.MonoidOps.op_right_id.symm.dist
     · exact ((pcore_op_left' (OFE.Equiv.of_eq rfl)).symm) m
 
 theorem valid_data {d : H A} : ✓ (mkData (H := H) d) ↔ ✓ d :=
@@ -379,7 +379,7 @@ theorem disj_of_valid_data_op_token (a : H A) (b : CoPset) (h : ✓ mkData a •
 theorem validN_data_op_token {n : Nat} (a : H A) (b : CoPset) (vd : ✓{n} mkData a)
     (disj : ∀ i, get? a i = none ∨ i ∉ b) : ✓{n} mkData a • mkToken b := by
   have abdp : (mkData a • mkToken b).data ≡ a :=
-    show a • ∅ ≡ a from (Algebra.MonoidOps.op_right_id)
+    show a • ∅ ≡ a from OFE.Equiv.of_eq (Algebra.MonoidOps.op_right_id)
   have eo : ∅ • valid b = .valid b := pcore_op_left_L rfl
   refine validN_iff.mpr ⟨?_, ?_, fun i => ?_⟩
   · exact validN_of_eqv abdp.symm ((validN_data).mp vd)
@@ -392,7 +392,7 @@ theorem validN_data_op_token {n : Nat} (a : H A) (b : CoPset) (vd : ✓{n} mkDat
 theorem valid_data_op_token (a : H A) (b : CoPset) (vd : ✓ mkData a)
     (disj : ∀i, get? a i = none ∨ i ∉ b) : ✓ mkData a • mkToken b := by
   have abdp : (mkData a • mkToken b).data ≡ a :=
-    show a • ∅ ≡ a from (Algebra.MonoidOps.op_right_id)
+    show a • ∅ ≡ a from OFE.Equiv.of_eq (Algebra.MonoidOps.op_right_id)
   have eo : ∅ • valid b = .valid b := pcore_op_left_L rfl
   refine valid_iff.mpr ⟨?_, ?_, fun i => ?_⟩
   · exact valid_of_eqv abdp.symm ((valid_data).mp vd)

@@ -72,15 +72,15 @@ instance [OFE α] [OFE β] : NonExpansive (inr (α := α) (β := β)) where
 #rocq_ignore Cinr_proper "Derivable using NonExpansive.eqv"
 
 @[rocq_alias Cinl_inj]
-theorem inl_inj [OFE α] [OFE β] {a a' : α} (h : (inl (β := β) a) ≡ inl a') : a = a' :=
-  OFE.Equiv.to_eq h
+theorem inl_inj [OFE α] [OFE β] {a a' : α} (h : (inl (β := β) a) = inl a') : a = a' :=
+  Csum.inl.inj h
 
 @[rocq_alias Cinl_inj_dist]
 theorem inl_injN [OFE α] [OFE β] {a a' : α} (h : inl (β := β) a ≡{n}≡ inl a') : a ≡{n}≡ a' := h
 
 @[rocq_alias Cinr_inj]
-theorem inr_inj [OFE α] [OFE β] {b b' : β} (h : (inr (α := α) b) ≡ inr b') : b = b' :=
-  OFE.Equiv.to_eq h
+theorem inr_inj [OFE α] [OFE β] {b b' : β} (h : (inr (α := α) b) = inr b') : b = b' :=
+  Csum.inr.inj h
 
 @[rocq_alias Cinr_inj_dist]
 theorem inr_injN [OFE α] [OFE β] {b b' : β} (h : inr (α := α) b ≡{n}≡ inr b') : b ≡{n}≡ b' := h
@@ -512,11 +512,11 @@ theorem map_compose (f : α → α') (f' : α' → α'') (g : β → β') (g' : 
 
 @[rocq_alias csum_map_ext]
 theorem map_ext [OFE α] [OFE α'] [OFE β] [OFE β'] (f f' : α → α') (g g' : β → β')
-    (hf : ∀ x, f x ≡ f' x) (hg : ∀ x, g x ≡ g' x) (x : Csum α β) :
+    (hf : ∀ x, f x = f' x) (hg : ∀ x, g x = g' x) (x : Csum α β) :
     map f g x = map f' g' x := by
   cases x with
-  | inl a => simp [map]; exact (hf _).to_eq
-  | inr b => simp [map]; exact (hg _).to_eq
+  | inl a => simp [map]; exact hf _
+  | inr b => simp [map]; exact hg _
   | invalid => trivial
 
 @[rocq_alias csum_map_cmra_ne]

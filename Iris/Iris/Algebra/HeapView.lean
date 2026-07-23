@@ -280,8 +280,8 @@ instance [Hdq : CoreId dq] [Hv1 : CoreId v1] : CoreId (Frag (H := H) k dq v1) wh
     cases h : CMRA.pcore v1
     · exact OFE.not_none_eqv_some (h ▸ Hv1.core_id) |>.elim
     · simp only [Option.bind_some, H]
-      exact Equiv.of_eq (OFE.some_eqv_some.mpr
-        (NonExpansive₂.eqv .rfl (Equiv.of_eq (OFE.some_eqv_some.mp (h ▸ Hv1.core_id)))).to_eq)
+      exact OFE.some_eqv_some.mpr
+        (NonExpansive₂.eqv .rfl (Equiv.of_eq (OFE.some_eqv_some.mp (h ▸ Hv1.core_id)))).to_eq
 
 nonrec theorem frag_validN_iff : ✓{n} Frag (H := H) k dq v1 ↔ ✓ dq ∧ ✓{n} v1 :=
   frag_validN_iff.trans <| (HeapR.exists_iff_validN ..).trans singleton_validN_iff

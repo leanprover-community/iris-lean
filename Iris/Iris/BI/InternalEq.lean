@@ -377,7 +377,7 @@ theorem later_equivI_prop_mpr (P Q : PROP) :
 @[rocq_alias internal_eq_soundness]
 theorem internalEq_soundness {A : Type _} [OFE A] (x y : A) :
     (⊢@{PROP} x ≡ y) → x ≡ y :=
-  (SiProp.internalEq_soundness <| siPure_emp_valid.mp ·)
+  (OFE.Equiv.of_eq <| SiProp.internalEq_soundness <| siPure_emp_valid.mp ·)
 
 /-! ## Derive NonExpansive/Contractive from internal statements -/
 

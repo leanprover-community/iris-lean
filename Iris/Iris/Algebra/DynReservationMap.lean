@@ -356,7 +356,7 @@ theorem split_validN {x : DynReservationMap A H} (vx : ✓{n} x) :
     refine ⟨xd, t, ?_⟩
     apply OFE.Equiv.to_eq
     refine fun m => ⟨?_, ?_⟩
-    · exact (show xd ≡ xd • (∅ : H A) from Algebra.MonoidOps.op_right_id.symm) m
+    · exact (show xd ≡ xd • (∅ : H A) from OFE.Equiv.of_eq Algebra.MonoidOps.op_right_id.symm) m
     · exact ((pcore_op_left' (OFE.Equiv.of_eq rfl)).symm) m
 
 theorem valid_mkData_singleton : ✓ (mkData (H := H) k a) ↔ ✓ ({[k := a]} : H A) :=
@@ -435,7 +435,7 @@ theorem validN_data_op_token {n : Nat} {a : H A} {b : CoPset} (vd : ✓{n} a)
     (inf : setInfinite ((⊤ : CoPset) \ b)) (disj : ∀ i, get? a i = none ∨ i ∉ b) :
     ✓{n} mk a ∅ • mkToken b := by
   have abdp : (mk a ∅ • mkToken b).data ≡ a :=
-    show a • ∅ ≡ a from Algebra.MonoidOps.op_right_id
+    show a • ∅ ≡ a from OFE.Equiv.of_eq Algebra.MonoidOps.op_right_id
   have eo : ∅ • DisjointLeibnizSet.valid b = .valid b := pcore_op_left_L rfl
   refine validN_iff.mpr ⟨?_, ?_, ?_, fun i => ?_⟩
   · exact abdp.symm.to_eq ▸ vd

@@ -173,15 +173,15 @@ def IProp.foldi : FF.api τ (IPre FF) -n> FF.api τ (IProp FF) :=
   OFunctor.map (IProp.unfold FF) (IProp.fold FF)
 
 @[rocq_alias inG_unfold_fold]
-theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) ≡ x := by
-  refine OFE.equiv_dist.mpr fun n => ?_
+theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) = x := by
+  refine OFE.Equiv.to_eq (OFE.equiv_dist.mpr fun n => ?_)
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm.dist ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
   apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold]
 
 @[rocq_alias inG_fold_unfold]
-theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) ≡ x := by
-  refine OFE.equiv_dist.mpr fun n => ?_
+theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) = x := by
+  refine OFE.Equiv.to_eq (OFE.equiv_dist.mpr fun n => ?_)
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm.dist ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
   apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold]
@@ -189,10 +189,10 @@ theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) ≡ x
 theorem IProp.unfoldi_discreteE {v : FF.api τ (IProp FF)} (hv : OFE.DiscreteE v) :
     OFE.DiscreteE (unfoldi.f v) where
   discrete h := OFE.Equiv.to_eq <| (OFE.NonExpansive.eqv (f := unfoldi.f) (OFE.Equiv.of_eq (hv.discrete
-    ((foldi_unfoldi v).dist.symm.trans (OFE.NonExpansive.ne h))))).trans (unfoldi_foldi _)
+    ((foldi_unfoldi v).dist.symm.trans (OFE.NonExpansive.ne h))))).trans (OFE.Equiv.of_eq (unfoldi_foldi _))
 
-theorem IProp.foldi_op (x y : FF.api τ (IPre FF)) : foldi (x • y) ≡ foldi x • foldi y :=
-  RFunctor.map (IProp.unfold FF) (IProp.fold FF) |>.op _ _
+theorem IProp.foldi_op (x y : FF.api τ (IPre FF)) : foldi (x • y) = foldi x • foldi y :=
+  (RFunctor.map (IProp.unfold FF) (IProp.fold FF) |>.op _ _).to_eq
 
 theorem IProp.foldi_validN {n : Nat} (x : FF.api τ (IPre FF)) (H : ✓{n} x) : ✓{n} (foldi x) :=
   RFunctor.map (IProp.unfold FF) (IProp.fold FF) |>.validN H
@@ -218,14 +218,14 @@ theorem IProp.unfoldi_unit {τ : GType} {x : FF.api τ (IProp FF)} [IsUnit x] :
   · intro y
     have h : foldi (unfoldi x • y) ≡ foldi y := by
       calc foldi (unfoldi x • y)
-        _ ≡ foldi (unfoldi x) • foldi y := foldi_op _ _
-        _ ≡ x • foldi y := (foldi_unfoldi x).op_l
+        _ ≡ foldi (unfoldi x) • foldi y := OFE.Equiv.of_eq (foldi_op _ _)
+        _ ≡ x • foldi y := (OFE.Equiv.of_eq (foldi_unfoldi x)).op_l
         _ ≡ foldi y := OFE.Equiv.of_eq IsUnit.unit_left_id
     refine OFE.Equiv.to_eq ?_
     calc unfoldi x • y
-      _ ≡ unfoldi (foldi (unfoldi x • y)) := (IProp.unfoldi_foldi _).symm
+      _ ≡ unfoldi (foldi (unfoldi x • y)) := (OFE.Equiv.of_eq (IProp.unfoldi_foldi _)).symm
       _ ≡ unfoldi (foldi y) := OFE.NonExpansive.eqv h
-      _ ≡ y := IProp.unfoldi_foldi y
+      _ ≡ y := OFE.Equiv.of_eq (IProp.unfoldi_foldi y)
   · letI : RFunctor (FF τ).fst := (FF τ).snd.toRFunctor
     refine OFE.Equiv.to_eq ?_
     calc CMRA.pcore (unfoldi.f x)
@@ -266,8 +266,8 @@ instance : OFE.NonExpansive (iSingleton F γ (GF := GF)) where
     next => rfl
 
 @[rocq_alias iRes_singleton_op]
-theorem iSingleton_op (x y : F.ap (IProp GF)) : (iSingleton F γ x) • iSingleton F γ y ≡ iSingleton F γ (x • y) := by
-  refine OFE.equiv_dist.mpr fun n => ?_
+theorem iSingleton_op (x y : F.ap (IProp GF)) : (iSingleton F γ x) • iSingleton F γ y = iSingleton F γ (x • y) := by
+  refine OFE.Equiv.to_eq (OFE.equiv_dist.mpr fun n => ?_)
   intro τ' γ'
   simp only [iSingleton]
   split
@@ -380,7 +380,7 @@ theorem unfoldi_op {a b : GF.api (ElemG.τ GF F) (IProp GF)} :
 theorem validN_bundle_op_foldi {a' : F.ap (IProp GF)} {v : GF.api E.τ (IPre GF)}
     (h : ✓{n} (a' • E.unbundle (foldi v))) :
     ✓{n} (unfoldi (E.bundle a') • v) := by
-  have h_unfoldi_foldi := IProp.unfoldi_foldi v
+  have h_unfoldi_foldi := OFE.Equiv.of_eq (IProp.unfoldi_foldi v)
   apply CMRA.validN_ne (h_unfoldi_foldi.op_r).dist
   apply CMRA.validN_ne unfoldi_op.dist
   apply IProp.unfoldi_validN
@@ -466,7 +466,7 @@ instance iSingleton_discreteE {v : F.ap (IProp GF)} [OFE.DiscreteE v] :
         rcases hw : (w E.τ).car k with _ | x <;> rw [hw] at Hk
         · exact Hk
         · refine some_dist_some.mpr (OFE.Equiv.dist ?_)
-          refine (NonExpansive.eqv ?_).trans (IProp.unfoldi_foldi x)
+          refine (NonExpansive.eqv ?_).trans (OFE.Equiv.of_eq (IProp.unfoldi_foldi x))
           refine (NonExpansive.eqv ?_).trans (ElemG.bundle_unbundle E _)
           refine OFE.Equiv.of_eq (OFE.DiscreteE.discrete ?_)
           refine (ElemG.unbundle_bundle E v).dist.symm.trans ?_
@@ -499,7 +499,7 @@ instance iOwn_ne : NonExpansive (iOwn τ : F.ap (IProp GF) → IProp GF) where
 
 @[rocq_alias own_op]
 theorem iOwn_op {a1 a2 : F.ap (IProp GF)} : iOwn γ (a1 • a2) ⊣⊢ iOwn γ a1 ∗ iOwn γ a2 :=
-  UPred.ownM_eqv (iSingleton_op _ _).symm |>.trans (UPred.ownM_op _ _)
+  UPred.ownM_eqv (OFE.Equiv.of_eq (iSingleton_op _ _)).symm |>.trans (UPred.ownM_op _ _)
 
 @[rocq_alias own_mono]
 theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ a1) : iOwn γ a1 ⊢ iOwn γ a2 := by
@@ -588,7 +588,7 @@ theorem iSingleton_op_validN_notfree {mf : IResUR GF} {y : F.ap (IProp GF)} :
   apply CMRA.validN_ne (ElemG.unbundle_bundle E y).op_l.dist
   apply CMRA.validN_ne (unbundle_op (E.bundle y) (foldi.f v)).dist
   apply ElemG.unbundle_validN
-  apply CMRA.validN_ne (foldi_unfoldi _).op_l.dist
+  apply CMRA.validN_ne (OFE.Equiv.of_eq (foldi_unfoldi _)).op_l.dist
   apply CMRA.validN_ne (foldi_op _ _).dist
   apply IProp.foldi_validN _ h_at_gamma
 

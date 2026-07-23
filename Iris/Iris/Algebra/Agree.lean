@@ -537,8 +537,8 @@ theorem Agree.toAgree_injN {a b : α} : toAgree a ≡{n}≡ toAgree b → a ≡{
   Raw.toAgree_injN
 
 @[rocq_alias to_agree_inj]
-theorem Agree.toAgree_inj {a b : α} : toAgree a ≡ toAgree b → a = b :=
-  fun heq => OFE.Equiv.to_eq fun n => toAgree_injN (heq n)
+theorem Agree.toAgree_inj {a b : α} : toAgree a = toAgree b → a = b :=
+  fun heq => OFE.Equiv.to_eq fun _ => toAgree_injN heq.dist
 
 @[simp] theorem Agree.toAgree_validN {a : α} : ✓{n} toAgree a := Raw.toAgree_validN (a := a) (n := n)
 
@@ -581,7 +581,7 @@ theorem toAgree_includedN {a b : α} : toAgree a ≼{n} toAgree b ↔ a ≡{n}�
 @[simp, rocq_alias to_agree_included]
 theorem toAgree_included {a b : α} : toAgree a ≼ toAgree b ↔ a = b := by
   refine ⟨?_, ?_⟩ <;> intro h
-  · exact toAgree_inj (OFE.Equiv.of_eq (valid_included (fun _ => trivial) h))
+  · exact toAgree_inj (valid_included (fun _ => trivial) h)
   · exists toAgree a
     calc
       toAgree b = toAgree a := congrArg toAgree h.symm
@@ -673,7 +673,7 @@ theorem Agree.map_ne {f g : α → β} [OFE.NonExpansive f] [OFE.NonExpansive g]
 
 @[rocq_alias agree_map_ext]
 theorem Agree.agree_map_ext {f g : α → β} [OFE.NonExpansive f] [OFE.NonExpansive g] {x : Agree α}
-    (H : ∀ a, f a ≡ g a) : map f x = map g x :=
+    (H : ∀ a, f a = g a) : map f x = map g x :=
   OFE.Equiv.to_eq <| OFE.equiv_dist.mpr fun _ => map_ne (H · |>.dist)
 
 @[rocq_alias agree_map_id]
@@ -703,11 +703,11 @@ instance {F} [COFE.OFunctor F] : RFunctor (AgreeRF F) where
   map_id x := by
     conv => right; rw [← (Agree.map_id x)]
     exact (Agree.map_id x) ▸ OFE.Equiv.of_eq
-      (Agree.agree_map_ext (fun a => OFE.Equiv.of_eq (COFE.OFunctor.map_id a)))
+      (Agree.agree_map_ext (fun a => COFE.OFunctor.map_id a))
   map_comp f g f' g' x := by
     rw [← Agree.map_compose]
     exact OFE.Equiv.of_eq
-      (Agree.agree_map_ext (fun a => OFE.Equiv.of_eq (COFE.OFunctor.map_comp f g f' g' a)))
+      (Agree.agree_map_ext (fun a => COFE.OFunctor.map_comp f g f' g' a))
 
 @[rocq_alias agreeRF_contractive]
 instance {F} [COFE.OFunctorContractive F] : RFunctorContractive (AgreeRF F) where

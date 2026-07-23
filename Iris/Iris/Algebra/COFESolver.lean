@@ -54,10 +54,12 @@ def down (k : Nat) : A F (k+1) -n> A F k := (updown F k).2
 #rocq_ignore solver.g_S "Not needed"
 
 @[rocq_alias solver.gf]
-theorem down_up : ∀ {k} x, down F k (up F k x) ≡ x
-  | 0, ⟨()⟩ => .rfl
-  | _+1, x => (Equiv.of_eq (map_comp _ _ _ _ _)).symm.trans <|
-    Equiv.trans (fun n => map_ne.eqv (fun m y => (down_up y) m) (fun m y => (down_up y) m) n x)
+theorem down_up : ∀ {k} x, down F k (up F k x) = x
+  | 0, ⟨()⟩ => rfl
+  | _+1, x => OFE.Equiv.to_eq <| (Equiv.of_eq (map_comp _ _ _ _ _)).symm.trans <|
+    Equiv.trans
+      (fun n => map_ne.eqv (fun m y => (Equiv.of_eq (down_up y)) m)
+        (fun m y => (Equiv.of_eq (down_up y)) m) n x)
       (Equiv.of_eq (map_id _))
 
 @[rocq_alias solver.fg]
@@ -120,9 +122,9 @@ def downN {k} : ∀ n, A F (k + n) -n> A F k
   | n+1 => (downN n).comp (down F (k + n))
 
 @[rocq_alias solver.ggff]
-theorem downN_upN {k} (x : A F k) : ∀ {i}, downN F i (upN F i x) ≡ x
-  | 0 => .rfl
-  | n+1 => ((downN F n).ne.eqv (down_up _)).trans (downN_upN _)
+theorem downN_upN {k} (x : A F k) : ∀ {i}, downN F i (upN F i x) = x
+  | 0 => rfl
+  | n+1 => ((downN F n).ne.eqv (Equiv.of_eq (down_up _))).to_eq.trans (downN_upN _)
 
 @[rocq_alias solver.f_tower]
 protected theorem Tower.up (X : Tower F) : up F (k+1) (X (k+1)) ≡{k}≡ X (k+2) :=
@@ -137,9 +139,9 @@ protected theorem Tower.upN (X : Tower F) : ∀ i, upN F i (X (k+1)) ≡{k}≡ X
     exact ((up ..).ne.1 (X.upN _)).trans <| this _ (Nat.add_right_comm ..)
 
 @[rocq_alias solver.gg_tower]
-protected theorem Tower.downN (X : Tower F) : ∀ i, downN F i (X (k+i)) ≡ X k
-  | 0 => .rfl
-  | _+1 => ((downN ..).ne.eqv X.down).trans (X.downN _)
+protected theorem Tower.downN (X : Tower F) : ∀ i, downN F i (X (k+i)) = X k
+  | 0 => rfl
+  | _+1 => ((downN ..).ne.eqv X.down).to_eq.trans (X.downN _)
 
 instance (k : Nat) : NonExpansive (fun X : Tower F => X.val k) := ⟨fun _ _ _ => (· _)⟩
 
@@ -177,7 +179,7 @@ protected def Tower.embed (k) : A F k -n> Tower F := by
         down F i (eqToHom e₁ (upN F a n)) ≡ eqToHom e₂ (upN F b n) from this _ _ _ _
       rintro a _ eq rfl
       rw [Nat.add_assoc, Nat.add_left_cancel_iff] at eq; subst a
-      apply down_up
+      exact Equiv.of_eq (down_up _)
     · cases (Nat.lt_or_eq_of_le h₁).resolve_left (h₂ ∘ Nat.lt_succ_iff.1)
       have {a b} (e₁ : i+1+a = i+1) (e₂ : i+1 = i+b) :
           down F i (eqToHom e₁ (upN F a n)) ≡ downN F b (eqToHom e₂ n) := by
@@ -280,11 +282,11 @@ def Tower.isoAux : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
     · refine fun m => map_ne.eqv (fun m' Y => ?_) (fun m' Y => ?_) m _
       · simp [Hom.comp, Tower.embed, Tower.proj, embed, (by omega : k ≤ k+n+1)]
         have {a e} : down F (k + n) (eqToHom e (upN F a Y)) ≡ upN F n Y := by
-          cases Nat.add_left_cancel (k := n+1) e; exact (down_up _)
+          cases Nat.add_left_cancel (k := n+1) e; exact Equiv.of_eq (down_up _)
         exact this.dist
       · simp [Hom.comp, Tower.embed, Tower.proj, embed, show ¬k+n+1 ≤ k by omega]
         have {a e} : downN F a (eqToHom e (up F (k + n) Y)) ≡ downN F n Y := by
-          cases Nat.add_left_cancel (m := n+1) e; exact (downN ..).ne.eqv (down_up _)
+          cases Nat.add_left_cancel (m := n+1) e; exact (downN ..).ne.eqv (Equiv.of_eq (down_up _))
         exact this.dist
     · have e : k+n+1 = k+1+n := by omega
       suffices ∀ x y, eqToHom e x = y → map (upN F n) (downN F n) x ≡ downN F n y by
@@ -326,8 +328,8 @@ def Fix.fold : F (Fix F) (Fix F) -n> Fix F := Fix.iso.hom
 @[rocq_alias solver.unfold]
 def Fix.unfold : Fix F -n> F (Fix F) (Fix F) := Fix.iso.inv
 #rocq_ignore solver.unfold_ne "Implicit in the OFE.Iso structure"
-theorem Fix.fold_unfold (X : Fix F) : Fix.fold (Fix.unfold X) ≡ X := Equiv.of_eq Fix.iso.hom_inv
-theorem Fix.unfold_fold (X : F (Fix F) (Fix F)) : Fix.unfold (Fix.fold X) ≡ X :=
-  Equiv.of_eq Fix.iso.inv_hom
+theorem Fix.fold_unfold (X : Fix F) : Fix.fold (Fix.unfold X) = X := Fix.iso.hom_inv
+theorem Fix.unfold_fold (X : F (Fix F) (Fix F)) : Fix.unfold (Fix.fold X) = X :=
+  Fix.iso.inv_hom
 
 attribute [irreducible] Fix Fix.fold Fix.unfold Fix.iso
