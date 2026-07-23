@@ -86,8 +86,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
   have : $out'' =Q $Pin := ⟨⟩
   have : $p'' =Q false := ⟨⟩
 
-  -- Solve side conditions automatically if possible, otherwise add them into the proof state
-  let hϕ ← iSolveSidecondition q($ϕ) false
+  let hϕ ← iSolveSidecondition (failOnUnsolved := false) q($ϕ)
 
   -- Simplify occurrences of `wandM`, `Option.getD`, pattern matching, etc.
   let Pout' : Q($X → $prop) ← reduceWandM Pout
