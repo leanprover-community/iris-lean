@@ -254,12 +254,10 @@ theorem auth_op_frag_valid_total_discrete_iff [IsTotal V] [CMRA.Discrete V]
   obtain ⟨v', dq', Hdp, Hl, Hv, Hi⟩ := auth_op_frag_discrete_valid_iff |>.mp H
   refine ⟨v', Hdp, ?_, Hl, Hv.2, ?_⟩
   · rcases Hi with ⟨(_|x), Hx⟩
-    · exact (show dq' = dq from
-        (OFE.equiv_dist.mpr (fun n => (Equiv.of_eq (some_eqv_some.mp Hx) n).1)).to_eq) ▸ Hv.1
+    · exact (show dq' = dq from congrArg Prod.fst (some_eqv_some.mp Hx)) ▸ Hv.1
     · exact Option.valid_of_inc_valid Hv.1 ⟨some x.fst, congrArg (fun p => some p.fst) (some_eqv_some.mp Hx)⟩
   · rcases Hi with ⟨(_|x), Hx⟩
-    · rw [show v1 = v' from
-        (OFE.Equiv.symm (fun n => (Equiv.of_eq (some_eqv_some.mp Hx) n).2)).to_eq]
+    · rw [show v1 = v' from (congrArg Prod.snd (some_eqv_some.mp Hx)).symm]
     · exact ⟨x.snd, congrArg Prod.snd (some_eqv_some.mp Hx)⟩
 
 theorem auth_op_frag_one_valid_iff :
@@ -268,7 +266,7 @@ theorem auth_op_frag_one_valid_iff :
   refine forall_congr' (fun _ => auth_op_frag_one_validN_iff) |>.trans ?_
   refine ⟨fun Hv => ?_, ?_⟩
   · exact ⟨Hv 0 |>.1, valid_iff_validN.mpr (Hv · |>.2.1),
-      OFE.Equiv.to_eq (equiv_dist.mpr (Hv · |>.2.2))⟩
+      OFE.eq_dist.mpr (Hv · |>.2.2)⟩
   · exact fun ⟨Hdp, Hv, Hl⟩ n => ⟨Hdp, Hv.validN, Hl.dist⟩
 
 instance [Hdq : CoreId dq] [Hv1 : CoreId v1] : CoreId (Frag (H := H) k dq v1) where
@@ -276,8 +274,7 @@ instance [Hdq : CoreId dq] [Hv1 : CoreId v1] : CoreId (Frag (H := H) k dq v1) wh
     obtain ⟨H⟩ := Hdq
     simp [CMRA.pcore] at H
     simp only [CMRA.pcore, View.Pcore]
-    refine OFE.Equiv.to_eq ?_
-    refine Equiv.of_eq (congrArg some (congrArg (View.mk _) (singleton_core_eqv ?_)))
+    refine congrArg some (congrArg (View.mk _) (singleton_core_eqv ?_))
     simp [CMRA.pcore, Prod.pcore]
     cases h : CMRA.pcore v1
     · exact OFE.not_none_eqv_some (h ▸ Hv1.core_id) |>.elim
@@ -548,19 +545,18 @@ instance {T} [RFunctor T] : URFunctor (HeapViewURF (H := H) T) where
       exact fun _ => Prod.map_ne (fun _ => rfl) (RFunctor.map_ne.ne Hx Hy)
   map_id x := by
     rw (config := { occs := .pos [2] }) [<- (View.map_id x)]
-    refine OFE.Equiv.to_eq (equiv_dist.mpr fun n => View.map_ne x (fun a => ?_) (fun b => ?_))
+    refine OFE.eq_dist.mpr (fun n => View.map_ne x (fun a => ?_) (fun b => ?_))
     · exact (COFE.OFunctor.map_id (F := PartialMapOF H T) a).dist
-    · refine OFE.Dist.trans ?_ (OFE.Equiv.of_eq (map_id _ b)).dist
+    · refine OFE.Dist.trans ?_ (map_id _ b).dist
       apply PartialMap.map_ne
       exact fun _ => ⟨rfl, (RFunctor.map_id _).dist⟩
   map_comp f g f' g' x := by
     simp [View.mapC]
     rw [<- View.map_compose']
-    refine OFE.Equiv.to_eq (equiv_dist.mpr fun n => View.map_ne x (fun a => (?_ : _ ≡ _).dist) (fun b => (?_ : _ ≡ _).dist))
-    · exact Equiv.of_eq ((inferInstance : URFunctor (PartialMapOF H T)).map_comp _ _ _ _ a)
+    refine OFE.eq_dist.mpr (fun n => View.map_ne x (fun a => (?_ : _ = _).dist) (fun b => (?_ : _ = _).dist))
+    · exact (inferInstance : URFunctor (PartialMapOF H T)).map_comp _ _ _ _ a
     · simp only [Prod.mapC, CMRA.Hom.id, PartialMap.mapC]
-      refine .trans ?_ (OFE.Equiv.of_eq (PartialMap.map_compose _ _ _ _))
-      apply OFE.Equiv.of_eq
+      refine .trans ?_ (PartialMap.map_compose _ _ _ _)
       refine congrArg (PartialMap.map _ · _) ?_
       rw [Prod.map_comp_map]
       refine funext fun p => ?_
@@ -593,21 +589,19 @@ theorem update_big_delete (m m' : H V) :
   induction m' using LawfulFiniteMap.induction_on with
   | hemp =>
     rw [bigOpM_frag_empty, CMRA.unit_right_id]
-    refine Trans.trans Update.id (OFE.Equiv.symm ?_)
-    refine Equiv.of_eq (congrArg _ (OFE.Equiv.to_eq ?_))
-    refine OFE.Equiv.of_eq (eqv_of_Equiv (fun j => ?_))
-    simp [get?_difference, get?_empty]
+    rw [show (m \ ∅ : H V) = m from eqv_of_Equiv fun j => by simp [get?_difference, get?_empty]]
+    exact Update.id
   | hins k v m2 Hm2 IH =>
     rw [← congrArg (CMRA.op _) (BigOpM.bigOpM_insert_eq _ _ Hm2).symm]
     rw [← congrArg (CMRA.op _) CMRA.comm]
     rw [CMRA.assoc]
     refine (Update.op IH .id).trans ?_
     refine update_one_delete.trans ?_
-    refine Trans.trans Update.id (OFE.Equiv.symm ?_)
-    refine Equiv.of_eq (congrArg _ (OFE.Equiv.to_eq ?_))
-    refine OFE.Equiv.of_eq (eqv_of_Equiv (fun j => ?_))
-    by_cases hjk : k = j
-      <;> simp [get?_difference, get?_delete_eq, get?_delete_ne, get?_insert_eq, get?_insert_ne, hjk]
+    rw [show (m \ Std.insert m2 k v) = delete (m \ m2) k from
+      eqv_of_Equiv fun j => by
+        by_cases hjk : k = j
+          <;> simp [get?_difference, get?_delete_eq, get?_delete_ne, get?_insert_eq, get?_insert_ne, hjk]]
+    exact Update.id
 
 theorem update_big_replace (m m0 m1 : H V)
   (Hdom : dom m0 = dom m1)
@@ -625,9 +619,8 @@ theorem update_big_replace (m m0 m1 : H V)
     rw [Heq]
     simp only [BigOpM.bigOpM_empty]
     rw [CMRA.unit_right_id]
-    refine Trans.trans Update.id (OFE.Equiv.symm ?_)
-    refine Equiv.of_eq (congrArg _ (OFE.Equiv.to_eq ?_))
     rw [union_empty_left]
+    exact Update.id
   | hins k v m2 Hm2 IH =>
     intro m1 Hdom Hall
     rw [← congrArg (CMRA.op _) (BigOpM.bigOpM_insert_eq _ _ Hm2).symm]
@@ -647,18 +640,20 @@ theorem update_big_replace (m m0 m1 : H V)
     refine (Update.op (update_replace (v2 := v') ?_) .id).trans ?_
     · exact Hall k v' Hin
     rw [← CMRA.assoc]
-    refine Trans.trans Update.id (OFE.Equiv.symm ?_)
-    refine Equiv.of_eq ((congrArg (CMRA.op · _) (OFE.Equiv.to_eq ?_)).trans (congrArg (CMRA.op _) (OFE.Equiv.to_eq ?_)))
-    · refine Equiv.of_eq (congrArg _ (OFE.Equiv.to_eq ?_))
-      refine OFE.Equiv.of_eq (eqv_of_Equiv (fun j => ?_))
-      show get? (PartialMap.union m1 m) j = get? (Std.insert (PartialMap.union (delete m1 k) m) k v') j
-      by_cases hjk : k = j
-      · rw [← hjk, get?_insert_eq rfl]; simp [PartialMap.union, get?_merge, Hin]
-        cases get? m k <;> rfl
-      · rw [get?_insert_ne hjk]; simp [PartialMap.union, get?_merge, get?_delete_ne hjk]
-    · refine .trans ?_ (Equiv.of_eq (BigOpM.bigOpM_insert_eq _ _ ?_))
-      · exact ((insert_delete_cancel Hin).symm ▸ .rfl)
-      · exact get?_delete_eq rfl
+    rw [show (m1 ∪ m) = Std.insert (delete m1 k ∪ m) k v' from
+          eqv_of_Equiv fun j => by
+            show get? (PartialMap.union m1 m) j = get? (Std.insert (PartialMap.union (delete m1 k) m) k v') j
+            by_cases hjk : k = j
+            · rw [← hjk, get?_insert_eq rfl]; simp [PartialMap.union, get?_merge, Hin]
+              cases get? m k <;> rfl
+            · rw [get?_insert_ne hjk]; simp [PartialMap.union, get?_merge, get?_delete_ne hjk],
+        show bigOpM CMRA.op (fun k v => Frag k (own one) v) m1
+              = CMRA.op (Frag k (own one) v')
+                  (bigOpM CMRA.op (fun k v => Frag k (own one) v) (delete m1 k)) from
+          (congrArg (bigOpM CMRA.op (fun k v => Frag k (own one) v))
+            (insert_delete_cancel Hin).symm).trans
+            (BigOpM.bigOpM_insert_eq _ _ (get?_delete_eq rfl))]
+    exact Update.id
 
 -- TODO: golf
 theorem update_big_alloc (m1 m2 : H V) dq
@@ -687,9 +682,9 @@ theorem update_big_alloc (m1 m2 : H V) dq
       refine (Update.op Hstep .id).trans ?_
       rw [← CMRA.assoc]
       refine Update.op ?_ ?_
-      · refine Trans.trans Update.id (OFE.Equiv.symm ?_)
-        rw [← union_insert_left]
-      · refine Trans.trans Update.id (OFE.Equiv.symm ?_)
-        exact Equiv.of_eq (BigOpM.bigOpM_insert_eq _ _ Hm2)
+      · rw [← union_insert_left]
+        exact Update.id
+      · rw [BigOpM.bigOpM_insert_eq _ _ Hm2]
+        exact Update.id
 
 end FiniteHeapView
