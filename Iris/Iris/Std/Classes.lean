@@ -19,6 +19,8 @@ export Top (top)
 
 notation "⊤" => top
 
+def trans [Trans R R R] : R a b → R b c → R a c := Trans.trans
+
 /-- Require that a binary function `f` on `α` is idempotent in a relation `R` on `α`. -/
 class Idempotent (R : Relation α) (f : α → α → α) where
   idem {x : α} : R (f x x) x
