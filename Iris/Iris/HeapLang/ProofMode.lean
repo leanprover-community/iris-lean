@@ -230,7 +230,7 @@ public meta def iWpValueHead {u}
   let p' : Q(Bool) ← mkFreshExprMVarQ q(Bool)
   let A' : Q(IProp $GF) ← mkFreshExprMVarQ q(IProp $GF)
   let Q' : Q(IProp $GF) ← mkFreshExprMVarQ q(IProp $GF)
-  if let .some _ ← ProofModeM.trySynthInstanceQ q(ElimModal $c false $p' iprop(|={$E}=> $goal) $A' $goal $Q') then
+  if let .some _ ← ProofModeM.trySynthInstanceQ q(ElimModal $c false .out $p' iprop(|={$E}=> $goal) $A' $goal $Q') then
     if let some _ ← try? <| iSolveSidecondition c then
       let pf ← addBIGoal hyps q($goal)
       return some q(tac_wp_value_nofupd (s:=$s) (E:=$E) $pf)

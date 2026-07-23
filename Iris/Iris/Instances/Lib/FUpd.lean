@@ -379,8 +379,8 @@ instance isExcept0_fupd_finally (E : CoPset) (P : IProp GF) : IsExcept0 iprop(|=
     iapply except0_mono fupd_intro $$ H
 
 @[rocq_alias elim_modal_bupd_fupd_finally]
-instance elimModal_bupd_fupd_finally p (E : CoPset) (P Q : IProp GF) :
-    ElimModal True p false iprop(|==> P) P iprop(|={E|}=> Q) iprop(|={E|}=> Q) where
+instance elimModal_bupd_fupd_finally p io (E : CoPset) (P Q : IProp GF) :
+    ElimModal True p io false iprop(|==> P) P iprop(|={E|}=> Q) iprop(|={E|}=> Q) where
   elim_modal _ := by
     iintro ⟨H1, H2⟩
     iapply fupd_fupd_finally E E
@@ -390,8 +390,8 @@ instance elimModal_bupd_fupd_finally p (E : CoPset) (P Q : IProp GF) :
     iapply H2 $$ H1
 
 @[rocq_alias elim_modal_fupd_fupd_finally]
-instance elimModal_fupd_fupd_finally p (E1 E2 : CoPset) (P Q : IProp GF) :
-    ElimModal True p false iprop(|={E1,E2}=> P) P iprop(|={E1|}=> Q) iprop(|={E2|}=> Q) where
+instance elimModal_fupd_fupd_finally p io (E1 E2 : CoPset) (P Q : IProp GF) :
+    ElimModal True p io false iprop(|={E1,E2}=> P) P iprop(|={E1|}=> Q) iprop(|={E2|}=> Q) where
   elim_modal _ := by
     iintro ⟨H1, H2⟩
     iapply fupd_fupd_finally E1 E2

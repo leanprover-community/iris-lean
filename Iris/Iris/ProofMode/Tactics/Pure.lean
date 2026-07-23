@@ -5,7 +5,6 @@ Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
 module
 
-public import Iris.ProofMode.Instances
 public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
@@ -26,7 +25,8 @@ theorem pure_elim_spatial [BI PROP] {P P' A Q : PROP} {φ : Prop}
     pure_elim_right fun hφ => (absorbingly_mono <| h_entails hφ).trans absorbing
 
 theorem pure_elim_intuitionistic [BI PROP] {P P' A Q : PROP} {φ : Prop}
-    [IntoPure A φ] (h : P ⊣⊢ P' ∗ □ A) (h' : φ → P' ⊢ Q) : P ⊢ Q :=
+    [inst : IntoPure A φ] (h : P ⊣⊢ P' ∗ □ A) (h' : φ → P' ⊢ Q) : P ⊢ Q :=
+  have : IntoPure iprop(□ A) φ := ⟨intuitionistically_elim.trans inst.into_pure⟩
   pure_elim_spatial h h'
 
 public meta section
@@ -51,7 +51,7 @@ def iPureCore {prop : Q(Type u)} (_bi : Q(BI $prop))
     | .inr _ =>
       let .some _ ← trySynthInstanceQ q(TCOr (Affine $A) (Absorbing $Q))
         | throwError "ipure: {A} is not affine and the goal not absorbing"
-      return q(pure_elim_spatial (A:=$A) $pf $f)
+      return q(pure_elim_spatial (A := $A) $pf $f)
 
 /--
   `ipure H` moves a pure hypothesis `H` from the Iris context into the regular

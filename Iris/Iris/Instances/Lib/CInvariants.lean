@@ -20,7 +20,7 @@ public import Iris.Std.List
 
 namespace Iris
 
-open BI CMRA OFE Iris Std LawfulSet Excl COFE
+open BI CMRA OFE Iris Std LawfulSet Excl COFE ProofMode
 
 /-! # Cancelable Invariants -/
 
@@ -288,6 +288,27 @@ theorem cancel (E : CoPset) {N : Namespace} {γ : GName} {P : IProp GF} (Hsub : 
   imod acc_one _ _ _ _ Hsub $$ Hinv Hγ with ⟨HP, -⟩
   imodintro
   iexact HP
+
+@[rocq_alias into_inv_cinv]
+instance intoInv_cinv (N : Namespace) (γ : GName) (P : IProp GF) :
+    IntoInv (cinv N γ P) N := {}
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias into_acc_cinv]
+instance intoAcc_cinv (E : CoPset) (N : Namespace) (γ : GName) (P : IProp GF) (p : Qp) :
+    IntoAcc (X := Unit) (cinv N γ P) (↑N ⊆ E) (own γ p) (fupd E (E \ ↑N)) (fupd (E \ ↑N) E)
+      (fun _ => iprop(▷ P ∗ own γ p)) (fun _ => iprop(▷ P)) (λ _ => none) where
+  into_acc := by
+    dsimp only [accessor, Option.getD]
+    iintro %x #Hinv Hown
+    imod acc x $$ Hinv Hown with ⟨HP, Hγ, Hcl⟩
+    imodintro
+    iexists ()
+    isplitl [HP Hγ]
+    · iframe
+    · iintro HP
+      iapply (BIFUpdate.mono true_emp.mp)
+      iapply Hcl $$ HP
 
 end CancelableInvariant
 end Iris

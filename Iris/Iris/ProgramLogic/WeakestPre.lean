@@ -8,13 +8,14 @@ public import Iris.Algebra
 public import Iris.Instances.Lib.FUpd
 public import Iris.BI
 public import Iris.BI.WeakestPre
+public import Iris.BI.DerivedLaws
 public import Iris.ProofMode
 public import Iris.ProgramLogic.Language
 public import Iris.Std.CoPset
 
 namespace Iris
 
-open ProgramLogic Language.Notation Std
+open ProgramLogic Language.Notation Std Iris.BI
 
 @[expose] public section
 
@@ -638,7 +639,7 @@ instance isExcept0Wp : IsExcept0 (WP e @ s ; E {{ Φ }}) where
 -- this should have higher priority than elimModalFupdWpAtomic
 @[rocq_alias elim_modal_fupd_wp]
 instance (priority := default + 10) elimModalFupdWp p :
-    ElimModal True p false iprop(|={E}=> P) P (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Φ }}) where
+    ElimModal True p io false iprop(|={E}=> P) P (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Φ }}) where
   elim_modal := by
     iintro %_ ⟨H, G⟩
     icases BI.intuitionisticallyIf_elim $$ H with H
@@ -648,11 +649,11 @@ instance (priority := default + 10) elimModalFupdWp p :
 
 @[rocq_alias elim_modal_bupd_wp]
 instance elimModalBupdWp p :
-    ElimModal True p false iprop(|==> P) P (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Φ }}) where
+    ElimModal True p io false iprop(|==> P) P (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Φ }}) where
   elim_modal := by
     rintro ⟨⟩
     refine BI.sep_mono (BI.intuitionisticallyIf_mono (BIUpdateFUpdate.fupd_of_bupd (E := E))) .rfl |>.trans ?_
-    apply elimModalFupdWp _ |>.elim_modal ⟨⟩
+    exact elimModalFupdWp _ |>.elim_modal ⟨⟩ (io := io)
 
 /-- Error message instance for non-mask-changing view shifts.  Also uses a slightly
 different error: we cannot apply `fupd_mask_subseteq` if `e` is not atomic, so
@@ -661,12 +662,12 @@ we tell the user to first add a leading `fupd` and then change the mask of that.
 instance elimModalFupdWp_wrongMask :
     ElimModal (PMError "Goal and eliminated modality must have the same mask.
     Use `iapply fupd_wp; imod (fupd_mask_subseteq E₂)` to adjust the mask of your goal to `E₂`")
-    p false iprop(|={E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
+    p io false iprop(|={E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
   elim_modal := nofun
 
 @[rocq_alias elim_modal_fupd_wp_atomic]
 instance elimModalFupdWpAtomic :
-    ElimModal (Language.Atomic ↑s e) p false iprop(|={E₁,E₂}=> P) P (WP e @ s ; E₁ {{ Φ }}) (WP e @ s ; E₂ {{ v, |={E₂,E₁}=> Φ v}}) where
+    ElimModal (Language.Atomic ↑s e) p io false iprop(|={E₁,E₂}=> P) P (WP e @ s ; E₁ {{ Φ }}) (WP e @ s ; E₂ {{ v, |={E₂,E₁}=> Φ v}}) where
   elim_modal := by
     rintro atomic; iintro ⟨H, G⟩
     icases BI.intuitionisticallyIf_elim $$ H with H
@@ -678,7 +679,43 @@ instance elimModalFupdWpAtomic :
 instance elimModalFupdWpAtomic_wrongMask :
     ElimModal (PMError "Goal and eliminated modality must have the same mask.
     Use `iapply fupd_wp; imod (fupd_mask_subseteq E₂)` to adjust the mask of your goal to `E₂`")
-    p false iprop(|={E₁,E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
+    p io false iprop(|={E₁,E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
   elim_modal := nofun
+
+@[rocq_alias elim_acc_wp_atomic]
+instance (priority := low) elimAcc_wp_atomic {X} (E₁ E₂ : CoPset) α β (γ : X → Option (IProp GF)) :
+    ElimAcc (Language.Atomic ↑s e) (fupd E₁ E₂) (fupd E₂ E₁) α β γ
+      (WP e @ s ; E₁ {{ Φ }})
+      (fun x => WP e @ s ; E₂ {{ v, |={E₂}=> β x ∗ (γ x -∗? Φ v) }}) where
+  elim_acc := by
+    dsimp only [accessor, BIBase.wandM, Option.getD]
+    iintro %atomic Hinner >⟨%x, Hα, Hclose⟩
+    iapply wp_wand $$ [Hinner Hα]
+    · iapply Hinner $$ Hα
+    · iintro %v >⟨Hβ, HΦ⟩
+      ispecialize Hclose $$ Hβ
+      imod Hclose
+      imodintro
+      cases (γ x) with
+      | none => iexact HΦ
+      | some P => iapply HΦ $$ Hclose
+
+@[rocq_alias elim_acc_wp_nonatomic]
+instance elimAcc_wp_nonatomic {X} E (α β : X → IProp GF) (γ : X → Option (IProp GF)) :
+    ElimAcc True (fupd E E) (fupd E E) α β γ (WP e @ s ; E {{ Φ }})
+    (fun x => WP e @ s ; E {{ v, |={E}=> β x ∗ (γ x -∗? Φ v) }}) where
+  elim_acc := by
+    dsimp only [accessor, BIBase.wandM, Option.getD]
+    iintro %_ Hinner >⟨%x, Hα, Hclose⟩
+    iapply wp_fupd
+    iapply wp_wand $$ [Hinner Hα]
+    · iapply Hinner $$ Hα
+    · iintro %v >⟨Hβ, HΦ⟩
+      ispecialize Hclose $$ Hβ
+      imod Hclose
+      imodintro
+      cases (γ x) with
+      | none => iexact HΦ
+      | some P => iapply HΦ $$ Hclose
 
 end ProofModeClasses

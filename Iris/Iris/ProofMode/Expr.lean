@@ -184,6 +184,20 @@ partial def Hyps.find? {u prop bi} (name : Name) :
   | _, .hyp _ name' ivar _ ty _ => if name == name' then (ivar, ty) else none
   | _, .sep _ _ _ _ lhs rhs => rhs.find? name <|> lhs.find? name
 
+partial def Hyps.findM? [Monad m] {prop : Q(Type u)} {bi : Q(BI $prop)}
+    (p : Name → IVarId → Q(Bool) → Q($prop) → m Bool) :
+    ∀ {e}, Hyps bi e → m (Option (Name × IVarId × Q(Bool) × Q($prop)))
+  | _, .emp _ => return none
+  | _, .hyp _ name ivar bp ty _ => do
+    if ← p name ivar bp ty then
+      return some (name, ivar, bp, ty)
+    else
+      return none
+  | _, .sep _ _ _ _ lhs rhs => do
+    match ← rhs.findM? p with
+    | some res => return some res
+    | none => lhs.findM? p
+
 partial def Hyps.getDecl? {u prop bi} (ivar : IVarId) {s}:
     @Hyps u prop bi s → Option (Name × IVarId × Q(Bool) × Q($prop))
   | .emp _ => none
