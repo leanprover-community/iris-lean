@@ -170,16 +170,14 @@ theorem frag_op_valid {q1 q2 : Qp} {a b : A} :
 
 @[rocq_alias ufrac_auth_is_op]
 instance isOp_ufrac_auth {q q1 q2 : Qp} {a1 a2 : A} {a : outParam A}
-    [h1 : IsOp io1 q io2 q1 io3 q2] [h2 : IsOp io1 a io2 a1 io3 a2] :
-    IsOp io1 (◯U{q} a) io2 (◯U{q1} a1) io3 (◯U{q2} a2) where
+    [h1 : IsOp io q q1 q2] [h2 : IsOp io a a1 a2] : IsOp io (◯U{q} a) (◯U{q1} a1) (◯U{q2} a2) where
   is_op := NonExpansive.eqv (OFE.some_eqv_some.mpr
     (NonExpansive₂.eqv (OFE.Equiv.of_eq (UFrac.ext_iff.mpr h1.is_op.to_eq)) h2.is_op))
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias ufrac_auth_is_op_core_id]
-instance isOp_ufrac_auth_core_id {q q1 q2 : Qp} {a : A}
-    [h1 : CoreId a] [h2 : IsOp io1 q io2 q1 io3 q2] :
-    IsOp io1 (◯U{q} a) io2 (◯U{q1} a) io3 (◯U{q2} a) where
+instance isOp_ufrac_auth_core_id {q q1 q2 : Qp} {a : A} [h1 : CoreId a] [h2 : IsOp io q q1 q2] :
+    IsOp io (◯U{q} a) (◯U{q1} a) (◯U{q2} a) where
   is_op := NonExpansive.eqv (OFE.some_eqv_some.mpr
     (NonExpansive₂.eqv (OFE.Equiv.of_eq (UFrac.ext_iff.mpr h2.is_op.to_eq)) (op_self a).symm))
 
