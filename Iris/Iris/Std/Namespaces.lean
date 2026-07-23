@@ -12,8 +12,6 @@ meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
-open Iris Std
-
 abbrev Namespace := List Pos
 
 instance : DecidableEq Namespace := by infer_instance
@@ -39,7 +37,7 @@ instance : Coe Lean.Name Namespace where coe := ofName
 
 infix:80 ".@" => ndot
 
-instance ndisjoint : Disjoint Namespace where
+instance ndisjoint : Iris.Std.Disjoint Namespace where
   disjoint N1 N2 := nclose N1 ## nclose N2
 
 theorem nclose_root : ↑nroot = CoPset.full := by rfl

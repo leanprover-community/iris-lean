@@ -6,6 +6,7 @@ Authors: Remy Seassau, Markus de Medeiros, Sergei Stepanenko
 module
 
 public import Iris.Std.Positives
+public import Iris.Std.Classes
 public import Iris.Std.GenSets
 import Iris.Std.List
 
@@ -219,6 +220,8 @@ instance : EmptyCollection CoPset where emptyCollection := CoPset.empty
 
 def full : CoPset := ⟨CoPsetRaw.leaf true, rfl⟩
 
+instance : Iris.Std.Top CoPset where top := CoPset.full
+
 @[simp] def singleton (p : Pos) : CoPset := ⟨CoPsetRaw.Singleton p, coPsetSingleton_wf p⟩
 
 instance : Singleton Pos CoPset where
@@ -251,9 +254,6 @@ theorem mem_empty {p : Pos} : p ∉ (∅ : CoPset) := by
 
 theorem mem_full {p : Pos} : p ∈ full := by
   simp only [Membership.mem, full, CoPsetRaw.ElemOf]
-
-/-- `CoPset.full` is the top element in the type `CoPset`. -/
-notation "⊤" => CoPset.full
 
 @[simp]
 theorem subseteq_top {X : CoPset} : X ⊆ ⊤ := λ _ _ => mem_full

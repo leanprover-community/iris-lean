@@ -5,6 +5,7 @@ Authors: Lars König
 -/
 module
 
+public import Iris.Std.Classes
 public meta import Iris.Std.Tactic
 
 public meta import Lean.Elab.Tactic

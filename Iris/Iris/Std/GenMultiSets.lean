@@ -5,6 +5,7 @@ Authors: Haokun Li
 -/
 module
 
+public import Iris.Std.Classes
 public import Iris.Std.GenSets
 public import Batteries.Data.List.Perm
 

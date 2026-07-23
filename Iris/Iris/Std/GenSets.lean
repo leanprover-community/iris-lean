@@ -5,6 +5,7 @@ Authors: Zongyuan Liu, Sergei Stepanenko
 -/
 module
 
+public import Iris.Std.Classes
 public import Iris.Std.Infinite
 import Batteries.Data.List.Perm
 import Iris.Std.List
@@ -67,14 +68,8 @@ instance : HasSubset S := ⟨fun S₁ S₂ => ∀ x, x ∈ S₁ → x ∈ S₂�
     is in `S₂` but they are not equal. -/
 instance : HasSSubset S := ⟨fun S₁ S₂ => S₁ ≠ S₂ ∧ ∀ x, x ∈ S₁ → x ∈ S₂⟩
 
-class Disjoint (α : Type u) where
-  disjoint : α → α → Prop
-export Disjoint (disjoint)
-
 /-- Two sets are disjoint if they share no common elements. -/
-infix:50 " ## " => Disjoint.disjoint
-
-instance instDisjoint : Disjoint S where
+instance : Disjoint S where
   disjoint S₁ S₂ := ∀ x, ¬(x ∈ S₁ ∧ x ∈ S₂)
 
 class FiniteSet (S : Type _) (A : outParam (Type _)) extends LawfulSet S A where

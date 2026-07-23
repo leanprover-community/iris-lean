@@ -63,7 +63,7 @@ example : True := by
   icases inv_alloc nroot ⊤ iprop(True) $$ [] with >#Hinv
   · itrivial
   imod inv_acc $$ Hinv with ⟨HP, Hcl⟩
-  · rw [nclose_root]
+  · rw [nclose_root]; exact subset_refl
   imod Hcl $$ HP with HP
   iapply fupd_mask_intro empty_subset
   iintro Hcl
