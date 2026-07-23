@@ -1283,19 +1283,19 @@ instance monPred_at_monoid_sep_homomorphism (i : I.car) :
 @[rocq_alias monPred_at_big_sepL]
 theorem monPred_at_big_sepL {α : Type _} (i : I.car) (Φ : Nat → α → MonPred I PROP) (l : List α) :
     ([∗list] k ↦ x ∈ l, Φ k x).monPred_at i ⊣⊢ [∗list] k ↦ x ∈ l, (Φ k x).monPred_at i :=
-  equiv_iff.mp (OFE.Equiv.of_eq (bigOpL_hom (H := monPred_at_monoid_sep_homomorphism i) Φ l))
+  BIBase.BiEntails.of_eq (bigOpL_hom (H := monPred_at_monoid_sep_homomorphism i) Φ l)
 
 @[rocq_alias monPred_at_big_sepM]
 theorem monPred_at_big_sepM {K V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
     (i : I.car) (Φ : K → V → MonPred I PROP) (m : M V) :
     ([∗map] k ↦ x ∈ m, Φ k x).monPred_at i ⊣⊢ [∗map] k ↦ x ∈ m, (Φ k x).monPred_at i :=
-  equiv_iff.mp (OFE.Equiv.of_eq (bigOpM_hom (ι := monPred_at_monoid_sep_homomorphism i) Φ m))
+  BIBase.BiEntails.of_eq (bigOpM_hom (ι := monPred_at_monoid_sep_homomorphism i) Φ m)
 
 @[rocq_alias monPred_at_big_sepS]
 theorem monPred_at_big_sepS {S α : Type _} [LawfulFiniteSet S α]
     (i : I.car) (Φ : α → MonPred I PROP) (X : S) :
     ([∗set] x ∈ X, Φ x).monPred_at i ⊣⊢ [∗set] x ∈ X, (Φ x).monPred_at i :=
-  equiv_iff.mp (OFE.Equiv.of_eq (Iris.Algebra.BigOpS.hom (monPred_at_monoid_sep_homomorphism i) Φ X))
+  BIBase.BiEntails.of_eq (Iris.Algebra.BigOpS.hom (monPred_at_monoid_sep_homomorphism i) Φ X)
 
 @[rocq_alias big_sepL_objective]
 instance big_sepL_objective {α : Type _} (Φ : Nat → α → MonPred I PROP) (l : List α)
@@ -1323,8 +1323,8 @@ instance monPred_objectively_monoid_and_homomorphism :
     MonoidHomomorphism (BIBase.and (PROP := MonPred I PROP)) BIBase.and iprop(True) iprop(True)
       (· = ·) MonPred.objectively :=
   MonoidHomomorphism.ofEq monPred_objectively_ne
-    (fun {x y} => (equiv_iff.mpr (monPred_objectively_and x y)).to_eq)
-    (equiv_iff.mpr (monPred_objectively_pure True)).to_eq
+    (fun {x y} => (monPred_objectively_and x y).to_eq)
+    (monPred_objectively_pure True).to_eq
 
 @[rocq_alias monPred_objectively_monoid_sep_entails_homomorphism]
 instance monPred_objectively_monoid_sep_entails_homomorphism :
@@ -1342,8 +1342,8 @@ theorem monPred_objectively_monoid_sep_homomorphism {bot : I.car} [BiIndexBottom
     MonoidHomomorphism (BIBase.sep (PROP := MonPred I PROP)) BIBase.sep BIBase.emp BIBase.emp
       (· = ·) MonPred.objectively :=
   MonoidHomomorphism.ofEq monPred_objectively_ne
-    (fun {x y} => (equiv_iff.mpr (monPred_objectively_sep (bot := bot) x y)).to_eq)
-    (equiv_iff.mpr monPred_objectively_emp).to_eq
+    (fun {x y} => (monPred_objectively_sep (bot := bot) x y).to_eq)
+    monPred_objectively_emp.to_eq
 
 @[rocq_alias monPred_objectively_big_sepL_entails]
 theorem monPred_objectively_big_sepL_entails {α : Type _} (Φ : Nat → α → MonPred I PROP)
@@ -1357,8 +1357,7 @@ theorem monPred_objectively_big_sepL {bot : I.car} [BiIndexBottom I bot] {α : T
     (Φ : Nat → α → MonPred I PROP) (l : List α) :
     MonPred.objectively (iprop([∗list] k ↦ x ∈ l, Φ k x)) ⊣⊢
       [∗list] k ↦ x ∈ l, MonPred.objectively (Φ k x) :=
-  equiv_iff.mp
-    (OFE.Equiv.of_eq (bigOpL_hom (H := monPred_objectively_monoid_sep_homomorphism (bot := bot)) Φ l))
+  BIBase.BiEntails.of_eq (bigOpL_hom (H := monPred_objectively_monoid_sep_homomorphism (bot := bot)) Φ l)
 
 @[rocq_alias monPred_objectively_big_sepM_entails]
 theorem monPred_objectively_big_sepM_entails {K V : Type _} {M : Type _ → Type _}
@@ -1372,8 +1371,7 @@ theorem monPred_objectively_big_sepM {bot : I.car} [BiIndexBottom I bot] {K V : 
     {M : Type _ → Type _} [LawfulFiniteMap M K] (Φ : K → V → MonPred I PROP) (m : M V) :
     MonPred.objectively (iprop([∗map] k ↦ x ∈ m, Φ k x)) ⊣⊢
       [∗map] k ↦ x ∈ m, MonPred.objectively (Φ k x) :=
-  equiv_iff.mp
-    (OFE.Equiv.of_eq (bigOpM_hom (ι := monPred_objectively_monoid_sep_homomorphism (bot := bot)) Φ m))
+  BIBase.BiEntails.of_eq (bigOpM_hom (ι := monPred_objectively_monoid_sep_homomorphism (bot := bot)) Φ m)
 
 @[rocq_alias monPred_objectively_big_sepS_entails]
 theorem monPred_objectively_big_sepS_entails {S α : Type _} [LawfulFiniteSet S α]
@@ -1387,9 +1385,8 @@ theorem monPred_objectively_big_sepS {bot : I.car} [BiIndexBottom I bot] {S α :
     [LawfulFiniteSet S α] (Φ : α → MonPred I PROP) (X : S) :
     MonPred.objectively (iprop([∗set] x ∈ X, Φ x)) ⊣⊢
       [∗set] x ∈ X, MonPred.objectively (Φ x) :=
-  equiv_iff.mp
-    (OFE.Equiv.of_eq
-      (Iris.Algebra.BigOpS.hom (monPred_objectively_monoid_sep_homomorphism (bot := bot)) Φ X))
+  BIBase.BiEntails.of_eq
+    (Iris.Algebra.BigOpS.hom (monPred_objectively_monoid_sep_homomorphism (bot := bot)) Φ X)
 
 end BigOp
 

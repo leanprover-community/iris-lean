@@ -114,7 +114,7 @@ nonrec theorem auth_dist_inj {n : Nat} {dq1 dq2 : DFrac} {a1 a2 : A}
 @[rocq_alias auth_auth_inj]
 theorem auth_inj {dq1 dq2 : DFrac} {a1 a2 : A} (h : (●{dq1} a1) = ●{dq2} a2) :
     dq1 = dq2 ∧ a1 = a2 :=
-  ⟨auth_inj_frac (n := 0) h.dist, (equiv_dist.mpr fun _ => dist_of_auth_dist h.dist).to_eq⟩
+  ⟨auth_inj_frac (n := 0) h.dist, OFE.eq_dist.mpr fun _ => dist_of_auth_dist h.dist⟩
 
 @[rocq_alias auth_frag_dist_inj]
 theorem frag_dist_inj {n : Nat} {b1 b2 : A} (h : (◯ b1 : Auth A) ≡{n}≡ ◯ b2) : b1 ≡{n}≡ b2 :=
@@ -122,7 +122,7 @@ theorem frag_dist_inj {n : Nat} {b1 b2 : A} (h : (◯ b1 : Auth A) ≡{n}≡ ◯
 
 @[rocq_alias auth_frag_inj]
 theorem frag_inj {b1 b2 : A} (h : (◯ b1 : Auth A) = ◯ b2) : b1 = b2 :=
-  (equiv_dist.mpr fun _ => dist_of_frag_dist h.dist).to_eq
+  OFE.eq_dist.mpr fun _ => dist_of_frag_dist h.dist
 
 @[rocq_alias auth_auth_discrete]
 nonrec instance auth_discrete {dq : DFrac} {a : A} [DiscreteE a] [DiscreteE (unit : A)] :

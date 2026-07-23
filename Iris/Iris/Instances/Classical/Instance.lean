@@ -49,8 +49,8 @@ instance : COFE (HeapProp Val) := COFE.ofDiscrete _
 instance : BI (HeapProp Val) where
   entails_preorder := by infer_instance
   equiv_iff {P Q} := ⟨
-    fun h => h.to_eq ▸ ⟨refl, refl⟩,
-    fun ⟨h₁, h₂⟩ => OFE.Equiv.of_eq (funext fun σ => propext ⟨h₁ σ, h₂ σ⟩)
+    fun h => OFE.equiv_iff_eq.mp h ▸ ⟨refl, refl⟩,
+    fun ⟨h₁, h₂⟩ => OFE.equiv_iff_eq.mpr (funext fun σ => propext ⟨h₁ σ, h₂ σ⟩)
   ⟩
 
   and_ne          := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩

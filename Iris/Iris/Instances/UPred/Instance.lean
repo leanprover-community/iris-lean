@@ -65,9 +65,9 @@ protected def imp (P Q : UPred M) : UPred M where
       calc x  ≡{n}≡ x₂ • m₂    := Hxle.dist
            _  ≡{n}≡ (x₁ • m₁) • m₂ := (Hle.le Hnle).op_l
     refine (uPred_ne (m₂ := ⟨(x₁.val • m₁) • m₂, Hx.validN.mp xP⟩) Hx).mpr (H _ ?_ ?_ ?_)
-    · calc x₁.val ≡ x₁ • unit        := OFE.Equiv.of_eq unit_right_id.symm
-           _      ≼ x₁ • (m₁ • m₂)   := op_mono_right _ inc_unit
-           _      ≡ (x₁ • m₁) • m₂   := OFE.Equiv.of_eq assoc'
+    · calc x₁.val = CMRA.op x₁.val unit               := unit_right_id.symm
+           _      ≼ x₁.val • (m₁ • m₂)                := op_mono_right _ inc_unit
+           _      = CMRA.op (CMRA.op x₁.val m₁) m₂    := assoc'
     · exact Nat.le_trans Hnle Hn
     · exact (uPred_ne Hx).mp HP
 
@@ -699,8 +699,7 @@ instance {a : M} : Persistent (ownM (core a)) where
   persistent := by
     refine .trans (persistently_ownM_core _) ?_
     refine persistently_mono ?_
-    refine equiv_iff.mp ?_ |>.mp
-    exact OFE.Equiv.of_eq (congrArg ownM (core_idem a))
+    exact (BIBase.BiEntails.of_eq (congrArg ownM (core_idem a))).mp
 
 @[rocq_alias uPred.bupd_ownM_updateP, rocq_alias uPred_primitive.bupd_ownM_updateP]
 theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
@@ -778,8 +777,8 @@ instance ownM_timeless (a : M) [OFE.DiscreteE a] : BI.Timeless (ownM a) where
     | 0, _, _ => .inl trivial
     | n+1, x, ⟨_, Hxy⟩ =>
       let ⟨_a', y', Hx, Ha', _⟩ := extend (validN_succ x.property) Hxy
-      .inr ⟨y', ((OFE.Equiv.of_eq Hx).trans
-        (OFE.Equiv.of_eq (congrArg (CMRA.op · _) (OFE.DiscreteE.discrete (Ha'.symm.le n.zero_le)).symm))).dist⟩
+      .inr ⟨y', OFE.Dist.of_eq (Hx.trans
+        (congrArg (CMRA.op · _) (OFE.DiscreteE.discrete (Ha'.symm.le n.zero_le)).symm))⟩
 
 @[rocq_alias uPred.ownM_persistent]
 instance ownM_persistent (a : M) [CoreId a] : Persistent (ownM a) where

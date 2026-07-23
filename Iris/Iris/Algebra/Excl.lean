@@ -185,7 +185,7 @@ theorem excl_included [OFE α] {a b : α} :
     fun h => ⟨none, congrArg (fun x => some (excl x)) h.symm⟩⟩
   rcases z with _|z
   · exact (excl_inj hz).symm
-  · exact (Equiv.of_eq hz 0).elim
+  · exact (hz.dist (n := 0)).elim
 
 @[rocq_alias Excl_includedN]
 theorem excl_includedN [OFE α] {a b : α} {n} :

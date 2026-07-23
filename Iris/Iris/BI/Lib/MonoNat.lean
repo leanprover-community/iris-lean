@@ -72,8 +72,7 @@ instance {γ n} : Fractional (PROP := IProp GF) (fun q : Qp => γ ↪●MN{.own 
   fractional p q := by
     unfold auth_own
     rw [←iOwn_op.to_eq]
-    refine BI.equiv_iff.mp ?_
-    exact OFE.Equiv.of_eq (congrArg (iOwn _) (auth_dfrac_op (.own p) (.own q) _))
+    exact BIBase.BiEntails.of_eq (congrArg (iOwn _) (auth_dfrac_op (.own p) (.own q) _))
 
 @[rocq_alias mono_nat_auth_own_agree]
 theorem auth_own_agree (γ : GName) (dq1 dq2 : DFrac) (n1 n2 : MaxNat) :

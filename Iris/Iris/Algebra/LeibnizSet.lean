@@ -94,12 +94,12 @@ instance : CMRA (DisjointLeibnizSet S) where
       exact hyz h |>.elim
   comm {x y} := by
     rcases x with (x|_) <;> rcases y with (y|_) <;> (try · simp)
-    by_cases H : x ## y <;> grind only [Equiv.of_eq, disjoint_symm, union_comm]
+    by_cases H : x ## y <;> grind only [equiv_iff_eq, disjoint_symm, union_comm]
   pcore_op_left {cx x} := by
     rcases x with (x|_) <;> rcases cx with (cx|_) <;> (try · simp)
     rintro ⟨⟩
     simp [disjoint_empty_left]
-  pcore_idem {x cx} := by grind only [Equiv.of_eq]
+  pcore_idem {x cx} := by grind only [equiv_iff_eq]
   pcore_op_mono {_ x} := by
     rcases x with (x|_) <;> rintro ⟨⟩ y
     exists (.valid ∅)

@@ -78,9 +78,9 @@ instance ghost_map_elem_fractional (γ : GName) (k : K) (v : V) :
   fractional p q := by
     unfold ghost_map_elem
     refine .trans ?_ iOwn_op
-    refine equiv_iff.mp ?_
-    refine .trans ?_ (OFE.Equiv.of_eq (congrArg (iOwn γ) frag_add_op_eqv))
-    refine OFE.Equiv.of_eq (congrArg (iOwn γ) (congrArg (Frag k (.own (p + q))) ?_))
+    refine BIBase.BiEntails.of_eq ?_
+    refine .trans ?_ (congrArg (iOwn γ) frag_add_op_eqv)
+    refine congrArg (iOwn γ) (congrArg (Frag k (.own (p + q))) ?_)
     exact Agree.idemp.symm
 
 @[rocq_alias ghost_map_elem_as_fractional]
@@ -255,8 +255,8 @@ instance ghost_map_auth_fractional (m : H V) :
   fractional p q := by
     unfold ghost_map_auth
     refine .trans ?_ iOwn_op
-    refine equiv_iff.mp ?_
-    refine .trans ?_ (OFE.Equiv.of_eq (congrArg (iOwn γ) auth_dfrac_op_eqv))
+    refine BIBase.BiEntails.of_eq ?_
+    refine .trans ?_ (congrArg (iOwn γ) auth_dfrac_op_eqv)
     rfl
 
 @[rocq_alias ghost_map_auth_as_fractional]
@@ -323,7 +323,7 @@ theorem ghost_map_lookup {γ dq} {m : H V} {k : K} {dq' v} :
   icombine H1 H2 gives %G
   ipureintro
   have ⟨av', _, _, h_av', _, h⟩ := auth_op_frag_valid_total_discrete_iff G
-  cases h₂ : get? m k <;> grind [get?_map,Agree.toAgree_included, OFE.Equiv.to_eq]
+  cases h₂ : get? m k <;> grind [get?_map,Agree.toAgree_included, OFE.equiv_iff_eq]
 
 @[rocq_alias ghost_map_lookup_combine_gives_1]
 instance ghost_map_lookup_combine_gives_1 γ (m : H V) (k : K) (dq1 dq2 : DFrac) (v : V) :

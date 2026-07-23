@@ -106,7 +106,7 @@ theorem agreeN {dq : DFrac} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F b) : a �
 
 @[rocq_alias frac_auth_agree]
 theorem agree {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F b) : a = b :=
-  OFE.Equiv.to_eq <| equiv_dist.mpr fun n => agreeN (valid_iff_validN.mp h n)
+  OFE.eq_dist.mpr fun n => agreeN (valid_iff_validN.mp h n)
 
 #rocq_ignore frac_auth_agree_L "Use agree"
 

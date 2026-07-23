@@ -229,9 +229,9 @@ instance : NonExpansive (pcore (α := α)) where
 @[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem coreId_of_eqv {x₁ x₂ : α} (e : x₁ ≡ x₂) (h : CoreId x₁) : CoreId x₂ where
   core_id := calc
-    pcore x₂ = pcore x₁ := (NonExpansive.eqv e.symm).to_eq
+    pcore x₂ = pcore x₁ := congrArg pcore (equiv_iff_eq.mp e.symm)
     _        = some x₁  := h.core_id
-    _        = some x₂  := congrArg some e.to_eq
+    _        = some x₂  := congrArg some (equiv_iff_eq.mp e)
 
 @[rocq_alias CoreId_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem coreId_iff {x₁ x₂ : α} (e : x₁ ≡ x₂) : CoreId x₁ ↔ CoreId x₂ :=
@@ -254,7 +254,9 @@ theorem op_assocN {x y z : α} : x • (y • z) ≡{n}≡ (x • y) • z := Di
 
 @[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem op_left_eqv {x y : α} (z : α) (e : x ≡ y) : x • z ≡ y • z :=
-  (Equiv.of_eq comm').trans <| e.op_r.trans (Equiv.of_eq comm')
+  calc x • z = z • x := comm'
+    _ ≡ z • y := e.op_r
+    _ = y • z := comm'
 @[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem _root_.Iris.OFE.Equiv.op_l {x y z : α} : x ≡ y → x • z ≡ y • z := op_left_eqv _
 
@@ -473,17 +475,17 @@ theorem _root_.Iris.OFE.Dist.exclusive {x₁ x₂ : α} : x₁ ≡ x₂ → (Exc
 
 @[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem inc_of_eqv_of_inc (e : (a : α) ≡ b) : b ≼ c → a ≼ c
-  | ⟨t, et⟩ => ⟨t, et.trans e.symm.op_l.to_eq⟩
+  | ⟨t, et⟩ => ⟨t, et.trans (congrArg (CMRA.op · t) (equiv_iff_eq.mp e).symm)⟩
 
 instance : Trans Equiv (Included (α := α)) Included where
-  trans e h := e.symm.to_eq ▸ h
+  trans e h := equiv_iff_eq.mp e.symm ▸ h
 
 @[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem inc_of_inc_of_eqv : (a : α) ≼ b → b ≡ c → a ≼ c
-  | ⟨t, et⟩, e => ⟨t, e.symm.to_eq.trans et⟩
+  | ⟨t, et⟩, e => ⟨t, (equiv_iff_eq.mp e.symm).trans et⟩
 
 instance : Trans (Included (α := α)) Equiv Included where
-  trans h e := e.to_eq ▸ h
+  trans h e := equiv_iff_eq.mp e ▸ h
 
 theorem incN_of_incN_of_dist : (a : α) ≼{n} b → b ≡{n}≡ c → a ≼{n} c
   | ⟨t, et⟩, e => ⟨t, e.symm.trans et⟩
@@ -822,7 +824,7 @@ variable {α : Type _} [CMRA α]
 
 @[rocq_alias cancelable]
 theorem cancelable {x y z : α} [Cancelable x] (v : ✓(x • y)) (e : x • y = x • z) : y = z :=
-  Equiv.to_eq (equiv_dist.mpr fun _ => cancelableN v.validN e.dist)
+  OFE.eq_dist.mpr fun _ => cancelableN v.validN e.dist
 
 @[rocq_alias discrete_cancelable]
 theorem discrete_cancelable {x : α} [Discrete α]
@@ -1811,8 +1813,8 @@ instance instCmraDistreteProd [CMRA.Discrete α] [CMRA.Discrete β] : CMRA.Discr
 
 @[rocq_alias pair_core_id]
 instance instCoreIdPair {x : α} {y : β} [CMRA.CoreId x] [CMRA.CoreId y] : CMRA.CoreId (α := α × β) ⟨x, y⟩ where
-  core_id := Equiv.to_eq <| by
-    refine (equiv_dist.mpr (fun _ => ?_))
+  core_id := by
+    refine (OFE.eq_dist.mpr (fun _ => ?_))
     simp only [CMRA.pcore, pcore]
     haveI : NonExpansive (fun b : β => some (x, b)) := ⟨fun _ _ _ H => some_dist_some.mpr (dist_prod_ext .rfl H)⟩
     haveI : NonExpansive ((fun a : α => (CMRA.pcore y).bind fun b : β => pure (a, b))) :=

@@ -46,7 +46,7 @@ instance mk_exclusive {a : A} : Exclusive (mk (.own (1 : Qp)) a) := one_exclusiv
 
 @[rocq_alias to_dfrac_agree_discrete]
 instance mk_discrete {d : DFrac} {a : A} [DiscreteE a] : DiscreteE (mk d a) :=
-  ⟨fun h => OFE.Equiv.to_eq <| by
+  ⟨fun h => OFE.eq_dist.mpr <| by
     intro n
     exact ⟨(is_discrete.discrete h.1).dist, (Agree.toAgree.is_discrete.discrete h.2).dist⟩⟩
 

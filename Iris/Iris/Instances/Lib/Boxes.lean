@@ -310,7 +310,7 @@ theorem box_fill {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     icases Hif $$ HP with HP
     icases bigSepM_later $$ HP with HP
     icombine Hbig HP as Hbig
-    icases (OFE.Equiv.of_eq bigSepM_sep_eq) $$ Hbig with Hbig
+    icases (BIBase.BiEntails.of_eq bigSepM_sep_eq) $$ Hbig with Hbig
     rw [bigSepM_map (f := fun x => true)]
     iapply bigSepM_fupd
     iapply bigSepM_impl $$ Hbig

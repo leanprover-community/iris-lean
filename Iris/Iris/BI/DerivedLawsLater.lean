@@ -170,23 +170,23 @@ These instances ported from Rocq `bi_later_monoid_*` in
 instance bi_later_monoid_and_homomorphism :
     Iris.Algebra.MonoidHomomorphism (and (PROP := PROP)) and iprop(True) iprop(True) (· = ·) later :=
   MonoidHomomorphism.ofEq BI.later_ne
-    (equiv_iff.mpr later_and).to_eq (equiv_iff.mpr later_true).to_eq
+    later_and.to_eq later_true.to_eq
 
 @[rocq_alias bi.bi_later_monoid_or_homomorphism]
 instance bi_later_monoid_or_homomorphism :
     Iris.Algebra.WeakMonoidHomomorphism (or (PROP := PROP)) or iprop(False) iprop(False) (· = ·) later :=
-  WeakMonoidHomomorphism.ofEq BI.later_ne (equiv_iff.mpr later_or).to_eq
+  WeakMonoidHomomorphism.ofEq BI.later_ne later_or.to_eq
 
 @[rocq_alias bi.bi_later_monoid_sep_weak_homomorphism]
 instance bi_later_monoid_sep_weak_homomorphism :
     Iris.Algebra.WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·) later :=
-  WeakMonoidHomomorphism.ofEq BI.later_ne (equiv_iff.mpr later_sep).to_eq
+  WeakMonoidHomomorphism.ofEq BI.later_ne later_sep.to_eq
 
 @[rocq_alias bi.bi_later_monoid_sep_homomorphism]
 instance bi_later_monoid_sep_homomorphism [BIAffine PROP] :
     Iris.Algebra.MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·) later :=
   MonoidHomomorphism.ofEq BI.later_ne
-    (equiv_iff.mpr later_sep).to_eq (equiv_iff.mpr later_emp).to_eq
+    later_sep.to_eq later_emp.to_eq
 
 @[rocq_alias bi.bi_later_monoid_sep_entails_weak_homomorphism]
 instance bi_later_monoid_sep_entails_weak_homomorphism :
@@ -248,7 +248,7 @@ instance later_contractive_bi_loeb [BILaterContractive PROP] : BILoeb PROP where
     let Flöb : PROP -c> PROP := { f := fun Q => iprop((▷ Q) → P), contractive := Hc }
     suffices HP : iprop(▷ (fixpoint Flöb) ⊢ P) by
       refine entails_impl_true.mp HP |>.trans ?_
-      refine equiv_iff.mp (OFE.Equiv.of_eq (fixpoint_unfold Flöb)) |>.mpr |>.trans ?_
+      refine BIBase.BiEntails.of_eq (fixpoint_unfold Flöb) |>.mpr |>.trans ?_
       exact later_intro.trans HP
     refine .trans ?_ ((later_mono HP).trans HP)
     suffices Hcut : later (fixpoint Flöb) ⊢ later (later (later (fixpoint Flöb))) → later (later P) by
@@ -256,8 +256,8 @@ instance later_contractive_bi_loeb [BILaterContractive PROP] : BILoeb PROP where
     refine .trans (later_mono ?_) later_imp
     refine .trans ?_ later_imp
     refine .trans ?_ later_intro
-    refine equiv_iff.mp ?_ |>.mp
-    exact OFE.Equiv.of_eq (fixpoint_unfold Flöb)
+    refine BIBase.BiEntails.of_eq ?_ |>.mp
+    exact fixpoint_unfold Flöb
 
 /-! # LaterN -/
 

@@ -26,7 +26,7 @@ namespace BigAndM
 @[simp, rocq_alias big_andM_empty]
 theorem bigAndM_empty {Φ : K → V → PROP} :
     ([∧map] k ↦ x ∈ (∅ : M V), Φ k x) ⊣⊢ True :=
-  equiv_iff.mp <| .of_eq <| bigOpM_empty Φ
+  BiEntails.of_eq <| bigOpM_empty Φ
 
 @[rocq_alias big_andM_empty']
 theorem bigAndM_empty_intro {P : PROP} {Φ : K → V → PROP} :
@@ -36,25 +36,25 @@ theorem bigAndM_empty_intro {P : PROP} {Φ : K → V → PROP} :
 @[rocq_alias big_andM_singleton]
 theorem bigAndM_singleton {Φ : K → V → PROP} {i : K} {x : V} :
     ([∧map] k ↦ v ∈ (PartialMap.singleton i x : M V), Φ k v) ⊣⊢ Φ i x :=
-  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpM_singleton_eq Φ i x
+  BiEntails.of_eq <| bigOpM_singleton_eq Φ i x
 
 @[rocq_alias big_andM_insert]
 theorem bigAndM_insert {Φ : K → V → PROP} {m : M V} {i : K} {x : V}
     (h : get? m i = none) :
     ([∧map] k ↦ v ∈ insert m i x, Φ k v) ⊣⊢ Φ i x ∧ [∧map] k ↦ v ∈ m, Φ k v :=
-  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpM_insert_eq Φ x h
+  BiEntails.of_eq <| bigOpM_insert_eq Φ x h
 
 @[rocq_alias big_andM_insert_delete]
 theorem bigAndM_insert_delete {Φ : K → V → PROP} {m : M V} {i : K} {x : V} :
     ([∧map] k ↦ v ∈ insert m i x, Φ k v) ⊣⊢
       Φ i x ∧ [∧map] k ↦ v ∈ delete m i, Φ k v :=
-  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpM_insert_delete_eq Φ m i x
+  BiEntails.of_eq <| bigOpM_insert_delete_eq Φ m i x
 
 @[rocq_alias big_andM_delete]
 theorem bigAndM_delete {Φ : K → V → PROP} {m : M V} {i : K} {x : V}
     (h : get? m i = some x) :
     ([∧map] k ↦ v ∈ m, Φ k v) ⊣⊢ Φ i x ∧ [∧map] k ↦ v ∈ delete m i, Φ k v :=
-  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpM_delete_eq Φ h
+  BiEntails.of_eq <| bigOpM_delete_eq Φ h
 
 @[rocq_alias big_andM_mono]
 theorem bigAndM_mono {Φ Ψ : K → V → PROP} {m : M V}
@@ -199,8 +199,8 @@ theorem bigAndM_and_eq {Φ Ψ : K → V → PROP} {m : M V} :
 theorem bigAndM_persistently {Φ : K → V → PROP} {m : M V} :
     (<pers> [∧map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∧map] k ↦ x ∈ m, <pers> Φ k x :=
   letI := MonoidHomomorphism.ofEq (PROP := PROP) persistently_ne
-       (equiv_iff.mpr persistently_and).to_eq (equiv_iff.mpr persistently_true).to_eq
-  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_hom _ <| toList m
+       (BiEntails.to_eq persistently_and) (BiEntails.to_eq persistently_true)
+  BiEntails.of_eq <| bigOpL_hom _ <| toList m
 
 @[rocq_alias big_andM_pure_1]
 theorem bigAndM_pure_intro {φ : K → V → Prop} {m : M V} :
@@ -223,8 +223,8 @@ theorem bigAndM_pure {φ : K → V → Prop} {m : M V} :
 theorem bigAndM_later {Φ : K → V → PROP} {m : M V} :
     (▷ [∧map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∧map] k ↦ x ∈ m, (▷ Φ k x) :=
   letI := MonoidHomomorphism.ofEq (PROP := PROP) later_ne
-    (equiv_iff.mpr later_and).to_eq (equiv_iff.mpr later_true).to_eq
-  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_hom _ <| toList m
+    (BiEntails.to_eq later_and) (BiEntails.to_eq later_true)
+  BiEntails.of_eq <| bigOpL_hom _ <| toList m
 
 @[rocq_alias big_andM_laterN]
 theorem bigAndM_laterN {Φ : K → V → PROP} {m : M V} {n : Nat} :
@@ -259,16 +259,16 @@ theorem bigAndM_filter_cond {Φ : K → V → PROP} {m : M V} (p : K → V → B
 theorem bigAndM_filter {Φ : K → V → PROP} {m : M V} (p : K → V → Bool) :
     ([∧map] k ↦ x ∈ PartialMap.filter p m, Φ k x) =
       [∧map] k ↦ x ∈ m, iprop(⌜p k x = true⌝ → Φ k x) :=
-  (bigAndM_filter_cond p).trans <| bigOpM_eq fun {k x} _ => OFE.Equiv.to_eq <| by
+  (bigAndM_filter_cond p).trans <| bigOpM_eq fun {k x} _ => BiEntails.to_eq <| by
     match hp : p k x with
-    | false => simpa using equiv_iff.mpr ⟨imp_intro_swap <| pure_elim_left False.elim, true_intro⟩
-    | true => simpa using equiv_iff.mpr true_imp.symm
+    | false => simpa using ⟨imp_intro_swap <| pure_elim_left False.elim, true_intro⟩
+    | true => simpa using true_imp.symm
 
 @[rocq_alias big_andM_union]
 theorem bigAndM_union [DecidableEq K] {Φ : K → V → PROP} {m₁ m₂ : M V} (hdisj : m₁ ##ₘ m₂) :
     ([∧map] k ↦ y ∈ m₁ ∪ m₂, Φ k y) ⊣⊢
       ([∧map] k ↦ y ∈ m₁, Φ k y) ∧ [∧map] k ↦ y ∈ m₂, Φ k y :=
-  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpM_union_eq Φ m₁ m₂ hdisj
+  BiEntails.of_eq <| bigOpM_union_eq Φ m₁ m₂ hdisj
 
 theorem bigAndM_insert_override {Φ : K → V → PROP} {m : M V} {i : K} {x x' : V}
     (hi : get? m i = some x) (hΦ : Φ i x = Φ i x') :
