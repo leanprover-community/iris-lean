@@ -412,6 +412,22 @@ def frameHereApplies {u : Level} {prop : Q(Type u)} (_bi : Q(BI $prop)) (R P : Q
   let_expr BI.affinely _ _ R' := R | return false
   isDefEq P R'
 
+/-- Analogous to `solve_gather_evars_eq` in the Rocq implementation. -/
+def solveGatherEvarsEq (a c : Expr) : MetaM Bool := do
+  match a with
+  | .mvar m =>
+    if ← m.isDelayedAssigned then return false
+    let decl ← m.getDecl
+    unless decl.lctx.contains c.fvarId! do
+      return false
+    unless decl.depth == (← getMCtx).depth do
+      return false
+    if decl.kind.isSyntheticOpaque then
+      return false
+    m.assign c
+    return true
+  | _ => return false
+
 @[ipm_tactic_instance Frame _ _ iprop(∃ _, _) _]
 def frameExist : SynthTactic := λ e => do
   let_expr Frame prop bi p R P _ := e | return .continue
@@ -431,30 +447,32 @@ def frameExist : SynthTactic := λ e => do
 
   let option ← frameInstantiateExistsEnabled
   if option then
-    -- `iris.frame.instantiateExists` set as `true`
-    let a : Q($α) ← mkFreshExprMVarQ q($α)
-    let G : Q($prop) ← mkFreshExprMVarQ q($prop)
-    have body : Q($prop) := Expr.headBeta q($Φ $a)
-
-    let some inst ← synthInstanceRecursiveQ q(Frame $p $R $body $G)
+    -- Framing of existential quantifiers *enabled*
+    let some ⟨a, X, inst⟩ ← withLocalDeclDQ bn α fun c => do
+      let a ← mkFreshExprMVarQ q($α)
+      let G ← mkFreshExprMVarQ q($prop)
+      have body : Q($prop) := Expr.headBeta q($Φ $a)
+      let some inst ← synthInstanceRecursiveQ q(Frame $p $R $body $G) | return none
+      if ← solveGatherEvarsEq (← instantiateMVars a) c then
+        return some (none, ← mkLambdaFVars #[c] (← instantiateMVars G),
+                           ← mkLambdaFVars #[c] (← instantiateMVars inst))
+      let a ← instantiateMVars a
+      let G ← instantiateMVars G
+      if a.containsFVar c.fvarId! || G.containsFVar c.fvarId! then return none
+      return some (some a, G, ← instantiateMVars inst)
     | return .continue
-
-    let a ← instantiateMVars a
-    if !a.hasExprMVar then
-      -- Instantiate the existentially quantified variable with `a`
+    match a with
+    | none =>
+      have Ψ : Q($α → $prop) := X
+      let inst : Q(∀ x, Frame $p $R ($Φ x) ($Ψ x)) := inst
+      return .success q(frame_exist_no_instantiate $p $R $Φ $Ψ $inst)
+    | some a =>
+      have a : Q($α) := a
+      have G : Q($prop) := X
       let inst : Q(Frame $p $R ($Φ $a) $G) := inst
       return .success q(frame_exist $p $R $Φ $a $G $inst)
-    else if a.isMVar then
-      -- For handling inner existential variables
-      let G ← instantiateMVars G
-      let inst ← instantiateMVars inst
-      have Ψ : Q($α → $prop) := .lam bn α (G.abstract #[a]) .default
-      let inst : Q(∀ x, Frame $p $R ($Φ x) ($Ψ x)) := .lam bn α (inst.abstract #[a]) .default
-      return .success q(frame_exist_no_instantiate $p $R $Φ $Ψ $inst)
-    else
-      return .continue
   else
-    -- `iris.frame.instantiateExists` set as `false`
+    -- Framing of existential quantifiers *disabled*
     let some ⟨Ψ, inst⟩ ← withLocalDeclDQ bn α fun a => do
       let G : Q($prop) ← mkFreshExprMVarQ q($prop)
       have body : Q($prop) := Expr.headBeta q($Φ $a)

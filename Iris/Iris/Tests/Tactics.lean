@@ -2531,6 +2531,30 @@ example [BI PROP] (P : PROP) : P ⊢ ∀ (x : Nat), ∃ n, ⌜n = x⌝ ∗ P := 
   iexists x
   ipureintro; rfl
 
+/- Tests `iframe` with an existentially quantified binder instantiated with a metavariable. -/
+example [BI PROP] (P Q : Nat → PROP) (m : Nat) :
+    ⊢ P m -∗ ∃ n, Q n -∗ ∃ x y, P x ∗ Q y ∗ ⌜y = 3⌝ := by
+  iintro HP
+  iexists ?w
+  iintro HQ
+  -- The existentially quantified binder `y` instantiated with `?w`
+  iframe HQ
+  iframe HP
+  ipureintro
+  rfl
+
+/-
+  Tests `iframe` with an existentially quantified binder instantiated with
+  a value that involves a metavariable.
+-/
+example [BI PROP] (P : Option Nat → PROP) :
+    ⊢ (∀ n, P (some n)) -∗ ∃ x, P x := by
+  iintro HP
+  ispecialize HP $$ %(?n)
+  -- The existentially quantified binder `x` instantiated with `some ?n`
+  iframe HP
+  exact 0
+
 variable {hlc : outParam HasLC} {Expr State Obs Val} [Λ : Language Expr State Obs Val]
 variable {GF : BundledGFunctors}
 variable [IrisGS_gen hlc Expr GF]
