@@ -375,8 +375,8 @@ theorem iSingleton_validN_at_ne {a : F.ap (IProp GF)} {τ' : GType} (h : τ' ≠
   apply UCMRA.unit_valid.validN
 
 theorem unfoldi_op {a b : GF.api (ElemG.τ GF F) (IProp GF)} :
-  unfoldi.f (a • b) ≡ (unfoldi.f a • unfoldi.f b) :=
-  OFE.Equiv.of_eq ((RFunctor.map (IProp.fold GF) (IProp.unfold GF)).op a b)
+  unfoldi.f (a • b) = (unfoldi.f a • unfoldi.f b) :=
+  (RFunctor.map (IProp.fold GF) (IProp.unfold GF)).op a b
 
 theorem validN_bundle_op_foldi {a' : F.ap (IProp GF)} {v : GF.api E.τ (IPre GF)}
     (h : ✓{n} (a' • E.unbundle (foldi v))) :

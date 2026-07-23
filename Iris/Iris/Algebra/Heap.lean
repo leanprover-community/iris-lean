@@ -217,13 +217,13 @@ instance instStoreCMRA : CMRA (M V) where
       simp only [pcore, Option.some.injEq, op, exists_eq_left']
       rcases this with ⟨z', Hz'⟩
       exists z'
-      refine .trans (OFE.Equiv.of_eq Hz') (fun n i => ?_)
+      refine OFE.Equiv.to_eq (.trans (OFE.Equiv.of_eq Hz') (fun n i => ?_))
       cases get? z' i <;> cases get? x i <;> simp_all
     refine lookup_inc.mpr (fun i => ?_)
     obtain ⟨v', Hv'⟩ : (core (get? x i)) ≼ (core (get? y i))  := by
       apply core_mono
       exists get? z i
-      have Hz := ((get?_ne i).eqv Hz).to_eq; revert Hz
+      have Hz := ((get?_ne i).eqv (OFE.Equiv.of_eq Hz)).to_eq; revert Hz
       simp [CMRA.op, optionOp, get?_merge]
       cases get? x i <;> cases get? z i <;> simp_all
     exists v'
@@ -473,7 +473,7 @@ theorem singleton_inc_iff {m : M V} :
 theorem exclusive_singleton_inc_iff {m : M V} (He : Exclusive x) (Hv : ✓ m) :
     (singleton i x) ≼ m ↔ (get? m i = some x) := by
   refine singleton_inc_iff.trans ⟨fun ⟨y, Hy, Hxy⟩ => ?_, fun _ => ?_⟩
-  · suffices x ≡ y by exact Hy.trans <| OFE.some_eqv_some.mpr this.symm.to_eq
+  · suffices x = y by exact Hy.trans <| OFE.some_eqv_some.mpr this.symm
     exact Option.eqv_of_inc_exclusive Hxy <| valid_get?_valid Hv Hy
   · exists x
 

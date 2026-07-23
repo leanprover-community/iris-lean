@@ -55,8 +55,8 @@ theorem mk_injN {d₁ d₂ : DFrac} {a₁ a₂ : A} (h : mk d₁ a₁ ≡{n}≡ 
   ⟨h.1, toAgree.inj h.2⟩
 
 @[rocq_alias to_dfrac_agree_inj]
-theorem mk_inj {d₁ d₂ : DFrac} {a₁ a₂ : A} (h : mk d₁ a₁ ≡ mk d₂ a₂) : d₁ = d₂ ∧ a₁ = a₂ :=
-  ⟨OFE.Equiv.to_eq fun n => (h n).1, Agree.toAgree_inj (OFE.Equiv.to_eq fun n => (h n).2)⟩
+theorem mk_inj {d₁ d₂ : DFrac} {a₁ a₂ : A} (h : mk d₁ a₁ = mk d₂ a₂) : d₁ = d₂ ∧ a₁ = a₂ :=
+  ⟨congrArg Prod.fst h, Agree.toAgree_inj (congrArg Prod.snd h)⟩
 
 @[rocq_alias dfrac_agree_op]
 theorem mk_op {d₁ d₂ : DFrac} {a : A} : mk (d₁ • d₂) a = mk d₁ a • mk d₂ a :=

@@ -126,13 +126,13 @@ theorem auth_dist_inj [UCMRA B] {q1 q2 : DFrac} {a1 a2 : A} {n}
 
 @[rocq_alias view_auth_inj]
 theorem auth_eqv_inj [UCMRA B] {q1 q2 : DFrac} {a1 a2 : A}
-    (H : (●V{q1} a1 : View R) ≡ ●V{q2} a2) : q1 = q2 ∧ a1 = a2 := by
+    (H : (●V{q1} a1 : View R) = ●V{q2} a2) : q1 = q2 ∧ a1 = a2 := by
   refine ⟨(auth_dist_inj (n := 0) H.dist).1, OFE.Equiv.to_eq (OFE.equiv_dist.mpr fun n => ?_)⟩
   exact (auth_dist_inj H.dist).2
 
 @[rocq_alias view_frag_inj]
 theorem frag_eqv_inj [UCMRA B] {b1 b2 : B}
-    (H : (◯V b1 : View R) ≡ ◯V b2) : b1 = b2 := OFE.Equiv.to_eq fun n => (H n).2
+    (H : (◯V b1 : View R) = ◯V b2) : b1 = b2 := OFE.Equiv.to_eq fun _ => H.dist.2
 
 @[rocq_alias view_frag_dist_inj]
 theorem dist_of_frag_dist [UCMRA B] {b1 b2 : B} {n} (H : (◯V b1 : View R) ≡{n}≡ ◯V b2) :
@@ -281,9 +281,10 @@ instance : CMRA (View R) where
       exact Eq.to_iff rfl
     apply pcore_op_mono_of_core_op_mono
     rintro y1 cy y2 ⟨z, Hy2⟩ Hy1
-    have Hle : g y1 ≼ g y2 := ⟨g z, congrArg g Hy2.to_eq⟩
+    have Hle : g y1 ≼ g y2 := ⟨g z, congrArg g Hy2⟩
     obtain ⟨_, Hcgy2, x, Hcx⟩ := CMRA.pcore_mono' Hle (Hg_core.mp <| .of_eq Hy1).to_eq
-    exact ⟨_, rfl, f x, Hg_core.mpr (Hcgy2 ▸ OFE.Equiv.of_eq (congrArg some Hcx))⟩
+    exact ⟨_, rfl, f x,
+      Option.some.inj (OFE.Equiv.to_eq (Hg_core.mpr (Hcgy2 ▸ OFE.Equiv.of_eq (congrArg some Hcx))))⟩
   extend {n x y1 y2} Hv He := by
     let g : View R → (Option ((DFrac) × Agree A) × B) := fun x => (x.auth, x.frag)
     obtain H1 : ✓{n} g x := by

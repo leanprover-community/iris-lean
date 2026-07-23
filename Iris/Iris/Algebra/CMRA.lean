@@ -50,11 +50,11 @@ class CMRA (α : Type _) extends OFE α where
 
 /-- Reduction of `pcore_op_mono` to regular monotonicity -/
 theorem pcore_op_mono_of_core_op_mono [OFE α] (op : α → α → α) (pcore : α → Option α)
-    (h : (∀ x cx y : α, (∃ z, y ≡ op x z) → pcore x = some cx →
-      ∃ cy, pcore y = some cy ∧ ∃ z, cy ≡ op cx z))
+    (h : (∀ x cx y : α, (∃ z, y = op x z) → pcore x = some cx →
+      ∃ cy, pcore y = some cy ∧ ∃ z, cy = op cx z))
     (x cx) (e : pcore x = some cx) (y) : ∃ cy, pcore (op x y) = some (op cx cy) :=
-  have ⟨_, hcy, z, hz⟩ := h x cx (op x y) ⟨y, Equiv.rfl⟩ e
-  ⟨z, hcy.trans (congrArg some hz.to_eq)⟩
+  have ⟨_, hcy, z, hz⟩ := h x cx (op x y) ⟨y, rfl⟩ e
+  ⟨z, hcy.trans (congrArg some hz)⟩
 
 namespace CMRA
 variable [CMRA α]
@@ -169,9 +169,9 @@ theorem pcore_idemp {x cx : α} (e : pcore x = some cx) : pcore cx = some cx :=
 
 @[rocq_alias cmra_extend]
 def extend' {n} {x y₁ y₂ : α} (v : ✓{n} x) (e : x ≡{n}≡ y₁ • y₂) :
-    Σ' z₁ z₂, x ≡ z₁ • z₂ ∧ z₁ ≡{n}≡ y₁ ∧ z₂ ≡{n}≡ y₂ :=
+    Σ' z₁ z₂, x = (z₁ • z₂ : α) ∧ z₁ ≡{n}≡ y₁ ∧ z₂ ≡{n}≡ y₂ :=
   let ⟨z₁, z₂, hx, hz, hw⟩ := extend (y₁ := y₁) (y₂ := y₂) v e
-  ⟨z₁, z₂, Equiv.of_eq hx, hz, hw⟩
+  ⟨z₁, z₂, hx, hz, hw⟩
 
 @[rocq_alias cmra_validN_op_l]
 theorem validN_op_l {n} {x y : α} : ✓{n} (x • y) → ✓{n} x := CMRA.validN_op_left
@@ -1561,11 +1561,11 @@ theorem some_inc_some_iff {a b : α} : some a ≼ some b ↔ a = b ∨ a ≼ b :
 
 @[rocq_alias Some_included_exclusive]
 theorem eqv_of_inc_exclusive [Exclusive (a : α)] {b : α} (H : some a ≼ some b) (Hv : ✓ b) :
-     a ≡ b := by
+     a = b := by
   rcases inc_iff.mp H with (Hcontra|H)
   · simp at Hcontra
   · obtain ⟨_, _, ⟨_, _⟩, ⟨_, _⟩, (He|H)⟩ := H
-    · exact Equiv.of_eq He
+    · exact He
     · exact not_valid_of_excl_inc H Hv |>.elim
 
 @[rocq_alias Some_includedN_exclusive]
