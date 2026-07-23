@@ -60,8 +60,9 @@ open Lean Elab Tactic Meta Qq BI Std
   and pattern matching (`match … with …`).
 -/
 private def reduceWandM (e : Expr) : ProofModeM Expr := do
-  #[``BIBase.wandM, ``Option.getD].foldlM (·.addDeclToUnfold ·) {} >>=
-  (Simp.mkContext {} #[·] (← getSimpCongrTheorems) >>= (Lean.Meta.dsimp e · <&> Prod.fst))
+  let simpThms ← #[``BIBase.wandM, ``Option.getD].foldlM (·.addDeclToUnfold ·) {}
+  let simpContext ← Simp.mkContext {} #[simpThms] (← getSimpCongrTheorems)
+  Lean.Meta.dsimp e simpContext <&> Prod.fst
 
 private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (ivar : IVarId) (specPat : Option SpecPat)
@@ -100,17 +101,17 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
       withLocalDeclDQ (← mkFreshUserName .anonymous) X fun x => do
         match closePat with
         | some closePat =>
-          iCasesCore _ hyps'' q($Q'' $x) (.conjunction [casesPat, closePat])
-            q(false) q(iprop($Pout' $x ∗ $f' $x)) >>=
-          (mkLambdaFVars #[x] ·)
+          let pf' ← iCasesCore _ hyps'' q($Q'' $x) (.conjunction [casesPat, closePat])
+            q(false) q(iprop($Pout' $x ∗ $f' $x))
+          mkLambdaFVars #[x] pf'
         -- Throw an error if `hclose` is not given, but `mPclose` is not `none`
         | none => throwError "iinv: missing cases pattern for the closing hypothesis"
     return q(tac_inv_elim $inst $hϕ $pf $pfEq $pfPin)
   | ~q(none) =>
     let pf : Q(∀ x, $e'' ∗ $Pout x ⊢ $Q' x) ←
       withLocalDeclDQ (← mkFreshUserName .anonymous) X fun x => do
-        iCasesCore _ hyps'' q($Q'' $x) casesPat q(false) q($Pout' $x) >>=
-        (mkLambdaFVars #[x] ·)
+        let pf' ← iCasesCore _ hyps'' q($Q'' $x) casesPat q(false) q($Pout' $x)
+        mkLambdaFVars #[x] pf'
     return q(tac_inv_elim $inst $hϕ $pf $pfEq $pfPin)
 
 syntax (name := iinv) "iinv " colGt term (" $$ " colGt ppSpace specPat)?
