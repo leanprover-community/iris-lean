@@ -30,21 +30,21 @@ namespace BigSepMS
 @[rocq_alias big_sepMS_mono]
 theorem bigSepMS_mono {Φ Ψ : A → PROP} {X : MS} (h : ∀ {x}, x ∈ X → Φ x ⊢ Ψ x) :
     ([∗mset] x ∈ X, Φ x) ⊢ [∗mset] x ∈ X, Ψ x :=
-  bigOpMS_gen_eqv _ .rfl sep_mono h
+  bigOpMS_gen_proper _ .rfl sep_mono h
 
 @[rocq_alias big_sepMS_ne]
 theorem bigSepMS_ne {Φ Ψ : A → PROP} {X : MS} {n : Nat} (h : ∀ {x}, x ∈ X → Φ x ≡{n}≡ Ψ x) :
     ([∗mset] x ∈ X, Φ x) ≡{n}≡ ([∗mset] x ∈ X, Ψ x) :=
   bigOpMS_dist h
 
-@[rocq_alias big_sepMS_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem bigSepMS_proper {Φ Ψ : A → PROP} {X : MS} (h : ∀ {x}, x ∈ X → Φ x ≡ Ψ x) :
-    ([∗mset] x ∈ X, Φ x) ≡ ([∗mset] x ∈ X, Ψ x) :=
-  bigOpMS_gen_eqv (· ≡ ·) .rfl MonoidOps.op_proper h
+@[rocq_alias big_sepMS_proper]
+theorem bigSepMS_eq {Φ Ψ : A → PROP} {X : MS} (h : ∀ {x}, x ∈ X → Φ x = Ψ x) :
+    ([∗mset] x ∈ X, Φ x) = ([∗mset] x ∈ X, Ψ x) :=
+  bigOpMS_eq h
 
 theorem bigSepMS_eqv {Φ Ψ : A → PROP} {X : MS} (h : ∀ {x}, x ∈ X → Φ x ⊣⊢ Ψ x) :
     ([∗mset] x ∈ X, Φ x) ⊣⊢ ([∗mset] x ∈ X, Ψ x) :=
-  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpMS_ext fun hx => (equiv_iff.mpr (h hx)).to_eq
+  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpMS_eq fun hx => (equiv_iff.mpr (h hx)).to_eq
 
 @[rocq_alias big_sepMS_mono']
 theorem bigSepMS_mono_of_forall {Φ Ψ : A → PROP} {X : MS} (h : ∀ x, Φ x ⊢ Ψ x) :
@@ -150,7 +150,7 @@ instance bigSepMS_timeless_inst [Timeless (emp : PROP)] {Φ : A → PROP} {X : M
 @[rocq_alias big_sepMS_sep]
 theorem bigSepMS_sep {Φ Ψ : A → PROP} {X : MS} :
     ([∗mset] y ∈ X, Φ y ∗ Ψ y) ⊣⊢ ([∗mset] y ∈ X, Φ y) ∗ ([∗mset] y ∈ X, Ψ y) :=
-  equiv_iff.mp <| OFE.Equiv.of_eq bigOpMS_op_eqv
+  equiv_iff.mp <| OFE.Equiv.of_eq bigOpMS_op_eq
 
 @[rocq_alias big_sepMS_and]
 theorem bigSepMS_and {Φ Ψ : A → PROP} {X : MS} :
@@ -283,7 +283,7 @@ theorem bigSepMS_comm_list {B : Type _} (Φ : A → Nat → B → PROP) (X : MS)
       ([∗list] k↦y ∈ l, [∗mset] x ∈ X, Φ x k y) := by
   refine bigSepMS_elements.trans ?_
   refine (bigSepL_comm _ (FiniteMultiSet.toList X) l).trans ?_
-  exact equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_ext fun _ => (equiv_iff.mpr bigSepMS_elements.symm).to_eq
+  exact equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_eq fun _ => (equiv_iff.mpr bigSepMS_elements.symm).to_eq
 
 @[rocq_alias big_sepMS_sepM]
 theorem bigSepMS_comm_map {B : Type _} {M : Type _ → Type _} {K : Type _}
@@ -293,8 +293,8 @@ theorem bigSepMS_comm_map {B : Type _} {M : Type _ → Type _} {K : Type _}
       ([∗map] k↦y ∈ m, [∗mset] x ∈ X, Φ x k y) := by
   refine bigSepMS_elements.trans ?_
   refine (bigSepL_comm _ (FiniteMultiSet.toList X) (LawfulFiniteMap.toList m)).trans ?_
-  refine (equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_ext fun _ => (equiv_iff.mpr bigSepMS_elements.symm).to_eq).trans <|
-    equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_ext fun _ => rfl
+  refine (equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_eq fun _ => (equiv_iff.mpr bigSepMS_elements.symm).to_eq).trans <|
+    equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_eq fun _ => rfl
 
 @[rocq_alias big_sepMS_sepS]
 theorem bigSepMS_comm_set {B : Type _} {T : Type _} [LawfulFiniteSet T B]
@@ -302,9 +302,9 @@ theorem bigSepMS_comm_set {B : Type _} {T : Type _} [LawfulFiniteSet T B]
     ([∗mset] x ∈ X, [∗set] y ∈ Y, Φ x y) ⊣⊢
       ([∗set] y ∈ Y, [∗mset] x ∈ X, Φ x y) := by
   refine bigSepMS_elements.trans ?_
-  refine (equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_ext fun _ => (equiv_iff.mpr BigSepS.bigSepS_elements).to_eq).trans ?_
+  refine (equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_eq fun _ => (equiv_iff.mpr BigSepS.bigSepS_elements).to_eq).trans ?_
   refine (bigSepL_comm _ (FiniteMultiSet.toList X) (FiniteSet.toList Y)).trans ?_
-  exact (equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_ext fun _ => (equiv_iff.mpr bigSepMS_elements.symm).to_eq).trans <|
+  exact (equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_eq fun _ => (equiv_iff.mpr bigSepMS_elements.symm).to_eq).trans <|
     BigSepS.bigSepS_elements.symm
 
 @[rocq_alias big_sepMS_sepMS]
@@ -313,9 +313,9 @@ theorem bigSepMS_comm_mset {B : Type _} {T : Type _} [LawfulFiniteMultiSet T B]
     ([∗mset] x ∈ X, [∗mset] y ∈ Y, Φ x y) ⊣⊢
       ([∗mset] y ∈ Y, [∗mset] x ∈ X, Φ x y) := by
   refine bigSepMS_elements.trans ?_
-  refine (equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_ext fun _ => (equiv_iff.mpr bigSepMS_elements).to_eq).trans ?_
+  refine (equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_eq fun _ => (equiv_iff.mpr bigSepMS_elements).to_eq).trans ?_
   refine (bigSepL_comm _ (FiniteMultiSet.toList X) (FiniteMultiSet.toList Y)).trans ?_
-  exact (equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_ext fun _ => (equiv_iff.mpr bigSepMS_elements.symm).to_eq).trans <|
+  exact (equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_eq fun _ => (equiv_iff.mpr bigSepMS_elements.symm).to_eq).trans <|
     bigSepMS_elements.symm
 
 @[rocq_alias big_sepMS_dup]

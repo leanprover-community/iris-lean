@@ -36,33 +36,32 @@ theorem bigAndL_cons {Φ : Nat → A → PROP} {x : A} {xs : List A} :
 @[rocq_alias big_andL_singleton]
 theorem bigAndL_singleton {Φ : Nat → A → PROP} {x : A} :
     ([∧list] k ↦ y ∈ [x], Φ k y) ⊣⊢ Φ 0 x :=
-  equiv_iff.mp (OFE.Equiv.of_eq <| bigOpL_singleton_eqv Φ x)
+  equiv_iff.mp (OFE.Equiv.of_eq <| bigOpL_singleton_eq Φ x)
 
 @[rocq_alias big_andL_app]
 theorem bigAndL_append {Φ : Nat → A → PROP} {l₁ l₂ : List A} :
     ([∧list] k ↦ x ∈ (l₁ ++ l₂), Φ k x) ⊣⊢
       ([∧list] k ↦ x ∈ l₁, Φ k x) ∧ [∧list] n ↦ x ∈ l₂, Φ (n + l₁.length) x :=
-  equiv_iff.mp (OFE.Equiv.of_eq <| bigOpL_append_eqv Φ l₁ l₂)
+  equiv_iff.mp (OFE.Equiv.of_eq <| bigOpL_append_eq Φ l₁ l₂)
 
 @[rocq_alias big_andL_snoc]
 theorem bigAndL_snoc {Φ : Nat → A → PROP} {l : List A} {x : A} :
     ([∧list] k ↦ y ∈ (l ++ [x]), Φ k y) ⊣⊢ ([∧list] k ↦ y ∈ l, Φ k y) ∧ Φ l.length x :=
-  equiv_iff.mp (OFE.Equiv.of_eq <| bigOpL_snoc_eqv Φ l x)
+  equiv_iff.mp (OFE.Equiv.of_eq <| bigOpL_snoc_eq Φ l x)
 
 @[rocq_alias big_andL_mono]
 theorem bigAndL_mono {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ k x, l[k]? = some x → Φ k x ⊢ Ψ k x) :
     ([∧list] k ↦ x ∈ l, Φ k x) ⊢ [∧list] k ↦ x ∈ l, Ψ k x :=
   bigOpL_gen_proper (· ⊢ ·) .rfl and_mono (h _ _ ·)
 
-@[rocq_alias big_andL_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem bigAndL_eqv {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l[k]? = some x → Φ k x ≡ Ψ k x) :
-    ([∧list] k ↦ x ∈ l, Φ k x) ≡ [∧list] k ↦ x ∈ l, Ψ k x :=
-  bigOpL_eqv h
+@[rocq_alias big_andL_proper]
+theorem bigAndL_eq {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l[k]? = some x → Φ k x = Ψ k x) :
+    ([∧list] k ↦ x ∈ l, Φ k x) = [∧list] k ↦ x ∈ l, Ψ k x :=
+  bigOpL_eq h
 
-@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem bigAndL_eqv_of_forall_eqv {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, Φ k x ≡ Ψ k x) :
-    ([∧list] k ↦ x ∈ l, Φ k x) ≡ [∧list] k ↦ x ∈ l, Ψ k x :=
-  bigOpL_eqv_of_forall_eqv h
+theorem bigAndL_eq_of_forall_eq {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, Φ k x = Ψ k x) :
+    ([∧list] k ↦ x ∈ l, Φ k x) = [∧list] k ↦ x ∈ l, Ψ k x :=
+  bigOpL_eq_of_forall_eq h
 
 instance bigAndL_affine_inst {Φ : Nat → A → PROP} {l : List A} [BIAffine PROP] :
     Affine ([∧list] k ↦ x ∈ l, Φ k x) where
@@ -70,15 +69,15 @@ instance bigAndL_affine_inst {Φ : Nat → A → PROP} {l : List A} [BIAffine PR
     (fun hx _ => and_elim_l.trans hx) (fun _ => Affine.affine)
 
 @[rocq_alias big_andL_and]
-theorem bigAndL_and_eqv {Φ Ψ : Nat → A → PROP} {l : List A} :
+theorem bigAndL_and_eq {Φ Ψ : Nat → A → PROP} {l : List A} :
     ([∧list] k ↦ x ∈ l, iprop(Φ k x ∧ Ψ k x)) =
       iprop(([∧list] k ↦ x ∈ l, Φ k x) ∧ [∧list] k ↦ x ∈ l, Ψ k x) :=
-  bigOpL_op_eqv Φ Ψ l
+  bigOpL_op_eq Φ Ψ l
 
 @[rocq_alias big_andL_fmap]
 theorem bigAndL_map {B : Type _} (f : A → B) {Φ : Nat → B → PROP} {l : List A} :
     ([∧list] k ↦ y ∈ (l.map f), Φ k y) = [∧list] k ↦ x ∈ l, Φ k (f x) :=
-  bigOpL_map_eqv f Φ l
+  bigOpL_map_eq f Φ l
 
 @[rocq_alias big_andL_lookup]
 theorem bigAndL_lookup {Φ : Nat → A → PROP} {l : List A} {i : Nat} {x : A} (h : l[i]? = some x) :
@@ -140,15 +139,15 @@ theorem bigAndL_mem {Φ : A → PROP} {l : List A} {x : A} (h : x ∈ l) :
   let ⟨_, hi, hget⟩ := List.mem_iff_getElem.mp h
   bigAndL_lookup (List.getElem?_eq_some_iff.mpr ⟨hi, hget⟩)
 
-@[rocq_alias big_andL_zip_seq, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
+@[rocq_alias big_andL_zip_seq]
 theorem bigAndL_zip_seq {Φ : A × Nat → PROP} {n : Nat} {l : List A} :
-    ([∧list] xy ∈ l.zipIdx n, Φ xy) ≡ [∧list] i ↦ x ∈ l, Φ (x, n + i) :=
-  bigOpL_zipIdx_eqv Φ n l
+    ([∧list] xy ∈ l.zipIdx n, Φ xy) = [∧list] i ↦ x ∈ l, Φ (x, n + i) :=
+  bigOpL_zipIdx_eq Φ n l
 
 @[rocq_alias big_andL_bind]
 theorem bigAndL_flatMap {B : Type _} (f : A → List B) {Φ : B → PROP} {l : List A} :
     ([∧list] y ∈ (l.flatMap f), Φ y) ⊣⊢ [∧list] x ∈ l, [∧list] y ∈ (f x), Φ y :=
-  equiv_iff.mp (OFE.Equiv.of_eq <| bigOpL_flatMap_eqv f Φ l)
+  equiv_iff.mp (OFE.Equiv.of_eq <| bigOpL_flatMap_eq f Φ l)
 
 @[rocq_alias big_andL_later]
 theorem bigAndL_later {Φ : Nat → A → PROP} {l : List A} :
@@ -164,15 +163,14 @@ theorem bigAndL_laterN {Φ : Nat → A → PROP} {l : List A} {n : Nat} :
   | 0 => .rfl
   | _ + 1 => (later_congr bigAndL_laterN).trans bigAndL_later
 
-@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem bigAndL_perm {Φ : A → PROP} {l₁ l₂ : List A} (hp : l₁.Perm l₂) :
-    ([∧list] x ∈ l₁, Φ x) ≡ [∧list] x ∈ l₂, Φ x :=
-  bigOpL_eqv_of_perm Φ hp
+    ([∧list] x ∈ l₁, Φ x) = [∧list] x ∈ l₂, Φ x :=
+  bigOpL_eq_of_perm Φ hp
 
 @[rocq_alias big_andL_submseteq]
 theorem bigAndL_submseteq {Φ : A → PROP} {l₁ l₂ l : List A} (h : (l₁ ++ l).Perm l₂) :
     ([∧list] x ∈ l₂, Φ x) ⊢ [∧list] x ∈ l₁, Φ x :=
-  (equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_perm Φ h).2.trans <|
+  (equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_eq_of_perm Φ h).2.trans <|
   bigAndL_append.1.trans and_elim_l
 
 @[rocq_alias big_andL_ne]

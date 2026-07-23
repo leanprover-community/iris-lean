@@ -598,7 +598,7 @@ theorem update_big_delete (m m' : H V) :
     refine OFE.Equiv.of_eq (eqv_of_Equiv (fun j => ?_))
     simp [get?_difference, get?_empty]
   | hins k v m2 Hm2 IH =>
-    rw [← congrArg (CMRA.op _) (BigOpM.bigOpM_insert_eqv _ _ Hm2).symm]
+    rw [← congrArg (CMRA.op _) (BigOpM.bigOpM_insert_eq _ _ Hm2).symm]
     rw [← congrArg (CMRA.op _) CMRA.comm]
     rw [CMRA.assoc]
     refine (Update.op IH .id).trans ?_
@@ -630,7 +630,7 @@ theorem update_big_replace (m m0 m1 : H V)
     rw [union_empty_left]
   | hins k v m2 Hm2 IH =>
     intro m1 Hdom Hall
-    rw [← congrArg (CMRA.op _) (BigOpM.bigOpM_insert_eqv _ _ Hm2).symm]
+    rw [← congrArg (CMRA.op _) (BigOpM.bigOpM_insert_eq _ _ Hm2).symm]
     rw [← congrArg (CMRA.op _) CMRA.comm]
     rw [CMRA.assoc]
     refine (Update.op (IH (delete m1 k) ?_ ?_) .id).trans ?_
@@ -656,7 +656,7 @@ theorem update_big_replace (m m0 m1 : H V)
       · rw [← hjk, get?_insert_eq rfl]; simp [PartialMap.union, get?_merge, Hin]
         cases get? m k <;> rfl
       · rw [get?_insert_ne hjk]; simp [PartialMap.union, get?_merge, get?_delete_ne hjk]
-    · refine .trans ?_ (Equiv.of_eq (BigOpM.bigOpM_insert_eqv _ _ ?_))
+    · refine .trans ?_ (Equiv.of_eq (BigOpM.bigOpM_insert_eq _ _ ?_))
       · exact ((insert_delete_cancel Hin).symm ▸ .rfl)
       · exact get?_delete_eq rfl
 
@@ -690,6 +690,6 @@ theorem update_big_alloc (m1 m2 : H V) dq
       · refine Trans.trans Update.id (OFE.Equiv.symm ?_)
         rw [← union_insert_left]
       · refine Trans.trans Update.id (OFE.Equiv.symm ?_)
-        exact Equiv.of_eq (BigOpM.bigOpM_insert_eqv _ _ Hm2)
+        exact Equiv.of_eq (BigOpM.bigOpM_insert_eq _ _ Hm2)
 
 end FiniteHeapView
