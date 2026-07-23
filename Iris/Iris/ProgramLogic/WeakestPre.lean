@@ -604,9 +604,9 @@ theorem wp_frame_wand {s : Stuckness} {E : CoPset} {e : Expr} {Φ :Val → IProp
 
 end Wp
 
-meta section ProofModeClasses
+section ProofModeClasses
 
-open ProofMode Lean Elab Meta Qq
+open ProofMode
 
 variable {hlc : outParam HasLC}
 variable {Expr State Obs Val : Type _}
