@@ -141,7 +141,7 @@ theorem internalCmraIncluded_intro {P : PROP} {a b : A} (h : a ≼ b) :
   calc (P : PROP)
     _ ⊢ True := true_intro
     _ ⊢ <si_pure> True := siPure_pure.mpr
-    _ ⊢ a ≼ b := siPure_mono (BI.exists_intro_trans c (internalEq.of_equiv (OFE.Equiv.of_eq hc)))
+    _ ⊢ a ≼ b := siPure_mono (BI.exists_intro_trans c (internalEq.of_equiv hc))
 
 @[rocq_alias si_pure_internal_included]
 theorem siPure_internalCmraIncluded {a b : A} :
@@ -170,10 +170,10 @@ theorem internalCmraIncluded_discrete {a b : A} [CMRA.Discrete A] :
   refine ⟨?_, pure_elim' internalCmraIncluded_intro⟩
   calc internalCmraIncluded a b
     _ ⊢ <si_pure> (∃ c, b ≡ (a • c)) := siPure_internalCmraIncluded.mp
-    _ ⊢ <si_pure> (∃ c, ⌜b ≡ a • c⌝) := siPure_mono <| exists_mono fun _ => discrete_eq_mp
-    _ ⊢ <si_pure> ⌜∃ c, b ≡ a • c⌝ := siPure_mono pure_exists.mp
-    _ ⊢ ⌜∃ c, b ≡ a • c⌝ := siPure_pure.mp
-    _ ⊢ ⌜a ≼ b⌝ := pure_mono fun ⟨c, h⟩ => ⟨c, h.to_eq⟩
+    _ ⊢ <si_pure> (∃ c, ⌜b = a • c⌝) := siPure_mono <| exists_mono fun _ => discrete_eq_mp
+    _ ⊢ <si_pure> ⌜∃ c, b = a • c⌝ := siPure_mono pure_exists.mp
+    _ ⊢ ⌜∃ c, b = a • c⌝ := siPure_pure.mp
+    _ ⊢ ⌜a ≼ b⌝ := pure_mono fun ⟨c, h⟩ => ⟨c, h⟩
 
 @[rocq_alias internal_included_refl]
 theorem internalCmraIncluded_refl {a : A} [IsTotal A] : ⊢@{PROP} a ≼ a :=
@@ -189,7 +189,7 @@ theorem internalCmraIncluded_trans {a b c : A} :
   refine siPure_and_sep.mpr.trans (siPure_mono ?_)
   refine BI.exists_intro_trans (a' • b') ?_
   refine Entails.trans ?_ (internalEq.trans (b := (a • a') • b'))
-  refine and_intro ?_ (internalEq.of_equiv assoc'.symm)
+  refine and_intro ?_ (internalEq.of_equiv assoc'.symm.to_eq)
   refine Entails.trans ?_ (internalEq.trans (b := (b • b')))
   exact and_intro and_elim_r (and_elim_left_trans (BI.internalEq_entails.mpr (fun n heq => op_left_dist _ heq)))
 

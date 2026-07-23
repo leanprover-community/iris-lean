@@ -204,9 +204,9 @@ theorem embed_entails_inj {P Q : PROP1} (h : (⎡P⎤ : PROP2) ⊢ ⎡Q⎤) : P 
 
 /-- `⎡·⎤` reflects equivalence. -/
 @[rocq_alias embed_inj]
-theorem embed_inj {P Q : PROP1} (h : (embed P : PROP2) ≡ embed Q) : P ≡ Q :=
-  BI.equiv_iff.mpr ⟨embed_entails_inj (BI.equiv_iff.mp h).mp,
-                    embed_entails_inj (BI.equiv_iff.mp h).mpr⟩
+theorem embed_inj {P Q : PROP1} (h : (embed P : PROP2) = embed Q) : P = Q :=
+  (BI.equiv_iff.mpr ⟨embed_entails_inj (BI.equiv_iff.mp (OFE.Equiv.of_eq h)).mp,
+                    embed_entails_inj (BI.equiv_iff.mp (OFE.Equiv.of_eq h)).mpr⟩).to_eq
 
 @[rocq_alias embed_emp]
 theorem embed_emp [BiEmbedEmp PROP1 PROP2] : (⎡(emp : PROP1)⎤ : PROP2) ⊣⊢ emp :=
