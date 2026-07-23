@@ -583,4 +583,109 @@ end StepIndexed
 
 end Iris
 
+public section
+
+open Lean Elab Tactic Meta Qq Iris.BI Iris Iris.ProofMode
+
+@[rocq_alias tac_lc_add_laterN_split]
+theorem tac_lc_add_laterN_split {GF : BundledGFunctors} [InvGS GF]
+    {n m newM : Nat} {E : CoPset} {P Q goal : IProp GF}
+    (inst : AddModal iprop(|={E}=> goal) goal goal)
+    (h1 : m = n + newM) (h2 : iprop(P ∗ £ newM) ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
+    iprop(P ∗ £ m) ⊢ goal := by
+  subst h1
+  iintro ⟨HP, Hcred⟩
+  iapply inst.add_modal
+  isplitl
+  · icases lc_split.mp $$ Hcred with ⟨Hn, Hm⟩
+    icombine HP Hm as H
+    ihave H := h2 $$ H
+    iapply lc_fupd_add_laterN n $$ Hn
+    inext
+    imodintro
+    iapply h3 $$ H
+  · iintro Hgoal
+    iassumption
+
+theorem tac_lc_add_laterN_full {GF : BundledGFunctors} [InvGS GF]
+    {m : Nat} {E : CoPset} {P Q goal : IProp GF}
+    (inst : AddModal iprop(|={E}=> goal) goal goal)
+    (h2 : P ⊢ ▷^[m] Q) (h3 : Q ⊢ goal) :
+    iprop(P ∗ £ m) ⊢ goal := by
+  iintro ⟨HP, Hcred⟩
+  iapply inst.add_modal
+  isplitl
+  · ihave H := h2 $$ HP
+    iapply lc_fupd_add_laterN m $$ Hcred
+    inext
+    imodintro
+    iapply h3 $$ H
+  · iintro Hgoal
+    iassumption
+
+public meta section
+
+elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
+  let natN := match n with | none => 1 | some n => n.raw.toNat
+
+  ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
+    let ivar ← hyps.findWithInfo h
+
+    -- Search for the later credit hypothesis from the context
+    let some ⟨⟨name, GF, natM⟩, e', hyps', out, out', _, _, pfEq⟩ ← hyps.removeG false <|
+      fun name ivar' p ty => do
+        if ivar != ivar' then return none
+        match matchBool p with
+        | .inl _ =>
+          throwError "inext: {h} is not in the spatial context"
+        | .inr _ =>
+          match_expr ty with
+          | lc GF _  _ c =>
+            match c.nat? with
+            | none => throwError "inext: {c} is not a numeral"
+            | some natM => return some (name, GF, natM)
+          | _ => return none
+    | throwError m!"inext: {h} is not a spatial later credit hypothesis"
+
+    -- To avoid non-termination caused by type class instance check in subsequent steps
+    let some _ ← mkAppM ``InvGS #[GF] >>= (synthInstance? ·)
+    | throwError "inext: requires an InvGS (HasLC) context"
+
+    -- Ensure sufficient credits
+    if natM < natN then throwError "inext: insufficient credits"
+
+    let g ← mkFreshExprMVarQ q($prop)
+    let some inst ← ProofModeM.trySynthInstanceQ q(AddModal $g $goal $goal)
+    | throwError "inext: AddModal type class synthesis failed {goal}"
+
+    -- Generate the proof goal with the updated hypothesis
+    let n : Q(Credit) ← pure <| mkNatLit natN
+    let modality := q(@modality_laterN $prop $n $bi)
+
+    match natM - natN with
+    -- Later credits used up, discard the later credits hypothesis
+    | 0 =>
+      let ⟨_, newHyps', pfModAction⟩ ← iModAction hyps' modality
+      let pf ← addBIGoal newHyps' goal
+      let pf'' : Q($e' ∗ $out ⊢ $goal) ←
+        mkAppM ``tac_lc_add_laterN_full #[inst, pfModAction, pf]
+      mvar.assign q($(pfEq).mp.trans $pf'')
+    -- Update the later credits hypothesis and introduce it into the context
+    | _ =>
+      let newM : Q(Credit) ← pure <| mkNatLit (natM - natN)
+      let newTy : Q($prop) ← pure <| mkApp out'.appFn! newM
+      let newHyps := Hyps.add _ name ivar q(false) newTy hyps'
+
+      let ⟨_, newHyps', pfModAction⟩ ← iModAction newHyps modality
+      let pf ← addBIGoal newHyps' goal
+
+      let hm : Q($natM = $n + $newM) ← mkDecideProof q($natM = $n + $newM)
+      let pf'' : Q($e' ∗ $out ⊢ $goal) ←
+        mkAppM ``tac_lc_add_laterN_split #[inst, hm, pfModAction, pf]
+      mvar.assign q($(pfEq).mp.trans $pf'')
+
+end
+
+end
+
 end

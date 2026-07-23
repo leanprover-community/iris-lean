@@ -11,11 +11,13 @@ public import Iris.Instances.IProp
 public import Iris.Instances.Lib.LaterCredits
 public import Iris.Instances.Lib.Token
 public import Iris.Algebra.CMRA
+public import Iris.ProgramLogic.Language
+public import Iris.ProgramLogic.WeakestPre
 
 @[expose] public section
 
 namespace Iris.Tests
-open BI CMRA DFrac
+open BI CMRA DFrac ProgramLogic
 
 /- This file contains tests with various scenarios for all available tactics. -/
 
@@ -2156,6 +2158,70 @@ set_option pp.mvars false in
 example [BI PROP] (P : PROP) : P ⊢ P := by
   iintro HP
   inext
+
+/-- Tests `inext`. -/
+example [BI PROP] (P Q : PROP) : ⊢ ▷ P -∗ Q -∗ ▷ (P ∗ Q) := by
+  iintro HP HQ
+  inext
+  icombine HP HQ as HPQ
+  iassumption
+
+variable {GF : BundledGFunctors} [InvGS GF]
+
+/- Tests `inext` with later credits consumption. -/
+example (E : CoPset) (P : IProp GF) : ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  -- No later credits consumed, equivalent to a no-op
+  inext 0 credit: Hcred
+  -- One later credit is consumed by default when the amount is not specified
+  inext credit: Hcred
+  iassumption
+
+/- Tests `inext` with insufficient credits. -/
+/-- error: inext: insufficient credits -/
+#guard_msgs in
+example (E : CoPset) (P : IProp GF) : ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  inext 2 credit: Hcred
+
+/- Tests `inext` with multiple credits consumed at once. -/
+example (E : CoPset) (P : IProp GF) : ⊢ £ 3 -∗ ▷▷▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  inext 3 credit: Hcred
+  iassumption
+
+/- Tests `inext` for later credits with an invalid hypothesis choice. -/
+/-- error: inext: Hcred is not a spatial later credit hypothesis -/
+#guard_msgs in
+example (E : CoPset) (P Q : IProp GF) : ⊢ Q -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  inext credit: Hcred
+
+/- Tests `inext` for later credits with the hypothesis not in the spatial context. -/
+/-- error: inext: Hcred is not in the spatial context -/
+#guard_msgs in
+example (E : CoPset) (P : IProp GF) : ⊢ □ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro #Hcred HP
+  inext credit: Hcred
+
+/- Tests `inext` with an `IProp GF` entailment where `InvGS GF` is not available. -/
+/-- error: inext: requires an InvGS (HasLC) context -/
+#guard_msgs in
+example [InvGS_gen .hasNoLC GF] (E : CoPset) (P : IProp GF) :
+    ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  inext credit: Hcred
+
+variable {Expr State Obs Val} [Λ : Language Expr State Obs Val]
+variable {GF : BundledGFunctors}
+variable [IrisGS_gen .hasLC Expr GF]
+variable {E : CoPset} {e : Expr} {Φ : Val → IProp GF}
+
+/- Tests `inext` for later credits with `WP`. -/
+example : £ 1 ∗ ▷ WP e @ E {{ Φ }} ⊢ WP e @ E {{ Φ }} := by
+  iintro ⟨Hcred, Hwp⟩
+  inext credit: Hcred
+  iassumption
 
 end inext
 

@@ -44,7 +44,7 @@ import Iris.Std.RocqPorting
 #rocq_concept proofmode "Tactics" "iExists" ported "iexists"
 #rocq_concept proofmode "Tactics" "iModIntro" ported "imodintro"
 #rocq_concept proofmode "Tactics" "iNext (basic)" ported "inext"
-#rocq_concept proofmode "Tactics" "iNext (with later credits)" missing ""
+#rocq_concept proofmode "Tactics" "iNext (with later credits)" ported "inext _ credit: _"
 #rocq_concept proofmode "Tactics" "iMod" ported "imod"
 #rocq_concept proofmode "Tactics" "iDestruct (basic)" ported "icases"
 #rocq_concept proofmode "Tactics" "iDestruct (all destruct patterns)" missing ""
