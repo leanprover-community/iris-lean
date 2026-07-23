@@ -17,10 +17,8 @@ open Lean Lean.Elab.Tactic Lean.Meta
 and the transparency mode is set to `reducible`. Only non-dependent arguments of the applied
 theorem are turned into goals. -/
 def apply' (goal : MVarId) (name : Name) : TacticM <| Option <| List MVarId := do
-  let some ci := (← getEnv).find? name
-    | return none
-  let some value := ci.value?
-    | return none
+  unless (← getEnv).contains name do return none
+  let value ← mkConstWithFreshMVarLevels name   -- reference, not body; needs only the type
 
   let goals ← withoutRecover <| withReducible <| goal.apply value { newGoals := .nonDependentOnly }
   setGoals <| goals ++ (← getUnsolvedGoals)

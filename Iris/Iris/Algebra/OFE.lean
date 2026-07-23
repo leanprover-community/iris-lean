@@ -1214,6 +1214,11 @@ instance oFunctor_discreteFunOF {C} (F : C → OFunctorPre) [∀ c, OFunctor (F 
   map_id x := fun n c => OFunctor.map_id (x c) n
   map_comp f g f' g' x := fun n c => OFunctor.map_comp f g f' g' (x c) n
 
+@[rocq_alias discrete_funOF_contractive]
+instance oFunctor_discreteFunOF_contractive {C} (F : C → OFunctorPre)
+    [∀ c, OFunctorContractive (F c)] : OFunctorContractive (DiscreteFunOF F) where
+  map_contractive.1 h _ _ := OFunctorContractive.map_contractive.distLater_dist h _
+
 end DiscreteFunOF
 
 section Option

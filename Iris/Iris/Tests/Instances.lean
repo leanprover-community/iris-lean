@@ -304,11 +304,11 @@ section issue_456
 -- test for https://github.com/leanprover-community/iris-lean/issues/456
 
 @[ipm_class]
-class C (_ : InOut) (a : semiOutParam Nat) (_ : InOut) (b : semiOutParam Nat) : Prop where
+class C (io : InOut) (a : semiOutParamIPM io Nat) (b : semiOutParamIPM io.negate Nat) : Prop where
 
-abbrev CMerge (a b : semiOutParam Nat) := C .out a .in b
+abbrev CMerge (a b : Nat) := C .out a b
 
-abbrev CSplit (a b : semiOutParam Nat) := C .in a .out b
+abbrev CSplit (a b : Nat) := C .in a b
 
 set_option synthInstance.checkSynthOrder false in
 instance instMerge (b : Nat) : CMerge (b + 1) b := ⟨⟩
@@ -327,3 +327,28 @@ instance instSplit (k : Nat) : CSplit (k + 1) k := ⟨⟩
 #ipm_synth CSplit _ _
 
 end issue_456
+
+section semiOutParam
+
+/-- error: invalid ipm_class, `semiOutParam` used directly in parameter #2. Use `semiOutParamIPM` instead -/
+#guard_msgs in
+@[ipm_class]
+class C1 (io : InOut) (a : semiOutParam Nat) : Prop where
+
+/-- Tests `semiOutParamIPM` where the `InOut` value depends on another argument by pattern matching. -/
+@[ipm_class]
+class C2 (a : Bool) (a : semiOutParamIPM (match a with | false => .in | true => .out) Nat) : Prop where
+
+/-- Tests `semiOutParamIPM` where the `InOut` value depends on another argument by conditional branching. -/
+@[ipm_class]
+class C3 (a : Bool) (a : semiOutParamIPM (if a then .in else .out) Nat) : Prop where
+
+/- The attribute `semiOutParam` is still relevant for regular type classes  -/
+class C4 (io : InOut) (a : semiOutParam Nat) : Prop where
+
+/-- error: invalid ipm_class, `semiOutParamCore` used directly in parameter #2. Use `semiOutParamIPM` instead -/
+#guard_msgs in
+@[ipm_class]
+class C5 (io : InOut) (a : semiOutParamCore .in Nat) : Prop where
+
+end semiOutParam
