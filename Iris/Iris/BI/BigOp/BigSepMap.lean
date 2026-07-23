@@ -39,7 +39,7 @@ theorem bigSepM_empty_intro {P : PROP} [Affine P] {Φ : K → V → PROP} :
 
 theorem bigSepM_eqv_of_perm {Φ : K → V → PROP} {m₁ m₂ : M V} (h : m₁ ≡ₘ m₂) :
     ([∗map] k ↦ v ∈ m₁, Φ k v) ⊣⊢ ([∗map] k ↦ v ∈ m₂, Φ k v) :=
-  equiv_iff.mp (bigOpM_eqv_of_perm _ h)
+  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpM_perm _ h
 
 /-- A `bigSepM` over the empty map is `emp`. -/
 theorem bigSepM_eqv_empty {Φ : K → V → PROP} {m : M V} (h : m = ∅) :
@@ -75,12 +75,13 @@ theorem bigSepM_mono {Φ Ψ : K → V → PROP} {m : M V}
     ([∗map] k ↦ x ∈ m, Φ k x) ⊢ [∗map] k ↦ x ∈ m, Ψ k x :=
   bigOpM_gen_eqv .rfl sep_mono h
 
-@[rocq_alias big_sepM_proper]
+@[rocq_alias big_sepM_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem bigSepM_eqv {Φ Ψ : K → V → PROP} {m : M V}
     (h : ∀ {k x}, get? m k = some x → Φ k x ≡ Ψ k x) :
     ([∗map] k ↦ x ∈ m, Φ k x) ≡ [∗map] k ↦ x ∈ m, Ψ k x :=
   bigOpM_eqv h
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem bigSepM_eqv_of_forall_eqv {Φ Ψ : K → V → PROP} {m : M V}
     (h : ∀ {k x}, Φ k x ≡ Ψ k x) :
     ([∗map] k ↦ x ∈ m, Φ k x) ≡ [∗map] k ↦ x ∈ m, Ψ k x :=
@@ -248,7 +249,7 @@ theorem bigSepM_insert_elim {Φ : K → V → PROP} {m : M V} {i : K} {x : V} [�
   | none => (bigSepM_insert hm).2
   | some _ => (sep_mono_right ((bigSepM_delete hm).1.trans sep_elim_right)).trans bigSepM_insert_delete.2
 
-@[rocq_alias big_sepM_insert_override]
+@[rocq_alias big_sepM_insert_override, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem bigSepM_insert_exist {Φ : K → V → PROP} {m : M V} {i : K} {x x' : V}
     (hi : get? m i = some x) (hΦ : Φ i x ≡ Φ i x') :
     ([∗map] k ↦ v ∈ insert m i x', Φ k v) ≡ [∗map] k ↦ v ∈ m, Φ k v :=
@@ -424,7 +425,7 @@ theorem bigSepM_filter_cond {Φ : K → V → PROP} {m : M V} (p : K → V → B
 theorem bigSepM_filter [BIAffine PROP] {Φ : K → V → PROP} {m : M V} (p : K → V → Bool) :
     ([∗map] k ↦ x ∈ filter p m, Φ k x) ≡
       [∗map] k ↦ x ∈ m, iprop(⌜p k x = true⌝ → Φ k x) :=
-  (OFE.Equiv.of_eq (bigSepM_filter_cond p)).trans <| bigOpM_eqv fun {k x} _ => by
+  (OFE.Equiv.of_eq (bigSepM_filter_cond p)).trans <| OFE.Equiv.of_eq <| bigOpM_ext fun {k x} _ => OFE.Equiv.to_eq <| by
     match hp : p k x with
     | false => simpa using equiv_iff.mpr ⟨imp_intro_swap <| pure_elim_left False.elim, Affine.affine⟩
     | true => simpa using equiv_iff.mpr true_imp.symm
@@ -472,7 +473,14 @@ theorem bigSepM_sep_zipWith {A B C : Type _}
     (hdom : ∀ k, (get? m₁ k).isSome ↔ (get? m₂ k).isSome) :
     ([∗map] k ↦ xy ∈ zipWith f m₁ m₂, Φ₁ k (g₁ xy) ∗ Φ₂ k (g₂ xy)) ⊣⊢
       ([∗map] k ↦ x ∈ m₁, Φ₁ k x) ∗ [∗map] k ↦ y ∈ m₂, Φ₂ k y :=
-  equiv_iff.mp <| bigOpM_sep_zipWith_eqv Φ₁ Φ₂ hg₁ hg₂ hdom
+  equiv_iff.mp <| OFE.Equiv.of_eq <| by
+    refine (bigOpM_op_eqv (fun k xy => Φ₁ k (g₁ xy)) (fun k xy => Φ₂ k (g₂ xy)) _).trans ?_
+    have hdom' : ∀ k, (get? m₁ k).isSome = (get? m₂ k).isSome := (Bool.eq_iff_iff.mpr <| hdom ·)
+    refine congr (congrArg _ ?_) ?_ <;> {
+      refine (bigOpM_map_eqv _ _ _).symm.trans (bigOpM_perm _ fun k => ?_)
+      simp only [get?_map, get?_zipWith]
+      have _ := hdom' k
+      cases h1k : get? m₁ k <;> cases h2k : get? m₂ k <;> simp_all [Option.bind, Option.map] }
 
 @[rocq_alias big_sepM_sep_zip]
 theorem bigSepM_sep_zip {A B : Type _}
@@ -481,7 +489,7 @@ theorem bigSepM_sep_zip {A B : Type _}
     (hdom : ∀ k, (get? m₁ k).isSome ↔ (get? m₂ k).isSome) :
     ([∗map] k ↦ xy ∈ zip m₁ m₂, Φ₁ k xy.1 ∗ Φ₂ k xy.2) ⊣⊢
       ([∗map] k ↦ x ∈ m₁, Φ₁ k x) ∗ [∗map] k ↦ y ∈ m₂, Φ₂ k y :=
-  equiv_iff.mp <| bigOpM_sep_zip_eqv Φ₁ Φ₂ hdom
+  bigSepM_sep_zipWith rfl rfl hdom
 
 
 -- FIXME: Refactor for readability
@@ -504,7 +512,7 @@ theorem bigSepM_impl_strong [DecidableEq K] {M₂ : Type _ → Type _} {V₂ : T
     refine (sep_mono_right Affine.affine).trans ?_
     refine sep_emp.1.trans ?_
     refine .trans ?_ (sep_emp.2 |>.trans <| sep_comm.1.trans <| sep_mono_left bigSepM_empty.2)
-    refine (equiv_iff.mp <| bigOpM_eqv_of_perm Φ fun k => ?_).2
+    refine (equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpM_perm Φ fun k => ?_).2
     simp [get?_filter, get?_empty k]
   case hind =>
     refine fun i y m₂'' hi IH m₁ => ?_
@@ -530,7 +538,7 @@ theorem bigSepM_impl_strong [DecidableEq K] {M₂ : Type _ → Type _} {V₂ : T
       refine (sep_mono_right sep_comm.1).trans ?_
       refine sep_assoc.2.trans ?_
       refine (sep_mono_left <| sep_comm.1.trans (bigSepM_insert hi).2).trans ?_
-      refine sep_mono_right (equiv_iff.mp <| bigOpM_eqv_of_perm Φ fun k => ?_).2
+      refine sep_mono_right (equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpM_perm Φ fun k => ?_).2
       by_cases heq : i = k <;> simp_all [get?_filter, get?_insert]
     | some x =>
       refine (sep_mono_left <| sep_mono_left (bigSepM_delete hm₁i).1).trans ?_
@@ -552,7 +560,7 @@ theorem bigSepM_impl_strong [DecidableEq K] {M₂ : Type _ → Type _} {V₂ : T
       -- Tail
       refine (sep_mono_right <| sep_mono_right <| intuitionistically_mono <| forall_mono fun k => forall_mono fun y' => hadapt k y').trans <| (sep_mono_right <| IH (delete m₁ i)).trans ?_
       refine .trans ?_ <| sep_assoc.2.trans <| sep_mono_left (bigSepM_insert hi).2
-      refine sep_mono_right <| sep_mono_right (equiv_iff.mp <| bigOpM_eqv_of_perm Φ fun k => ?_).2
+      refine sep_mono_right <| sep_mono_right (equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpM_perm Φ fun k => ?_).2
       by_cases hki : i = k <;> simp_all [get?_filter, get?_insert, get?_delete]
 
 -- TODO: `big_sepM_kmap` requires map operations which are not yet available in `PartialMap`.
@@ -582,7 +590,7 @@ theorem bigSepM_dom {Φ : K → PROP} {m : M V} :
     ([∗map] k ↦ _v ∈ m, Φ k) ⊣⊢ ([∗set] k ∈ (FiniteMap.dom_set m : S), Φ k) := by
   exact equiv_iff.mp <|
     (OFE.Equiv.of_eq (bigOpL_map_eqv Prod.fst _ _).symm).trans <|
-    (bigOpL_eqv_of_perm _ <| LawfulFiniteMap.toList_dom_set_perm m).symm
+    (OFE.Equiv.of_eq <| bigOpL_perm _ <| LawfulFiniteMap.toList_dom_set_perm m).symm
 
 @[rocq_alias big_sepM_impl_dom_subseteq]
 theorem bigSepM_impl_dom_subseteq [DecidableEq K] {M₂ : Type _ → Type _} {V₂ : Type _}

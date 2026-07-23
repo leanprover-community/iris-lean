@@ -56,7 +56,7 @@ theorem refl {A : Type _} [OFE A] {P : PROP} {a : A} : P ⊢ a ≡ a :=
 @[rocq_alias equiv_internal_eq]
 theorem of_equiv {A : Type _} [OFE A] {P : PROP} {a b : A} (h : a = b) :
     P ⊢ a ≡ b :=
-  refl.trans (equiv_iff.mp (NonExpansive₂.eqv Equiv.rfl (Equiv.of_eq h))).1
+  h ▸ refl
 
 @[rocq_alias pure_internal_eq]
 theorem of_pure {A : Type _} [OFE A] {x y : A} : ⌜x = y⌝ ⊢@{PROP} iprop(x ≡ y) :=

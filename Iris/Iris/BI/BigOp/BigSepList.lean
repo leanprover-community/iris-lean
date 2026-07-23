@@ -64,11 +64,12 @@ theorem bigSepL_mono {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l
     ([∗list] k ↦ x ∈ l, Φ k x) ⊢ [∗list] k ↦ x ∈ l, Ψ k x :=
   bigOpL_gen_proper (· ⊢ ·) .rfl sep_mono (h ·)
 
-@[rocq_alias big_sepL_proper]
+@[rocq_alias big_sepL_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem bigSepL_eqv {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l[k]? = some x → Φ k x ≡ Ψ k x) :
     ([∗list] k ↦ x ∈ l, Φ k x) ≡ [∗list] k ↦ x ∈ l, Ψ k x :=
   bigOpL_eqv h
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem bigSepL_eqv_of_forall_eqv {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, Φ k x ≡ Ψ k x) :
     ([∗list] k ↦ x ∈ l, Φ k x) ≡ [∗list] k ↦ x ∈ l, Ψ k x :=
   bigOpL_eqv_of_forall_eqv h
@@ -228,7 +229,7 @@ theorem bigSepL_pure [BIAffine PROP] {φ : Nat → A → Prop} {l : List A} :
 theorem bigSepL_take_drop {Φ : Nat → A → PROP} {l : List A} {n : Nat} :
     ([∗list] k ↦ x ∈ l, Φ k x) ⊣⊢
       ([∗list] k ↦ x ∈ l.take n, Φ k x) ∗ [∗list] k ↦ x ∈ l.drop n, Φ (n + k) x :=
-  equiv_iff.mp (bigOpL_take_drop_eqv Φ l n)
+  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_take_drop Φ l n
 
 @[rocq_alias big_sepL_fmap]
 theorem bigSepL_map {B : Type _} (f : A → B) {Φ : Nat → B → PROP} {l : List A} :
@@ -304,19 +305,19 @@ theorem bigSepL_delete_cond {Φ : Nat → A → PROP} {l : List A} {i : Nat} {x 
   | cons z zs ih => cases i with
     | zero =>
       simp only [List.getElem?_cons_zero, Option.some.injEq] at h; subst h
-      exact sep_congr_right <| (equiv_iff.mp (bigSepL_eqv fun _ => equiv_iff.mpr .rfl)).trans emp_sep.symm
+      exact sep_congr_right <| (equiv_iff.mp (OFE.Equiv.of_eq (bigOpL_ext fun _ => rfl))).trans emp_sep.symm
     | succ j =>
       simp only [List.getElem?_cons_succ] at h
       exact ((sep_congr_right <| ih h).trans sep_left_comm).trans <|
-        sep_congr_right <| sep_congr_right <| equiv_iff.mp <|
-        bigSepL_eqv fun _ => equiv_iff.mpr <| by simp [Nat.add_right_cancel_iff]
+        sep_congr_right <| sep_congr_right <| equiv_iff.mp <| OFE.Equiv.of_eq <|
+        bigOpL_ext fun _ => (equiv_iff.mpr <| by simp [Nat.add_right_cancel_iff]).to_eq
 
 @[rocq_alias big_sepL_delete']
 theorem bigSepL_delete [BIAffine PROP] {Φ : Nat → A → PROP} {l : List A} {i : Nat} {x : A}
     (h : l[i]? = some x) :
     ([∗list] k ↦ y ∈ l, Φ k y) ⊣⊢ Φ i x ∗ [∗list] k ↦ y ∈ l, ⌜k ≠ i⌝ → Φ k y := by
   refine (bigSepL_delete_cond h).trans <|
-    sep_congr_right <| equiv_iff.mp <| bigSepL_eqv fun {k _} _ => equiv_iff.mpr ?_
+    sep_congr_right <| equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_ext fun {k _} _ => (equiv_iff.mpr ?_).to_eq
   by_cases hki : k = i <;> simp only [hki, ne_eq, not_true_eq_false, not_false_eq_true]
   · exact ⟨imp_intro_swap <| pure_elim_left fun hf => hf.elim, Affine.affine⟩
   · exact true_imp.symm
@@ -413,7 +414,7 @@ theorem bigSepL_laterN_2 {Φ : Nat → A → PROP} {l : List A} {n : Nat} :
 
 theorem bigSepL_perm {Φ : A → PROP} {l₁ l₂ : List A} (hp : l₁.Perm l₂) :
     ([∗list] x ∈ l₁, Φ x) ⊣⊢ [∗list] x ∈ l₂, Φ x :=
-  equiv_iff.mp <| bigOpL_eqv_of_perm Φ hp
+  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_perm Φ hp
 
 @[rocq_alias big_sepL_submseteq]
 theorem bigSepL_submseteq {Φ : A → PROP} [∀ x, Affine (Φ x)] {l₁ l₂ l : List A} (h : (l₁ ++ l).Perm l₂) :
@@ -437,7 +438,10 @@ theorem bigSepL_replicate {P : PROP} {l : List A} :
 @[rocq_alias big_sepL_zip_seq]
 theorem bigSepL_zip_seq {Φ : A × Nat → PROP} {n : Nat} {l : List A} :
     ([∗list] xy ∈ l.zipIdx n, Φ xy) ⊣⊢ [∗list] i ↦ x ∈ l, Φ (x, n + i) :=
-  equiv_iff.mp <| bigOpL_zipIdx_eqv Φ n l
+  equiv_iff.mp <| OFE.Equiv.of_eq <| by
+    induction l generalizing n with
+    | nil => rfl
+    | cons _ _ ih => exact congrArg (sep _) ((ih (n := n + 1)).trans (by grind))
 
 @[rocq_alias big_sepL_sep_zip]
 theorem bigSepL_sep_zip {B : Type _} {Φ : Nat → A → PROP} {Ψ : Nat → B → PROP}
@@ -1213,7 +1217,7 @@ theorem bigSepL2_dist_2 [OFE A] [OFE B]
     bigSepL2_dist_2 (by simpa using hl1) (by simpa using hl2)
     (fun {k} => @hel1 (k + 1)) (fun {k} => @hel2 (k + 1)) (fun {k} => @hf (k + 1))
 
-@[rocq_alias big_sepL2_proper_2]
+@[rocq_alias big_sepL2_proper_2, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem bigSepL2_proper_2 [OFE A] [OFE B]
     {Φ Ψ : Nat → A → B → PROP} {l1 l1' : List A} {l2 l2' : List B}
     (hl1 : l1.length = l1'.length) (hl2 : l2.length = l2'.length)

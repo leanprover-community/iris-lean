@@ -411,13 +411,15 @@ theorem auth_update {a b a' b' : A} (hup : (a, b) ~l~> (a', b')) :
 
 @[rocq_alias auth_update_alloc]
 theorem auth_update_alloc {a a' b' : A} (hup : (a, unit) ~l~> (a', b')) :
-    (● a : Auth A) ~~> (● a') • ◯ b' :=
-  Update.equiv_left (Equiv.of_eq unit_right_id) (auth_update hup)
+    (● a : Auth A) ~~> (● a') • ◯ b' := by
+  rw [← unit_right_id (x := (● a : Auth A))]
+  exact auth_update hup
 
 @[rocq_alias auth_update_dealloc]
 theorem auth_update_dealloc {a b a' : A} (hup : (a, b) ~l~> (a', unit)) :
-    ((● a : Auth A) • ◯ b) ~~> ● a' :=
-  Update.equiv_right (Equiv.of_eq unit_right_id) (auth_update hup)
+    ((● a : Auth A) • ◯ b) ~~> ● a' := by
+  rw [← unit_right_id (x := (● a' : Auth A))]
+  exact auth_update hup
 
 @[rocq_alias auth_update_auth]
 theorem auth_update_auth {a a' b' : A} (hup : (a, unit) ~l~> (a', b')) :
@@ -476,11 +478,13 @@ instance instURFunctorAuthURF {T : COFE.OFunctorPre} [URFunctor T] :
     map_ne _ (URFunctor.map_ne.ne hx hy) (URFunctor.map_ne.ne hx hy)
   map_id x := by
     refine .trans ?_ (map_id x)
-    apply map_ext <;> exact fun _ => Equiv.of_eq (URFunctor.map_id _)
+    refine congrArg (View.map _ · _ _) (funext fun _ => URFunctor.map_id _) |>.trans
+      (congrArg (View.map _ _ · _) (funext fun _ => URFunctor.map_id _))
   map_comp f g f' g' x := by
     simp only [mapC]
     refine .trans ?_ (map_compose' ..)
-    apply View.map_ext <;> exact fun _ => Equiv.of_eq (URFunctor.map_comp f g f' g' _)
+    refine congrArg (View.map _ · _ _) (funext fun _ => URFunctor.map_comp f g f' g' _) |>.trans
+      (congrArg (View.map _ _ · _) (funext fun _ => URFunctor.map_comp f g f' g' _))
 
 @[rocq_alias authURF_contractive]
 instance instURFunctorContractiveAuthURF {T : COFE.OFunctorPre} [URFunctorContractive T] :
@@ -503,11 +507,13 @@ instance instRFunctorAuthRF {T : COFE.OFunctorPre} [URFunctor T] :
     apply map_ne <;> exact URFunctor.map_ne.ne hx hy
   map_id x := by
     refine .trans ?_ (map_id x)
-    apply map_ext <;> exact fun _ => Equiv.of_eq (URFunctor.map_id _)
+    refine congrArg (View.map _ · _ _) (funext fun _ => URFunctor.map_id _) |>.trans
+      (congrArg (View.map _ _ · _) (funext fun _ => URFunctor.map_id _))
   map_comp f g f' g' x := by
     simp only [mapC]
     rw [← map_compose']
-    apply map_ext <;> exact fun _ => Equiv.of_eq (URFunctor.map_comp f g f' g' _)
+    refine congrArg (View.map _ · _ _) (funext fun _ => URFunctor.map_comp f g f' g' _) |>.trans
+      (congrArg (View.map _ _ · _) (funext fun _ => URFunctor.map_comp f g f' g' _))
 
 @[rocq_alias authRF_contractive]
 instance instRFunctorContractiveAuthRF {T : COFE.OFunctorPre} [URFunctorContractive T] :

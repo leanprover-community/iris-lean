@@ -432,7 +432,7 @@ instance plainly_sep_weak_homomorphism [BIPositive PROP][BIAffine PROP] :
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
-  op_proper aa' bb' := equiv_iff.1 (sep_ne.eqv (equiv_iff.2 aa') (equiv_iff.2 bb'))
+  op_proper aa' bb' := (equiv_iff.2 aa').to_eq ▸ (equiv_iff.2 bb').to_eq ▸ .rfl
   map_ne := inferInstance
   map_op := plainly_sep
 
@@ -441,7 +441,7 @@ instance plainly_and_weak_homomorphism :
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
-  op_proper aa' bb' := equiv_iff.1 (and_ne.eqv (equiv_iff.2 aa') (equiv_iff.2 bb'))
+  op_proper aa' bb' := (equiv_iff.2 aa').to_eq ▸ (equiv_iff.2 bb').to_eq ▸ .rfl
   map_ne := inferInstance
   map_op := plainly_and
 
@@ -450,7 +450,7 @@ instance plainly_or_weak_homomorphism [SbiEmpValidExist PROP] :
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
-  op_proper aa' bb' := equiv_iff.1 (or_ne.eqv (equiv_iff.2 aa') (equiv_iff.2 bb'))
+  op_proper aa' bb' := (equiv_iff.2 aa').to_eq ▸ (equiv_iff.2 bb').to_eq ▸ .rfl
   map_ne := inferInstance
   map_op := plainly_or
 

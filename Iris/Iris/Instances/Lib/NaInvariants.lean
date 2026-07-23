@@ -42,7 +42,7 @@ instance coreId_valid_empty_empty : CoreId ((valid (∅ : CoPset), valid (∅ : 
 
 instance isUnit_valid_empty_empty : IsUnit ((valid (∅ : CoPset), valid (∅ : PosSet))) where
   unit_valid := ⟨trivial, trivial⟩
-  unit_left_id := (NonExpansive₂.eqv (OFE.Equiv.of_eq unit_left_id) (OFE.Equiv.of_eq unit_left_id)).to_eq
+  unit_left_id := Prod.ext CMRA.ucmra_unit_left_id CMRA.ucmra_unit_left_id
   pcore_unit := coreId_valid_empty_empty.core_id
 
 namespace NonAtomicInvariant
@@ -128,7 +128,7 @@ theorem own_disjoint {p : NaInvPoolName} {E1 E2 : CoPset} :
 theorem own_union {p : NaInvPoolName} {E1 E2 : CoPset} (Hdisj : E1 ## E2) :
     own (GF := GF) p (E1 ∪ E2) ⊣⊢ own p E1 ∗ own p E2 := by
   refine .trans ?_ iOwn_op
-  refine BI.equiv_iff.mp (NonExpansive.eqv (f := iOwn (E := W.inv) p) ?_)
+  refine BI.equiv_iff.mp (Equiv.of_eq (congrArg (iOwn (E := W.inv) p) (?_ : _ ≡ _).to_eq))
   refine .symm <| Equiv.of_eq (OFE.equiv_prod_ext (disj_op_union Hdisj) ?_)
   exact (disj_op_union disjoint_empty_left).trans (by simp)
 

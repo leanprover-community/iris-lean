@@ -133,14 +133,14 @@ def ofSig :
 @[rocq_alias sig_monPred_ne]
 theorem ofSig_ne : OFE.NonExpansive (ofSig (I := I) (PROP := PROP)) := ofSig.ne
 
-@[rocq_alias sig_monPred_proper]
+@[rocq_alias sig_monPred_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem ofSig_proper {P Q : { f : I.car → PROP // ∀ {i j : I.car}, I.rel i j → (f i ⊢ f j) }}
     (h : P ≡ Q) : ofSig P ≡ ofSig Q := ofSig.ne.eqv h
 
 @[rocq_alias monPred_sig_ne]
 theorem toSig_ne : OFE.NonExpansive (toSig (I := I) (PROP := PROP)) := toSig.ne
 
-@[rocq_alias monPred_sig_proper]
+@[rocq_alias monPred_sig_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem toSig_proper {P Q : MonPred I PROP} (h : P ≡ Q) : toSig P ≡ toSig Q := toSig.ne.eqv h
 
 @[rocq_alias sig_monPred_sig]
@@ -375,7 +375,7 @@ instance : BIBase (MonPred I PROP) where
 theorem entails_at {P Q : MonPred I PROP} :
     (P ⊢ Q) ↔ ∀ i, P.monPred_at i ⊢ Q.monPred_at i := Iff.rfl
 
-@[rocq_alias monPred_at_equiv]
+@[rocq_alias monPred_at_equiv, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem equiv_at {P Q : MonPred I PROP} :
     (P ≡ Q) ↔ ∀ i, P.monPred_at i ≡ Q.monPred_at i := forall_comm
 
@@ -396,9 +396,9 @@ instance : BI (MonPred I PROP) where
     { refl := entails_at.mpr fun _ => BIBase.Entails.rfl
       trans := fun h h' => entails_at.mpr fun i => (entails_at.mp h i).trans (entails_at.mp h' i) }
   equiv_iff := fun {P Q} =>
-    ⟨fun h => ⟨entails_at.mpr fun i => (equiv_iff.mp (equiv_at.mp h i)).mp,
-              entails_at.mpr fun i => (equiv_iff.mp (equiv_at.mp h i)).mpr⟩,
-     fun h => equiv_at.mpr fun i => equiv_iff.mpr ⟨entails_at.mp h.1 i, entails_at.mp h.2 i⟩⟩
+    ⟨fun h => ⟨entails_at.mpr fun i => (equiv_iff.mp (fun n => h n i)).mp,
+              entails_at.mpr fun i => (equiv_iff.mp (fun n => h n i)).mpr⟩,
+     fun h => fun n i => equiv_iff.mpr ⟨entails_at.mp h.1 i, entails_at.mp h.2 i⟩ n⟩
   and_ne := ⟨fun _ _ _ h _ _ h' =>
     dist_at.mpr fun i => and_ne.ne (dist_at.mp h i) (dist_at.mp h' i)⟩
   or_ne := ⟨fun _ _ _ h _ _ h' => dist_at.mpr fun i => or_ne.ne (dist_at.mp h i) (dist_at.mp h' i)⟩
@@ -1257,7 +1257,7 @@ theorem monPred_at_hom {op₁ : MonPred I PROP → MonPred I PROP → MonPred I 
     MonoidHomomorphism op₁ op₂ u₁ u₂ (· ≡ ·) (fun P : MonPred I PROP => P.monPred_at i) where
   rel_refl := .rfl
   rel_trans := .trans
-  op_proper ha hb := MonoidOps.op_proper ha hb
+  op_proper ha hb := ha.to_eq ▸ hb.to_eq ▸ OFE.Equiv.rfl
   map_ne := monPred_at_ne i
   map_op := hop
   map_unit := hunit

@@ -226,19 +226,22 @@ instance : NonExpansive (pcore (α := α)) where
       cases hw.symm ▸ ex
     | .none, .none => rw [ex, ey]
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem coreId_of_eqv {x₁ x₂ : α} (e : x₁ ≡ x₂) (h : CoreId x₁) : CoreId x₂ where
   core_id := calc
     pcore x₂ = pcore x₁ := (NonExpansive.eqv e.symm).to_eq
     _        = some x₁  := h.core_id
     _        = some x₂  := congrArg some e.to_eq
 
-@[rocq_alias CoreId_proper]
+@[rocq_alias CoreId_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem coreId_iff {x₁ x₂ : α} (e : x₁ ≡ x₂) : CoreId x₁ ↔ CoreId x₂ :=
   ⟨coreId_of_eqv e, coreId_of_eqv e.symm⟩
 
 /-! ## Op -/
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem op_right_eqv (x : α) {y z : α} (e : y ≡ z) : x • y ≡ x • z := op_ne.eqv e
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem _root_.Iris.OFE.Equiv.op_r {x y z : α} : y ≡ z → x • y ≡ x • z := op_right_eqv _
 
 theorem op_right_dist (x : α) {y z : α} (e : y ≡{n}≡ z) : x • y ≡{n}≡ x • z :=
@@ -249,8 +252,10 @@ theorem op_commN {x y : α} : x • y ≡{n}≡ y • x := Dist.of_eq comm
 
 theorem op_assocN {x y z : α} : x • (y • z) ≡{n}≡ (x • y) • z := Dist.of_eq assoc
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem op_left_eqv {x y : α} (z : α) (e : x ≡ y) : x • z ≡ y • z :=
   (Equiv.of_eq comm').trans <| e.op_r.trans (Equiv.of_eq comm')
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem _root_.Iris.OFE.Equiv.op_l {x y z : α} : x ≡ y → x • z ≡ y • z := op_left_eqv _
 
 theorem op_left_dist {x y : α} (z : α) (e : x ≡{n}≡ y) : x • z ≡{n}≡ y • z :=
@@ -260,11 +265,13 @@ theorem _root_.Iris.OFE.Dist.op_l {x y z : α} : x ≡{n}≡ y → x • z ≡{n
 theorem _root_.Iris.OFE.Dist.op {x x' y y' : α}
     (ex : x ≡{n}≡ x') (ey : y ≡{n}≡ y') : x • y ≡{n}≡ x' • y' := ex.op_l.trans ey.op_r
 
-@[rocq_alias cmra_op_proper']
+@[rocq_alias cmra_op_proper', deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem op_eqv {x x' y y' : α} (ex : x ≡ x') (ey : y ≡ y') : x • y ≡ x' • y' :=
   ex.op_l.trans ey.op_r
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem _root_.Iris.OFE.Equiv.op : (x : α) ≡ x' → y ≡ y' → x • y ≡ x' • y' := op_eqv
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem op_proper2 {x₁ x₂ y₁ y₂ : α} (H1 : x₁ ≡ x₂) (H2 : y₁ ≡ y₂) : x₁ • y₁ ≡ x₂ • y₂ :=
   (Equiv.op_l H1).trans (op_right_eqv x₂ H2)
 
@@ -274,11 +281,14 @@ theorem _root_.Iris.OFE.Dist.opM {x₁ x₂ : α} {y₁ y₂ : Option α}
   | none, none, _ => H1
   | some _, some _, H2 => H1.op H2
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem _root_.Iris.OFE.Equiv.opM {x₁ x₂ : α} {y₁ y₂ : Option α}
     (H1 : x₁ ≡ x₂) (H2 : y₁ ≡ y₂) : x₁ •? y₁ ≡ x₂ •? y₂ :=
   equiv_dist.2 fun _ => H1.dist.opM H2.dist
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem opM_left_eqv {x y : α} (z : Option α) (e : x ≡ y) : x •? z ≡ y •? z := e.opM Equiv.rfl
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem opM_right_eqv (x : α) {y z : Option α} (e : y ≡ z) : x •? y ≡ x •? z := Equiv.rfl.opM e
 
 theorem opM_left_dist {n} {x y : α} (z : Option α) (e : x ≡{n}≡ y) : x •? z ≡{n}≡ y •? z :=
@@ -301,6 +311,7 @@ theorem Valid.validN : ✓ (x : α) → ✓{n} x := (valid_iff_validN.1 · _)
 theorem valid_mapN {x y : α} (f : ∀ n, ✓{n} x → ✓{n} y) (v : ✓ x) : ✓ y :=
   valid_iff_validN.mpr fun n => f n v.validN
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem validN_of_eqv {x y : α} : x ≡ y → ✓{n} x → ✓{n} y :=
   fun e v => validN_ne (equiv_dist.mp e n) v
 
@@ -308,15 +319,17 @@ theorem validN_of_eqv {x y : α} : x ≡ y → ✓{n} x → ✓{n} y :=
 theorem validN_dist_iff {x y : α} (e : x ≡{n}≡ y) : ✓{n} x ↔ ✓{n} y := ⟨validN_ne e, validN_ne e.symm⟩
 theorem _root_.Iris.OFE.Dist.validN : (x : α) ≡{n}≡ y → (✓{n} x ↔ ✓{n} y) := validN_dist_iff
 
-@[rocq_alias cmra_validN_proper]
+@[rocq_alias cmra_validN_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem validN_eqv_iff {x y : α} (e : x ≡ y) : ✓{n} x ↔ ✓{n} y :=
   validN_dist_iff (equiv_dist.mp e n)
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem valid_of_eqv {x y : α} : x ≡ y → ✓ x → ✓ y :=
   fun e => valid_mapN fun _ => validN_of_eqv e
 
-@[rocq_alias cmra_valid_proper]
+@[rocq_alias cmra_valid_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem valid_iff {x y : α} (e : x ≡ y) : ✓ x ↔ ✓ y := ⟨valid_of_eqv e, valid_of_eqv e.symm⟩
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem _root_.Iris.OFE.Equiv.valid : (x : α) ≡ y → (✓ x ↔ ✓ y) := valid_iff
 
 @[rocq_alias cmra_validN_le]
@@ -331,7 +344,7 @@ theorem valid0_of_validN {n} {x : α} : ✓{n} x → ✓{0} x := validN_of_le (N
 
 @[rocq_alias cmra_validN_op_r]
 theorem validN_op_right {n} {x y : α} : ✓{n} (x • y) → ✓{n} y :=
-  fun v => validN_op_left (validN_of_eqv (Equiv.of_eq comm') v)
+  fun v => validN_op_left (comm' (x := x) (y := y) ▸ v)
 
 @[rocq_alias cmra_valid_op_r]
 theorem valid_op_right (x y : α) : ✓ (x • y) → ✓ y :=
@@ -339,7 +352,7 @@ theorem valid_op_right (x y : α) : ✓ (x • y) → ✓ y :=
 
 @[rocq_alias cmra_valid_op_l]
 theorem valid_op_left {x y : α} : ✓ (x • y) → ✓ x :=
-  fun v => valid_op_right y x (valid_of_eqv (Equiv.of_eq comm') v)
+  fun v => valid_op_right y x (comm' (x := x) (y := y) ▸ v)
 
 theorem validN_opM {x : α} {my : Option α} : ✓{n} (x •? my) → ✓{n} x :=
   match my with
@@ -364,7 +377,7 @@ theorem validN_op_opM_right {mz : Option α} (h : ✓{n} (x • y : α) •? mz)
 
 /-! ## Core -/
 
-@[rocq_alias cmra_pcore_proper]
+@[rocq_alias cmra_pcore_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem pcore_proper {x y : α} (cx : α) (e : x ≡ y) (ps : pcore x = some cx)
     : ∃ cy, pcore y = some cy ∧ cx ≡ cy := by
   let ⟨cy, hcy, ecy⟩ := pcore_ne (equiv_dist.mp e 0) ps
@@ -379,7 +392,7 @@ theorem pcore_proper {x y : α} (cx : α) (e : x ≡ y) (ps : pcore x = some cx)
 instance cmra_op_ne2 : NonExpansive₂ (op (α := α)) where
   ne _ _ _ e₁ _ _ e₂ := e₁.op e₂
 
-@[rocq_alias cmra_pcore_proper']
+@[rocq_alias cmra_pcore_proper', deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem pcore_proper' {x y : α} (e : x ≡ y) : pcore x ≡ pcore y :=
   NonExpansive.eqv e
 
@@ -409,7 +422,7 @@ theorem pcore_op_self' {x : α} {cx} (e : pcore x = some cx) : cx • cx = cx :=
 
 @[rocq_alias cmra_pcore_validN]
 theorem pcore_validN {n} {x : α} {cx} (e : pcore x = some cx) (v : ✓{n} x) : ✓{n} cx :=
-  validN_op_right (validN_of_eqv (Equiv.of_eq (pcore_op_right e).symm) v)
+  validN_op_right ((pcore_op_right e).symm ▸ v)
 
 @[rocq_alias cmra_pcore_valid]
 theorem pcore_valid {x : α} {cx} (e : pcore x = some cx) : ✓ x → ✓ cx :=
@@ -423,7 +436,7 @@ theorem not_valid_exclN_op_left {n} {x : α} [Exclusive x] {y} : ¬✓{n} (x •
 
 @[rocq_alias exclusiveN_r]
 theorem not_valid_exclN_op_right {n} {x : α} [Exclusive x] {y} : ¬✓{n} (y • x) :=
-  fun v => not_valid_exclN_op_left (validN_of_eqv (Equiv.of_eq comm') v)
+  fun v => not_valid_exclN_op_left (comm' (x := y) (y := x) ▸ v)
 
 @[rocq_alias exclusive_l]
 theorem not_valid_excl_op_left {x : α} [Exclusive x] {y} : ¬✓ (x • y) :=
@@ -431,7 +444,7 @@ theorem not_valid_excl_op_left {x : α} [Exclusive x] {y} : ¬✓ (x • y) :=
 
 @[rocq_alias exclusive_r]
 theorem not_excl_op_right {x : α} [Exclusive x] {y} : ¬✓ (y • x) :=
-  fun v => not_valid_excl_op_left (valid_of_eqv (Equiv.of_eq comm') v)
+  fun v => not_valid_excl_op_left (comm' (x := y) (y := x) ▸ v)
 
 @[rocq_alias exclusiveN_opM]
 theorem none_of_excl_valid_op {n} {x : α} [Exclusive x] {my} : ✓{n} (x •? my) → my = none := by
@@ -443,30 +456,34 @@ theorem not_valid_of_exclN_inc {n} {x : α} [Exclusive x] {y} : x ≼{n} y → �
 
 @[rocq_alias exclusive_included]
 theorem not_valid_of_excl_inc {x : α} [Exclusive x] {y} : x ≼ y → ¬✓ y
-  | ⟨_, hz⟩, v => Exclusive.exclusive0_l _ <| validN_of_eqv (Equiv.of_eq hz) v.validN
+  | ⟨_, hz⟩, v => Exclusive.exclusive0_l _ <| hz ▸ v.validN
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem Exclusive.of_eqv {x₁ x₂ : α} (e : x₁ ≡ x₂) (h : Exclusive x₁) : Exclusive x₂ where
   exclusive0_l y := h.exclusive0_l y ∘ e.op_l.dist.validN.2
 
-@[rocq_alias Exclusive_proper]
+@[rocq_alias Exclusive_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem exclusive_iff {x₁ x₂ : α} (e : x₁ ≡ x₂) : Exclusive x₁ ↔ Exclusive x₂ :=
   ⟨.of_eqv e, .of_eqv e.symm⟩
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem _root_.Iris.OFE.Dist.exclusive {x₁ x₂ : α} : x₁ ≡ x₂ → (Exclusive x₁ ↔ Exclusive x₂) :=
   exclusive_iff
 
 /-! ## Order -/
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem inc_of_eqv_of_inc (e : (a : α) ≡ b) : b ≼ c → a ≼ c
   | ⟨t, et⟩ => ⟨t, et.trans e.symm.op_l.to_eq⟩
 
 instance : Trans Equiv (Included (α := α)) Included where
-  trans := inc_of_eqv_of_inc
+  trans e h := e.symm.to_eq ▸ h
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem inc_of_inc_of_eqv : (a : α) ≼ b → b ≡ c → a ≼ c
   | ⟨t, et⟩, e => ⟨t, e.symm.to_eq.trans et⟩
 
 instance : Trans (Included (α := α)) Equiv Included where
-  trans := inc_of_inc_of_eqv
+  trans h e := e.to_eq ▸ h
 
 theorem incN_of_incN_of_dist : (a : α) ≼{n} b → b ≡{n}≡ c → a ≼{n} c
   | ⟨t, et⟩, e => ⟨t, e.symm.trans et⟩
@@ -485,17 +502,22 @@ theorem incN_of_inc (n) {x y : α} : x ≼ y → x ≼{n} y
   | ⟨z, hz⟩ => ⟨z, hz.dist⟩
 theorem Included.incN {n} {x y : α} : x ≼ y → x ≼{n} y := incN_of_inc _
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem inc_iff_left (e : (a : α) ≡ b) : a ≼ c ↔ b ≼ c :=
   ⟨inc_of_eqv_of_inc e.symm, inc_of_eqv_of_inc e⟩
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem _root_.Iris.OFE.Equiv.inc_l : (a : α) ≡ b → (a ≼ c ↔ b ≼ c) := inc_iff_left
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem inc_iff_right (e : (b : α) ≡ c) : a ≼ b ↔ a ≼ c :=
   ⟨(inc_of_inc_of_eqv · e), (inc_of_inc_of_eqv · e.symm)⟩
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem _root_.Iris.OFE.Equiv.inc_r : (b : α) ≡ c → (a ≼ b ↔ a ≼ c) := inc_iff_right
 
-@[rocq_alias cmra_included_proper]
+@[rocq_alias cmra_included_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem inc_iff (ea : (a : α) ≡ a') (eb : (b : α) ≡ b') : a ≼ b ↔ a' ≼ b' :=
   (inc_iff_left ea).trans (inc_iff_right eb)
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem _root_.Iris.OFE.Equiv.inc : (a : α) ≡ a' → b ≡ b' → (a ≼ b ↔ a' ≼ b') := inc_iff
 
 theorem incN_iff_left (e : (a : α) ≡{n}≡ b) : a ≼{n} c ↔ b ≼{n} c :=
@@ -512,7 +534,7 @@ theorem incN_dist_iff (ea : (a : α) ≡{n}≡ a') (eb : (b : α) ≡{n}≡ b') 
 theorem _root_.Iris.OFE.Dist.incN :
     (a : α) ≡{n}≡ a' → b ≡{n}≡ b' → (a ≼{n} b ↔ a' ≼{n} b') := incN_dist_iff
 
-@[rocq_alias cmra_includedN_proper]
+@[rocq_alias cmra_includedN_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem incN_eqv_iff (ea : (a : α) ≡ a') (eb : (b : α) ≡ b') : a ≼{n} b ↔ a' ≼{n} b' :=
   incN_dist_iff ea.dist eb.dist
 
@@ -544,7 +566,7 @@ instance : Trans (IncludedN (α := α) n) (IncludedN n) (IncludedN n) where
 
 @[rocq_alias cmra_valid_included]
 theorem valid_of_inc {x y : α} : x ≼ y → ✓ y → ✓ x
-  | ⟨_, hz⟩, v => valid_op_left (valid_of_eqv (Equiv.of_eq hz) v)
+  | ⟨_, hz⟩, v => valid_op_left (hz ▸ v)
 
 @[rocq_alias cmra_validN_includedN]
 theorem validN_of_incN {n} {x y : α} : x ≼{n} y → ✓{n} y → ✓{n} x
@@ -625,8 +647,8 @@ theorem op_monoN_left {n x y} (z : α) (h : x ≼{n} y) : x • z ≼{n} y • z
   (op_commN.incN op_commN).1 (op_monoN_right z h)
 
 @[rocq_alias cmra_mono_r]
-theorem op_mono_left {x y} (z : α) (h : x ≼ y) : x • z ≼ y • z :=
-  ((Equiv.of_eq comm').inc (Equiv.of_eq comm')).1 (op_mono_right z h)
+theorem op_mono_left {x y} (z : α) (h : x ≼ y) : x • z ≼ y • z := by
+  rw [comm' (x := x) (y := z), comm' (x := y) (y := z)]; exact op_mono_right z h
 
 @[rocq_alias cmra_monoN]
 theorem op_monoN {n} {x x' y y' : α} (hx : x ≼{n} x') (hy : y ≼{n} y') : x • y ≼{n} x' • y' :=
@@ -706,6 +728,7 @@ theorem core_ne : NonExpansive (core : α → α) where
 
 theorem _root_.Iris.OFE.Dist.core :
   ∀ {n} {x₁ x₂ : α}, x₁ ≡{n}≡ x₂ → core x₁ ≡{n}≡ core x₂ := @core_ne.ne
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem _root_.Iris.OFE.Equiv.core : ∀ {x₁ x₂ : α}, x₁ ≡ x₂ → core x₁ ≡ core x₂ := @core_ne.eqv
 
 @[rocq_alias core_id_core]
@@ -743,7 +766,7 @@ theorem core_op_mono (x y : α) : core x ≼ core (x • y) := by
 @[rocq_alias cmra_core_mono]
 theorem core_mono {x y : α} (Hinc : x ≼ y) : core x ≼ core y := by
   have ⟨z, hz⟩ := Hinc
-  exact (Equiv.of_eq hz).core.inc_r.2 (core_op_mono x z)
+  rw [hz]; exact core_op_mono x z
 
 end total
 
@@ -764,10 +787,9 @@ theorem discrete_inc_r {x y : α} [HD : DiscreteE y] : x ≼{0} y → x ≼ y
 @[rocq_alias cmra_op_discrete]
 theorem discrete_op {x y : α} (Hv : ✓{0} x • y) [Hx : DiscreteE x] [Hy : DiscreteE y] :
     DiscreteE (x • y) where
-  discrete h :=
-    let ⟨_w, _t, wt, wx, ty⟩ := extend ((Dist.validN h).mp Hv) h.symm
-    (((Equiv.of_eq (Hx.discrete wx.symm)).op (Equiv.of_eq (Hy.discrete ty.symm))).trans
-      (Equiv.of_eq wt).symm).to_eq
+  discrete h := by
+    obtain ⟨_w, _t, wt, wx, ty⟩ := extend ((Dist.validN h).mp Hv) h.symm
+    rw [Hx.discrete wx.symm, Hy.discrete ty.symm, wt]
 
 end discreteElements
 
@@ -818,14 +840,16 @@ instance cancelable_op {x y : α} [Cancelable x] [Cancelable y] : Cancelable (x 
 instance exclusive_cancelable {x : α} [Exclusive x] : Cancelable x where
   cancelableN v _ := absurd v not_valid_exclN_op_left
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem Cancelable.of_eqv {x₁ x₂ : α} (e : x₁ ≡ x₂) (h : Cancelable x₁) : Cancelable x₂ where
   cancelableN {n w _} v ee :=
     have v_xw : ✓{n} x₁ • w := e.symm.op_l.dist.validN.1 v
     h.cancelableN v_xw <| e.dist.op_l.trans <| ee.trans e.symm.dist.op_l
 
-@[rocq_alias cancelable_proper]
+@[rocq_alias cancelable_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem cancelable_iff {x₁ x₂ : α} (e : x₁ ≡ x₂) : Cancelable x₁ ↔ Cancelable x₂ :=
   ⟨.of_eqv e, .of_eqv e.symm⟩
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem _root_.Iris.OFE.Equiv.cancelable {x₁ x₂ : α} : x₁ ≡ x₂ → (Cancelable x₁ ↔ Cancelable x₂) :=
   cancelable_iff
 
@@ -862,12 +886,14 @@ theorem IdFree.of_dist {x₁ x₂ : α} {n} (e : x₁ ≡{n}≡ x₂) (h : IdFre
 theorem _root_.Iris.OFE.Dist.idFree {x₁ x₂ : α} (e : x₁ ≡{n}≡ x₂) : IdFree x₁ ↔ IdFree x₂ :=
   ⟨.of_dist e, .of_dist e.symm⟩
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem IdFree.of_eqv {x₁ x₂ : α} (e : x₁ ≡ x₂) (h : IdFree x₁) : IdFree x₂ :=
   h.of_dist e.dist (n := 0)
 
-@[rocq_alias id_free_proper]
+@[rocq_alias id_free_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem idFree_iff {x₁ x₂ : α} (e : x₁ ≡ x₂) : IdFree x₁ ↔ IdFree x₂ :=
   e.dist.idFree (n := 0)
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem _root_.Iris.OFE.Equiv.idFree {x₁ x₂ : α} : x₁ ≡ x₂ → (IdFree x₁ ↔ IdFree x₂) :=
   idFree_iff
 
@@ -897,8 +923,8 @@ instance idFree_op_r {x y : α} [IdFree y] [Cancelable x] : IdFree (x • y) whe
     id_free0_r z (validN_op_right v) (cancelableN v (op_assocN.trans h).symm).symm
 
 @[rocq_alias id_free_op_l]
-instance idFree_op_l {x y : α} [IdFree x] [Cancelable y] : IdFree (x • y) :=
-  (Equiv.of_eq comm').idFree.1 inferInstance
+instance idFree_op_l {x y : α} [IdFree x] [Cancelable y] : IdFree (x • y) := by
+  rw [comm']; exact inferInstance
 
 @[rocq_alias exclusive_id_free]
 instance exclusive_idFree {x : α} [Exclusive x] : IdFree x where
@@ -1077,7 +1103,7 @@ protected def Hom.id [CMRA α] : α -C> α where
 --       fun x => sorry,
 --       fun x y => sorry⟩
 
-@[rocq_alias cmra_morphism_proper]
+@[rocq_alias cmra_morphism_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 protected theorem Hom.eqv [CMRA β] (f : α -C> β) {x₁ x₂ : α} (X : x₁ ≡ x₂) : f x₁ ≡ f x₂ :=
   f.ne.eqv X
 
@@ -1419,6 +1445,7 @@ theorem op_none_left_id (a : Option α) : (none : Option α) • a = a := by
 theorem op_none_right_id (a : Option α) : a • (none : Option α) = a := by
   cases a <;> rfl
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem equiv_of_some_equiv_some {x y : α} (H : some x ≡ some y) : x ≡ y := H
 
 theorem dist_of_some_dist_some {n} {x y : α} (H : some x ≡{n}≡ some y) : x ≡{n}≡ y := H

@@ -62,12 +62,13 @@ theorem bigAndM_mono {Φ Ψ : K → V → PROP} {m : M V}
     ([∧map] k ↦ x ∈ m, Φ k x) ⊢ [∧map] k ↦ x ∈ m, Ψ k x :=
   bigOpM_gen_eqv .rfl and_mono (h ·)
 
-@[rocq_alias big_andM_proper]
+@[rocq_alias big_andM_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem bigAndM_eqv {Φ Ψ : K → V → PROP} {m : M V}
     (h : ∀ {k x}, get? m k = some x → Φ k x ≡ Ψ k x) :
     ([∧map] k ↦ x ∈ m, Φ k x) ≡ [∧map] k ↦ x ∈ m, Ψ k x :=
   bigOpM_eqv h
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem bigAndM_eqv_of_forall_eqv {Φ Ψ : K → V → PROP} {m : M V}
     (h : ∀ {k x}, Φ k x ≡ Ψ k x) :
     ([∧map] k ↦ x ∈ m, Φ k x) ≡ [∧map] k ↦ x ∈ m, Ψ k x :=
@@ -259,7 +260,7 @@ theorem bigAndM_filter_cond {Φ : K → V → PROP} {m : M V} (p : K → V → B
 theorem bigAndM_filter {Φ : K → V → PROP} {m : M V} (p : K → V → Bool) :
     ([∧map] k ↦ x ∈ PartialMap.filter p m, Φ k x) ≡
       [∧map] k ↦ x ∈ m, iprop(⌜p k x = true⌝ → Φ k x) :=
-  (OFE.Equiv.of_eq (bigAndM_filter_cond p)).trans <| bigOpM_eqv fun {k x} _ => by
+  (OFE.Equiv.of_eq (bigAndM_filter_cond p)).trans <| OFE.Equiv.of_eq <| bigOpM_ext fun {k x} _ => OFE.Equiv.to_eq <| by
     match hp : p k x with
     | false => simpa using equiv_iff.mpr ⟨imp_intro_swap <| pure_elim_left False.elim, true_intro⟩
     | true => simpa using equiv_iff.mpr true_imp.symm
@@ -270,6 +271,7 @@ theorem bigAndM_union [DecidableEq K] {Φ : K → V → PROP} {m₁ m₂ : M V} 
       ([∧map] k ↦ y ∈ m₁, Φ k y) ∧ [∧map] k ↦ y ∈ m₂, Φ k y :=
   equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpM_union_eqv Φ m₁ m₂ hdisj
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem bigAndM_insert_override {Φ : K → V → PROP} {m : M V} {i : K} {x x' : V}
     (hi : get? m i = some x) (hΦ : Φ i x ≡ Φ i x') :
     ([∧map] k ↦ v ∈ insert m i x', Φ k v) ≡ ([∧map] k ↦ v ∈ m, Φ k v) :=

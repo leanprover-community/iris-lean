@@ -144,7 +144,7 @@ theorem valid_op_own {dq : DFrac} {q : Qp} : ✓ dq • own q → q.val < 1 := b
 
 @[rocq_alias dfrac_valid_own_l]
 theorem valid_own_op {dq : DFrac} {q : Qp} : ✓ own q • dq → q.val < 1 :=
-  valid_op_own ∘ CMRA.valid_of_eqv (OFE.Equiv.of_eq (CMRA.comm' (y := dq)))
+  fun h => valid_op_own (CMRA.comm' (y := dq) ▸ h)
 
 @[rocq_alias dfrac_valid_discarded]
 theorem valid_discard : ✓ (discard : DFrac) := by simp [CMRA.Valid, valid]

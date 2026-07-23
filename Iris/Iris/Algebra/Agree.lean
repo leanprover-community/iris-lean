@@ -508,7 +508,7 @@ theorem valid_includedN {x y : Agree α} : ✓{n} y → x ≼{n} y → x ≡{n}�
 @[rocq_alias agree_valid_included]
 theorem valid_included {x y : Agree α} : ✓ y → x ≼ y → x = y := by
   intro hval ⟨z, heq⟩
-  have hz : x = z := op_inv ((CMRA.valid_iff (OFE.Equiv.of_eq heq)).mp hval)
+  have hz : x = z := op_inv (heq ▸ hval : ✓ (x • z))
   rw [heq, ← hz, idemp]
 
 set_option synthInstance.checkSynthOrder false in

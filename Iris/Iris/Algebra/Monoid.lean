@@ -43,7 +43,7 @@ attribute [instance] op_ne
 variable {M : Type u} [OFE M] {unit : M} {op : M → M → M}
 
 /-- The operation is proper with respect to equivalence. -/
-@[rocq_alias monoid_proper]
+@[rocq_alias monoid_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem op_proper [MonoidOps op unit] (ha : a ≡ a') (hb : b ≡ b') :
     op a b ≡ op a' b' := NonExpansive₂.eqv ha hb
 
@@ -53,10 +53,12 @@ theorem op_right_id [MonoidOps op unit] : op a unit = a :=
   op_comm.trans op_left_id
 
 /-- Congruence on the left argument. -/
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem op_congr_left [MonoidOps op unit] (h : a ≡ a') : op a b ≡ op a' b :=
   op_proper h .rfl
 
 /-- Congruence on the right argument. -/
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem op_congr_right [MonoidOps op unit] (h : b ≡ b') : op a b ≡ op a b' :=
   op_proper .rfl h
 
@@ -103,6 +105,7 @@ class WeakMonoidHomomorphism {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M�
   /-- The homomorphism property -/
   map_op : ∀ {x y}, R (f (op₁ x y)) (op₂ (f x) (f y))
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem WeakMonoidHomomorphism.rel_proper {M₁ : Type u} {M₂ : Type v}
   [OFE M₁] [OFE M₂] {a a' b b' : M₂}
   {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
@@ -112,7 +115,7 @@ theorem WeakMonoidHomomorphism.rel_proper {M₁ : Type u} {M₂ : Type v}
     intro Heq1 Heq2
     rw [Heq1.to_eq, Heq2.to_eq]
 
-@[rocq_alias weak_monoid_homomorphism_proper]
+@[rocq_alias weak_monoid_homomorphism_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem weak_monoid_homomorphism_equiv [ OFE M₁] [OFE M₂]
   [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂] (f : M₁ → M₂)
   [h : WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R f] {x y} :

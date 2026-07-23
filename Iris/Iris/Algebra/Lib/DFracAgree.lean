@@ -106,7 +106,7 @@ theorem includedN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
 theorem update₂ {d₁ d₂ : DFrac} {a₁ a₂ a' : A} (hd : d₁ • d₂ = .own 1) :
     mk d₁ a₁ • mk d₂ a₂ ~~> mk d₁ a' • mk d₂ a' := by
   have : mk d₁ a₁ • mk d₂ a₂ ≡ (own (1 : Qp), toAgree a₁ • toAgree a₂) :=
-    NonExpansive₂.eqv (OFE.Equiv.of_eq hd) Equiv.rfl
+    hd ▸ Equiv.rfl
   calc
     _ ≡ (own (1 : Qp), toAgree a₁ • toAgree a₂) := this
     _ ~~> mk d₁ a' • mk d₂ a' :=

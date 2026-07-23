@@ -28,27 +28,30 @@ section updates
 
 variable [CMRA α] [CMRA β] (f : α → β) (g : β → α)
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem UpdateP.equiv_left {P : α → Prop} {x y : α} (e : x ≡ y) (u : x ~~>: P) : y ~~>: P :=
   fun n mz v => u n mz (CMRA.validN_ne (CMRA.opM_left_dist mz e.symm.dist) v)
 
 #rocq_ignore cmra_updateP_proper "Follows from UpdateP.equiv_left"
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem Update.equiv_left {x y z : α} (e : x ≡ y) (u : x ~~> z) : y ~~> z :=
   fun n mz v => u n mz (CMRA.validN_ne (CMRA.opM_left_dist mz e.symm.dist) v)
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem Update.equiv_right {x y z : α} (e : y ≡ z) (u : x ~~> y) : x ~~> z :=
   fun n mz v => CMRA.validN_ne (CMRA.opM_left_dist mz e.dist) (u n mz v)
 
 #rocq_ignore cmra_update_proper "Follows from Update.equiv_left"
 
 instance [CMRA α] : Trans OFE.Equiv UpdateP UpdateP (α := α) where
-  trans e u := UpdateP.equiv_left e.symm u
+  trans e u := fun n mz v => u n mz (CMRA.validN_ne (CMRA.opM_left_dist mz e.dist) v)
 
 instance [CMRA α] : Trans OFE.Equiv Update Update (α := α) where
-  trans e u := Update.equiv_left (id (OFE.Equiv.symm e)) u
+  trans e u := fun n mz v => u n mz (CMRA.validN_ne (CMRA.opM_left_dist mz e.dist) v)
 
 instance [CMRA α] : Trans Update OFE.Equiv Update (α := α) where
-  trans u e := Update.equiv_right e u
+  trans u e := fun n mz v => CMRA.validN_ne (CMRA.opM_left_dist mz e.dist) (u n mz v)
 
 @[rocq_alias cmra_update_updateP]
 theorem Update.of_updateP {x y : α} (h : x ~~>: (y = ·)) : x ~~> y :=
@@ -119,7 +122,7 @@ theorem Update.op_r {x y : α} : x • y ~~> y := fun _ _ => CMRA.validN_op_opM_
 
 @[rocq_alias cmra_update_included]
 theorem Update.included {x y : α} : x ≼ y → y ~~> x :=
-  fun ⟨_, ez⟩ => .equiv_left (OFE.Equiv.of_eq ez.symm) .op_l
+  fun ⟨_, ez⟩ => ez.symm ▸ Update.op_l
 
 @[rocq_alias cmra_update_valid0]
 theorem Update.valid0 {x y : α} : (✓{0} x → x ~~> y) → x ~~> y :=

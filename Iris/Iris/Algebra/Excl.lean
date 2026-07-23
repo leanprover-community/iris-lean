@@ -23,7 +23,7 @@ namespace Excl
 open OFE
 
 /-! ## COFE -/
-@[simp, rocq_alias excl_equiv] protected def Equiv [OFE α] : Excl α → Excl α → Prop
+@[simp, rocq_alias excl_equiv, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")] protected def Equiv [OFE α] : Excl α → Excl α → Prop
   | excl a, excl b => a ≡ b
   | invalid, invalid => True
   | _, _ => False

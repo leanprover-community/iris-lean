@@ -54,11 +54,12 @@ theorem bigAndL_mono {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ k x, l[k
     ([∧list] k ↦ x ∈ l, Φ k x) ⊢ [∧list] k ↦ x ∈ l, Ψ k x :=
   bigOpL_gen_proper (· ⊢ ·) .rfl and_mono (h _ _ ·)
 
-@[rocq_alias big_andL_proper]
+@[rocq_alias big_andL_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem bigAndL_eqv {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l[k]? = some x → Φ k x ≡ Ψ k x) :
     ([∧list] k ↦ x ∈ l, Φ k x) ≡ [∧list] k ↦ x ∈ l, Ψ k x :=
   bigOpL_eqv h
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem bigAndL_eqv_of_forall_eqv {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, Φ k x ≡ Ψ k x) :
     ([∧list] k ↦ x ∈ l, Φ k x) ≡ [∧list] k ↦ x ∈ l, Ψ k x :=
   bigOpL_eqv_of_forall_eqv h
@@ -139,7 +140,7 @@ theorem bigAndL_mem {Φ : A → PROP} {l : List A} {x : A} (h : x ∈ l) :
   let ⟨_, hi, hget⟩ := List.mem_iff_getElem.mp h
   bigAndL_lookup (List.getElem?_eq_some_iff.mpr ⟨hi, hget⟩)
 
-@[rocq_alias big_andL_zip_seq]
+@[rocq_alias big_andL_zip_seq, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem bigAndL_zip_seq {Φ : A × Nat → PROP} {n : Nat} {l : List A} :
     ([∧list] xy ∈ l.zipIdx n, Φ xy) ≡ [∧list] i ↦ x ∈ l, Φ (x, n + i) :=
   bigOpL_zipIdx_eqv Φ n l
@@ -163,6 +164,7 @@ theorem bigAndL_laterN {Φ : Nat → A → PROP} {l : List A} {n : Nat} :
   | 0 => .rfl
   | _ + 1 => (later_congr bigAndL_laterN).trans bigAndL_later
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem bigAndL_perm {Φ : A → PROP} {l₁ l₂ : List A} (hp : l₁.Perm l₂) :
     ([∧list] x ∈ l₁, Φ x) ≡ [∧list] x ∈ l₂, Φ x :=
   bigOpL_eqv_of_perm Φ hp
@@ -170,7 +172,7 @@ theorem bigAndL_perm {Φ : A → PROP} {l₁ l₂ : List A} (hp : l₁.Perm l₂
 @[rocq_alias big_andL_submseteq]
 theorem bigAndL_submseteq {Φ : A → PROP} {l₁ l₂ l : List A} (h : (l₁ ++ l).Perm l₂) :
     ([∧list] x ∈ l₂, Φ x) ⊢ [∧list] x ∈ l₁, Φ x :=
-  (equiv_iff.mp <| bigAndL_perm h).2.trans <|
+  (equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_perm Φ h).2.trans <|
   bigAndL_append.1.trans and_elim_l
 
 @[rocq_alias big_andL_ne]

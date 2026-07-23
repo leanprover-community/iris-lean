@@ -100,6 +100,7 @@ theorem singleton_dist [LawfulPartialMap M K] [DecidableEq K] [OFE V] {n : Nat} 
   simp only [LawfulPartialMap.get?_singleton]
   split <;> simp [h]
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem singleton_equiv [LawfulPartialMap M K] [DecidableEq K] [OFE V] {x y : V} (h : x ≡ y) (k : K) :
     PartialMap.singleton (M := M) k x = PartialMap.singleton k y :=
   Equiv.to_eq fun _ => singleton_dist h.dist k
@@ -223,7 +224,7 @@ instance instStoreCMRA : CMRA (M V) where
     obtain ⟨v', Hv'⟩ : (core (get? x i)) ≼ (core (get? y i))  := by
       apply core_mono
       exists get? z i
-      have Hz := ((get?_ne i).eqv (OFE.Equiv.of_eq Hz)).to_eq; revert Hz
+      have Hz := congrArg (get? · i) Hz; revert Hz
       simp [CMRA.op, optionOp, get?_merge]
       cases get? x i <;> cases get? z i <;> simp_all
     exists v'
@@ -479,8 +480,7 @@ theorem exclusive_singleton_inc_iff {m : M V} (He : Exclusive x) (Hv : ✓ m) :
 
 theorem singleton_inc_singleton_iff : (singleton i x : M V) ≼ (singleton i y : M V) ↔ some x ≼ some y := by
   refine singleton_inc_iff.trans ⟨fun ⟨z, Hz, Hxz⟩ => ?_, fun H => ?_⟩
-  · refine inc_of_inc_of_eqv Hxz ?_
-    exact OFE.Equiv.of_eq <| Hz.symm.trans <| get?_singleton_eq rfl
+  · exact (Hz.symm.trans <| get?_singleton_eq rfl) ▸ Hxz
   · refine ⟨y, ?_, H⟩
     exact get?_singleton_eq rfl
 
@@ -596,6 +596,7 @@ def mapO [OFE α] [OFE β] (f : α -n> β) : OFE.Hom (H α) (H β) where
   f := map H f
   ne := inferInstance
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem map_ext [OFE α] [OFE β] {f g : α -> β} (heq : f ≡ g) : map H f m = map H g m := OFE.Equiv.to_eq <| by
   intro n k
   simp [map, get?_bindAlter, Option.bind]
@@ -652,8 +653,7 @@ instance {F} [COFE.OFunctor F] : COFE.OFunctor (PartialMapOF H F) where
     apply COFE.OFunctor.map_ne.ne <;> simp_all
   map_id x := by
     refine .trans ?_ (map_id H x)
-    apply map_ext
-    exact fun _ a => (COFE.OFunctor.map_id a).dist
+    exact congrArg (map H · x) (funext fun a => COFE.OFunctor.map_id a)
   map_comp f g f' g' m := OFE.Equiv.to_eq <| by
     simp [mapO, map]
     intro n x
@@ -670,8 +670,7 @@ instance {F} [RFunctor F] : URFunctor (PartialMapOF H F) where
     apply RFunctor.map_ne.ne <;> simp_all
   map_id x := by
     refine .trans ?_ (map_id H x)
-    apply map_ext
-    exact fun _ a => (RFunctor.map_id a).dist
+    exact congrArg (map H · x) (funext fun a => RFunctor.map_id a)
   map_comp f g f' g' m := OFE.Equiv.to_eq <| by
     simp [mapC, map]
     intro n x

@@ -45,7 +45,7 @@ theorem MonoidHomomorphism.ofEquiv [OFE PROP] {op₁ op₂ : PROP → PROP → P
     (hunit : f u₁ ≡ u₂) : MonoidHomomorphism op₁ op₂ u₁ u₂ (· ≡ ·) f where
   rel_refl := .rfl
   rel_trans := .trans
-  op_proper ha hb := MonoidOps.op_proper ha hb
+  op_proper ha hb := ha.to_eq ▸ hb.to_eq ▸ .rfl
   map_ne := hne
   map_op := hop
   map_unit := hunit
@@ -57,7 +57,7 @@ theorem WeakMonoidHomomorphism.ofEquiv [OFE PROP] {op₁ op₂ : PROP → PROP �
     WeakMonoidHomomorphism op₁ op₂ u₁ u₂ (· ≡ ·) f where
   rel_refl := .rfl
   rel_trans := .trans
-  op_proper ha hb := MonoidOps.op_proper ha hb
+  op_proper ha hb := ha.to_eq ▸ hb.to_eq ▸ .rfl
   map_ne := hne
   map_op := hop
 

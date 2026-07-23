@@ -107,6 +107,7 @@ theorem BIBase.BiEntails.ofMono [BI PROP1] [BI PROP2] {mod : PROP1 → PROP2}
     ∀ {P Q : PROP1}, P ⊣⊢ Q → mod P ⊣⊢ mod Q :=
   fun h => ⟨mono h.1, mono h.2⟩
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem BIBase.BiEntails.proper [BI PROP] {a a' b b' : PROP} (ha : a ≡ a') (hb : b ≡ b') : (a ⊣⊢ b ↔ a' ⊣⊢ b') where
   mp h := equiv_iff.1 (ha.symm.trans (equiv_iff.2 h) |>.trans hb)
   mpr h := equiv_iff.1 (ha.trans (equiv_iff.2 h) |>.trans hb.symm)

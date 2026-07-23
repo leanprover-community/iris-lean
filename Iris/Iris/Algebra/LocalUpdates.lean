@@ -26,6 +26,7 @@ variable [CMRA α]
 
 theorem LocalUpdate.id (x : α × α) : x ~l~> x := fun _ _ vx e => ⟨vx, e⟩
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem LocalUpdate.equiv_left {x y : α × α} (z : α × α) (h : x ≡ y) : x ~l~> z → y ~l~> z := by
   intro u n mw v e
   refine u n mw ((OFE.Dist.validN (OFE.equiv_fst h.to_eq).dist.symm).mp v) ?_
@@ -34,6 +35,7 @@ theorem LocalUpdate.equiv_left {x y : α × α} (z : α × α) (h : x ≡ y) : x
     _     ≡{n}≡ y.snd •? mw := e
     _     ≡{n}≡ x.snd •? mw := CMRA.opM_left_dist mw (OFE.equiv_snd h.to_eq).dist.symm
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem LocalUpdate.equiv_right (x : α × α) {y z : α × α} (h : y ≡ z) : x ~l~> y → x ~l~> z := by
   intro u n mw v e
   let ⟨vy, e⟩ := u n mw v e
@@ -43,10 +45,9 @@ theorem LocalUpdate.equiv_right (x : α × α) {y z : α × α} (h : y ≡ z) : 
     _     ≡{n}≡ y.snd •? mw := e
     _     ≡{n}≡ z.snd •? mw := h.dist.2.opM .rfl
 
-@[rocq_alias local_update_proper]
-theorem LocalUpdate.equiv {x x' : α × α} {y y' : α × α} (h1 : x ≡ x') (h2 : y ≡ y') : x ~l~> y ↔ x' ~l~> y' :=
-  ⟨fun u => equiv_right _ h2 (equiv_left _ h1 u),
-   fun u => equiv_right _ h2.symm (equiv_left _ h1.symm u)⟩
+@[rocq_alias local_update_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
+theorem LocalUpdate.equiv {x x' : α × α} {y y' : α × α} (h1 : x ≡ x') (h2 : y ≡ y') : x ~l~> y ↔ x' ~l~> y' := by
+  rw [h1.to_eq, h2.to_eq]
 
 @[rocq_alias exclusive_local_update]
 theorem LocalUpdate.exclusive [CMRA.Exclusive y] {x x' : α}
@@ -170,7 +171,7 @@ theorem local_update_unital_discrete [CMRA.Discrete α] (x y x' y' : α) :
 theorem cancel_local_update_unit (x y : α) [CMRA.Cancelable x] : (x • y, x) ~l~> (y, CMRA.unit) :=
   have e : (x • y, x • CMRA.unit) = (x • y, x) :=
     OFE.equiv_prod_ext rfl CMRA.unit_right_id
-  .equiv_left _ (OFE.Equiv.of_eq e) (.cancel x y CMRA.unit)
+  e ▸ LocalUpdate.cancel x y CMRA.unit
 
 /-- Necessary and sufficient condition for a local update on a unital discrete leibniz CMRA
   with trivial validity predicate -/

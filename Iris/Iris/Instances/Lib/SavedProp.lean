@@ -58,7 +58,7 @@ instance saved_anything_fractional (γ : GName) (x : F.ap (IProp GF)) :
     unfold saved_anything_own
     refine .trans ?_ iOwn_op
     refine equiv_iff.mp ?_
-    exact iOwn_ne.eqv (OFE.Equiv.of_eq (DFracAgree.Frac.mk_op (q₁ := p) (q₂ := q)))
+    exact Equiv.of_eq (congrArg (iOwn _) (DFracAgree.Frac.mk_op (q₁ := p) (q₂ := q)))
 
 @[rocq_alias saved_anything_as_fractional]
 instance saved_anything_as_fractional (γ : GName) (x : F.ap (IProp GF)) (q : Qp) :
@@ -125,7 +125,7 @@ instance saved_anything_combine_as (γ : GName) (dq1 dq2 : DFrac) (x y : F.ap (I
     icombine Hx Hy gives ⟨-, #H⟩
     irewrite [← H] at Hy
     unfold saved_anything_own
-    iapply (equiv_iff.mp (iOwn_ne.eqv (OFE.Equiv.of_eq (DFracAgree.mk_op (d₁ := dq1) (d₂ := dq2) (a := x))))).mpr
+    iapply (equiv_iff.mp (Equiv.of_eq (congrArg (iOwn _) (DFracAgree.mk_op (d₁ := dq1) (d₂ := dq2) (a := x))))).mpr
     iapply iOwn_op.mpr
     isplitl [Hx] <;> iassumption
 

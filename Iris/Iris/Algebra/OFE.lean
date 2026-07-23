@@ -93,7 +93,7 @@ theorem NonExpansive.comp [OFE α] [OFE β] [OFE γ] {g : β → γ} {f : α →
   ⟨fun {_ _ _} h => hg.ne (hf.ne h)⟩
 
 /-- A non-expansive function preserves equivalence. -/
-@[rocq_alias ne_proper]
+@[rocq_alias ne_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem NonExpansive.eqv [OFE α] [OFE β] {f : α → β} [NonExpansive f]
     ⦃x₁ x₂⦄ (h : x₁ ≡ x₂) : f x₁ ≡ f x₂ :=
   equiv_dist.2 fun _ => ne (equiv_dist.1 h _)
@@ -102,7 +102,7 @@ theorem NonExpansive.eqv [OFE α] [OFE β] {f : α → β} [NonExpansive f]
 class NonExpansive₂ [OFE α] [OFE β] [OFE γ] (f : α → β → γ) where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → ∀ ⦃y₁ y₂⦄, y₁ ≡{n}≡ y₂ → f x₁ y₁ ≡{n}≡ f x₂ y₂
 
-@[rocq_alias ne_proper_2]
+@[rocq_alias ne_proper_2, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem NonExpansive₂.eqv [OFE α] [OFE β] [OFE γ] {f : α → β → γ} [NonExpansive₂ f]
     ⦃x₁ x₂⦄ (hx : x₁ ≡ x₂) ⦃y₁ y₂⦄ (hy : y₁ ≡ y₂) : f x₁ y₁ ≡ f x₂ y₂ :=
   equiv_dist.2 fun _ => ne hx.dist hy.dist
@@ -178,9 +178,9 @@ instance ne_of_contractive [OFE α] [OFE β] (f : α → β) [Contractive f] : N
   ne := fun _ _ _ h => Contractive.distLater_dist (Dist.distLater h)
 
 /-- A contractive function preserves equivalence. -/
-@[rocq_alias contractive_proper]
+@[rocq_alias contractive_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem Contractive.eqv [OFE α] [OFE β] (f : α → β) [Contractive f] ⦃x y : α⦄ (h : x ≡ y) :
-    f x ≡ f y := NonExpansive.eqv h
+    f x ≡ f y := Equiv.of_eq (congrArg f h.to_eq)
 
 /-- Constant functions are contractive. -/
 @[rocq_alias const_contractive]

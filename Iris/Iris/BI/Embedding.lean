@@ -325,7 +325,7 @@ theorem mkEmbedHom {op₁ : PROP1 → PROP1 → PROP1} {op₂ : PROP2 → PROP2 
     MonoidHomomorphism op₁ op₂ u₁ u₂ (· ≡ ·) (embed (A := PROP1) (B := PROP2)) where
   rel_refl := .rfl
   rel_trans := .trans
-  op_proper ha hb := MonoidOps.op_proper ha hb
+  op_proper ha hb := ha.to_eq ▸ hb.to_eq ▸ OFE.Equiv.rfl
   map_ne := embed_ne
   map_op := hop
   map_unit := hunit
