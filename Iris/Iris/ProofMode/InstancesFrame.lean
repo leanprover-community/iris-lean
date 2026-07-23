@@ -418,6 +418,7 @@ def solveGatherEvarsEq (a c : Expr) : MetaM Bool := do
   | .mvar m =>
     if ← m.isDelayedAssigned then return false
     let decl ← m.getDecl
+    -- The metavaiable `m` cannot be older than `c`, or else assignment is out of scope
     unless decl.lctx.contains c.fvarId! do
       return false
     unless decl.depth == (← getMCtx).depth do
@@ -445,47 +446,36 @@ def frameExist : SynthTactic := λ e => do
   -- Find the binder name so that it can be reused after framing
   let bn := match Φ with | .lam n .. => n | _ => `x
 
-  let option ← frameInstantiateExistsEnabled
-  if option then
-    -- Framing of existential quantifiers *enabled*
-    let some ⟨a, X, inst⟩ ← withLocalDeclDQ bn α fun c => do
-      let a ← mkFreshExprMVarQ q($α)
-      let G ← mkFreshExprMVarQ q($prop)
-      have body : Q($prop) := Expr.headBeta q($Φ $a)
-      let some inst ← synthInstanceRecursiveQ q(Frame $p $R $body $G) | return none
-      if ← solveGatherEvarsEq (← instantiateMVars a) c then
-        return some (none, ← mkLambdaFVars #[c] (← instantiateMVars G),
-                           ← mkLambdaFVars #[c] (← instantiateMVars inst))
-      let a ← instantiateMVars a
-      let G ← instantiateMVars G
-      if a.containsFVar c.fvarId! || G.containsFVar c.fvarId! then return none
-      return some (some a, G, ← instantiateMVars inst)
-    | return .continue
-    match a with
-    | none =>
-      have Ψ : Q($α → $prop) := X
-      let inst : Q(∀ x, Frame $p $R ($Φ x) ($Ψ x)) := inst
-      return .success q(frame_exist_no_instantiate $p $R $Φ $Ψ $inst)
-    | some a =>
-      have a : Q($α) := a
-      have G : Q($prop) := X
-      let inst : Q(Frame $p $R ($Φ $a) $G) := inst
-      return .success q(frame_exist $p $R $Φ $a $G $inst)
-  else
-    -- Framing of existential quantifiers *disabled*
-    let some ⟨Ψ, inst⟩ ← withLocalDeclDQ bn α fun a => do
-      let G : Q($prop) ← mkFreshExprMVarQ q($prop)
-      have body : Q($prop) := Expr.headBeta q($Φ $a)
-      let some inst ← synthInstanceRecursiveQ q(Frame $p $R $body $G)
-      | return none
-      let G ← instantiateMVars G
-      let inst ← instantiateMVars inst
-      return some (← mkLambdaFVars #[a] G, ← mkLambdaFVars #[a] inst)
-    | return .continue
+  -- Introduce a free variable `c` for the computation within `withLocalDeclDQ`
+  let some ⟨a, X, inst⟩ ← withLocalDeclDQ bn α fun c => do
+    let a : Q($α) ←
+      if ← frameInstantiateExistsEnabled then
+        mkFreshExprMVarQ q($α)
+      else pure c
+    let G ← mkFreshExprMVarQ q($prop)
+    have body : Q($prop) := Expr.headBeta q($Φ $a)
+    let some inst ← synthInstanceRecursiveQ q(Frame $p $R $body $G) | return none
+    -- The existential quantifier remains (`a == c` when framing of existential is disabled)
+    if a == c || (← solveGatherEvarsEq (← instantiateMVars a) c) then
+      return some (none, ← mkLambdaFVars #[c] (← instantiateMVars G),
+                          ← mkLambdaFVars #[c] (← instantiateMVars inst))
+    let a ← instantiateMVars a
+    let G ← instantiateMVars G
+    if a.containsFVar c.fvarId! || G.containsFVar c.fvarId! then return none
+    -- The existential quantifier does not remain as the existential variable is instantiated
+    return some (some a, G, ← instantiateMVars inst)
+  | return .continue
 
-    have Ψ : Q($α → $prop) := Ψ
+  match a with
+  | none =>
+    have Ψ : Q($α → $prop) := X
     let inst : Q(∀ x, Frame $p $R ($Φ x) ($Ψ x)) := inst
     return .success q(frame_exist_no_instantiate $p $R $Φ $Ψ $inst)
+  | some a =>
+    have a : Q($α) := a
+    have G : Q($prop) := X
+    let inst : Q(Frame $p $R ($Φ $a) $G) := inst
+    return .success q(frame_exist $p $R $Φ $a $G $inst)
 
 #rocq_ignore frame_exist_helper "Logic already handled in the metaprogram frameExist"
 #rocq_ignore GatherEvarsEq "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
