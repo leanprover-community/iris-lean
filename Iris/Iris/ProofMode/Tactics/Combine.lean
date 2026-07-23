@@ -12,8 +12,8 @@ public meta import Iris.ProofMode.ClassesMake
 
 namespace Iris.ProofMode
 
-public meta section
-open Lean Elab Tactic Meta Qq BI Std
+public section
+open BI Std
 
 /-- Auxiliary lemma for combining two hypotheses using `CombineSepAs` -/
 theorem combine_as_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1 out2 out : PROP}
@@ -94,6 +94,9 @@ theorem combine_as_gives [BI PROP] {p : Bool} {newE e outAs outGives goal : PROP
   _ ⊢ newE ∗ □?p outAs ∗ □?p □ outGives := sep_mono_right <| sep_mono_right intuitionisticallyIf_intutitionistically.mpr
   _ ⊢ newE ∗ □?p (outAs ∗ □ outGives)   := sep_mono_right intuitionisticallyIf_sep_mpr
   _ ⊢ goal := pfAsGives
+
+public meta section
+open Lean Elab Tactic Meta Qq BI Std
 
 /--
   The `icombine` tactic with the `as` syntax transforms the hypotheses
@@ -229,7 +232,7 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
     let hs ← iCombineParseSelPats hyps patSels
     let st ← iCombineCore hs hyps goal
 
-    let pf ← iCasesCore _ st.newHyps goal pat q($(st.p)) st.outAs addBIGoal
+    let pf ← iCasesCore st.newHyps goal pat q($(st.p)) st.outAs "icombine"
     mvar.assign q($(st.pfAs).trans $pf)
 
 /--
@@ -251,7 +254,7 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
 
     match outGives, pfGives with
     | some outGives, pfGives =>
-      let pf ← iCasesCore _ hyps goal pat q(true) outGives addBIGoal
+      let pf ← iCasesCore hyps goal pat q(true) outGives "icombine"
       mvar.assign q($(pfGives).trans $pf)
     | none, _ => throwNoInstanceForGives
 
@@ -280,7 +283,8 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
 
     match outGives, pfGives with
     | some outGives, pfGives =>
-      let pf ← iCasesCore _ st.newHyps goal (.conjunction [pat1, .intuitionistic pat2])
-        q($st.p) q(iprop($st.outAs ∗ □ $outGives)) addBIGoal
+      let pf ← iCasesCore st.newHyps goal
+        ⟨pat1.ref, (.conjunction [pat1.case, .intuitionistic pat2.case])⟩
+        q($st.p) q(iprop($st.outAs ∗ □ $outGives)) "icombine"
       mvar.assign q(combine_as_gives $st.pfAs $pfGives $pf)
     | none, _ => throwNoInstanceForGives

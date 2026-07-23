@@ -16,6 +16,7 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 - `irevert` [*selPats*](#selection-patterns) — Revert the selected hypotheses (proof mode or pure Lean hypotheses) into the goal. An Iris hypothesis *H* in *selPats* is reverted as a wand premise. If a pure hypothesis *H* in *selPats* has a type `φ` such that `φ : Prop`, then *H* is reverted as a premise. If *x* in *selPats* has a type `α` such that `α` is non-`Prop`, then *x* is reverted as a universally quantified variable. For every hypothesis *H* being reverted, all hypotheses dependent on *H* must also be reverted.
 - `irevert!` [*selPats*](#selection-patterns) — similar to `irevert` [*selPats*](#selection-patterns), except that for every hypothesis in *selPats*, hypotheses dependent on *H* are also implicitly reverted.
 - `ipure` *H* — Move the pure hypothesis *H* into the Lean context.
+- `ipure` *H* `as` *rcasesPat* — Move the pure hypothesis *H* into the Lean context and destruct it with the `rcases` pattern.
 - `iintuitionistic` *H* — Move *H* to the intuitionistic context. Equivalent to `icases H with #H`.
 - `ispatial` *H* — Move *H* to the spatial context. Equivalent to `icases H with ∗H`.
 
@@ -83,10 +84,11 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 - `$` — Frame the hypothesis: immediately cancel it against the goal (like `iframe`).
 - `⟨`*pat₁*`,` ... `,` *patₙ*`⟩` — Destruct a (separating) conjunction or existential; an existential variable is bound with `%`*x*, e.g. `⟨%x, H⟩`.
 - `(`*pat₁* `|` ... `|` *patₙ*`)` — Destruct a disjunction, one goal per disjunct. Parentheses can be omitted when nested inside `⟨⟩`.
-- `%`*name* — Move the (pure) hypothesis into the Lean context as *name*.
+- `%`*rcasesPat* — Move the (pure) hypothesis into the Lean context and destruct it with the `rcases` pattern *rcasesPat*.
 - `#`*pat* — Move the hypothesis to the intuitionistic context, then destruct with *pat*.
 - `∗`*pat* — Move the hypothesis to the spatial context, then destruct with *pat*.
 - `>`*pat* — Eliminate the modality at the top of the hypothesis, then destruct with *pat*.
+- `←`/`→` — Rewrite using a pure Lean equality and then remove the equality from the context.
 
 Example:
 ```lean
@@ -101,8 +103,14 @@ Example:
 - [*casesPat*](#cases-patterns) — Introduce a hypothesis and destruct it with [*casesPat*](#cases-patterns). In particular, `%x` introduces a universally quantified variable or pure premise into the Lean context.
 - `!>` — Introduce the modality at the top of the goal (like `imodintro`).
 - `//` — Try to close the goal with `itrivial` (and continue with the remaining patterns if it fails).
+- `*` — Introduce all universal quantifiers.
+- `**` — Introduce all universal quantifiers, pure arrows, and wands.
+- `!%` — Introduce a pure proof goal and exit the proof mode.
+- `/=` — Apply simplification.
+- `//=` — Apply simplification and try solving the goal using `itrivial`. This is a shorthand for `/=` and `//`.
+- `{` [*selPats*](#selection-patterns) `}` — Clear the selection hypotheses chosen by the selection patterns *selPats*. Each element in *selPats* can be prefixed with `!` so that the chosen hypotheses are framed instead.
 
-Example: `iintro %x ⟨HP, #HQ⟩ !> //`.
+Example: `iintro %x ⟨HP, #HQ⟩ !> {HR !HS #} → //`.
 
 ## Selection Patterns
 

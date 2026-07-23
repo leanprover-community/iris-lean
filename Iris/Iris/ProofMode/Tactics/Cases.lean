@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang
+Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang, Alvin Tang
 -/
 module
 
@@ -64,29 +64,30 @@ public meta section
 open Lean Elab Tactic Meta Qq Std
 
 private def iCasesEmptyConj {prop : Q(Type u)} (bi : Q(BI $prop))
-    {P} (_hyps : Hyps bi P) (p : Q(Bool)) (A goal : Q($prop)) :
+    {P} (_hyps : Hyps bi P) (p : Q(Bool)) (A goal : Q($prop)) (tacName : String) :
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) := do
   if let .defEq _ ← isDefEqQ A q(iprop(False)) then
     return q(false_elim')
   else
-    throwError "icases: cannot destruct {A} as an empty conjunct"
+    throwError "{tacName}: cannot destruct {A} as an empty conjunct"
 
 /-- Destruct an existential hypothesis [A] by introducing its witness and continuing with the body [B]. -/
-private def iCasesExists {prop : Q(Type u)} (bi : Q(BI $prop)) (name : TSyntax ``binderIdent)
-    (p : Q(Bool)) (P A goal : Q($prop))
+private def iCasesExists {prop : Q(Type u)} {bi : Q(BI $prop)} (pat : TSyntax `rcasesPat)
+    (p : Q(Bool)) (P A goal : Q($prop)) (tacName : String)
     (k : (B : Q($prop)) → ProofModeM Q($P ∗ □?$p $B ⊢ $goal)) :
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) := do
   let v ← mkFreshLevelMVar
   let α : Q(Sort v) ← mkFreshExprMVarQ q(Sort v)
   let Φ : Q($α → $prop) ← mkFreshExprMVarQ q($α → $prop)
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoExists $A $Φ)
-    | throwError "icases: {A} is not an existential quantifier"
-  let (name, ref) ← getFreshName name
-  withLocalDeclDQ name α fun x => do
-    addLocalVarInfo ref (← getLCtx) x α
-    have B : Q($prop) := Expr.headBeta q($Φ $x)
-    let pf : Q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) ← mkLambdaFVars #[x] <|← k B
-    return q(exists_elim' $pf)
+  | throwError "{tacName}: {A} is not an existential quantifier"
+  let pf : Q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) ←
+    iPureCases q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) pat fun g => do
+      let B : Q($prop) ← mkFreshExprMVarQ q($prop)
+      unless ← isDefEq (← g.getType) q($P ∗ □?$p $B ⊢ $goal) do
+        throwError "{tacName}: unexpected goal {goal} after intro pattern"
+      k (Expr.headBeta (← instantiateMVars B))
+  return q(exists_elim' $pf)
 
 /-- Destruct a conjunction hypothesis [A] and continue with only its left or right component. -/
 private def iCasesAndLR {prop : Q(Type u)} (bi : Q(BI $prop))
@@ -101,8 +102,8 @@ private def iCasesAndLR {prop : Q(Type u)} (bi : Q(BI $prop))
   else return some q(sep_and_elim_l $(← k A1))
 
 /-- Destruct a conjunction hypothesis [A] into two parts and continue with the left and right subpatterns in sequence. -/
-private def iCasesSep {prop : Q(Type u)} (bi : Q(BI $prop))
-    {P} (hyps : Hyps bi P) (p : Q(Bool)) (A goal : Q($prop))
+private def iCasesSep {prop : Q(Type u)} {bi : Q(BI $prop)}
+    {P} (hyps : Hyps bi P) (p : Q(Bool)) (A goal : Q($prop)) (tacName : String)
     (k : ∀ {P}, Hyps bi P → (goal : Q($prop)) → ProofModeM Q($P ⊢ $goal))
     (k1 k2 : ∀ {P}, Hyps bi P → (goal B : Q($prop)) →
       (∀ {P}, Hyps bi P → (goal : Q($prop)) → ProofModeM Q($P ⊢ $goal)) →
@@ -113,62 +114,62 @@ private def iCasesSep {prop : Q(Type u)} (bi : Q(BI $prop))
   match matchBool p with
   | .inl _ =>
     let .some _ ← ProofModeM.trySynthInstanceQ q(IntoAnd $p $A $A1 $A2)
-      | throwError "icases: cannot destruct {A}"
+      | throwError "{tacName}: cannot destruct {A}"
     let goal' := q(iprop(□ $A2 -∗ $goal))
     let pf ← k1 hyps goal' A1 fun hyps goal' => do
       let goal'' ← mkFreshExprMVarQ q($prop)
       let .some inst ← ProofModeM.trySynthInstanceQ q(FromWand $goal' .in iprop(□ $A2) $goal'')
-        | throwError "icases: internal error: {goal'} is not a wand"
+        | throwError "{tacName}: internal error: {goal'} is not a wand"
       let pf ← k2 hyps goal'' A2 k
       return q((wand_intro $pf).trans $(inst).from_wand)
     return q(and_elim_intuitionistic $pf)
   | .inr _ =>
     let .some _ ← ProofModeM.trySynthInstanceQ q(IntoSep $A $A1 $A2)
-      | throwError "icases: cannot destruct {A}"
+      | throwError "{tacName}: cannot destruct {A}"
     let goal' := q(iprop($A2 -∗ $goal))
     let pf ← k1 hyps goal' A1 fun hyps goal' => do
       let goal'' ← mkFreshExprMVarQ q($prop)
       let .some inst ← ProofModeM.trySynthInstanceQ q(FromWand $goal' .in $A2 $goal'')
-        | throwError "icases: internal error: {goal'} is not a wand"
+        | throwError "{tacName}: internal error: {goal'} is not a wand"
       let pf ← k2 hyps goal'' A2 k
       return q((wand_intro $pf).trans $(inst).from_wand)
     return q(sep_elim_spatial (A := $A) $pf)
 
 /-- Destruct a disjunction hypothesis [A] into two cases and continue separately on each branch. -/
-private def iCasesOr {prop : Q(Type u)} (bi : Q(BI $prop))
-    (p : Q(Bool)) (P A goal : Q($prop))
+private def iCasesOr {prop : Q(Type u)} {bi : Q(BI $prop)}
+    (p : Q(Bool)) (P A goal : Q($prop)) (tacName : String)
     (k1 k2 : (B : Q($prop)) → ProofModeM Q($P ∗ □?$p $B ⊢ $goal)) :
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) := do
   let A1 ← mkFreshExprMVarQ q($prop)
   let A2 ← mkFreshExprMVarQ q($prop)
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoOr $A $A1 $A2)
-    | throwError "icases: {A} is not a disjunction"
+    | throwError "{tacName}: {A} is not a disjunction"
   return q(or_elim' $(← k1 A1) $(← k2 A2))
 
 /--
 Destruct a persistent hypothesis [A] by turning it into an explicit [□ B] and continuing with
 the persistent body.
 -/
-private def iCasesIntuitionistic {prop : Q(Type u)} (_bi : Q(BI $prop))
-    (p : Q(Bool)) (P A goal : Q($prop))
+private def iCasesIntuitionistic {prop : Q(Type u)} {bi : Q(BI $prop)}
+    (p : Q(Bool)) (P A goal : Q($prop)) (tacName : String)
     (k : (B : Q($prop)) → ProofModeM Q($P ∗ □ $B ⊢ $goal)) :
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) := do
   let B ← mkFreshExprMVarQ q($prop)
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPersistently $p $A $B)
-    | throwError "icases: {A} not persistent"
+    | throwError "{tacName}: {A} not persistent"
   match matchBool p with
   | .inl _ =>
     return q(intuitionistic_elim_intuitionistic $(← k B))
   | .inr _ =>
     let .some _ ← trySynthInstanceQ q(TCOr (Affine $A) (Absorbing $goal))
-      | throwError "icases: {A} not affine and the goal not absorbing"
+      | throwError "{tacName}: {A} not affine and the goal not absorbing"
     return q(intuitionistic_elim_spatial (A := $A) $(← k B))
 
 /--
 Destruct an affine/spatial hypothesis [A] by removing the affinely wrapper and continuing with
 the spatial body.
 -/
-private def iCasesSpatial {prop : Q(Type u)} (_bi : Q(BI $prop))
+private def iCasesSpatial {prop : Q(Type u)} {bi : Q(BI $prop)}
     (p : Q(Bool)) (P A goal : Q($prop))
     (k : (B : Q($prop)) → ProofModeM Q($P ∗ $B ⊢ $goal)) :
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) := do
@@ -195,65 +196,68 @@ possibly an updated goal.
 ## Returns
 A proof of `hyps ∗ □?p A ⊢ goal`.
 -/
-partial def iCasesCore {P} (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat)
-    (p : Q(Bool)) (A : Q($prop))
+partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
+    (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat)
+    (p : Q(Bool)) (A : Q($prop)) (tacName : String)
     (k : ∀ {P}, Hyps bi P → (goal' : Q($prop)) → ProofModeM Q($P ⊢ $goal') := addBIGoal) :
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) :=
-  match pat with
+  withRef pat.ref do
+  match pat.case with
   | .one name => do
-    -- TODO: use Hyps.addWithInfo here?
-    let (name, ref) ← getFreshName name
-    let ivar ← mkFreshIVarId (isTrue p)
-    addHypInfo ref name ivar prop A (isBinder := true)
-    let hyp := .mkHyp bi name ivar p A
-    if let .emp _ := hyps then pure q(of_emp_sep $(← k hyp goal))
-    else k (.mkSep hyps hyp) goal
+    let ⟨_, _, hyps', pfEq⟩ ← Hyps.addWithInfo bi name p A hyps
+    let pf ← k hyps' goal
+    return q($(pfEq).mp.trans $pf)
 
-  | .clear => do
-    let pf ← iClearCore bi q(iprop($P ∗ □?$p $A)) P p A goal q(.rfl)
+  | .clear =>
+    let pf ← iClearCoreOne bi q(iprop($P ∗ □?$p $A)) P p A goal q(.rfl) tacName
     pure q($pf $(← k hyps goal))
 
-  | .frame => do
-    let ⟨ivar, hyps'⟩ ← Hyps.addWithInfo bi (← `(binderIdent | _)) p A hyps
-    let res ← iFrame bi _ hyps' goal [⟨.ipm ivar, true⟩]
-    res.finish @k
+  | .frame =>
+    let ⟨ivar, _, hyps', pfEq⟩ ← Hyps.addWithInfo bi (← `(binderIdent | _)) p A hyps
+    let res ← iFrame hyps' goal [⟨.ipm ivar, true⟩]
+    let pf ← res.finish k
+    return q($(pfEq).mp.trans $pf)
 
-  | .conjunction [arg] | .disjunction [arg] => iCasesCore hyps goal arg p A @k
+  | .conjunction [arg] | .disjunction [arg] =>
+    iCasesCore hyps goal ⟨pat.ref, arg⟩ p A tacName k
 
   | .disjunction [] => throwUnsupportedSyntax
 
-  | .conjunction [] => iCasesEmptyConj bi hyps p A goal
+  | .conjunction [] => iCasesEmptyConj bi hyps p A goal tacName
 
   -- pure conjunctions are always handled as existentials. There is `intoExist_and_pure` and
   -- `intoExist_sep_pure` to make this work as expected for pure assertions that are not explicit existentials.
-  | .conjunction (.pure arg :: args) => do
-    iCasesExists bi arg p P A goal (iCasesCore hyps goal (.conjunction args) p · k)
-  | .conjunction (arg :: args) => do
+  | .conjunction (.pure arg :: args) =>
+    iCasesExists arg p P A goal tacName (iCasesCore hyps goal ⟨pat.ref, (.conjunction args)⟩ p · tacName k)
+  | .conjunction (arg :: args) =>
     if arg matches .clear then
       if let some pf ← iCasesAndLR bi p P A goal true λ B =>
-        iCasesCore hyps goal (.conjunction args) p B @k then return pf
+        iCasesCore hyps goal ⟨pat.ref, (.conjunction args)⟩ p B tacName k then return pf
     if args matches [.clear] then
       if let some pf ← iCasesAndLR bi p P A goal false λ B =>
-        iCasesCore hyps goal arg p B @k then return pf
-    iCasesSep bi hyps p A goal @k (iCasesCore · · arg p · ·)
-      (iCasesCore · · (.conjunction args) p · ·)
+        iCasesCore hyps goal ⟨pat.ref, arg⟩ p B tacName k then return pf
+    iCasesSep hyps p A goal tacName k (iCasesCore · · ⟨pat.ref, arg⟩ p · tacName ·)
+      (iCasesCore · · ⟨pat.ref, (.conjunction args)⟩ p · tacName ·)
 
   | .disjunction (arg :: args) =>
-    iCasesOr bi p P A goal (iCasesCore hyps goal arg p · k)
-      (iCasesCore hyps goal (.disjunction args) p · k)
+    iCasesOr p P A goal tacName (iCasesCore hyps goal ⟨pat.ref, arg⟩ p · tacName k)
+      (iCasesCore hyps goal ⟨pat.ref, (.disjunction args)⟩ p · tacName k)
 
-  | .pure arg => do
-    iPureCore bi q(iprop($P ∗ □?$p $A)) P p A goal arg q(.rfl) λ _ _ => k hyps goal
+  | .pure arg =>
+    iPureCore q(iprop($P ∗ □?$p $A)) P p A goal arg q(.rfl) tacName <| k hyps goal
 
   | .intuitionistic arg =>
-    iCasesIntuitionistic bi p P A goal (iCasesCore hyps goal arg q(true) · @k)
+    iCasesIntuitionistic p P A goal tacName (iCasesCore hyps goal ⟨pat.ref, arg⟩ q(true) · tacName k)
 
   | .spatial arg =>
-    iCasesSpatial bi p P A goal (iCasesCore hyps goal arg q(false) · @k)
+    iCasesSpatial p P A goal (iCasesCore hyps goal ⟨pat.ref, arg⟩ q(false) · tacName k)
 
   | .mod arg =>
     iModCore bi P goal p A λ p' A goal' =>
-      iCasesCore hyps goal' arg p' A @k
+      iCasesCore hyps goal' ⟨pat.ref, arg⟩ p' A tacName k
+
+  | .rewrite forward =>
+    iPureRewriteCore hyps p A goal tacName forward q(.rfl) k
 
 /--
   `icases pmt with pat` destructs `pmt : pmTerm` using the cases pattern `pat`.
@@ -262,7 +266,7 @@ elab "icases" keep:("+keep ")? colGt pmt:pmTerm " with " colGt pat:icasesPat : t
   -- parse syntax
   let pmt ← liftMacroM <| PMTerm.parse pmt
   let pat ← liftMacroM <| iCasesPat.parse pat
-  ProofModeM.runTactic λ mvar { bi, goal, hyps, .. } => do
+  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
 
   -- We keep the persistent hypothesis if it is required by the user (+keep is set by ihave)
   -- or if we perform specialization
@@ -270,7 +274,7 @@ elab "icases" keep:("+keep ")? colGt pmt:pmTerm " with " colGt pat:icasesPat : t
     (try_dup_context := pat.should_try_dup_context)
 
   -- process pattern
-  let pf2 ← iCasesCore bi hyps goal pat p A
+  let pf2 ← iCasesCore hyps goal pat p A "icases"
 
   mvar.assign q(($pf).trans $pf2)
 

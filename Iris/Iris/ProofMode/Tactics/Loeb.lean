@@ -19,15 +19,15 @@ syntax (name := iloeb) "iloeb" " as " binderIdent (generalizingSelPats)? : tacti
 private def iLoebCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (targets : List SelTarget)
     (IH : TSyntax `Lean.binderIdent) : ProofModeM Q($e ⊢ $goal) :=
-  iRevertIntro hyps goal targets fun {prop _ _} hyps goal k => do
+  iRevertIntro hyps goal targets "iloeb" fun {prop _ _} hyps goal k => do
     let some _ ← ProofModeM.trySynthInstanceQ q(BI.BILoeb $prop)
       | throwError m!"iloeb: no `{←ppExpr q(BI.BILoeb $prop)}` instance found"
     let pf := q(BI.loeb_wand_intuitionistically (P := $goal))
     let pf' ← do
       -- We have applied `BI.loeb_wand_intuitionistically`
       let goal := q(iprop(□ (□ ▷ $goal -∗ $goal)))
-      iModIntroCore hyps goal (← `(_)) fun hyps goal => do
-      iIntroCore hyps goal [(IH, .intro <| .intuitionistic <| .one IH)] (k · · addBIGoal)
+      iModIntroCore hyps goal (← `(_)) "iloeb" fun hyps goal => do
+      iIntroCore hyps goal [(IH, .intro ⟨IH, .intuitionistic <| .one IH⟩)] "iloeb" (k · · addBIGoal)
     return q($(pf').trans $pf)
 
 /--
