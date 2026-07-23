@@ -9,6 +9,7 @@ public import Iris.Algebra.Frac
 public import Iris.Algebra.GenMap
 public import Iris.Algebra.LeibnizSet
 public import Iris.Algebra.LocalUpdates
+public import Iris.Algebra.Mra
 public import Iris.Algebra.IProp
 public import Iris.Algebra.OFE
 public import Iris.Algebra.UFrac
