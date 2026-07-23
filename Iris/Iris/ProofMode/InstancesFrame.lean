@@ -28,11 +28,6 @@ end
 namespace Iris.ProofMode
 open Qq Iris.BI Iris.Std
 
-@[ipm_class, rocq_alias FrameInstantiateExistDisabled]
-class FrameInstantiateExistDisabled {PROP} [BI PROP] (p : Bool) (R P : PROP) (Q : outParam $ PROP) where
-  frame_instantiatiate_exist_disabled : Frame p R P Q
-export FrameInstantiateExistDisabled (frame_instantiatiate_exist_disabled)
-
 /-
 When framing [R] against itself, we leave [True] if possible since it is a weaker goal.
 Otherwise we leave [emp]. Only if all those options fail, we start decomposing [R].
