@@ -316,16 +316,16 @@ instance embed_timeless [BiEmbedLater PROP1 PROP2] (P : PROP1) [Timeless P] :
 
 /-! ### Monoid homomorphisms -/
 
-/-- Cross-type `MonoidHomomorphism` for `⎡·⎤` w.r.t. OFE equivalence (mirrors
-`MonoidHomomorphism.ofEquiv`, which is single-type). -/
+/-- Cross-type `MonoidHomomorphism` for `⎡·⎤` w.r.t. Leibniz equality (mirrors
+`MonoidHomomorphism.ofEq`, which is single-type). -/
 theorem mkEmbedHom {op₁ : PROP1 → PROP1 → PROP1} {op₂ : PROP2 → PROP2 → PROP2}
     {u₁ : PROP1} {u₂ : PROP2} [MonoidOps op₁ u₁] [MonoidOps op₂ u₂]
-    (hop : ∀ {x y}, (embed (op₁ x y) : PROP2) ≡ op₂ (embed x) (embed y))
-    (hunit : (embed u₁ : PROP2) ≡ u₂) :
-    MonoidHomomorphism op₁ op₂ u₁ u₂ (· ≡ ·) (embed (A := PROP1) (B := PROP2)) where
-  rel_refl := .rfl
-  rel_trans := .trans
-  op_proper ha hb := ha.to_eq ▸ hb.to_eq ▸ OFE.Equiv.rfl
+    (hop : ∀ {x y}, (embed (op₁ x y) : PROP2) = op₂ (embed x) (embed y))
+    (hunit : (embed u₁ : PROP2) = u₂) :
+    MonoidHomomorphism op₁ op₂ u₁ u₂ (· = ·) (embed (A := PROP1) (B := PROP2)) where
+  rel_refl := rfl
+  rel_trans := Eq.trans
+  op_proper ha hb := ha ▸ hb ▸ rfl
   map_ne := embed_ne
   map_op := hop
   map_unit := hunit
@@ -333,14 +333,14 @@ theorem mkEmbedHom {op₁ : PROP1 → PROP1 → PROP1} {op₂ : PROP2 → PROP2 
 @[rocq_alias embed_and_homomorphism]
 instance embed_and_homomorphism :
     MonoidHomomorphism (and (PROP := PROP1)) (and (PROP := PROP2)) iprop(True) iprop(True)
-      (· ≡ ·) (embed (A := PROP1) (B := PROP2)) :=
-  mkEmbedHom (fun {x y} => equiv_iff.mpr (embed_and x y)) (equiv_iff.mpr (embed_pure _))
+      (· = ·) (embed (A := PROP1) (B := PROP2)) :=
+  mkEmbedHom (fun {x y} => (equiv_iff.mpr (embed_and x y)).to_eq) (equiv_iff.mpr (embed_pure _)).to_eq
 
 @[rocq_alias embed_or_homomorphism]
 instance embed_or_homomorphism :
     MonoidHomomorphism (or (PROP := PROP1)) (or (PROP := PROP2)) iprop(False) iprop(False)
-      (· ≡ ·) (embed (A := PROP1) (B := PROP2)) :=
-  mkEmbedHom (fun {x y} => equiv_iff.mpr (embed_or x y)) (equiv_iff.mpr (embed_pure False))
+      (· = ·) (embed (A := PROP1) (B := PROP2)) :=
+  mkEmbedHom (fun {x y} => (equiv_iff.mpr (embed_or x y)).to_eq) (equiv_iff.mpr (embed_pure False)).to_eq
 
 @[rocq_alias embed_sep_entails_homomorphism]
 instance embed_sep_entails_homomorphism :
@@ -356,8 +356,8 @@ instance embed_sep_entails_homomorphism :
 @[rocq_alias embed_sep_homomorphism]
 instance embed_sep_homomorphism [BiEmbedEmp PROP1 PROP2] :
     MonoidHomomorphism (sep (PROP := PROP1)) (sep (PROP := PROP2)) emp emp
-      (· ≡ ·) (embed (A := PROP1) (B := PROP2)) :=
-  mkEmbedHom (fun {x y} => equiv_iff.mpr (embed_sep x y)) (equiv_iff.mpr embed_emp)
+      (· = ·) (embed (A := PROP1) (B := PROP2)) :=
+  mkEmbedHom (fun {x y} => (equiv_iff.mpr (embed_sep x y)).to_eq) (equiv_iff.mpr embed_emp).to_eq
 
 /-! ### Big separating conjunction
 
@@ -372,7 +372,7 @@ theorem embed_big_sepL_2 {A : Type _} (Φ : Nat → A → PROP1) (l : List A) :
 @[rocq_alias embed_big_sepL]
 theorem embed_big_sepL [BiEmbedEmp PROP1 PROP2] {A : Type _} (Φ : Nat → A → PROP1) (l : List A) :
     (⎡[∗list] k ↦ x ∈ l, Φ k x⎤ : PROP2) ⊣⊢ [∗list] k ↦ x ∈ l, ⎡Φ k x⎤ :=
-  equiv_iff.mp (bigOpL_hom (H := embed_sep_homomorphism) Φ l)
+  equiv_iff.mp (OFE.Equiv.of_eq (bigOpL_hom (H := embed_sep_homomorphism) Φ l))
 
 variable {K V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
 
@@ -384,7 +384,7 @@ theorem embed_big_sepM_2 (Φ : K → V → PROP1) (m : M V) :
 @[rocq_alias embed_big_sepM]
 theorem embed_big_sepM [BiEmbedEmp PROP1 PROP2] (Φ : K → V → PROP1) (m : M V) :
     (⎡[∗map] k ↦ x ∈ m, Φ k x⎤ : PROP2) ⊣⊢ [∗map] k ↦ x ∈ m, ⎡Φ k x⎤ :=
-  equiv_iff.mp (bigOpM_hom (ι := embed_sep_homomorphism) Φ m)
+  equiv_iff.mp (OFE.Equiv.of_eq (bigOpM_hom (ι := embed_sep_homomorphism) Φ m))
 
 @[rocq_alias embed_big_sepS_2]
 theorem embed_big_sepS_2 {S A : Type _} [LawfulFiniteSet S A] (Φ : A → PROP1) (X : S) :
@@ -395,7 +395,7 @@ theorem embed_big_sepS_2 {S A : Type _} [LawfulFiniteSet S A] (Φ : A → PROP1)
 theorem embed_big_sepS [BiEmbedEmp PROP1 PROP2] {S A : Type _} [LawfulFiniteSet S A]
     (Φ : A → PROP1) (X : S) :
     (⎡[∗set] x ∈ X, Φ x⎤ : PROP2) ⊣⊢ [∗set] x ∈ X, ⎡Φ x⎤ :=
-  equiv_iff.mp (Iris.Algebra.BigOpS.hom embed_sep_homomorphism Φ X)
+  equiv_iff.mp (OFE.Equiv.of_eq (Iris.Algebra.BigOpS.hom embed_sep_homomorphism Φ X))
 
 @[rocq_alias embed_big_sepMS_2]
 theorem embed_big_sepMS_2 {MS A : Type _} [LawfulFiniteMultiSet MS A]
@@ -407,7 +407,7 @@ theorem embed_big_sepMS_2 {MS A : Type _} [LawfulFiniteMultiSet MS A]
 theorem embed_big_sepMS [BiEmbedEmp PROP1 PROP2] {MS A : Type _} [LawfulFiniteMultiSet MS A]
   (Φ : A → PROP1) (X : MS) :
   (⎡[∗mset] x ∈ X, Φ x⎤ : PROP2) ⊣⊢ [∗mset] x ∈ X, ⎡Φ x⎤ :=
-  equiv_iff.mp (Iris.Algebra.BigOpMS.hom embed_sep_homomorphism Φ X)
+  equiv_iff.mp (OFE.Equiv.of_eq (Iris.Algebra.BigOpMS.hom embed_sep_homomorphism Φ X))
 
 end
 

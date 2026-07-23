@@ -198,9 +198,9 @@ theorem bigAndM_and_eq {Φ Ψ : K → V → PROP} {m : M V} :
 @[rocq_alias big_andM_persistently]
 theorem bigAndM_persistently {Φ : K → V → PROP} {m : M V} :
     (<pers> [∧map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∧map] k ↦ x ∈ m, <pers> Φ k x :=
-  letI := MonoidHomomorphism.ofEquiv (PROP := PROP) persistently_ne
-       (equiv_iff.mpr persistently_and) (equiv_iff.mpr persistently_true)
-  equiv_iff.mp <| bigOpL_hom _ <| toList m
+  letI := MonoidHomomorphism.ofEq (PROP := PROP) persistently_ne
+       (equiv_iff.mpr persistently_and).to_eq (equiv_iff.mpr persistently_true).to_eq
+  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_hom _ <| toList m
 
 @[rocq_alias big_andM_pure_1]
 theorem bigAndM_pure_intro {φ : K → V → Prop} {m : M V} :
@@ -222,9 +222,9 @@ theorem bigAndM_pure {φ : K → V → Prop} {m : M V} :
 @[rocq_alias big_andM_later]
 theorem bigAndM_later {Φ : K → V → PROP} {m : M V} :
     (▷ [∧map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∧map] k ↦ x ∈ m, (▷ Φ k x) :=
-  letI := MonoidHomomorphism.ofEquiv (PROP := PROP) later_ne
-    (equiv_iff.mpr later_and) (equiv_iff.mpr later_true)
-  equiv_iff.mp <| bigOpL_hom _ <| toList m
+  letI := MonoidHomomorphism.ofEq (PROP := PROP) later_ne
+    (equiv_iff.mpr later_and).to_eq (equiv_iff.mpr later_true).to_eq
+  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_hom _ <| toList m
 
 @[rocq_alias big_andM_laterN]
 theorem bigAndM_laterN {Φ : K → V → PROP} {m : M V} {n : Nat} :
@@ -257,9 +257,9 @@ theorem bigAndM_filter_cond {Φ : K → V → PROP} {m : M V} (p : K → V → B
 
 @[rocq_alias big_andM_filter]
 theorem bigAndM_filter {Φ : K → V → PROP} {m : M V} (p : K → V → Bool) :
-    ([∧map] k ↦ x ∈ PartialMap.filter p m, Φ k x) ≡
+    ([∧map] k ↦ x ∈ PartialMap.filter p m, Φ k x) =
       [∧map] k ↦ x ∈ m, iprop(⌜p k x = true⌝ → Φ k x) :=
-  (OFE.Equiv.of_eq (bigAndM_filter_cond p)).trans <| OFE.Equiv.of_eq <| bigOpM_eq fun {k x} _ => OFE.Equiv.to_eq <| by
+  (bigAndM_filter_cond p).trans <| bigOpM_eq fun {k x} _ => OFE.Equiv.to_eq <| by
     match hp : p k x with
     | false => simpa using equiv_iff.mpr ⟨imp_intro_swap <| pure_elim_left False.elim, true_intro⟩
     | true => simpa using equiv_iff.mpr true_imp.symm

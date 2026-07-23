@@ -250,16 +250,16 @@ theorem bigSepS_elem_of_acc_impl {Φ : A → PROP} {X : S} {x : A} (h : x ∈ X)
 @[rocq_alias big_sepS_persistently]
 theorem bigSepS_persistently [BIAffine PROP] {Φ : A → PROP} {X : S} :
     (<pers> ([∗set] y ∈ X, Φ y)) ⊣⊢ [∗set] y ∈ X, <pers> (Φ y) :=
-  letI := MonoidHomomorphism.ofEquiv persistently_ne
-    (equiv_iff.mpr persistently_sep) (equiv_iff.mpr persistently_emp_affine)
-  equiv_iff.mp <| BigOpS.hom this Φ X
+  letI := MonoidHomomorphism.ofEq persistently_ne
+    (equiv_iff.mpr persistently_sep).to_eq (equiv_iff.mpr persistently_emp_affine).to_eq
+  equiv_iff.mp <| OFE.Equiv.of_eq <| BigOpS.hom this Φ X
 
 @[rocq_alias big_sepS_later]
 theorem bigSepS_later [BIAffine PROP] {Φ : A → PROP} {X : S} :
     (▷ [∗set] y ∈ X, Φ y) ⊣⊢ [∗set] y ∈ X, ▷ Φ y :=
-  letI := MonoidHomomorphism.ofEquiv later_ne
-    (equiv_iff.mpr later_sep) (equiv_iff.mpr later_emp)
-  equiv_iff.mp <| BigOpS.hom this Φ X
+  letI := MonoidHomomorphism.ofEq later_ne
+    (equiv_iff.mpr later_sep).to_eq (equiv_iff.mpr later_emp).to_eq
+  equiv_iff.mp <| OFE.Equiv.of_eq <| BigOpS.hom this Φ X
 
 @[rocq_alias big_sepS_later_2]
 theorem bigSepS_later_2 {Φ : A → PROP} {X : S} :

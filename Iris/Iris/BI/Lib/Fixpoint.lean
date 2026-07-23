@@ -78,8 +78,8 @@ theorem least_fixpoint_unfold_mp {x} [BIMonoPred F] :
 
 @[rocq_alias least_fixpoint_unfold]
 theorem least_fixpoint_unfold {x} [BIMonoPred F] :
-    bi_least_fixpoint F x ≡ F (bi_least_fixpoint F) x :=
-  equiv_iff.mpr ⟨least_fixpoint_unfold_mp _, least_fixpoint_unfold_mpr _⟩
+    bi_least_fixpoint F x = F (bi_least_fixpoint F) x :=
+  (equiv_iff.mpr ⟨least_fixpoint_unfold_mp _, least_fixpoint_unfold_mpr _⟩).to_eq
 
 @[rocq_alias least_fixpoint_iter]
 theorem least_fixpoint_iter {Φ : A → PROP} [I : NonExpansive Φ] :
@@ -108,7 +108,7 @@ instance least_fixpoint_absorbing [BIMonoPred F]
       ⟨fun _ _ _ H => wand_ne.ne .rfl (NonExpansive.ne H)⟩
     iapply least_fixpoint_iter
     iintro !> %y HF HT
-    iapply least_fixpoint_unfold
+    iapply OFE.Equiv.of_eq (least_fixpoint_unfold ..)
     iapply mono_pred (Φ := (fun x : A => iprop(True -∗ bi_least_fixpoint F x))) $$ [] [HF HT]
     · iintro !> %x HF
       iapply HF
@@ -128,7 +128,7 @@ instance least_fixpoint_persistent_affine [BIMonoPred F]
       ⟨fun _ _ _ H => intuitionistically_ne.ne (NonExpansive.ne H)⟩
     iapply least_fixpoint_iter
     iintro !> %y #HY !>
-    iapply least_fixpoint_unfold
+    iapply OFE.Equiv.of_eq (least_fixpoint_unfold ..)
     iapply mono_pred (Φ := fun x => iprop(□ bi_least_fixpoint F x))
     · iintro !> %_ #Hx
       iexact Hx
@@ -145,7 +145,7 @@ instance least_fixpoint_persistent_absorbing [BIMonoPred F]
       ⟨fun _ _ _ H => persistently_ne.ne <| NonExpansive.ne H⟩
     iapply least_fixpoint_iter
     iintro !> %y #HF !>
-    iapply least_fixpoint_unfold
+    iapply OFE.Equiv.of_eq (least_fixpoint_unfold ..)
     iapply mono_pred (Φ := fun x => iprop(<pers> bi_least_fixpoint F x)) $$ [] HF
     letI _ := @least_fixpoint_absorbing _ _ _ _ _ _ Habsorb
     iintro !> %x #H
@@ -157,7 +157,7 @@ theorem least_fixpoint_strong_mono (G : (A → PROP) → (A → PROP)) [BIMonoPr
   iintro #Hmon
   iapply least_fixpoint_iter
   iintro !> %y IH
-  iapply least_fixpoint_unfold
+  iapply OFE.Equiv.of_eq (least_fixpoint_unfold ..)
   iapply Hmon $$ IH
 
 section Strong
@@ -186,7 +186,7 @@ theorem least_fixpoint_ind_wf :
   ihave Hthis : (F (bi_least_fixpoint F) x -∗ Φ x) -∗ (bi_least_fixpoint F x -∗ Φ x) $$ []
   · iintro H1 H2
     iapply H1
-    iapply least_fixpoint_unfold
+    iapply OFE.Equiv.of_eq (least_fixpoint_unfold ..)
     iexact H2
   iapply Hthis
   iintro HF
@@ -195,7 +195,7 @@ theorem least_fixpoint_ind_wf :
   imodintro
   iapply least_fixpoint_iter
   iintro !> %y Hy
-  iapply least_fixpoint_unfold
+  iapply OFE.Equiv.of_eq (least_fixpoint_unfold ..)
   isplit
   · iapply HM $$ Hy
   · iexact Hy
@@ -263,8 +263,8 @@ theorem greatest_fixpoint_unfold_mpr {x} [BIMonoPred F] :
 
 @[rocq_alias greatest_fixpoint_unfold]
 theorem greatest_fixpoint_unfold {x} [BIMonoPred F] :
-    bi_greatest_fixpoint F x ≡ F (bi_greatest_fixpoint F) x :=
-  equiv_iff.mpr ⟨greatest_fixpoint_unfold_mp _, greatest_fixpoint_unfold_mpr _⟩
+    bi_greatest_fixpoint F x = F (bi_greatest_fixpoint F) x :=
+  (equiv_iff.mpr ⟨greatest_fixpoint_unfold_mp _, greatest_fixpoint_unfold_mpr _⟩).to_eq
 
 @[rocq_alias greatest_fixpoint_coiter]
 theorem greatest_fixpoint_coiter (Φ : A → PROP) [I : NonExpansive Φ] :

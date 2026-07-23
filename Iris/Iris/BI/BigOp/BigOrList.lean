@@ -73,9 +73,9 @@ theorem bigOrL_or_eq {Φ Ψ : Nat → A → PROP} {l : List A} :
   bigOpL_op_eq Φ Ψ l
 
 theorem bigOrL_take_drop {Φ : Nat → A → PROP} {l : List A} {n : Nat} :
-    ([∨list] k ↦ x ∈ l, Φ k x) ≡
+    ([∨list] k ↦ x ∈ l, Φ k x) =
       iprop(([∨list] k ↦ x ∈ (l.take n), Φ k x) ∨ [∨list] k ↦ x ∈ (l.drop n), Φ (n + k) x) :=
-  OFE.Equiv.of_eq <| bigOpL_take_drop_eq Φ l n
+  bigOpL_take_drop_eq Φ l n
 
 @[rocq_alias big_orL_fmap]
 theorem bigOrL_map {B : Type _} (f : A → B) {Φ : Nat → B → PROP} {l : List A} :
@@ -141,15 +141,15 @@ theorem bigOrL_flatMap {B : Type _} (f : A → List B) {Φ : B → PROP} {l : Li
 @[rocq_alias big_orL_persistently]
 theorem bigOrL_persistently {Φ : Nat → A → PROP} {l : List A} :
     (<pers> [∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, <pers> Φ k x :=
-  letI := MonoidHomomorphism.ofEquiv (PROP := PROP) persistently_ne
-    (equiv_iff.mpr persistently_or) (equiv_iff.mpr ⟨persistently_elim, false_elim⟩)
-  equiv_iff.mp <| bigOpL_hom Φ l
+  letI := MonoidHomomorphism.ofEq (PROP := PROP) persistently_ne
+    (equiv_iff.mpr persistently_or).to_eq (equiv_iff.mpr ⟨persistently_elim, false_elim⟩).to_eq
+  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_hom Φ l
 
 @[rocq_alias big_orL_later]
 theorem bigOrL_later {Φ : Nat → A → PROP} {l : List A} (hne : l ≠ []) :
     (▷ [∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, ▷ Φ k x :=
-  letI := WeakMonoidHomomorphism.ofEquiv (PROP := PROP) later_ne (equiv_iff.mpr later_or)
-  equiv_iff.mp <| bigOpL_hom_weak Φ hne
+  letI := WeakMonoidHomomorphism.ofEq (PROP := PROP) later_ne (equiv_iff.mpr later_or).to_eq
+  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_hom_weak Φ hne
 
 @[rocq_alias big_orL_laterN]
 theorem bigOrL_laterN {Φ : Nat → A → PROP} {l : List A} {n : Nat} (hne : l ≠ []) :

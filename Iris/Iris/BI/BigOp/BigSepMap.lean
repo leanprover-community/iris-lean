@@ -371,16 +371,16 @@ theorem bigSepM_ofList [DecidableEq K] {Φ : K → V → PROP} {l : List (K × V
 @[rocq_alias big_sepM_persistently]
 theorem bigSepM_persistently {Φ : K → V → PROP} {m : M V} [BIAffine PROP] :
     (<pers> [∗map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∗map] k ↦ x ∈ m, <pers> Φ k x :=
-  letI := MonoidHomomorphism.ofEquiv (PROP := PROP) persistently_ne
-    (equiv_iff.mpr persistently_sep) (equiv_iff.mpr persistently_emp_affine)
-  equiv_iff.mp <| bigOpL_hom _ (toList m)
+  letI := MonoidHomomorphism.ofEq (PROP := PROP) persistently_ne
+    (equiv_iff.mpr persistently_sep).to_eq (equiv_iff.mpr persistently_emp_affine).to_eq
+  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_hom _ (toList m)
 
 @[rocq_alias big_sepM_later]
 theorem bigSepM_later {Φ : K → V → PROP} {m : M V} [BIAffine PROP] :
     (▷ [∗map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∗map] k ↦ x ∈ m, ▷ Φ k x :=
-  letI := MonoidHomomorphism.ofEquiv (PROP := PROP) later_ne
-    (equiv_iff.mpr later_sep) (equiv_iff.mpr later_emp)
-  equiv_iff.mp <| bigOpL_hom _ <| toList m
+  letI := MonoidHomomorphism.ofEq (PROP := PROP) later_ne
+    (equiv_iff.mpr later_sep).to_eq (equiv_iff.mpr later_emp).to_eq
+  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_hom _ <| toList m
 
 @[rocq_alias big_sepM_later_2]
 theorem bigSepM_later_2 {Φ : K → V → PROP} {m : M V} :
@@ -422,9 +422,9 @@ theorem bigSepM_filter_cond {Φ : K → V → PROP} {m : M V} (p : K → V → B
 
 @[rocq_alias big_sepM_filter]
 theorem bigSepM_filter [BIAffine PROP] {Φ : K → V → PROP} {m : M V} (p : K → V → Bool) :
-    ([∗map] k ↦ x ∈ filter p m, Φ k x) ≡
+    ([∗map] k ↦ x ∈ filter p m, Φ k x) =
       [∗map] k ↦ x ∈ m, iprop(⌜p k x = true⌝ → Φ k x) :=
-  (OFE.Equiv.of_eq (bigSepM_filter_cond p)).trans <| OFE.Equiv.of_eq <| bigOpM_eq fun {k x} _ => OFE.Equiv.to_eq <| by
+  (bigSepM_filter_cond p).trans <| bigOpM_eq fun {k x} _ => OFE.Equiv.to_eq <| by
     match hp : p k x with
     | false => simpa using equiv_iff.mpr ⟨imp_intro_swap <| pure_elim_left False.elim, Affine.affine⟩
     | true => simpa using equiv_iff.mpr true_imp.symm

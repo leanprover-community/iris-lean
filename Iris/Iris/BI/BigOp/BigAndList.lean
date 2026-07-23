@@ -110,9 +110,9 @@ theorem bigAndL_impl {Φ Ψ : Nat → A → PROP} {l : List A} :
 @[rocq_alias big_andL_persistently]
 theorem bigAndL_persistently {Φ : Nat → A → PROP} {l : List A} :
     (<pers> [∧list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∧list] k ↦ x ∈ l, <pers> Φ k x :=
-  letI := MonoidHomomorphism.ofEquiv (PROP := PROP) persistently_ne
-       (equiv_iff.mpr persistently_and) (equiv_iff.mpr persistently_true)
-  equiv_iff.mp <| bigOpL_hom Φ l
+  letI := MonoidHomomorphism.ofEq (PROP := PROP) persistently_ne
+       (equiv_iff.mpr persistently_and).to_eq (equiv_iff.mpr persistently_true).to_eq
+  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_hom Φ l
 
 @[rocq_alias big_andL_pure_1]
 theorem bigAndL_pure_intro {φ : Nat → A → Prop} {l : List A} :
@@ -152,9 +152,9 @@ theorem bigAndL_flatMap {B : Type _} (f : A → List B) {Φ : B → PROP} {l : L
 @[rocq_alias big_andL_later]
 theorem bigAndL_later {Φ : Nat → A → PROP} {l : List A} :
     (▷ [∧list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∧list] k ↦ x ∈ l, (▷ Φ k x) :=
-  letI := MonoidHomomorphism.ofEquiv (PROP := PROP) later_ne
-    (equiv_iff.mpr later_and) (equiv_iff.mpr later_true)
-  equiv_iff.mp <| bigOpL_hom  Φ l
+  letI := MonoidHomomorphism.ofEq (PROP := PROP) later_ne
+    (equiv_iff.mpr later_and).to_eq (equiv_iff.mpr later_true).to_eq
+  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_hom  Φ l
 
 @[rocq_alias big_andL_laterN]
 theorem bigAndL_laterN {Φ : Nat → A → PROP} {l : List A} {n : Nat} :

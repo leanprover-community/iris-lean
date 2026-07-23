@@ -384,16 +384,16 @@ theorem bigSepL_lookup_acc_impl {Φ : Nat → A → PROP} {l : List A} {i : Nat}
 @[rocq_alias big_sepL_persistently]
 theorem bigSepL_persistently {Φ : Nat → A → PROP} {l : List A} [BIAffine PROP] :
     (<pers> [∗list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∗list] k ↦ x ∈ l, <pers> Φ k x :=
-  letI := MonoidHomomorphism.ofEquiv (PROP := PROP) persistently_ne
-    (equiv_iff.mpr persistently_sep) (equiv_iff.mpr persistently_emp_affine)
-  equiv_iff.mp <| bigOpL_hom  Φ l
+  letI := MonoidHomomorphism.ofEq (PROP := PROP) persistently_ne
+    (equiv_iff.mpr persistently_sep).to_eq (equiv_iff.mpr persistently_emp_affine).to_eq
+  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_hom  Φ l
 
 @[rocq_alias big_sepL_later]
 theorem bigSepL_later [BIAffine PROP] {Φ : Nat → A → PROP} {l : List A} :
     (▷ [∗list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∗list] k ↦ x ∈ l, ▷ Φ k x :=
-  letI := MonoidHomomorphism.ofEquiv (PROP := PROP) later_ne
-    (equiv_iff.mpr later_sep) (equiv_iff.mpr later_emp)
-  equiv_iff.mp <| bigOpL_hom  Φ l
+  letI := MonoidHomomorphism.ofEq (PROP := PROP) later_ne
+    (equiv_iff.mpr later_sep).to_eq (equiv_iff.mpr later_emp).to_eq
+  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_hom  Φ l
 
 @[rocq_alias big_sepL_later_2]
 theorem bigSepL_later_2 {Φ : Nat → A → PROP} {l : List A} :
