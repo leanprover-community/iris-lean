@@ -60,12 +60,22 @@ theorem lt_irrefl (n : I) : ¬n < n := by
   induction n using inst.lt_wf.induction with
   | h n ih => apply ih n <;> exact h
 
+instance : Std.Irrefl ((· < ·) : I → I → Prop) where
+  irrefl := lt_irrefl
+
 theorem lt_asymm (h : n < m) : ¬m < n := by
   intro h1
   apply lt_irrefl n
   exact inst.lt_trans h h1
 
-#rocq_ignore SIdx.lt_strict "A type class for strict orders is not yet available in Std"
+instance : Std.Asymm ((· < ·) : I → I → Prop) where
+  asymm _ _ := lt_asymm
+
+instance : Trans (· < ·) (· < ·) ((· < ·) : I → I → Prop) where
+  trans := lt_trans
+
+@[rocq_alias SIdx.lt_strict]
+instance : IsStrictOrder ((· < ·) : I → I → Prop) where
 
 @[rocq_alias SIdx.lt_le_incl]
 theorem lt_le_incl (h : n < m) : n ≤ m := by
@@ -75,12 +85,18 @@ theorem lt_le_incl (h : n < m) : n ≤ m := by
 @[refl, simp]
 theorem le_refl : n ≤ n := by apply inst.le_lteq.mpr; right; rfl
 
+instance : Std.Refl ((· ≤ ·) : I → I → Prop) where
+  refl _ := le_refl
+
 theorem le_trans (h1 : n ≤ m) (h2 : m ≤ p) : n ≤ p := by
   rcases le_lteq.mp h1 with (h1 | rfl)
   · rcases le_lteq.mp h2 with (h2 | rfl)
     · exact lt_le_incl <| inst.lt_trans h1 h2
     · exact lt_le_incl h1
   · assumption
+
+instance : Trans (· ≤ ·) (· ≤ ·) ((· ≤ ·) : I → I → Prop) where
+  trans := le_trans
 
 theorem le_antisymm (h1 : m ≤ n) (h2 : n ≤ m) : m = n := by
   rcases le_lteq.mp h2 with (h2 | h2)
@@ -111,17 +127,26 @@ theorem le_total : n ≤ m ∨ m ≤ n := by
   · left; exact lt_le_incl h
   · right; assumption
 
+instance : Std.Total ((· ≤ ·) : I → I → Prop) where
+  total _ _ := le_total
+
 @[rocq_alias SIdx.lt_le_trans]
 theorem lt_le_trans (h1 : n < m) (h2 : m ≤ p) : n < p := by
   rcases inst.le_lteq.mp h2 with (h2 | h2)
   · exact inst.lt_trans h1 h2
   · subst h2; assumption
 
+instance : Trans (· < ·) (· ≤ ·) ((· < ·) : I → I → Prop) where
+  trans := lt_le_trans
+
 @[rocq_alias SIdx.le_lt_trans]
 theorem le_lt_trans (h1 : n ≤ m) (h2 : m < p) : n < p := by
   rcases inst.le_lteq.mp h1 with (h1 | h1)
   · exact inst.lt_trans h1 h2
   · subst h1; assumption
+
+instance : Trans (· ≤ ·) (· < ·) ((· < ·) : I → I → Prop) where
+  trans := le_lt_trans
 
 @[rocq_alias SIdx.le_succ_diag_r]
 theorem le_succ_diag_r : n ≤ succᵢ n := by
