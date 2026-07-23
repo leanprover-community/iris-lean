@@ -1,0 +1,6 @@
+name = "IrisDoNightly"
+version = "0.1.0"
+defaultTargets = ["IrisDoNightly"]
+
+[[lean_lib]]
+name = "IrisDoNightly"
