@@ -86,8 +86,8 @@ instance fromModal_bupd (P : PROP) :
   from_modal := by simp [modality_id]; exact BIUpdate.intro
 
 @[rocq_alias elim_modal_bupd]
-instance elimModal_bupd p (P Q : PROP) :
-    ElimModal True p false iprop(|==> P) P iprop(|==> Q) iprop(|==> Q) where
+instance elimModal_bupd p io (P Q : PROP) :
+    ElimModal True p io false iprop(|==> P) P iprop(|==> Q) iprop(|==> Q) where
   elim_modal _ := (sep_mono_left intuitionisticallyIf_elim).trans <|
     bupd_frame_right.trans <| (BIUpdate.mono wand_elim_right).trans BIUpdate.trans
 
@@ -98,14 +98,14 @@ section SBIBasicUpdate
 variable {PROP} [Sbi PROP] [BIUpdate PROP] [BIBUpdateSbi PROP]
 
 @[ipm_backtrack, rocq_alias elim_modal_bupd_plain_goal]
-instance elimModal_bupd_plain_goal [BIAffine PROP] p (P Q : PROP) [Plain Q] :
-    ElimModal True p false iprop(|==> P) P Q Q where
+instance elimModal_bupd_plain_goal [BIAffine PROP] p io (P Q : PROP) [Plain Q] :
+    ElimModal True p io false iprop(|==> P) P Q Q where
   elim_modal _ := (sep_mono_left intuitionisticallyIf_elim).trans <|
     bupd_frame_right.trans <| (BIUpdate.mono wand_elim_right).trans bupd_elim
 
 @[ipm_backtrack, rocq_alias elim_modal_bupd_plain]
-instance elimModal_bupd_plain [BIAffine PROP] p (P Q : PROP) [Plain P] :
-    ElimModal True p p iprop(|==> P) P Q Q where
+instance elimModal_bupd_plain [BIAffine PROP] p io (P Q : PROP) [Plain P] :
+    ElimModal True p io p iprop(|==> P) P Q Q where
   elim_modal _ := (sep_mono_left (intuitionisticallyIf_mono bupd_elim)).trans wand_elim_right
 
 end SBIBasicUpdate
@@ -184,23 +184,23 @@ instance (priority := low) fromModal_fupd_wrongMask E1 E2 (P : PROP) :
   from_modal h := by cases h
 
 @[rocq_alias elim_modal_bupd_fupd]
-instance elimModal_bupd_fupd p E1 E2 (P Q : PROP) :
-    ElimModal True p false iprop(|==> P) P iprop(|={E1,E2}=> Q) iprop(|={E1,E2}=> Q) where
+instance elimModal_bupd_fupd p io E1 E2 (P Q : PROP) :
+    ElimModal True p io false iprop(|==> P) P iprop(|={E1,E2}=> Q) iprop(|={E1,E2}=> Q) where
   elim_modal _ := (sep_mono_left intuitionisticallyIf_elim).trans <|
     (sep_mono_left BIUpdateFUpdate.fupd_of_bupd).trans <|
     fupd_frame_right.trans <| (BIFUpdate.mono wand_elim_right).trans BIFUpdate.trans
 
 @[rocq_alias elim_modal_fupd_fupd]
-instance (priority := high) elimModal_fupd_fupd p E1 E2 E3 (P Q : PROP) :
-    ElimModal True p false iprop(|={E1,E2}=> P) P iprop(|={E1,E3}=> Q) iprop(|={E2,E3}=> Q) where
+instance (priority := high) elimModal_fupd_fupd p io E1 E2 E3 (P Q : PROP) :
+    ElimModal True p io false iprop(|={E1,E2}=> P) P iprop(|={E1,E3}=> Q) iprop(|={E2,E3}=> Q) where
   elim_modal _ := (sep_mono_left intuitionisticallyIf_elim).trans <|
     fupd_frame_right.trans <| (BIFUpdate.mono wand_elim_right).trans BIFUpdate.trans
 
 @[rocq_alias elim_modal_fupd_fupd_wrong_mask]
-instance (priority := low) elimModal_fupd_fupd_wrongMask p E0 E1 E2 E3 (P Q : PROP) :
+instance (priority := low) elimModal_fupd_fupd_wrongMask p io E0 E1 E2 E3 (P Q : PROP) :
     ElimModal (PMError "Goal and eliminated modality must have the same mask.
       Use `BIFUpdate.subset` to adjust the goal mask before using `imod`.")
-      p false iprop(|={E1,E2}=> P) iprop(False) iprop(|={E0,E3}=> Q) iprop(False) where
+      p io false iprop(|={E1,E2}=> P) iprop(False) iprop(|={E0,E3}=> Q) iprop(False) where
   elim_modal h := by cases h
 
 @[rocq_alias elim_acc_bupd]

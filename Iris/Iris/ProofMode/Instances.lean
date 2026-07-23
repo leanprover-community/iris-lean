@@ -856,29 +856,29 @@ instance fromModal_absorbingly [BI PROP] (P : PROP) :
 
 -- ElimModal
 @[rocq_alias elim_modal_wand]
-instance elimModal_wand [BI PROP] φ p p' (P P' Q Q' R : PROP) [h : ElimModal φ p p' P P' Q Q'] :
-   ElimModal φ p p' P P' iprop(R -∗ Q) iprop(R -∗ Q') where
+instance elimModal_wand [BI PROP] φ p p' io (P P' Q Q' R : PROP) [h : ElimModal φ p io p' P P' Q Q'] :
+   ElimModal φ p io p' P P' iprop(R -∗ Q) iprop(R -∗ Q') where
    elim_modal hφ := by
      apply wand_intro ((sep_assoc.1.trans $ sep_mono_right $ wand_elim $ wand_intro_left $
        wand_intro_left $ sep_assoc.2.trans _).trans (h.1 hφ))
      apply (sep_mono_left sep_comm.1).trans (sep_assoc.1.trans $ wand_elim_swap $ wand_elim_swap .rfl)
 
 @[rocq_alias elim_modal_wandM]
-instance elimModal_wandM [BI PROP] φ p p' (P P' Q Q' : PROP) (mR : Option PROP)
-    [h : ElimModal φ p p' P P' Q Q'] :
-    ElimModal φ p p' P P' iprop(mR -∗? Q) iprop(mR -∗? Q') where
+instance elimModal_wandM [BI PROP] φ p p' io (P P' Q Q' : PROP) (mR : Option PROP)
+    [h : ElimModal φ p io p' P P' Q Q'] :
+    ElimModal φ p io p' P P' iprop(mR -∗? Q) iprop(mR -∗? Q') where
   elim_modal hφ :=
     (sep_mono_right <| wand_mono_right wandM_sound.mp).trans <|
-    ((elimModal_wand φ p p' P P' Q Q' (mR.getD emp)).elim_modal hφ).trans wandM_sound.mpr
+    ((elimModal_wand φ p p' io P P' Q Q' (mR.getD emp)).elim_modal hφ).trans wandM_sound.mpr
 
 @[rocq_alias elim_modal_forall]
-instance elimModal_forall [BI PROP] φ p p' P P' (Φ Ψ : α → PROP) [h : ∀ x, ElimModal φ p p' P P' (Φ x) (Ψ x)] :
-  ElimModal φ p p' P P' iprop(∀ x, Φ x) iprop(∀ x, Ψ x) where
+instance elimModal_forall [BI PROP] φ p p' io P P' (Φ Ψ : α → PROP) [h : ∀ x, ElimModal φ p io p' P P' (Φ x) (Ψ x)] :
+  ElimModal φ p io p' P P' iprop(∀ x, Φ x) iprop(∀ x, Ψ x) where
   elim_modal hφ := forall_intro λ a => Entails.trans (sep_mono_right (wand_mono_right (forall_elim a))) ((h a).1 hφ)
 
 @[rocq_alias elim_modal_absorbingly_here]
-instance elimModal_absorbingly_here [BI PROP] p (P Q : PROP) [Absorbing Q] :
-  ElimModal True p false iprop(<absorb> P) P Q Q where
+instance elimModal_absorbingly_here [BI PROP] p io (P Q : PROP) [Absorbing Q] :
+  ElimModal True p io false iprop(<absorb> P) P Q Q where
   elim_modal _ := (sep_mono_left intuitionisticallyIf_elim).trans $ absorbingly_sep_left.1.trans $ absorbing_absorbingly.1.trans wand_elim_right
 
 -- CombineSepAs
@@ -962,18 +962,23 @@ instance elimInv_acc_without_close [BI PROP] {X : Type}
 instance elimInv_acc_with_close [BI PROP] {X : Type}
     ϕ1 ϕ2 Pinv Pin (M1 M2 : PROP → PROP) α β mγ Q (Q' : PROP)
     [h1 : IntoAcc Pinv ϕ1 Pin M1 M2 α β mγ]
-    [h2 : ∀ R, ElimModal ϕ2 false false (M1 R) R Q Q'] :
+    [h2 : ∀ R, ElimModal ϕ2 false .in false (M1 R) R Q Q'] :
     ElimInv (ϕ1 ∧ ϕ2) X Pinv Pin α true
             (some (fun x => iprop(β x -∗ M2 (mγ x |>.getD emp))))
             Q (fun _ => Q') where
   elim_inv := by
-    intro ⟨hϕ1, _⟩
+    intro ⟨hϕ1, hϕ2⟩
     have hAcc := h1.into_acc
     unfold accessor at hAcc
     iintro ⟨Hinv, Hin, Hcont⟩
-    imod hAcc hϕ1 $$ Hinv Hin with ⟨%_, Hα, Hclose⟩
-    iapply Hcont
-    isplitl [Hα] <;> iassumption
+    iapply (h2 _ |>.elim_modal hϕ2)
+    isplitl [Hinv Hin]
+    · dsimp
+      iapply hAcc hϕ1 $$ Hinv Hin
+    · dsimp
+      iintro ⟨%_, Hα, Hclose⟩
+      iapply Hcont
+      isplitl [Hα] <;> iassumption
 
 @[rocq_alias into_ih_entails]
 instance intoIH_entails [BI PROP] (P Q : PROP) : IntoIH (Entails' P Q) P Q where

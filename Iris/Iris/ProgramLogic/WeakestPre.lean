@@ -639,7 +639,7 @@ instance isExcept0Wp : IsExcept0 (WP e @ s ; E {{ Φ }}) where
 -- this should have higher priority than elimModalFupdWpAtomic
 @[rocq_alias elim_modal_fupd_wp]
 instance (priority := default + 10) elimModalFupdWp p :
-    ElimModal True p false iprop(|={E}=> P) P (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Φ }}) where
+    ElimModal True p io false iprop(|={E}=> P) P (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Φ }}) where
   elim_modal := by
     iintro %_ ⟨H, G⟩
     icases BI.intuitionisticallyIf_elim $$ H with H
@@ -649,11 +649,11 @@ instance (priority := default + 10) elimModalFupdWp p :
 
 @[rocq_alias elim_modal_bupd_wp]
 instance elimModalBupdWp p :
-    ElimModal True p false iprop(|==> P) P (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Φ }}) where
+    ElimModal True p io false iprop(|==> P) P (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Φ }}) where
   elim_modal := by
     rintro ⟨⟩
     refine BI.sep_mono (BI.intuitionisticallyIf_mono (BIUpdateFUpdate.fupd_of_bupd (E := E))) .rfl |>.trans ?_
-    apply elimModalFupdWp _ |>.elim_modal ⟨⟩
+    exact elimModalFupdWp _ |>.elim_modal ⟨⟩ (io := io)
 
 /-- Error message instance for non-mask-changing view shifts.  Also uses a slightly
 different error: we cannot apply `fupd_mask_subseteq` if `e` is not atomic, so
@@ -662,12 +662,12 @@ we tell the user to first add a leading `fupd` and then change the mask of that.
 instance elimModalFupdWp_wrongMask :
     ElimModal (PMError "Goal and eliminated modality must have the same mask.
     Use `iapply fupd_wp; imod (fupd_mask_subseteq E₂)` to adjust the mask of your goal to `E₂`")
-    p false iprop(|={E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
+    p io false iprop(|={E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
   elim_modal := nofun
 
 @[rocq_alias elim_modal_fupd_wp_atomic]
 instance elimModalFupdWpAtomic :
-    ElimModal (Language.Atomic ↑s e) p false iprop(|={E₁,E₂}=> P) P (WP e @ s ; E₁ {{ Φ }}) (WP e @ s ; E₂ {{ v, |={E₂,E₁}=> Φ v}}) where
+    ElimModal (Language.Atomic ↑s e) p io false iprop(|={E₁,E₂}=> P) P (WP e @ s ; E₁ {{ Φ }}) (WP e @ s ; E₂ {{ v, |={E₂,E₁}=> Φ v}}) where
   elim_modal := by
     rintro atomic; iintro ⟨H, G⟩
     icases BI.intuitionisticallyIf_elim $$ H with H
@@ -679,7 +679,7 @@ instance elimModalFupdWpAtomic :
 instance elimModalFupdWpAtomic_wrongMask :
     ElimModal (PMError "Goal and eliminated modality must have the same mask.
     Use `iapply fupd_wp; imod (fupd_mask_subseteq E₂)` to adjust the mask of your goal to `E₂`")
-    p false iprop(|={E₁,E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
+    p io false iprop(|={E₁,E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
   elim_modal := nofun
 
 @[rocq_alias elim_acc_wp_atomic]

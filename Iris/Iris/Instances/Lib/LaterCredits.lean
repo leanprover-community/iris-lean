@@ -429,7 +429,7 @@ open ProofMode
 variable {GF : BundledGFunctors} {hlc : HasLC} [LcGS hlc GF]
 
 @[rocq_alias le_upd.elim_bupd_le_upd]
-instance {P : IProp GF} : ElimModal True p false (bupd P) P (le_upd Q) (le_upd Q) where
+instance {P Q : IProp GF} : ElimModal True p io false (bupd P) P (le_upd Q) (le_upd Q) where
   elim_modal := by
     cases p <;> (dsimp; intro _)
     · iintro ⟨H1, H2⟩
@@ -466,7 +466,7 @@ instance {P : IProp GF} : FromModal True modality_id (le_upd P) (le_upd P) P whe
     iapply le_upd_intro
 
 @[rocq_alias le_upd.elim_modal_le_upd]
-instance {P : IProp GF} : ElimModal True p false (le_upd P) P (le_upd Q) (le_upd Q) where
+instance {P Q : IProp GF} : ElimModal True p io false (le_upd P) P (le_upd Q) (le_upd Q) where
   elim_modal := by
     intro _
     cases p <;> dsimp
