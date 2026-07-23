@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Michael Sammler, ayhon, Klaus Kraßnitzer
+-/
 module
 
 public import Iris.HeapLang.Lib.Lock
@@ -85,8 +90,8 @@ theorem newlock_spec :
   iintro !> %Φ Hcont
   wp_rec
   imod token_alloc with ⟨%γ, Hγ⟩
-  iapply wp_alloc
-  iintro !> %l Hpt
+  wp_alloc l with Hpt
+  imodintro
   iapply Hcont
   iintro %R %E HR
   imod inv_alloc spinlockN E (lockInv γ l R) $$ [Hpt HR Hγ] with H
@@ -118,11 +123,7 @@ theorem try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   icases G1 with ⟨%b, Hpt, Hcond⟩
   cases b
   · simp only [Bool.false_eq_true, ↓reduceIte]
-    iapply wp_wand $$ [Hpt]
-    · iapply wp_cmpXchg_true rfl rfl $$ Hpt <;>
-        simp [Val.compareSafe, Val.isUnboxed, BaseLit.isUnboxed]
-    iintro %v ⟨%Heq, Hpt⟩
-    subst Heq
+    wp_cmpxchg_suc
     imod G2 $$ [Hpt]
     · iexists true
       simp only [↓reduceIte]
@@ -134,11 +135,7 @@ theorem try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
       simp only [↓reduceIte]
       iframe
   · simp only [↓reduceIte]
-    iapply wp_wand $$ [Hpt]
-    · iapply wp_cmpXchg_fail rfl rfl $$ Hpt <;>
-        simp [Val.compareSafe, Val.isUnboxed, BaseLit.isUnboxed]
-    iintro %v ⟨%Heq, Hpt⟩
-    subst Heq
+    wp_cmpxchg_fail
     imod G2 $$ [Hpt]
     · iexists true
       simp only [↓reduceIte]
@@ -187,8 +184,7 @@ theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
   unfold lockInv
   imodintro
   icases G1 with ⟨%b, Hpt, Hcond⟩
-  iapply wp_store $$ Hpt
-  iintro !> Hpt
+  wp_store
   imod G2 $$ [- Hcont]
   · inext
     iexists false
