@@ -215,6 +215,11 @@ class Frame {PROP} [BI PROP] (p : Bool) (R P : PROP) (Q : outParam $ PROP) where
   frame : □?p R ∗ Q ⊢ P
 export Frame (frame)
 
+@[ipm_class, rocq_alias FrameInstantiateExistDisabled]
+class FrameInstantiateExistDisabled {PROP} [BI PROP] (p : Bool) (R P : PROP) (Q : outParam $ PROP) where
+  frame_instantiatiate_exist_disabled : Frame p R P Q
+export FrameInstantiateExistDisabled (frame_instantiatiate_exist_disabled)
+
 /--
 `IntoLaterN` turns `P` into `▷^[n] Q`.
 The Boolean [only_head] indicates whether laters should only be stripped in head position or also below

@@ -617,15 +617,12 @@ variable [ι : IrisGS_gen hlc Expr GF]
 variable {s : Stuckness} {E : CoPset} {e : Expr} {v : Val} {Φ Ψ : Val → IProp GF} {P Q R : IProp GF}
 
 @[rocq_alias frame_wp]
-instance frameWp {p : Bool} [H : ∀ v, Frame p R (Φ v) (Ψ v)] :
-    -- TODO: move FrameInstantiateExistDisabled over the `FrameInstantiateExistDisabled` constant
-    -- Blocked by #390
-    -- see: https://github.com/leanprover-community/iris-lean/pull/393
+instance frameWp {p : Bool} [H : ∀ v, FrameInstantiateExistDisabled p R (Φ v) (Ψ v)] :
     Frame p R (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Ψ }}) where
   frame := by
     refine wp_frame_l.trans ?_
     apply wp_mono
-    exact fun v => frame
+    exact fun v => (H v).frame_instantiatiate_exist_disabled.frame
 
 @[rocq_alias is_except_0_wp]
 instance isExcept0Wp : IsExcept0 (WP e @ s ; E {{ Φ }}) where

@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Michael Sammler
+Authors: Michael Sammler, Alvin Tang
 -/
 module
 
@@ -10,6 +10,18 @@ public import Iris.ProofMode.Classes
 public import Iris.ProofMode.ClassesMake
 public meta import Iris.ProofMode.Expr
 public import Iris.Std.TC
+
+public meta section
+
+register_option iris.frame.instantiateExists : Bool := {
+  defValue := true
+  descr := "When set as `true`, `iframe` may instantiate existential \
+    quantifiers in the goal while framing. Set to `false` to allow framing \
+    below existential quantifiers without instantiating any existentially \
+    quantified variables."
+}
+
+end
 
 @[expose] public section
 
@@ -60,8 +72,10 @@ instance frame_here_pure [BI PROP] {a : Bool} {φ : Prop} {Q : PROP}
 
 @[ipm_backtrack, rocq_alias frame_wand]
 instance frame_wand [BI PROP] p (R P1 P2 Q2 : PROP)
-    [h : Frame p R P2 Q2] : Frame p R iprop(P1 -∗ P2) iprop(P1 -∗ Q2) where
-  frame := wand_intro <| sep_assoc.1.trans <| (sep_mono_right wand_elim_left).trans h.frame
+    [h : FrameInstantiateExistDisabled p R P2 Q2] :
+    Frame p R iprop(P1 -∗ P2) iprop(P1 -∗ Q2) where
+  frame := wand_intro <| sep_assoc.1.trans <| (sep_mono_right wand_elim_left).trans
+    h.frame_instantiatiate_exist_disabled.frame
 
 @[ipm_backtrack, rocq_alias frame_affinely]
 instance frame_affinely [BI PROP] p (R P Q Q' : PROP)
@@ -108,19 +122,21 @@ instance frame_persistently [BI PROP] (R P Q Q' : PROP)
 
 @[ipm_backtrack, rocq_alias frame_forall]
 instance frame_forall {α} [BI PROP] p R (Φ Ψ : α → PROP)
--- TODO: add FrameInstantiateExistDisabled to the premise once supported
-    [h : ∀ a, Frame p R (Φ a) (Ψ a)] :
+    [h : ∀ a, FrameInstantiateExistDisabled p R (Φ a) (Ψ a)] :
     Frame p R iprop(∀ x, Φ x) iprop(∀ x, Ψ x) where
-  frame := forall_intro λ a => (sep_mono_right (forall_elim a)).trans (h a).1
+  frame := forall_intro λ a =>
+    (sep_mono_right (forall_elim a)).trans (h a).frame_instantiatiate_exist_disabled.frame
 
 @[ipm_backtrack, rocq_alias frame_impl_persistent]
 instance frame_impl_persistent [BI PROP] (R P1 P2 Q2 : PROP)
-    [h : Frame true R P2 Q2] : Frame true R iprop(P1 → P2) iprop(P1 → Q2) where
+    [h : FrameInstantiateExistDisabled true R P2 Q2] :
+    Frame true R iprop(P1 → P2) iprop(P1 → Q2) where
   frame := imp_intro <|
     (and_mono_left persistently_and_intuitionistically_sep_left.2).trans <|
     and_assoc.1.trans <|
     (and_mono_right (and_comm.1.trans imp_elim_right)).trans <|
-    persistently_and_intuitionistically_sep_left.1.trans h.frame
+    persistently_and_intuitionistically_sep_left.1.trans
+    h.frame_instantiatiate_exist_disabled.frame
 
 /-
 You may wonder why this uses [Persistent] and not [QuickPersistent].
@@ -132,14 +148,14 @@ a new typeclass just for this extremely rarely used instance.
 @[ipm_backtrack, rocq_alias frame_impl]
 instance frame_impl [BI PROP] (R P1 P2 Q2 : PROP)
     [hp : Persistent P1] [ha : QuickAbsorbing P1]
-    [h : Frame false R P2 Q2] : Frame false R iprop(P1 → P2) iprop(P1 → Q2) where
+    [h : FrameInstantiateExistDisabled false R P2 Q2] : Frame false R iprop(P1 → P2) iprop(P1 → Q2) where
   frame :=
     have : Absorbing P1 := ha.quick_absorbing
     imp_intro <|
       persistent_and_affinely_sep_right.1.trans <|
       sep_assoc.1.trans <|
       (sep_mono_right (sep_comm.1.trans (persistent_and_affinely_sep_left.2.trans imp_elim_right))).trans <|
-      h.frame
+      h.frame_instantiatiate_exist_disabled.frame
 
 @[ipm_backtrack, rocq_alias frame_later]
 instance frame_later [BI PROP] p (R R' P Q Q' : PROP)
@@ -236,10 +252,46 @@ theorem frame_or [BI PROP] p (R P1 P2 Q1 Q2 Q' : PROP)
     sep_or_left.1.trans <|
     or_mono h1.frame h2.frame
 
+@[rocq_alias frame_exist]
+theorem frame_exist [BI PROP] {α} (p : Bool) (R : PROP) (Φ : α → PROP)
+    (a : α) (Q : PROP) (inst : Frame p R (Φ a) Q) :
+    Frame p R iprop(BI.exists Φ) Q where
+  frame := inst.frame.trans <| exists_intro a
+
+@[rocq_alias frame_exist_no_instantiate]
+theorem frame_exist_no_instantiate [BI PROP] {α} (p : Bool) (R : PROP) (Φ Ψ : α → PROP)
+    (inst : ∀ a, Frame p R (Φ a) (Ψ a)) :
+    Frame p R iprop(BI.exists Φ) iprop(BI.exists Ψ) where
+  frame := sep_exists_left.mp.trans <|
+    exists_elim <| fun a => (inst a).frame.trans <| exists_intro a
+
 end tactic_theorems
 
 meta section tactics
-open Lean
+open Lean Elab Meta Std
+
+def frameInstantiateExistsEnabled : MetaM Bool := do
+  return iris.frame.instantiateExists.get (← getOptions)
+
+def withFrameInstantiateExistsDisabled {α} (x : MetaM α) : MetaM α :=
+  withOptions (iris.frame.instantiateExists.set · false) x
+
+theorem frameInstantiateExistsDisabled_of [BI PROP] {p} {R P Q : PROP} (h : Frame p R P Q) :
+    FrameInstantiateExistDisabled p R P Q := ⟨h⟩
+
+@[ipm_tactic_instance FrameInstantiateExistDisabled _ _ _ _]
+def frameNoInstantiateExist : SynthTactic := λ e => do
+  let_expr FrameInstantiateExistDisabled prop bi p R P G := e | return .continue
+  have u := e.getAppFn.constLevels![0]!
+  have prop : Q(Type u) := prop
+  have _bi : Q(BI $prop) := bi
+  have p : Q(Bool) := p
+  have R : Q($prop) := R
+  have P : Q($prop) := P
+  have G : Q($prop) := G
+  let some inst ← withFrameInstantiateExistsDisabled <|
+    synthInstanceRecursiveQ q(Frame $p $R $P $G) | return .continue
+  return .success q(frameInstantiateExistsDisabled_of $inst)
 
 /-- corresponds to the MaybeFrame typeclass in Rocq -/
 @[rocq_alias MaybeFrame', rocq_alias maybe_frame_frame]
@@ -353,3 +405,80 @@ def frameOr : SynthTactic := λ e => do
       throwError "MakeOr should always succeed"
     return .success q(frame_or $p $R $P1 $P2 $Q1 $Q2 $Q')
   return .continue
+
+def frameHereApplies {u : Level} {prop : Q(Type u)} (_bi : Q(BI $prop)) (R P : Q($prop)) :
+    MetaM Bool := withoutModifyingState do
+  if ← isDefEq P R then return true
+  let_expr BI.affinely _ _ R' := R | return false
+  isDefEq P R'
+
+/-- Analogous to `solve_gather_evars_eq` in the Rocq implementation. -/
+def solveGatherEvarsEq (a c : Expr) : MetaM Bool := do
+  match a with
+  | .mvar m =>
+    if ← m.isDelayedAssigned then return false
+    let decl ← m.getDecl
+    -- The metavaiable `m` cannot be older than `c`, or else assignment is out of scope
+    unless decl.lctx.contains c.fvarId! do
+      return false
+    unless decl.depth == (← getMCtx).depth do
+      return false
+    if decl.kind.isSyntheticOpaque then
+      return false
+    m.assign c
+    return true
+  | _ => return false
+
+@[ipm_tactic_instance Frame _ _ iprop(∃ _, _) _]
+def frameExist : SynthTactic := λ e => do
+  let_expr Frame prop bi p R P _ := e | return .continue
+  have u := e.getAppFn.constLevels![0]!
+  have prop : Q(Type u) := prop
+  have _bi : Q(BI $prop) := bi
+  have p : Q(Bool) := p
+  have R : Q($prop) := R
+  let_expr BI.exists _ _ α Φ := P | return .continue
+
+  let .sort v ← inferType α | return .continue
+  have α : Q(Sort v) := α
+  have Φ : Q($α → $prop) := Φ
+
+  -- Find the binder name so that it can be reused after framing
+  let bn := match Φ with | .lam n .. => n | _ => `x
+
+  -- Introduce a free variable `c` for the computation within `withLocalDeclDQ`
+  let some ⟨a, X, inst⟩ ← withLocalDeclDQ bn α fun c => do
+    let a : Q($α) ←
+      if ← frameInstantiateExistsEnabled then
+        mkFreshExprMVarQ q($α)
+      else pure c
+    let G ← mkFreshExprMVarQ q($prop)
+    have body : Q($prop) := Expr.headBeta q($Φ $a)
+    let some inst ← synthInstanceRecursiveQ q(Frame $p $R $body $G) | return none
+    -- The existential quantifier remains (`a == c` when framing of existential is disabled)
+    if a == c || (← solveGatherEvarsEq (← instantiateMVars a) c) then
+      return some (none, ← mkLambdaFVars #[c] (← instantiateMVars G),
+                          ← mkLambdaFVars #[c] (← instantiateMVars inst))
+    let a ← instantiateMVars a
+    let G ← instantiateMVars G
+    if a.containsFVar c.fvarId! || G.containsFVar c.fvarId! then return none
+    -- The existential quantifier does not remain as the existential variable is instantiated
+    return some (some a, G, ← instantiateMVars inst)
+  | return .continue
+
+  match a with
+  | none =>
+    have Ψ : Q($α → $prop) := X
+    let inst : Q(∀ x, Frame $p $R ($Φ x) ($Ψ x)) := inst
+    return .success q(frame_exist_no_instantiate $p $R $Φ $Ψ $inst)
+  | some a =>
+    have a : Q($α) := a
+    have G : Q($prop) := X
+    let inst : Q(Frame $p $R ($Φ $a) $G) := inst
+    return .success q(frame_exist $p $R $Φ $a $G $inst)
+
+#rocq_ignore frame_exist_helper "Logic already handled in the metaprogram frameExist"
+#rocq_ignore GatherEvarsEq "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
+#rocq_ignore TCCbnTele "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
+#rocq_ignore frame_texist "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
+#rocq_ignore frame_tforall "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
