@@ -75,6 +75,13 @@ instance frame_here_pure [BI PROP] {a : Bool} {φ : Prop} {Q : PROP}
     | @TCOr.l _ _ heq => by cases heq; refine h1.1
     | TCOr.r => (affinely_intro .rfl).trans <| affinely_affinelyIf.trans h1.1
 
+@[ipm_backtrack, rocq_alias frame_wand]
+instance frame_wand [BI PROP] p (R P1 P2 Q2 : PROP)
+    [h : FrameInstantiateExistDisabled p R P2 Q2] :
+    Frame p R iprop(P1 -∗ P2) iprop(P1 -∗ Q2) where
+  frame := wand_intro <| sep_assoc.1.trans <| (sep_mono_right wand_elim_left).trans
+    h.frame_instantiatiate_exist_disabled.frame
+
 @[ipm_backtrack, rocq_alias frame_affinely]
 instance frame_affinely [BI PROP] p (R P Q Q' : PROP)
     [hor : TCOr (TCEq p true) (QuickAffine R)]
@@ -88,13 +95,6 @@ instance frame_affinely [BI PROP] p (R P Q Q' : PROP)
     (sep_mono_left (affine_affinely _).symm.1).trans <|
     affinely_sep_mpr.trans <|
     affinely_mono h1.frame
-
-@[ipm_backtrack, rocq_alias frame_wand]
-instance frame_wand [BI PROP] p (R P1 P2 Q2 : PROP)
-    [h : FrameInstantiateExistDisabled p R P2 Q2] :
-    Frame p R iprop(P1 -∗ P2) iprop(P1 -∗ Q2) where
-  frame := wand_intro <| sep_assoc.1.trans <| (sep_mono_right wand_elim_left).trans
-    h.frame_instantiatiate_exist_disabled.frame
 
 @[ipm_backtrack, rocq_alias frame_intuitionistically]
 instance frame_intuitionistically [BI PROP] (R P Q Q' : PROP)
@@ -280,7 +280,8 @@ def frameInstantiateExistsEnabled : MetaM Bool := do
 
 def withFrameInstantiateExistsDisabled {α} (x : MetaM α) : MetaM α :=
   withOptions (iris.frame.instantiateExists.set · false) x
-theorem frameNoInstantiateExist_of [BI PROP] {p} {R P Q : PROP} (h : Frame p R P Q) :
+
+theorem frameInstantiateExistsDisabled_of [BI PROP] {p} {R P Q : PROP} (h : Frame p R P Q) :
     FrameInstantiateExistDisabled p R P Q := ⟨h⟩
 
 @[ipm_tactic_instance FrameInstantiateExistDisabled _ _ _ _]
@@ -295,7 +296,7 @@ def frameNoInstantiateExist : SynthTactic := λ e => do
   have G : Q($prop) := G
   let some inst ← withFrameInstantiateExistsDisabled <|
     synthInstanceRecursiveQ q(Frame $p $R $P $G) | return .continue
-  return .success q(frameNoInstantiateExist_of $inst)
+  return .success q(frameInstantiateExistsDisabled_of $inst)
 
 /-- corresponds to the MaybeFrame typeclass in Rocq -/
 @[rocq_alias MaybeFrame', rocq_alias maybe_frame_frame]
