@@ -93,7 +93,8 @@ instance frame_affinely [BI PROP] p (R P Q Q' : PROP)
 instance frame_wand [BI PROP] p (R P1 P2 Q2 : PROP)
     [h : FrameInstantiateExistDisabled p R P2 Q2] :
     Frame p R iprop(P1 -∗ P2) iprop(P1 -∗ Q2) where
-  frame := sorry--h.frame
+  frame := wand_intro <| sep_assoc.1.trans <| (sep_mono_right wand_elim_left).trans
+    h.frame_instantiatiate_exist_disabled.frame
 
 @[ipm_backtrack, rocq_alias frame_intuitionistically]
 instance frame_intuitionistically [BI PROP] (R P Q Q' : PROP)
@@ -128,19 +129,19 @@ instance frame_persistently [BI PROP] (R P Q Q' : PROP)
 instance frame_forall {α} [BI PROP] p R (Φ Ψ : α → PROP)
     [h : ∀ a, FrameInstantiateExistDisabled p R (Φ a) (Ψ a)] :
     Frame p R iprop(∀ x, Φ x) iprop(∀ x, Ψ x) where
-  frame := sorry -- (h a).1
+  frame := forall_intro λ a =>
+    (sep_mono_right (forall_elim a)).trans (h a).frame_instantiatiate_exist_disabled.frame
 
 @[ipm_backtrack, rocq_alias frame_impl_persistent]
 instance frame_impl_persistent [BI PROP] (R P1 P2 Q2 : PROP)
     [h : FrameInstantiateExistDisabled true R P2 Q2] :
     Frame true R iprop(P1 → P2) iprop(P1 → Q2) where
-  frame := sorry
-    -- have : Absorbing P1 := ha.quick_absorbing
-    -- imp_intro <|
-    -- (and_mono_left persistently_and_intuitionistically_sep_left.2).trans <|
-    -- and_assoc.1.trans <|
-    -- (and_mono_right (and_comm.1.trans imp_elim_right)).trans <|
-    -- persistently_and_intuitionistically_sep_left.1.trans h.frame
+  frame := imp_intro <|
+    (and_mono_left persistently_and_intuitionistically_sep_left.2).trans <|
+    and_assoc.1.trans <|
+    (and_mono_right (and_comm.1.trans imp_elim_right)).trans <|
+    persistently_and_intuitionistically_sep_left.1.trans
+    h.frame_instantiatiate_exist_disabled.frame
 
 /-
 You may wonder why this uses [Persistent] and not [QuickPersistent].
@@ -153,12 +154,13 @@ a new typeclass just for this extremely rarely used instance.
 instance frame_impl [BI PROP] (R P1 P2 Q2 : PROP)
     [hp : Persistent P1] [ha : QuickAbsorbing P1]
     [h : FrameInstantiateExistDisabled false R P2 Q2] : Frame false R iprop(P1 → P2) iprop(P1 → Q2) where
-  frame := sorry
-    -- imp_intro <|
-    --   persistent_and_affinely_sep_right.1.trans <|
-    --   sep_assoc.1.trans <|
-    --   (sep_mono_right (sep_comm.1.trans (persistent_and_affinely_sep_left.2.trans imp_elim_right))).trans <|
-    --   h.frame
+  frame :=
+    have : Absorbing P1 := ha.quick_absorbing
+    imp_intro <|
+      persistent_and_affinely_sep_right.1.trans <|
+      sep_assoc.1.trans <|
+      (sep_mono_right (sep_comm.1.trans (persistent_and_affinely_sep_left.2.trans imp_elim_right))).trans <|
+      h.frame_instantiatiate_exist_disabled.frame
 
 @[ipm_backtrack, rocq_alias frame_later]
 instance frame_later [BI PROP] p (R R' P Q Q' : PROP)

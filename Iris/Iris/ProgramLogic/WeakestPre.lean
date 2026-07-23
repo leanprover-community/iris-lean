@@ -622,7 +622,7 @@ instance frameWp {p : Bool} [H : ∀ v, FrameInstantiateExistDisabled p R (Φ v)
   frame := by
     refine wp_frame_l.trans ?_
     apply wp_mono
-    exact fun v => sorry --frame
+    exact fun v => (H v).frame_instantiatiate_exist_disabled.frame
 
 @[rocq_alias is_except_0_wp]
 instance isExcept0Wp : IsExcept0 (WP e @ s ; E {{ Φ }}) where
