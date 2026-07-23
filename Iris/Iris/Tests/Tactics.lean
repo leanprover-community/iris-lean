@@ -2645,7 +2645,7 @@ example [BI PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ □ R -∗ R ∗ P ∗ Q :=
     the former takes higher precedence. Likewise, `a1` and `b` is merged
     as `c` instead of `a1 • b`. -/
 example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
-    {a1 a2 a3 b c : F.ap (IProp GF)} [IsOpMerge b a2 a3] [IsOpMerge c a1 b] :
+    {a1 a2 a3 b c : F.ap (IProp GF)} [IsOp .merge b a2 a3] [IsOp .merge c a1 b] :
     ⊢ iOwn γ a1 -∗ iOwn γ a2 -∗ iOwn γ a3 -∗
       iOwn γ c ∗ internalCmraValid (a2 • a3) ∗ internalCmraValid (a1 • b) := by
   iintro H1 H2 H3
@@ -2660,7 +2660,7 @@ example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
     instances for `DFrac` and `Frac`. -/
 example {GF} [ElemG GF (constOF DFrac)]
     [ElemG GF (constOF Qp)] {γ}
-    {a1 a2 a3 b c : Qp} [IsOpMerge b a2 a3] [IsOpMerge c a1 b] :
+    {a1 a2 a3 b c : Qp} [IsOp .merge b a2 a3] [IsOp .merge c a1 b] :
     ⊢@{IProp GF}
       iOwn (F := constOF DFrac) γ (own a1) -∗
       iOwn (F := constOF DFrac) γ (own a2) -∗
@@ -2680,8 +2680,8 @@ example {GF} [ElemG GF (constOF DFrac)]
     instances for the authoritative CMRA. -/
 example {GF A} [UCMRA A] [ElemG GF (constOF (Auth A))] {γ}
     {a1 a2 a3 b c : A} {q1 q2 : Qp} {dq'' dq3 dq4 : DFrac}
-    [IsOpMerge b a2 a3] [IsOpMerge c a1 b]
-    [IsOpMerge dq'' dq3 dq4] :
+    [IsOp .merge b a2 a3] [IsOp .merge c a1 b]
+    [IsOp .merge dq'' dq3 dq4] :
     ⊢@{IProp GF}
       iOwn (F := constOF (Auth A)) γ (◯ a1) -∗
       iOwn (F := constOF (Auth A)) γ (◯ a2) -∗
@@ -2917,6 +2917,95 @@ example {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop} {h1 : Q n} {_ : (Q n) 
   iloeb as IH generalizing! %n
 
 end iloeb
+
+section ieval
+
+/-- Tests `ieval` and `isimp` to simplify the goal and specific Iris hypotheses. -/
+example [BI PROP] {u v w x y z : Nat} :
+    ⌜(x + y) + 3 = 4⌝ ∗ ⌜(w + z) + 1 = Nat.succ 2⌝ ∗ ⌜(u + v) = v⌝
+    ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ ∗ ⌜w + z = 2⌝ ∗ ⌜u = 0⌝ := by
+  iintro ⟨H1, H2, H3⟩
+  -- Simplify `(x + y) + 3 = 4` as `x + y = 1`
+  isimp in H1
+  isplitl [H1]
+  -- Simplify `(x + y).succ = 2` as `x + y = 1`
+  · isimp
+    iexact H1
+  -- Simplify the goal `w + z + 1 = Nat.succ 2` as `w + z = 2` and `u + v = v` as `u = 0`
+  · ieval (simp) in H2 H3
+    iframe
+
+/- Tests `isimp` with a pure hypothesis in the selection pattern -/
+/-- error: ieval: pure hypotheses in the selection pattern is not supported -/
+#guard_msgs in
+example [BI PROP] {x y : Nat} :
+    ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ := by
+  iintro #H
+  isimp in %x H
+
+/- Tests `isimp` with the simplification failing -/
+/-- error: `simp` made no progress -/
+#guard_msgs in
+example [BI PROP] {x y : Nat} : ⌜x = 0⌝ ⊢@{PROP} ⌜x = 0⌝ := by
+  iintro #H
+  isimp in H
+
+/-- Tests `isimp` with variants of `simp` -/
+example [BI PROP] {m n p q : Nat} (h1 : m = n + 1) (h2 : r = t) (h3 : s = t) :
+    ⌜p + q = q + p⌝ ⊢@{PROP} ⌜m - 1 = n⌝ ∗ ⌜r = s⌝ ∗ ⌜q + p = p + q⌝ := by
+  iintro H
+  isplitr
+  -- Simplification with a hypothesis
+  · isimp [h1]
+    itrivial
+  · isplitr
+    -- Simplification with all rules annotated with `[simp]` and all hypotheses
+    · isimp [*]
+      itrivial
+    -- Simplification only with specific rules
+    · isimp only [Nat.add_comm] in H
+      isimp only [Nat.add_comm]
+      iexact H
+
+private def def1 := 10
+private def def2 := def1
+
+/-- Tests `iunfold` to unfold definitions in an Iris hypothesis and a proof goal -/
+example [BI PROP] : ⌜def2 = 10⌝ ⊢@{PROP} ⌜10 = 10⌝ ∗ ⌜def2 = 10⌝ := by
+  iintro #H
+  -- Unfold definitions in an Iris hypothesis
+  iunfold def2, def1 in H
+  iframe H
+  -- Unfold definitions in the proof goal
+  iunfold def2, def1
+  ipureintro
+  .rfl
+
+/- Tests `ieval` where the supplied tactic solves the goal completely -/
+/-- error: ieval: the supplied tactic does not produce exactly one subgoal -/
+#guard_msgs in
+example [BI PROP] {x y : Nat} (_ : False) :
+    ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ := by
+  iintro H
+  ieval (contradiction) in H
+
+/- Tests `ieval` where the supplied tactic produces more than one subgoal -/
+/-- error: ieval: the supplied tactic does not produce exactly one subgoal -/
+#guard_msgs in
+example [BI PROP] {x y : Nat} (h : False) :
+    ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ := by
+  iintro H
+  ieval (cases x) in H
+
+/- Tests `ieval` where the given tactic breaks the Iris entailment -/
+/-- error: ieval: the goal is not Iris entailment upon applying the supplied tactic -/
+#guard_msgs in
+example [BI PROP] {x y : Nat} :
+    ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ := by
+  iintro H
+  ieval (exfalso) in H
+
+end ieval
 
 section iaccu
 
