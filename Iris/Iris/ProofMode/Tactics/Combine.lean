@@ -136,6 +136,7 @@ private def CombineState.combineProofModeHyp {u prop bi origE goal} :
     -- Type class instance search for the `as` syntax
     let newOutAs ← mkFreshExprMVarQ q($prop)
     let instAs ← ProofModeM.synthInstanceQ q(CombineSepAs $out2 $outAs $newOutAs)
+    have : ($(conj p1 p2)) =Q ($p1 && $p2) := ⟨⟩
     let newPfAs := q(combine_as_step $instAs $pfAs $(pf2).mp)
 
     match outGives, pfGives with
@@ -246,9 +247,9 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
     let hs ← iCombineParseSelPats hyps patSels
-    let st ← iCombineCore hs hyps goal
+    let {outGives, pfGives, ..} ← iCombineCore hs hyps goal
 
-    match st.outGives, st.pfGives with
+    match outGives, pfGives with
     | some outGives, pfGives =>
       let pf ← iCasesCore _ hyps goal pat q(true) outGives addBIGoal
       mvar.assign q($(pfGives).trans $pf)
@@ -275,9 +276,9 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
     let hs ← iCombineParseSelPats hyps patSels
-    let st ← iCombineCore hs hyps goal
+    let st@{outGives, pfGives, ..} ← iCombineCore hs hyps goal
 
-    match st.outGives, st.pfGives with
+    match outGives, pfGives with
     | some outGives, pfGives =>
       let pf ← iCasesCore _ st.newHyps goal (.conjunction [pat1, .intuitionistic pat2])
         q($st.p) q(iprop($st.outAs ∗ □ $outGives)) addBIGoal

@@ -20,6 +20,20 @@ open Lean Lean.Expr Lean.Meta Qq
 @[expose, match_pattern] def nameAnnotation := `name
 @[expose, match_pattern] def ivarAnnotation := `ivar
 
+/--
+Identity wrapper used as a marker around top-level Iris hypotheses.
+This is to solve the issues that `rw` and `simp` may erase the metadata of a hypothesis,
+which is needed for the proof mode pretty-printer/parser to display the hypothesis correctly.
+
+The underlying issue is `rw`'s `kabstract`-based implementation: without a real head symbol,
+rewriting can abstract away the metadata wrapper and the pretty-printer/parser loses
+the named hypothesis.
+
+`IrisHyp` should be only inserted at the outermost level of Iris hypotheses.
+See https://github.com/leanprover-community/iris-lean/issues/469
+-/
+@[expose, reducible] public def IrisHyp {α : Sort u} (x : α) : α := x
+
 structure IVarId where
   name : Name
   -- caches whether the ivar is persistent or not to allow
@@ -37,12 +51,14 @@ def mkFreshIVarId [Monad m] [MonadNameGenerator m] (persistent? : Bool) : m IVar
   deriving Inhabited, EmptyCollection, Singleton
 
 def parseName? : Expr → Option (Name × Name × Expr)
-  | .mdata ⟨[(nameAnnotation, .ofName name), (ivarAnnotation, .ofName ivar)]⟩ e => do
+  | .mdata ⟨[(nameAnnotation, .ofName name), (ivarAnnotation, .ofName ivar)]⟩ (.app (.app c _α) e) => do
+    if c.constName? != some ``IrisHyp then
+      failure
     some (name, ivar, e)
   | _ => none
 
-def mkNameAnnotation (name : Name)(ivar : IVarId) (e : Expr) : Expr :=
-  .mdata ⟨[(nameAnnotation, .ofName name), (ivarAnnotation, .ofName ivar.name)]⟩ e
+def mkNameAnnotation {prop : Q(Type u)} (name : Name) (ivar : IVarId) (e : Q($prop)) : Q($prop) :=
+  .mdata ⟨[(nameAnnotation, .ofName name), (ivarAnnotation, .ofName ivar.name)]⟩ q(IrisHyp $e)
 
 def getFreshName : TSyntax ``binderIdent → CoreM (Name × Syntax)
   | `(binderIdent| $name:ident) => pure (name.getId, name)
@@ -188,6 +204,35 @@ partial def Hyps.intuitionisticIVarIds {u prop bi} :
   | _, .emp _ => []
   | _, .hyp _ _ ivar p _ _ => if isTrue p then [ivar] else []
   | _, .sep _ _ _ _ lhs rhs => lhs.intuitionisticIVarIds ++ rhs.intuitionisticIVarIds
+
+/--
+  Given any hypotheses `hyps` representing `e`, filter in all spatial hypotheses
+  and prove that `e` implies the set of spatial hypotheses.
+-/
+def Hyps.buildAccuProof {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (hyps : Hyps bi e) : (spatialProps : Q($prop)) × Q($e ⊢ $spatialProps) :=
+  let ⟨spatialProps, pf⟩ := buildAccuProofAux hyps (e' := q(iprop(emp))) q(iprop(emp)) q(.rfl)
+  let pf : Q($e ⊢ $spatialProps) := q(sep_emp.mpr.trans $pf)
+  ⟨spatialProps, pf⟩
+  where
+    buildAccuProofAux {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e e' : Q($prop)}
+      (hyps : Hyps bi e) (spatialProps : Q($prop)) (pf : Q($e' ⊢ $spatialProps)) :
+      (newSpatialProps : Q($prop)) × Q($e ∗ $e' ⊢ $newSpatialProps) :=
+    match hyps with
+    | .emp _ => ⟨spatialProps, q(emp_sep.mp.trans $pf)⟩
+    | .hyp _ _ _ p ty _ =>
+      match matchBool p with
+      | .inl _ =>
+        ⟨spatialProps, q((sep_mono_left intuitionistically_elim_emp).trans (emp_sep.mp.trans $pf))⟩
+      | .inr _ =>
+        if spatialProps == q(iprop(emp)) then
+          let pf : Q($e' ⊢ iprop(emp)) := pf
+          ⟨ty, q((sep_mono_right $pf).trans sep_emp.mp)⟩
+        else ⟨q(iprop($ty ∗ $spatialProps)), q(sep_mono_right $pf)⟩
+    | .sep _ _ _ _ lhs rhs =>
+      let ⟨spatialPropsR, pfR⟩ := buildAccuProofAux rhs spatialProps pf
+      let ⟨spatialPropsLR, pfLR⟩ := buildAccuProofAux lhs spatialPropsR pfR
+      ⟨q($spatialPropsLR), q(sep_assoc.mp.trans $pfLR)⟩
 
 variable (oldIVar : IVarId) (new : Name) {prop : Q(Type u)} {bi : Q(BI $prop)} in
 def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)
@@ -434,6 +479,24 @@ def Hyps.replace : m (Option ((e' : Q($prop)) × Hyps bi e' × Q($e ⊢ $e'))) :
   let some ⟨_, hyps', pf⟩ ← hyps.replaceCore bi e ivar repl | return none
   return some ⟨_, hyps', q(replace_finish $pf)⟩
 
+def Hyps.evalReplace [Monad m] [MonadLiftT MetaM m]
+    {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (ivar : IVarId)
+    (repl : (ty : Q($prop)) → m ((ty' : Q($prop)) × Q($ty ⊢ $ty'))) :
+    ∀ {e}, Hyps bi e → m (Option ((e' : Q($prop)) × Hyps bi e' × Q($e ⊢ $e')))
+  | _, .emp _ => return none
+  | _, .hyp _ name ivar' p ty _ =>
+      if ivar == ivar' then do
+        let ⟨ty', h⟩ ← repl ty
+        return some ⟨_, .mkHyp bi name ivar p ty',
+                     q(intuitionisticallyIf_mono (p := $p) $h)⟩
+      else return none
+  | _, .sep _ _ _ _ lhs rhs => do
+      if let some ⟨_, lhs', h⟩ ← lhs.evalReplace ivar repl then
+        return some ⟨_, .mkSep lhs' rhs, q(sep_mono_left $h)⟩
+      if let some ⟨_, rhs', h⟩ ← rhs.evalReplace ivar repl then
+        return some ⟨_, .mkSep lhs rhs', q(sep_mono_right $h)⟩
+      return none
+
 end replace
 
 section dependency
@@ -539,3 +602,21 @@ def Hyps.addWithInfo {prop : Q(Type u)} (bi : Q(BI $prop))
   addHypInfo nameRef nameTo ivar' prop ty (isBinder := true)
   let hyps := Hyps.add bi nameTo ivar' p ty h
   return ⟨ivar', hyps⟩
+
+/--
+  Given hypothesis `hyps` representing `e` where every hypothesis exist in the
+  intuitionistic context, return the proof of `e ⊢ □ e`. Return `none` if
+  `hyps` contains hypotheses in the spatial context.
+-/
+def Hyps.buildIntuitionisticProof {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (hyps : Hyps bi e) : Option Q($e ⊢ □ $e) :=
+  match hyps with
+  | .emp _ => some q(intuitionistically_emp.mpr)
+  | .hyp _ _ _ p _ _ =>
+    match matchBool p with
+    | .inl _ => some q(intuitionistically_idem.mpr)
+    | .inr _ => none
+  | .sep _ _ _ _ lhs rhs => do
+    let pfL ← buildIntuitionisticProof lhs
+    let pfR ← buildIntuitionisticProof rhs
+    some q((sep_mono $pfL $pfR).trans intuitionistically_sep_mpr)

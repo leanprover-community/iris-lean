@@ -767,6 +767,9 @@ def setFinite (X : S) : Prop := ∃ xs : List A, ∀ x ∈ X, x ∈ xs
 
 def setInfinite (X : S) : Prop := ∀ xs : List A, ∃ x ∈ X, x ∉ xs
 
+theorem ofList_finite {xs : List A} : setFinite (ofList xs : S) :=
+  ⟨xs, fun _ h => mem_ofList.mpr h⟩
+
 theorem not_finite_infinite {X : S} : ¬ setFinite X ↔ setInfinite X := by simp [setFinite, setInfinite]
 
 theorem not_infinite_finite {X : S} : ¬ setInfinite X ↔ setFinite X := by simp [setFinite, setInfinite]
@@ -824,6 +827,11 @@ theorem difference_infinite {X Y : S} :
   simp only [List.mem_append, not_or] at Hx2
   simp only [mem_diff]
   grind
+
+theorem setInfinite_mono {X Y : S} (H : X ⊆ Y) (Hinf : setInfinite X) : setInfinite Y := by
+  intro xs
+  obtain ⟨x, Hx, Hxs⟩ := Hinf xs
+  exact ⟨x, H x Hx, Hxs⟩
 
 theorem diff_not_finite_finite_ne_empty {X Y : S} (hX : setInfinite X) (hY : setFinite Y) :
     X \ Y ≠ ∅ := by

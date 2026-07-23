@@ -45,7 +45,7 @@ def UPred.holds_unpacked {M : Type _} [UCMRA M] (P : UPred M) (n : Nat) (x : M) 
     Prop :=
   P.holds n ⟨x, Hx⟩
 
-def UPred.mono_unpacked {M : Type _} [UCMRA M] (P : UPred M) {n1 n2 : Nat} {x1 x2 : M}
+theorem UPred.mono_unpacked {M : Type _} [UCMRA M] (P : UPred M) {n1 n2 : Nat} {x1 x2 : M}
     (Hx1 : ✓{n1} x1) (Hx2 : ✓{n2} x2) (HP : P.holds_unpacked n1 x1 Hx1) (Hxle : x1 ≼{n2} x2)
     (Hle : n2 ≤ n1) : P.holds_unpacked n2 x2 Hx2 :=
   P.mono HP Hxle Hle

@@ -148,6 +148,7 @@ def difference (m₁ m₂ : M V) : M V :=
 def zipWith (f : V → V' → V'') (m₁ : M V) (m₂ : M V') : M V'' :=
   bindAlter (fun k v => (get? m₂ k).bind fun v' => some <| f v v') m₁
 
+set_option linter.checkUnivs false in
 def zip (m₁ : M V) (m₂ : M V') : M (V × V') :=
   zipWith (fun x y => (x, y)) m₁ m₂
 
@@ -168,7 +169,7 @@ theorem equiv.trans : ∀ {a b c : M V}, equiv a b → equiv b c → equiv a c :
 /-- Pointwise equivalence is transitive. -/
 instance instEquivTrans : Trans equiv (@equiv K V M _) equiv := ⟨equiv.trans⟩
 
-@[simp] def equiv.symm :  ∀  (a b : M V), equiv a b → equiv b a :=
+@[simp] theorem equiv.symm :  ∀  (a b : M V), equiv a b → equiv b a :=
   fun _ _ h k => (h k).symm
 
 instance instEquivSymm : Std.Symm (@equiv K V M _) := ⟨equiv.symm⟩

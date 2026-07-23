@@ -20,8 +20,6 @@ open Iris ProgramLogic Language.Notation Std FromMathlib
 
 section HeapLangGS
 
-abbrev HeapF := fun V => Std.ExtTreeMap Loc V compare
-
 abbrev ProphMapF := fun V => Std.ExtTreeMap ProphId V compare
 
 class HeapLangGpreS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGpreS GF where
