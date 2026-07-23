@@ -120,9 +120,15 @@ Used in [proof mode terms](#proof-mode-terms) after `$$` to eliminate the premis
 - `%`*t* — Instantiate a universal quantifier with the pure term *t*.
 - `[`*H₁* ... *Hₙ*`]` — Generate a subgoal for the premise with exactly the spatial hypotheses *Hᵢ*. Hypotheses written as `$H` are framed instead of forming the context.
 - `[-` *H₁* ... *Hₙ*`]` — Like above, but use all spatial hypotheses *except* the listed ones.
+- `[>` *H₁* ... *Hₙ*`]` — Given the proof goal involves a modality, solve the premise by wrapping it with the modality and then by generating a subgoal with the spatial hypotheses *Hᵢ*. Hypotheses written as `$H` are framed instead of forming the context.
+- `[>-` *H₁* ... *Hₙ*`]` — Like above, but use all spatial hypotheses *except* the listed ones.
+- `[#` `$`*H₁* ... `$`*Hₙ*`]` — Generate a subgoal for the *persistent* premise with the hypotheses *H₁*, ..., *Hₙ* being framed. The spatial hypotheses used for framing are not consumed.
 - `[`... `//]` — Additionally try to solve the subgoal with `itrivial` and fail if unsuccessful.
 - `[`...`] as` *name* — Name the generated subgoal *name*.
 - `[$]` — Solve the premise entirely by framing spatial and intuitionistic hypotheses.
+- `[# $]` — Solve the *persistent* premise by framing spatial and intutionistic hypotheses. The spatial hypotheses used for framing are not consumed.
+- `[> $]` — Given the proof goal involves a modality, solve the premise by wrapping it with the modality and then by framing.
+- `(` *H* `$$` *spat₁* ... *spatₙ* `)` — specialises the hypothesis *H* with the specialisation patterns *spat₁*, ..., *spatₙ* before the resultant hypothesis is itself used for matching a premise.
 
 If the conclusion of a specialization is persistent, the context can be shared between the subgoal and the main goal (e.g. `ihave #HQ : □ Q $$ [HP]` keeps `HP` usable in the main goal).
 

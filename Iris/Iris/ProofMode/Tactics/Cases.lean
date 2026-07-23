@@ -5,7 +5,7 @@ Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang
 -/
 module
 
-meta import Iris.ProofMode.Patterns.ProofModeTerm
+meta import Iris.ProofMode.Patterns.SpecPattern
 meta import Iris.ProofMode.Patterns.CasesPattern
 public meta import Iris.ProofMode.Tactics.Mod
 public meta import Iris.ProofMode.Tactics.Pure
@@ -215,7 +215,7 @@ partial def iCasesCore {P} (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat
 
   | .frame => do
     let ⟨ivar, hyps'⟩ ← Hyps.addWithInfo bi (← `(binderIdent | _)) p A hyps
-    let res ← iFrame bi _ hyps' goal [⟨.ipm ivar, true⟩]
+    let res ← iFrame bi hyps' goal [⟨.ipm ivar, true⟩]
     res.finish @k
 
   | .conjunction [arg] | .disjunction [arg] => iCasesCore hyps goal arg p A @k
@@ -266,13 +266,13 @@ elab "icases" keep:("+keep ")? colGt pmt:pmTerm " with " colGt pat:icasesPat : t
 
   -- We keep the persistent hypothesis if it is required by the user (+keep is set by ihave)
   -- or if we perform specialization
-  let ⟨_, hyps, p, A, pf⟩ ← iHave hyps pmt (keep.isSome || pmt.is_nontrivial)
+  let ⟨_, hyps, p, A, pf⟩ ← iHave hyps goal pmt (keep.isSome || pmt.is_nontrivial)
     (try_dup_context := pat.should_try_dup_context)
 
   -- process pattern
   let pf2 ← iCasesCore bi hyps goal pat p A
 
-  mvar.assign q(($pf).trans $pf2)
+  mvar.assign q($pf $pf2)
 
 /--
   `imod pmt with pat` eliminates the modality at the top of `pmt : pmTerm` into

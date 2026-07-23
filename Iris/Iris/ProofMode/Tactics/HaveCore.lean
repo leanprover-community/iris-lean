@@ -7,7 +7,7 @@ module
 
 import Iris.BI
 import Iris.ProofMode.Classes
-public meta import Iris.ProofMode.Patterns.ProofModeTerm
+public meta import Iris.ProofMode.Patterns.SpecPattern
 public meta import Iris.ProofMode.Tactics.Basic
 public meta import Iris.ProofMode.Tactics.Specialize
 
@@ -56,13 +56,13 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
     let ⟨_, hyps, _, out', p, _, pf⟩ := hyps.remove (!keep) ivar
     return ⟨_, hyps, p, out', q($pf.1)⟩
   else
-    -- lean hypothesis
+    -- Lean hypothesis
     let val ← instantiateMVars <| ← elabTerm tm none (mayPostpone := true)
     let ty ← instantiateMVars <| ← inferType val
 
     let ⟨newMVars, _, _⟩ ← forallMetaTelescope ty
     let val := mkAppN val newMVars
-    -- TOOD: should we call postprocessAppMVars?
+    -- TODO: should we call postprocessAppMVars?
     let newMVarIds ← newMVars.map Expr.mvarId! |>.filterM fun mvarId => not <$> mvarId.isAssigned
     let otherMVarIds ← getMVarsNoDelayed val
     let otherMVarIds := otherMVarIds.filter (!newMVarIds.contains ·)
@@ -88,11 +88,12 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
 
     return ⟨_, hyps, q(true), hyp, q(have_asEmpValid $val)⟩
 
-def iHave {e} (hyps : @Hyps u prop bi e)
-  (pmt : PMTerm) (keep : Bool) (try_dup_context : Bool := false) :
-  ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) × (out : Q($prop)) × Q($e ⊢ $e' ∗ □?$p $out)) := do
+def iHave {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
+    (pmt : PMTerm) (keep : Bool) (try_dup_context : Bool := false) :
+    ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) × (out : Q($prop)) ×
+      Q(($e' ∗ □?$p $out ⊢ $goal) → $e ⊢ $goal)) := do
   -- assert `term` as hypothesis `A`
   let ⟨_, hyps', p, A, pf⟩ ← iHaveCore hyps pmt.term keep
   -- specialize `A` with `spats`
-  let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p A pmt.spats (try_dup_context := try_dup_context)
-  return ⟨_, hyps'', pb, B, q($(pf).trans $pf')⟩
+  let ⟨_, hyps'', pb, B, pf', _⟩ ← iSpecializeCore hyps' p A goal pmt.spats (try_dup_context := try_dup_context)
+  return ⟨_, hyps'', pb, B, q(fun x => $(pf).trans ($pf' x))⟩
