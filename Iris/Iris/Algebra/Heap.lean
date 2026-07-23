@@ -624,7 +624,7 @@ def mapC [CMRA α] [CMRA β] (f : α -C> β) : CMRA.Hom (H α) (H β) where
     rw [get?_bindAlter]
     cases (get? x k) <;> simp
     apply CMRA.Hom.validN
-  pcore m := by
+  pcore m := OFE.Equiv.to_eq <| by
     intro _ x
     simp [map, get?_bindAlter]
     rcases get? m x with _|v <;> simp
@@ -633,7 +633,8 @@ def mapC [CMRA α] [CMRA β] (f : α -C> β) : CMRA.Hom (H α) (H β) where
       rfl
     rw [h]
     exact (CMRA.Hom.pcore f v).dist
-  op m1 m2 _ k := by
+  op m1 m2 := OFE.Equiv.to_eq <| by
+    intro _ k
     simp [CMRA.op, map, get?_bindAlter, get?_merge, Option.merge]
     cases get? m1 k <;> cases get? m2 k <;> simp
     exact (CMRA.Hom.op f _ _).dist
@@ -667,11 +668,11 @@ instance {F} [RFunctor F] : URFunctor (PartialMapOF H F) where
     intros _ _ _ _ _ _ _ _
     apply map_ne
     apply RFunctor.map_ne.ne <;> simp_all
-  map_id x := OFE.Equiv.of_eq <| by
+  map_id x := by
     refine .trans ?_ (map_id H x)
     apply map_ext
     exact fun _ a => (RFunctor.map_id a).dist
-  map_comp f g f' g' m := by
+  map_comp f g f' g' m := OFE.Equiv.to_eq <| by
     simp [mapC, map]
     intro n x
     simp [get?_bindAlter]

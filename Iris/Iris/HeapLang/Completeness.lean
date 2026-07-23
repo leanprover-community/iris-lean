@@ -350,7 +350,7 @@ theorem wp_baseCompletenessGoal (e₁ : Exp) (σ : State) (E : CoPset)
       iapply (BigSepM.bigSepM_eqv_of_perm initHeap_heap_eq).2
       iapply (BigSepM.bigSepM_union (allocCells_disjoint hfreshσ)).2
       iframe
-      iapply (equiv_iff.mp BigSepM.bigSepM_sep_eqv).2
+      iapply (equiv_iff.mp (OFE.Equiv.of_eq BigSepM.bigSepM_sep_eqv)).2
       iframe
       iapply (BigSepM.bigSepM_mono_of_forall (fun {k vo} => pointsTo_heapCellPts k vo)) $$ Hnewpts
   | newProphS σ p hp =>

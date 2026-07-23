@@ -189,7 +189,7 @@ theorem internalCmraIncluded_trans {a b c : A} :
   refine siPure_and_sep.mpr.trans (siPure_mono ?_)
   refine BI.exists_intro_trans (a' • b') ?_
   refine Entails.trans ?_ (internalEq.trans (b := (a • a') • b'))
-  refine and_intro ?_ (internalEq.of_equiv assoc'.symm.to_eq)
+  refine and_intro ?_ (internalEq.of_equiv assoc'.symm)
   refine Entails.trans ?_ (internalEq.trans (b := (b • b')))
   exact and_intro and_elim_r (and_elim_left_trans (BI.internalEq_entails.mpr (fun n heq => op_left_dist _ heq)))
 

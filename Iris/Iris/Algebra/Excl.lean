@@ -275,11 +275,11 @@ instance {F} [COFE.OFunctor F] : RFunctor (ExclOF F) where
     | invalid => trivial
   map_id {_ _} _ _ x := by
     cases x
-    · apply OFE.Equiv.of_eq; exact congrArg excl (COFE.OFunctor.map_id _)
+    · exact congrArg excl (COFE.OFunctor.map_id _)
     · trivial
   map_comp f g f' g' x := by
     cases x
-    · apply OFE.Equiv.of_eq; exact congrArg excl (COFE.OFunctor.map_comp _ _ _ _ _)
+    · exact congrArg excl (COFE.OFunctor.map_comp _ _ _ _ _)
     · trivial
 
 @[rocq_alias exclRF_contractive]

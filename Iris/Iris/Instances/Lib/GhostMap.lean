@@ -214,7 +214,7 @@ theorem ghost_map_alloc_strong [DecidableEq K] (P : GName → Prop) (m : H V) :
       (update_big_alloc _ (Std.PartialMap.map (fun x ↦ toAgree ⟨x⟩) m) _
         (disjoint_empty_right _) DFrac.valid_own_one
         (all_map fun _ _ => Agree.toAgree_valid))
-    refine CMRA.op_eqv ?_ (BigOpM.bigOpM_map_eqv _ _ _)
+    refine CMRA.op_eqv ?_ (OFE.Equiv.of_eq (BigOpM.bigOpM_map_eqv _ _ _))
     exact OFE.NonExpansive.eqv (OFE.Equiv.of_eq union_empty_right)
 
 @[rocq_alias ghost_map_alloc_strong_empty]
@@ -421,7 +421,7 @@ theorem ghost_map_insert_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ
     · iapply iOwn_mono $$ H1
       exact auth_inc_of_map_eq _ map_union
     · iapply iOwn_mono $$ H2
-      exact inc_of_inc_of_eqv .rfl (BigOpM.bigOpM_map_eqv _ _ _).symm
+      exact inc_of_inc_of_eqv .rfl (OFE.Equiv.of_eq (BigOpM.bigOpM_map_eqv _ _ _)).symm
 
 @[rocq_alias ghost_map_insert_persist_big]
 theorem ghost_map_insert_persist_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ m) :
@@ -440,7 +440,7 @@ theorem ghost_map_delete_big [DecidableEq K] {γ m} (m0 : H V) :
   imod ghost_map_elems_unseal $$ H2 with H2
   unfold ghost_map_auth
   iapply iOwn_update_op $$ [$H1 $H2]
-  refine Update.equiv_left (CMRA.op_right_eqv _ (BigOpM.bigOpM_map_eqv _ _ m0)) ?_
+  refine Update.equiv_left (CMRA.op_right_eqv _ (OFE.Equiv.of_eq (BigOpM.bigOpM_map_eqv _ _ m0))) ?_
   refine (update_big_delete _ _).trans ?_
   refine Update.equiv_right ?_ .id
   exact OFE.NonExpansive.eqv (OFE.Equiv.of_eq map_difference_map)
@@ -462,14 +462,14 @@ theorem ghost_map_update_big [DecidableEq K] {γ m} (m0 m1 : H V) (Heq : dom m0 
     icombine H1 H2 as H
     rw [←(bigOpM_iOwn γ _ _ h).to_eq, ←iOwn_op.to_eq]
     iapply iOwn_update $$ H
-    refine Update.equiv_left (CMRA.op_right_eqv _ (BigOpM.bigOpM_map_eqv _ _ m0)) ?_
+    refine Update.equiv_left (CMRA.op_right_eqv _ (OFE.Equiv.of_eq (BigOpM.bigOpM_map_eqv _ _ m0))) ?_
     have Heq' : dom (Std.PartialMap.map (fun x : V => toAgree (DiscreteO.mk x)) m0) =
         dom (Std.PartialMap.map (fun x : V => toAgree (DiscreteO.mk x)) m1) := by
       rw [dom_map, dom_map, Heq]
     refine (update_big_replace _ _ _ Heq'
       (all_map fun _ _ => Agree.toAgree_valid)).trans ?_
     refine Update.equiv_right ?_ .id
-    refine CMRA.op_eqv ?_ (BigOpM.bigOpM_map_eqv _ _ _)
+    refine CMRA.op_eqv ?_ (OFE.Equiv.of_eq (BigOpM.bigOpM_map_eqv _ _ _))
     exact OFE.NonExpansive.eqv (OFE.Equiv.of_eq map_union.symm)
 
 end lemmas

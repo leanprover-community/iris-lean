@@ -366,7 +366,8 @@ instance instURFunctor_GenMapOF (F : COFE.OFunctorPre) [RFunctor F] :
         have hv' := hv z
         simp only [h, CMRA.ValidN, optionValidN] at hv'
         exact Hvalid hv'
-    pcore x _ γ := by
+    pcore x := OFE.Equiv.to_eq <| by
+      intro _ γ
       have Hcore := @(URFunctor.map (F := OptionOF F) f g).pcore (x.car γ)
       simp only [CMRA.pcore, optionCore, Option.bind, Option.map, URFunctor.map,
                  OFunctor.map, optionMap, CMRA.core] at Hcore ⊢
@@ -376,15 +377,16 @@ instance instURFunctor_GenMapOF (F : COFE.OFunctorPre) [RFunctor F] :
         revert Hcore
         cases h' : pcore v <;> cases h'' : pcore ((OFunctor.map f g).f v) <;>
           simp_all <;> exact (·.dist)
-    op z x _ γ := by
+    op z x := OFE.Equiv.to_eq <| by
+      intro _ γ
       have Hop := @(URFunctor.map (F := OptionOF F) f g).op (z.car γ) (x.car γ)
       simp only [Option.map, CMRA.op, optionOp, URFunctor.map] at Hop ⊢
       cases h : z.car γ <;> cases h' : x.car γ <;>
-        simp_all [OFunctor.map, optionMap, OFE.Equiv]
+        simp_all [OFunctor.map, optionMap]
   }
   map_ne.ne := OFunctor.map_ne.ne
-  map_id x := OFE.Equiv.of_eq (OFunctor.map_id x)
-  map_comp f g f' g' x := OFE.Equiv.of_eq (OFunctor.map_comp f g f' g' x)
+  map_id x := OFunctor.map_id x
+  map_comp f g f' g' x := OFunctor.map_comp f g f' g' x
 
 instance instURFunctorContractive_GenMapOF (F : COFE.OFunctorPre) [RFunctorContractive F] :
     URFunctorContractive (GenMapOF F) where

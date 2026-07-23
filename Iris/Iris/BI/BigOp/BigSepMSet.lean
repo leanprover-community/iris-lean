@@ -59,7 +59,7 @@ theorem bigSepMS_flip_mono {Φ Ψ : A → PROP} {X : MS} (h : ∀ x, Ψ x ⊢ Φ
 /-- Lean helper (Coq has no `big_sepMS_elements`; only algebra `big_opMS_elements`). -/
 theorem bigSepMS_elements {Φ : A → PROP} {X : MS} :
     ([∗mset] x ∈ X, Φ x) ⊣⊢ [∗list] x ∈ FiniteMultiSet.toList X, Φ x :=
-  equiv_iff.mp bigOpMS_bigOpL
+  equiv_iff.mp <| OFE.Equiv.of_eq bigOpMS_bigOpL
 
 @[simp, rocq_alias big_sepMS_empty]
 theorem bigSepMS_empty {Φ : A → PROP} : ([∗mset] x ∈ (∅ : MS), Φ x) ⊣⊢ emp :=
@@ -81,17 +81,17 @@ theorem bigSepMS_singleton {Φ : A → PROP} {x : A} : ([∗mset] y ∈ ({x} : M
 @[rocq_alias big_sepMS_disj_union]
 theorem bigSepMS_disjUnion {Φ : A → PROP} {X Y : MS} :
     ([∗mset] y ∈ X ⊎ Y, Φ y) ⊣⊢ ([∗mset] y ∈ X, Φ y) ∗ ([∗mset] y ∈ Y, Φ y) :=
-  equiv_iff.mp bigOpMS_disjUnion
+  equiv_iff.mp <| OFE.Equiv.of_eq bigOpMS_disjUnion
 
 @[rocq_alias big_sepMS_insert]
 theorem bigSepMS_insert {Φ : A → PROP} {X : MS} {x : A} :
     ([∗mset] y ∈ ({x} ⊎ X), Φ y) ⊣⊢ Φ x ∗ [∗mset] y ∈ X, Φ y :=
-  equiv_iff.mp bigOpMS_insert
+  equiv_iff.mp <| OFE.Equiv.of_eq bigOpMS_insert
 
 @[rocq_alias big_sepMS_delete]
 theorem bigSepMS_delete {Φ : A → PROP} {X : MS} {x : A} (h : x ∈ X) :
     ([∗mset] y ∈ X, Φ y) ⊣⊢ Φ x ∗ [∗mset] y ∈ X \ {x}, Φ y :=
-  equiv_iff.mp (bigOpMS_delete h)
+  equiv_iff.mp (OFE.Equiv.of_eq <| bigOpMS_delete h)
 
 @[rocq_alias big_sepMS_persistent]
 theorem bigSepMS_persistent {Φ : A → PROP} {X : MS}
@@ -150,7 +150,7 @@ instance bigSepMS_timeless_inst [Timeless (emp : PROP)] {Φ : A → PROP} {X : M
 @[rocq_alias big_sepMS_sep]
 theorem bigSepMS_sep {Φ Ψ : A → PROP} {X : MS} :
     ([∗mset] y ∈ X, Φ y ∗ Ψ y) ⊣⊢ ([∗mset] y ∈ X, Φ y) ∗ ([∗mset] y ∈ X, Ψ y) :=
-  equiv_iff.mp bigOpMS_op_eqv
+  equiv_iff.mp <| OFE.Equiv.of_eq bigOpMS_op_eqv
 
 @[rocq_alias big_sepMS_and]
 theorem bigSepMS_and {Φ Ψ : A → PROP} {X : MS} :

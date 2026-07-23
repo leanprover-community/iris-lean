@@ -71,7 +71,7 @@ set_option synthInstance.checkSynthOrder false in
 instance isOp_pair_core_id_l [CMRA α] [CMRA β] {ioa iob1 iob2 : InOut}
     (a : α) (a' b1' b2' : β) [h1 : CoreId a] [h2 : IsOp ioa a' iob1 b1' iob2 b2'] :
     IsOp ioa (a, a') iob1 (a, b1') iob2 (a, b2') where
-  is_op := OFE.equiv_prod_ext (op_self a).symm.to_eq h2.is_op
+  is_op := OFE.equiv_prod_ext (op_self a).symm h2.is_op
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_pair_core_id_r]
@@ -79,7 +79,7 @@ instance isOpMerge_pair_core_id_r [CMRA α] [CMRA β] {ioa iob1 iob2 : InOut}
     (a b1 b2 : α) (a' : β)
     [h1 : CoreId a'] [h2 : IsOp ioa a iob1 b1 iob2 b2] :
     IsOp ioa (a, a') iob1 (b1, a') iob2 (b2, a') where
-  is_op := OFE.equiv_prod_ext h2.is_op (op_self a').symm.to_eq
+  is_op := OFE.equiv_prod_ext h2.is_op (op_self a').symm
 
 @[rocq_alias is_op_Some]
 instance isOp_some [CMRA α] (a b1 b2 : α) {ioa iob1 iob2 : InOut}

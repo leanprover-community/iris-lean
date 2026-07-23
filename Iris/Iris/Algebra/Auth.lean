@@ -412,12 +412,12 @@ theorem auth_update {a b a' b' : A} (hup : (a, b) ~l~> (a', b')) :
 @[rocq_alias auth_update_alloc]
 theorem auth_update_alloc {a a' b' : A} (hup : (a, unit) ~l~> (a', b')) :
     (● a : Auth A) ~~> (● a') • ◯ b' :=
-  Update.equiv_left unit_right_id (auth_update hup)
+  Update.equiv_left (Equiv.of_eq unit_right_id) (auth_update hup)
 
 @[rocq_alias auth_update_dealloc]
 theorem auth_update_dealloc {a b a' : A} (hup : (a, b) ~l~> (a', unit)) :
     ((● a : Auth A) • ◯ b) ~~> ● a' :=
-  Update.equiv_right unit_right_id (auth_update hup)
+  Update.equiv_right (Equiv.of_eq unit_right_id) (auth_update hup)
 
 @[rocq_alias auth_update_auth]
 theorem auth_update_auth {a a' b' : A} (hup : (a, unit) ~l~> (a', b')) :
@@ -445,7 +445,7 @@ theorem auth_updateP_both_unpersist {a b : A} :
 theorem auth_update_dfrac_alloc {dq : DFrac} {a b : A} [CoreId b] (hb : b ≼ a) :
     (●{dq} a) ~~> (●{dq} a) • ◯ b := by
   refine auth_alloc fun n bf ⟨hinc, hv⟩ => ⟨?_, hv⟩
-  have hba : b • a ≡ a := comm'.trans (op_core_left_of_inc hb)
+  have hba : b • a = a := comm'.trans (op_core_left_of_inc hb)
   exact (incN_iff_right hba.dist).mp (op_monoN_right b hinc)
 
 @[rocq_alias auth_local_update]
@@ -475,12 +475,12 @@ instance instURFunctorAuthURF {T : COFE.OFunctorPre} [URFunctor T] :
   map_ne.ne a b c hx d e hy x :=
     map_ne _ (URFunctor.map_ne.ne hx hy) (URFunctor.map_ne.ne hx hy)
   map_id x := by
-    refine .trans (.of_eq ?_) (.of_eq <| map_id x)
-    apply map_ext <;> exact URFunctor.map_id
+    refine .trans ?_ (map_id x)
+    apply map_ext <;> exact fun _ => Equiv.of_eq (URFunctor.map_id _)
   map_comp f g f' g' x := by
     simp only [mapC]
-    refine .trans (.of_eq ?_) (.of_eq (map_compose' ..))
-    apply View.map_ext <;> exact URFunctor.map_comp f g f' g'
+    refine .trans ?_ (map_compose' ..)
+    apply View.map_ext <;> exact fun _ => Equiv.of_eq (URFunctor.map_comp f g f' g' _)
 
 @[rocq_alias authURF_contractive]
 instance instURFunctorContractiveAuthURF {T : COFE.OFunctorPre} [URFunctorContractive T] :
@@ -502,13 +502,12 @@ instance instRFunctorAuthRF {T : COFE.OFunctorPre} [URFunctor T] :
   map_ne.ne a b c hx d e hy x := by
     apply map_ne <;> exact URFunctor.map_ne.ne hx hy
   map_id x := by
-    refine .trans (.of_eq ?_) (.of_eq <| map_id x)
-    apply map_ext <;> exact URFunctor.map_id
+    refine .trans ?_ (map_id x)
+    apply map_ext <;> exact fun _ => Equiv.of_eq (URFunctor.map_id _)
   map_comp f g f' g' x := by
     simp only [mapC]
     rw [← map_compose']
-    refine .of_eq ?_
-    apply map_ext <;> exact URFunctor.map_comp f g f' g'
+    apply map_ext <;> exact fun _ => Equiv.of_eq (URFunctor.map_comp f g f' g' _)
 
 @[rocq_alias authRF_contractive]
 instance instRFunctorContractiveAuthRF {T : COFE.OFunctorPre} [URFunctorContractive T] :

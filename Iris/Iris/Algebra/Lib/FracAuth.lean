@@ -240,7 +240,7 @@ instance isOp_frac_auth_core_id {q q1 q2 : Qp} {a : A}
     IsOp io1 (◯F{q} a) io2 (◯F{q1} a) io3 (◯F{q2} a) where
   is_op := (NonExpansive.eqv
     (Equiv.of_eq (OFE.some_eqv_some.mpr
-      (NonExpansive₂.eqv (OFE.Equiv.of_eq h2.is_op) (op_self a).symm).to_eq))).to_eq
+      (NonExpansive₂.eqv (OFE.Equiv.of_eq h2.is_op) (OFE.Equiv.of_eq (op_self a).symm)).to_eq))).to_eq
 
 /-! ## Updates -/
 

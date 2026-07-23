@@ -223,9 +223,9 @@ instance [CMRA α] [CMRA β] : CMRA (Csum α β) where
   valid_iff_validN {x} := by cases x <;> simp [CMRA.valid_iff_validN]
   validN_succ {x _} h := by
     cases x with | inl | inr => exact CMRA.validN_succ h | invalid => exact h
-  assoc {x y z} := Equiv.to_eq <| by
-    cases x <;> cases y <;> cases z <;> first | trivial | exact CMRA.assoc'
-  comm {x y} := Equiv.to_eq <| by cases x <;> cases y <;> first | trivial | exact CMRA.comm'
+  assoc {x y z} := by
+    cases x <;> cases y <;> cases z <;> first | trivial | exact congrArg _ CMRA.assoc
+  comm {x y} := by cases x <;> cases y <;> first | trivial | exact congrArg _ CMRA.comm
   pcore_op_left {x cx} hpx := by cases x with
     | inl a => obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq hpx; exact congrArg _ (CMRA.pcore_op_left hpa)
     | inr b => obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx; exact congrArg _ (CMRA.pcore_op_left hpb)
@@ -395,12 +395,12 @@ theorem some_included [CMRA α] [CMRA β] {x y : Csum α β} :
       (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ some b') := by
   constructor
   · intro h; rcases Option.some_inc_some_iff.mp h with heq | hinc
-    · cases x <;> cases y <;>
+    · subst heq
+      cases x <;>
         first
         | exact .inl rfl
-        | exact heq.elim | exact (heq 0).elim
-        | exact .inr (Or.inl ⟨_, _, rfl, rfl, Option.some_inc_some_iff.mpr (.inl heq)⟩)
-        | exact .inr (Or.inr ⟨_, _, rfl, rfl, Option.some_inc_some_iff.mpr (.inl heq)⟩)
+        | exact .inr (Or.inl ⟨_, _, rfl, rfl, Option.some_inc_some_iff.mpr (.inl rfl)⟩)
+        | exact .inr (Or.inr ⟨_, _, rfl, rfl, Option.some_inc_some_iff.mpr (.inl rfl)⟩)
     · rcases included.mp hinc with rfl | ⟨a, a', rfl, rfl, ha⟩ | ⟨b, b', rfl, rfl, hb⟩
       · exact .inl rfl
       · exact .inr (Or.inl ⟨a, a', rfl, rfl, Option.some_inc_some_iff.mpr (.inr ha)⟩)
@@ -562,21 +562,22 @@ def cMap [CMRA α] [CMRA α'] [CMRA β] [CMRA β']
   pcore x := by
     cases x with
     | inl a =>
-      show ((CMRA.pcore a).map inl).map (map fa fb) ≡ (CMRA.pcore (fa a)).map inl
+      show ((CMRA.pcore a).map inl).map (map fa fb) = (CMRA.pcore (fa a)).map inl
       rw [Option.map_map]
-      show (CMRA.pcore a).map (inl ∘ ⇑fa) ≡ _
+      show (CMRA.pcore a).map (inl ∘ ⇑fa) = _
       rw [show (CMRA.pcore a).map (inl ∘ ⇑fa) = ((CMRA.pcore a).map fa).map inl from
         (Option.map_map ..).symm]
-      exact Equiv.of_eq (Option.map_forall₂ inl (fa.pcore a).to_eq)
+      exact Option.map_forall₂ inl (fa.pcore a)
     | inr b =>
-      show ((CMRA.pcore b).map inr).map (map fa fb) ≡ (CMRA.pcore (fb b)).map inr
+      show ((CMRA.pcore b).map inr).map (map fa fb) = (CMRA.pcore (fb b)).map inr
       rw [Option.map_map]
-      show (CMRA.pcore b).map (inr ∘ ⇑fb) ≡ _
+      show (CMRA.pcore b).map (inr ∘ ⇑fb) = _
       rw [show (CMRA.pcore b).map (inr ∘ ⇑fb) = ((CMRA.pcore b).map fb).map inr from
         (Option.map_map ..).symm]
-      exact Equiv.of_eq (Option.map_forall₂ inr (fb.pcore b).to_eq)
+      exact Option.map_forall₂ inr (fb.pcore b)
     | invalid => trivial
-  op x y := by cases x <;> cases y <;> first | exact fa.op _ _ | exact fb.op _ _ | trivial
+  op x y := by cases x <;> cases y <;>
+    first | exact congrArg _ (fa.op _ _) | exact congrArg _ (fb.op _ _) | trivial
 
 instance {Fa Fb} [RFunctor Fa] [RFunctor Fb] : RFunctor (OF Fa Fb) where
   map f g := cMap (RFunctor.map f g) (RFunctor.map f g)

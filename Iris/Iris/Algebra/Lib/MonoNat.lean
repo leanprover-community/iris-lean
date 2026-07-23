@@ -72,15 +72,15 @@ instance {l : MaxNat} : CMRA.CoreId (●MN□ l : MonoNat) := by
 theorem auth_dfrac_op (dq1 dq2 : DFrac) (n : MaxNat) :
   (●MN{dq1 • dq2} n : MonoNat) = (●MN{dq1} n) • (●MN{dq2} n) := by
   apply OFE.Equiv.to_eq
-  refine CMRA.comm'.trans ?_
+  refine (OFE.Equiv.of_eq CMRA.comm').trans ?_
   refine (CMRA.op_right_eqv _ (OFE.Equiv.of_eq Auth.auth_dfrac_op)).trans ?_
-  refine CMRA.comm'.trans ?_
-  refine CMRA.assoc'.symm.trans ?_
-  refine (CMRA.op_right_eqv _ CMRA.comm').trans ?_
-  refine (CMRA.op_right_eqv _ (CMRA.op_self (◯ n)).symm.op_l).trans ?_
-  refine (CMRA.op_right_eqv _ CMRA.assoc'.symm).trans ?_
-  refine CMRA.assoc'.trans ?_
-  refine CMRA.op_right_eqv _ CMRA.comm'
+  refine (OFE.Equiv.of_eq CMRA.comm').trans ?_
+  refine (OFE.Equiv.of_eq CMRA.assoc'.symm).trans ?_
+  refine (CMRA.op_right_eqv _ (OFE.Equiv.of_eq CMRA.comm')).trans ?_
+  refine (CMRA.op_right_eqv _ (OFE.Equiv.of_eq (CMRA.op_self (◯ n)).symm).op_l).trans ?_
+  refine (CMRA.op_right_eqv _ (OFE.Equiv.of_eq CMRA.assoc'.symm)).trans ?_
+  refine (OFE.Equiv.of_eq CMRA.assoc').trans ?_
+  refine CMRA.op_right_eqv _ (OFE.Equiv.of_eq CMRA.comm')
 
 @[rocq_alias mono_nat_lb_op]
 theorem lb_op (n1 n2 : MaxNat) :
@@ -91,7 +91,7 @@ theorem lb_op (n1 n2 : MaxNat) :
 theorem auth_lb_op (dq : DFrac) (n : MaxNat) :
   (●MN{dq} n : MonoNat) = (●MN{dq} n) • (◯MN n) := by
   apply OFE.Equiv.to_eq
-  refine .trans ?_ CMRA.assoc'
+  refine .trans ?_ (OFE.Equiv.of_eq CMRA.assoc')
   simp only [lb, ←Auth.frag_op]
   refine CMRA.op_right_eqv _ ?_
   simp [CMRA.op, Add.add]
@@ -120,9 +120,10 @@ theorem auth_dfrac_op_valid (dq1 dq2 : DFrac) (n1 n2 : MaxNat) :
   constructor
   · intro h
     unfold auth at h
-    replace h := CMRA.valid_of_eqv (CMRA.assoc'.symm.trans <| (CMRA.op_right_eqv _ <|
-      CMRA.assoc'.trans <| (CMRA.op_left_eqv _ CMRA.comm').trans CMRA.assoc'.symm).trans
-      CMRA.assoc') h
+    replace h := CMRA.valid_of_eqv ((OFE.Equiv.of_eq CMRA.assoc'.symm).trans <| (CMRA.op_right_eqv _ <|
+      (OFE.Equiv.of_eq CMRA.assoc').trans <|
+        (CMRA.op_left_eqv _ (OFE.Equiv.of_eq CMRA.comm')).trans (OFE.Equiv.of_eq CMRA.assoc'.symm)).trans
+      (OFE.Equiv.of_eq CMRA.assoc')) h
     have ⟨hdq, heq, _⟩ := Auth.auth_dfrac_op_valid.mp (CMRA.valid_op_left h)
     exact ⟨hdq, heq⟩
   · rintro ⟨hdq, rfl⟩
@@ -140,7 +141,7 @@ theorem auth_op_valid (n1 n2 : MaxNat) :
 theorem both_dfrac_valid (dq : DFrac) (n m : MaxNat) :
   (✓ ((●MN{dq} n) • (◯MN m) : MonoNat)) ↔ ✓ dq ∧ m ≤ n := by
   unfold auth lb
-  rw [CMRA.valid_iff CMRA.assoc'.symm, ←Auth.frag_op, Auth.both_dfrac_valid_discrete]
+  rw [CMRA.valid_iff (OFE.Equiv.of_eq CMRA.assoc'.symm), ←Auth.frag_op, Auth.both_dfrac_valid_discrete]
   constructor
   · intro ⟨hdq, ⟨k, hk⟩, _⟩; refine ⟨hdq, ?_⟩
     simp only [CMRA.op, Add.add] at hk

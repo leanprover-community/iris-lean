@@ -180,7 +180,8 @@ theorem not_mem_of_mem_and_valid_op_left {x y : DisjointLeibnizSet S} (v : ✓ x
 
 theorem not_mem_of_mem_and_valid_op_right {x y : DisjointLeibnizSet S}
   (v : ✓ x • y) {p : A} (m : p ∈ y)
-    : ¬ p ∈ x := not_mem_of_mem_and_valid_op_left ((OFE.Equiv.valid CMRA.comm').mp v) m
+    : ¬ p ∈ x :=
+  not_mem_of_mem_and_valid_op_left ((OFE.Equiv.valid (OFE.Equiv.of_eq CMRA.comm')).mp v) m
 
 @[rocq_alias gset_disj_dealloc_local_update]
 theorem localUpdate_dealloc {X Y : S} : (valid X, valid Y) ~l~> (valid (X \ Y), valid ∅) := by

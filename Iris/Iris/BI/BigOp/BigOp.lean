@@ -20,21 +20,21 @@ open Iris.Algebra Iris.Std OFE BIBase
 
 instance sepMonoidOps [BI PROP] : MonoidOps (sep (PROP := PROP)) emp where
   op_ne := BI.sep_ne
-  op_assoc := equiv_iff.mpr sep_assoc
-  op_comm := equiv_iff.mpr sep_comm
-  op_left_id := equiv_iff.mpr emp_sep
+  op_assoc := (equiv_iff.mpr sep_assoc).to_eq
+  op_comm := (equiv_iff.mpr sep_comm).to_eq
+  op_left_id := (equiv_iff.mpr emp_sep).to_eq
 
 instance andMonoidOps [BI PROP] : MonoidOps (and (PROP := PROP)) iprop(True) where
   op_ne := BI.and_ne
-  op_assoc := equiv_iff.mpr and_assoc
-  op_comm := equiv_iff.mpr and_comm
-  op_left_id := equiv_iff.mpr true_and
+  op_assoc := (equiv_iff.mpr and_assoc).to_eq
+  op_comm := (equiv_iff.mpr and_comm).to_eq
+  op_left_id := (equiv_iff.mpr true_and).to_eq
 
 instance orMonoidOps [BI PROP] : MonoidOps (or (PROP := PROP)) iprop(False) where
   op_ne := BI.or_ne
-  op_assoc := equiv_iff.mpr or_assoc
-  op_comm := equiv_iff.mpr or_comm
-  op_left_id := equiv_iff.mpr false_or
+  op_assoc := (equiv_iff.mpr or_assoc).to_eq
+  op_comm := (equiv_iff.mpr or_comm).to_eq
+  op_left_id := (equiv_iff.mpr false_or).to_eq
 
 /-! ## Homomorphism helpers for OFE equivalence -/
 

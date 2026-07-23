@@ -73,7 +73,7 @@ variable (F) in
 @[ext, rocq_alias solver.tower]
 structure Tower : Type u where
   val k : A F k
-  protected down {k} : down F k (val (k+1)) ≡ val k
+  protected down {k} : down F k (val (k+1)) = val k
 
 instance : CoeFun (Tower F) (fun _ => ∀ k, A F k) := ⟨Tower.val⟩
 
@@ -100,7 +100,7 @@ def towerChain (c : Chain (Tower F)) (k : Nat) : Chain (A F k) where
 instance : COFE (Tower F) where
   compl c := by
     refine ⟨fun k => compl ⟨fun i => c.1 i k, fun h => c.cauchy h k⟩, ?_⟩
-    refine equiv_dist.2 fun n => ?_
+    refine OFE.Equiv.to_eq (equiv_dist.2 fun n => ?_)
     refine ((down ..).ne.1 conv_compl).trans <| .trans ?_ conv_compl.symm
     exact (c.chain n).down.dist
   conv_compl _ := conv_compl
@@ -141,7 +141,7 @@ protected theorem Tower.upN (X : Tower F) : ∀ i, upN F i (X (k+1)) ≡{k}≡ X
 @[rocq_alias solver.gg_tower]
 protected theorem Tower.downN (X : Tower F) : ∀ i, downN F i (X (k+i)) = X k
   | 0 => rfl
-  | _+1 => ((downN ..).ne.eqv X.down).to_eq.trans (X.downN _)
+  | _+1 => ((downN ..).ne.eqv (OFE.Equiv.of_eq X.down)).to_eq.trans (X.downN _)
 
 instance (k : Nat) : NonExpansive (fun X : Tower F => X.val k) := ⟨fun _ _ _ => (· _)⟩
 
@@ -176,24 +176,24 @@ protected def Tower.embed (k) : A F k -n> Tower F := by
   dsimp [embed]; split <;> rename_i h₁
   · split <;> rename_i h₂
     · suffices ∀ a b (e₁ : k+a = i+1) (e₂ : k+b = i),
-        down F i (eqToHom e₁ (upN F a n)) ≡ eqToHom e₂ (upN F b n) from this _ _ _ _
+        down F i (eqToHom e₁ (upN F a n)) = eqToHom e₂ (upN F b n) from this _ _ _ _
       rintro a _ eq rfl
       rw [Nat.add_assoc, Nat.add_left_cancel_iff] at eq; subst a
-      exact Equiv.of_eq (down_up _)
+      exact down_up _
     · cases (Nat.lt_or_eq_of_le h₁).resolve_left (h₂ ∘ Nat.lt_succ_iff.1)
       have {a b} (e₁ : i+1+a = i+1) (e₂ : i+1 = i+b) :
-          down F i (eqToHom e₁ (upN F a n)) ≡ downN F b (eqToHom e₂ n) := by
+          down F i (eqToHom e₁ (upN F a n)) = downN F b (eqToHom e₂ n) := by
         cases Nat.add_left_cancel (k := 0) e₁; cases Nat.add_left_cancel e₂
-        exact .rfl
+        rfl
       apply this <;> simp [Nat.add_sub_cancel_left]
   · rw [dif_neg (mt Nat.le_succ_of_le h₁)]
     suffices ∀ k a b (e₁ : k = i+1+a) (e₂ : k = i+b) (n : A F k),
-        down F i (downN F a (eqToHom e₁ n)) ≡ downN F b (eqToHom e₂ n) from this _ _ _ _ _ _
+        down F i (downN F a (eqToHom e₁ n)) = downN F b (eqToHom e₂ n) from this _ _ _ _ _ _
     rintro k a b eq rfl n
     rw [Nat.add_assoc, Nat.add_left_cancel_iff, Nat.add_comm] at eq; subst eq
-    show _ ≡ downN F a (down F (i+a) n)
+    show _ = downN F a (down F (i+a) n)
     induction a with
-    | zero => exact .rfl
+    | zero => rfl
     | succ a ih =>
       dsimp [downN, Hom.comp]
       rw [down_eqToHom (Nat.add_right_comm i a 1)]
@@ -201,8 +201,8 @@ protected def Tower.embed (k) : A F k -n> Tower F := by
 
 @[rocq_alias solver.embed_f]
 theorem Tower.embed_up (x : A F k) :
-    Tower.embed (k+1) (up F k x) ≡ Tower.embed k x := by
-  refine equiv_dist.2 fun n i => ?_
+    Tower.embed (k+1) (up F k x) = Tower.embed k x := by
+  refine OFE.Equiv.to_eq (equiv_dist.2 fun n i => ?_)
   dsimp [Tower.embed, embed]; split <;> rename_i h₁
   · simp [Nat.le_of_succ_le h₁]
     suffices ∀ a b (e₁ : k + 1 + a = i) (e₂ : k+b = i),
@@ -261,9 +261,9 @@ def unfoldChain (X : Tower F) : Chain (F (Tower F) (Tower F)) where
 def Tower.isoAux : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
   hom.f X := {
     val n := (down F n).comp (map (Tower.embed _) (Tower.proj _)) X
-    down {n} := (down ..).ne.eqv <|
+    down {n} := OFE.Equiv.to_eq <| (down ..).ne.eqv <|
       (Equiv.of_eq (map_comp _ _ _ _ _)).symm.trans
-        (fun m => map_ne.eqv (fun m' Y => (Tower.embed_up Y) m') (fun m' Y => Y.down m') m _)
+        (fun m => map_ne.eqv (fun m' Y => (Tower.embed_up Y).dist) (fun m' Y => Y.down.dist) m _)
   }
   hom.ne.1 _ _ _ h _ := by dsimp only; exact (Hom.ne _).1 h
   inv.f X := compl (unfoldChain X)

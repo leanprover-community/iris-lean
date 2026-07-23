@@ -654,8 +654,8 @@ def Agree.map : (Agree α) -C> (Agree β) where
   f := map' f
   ne := instNonExpansive_AgreeMap'
   validN {_n x} := x.ind fun _ => Raw.map'_validN
-  pcore _ := .rfl
-  op x y := x.ind fun _ => y.ind fun _ => .of_eq (congrArg mk Raw.map'_op)
+  pcore _ := rfl
+  op x y := x.ind fun _ => y.ind fun _ => congrArg mk Raw.map'_op
 
 @[simp] theorem Agree.map_mk (f : α → β) [OFE.NonExpansive f] (x : Raw α) :
     Agree.map f (mk x) = mk (Raw.map' f x) := rfl
@@ -702,12 +702,10 @@ instance {F} [COFE.OFunctor F] : RFunctor (AgreeRF F) where
   map_ne.ne _ _ _ Hx _ _ Hy _ := Agree.map_ne <| COFE.OFunctor.map_ne.ne Hx Hy
   map_id x := by
     conv => right; rw [← (Agree.map_id x)]
-    exact (Agree.map_id x) ▸ OFE.Equiv.of_eq
-      (Agree.agree_map_ext (fun a => COFE.OFunctor.map_id a))
+    exact Agree.agree_map_ext (fun a => COFE.OFunctor.map_id a)
   map_comp f g f' g' x := by
     rw [← Agree.map_compose]
-    exact OFE.Equiv.of_eq
-      (Agree.agree_map_ext (fun a => COFE.OFunctor.map_comp f g f' g' a))
+    exact Agree.agree_map_ext (fun a => COFE.OFunctor.map_comp f g f' g' a)
 
 @[rocq_alias agreeRF_contractive]
 instance {F} [COFE.OFunctorContractive F] : RFunctorContractive (AgreeRF F) where

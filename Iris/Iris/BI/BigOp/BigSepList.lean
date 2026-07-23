@@ -46,18 +46,18 @@ theorem bigSepL_cons {Φ : Nat → A → PROP} {x : A} {xs : List A} :
 @[rocq_alias big_sepL_singleton]
 theorem bigSepL_singleton {Φ : Nat → A → PROP} {x : A} :
     ([∗list] k ↦ y ∈ [x], Φ k y) ⊣⊢ Φ 0 x :=
-  equiv_iff.mp <| bigOpL_singleton_eqv Φ x
+  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_singleton_eqv Φ x
 
 @[rocq_alias big_sepL_app]
 theorem bigSepL_append {Φ : Nat → A → PROP} {l₁ l₂ : List A} :
     ([∗list] k ↦ x ∈ l₁ ++ l₂, Φ k x) ⊣⊢
       ([∗list] k ↦ x ∈ l₁, Φ k x) ∗ [∗list] k ↦ x ∈ l₂, Φ (k + l₁.length) x :=
-  equiv_iff.mp <| bigOpL_append_eqv Φ l₁ l₂
+  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_append_eqv Φ l₁ l₂
 
 @[rocq_alias big_sepL_snoc]
 theorem bigSepL_snoc {Φ : Nat → A → PROP} {l : List A} {x : A} :
     ([∗list] k ↦ y ∈ l ++ [x], Φ k y) ⊣⊢ ([∗list] k ↦ y ∈ l, Φ k y) ∗ Φ l.length x :=
-  equiv_iff.mp <| bigOpL_snoc_eqv Φ l x
+  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_snoc_eqv Φ l x
 
 @[rocq_alias big_sepL_mono]
 theorem bigSepL_mono {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l[k]? = some x → Φ k x ⊢ Ψ k x) :
@@ -178,7 +178,7 @@ theorem bigSepL_emp {l : List A} :
 @[rocq_alias big_sepL_sep]
 theorem bigSepL_sep_eqv {Φ Ψ : Nat → A → PROP} {l : List A} :
     ([∗list] k ↦ x ∈ l, Φ k x ∗ Ψ k x) ⊣⊢ ([∗list] k ↦ x ∈ l, Φ k x) ∗ [∗list] k ↦ x ∈ l, Ψ k x :=
-  equiv_iff.mp <| bigOpL_op_eqv Φ Ψ l
+  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpL_op_eqv Φ Ψ l
 
 @[deprecated "bigSepL_sep_eqv.symm" (since := "26/03/30"), rocq_alias big_sepL_sep_2]
 theorem bigSepL_sep_eqv_symm {Φ Ψ : Nat → A → PROP} {l : List A} :
@@ -232,17 +232,17 @@ theorem bigSepL_take_drop {Φ : Nat → A → PROP} {l : List A} {n : Nat} :
 
 @[rocq_alias big_sepL_fmap]
 theorem bigSepL_map {B : Type _} (f : A → B) {Φ : Nat → B → PROP} {l : List A} :
-    ([∗list] k ↦ y ∈ l.map f, Φ k y) ≡ [∗list] k ↦ x ∈ l, Φ k (f x) :=
+    ([∗list] k ↦ y ∈ l.map f, Φ k y) = [∗list] k ↦ x ∈ l, Φ k (f x) :=
   bigOpL_map_eqv f Φ l
 
 @[rocq_alias big_sepL_omap]
 theorem bigSepL_filterMap {B : Type _} (f : A → Option B) {Φ : B → PROP} {l : List A} :
-    ([∗list] y ∈ l.filterMap f, Φ y) ≡ [∗list] x ∈ l, (f x).elim emp Φ :=
+    ([∗list] y ∈ l.filterMap f, Φ y) = [∗list] x ∈ l, (f x).elim emp Φ :=
   bigOpL_filterMap_eqv f Φ l
 
 @[rocq_alias big_sepL_bind]
 theorem bigSepL_flatMap {B : Type _} (f : A → List B) {Φ : B → PROP} {l : List A} :
-    ([∗list] y ∈ l.flatMap f, Φ y) ≡ [∗list] x ∈ l, [∗list] y ∈ f x, Φ y :=
+    ([∗list] y ∈ l.flatMap f, Φ y) = [∗list] x ∈ l, [∗list] y ∈ f x, Φ y :=
   bigOpL_flatMap_eqv f Φ l
 
 @[rocq_alias big_sepL_lookup_acc]
@@ -489,8 +489,8 @@ theorem bigSepL_comm {B : Type _} (Φ : Nat → A → Nat → B → PROP) (l₁ 
           (equiv_iff.mp (OFE.Equiv.of_eq bigOpL_const_unit_eqv)).1⟩
   | _ :: _ =>
     let ih := bigSepL_comm (fun i a j b => Φ (i + 1) a j b) _ l₂
-    ⟨(sep_mono_right ih.1).trans (equiv_iff.mp (bigOpL_op_eqv _ _ _)).2,
-     (equiv_iff.mp (bigOpL_op_eqv _ _ _)).1.trans (sep_mono_right ih.2)⟩
+    ⟨(sep_mono_right ih.1).trans (equiv_iff.mp (OFE.Equiv.of_eq <| bigOpL_op_eqv _ _ _)).2,
+     (equiv_iff.mp (OFE.Equiv.of_eq <| bigOpL_op_eqv _ _ _)).1.trans (sep_mono_right ih.2)⟩
 
 -- TODO: missing and blocked: big_sepL_sepM, big_sepL_sepMS, big_sepL_sepS
 
@@ -1111,7 +1111,7 @@ theorem bigSepL2_const_sepL_left {Φ : Nat → A → PROP} {l1 : List A} {l2 : L
         ⟨pure_elim_left fun hlen => and_intro (pure_intro hlen) ?_,
          pure_elim_left fun hlen => and_intro (pure_intro hlen) ?_⟩ <;>
   { have h : bigSepL Φ ((l1.zip l2).map Prod.fst) ⊣⊢ bigSepL (fun k p => Φ k p.1) (l1.zip l2) :=
-      equiv_iff.mp (BigSepL.bigSepL_map Prod.fst)
+      equiv_iff.mp (OFE.Equiv.of_eq (BigSepL.bigSepL_map Prod.fst))
     rw [fst_zip hlen] at h; first | exact h.1 | exact h.2 }
 
 @[rocq_alias big_sepL2_const_sepL_r]
@@ -1235,7 +1235,7 @@ theorem bigSepL_sepL2_diag {Φ : Nat → A → A → PROP} {l : List A} :
   have hzip : l.zip l = l.map (fun x => (x, x)) := by
     induction l with | nil => rfl | cons _ _ ih => simp [ih]
   rw [hzip]
-  exact (equiv_iff.mp <| BigSepL.bigSepL_map (Φ := fun k p => Φ k p.1 p.2) (fun x => (x, x))).symm.1
+  exact (equiv_iff.mp <| OFE.Equiv.of_eq <| BigSepL.bigSepL_map (Φ := fun k p => Φ k p.1 p.2) (fun x => (x, x))).symm.1
 
 end BigSepL2
 

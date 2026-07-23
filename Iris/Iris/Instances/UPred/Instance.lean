@@ -65,9 +65,9 @@ protected def imp (P Q : UPred M) : UPred M where
       calc x  ≡{n}≡ x₂ • m₂    := Hxle.dist
            _  ≡{n}≡ (x₁ • m₁) • m₂ := (Hle.le Hnle).op_l
     refine (uPred_ne (m₂ := ⟨(x₁.val • m₁) • m₂, Hx.validN.mp xP⟩) Hx).mpr (H _ ?_ ?_ ?_)
-    · calc x₁.val ≡ x₁ • unit        := unit_right_id.symm
+    · calc x₁.val ≡ x₁ • unit        := OFE.Equiv.of_eq unit_right_id.symm
            _      ≼ x₁ • (m₁ • m₂)   := op_mono_right _ inc_unit
-           _      ≡ (x₁ • m₁) • m₂   := assoc'
+           _      ≡ (x₁ • m₁) • m₂   := OFE.Equiv.of_eq assoc'
     · exact Nat.le_trans Hnle Hn
     · exact (uPred_ne Hx).mp HP
 
@@ -672,10 +672,10 @@ theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 := by
       x.val ≡{n}≡ y1 • y2 := H
       _     ≡{n}≡ (m1 • w1) • (m2 • w2) := Hw1.op Hw2
       _     ≡{n}≡ m1 • (w1 • (m2 • w2)) := assoc.symm.dist
-      _     ≡{n}≡ m1 • ((m2 • w2) • w1) := comm'.op_r.dist
-      _     ≡{n}≡ m1 • (m2 • (w2 • w1)) := assoc'.symm.op_r.dist
+      _     ≡{n}≡ m1 • ((m2 • w2) • w1) := comm'.dist.op_r
+      _     ≡{n}≡ m1 • (m2 • (w2 • w1)) := assoc'.symm.dist.op_r
       _     ≡{n}≡ (m1 • m2) • (w2 • w1) := assoc.dist
-      _     ≡{n}≡ (m1 • m2) • (w1 • w2) := comm'.op_r.dist
+      _     ≡{n}≡ (m1 • m2) • (w1 • w2) := comm'.dist.op_r
 
 theorem ownM_eqv {m1 m2 : M} (H : m1 ≡ m2) : ownM m1 ⊣⊢ ownM m2 :=
   ⟨fun _ _ => (incN_iff_left H.dist).mp, fun _ _ => (incN_iff_left H.dist).mpr⟩
@@ -700,7 +700,7 @@ instance {a : M} : Persistent (ownM (core a)) where
     refine persistently_mono ?_
     refine equiv_iff.mp ?_ |>.mp
     refine OFE.NonExpansive.eqv ?_
-    exact core_idem a
+    exact OFE.Equiv.of_eq (core_idem a)
 
 @[rocq_alias uPred.bupd_ownM_updateP, rocq_alias uPred_primitive.bupd_ownM_updateP]
 theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
@@ -753,7 +753,7 @@ theorem intuitionistically_ownM (a : M) [CoreId a] : □ ownM a ⊣⊢ ownM a :=
   refine ⟨intuitionistically_elim, ?_⟩
   refine (intuitionistically_ownM_core a).trans ?_
   refine intuitionistically_mono ?_
-  exact (ownM_eqv (core_eqv_self a).symm).mpr
+  exact (ownM_eqv (OFE.Equiv.of_eq (core_eqv_self a).symm)).mpr
 
 @[rocq_alias uPred.ownM_invalid]
 theorem ownM_invalid (a : M) (hnv : ¬ ✓{0} a) : ownM a ⊢ False :=
@@ -784,7 +784,7 @@ instance ownM_timeless (a : M) [OFE.DiscreteE a] : BI.Timeless (ownM a) where
 instance ownM_persistent (a : M) [CoreId a] : Persistent (ownM a) where
   persistent := by
     refine (persistently_ownM_core a).trans ?_
-    exact persistently_mono (ownM_eqv (core_eqv_self a)).mp
+    exact persistently_mono (ownM_eqv (OFE.Equiv.of_eq (core_eqv_self a))).mp
 
 @[rocq_alias uPred.bupd_soundness]
 theorem bupd_soundness {P : UPred M} [Plain P] : (⊢ |==> P) → ⊢ P :=

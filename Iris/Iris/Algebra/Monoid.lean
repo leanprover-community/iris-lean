@@ -26,19 +26,18 @@ The operation must be non-expansive, associative, commutative, and have a left i
 class MonoidOps {M : Type u} [OFE M] (op : M → M → M) (unit : outParam M) where
   /-- The operation is non-expansive in both arguments -/
   op_ne : NonExpansive₂ op
-  /-- Associativity up to equivalence -/
-  op_assoc : ∀ {a b c : M}, op (op a b) c ≡ op a (op b c)
-  /-- Commutativity up to equivalence -/
-  op_comm : ∀ {a b : M}, op a b ≡ op b a
-  /-- Left identity up to equivalence -/
-  op_left_id : ∀ {a : M}, op unit a ≡ a
+  /-- Associativity -/
+  op_assoc : ∀ {a b c : M}, op (op a b) c = op a (op b c)
+  /-- Commutativity -/
+  op_comm : ∀ {a b : M}, op a b = op b a
+  /-- Left identity -/
+  op_left_id : ∀ {a : M}, op unit a = a
 
 #rocq_ignore MonoidOps "Not needed"
 #rocq_ignore monoid_ops "Not needed"
 
 namespace MonoidOps
 
-attribute [simp] op_left_id
 attribute [instance] op_ne
 
 variable {M : Type u} [OFE M] {unit : M} {op : M → M → M}
@@ -51,7 +50,7 @@ theorem op_proper [MonoidOps op unit] (ha : a ≡ a') (hb : b ≡ b') :
 /-- Right identity follows from commutativity and left identity. -/
 @[rocq_alias monoid_right_id]
 theorem op_right_id [MonoidOps op unit] : op a unit = a :=
-  (op_comm.trans op_left_id).to_eq
+  op_comm.trans op_left_id
 
 /-- Congruence on the left argument. -/
 theorem op_congr_left [MonoidOps op unit] (h : a ≡ a') : op a b ≡ op a' b :=
@@ -63,21 +62,21 @@ theorem op_congr_right [MonoidOps op unit] (h : b ≡ b') : op a b ≡ op a b' :
 
 /-- Rearrange `(a * b) * (c * d)` to `(a * c) * (b * d)`. -/
 theorem op_op_op_comm [MonoidOps op unit] {a b c d : M} :
-    op (op a b) (op c d) ≡ op (op a c) (op b d) :=
+    op (op a b) (op c d) = op (op a c) (op b d) :=
   calc op (op a b) (op c d)
-      _ ≡ op a (op b (op c d)) := op_assoc
-      _ ≡ op a (op (op b c) d) := op_congr_right op_assoc.symm
-      _ ≡ op a (op (op c b) d) := op_congr_right (op_congr_left op_comm)
-      _ ≡ op a (op c (op b d)) := op_congr_right op_assoc
-      _ ≡ op (op a c) (op b d) := op_assoc.symm
+      _ = op a (op b (op c d)) := op_assoc
+      _ = op a (op (op b c) d) := congrArg (op a) op_assoc.symm
+      _ = op a (op (op c b) d) := congrArg (op a) (congrArg (op · d) op_comm)
+      _ = op a (op c (op b d)) := congrArg (op a) op_assoc
+      _ = op (op a c) (op b d) := op_assoc.symm
 
 /-- Swap inner elements: `a * (b * c)` to `b * (a * c)`. -/
 theorem op_left_comm [MonoidOps op unit] {a b c : M} :
-    op a (op b c) ≡ op b (op a c) :=
+    op a (op b c) = op b (op a c) :=
   calc op a (op b c)
-      _ ≡ op (op a b) c := op_assoc.symm
-      _ ≡ op (op b a) c := op_congr_left op_comm
-      _ ≡ op b (op a c) := op_assoc
+      _ = op (op a b) c := op_assoc.symm
+      _ = op (op b a) c := congrArg (op · c) op_comm
+      _ = op b (op a c) := op_assoc
 
 /-- Non-expansiveness for dist. -/
 theorem op_dist [MonoidOps op unit] (ha : a ≡{n}≡ a') (hb : b ≡{n}≡ b') :

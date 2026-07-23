@@ -57,7 +57,7 @@ theorem bigSepS_flip_mono {Φ Ψ : A → PROP} {X : S} (h : ∀ x, Ψ x ⊢ Φ x
 @[rocq_alias big_sepS_elements]
 theorem bigSepS_elements {Φ : A → PROP} {X : S} :
     ([∗set] x ∈ X, Φ x) ⊣⊢ [∗list] x ∈ FiniteSet.toList X, Φ x :=
-  equiv_iff.mp bigOpS_bigOpL
+  equiv_iff.mp <| OFE.Equiv.of_eq bigOpS_bigOpL
 
 @[simp, rocq_alias big_sepS_empty]
 theorem bigSepS_empty {Φ : A → PROP} : ([∗set] x ∈ (∅ : S), Φ x) ⊣⊢ emp :=
@@ -79,12 +79,12 @@ theorem bigSepS_singleton {Φ : A → PROP} {x : A} : ([∗set] y ∈ ({x} : S),
 @[rocq_alias big_sepS_insert]
 theorem bigSepS_insert {Φ : A → PROP} {X : S} {x : A} (h : x ∉ X) :
     ([∗set] y ∈ insert x X, Φ y) ⊣⊢ Φ x ∗ [∗set] y ∈ X, Φ y := by
-  rw [insert_union]; exact equiv_iff.mp <| bigOpS_insert h
+  rw [insert_union]; exact equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpS_insert h
 
 @[rocq_alias big_sepS_union]
 theorem bigSepS_union {Φ : A → PROP} {X Y : S} (h : X ## Y) :
     ([∗set] y ∈ X ∪ Y, Φ y) ⊣⊢ ([∗set] y ∈ X, Φ y) ∗ ([∗set] y ∈ Y, Φ y) :=
-  equiv_iff.mp <| bigOpS_union h
+  equiv_iff.mp <| OFE.Equiv.of_eq <| bigOpS_union h
 
 @[rocq_alias big_sepS_delete]
 theorem bigSepS_delete {Φ : A → PROP} {X : S} {x : A} (h : x ∈ X) :
@@ -153,7 +153,7 @@ instance bigSepS_timeless_inst [Timeless (emp : PROP)] {Φ : A → PROP} {X : S}
 @[rocq_alias big_sepS_sep]
 theorem bigSepS_sep {Φ Ψ : A → PROP} {X : S} :
     ([∗set] y ∈ X, Φ y ∗ Ψ y) ⊣⊢ ([∗set] y ∈ X, Φ y) ∗ ([∗set] y ∈ X, Ψ y) :=
-  equiv_iff.mp bigOpS_op_eqv
+  equiv_iff.mp <| OFE.Equiv.of_eq bigOpS_op_eqv
 
 @[deprecated "bigSepS_sep.symm" (since := "26/04/07"), rocq_alias big_sepS_sep_2]
 theorem bigSepS_sep_symm {Φ Ψ : A → PROP} {X : S} :
@@ -328,7 +328,7 @@ theorem bigSepS_filter_cond (φ : A → Bool) {Φ : A → PROP} {X : S} :
     ([∗set] y ∈ X, if φ y then Φ y else emp) := by
   refine bigSepS_elements.trans ?_
   refine (bigSepL_perm (Iris.Std.FiniteSet.toList_filter_perm φ X)).trans ?_
-  exact (equiv_iff.mp (bigOpL_filter_eqv φ Φ (FiniteSet.toList X))).trans <|
+  exact (equiv_iff.mp (OFE.Equiv.of_eq <| bigOpL_filter_eqv φ Φ (FiniteSet.toList X))).trans <|
     bigSepS_elements.symm
 
 @[rocq_alias big_sepS_filter]

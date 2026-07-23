@@ -134,11 +134,11 @@ instance [URFunctor F] : COFE.OFunctor (UPredOF F) where
   map_id x := OFE.Equiv.to_eq <| by
     intro _ _ z _ _
     simp only [uPred_map]
-    exact uPred_proper <| URFunctor.map_id z
+    exact uPred_proper <| OFE.Equiv.of_eq <| URFunctor.map_id z
   map_comp f g f' g' x := OFE.Equiv.to_eq <| by
     intro _ _ H _ _
     simp only [uPred_map]
-    exact uPred_proper <| URFunctor.map_comp g' f' g f H
+    exact uPred_proper <| OFE.Equiv.of_eq <| URFunctor.map_comp g' f' g f H
 
 @[rocq_alias uPredOF_contractive]
 instance instUPredOFunctorContractive [URFunctorContractive F] : COFE.OFunctorContractive (UPredOF F) where

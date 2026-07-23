@@ -221,7 +221,7 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness) (es : List Expr) (Ï
   rw [List.length_replicate] at Hlen2; subst Hlen2
   simp only [Nat.zero_add]
   icases BigSepL2.bigSepL2_replicate_right $$ Ht2' with Ht2'
-  icases (equiv_iff.mp <| BigSepL.bigSepL_filterMap toVal).mpr $$ [Ht2'] with Ht2'
+  icases (equiv_iff.mp <| OFE.Equiv.of_eq <| BigSepL.bigSepL_filterMap toVal).mpr $$ [Ht2'] with Ht2'
   Â· iapply BigSepL.bigSepL_mono $$ Ht2'
     intros; rcases (toVal _)
     simp only [Option.elim_none]
