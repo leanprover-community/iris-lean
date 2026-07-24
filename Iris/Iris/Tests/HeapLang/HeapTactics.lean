@@ -39,8 +39,7 @@ example {l l' : Loc} :
   wp_binop
   imodintro
   iframe Hpt
-  ipureintro
-  rfl
+  itrivial
 
 -- `wp_load` accepts *fractional* ownership (where store/faa/free would reject)
 example {l : Loc} {dq : DFrac} {v : Val} :
@@ -50,8 +49,28 @@ example {l : Loc} {dq : DFrac} {v : Val} :
   imodintro
   iapply HΦ $$ Hl
 
+-- a *discarded* points-to is persistent, so it can sit in the intuitionistic context;
+-- the lookup finds it there and keeps it (`Hl` is still available afterwards)
+example {l : Loc} {v : Val} :
+    □ (l ↦{.discard} some v) ∗ ((l ↦{.discard} some v) -∗ Φ v) ⊢
+      WP hl(!v(#l)) @ s ; E {{ Φ }} := by
+  iintro ⟨#Hl, HΦ⟩
+  wp_load
+  imodintro
+  iapply HΦ $$ Hl
+
+-- a *bare* discarded points-to moved to the intuitionistic context with `#`;
+-- this needs the `Persistent` instance for `l ↦{.discard} v`
+example {l : Loc} {v : Val} :
+    (l ↦{.discard} some v) ∗ ((l ↦{.discard} some v) -∗ Φ v) ⊢
+      WP hl(!v(#l)) @ s ; E {{ Φ }} := by
+  iintro ⟨#Hl, HΦ⟩
+  wp_load
+  imodintro
+  iapply HΦ $$ Hl
+
 /--
-error: Tactic `wp_load` failed: cannot find a points-to hypothesis for location l
+error: Tactic `wp_load` failed: cannot find a points-to hypothesis for l ↦{_} _
 
 hlc : HasLC
 GF : BundledGFunctors
@@ -122,7 +141,7 @@ example {l : Loc} {v v' v'' : Val} :
   iframe
 
 /--
-error: Tactic `wp_store` failed: cannot find a full-ownership points-to hypothesis for location l
+error: Tactic `wp_store` failed: cannot find a points-to hypothesis for l ↦{DFrac.own 1} _
 
 hlc : HasLC
 GF : BundledGFunctors
@@ -165,12 +184,11 @@ example {l : Loc} {z : Int} :
   wp_binop
   imodintro
   iframe
-  ipureintro
-  rfl
+  itrivial
 
 -- `wp_faa` failing: writes need full ownership, fractional is rejected
 /--
-error: Tactic `wp_faa` failed: cannot find a full-ownership points-to hypothesis for location l
+error: Tactic `wp_faa` failed: cannot find a points-to hypothesis for l ↦{DFrac.own 1} _
 
 hlc : HasLC
 GF : BundledGFunctors
@@ -232,12 +250,11 @@ example {l : Loc} {v v' : Val} :
   wp_xchg
   imodintro
   iframe
-  ipureintro
-  rfl
+  itrivial
 
 -- `wp_xchg` failing: writes need full ownership, fractional is rejected
 /--
-error: Tactic `wp_xchg` failed: cannot find a full-ownership points-to hypothesis for location l
+error: Tactic `wp_xchg` failed: cannot find a points-to hypothesis for l ↦{DFrac.own 1} _
 
 hlc : HasLC
 GF : BundledGFunctors
@@ -281,7 +298,7 @@ example {l l' : Loc} {v w : Val} :
 
 -- `wp_free` failing: deallocation needs full ownership, fractional is rejected
 /--
-error: Tactic `wp_free` failed: cannot find a full-ownership points-to hypothesis for location l
+error: Tactic `wp_free` failed: cannot find a points-to hypothesis for l ↦{DFrac.own 1} _
 
 hlc : HasLC
 GF : BundledGFunctors
@@ -313,7 +330,7 @@ example {v : Val} :
   imodintro
   iexists l
   isplit
-  · ipureintro; rfl
+  · itrivial
   · iexact Hl
 
 -- anonymous variant: `wp_alloc l` auto-names the points-to; `iframe` picks it up
@@ -323,8 +340,7 @@ example {v : Val} :
   imodintro
   iexists l
   iframe
-  ipureintro
-  rfl
+  itrivial
 
 end wp_alloc
 
@@ -340,13 +356,11 @@ example {l : Loc} {v2 : Val} :
   wp_cmpxchg_suc
   imodintro
   iframe
-  ipureintro
-  rfl
+  itrivial
 
 -- `wp_cmpxchg_suc` failing: a successful CAS writes, so fractional is rejected
 /--
-error: Tactic `wp_cmpxchg_suc` failed: cannot find a full-ownership points-to hypothesis for
-location l
+error: Tactic `wp_cmpxchg_suc` failed: cannot find a points-to hypothesis for l ↦{DFrac.own 1} _
 
 hlc : HasLC
 GF : BundledGFunctors
@@ -383,8 +397,7 @@ example {l : Loc} {dq : DFrac} {v2 : Val} :
   wp_cmpxchg_fail
   imodintro
   iframe
-  ipureintro
-  rfl
+  itrivial
 
 end wp_cmpxchg_fail
 
@@ -403,13 +416,11 @@ example {l : Loc} {v1 : Val} :
   · imodintro
     ileft
     iframe
-    ipureintro
-    rfl
+    itrivial
   · imodintro
     iright
     iframe
-    ipureintro
-    rfl
+    itrivial
 
 end wp_cmpxchg
 
