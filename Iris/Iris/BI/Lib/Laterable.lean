@@ -29,18 +29,12 @@ class IntoLaterable [BI PROP] (P : PROP) (Q : outParam PROP) where
 @[rocq_alias later_laterable]
 instance later_laterable [BI PROP] (P : PROP) : Laterable iprop(▷ P) where
   laterable := by
-    iintro HP
-    /- TODO: `iframe` for existential quantifiers -/
-    iexists P; iframe
-    iintro !> HP !>
-    iassumption
+    iintro HP {$HP} !> HP !> //
 
 @[rocq_alias timeless_laterable]
 instance timeless_laterable [BI PROP] (P : PROP) [Timeless P] : Laterable P where
   laterable := by
-    iintro HP
-    /- TODO: `iframe` for existential quantifiers -/
-    iexists P; iframe
+    iintro HP {$HP}
     isplitr
     · itrivial
     · iintro !> >HP !> //
@@ -83,10 +77,7 @@ instance exist_laterable [BI PROP] {A} (Φ : A → PROP)
   laterable := by
     iintro ⟨%x, H⟩
     icases (inst x).laterable $$ H with ⟨%Q, HQ, #HΦ⟩
-    iexists Q
-    /- TODO: use the introduction pattern for framing here -/
-    iframe HQ
-    iintro !> HQ
+    iintro {$HQ} !> HQ
     iexists x
     iapply HΦ
     iassumption
@@ -111,28 +102,16 @@ instance make_laterable_ne [BI PROP] : NonExpansive <| make_laterable (PROP := P
 
 /- TODO: `make_laterable_proper`, `make_laterable_mono'`, `make_laterable_flip_mono'` -/
 
-/- TODO: one step with `rw'` -/
 @[rw_mono_rule, rocq_alias make_laterable_mono]
 theorem make_laterable_mono [BI PROP] {Q1 Q2 : PROP} (h : Q1 ⊢ Q2) :
-    make_laterable Q1 ⊢ make_laterable Q2 := by
-  unfold make_laterable
-  apply exists_mono
-  intro P
-  apply sep_mono_right
-  apply intuitionistically_mono
-  apply wand_mono_right
-  apply except0_mono
-  assumption
+    make_laterable Q1 ⊢ make_laterable Q2 := by unfold make_laterable; rw' [h]
 
 @[rocq_alias make_laterable_except_0]
 theorem make_laterable_except_0 [BI PROP] {Q : PROP} :
     make_laterable iprop(◇ Q) ⊢ make_laterable Q := by
   unfold make_laterable
   iintro ⟨%P, HP, #HPQ⟩
-  /- TODO: `iframe` with existential quantifiers -/
-  iexists P
-  iframe HP
-  iintro !> HP
+  iintro {$HP} !> HP
   imod HPQ $$ HP with HQ
   iassumption
 
@@ -143,9 +122,8 @@ theorem make_laterable_sep [BI PROP] {Q1 Q2 : PROP} :
   unfold make_laterable
   icases HQ1 with ⟨%P1, HP1, #HQ1⟩
   icases HQ2 with ⟨%P2, HP2, #HQ2⟩
-  iexists iprop(P1 ∗ P2)
-  iframe
-  iintro !> ⟨HP1, HP2⟩
+  icombine HP1 HP2 as HP
+  iintro {$HP} !> ⟨HP1, HP2⟩
   icases HQ1 $$ HP1 with >$
   icases HQ2 $$ HP2 with >$
   itrivial
@@ -165,10 +143,7 @@ theorem make_laterable_intuitionistic_wand [BI PROP] {Q1 Q2 : PROP} :
   iintro #HQ HQ1
   unfold make_laterable
   icases HQ1 with ⟨%P, HP, #HQ1⟩
-  /- TODO: `iframe` with existential quantifiers -/
-  iexists P; iframe
-  iintro !> HP
-  /- TODO: use the introduction pattern `{HQ1}` to drop the original hypothesis -/
+  iintro {$HP} !> HP
   icases HQ1 $$ HP with >HQ1'
   iclear HQ1
   iapply HQ $$ HQ1'
@@ -178,9 +153,7 @@ instance make_laterable_laterable [BI PROP] {Q : PROP} : Laterable (make_laterab
   laterable := by
     unfold make_laterable
     iintro ⟨%P, HP, #HQ⟩
-    /- TODO: `iframe` with existential quantifiers -/
-    iexists P; iframe
-    iintro !> HP !>
+    iintro {$HP} !> HP !>
     iexists P; iframe
     imodintro; iassumption
 
@@ -196,9 +169,7 @@ theorem make_laterable_intro [BI PROP] {P Q : PROP} [inst : Laterable P] :
   unfold make_laterable
   iintro #HPQ HP
   icases inst.laterable $$ HP with ⟨%P', HP', #HPi⟩
-  /- TODO: `iframe` with existential quantifiers -/
-  iexists P'; iframe
-  iintro !> HP'
+  iintro {$HP'} !> HP'
   icases HPi $$ HP' with >HP
   imodintro
   iapply HPQ $$ HP
