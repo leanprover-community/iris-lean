@@ -118,6 +118,22 @@ variable (Φ : Val → PROP)
 
 end TestWP
 
+section TestTotalTexanTriple
+
+set_option linter.unusedVariables false
+
+variable (PROP Expr Val : Type _) [BI PROP]
+variable [TotalWp PROP Expr Val Stuckness]
+variable (e : Expr) (P Q : PROP) (v : Val)
+
+/-- info: iprop(∀ Φ, P -∗ (Q -∗ Φ v) -∗ WP e [{ Φ }] ) : PROP -/
+#guard_msgs in #check [[{ P }]] e [[{ RET v; Q }]]
+
+/-- info: iprop(∀ Φ, P -∗ (∀ x, Q -∗ Φ x) -∗ WP e [{ Φ }] ) : PROP -/
+#guard_msgs in #check [[{ P }]] e [[{ x, RET x; Q }]]
+
+end TestTotalTexanTriple
+
 section TestTexanTriple
 
 set_option linter.unusedVariables false
