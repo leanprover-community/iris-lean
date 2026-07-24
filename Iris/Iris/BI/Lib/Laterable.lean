@@ -8,7 +8,7 @@ module
 
 public import Iris.BI
 public import Iris.ProofMode
-public import Iris.Std.Classes
+public import Iris.Std.TC
 
 @[expose] public section
 
@@ -112,11 +112,11 @@ theorem big_sep_sepL_laterable [BI PROP] (Q : PROP) (Ps : List PROP)
 
 @[rocq_alias big_sepL_laterable]
 instance big_sepL_laterable [BI PROP] (Ps : List PROP)
-    [instEmp : Laterable (emp : PROP)] [instPs : Std.List.Forall Laterable Ps] :
+    [instEmp : Laterable (emp : PROP)] [instPs : TCForall Laterable Ps] :
     Laterable iprop([∗] Ps) := by
   apply laterable_congr emp_sep
   apply big_sep_sepL_laterable emp Ps instEmp
-  exact listForall_forall.mp instPs
+  exact forall_TCForall.mp instPs
 
 @[rocq_alias make_laterable]
 def make_laterable [BI PROP] (Q : PROP) : PROP :=
