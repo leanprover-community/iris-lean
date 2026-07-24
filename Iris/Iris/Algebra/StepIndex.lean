@@ -32,7 +32,6 @@ class SIdxFinite (I : Type u) [SIdx I] where
 
 #rocq_ignore SIdx.lt_trans "Lifting of mixin properties not required as they are part of the type class SIdx"
 #rocq_ignore SIdx.lt_wf "Lifting of mixin properties not required as they are part of the type class SIdx"
-#rocq_ignore SIdx.lt_lteq "Lifting of mixin properties not required as they are part of the type class SIdx"
 #rocq_ignore SIdx.lt_trichotomy "Lifting of mixin properties not required as they are part of the type class SIdx"
 #rocq_ignore SIdx.le_lteq "Lifting of mixin properties not required as they are part of the type class SIdx"
 #rocq_ignore SIdx.nlt_0_r "Lifting of mixin properties not required as they are part of the type class SIdx"
@@ -232,10 +231,10 @@ theorem neq_0_lt_0 : n ≠ 0 ↔ 0 < n := by
   · rintro h rfl
     exact inst.not_lt_zero 0 h
 
-@[rocq_alias neq_succ_0]
+@[rocq_alias SIdx.neq_succ_0]
 theorem neq_succ_0 : succᵢ n ≠ 0 := neq_0_lt_0.mpr <| lt_succ_r.mpr le_0_l
 
-@[rocq_alias succ_neq]
+@[rocq_alias SIdx.succ_neq]
 theorem succ_neq : n ≠ succᵢ n := by
   intro h
   have hlt := inst.lt_succ_self n
@@ -386,7 +385,7 @@ theorem rec_lim {P : I → Sort v} (s : P 0) (f : ∀ n, P n → P (succᵢ n))
       exact absurd (EQ ▸ Hn) (limit_S m)
     | inr Hlim => rfl
 
-#rocq_ignore rec_lim_ext
+#rocq_ignore SIdx.rec_lim_ext
   "Proof irrelevance already handled automatically by Lean for the theorems \
   rec_zero, rec_succ and rec_elim"
 
