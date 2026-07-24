@@ -95,6 +95,7 @@ class inductive TCForall (p : α → Prop) : List α → Prop
   | nil : TCForall p []
   | cons {x : α} {xs : List α} : p x → TCForall p xs → TCForall p (x :: xs)
 
+/-- Corresponding to `TCForall_Forall` in Rocq's stdpp. -/
 theorem forall_TCForall {α} {p : α → Prop} {xs : List α} : TCForall p xs ↔ ∀ x ∈ xs, p x := by
   constructor
   · intro h
