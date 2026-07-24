@@ -79,13 +79,15 @@ export Disjoint (disjoint)
 infix:50 " ## " => Disjoint.disjoint
 
 /--
-  The core Lean libraries only provide `List.Forall₂`.
-  The proposition `∀ x ∈ xs, p x` is typically used instead of `xs.Forall p`,
-  but `List.Forall` is useful as a type class.
+  The core Lean libraries only provide `List.Forall₂` while `List.Forall` is
+  available in Mathlib (`Mathlib.Data.List.Defs`) as a definition.
+  The proposition `∀ x ∈ xs, p x` is typically directly used as an assertion,
+  but `List.Forall` as a type class is useful for automatic inference, e.g.,
+  instances that involve `[∗]`.
 -/
 class inductive List.Forall (p : α → Prop) : List α → Prop
-| nil : Forall p []
-| cons : p x → Forall p xs → Forall p (x :: xs)
+  | nil : Forall p []
+  | cons {x : α} {xs : List α} : p x → Forall p xs → Forall p (x :: xs)
 
 theorem listForall {α} {p : α → Prop} {xs : List α} : List.Forall p xs ↔ ∀ x ∈ xs, p x := by
   constructor
