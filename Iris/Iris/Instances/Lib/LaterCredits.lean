@@ -260,7 +260,7 @@ theorem le_upd_unfold {P : IProp GF} :
   (|==£> P) ⊣⊢
   ∀ n, lc_supply n ==∗
     ▷^[n.succ] False ∨ (lc_supply n ∗ P) ∨ (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ |==£> P) :=
-    (BIBase.BiEntails.of_eq (fixpoint_unfold ⟨le_upd_pre P, inferInstance⟩)).trans .rfl
+    (fixpoint_unfold ⟨le_upd_pre P, inferInstance⟩).to_bi.trans .rfl
 
 @[rocq_alias le_upd.le_upd_ne]
 instance : NonExpansive (le_upd (GF := GF)) where

@@ -94,6 +94,7 @@ theorem BIBase.Entails.of_eq [BI PROP] {P Q : PROP} (h : P = Q) : P ⊢ Q := h �
 @[simp] theorem BIBase.BiEntails.rfl [BI PROP] {P : PROP} : P ⊣⊢ P := ⟨.rfl, .rfl⟩
 
 theorem BIBase.BiEntails.of_eq [BI PROP] {P Q : PROP} (h : P = Q) : P ⊣⊢ Q := h ▸ .rfl
+theorem _root_.Eq.to_bi [BI PROP] {P Q : PROP} (h : P = Q) : P ⊣⊢ Q := h ▸ .rfl
 
 theorem BIBase.BiEntails.to_eq [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : P = Q := equiv_iff.mpr h
 
@@ -116,7 +117,7 @@ export BIBase (
   Entails emp pure and or imp sForall sExists «forall» «exists» sep wand
   persistently BiEntails iff wandIff affinely absorbingly
   intuitionistically later persistentlyIf affinelyIf absorbinglyIf
-  intuitionisticallyIf bigAnd bigOr bigSep Entails.trans BiEntails.trans)
+  intuitionisticallyIf bigAnd bigOr bigSep Entails.trans BiEntails.trans BiEntails.of_eq BiEntails.to_eq)
 
 attribute [rw_mono_rule] BI.sep_mono
 attribute [rw_mono_rule] BI.persistently_mono

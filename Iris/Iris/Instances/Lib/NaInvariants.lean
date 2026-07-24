@@ -128,7 +128,7 @@ theorem own_disjoint {p : NaInvPoolName} {E1 E2 : CoPset} :
 theorem own_union {p : NaInvPoolName} {E1 E2 : CoPset} (Hdisj : E1 ## E2) :
     own (GF := GF) p (E1 ∪ E2) ⊣⊢ own p E1 ∗ own p E2 := by
   refine .trans ?_ iOwn_op
-  refine BIBase.BiEntails.of_eq (congrArg (iOwn (E := W.inv) p) ?_)
+  refine (congrArg (iOwn (E := W.inv) p) ?_).to_bi
   refine .symm (OFE.equiv_prod_ext (disj_op_union Hdisj) ?_)
   exact (disj_op_union disjoint_empty_left).trans (by simp)
 

@@ -700,7 +700,7 @@ instance {a : M} : Persistent (ownM (core a)) where
   persistent := by
     refine .trans (persistently_ownM_core _) ?_
     refine persistently_mono ?_
-    exact (BIBase.BiEntails.of_eq (congrArg ownM (core_idem a))).mp
+    exact (congrArg ownM (core_idem a)).to_bi.mp
 
 @[rocq_alias uPred.bupd_ownM_updateP, rocq_alias uPred_primitive.bupd_ownM_updateP]
 theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :

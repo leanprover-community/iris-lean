@@ -686,13 +686,13 @@ instance bigSepM_plain {K} [DecidableEq K] {M A} [ι : LawfulFiniteMap M K] (Φ 
     case hins k v m get?_m_k IH=>
       calc iprop([∗map] k ↦ x ∈ Std.insert m k v, Φ k x)
         _ ⊣⊢ Φ k v ∗ [∗map] k ↦ x ∈  m, Φ k x :=
-            BIBase.BiEntails.of_eq (Algebra.BigOpM.bigOpM_insert_eq _ _ get?_m_k)
+            (Algebra.BigOpM.bigOpM_insert_eq _ _ get?_m_k).to_bi
         _  ⊢ ■ Φ k v ∗ ■ [∗map] k ↦ x ∈  m, Φ k x :=
           sep_mono (h k v |>.plain) IH
         _  ⊢ ■ (Φ k v ∗ [∗map] k ↦ x ∈  m, Φ k x) := plainly_sep_2
         _ ⊣⊢ ■ [∗map] k ↦ x ∈ Std.insert m k v, Φ k x :=
           .ofMono plainly_mono <|
-            BIBase.BiEntails.of_eq (Algebra.BigOpM.bigOpM_insert_eq _ _ get?_m_k) |>.symm
+            (Algebra.BigOpM.bigOpM_insert_eq _ _ get?_m_k).to_bi |>.symm
 
 open Algebra in
 @[rocq_alias big_sepS_empty_plain]
@@ -711,11 +711,11 @@ instance  bigSepS_plain {S} [Pos.Countable S] {A} [LawfulFiniteSet S A] (Φ : A 
     case hadd x s x_s IH =>
       calc iprop([^ sep set] x ∈ insert x s, Φ x)
         _ ⊣⊢ Φ x ∗ [^ sep set] x ∈  s, Φ x :=
-          BIBase.BiEntails.of_eq (BigOpS.bigOpS_insert x_s)
+          (BigOpS.bigOpS_insert x_s).to_bi
         _  ⊢ ■ Φ x ∗ ■ [^ sep set] x ∈ s, Φ x := sep_mono (h x |>.plain) IH
         _  ⊢ ■ (Φ x ∗ [^ sep set] x ∈ s, Φ x) := plainly_sep_2
         _ ⊣⊢ ■ [^ sep set] y ∈ insert x s, Φ y :=
-          .ofMono plainly_mono <| BIBase.BiEntails.of_eq (BigOpS.bigOpS_insert x_s).symm
+          .ofMono plainly_mono <| (BigOpS.bigOpS_insert x_s).symm.to_bi
 
 @[rocq_alias plainly_timeless]
 instance plainly_timeless (P : PROP) [Timeless P] : Timeless iprop(■ P) :=

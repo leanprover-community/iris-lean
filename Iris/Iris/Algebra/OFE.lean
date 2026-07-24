@@ -64,8 +64,10 @@ theorem equiv_eqv [ofe : OFE α] : Equivalence ofe.Equiv := by
   · rintro x y h n; exact Dist.symm (h n)
   · rintro x y z h₁ h₂ n; exact Dist.trans (h₁ n) (h₂ n)
 
-@[simp, refl, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")] theorem Equiv.rfl [OFE α] {x : α} : x ≡ x := equiv_eqv.1 _
-@[symm, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")] theorem Equiv.symm [OFE α] {x : α} : x ≡ y → y ≡ x := equiv_eqv.2
+@[refl, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
+theorem Equiv.rfl [OFE α] {x : α} : x ≡ x := equiv_eqv.1 _
+@[symm, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
+theorem Equiv.symm [OFE α] {x : α} : x ≡ y → y ≡ x := equiv_eqv.2
 @[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem Equiv.trans [OFE α] {x : α} : x ≡ y → y ≡ z → x ≡ z := equiv_eqv.3
 

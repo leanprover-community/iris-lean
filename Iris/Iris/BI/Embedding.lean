@@ -205,8 +205,8 @@ theorem embed_entails_inj {P Q : PROP1} (h : (⎡P⎤ : PROP2) ⊢ ⎡Q⎤) : P 
 /-- `⎡·⎤` reflects equivalence. -/
 @[rocq_alias embed_inj]
 theorem embed_inj {P Q : PROP1} (h : (embed P : PROP2) = embed Q) : P = Q :=
-  BIBase.BiEntails.to_eq ⟨embed_entails_inj (BIBase.BiEntails.of_eq h).mp,
-                    embed_entails_inj (BIBase.BiEntails.of_eq h).mpr⟩
+  BIBase.BiEntails.to_eq ⟨embed_entails_inj h.to_bi.mp,
+                    embed_entails_inj h.to_bi.mpr⟩
 
 @[rocq_alias embed_emp]
 theorem embed_emp [BiEmbedEmp PROP1 PROP2] : (⎡(emp : PROP1)⎤ : PROP2) ⊣⊢ emp :=
@@ -372,7 +372,7 @@ theorem embed_big_sepL_2 {A : Type _} (Φ : Nat → A → PROP1) (l : List A) :
 @[rocq_alias embed_big_sepL]
 theorem embed_big_sepL [BiEmbedEmp PROP1 PROP2] {A : Type _} (Φ : Nat → A → PROP1) (l : List A) :
     (⎡[∗list] k ↦ x ∈ l, Φ k x⎤ : PROP2) ⊣⊢ [∗list] k ↦ x ∈ l, ⎡Φ k x⎤ :=
-  BIBase.BiEntails.of_eq (bigOpL_hom (H := embed_sep_homomorphism) Φ l)
+  (bigOpL_hom (H := embed_sep_homomorphism) Φ l).to_bi
 
 variable {K V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
 
@@ -384,30 +384,30 @@ theorem embed_big_sepM_2 (Φ : K → V → PROP1) (m : M V) :
 @[rocq_alias embed_big_sepM]
 theorem embed_big_sepM [BiEmbedEmp PROP1 PROP2] (Φ : K → V → PROP1) (m : M V) :
     (⎡[∗map] k ↦ x ∈ m, Φ k x⎤ : PROP2) ⊣⊢ [∗map] k ↦ x ∈ m, ⎡Φ k x⎤ :=
-  BIBase.BiEntails.of_eq (bigOpM_hom (ι := embed_sep_homomorphism) Φ m)
+  (bigOpM_hom (ι := embed_sep_homomorphism) Φ m).to_bi
 
 @[rocq_alias embed_big_sepS_2]
 theorem embed_big_sepS_2 {S A : Type _} [LawfulFiniteSet S A] (Φ : A → PROP1) (X : S) :
     ([∗set] x ∈ X, (⎡Φ x⎤ : PROP2)) ⊢ ⎡[∗set] x ∈ X, Φ x⎤ :=
-  Iris.Algebra.BigOpS.hom embed_sep_entails_homomorphism Φ X
+  BigOpS.hom embed_sep_entails_homomorphism Φ X
 
 @[rocq_alias embed_big_sepS]
 theorem embed_big_sepS [BiEmbedEmp PROP1 PROP2] {S A : Type _} [LawfulFiniteSet S A]
     (Φ : A → PROP1) (X : S) :
     (⎡[∗set] x ∈ X, Φ x⎤ : PROP2) ⊣⊢ [∗set] x ∈ X, ⎡Φ x⎤ :=
-  BIBase.BiEntails.of_eq (Iris.Algebra.BigOpS.hom embed_sep_homomorphism Φ X)
+  (BigOpS.hom embed_sep_homomorphism Φ X).to_bi
 
 @[rocq_alias embed_big_sepMS_2]
 theorem embed_big_sepMS_2 {MS A : Type _} [LawfulFiniteMultiSet MS A]
   (Φ : A → PROP1) (X : MS) :
   ([∗mset] x ∈ X, (⎡Φ x⎤ : PROP2)) ⊢ ⎡[∗mset] x ∈ X, Φ x⎤ :=
-  Iris.Algebra.BigOpMS.hom embed_sep_entails_homomorphism Φ X
+  BigOpMS.hom embed_sep_entails_homomorphism Φ X
 
 @[rocq_alias embed_big_sepMS]
 theorem embed_big_sepMS [BiEmbedEmp PROP1 PROP2] {MS A : Type _} [LawfulFiniteMultiSet MS A]
   (Φ : A → PROP1) (X : MS) :
   (⎡[∗mset] x ∈ X, Φ x⎤ : PROP2) ⊣⊢ [∗mset] x ∈ X, ⎡Φ x⎤ :=
-  BIBase.BiEntails.of_eq (Iris.Algebra.BigOpMS.hom embed_sep_homomorphism Φ X)
+  (BigOpMS.hom embed_sep_homomorphism Φ X).to_bi
 
 end
 

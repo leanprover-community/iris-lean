@@ -525,10 +525,13 @@ theorem bigSepM_impl_strong [DecidableEq K] {M₂ : Type _ → Type _} {V₂ : T
         refine emp_sep.2.trans ?_
         refine sep_comm.1.trans ?_
         exact wand_elim_left
-      refine (sep_mono_right (intuitionistically_elim.trans <| (forall_elim i).trans <| (forall_elim y).trans H')).trans ?_
+      refine (sep_mono_right (intuitionistically_elim.trans <| (forall_elim i).trans
+        <| (forall_elim y).trans H')).trans ?_
       have H (k y') : (⌜get? (insert m₂'' i y) k = some y'⌝ → Ψ k y') ⊢ ⌜get? m₂'' k = some y'⌝ → Ψ k y' :=
-        imp_intro_swap <| pure_elim_left fun hget => pure_imp_elim ((get?_insert_ne (hne_of_get hget).symm).trans hget)
-      refine (sep_mono_left <| sep_mono_right <| intuitionistically_mono <| forall_mono fun k => forall_mono fun y' => wand_mono_right <| H k y').trans ?_
+        imp_intro_swap
+        <| pure_elim_left fun hget => pure_imp_elim ((get?_insert_ne (hne_of_get hget).symm).trans hget)
+      refine (sep_mono_left <| sep_mono_right <| intuitionistically_mono
+        <| forall_mono fun k => forall_mono fun y' => wand_mono_right <| H k y').trans ?_
       -- Tail
       refine (sep_mono_left <| IH m₁).trans ?_
       refine sep_assoc.1.trans ?_
@@ -546,16 +549,20 @@ theorem bigSepM_impl_strong [DecidableEq K] {M₂ : Type _ → Type _} {V₂ : T
       refine sep_assoc.2.trans ?_
       have H : Φ i x ∗ ((get? m₁ i).elim emp (Φ i) -∗ ⌜get? (insert m₂'' i y) i = some y⌝ → Ψ i y) ⊢ Ψ i y := by
         simpa [hm₁i, get?_insert_eq rfl] using (sep_mono_right <| wand_mono_right true_imp.1).trans wand_elim_right
-      refine (sep_mono_left <| (sep_mono_right intuitionistically_elim).trans <| (sep_mono_right <| (forall_elim i).trans <| forall_elim y).trans H).trans ?_
+      refine (sep_mono_left <| (sep_mono_right intuitionistically_elim).trans
+        <| (sep_mono_right <| (forall_elim i).trans <| forall_elim y).trans H).trans ?_
       have hadapt (k : K) (y' : V₂) :
           ((get? m₁ k).elim emp (Φ k) -∗ ⌜get? (insert m₂'' i y) k = some y'⌝ → Ψ k y') ⊢
           (get? (delete m₁ i) k).elim emp (Φ k) -∗ ⌜get? m₂'' k = some y'⌝ → Ψ k y' :=
         wand_intro <| imp_intro_swap <| pure_elim_left fun hget => by
           let hne : i ≠ k := (hne_of_get hget).symm
           simp only [get?_delete_ne hne]
-          exact (sep_mono_left <| wand_mono_right <| pure_imp_elim ((get?_insert_ne hne).trans hget)).trans wand_elim_left
+          exact (sep_mono_left <| wand_mono_right
+            <| pure_imp_elim ((get?_insert_ne hne).trans hget)).trans wand_elim_left
       -- Tail
-      refine (sep_mono_right <| sep_mono_right <| intuitionistically_mono <| forall_mono fun k => forall_mono fun y' => hadapt k y').trans <| (sep_mono_right <| IH (delete m₁ i)).trans ?_
+      refine (sep_mono_right <| sep_mono_right <| intuitionistically_mono
+        <| forall_mono fun k => forall_mono fun y' => hadapt k y').trans
+        <| (sep_mono_right <| IH (delete m₁ i)).trans ?_
       refine .trans ?_ <| sep_assoc.2.trans <| sep_mono_left (bigSepM_insert hi).2
       refine sep_mono_right <| sep_mono_right (BiEntails.of_eq <| bigOpM_eq_of_perm Φ fun k => ?_).2
       by_cases hki : i = k <;> simp_all [get?_filter, get?_insert, get?_delete]

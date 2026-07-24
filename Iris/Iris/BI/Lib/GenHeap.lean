@@ -211,7 +211,7 @@ theorem metaToken_union_1 {l : L} {E1 E2 : CoPset} (he : E1 ## E2) :
   unfold metaToken
   iintro ⟨%γm, #Hγm, Hm⟩
   -- TODO: why do we need to destruct in a second step?
-  icases (BIBase.BiEntails.of_eq (congrArg (iOwn _) (ReservationMap.token_union he).symm)) $$ Hm with Hm
+  icases (congrArg (iOwn _) (ReservationMap.token_union he).symm) $$ Hm with Hm
   icases Hm with ⟨Hm1, Hm2⟩
   isplitl [Hm1]
   · iexists γm
@@ -230,7 +230,7 @@ theorem metaToken_union_2 {l : L} {E1 E2 : CoPset} :
   have hdisj : E1 ## E2 := ReservationMap.valid_token_op_iff_disj.mp Hvalid
   iexists γm1
   iframe Hγm1
-  iapply (BIBase.BiEntails.of_eq (congrArg (iOwn _) (ReservationMap.token_union hdisj))).mpr
+  iapply (congrArg (iOwn _) (ReservationMap.token_union hdisj))
   iapply iOwn_op
   iframe
 

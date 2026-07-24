@@ -108,7 +108,7 @@ instance least_fixpoint_absorbing [BIMonoPred F]
       ⟨fun _ _ _ H => wand_ne.ne .rfl (NonExpansive.ne H)⟩
     iapply least_fixpoint_iter
     iintro !> %y HF HT
-    iapply BIBase.BiEntails.of_eq (least_fixpoint_unfold ..)
+    iapply (least_fixpoint_unfold ..).to_bi
     iapply mono_pred (Φ := (fun x : A => iprop(True -∗ bi_least_fixpoint F x))) $$ [] [HF HT]
     · iintro !> %x HF
       iapply HF
@@ -128,7 +128,7 @@ instance least_fixpoint_persistent_affine [BIMonoPred F]
       ⟨fun _ _ _ H => intuitionistically_ne.ne (NonExpansive.ne H)⟩
     iapply least_fixpoint_iter
     iintro !> %y #HY !>
-    iapply BIBase.BiEntails.of_eq (least_fixpoint_unfold ..)
+    iapply (least_fixpoint_unfold ..).to_bi
     iapply mono_pred (Φ := fun x => iprop(□ bi_least_fixpoint F x))
     · iintro !> %_ #Hx
       iexact Hx
@@ -145,7 +145,7 @@ instance least_fixpoint_persistent_absorbing [BIMonoPred F]
       ⟨fun _ _ _ H => persistently_ne.ne <| NonExpansive.ne H⟩
     iapply least_fixpoint_iter
     iintro !> %y #HF !>
-    iapply BIBase.BiEntails.of_eq (least_fixpoint_unfold ..)
+    iapply (least_fixpoint_unfold ..).to_bi
     iapply mono_pred (Φ := fun x => iprop(<pers> bi_least_fixpoint F x)) $$ [] HF
     letI _ := @least_fixpoint_absorbing _ _ _ _ _ _ Habsorb
     iintro !> %x #H
@@ -157,7 +157,7 @@ theorem least_fixpoint_strong_mono (G : (A → PROP) → (A → PROP)) [BIMonoPr
   iintro #Hmon
   iapply least_fixpoint_iter
   iintro !> %y IH
-  iapply BIBase.BiEntails.of_eq (least_fixpoint_unfold ..)
+  iapply (least_fixpoint_unfold ..).to_bi
   iapply Hmon $$ IH
 
 section Strong
@@ -186,7 +186,7 @@ theorem least_fixpoint_ind_wf :
   ihave Hthis : (F (bi_least_fixpoint F) x -∗ Φ x) -∗ (bi_least_fixpoint F x -∗ Φ x) $$ []
   · iintro H1 H2
     iapply H1
-    iapply BIBase.BiEntails.of_eq (least_fixpoint_unfold ..)
+    iapply (least_fixpoint_unfold ..).to_bi
     iexact H2
   iapply Hthis
   iintro HF
@@ -195,7 +195,7 @@ theorem least_fixpoint_ind_wf :
   imodintro
   iapply least_fixpoint_iter
   iintro !> %y Hy
-  iapply BIBase.BiEntails.of_eq (least_fixpoint_unfold ..)
+  iapply (least_fixpoint_unfold ..).to_bi
   isplit
   · iapply HM $$ Hy
   · iexact Hy
