@@ -43,10 +43,7 @@ predicates are functions out of a `BiIndex` that are monotone w.r.t. this order.
 structure BiIndex where
   car : Type _
   [inhabited : Inhabited car]
-  -- rel : car → car → Prop
-
   rel : LE car
-
   [preorder : Std.IsPreorder car]
 
 attribute [instance] BiIndex.inhabited BiIndex.preorder
