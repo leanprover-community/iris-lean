@@ -84,12 +84,14 @@ infix:50 " ## " => Disjoint.disjoint
   The proposition `∀ x ∈ xs, p x` is typically directly used as an assertion,
   but `List.Forall` as a type class is useful for automatic inference, e.g.,
   instances that involve `[∗]`.
+
+  This type class corresponds to `TCForall` in Rocq's stdpp.
 -/
 class inductive List.Forall (p : α → Prop) : List α → Prop
   | nil : Forall p []
   | cons {x : α} {xs : List α} : p x → Forall p xs → Forall p (x :: xs)
 
-theorem listForall {α} {p : α → Prop} {xs : List α} : List.Forall p xs ↔ ∀ x ∈ xs, p x := by
+theorem listForall_forall {α} {p : α → Prop} {xs : List α} : List.Forall p xs ↔ ∀ x ∈ xs, p x := by
   constructor
   · intro h
     induction h with

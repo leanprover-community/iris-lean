@@ -15,7 +15,7 @@ public import Iris.Std.Classes
 namespace Iris
 
 section Laterable
-open BI OFE ProofMode
+open BI OFE Std ProofMode
 
 /-- Require that the proposition `P` is laterable. -/
 @[rocq_alias Laterable]
@@ -94,7 +94,7 @@ theorem laterable_congr [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) (inst : Laterabl
     apply sep_mono_right
     apply intuitionistically_mono
     apply wand_mono_right
-    apply except0_mono h.mp
+    exact except0_mono h.mp
 
 @[rocq_alias big_sep_sepL_laterable]
 theorem big_sep_sepL_laterable [BI PROP] (Q : PROP) (Ps : List PROP)
@@ -116,7 +116,7 @@ instance big_sepL_laterable [BI PROP] (Ps : List PROP)
     Laterable iprop([∗] Ps) := by
   apply laterable_congr emp_sep
   apply big_sep_sepL_laterable emp Ps instEmp
-  apply Iris.Std.listForall.mp instPs
+  exact listForall_forall.mp instPs
 
 @[rocq_alias make_laterable]
 def make_laterable [BI PROP] (Q : PROP) : PROP :=
