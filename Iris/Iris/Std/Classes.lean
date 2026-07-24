@@ -78,4 +78,33 @@ class Disjoint (α : Type u) where
 export Disjoint (disjoint)
 infix:50 " ## " => Disjoint.disjoint
 
+/--
+  The core Lean libraries only provide `List.Forall₂`.
+  The proposition `∀ x ∈ xs, p x` is typically used instead of `xs.Forall p`,
+  but `List.Forall` is useful as a type class.
+-/
+class inductive List.Forall (p : α → Prop) : List α → Prop
+| nil : Forall p []
+| cons : p x → Forall p xs → Forall p (x :: xs)
+
+theorem listForall {α} {p : α → Prop} {xs : List α} : List.Forall p xs ↔ ∀ x ∈ xs, p x := by
+  constructor
+  · intro h
+    induction h with
+    | nil => intro _ _; contradiction
+    | cons hx _ ih =>
+      intro y hy
+      cases hy with
+      | head => exact hx
+      | tail _ hy => exact ih _ hy
+  · intro h
+    induction xs with
+    | nil => exact .nil
+    | cons x xs ih =>
+      constructor
+      · exact h x (.head _)
+      · apply ih
+        intro y hy
+        exact h y (.tail _ hy)
+
 end Iris.Std

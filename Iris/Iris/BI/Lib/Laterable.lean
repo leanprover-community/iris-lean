@@ -8,6 +8,7 @@ module
 
 public import Iris.BI
 public import Iris.ProofMode
+public import Iris.Std.Classes
 
 @[expose] public section
 
@@ -82,7 +83,40 @@ instance exist_laterable [BI PROP] {A} (Φ : A → PROP)
     iapply HΦ
     iassumption
 
-/- TODO: `big_sep_sepL_laterable`, `big_sepL_laterable` -/
+@[rocq_alias laterable_proper]
+theorem laterable_congr [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) (inst : Laterable P) :
+    Laterable Q where
+  laterable := by
+    refine h.mpr.trans ?_
+    refine inst.laterable.trans ?_
+    apply exists_mono
+    intro Q
+    apply sep_mono_right
+    apply intuitionistically_mono
+    apply wand_mono_right
+    apply except0_mono h.mp
+
+@[rocq_alias big_sep_sepL_laterable]
+theorem big_sep_sepL_laterable [BI PROP] (Q : PROP) (Ps : List PROP)
+    (instQ : Laterable Q) (instPs : ∀ P ∈ (Ps : List PROP), Laterable P) :
+    Laterable iprop(Q ∗ [∗] Ps) := by
+  induction Ps generalizing Q instQ with
+  | nil =>
+    dsimp [bigSep, Std.bigOp]
+    apply laterable_congr sep_emp.symm instQ
+  | cons P Ps ih =>
+    dsimp [bigSep, Std.bigOp]
+    letI : Laterable P := instPs P (.head _)
+    apply laterable_congr <| sep_assoc.trans (sep_congr_right bigOp_sep_cons.symm)
+    exact ih _ (sep_laterable Q P) (fun R hR => instPs R (.tail _ hR))
+
+@[rocq_alias big_sepL_laterable]
+instance big_sepL_laterable [BI PROP] (Ps : List PROP)
+    [instEmp : Laterable (emp : PROP)] [instPs : Std.List.Forall Laterable Ps] :
+    Laterable iprop([∗] Ps) := by
+  apply laterable_congr emp_sep
+  apply big_sep_sepL_laterable emp Ps instEmp
+  apply Iris.Std.listForall.mp instPs
 
 @[rocq_alias make_laterable]
 def make_laterable [BI PROP] (Q : PROP) : PROP :=
