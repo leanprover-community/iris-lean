@@ -49,28 +49,6 @@ variable (Φ : Val → PROP)
 /-- info: WP e ? [{ Φ }] : PROP -/
 #guard_msgs in #check WP e ? [{ Φ }]
 
-/-- info: WP e @ s ; E {{ Φ }} : PROP -/
-#guard_msgs in #check WP e @ s ; E ⦃ Φ ⦄
-/-- info: WP e @ E {{ Φ }} : PROP -/
-#guard_msgs in #check WP e @ E ⦃ Φ ⦄
-/-- info: WP e @ E ? {{ Φ }} : PROP -/
-#guard_msgs in #check WP e @ E ? ⦃ Φ ⦄
-/-- info: WP e {{ Φ }} : PROP -/
-#guard_msgs in #check WP e ⦃ Φ ⦄
-/-- info: WP e ? {{ Φ }} : PROP -/
-#guard_msgs in #check WP e ? ⦃ Φ ⦄
-
-/-- info: WP e @ s ; E [{ Φ }] : PROP -/
-#guard_msgs in #check WP e @ s ; E 〖 Φ 〗
-/-- info: WP e @ E [{ Φ }] : PROP -/
-#guard_msgs in #check WP e @ E 〖 Φ 〗
-/-- info: WP e @ E ? [{ Φ }] : PROP -/
-#guard_msgs in #check WP e @ E ? 〖 Φ 〗
-/-- info: WP e [{ Φ }] : PROP -/
-#guard_msgs in #check WP e 〖 Φ 〗
-/-- info: WP e ? [{ Φ }] : PROP -/
-#guard_msgs in #check WP e ? 〖 Φ 〗
-
 -- Base binder cases
 variable (Φ : PROP)
 
@@ -96,28 +74,6 @@ variable (Φ : PROP)
 /-- info: WP e ? [{ v, Φ }] : PROP -/
 #guard_msgs in #check WP e ? [{v,  Φ }]
 
-/-- info: WP e @ s ; E {{ v, Φ }} : PROP -/
-#guard_msgs in #check WP e @ s ; E ⦃v, Φ⦄
-/-- info: WP e @ E {{ v, Φ }} : PROP -/
-#guard_msgs in #check WP e @ E ⦃v, Φ⦄
-/-- info: WP e @ E ? {{ v, Φ }} : PROP -/
-#guard_msgs in #check WP e @ E ? ⦃v, Φ⦄
-/-- info: WP e {{ v, Φ }} : PROP -/
-#guard_msgs in #check WP e ⦃v, Φ⦄
-/-- info: WP e ? {{ v, Φ }} : PROP -/
-#guard_msgs in #check WP e ? ⦃v, Φ⦄
-
-/-- info: WP e @ s ; E [{ v, Φ }] : PROP -/
-#guard_msgs in #check WP e @ s ; E 〖v, Φ〗
-/-- info: WP e @ E [{ v, Φ }] : PROP -/
-#guard_msgs in #check WP e @ E 〖v, Φ〗
-/-- info: WP e @ E ? [{ v, Φ }] : PROP -/
-#guard_msgs in #check WP e @ E ? 〖v, Φ〗
-/-- info: WP e [{ v, Φ }] : PROP -/
-#guard_msgs in #check WP e 〖v, Φ〗
-/-- info: WP e ? [{ v, Φ }] : PROP -/
-#guard_msgs in #check WP e ? 〖v, Φ〗
-
 -- BI binder cases
 variable [BI PROP]
 
@@ -134,11 +90,6 @@ variable [BI PROP]
 #guard_msgs in #check WP e ? [{v, Φ ∗ Φ}]
 /-- info: WP e ? [{ v, Φ -∗ Φ }] : PROP -/
 #guard_msgs in #check WP e ? [{v, Φ -∗ Φ}]
-
-/-- info: WP e ? {{ v, Φ ∗ Φ }} : PROP -/
-#guard_msgs in #check WP e ? ⦃v, Φ ∗ Φ⦄
-/-- info: WP e ? [{ v, Φ ∗ Φ }] : PROP -/
-#guard_msgs in #check WP e ? 〖v, Φ ∗ Φ〗
 
 /-- info: WP e @ E {{ v, Φ ∗ Φ }} : PROP -/
 #guard_msgs in #check WP e @ E {{v, Φ ∗ Φ}}
@@ -160,10 +111,6 @@ variable (Φ : Val → PROP)
 #guard_msgs in #check WP e ? [{v, Φ v ∗ Φ v}]
 /-- info: WP e ? [{ v, Φ v -∗ Φ v }] : PROP -/
 #guard_msgs in #check WP e ? [{v, Φ v -∗ Φ v}]
-/-- info: WP e ? {{ v, Φ v ∗ Φ v }} : PROP -/
-#guard_msgs in #check WP e ? ⦃v, Φ v ∗ Φ v⦄
-/-- info: WP e ? [{ v, Φ v ∗ Φ v }] : PROP -/
-#guard_msgs in #check WP e ? 〖v, Φ v ∗ Φ v〗
 /-- info: WP e @ E {{ v, Φ v ∗ Φ v }} : PROP -/
 #guard_msgs in #check WP e @ E {{v, Φ v ∗ Φ v}}
 /-- info: WP e {{ v, Φ v -∗ Φ v }} : PROP -/
@@ -212,36 +159,6 @@ variable (P Q : PROP)
 
 /-- info: iprop(∀ Φ, P -∗ ▷ (Q -∗ Φ 0) -∗ WP e ? {{ Φ }} ) : PROP -/
 #guard_msgs in #check {{ P }} e ? {{ RET 0 ; Q }}
-
-/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x y, Q -∗ Φ (x + y)) -∗ WP e @ s ; E {{ Φ }} ) : PROP -/
-#guard_msgs in #check ⦃ P ⦄ e @ s ; E ⦃ x y , RET (x+y) ; Q ⦄
-
-/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x y, Q -∗ Φ (x + y)) -∗ WP e @ E {{ Φ }} ) : PROP -/
-#guard_msgs in #check ⦃ P ⦄ e @ E ⦃ x y , RET (x+y) ; Q ⦄
-
-/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x y, Q -∗ Φ (x + y)) -∗ WP e @ E ? {{ Φ }} ) : PROP -/
-#guard_msgs in #check ⦃ P ⦄ e @ E ? ⦃ x y , RET (x+y) ; Q ⦄
-
-/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x y, Q -∗ Φ (x + y)) -∗ WP e {{ Φ }} ) : PROP -/
-#guard_msgs in #check ⦃ P ⦄ e ⦃ x y , RET (x+y) ; Q ⦄
-
-/-- info: iprop(∀ Φ, P -∗ (▷ ∀ x y, Q -∗ Φ (x + y)) -∗ WP e ? {{ Φ }} ) : PROP -/
-#guard_msgs in #check ⦃ P ⦄ e ? ⦃ x y , RET (x+y) ; Q ⦄
-
-/-- info: iprop(∀ Φ, P -∗ ▷ (Q -∗ Φ 0) -∗ WP e @ s ; E {{ Φ }} ) : PROP -/
-#guard_msgs in #check ⦃ P ⦄ e @ s ; E ⦃ RET 0 ; Q ⦄
-
-/-- info: iprop(∀ Φ, P -∗ ▷ (Q -∗ Φ 0) -∗ WP e @ E {{ Φ }} ) : PROP -/
-#guard_msgs in #check ⦃ P ⦄ e @ E ⦃ RET 0 ; Q ⦄
-
-/-- info: iprop(∀ Φ, P -∗ ▷ (Q -∗ Φ 0) -∗ WP e @ E ? {{ Φ }} ) : PROP -/
-#guard_msgs in #check ⦃ P ⦄ e @ E ? ⦃ RET 0 ; Q ⦄
-
-/-- info: iprop(∀ Φ, P -∗ ▷ (Q -∗ Φ 0) -∗ WP e {{ Φ }} ) : PROP -/
-#guard_msgs in #check ⦃ P ⦄ e ⦃ RET 0 ; Q ⦄
-
-/-- info: iprop(∀ Φ, P -∗ ▷ (Q -∗ Φ 0) -∗ WP e ? {{ Φ }} ) : PROP -/
-#guard_msgs in #check ⦃ P ⦄ e ? ⦃ RET 0 ; Q ⦄
 
 end TestTexanTriple
 
@@ -316,5 +233,3 @@ info: iprop(∀ Φ, P -∗ (▷ ∀ x, Q -∗ Φ x) -∗ WP hl(if (#1 < #2) then
 #guard_msgs in #check ({{ P }} hl(#1) {{ v, RET v; ⌜v = hl_val(#1)⌝ }} : PROP)
 
 end HeapLangTestTexanTriple
-
-
