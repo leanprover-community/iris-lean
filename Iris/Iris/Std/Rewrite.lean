@@ -118,7 +118,8 @@ private partial def rewriteTMR
 where
   applyTransitivity (goal : MVarId) : TacticM <| Option <| MVarId × MVarId := do
     try
-      let some <| goalL :: goalR :: [] ← apply' goal ``trans
+      let some <| goalL :: goalR :: [] ← apply' goal (← `((Trans.trans :
+          ∀ {α} {r} [Trans r r r] {a b c : α}, r a b → r b c → r a c)))
         | return none
       return some (goalL, goalR)
     catch _ =>
@@ -127,7 +128,7 @@ where
   applyMonotonicity (goal : MVarId) : TacticM <| Option <| List MVarId := do
     for rule in (← getMonotonicityRules) do
       try
-        if let some goals ← apply' goal rule then
+        if let some goals ← apply' goal (mkCIdent rule) then
           return ← goals.mapM normalizeGoal
       catch _ =>
         continue
@@ -135,7 +136,7 @@ where
 
   applyReflexivity (goal : MVarId) : TacticM Unit := do
     try
-      discard <| apply' goal ``refl
+      discard <| apply' goal (← `(Std.Refl.refl))
     catch _ => pure ()
 
   go (goal : MVarId) (rule : TSyntax `term) : TacticM Bool := do
@@ -194,7 +195,7 @@ elab "rw' " "[" rules:rwRule',*,? "]" : tactic => do
   withoutRecover <| evalTactic (← `(tactic|
     try first
     | rfl
-    | exact refl
+    | exact Std.Refl.refl _
   ))
 
 end Iris.Std
