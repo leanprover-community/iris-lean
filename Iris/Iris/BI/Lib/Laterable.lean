@@ -138,8 +138,9 @@ instance make_laterable_ne [BI PROP] : NonExpansive <| make_laterable (PROP := P
 theorem make_laterable_mono [BI PROP] {Q1 Q2 : PROP} (h : Q1 ⊢ Q2) :
     make_laterable Q1 ⊢ make_laterable Q2 := by unfold make_laterable; rw' [h]
 
-#rocq_ignore make_laterable_mono' "No Proper type class in Lean"
-#rocq_ignore make_laterable_proper "No Proper type class in Lean"
+#rocq_ignore make_laterable_mono' "No Proper type class in Lean, use make_laterable_mono directly"
+#rocq_ignore make_laterable_flip_mono' "No Proper type class in Lean, use make_laterable_mono directly"
+#rocq_ignore make_laterable_proper "No Proper type class in Lean, use make_laterable_mono directly"
 
 @[rocq_alias make_laterable_except_0]
 theorem make_laterable_except_0 [BI PROP] {Q : PROP} :
