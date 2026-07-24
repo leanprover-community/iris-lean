@@ -323,7 +323,7 @@ theorem ghost_map_lookup {γ dq} {m : H V} {k : K} {dq' v} :
   icombine H1 H2 gives %G
   ipureintro
   have ⟨av', _, _, h_av', _, h⟩ := auth_op_frag_valid_total_discrete_iff G
-  cases h₂ : get? m k <;> grind [get?_map,Agree.toAgree_included, OFE.equiv_iff_eq]
+  cases h₂ : get? m k <;> grind [get?_map,Agree.toAgree_included]
 
 @[rocq_alias ghost_map_lookup_combine_gives_1]
 instance ghost_map_lookup_combine_gives_1 γ (m : H V) (k : K) (dq1 dq2 : DFrac) (v : V) :

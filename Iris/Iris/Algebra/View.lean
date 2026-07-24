@@ -273,22 +273,21 @@ instance : CMRA (View R) where
   pcore_op_mono := by
     let f : (Option ((DFrac) × Agree A) × B) → View R := fun x => ⟨x.1, x.2⟩
     let g : View R → (Option ((DFrac) × Agree A) × B) := fun x => (x.auth, x.frag)
-    have Hg_eqv {y : View R} : CMRA.pcore (g y) ≡ g <$> Pcore y := by
+    have Hg_eqv {y : View R} : CMRA.pcore (g y) = g <$> Pcore y := by
       rcases y with ⟨x, b⟩
       simp [Option.map_eq_map, Option.map, g, CMRA.pcore, Prod.pcore, optionCore, CMRA.pcore_eq_core]
       rfl
-    have Hg_core {y cy : View R} : Pcore y ≡ some cy ↔ CMRA.pcore (g y) ≡ some (g cy) := by
-      suffices y.Pcore ≡ some cy ↔ g <$> y.Pcore ≡ some (g cy) by
-        exact ⟨Hg_eqv.trans ∘ this.mp, this.mpr ∘ Hg_eqv.symm.trans⟩
-      exact Eq.to_iff rfl
+    have Hg_core {y cy : View R} : Pcore y = some cy ↔ CMRA.pcore (g y) = some (g cy) := by
+      rw [Hg_eqv]
+      cases cy; simp [g]
     apply pcore_op_mono_of_core_op_mono
     rintro y1 cy y2 ⟨z, Hy2⟩ Hy1
     have Hle : g y1 ≼ g y2 := ⟨g z, congrArg g Hy2⟩
     obtain ⟨_, Hcgy2, x, Hcx⟩ :=
-      CMRA.pcore_mono' Hle (OFE.equiv_iff_eq.mp (Hg_core.mp (OFE.equiv_iff_eq.mpr Hy1)))
+      CMRA.pcore_mono' Hle (Hg_core.mp Hy1)
     exact ⟨_, rfl, f x,
       Option.some.inj
-        (OFE.equiv_iff_eq.mp (Hg_core.mpr (Hcgy2 ▸ OFE.equiv_iff_eq.mpr (congrArg some Hcx))))⟩
+        (Hg_core.mpr (Hcgy2 ▸ (congrArg some Hcx)))⟩
   extend {n x y1 y2} Hv He := by
     let g : View R → (Option ((DFrac) × Agree A) × B) := fun x => (x.auth, x.frag)
     obtain H1 : ✓{n} g x := by
@@ -840,8 +839,8 @@ omit [OFE B] in
 theorem map_ext {f1 f2 : A → A'} {g1 g2 : B → B'} [OFE.NonExpansive f1] [OFE.NonExpansive f2]
     (v : View R) (h1 : ∀ a, f1 a ≡ f2 a) (h2 : ∀ b, g1 b ≡ g2 b) :
     View.map R' f1 g1 v = View.map R' f2 g2 v := by
-  have hf : f1 = f2 := funext fun a => OFE.equiv_iff_eq.mp (h1 a)
-  have hg : g1 = g2 := funext fun b => OFE.equiv_iff_eq.mp (h2 b)
+  have hf : f1 = f2 := funext fun a => OFE.eq_dist.mpr (h1 a)
+  have hg : g1 = g2 := funext fun b => OFE.eq_dist.mpr (h2 b)
   rw [hf, hg]
 
 omit [OFE B] in

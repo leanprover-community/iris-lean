@@ -113,7 +113,7 @@ theorem WeakMonoidHomomorphism.rel_proper {M₁ : Type u} {M₂ : Type v}
   {R : M₂ → M₂ → Prop} {f : M₁ → M₂}
   [WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R f] : a ≡ a' → b ≡ b' → (R a b ↔ R a' b') := by
     intro Heq1 Heq2
-    rw [equiv_iff_eq.mp Heq1, equiv_iff_eq.mp Heq2]
+    rw [OFE.eq_dist.mpr Heq1, OFE.eq_dist.mpr Heq2]
 
 @[rocq_alias weak_monoid_homomorphism_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem weak_monoid_homomorphism_equiv [ OFE M₁] [OFE M₂]

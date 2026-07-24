@@ -229,9 +229,9 @@ instance : NonExpansive (pcore (α := α)) where
 @[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem coreId_of_eqv {x₁ x₂ : α} (e : x₁ ≡ x₂) (h : CoreId x₁) : CoreId x₂ where
   core_id := calc
-    pcore x₂ = pcore x₁ := congrArg pcore (equiv_iff_eq.mp e.symm)
+    pcore x₂ = pcore x₁ := congrArg pcore (OFE.eq_dist.mpr e.symm)
     _        = some x₁  := h.core_id
-    _        = some x₂  := congrArg some (equiv_iff_eq.mp e)
+    _        = some x₂  := congrArg some (OFE.eq_dist.mpr e)
 
 @[rocq_alias CoreId_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem coreId_iff {x₁ x₂ : α} (e : x₁ ≡ x₂) : CoreId x₁ ↔ CoreId x₂ :=
@@ -475,17 +475,19 @@ theorem _root_.Iris.OFE.Dist.exclusive {x₁ x₂ : α} : x₁ ≡ x₂ → (Exc
 
 @[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem inc_of_eqv_of_inc (e : (a : α) ≡ b) : b ≼ c → a ≼ c
-  | ⟨t, et⟩ => ⟨t, et.trans (congrArg (CMRA.op · t) (equiv_iff_eq.mp e).symm)⟩
+  | ⟨t, et⟩ => ⟨t, et.trans (congrArg (CMRA.op · t) (OFE.eq_dist.mpr e).symm)⟩
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 instance : Trans Equiv (Included (α := α)) Included where
-  trans e h := equiv_iff_eq.mp e.symm ▸ h
+  trans e h := OFE.eq_dist.mpr e.symm ▸ h
 
 @[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem inc_of_inc_of_eqv : (a : α) ≼ b → b ≡ c → a ≼ c
-  | ⟨t, et⟩, e => ⟨t, (equiv_iff_eq.mp e.symm).trans et⟩
+  | ⟨t, et⟩, e => ⟨t, (OFE.eq_dist.mpr e.symm).trans et⟩
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 instance : Trans (Included (α := α)) Equiv Included where
-  trans h e := equiv_iff_eq.mp e ▸ h
+  trans h e := OFE.eq_dist.mpr e ▸ h
 
 theorem incN_of_incN_of_dist : (a : α) ≼{n} b → b ≡{n}≡ c → a ≼{n} c
   | ⟨t, et⟩, e => ⟨t, e.symm.trans et⟩

@@ -203,8 +203,7 @@ instance instStoreCMRA : CMRA (M V) where
       simp [← Hcx, ← H, get?_bindAlter, hx]
   pcore_idem {x cx} H := eq_dist.mpr <| by
     simp only [pcore, Option.some.injEq] at H
-    change (pcore cx |>.getD cx) ≡ cx
-    simp only [pcore, ← H, Option.getD_some]
+    simp only [pcore, ← H]
     intro n k
     simp [get?_bindAlter]
     rcases get? x k with (_|v) <;> simp

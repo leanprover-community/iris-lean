@@ -105,10 +105,8 @@ theorem includedN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
 @[rocq_alias dfrac_agree_update_2]
 theorem update₂ {d₁ d₂ : DFrac} {a₁ a₂ a' : A} (hd : d₁ • d₂ = .own 1) :
     mk d₁ a₁ • mk d₂ a₂ ~~> mk d₁ a' • mk d₂ a' := by
-  have : mk d₁ a₁ • mk d₂ a₂ ≡ (own (1 : Qp), toAgree a₁ • toAgree a₂) :=
-    hd ▸ Equiv.rfl
   calc
-    _ ≡ (own (1 : Qp), toAgree a₁ • toAgree a₂) := this
+    _ = (own (1 : Qp), toAgree a₁ • toAgree a₂) := hd ▸ rfl
     _ ~~> mk d₁ a' • mk d₂ a' :=
       @Update.exclusive _ _ _ _ one_exclusive_left
         (op_valid.mpr ⟨hd ▸ valid_own_one, rfl⟩)

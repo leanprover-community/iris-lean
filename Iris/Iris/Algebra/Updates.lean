@@ -44,12 +44,15 @@ theorem Update.equiv_right {x y z : α} (e : y ≡ z) (u : x ~~> y) : x ~~> z :=
 
 #rocq_ignore cmra_update_proper "Follows from Update.equiv_left"
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 instance [CMRA α] : Trans OFE.Equiv UpdateP UpdateP (α := α) where
   trans e u := fun n mz v => u n mz (CMRA.validN_ne (CMRA.opM_left_dist mz e.dist) v)
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 instance [CMRA α] : Trans OFE.Equiv Update Update (α := α) where
   trans e u := fun n mz v => u n mz (CMRA.validN_ne (CMRA.opM_left_dist mz e.dist) v)
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 instance [CMRA α] : Trans Update OFE.Equiv Update (α := α) where
   trans u e := fun n mz v => CMRA.validN_ne (CMRA.opM_left_dist mz e.dist) (u n mz v)
 

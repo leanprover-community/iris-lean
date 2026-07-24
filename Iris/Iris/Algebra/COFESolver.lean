@@ -274,11 +274,11 @@ def Tower.isoAux : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
     refine ((down ..).ne.1 (.trans ?_ (X.downN n).dist)).trans X.down.dist
     refine ((map ..).ne.1 (conv_compl.trans
       ((unfoldChain ..).cauchy (show n ≤ k+n+1 by omega)).symm)).trans ?_
-    refine (((map ..).comp _).ne.1 (X.up.le (Nat.le_add_left ..)).symm).trans (Equiv.dist ?_)
-    refine (OFE.equiv_iff_eq.mpr ((map_comp _ _ _ _ _).trans
-      (congrArg (fun a => (map ..) a) (map_comp _ _ _ _ _)))).symm.trans ?_
+    refine (((map ..).comp _).ne.1 (X.up.le (Nat.le_add_left ..)).symm).trans ?_
+    refine ((map_comp _ _ _ _ _).trans
+      (congrArg (fun a => (map ..) a) (map_comp _ _ _ _ _))).symm.dist.trans ?_
     refine .trans (y := map (upN F n) (downN F n) (X (k+n+1))) ?_ ?_
-    · refine fun m => map_ne.ne (fun Y => ?_) (fun Y => ?_) _
+    · refine map_ne.ne (fun Y => ?_) (fun Y => ?_) _
       · simp [Hom.comp, Tower.embed, Tower.proj, embed, (by omega : k ≤ k+n+1)]
         have {a e} : down F (k + n) (eqToHom e (upN F a Y)) = upN F n Y := by
           cases Nat.add_left_cancel (k := n+1) e; exact down_up _
@@ -288,14 +288,15 @@ def Tower.isoAux : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
           cases Nat.add_left_cancel (m := n+1) e; exact congrArg (fun a => (downN ..) a) (down_up _)
         exact this.dist
     · have e : k+n+1 = k+1+n := by omega
-      suffices ∀ x y, eqToHom e x = y → map (upN F n) (downN F n) x ≡ downN F n y by
-        apply this; clear this; revert e; generalize k+1+n = a; rintro rfl; rfl
-      rintro x _ rfl
+      suffices ∀ x y, eqToHom e x = y → ∀ m, map (upN F n) (downN F n) x ≡{m}≡ downN F n y by
+        refine this _ _ ?_ n
+        clear this; revert e; generalize k+1+n = a; rintro rfl; rfl
+      rintro x _ rfl m
       induction n with
-      | zero => exact OFE.equiv_iff_eq.mpr (map_id _)
+      | zero => exact (map_id _).dist
       | succ n ih =>
-        refine (OFE.equiv_iff_eq.mpr (map_comp _ _ _ _ _)).trans <|
-          (ih (Nat.succ.inj e) _).trans (OFE.equiv_iff_eq.mpr (congrArg (fun a => (downN ..) a) ?_))
+        refine (map_comp _ _ _ _ _).dist.trans <|
+          (ih (Nat.succ.inj e) _).trans (congrArg (fun a => (downN ..) a) ?_).dist
         exact (down_eqToHom _).symm
   inv_hom := OFE.eq_dist.mpr fun n => by
     refine (conv_compl' n.le_succ).trans ?_

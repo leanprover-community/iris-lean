@@ -79,8 +79,8 @@ instance instCMRADFrac : CMRA DFrac where
   valid_iff_validN := ⟨fun x _ => x, fun x => x 0⟩
   validN_succ := id
   validN_op_left {_} := by rintro ⟨⟩ ⟨⟩ <;> simp [valid, op] <;> grind
-  assoc := by rintro ⟨⟩ ⟨⟩ ⟨⟩ <;> grind [op, OFE.equiv_iff_eq]
-  comm := by rintro ⟨⟩ ⟨⟩ <;> grind [op, OFE.equiv_iff_eq]
+  assoc := by rintro ⟨⟩ ⟨⟩ ⟨⟩ <;> grind [op]
+  comm := by rintro ⟨⟩ ⟨⟩ <;> grind [op]
   pcore_op_left := by rintro ⟨⟩ ⟨⟩ <;> simp [op, pcore]
   pcore_idem := by rintro ⟨⟩ ⟨⟩ <;> simp [pcore]
   pcore_op_mono := by

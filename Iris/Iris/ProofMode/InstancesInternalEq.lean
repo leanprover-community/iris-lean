@@ -21,15 +21,14 @@ variable {PROP} [Sbi PROP]
 
 @[rocq_alias from_pure_internal_eq]
 instance fromPure_internalEq [Sbi PROP] [OFE A] (a b : A) :
-    FromPure (PROP := PROP) false iprop(a ≡ b) io (a ≡ b) where
-  from_pure := (pure_mono OFE.Equiv.to_eq).trans internalEq.of_pure
-
+    FromPure (PROP := PROP) false iprop(a ≡ b) io (a = b) where
+  from_pure := internalEq.of_pure
 
 @[ipm_backtrack, rocq_alias into_pure_eq]
 instance intoPure_internalEq [Sbi PROP] [OFE A] (a b : A)
     [TCOr (OFE.DiscreteE a) (OFE.DiscreteE b)] :
-    IntoPure (PROP := PROP) iprop(a ≡ b) (a ≡ b) where
-  into_pure := discrete_eq_mp.trans (pure_mono OFE.Equiv.of_eq)
+    IntoPure (PROP := PROP) iprop(a ≡ b) (a = b) where
+  into_pure := discrete_eq_mp
 
 @[ipm_backtrack]
 instance (priority := default + 10) intoPure_internalEq_leibniz [Sbi PROP] [OFE A]

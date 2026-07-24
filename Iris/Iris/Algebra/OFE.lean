@@ -19,6 +19,7 @@ class OFE (α : Type _) where
   eq_dist : x = y ↔ ∀ n, Dist n x y
   dist_lt : Dist n x y → m < n → Dist m x y
 
+@[deprecated "OFE is Leibniz; use propositional equality" (since := "2026-07")]
 def OFE.Equiv [OFE α] (x y : α) : Prop := (∀ n, Dist n x y)
 
 #rocq_ignore OfeMixin "Use the OFE type class"
@@ -53,26 +54,36 @@ theorem Dist.le [OFE α] {m n} {x y : α} (h : x ≡{n}≡ y) (h' : m ≤ n) : x
 theorem Dist.trans [OFE α] {n} {x : α} : x ≡{n}≡ y → y ≡{n}≡ z → x ≡{n}≡ z := dist_eqv.3
 theorem Dist.of_eq [OFE α] {x y : α} : x = y → x ≡{n}≡ y := (· ▸ .rfl)
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem equiv_dist [OFE α] {x y : α} : x ≡ y ↔ ∀ n, x ≡{n}≡ y := .rfl
 
-@[rocq_alias ofe_equivalence]
+@[rocq_alias ofe_equivalence, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem equiv_eqv [ofe : OFE α] : Equivalence ofe.Equiv := by
   constructor
-  · rintro x; rw [ofe.equiv_dist]; rintro n; exact Dist.rfl
-  · rintro x y; simp only [ofe.equiv_dist]; rintro h n; exact Dist.symm (h n)
-  · rintro x y z; simp only [ofe.equiv_dist]; rintro h₁ h₂ n; exact Dist.trans (h₁ n) (h₂ n)
+  · rintro x n; exact Dist.rfl
+  · rintro x y h n; exact Dist.symm (h n)
+  · rintro x y z h₁ h₂ n; exact Dist.trans (h₁ n) (h₂ n)
 
-@[simp, refl] theorem Equiv.rfl [OFE α] {x : α} : x ≡ x := equiv_eqv.1 _
-@[symm] theorem Equiv.symm [OFE α] {x : α} : x ≡ y → y ≡ x := equiv_eqv.2
+@[simp, refl, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")] theorem Equiv.rfl [OFE α] {x : α} : x ≡ x := equiv_eqv.1 _
+@[symm, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")] theorem Equiv.symm [OFE α] {x : α} : x ≡ y → y ≡ x := equiv_eqv.2
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem Equiv.trans [OFE α] {x : α} : x ≡ y → y ≡ z → x ≡ z := equiv_eqv.3
+
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem Equiv.dist [OFE α] {x : α} : x ≡ y → x ≡{n}≡ y := (equiv_dist.1 · _)
+
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem Equiv.to_eq [OFE α] {x y : α} (h : x ≡ y) : x = y := OFE.eq_dist.mpr h
+
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem Equiv.of_eq [OFE α] {x y : α} : x = y → x ≡ y := (· ▸ .rfl)
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem equiv_iff_eq [OFE α] {x y : α} : x ≡ y ↔ x = y := ⟨Equiv.to_eq, Equiv.of_eq⟩
 
 theorem _root_.Eq.dist [OFE α] {x y : α} (h : x = y) : x ≡{n}≡ y := h ▸ .rfl
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 instance [OFE α] : Trans OFE.Equiv OFE.Equiv (OFE.Equiv : α → α → Prop) where
   trans := Equiv.trans
 

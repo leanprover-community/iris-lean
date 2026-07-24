@@ -318,8 +318,8 @@ theorem bigSepL_delete [BIAffine PROP] {Φ : Nat → A → PROP} {l : List A} {i
   refine (bigSepL_delete_cond h).trans <|
     sep_congr_right <| BiEntails.of_eq <| bigOpL_eq fun {k _} _ => ?_
   by_cases hki : k = i <;> simp only [hki, ne_eq, not_true_eq_false, not_false_eq_true]
-  · exact OFE.equiv_iff_eq.mp (equiv_iff.mpr ⟨imp_intro_swap <| pure_elim_left fun hf => hf.elim, Affine.affine⟩)
-  · exact OFE.equiv_iff_eq.mp (equiv_iff.mpr true_imp.symm)
+  · exact equiv_iff.mpr ⟨imp_intro_swap <| pure_elim_left fun hf => hf.elim, Affine.affine⟩
+  · exact equiv_iff.mpr true_imp.symm
 
 @[rocq_alias big_sepL_intro]
 theorem bigSepL_intro {P : PROP} {Φ : Nat → A → PROP} {l : List A} [Intuitionistic P]
@@ -1223,7 +1223,7 @@ theorem bigSepL2_proper_2 [OFE A] [OFE B]
       Φ k y1 y2 ⊣⊢ Ψ k y1' y2') :
     ([∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) ⊣⊢
       ([∗list] k ↦ x1;x2 ∈ l1';l2', Ψ k x1 x2) :=
-  equiv_iff.mp <| OFE.equiv_dist.mpr fun _ =>
+  equiv_iff.mp <| OFE.eq_dist.mpr fun _ =>
     bigSepL2_dist_2 hl1 hl2 (fun h1 h2 => OFE.Dist.of_eq (hel1 h1 h2))
       (fun h1 h2 => OFE.Dist.of_eq (hel2 h1 h2))
       (fun h1 h2 _ h3 h4 _ => (equiv_iff.mpr (hf h1 h2 (hel1 h1 h2) h3 h4 (hel2 h3 h4))).dist)

@@ -396,9 +396,9 @@ instance : BI (MonPred I PROP) where
     { refl := entails_at.mpr fun _ => BIBase.Entails.rfl
       trans := fun h h' => entails_at.mpr fun i => (entails_at.mp h i).trans (entails_at.mp h' i) }
   equiv_iff := fun {P Q} =>
-    ⟨fun h => ⟨entails_at.mpr fun i => (equiv_iff.mp (fun n => h n i)).mp,
-              entails_at.mpr fun i => (equiv_iff.mp (fun n => h n i)).mpr⟩,
-     fun h => fun n i => equiv_iff.mpr ⟨entails_at.mp h.1 i, entails_at.mp h.2 i⟩ n⟩
+    ⟨fun h => ⟨entails_at.mpr fun i => BIBase.Entails.of_eq (congrArg (·.monPred_at i) h),
+              entails_at.mpr fun i => BIBase.Entails.of_eq (congrArg (·.monPred_at i) h.symm)⟩,
+     fun h => MonPred.ext fun i => equiv_iff.mpr ⟨entails_at.mp h.1 i, entails_at.mp h.2 i⟩⟩
   and_ne := ⟨fun _ _ _ h _ _ h' =>
     dist_at.mpr fun i => and_ne.ne (dist_at.mp h i) (dist_at.mp h' i)⟩
   or_ne := ⟨fun _ _ _ h _ _ h' => dist_at.mpr fun i => or_ne.ne (dist_at.mp h i) (dist_at.mp h' i)⟩

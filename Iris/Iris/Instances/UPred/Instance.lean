@@ -282,6 +282,7 @@ theorem uPred_entails_lim {cP cQ : Chain (UPred M)} (H : ∀ n, cP n ⊢ cQ n) :
 instance : BI (UPred M) where
   entails_preorder := inferInstance
   equiv_iff {_ _} := by
+    rw [OFE.eq_dist]
     constructor <;> intro HE
     · exact ⟨fun n ⟨x, Hv⟩ H => (HE n n x .refl Hv).mp H,
              fun n ⟨x, Hv⟩ H => (HE n n x .refl Hv).mpr H⟩

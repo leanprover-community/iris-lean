@@ -610,8 +610,8 @@ end Agree
 @[rocq_alias to_agree_op_valid_L]
 theorem toAgree_op_valid_iff_eq {a : α} :
     ✓ (toAgree a • toAgree b) ↔ a = b := by
-  rw [← OFE.equiv_iff_eq]
-  simp [OFE.equiv_dist, CMRA.valid_iff_validN, Agree.toAgree_op_validN_iff_dist]
+  rw [OFE.eq_dist]
+  simp [CMRA.valid_iff_validN, Agree.toAgree_op_validN_iff_dist]
 
 #rocq_ignore to_agree_op_inv_L "Use toAgree_op_valid_iff_eq"
 

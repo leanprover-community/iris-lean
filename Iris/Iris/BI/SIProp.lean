@@ -162,8 +162,9 @@ instance : Std.Preorder (BIBase.Entails (PROP := SiProp)) where
 @[rocq_alias siPropI]
 instance instBI : BI SiProp where
   entails_preorder := inferInstance
-  equiv_iff.mp heq := ⟨fun n hP => (heq n .refl).mp hP, fun n hQ => (heq n .refl).mpr hQ⟩
-  equiv_iff.mpr H _ _ _ := ⟨H.1 _, H.2 _⟩
+  equiv_iff := OFE.eq_dist.trans
+    ⟨fun heq => ⟨fun n hP => (heq n .refl).mp hP, fun n hQ => (heq n .refl).mpr hQ⟩,
+     fun H _ _ _ => ⟨H.1 _, H.2 _⟩⟩
   and_ne.ne _ _ _ h₁ _ _ h₂ m h := ⟨.imp (h₁ h).mp (h₂ h).mp, .imp (h₁ h).mpr (h₂ h).mpr⟩
   or_ne.ne _ _ _ h₁ _ _ h₂ m h := ⟨.imp (h₁ h).mp (h₂ h).mp, .imp (h₁ h).mpr (h₂ h).mpr⟩
   imp_ne.ne _ _ _ h₁ _ _ h₂ m hle := {

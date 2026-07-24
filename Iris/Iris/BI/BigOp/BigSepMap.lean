@@ -423,9 +423,9 @@ theorem bigSepM_filter [BIAffine PROP] {Φ : K → V → PROP} {m : M V} (p : K 
   (bigSepM_filter_cond p).trans <| bigOpM_eq fun {k x} _ => by
     match hp : p k x with
     | false =>
-      simpa using OFE.equiv_iff_eq.mp
-        (equiv_iff.mpr ⟨imp_intro_swap <| pure_elim_left False.elim, Affine.affine⟩)
-    | true => simpa using OFE.equiv_iff_eq.mp (equiv_iff.mpr true_imp.symm)
+      simpa using
+        equiv_iff.mpr ⟨imp_intro_swap <| pure_elim_left False.elim, Affine.affine⟩
+    | true => simpa using equiv_iff.mpr true_imp.symm
 
 @[rocq_alias big_sepM_union]
 theorem bigSepM_union [DecidableEq K] {Φ : K → V → PROP} {m₁ m₂ : M V} (hdisj : m₁ ##ₘ m₂) :

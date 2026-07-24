@@ -29,12 +29,12 @@ theorem LocalUpdate.id (x : α × α) : x ~l~> x := fun _ _ vx e => ⟨vx, e⟩
 @[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem LocalUpdate.equiv_left {x y : α × α} (z : α × α) (h : x ≡ y) : x ~l~> z → y ~l~> z := by
   intro u n mw v e
-  refine u n mw ((OFE.Dist.validN (OFE.equiv_fst (OFE.equiv_iff_eq.mp h)).dist.symm).mp v) ?_
+  refine u n mw ((OFE.Dist.validN (OFE.equiv_fst (OFE.eq_dist.mpr h)).dist.symm).mp v) ?_
   calc
-    x.fst ≡{n}≡ y.fst       := (OFE.equiv_fst (OFE.equiv_iff_eq.mp h)).dist
+    x.fst ≡{n}≡ y.fst       := (OFE.equiv_fst (OFE.eq_dist.mpr h)).dist
     _     ≡{n}≡ y.snd •? mw := e
     _     ≡{n}≡ x.snd •? mw :=
-      CMRA.opM_left_dist mw (OFE.equiv_snd (OFE.equiv_iff_eq.mp h)).dist.symm
+      CMRA.opM_left_dist mw (OFE.equiv_snd (OFE.eq_dist.mpr h)).dist.symm
 
 @[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem LocalUpdate.equiv_right (x : α × α) {y z : α × α} (h : y ≡ z) : x ~l~> y → x ~l~> z := by
@@ -48,7 +48,7 @@ theorem LocalUpdate.equiv_right (x : α × α) {y z : α × α} (h : y ≡ z) : 
 
 @[rocq_alias local_update_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem LocalUpdate.equiv {x x' : α × α} {y y' : α × α} (h1 : x ≡ x') (h2 : y ≡ y') : x ~l~> y ↔ x' ~l~> y' := by
-  rw [OFE.equiv_iff_eq.mp h1, OFE.equiv_iff_eq.mp h2]
+  rw [OFE.eq_dist.mpr h1, OFE.eq_dist.mpr h2]
 
 @[rocq_alias exclusive_local_update]
 theorem LocalUpdate.exclusive [CMRA.Exclusive y] {x x' : α}
