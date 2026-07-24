@@ -192,9 +192,9 @@ theorem frag_op_eqv : Frag (H := H) k (dp • dq) (v1 • v2) = Frag (H := H) k 
 
 set_option synthInstance.checkSynthOrder false in
 instance
-  [hdp : IsOp io1 dp io2 dp1 io3 dp2]
-  [hv : IsOp io1 v io2 v1 io3 v2] :
-  IsOp io1 (Frag k dp v) io2 (Frag k dp1 v1) io3 (Frag (H := H) k dp2 v2) where
+  [hdp : IsOp d dp dp1 dp2]
+  [hv : IsOp d v v1 v2] :
+  IsOp d (Frag k dp v) (Frag k dp1 v1) (Frag (H := H) k dp2 v2) where
   is_op := by
     rw [hdp.is_op, hv.is_op]
     exact frag_op_eqv

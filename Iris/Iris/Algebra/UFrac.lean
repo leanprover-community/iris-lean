@@ -95,7 +95,7 @@ instance {q : UFrac} : CMRA.IdFree q where
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_ufrac]
-instance (q : UFrac) : IsOp io1 q io2 ⟨q.frac.half⟩ io3 ⟨q.frac.half⟩ where
+instance (q : UFrac) : IsOp d q ⟨q.frac.half⟩ ⟨q.frac.half⟩ where
   is_op := ext_iff.mpr (Qp.half_add_half q.frac).symm
 
 end UFrac

@@ -409,8 +409,8 @@ theorem singleton_mono {k} {a b : A} (Hab : a ≼ b) : singleton (H := H) k a �
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias reservation_map_data_is_op]
-instance {ia ib₁ ib₂ : ProofMode.InOut} {a b₁ b₂ : A} [hv : IsOp ia a ib₁ b₁ ib₂ b₂] :
-    IsOp ia (singleton (H := H) k a) ib₁ (singleton k b₁) ib₂ (singleton k b₂) where
+instance {d : IsOp.Direction} {a b₁ b₂ : A} [hv : IsOp d a b₁ b₂] :
+    IsOp d (singleton (H := H) k a) (singleton k b₁) (singleton k b₂) where
   is_op := (congrArg (singleton k) hv.is_op).trans (singleton_op k b₁ b₂)
 
 @[rocq_alias reservation_map_token_union]

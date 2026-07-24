@@ -26,22 +26,37 @@ inductive AsEmpValid.Direction where
   | into
   | from
 
+meta section
+
+@[reducible]
+def AsEmpValid.Direction.toInOut : AsEmpValid.Direction → InOut
+  | .into => .in
+  | .from => .out
+
+end
+
 @[ipm_class, rocq_alias AsEmpValid]
-class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop) (_ : InOut) (PROP : semiOutParam $ Type _)
-(_ : InOut) (bi : semiOutParam $ BI PROP) (P : outParam $ PROP) where
+class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop) io
+    (PROP : semiOutParamIPM io (Type _))
+    (bi : semiOutParamIPM d.toInOut (BI PROP))
+    (P : outParam $ PROP) where
   as_emp_valid : (d = .into → φ → ⊢ P) ∧ (d = .from → (⊢ P) → φ)
+
 @[rocq_alias as_emp_valid_1]
-theorem asEmpValid_1 {PROP} [bi : BI PROP] {φ : Prop} (P : PROP) [AsEmpValid .into φ .in PROP .in bi P]
-: φ → ⊢ P := (AsEmpValid.as_emp_valid .in .in).1 rfl
+theorem asEmpValid_1 {PROP} [bi : BI PROP] {φ : Prop} (P : PROP) {io}
+    (inst : AsEmpValid .into φ io PROP bi P) : φ → ⊢ P :=
+  inst.as_emp_valid.left rfl
+
 @[rocq_alias as_emp_valid_2]
-theorem asEmpValid_2 {PROP} [bi : BI PROP] {P: PROP} {io : InOut}
-    (φ : Prop) (inst : AsEmpValid .from φ io PROP .out bi P) : (⊢ P) → φ :=
-  (AsEmpValid.as_emp_valid io .out).2 rfl
+theorem asEmpValid_2 {PROP} [bi : BI PROP] {P: PROP} (φ : Prop) {io}
+    (inst : AsEmpValid .from φ io PROP bi P) : (⊢ P) → φ :=
+  inst.as_emp_valid.right rfl
 
 @[ipm_class, rocq_alias AsEmpValid0]
-class AsEmpValid0 (d : AsEmpValid.Direction) (φ : Prop) (io1 : InOut) (PROP : semiOutParam $ Type _)
-    (io2 : InOut) (bi : semiOutParam $ BI PROP) (P : outParam PROP) where
-  as_emp_valid_0 : AsEmpValid d φ io1 PROP io2 bi P
+class AsEmpValid0 (d : AsEmpValid.Direction) (φ : Prop) (io : InOut := d.toInOut)
+    (PROP : semiOutParamIPM io (Type _))
+    (bi : semiOutParamIPM d.toInOut (BI PROP)) (P : outParam PROP) where
+  as_emp_valid_0 : AsEmpValid d φ io PROP bi P
 
 attribute [ipm_backtrack,instance] AsEmpValid0.as_emp_valid_0
 
@@ -57,7 +72,8 @@ class FromImp {PROP} [BI PROP] (P : PROP) (Q1 Q2 : outParam $ PROP) where
 export FromImp (from_imp)
 
 @[ipm_class, rocq_alias FromWand]
-class FromWand {PROP} [BI PROP] (P : PROP) (_ : InOut) (Q1 : semiOutParam PROP) (Q2 : outParam $ PROP) where
+class FromWand {PROP} [BI PROP] (P : PROP) (io : InOut)
+    (Q1 : semiOutParamIPM io PROP) (Q2 : outParam $ PROP) where
   from_wand : (Q1 -∗ Q2) ⊢ P
 export FromWand (from_wand)
 
@@ -65,8 +81,8 @@ export FromWand (from_wand)
 
 @[ipm_class, rocq_alias IntoWand]
 class IntoWand {PROP} [BI PROP] (p q : Bool) (R : PROP)
-  (ioP : InOut) (P : semiOutParam PROP)
-  (ioQ : InOut) (Q : semiOutParam PROP) where
+  (ioP : InOut) (P : semiOutParamIPM ioP PROP)
+  (ioQ : InOut) (Q : semiOutParamIPM ioQ PROP) where
   into_wand : □?p R ⊢ □?q P -∗ Q
 export IntoWand (into_wand)
 
@@ -141,7 +157,8 @@ class IntoAbsorbingly {PROP} [BI PROP] (P : outParam $ PROP) (Q : PROP) where
 export IntoAbsorbingly (into_absorbingly)
 
 @[ipm_class, rocq_alias FromAssumption, rocq_alias KnownLFromAssumption, rocq_alias KnownRFromAssumption]
-class FromAssumption {PROP} [BI PROP] (p : Bool) (ioP : InOut) (P : semiOutParam $ PROP) (Q : PROP) where
+class FromAssumption {PROP} [BI PROP] (p : Bool) (ioP : InOut)
+    (P : semiOutParamIPM ioP PROP) (Q : PROP) where
   from_assumption : □?p P ⊢ Q
 export FromAssumption (from_assumption)
 
@@ -153,7 +170,8 @@ export IntoPure (into_pure)
 #rocq_ignore into_pureT_hint "IntoPureT is not necessary in Lean"
 
 @[ipm_class, rocq_alias FromPure, rocq_alias FromPureT]
-class FromPure {PROP} [BI PROP] (a : outParam $ Bool) (P : PROP) (ioφ : InOut) (φ : semiOutParam $ Prop) where
+class FromPure {PROP} [BI PROP] (a : outParam $ Bool) (P : PROP) (ioφ : InOut)
+    (φ : semiOutParamIPM ioφ Prop) where
   from_pure : <affine>?a ⌜φ⌝ ⊢ P
 export FromPure (from_pure)
 

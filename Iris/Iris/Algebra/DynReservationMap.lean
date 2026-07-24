@@ -394,8 +394,8 @@ theorem mkData_mono {k} {a b : A} (Hab : a ≼ b) :
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias dyn_reservation_map_data_is_op]
-instance {ia ib₁ ib₂ : ProofMode.InOut} {a b₁ b₂ : A} [hv : IsOp ia a ib₁ b₁ ib₂ b₂] :
-    IsOp ia (mkData (H := H) k a) ib₁ (mkData k b₁) ib₂ (mkData k b₂) where
+instance {d : IsOp.Direction} {a b₁ b₂ : A} [hv : IsOp d a b₁ b₂] :
+    IsOp d (mkData (H := H) k a) (mkData k b₁) (mkData k b₂) where
   is_op := (congrArg (mkData k) hv.is_op).trans (mkData_op k b₁ b₂)
 
 @[rocq_alias dyn_reservation_map_token_union]

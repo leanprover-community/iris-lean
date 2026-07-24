@@ -227,8 +227,8 @@ theorem frag_op_valid {q1 q2 : Qp} {a b : A} :
 
 @[rocq_alias frac_auth_is_op]
 instance isOp_frac_auth {q q1 q2 : Qp} {a1 a2 : A} {a : outParam A}
-    [h1 : IsOp io1 q io2 q1 io3 q2] [h2 : IsOp io1 a io2 a1 io3 a2] :
-    IsOp io1 (◯F{q} a) io2 (◯F{q1} a1) io3 (◯F{q2} a2) where
+    [h1 : IsOp d q q1 q2] [h2 : IsOp d a a1 a2] :
+    IsOp d (◯F{q} a) (◯F{q1} a1) (◯F{q2} a2) where
   is_op :=
     (congrArg (frag · a) h1.is_op).trans <|
       (congrArg (frag (q1 • q2)) h2.is_op).trans frag_op
@@ -236,8 +236,8 @@ instance isOp_frac_auth {q q1 q2 : Qp} {a1 a2 : A} {a : outParam A}
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias frac_auth_is_op_core_id]
 instance isOp_frac_auth_core_id {q q1 q2 : Qp} {a : A}
-    [h1 : CoreId a] [h2 : IsOp io1 q io2 q1 io3 q2] :
-    IsOp io1 (◯F{q} a) io2 (◯F{q1} a) io3 (◯F{q2} a) where
+    [h1 : CoreId a] [h2 : IsOp d q q1 q2] :
+    IsOp d (◯F{q} a) (◯F{q1} a) (◯F{q2} a) where
   is_op :=
     (congrArg (frag · a) h2.is_op).trans <|
       (congrArg (frag (q1 • q2)) (op_self a).symm).trans frag_op
