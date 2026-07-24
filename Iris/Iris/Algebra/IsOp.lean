@@ -38,21 +38,21 @@ class IsOp [CMRA α]
     (d : IsOp.Direction) (a : semiOutParamIPM d.toInOut α)
     (b1 : semiOutParamIPM d.toInOut.negate α)
     (b2 : semiOutParamIPM d.toInOut.negate α) where
-  is_op : a ≡ b1 • b2
+  is_op : a = b1 • b2
 
 set_option synthInstance.checkSynthOrder false in
 /-- Merging with `•` should have the lowest priority. -/
 @[rocq_alias is_op_op]
 instance (priority := default - 100) isOpMerge_op [CMRA α] (a b : α) :
     IsOp .merge (a • b) a b where
-  is_op := .rfl
+  is_op := rfl
 
 set_option synthInstance.checkSynthOrder false in
 /-- Splitting with `•` should have the highest priority. -/
 @[rocq_alias is_op_lr_op]
 instance (priority := default + 100) isOpSplit_op [CMRA α] (a b : α) :
     IsOp .split (a • b) a b where
-  is_op := .rfl
+  is_op := rfl
 
 /-
   The following type class instances were originally defined in terms of
@@ -83,7 +83,7 @@ instance isOpMerge_pair_core_id_r [CMRA α] [CMRA β] {d : IsOp.Direction}
 @[rocq_alias is_op_Some]
 instance isOp_some [CMRA α] (a b1 b2 : α) {d : IsOp.Direction}
     [h : IsOp d a b1 b2] : IsOp d (some a) (some b1) (some b2) where
-  is_op := h.is_op
+  is_op := congrArg some h.is_op
 
 end IsOp
 

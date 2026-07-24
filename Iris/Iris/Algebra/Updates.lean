@@ -28,27 +28,33 @@ section updates
 
 variable [CMRA α] [CMRA β] (f : α → β) (g : β → α)
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem UpdateP.equiv_left {P : α → Prop} {x y : α} (e : x ≡ y) (u : x ~~>: P) : y ~~>: P :=
   fun n mz v => u n mz (CMRA.validN_ne (CMRA.opM_left_dist mz e.symm.dist) v)
 
 #rocq_ignore cmra_updateP_proper "Follows from UpdateP.equiv_left"
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem Update.equiv_left {x y z : α} (e : x ≡ y) (u : x ~~> z) : y ~~> z :=
   fun n mz v => u n mz (CMRA.validN_ne (CMRA.opM_left_dist mz e.symm.dist) v)
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem Update.equiv_right {x y z : α} (e : y ≡ z) (u : x ~~> y) : x ~~> z :=
   fun n mz v => CMRA.validN_ne (CMRA.opM_left_dist mz e.dist) (u n mz v)
 
 #rocq_ignore cmra_update_proper "Follows from Update.equiv_left"
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 instance [CMRA α] : Trans OFE.Equiv UpdateP UpdateP (α := α) where
-  trans e u := UpdateP.equiv_left e.symm u
+  trans e u := fun n mz v => u n mz (CMRA.validN_ne (CMRA.opM_left_dist mz e.dist) v)
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 instance [CMRA α] : Trans OFE.Equiv Update Update (α := α) where
-  trans e u := Update.equiv_left (id (OFE.Equiv.symm e)) u
+  trans e u := fun n mz v => u n mz (CMRA.validN_ne (CMRA.opM_left_dist mz e.dist) v)
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 instance [CMRA α] : Trans Update OFE.Equiv Update (α := α) where
-  trans u e := Update.equiv_right e u
+  trans u e := fun n mz v => CMRA.validN_ne (CMRA.opM_left_dist mz e.dist) (u n mz v)
 
 @[rocq_alias cmra_update_updateP]
 theorem Update.of_updateP {x y : α} (h : x ~~>: (y = ·)) : x ~~> y :=
@@ -118,7 +124,8 @@ theorem Update.op_l {x y : α} : x • y ~~> x := fun _ _ => CMRA.validN_op_opM_
 theorem Update.op_r {x y : α} : x • y ~~> y := fun _ _ => CMRA.validN_op_opM_right
 
 @[rocq_alias cmra_update_included]
-theorem Update.included {x y : α} : x ≼ y → y ~~> x := fun ⟨_, ez⟩ => .equiv_left ez.symm .op_l
+theorem Update.included {x y : α} : x ≼ y → y ~~> x :=
+  fun ⟨_, ez⟩ => ez.symm ▸ Update.op_l
 
 @[rocq_alias cmra_update_valid0]
 theorem Update.valid0 {x y : α} : (✓{0} x → x ~~> y) → x ~~> y :=
@@ -198,8 +205,8 @@ theorem Update.discrete_total [CMRA.Discrete α] [CMRA.IsTotal α] :
 /-! ## Isomorphism -/
 @[rocq_alias iso_cmra_updateP]
 theorem UpdateP.iso
-    (gf : ∀ x, g (f x) ≡ x)
-    (g_op : ∀ y1 y2, g (y1 • y2) ≡ g y1 • g y2)
+    (gf : ∀ x, g (f x) = x)
+    (g_op : ∀ y1 y2, g (y1 • y2) = g y1 • g y2)
     (g_validN : ∀ n y, ✓{n} (g y) ↔ ✓{n} y)
     (uyp : y ~~>: P)
     (pq : ∀ y', P y' → Q (g y')) :
@@ -209,20 +216,19 @@ theorem UpdateP.iso
     match mz with
     | none => (g_validN n _).mp v
     | some z =>
-      have : g y • z ≡ g (y • f z) :=
-        (CMRA.op_right_eqv _ (gf z).symm).trans (g_op y (f z)).symm
+      have : g y • z = g (y • f z) := by rw [g_op, gf]
       (g_validN n _).mp (CMRA.validN_ne this.dist v)
   have ⟨x, px, vx⟩ := uyp n (mz.map f) this
-  have : g (x •? Option.map f mz) ≡ g x •? mz :=
+  have : g (x •? Option.map f mz) = g x •? mz :=
     match mz with
-    | none => OFE.Equiv.rfl
-    | some z => (g_op x (f z)).trans (CMRA.op_right_eqv (g x) (gf z))
+    | none => rfl
+    | some z => by simp only [Option.map_some, CMRA.op?, g_op, gf]
   exact ⟨g x, pq x px, CMRA.validN_ne this.dist ((g_validN n _).mpr vx)⟩
 
 @[rocq_alias iso_cmra_updateP']
 theorem UpdateP.iso'
-    (gf : ∀ x, g (f x) ≡ x)
-    (g_op : ∀ y1 y2, g (y1 • y2) ≡ g y1 • g y2)
+    (gf : ∀ x, g (f x) = x)
+    (g_op : ∀ y1 y2, g (y1 • y2) = g y1 • g y2)
     (g_validN : ∀ n y, ✓{n} (g y) ↔ ✓{n} y)
     (uyp : y ~~>: P) :
     g y ~~>: λ x ↦ ∃ y, x = g y ∧ P y :=

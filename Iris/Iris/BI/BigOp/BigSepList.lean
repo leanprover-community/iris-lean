@@ -46,18 +46,18 @@ theorem bigSepL_cons {Φ : Nat → A → PROP} {x : A} {xs : List A} :
 @[rocq_alias big_sepL_singleton]
 theorem bigSepL_singleton {Φ : Nat → A → PROP} {x : A} :
     ([∗list] k ↦ y ∈ [x], Φ k y) ⊣⊢ Φ 0 x :=
-  equiv_iff.mp <| bigOpL_singleton_eqv Φ x
+  BiEntails.of_eq <| bigOpL_singleton_eq Φ x
 
 @[rocq_alias big_sepL_app]
 theorem bigSepL_append {Φ : Nat → A → PROP} {l₁ l₂ : List A} :
     ([∗list] k ↦ x ∈ l₁ ++ l₂, Φ k x) ⊣⊢
       ([∗list] k ↦ x ∈ l₁, Φ k x) ∗ [∗list] k ↦ x ∈ l₂, Φ (k + l₁.length) x :=
-  equiv_iff.mp <| bigOpL_append_eqv Φ l₁ l₂
+  BiEntails.of_eq <| bigOpL_append_eq Φ l₁ l₂
 
 @[rocq_alias big_sepL_snoc]
 theorem bigSepL_snoc {Φ : Nat → A → PROP} {l : List A} {x : A} :
     ([∗list] k ↦ y ∈ l ++ [x], Φ k y) ⊣⊢ ([∗list] k ↦ y ∈ l, Φ k y) ∗ Φ l.length x :=
-  equiv_iff.mp <| bigOpL_snoc_eqv Φ l x
+  BiEntails.of_eq <| bigOpL_snoc_eq Φ l x
 
 @[rocq_alias big_sepL_mono]
 theorem bigSepL_mono {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l[k]? = some x → Φ k x ⊢ Ψ k x) :
@@ -65,13 +65,13 @@ theorem bigSepL_mono {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l
   bigOpL_gen_proper (· ⊢ ·) .rfl sep_mono (h ·)
 
 @[rocq_alias big_sepL_proper]
-theorem bigSepL_eqv {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l[k]? = some x → Φ k x ≡ Ψ k x) :
-    ([∗list] k ↦ x ∈ l, Φ k x) ≡ [∗list] k ↦ x ∈ l, Ψ k x :=
-  bigOpL_eqv h
+theorem bigSepL_eq {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l[k]? = some x → Φ k x = Ψ k x) :
+    ([∗list] k ↦ x ∈ l, Φ k x) = [∗list] k ↦ x ∈ l, Ψ k x :=
+  bigOpL_eq h
 
-theorem bigSepL_eqv_of_forall_eqv {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, Φ k x ≡ Ψ k x) :
-    ([∗list] k ↦ x ∈ l, Φ k x) ≡ [∗list] k ↦ x ∈ l, Ψ k x :=
-  bigOpL_eqv_of_forall_eqv h
+theorem bigSepL_eq_of_forall_eq {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, Φ k x = Ψ k x) :
+    ([∗list] k ↦ x ∈ l, Φ k x) = [∗list] k ↦ x ∈ l, Ψ k x :=
+  bigOpL_eq_of_forall_eq h
 
 @[rocq_alias big_sepL_ne]
 theorem bigSepL_dist {Φ Ψ : Nat → A → PROP} {l : List A} {n : Nat}
@@ -173,14 +173,14 @@ instance bigSepL_timeless_inst [Timeless (emp : PROP)] {Φ : Nat → A → PROP}
 @[rocq_alias big_sepL_emp]
 theorem bigSepL_emp {l : List A} :
     ([∗list] _x ∈ l, (emp : PROP)) ⊣⊢ emp :=
-  equiv_iff.mp <| bigOpL_const_unit_eqv
+  BiEntails.of_eq bigOpL_const_unit_eq
 
 @[rocq_alias big_sepL_sep]
 theorem bigSepL_sep_eqv {Φ Ψ : Nat → A → PROP} {l : List A} :
     ([∗list] k ↦ x ∈ l, Φ k x ∗ Ψ k x) ⊣⊢ ([∗list] k ↦ x ∈ l, Φ k x) ∗ [∗list] k ↦ x ∈ l, Ψ k x :=
-  equiv_iff.mp <| bigOpL_op_eqv Φ Ψ l
+  BiEntails.of_eq <| bigOpL_op_eq Φ Ψ l
 
-@[deprecated "bigSepL_sep_eqv.symm" (since := "26/03/30"), rocq_alias big_sepL_sep_2]
+@[rocq_alias big_sepL_sep_2]
 theorem bigSepL_sep_eqv_symm {Φ Ψ : Nat → A → PROP} {l : List A} :
     ([∗list] k ↦ x ∈ l, Φ k x) ∗ ([∗list] k ↦ x ∈ l, Ψ k x) ⊣⊢ [∗list] k ↦ x ∈ l, Φ k x ∗ Ψ k x :=
   bigSepL_sep_eqv.symm
@@ -228,22 +228,22 @@ theorem bigSepL_pure [BIAffine PROP] {φ : Nat → A → Prop} {l : List A} :
 theorem bigSepL_take_drop {Φ : Nat → A → PROP} {l : List A} {n : Nat} :
     ([∗list] k ↦ x ∈ l, Φ k x) ⊣⊢
       ([∗list] k ↦ x ∈ l.take n, Φ k x) ∗ [∗list] k ↦ x ∈ l.drop n, Φ (n + k) x :=
-  equiv_iff.mp (bigOpL_take_drop_eqv Φ l n)
+  BiEntails.of_eq <| bigOpL_take_drop_eq Φ l n
 
 @[rocq_alias big_sepL_fmap]
 theorem bigSepL_map {B : Type _} (f : A → B) {Φ : Nat → B → PROP} {l : List A} :
-    ([∗list] k ↦ y ∈ l.map f, Φ k y) ≡ [∗list] k ↦ x ∈ l, Φ k (f x) :=
-  bigOpL_map_eqv f Φ l
+    ([∗list] k ↦ y ∈ l.map f, Φ k y) = [∗list] k ↦ x ∈ l, Φ k (f x) :=
+  bigOpL_map_eq f Φ l
 
 @[rocq_alias big_sepL_omap]
 theorem bigSepL_filterMap {B : Type _} (f : A → Option B) {Φ : B → PROP} {l : List A} :
-    ([∗list] y ∈ l.filterMap f, Φ y) ≡ [∗list] x ∈ l, (f x).elim emp Φ :=
-  bigOpL_filterMap_eqv f Φ l
+    ([∗list] y ∈ l.filterMap f, Φ y) = [∗list] x ∈ l, (f x).elim emp Φ :=
+  bigOpL_filterMap_eq f Φ l
 
 @[rocq_alias big_sepL_bind]
 theorem bigSepL_flatMap {B : Type _} (f : A → List B) {Φ : B → PROP} {l : List A} :
-    ([∗list] y ∈ l.flatMap f, Φ y) ≡ [∗list] x ∈ l, [∗list] y ∈ f x, Φ y :=
-  bigOpL_flatMap_eqv f Φ l
+    ([∗list] y ∈ l.flatMap f, Φ y) = [∗list] x ∈ l, [∗list] y ∈ f x, Φ y :=
+  bigOpL_flatMap_eq f Φ l
 
 @[rocq_alias big_sepL_lookup_acc]
 theorem bigSepL_lookup_acc {Φ : Nat → A → PROP} {l : List A} {i : Nat} {x : A} (h : l[i]? = some x) :
@@ -304,22 +304,22 @@ theorem bigSepL_delete_cond {Φ : Nat → A → PROP} {l : List A} {i : Nat} {x 
   | cons z zs ih => cases i with
     | zero =>
       simp only [List.getElem?_cons_zero, Option.some.injEq] at h; subst h
-      exact sep_congr_right <| (equiv_iff.mp (bigSepL_eqv fun _ => equiv_iff.mpr .rfl)).trans emp_sep.symm
+      exact sep_congr_right <| (BiEntails.of_eq (bigOpL_eq fun _ => rfl)).trans emp_sep.symm
     | succ j =>
       simp only [List.getElem?_cons_succ] at h
       exact ((sep_congr_right <| ih h).trans sep_left_comm).trans <|
-        sep_congr_right <| sep_congr_right <| equiv_iff.mp <|
-        bigSepL_eqv fun _ => equiv_iff.mpr <| by simp [Nat.add_right_cancel_iff]
+        sep_congr_right <| sep_congr_right <| BiEntails.of_eq <|
+        bigOpL_eq fun _ => by simp [Nat.add_right_cancel_iff]
 
 @[rocq_alias big_sepL_delete']
 theorem bigSepL_delete [BIAffine PROP] {Φ : Nat → A → PROP} {l : List A} {i : Nat} {x : A}
     (h : l[i]? = some x) :
     ([∗list] k ↦ y ∈ l, Φ k y) ⊣⊢ Φ i x ∗ [∗list] k ↦ y ∈ l, ⌜k ≠ i⌝ → Φ k y := by
   refine (bigSepL_delete_cond h).trans <|
-    sep_congr_right <| equiv_iff.mp <| bigSepL_eqv fun {k _} _ => equiv_iff.mpr ?_
+    sep_congr_right <| BiEntails.of_eq <| bigOpL_eq fun {k _} _ => ?_
   by_cases hki : k = i <;> simp only [hki, ne_eq, not_true_eq_false, not_false_eq_true]
-  · exact ⟨imp_intro_swap <| pure_elim_left fun hf => hf.elim, Affine.affine⟩
-  · exact true_imp.symm
+  · exact equiv_iff.mpr ⟨imp_intro_swap <| pure_elim_left fun hf => hf.elim, Affine.affine⟩
+  · exact equiv_iff.mpr true_imp.symm
 
 @[rocq_alias big_sepL_intro]
 theorem bigSepL_intro {P : PROP} {Φ : Nat → A → PROP} {l : List A} [Intuitionistic P]
@@ -384,16 +384,12 @@ theorem bigSepL_lookup_acc_impl {Φ : Nat → A → PROP} {l : List A} {i : Nat}
 @[rocq_alias big_sepL_persistently]
 theorem bigSepL_persistently {Φ : Nat → A → PROP} {l : List A} [BIAffine PROP] :
     (<pers> [∗list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∗list] k ↦ x ∈ l, <pers> Φ k x :=
-  letI := MonoidHomomorphism.ofEquiv (PROP := PROP) persistently_ne
-    (equiv_iff.mpr persistently_sep) (equiv_iff.mpr persistently_emp_affine)
-  equiv_iff.mp <| bigOpL_hom  Φ l
+  BiEntails.of_eq <| bigOpL_hom Φ l
 
 @[rocq_alias big_sepL_later]
 theorem bigSepL_later [BIAffine PROP] {Φ : Nat → A → PROP} {l : List A} :
     (▷ [∗list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∗list] k ↦ x ∈ l, ▷ Φ k x :=
-  letI := MonoidHomomorphism.ofEquiv (PROP := PROP) later_ne
-    (equiv_iff.mpr later_sep) (equiv_iff.mpr later_emp)
-  equiv_iff.mp <| bigOpL_hom  Φ l
+  BiEntails.of_eq <| bigOpL_hom Φ l
 
 @[rocq_alias big_sepL_later_2]
 theorem bigSepL_later_2 {Φ : Nat → A → PROP} {l : List A} :
@@ -413,7 +409,7 @@ theorem bigSepL_laterN_2 {Φ : Nat → A → PROP} {l : List A} {n : Nat} :
 
 theorem bigSepL_perm {Φ : A → PROP} {l₁ l₂ : List A} (hp : l₁.Perm l₂) :
     ([∗list] x ∈ l₁, Φ x) ⊣⊢ [∗list] x ∈ l₂, Φ x :=
-  equiv_iff.mp <| bigOpL_eqv_of_perm Φ hp
+  BiEntails.of_eq <| bigOpL_eq_of_perm Φ hp
 
 @[rocq_alias big_sepL_submseteq]
 theorem bigSepL_submseteq {Φ : A → PROP} [∀ x, Affine (Φ x)] {l₁ l₂ l : List A} (h : (l₁ ++ l).Perm l₂) :
@@ -437,7 +433,10 @@ theorem bigSepL_replicate {P : PROP} {l : List A} :
 @[rocq_alias big_sepL_zip_seq]
 theorem bigSepL_zip_seq {Φ : A × Nat → PROP} {n : Nat} {l : List A} :
     ([∗list] xy ∈ l.zipIdx n, Φ xy) ⊣⊢ [∗list] i ↦ x ∈ l, Φ (x, n + i) :=
-  equiv_iff.mp <| bigOpL_zipIdx_eqv Φ n l
+  BiEntails.of_eq <| by
+    induction l generalizing n with
+    | nil => rfl
+    | cons _ _ ih => exact congrArg (sep _) ((ih (n := n + 1)).trans (by grind))
 
 @[rocq_alias big_sepL_sep_zip]
 theorem bigSepL_sep_zip {B : Type _} {Φ : Nat → A → PROP} {Ψ : Nat → B → PROP}
@@ -485,11 +484,12 @@ theorem bigSepL_comm {B : Type _} (Φ : Nat → A → Nat → B → PROP) (l₁ 
     ([∗list] k1↦x1 ∈ l₁, [∗list] k2↦x2 ∈ l₂, Φ k1 x1 k2 x2) ⊣⊢
       ([∗list] k2↦x2 ∈ l₂, [∗list] k1↦x1 ∈ l₁, Φ k1 x1 k2 x2) :=
   match l₁ with
-  | [] => ⟨(equiv_iff.mp bigOpL_const_unit_eqv).2, (equiv_iff.mp bigOpL_const_unit_eqv).1⟩
+  | [] => ⟨(BiEntails.of_eq bigOpL_const_unit_eq).2,
+          (BiEntails.of_eq bigOpL_const_unit_eq).1⟩
   | _ :: _ =>
     let ih := bigSepL_comm (fun i a j b => Φ (i + 1) a j b) _ l₂
-    ⟨(sep_mono_right ih.1).trans (equiv_iff.mp (bigOpL_op_eqv _ _ _)).2,
-     (equiv_iff.mp (bigOpL_op_eqv _ _ _)).1.trans (sep_mono_right ih.2)⟩
+    ⟨(sep_mono_right ih.1).trans (BiEntails.of_eq (bigOpL_op_eq _ _ _)).2,
+     (BiEntails.of_eq (bigOpL_op_eq _ _ _)).1.trans (sep_mono_right ih.2)⟩
 
 -- TODO: missing and blocked: big_sepL_sepM, big_sepL_sepMS, big_sepL_sepS
 
@@ -1110,7 +1110,7 @@ theorem bigSepL2_const_sepL_left {Φ : Nat → A → PROP} {l1 : List A} {l2 : L
         ⟨pure_elim_left fun hlen => and_intro (pure_intro hlen) ?_,
          pure_elim_left fun hlen => and_intro (pure_intro hlen) ?_⟩ <;>
   { have h : bigSepL Φ ((l1.zip l2).map Prod.fst) ⊣⊢ bigSepL (fun k p => Φ k p.1) (l1.zip l2) :=
-      equiv_iff.mp (BigSepL.bigSepL_map Prod.fst)
+      BiEntails.of_eq (BigSepL.bigSepL_map Prod.fst)
     rw [fst_zip hlen] at h; first | exact h.1 | exact h.2 }
 
 @[rocq_alias big_sepL2_const_sepL_r]
@@ -1216,15 +1216,16 @@ theorem bigSepL2_dist_2 [OFE A] [OFE B]
 theorem bigSepL2_proper_2 [OFE A] [OFE B]
     {Φ Ψ : Nat → A → B → PROP} {l1 l1' : List A} {l2 l2' : List B}
     (hl1 : l1.length = l1'.length) (hl2 : l2.length = l2'.length)
-    (hel1 : ∀ {k : Nat} {x x' : A}, l1[k]? = some x → l1'[k]? = some x' → x ≡ x')
-    (hel2 : ∀ {k : Nat} {y y' : B}, l2[k]? = some y → l2'[k]? = some y' → y ≡ y')
-    (hf : ∀ {k y1 y1' y2 y2'}, l1[k]? = some y1 → l1'[k]? = some y1' → y1 ≡ y1' →
-      l2[k]? = some y2 → l2'[k]? = some y2' → y2 ≡ y2' →
+    (hel1 : ∀ {k : Nat} {x x' : A}, l1[k]? = some x → l1'[k]? = some x' → x = x')
+    (hel2 : ∀ {k : Nat} {y y' : B}, l2[k]? = some y → l2'[k]? = some y' → y = y')
+    (hf : ∀ {k y1 y1' y2 y2'}, l1[k]? = some y1 → l1'[k]? = some y1' → y1 = y1' →
+      l2[k]? = some y2 → l2'[k]? = some y2' → y2 = y2' →
       Φ k y1 y2 ⊣⊢ Ψ k y1' y2') :
     ([∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) ⊣⊢
       ([∗list] k ↦ x1;x2 ∈ l1';l2', Ψ k x1 x2) :=
-  equiv_iff.mp <| OFE.equiv_dist.mpr fun _ =>
-    bigSepL2_dist_2 hl1 hl2 (fun h1 h2 => (hel1 h1 h2).dist) (fun h1 h2 => (hel2 h1 h2).dist)
+  equiv_iff.mp <| OFE.eq_dist.mpr fun _ =>
+    bigSepL2_dist_2 hl1 hl2 (fun h1 h2 => OFE.Dist.of_eq (hel1 h1 h2))
+      (fun h1 h2 => OFE.Dist.of_eq (hel2 h1 h2))
       (fun h1 h2 _ h3 h4 _ => (equiv_iff.mpr (hf h1 h2 (hel1 h1 h2) h3 h4 (hel2 h3 h4))).dist)
 
 @[rocq_alias big_sepL_sepL2_diag]
@@ -1234,7 +1235,7 @@ theorem bigSepL_sepL2_diag {Φ : Nat → A → A → PROP} {l : List A} :
   have hzip : l.zip l = l.map (fun x => (x, x)) := by
     induction l with | nil => rfl | cons _ _ ih => simp [ih]
   rw [hzip]
-  exact (equiv_iff.mp <| BigSepL.bigSepL_map (Φ := fun k p => Φ k p.1 p.2) (fun x => (x, x))).symm.1
+  exact (BiEntails.of_eq <| BigSepL.bigSepL_map (Φ := fun k p => Φ k p.1 p.2) (fun x => (x, x))).symm.1
 
 end BigSepL2
 

@@ -432,7 +432,7 @@ instance plainly_sep_weak_homomorphism [BIPositive PROP][BIAffine PROP] :
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
-  op_proper aa' bb' := equiv_iff.1 (sep_ne.eqv (equiv_iff.2 aa') (equiv_iff.2 bb'))
+  op_proper aa' bb' := aa'.to_eq ▸ bb'.to_eq ▸ .rfl
   map_ne := inferInstance
   map_op := plainly_sep
 
@@ -441,7 +441,7 @@ instance plainly_and_weak_homomorphism :
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
-  op_proper aa' bb' := equiv_iff.1 (and_ne.eqv (equiv_iff.2 aa') (equiv_iff.2 bb'))
+  op_proper aa' bb' := aa'.to_eq ▸ bb'.to_eq ▸ .rfl
   map_ne := inferInstance
   map_op := plainly_and
 
@@ -450,7 +450,7 @@ instance plainly_or_weak_homomorphism [SbiEmpValidExist PROP] :
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
-  op_proper aa' bb' := equiv_iff.1 (or_ne.eqv (equiv_iff.2 aa') (equiv_iff.2 bb'))
+  op_proper aa' bb' := aa'.to_eq ▸ bb'.to_eq ▸ .rfl
   map_ne := inferInstance
   map_op := plainly_or
 
@@ -686,13 +686,13 @@ instance bigSepM_plain {K} [DecidableEq K] {M A} [ι : LawfulFiniteMap M K] (Φ 
     case hins k v m get?_m_k IH=>
       calc iprop([∗map] k ↦ x ∈ Std.insert m k v, Φ k x)
         _ ⊣⊢ Φ k v ∗ [∗map] k ↦ x ∈  m, Φ k x :=
-            BI.equiv_iff.1 (Algebra.BigOpM.bigOpM_insert_eqv _ _ get?_m_k)
+            (Algebra.BigOpM.bigOpM_insert_eq _ _ get?_m_k).to_bi
         _  ⊢ ■ Φ k v ∗ ■ [∗map] k ↦ x ∈  m, Φ k x :=
           sep_mono (h k v |>.plain) IH
         _  ⊢ ■ (Φ k v ∗ [∗map] k ↦ x ∈  m, Φ k x) := plainly_sep_2
         _ ⊣⊢ ■ [∗map] k ↦ x ∈ Std.insert m k v, Φ k x :=
           .ofMono plainly_mono <|
-            BI.equiv_iff.1 (Algebra.BigOpM.bigOpM_insert_eqv _ _ get?_m_k) |>.symm
+            (Algebra.BigOpM.bigOpM_insert_eq _ _ get?_m_k).to_bi |>.symm
 
 open Algebra in
 @[rocq_alias big_sepS_empty_plain]
@@ -710,11 +710,12 @@ instance  bigSepS_plain {S} [Pos.Countable S] {A} [LawfulFiniteSet S A] (Φ : A 
     case hemp => simp only [BigOpS.bigOpS_empty, plain]
     case hadd x s x_s IH =>
       calc iprop([^ sep set] x ∈ insert x s, Φ x)
-        _ ⊣⊢ Φ x ∗ [^ sep set] x ∈  s, Φ x := BI.equiv_iff.1 (BigOpS.bigOpS_insert x_s)
+        _ ⊣⊢ Φ x ∗ [^ sep set] x ∈  s, Φ x :=
+          (BigOpS.bigOpS_insert x_s).to_bi
         _  ⊢ ■ Φ x ∗ ■ [^ sep set] x ∈ s, Φ x := sep_mono (h x |>.plain) IH
         _  ⊢ ■ (Φ x ∗ [^ sep set] x ∈ s, Φ x) := plainly_sep_2
         _ ⊣⊢ ■ [^ sep set] y ∈ insert x s, Φ y :=
-          .ofMono plainly_mono <| BI.equiv_iff.1 (BigOpS.bigOpS_insert x_s).symm
+          .ofMono plainly_mono <| (BigOpS.bigOpS_insert x_s).symm.to_bi
 
 @[rocq_alias plainly_timeless]
 instance plainly_timeless (P : PROP) [Timeless P] : Timeless iprop(■ P) :=

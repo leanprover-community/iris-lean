@@ -65,9 +65,9 @@ protected def imp (P Q : UPred M) : UPred M where
       calc x  ≡{n}≡ x₂ • m₂    := Hxle.dist
            _  ≡{n}≡ (x₁ • m₁) • m₂ := (Hle.le Hnle).op_l
     refine (uPred_ne (m₂ := ⟨(x₁.val • m₁) • m₂, Hx.validN.mp xP⟩) Hx).mpr (H _ ?_ ?_ ?_)
-    · calc x₁.val ≡ x₁ • unit        := unit_right_id.symm
-           _      ≼ x₁ • (m₁ • m₂)   := op_mono_right _ inc_unit
-           _      ≡ (x₁ • m₁) • m₂   := assoc
+    · calc x₁.val = CMRA.op x₁.val unit               := unit_right_id.symm
+           _      ≼ x₁.val • (m₁ • m₂)                := op_mono_right _ inc_unit
+           _      = CMRA.op (CMRA.op x₁.val m₁) m₂    := assoc'
     · exact Nat.le_trans Hnle Hn
     · exact (uPred_ne Hx).mp HP
 
@@ -282,6 +282,7 @@ theorem uPred_entails_lim {cP cQ : Chain (UPred M)} (H : ∀ n, cP n ⊢ cQ n) :
 instance : BI (UPred M) where
   entails_preorder := inferInstance
   equiv_iff {_ _} := by
+    rw [OFE.eq_dist]
     constructor <;> intro HE
     · exact ⟨fun n ⟨x, Hv⟩ H => (HE n n x .refl Hv).mp H,
              fun n ⟨x, Hv⟩ H => (HE n n x .refl Hv).mpr H⟩
@@ -672,11 +673,12 @@ theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 := by
       x.val ≡{n}≡ y1 • y2 := H
       _     ≡{n}≡ (m1 • w1) • (m2 • w2) := Hw1.op Hw2
       _     ≡{n}≡ m1 • (w1 • (m2 • w2)) := assoc.symm.dist
-      _     ≡{n}≡ m1 • ((m2 • w2) • w1) := comm.op_r.dist
-      _     ≡{n}≡ m1 • (m2 • (w2 • w1)) := assoc.symm.op_r.dist
+      _     ≡{n}≡ m1 • ((m2 • w2) • w1) := comm'.dist.op_r
+      _     ≡{n}≡ m1 • (m2 • (w2 • w1)) := assoc'.symm.dist.op_r
       _     ≡{n}≡ (m1 • m2) • (w2 • w1) := assoc.dist
-      _     ≡{n}≡ (m1 • m2) • (w1 • w2) := comm.op_r.dist
+      _     ≡{n}≡ (m1 • m2) • (w1 • w2) := comm'.dist.op_r
 
+@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
 theorem ownM_eqv {m1 m2 : M} (H : m1 ≡ m2) : ownM m1 ⊣⊢ ownM m2 :=
   ⟨fun _ _ => (incN_iff_left H.dist).mp, fun _ _ => (incN_iff_left H.dist).mpr⟩
 
@@ -698,9 +700,7 @@ instance {a : M} : Persistent (ownM (core a)) where
   persistent := by
     refine .trans (persistently_ownM_core _) ?_
     refine persistently_mono ?_
-    refine equiv_iff.mp ?_ |>.mp
-    refine OFE.NonExpansive.eqv ?_
-    exact core_idem a
+    exact (congrArg ownM (core_idem a)).to_bi.mp
 
 @[rocq_alias uPred.bupd_ownM_updateP, rocq_alias uPred_primitive.bupd_ownM_updateP]
 theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
@@ -732,7 +732,7 @@ theorem later_ownM (a : M) : ▷ ownM a ⊢ ∃ b, ownM b ∧ ▷ <si_pure> (SiP
   | n+1, x, ⟨y, hx⟩ => by
     let ⟨a', y', hx', ha', hy'⟩ := extend (validN_succ x.property) hx
     refine ⟨iprop(ownM a' ∧ ▷ <si_pure> (SiProp.internalEq a a')), ⟨a', rfl⟩, ?_, ?_⟩
-    · exact (incN_iff_right (OFE.equiv_dist.mp hx' (n + 1))).mpr (incN_op_left (n + 1) a' y')
+    · exact (incN_iff_right hx'.dist).mpr (incN_op_left (n + 1) a' y')
     · exact OFE.Dist.symm ha'
 
 theorem pure_soundness : iprop(True ⊢ (⌜P⌝ : UPred M)) → P :=
@@ -753,7 +753,7 @@ theorem intuitionistically_ownM (a : M) [CoreId a] : □ ownM a ⊣⊢ ownM a :=
   refine ⟨intuitionistically_elim, ?_⟩
   refine (intuitionistically_ownM_core a).trans ?_
   refine intuitionistically_mono ?_
-  exact (ownM_eqv (core_eqv_self a).symm).mpr
+  simp only [core_eqv_self, BIBase.Entails.rfl]
 
 @[rocq_alias uPred.ownM_invalid]
 theorem ownM_invalid (a : M) (hnv : ¬ ✓{0} a) : ownM a ⊢ False :=
@@ -778,13 +778,15 @@ instance ownM_timeless (a : M) [OFE.DiscreteE a] : BI.Timeless (ownM a) where
     | 0, _, _ => .inl trivial
     | n+1, x, ⟨_, Hxy⟩ =>
       let ⟨_a', y', Hx, Ha', _⟩ := extend (validN_succ x.property) Hxy
-      .inr ⟨y', (Hx.trans (OFE.DiscreteE.discrete (Ha'.symm.le n.zero_le)).symm.op_l).dist⟩
+      .inr ⟨y', OFE.Dist.of_eq (Hx.trans
+        (congrArg (CMRA.op · _) (OFE.DiscreteE.discrete (Ha'.symm.le n.zero_le)).symm))⟩
 
 @[rocq_alias uPred.ownM_persistent]
 instance ownM_persistent (a : M) [CoreId a] : Persistent (ownM a) where
   persistent := by
     refine (persistently_ownM_core a).trans ?_
-    exact persistently_mono (ownM_eqv (core_eqv_self a)).mp
+    refine persistently_mono ?_
+    simp only [core_eqv_self, BIBase.Entails.rfl]
 
 @[rocq_alias uPred.bupd_soundness]
 theorem bupd_soundness {P : UPred M} [Plain P] : (⊢ |==> P) → ⊢ P :=
