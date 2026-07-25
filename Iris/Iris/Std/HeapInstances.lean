@@ -22,7 +22,7 @@ instances for types from the Lean standard library.
 - Classical functions into `Option`: `UnboundedHeap`
 - Association lists: `UnboundedHeap`
 - `TreeMap`: `PartialMap`
-- `ExtTreeMap`: `PartialMap`
+- `ExtTreeMap`: `UnboundedHeap`
 -/
 
 @[expose] public section
@@ -280,6 +280,32 @@ instance : LawfulFiniteMap (ExtTreeMap K · compare) K where
       refine h.imp (· <| LawfulEqOrd.compare_eq_iff_eq.mpr ·)
     exact List.pairwise_map.mpr distinct_keys_toList
   toList_get {_ m _ _} := m.mem_toList_iff_getElem?_eq_some
+
+noncomputable instance instUnboundedHeapCompare [InfiniteType K] :
+    UnboundedHeap (ExtTreeMap K · compare) K where
+  notFull _ := True
+  fresh {_} {m} _ :=
+    (Iris.Std.List.fresh
+      ((LawfulFiniteMap.toList (M := fun V => ExtTreeMap K V compare) m).map Prod.fst)).choose
+  get?_fresh {_} {m} {_} := by
+    let freshKey :=
+      (Iris.Std.List.fresh
+        ((LawfulFiniteMap.toList (M := fun V => ExtTreeMap K V compare) m).map Prod.fst)).choose
+    change get? m freshKey = none
+    have freshKey_not_mem :
+        freshKey ∉
+          (LawfulFiniteMap.toList (M := fun V => ExtTreeMap K V compare) m).map Prod.fst :=
+      (Iris.Std.List.fresh
+        ((LawfulFiniteMap.toList (M := fun V => ExtTreeMap K V compare) m).map Prod.fst)).choose_spec
+    cases hget : get? m freshKey with
+    | none => rfl
+    | some v =>
+      exfalso
+      apply freshKey_not_mem
+      apply List.mem_map.mpr
+      exact ⟨(freshKey, v), LawfulFiniteMap.toList_get.mpr hget, rfl⟩
+  notFull_empty := trivial
+  notFull_insert_fresh := trivial
 
 end HeapInstance
 
