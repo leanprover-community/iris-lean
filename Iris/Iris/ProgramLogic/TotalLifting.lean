@@ -31,7 +31,7 @@ variable {e e₁ e₂ : Expr} {Φ : Val → IProp GF}
 @[rocq_alias twp_lift_step]
 theorem twp_lift_step (h : toVal e₁ = none) :
     (∀ σ₁ ns obs nt, stateInterp σ₁ ns obs nt ={E,∅}=∗
-      ⌜s.MaybeReducible (e₁, σ₁)⌝ ∗
+      ⌜s.MaybeReducibleNoObs (e₁, σ₁)⌝ ∗
       ∀ κ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<κ>-> (e₂, σ₂, eₜ)⌝ ={∅,E}=∗
         ⌜κ = []⌝ ∗
         stateInterp σ₂ (ns + 1) obs (nt + eₜ.length) ∗
@@ -44,7 +44,7 @@ theorem twp_lift_step (h : toVal e₁ = none) :
 
 theorem twp_lift_step_no_fork (h : toVal e₁ = none) :
     (∀ σ₁ ns obs nt, stateInterp σ₁ ns obs nt ={E,∅}=∗
-      ⌜s.MaybeReducible (e₁, σ₁)⌝ ∗
+      ⌜s.MaybeReducibleNoObs (e₁, σ₁)⌝ ∗
       ∀ κ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<κ>-> (e₂, σ₂, eₜ)⌝ ={∅,E}=∗
         ⌜κ = []⌝ ∗ ⌜eₜ = []⌝ ∗
         stateInterp σ₂ (ns + 1) obs nt ∗
@@ -66,7 +66,7 @@ theorem twp_lift_step_no_fork (h : toVal e₁ = none) :
 @[rocq_alias twp_lift_atomic_step]
 theorem twp_lift_atomic_step (h : toVal e₁ = none) :
     (∀ σ₁ ns obs nt, stateInterp σ₁ ns obs nt ={E}=∗
-      ⌜s.MaybeReducible (e₁, σ₁)⌝ ∗
+      ⌜s.MaybeReducibleNoObs (e₁, σ₁)⌝ ∗
       ∀ κ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<κ>-> (e₂, σ₂, eₜ)⌝ ={E}=∗
         ⌜κ = []⌝ ∗
         stateInterp σ₂ (ns + 1) obs (nt + eₜ.length) ∗
@@ -93,7 +93,7 @@ theorem twp_lift_atomic_step (h : toVal e₁ = none) :
 
 theorem twp_lift_atomic_step_no_fork (h : toVal e₁ = none) :
     (∀ σ₁ ns obs nt, stateInterp σ₁ ns obs nt ={E}=∗
-      ⌜s.MaybeReducible (e₁, σ₁)⌝ ∗
+      ⌜s.MaybeReducibleNoObs (e₁, σ₁)⌝ ∗
       ∀ κ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<κ>-> (e₂, σ₂, eₜ)⌝ ={E}=∗
         ⌜κ = []⌝ ∗ ⌜eₜ = []⌝ ∗
         stateInterp σ₂ (ns + 1) obs nt ∗
@@ -113,38 +113,82 @@ theorem twp_lift_atomic_step_no_fork (h : toVal e₁ = none) :
   simp only [List.length_nil, Nat.add_zero, Algebra.BigOpL.bigOpL_nil]
   iframe %hκ Hσ Hval
 
-theorem twp_lift_pure_det_step_no_fork [Inhabited State]
-    (Hsafe : ∀ σ₁, match s with
-      | .NotStuck => PrimStep.ReducibleNoObs (e₁, σ₁)
-      | .MaybeStuck => toVal e₁ = none)
+@[rocq_alias twp_lift_pure_step_no_fork]
+theorem twp_lift_pure_step_no_fork [Inhabited State]
+    (Hsafe : ∀ σ₁, PrimStep.ReducibleNoObs (e₁, σ₁))
     (Hpure : ∀ σ₁ κ e₂' σ₂ eₜ,
       (e₁, σ₁) -<κ>-> (e₂', σ₂, eₜ) →
-      κ = [] ∧ σ₂ = σ₁ ∧ e₂' = e₂ ∧ eₜ = []) :
-    WP e₂ @ s; E [{ Φ }] ⊢ WP e₁ @ s; E [{ Φ }] := by
-  iintro Hwp
-  have hnone : toVal e₁ = none := by
-    cases s
-    · exact Language.toVal_none_of_reducible
-        (Language.reducible_of_reducibleNoObs (Hsafe default))
-    · exact Hsafe default
+      κ = [] ∧ σ₂ = σ₁ ∧ eₜ = []) :
+    (|={E}=> ∀ κ e₂' eₜ σ,
+      ⌜(e₁, σ) -<κ>-> (e₂', σ, eₜ)⌝ -∗
+      WP e₂' @ s; E [{ Φ }])
+    ⊢ WP e₁ @ s; E [{ Φ }] := by
+  iintro H
+  have hnone : toVal e₁ = none :=
+    Language.toVal_none_of_reducible
+      (Language.reducible_of_reducibleNoObs (Hsafe default))
   iapply twp_lift_step_no_fork hnone
   iintro %σ₁ %ns %obs %nt Hσ
+  imod H with H
   iapply fupd_mask_intro Std.LawfulSet.empty_subset
   iintro Hclose
   isplit
   · ipureintro
     cases s
-    · exact Language.reducible_of_reducibleNoObs (Hsafe σ₁)
+    · exact Hsafe σ₁
     · trivial
   · iintro %κ %e₂' %σ₂ %eₜ %Hstep
-    obtain ⟨rfl, rfl, rfl, rfl⟩ := Hpure _ _ _ _ _ Hstep
+    obtain ⟨rfl, rfl, rfl⟩ := Hpure _ _ _ _ _ Hstep
+    imod ι.stateInterp_mono σ₂ ns obs nt $$ Hσ with Hσ
     imod Hclose
-    ihave Hmono := ι.stateInterp_mono σ₂ ns obs nt $$ Hσ
-    imod fupd_mask_mono Std.LawfulSet.empty_subset $$ Hmono with Hσ
     imodintro
-    iframe Hσ Hwp
-    ipureintro
-    exact ⟨rfl, rfl⟩
+    iframe Hσ
+    isplit
+    · ipureintro
+      exact rfl
+    · isplit
+      · ipureintro
+        exact rfl
+      · iapply H $$ %([] : List Obs) %e₂' %([] : List Expr) %σ₂ %Hstep
+
+@[rocq_alias twp_lift_pure_det_step_no_fork]
+theorem twp_lift_pure_det_step_no_fork [Inhabited State]
+    (Hsafe : ∀ σ₁, PrimStep.ReducibleNoObs (e₁, σ₁))
+    (Hpure : ∀ σ₁ κ e₂' σ₂ eₜ,
+      (e₁, σ₁) -<κ>-> (e₂', σ₂, eₜ) →
+      κ = [] ∧ σ₂ = σ₁ ∧ e₂' = e₂ ∧ eₜ = []) :
+    (|={E}=> WP e₂ @ s; E [{ Φ }]) ⊢ WP e₁ @ s; E [{ Φ }] := by
+  iintro Hwp
+  iapply twp_lift_pure_step_no_fork Hsafe ?_
+  · intro σ₁ κ e₂' σ₂ eₜ Hstep
+    obtain ⟨hκ, hσ, _, heₜ⟩ := Hpure _ _ _ _ _ Hstep
+    exact ⟨hκ, hσ, heₜ⟩
+  · imod Hwp with Hwp
+    imodintro
+    iintro %κ %e₂' %eₜ %σ %Hstep
+    obtain ⟨_, _, he₂, _⟩ := Hpure _ _ _ _ _ Hstep
+    subst e₂'
+    iexact Hwp
+
+@[rocq_alias twp_pure_step]
+theorem twp_pure_step [Inhabited State]
+    (Hexec : PureExec φ n e₁ e₂) (Hφ : φ) :
+    WP e₂ @ s; E [{ Φ }] ⊢ WP e₁ @ s; E [{ Φ }] := by
+  replace Hexec := Hexec.pureExec Hφ
+  iinduction Hexec using Relation.Iterate.head_induction_on with
+  | rfl =>
+      iintro Hwp
+      iexact Hwp
+  | @head n e₁ e₃ _ _ IH =>
+      iintro Hwp
+      obtain ⟨Hsafe, Hdet⟩ := ‹e₁ -ᵖ-> e₃›
+      iapply twp_lift_pure_det_step_no_fork Hsafe ?_
+      · intro σ₁ κ e₂' σ₂ eₜ Hstep
+        obtain ⟨hκ, hσ, he, heₜ⟩ := Hdet Hstep
+        exact ⟨hκ, hσ.symm, he.symm, heₜ⟩
+      · imodintro
+        iapply IH
+        iexact Hwp
 
 end
 end Iris.ProgramLogic

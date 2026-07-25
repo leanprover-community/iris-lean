@@ -30,11 +30,27 @@ deliberately not duplicated here.
 As in Iris-Rocq, TWP only accepts silent operational steps.  A language with
 observable reductions must expose a silent administrative semantics or provide
 a future trace-sensitive generalization instead of discarding observations.
+
+For Wasm, traps must therefore be represented deliberately: either as values
+in the language's result type, or as non-values excluded by the reducibility
+obligation. TWP does not silently reinterpret a stuck trap as successful
+termination.
 -/
 
 variable {hlc : outParam HasLC} {Expr State Obs Val}
 variable [Λ : Language Expr State Obs Val]
 variable {GF : BundledGFunctors} [ι : IrisGS_gen hlc Expr GF]
+
+/-- The stuckness-dependent reducibility condition used by total WP.
+
+Unlike partial WP's `Stuckness.MaybeReducible`, the `NotStuck` case requires
+the existence of a *silent* primitive step.  This matches Iris-Rocq's
+`reducible_no_obs` premise and prevents an observable transition from being
+used to justify TWP only to be rejected by the step clause immediately
+afterwards. -/
+abbrev Stuckness.MaybeReducibleNoObs : Stuckness → Expr × State → Prop
+  | .NotStuck, ρ => PrimStep.ReducibleNoObs ρ
+  | .MaybeStuck, _ => True
 
 namespace twp
 
@@ -45,6 +61,7 @@ local instance : OFE Val := OFE.ofDiscrete _
 abbrev Args (Expr Val : Type _) (GF : BundledGFunctors) :=
   (CoPset × Expr) × (Val → IProp GF)
 
+@[rocq_alias twp_pre]
 def pre (s : Stuckness)
     (twp : CoPset → Expr → (Val → IProp GF) → IProp GF)
     (E : CoPset) (e₁ : Expr) (Φ : Val → IProp GF) : IProp GF :=
@@ -52,7 +69,7 @@ def pre (s : Stuckness)
   | some v => iprop(|={E}=> Φ v)
   | none => iprop(∀ (σ₁ : State) (ns : Nat) (obs : List Obs) (nt : Nat),
       stateInterp σ₁ ns obs nt ={E,∅}=∗
-      ⌜s.MaybeReducible (e₁, σ₁)⌝ ∗
+      ⌜s.MaybeReducibleNoObs (e₁, σ₁)⌝ ∗
       ∀ (κ : List Obs) e₂ σ₂ eₜ,
         ⌜(e₁, σ₁) -<κ>-> (e₂, σ₂, eₜ)⌝ ={∅,E}=∗
         ⌜κ = []⌝ ∗
@@ -120,6 +137,36 @@ instance pre'_mono (s : Stuckness) : BIMonoPred (pre' (ι := ι) s) where
       · apply NonExpansive.ne
         exact ⟨⟨.rfl, .rfl⟩, hΦ⟩
       · exact .rfl
+
+@[rocq_alias twp_pre_mono]
+theorem pre_mono (s : Stuckness)
+    (X Y : CoPset → Expr → (Val → IProp GF) → IProp GF)
+    [NonExpansive (fun x : Args Expr Val GF => X x.1.1 x.1.2 x.2)]
+    [NonExpansive (fun x : Args Expr Val GF => Y x.1.1 x.1.2 x.2)] :
+    ⊢ □ (∀ E e Φ, X E e Φ -∗ Y E e Φ) -∗
+      ∀ E e Φ, pre s X E e Φ -∗ pre s Y E e Φ := by
+  iintro #H %E %e %Φ Hpre
+  unfold pre
+  cases hval : toVal e with
+  | some v =>
+      imod Hpre with Hpre
+      imodintro
+      iexact Hpre
+  | none =>
+      iintro %σ₁ %ns %obs %nt Hσ
+      imod Hpre $$ Hσ with ⟨%Hred, Hstep⟩
+      imodintro
+      iframe %Hred
+      iintro %κ %e₂ %σ₂ %eₜ %Hprim
+      imod Hstep $$ %κ %e₂ %σ₂ %eₜ %Hprim with
+        ⟨%hκ, Hσ, He₂, Hefs⟩
+      imodintro
+      iframe %hκ Hσ
+      isplitl [He₂]
+      · iapply H $$ %E %e₂ %Φ He₂
+      · iapply BI.BigSepL.bigSepL_impl $$ Hefs
+        iintro !> %k %ef %Hef Hef
+        iapply H $$ %⊤ %ef %ι.forkPost Hef
 
 def get (s : Stuckness) (E : CoPset) (e : Expr) (Φ : Val → IProp GF) : IProp GF :=
   letI : OFE CoPset := OFE.ofDiscrete _
@@ -314,7 +361,8 @@ theorem atomic {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}
         imod He₂ $$ %σ₂ %(ns + 1) %obs %(nt + eₜ.length) Hσ with
           ⟨%Hred₂, _⟩
         exact (Language.not_reducible_iff_irreducible.mpr
-          (hatom.atomic Hprim)) Hred₂ |>.elim
+          (hatom.atomic Hprim))
+          (Language.reducible_of_reducibleNoObs Hred₂) |>.elim
     · iintro %κ %e₂ %σ₂ %eₜ %Hprim
       imod Hstep $$ %κ %e₂ %σ₂ %eₜ %Hprim with
         ⟨%hκ, Hσ, He₂, Hefs⟩
@@ -380,7 +428,7 @@ theorem bind (K : Expr → Expr) [ctx : Language.Context K]
       isplit
       · ipureintro
         cases s
-        · exact Language.Context.reducible_fill (K := K) Hred
+        · exact Language.Context.reducibleNoObs_fill (K := K) Hred
         · trivial
       · iintro %κ %e₂ %σ₂ %eₜ %HKstep
         obtain ⟨e₂', rfl, Hprim⟩ := ctx.primStep_fill_inv he HKstep
@@ -397,6 +445,131 @@ theorem bind (K : Expr → Expr) [ctx : Language.Context K]
         iexact Hef
   · iintro %v Hv
     iexact Hv
+
+private theorem fold_induction_right
+    (Ψ : CoPset → Expr → (Val → IProp GF) → IProp GF)
+    (s : Stuckness) (E : CoPset) (e : Expr) (Φ : Val → IProp GF) :
+    (match toVal e with
+    | some v => iprop(|={E}=> Φ v)
+    | none => iprop(
+        ∀ (σ₁ : State) (ns : Nat) (obs : List Obs) (nt : Nat),
+          stateInterp σ₁ ns obs nt ={E,∅}=∗
+          ⌜s.MaybeReducibleNoObs (e, σ₁)⌝ ∗
+          ∀ (κ : List Obs) e₂ σ₂ eₜ,
+            ⌜(e, σ₁) -<κ>-> (e₂, σ₂, eₜ)⌝ ={∅,E}=∗
+            ⌜κ = []⌝ ∗
+            stateInterp σ₂ (ns + 1) obs (nt + eₜ.length) ∗
+            (Ψ E e₂ Φ ∧ WP e₂ @ s ; E [{ Φ }]) ∗
+            [∗list] e' ∈ eₜ,
+              (Ψ ⊤ e' ι.forkPost ∧
+                WP e' @ s ; ⊤ [{ ι.forkPost }]))) ⊢
+    WP e @ s ; E [{ Φ }] := by
+  rw [unfold.to_eq]
+  unfold pre
+  cases hval : toVal e with
+  | some =>
+      exact .rfl
+  | none =>
+      iintro H
+      iintro %σ₁ %ns %obs %nt Hσ
+      imod H $$ Hσ with ⟨%Hred, Hstep⟩
+      imodintro
+      iframe %Hred
+      iintro %κ %e₂ %σ₂ %eₜ %Hprim
+      imod Hstep $$ %κ %e₂ %σ₂ %eₜ %Hprim with
+        ⟨%hκ, Hσ, He₂, Hefs⟩
+      imodintro
+      iframe %hκ Hσ
+      isplitl [He₂]
+      · icases He₂ with ⟨-, He₂⟩
+        iexact He₂
+      · iapply BI.BigSepL.bigSepL_impl $$ Hefs
+        iintro !> %k %ef %Hef Hef
+        icases Hef with ⟨-, Hef⟩
+        iexact Hef
+
+@[rocq_alias twp_bind_inv]
+theorem bind_inv (K : Expr → Expr) [ctx : Language.Context K]
+    {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF} :
+    WP (K e) @ s ; E [{ Φ }] ⊢
+      TotalWp.totalWp s E e
+        (fun v : Val => iprop(WP (K (v : Expr)) @ s ; E [{ Φ }])) := by
+  let Pred := fun (E : CoPset) (e' : Expr) (Φ : Val → IProp GF) => iprop(
+    ∀ e, ⌜e' = K e⌝ -∗
+      TotalWp.totalWp s E e
+        (fun v : Val => iprop(WP (K (v : Expr)) @ s ; E [{ Φ }])))
+  have hPred : NonExpansive
+      (fun x : Args Expr Val GF => Pred x.1.1 x.1.2 x.2) := by
+    constructor
+    intro n x y hxy
+    rcases x with ⟨⟨EX, eX⟩, ΦX⟩
+    rcases y with ⟨⟨EY, eY⟩, ΦY⟩
+    rcases hxy with ⟨⟨hE, he⟩, hΦ⟩
+    change EX = EY at hE
+    change eX = eY at he
+    subst EY
+    subst eY
+    refine BI.forall_ne fun _ => ?_
+    refine BI.wand_ne.ne .rfl ?_
+    apply NonExpansive.ne
+    exact fun _ => NonExpansive.ne hΦ
+  letI := hPred
+  iintro H
+  iapply induction s Pred (ι := ι) ?_ $$ H %e %rfl
+  iintro !> %E %e' %Φ IH %e %heq
+  subst e'
+  rw [unfold.to_eq]
+  unfold pre
+  cases he : toVal e with
+  | some v =>
+      dsimp only
+      have heq := ToVal.coe_of_toVal_eq_some he
+      subst e
+      imodintro
+      iapply fold_induction_right Pred s E (K (v : Expr)) Φ
+      iexact IH
+  | none =>
+      dsimp only
+      have hK : toVal (K e) = none := ctx.toVal_eq_none_fill he
+      let unfolded := iprop(
+        ∀ (σ₁ : State) (ns : Nat) (obs : List Obs) (nt : Nat),
+            stateInterp σ₁ ns obs nt ={E,∅}=∗
+            ⌜s.MaybeReducibleNoObs (K e, σ₁)⌝ ∗
+            ∀ (κ : List Obs) e₂ σ₂ eₜ,
+              ⌜(K e, σ₁) -<κ>-> (e₂, σ₂, eₜ)⌝ ={∅,E}=∗
+              ⌜κ = []⌝ ∗
+              stateInterp σ₂ (ns + 1) obs (nt + eₜ.length) ∗
+              (Pred E e₂ Φ ∧ WP e₂ @ s ; E [{ Φ }]) ∗
+              [∗list] e' ∈ eₜ,
+                (Pred ⊤ e' ι.forkPost ∧
+                  WP e' @ s ; ⊤ [{ ι.forkPost }]))
+      have hIH :
+          (match toVal (K e) with
+          | some v => iprop(|={E}=> Φ v)
+          | none => unfolded) ⊢ unfolded := by
+        simp only [hK]
+        exact .rfl
+      icases hIH $$ IH with IH
+      iintro %σ₁ %ns %obs %nt Hσ
+      imod IH $$ Hσ with ⟨%Hred, Hstep⟩
+      imodintro
+      isplit
+      · ipureintro
+        cases s
+        · exact Language.Context.reducibleNoObs_fill_inv (K := K) he Hred
+        · trivial
+      · iintro %κ %e₂ %σ₂ %eₜ %Hprim
+        imod Hstep $$ %κ %(K e₂) %σ₂ %eₜ
+          %(ctx.primStep_fill Hprim) with ⟨%hκ, Hσ, He₂, Hefs⟩
+        imodintro
+        iframe %hκ Hσ
+        isplitl [He₂]
+        · icases He₂ with ⟨IH₂, -⟩
+          iapply IH₂ $$ %e₂ %rfl
+        · iapply BI.BigSepL.bigSepL_impl $$ Hefs
+          iintro !> %k %ef %Hef Hef
+          icases Hef with ⟨-, Hef⟩
+          iexact Hef
 
 @[rocq_alias twp_mono]
 theorem mono {s : Stuckness} {E} {e : Expr} {Φ Ψ : Val → IProp GF}
@@ -483,6 +656,30 @@ theorem wand {s : Stuckness} {E} {e : Expr} {Φ Ψ : Val → IProp GF} :
   imodintro
   iapply H $$ Hv
 
+@[rocq_alias twp_wand_l]
+theorem wand_l {s : Stuckness} {E} {e : Expr} {Φ Ψ : Val → IProp GF} :
+    (∀ v, Φ v -∗ Ψ v) ∗ WP e @ s ; E [{ Φ }] ⊢
+      WP e @ s ; E [{ Ψ }] := by
+  iintro ⟨H, Hwp⟩
+  iapply wand $$ Hwp H
+
+@[rocq_alias twp_wand_r]
+theorem wand_r {s : Stuckness} {E} {e : Expr} {Φ Ψ : Val → IProp GF} :
+    WP e @ s ; E [{ Φ }] ∗ (∀ v, Φ v -∗ Ψ v) ⊢
+      WP e @ s ; E [{ Ψ }] := by
+  iintro ⟨Hwp, H⟩
+  iapply wand $$ Hwp H
+
+@[rocq_alias twp_frame_wand]
+theorem frame_wand {s : Stuckness} {E} {e : Expr}
+    {Φ : Val → IProp GF} {R : IProp GF} :
+    R ⊢ (WP e @ s ; E [{ v, R -∗ Φ v }]) -∗
+      WP e @ s ; E [{ Φ }] := by
+  iintro HR Hwp
+  iapply wand $$ Hwp
+  iintro %v HΦ
+  iapply HΦ $$ HR
+
 @[rocq_alias twp_wp]
 theorem to_wp {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E [{ Φ }] ⊢ WP e @ s ; E {{ Φ }} := by
@@ -499,7 +696,9 @@ theorem to_wp {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} :
     imodintro
     isplit
     · ipureintro
-      cases s <;> simp_all [Stuckness.MaybeReducible]
+      cases s
+      · exact Language.reducible_of_reducibleNoObs Hred
+      · trivial
     · iintro %e₂ %σ₂ %eₜ %Hstep _
       ihave Hnext := H $$ %κ %e₂ %σ₂ %eₜ %Hstep
       iapply step_fupdN_intro Std.LawfulSet.empty_subset
@@ -521,9 +720,10 @@ section ProofMode
 
 open ProofMode
 
-variable {s : Stuckness} {E : CoPset} {e : Expr}
+variable {s : Stuckness} {E E₁ E₂ : CoPset} {e : Expr}
 variable {Φ Ψ : Val → IProp GF} {P R : IProp GF}
 
+@[rocq_alias frame_twp]
 instance frameTwp {p : Bool} [H : ∀ v, Frame p R (Φ v) (Ψ v)] :
     Frame p R (WP e @ s ; E [{ Φ }]) (WP e @ s ; E [{ Ψ }]) where
   frame := by
@@ -531,6 +731,8 @@ instance frameTwp {p : Bool} [H : ∀ v, Frame p R (Φ v) (Ψ v)] :
     apply mono
     exact fun v => (H v).frame
 
+-- Iris-Rocq reuses the module-qualified name `is_except_0_wp` here; that alias
+-- is already assigned to partial WP in Lean, so this instance is left unaliased.
 instance isExcept0Twp : IsExcept0 (WP e @ s ; E [{ Φ }]) where
   is_except0 :=
     calc iprop(◇ _)
@@ -538,6 +740,7 @@ instance isExcept0Twp : IsExcept0 (WP e @ s ; E [{ Φ }]) where
       _ ⊢ |={E}=> _ := BIFUpdate.except0
       _ ⊢ WP e @ s ; E [{ Φ }] := fupd_twp
 
+@[rocq_alias elim_modal_fupd_twp]
 instance (priority := default + 10) elimModalFupdTwp p :
     ElimModal True p false iprop(|={E}=> P) P
       (WP e @ s ; E [{ Φ }]) (WP e @ s ; E [{ Φ }]) where
@@ -549,6 +752,7 @@ instance (priority := default + 10) elimModalFupdTwp p :
     imodintro
     iapply G $$ H
 
+@[rocq_alias elim_modal_bupd_twp]
 instance elimModalBupdTwp p :
     ElimModal True p false iprop(|==> P) P
       (WP e @ s ; E [{ Φ }]) (WP e @ s ; E [{ Φ }]) where
@@ -557,6 +761,38 @@ instance elimModalBupdTwp p :
     refine BI.sep_mono (BI.intuitionisticallyIf_mono
       (BIUpdateFUpdate.fupd_of_bupd (E := E))) .rfl |>.trans ?_
     apply elimModalFupdTwp _ |>.elim_modal ⟨⟩
+
+/-- The same diagnostic as partial WP: changing masks through a non-atomic
+TWP goal requires an explicit leading update. -/
+@[rocq_alias elim_modal_fupd_twp_wrong_mask]
+instance elimModalFupdTwp_wrongMask :
+    ElimModal (PMError "Goal and eliminated modality must have the same mask.
+    Use `iapply twp.fupd_twp; imod (fupd_mask_subseteq E₂)` to adjust the mask of your goal to `E₂`")
+      p false iprop(|={E₂}=> P) iprop(False)
+      (WP e @ s ; E₁ [{ Φ }]) iprop(False) where
+  elim_modal := nofun
+
+@[rocq_alias elim_modal_fupd_twp_atomic]
+instance elimModalFupdTwpAtomic :
+    ElimModal (Language.Atomic ↑s e) p false iprop(|={E₁,E₂}=> P) P
+      (WP e @ s ; E₁ [{ Φ }])
+      (WP e @ s ; E₂ [{ v, |={E₂,E₁}=> Φ v }]) where
+  elim_modal := by
+    rintro hatomic
+    iintro ⟨H, G⟩
+    icases BI.intuitionisticallyIf_elim $$ H with H
+    iapply atomic
+    imod H
+    imodintro
+    iapply G $$ H
+
+@[rocq_alias elim_modal_fupd_twp_atomic_wrong_mask]
+instance elimModalFupdTwpAtomic_wrongMask :
+    ElimModal (PMError "Goal and eliminated modality must have the same mask.
+    Use `iapply twp.fupd_twp; imod (fupd_mask_subseteq E₂)` to adjust the mask of your goal to `E₂`")
+      p false iprop(|={E₁,E₂}=> P) iprop(False)
+      (WP e @ s ; E₁ [{ Φ }]) iprop(False) where
+  elim_modal := nofun
 
 end ProofMode
 
