@@ -47,9 +47,9 @@ theorem wp_step (s : Stuckness) (e1 : Expr) (σ1 : State)
   rw [wp_unfold.to_eq]
   simp only [wp.pre, Language.val_stuck Hstep]
   iintro Hσ Hcred Hwp
-  imod Hwp $$ %σ1 %ns %κ %κs %nt Hσ with ⟨%_, Hcont⟩
+  imod Hwp $$ %σ1 %ns %(κ ++ κs) %nt Hσ with ⟨%_, Hcont⟩
   imodintro
-  ihave Hcont := Hcont $$ %e2 %σ2 %efs %Hstep Hcred
+  ihave Hcont := Hcont $$ %e2 %σ2 %efs %κ %κs [//] %Hstep Hcred
   iapply step_fupdN_wand $$ Hcont
   iintro >⟨HSI, Hwp2, Hefs⟩
   imodintro
@@ -103,8 +103,7 @@ theorem wp_not_stuck (κs : List Obs) (nt : Nat) (e : Expr) (σ : State)
   | none =>
     dsimp only
     iintro Hst Hcont
-    ispecialize Hcont $$ %σ %ns %([]) %κs %nt
-    rw [List.nil_append]
+    ispecialize Hcont $$ %σ %ns %κs %nt
     imod Hcont $$ Hst with ⟨%H, _⟩
     imodintro
     ipureintro

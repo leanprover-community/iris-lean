@@ -20,50 +20,54 @@ variable {σ : State} {P Q : IProp GF} {Φ : Val → IProp GF}
 
 @[rocq_alias wp_lift_base_step_fupd]
 theorem wp_lift_base_step_fupd (h : toVal e₁ = none) :
-    (∀ σ₁ ns obs obs' nt, stateInterp σ₁ ns (obs ++ obs') nt ={E,∅}=∗
+    (∀ σ₁ ns obs nt, stateInterp σ₁ ns obs nt ={E,∅}=∗
       ⌜BaseStep.Reducible (e₁,σ₁)⌝ ∗
-      ∀ e₂ σ₂ eₜ, ⌜(e₁,σ₁) -<obs>->ᵇ (e₂,σ₂,eₜ)⌝ -∗ £ 1 ={∅}=∗ ▷ |={∅,E}=>
+      ∀ e₂ σ₂ eₜ κ obs',
+        ⌜obs = κ ++ obs'⌝ -∗
+        ⌜(e₁,σ₁) -<κ>->ᵇ (e₂,σ₂,eₜ)⌝ -∗ £ 1 ={∅}=∗ ▷ |={∅,E}=>
         stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
         WP e₂ @ s; E {{ Φ }} ∗
         [∗list] ef ∈ eₜ, WP ef @ s; ⊤ {{ ι.forkPost }})
     ⊢ WP e₁ @ s; E {{ Φ }} := by
   iintro H
   iapply wp_lift_step_fupd h
-  iintro %σ₁ %ns %obs %obs' %nt Hσ
+  iintro %σ₁ %ns %obs %nt Hσ
   imod H $$ Hσ with ⟨%Hred, H⟩
   imodintro
   isplit
   · ipureintro
     grind [primStep_reducible_of_baseStep_reducible]
-  iintro %e₂ %σ₂ %eₜ %Hstep
-  iapply H $$ %_ %_ %_
+  iintro %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Hstep
+  iapply H $$ %_ %_ %_ %_ %_ %Hsplit
   ipureintro
   exact baseStep_of_primStep_of_baseStep_reducible Hred Hstep
 
 @[rocq_alias wp_lift_base_step]
 theorem wp_lift_base_step (h : toVal e₁ = none) :
-    (∀ σ₁ ns obs obs' nt, stateInterp σ₁ ns (obs ++ obs') nt ={E,∅}=∗
+    (∀ σ₁ ns obs nt, stateInterp σ₁ ns obs nt ={E,∅}=∗
       ⌜BaseStep.Reducible (e₁, σ₁)⌝ ∗
-      ▷ ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>->ᵇ (e₂,σ₂,eₜ)⌝ -∗ £ 1 ={∅,E}=∗
+      ▷ ∀ e₂ σ₂ eₜ κ obs',
+        ⌜obs = κ ++ obs'⌝ -∗
+        ⌜(e₁, σ₁) -<κ>->ᵇ (e₂,σ₂,eₜ)⌝ -∗ £ 1 ={∅,E}=∗
         stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
         WP e₂ @ s; E {{ Φ }} ∗
         [∗list] ef ∈ eₜ, WP ef @ s; ⊤ {{ ι.forkPost }})
     ⊢ WP e₁ @ s; E {{ Φ }} := by
   iintro H
   iapply wp_lift_base_step_fupd h
-  iintro %σ₁ %ns %obs %obs' %nt Hσ
+  iintro %σ₁ %ns %obs %nt Hσ
   imod H $$ [$] with ⟨$, H⟩
-  iintro !> %e₂ %σ₂ %eₜ %Hbstep Hcred !> !>
-  iapply H $$ %_ %_ %_ %Hbstep Hcred
+  iintro !> %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Hbstep Hcred !> !>
+  iapply H $$ %_ %_ %_ %_ %_ %Hsplit %Hbstep Hcred
 
 @[rocq_alias wp_lift_base_stuck]
 theorem wp_lift_base_stuck (h : toVal e = none) :
     SubredexesAreValues e →
-    (∀ σ ns obs' nt, stateInterp σ ns obs' nt ={E,∅}=∗ ⌜BaseStep.Stuck (e,σ)⌝)
+    (∀ σ ns obs nt, stateInterp σ ns obs nt ={E,∅}=∗ ⌜BaseStep.Stuck (e,σ)⌝)
     ⊢ WP e @ E ? {{ Φ }} := by
   iintro %sav_e H
   iapply wp_lift_stuck h
-  iintro %σ %ns %obs' %nt Hσ
+  iintro %σ %ns %obs %nt Hσ
   imod H $$ Hσ with %H
   ipureintro
   exact primStep_stuck_of_baseStep_stuck H sav_e
@@ -75,7 +79,7 @@ theorem wp_lift_pure_base_stuck (h : toVal e = none) :
     ⊢ WP e @ E ?{{ Φ }} := by
   iintro %sav_e %Hstuck
   iapply wp_lift_base_stuck h sav_e
-  iintro %σ %ns %obs' %nt Hσ
+  iintro %σ %ns %obs %nt Hσ
   iapply fupd_mask_intro Std.LawfulSet.empty_subset
   iintro -
   ipureintro
@@ -83,61 +87,67 @@ theorem wp_lift_pure_base_stuck (h : toVal e = none) :
 
 @[rocq_alias wp_lift_atomic_base_step_fupd]
 theorem wp_lift_atomic_base_step_fupd (h : toVal e₁ = none) :
-    (∀ σ₁ ns obs obs' nt, stateInterp σ₁ ns (obs ++ obs') nt ={E₁}=∗
+    (∀ σ₁ ns obs nt, stateInterp σ₁ ns obs nt ={E₁}=∗
       ⌜BaseStep.Reducible (e₁, σ₁)⌝ ∗
-      ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>->ᵇ (e₂, σ₂, eₜ)⌝ -∗ £ 1 ={E₁}[E₂]▷=∗
+      ∀ e₂ σ₂ eₜ κ obs',
+        ⌜obs = κ ++ obs'⌝ -∗
+        ⌜(e₁, σ₁) -<κ>->ᵇ (e₂, σ₂, eₜ)⌝ -∗ £ 1 ={E₁}[E₂]▷=∗
         stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
         (∃ v, ⌜(toVal e₂) = some v⌝ ∧ Φ v) ∗
         [∗list] ef ∈ eₜ, WP ef @ s; ⊤ {{ ι.forkPost }})
     ⊢ WP e₁ @ s; E₁ {{ Φ }} := by
   iintro H
   iapply wp_lift_atomic_step_fupd (E₂ := E₂) h
-  iintro %σ₁ %ns %obs %obs' %nt Hσ₁
+  iintro %σ₁ %ns %obs %nt Hσ₁
   imod H $$ Hσ₁ with ⟨%Hbred, H⟩
   imodintro
   isplit
   · ipureintro; grind only [primStep_reducible_of_baseStep_reducible]
-  iintro %_ %_ %_ %Hstep
-  iapply H
+  iintro %_ %_ %_ %κ %obs' %Hsplit %Hstep
+  iapply H $$ %_ %_ %_ %_ %_ %Hsplit
   ipureintro
   exact baseStep_of_primStep_of_baseStep_reducible Hbred Hstep
 
 @[rocq_alias wp_lift_atomic_base_step]
 theorem wp_lift_atomic_base_step (h : toVal e₁ = none) :
-    (∀ σ₁ ns obs obs' nt, stateInterp σ₁ ns (obs ++ obs') nt ={E}=∗
+    (∀ σ₁ ns obs nt, stateInterp σ₁ ns obs nt ={E}=∗
       ⌜BaseStep.Reducible (e₁, σ₁)⌝ ∗
-      ▷ ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>->ᵇ (e₂, σ₂, eₜ)⌝ -∗ £ 1 ={E}=∗
+      ▷ ∀ e₂ σ₂ eₜ κ obs',
+        ⌜obs = κ ++ obs'⌝ -∗
+        ⌜(e₁, σ₁) -<κ>->ᵇ (e₂, σ₂, eₜ)⌝ -∗ £ 1 ={E}=∗
         stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
         (∃ v, ⌜(toVal e₂) = some v⌝ ∧ Φ v) ∗
         [∗list] ef ∈ eₜ, WP ef @ s; ⊤ {{ ι.forkPost }})
     ⊢ WP e₁ @ s; E {{ Φ }} := by
   iintro H
   iapply wp_lift_atomic_step h
-  iintro %σ₁ %ns %obs %obs' %nt Hσ₁
+  iintro %σ₁ %ns %obs %nt Hσ₁
   imod H $$ Hσ₁ with ⟨%Hbred, H⟩
   imodintro
   isplit
   · ipureintro; grind only [primStep_reducible_of_baseStep_reducible]
   inext
-  iintro %e₂ %σ₂ %eₜ %Hstep Hcred
-  iapply H $$ %_ %_ %_ [] Hcred
+  iintro %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Hstep Hcred
+  iapply H $$ %_ %_ %_ %_ %_ %Hsplit [] Hcred
   ipureintro
   exact baseStep_of_primStep_of_baseStep_reducible Hbred Hstep
 
 @[rocq_alias wp_lift_atomic_base_step_no_fork_fupd]
 theorem wp_lift_atomic_base_step_no_fork_fupd (h : toVal e₁ = none) :
-    (∀ σ₁ ns obs obs' nt, stateInterp σ₁ ns (obs ++ obs') nt ={E₁}=∗
+    (∀ σ₁ ns obs nt, stateInterp σ₁ ns obs nt ={E₁}=∗
       ⌜BaseStep.Reducible (e₁, σ₁)⌝ ∗
-      ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>->ᵇ (e₂, σ₂, eₜ)⌝ -∗ £ 1 ={E₁}[E₂]▷=∗
+      ∀ e₂ σ₂ eₜ κ obs',
+        ⌜obs = κ ++ obs'⌝ -∗
+        ⌜(e₁, σ₁) -<κ>->ᵇ (e₂, σ₂, eₜ)⌝ -∗ £ 1 ={E₁}[E₂]▷=∗
         ⌜eₜ = []⌝ ∗ stateInterp σ₂ (ns + 1) obs' nt ∗ (∃ v, ⌜(toVal e₂) = some v⌝ ∧ Φ v))
     ⊢ WP e₁ @ s; E₁ {{ Φ }} := by
   iintro H
   iapply wp_lift_atomic_base_step_fupd (E₂ := E₂) h
-  iintro %σ₁ %ns %obs %obs' %nt Hσ₁
-  imod H $$ %_ %_ %_ %_ %_ Hσ₁ with ⟨$, H⟩
+  iintro %σ₁ %ns %obs %nt Hσ₁
+  imod H $$ %_ %_ %_ %_ Hσ₁ with ⟨$, H⟩
   imodintro
-  iintro %_ %_ %_ %Hbstep Hcred
-  imod H $$ %_ %_ %_ %Hbstep Hcred with H
+  iintro %_ %_ %_ %κ %obs' %Hsplit %Hbstep Hcred
+  imod H $$ %_ %_ %_ %_ %_ %Hsplit %Hbstep Hcred with H
   iintro !> !>
   imod H with ⟨%h, _, _⟩
   subst h
@@ -147,19 +157,21 @@ theorem wp_lift_atomic_base_step_no_fork_fupd (h : toVal e₁ = none) :
 
 @[rocq_alias wp_lift_atomic_base_step_no_fork]
 theorem wp_lift_atomic_base_step_no_fork (h : toVal e₁ = none) :
-    (∀ σ₁ ns obs obs' nt, stateInterp σ₁ ns (obs ++ obs') nt ={E}=∗
+    (∀ σ₁ ns obs nt, stateInterp σ₁ ns obs nt ={E}=∗
       ⌜BaseStep.Reducible (e₁, σ₁)⌝ ∗
-      ▷ ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>->ᵇ (e₂, σ₂, eₜ)⌝ -∗ £ 1 ={E}=∗
+      ▷ ∀ e₂ σ₂ eₜ κ obs',
+        ⌜obs = κ ++ obs'⌝ -∗
+        ⌜(e₁, σ₁) -<κ>->ᵇ (e₂, σ₂, eₜ)⌝ -∗ £ 1 ={E}=∗
         ⌜eₜ = []⌝ ∗ stateInterp σ₂ (ns + 1) obs' nt ∗ (∃ v, ⌜(toVal e₂) = some v⌝ ∧ Φ v))
     ⊢ WP e₁ @ s; E {{ Φ }} := by
   iintro H
   iapply wp_lift_atomic_base_step h
-  iintro %σ₁ %ns %obs %obs' %nt Hσ₁
+  iintro %σ₁ %ns %obs %nt Hσ₁
   imod H $$ Hσ₁  with ⟨$, H⟩
   imodintro
   inext
-  iintro %v2 %σ₂ %eₜ %Hstep Hcred
-  imod H $$ %_ %_ %_ %Hstep Hcred with ⟨%h, _, _⟩
+  iintro %v2 %σ₂ %eₜ %κ %obs' %Hsplit %Hstep Hcred
+  imod H $$ %_ %_ %_ %_ %_ %Hsplit %Hstep Hcred with ⟨%h, _, _⟩
   subst h
   imodintro
   simp only [List.length_nil, Nat.add_zero, Algebra.BigOpL.bigOpL_nil]
