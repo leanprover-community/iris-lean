@@ -8,7 +8,6 @@ module
 import Batteries.Data.List.Perm
 import Iris.Std.FromMathlib
 public import Iris.Std.GenSets
-public import Iris.Std.GenSets
 
 /-! ## Partial Maps
 
@@ -159,9 +158,11 @@ instance : SDiff (M V) := ⟨difference⟩
 /-- Two PartialMaps are pointwise equivalent. -/
 @[simp] def equiv (m1 m2 : M V) : Prop := ∀ k, get? m1 k = get? m2 k
 
-theorem equiv.refl : ∀ {a : M V}, equiv a a := by simp only [equiv, implies_true]
+@[simp,refl]
+theorem equiv.refl : ∀ a : M V, equiv a a := by simp only [equiv, implies_true]
 
-instance instEquivRefl : Reflexive (@equiv K V M _) := ⟨equiv.refl⟩
+instance instEquivRefl : Std.Refl (@equiv K V M _) where
+  refl := equiv.refl
 
 theorem equiv.trans : ∀ {a b c : M V}, equiv a b → equiv b c → equiv a c := by simp_all
 

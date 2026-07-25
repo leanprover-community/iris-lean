@@ -190,14 +190,14 @@ theorem auth_unpersist (n : MaxNat) :
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias mono_nat_auth_dfrac_is_op]
 instance {dq dq1 dq2 : DFrac} {n : MaxNat}
-    [h : IsOp io1 dq io2 dq1 io3 dq2] :
-    IsOp io1 (●MN{dq} n) io2 (●MN{dq1} n) io3 (●MN{dq2} n) where
+    [h : IsOp d dq dq1 dq2] :
+    IsOp d (●MN{dq} n) (●MN{dq1} n) (●MN{dq2} n) where
   is_op := by rw [h.is_op.to_eq]; apply auth_dfrac_op
 
 @[rocq_alias mono_nat_lb_max_is_op]
 instance {n n1 n2 : MaxNat}
-    [h : IsOp io1 n io2 n1 io3 n2] :
-    IsOp io1 (◯MN n : MonoNat) io2 (◯MN n1) io3 (◯MN n2) where
+    [h : IsOp d n n1 n2] :
+    IsOp d (◯MN n : MonoNat) (◯MN n1) (◯MN n2) where
   is_op := by rw [h.is_op.to_eq]; exact .rfl
 
 end MonoNat

@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Michael Sammler
+Authors: Michael Sammler, Alvin Tang
 -/
 module
 
@@ -21,6 +21,12 @@ inductive InOut where
   | in
   | out
 
+/-- `InOut.negate` converts `.in` into `.out`, and vice versa. -/
+@[reducible, expose]
+def InOut.negate : InOut → InOut
+  | .in => .out
+  | .out => .in
+
 /-- Marker for an unchecked input parameter. -/
 @[reducible, expose]
 def uncheckedInParam (α : Sort u) : Sort u := α
@@ -38,42 +44,36 @@ The parameters of a class declared with `ipm_class` are categorized into the fol
 1. in: This is the default for a parameter when not annotated in another way.
 2. out: These are parameters marked with `outParam`. These parameters must be mvars when starting
    typeclass search.
-3. semiOut: These are parameters marked with `semiOutParam`. The preceding parameter must be of type `InOut`.
-   The value of the `InOut` parameter decides whether the `semiOut` parameter is treated as an input
-   or an output.
+3. semiOut: These are parameters marked with `semiOutParamIPM`. The `InOut` argument of `semiOutParamIPM`
+   determines whether the semiOut parameter is treated as an input or an output.
 4. uncheckedIn: These are parameters marked with `uncheckedInParam`. These behave like `in` parameters,
    but allow mvars to match terms (see below).
-5. inout: Parameters of type `InOut`, must appear before semiOut parameters (see above).
 
 The following constraints apply to the parameters:
-(In the following, semiOut parameters are treated as inputs if the preceding `InOut` is `in` and as
-outputs if the `InOut` is `out`.)
-1. semiOut parameters must have a preceding `InOut` parameter.
-2. For each synthesis problem, all output parameters must be mvars.
-3. When an input parameter is a mvar, it is not considered to match an instance which does not have
+(In the following, semiOut parameters are treated as inputs according to the value of their `InOut` argument.)
+1. For each synthesis problem, all output parameters must be mvars.
+2. When an input parameter is a mvar, it is not considered to match an instance which does not have
 an mvar at the top-level. This is to prevent accidentally instantiating mvars. Note that this only
 applies for mvars the top-level (matching the behavior of Hint Mode : ! in Rocq), since this is the
 simplest version to implement and catches most (all?) of the cases.
-This check 3 is omitted for `uncheckedIn` parameters.
+This check 2 is omitted for `uncheckedIn` parameters.
 
-(We are reusing `outParam` and `semiOutParam` from the Lean TC infrastructure since this gives us
+(We are reusing `outParam` from the Lean TC infrastructure since this gives us
 checking synthesis order checking, which is useful (though not perfect).)
  -/
 inductive ParamKind
   | in
   | out
-  | semiOut
+  | semiOut (expr : Expr)
   | uncheckedIn
-  | inout
 deriving Inhabited
 
 instance : ToString ParamKind where
   toString
     | .in => "in"
     | .out => "out"
-    | .semiOut => "semiOut"
+    | .semiOut expr => s!"semiOut {expr}"
     | .uncheckedIn => "uncheckedIn"
-    | .inout => "inout"
 
 section IPMClasses
 structure ClassEntry where
@@ -122,30 +122,45 @@ initialize ipmClassesExt :
 private def getIPMParamKinds? (env : Environment) (declName : Name) : Option (Array ParamKind) :=
   (ipmClassesExt.getState env).paramMap.find? declName
 
-private partial def computeParamKinds (params : Array ParamKind) (wasInOut : Bool) (type : Expr) :
-Except MessageData (Array ParamKind) :=
+@[reducible, expose]
+def semiOutParamCore (_io : InOut) (α : Sort u) : Sort u := α
+
+/--
+  The keyword `semiOutParamIPM` is analogous to `semiOutParam`, with
+  an `InOut` value as an explicit argument, which determines whether this is an
+  input parameter or an output paramter for the purpose of type class synthesis.
+
+  This should be used instead of `semiOutParam` for any type class with
+  the annotation `[ipm_class]`.
+-/
+macro "semiOutParamIPM" io:term:max α:term:max : term =>
+  `(semiOutParam (semiOutParamCore $io $α))
+
+private def parseInOutParam (d : Expr) : Option Expr := do
+  if !d.isAppOfArity ``semiOutParam 1 then failure
+  let expr := d.getAppArgs[0]!
+  if !expr.isAppOfArity ``semiOutParamCore 2 then failure
+  some expr.getAppArgs[0]!
+
+private partial def computeParamKinds (params : Array ParamKind) (type : Expr) : Except MessageData (Array ParamKind) :=
   match type with
   | .forallE _ d b _ =>
-    if wasInOut then
-      if d.isSemiOutParam then
-        computeParamKinds (params.push .semiOut) false b
-      else
-        Except.error m!"invalid ipm_class, parameter #{params.size} is a `InOut` that is not followed \
-        by a `semiOutParam`"
+    -- we need to check this before outParam since `outParam (uncheckedInParam _)` should be
+    -- an `uncheckedInParam`
+    if isUncheckedInParam d then
+      computeParamKinds (params.push .uncheckedIn) b
+    else if d.isOutParam then
+      computeParamKinds (params.push .out) b
+    else if let some expr := parseInOutParam d then
+      computeParamKinds (params.push (.semiOut expr)) b
+    else if d.isAppOfArity ``semiOutParamCore 2 then
+      Except.error m!"invalid ipm_class, `semiOutParamCore` used directly \
+        in parameter #{params.size + 1}. Use `semiOutParamIPM` instead"
+    else if d.isSemiOutParam then
+      Except.error m!"invalid ipm_class, `semiOutParam` used directly \
+        in parameter #{params.size + 1}. Use `semiOutParamIPM` instead"
     else
-      -- we need to check this before outParam since `outParam (uncheckedInParam _)` should be
-      -- an `uncheckedInParam`
-      if isUncheckedInParam d then
-        computeParamKinds (params.push .uncheckedIn) false b
-      else if d.isOutParam then
-        computeParamKinds (params.push .out) false b
-      else if d.isSemiOutParam then
-        Except.error m!"invalid ipm_class, parameter #{params.size+1} is a `semiOutParam` that is \
-        not preceded by an `InOut`"
-      else if d.isAppOfArity ``InOut 0 then
-        computeParamKinds (params.push .inout) true b
-      else
-        computeParamKinds (params.push .in) false b
+      computeParamKinds (params.push .in) b
   | _ => return params
 
 /--
@@ -164,27 +179,28 @@ def checkIPMSynthParams (type : Expr) : MetaM (Option (Array Nat)) := do
     let args := typeBody.getAppArgs
     if args.size != params.size then
       throwError "mismatched number of arguments"
-    let mut inoutIsIn := false
+
     let mut mvarInputs := #[]
+
     for i in 0...args.size do
       let param := params[i]!
       let arg := args[i]!
-      let param := if param matches .semiOut then
-          if inoutIsIn then .in else .out
-        else param
+
+      let param ← match param with
+      | .semiOut expr =>
+        -- Reduce the `InOut` argument and determine whether it is `.in` or `.out`
+        let expr ← whnf <| expr.instantiateRev <| args.extract 0 i
+        if expr.isAppOfArity ``InOut.in 0 then pure .in
+        else if expr.isAppOfArity ``InOut.out 0 then pure .out
+        else throwError m!"unable to parse the Boolean expression {expr}"
+      | p => pure p
+
       match param with
       | .uncheckedIn => pure ()
       | .in => if arg.getAppFn.isMVar then mvarInputs := mvarInputs.push i
       | .out => if !arg.getAppFn.isMVar then
         throwError "parameter #{i} {arg} of {type} is an out parameter that is not an mvar"
-      | .inout =>
-        if arg.isAppOfArity ``InOut.in 0 then
-          inoutIsIn := true
-        else if arg.isAppOfArity ``InOut.out 0 then
-          inoutIsIn := false
-        else
-          throwError "parameter #{i} {arg} of {type} is an inout parameter that is not .in nor .out"
-      | .semiOut => unreachable!
+      | .semiOut _ => unreachable!
     return some mvarInputs
 
 syntax (name := ipm_class) "ipm_class" : attr
@@ -198,7 +214,7 @@ initialize registerBuiltinAttribute {
     let some decl := env.find? declName
       | throwError "unknown declaration '{declName}'"
     unless kind == AttributeKind.global do throwAttrMustBeGlobal `ipm_class kind
-    let params ← ofExcept <| computeParamKinds #[] false decl.type
+    let params ← ofExcept <| computeParamKinds #[] decl.type
     trace[Meta.synthInstance.ipmParamKinds] m!"IPM params of {declName}: {params}"
     let env := ipmClassesExt.addEntry env {name := declName, params}
     setEnv env

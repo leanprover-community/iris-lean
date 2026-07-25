@@ -19,19 +19,6 @@ export Top (top)
 
 notation "⊤" => top
 
-/-- Require that a relation `R` on `a` is reflexive. -/
-class Reflexive (R : Relation α) where
-  refl {x : α} : R x x
-export Reflexive (refl)
-
-/-- Require that a relation `R` on `α` is transitive. -/
-class Transitive (R : Relation α) where
-  trans {x y z : α} : R x y → R y z → R x z
-export Transitive (trans)
-
-/-- Require that a relation `R` on `α` is a preorder, i.e. that it is reflexive and transitive. -/
-class Preorder (R : Relation α) extends Reflexive R, Transitive R
-
 /-- Require that a relation `R` on `α` is a strict order, i.e. that it is irreflexive and transitive. -/
 class IsStrictOrder (R : Relation α) extends Std.Irrefl R, Trans R R R
 
