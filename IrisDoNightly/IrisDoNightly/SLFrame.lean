@@ -7,20 +7,6 @@ import Std.Tactic.Do
 public meta import Lean.Elab.Tactic.Do.Internal.VCGen.FrameProc
 public meta import Lean.Meta.Sym.Pattern
 
-/-!
-# Phase 4 — Frame-inference metaprogramming for `∗` (+ Phase 5 front-end demos)
-
-Per `SEPLOGIC_PORT.md` §7 Phases 4–5. This is `Phase0Spike.lean`'s frameproc machinery retargeted
-onto the real `Iris.HeapLang.HProp`/`sepConj` (Phase 2) and the `HeapLangAxioms` spec laws (Phase 3):
-the separation-logic structural lemmas `sepConj_mono_r`/`sepConj_frame_r`, the `∗`-atom flattener
-`sepAtoms`, the domain-difference frame inference `sepConjFrameProc`, and the `@[frameproc] heapFP`
-keyed on `prog := ``Iris.HeapLang.Exp`. Phase 0 already proved this path fires on the non-monadic
-`Exp` WP, so the only change from the spike is the target constants.
-
-The demos at the bottom (Phase 5) drive `vcgen` over the real SL: auto-framed and explicitly-framed
-`store`, and a mixed `alloc`/`store`/`load` program.
--/
-
 set_option mvcgen.warning false
 set_option grind.warning false
 
