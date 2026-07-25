@@ -557,9 +557,8 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
   ihave HWPe : iprop(WP e @ s; E {{ v_e, ∃ pvs', proph p pvs' ∗
       ∀ pvs'', ⌜pvs' = (v_e, w) :: pvs''⌝ -∗ proph p pvs'' -∗ Φ v_e }}) $$ [Hp HWPe]
   · iapply HWPe; iexact Hp
-  ihave HWPe := (show iprop(WP e @ s; E {{ v_e, ∃ pvs', proph p pvs' ∗
-      ∀ pvs'', ⌜pvs' = (v_e, w) :: pvs''⌝ -∗ proph p pvs'' -∗ Φ v_e }}) ⊢ _
-    by rw [wp_unfold.to_eq]; simp only [wp.pre, hne]; exact .rfl) $$ HWPe
+  ihave HWPe := wp_unfold.mp $$ HWPe
+  isimp only [wp.pre, hne] in HWPe
   ihave Hσ_e : iprop(stateInterp σ₁ ns obs nt) $$ [Hheap Hpmap]
   · iapply (stateInterp_split σ₁ ns obs nt).mpr; iframe Hheap; iexact Hpmap
   imod HWPe $$ %_ %_ %_ %_ Hσ_e with ⟨%Hred_e, HWPe⟩
