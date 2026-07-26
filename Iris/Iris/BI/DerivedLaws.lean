@@ -615,6 +615,23 @@ theorem wandIff_trans [BI PROP] {P Q R : PROP} :
   · exact (sep_mono and_elim_l and_elim_l).trans wand_trans
   · exact (sep_mono and_elim_r and_elim_r).trans <| sep_comm.mp.trans wand_trans
 
+@[rocq_alias bi.exist_wand_forall]
+theorem exists_wand_forall [BI PROP] {P : PROP} {Ψ : α → PROP} :
+    ((∃ x, Ψ x) -∗ P) ⊣⊢ (∀ x, Ψ x -∗ P) := by
+  constructor
+  · exact forall_intro (wand_mono_left <| exists_intro ·)
+  · exact wand_intro <| sep_exists_left.mp.trans <| exists_elim fun x =>
+      (sep_mono_left (forall_elim x)).trans wand_elim_left
+
+@[rocq_alias bi.and_parallel]
+theorem and_parallel [BI PROP] {P1 P2 Q1 Q2 : PROP} :
+    ⊢ (P1 ∧ P2) -∗ ((P1 -∗ Q1) ∧ (P2 -∗ Q2)) -∗ Q1 ∧ Q2 := by
+  apply wand_intro
+  apply wand_intro
+  apply and_intro <;> apply wand_elim <;> apply wand_intro
+  · exact (sep_mono (emp_sep.mp.trans and_elim_l) and_elim_l).trans wand_elim_right
+  · exact (sep_mono (emp_sep.mp.trans and_elim_r) and_elim_r).trans wand_elim_right
+
 @[rocq_alias bi.iff_ne]
 instance iff_ne [BI PROP] : OFE.NonExpansive₂ (BIBase.iff (PROP := PROP)) :=
   ⟨fun {_ _ _} h₁ {_ _} h₂ => and_ne.ne (imp_ne.ne h₁ h₂) (imp_ne.ne h₂ h₁)⟩
