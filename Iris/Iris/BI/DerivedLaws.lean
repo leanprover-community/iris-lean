@@ -891,6 +891,11 @@ instance affinely_affine [BI PROP] (P : PROP) : Affine iprop(<affine> P) where
 instance [BIBase PROP] : Inhabited PROP where
   default := emp
 
+@[rocq_alias bi.pure_impl_forall]
+theorem pure_imp_forall [BI PROP] {φ : Prop} {P : PROP} :
+    (⌜φ⌝ → P) ⊣⊢ (∀ _ : φ, P) :=
+  ⟨forall_intro pure_imp_elim, imp_intro_swap <| pure_elim_left (forall_elim ·)⟩
+
 /-! # Absorbing -/
 
 @[rocq_alias bi.absorbingly_ne]
@@ -2273,3 +2278,5 @@ theorem bi_emp_valid_mono [BI PROP] {P Q : PROP} (h : P ⊢ Q) : (⊢ P) → ⊢
 @[rocq_alias bi.bi_emp_valid_flip_mono]
 theorem bi_emp_valid_flip_mono [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : (⊢ P) ↔ ⊢ Q :=
   ⟨(·.trans h.1), (·.trans h.2)⟩
+
+-/
