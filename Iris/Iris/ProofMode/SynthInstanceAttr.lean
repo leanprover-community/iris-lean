@@ -82,7 +82,7 @@ structure ClassEntry where
   Parameter kinds of class.
   For example, for class
   ```
-  class FromModal {PROP1 : outParam (Type _)} {PROP2} {α} [outParam (BI PROP1)] [BI PROP2]
+  class FromModal {PROP1 : outParam (Type _)} {PROP2} {α : outParam <| Type _} [outParam (BI PROP1)] [BI PROP2]
     (φ : outParam $ Prop) (M : outParam $ Modality PROP1 PROP2) (sel : outParam (uncheckedInParam α))
     (P : PROP2) (Q : outParam $ PROP1) where
   from_modal : φ → M.M Q ⊢ P
