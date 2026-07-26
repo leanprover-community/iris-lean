@@ -1152,7 +1152,7 @@ instance bi_affine_positive [BI PROP] [BIAffine PROP] : BIPositive PROP where
   affinely_sep_l := (affine_affinely _).1.trans (sep_mono_left (affine_affinely _).2)
 
 @[rocq_alias bi.impl_wand_1]
-theorem imp_wand [BI PROP] [BIAffine PROP] {P Q : PROP} : (P → Q) ⊢ P -∗ Q :=
+theorem imp_wand_1 [BI PROP] [BIAffine PROP] {P Q : PROP} : (P → Q) ⊢ P -∗ Q :=
   wand_intro <| sep_and.trans imp_elim_left
 
 theorem pure_sep [BI PROP] {φ1 φ2 : Prop} : ⌜φ1⌝ ∗ (⌜φ2⌝ : PROP) ⊣⊢ ⌜φ1 ∧ φ2⌝ :=
@@ -1372,7 +1372,7 @@ theorem persistently_imp_wand [BI PROP] [BIAffine PROP] {P Q : PROP} :
 
 @[rocq_alias bi.impl_wand_persistently]
 theorem imp_wand_persistently [BI PROP] [BIAffine PROP] {P Q : PROP} :
-    (<pers> P → Q) ⊣⊢ (<pers> P -∗ Q) := ⟨imp_wand, imp_wand_persistently_mpr⟩
+    (<pers> P → Q) ⊣⊢ (<pers> P -∗ Q) := ⟨imp_wand_1, imp_wand_persistently_mpr⟩
 
 @[rocq_alias bi.wand_alt]
 theorem wand_iff_exists_persistently [BI PROP] [BIAffine PROP] {P Q : PROP} :
@@ -2249,6 +2249,13 @@ theorem bigOp_sep_cons [BI PROP] {P : PROP} {Ps : List PROP} :
 
 theorem bigOp_and_cons [BI PROP] {P : PROP} {Ps : List PROP} :
     [∧] (P :: Ps) ⊣⊢ P ∧ [∧] Ps := bigOp_cons
+
+@[rocq_alias bi.persistent_impl_wand_affinely]
+theorem persistent_impl_wand_affinely [BI PROP] {P Q : PROP} [Persistent P] [Absorbing P] :
+    (P → Q) ⊣⊢ (<affine> P -∗ Q) := by
+  constructor
+  · exact wand_intro_left <| persistent_and_affinely_sep_left.mpr.trans imp_elim_right
+  · exact imp_intro_swap <| persistent_and_affinely_sep_left.mp.trans wand_elim_right
 
 /-! # Limits -/
 
