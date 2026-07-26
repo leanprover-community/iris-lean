@@ -25,7 +25,7 @@ open Iris.Std BI
 instance entails_trans' [BI PROP] : Trans (α := PROP) Entails Entails Entails where
   trans h1 h2 := h1.trans h2
 
-@[rocq_alias entails_anti_sym]
+@[rocq_alias bi.entails_anti_sym]
 instance entails_antisymm [BI PROP] : Antisymmetric (α := PROP) BiEntails Entails where
   antisymm h1 h2 := ⟨h1, h2⟩
 

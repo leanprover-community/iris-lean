@@ -264,7 +264,7 @@ instance later_contractive_bi_loeb [BILaterContractive PROP] : BILoeb PROP where
     refine equiv_iff.mp ?_ |>.mp
     exact fixpoint_unfold Flöb
 
-@[rocq_alias not_not_later_False]
+@[rocq_alias bi.not_not_later_False]
 theorem not_not_later_False [BILoeb PROP] : ⊢@{PROP} ¬ ¬ ▷ False := entails_imp loeb
 
 @[rocq_alias bi.löb_alt_wand]
