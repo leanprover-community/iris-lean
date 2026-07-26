@@ -726,7 +726,7 @@ theorem pure_elim [BI PROP] (φ : Prop) {Q R : PROP} (h1 : Q ⊢ ⌜φ⌝) (h2 :
   (and_self (PROP := PROP)).2.trans <| imp_elim <| h1.trans <| pure_elim' fun h =>
     imp_intro_swap <| and_elim_l.trans (h2 h)
 
-@[rocq_alias bi.pure_mono]
+@[rw_mono_rule, rocq_alias bi.pure_mono]
 theorem pure_mono [BI PROP] {φ1 φ2 : Prop} (h : φ1 → φ2) : ⌜φ1⌝ ⊢ (⌜φ2⌝ : PROP) :=
   pure_elim' <| pure_intro ∘ h
 #rocq_ignore bi.pure_mono' "Use pure_mono."
