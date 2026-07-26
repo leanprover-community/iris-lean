@@ -161,6 +161,8 @@ instance later_persistent {P : PROP} [Persistent P] : Persistent iprop(▷ P) wh
 instance later_absorbing {P : PROP} [Absorbing P] : Absorbing iprop(▷ P) where
   absorbing := later_absorbingly.mpr.trans <| later_mono absorbing
 
+#rocq_ignore bi.laterN_iter "laterN in Lean is defined using Nat.repeat directly"
+
 /-! ## Later as a monoid homomorphism
 
 These instances ported from Rocq `bi_later_monoid_*` in
