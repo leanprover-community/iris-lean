@@ -67,27 +67,22 @@ instance intoWand_wand (p q : Bool) [BI PROP] (P Q P' : PROP) [h : FromAssumptio
 instance intoWand_impl_false_true [BI PROP] (P Q P' : PROP) [Absorbing P']
     [h : FromAssumption true ioP P P'] : IntoWand false true iprop(P' → Q) ioP P ioQ Q where
   into_wand := by
-    letI : TCOr (Affine P') (Absorbing iprop(P' → Q)) := sorry
-    apply wand_intro
     calc
-      _ ⊢ (P' → Q) ∗ P'         := sep_mono_right h.from_assumption
-      _ ⊢ (P' → Q) ∧ P'         := sep_and
-      _ ⊢ Q                     := imp_elim_left
+      _ ⊢ <pers> P' → Q           := imp_mono_left persistently_elim
+      _ ⊢ <affine> <pers> P' -∗ Q := persistent_impl_wand_affinely.mp
+      _ ⊢ □ P -∗ Q                := wand_mono_left <| affinely_intro <| Persistent.persistent.trans <| persistently_mono h.from_assumption
 
 @[rocq_alias into_wand_impl_true_false]
 instance intoWand_impl_true_false [BI PROP] (P Q P' P'' : PROP) [h1 : MakeAffinely P P']
     [h2 : FromAssumption false ioP P'' P'] : IntoWand true false iprop(P → Q) ioP P'' ioQ Q where
   into_wand := by
-    letI : TCOr (Affine iprop(P → Q)) (Absorbing iprop(<affine> P)) := sorry
     apply wand_intro
     calc
-      _ ⊢ □ (P → Q) ∗ P''       := .rfl
-      _ ⊢ (P → Q) ∗ P''         := sep_mono_left intuitionistically_elim
-      _ ⊢ (P → Q) ∗ P'          := sep_mono_right h2.from_assumption
-      _ ⊢ (P → Q) ∗ <affine> P  := sep_mono_right h1.make_affinely.mpr
-      _ ⊢ (P → Q) ∧ <affine> P  := sep_and
-      _ ⊢ (P → Q) ∧ P           := and_mono_right affinely_elim
-      _ ⊢ Q                     := imp_elim_left
+      □ (P → Q) ∗ P'' ⊢ (P → Q) ∗ P''    := sep_mono_left intuitionistically_elim
+      _ ⊢ (P → Q) ∗ P'                   := sep_mono_right h2.from_assumption
+      _ ⊢ (P → Q) ∗ <affine> P           := sep_mono_right h1.make_affinely.mpr
+      _ ⊢ (<affine> P -∗ Q) ∗ <affine> P := sep_mono_left sorry
+      _ ⊢ Q                              := wand_elim_left
 
 @[rocq_alias into_wand_impl_true_true]
 instance intoWand_impl_true_true [BI PROP] (P Q P' : PROP)
@@ -105,15 +100,12 @@ instance intoWand_impl_false_false [BI PROP] (P Q P' P'' : PROP) [Absorbing P]
     [TCOr (BIAffine PROP) (Persistent P)] [h1 : MakeAffinely P P']
     [h2 : FromAssumption false ioP P'' P'] : IntoWand false false iprop(P → Q) ioP P'' ioQ Q where
   into_wand := by
-    letI : TCOr (Affine P) (Absorbing iprop(P → Q)) := sorry
     apply wand_intro
-    dsimp
     calc
-      _ ⊢ (P → Q) ∗ P'         := sep_mono_right <| h2.from_assumption
-      _ ⊢ (P → Q) ∗ <affine> P := sep_mono_right <| h1.make_affinely.mpr
-      _ ⊢ (P → Q) ∗ P          := sep_mono_right affinely_elim
-      _ ⊢ (P → Q) ∧ P          := sep_and
-      _ ⊢ Q                    := imp_elim_left
+      _ ⊢ (P → Q) ∗ P'                   := sep_mono_right <| h2.from_assumption
+      _ ⊢ (P → Q) ∗ <affine> P           := sep_mono_right <| h1.make_affinely.mpr
+      _ ⊢ (<affine> P -∗ Q) ∗ <affine> P := sep_mono_left sorry
+      _ ⊢ Q                              := wand_elim_left
 
 @[ipm_backtrack, rocq_alias into_wand_and_l]
 instance intoWand_and_l (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP)
