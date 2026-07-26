@@ -78,11 +78,12 @@ instance intoWand_impl_true_false [BI PROP] (P Q P' P'' : PROP) [h1 : MakeAffine
   into_wand := by
     apply wand_intro
     calc
-      □ (P → Q) ∗ P'' ⊢ (P → Q) ∗ P''    := sep_mono_left intuitionistically_elim
-      _ ⊢ (P → Q) ∗ P'                   := sep_mono_right h2.from_assumption
-      _ ⊢ (P → Q) ∗ <affine> P           := sep_mono_right h1.make_affinely.mpr
-      _ ⊢ (<affine> P -∗ Q) ∗ <affine> P := sep_mono_left sorry
-      _ ⊢ Q                              := wand_elim_left
+      _ ⊢ □ (P → Q) ∗ P'         := sep_mono_right h2.from_assumption
+      _ ⊢ □ (P → Q) ∗ <affine> P := sep_mono_right h1.make_affinely.mpr
+      _ ⊢ □ (P → Q) ∧ <affine> P := sep_and
+      _ ⊢ (P → Q) ∧ <affine> P   := and_mono_left intuitionistically_elim
+      _ ⊢ (P → Q) ∧ P            := and_mono_right affinely_elim
+      _ ⊢ Q                      := imp_elim_left
 
 @[rocq_alias into_wand_impl_true_true]
 instance intoWand_impl_true_true [BI PROP] (P Q P' : PROP)
@@ -97,14 +98,20 @@ instance intoWand_impl_true_true [BI PROP] (P Q P' : PROP)
 
 @[rocq_alias into_wand_impl_false_false]
 instance intoWand_impl_false_false [BI PROP] (P Q P' P'' : PROP) [Absorbing P]
-    [TCOr (BIAffine PROP) (Persistent P)] [h1 : MakeAffinely P P']
+    [inst : TCOr (BIAffine PROP) (Persistent P)] [h1 : MakeAffinely P P']
     [h2 : FromAssumption false ioP P'' P'] : IntoWand false false iprop(P → Q) ioP P'' ioQ Q where
   into_wand := by
     apply wand_intro
-    calc
+    match inst with
+    | TCOr.l => calc
       _ ⊢ (P → Q) ∗ P'                   := sep_mono_right <| h2.from_assumption
       _ ⊢ (P → Q) ∗ <affine> P           := sep_mono_right <| h1.make_affinely.mpr
-      _ ⊢ (<affine> P -∗ Q) ∗ <affine> P := sep_mono_left sorry
+      _ ⊢ (<affine> P -∗ Q) ∗ <affine> P := sep_mono_left <| imp_wand_1.trans <| wand_mono_left affinely_elim
+      _ ⊢ Q                              := wand_elim_left
+    | TCOr.r => calc
+      _ ⊢ (P → Q) ∗ P'                   := sep_mono_right <| h2.from_assumption
+      _ ⊢ (P → Q) ∗ <affine> P           := sep_mono_right <| h1.make_affinely.mpr
+      _ ⊢ (<affine> P -∗ Q) ∗ <affine> P := sep_mono_left persistent_impl_wand_affinely.mp
       _ ⊢ Q                              := wand_elim_left
 
 @[ipm_backtrack, rocq_alias into_wand_and_l]
