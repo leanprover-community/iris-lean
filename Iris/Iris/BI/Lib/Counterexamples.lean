@@ -17,9 +17,7 @@ namespace Iris
 
 open Iris.Std BI
 
-/-! ## Excluded middle makes separating conjunction trivial for affine props -/
-
-section AffineEM
+namespace AffineEM
 
 variable {PROP : Type _} [BI PROP]
 variable (em : ∀ P : PROP, ⊢ P ∨ ¬P)
@@ -46,3 +44,25 @@ theorem and_sep [BIAffine PROP] : P ∧ Q ⊢ P ∗ Q := by
       iassumption
 
 end AffineEM
+
+namespace LoebEM
+
+@[rocq_alias löb_em.later_anything]
+theorem later_anything [BI PROP] (em : ∀ P : PROP, ⊢ P ∨ ¬P) [BILoeb PROP] :
+    ⊢@{PROP} ▷ P := by
+  icases (em iprop(▷ False)) with #(HP | HnotP)
+  · inext
+    iexfalso
+    iassumption
+  · iexfalso
+    iloeb as IH
+    ispecialize HnotP $$ IH
+    iassumption
+
+@[rocq_alias löb_em.later_inconsistent]
+theorem later_inconsistent [Sbi PROP] (em : ∀ P : PROP, ⊢ P ∨ ¬P) : ⊢@{PROP} False := by
+  apply later_soundness (PROP := PROP) (P := iprop(False))
+  apply later_anything
+  assumption
+
+end LoebEM
