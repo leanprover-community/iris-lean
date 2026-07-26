@@ -1591,6 +1591,11 @@ theorem intuitionistically_wand [BI PROP] {P Q : PROP} : (□ P -∗ Q) ⊣⊢ (
   ⟨imp_intro <| persistently_and_intuitionistically_sep_right.1.trans wand_elim_left,
    wand_intro <|persistently_and_intuitionistically_sep_right.2.trans imp_elim_left⟩
 
+@[rocq_alias bi.intuitionistically_intro]
+theorem intuitionistically_intro [BI PROP] {P Q : PROP}
+    [Affine P] [Persistent P] (h : P ⊢ Q) : P ⊢ □ Q :=
+  intuitionistic_alias.trans <| intuitionistically_mono h
+
 theorem affinely_self_sep_intuitionistically [BI PROP] {P : PROP} :
     <affine> (P ∗ □ P) ⊣⊢ □ P :=
   ⟨affinely_mono <| (sep_mono_right persistently_of_intuitionistically).trans self_sep_persistently.1,
