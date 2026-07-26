@@ -2177,12 +2177,8 @@ theorem bigOp_and_cons [BI PROP] {P : PROP} {Ps : List PROP} :
 theorem persistent_impl_wand_affinely [BI PROP] {P Q : PROP} [Persistent P] [Absorbing P] :
     (P → Q) ⊣⊢ (<affine> P -∗ Q) := by
   constructor
-  · apply wand_intro_left
-    refine persistent_and_affinely_sep_left.mpr.trans ?_
-    apply imp_elim_right
-  · apply imp_intro_swap
-    refine persistent_and_affinely_sep_left.mp.trans ?_
-    apply wand_elim_right
+  · exact wand_intro_left <| persistent_and_affinely_sep_left.mpr.trans imp_elim_right
+  · exact imp_intro_swap <| persistent_and_affinely_sep_left.mp.trans wand_elim_right
 
 /-! # Limits -/
 
