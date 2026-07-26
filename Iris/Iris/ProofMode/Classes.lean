@@ -258,6 +258,11 @@ class IntoIH [BI PROP] (φ : Prop) (P : PROP) (Q : outParam PROP) where
   into_ih : φ → □ P ⊢ Q
 export IntoIH (into_ih)
 
+@[ipm_class, rocq_alias IntoEmbed]
+class IntoEmbed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] (P : PROP2) (Q : outParam PROP1) where
+  into_embed : P ⊢ ⎡Q⎤
+export IntoEmbed (into_embed)
+
 #rocq_ignore elim_inv_tc_opaque "No tc_opaque in Lean"
 #rocq_ignore elim_modal_tc_opaque "No tc_opaque in Lean"
 #rocq_ignore from_and_tc_opaque "No tc_opaque in Lean"
