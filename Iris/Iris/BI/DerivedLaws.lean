@@ -613,6 +613,33 @@ instance iff_ne [BI PROP] : OFE.NonExpansive₂ (BIBase.iff (PROP := PROP)) :=
 theorem iff_refl_alias [BI PROP] {Q P : PROP} : Q ⊢ iprop(P ↔ P) :=
   true_intro.trans <| and_intro (imp_intro and_elim_r) (imp_intro and_elim_r)
 
+@[rocq_alias bi.iff_sym]
+theorem iff_sym [BI PROP] {P Q : PROP} : (P ↔ Q) ⊣⊢ (Q ↔ P) :=
+  ⟨and_intro and_elim_r and_elim_l, and_intro and_elim_r and_elim_l⟩
+
+@[rocq_alias bi.iff_trans]
+theorem iff_trans [BI PROP] {P Q R : PROP} : (P ↔ Q) ∧ (Q ↔ R) ⊢ (P ↔ R) := by
+  apply and_intro
+  · exact (and_mono and_elim_l and_elim_l).trans imp_trans
+  · calc
+      _ ⊢ (Q → P) ∧ (R → Q) := and_mono and_elim_r and_elim_r
+      _ ⊢ (R → Q) ∧ (Q → P) := and_comm.mp
+      _ ⊢ R → P             := imp_trans
+
+@[rocq_alias bi.entails_impl]
+theorem entails_imp [BI PROP] {P Q : PROP} (h : P ⊢ Q) : ⊢ P → Q :=
+  imp_intro <| and_elim_r.trans h
+
+@[rocq_alias bi.impl_entails]
+theorem imp_entails [BI PROP] {P Q : PROP} [inst : Affine P] (h : ⊢ P → Q) : P ⊢ Q :=
+  imp_mp (inst.affine.trans h) .rfl
+
+@[rocq_alias bi.equiv_iff]
+theorem equiv_iff_thm [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : ⊢ iprop(P ↔ Q) := by
+  apply and_intro
+  · exact imp_intro <| and_elim_r.trans h.mp
+  · exact imp_intro <| and_elim_r.trans h.mpr
+
 @[rocq_alias bi.wand_iff_ne]
 instance wandIff_ne [BI PROP] : OFE.NonExpansive₂ (wandIff (PROP := PROP)) :=
   ⟨fun {_ _ _} h₁ {_ _} h₂ => and_ne.ne (wand_ne.ne h₁ h₂) (wand_ne.ne h₂ h₁)⟩
@@ -641,6 +668,16 @@ theorem equiv_wandIff [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : ⊢ P ∗-∗ Q 
 @[rocq_alias bi.wand_iff_equiv]
 theorem wandIff_equiv [BI PROP] {P Q : PROP} (h : ⊢ P ∗-∗ Q) : P ⊣⊢ Q :=
   ⟨wand_entails (h.trans and_elim_l), wand_entails (h.trans and_elim_r)⟩
+
+@[rocq_alias bi.bi_or_monoid]
+instance bi_or_monoid [BI PROP] : LawfulBigOp or (iprop(False) : PROP) BiEntails where
+  refl := .rfl
+  symm h := h.symm
+  trans h1 h2 := h1.trans h2
+  comm := or_comm
+  assoc := or_assoc
+  left_id := left_id
+  congr_l := or_congr_left
 
 /-! # Pure -/
 
