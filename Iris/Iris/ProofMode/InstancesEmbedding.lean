@@ -7,6 +7,7 @@ module
 
 public import Iris.BI
 public import Iris.ProofMode.Classes
+public import Iris.ProofMode.ModalityInstances
 
 @[expose] public section
 
@@ -26,3 +27,18 @@ instance (priority := low) asEmpValid_embed
       apply (embed_emp_valid P).mpr <| inst.as_emp_valid_0.as_emp_valid.left hd hφ
     · intro hd hP
       apply inst.as_emp_valid_0.as_emp_valid.right hd <| (embed_emp_valid P).mp hP
+
+@[rocq_alias from_modal_embed]
+instance fromModal_embed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] (P : PROP1) :
+    FromModal True (modality_embed (PROP2 := PROP2)) iprop(⎡P⎤ : PROP2) iprop(⎡P⎤) P where
+  from_modal _ := .rfl
+
+@[rocq_alias into_embed_embed]
+instance intoEmbed_embed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] (P : PROP1) : IntoEmbed iprop(⎡P⎤ : PROP2) P where
+  into_embed := .rfl
+
+@[rocq_alias into_embed_affinely]
+instance intoEmbed_affinely [BI PROP1] [BI PROP2] [BIUpdate PROP1] [BIUpdate PROP2]
+    [BiEmbed PROP1 PROP2] [BiEmbedBUpd PROP1 PROP2] (P : PROP2) (Q : PROP1) [inst : IntoEmbed P Q] :
+    IntoEmbed iprop(<affine> P) iprop(<affine> Q) where
+  into_embed := (affinely_mono inst.into_embed).trans <| embed_affinely_2 Q
