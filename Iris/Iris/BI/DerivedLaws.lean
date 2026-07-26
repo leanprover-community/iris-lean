@@ -24,8 +24,11 @@ open Iris.Std BI
 /- Necessary for `calc`-style proofs. -/
 instance entails_trans' [BI PROP] : Trans (α := PROP) Entails Entails Entails where
   trans h1 h2 := h1.trans h2
+
+@[rocq_alias entails_anti_sym]
 instance entails_antisymm [BI PROP] : Antisymmetric (α := PROP) BiEntails Entails where
   antisymm h1 h2 := ⟨h1, h2⟩
+
 #rocq_ignore bi.entails_proper "Derivable from _ne with NonExpansive.eqv."
 
 instance equiv_trans [BI PROP] : Trans (α := PROP) BiEntails BiEntails BiEntails where
@@ -36,6 +39,8 @@ instance equiv_entails_trans [BI PROP] : Trans (α := PROP) BiEntails Entails En
 
 instance entails_equiv_trans [BI PROP] : Trans (α := PROP) Entails BiEntails Entails where
   trans h1 h2 := h1.trans h2.1
+
+#rocq_ignore bi.equiv_entails_2 "Use the BiEntails constructor directly"
 
 /-! # Logic -/
 
@@ -717,8 +722,9 @@ theorem pure_elim [BI PROP] (φ : Prop) {Q R : PROP} (h1 : Q ⊢ ⌜φ⌝) (h2 :
 @[rocq_alias bi.pure_mono]
 theorem pure_mono [BI PROP] {φ1 φ2 : Prop} (h : φ1 → φ2) : ⌜φ1⌝ ⊢ (⌜φ2⌝ : PROP) :=
   pure_elim' <| pure_intro ∘ h
-#rocq_ignore bi.pure_mono' "Use _mono."
+#rocq_ignore bi.pure_mono' "Use pure_mono."
 #rocq_ignore bi.pure_proper "Derivable from _ne with NonExpansive.eqv."
+#rocq_ignore bi.pure_flip_mono "No Proper type class in Lean. Use pure_mono directly."
 
 theorem pure_congr [BI PROP] {φ1 φ2 : Prop} (h : φ1 ↔ φ2) : ⌜φ1⌝ ⊣⊢ (⌜φ2⌝ : PROP) :=
   ⟨pure_mono h.1,pure_mono h.2⟩
@@ -1573,6 +1579,7 @@ theorem intuitionistically_and_sep [BI PROP] {P Q : PROP} : □ (P ∧ Q) ⊣⊢
 theorem intuitionistically_sep_idem [BI PROP] {P : PROP} : □ P ∗ □ P ⊣⊢ □ P :=
   and_sep_intuitionistically.symm.trans and_self
 
+@[rocq_alias bi.impl_wand_intuitionistically]
 theorem intuitionistically_wand [BI PROP] {P Q : PROP} : (□ P -∗ Q) ⊣⊢ (<pers> P → Q) :=
   ⟨imp_intro <| persistently_and_intuitionistically_sep_right.1.trans wand_elim_left,
    wand_intro <|persistently_and_intuitionistically_sep_right.2.trans imp_elim_left⟩
