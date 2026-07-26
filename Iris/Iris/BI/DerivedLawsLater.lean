@@ -163,6 +163,9 @@ instance later_absorbing {P : PROP} [Absorbing P] : Absorbing iprop(▷ P) where
 
 #rocq_ignore bi.laterN_iter "laterN in Lean is defined using Nat.repeat directly"
 
+theorem later_imp_and {P S : PROP} : ▷ (S → P) ∧ S ⊢ ▷ P :=
+  ((and_mono_right later_intro).trans later_and.mpr).trans <| later_mono <| and_comm.mp.trans imp_elim_right
+
 /-! ## Later as a monoid homomorphism
 
 These instances ported from Rocq `bi_later_monoid_*` in
@@ -263,6 +266,35 @@ instance later_contractive_bi_loeb [BILaterContractive PROP] : BILoeb PROP where
 
 @[rocq_alias not_not_later_False]
 theorem not_not_later_False [BILoeb PROP] : ⊢@{PROP} ¬ ¬ ▷ False := entails_imp loeb
+
+@[rocq_alias bi.löb_alt_wand]
+theorem loeb_alt_wand [BIAffine PROP] :
+    BILoeb PROP ↔ ∀ P : PROP, □ (▷ P -∗ P) ⊢ P := by
+  constructor <;> intro h
+  · apply loeb_wand
+  · constructor
+    intro _ hP
+    apply loeb_weak_of_strong _ hP
+    intro P
+    refine imp_iff_exists_persistently.mp.trans ?_
+    refine exists_elim fun S => ?_
+    apply imp_elim_swap
+    refine intuitionistically_into_persistently.mpr.trans ?_
+    apply imp_intro
+    calc
+      _ ⊢ □ (▷ (S → P) -∗ S → P) ∧ S := and_mono_left ?_
+      _ ⊢ S ∧ □ (▷ (S → P) -∗ S → P) := and_comm.mp
+      _ ⊢ S ∧ (S → P)                 := and_mono_right <| h _
+      _ ⊢ P                           := imp_elim_right
+    apply intuitionistically_intro_intuitionistically
+    apply wand_intro
+    apply imp_intro
+    calc
+      _ ⊢ (<pers> (▷ P ∧ S -∗ P) ∧ ▷ (S → P)) ∧ S := and_mono_left persistently_and_intuitionistically_sep_left.mpr
+      _ ⊢ <pers> (▷ P ∧ S -∗ P) ∧ ▷ (S → P) ∧ S   := and_assoc.mp
+      _ ⊢ □ (▷ P ∧ S -∗ P) ∗ (▷ (S → P) ∧ S)      := persistently_and_intuitionistically_sep_left.mp
+      _ ⊢ (▷ P ∧ S -∗ P) ∗ ▷ P ∧ S                := sep_mono intuitionistically_elim <| and_intro later_imp_and and_elim_r
+      _ ⊢ P                                         := wand_elim_left
 
 /-! # LaterN -/
 
