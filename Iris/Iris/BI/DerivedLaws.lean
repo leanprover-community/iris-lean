@@ -2298,6 +2298,13 @@ theorem persistent_impl_wand_affinely [BI PROP] {P Q : PROP} [Persistent P] [Abs
   · exact wand_intro_left <| persistent_and_affinely_sep_left.mpr.trans imp_elim_right
   · exact imp_intro_swap <| persistent_and_affinely_sep_left.mp.trans wand_elim_right
 
+@[rocq_alias bi.from_option_persistent]
+instance from_option_persistent [BI PROP] {P : PROP} {Ψ : α → PROP} {mx : Option α}
+    [inst : ∀ x, Persistent (Ψ x)] [Persistent P] : Persistent (mx.elim P Ψ) := by
+  cases mx with
+  | none => assumption
+  | some x => apply inst
+
 /-! # Limits -/
 
 @[rocq_alias bi.limit_preserving_entails]
