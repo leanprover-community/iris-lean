@@ -1594,7 +1594,8 @@ theorem affinely_self_sep_intuitionistically [BI PROP] {P : PROP} :
 theorem intuitionistically_imp_wand [BI PROP] {P Q : PROP} : □ (P -∗ Q) ⊢ □ (P → Q) :=
   affinely_mono persistently_imp_wand_mpr
 
-theorem imp_iff_exists_persistently [BI PROP] [BIAffine PROP] {P Q : PROP} :
+@[rocq_alias bi.impl_alt]
+theorem imp_iff_exists_persistently [BI PROP] {P Q : PROP} :
     (P → Q) ⊣⊢ ∃ R, R ∧ <pers> (P ∧ R -∗ Q) := by
   constructor
   · refine (and_true.2.trans ?_).trans (exists_intro iprop(P → Q))
