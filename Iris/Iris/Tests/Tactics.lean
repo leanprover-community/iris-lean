@@ -1994,6 +1994,29 @@ example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP]
   imodintro
   iexact HP
 
+/-- Tests `imodintro` with `intoEmbed_embed`. -/
+example {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+    (P Q : PROP1) : ⎡P⎤ ∗ ⎡P -∗ Q⎤ ⊢@{PROP2} ⎡Q⎤ := by
+  iintro ⟨HP, HPQ⟩
+  imodintro
+  iapply HPQ $$ HP
+
+/-- Tests `imodintro` with `intoEmbed_affinely` and `intoEmbed_embed`. -/
+example {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BIUpdate PROP1] [BIUpdate PROP2]
+    [BiEmbed PROP1 PROP2] [BiEmbedBUpd PROP1 PROP2] (P : PROP1) :
+    <affine> ⎡P⎤ ⊢@{PROP2} ⎡<affine> P⎤ := by
+  iintro HP
+  imodintro
+  iassumption
+
+/- Tests `imodintro` where `intoEmbed_embed` does not apply. -/
+/-- error: imodintro: cannot transform hypothesis HQ : Q with ProofMode.IntoEmbed -/
+#guard_msgs in
+example {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+    (P : PROP1) (Q : PROP2) : ⎡P⎤ ∗ Q ⊢@{PROP2} ⎡P⎤ := by
+  iintro ⟨HP, HQ⟩
+  imodintro
+
 end imodintro
 
 section imod
