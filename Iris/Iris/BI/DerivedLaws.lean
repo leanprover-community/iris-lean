@@ -604,6 +604,17 @@ theorem wandIff_congr_right [BI PROP] {P Q Q' : PROP} (h : Q ⊣⊢ Q') : (P ∗
 @[rocq_alias bi.wand_iff_refl]
 theorem wandIff_refl [BI PROP] {P : PROP} : ⊢ P ∗-∗ P := and_intro wand_rfl wand_rfl
 
+@[rocq_alias bi.wand_iff_sym]
+theorem wandIff_sym [BI PROP] {P Q : PROP} : (P ∗-∗ Q) ⊣⊢ (Q ∗-∗ P) :=
+  ⟨and_symm, and_symm⟩
+
+@[rocq_alias bi.wand_iff_trans]
+theorem wandIff_trans [BI PROP] {P Q R : PROP} :
+    (P ∗-∗ Q) ∗ (Q ∗-∗ R) ⊢ (P ∗-∗ R) := by
+  apply and_intro
+  · exact (sep_mono and_elim_l and_elim_l).trans wand_trans
+  · exact (sep_mono and_elim_r and_elim_r).trans <| sep_comm.mp.trans wand_trans
+
 @[rocq_alias bi.iff_ne]
 instance iff_ne [BI PROP] : OFE.NonExpansive₂ (BIBase.iff (PROP := PROP)) :=
   ⟨fun {_ _ _} h₁ {_ _} h₂ => and_ne.ne (imp_ne.ne h₁ h₂) (imp_ne.ne h₂ h₁)⟩
@@ -2278,5 +2289,3 @@ theorem bi_emp_valid_mono [BI PROP] {P Q : PROP} (h : P ⊢ Q) : (⊢ P) → ⊢
 @[rocq_alias bi.bi_emp_valid_flip_mono]
 theorem bi_emp_valid_flip_mono [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : (⊢ P) ↔ ⊢ Q :=
   ⟨(·.trans h.1), (·.trans h.2)⟩
-
--/
