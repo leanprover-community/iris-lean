@@ -673,6 +673,13 @@ theorem equiv_iff_thm [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : ⊢ iprop(P ↔ 
   · exact imp_intro <| and_elim_r.trans h.mp
   · exact imp_intro <| and_elim_r.trans h.mpr
 
+@[rocq_alias bi.iff_equiv]
+theorem iff_equiv [BI PROP] {P Q : PROP} [Affine P] [Affine Q] (h : ⊢ iprop(P ↔ Q)) :
+    P ⊣⊢ Q := by
+  constructor
+  · exact (and_intro .rfl ((Affine.affine).trans (h.trans and_elim_l))).trans imp_elim_right
+  · exact (and_intro .rfl ((Affine.affine).trans (h.trans and_elim_r))).trans imp_elim_right
+
 @[rocq_alias bi.wand_iff_ne]
 instance wandIff_ne [BI PROP] : OFE.NonExpansive₂ (wandIff (PROP := PROP)) :=
   ⟨fun {_ _ _} h₁ {_ _} h₂ => and_ne.ne (wand_ne.ne h₁ h₂) (wand_ne.ne h₂ h₁)⟩
