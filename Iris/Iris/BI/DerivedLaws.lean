@@ -799,6 +799,26 @@ theorem pure_alt {PROP : Type _} [BI PROP] (φ : Prop) :
     (⌜φ⌝ : PROP) ⊣⊢ ∃ _ : φ, True :=
   (pure_congr ⟨fun h => ⟨h, trivial⟩, fun ⟨h, _⟩ => h⟩).trans pure_exists.symm
 
+@[rocq_alias bi.pure_wand_forall]
+theorem pure_wand_forall [BI PROP] {φ : Prop} {P : PROP} [Absorbing P] :
+    (⌜φ⌝ -∗ P) ⊣⊢ (∀ _ : φ, P) := by
+  constructor
+  · apply forall_intro
+    intro hφ
+    calc
+      _ ⊢ (⌜φ⌝ -∗ P) ∗ emp := sep_emp.mpr
+      _ ⊢ (⌜φ⌝ -∗ P) ∗ ⌜φ⌝ := sep_mono_right <| pure_intro hφ
+      _ ⊢ P                := wand_elim_left
+  · apply wand_intro_left
+    apply wand_elim
+    apply pure_elim'
+    intro hφ
+    apply wand_intro_left
+    calc
+      _ ⊢ P ∗ True := sep_mono_left <| forall_elim hφ
+      _ ⊢ True ∗ P := sep_comm.mp
+      _ ⊢ P        := absorbing
+
 /-! # Affine -/
 
 @[rocq_alias bi.affinely_ne]
@@ -1172,6 +1192,26 @@ theorem pure_wand_mpr [BI PROP] {φ1 φ2 : Prop} : ⌜φ1 → φ2⌝ ⊢ (⌜φ1
 theorem pure_wand [BI PROP] {φ1 φ2 : Prop} : (⌜φ1⌝ -∗ (⌜φ2⌝ : PROP)) ⊣⊢ ⌜φ1 → φ2⌝ := by
   refine ⟨(imp_intro_swap ?_).trans pure_imp.2, pure_wand_mpr⟩
   exact pure_elim_left fun h => true_sep_mpr.trans (eq_true h ▸ wand_elim_right)
+
+/-! # Decidable pure propositions -/
+
+@[rocq_alias bi.decide_bi_True]
+theorem decide_true [BI PROP] (φ : Prop) [Decidable φ] (P : PROP) :
+    (if φ then P else iprop(True)) ⊣⊢ (⌜φ⌝ → P) := by
+  by_cases h : φ
+  · rw [if_pos h]
+    exact ((imp_congr_left (pure_true h)).trans true_imp).symm
+  · rw [if_neg h]
+    exact ((imp_congr_left (pure_false h)).trans false_imp).symm
+
+@[rocq_alias bi.decide_emp]
+theorem decide_emp [BI PROP] [BIAffine PROP] (φ : Prop) [Decidable φ] (P : PROP) :
+    (if φ then P else iprop(emp)) ⊣⊢ (⌜φ⌝ → P) := by
+  by_cases h : φ
+  · rw [if_pos h]
+    exact ((imp_congr_left <| pure_true h).trans true_imp).symm
+  · rw [if_neg h]
+    exact true_emp.symm.trans ((imp_congr_left <| pure_false h).trans false_imp).symm
 
 /-! # Properties of the persistence modality -/
 
@@ -2332,6 +2372,12 @@ theorem LimitPreserving.entails [BI PROP] [COFE A] (Φ Ψ : A → PROP) [Φne : 
     refine equiv_iff.1 ?_
     refine LimitPreserving.equiv f g _ ?_
     exact (equiv_iff.mpr <| h' ·)
+
+@[rocq_alias bi.limit_preserving_emp_valid]
+theorem limitPreserving_emp_valid [BI PROP] [COFE A] (Φ : A → PROP)
+    [OFE.NonExpansive Φ] : LimitPreserving (fun x => ⊢ Φ x) := by
+  refine fun c h => ?_
+  exact LimitPreserving.entails (fun _ => iprop(emp)) Φ c h
 
 @[rocq_alias bi.limit_preserving_Persistent]
 instance limitPreserving_persistent [BI PROP] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
