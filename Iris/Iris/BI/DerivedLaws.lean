@@ -2280,6 +2280,17 @@ theorem bigOp_sep_cons [BI PROP] {P : PROP} {Ps : List PROP} :
 theorem bigOp_and_cons [BI PROP] {P : PROP} {Ps : List PROP} :
     [∧] (P :: Ps) ⊣⊢ P ∧ [∧] Ps := bigOp_cons
 
+@[rocq_alias bi.persistent_absorbingly_affinely]
+theorem persistent_absorbingly_affinely [BI PROP] {P : PROP}
+    [Persistent P] [Absorbing P] : <absorb> <affine> P ⊣⊢ P :=
+  ⟨(sep_mono_right affinely_elim).trans absorbing, absorbingly_affinely_intro_of_persistent⟩
+
+@[rocq_alias bi.persistent_and_sep_assoc]
+theorem persistent_and_sep_assoc [BI PROP] {P Q R : PROP}
+    [Persistent P] [Absorbing P] : P ∧ (Q ∗ R) ⊣⊢ (P ∧ Q) ∗ R :=
+  (and_congr_left persistently_iff.symm).trans <| persistently_and_sep_assoc.trans <|
+    sep_congr_left <| and_congr_left persistently_iff
+
 @[rocq_alias bi.persistent_impl_wand_affinely]
 theorem persistent_impl_wand_affinely [BI PROP] {P Q : PROP} [Persistent P] [Absorbing P] :
     (P → Q) ⊣⊢ (<affine> P -∗ Q) := by
