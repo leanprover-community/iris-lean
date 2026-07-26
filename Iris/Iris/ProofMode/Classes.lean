@@ -197,8 +197,8 @@ For the IPM TC synthesis, it needs to be an `uncheckedInParam` since it should m
 if the user provides an mvar.
 -/
 @[ipm_class, rocq_alias FromModal]
-class FromModal {PROP1 : outParam $ Type _} {PROP2} [outParam $ BI PROP1] [BI PROP2] (φ : outParam $ Prop)
-    (M : outParam $ Modality PROP1 PROP2) (sel : outParam <| uncheckedInParam $ PROP1) (P : PROP2)
+class FromModal {PROP1 : outParam $ Type _} {PROP2} {α : outParam <| Type _} [outParam $ BI PROP1] [BI PROP2] (φ : outParam $ Prop)
+    (M : outParam $ Modality PROP1 PROP2) (sel : outParam <| uncheckedInParam α) (P : PROP2)
     (Q : outParam $ PROP1) where
   from_modal : φ → M.M Q ⊢ P
 export FromModal (from_modal)
