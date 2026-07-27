@@ -353,8 +353,7 @@ theorem saved_A (i : gname) :
   iexact Hi
 
 include fupd_intro fupd_mono fupd_fupd fupd_frame_left fupd_mask_mono
-  inv_alloc inv_fupd consistency
-  sts_alloc start_finish finished_not_start finished_dup in
+  inv_alloc inv_fupd consistency sts_alloc start_finish finished_not_start finished_dup in
 omit instBFupd in
 @[rocq_alias inv.contradiction]
 theorem contradiction : False := by
@@ -376,9 +375,92 @@ end Inv1
 
 section Inv2
 
-end Inv
+variable {gname : Type _} (start finished : gname → PROP)
+variable [∀ γ, Persistent (finished γ)]
 
-/-
+variable (sts_alloc : ⊢ fupd M0 (∃ γ, start γ))
+variable (start_finish : ∀ γ, start γ ⊢ fupd M0 (finished γ))
+variable (finished_not_start : ∀ γ, start γ ∗ finished γ ⊢ (False : PROP))
+
+@[reducible, rocq_alias inv.B]
+def B : PROP := iprop(□ fupd M1 iprop(False))
+
+@[reducible, rocq_alias inv.P]
+def P' (γ : gname) : PROP := iprop(start γ ∨ B fupd)
+
+@[reducible, rocq_alias inv.I]
+def I (i : name) (γ : gname) : PROP := inv i (P' fupd start γ)
+
+include fupd_intro fupd_fupd inv_fupd finished_not_start in
+omit instBFupd in
+@[rocq_alias inv.finished_contradiction]
+theorem finished_contradiction (γ : gname) (i : name) :
+    finished γ ∗ I fupd name inv start i γ ⊢ B fupd := by
+  iintro ⟨#Hfin, #Hi⟩ !>
+  iapply inv_fupd' fupd name inv fupd_fupd inv_fupd i
+  isplit
+  · iexact Hi
+  · iintro (Hstart | #Hfalse)
+    · iexfalso
+      iapply finished_not_start γ
+      iframe Hstart Hfin
+    · iapply fupd_intro
+      isplitl []
+      · iright; iexact Hfalse
+      · iexact Hfalse
+
+include fupd_intro fupd_mono fupd_fupd fupd_frame_left inv_fupd
+  start_finish finished_not_start in
+omit instBFupd in
+@[rocq_alias inv.invariant_contradiction]
+theorem invariant_contradiction {γ : gname} {i : name} :
+    I fupd name inv start i γ ⊢ B fupd := by
+  haveI {p : Bool} {E : Mask} {P Q : PROP} :
+      ElimModal True p .out false (fupd E P) P (fupd E Q) (fupd E Q) :=
+    elim_fupd_fupd fupd fupd_mono fupd_fupd fupd_frame_left p E
+  iintro #Hi !>
+  iapply inv_fupd' fupd name inv fupd_fupd inv_fupd i
+  isplit
+  · iexact Hi
+  · iintro HP
+    ihave >#Hfalse : fupd M0 (B fupd) $$ [HP]
+    · icases HP with (Hstart | #Hfalse)
+      · imod start_finish γ $$ [Hstart] with Hfin
+        iexact Hstart
+        iapply fupd_intro
+        iapply finished_contradiction fupd name inv
+          fupd_intro fupd_fupd inv_fupd start finished finished_not_start γ i
+        iframe Hfin Hi
+      · iapply fupd_intro; iexact Hfalse
+    · iapply fupd_intro
+      isplitl []
+      · iright; iexact Hfalse
+      · iexact Hfalse
+
+include fupd_intro fupd_mono fupd_fupd fupd_frame_left fupd_mask_mono
+  inv_alloc inv_fupd consistency sts_alloc start_finish finished_not_start in
+omit instBFupd in
+@[rocq_alias inv.contradiction']
+theorem contradiction' : False := by
+  apply consistency
+  haveI {p : Bool} {P Q : PROP} :
+      ElimModal True p .out false (fupd M0 P) P (fupd M1 Q) (fupd M1 Q) :=
+    elim_fupd0_fupd1 fupd fupd_mono fupd_fupd fupd_frame_left fupd_mask_mono p
+  haveI {p : Bool} {E : Mask} {P Q : PROP} :
+      ElimModal True p .out false (fupd E P) P (fupd E Q) (fupd E Q) :=
+    elim_fupd_fupd fupd fupd_mono fupd_fupd fupd_frame_left p E
+  imod sts_alloc with ⟨%γ, Hstart⟩
+  imod inv_alloc (P' fupd start γ) $$ [Hstart] with ⟨%i, Hi⟩
+  · ileft; iassumption
+  · ihave #HB := invariant_contradiction fupd name inv
+      fupd_intro fupd_mono fupd_fupd fupd_frame_left inv_fupd
+      start finished start_finish finished_not_start $$ [Hi]
+    · iexact Hi
+    · iexact HB
+
+end Inv2
+
+end Inv
 
 namespace Linear
 
@@ -499,5 +581,3 @@ theorem contradiction [BILoeb PROP] : False := by
     iapply IH $$ Hlc Hfalse
 
 end LaterCreditsPlain
-
--/
