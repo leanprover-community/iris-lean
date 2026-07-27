@@ -955,7 +955,7 @@ instance elimInv_acc_without_close [BI PROP] {X : Type}
     iintro ⟨Hinv, Hin, Hcont⟩
     iapply h2.elim_acc $$ [Hcont]
     · assumption
-    · iassumption
+    · simp only [Option.getD_none, sep_emp.to_eq]; iassumption
     · iapply h1.into_acc hϕ1 $$ Hinv Hin
 
 @[rocq_alias elim_inv_acc_with_close]

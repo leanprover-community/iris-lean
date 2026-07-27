@@ -278,9 +278,7 @@ class ElimInv [BI PROP] (φ : outParam Prop) (X : outParam Type)
     (Pinv : PROP) (Pin : outParam PROP) (Pout : outParam <| X → PROP)
     (close : Bool) (mPclose : outParam <| Option <| X → PROP)
     (Q : PROP) (Q' : outParam <| X → PROP) where
-  elim_inv : φ → Pinv ∗ Pin ∗ (∀ x, (match mPclose with
-    | some Pclose => iprop(Pout x ∗ Pclose x -∗ Q' x)
-    | none => iprop(Pout x -∗ Q' x))) ⊢ Q
+  elim_inv : φ → Pinv ∗ Pin ∗ (∀ x, Pout x ∗ mPclose.getD (λ _ => emp) x -∗ Q' x) ⊢ Q
 export ElimInv (elim_inv)
 
 /-

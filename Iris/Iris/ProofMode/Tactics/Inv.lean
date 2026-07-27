@@ -39,7 +39,7 @@ theorem tac_inv_elim [BI PROP]
     _ ⊢ Pinv ∗ e' ∗ (Pin -∗ Pin) := sep_mono_right <| sep_mono_right wand_rfl
     _ ⊢ Pinv ∗ e'' ∗ Pin         := sep_mono_right pfPin
     _ ⊢ Pinv ∗ Pin ∗ e''         := sep_mono_right sep_comm.mp
-  cases mPclose with simp_all
+  cases mPclose with simp_all [sep_emp.to_eq]
   | none => calc
     e ⊢ Pinv ∗ Pin ∗ e'' := h1
     _ ⊢ _ := sep_mono_right <| sep_mono_right <| forall_intro (wand_intro <| pf ·)
