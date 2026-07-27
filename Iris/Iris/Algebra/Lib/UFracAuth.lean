@@ -20,24 +20,27 @@ authoritative element can allocate a new fragment by increasing its fraction and
 fragment's resource to its payload.
 -/
 
-open Iris OFE CMRA UCMRA Auth Option UFrac
+@[expose] public section
+
+namespace Iris
+open OFE CMRA UCMRA Auth Option UFrac
 
 /-! ## Definitions -/
 
 @[rocq_alias ufrac_authR, rocq_alias ufrac_authUR]
-public abbrev UFracAuth [CMRA A] := Auth (Option (UFrac × A))
+abbrev UFracAuth [CMRA A] := Auth (Option (UFrac × A))
 
 namespace UFracAuth
 
 variable [CMRA A]
 
 @[rocq_alias ufrac_auth_auth]
-public abbrev auth (q : Qp) (a : A) : UFracAuth (A := A) :=
-  Auth.auth (.own 1) (some (⟨q⟩, a))
+nonrec abbrev auth (q : Qp) (a : A) : UFracAuth (A := A) :=
+  auth (.own 1) (some (⟨q⟩, a))
 
 @[rocq_alias ufrac_auth_frag]
-public abbrev frag (q : Qp) (a : A) : UFracAuth (A := A) :=
-  Auth.frag (some (⟨q⟩, a))
+nonrec abbrev frag (q : Qp) (a : A) : UFracAuth (A := A) :=
+  frag (some (⟨q⟩, a))
 
 notation "●U{" q "} " a => auth q a
 notation "◯U{" q "} " a => frag q a
@@ -45,14 +48,14 @@ notation "◯U{" q "} " a => frag q a
 /-! ## NonExpansive instances -/
 
 @[rocq_alias ufrac_auth_auth_ne]
-instance auth_ne {q : Qp} : NonExpansive (auth q : A → UFracAuth) where
-  ne _ _ _ h := Auth.auth_ne.ne ⟨.rfl, h⟩
+nonrec instance auth_ne {q : Qp} : NonExpansive (auth q : A → UFracAuth) where
+  ne _ _ _ h := auth_ne.ne ⟨.rfl, h⟩
 
 #rocq_ignore ufrac_auth_auth_proper "Derivable from auth_ne with NonExpansive.eqv"
 
 @[rocq_alias ufrac_auth_frag_ne]
-instance frag_ne {q : Qp} : NonExpansive (frag q : A → UFracAuth) where
-  ne _ _ _ h := Auth.frag_ne.ne ⟨.rfl, h⟩
+nonrec instance frag_ne {q : Qp} : NonExpansive (frag q : A → UFracAuth) where
+  ne _ _ _ h := frag_ne.ne ⟨.rfl, h⟩
 
 #rocq_ignore ufrac_auth_frag_proper "Derivable from frag_ne with NonExpansive.eqv"
 
@@ -72,22 +75,22 @@ instance frag_discrete {q : Qp} {a : A} [DiscreteE a] : DiscreteE (◯U{q} a : U
 @[rocq_alias ufrac_auth_validN]
 theorem validN {n : Nat} {a : A} {p : Qp} (ha : ✓{n} a) :
     ✓{n} ((●U{p} a : UFracAuth) • ◯U{p} a) := by
-  simpa only [Auth.both_validN] using ⟨incN_refl _, ⟨trivial, ha⟩⟩
+  simpa only [both_validN] using ⟨incN_refl _, ⟨trivial, ha⟩⟩
 
 @[rocq_alias ufrac_auth_valid]
 theorem valid {p : Qp} {a : A} (ha : ✓ a) : ✓ ((●U{p} a : UFracAuth) • ◯U{p} a) :=
-  Auth.auth_both_valid_2 ⟨trivial, ha⟩ ⟨none, .rfl⟩
+  auth_both_valid_2 ⟨trivial, ha⟩ ⟨none, .rfl⟩
 
 /-! ## Agreement -/
 
 @[rocq_alias ufrac_auth_agreeN]
 theorem agreeN {n : Nat} {p : Qp} {a b : A} (h : ✓{n} ((●U{p} a : UFracAuth) • ◯U{p} b)) :
     a ≡{n}≡ b := by
-  obtain ⟨mc, hmc⟩ := (Auth.both_validN.mp h).1
+  obtain ⟨mc, hmc⟩ := (both_validN.mp h).1
   match mc with
   | none => exact hmc.2
   | some (r, _) =>
-    have hp : p = p + r.frac := UFrac.ext_iff.mp hmc.1
+    have hp : p = p + r.frac := ext_iff.mp hmc.1
     grind
 
 @[rocq_alias ufrac_auth_agree]
@@ -103,7 +106,7 @@ theorem agree_L {p : Qp} {a b : A} (h : ✓ ((●U{p} a : UFracAuth) • ◯U{p}
 @[rocq_alias ufrac_auth_includedN]
 theorem includedN {n : Nat} {p q : Qp} {a b : A}
     (h : ✓{n} ((●U{p} a : UFracAuth) • ◯U{q} b)) : some b ≼{n} some a := by
-  rw [Auth.both_validN] at h
+  rw [both_validN] at h
   obtain ⟨⟨mc, hmc⟩, _⟩ := h
   match mc with
   | none => exact ⟨none, hmc.2⟩
@@ -112,7 +115,7 @@ theorem includedN {n : Nat} {p q : Qp} {a b : A}
 @[rocq_alias ufrac_auth_included]
 theorem included [CMRA.Discrete A] {q p : Qp} {a b : A}
     (h : ✓ ((●U{p} a : UFracAuth) • ◯U{q} b)) : some b ≼ some a := by
-  rw [Auth.auth_both_valid_discrete] at h
+  rw [auth_both_valid_discrete] at h
   obtain ⟨⟨mc, hmc⟩, _⟩ := h
   match mc with
   | none => exact ⟨none, fun n => (hmc n).2⟩
@@ -171,15 +174,15 @@ theorem frag_op_valid {q1 q2 : Qp} {a b : A} :
 @[rocq_alias ufrac_auth_is_op]
 instance isOp_ufrac_auth {q q1 q2 : Qp} {a1 a2 : A} {a : outParam A}
     [h1 : IsOp io q q1 q2] [h2 : IsOp io a a1 a2] : IsOp io (◯U{q} a) (◯U{q1} a1) (◯U{q2} a2) where
-  is_op := NonExpansive.eqv (OFE.some_eqv_some.mpr
-    (NonExpansive₂.eqv (OFE.Equiv.of_eq (UFrac.ext_iff.mpr h1.is_op.to_eq)) h2.is_op))
+  is_op := NonExpansive.eqv (some_eqv_some.mpr
+    (NonExpansive₂.eqv (.of_eq (UFrac.ext_iff.mpr h1.is_op.to_eq)) h2.is_op))
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias ufrac_auth_is_op_core_id]
 instance isOp_ufrac_auth_core_id {q q1 q2 : Qp} {a : A} [h1 : CoreId a] [h2 : IsOp io q q1 q2] :
     IsOp io (◯U{q} a) (◯U{q1} a) (◯U{q2} a) where
-  is_op := NonExpansive.eqv (OFE.some_eqv_some.mpr
-    (NonExpansive₂.eqv (OFE.Equiv.of_eq (UFrac.ext_iff.mpr h2.is_op.to_eq)) (op_self a).symm))
+  is_op := NonExpansive.eqv (some_eqv_some.mpr
+    (NonExpansive₂.eqv (.of_eq (ext_iff.mpr h2.is_op.to_eq)) (op_self a).symm))
 
 /-! ## Updates -/
 
@@ -191,29 +194,29 @@ theorem update {p q : Qp} {a b a' b' : A} (h : (a, b) ~l~> (a', b')) :
 @[rocq_alias ufrac_auth_update_surplus]
 theorem update_surplus {p q : Qp} {a b : A} (h : ✓ (a • b)) :
     (●U{p} a : UFracAuth) ~~> (●U{p + q} (a • b)) • ◯U{q} b := by
-  refine Auth.auth_update_alloc (local_update_unital.mpr fun n mpa _ heq => ?_)
+  refine auth_update_alloc (local_update_unital.mpr fun n mpa _ heq => ?_)
   refine ⟨⟨trivial, h.validN⟩, ?_⟩
-  have hop : some ((⟨p + q⟩ : UFrac), a • b) ≡{n}≡ some ((⟨q⟩ : UFrac), b) • some ((⟨p⟩ : UFrac), a) :=
-    ⟨CMRA.comm.dist, CMRA.op_commN⟩
+  have hop : some ((⟨p + q⟩ : UFrac), a • b)
+      ≡{n}≡ some ((⟨q⟩ : UFrac), b) • some ((⟨p⟩ : UFrac), a) :=
+    ⟨comm.dist, op_commN⟩
   refine hop.trans ?_
-  exact (heq.trans (CMRA.unit_left_id_dist mpa)).op_r
+  exact (heq.trans (unit_left_id_dist mpa)).op_r
 
 @[rocq_alias ufrac_auth_update_surplus_cancel]
-theorem update_surplus_cancel {p q : Qp} {a b : A} (h : CMRA.Cancelable b) :
+theorem update_surplus_cancel {p q : Qp} {a b : A} [CMRA.Cancelable b] :
     ((●U{p + q} (a • b) : UFracAuth) • ◯U{q} b) ~~> ●U{p} a := by
-  letI : CMRA.Cancelable b := h
-  refine Auth.auth_update_dealloc (local_update_unital.mpr fun n mpa hv heq => ?_)
+  refine auth_update_dealloc (local_update_unital.mpr fun n mpa hv heq => ?_)
   match mpa with
   | none =>
-    have hp : p + q = q := UFrac.ext_iff.mp heq.1
+    have hp : p + q = q := ext_iff.mp heq.1
     grind
   | some (p', a') =>
-    have hpq : p + q = q + p'.frac := UFrac.ext_iff.mp heq.1
+    have hpq : p + q = q + p'.frac := ext_iff.mp heq.1
     have hp : p = p'.frac := by grind
-    refine ⟨⟨trivial, CMRA.validN_op_left hv.2⟩, ?_⟩
-    refine ⟨OFE.Dist.of_eq (UFrac.ext_iff.mpr hp), ?_⟩
-    refine CMRA.cancelableN ?_ (CMRA.op_commN.trans heq.2)
-    exact (OFE.Dist.validN CMRA.op_commN).mp hv.2
+    refine ⟨⟨trivial, validN_op_left hv.2⟩, ?_⟩
+    refine ⟨.of_eq (ext_iff.mpr hp), ?_⟩
+    refine cancelableN ?_ (op_commN.trans heq.2)
+    exact (Dist.validN op_commN).mp hv.2
 
 /-! ## Functors -/
 
@@ -230,3 +233,5 @@ abbrev UFracAuthRF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
 #rocq_ignore ufrac_authRF_contractive "Contractiveness is bundled into Lean's RFunctor type class and inferred for AuthRF"
 
 end UFracAuth
+
+end Iris
