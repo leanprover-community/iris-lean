@@ -72,12 +72,13 @@ namespace SavedProp
 
 variable [BI PROP] [instAffine : BIAffine PROP] {P Q : PROP}
 variable (bupd : PROP → PROP)
+variable (ident : Type _) (saved : ident → PROP → PROP)
+variable [instPers : ∀ (i : ident) (P : PROP), Persistent (saved i P)]
+
 variable (bupd_intro : ∀ {P : PROP}, P ⊢ bupd P)
 variable (bupd_mono : ∀ {P Q : PROP}, (P ⊢ Q) → bupd P ⊢ bupd Q)
 variable (bupd_trans : ∀ {P : PROP}, bupd (bupd P) ⊢ bupd P)
 variable (bupd_frame_right : ∀ {P R : PROP}, bupd P ∗ R ⊢ bupd iprop(P ∗ R))
-variable (ident : Type _) (saved : ident → PROP → PROP)
-variable [instPers : ∀ (i : ident) (P : PROP), Persistent (saved i P)]
 variable (sprop_alloc_dep : ∀ {P : ident → PROP}, ⊢ bupd (∃ i, saved i (P i)))
 variable (sprop_agree : ∀ (i : ident) (P Q : PROP), saved i P ∧ saved i Q ⊢ □ (P ↔ Q))
 variable (consistency : ¬(⊢ bupd iprop(False)))
