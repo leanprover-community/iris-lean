@@ -60,7 +60,7 @@ theorem modaction_sep [BI PROP1] [bi2: BI PROP2] {elhs erhs elhs' erhs'} {M : Mo
   (h1 : elhs ⊢ M.M elhs') (h2 : erhs ⊢ M.M erhs') : elhs ∗ erhs ⊢ M.M iprop(elhs' ∗ erhs') :=
   (sep_mono h1 h2).trans M.sep
 
-theorem modintro [BI PROP1] [BI PROP2] {e e'} {Φ M sel} {P : PROP2} {Q : PROP1}
+theorem modintro [BI PROP1] [BI PROP2] {e e'} {α} {Φ M} {sel : α} {P : PROP2} {Q : PROP1}
 [FromModal Φ M sel P Q] (h1 : e ⊢ M.M e') (h2 : e' ⊢ Q) (hΦ : Φ) : e ⊢ P :=
     (h1.trans (M.mono h2)).trans (from_modal hΦ)
 
@@ -167,10 +167,11 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
     let bi' ← mkFreshExprMVarQ q(BI $prop')
     let Φ ← mkFreshExprMVarQ q(Prop)
     let M ← mkFreshExprMVarQ q(Modality $prop' $prop)
-    let sel ← elabTermEnsuringTypeQ (← `(term | iprop($sel))) prop'
+    let α : Q(Type u) ← mkFreshExprMVarQ q(Type u)
+    let sel ← elabTermEnsuringTypeQ (← `(term | iprop($sel))) α
     let Q ← mkFreshExprMVarQ q($prop')
     -- `M Q ⊢ goal`
-    let .some _ ← ProofModeM.trySynthInstanceQ q(@FromModal $prop' $prop $bi' $bi $Φ $M $sel $goal $Q)
+    let .some _ ← ProofModeM.trySynthInstanceQ q(@FromModal $prop' $prop $α $bi' $bi $Φ $M $sel $goal $Q)
       | throwError "{tacName}: {goal} is not a modality{if sel.isMVar then m!"" else m!" matching {sel}"}"
     -- show the side condition
     let hΦ ← iSolveSidecondition q($Φ)

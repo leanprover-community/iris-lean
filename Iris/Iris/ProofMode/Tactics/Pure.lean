@@ -5,7 +5,6 @@ Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
 module
 
-public import Iris.ProofMode.Instances
 public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
@@ -26,7 +25,8 @@ theorem pure_elim_spatial [BI PROP] {P P' A Q : PROP} {φ : Prop}
     pure_elim_right fun hφ => (absorbingly_mono <| h_entails hφ).trans absorbing
 
 theorem pure_elim_intuitionistic [BI PROP] {P P' A Q : PROP} {φ : Prop}
-    [IntoPure A φ] (h : P ⊣⊢ P' ∗ □ A) (h' : φ → P' ⊢ Q) : P ⊢ Q :=
+    [inst : IntoPure A φ] (h : P ⊣⊢ P' ∗ □ A) (h' : φ → P' ⊢ Q) : P ⊢ Q :=
+  have : IntoPure iprop(□ A) φ := ⟨intuitionistically_elim.trans inst.into_pure⟩
   pure_elim_spatial h h'
 
 theorem pure_intro_affine [BI PROP] {Q : PROP} {φ : Prop}
