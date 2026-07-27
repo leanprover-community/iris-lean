@@ -21,6 +21,7 @@ python3 scripts/check_porting.py --format html -o report.html
 | `--no-build` | Skip running `lake exe dumpPortingData` | off |
 | `--cache-dir` | Cache directory for downloaded Rocq definitions | `.lake/iris-rocq-cache` |
 | `--lean-json` | Path to the Lean JSON dump | `.lake/porting_data.json` |
+| `--print` | Print one config value (`commit-api-url`) and exit; used by CI | — |
 
 ## How It Works
 
@@ -29,12 +30,13 @@ python3 scripts/check_porting.py --format html -o report.html
    entries, `#rocq_ignore_file` entries, and `#rocq_concept` entries.
 
 2. **Rocq side** -- The script downloads the Iris-Rocq source tarball from GitLab
-   at the revision specified in `scripts/ROCQ_REVISION`, parses every `.v` file
-   for definition names, and caches the result under `--cache-dir`.
+   at the pinned revision, parses every `.v` file under the tracked package
+   directories for definition names, and caches the result under `--cache-dir`.
 
 3. **Diff** -- Each Rocq definition is classified as:
    - **ported** -- has a matching `@[rocq_alias]` in Lean
-   - **ignored** -- listed via `#rocq_ignore`, `#rocq_ignore_file`, or in an ignored directory
+   - **ignored** -- listed via `#rocq_ignore`, `#rocq_ignore_file`, or in one of
+     its package's `ignoredDirs`
    - **missing** -- no alias or ignore entry
 
    Lean-side aliases or ignores whose Rocq target no longer exists upstream
@@ -44,7 +46,34 @@ python3 scripts/check_porting.py --format html -o report.html
    `#rocq_concept` entries appear as separate feature sections alongside files
    in the HTML report.
 
+## Packages
+
+Tracked directories are listed in [`porting_config.json`](porting_config.json);
+anything absent from it (`iris_deprecated/`, `iris_unstable/`) is untracked. Each
+is rendered as a report section, with its immediate subdirectories as folders and
+anything deeper flattened into the file name — so `base_logic/lib/gen_heap.v`
+shows as `lib/gen_heap.v` under `base_logic`.
+
+Rocq short names are only unique within a package (`pointsto` is defined in both
+`iris/base_logic/lib/gen_heap.v` and `iris_heap_lang/primitive_laws.v`), so each
+package has a `prefix` that keeps its definitions distinct. `iris` claims the
+unprefixed namespace; at most one package may. The same prefix spells the
+directory argument of `#rocq_ignore_file` / `#rocq_concept`:
+
+```
+@[rocq_alias heap_lang.pointsto] theorem pointsTo ...
+#rocq_ignore heap_lang.pretty_int "Rocq-specific pretty printing"
+
+#rocq_ignore_file proofmode     "tokens.v"   "Rocq-specific tokenizer"
+#rocq_ignore_file heap_lang.lib "diverge.v"  "Not needed"
+```
+
 ## Configuration Files
 
-- **`scripts/ROCQ_REVISION`** -- Single line containing the Iris-Rocq commit SHA
-  to track against. Update this when bumping the upstream revision.
+- **`scripts/ROCQ_REVISION`** -- The Iris-Rocq commit SHA to track against.
+  Update this when bumping the upstream revision.
+
+- **`scripts/porting_config.json`** -- The tracked repo and packages, read by
+  both `check_porting.py` and `Iris/Std/RocqPorting.lean` so the two cannot
+  drift. To track another directory, add a package entry — no code changes.
+  Lean reads it at load time, so restart your language server after editing.

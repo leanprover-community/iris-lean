@@ -57,6 +57,12 @@ Here the name is just `internal_eq_ne`, so:
 ```
 @[rocq_alias internal_eq_ne]
 ```
+
+Definitions outside the main `iris/` package carry a package prefix.
+For the heap_lang package (`iris_heap_lang/` upstream) write:
+```
+@[rocq_alias heap_lang.pointsto]
+```
 -/
 
 open Lean Elab Command
@@ -106,15 +112,51 @@ initialize registerBuiltinAttribute {
 -- Porting Commands
 -- ============================================================================
 
-/-- Valid top-level Rocq source directories. -/
-private meta def validRocqFolders : List Name :=
-  [`algebra, `base_logic, `bi, `program_logic, `proofmode, `si_logic]
+/-- Path to the shared porting configuration, relative to the Lake workspace
+root (the `Iris/` directory Lake runs builds from). -/
+private meta def configPath : System.FilePath :=
+  ".." / "scripts" / "porting_config.json"
+
+/-- Read the valid Rocq source directories from `scripts/porting_config.json`.
+
+Each tracked package contributes its own name plus one entry per immediate
+subdirectory, both following the package's configured `prefix` -- so they read
+exactly like the alias names: `heap_lang` and `heap_lang.lib` alongside
+`@[rocq_alias heap_lang.pointsto]`. The package that goes unprefixed contributes
+its folders bare (`proofmode`), which cannot collide because at most one package
+may claim the unprefixed namespace.
+
+Sharing the file with `scripts/check_porting.py` is what keeps the directory
+names accepted here from drifting from the directories the report tracks.
+
+The config is read when this module is loaded, so edits to it take effect
+without a rebuild. A long-running process that already loaded the module -- an
+editor's language server, say -- keeps the list it started with until restarted. -/
+private meta def readValidRocqFolders : IO (List String) := do
+  let src ← IO.FS.readFile configPath
+  let .ok json := Json.parse src
+    | throw <| IO.userError s!"{configPath}: not valid JSON"
+  let .ok packages := json.getObjVal? "packages" >>= Json.getArr?
+    | throw <| IO.userError s!"{configPath}: missing 'packages' array"
+  let mut valid := #[]
+  for p in packages do
+    let pre := (p.getObjVal? "prefix" >>= Json.getStr?).toOption.getD ""
+    -- The package itself: the prefix without its trailing dot.
+    let name := pre.dropEndWhile (· == '.') |>.toString
+    if !name.isEmpty then valid := valid.push name
+    if let .ok fs := p.getObjVal? "folders" >>= Json.getArr? then
+      for f in fs do
+        if let .ok s := f.getStr? then valid := valid.push s!"{pre}{s}"
+  return valid.toList
+
+/-- Valid Rocq source directories, read once from the shared config. -/
+private meta initialize validRocqFolders : List String ← readValidRocqFolders
 
 private meta def checkRocqFolder (folder : Syntax) : CommandElabM Unit := do
-  let name := folder.getId
+  let name := folder.getId.toString
   unless validRocqFolders.contains name do
     throwErrorAt folder
-      "unknown Rocq folder '{name}', expected one of: {", ".intercalate (validRocqFolders.map toString)}"
+      "unknown Rocq folder '{name}', expected one of: {", ".intercalate validRocqFolders}"
 
 /-- Environment extension tracking all `#rocq_ignore` entries as `(rocqName, reason)` pairs. -/
 public meta initialize rocqIgnoreExt : SimplePersistentEnvExtension (Name × String) (Array (Name × String)) ←
@@ -123,10 +165,13 @@ public meta initialize rocqIgnoreExt : SimplePersistentEnvExtension (Name × Str
     addImportedFn := fun es => es.foldl (fun acc a => a.foldl Array.push acc) #[]
   }
 
-/-- Ignore a single Rocq definition by name.
+/-- Ignore a single Rocq definition by name. The name follows the same
+convention as `@[rocq_alias]`, so definitions outside the main `iris/` package
+carry a package prefix.
 
 ```
 #rocq_ignore rocq_name "Reason"
+#rocq_ignore heap_lang.pretty_int "Rocq-specific pretty printing"
 ```
 -/
 @[expose]
@@ -140,12 +185,17 @@ public meta initialize rocqIgnoreFileExt : SimplePersistentEnvExtension (String 
     addImportedFn := fun es => es.foldl (fun acc a => a.foldl Array.push acc) #[]
   }
 
-/-- Ignore all definitions in a Rocq file. The folder is a top-level Rocq source
-directory keyword (`algebra`, `base_logic`, `bi`, `program_logic`, `proofmode`,
-`si_logic`). The file is relative to that folder.
+/-- Ignore all definitions in a Rocq file. The folder names an upstream Rocq
+source directory, written with the owning package's prefix so that it reads like
+the alias names: `heap_lang` for that package, `heap_lang.lib` for its
+subdirectory, and bare (`algebra`, `base_logic`, `bi`, `program_logic`,
+`proofmode`, `si_logic`) for the unprefixed `iris` package. The file is relative
+to the named directory.
 
 ```
 #rocq_ignore_file proofmode "tokens.v" "Rocq-specific tokenizer"
+#rocq_ignore_file heap_lang.lib "diverge.v" "Not needed"
+#rocq_ignore_file heap_lang "pretty.v" "Rocq-specific pretty printing"
 ```
 -/
 @[expose]
@@ -164,10 +214,9 @@ public meta initialize rocqConceptExt : SimplePersistentEnvExtension ConceptEntr
   }
 
 /-- Track a Rocq concept (feature or sub-feature) that doesn't map to individual
-definitions. The folder is a top-level Rocq source directory keyword (`algebra`,
-`base_logic`, `bi`, `program_logic`, `proofmode`, `si_logic`). Status must be
-`ported` or `missing`. An optional sub-feature string creates a nested entry
-under the feature in the HTML report.
+definitions. The folder names an upstream Rocq source directory, as for
+`#rocq_ignore_file`. Status must be `ported` or `missing`. An optional
+sub-feature string creates a nested entry under the feature in the HTML report.
 
 ```
 #rocq_concept proofmode "IPM Tactics" ported "Implemented via Lean macro"
