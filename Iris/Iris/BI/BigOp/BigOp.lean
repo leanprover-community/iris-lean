@@ -20,44 +20,44 @@ open Iris.Algebra Iris.Std OFE BIBase
 
 instance sepMonoidOps [BI PROP] : MonoidOps (sep (PROP := PROP)) emp where
   op_ne := BI.sep_ne
-  op_assoc := equiv_iff.mpr sep_assoc
-  op_comm := equiv_iff.mpr sep_comm
-  op_left_id := equiv_iff.mpr emp_sep
+  op_assoc := (BiEntails.to_eq sep_assoc)
+  op_comm := (BiEntails.to_eq sep_comm)
+  op_left_id := (BiEntails.to_eq emp_sep)
 
 instance andMonoidOps [BI PROP] : MonoidOps (and (PROP := PROP)) iprop(True) where
   op_ne := BI.and_ne
-  op_assoc := equiv_iff.mpr and_assoc
-  op_comm := equiv_iff.mpr and_comm
-  op_left_id := equiv_iff.mpr true_and
+  op_assoc := (BiEntails.to_eq and_assoc)
+  op_comm := (BiEntails.to_eq and_comm)
+  op_left_id := (BiEntails.to_eq true_and)
 
 instance orMonoidOps [BI PROP] : MonoidOps (or (PROP := PROP)) iprop(False) where
   op_ne := BI.or_ne
-  op_assoc := equiv_iff.mpr or_assoc
-  op_comm := equiv_iff.mpr or_comm
-  op_left_id := equiv_iff.mpr false_or
+  op_assoc := (BiEntails.to_eq or_assoc)
+  op_comm := (BiEntails.to_eq or_comm)
+  op_left_id := (BiEntails.to_eq false_or)
 
 /-! ## Homomorphism helpers for OFE equivalence -/
 
-/-- Build a `MonoidHomomorphism` for OFE equivalence from just the essential fields. -/
-theorem MonoidHomomorphism.ofEquiv [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
+/-- Build a `MonoidHomomorphism` for Leibniz equality from just the essential fields. -/
+theorem MonoidHomomorphism.ofEq [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
     {u₁ u₂ : PROP} [MonoidOps op₁ u₁] [MonoidOps op₂ u₂] {f : PROP → PROP}
-    (hne : NonExpansive f) (hop : ∀ {x y}, f (op₁ x y) ≡ op₂ (f x) (f y))
-    (hunit : f u₁ ≡ u₂) : MonoidHomomorphism op₁ op₂ u₁ u₂ (· ≡ ·) f where
-  rel_refl := .rfl
-  rel_trans := .trans
-  op_proper ha hb := MonoidOps.op_proper ha hb
+    (hne : NonExpansive f) (hop : ∀ {x y}, f (op₁ x y) = op₂ (f x) (f y))
+    (hunit : f u₁ = u₂) : MonoidHomomorphism op₁ op₂ u₁ u₂ (· = ·) f where
+  rel_refl := rfl
+  rel_trans := Eq.trans
+  op_proper ha hb := ha ▸ hb ▸ rfl
   map_ne := hne
   map_op := hop
   map_unit := hunit
 
-/-- Build a `WeakMonoidHomomorphism` for OFE equivalence from just the essential fields. -/
-theorem WeakMonoidHomomorphism.ofEquiv [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
+/-- Build a `WeakMonoidHomomorphism` for Leibniz equality from just the essential fields. -/
+theorem WeakMonoidHomomorphism.ofEq [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
     {u₁ u₂ : PROP} [MonoidOps op₁ u₁] [MonoidOps op₂ u₂] {f : PROP → PROP}
-    (hne : NonExpansive f) (hop : ∀ {x y}, f (op₁ x y) ≡ op₂ (f x) (f y)) :
-    WeakMonoidHomomorphism op₁ op₂ u₁ u₂ (· ≡ ·) f where
-  rel_refl := .rfl
-  rel_trans := .trans
-  op_proper ha hb := MonoidOps.op_proper ha hb
+    (hne : NonExpansive f) (hop : ∀ {x y}, f (op₁ x y) = op₂ (f x) (f y)) :
+    WeakMonoidHomomorphism op₁ op₂ u₁ u₂ (· = ·) f where
+  rel_refl := rfl
+  rel_trans := Eq.trans
+  op_proper ha hb := ha ▸ hb ▸ rfl
   map_ne := hne
   map_op := hop
 
@@ -430,26 +430,26 @@ open Iris.Algebra Iris.Std OFE BIBase
 
 @[rocq_alias bi.bi_persistently_and_homomorphism]
 instance bi_persistently_and_homomorphism [BI PROP] :
-    MonoidHomomorphism (and (PROP := PROP)) and iprop(True) iprop(True) (· ≡ ·) persistently :=
-  MonoidHomomorphism.ofEquiv BI.persistently_ne
-    (equiv_iff.mpr persistently_and) (equiv_iff.mpr persistently_true)
+    MonoidHomomorphism (and (PROP := PROP)) and iprop(True) iprop(True) (· = ·) persistently :=
+  MonoidHomomorphism.ofEq BI.persistently_ne
+    (BiEntails.to_eq persistently_and) (BiEntails.to_eq persistently_true)
 
 @[rocq_alias bi.bi_persistently_or_homomorphism]
 instance bi_persistently_or_homomorphism [BI PROP] :
-    MonoidHomomorphism (or (PROP := PROP)) or iprop(False) iprop(False) (· ≡ ·) persistently :=
-  MonoidHomomorphism.ofEquiv BI.persistently_ne
-    (equiv_iff.mpr persistently_or) (equiv_iff.mpr persistently_pure)
+    MonoidHomomorphism (or (PROP := PROP)) or iprop(False) iprop(False) (· = ·) persistently :=
+  MonoidHomomorphism.ofEq BI.persistently_ne
+    (BiEntails.to_eq persistently_or) (BiEntails.to_eq persistently_pure)
 
 @[rocq_alias bi.bi_persistently_sep_weak_homomorphism]
 instance bi_persistently_sep_weak_homomorphism [BI PROP] [BIPositive PROP] :
-    WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· ≡ ·) persistently :=
-  WeakMonoidHomomorphism.ofEquiv BI.persistently_ne (equiv_iff.mpr persistently_sep)
+    WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·) persistently :=
+  WeakMonoidHomomorphism.ofEq BI.persistently_ne (BiEntails.to_eq persistently_sep)
 
 @[rocq_alias bi.bi_persistently_sep_homomorphism]
 instance bi_persistently_sep_homomorphism [BI PROP] [BIAffine PROP] :
-    MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· ≡ ·) persistently :=
-  MonoidHomomorphism.ofEquiv BI.persistently_ne
-    (equiv_iff.mpr persistently_sep) (equiv_iff.mpr persistently_emp_affine)
+    MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·) persistently :=
+  MonoidHomomorphism.ofEq BI.persistently_ne
+    (BiEntails.to_eq persistently_sep) (BiEntails.to_eq persistently_emp_affine)
 
 @[rocq_alias bi.bi_persistently_sep_entails_weak_homomorphism]
 instance bi_persistently_sep_entails_weak_homomorphism [BI PROP] :
