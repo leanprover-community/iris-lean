@@ -70,7 +70,7 @@ example {l : Loc} {v : Val} :
   iapply HΦ $$ Hl
 
 /--
-error: Tactic `wp_load` failed: cannot find a points-to hypothesis for l ↦{_} _
+error: Tactic `wp_load` failed: cannot find a points-to hypothesis for l ↦{?_} _
 
 hlc : HasLC
 GF : BundledGFunctors
@@ -84,7 +84,10 @@ v : Val
   ∗Hpt : l' ↦ some v
   ⊢ WP hl(!#l) @ s ; E {{ Φ }}
 -/
+-- the fraction is an unassigned metavariable here (a read accepts any); `pp.mvars false`
+-- keeps its rendering stable instead of a `?m.…` with a nondeterministic index
 #guard_msgs (whitespace := lax) in
+set_option pp.mvars false in
 example {l l' : Loc} {v : Val} :
     (l' ↦ some v) ⊢ WP hl(!v(#l)) @ s ; E {{ Φ }} := by
   iintro Hpt

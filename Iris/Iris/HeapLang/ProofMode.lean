@@ -593,11 +593,8 @@ meta def lookupPointsTo {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(HasLC)
         unless ← isDefEq dq' dq do return none
         unless ← isDefEq p' p do return none
         return some ((v : Q(Val)), name, vid)
-    | do
-      let dq ← instantiateMVars dq
-      let dqMsg := if dq.isMVar then m!"_" else m!"{dq}"
-      throwTacticEx tacName mvar
-        m!"cannot find a points-to hypothesis for {l} ↦\{{dqMsg}} _"
+    | throwTacticEx tacName mvar
+        m!"cannot find a points-to hypothesis for {l} ↦\{{dq}} _"
   trace[wp_heap.lookup] "found {name} : □?{p} (pointsTo {l} ({dq}) (some {v}))"
   let pfSplit : Q($eΔ' ⊣⊢ $eΔ'' ∗ □?$p (pointsTo $l $dq (some $v))) := pf
   return { v, name, vid, eΔ'', hyps'', pfSplit }
