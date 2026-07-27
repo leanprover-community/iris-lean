@@ -73,7 +73,6 @@ directory argument of `#rocq_ignore_file` / `#rocq_concept`:
 - **`scripts/ROCQ_REVISION`** -- The Iris-Rocq commit SHA to track against.
   Update this when bumping the upstream revision.
 
-- **`scripts/porting_config.json`** -- The tracked repo and packages, read by
-  both `check_porting.py` and `Iris/Std/RocqPorting.lean` so the two cannot
-  drift. To track another directory, add a package entry — no code changes.
-  Lean reads it at load time, so restart your language server after editing.
+- **`scripts/porting_config.json`** -- The tracked repo and packages. To track
+  another directory, add a package entry — no code changes needed. The Lean
+  commands accept any directory name; unknown ones are reported by this script.

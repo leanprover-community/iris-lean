@@ -142,13 +142,20 @@ def package_of_name(name: str) -> Package | None:
 def directory_args() -> list[str]:
     """Accepted `#rocq_ignore_file` / `#rocq_concept` directories.
 
-    Mirrors `readValidRocqFolders` in `Iris/Std/RocqPorting.lean`.
-
     >>> directory_args()[:2], directory_args()[-1]
     (['algebra', 'base_logic'], 'heap_lang.lib')
     """
     return [a for p in PACKAGES
             for a in (p.arg(), *(p.arg(f) for f in p.folders)) if a]
+
+
+def is_directory_arg(folder: str) -> bool:
+    """Whether `folder` names a tracked directory.
+
+    >>> is_directory_arg("heap_lang.lib"), is_directory_arg("typo")
+    (True, False)
+    """
+    return folder.rstrip("/") in directory_args()
 
 
 def qualify(name: str, rel_path: str) -> str:
@@ -464,9 +471,21 @@ class LeanData:
 
 
 def load_lean_data(json_path: str) -> LeanData:
-    """Load Lean alias/ignore/concept data from the JSON dump."""
+    """Load Lean alias/ignore/concept data from the JSON dump.
+
+    This is where a bad `#rocq_ignore_file` / `#rocq_concept` directory is caught:
+    the Lean side accepts any identifier, so the check lives here.
+    """
     with open(json_path) as f:
         data = json.load(f)
+    bad = sorted({e["folder"] for e in data.get("ignored_files", [])
+                  + data.get("concepts", []) if not is_directory_arg(e["folder"])})
+    if bad:
+        raise SystemExit(
+            f"Error: unknown #rocq_ignore_file / #rocq_concept "
+            f"{'directories' if len(bad) > 1 else 'directory'} {', '.join(map(repr, bad))}.\n"
+            f"Expected one of: {', '.join(directory_args())}"
+        )
     aliases = {a["rocq"]: a["lean"] for a in data["aliases"]}
     ignores = {i["rocq"]: i["reason"] for i in data["ignores"]}
     ignored_files = {

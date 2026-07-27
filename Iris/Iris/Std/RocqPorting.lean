@@ -112,52 +112,6 @@ initialize registerBuiltinAttribute {
 -- Porting Commands
 -- ============================================================================
 
-/-- Path to the shared porting configuration, relative to the Lake workspace
-root (the `Iris/` directory Lake runs builds from). -/
-private meta def configPath : System.FilePath :=
-  ".." / "scripts" / "porting_config.json"
-
-/-- Read the valid Rocq source directories from `scripts/porting_config.json`.
-
-Each tracked package contributes its own name plus one entry per immediate
-subdirectory, both following the package's configured `prefix` -- so they read
-exactly like the alias names: `heap_lang` and `heap_lang.lib` alongside
-`@[rocq_alias heap_lang.pointsto]`. The package that goes unprefixed contributes
-its folders bare (`proofmode`), which cannot collide because at most one package
-may claim the unprefixed namespace.
-
-Sharing the file with `scripts/check_porting.py` is what keeps the directory
-names accepted here from drifting from the directories the report tracks.
-
-The config is read when this module is loaded, so edits to it take effect
-without a rebuild. A long-running process that already loaded the module -- an
-editor's language server, say -- keeps the list it started with until restarted. -/
-private meta def readValidRocqFolders : IO (List String) := do
-  let src ← IO.FS.readFile configPath
-  let .ok json := Json.parse src
-    | throw <| IO.userError s!"{configPath}: not valid JSON"
-  let .ok packages := json.getObjVal? "packages" >>= Json.getArr?
-    | throw <| IO.userError s!"{configPath}: missing 'packages' array"
-  let mut valid := #[]
-  for p in packages do
-    let pre := (p.getObjVal? "prefix" >>= Json.getStr?).toOption.getD ""
-    -- The package itself: the prefix without its trailing dot.
-    let name := pre.dropEndWhile (· == '.') |>.toString
-    if !name.isEmpty then valid := valid.push name
-    if let .ok fs := p.getObjVal? "folders" >>= Json.getArr? then
-      for f in fs do
-        if let .ok s := f.getStr? then valid := valid.push s!"{pre}{s}"
-  return valid.toList
-
-/-- Valid Rocq source directories, read once from the shared config. -/
-private meta initialize validRocqFolders : List String ← readValidRocqFolders
-
-private meta def checkRocqFolder (folder : Syntax) : CommandElabM Unit := do
-  let name := folder.getId.toString
-  unless validRocqFolders.contains name do
-    throwErrorAt folder
-      "unknown Rocq folder '{name}', expected one of: {", ".intercalate validRocqFolders}"
-
 /-- Environment extension tracking all `#rocq_ignore` entries as `(rocqName, reason)` pairs. -/
 public meta initialize rocqIgnoreExt : SimplePersistentEnvExtension (Name × String) (Array (Name × String)) ←
   registerSimplePersistentEnvExtension {
@@ -185,12 +139,11 @@ public meta initialize rocqIgnoreFileExt : SimplePersistentEnvExtension (String 
     addImportedFn := fun es => es.foldl (fun acc a => a.foldl Array.push acc) #[]
   }
 
-/-- Ignore all definitions in a Rocq file. The folder names an upstream Rocq
-source directory, written with the owning package's prefix so that it reads like
-the alias names: `heap_lang` for that package, `heap_lang.lib` for its
-subdirectory, and bare (`algebra`, `base_logic`, `bi`, `program_logic`,
-`proofmode`, `si_logic`) for the unprefixed `iris` package. The file is relative
-to the named directory.
+/-- Ignore all definitions in a Rocq file. The folder names a tracked directory
+from `scripts/porting_config.json`, written with the owning package's prefix so
+that it reads like the alias names -- `heap_lang.lib`, or bare `proofmode` for
+the unprefixed `iris` package. The file is relative to the named directory;
+`check_porting.py` rejects a directory that is not tracked.
 
 ```
 #rocq_ignore_file proofmode "tokens.v" "Rocq-specific tokenizer"
@@ -200,7 +153,6 @@ to the named directory.
 -/
 @[expose]
 elab "#rocq_ignore_file" folder:ident file:str reason:str : command => do
-  checkRocqFolder folder
   modifyEnv (rocqIgnoreFileExt.addEntry · (folder.getId.toString, file.getString, reason.getString))
 
 /-- A concept entry: `(dir, feature, subfeature?, status, reason)`. -/
@@ -225,7 +177,6 @@ sub-feature string creates a nested entry under the feature in the HTML report.
 -/
 @[expose]
 elab "#rocq_concept" folder:ident feature:str sub:(str)? status:ident reason:str : command => do
-  checkRocqFolder folder
   let statusName := status.getId
   unless statusName == `ported || statusName == `missing || statusName == `ignored do
     throwErrorAt status "status must be 'ported' or 'missing' or 'ignored', got '{statusName}'"
