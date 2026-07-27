@@ -154,14 +154,14 @@ variable {PROP : Type _} [BI PROP] [instAffine : BIAffine PROP] [instBFupd : BIF
 variable {P Q R : PROP}
 variable (fupd : Mask → PROP → PROP)
 variable (name : Type _) (inv : name → PROP → PROP)
-variable [∀ {i : name} {P : PROP}, Persistent (inv i P)]
+variable [∀ (i : name) (P : PROP), Persistent (inv i P)]
 
 variable (fupd_intro : ∀ {E : Mask} {P : PROP}, P ⊢ fupd E P)
 variable (fupd_mono : ∀ {E : Mask} {P Q : PROP}, (P ⊢ Q) → fupd E P ⊢ fupd E Q)
 variable (fupd_fupd : ∀ {E : Mask} {P : PROP}, fupd E (fupd E P) ⊢ fupd E P)
 variable (fupd_frame_left : ∀ {E : Mask} {P Q : PROP}, P ∗ fupd E Q ⊢ fupd E iprop(P ∗ Q))
 variable (fupd_mask_mono : ∀ {P : PROP}, fupd M0 P ⊢ fupd M1 P)
-variable (inv_alloc : ∀ {P : PROP}, P ⊢ fupd M1 (∃ i, inv i P))
+variable (inv_alloc : ∀ P : PROP, P ⊢ fupd M1 (∃ i, inv i P))
 variable (inv_fupd :
   ∀ {i : name} (P Q R : PROP), (P ∗ Q ⊢ fupd M0 iprop(P ∗ R)) → inv i P ∗ Q ⊢ fupd M1 R)
 variable (consistency : ¬(⊢ fupd M1 iprop(False)))
@@ -226,6 +226,153 @@ theorem exists_split_fupd0 {α : Type _} (E : Mask) (Φ : α → PROP) [inst : F
     apply exists_elim
     intro h
     exact fupd_mono <| (exists_intro h).trans inst.from_exists
+
+section Inv1
+
+variable (gname : Type _) (start finished : gname → PROP)
+
+variable (sts_alloc : ⊢ fupd M0 (∃ γ, start γ))
+variable (start_finish : ∀ γ, start γ ⊢ fupd M0 (finished γ))
+variable (finished_not_start : ∀ γ, start γ ∗ finished γ ⊢ (False : PROP))
+variable (finished_dup : ∀ γ, finished γ ⊢ finished γ ∗ finished γ)
+
+@[reducible, rocq_alias inv.saved]
+def saved (γ : gname) (P : PROP) : PROP :=
+  iprop(∃ i, inv i iprop(start γ ∨ iprop(finished γ ∗ □ P)))
+
+omit instAffine instBFupd in
+@[rocq_alias inv.saved_persistent]
+theorem saved_persistent (γ : gname) (P : PROP) :
+    Persistent (saved name inv gname start finished γ P) := by infer_instance
+
+include sts_alloc fupd_mono fupd_intro fupd_fupd fupd_frame_left fupd_mask_mono inv_alloc in
+omit instBFupd in
+@[rocq_alias inv.saved_alloc]
+theorem saved_alloc (P : gname → PROP) :
+    ⊢ fupd M1 iprop(∃ γ, saved name inv gname start finished γ (P γ)) := by
+  haveI {p : Bool} {P Q : PROP} :
+      ElimModal True p .out false (fupd M0 P) P (fupd M1 Q) (fupd M1 Q) :=
+    elim_fupd0_fupd1 fupd fupd_mono fupd_fupd fupd_frame_left fupd_mask_mono p
+  haveI {p : Bool} {E : Mask} {P Q : PROP} :
+      ElimModal True p .out false (fupd E P) P (fupd E Q) (fupd E Q) :=
+    elim_fupd_fupd fupd fupd_mono fupd_fupd fupd_frame_left p E
+  imod sts_alloc with ⟨%γ, Hs⟩
+  imod inv_alloc iprop(start γ ∨ finished γ ∗ □ (P γ)) $$ [Hs] with ⟨%i, #Hi⟩
+  · ileft; iassumption
+  · iapply fupd_intro
+    iexists γ, i; iassumption
+
+include fupd_intro fupd_mono fupd_fupd fupd_frame_left inv_fupd
+  start_finish finished_not_start finished_dup in
+omit instBFupd in
+@[rocq_alias inv.inv1.saved_cast]
+theorem saved_cast (γ : gname) :
+    saved name inv gname start finished γ P ∗
+    saved name inv gname start finished γ Q ∗ □ P ⊢ fupd M1 iprop(□ Q) := by
+  haveI {p : Bool} {E : Mask} {P Q : PROP} :
+      ElimModal True p .out false (fupd E P) P (fupd E Q) (fupd E Q) :=
+    elim_fupd_fupd fupd fupd_mono fupd_fupd fupd_frame_left p E
+  iintro ⟨#⟨%i, HiP⟩, #HsQ, #HP⟩
+  iapply inv_fupd' fupd name inv fupd_fupd inv_fupd i
+  · isplit
+    · iexact HiP
+    · iintro HaP
+      ihave >Hf : fupd M0 (finished γ) $$ [HaP]
+      · icases HaP with (Hs | ⟨Hf, -⟩)
+        · iapply start_finish; iexact Hs
+        · iapply fupd_intro; iexact Hf
+      icases finished_dup γ $$ Hf with ⟨Hf, Hf'⟩
+      iapply fupd_intro
+      isplitl [Hf']
+      · iright; iframe Hf' HP
+      · iclear HiP
+        icases HsQ with ⟨%j, HiQ⟩
+        iapply inv_fupd' fupd name inv fupd_fupd inv_fupd j
+        isplit
+        · iexact HiQ
+        · iintro (HaQ | ⟨-, #HQ⟩)
+          · iexfalso
+            iapply finished_not_start γ
+            iframe HaQ Hf
+          · iapply fupd_intro
+            isplitl [Hf]
+            · iright; iframe Hf HQ
+            · iapply fupd_intro; iexact HQ
+
+@[reducible, rocq_alias inv.inv1.not_fupd]
+def notFUpd (P : PROP) : PROP := iprop(□ (P -∗ fupd M1 iprop(False)))
+
+@[reducible, rocq_alias inv.inv1.A]
+def A (i : gname) : PROP :=
+  iprop(∃ P, notFUpd fupd P ∗ saved name inv gname start finished i P)
+
+@[rocq_alias inv.inv1.A_persistent]
+instance A_persistent (i : gname) :
+    Persistent (A fupd name inv gname start finished i) := by infer_instance
+
+include sts_alloc fupd_intro fupd_mono fupd_fupd fupd_frame_left fupd_mask_mono inv_alloc in
+omit instBFupd in
+@[rocq_alias inv.inv1.A_alloc]
+theorem A_alloc :
+    ⊢ fupd M1 (∃ i, saved name inv gname start finished i
+      (A fupd name inv gname start finished i)) :=
+  saved_alloc fupd name inv fupd_intro fupd_mono fupd_fupd fupd_frame_left fupd_mask_mono
+    inv_alloc gname start finished sts_alloc
+    (P := fun i => A fupd name inv gname start finished i)
+
+include fupd_intro fupd_mono fupd_fupd fupd_frame_left inv_fupd
+  start_finish finished_not_start finished_dup in
+omit instBFupd in
+@[rocq_alias inv.inv1.saved_NA]
+theorem saved_NA (i : gname) :
+    saved name inv gname start finished i (A fupd name inv gname start finished i) ⊢
+      notFUpd fupd (A fupd name inv gname start finished i) := by
+  haveI {p : Bool} {E : Mask} {P Q : PROP} :
+      ElimModal True p .out false (fupd E P) P (fupd E Q) (fupd E Q) :=
+    elim_fupd_fupd fupd fupd_mono fupd_fupd fupd_frame_left p E
+  iintro #Hi !> #HA
+  ihave ⟨%P', HNP, Hi'⟩ := HA
+  imod saved_cast fupd name inv fupd_intro fupd_mono fupd_fupd fupd_frame_left
+    inv_fupd gname start finished start_finish finished_not_start finished_dup
+    (P := A fupd name inv gname start finished i) (Q := P') i $$ [] with HP
+  · iframe #
+  · iapply HNP; iassumption
+
+include fupd_intro fupd_mono fupd_fupd fupd_frame_left inv_fupd
+  start_finish finished_not_start finished_dup in
+omit instBFupd in
+@[rocq_alias inv.inv1.saved_A]
+theorem saved_A (i : gname) :
+    saved name inv gname start finished i (A fupd name inv gname start finished i) ⊢
+      A fupd name inv gname start finished i := by
+  iintro #Hi
+  iexists A fupd name inv gname start finished i
+  iframe Hi
+  iapply saved_NA fupd name inv fupd_intro fupd_mono fupd_fupd fupd_frame_left
+    inv_fupd gname start finished start_finish finished_not_start finished_dup i
+  iexact Hi
+
+include fupd_intro fupd_mono fupd_fupd fupd_frame_left fupd_mask_mono
+  inv_alloc inv_fupd consistency
+  sts_alloc start_finish finished_not_start finished_dup in
+omit instBFupd in
+@[rocq_alias inv.inv1.contradiction]
+theorem contradiction : False := by
+  apply consistency
+  haveI {p : Bool} {E : Mask} {P Q : PROP} :
+      ElimModal True p .out false (fupd E P) P (fupd E Q) (fupd E Q) :=
+    elim_fupd_fupd fupd fupd_mono fupd_fupd fupd_frame_left p E
+  imod A_alloc fupd name inv fupd_intro fupd_mono fupd_fupd fupd_frame_left fupd_mask_mono
+    inv_alloc gname start finished sts_alloc with ⟨%i, #H⟩
+  ihave HN := saved_NA fupd name inv fupd_intro fupd_mono fupd_fupd fupd_frame_left
+    inv_fupd gname start finished start_finish finished_not_start finished_dup i $$ [H]
+  · iexact H
+  · iapply HN
+    iapply saved_A fupd name inv fupd_intro fupd_mono fupd_fupd fupd_frame_left
+      inv_fupd gname start finished start_finish finished_not_start finished_dup i
+    iassumption
+
+end Inv1
 
 end Inv
 
