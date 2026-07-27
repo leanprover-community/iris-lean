@@ -203,3 +203,62 @@ theorem leak : P ⊢ fupd M1 M1 (emp : PROP) := by
   iassumption
 
 end Linear
+
+namespace LaterCreditsPlain
+
+variable [instSbi : Sbi PROP] [instBFupd : BIFUpdate PROP]
+variable {lc : PROP}
+
+variable (lc_fupd_elim_later : ∀ E P, lc ∗ ▷ P ⊢ |={E}=> P)
+variable (lc_soundness : ∀ P [Plain P] E, (lc ⊢ |={E}=> P) → ⊢ P)
+
+variable (fupd_keep_si_pure' : ∀ {E : CoPset} (E' : CoPset) (Pi : SiProp) (R : PROP),
+  (|={E,E'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E}=∗ R) ⊢ |={E}=> R)
+
+include lc_fupd_elim_later fupd_keep_si_pure' in
+@[rocq_alias later_credits_plain.lc_fupd_elim_later_keep]
+theorem lc_fupd_elim_later_keep {E : CoPset} {P : PROP} [inst1 : Plain P] [inst2 : Absorbing P] :
+    ⊢ lc -∗ ▷ P ={E}=∗ lc ∗ P := by
+  iintro Hlc HP
+  iapply (fupd_keep_si_pure' E iprop(<si_emp_valid> P))
+  isplit
+  · iapply lc_fupd_elim_later
+    iframe Hlc
+    inext
+    exact Plain.plain
+  · iintro HP' !>
+    iframe Hlc
+    iclear HP
+    apply siPure_siEmpValid_elim
+
+omit instBFupd in
+@[rocq_alias later_credits_plain.laterN_False]
+theorem laterN_False [BILoeb PROP] : ⊢@{PROP} ∃ n, ▷^[n] False := by
+  iloeb as IH
+  icases IH with ⟨%n, Hn⟩
+  iexists n + 1
+  dsimp [BIBase.laterN, Nat.repeat]
+  iassumption
+
+include lc_fupd_elim_later lc_soundness fupd_keep_si_pure' in
+@[rocq_alias later_credits_plain.contradiction]
+theorem contradiction [BILoeb PROP] : False := by
+  apply pure_soundness (PROP := PROP)
+  apply lc_soundness _ ⊤
+  iintro Hlc
+  icases laterN_False with ⟨%n, ∗Hfalse⟩
+  icases affinely_elim $$ Hfalse with Hfalse
+  iinduction n with
+  | zero =>
+    dsimp [BIBase.laterN, Nat.repeat]
+    iexfalso; iexact Hfalse
+  | succ n IH =>
+    ihave Hfalse := Hfalse
+    /- Necessary to unfold `▷^[n + 1]` as `▷ ▷^[n]`, or else we get
+       `∗Hfalse : ▷^[n + 1] False` after `imod`. -/
+    icases (later_laterN n).mp $$ Hfalse with Hfalse
+    imod lc_fupd_elim_later_keep
+      lc_fupd_elim_later fupd_keep_si_pure' $$ Hlc Hfalse with ⟨Hlc, Hfalse⟩
+    iapply IH $$ Hlc Hfalse
+
+end LaterCreditsPlain
