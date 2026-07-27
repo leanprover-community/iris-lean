@@ -15,9 +15,9 @@ noncomputable section
 open Iris
 
 instance ordinalSIdx : SIdx Ordinal where
-  toLT := Ordinal.partialOrder.toLT
-  toLE := Preorder.toLE
-  toZero := Ordinal.zero
+  toLT := inferInstance
+  toLE := inferInstance
+  toZero := inferInstance
   succ := Order.succ
   lt_trans := lt_trans
   lt_wf := Ordinal.lt_wf
