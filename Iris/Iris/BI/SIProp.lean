@@ -153,15 +153,16 @@ instance : BIBase SiProp where
 #rocq_ignore siProp_wand "Included in BIBase instance."
 #rocq_ignore siProp_persistently "Included in BIBase instance."
 
-instance : Std.Preorder (BIBase.Entails (PROP := SiProp)) where
-  refl _ h := h
-  trans h₁ h₂ n h := h₂ n (h₁ n h)
+instance siPropPreorder : Std.IsPreorder SiProp where
+  le_refl _ _ := id
+  le_trans _ _ _ h₁ h₂ n h := h₂ n (h₁ n h)
 
 /-! ## BI instance -/
 
 @[rocq_alias siPropI]
 instance instBI : BI SiProp where
-  entails_preorder := inferInstance
+  entails_refl := siPropPreorder.le_refl _
+  entails_trans := siPropPreorder.le_trans _ _ _
   equiv_iff.mp heq := ⟨fun n hP => (heq n .refl).mp hP, fun n hQ => (heq n .refl).mpr hQ⟩
   equiv_iff.mpr H _ _ _ := ⟨H.1 _, H.2 _⟩
   and_ne.ne _ _ _ h₁ _ _ h₂ m h := ⟨.imp (h₁ h).mp (h₂ h).mp, .imp (h₁ h).mpr (h₂ h).mpr⟩

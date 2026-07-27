@@ -76,6 +76,11 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 - `iexfalso` — Change the goal to `False`.
 - `itrivial` — Try to solve the goal with simple tactics (`iassumption`, `ipureintro` followed by `simp`/`assumption`, ...). Used by the `//` patterns. Extensible by adding `macro_rules` for `itrivial`.
 
+## Iris-Specific Tactics
+
+- `iinv` *H* (`$$` [*specPat*](#specialization-patterns))? `with` [*casesPat*](#cases-patterns) ([*casesPat*](#cases-patterns))? — opens an invariant hypothesis *H* and uses the first cases pattern to destruct the result. The second cases pattern is used for destructing the hypothesis for closing the invariant. The specialisation pattern is used for resource consumption needed for opening the invariant. If the specialisation pattern is not given as part of the tactic, it is, by default, the auto-framing of spatial hypotheses.
+- `iinv` *N* (`$$` [*specPat*](#specialization-patterns))? `with` [*casesPat*](#cases-patterns) ([*casesPat*](#cases-patterns))? — same as above, except that a namespace *N* is given. The last invariant hypothesis in the context of this namespace is chosen.
+
 ## Cases Patterns
 
 - *name* / `_` — Name the hypothesis *name* (or keep it anonymous).

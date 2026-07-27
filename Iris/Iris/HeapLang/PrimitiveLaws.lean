@@ -559,11 +559,12 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
   · iapply HWPe; iexact Hp
   ihave HWPe := (show iprop(WP e @ s; E {{ v_e, ∃ pvs', proph p pvs' ∗
       ∀ pvs'', ⌜pvs' = (v_e, w) :: pvs''⌝ -∗ proph p pvs'' -∗ Φ v_e }}) ⊢ _
-    by rw [wp_unfold.to_eq]; simp only [wp.pre, hne]; exact .rfl) $$ HWPe
+    by rw [wp_unfold.to_eq]) $$ HWPe
   cases obs using List.reverseRec with
   | nil =>
     ihave Hσ_e : iprop(stateInterp σ₁ ns ([] ++ obs') nt) $$ [Hheap Hpmap]
     · iapply (stateInterp_split σ₁ ns ([] ++ obs') nt).mpr; iframe Hheap; iexact Hpmap
+    simp only [wp.pre, hne]
     imod HWPe $$ %_ %_ %_ %_ %_ Hσ_e with ⟨%Hred_e, _⟩
     imodintro
     isplitr
@@ -578,6 +579,7 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
     ihave Hσ_e : iprop(stateInterp σ₁ ns (init ++ (lastObs :: obs')) nt) $$ [Hheap Hpmap]
     · iapply (stateInterp_split σ₁ ns (init ++ (lastObs :: obs')) nt).mpr
       iframe Hheap; rw [← hassoc]; iexact Hpmap
+    simp only [wp.pre, hne]
     imod HWPe $$ %_ %_ %_ %_ %_ Hσ_e with ⟨%Hred_e, HWPe⟩
     imodintro
     isplitr
