@@ -387,6 +387,6 @@ theorem rec_lim {P : I → Sort v} (s : P 0) (f : ∀ n, P n → P (succᵢ n))
 
 #rocq_ignore SIdx.rec_lim_ext
   "Proof irrelevance already handled automatically by Lean for the theorems \
-  rec_zero, rec_succ and rec_elim"
+  rec_zero, rec_succ and rec_lim"
 
 end SIdx
