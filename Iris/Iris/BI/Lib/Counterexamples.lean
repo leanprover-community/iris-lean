@@ -143,6 +143,92 @@ theorem contradiction : False := by
 
 end SavedProp
 
+namespace Inv
+
+@[rocq_alias inv.mask]
+inductive Mask where | M0 | M1 deriving DecidableEq, Inhabited
+
+open Mask
+
+variable {PROP : Type _} [BI PROP] [instAffine : BIAffine PROP] [instBFupd : BIFUpdate PROP]
+variable {P Q R : PROP}
+variable (fupd : Mask → PROP → PROP)
+variable (name : Type _) (inv : name → PROP → PROP)
+variable [∀ {i : name} {P : PROP}, Persistent (inv i P)]
+
+variable (fupd_intro : ∀ {E : Mask} {P : PROP}, P ⊢ fupd E P)
+variable (fupd_mono : ∀ {E : Mask} {P Q : PROP}, (P ⊢ Q) → fupd E P ⊢ fupd E Q)
+variable (fupd_fupd : ∀ {E : Mask} {P : PROP}, fupd E (fupd E P) ⊢ fupd E P)
+variable (fupd_frame_left : ∀ {E : Mask} {P Q : PROP}, P ∗ fupd E Q ⊢ fupd E iprop(P ∗ Q))
+variable (fupd_mask_mono : ∀ {P : PROP}, fupd M0 P ⊢ fupd M1 P)
+variable (inv_alloc : ∀ {P : PROP}, P ⊢ fupd M1 (∃ i, inv i P))
+variable (inv_fupd :
+  ∀ {i : name} (P Q R : PROP), (P ∗ Q ⊢ fupd M0 iprop(P ∗ R)) → inv i P ∗ Q ⊢ fupd M1 R)
+variable (consistency : ¬(⊢ fupd M1 iprop(False)))
+
+include fupd_fupd inv_fupd in
+omit instBFupd in
+@[rocq_alias inv.inv_fupd']
+theorem inv_fupd' (i : name) : inv i P ∗ (P -∗ fupd M0 iprop(P ∗ fupd M1 R)) ⊢ fupd M1 R := by
+  iintro ⟨#HiP, HP⟩
+  iapply fupd_fupd
+  iapply inv_fupd P iprop(P -∗ fupd M0 iprop(P ∗ fupd M1 R))
+  · iintro ⟨HP, HPw⟩
+    iapply HPw $$ HP
+  · iframe HiP HP
+
+include fupd_mono in
+omit instAffine instBFupd in
+@[rw_mono_rule, rocq_alias inv.fupd_mono']
+theorem fupd_mono' (E : Mask) (h : P ⊢ Q) : fupd E P ⊢ fupd E Q := fupd_mono h
+
+include fupd_mono in
+omit instAffine instBFupd in
+@[rocq_alias inv.fupd_proper]
+theorem fupd_proper (E : Mask) (h : P ⊣⊢ Q) : fupd E P ⊣⊢ fupd E Q :=
+  ⟨fupd_mono h.mp, fupd_mono h.mpr⟩
+
+include fupd_mono fupd_frame_left in
+omit instAffine instBFupd in
+@[rocq_alias inv.fupd_frame_r]
+theorem fupd_frame_right (E : Mask) : fupd E P ∗ Q ⊢ fupd E iprop(P ∗ Q) :=
+  sep_comm.mp.trans <| fupd_frame_left.trans <| fupd_mono sep_comm.mp
+
+include fupd_mono fupd_frame_left fupd_fupd in
+omit instAffine instBFupd in
+@[rocq_alias inv.elim_fupd_fupd]
+theorem elim_fupd_fupd (p : Bool) (E : Mask) :
+    ElimModal True p io false (fupd E P) P (fupd E Q) (fupd E Q) where
+  elim_modal _ := calc
+    _ ⊢ fupd E P ∗ (P -∗ fupd E Q) := sep_mono_left intuitionisticallyIf_elim
+    _ ⊢ fupd E iprop(P ∗ (P -∗ fupd E Q)) := fupd_frame_right fupd fupd_mono fupd_frame_left _
+    _ ⊢ fupd E (fupd E Q) := fupd_mono wand_elim_right
+    _ ⊢ fupd E Q := fupd_fupd
+
+include fupd_mono fupd_frame_left fupd_fupd fupd_mask_mono in
+omit instAffine instBFupd in
+@[rocq_alias inv.elim_fupd0_fupd1]
+theorem elim_fupd0_fupd1 (p : Bool) :
+    ElimModal True p io false (fupd M0 P) P (fupd M1 Q) (fupd M1 Q) where
+  elim_modal _ := calc
+    _ ⊢ fupd M0 P ∗ (P -∗ fupd M1 Q)        := sep_mono_left intuitionisticallyIf_elim
+    _ ⊢ fupd M1 P ∗ (P -∗ fupd M1 Q)        := sep_mono_left fupd_mask_mono
+    _ ⊢ fupd M1 iprop(P ∗ (P -∗ fupd M1 Q)) := fupd_frame_right fupd fupd_mono fupd_frame_left _
+    _ ⊢ fupd M1 (fupd M1 Q)                 := fupd_mono wand_elim_right
+    _ ⊢ fupd M1 Q                           := fupd_fupd
+
+include fupd_mono in
+omit instAffine instBFupd in
+@[rocq_alias inv.exists_split_fupd0]
+theorem exists_split_fupd0 {α : Type _} (E : Mask) (Φ : α → PROP) [inst : FromExists P Φ] :
+    FromExists (fupd E P) (fun a => fupd E (Φ a)) where
+  from_exists := by
+    apply exists_elim
+    intro h
+    exact fupd_mono <| (exists_intro h).trans inst.from_exists
+
+end Inv
+
 namespace Linear
 
 @[rocq_alias linear.mask]
