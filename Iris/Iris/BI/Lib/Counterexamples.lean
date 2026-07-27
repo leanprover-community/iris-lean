@@ -145,15 +145,13 @@ end SavedProp
 
 namespace Linear
 
-variable {PROP : Type _} [BI PROP]
-variable {P Q : PROP}
-
 @[rocq_alias linear.mask]
 inductive Mask where | M0 | M1 deriving DecidableEq, Inhabited
 
-open Mask
-
+variable {PROP : Type _} [BI PROP]
+variable {P Q : PROP}
 variable (fupd : Mask → Mask → PROP → PROP)
+variable (gname : Type _) (cinv : gname → PROP → PROP) (cinv_own : gname → PROP)
 
 variable (fupd_intro : ∀ {E : Mask} {P : PROP}, P ⊢ fupd E E P)
 variable (fupd_mono : ∀ {E1 E2 : Mask} {P Q : PROP}, (P ⊢ Q) → fupd E1 E2 P ⊢ fupd E1 E2 Q)
@@ -161,9 +159,6 @@ variable (fupd_fupd :
   ∀ {E1 E2 E3 : Mask} {P : PROP}, fupd E1 E2 (fupd E2 E3 P) ⊢ fupd E1 E3 P)
 variable (fupd_frame_left :
   ∀ {E1 E2 : Mask} {P Q : PROP}, P ∗ fupd E1 E2 Q ⊢ fupd E1 E2 iprop(P ∗ Q))
-
-variable (gname : Type _) (cinv : gname → PROP → PROP) (cinv_own : gname → PROP)
-
 variable (cinv_alloc : ∀ {E : Mask} (P : PROP), ▷ P ⊢ fupd E E iprop(∃ γ, cinv γ P ∗ cinv_own γ))
 variable (cinv_acc :
   ∀ (P : PROP) (γ : gname), cinv γ P -∗ cinv_own γ -∗
