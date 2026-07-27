@@ -281,32 +281,24 @@ instance : LawfulFiniteMap (ExtTreeMap K · compare) K where
     exact List.pairwise_map.mpr distinct_keys_toList
   toList_get {_ m _ _} := m.mem_toList_iff_getElem?_eq_some
 
-noncomputable instance instUnboundedHeapCompare [InfiniteType K] :
+end HeapInstance
+end Std.ExtTreeMap
+
+namespace Classical
+
+open Std Iris.Std
+variable {K} [Ord K] [TransOrd K] [LawfulEqOrd K]
+
+noncomputable scoped instance instUnboundedHeapCompare [InfiniteType K] :
     UnboundedHeap (ExtTreeMap K · compare) K where
   notFull _ := True
-  fresh {_} {m} _ :=
-    (Iris.Std.List.fresh
-      ((LawfulFiniteMap.toList (M := fun V => ExtTreeMap K V compare) m).map Prod.fst)).choose
-  get?_fresh {_} {m} {_} := by
-    let freshKey :=
-      (Iris.Std.List.fresh
-        ((LawfulFiniteMap.toList (M := fun V => ExtTreeMap K V compare) m).map Prod.fst)).choose
-    change get? m freshKey = none
-    have freshKey_not_mem :
-        freshKey ∉
-          (LawfulFiniteMap.toList (M := fun V => ExtTreeMap K V compare) m).map Prod.fst :=
-      (Iris.Std.List.fresh
-        ((LawfulFiniteMap.toList (M := fun V => ExtTreeMap K V compare) m).map Prod.fst)).choose_spec
-    cases hget : get? m freshKey with
-    | none => rfl
-    | some v =>
-      exfalso
-      apply freshKey_not_mem
-      apply List.mem_map.mpr
-      exact ⟨(freshKey, v), LawfulFiniteMap.toList_get.mpr hget, rfl⟩
+  fresh {_} {m} _ := m.keys.fresh.choose
+  get?_fresh {V} {m} {_} := by
+    change m.get? m.keys.fresh.choose = none
+    grind
   notFull_empty := trivial
   notFull_insert_fresh := trivial
 
-end HeapInstance
+end Classical
 
-end Std.ExtTreeMap
+section
