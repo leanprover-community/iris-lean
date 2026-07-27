@@ -265,7 +265,7 @@ theorem saved_alloc (P : gname → PROP) :
 include fupd_intro fupd_mono fupd_fupd fupd_frame_left inv_fupd
   start_finish finished_not_start finished_dup in
 omit instBFupd in
-@[rocq_alias inv.inv1.saved_cast]
+@[rocq_alias inv.saved_cast]
 theorem saved_cast (γ : gname) :
     saved name inv gname start finished γ P ∗
     saved name inv gname start finished γ Q ∗ □ P ⊢ fupd M1 iprop(□ Q) := by
@@ -299,20 +299,20 @@ theorem saved_cast (γ : gname) :
             · iright; iframe Hf HQ
             · iapply fupd_intro; iexact HQ
 
-@[reducible, rocq_alias inv.inv1.not_fupd]
+@[reducible, rocq_alias inv.not_fupd]
 def notFUpd (P : PROP) : PROP := iprop(□ (P -∗ fupd M1 iprop(False)))
 
-@[reducible, rocq_alias inv.inv1.A]
+@[reducible, rocq_alias inv.A]
 def A (i : gname) : PROP :=
   iprop(∃ P, notFUpd fupd P ∗ saved name inv gname start finished i P)
 
-@[rocq_alias inv.inv1.A_persistent]
+@[rocq_alias inv.A_persistent]
 instance A_persistent (i : gname) :
     Persistent (A fupd name inv gname start finished i) := by infer_instance
 
 include sts_alloc fupd_intro fupd_mono fupd_fupd fupd_frame_left fupd_mask_mono inv_alloc in
 omit instBFupd in
-@[rocq_alias inv.inv1.A_alloc]
+@[rocq_alias inv.A_alloc]
 theorem A_alloc :
     ⊢ fupd M1 (∃ i, saved name inv gname start finished i
       (A fupd name inv gname start finished i)) :=
@@ -323,7 +323,7 @@ theorem A_alloc :
 include fupd_intro fupd_mono fupd_fupd fupd_frame_left inv_fupd
   start_finish finished_not_start finished_dup in
 omit instBFupd in
-@[rocq_alias inv.inv1.saved_NA]
+@[rocq_alias inv.saved_NA]
 theorem saved_NA (i : gname) :
     saved name inv gname start finished i (A fupd name inv gname start finished i) ⊢
       notFUpd fupd (A fupd name inv gname start finished i) := by
@@ -341,7 +341,7 @@ theorem saved_NA (i : gname) :
 include fupd_intro fupd_mono fupd_fupd fupd_frame_left inv_fupd
   start_finish finished_not_start finished_dup in
 omit instBFupd in
-@[rocq_alias inv.inv1.saved_A]
+@[rocq_alias inv.saved_A]
 theorem saved_A (i : gname) :
     saved name inv gname start finished i (A fupd name inv gname start finished i) ⊢
       A fupd name inv gname start finished i := by
@@ -356,7 +356,7 @@ include fupd_intro fupd_mono fupd_fupd fupd_frame_left fupd_mask_mono
   inv_alloc inv_fupd consistency
   sts_alloc start_finish finished_not_start finished_dup in
 omit instBFupd in
-@[rocq_alias inv.inv1.contradiction]
+@[rocq_alias inv.contradiction]
 theorem contradiction : False := by
   apply consistency
   haveI {p : Bool} {E : Mask} {P Q : PROP} :
@@ -374,7 +374,11 @@ theorem contradiction : False := by
 
 end Inv1
 
+section Inv2
+
 end Inv
+
+/-
 
 namespace Linear
 
@@ -495,3 +499,5 @@ theorem contradiction [BILoeb PROP] : False := by
     iapply IH $$ Hlc Hfalse
 
 end LaterCreditsPlain
+
+-/
