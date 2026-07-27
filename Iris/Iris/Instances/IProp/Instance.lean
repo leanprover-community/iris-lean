@@ -539,7 +539,6 @@ instance {a : F.ap (IProp GF)} [CMRA.CoreId a] : BI.Persistent (iOwn γ a) where
     refine (UPred.persistently_ownM_core _).trans ?_
     refine persistently_mono ?_
     rw [CMRA.core_eqv_self]
-    exact .rfl
 
 @[rocq_alias own_timeless]
 instance iOwn_timeless {a : F.ap (IProp GF)} [OFE.DiscreteE a] : BI.Timeless (iOwn γ a) :=
@@ -816,7 +815,7 @@ instance fromAndOwn_persistent {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp .split
     calc
       _ ⊢ iOwn γ b1 ∗ iOwn γ b2 := persistent_and_sep_mp
       _ ⊢ iOwn γ (b1 • b2)      := iOwn_op.mpr
-      _ ⊢ iOwn γ a              := by rw [h.is_op]; exact .rfl
+      _ ⊢ iOwn γ a              := by rw [h.is_op]
 
 end iOwn
 
