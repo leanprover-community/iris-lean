@@ -37,9 +37,8 @@ scoped instance : LeftIdentity (Add.add (α := Credit)) (0 : Credit) where
 scoped instance : LawfulLeftIdentity (Add.add (α := Credit)) (0 : Credit) := ⟨Nat.zero_add⟩
 scoped instance : LeftCancelAdd Credit := ⟨Nat.add_left_cancel⟩
 
-scoped instance : COFE Credit := COFE.ofDiscrete _ Eq_Equivalence
-scoped instance : Discrete Credit := ⟨congrArg id⟩
-scoped instance : Leibniz Credit := ⟨congrArg id⟩
+scoped instance : COFE Credit := COFE.ofDiscrete _
+scoped instance : Discrete Credit := ⟨fun h _ => h⟩
 scoped instance : UCMRA Credit := CommMonoidLike.instUCMRA
 scoped instance : CMRA.Discrete Credit := CommMonoidLike.instDiscrete
 scoped instance {a : Credit} : CMRA.Cancelable a := inferInstance
@@ -130,7 +129,8 @@ theorem lc_supply_bound {n m} : ⊢@{IProp GF} lc_supply m -∗ £ n -∗ ⌜n �
   ihave H := iOwn_cmraValid $$ H
   ihave ⟨%H, H2⟩ := auth_both_validI m n $$ H
   ipureintro
-  obtain ⟨k, rfl⟩ := H
+  obtain ⟨k, hk⟩ := H
+  rw [hk.to_eq]
   exact n.le_add_right k
 
 @[rocq_alias lc_decrease_supply]
@@ -429,7 +429,7 @@ open ProofMode
 variable {GF : BundledGFunctors} {hlc : HasLC} [LcGS hlc GF]
 
 @[rocq_alias le_upd.elim_bupd_le_upd]
-instance {P : IProp GF} : ElimModal True p false (bupd P) P (le_upd Q) (le_upd Q) where
+instance {P Q : IProp GF} : ElimModal True p io false (bupd P) P (le_upd Q) (le_upd Q) where
   elim_modal := by
     cases p <;> (dsimp; intro _)
     · iintro ⟨H1, H2⟩
@@ -466,7 +466,7 @@ instance {P : IProp GF} : FromModal True modality_id (le_upd P) (le_upd P) P whe
     iapply le_upd_intro
 
 @[rocq_alias le_upd.elim_modal_le_upd]
-instance {P : IProp GF} : ElimModal True p false (le_upd P) P (le_upd Q) (le_upd Q) where
+instance {P Q : IProp GF} : ElimModal True p io false (le_upd P) P (le_upd Q) (le_upd Q) where
   elim_modal := by
     intro _
     cases p <;> dsimp

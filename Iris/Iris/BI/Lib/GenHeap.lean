@@ -29,7 +29,7 @@ rationale.  To implement the meta machinery we use two extra pieces of ghost
 state in addition to the value map:
 
 - a `ghost_map L gname`, which associates a ghost name with each location;
-- for each such ghost name, a `ReservationMap (Agree (LeibnizO Pos))` storing
+- for each such ghost name, a `ReservationMap (Agree (DiscreteO Pos))` storing
   the actual meta data.  The indirection is required so that `meta_set` is a
   frame-preserving update that does not need to inspect `genHeapInterp`. -/
 
@@ -39,7 +39,7 @@ tree maps over positives. -/
 abbrev MetaResMap (x : Sort _) : Sort _ := Std.ExtTreeMap Pos x compare
 
 /-- The CMRA used to store the meta-data attached to a single location. -/
-abbrev MetaUR : Sort _ := ReservationMap (Agree (LeibnizO Pos)) MetaResMap
+abbrev MetaUR : Sort _ := ReservationMap (Agree (DiscreteO Pos)) MetaResMap
 
 @[rocq_alias gen_heapGpreS]
 class genHeapPreS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ → Type _)
@@ -289,14 +289,14 @@ theorem meta_agree {A : Type _} [Pos.Countable A] {l : L} {N : Namespace} {x1 x2
   ipureintro
   rw [valid_iff (ReservationMap.singleton_op _ _ _).symm
     , ReservationMap.valid_singleton, toAgree_op_valid_iff_eq] at Hvalid
-  exact Pos.encode_inj (LeibnizO.eqv_inj Hvalid)
+  exact Pos.encode_inj (DiscreteO.eqv_inj (OFE.Equiv.of_eq Hvalid))
 
 @[rocq_alias meta_set]
 theorem meta_set {A : Type _} [Pos.Countable A] {l : L} {E : CoPset} {N : Namespace} (x : A)
     (he : (↑N : CoPset) ⊆ E) : metaToken (GF := GF) l E ==∗ metaInfo l N x := by
   unfold metaToken metaInfo
   iintro ⟨%γm, #Hγm, Hm⟩
-  imod iOwn_update (ReservationMap.alloc (a := toAgree (⟨Pos.Countable.encode x⟩ : LeibnizO Pos))
+  imod iOwn_update (ReservationMap.alloc (a := toAgree (⟨Pos.Countable.encode x⟩ : DiscreteO Pos))
     (he _ (coPpick_nclose N)) Agree.toAgree_valid) $$ Hm with Hm
   imodintro
   iexists γm

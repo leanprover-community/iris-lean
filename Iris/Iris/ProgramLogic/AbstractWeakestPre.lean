@@ -156,7 +156,7 @@ theorem wp_inv_open_maybe_of_not_val {e : Expr} {E₁ E₂ : CoPset} {Φ : Val �
       (|={E₂, E₁}=> Wp.wp (Val := Val) Stuckness.NotStuck E₁ e Φ))
     ⊢ Wp.wp (Val := Val) Stuckness.NotStuck E₁ e Φ := by
   iintro H
-  rw [IProp.ext wp_unfold, wp.pre, Hnv]
+  rw [wp_unfold.to_eq, wp.pre, Hnv]
   simp only
   imod H with (⟨%K, %e', %Hctx, %Haux, %hato, Hwp⟩| >$)
   subst Haux

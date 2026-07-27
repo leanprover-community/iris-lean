@@ -47,12 +47,15 @@ theorem or_elim' [BI PROP] {p} {P A Q A1 A2 : PROP} [inst : IntoOr A A1 A2]
     (h1 : P ∗ □?p A1 ⊢ Q) (h2 : P ∗ □?p A2 ⊢ Q) : P ∗ □?p A ⊢ Q :=
   (sep_mono_right <| (intuitionisticallyIf_mono inst.1).trans (intuitionisticallyIf_or _).1).trans <| BI.sep_or_left.1.trans <| or_elim h1 h2
 
-theorem intuitionistic_elim_spatial [BI PROP] {A A' Q : PROP}
+theorem intuitionistic_elim_spatial [BI PROP] {A A' P Q : PROP}
     [IntoPersistently false A A'] [TCOr (Affine A) (Absorbing Q)]
     (h : P ∗ □ A' ⊢ Q) : P ∗ A ⊢ Q := (replaces_r to_persistent_spatial).apply h
 
-theorem intuitionistic_elim_intuitionistic [BI PROP] {A A' Q : PROP} [IntoPersistently true A A']
-    (h : P ∗ □ A' ⊢ Q) : P ∗ □ A ⊢ Q := intuitionistic_elim_spatial h
+theorem intuitionistic_elim_intuitionistic [BI PROP] {A A' Q : PROP}
+    [inst : IntoPersistently true A A'] (h : P ∗ □ A' ⊢ Q) : P ∗ □ A ⊢ Q :=
+  have : IntoPersistently false iprop(□ A) A' :=
+    ⟨persistently_of_intuitionistically.trans inst.into_persistently⟩
+  intuitionistic_elim_spatial (A := iprop(□ A)) h
 
 theorem spatial_elim [BI PROP] {p} {A A' Q : PROP} [FromAffinely A' A p]
     (h : P ∗ A' ⊢ Q) : P ∗ □?p A ⊢ Q :=
@@ -117,10 +120,10 @@ private def iCasesSep {prop : Q(Type u)} (bi : Q(BI $prop))
     let goal' := q(iprop(□ $A2 -∗ $goal))
     let pf ← k1 hyps goal' A1 fun hyps goal' => do
       let goal'' ← mkFreshExprMVarQ q($prop)
-      let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $goal' .in iprop(□ $A2) $goal'')
+      let .some inst ← ProofModeM.trySynthInstanceQ q(FromWand $goal' .in iprop(□ $A2) $goal'')
         | throwError "icases: internal error: {goal'} is not a wand"
       let pf ← k2 hyps goal'' A2 k
-      return q((wand_intro $pf).trans (from_wand .in (Q1:=iprop(□ $A2))))
+      return q((wand_intro $pf).trans $(inst).from_wand)
     return q(and_elim_intuitionistic $pf)
   | .inr _ =>
     let .some _ ← ProofModeM.trySynthInstanceQ q(IntoSep $A $A1 $A2)
@@ -128,10 +131,10 @@ private def iCasesSep {prop : Q(Type u)} (bi : Q(BI $prop))
     let goal' := q(iprop($A2 -∗ $goal))
     let pf ← k1 hyps goal' A1 fun hyps goal' => do
       let goal'' ← mkFreshExprMVarQ q($prop)
-      let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $goal' .in $A2 $goal'')
+      let .some inst ← ProofModeM.trySynthInstanceQ q(FromWand $goal' .in $A2 $goal'')
         | throwError "icases: internal error: {goal'} is not a wand"
       let pf ← k2 hyps goal'' A2 k
-      return q((wand_intro $pf).trans (from_wand .in (Q1:=$A2)))
+      return q((wand_intro $pf).trans $(inst).from_wand)
     return q(sep_elim_spatial (A := $A) $pf)
 
 /-- Destruct a disjunction hypothesis [A] into two cases and continue separately on each branch. -/

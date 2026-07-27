@@ -23,11 +23,11 @@ theorem rewrite_tac [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p
     (h1 : P ⊢ P' ∗ □?p Q)
     : P ⊢ <pers> (Ψ a ∗-∗ Ψ b) :=
   calc P
-  _ ⊢ P' ∗ internalEq a b := h1.trans (sep_mono_right (intuitionisticallyIf_elim.trans heq.1))
-  _ ⊢ internalEq a b := sep_elim_right
-  _ ⊢ internalEq (Ψ a) (Ψ b) := internalEq.of_internalEquiv_ne Ψ
-  _ ⊢ <pers> internalEq (Ψ a) (Ψ b) := persistent
-  _ ⊢ <pers> <affine> internalEq (Ψ a) (Ψ b) := persistently_affinely.2
+  _ ⊢ P' ∗ a ≡ b := h1.trans (sep_mono_right (intuitionisticallyIf_elim.trans heq.1))
+  _ ⊢ a ≡ b := sep_elim_right
+  _ ⊢ Ψ a ≡ Ψ b := internalEq.of_internalEquiv_ne Ψ
+  _ ⊢ <pers> (Ψ a ≡ Ψ b) := persistent
+  _ ⊢ <pers> <affine> Ψ a ≡ Ψ b := persistently_affinely.2
   _ ⊢ <pers> (Ψ a ∗-∗ Ψ b) := persistently_mono (affinely_internalEq_wandIff _ _)
 
 theorem rewrite_tac_symm [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p}

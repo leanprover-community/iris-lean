@@ -266,9 +266,9 @@ instance : BIBase (UPred M) where
 #rocq_ignore uPred_primitive.uPred_unseal "No `Ltac unseal` rewrite is needed; nothing is sealed."
 
 @[rocq_alias uPred_primitive.entails_po]
-instance uPred_entails_preorder : Std.Preorder (Entails (PROP := UPred M)) where
-  refl _ _ H := H
-  trans H1 H2 _ _ Hv := H2 _ _ <| H1 _ _ Hv
+instance uPred_entails_preorder : Std.IsPreorder (UPred M) where
+  le_refl _ _ _ H := H
+  le_trans _ _ _ H1 H2 _ _ Hv := H2 _ _ <| H1 _ _ Hv
 
 @[rocq_alias uPred_primitive.entails_lim]
 theorem uPred_entails_lim {cP cQ : Chain (UPred M)} (H : ∀ n, cP n ⊢ cQ n) :
@@ -280,14 +280,14 @@ theorem uPred_entails_lim {cP cQ : Chain (UPred M)} (H : ∀ n, cP n ⊢ cQ n) :
 
 @[rocq_alias uPredI]
 instance : BI (UPred M) where
-  entails_preorder := inferInstance
+  entails_refl := uPred_entails_preorder.le_refl _
+  entails_trans := uPred_entails_preorder.le_trans _ _ _
   equiv_iff {_ _} := by
     constructor <;> intro HE
-    · constructor <;> intro n ⟨x, Hv⟩ H <;> refine uPred_holds_ne ?_ .refl Hv Hv H
-      · exact fun n' x _ => HE.symm n' x
-      · exact fun n' x _ => HE n' x
-    · intro n m Hv
-      exact ⟨fun H => HE.1 _ ⟨_, Hv⟩ H, fun H => HE.2 _ ⟨_, Hv⟩ H⟩
+    · exact ⟨fun n ⟨x, Hv⟩ H => (HE n n x .refl Hv).mp H,
+             fun n ⟨x, Hv⟩ H => (HE n n x .refl Hv).mpr H⟩
+    · intro n n' x _ p
+      exact ⟨fun H => HE.1 n' ⟨x, p⟩ H, fun H => HE.2 n' ⟨x, p⟩ H⟩
   and_ne.ne _ _ _ H _ _ H' _ _ Hn' Hv' := by
     constructor <;> intro H <;> rcases H with ⟨H1, H2⟩
     · constructor
@@ -387,8 +387,8 @@ instance : BI (UPred M) where
     refine P.mono H ?_ .refl
     refine (incN_iff_right ?_).mpr (incN_refl _)
     exact (core_idem x.val).dist
-  persistently_emp_2 := Std.refl
-  persistently_and_2 := Std.refl
+  persistently_emp_2 := uPred_entails_preorder.le_refl emp
+  persistently_and_2 {P Q} := uPred_entails_preorder.le_refl iprop(<pers> P ∧ <pers> Q)
   persistently_sExists_1 _ _ := fun ⟨p, HΨ, H⟩ => by
     refine ⟨iprop(<pers> p), ⟨p, ?_⟩, H⟩
     ext; exact and_iff_right HΨ
@@ -620,7 +620,7 @@ theorem plainly_eq_uPred_plainly (P : UPred M) : iprop(■ P) = UPred.plainly P 
 
 /-- The Sbi-derived `internalCmraValid` on UPred unfolds to `UPred.cmraValid`. -/
 theorem internalCmraValid_eq_uPred_cmraValid [CMRA A] (a : A) :
-    (internalCmraValid a : UPred M) = UPred.cmraValid a := rfl
+    iprop(✓ a : UPred M) = UPred.cmraValid a := rfl
 
 instance : BUpd (UPred M) := ⟨bupd⟩
 

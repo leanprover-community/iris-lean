@@ -112,7 +112,7 @@ theorem ownE_empty : ⊢ |==> ownE (W := W) ∅ := iOwn_unit (ε := UCMRA.unit)
 @[rocq_alias ownE_op]
 theorem ownE_op {E1 E2} (Hdisj : E1 ## E2) : ownE (E1 ∪ E2) ⊣⊢@{IProp GF} ownE E1 ∗ ownE E2 := by
   refine .trans (.of_eq ?_) iOwn_op
-  rw [disj_op_union Hdisj]
+  rw [(disj_op_union Hdisj).to_eq]
   rfl
 
 @[rocq_alias ownE_disjoint]
@@ -156,7 +156,7 @@ theorem ownD_empty : ⊢@{IProp GF} |==> ownD ∅ := iOwn_unit (ε := UCMRA.unit
 @[rocq_alias ownD_op]
 theorem ownD_op {E1 E2} (Hdisj : E1 ## E2) : ownD (E1 ∪ E2) ⊣⊢@{IProp GF} ownD E1 ∗ ownD E2 := by
   refine .trans (.of_eq ?_) iOwn_op
-  rw [disj_op_union Hdisj]
+  rw [(disj_op_union Hdisj).to_eq]
   rfl
 
 @[rocq_alias ownD_disjoint]
@@ -198,7 +198,7 @@ variable {GF : BundledGFunctors} [W : WsatGS GF]
 @[rocq_alias invariant_lookup]
 theorem invariant_lookup (I : InvMap (IProp GF)) (i : Pos) (P : IProp GF) :
     iOwn (E := W.inv) W.invariant_name (invMap I) ∗ ownI i P
-    ⊢@{IProp GF} ∃ Q, ⌜get? I i = .some Q⌝ ∗ ▷ internalEq Q P := by
+    ⊢@{IProp GF} ∃ Q, ⌜get? I i = .some Q⌝ ∗ ▷ (Q ≡ P) := by
   unfold ownI
   iintro H
   ihave H := iOwn_cmraValid_op $$ H

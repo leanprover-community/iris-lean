@@ -1,15 +1,19 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König, Mario Carneiro, Alvin Tang
+Authors: Lars König, Mario Carneiro, Michael Sammler, Alvin Tang
 -/
 module
 
 public import Iris.BI
 public import Iris.ProofMode.Classes
+public import Iris.ProofMode.ClassesMake
 public import Iris.ProofMode.ModalityInstances
+public import Iris.ProofMode.Expr
 public import Iris.Std.TC
 public import Iris.Std.RocqPorting
+public import Iris.ProofMode.Tactics
+public import Iris.ProofMode.Display
 
 @[expose] public section
 
@@ -19,27 +23,27 @@ open Iris.BI Iris.Std
 -- AsEmpValid
 @[rocq_alias as_emp_valid_emp_valid]
 instance (priority := default + 10) asEmpValidEmpValid
-    [bi : BI PROP] d (P : PROP) :
-    AsEmpValid d (⊢ P) io1 PROP io2 bi P := ⟨by simp⟩
+    [bi : BI PROP] d (P : PROP) io : AsEmpValid0 d (⊢ P) io PROP bi P where
+  as_emp_valid_0 := ⟨by simp⟩
 
 @[rocq_alias as_emp_valid_entails]
-instance asEmpValid_entails [bi : BI PROP] d (P Q : PROP)
-: AsEmpValid d (P ⊢ Q) io1 PROP io2 bi iprop(P -∗ Q) where
-  as_emp_valid := ⟨λ _ => entails_wand, λ _ => wand_entails⟩
+instance asEmpValid_entails [bi : BI PROP] d io (P Q : PROP) :
+    AsEmpValid0 d (P ⊢ Q) io PROP bi iprop(P -∗ Q) where
+  as_emp_valid_0 := ⟨λ _ => entails_wand, λ _ => wand_entails⟩
 
-instance asEmpValid_bientails [bi : BI PROP] (P Q : PROP)
-: AsEmpValid d (P ⊣⊢ Q) io1 PROP io2 bi iprop(P ∗-∗ Q) where
-  as_emp_valid := ⟨λ _ => equiv_wandIff, λ _ => wandIff_equiv⟩
+instance asEmpValid_bientails [bi : BI PROP] d io (P Q : PROP) :
+    AsEmpValid0 d (P ⊣⊢ Q) io PROP bi iprop(P ∗-∗ Q) where
+  as_emp_valid_0 := ⟨λ _ => equiv_wandIff, λ _ => wandIff_equiv⟩
 
 @[rocq_alias as_emp_valid_equiv]
-instance asEmpValid_equiv [bi : BI PROP] (P Q : PROP)
-: AsEmpValid d (P ≡ Q) io1 PROP io2 bi iprop(P ∗-∗ Q) where
-  as_emp_valid := ⟨λ _ h => equiv_wandIff (equiv_iff.1 h), λ _ h => (equiv_iff.2 (wandIff_equiv h))⟩
+instance asEmpValid_equiv [bi : BI PROP] d io (P Q : PROP) :
+    AsEmpValid0 d (P ≡ Q) io PROP bi iprop(P ∗-∗ Q) where
+  as_emp_valid_0 := ⟨λ _ h => equiv_wandIff (equiv_iff.1 h), λ _ h => (equiv_iff.2 (wandIff_equiv h))⟩
 
 @[rocq_alias as_emp_valid_forall]
-instance asEmpValid_forall {α} [bi : BI PROP] (Φ : α → Prop) (P : α → PROP)
-  [hP : ∀ x, AsEmpValid d (Φ x) io1 PROP io2 bi iprop(P x)]
-: AsEmpValid d (∀ x, Φ x) io1 PROP io2 bi iprop(∀ x, P x) where
+instance asEmpValid_forall {α} [bi : BI PROP] (Φ : α → Prop) (P : α → PROP) d io
+    [hP : ∀ x, AsEmpValid d (Φ x) io PROP bi iprop(P x)] :
+    AsEmpValid d (∀ x, Φ x) io PROP bi iprop(∀ x, P x) where
   as_emp_valid := ⟨λ hd h => forall_intro λ x => (hP x).1.1 hd (h x),
                    λ hd h x => (hP x).1.2 hd $ h.trans (forall_elim x)⟩
 
@@ -49,7 +53,13 @@ instance fromImp_imp [BI PROP] (P1 P2 : PROP) : FromImp iprop(P1 → P2) P1 P2 :
 
 -- FromWand
 @[rocq_alias from_wand_wand]
-instance fromWand_wand [BI PROP] (P1 P2 : PROP) : FromWand iprop(P1 -∗ P2) io P1 P2 := ⟨.rfl⟩
+instance fromWand_wand [BI PROP] (P1 P2 : PROP) io : FromWand iprop(P1 -∗ P2) io P1 P2 := ⟨.rfl⟩
+
+-- FromWandM
+@[rocq_alias from_wand_wandM]
+instance fromWand_wandM [BI PROP] (mP1 : Option PROP) (P2 : PROP) :
+    FromWand iprop(mP1 -∗? P2) io (mP1.getD emp) P2 where
+  from_wand := wandM_sound.mpr
 
 -- IntoWand
 #rocq_ignore into_wand_wand' "IntoWand' is not used in Lean"
@@ -83,6 +93,13 @@ instance intoWand_and_r (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP)
 
 instance intoWand_wandIff (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP)
     [h : IntoWand p q iprop((R1 -∗ R2) ∧ (R2 -∗ R1)) ioP P' ioQ Q'] : IntoWand p q iprop(R1 ∗-∗ R2) ioP P' ioQ Q' := h
+
+@[rocq_alias into_wand_wandM]
+instance intoWand_wandM (p q : Bool) [BI PROP] (mP' : Option PROP) (P Q : PROP)
+    [h : FromAssumption q ioP P (mP'.getD emp)] :
+    IntoWand p q iprop(mP' -∗? Q) ioP P ioQ Q where
+  into_wand := (intuitionisticallyIf_mono wandM_sound.mp).trans <|
+    (intuitionisticallyIf_mono <| wand_mono_left h.1).trans intuitionisticallyIf_elim
 
 -- The set_option is ok since this is an instance for an IPM class and thus can create mvars.
 set_option synthInstance.checkSynthOrder false in
@@ -839,21 +856,29 @@ instance fromModal_absorbingly [BI PROP] (P : PROP) :
 
 -- ElimModal
 @[rocq_alias elim_modal_wand]
-instance elimModal_wand [BI PROP] φ p p' (P P' Q Q' R : PROP) [h : ElimModal φ p p' P P' Q Q'] :
-   ElimModal φ p p' P P' iprop(R -∗ Q) iprop(R -∗ Q') where
+instance elimModal_wand [BI PROP] φ p p' io (P P' Q Q' R : PROP) [h : ElimModal φ p io p' P P' Q Q'] :
+   ElimModal φ p io p' P P' iprop(R -∗ Q) iprop(R -∗ Q') where
    elim_modal hφ := by
      apply wand_intro ((sep_assoc.1.trans $ sep_mono_right $ wand_elim $ wand_intro_left $
        wand_intro_left $ sep_assoc.2.trans _).trans (h.1 hφ))
      apply (sep_mono_left sep_comm.1).trans (sep_assoc.1.trans $ wand_elim_swap $ wand_elim_swap .rfl)
 
+@[rocq_alias elim_modal_wandM]
+instance elimModal_wandM [BI PROP] φ p p' io (P P' Q Q' : PROP) (mR : Option PROP)
+    [h : ElimModal φ p io p' P P' Q Q'] :
+    ElimModal φ p io p' P P' iprop(mR -∗? Q) iprop(mR -∗? Q') where
+  elim_modal hφ :=
+    (sep_mono_right <| wand_mono_right wandM_sound.mp).trans <|
+    ((elimModal_wand φ p p' io P P' Q Q' (mR.getD emp)).elim_modal hφ).trans wandM_sound.mpr
+
 @[rocq_alias elim_modal_forall]
-instance elimModal_forall [BI PROP] φ p p' P P' (Φ Ψ : α → PROP) [h : ∀ x, ElimModal φ p p' P P' (Φ x) (Ψ x)] :
-  ElimModal φ p p' P P' iprop(∀ x, Φ x) iprop(∀ x, Ψ x) where
+instance elimModal_forall [BI PROP] φ p p' io P P' (Φ Ψ : α → PROP) [h : ∀ x, ElimModal φ p io p' P P' (Φ x) (Ψ x)] :
+  ElimModal φ p io p' P P' iprop(∀ x, Φ x) iprop(∀ x, Ψ x) where
   elim_modal hφ := forall_intro λ a => Entails.trans (sep_mono_right (wand_mono_right (forall_elim a))) ((h a).1 hφ)
 
 @[rocq_alias elim_modal_absorbingly_here]
-instance elimModal_absorbingly_here [BI PROP] p (P Q : PROP) [Absorbing Q] :
-  ElimModal True p false iprop(<absorb> P) P Q Q where
+instance elimModal_absorbingly_here [BI PROP] p io (P Q : PROP) [Absorbing Q] :
+  ElimModal True p io false iprop(<absorb> P) P Q Q where
   elim_modal _ := (sep_mono_left intuitionisticallyIf_elim).trans $ absorbingly_sep_left.1.trans $ absorbing_absorbingly.1.trans wand_elim_right
 
 theorem addModal_wand_mp [BI PROP] {P P' Q R : PROP} [h : AddModal P P' Q] :
@@ -898,7 +923,7 @@ instance addModal_forall {A : Type} [BI PROP] (P P' : PROP) (Φ : A → PROP)
 @[rocq_alias maybe_combine_sep_as_default]
 instance (priority := default - 20) combineSepAs_default [BI PROP] (P Q : PROP) :
     CombineSepAs P Q iprop(P ∗ Q) where
-  combine_sep_as := refl
+  combine_sep_as := by rfl
 
 @[rocq_alias maybe_combine_sep_as_affinely]
 instance combineSepAs_affinely [BI PROP] (Q1 Q2 P : PROP)
@@ -956,3 +981,85 @@ instance combineSepGives_persistently [BI PROP] (Q1 Q2 P : PROP)
     [h : CombineSepGives Q1 Q2 P] :
     CombineSepGives iprop(<pers> Q1) iprop(<pers> Q2) iprop(<pers> P) where
   combine_sep_gives := persistently_sep_mpr.trans (persistently_mono h.combine_sep_gives)
+
+@[rocq_alias elim_inv_acc_without_close]
+instance elimInv_acc_without_close [BI PROP] {X : Type}
+    ϕ1 ϕ2 Pinv Pin (M1 M2 : PROP → PROP) α β mγ Q (Q' : X → PROP)
+    [h1 : IntoAcc Pinv ϕ1 Pin M1 M2 α β mγ]
+    [h2 : ElimAcc ϕ2 M1 M2 α β mγ Q Q'] :
+    ElimInv (ϕ1 ∧ ϕ2) X Pinv Pin α false none Q Q' where
+  elim_inv := by
+    intro ⟨hϕ1, _⟩
+    iintro ⟨Hinv, Hin, Hcont⟩
+    iapply h2.elim_acc $$ [Hcont]
+    · assumption
+    · simp only [Option.getD_none, sep_emp.to_eq]; iassumption
+    · iapply h1.into_acc hϕ1 $$ Hinv Hin
+
+@[rocq_alias elim_inv_acc_with_close]
+instance elimInv_acc_with_close [BI PROP] {X : Type}
+    ϕ1 ϕ2 Pinv Pin (M1 M2 : PROP → PROP) α β mγ Q (Q' : PROP)
+    [h1 : IntoAcc Pinv ϕ1 Pin M1 M2 α β mγ]
+    [h2 : ∀ R, ElimModal ϕ2 false .in false (M1 R) R Q Q'] :
+    ElimInv (ϕ1 ∧ ϕ2) X Pinv Pin α true
+            (some (fun x => iprop(β x -∗ M2 (mγ x |>.getD emp))))
+            Q (fun _ => Q') where
+  elim_inv := by
+    intro ⟨hϕ1, hϕ2⟩
+    have hAcc := h1.into_acc
+    unfold accessor at hAcc
+    iintro ⟨Hinv, Hin, Hcont⟩
+    iapply (h2 _ |>.elim_modal hϕ2)
+    isplitl [Hinv Hin]
+    · dsimp
+      iapply hAcc hϕ1 $$ Hinv Hin
+    · dsimp
+      iintro ⟨%_, Hα, Hclose⟩
+      iapply Hcont
+      isplitl [Hα] <;> iassumption
+
+@[rocq_alias into_ih_entails]
+instance intoIH_entails [BI PROP] (P Q : PROP) : IntoIH (Entails' P Q) P Q where
+  into_ih := λ hpq => intuitionistically_elim.trans hpq
+
+@[rocq_alias into_ih_forall]
+instance (priority := default - 2) intoIH_forall [BI PROP] (φ : α → Prop) (P : PROP) (Φ : α → PROP)
+    [h : ∀ x, IntoIH (φ x) P (Φ x)] :
+    IntoIH (∀ x, φ x) P (BI.forall Φ) where
+  into_ih := by
+    intro hφ
+    apply forall_intro
+    intro x
+    exact (h x).into_ih (hφ x)
+
+@[rocq_alias into_ih_impl]
+instance (priority := default - 1) intoIH_imp [BI PROP] (φ ψ : Prop) (Δ P Q : PROP)
+    [h1 : MakeAffinely iprop(⌜φ⌝) P]
+    [h2 : IntoIH ψ Δ Q] :
+    IntoIH (φ → ψ) Δ iprop(P -∗ Q) where
+  into_ih := by
+    intro hImp
+    apply wand_intro
+    refine (sep_mono_right h1.make_affinely.mpr).trans ?_
+    refine persistent_and_affinely_sep_right.2.trans ?_
+    exact pure_elim_right (fun hφ => h2.into_ih (hImp hφ))
+
+#rocq_ignore into_ih_Forall "List.Forall does not exist in the core Lean libraries, and ∀ x ∈ l, p x is used instead"
+
+/-- Support for induction principles whose IH is guarded by `List.Forall₂`, e.g.
+    arising from mutual inductive types relating two lists element-wise. -/
+@[rocq_alias into_ih_Forall2]
+instance (priority := default - 2) intoIH_listForall₂ [BI PROP] (φ : α → β → Prop) (l1 : List α) (l2 : List β)
+    (P : PROP) (Φ : α → β → PROP)
+    [h : ∀ x1 x2, IntoIH (φ x1 x2) P (Φ x1 x2)] :
+    IntoIH (List.Forall₂ φ l1 l2) P (bigSepL2 (fun _ x1 x2 => iprop(□ Φ x1 x2)) l1 l2) where
+  into_ih := by
+    intro h
+    induction h with
+    | nil => simp [bigSepL2, affine]
+    | cons x xs ih =>
+      simp [bigSepL2] at ⊢
+      apply intuitionistically_sep_idem.mpr.trans
+      refine sep_mono ?_ ?_
+      · exact intuitionistically_intro_intuitionistically ((h _ _).into_ih x)
+      · exact ih

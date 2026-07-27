@@ -28,9 +28,8 @@ scoped instance : LawfulLeftIdentity (Add.add (α := MaxNat)) (0 : MaxNat) where
   left_id := Nat.zero_max
 scoped instance : Std.IdempotentOp (Add.add (α := MaxNat)) where
   idempotent x := by simp [Add.add]
-scoped instance : COFE MaxNat := COFE.ofDiscrete _ Eq_Equivalence
-scoped instance : OFE.Discrete MaxNat := ⟨congrArg id⟩
-scoped instance : OFE.Leibniz MaxNat := ⟨congrArg id⟩
+scoped instance : COFE MaxNat := COFE.ofDiscrete _
+scoped instance : OFE.Discrete MaxNat := ⟨fun h _ => h⟩
 scoped instance : UCMRA MaxNat := OrdCommMonoidLike.instUCMRAOfLawfulLeftIdentityAddZero
 scoped instance : CMRA.Discrete MaxNat := OrdCommMonoidLike.instDiscrete
 scoped instance : CMRA.CoreId (a : MaxNat) := OrdCommMonoidLike.instCoreId _
@@ -123,7 +122,7 @@ theorem auth_dfrac_op_valid (dq1 dq2 : DFrac) (n1 n2 : MaxNat) :
       CMRA.assoc.trans <| (CMRA.op_left_eqv _ CMRA.comm).trans CMRA.assoc.symm).trans
       CMRA.assoc) h
     have ⟨hdq, heq, _⟩ := Auth.auth_dfrac_op_valid.mp (CMRA.valid_op_left h)
-    exact ⟨hdq, OFE.Leibniz.eq_of_eqv heq⟩
+    exact ⟨hdq, heq.to_eq⟩
   · rintro ⟨hdq, rfl⟩
     refine CMRA.valid_of_eqv ?_ (Auth.both_dfrac_valid_discrete.mpr ⟨hdq, CMRA.inc_refl n1, trivial⟩)
     exact auth_dfrac_op dq1 dq2 n1
@@ -142,10 +141,12 @@ theorem both_dfrac_valid (dq : DFrac) (n m : MaxNat) :
   rw [CMRA.valid_iff CMRA.assoc.symm, ←Auth.frag_op, Auth.both_dfrac_valid_discrete]
   constructor
   · intro ⟨hdq, ⟨k, hk⟩, _⟩; refine ⟨hdq, ?_⟩
-    simp only [CMRA.op, Add.add, OFE.Equiv] at hk
+    replace hk := hk.to_eq
+    simp only [CMRA.op, Add.add] at hk
     grind
   · intro ⟨hdq, hle⟩; refine ⟨hdq, ⟨0, ?_⟩, trivial⟩
-    simp [CMRA.op, Add.add, OFE.Equiv, Nat.max_eq_left hle]
+    refine OFE.Equiv.of_eq ?_
+    simp [CMRA.op, Add.add, Nat.max_eq_left hle]
 
 @[rocq_alias mono_nat_both_valid]
 theorem both_valid (n m : MaxNat) :
@@ -158,7 +159,8 @@ theorem lb_mono (n1 n2 : MaxNat) (h : n1 ≤ n2) :
   (◯MN n1 : MonoNat) ≼ ◯MN n2 := by
   refine Auth.frag_inc_of_inc ?_
   exists n2
-  simp only [CMRA.op, Add.add, OFE.Equiv]
+  refine OFE.Equiv.of_eq ?_
+  simp only [CMRA.op, Add.add]
   grind
 
 @[rocq_alias mono_nat_included]
@@ -188,15 +190,15 @@ theorem auth_unpersist (n : MaxNat) :
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias mono_nat_auth_dfrac_is_op]
 instance {dq dq1 dq2 : DFrac} {n : MaxNat}
-    [h : IsOp io1 dq io2 dq1 io3 dq2] :
-    IsOp io1 (●MN{dq} n) io2 (●MN{dq1} n) io3 (●MN{dq2} n) where
-  is_op := by rw [h.is_op]; apply auth_dfrac_op
+    [h : IsOp d dq dq1 dq2] :
+    IsOp d (●MN{dq} n) (●MN{dq1} n) (●MN{dq2} n) where
+  is_op := by rw [h.is_op.to_eq]; apply auth_dfrac_op
 
 @[rocq_alias mono_nat_lb_max_is_op]
 instance {n n1 n2 : MaxNat}
-    [h : IsOp io1 n io2 n1 io3 n2] :
-    IsOp io1 (◯MN n : MonoNat) io2 (◯MN n1) io3 (◯MN n2) where
-  is_op := by rw [h.is_op]; .rfl
+    [h : IsOp d n n1 n2] :
+    IsOp d (◯MN n : MonoNat) (◯MN n1) (◯MN n2) where
+  is_op := by rw [h.is_op.to_eq]; exact .rfl
 
 end MonoNat
 

@@ -307,8 +307,8 @@ theorem primStep_stuck_of_baseStep_stuck :
     BaseStep.Stuck (e, σ) → SubredexesAreValues e → PrimStep.Stuck (e, σ) :=
   fun ⟨toVal_none, irr⟩ hsr => ⟨toVal_none, primStep_irreducible_of_baseStep_irreducible irr hsr⟩
 
-@[rocq_alias ectx_language_atomic, implicit_reducible]
-def Atomic.ofBaseAtomic (a : Language.Atomicity) :
+@[rocq_alias ectx_language_atomic]
+theorem Atomic.ofBaseAtomic (a : Language.Atomicity) :
     BaseAtomic a e →
     SubredexesAreValues e →
     Language.Atomic a e := fun _ _ => ⟨by grind [BaseAtomic]⟩
