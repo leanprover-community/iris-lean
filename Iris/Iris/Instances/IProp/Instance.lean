@@ -17,9 +17,6 @@ namespace Iris
 
 open COFE Std CMRA
 
-@[ext]
-theorem IProp.ext {P Q : IProp GF} : P ⊣⊢ Q → P = Q := OFE.Leibniz.eq_of_eqv ∘ BI.equiv_iff.mpr
-
 /-- Apply an OFunctor at a fixed type -/
 abbrev COFE.OFunctorPre.ap (F : OFunctorPre) (T : Type _) [COFE T] :=
   F T T
@@ -29,7 +26,7 @@ abbrev BundledGFunctors.api (FF : BundledGFunctors) (τ : GType) (T : Type _) [C
   FF τ |>.fst |>.ap T
 
 /-- Transport an OFunctorPre application along equality of the OFunctorPre.  -/
-def transpAp {F1 F2 : OFunctorPre} (H : F1 = F2) {T} [COFE T] : F1.ap T = F2.ap T :=
+theorem transpAp {F1 F2 : OFunctorPre} (H : F1 = F2) {T} [COFE T] : F1.ap T = F2.ap T :=
   congrArg (OFunctorPre.ap · T) H
 
 section TranspAp
@@ -47,8 +44,8 @@ theorem OFE.transpAp_op_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x y
 theorem OFE.transpAp_pcore_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x : F₁ T T} :
     (CMRA.pcore x).map (transpAp h_fun).mp ≡ CMRA.pcore ((transpAp h_fun).mp x) := by
   cases h_fun; cases eq_of_heq h_inst
-  simp [Equiv, Option.Forall₂]
-  cases CMRA.pcore x <;> simp [Equiv.rfl]
+  simp [Equiv]
+  cases CMRA.pcore x <;> simp
 
 theorem OFE.transpAp_validN_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x : F₁ T T} (H : ✓{n} x) :
     ✓{n} ((transpAp h_fun).mp x) := by
@@ -74,10 +71,10 @@ open OFE
 
 variable [I : RFunctorContractive F]
 
-def ElemG.transpMap (E : ElemG GF F) T [OFE T] : (GF E.τ).fst = F :=
+theorem ElemG.transpMap (E : ElemG GF F) T [OFE T] : (GF E.τ).fst = F :=
   Sigma.mk.inj E.transp |>.1
 
-def ElemG.transpClass (E : ElemG GF F) T [OFE T] : (GF E.τ).snd ≍ I :=
+theorem ElemG.transpClass (E : ElemG GF F) T [OFE T] : (GF E.τ).snd ≍ I :=
   Sigma.mk.inj E.transp |>.2
 
 def ElemG.bundle (E : ElemG GF F) [COFE T] : F.ap T → GF.api E.τ T :=
@@ -174,15 +171,17 @@ def IProp.foldi : FF.api τ (IPre FF) -n> FF.api τ (IProp FF) :=
 
 @[rocq_alias inG_unfold_fold]
 theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) ≡ x := by
+  refine OFE.equiv_dist.mpr fun n => ?_
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm ?_
-  refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x)
-  apply OFunctor.map_ne.eqv <;> intro _ <;> simp [IProp.unfold, IProp.fold]
+  refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
+  apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold]
 
 @[rocq_alias inG_fold_unfold]
 theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) ≡ x := by
+  refine OFE.equiv_dist.mpr fun n => ?_
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm ?_
-  refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x)
-  apply OFunctor.map_ne.eqv <;> intro _ <;> simp [IProp.unfold, IProp.fold, -OFE.leibniz]
+  refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
+  apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold]
 
 theorem IProp.unfoldi_discreteE {v : FF.api τ (IProp FF)} (hv : OFE.DiscreteE v) :
     OFE.DiscreteE (unfoldi.f v) where
@@ -263,6 +262,7 @@ instance : OFE.NonExpansive (iSingleton F γ (GF := GF)) where
 
 @[rocq_alias iRes_singleton_op]
 theorem iSingleton_op (x y : F.ap (IProp GF)) : (iSingleton F γ x) • iSingleton F γ y ≡ iSingleton F γ (x • y) := by
+  refine OFE.equiv_dist.mpr fun n => ?_
   intro τ' γ'
   simp only [iSingleton]
   split
@@ -270,8 +270,9 @@ theorem iSingleton_op (x y : F.ap (IProp GF)) : (iSingleton F γ x) • iSinglet
     subst h; simp only [CMRA.op, optionOp]
     by_cases heq : γ' = γ
     · subst heq
-      simp only [iSingleton, ↓reduceDIte, GenMap.singleton_map_in, some_eqv_some]
-      exact ((RFunctor.map (fold GF) (unfold GF)).op _ _).symm.trans (NonExpansive.eqv (bundle_op x y).symm)
+      simp only [iSingleton, ↓reduceDIte, GenMap.singleton_map_in, some_dist_some]
+      exact (((RFunctor.map (fold GF) (unfold GF)).op _ _).symm.trans
+        (NonExpansive.eqv (bundle_op x y).symm)).dist
     · simp only [iSingleton, ↓reduceDIte, singleton_map_none heq]; rfl
   next h => simp [iSingleton, h, CMRA.op, GenMap.empty_map_lookup]
 
@@ -314,8 +315,8 @@ theorem unfoldi_bundle_coreId {a : F.ap (IProp GF)} [CMRA.CoreId a] :
 
 @[rocq_alias iRes_singleton_core_id]
 instance {a : F.ap (IProp GF)} [CMRA.CoreId a] : CMRA.CoreId (iSingleton F γ a) where
-  core_id τ' γ' := by
-    show CMRA.core ((iSingleton F γ a τ').car γ') ≡ (iSingleton F γ a τ').car γ'
+  core_id n τ' γ' := by
+    show CMRA.core ((iSingleton F γ a τ').car γ') ≡{n}≡ (iSingleton F γ a τ').car γ'
     simp only [iSingleton]
     split
     next h =>
@@ -323,7 +324,7 @@ instance {a : F.ap (IProp GF)} [CMRA.CoreId a] : CMRA.CoreId (iSingleton F γ a)
       by_cases heq : γ' = γ
       · subst heq
         simp only [GenMap.singleton_map_in, CMRA.core, optionCore, CMRA.pcore, Option.bind]
-        exact unfoldi_bundle_coreId.core_id
+        exact unfoldi_bundle_coreId.core_id.dist
       · simp [singleton_map_none heq, CMRA.core, optionCore, CMRA.pcore]
     next => simp [GenMap.empty_map_lookup, CMRA.core, optionCore, CMRA.pcore]
 
@@ -445,7 +446,8 @@ theorem iSingleton_op_validN_at_γ {a : F.ap (IProp GF)} (Hv : ✓{n} mf) :
 @[rocq_alias iRes_singleton_discrete]
 instance iSingleton_discreteE {v : F.ap (IProp GF)} [OFE.DiscreteE v] :
     OFE.DiscreteE (iSingleton F γ v) where
-  discrete {w} H τ := by
+  discrete {w} H := by
+    refine OFE.equiv_dist.mpr fun n τ => ?_
     simp only [iSingleton] at ⊢
     split
     next h =>
@@ -456,18 +458,18 @@ instance iSingleton_discreteE {v : F.ap (IProp GF)} [OFE.DiscreteE v] :
         rw [GenMap.singleton_map_in] at Hk ⊢
         rcases hw : (w E.τ).car k with _ | x <;> rw [hw] at Hk
         · exact Hk
-        · simp only [OFE.Equiv] at ⊢
+        · refine some_dist_some.mpr (OFE.Equiv.dist ?_)
           refine (NonExpansive.eqv ?_).trans (IProp.unfoldi_foldi x)
           refine (NonExpansive.eqv ?_).trans (ElemG.bundle_unbundle E _)
           refine OFE.DiscreteE.discrete ?_
           refine (ElemG.unbundle_bundle E v).dist.symm.trans ?_
           refine NonExpansive.ne <| (IProp.foldi_unfoldi _).dist.symm.trans (NonExpansive.ne Hk)
       · rw [GenMap.singleton_map_none hk] at Hk ⊢
-        exact Option.none_is_discrete.discrete Hk
+        exact (Option.none_is_discrete.discrete Hk).dist
     next h =>
       intro k; have Hk := (H τ) k
       simp [iSingleton, dif_neg h, GenMap.empty_map_lookup] at Hk ⊢
-      exact Option.none_is_discrete.discrete Hk
+      exact (Option.none_is_discrete.discrete Hk).dist
 
 end iSingleton
 
@@ -514,19 +516,19 @@ theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ a1) : iOwn γ a1 ⊢ iOw
   next => simp [GenMap.empty_map_lookup]; exact Dist.op_l Dist.rfl
 
 @[rocq_alias own_valid]
-theorem iOwn_cmraValid {a : F.ap (IProp GF)} : iOwn γ a ⊢ internalCmraValid a :=
+theorem iOwn_cmraValid {a : F.ap (IProp GF)} : iOwn γ a ⊢ ✓ a :=
   (UPred.ownM_valid _).trans (internalCmraValid_entails.mpr fun _ => validN_of_iSingleton)
 
 @[rocq_alias own_valid_2]
 theorem iOwn_cmraValid_op {a1 a2 : F.ap (IProp GF)} :
-    iOwn γ a1 ∗ iOwn γ a2 ⊢ internalCmraValid (a1 • a2) :=
+    iOwn γ a1 ∗ iOwn γ a2 ⊢ ✓ (a1 • a2) :=
   iOwn_op.mpr.trans iOwn_cmraValid
 
 @[rocq_alias own_valid_r]
-theorem iOwn_valid_r {a : F.ap (IProp GF)} : iOwn γ a ⊢ iOwn γ a ∗ internalCmraValid a :=
+theorem iOwn_valid_r {a : F.ap (IProp GF)} : iOwn γ a ⊢ iOwn γ a ∗ ✓ a :=
   BI.persistent_entails_left iOwn_cmraValid
 @[rocq_alias own_valid_l]
-theorem iOwn_valid_l {a : F.ap (IProp GF)} : iOwn γ a ⊢ internalCmraValid a ∗ iOwn γ a :=
+theorem iOwn_valid_l {a : F.ap (IProp GF)} : iOwn γ a ⊢ ✓ a ∗ iOwn γ a :=
   BI.persistent_entails_right iOwn_cmraValid
 
 @[rocq_alias own_core_persistent]
@@ -772,36 +774,37 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_sep_own]
-instance intoSep_own {γ} {a : F.ap (IProp GF)} [h : IsOpSplit a b1 b2] :
+instance intoSep_own {γ} {a : F.ap (IProp GF)} [h : IsOp .split a b1 b2] :
     IntoSep (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
   into_sep := (equiv_iff.mp <| NonExpansive.eqv h.is_op).mp.trans iOwn_op.mp
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_and_own]
-instance intoAnd_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpSplit a b1 b2] :
+instance intoAnd_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp .split a b1 b2] :
     IntoAnd false (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
   into_and := (equiv_iff.mp <| NonExpansive.eqv h.is_op).mp.trans <|
     and_intro (iOwn_mono ⟨b2, .rfl⟩) (iOwn_mono ⟨b1, CMRA.comm⟩)
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias from_sep_own]
-instance fromSep_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpSplit a b1 b2] :
+instance fromSep_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp .split a b1 b2] :
     FromSep (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
   from_sep := iOwn_op.mpr.trans (equiv_iff.mp <| NonExpansive.eqv h.is_op).mpr
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias combine_sep_as_own]
-instance combineSepAs_iOwn {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpMerge a b1 b2] :
+instance combineSepAs_iOwn {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp .merge a b1 b2] :
     CombineSepAs (iOwn γ b1) (iOwn γ b2) (iOwn γ a) where
   combine_sep_as := iOwn_op.mpr.trans (equiv_iff.mp <| NonExpansive.eqv h.is_op.symm).mp
 
 @[rocq_alias combine_sep_gives_own]
 instance combineSepGives_iOwn {γ} {a1 a2 : F.ap (IProp GF)} :
-    CombineSepGives (iOwn γ a1) (iOwn γ a2) (internalCmraValid (a1 • a2)) where
+    CombineSepGives (iOwn γ a1) (iOwn γ a2) iprop(✓ a1 • a2) where
   combine_sep_gives := iOwn_cmraValid_op
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias from_and_own_persistent]
-instance fromAndOwn_persistent {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpSplit a b1 b2]
+instance fromAndOwn_persistent {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp .split a b1 b2]
     [TCOr (CoreId b1) (CoreId b2)] : FromAnd (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
   from_and := by
     -- Infer from `CoreId b1` that `iOwn γ b1` is persistent, likewise for `b2`
@@ -829,7 +832,6 @@ instance iOwn_cmra_sep_homomorphism (γ : GName) :
       UCMRA.unit iprop(emp) BiEntails (iOwn γ) where
   rel_refl := .rfl
   rel_trans := .trans
-  rel_proper := BIBase.BiEntails.proper
   op_proper aa' bb' := equiv_iff.1 (sep_ne.eqv (equiv_iff.2 aa') (equiv_iff.2 bb'))
   map_ne := iOwn_ne
   map_op := iOwn_op
@@ -843,9 +845,9 @@ theorem bigOpL_iOwn {B : Type _} (γ : GName) (f : Nat → B → F.ap (IProp GF)
 @[rocq_alias big_opM_own]
 theorem bigOpM_iOwn {K : Type _} {M : Type _ → Type _} {B : Type _} [LawfulFiniteMap M K]
     [DecidableEq K] (γ : GName) (g : K → B → F.ap (IProp GF)) (m : M B) :
-    ¬ m ≡ₘ (∅ : M B) →
+    ¬ m = (∅ : M B) →
     iOwn γ ([^ CMRA.op map] k ↦ x ∈ m, g k x) ⊣⊢ [∗map] k ↦ x ∈ m, iOwn γ (g k x) :=
-  BigOpM.bigOpM_weak_hom g m
+  fun h => BigOpM.bigOpM_weak_hom g m (fun he => h he)
 
 @[rocq_alias big_opS_own]
 theorem bigOpS_iOwn {B : Type _} {S : Type _} [LawfulFiniteSet S B] (γ : GName)
@@ -860,9 +862,6 @@ instance iOwn_cmra_sep_entails_homomorphism (γ : GName) :
       UCMRA.unit iprop(emp) Entails (iOwn γ) where
   rel_refl := .rfl
   rel_trans := .trans
-  rel_proper ha hb :=
-    ⟨fun h => (equiv_iff.1 ha).mpr.trans <| h.trans (equiv_iff.1 hb).mp,
-     fun h => (equiv_iff.1 ha).mp.trans <| h.trans (equiv_iff.1 hb).mpr⟩
   op_proper := sep_mono
   map_ne := iOwn_ne
   map_op := iOwn_op.mp

@@ -36,7 +36,7 @@ abbrev InvMapF := HeapViewURF (H := InvMap) (AgreeRF (LaterOF IdOF))
 @[rocq_alias wsatGS.wsatGpreS]
 class WsatGpreS (GF : BundledGFunctors) where
   inv : ElemG GF InvMapF
-  enabled : ElemG GF (constOF (DisjointLeibnizSet CoPset))
+  enabled : ElemG GF (constOF CoPsetDisjL)
   disabled : ElemG GF (constOF (DisjointLeibnizSet PosSet))
 
 attribute [reducible, instance] WsatGpreS.inv
@@ -112,7 +112,7 @@ theorem ownE_empty : ⊢ |==> ownE (W := W) ∅ := iOwn_unit (ε := UCMRA.unit)
 @[rocq_alias ownE_op]
 theorem ownE_op {E1 E2} (Hdisj : E1 ## E2) : ownE (E1 ∪ E2) ⊣⊢@{IProp GF} ownE E1 ∗ ownE E2 := by
   refine .trans (.of_eq ?_) iOwn_op
-  rw [disj_op_union Hdisj]
+  rw [(disj_op_union Hdisj).to_eq]
   rfl
 
 @[rocq_alias ownE_disjoint]
@@ -122,7 +122,7 @@ theorem ownE_disjoint {E1 E2} : ownE E1 ∗ ownE E2 ⊢@{IProp GF} ⌜E1 ## E2�
   · unfold ownE
     isplitl [H1] <;> iassumption
   ihave H := iOwn_cmraValid $$ H
-  icases internalCmraValid_discrete (A := DisjointLeibnizSet CoPset) $$ H with %H
+  icases internalCmraValid_discrete (A := CoPsetDisjL) $$ H with %H
   ipureintro
   exact valid_op_iff_disj.mp H
 
@@ -156,7 +156,7 @@ theorem ownD_empty : ⊢@{IProp GF} |==> ownD ∅ := iOwn_unit (ε := UCMRA.unit
 @[rocq_alias ownD_op]
 theorem ownD_op {E1 E2} (Hdisj : E1 ## E2) : ownD (E1 ∪ E2) ⊣⊢@{IProp GF} ownD E1 ∗ ownD E2 := by
   refine .trans (.of_eq ?_) iOwn_op
-  rw [disj_op_union Hdisj]
+  rw [(disj_op_union Hdisj).to_eq]
   rfl
 
 @[rocq_alias ownD_disjoint]
@@ -198,7 +198,7 @@ variable {GF : BundledGFunctors} [W : WsatGS GF]
 @[rocq_alias invariant_lookup]
 theorem invariant_lookup (I : InvMap (IProp GF)) (i : Pos) (P : IProp GF) :
     iOwn (E := W.inv) W.invariant_name (invMap I) ∗ ownI i P
-    ⊢@{IProp GF} ∃ Q, ⌜get? I i = .some Q⌝ ∗ ▷ internalEq Q P := by
+    ⊢@{IProp GF} ∃ Q, ⌜get? I i = .some Q⌝ ∗ ▷ (Q ≡ P) := by
   unfold ownI
   iintro H
   ihave H := iOwn_cmraValid_op $$ H
@@ -297,9 +297,7 @@ theorem ownI_alloc [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
     · suffices Hi : insert (liftInv I) j (toAgree (invariant_unfold P)) = liftInv (insert I j P) by
         rw [Hi]
         iexact Hown
-      refine ExtensionalPartialMap.equiv_iff_eq.mp fun k => ?_
-      simp only [get?_insert, get?_map, Option.map_map]
-      by_cases h : j = k <;> simp [h]
+      simp only [liftInv, map_insert]
     · iapply bigSepM_insert (x := P) Hget $$ [Hmap HProp HD]
       isplitl [HProp HD]
       · rw [HEQ]
@@ -340,9 +338,7 @@ theorem ownI_alloc_open [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
     · suffices Hi : Std.insert (liftInv I) j (toAgree (invariant_unfold P)) = liftInv (Std.insert I j P) by
         rw [Hi]
         iexact Hown
-      refine ExtensionalPartialMap.equiv_iff_eq.mp fun k => ?_
-      simp only [get?_insert, get?_map, Option.map_map]
-      by_cases h : j = k <;> simp [h]
+      simp only [liftInv, map_insert]
     · iapply bigSepM_insert (x := P) Hget $$ [Hmap HE]
       isplitl [HE]
       · iright; iassumption
@@ -371,8 +367,7 @@ theorem wsat_alloc [WP : WsatGpreS GF] :
     isplitl
     · iclear Hd
       have H : liftInv (∅ : InvMap (IProp GF)) = ∅ := by
-        refine ExtensionalPartialMap.equiv_iff_eq.mp fun _ => ?_
-        simp [get?_map, get?_empty]
+        simp only [liftInv, map_empty]
       rw [invMap, H]
       iassumption
     · iapply bigSepM_empty

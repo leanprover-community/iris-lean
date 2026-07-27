@@ -28,6 +28,13 @@ def nclose (N : Namespace) : CoPset :=
 
 instance : CoeOut Namespace CoPset where coe := nclose
 
+def ofName : Lean.Name → Namespace
+  | .anonymous => nroot
+  | .str rest str => ndot (ofName rest) str
+  | .num rest num => ndot (ofName rest) num
+
+instance : Coe Lean.Name Namespace where coe := ofName
+
 infix:80 ".@" => ndot
 
 instance ndisjoint : Iris.Std.Disjoint Namespace where

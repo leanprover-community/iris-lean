@@ -249,8 +249,7 @@ delab_rule intuitionistically
 syntax:max "▷^[" term:45 "]" term:40 : term
 
 @[rocq_alias bi_laterN]
-def laterN [BIBase PROP] (n : Nat) (P : PROP) : PROP :=
-  match n with | .zero => P | .succ n' => later <| laterN n' P
+def laterN [BIBase PROP] (n : Nat) (P : PROP) : PROP := n.repeat later P
 
 macro_rules
   | `(iprop(▷^[$n] $P))   => ``(laterN $n iprop($P))
@@ -297,7 +296,7 @@ def affinelyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <af
 def absorbinglyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <absorb> P else P)
 @[rocq_alias bi_intuitionistically_if]
 def intuitionisticallyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then □ P else P)
-def laterIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(▷^[p.toNat] P)
+@[reducible] def laterIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(▷^[p.toNat] P)
 
 macro_rules
   | `(iprop(<pers>?$p $P))   => ``(persistentlyIf $p iprop($P))

@@ -13,15 +13,13 @@ public meta section
 namespace Iris.Std
 open Lean Lean.Elab.Tactic Lean.Meta
 
-/-- Apply the theorem with the name `name` to the goal `goal`. The flag `recover` is set to `false`
+/--
+Apply the theorem expressed by `term` to the goal `goal`. The flag `recover` is set to `false`
 and the transparency mode is set to `reducible`. Only non-dependent arguments of the applied
-theorem are turned into goals. -/
-def apply' (goal : MVarId) (name : Name) : TacticM <| Option <| List MVarId := do
-  let some ci := (← getEnv).find? name
-    | return none
-  let some value := ci.value?
-    | return none
-
+theorem are turned into goals.
+-/
+def apply' (goal : MVarId) (term : Term) : TacticM <| Option <| List MVarId := do
+  let value ← goal.withContext <| elabTermForApply term
   let goals ← withoutRecover <| withReducible <| goal.apply value { newGoals := .nonDependentOnly }
   setGoals <| goals ++ (← getUnsolvedGoals)
   return goals

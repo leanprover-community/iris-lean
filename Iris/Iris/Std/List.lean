@@ -29,6 +29,9 @@ inductive Equiv {α : Type _} (R : α → α → Prop) : List α → List α →
 @[expose] def zipIdxInt {α : Type _} (l : List α) (n : Int) : List (α × Int) :=
   l.mapIdx (fun i v => (v, (i : Int) + n))
 
+theorem mem_le_foldr_max (x : Int) (L : List Int) (h : x ∈ L) :
+    x ≤ L.foldr max 0 := by induction L <;> grind
+
 theorem nodup_map_of_injective {B : Type _} {f : A → B} {l : List A}
     (hinj : f.Injective) (hnodup : l.Nodup) : (l.map f).Nodup := by
   induction l with
@@ -42,8 +45,7 @@ theorem nodup_map_of_injective {B : Type _} {f : A → B} {l : List A}
     cases hinj heq.symm
     exact hnodup.1 hy
 
-@[expose, match_pattern]
-def Forall₂.append {l₁ l₁' l₂ l₂'} : List.Forall₂ R l₁ l₂ → List.Forall₂ R l₁' l₂' → List.Forall₂ R (l₁ ++ l₁') (l₂ ++ l₂')
+theorem Forall₂.append {l₁ l₁' l₂ l₂'} : List.Forall₂ R l₁ l₂ → List.Forall₂ R l₁' l₂' → List.Forall₂ R (l₁ ++ l₁') (l₂ ++ l₂')
   | .nil, h => h
   | .cons step rest, h => .cons step (append rest h)
 

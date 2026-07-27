@@ -25,6 +25,14 @@ theorem mem_singleton_extTreeSet {α : Type _} {cmp : α → α → Ordering} [S
     Std.LawfulEqCmp.compare_eq_iff_eq, Std.ExtTreeSet.not_mem_empty, or_false]
   apply Iff.intro <;> rintro ⟨⟩ <;> rfl
 
+theorem insert_eq_singleton_union_extTreeSet {α : Type _} {cmp : α → α → Ordering}
+    [Std.TransCmp cmp] [Std.LawfulEqCmp cmp] {ps : Std.ExtTreeSet α cmp} {p : α} :
+    ps.insert p = ({p} ∪ ps : Std.ExtTreeSet α cmp) := by
+  refine Std.ExtTreeSet.ext_mem fun x => ?_
+  rw [Std.ExtTreeSet.mem_union_iff, Std.ExtTreeSet.mem_insert, mem_singleton_extTreeSet,
+    Std.LawfulEqCmp.compare_eq_iff_eq]
+  grind
+
 instance {α : Type _} {cmp : α → α → Ordering} [Std.TransCmp cmp] [Std.LawfulEqCmp cmp] :
     LawfulSet (Std.ExtTreeSet α cmp) α where
   ext h := Std.ExtTreeSet.ext_mem h

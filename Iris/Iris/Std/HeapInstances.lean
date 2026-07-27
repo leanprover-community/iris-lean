@@ -57,8 +57,6 @@ instance : LawfulPartialMap (K → Option ·) K where
   get?_delete_ne := by simp [get?, delete]; grind
   get?_bindAlter := by simp [get?, bindAlter]
   get?_merge {_ _ _ _ _} := by simp [get?, merge]; split <;> simp_all
-
-instance : ExtensionalPartialMap (K → Option ·) K where
   equiv_iff_eq := ⟨funext, congrFun⟩
 
 end FunPartialMap
@@ -83,160 +81,6 @@ instance instClassicalUnboundedHeap [InfiniteType K] : UnboundedHeap (K → Opti
     grind
 
 end ClassicalAllocHeap
-
-section AssociationLists
-
-/-- An association list represented as a sequence of set and remove operations. -/
-inductive AssocList (V : Type _)
-  | empty : AssocList V
-  | set : Nat → V → AssocList V → AssocList V
-  | remove : Nat → AssocList V → AssocList V
-
-open AssocList
-
-/-- Look up a value in an association list. -/
-@[simp]
-def AssocList.lookup (f : AssocList V) (k : Nat) : Option V :=
-  match f with
-  | .empty => none
-  | .set n v' rest => if n = k then some v' else rest.lookup k
-  | .remove n rest => if n = k then none else rest.lookup k
-
-/-- Update an association list by setting or removing a key. -/
-@[simp]
-def AssocList.update (f : AssocList V) (k : Nat) (v : Option V) : AssocList V :=
-  match v with
-  | some v' => f.set k v'
-  | none => f.remove k
-
-/-- Map a function over the values in an association list. -/
-@[simp]
-def AssocList.map (f : Nat → V → Option V') (g : AssocList V) : AssocList V' :=
-  match g with
-  | .empty => .empty
-  | .set n v rest =>
-      match (f n v) with
-      | .some r => .set n r (rest.map f)
-      | .none => .remove n (rest.map f)
-  | .remove n rest => .remove n (rest.map f)
-
-/-- Find a fresh key that is not present in the association list. -/
-@[simp]
-def AssocList.fresh (f : AssocList V) : Nat :=
-  match f with
-  | .empty => 0
-  | .set n _ rest => max (n + 1) rest.fresh
-  | .remove n rest => max (n + 1) rest.fresh
-
-/-- Construct an association list from a function on naturals less than N. -/
-@[simp]
-def AssocList.construct (f : Nat → Option V) (N : Nat) : AssocList V :=
-  match N with
-  | .zero => .empty
-  | .succ N' =>
-      match (f N') with
-      | some v => .set N' v (AssocList.construct f N')
-      | none => (AssocList.construct f N')
-
-/-- The specification function for `construct`: returns f n for n < N, none otherwise. -/
-@[simp]
-def AssocList.construct_spec (f : Nat → Option V) (N : Nat) : Nat → (Option V) :=
-  fun n => if n < N then f n else none
-
-/-- Updating an association list and then looking up is equivalent to the functional set. -/
-theorem AssocList.lookup_update (f : AssocList V) :
-    (f.update k v).lookup = fset (f.lookup) k v := by
-  funext k'
-  cases f <;> cases v <;> simp [fset]
-
-/-- Keys greater than or equal to `fresh` are not present in the association list. -/
-theorem AssocList.fresh_lookup_ge (f : AssocList V) n :
-    f.fresh ≤ n → f.lookup n = none := by
-  induction f <;> simp
-  case set => split <;> grind
-  case remove => grind
-
-/-- The lookup function of a constructed association list matches its specification. -/
-theorem AssocList.construct_get (f : Nat → Option V) (N : Nat) :
-    lookup (construct f N) = construct_spec f N := by
-  funext k
-  rcases Nat.lt_or_ge k N with hl | hg
-  · induction N <;> simp
-    rename_i N' IH
-    split <;> rename_i h
-    · simp only [lookup]; split
-      · simp_all
-      · rw [IH (by omega)]; simp; omega
-    · rw [if_pos hl]
-      if h : k < N' then
-        simp [IH h]; omega
-      else
-        have : k = N' := by omega
-        simp_all
-        clear this h
-        suffices ∀ N'', N' ≤ N'' → (construct f N').lookup N'' = none by grind
-        induction N' <;> simp
-        rename_i n' _
-        cases f n' <;> simp <;> grind
-  · simp; rw [if_neg (by omega)]
-    induction N <;> simp
-    split
-    · simp [lookup]; grind
-    · grind
-
-/-- Lift a binary operation to `Option`, treating `none` as an identity element. -/
-abbrev op_lift (op : V → V → V) (v1 v2 : Option V) : Option V :=
-  match v1, v2 with
-  | some v1, some v2 => some (op v1 v2)
-  | some v1, none => some v1
-  | none, some v2 => some v2
-  | none, none => none
-
-/-- PartialMap instance for AssocList. -/
-instance AssocList.instPartialMapAssocList : Iris.Std.PartialMap AssocList Nat where
-  get? f k := f.lookup k
-  insert f k v := f.update k (some v)
-  delete f k := f.update k none
-  empty := .empty
-  bindAlter f m := m.map f
-  merge op t1 t2 :=
-    construct (fun n => op_lift (op n) (t1.lookup n) (t2.lookup n)) (max t1.fresh t2.fresh)
-
-instance AssocList.instLawfulPartialMapAssocList : Iris.Std.LawfulPartialMap AssocList Nat where
-  get?_empty := by simp [get?, EmptyCollection.emptyCollection, Std.empty]
-  get?_insert_eq := by simp [get?, insert]; grind
-  get?_insert_ne := by simp [get?, insert]; grind
-  get?_delete_eq := by simp [get?, delete]
-  get?_delete_ne := by simp [get?, delete]; grind
-  get?_bindAlter {_ _ n t f} := by
-    induction t with
-    | empty => simp_all [get?, bindAlter, AssocList.map]
-    | set n' v' t' IH =>
-      simp_all [get?, bindAlter]
-      cases h1 : f n' v' <;> simp <;> split <;> rename_i h2 <;> simp_all
-    | remove n' t' IH =>
-      simp_all [get?, bindAlter]
-      split <;> simp [Option.bind]
-  get?_merge := by
-    intro _ op t1 t2 k
-    simp [PartialMap.get?, merge, construct_get, Option.merge, op_lift]
-    split
-    · rename_i h
-      cases t1.lookup k <;> cases t2.lookup k <;> simp_all
-    · rename_i h
-      rw [fresh_lookup_ge _ _ (by omega : t1.fresh ≤ k)]
-      rw [fresh_lookup_ge _ _ (by omega : t2.fresh ≤ k)]
-
-instance instAllocHeapAssocList : Iris.Std.Heap AssocList Nat where
-  notFull _ := True
-  fresh {_ f} _ := f.fresh
-  get?_fresh {_ f _} := fresh_lookup_ge f f.fresh (f.fresh.le_refl)
-
-instance instUnboundedHeapAssocList : Iris.Std.UnboundedHeap AssocList Nat where
-  notFull_empty := by simp [notFull]
-  notFull_insert_fresh {t v h} := by simp [notFull]
-
-end AssociationLists
 
 end Iris.Std
 
@@ -276,15 +120,6 @@ open Option Std.DTreeMap.Internal.Impl List TransCmp OrientedCmp LawfulEqCmp Ord
 open Iris.Std
 
 variable {K V : Type _} [Ord K] [TransOrd K] [LawfulEqOrd K]
-
-/-- TreeMap forms a Store with Option values. -/
-instance instStoreTreeMap : PartialMap (TreeMap K · compare) K where
-  get? t k := t[k]?
-  insert t k v := t.alter k (fun _ => some v)
-  delete t k := t.alter k (fun _ => none)
-  empty := ∅
-  bindAlter f t := t.filterMap f
-  merge op t1 t2 := t1.mergeWith op t2
 
 private theorem get?_foldl_alter_impl_sigma {l : List ((_ : K) × V)}
     (hinit : init.WF) (hl : l.Pairwise (fun x y => ¬ (compare x.1 y.1).isEq)) :
@@ -386,41 +221,6 @@ theorem getElem?_mergeWith' {t₁ t₂ : TreeMap K V compare} {f : K → V → V
     simp [← hval, hfind]
     simp [eq_of_compare hkv_cmp]
 
-instance : LawfulPartialMap (TreeMap K · compare) K where
-  get?_empty := by simp [Iris.Std.get?]
-  get?_insert_eq := by simp [Iris.Std.get?, Iris.Std.insert]; grind
-  get?_insert_ne := by simp [Iris.Std.get?, Iris.Std.insert]; grind
-  get?_delete_eq := by simp [Iris.Std.get?, Iris.Std.delete]
-  get?_delete_ne := by simp [Iris.Std.get?, Iris.Std.delete]; grind
-  get?_bindAlter := by simp [Iris.Std.get?, Iris.Std.bindAlter]
-  get?_merge := getElem?_mergeWith'
-
-instance : FiniteMap (TreeMap K · compare) K where
-  toList t := t.toList
-
-instance : LawfulFiniteMap (TreeMap K · compare) K where
-  toList_empty := rfl
-  toList_noDupKeys := by
-    intro V m
-    have h' : List.Pairwise (fun a b => ¬compare a b = eq) (m.toList.map (·.1)) := by
-      refine List.pairwise_map.mpr ?_
-      refine (distinct_keys_toList (t := m)).imp ?_
-      intro _ _ hab
-      exact hab
-    refine h'.imp ?_
-    intro a b hab
-    rw [compare_eq_iff_eq] at hab
-    exact hab
-  toList_get := by
-    intro V m k v
-    constructor
-    · intro h
-      exact getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mpr ⟨k, compare_self, h⟩
-    · intro h
-      obtain ⟨_, hcmp, hmem⟩ := getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mp h
-      rw [compare_eq_iff_eq.mp hcmp]
-      exact hmem
-
 end HeapInstance
 
 end Std.TreeMap
@@ -468,6 +268,7 @@ instance : LawfulPartialMap (ExtTreeMap K · compare) K where
   get?_delete_ne := by simp [Iris.Std.get?, Iris.Std.delete]; grind
   get?_bindAlter := by simp [Iris.Std.get?, Iris.Std.bindAlter]
   get?_merge := getElem?_mergeWith'
+  equiv_iff_eq {V m₁ m₂} := by rw [ExtTreeMap.ext_getElem?_iff]; rfl
 
 instance : FiniteMap (ExtTreeMap K · compare) K where
   toList t := t.toList
@@ -479,9 +280,6 @@ instance : LawfulFiniteMap (ExtTreeMap K · compare) K where
       refine h.imp (· <| LawfulEqOrd.compare_eq_iff_eq.mpr ·)
     exact List.pairwise_map.mpr distinct_keys_toList
   toList_get {_ m _ _} := m.mem_toList_iff_getElem?_eq_some
-
-instance : ExtensionalPartialMap (ExtTreeMap K · compare) K where
-  equiv_iff_eq {V m₁ m₂} := by rw [ExtTreeMap.ext_getElem?_iff]; rfl
 
 end HeapInstance
 

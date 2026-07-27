@@ -18,7 +18,7 @@ open Iris.BI COFE
 
 section Example1
 
-abbrev F0 : OFunctorPre := constOF (Agree (LeibnizO String))
+abbrev F0 : OFunctorPre := constOF (Agree (DiscreteO String))
 
 variable {GF} [E0 : ElemG GF F0]
 
@@ -49,11 +49,11 @@ end Example1
 /-! Example: a typical separating conjunction -/
 section Example2
 
-open HeapView One DFrac Agree LeibnizO
+open HeapView One DFrac Agree DiscreteO
 
 /- Define an OFunctor for the heap. Fractions are concretely `Qp`. -/
 abbrev F1 : OFunctorPre :=
-  constOF <| HeapView Nat (Agree (LeibnizO String)) Iris.Std.AssocList
+  constOF <| HeapView Nat (Agree (DiscreteO String)) (Std.ExtTreeMap Nat · compare)
 
 /- Our OFunctor is present in the global list of OFunctors. -/
 variable {GF} [ElemG GF F1]
@@ -141,8 +141,8 @@ theorem wp_unfold (e : Expr) (Φ : Value → IProp GF) :
         ∀ s, @state_interp State _ _ s -∗
           ∃ e' s', ⌜@step _ _ Value _ (e, s) = (e', s') ⌝ ∗
           ▷ |==> (@state_interp _ _ _  s' ∗ wp e' Φ)) := by
-  apply fixpoint_unfold (f := ⟨(@wp_F Expr State Value _ GF _),
-                                @OFE.ne_of_contractive _ _ _ _ (@wp_F Expr State Value _ GF _) _⟩)
+  exact fun n => fixpoint_unfold (f := ⟨(@wp_F Expr State Value _ GF _),
+                                @OFE.ne_of_contractive _ _ _ _ (@wp_F Expr State Value _ GF _) _⟩) n e Φ
 
 /- Now, we can derive some example proof rules. First let's prove a rule for pure deterministic steps: -/
 example (e e' : Expr) Φ (Hstep : ∀ {s : State}, @step _ _ Value _ (e, s) = (e', s)) :

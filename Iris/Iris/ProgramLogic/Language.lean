@@ -125,7 +125,7 @@ end Notation
 
 open Notation
 
-def Step.of_primStep {e σ} {obs : List Obs} {e'} {σ' : State} {eₜ}
+theorem Step.of_primStep {e σ} {obs : List Obs} {e'} {σ' : State} {eₜ}
     (H : (e, σ) -<obs>-> (e', σ', eₜ)) {t₁ t₂: List Expr} :
     Step (t₁ ++ e :: t₂, σ) obs (t₁ ++ e' :: t₂ ++ eₜ, σ') :=
   atomic H ..

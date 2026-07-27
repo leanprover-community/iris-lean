@@ -210,6 +210,8 @@ variable {e e' e₁ e₂ : Expr} {σ σ' σ₁ σ₂ : State}
 variable {K K' K₁ K₂ : Ectx} {obs obs' : List Obs}
 variable {eₜ : List Expr}
 
+-- FIXME: Implicits
+
 open EvContext in
 @[rocq_alias base_redex_unique]
 theorem base_redex_unique (heq : fill K e = fill K' e') :
@@ -305,8 +307,8 @@ theorem primStep_stuck_of_baseStep_stuck :
     BaseStep.Stuck (e, σ) → SubredexesAreValues e → PrimStep.Stuck (e, σ) :=
   fun ⟨toVal_none, irr⟩ hsr => ⟨toVal_none, primStep_irreducible_of_baseStep_irreducible irr hsr⟩
 
-@[rocq_alias ectx_language_atomic, implicit_reducible]
-def Atomic.ofBaseAtomic (a : Language.Atomicity) :
+@[rocq_alias ectx_language_atomic]
+theorem Atomic.ofBaseAtomic (a : Language.Atomicity) :
     BaseAtomic a e →
     SubredexesAreValues e →
     Language.Atomic a e := fun _ _ => ⟨by grind [BaseAtomic]⟩

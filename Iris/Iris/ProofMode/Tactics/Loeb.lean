@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Fernando Leal
 -/
 module
+
+public import Iris.ProofMode.Tactics.Revert
 public import Iris.ProofMode.Tactics.RevertIntro
 
 namespace Iris.ProofMode
@@ -12,34 +14,62 @@ open Lean Meta Elab.Tactic Qq
 
 public meta section
 
+syntax (name := iloeb) "iloeb" " as " binderIdent (generalizingSelPats)? : tactic
+
+private def iLoebCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (hyps : Hyps bi e) (goal : Q($prop)) (targets : List SelTarget)
+    (IH : TSyntax `Lean.binderIdent) : ProofModeM Q($e ⊢ $goal) :=
+  iRevertIntro hyps goal targets fun {prop _ _} hyps goal k => do
+    let some _ ← ProofModeM.trySynthInstanceQ q(BI.BILoeb $prop)
+      | throwError m!"iloeb: no `{←ppExpr q(BI.BILoeb $prop)}` instance found"
+    let pf := q(BI.loeb_wand_intuitionistically (P := $goal))
+    let pf' ← do
+      -- We have applied `BI.loeb_wand_intuitionistically`
+      let goal := q(iprop(□ (□ ▷ $goal -∗ $goal)))
+      iModIntroCore hyps goal (← `(_)) fun hyps goal => do
+      iIntroCore hyps goal [(IH, .intro <| .intuitionistic <| .one IH)] (k · · addBIGoal)
+    return q($(pf').trans $pf)
+
 /--
   `iloeb as IH generalizing hs` applies Löb induction in the current goal
   using the induction hypothesis `IH`, optionally with other variables can be
-  generalized over through the `generalizing selPat*` syntax.
+  generalised over through the `generalizing selPat*` syntax. All spatial
+  hypothesis are generalised in the induction hypothesis. Hypotheses dependent
+  on those included in the selection pattern `hs` must also themselves be
+  included in `hs`.
 
-  All spatial hypothesis are generalized in the induction hypothesis.
+  `iloeb as IH generalizing! hs` is the same as `iloeb as IH generalizing hs`,
+  except that all hypotheses dependent on any hypothesis in the selection
+  pattern `hs` are implicitly reverted.
 -/
-elab "iloeb" " as " colGt IH:binderIdent " generalizing " hs:(colGt ppSpace selPat)* : tactic => do
-  let pats ← Elab.liftMacroM <| SelPat.parse hs
-  ProofModeM.runTactic fun mvid {hyps, goal, ..} => do
-    let targets : List SelTarget ← SelPat.resolve hyps (pats ++ [.spatial])
-    let expr ← iRevertIntro hyps goal targets fun {prop _ _} hyps goal k => do
-      let some _ ← ProofModeM.trySynthInstanceQ q(BI.BILoeb $prop)
-        | throwError m!"iloeb: no `{←ppExpr q(BI.BILoeb $prop)}` instance found"
-      let pf := q(BI.loeb_wand_intuitionistically (P := $goal))
-      let pf' ← do
-        -- We have applied BI.loeb_wand_intuitionistically
-        let goal := q(iprop(□ (□ ▷ $goal -∗ $goal)))
-        iModIntroCore hyps goal (← `(_)) fun hyps goal => do
-        iIntroCore hyps goal [(IH, .intro <| .intuitionistic <| .one IH)] k
-      return q($(pf').trans $pf)
+elab_rules : tactic
+  | `(tactic| iloeb as $IH:binderIdent generalizing $hs:selPat*) => do
+    let pats ← Elab.liftMacroM <| SelPat.parse hs
 
-    mvid.assign expr
+    ProofModeM.runTactic fun mvid { hyps, goal, .. } => do
+      -- Parse the selection patterns provided by the tactic user
+      let targets : List SelTarget ← SelPat.resolve hyps (pats ++ [.spatial])
 
-/--
-  `iloeb as IH` applies Löb induction in the current goal
-  using the induction hypothesis `IH`.
+      -- Check for dependencies with the hypotheses in the selection targets
+      checkDependentHyps "iloeb" hyps targets none hs
+        (fun pats => `(tactic| iloeb as $IH generalizing $pats*))
+        (fun pats => `(tactic| iloeb as $IH generalizing! $pats*))
 
-  All spatial hypothesis are generalized in the induction hypothesis.
--/
-macro "iloeb" " as " colGt IH:binderIdent : tactic => `(tactic | iloeb as $IH generalizing)
+      let expr ← iLoebCore hyps goal targets IH
+      mvid.assign expr
+  | `(tactic| iloeb as $IH:binderIdent $[generalizing! $hs:selPat*]?) => do
+    ProofModeM.runTactic fun mvid { hyps, goal, .. } => do
+      let targets ← do match hs with
+      | none =>
+        SelPat.resolve hyps [.spatial]
+      | some hs =>
+        -- Parse the selection patterns provided by the tactic user
+        let pats ← Elab.liftMacroM <| SelPat.parse hs
+        let targets ← SelPat.resolve hyps (pats ++ [.spatial])
+        -- Find all dependent hypotheses
+        let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ← getDependentHyps hyps targets none false
+        -- Obtain the selection targets, including dependent ones
+        pure <| getCompleteSelTargets targets missingIrisHyps allPureFVarsSorted
+
+      let expr ← iLoebCore hyps goal targets IH
+      mvid.assign expr

@@ -1,13 +1,14 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König, Michael Sammler, Alvin Tang
+Authors: Lars König, Michael Sammler, Yunsong Yang, Alvin Tang
 -/
 module
 
 public import Iris.BI
 public meta import Iris.ProofMode.SynthInstance
 public import Iris.ProofMode.Modalities
+public import Iris.Std.Namespaces
 
 @[expose] public section
 
@@ -26,17 +27,39 @@ inductive AsEmpValid.Direction where
   | into
   | from
 
+meta section
+
+@[reducible]
+def AsEmpValid.Direction.toInOut : AsEmpValid.Direction → InOut
+  | .into => .in
+  | .from => .out
+
+end
+
 @[ipm_class, rocq_alias AsEmpValid]
-class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop) (_ : InOut) (PROP : semiOutParam $ Type _)
-(_ : InOut) (bi : semiOutParam $ BI PROP) (P : outParam $ PROP) where
+class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop) io
+    (PROP : semiOutParamIPM io (Type _))
+    (bi : semiOutParamIPM d.toInOut (BI PROP))
+    (P : outParam $ PROP) where
   as_emp_valid : (d = .into → φ → ⊢ P) ∧ (d = .from → (⊢ P) → φ)
 
 @[rocq_alias as_emp_valid_1]
-theorem asEmpValid_1 {PROP} [bi : BI PROP] {φ : Prop} (P : PROP) [AsEmpValid .into φ .in PROP .in bi P]
-: φ → ⊢ P := (AsEmpValid.as_emp_valid .in .in).1 rfl
+theorem asEmpValid_1 {PROP} [bi : BI PROP] {φ : Prop} (P : PROP) {io}
+    (inst : AsEmpValid .into φ io PROP bi P) : φ → ⊢ P :=
+  inst.as_emp_valid.left rfl
+
 @[rocq_alias as_emp_valid_2]
-theorem asEmpValid_2 {PROP} [bi : BI PROP] {P: PROP} (φ : Prop) [AsEmpValid .from φ .out PROP .out bi P]
-: (⊢ P) → φ := (AsEmpValid.as_emp_valid .out .out).2 rfl
+theorem asEmpValid_2 {PROP} [bi : BI PROP] {P: PROP} (φ : Prop) {io}
+    (inst : AsEmpValid .from φ io PROP bi P) : (⊢ P) → φ :=
+  inst.as_emp_valid.right rfl
+
+@[ipm_class, rocq_alias AsEmpValid0]
+class AsEmpValid0 (d : AsEmpValid.Direction) (φ : Prop) (io : InOut := d.toInOut)
+    (PROP : semiOutParamIPM io (Type _))
+    (bi : semiOutParamIPM d.toInOut (BI PROP)) (P : outParam PROP) where
+  as_emp_valid_0 : AsEmpValid d φ io PROP bi P
+
+attribute [ipm_backtrack,instance] AsEmpValid0.as_emp_valid_0
 
 /- Depending on the use case, type classes with the prefix `From` or `Into` are used. Type classes
 with the prefix `From` are used to generate one or more propositions *from* which the original
@@ -50,7 +73,8 @@ class FromImp {PROP} [BI PROP] (P : PROP) (Q1 Q2 : outParam $ PROP) where
 export FromImp (from_imp)
 
 @[ipm_class, rocq_alias FromWand]
-class FromWand {PROP} [BI PROP] (P : PROP) (_ : InOut) (Q1 : semiOutParam PROP) (Q2 : outParam $ PROP) where
+class FromWand {PROP} [BI PROP] (P : PROP) (io : InOut)
+    (Q1 : semiOutParamIPM io PROP) (Q2 : outParam $ PROP) where
   from_wand : (Q1 -∗ Q2) ⊢ P
 export FromWand (from_wand)
 
@@ -58,8 +82,8 @@ export FromWand (from_wand)
 
 @[ipm_class, rocq_alias IntoWand]
 class IntoWand {PROP} [BI PROP] (p q : Bool) (R : PROP)
-  (ioP : InOut) (P : semiOutParam PROP)
-  (ioQ : InOut) (Q : semiOutParam PROP) where
+  (ioP : InOut) (P : semiOutParamIPM ioP PROP)
+  (ioQ : InOut) (Q : semiOutParamIPM ioQ PROP) where
   into_wand : □?p R ⊢ □?q P -∗ Q
 export IntoWand (into_wand)
 
@@ -115,7 +139,7 @@ export IntoOr (into_or)
 
 @[ipm_class, rocq_alias IntoInternalEq]
 class IntoInternalEq {PROP} [BI PROP] [Sbi PROP] {A : outParam $ Type _} [ofe : outParam $ OFE A] (P : PROP) (x y : outParam A) where
-  into_internal_eq : P ⊢@{PROP} internalEq x y
+  into_internal_eq : P ⊢@{PROP} x ≡ y
 export IntoInternalEq (into_internal_eq)
 
 @[ipm_class, rocq_alias IntoPersistent]
@@ -134,7 +158,8 @@ class IntoAbsorbingly {PROP} [BI PROP] (P : outParam $ PROP) (Q : PROP) where
 export IntoAbsorbingly (into_absorbingly)
 
 @[ipm_class, rocq_alias FromAssumption, rocq_alias KnownLFromAssumption, rocq_alias KnownRFromAssumption]
-class FromAssumption {PROP} [BI PROP] (p : Bool) (ioP : InOut) (P : semiOutParam $ PROP) (Q : PROP) where
+class FromAssumption {PROP} [BI PROP] (p : Bool) (ioP : InOut)
+    (P : semiOutParamIPM ioP PROP) (Q : PROP) where
   from_assumption : □?p P ⊢ Q
 export FromAssumption (from_assumption)
 
@@ -146,7 +171,8 @@ export IntoPure (into_pure)
 #rocq_ignore into_pureT_hint "IntoPureT is not necessary in Lean"
 
 @[ipm_class, rocq_alias FromPure, rocq_alias FromPureT]
-class FromPure {PROP} [BI PROP] (a : outParam $ Bool) (P : PROP) (ioφ : InOut) (φ : semiOutParam $ Prop) where
+class FromPure {PROP} [BI PROP] (a : outParam $ Bool) (P : PROP) (ioφ : InOut)
+    (φ : semiOutParamIPM ioφ Prop) where
   from_pure : <affine>?a ⌜φ⌝ ⊢ P
 export FromPure (from_pure)
 
@@ -172,16 +198,17 @@ For the IPM TC synthesis, it needs to be an `uncheckedInParam` since it should m
 if the user provides an mvar.
 -/
 @[ipm_class, rocq_alias FromModal]
-class FromModal {PROP1 : outParam $ Type _} {PROP2} [outParam $ BI PROP1] [BI PROP2] (φ : outParam $ Prop)
-    (M : outParam $ Modality PROP1 PROP2) (sel : outParam <| uncheckedInParam $ PROP1) (P : PROP2)
+class FromModal {PROP1 : outParam $ Type _} {PROP2} {α : outParam <| Type _} [outParam $ BI PROP1] [BI PROP2] (φ : outParam $ Prop)
+    (M : outParam $ Modality PROP1 PROP2) (sel : outParam <| uncheckedInParam α) (P : PROP2)
     (Q : outParam $ PROP1) where
   from_modal : φ → M.M Q ⊢ P
 export FromModal (from_modal)
 
 /-- `ElimModal` turns `□?p P` into `□?p' P'` and `Q` into `Q'` under condition `φ`. -/
 @[ipm_class, rocq_alias ElimModal]
-class ElimModal {PROP} [BI PROP] (φ : outParam $ Prop) (p : Bool) (p' : outParam $ Bool) (P : PROP)
-    (P' : outParam $ PROP) (Q : PROP) (Q' : outParam $ PROP) where
+class ElimModal {PROP} [BI PROP] (φ : outParam $ Prop) (p : Bool) (io : InOut)
+    (p' : semiOutParamIPM io Bool) (P : PROP)
+    (P' : semiOutParamIPM io PROP) (Q : PROP) (Q' : outParam $ PROP) where
   elim_modal : φ → □?p P ∗ (□?p' P' -∗ Q') ⊢ Q
 export ElimModal (elim_modal)
 
@@ -236,6 +263,50 @@ export CombineSepAs (combine_sep_as)
 class CombineSepGives [BI PROP] (P Q : PROP) (R : outParam PROP) where
   combine_sep_gives : P ∗ Q ⊢ <pers> R
 export CombineSepGives (combine_sep_gives)
+
+@[ipm_class, rocq_alias IntoInv]
+class IntoInv [BI PROP] (P : PROP) (N : Namespace)
+
+@[rocq_alias accessor]
+def accessor [BI PROP] {X : Type} (M1 M2 : PROP → PROP) (α β : X → PROP)
+    (mγ : X → Option  PROP) : PROP :=
+  M1 iprop(∃ x, α x ∗ (β x -∗ M2 (mγ x |>.getD emp)))
+
+@[ipm_class, rocq_alias ElimAcc]
+class ElimAcc [BI PROP] {X : Type} (ϕ : outParam Prop) (M1 M2 : PROP → PROP)
+    (α β : X → PROP) (mγ : X → Option PROP) (Q : PROP) (Q' : outParam <| X → PROP) where
+  elim_acc : ϕ → ((∀ x, α x -∗ Q' x) -∗ accessor M1 M2 α β mγ -∗ Q)
+
+@[ipm_class, rocq_alias IntoAcc]
+class IntoAcc [BI PROP] {X : outParam Type} (Pacc : PROP)
+    (ϕ : outParam Prop) (Pin : outParam <| PROP)
+    (M1 M2 : outParam <| PROP → PROP) (α β : outParam <| X → PROP)
+    (mγ : outParam <| X → Option PROP) where
+  into_acc : ϕ → Pacc -∗ Pin -∗ accessor M1 M2 α β mγ
+
+set_option synthInstance.checkSynthOrder false in
+/-- The type class used for the `iinv` tactic. -/
+@[ipm_class, rocq_alias ElimInv]
+class ElimInv [BI PROP] (φ : outParam Prop) (X : outParam Type)
+    (Pinv : PROP) (Pin : outParam PROP) (Pout : outParam <| X → PROP)
+    (close : Bool) (mPclose : outParam <| Option <| X → PROP)
+    (Q : PROP) (Q' : outParam <| X → PROP) where
+  elim_inv : φ → Pinv ∗ Pin ∗ (∀ x, Pout x ∗ mPclose.getD (λ _ => emp) x -∗ Q' x) ⊢ Q
+export ElimInv (elim_inv)
+
+/-
+  `IntoIH φ P Q` describes how to turn a pure induction hypothesis `φ` into a proofmode
+  hypothesis `Q` under an intuitionistic BI context `□ P`.
+-/
+@[ipm_class, rocq_alias IntoIH]
+class IntoIH [BI PROP] (φ : Prop) (P : PROP) (Q : outParam PROP) where
+  into_ih : φ → □ P ⊢ Q
+export IntoIH (into_ih)
+
+@[ipm_class, rocq_alias IntoEmbed]
+class IntoEmbed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] (P : PROP2) (Q : outParam PROP1) where
+  into_embed : P ⊢ ⎡Q⎤
+export IntoEmbed (into_embed)
 
 #rocq_ignore elim_inv_tc_opaque "No tc_opaque in Lean"
 #rocq_ignore elim_modal_tc_opaque "No tc_opaque in Lean"

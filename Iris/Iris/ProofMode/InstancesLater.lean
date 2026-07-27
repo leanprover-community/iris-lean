@@ -314,8 +314,8 @@ instance intoExcept0_persistently [BI PROP] (P Q : PROP)
 
 /-- ElimModal -/
 @[ipm_backtrack, rocq_alias elim_modal_timeless]
-instance (priority := default - 10) elimModal_timeless [BI PROP] p (P P' Q : PROP) [IntoExcept0 P P'] [IsExcept0 Q] :
-  ElimModal True p p P P' Q Q where
+instance (priority := default - 10) elimModal_timeless [BI PROP] p io (P P' Q : PROP) [IntoExcept0 P P'] [IsExcept0 Q] :
+  ElimModal True p io p P P' Q Q where
   elim_modal _ := ((sep_mono ((intuitionisticallyIf_mono into_except0).trans except0_intuitionisticallyIf) except0_intro).trans $ except0_sep.2.trans (except0_mono wand_elim_right)).trans is_except0
 
 /-- AddModal -/
@@ -405,7 +405,6 @@ instance intoLaterN_or [BI PROP] n (P1 P2 Q1 Q2 : PROP)
     [h1 : IntoLaterN false n P1 Q1] [h2 : IntoLaterN false n P2 Q2] :
     IntoLaterN false n iprop(P1 ∨ P2) iprop(Q1 ∨ Q2) where
   into_laterN := (or_mono h1.1 h2.1).trans (laterN_or n).2
-
 
 @[rocq_alias into_later_affinely]
 instance intoLaterN_affinely [BI PROP] n (P Q : PROP)

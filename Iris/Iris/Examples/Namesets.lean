@@ -49,8 +49,8 @@ example {x y : α} : SetOwn {x, y} ⊢ (SetOwn ({x} : SetImpl α cmp) -∗ False
 abbrev gname := Pos
 
 @[simp]
-def MyCoPSet (S : CoPset) : DisjointLeibnizSet CoPset := .valid S
-def CoPSetOwn (S : CoPset) : UPred (DisjointLeibnizSet CoPset) := UPred.ownM (MyCoPSet S)
+def MyCoPSet (S : CoPset) : CoPsetDisjL := .valid S
+def CoPSetOwn (S : CoPset) : UPred CoPsetDisjL := UPred.ownM (MyCoPSet S)
 
 -- Example: Owning a subset and the full set simultaneously leads to a contradiction.
 example {x y : gname} : CoPSetOwn {x, y} ⊢ (CoPSetOwn CoPset.full -∗ False) := by

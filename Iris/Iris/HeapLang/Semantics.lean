@@ -12,6 +12,7 @@ public import Iris.Std.BitOp
 public import Iris.Std.RocqPorting
 public import Iris.Std.PartialMap
 public import Iris.Std.HeapInstances
+import Iris.Std.List
 
 @[expose] public section
 namespace Iris.HeapLang
@@ -116,14 +117,90 @@ def BinOp.eval : BinOp → Val → Val → Option Val
   | .offset, .lit (.loc l),   .lit (.int n)   => some (.lit (.loc (l + n)))
   | _,       _,               _               => none
 
+abbrev HeapF := fun V => Std.ExtTreeMap Loc V compare
+
 abbrev State.initHeap (σ : State) (l : Loc) (n : Int) (v : Option Val) : State :=
   { σ with heap := (List.range n.toNat).foldl
-            (fun h (i : Nat) => Std.insert
-                (M := fun V => Std.ExtTreeMap Loc V compare)
-                h (l + (i : Int)) v) σ.heap }
+            (fun h (i : Nat) => Std.insert (M := HeapF) h (l + (i : Int)) v) σ.heap }
 
 abbrev State.get? (σ : State) (l : Loc) : Option (Option Val) :=
-    PartialMap.get? (M := fun V => Std.ExtTreeMap Loc V compare) σ.heap l
+    PartialMap.get? (M := HeapF) σ.heap l
+
+/-! ### Multi-cell allocation -/
+
+def allocCells (l : Loc) (n : Nat) (v : Option Val) : HeapF (Option Val) :=
+  (List.range n).foldl (fun h (i : Nat) => Std.insert (M := HeapF) h (l + (i : Int)) v) ∅
+
+theorem get?_foldl_insert (l : Loc) (v : Option Val) (m : HeapF (Option Val)) (n : Nat) (k : Loc) :
+    PartialMap.get? (M := HeapF) ((List.range n).foldl
+        (fun h (i : Nat) => Std.insert (M := HeapF) h (l + (i : Int)) v) m) k
+      = if (∃ i, i < n ∧ k = l + (i : Int)) then some v
+        else PartialMap.get? (M := HeapF) m k := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil,
+      Std.LawfulPartialMap.get?_insert, ih]
+    by_cases hk : (l + (n : Int)) = k
+    · rw [if_pos hk, if_pos ⟨n, Nat.lt_succ_self n, hk.symm⟩]
+    · rw [if_neg hk]
+      by_cases hex : ∃ i, i < n ∧ k = l + (i : Int)
+      · obtain ⟨i, hi, hki⟩ := hex
+        rw [if_pos ⟨i, hi, hki⟩, if_pos ⟨i, Nat.lt_succ_of_lt hi, hki⟩]
+      · grind
+
+theorem get?_allocCells {l : Loc} {n : Nat} {v : Option Val} {k : Loc} :
+    PartialMap.get? (M := HeapF) (allocCells l n v) k
+      = if (∃ i, i < n ∧ k = l + (i : Int)) then some v else none := by
+  simp [allocCells, get?_foldl_insert, Std.LawfulPartialMap.get?_empty]
+
+theorem initHeap_heap_eq {σ : State} {l : Loc} {n : Int} {v : Option Val} :
+    Std.PartialMap.equiv (M := HeapF) (σ.initHeap l n v).heap
+      (Std.PartialMap.union (allocCells l n.toNat v) σ.heap) := by
+  intro k
+  show PartialMap.get? (M := HeapF) ((List.range n.toNat).foldl
+      (fun h (i : Nat) => Std.insert (M := HeapF) h (l + (i : Int)) v) σ.heap) k = _
+  rw [get?_foldl_insert, Std.PartialMap.union, Std.LawfulPartialMap.get?_merge, get?_allocCells]
+  by_cases hex : ∃ i, i < n.toNat ∧ k = l + (i : Int)
+  · simp only [if_pos hex]; cases PartialMap.get? (M := HeapF) σ.heap k <;> rfl
+  · simp only [if_neg hex]; cases PartialMap.get? (M := HeapF) σ.heap k <;> rfl
+
+theorem allocCells_disjoint {l : Loc} {n : Int} {v : Val} {m : HeapF (Option Val)}
+    (hf : ∀ i : Int, 0 ≤ i → i < n → PartialMap.get? (M := HeapF) m (l + i) = none) :
+    Std.PartialMap.disjoint (M := HeapF) (allocCells l n.toNat (some v)) m := by
+  intro k ⟨h1, h2⟩
+  rw [get?_allocCells] at h1
+  split at h1 <;> rename_i hcond
+  · obtain ⟨i, hi, hki⟩ := hcond
+    rw [hki, hf (i : Int) (Int.natCast_nonneg i) (by omega)] at h2
+    simp at h2
+  · simp at h1
+
+theorem exists_fresh_block (m : HeapF (Option Val)) (n : Int) :
+    ∃ l : Loc, ∀ i : Int, 0 ≤ i → i < n → PartialMap.get? (M := HeapF) m (l + i) = none := by
+  refine ⟨Loc.mk ((m.keys.map Loc.n).foldr max 0 + 1), fun i hi0 hin => ?_⟩
+  simp only [PartialMap.get?, getElem?_eq_none_iff, ← Std.ExtTreeMap.mem_keys]
+  intro hmem
+  have hle : (Loc.mk ((m.keys.map Loc.n).foldr max 0 + 1) + i).n ≤ (m.keys.map Loc.n).foldr max 0 :=
+    List.mem_le_foldr_max _ _ (List.mem_map_of_mem hmem)
+  simp only [loc_add_n] at hle
+  grind
+
+/-- Writing back a cell's current contents leaves the state unchanged. -/
+theorem State.initHeap_self {σ : State} {l : Loc} {v : Option Val}
+    (h : PartialMap.get? (M := HeapF) σ.heap l = some v) : σ.initHeap l 1 v = σ := by
+  have hl : l + (0 : Int) = l := by
+    cases l
+    simp only [HAdd.hAdd, Loc.mk.injEq]
+    grind
+  have hins : Std.insert (M := HeapF) σ.heap l v = σ.heap := by
+    refine Std.LawfulPartialMap.equiv_iff_eq.mp fun k => ?_
+    rw [Std.LawfulPartialMap.get?_insert]
+    split
+    · next heq => exact heq ▸ h.symm
+    · rfl
+  simp only [State.initHeap, Int.toNat_one, List.range_one, List.foldl_cons, List.foldl_nil,
+    Int.cast_ofNat_Int, hl, hins]
 
 inductive BaseStep : Exp → State → List Observation → Exp → State → List Exp → Prop where
   | recS (f x : Binder) (e : Exp) (σ : State) :

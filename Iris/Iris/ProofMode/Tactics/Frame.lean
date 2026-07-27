@@ -117,9 +117,7 @@ def FrameResult.finish {u prop bi origE origGoal} (res : @FrameResult u prop bi 
   back with the remaining hypotheses. -/
 def FrameResult.finishClose {u prop bi origE origGoal} (res : @FrameResult u prop bi origE origGoal) :
   ProofModeM ((e : Q($prop)) × (_ : Hyps bi e) × Q($origE ⊢ $e ∗ $origGoal)) := do
-  let {progress, e, hyps, goal, pf} := res
-  if !progress then
-    throwError "iframe: cannot solve {origGoal} by framing"
+  let {e, hyps, goal, pf, ..} := res
   -- try closing the goal for emp or True without calling k
   match goal with
   | ~q(iprop(emp)) =>
