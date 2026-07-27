@@ -133,15 +133,12 @@ def ofSig :
 @[rocq_alias sig_monPred_ne]
 theorem ofSig_ne : OFE.NonExpansive (ofSig (I := I) (PROP := PROP)) := ofSig.ne
 
-@[rocq_alias sig_monPred_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem ofSig_proper {P Q : { f : I.car → PROP // ∀ {i j : I.car}, I.rel.le i j → (f i ⊢ f j) }}
-    (h : P ≡ Q) : ofSig P ≡ ofSig Q := ofSig.ne.eqv h
+#rocq_ignore sig_monPred_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias monPred_sig_ne]
 theorem toSig_ne : OFE.NonExpansive (toSig (I := I) (PROP := PROP)) := toSig.ne
 
-@[rocq_alias monPred_sig_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem toSig_proper {P Q : MonPred I PROP} (h : P ≡ Q) : toSig P ≡ toSig Q := toSig.ne.eqv h
+#rocq_ignore monPred_sig_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias sig_monPred_sig]
 theorem ofSig_toSig (P : MonPred I PROP) : ofSig (toSig P) = P := rfl
@@ -375,9 +372,7 @@ instance : BIBase (MonPred I PROP) where
 theorem entails_at {P Q : MonPred I PROP} :
     (P ⊢ Q) ↔ ∀ i, P.monPred_at i ⊢ Q.monPred_at i := Iff.rfl
 
-@[rocq_alias monPred_at_equiv, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem equiv_at {P Q : MonPred I PROP} :
-    (P ≡ Q) ↔ ∀ i, P.monPred_at i ≡ Q.monPred_at i := forall_comm
+#rocq_ignore monPred_at_equiv "OFE is Leibniz; use equality"
 
 @[rocq_alias monPred_at_dist]
 theorem dist_at {n : Nat} {P Q : MonPred I PROP} :

@@ -19,9 +19,6 @@ class OFE (α : Type _) where
   eq_dist : x = y ↔ ∀ n, Dist n x y
   dist_lt : Dist n x y → m < n → Dist m x y
 
-@[deprecated "OFE is Leibniz; use propositional equality" (since := "2026-07")]
-def OFE.Equiv [OFE α] (x y : α) : Prop := (∀ n, Dist n x y)
-
 #rocq_ignore OfeMixin "Use the OFE type class"
 #rocq_ignore ofe_mixin_of' "Not needed"
 #rocq_ignore Dist "Use OFE.Dist"
@@ -32,7 +29,6 @@ def OFE.Equiv [OFE α] (x y : α) : Prop := (∀ n, Dist n x y)
 
 open OFE
 
-scoped infix:40 " ≡ " => OFE.Equiv
 scoped notation:40 x " ≡{" n "}≡ " y:41 => OFE.Dist n x y
 
 namespace OFE
@@ -54,40 +50,8 @@ theorem Dist.le [OFE α] {m n} {x y : α} (h : x ≡{n}≡ y) (h' : m ≤ n) : x
 theorem Dist.trans [OFE α] {n} {x : α} : x ≡{n}≡ y → y ≡{n}≡ z → x ≡{n}≡ z := dist_eqv.3
 theorem Dist.of_eq [OFE α] {x y : α} : x = y → x ≡{n}≡ y := (· ▸ .rfl)
 
-@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem equiv_dist [OFE α] {x y : α} : x ≡ y ↔ ∀ n, x ≡{n}≡ y := .rfl
-
-@[rocq_alias ofe_equivalence, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem equiv_eqv [ofe : OFE α] : Equivalence ofe.Equiv := by
-  constructor
-  · rintro x n; exact Dist.rfl
-  · rintro x y h n; exact Dist.symm (h n)
-  · rintro x y z h₁ h₂ n; exact Dist.trans (h₁ n) (h₂ n)
-
-@[refl, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem Equiv.rfl [OFE α] {x : α} : x ≡ x := equiv_eqv.1 _
-@[symm, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem Equiv.symm [OFE α] {x : α} : x ≡ y → y ≡ x := equiv_eqv.2
-@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem Equiv.trans [OFE α] {x : α} : x ≡ y → y ≡ z → x ≡ z := equiv_eqv.3
-
-@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem Equiv.dist [OFE α] {x : α} : x ≡ y → x ≡{n}≡ y := (equiv_dist.1 · _)
-
-@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem Equiv.to_eq [OFE α] {x y : α} (h : x ≡ y) : x = y := OFE.eq_dist.mpr h
-
-@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem Equiv.of_eq [OFE α] {x y : α} : x = y → x ≡ y := (· ▸ .rfl)
-
-@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem equiv_iff_eq [OFE α] {x y : α} : x ≡ y ↔ x = y := ⟨Equiv.to_eq, Equiv.of_eq⟩
-
+#rocq_ignore ofe_equivalence "OFE is Leibniz; use equality"
 theorem _root_.Eq.dist [OFE α] {x y : α} (h : x = y) : x ≡{n}≡ y := h ▸ .rfl
-
-@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-instance [OFE α] : Trans OFE.Equiv OFE.Equiv (OFE.Equiv : α → α → Prop) where
-  trans := Equiv.trans
 
 instance [OFE α] {n : Nat} : Trans (OFE.Dist n) (OFE.Dist n) (OFE.Dist n : α → α → Prop) where
   trans := Dist.trans
@@ -105,20 +69,13 @@ theorem NonExpansive.comp [OFE α] [OFE β] [OFE γ] {g : β → γ} {f : α →
     (hg : NonExpansive g) (hf : NonExpansive f) : NonExpansive (g ∘ f) :=
   ⟨fun {_ _ _} h => hg.ne (hf.ne h)⟩
 
-/-- A non-expansive function preserves equivalence. -/
-@[rocq_alias ne_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem NonExpansive.eqv [OFE α] [OFE β] {f : α → β} [NonExpansive f]
-    ⦃x₁ x₂⦄ (h : x₁ ≡ x₂) : f x₁ ≡ f x₂ :=
-  equiv_dist.2 fun _ => ne (equiv_dist.1 h _)
+#rocq_ignore ne_proper "OFE is Leibniz; use equality"
 
 /-- A function `f : α → β → γ` is non-expansive if it preserves `n`-equivalence in each argument. -/
 class NonExpansive₂ [OFE α] [OFE β] [OFE γ] (f : α → β → γ) where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → ∀ ⦃y₁ y₂⦄, y₁ ≡{n}≡ y₂ → f x₁ y₁ ≡{n}≡ f x₂ y₂
 
-@[rocq_alias ne_proper_2, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem NonExpansive₂.eqv [OFE α] [OFE β] [OFE γ] {f : α → β → γ} [NonExpansive₂ f]
-    ⦃x₁ x₂⦄ (hx : x₁ ≡ x₂) ⦃y₁ y₂⦄ (hy : y₁ ≡ y₂) : f x₁ y₁ ≡ f x₂ y₂ :=
-  equiv_dist.2 fun _ => ne hx.dist hy.dist
+#rocq_ignore ne_proper_2 "OFE is Leibniz; use equality"
 
 /-- Note: Not an instance, for symmetry with NonExpansive₂.ne_left, which cannot be an instance. -/
 theorem NonExpansive₂.ne_right [OFE α] [OFE β] [OFE γ] (f : α → β → γ) [NonExpansive₂ f]
@@ -190,11 +147,7 @@ theorem Contractive.succ [OFE α] [OFE β] (f : α → β) [Contractive f] {n x 
 instance ne_of_contractive [OFE α] [OFE β] (f : α → β) [Contractive f] : NonExpansive f where
   ne := fun _ _ _ h => Contractive.distLater_dist (Dist.distLater h)
 
-/-- A contractive function preserves equivalence. -/
-@[rocq_alias contractive_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem Contractive.eqv [OFE α] [OFE β] (f : α → β) [Contractive f] ⦃x y : α⦄ (h : x ≡ y) :
-    f x ≡ f y := Equiv.of_eq (congrArg f h.to_eq)
-
+#rocq_ignore contractive_proper "OFE is Leibniz; use equality"
 /-- Constant functions are contractive. -/
 @[rocq_alias const_contractive]
 instance [OFE α] [OFE β] {x : β} : Contractive (fun _ : α => x) where
@@ -676,6 +629,11 @@ instance instDiscreteProd [OFE α] [OFE β] [Discrete α] [Discrete β] : Discre
 
 section sum
 
+theorem equiv_inl {x y : α} (h : x = y) : (.inl x : α ⊕ β) = .inl y := congrArg Sum.inl h
+theorem equiv_inr {x y : β} (h : x = y) : (.inr x : α ⊕ β) = .inr y := congrArg Sum.inr h
+theorem equiv_ext_left {x y : α} (h : (.inl x : α ⊕ β) = .inl y) : x = y := Sum.inl.inj h
+theorem equiv_ext_right {x y : β} (h : (.inr x : α ⊕ β) = .inr y) : x = y := Sum.inr.inj h
+
 variable [OFE α] [OFE β]
 
 @[rocq_alias sum_ofe_mixin]
@@ -713,16 +671,6 @@ instance : OFE (α ⊕ β) where
     | .inr _, .inl _ => (False.elim ·)
 #rocq_ignore sumO "Use sum type"
 #rocq_ignore sum_dist "Inlined in OFE (α ⊕ β) instance"
-
-
-omit [OFE α] [OFE β] in
-theorem equiv_inl {x y : α} (h : x = y) : (.inl x : α ⊕ β) = .inl y := congrArg Sum.inl h
-omit [OFE α] [OFE β] in
-theorem equiv_inr {x y : β} (h : x = y) : (.inr x : α ⊕ β) = .inr y := congrArg Sum.inr h
-omit [OFE α] [OFE β] in
-theorem equiv_ext_left {x y : α} (h : (.inl x : α ⊕ β) = .inl y) : x = y := Sum.inl.inj h
-omit [OFE α] [OFE β] in
-theorem equiv_ext_right {x y : β} (h : (.inr x : α ⊕ β) = .inr y) : x = y := Sum.inr.inj h
 
 theorem dist_inl (h : x ≡{n}≡ y) : (.inl x : α ⊕ β) ≡{n}≡ .inl y := h
 theorem dist_inr {x y : β} (h : x ≡{n}≡ y) : (.inr x : α ⊕ β) ≡{n}≡ .inr y := h
@@ -1767,10 +1715,8 @@ theorem fixpointB_unfold [COFE α] [COFE β] [Inhabited α] [Inhabited β]
 @[rocq_alias fixpoint_A_unique]
 theorem fixpointA_unique [COFE α] [COFE β] [Inhabited α] [Inhabited β]
     (fA : α -c> β -n> α) (fB : α -c> β -c> β) (Hp : fA p q = p) (Hq : fB p q = q) :
-    p = (fixpointA fA fB) := by
-  have hq : q = fixpointAB fB p := fixpoint_unique Hq.symm
-  apply fixpoint_unique
-  exact Hp.symm.trans (congrArg (fA p) hq)
+    p = (fixpointA fA fB) :=
+    fixpoint_unique <| Hp.symm.trans <| congrArg (fA p) (fixpoint_unique Hq.symm)
 
 @[rocq_alias fixpoint_B_unique]
 theorem fixpointB_unique [COFE α] [COFE β] [Inhabited α] [Inhabited β]

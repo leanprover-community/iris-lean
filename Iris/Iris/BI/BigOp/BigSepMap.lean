@@ -470,14 +470,7 @@ theorem bigSepM_sep_zipWith {A B C : Type _}
     (hdom : ∀ k, (get? m₁ k).isSome ↔ (get? m₂ k).isSome) :
     ([∗map] k ↦ xy ∈ zipWith f m₁ m₂, Φ₁ k (g₁ xy) ∗ Φ₂ k (g₂ xy)) ⊣⊢
       ([∗map] k ↦ x ∈ m₁, Φ₁ k x) ∗ [∗map] k ↦ y ∈ m₂, Φ₂ k y :=
-  BiEntails.of_eq <| by
-    refine (bigOpM_op_eq (fun k xy => Φ₁ k (g₁ xy)) (fun k xy => Φ₂ k (g₂ xy)) _).trans ?_
-    have hdom' : ∀ k, (get? m₁ k).isSome = (get? m₂ k).isSome := (Bool.eq_iff_iff.mpr <| hdom ·)
-    refine congr (congrArg _ ?_) ?_ <;> {
-      refine (bigOpM_map_eq _ _ _).symm.trans (bigOpM_eq_of_perm _ fun k => ?_)
-      simp only [get?_map, get?_zipWith]
-      have _ := hdom' k
-      cases h1k : get? m₁ k <;> cases h2k : get? m₂ k <;> simp_all [Option.bind, Option.map] }
+  BiEntails.of_eq <| bigOpM_sep_zipWith_eq Φ₁ Φ₂ hg₁ hg₂ hdom
 
 @[rocq_alias big_sepM_sep_zip]
 theorem bigSepM_sep_zip {A B : Type _}

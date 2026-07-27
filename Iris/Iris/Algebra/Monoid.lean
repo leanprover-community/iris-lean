@@ -42,25 +42,12 @@ attribute [instance] op_ne
 
 variable {M : Type u} [OFE M] {unit : M} {op : M → M → M}
 
-/-- The operation is proper with respect to equivalence. -/
-@[rocq_alias monoid_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem op_proper [MonoidOps op unit] (ha : a ≡ a') (hb : b ≡ b') :
-    op a b ≡ op a' b' := NonExpansive₂.eqv ha hb
+#rocq_ignore monoid_proper "OFE is Leibniz; use equality"
 
 /-- Right identity follows from commutativity and left identity. -/
 @[rocq_alias monoid_right_id]
 theorem op_right_id [MonoidOps op unit] : op a unit = a :=
   op_comm.trans op_left_id
-
-/-- Congruence on the left argument. -/
-@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem op_congr_left [MonoidOps op unit] (h : a ≡ a') : op a b ≡ op a' b :=
-  op_proper h .rfl
-
-/-- Congruence on the right argument. -/
-@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem op_congr_right [MonoidOps op unit] (h : b ≡ b') : op a b ≡ op a b' :=
-  op_proper .rfl h
 
 /-- Rearrange `(a * b) * (c * d)` to `(a * c) * (b * d)`. -/
 theorem op_op_op_comm [MonoidOps op unit] {a b c d : M} :
@@ -105,21 +92,7 @@ class WeakMonoidHomomorphism {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M�
   /-- The homomorphism property -/
   map_op : ∀ {x y}, R (f (op₁ x y)) (op₂ (f x) (f y))
 
-@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem WeakMonoidHomomorphism.rel_proper {M₁ : Type u} {M₂ : Type v}
-  [OFE M₁] [OFE M₂] {a a' b b' : M₂}
-  {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
-  [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
-  {R : M₂ → M₂ → Prop} {f : M₁ → M₂}
-  [WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R f] : a ≡ a' → b ≡ b' → (R a b ↔ R a' b') := by
-    intro Heq1 Heq2
-    rw [OFE.eq_dist.mpr Heq1, OFE.eq_dist.mpr Heq2]
-
-@[rocq_alias weak_monoid_homomorphism_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem weak_monoid_homomorphism_equiv [ OFE M₁] [OFE M₂]
-  [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂] (f : M₁ → M₂)
-  [h : WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R f] {x y} :
-    (x ≡ y) → f x ≡ f y := fun e => h.map_ne.eqv e
+#rocq_ignore weak_monoid_homomorphism_proper "OFE is Leibniz; use equality"
 
 /-- A monoid homomorphism preserves both the operation and the unit. -/
 @[rocq_alias MonoidHomomorphism]

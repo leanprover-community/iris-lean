@@ -39,9 +39,7 @@ variable [OFE A] [UCMRA B] {R : ViewRel A B} [IsViewRel R]
 theorem iff_of_dist (Ha : a1 ≡{n}≡ a2) (Hb : b1 ≡{n}≡ b2) : R n a1 b1 ↔ R n a2 b2 :=
   ⟨(mono · Ha Hb.symm.to_incN n.le_refl), (mono · Ha.symm Hb.to_incN n.le_refl)⟩
 
-@[rocq_alias view_rel_proper, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem iff_of_equiv (Ha : a1 ≡ a2) (Hb : b1 ≡ b2) : R n a1 b1 ↔ R n a2 b2 :=
-  iff_of_dist Ha.dist Hb.dist
+#rocq_ignore view_rel_proper "OFE is Leibniz; use equality"
 
 end ViewRel
 
@@ -66,8 +64,8 @@ section OFE
 open OFE UCMRA
 variable [OFE A] [OFE B] {R : ViewRel A B}
 
-@[rocq_alias view_equiv, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-def equiv (x y : View R) : Prop := x.auth ≡ y.auth ∧ x.frag ≡ y.frag
+#rocq_ignore view_equiv "OFE is Leibniz; use equality"
+
 @[rocq_alias view_dist]
 def dist (n : Nat) (x y : View R) : Prop := x.auth ≡{n}≡ y.auth ∧ x.frag ≡{n}≡ y.frag
 
@@ -267,8 +265,7 @@ instance : CMRA (View R) where
     simp only [Pcore, Option.some.injEq]
     rcases cx
     simp only [mk.injEq, and_imp]
-    intro H1 H2
-    subst H1 H2
+    rintro rfl rfl
     exact ⟨CMRA.core_idem _, CMRA.core_idem _⟩
   pcore_op_mono := by
     let f : (Option ((DFrac) × Agree A) × B) → View R := fun x => ⟨x.1, x.2⟩
@@ -285,9 +282,7 @@ instance : CMRA (View R) where
     have Hle : g y1 ≼ g y2 := ⟨g z, congrArg g Hy2⟩
     obtain ⟨_, Hcgy2, x, Hcx⟩ :=
       CMRA.pcore_mono' Hle (Hg_core.mp Hy1)
-    exact ⟨_, rfl, f x,
-      Option.some.inj
-        (Hg_core.mpr (Hcgy2 ▸ (congrArg some Hcx)))⟩
+    exact ⟨_, rfl, f x, Option.some.inj (Hg_core.mpr (Hcgy2 ▸ (congrArg some Hcx)))⟩
   extend {n x y1 y2} Hv He := by
     let g : View R → (Option ((DFrac) × Agree A) × B) := fun x => (x.auth, x.frag)
     obtain H1 : ✓{n} g x := by
@@ -834,14 +829,7 @@ theorem map_compose' [OFE A''] [OFE B''] {R'' : ViewRel A'' B''}
     View.map R'' (f'.comp f) (g'.comp g) v = View.map R'' f' g' (View.map R' f g v) :=
     map_compose f.f g.f f'.f g'.f v
 
-omit [OFE B] in
-@[rocq_alias view_map_ext, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem map_ext {f1 f2 : A → A'} {g1 g2 : B → B'} [OFE.NonExpansive f1] [OFE.NonExpansive f2]
-    (v : View R) (h1 : ∀ a, f1 a ≡ f2 a) (h2 : ∀ b, g1 b ≡ g2 b) :
-    View.map R' f1 g1 v = View.map R' f2 g2 v := by
-  have hf : f1 = f2 := funext fun a => OFE.eq_dist.mpr (h1 a)
-  have hg : g1 = g2 := funext fun b => OFE.eq_dist.mpr (h2 b)
-  rw [hf, hg]
+#rocq_ignore view_map_ext "OFE is Leibniz; use equality"
 
 omit [OFE B] in
 theorem map_ne {f1 f2 : A → A'} {g1 g2 : B → B'} [OFE.NonExpansive f1] [OFE.NonExpansive f2]

@@ -54,9 +54,6 @@ theorem DisjointLeibnizSet.exist_set_of_mem [LawfulSet S A] {x : DisjointLeibniz
   | .error => by simp [Membership.mem] at h
   | .valid x' => ⟨x', rfl⟩
 
-theorem DisjointLeibnizSet.mem_of_eqv [LawfulSet S A] {a b : DisjointLeibnizSet S}
-    (eqv : a = b) (mx : x ∈ a) : x ∈ b := eqv ▸ mx
-
 namespace DisjointLeibnizSet
 
 variable {S : Type _} [LawfulSet S A] [DecidableDisj S]

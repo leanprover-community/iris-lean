@@ -100,11 +100,6 @@ theorem singleton_dist [LawfulPartialMap M K] [DecidableEq K] [OFE V] {n : Nat} 
   simp only [LawfulPartialMap.get?_singleton]
   split <;> simp [h]
 
-@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem singleton_equiv [LawfulPartialMap M K] [DecidableEq K] [OFE V] {x y : V} (h : x ≡ y) (k : K) :
-    PartialMap.singleton (M := M) k x = PartialMap.singleton k y :=
-  eq_dist.mpr fun _ => singleton_dist h.dist k
-
 end OFE
 
 section CMRA
@@ -594,13 +589,6 @@ theorem map_id [OFE α] (a : H α) :
 def mapO [OFE α] [OFE β] (f : α -n> β) : OFE.Hom (H α) (H β) where
   f := map H f
   ne := inferInstance
-
-@[deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")]
-theorem map_ext [OFE α] [OFE β] {f g : α -> β} (heq : f ≡ g) : map H f m = map H g m := OFE.eq_dist.mpr <| by
-  intro n k
-  simp [map, get?_bindAlter, Option.bind]
-  cases get? m k <;> simp
-  exact heq _ _
 
 theorem map_ne [OFE α] [OFE β] (f g : α -> β) {heq : f ≡{n}≡ g} : map H f m ≡{n}≡ map H g m := by
   simp [OFE.Dist, Option.Forall₂, map, get?_bindAlter]

@@ -20,6 +20,7 @@ open BI OFE Iris.Std
 def internalEq [Sbi PROP] {A : Type _} [OFE A] (a b : A) : PROP :=
   iprop(<si_pure> (SiProp.internalEq a b))
 
+syntax:40 term:40 " ≡ " term:41 : term
 macro_rules
   | `(iprop($a ≡ $b)) => ``(internalEq $a $b)
 

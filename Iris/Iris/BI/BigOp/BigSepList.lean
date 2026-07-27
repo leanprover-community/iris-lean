@@ -433,10 +433,7 @@ theorem bigSepL_replicate {P : PROP} {l : List A} :
 @[rocq_alias big_sepL_zip_seq]
 theorem bigSepL_zip_seq {Φ : A × Nat → PROP} {n : Nat} {l : List A} :
     ([∗list] xy ∈ l.zipIdx n, Φ xy) ⊣⊢ [∗list] i ↦ x ∈ l, Φ (x, n + i) :=
-  BiEntails.of_eq <| by
-    induction l generalizing n with
-    | nil => rfl
-    | cons _ _ ih => exact congrArg (sep _) ((ih (n := n + 1)).trans (by grind))
+  BiEntails.of_eq <| bigOpL_zipIdx_eq Φ n l
 
 @[rocq_alias big_sepL_sep_zip]
 theorem bigSepL_sep_zip {B : Type _} {Φ : Nat → A → PROP} {Ψ : Nat → B → PROP}

@@ -254,10 +254,12 @@ theorem auth_op_frag_valid_total_discrete_iff [IsTotal V] [CMRA.Discrete V]
   obtain ⟨v', dq', Hdp, Hl, Hv, Hi⟩ := auth_op_frag_discrete_valid_iff |>.mp H
   refine ⟨v', Hdp, ?_, Hl, Hv.2, ?_⟩
   · rcases Hi with ⟨(_|x), Hx⟩
-    · exact (show dq' = dq from congrArg Prod.fst (some_eqv_some.mp Hx)) ▸ Hv.1
+    · obtain rfl : dq' = dq := congrArg Prod.fst (some_eqv_some.mp Hx)
+      exact Hv.1
     · exact Option.valid_of_inc_valid Hv.1 ⟨some x.fst, congrArg (fun p => some p.fst) (some_eqv_some.mp Hx)⟩
   · rcases Hi with ⟨(_|x), Hx⟩
-    · rw [show v1 = v' from (congrArg Prod.snd (some_eqv_some.mp Hx)).symm]
+    · obtain rfl : v1 = v' := (congrArg Prod.snd (some_eqv_some.mp Hx)).symm
+      exact CMRA.inc_refl v1
     · exact ⟨x.snd, congrArg Prod.snd (some_eqv_some.mp Hx)⟩
 
 theorem auth_op_frag_one_valid_iff :
@@ -588,20 +590,18 @@ theorem update_big_delete (m m' : H V) :
   Auth (.own one) (m \ m') := by
   induction m' using LawfulFiniteMap.induction_on with
   | hemp =>
-    rw [bigOpM_frag_empty, CMRA.unit_right_id]
-    rw [show (m \ ∅ : H V) = m from eqv_of_Equiv fun j => by simp [get?_difference, get?_empty]]
-    exact Update.id
+    suffices h : (m \ ∅ : H V) = m by
+      rw [bigOpM_frag_empty, CMRA.unit_right_id, h]
+      exact Update.id
+    exact eqv_of_Equiv fun j => by simp [get?_difference, get?_empty]
   | hins k v m2 Hm2 IH =>
-    rw [← congrArg (CMRA.op _) (BigOpM.bigOpM_insert_eq _ _ Hm2).symm]
-    rw [← congrArg (CMRA.op _) CMRA.comm]
-    rw [CMRA.assoc]
-    refine (Update.op IH .id).trans ?_
-    refine update_one_delete.trans ?_
-    rw [show (m \ Std.insert m2 k v) = delete (m \ m2) k from
-      eqv_of_Equiv fun j => by
-        by_cases hjk : k = j
-          <;> simp [get?_difference, get?_delete_eq, get?_delete_ne, get?_insert_eq, get?_insert_ne, hjk]]
-    exact Update.id
+    suffices h : (m \ Std.insert m2 k v) = delete (m \ m2) k by
+      rw [BigOpM.bigOpM_insert_eq _ _ Hm2, CMRA.comm' (x := Frag k (.own one) v), CMRA.assoc', h]
+      exact (Update.op IH .id).trans update_one_delete
+    exact eqv_of_Equiv fun j => by
+      by_cases hjk : k = j
+        <;> simp [get?_difference, get?_delete_eq, get?_delete_ne, get?_insert_eq,
+              get?_insert_ne, hjk]
 
 theorem update_big_replace (m m0 m1 : H V)
   (Hdom : dom m0 = dom m1)
@@ -612,48 +612,36 @@ theorem update_big_replace (m m0 m1 : H V)
   induction m0 using LawfulFiniteMap.induction_on with
   | hemp =>
     intro m1 Hdom Hall
-    rw [bigOpM_frag_empty, CMRA.unit_right_id]
-    have Heq : m1 = ∅ := by
-      apply Std.LawfulPartialMap.equiv_iff_eq.mp; intro j; have h := congrFun Hdom.symm j
-      simp [dom, get?_empty] at h; simp [get?_empty, h]
-    rw [Heq]
-    simp only [BigOpM.bigOpM_empty]
-    rw [CMRA.unit_right_id]
-    rw [union_empty_left]
-    exact Update.id
+    suffices h : m1 = ∅ by
+      simp only [h, bigOpM_frag_empty, CMRA.unit_right_id, union_empty_left]
+      exact Update.id
+    refine Std.LawfulPartialMap.equiv_iff_eq.mp fun j => ?_
+    cases hj : get? m1 j with
+    | none => exact (get?_empty j).symm
+    | some w => simpa [dom, get?_empty, hj] using congrFun Hdom j
   | hins k v m2 Hm2 IH =>
     intro m1 Hdom Hall
-    rw [← congrArg (CMRA.op _) (BigOpM.bigOpM_insert_eq _ _ Hm2).symm]
-    rw [← congrArg (CMRA.op _) CMRA.comm]
-    rw [CMRA.assoc]
-    refine (Update.op (IH (delete m1 k) ?_ ?_) .id).trans ?_
-    · funext j; by_cases hjk : k = j; subst hjk; simp [dom, Hm2, get?_delete_eq rfl]
-      have h := congrFun Hdom j; simp only [dom, get?_insert_ne hjk] at h
-      simp only [dom, get?_delete_ne hjk]; exact h
-    · exact all_delete _ Hall
-    rw [← CMRA.assoc]
-    rw [← congrArg (CMRA.op _) CMRA.comm]
-    rw [CMRA.assoc]
-    obtain ⟨v', Hin⟩ : ∃ v', get? m1 k = .some v' := by
-      have h := congrFun Hdom k; simp [dom, get?_insert_eq rfl] at h
-      exact Option.isSome_iff_exists.mp h
-    refine (Update.op (update_replace (v2 := v') ?_) .id).trans ?_
-    · exact Hall k v' Hin
-    rw [← CMRA.assoc]
-    rw [show (m1 ∪ m) = Std.insert (delete m1 k ∪ m) k v' from
-          eqv_of_Equiv fun j => by
-            show get? (PartialMap.union m1 m) j = get? (Std.insert (PartialMap.union (delete m1 k) m) k v') j
-            by_cases hjk : k = j
-            · rw [← hjk, get?_insert_eq rfl]; simp [PartialMap.union, get?_merge, Hin]
-              cases get? m k <;> rfl
-            · rw [get?_insert_ne hjk]; simp [PartialMap.union, get?_merge, get?_delete_ne hjk],
-        show bigOpM CMRA.op (fun k v => Frag k (own one) v) m1
-              = CMRA.op (Frag k (own one) v')
-                  (bigOpM CMRA.op (fun k v => Frag k (own one) v) (delete m1 k)) from
-          (congrArg (bigOpM CMRA.op (fun k v => Frag k (own one) v))
-            (insert_delete_cancel Hin).symm).trans
-            (BigOpM.bigOpM_insert_eq _ _ (get?_delete_eq rfl))]
-    exact Update.id
+    obtain ⟨v', Hin⟩ : ∃ v', get? m1 k = some v' :=
+      Option.isSome_iff_exists.mp (by simpa [dom, get?_insert_eq rfl] using congrFun Hdom k)
+    have hdom : dom m2 = dom (delete m1 k) := funext fun j => by
+      by_cases hjk : k = j
+      · simp [dom, ← hjk, Hm2, get?_delete_eq rfl]
+      · simpa [dom, get?_delete_ne hjk, get?_insert_ne hjk] using congrFun Hdom j
+    have hunion : (m1 ∪ m) = Std.insert (delete m1 k ∪ m) k v' :=
+      eqv_of_Equiv fun j => by
+        show get? (PartialMap.union m1 m) j
+          = get? (Std.insert (PartialMap.union (delete m1 k) m) k v') j
+        by_cases hjk : k = j
+        · rw [← hjk, get?_insert_eq rfl]
+          simp only [PartialMap.union, get?_merge, Hin]
+          cases get? m k <;> rfl
+        · rw [get?_insert_ne hjk]
+          simp [PartialMap.union, get?_merge, get?_delete_ne hjk]
+    rw [BigOpM.bigOpM_insert_eq _ _ Hm2, CMRA.comm' (x := Frag k (.own one) v), CMRA.assoc',
+      hunion, BigOpM.bigOpM_delete_eq _ Hin, CMRA.assoc']
+    refine (Update.op (IH _ hdom (all_delete _ Hall)) .id).trans ?_
+    rw [← CMRA.assoc', CMRA.comm' (y := Frag k (.own one) v), CMRA.assoc']
+    exact Update.op (update_replace (Hall k v' Hin)) .id
 
 -- TODO: golf
 theorem update_big_alloc (m1 m2 : H V) dq

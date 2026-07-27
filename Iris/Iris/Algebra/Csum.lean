@@ -26,11 +26,7 @@ namespace Csum
 
 /-! ## OFE -/
 
-@[simp, rocq_alias csum_equiv, deprecated "OFE is Leibniz; use `congrArg`/`rw`" (since := "2026-07")] def Equiv [OFE α] [OFE β] : Csum α β → Csum α β → Prop
-  | inl a, inl a' => a ≡ a'
-  | inr b, inr b' => b ≡ b'
-  | invalid, invalid => True
-  | _, _ => False
+#rocq_ignore csum_equiv "OFE is Leibniz; use equality"
 
 @[simp, rocq_alias csum_dist] def Dist [OFE α] [OFE β] (n : Nat) : Csum α β → Csum α β → Prop
   | inl a, inl a' => a ≡{n}≡ a'

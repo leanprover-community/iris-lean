@@ -13,6 +13,7 @@ public import Iris.Std.PartialMap
 public import Iris.Std.GenSets
 public import Iris.Std.GenMultiSets
 public import Iris.Std.Positives
+public import Iris.Std.Equivalence
 meta import Iris.Std.RocqPorting
 
 namespace Iris.Algebra
@@ -127,7 +128,7 @@ theorem bigOpL_append_eq (Φ : Nat → A → M) (l₁ l₂ : List A) :
 @[rocq_alias big_opL_snoc]
 theorem bigOpL_snoc_eq (Φ : Nat → A → M) (l : List A) (a : A) :
     ([^ op list] k ↦ x ∈ l ++ [a], Φ k x) = op ([^ op list] k ↦ x ∈ l, Φ k x) (Φ l.length a) := by
-  rw [bigOpL_append_eq]; simp [op_right_id]
+  simp [bigOpL_append_eq, op_right_id]
 
 @[rocq_alias big_opL_unit]
 theorem bigOpL_const_unit_eq {l : List A} : ([^ op list] _x ∈ l, unit) = unit :=
@@ -403,7 +404,7 @@ theorem bigOpM_eq {Φ Ψ : K → V → M} {m : M' V} (hf : ∀ {k x}, get? m k =
 theorem bigOpM_eq_strong [OFE A] {Φ Ψ : K → A → M} {m1 m2 : M' A} (hm : ∀ k, get? m1 k = get? m2 k)
     (hf : ∀ {k y1 y2}, get? m1 k = some y1 → get? m2 k = some y2 → y1 = y2 → Φ k y1 = Ψ k y2) :
     ([^ op map] k ↦ x ∈ m1, Φ k x) = ([^ op map] k ↦ x ∈ m2, Ψ k x) :=
-  bigOpM_gen_proper_2 id ⟨fun _ => rfl, Eq.symm, Eq.trans⟩ (· ▸ · ▸ rfl) (fun k => by rw [hm k])
+  bigOpM_gen_proper_2 id equivalence_eq (· ▸ · ▸ rfl) (fun k => by rw [hm k])
     fun h1 h2 => hf h1 h2 (by rw [hm _] at h1; exact Option.some.inj (h1.symm.trans h2))
 
 theorem bigOpM_dist_pointwise {Φ Ψ : K → V → M} {n : Nat} (m : M' V)
