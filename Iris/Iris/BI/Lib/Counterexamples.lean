@@ -142,3 +142,69 @@ theorem contradiction : False := by
     · iassumption
 
 end SavedProp
+
+namespace Linear
+
+variable {PROP : Type _} [BI PROP]
+variable {P Q : PROP}
+
+@[rocq_alias linear.mask]
+inductive Mask where | M0 | M1 deriving DecidableEq, Inhabited
+
+open Mask
+
+variable (fupd : Mask → Mask → PROP → PROP)
+
+variable (fupd_intro : ∀ {E : Mask} {P : PROP}, P ⊢ fupd E E P)
+variable (fupd_mono : ∀ {E1 E2 : Mask} {P Q : PROP}, (P ⊢ Q) → fupd E1 E2 P ⊢ fupd E1 E2 Q)
+variable (fupd_fupd :
+  ∀ {E1 E2 E3 : Mask} {P : PROP}, fupd E1 E2 (fupd E2 E3 P) ⊢ fupd E1 E3 P)
+variable (fupd_frame_left :
+  ∀ {E1 E2 : Mask} {P Q : PROP}, P ∗ fupd E1 E2 Q ⊢ fupd E1 E2 iprop(P ∗ Q))
+
+variable (gname : Type _) (cinv : gname → PROP → PROP) (cinv_own : gname → PROP)
+
+variable (cinv_alloc : ∀ {E : Mask} (P : PROP), ▷ P ⊢ fupd E E iprop(∃ γ, cinv γ P ∗ cinv_own γ))
+variable (cinv_acc :
+  ∀ (P : PROP) (γ : gname), cinv γ P -∗ cinv_own γ -∗
+    fupd M1 M0 iprop(▷ P ∗ cinv_own γ ∗ (▷ P -∗ fupd M0 M1 (emp : PROP))))
+
+include fupd_mono in
+@[rw_mono_rule, rocq_alias linear.fupd_mono']
+theorem fupd_mono' {E1 E2 : Mask} (h : P ⊢ Q) : fupd E1 E2 P ⊢ fupd E1 E2 Q := fupd_mono h
+
+include fupd_mono in
+@[rocq_alias linear.fupd_proper]
+theorem fupd_proper {E1 E2 : Mask} (h : P ⊣⊢ Q) : fupd E1 E2 P ⊣⊢ fupd E1 E2 Q := by
+  constructor
+  · apply fupd_mono h.mp
+  · apply fupd_mono h.mpr
+
+include fupd_frame_left fupd_mono in
+@[rocq_alias linear.fupd_frame_r]
+theorem fupd_frame_right {E1 E2 : Mask} : fupd E1 E2 P ∗ Q ⊢ fupd E1 E2 iprop(P ∗ Q) :=
+  sep_comm.mp.trans <| fupd_frame_left.trans <| fupd_mono sep_comm.mp
+
+include fupd_frame_left fupd_mono fupd_fupd in
+@[rocq_alias linear.elim_fupd_fupd]
+theorem elim_fupd_fupd {p : Bool} {E1 E2 E3 : Mask} :
+    ElimModal True p io false (fupd E1 E2 P) P (fupd E1 E3 Q) (fupd E2 E3 Q) where
+  elim_modal _ := calc
+    _ ⊢ fupd E1 E2 P ∗ (P -∗ fupd E2 E3 Q)        := sep_mono_left intuitionisticallyIf_elim
+    _ ⊢ fupd E1 E2 iprop(P ∗ (P -∗ fupd E2 E3 Q)) := fupd_frame_right fupd fupd_mono fupd_frame_left
+    _ ⊢ fupd E1 E2 (fupd E2 E3 Q)                 := fupd_mono wand_elim_right
+    _ ⊢ fupd E1 E3 Q                              := fupd_fupd
+
+include cinv_alloc cinv_acc fupd_mono fupd_fupd fupd_frame_left in
+@[rocq_alias linear.leak]
+theorem leak : P ⊢ fupd M1 M1 (emp : PROP) := by
+  haveI {p : Bool} {E1 E2 E3 : Mask} {P Q : PROP} :
+      ElimModal True p .out false (fupd E1 E2 P) P (fupd E1 E3 Q) (fupd E2 E3 Q) :=
+    elim_fupd_fupd (io := .out) fupd fupd_mono fupd_fupd fupd_frame_left
+  iintro HP
+  imod cinv_alloc iprop(True) $$ [//] with ⟨%γ, Hinv, Htok⟩
+  imod cinv_acc $$ Hinv Htok with ⟨Htrue, Htok, Hclose⟩
+  iapply Hclose
+  iassumption
+
+end Linear
