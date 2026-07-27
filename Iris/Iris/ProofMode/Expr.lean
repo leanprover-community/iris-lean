@@ -184,6 +184,20 @@ partial def Hyps.find? {u prop bi} (name : Name) :
   | _, .hyp _ name' ivar _ ty _ => if name == name' then (ivar, ty) else none
   | _, .sep _ _ _ _ lhs rhs => rhs.find? name <|> lhs.find? name
 
+partial def Hyps.findM? [Monad m] {prop : Q(Type u)} {bi : Q(BI $prop)}
+    (p : Name → IVarId → Q(Bool) → Q($prop) → m Bool) :
+    ∀ {e}, Hyps bi e → m (Option (Name × IVarId × Q(Bool) × Q($prop)))
+  | _, .emp _ => return none
+  | _, .hyp _ name ivar bp ty _ => do
+    if ← p name ivar bp ty then
+      return some (name, ivar, bp, ty)
+    else
+      return none
+  | _, .sep _ _ _ _ lhs rhs => do
+    match ← rhs.findM? p with
+    | some res => return some res
+    | none => lhs.findM? p
+
 partial def Hyps.getDecl? {u prop bi} (ivar : IVarId) {s}:
     @Hyps u prop bi s → Option (Name × IVarId × Q(Bool) × Q($prop))
   | .emp _ => none
@@ -478,24 +492,6 @@ variable [Monad m] [MonadLiftT MetaM m] {prop : Q(Type u)} {bi : Q(BI $prop)} {e
 def Hyps.replace : m (Option ((e' : Q($prop)) × Hyps bi e' × Q($e ⊢ $e'))) := do
   let some ⟨_, hyps', pf⟩ ← hyps.replaceCore bi e ivar repl | return none
   return some ⟨_, hyps', q(replace_finish $pf)⟩
-
-def Hyps.evalReplace [Monad m] [MonadLiftT MetaM m]
-    {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (ivar : IVarId)
-    (repl : (ty : Q($prop)) → m ((ty' : Q($prop)) × Q($ty ⊢ $ty'))) :
-    ∀ {e}, Hyps bi e → m (Option ((e' : Q($prop)) × Hyps bi e' × Q($e ⊢ $e')))
-  | _, .emp _ => return none
-  | _, .hyp _ name ivar' p ty _ =>
-      if ivar == ivar' then do
-        let ⟨ty', h⟩ ← repl ty
-        return some ⟨_, .mkHyp bi name ivar p ty',
-                     q(intuitionisticallyIf_mono (p := $p) $h)⟩
-      else return none
-  | _, .sep _ _ _ _ lhs rhs => do
-      if let some ⟨_, lhs', h⟩ ← lhs.evalReplace ivar repl then
-        return some ⟨_, .mkSep lhs' rhs, q(sep_mono_left $h)⟩
-      if let some ⟨_, rhs', h⟩ ← rhs.evalReplace ivar repl then
-        return some ⟨_, .mkSep lhs rhs', q(sep_mono_right $h)⟩
-      return none
 
 end replace
 

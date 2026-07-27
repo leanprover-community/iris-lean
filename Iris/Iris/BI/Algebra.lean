@@ -270,7 +270,7 @@ theorem agree_includedI (x y : Agree A) :
   · refine siPure_mono (exists_elim (fun c => ?_))
     exact (fun n Heq => (includedN.mp ⟨c, Heq⟩).trans op_commN)
   · refine siPure_mono (exists_intro_trans y ?_)
-    exact entails_preorder.refl
+    rfl
 
 @[rocq_alias to_agree_includedI]
 theorem toAgree_includedI (a b : A) :
@@ -282,7 +282,7 @@ theorem toAgree_includedI (a b : A) :
     show SiProp.internalEq a b ⊢ (∃ c, SiProp.internalEq (toAgree b) (toAgree a • c))
     refine exists_intro_trans (toAgree a) ?_
     refine internalEq_entails.mpr fun n heq => ?_
-    exact (NonExpansive.ne heq.symm).trans (idemp.symm n)
+    exact (NonExpansive.ne heq.symm).trans (Dist.of_eq idemp.symm)
 
 end agree_inclusion
 

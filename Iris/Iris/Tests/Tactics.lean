@@ -11,11 +11,16 @@ public import Iris.Instances.IProp
 public import Iris.Instances.Lib.LaterCredits
 public import Iris.Instances.Lib.Token
 public import Iris.Algebra.CMRA
+public import Iris.Instances.Lib.Invariants
+public import Iris.Instances.Lib.CInvariants
+public import Iris.Instances.Lib.NaInvariants
+public import Iris.ProgramLogic.Language
+public import Iris.ProgramLogic.WeakestPre
 
 @[expose] public section
 
 namespace Iris.Tests
-open BI CMRA DFrac
+open BI CMRA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic
 
 /- This file contains tests with various scenarios for all available tactics. -/
 
@@ -1994,6 +1999,29 @@ example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP]
   imodintro
   iexact HP
 
+/-- Tests `imodintro` with `intoEmbed_embed`. -/
+example {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+    (P Q : PROP1) : ⎡P⎤ ∗ ⎡P -∗ Q⎤ ⊢@{PROP2} ⎡Q⎤ := by
+  iintro ⟨HP, HPQ⟩
+  imodintro
+  iapply HPQ $$ HP
+
+/-- Tests `imodintro` with `intoEmbed_affinely` and `intoEmbed_embed`. -/
+example {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BIUpdate PROP1] [BIUpdate PROP2]
+    [BiEmbed PROP1 PROP2] [BiEmbedBUpd PROP1 PROP2] (P : PROP1) :
+    <affine> ⎡P⎤ ⊢@{PROP2} ⎡<affine> P⎤ := by
+  iintro HP
+  imodintro
+  iassumption
+
+/- Tests `imodintro` where `intoEmbed_embed` does not apply. -/
+/-- error: imodintro: cannot transform hypothesis HQ : Q with ProofMode.IntoEmbed -/
+#guard_msgs in
+example {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+    (P : PROP1) (Q : PROP2) : ⎡P⎤ ∗ Q ⊢@{PROP2} ⎡P⎤ := by
+  iintro ⟨HP, HQ⟩
+  imodintro
+
 end imodintro
 
 section imod
@@ -2467,6 +2495,122 @@ example [BI PROP] [BIAffine PROP] (Q : Nat → PROP) : (Q 0 ⊢ ∃ x, False ∨
   iexists _
   iframe
 
+/- Tests `iframe` with existential quantifiers -/
+example [BI PROP] {α} (a : α) {β} (b : β) (P : PROP)
+    (Q : α → PROP) (R : β → PROP) (S : PROP) :
+    ⊢ P -∗ Q a -∗ R b -∗ S -∗ ∃ n, Q n ∗ ∃ m, R m ∗ P ∗ S := by
+  iintro HP HQ HR HS
+  -- Instantiate the inner existential quantifier `m`
+  iframe HR
+  -- Keep the outer existential quantifier `n` around
+  iframe HP
+  -- Instantiate the outer existential quantifier `n`
+  iframe HQ
+  iassumption
+
+/- Tests `iframe` with multiple existential quantifiers framed at once -/
+example [BI PROP] {α} (a : α) {β} (b : β) (P : PROP)
+    (Q : α → PROP) (R : β → PROP) (S : PROP) :
+    ⊢ P -∗ Q a -∗ R b -∗ S -∗ ∃ n, Q n ∗ ∃ m, R m ∗ P ∗ S := by
+  iintro HP HQ HR HS
+  iframe HS HP HR HQ
+
+/- Tests `iframe` with multiple existential quantifiers framed at once -/
+/--
+error: unsolved goals
+PROP : Type u_1
+inst✝ : BI PROP
+α : Sort u_2
+P : PROP
+Q : α → PROP
+⊢ ⏎
+  ⊢ «exists» fun {n} => Q n
+-/
+#guard_msgs in
+example [BI PROP] {α} (P : PROP) (Q : α → PROP) :
+    ⊢ P -∗ BI.exists fun {n} => iprop(Q n  ∗ P) := by
+  iintro HP
+  iframe HP
+
+/- Tests `iframe` with existential quantifers in various orders -/
+example [BI PROP] {α} (a : α) {β} (b : β) {γ} (c : γ)
+    (P : α → β → PROP) (Q : β → α → γ → PROP) :
+    ⊢ P a b -∗ Q b a c -∗ ∃ x, ∃ y, (P x y ∗ ∃ z, Q y x z) := by
+  iintro HP HQ
+  iframe
+
+/-
+  Tests `iframe` with the framing of existential quantifiers disabled.
+  The tactic should succeed as `P`, which is under the existential
+  quantifier, can still be framed.
+-/
+set_option iris.frame.instantiateExists false in
+example [BI PROP] {α} (a : α) (P : PROP) (Q R : α → PROP) (S : PROP) :
+    ⊢ P -∗ Q a -∗ R a -∗ S -∗ ∃ n, P ∗ Q n ∗ ∃ m, R m ∗ S := by
+  iintro HP HQ HR HS
+  iframe ∗
+  iexists a
+  iframe HQ
+  iexists a
+  iassumption
+
+/-
+  Tests `iframe` with the framing of existential quantifiers disabled.
+  Since nothing else can be framed, the tactic should fail.
+-/
+/-- error: iframe: cannot frame P a -/
+#guard_msgs in
+set_option iris.frame.instantiateExists false in
+example [BI PROP] {α} (a : α) (P : α → PROP) :
+    ⊢ P a -∗ ∃ n, P n := by
+  iintro HP
+  iframe HP
+
+/- Tests `iframe` with an existential quantifier under a universal quantifier. -/
+example [BI PROP] (P : PROP) : P ⊢ ∀ (x : Nat), ∃ n, ⌜n = x⌝ ∗ P := by
+  iintro HP
+  iframe HP
+  iintro %x
+  iexists x
+  ipureintro; rfl
+
+/- Tests `iframe` with an existentially quantified binder instantiated with a metavariable. -/
+example [BI PROP] (P Q : Nat → PROP) (m : Nat) :
+    ⊢ P m -∗ ∃ n, Q n -∗ ∃ x y, P x ∗ Q y ∗ ⌜y = 3⌝ := by
+  iintro HP
+  iexists ?w
+  iintro HQ
+  -- The existentially quantified binder `y` instantiated with `?w`
+  iframe HQ
+  iframe HP
+  ipureintro
+  rfl
+
+/-
+  Tests `iframe` with an existentially quantified binder instantiated with
+  a value that involves a metavariable.
+-/
+example [BI PROP] (P : Option Nat → PROP) :
+    ⊢ (∀ n, P (some n)) -∗ ∃ x, P x := by
+  iintro HP
+  ispecialize HP $$ %(?n)
+  -- The existentially quantified binder `x` instantiated with `some ?n`
+  iframe HP
+  exact 0
+
+variable {hlc : outParam HasLC} {Expr State Obs Val} [Λ : Language Expr State Obs Val]
+variable {GF : BundledGFunctors}
+variable [IrisGS_gen hlc Expr GF]
+variable {s : Stuckness} {E : CoPset} {e : Expr} {v : Val} {Φ : Val → IProp GF}
+
+/- Tests `iframe` with the `Frame` type class instance `frameWp`. -/
+example [inst : Language.IntoVal e v] (P : IProp GF) :
+    P ∗ Φ v ⊢ WP e @ s ; E {{ w, P ∗ Φ w }} := by
+  iintro ⟨HP, HΦ⟩
+  iframe HP
+  iapply wp_value $$ HΦ
+  exact inst
+
 end iframe
 
 section icombine
@@ -2917,6 +3061,175 @@ example {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop} {h1 : Q n} {_ : (Q n) 
   iloeb as IH generalizing! %n
 
 end iloeb
+
+section iinv
+
+variable {hlc : HasLC} {GF : BundledGFunctors} [InvGS_gen hlc GF] {N : Namespace}
+
+/--
+  Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and
+  `intoAcc_inv` where the side condition is trivial.
+-/
+example {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
+  iintro #Hinv
+  iinv Hinv with #H
+  imodintro
+  isplit
+  · iexact H
+  · imodintro
+    inext
+    iexact H
+
+/--
+  Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and
+  `intoAcc_inv` where the side condition is trivial.
+-/
+example {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
+  iintro #Hinv
+  iinv Hinv with #H Hclose
+  imod Hclose $$ H
+  imodintro
+  inext
+  iexact H
+
+/--
+  Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and
+  `intoAcc_inv`, relying on the side condition `↑N ⊆ E`.
+-/
+example {E} {P : IProp GF} {h : ↑N ⊆ E} : inv N iprop(<pers> P) ={E}=∗ ▷ P := by
+  iintro #Hinv
+  iinv Hinv with #H
+  imodintro
+  isplit
+  · iexact H
+  · imodintro
+    inext
+    iexact H
+
+/- Tests `iinv` with an invalid invariant. -/
+/-- error: iinv: invalid invariant P (ElimInv type class synthesis failed) -/
+#guard_msgs in
+example {E : CoPset} {P : IProp GF} : □ P ={E}=∗ ▷ P := by
+  iintro #HP
+  iinv HP with #H
+
+/-- Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and `intoAcc_cinv`. -/
+example [CInvG GF]  {γ : GName} {p : Qp} :
+    cinv N γ iprop(<pers> P) ∗ own γ p ⊢@{IProp GF} |={⊤}=> own γ p ∗ ▷ P := by
+  iintro ⟨#Hinv, H⟩
+  iinv Hinv with ⟨#HP, Hown⟩
+  imodintro
+  isplit
+  iexact HP
+  iframe
+  imodintro
+  inext
+  iexact HP
+
+/-- Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and `intoAcc_cinv`. -/
+example [CInvG GF] {γ : GName} {p : Qp} :
+    cinv N γ iprop(<pers> P) ∗ own γ p ⊢@{IProp GF} |={⊤}=> own γ p ∗ ▷ P := by
+  iintro ⟨#Hinv, H⟩
+  iinv Hinv with ⟨#HP, Hown⟩ Hclose
+  imod Hclose $$ HP
+  imodintro
+  iframe
+  inext
+  iexact HP
+
+/--
+  Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd`,
+  `intoAcc_cinv` and a specialisation pattern. -/
+example [CInvG GF] {γ : GName} {p1 p2 : Qp} {P : IProp GF} :
+    cinv N γ iprop(<pers> P) ∗ own γ p1 ∗ own γ p2
+    ⊢@{IProp GF} |={⊤}=> own γ p1 ∗ own γ p2 ∗ ▷ P := by
+  iintro ⟨#Hinv, Hown1, Hown2⟩
+  iinv Hinv $$ [Hown2 //] with ⟨#HP, Hown2⟩
+  imodintro
+  iframe HP ∗
+  imodintro
+  inext
+  iexact HP
+
+/-- Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and `intoAcc_na`. -/
+example {t : NaInvPoolName} [NaInvG GF] {E1 E2 : CoPset} {P : IProp GF} (h : ↑N ⊆ E1) :
+    NonAtomicInvariant.inv t N iprop(<pers> P) ∗ own t E1 ∗ own t E2
+    ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
+  iintro ⟨#Hinv, Hown1, Hown2⟩
+  iinv Hinv $$ [Hown1 //] with ⟨#HP, Hown1⟩ Hclose
+  imod Hclose $$ [HP Hown1]
+  · iframe
+    iexact HP
+  · iframe
+    imodintro
+    inext
+    iexact HP
+
+/-- Tests the robustness of `iinv` in presence of other invariants. -/
+example {t : NaInvPoolName} [NaInvG GF] {N1 N2 N3 : Namespace} {E1 E2 : CoPset}
+    {P : IProp GF} (h : ↑N3 ⊆ E1) :
+    inv N1 P ∗ NonAtomicInvariant.inv t N3 iprop(<pers> P) ∗ inv N2 P ∗ own t E1 ∗ own t E2
+    ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
+  iintro ⟨#_, #Hinv, #_, Hown1, Hown2⟩
+  iinv Hinv $$ Hown1 with ⟨#HP, Hown1⟩
+  imodintro
+  isplitl [Hown1]
+  · iframe HP ∗
+  · iintro Hown1
+    iframe
+    imodintro
+    inext
+    iexact HP
+
+/--
+  Tests `iinv` with two invariant hypotheses using the same `Namespace` value.
+  The last hypothesis in the context with this `Namespace` value gets chosen.
+-/
+example {t : NaInvPoolName} [NaInvG GF] {N : Namespace} {E1 E2 : CoPset}
+    {P Q : IProp GF} (h : ↑N ⊆ E1) :
+    NonAtomicInvariant.inv t N iprop(<pers> Q) ∗
+    NonAtomicInvariant.inv t N iprop(<pers> P) ∗
+    own t E1 ∗ own t E2 ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
+  iintro ⟨#_, #_, Hown1, Hown2⟩
+  iinv N $$ Hown1 with ⟨#HP, Hown1⟩
+  imodintro
+  isplitl [Hown1]
+  · iframe HP ∗
+  · iintro Hown1
+    iframe
+    imodintro
+    inext
+    iexact HP
+
+/-
+  Tests `iinv` with a valid `Namespace` value that does not correspond to
+  any invariant hypothesis in the context.
+-/
+/-- error: iinv: invariant hypothesis with the namespace N3 not found -/
+#guard_msgs in
+example {t : NaInvPoolName} [NaInvG GF] {N1 N2 N3 : Namespace} {E1 E2 : CoPset}
+    {P Q : IProp GF} (h : ↑N1 ⊆ E1) :
+    NonAtomicInvariant.inv t N1 iprop(<pers> Q) ∗
+    NonAtomicInvariant.inv t N2 iprop(<pers> P) ∗
+    own t E1 ∗ own t E2 ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
+  iintro ⟨#_, #_, Hown1, Hown2⟩
+  iinv N3 $$ Hown1 with ⟨#HP, Hown1⟩
+
+/- Variables to test `iinv` with `WP` -/
+variable {hlc : outParam HasLC} {Expr State Obs Val} [Λ : Language Expr State Obs Val]
+variable {GF : BundledGFunctors}
+variable [IrisGS_gen hlc Expr GF]
+variable {s : Stuckness} {E : CoPset} {e : Expr} {v : Val} {Φ : Val → IProp GF} {P : IProp GF}
+
+/-- Tests `iinv` with `elimInv_acc_without_close`, `intoAcc_inv` and `elimAcc_wp_atomic`. -/
+example [Language.Atomic ↑s e] (h : ↑N ⊆ E) :
+    ⊢ inv N P -∗ (▷ P -∗ WP e @ s ; (E \ ↑N) {{ v, |={E \ ↑N}=> ▷ P ∗ Φ v }}) -∗ WP e @ s ; E {{ Φ }} := by
+  iintro #Hinv Hwp
+  iinv Hinv with H
+  iapply Hwp
+  iexact H
+
+end iinv
 
 section ieval
 
