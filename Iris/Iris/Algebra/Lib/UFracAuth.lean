@@ -79,7 +79,7 @@ theorem validN {n : Nat} {a : A} {p : Qp} (ha : ✓{n} a) :
 
 @[rocq_alias ufrac_auth_valid]
 theorem valid {p : Qp} {a : A} (ha : ✓ a) : ✓ ((●U{p} a : UFracAuth) • ◯U{p} a) :=
-  auth_both_valid_2 ⟨trivial, ha⟩ ⟨none, .rfl⟩
+  auth_both_valid_2 ⟨trivial, ha⟩ ⟨none, rfl⟩
 
 /-! ## Agreement -/
 
@@ -94,12 +94,10 @@ theorem agreeN {n : Nat} {p : Qp} {a b : A} (h : ✓{n} ((●U{p} a : UFracAuth)
     grind
 
 @[rocq_alias ufrac_auth_agree]
-theorem agree {p : Qp} {a b : A} (h : ✓ ((●U{p} a : UFracAuth) • ◯U{p} b)) : a ≡ b :=
-  equiv_dist.mpr fun n => agreeN (valid_iff_validN.mp h n)
+theorem agree {p : Qp} {a b : A} (h : ✓ ((●U{p} a : UFracAuth) • ◯U{p} b)) : a = b :=
+  OFE.eq_dist.mpr fun n => agreeN (valid_iff_validN.mp h n)
 
-@[rocq_alias ufrac_auth_agree_L]
-theorem agree_L {p : Qp} {a b : A} (h : ✓ ((●U{p} a : UFracAuth) • ◯U{p} b)) : a = b :=
-  (agree h).to_eq
+#rocq_ignore ufrac_auth_agree_L "Use agree"
 
 /-! ## Inclusion -/
 
@@ -118,8 +116,8 @@ theorem included [CMRA.Discrete A] {q p : Qp} {a b : A}
   rw [auth_both_valid_discrete] at h
   obtain ⟨⟨mc, hmc⟩, _⟩ := h
   match mc with
-  | none => exact ⟨none, fun n => (hmc n).2⟩
-  | some (_, cr) => exact ⟨some cr, fun n => (hmc n).2⟩
+  | none => exact ⟨none, congrArg (fun p => some p.snd) (some_eqv_some.mp hmc)⟩
+  | some (_, cr) => exact ⟨some cr, congrArg (fun p => some p.snd) (some_eqv_some.mp hmc)⟩
 
 @[rocq_alias ufrac_auth_includedN_total]
 theorem includedN_total [IsTotal A] {n : Nat} {q p : Qp} {a b : A}
@@ -159,7 +157,7 @@ theorem frag_valid {q : Qp} {a : A} : (✓ (◯U{q} a : UFracAuth)) ↔ ✓ a :=
 
 @[rocq_alias ufrac_auth_frag_op]
 theorem frag_op {q1 q2 : Qp} {a1 a2 : A} :
-    (◯U{q1 + q2} (a1 • a2) : UFracAuth) ≡ (◯U{q1} a1) • ◯U{q2} a2 := .rfl
+    (◯U{q1 + q2} (a1 • a2) : UFracAuth) = (◯U{q1} a1) • ◯U{q2} a2 := rfl
 
 @[rocq_alias ufrac_auth_frag_op_validN]
 theorem frag_op_validN {n : Nat} {q1 q2 : Qp} {a b : A} :
@@ -174,15 +172,17 @@ theorem frag_op_valid {q1 q2 : Qp} {a b : A} :
 @[rocq_alias ufrac_auth_is_op]
 instance isOp_ufrac_auth {q q1 q2 : Qp} {a1 a2 : A} {a : outParam A}
     [h1 : IsOp io q q1 q2] [h2 : IsOp io a a1 a2] : IsOp io (◯U{q} a) (◯U{q1} a1) (◯U{q2} a2) where
-  is_op := NonExpansive.eqv (some_eqv_some.mpr
-    (NonExpansive₂.eqv (.of_eq (UFrac.ext_iff.mpr h1.is_op.to_eq)) h2.is_op))
+  is_op :=
+    (congrArg (frag · a) h1.is_op).trans <|
+      (congrArg (frag (q1 • q2)) h2.is_op).trans frag_op
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias ufrac_auth_is_op_core_id]
 instance isOp_ufrac_auth_core_id {q q1 q2 : Qp} {a : A} [h1 : CoreId a] [h2 : IsOp io q q1 q2] :
     IsOp io (◯U{q} a) (◯U{q1} a) (◯U{q2} a) where
-  is_op := NonExpansive.eqv (some_eqv_some.mpr
-    (NonExpansive₂.eqv (.of_eq (ext_iff.mpr h2.is_op.to_eq)) (op_self a).symm))
+  is_op :=
+    (congrArg (frag · a) h2.is_op).trans <|
+      (congrArg (frag (q1 • q2)) (op_self a).symm).trans frag_op
 
 /-! ## Updates -/
 
@@ -224,13 +224,13 @@ theorem update_surplus_cancel {p q : Qp} {a b : A} [CMRA.Cancelable b] :
 abbrev UFracAuthURF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
   AuthURF (OptionOF (ProdOF (constOF UFrac) T))
 
-#rocq_ignore ufrac_authURF_contractive "Contractiveness is bundled into Lean's RFunctor type class and inferred for AuthURF"
+#rocq_ignore ufrac_authURF_contractive "Contractiveness is bundled into Lean's RFunctor class"
 
 @[rocq_alias ufrac_authRF]
 abbrev UFracAuthRF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
   AuthRF (OptionOF (ProdOF (constOF UFrac) T))
 
-#rocq_ignore ufrac_authRF_contractive "Contractiveness is bundled into Lean's RFunctor type class and inferred for AuthRF"
+#rocq_ignore ufrac_authRF_contractive "Contractiveness is bundled into Lean's RFunctor class"
 
 end UFracAuth
 
