@@ -35,7 +35,7 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 - `isplitl [`*H₁* ... *Hₙ*`]` — Split a separating conjunction (`∗`); the hypotheses *Hᵢ* go to the left goal, all remaining spatial hypotheses to the right.
 - `isplitr [`*H₁* ... *Hₙ*`]` — Like `isplitl`, but the listed hypotheses go to the right goal.
 - `isplitl` / `isplitr` — Split a separating conjunction, giving *all* spatial hypotheses to the left (`isplitl`) or right (`isplitr`) goal.
-- `iframe` [*selPats*](#selection-patterns) — Cancel the selected hypotheses against matching parts of the goal. Solves the goal completely if the leftover is `True` or `emp` (with affine context).
+- `iframe` [*selPats*](#selection-patterns) — Cancel the selected hypotheses against matching parts of the goal. Solves the goal completely if the leftover is `True` or `emp` (with affine context). One can use `set_option iris.frame.instantiateExists false` to disable the framing of existentially quantified propositions.
 - `iframe` — Equivalent to `iframe ∗` (frame all spatial hypotheses).
 - `icombine` [*selPats*](#selection-patterns) `as` [*casesPat*](#cases-patterns) — Combine the selected hypotheses into one using the `CombineSepAs` type class (defaults to `∗`) and destruct the result with [*casesPat*](#cases-patterns).
 - `icombine` [*selPats*](#selection-patterns) `gives` [*casesPat*](#cases-patterns) — Derive persistent information (e.g. validity of combined ghost state) from the selected hypotheses via `CombineSepGives`, keeping the originals.
@@ -75,6 +75,11 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 - `iempintro` — Solve an `emp` goal, requiring the spatial context to be affine.
 - `iexfalso` — Change the goal to `False`.
 - `itrivial` — Try to solve the goal with simple tactics (`iassumption`, `ipureintro` followed by `simp`/`assumption`, ...). Used by the `//` patterns. Extensible by adding `macro_rules` for `itrivial`.
+
+## Iris-Specific Tactics
+
+- `iinv` *H* (`$$` [*specPat*](#specialization-patterns))? `with` [*casesPat*](#cases-patterns) ([*casesPat*](#cases-patterns))? — opens an invariant hypothesis *H* and uses the first cases pattern to destruct the result. The second cases pattern is used for destructing the hypothesis for closing the invariant. The specialisation pattern is used for resource consumption needed for opening the invariant. If the specialisation pattern is not given as part of the tactic, it is, by default, the auto-framing of spatial hypotheses.
+- `iinv` *N* (`$$` [*specPat*](#specialization-patterns))? `with` [*casesPat*](#cases-patterns) ([*casesPat*](#cases-patterns))? — same as above, except that a namespace *N* is given. The last invariant hypothesis in the context of this namespace is chosen.
 
 ## Cases Patterns
 
