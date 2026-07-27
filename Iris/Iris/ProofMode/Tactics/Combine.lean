@@ -47,7 +47,7 @@ theorem combine_gives_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1 out2 out : PRO
     _ ⊢ (e2 ∗ □?p2 out2) ∗ □?p1 out1                     := sep_mono_left pf2.mp
     _ ⊢ e2 ∗ □?p2 out2 ∗ □?p1 out1                       := sep_assoc.mp
     _ ⊢ e2 ∗ □?p1 out1 ∗ □?p2 out2                       := sep_mono_right sep_comm.mp
-    _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∧ (e2 ∗ <pers> out) := and_intro refl <| sep_mono_right pf3
+    _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∧ (e2 ∗ <pers> out) := and_intro .rfl <| sep_mono_right pf3
     _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∧ <pers> out        := and_mono_right sep_elim_right
     _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∗ □ out             := persistently_and_intuitionistically_sep_right.mp
     _ ⊢ (e2 ∗ □?p2 out2 ∗ □?p1 out1) ∗ □ out             := sep_mono_left <| sep_mono_right sep_comm.mp
@@ -77,7 +77,7 @@ theorem combine_gives_step_conj [BI PROP] {p1 p2 : Bool}
     _ ⊢ <pers> newOutGives           := persistently_absorb_right
   calc
     _ ⊢ e ∗ □ outGives                                          := pf1
-    _ ⊢ (e ∗ □ outGives) ∧ <pers> outGives ∧ <pers> newOutGives := and_intro refl <| and_intro pf4 pf5
+    _ ⊢ (e ∗ □ outGives) ∧ <pers> outGives ∧ <pers> newOutGives := and_intro .rfl <| and_intro pf4 pf5
     _ ⊢ (e ∗ □ outGives) ∧ <pers> (outGives ∧ newOutGives)      := and_mono_right <| persistently_and.mpr
     _ ⊢ (e ∗ □ outGives) ∧ <pers> outGivesCombined              := and_mono_right <| persistently_mono instGivesCombined.make_and.mp
     _ ⊢ (e ∗ □ outGives) ∗ □ outGivesCombined                   := persistently_and_intuitionistically_sep_right.mp
