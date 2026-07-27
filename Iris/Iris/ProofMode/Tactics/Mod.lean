@@ -14,7 +14,7 @@ namespace Iris.ProofMode
 public section
 open BI
 
-theorem mod [BI PROP] {e} {Φ} {p p'} {A A' Q Q' : PROP} [he : ElimModal Φ p p' A A' Q Q']
+theorem mod [BI PROP] {e} {Φ} {p p'} {A A' Q Q' : PROP} [he : ElimModal Φ p .out p' A A' Q Q']
   (h1 : e ∗ □?p' A' ⊢ Q') (hΦ : Φ) : e ∗ □?p A ⊢ Q :=
     (sep_comm.1.trans (sep_mono_right (wand_intro h1))).trans (he.1 hΦ)
 
@@ -41,7 +41,7 @@ def iModCore {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q : Q($prop)) (p : Q(Bool
     let A' : Q($prop) ← mkFreshExprMVarQ q($prop)
     let Q' : Q($prop) ← mkFreshExprMVarQ q($prop)
     -- transform `Q` to `Q'` and `A` to `A'`
-    let .some _ ← ProofModeM.trySynthInstanceQ q(ElimModal $Φ $p $p' $A $A' $Q $Q')
+    let .some _ ← ProofModeM.trySynthInstanceQ q(ElimModal $Φ $p .out $p' $A $A' $Q $Q')
       | throwError "imod: {A} is not a modality"
     let hΦ ← iSolveSidecondition q($Φ)
     let p'' : Q(Bool) ← instantiateMVars p'

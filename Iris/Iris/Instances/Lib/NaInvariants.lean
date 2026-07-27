@@ -17,7 +17,7 @@ public import Iris.Std.CoPset
 
 namespace Iris
 
-open BI CMRA OFE Iris Std LawfulSet DisjointLeibnizSet COFE
+open BI CMRA OFE Iris Std LawfulSet DisjointLeibnizSet COFE ProofMode
 
 abbrev NaInvF : OFunctorPre :=
   ProdOF (constOF CoPsetDisjL) (constOF (DisjointLeibnizSet PosSet))
@@ -220,6 +220,24 @@ nonrec theorem inv_acc {p : NaInvPoolName} {E F : CoPset} {N : Namespace} {P : I
     · iapply own_disjoint $$ Htoki Htoki2
     icases Hbad with %Hbad
     exact Hbad i ⟨mem_singleton.mpr rfl, mem_singleton.mpr rfl⟩ |>.elim
+
+@[rocq_alias into_inv_na]
+instance intoInv_na (N : Namespace) (P : IProp GF) :
+    IntoInv (inv p N P) N := {}
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias into_acc_na]
+instance intoAcc_na (p : NaInvPoolName) (E F : CoPset) (N : Namespace) (P : IProp GF) :
+    IntoAcc (X := Unit) (inv p N P) (↑N ⊆ E ∧ ↑N ⊆ F) (own p F) (fupd E E) (fupd E E)
+    (fun _ => iprop(▷ P ∗ own p (F \ ↑N))) (fun _ => iprop(▷ P ∗ own p (F \ ↑N)))
+              (λ _ => some (own p F)) where
+  into_acc := by
+    dsimp only [accessor, Option.getD]
+    intro ⟨hE, hF⟩
+    iintro #Hinv Hown
+    imod inv_acc hE hF $$ Hinv Hown with ⟨_, Hown, _⟩
+    iexists ()
+    iframe
 
 end NonAtomicInvariant
 end Iris
