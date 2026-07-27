@@ -431,11 +431,12 @@ def frameExist : SynthTactic := λ e => do
     let some inst ← synthInstanceRecursiveQ q(Frame $p $R $body $G) | return none
     -- If `a` is defEq to `c`, the existential quantifier remains. This can be either since the framing
     -- did not instantiate the existential quantifer or since the instiation of existentials was disabled.
-    if ← withTransparency .none <| isDefEq (← instantiateMVars a) c then
+    -- The `withConfig` is necessary to disable stuck defEq exceptions.
+    if ← withTransparency .none <| withConfig (λ _ => {}) (isDefEq (← instantiateMVars a) c) then
       return some (none, ← mkLambdaFVars #[c] (← instantiateMVars G),
                           ← mkLambdaFVars #[c] (← instantiateMVars inst))
     else
-      -- The existential quantifier does not remain as the existential variable is instantiated
+      -- The existential quantifier does not remain as the existential variable is instantiated.
       return some (some <| ← instantiateMVars a, ← instantiateMVars G, ← instantiateMVars inst)
   | return .continue
 
