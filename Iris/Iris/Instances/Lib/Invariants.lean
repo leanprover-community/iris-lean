@@ -87,7 +87,26 @@ theorem except_0_inv (N : Namespace) (P : IProp GF) : ⊢ ◇ inv N P -∗ inv N
 instance is_except_0_inv (N : Namespace) (P : IProp GF) : IsExcept0 (inv N P) where
   is_except0 := by iintro H; iapply except_0_inv $$ H
 
--- TODO: into_inv_inv, into_acc_inv
+@[rocq_alias into_inv_inv]
+instance intoInv_inv (N : Namespace) (P : IProp GF) : IntoInv (inv N P) N := {}
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias into_acc_inv]
+instance intoAcc_inv (N : Namespace) (P : IProp GF) E :
+    IntoAcc (X := Unit) (inv N P) (↑N ⊆ E) iprop(True) (fupd E (E \ ↑N)) (fupd (E \ ↑N) E)
+      (λ _ => iprop(▷ P)) (λ _ => iprop(▷ P)) (λ _ => none) where
+  into_acc := by
+    dsimp only [inv, accessor, Option.getD]
+    iintro %x #Hinv -
+    imod Hinv $$ %E [] with ⟨HP, Hclose⟩
+    · itrivial
+    · iexists ()
+      imodintro
+      isplitl [HP]
+      · iassumption
+      · iintro HP
+        iapply (BIFUpdate.mono true_emp.mp)
+        iapply Hclose $$ HP
 
 end Instances
 

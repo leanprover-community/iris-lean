@@ -8,6 +8,7 @@ module
 public import Iris.BI
 public meta import Iris.ProofMode.SynthInstance
 public import Iris.ProofMode.Modalities
+public import Iris.Std.Namespaces
 
 @[expose] public section
 
@@ -197,16 +198,17 @@ For the IPM TC synthesis, it needs to be an `uncheckedInParam` since it should m
 if the user provides an mvar.
 -/
 @[ipm_class, rocq_alias FromModal]
-class FromModal {PROP1 : outParam $ Type _} {PROP2} [outParam $ BI PROP1] [BI PROP2] (φ : outParam $ Prop)
-    (M : outParam $ Modality PROP1 PROP2) (sel : outParam <| uncheckedInParam $ PROP1) (P : PROP2)
+class FromModal {PROP1 : outParam $ Type _} {PROP2} {α : outParam <| Type _} [outParam $ BI PROP1] [BI PROP2] (φ : outParam $ Prop)
+    (M : outParam $ Modality PROP1 PROP2) (sel : outParam <| uncheckedInParam α) (P : PROP2)
     (Q : outParam $ PROP1) where
   from_modal : φ → M.M Q ⊢ P
 export FromModal (from_modal)
 
 /-- `ElimModal` turns `□?p P` into `□?p' P'` and `Q` into `Q'` under condition `φ`. -/
 @[ipm_class, rocq_alias ElimModal]
-class ElimModal {PROP} [BI PROP] (φ : outParam $ Prop) (p : Bool) (p' : outParam $ Bool) (P : PROP)
-    (P' : outParam $ PROP) (Q : PROP) (Q' : outParam $ PROP) where
+class ElimModal {PROP} [BI PROP] (φ : outParam $ Prop) (p : Bool) (io : InOut)
+    (p' : semiOutParamIPM io Bool) (P : PROP)
+    (P' : semiOutParamIPM io PROP) (Q : PROP) (Q' : outParam $ PROP) where
   elim_modal : φ → □?p P ∗ (□?p' P' -∗ Q') ⊢ Q
 export ElimModal (elim_modal)
 
@@ -254,6 +256,36 @@ class CombineSepGives [BI PROP] (P Q : PROP) (R : outParam PROP) where
   combine_sep_gives : P ∗ Q ⊢ <pers> R
 export CombineSepGives (combine_sep_gives)
 
+@[ipm_class, rocq_alias IntoInv]
+class IntoInv [BI PROP] (P : PROP) (N : Namespace)
+
+@[rocq_alias accessor]
+def accessor [BI PROP] {X : Type} (M1 M2 : PROP → PROP) (α β : X → PROP)
+    (mγ : X → Option  PROP) : PROP :=
+  M1 iprop(∃ x, α x ∗ (β x -∗ M2 (mγ x |>.getD emp)))
+
+@[ipm_class, rocq_alias ElimAcc]
+class ElimAcc [BI PROP] {X : Type} (ϕ : outParam Prop) (M1 M2 : PROP → PROP)
+    (α β : X → PROP) (mγ : X → Option PROP) (Q : PROP) (Q' : outParam <| X → PROP) where
+  elim_acc : ϕ → ((∀ x, α x -∗ Q' x) -∗ accessor M1 M2 α β mγ -∗ Q)
+
+@[ipm_class, rocq_alias IntoAcc]
+class IntoAcc [BI PROP] {X : outParam Type} (Pacc : PROP)
+    (ϕ : outParam Prop) (Pin : outParam <| PROP)
+    (M1 M2 : outParam <| PROP → PROP) (α β : outParam <| X → PROP)
+    (mγ : outParam <| X → Option PROP) where
+  into_acc : ϕ → Pacc -∗ Pin -∗ accessor M1 M2 α β mγ
+
+set_option synthInstance.checkSynthOrder false in
+/-- The type class used for the `iinv` tactic. -/
+@[ipm_class, rocq_alias ElimInv]
+class ElimInv [BI PROP] (φ : outParam Prop) (X : outParam Type)
+    (Pinv : PROP) (Pin : outParam PROP) (Pout : outParam <| X → PROP)
+    (close : Bool) (mPclose : outParam <| Option <| X → PROP)
+    (Q : PROP) (Q' : outParam <| X → PROP) where
+  elim_inv : φ → Pinv ∗ Pin ∗ (∀ x, Pout x ∗ mPclose.getD (λ _ => emp) x -∗ Q' x) ⊢ Q
+export ElimInv (elim_inv)
+
 /-
   `IntoIH φ P Q` describes how to turn a pure induction hypothesis `φ` into a proofmode
   hypothesis `Q` under an intuitionistic BI context `□ P`.
@@ -262,6 +294,11 @@ export CombineSepGives (combine_sep_gives)
 class IntoIH [BI PROP] (φ : Prop) (P : PROP) (Q : outParam PROP) where
   into_ih : φ → □ P ⊢ Q
 export IntoIH (into_ih)
+
+@[ipm_class, rocq_alias IntoEmbed]
+class IntoEmbed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] (P : PROP2) (Q : outParam PROP1) where
+  into_embed : P ⊢ ⎡Q⎤
+export IntoEmbed (into_embed)
 
 #rocq_ignore elim_inv_tc_opaque "No tc_opaque in Lean"
 #rocq_ignore elim_modal_tc_opaque "No tc_opaque in Lean"
