@@ -11,6 +11,10 @@ namespace Iris
 
 open Lean Elab Tactic Meta Iris.Std
 
+meta def observingSuccess [Monad m] [MonadBacktrack s m] [MonadExcept ε m]
+    (x : m α) : m Bool := do
+  return (← observing? x).isSome
+
 meta def nonexpLemmas : MetaM (Array Name) := do
   let env ← getEnv
   return (nonexpExt.getState env).reverse
@@ -22,40 +26,27 @@ meta def distIsForall (expr : Expr) : MetaM Bool := do
 
 meta def nonexpStep : TacticM Bool := do
   for neLem in ← nonexpLemmas do
-    try
-      let tac ← `(tactic|apply $(mkIdent neLem):ident; try intros)
-      evalTactic tac
+    let tac ← `(tactic|apply $(mkIdent neLem):ident; try intros)
+    if ← observingSuccess <| evalTactic tac then
       return true
-    catch _ =>
-      continue
   return false
 
 meta def distInstanceStep : TacticM Bool := do
-  try
-    let tac ← `(tactic|apply $(mkIdent ``OFE.Contractive.distLater_dist); intro _ _)
-    evalTactic tac
-    return true
-  catch _ =>
-    return false
+  let tac ← `(tactic|apply $(mkIdent ``OFE.Contractive.distLater_dist); intro _ _)
+  return ← observingSuccess <| evalTactic tac
 
 meta def distHypStep : TacticM Bool := do
-  try
-    let goal ← getMainGoal
-    goal.withContext do
-      let ctx ← getLCtx
-      for decl? in ctx.decls do
-        if let some decl := decl? then
-          if decl.type.isAppOf ``OFE.DistLater then
-            let declIdent := mkIdent decl.userName
-            try
-              let tac ← `(tactic|apply $declIdent:ident; assumption)
-              evalTactic tac
-              return
-            catch _ =>
-              continue
-      throwError ""
-    return true
-  catch _ => return false
+  let goal ← getMainGoal
+  pure <| ← goal.withContext do
+    let ctx ← getLCtx
+    for decl? in ctx.decls do
+      if let some decl := decl? then
+        if decl.type.isAppOf ``OFE.DistLater then
+          let declIdent := mkIdent decl.userName
+          let tac ← `(tactic|apply $declIdent:ident; assumption)
+          if ← observingSuccess <| evalTactic tac then
+            return true
+    return false
 
 elab "contractive" : tactic => do
   -- intro hypotheses
