@@ -2515,6 +2515,23 @@ example [BI PROP] {α} (a : α) {β} (b : β) (P : PROP)
   iintro HP HQ HR HS
   iframe HS HP HR HQ
 
+/- Tests `iframe` with multiple existential quantifiers framed at once -/
+/--
+error: unsolved goals
+PROP : Type u_1
+inst✝ : BI PROP
+α : Sort u_2
+P : PROP
+Q : α → PROP
+⊢ ⏎
+  ⊢ «exists» fun {n} => Q n
+-/
+#guard_msgs in
+example [BI PROP] {α} (P : PROP) (Q : α → PROP) :
+    ⊢ P -∗ BI.exists fun {n} => iprop(Q n  ∗ P) := by
+  iintro HP
+  iframe HP
+
 /- Tests `iframe` with existential quantifers in various orders -/
 example [BI PROP] {α} (a : α) {β} (b : β) {γ} (c : γ)
     (P : α → β → PROP) (Q : β → α → γ → PROP) :

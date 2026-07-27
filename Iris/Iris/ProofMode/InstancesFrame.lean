@@ -406,29 +406,6 @@ def frameOr : SynthTactic := λ e => do
     return .success q(frame_or $p $R $P1 $P2 $Q1 $Q2 $Q')
   return .continue
 
-def frameHereApplies {u : Level} {prop : Q(Type u)} (_bi : Q(BI $prop)) (R P : Q($prop)) :
-    MetaM Bool := withoutModifyingState do
-  if ← isDefEq P R then return true
-  let_expr BI.affinely _ _ R' := R | return false
-  isDefEq P R'
-
-/-- Analogous to `solve_gather_evars_eq` in the Rocq implementation. -/
-def solveGatherEvarsEq (a c : Expr) : MetaM Bool := do
-  match a with
-  | .mvar m =>
-    if ← m.isDelayedAssigned then return false
-    let decl ← m.getDecl
-    -- The metavaiable `m` cannot be older than `c`, or else assignment is out of scope
-    unless decl.lctx.contains c.fvarId! do
-      return false
-    unless decl.depth == (← getMCtx).depth do
-      return false
-    if decl.kind.isSyntheticOpaque then
-      return false
-    m.assign c
-    return true
-  | _ => return false
-
 @[ipm_tactic_instance Frame _ _ iprop(∃ _, _) _]
 def frameExist : SynthTactic := λ e => do
   let_expr Frame prop bi p R P _ := e | return .continue
@@ -444,26 +421,22 @@ def frameExist : SynthTactic := λ e => do
   have Φ : Q($α → $prop) := Φ
 
   -- Find the binder name so that it can be reused after framing
-  let bn := match Φ with | .lam n .. => n | _ => `x
+  let .lam bn _ _ bi := Φ | throwError "iframe: argument to BI.exists must be a lambda"
 
   -- Introduce a free variable `c` for the computation within `withLocalDeclDQ`
-  let some ⟨a, X, inst⟩ ← withLocalDeclDQ bn α fun c => do
-    let a : Q($α) ←
-      if ← frameInstantiateExistsEnabled then
-        mkFreshExprMVarQ q($α)
-      else pure c
+  let some ⟨a, X, inst⟩ ← withLocalDeclQ bn bi α fun c => do
+    let a : Q($α) ← if ← frameInstantiateExistsEnabled then mkFreshExprMVarQ q($α) else pure c
     let G ← mkFreshExprMVarQ q($prop)
     have body : Q($prop) := Expr.headBeta q($Φ $a)
     let some inst ← synthInstanceRecursiveQ q(Frame $p $R $body $G) | return none
-    -- The existential quantifier remains (`a == c` when framing of existential is disabled)
-    if a == c || (← solveGatherEvarsEq (← instantiateMVars a) c) then
+    -- If `a` is defEq to `c`, the existential quantifier remains. This can be either since the framing
+    -- did not instantiate the existential quantifer or since the instiation of existentials was disabled.
+    if ← withTransparency .none <| isDefEq (← instantiateMVars a) c then
       return some (none, ← mkLambdaFVars #[c] (← instantiateMVars G),
                           ← mkLambdaFVars #[c] (← instantiateMVars inst))
-    let a ← instantiateMVars a
-    let G ← instantiateMVars G
-    if a.containsFVar c.fvarId! || G.containsFVar c.fvarId! then return none
-    -- The existential quantifier does not remain as the existential variable is instantiated
-    return some (some a, G, ← instantiateMVars inst)
+    else
+      -- The existential quantifier does not remain as the existential variable is instantiated
+      return some (some <| ← instantiateMVars a, ← instantiateMVars G, ← instantiateMVars inst)
   | return .continue
 
   match a with
@@ -480,5 +453,3 @@ def frameExist : SynthTactic := λ e => do
 #rocq_ignore frame_exist_helper "Logic already handled in the metaprogram frameExist"
 #rocq_ignore GatherEvarsEq "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
 #rocq_ignore TCCbnTele "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
-#rocq_ignore frame_texist "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
-#rocq_ignore frame_tforall "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
