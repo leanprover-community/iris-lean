@@ -21,7 +21,8 @@ open Iris.Std BI
 
 /-! # Entails -/
 
-instance entails_trans [BI PROP] : Trans (α := PROP) Entails Entails Entails where
+/- Necessary for `calc`-style proofs. -/
+instance entails_trans' [BI PROP] : Trans (α := PROP) Entails Entails Entails where
   trans h1 h2 := h1.trans h2
 instance entails_antisymm [BI PROP] : Antisymmetric (α := PROP) BiEntails Entails where
   antisymm h1 h2 := ⟨h1, h2⟩
@@ -1041,6 +1042,12 @@ theorem emp_or [BI PROP] {P : PROP} [Affine P] : emp ∨ P ⊣⊢ emp := ⟨or_e
 theorem emp_wand [BI PROP] {P : PROP} : (emp -∗ P) ⊣⊢ P :=
   ⟨emp_sep.mpr.trans wand_elim_right, wand_intro_left emp_sep.mp⟩
 
+@[rocq_alias bi.wandM_sound]
+theorem wandM_sound [BI PROP] {mP : Option PROP} {Q : PROP} :
+    (mP -∗? Q) ⊣⊢ (mP.getD emp -∗ Q) := by
+  cases mP <;> simp [BIBase.wandM]
+  exact emp_wand.symm
+
 @[rocq_alias bi.or_emp]
 theorem or_emp [BI PROP] {P : PROP} [Affine P] : P ∨ emp ⊣⊢ emp := or_comm.trans emp_or
 
@@ -2026,7 +2033,7 @@ theorem intuitionisticallyIf_sep {p : Bool} [BI PROP] [BIPositive PROP] {P Q : P
 theorem intuitionisticallyIf_sep_conj {p1 p2 : Bool} [BI PROP] {P Q : PROP} :
   (□?p1 P ∗ □?p2 Q) ⊢ □?(p1 && p2) (P ∗ Q) :=
   match p1, p2 with
-  | false, false => refl
+  | false, false => by rfl
   | false, true  => sep_mono_right intuitionisticallyIf_elim
   | true,  false => sep_mono_left intuitionisticallyIf_elim
   | true,  true  => intuitionisticallyIf_sep_mpr
