@@ -29,10 +29,12 @@ def iSolveSidecondition (target : Q(Prop)) (failOnUnsolved := true) : ProofModeM
   | .app (.const ``PMError _) (.lit (.strVal msg)) =>
       throwError "{msg}"
   | _ =>
-      let gs ← evalTacticAt (← `(tactic | trivial)) mvar.mvarId!
+      let gs ← (observing? <|
+        evalTacticAt (← `(tactic | first | trivial | (simp [*] <;> done))) mvar.mvarId!) <&>
+        (·.getD [mvar.mvarId!])
       if !gs.isEmpty then
         if failOnUnsolved then
-          throwError "isolvesidecondition: failed to solve sidecondition {target}"
+          throwError "iSolveSidecondition: failed to solve side condition {target}"
         else
           for g in gs do addMVarGoal g
       return mvar

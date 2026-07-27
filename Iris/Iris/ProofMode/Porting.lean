@@ -31,7 +31,7 @@ import Iris.Std.RocqPorting
 #rocq_concept proofmode "Tactics" "iEmpIntro" ported "iempintro"
 #rocq_concept proofmode "Tactics" "iPureIntro" ported "ipureintro"
 #rocq_concept proofmode "Tactics" "iFrame (basic)" ported "iframe"
-#rocq_concept proofmode "Tactics" "iFrame (existential quantifiers)" missing ""
+#rocq_concept proofmode "Tactics" "iFrame (existential quantifiers)" ported "iframe"
 #rocq_concept proofmode "Tactics" "iRevert" ported "irevert"
 #rocq_concept proofmode "Tactics" "iPoseProof" ported "ihave _ := _"
 #rocq_concept proofmode "Tactics" "iSpecialize (basic)" ported "ispecialize"
@@ -55,7 +55,7 @@ import Iris.Std.RocqPorting
 #rocq_concept proofmode "Tactics" "iLöb" ported "iloeb"
 #rocq_concept proofmode "Tactics" "iAssert" ported "ihave _ : _"
 #rocq_concept proofmode "Tactics" "iRewrite" ported "irewrite"
-#rocq_concept proofmode "Tactics" "iInv" missing ""
+#rocq_concept proofmode "Tactics" "iInv" ported "iinv"
 #rocq_concept proofmode "Tactics" "iAccu" ported "iaccu"
 #rocq_concept proofmode "Tactics" "rules for trivial" ported "itrivial"
 

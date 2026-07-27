@@ -37,7 +37,7 @@ syntax "⎡" term "⎤" : term
 macro_rules | `(iprop(⎡$P⎤)) => ``(Embed.embed iprop($P))
 
 delab_rule Embed.embed
-  | `($_ $P) => ``(iprop(⎡$P⎤))
+  | `($_ $P) => do ``(⎡$(← unpackIprop P)⎤)
 
 /-! ## The `BiEmbed` class -/
 

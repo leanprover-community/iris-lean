@@ -39,7 +39,7 @@ instance (priority := default + 10) intoPure_internalEq_leibniz [Sbi PROP] [OFE 
 @[rocq_alias from_modal_Next]
 instance fromModal_internalEq_next [Sbi PROP] [OFE A] (x y : A) :
     FromModal (PROP1 := PROP) (PROP2 := PROP) True (modality_laterN 1)
-      iprop(▷ (x ≡ y)) iprop(Later.next x ≡ Later.next y) iprop(x ≡ y) where
+      iprop(▷ (x ≡ y) : PROP) iprop(Later.next x ≡ Later.next y) iprop(x ≡ y) where
   from_modal _ := later_equivI_mpr x y
 
 @[rocq_alias into_laterN_Next]
