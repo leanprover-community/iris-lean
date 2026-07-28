@@ -824,16 +824,14 @@ theorem pure_alt {PROP : Type _} [BI PROP] (φ : Prop) :
 theorem pure_wand_forall [BI PROP] {φ : Prop} {P : PROP} [Absorbing P] :
     (⌜φ⌝ -∗ P) ⊣⊢ (∀ _ : φ, P) := by
   constructor
-  · apply forall_intro
-    intro hφ
+  · refine forall_intro fun hφ => ?_
     calc
       _ ⊢ (⌜φ⌝ -∗ P) ∗ emp := sep_emp.mpr
       _ ⊢ (⌜φ⌝ -∗ P) ∗ ⌜φ⌝ := sep_mono_right <| pure_intro hφ
       _ ⊢ P                := wand_elim_left
   · apply wand_intro_left
     apply wand_elim
-    apply pure_elim'
-    intro hφ
+    refine pure_elim' fun hφ => ?_
     apply wand_intro_left
     calc
       _ ⊢ P ∗ True := sep_mono_left <| forall_elim hφ
