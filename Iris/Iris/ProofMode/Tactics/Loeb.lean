@@ -27,7 +27,7 @@ private def iLoebCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
       -- We have applied `BI.loeb_wand_intuitionistically`
       let goal := q(iprop(□ (□ ▷ $goal -∗ $goal)))
       iModIntroCore hyps goal (← `(_)) fun hyps goal => do
-      iIntroCore hyps goal [(IH, .intro ⟨IH, .intuitionistic <| .one IH⟩)] (k · · addBIGoal)
+      iIntroCore hyps goal [(IH, .intro ⟨IH, .intuitionistic <| ⟨IH, .one IH⟩⟩)] (k · · addBIGoal)
     return q($(pf').trans $pf)
 
 /--

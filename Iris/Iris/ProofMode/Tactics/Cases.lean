@@ -222,7 +222,7 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
     return q($(pfEq).mp.trans $pf)
 
   | .conjunction [arg] | .disjunction [arg] =>
-    iCasesCore hyps goal ⟨pat.ref, arg⟩ p A k
+    iCasesCore hyps goal arg p A k
 
   | .disjunction [] => throwUnsupportedSyntax
 
@@ -230,34 +230,35 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
 
   -- pure conjunctions are always handled as existentials. There is `intoExist_and_pure` and
   -- `intoExist_sep_pure` to make this work as expected for pure assertions that are not explicit existentials.
-  | .conjunction (.pure arg :: args) =>
+  | .conjunction (⟨_, .pure arg⟩ :: args) =>
     iCasesExists arg p P A goal (iCasesCore hyps goal ⟨pat.ref, (.conjunction args)⟩ p · k)
+
   | .conjunction (arg :: args) =>
-    if arg matches .clear then
+    if arg.case matches .clear then
       if let some pf ← iCasesAndLR bi p P A goal true λ B =>
         iCasesCore hyps goal ⟨pat.ref, (.conjunction args)⟩ p B k then return pf
-    if args matches [.clear] then
+    if args matches [⟨_, .clear⟩] then
       if let some pf ← iCasesAndLR bi p P A goal false λ B =>
-        iCasesCore hyps goal ⟨pat.ref, arg⟩ p B k then return pf
-    iCasesSep hyps p A goal k (iCasesCore · · ⟨pat.ref, arg⟩ p · ·)
+        iCasesCore hyps goal arg p B k then return pf
+    iCasesSep hyps p A goal k (iCasesCore · · arg p · ·)
       (iCasesCore · · ⟨pat.ref, (.conjunction args)⟩ p · ·)
 
   | .disjunction (arg :: args) =>
-    iCasesOr p P A goal (iCasesCore hyps goal ⟨pat.ref, arg⟩ p · k)
+    iCasesOr p P A goal (iCasesCore hyps goal arg p · k)
       (iCasesCore hyps goal ⟨pat.ref, (.disjunction args)⟩ p · k)
 
   | .pure arg =>
     iPureCore q(iprop($P ∗ □?$p $A)) P p A goal arg q(.rfl) <| k hyps goal
 
   | .intuitionistic arg =>
-    iCasesIntuitionistic p P A goal (iCasesCore hyps goal ⟨pat.ref, arg⟩ q(true) · k)
+    iCasesIntuitionistic p P A goal (iCasesCore hyps goal arg q(true) · k)
 
   | .spatial arg =>
-    iCasesSpatial p P A goal (iCasesCore hyps goal ⟨pat.ref, arg⟩ q(false) · k)
+    iCasesSpatial p P A goal (iCasesCore hyps goal arg q(false) · k)
 
   | .mod arg =>
     iModCore bi P goal p A λ p' A goal' =>
-      iCasesCore hyps goal' ⟨pat.ref, arg⟩ p' A k
+      iCasesCore hyps goal' arg p' A k
 
   | .rewrite forward =>
     iPureRewriteCore hyps p A goal forward q(.rfl) k

@@ -39,16 +39,18 @@ syntax "←" : icasesPat
 /-- Introduce a pure equality and use it for rewriting in the forward direction. -/
 syntax "→" : icasesPat
 
+mutual
+
 inductive iCasesPatCase
   | one (name : TSyntax ``binderIdent)
   | clear
   | frame
-  | conjunction (args : List iCasesPatCase)
-  | disjunction (args : List iCasesPatCase)
+  | conjunction (args : List iCasesPat)
+  | disjunction (args : List iCasesPat)
   | pure (pat : TSyntax `rcasesPat)
-  | intuitionistic (pat : iCasesPatCase)
-  | spatial (pat : iCasesPatCase)
-  | mod (pat : iCasesPatCase)
+  | intuitionistic (pat : iCasesPat)
+  | spatial (pat : iCasesPat)
+  | mod (pat : iCasesPat)
   | rewrite (forward : Bool)
   deriving Repr, Inhabited
 
@@ -56,32 +58,41 @@ structure iCasesPat where
   ref : Syntax
   case : iCasesPatCase
 
+end
+
 partial def iCasesPat.parse (pat : TSyntax `icasesPat) : MacroM iCasesPat := do
   let stx ← expandMacros pat
   match go ⟨stx⟩ with
   | none => Macro.throwUnsupported
-  | some pat => return { ref := stx, case := pat }
+  | some pat => return pat
 where
-  go (stx : TSyntax `icasesPat) : Option iCasesPatCase :=
+  go (stx : TSyntax `icasesPat) : Option iCasesPat :=
+    match stx.raw with
+    -- delegate: keep the inner pattern's own ref
+    | `(icasesPat| ($pat)) => goAlts pat
+    | _ => (goCase stx).map ({ ref := stx.raw, case := · })
+
+  goCase (stx : TSyntax `icasesPat) : Option iCasesPatCase :=
     match stx.raw with
     | `(icasesPat| $name:binderIdent) => some <| .one name
     | `(icasesPat| -) => some <| .clear
     | `(icasesPat| $) => some <| .frame
-    | `(icasesPat| ⟨$[$args],*⟩) => args.mapM goAlts |>.map (.conjunction <| ·.toList)
+    | `(icasesPat| ⟨$[$args],*⟩) => args.mapM goAlts |>.map (.conjunction ·.toList)
     | `(icasesPat| %$pat:rcasesPat) => some <| .pure pat
     | `(icasesPat| #$pat) => go pat |>.map <| .intuitionistic
     | `(icasesPat| ∗$pat) => go pat |>.map <| .spatial
     | `(icasesPat| >$pat) => go pat |>.map <| .mod
-    | `(icasesPat| ($pat)) => goAlts pat
     | `(icasesPat| ←) => some <| .rewrite false
     | `(icasesPat| →) => some <| .rewrite true
     | _ => none
-  goAlts (stx : TSyntax ``icasesPatAlts) : Option iCasesPatCase :=
+
+  goAlts (stx : TSyntax ``icasesPatAlts) : Option iCasesPat :=
     match stx with
     | `(icasesPatAlts| $args|*) =>
       match args.getElems with
       | #[arg] => go arg
-      | args   => args.mapM go |>.map (.disjunction ·.toList)
+      | args   => args.mapM go |>.map
+          fun ps => { ref := stx.raw, case := .disjunction ps.toList }
     | _ => none
 
 end Iris.ProofMode

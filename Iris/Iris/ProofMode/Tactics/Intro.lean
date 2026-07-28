@@ -190,7 +190,7 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       | .intuitionistic p, some _ =>
         let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPersistently false $A1 $B)
           | throwError "iintro: {A1} not persistent"
-        let pf ← iCasesCore hyps A2 ⟨pat.ref, p⟩ q(true) B (iIntroCore · · pats k)
+        let pf ← iCasesCore hyps A2 p q(true) B (iIntroCore · · pats k)
         return q(imp_intro_intuitionistic (Q := $Q) $pf)
       | .intuitionistic p, none =>
         let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $Q .out $A1 $A2)
@@ -199,7 +199,7 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
           | throwError "iintro: {A1} not persistent"
         let .some _ ← trySynthInstanceQ q(TCOr (Affine $A1) (Absorbing $A2))
           | throwError "iintro: {A1} not affine and the goal not absorbing"
-        let pf ← iCasesCore hyps A2 ⟨pat.ref, p⟩ q(true) B (iIntroCore · · pats k)
+        let pf ← iCasesCore hyps A2 p q(true) B (iIntroCore · · pats k)
         return q(wand_intro_intuitionistic (A1 := $A1) (Q := $Q) $pf)
       | _, some _ =>
         -- should always succeed

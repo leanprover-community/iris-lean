@@ -100,8 +100,8 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
     let pf : Q(∀ x, $e'' ∗ $Pout x ∗ $f x ⊢ $Q' x) ←
       withLocalDeclDQ (← mkFreshUserName .anonymous) X fun x => do
         match closePat with
-        | some ⟨ref, closePat⟩ =>
-          let pf' ← iCasesCore hyps'' q($Q'' $x) ⟨ref, (.conjunction [casesPat.case, closePat])⟩
+        | some closePat =>
+          let pf' ← iCasesCore hyps'' q($Q'' $x) ⟨closePat.ref, (.conjunction [casesPat, closePat])⟩
             q(false) q(iprop($Pout' $x ∗ $f' $x))
           mkLambdaFVars #[x] pf'
         -- Throw an error if `hclose` is not given, but `mPclose` is not `none`
