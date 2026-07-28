@@ -1164,6 +1164,12 @@ theorem emp_or [BI PROP] {P : PROP} [Affine P] : emp ∨ P ⊣⊢ emp := ⟨or_e
 theorem emp_wand [BI PROP] {P : PROP} : (emp -∗ P) ⊣⊢ P :=
   ⟨emp_sep.mpr.trans wand_elim_right, wand_intro_left emp_sep.mp⟩
 
+@[rocq_alias bi.wandM_sound]
+theorem wandM_sound [BI PROP] {mP : Option PROP} {Q : PROP} :
+    (mP -∗? Q) ⊣⊢ (mP.getD emp -∗ Q) := by
+  cases mP <;> simp [BIBase.wandM]
+  exact emp_wand.symm
+
 @[rocq_alias bi.or_emp]
 theorem or_emp [BI PROP] {P : PROP} [Affine P] : P ∨ emp ⊣⊢ emp := or_comm.trans emp_or
 
@@ -2386,9 +2392,8 @@ theorem LimitPreserving.entails [BI PROP] [COFE A] (Φ Ψ : A → PROP) [Φne : 
        ne.ne _ {_ _} x := imp_ne.ne (Φne.ne x) (Ψne.ne x)
     }
     refine fun c h' => ?_
-    refine equiv_iff.1 ?_
-    refine LimitPreserving.equiv f g _ ?_
-    exact (equiv_iff.mpr <| h' ·)
+    refine BIBase.BiEntails.of_eq (LimitPreserving.equiv f g _ ?_)
+    exact fun n => (h' n).to_eq
 
 @[rocq_alias bi.limit_preserving_emp_valid]
 theorem limitPreserving_emp_valid [BI PROP] [COFE A] (Φ : A → PROP)
