@@ -2392,9 +2392,8 @@ theorem LimitPreserving.entails [BI PROP] [COFE A] (Φ Ψ : A → PROP) [Φne : 
 
 @[rocq_alias bi.limit_preserving_emp_valid]
 theorem limitPreserving_emp_valid [BI PROP] [COFE A] (Φ : A → PROP)
-    [OFE.NonExpansive Φ] : LimitPreserving (fun x => ⊢ Φ x) := by
-  refine fun c h => ?_
-  exact LimitPreserving.entails (fun _ => iprop(emp)) Φ c h
+    [OFE.NonExpansive Φ] : LimitPreserving (fun x => ⊢ Φ x) :=
+  LimitPreserving.entails (fun _ => iprop(emp)) Φ
 
 @[rocq_alias bi.limit_preserving_Persistent]
 instance limitPreserving_persistent [BI PROP] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
