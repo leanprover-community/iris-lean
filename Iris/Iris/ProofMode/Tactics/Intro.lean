@@ -167,13 +167,6 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       | ⟨true, s⟩ :: selPats =>
         let res ← s.resolveOne hyps >>= iFrame hyps Q
         res.finish (iIntroCore · · ((ref, .clear selPats) :: pats) k)
-    | .intro ⟨_, .rewrite direction⟩ =>
-      let ⟨n, _⟩ ← getFreshName (← `(binderIdent| _))
-      iIntroCoreForallIntro (← `(rcasesPat| $(mkIdent n):ident)) Q none
-        fun g B => g.withContext do
-          let some ldecl := (← g.getDecl).lctx.findFromUserName? n
-            | throwError "iintro: internal error: rewrite hypothesis not found"
-          iPureRewriteCoreAux hyps B ldecl.toExpr direction (iIntroCore · · pats k)
     | .intro ⟨_, .pure pat⟩ =>
       iIntroCoreForallIntro pat Q none fun _ B =>
         iIntroCore hyps B pats k

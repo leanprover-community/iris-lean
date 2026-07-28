@@ -401,7 +401,7 @@ example [BI PROP] (P Q R S T : PROP) (ϕ : Prop) :
 /-- Tests `iintro` with introduction patterns for rewriting pure equalities -/
 example [BI PROP] (m n : Nat) (a b c : Prop) :
     m = 2 → 3 = n → ⊢@{PROP} ⌜a = b⌝ -∗ ⌜b = c⌝ -∗ ⌜m.succ = n ∧ a = c⌝ := by
-  iintro → ← ← →
+  iintro %rfl %rfl %rfl %rfl
   ipureintro
   and_intros <;> rfl
 
@@ -409,12 +409,19 @@ example [BI PROP] (m n : Nat) (a b c : Prop) :
   Tests `iintro` with an introduction pattern for rewriting but the
   hypothesis is not a pure equality
 -/
-/-- error: Invalid rewrite argument: Expected an equality or iff proof or
-definition name, but `x✝` is a proof of
-  P -/
+/--
+error: Tactic `subst` failed: invalid equality proof, it is not of the form (x = t) or (t = x)
+  P
+
+PROP : Type u_1
+inst✝ : BI PROP
+P : Prop
+x✝ : P
+⊢ emp ⊢ True
+-/
 #guard_msgs in
 example [BI PROP] (P : Prop) : ⊢@{PROP} ⌜P⌝ -∗ True := by
-  iintro →
+  iintro %rfl
 
 /-- Tests `iintro` with non-trivial `rcases` destruction patterns -/
 example [BI PROP] (a b c1 c2 c3 : Prop) (P : Prop → Prop) :
@@ -1885,10 +1892,10 @@ example [BI PROP] (Q : PROP) : □ Q ⊢ Q := by
 example [BI PROP] (m n : Nat) (a b c : Prop) :
     ⊢@{PROP} ⌜m = 2⌝ -∗ ⌜3 = n⌝ -∗ ⌜a = b⌝ -∗ ⌜b = c⌝ -∗ ⌜m.succ = n ∧ a = c⌝ := by
   iintro #H1 H2 #H3 H4
-  icases H1 with →
-  icases H2 with ←
-  icases H3 with ←
-  icases H4 with →
+  icases H1 with %rfl
+  icases H2 with %rfl
+  icases H3 with %rfl
+  icases H4 with %rfl
   ipureintro
   and_intros <;> rfl
 
@@ -1896,13 +1903,20 @@ example [BI PROP] (m n : Nat) (a b c : Prop) :
   Tests `icases` with a case destruction pattern for rewriting but the
   hypothesis is not a pure equality.
 -/
-/-- error: Invalid rewrite argument: Expected an equality or iff proof or
-definition name, but `a✝` is a proof of
-  P -/
+/--
+error: Tactic `subst` failed: invalid equality proof, it is not of the form (x = t) or (t = x)
+  P
+
+PROP : Type u_1
+inst✝ : BI PROP
+P : Prop
+a✝ : P
+⊢ emp ⊢ True
+-/
 #guard_msgs in
 example [BI PROP] (P : Prop) : ⊢@{PROP} ⌜P⌝ -∗ True := by
   iintro HP
-  icases HP with →
+  icases HP with %rfl
 
 /-
   Tests `icases` with a case destruction pattern for rewriting but the
@@ -1912,7 +1926,7 @@ example [BI PROP] (P : Prop) : ⊢@{PROP} ⌜P⌝ -∗ True := by
 #guard_msgs in
 example [BI PROP] (P : PROP) : ⊢@{PROP} P -∗ True := by
   iintro HP
-  icases HP with →
+  icases HP with %rfl
 
 /-- Tests `icases` with non-trivial `rcases` destruction patterns -/
 example [BI PROP] (a b c1 c2 c3 : Prop) (P : Prop → Prop) :

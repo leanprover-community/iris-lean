@@ -86,25 +86,6 @@ def iPureCoreBuildProof {prop : Q(Type u)} {bi : Q(BI $prop)}
     | throwError "ipure: {A} is not affine and the goal not absorbing"
     return q(pure_elim_spatial (A := $A) $pf $f)
 
-/--
-  Introduce a pure equality into the Lean context, use it for rewriting and
-  discard the equality hypothesis.
--/
-def iPureRewriteCore {prop : Q(Type u)} {bi : Q(BI $prop)} {P P' : Q($prop)}
-    (hyps : Hyps bi P') (p : Q(Bool)) (A Q : Q($prop))
-    (forward : Bool) (pf : Q($P ⊣⊢ $P' ∗ □?$p $A))
-    (k : ∀ {e'}, Hyps bi e' → (goal' : Q($prop)) → ProofModeM Q($e' ⊢ $goal')) :
-    ProofModeM Q($P ⊢ $Q) := do
-  let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
-  let .some inst ← ProofModeM.trySynthInstanceQ q(IntoPure $A $φ)
-  | throwError "ipure: {A} is not pure"
-  let m : Q($φ → ($P' ⊢ $Q)) ← mkFreshExprSyntheticOpaqueMVar q($φ → ($P' ⊢ $Q))
-  let (h, g) ← m.mvarId!.intro1
-  let f ← do
-    g.withContext do g.assign (← iPureRewriteCoreAux hyps Q (.fvar h) forward k)
-    instantiateMVars m
-  return ← iPureCoreBuildProof φ inst pf f
-
 def iPureCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     (P P' : Q($prop)) (p : Q(Bool)) (A Q : Q($prop)) (purePat : TSyntax `rcasesPat)
     (pf : Q($P ⊣⊢ $P' ∗ □?$p $A))

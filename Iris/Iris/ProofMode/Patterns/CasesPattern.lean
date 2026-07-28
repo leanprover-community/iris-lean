@@ -34,10 +34,6 @@ syntax "#" icasesPat : icasesPat
 syntax "∗" icasesPat : icasesPat
 /-- Eliminate the modality at the top of the hypothesis and destruct the remaining proposition. -/
 syntax ">" icasesPat : icasesPat
-/-- Introduce a pure equality and use it for rewriting in the backward direction. -/
-syntax "←" : icasesPat
-/-- Introduce a pure equality and use it for rewriting in the forward direction. -/
-syntax "→" : icasesPat
 
 mutual
 
@@ -51,7 +47,6 @@ inductive iCasesPatCase
   | intuitionistic (pat : iCasesPat)
   | spatial (pat : iCasesPat)
   | mod (pat : iCasesPat)
-  | rewrite (forward : Bool)
   deriving Repr, Inhabited
 
 structure iCasesPat where
@@ -82,8 +77,6 @@ where
     | `(icasesPat| #$pat) => go pat |>.map <| .intuitionistic
     | `(icasesPat| ∗$pat) => go pat |>.map <| .spatial
     | `(icasesPat| >$pat) => go pat |>.map <| .mod
-    | `(icasesPat| ←) => some <| .rewrite false
-    | `(icasesPat| →) => some <| .rewrite true
     | _ => none
 
   goAlts (stx : TSyntax ``icasesPatAlts) : Option iCasesPat :=

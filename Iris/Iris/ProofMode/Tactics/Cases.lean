@@ -260,9 +260,6 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
     iModCore bi P goal p A λ p' A goal' =>
       iCasesCore hyps goal' arg p' A k
 
-  | .rewrite forward =>
-    iPureRewriteCore hyps p A goal forward q(.rfl) k
-
 /--
   `icases pmt with pat` destructs `pmt : pmTerm` using the cases pattern `pat`.
 -/
