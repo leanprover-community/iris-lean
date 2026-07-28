@@ -179,6 +179,12 @@ theorem pointsTo_unpersist {l : L} {v : V} :
   unfold pointsTo
   iapply ghost_map_elem_unpersist
 
+@[rocq_alias pointsto_persistent]
+instance instPersistentPointsTo (l : L) (v : V) :
+    BI.Persistent (PROP := IProp GF) (l ↦{.discard} v) := by
+  unfold pointsTo
+  infer_instance
+
 /-! ### General properties of `metaInfo` and `metaToken` -/
 
 @[rocq_alias meta_token_timeless]
