@@ -340,32 +340,17 @@ theorem bigSepS_filter [BIAffine PROP] (φ : A → Bool) {Φ : A → PROP} {X : 
     · exact ⟨imp_intro_swap <| pure_elim_left (fun hf => nomatch hf), Affine.affine⟩
     · simp [true_imp.symm]
 
-@[rocq_alias big_sepS_filter_acc']
-theorem bigSepS_filter_acc_cond (φ : A → Bool) {Φ : A → PROP} {X Y : S}
+@[rocq_alias big_sepS_filter_acc]
+theorem bigSepS_filter_acc (φ : A → Bool) {Φ : A → PROP} {X Y : S}
     (h : ∀ y, y ∈ Y → φ y → y ∈ X) :
     ([∗set] y ∈ X, Φ y) ⊢
-      ([∗set] y ∈ Y, if φ y then Φ y else emp) ∗
-      (([∗set] y ∈ Y, if φ y then Φ y else emp) -∗ [∗set] y ∈ X, Φ y) := by
+      ([∗set] y ∈ FiniteSet.filter φ Y, Φ y) ∗
+      (([∗set] y ∈ FiniteSet.filter φ Y, Φ y) -∗ [∗set] y ∈ X, Φ y) := by
   have hdisj : FiniteSet.filter φ Y ## (X \ FiniteSet.filter φ Y) :=
     fun a ha => (mem_diff.mp ha.2).2 ha.1
   rw [(diff_subset_decomp (fun z hz => (FiniteSet.mem_filter φ Y z).mp hz |>.elim (h z))).trans
     union_comm]
-  exact (bigSepS_union hdisj).1.trans <|
-    sep_mono (bigSepS_filter_cond φ).1
-      (wand_intro_left <| (sep_mono_left (bigSepS_filter_cond φ).2).trans (bigSepS_union hdisj).2)
-
-@[rocq_alias big_sepS_filter_acc]
-theorem bigSepS_filter_acc [BIAffine PROP] (φ : A → Bool) {Φ : A → PROP} {X Y : S}
-    (h : ∀ y, y ∈ Y → φ y → y ∈ X) :
-    ([∗set] y ∈ X, Φ y) ⊢
-      ([∗set] y ∈ Y, ⌜φ y⌝ → Φ y) ∗
-      (([∗set] y ∈ Y, ⌜φ y⌝ → Φ y) -∗ [∗set] y ∈ X, Φ y) := by
-  have hequiv : ([∗set] y ∈ Y, if φ y then Φ y else emp) ⊣⊢
-      ([∗set] y ∈ Y, ⌜φ y⌝ → Φ y) := bigSepS_eqv fun _ => by
-    cases hp : φ _
-    · exact ⟨imp_intro_swap <| pure_elim_left (fun hf => nomatch hf), Affine.affine⟩
-    · simp [true_imp.symm]
-  exact (bigSepS_filter_acc_cond φ h).trans <| sep_mono hequiv.1 (wand_mono hequiv.2 .rfl)
+  exact (bigSepS_union hdisj).1.trans <| sep_mono_right <| wand_intro_left (bigSepS_union hdisj).2
 
 @[rocq_alias big_sepS_union_2]
 theorem bigSepS_union_elim {Φ : A → PROP} {X Y : S} [∀ x, TCOr (Affine (Φ x)) (Absorbing (Φ x))] :
