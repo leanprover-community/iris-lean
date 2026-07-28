@@ -84,8 +84,6 @@ v : Val
   ∗Hpt : l' ↦ some v
   ⊢ WP hl(!#l) @ s ; E {{ Φ }}
 -/
--- the fraction is an unassigned metavariable here (a read accepts any); `pp.mvars false`
--- keeps its rendering stable instead of a `?m.…` with a nondeterministic index
 #guard_msgs (whitespace := lax) in
 set_option pp.mvars false in
 example {l l' : Loc} {v : Val} :
