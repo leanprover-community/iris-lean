@@ -591,8 +591,8 @@ open Lean Elab Tactic Meta Qq Iris.BI Iris Iris.ProofMode
 theorem tac_lc_add_laterN_split {GF : BundledGFunctors} [InvGS GF]
     {n m newM : Nat} {E : CoPset} {P Q goal : IProp GF}
     (inst : AddModal iprop(|={E}=> goal) goal goal)
-    (h1 : m = n + newM) (h2 : iprop(P ∗ £ newM) ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
-    iprop(P ∗ £ m) ⊢ goal := by
+    (h1 : m = n + newM) (h2 : P ∗ £ newM ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
+    P ∗ £ m ⊢ goal := by
   subst h1
   iintro ⟨HP, Hcred⟩
   iapply inst.add_modal
@@ -610,16 +610,15 @@ theorem tac_lc_add_laterN_split {GF : BundledGFunctors} [InvGS GF]
 theorem tac_lc_add_laterN_full {GF : BundledGFunctors} [InvGS GF]
     {m : Nat} {E : CoPset} {P Q goal : IProp GF}
     (inst : AddModal iprop(|={E}=> goal) goal goal)
-    (h2 : P ⊢ ▷^[m] Q) (h3 : Q ⊢ goal) :
-    iprop(P ∗ £ m) ⊢ goal := by
+    (h1 : P ⊢ ▷^[m] Q) (h2 : Q ⊢ goal) : P ∗ £ m ⊢ goal := by
   iintro ⟨HP, Hcred⟩
   iapply inst.add_modal
   isplitl
-  · ihave H := h2 $$ HP
+  · ihave H := h1 $$ HP
     iapply lc_fupd_add_laterN m $$ Hcred
     inext
     imodintro
-    iapply h3 $$ H
+    iapply h2 $$ H
   · iintro Hgoal
     iassumption
 
