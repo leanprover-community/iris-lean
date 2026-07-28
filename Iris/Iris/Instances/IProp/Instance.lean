@@ -170,17 +170,17 @@ def IProp.foldi : FF.api τ (IPre FF) -n> FF.api τ (IProp FF) :=
 
 @[rocq_alias inG_unfold_fold]
 theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) = x := by
-  refine OFE.eq_dist.mpr fun n => ?_
-  refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm.dist ?_
-  refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
-  apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold]
+  refine (OFunctor.map_comp (F := FF τ |>.fst) ..).symm.trans ?_
+  refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x)
+  rw [show (IProp.unfold FF).comp (IProp.fold FF) = OFE.Hom.id by
+    ext; simp [IProp.unfold, IProp.fold]]
 
 @[rocq_alias inG_fold_unfold]
 theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) = x := by
-  refine OFE.eq_dist.mpr fun n => ?_
-  refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm.dist ?_
-  refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
-  apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold]
+  refine (OFunctor.map_comp (F := FF τ |>.fst) ..).symm.trans ?_
+  refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x)
+  rw [show (IProp.fold FF).comp (IProp.unfold FF) = OFE.Hom.id by
+    ext; simp [IProp.unfold, IProp.fold]]
 
 theorem IProp.unfoldi_discreteE {v : FF.api τ (IProp FF)} (hv : OFE.DiscreteE v) :
     OFE.DiscreteE (unfoldi.f v) where
@@ -197,10 +197,10 @@ theorem IProp.unfoldi_validN {n : Nat} (x : FF.api τ (IProp FF)) (H : ✓{n} x)
   RFunctor.map (IProp.fold FF) (IProp.unfold FF) |>.validN H
 
 theorem IProp.validN_foldi {n : Nat} (x : FF.api τ (IPre FF)) (H : ✓{n} (foldi x)) : ✓{n} x :=
-  CMRA.validN_ne (IProp.unfoldi_foldi x).dist (IProp.unfoldi_validN _ H)
+  IProp.unfoldi_foldi x ▸ IProp.unfoldi_validN _ H
 
 theorem IProp.validN_unfoldi_mp {n : Nat} (x : FF.api τ (IProp FF)) (H : ✓{n} (unfoldi x)) : ✓{n} x :=
-  CMRA.validN_ne (IProp.foldi_unfoldi x).dist (IProp.foldi_validN _ H)
+  IProp.foldi_unfoldi x ▸ IProp.foldi_validN _ H
 
 @[rocq_alias inG_unfold_validN]
 theorem IProp.validN_unfoldi {n : Nat} (x : FF.api τ (IProp FF)) : ✓{n} (unfoldi x) ↔ ✓{n} x :=
@@ -347,10 +347,9 @@ theorem IProp.unfoldi_bundle_unit {ε : F.ap (IProp GF)} [IsUnit ε] :
 theorem validN_of_iSingleton {a : F.ap (IProp GF)} (Hv : ✓{n} iSingleton F γ a) : ✓{n} a := by
   have h_at_gamma : ✓{n} (((iSingleton F γ a) E.τ).car γ) := Hv E.τ γ
   simp [iSingleton, GenMap.singleton_map_in] at h_at_gamma
-  apply CMRA.validN_ne (ElemG.unbundle_bundle E a).dist
+  rw [← ElemG.unbundle_bundle E a]
   apply ElemG.unbundle_validN
-  apply CMRA.validN_ne (foldi_unfoldi (E.bundle a)).dist
-  exact foldi_validN (unfoldi (E.bundle a)) h_at_gamma
+  exact foldi_unfoldi (E.bundle a) ▸ foldi_validN (unfoldi (E.bundle a)) h_at_gamma
 
 theorem iSingleton_validN_at_E_τ {a : F.ap (IProp GF)} (a_valid : ✓{n} a) :
     ✓{n} (iSingleton F γ a E.τ) := by
@@ -372,13 +371,9 @@ theorem unfoldi_op {a b : GF.api (ElemG.τ GF F) (IProp GF)} :
 theorem validN_bundle_op_foldi {a' : F.ap (IProp GF)} {v : GF.api E.τ (IPre GF)}
     (h : ✓{n} (a' • E.unbundle (foldi v))) :
     ✓{n} (unfoldi (E.bundle a') • v) := by
-  have h_unfoldi_foldi := IProp.unfoldi_foldi v
-  apply CMRA.validN_ne (congrArg (CMRA.op _ ·) h_unfoldi_foldi).dist
-  apply CMRA.validN_ne unfoldi_op.dist
+  rw [← IProp.unfoldi_foldi v, ← unfoldi_op]
   apply IProp.unfoldi_validN
-  have h_unbundle_bundle := ElemG.bundle_unbundle E (foldi v)
-  apply CMRA.validN_ne (congrArg (CMRA.op _ ·) h_unbundle_bundle).dist
-  apply CMRA.validN_ne (bundle_op _ _).dist
+  rw [← ElemG.bundle_unbundle E (foldi v), ← bundle_op]
   apply ElemG.bundle_validN h
 
 theorem validN_of_iSingleton_op_free {mf : IResUR GF} {y : F.ap (IProp GF)}
@@ -386,10 +381,9 @@ theorem validN_of_iSingleton_op_free {mf : IResUR GF} {y : F.ap (IProp GF)}
   have h_at_gamma : ✓{n} ((((iSingleton F γ y) • mf) E.τ).car γ) := Hv E.τ γ
   simp [IsFree] at Hfree
   simp [iSingleton, CMRA.op, Hfree, GenMap.singleton_map_in] at h_at_gamma
-  apply CMRA.validN_ne (ElemG.unbundle_bundle E y).dist
+  rw [← ElemG.unbundle_bundle E y]
   apply ElemG.unbundle_validN
-  apply CMRA.validN_ne (foldi_unfoldi (E.bundle y)).dist
-  exact foldi_validN (unfoldi (E.bundle y)) h_at_gamma
+  exact foldi_unfoldi (E.bundle y) ▸ foldi_validN (unfoldi (E.bundle y)) h_at_gamma
 
 theorem validN_mf_at_E_τ_of_iSingleton_op_free {mf : IResUR GF} {y : F.ap (IProp GF)}
     (Hv : ✓{n} iSingleton F γ y • mf) (Hfree : IsFree (mf E.τ).car γ) :
@@ -577,11 +571,9 @@ theorem iSingleton_op_validN_notfree {mf : IResUR GF} {y : F.ap (IProp GF)} :
   intros Hv Hnfree
   have h_at_gamma : ✓{n} ((((iSingleton F γ y) • mf) E.τ).car γ) := Hv E.τ γ
   simp [iSingleton, CMRA.op, Hnfree, GenMap.singleton_map_in] at h_at_gamma
-  apply CMRA.validN_ne (congrArg (CMRA.op · _) (ElemG.unbundle_bundle E y)).dist
-  apply CMRA.validN_ne (unbundle_op (E.bundle y) (foldi.f v)).dist
+  rw [← ElemG.unbundle_bundle E y, ← unbundle_op]
   apply ElemG.unbundle_validN
-  apply CMRA.validN_ne (congrArg (CMRA.op · _) (foldi_unfoldi _)).dist
-  apply CMRA.validN_ne (foldi_op _ _).dist
+  rw [← foldi_unfoldi (E.bundle y), ← foldi_op]
   apply IProp.foldi_validN _ h_at_gamma
 
 theorem IResUR.valid_exists_fresh {mf : IResUR GF} (_Hv : ✓{n} mf) : ∃ a : Nat, (mf (ElemG.τ GF F)).car a = none :=
@@ -593,7 +585,7 @@ theorem alloc_update_unit {f : GName → F.ap (IProp GF)} :
   intros Hf_valid
   apply UpdateP.total.mpr
   intros n mf Hvalid
-  replace Hvalid : ✓{n} mf := CMRA.validN_ne UCMRA.unit_left_id.dist Hvalid
+  rw [UCMRA.unit_left_id] at Hvalid
   obtain ⟨γ, Hfresh⟩ := @IResUR.valid_exists_fresh GF F _ E n mf Hvalid
   refine ⟨iSingleton F γ (f γ), ⟨γ, rfl⟩, ?_⟩
   apply validN_iSingleton_op Hvalid (Hf_valid _).validN Hfresh
@@ -629,7 +621,7 @@ theorem iOwn_alloc_strong_dep (f : GName → F.ap (IProp GF)) (P : GName → Pro
     apply UPred.bupd_ownM_updateP
     apply UpdateP.total.mpr
     intros n mf Hvalid
-    replace Hvalid : ✓{n} mf := CMRA.validN_ne UCMRA.unit_left_id.dist Hvalid
+    rw [UCMRA.unit_left_id] at Hvalid
     obtain ⟨γ, Hfresh, HPγ⟩ := (mf (ElemG.τ GF F)).exists_fresh_sat HP
     refine ⟨iSingleton F γ (f γ), ⟨γ, HPγ, rfl⟩, ?_⟩
     apply validN_iSingleton_op Hvalid (Hf γ HPγ).validN Hfresh
@@ -756,15 +748,14 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
   · apply UpdateP.total.mpr
     intros n mf Hv
     refine ⟨iSingleton F γ ε, rfl, ?_⟩
-    replace Hv := CMRA.validN_ne UCMRA.unit_left_id.dist Hv
+    rw [UCMRA.unit_left_id] at Hv
     apply iSingleton_op_validN_at_γ Hv
     unfold iSingleton; simp [CMRA.ValidN, CMRA.op, GenMap.singleton_map_in]
     rcases h_at : (mf E.τ).car γ with (⟨⟩ | v) <;> simp
     · exact IProp.unfoldi_bundle_validN Hε.unit_valid.validN
     · have h_unit : IsUnit (IProp.unfoldi (E.bundle ε)) := IProp.unfoldi_bundle_unit
-      apply CMRA.validN_ne h_unit.unit_left_id.dist.symm
+      rw [h_unit.unit_left_id]
       apply extract_frame_validN (Hv E.τ) h_at
-
   · apply BIUpdate.mono
     refine BI.exists_elim (fun y => ?_)
     apply BI.pure_elim (iSingleton F γ ε = y) BI.and_elim_l

@@ -77,11 +77,8 @@ instance ghost_map_elem_fractional (γ : GName) (k : K) (v : V) :
     Fractional (PROP := IProp GF) (fun q : Qp => γ ↪◯MAP[k]{.own q} v) where
   fractional p q := by
     unfold ghost_map_elem
-    refine .trans ?_ iOwn_op
-    refine BIBase.BiEntails.of_eq ?_
-    refine .trans ?_ (congrArg (iOwn γ) frag_add_op_eqv)
-    refine congrArg (iOwn γ) (congrArg (Frag k (.own (p + q))) ?_)
-    exact Agree.idemp.symm
+    refine .trans (BIBase.BiEntails.of_eq ?_) iOwn_op
+    rw [← frag_add_op_eqv, Agree.idemp]
 
 @[rocq_alias ghost_map_elem_as_fractional]
 instance (γ : GName) (k : K) (v : V) : AsFractional (PROP := IProp GF) (γ ↪◯MAP[k]{.own q} v)
@@ -254,9 +251,8 @@ instance ghost_map_auth_fractional (m : H V) :
     Fractional (PROP := IProp GF) (fun q => γ ↪●MAP{.own q} m) where
   fractional p q := by
     unfold ghost_map_auth
-    refine .trans ?_ iOwn_op
-    refine BIBase.BiEntails.of_eq ?_
-    refine .trans ?_ (congrArg (iOwn γ) auth_dfrac_op_eqv)
+    refine .trans (BIBase.BiEntails.of_eq ?_) iOwn_op
+    rw [← auth_dfrac_op_eqv]
     rfl
 
 @[rocq_alias ghost_map_auth_as_fractional]
