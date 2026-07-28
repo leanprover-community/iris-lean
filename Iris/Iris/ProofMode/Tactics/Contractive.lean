@@ -55,6 +55,31 @@ meta def tryUnfoldFn : TacticM Unit := do
     if not <| (`Iris.BI.BIBase).isPrefixOf fn then
       evalTactic <| ← `(tactic|unfold $(mkIdent fn); try split))
 
+meta def makeMainGoal (goal : MVarId) : TacticM Unit := do
+  let goals ← getGoals
+  let goals := goal :: goals.erase goal
+  setGoals goals
+
+meta partial def contractiveMain (goal : MVarId) (guarded : Bool := false) : TacticM Unit := do
+  if ← goal.isAssigned then return
+  makeMainGoal goal
+
+  if let some _ ← observing? (evalTactic <| ← `(tactic|simp)) then
+    let _ ← (← getUnsolvedGoals).mapM (contractiveMain · guarded)
+    return
+
+  if not guarded then if ← distInstanceStep then
+    let _ ← (← getUnsolvedGoals).mapM (contractiveMain · true)
+    return
+
+  if ← distHypStep then
+    let _ ← (← getUnsolvedGoals).mapM (contractiveMain · guarded)
+    return
+
+  if ← nonexpStep then
+    let _ ← (← getUnsolvedGoals).mapM (contractiveMain · guarded)
+    return
+
 elab "contractive" : tactic => do
   -- intro hypotheses
   evalTactic <| ← `(tactic|intros)
@@ -67,18 +92,4 @@ elab "contractive" : tactic => do
   tryUnfoldFn
 
   -- main loop
-  while ¬(← getUnsolvedGoals).isEmpty do
-    -- simplification step (includes application of Dist.rfl)
-    if let some _ ← observing? (evalTactic <| ← `(tactic|simp)) then continue
-
-    -- uses an OFE.Contractive instance
-    if ← distInstanceStep then continue
-
-    -- applies an OFE.DistLater hypothesis
-    if ← distHypStep then continue
-
-    -- applies a non-expansive lemma
-    if ← nonexpStep then continue
-
-    -- exit if all fail
-    break
+  contractiveMain <| ← getMainGoal

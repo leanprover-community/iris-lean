@@ -3584,4 +3584,8 @@ example [BI PROP] [BILaterContractive PROP] : OFE.Contractive (λP : PROP => ipr
   distLater_dist := by
     contractive
 
+example [BI PROP] [BILaterContractive PROP] : OFE.Contractive (λP : PROP => iprop(▷ ▷ P)) where
+  distLater_dist := by
+    contractive
+
 end icontractive
