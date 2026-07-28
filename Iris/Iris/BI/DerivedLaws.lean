@@ -618,7 +618,10 @@ theorem wandIff_trans [BI PROP] {P Q R : PROP} :
     (P ∗-∗ Q) ∗ (Q ∗-∗ R) ⊢ (P ∗-∗ R) := by
   apply and_intro
   · exact (sep_mono and_elim_l and_elim_l).trans wand_trans
-  · exact (sep_mono and_elim_r and_elim_r).trans <| sep_comm.mp.trans wand_trans
+  · calc
+      _ ⊢ (Q -∗ P) ∗ (R -∗ Q) := sep_mono and_elim_r and_elim_r
+      _ ⊢ (R -∗ Q) ∗ (Q -∗ P) := sep_comm.mp
+      _ ⊢ R -∗ P              := wand_trans
 
 @[rocq_alias bi.exist_wand_forall]
 theorem exists_wand_forall [BI PROP] {P : PROP} {Ψ : α → PROP} :
