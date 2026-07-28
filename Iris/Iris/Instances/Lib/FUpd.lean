@@ -628,7 +628,7 @@ public meta section
 elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
   let natN := match n with | none => 1 | some n => n.raw.toNat
 
-  ProofModeM.runTactic λ mvar { u, prop, bi, hyps, goal, .. } => do
+  ProofModeM.runTactic λ mvar { u, prop, bi, e, hyps, goal, .. } => do
     let .defEq _ ← isLevelDefEqQ u 0
       | throwError "inext: the goal must be an `IProp` at universe level 0"
     let ~q(IProp $GF) := prop
@@ -643,17 +643,29 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
     let some ⟨name, _, p, ty⟩ := hyps.getDecl? ivar
       | throwError m!"inext: unknown hypothesis {h}"
     if isTrue p then throwError "inext: {h} is not in the spatial context"
-    let ~q(lc $c) := ty
+    let ~q(£ $c) := ty
       | throwError m!"inext: {h} is not a spatial later credit hypothesis"
     let some natM := c.nat? | throwError "inext: {c} is not a numeral"
-    let ⟨e', hyps', out, _, _, _, pfEq⟩ := hyps.remove false ivar
+    let ⟨e', hyps', _, _, _, _, pfEq⟩ := hyps.remove false ivar
 
     -- Ensure sufficient credits
     if natM < natN then throwError "inext: insufficient credits"
 
     let g ← mkFreshExprMVarQ q($prop)
     let some inst ← ProofModeM.trySynthInstanceQ q(AddModal $g $goal $goal)
-    | throwError "inext: AddModal type class synthesis failed {goal}"
+      | throwError "inext: AddModal type class synthesis failed {goal}"
+
+    -- extract the mask `E` from the synthesized modal goal, and check it's
+    -- mask-preserving (the shape `tac_lc_add_laterN_split/_full` require)
+    let g ← instantiateMVars g
+    let E : Q(CoPset) ← match_expr g with
+      | FUpd.fupd _ _ E1 E2 _ =>
+        unless ← isDefEq E1 E2 do
+          throwError "inext: the fancy update modality is not mask-preserving"
+        pure E1
+      | _ => throwError "inext: the goal cannot be turned into a fancy update modality"
+
+    have inst : Q(AddModal iprop(|={$E}=> $goal) $goal $goal) := inst
 
     -- Generate the proof goal with the updated hypothesis
     let n : Q(Credit) ← pure <| mkNatLit natN
@@ -664,21 +676,19 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
     | 0 =>
       let ⟨_, newHyps', pfModAction⟩ ← iModAction hyps' modality
       let pf ← addBIGoal newHyps' goal
-      let pf'' : Q($e' ∗ $out ⊢ $goal) ←
-        mkAppM ``tac_lc_add_laterN_full #[inst, pfModAction, pf]
-      mvar.assign q($(pfEq).mp.trans $pf'')
+      have pfEq : Q($e ⊣⊢ $e' ∗ £ $n) := pfEq
+      let pf' : Q($e' ∗ £ $n ⊢ $goal) := q(tac_lc_add_laterN_full $inst $pfModAction $pf)
+      mvar.assign q($(pfEq).mp.trans $pf')
     -- Update the later credits hypothesis and introduce it into the context
     | _ =>
       let newM : Q(Credit) ← pure <| mkNatLit (natM - natN)
       let newTy : Q($prop) := q(£ $newM)
       let newHyps := Hyps.add _ name ivar q(false) newTy hyps'
-
       let ⟨_, newHyps', pfModAction⟩ ← iModAction newHyps modality
       let pf ← addBIGoal newHyps' goal
-
       let hm : Q($natM = $n + $newM) ← mkDecideProof q($natM = $n + $newM)
-      let pf'' : Q($e' ∗ $out ⊢ $goal) ←
-        mkAppM ``tac_lc_add_laterN_split #[inst, hm, pfModAction, pf]
+      have pfEq : Q($e ⊣⊢ $e' ∗ £ $natM) := pfEq
+      let pf'' : Q($e' ∗ £ $natM ⊢ $goal) := q(tac_lc_add_laterN_split $inst $hm $pfModAction $pf)
       mvar.assign q($(pfEq).mp.trans $pf'')
 
 end
