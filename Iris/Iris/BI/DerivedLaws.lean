@@ -633,9 +633,13 @@ theorem and_parallel [BI PROP] {P1 P2 Q1 Q2 : PROP} :
     ⊢ (P1 ∧ P2) -∗ ((P1 -∗ Q1) ∧ (P2 -∗ Q2)) -∗ Q1 ∧ Q2 := by
   apply wand_intro
   apply wand_intro
-  apply and_intro <;> apply wand_elim <;> apply wand_intro
-  · exact (sep_mono (emp_sep.mp.trans and_elim_l) and_elim_l).trans wand_elim_right
-  · exact (sep_mono (emp_sep.mp.trans and_elim_r) and_elim_r).trans wand_elim_right
+  apply and_intro
+  · apply wand_elim
+    apply wand_intro
+    exact (sep_mono (emp_sep.mp.trans and_elim_l) and_elim_l).trans wand_elim_right
+  · apply wand_elim
+    apply wand_intro
+    exact (sep_mono (emp_sep.mp.trans and_elim_r) and_elim_r).trans wand_elim_right
 
 @[rocq_alias bi.iff_ne]
 instance iff_ne [BI PROP] : OFE.NonExpansive₂ (BIBase.iff (PROP := PROP)) :=
