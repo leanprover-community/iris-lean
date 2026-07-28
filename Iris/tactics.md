@@ -93,7 +93,6 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 - `#`*pat* — Move the hypothesis to the intuitionistic context, then destruct with *pat*.
 - `∗`*pat* — Move the hypothesis to the spatial context, then destruct with *pat*.
 - `>`*pat* — Eliminate the modality at the top of the hypothesis, then destruct with *pat*.
-- `←`/`→` — Rewrite using a pure Lean equality and then remove the equality from the context.
 
 Example:
 ```lean

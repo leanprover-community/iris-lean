@@ -70,7 +70,7 @@ import Iris.Std.RocqPorting
 #rocq_concept proofmode "Intro Patterns" "IIntuitionistic (pattern: #H)" ported "pattern: #H"
 #rocq_concept proofmode "Intro Patterns" "ISpatial (pattern: -#H)" ported "pattern: ∗H"
 #rocq_concept proofmode "Intro Patterns" "IModalElim (pattern: >H)" ported "pattern: >H"
-#rocq_concept proofmode "Intro Patterns" "IRewrite (pattern: ->/<-)" ported "pattern: →/←"
+#rocq_concept proofmode "Intro Patterns" "IRewrite (pattern: ->/<-)" ignored "use %rfl instead"
 #rocq_concept proofmode "Intro Patterns" "IPureIntro (pattern: !%)" ported "pattern: !%"
 #rocq_concept proofmode "Intro Patterns" "IModalIntro (pattern: !>)" ported "pattern: !>"
 #rocq_concept proofmode "Intro Patterns" "ISimpl (pattern: /=)" ported "pattern: /="
