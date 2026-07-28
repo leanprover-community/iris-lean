@@ -30,7 +30,7 @@ class OFE (SI : outParam <| Type _) [SIdx SI] (α : Type _) where
 
 open OFE
 
-scoped notation:40 x " ≡{" n "}≡ " y:41 => Dist n x y
+scoped notation:40 x " ≡{" n "}≡ " y:41 => OFE.Dist n x y
 
 namespace OFE
 
