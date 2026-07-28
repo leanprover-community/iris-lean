@@ -300,7 +300,7 @@ theorem plainly_impl_wand : ■ (P → Q) ⊣⊢ ■ (P -∗ Q) := by
 
 @[rocq_alias impl_wand_plainly]
 theorem impl_wand_plainly : (■ P → Q) ⊣⊢ (■ P -∗ Q) :=
-  ⟨imp_wand, impl_wand_plainly_2⟩
+  ⟨imp_wand_1, impl_wand_plainly_2⟩
 
 end AffineBI
 
