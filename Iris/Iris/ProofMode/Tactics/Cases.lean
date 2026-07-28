@@ -248,7 +248,7 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
       (iCasesCore hyps goal ⟨pat.ref, (.disjunction args)⟩ p · k)
 
   | .pure arg =>
-    iPureCore q(iprop($P ∗ □?$p $A)) P p A goal arg q(.rfl) <| k hyps goal
+    iPureCore q(iprop($P ∗ □?$p $A)) hyps p A goal arg q(.rfl) k
 
   | .intuitionistic arg =>
     iCasesIntuitionistic p P A goal (iCasesCore hyps goal arg q(true) · k)
