@@ -60,25 +60,26 @@ meta def makeMainGoal (goal : MVarId) : TacticM Unit := do
   let goals := goal :: goals.erase goal
   setGoals goals
 
-meta partial def contractiveMain (goal : MVarId) (guarded : Bool := false) : TacticM Unit := do
+meta def recurseTactic (t : MVarId → Bool → TacticM Unit) (guarded : Bool) : TacticM Unit := do
+  let _ ← (← getUnsolvedGoals).mapM (t · guarded)
+
+meta partial def contractiveMain (goal : MVarId) (guarded : Bool) : TacticM Unit := do
   if ← goal.isAssigned then return
   makeMainGoal goal
 
+  -- simplification step (includes application of Dist.rfl)
   if let some _ ← observing? (evalTactic <| ← `(tactic|simp)) then
-    let _ ← (← getUnsolvedGoals).mapM (contractiveMain · guarded)
-    return
+    recurseTactic contractiveMain guarded; return
 
+  -- uses an OFE.Contractive instance
   if not guarded then if ← distInstanceStep then
-    let _ ← (← getUnsolvedGoals).mapM (contractiveMain · true)
-    return
+    recurseTactic contractiveMain true; return
 
-  if ← distHypStep then
-    let _ ← (← getUnsolvedGoals).mapM (contractiveMain · guarded)
-    return
+  -- applies an OFE.DistLater hypothesis
+  if ← distHypStep then recurseTactic contractiveMain guarded; return
 
-  if ← nonexpStep then
-    let _ ← (← getUnsolvedGoals).mapM (contractiveMain · guarded)
-    return
+  -- applies a non-expansive lemma
+  if ← nonexpStep then recurseTactic contractiveMain guarded; return
 
 elab "contractive" : tactic => do
   -- intro hypotheses
@@ -92,4 +93,4 @@ elab "contractive" : tactic => do
   tryUnfoldFn
 
   -- main loop
-  contractiveMain <| ← getMainGoal
+  contractiveMain (← getMainGoal) false

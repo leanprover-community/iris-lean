@@ -59,3 +59,15 @@ open Function in
 @[rocq_alias twp_pre']
 def twp.pre' (s : Stuckness) (wp : (CoPset × Expr) × (Val -> IProp GF) -> IProp GF) :=
     uncurry <| uncurry <| @twp.pre hlc Expr State Obs Val Λ GF ι s (curry <| curry wp)
+
+/-
+Local Instance twp_pre_mono' `{!irisGS_gen hlc Λ Σ} s : BiMonoPred (twp_pre' s).
+Proof.
+  constructor.
+  - iIntros (wp1 wp2 ??) "#H"; iIntros ([[E e1] Φ]); iRevert (E e1 Φ).
+    iApply twp_pre_mono. iIntros "!>" (E e Φ). iApply ("H" $! (E,e,Φ)).
+  - intros wp Hwp n [[E1 e1] Φ1] [[E2 e2] Φ2]
+      [[?%leibniz_equiv ?%leibniz_equiv] ?]; simplify_eq/=.
+    rewrite /curry3 /twp_pre. do 26 (f_equiv || done). by apply pair_ne.
+Qed.
+-/
