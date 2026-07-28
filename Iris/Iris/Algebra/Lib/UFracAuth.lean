@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Zongyuan Liu. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Zongyuan Liu
+Authors: Zongyuan Liu, Markus de Medeiros
 -/
 module
 
@@ -62,30 +62,28 @@ nonrec instance frag_ne {q : Qp} : NonExpansive (frag q : A → UFracAuth) where
 /-! ## Discrete instances -/
 
 @[rocq_alias ufrac_auth_auth_discrete]
-instance auth_discrete {q : Qp} {a : A} [DiscreteE a] : DiscreteE (●U{q} a : UFracAuth) :=
+instance auth_discrete {q : Qp} {a : A} [DiscreteE a] : DiscreteE (●U{q} a) :=
   letI _ : DiscreteE (unit : Option (UFrac × A)) := none_is_discrete
   by infer_instance
 
 @[rocq_alias ufrac_auth_frag_discrete]
-instance frag_discrete {q : Qp} {a : A} [DiscreteE a] : DiscreteE (◯U{q} a : UFracAuth) :=
+instance frag_discrete {q : Qp} {a : A} [DiscreteE a] : DiscreteE (◯U{q} a) :=
   by infer_instance
 
 /-! ## Validity -/
 
 @[rocq_alias ufrac_auth_validN]
-theorem validN {n : Nat} {a : A} {p : Qp} (ha : ✓{n} a) :
-    ✓{n} ((●U{p} a : UFracAuth) • ◯U{p} a) := by
+theorem validN {n : Nat} {a : A} {p : Qp} (ha : ✓{n} a) : ✓{n} (●U{p} a) • ◯U{p} a := by
   simpa only [both_validN] using ⟨incN_refl _, ⟨trivial, ha⟩⟩
 
 @[rocq_alias ufrac_auth_valid]
-theorem valid {p : Qp} {a : A} (ha : ✓ a) : ✓ ((●U{p} a : UFracAuth) • ◯U{p} a) :=
+theorem valid {p : Qp} {a : A} (ha : ✓ a) : ✓ (●U{p} a) • ◯U{p} a :=
   auth_both_valid_2 ⟨trivial, ha⟩ ⟨none, rfl⟩
 
 /-! ## Agreement -/
 
 @[rocq_alias ufrac_auth_agreeN]
-theorem agreeN {n : Nat} {p : Qp} {a b : A} (h : ✓{n} ((●U{p} a : UFracAuth) • ◯U{p} b)) :
-    a ≡{n}≡ b := by
+theorem agreeN {n : Nat} {p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{p} b) : a ≡{n}≡ b := by
   obtain ⟨mc, hmc⟩ := (both_validN.mp h).1
   match mc with
   | none => exact hmc.2
@@ -94,8 +92,8 @@ theorem agreeN {n : Nat} {p : Qp} {a b : A} (h : ✓{n} ((●U{p} a : UFracAuth)
     grind
 
 @[rocq_alias ufrac_auth_agree]
-theorem agree {p : Qp} {a b : A} (h : ✓ ((●U{p} a : UFracAuth) • ◯U{p} b)) : a = b :=
-  OFE.eq_dist.mpr fun n => agreeN (valid_iff_validN.mp h n)
+theorem agree {p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{p} b) : a = b :=
+  eq_dist.mpr (agreeN <| valid_iff_validN.mp h ·)
 
 #rocq_ignore ufrac_auth_agree_L "Use agree"
 
@@ -103,7 +101,7 @@ theorem agree {p : Qp} {a b : A} (h : ✓ ((●U{p} a : UFracAuth) • ◯U{p} b
 
 @[rocq_alias ufrac_auth_includedN]
 theorem includedN {n : Nat} {p q : Qp} {a b : A}
-    (h : ✓{n} ((●U{p} a : UFracAuth) • ◯U{q} b)) : some b ≼{n} some a := by
+    (h : ✓{n} (●U{p} a) • ◯U{q} b) : some b ≼{n} some a := by
   rw [both_validN] at h
   obtain ⟨⟨mc, hmc⟩, _⟩ := h
   match mc with
@@ -111,108 +109,102 @@ theorem includedN {n : Nat} {p q : Qp} {a b : A}
   | some (_, cr) => exact ⟨some cr, hmc.2⟩
 
 @[rocq_alias ufrac_auth_included]
-theorem included [CMRA.Discrete A] {q p : Qp} {a b : A}
-    (h : ✓ ((●U{p} a : UFracAuth) • ◯U{q} b)) : some b ≼ some a := by
+theorem included [CMRA.Discrete A] {q p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{q} b) :
+    some b ≼ some a := by
   rw [auth_both_valid_discrete] at h
   obtain ⟨⟨mc, hmc⟩, _⟩ := h
   match mc with
-  | none => exact ⟨none, congrArg (fun p => some p.snd) (some_eqv_some.mp hmc)⟩
-  | some (_, cr) => exact ⟨some cr, congrArg (fun p => some p.snd) (some_eqv_some.mp hmc)⟩
+  | none => exact ⟨none, congrArg (some ·.snd) (some_eqv_some.mp hmc)⟩
+  | some (_, cr) => exact ⟨some cr, congrArg (some ·.snd) (some_eqv_some.mp hmc)⟩
 
 @[rocq_alias ufrac_auth_includedN_total]
-theorem includedN_total [IsTotal A] {n : Nat} {q p : Qp} {a b : A}
-    (h : ✓{n} ((●U{p} a : UFracAuth) • ◯U{q} b)) : b ≼{n} a :=
-  some_incN_some_iff_is_total.mp <| includedN h
+theorem includedN_total [IsTotal A] {n : Nat} {q p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{q} b) :
+    b ≼{n} a := some_incN_some_iff_is_total.mp <| includedN h
 
 @[rocq_alias ufrac_auth_included_total]
 theorem included_total [CMRA.Discrete A] [IsTotal A] {q p : Qp} {a b : A}
-    (h : ✓ ((●U{p} a : UFracAuth) • ◯U{q} b)) : b ≼ a :=
+    (h : ✓ (●U{p} a) • ◯U{q} b) : b ≼ a :=
   inc_of_some_inc_some <| included h
 
 /-! ## Auth-only validity -/
 
 @[rocq_alias ufrac_auth_auth_validN]
-theorem auth_validN {n : Nat} {q : Qp} {a : A} : (✓{n} (●U{q} a : UFracAuth)) ↔ ✓{n} a := by
+theorem auth_validN {n : Nat} {q : Qp} {a : A} : (✓{n} ●U{q} a) ↔ ✓{n} a := by
   rw [Auth.auth_validN]
   exact ⟨(·.2), (⟨trivial, ·⟩)⟩
 
 @[rocq_alias ufrac_auth_auth_valid]
-theorem auth_valid {q : Qp} {a : A} : (✓ (●U{q} a : UFracAuth)) ↔ ✓ a := by
+theorem auth_valid {q : Qp} {a : A} : (✓ ●U{q} a) ↔ ✓ a := by
   rw [Auth.auth_valid]
   exact ⟨(·.2), (⟨trivial, ·⟩)⟩
 
 /-! ## Fragment-only validity -/
 
 @[rocq_alias ufrac_auth_frag_validN]
-theorem frag_validN {n : Nat} {q : Qp} {a : A} : (✓{n} (◯U{q} a : UFracAuth)) ↔ ✓{n} a := by
+theorem frag_validN {n : Nat} {q : Qp} {a : A} : (✓{n} ◯U{q} a) ↔ ✓{n} a := by
   rw [Auth.frag_validN]
   exact ⟨(·.2), (⟨trivial, ·⟩)⟩
 
 @[rocq_alias ufrac_auth_frag_valid]
-theorem frag_valid {q : Qp} {a : A} : (✓ (◯U{q} a : UFracAuth)) ↔ ✓ a := by
+theorem frag_valid {q : Qp} {a : A} : (✓ ◯U{q} a) ↔ ✓ a := by
   rw [Auth.frag_valid]
   exact ⟨(·.2), (⟨trivial, ·⟩)⟩
 
 /-! ## Operations -/
 
 @[rocq_alias ufrac_auth_frag_op]
-theorem frag_op {q1 q2 : Qp} {a1 a2 : A} :
-    (◯U{q1 + q2} (a1 • a2) : UFracAuth) = (◯U{q1} a1) • ◯U{q2} a2 := rfl
+theorem frag_op {q1 q2 : Qp} {a1 a2 : A} : (◯U{q1 + q2} (a1 • a2)) = (◯U{q1} a1) • ◯U{q2} a2 := rfl
 
 @[rocq_alias ufrac_auth_frag_op_validN]
 theorem frag_op_validN {n : Nat} {q1 q2 : Qp} {a b : A} :
-    (✓{n} ((◯U{q1} a : UFracAuth) • ◯U{q2} b)) ↔ ✓{n} (a • b) := frag_validN
+    (✓{n} (◯U{q1} a) • ◯U{q2} b) ↔ ✓{n} (a • b) := frag_validN
 
 @[rocq_alias ufrac_auth_frag_op_valid]
-theorem frag_op_valid {q1 q2 : Qp} {a b : A} :
-    (✓ ((◯U{q1} a : UFracAuth) • ◯U{q2} b)) ↔ ✓ (a • b) := frag_valid
+theorem frag_op_valid {q1 q2 : Qp} {a b : A} : ✓ ((◯U{q1} a) • ◯U{q2} b) ↔ ✓ (a • b) := frag_valid
 
 /-! ## IsOp type class instances -/
 
 @[rocq_alias ufrac_auth_is_op]
 instance isOp_ufrac_auth {q q1 q2 : Qp} {a1 a2 : A} {a : outParam A}
     [h1 : IsOp io q q1 q2] [h2 : IsOp io a a1 a2] : IsOp io (◯U{q} a) (◯U{q1} a1) (◯U{q2} a2) where
-  is_op :=
-    (congrArg (frag · a) h1.is_op).trans <|
-      (congrArg (frag (q1 • q2)) h2.is_op).trans frag_op
+  is_op := calc
+        ◯U{q} a
+    _ = ◯U{q1 • q2} a := congrArg (frag · a) h1.is_op
+    _ = ◯U{q1 • q2} a1 • a2 := congrArg _ h2.is_op
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias ufrac_auth_is_op_core_id]
 instance isOp_ufrac_auth_core_id {q q1 q2 : Qp} {a : A} [h1 : CoreId a] [h2 : IsOp io q q1 q2] :
     IsOp io (◯U{q} a) (◯U{q1} a) (◯U{q2} a) where
-  is_op :=
-    (congrArg (frag · a) h2.is_op).trans <|
-      (congrArg (frag (q1 • q2)) (op_self a).symm).trans frag_op
+  is_op := calc
+        (◯U{q} a)
+    _ = ◯U{q1 • q2} a := congrArg (frag · a) h2.is_op
+    _ = ◯U{q1 • q2} a • a := congrArg _ (op_self a).symm
 
 /-! ## Updates -/
 
 @[rocq_alias ufrac_auth_update]
 theorem update {p q : Qp} {a b a' b' : A} (h : (a, b) ~l~> (a', b')) :
-    ((●U{p} a : UFracAuth) • ◯U{q} b) ~~> (●U{p} a') • ◯U{q} b' :=
+    ((●U{p} a) • ◯U{q} b) ~~> (●U{p} a') • ◯U{q} b' :=
   auth_update <| .option (.prod_2 _ _ h)
 
 @[rocq_alias ufrac_auth_update_surplus]
 theorem update_surplus {p q : Qp} {a b : A} (h : ✓ (a • b)) :
-    (●U{p} a : UFracAuth) ~~> (●U{p + q} (a • b)) • ◯U{q} b := by
+    (●U{p} a) ~~> (●U{p + q} (a • b)) • ◯U{q} b := by
   refine auth_update_alloc (local_update_unital.mpr fun n mpa _ heq => ?_)
   refine ⟨⟨trivial, h.validN⟩, ?_⟩
-  have hop : some ((⟨p + q⟩ : UFrac), a • b)
-      ≡{n}≡ some ((⟨q⟩ : UFrac), b) • some ((⟨p⟩ : UFrac), a) :=
-    ⟨comm.dist, op_commN⟩
-  refine hop.trans ?_
-  exact (heq.trans (unit_left_id_dist mpa)).op_r
+  refine .trans ?_ (heq.trans (unit_left_id_dist mpa)).op_r
+  exact ⟨comm.dist, op_commN⟩
 
 @[rocq_alias ufrac_auth_update_surplus_cancel]
 theorem update_surplus_cancel {p q : Qp} {a b : A} [CMRA.Cancelable b] :
-    ((●U{p + q} (a • b) : UFracAuth) • ◯U{q} b) ~~> ●U{p} a := by
+    ((●U{p + q} (a • b)) • ◯U{q} b) ~~> ●U{p} a := by
   refine auth_update_dealloc (local_update_unital.mpr fun n mpa hv heq => ?_)
   match mpa with
   | none =>
-    have hp : p + q = q := ext_iff.mp heq.1
-    grind
+    grind [show p + q = q from ext_iff.mp heq.1]
   | some (p', a') =>
-    have hpq : p + q = q + p'.frac := ext_iff.mp heq.1
-    have hp : p = p'.frac := by grind
+    have hp : p = p'.frac := by grind [show p + q = q + p'.frac from ext_iff.mp heq.1]
     refine ⟨⟨trivial, validN_op_left hv.2⟩, ?_⟩
     refine ⟨.of_eq (ext_iff.mpr hp), ?_⟩
     refine cancelableN ?_ (op_commN.trans heq.2)
