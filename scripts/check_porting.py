@@ -240,6 +240,14 @@ _DEF_RE = re.compile(
     re.MULTILINE,
 )
 
+# A mutual definition continues with `with <name>`, which declares a name just as
+# the head keyword does -- `Inductive expr := ... with val := ...` defines both.
+# Anchored at column 0 so that `with` clauses of a *nested* mutual block (a local
+# helper inside another definition's body, indented) are correctly skipped. The
+# lookahead requires a parameter list, type ascription, or `:=` to follow, so
+# prose and tactic text beginning with "with" is not mistaken for a definition.
+_WITH_DEF_RE = re.compile(r"^with\s+(\w[\w']*)\s*(?=[({:])")
+
 # Module/Section tracking: Modules qualify names (e.g., Module bi -> bi.foo),
 # but Sections do not.
 # `Module Export M` and `Module Import M` are valid forms where the name is M,
@@ -288,8 +296,22 @@ def parse_rocq_file(text: str) -> list[str]:
     """Extract fully-qualified definition names from a Rocq .v file.
 
     Module prefixes are included; Section prefixes are not.
+
+    A mutual block declares one name per `with` clause:
+
+    >>> parse_rocq_file("Inductive expr :=\\n | Val (v : val)\\nwith val :=\\n | LitV.")
+    ['expr', 'val']
+
+    Only at column 0, so an indented `with` -- a mutual helper local to another
+    definition's body -- contributes no name:
+
+    >>> parse_rocq_file("Fixpoint f x := 0\\n  with g y := 1.")
+    ['f']
     """
     text = _strip_comments(text)
+    # A mutual `with` sometimes sits alone on its line, the name following on the
+    # next. Join the two so the line-based matching below sees one head.
+    text = re.sub(r"^with[ \t]*\n[ \t]*", "with ", text, flags=re.MULTILINE)
 
     names: list[str] = []
     module_stack: list[str] = []  # current Module nesting, used for name qualification
@@ -320,8 +342,9 @@ def parse_rocq_file(text: str) -> list[str]:
         if _SKIP_RE.match(line):
             continue
 
-        # Extract definition name and qualify with Module prefix
-        if m := _DEF_RE.match(line):
+        # Extract definition name and qualify with Module prefix. A mutual
+        # block's `with` clauses declare names too, so they count as well.
+        if m := _DEF_RE.match(line) or _WITH_DEF_RE.match(line):
             ident = m.group(1)
             qualified = ".".join([*module_stack, ident]) if module_stack else ident
             names.append(qualified)
