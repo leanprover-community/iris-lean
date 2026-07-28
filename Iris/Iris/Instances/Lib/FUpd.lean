@@ -632,24 +632,17 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
     let ivar ← hyps.findWithInfo h
 
     -- Search for the later credit hypothesis from the context
-    let some ⟨⟨name, GF, natM⟩, e', hyps', out, out', _, _, pfEq⟩ ← hyps.removeG false <|
-      fun name ivar' p ty => do
-        if ivar != ivar' then return none
-        match matchBool p with
-        | .inl _ =>
-          throwError "inext: {h} is not in the spatial context"
-        | .inr _ =>
-          match_expr ty with
-          | lc GF _  _ c =>
-            match c.nat? with
-            | none => throwError "inext: {c} is not a numeral"
-            | some natM => return some (name, GF, natM)
-          | _ => return none
-    | throwError m!"inext: {h} is not a spatial later credit hypothesis"
+    let some ⟨name, _, p, ty⟩ := hyps.getDecl? ivar
+      | throwError m!"inext: unknown hypothesis {h}"
+    if isTrue p then throwError "inext: {h} is not in the spatial context"
+    let_expr lc GF _ _ c := ty
+      | throwError m!"inext: {h} is not a spatial later credit hypothesis"
+    let some natM := c.nat? | throwError "inext: {c} is not a numeral"
+    let ⟨e', hyps', out, out', _, _, pfEq⟩ := hyps.remove false ivar
 
     -- To avoid non-termination caused by type class instance check in subsequent steps
-    let some _ ← mkAppM ``InvGS #[GF] >>= (synthInstance? ·)
-    | throwError "inext: requires an InvGS (HasLC) context"
+    let some _ ← synthInstance? (← mkAppM ``InvGS #[GF])
+      | throwError "inext: requires an InvGS (HasLC) context"
 
     -- Ensure sufficient credits
     if natM < natN then throwError "inext: insufficient credits"
