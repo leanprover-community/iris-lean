@@ -628,21 +628,25 @@ public meta section
 elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
   let natN := match n with | none => 1 | some n => n.raw.toNat
 
-  ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
-    let ivar ← hyps.findWithInfo h
+  ProofModeM.runTactic λ mvar { u, prop, bi, hyps, goal, .. } => do
+    let .defEq _ ← isLevelDefEqQ u 0
+      | throwError "inext: the goal must be an `IProp` at universe level 0"
+    let ~q(IProp $GF) := prop
+      | throwError "inext: the goal must be an `IProp`"
+    let .some _ ← trySynthInstanceQ q(InvGS $GF)
+      | throwError "inext: requires an InvGS (HasLC) context"
+    let ~q(UPred.instBIUPred) := bi
+      | throwError "Expected the BI implementation of `IProp` to be `UPred.instBIUPred`"
 
     -- Search for the later credit hypothesis from the context
+    let ivar ← hyps.findWithInfo h
     let some ⟨name, _, p, ty⟩ := hyps.getDecl? ivar
       | throwError m!"inext: unknown hypothesis {h}"
     if isTrue p then throwError "inext: {h} is not in the spatial context"
-    let_expr lc GF _ _ c := ty
+    let ~q(lc $c) := ty
       | throwError m!"inext: {h} is not a spatial later credit hypothesis"
     let some natM := c.nat? | throwError "inext: {c} is not a numeral"
-    let ⟨e', hyps', out, out', _, _, pfEq⟩ := hyps.remove false ivar
-
-    -- To avoid non-termination caused by type class instance check in subsequent steps
-    let some _ ← synthInstance? (← mkAppM ``InvGS #[GF])
-      | throwError "inext: requires an InvGS (HasLC) context"
+    let ⟨e', hyps', out, _, _, _, pfEq⟩ := hyps.remove false ivar
 
     -- Ensure sufficient credits
     if natM < natN then throwError "inext: insufficient credits"
@@ -666,7 +670,7 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
     -- Update the later credits hypothesis and introduce it into the context
     | _ =>
       let newM : Q(Credit) ← pure <| mkNatLit (natM - natN)
-      let newTy : Q($prop) ← pure <| mkApp out'.appFn! newM
+      let newTy : Q($prop) := q(£ $newM)
       let newHyps := Hyps.add _ name ivar q(false) newTy hyps'
 
       let ⟨_, newHyps', pfModAction⟩ ← iModAction newHyps modality
