@@ -78,7 +78,7 @@ import Iris.Std.RocqPorting
 #rocq_concept proofmode "Intro Patterns" "IForall (pattern: *)" ported "pattern: *"
 #rocq_concept proofmode "Intro Patterns" "IAll (pattern: **)" ported "pattern: **"
 #rocq_concept proofmode "Intro Patterns" "IClear (pattern: {selpat})" ported "pattern: { H, ... }"
-#rocq_concept proofmode "Intro Patterns" "IClearFrame (pattern: {$selpat})" ported "pattern: { !H, ... }"
+#rocq_concept proofmode "Intro Patterns" "IClearFrame (pattern: {$selpat})" ported "pattern: { $H, ... }"
 
 #rocq_concept proofmode "Specialization Patterns" missing ""
 #rocq_concept proofmode "Specialization Patterns" "SIdent (pattern: H)" ported "pattern: H"

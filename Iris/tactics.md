@@ -113,9 +113,9 @@ Example:
 - `!%` — Introduce a pure proof goal and exit the proof mode.
 - `/=` — Apply simplification.
 - `//=` — Apply simplification and try solving the goal using `itrivial`. This is a shorthand for `/=` and `//`.
-- `{` [*selPats*](#selection-patterns) `}` — Clear the selection hypotheses chosen by the selection patterns *selPats*. Each element in *selPats* can be prefixed with `!` so that the chosen hypotheses are framed instead.
+- `{` [*selPats*](#selection-patterns) `}` — Clear the selection hypotheses chosen by the selection patterns *selPats*. Each element in *selPats* can be prefixed with `$` so that the chosen hypotheses are framed instead.
 
-Example: `iintro %x ⟨HP, #HQ⟩ !> {HR !HS #} → //`.
+Example: `iintro %x ⟨HP, #HQ⟩ !> {HR $HS #} → //`.
 
 ## Selection Patterns
 
