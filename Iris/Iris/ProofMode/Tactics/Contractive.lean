@@ -48,6 +48,13 @@ meta def distHypStep : TacticM Bool := do
             return true
     return false
 
+meta def tryUnfoldFn : TacticM Unit := do
+  let _ ← observing? ((← getMainTarget).withApp <| λ _ args => do
+    let fn := args[3]!.getAppFn.constName!
+    -- don't unfold primitives
+    if not <| (`Iris.BI.BIBase).isPrefixOf fn then
+      evalTactic <| ← `(tactic|unfold $(mkIdent fn); try split))
+
 elab "contractive" : tactic => do
   -- intro hypotheses
   evalTactic <| ← `(tactic|intros)
@@ -56,9 +63,8 @@ elab "contractive" : tactic => do
   while ← distIsForall <| ← getMainTarget do
     evalTactic <| ← `(tactic|intro)
 
-  -- unfold function definition, if possible
-  let _ ← observing? ((← getMainTarget).withApp <| λ _ gArgs => do
-    evalTactic <| ← `(tactic|unfold $(mkIdent gArgs[3]!.getAppFn.constName!); try split))
+  -- unfold function definition
+  tryUnfoldFn
 
   -- main loop
   while ¬(← getUnsolvedGoals).isEmpty do

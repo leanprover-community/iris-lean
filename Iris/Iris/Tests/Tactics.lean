@@ -3577,3 +3577,11 @@ example [BI PROP] {P : PROP} {m n : Nat} {T : Nat → Prop}
   | succ n IH => itrivial
 
 end iinduction
+
+section icontractive
+
+example [BI PROP] [BILaterContractive PROP] : OFE.Contractive (λP : PROP => iprop(▷ P)) where
+  distLater_dist := by
+    contractive
+
+end icontractive
