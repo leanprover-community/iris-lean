@@ -92,7 +92,7 @@ instance instFractionalOwn (γ : GName) :
   fractional p q := by
     show iOwn (E := W.inv) γ ((none, some (p + q))) ⊣⊢ _
     refine .trans ?_ iOwn_op
-    exact equiv_iff.mp (NonExpansive.eqv (.of_eq rfl))
+    exact equiv_iff.mp rfl
 
 @[rocq_alias cinv_own_as_fractional]
 instance instAsFractionalOwn (γ : GName) (q : Qp) :

@@ -87,9 +87,7 @@ instance : OFE (UPred M) where
 theorem uPred_ne {P : UPred M} {n} {m₁ m₂ : ValidAt M n} (H : (m₁ : M) ≡{n}≡ (m₂ : M)) : P n m₁ ↔ P n m₂ :=
   ⟨fun H' => P.mono H' H.to_incN .refl, fun H' => P.mono H' H.symm.to_incN .refl⟩
 
-@[rocq_alias uPred_proper]
-theorem uPred_proper {P : UPred M} {n} {m₁ m₂ : ValidAt M n} (H : (m₁ : M) ≡ (m₂ : M)) : P n m₁ ↔ P n m₂ :=
-  uPred_ne H.dist
+#rocq_ignore uPred_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias uPred_holds_ne]
 theorem uPred_holds_ne {P Q : UPred M} {n₁ n₂} {x : M}
@@ -131,12 +129,14 @@ instance [URFunctor F] : COFE.OFunctor (UPredOF F) where
   map_ne.ne _ _ _ Hx _ _ Hy _ _ z2 Hn _ := by
     simp only [uPred_map]
     exact uPred_ne <| URFunctor.map_ne.ne (Hy.le Hn) (Hx.le Hn) z2
-  map_id _ _ _ z _ _ := by
+  map_id x := OFE.eq_dist.mpr <| by
+    intro _ _ z _ _
     simp only [uPred_map]
-    exact uPred_proper <| URFunctor.map_id z
-  map_comp f g f' g' _ _ _ H _ _ := by
+    simp only [URFunctor.map_id]
+  map_comp f g f' g' x := OFE.eq_dist.mpr <| by
+    intro _ _ H _ _
     simp only [uPred_map]
-    exact uPred_proper <| URFunctor.map_comp g' f' g f H
+    simp only [URFunctor.map_comp]
 
 @[rocq_alias uPredOF_contractive]
 instance instUPredOFunctorContractive [URFunctorContractive F] : COFE.OFunctorContractive (UPredOF F) where
