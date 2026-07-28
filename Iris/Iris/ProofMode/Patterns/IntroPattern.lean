@@ -17,9 +17,13 @@ open Lean
 
 declare_syntax_cat selPatFrame
 syntax selPat : selPatFrame
+/-- Choose all hypothesis from the pure context for framing. -/
 syntax "$%" : selPatFrame
+/-- Choose a specific hypothesis from the pure context for framing. -/
 syntax "$%" noWs ident : selPatFrame
+/-- Choose all hypotheses in the intuitionistic context from framing. -/
 syntax "$#" : selPatFrame
+/-- Choose all hypotheses in the spatial context from framing. -/
 syntax "$∗" : selPatFrame
 
 declare_syntax_cat introPat
