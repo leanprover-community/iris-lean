@@ -193,7 +193,7 @@ example [BI PROP] (x : α) (_hx : x = x) (Q : PROP) : Q ⊢ Q := by
   iexact HQ
 
 /- Tests `iclear` failing -/
-/-- error: iclear: P is not affine and the goal not absorbing -/
+/-- error: icases: P is not affine and the goal not absorbing -/
 #guard_msgs in
 example [BI PROP] (P Q : PROP) : P ⊢ Q -∗ Q := by
   iintro HP HQ
@@ -382,7 +382,7 @@ example [BI PROP] (P Q : PROP) : ⊢ □ P -∗ □ Q -∗ ⌜n = n⌝ := by
   rfl
 
 /- Tests `iintro` with pure introduction failure -/
-/-- error: iintro: Q is not pure -/
+/-- error: ipure: Q is not pure -/
 #guard_msgs in
 example [BI PROP] (P Q : PROP) : P ⊢ Q := by
   iintro HP !%
@@ -1225,7 +1225,7 @@ example [BI PROP] : ⊢@{PROP} (⌜φ2⌝ -∗ <absorb> emp) := by
   intro _; trivial
 
 /- Tests `ipureintro` failure -/
-/-- error: ipureintro: P is not pure -/
+/-- error: ipure: P is not pure -/
 #guard_msgs in
 example [BI PROP] (P : PROP) : ⊢ P := by
   ipureintro
@@ -1908,7 +1908,7 @@ example [BI PROP] (P : Prop) : ⊢@{PROP} ⌜P⌝ -∗ True := by
   Tests `icases` with a case destruction pattern for rewriting but the
   hypothesis is not a pure hypothesis.
 -/
-/-- error: icases: P is not pure -/
+/-- error: ipure: P is not pure -/
 #guard_msgs in
 example [BI PROP] (P : PROP) : ⊢@{PROP} P -∗ True := by
   iintro HP
@@ -3004,7 +3004,7 @@ example {GF} [TokenG GF] {γ} :
   iexact H
 
 /- Tests `icombine` with an invalid destruction pattern. -/
-/-- error: icombine: cannot destruct iprop(<absorb> <affine> (P ∗ Q)) -/
+/-- error: icases: cannot destruct iprop(<absorb> <affine> (P ∗ Q)) -/
 #guard_msgs in
 example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
     ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <absorb> <affine> (P ∗ Q) ∗ <pers> R := by

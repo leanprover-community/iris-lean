@@ -57,17 +57,17 @@ def iPureCases (ty : Q(Prop)) (pat : TSyntax `rcasesPat)
   removing it from the context afterwards.
 -/
 def iPureRewriteCoreAux {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
-    (hyps : Hyps bi e) (goal : Q($prop)) (h : Expr) (forward : Bool) (tacName : String)
+    (hyps : Hyps bi e) (goal : Q($prop)) (h : Expr) (forward : Bool)
     (k : ∀ {e'}, Hyps bi e' → (goal' : Q($prop)) → ProofModeM Q($e' ⊢ $goal')) :
     ProofModeM Q($e ⊢ $goal) := do
   let target := q($(hyps.tm) ⊢ $goal)
   let g ← mkFreshExprSyntheticOpaqueMVar target <&> (·.mvarId!)
   let ⟨newE, eq, []⟩ ← g.rewrite target h !forward
-  | throwError "{tacName}: rewriting should not give additional subgoals"
+  | throwError "ipure: rewriting should not give additional subgoals"
   let some #[_, _, newTm, newGoal] := newE.consumeMData.appM? ``BIBase.Entails
-  | throwError "{tacName}: unable to parse the Iris entailment {newE}"
+  | throwError "ipure: unable to parse the Iris entailment {newE}"
   let some ⟨_, hyps'⟩ := parseHyps? bi newTm
-  | throwError "{tacName}: unable to parse the Iris context {newTm}"
+  | throwError "ipure: unable to parse the Iris context {newTm}"
   let gNew ← g.replaceTargetEq newE eq
   -- Apply the continuation function to the new proof goal after rewriting
   (withoutFVars (u := 0) #[h.fvarId!] <| k hyps' newGoal) >>= (gNew.assign ·)
@@ -77,13 +77,13 @@ def iPureRewriteCoreAux {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 def iPureCoreBuildProof {prop : Q(Type u)} {bi : Q(BI $prop)}
     {P P' : Q($prop)} {p : Q(Bool)} {A Q : Q($prop)} (φ : Q(Prop))
     (inst : Q(IntoPure $A $φ))
-    (pf : Q($P ⊣⊢ $P' ∗ □?$p $A)) (f : Q($φ → ($P' ⊢ $Q))) (tacName : String) :
+    (pf : Q($P ⊣⊢ $P' ∗ □?$p $A)) (f : Q($φ → ($P' ⊢ $Q))) :
     ProofModeM Q($P ⊢ $Q) := do
   match matchBool p with
   | .inl _ => return q(pure_elim_intuitionistic $pf $f)
   | .inr _ =>
     let .some _ ← trySynthInstanceQ q(TCOr (Affine $A) (Absorbing $Q))
-    | throwError "{tacName}: {A} is not affine and the goal not absorbing"
+    | throwError "ipure: {A} is not affine and the goal not absorbing"
     return q(pure_elim_spatial (A := $A) $pf $f)
 
 /--
@@ -91,37 +91,37 @@ def iPureCoreBuildProof {prop : Q(Type u)} {bi : Q(BI $prop)}
   discard the equality hypothesis.
 -/
 def iPureRewriteCore {prop : Q(Type u)} {bi : Q(BI $prop)} {P P' : Q($prop)}
-    (hyps : Hyps bi P') (p : Q(Bool)) (A Q : Q($prop)) (tacName : String)
+    (hyps : Hyps bi P') (p : Q(Bool)) (A Q : Q($prop))
     (forward : Bool) (pf : Q($P ⊣⊢ $P' ∗ □?$p $A))
     (k : ∀ {e'}, Hyps bi e' → (goal' : Q($prop)) → ProofModeM Q($e' ⊢ $goal')) :
     ProofModeM Q($P ⊢ $Q) := do
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
   let .some inst ← ProofModeM.trySynthInstanceQ q(IntoPure $A $φ)
-  | throwError "{tacName}: {A} is not pure"
+  | throwError "ipure: {A} is not pure"
   let m : Q($φ → ($P' ⊢ $Q)) ← mkFreshExprSyntheticOpaqueMVar q($φ → ($P' ⊢ $Q))
   let (h, g) ← m.mvarId!.intro1
   let f ← do
-    g.withContext do g.assign (← iPureRewriteCoreAux hyps Q (.fvar h) forward tacName k)
+    g.withContext do g.assign (← iPureRewriteCoreAux hyps Q (.fvar h) forward k)
     instantiateMVars m
-  return ← iPureCoreBuildProof φ inst pf f tacName
+  return ← iPureCoreBuildProof φ inst pf f
 
 def iPureCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     (P P' : Q($prop)) (p : Q(Bool)) (A Q : Q($prop)) (purePat : TSyntax `rcasesPat)
-    (pf : Q($P ⊣⊢ $P' ∗ □?$p $A)) (tacName : String)
+    (pf : Q($P ⊣⊢ $P' ∗ □?$p $A))
     (k : ProofModeM Q($P' ⊢ $Q)) : ProofModeM Q($P ⊢ $Q) := do
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
   let some inst ← ProofModeM.trySynthInstanceQ q(IntoPure $A $φ)
-  | throwError "{tacName}: {A} is not pure"
+  | throwError "ipure: {A} is not pure"
   let f ← iPureCases q($φ → ($P' ⊢ $Q)) purePat <| fun _ => k
-  return ← iPureCoreBuildProof φ inst pf f tacName
+  return ← iPureCoreBuildProof φ inst pf f
 
 def iPureIntroCore {u} {prop : Q(Type u)} (_bi : Q(BI $prop))
-    (e goal : Q($prop)) (tacName : String) :
+    (e goal : Q($prop)) :
     ProofModeM <| Q($e ⊢ $goal) × MVarId := do
   let b : Q(Bool) ← mkFreshExprMVarQ q(Bool)
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
   let .some h ← ProofModeM.trySynthInstanceQ q(FromPure $b $goal .out $φ)
-  | throwError "{tacName}: {goal} is not pure"
+  | throwError "ipure: {goal} is not pure"
   let m : Q($φ) ← mkFreshExprSyntheticOpaqueMVar (← instantiateMVars φ)
 
   let pf : Q($e ⊢ $goal) ← do
@@ -129,13 +129,13 @@ def iPureIntroCore {u} {prop : Q(Type u)} (_bi : Q(BI $prop))
     | .const ``true _ =>
       have : $b =Q true := ⟨⟩
       let .some _ ← trySynthInstanceQ q(Affine $e)
-        | throwError "{tacName}: context is not affine"
+        | throwError "ipure: context is not affine"
       pure q(pure_intro_affine (P := $e) (Q := $goal) $h $m)
     | .const ``false _ =>
       have : $b =Q false := ⟨⟩
       pure q(pure_intro_spatial (P := $e) (Q := $goal) $h $m)
     -- the following indicates a bug in the typeclass instances that generate b
-    | _ => throwError "{tacName}: bug in typeclass instances, cannot reduce {b} to true or false"
+    | _ => throwError "ipure: bug in typeclass instances, cannot reduce {b} to true or false"
 
   return ⟨pf, m.mvarId!⟩
 
@@ -149,7 +149,7 @@ elab "ipure " colGt hyp:ident : tactic => do
   let ivar ← hyps.findWithInfo hyp
   let ⟨e', hyps', _, out', p, _, pf⟩ := hyps.remove true ivar
 
-  let pf ← iPureCore e e' p out' goal (← `(rcasesPat| $hyp:ident)) pf "ipure" <| addBIGoal hyps' goal
+  let pf ← iPureCore e e' p out' goal (← `(rcasesPat| $hyp:ident)) pf <| addBIGoal hyps' goal
 
   mvar.assign pf
 
@@ -163,7 +163,7 @@ elab "ipure " colGt hyp:ident " with " pat:rcasesPat : tactic => do
   let ivar ← hyps.findWithInfo hyp
   let ⟨e', hyps', _, out', p, _, pf⟩ := hyps.remove true ivar
 
-  let pf ← iPureCore e e' p out' goal pat pf "ipure" <| addBIGoal hyps' goal
+  let pf ← iPureCore e e' p out' goal pat pf <| addBIGoal hyps' goal
 
   mvar.assign pf
 
@@ -183,7 +183,7 @@ elab "iempintro" : tactic => do
 -/
 elab "ipureintro" : tactic => do
   ProofModeM.runTactic λ mvar { bi, e, goal, .. } => do
-    let ⟨pf, m⟩ ← iPureIntroCore bi e goal "ipureintro"
+    let ⟨pf, m⟩ ← iPureIntroCore bi e goal
     addMVarGoal m
     mvar.assign pf
 

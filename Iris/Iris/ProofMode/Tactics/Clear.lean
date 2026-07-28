@@ -26,13 +26,13 @@ public meta section
 open Lean Elab Tactic Meta Qq
 
 def iClearCoreOne {prop : Q(Type u)} (_bi : Q(BI $prop)) (e e' : Q($prop))
-    (p : Q(Bool)) (out goal : Q($prop)) (pf : Q($e ⊣⊢ $e' ∗ □?$p $out))
-    (tacName : String) : ProofModeM Q(($e' ⊢ $goal) → $e ⊢ $goal) := do
+    (p : Q(Bool)) (out goal : Q($prop)) (pf : Q($e ⊣⊢ $e' ∗ □?$p $out)) :
+    ProofModeM Q(($e' ⊢ $goal) → $e ⊢ $goal) := do
     match matchBool p with
     | .inl _ => return q(clear_intuitionistic (Q := $goal) $pf)
     | .inr _ =>
       let .some _ ← trySynthInstanceQ q(TCOr (Affine $out) (Absorbing $goal))
-        | throwError "{tacName}: {out} is not affine and the goal not absorbing"
+        | throwError "icases: {out} is not affine and the goal not absorbing"
       return q(clear_spatial (A:=$out) $pf)
 
 private structure ClearState {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (origE goal : Q($prop)) where
@@ -40,11 +40,11 @@ private structure ClearState {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (origE go
   pf : Q(($e ⊢ $goal) → ($origE ⊢ $goal))
 
 private def ClearState.clearProofModeHyp {u prop bi origE goal} :
-    @ClearState u prop bi origE goal → String → IVarId →
+    @ClearState u prop bi origE goal → IVarId →
     ProofModeM (@ClearState u prop bi origE goal)
-  | { e, hyps, pf }, tacName, ivar => do
+  | { e, hyps, pf }, ivar => do
       let ⟨e', hyps', _, out', p, _, hrem⟩ := hyps.remove true ivar
-      let step ← iClearCoreOne bi e e' p out' goal hrem tacName
+      let step ← iClearCoreOne bi e e' p out' goal hrem
       let pf' : Q(($e' ⊢ $goal) → ($origE ⊢ $goal)) := q(λ h => $pf ($step h))
       return {  e := e', hyps := hyps', pf := pf' }
 
@@ -59,7 +59,7 @@ def iClearCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 
   -- Clear the selected Iris hypotheses first, updating the proof-mode context and proof term.
   let mut st : ClearState e goal := { e, hyps, pf := q(id) }
-  for ivar in ivars do st ← st.clearProofModeHyp "iclear" ivar
+  for ivar in ivars do st ← st.clearProofModeHyp ivar
 
   -- Lean locals are cleared afterwards; first ensure no remaining hypothesis or goal depends on them.
   for fvar in fvars do

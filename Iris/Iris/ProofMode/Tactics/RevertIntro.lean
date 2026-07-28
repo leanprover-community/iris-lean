@@ -25,7 +25,7 @@ abbrev ProofModeContinuationRevert :=
 
 def iRevertIntro
   {prop: Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)} (hyps : Hyps bi e) (goal: Q($prop))
-  (hs : List SelTarget) (tacName : String)
+  (hs : List SelTarget)
   (k : ∀ {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
     (_hyps : Hyps bi e) (goal: Q($prop)), ProofModeContinuationRevert →
     ProofModeM Q($e ⊢ $goal))
@@ -42,6 +42,6 @@ def iRevertIntro
   trace[irevertintro] s!"Calling `iRevertIntro` with {names.map (·.1)} on context {←ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
   iRevertCore hs hyps goal fun hyps goal => do
     k hyps goal fun hyps goal k' => do
-      iIntroCore hyps goal names tacName k'
+      iIntroCore hyps goal names k'
 
 initialize registerTraceClass `irevertintro

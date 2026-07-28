@@ -224,7 +224,7 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
         else
           throwMissingAlt ctor
 
-  let pf ← iRevertIntro hyps goal targets "iinduction" <|
+  let pf ← iRevertIntro hyps goal targets <|
     fun hyps' goal' kIntro => do
       -- Create a new metavariable for the proof goal upon reverting hypotheses
       let m ← mkBIGoal hyps' goal'

@@ -160,7 +160,7 @@ where go {e}
 Proof term of `hyps ⊢ goal`
 -/
 def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
-  (sel : TSyntax `term) (tacName : String)
+  (sel : TSyntax `term)
   (k : ∀ {prop' bi' P}, @Hyps u prop' bi' P → ∀ Q : Q($prop'), ProofModeM Q($P ⊢ $Q) := addBIGoal)
    : ProofModeM (Q($e ⊢ $goal)) := do
     let prop' : Q(Type u) ← mkFreshExprMVarQ q(Type u)
@@ -172,7 +172,7 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
     let Q ← mkFreshExprMVarQ q($prop')
     -- `M Q ⊢ goal`
     let .some _ ← ProofModeM.trySynthInstanceQ q(@FromModal $prop' $prop $α $bi' $bi $Φ $M $sel $goal $Q)
-      | throwError "{tacName}: {goal} is not a modality{if sel.isMVar then m!"" else m!" matching {sel}"}"
+      | throwError "imodintro: {goal} is not a modality{if sel.isMVar then m!"" else m!" matching {sel}"}"
     -- show the side condition
     let hΦ ← iSolveSidecondition q($Φ)
     -- perform modality actions, get transformed context `hyps'` and `pf : hyps ⊢ M hyps'`
@@ -188,7 +188,7 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
 -/
 elab "imodintro " colGt sel:term : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-  let pf ← iModIntroCore hyps goal sel "imodintro"
+  let pf ← iModIntroCore hyps goal sel
 
   mvar.assign pf
 

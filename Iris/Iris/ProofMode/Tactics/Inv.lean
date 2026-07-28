@@ -102,7 +102,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
         match closePat with
         | some ⟨ref, closePat⟩ =>
           let pf' ← iCasesCore hyps'' q($Q'' $x) ⟨ref, (.conjunction [casesPat.case, closePat])⟩
-            q(false) q(iprop($Pout' $x ∗ $f' $x)) "iinv"
+            q(false) q(iprop($Pout' $x ∗ $f' $x))
           mkLambdaFVars #[x] pf'
         -- Throw an error if `hclose` is not given, but `mPclose` is not `none`
         | none => throwError "iinv: missing cases pattern for the closing hypothesis"
@@ -110,7 +110,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
   | ~q(none) =>
     let pf : Q(∀ x, $e'' ∗ $Pout x ⊢ $Q' x) ←
       withLocalDeclDQ (← mkFreshUserName .anonymous) X fun x => do
-        let pf' ← iCasesCore hyps'' q($Q'' $x) casesPat q(false) q($Pout' $x) "iinv"
+        let pf' ← iCasesCore hyps'' q($Q'' $x) casesPat q(false) q($Pout' $x)
         mkLambdaFVars #[x] pf'
     return q(tac_inv_elim $inst $hϕ $pf $pfEq $pfPin)
 
