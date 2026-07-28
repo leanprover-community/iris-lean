@@ -31,7 +31,7 @@ import Iris.Std.RocqPorting
 #rocq_concept proofmode "Tactics" "iEmpIntro" ported "iempintro"
 #rocq_concept proofmode "Tactics" "iPureIntro" ported "ipureintro"
 #rocq_concept proofmode "Tactics" "iFrame (basic)" ported "iframe"
-#rocq_concept proofmode "Tactics" "iFrame (existential quantifiers)" missing ""
+#rocq_concept proofmode "Tactics" "iFrame (existential quantifiers)" ported "iframe"
 #rocq_concept proofmode "Tactics" "iRevert" ported "irevert"
 #rocq_concept proofmode "Tactics" "iPoseProof" ported "ihave _ := _"
 #rocq_concept proofmode "Tactics" "iSpecialize (basic)" ported "ispecialize"
