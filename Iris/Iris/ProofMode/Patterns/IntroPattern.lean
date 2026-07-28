@@ -42,7 +42,7 @@ syntax "!%" : introPat
 /--
   Given selection patterns `spats`, the introduction pattern `{ spats }`
   *clears* the hypotheses chosen by `spats`. Prefix an element in the selection
-  patterns with `!` to *frame* the hypotheses instead.
+  patterns with `$` to *frame* the hypotheses instead.
 -/
 syntax "{" (colGt ppSpace selPatFrame)* ppSpace "}" : introPat
 
@@ -56,6 +56,8 @@ inductive IntroPat
   | all
   | allwand
   | pureintro
+  /- Each selection pattern is paired with a Boolean value, which is `True` when
+     the selection target should be framed. -/
   | clear (selPats : List <| Bool × SelPat)
   deriving Inhabited
 
