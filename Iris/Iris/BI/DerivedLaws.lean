@@ -628,8 +628,10 @@ theorem exists_wand_forall [BI PROP] {P : PROP} {Ψ : α → PROP} :
     ((∃ x, Ψ x) -∗ P) ⊣⊢ (∀ x, Ψ x -∗ P) := by
   constructor
   · exact forall_intro (wand_mono_left <| exists_intro ·)
-  · exact wand_intro <| sep_exists_left.mp.trans <| exists_elim fun x =>
-      (sep_mono_left (forall_elim x)).trans wand_elim_left
+  · apply wand_intro
+    refine sep_exists_left.mp.trans ?_
+    refine exists_elim fun x => ?_
+    exact (sep_mono_left <| forall_elim x).trans wand_elim_left
 
 @[rocq_alias bi.and_parallel]
 theorem and_parallel [BI PROP] {P1 P2 Q1 Q2 : PROP} :
