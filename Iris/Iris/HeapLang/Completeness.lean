@@ -414,82 +414,12 @@ theorem wp_baseCompletenessGoal (e₁ : Exp) (σ : State) (E : CoPset)
       iapply BigSepS.bigSepS_singleton.mpr
       iexists (prophListResolves obs p')
       iexact Htok
-  | resolveS p v e σ w σ' κs ts hbase hp =>
-      have IH : heapInv (GF := GF) σ ⊢ iprop(|={E}=> baseCompletenessGoal e σ E) :=
-        wp_baseCompletenessGoal e σ E ⟨κs, _, _, _, hbase⟩
-      have hatom : Atomic Atomicity.StronglyAtomic
-          (Exp.resolve e (.val (.lit (.prophecy p))) (.val w)) :=
-        base_step_to_val_atomic Atomicity.StronglyAtomic
-          (BaseStep.resolveS p v e σ w σ' κs efs hbase hp)
-      have hatom_e : Atomic Atomicity.StronglyAtomic e :=
-        base_step_to_val_atomic Atomicity.StronglyAtomic hbase
-      have hne_e : toVal e = none := EctxLanguage.val_stuck hbase
-      have hp_mem : p ∈ σ.usedProphId := Std.ExtTreeSet.mem_iff_contains.symm.mpr hp
-      imodintro
-      ileft
-      iframe %hatom; clear hatom
-      iintro %Φ Hstep
-      icases Hinv with ⟨Hmap, Hproph_inv⟩
-      icases BigSepS.bigSepS_elem_of_acc hp_mem $$ Hproph_inv with ⟨⟨%pvs, Htok⟩, HcloseProph⟩
-      iapply (wp_resolve_strong hatom_e hne_e) $$ Htok
-      iintro Hele
-      ihave Hinv_full : heapInv σ $$ [Hmap HcloseProph Hele]
-      · unfold heapInv
-        iframe
-        iapply HcloseProph
-        iexists pvs; iexact Hele
-      ihave Hinner : iprop(|={E}=> baseCompletenessGoal e σ E) $$ [Hinv_full]
-      · iapply IH $$ [$]
-      iapply fupd_wp
-      imod Hinner with H
-      imodintro
-      icases H with (⟨-, Hrst⟩ | ⟨Hinv_back, Hrst_nonatom⟩)
-      · iapply Hrst
-        iintro !> %κ_e %v_e %σ_e %efs_e %Hprim_e
-        have Hbase_e : BaseStep e σ κ_e (.val v_e) σ_e efs_e := primStep_val_baseStep Hprim_e
-        imod Hstep $$ %_ %_ %_ %_ %(prim_step_resolve_of_inner (w := w) Hbase_e hp)
-          with ⟨Hwp_outer, Hefs⟩
-        imodintro
-        iframe Hefs
-        iintro ⟨Hmap_e, Hproph_inv_e⟩
-        have hp_mem_e : p ∈ σ_e.usedProphId := base_step_more_proph_ids Hbase_e p hp_mem
-        icases BigSepS.bigSepS_elem_of_acc hp_mem_e $$ Hproph_inv_e
-          with ⟨⟨%pvs2, Hele2⟩, HcloseProph_e⟩
-        iexists pvs2
-        iframe Hele2
-        iintro %pvs'' %heq Hele2'
-        subst heq
-        iapply Hwp_outer
-        unfold heapInv
-        iframe Hmap_e
-        iapply HcloseProph_e
-        iexists pvs''; iexact Hele2'
-      · iapply Hrst_nonatom
-        iintro !> %e₂_e %efs_e Htraj_e
-        imod Htraj_e $$ %_ Hinv_back with ⟨%κ_e, %σ_e, %Hprims, ⟨Hmap_e, Hproph_inv_e⟩⟩
-        obtain ⟨Hprim_e, hval_e⟩ := primSteps_atomic (e := e) hatom_e Hprims
-        obtain ⟨v_e, rfl⟩ : ∃ v_e, e₂_e = Exp.val v_e := by
-          match e₂_e, hval_e with | .val v_e, _ => exact ⟨v_e, rfl⟩
-        have Hbase_e : BaseStep e σ κ_e (.val v_e) σ_e efs_e := primStep_val_baseStep Hprim_e
-        imod Hstep $$ %_ %_ %_ %_ %(prim_step_resolve_of_inner (w := w) Hbase_e hp)
-          with ⟨Hwp_outer, Hefs⟩
-        imodintro
-        have hp_mem_e : p ∈ σ_e.usedProphId := base_step_more_proph_ids Hbase_e p hp_mem
-        icases BigSepS.bigSepS_elem_of_acc hp_mem_e $$ Hproph_inv_e
-          with ⟨⟨%pvs2, Hele2⟩, HcloseProph_e⟩
-        iframe
-        iapply wp_value'
-        iexists pvs2
-        iframe Hele2
-        iintro %pvs'' %heq Hele2'
-        subst heq
-        iapply Hwp_outer
-        unfold heapInv
-        iframe Hmap_e
-        iapply HcloseProph_e
-        iexists pvs''
-        iexact Hele2'
-termination_by e₁
+  | resolveStepS _ _ _ _ _ _ _ _ _ _ =>
+      sorry
+  | resolveFinalS _ _ _ _ _ _ _ _ _ _ _ =>
+      sorry
+  | resolveFinalWrongS _ _ _ _ _ _ _ _ _ _ =>
+      sorry
 
 section Framework
 

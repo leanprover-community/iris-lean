@@ -549,6 +549,8 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
   iintro %σ₁ %ns %obs %nt Hσ
   icases (stateInterp_split σ₁ ns obs nt).mp $$ Hσ with ⟨Hheap, Hpmap⟩
   icases ProphMap.agree obs σ₁.usedProphId p pvs $$ [$Hpmap $Hp] with %Hagree
+  have hp_mem : p ∈ σ₁.usedProphId :=
+    Std.ExtTreeSet.mem_iff_contains.symm.mpr (Std.ExtTreeSet.mem_iff_contains.mp Hagree.1)
   have hredR : Stuckness.MaybeReducible s (e, σ₁) →
       Stuckness.MaybeReducible s (hl(resolve(&e, v(#p), v(&w))), σ₁) := fun Hred_e => by
     cases s <;> simp only [Stuckness.MaybeReducible] at Hred_e ⊢
@@ -566,7 +568,8 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
   isplitr
   · ipureintro; exact hredR Hred_e
   iintro %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Hstep Hcred
-  obtain ⟨κ_inner, v_inner, hκ_eq, rfl, Hbase_e⟩ := step_resolve_decompose Hstep
+  obtain ⟨κ_inner, v_inner, hκ_eq, rfl, Hbase_e⟩ :=
+    step_resolve_decompose (hne := hne) hp_mem Hstep
   have Hsplit_e : obs = κ_inner ++ ((p, (v_inner, w)) :: obs') := by
     rw [Hsplit, hκ_eq]; simp [List.append_assoc]
   ispecialize HWPe $$ %_ %_ %_ %κ_inner %((p, (v_inner, w)) :: obs') %Hsplit_e
