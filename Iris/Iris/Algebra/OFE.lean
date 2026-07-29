@@ -44,7 +44,7 @@ theorem Dist.lt [OFE SI α] {m n : SI} {x y : α} : x ≡{n}≡ y → m < n → 
 
 @[rocq_alias dist_le]
 theorem Dist.le [OFE SI α] {m n : SI} {x y : α} (h : x ≡{n}≡ y) (h' : m ≤ n) : x ≡{m}≡ y :=
-  if hm : m = n then hm ▸ h else h.lt (Nat.lt_of_le_of_ne h' hm)
+  if hm : m = n then hm ▸ h else h.lt (SIdx.le_neq.mpr ⟨h', hm⟩)
 #rocq_ignore dist_le' "Use Dist.le"
 #rocq_ignore dist_S "Subsumed by `Dist.lt`/`Dist.le`."
 
@@ -123,7 +123,7 @@ theorem DistLater.dist_lt [OFE SI α] {m n : SI} {x y : α} (h : DistLater n x y
 /-- `DistLater n`-equivalence is equivalent to `(n + 1)`-equivalence. -/
 @[rocq_alias dist_later_S]
 theorem distLater_succ [OFE SI α] {n : SI} {x y : α} : DistLater (SIdx.succ n) x y ↔ x ≡{n}≡ y :=
-  ⟨(·.dist_lt (Nat.lt_succ_self _)), fun h1 _ h2 => h1.le (Nat.le_of_lt_succ h2)⟩
+  ⟨(·.dist_lt (SIdx.lt_succ_self _)), fun h1 _ h2 => h1.le (SIdx.lt_succ_r.mp h2)⟩
 
 theorem distLater_soundness [OFE SI α] {x y : α} (H : ∀ n, DistLater n x y → x ≡{n}≡ y) : x = y := by
   refine eq_dist.mpr fun n => ?_
@@ -184,7 +184,7 @@ theorem discreteE_eqv [OFE SI α] {x y : α} (h : x = y) : DiscreteE x ↔ Discr
 /-- For discrete OFEs, `n`-equivalence implies equivalence for any `n`. -/
 @[rocq_alias discrete]
 theorem Discrete.discrete [OFE SI α] [Discrete α] {n : SI} {x y : α} (h : x ≡{n}≡ y) : x = y :=
-  discrete_0 (h.le (Nat.zero_le _))
+  discrete_0 (h.le SIdx.le_0_l)
 export OFE.Discrete (discrete)
 
 instance Discrete.toDiscreteE [OFE SI α] [Discrete α] (x : α) : DiscreteE x := ⟨discrete_0⟩
@@ -200,7 +200,7 @@ theorem Discrete.discrete_iff [OFE SI α] [Discrete α] (n) {x y : α} : x = y �
 
 @[rocq_alias discrete_iff_0]
 theorem Discrete.discrete_iff_0 [OFE SI α] [Discrete α] (n) {x y : α} : x ≡{0}≡ y ↔ x ≡{n}≡ y :=
-  ⟨discrete_n, fun h => h.le (Nat.zero_le _)⟩
+  ⟨discrete_n, fun h => h.le SIdx.le_0_l⟩
 
 #rocq_ignore boolO "Canonical Leibniz OFE on `bool`; Lean uses `ofDiscrete Bool`."
 #rocq_ignore natO "Canonical Leibniz OFE on `nat`; Lean uses `ofDiscrete Nat`."
@@ -956,7 +956,7 @@ theorem chain_none_const [SIdx SI] [OFE SI V] {c : Chain (Option V)} (H : c n = 
     c = Chain.const none := by
   rcases c with ⟨c, Hc⟩
   congr 1; refine funext (fun k => ?_)
-  rcases Nat.le_or_ge n k with (Hnk|Hnk)
+  rcases SIdx.le_total (I := SI) with (Hnk|Hnk)
   · suffices c k ≡{n}≡ c n by cases _ : c k <;> simp_all
     exact Hc Hnk
   · suffices c k ≡{k}≡ c n by cases _ : c k <;> simp_all
@@ -1054,7 +1054,7 @@ instance instIsCOFEOption [OFE SI α] [IsCOFE SI α] : IsCOFE SI (Option α) whe
       refine (some_dist_some.mpr conv_compl).trans ?_
       dsimp only [Chain.map_apply]
       cases h2 : c.chain n with
-      | none => exact (h1 ▸ h2 ▸ c.cauchy (by omega : 0 ≤ n)).elim
+      | none => exact (h1 ▸ h2 ▸ c.cauchy SIdx.le_0_l).elim
       | some _ => rfl
 #rocq_ignore option_compl "Local Compl definition; folded into Lean's IsCOFE instance."
 
@@ -1090,12 +1090,12 @@ instance instIsCOFESum  [OFE SI α] [OFE SI β] [IsCOFE SI α] [IsCOFE SI β] : 
       dsimp only [Chain.map_apply]
       cases h2 : c.chain n with
       | inl _ => simp
-      | inr _ => exact (h1 ▸ h2 ▸ c.cauchy (by omega : 0 ≤ n)).elim
+      | inr _ => exact (h1 ▸ h2 ▸ c.cauchy SIdx.le_0_l).elim
     | inr seed =>
       refine (dist_inr conv_compl).trans ?_
       dsimp only [Chain.map_apply]
       cases h2 : c.chain n with
-      | inl _ => exact (h1 ▸ h2 ▸ c.cauchy (by omega : 0 ≤ n)).elim
+      | inl _ => exact (h1 ▸ h2 ▸ c.cauchy SIdx.le_0_l).elim
       | inr _ => simp
 #rocq_ignore inl_chain "Local helper for `sum_compl`; folded into Lean's IsCOFE instance."
 #rocq_ignore inr_chain "Local helper for `sum_compl`; folded into Lean's IsCOFE instance."
@@ -1103,7 +1103,7 @@ instance instIsCOFESum  [OFE SI α] [OFE SI β] [IsCOFE SI α] [IsCOFE SI β] : 
 
 @[rocq_alias sigT_chain_const_proj1]
 theorem Sigma.chain_const_proj1 {P : α → Type _} [∀ x, OFE SI (P x)] [∀ x, IsCOFE SI (P x)]
-  (c : Chain (Sigma P)) n : (c n).fst = (c 0).fst := (c.cauchy (by omega : 0 ≤ n)).choose
+  (c : Chain (Sigma P)) n : (c n).fst = (c 0).fst := (c.cauchy SIdx.le_0_l).choose
 
 @[rocq_alias chain_map_snd]
 def Sigma.chain_map_snd {P : α → Type _} [∀ x, OFE SI (P x)] [∀ x, IsCOFE SI (P x)] (c : Chain (Sigma P)) :
@@ -1218,7 +1218,7 @@ def optionChain (c : Chain (Option α)) (x : α) : Chain α := by
 instance isCOFE_option [IsCOFE SI α] : IsCOFE SI (Option α) where
   compl c := (c 0).map fun x => IsCOFE.compl (optionChain c x)
   conv_compl {n : SI} c := by
-    have := c.cauchy (Nat.zero_le n); revert this
+    have := c.cauchy (SIdx.le_0_l (n := n)); revert this
     rcases c.chain 0 with _|x' <;> rcases e : c.chain n with _|y' <;> simp [Dist, Option.Forall₂]
     refine fun _ => OFE.dist_eqv.trans IsCOFE.conv_compl ?_
     simp [optionChain, e]
@@ -1795,8 +1795,8 @@ instance isOFE_later [OFE SI A] : OFE SI (Later A) where
   eq_dist {x y} := by
     obtain ⟨a⟩ := x; obtain ⟨b⟩ := y
     simp only [Later.next.injEq, eq_dist]
-    exact ⟨fun H n => (H n).distLater, fun H n => (H (n+1)).dist_lt (Nat.lt_succ_self n)⟩
-  dist_lt Hxy Hmn _ Hkm := Hxy _ (Nat.lt_trans Hkm Hmn)
+    exact ⟨fun H n => (H n).distLater, fun H n => (H (SIdx.succ n)).dist_lt (SIdx.lt_succ_self n)⟩
+  dist_lt Hxy Hmn _ Hkm := Hxy _ (SIdx.lt_trans Hkm Hmn)
 #rocq_ignore laterO "Use the later type"
 
 #rocq_ignore later_equiv "Local Equiv instance; folded into Lean's OFE (Later A) instance."
@@ -1810,8 +1810,8 @@ instance NextContractive {A : Type _} [OFE SI A] : Contractive (@Later.next A) w
 
 @[rocq_alias later_chain]
 def laterChain [OFE SI A] (c : Chain (Later A)) : Chain A where
-  chain n := (c (Nat.succ n)).car
-  cauchy Hle := c.cauchy (Nat.succ_le_succ Hle) _ (Nat.lt_succ_self _)
+  chain n := (c (SIdx.succ n)).car
+  cauchy Hle := c.cauchy (SIdx.succ_le_mono.mp Hle) _ (SIdx.lt_succ_self _)
 
 @[rocq_alias later_cofe]
 instance isCOFE_later [OFE SI A] [IsCOFE SI A] : IsCOFE SI (Later A) where
