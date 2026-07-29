@@ -346,16 +346,16 @@ theorem ownI_alloc_open [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
   · unfold ownI; rw [HEQ]; isplit <;> iassumption
 
 @[rocq_alias wsat_alloc]
-theorem wsat_alloc [WP : WsatGpreS GF] :
+theorem wsat_alloc [instWp : WsatGpreS GF] :
     ⊢ |==> ∃ (W : WsatGS GF), wsat (W := W) ∗ ownE ⊤ := by
-  imod (iOwn_alloc (E := WP.inv) (Auth (.own 1) ∅) auth_one_valid) with ⟨%γ, H⟩
-  imod (iOwn_alloc (E := WP.enabled) (valid ⊤) ⟨⟩) with ⟨%γe, He⟩
-  imod (iOwn_alloc (E := WP.disabled) (valid ∅) ⟨⟩) with ⟨%γd, Hd⟩
+  imod (iOwn_alloc (E := instWp.inv) (Auth (.own 1) ∅) auth_one_valid) with ⟨%γ, H⟩
+  imod (iOwn_alloc (E := instWp.enabled) (valid ⊤) ⟨⟩) with ⟨%γe, He⟩
+  imod (iOwn_alloc (E := instWp.disabled) (valid ∅) ⟨⟩) with ⟨%γd, Hd⟩
   imodintro
   let W : WsatGS GF := {
-    inv := WP.inv,
-    enabled := WP.enabled,
-    disabled := WP.disabled,
+    inv := instWp.inv,
+    enabled := instWp.enabled,
+    disabled := instWp.disabled,
     invariant_name := γ,
     enabled_name := γe,
     disabled_name := γd

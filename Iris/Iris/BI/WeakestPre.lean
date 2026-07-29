@@ -1,21 +1,7 @@
 module
 
 public import Iris.Std.CoPset
-public import Iris.BI
-public meta import Iris.BI
-public import Iris.BI.BIBase
-public meta import Iris.Std.Rewrite
-public import Std
-meta import Lean
-public import Lean
-
 public import Iris.BI.BI
-public import Iris.BI.Classes
-public import Iris.BI.DerivedLaws
-public import Iris.BI.DerivedLawsLater
-public import Iris.BI.Extensions
-public import Iris.BI.SIProp
-public meta import Iris.Std.RocqPorting
 
 public section
 
@@ -129,14 +115,14 @@ meta def wpTexanTriple : Lean.Macro
   | `(⦃ $P:term ⦄ $wpExpr ⦃ $[$[$xs]* ,]? RET $pat ; $Q:term ⦄)
   | `({{ $P:term }} $wpExpr {{ $[$[$xs]* ,]? RET $pat ; $Q:term }}) => do
 
-    let transform (xs : Array (TSyntax [`Lean.binderIdent, `Lean.Parser.Term.bracketedBinder])) : MacroM <| TSyntaxArray [`ident, `Lean.Parser.Term.hole, `Lean.Parser.Term.bracketedBinder] := 
+    let transform (xs : Array (TSyntax [`Lean.binderIdent, `Lean.Parser.Term.bracketedBinder])) : MacroM <| TSyntaxArray [`ident, `Lean.Parser.Term.hole, `Lean.Parser.Term.bracketedBinder] :=
       xs.mapM fun
         | `(binderIdent|_) => `(hole|_)
         | `(binderIdent|$i:ident) => `(ident|$i)
         | `(bracketedBinder|$x) => `(bracketedBinder|$x)
 
     let k ← match xs with
-            | some xs => 
+            | some xs =>
               let xs ← transform xs -- TSyntax cast
               `(iprop(∀ $xs*, $Q:term -∗ Φ $pat))
             | none => `($Q:term -∗ Φ $pat)
