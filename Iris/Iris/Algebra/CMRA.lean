@@ -7,6 +7,7 @@ module
 
 public import Iris.Algebra.OFE
 public import Iris.Algebra.Monoid
+public import Iris.Algebra.StepIndexFinite
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
@@ -15,7 +16,7 @@ namespace Iris
 open OFE
 
 @[rocq_alias cmra]
-class CMRA (α : Type _) extends OFE α where
+class CMRA (α : Type _) extends OFE Nat α where
   pcore : α → Option α
   op : α → α → α
   ValidN : Nat → α → Prop
@@ -49,7 +50,7 @@ class CMRA (α : Type _) extends OFE α where
 #rocq_ignore cmra_ofeO "Not needed."
 
 /-- Reduction of `pcore_op_mono` to regular monotonicity -/
-theorem pcore_op_mono_of_core_op_mono [OFE α] (op : α → α → α) (pcore : α → Option α)
+theorem pcore_op_mono_of_core_op_mono [OFE Nat α] (op : α → α → α) (pcore : α → Option α)
     (h : (∀ x cx y : α, (∃ z, y = op x z) → pcore x = some cx →
       ∃ cy, pcore y = some cy ∧ ∃ z, cy = op cx z))
     (x cx) (e : pcore x = some cx) (y) : ∃ cy, pcore (op x y) = some (op cx cy) :=
@@ -759,11 +760,11 @@ variable {α : Type _} [CMRA α]
 
 theorem IdFree.of_dist {x₁ x₂ : α} {n} (e : x₁ ≡{n}≡ x₂) (h : IdFree x₁) : IdFree x₂ where
   id_free0_r z v := fun h₂ =>
-    have ee := Dist.le e (Nat.zero_le _)
+    have ee := Dist.le e (SIdx.le_0_l)
     have := calc
-      x₁ • z ≡{0}≡ x₂ • z := op_left_dist z ee
+      x₁ • z ≡{(0 : Nat)}≡ x₂ • z := op_left_dist z ee
       _      ≡{0}≡ x₂ := h₂
-      _      ≡{0}≡ x₁ := ee.symm
+      _      ≡{(0 : Nat)}≡ x₁ := ee.symm
     h.id_free0_r _ ((validN_dist_iff ee).mpr v) this
 
 theorem _root_.Iris.OFE.Dist.idFree {x₁ x₂ : α} (e : x₁ ≡{n}≡ x₂) : IdFree x₁ ↔ IdFree x₂ :=
@@ -773,7 +774,7 @@ theorem _root_.Iris.OFE.Dist.idFree {x₁ x₂ : α} (e : x₁ ≡{n}≡ x₂) :
 
 @[rocq_alias id_freeN_r]
 theorem id_freeN_r {n n'} {x : α} [IdFree x] {y} (v : ✓{n} x) : ¬(x • y ≡{n'}≡ x) :=
-  id_free0_r _ (validN_of_le (Nat.zero_le _) v) |>.imp (·.le (Nat.zero_le _))
+  id_free0_r _ (validN_of_le (SIdx.le_0_l) v) |>.imp (·.le (SIdx.le_0_l))
 
 @[rocq_alias id_freeN_l]
 theorem id_freeN_l {n n'} {x : α} [IdFree x] {y} (v : ✓{n} x) : ¬(y • x ≡{n'}≡ x) :=
@@ -953,7 +954,7 @@ infixr:25 " -C> " => Hom
 
 instance [CMRA β] : CoeFun (α -C> β) (fun _ => α → β) := ⟨fun F => F.f⟩
 
-instance [CMRA β] : OFE (α -C> β) where
+instance [CMRA β] : OFE Nat (α -C> β) where
   Dist n f g := f.toHom ≡{n}≡ g.toHom
   dist_eqv := {
     refl _ := dist_eqv.refl _
@@ -1004,27 +1005,27 @@ end CMRA
 section rFunctor
 
 @[rocq_alias rFunctor]
-class RFunctor (F : COFE.OFunctorPre) where
-  [cmra [COFE α] [COFE β] : CMRA (F α β)]
-  map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+class RFunctor (F : COFE.OFunctorPre Nat) where
+  [cmra [COFE Nat α] [COFE Nat β] : CMRA (F α β)]
+  map [COFE Nat α₁] [COFE Nat α₂] [COFE Nat β₁] [COFE Nat β₂] :
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -C> F α₂ β₂
-  map_ne [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+  map_ne [COFE Nat α₁] [COFE Nat α₂] [COFE Nat β₁] [COFE Nat β₂] :
     NonExpansive₂ (@map α₁ α₂ β₁ β₂ _ _ _ _)
-  map_id [COFE α] [COFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x = x
-  map_comp [COFE α₁] [COFE α₂] [COFE α₃] [COFE β₁] [COFE β₂] [COFE β₃]
+  map_id [COFE Nat α] [COFE Nat β] (x : F α β) : map (Hom.id (α := α)) (Hom.id (α := β)) x = x
+  map_comp [COFE Nat α₁] [COFE Nat α₂] [COFE Nat α₃] [COFE Nat β₁] [COFE Nat β₂] [COFE Nat β₃]
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x = map g g' (map f f' x)
 
 @[rocq_alias rFunctorContractive]
-class RFunctorContractive (F : COFE.OFunctorPre) extends (RFunctor F) where
-  map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+class RFunctorContractive (F : COFE.OFunctorPre Nat) extends (RFunctor F) where
+  map_contractive [COFE Nat α₁] [COFE Nat α₂] [COFE Nat β₁] [COFE Nat β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
 attribute [reducible, instance] RFunctor.cmra
 
 
 @[rocq_alias rFunctor_to_oFunctor]
-instance RFunctor.toOFunctor [R : RFunctor F] : COFE.OFunctor F where
+instance RFunctor.toOFunctor [R : RFunctor F] : COFE.OFunctor Nat F where
   ofe        := RFunctor.cmra.toOFE
   map a b    := (RFunctor.map a b).toHom
   map_ne.ne  := RFunctor.map_ne.ne
@@ -1033,7 +1034,7 @@ instance RFunctor.toOFunctor [R : RFunctor F] : COFE.OFunctor F where
 
 @[rocq_alias rFunctor_to_oFunctor_contractive]
 instance RFunctorContractive.toOFunctorContractive
-    [RFunctorContractive F] : COFE.OFunctorContractive F where
+    [RFunctorContractive F] : COFE.OFunctorContractive Nat F where
   map_contractive.1 := map_contractive.1
 
 end rFunctor
@@ -1041,20 +1042,20 @@ end rFunctor
 section urFunctor
 
 @[rocq_alias urFunctor]
-class URFunctor (F : COFE.OFunctorPre) where
-  [cmra [COFE α] [COFE β] : UCMRA (F α β)]
-  map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+class URFunctor (F : COFE.OFunctorPre Nat) where
+  [cmra [COFE Nat α] [COFE Nat β] : UCMRA (F α β)]
+  map [COFE Nat α₁] [COFE Nat α₂] [COFE Nat β₁] [COFE Nat β₂] :
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -C> F α₂ β₂
-  map_ne [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+  map_ne [COFE Nat α₁] [COFE Nat α₂] [COFE Nat β₁] [COFE Nat β₂] :
     NonExpansive₂ (@map α₁ α₂ β₁ β₂ _ _ _ _)
-  map_id [COFE α] [COFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x = x
-  map_comp [COFE α₁] [COFE α₂] [COFE α₃] [COFE β₁] [COFE β₂] [COFE β₃]
+  map_id [COFE Nat α] [COFE Nat β] (x : F α β) : map (Hom.id (α := α)) (Hom.id (α := β)) x = x
+  map_comp [COFE Nat α₁] [COFE Nat α₂] [COFE Nat α₃] [COFE Nat β₁] [COFE Nat β₂] [COFE Nat β₃]
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x = map g g' (map f f' x)
 
 @[rocq_alias urFunctorContractive]
-class URFunctorContractive (F : COFE.OFunctorPre) extends URFunctor F where
-  map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+class URFunctorContractive (F : COFE.OFunctorPre Nat) extends URFunctor F where
+  map_contractive [COFE Nat α₁] [COFE Nat α₂] [COFE Nat β₁] [COFE Nat β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
 attribute [reducible, instance] URFunctor.cmra
@@ -1153,7 +1154,7 @@ end DiscreteFunO
 section DiscreteFunURF
 
 @[rocq_alias discrete_funURF]
-instance urFunctorDiscreteFunOF {C} (F : C → COFE.OFunctorPre) [∀ c, URFunctor (F c)] :
+instance urFunctorDiscreteFunOF {C} (F : C → COFE.OFunctorPre Nat) [∀ c, URFunctor (F c)] :
     URFunctor (DiscreteFunOF F) where
   map f g := {
     toHom := COFE.OFunctor.map f g
@@ -1168,7 +1169,7 @@ instance urFunctorDiscreteFunOF {C} (F : C → COFE.OFunctorPre) [∀ c, URFunct
   map_comp f g f' g' x := COFE.OFunctor.map_comp f g f' g' x
 
 @[rocq_alias discrete_funURF_contractive]
-instance DiscreteFunOF_URFC {C} (F : C → COFE.OFunctorPre) [HURF : ∀ c, URFunctorContractive (F c)] :
+instance DiscreteFunOF_URFC {C} (F : C → COFE.OFunctorPre Nat) [HURF : ∀ c, URFunctorContractive (F c)] :
     URFunctorContractive (DiscreteFunOF F) where
   map_contractive.1 h _ _ := URFunctorContractive.map_contractive.distLater_dist h _
 
@@ -1556,23 +1557,26 @@ section unit
 #rocq_ignore unit_core_id "Subsumed by unit_CoreId"
 
 @[rocq_alias unitR, rocq_alias unit_cmra_mixin]
-instance cmraUnit : CMRA Unit where
-  pcore _ := some ()
-  op _ _ := ()
-  ValidN _ _ := True
-  Valid _ := True
-  op_ne.ne _ _ _ := id
-  pcore_ne _ _ := ⟨(), rfl, .rfl⟩
-  validN_ne _ := id
-  valid_iff_validN := ⟨fun _ _ => ⟨⟩, fun _ => ⟨⟩⟩
-  validN_succ := id
-  validN_op_left := id
-  assoc := rfl
-  comm := rfl
-  pcore_op_left _ := rfl
-  pcore_idem _ := rfl
-  pcore_op_mono _ _ := ⟨.unit, rfl⟩
-  extend _ _ := ⟨(), (), rfl, .rfl, .rfl⟩
+instance cmraUnit : CMRA Unit :=
+  letI : OFE Nat Unit := unitOFE
+  {
+    pcore _ := some ()
+    op _ _ := ()
+    ValidN _ _ := True
+    Valid _ := True
+    op_ne.ne _ _ _ := id
+    pcore_ne _ _ := ⟨(), rfl, .rfl⟩
+    validN_ne _ := id
+    valid_iff_validN := ⟨fun _ _ => ⟨⟩, fun _ => ⟨⟩⟩
+    validN_succ := id
+    validN_op_left := id
+    assoc := rfl
+    comm := rfl
+    pcore_op_left _ := rfl
+    pcore_idem _ := rfl
+    pcore_op_mono _ _ := ⟨.unit, rfl⟩
+    extend _ _ := ⟨(), (), rfl, .rfl, .rfl⟩
+  }
 
 end unit
 
@@ -1721,7 +1725,7 @@ section ProdRF
 open RFunctor
 
 @[rocq_alias prodRF]
-instance instRFunctorProdOF [RFunctor F1] [RFunctor F2] : RFunctor (ProdOF F1 F2) where
+instance instRFunctorProdOF [RFunctor F1] [RFunctor F2] : RFunctor (ProdOF Nat F1 F2) where
   map f g := Prod.mapC (map f g) (map f g)
   map_ne.ne _ _ _ Hx _ _ Hy _ :=
     Prod.map_ne (fun _ => map_ne.ne Hx Hy _) (fun _ => map_ne.ne Hx Hy _)
@@ -1732,7 +1736,7 @@ instance instRFunctorProdOF [RFunctor F1] [RFunctor F2] : RFunctor (ProdOF F1 F2
 @[rocq_alias prodRF_contractive]
 instance instRFunctorContractiveProdOF
     [RFunctorContractive F1] [RFunctorContractive F2] :
-    RFunctorContractive (ProdOF F1 F2) where
+    RFunctorContractive (ProdOF Nat F1 F2) where
   map_contractive.1 H _ :=
     Prod.map_ne (fun _ => RFunctorContractive.map_contractive.1 H _)
       (fun _ => RFunctorContractive.map_contractive.1 H _)
@@ -1741,7 +1745,7 @@ end ProdRF
 
 section optionOF
 
-variable {F : COFE.OFunctorPre}
+variable {F : COFE.OFunctorPre Nat}
 
 @[rocq_alias optionURF]
 instance urFunctorOptionOF [RFunctor F] : URFunctor (OptionOF F) where
