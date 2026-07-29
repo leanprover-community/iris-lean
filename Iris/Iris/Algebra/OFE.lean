@@ -5,7 +5,7 @@ Authors: Mario Carneiro, Sebastian Graf, Sergei Stepanenko
 -/
 module
 
-public meta import Iris.Algebra.StepIndex
+public import Iris.Algebra.StepIndex
 public meta import Iris.Std.RocqPorting
 
 @[expose] public section
@@ -1601,48 +1601,79 @@ section Fixpoint
 variable [SIdx SI]
 
 @[rocq_alias LimitPreserving]
-def LimitPreserving [COFE SI α] (P : α → Prop) : Prop :=
-  ∀ (c : Chain α), (∀ n, P (c n)) → P (COFE.compl c)
+structure LimitPreserving [COFE SI α] (P : α → Prop) : Prop where
+  compl (c : Chain α) : (∀ n, P (c n)) → P (COFE.compl c)
+  lbcompl {n : SI} (hn : SIdx.Limit n) (c : BChain α n) :
+    (∀ m (hm : m < n), P (c.bchain m hm)) → P (IsCOFE.lbcompl hn c)
 
 @[rocq_alias limit_preserving_const]
 theorem LimitPreserving.const [COFE SI α] {P : Prop} : LimitPreserving fun (_ : α) => P := by
-  simp [LimitPreserving]
+  sorry -- simp [LimitPreserving]
 
 @[rocq_alias limit_preserving_discrete]
 theorem LimitPreserving.discrete [COFE SI α] {P : α → Prop} :
     (∀ {x y : α}, x ≡{0}≡ y → (P x → P y)) → LimitPreserving P :=
-  fun Hdisc _ H => Hdisc COFE.conv_compl.symm (H _)
+  sorry -- fun Hdisc _ H => Hdisc COFE.conv_compl.symm (H _)
 
 @[rocq_alias limit_preserving_and]
 theorem LimitPreserving.and [COFE SI α] {P Q : α → Prop} (HP : LimitPreserving P)
     (HQ : LimitPreserving Q) : LimitPreserving fun a => P a ∧ Q a :=
-  fun _ HPQ => ⟨HP _ (fun n => (HPQ n).left), HQ _ (fun n => (HPQ n).right)⟩
+  sorry -- fun _ HPQ => ⟨HP _ (fun n => (HPQ n).left), HQ _ (fun n => (HPQ n).right)⟩
 
 @[rocq_alias limit_preserving_forall]
 theorem LimitPreserving.forall [COFE SI α] (P : β → α → Prop) (Hlim : ∀ y, LimitPreserving (P y)) :
     LimitPreserving (∀ y, P y ·) :=
-  fun c H y => Hlim y c (H · y)
+  sorry -- fun c H y => Hlim y c (H · y)
 
 @[rocq_alias limit_preserving_impl]
 theorem LimitPreserving.impl [COFE SI α] (P1 P2 : α → Prop)
     (HP1 : ∀ {x y : α}, x ≡{0}≡ y → P1 x → P1 y)
     (Hcompl : LimitPreserving P2) :
     LimitPreserving (fun x => P1 x → P2 x) :=
-  fun _ Hc HP1c => Hcompl _ <| fun _ => Hc _ (HP1 (COFE.conv_compl' SIdx.le_0_l) HP1c)
+  sorry -- fun _ Hc HP1c => Hcompl _ <| fun _ => Hc _ (HP1 (COFE.conv_compl' SIdx.le_0_l) HP1c)
 
 @[rocq_alias limit_preserving_equiv]
 theorem LimitPreserving.equiv [COFE SI α] [COFE SI β] (f g : α -n> β) :
     LimitPreserving (fun x => f x = g x) := by
-  intro c Hfg
-  refine eq_dist.mpr fun n => ?_
-  apply (COFE.compl_map _ _).symm.dist.trans
-  apply (COFE.conv_compl' SIdx.le_refl).trans
-  apply (Hfg _).dist.trans
-  exact g.ne.ne COFE.conv_compl.symm
+  sorry
+  -- intro c Hfg
+  -- refine eq_dist.mpr fun n => ?_
+  -- apply (COFE.compl_map _ _).symm.dist.trans
+  -- apply (COFE.conv_compl' SIdx.le_refl).trans
+  -- apply (Hfg _).dist.trans
+  -- exact g.ne.ne COFE.conv_compl.symm
 
 @[rocq_alias limit_preserving_ext]
 theorem LimitPreserving.ext {α} [COFE SI α] {P Q : α -> Prop} (he : ∀ {x}, (P x ↔ Q x))
-    (hp : LimitPreserving P) : LimitPreserving Q := fun _ => (he.1 <| hp _ <| fun _ => he.2 <| · _)
+    (hp : LimitPreserving P) : LimitPreserving Q :=
+  sorry -- fun _ => (he.1 <| hp _ <| fun _ => he.2 <| · _)
+
+section BCompl
+
+variable [SIdx SI] [COFE SI α] [Inhabited α]
+
+@[rocq_alias bcompl]
+def bcompl (n : SI) (c : BChain α n) : α :=
+  match SIdx.case n with
+  | .inl _              => default
+  | .inr (.inl ⟨m, hm⟩) => c.bchain m (SIdx.lt_succ_diag_r' hm)
+  | .inr (.inr hlim)    => IsCOFE.lbcompl hlim c
+
+@[rocq_alias conv_bcompl]
+theorem conv_bcompl {n : SI} (c : BChain α n) {m} (hm : m < n) :
+    bcompl n c ≡{m}≡ c.bchain m hm := sorry
+
+@[rocq_alias bcompl_ne]
+theorem bcompl_ne {n : SI} (c1 c2 : BChain α n) {m : SI}
+    (Hc : ∀ p (hp : p < n), c1.bchain p hp ≡{m}≡ c2.bchain p hp) :
+    bcompl n c1 ≡{m}≡ bcompl n c2 := sorry
+
+@[rocq_alias limit_preserving_bcompl]
+theorem LimitPreserving.bcompl {P : α → Prop} (n : SI) (c : BChain α n)
+    (H0 : n ≠ 0 ∨ P default) (HP : LimitPreserving P)
+    (Hc : ∀ m (hm : m < n), P (c.bchain m hm)) : P (bcompl n c) := sorry
+
+end BCompl
 
 def Fixpoint.chain [OFE SI α] [Inhabited α] (f : α → α) [Contractive f] : Chain α where
   chain n := Nat.repeat f (n + 1) default
