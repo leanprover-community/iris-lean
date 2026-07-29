@@ -6,6 +6,7 @@ Authors: Mario Carneiro, Sebastian Graf
 module
 
 public import Iris.Algebra.OFE
+public import Iris.Algebra.StepIndexFinite
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
@@ -15,23 +16,26 @@ meta import Iris.Std.RocqPorting
 namespace Iris.COFE.OFunctor
 open OFE
 
-variable {F : ∀ α β [COFE α] [COFE β], Type u} [OFunctorContractive F]
-variable [∀ α [COFE α], IsCOFE (F α α)]
+variable [SIdx SI]
+
+variable {F : ∀ α β [COFE Nat α] [COFE Nat β], Type u} [OFunctorContractive Nat F]
+variable [∀ α [COFE Nat α], IsCOFE Nat (F α α)]
+local instance : COFE Nat Unit := unitCOFE
 variable [inh : Inhabited (F (ULift Unit) (ULift Unit))]
 
 namespace Fix.Impl
 
 variable (F) in
 @[rocq_alias solver.A']
-def A' : Nat → Σ α : Type u, COFE α
+def A' : Nat → Σ α : Type u, COFE Nat α
   | 0 => ⟨ULift Unit, inferInstance⟩
   | n+1 => let ⟨A, _⟩ := A' n; ⟨F A A, inferInstance⟩
 
 variable (F) in
 def A (n : Nat) : Type u := (A' F n).1
 
-instance instA' (n) : COFE (A' F n).1 := (A' F n).2
-instance instA (n) : COFE (A F n) := (A' F n).2
+instance instA' (n) : COFE Nat (A' F n).1 := (A' F n).2
+instance instA (n) : COFE Nat (A F n) := (A' F n).2
 #rocq_ignore solver.A_cofe "Inference succeeds automatically via `instA`/`instA'`"
 
 variable (F) in
@@ -77,7 +81,7 @@ structure Tower : Type u where
 instance : CoeFun (Tower F) (fun _ => ∀ k, A F k) := ⟨Tower.val⟩
 
 @[rocq_alias solver.T]
-instance : OFE (Tower F) where
+instance : OFE Nat (Tower F) where
   Dist n f g := ∀ k, f k ≡{n}≡ g k
   dist_eqv := {
     refl _ _ := dist_eqv.refl _
@@ -92,17 +96,20 @@ instance : OFE (Tower F) where
 #rocq_ignore solver.tower_ofe_mixin "Not needed"
 
 @[rocq_alias solver.tower_chain]
-def towerChain (c : Chain (Tower F)) (k : Nat) : Chain (A F k) where
+def towerChain (c : Chain (SI := Nat) (Tower F)) (k : Nat) : Chain (A F k) where
   chain i := c.1 i k
   cauchy h := c.cauchy h k
 
-instance : COFE (Tower F) where
+instance : COFE Nat (Tower F) where
   compl c := by
     refine ⟨fun k => compl ⟨fun i => c.1 i k, fun h => c.cauchy h k⟩, ?_⟩
     refine OFE.eq_dist.mpr (fun n => ?_)
     refine ((down ..).ne.1 conv_compl).trans <| .trans ?_ conv_compl.symm
     exact (c.chain n).down.dist
   conv_compl _ := conv_compl
+  lbcompl := sorry
+  conv_lbcompl := sorry
+  lbcompl_ne := sorry
 
 #rocq_ignore solver.tower_cofe "Use IsCOFE instance"
 #rocq_ignore solver.tower_compl "Use IsCOFE instance"
@@ -318,7 +325,7 @@ variable (F) in
 def Fix : Type u := Tower F
 
 instance : Inhabited (Fix F) := inferInstanceAs (Inhabited (Tower F))
-instance : COFE (Fix F) := inferInstanceAs (COFE (Tower F))
+instance : COFE Nat (Fix F) := inferInstanceAs (COFE Nat (Tower F))
 
 def Fix.iso : OFE.Iso (F (Fix F) (Fix F)) (Fix F) := Tower.iso
 
