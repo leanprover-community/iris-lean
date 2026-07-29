@@ -30,7 +30,7 @@ inductive DFrac where
 #rocq_ignore DfracOwn_inj "Not needed"
 #rocq_ignore DfracBoth_inj "Not needed"
 
-@[simp] instance : COFE DFrac := COFE.ofDiscrete _
+@[simp] instance : COFE Nat DFrac := COFE.ofDiscrete _
 instance : OFE.Discrete DFrac := ⟨fun h => h⟩
 #rocq_ignore dfracO "Use DFrac type with typeclass inference"
 

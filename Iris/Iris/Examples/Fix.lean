@@ -25,10 +25,10 @@ tactics for simplification/rewriting.
 section Fix
 open Iris OFE COFE
 
-variable [OFE Val] [OFE Err] [IsCOFE Val] [IsCOFE Err] [Inhabited Err]
+variable [OFE Nat Val] [OFE Nat Err] [IsCOFE Nat Val] [IsCOFE Nat Err] [Inhabited Err]
 
-abbrev DomF : OFunctorPre :=
-  SumOF (constOF Val) (SumOF (constOF Err) (SumOF (LaterOF IdOF) (LaterOF (HomOF IdOF IdOF))))
+abbrev DomF : OFunctorPre Nat :=
+  SumOF Nat (constOF Val) (SumOF Nat (constOF Err) (SumOF Nat (LaterOF IdOF) (LaterOF (HomOF IdOF IdOF))))
 
 instance : Inhabited (DomF (Val := Val) (Err := Err) (ULift Unit) (ULift Unit)) :=
   ⟨.inr (.inr (.inr ⟨id, inferInstance⟩))⟩
@@ -36,13 +36,13 @@ instance : Inhabited (DomF (Val := Val) (Err := Err) (ULift Unit) (ULift Unit)) 
 end Fix
 
 open Iris OFE COFE in
-abbrev Dom (Val : Type _) (Err : Type _) [OFE Val] [OFE Err] [IsCOFE Val] [IsCOFE Err] [Inhabited Err] :=
+abbrev Dom (Val : Type _) (Err : Type _) [OFE Nat Val] [OFE Nat Err] [IsCOFE Nat Val] [IsCOFE Nat Err] [Inhabited Err] :=
   OFunctor.Fix (DomF (Val := Val) (Err := Err))
 
 namespace Dom
 open Iris OFE COFE
 
-variable [OFE V] [OFE E] [IsCOFE V] [IsCOFE E] [Inhabited E]
+variable [OFE Nat V] [OFE Nat E] [IsCOFE Nat V] [IsCOFE Nat E] [Inhabited E]
 
 def fold : V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom V E) -n> Dom V E :=
   OFunctor.Fix.fold (F := DomF (Val := V) (Err := E))

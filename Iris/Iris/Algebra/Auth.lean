@@ -71,7 +71,7 @@ abbrev Auth (A : Type _) [UCMRA A] :=
 namespace Auth
 variable [UCMRA A]
 
-instance : OFE (Auth A) := View.instOFE
+instance : OFE Nat (Auth A) := View.instOFE
 instance : CMRA (Auth A) := View.instCMRA
 instance : UCMRA (Auth A) := View.instUCMRA
 
@@ -464,10 +464,10 @@ theorem authViewRel_map [UCMRA A'] [UCMRA B'] (g : A' -C> B') (n : Nat) (a : A')
   fun ⟨hinc, hv⟩ => ⟨CMRA.Hom.monoN g n hinc, CMRA.Hom.validN g hv⟩
 
 @[rocq_alias authURF]
-abbrev AuthURF (T : COFE.OFunctorPre) [URFunctor T] : COFE.OFunctorPre :=
+abbrev AuthURF (T : COFE.OFunctorPre Nat) [URFunctor T] : COFE.OFunctorPre Nat :=
   fun A B _ _ => Auth (T A B)
 
-instance instURFunctorAuthURF {T : COFE.OFunctorPre} [URFunctor T] :
+instance instURFunctorAuthURF {T : COFE.OFunctorPre Nat} [URFunctor T] :
     URFunctor (AuthURF T) where
   map {A A'} {B B'} _ _ _ _ f g :=
     mapC
@@ -487,16 +487,16 @@ instance instURFunctorAuthURF {T : COFE.OFunctorPre} [URFunctor T] :
       (congrArg (View.map _ _ · _) (funext fun _ => URFunctor.map_comp f g f' g' _))
 
 @[rocq_alias authURF_contractive]
-instance instURFunctorContractiveAuthURF {T : COFE.OFunctorPre} [URFunctorContractive T] :
+instance instURFunctorContractiveAuthURF {T : COFE.OFunctorPre Nat} [URFunctorContractive T] :
     URFunctorContractive (AuthURF T) where
   map_contractive.1 h x := by
     apply map_ne <;> apply URFunctorContractive.map_contractive.1 h
 
 @[rocq_alias authRF]
-abbrev AuthRF (T : COFE.OFunctorPre) [URFunctor T] : COFE.OFunctorPre :=
+abbrev AuthRF (T : COFE.OFunctorPre Nat) [URFunctor T] : COFE.OFunctorPre Nat :=
   fun A B _ _ => Auth (T A B)
 
-instance instRFunctorAuthRF {T : COFE.OFunctorPre} [URFunctor T] :
+instance instRFunctorAuthRF {T : COFE.OFunctorPre Nat} [URFunctor T] :
     RFunctor (AuthRF T) where
   map {A A'} {B B'} _ _ _ _ f g :=
     mapC
@@ -516,7 +516,7 @@ instance instRFunctorAuthRF {T : COFE.OFunctorPre} [URFunctor T] :
       (congrArg (View.map _ _ · _) (funext fun _ => URFunctor.map_comp f g f' g' _))
 
 @[rocq_alias authRF_contractive]
-instance instRFunctorContractiveAuthRF {T : COFE.OFunctorPre} [URFunctorContractive T] :
+instance instRFunctorContractiveAuthRF {T : COFE.OFunctorPre Nat} [URFunctorContractive T] :
     RFunctorContractive (AuthRF T) where
   map_contractive.1 h x := by
     apply View.map_ne <;> apply URFunctorContractive.map_contractive.1 h

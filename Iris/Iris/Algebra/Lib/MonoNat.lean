@@ -28,7 +28,7 @@ scoped instance : LawfulLeftIdentity (Add.add (α := MaxNat)) (0 : MaxNat) where
   left_id := Nat.zero_max
 scoped instance : Std.IdempotentOp (Add.add (α := MaxNat)) where
   idempotent x := by simp [Add.add]
-scoped instance : COFE MaxNat := COFE.ofDiscrete _
+scoped instance : COFE Nat MaxNat := COFE.ofDiscrete _
 scoped instance : OFE.Discrete MaxNat := ⟨fun h => h⟩
 scoped instance : UCMRA MaxNat := OrdCommMonoidLike.instUCMRAOfLawfulLeftIdentityAddZero
 scoped instance : CMRA.Discrete MaxNat := OrdCommMonoidLike.instDiscrete

@@ -57,4 +57,8 @@ theorem Contractive.succNat [OFE Nat α] [OFE Nat β] (f : α → β) [Contracti
     (h : x ≡{n}≡ y) : f x ≡{n.succ}≡ f y :=
   Contractive.distLater_dist <| distLater_succ.mpr h
 
+instance DiscreteO.instCOFE_Nat {α : Type _} : COFE Nat (DiscreteO α) := DiscreteO.instCOFE
+instance DiscreteO.discrete_Nat {α : Type _} : OFE.Discrete (SI := Nat) (DiscreteO α) := DiscreteO.OFE
+instance unitCOFE_Nat : COFE Nat Unit := COFE.unitCOFE
+
 end OFE

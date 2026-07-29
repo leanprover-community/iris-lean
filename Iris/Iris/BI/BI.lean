@@ -6,6 +6,7 @@ Authors: Lars König, Mario Carneiro
 module
 
 public import Iris.Algebra.OFE
+public import Iris.Algebra.StepIndexFinite
 public import Iris.BI.BIBase
 
 @[expose] public section
@@ -21,7 +22,7 @@ theorem liftRel_eq : liftRel (@Eq α) A B ↔ A = B := by
   simp [liftRel, forall_and, iff_def, funext_iff]
 
 /-- Require that a separation logic with carrier type `PROP` fulfills all necessary axioms. -/
-class BI (PROP : Type _) extends COFE PROP, BI.BIBase PROP where
+class BI (PROP : Type _) extends COFE Nat PROP, BI.BIBase PROP where
   entails_refl {P : PROP} : P ⊢ P
   entails_trans {P Q R : PROP} : (P ⊢ Q) → (Q ⊢ R) → P ⊢ R
   equiv_iff {P Q : PROP} : (P = Q) ↔ P ⊣⊢ Q := by rw [OFE.eq_dist]; simp

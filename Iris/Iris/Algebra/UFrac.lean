@@ -36,7 +36,7 @@ namespace UFrac
 #rocq_ignore ufrac_pcore_instance "Use CMRA instance"
 #rocq_ignore ufrac_valid_instance "Use CMRA instance"
 
-@[simp] instance : COFE UFrac := COFE.ofDiscrete _
+@[simp] instance : COFE Nat UFrac := COFE.ofDiscrete _
 instance : OFE.Discrete UFrac := ⟨fun h => h⟩
 
 @[simp] theorem dist_iff {n} {x y : UFrac} : x ≡{n}≡ y ↔ x = y := Iff.rfl

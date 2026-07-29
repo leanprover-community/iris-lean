@@ -18,20 +18,20 @@ namespace Iris
 open COFE Std CMRA
 
 /-- Apply an OFunctor at a fixed type -/
-abbrev COFE.OFunctorPre.ap (F : OFunctorPre) (T : Type _) [COFE T] :=
+abbrev COFE.OFunctorPre.ap (F : OFunctorPre Nat) (T : Type _) [COFE Nat T] :=
   F T T
 
 /-- Apply a list of OFunctors at a fixed type and index -/
-abbrev BundledGFunctors.api (FF : BundledGFunctors) (τ : GType) (T : Type _) [COFE T] :=
+abbrev BundledGFunctors.api (FF : BundledGFunctors) (τ : GType) (T : Type _) [COFE Nat T] :=
   FF τ |>.fst |>.ap T
 
 /-- Transport an OFunctorPre application along equality of the OFunctorPre.  -/
-theorem transpAp {F1 F2 : OFunctorPre} (H : F1 = F2) {T} [COFE T] : F1.ap T = F2.ap T :=
+theorem transpAp {F1 F2 : OFunctorPre Nat} (H : F1 = F2) {T} [COFE Nat T] : F1.ap T = F2.ap T :=
   congrArg (OFunctorPre.ap · T) H
 
 section TranspAp
 
-variable [RF₁ : RFunctorContractive F₁] [RF₂ : RFunctorContractive F₂] [COFE T]
+variable [RF₁ : RFunctorContractive F₁] [RF₂ : RFunctorContractive F₂] [COFE Nat T]
 
 theorem OFE.transpAp_eqv_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x y : F₁.ap T} (H : x ≡{n}≡ y) :
     (transpAp h_fun).mp x ≡{n}≡ (transpAp h_fun).mp y := by
@@ -61,7 +61,7 @@ section ElemG
 
 /-- `ElemG` takes functors instead of CMRAs -/
 @[rocq_alias inG]
-class ElemG (FF : BundledGFunctors) (F : OFunctorPre) [RFunctorContractive F] where
+class ElemG (FF : BundledGFunctors) (F : OFunctorPre Nat) [RFunctorContractive F] where
   τ : GType
   transp : FF τ = ⟨F, ‹_›⟩
 
@@ -71,29 +71,29 @@ open OFE
 
 variable [I : RFunctorContractive F]
 
-theorem ElemG.transpMap (E : ElemG GF F) T [OFE T] : (GF E.τ).fst = F :=
+theorem ElemG.transpMap (E : ElemG GF F) T [OFE Nat T] : (GF E.τ).fst = F :=
   Sigma.mk.inj E.transp |>.1
 
-theorem ElemG.transpClass (E : ElemG GF F) T [OFE T] : (GF E.τ).snd ≍ I :=
+theorem ElemG.transpClass (E : ElemG GF F) T [OFE Nat T] : (GF E.τ).snd ≍ I :=
   Sigma.mk.inj E.transp |>.2
 
-def ElemG.bundle (E : ElemG GF F) [COFE T] : F.ap T → GF.api E.τ T :=
+def ElemG.bundle (E : ElemG GF F) [COFE Nat T] : F.ap T → GF.api E.τ T :=
   transpAp (E.transpMap T) |>.mpr
 
-def ElemG.unbundle (E : ElemG GF F) [COFE T] : GF.api E.τ T → F.ap T :=
+def ElemG.unbundle (E : ElemG GF F) [COFE Nat T] : GF.api E.τ T → F.ap T :=
   transpAp (E.transpMap T) |>.mp
 
-theorem ElemG.bundle_unbundle (E : ElemG GF F) [COFE T] (x : GF.api E.τ T) :
+theorem ElemG.bundle_unbundle (E : ElemG GF F) [COFE Nat T] (x : GF.api E.τ T) :
     E.bundle (E.unbundle x) = x := by simp [bundle, unbundle]
 
-theorem ElemG.unbundle_bundle (E : ElemG GF F) [COFE T] (x : F.ap T) :
+theorem ElemG.unbundle_bundle (E : ElemG GF F) [COFE Nat T] (x : F.ap T) :
     E.unbundle (E.bundle x) = x := by simp [bundle, unbundle]
 
-instance ElemG.bundle.ne {E : ElemG GF F} [COFE T] :
+instance ElemG.bundle.ne {E : ElemG GF F} [COFE Nat T] :
     OFE.NonExpansive (E.bundle (T := T)) where
   ne {_ _ _} := OFE.transpAp_eqv_mp (E.transpMap T).symm (E.transpClass T).symm
 
-instance ElemG.unbundle.ne {E : ElemG GF F} [COFE T] :
+instance ElemG.unbundle.ne {E : ElemG GF F} [COFE Nat T] :
     OFE.NonExpansive (E.unbundle (T := T)) where
   ne {_ _ _} H := OFE.transpAp_eqv_mp (E.transpMap T) (E.transpClass T) H
 
@@ -443,7 +443,7 @@ theorem iSingleton_op_validN_at_γ {a : F.ap (IProp GF)} (Hv : ✓{n} mf) :
     · simp; exact extract_frame_validN (Hv E.τ) h_at
 
 @[rocq_alias iRes_singleton_discrete]
-instance iSingleton_discreteE {v : F.ap (IProp GF)} [OFE.DiscreteE v] :
+instance iSingleton_discreteE {v : F.ap (IProp GF)} [inst : OFE.DiscreteE v] :
     OFE.DiscreteE (iSingleton F γ v) where
   discrete {w} H := by
     refine OFE.eq_dist.mpr fun n τ => ?_
@@ -460,7 +460,7 @@ instance iSingleton_discreteE {v : F.ap (IProp GF)} [OFE.DiscreteE v] :
         · refine some_dist_some.mpr (Eq.dist ?_)
           refine (congrArg unfoldi.f ?_).trans (IProp.unfoldi_foldi x)
           refine (congrArg E.bundle ?_).trans (ElemG.bundle_unbundle E _)
-          refine OFE.DiscreteE.discrete ?_
+          refine inst.discrete ?_
           refine (ElemG.unbundle_bundle E v).dist.symm.trans ?_
           refine NonExpansive.ne <| (IProp.foldi_unfoldi _).dist.symm.trans (NonExpansive.ne Hk)
       · rw [GenMap.singleton_map_none hk] at Hk ⊢

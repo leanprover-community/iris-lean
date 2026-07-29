@@ -37,7 +37,7 @@ scoped instance : LeftIdentity (Add.add (α := Credit)) (0 : Credit) where
 scoped instance : LawfulLeftIdentity (Add.add (α := Credit)) (0 : Credit) := ⟨Nat.zero_add⟩
 scoped instance : LeftCancelAdd Credit := ⟨Nat.add_left_cancel⟩
 
-scoped instance : COFE Credit := COFE.ofDiscrete _
+scoped instance : COFE Nat Credit := COFE.ofDiscrete _
 scoped instance : Discrete Credit := ⟨fun h => h⟩
 scoped instance : UCMRA Credit := CommMonoidLike.instUCMRA
 scoped instance : CMRA.Discrete Credit := CommMonoidLike.instDiscrete

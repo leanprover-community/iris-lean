@@ -56,12 +56,12 @@ section OFE
 
 open OFE
 
-variable [LawfulPartialMap H Pos] [OFE A]
+variable [LawfulPartialMap H Pos] [OFE Nat A]
 
 #rocq_ignore reservation_map_ofe_mixin "Not needed"
 
 @[rocq_alias reservation_mapO]
-instance : OFE (ReservationMap A H) where
+instance : OFE Nat (ReservationMap A H) where
   Dist n x y := x.data ≡{n}≡ y.data ∧ x.token ≡{n}≡ y.token
   dist_eqv := {
     refl _ := ⟨.rfl, rfl⟩,

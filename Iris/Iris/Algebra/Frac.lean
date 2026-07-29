@@ -62,7 +62,7 @@ instance instHDivQpQpQp : HDiv Qp Qp Qp where
 def Qp.divide_even (q : Qp) (n : Nat) (hn : 0 < n) : Qp :=
   ⟨q.val / n, Rat.div_pos q.2 (by exact_mod_cast hn)⟩
 
-instance instCOFEQp : COFE Qp := COFE.ofDiscrete _
+instance instCOFEQp : COFE Nat Qp := COFE.ofDiscrete _
 
 instance instCMRAQp : CMRA Qp where
   pcore _ := none

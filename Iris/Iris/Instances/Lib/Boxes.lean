@@ -23,8 +23,10 @@ abbrev BoolO := DiscreteO Bool
 
 variable (GF : BundledGFunctors)
 
-abbrev BoxF : OFunctorPre :=
-  ProdOF (AuthURF (OptionOF (ExclOF (constOF BoolO))))
+local instance discreteO_cofe {α : Type _} : COFE Nat (DiscreteO α) := DiscreteO.instCOFE
+
+abbrev BoxF : OFunctorPre Nat :=
+  ProdOF Nat (AuthURF (OptionOF (ExclOF (constOF BoolO))))
     (OptionOF (AgreeRF (LaterOF IdOF)))
 
 @[rocq_alias boxG]

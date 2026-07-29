@@ -20,7 +20,7 @@ open OFE
 
 namespace PartialMap
 
-instance instOFE [LawfulPartialMap M K] [OFE V] : OFE (M V) where
+instance instOFE [LawfulPartialMap M K] [OFE Nat V] : OFE Nat (M V) where
   Dist n s0 s1 := get? s0 ≡{n}≡ get? s1
   dist_eqv     := ⟨fun _ => .of_eq rfl, (·.symm), (·.trans ·)⟩
   eq_dist {s0 s1} := by
@@ -28,54 +28,57 @@ instance instOFE [LawfulPartialMap M K] [OFE V] : OFE (M V) where
     exact ⟨fun h n k => Dist.of_eq (h k), fun h k => eq_dist.mpr fun n => h n k⟩
   dist_lt      := dist_lt
 
-@[simp] def toMap [LawfulPartialMap M K] [OFE V] : (M V) -n> (K → Option V) where
+@[simp] def toMap [LawfulPartialMap M K] [OFE Nat V] : (M V) -n> (K → Option V) where
   f x := get? x
   ne.1 {_ _ _} H k := H k
 
-@[simp] def ofMap [LawfulPartialMap M K] [R : RepFunMap M K] [OFE V] :  (K → Option V) -n> (M V) where
+@[simp] def ofMap [LawfulPartialMap M K] [R : RepFunMap M K] [OFE Nat V] :  (K → Option V) -n> (M V) where
   f x := of_fun x
   ne.1 {_ _ _} H k := by simp only [get_of_fun, H k]
 
-instance get?_ne [LawfulPartialMap M K] [OFE V] (k : K) : NonExpansive (get? · k : M V → Option V) where
+instance get?_ne [LawfulPartialMap M K] [OFE Nat V] (k : K) : NonExpansive (get? · k : M V → Option V) where
   ne {_ _ _} Ht := Ht k
 
-instance [LawfulPartialMap M K] [OFE V] (k : K) : NonExpansive₂ (insert · k · : M V → V → M V) where
+instance [LawfulPartialMap M K] [OFE Nat V] (k : K) : NonExpansive₂ (insert · k · : M V → V → M V) where
   ne {_ _ _} Hv {_ _} Ht k' := by
     by_cases h : k = k'
     · simp [get?_insert_eq h, Ht]
     · simp [get?_insert_ne h, Hv k']
 
-theorem eqv_of_Equiv [OFE V] [LawfulPartialMap M K] {t1 t2 : M V} (H : PartialMap.equiv t1 t2) : t1 = t2 :=
+theorem eqv_of_Equiv [OFE Nat V] [LawfulPartialMap M K] {t1 t2 : M V} (H : PartialMap.equiv t1 t2) : t1 = t2 :=
   eq_dist.mpr fun _ k => Dist.of_eq (H k)
 
-instance [LawfulPartialMap M K] [OFE V] (op : K → V → V → V) [∀ k, NonExpansive₂ (op k)] :
+instance [LawfulPartialMap M K] [OFE Nat V] (op : K → V → V → V) [∀ k, NonExpansive₂ (op k)] :
     NonExpansive₂ (merge (M := M) op) where
   ne _ {_ _} Ht {_ _} Hs k := by simp only [get?_merge]; exact NonExpansive₂.ne (Ht k) (Hs k)
 
 /-- Project a chain of stores through its kth coordinate to a chain of values. -/
-def chain [LawfulPartialMap M K] [OFE V] (k : K) (c : Chain (M V)) : Chain (Option V) where
+def chain [LawfulPartialMap M K] [OFE Nat V] (k : K) (c : Chain (M V)) : Chain (Option V) where
   chain i := get? (c i) k
   cauchy Hni := c.cauchy Hni k
 
-theorem chain_get [LawfulPartialMap M K] [OFE V] (k : K) (c : Chain (M V)) :
+theorem chain_get [LawfulPartialMap M K] [OFE Nat V] (k : K) (c : Chain (M V)) :
     (chain k c) i = get? (c i) k := by simp [chain]
 
 end PartialMap
 
-instance Heap.instCOFE [LawfulPartialMap M K] [COFE V] : COFE (M V) where
+instance Heap.instCOFE [LawfulPartialMap M K] [COFE Nat V] : COFE Nat (M V) where
   compl c := bindAlter (fun _ => COFE.compl <| c.map ⟨_, PartialMap.get?_ne ·⟩) (c 0)
   conv_compl {_ c} k := by
     rw [get?_bindAlter]
     rcases H : get? (c.chain 0) k
     · simp [← PartialMap.chain_get, chain_none_const (c := PartialMap.chain k c) (n := 0) (H▸rfl)]
     · exact IsCOFE.conv_compl
+  lbcompl := sorry
+  conv_lbcompl := sorry
+  lbcompl_ne := sorry
 
-instance instDiscreteHeap [LawfulPartialMap M K] [OFE V] [Discrete V] : Discrete (M V) where
+instance instDiscreteHeap [LawfulPartialMap M K] [OFE Nat V] [Discrete V] : Discrete (M V) where
   discrete_0 h := OFE.eq_dist.mpr <| by
     intro _ k
     exact (Discrete.discrete_0 (h k)).dist
 
-instance instDiscreteESingleton [LawfulPartialMap M K] [DecidableEq K] [OFE V] {v : V}
+instance instDiscreteESingleton [LawfulPartialMap M K] [DecidableEq K] [OFE Nat V] {v : V}
     [ha : DiscreteE v] {k : K} : DiscreteE (PartialMap.singleton (M := M) k v) where
   discrete {y} h := OFE.eq_dist.mpr <| by
     intro n k'
@@ -87,14 +90,14 @@ instance instDiscreteESingleton [LawfulPartialMap M K] [DecidableEq K] [OFE V] {
       refine (Option.none_is_discrete.discrete (.trans ?_ (h k'))).dist
       simp [LawfulPartialMap.get?_singleton, hh, ↓reduceIte]
 
-instance instDiscreteEEmpty [LawfulPartialMap M K] [OFE V] : DiscreteE (∅ : M V) where
+instance instDiscreteEEmpty [LawfulPartialMap M K] [OFE Nat V] : DiscreteE (∅ : M V) where
   discrete {y} h := OFE.eq_dist.mpr <| by
     intro n k
     simp only [LawfulPartialMap.get?_empty]
     refine (DiscreteE.discrete (.trans ?_ (h k))).dist
     simp [LawfulPartialMap.get?_empty]
 
-theorem singleton_dist [LawfulPartialMap M K] [DecidableEq K] [OFE V] {n : Nat} {x y : V}
+theorem singleton_dist [LawfulPartialMap M K] [DecidableEq K] [OFE Nat V] {n : Nat} {x y : V}
     (h : x ≡{n}≡ y) (k : K) : PartialMap.singleton (M := M) k x ≡{n}≡ PartialMap.singleton k y := by
   intro k'
   simp only [LawfulPartialMap.get?_singleton]
@@ -573,30 +576,30 @@ namespace PartialMap
 
 def map (f : α → β) : H α → H β := PartialMap.bindAlter (fun _ a => some <| f a)
 
-instance [OFE α] [OFE β] {f : α → β} [hne : OFE.NonExpansive f] : OFE.NonExpansive (map H f) where
+instance [OFE Nat α] [OFE Nat β] {f : α → β} [hne : OFE.NonExpansive f] : OFE.NonExpansive (map H f) where
   ne := by
     simp only [OFE.Dist, Option.Forall₂, map, get?_bindAlter, Option.bind]
     refine fun n m1 m2 => forall_imp fun k => ?_
     cases get? m1 k <;> cases get? m2 k <;> simp
     apply OFE.NonExpansive.ne
 
-theorem map_id [OFE α] (a : H α) :
+theorem map_id [OFE Nat α] (a : H α) :
     PartialMap.map H id a = a := OFE.eq_dist.mpr <| by
   intro n x
   simp [PartialMap.map, get?_bindAlter, Option.bind]
   rcases get? a x <;> simp
 
-def mapO [OFE α] [OFE β] (f : α -n> β) : OFE.Hom (H α) (H β) where
+def mapO [OFE Nat α] [OFE Nat β] (f : α -n> β) : OFE.Hom (H α) (H β) where
   f := map H f
   ne := inferInstance
 
-theorem map_ne [OFE α] [OFE β] (f g : α -> β) {heq : f ≡{n}≡ g} : map H f m ≡{n}≡ map H g m := by
+theorem map_ne [OFE Nat α] [OFE Nat β] (f g : α -> β) {heq : f ≡{n}≡ g} : map H f m ≡{n}≡ map H g m := by
   simp [OFE.Dist, Option.Forall₂, map, get?_bindAlter]
   intro k
   cases get? m k <;> simp
   exact heq _
 
-theorem map_compose [OFE α] [OFE β] [OFE γ] (f : α -> β) (g : β -> γ) m :
+theorem map_compose [OFE Nat α] [OFE Nat β] [OFE Nat γ] (f : α -> β) (g : β -> γ) m :
     map H (g.comp f) m = map H g (map H f m) := OFE.eq_dist.mpr <| by
   intro n k
   simp [map, get?_bindAlter]
@@ -627,10 +630,10 @@ def mapC [CMRA α] [CMRA β] (f : α -C> β) : CMRA.Hom (H α) (H β) where
     cases get? m1 k <;> cases get? m2 k <;> simp
     exact (CMRA.Hom.op f _ _).dist
 
-abbrev PartialMapOF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
+abbrev PartialMapOF (F : COFE.OFunctorPre Nat) : COFE.OFunctorPre Nat :=
   fun A B _ _ => H (F A B)
 
-instance {F} [COFE.OFunctor F] : COFE.OFunctor (PartialMapOF H F) where
+instance {F} [COFE.OFunctor Nat F] : COFE.OFunctor Nat (PartialMapOF H F) where
   ofe := inferInstance
   map f g := mapO H (COFE.OFunctor.map f g)
   map_ne {_} _ _ _ _ _ _ _ := by

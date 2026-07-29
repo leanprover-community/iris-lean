@@ -21,7 +21,7 @@ open BI CMRA Agree OFE UPred IProp Std ProofMode COFE
 /-! ## Saved anything -/
 
 @[rocq_alias savedAnythingG]
-class SavedAnythingG (GF : BundledGFunctors) (F : OFunctorPre) [OFunctorContractive F] where
+class SavedAnythingG (GF : BundledGFunctors) (F : OFunctorPre Nat) [OFunctorContractive Nat F] where
   [elemG : ElemG GF (DFracAgree.DFracAgreeRF F)]
 
 attribute [reducible, instance] SavedAnythingG.elemG
@@ -30,13 +30,13 @@ attribute [reducible, instance] SavedAnythingG.elemG
 #rocq_ignore «subG_savedAnythingΣ» "Subsumed by BundledGFunctors typeclass synthesis"
 
 @[rocq_alias saved_anything_own]
-def saved_anything_own {GF : BundledGFunctors} {F : OFunctorPre} [OFunctorContractive F]
+def saved_anything_own {GF : BundledGFunctors} {F : OFunctorPre Nat} [OFunctorContractive Nat F]
     [SavedAnythingG GF F] (γ : GName) (dq : DFrac) (x : F.ap (IProp GF)) : IProp GF :=
   iOwn (F := DFracAgree.DFracAgreeRF F) γ (DFracAgree.mk dq x)
 
 section saved_anything
 
-variable {GF : BundledGFunctors} {F : OFunctorPre} [OFunctorContractive F] [SavedAnythingG GF F]
+variable {GF : BundledGFunctors} {F : OFunctorPre Nat} [OFunctorContractive Nat F] [SavedAnythingG GF F]
 
 @[rocq_alias saved_anything_discarded_persistent]
 instance saved_anything_discarded_persistent (γ : GName) (x : F.ap (IProp GF)) :

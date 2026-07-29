@@ -24,8 +24,8 @@ open BI CMRA OFE Iris Std LawfulSet Excl COFE ProofMode
 
 /-! # Cancelable Invariants -/
 
-abbrev CInvF : OFunctorPre :=
-  ProdOF (constOF (Option (Excl Unit))) (constOF (Option Qp))
+abbrev CInvF : OFunctorPre Nat :=
+  ProdOF Nat (constOF (Option (Excl Unit))) (constOF (Option Qp))
 
 @[rocq_alias cinvG]
 class CInvG (GF : BundledGFunctors) where

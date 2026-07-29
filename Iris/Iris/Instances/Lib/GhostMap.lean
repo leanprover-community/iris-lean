@@ -228,7 +228,7 @@ theorem ghost_map_alloc_strong_empty [DecidableEq K] (P : GName → Prop)
 theorem ghost_map_alloc [DecidableEq K] (m : H V) :
     ⊢@{IProp GF} |==> ∃ γ, (γ ↪●MAP m) ∗ [∗map] k ↦ v ∈ m, γ ↪◯MAP[k] v := by
   imod (ghost_map_alloc_strong (fun _ => True) m) with ⟨%γ, -, H1, H2⟩
-  · intro N; exists N; simp
+  · intro N; exists N -- ; simp
   · iexists γ
     iframe H1 H2
 

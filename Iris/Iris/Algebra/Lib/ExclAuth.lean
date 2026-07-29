@@ -25,7 +25,7 @@ open OFE CMRA Auth Excl Option
 
 namespace ExclAuth
 
-variable [OFE A]
+variable [OFE Nat A]
 
 @[rocq_alias excl_authR]
 abbrev ExclAuthR := Auth (Option (Excl A))
@@ -107,11 +107,11 @@ theorem update {a b a' : A} : ((●E a) • ◯E b) ~~> ((●E a') • ◯E a') 
 /-! ## Functors -/
 
 @[rocq_alias excl_authURF]
-abbrev ExclAuthURF (T : COFE.OFunctorPre) [URFunctor T] : COFE.OFunctorPre :=
+abbrev ExclAuthURF (T : COFE.OFunctorPre Nat) [URFunctor T] : COFE.OFunctorPre Nat :=
   AuthURF (OptionOF (ExclOF T))
 
 @[rocq_alias excl_authRF]
-abbrev ExclAuthRF (T : COFE.OFunctorPre) [URFunctor T] : COFE.OFunctorPre :=
+abbrev ExclAuthRF (T : COFE.OFunctorPre Nat) [URFunctor T] : COFE.OFunctorPre Nat :=
   AuthRF (OptionOF (ExclOF T))
 
 end ExclAuth

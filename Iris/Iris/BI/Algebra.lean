@@ -207,7 +207,7 @@ section agree_inclusion
 
 open Iris BI Agree OFE
 
-variable [Sbi PROP] [OFE A]
+variable [Sbi PROP] [OFE Nat A]
 
 @[rocq_alias agree_equivI]
 theorem agree_equivI {a b : A} : toAgree a ≡ toAgree b ⊣⊢@{PROP} a ≡ b := by
@@ -351,7 +351,7 @@ theorem auth_both_validI (a b : A) :
 end auth
 
 section dfrac_agree
-variable [Sbi PROP] {A : Type _} [OFE A]
+variable [Sbi PROP] {A : Type _} [OFE Nat A]
 
 open BI
 

@@ -95,7 +95,7 @@ variable {I : BiIndex} {PROP : Type _} [BI PROP]
 /-- Pointwise OFE: `P ≡ Q := ∀ i, P i ≡ Q i`, `P ≡{n}≡ Q := ∀ i, P i ≡{n}≡ Q i`
 (Rocq `monPredO`). -/
 @[rocq_alias monPredO]
-instance : OFE (MonPred I PROP) where
+instance : OFE Nat (MonPred I PROP) where
   Dist n P Q := ∀ i, P.monPred_at i ≡{n}≡ Q.monPred_at i
   dist_eqv :=
     { refl _ _ := dist_eqv.refl _
@@ -150,15 +150,18 @@ theorem toSig_ofSig (P : { f : I.car → PROP // ∀ {i j : I.car}, I.rel.le i j
 end MonPred
 
 @[rocq_alias monPred_cofe]
-instance : IsCOFE (MonPred I PROP) where
+instance : IsCOFE Nat (MonPred I PROP) where
   compl c :=
     let cf := c.map ((⟨Subtype.val, inferInstance⟩ : _ -n> (I.car → PROP)).comp MonPred.toSig)
     { monPred_at := fun i => COFE.compl cf i
       monPred_mono := fun {i j} h =>
-        LimitPreserving.entails (applyHom i) (applyHom j) cf (fun n => (c n).monPred_mono h) }
+        (LimitPreserving.entails (applyHom i) (applyHom j)).compl cf (fun n => (c n).monPred_mono h) }
   conv_compl {n c} :=
     IsCOFE.conv_compl (n := n)
       (c := c.map ((⟨Subtype.val, inferInstance⟩ : _ -n> (I.car → PROP)).comp MonPred.toSig))
+  lbcompl := sorry
+  conv_lbcompl := sorry
+  lbcompl_ne := sorry
 
 end OFE
 
@@ -1477,12 +1480,12 @@ instance instSbiMonPred : Sbi (MonPred I PROP) where
 /-! ### Internal equality and the plainly modality on `MonPred` -/
 
 @[rocq_alias monPred_internal_eq_unfold]
-theorem monPred_internal_eq_unfold {A : Type _} [OFE A] :
+theorem monPred_internal_eq_unfold {A : Type _} [OFE Nat A] :
     (internalEq : A → A → MonPred I PROP) =
       fun x y => (iprop(⎡(x ≡ y : PROP)⎤) : MonPred I PROP) := rfl
 
 @[rocq_alias monPred_at_internal_eq]
-theorem monPred_at_internal_eq {A : Type _} [OFE A] (i : I.car) (a b : A) :
+theorem monPred_at_internal_eq {A : Type _} [OFE Nat A] (i : I.car) (a b : A) :
     (iprop(a ≡ b) : MonPred I PROP).monPred_at i ⊣⊢ a ≡ b :=
   .rfl
 
@@ -1518,7 +1521,7 @@ instance si_pure_objective (Pi : SiProp) : Objective (iprop(<si_pure> Pi) : MonP
   objective_at _ _ := .rfl
 
 @[rocq_alias internal_eq_objective]
-instance internal_eq_objective {A : Type _} [OFE A] (x y : A) :
+instance internal_eq_objective {A : Type _} [OFE Nat A] (x y : A) :
     Objective (iprop(x ≡ y) : MonPred I PROP) where
   objective_at _ _ := .rfl
 

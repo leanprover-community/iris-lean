@@ -89,9 +89,9 @@ def IsFree {β : α → Type _} (f : (a : α) → Option (β a)) : α → Prop :
 /-! ## OFE -/
 
 section OFE
-variable (β : Type _) [OFE β]
+variable (β : Type _) [OFE Nat β]
 
-instance instOFE_GenMap : OFE (GenMap β) where
+instance instOFE_GenMap : OFE Nat (GenMap β) where
   Dist n := (·.car ≡{n}≡ ·.car)
   dist_eqv.refl _ := Dist.of_eq rfl
   dist_eqv.symm := Dist.symm
@@ -104,7 +104,7 @@ instance instOFE_GenMap : OFE (GenMap β) where
   dist_lt := Dist.lt
 end OFE
 
-theorem GenMap.singleton_discreteE {v : β} [OFE β] [DiscreteE v] :
+theorem GenMap.singleton_discreteE {v : β} [OFE Nat β] [DiscreteE v] :
     DiscreteE (GenMap.singleton (β := β) k v) where
   discrete {y} H := OFE.eq_dist.mpr <| by
     intro n γ'
@@ -114,7 +114,7 @@ theorem GenMap.singleton_discreteE {v : β} [OFE β] [DiscreteE v] :
     · next heq => simp only [heq, ite_true] at H ⊢; exact (Option.some_is_discrete.discrete H).dist
     · next hne => simp only [hne, ite_false] at H ⊢; exact (Option.none_is_discrete.discrete H).dist
 
-theorem GenMap.empty_discreteE [OFE β] : DiscreteE (GenMap.empty (β := β)) where
+theorem GenMap.empty_discreteE [OFE Nat β] : DiscreteE (GenMap.empty (β := β)) where
   discrete {y} H := OFE.eq_dist.mpr <| by
     intro n γ'
     specialize H γ'
@@ -297,10 +297,10 @@ theorem GenMap.op_singleton_comm {mf : GenMap β} {x : Nat} (y : β)
   by_cases heq : k = x
   · subst heq
     simp only [CMRA.op, optionOp, alter, Iris.alter, singleton, empty, ↓reduceIte]
-    rw [H_free]
+    simp [H_free]
   · simp only [CMRA.op, optionOp, alter, Iris.alter, singleton, empty]
     have : x ≠ k := Ne.symm heq
-    rw [if_neg this, if_neg this]
+    simp [if_neg this]
 
 theorem GenMap.validN_op_comm {m mf : GenMap β} (x : Nat) (y : β) (H : IsFree mf.car x) :
     ✓{n} m.alter x (some y) • mf ↔ ✓{n} (m • mf).alter x (some y) := by
@@ -310,10 +310,10 @@ theorem GenMap.validN_op_comm {m mf : GenMap β} (x : Nat) (y : β) (H : IsFree 
   by_cases heq : k = x
   · subst heq
     simp only [CMRA.op, alter, Iris.alter, ↓reduceIte, optionOp]
-    rw [H]
+    simp [H]
   · simp only [CMRA.op, alter, Iris.alter]
     have : x ≠ k := Ne.symm heq
-    rw [if_neg this, if_neg this]
+    simp [if_neg this]
 
 end CMRA
 
@@ -322,10 +322,10 @@ end CMRA
 section OFunctors
 open COFE CMRA
 
-abbrev GenMapOF (F : OFunctorPre) : OFunctorPre :=
+abbrev GenMapOF (F : OFunctorPre Nat) : OFunctorPre Nat :=
   fun A B _ _ => GenMap (F A B)
 
-abbrev GenMap.lift [OFE α] [OFE β] (f : α -n> β) : GenMap α -n> GenMap β where
+abbrev GenMap.lift [OFE Nat α] [OFE Nat β] (f : α -n> β) : GenMap α -n> GenMap β where
   f g := ⟨fun t => Option.map f (g.car t), by
     obtain ⟨N, hN⟩ := g.bound
     exact ⟨N, fun k hk => by simp [Option.map, hN k hk]⟩⟩
@@ -335,8 +335,8 @@ abbrev GenMap.lift [OFE α] [OFE β] (f : α -n> β) : GenMap α -n> GenMap β w
     split <;> split <;> simp_all
     exact NonExpansive.ne H
 
-instance instOFunctor_GenMapOF (F : OFunctorPre) [OFunctor F] :
-    OFunctor (GenMapOF F) where
+instance instOFunctor_GenMapOF (F : OFunctorPre Nat) [OFunctor Nat F] :
+    OFunctor Nat (GenMapOF F) where
   ofe {A B _ _} := instOFE_GenMap (F A B)
   map f₁ f₂ := GenMap.lift <| OFunctor.map (F := F) f₁ f₂
   map_ne.ne {n x1 x2} Hx {y1 y2} Hy k γ := by
@@ -352,7 +352,7 @@ instance instOFunctor_GenMapOF (F : OFunctorPre) [OFunctor F] :
     simp only [Option.map]; cases _ : x.car γ <;> simp
     exact (OFunctor.map_comp _ _ _ _ _).dist
 
-instance instURFunctor_GenMapOF (F : COFE.OFunctorPre) [RFunctor F] :
+instance instURFunctor_GenMapOF (F : COFE.OFunctorPre Nat) [RFunctor F] :
     URFunctor (GenMapOF F) where
   map f g := {
     toHom := GenMap.lift <| OFunctor.map f g
@@ -388,7 +388,7 @@ instance instURFunctor_GenMapOF (F : COFE.OFunctorPre) [RFunctor F] :
   map_id x := OFunctor.map_id x
   map_comp f g f' g' x := OFunctor.map_comp f g f' g' x
 
-instance instURFunctorContractive_GenMapOF (F : COFE.OFunctorPre) [RFunctorContractive F] :
+instance instURFunctorContractive_GenMapOF (F : COFE.OFunctorPre Nat) [RFunctorContractive F] :
     URFunctorContractive (GenMapOF F) where
   map_contractive.1 h x γ := by
     next n x' y' =>

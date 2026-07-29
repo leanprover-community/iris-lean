@@ -93,7 +93,7 @@ protected def sExists (Ψ : UPred M → Prop) : UPred M where
 #rocq_ignore uPred_exist_def "`UPred.sExists` is defined directly without `seal`/`unseal`."
 #rocq_ignore uPred_exist_aux "`UPred.sExists` is defined directly without `seal`/`unseal`."
 
-protected def eq [OFE O] (o1 o2 : O) : UPred M where
+protected def eq [OFE Nat O] (o1 o2 : O) : UPred M where
   holds n _ := o1 ≡{n}≡ o2
   mono H1 _ H2 := H1.le H2
 

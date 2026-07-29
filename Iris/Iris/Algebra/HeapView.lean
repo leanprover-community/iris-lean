@@ -143,6 +143,7 @@ instance : NonExpansive (Frag k dq : _ → HeapView K V H) where
     · rw [Std.PartialMap.singleton, get?_insert_eq h, get?_singleton_eq h]
       exact dist_prod_ext rfl Hx
     · rw [Std.PartialMap.singleton, get?_insert_ne h, get?_empty, get?_singleton_ne h]
+      rfl
 
 variable {dp dq : DFrac} {n : Nat} {m1 m2 : H V} {k : K} {v1 v2 : V}
 
@@ -496,7 +497,7 @@ section heapViewFunctor
 
 open Iris.Std PartialMap
 
-theorem heapR_map_eq [COFE A] [COFE B] [COFE A'] [COFE B'] [RFunctor T] (f : A' -n> A) (g : B -n> B')
+theorem heapR_map_eq [COFE Nat A] [COFE Nat B] [COFE Nat A'] [COFE Nat B'] [RFunctor T] (f : A' -n> A) (g : B -n> B')
     (n : Nat) (m : H (T A B)) (mv : H (DFrac × T A B)) :
     HeapR K (T A B) H n m mv →
     HeapR K (T A' B') H n
@@ -528,7 +529,7 @@ theorem heapR_map_eq [COFE A] [COFE B] [COFE A'] [COFE B'] [RFunctor T] (f : A' 
       · simp_all
       · exact (Hom.monoN _ _ he)
 
-abbrev HeapViewURF T [RFunctor T] : COFE.OFunctorPre :=
+abbrev HeapViewURF T [RFunctor T] : COFE.OFunctorPre Nat :=
   fun A B _ _ => HeapView K (T A B) H
 
 instance {T} [RFunctor T] : URFunctor (HeapViewURF (H := H) T) where

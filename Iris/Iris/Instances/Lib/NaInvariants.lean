@@ -19,8 +19,8 @@ namespace Iris
 
 open BI CMRA OFE Iris Std LawfulSet DisjointLeibnizSet COFE ProofMode
 
-abbrev NaInvF : OFunctorPre :=
-  ProdOF (constOF CoPsetDisjL) (constOF (DisjointLeibnizSet PosSet))
+abbrev NaInvF : OFunctorPre Nat :=
+  ProdOF Nat (constOF CoPsetDisjL) (constOF (DisjointLeibnizSet PosSet))
 
 @[rocq_alias na_invG]
 class NaInvG (GF : BundledGFunctors) where
