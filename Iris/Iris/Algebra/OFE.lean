@@ -1013,6 +1013,12 @@ end BChain
 class IsCOFE (SI : outParam <| Type _) (α : Type _) [SIdx SI] [OFE SI α] where
   compl : Chain α → α
   conv_compl {c : Chain α} : compl c ≡{n}≡ c n
+  lbcompl {n : SI} : SIdx.Limit n → BChain α n → α
+  conv_lbcompl {n : SI} (Hn : SIdx.Limit n) (c : BChain α n) {m} (hm : m < n) :
+    lbcompl Hn c ≡{m}≡ c.bchain m hm
+  lbcompl_ne {n : SI} (hn : SIdx.Limit n) (c1 c2 : BChain α n) {m : SI} :
+    (∀ p (Hp : p < n), c1.bchain p Hp ≡{m}≡ c2.bchain p Hp) →
+    lbcompl hn c1 ≡{m}≡ lbcompl hn c2
 
 /-- Complete ordered family of equivalences -/
 class abbrev COFE (SI : outParam <| Type _) [SIdx SI] (α : Type _) := OFE SI α, IsCOFE SI α
@@ -1045,13 +1051,21 @@ theorem compl_const [COFE SI α] (a : α) : compl (Chain.const a) = a :=
 /-- The discrete COFE obtained from an equivalence relation `Equiv` -/
 @[reducible, rocq_alias discrete_cofe]
 def ofDiscrete (α : Type _) : COFE SI α :=
-  let _ := OFE.ofDiscrete α
-  { compl := fun c => c 0
-    conv_compl := fun {_ c} => (c.cauchy SIdx.le_0_l).symm }
+  letI := OFE.ofDiscrete α
+  {
+    compl := fun c => c 0
+    conv_compl := fun {_ c} => (c.cauchy SIdx.le_0_l).symm
+    lbcompl := fun hn c => c.bchain 0 hn.limit_lt_0
+    conv_lbcompl := fun hn c _ hm => (c.bcauchy hn.limit_lt_0 hm SIdx.le_0_l).symm
+    lbcompl_ne := fun hn _ _ _ hc => hc 0 hn.limit_lt_0
+  }
 
 instance [COFE SI α] : COFE SI (ULift α) where
   compl c := ⟨compl (c.map uliftDownHom)⟩
   conv_compl := conv_compl
+  lbcompl := sorry
+  conv_lbcompl := sorry
+  lbcompl_ne := sorry
 
 @[rocq_alias unit_ofe_discrete]
 instance : @Discrete SI _ Unit unitOFE :=
@@ -1061,8 +1075,13 @@ instance : @Discrete SI _ Unit unitOFE :=
 @[reducible, rocq_alias unit_cofe]
 def unitCOFE [SIdx SI] : COFE SI Unit :=
   letI := unitOFE
-  { compl _ := ()
-    conv_compl := ⟨⟩ }
+  {
+    compl _ := ()
+    conv_compl := ⟨⟩
+    lbcompl := fun _ _ => ()
+    conv_lbcompl := sorry
+    lbcompl_ne := sorry
+  }
 
 abbrev IsCOFEFun {α : Type _} (β : α → Type _) [OFEFun (SI := SI) β] := ∀ x : α, IsCOFE SI (β x)
 
@@ -1081,12 +1100,18 @@ instance instIsCOFEOption [OFE SI α] [IsCOFE SI α] : IsCOFE SI (Option α) whe
       cases h2 : c.chain n with
       | none => exact (h1 ▸ h2 ▸ c.cauchy SIdx.le_0_l).elim
       | some _ => rfl
+  lbcompl := sorry
+  conv_lbcompl := sorry
+  lbcompl_ne := sorry
 #rocq_ignore option_compl "Local Compl definition; folded into Lean's IsCOFE instance."
 
 @[rocq_alias discrete_fun_cofe]
 instance {α : Type _} (β : α → Type _) [∀ x, COFE SI (β x)] : COFE SI ((x : α) → β x) where
   compl c x := compl (c.map (applyHom x))
   conv_compl _ := IsCOFE.conv_compl
+  lbcompl := sorry
+  conv_lbcompl := sorry
+  lbcompl_ne := sorry
 #rocq_ignore discrete_fun_chain "Local helper; folded into Lean's IsCOFE instance."
 
 @[rocq_alias ofe_mor_cofe]
@@ -1096,12 +1121,18 @@ instance instIsCOFEHom [OFE SI α] [OFE SI β] [IsCOFE SI β] : IsCOFE SI (α -n
     refine conv_compl.trans (.trans ?_ conv_compl.symm)
     exact NonExpansive.ne (f := c.chain n) H
   conv_compl _ := IsCOFE.conv_compl
+  lbcompl := sorry
+  conv_lbcompl := sorry
+  lbcompl_ne := sorry
 #rocq_ignore ofe_mor_compl "Inlined in IsCOFE instance"
 
 @[rocq_alias prod_cofe]
 instance instIsCOFEProd [OFE SI α] [OFE SI β] [IsCOFE SI α] [IsCOFE SI β] : IsCOFE SI (α × β) where
   compl c := ⟨compl (c.map ⟨Prod.fst, inferInstance⟩), compl (c.map ⟨Prod.snd, inferInstance⟩)⟩
   conv_compl := ⟨conv_compl, conv_compl⟩
+  lbcompl := sorry
+  conv_lbcompl := sorry
+  lbcompl_ne := sorry
 
 @[rocq_alias sum_cofe]
 instance instIsCOFESum  [OFE SI α] [OFE SI β] [IsCOFE SI α] [IsCOFE SI β] : IsCOFE SI (α ⊕ β) where
@@ -1122,6 +1153,9 @@ instance instIsCOFESum  [OFE SI α] [OFE SI β] [IsCOFE SI α] [IsCOFE SI β] : 
       cases h2 : c.chain n with
       | inl _ => exact (h1 ▸ h2 ▸ c.cauchy SIdx.le_0_l).elim
       | inr _ => simp
+  lbcompl := sorry
+  conv_lbcompl := sorry
+  lbcompl_ne := sorry
 #rocq_ignore inl_chain "Local helper for `sum_compl`; folded into Lean's IsCOFE instance."
 #rocq_ignore inr_chain "Local helper for `sum_compl`; folded into Lean's IsCOFE instance."
 #rocq_ignore sum_compl "Local Compl definition; folded into Lean's IsCOFE instance."
@@ -1155,6 +1189,9 @@ instance {P : α → Type _} [∀ x, OFE SI (P x)] [∀ x, IsCOFE SI (P x)] : Is
     revert heq; cases c.chain n
     rintro ⟨⟩ hequiv
     exact hequiv
+  lbcompl := sorry
+  conv_lbcompl := sorry
+  lbcompl_ne := sorry
 #rocq_ignore sigT_compl "Local Compl definition; folded into Lean's IsCOFE instance."
 
 set_option linter.checkUnivs false in
@@ -1246,6 +1283,9 @@ instance isCOFE_option [IsCOFE SI α] : IsCOFE SI (Option α) where
     rcases c.chain 0 with _|x' <;> rcases e : c.chain n with _|y' <;> simp [Dist, Option.Forall₂]
     refine fun _ => OFE.dist_eqv.trans IsCOFE.conv_compl ?_
     simp [optionChain, e]
+  lbcompl := sorry
+  conv_lbcompl := sorry
+  lbcompl_ne := sorry
 
 @[rocq_alias optionO_map]
 def optionMap {α β : Type _} [OFE SI α] [OFE SI β] (f : α -n> β) : Option α -n> Option β := by
@@ -1842,6 +1882,9 @@ instance isCOFE_later [OFE SI A] [IsCOFE SI A] : IsCOFE SI (Later A) where
     intros m Hlt
     refine (IsCOFE.conv_compl (n := m) (c := laterChain c)).trans ?_
     exact ((c.cauchy <| SIdx.succ_le_of_lt Hlt) m (SIdx.lt_succ_self m)).symm
+  lbcompl := sorry
+  conv_lbcompl := sorry
+  lbcompl_ne := sorry
 
 @[rocq_alias laterO_map]
 def laterMap [OFE SI A] [OFE SI B] (f : A -n> B)  : Later A -n> Later B := by
