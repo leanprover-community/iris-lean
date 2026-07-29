@@ -1675,15 +1675,39 @@ theorem LimitPreserving.bcompl {P : α → Prop} (n : SI) (c : BChain α n)
 
 end BCompl
 
-def Fixpoint.chain [OFE SI α] [Inhabited α] (f : α → α) [Contractive f] : Chain α where
-  chain n := Nat.repeat f (n + 1) default
-  cauchy {n : SI} := by
-    induction n with simp [Nat.repeat] | succ n IH
-    rintro (_|i) <;> simp
-    intro H
-    apply Contractive.distLater_dist
-    intro _ Hm
-    exact (IH H).le (Nat.le_of_lt_succ Hm)
+section BFChain
+
+variable [instSI : SIdx SI] [COFE SI α] [Inhabited α] (f : α → α) [Contractive f]
+
+@[rocq_alias bfchain]
+structure BFChain (n : SI) where
+  car : BChain α n
+  fixpoint : ∀ p, p < n → f (bcompl n car) ≡{p}≡ bcompl n car
+
+@[rocq_alias bfchain_chain_unique]
+theorem BFChain.unique {n m : SI} (c1 : BFChain f n) (c2 : BFChain f m) :
+    ∀ p, p < n → p < m → bcompl n c1.car ≡{p}≡ bcompl m c2.car := sorry
+
+@[rocq_alias fixpoint_bchain_go]
+def BFChain.go (n : SI) (rec : ∀ m, m < n → BFChain f m) : BFChain f n where
+  car :=
+    { bchain := fun m Hm => f (bcompl m (rec m Hm).car)
+      bcauchy := fun {m p} Hm Hp Hmp =>
+        Contractive.distLater_dist fun q Hq =>
+          BFChain.unique f (rec p Hp) (rec m Hm) q (SIdx.lt_le_trans Hq Hmp) Hq }
+  fixpoint p Hp := sorry
+
+def fixpointBFChain (n : SI) : BFChain f n := instSI.lt_wf.fix (BFChain.go f) n
+
+theorem fixpointBFChain_unfold (n : SI) :
+    fixpointBFChain f n = BFChain.go f n (fun m _ => fixpointBFChain f m) :=
+  sorry
+
+end BFChain
+
+def Fixpoint.chain [COFE SI α] [Inhabited α] (f : α → α) [Contractive f] : Chain α where
+  chain n := f (bcompl n (fixpointBFChain f n).car)
+  cauchy {n i : SI} H := sorry
 
 /-- The chain construction of the Banach fixpoint. `fixpointP` packages it, together with
 its unfolding equation, behind an opaque constant. -/
@@ -1695,9 +1719,7 @@ theorem fixpointAux_unfold [COFE SI α] [Inhabited α] (f : α -c> α) :
   refine eq_dist.mpr fun n => ?_
   apply COFE.conv_compl.trans
   refine .trans ?_ (NonExpansive.ne COFE.conv_compl.symm)
-  induction n with
-  | zero => exact Contractive.zero f.f
-  | succ _ IH => exact (Contractive.succ f.f IH.symm).symm
+  sorry
 
 /-- The Banach fixpoint packed together with its unfolding equation as a single opaque
 value. Being opaque, it is a stuck constant for definitional-equality checks in both the
@@ -1724,43 +1746,20 @@ theorem fixpoint_unfold [COFE SI α] [Inhabited α] (f : α -c> α) :
 theorem fixpoint_unique [COFE SI α] [Inhabited α] {f : α -c> α} {x : α} (H : x = f x) :
     x = fixpoint f := by
   refine eq_dist.mpr fun n => ?_
-  induction n with refine H.dist.trans <| .trans ?_ (fixpoint_unfold f).dist.symm
-  | zero => exact Contractive.zero f.f
-  | succ _ IH => exact Contractive.succ f.f IH
+  sorry
 
 @[rocq_alias fixpoint_ne]
 instance OFE.ContractiveHom.fixpoint_ne [COFE SI α] [Inhabited α] :
     NonExpansive (ContractiveHom.fixpoint (α := α)) where
   ne n f1 f2 H := by
-    induction n with
-      refine (fixpoint_unfold f1).dist.trans <|
-        ((H _).trans ?_).trans (fixpoint_unfold f2).dist.symm
-    | zero => exact Contractive.zero f2.f
-    | succ _ IH => exact Contractive.succ f2.f <| IH <| Dist.lt H (Nat.lt_add_one _)
+    sorry
 
 @[elab_as_elim, rocq_alias fixpoint_ind]
 theorem OFE.ContractiveHom.fixpoint_ind [COFE SI α] [Inhabited α] (f : α -c> α)
     (P : α → Prop) (HProper : ∀ A B : α, A = B → P A → P B) (x : α) (Hbase : P x)
     (Hind : ∀ x, P x → P (f x)) (Hlim : LimitPreserving P) :
     P f.fixpoint := by
-  let chain : Chain α := by
-    refine ⟨fun i => Nat.repeat f (i + 1) x, fun {n i} H => ?_⟩
-    induction n generalizing i with
-    | zero => simp [Nat.repeat]
-    | succ _ IH =>
-      cases i <;> simp at H
-      exact Contractive.succ _ <| IH H
-  refine HProper _ _ (fixpoint_unique (f := f) (x := COFE.compl chain) ?_) ?_
-  · refine eq_dist.mpr fun n => ?_
-    apply COFE.conv_compl.trans
-    refine .trans ?_ (f.ne.ne COFE.conv_compl).symm
-    induction n
-    · exact Contractive.zero f.f
-    · rename_i IH; apply Contractive.succ _ IH
-  · apply Hlim; intro n
-    induction n with
-    | zero => exact Hind (Nat.repeat f.f 0 x) Hbase
-    | succ _ IH => apply Hind (Nat.repeat f.f _ x) IH
+  sorry
 
 end Fixpoint
 
