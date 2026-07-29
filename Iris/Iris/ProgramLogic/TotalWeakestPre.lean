@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Iris.ProgramLogic.WeakestPre
+public import Iris.BI.Lib.Fixpoint
 
 namespace Iris
 
@@ -60,14 +61,27 @@ open Function in
 def twp.pre' (s : Stuckness) (wp : (CoPset × Expr) × (Val -> IProp GF) -> IProp GF) :=
     uncurry <| uncurry <| @twp.pre hlc Expr State Obs Val Λ GF ι s (curry <| curry wp)
 
-/-
-Local Instance twp_pre_mono' `{!irisGS_gen hlc Λ Σ} s : BiMonoPred (twp_pre' s).
-Proof.
-  constructor.
-  - iIntros (wp1 wp2 ??) "#H"; iIntros ([[E e1] Φ]); iRevert (E e1 Φ).
-    iApply twp_pre_mono. iIntros "!>" (E e Φ). iApply ("H" $! (E,e,Φ)).
-  - intros wp Hwp n [[E1 e1] Φ1] [[E2 e2] Φ2]
-      [[?%leibniz_equiv ?%leibniz_equiv] ?]; simplify_eq/=.
-    rewrite /curry3 /twp_pre. do 26 (f_equiv || done). by apply pair_ne.
-Qed.
--/
+instance twp.pre_mono' [OFE Expr] [OFE CoPset] (s : Stuckness) : BIMonoPred (@twp.pre' hlc Expr State Obs Val Λ GF ι s) where
+  mono_pred := by
+    intros wp1 wp2 _ _
+    iintro #H %x
+    rcases x with ⟨⟨E, e1⟩, Φ⟩
+    irevert %E %e1 %Φ
+    unfold pre'
+    simp
+    iapply twp.pre_mono
+    simp
+    iintro !> %E %e %Φ
+    iapply H
+  mono_pred_ne := by
+    intros wp Hwp
+    constructor
+    intros n x₁ x₂ h
+    rcases x₁ with ⟨⟨E1, e1⟩, Φ1⟩
+    rcases x₂ with ⟨⟨E2, e2⟩, Φ2⟩
+    unfold pre'
+    simp
+    unfold pre
+    split
+    sorry
+    sorry
