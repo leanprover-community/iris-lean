@@ -1566,7 +1566,7 @@ theorem LimitPreserving.impl [COFE SI α] (P1 P2 : α → Prop)
     (HP1 : ∀ {x y : α}, x ≡{0}≡ y → P1 x → P1 y)
     (Hcompl : LimitPreserving P2) :
     LimitPreserving (fun x => P1 x → P2 x) :=
-  fun _ Hc HP1c => Hcompl _ <| fun n => Hc _ (HP1 (COFE.conv_compl' (Nat.zero_le n)) HP1c)
+  fun _ Hc HP1c => Hcompl _ <| fun _ => Hc _ (HP1 (COFE.conv_compl' SIdx.le_0_l) HP1c)
 
 @[rocq_alias limit_preserving_equiv]
 theorem LimitPreserving.equiv [COFE SI α] [COFE SI β] (f g : α -n> β) :
@@ -1574,7 +1574,7 @@ theorem LimitPreserving.equiv [COFE SI α] [COFE SI β] (f g : α -n> β) :
   intro c Hfg
   refine eq_dist.mpr fun n => ?_
   apply (COFE.compl_map _ _).symm.dist.trans
-  apply (COFE.conv_compl' (Nat.le_refl n)).trans
+  apply (COFE.conv_compl' SIdx.le_refl).trans
   apply (Hfg _).dist.trans
   exact g.ne.ne COFE.conv_compl.symm
 
