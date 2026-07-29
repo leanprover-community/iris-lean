@@ -1176,10 +1176,9 @@ theorem DiscreteO.eqv_inj {x y : α} (H : DiscreteO.mk x = DiscreteO.mk y) : x =
   congrArg DiscreteO.car H
 
 theorem DiscreteO.dist_inj [SIdx SI] {α : Type _} {x y : α} {n : SI} :
-    letI := DiscreteO.instCOFE (SI := SI) (α := α)
-    DiscreteO.mk x ≡{n}≡ DiscreteO.mk y → x = y := by
-  letI := DiscreteO.instCOFE (SI := SI) (α := α)
-  exact DiscreteO.eqv_inj <| discrete H
+    letI := DiscreteO.instCOFE (α := α)
+    DiscreteO.mk x ≡{n}≡ DiscreteO.mk y → x = y :=
+  fun H => DiscreteO.eqv_inj H
 
 section DiscreteFunOF
 open COFE
