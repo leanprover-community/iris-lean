@@ -589,13 +589,13 @@ open Lean Elab Tactic Meta Qq Iris.BI Iris Iris.ProofMode
 
 @[rocq_alias tac_lc_add_laterN_split]
 theorem tac_lc_add_laterN_split {GF : BundledGFunctors} [InvGS GF]
-    {n m newM : Nat} {E : CoPset} {P Q goal : IProp GF}
-    (inst : AddModal iprop(|={E}=> goal) goal goal)
-    (h1 : m = n + newM) (h2 : P ∗ £ newM ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
-    P ∗ £ m ⊢ goal := by
+    {φ : Prop} {n m newM : Nat} {E : CoPset} {P Q goal : IProp GF}
+    (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
+    (h1 : m = n + newM) (h2 : iprop(P ∗ £ newM) ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
+    iprop(P ∗ £ m) ⊢ goal := by
   subst h1
   iintro ⟨HP, Hcred⟩
-  iapply inst.add_modal
+  iapply inst.elim_modal hφ
   isplitl
   · icases lc_split.mp $$ Hcred with ⟨Hn, Hm⟩
     icombine HP Hm as H
@@ -604,23 +604,22 @@ theorem tac_lc_add_laterN_split {GF : BundledGFunctors} [InvGS GF]
     inext
     imodintro
     iapply h3 $$ H
-  · iintro Hgoal
-    iassumption
+  · iintro _ //
 
 theorem tac_lc_add_laterN_full {GF : BundledGFunctors} [InvGS GF]
-    {m : Nat} {E : CoPset} {P Q goal : IProp GF}
-    (inst : AddModal iprop(|={E}=> goal) goal goal)
-    (h1 : P ⊢ ▷^[m] Q) (h2 : Q ⊢ goal) : P ∗ £ m ⊢ goal := by
+    {φ : Prop} {m : Nat} {E : CoPset} {P Q goal : IProp GF}
+    (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
+    (h2 : P ⊢ ▷^[m] Q) (h3 : Q ⊢ goal) :
+    iprop(P ∗ £ m) ⊢ goal := by
   iintro ⟨HP, Hcred⟩
-  iapply inst.add_modal
+  iapply inst.elim_modal hφ
   isplitl
-  · ihave H := h1 $$ HP
+  · ihave H := h2 $$ HP
     iapply lc_fupd_add_laterN m $$ Hcred
     inext
     imodintro
-    iapply h2 $$ H
-  · iintro Hgoal
-    iassumption
+    iapply h3 $$ H
+  · iintro _ //
 
 public meta section
 
@@ -650,21 +649,16 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
     -- Ensure sufficient credits
     if natM < natN then throwError "inext: insufficient credits"
 
-    let g ← mkFreshExprMVarQ q($prop)
-    let some inst ← ProofModeM.trySynthInstanceQ q(AddModal $g $goal $goal)
-      | throwError "inext: AddModal type class synthesis failed {goal}"
+    let φ ← mkFreshExprMVarQ q(Prop)
+    let E ← mkFreshExprMVarQ q(CoPset)
+    let Q' ← mkFreshExprMVarQ q($prop)
+    let some inst ← ProofModeM.trySynthInstanceQ q(ElimModal $φ false .in false iprop(|={$E}=> $goal) $goal $goal $Q')
+    | throwError "inext: ElimModal type class synthesis failed with {goal}"
+    unless ← isDefEq Q' goal do
+      throwError "inext: eliminating the fancy update does not preserve the goal {goal}"
+    have inst : Q(ElimModal $φ false .in false iprop(|={$E}=> $goal) $goal $goal $goal) := inst
 
-    -- extract the mask `E` from the synthesized modal goal, and check it's
-    -- mask-preserving (the shape `tac_lc_add_laterN_split/_full` require)
-    let g ← instantiateMVars g
-    let E : Q(CoPset) ← match_expr g with
-      | FUpd.fupd _ _ E1 E2 _ =>
-        unless ← isDefEq E1 E2 do
-          throwError "inext: the fancy update modality is not mask-preserving"
-        pure E1
-      | _ => throwError "inext: the goal cannot be turned into a fancy update modality"
-
-    have inst : Q(AddModal iprop(|={$E}=> $goal) $goal $goal) := inst
+    let hφ ← iSolveSidecondition q($φ) (failOnUnsolved := false)
 
     -- Generate the proof goal with the updated hypothesis
     let n : Q(Credit) ← pure <| mkNatLit natN
@@ -676,7 +670,7 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
       let ⟨_, newHyps', pfModAction⟩ ← iModAction hyps' modality
       let pf ← addBIGoal newHyps' goal
       have pfEq : Q($e ⊣⊢ $e' ∗ £ $n) := pfEq
-      let pf' : Q($e' ∗ £ $n ⊢ $goal) := q(tac_lc_add_laterN_full $inst $pfModAction $pf)
+      let pf' : Q($e' ∗ £ $n ⊢ $goal) := q(tac_lc_add_laterN_full $inst $hφ $pfModAction $pf)
       mvar.assign q($(pfEq).mp.trans $pf')
     -- Update the later credits hypothesis and introduce it into the context
     | _ =>
@@ -687,7 +681,7 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
       let pf ← addBIGoal newHyps' goal
       let hm : Q($natM = $n + $newM) ← mkDecideProof q($natM = $n + $newM)
       have pfEq : Q($e ⊣⊢ $e' ∗ £ $natM) := pfEq
-      let pf'' : Q($e' ∗ £ $natM ⊢ $goal) := q(tac_lc_add_laterN_split $inst $hm $pfModAction $pf)
+      let pf'' : Q($e' ∗ £ $natM ⊢ $goal) := q(tac_lc_add_laterN_split $inst $hφ $hm $pfModAction $pf)
       mvar.assign q($(pfEq).mp.trans $pf'')
 
 end
