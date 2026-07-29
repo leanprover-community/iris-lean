@@ -118,7 +118,8 @@ theorem DistLater.dist_lt [OFE SI α] {m n : SI} {x y : α} (h : DistLater n x y
   h _ hm
 
 /-- `DistLater 0`-equivalence is trivial. -/
-@[simp, rocq_alias dist_later_0] theorem distLater_zero [OFE SI α] {x y : α} : DistLater 0 x y := nofun
+@[simp, rocq_alias dist_later_0] theorem distLater_zero [OFE SI α] {x y : α} : DistLater 0 x y :=
+  fun m hm => absurd hm (SIdx.not_lt_zero m)
 
 /-- `DistLater n`-equivalence is equivalent to `(n + 1)`-equivalence. -/
 @[rocq_alias dist_later_S]
@@ -127,9 +128,8 @@ theorem distLater_succ [OFE SI α] {n : SI} {x y : α} : DistLater (SIdx.succ n)
 
 theorem distLater_soundness [OFE SI α] {x y : α} (H : ∀ n, DistLater n x y → x ≡{n}≡ y) : x = y := by
   refine eq_dist.mpr fun n => ?_
-  induction n with
-  | zero => exact H 0 distLater_zero
-  | succ n IH => exact H (n + 1) (distLater_succ.mpr IH)
+  induction n using instSI.lt_wf.induction with
+  | _ n IH => exact H n IH
 
 /-- A function `f : α → β` is contractive if it sends `DistLater n`-equivalent inputs to
 `n`-equivalent outputs. -/
@@ -374,6 +374,7 @@ def unitOFE : OFE SI Unit where
 
 -- set_option trace.Meta.synthInstance true in
 instance : @DiscreteE SI _ Unit unitOFE (() : Unit) :=
+  letI := unitOFE
   ⟨fun _ => Subsingleton.elim _ _⟩
 
 instance [OFE SI α] : OFE SI (ULift α) where
@@ -741,7 +742,7 @@ instance [OFE SI α] (P : α → Prop) : OFE SI (Subtype P) where
 
 @[rocq_alias sig_discrete]
 instance [OFE SI α] [Discrete α] (P : α → Prop) : Discrete (Subtype P) where
-  discrete_0 h := Subtype.ext (@Discrete.discrete_0 α _ _ _ _ h)
+  discrete_0 h := Subtype.ext <| Discrete.discrete_0 (α := α) h
 
 @[rocq_alias proj1_sig_ne]
 instance [OFE SI α] (P : α → Prop) : NonExpansive (Subtype.val : Subtype P → α) where
@@ -1024,7 +1025,7 @@ theorem compl_const [COFE SI α] (a : α) : compl (Chain.const a) = a :=
 def ofDiscrete (α : Type _) : COFE SI α :=
   let _ := OFE.ofDiscrete α
   { compl := fun c => c 0
-    conv_compl := fun {n c} => (c.cauchy (Nat.zero_le n)).symm }
+    conv_compl := fun {_ c} => (c.cauchy SIdx.le_0_l).symm }
 
 instance [COFE SI α] : COFE SI (ULift α) where
   compl c := ⟨compl (c.map uliftDownHom)⟩
@@ -1049,7 +1050,7 @@ instance instIsCOFEOption [OFE SI α] [IsCOFE SI α] : IsCOFE SI (Option α) whe
     cases h1 : c.chain 0 with
     | none =>
       refine Eq.dist <| Option.none_is_discrete.discrete ?_
-      exact h1 ▸ c.cauchy (Nat.zero_le n) |>.symm
+      exact h1 ▸ c.cauchy (SIdx.le_0_l (n := n)) |>.symm
     | some seed =>
       refine (some_dist_some.mpr conv_compl).trans ?_
       dsimp only [Chain.map_apply]
@@ -1525,10 +1526,7 @@ instance instOFunctorContractiveHomOF [OFunctorContractive SI F1] [OFunctorContr
   map_contractive.1 {n : SI} ab ab' h := match ab, ab' with
     | ⟨a, b⟩, ⟨a', b'⟩ => by
       simp only [Function.uncurry_apply_pair, OFunctor.map]
-      have h' : DistLater n (b, a) (b', a') :=
-        match n with
-        | 0 => distLater_zero
-        | _ + 1 => distLater_succ.mpr ⟨(distLater_succ.mp h).2, (distLater_succ.mp h).1⟩
+      have h' : DistLater n (b, a) (b', a') := fun m hm => ⟨(h m hm).2, (h m hm).1⟩
       refine NonExpansive₂.ne ?_ ?_
       · exact (map_contractive (F := F1)).1 h'
       · exact (map_contractive (F := F2)).1 h
