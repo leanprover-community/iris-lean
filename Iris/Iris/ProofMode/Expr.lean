@@ -553,6 +553,14 @@ def parseIrisGoal? (expr : Expr) : Option IrisGoal := do
   let ⟨e, hyps⟩ ← parseHyps? bi P
   some { u, prop, bi, e, hyps, goal }
 
+/--
+  Parse an Iris entailment (`Entails` rather than `Entails'`).
+-/
+def parseEntails? (expr : Expr) : Option <| Expr × Expr × Expr × Expr :=
+  match expr.consumeMData.appM? ``BIBase.Entails with
+  | some #[prop, bi, e, goal] => some ⟨prop, bi, e, goal⟩
+  | _ => none
+
 def IrisGoal.toExpr : IrisGoal → Expr
   | { hyps, goal, .. } => q(Entails' $(hyps.tm) $goal)
 
