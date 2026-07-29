@@ -32,7 +32,7 @@ def iClearCoreOne {prop : Q(Type u)} (_bi : Q(BI $prop)) (e e' : Q($prop))
     | .inl _ => return q(clear_intuitionistic (Q := $goal) $pf)
     | .inr _ =>
       let .some _ ← trySynthInstanceQ q(TCOr (Affine $out) (Absorbing $goal))
-        | throwError "icases: {out} is not affine and the goal not absorbing"
+        | throwError "iclear: {out} is not affine and the goal not absorbing"
       return q(clear_spatial (A:=$out) $pf)
 
 private structure ClearState {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (origE goal : Q($prop)) where

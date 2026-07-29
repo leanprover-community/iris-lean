@@ -89,7 +89,7 @@ def iPureIntroCore {u} {prop : Q(Type u)} (_bi : Q(BI $prop))
   let b : Q(Bool) ← mkFreshExprMVarQ q(Bool)
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
   let .some h ← ProofModeM.trySynthInstanceQ q(FromPure $b $goal .out $φ)
-  | throwError "ipure: {goal} is not pure"
+  | throwError "ipureintro: {goal} is not pure"
   let m : Q($φ) ← mkFreshExprSyntheticOpaqueMVar (← instantiateMVars φ)
 
   let pf : Q($e ⊢ $goal) ← do
@@ -97,13 +97,13 @@ def iPureIntroCore {u} {prop : Q(Type u)} (_bi : Q(BI $prop))
     | .const ``true _ =>
       have : $b =Q true := ⟨⟩
       let .some _ ← trySynthInstanceQ q(Affine $e)
-        | throwError "ipure: context is not affine"
+        | throwError "ipureintro: context is not affine"
       pure q(pure_intro_affine (P := $e) (Q := $goal) $h $m)
     | .const ``false _ =>
       have : $b =Q false := ⟨⟩
       pure q(pure_intro_spatial (P := $e) (Q := $goal) $h $m)
     -- the following indicates a bug in the typeclass instances that generate b
-    | _ => throwError "ipure: bug in typeclass instances, cannot reduce {b} to true or false"
+    | _ => throwError "ipureintro: bug in typeclass instances, cannot reduce {b} to true or false"
 
   return ⟨pf, m.mvarId!⟩
 

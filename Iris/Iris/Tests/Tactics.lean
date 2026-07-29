@@ -193,7 +193,7 @@ example [BI PROP] (x : α) (_hx : x = x) (Q : PROP) : Q ⊢ Q := by
   iexact HQ
 
 /- Tests `iclear` failing -/
-/-- error: icases: P is not affine and the goal not absorbing -/
+/-- error: iclear: P is not affine and the goal not absorbing -/
 #guard_msgs in
 example [BI PROP] (P Q : PROP) : P ⊢ Q -∗ Q := by
   iintro HP HQ
@@ -382,7 +382,7 @@ example [BI PROP] (P Q : PROP) : ⊢ □ P -∗ □ Q -∗ ⌜n = n⌝ := by
   rfl
 
 /- Tests `iintro` with pure introduction failure -/
-/-- error: ipure: Q is not pure -/
+/-- error: ipureintro: Q is not pure -/
 #guard_msgs in
 example [BI PROP] (P Q : PROP) : P ⊢ Q := by
   iintro HP !%
@@ -1232,7 +1232,7 @@ example [BI PROP] : ⊢@{PROP} (⌜φ2⌝ -∗ <absorb> emp) := by
   intro _; trivial
 
 /- Tests `ipureintro` failure -/
-/-- error: ipure: P is not pure -/
+/-- error: ipureintro: P is not pure -/
 #guard_msgs in
 example [BI PROP] (P : PROP) : ⊢ P := by
   ipureintro
