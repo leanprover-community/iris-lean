@@ -9,7 +9,7 @@ public import Iris.BI
 @[expose] public section
 
 namespace Iris
-open Iris.Std BI OFE
+open Iris.Std BI BI.BIBase OFE
 
 section Laws
 
@@ -20,8 +20,8 @@ theorem fixpoint_plain [Sbi PROP] {A : Type _} (F : (A → PROP) → A → PROP)
   refine ContractiveHom.fixpoint_ind ⟨F, inferInstance⟩ (fun f => ∀ x, Plain (f x)) ?_
       (fun _ => iprop(emp)) inferInstance HΦ ?_
   · intro _ _ H HP x
-    refine ⟨.trans (.trans (equiv_iff.mp (fun n => H n x)).mpr (HP x).plain) ?_⟩
-    exact plainly_mono (equiv_iff.mp (fun n => H n x)).mp
+    refine ⟨.trans (.trans (BiEntails.of_eq (congrFun H x)).mpr (HP x).plain) ?_⟩
+    exact plainly_mono (BiEntails.of_eq (congrFun H x)).mp
   · refine LimitPreserving.forall _ (fun _ => ?_)
     refine limitPreserving_plain (Φne := ⟨fun _ _ _ h => h _⟩)
 
@@ -33,8 +33,8 @@ theorem fixpoint_persistent [BI PROP] {A : Type _} (F : (A → PROP) → A → P
   refine ContractiveHom.fixpoint_ind ⟨F, inferInstance⟩ (fun f => ∀ x, Persistent (f x)) ?_
       (fun _ => iprop(emp)) inferInstance HΦ ?_
   · intro _ _ H HP x
-    refine ⟨.trans (.trans (equiv_iff.mp (fun n => H n x)).mpr (HP x).persistent) ?_⟩
-    exact persistently_mono (equiv_iff.mp (fun n => H n x)).mp
+    refine ⟨.trans (.trans (BiEntails.of_eq (congrFun H x)).mpr (HP x).persistent) ?_⟩
+    exact persistently_mono (BiEntails.of_eq (congrFun H x)).mp
   · refine LimitPreserving.forall _ (fun _ => ?_)
     exact limitPreserving_persistent _ (Φne := ⟨fun _ _ _ h => h _⟩)
 
@@ -46,8 +46,8 @@ theorem fixpoint_absorbing [BI PROP] {A : Type _} (F : (A → PROP) → A → PR
   refine ContractiveHom.fixpoint_ind ⟨F, inferInstance⟩ (fun f => ∀ x, Absorbing (f x)) ?_
       (fun _ => iprop(True)) inferInstance HΦ ?_
   · intro _ _ H HP x
-    refine ⟨.trans (absorbingly_mono (equiv_iff.mp (fun n => H n x)).mpr) ?_⟩
-    exact (HP x).absorbing.trans (equiv_iff.mp (fun n => H n x)).mp
+    refine ⟨.trans (absorbingly_mono (BiEntails.of_eq (congrFun H x)).mpr) ?_⟩
+    exact (HP x).absorbing.trans (BiEntails.of_eq (congrFun H x)).mp
   · refine LimitPreserving.forall _ (fun _ => ?_)
     exact limitPreserving_absorbing _ (Φne := ⟨fun _ _ _ h => h _⟩)
 
@@ -58,7 +58,7 @@ theorem fixpoint_affine [BI PROP] {A : Type _} (F : (A → PROP) → A → PROP)
   refine ContractiveHom.fixpoint_ind ⟨F, inferInstance⟩ (fun f => ∀ x, Affine (f x)) ?_
       (fun _ => iprop(emp)) inferInstance HΦ ?_
   · intro _ _ H HP x
-    exact ⟨.trans (.trans (equiv_iff.mp (fun n => H n x)).mpr (HP x).affine) .rfl⟩
+    exact ⟨.trans (.trans (BiEntails.of_eq (congrFun H x)).mpr (HP x).affine) .rfl⟩
   · refine LimitPreserving.forall _ (fun _ => ?_)
     exact limitPreserving_affine _ (Φne := ⟨fun _ _ _ h => h _⟩)
 
@@ -76,10 +76,10 @@ theorem fixpoint_persistent_absorbing [BI PROP] {A : Type _}
       (fun x H => HΦ _ (fun x => (H x).left) (fun x => (H x).right)) ?_
   · intro _ _ H HP x
     refine ⟨⟨?_⟩, ⟨?_⟩⟩
-    · refine .trans (.trans (equiv_iff.mp (fun n => H n x)).mpr (HP x).left.persistent) ?_
-      exact persistently_mono (equiv_iff.mp (fun n => H n x)).mp
-    · refine (absorbingly_mono (equiv_iff.mp (fun n => H n x)).mpr).trans ?_
-      exact (HP x).right.absorbing.trans (equiv_iff.mp (fun n => H n x)).mp
+    · refine .trans (.trans (BiEntails.of_eq (congrFun H x)).mpr (HP x).left.persistent) ?_
+      exact persistently_mono (BiEntails.of_eq (congrFun H x)).mp
+    · refine (absorbingly_mono (BiEntails.of_eq (congrFun H x)).mpr).trans ?_
+      exact (HP x).right.absorbing.trans (BiEntails.of_eq (congrFun H x)).mp
   · refine LimitPreserving.forall _ (fun _ => ?_)
     refine LimitPreserving.and ?_ ?_
     · exact limitPreserving_persistent _ (Φne := ⟨fun _ _ _ h => h _⟩)
@@ -98,9 +98,9 @@ theorem fixpoint_persistent_affine [BI PROP] {A : Type _}
       (fun x H => HΦ _ (fun x => (H x).left) (fun x => (H x).right)) ?_
   · intro _ _ H HP x
     refine ⟨⟨?_⟩, ⟨?_⟩⟩
-    · refine .trans (.trans (equiv_iff.mp (fun n => H n x)).mpr (HP x).left.persistent) ?_
-      exact persistently_mono (equiv_iff.mp (fun n => H n x)).mp
-    · exact .trans (.trans (equiv_iff.mp (fun n => H n x)).mpr (HP x).right.affine) .rfl
+    · refine .trans (.trans (BiEntails.of_eq (congrFun H x)).mpr (HP x).left.persistent) ?_
+      exact persistently_mono (BiEntails.of_eq (congrFun H x)).mp
+    · exact .trans (.trans (BiEntails.of_eq (congrFun H x)).mpr (HP x).right.affine) .rfl
   · refine LimitPreserving.forall _ (fun _ => ?_)
     refine LimitPreserving.and ?_ ?_
     · exact limitPreserving_persistent _ (Φne := ⟨fun _ _ _ h => h _⟩)
@@ -120,10 +120,10 @@ theorem fixpoint_plain_absorbing [Sbi PROP] {A : Type _}
       (fun x H => HΦ _ (fun x => (H x).left) (fun x => (H x).right)) ?_
   · intro _ _ H HP x
     refine ⟨⟨?_⟩, ⟨?_⟩⟩
-    · refine .trans (.trans (equiv_iff.mp (fun n => H n x)).mpr (HP x).left.plain) ?_
-      exact plainly_mono (equiv_iff.mp (fun n => H n x)).mp
-    · refine (absorbingly_mono (equiv_iff.mp (fun n => H n x)).mpr).trans ?_
-      exact (HP x).right.absorbing.trans (equiv_iff.mp (fun n => H n x)).mp
+    · refine .trans (.trans (BiEntails.of_eq (congrFun H x)).mpr (HP x).left.plain) ?_
+      exact plainly_mono (BiEntails.of_eq (congrFun H x)).mp
+    · refine (absorbingly_mono (BiEntails.of_eq (congrFun H x)).mpr).trans ?_
+      exact (HP x).right.absorbing.trans (BiEntails.of_eq (congrFun H x)).mp
   · refine LimitPreserving.forall _ (fun _ => ?_)
     refine LimitPreserving.and ?_ ?_
     · exact limitPreserving_plain _ (Φne := ⟨fun _ _ _ h => h _⟩)
@@ -142,9 +142,9 @@ theorem fixpoint_plain_affine [Sbi PROP] {A : Type _}
       (fun x H => HΦ _ (fun x => (H x).left) (fun x => (H x).right)) ?_
   · intro _ _ H HP x
     refine ⟨⟨?_⟩, ⟨?_⟩⟩
-    · refine .trans (.trans (equiv_iff.mp (fun n => H n x)).mpr (HP x).left.plain) ?_
-      exact plainly_mono (equiv_iff.mp (fun n => H n x)).mp
-    · exact .trans (.trans (equiv_iff.mp (fun n => H n x)).mpr (HP x).right.affine) .rfl
+    · refine .trans (.trans (BiEntails.of_eq (congrFun H x)).mpr (HP x).left.plain) ?_
+      exact plainly_mono (BiEntails.of_eq (congrFun H x)).mp
+    · exact .trans (.trans (BiEntails.of_eq (congrFun H x)).mpr (HP x).right.affine) .rfl
   · refine LimitPreserving.forall _ (fun _ => ?_)
     refine LimitPreserving.and ?_ ?_
     · exact limitPreserving_plain _ (Φne := ⟨fun _ _ _ h => h _⟩)

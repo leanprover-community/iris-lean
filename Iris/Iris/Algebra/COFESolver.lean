@@ -54,10 +54,12 @@ def down (k : Nat) : A F (k+1) -n> A F k := (updown F k).2
 #rocq_ignore solver.g_S "Not needed"
 
 @[rocq_alias solver.gf]
-theorem down_up : ∀ {k} x, down F k (up F k x) ≡ x
-  | 0, ⟨()⟩ => .rfl
-  | _+1, x => (map_comp _ _ _ _ _).symm.trans <|
-    Equiv.trans (fun n => map_ne.eqv (fun m y => (down_up y) m) (fun m y => (down_up y) m) n x) (map_id _)
+theorem down_up : ∀ {k} x, down F k (up F k x) = x
+  | 0, ⟨()⟩ => rfl
+  | _+1, x => OFE.eq_dist.mpr fun _ => (map_comp _ _ _ _ _).dist.symm.trans <|
+    Dist.trans
+      (map_ne.ne (fun y => (down_up y).dist) (fun y => (down_up y).dist) x)
+      (map_id _).dist
 
 @[rocq_alias solver.fg]
 theorem up_down {k} (x) : up F (k+1) (down F (k+1) x) ≡{k}≡ x := by
@@ -70,7 +72,7 @@ variable (F) in
 @[ext, rocq_alias solver.tower]
 structure Tower : Type u where
   val k : A F k
-  protected down {k} : down F k (val (k+1)) ≡ val k
+  protected down {k} : down F k (val (k+1)) = val k
 
 instance : CoeFun (Tower F) (fun _ => ∀ k, A F k) := ⟨Tower.val⟩
 
@@ -97,7 +99,7 @@ def towerChain (c : Chain (Tower F)) (k : Nat) : Chain (A F k) where
 instance : COFE (Tower F) where
   compl c := by
     refine ⟨fun k => compl ⟨fun i => c.1 i k, fun h => c.cauchy h k⟩, ?_⟩
-    refine equiv_dist.2 fun n => ?_
+    refine OFE.eq_dist.mpr (fun n => ?_)
     refine ((down ..).ne.1 conv_compl).trans <| .trans ?_ conv_compl.symm
     exact (c.chain n).down.dist
   conv_compl _ := conv_compl
@@ -119,9 +121,9 @@ def downN {k} : ∀ n, A F (k + n) -n> A F k
   | n+1 => (downN n).comp (down F (k + n))
 
 @[rocq_alias solver.ggff]
-theorem downN_upN {k} (x : A F k) : ∀ {i}, downN F i (upN F i x) ≡ x
-  | 0 => .rfl
-  | n+1 => ((downN F n).ne.eqv (down_up _)).trans (downN_upN _)
+theorem downN_upN {k} (x : A F k) : ∀ {i}, downN F i (upN F i x) = x
+  | 0 => rfl
+  | n+1 => (congrArg (fun a => (downN F n) a) (down_up _)).trans (downN_upN _)
 
 @[rocq_alias solver.f_tower]
 protected theorem Tower.up (X : Tower F) : up F (k+1) (X (k+1)) ≡{k}≡ X (k+2) :=
@@ -136,9 +138,9 @@ protected theorem Tower.upN (X : Tower F) : ∀ i, upN F i (X (k+1)) ≡{k}≡ X
     exact ((up ..).ne.1 (X.upN _)).trans <| this _ (Nat.add_right_comm ..)
 
 @[rocq_alias solver.gg_tower]
-protected theorem Tower.downN (X : Tower F) : ∀ i, downN F i (X (k+i)) ≡ X k
-  | 0 => .rfl
-  | _+1 => ((downN ..).ne.eqv X.down).trans (X.downN _)
+protected theorem Tower.downN (X : Tower F) : ∀ i, downN F i (X (k+i)) = X k
+  | 0 => rfl
+  | _+1 => (congrArg (fun a => (downN ..) a) X.down).trans (X.downN _)
 
 instance (k : Nat) : NonExpansive (fun X : Tower F => X.val k) := ⟨fun _ _ _ => (· _)⟩
 
@@ -173,24 +175,24 @@ protected def Tower.embed (k) : A F k -n> Tower F := by
   dsimp [embed]; split <;> rename_i h₁
   · split <;> rename_i h₂
     · suffices ∀ a b (e₁ : k+a = i+1) (e₂ : k+b = i),
-        down F i (eqToHom e₁ (upN F a n)) ≡ eqToHom e₂ (upN F b n) from this _ _ _ _
+        down F i (eqToHom e₁ (upN F a n)) = eqToHom e₂ (upN F b n) from this _ _ _ _
       rintro a _ eq rfl
       rw [Nat.add_assoc, Nat.add_left_cancel_iff] at eq; subst a
-      apply down_up
+      exact down_up _
     · cases (Nat.lt_or_eq_of_le h₁).resolve_left (h₂ ∘ Nat.lt_succ_iff.1)
       have {a b} (e₁ : i+1+a = i+1) (e₂ : i+1 = i+b) :
-          down F i (eqToHom e₁ (upN F a n)) ≡ downN F b (eqToHom e₂ n) := by
+          down F i (eqToHom e₁ (upN F a n)) = downN F b (eqToHom e₂ n) := by
         cases Nat.add_left_cancel (k := 0) e₁; cases Nat.add_left_cancel e₂
-        exact .rfl
+        rfl
       apply this <;> simp [Nat.add_sub_cancel_left]
   · rw [dif_neg (mt Nat.le_succ_of_le h₁)]
     suffices ∀ k a b (e₁ : k = i+1+a) (e₂ : k = i+b) (n : A F k),
-        down F i (downN F a (eqToHom e₁ n)) ≡ downN F b (eqToHom e₂ n) from this _ _ _ _ _ _
+        down F i (downN F a (eqToHom e₁ n)) = downN F b (eqToHom e₂ n) from this _ _ _ _ _ _
     rintro k a b eq rfl n
     rw [Nat.add_assoc, Nat.add_left_cancel_iff, Nat.add_comm] at eq; subst eq
-    show _ ≡ downN F a (down F (i+a) n)
+    show _ = downN F a (down F (i+a) n)
     induction a with
-    | zero => exact .rfl
+    | zero => rfl
     | succ a ih =>
       dsimp [downN, Hom.comp]
       rw [down_eqToHom (Nat.add_right_comm i a 1)]
@@ -198,8 +200,8 @@ protected def Tower.embed (k) : A F k -n> Tower F := by
 
 @[rocq_alias solver.embed_f]
 theorem Tower.embed_up (x : A F k) :
-    Tower.embed (k+1) (up F k x) ≡ Tower.embed k x := by
-  refine equiv_dist.2 fun n i => ?_
+    Tower.embed (k+1) (up F k x) = Tower.embed k x := by
+  refine OFE.eq_dist.mpr (fun n i => ?_)
   dsimp [Tower.embed, embed]; split <;> rename_i h₁
   · simp [Nat.le_of_succ_le h₁]
     suffices ∀ a b (e₁ : k + 1 + a = i) (e₂ : k+b = i),
@@ -258,45 +260,49 @@ def unfoldChain (X : Tower F) : Chain (F (Tower F) (Tower F)) where
 def Tower.isoAux : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
   hom.f X := {
     val n := (down F n).comp (map (Tower.embed _) (Tower.proj _)) X
-    down {n} := (down ..).ne.eqv <|
-      (map_comp _ _ _ _ _).symm.trans
-        (fun m => map_ne.eqv (fun m' Y => (Tower.embed_up Y) m') (fun m' Y => Y.down m') m _)
+    down {n} := OFE.eq_dist.mpr fun m => (down ..).ne.1 <|
+      (map_comp _ _ _ _ _).dist.symm.trans <|
+        map_ne.ne (fun Y => (Tower.embed_up Y).dist) (fun Y => Y.down.dist) _
   }
   hom.ne.1 _ _ _ h _ := by dsimp only; exact (Hom.ne _).1 h
   inv.f X := compl (unfoldChain X)
   inv.ne.1 n _ _ h := by
     refine conv_compl.trans <| .trans ?_ conv_compl.symm
     exact (map ..).ne.1 (h (n+1))
-  hom_inv {X} := equiv_dist.2 fun n => by
+  hom_inv {X} := OFE.eq_dist.mpr fun n => by
     intro k
     refine ((down ..).ne.1 (.trans ?_ (X.downN n).dist)).trans X.down.dist
     refine ((map ..).ne.1 (conv_compl.trans
       ((unfoldChain ..).cauchy (show n ≤ k+n+1 by omega)).symm)).trans ?_
-    refine (((map ..).comp _).ne.1 (X.up.le (Nat.le_add_left ..)).symm).trans (Equiv.dist ?_)
-    refine ((map_comp _ _ _ _ _).trans <| (map ..).ne.eqv (map_comp _ _ _ _ _)).symm.trans ?_
+    refine (((map ..).comp _).ne.1 (X.up.le (Nat.le_add_left ..)).symm).trans ?_
+    refine ((map_comp _ _ _ _ _).trans
+      (congrArg (fun a => (map ..) a) (map_comp _ _ _ _ _))).symm.dist.trans ?_
     refine .trans (y := map (upN F n) (downN F n) (X (k+n+1))) ?_ ?_
-    · refine fun m => map_ne.eqv (fun m' Y => ?_) (fun m' Y => ?_) m _
+    · refine map_ne.ne (fun Y => ?_) (fun Y => ?_) _
       · simp [Hom.comp, Tower.embed, Tower.proj, embed, (by omega : k ≤ k+n+1)]
-        have {a e} : down F (k + n) (eqToHom e (upN F a Y)) ≡ upN F n Y := by
-          cases Nat.add_left_cancel (k := n+1) e; exact (down_up _)
+        have {a e} : down F (k + n) (eqToHom e (upN F a Y)) = upN F n Y := by
+          cases Nat.add_left_cancel (k := n+1) e; exact down_up _
         exact this.dist
       · simp [Hom.comp, Tower.embed, Tower.proj, embed, show ¬k+n+1 ≤ k by omega]
-        have {a e} : downN F a (eqToHom e (up F (k + n) Y)) ≡ downN F n Y := by
-          cases Nat.add_left_cancel (m := n+1) e; exact (downN ..).ne.eqv (down_up _)
+        have {a e} : downN F a (eqToHom e (up F (k + n) Y)) = downN F n Y := by
+          cases Nat.add_left_cancel (m := n+1) e; exact congrArg (fun a => (downN ..) a) (down_up _)
         exact this.dist
     · have e : k+n+1 = k+1+n := by omega
-      suffices ∀ x y, eqToHom e x = y → map (upN F n) (downN F n) x ≡ downN F n y by
-        apply this; clear this; revert e; generalize k+1+n = a; rintro rfl; rfl
-      rintro x _ rfl
+      suffices ∀ x y, eqToHom e x = y → ∀ m, map (upN F n) (downN F n) x ≡{m}≡ downN F n y by
+        refine this _ _ ?_ n
+        clear this; revert e; generalize k+1+n = a; rintro rfl; rfl
+      rintro x _ rfl m
       induction n with
-      | zero => exact map_id _
+      | zero => exact (map_id _).dist
       | succ n ih =>
-        refine (map_comp _ _ _ _ _).trans <| (ih (Nat.succ.inj e) _).trans ((downN ..).ne.eqv ?_)
-        exact .of_eq (down_eqToHom _).symm
-  inv_hom := equiv_dist.2 fun n => by
+        refine (map_comp _ _ _ _ _).dist.trans <|
+          (ih (Nat.succ.inj e) _).trans (congrArg (fun a => (downN ..) a) ?_).dist
+        exact (down_eqToHom _).symm
+  inv_hom := OFE.eq_dist.mpr fun n => by
     refine (conv_compl' n.le_succ).trans ?_
     dsimp [unfoldChain]; rw [down]
-    refine ((map_comp _ _ _ _ _).trans <| (map ..).ne.eqv (map_comp _ _ _ _ _)).dist.symm.trans ?_
+    refine ((map_comp _ _ _ _ _).trans
+      (congrArg (fun a => (map ..) a) (map_comp _ _ _ _ _))).dist.symm.trans ?_
     refine (map_ne.ne (fun Y => ?_) (fun Y => ?_) _).trans (map_id _).dist
     · exact ((Tower.embed _).ne.1 Y.up).trans (Y.embed_self.le (by omega))
     · exact ((Tower.embed _).ne.1 Y.down.dist).trans Y.embed_self
@@ -322,7 +328,8 @@ def Fix.fold : F (Fix F) (Fix F) -n> Fix F := Fix.iso.hom
 @[rocq_alias solver.unfold]
 def Fix.unfold : Fix F -n> F (Fix F) (Fix F) := Fix.iso.inv
 #rocq_ignore solver.unfold_ne "Implicit in the OFE.Iso structure"
-theorem Fix.fold_unfold (X : Fix F) : Fix.fold (Fix.unfold X) ≡ X := Fix.iso.hom_inv
-theorem Fix.unfold_fold (X : F (Fix F) (Fix F)) : Fix.unfold (Fix.fold X) ≡ X := Fix.iso.inv_hom
+theorem Fix.fold_unfold (X : Fix F) : Fix.fold (Fix.unfold X) = X := Fix.iso.hom_inv
+theorem Fix.unfold_fold (X : F (Fix F) (Fix F)) : Fix.unfold (Fix.fold X) = X :=
+  Fix.iso.inv_hom
 
 attribute [irreducible] Fix Fix.fold Fix.unfold Fix.iso
