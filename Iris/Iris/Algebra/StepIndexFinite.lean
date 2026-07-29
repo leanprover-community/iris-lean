@@ -50,17 +50,11 @@ instance natSIdxFinite : SIdxFinite Nat where
 
 namespace OFE
 
-variable {α : Type _} [OFE Nat α]
+theorem Dist.leNat [OFE Nat α] {m n} {x y : α} (h : x ≡{n}≡ y) (h' : m ≤ n) : x ≡{m}≡ y :=
+  if hm : m = n then hm ▸ h else h.lt <| Nat.lt_of_le_of_ne h' hm
 
-@[rocq_alias dist_le]
-theorem Dist.le [OFE α] {m n} {x y : α} (h : x ≡{n}≡ y) (h' : m ≤ n) : x ≡{m}≡ y :=
-  if hm : m = n then hm ▸ h else h.lt (Nat.lt_of_le_of_ne h' hm)
-
-@[rocq_alias contractive_S]
-theorem Contractive.succ [OFE α] [OFE β] (f : α → β) [Contractive f] {n x y}
+theorem Contractive.succNat [OFE Nat α] [OFE Nat β] (f : α → β) [Contractive f] {n x y}
     (h : x ≡{n}≡ y) : f x ≡{n.succ}≡ f y :=
-  Contractive.distLater_dist (distLater_succ.2 h)
-
-#rocq_ignore dist_S "Subsumed by `Dist.lt`/`Dist.le`."
+  Contractive.distLater_dist <| distLater_succ.mpr h
 
 end OFE
