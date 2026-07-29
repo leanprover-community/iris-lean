@@ -1815,9 +1815,10 @@ def laterChain [OFE SI A] (c : Chain (Later A)) : Chain A where
 instance isCOFE_later [OFE SI A] [IsCOFE SI A] : IsCOFE SI (Later A) where
   compl c := Later.next (IsCOFE.compl (laterChain c))
   conv_compl {n : SI} c := by
-    rcases n with _|n' <;> simp [Dist, DistLater]
+    simp [Dist, DistLater]
     intros m Hlt
-    exact (IsCOFE.conv_compl (n := n') (c := laterChain c)).le (Nat.le_of_lt_succ Hlt)
+    refine (IsCOFE.conv_compl (n := m) (c := laterChain c)).trans ?_
+    exact ((c.cauchy <| SIdx.succ_le_of_lt Hlt) m (SIdx.lt_succ_self m)).symm
 
 @[rocq_alias laterO_map]
 def laterMap [OFE SI A] [OFE SI B] (f : A -n> B)  : Later A -n> Later B := by
