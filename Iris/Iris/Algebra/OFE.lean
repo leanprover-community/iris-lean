@@ -986,6 +986,28 @@ theorem chain_option_some [SIdx SI] [OFE SI V] {c : Chain (Option V)} (H : c n =
   rw [← Hchoose]
   simp [hcc]
 
+@[rocq_alias bchain]
+structure BChain (α : Type _) [SIdx SI] [OFE SI α] (n : SI) where
+  bchain m : m < n → α
+  bcauchy {m p} (hm : m < n) (hp : p < n) (h : m ≤ p) : bchain p hp ≡{m}≡ bchain m hm
+
+namespace BChain
+variable [SIdx SI] [OFE SI α] [OFE SI β]
+
+def map (f : α -n> β) {n : SI} (c : BChain α n) : BChain β n where
+  bchain m hm := f <| c.bchain m hm
+  bcauchy hm hp h := f.ne.ne <| c.bcauchy hm hp h
+
+def const (a : α) (n : SI) : BChain α n where
+  bchain _ _ := a
+  bcauchy _ _ _ := .rfl
+
+def le {n : SI} (c : BChain α n) {m : SI} (hm : m ≤ n) : BChain α m where
+  bchain m' hm' := c.bchain m' (SIdx.lt_le_trans hm' hm)
+  bcauchy _ _ h := c.bcauchy _ _ h
+
+end BChain
+
 /-- Complete ordered family of equivalences -/
 @[rocq_alias Cofe]
 class IsCOFE (SI : outParam <| Type _) (α : Type _) [SIdx SI] [OFE SI α] where
