@@ -1032,13 +1032,15 @@ instance [COFE SI α] : COFE SI (ULift α) where
   conv_compl := conv_compl
 
 @[rocq_alias unit_ofe_discrete]
-instance : @Discrete SI _ Unit unitOFE where
-  discrete_0 _ := Subsingleton.elim _ _
+instance : @Discrete SI _ Unit unitOFE :=
+  letI := unitOFE
+  { discrete_0 _ := Subsingleton.elim _ _ }
 
 @[reducible, rocq_alias unit_cofe]
-def unitCOFE [SIdx SI] : @COFE SI _ Unit where
-  compl _ := ()
-  conv_compl := ⟨⟩
+def unitCOFE [SIdx SI] : COFE SI Unit :=
+  letI := unitOFE
+  { compl _ := ()
+    conv_compl := ⟨⟩ }
 
 abbrev IsCOFEFun {α : Type _} (β : α → Type _) [OFEFun (SI := SI) β] := ∀ x : α, IsCOFE SI (β x)
 
@@ -1165,10 +1167,10 @@ end COFE
 @[reducible]
 def DiscreteO.instCOFE [SIdx SI] {α : Type _} : COFE SI (DiscreteO α) := COFE.ofDiscrete _
 
-@[reducible]
-def DiscreteO.OFE [SIdx SI] {α : Type _} :
+theorem DiscreteO.OFE [SIdx SI] {α : Type _} :
     @OFE.Discrete SI _ (DiscreteO α) (OFE.ofDiscrete _) :=
-  ⟨fun h => h⟩
+  letI := OFE.ofDiscrete
+  ⟨id⟩
 
 #rocq_ignore leibnizO_leibniz "Not needed"
 
