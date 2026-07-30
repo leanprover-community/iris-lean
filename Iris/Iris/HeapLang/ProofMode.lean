@@ -658,11 +658,11 @@ elab "wp_store" : tactic =>
     let ⟨_, name, vid, _, hyps'', pfSplit⟩ ←
       lookupPointsTo `wp_store mvar hgs hyps' l q(DFrac.own 1) q(false)
 
-    let hyps''' := hyps''.add bi name vid q(false) q(pointsTo $l (DFrac.own 1) (some $v'))
+    let ⟨_, hyps''', pf'''⟩ := hyps''.add bi name vid q(false) q(pointsTo $l (DFrac.own 1) (some $v'))
 
     let pfCont ← finishHeapOp hyps''' hgs s E K q(hl_val(#())) Φ
 
-    mvar.assign q(tac_wp_store (ι := $hgs) (Δ' := $eΔ') $pfLater $pfSplit $pfCont)
+    mvar.assign q(tac_wp_store (ι := $hgs) (Δ' := $eΔ') $pfLater $pfSplit <| $(pf''').mp.trans $pfCont)
 
 elab "wp_xchg" : tactic =>
   runTacticHeapWp `wp_xchg fun mvar {bi, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
@@ -676,11 +676,11 @@ elab "wp_xchg" : tactic =>
     let ⟨v, name, vid, _, hyps'', pfSplit⟩ ←
       lookupPointsTo `wp_xchg mvar hgs hyps' l q(DFrac.own 1) q(false)
 
-    let hyps''' := hyps''.add bi name vid q(false) q(pointsTo $l (DFrac.own 1) (some $v'))
+    let ⟨_, hyps''', pf'''⟩ := hyps''.add bi name vid q(false) q(pointsTo $l (DFrac.own 1) (some $v'))
 
     let pfCont ← finishHeapOp hyps''' hgs s E K v Φ
 
-    mvar.assign q(tac_wp_xchg (ι := $hgs) (Δ' := $eΔ') $pfLater $pfSplit $pfCont)
+    mvar.assign q(tac_wp_xchg (ι := $hgs) (Δ' := $eΔ') $pfLater $pfSplit <| $(pf''').mp.trans $pfCont)
 
 elab "wp_faa" : tactic =>
   runTacticHeapWp `wp_faa fun mvar {bi, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
@@ -703,12 +703,12 @@ elab "wp_faa" : tactic =>
     have pfSplit : Q($eΔ' ⊣⊢ $eΔ'' ∗
       pointsTo $l (DFrac.own 1) (some (Val.lit (BaseLit.int $z1)))) := pfSplit
 
-    let hyps''' := hyps''.add bi name vid q(false)
+    let ⟨_, hyps''', pf'''⟩ := hyps''.add bi name vid q(false)
       q(pointsTo $l (DFrac.own 1) (some (Val.lit (BaseLit.int ($z1 + $z2)))))
 
     let pfCont ← finishHeapOp hyps''' hgs s E K q(Val.lit (BaseLit.int $z1)) Φ
 
-    mvar.assign q(tac_wp_faa (ι := $hgs) (Δ' := $eΔ') $pfLater $pfSplit $pfCont)
+    mvar.assign q(tac_wp_faa (ι := $hgs) (Δ' := $eΔ') $pfLater $pfSplit <| $(pf''').mp.trans $pfCont)
 
 elab "wp_cmpxchg_suc" : tactic =>
   runTacticHeapWp `wp_cmpxchg_suc fun mvar {bi, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
@@ -729,14 +729,14 @@ elab "wp_cmpxchg_suc" : tactic =>
     -- check equality, don't throw hard error to match Rocq behavior
     let pfEq ← iSolveSidecondition q($v = $v1) (failOnUnsolved := false)
 
-    let hyps''' := hyps''.add bi name vid q(false)
+    let ⟨_, hyps''', pf'''⟩ := hyps''.add bi name vid q(false)
       q(pointsTo $l (DFrac.own 1) (some $v2))
 
     let pfCont ← finishHeapOp hyps''' hgs s E K
       q(Val.pair $v (Val.lit (BaseLit.bool true))) Φ
 
     mvar.assign
-      q(tac_wp_cmpXchg_suc (ι := $hgs) (Δ' := $eΔ') $pfLater $pfSplit $pfEq $pfSafe $pfCont)
+      q(tac_wp_cmpXchg_suc (ι := $hgs) (Δ' := $eΔ') $pfLater $pfSplit $pfEq $pfSafe <| $(pf''').mp.trans $pfCont)
 
 elab "wp_cmpxchg_fail" : tactic =>
   runTacticHeapWp `wp_cmpxchg_fail fun mvar {s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
@@ -779,7 +779,7 @@ elab "wp_cmpxchg" " with" colGt ppSpace h1:binderIdent colGt ppSpace h2:binderId
     let ⟨v, name, vid, eΔ'', hyps'', pfSplit⟩ ←
       lookupPointsTo `wp_cmpxchg mvar hgs hyps' l q(DFrac.own 1) q(false)
 
-    let hypsSuc := hyps''.add bi name vid q(false)
+    let ⟨_, hypsSuc, pfEq⟩ := hyps''.add bi name vid q(false)
       q(pointsTo $l (DFrac.own 1) (some $v2))
 
     -- check safety, don't throw hard error to match Rocq behavior
@@ -793,7 +793,7 @@ elab "wp_cmpxchg" " with" colGt ppSpace h1:binderIdent colGt ppSpace h2:binderId
         Qq.withLocalDeclDQ sucName q($v = $v1) fun _h => do
           let pf ← finishHeapOp hypsSuc hgs s E K
             q(Val.pair $v (Val.lit (BaseLit.bool true))) Φ
-          mkLambdaFVars #[_h] pf
+          mkLambdaFVars #[_h] q($(pfEq).mp.trans $pf)
 
     let (failName, _) ← getFreshName h2
     let pfFail : Q($v ≠ $v1 → $eΔ' ⊢
@@ -843,11 +843,11 @@ elab "wp_alloc" colGt ppSpace loc:binderIdent " with" colGt ppSpace hyp:binderId
         Wp.wp (self := wp.def (ι := @HeapLang $hlc $GF $hgs)) $s $E
           (ProgramLogic.fill $K (Exp.ofVal (Expr := Exp) (Val.lit (BaseLit.loc l)))) $Φ) ←
       Qq.withLocalDeclDQ locName q(Loc) fun l => do
-        let ⟨_, hyps''⟩ ← hyps'.addWithInfo bi hyp q(false)
+        let ⟨_, _, hyps'', pfEq⟩ ← hyps'.addWithInfo bi hyp q(false)
           q(pointsTo $l (DFrac.own 1) (some $v))
 
         let pf ← finishHeapOp hyps'' hgs s E K q(Val.lit (BaseLit.loc $l)) Φ
-        mkLambdaFVars #[l] pf
+        mkLambdaFVars #[l] q($(pfEq).mp.trans $pf)
 
     mvar.assign q(tac_wp_alloc (ι := $hgs) (Δ' := $eΔ') $pfLater $pfCont)
 
