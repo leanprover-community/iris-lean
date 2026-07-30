@@ -742,7 +742,7 @@ instance isExcept0Twp : IsExcept0 (WP e @ s ; E [{ Φ }]) where
 
 @[rocq_alias elim_modal_fupd_twp]
 instance (priority := default + 10) elimModalFupdTwp p :
-    ElimModal True p false iprop(|={E}=> P) P
+    ElimModal True p io false iprop(|={E}=> P) P
       (WP e @ s ; E [{ Φ }]) (WP e @ s ; E [{ Φ }]) where
   elim_modal := by
     iintro %_ ⟨H, G⟩
@@ -754,13 +754,13 @@ instance (priority := default + 10) elimModalFupdTwp p :
 
 @[rocq_alias elim_modal_bupd_twp]
 instance elimModalBupdTwp p :
-    ElimModal True p false iprop(|==> P) P
+    ElimModal True p io false iprop(|==> P) P
       (WP e @ s ; E [{ Φ }]) (WP e @ s ; E [{ Φ }]) where
   elim_modal := by
     rintro ⟨⟩
     refine BI.sep_mono (BI.intuitionisticallyIf_mono
       (BIUpdateFUpdate.fupd_of_bupd (E := E))) .rfl |>.trans ?_
-    apply elimModalFupdTwp _ |>.elim_modal ⟨⟩
+    apply elimModalFupdTwp _ |>.elim_modal ⟨⟩ (io := io)
 
 /-- The same diagnostic as partial WP: changing masks through a non-atomic
 TWP goal requires an explicit leading update. -/
@@ -768,13 +768,13 @@ TWP goal requires an explicit leading update. -/
 instance elimModalFupdTwp_wrongMask :
     ElimModal (PMError "Goal and eliminated modality must have the same mask.
     Use `iapply twp.fupd_twp; imod (fupd_mask_subseteq E₂)` to adjust the mask of your goal to `E₂`")
-      p false iprop(|={E₂}=> P) iprop(False)
+      p io false iprop(|={E₂}=> P) iprop(False)
       (WP e @ s ; E₁ [{ Φ }]) iprop(False) where
   elim_modal := nofun
 
 @[rocq_alias elim_modal_fupd_twp_atomic]
 instance elimModalFupdTwpAtomic :
-    ElimModal (Language.Atomic ↑s e) p false iprop(|={E₁,E₂}=> P) P
+    ElimModal (Language.Atomic ↑s e) p io false iprop(|={E₁,E₂}=> P) P
       (WP e @ s ; E₁ [{ Φ }])
       (WP e @ s ; E₂ [{ v, |={E₂,E₁}=> Φ v }]) where
   elim_modal := by
@@ -790,7 +790,7 @@ instance elimModalFupdTwpAtomic :
 instance elimModalFupdTwpAtomic_wrongMask :
     ElimModal (PMError "Goal and eliminated modality must have the same mask.
     Use `iapply twp.fupd_twp; imod (fupd_mask_subseteq E₂)` to adjust the mask of your goal to `E₂`")
-      p false iprop(|={E₁,E₂}=> P) iprop(False)
+      p io false iprop(|={E₁,E₂}=> P) iprop(False)
       (WP e @ s ; E₁ [{ Φ }]) iprop(False) where
   elim_modal := nofun
 
