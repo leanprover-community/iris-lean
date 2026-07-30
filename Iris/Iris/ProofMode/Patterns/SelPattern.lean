@@ -15,9 +15,13 @@ open Lean Meta Std
 declare_syntax_cat selPat
 
 syntax ident : selPat
+/-- Choose all hypothesis from the pure context. -/
 syntax "%" : selPat
+/-- Choose a specific hypothesis from the pure context. -/
 syntax "%" noWs ident : selPat
+/-- Choose all hypotheses in the intuitionistic context. -/
 syntax "#" : selPat
+/-- Choose all hypotheses in the spatial context. -/
 syntax "∗" : selPat
 
 @[rocq_alias sel_pat]
@@ -69,6 +73,7 @@ def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget
       return [⟨.ipm ivar, true⟩]
   | .leanIdent name => do
       let ldecl ← getLocalDeclFromUserName name.getId
+      addLocalVarInfo name (← getLCtx) ldecl.toExpr ldecl.type
       return [⟨.pure ldecl.fvarId, true⟩]
   | .intuitionistic =>
       return hyps.intuitionisticIVarIds.map (⟨.ipm ·, false⟩)

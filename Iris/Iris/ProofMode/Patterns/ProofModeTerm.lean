@@ -16,7 +16,7 @@ open Lean
 declare_syntax_cat pmTerm
 
 syntax term : pmTerm
-syntax term colGt " $$ " (colGt specPat)+ : pmTerm
+syntax term colGt " $$ " (colGt ppSpace specPat)+ : pmTerm
 
 @[rocq_alias iTrm]
 structure PMTerm where
