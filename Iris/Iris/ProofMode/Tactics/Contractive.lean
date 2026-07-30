@@ -11,10 +11,6 @@ namespace Iris
 
 open Lean Elab Tactic Meta Iris.Std
 
-meta def observingSuccess [Monad m] [MonadBacktrack s m] [MonadExcept ε m]
-    (x : m α) : m Bool := do
-  return (← observing? x).isSome
-
 meta def nonexpLemmas : MetaM (Array Name) := do
   let env ← getEnv
   return (nonexpExt.getState env).reverse
@@ -48,18 +44,17 @@ meta def distLaterStep (goal : MVarId) : MetaM (Option (List MVarId)) :=
           catch _ => continue
     return none
 
-meta def distStep : TacticM Bool := do
-  let goal ← getMainGoal
-  pure <| ← goal.withContext do
+meta def distStep (goal : MVarId) : MetaM (Option (List MVarId)) := do
+  goal.withContext do
     let ctx ← getLCtx
     for decl? in ctx.decls do
       if let some decl := decl? then
-        if decl.type.isAppOf ``OFE.Dist then
-          let declIdent := mkIdent decl.userName
-          let tac ← `(tactic|apply $declIdent:ident)
-          if ← observingSuccess <| evalTactic tac then
-            return true
-    return false
+        if decl.type.isAppOf ``OFE.Dist then try
+            let newGoals ← goal.apply decl.toExpr
+            newGoals.head!.assumption
+            return some newGoals.tail!
+          catch _ => continue
+    return none
 
 meta def tryUnfoldFn : TacticM Unit := do
   let _ ← observing? ((← getMainTarget).withApp <| λ _ args => do
@@ -121,36 +116,44 @@ elab "contractive" : tactic => do
   -- main loop
   contractiveMain (← getMainGoal) false
 
--- mutual
+mutual
 
--- meta partial def nonexpRecurse : TacticM Unit := do
---   let _ ← (← getUnsolvedGoals).mapM (nonexpMain ·)
+meta partial def nonexpRecurse : TacticM Unit := do
+  let _ ← (← getUnsolvedGoals).mapM (nonexpMain ·)
 
--- meta partial def nonexpMain (goal : MVarId) : TacticM Unit := do
---   if ← goal.isAssigned then return
---   makeMainGoal goal
+meta partial def nonexpMain (goal : MVarId) : TacticM Unit := do
+  if ← goal.isAssigned then return
+  makeMainGoal goal
 
---   -- simplification step (includes application of Dist.rfl)
---   if let some _ ← observing? (evalTactic <| ← `(tactic|simp)) then nonexpRecurse; return
+  -- simplification step (includes application of Dist.rfl)
+  if let some _ ← observing? (evalTactic <| ← `(tactic|simp)) then
+    nonexpRecurse
+    return
 
---   -- applies an OFE.Dist hypothesis
---   if ← distStep then nonexpRecurse; return
+  -- applies an OFE.Dist hypothesis
+  if let some newGoals ← (distStep goal) then
+    replaceMainGoal newGoals
+    discard <| newGoals.mapM (nonexpMain ·)
+    return
 
---   -- applies a non-expansive lemma
---   if ← nonexpStep then nonexpRecurse; return
+  -- applies a non-expansive lemma
+  if let some newGoals ← (nonexpStep goal) then
+    replaceMainGoal newGoals
+    discard <| newGoals.mapM (nonexpMain ·)
+    return
 
--- end
+end
 
--- elab "nonexp" : tactic => do
---   -- intro hypotheses
---   evalTactic <| ← `(tactic|intros)
+elab "nonexp" : tactic => do
+  -- intro hypotheses
+  evalTactic <| ← `(tactic|intros)
 
---   -- intro foralls within OFE.Dist
---   while ← distIsForall <| ← getMainTarget do
---    evalTactic <| ← `(tactic|intro)
+  -- intro foralls within OFE.Dist
+  while ← distIsForall <| ← getMainTarget do
+   evalTactic <| ← `(tactic|intro)
 
---   -- unfold function definition
---   tryUnfoldFn
+  -- unfold function definition
+  tryUnfoldFn
 
---   -- main loop
---   nonexpMain (← getMainGoal)
+  -- main loop
+  nonexpMain (← getMainGoal)
