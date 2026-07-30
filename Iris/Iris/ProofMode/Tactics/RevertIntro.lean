@@ -33,12 +33,14 @@ def iRevertIntro
   let names : List (Syntax × IntroPat) ← hs.mapM fun
     | {kind := .pure id, ..} => do
       let name ← Lean.mkIdent <$> id.getUserName
-      let ident ← `(binderIdent| $name:ident)
-      return (name, .intro <| .pure ident)
+      let purePat ← `(rcasesPat| $name:ident)
+      return (name, .intro ⟨purePat, .pure purePat⟩)
     | {kind := .ipm ivar, ..} =>  do
       let name ← Lean.mkIdent <$> (hyps.getUserName? ivar).getM
       let ident ← `(binderIdent| $name:ident)
-      return (name, .intro <| (if ivar.persistent? then .intuitionistic else id) <| .one ident)
+      let onePat : iCasesPat := ⟨ident, .one ident⟩
+      let case : iCasesPatCase := if ivar.persistent? then .intuitionistic onePat else .one ident
+      return (name, .intro ⟨ident, case⟩)
   trace[irevertintro] s!"Calling `iRevertIntro` with {names.map (·.1)} on context {←ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
   iRevertCore hs hyps goal fun hyps goal => do
     k hyps goal fun hyps goal k' => do
