@@ -86,11 +86,7 @@ private def FrameResult.step {u prop bi origE origGoal} :
     else
       return st
 
-<<<<<<< HEAD
-def iFrame {prop : Q(Type u)} (bi : Q(BI $prop)) {e : Q($prop)}
-=======
 def iFrame {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
->>>>>>> upstream/master
     (hyps : Hyps bi e) (goal : Q($prop)) (sels : List SelTarget) :
     ProofModeM (FrameResult bi e goal) := do
   let mut st : FrameResult bi e goal := { progress := false, e, hyps, goal, pf := q(frame_init) }
