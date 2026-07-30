@@ -591,7 +591,7 @@ open Lean Elab Tactic Meta Qq Iris.BI Iris Iris.ProofMode
 theorem tac_lc_add_laterN_split {GF : BundledGFunctors} [InvGS GF]
     {φ : Prop} {n m newM : Nat} {E : CoPset} {P Q goal : IProp GF}
     (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
-    (h1 : m = n + newM) (h2 : iprop(P ∗ £ newM) ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
+    (h1 : m = n + newM) (h2 : P ∗ £ newM ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
     iprop(P ∗ £ m) ⊢ goal := by
   subst h1
   iintro ⟨HP, Hcred⟩
@@ -610,7 +610,7 @@ theorem tac_lc_add_laterN_full {GF : BundledGFunctors} [InvGS GF]
     {φ : Prop} {m : Nat} {E : CoPset} {P Q goal : IProp GF}
     (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
     (h2 : P ⊢ ▷^[m] Q) (h3 : Q ⊢ goal) :
-    iprop(P ∗ £ m) ⊢ goal := by
+    P ∗ £ m ⊢ goal := by
   iintro ⟨HP, Hcred⟩
   iapply inst.elim_modal hφ
   isplitl
