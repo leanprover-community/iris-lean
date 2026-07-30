@@ -21,8 +21,9 @@ jobs:
       - name: Resolve Iris-Rocq master to a commit SHA
         id: rocq-commit
         run: |
-          sha=$(curl -fsSL \
-            "https://gitlab.mpi-sws.org/api/v4/projects/iris%2Firis/repository/commits/master" \
+          set -euo pipefail
+          url=$(python3 scripts/check_porting.py --print commit-api-url)
+          sha=$(curl -fsSL "$url" \
             | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
