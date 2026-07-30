@@ -6,11 +6,7 @@ Authors: Alvin Tang
 module
 
 public import Iris.BI
-public import Iris.BI.Extensions
-public import Iris.BI.Sbi
 public import Iris.ProofMode
-public import Iris.ProofMode.Classes
-public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
