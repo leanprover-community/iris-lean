@@ -648,9 +648,6 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
       | throwError m!"inext: {h} is not a spatial later credit hypothesis"
     let ⟨e', hyps', _, _, _, _, pfEq⟩ := hyps.remove false ivar
 
-    -- -- Ensure sufficient credits
-    -- if natM < natN then throwError "inext: insufficient credits"
-
     let φ ← mkFreshExprMVarQ q(Prop)
     let E ← mkFreshExprMVarQ q(CoPset)
     let Q' ← mkFreshExprMVarQ q($prop)
