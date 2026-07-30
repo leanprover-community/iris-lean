@@ -57,8 +57,7 @@ public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
 /--
-  Used by `iIntroCore` for the cases `.intro (.pure …)`, `.intro (.rewrite …)`,
-  `.all` and `.allwand`.
+  Used by `iIntroCore` for the pure and quantifier cases.
 
   The function `k'` is the fallback option when type class synthesis with `Q`
   using `FromForall` fails. The fallback option is applicable only for
@@ -77,9 +76,10 @@ private def iIntroCoreForallIntro {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     throwError "iintro: {Q} cannot be turned into a universal quantifier or pure hypothesis"
   | none, some k' => k'
   | some _, _ =>
-    let pf : Q(∀ x, $P ⊢ $Φ x) ← iPureCases q(∀ x, $P ⊢ $Φ x) pat fun g => g.withContext do
+    let pf : Q(∀ x, $P ⊢ $Φ x) ← iPureCases q(∀ x, $P ⊢ $Φ x) pat fun g => do
       let B : Q($prop) ← mkFreshExprMVarQ q($prop)
-      unless ← isDefEq (← g.getType) q($P ⊢ $B) do
+      -- TODO: Is this the right way to check this?
+      unless ← withTransparency .none <| isDefEq (← g.getType) q($P ⊢ $B) do
         throwError "iintro: internal error: unexpected goal after intro pattern"
       k g (Expr.headBeta (← instantiateMVars B))
     return q(from_forall_intro (Q := $Q) $pf)

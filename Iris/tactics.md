@@ -16,7 +16,7 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 - `irevert` [*selPats*](#selection-patterns) — Revert the selected hypotheses (proof mode or pure Lean hypotheses) into the goal. An Iris hypothesis *H* in *selPats* is reverted as a wand premise. If a pure hypothesis *H* in *selPats* has a type `φ` such that `φ : Prop`, then *H* is reverted as a premise. If *x* in *selPats* has a type `α` such that `α` is non-`Prop`, then *x* is reverted as a universally quantified variable. For every hypothesis *H* being reverted, all hypotheses dependent on *H* must also be reverted.
 - `irevert!` [*selPats*](#selection-patterns) — similar to `irevert` [*selPats*](#selection-patterns), except that for every hypothesis in *selPats*, hypotheses dependent on *H* are also implicitly reverted.
 - `ipure` *H* — Move the pure hypothesis *H* into the Lean context.
-- `ipure` *H* `as` *rcasesPat* — Move the pure hypothesis *H* into the Lean context and destruct it with the `rcases` pattern.
+- `ipure` *H* `with` *rcasesPat* — Move the pure hypothesis *H* into the Lean context and destruct it with the `rcases` pattern.
 - `iintuitionistic` *H* — Move *H* to the intuitionistic context. Equivalent to `icases H with #H`.
 - `ispatial` *H* — Move *H* to the spatial context. Equivalent to `icases H with ∗H`.
 

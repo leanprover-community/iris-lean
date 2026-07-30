@@ -87,7 +87,8 @@ private def iCasesExists {prop : Q(Type u)} {bi : Q(BI $prop)} (pat : TSyntax `r
   let pf : Q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) ←
     iPureCases q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) pat fun g => do
       let B : Q($prop) ← mkFreshExprMVarQ q($prop)
-      unless ← isDefEq (← g.getType) q($P ∗ □?$p $B ⊢ $goal) do
+      -- TODO: Is this the right way to check this?
+      unless ← withTransparency .none <| isDefEq (← g.getType) q($P ∗ □?$p $B ⊢ $goal) do
         throwError "icases: unexpected goal {goal} after intro pattern"
       k (Expr.headBeta (← instantiateMVars B))
   return q(exists_elim' $pf)

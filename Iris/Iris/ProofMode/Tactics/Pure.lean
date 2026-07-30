@@ -48,8 +48,7 @@ def iPureCases (ty : Q(Prop)) (pat : TSyntax `rcasesPat)
     (k : MVarId → ProofModeM Expr) : ProofModeM Q($ty) := do
   let m : Q($ty) ← mkFreshExprSyntheticOpaqueMVar ty
   let gs ← withRef pat <| Lean.Elab.Tactic.RCases.rintro #[pat] none m.mvarId!
-  for g in gs do
-    g.withContext do g.assign (← k g)
+  for g in gs do g.withContext do g.assign (← k g)
   instantiateMVars m
 
 def iPureCore {prop : Q(Type u)} {bi : Q(BI $prop)}
@@ -59,13 +58,12 @@ def iPureCore {prop : Q(Type u)} {bi : Q(BI $prop)}
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
   let some _ ← ProofModeM.trySynthInstanceQ q(IntoPure $A $φ)
   | throwError "ipure: {A} is not pure"
-  let f ← iPureCases q($φ → ($(hyps'.tm) ⊢ $Q)) purePat <| fun g =>
-    g.withContext do
-      let some ⟨_, _, tm, goal'⟩ := parseEntails? (← instantiateMVars (← g.getType))
-        | throwError "ipure: unable to parse the Iris entailment {← g.getType}"
-      let some ⟨_, hyps'⟩ := parseHyps? bi tm
-        | throwError "ipure: unable to parse the Iris context {tm}"
-      return (← k hyps' goal' : Expr)
+  let f ← iPureCases q($φ → ($(hyps'.tm) ⊢ $Q)) purePat <| fun g => do
+    let some ⟨_, _, tm, goal'⟩ := parseEntails? (← instantiateMVars (← g.getType))
+      | throwError "ipure: unable to parse the Iris entailment {← g.getType}"
+    let some ⟨_, hyps'⟩ := parseHyps? bi tm
+      | throwError "ipure: unable to parse the Iris context {tm}"
+    return (← k hyps' goal' : Expr)
   have : $hyps'.tm =Q $P' := ⟨⟩
   match matchBool p with
   | .inl _ => return q(pure_elim_intuitionistic $pf $f)

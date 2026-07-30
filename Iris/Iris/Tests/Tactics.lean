@@ -344,6 +344,10 @@ example [BI PROP] (P : PROP) : P -∗ P → P := by
 example [BI PROP] (P : PROP) : False ∗ □ P ⊢@{PROP} P := by
   iintro ⟨⟨⟩, #_⟩
 
+/- Tests `iintro` using the pure introduction pattern -/
+example [BI PROP] (P : Nat → PROP) : ∀ n, P n ⊢@{PROP} P n := by
+  iintro %(a | n) HP //
+
 @[simp]
 private def def1 := 3
 
