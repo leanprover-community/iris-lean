@@ -676,12 +676,13 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
     | _ =>
       let newM : Q(Credit) ← pure <| mkNatLit (natM - natN)
       let newTy : Q($prop) := q(£ $newM)
-      let newHyps := Hyps.add _ name ivar q(false) newTy hyps'
+      let ⟨_, newHyps, pfNewHyps⟩ := Hyps.add _ name ivar q(false) newTy hyps'
       let ⟨_, newHyps', pfModAction⟩ ← iModAction newHyps modality
       let pf ← addBIGoal newHyps' goal
       let hm : Q($natM = $n + $newM) ← mkDecideProof q($natM = $n + $newM)
       have pfEq : Q($e ⊣⊢ $e' ∗ £ $natM) := pfEq
-      let pf'' : Q($e' ∗ £ $natM ⊢ $goal) := q(tac_lc_add_laterN_split $inst $hφ $hm $pfModAction $pf)
+      let pf'' : Q($e' ∗ £ $natM ⊢ $goal) :=
+        q(tac_lc_add_laterN_split $inst $hφ $hm ($(pfNewHyps).mp.trans $pfModAction) $pf)
       mvar.assign q($(pfEq).mp.trans $pf'')
 
 end
