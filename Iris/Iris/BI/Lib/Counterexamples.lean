@@ -93,10 +93,10 @@ omit instAffine in
 @[rocq_alias savedprop.elim_modal_bupd]
 theorem elim_modal_bupd (p : Bool) : ElimModal True p io false (bupd P) P (bupd Q) (bupd Q) where
   elim_modal _ := calc
-    _ ⊢ bupd P ∗ (P -∗ bupd Q) := sep_mono_left intuitionisticallyIf_elim
+    _ ⊢ bupd P ∗ (P -∗ bupd Q)        := sep_mono_left intuitionisticallyIf_elim
     _ ⊢ bupd iprop(P ∗ (P -∗ bupd Q)) := bupd_frame_right
-    _ ⊢ bupd (bupd Q) := bupd_mono wand_elim_right
-    _ ⊢ bupd Q := bupd_trans
+    _ ⊢ bupd (bupd Q)                 := bupd_mono wand_elim_right
+    _ ⊢ bupd Q                        := bupd_trans
 
 @[reducible, rocq_alias savedprop.A]
 def A (i : ident) : PROP := iprop(∃ P, □ (¬P ∗ saved i P))
@@ -121,8 +121,7 @@ include sprop_agree in
 theorem saved_A (i : ident) : saved i (A ident saved i) ⊢ A ident saved i := by
   iintro #Hs
   iexists A ident saved i
-  iframe Hs
-  iintro !>
+  iintro {$Hs} !>
   iapply saved_NA
   · exact sprop_agree
   · iassumption
@@ -200,10 +199,10 @@ omit instAffine instBFupd in
 theorem elim_fupd_fupd (p : Bool) (E : Mask) :
     ElimModal True p io false (fupd E P) P (fupd E Q) (fupd E Q) where
   elim_modal _ := calc
-    _ ⊢ fupd E P ∗ (P -∗ fupd E Q) := sep_mono_left intuitionisticallyIf_elim
+    _ ⊢ fupd E P ∗ (P -∗ fupd E Q)        := sep_mono_left intuitionisticallyIf_elim
     _ ⊢ fupd E iprop(P ∗ (P -∗ fupd E Q)) := fupd_frame_right fupd fupd_mono fupd_frame_left _
-    _ ⊢ fupd E (fupd E Q) := fupd_mono wand_elim_right
-    _ ⊢ fupd E Q := fupd_fupd
+    _ ⊢ fupd E (fupd E Q)                 := fupd_mono wand_elim_right
+    _ ⊢ fupd E Q                          := fupd_fupd
 
 include fupd_mono fupd_frame_left fupd_fupd fupd_mask_mono in
 omit instAffine instBFupd in
@@ -222,10 +221,8 @@ omit instAffine instBFupd in
 @[rocq_alias inv.exists_split_fupd0]
 theorem exists_split_fupd0 {α : Type _} (E : Mask) (Φ : α → PROP) [inst : FromExists P Φ] :
     FromExists (fupd E P) (fun a => fupd E (Φ a)) where
-  from_exists := by
-    apply exists_elim
-    intro h
-    exact fupd_mono <| (exists_intro h).trans inst.from_exists
+  from_exists :=
+    exists_elim <| fun h => fupd_mono <| (exists_intro h).trans inst.from_exists
 
 section Inv1
 
@@ -454,9 +451,7 @@ theorem contradiction' : False := by
   · ileft; iassumption
   · ihave #HB := invariant_contradiction fupd name inv
       fupd_intro fupd_mono fupd_fupd fupd_frame_left inv_fupd
-      start finished start_finish finished_not_start $$ [Hi]
-    · iexact Hi
-    · iexact HB
+      start finished start_finish finished_not_start $$ [Hi] <;> iassumption
 
 end Inv2
 
@@ -496,8 +491,10 @@ theorem fupd_proper {E1 E2 : Mask} (h : P ⊣⊢ Q) : fupd E1 E2 P ⊣⊢ fupd E
 
 include fupd_frame_left fupd_mono in
 @[rocq_alias linear.fupd_frame_r]
-theorem fupd_frame_right {E1 E2 : Mask} : fupd E1 E2 P ∗ Q ⊢ fupd E1 E2 iprop(P ∗ Q) :=
-  sep_comm.mp.trans <| fupd_frame_left.trans <| fupd_mono sep_comm.mp
+theorem fupd_frame_right {E1 E2 : Mask} : fupd E1 E2 P ∗ Q ⊢ fupd E1 E2 iprop(P ∗ Q) := calc
+  _ ⊢ Q ∗ fupd E1 E2 P        := sep_comm.mp
+  _ ⊢ fupd E1 E2 iprop(Q ∗ P) := fupd_frame_left
+  _ ⊢ fupd E1 E2 iprop(P ∗ Q) := fupd_mono sep_comm.mp
 
 include fupd_frame_left fupd_mono fupd_fupd in
 @[rocq_alias linear.elim_fupd_fupd]
@@ -539,16 +536,13 @@ include lc_fupd_elim_later fupd_keep_si_pure' in
 theorem lc_fupd_elim_later_keep {E : CoPset} {P : PROP} [inst1 : Plain P] [inst2 : Absorbing P] :
     ⊢ lc -∗ ▷ P ={E}=∗ lc ∗ P := by
   iintro Hlc HP
-  iapply (fupd_keep_si_pure' E iprop(<si_emp_valid> P))
+  iapply fupd_keep_si_pure' E iprop(<si_emp_valid> P)
   isplit
   · iapply lc_fupd_elim_later
-    iframe Hlc
-    inext
+    iintro {$Hlc} !>
     exact Plain.plain
-  · iintro HP' !>
-    iframe Hlc
-    iclear HP
-    apply siPure_siEmpValid_elim
+  · iintro HP' !> {$Hlc} {HP}
+    exact siPure_siEmpValid_elim
 
 omit instBFupd in
 @[rocq_alias later_credits_plain.laterN_False]
