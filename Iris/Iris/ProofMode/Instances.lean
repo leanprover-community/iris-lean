@@ -414,12 +414,13 @@ instance (priority := default + 10) fromSep_persistently [BI PROP] (P Q1 Q2 : PR
   from_sep := persistently_sep_mpr.trans (persistently_mono h.1)
 
 -- AndIntoSep
-@[ipm_class, rocq_alias AndIntoSep]
+@[ipm_backtrack, rocq_alias AndIntoSep]
 class inductive AndIntoSep {PROP} [BI PROP] : PROP → outParam PROP → PROP → outParam PROP → Prop
   | affine (P Q Q' : PROP) [Affine P] [h : FromAffinely Q' Q] : AndIntoSep P P Q Q'
   | affinely (P Q : PROP) : AndIntoSep P iprop(<affine> P) Q Q
 
-attribute [instance] AndIntoSep.affine AndIntoSep.affinely
+attribute [instance (default + 10)] AndIntoSep.affine
+attribute [instance] AndIntoSep.affinely
 
 -- IntoSep
 @[rocq_alias into_sep_sep]

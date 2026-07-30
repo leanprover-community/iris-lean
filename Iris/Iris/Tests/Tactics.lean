@@ -1791,6 +1791,24 @@ example [BI PROP] (Q : PROP) : □ Q ⊢ Q := by
   iintro H
   icases H with ⟨HA, HB⟩
 
+/- Tests `AndIntoSep` instances -/
+/--
+ error: unsolved goals
+PROP : Type u_1
+inst✝¹ : BI PROP
+inst✝ : BIAffine PROP
+P Q : PROP
+⊢ 
+  □x✝ : P
+  ∗R : <pers> Q
+  ⊢ Q
+-/
+#guard_msgs in
+example [BI PROP] [BIAffine PROP] (P Q : PROP) :
+  (□ P) ∧ <pers> Q ⊢ Q := by
+  iintro H
+  icases H with ⟨#_, R⟩
+
 end cases
 
 section imodintro
