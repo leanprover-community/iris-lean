@@ -14,6 +14,7 @@ public import Iris.Instances.IProp
 public import Iris.Instances.Lib.WSat
 public import Iris.Instances.Lib.LaterCredits
 public import Iris.BI.Plainly
+public import Iris.Std
 
 @[expose] public section
 
@@ -591,8 +592,9 @@ open Lean Elab Tactic Meta Qq Iris.BI Iris Iris.ProofMode
 theorem tac_lc_add_laterN_split {GF : BundledGFunctors} [InvGS GF]
     {φ : Prop} {n m newM : Nat} {E : CoPset} {P Q goal : IProp GF}
     (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
-    (h1 : m = n + newM) (h2 : P ∗ £ newM ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
-    iprop(P ∗ £ m) ⊢ goal := by
+    (h1 : Std.NatCancel m n newM 0) (h2 : P ∗ £ newM ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
+    P ∗ £ m ⊢ goal := by
+  have h1 : m = n + newM := by have := h1.nat_cancel; omega
   subst h1
   iintro ⟨HP, Hcred⟩
   iapply inst.elim_modal hφ
@@ -609,7 +611,8 @@ theorem tac_lc_add_laterN_split {GF : BundledGFunctors} [InvGS GF]
 theorem tac_lc_add_laterN_full {GF : BundledGFunctors} [InvGS GF]
     {φ : Prop} {m : Nat} {E : CoPset} {P Q goal : IProp GF}
     (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
-    (h2 : P ⊢ ▷^[m] Q) (h3 : Q ⊢ goal) :
+    (h1 : Std.NatCancel m n 0 0)
+    (h2 : P ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
     P ∗ £ m ⊢ goal := by
   iintro ⟨HP, Hcred⟩
   iapply inst.elim_modal hφ
@@ -643,11 +646,10 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
     if isTrue p then throwError "inext: {h} is not in the spatial context"
     let ~q(£ $c) := ty
       | throwError m!"inext: {h} is not a spatial later credit hypothesis"
-    let some natM := c.nat? | throwError "inext: {c} is not a numeral"
     let ⟨e', hyps', _, _, _, _, pfEq⟩ := hyps.remove false ivar
 
-    -- Ensure sufficient credits
-    if natM < natN then throwError "inext: insufficient credits"
+    -- -- Ensure sufficient credits
+    -- if natM < natN then throwError "inext: insufficient credits"
 
     let φ ← mkFreshExprMVarQ q(Prop)
     let E ← mkFreshExprMVarQ q(CoPset)
@@ -662,27 +664,35 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
 
     -- Generate the proof goal with the updated hypothesis
     let n : Q(Credit) ← pure <| mkNatLit natN
+
+    let newC ← mkFreshExprMVarQ q(Nat)
+    let newN ← mkFreshExprMVarQ q(Nat)
+    let some hcancel ← synthInstance? q(Std.NatCancel $c $n $newC $newN)
+      | throwError "inext: unable to cancel {n} later credits from {c}"
+    unless ← isDefEq newN q(0) do
+      throwError "inext: insufficient credits"
+
     let modality := q(@modality_laterN $prop $n $bi)
 
-    match natM - natN with
+    match newC.nat? with
     -- Later credits used up, discard the later credits hypothesis
-    | 0 =>
+    | some 0 =>
       let ⟨_, newHyps', pfModAction⟩ ← iModAction hyps' modality
       let pf ← addBIGoal newHyps' goal
-      have pfEq : Q($e ⊣⊢ $e' ∗ £ $n) := pfEq
-      let pf' : Q($e' ∗ £ $n ⊢ $goal) := q(tac_lc_add_laterN_full $inst $hφ $pfModAction $pf)
+      have pfEq : Q($e ⊣⊢ $e' ∗ £ $c) := pfEq
+      have hcancel : Q(Std.NatCancel $c $n 0 0) := hcancel
+      let pf' : Q($e' ∗ £ $c ⊢ $goal) := q(tac_lc_add_laterN_full $inst $hφ $hcancel $pfModAction $pf)
       mvar.assign q($(pfEq).mp.trans $pf')
     -- Update the later credits hypothesis and introduce it into the context
     | _ =>
-      let newM : Q(Credit) ← pure <| mkNatLit (natM - natN)
-      let newTy : Q($prop) := q(£ $newM)
+      let newTy : Q($prop) := q(£ $newC)
       let ⟨_, newHyps, pfNewHyps⟩ := Hyps.add _ name ivar q(false) newTy hyps'
       let ⟨_, newHyps', pfModAction⟩ ← iModAction newHyps modality
       let pf ← addBIGoal newHyps' goal
-      let hm : Q($natM = $n + $newM) ← mkDecideProof q($natM = $n + $newM)
-      have pfEq : Q($e ⊣⊢ $e' ∗ £ $natM) := pfEq
-      let pf'' : Q($e' ∗ £ $natM ⊢ $goal) :=
-        q(tac_lc_add_laterN_split $inst $hφ $hm ($(pfNewHyps).mp.trans $pfModAction) $pf)
+      have hcancel : Q(Std.NatCancel $c $n $newC 0) := hcancel
+      have pfEq : Q($e ⊣⊢ $e' ∗ £ $c) := pfEq
+      let pf'' : Q($e' ∗ £ $c ⊢ $goal) :=
+        q(tac_lc_add_laterN_split $inst $hφ $hcancel ($(pfNewHyps).mp.trans $pfModAction) $pf)
       mvar.assign q($(pfEq).mp.trans $pf'')
 
 end
