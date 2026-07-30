@@ -658,7 +658,7 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
       throwError "inext: eliminating the fancy update does not preserve the goal {goal}"
     have inst : Q(ElimModal $φ false .in false iprop(|={$E}=> $goal) $goal $goal $goal) := inst
 
-    let hφ ← iSolveSidecondition q($φ) (failOnUnsolved := false)
+    let hφ ← iSolveSidecondition q($φ)
 
     -- Generate the proof goal with the updated hypothesis
     let n : Q(Credit) ← pure <| mkNatLit natN
