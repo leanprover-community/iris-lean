@@ -1,21 +1,7 @@
 module
 
 public import Iris.Std.CoPset
-public import Iris.BI
-public meta import Iris.BI
-public import Iris.BI.BIBase
-public meta import Iris.Std.Rewrite
-public import Std
-meta import Lean
-public import Lean
-
 public import Iris.BI.BI
-public import Iris.BI.Classes
-public import Iris.BI.DerivedLaws
-public import Iris.BI.DerivedLawsLater
-public import Iris.BI.Extensions
-public import Iris.BI.SIProp
-public meta import Iris.Std.RocqPorting
 
 public section
 
