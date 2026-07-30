@@ -680,13 +680,6 @@ instance elimModalFupdWpAtomic_wrongMask :
     p io false iprop(|={E₁,E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
   elim_modal := nofun
 
-@[rocq_alias add_modal_fupd_wp]
-instance addModalFupdWp : AddModal iprop(|={E}=> P) P (WP e @ s ; E {{ Φ }}) where
-  add_modal := by
-    iintro ⟨H1, H2⟩
-    imod H1
-    iapply H2 $$ H1
-
 @[rocq_alias elim_acc_wp_atomic]
 instance (priority := low) elimAcc_wp_atomic {X} (E₁ E₂ : CoPset) α β (γ : X → Option (IProp GF)) :
     ElimAcc (Language.Atomic ↑s e) (fupd E₁ E₂) (fupd E₂ E₁) α β γ
