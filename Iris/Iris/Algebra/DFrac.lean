@@ -31,7 +31,7 @@ inductive DFrac where
 #rocq_ignore DfracBoth_inj "Not needed"
 
 @[simp] instance : COFE DFrac := COFE.ofDiscrete _
-instance : OFE.Discrete DFrac := ⟨fun h _ => h⟩
+instance : OFE.Discrete DFrac := ⟨fun h => h⟩
 #rocq_ignore dfracO "Use DFrac type with typeclass inference"
 
 namespace DFrac
@@ -79,8 +79,8 @@ instance instCMRADFrac : CMRA DFrac where
   valid_iff_validN := ⟨fun x _ => x, fun x => x 0⟩
   validN_succ := id
   validN_op_left {_} := by rintro ⟨⟩ ⟨⟩ <;> simp [valid, op] <;> grind
-  assoc := by rintro ⟨⟩ ⟨⟩ ⟨⟩ <;> grind [op, OFE.Equiv.of_eq]
-  comm := by rintro ⟨⟩ ⟨⟩ <;> grind [op, OFE.Equiv.of_eq]
+  assoc := by rintro ⟨⟩ ⟨⟩ ⟨⟩ <;> grind [op]
+  comm := by rintro ⟨⟩ ⟨⟩ <;> grind [op]
   pcore_op_left := by rintro ⟨⟩ ⟨⟩ <;> simp [op, pcore]
   pcore_idem := by rintro ⟨⟩ ⟨⟩ <;> simp [pcore]
   pcore_op_mono := by
@@ -117,7 +117,7 @@ instance one_exclusive_right [CMRA V] {v : V} : CMRA.Exclusive (v, own (One.one 
 instance {f : Qp} : CMRA.Cancelable (own f) where
   cancelableN {_} := by
     rintro (a|_|a) (b|_|b) <;> simp [CMRA.ValidN, CMRA.op, op] <;> intro H Hxyz
-    any_goals have Hxyz' := (discrete Hxyz).to_eq <;> simp at Hxyz'
+    any_goals have Hxyz' := discrete Hxyz <;> simp at Hxyz'
     · exact congrArg own (Subtype.ext (by grind))
     · exact absurd Hxyz' (by have := b.2; grind)
     · exact absurd Hxyz' (by have := a.2; grind)
@@ -129,7 +129,7 @@ instance {f : Qp} : CMRA.IdFree (own f) where
     rintro (y|_|y) <;>
       simp [CMRA.ValidN, CMRA.op, op] <;>
       intro H Hxyz <;>
-      any_goals have Hxyz' := (discrete Hxyz).to_eq <;>
+      any_goals have Hxyz' := discrete Hxyz <;>
       simp at Hxyz'
     exact absurd Hxyz' (by have := y.2; grind)
 
@@ -144,7 +144,7 @@ theorem valid_op_own {dq : DFrac} {q : Qp} : ✓ dq • own q → q.val < 1 := b
 
 @[rocq_alias dfrac_valid_own_l]
 theorem valid_own_op {dq : DFrac} {q : Qp} : ✓ own q • dq → q.val < 1 :=
-  valid_op_own ∘ CMRA.valid_of_eqv (CMRA.comm (y := dq))
+  fun h => valid_op_own (CMRA.comm' (y := dq) ▸ h)
 
 @[rocq_alias dfrac_valid_discarded]
 theorem valid_discard : ✓ (discard : DFrac) := by simp [CMRA.Valid, valid]
@@ -157,7 +157,7 @@ theorem valid_own_op_discard {q : Qp} : ✓ own q • discard ↔ q.val < 1 := b
 instance : CMRA.Discrete DFrac where
   discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
 
-theorem is_discrete {q : DFrac} : OFE.DiscreteE q := ⟨fun h _ => h⟩
+theorem is_discrete {q : DFrac} : OFE.DiscreteE q := ⟨fun h => h⟩
 
 @[rocq_alias dfrac_discarded_core_id]
 instance : CMRA.CoreId (DFrac.discard) where
@@ -218,17 +218,17 @@ theorem valid_iff {dq : DFrac} : ✓ dq ↔
   cases dq <;> rfl
 
 @[rocq_alias dfrac_discarded_included]
-theorem discard_included : (discard : DFrac) ≼ discard := ⟨discard, .rfl⟩
+theorem discard_included : (discard : DFrac) ≼ discard := ⟨discard, rfl⟩
 
 @[rocq_alias dfrac_own_included]
 theorem own_included {p q : Qp} : own p ≼ own q ↔ ∃ r, q = p + r := by
-  refine ⟨fun ⟨z, hz⟩ => ?_, fun ⟨r, hr⟩ => ⟨own r, hr ▸ .rfl⟩⟩
-  rcases z with (r|_|r) <;> replace hz := hz.to_eq <;> simp [CMRA.op, op] at hz
+  refine ⟨fun ⟨z, hz⟩ => ?_, fun ⟨r, hr⟩ => ⟨own r, hr ▸ rfl⟩⟩
+  rcases z with (r|_|r) <;> simp [CMRA.op, op] at hz
   exact ⟨r, Qp.ext_iff.mpr hz⟩
 
 @[rocq_alias dfrac_is_op]
 instance isOp_dfrac_own {q q1 q2 : Qp} [h : IsOp d q q1 q2] :
     IsOp d (own q) (own q1) (own q2) where
-  is_op := by rw [h.is_op.to_eq]; rfl
+  is_op := by rw [h.is_op]; rfl
 
 end DFrac

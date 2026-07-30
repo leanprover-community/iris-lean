@@ -86,7 +86,11 @@ private def FrameResult.step {u prop bi origE origGoal} :
     else
       return st
 
+<<<<<<< HEAD
 def iFrame {prop : Q(Type u)} (bi : Q(BI $prop)) {e : Q($prop)}
+=======
+def iFrame {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
+>>>>>>> upstream/master
     (hyps : Hyps bi e) (goal : Q($prop)) (sels : List SelTarget) :
     ProofModeM (FrameResult bi e goal) := do
   let mut st : FrameResult bi e goal := { progress := false, e, hyps, goal, pf := q(frame_init) }
@@ -134,10 +138,10 @@ def FrameResult.finishClose {u prop bi origE origGoal} (res : @FrameResult u pro
 elab "iframe " pats:(colGt ppSpace selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 
-  ProofModeM.runTactic λ mvar { bi, hyps, goal, .. } => do
+  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
   let pats ← SelPat.resolve hyps pats
 
-  let res ← iFrame bi hyps goal pats
+  let res ← iFrame hyps goal pats
   mvar.assign (← res.finish (addBIGoal · ·))
 
 /--

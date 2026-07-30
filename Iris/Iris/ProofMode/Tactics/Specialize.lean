@@ -271,6 +271,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     have out' : Q($prop) := Expr.headBeta q($Φ $x)
     let newMVarIds ← getMVarsNoDelayed x
     for mvar in newMVarIds do addMVarGoal mvar
+<<<<<<< HEAD
     let pfStep : Q($e ∗ □?$p $out ⊢ $e ∗ □?$p $Φ $x) :=
       q(specialize_forall (A2 := $e) (p := $p) $inst $x)
     return specState.update hyps p out' pfStep
@@ -318,6 +319,64 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let ⟨_, hyps', pf'⟩ ← res.finishClose
     let pfCont := q(fun pf => $pfCont (specialize_modal $pf' pf $instWand $instModal))
     return { hyps := hyps', p := q(false), out := out2, pfCont, pf := none }
+=======
+    return { e, hyps, p, out := out', pf := q(specialize_forall $pf $x) }
+  | { hyps, p, out, pf, .. }, .goal {kind, negate, trivial, frame := f, hyps := hs} g => do
+    if kind != .spatial then
+      -- TODO
+      throwError "ispecialize: only spatial kind is supported at the moment"
+    let mut ivars : IVarIdSet := {}
+    for name in hs do
+      ivars := ivars.insert (← hyps.findWithInfo name)
+    let mut frameIVars : List IVarId := []
+    for name in f do
+      let ivar ← hyps.findWithInfo name
+      frameIVars := ivar :: frameIVars
+      if ivars.contains ivar then
+        throwError "ispecialize: {name} used twice"
+    frameIVars := frameIVars.reverse
+    let ⟨el', _, hypsl', hypsr', pf'⟩ := Hyps.split bi
+      (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
+    let out₁ ← mkFreshExprMVarQ prop
+    let out₂ ← mkFreshExprMVarQ prop
+    let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
+      | throwError m!"ispecialize: {out} is not a wand"
+    let res ← iFrame hypsr' out₁ (frameIVars.map (⟨.ipm ·, true⟩))
+    let pf'' ← res.finish λ hyps goal => do
+      if trivial then
+        let some r ← iTrivial hyps goal
+          | throwError "ispecialize: itrivial could not solve {← ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
+        return r
+      else
+        addBIGoal hyps goal g
+    let pf := q(specialize_wand_subgoal $out₂ $pf $pf' $pf'')
+    return { e := el', hyps := hypsl', p := q(false), out := out₂, pf }
+
+  | { hyps, p, out, pf, .. }, .autoframe kind => do
+    if kind != .spatial then
+      -- TODO
+      throwError "ispecialize: only spatial kind is supported at the moment"
+    let out₁ ← mkFreshExprMVarQ prop
+    let out₂ ← mkFreshExprMVarQ prop
+    let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
+      | throwError m!"ispecialize: {out} is not a wand"
+    let res ← iFrame hyps out₁ (← SelPat.resolve hyps [.spatial, .intuitionistic])
+    let ⟨_, hyps', pf'⟩ ← res.finishClose
+    return { e := _, hyps := hyps', p := q(false), out := out₂, pf := q(specialize_wand_autoframe $out₂ $pf $pf') }
+
+/-- `iCasesPat.should_try_dup_context` determines when iSpecializeCore should try to duplicate the separation context.
+The duplication only works if the conclusion of the specialization is persistent.
+
+TODO: Should this also return true for lists of intuitionistic patterns? (check in Rocq)
+
+TODO: This also needs to check that there are no modality addition patterns in `pat` once they are implemented.
+-/
+@[rocq_alias intro_pat_intuitionistic, rocq_alias use_tac_specialize_intuitionistic_helper]
+def iCasesPat.should_try_dup_context (pat : iCasesPat) : Bool :=
+  match pat.case with
+  | .intuitionistic _ | .pure _ => true
+  | _ => false
+>>>>>>> upstream/master
 
 /-- Specialize a proposition `A` by applying a sequence of specialization patterns.
 
@@ -394,6 +453,6 @@ elab "ispecialize " colGt pmt:pmTerm : tactic => do
     | throwError "ispecialize: cannot find argument {name}"
 
   let ⟨_, hyps'', pb, B, pf', _⟩ ← iSpecializeCore hyps' p out goal pmt.spats
-  let hyps''' := Hyps.add bi name ivar pb B hyps''
+  let ⟨_, hyps''', pfEq⟩ := Hyps.add bi name ivar pb B hyps''
   let pf'' ← addBIGoal hyps''' goal
-  mvar.assign q(($pf).mp.trans <| $pf' $pf'')
+  mvar.assign q(($pf).1.trans <| $(pf').trans <| $(pfEq).mp.trans $pf'')
