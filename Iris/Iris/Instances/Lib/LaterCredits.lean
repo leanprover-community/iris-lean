@@ -226,7 +226,7 @@ def le_upd_pre (P le_upd : IProp GF) : IProp GF :=
 
 @[rocq_alias le_upd.le_upd_pre_contractive]
 instance {P : IProp GF} : Contractive (le_upd_pre P) where
-  distLater_dist {n x y} H := by contractive
+  distLater_dist := by contractive
 
 #rocq_ignore le_upd.le_upd_def "`le_upd` is defined directly without `seal`/`unseal`."
 #rocq_ignore le_upd.le_upd_aux "`le_upd` is defined directly without `seal`/`unseal`."

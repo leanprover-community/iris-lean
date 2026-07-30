@@ -24,29 +24,29 @@ meta def distIsForall (expr : Expr) : MetaM Bool := do
     distArgs[1]!.withApp <| λ ofeFn _ => do
       return ofeFn.getLambdaBody.getAppFn.isConstOf ``OFE.instForallOfOFEFun
 
-meta def nonexpStep : TacticM Bool := do
-  for neLem in ← nonexpLemmas do
-    let tac ← `(tactic|apply $(mkIdent neLem):ident; try intros)
-    if ← observingSuccess <| evalTactic tac then
-      return true
-  return false
+meta def nonexpStep (goal : MVarId) : MetaM (Option (List MVarId)) := do
+  for neLem in ← nonexpLemmas do try
+      let newGoals ← goal.applyConst neLem
+      return (← newGoals[0]!.intros).snd :: newGoals.tail!
+    catch _ => continue
+  return none
 
-meta def distInstanceStep : TacticM Bool := do
-  let tac ← `(tactic|apply $(mkIdent ``OFE.Contractive.distLater_dist); intro _ _)
-  return ← observingSuccess <| evalTactic tac
+meta def distInstanceStep (goal : MVarId) : MetaM (Option (List MVarId)) := do try
+    let mut newGoals ← goal.applyConst ``OFE.Contractive.distLater_dist
+    return (← newGoals[0]!.introN 2).snd :: newGoals.tail!
+  catch _ => return none
 
-meta def distLaterStep : TacticM Bool := do
-  let goal ← getMainGoal
-  pure <| ← goal.withContext do
+meta def distLaterStep (goal : MVarId) : MetaM (Option (List MVarId)) :=
+  goal.withContext do
     let ctx ← getLCtx
     for decl? in ctx.decls do
       if let some decl := decl? then
-        if decl.type.isAppOf ``OFE.DistLater then
-          let declIdent := mkIdent decl.userName
-          let tac ← `(tactic|apply $declIdent:ident; assumption)
-          if ← observingSuccess <| evalTactic tac then
-            return true
-    return false
+        if decl.type.isAppOf ``OFE.DistLater then try
+            let newGoals ← goal.apply decl.toExpr
+            newGoals.head!.assumption
+            return some newGoals.tail!
+          catch _ => continue
+    return none
 
 meta def distStep : TacticM Bool := do
   let goal ← getMainGoal
@@ -83,16 +83,27 @@ meta partial def contractiveMain (goal : MVarId) (guarded : Bool) : TacticM Unit
   makeMainGoal goal
 
   -- simplification step (includes application of Dist.rfl)
-  if let some _ ← observing? (evalTactic <| ← `(tactic|simp)) then contractiveRecurse guarded; return
+  if let some _ ← observing? (evalTactic <| ← `(tactic|simp)) then
+    contractiveRecurse guarded;
+    return
 
   -- uses an OFE.Contractive instance
-  if not guarded then if ← distInstanceStep then contractiveRecurse true; return
+  if not guarded then if let some newGoals ← (distInstanceStep goal) then
+    replaceMainGoal newGoals
+    discard <| newGoals.mapM (contractiveMain · true)
+    return
 
   -- applies an OFE.DistLater hypothesis
-  if ← distLaterStep then contractiveRecurse guarded; return
+  if let some newGoals ← (distLaterStep goal) then
+    replaceMainGoal newGoals
+    discard <| newGoals.mapM (contractiveMain · guarded)
+    return
 
   -- applies a non-expansive lemma
-  if ← nonexpStep then contractiveRecurse guarded; return
+  if let some newGoals ← (nonexpStep goal) then
+    replaceMainGoal newGoals
+    discard <| newGoals.mapM (contractiveMain · guarded)
+    return
 
 end
 
@@ -110,36 +121,36 @@ elab "contractive" : tactic => do
   -- main loop
   contractiveMain (← getMainGoal) false
 
-mutual
+-- mutual
 
-meta partial def nonexpRecurse : TacticM Unit := do
-  let _ ← (← getUnsolvedGoals).mapM (nonexpMain ·)
+-- meta partial def nonexpRecurse : TacticM Unit := do
+--   let _ ← (← getUnsolvedGoals).mapM (nonexpMain ·)
 
-meta partial def nonexpMain (goal : MVarId) : TacticM Unit := do
-  if ← goal.isAssigned then return
-  makeMainGoal goal
+-- meta partial def nonexpMain (goal : MVarId) : TacticM Unit := do
+--   if ← goal.isAssigned then return
+--   makeMainGoal goal
 
-  -- simplification step (includes application of Dist.rfl)
-  if let some _ ← observing? (evalTactic <| ← `(tactic|simp)) then nonexpRecurse; return
+--   -- simplification step (includes application of Dist.rfl)
+--   if let some _ ← observing? (evalTactic <| ← `(tactic|simp)) then nonexpRecurse; return
 
-  -- applies an OFE.Dist hypothesis
-  if ← distStep then nonexpRecurse; return
+--   -- applies an OFE.Dist hypothesis
+--   if ← distStep then nonexpRecurse; return
 
-  -- applies a non-expansive lemma
-  if ← nonexpStep then nonexpRecurse; return
+--   -- applies a non-expansive lemma
+--   if ← nonexpStep then nonexpRecurse; return
 
-end
+-- end
 
-elab "nonexp" : tactic => do
-  -- intro hypotheses
-  evalTactic <| ← `(tactic|intros)
+-- elab "nonexp" : tactic => do
+--   -- intro hypotheses
+--   evalTactic <| ← `(tactic|intros)
 
-  -- intro foralls within OFE.Dist
-  while ← distIsForall <| ← getMainTarget do
-   evalTactic <| ← `(tactic|intro)
+--   -- intro foralls within OFE.Dist
+--   while ← distIsForall <| ← getMainTarget do
+--    evalTactic <| ← `(tactic|intro)
 
-  -- unfold function definition
-  tryUnfoldFn
+--   -- unfold function definition
+--   tryUnfoldFn
 
-  -- main loop
-  nonexpMain (← getMainGoal)
+--   -- main loop
+--   nonexpMain (← getMainGoal)
