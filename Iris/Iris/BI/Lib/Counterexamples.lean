@@ -299,7 +299,7 @@ theorem saved_cast (γ : gname) :
             · iright; iframe Hf HQ
             · iapply fupd_intro; iexact HQ
 
-@[reducible, rocq_alias inv.not_fupd]
+@[reducible]
 def notFUpd (P : PROP) : PROP := iprop(□ (P -∗ fupd M1 iprop(False)))
 
 @[reducible, rocq_alias inv.A]
