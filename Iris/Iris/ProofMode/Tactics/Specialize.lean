@@ -396,4 +396,4 @@ elab "ispecialize " colGt pmt:pmTerm : tactic => do
   let ⟨_, hyps'', pb, B, pf', _⟩ ← iSpecializeCore hyps' p out goal pmt.spats
   let ⟨_, hyps''', pfEq⟩ := Hyps.add bi name ivar pb B hyps''
   let pf'' ← addBIGoal hyps''' goal
-  mvar.assign q(($pf).1.trans <| $(pf').trans <| $(pfEq).mp.trans $pf'')
+  mvar.assign q(($pf).1.trans <| $(pf') <| $(pfEq).mp.trans $pf'')
