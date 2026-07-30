@@ -22,7 +22,7 @@ instances for types from the Lean standard library.
 - Classical functions into `Option`: `UnboundedHeap`
 - Association lists: `UnboundedHeap`
 - `TreeMap`: `PartialMap`
-- `ExtTreeMap`: `PartialMap`
+- `ExtTreeMap`: `UnboundedHeap`
 -/
 
 @[expose] public section
@@ -282,5 +282,23 @@ instance : LawfulFiniteMap (ExtTreeMap K · compare) K where
   toList_get {_ m _ _} := m.mem_toList_iff_getElem?_eq_some
 
 end HeapInstance
-
 end Std.ExtTreeMap
+
+namespace Classical
+
+open Std Iris.Std
+variable {K} [Ord K] [TransOrd K] [LawfulEqOrd K]
+
+noncomputable scoped instance instUnboundedHeapCompare [InfiniteType K] :
+    UnboundedHeap (ExtTreeMap K · compare) K where
+  notFull _ := True
+  fresh {_} {m} _ := m.keys.fresh.choose
+  get?_fresh {V} {m} {_} := by
+    change m.get? m.keys.fresh.choose = none
+    grind
+  notFull_empty := trivial
+  notFull_insert_fresh := trivial
+
+end Classical
+
+section

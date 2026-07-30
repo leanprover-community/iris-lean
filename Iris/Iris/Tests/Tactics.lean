@@ -340,6 +340,100 @@ example [BI PROP] (P Q : PROP) : ⊢ P → Q := by
 example [BI PROP] (P : PROP) : P -∗ P → P := by
   iintro HP1 HP2
 
+/- Tests `iintro` using the introduction pattern `⟨⟩` to solve the goal -/
+example [BI PROP] (P : PROP) : False ∗ □ P ⊢@{PROP} P := by
+  iintro ⟨⟨⟩, #_⟩
+
+/- Tests `iintro` using the pure introduction pattern -/
+example [BI PROP] (P : Nat → PROP) : ∀ n, P n ⊢@{PROP} P n := by
+  iintro %(a | n) HP //
+
+@[simp]
+private def def1 := 3
+
+/- Tests `iintro` using the introduction pattern for simplification (`/=`) -/
+example [BI PROP] (P Q : PROP) : ⊢@{PROP} if def1 = 3 then P -∗ P else Q := by
+  iintro /= HP
+  iexact HP
+
+/- Tests `iintro` where the lack of simplification (`/=`) causes a failure -/
+/-- error: iintro: if def1 = 3 then iprop(P -∗ P) else Q not a wand -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : ⊢@{PROP} if def1 = 3 then P -∗ P else Q := by
+  iintro HP
+
+/- Tests `iintro` with the pattern for simplification and solving trivial goals (`//=`) -/
+example [BI PROP] : ⊢@{PROP} if def1 = 3 then True else False := by
+  iintro //=
+
+/- Tests `iintro` with the pattern for ∀-introduction (`*`) -/
+example {Val : Type} [BI PROP] (P Q : Val → PROP) :
+    ⊢@{PROP} ∀ x y, P x -∗ Q y -∗ P x ∗ Q y := by
+  iintro * _ _
+  iframe
+
+/-- Tests `iintro` with the pattern for repeating ∀-introduction and premise introduction (`**`) -/
+example {Val : Type} {ϕ : Prop} [BI PROP] (P : Val → Val → PROP) (Q : Val → PROP) :
+    ⊢@{PROP} ∀ x y, P x y -∗ ∀ z, (⌜ϕ⌝ → Q z -∗ P x y ∗ Q z ∗ ⌜ϕ⌝) := by
+  iintro **
+  iframe
+  ipureintro
+  assumption
+
+/-- Tests `iintro` with the pattern for introducing a pure goal and exiting the proof mode (`!%`) -/
+example [BI PROP] (P Q : PROP) : ⊢ □ P -∗ □ Q -∗ ⌜n = n⌝ := by
+  iintro - - !%
+  rfl
+
+/- Tests `iintro` with pure introduction failure -/
+/-- error: ipureintro: Q is not pure -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : P ⊢ Q := by
+  iintro HP !%
+
+/-- Tests `iintro` with introduction patterns coming after `!%` -/
+example {ϕ : Prop} [BI PROP] : ⊢@{PROP} ⌜⌜ϕ⌝ ⊢@{PROP} ⌜ϕ⌝⌝ := by
+  iintro !% %_ !%
+  assumption
+
+/-- Tests `iintro` with an introduction pattern for clearing and framing hypotheses (`{ selPats* }`) -/
+example [BI PROP] (P Q R S T : PROP) (ϕ : Prop) :
+    ⊢ □ ⌜ϕ⌝ -∗ P -∗ Q -∗ <affine> R -∗ □ S -∗ □ T -∗ P ∗ Q ∗ T := by
+  iintro %hϕ HP HQ {$HP} HR #HS #HT {HR %hϕ %ϕ $# #}
+  iexact HQ
+
+/-- Tests `iintro` with introduction patterns for rewriting pure equalities -/
+example [BI PROP] (m n : Nat) (a b c : Prop) :
+    m = 2 → 3 = n → ⊢@{PROP} ⌜a = b⌝ -∗ ⌜b = c⌝ -∗ ⌜m.succ = n ∧ a = c⌝ := by
+  iintro %rfl %rfl %rfl %rfl
+  ipureintro
+  and_intros <;> rfl
+
+/-
+  Tests `iintro` with an introduction pattern for rewriting but the
+  hypothesis is not a pure equality
+-/
+/--
+error: Tactic `subst` failed: invalid equality proof, it is not of the form (x = t) or (t = x)
+  P
+
+PROP : Type u_1
+inst✝ : BI PROP
+P : Prop
+x✝ : P
+⊢ emp ⊢ True
+-/
+#guard_msgs in
+example [BI PROP] (P : Prop) : ⊢@{PROP} ⌜P⌝ -∗ True := by
+  iintro %rfl
+
+/-- Tests `iintro` with non-trivial `rcases` destruction patterns -/
+example [BI PROP] (a b c1 c2 c3 : Prop) (P : Prop → Prop) :
+    ⊢@{PROP} □ ⌜((a = b ∧ (b ∨ (c1 ∧ c2 ∧ c3))) ∧ ∃ x, P x)⌝ -∗ ⌜a ∨ c1⌝ ∗ ⌜∃ x, P x⌝ := by
+  iintro %⟨⟨rfl, ((hb : a) | ⟨hc, _, -⟩)⟩, @⟨d : Prop, hd⟩⟩ !%
+  · grind
+  · grind
+
 end intro
 
 -- revert
@@ -991,6 +1085,13 @@ example [BI PROP] (Q : PROP) : (⌜φ1⌝ ∧ <affine> ⌜φ2⌝) ⊢ Q -∗ Q :
   iintro Hφ
   iintro HQ
   ipure Hφ
+  iexact HQ
+
+/-- Tests `ipure` with an `rcases` destruction pattern -/
+example [BI PROP] (Q : PROP) : (⌜φ1⌝ ∧ <affine> ⌜φ2⌝) ⊢ Q -∗ Q := by
+  iintro Hφ
+  iintro HQ
+  ipure Hφ with ⟨hφ1, -⟩
   iexact HQ
 
 /-- Tests `ipure` with implication containing pure -/
@@ -1791,6 +1892,54 @@ example [BI PROP] (Q : PROP) : □ Q ⊢ Q := by
   iintro H
   icases H with ⟨HA, HB⟩
 
+/-- Tests `icases` with a case destruction pattern for rewriting pure equalities -/
+example [BI PROP] (m n : Nat) (a b c : Prop) :
+    ⊢@{PROP} ⌜m = 2⌝ -∗ ⌜3 = n⌝ -∗ ⌜a = b⌝ -∗ ⌜b = c⌝ -∗ ⌜m.succ = n ∧ a = c⌝ := by
+  iintro #H1 H2 #H3 H4
+  icases H1 with %rfl
+  icases H2 with %rfl
+  icases H3 with %rfl
+  icases H4 with %rfl
+  ipureintro
+  and_intros <;> rfl
+
+/-
+  Tests `icases` with a case destruction pattern for rewriting but the
+  hypothesis is not a pure equality.
+-/
+/--
+error: Tactic `subst` failed: invalid equality proof, it is not of the form (x = t) or (t = x)
+  P
+
+PROP : Type u_1
+inst✝ : BI PROP
+P : Prop
+a✝ : P
+⊢ emp ⊢ True
+-/
+#guard_msgs in
+example [BI PROP] (P : Prop) : ⊢@{PROP} ⌜P⌝ -∗ True := by
+  iintro HP
+  icases HP with %rfl
+
+/-
+  Tests `icases` with a case destruction pattern for rewriting but the
+  hypothesis is not a pure hypothesis.
+-/
+/-- error: ipure: P is not pure -/
+#guard_msgs in
+example [BI PROP] (P : PROP) : ⊢@{PROP} P -∗ True := by
+  iintro HP
+  icases HP with %rfl
+
+/-- Tests `icases` with non-trivial `rcases` destruction patterns -/
+example [BI PROP] (a b c1 c2 c3 : Prop) (P : Prop → Prop) :
+    ⊢@{PROP} □ ⌜((a = b ∧ (b ∨ (c1 ∧ c2 ∧ c3))) ∧ ∃ x, P x)⌝ -∗ ⌜a ∨ c1⌝ ∗ ⌜∃ x, P x⌝ := by
+  iintro Hpure
+  icases Hpure with %⟨⟨rfl, ((hb : a) | ⟨hc, _, -⟩)⟩, @⟨d : Prop, hd⟩⟩
+  · ipureintro <;> grind
+  · ipureintro <;> grind
+
 end cases
 
 section imodintro
@@ -2495,6 +2644,122 @@ example [BI PROP] [BIAffine PROP] (Q : Nat → PROP) : (Q 0 ⊢ ∃ x, False ∨
   iexists _
   iframe
 
+/- Tests `iframe` with existential quantifiers -/
+example [BI PROP] {α} (a : α) {β} (b : β) (P : PROP)
+    (Q : α → PROP) (R : β → PROP) (S : PROP) :
+    ⊢ P -∗ Q a -∗ R b -∗ S -∗ ∃ n, Q n ∗ ∃ m, R m ∗ P ∗ S := by
+  iintro HP HQ HR HS
+  -- Instantiate the inner existential quantifier `m`
+  iframe HR
+  -- Keep the outer existential quantifier `n` around
+  iframe HP
+  -- Instantiate the outer existential quantifier `n`
+  iframe HQ
+  iassumption
+
+/- Tests `iframe` with multiple existential quantifiers framed at once -/
+example [BI PROP] {α} (a : α) {β} (b : β) (P : PROP)
+    (Q : α → PROP) (R : β → PROP) (S : PROP) :
+    ⊢ P -∗ Q a -∗ R b -∗ S -∗ ∃ n, Q n ∗ ∃ m, R m ∗ P ∗ S := by
+  iintro HP HQ HR HS
+  iframe HS HP HR HQ
+
+/- Tests `iframe` with multiple existential quantifiers framed at once -/
+/--
+error: unsolved goals
+PROP : Type u_1
+inst✝ : BI PROP
+α : Sort u_2
+P : PROP
+Q : α → PROP
+⊢ ⏎
+  ⊢ «exists» fun {n} => Q n
+-/
+#guard_msgs in
+example [BI PROP] {α} (P : PROP) (Q : α → PROP) :
+    ⊢ P -∗ BI.exists fun {n} => iprop(Q n  ∗ P) := by
+  iintro HP
+  iframe HP
+
+/- Tests `iframe` with existential quantifers in various orders -/
+example [BI PROP] {α} (a : α) {β} (b : β) {γ} (c : γ)
+    (P : α → β → PROP) (Q : β → α → γ → PROP) :
+    ⊢ P a b -∗ Q b a c -∗ ∃ x, ∃ y, (P x y ∗ ∃ z, Q y x z) := by
+  iintro HP HQ
+  iframe
+
+/-
+  Tests `iframe` with the framing of existential quantifiers disabled.
+  The tactic should succeed as `P`, which is under the existential
+  quantifier, can still be framed.
+-/
+set_option iris.frame.instantiateExists false in
+example [BI PROP] {α} (a : α) (P : PROP) (Q R : α → PROP) (S : PROP) :
+    ⊢ P -∗ Q a -∗ R a -∗ S -∗ ∃ n, P ∗ Q n ∗ ∃ m, R m ∗ S := by
+  iintro HP HQ HR HS
+  iframe ∗
+  iexists a
+  iframe HQ
+  iexists a
+  iassumption
+
+/-
+  Tests `iframe` with the framing of existential quantifiers disabled.
+  Since nothing else can be framed, the tactic should fail.
+-/
+/-- error: iframe: cannot frame P a -/
+#guard_msgs in
+set_option iris.frame.instantiateExists false in
+example [BI PROP] {α} (a : α) (P : α → PROP) :
+    ⊢ P a -∗ ∃ n, P n := by
+  iintro HP
+  iframe HP
+
+/- Tests `iframe` with an existential quantifier under a universal quantifier. -/
+example [BI PROP] (P : PROP) : P ⊢ ∀ (x : Nat), ∃ n, ⌜n = x⌝ ∗ P := by
+  iintro HP
+  iframe HP
+  iintro %x
+  iexists x
+  ipureintro; rfl
+
+/- Tests `iframe` with an existentially quantified binder instantiated with a metavariable. -/
+example [BI PROP] (P Q : Nat → PROP) (m : Nat) :
+    ⊢ P m -∗ ∃ n, Q n -∗ ∃ x y, P x ∗ Q y ∗ ⌜y = 3⌝ := by
+  iintro HP
+  iexists ?w
+  iintro HQ
+  -- The existentially quantified binder `y` instantiated with `?w`
+  iframe HQ
+  iframe HP
+  ipureintro
+  rfl
+
+/-
+  Tests `iframe` with an existentially quantified binder instantiated with
+  a value that involves a metavariable.
+-/
+example [BI PROP] (P : Option Nat → PROP) :
+    ⊢ (∀ n, P (some n)) -∗ ∃ x, P x := by
+  iintro HP
+  ispecialize HP $$ %(?n)
+  -- The existentially quantified binder `x` instantiated with `some ?n`
+  iframe HP
+  exact 0
+
+variable {hlc : outParam HasLC} {Expr State Obs Val} [Λ : Language Expr State Obs Val]
+variable {GF : BundledGFunctors}
+variable [IrisGS_gen hlc Expr GF]
+variable {s : Stuckness} {E : CoPset} {e : Expr} {v : Val} {Φ : Val → IProp GF}
+
+/- Tests `iframe` with the `Frame` type class instance `frameWp`. -/
+example [inst : Language.IntoVal e v] (P : IProp GF) :
+    P ∗ Φ v ⊢ WP e @ s ; E {{ w, P ∗ Φ w }} := by
+  iintro ⟨HP, HΦ⟩
+  iframe HP
+  iapply wp_value $$ HΦ
+  exact inst
+
 end iframe
 
 section icombine
@@ -2749,12 +3014,20 @@ example {GF m n} [LcGS .hasLC GF] :
   icombine H1 H2 H3 H4 as Hnew
   iexact Hnew
 
-/-- Tests `icombine` for combining two tokens -/
+/-- Tests `icombine` for combining two tokens. -/
 example {GF} [TokenG GF] {γ} :
     ⊢@{IProp GF} token γ -∗ token γ -∗ False := by
   iintro H1 H2
   icombine H1 H2 gives H
   iexact H
+
+/- Tests `icombine` with an invalid destruction pattern. -/
+/-- error: icases: cannot destruct iprop(<absorb> <affine> (P ∗ Q)) -/
+#guard_msgs in
+example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
+    ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <absorb> <affine> (P ∗ Q) ∗ <pers> R := by
+  iintro HP HQ
+  icombine HP HQ as ⟨HNew1, _⟩ gives HNew2
 
 end icombine
 

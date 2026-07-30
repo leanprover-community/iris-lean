@@ -57,6 +57,12 @@ Here the name is just `internal_eq_ne`, so:
 ```
 @[rocq_alias internal_eq_ne]
 ```
+
+Definitions outside the main `iris/` package carry a package prefix.
+For the heap_lang package (`iris_heap_lang/` upstream) write:
+```
+@[rocq_alias heap_lang.pointsto]
+```
 -/
 
 open Lean Elab Command
@@ -106,16 +112,6 @@ initialize registerBuiltinAttribute {
 -- Porting Commands
 -- ============================================================================
 
-/-- Valid top-level Rocq source directories. -/
-private meta def validRocqFolders : List Name :=
-  [`algebra, `base_logic, `bi, `program_logic, `proofmode, `si_logic]
-
-private meta def checkRocqFolder (folder : Syntax) : CommandElabM Unit := do
-  let name := folder.getId
-  unless validRocqFolders.contains name do
-    throwErrorAt folder
-      "unknown Rocq folder '{name}', expected one of: {", ".intercalate (validRocqFolders.map toString)}"
-
 /-- Environment extension tracking all `#rocq_ignore` entries as `(rocqName, reason)` pairs. -/
 public meta initialize rocqIgnoreExt : SimplePersistentEnvExtension (Name × String) (Array (Name × String)) ←
   registerSimplePersistentEnvExtension {
@@ -123,10 +119,13 @@ public meta initialize rocqIgnoreExt : SimplePersistentEnvExtension (Name × Str
     addImportedFn := fun es => es.foldl (fun acc a => a.foldl Array.push acc) #[]
   }
 
-/-- Ignore a single Rocq definition by name.
+/-- Ignore a single Rocq definition by name. The name follows the same
+convention as `@[rocq_alias]`, so definitions outside the main `iris/` package
+carry a package prefix.
 
 ```
 #rocq_ignore rocq_name "Reason"
+#rocq_ignore heap_lang.pretty_int "Rocq-specific pretty printing"
 ```
 -/
 @[expose]
@@ -140,17 +139,20 @@ public meta initialize rocqIgnoreFileExt : SimplePersistentEnvExtension (String 
     addImportedFn := fun es => es.foldl (fun acc a => a.foldl Array.push acc) #[]
   }
 
-/-- Ignore all definitions in a Rocq file. The folder is a top-level Rocq source
-directory keyword (`algebra`, `base_logic`, `bi`, `program_logic`, `proofmode`,
-`si_logic`). The file is relative to that folder.
+/-- Ignore all definitions in a Rocq file. The folder names a tracked directory
+from `scripts/porting_config.json`, written with the owning package's prefix so
+that it reads like the alias names -- `heap_lang.lib`, or bare `proofmode` for
+the unprefixed `iris` package. The file is relative to the named directory;
+`check_porting.py` rejects a directory that is not tracked.
 
 ```
 #rocq_ignore_file proofmode "tokens.v" "Rocq-specific tokenizer"
+#rocq_ignore_file heap_lang.lib "diverge.v" "Not needed"
+#rocq_ignore_file heap_lang "pretty.v" "Rocq-specific pretty printing"
 ```
 -/
 @[expose]
 elab "#rocq_ignore_file" folder:ident file:str reason:str : command => do
-  checkRocqFolder folder
   modifyEnv (rocqIgnoreFileExt.addEntry · (folder.getId.toString, file.getString, reason.getString))
 
 /-- A concept entry: `(dir, feature, subfeature?, status, reason)`. -/
@@ -164,10 +166,9 @@ public meta initialize rocqConceptExt : SimplePersistentEnvExtension ConceptEntr
   }
 
 /-- Track a Rocq concept (feature or sub-feature) that doesn't map to individual
-definitions. The folder is a top-level Rocq source directory keyword (`algebra`,
-`base_logic`, `bi`, `program_logic`, `proofmode`, `si_logic`). Status must be
-`ported` or `missing`. An optional sub-feature string creates a nested entry
-under the feature in the HTML report.
+definitions. The folder names an upstream Rocq source directory, as for
+`#rocq_ignore_file`. Status must be `ported` or `missing`. An optional
+sub-feature string creates a nested entry under the feature in the HTML report.
 
 ```
 #rocq_concept proofmode "IPM Tactics" ported "Implemented via Lean macro"
@@ -176,7 +177,6 @@ under the feature in the HTML report.
 -/
 @[expose]
 elab "#rocq_concept" folder:ident feature:str sub:(str)? status:ident reason:str : command => do
-  checkRocqFolder folder
   let statusName := status.getId
   unless statusName == `ported || statusName == `missing || statusName == `ignored do
     throwErrorAt status "status must be 'ported' or 'missing' or 'ignored', got '{statusName}'"

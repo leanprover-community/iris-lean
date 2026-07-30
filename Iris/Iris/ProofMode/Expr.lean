@@ -156,12 +156,13 @@ def Hyps.mkHyp {prop : Q(Type u)} (bi : Q(BI $prop))
     (name : Name) (ivar : IVarId) (p : Q(Bool)) (ty : Q($prop)) (e := q(iprop(□?$p $ty))) : Hyps bi e :=
   .hyp (mkIntuitionisticIf bi p (mkNameAnnotation name ivar ty)) name ivar p ty ⟨⟩
 
--- TODO: should this ensure that adding a hypothesis to emp creates a
--- hyp node instead of a sep node?
 def Hyps.add {prop : Q(Type u)} (bi : Q(BI $prop))
     (name : Name) (ivar : IVarId) (p : Q(Bool)) (ty : Q($prop)) {e} (h : Hyps bi e)
-    : Hyps bi q(iprop($e ∗ □?$p $ty)) :=
-  Hyps.mkSep h (.mkHyp bi name ivar p ty)
+    : (e' : Q($prop)) × Hyps bi e' × Q(iprop($e ∗ □?$p $ty ⊣⊢ $e')) :=
+  match h with
+  -- Adding a hypothesis to `emp` creates a `.hyp` node instead of a `.sep` node
+  | .emp _ => ⟨_, .mkHyp bi name ivar p ty, q(emp_sep)⟩
+  | _ => ⟨_, .mkSep h (.mkHyp bi name ivar p ty), q(.rfl)⟩
 
 partial def parseHyps? {prop : Q(Type u)} (bi : Q(BI $prop)) (expr : Expr) :
     Option ((s : Q($prop)) × Hyps bi s) := do
@@ -493,24 +494,6 @@ def Hyps.replace : m (Option ((e' : Q($prop)) × Hyps bi e' × Q($e ⊢ $e'))) :
   let some ⟨_, hyps', pf⟩ ← hyps.replaceCore bi e ivar repl | return none
   return some ⟨_, hyps', q(replace_finish $pf)⟩
 
-def Hyps.evalReplace [Monad m] [MonadLiftT MetaM m]
-    {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (ivar : IVarId)
-    (repl : (ty : Q($prop)) → m ((ty' : Q($prop)) × Q($ty ⊢ $ty'))) :
-    ∀ {e}, Hyps bi e → m (Option ((e' : Q($prop)) × Hyps bi e' × Q($e ⊢ $e')))
-  | _, .emp _ => return none
-  | _, .hyp _ name ivar' p ty _ =>
-      if ivar == ivar' then do
-        let ⟨ty', h⟩ ← repl ty
-        return some ⟨_, .mkHyp bi name ivar p ty',
-                     q(intuitionisticallyIf_mono (p := $p) $h)⟩
-      else return none
-  | _, .sep _ _ _ _ lhs rhs => do
-      if let some ⟨_, lhs', h⟩ ← lhs.evalReplace ivar repl then
-        return some ⟨_, .mkSep lhs' rhs, q(sep_mono_left $h)⟩
-      if let some ⟨_, rhs', h⟩ ← rhs.evalReplace ivar repl then
-        return some ⟨_, .mkSep lhs rhs', q(sep_mono_right $h)⟩
-      return none
-
 end replace
 
 section dependency
@@ -570,6 +553,14 @@ def parseIrisGoal? (expr : Expr) : Option IrisGoal := do
   let ⟨e, hyps⟩ ← parseHyps? bi P
   some { u, prop, bi, e, hyps, goal }
 
+/--
+  Parse an Iris entailment (`Entails` rather than `Entails'`).
+-/
+def parseEntails? (expr : Expr) : Option <| Expr × Expr × Expr × Expr :=
+  match expr.consumeMData.appM? ``Entails with
+  | some #[prop, bi, e, goal] => some ⟨prop, bi, e, goal⟩
+  | _ => none
+
 def IrisGoal.toExpr : IrisGoal → Expr
   | { hyps, goal, .. } => q(Entails' $(hyps.tm) $goal)
 
@@ -610,12 +601,12 @@ def Hyps.findWithInfo {u prop bi} (hyps : @Hyps u prop bi s) (name : Ident) : Me
 /-- Hyps.addWithInfo should be used by tactics that introduce a hypothesis based on the name given by the user. -/
 def Hyps.addWithInfo {prop : Q(Type u)} (bi : Q(BI $prop))
     (name : TSyntax ``binderIdent) (p : Q(Bool)) (ty : Q($prop)) {e} (h : Hyps bi e)
-    : MetaM (IVarId × Hyps bi q(iprop($e ∗ □?$p $ty))) := do
+    : MetaM (IVarId × (e' : Q($prop)) × Hyps bi e' × Q(iprop($e ∗ □?$p $ty ⊣⊢ $e'))) := do
   let ivar' ← mkFreshIVarId (isTrue p)
   let (nameTo, nameRef) ← getFreshName name
   addHypInfo nameRef nameTo ivar' prop ty (isBinder := true)
-  let hyps := Hyps.add bi nameTo ivar' p ty h
-  return ⟨ivar', hyps⟩
+  let ⟨e', hyps, pf⟩ := Hyps.add bi nameTo ivar' p ty h
+  return ⟨ivar', e', hyps, pf⟩
 
 /--
   Given hypothesis `hyps` representing `e` where every hypothesis exist in the

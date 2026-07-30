@@ -82,7 +82,9 @@ jobs:
           path: Iris/.lake
       - name: Read pinned Rocq commit
         id: rocq-commit
-        run: echo "sha=$(cat scripts/ROCQ_REVISION)" >> "$GITHUB_OUTPUT"
+        run: |
+          sha=$(cat scripts/ROCQ_REVISION)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
       - name: Cache Rocq definitions
         uses: actions/cache@v6
         with:
