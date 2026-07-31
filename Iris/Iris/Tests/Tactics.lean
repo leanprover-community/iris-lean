@@ -916,6 +916,22 @@ example [BI PROP] (P Q : PROP) : Q ⊢ P -∗ Q := by
   iintro H HP
   iapply H
 
+/-- Tests `iapply` of a plain wand under a basic update, using `intoWand_bupd_args` to balance the
+argument and the result of the wand against the goal's modality. -/
+example [BI PROP] [BIUpdate PROP] (P Q : PROP) :
+    (P -∗ Q) ⊢ (|==> P) -∗ |==> Q := by
+  iintro Hwand HP
+  iapply Hwand
+  iexact HP
+
+/-- Tests `iapply` of a plain wand under a fancy update, using `intoWand_fupd_args` to balance the
+argument and the result of the wand against the goal's modality. -/
+example [BI PROP] [BIFUpdate PROP] (E1 E2 : CoPset) (P Q : PROP) :
+    (P -∗ Q) ⊢ (|={E1,E2}=> P) -∗ |={E1,E2}=> Q := by
+  iintro Hwand HP
+  iapply Hwand
+  iexact HP
+
 end apply
 
 -- have

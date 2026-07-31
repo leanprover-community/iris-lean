@@ -40,7 +40,13 @@ instance intoWand_bupd (p q : Bool) ioP ioQ (R P Q : PROP)
     wand_intro <| (sep_mono (BIUpdate.mono h.1) intuitionisticallyIf_elim).trans <|
     bupd_sep.trans <| BIUpdate.mono wand_elim_left
 
-#rocq_ignore into_wand_bupd_args "IntoWand' is not used in Lean"
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias into_wand_bupd_args]
+instance intoWand_bupd_args (p q : Bool) ioP ioQ (R P Q : PROP)
+    [h : IntoWand p false R ioP P ioQ Q] :
+    IntoWand p q R ioP iprop(|==> P) ioQ iprop(|==> Q) where
+  into_wand := wand_intro_left <|
+    (sep_mono intuitionisticallyIf_elim h.into_wand).trans bupd_wand_right
 
 @[rocq_alias into_wand_bupd_persistent]
 instance intoWand_bupd_persistent (p q : Bool) ioP ioQ (R P Q : PROP)
@@ -140,7 +146,13 @@ instance intoWand_fupd_persistent E1 E2 (p q : Bool) ioP ioQ (R P Q : PROP)
     wand_intro <| (sep_mono (BIFUpdate.mono h.into_wand) .rfl).trans <|
     fupd_frame_right.trans <| BIFUpdate.mono wand_elim_left
 
-#rocq_ignore into_wand_fupd_args "IntoWand' is not used in Lean"
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias into_wand_fupd_args]
+instance intoWand_fupd_args E1 E2 (p q : Bool) ioP ioQ (R P Q : PROP)
+    [h : IntoWand p false R ioP P ioQ Q] :
+    IntoWand p q R ioP iprop(|={E1,E2}=> P) ioQ iprop(|={E1,E2}=> Q) where
+  into_wand := wand_intro_left <|
+    (sep_mono intuitionisticallyIf_elim h.into_wand).trans fupd_wand_right
 
 @[rocq_alias from_sep_fupd]
 instance fromSep_fupd E (P Q1 Q2 : PROP)
