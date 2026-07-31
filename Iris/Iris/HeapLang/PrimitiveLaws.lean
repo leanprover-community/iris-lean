@@ -29,7 +29,9 @@ class HeapLangGpreS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGp
 attribute [reducible, instance] HeapLangGpreS.heap_pre
 attribute [reducible, instance] HeapLangGpreS.proph_pre
 
-class HeapLangGS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGS_gen hlc GF where
+class HeapLangGS (hlc : outParam HasLC) (GF : BundledGFunctors) where
+  -- not an instance on purpose to avoid diamonds with IrisGS_gen
+  [invGS : InvGS_gen hlc GF]
   heap : genHeapGS Loc (Option Val) GF HeapF
   proph : prophMapGS ProphId (Val × Val) GF ProphMapF
 
@@ -49,9 +51,12 @@ theorem prophMapInterp_nil_append [HeapLangGS hlc GF] (κs : List Observation)
   .rfl
 
 instance HeapLang [HeapLangGS hlc GF] : IrisGS_gen hlc Exp GF where
+  invGS := HeapLangGS.invGS
   numLatersPerStep n := 0
   forkPost v := iprop(True)
-  stateInterp_mono σ ns obs nt := by iintro $
+  stateInterp_mono σ ns obs nt := by
+    let := @HeapLangGS.invGS hlc GF _
+    iintro $
 
 theorem state_interp_step [HeapLangGS hlc GF] (σ : State) (ns : Nat)
     (κs : List Observation) (nt : Nat) :
@@ -501,8 +506,10 @@ theorem wp_faa {l : Loc} {i1 i2 : Int} :
   iframe Hpt
   ipureintro; simp [toVal]; rfl
 
-theorem wp_new_proph :
-    ⊢ WP hl(newProph()) @ s; E {{ v, ∃ p, ∃ pvs, ⌜v = .lit (.prophecy p)⌝ ∗ proph p pvs }} := by
+theorem wp_new_proph Φ :
+    (∀ p pvs, proph p pvs -∗ Φ (.lit (.prophecy p))) -∗
+    WP hl(newProph()) @ s; E {{ Φ }} := by
+  iintro HΦ
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
   icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
@@ -529,13 +536,11 @@ theorem wp_new_proph :
   · rw [show σ₁.usedProphId.insert p' = {p'} ∪ σ₁.usedProphId by
         ext x; simp [Std.ExtTreeSet.mem_insert, Std.ExtTreeSet.mem_union_iff]]
     iexact Hproph'
-  isplitl [Htok]
+  isplitl [HΦ Htok]
   · iexists hl_val(#(BaseLit.prophecy p'))
     isplit
     · ipureintro; simp [toVal]; rfl
-    iexists p', _
-    iframe Htok
-    ipureintro; rfl
+    iapply HΦ $$ [$]
   · simp only [Algebra.BigOpL.bigOpL_nil]; itrivial
 
 theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × Val)}

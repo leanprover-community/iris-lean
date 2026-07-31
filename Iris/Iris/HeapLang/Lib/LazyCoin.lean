@@ -53,19 +53,15 @@ theorem newCoin.spec : ⊢@{IProp GF}
   unfold newCoin
   wp_pures
   wp_bind newProph()
-  ihave ∗aux := wp_new_proph
-  iapply wp_strong_mono (Std.IsPreorder.le_refl _) CoPset.subseteq_refl $$ aux
-  iintro %v ⟨%p, %pvs, %eq, h⟩ !>; subst eq
-  wp_pures
-  wp_bind ref(_)
-  iapply wp_alloc
-  iintro %l !> Hl
+  iapply wp_new_proph
+  iintro %p %pvs Hp
+  wp_alloc l with Hl
   wp_pures
   iintro !>
   iapply K
   unfold coin
   iexists l, p, pvs
-  isplitl []; itrivial
+  isplitr; itrivial
   iframe
   iright
   iframe
@@ -80,21 +76,17 @@ theorem readCoin.spec (cp : Val) (b : Bool) : ⊢@{IProp GF}
   subst cp_eq
   wp_pures
   wp_bind !_
-  icases disj with (Hsome | ⟨Hnone, %b_eq⟩)
-  · iapply wp_load $$ Hsome
-    iintro !> Hc
+  icases disj with (Hsome | ⟨Hnone, %rfl⟩)
+  · wp_load
     wp_pures
     iintro !>
     iapply K
     iexists c, p, pvs
     iframe; ipureintro; rfl
-  · subst b_eq
-    iapply wp_load $$ Hnone
-    iintro !> Hc
+  · wp_load
     wp_pures
     wp_bind &nondetBool _; iapply nondetBool.spec $$ [//]; iintro !> %b -
-    wp_pures
-    wp_bind _ ← _; iapply wp_store $$ Hc; iintro !> Hc
+    wp_store
     wp_pure; wp_pure
     wp_bind resolveProph(_, _); iapply wp_resolve_proph $$ proph
     iintro %pvs' %pvs_eq proph
@@ -103,5 +95,4 @@ theorem readCoin.spec (cp : Val) (b : Bool) : ⊢@{IProp GF}
     iintro !>
     simp only [prophecyToBool_of_bool]
     iapply K
-    iexists c, p, pvs'
-    iframe; ipureintro; rfl
+    iframe; itrivial
