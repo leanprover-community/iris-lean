@@ -528,6 +528,7 @@ theorem wp_step_fupdN {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : IProp
   simp [LawfulSet.diff_empty, ←LawfulSet.diff_subset_decomp E₂E₁]
   itrivial
 
+set_option trace.Meta.synthInstance true in
 @[rocq_alias wp_step_fupd]
 theorem wp_step_fupd {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : IProp GF} {Φ : Val → IProp GF}
     (toVal_e : toVal e = none) (E₂E₁ : E₂ ⊆ E₁) :
@@ -541,7 +542,7 @@ theorem wp_step_fupd {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : IProp 
     itrivial
   · imod HR
     dsimp only [Nat.repeat]
-    iframe
+    iframe HR
 
 @[rocq_alias wp_frame_step_l]
 theorem wp_frame_step_l {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {Φ : Val → IProp GF} {R : IProp GF}

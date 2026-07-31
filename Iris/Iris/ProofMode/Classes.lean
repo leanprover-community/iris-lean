@@ -222,21 +222,22 @@ class FrameInstantiateExistDisabled {PROP} [BI PROP] (p : Bool) (R P : PROP) (Q 
   frame_instantiatiate_exist_disabled : Frame p R P Q
 export FrameInstantiateExistDisabled (frame_instantiatiate_exist_disabled)
 
+@[ipm_class, rocq_alias MaybeIntoLaterN]
+class MaybeIntoLaterN {PROP} [BI PROP] (only_head : Bool) (n : Nat) (P : PROP) (Q : outParam $ PROP) where
+  maybe_into_laterN : P ⊢ ▷^[n] Q
+export MaybeIntoLaterN (maybe_into_laterN)
+
 /--
 `IntoLaterN` turns `P` into `▷^[n] Q`.
 The Boolean [only_head] indicates whether laters should only be stripped in head position or also below
 other logical connectives. For [inext] it should strip laters below other logical connectives,
 but this should not happen while framing.
 
-The Rocq version uses an `MaybeIntoLaterN` typeclass that avoids unfolding definitions for searches
-that do not make progress. But this is not necessary in Lean since Lean TC synthesis does not unfold
-definitions by default.
-
 This classes is deliberately not an `ipm_class` to use the more efficient TC synthesis.
 -/
-@[rocq_alias IntoLaterN, rocq_alias MaybeIntoLaterN]
+@[ipm_class, rocq_alias IntoLaterN]
 class IntoLaterN {PROP} [BI PROP] (only_head : Bool) (n : Nat) (P : PROP) (Q : outParam $ PROP) where
-  into_laterN : P ⊢ ▷^[n] Q
+  into_laterN : MaybeIntoLaterN only_head n P Q
 export IntoLaterN (into_laterN)
 
 /-- `CombineSepAs` combines two propositions `P` and `Q` into `R` -/

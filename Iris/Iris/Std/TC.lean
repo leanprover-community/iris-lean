@@ -38,7 +38,6 @@ class inductive TCEq {α : Sort _} (a : α) : α → Prop
 
 instance {α : Sort _} {a : α} : TCEq a a := TCEq.refl
 
-
 /-- Type class version of `Ite`, i.e. a type class for which an instance exists if the boolean
 condition is `true` and an instance of `T` is present or the condition is `false` and an instance
 of `U` is present.
@@ -60,6 +59,23 @@ unif_hint (b : Bool) where
   |- false && b ≟ false
 unif_hint (b : Bool) where
   |- true && b ≟ b
+
+/-- Corresponds to `tc_to_bool` in Rocq's stdpp. -/
+class TCToBool (P : Prop) (b : outParam Bool) : Prop where
+  tc_to_bool : True
+
+instance (priority := high) tcToBool_true (P : Prop) [P] : TCToBool P true := ⟨trivial⟩
+instance (priority := low) tcToBool_false (P : Prop) : TCToBool P false := ⟨trivial⟩
+
+/-- Type class version of `if P then Q else R`, where `P` is decided by instance search. -/
+class inductive TCIf (P Q R : Prop) : Prop
+  | pos (hq : Q) : TCIf P Q R
+  | neg (hr : R) : TCIf P Q R
+
+instance tcIf_of_bool (P Q R : Prop) (b : Bool) [TCToBool P b] [h : TCIte b Q R] : TCIf P Q R :=
+  match b, h with
+  | true,  .t (t := q) => .pos q
+  | false, .e (u := r) => .neg r
 
 class MakeNatAdd (n1 n2 : Nat) (m : outParam Nat) where
   make_nat_add : m = n1 + n2
