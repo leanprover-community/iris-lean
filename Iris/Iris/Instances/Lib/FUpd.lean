@@ -666,6 +666,7 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
     let newN ← mkFreshExprMVarQ q(Nat)
     let some hcancel ← synthInstance? q(NatCancel $c $n $newC $newN)
       | throwError "inext: unable to cancel {n} later credits from {c}"
+    let newC : Q(Nat) ← instantiateMVars newC
     unless ← isDefEq newN q(0) do
       throwError "inext: insufficient credits"
 
