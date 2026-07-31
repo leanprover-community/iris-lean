@@ -73,7 +73,7 @@ partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
 
     let mctx0 ← getMCtx
     withTraceNode `Meta.synthInstance
-      (λ _ => return m!"new goal {MessageData.withMCtx mctx0 m!"{mvarType}"} => {mvarType}") do
+      (λ _ => return m!"IPM: new goal {MessageData.withMCtx mctx0 m!"{mvarType}"} => {mvarType}") do
 
     -- first tactics and then instances. We cannot interleave them
     -- since we don't know the priorities of the instances.
