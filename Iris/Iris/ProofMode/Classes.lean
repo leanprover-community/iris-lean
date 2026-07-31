@@ -227,8 +227,6 @@ export FrameInstantiateExistDisabled (frame_instantiatiate_exist_disabled)
 The Boolean [only_head] indicates whether laters should only be stripped in head position or also below
 other logical connectives. For [inext] it should strip laters below other logical connectives,
 but this should not happen while framing.
-
-This classes is deliberately not an `ipm_class` to use the more efficient TC synthesis.
 -/
 @[ipm_class, rocq_alias IntoLaterN]
 class IntoLaterN {PROP} [BI PROP] (only_head : Bool) (n : Nat) (P : PROP) (Q : outParam $ PROP) where
