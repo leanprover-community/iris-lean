@@ -148,8 +148,8 @@ def difference (m₁ m₂ : M V) : M V :=
 def zipWith (f : V → V' → V'') (m₁ : M V) (m₂ : M V') : M V'' :=
   bindAlter (fun k v => (get? m₂ k).bind fun v' => some <| f v v') m₁
 
-set_option linter.checkUnivs false in
-def zip (m₁ : M V) (m₂ : M V') : M (V × V') :=
+universe u
+def zip {V V' : Type u} (m₁ : M V) (m₂ : M V') : M (V × V') :=
   zipWith (fun x y => (x, y)) m₁ m₂
 
 /-- Partial maps support the set difference operation `\` via difference. -/
@@ -818,7 +818,7 @@ theorem zipWith_comm {f : V → V' → V''} {m₁ : M V} {m₂ : M V'} :
 --     PartialMap.map Prod.swap (zip m₁ m₂) = zip m₂ m₁ := by
 --   sorry
 
-theorem zip_map {f : V → V'} {g : V → V''} {m : M V} :
+theorem zip_map {V V' V'' : Type u} {f : V → V'} {g : V → V''} {m : M V} :
     zip (PartialMap.map f m) (PartialMap.map g m) =
       PartialMap.map (fun v => (f v, g v)) m := by
   apply equiv_iff_eq.mp
@@ -826,7 +826,7 @@ theorem zip_map {f : V → V'} {g : V → V''} {m : M V} :
   simp [zip, get?_map, zipWith, get?_bindAlter]
   cases get? m k <;> simp [Option.bind, Option.map]
 
-theorem zip_fst_snd {m : M (V × V')} :
+theorem zip_fst_snd {V V' : Type u} {m : M (V × V')} :
     zip (PartialMap.map Prod.fst m) (PartialMap.map Prod.snd m) = m := by
   apply equiv_iff_eq.mp
   intro k
