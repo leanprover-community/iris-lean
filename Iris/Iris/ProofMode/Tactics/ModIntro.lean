@@ -129,7 +129,7 @@ where go {e}
     | .forall C => do
       have : $prop1 =Q $prop2 := ⟨⟩
       have : $bi1 =Q $bi2 := ⟨⟩
-      let .some hC ← trySynthInstanceQ q($C $ty)
+      let .some hC ← ProofModeM.trySynthInstanceQ q($C $ty)
         | throwError "imodintro: hypothesis {name} : {ty} does not satisfy {C}"
       -- bridge through defeq since `M.action` cannot unify directly with the pattern (same in other cases)
       have heq : Q(@ModalityAction.forall $prop1 $C = .forall $C) := q(Eq.refl (ModalityAction.forall $C))
@@ -137,7 +137,7 @@ where go {e}
       return ⟨_, .mkHyp bi1 name ivar p ty, q(modaction_forall $M $heq $hC)⟩
     | .transform C => do
       let ty' ← mkFreshExprMVarQ q($prop1)
-      let .some hC ← trySynthInstanceQ q($C $ty $ty')
+      let .some hC ← ProofModeM.trySynthInstanceQ q($C $ty $ty')
         | throwError "imodintro: cannot transform hypothesis {name} : {ty} with {C}"
       have heq : Q(@ModalityAction.transform $prop1 $prop2 $C = .transform $C) :=
         q(Eq.refl (ModalityAction.transform $C))
