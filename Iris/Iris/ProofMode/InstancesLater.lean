@@ -330,7 +330,7 @@ instance (priority := high) intoLaterN_default_0 [BI PROP] only_head (P : PROP) 
   into_laterN := laterN_intro 0
 
 @[rocq_alias into_laterN_later]
-instance intoLaterN_later [BI PROP] only_head n n' m' (P Q lQ : PROP)
+instance (priority := default - 200) intoLaterN_later [BI PROP] only_head n n' m' (P Q lQ : PROP)
     [h1 : NatCancel n 1 n' m']
     [h2 : IntoLaterN only_head n' P Q]
     [h3 : MakeLaterN m' Q lQ] : IntoLaterN only_head n iprop(▷ P) lQ where
@@ -339,13 +339,27 @@ instance intoLaterN_later [BI PROP] only_head n n' m' (P Q lQ : PROP)
     apply (laterN_add _ _).1.trans (laterN_mono _ h3.1.1)
 
 @[rocq_alias into_laterN_laterN]
-instance intoLaterN_laterN [BI PROP] only_head n m n' m' (P Q lQ : PROP)
+instance (priority := default - 100) intoLaterN_laterN [BI PROP] only_head n m n' m' (P Q lQ : PROP)
     [h1 : NatCancel n m n' m']
     [h2 : IntoLaterN only_head n' P Q]
     [h3 : MakeLaterN m' Q lQ] : IntoLaterN only_head n iprop(▷^[m] P) lQ where
   into_laterN := (laterN_mono _ h2.1).trans $ (laterN_add _ _).2.trans $ by
     rw [Nat.add_comm, h1.1]
     apply (laterN_add _ _).1.trans (laterN_mono _ h3.1.1)
+
+@[rocq_alias into_laterN_laterN_bool]
+instance (priority := default - 300) intoLaterN_laterN_bool [BI PROP] only_head n (p : Bool) n' m' (P Q lQ : PROP)
+    [h1 : NatCancel n 1 n' m']
+    [h2 : IntoLaterN only_head n' P Q]
+    [h3 : MakeLaterN m' Q lQ] : IntoLaterN only_head n iprop(▷?p P) lQ where
+  into_laterN := by
+    cases p
+    · exact (later_intro.trans (later_mono h2.1)).trans $ (later_laterN _).2.trans $ by
+        rw [h1.1]
+        apply (laterN_add _ _).1.trans (laterN_mono _ h3.1.1)
+    · exact (later_mono h2.1).trans $ (later_laterN _).2.trans $ by
+        rw [h1.1]
+        apply (laterN_add _ _).1.trans (laterN_mono _ h3.1.1)
 
 -- There is no MaybeIntoLaterN in Lean, so we only need one instance
 @[rocq_alias into_laterN_and_l, rocq_alias into_laterN_and_r]
