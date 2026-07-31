@@ -626,8 +626,13 @@ theorem tac_lc_add_laterN_full {GF : BundledGFunctors} [InvGS GF]
 
 public meta section
 
-elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
-  let natN := match n with | none => 1 | some n => n.raw.toNat
+elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
+  let n : Q(Nat) ← match t with
+  | none => pure <| mkNatLit 1
+  | some t => do
+    let n ← Term.elabTermEnsuringType t q(Nat)
+    Term.synthesizeSyntheticMVarsNoPostponing
+    instantiateMVars n
 
   ProofModeM.runTactic λ mvar { u, prop, bi, e, hyps, goal, .. } => do
     let .defEq _ ← isLevelDefEqQ u 0
@@ -658,9 +663,6 @@ elab "inext" n:(ppSpace num)? " credit: " h:ident : tactic => do
     have inst : Q(ElimModal $φ false .in false iprop(|={$E}=> $goal) $goal $goal $goal) := inst
 
     let hφ ← iSolveSidecondition q($φ)
-
-    -- Generate the proof goal with the updated hypothesis
-    let n : Q(Credit) ← pure <| mkNatLit natN
 
     let newC ← mkFreshExprMVarQ q(Nat)
     let newN ← mkFreshExprMVarQ q(Nat)

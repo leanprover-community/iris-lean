@@ -82,4 +82,16 @@ instance (priority := high) : NatCancel n n 0 0 where
 instance [h : NatCancel n m n' m'] : NatCancel (n + 1) (m + 1) n' m' where
   nat_cancel := by have := h.nat_cancel; grind
 
+instance (priority := high) : NatCancel (n + m) n m 0 where
+  nat_cancel := by omega
+
+instance (priority := high) : NatCancel (n + m) m n 0 where
+  nat_cancel := by simp
+
+instance (priority := high) : NatCancel n (n + m) 0 m where
+  nat_cancel := by omega
+
+instance (priority := high) : NatCancel m (n + m) 0 n where
+  nat_cancel := by omega
+
 end Iris.Std

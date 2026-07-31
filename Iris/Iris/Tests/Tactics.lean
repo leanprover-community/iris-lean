@@ -2359,12 +2359,15 @@ example (E : CoPset) (P : IProp GF) : ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=>
   iintro Hcred HP
   inext 2 credit: Hcred
 
-/- Tests `inext` with multiple credits consumed at once. -/
-example (E : CoPset) (P : IProp GF) : ⊢ £ 6 -∗ ▷^[6] (|={E}=> P) -∗ |={E}=> P := by
+/- Tests `inext` with multiple credits consumed. -/
+example (E : CoPset) (P : IProp GF) :
+    ⊢ £ (m + n + 6) -∗ ▷^[m + n + 6] (|={E}=> P) -∗ |={E}=> P := by
   iintro Hcred HP
   inext 3 credit: Hcred
-  inext 2 credit: Hcred
+  inext (1 + (3 - 2)) credit: Hcred
   inext 1 credit: Hcred
+  inext n credit: Hcred
+  inext m credit: Hcred
   iassumption
 
 /- Tests `inext` for later credits with an invalid hypothesis choice. -/
