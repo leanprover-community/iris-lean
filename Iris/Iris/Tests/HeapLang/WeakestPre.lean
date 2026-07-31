@@ -10,6 +10,8 @@ public import Iris.Instances
 public import Iris.HeapLang.Notation
 public import Iris.HeapLang.ProofMode
 public import Iris.HeapLang.Instances
+public import Iris.HeapLang.PrimitiveLaws
+public import Iris.Instances.Lib.Invariants
 public import Iris.ProgramLogic.WeakestPre
 
 namespace Iris.HeapLang
@@ -790,3 +792,37 @@ example : ⊢@{IProp GF} WP hl(if #true then #1 else #2) {{ v, ⌜v = hl_val(#1)
 end wp_match
 
 end pure_tactics
+
+section iinv
+
+open Std ProofMode
+
+/-! Test for `iinv` on a `WP` goal.
+
+`iinv` has to synthesise `ElimInv … goal _`, where `goal` is the current `WP`
+proposition.  That goes through `elimInv_acc_without_close`, whose `ElimAcc`
+premise is discharged by `elimAcc_wp_atomic` / `elimAcc_wp_nonatomic`.  Both of
+those instance heads mention `WP e @ s ; E {{ Φ }}`, which carries an
+`IrisGS_gen hlc Expr GF` instance argument, so matching against them requires
+solving `IrisGS_gen ?hlc ?Expr ?GF` with `?Expr`, `?Val`, `?State`, `?Obs` (and
+the `Language` instance argument) still unassigned.  Unless all four of those
+are `outParam`s, they count as inputs, resolution refuses to commit, and `iinv`
+fails with "invalid invariant … (ElimInv type class synthesis failed)". -/
+
+variable {GF : BundledGFunctors} [HeapLangGS hlc GF] (N : Namespace)
+
+private def iinvTestInv (l : Loc) : IProp GF := iprop% ∃ n : Nat, l ↦ hl_val(#n)
+
+example (l : Loc) :
+    ⊢@{IProp GF} inv N (iinvTestInv l) -∗ WP hl(!(#l)) {{ v, True }} := by
+  iintro #Hinv
+  unfold iinvTestInv
+  iinv N with ⟨%n, >Hl⟩
+  · exact ⟨by simp, by infer_instance⟩
+  wp_load
+  imodintro
+  isplitl [Hl]
+  · inext; iexists n; iframe
+  exact BI.true_intro
+
+end iinv

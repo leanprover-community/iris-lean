@@ -42,8 +42,8 @@ class StateInterp (State : Type _) (Obs : outParam $ Type _) (GF : BundledGFunct
 export StateInterp (stateInterp)
 
 @[rocq_alias irisGS_gen]
-class IrisGS_gen (hlc : outParam HasLC) (Expr : Type _) {Val : Type _} {State : Type _}
-    {Obs : Type _} [Λ : Language Expr State Obs Val] (GF : BundledGFunctors) extends
+class IrisGS_gen (hlc : outParam $ HasLC) (Expr : outParam $ Type _) {Val : outParam $ Type _} {State : outParam $ Type _}
+    {Obs : outParam $ Type _} [Λ : Language Expr State Obs Val] (GF : BundledGFunctors) extends
     StateInterp State Obs GF, InvGS_gen hlc GF where
   /-- Number of later credits obtained from taking one step in the
   operational semantics of our language. -/
