@@ -2379,6 +2379,21 @@ example (m n p q : Nat) (E : CoPset) (P : IProp GF) :
   inext 4 credit: Hcred
   iassumption
 
+/- TODO: in the Rocq version, `intoLaterN_later` fails to apply, and `intoLaterN_laterN_bool` applies instead -/
+set_option trace.Meta.synthInstance true in
+example (p : Bool) (P : IProp GF) (E : CoPset) :
+    ⊢ £ 1 -∗ ▷?p P -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred H HQ
+  inext credit: Hcred
+  /-
+    Proof state:
+      ∗H : ▷^[p.toNat]P
+      ∗HQ : |={E}=> P
+      ⊢ |={E}=> P
+  -/
+  /- We should get `H : P` instead -/
+  iexact HQ
+
 /- Tests `inext` for later credits with an invalid hypothesis choice. -/
 /-- error: inext: Hcred is not a spatial later credit hypothesis -/
 #guard_msgs in
