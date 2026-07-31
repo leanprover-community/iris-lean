@@ -2370,6 +2370,13 @@ example (E : CoPset) (P : IProp GF) :
   inext m credit: Hcred
   iassumption
 
+example (E : CoPset) (P : IProp GF) :
+    ⊢ £ (m + n + p + q) -∗ ▷^[m + p] (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  inext (m + q) credit: Hcred
+  inext (n + p) credit: Hcred
+  iassumption
+
 /- Tests `inext` for later credits with an invalid hypothesis choice. -/
 /-- error: inext: Hcred is not a spatial later credit hypothesis -/
 #guard_msgs in
