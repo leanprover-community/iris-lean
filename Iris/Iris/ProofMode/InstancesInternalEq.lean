@@ -48,7 +48,6 @@ instance intoLaterN_internalEq_next [Sbi PROP] [OFE A] (x y : A)
     IntoLaterN (PROP := PROP) only_head n iprop(Later.next x ≡ Later.next y)
       iprop(x ≡ y) where
   into_laterN := by
-    constructor
     apply (later_equivI_mp x y).trans (by
       have hcancel : n' + 1 = n := by have := h.nat_cancel; omega
       rw [← hcancel]

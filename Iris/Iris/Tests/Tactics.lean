@@ -2384,9 +2384,7 @@ example (p : Bool) (P : IProp GF) (E : CoPset) :
     ⊢ £ 1 -∗ ▷?p P -∗ ▷ (|={E}=> P) -∗ |={E}=> (P ∗ P) := by
   iintro Hcred H HQ
   inext credit: Hcred
-  isplitl [HQ]
-  · iassumption
-  · iassumption
+  isplitl [HQ] <;> iassumption
 
 /- Tests `inext` for later credits with an invalid hypothesis choice. -/
 /-- error: inext: Hcred is not a spatial later credit hypothesis -/

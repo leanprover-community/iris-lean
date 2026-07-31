@@ -163,7 +163,7 @@ instance frame_later [BI PROP] p (R R' P Q Q' : PROP)
     Frame p R' iprop(▷ P) Q' where
   frame :=
     (sep_mono_right h3.make_laterN.2).trans <|
-    (sep_mono_left ((intuitionisticallyIf_mono h1.maybe_into_laterN).trans later_intuitionisticallyIf_2)).trans <|
+    (sep_mono_left ((intuitionisticallyIf_mono h1.maybe_into_laterN.into_laterN).trans later_intuitionisticallyIf_2)).trans <|
     later_sep.2.trans <|
     later_mono h2.frame
 
@@ -173,7 +173,7 @@ instance frame_laterN [BI PROP] p n (R R' P Q Q' : PROP)
     Frame p R' iprop(▷^[n] P) Q' where
   frame :=
     (sep_mono_right h3.make_laterN.2).trans <|
-    (sep_mono_left ((intuitionisticallyIf_mono h1.maybe_into_laterN).trans (laterN_intuitionisticallyIf n))).trans <|
+    (sep_mono_left ((intuitionisticallyIf_mono h1.maybe_into_laterN.into_laterN).trans (laterN_intuitionisticallyIf n))).trans <|
     (laterN_sep n).2.trans <|
     laterN_mono n h2.frame
 

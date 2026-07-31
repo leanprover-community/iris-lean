@@ -70,7 +70,7 @@ def modality_plainly [Sbi PROP] : Modality PROP PROP where
 def modality_laterN (n : Nat) [BI PROP] : Modality PROP PROP where
   M := BIBase.laterN n
   action := λ _ => .transform (MaybeIntoLaterN false n)
-  spec := λ _ _ _ h => (intuitionisticallyIf_mono (h.1)).trans (laterN_intuitionisticallyIf n)
+  spec := λ _ _ _ h => (intuitionisticallyIf_mono (h.maybe_into_laterN.into_laterN)).trans (laterN_intuitionisticallyIf n)
   emp := laterN_intro n
   mono := (laterN_mono n ·)
   sep := (laterN_sep n).2

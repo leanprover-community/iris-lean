@@ -222,11 +222,6 @@ class FrameInstantiateExistDisabled {PROP} [BI PROP] (p : Bool) (R P : PROP) (Q 
   frame_instantiatiate_exist_disabled : Frame p R P Q
 export FrameInstantiateExistDisabled (frame_instantiatiate_exist_disabled)
 
-@[ipm_class, rocq_alias MaybeIntoLaterN]
-class MaybeIntoLaterN {PROP} [BI PROP] (only_head : Bool) (n : Nat) (P : PROP) (Q : outParam $ PROP) where
-  maybe_into_laterN : P ⊢ ▷^[n] Q
-export MaybeIntoLaterN (maybe_into_laterN)
-
 /--
 `IntoLaterN` turns `P` into `▷^[n] Q`.
 The Boolean [only_head] indicates whether laters should only be stripped in head position or also below
@@ -237,8 +232,19 @@ This classes is deliberately not an `ipm_class` to use the more efficient TC syn
 -/
 @[ipm_class, rocq_alias IntoLaterN]
 class IntoLaterN {PROP} [BI PROP] (only_head : Bool) (n : Nat) (P : PROP) (Q : outParam $ PROP) where
-  into_laterN : MaybeIntoLaterN only_head n P Q
+  into_laterN : P ⊢ ▷^[n] Q
 export IntoLaterN (into_laterN)
+
+@[ipm_class, rocq_alias MaybeIntoLaterN]
+class MaybeIntoLaterN {PROP} [BI PROP] (only_head : Bool) (n : Nat) (P : PROP) (Q : outParam $ PROP) where
+  maybe_into_laterN : IntoLaterN only_head n P Q
+export MaybeIntoLaterN (maybe_into_laterN)
+
+@[ipm_class]
+class GuardedIntoLaterN {PROP} [BI PROP] (m m' : Nat) (only_head : Bool) (n : Nat)
+    (P : PROP) (Q : outParam $ PROP) where
+  into_laterN_guard : IntoLaterN only_head n P Q
+export GuardedIntoLaterN (into_laterN_guard)
 
 /-- `CombineSepAs` combines two propositions `P` and `Q` into `R` -/
 @[ipm_class, rocq_alias CombineSepAs]
