@@ -2370,11 +2370,13 @@ example (E : CoPset) (P : IProp GF) :
   inext m credit: Hcred
   iassumption
 
-example (E : CoPset) (P : IProp GF) :
-    ⊢ £ (m + n + p + q) -∗ ▷^[m + p] (|={E}=> P) -∗ |={E}=> P := by
+/- Tests `inext` for later credits with later modalities expressed in terms of `Nat` variables. -/
+example  (m n p q : Nat) (E : CoPset) (P : IProp GF) :
+    ⊢ £ (1 + m + n + p + q + 3) -∗ ▷^[n + m + 4 + p + q] (|={E}=> P) -∗ |={E}=> P := by
   iintro Hcred HP
   inext (m + q) credit: Hcred
-  inext (n + p) credit: Hcred
+  inext (p + n) credit: Hcred
+  inext 4 credit: Hcred
   iassumption
 
 /- Tests `inext` for later credits with an invalid hypothesis choice. -/
