@@ -5,6 +5,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Iris.ProofMode
+public import Iris.Algebra.Lib.DFracAgree
+
 /-! ## Algebra wrappers for BI
 This file provides introduction rules (BI entailments) for (some) CMRA operations and properties.
 -/
@@ -270,7 +272,7 @@ theorem agree_includedI (x y : Agree A) :
   · refine siPure_mono (exists_elim (fun c => ?_))
     exact (fun n Heq => (includedN.mp ⟨c, Heq⟩).trans op_commN)
   · refine siPure_mono (exists_intro_trans y ?_)
-    exact entails_preorder.refl
+    rfl
 
 @[rocq_alias to_agree_includedI]
 theorem toAgree_includedI (a b : A) :
@@ -282,7 +284,7 @@ theorem toAgree_includedI (a b : A) :
     show SiProp.internalEq a b ⊢ (∃ c, SiProp.internalEq (toAgree b) (toAgree a • c))
     refine exists_intro_trans (toAgree a) ?_
     refine internalEq_entails.mpr fun n heq => ?_
-    exact (NonExpansive.ne heq.symm).trans (idemp.symm n)
+    exact (NonExpansive.ne heq.symm).trans (Dist.of_eq idemp.symm)
 
 end agree_inclusion
 
@@ -349,4 +351,26 @@ theorem auth_both_validI (a b : A) :
   · exact exists_elim fun c n ⟨hi, hvn⟩ => ⟨DFrac.valid_own_one, ⟨⟨c, hi⟩, hvn⟩⟩
 
 end auth
+
+section dfrac_agree
+variable [Sbi PROP] {A : Type _} [OFE A]
+
+open BI
+
+@[rocq_alias dfrac_agree_validI]
+theorem dfrac_agree_validI (dq : DFrac) (x : A) :
+    internalCmraValid (DFracAgree.mk dq x) ⊣⊢@{PROP} ⌜✓ dq⌝ := by
+  refine (prod_validI (DFracAgree.mk dq x)).trans ⟨?_, ?_⟩
+  · exact and_elim_l.trans internalCmraValid_discrete.mp
+  · exact and_intro internalCmraValid_discrete.mpr
+      (sep_elim_emp_valid_left (toAgree_validI x) sep_elim_left)
+
+@[rocq_alias dfrac_agree_validI_2]
+theorem dfrac_agree_validI_2 (dq1 dq2 : DFrac) (x y : A) :
+    internalCmraValid (DFracAgree.mk dq1 x • DFracAgree.mk dq2 y) ⊣⊢@{PROP}
+      ⌜✓ (dq1 • dq2)⌝ ∧ internalEq x y :=
+  (prod_validI _).trans (and_congr internalCmraValid_discrete (toAgree_op_validI x y))
+
+end dfrac_agree
+
 end Iris

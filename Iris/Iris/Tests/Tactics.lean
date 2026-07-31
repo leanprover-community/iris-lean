@@ -11,11 +11,16 @@ public import Iris.Instances.IProp
 public import Iris.Instances.Lib.LaterCredits
 public import Iris.Instances.Lib.Token
 public import Iris.Algebra.CMRA
+public import Iris.Instances.Lib.Invariants
+public import Iris.Instances.Lib.CInvariants
+public import Iris.Instances.Lib.NaInvariants
+public import Iris.ProgramLogic.Language
+public import Iris.ProgramLogic.WeakestPre
 
 @[expose] public section
 
 namespace Iris.Tests
-open BI CMRA DFrac
+open BI CMRA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic
 
 /- This file contains tests with various scenarios for all available tactics. -/
 
@@ -24,9 +29,71 @@ open BI CMRA DFrac
 example [BI PROP] (Q : PROP) (H : Q ⊢ Q) : Q ⊢ Q := by
   istart
   iintro _HQ
-  have HH: True := by trivial
+  have HH : True := by trivial
   istop
   exact H
+
+/-- Tests `istart` with a BI instance specified. -/
+example [BI PROP1] [BI PROP2] (P1 : PROP1) (P2 : PROP2)
+    (_ : ⊢@{PROP1} P1) : ⊢@{PROP2} P2 -∗ P2 := by
+  istart PROP2
+  iintro HP
+  iassumption
+
+/- Tests `istart` with the wrong BI instance specified. -/
+/-- error: istart: ⊢ P2 is not an emp valid in PROP1 -/
+#guard_msgs in
+example [BI PROP1] [BI PROP2] (P1 : PROP1) (P2 : PROP2)
+    (h : ⊢@{PROP1} P1) : ⊢@{PROP2} P2 := by
+  istart PROP1
+
+/- Tests `istart` with an invalid type specified as the BI instance. -/
+/-- error: istart: True is not a valid BI instance type -/
+#guard_msgs in
+example [BI PROP1] [BI PROP2] (P1 : PROP1) (P2 : PROP2)
+    (h : ⊢@{PROP1} P1) : ⊢@{PROP2} P2 := by
+  istart True
+
+/- Tests `istart` within the Iris Proof Mode. -/
+example [BI PROP1] [BI PROP2] (P1 : PROP1) (P2 : PROP2)
+    (_ : ⊢@{PROP1} P1) : ⊢@{PROP2} P2 -∗ P2 := by
+  iintro P2
+  istart PROP2
+  istart
+  istart PROP2
+  iassumption
+
+/- Tests `istart` within the Iris Proof Mode with the wrong BI instance specified. -/
+/-- error: istart: currently in the Iris Proof Mode with PROP2 rather than PROP1 -/
+#guard_msgs in
+example [BI PROP1] [BI PROP2] (P1 : PROP1) (P2 : PROP2)
+    (_ : ⊢@{PROP1} P1) : ⊢@{PROP2} P2 -∗ P2 := by
+  iintro P2
+  istart PROP1
+
+/- Tests `istart` with BI specified and embedding involved. -/
+example [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] (P : PROP1)
+    (h : ⊢@{PROP1} P) : ⊢@{PROP1} P := by
+  istart PROP2
+  guard_target = ProofMode.Entails' (PROP:=PROP2) _ iprop(⎡P⎤)
+  ihave H := h
+  iexact H
+
+/- Tests `istart` with embedding involved but an invalid BI specified. -/
+/-- error: istart: ⊢ P1 is not an emp valid in PROP3 -/
+#guard_msgs in
+example [BI PROP1] [BI PROP2] [BI PROP3] [BiEmbed PROP1 PROP2]
+  [BiEmbed PROP2 PROP3] (P1 : PROP1)
+    (h : ⊢@{PROP1} P1) : ⊢@{PROP1} P1 := by
+  istart PROP3
+
+/- Tests `istart` to ensure embedding is not used unless a BI is specified. -/
+/-- error: istart: currently in the Iris Proof Mode with PROP1 rather than PROP2 -/
+#guard_msgs in
+example [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+    (P1 : PROP1) (h : ⊢@{PROP1} P1) : ⊢@{PROP1} P1 := by
+  istart
+  istart PROP2
 
 -- rename
 namespace rename
@@ -273,6 +340,100 @@ example [BI PROP] (P Q : PROP) : ⊢ P → Q := by
 example [BI PROP] (P : PROP) : P -∗ P → P := by
   iintro HP1 HP2
 
+/- Tests `iintro` using the introduction pattern `⟨⟩` to solve the goal -/
+example [BI PROP] (P : PROP) : False ∗ □ P ⊢@{PROP} P := by
+  iintro ⟨⟨⟩, #_⟩
+
+/- Tests `iintro` using the pure introduction pattern -/
+example [BI PROP] (P : Nat → PROP) : ∀ n, P n ⊢@{PROP} P n := by
+  iintro %(a | n) HP //
+
+@[simp]
+private def def1 := 3
+
+/- Tests `iintro` using the introduction pattern for simplification (`/=`) -/
+example [BI PROP] (P Q : PROP) : ⊢@{PROP} if def1 = 3 then P -∗ P else Q := by
+  iintro /= HP
+  iexact HP
+
+/- Tests `iintro` where the lack of simplification (`/=`) causes a failure -/
+/-- error: iintro: if def1 = 3 then iprop(P -∗ P) else Q not a wand -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : ⊢@{PROP} if def1 = 3 then P -∗ P else Q := by
+  iintro HP
+
+/- Tests `iintro` with the pattern for simplification and solving trivial goals (`//=`) -/
+example [BI PROP] : ⊢@{PROP} if def1 = 3 then True else False := by
+  iintro //=
+
+/- Tests `iintro` with the pattern for ∀-introduction (`*`) -/
+example {Val : Type} [BI PROP] (P Q : Val → PROP) :
+    ⊢@{PROP} ∀ x y, P x -∗ Q y -∗ P x ∗ Q y := by
+  iintro * _ _
+  iframe
+
+/-- Tests `iintro` with the pattern for repeating ∀-introduction and premise introduction (`**`) -/
+example {Val : Type} {ϕ : Prop} [BI PROP] (P : Val → Val → PROP) (Q : Val → PROP) :
+    ⊢@{PROP} ∀ x y, P x y -∗ ∀ z, (⌜ϕ⌝ → Q z -∗ P x y ∗ Q z ∗ ⌜ϕ⌝) := by
+  iintro **
+  iframe
+  ipureintro
+  assumption
+
+/-- Tests `iintro` with the pattern for introducing a pure goal and exiting the proof mode (`!%`) -/
+example [BI PROP] (P Q : PROP) : ⊢ □ P -∗ □ Q -∗ ⌜n = n⌝ := by
+  iintro - - !%
+  rfl
+
+/- Tests `iintro` with pure introduction failure -/
+/-- error: ipureintro: Q is not pure -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : P ⊢ Q := by
+  iintro HP !%
+
+/-- Tests `iintro` with introduction patterns coming after `!%` -/
+example {ϕ : Prop} [BI PROP] : ⊢@{PROP} ⌜⌜ϕ⌝ ⊢@{PROP} ⌜ϕ⌝⌝ := by
+  iintro !% %_ !%
+  assumption
+
+/-- Tests `iintro` with an introduction pattern for clearing and framing hypotheses (`{ selPats* }`) -/
+example [BI PROP] (P Q R S T : PROP) (ϕ : Prop) :
+    ⊢ □ ⌜ϕ⌝ -∗ P -∗ Q -∗ <affine> R -∗ □ S -∗ □ T -∗ P ∗ Q ∗ T := by
+  iintro %hϕ HP HQ {$HP} HR #HS #HT {HR %hϕ %ϕ $# #}
+  iexact HQ
+
+/-- Tests `iintro` with introduction patterns for rewriting pure equalities -/
+example [BI PROP] (m n : Nat) (a b c : Prop) :
+    m = 2 → 3 = n → ⊢@{PROP} ⌜a = b⌝ -∗ ⌜b = c⌝ -∗ ⌜m.succ = n ∧ a = c⌝ := by
+  iintro %rfl %rfl %rfl %rfl
+  ipureintro
+  and_intros <;> rfl
+
+/-
+  Tests `iintro` with an introduction pattern for rewriting but the
+  hypothesis is not a pure equality
+-/
+/--
+error: Tactic `subst` failed: invalid equality proof, it is not of the form (x = t) or (t = x)
+  P
+
+PROP : Type u_1
+inst✝ : BI PROP
+P : Prop
+x✝ : P
+⊢ emp ⊢ True
+-/
+#guard_msgs in
+example [BI PROP] (P : Prop) : ⊢@{PROP} ⌜P⌝ -∗ True := by
+  iintro %rfl
+
+/-- Tests `iintro` with non-trivial `rcases` destruction patterns -/
+example [BI PROP] (a b c1 c2 c3 : Prop) (P : Prop → Prop) :
+    ⊢@{PROP} □ ⌜((a = b ∧ (b ∨ (c1 ∧ c2 ∧ c3))) ∧ ∃ x, P x)⌝ -∗ ⌜a ∨ c1⌝ ∗ ⌜∃ x, P x⌝ := by
+  iintro %⟨⟨rfl, ((hb : a) | ⟨hc, _, -⟩)⟩, @⟨d : Prop, hd⟩⟩ !%
+  · grind
+  · grind
+
 end intro
 
 -- revert
@@ -377,18 +538,39 @@ example [BI PROP] (P : PROP) {x : Nat} : ⊢ P := by
   irevert %x
 
 /- Tests `irevert` failing with dependency -/
-/-- error: irevert: proofmode hypothesis H depends on x -/
+/-- info: Try this:
+  [apply] irevert %x %hp H
+---
+info: Try this:
+  [apply] irevert! %x
+---
+error: irevert: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Lean hypothesis `hp` depends on `x`
+• Iris hypothesis `H` depends on `x` -/
 #guard_msgs in
 example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
   iintro %x %hp H
   irevert %x
 
-/- Tests `irevert` failing with dependency -/
-/-- error: irevert: Lean hypothesis hp depends on x -/
+/-
+  Tests `irevert` failing with dependency, involving an inaccessible name
+-/
+/-- info: Try this:
+  [apply] irevert! %x H
+---
+error: irevert: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Lean hypothesis `x` (inaccessible name) depends on `x` -/
 #guard_msgs in
 example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
-  iintro %x %hp H
+  iintro %x %_ H
   irevert %x H
+
+/-- Tests `irevert!` which reverts `H2` and `H3` automatically -/
+example [BI PROP] (Φ : Bool → PROP) (x y : Bool) :
+    (∀ x, (Φ x -∗ Φ y) -∗ Φ x -∗ Φ y) ∗ (Φ x -∗ Φ y) ∗ Φ x ⊢ Φ y := by
+  iintro ⟨H1, H2, H3⟩
+  irevert! %x
+  iassumption
 
 end revert
 
@@ -903,6 +1085,13 @@ example [BI PROP] (Q : PROP) : (⌜φ1⌝ ∧ <affine> ⌜φ2⌝) ⊢ Q -∗ Q :
   iintro Hφ
   iintro HQ
   ipure Hφ
+  iexact HQ
+
+/-- Tests `ipure` with an `rcases` destruction pattern -/
+example [BI PROP] (Q : PROP) : (⌜φ1⌝ ∧ <affine> ⌜φ2⌝) ⊢ Q -∗ Q := by
+  iintro Hφ
+  iintro HQ
+  ipure Hφ with ⟨hφ1, -⟩
   iexact HQ
 
 /-- Tests `ipure` with implication containing pure -/
@@ -1443,6 +1632,24 @@ example [BI PROP] (Q : PROP) : Q ∧ <pers> P ⊢ Q := by
   icases HQP with ⟨HQ, _HP⟩
   iexact HQ
 
+/- Tests `icases` on conjunction with persistent right in an affine logic -/
+/--
+ error: unsolved goals
+PROP : Type u_1
+inst✝¹ : BI PROP
+inst✝ : BIAffine PROP
+P Q : PROP
+⊢ 
+  ∗x✝ : P
+  ∗HQ : <pers> Q
+  ⊢ Q
+-/
+#guard_msgs in
+example [BI PROP] [BIAffine PROP] (P Q : PROP) :
+  P ∧ <pers> Q ⊢ Q := by
+  iintro H
+  icases H with ⟨_, HQ⟩
+
 /-- Tests `icases` with nested separating conjunction -/
 example [BI PROP] [BIAffine PROP] (Q : PROP) : P1 ∗ P2 ∗ Q ⊢ Q := by
   iintro HPQ
@@ -1703,6 +1910,54 @@ example [BI PROP] (Q : PROP) : □ Q ⊢ Q := by
   iintro H
   icases H with ⟨HA, HB⟩
 
+/-- Tests `icases` with a case destruction pattern for rewriting pure equalities -/
+example [BI PROP] (m n : Nat) (a b c : Prop) :
+    ⊢@{PROP} ⌜m = 2⌝ -∗ ⌜3 = n⌝ -∗ ⌜a = b⌝ -∗ ⌜b = c⌝ -∗ ⌜m.succ = n ∧ a = c⌝ := by
+  iintro #H1 H2 #H3 H4
+  icases H1 with %rfl
+  icases H2 with %rfl
+  icases H3 with %rfl
+  icases H4 with %rfl
+  ipureintro
+  and_intros <;> rfl
+
+/-
+  Tests `icases` with a case destruction pattern for rewriting but the
+  hypothesis is not a pure equality.
+-/
+/--
+error: Tactic `subst` failed: invalid equality proof, it is not of the form (x = t) or (t = x)
+  P
+
+PROP : Type u_1
+inst✝ : BI PROP
+P : Prop
+a✝ : P
+⊢ emp ⊢ True
+-/
+#guard_msgs in
+example [BI PROP] (P : Prop) : ⊢@{PROP} ⌜P⌝ -∗ True := by
+  iintro HP
+  icases HP with %rfl
+
+/-
+  Tests `icases` with a case destruction pattern for rewriting but the
+  hypothesis is not a pure hypothesis.
+-/
+/-- error: ipure: P is not pure -/
+#guard_msgs in
+example [BI PROP] (P : PROP) : ⊢@{PROP} P -∗ True := by
+  iintro HP
+  icases HP with %rfl
+
+/-- Tests `icases` with non-trivial `rcases` destruction patterns -/
+example [BI PROP] (a b c1 c2 c3 : Prop) (P : Prop → Prop) :
+    ⊢@{PROP} □ ⌜((a = b ∧ (b ∨ (c1 ∧ c2 ∧ c3))) ∧ ∃ x, P x)⌝ -∗ ⌜a ∨ c1⌝ ∗ ⌜∃ x, P x⌝ := by
+  iintro Hpure
+  icases Hpure with %⟨⟨rfl, ((hb : a) | ⟨hc, _, -⟩)⟩, @⟨d : Prop, hd⟩⟩
+  · ipureintro <;> grind
+  · ipureintro <;> grind
+
 end cases
 
 section imodintro
@@ -1910,6 +2165,29 @@ example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP]
   imodintro
   imodintro
   iexact HP
+
+/-- Tests `imodintro` with `intoEmbed_embed`. -/
+example {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+    (P Q : PROP1) : ⎡P⎤ ∗ ⎡P -∗ Q⎤ ⊢@{PROP2} ⎡Q⎤ := by
+  iintro ⟨HP, HPQ⟩
+  imodintro
+  iapply HPQ $$ HP
+
+/-- Tests `imodintro` with `intoEmbed_affinely` and `intoEmbed_embed`. -/
+example {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BIUpdate PROP1] [BIUpdate PROP2]
+    [BiEmbed PROP1 PROP2] [BiEmbedBUpd PROP1 PROP2] (P : PROP1) :
+    <affine> ⎡P⎤ ⊢@{PROP2} ⎡<affine> P⎤ := by
+  iintro HP
+  imodintro
+  iassumption
+
+/- Tests `imodintro` where `intoEmbed_embed` does not apply. -/
+/-- error: imodintro: cannot transform hypothesis HQ : Q with ProofMode.IntoEmbed -/
+#guard_msgs in
+example {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+    (P : PROP1) (Q : PROP2) : ⎡P⎤ ∗ Q ⊢@{PROP2} ⎡P⎤ := by
+  iintro ⟨HP, HQ⟩
+  imodintro
 
 end imodintro
 
@@ -2384,6 +2662,122 @@ example [BI PROP] [BIAffine PROP] (Q : Nat → PROP) : (Q 0 ⊢ ∃ x, False ∨
   iexists _
   iframe
 
+/- Tests `iframe` with existential quantifiers -/
+example [BI PROP] {α} (a : α) {β} (b : β) (P : PROP)
+    (Q : α → PROP) (R : β → PROP) (S : PROP) :
+    ⊢ P -∗ Q a -∗ R b -∗ S -∗ ∃ n, Q n ∗ ∃ m, R m ∗ P ∗ S := by
+  iintro HP HQ HR HS
+  -- Instantiate the inner existential quantifier `m`
+  iframe HR
+  -- Keep the outer existential quantifier `n` around
+  iframe HP
+  -- Instantiate the outer existential quantifier `n`
+  iframe HQ
+  iassumption
+
+/- Tests `iframe` with multiple existential quantifiers framed at once -/
+example [BI PROP] {α} (a : α) {β} (b : β) (P : PROP)
+    (Q : α → PROP) (R : β → PROP) (S : PROP) :
+    ⊢ P -∗ Q a -∗ R b -∗ S -∗ ∃ n, Q n ∗ ∃ m, R m ∗ P ∗ S := by
+  iintro HP HQ HR HS
+  iframe HS HP HR HQ
+
+/- Tests `iframe` with multiple existential quantifiers framed at once -/
+/--
+error: unsolved goals
+PROP : Type u_1
+inst✝ : BI PROP
+α : Sort u_2
+P : PROP
+Q : α → PROP
+⊢ ⏎
+  ⊢ «exists» fun {n} => Q n
+-/
+#guard_msgs in
+example [BI PROP] {α} (P : PROP) (Q : α → PROP) :
+    ⊢ P -∗ BI.exists fun {n} => iprop(Q n  ∗ P) := by
+  iintro HP
+  iframe HP
+
+/- Tests `iframe` with existential quantifers in various orders -/
+example [BI PROP] {α} (a : α) {β} (b : β) {γ} (c : γ)
+    (P : α → β → PROP) (Q : β → α → γ → PROP) :
+    ⊢ P a b -∗ Q b a c -∗ ∃ x, ∃ y, (P x y ∗ ∃ z, Q y x z) := by
+  iintro HP HQ
+  iframe
+
+/-
+  Tests `iframe` with the framing of existential quantifiers disabled.
+  The tactic should succeed as `P`, which is under the existential
+  quantifier, can still be framed.
+-/
+set_option iris.frame.instantiateExists false in
+example [BI PROP] {α} (a : α) (P : PROP) (Q R : α → PROP) (S : PROP) :
+    ⊢ P -∗ Q a -∗ R a -∗ S -∗ ∃ n, P ∗ Q n ∗ ∃ m, R m ∗ S := by
+  iintro HP HQ HR HS
+  iframe ∗
+  iexists a
+  iframe HQ
+  iexists a
+  iassumption
+
+/-
+  Tests `iframe` with the framing of existential quantifiers disabled.
+  Since nothing else can be framed, the tactic should fail.
+-/
+/-- error: iframe: cannot frame P a -/
+#guard_msgs in
+set_option iris.frame.instantiateExists false in
+example [BI PROP] {α} (a : α) (P : α → PROP) :
+    ⊢ P a -∗ ∃ n, P n := by
+  iintro HP
+  iframe HP
+
+/- Tests `iframe` with an existential quantifier under a universal quantifier. -/
+example [BI PROP] (P : PROP) : P ⊢ ∀ (x : Nat), ∃ n, ⌜n = x⌝ ∗ P := by
+  iintro HP
+  iframe HP
+  iintro %x
+  iexists x
+  ipureintro; rfl
+
+/- Tests `iframe` with an existentially quantified binder instantiated with a metavariable. -/
+example [BI PROP] (P Q : Nat → PROP) (m : Nat) :
+    ⊢ P m -∗ ∃ n, Q n -∗ ∃ x y, P x ∗ Q y ∗ ⌜y = 3⌝ := by
+  iintro HP
+  iexists ?w
+  iintro HQ
+  -- The existentially quantified binder `y` instantiated with `?w`
+  iframe HQ
+  iframe HP
+  ipureintro
+  rfl
+
+/-
+  Tests `iframe` with an existentially quantified binder instantiated with
+  a value that involves a metavariable.
+-/
+example [BI PROP] (P : Option Nat → PROP) :
+    ⊢ (∀ n, P (some n)) -∗ ∃ x, P x := by
+  iintro HP
+  ispecialize HP $$ %(?n)
+  -- The existentially quantified binder `x` instantiated with `some ?n`
+  iframe HP
+  exact 0
+
+variable {hlc : outParam HasLC} {Expr State Obs Val} [Λ : Language Expr State Obs Val]
+variable {GF : BundledGFunctors}
+variable [IrisGS_gen hlc Expr GF]
+variable {s : Stuckness} {E : CoPset} {e : Expr} {v : Val} {Φ : Val → IProp GF}
+
+/- Tests `iframe` with the `Frame` type class instance `frameWp`. -/
+example [inst : Language.IntoVal e v] (P : IProp GF) :
+    P ∗ Φ v ⊢ WP e @ s ; E {{ w, P ∗ Φ w }} := by
+  iintro ⟨HP, HΦ⟩
+  iframe HP
+  iapply wp_value $$ HΦ
+  exact inst
+
 end iframe
 
 section icombine
@@ -2562,7 +2956,7 @@ example [BI PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ □ R -∗ R ∗ P ∗ Q :=
     the former takes higher precedence. Likewise, `a1` and `b` is merged
     as `c` instead of `a1 • b`. -/
 example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
-    {a1 a2 a3 b c : F.ap (IProp GF)} [IsOpMerge b a2 a3] [IsOpMerge c a1 b] :
+    {a1 a2 a3 b c : F.ap (IProp GF)} [IsOp .merge b a2 a3] [IsOp .merge c a1 b] :
     ⊢ iOwn γ a1 -∗ iOwn γ a2 -∗ iOwn γ a3 -∗
       iOwn γ c ∗ internalCmraValid (a2 • a3) ∗ internalCmraValid (a1 • b) := by
   iintro H1 H2 H3
@@ -2577,7 +2971,7 @@ example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
     instances for `DFrac` and `Frac`. -/
 example {GF} [ElemG GF (constOF DFrac)]
     [ElemG GF (constOF Qp)] {γ}
-    {a1 a2 a3 b c : Qp} [IsOpMerge b a2 a3] [IsOpMerge c a1 b] :
+    {a1 a2 a3 b c : Qp} [IsOp .merge b a2 a3] [IsOp .merge c a1 b] :
     ⊢@{IProp GF}
       iOwn (F := constOF DFrac) γ (own a1) -∗
       iOwn (F := constOF DFrac) γ (own a2) -∗
@@ -2597,8 +2991,8 @@ example {GF} [ElemG GF (constOF DFrac)]
     instances for the authoritative CMRA. -/
 example {GF A} [UCMRA A] [ElemG GF (constOF (Auth A))] {γ}
     {a1 a2 a3 b c : A} {q1 q2 : Qp} {dq'' dq3 dq4 : DFrac}
-    [IsOpMerge b a2 a3] [IsOpMerge c a1 b]
-    [IsOpMerge dq'' dq3 dq4] :
+    [IsOp .merge b a2 a3] [IsOp .merge c a1 b]
+    [IsOp .merge dq'' dq3 dq4] :
     ⊢@{IProp GF}
       iOwn (F := constOF (Auth A)) γ (◯ a1) -∗
       iOwn (F := constOF (Auth A)) γ (◯ a2) -∗
@@ -2638,18 +3032,27 @@ example {GF m n} [LcGS .hasLC GF] :
   icombine H1 H2 H3 H4 as Hnew
   iexact Hnew
 
-/-- Tests `icombine` for combining two tokens -/
+/-- Tests `icombine` for combining two tokens. -/
 example {GF} [TokenG GF] {γ} :
     ⊢@{IProp GF} token γ -∗ token γ -∗ False := by
   iintro H1 H2
   icombine H1 H2 gives H
   iexact H
 
+/- Tests `icombine` with an invalid destruction pattern. -/
+/-- error: icases: cannot destruct iprop(<absorb> <affine> (P ∗ Q)) -/
+#guard_msgs in
+example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
+    ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <absorb> <affine> (P ∗ Q) ∗ <pers> R := by
+  iintro HP HQ
+  icombine HP HQ as ⟨HNew1, _⟩ gives HNew2
+
 end icombine
 
 section iloeb
 
 variable {PROP : Type u} [ι₁ : BI PROP] [ι₂ : BILoeb PROP]
+
 -- Tests `iloeb` basic
 /--
 error: unsolved goals
@@ -2775,4 +3178,695 @@ example (P Q : PROP) :
     ⊢ P -∗ Q := by
   iloeb as IH
 
+-- Tests `iloeb` where the `generalizing` clause has dependency
+/--
+info: Try this:
+  [apply] iloeb as IH generalizing %n %h1 %U HT
+---
+info: Try this:
+  [apply] iloeb as IH generalizing! %n
+---
+error: iloeb: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Lean hypothesis `h1` depends on `n`
+• Lean hypothesis `U` depends on `n`
+• Iris hypothesis `HT` depends on `n`
+-/
+#guard_msgs in
+example {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop} {h1 : Q n} {U : (Q n) → Prop} :
+    ⊢ □ T n -∗ □ P n := by
+  iintro #HT
+  iloeb as IH generalizing %n
+
+-- Same test as above, involving inaccessible names
+/--
+info: Try this:
+  [apply] iloeb as IH generalizing! %n
+---
+error: iloeb: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Lean hypothesis `h1` depends on `n`
+• Lean hypothesis `x` (inaccessible name) depends on `n`
+• Iris hypothesis `x` (inaccessible name) depends on `n`
+-/
+#guard_msgs in
+example {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop} {h1 : Q n} {_ : (Q n) → Prop} :
+    ⊢ □ T n -∗ □ P n := by
+  iintro #_
+  iloeb as IH generalizing %n
+
+-- Same test as above, except `generalizing!` is used
+/--
+error: unsolved goals
+PROP : Type u
+ι₁ : BI PROP
+ι₂ : BILoeb PROP
+P T : Nat → PROP
+Q : Nat → Prop
+n : Nat
+h1 : Q n
+x✝ : Q n → Prop
+⊢ ⏎
+  □IH : ▷ ∀ n, <affine> ⌜Q n⌝ -∗ ∀ x, □ T n -∗ □ P n
+  □x✝ : T n
+  ⊢ □ P n
+-/
+#guard_msgs in
+example {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop} {h1 : Q n} {_ : (Q n) → Prop} :
+    ⊢ □ T n -∗ □ P n := by
+  iintro #_
+  iloeb as IH generalizing! %n
+
 end iloeb
+
+section iinv
+
+variable {hlc : HasLC} {GF : BundledGFunctors} [InvGS_gen hlc GF] {N : Namespace}
+
+/--
+  Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and
+  `intoAcc_inv` where the side condition is trivial.
+-/
+example {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
+  iintro #Hinv
+  iinv Hinv with #H
+  imodintro
+  isplit
+  · iexact H
+  · imodintro
+    inext
+    iexact H
+
+/--
+  Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and
+  `intoAcc_inv` where the side condition is trivial.
+-/
+example {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
+  iintro #Hinv
+  iinv Hinv with #H Hclose
+  imod Hclose $$ H
+  imodintro
+  inext
+  iexact H
+
+/--
+  Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and
+  `intoAcc_inv`, relying on the side condition `↑N ⊆ E`.
+-/
+example {E} {P : IProp GF} {h : ↑N ⊆ E} : inv N iprop(<pers> P) ={E}=∗ ▷ P := by
+  iintro #Hinv
+  iinv Hinv with #H
+  imodintro
+  isplit
+  · iexact H
+  · imodintro
+    inext
+    iexact H
+
+/- Tests `iinv` with an invalid invariant. -/
+/-- error: iinv: invalid invariant P (ElimInv type class synthesis failed) -/
+#guard_msgs in
+example {E : CoPset} {P : IProp GF} : □ P ={E}=∗ ▷ P := by
+  iintro #HP
+  iinv HP with #H
+
+/-- Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and `intoAcc_cinv`. -/
+example [CInvG GF]  {γ : GName} {p : Qp} :
+    cinv N γ iprop(<pers> P) ∗ own γ p ⊢@{IProp GF} |={⊤}=> own γ p ∗ ▷ P := by
+  iintro ⟨#Hinv, H⟩
+  iinv Hinv with ⟨#HP, Hown⟩
+  imodintro
+  isplit
+  iexact HP
+  iframe
+  imodintro
+  inext
+  iexact HP
+
+/-- Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and `intoAcc_cinv`. -/
+example [CInvG GF] {γ : GName} {p : Qp} :
+    cinv N γ iprop(<pers> P) ∗ own γ p ⊢@{IProp GF} |={⊤}=> own γ p ∗ ▷ P := by
+  iintro ⟨#Hinv, H⟩
+  iinv Hinv with ⟨#HP, Hown⟩ Hclose
+  imod Hclose $$ HP
+  imodintro
+  iframe
+  inext
+  iexact HP
+
+/--
+  Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd`,
+  `intoAcc_cinv` and a specialisation pattern. -/
+example [CInvG GF] {γ : GName} {p1 p2 : Qp} {P : IProp GF} :
+    cinv N γ iprop(<pers> P) ∗ own γ p1 ∗ own γ p2
+    ⊢@{IProp GF} |={⊤}=> own γ p1 ∗ own γ p2 ∗ ▷ P := by
+  iintro ⟨#Hinv, Hown1, Hown2⟩
+  iinv Hinv $$ [Hown2 //] with ⟨#HP, Hown2⟩
+  imodintro
+  iframe HP ∗
+  imodintro
+  inext
+  iexact HP
+
+/-- Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and `intoAcc_na`. -/
+example {t : NaInvPoolName} [NaInvG GF] {E1 E2 : CoPset} {P : IProp GF} (h : ↑N ⊆ E1) :
+    NonAtomicInvariant.inv t N iprop(<pers> P) ∗ own t E1 ∗ own t E2
+    ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
+  iintro ⟨#Hinv, Hown1, Hown2⟩
+  iinv Hinv $$ [Hown1 //] with ⟨#HP, Hown1⟩ Hclose
+  imod Hclose $$ [HP Hown1]
+  · iframe
+    iexact HP
+  · iframe
+    imodintro
+    inext
+    iexact HP
+
+/-- Tests the robustness of `iinv` in presence of other invariants. -/
+example {t : NaInvPoolName} [NaInvG GF] {N1 N2 N3 : Namespace} {E1 E2 : CoPset}
+    {P : IProp GF} (h : ↑N3 ⊆ E1) :
+    inv N1 P ∗ NonAtomicInvariant.inv t N3 iprop(<pers> P) ∗ inv N2 P ∗ own t E1 ∗ own t E2
+    ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
+  iintro ⟨#_, #Hinv, #_, Hown1, Hown2⟩
+  iinv Hinv $$ Hown1 with ⟨#HP, Hown1⟩
+  imodintro
+  isplitl [Hown1]
+  · iframe HP ∗
+  · iintro Hown1
+    iframe
+    imodintro
+    inext
+    iexact HP
+
+/--
+  Tests `iinv` with two invariant hypotheses using the same `Namespace` value.
+  The last hypothesis in the context with this `Namespace` value gets chosen.
+-/
+example {t : NaInvPoolName} [NaInvG GF] {N : Namespace} {E1 E2 : CoPset}
+    {P Q : IProp GF} (h : ↑N ⊆ E1) :
+    NonAtomicInvariant.inv t N iprop(<pers> Q) ∗
+    NonAtomicInvariant.inv t N iprop(<pers> P) ∗
+    own t E1 ∗ own t E2 ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
+  iintro ⟨#_, #_, Hown1, Hown2⟩
+  iinv N $$ Hown1 with ⟨#HP, Hown1⟩
+  imodintro
+  isplitl [Hown1]
+  · iframe HP ∗
+  · iintro Hown1
+    iframe
+    imodintro
+    inext
+    iexact HP
+
+/-
+  Tests `iinv` with a valid `Namespace` value that does not correspond to
+  any invariant hypothesis in the context.
+-/
+/-- error: iinv: invariant hypothesis with the namespace N3 not found -/
+#guard_msgs in
+example {t : NaInvPoolName} [NaInvG GF] {N1 N2 N3 : Namespace} {E1 E2 : CoPset}
+    {P Q : IProp GF} (h : ↑N1 ⊆ E1) :
+    NonAtomicInvariant.inv t N1 iprop(<pers> Q) ∗
+    NonAtomicInvariant.inv t N2 iprop(<pers> P) ∗
+    own t E1 ∗ own t E2 ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
+  iintro ⟨#_, #_, Hown1, Hown2⟩
+  iinv N3 $$ Hown1 with ⟨#HP, Hown1⟩
+
+/- Variables to test `iinv` with `WP` -/
+variable {hlc : outParam HasLC} {Expr State Obs Val} [Λ : Language Expr State Obs Val]
+variable {GF : BundledGFunctors}
+variable [IrisGS_gen hlc Expr GF]
+variable {s : Stuckness} {E : CoPset} {e : Expr} {v : Val} {Φ : Val → IProp GF} {P : IProp GF}
+
+/-- Tests `iinv` with `elimInv_acc_without_close`, `intoAcc_inv` and `elimAcc_wp_atomic`. -/
+example [Language.Atomic ↑s e] (h : ↑N ⊆ E) :
+    ⊢ inv N P -∗ (▷ P -∗ WP e @ s ; (E \ ↑N) {{ v, |={E \ ↑N}=> ▷ P ∗ Φ v }}) -∗ WP e @ s ; E {{ Φ }} := by
+  iintro #Hinv Hwp
+  iinv Hinv with H
+  iapply Hwp
+  iexact H
+
+end iinv
+
+section ieval
+
+/-- Tests `ieval` and `isimp` to simplify the goal and specific Iris hypotheses. -/
+example [BI PROP] {u v w x y z : Nat} :
+    ⌜(x + y) + 3 = 4⌝ ∗ ⌜(w + z) + 1 = Nat.succ 2⌝ ∗ ⌜(u + v) = v⌝
+    ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ ∗ ⌜w + z = 2⌝ ∗ ⌜u = 0⌝ := by
+  iintro ⟨H1, H2, H3⟩
+  -- Simplify `(x + y) + 3 = 4` as `x + y = 1`
+  isimp in H1
+  isplitl [H1]
+  -- Simplify `(x + y).succ = 2` as `x + y = 1`
+  · isimp
+    iexact H1
+  -- Simplify the goal `w + z + 1 = Nat.succ 2` as `w + z = 2` and `u + v = v` as `u = 0`
+  · ieval (simp) in H2 H3
+    iframe
+
+/- Tests `isimp` with a pure hypothesis in the selection pattern -/
+/-- error: ieval: pure hypotheses in the selection pattern is not supported -/
+#guard_msgs in
+example [BI PROP] {x y : Nat} :
+    ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ := by
+  iintro #H
+  isimp in %x H
+
+/- Tests `isimp` with the simplification failing -/
+/-- error: `simp` made no progress -/
+#guard_msgs in
+example [BI PROP] {x y : Nat} : ⌜x = 0⌝ ⊢@{PROP} ⌜x = 0⌝ := by
+  iintro #H
+  isimp in H
+
+/-- Tests `isimp` with variants of `simp` -/
+example [BI PROP] {m n p q : Nat} (h1 : m = n + 1) (h2 : r = t) (h3 : s = t) :
+    ⌜p + q = q + p⌝ ⊢@{PROP} ⌜m - 1 = n⌝ ∗ ⌜r = s⌝ ∗ ⌜q + p = p + q⌝ := by
+  iintro H
+  isplitr
+  -- Simplification with a hypothesis
+  · isimp [h1]
+    itrivial
+  · isplitr
+    -- Simplification with all rules annotated with `[simp]` and all hypotheses
+    · isimp [*]
+      itrivial
+    -- Simplification only with specific rules
+    · isimp only [Nat.add_comm] in H
+      isimp only [Nat.add_comm]
+      iexact H
+
+private def def1 := 10
+private def def2 := def1
+
+/-- Tests `iunfold` to unfold definitions in an Iris hypothesis and a proof goal -/
+example [BI PROP] : ⌜def2 = 10⌝ ⊢@{PROP} ⌜10 = 10⌝ ∗ ⌜def2 = 10⌝ := by
+  iintro #H
+  -- Unfold definitions in an Iris hypothesis
+  iunfold def2, def1 in H
+  iframe H
+  -- Unfold definitions in the proof goal
+  iunfold def2, def1
+  ipureintro
+  .rfl
+
+/- Tests `ieval` where the supplied tactic solves the goal completely -/
+/-- error: ieval: the supplied tactic does not produce exactly one subgoal -/
+#guard_msgs in
+example [BI PROP] {x y : Nat} (_ : False) :
+    ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ := by
+  iintro H
+  ieval (contradiction) in H
+
+/- Tests `ieval` where the supplied tactic produces more than one subgoal -/
+/-- error: ieval: the supplied tactic does not produce exactly one subgoal -/
+#guard_msgs in
+example [BI PROP] {x y : Nat} (h : False) :
+    ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ := by
+  iintro H
+  ieval (cases x) in H
+
+/- Tests `ieval` where the given tactic breaks the Iris entailment -/
+/-- error: ieval: the goal is not Iris entailment upon applying the supplied tactic -/
+#guard_msgs in
+example [BI PROP] {x y : Nat} :
+    ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ := by
+  iintro H
+  ieval (exfalso) in H
+
+end ieval
+
+section iaccu
+
+/-- Tests `iaccu` with spatial hypotheses `HQ`, `HR1`, `HR2` and `HT`. -/
+example [BI PROP] (P Q R1 R2 S T : PROP) :
+    (□ P -∗ Q -∗ (R1 ∗ R2) -∗ □ S -∗ T -∗ ∃ U, U ∧ ⌜U = iprop(Q ∗ R1 ∗ R2 ∗ T)⌝) := by
+  iintro #HP HQ ⟨HR1, HR2⟩ #HS HT
+  iexists ?_
+  isplit
+  · iaccu
+  · ipureintro <;> rfl
+
+/-- Tests `iaccu` where there is no spatial hypothesis in the context. -/
+example [BI PROP] (P Q R : PROP) :
+    (□ P -∗ □ Q -∗ □ R -∗ ∃ S, S ∧ ⌜S = iprop(emp)⌝) := by
+  iintro #HP #HQ #HR
+  iexists ?_
+  isplit
+  · iaccu
+  · ipureintro <;> rfl
+
+/- Tests `iaccu` where the proof goal is not a metavariable -/
+/-- error: iaccu: R is not a metavariable -/
+#guard_msgs in
+example [BI PROP] (P Q R : PROP) :
+    □ P -∗ Q -∗ R := by
+  iintro #HP HQ
+  iaccu
+
+end iaccu
+
+section iinduction
+
+/-- Inductively defined binary tree data structure -/
+inductive Tree (α : Type u) where
+  | leaf : Tree α
+  | node : Tree α → α → Tree α → Tree α
+  deriving Repr
+
+/--
+  Tests `iinduction` with simple induction on binary trees.
+  All propositions involved are in the intuitionistic context in this example.
+  Tests the use of a hole (`_`) for leaving a variable unnamed.
+-/
+example [BI PROP] {α} {t : Tree α} {P : Tree α → PROP} :
+    □ P .leaf -∗ □ (∀ l x r, P l -∗ P r -∗ P (.node l x r)) -∗ P t := by
+  iintro #H1 #H2
+  iinduction t with
+  | leaf => iexact H1
+  | node l _ r IH1 IH2 =>
+    iapply H2
+    · iexact IH1
+    · iexact IH2
+
+/-- A simple function on the inductive structure `Tree` -/
+def Tree.mirror : Tree α → Tree α
+  | .leaf => .leaf
+  | .node l x r => .node (.mirror r) x (.mirror l)
+
+/--
+  Tests `iinduction` with a pure hypothesis that involves `Tree.mirror`.
+-/
+example [BI PROP] {α} {t : Tree α} :
+  ⊢@{PROP} ⌜.mirror (.mirror t) = t⌝ := by
+  iinduction t with simp [Tree.mirror]
+  | leaf =>
+    itrivial
+  | node l x r ihl ihr =>
+    isplit
+    · iexact ihl
+    · iexact ihr
+
+/-- An inductively defined predicate on `Tree` -/
+def Tree.pred [BI PROP] (P : α → PROP) : Tree α → PROP
+  | .leaf => emp
+  | .node l x r => iprop(Tree.pred P l ∗ (P x ∗ Tree.pred P r))
+
+/--
+  Tests `iinduction` with spatial hypotheses that involve `Tree.mirror` and `Tree.pred`.
+-/
+example [BI PROP] {α} {t : Tree α} {P : α → PROP} :
+    Tree.pred P t -∗ Tree.pred P (.mirror t) := by
+  iintro H
+  iinduction t with simp [Tree.mirror, Tree.pred]
+  | leaf => itrivial
+  | node l x r ihl ihr =>
+    icases H with ⟨Hl, Hx, Hr⟩
+    iframe
+    isplitl [Hr]
+    · iapply ihr $$ Hr
+    · iapply ihl $$ Hl
+
+/--
+  Definition of n-tree and its induction principle from:
+  https://leanprover.zulipchat.com/#narrow/channel/113489-new-members/topic/.E2.9C.94.20Induction.20principle.20for.20nested.20inductive.20types/near/437905021
+-/
+inductive NTree (α : Type)
+| leaf
+| node : α → List (NTree α) → NTree α
+
+@[induction_eliminator]
+theorem NTree.induction_principle {α} (p : NTree α → Prop) (h_leaf : p leaf)
+  (h_node : (x : α) → (ts : List (NTree α)) → (ih : ∀ t ∈ ts, p t) → p (node x ts)) :
+  ∀ t : NTree α, p t :=
+  @NTree.rec α p (λ ts => ∀ t ∈ ts, p t) h_leaf h_node (List.forall_mem_nil p)
+    (λ _ _ h_head h_tail => List.forall_mem_cons.mpr (And.intro h_head h_tail))
+
+def NTree.id : NTree α → NTree α
+  | .leaf => .leaf
+  | .node x ts => .node x (ts.map .id)
+
+/-- Tests `iinduction` with the mutual induction principle -/
+example [BI PROP] {α} {t : NTree α} : ⊢@{PROP} ⌜t.id = t⌝ := by
+  iinduction t with simp [NTree.id]
+  | h_leaf => itrivial
+  | h_node x ts IH1 =>
+    iinduction ts with simp
+    | nil => itrivial
+    | cons t ts IH2 =>
+      isplit
+      · iapply IH1
+        itrivial
+      · iapply IH2
+        iintro !> %x H
+        iapply IH1
+        imodintro
+        iright
+        iexact H
+
+def NTree.childCount : NTree α → Nat
+  | .leaf => 0
+  | .node _ ts => ts.length
+
+/-- An binary relation defined using nested induction -/
+inductive NTree.Rel {α β} (R : α → β → Prop) : NTree α → NTree β → Prop
+  | leaf : Rel R .leaf .leaf
+  | node : ∀ a b ts₁ ts₂, R a b → List.Forall₂ (Rel R) ts₁ ts₂ → Rel R (.node a ts₁) (.node b ts₂)
+
+@[induction_eliminator]
+theorem NTree.Rel.induction_principle {α β} {R : α → β → Prop}
+    (p : ∀ {t1 : NTree α} {t2 : NTree β}, NTree.Rel R t1 t2 → Prop)
+    (h_base : p .leaf)
+    (h_step : ∀ a b ts1 ts2 ra f2,
+      List.Forall₂ (fun t1 t2 => ∀ h : NTree.Rel R t1 t2, p h) ts1 ts2 →
+      p (.node a b ts1 ts2 ra f2)) :
+    ∀ t1 t2 (h : NTree.Rel R t1 t2), p h :=
+  @NTree.Rel.rec α β R
+    (fun _ _ h => p h)
+    (fun a b _ => List.Forall₂ (fun t1 t2 => ∀ h : NTree.Rel R t1 t2, p h) a b)
+    h_base h_step .nil
+    (fun _ _ ih_h ih_hs => .cons (fun _ => ih_h) ih_hs)
+
+/-- Tests `iinduction` with induction that uses the type class instance `intoIH_listForall₂`. -/
+example [BI PROP] {α β} {R : α → β → Prop}
+    {t₁ : NTree α} {t₂ : NTree β} (H : NTree.Rel R t₁ t₂) :
+    ⊢@{PROP} ⌜NTree.childCount t₁ = NTree.childCount t₂⌝ := by
+  iinduction H with
+  | h_base =>
+    ipureintro
+    apply rfl
+  | h_step x1 x2 t1 t2 r IH1 IH2 =>
+    ipureintro
+    simp only [NTree.childCount]
+    induction IH1 with simp_all
+
+/--
+  Tests `iinduction` with simple induction on natural numbers.
+  Tries `iframe` to solve induction subgoals before splitting into cases.
+  Tests the `using` clause for custom recursor name.
+  Tests the use of a synthetic hole (`?_`) for delaying the induction subgoal.
+-/
+example [BI PROP] {n : Nat} {P : Nat → PROP} :
+    □ (∀ k, P k -∗ P (k + 1)) -∗ P 0 -∗ P n := by
+  iintro #H1 H2
+  iinduction n using Nat.rec with iframe
+  | succ n IH => ?_
+  iapply H1
+  iapply IH
+  iexact H2
+
+/--
+  Tests `iinduction` with induction on lists where it is necessary to
+  generalise some variables.
+  Tests the use of the wildcard (`_`) for remaining cases.
+-/
+example [BI PROP] {α} {xs : List α} {acc : List α} {P : List α → List α → PROP} :
+    □ (∀ acc, P [] acc) -∗
+    □ (∀ x xs acc, P xs (x :: acc) -∗ P (x :: xs) acc) -∗
+    P xs acc := by
+  iintro #Hnil #Hcons
+  iinduction xs generalizing %acc with
+  | cons x xs IH =>
+    iapply Hcons
+    iexact IH
+  | _ =>
+    iapply Hnil
+
+/- Tests `iinduction` with a non-inductive datatype. -/
+/-- error: iinduction: unable to determine inductive type -/
+#guard_msgs in
+example [BI PROP] {P : PROP} : ⊢ P := by
+  iinduction P
+
+/-
+  Tests `iinduction` with induction on natural numbers with invalid, duplicate
+  and missing user-supplied alternative names.
+-/
+/-- error: iinduction: invalid alternative name `invalidA`
+---
+error: iinduction: invalid alternative name `invalidB`
+---
+error: iinduction: duplicate alternative name `zero`
+---
+error: iinduction: alternative `succ` has not been provided -/
+#guard_msgs in
+example [BI PROP] {n : Nat} :
+    ⊢@{PROP} ⌜n + 0 = n⌝ := by
+  iinduction n with
+  | invalidA  => done
+  | zero      => itrivial
+  | invalidB  => done
+  | zero      => itrivial
+
+/- Tests `iinduction` with extra arguments supplied by the user -/
+/-- error: iinduction: too many variable names provided at alternative `succ`: 4 provided, but 2 expected -/
+#guard_msgs in
+example [BI PROP] {n : Nat} :
+    ⊢@{PROP} ⌜n + 0 = n⌝ := by
+  iinduction n with
+  | zero => itrivial
+  | succ n IH extra1 extra2 => itrivial
+
+/--
+  Tests `iinduction` using a custom recursor name (strong induction).
+  Tests induction on an expression `n + m`, which requires generalisation.
+  Tests the use of the same tactic sequences for multiple alternative names.
+  Note that `P` and `S` are reverted and thus included as wand premises
+  in the induction hypothesis.
+  Meanwhile, `T (n + m)` is also reverted because it involves the induction
+  target `n + m`.
+  The proposition `Q m` is reverted manually using the `generalizing` clause.
+  On the contrary, `R` is not reverted.
+-/
+example [BI PROP] {P R S : PROP} {Q T : Nat → PROP} {m n : Nat} :
+    ⊢ P -∗ □ Q m -∗ □ R -∗ S -∗ □ T (n + m) -∗ ⌜n + m + 0 = n + m⌝ := by
+  iintro HP #HQ #HR HS #HT
+  iinduction n + m using Nat.caseStrongRecOn generalizing %m HQ HT with
+  | zero | ind _ _ => itrivial
+
+/-
+  Tests `iinduction` with invalid use of the wildcard. The wildcard
+  should always be the last case.
+-/
+/-- error: iinduction: invalid occurrence of the wildcard alternative `| _ => ...`: It must be the last alternative -/
+#guard_msgs in
+example [BI PROP] {n : Nat} :
+    ⊢@{PROP} ⌜n + 0 = n⌝ := by
+  iinduction n with
+  | zero => itrivial
+  | _ => _
+  | succ n IH => itrivial
+
+/-
+  Tests `iinduction` with redundant use of the wildcard. The wildcard
+  is not required when all cases have already been handled.
+-/
+/-- error: iinduction: wildcard alternative is not needed -/
+#guard_msgs in
+example [BI PROP] {n : Nat} :
+    ⊢@{PROP} ⌜n + 0 = n⌝ := by
+  iinduction n with
+  | zero => itrivial
+  | succ n IH => itrivial
+  | _ => _
+
+/-
+  Tests `iinduction` with the tactic after `with` syntax.
+  One of the alternative names (`zero`) becomes redundant and therefore should
+  be detected by the tactic.
+-/
+/-- error: iinduction: alternative `zero` is not needed -/
+#guard_msgs in
+example [BI PROP] {P Q R S T : PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜0 + 0 = 0⌝ -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT #H
+  iinduction n with (try iexact H)
+  | zero => itrivial  -- Redundant case
+  | succ n IH => itrivial
+
+/-
+  Tests `iinduction` with a tactic after `with` syntax.
+  One of the alternative names (`zero`) is redundant and therefore not required.
+  The tactic should not complain about any missing alternative names.
+-/
+example [BI PROP] {P Q R S T : PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜0 + 0 = 0⌝ -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT #H
+  iinduction n with (try iexact H)
+  -- No complaints about missing `zero` case
+  | succ n IH => itrivial
+
+/-
+  Tests `iinduction` on `n` generalising `m`, where:
+  - *regular hypotheses* `h1 : T m` and `U1 : (T m) → Prop` depend on `m`;
+  - *regular hypotheses* `h2 : U1 h1` and `U2 : (U1 h1) → PROP` depends on `h1`,
+    which in turn depends on `m`;
+  - *Iris hypotheses* `□HQ : Q m` and `□HR : R m` depend on `m`;
+  - *Iris hypothesis* `□HS : S n` depends on the induction target `n`;
+  - *Iris hypothesis* `□HU2 : U2 h2` depends on `h2` and `U2`, which depends
+    depend on `h1`, which in turn depends on `m`.
+  This requires manual resolution.
+-/
+/-- info: Try this:
+  [apply] iinduction n generalizing %m %h1 %U1 %h2 %U2 HQ HR HS HU2 with
+  | zero
+  | succ n IH => itrivial
+---
+info: Try this:
+  [apply] iinduction n generalizing! %m with
+  | zero
+  | succ n IH => itrivial
+---
+error: iinduction: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Lean hypothesis `h1` depends on `m`
+• Lean hypothesis `U1` depends on `m`
+• Lean hypothesis `h2` depends on `m`
+• Lean hypothesis `U2` depends on `m`
+• Iris hypothesis `HQ` depends on `m`
+• Iris hypothesis `HR` depends on `m`
+• Iris hypothesis `HS` depends on `n`
+• Iris hypothesis `HU2` depends on `h2` -/
+#guard_msgs in
+example [BI PROP] {P : PROP} {m n : Nat} {Q R S : Nat → PROP} {T : Nat → Prop}
+    {h1 : T m} {U1 : (T m) → Prop} {h2 : U1 h1} {U2 : (U1 h1) → PROP} :
+    ⊢ P -∗ □ Q m -∗ □ R m -∗ □ S n -∗ □ U2 h2 -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR #HS #HU2
+  iinduction n generalizing %m with
+  | zero
+  | succ n IH => itrivial
+
+/--
+  The same example with `generalizing!` clause does not require any manual
+  resolution of dependencies.
+-/
+example [BI PROP] {P : PROP} {m n : Nat} {Q R S : Nat → PROP} {T : Nat → Prop}
+    {h1 : T m} {U1 : (T m) → Prop} {h2 : U1 h1} {U2 : (U1 h1) → PROP} :
+    ⊢ P -∗ □ Q m -∗ □ R m -∗ □ S n -∗ □ U2 h2 -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR #HS #HU2
+  iinduction n generalizing! %m with
+  | zero
+  | succ n IH => itrivial
+
+/- Similar test as above, except that some hypotheses have inaccessible names. -/
+/-- info: Try this:
+  [apply] iinduction n generalizing! %m with
+  | zero
+  | succ n IH => itrivial
+---
+error: iinduction: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Lean hypothesis `h1` depends on `m`
+• Lean hypothesis `U1` depends on `m`
+• Lean hypothesis `h2` depends on `m`
+• Lean hypothesis `U2` depends on `m`
+• Lean hypothesis `x` (inaccessible name) depends on `n`
+• Iris hypothesis `x` (inaccessible name) depends on `h2` -/
+#guard_msgs in
+example [BI PROP] {P : PROP} {m n : Nat} {T : Nat → Prop}
+    {h1 : T m} {_ : T n} {U1 : (T m) → Prop}
+    {h2 : U1 h1} {U2 : (U1 h1) → PROP} :
+    ⊢ P -∗ □ U2 h2 -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #_
+  iinduction n generalizing %m with
+  | zero
+  | succ n IH => itrivial
+
+end iinduction

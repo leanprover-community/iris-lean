@@ -86,7 +86,7 @@ private def FrameResult.step {u prop bi origE origGoal} :
     else
       return st
 
-def iFrame {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop))
+def iFrame {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
     (hyps : Hyps bi e) (goal : Q($prop)) (sels : List SelTarget) :
     ProofModeM (FrameResult bi e goal) := do
   let mut st : FrameResult bi e goal := { progress := false, e, hyps, goal, pf := q(frame_init) }
@@ -117,9 +117,7 @@ def FrameResult.finish {u prop bi origE origGoal} (res : @FrameResult u prop bi 
   back with the remaining hypotheses. -/
 def FrameResult.finishClose {u prop bi origE origGoal} (res : @FrameResult u prop bi origE origGoal) :
   ProofModeM ((e : Q($prop)) × (_ : Hyps bi e) × Q($origE ⊢ $e ∗ $origGoal)) := do
-  let {progress, e, hyps, goal, pf} := res
-  if !progress then
-    throwError "iframe: cannot solve {origGoal} by framing"
+  let {e, hyps, goal, pf, ..} := res
   -- try closing the goal for emp or True without calling k
   match goal with
   | ~q(iprop(emp)) =>
@@ -136,10 +134,10 @@ def FrameResult.finishClose {u prop bi origE origGoal} (res : @FrameResult u pro
 elab "iframe " pats:(colGt ppSpace selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 
-  ProofModeM.runTactic λ mvar { bi, e, hyps, goal, .. } => do
+  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
   let pats ← SelPat.resolve hyps pats
 
-  let res ← iFrame bi e hyps goal pats
+  let res ← iFrame hyps goal pats
   mvar.assign (← res.finish (addBIGoal · ·))
 
 /--

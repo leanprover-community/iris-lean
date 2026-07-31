@@ -1,16 +1,18 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König
+Authors: Lars König, Alex Keizer
 -/
 module
 
 public meta import Lean.PrettyPrinter.Delaborator
 
+meta import Lean.Parser.Term
+
 public meta section
 
 namespace Iris.BI
-open Lean Lean.Macro
+open Lean Lean.Macro Lean.Parser.Term
 
 -- define `iprop` embedding in `term`
 syntax:max "iprop(" term ")" : term
@@ -27,6 +29,13 @@ macro_rules
   | `(iprop(if $c then $t else $e)) => ``(if $c then iprop($t) else iprop($e))
   | `(iprop(($P : $t)))             => ``((iprop($P) : $t))
   | `(iprop(fun $xs* => $P))        => ``(fun $xs* => iprop($P))
+  -- `iprop(match …)` expansion wraps the rhs of each match arm in `iprop(…)`
+  | `(iprop(match $[$g:generalizingParam]? $[$m:motive]? $[$x:matchDiscr],* with
+              $[$alts:matchAlt]*)) => do
+        let alts ← alts.mapM <| fun
+          | `(matchAltExpr| | $[$lhs]|* => $rhs) => `(matchAltExpr| | $[$lhs]|* => iprop($rhs))
+          | _ => throwUnsupported
+        `(match $[$g:generalizingParam]? $[$m:motive]? $[$x:matchDiscr],* with $[$alts:matchAlt]*)
 
 macro:max "iprop(" P:term " : " t:term ")" : term => `((iprop($P) : $t))
 
@@ -47,6 +56,18 @@ partial def unpackIprop [Monad m] [MonadRef m] [MonadQuotation m] : Term → m T
     let e ← unpackIprop e
     `(if $c then $t else $e)
   | `(($P : $t))             => do ``(($(← unpackIprop P) : $t))
+  | `(match $[$g:generalizingParam]? $[$mot:motive]? $[$x:matchDiscr],* with $[$alts:matchAlt]*) => do
+      -- The following type ascriptions look redundant, but, without them, the ``(match ...)`
+      -- syntax quotation below fails with an error about types containing metavariables.
+      let g : Option (TSyntax ``generalizingParam) := g
+      let mot : Option (TSyntax ``motive) := mot
+      let alts ← Array.mapM (as := alts) (m:=m) <| fun
+        | `(matchAltExpr| | $[$lhs]|* => $rhs) => do
+            let rhs ← unpackIprop rhs
+            `(matchAltExpr| | $[$lhs]|* => $rhs)
+        | alt => return ⟨alt⟩
+      `(match $[$g:generalizingParam]? $[$mot:motive]? $[$x:matchDiscr],* with $[$alts:matchAlt]*)
+  -- Fallback case
   | `($t)                    => `($t:term)
 
 end Iris.BI

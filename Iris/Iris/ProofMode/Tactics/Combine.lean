@@ -12,8 +12,8 @@ public meta import Iris.ProofMode.ClassesMake
 
 namespace Iris.ProofMode
 
-public meta section
-open Lean Elab Tactic Meta Qq BI Std
+public section
+open BI Std
 
 /-- Auxiliary lemma for combining two hypotheses using `CombineSepAs` -/
 theorem combine_as_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1 out2 out : PROP}
@@ -47,7 +47,7 @@ theorem combine_gives_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1 out2 out : PRO
     _ ⊢ (e2 ∗ □?p2 out2) ∗ □?p1 out1                     := sep_mono_left pf2.mp
     _ ⊢ e2 ∗ □?p2 out2 ∗ □?p1 out1                       := sep_assoc.mp
     _ ⊢ e2 ∗ □?p1 out1 ∗ □?p2 out2                       := sep_mono_right sep_comm.mp
-    _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∧ (e2 ∗ <pers> out) := and_intro refl <| sep_mono_right pf3
+    _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∧ (e2 ∗ <pers> out) := and_intro .rfl <| sep_mono_right pf3
     _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∧ <pers> out        := and_mono_right sep_elim_right
     _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∗ □ out             := persistently_and_intuitionistically_sep_right.mp
     _ ⊢ (e2 ∗ □?p2 out2 ∗ □?p1 out1) ∗ □ out             := sep_mono_left <| sep_mono_right sep_comm.mp
@@ -77,7 +77,7 @@ theorem combine_gives_step_conj [BI PROP] {p1 p2 : Bool}
     _ ⊢ <pers> newOutGives           := persistently_absorb_right
   calc
     _ ⊢ e ∗ □ outGives                                          := pf1
-    _ ⊢ (e ∗ □ outGives) ∧ <pers> outGives ∧ <pers> newOutGives := and_intro refl <| and_intro pf4 pf5
+    _ ⊢ (e ∗ □ outGives) ∧ <pers> outGives ∧ <pers> newOutGives := and_intro .rfl <| and_intro pf4 pf5
     _ ⊢ (e ∗ □ outGives) ∧ <pers> (outGives ∧ newOutGives)      := and_mono_right <| persistently_and.mpr
     _ ⊢ (e ∗ □ outGives) ∧ <pers> outGivesCombined              := and_mono_right <| persistently_mono instGivesCombined.make_and.mp
     _ ⊢ (e ∗ □ outGives) ∗ □ outGivesCombined                   := persistently_and_intuitionistically_sep_right.mp
@@ -94,6 +94,9 @@ theorem combine_as_gives [BI PROP] {p : Bool} {newE e outAs outGives goal : PROP
   _ ⊢ newE ∗ □?p outAs ∗ □?p □ outGives := sep_mono_right <| sep_mono_right intuitionisticallyIf_intutitionistically.mpr
   _ ⊢ newE ∗ □?p (outAs ∗ □ outGives)   := sep_mono_right intuitionisticallyIf_sep_mpr
   _ ⊢ goal := pfAsGives
+
+public meta section
+open Lean Elab Tactic Meta Qq BI Std
 
 /--
   The `icombine` tactic with the `as` syntax transforms the hypotheses
@@ -229,7 +232,7 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
     let hs ← iCombineParseSelPats hyps patSels
     let st ← iCombineCore hs hyps goal
 
-    let pf ← iCasesCore _ st.newHyps goal pat q($(st.p)) st.outAs addBIGoal
+    let pf ← iCasesCore st.newHyps goal pat q($(st.p)) st.outAs
     mvar.assign q($(st.pfAs).trans $pf)
 
 /--
@@ -251,7 +254,7 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
 
     match outGives, pfGives with
     | some outGives, pfGives =>
-      let pf ← iCasesCore _ hyps goal pat q(true) outGives addBIGoal
+      let pf ← iCasesCore hyps goal pat q(true) outGives
       mvar.assign q($(pfGives).trans $pf)
     | none, _ => throwNoInstanceForGives
 
@@ -280,7 +283,8 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
 
     match outGives, pfGives with
     | some outGives, pfGives =>
-      let pf ← iCasesCore _ st.newHyps goal (.conjunction [pat1, .intuitionistic pat2])
-        q($st.p) q(iprop($st.outAs ∗ □ $outGives)) addBIGoal
+      let pf ← iCasesCore st.newHyps goal
+        ⟨pat1.ref, (.conjunction [pat1, ⟨pat2.ref, .intuitionistic pat2⟩])⟩
+        q($st.p) q(iprop($st.outAs ∗ □ $outGives))
       mvar.assign q(combine_as_gives $st.pfAs $pfGives $pf)
     | none, _ => throwNoInstanceForGives
