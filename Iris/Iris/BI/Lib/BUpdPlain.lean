@@ -1,7 +1,6 @@
 module
 
 public import Iris.Std
-public import Iris.BI
 public import Iris.Algebra.Updates
 public import Iris.ProofMode.Classes
 public import Iris.ProofMode.Tactics

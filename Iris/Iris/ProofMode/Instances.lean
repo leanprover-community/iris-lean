@@ -37,8 +37,9 @@ instance asEmpValid_bientails [bi : BI PROP] d io (P Q : PROP) :
 
 @[rocq_alias as_emp_valid_equiv]
 instance asEmpValid_equiv [bi : BI PROP] d io (P Q : PROP) :
-    AsEmpValid0 d (P ≡ Q) io PROP bi iprop(P ∗-∗ Q) where
-  as_emp_valid_0 := ⟨λ _ h => equiv_wandIff (equiv_iff.1 h), λ _ h => (equiv_iff.2 (wandIff_equiv h))⟩
+    AsEmpValid0 d (P = Q) io PROP bi iprop(P ∗-∗ Q) where
+  as_emp_valid_0 := ⟨λ _ h => h ▸ wandIff_refl,
+    λ _ h => equiv_iff.2 (wandIff_equiv h)⟩
 
 @[rocq_alias as_emp_valid_forall]
 instance asEmpValid_forall {α} [bi : BI PROP] (Φ : α → Prop) (P : α → PROP) d io
@@ -418,7 +419,8 @@ class inductive AndIntoSep {PROP} [BI PROP] : PROP → outParam PROP → PROP �
   | affine (P Q Q' : PROP) [Affine P] [h : FromAffinely Q' Q] : AndIntoSep P P Q Q'
   | affinely (P Q : PROP) : AndIntoSep P iprop(<affine> P) Q Q
 
-attribute [instance] AndIntoSep.affine AndIntoSep.affinely
+attribute [instance (default + 10), ipm_backtrack] AndIntoSep.affine
+attribute [instance, ipm_backtrack] AndIntoSep.affinely
 
 -- IntoSep
 @[rocq_alias into_sep_sep]

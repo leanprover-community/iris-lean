@@ -161,6 +161,11 @@ instance later_persistent {P : PROP} [Persistent P] : Persistent iprop(▷ P) wh
 instance later_absorbing {P : PROP} [Absorbing P] : Absorbing iprop(▷ P) where
   absorbing := later_absorbingly.mpr.trans <| later_mono absorbing
 
+#rocq_ignore bi.laterN_iter "laterN in Lean is defined using Nat.repeat directly"
+
+theorem later_imp_and {P S : PROP} : ▷ (S → P) ∧ S ⊢ ▷ P :=
+  ((and_mono_right later_intro).trans later_and.mpr).trans <| later_mono <| and_comm.mp.trans imp_elim_right
+
 /-! ## Later as a monoid homomorphism
 
 These instances ported from Rocq `bi_later_monoid_*` in
@@ -168,25 +173,25 @@ These instances ported from Rocq `bi_later_monoid_*` in
 
 @[rocq_alias bi.bi_later_monoid_and_homomorphism]
 instance bi_later_monoid_and_homomorphism :
-    Iris.Algebra.MonoidHomomorphism (and (PROP := PROP)) and iprop(True) iprop(True) (· ≡ ·) later :=
-  MonoidHomomorphism.ofEquiv BI.later_ne
-    (equiv_iff.mpr later_and) (equiv_iff.mpr later_true)
+    Iris.Algebra.MonoidHomomorphism (and (PROP := PROP)) and iprop(True) iprop(True) (· = ·) later :=
+  MonoidHomomorphism.ofEq BI.later_ne
+    later_and.to_eq later_true.to_eq
 
 @[rocq_alias bi.bi_later_monoid_or_homomorphism]
 instance bi_later_monoid_or_homomorphism :
-    Iris.Algebra.WeakMonoidHomomorphism (or (PROP := PROP)) or iprop(False) iprop(False) (· ≡ ·) later :=
-  WeakMonoidHomomorphism.ofEquiv BI.later_ne (equiv_iff.mpr later_or)
+    Iris.Algebra.WeakMonoidHomomorphism (or (PROP := PROP)) or iprop(False) iprop(False) (· = ·) later :=
+  WeakMonoidHomomorphism.ofEq BI.later_ne later_or.to_eq
 
 @[rocq_alias bi.bi_later_monoid_sep_weak_homomorphism]
 instance bi_later_monoid_sep_weak_homomorphism :
-    Iris.Algebra.WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· ≡ ·) later :=
-  WeakMonoidHomomorphism.ofEquiv BI.later_ne (equiv_iff.mpr later_sep)
+    Iris.Algebra.WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·) later :=
+  WeakMonoidHomomorphism.ofEq BI.later_ne later_sep.to_eq
 
 @[rocq_alias bi.bi_later_monoid_sep_homomorphism]
 instance bi_later_monoid_sep_homomorphism [BIAffine PROP] :
-    Iris.Algebra.MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· ≡ ·) later :=
-  MonoidHomomorphism.ofEquiv BI.later_ne
-    (equiv_iff.mpr later_sep) (equiv_iff.mpr later_emp)
+    Iris.Algebra.MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·) later :=
+  MonoidHomomorphism.ofEq BI.later_ne
+    later_sep.to_eq later_emp.to_eq
 
 @[rocq_alias bi.bi_later_monoid_sep_entails_weak_homomorphism]
 instance bi_later_monoid_sep_entails_weak_homomorphism :
@@ -236,7 +241,7 @@ theorem loeb_wand_intuitionistically [BILoeb PROP] {P : PROP} :
   exact intuitionistically_sep_mpr.trans (intuitionistically_mono wand_elim_right)
 
 @[rocq_alias bi.löb_wand]
-theorem loeb_wand [BILoeb PROP] {P : PROP} : □ (▷ P -∗ P) ⊢ P :=
+theorem loeb_wand [BILoeb PROP] (P : PROP) : □ (▷ P -∗ P) ⊢ P :=
   (intuitionistically_mono (wand_mono intuitionistically_elim .rfl)).trans
     loeb_wand_intuitionistically
 
@@ -248,7 +253,7 @@ instance later_contractive_bi_loeb [BILaterContractive PROP] : BILoeb PROP where
     let Flöb : PROP -c> PROP := { f := fun Q => iprop((▷ Q) → P), contractive := Hc }
     suffices HP : iprop(▷ (fixpoint Flöb) ⊢ P) by
       refine entails_impl_true.mp HP |>.trans ?_
-      refine equiv_iff.mp (fixpoint_unfold Flöb) |>.mpr |>.trans ?_
+      refine (fixpoint_unfold Flöb).to_bi |>.mpr |>.trans ?_
       exact later_intro.trans HP
     refine .trans ?_ ((later_mono HP).trans HP)
     suffices Hcut : later (fixpoint Flöb) ⊢ later (later (later (fixpoint Flöb))) → later (later P) by
@@ -256,8 +261,36 @@ instance later_contractive_bi_loeb [BILaterContractive PROP] : BILoeb PROP where
     refine .trans (later_mono ?_) later_imp
     refine .trans ?_ later_imp
     refine .trans ?_ later_intro
-    refine equiv_iff.mp ?_ |>.mp
+    refine BIBase.BiEntails.of_eq ?_ |>.mp
     exact fixpoint_unfold Flöb
+
+@[rocq_alias bi.not_not_later_False]
+theorem not_not_later_False [BILoeb PROP] : ⊢@{PROP} ¬ ¬ ▷ False := entails_imp loeb
+
+@[rocq_alias bi.löb_alt_wand]
+theorem loeb_alt_wand [BIAffine PROP] :
+    BILoeb PROP ↔ ∀ P : PROP, □ (▷ P -∗ P) ⊢ P := by
+  refine ⟨fun _ => loeb_wand, fun h => ⟨fun hP => ?_⟩⟩
+  refine loeb_weak_of_strong (fun P => ?_) hP
+  refine imp_iff_exists_persistently.mp.trans ?_
+  refine exists_elim fun S => ?_
+  apply imp_elim_swap
+  refine intuitionistically_into_persistently.mpr.trans ?_
+  apply imp_intro
+  calc
+    _ ⊢ □ (▷ (S → P) -∗ S → P) ∧ S := and_mono_left ?_
+    _ ⊢ S ∧ □ (▷ (S → P) -∗ S → P) := and_comm.mp
+    _ ⊢ S ∧ (S → P)                 := and_mono_right <| h _
+    _ ⊢ P                           := imp_elim_right
+  apply intuitionistically_intro_intuitionistically
+  apply wand_intro
+  apply imp_intro
+  calc
+    _ ⊢ (<pers> (▷ P ∧ S -∗ P) ∧ ▷ (S → P)) ∧ S := and_mono_left persistently_and_intuitionistically_sep_left.mpr
+    _ ⊢ <pers> (▷ P ∧ S -∗ P) ∧ ▷ (S → P) ∧ S   := and_assoc.mp
+    _ ⊢ □ (▷ P ∧ S -∗ P) ∗ (▷ (S → P) ∧ S)      := persistently_and_intuitionistically_sep_left.mp
+    _ ⊢ (▷ P ∧ S -∗ P) ∗ ▷ P ∧ S                := sep_mono intuitionistically_elim <| and_intro later_imp_and and_elim_r
+    _ ⊢ P                                         := wand_elim_left
 
 /-! # LaterN -/
 
@@ -418,28 +451,28 @@ instance laterN_absorbing (n : Nat) (P : PROP) [Absorbing P] :
 
 @[rocq_alias bi.bi_laterN_and_homomorphism]
 instance bi_laterN_and_homomorphism (n : Nat) :
-    Algebra.MonoidHomomorphism (and (PROP := PROP)) and iprop(True) iprop(True) (· ≡ ·)
+    Algebra.MonoidHomomorphism (and (PROP := PROP)) and iprop(True) iprop(True) (· = ·)
       (iprop(▷^[n] · )) :=
-  MonoidHomomorphism.ofEquiv (laterN_ne n)
+  MonoidHomomorphism.ofEq (laterN_ne n)
     (equiv_iff.mpr (laterN_and n)) (equiv_iff.mpr (laterN_true n))
 
 @[rocq_alias bi.bi_laterN_or_homomorphism]
 instance bi_laterN_or_homomorphism (n : Nat) :
-    Algebra.WeakMonoidHomomorphism (or (PROP := PROP)) or iprop(False) iprop(False) (· ≡ ·)
+    Algebra.WeakMonoidHomomorphism (or (PROP := PROP)) or iprop(False) iprop(False) (· = ·)
       (iprop(▷^[n] · )) :=
-  WeakMonoidHomomorphism.ofEquiv (laterN_ne n) (equiv_iff.mpr (laterN_or n))
+  WeakMonoidHomomorphism.ofEq (laterN_ne n) (equiv_iff.mpr (laterN_or n))
 
 @[rocq_alias bi.bi_laterN_sep_weak_homomorphism]
 instance bi_laterN_sep_weak_homomorphism (n : Nat) :
-    Algebra.WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· ≡ ·)
+    Algebra.WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·)
       (iprop(▷^[n] · )) :=
-  WeakMonoidHomomorphism.ofEquiv (laterN_ne n) (equiv_iff.mpr (laterN_sep n))
+  WeakMonoidHomomorphism.ofEq (laterN_ne n) (equiv_iff.mpr (laterN_sep n))
 
 @[rocq_alias bi.bi_laterN_sep_homomorphism]
 instance bi_laterN_sep_homomorphism [BIAffine PROP] (n : Nat) :
-    Algebra.MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· ≡ ·)
+    Algebra.MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·)
       (iprop(▷^[n] · )) :=
-  MonoidHomomorphism.ofEquiv (laterN_ne n)
+  MonoidHomomorphism.ofEq (laterN_ne n)
     (equiv_iff.mpr (laterN_sep n)) (equiv_iff.mpr (laterN_emp n))
 
 @[rocq_alias bi.bi_laterN_sep_entails_weak_homomorphism]
@@ -615,28 +648,28 @@ instance except0_absorbing (P : PROP) [Absorbing P] : Absorbing iprop(◇ P) :=
 
 @[rocq_alias bi.bi_except_0_and_homomorphism]
 instance bi_except0_and_homomorphism :
-    Algebra.MonoidHomomorphism (and (PROP := PROP)) and iprop(True) iprop(True) (· ≡ ·)
+    Algebra.MonoidHomomorphism (and (PROP := PROP)) and iprop(True) iprop(True) (· = ·)
       (iprop(◇ ·)) :=
-  MonoidHomomorphism.ofEquiv except0_ne
+  MonoidHomomorphism.ofEq except0_ne
     (equiv_iff.mpr except0_and) (equiv_iff.mpr except0_true)
 
 @[rocq_alias bi.bi_except_0_or_homomorphism]
 instance bi_except0_or_homomorphism :
-    Algebra.WeakMonoidHomomorphism (or (PROP := PROP)) or iprop(False) iprop(False) (· ≡ ·)
+    Algebra.WeakMonoidHomomorphism (or (PROP := PROP)) or iprop(False) iprop(False) (· = ·)
       (iprop(◇ ·)) :=
-  WeakMonoidHomomorphism.ofEquiv except0_ne (equiv_iff.mpr except0_or)
+  WeakMonoidHomomorphism.ofEq except0_ne (equiv_iff.mpr except0_or)
 
 @[rocq_alias bi.bi_except_0_sep_weak_homomorphism]
 instance bi_except0_sep_weak_homomorphism :
-    Algebra.WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· ≡ ·)
+    Algebra.WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·)
       (iprop(◇ ·)) :=
-  WeakMonoidHomomorphism.ofEquiv except0_ne (equiv_iff.mpr except0_sep)
+  WeakMonoidHomomorphism.ofEq except0_ne (equiv_iff.mpr except0_sep)
 
 @[rocq_alias bi.bi_except_0_sep_homomorphism]
 instance bi_except0_sep_homomorphism [BIAffine PROP] :
-    Algebra.MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· ≡ ·)
+    Algebra.MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·)
       (iprop(◇ ·)) :=
-  MonoidHomomorphism.ofEquiv except0_ne
+  MonoidHomomorphism.ofEq except0_ne
     (equiv_iff.mpr except0_sep) (equiv_iff.mpr except0_emp)
 
 @[rocq_alias bi.bi_except_0_sep_entails_weak_homomorphism]

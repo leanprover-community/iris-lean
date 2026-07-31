@@ -107,7 +107,7 @@ theorem ownE_empty : ⊢ |==> ownE (W := W) ∅ := iOwn_unit (ε := UCMRA.unit)
 @[rocq_alias ownE_op]
 theorem ownE_op {E1 E2} (Hdisj : E1 ## E2) : ownE (E1 ∪ E2) ⊣⊢@{IProp GF} ownE E1 ∗ ownE E2 := by
   refine .trans (.of_eq ?_) iOwn_op
-  rw [(disj_op_union Hdisj).to_eq]
+  rw [disj_op_union Hdisj]
   rfl
 
 @[rocq_alias ownE_disjoint]
@@ -151,7 +151,7 @@ theorem ownD_empty : ⊢@{IProp GF} |==> ownD ∅ := iOwn_unit (ε := UCMRA.unit
 @[rocq_alias ownD_op]
 theorem ownD_op {E1 E2} (Hdisj : E1 ## E2) : ownD (E1 ∪ E2) ⊣⊢@{IProp GF} ownD E1 ∗ ownD E2 := by
   refine .trans (.of_eq ?_) iOwn_op
-  rw [(disj_op_union Hdisj).to_eq]
+  rw [disj_op_union Hdisj]
   rfl
 
 @[rocq_alias ownD_disjoint]
@@ -341,16 +341,16 @@ theorem ownI_alloc_open [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
   · unfold ownI; rw [HEQ]; isplit <;> iassumption
 
 @[rocq_alias wsat_alloc]
-theorem wsat_alloc [WP : WsatGpreS GF] :
+theorem wsat_alloc [instWp : WsatGpreS GF] :
     ⊢ |==> ∃ (W : WsatGS GF), wsat (W := W) ∗ ownE ⊤ := by
-  imod (iOwn_alloc (E := WP.inv) (Auth (.own 1) ∅) auth_one_valid) with ⟨%γ, H⟩
-  imod (iOwn_alloc (E := WP.enabled) (valid ⊤) ⟨⟩) with ⟨%γe, He⟩
-  imod (iOwn_alloc (E := WP.disabled) (valid ∅) ⟨⟩) with ⟨%γd, Hd⟩
+  imod (iOwn_alloc (E := instWp.inv) (Auth (.own 1) ∅) auth_one_valid) with ⟨%γ, H⟩
+  imod (iOwn_alloc (E := instWp.enabled) (valid ⊤) ⟨⟩) with ⟨%γe, He⟩
+  imod (iOwn_alloc (E := instWp.disabled) (valid ∅) ⟨⟩) with ⟨%γd, Hd⟩
   imodintro
   let W : WsatGS GF := {
-    inv := WP.inv,
-    enabled := WP.enabled,
-    disabled := WP.disabled,
+    inv := instWp.inv,
+    enabled := instWp.enabled,
+    disabled := instWp.disabled,
     invariant_name := γ,
     enabled_name := γe,
     disabled_name := γd

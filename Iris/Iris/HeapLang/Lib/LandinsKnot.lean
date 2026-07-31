@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Alex Bai, Klaus Kraßnitzer
+-/
 module
 
 public import Iris.Instances.Lib.Invariants
@@ -37,17 +42,9 @@ theorem wp_landinsKnot (P : Val → IProp GF) (Q : Val → Val → IProp GF) (F 
   iintro !> %Φ ⟨#H, HP⟩ HQ
   wp_bind &landinsKnot _
   wp_rec
-  wp_bind ref(_)
-  wp_pures
-  iapply wp_alloc
-  iintro !> %r Hr
-  wp_pures
-  wp_bind (_ ← _)
-  iapply wp_store $$ Hr
-  iintro !> Hr
-  wp_pures
-  iapply wp_load $$ Hr
-  iintro !> Hr
+  wp_alloc r with Hr
+  wp_store
+  wp_load
   imod inv_alloc landinN ⊤ _ $$ Hr with #Hinv
   ihave HQ : ▷ (∀ u, Q u v1 -∗ Φ u) $$ [HQ]
   · inext; iexact HQ
@@ -58,8 +55,7 @@ theorem wp_landinsKnot (P : Val → IProp GF) (Q : Val → Val → IProp GF) (F 
   imod inv_acc $$ Hinv with ⟨Hr, Hcl⟩
   simp only [CoPset.subseteq_top]
   imodintro
-  iapply wp_load $$ Hr
-  iintro !> Hr
+  wp_load
   imod Hcl $$ Hr
   iapply H $$ [HP] [$]
   iframe HP

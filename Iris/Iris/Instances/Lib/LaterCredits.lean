@@ -39,7 +39,7 @@ scoped instance : LawfulLeftIdentity (Add.add (α := Credit)) (0 : Credit) := �
 scoped instance : LeftCancelAdd Credit := ⟨Nat.add_left_cancel⟩
 
 scoped instance : COFE Credit := COFE.ofDiscrete _
-scoped instance : Discrete Credit := ⟨fun h _ => h⟩
+scoped instance : Discrete Credit := ⟨fun h => h⟩
 scoped instance : UCMRA Credit := CommMonoidLike.instUCMRA
 scoped instance : CMRA.Discrete Credit := CommMonoidLike.instDiscrete
 scoped instance {a : Credit} : CMRA.Cancelable a := inferInstance
@@ -131,7 +131,7 @@ theorem lc_supply_bound {n m} : ⊢@{IProp GF} lc_supply m -∗ £ n -∗ ⌜n �
   ihave ⟨%H, H2⟩ := auth_both_validI m n $$ H
   ipureintro
   obtain ⟨k, hk⟩ := H
-  rw [hk.to_eq]
+  rw [hk]
   exact n.le_add_right k
 
 @[rocq_alias lc_decrease_supply]
@@ -248,7 +248,7 @@ theorem le_upd_unfold {P : IProp GF} :
   (|==£> P) ⊣⊢
   ∀ n, lc_supply n ==∗
     ▷^[n.succ] False ∨ (lc_supply n ∗ P) ∨ (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ |==£> P) :=
-    (equiv_iff.mp (fixpoint_unfold ⟨le_upd_pre P, inferInstance⟩)).trans .rfl
+    (fixpoint_unfold ⟨le_upd_pre P, inferInstance⟩).to_bi.trans .rfl
 
 @[rocq_alias le_upd.le_upd_ne]
 instance : NonExpansive (le_upd (GF := GF)) where

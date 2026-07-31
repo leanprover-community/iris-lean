@@ -96,7 +96,8 @@ section Wp
 @[rocq_alias wp_unfold]
 theorem wp_unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E {{ Φ }} ⊣⊢ wp.pre s (Wp.wp (PROP := IProp GF) s) E e Φ :=
-  BI.equiv_iff.1 <| fun n => fixpoint_unfold (f := (wp.pre s).toContractiveHom) n E e Φ
+  BI.equiv_iff.1 <| OFE.eq_dist.mpr <|
+    fun _n => (fixpoint_unfold (f := (wp.pre s).toContractiveHom)).dist E e Φ
 
 @[rocq_alias wp_ne]
 instance wp_ne {s : Stuckness} {E} {e : Expr} :
@@ -572,15 +573,12 @@ variable [ι : IrisGS_gen hlc Expr GF]
 variable {s : Stuckness} {E : CoPset} {e : Expr} {v : Val} {Φ Ψ : Val → IProp GF} {P Q R : IProp GF}
 
 @[rocq_alias frame_wp]
-instance frameWp {p : Bool} [H : ∀ v, Frame p R (Φ v) (Ψ v)] :
-    -- TODO: move FrameInstantiateExistDisabled over the `FrameInstantiateExistDisabled` constant
-    -- Blocked by #390
-    -- see: https://github.com/leanprover-community/iris-lean/pull/393
+instance frameWp {p : Bool} [H : ∀ v, FrameInstantiateExistDisabled p R (Φ v) (Ψ v)] :
     Frame p R (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Ψ }}) where
   frame := by
     refine wp_frame_l.trans ?_
     apply wp_mono
-    exact fun v => frame
+    exact fun v => (H v).frame_instantiatiate_exist_disabled.frame
 
 @[rocq_alias is_except_0_wp]
 instance isExcept0Wp : IsExcept0 (WP e @ s ; E {{ Φ }}) where
