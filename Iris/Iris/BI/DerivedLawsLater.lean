@@ -261,8 +261,8 @@ instance later_contractive_bi_loeb [BILaterContractive PROP] : BILoeb PROP where
 
 /-! # LaterN -/
 
-@[rocq_alias bi.laterN_ne, instance]
-theorem laterN_ne (n : Nat) : OFE.NonExpansive (BIBase.laterN (PROP:=PROP) n) where
+@[rocq_alias bi.laterN_ne]
+instance laterN_ne (n : Nat) : OFE.NonExpansive (BIBase.laterN (PROP:=PROP) n) where
   ne := by
     induction n with
     | zero => exact fun _ _ _ h => h
@@ -465,8 +465,8 @@ instance bi_laterN_sep_entails_homomorphism (n : Nat) :
 
 /-! # Except0 -/
 
-@[rocq_alias bi.except_0_ne, instance]
-theorem except0_ne : OFE.NonExpansive (BIBase.except0 (PROP:=PROP)) where
+@[rocq_alias bi.except_0_ne]
+instance except0_ne : OFE.NonExpansive (BIBase.except0 (PROP:=PROP)) where
   ne _ _ _ h := or_ne.ne .rfl h
 
 @[rw_mono_rule, rocq_alias bi.except_0_mono]

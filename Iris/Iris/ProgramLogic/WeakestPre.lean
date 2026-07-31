@@ -12,7 +12,6 @@ public import Iris.BI.DerivedLaws
 public import Iris.ProofMode
 public import Iris.ProgramLogic.Language
 public import Iris.Std.CoPset
-public import Iris.Std.Guarded
 
 namespace Iris
 
