@@ -80,10 +80,6 @@ class NonExpansive₂ [OFE α] [OFE β] [OFE γ] (f : α → β → γ) where
 
 attribute [non_exp] NonExpansive₂.ne
 
-@[rocq_alias ne_proper_2]
-theorem NonExpansive₂.eqv [OFE α] [OFE β] [OFE γ] {f : α → β → γ} [NonExpansive₂ f]
-    ⦃x₁ x₂⦄ (hx : x₁ ≡ x₂) ⦃y₁ y₂⦄ (hy : y₁ ≡ y₂) : f x₁ y₁ ≡ f x₂ y₂ :=
-  equiv_dist.2 fun _ => ne hx.dist hy.dist
 #rocq_ignore ne_proper_2 "OFE is Leibniz; use equality"
 
 /-- Note: Not an instance, for symmetry with NonExpansive₂.ne_left, which cannot be an instance. -/
