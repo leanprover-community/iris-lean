@@ -61,6 +61,30 @@ unif_hint (b : Bool) where
 unif_hint (b : Bool) where
   |- true && b ≟ b
 
+class MakeNatAdd (n1 n2 : Nat) (m : outParam Nat) where
+  make_nat_add : m = n1 + n2
+
+instance (n : Nat) : MakeNatAdd 0 n n where
+  make_nat_add := (Nat.zero_add n).symm
+
+instance (n : Nat) : MakeNatAdd n 0 n where
+  make_nat_add := (Nat.add_zero n).symm
+
+instance (priority := low) make_nat_add_default n1 n2 : MakeNatAdd n1 n2 (n1 + n2) where
+  make_nat_add := rfl
+
+class MakeNatS (n1 n2 : Nat) (m : outParam Nat) : Prop where
+  make_nat_S : m = n1 + n2
+
+instance (n : Nat) : MakeNatS 0 n n where
+  make_nat_S := (Nat.zero_add n).symm
+
+instance (priority := high) make_nat_S_1_0 : MakeNatS 1 0 1 where
+  make_nat_S := rfl
+
+instance (n : Nat) : MakeNatS 1 n (n + 1) where
+  make_nat_S := by omega
+
 /-- Type class for natural number cancellation. Given a number `n` and a number `m` that should
 be cancelled (subtracted) from `n`, compute a new `n'` and a remainder `m'` that could not be cancelled. -/
 class NatCancel (n m : Nat) (n' m' : outParam Nat) : Prop where
@@ -93,5 +117,77 @@ instance (priority := high) : NatCancel n (n + m) 0 m where
 
 instance (priority := high) : NatCancel m (n + m) 0 n where
   nat_cancel := by omega
+
+class NatCancelL (n m : Nat) (n' m' : outParam Nat) : Prop where
+  nat_cancel_l : n' + m = n + m'
+export NatCancelL (nat_cancel_l)
+
+class NatCancelR (n m : Nat) (n' m' : outParam Nat) : Prop where
+  nat_cancel_r : NatCancelL n m n' m'
+export NatCancelR (nat_cancel_r)
+
+instance (priority := low) [inst : NatCancelR n m n' m'] :
+    NatCancelL n m n' m' where
+  nat_cancel_l := inst.nat_cancel_r.nat_cancel_l
+
+instance (priority := default - 100) (n : Nat) : NatCancelR n n 0 0 where
+  nat_cancel_r := by constructor; simp
+
+instance (priority := default - 300)
+    [h1 : NatCancelR n m1 n' m1'] [h2 : NatCancelR n' m2 n'' m2']
+    [h3 : MakeNatAdd m1' m2' m1'm2'] :
+    NatCancelR n (m1 + m2) n'' m1'm2' where
+  nat_cancel_r := by
+    constructor
+    let h1 := h1.nat_cancel_r.nat_cancel_l
+    let h2 := h2.nat_cancel_r.nat_cancel_l
+    let h3 := h3.make_nat_add
+    omega
+
+instance (priority := default - 400) [h : NatCancelR n m n' m'] :
+    NatCancelR (n + 1) (m + 1) n' m' where
+  nat_cancel_r := by
+    constructor
+    let h := h.nat_cancel_r.nat_cancel_l
+    omega
+
+instance (priority := 500)
+    [h1 : NatCancelR n m n' m'] [h2 : MakeNatS 1 m' Sm'] :
+    NatCancelR n (m + 1) n' Sm' where
+  nat_cancel_r := by
+    constructor
+    let h1 := h1.nat_cancel_r.nat_cancel_l
+    let h2 := h2.make_nat_S
+    omega
+
+instance (priority := low) (n m : Nat) : NatCancelR n m n m where
+  nat_cancel_r := ⟨rfl⟩
+
+instance (priority := default - 100) [h : NatCancelL n m n' m'] :
+    NatCancelL (n + 1) (m + 1) n' m' where
+  nat_cancel_l := by have := h.nat_cancel_l; omega
+
+instance (priority := default - 200)
+    [h1 : NatCancelL n1 m n1' m'] [h2 : NatCancelL n2 m' n2' m'']
+    [h3 : MakeNatAdd n1' n2' n1'n2'] :
+    NatCancelL (n1 + n2) m n1'n2' m'' where
+  nat_cancel_l := by
+    let h1 := h1.nat_cancel_l
+    let h2 := h2.nat_cancel_l
+    let h3 := h3.make_nat_add
+    omega
+
+instance (priority := default - 300)
+    [h1 : NatCancelL n m n' m'] [h2 : NatCancelR 1 m' n'' m'']
+    [h3 : MakeNatS n'' n' Sn'] :
+    NatCancelL (n + 1) m Sn' m'' where
+  nat_cancel_l := by
+    let h1 := h1.nat_cancel_l
+    let h2 := h2.nat_cancel_r.nat_cancel_l
+    let h3 := h3.make_nat_S
+    omega
+
+instance [inst : NatCancelL n m n' m'] : NatCancel n m n' m' where
+  nat_cancel := inst.nat_cancel_l
 
 end Iris.Std
