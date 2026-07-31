@@ -163,6 +163,9 @@ instance (priority := 500)
 instance (priority := low) (n m : Nat) : NatCancelR n m n m where
   nat_cancel_r := ⟨rfl⟩
 
+instance (priority := default - 50) (n : Nat) : NatCancelL n 0 n 0 where
+  nat_cancel_l := rfl
+
 instance (priority := default - 100) [h : NatCancelL n m n' m'] :
     NatCancelL (n + 1) (m + 1) n' m' where
   nat_cancel_l := by have := h.nat_cancel_l; omega
