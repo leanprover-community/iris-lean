@@ -79,6 +79,22 @@ private def parseModalityActionQ {prop1 prop2 : Q(Type u)} (act : Q(ModalityActi
   | _ => throwError "imodintro: unknown modality action {act}"
 
 /--
+  For recursively simplifying arithmetic expressions (e.g. from `m + 1 + 1 + 1`
+  to `m + 3`. We cannot use `whnf` because it rewrites `HAdd.hAdd` into `Nat.add`,
+  which breaks `inext` for later credits.
+-/
+private def normNatArith (e : Expr) : MetaM Expr := transform e (post := postFn)
+  where
+    postFn (e : Expr) := do
+      match e.getAppFn.constName? with
+      | some ``HAdd.hAdd | some ``HSub.hSub
+      | some ``Nat.add | some ``Nat.succ | some ``Nat.sub =>
+        match ← (evalNat e).run with
+        | some v => return .done <| mkNatLit v
+        | none   => return .continue
+      | _ => return .continue
+
+/--
 Applies modality actions to transform proof mode context.
 
 # Parameters
@@ -125,6 +141,8 @@ where go {e}
         | throwError "imodintro: cannot transform hypothesis {name} : {ty} with {C}"
       have heq : Q(@ModalityAction.transform $prop1 $prop2 $C = .transform $C) :=
         q(Eq.refl (ModalityAction.transform $C))
+      let ty' : Q($prop1) ← normNatArith (← instantiateMVars ty')
+      have hC : Q($C $ty $ty') := hC
       have heq : Q($(M).action $p = .transform $C) := heq
       return ⟨_, .mkHyp bi1 name ivar p ty', q(modaction_transform $M $heq $hC)⟩
     | .clear =>

@@ -626,18 +626,6 @@ theorem tac_lc_add_laterN_full {GF : BundledGFunctors} [InvGS GF]
 
 public meta section
 
-/--
-  For recursively simplifying arithmetic expressions (e.g. from `m + 1 + 1 + 1`
-  to `m + 3`. We cannot use `whnf` because it rewrites `HAdd.hAdd` into `Nat.add`.
--/
-partial def normNatLit (e : Expr) : MetaM Expr := do
-  if let some v ← (evalNat e).run then
-    return mkNatLit v
-  match_expr e with
-  | HAdd.hAdd _ _ _ _ a b => do
-    mkAppM ``HAdd.hAdd #[← normNatLit a, ← normNatLit b]
-  | _ => return e
-
 elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
   let n : Q(Nat) ← match t with
   | none => pure <| mkNatLit 1
@@ -680,7 +668,7 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
     let newN ← mkFreshExprMVarQ q(Nat)
     let some hcancel ← synthInstance? q(NatCancel $c $n $newC $newN)
       | throwError "inext: unable to cancel {n} later credits from {c}"
-    let newC : Q(Nat) ← normNatLit <| ← instantiateMVars newC
+    let newC : Q(Nat) ← instantiateMVars newC
     unless ← isDefEq newN q(0) do
       throwError "inext: insufficient credits"
 
