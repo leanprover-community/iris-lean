@@ -39,8 +39,9 @@ meta def distLaterStep (goal : MVarId) : MetaM (Option (List MVarId)) :=
       if let some decl := decl? then
         if decl.type.isAppOf ``OFE.DistLater then try
             let newGoals ← goal.apply decl.toExpr
-            newGoals.head!.assumption
-            return some newGoals.tail!
+            if not newGoals.isEmpty then
+              newGoals.head!.assumption
+              return some newGoals.tail!
           catch _ => continue
     return none
 
@@ -51,17 +52,20 @@ meta def distStep (goal : MVarId) : MetaM (Option (List MVarId)) := do
       if let some decl := decl? then
         if decl.type.isAppOf ``OFE.Dist then try
             let newGoals ← goal.apply decl.toExpr
-            newGoals.head!.assumption
-            return some newGoals.tail!
+            if not newGoals.isEmpty then
+              newGoals.head!.assumption
+              return some newGoals.tail!
           catch _ => continue
     return none
 
 meta def tryUnfoldFn : TacticM Unit := do
   let _ ← observing? ((← getMainTarget).withApp <| λ _ args => do
-    let fn := args[3]!.getAppFn.constName!
-    -- don't unfold primitives
-    if not <| (`Iris.BI.BIBase).isPrefixOf fn then
-      evalTactic <| ← `(tactic|unfold $(mkIdent fn); try split))
+    match args[3]!.getAppFn with
+    | .const fn _ => do
+      -- don't unfold primitives
+      if not <| (`Iris.BI.BIBase).isPrefixOf fn then
+        evalTactic <| ← `(tactic|unfold $(mkIdent fn); try split)
+    | _ => return)
 
 meta def makeMainGoal (goal : MVarId) : TacticM Unit := do
   let goals ← getGoals
@@ -74,7 +78,9 @@ meta partial def contractiveMain (goal : MVarId) (guarded : Bool) : TacticM Unit
 
   -- simplification step (includes application of Dist.rfl)
   if let some _ ← observing? (evalTactic <| ← `(tactic|simp)) then
-    let _ ← (← getUnsolvedGoals).mapM (contractiveMain · guarded)
+    let _ ← observing? do
+      let newGoal ← getMainGoal
+      contractiveMain newGoal guarded
     return
 
   -- uses an OFE.Contractive instance
@@ -94,6 +100,8 @@ meta partial def contractiveMain (goal : MVarId) (guarded : Bool) : TacticM Unit
     replaceMainGoal newGoals
     discard <| newGoals.mapM (contractiveMain · guarded)
     return
+
+  throwError "tactic 'contractive' failed"
 
 elab "contractive" : tactic => do
   -- intro hypotheses
@@ -115,7 +123,9 @@ meta partial def nonexpMain (goal : MVarId) : TacticM Unit := do
 
   -- simplification step (includes application of Dist.rfl)
   if let some _ ← observing? (evalTactic <| ← `(tactic|simp)) then
-    let _ ← (← getUnsolvedGoals).mapM (nonexpMain ·)
+    let _ ← observing? do
+      let newGoal ← getMainGoal
+      nonexpMain newGoal
     return
 
   -- applies an OFE.Dist hypothesis
