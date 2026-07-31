@@ -50,7 +50,7 @@ scoped instance : CMRA α where
   op := add
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ h := by rw [(discrete h).to_eq]
+  op_ne.ne _ _ _ h := by rw [discrete h]
   pcore_ne _ := dist_some ∘ Dist.of_eq
   validN_ne _ _ := .intro
   valid_iff_validN := .symm <| forall_const Nat
@@ -87,7 +87,7 @@ scoped instance : UCMRA α where
   unit := zero
   unit_valid := trivial
   unit_left_id := pcore_op_left rfl
-  pcore_unit := .symm .rfl
+  pcore_unit := rfl
 
 #rocq_ignore natUR "Use Nat with scoped UCMRA instance"
 #rocq_ignore ZUR "Use Int with scoped UCMRA instance"
@@ -97,7 +97,7 @@ scoped instance : UCMRA α where
 #rocq_ignore Z_unit_instance "Use UCMRA instance"
 
 scoped instance [LeftCancelAdd α] {a : α} : Cancelable a where
-  cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ Equiv.to_eq ∘ discrete
+  cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ discrete
 #rocq_ignore nat_cancelable "Use scoped Cancelable instance"
 #rocq_ignore Z_cancelable "Use scoped Cancelable instance"
 
@@ -106,7 +106,7 @@ scoped instance [LeftCancelAdd α] {a : α} : Cancelable a where
 theorem op_eq {x y : α} : x • y = x + y := rfl
 
 theorem included_iff {x y : α} : x ≼ y ↔ ∃ z, y = x + z := by
-  refine ⟨fun ⟨z, hz⟩ => ⟨z, hz.to_eq⟩, fun ⟨z, hz⟩ => ⟨z, .of_eq hz⟩⟩
+  refine ⟨fun ⟨z, hz⟩ => ⟨z, hz⟩, fun ⟨z, hz⟩ => ⟨z, hz⟩⟩
 
 /-- Sufficient condition for a local update on a LeftCancelAdd structure, such as (ℕ, +) -/
 theorem leftCancelAdd_local_update [LeftCancelAdd α] (h : add x y' = add x' y) :
@@ -143,10 +143,10 @@ scoped instance : CMRA α where
   op := add
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ h := by rw [(discrete h).to_eq]
+  op_ne.ne _ _ _ h := by rw [discrete h]
   pcore_ne {_ y _ _} h := by
     rintro ⟨rfl⟩
-    exact ⟨y, congrArg _ <| (discrete h.symm).to_eq, .rfl⟩
+    exact ⟨y, congrArg _ <| discrete h.symm, .rfl⟩
   validN_ne _ _ := .intro
   valid_iff_validN := .symm <| forall_const Nat
   validN_succ := (·)
@@ -155,7 +155,7 @@ scoped instance : CMRA α where
   comm {_ _} := by rw [comm (op := add)]
   pcore_op_left {_ _} := by
     rintro ⟨rfl⟩
-    refine .of_eq <| idempotent _
+    exact idempotent _
   pcore_idem := by simp
   pcore_op_mono {a b} := by
     rintro ⟨rfl⟩ z
@@ -202,15 +202,15 @@ scoped instance (a : α) : CMRA.CoreId a where
 scoped instance [LawfulLeftIdentity (add (α := α)) zero] : UCMRA α where
   unit := zero
   unit_valid := trivial
-  unit_left_id := .of_eq <| left_id _
-  pcore_unit := .symm .rfl
+  unit_left_id := left_id _
+  pcore_unit := rfl
 #rocq_ignore max_natUR "Use Nat with scoped UCMRA instance"
 #rocq_ignore max_nat_ucmra_mixin "Not needed"
 #rocq_ignore max_nat_unit_instance "Use UCMRA instance"
 #rocq_ignore max_Z_unit_instance "Use UCMRA instance"
 
 scoped instance [LeftCancelAdd α] {a : α} : Cancelable a where
-  cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ Equiv.to_eq ∘ discrete
+  cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ discrete
 
 omit [Zero α] in
 /-- The CMRA operation is `add` (which is `max`/`min` for max_nat/min_nat/max_Z). -/
@@ -237,7 +237,7 @@ scoped instance : CMRA α where
   op := add
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ h := by rw [(discrete h).to_eq]
+  op_ne.ne _ _ _ h := by rw [discrete h]
   pcore_ne _ := by rintro ⟨rfl⟩
   validN_ne _ _ := .intro
   valid_iff_validN := .symm <| forall_const Nat
@@ -261,11 +261,11 @@ scoped instance : CMRA.Discrete α where
 #rocq_ignore pos_cmra_discrete "Use Discrete instance"
 
 scoped instance [LeftCancelAdd α] {a : α} : Cancelable a where
-  cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ Equiv.to_eq ∘ discrete
+  cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ discrete
 #rocq_ignore pos_cancelable "Use scoped Cancelable instance"
 
 scoped instance [IdentityFree α] {a : α} : CMRA.IdFree a where
-  id_free0_r _ _ h := IdentityFree.id_free <| (discrete h).to_eq
+  id_free0_r _ _ h := IdentityFree.id_free <| discrete h
 #rocq_ignore pos_id_free "Use scoped IdentityFree instance"
 
 #rocq_ignore pos_op_add "Not needed"

@@ -5,7 +5,6 @@ Authors: Lars König
 -/
 module
 
-public import Lean.Expr
 public import Lean.Meta
 
 @[expose] public section

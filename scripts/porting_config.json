@@ -1,0 +1,32 @@
+{
+  "repo": {
+    "project": "iris%2Firis",
+    "apiBase": "https://gitlab.mpi-sws.org/api/v4",
+    "webBase": "https://gitlab.mpi-sws.org/iris/iris"
+  },
+  "packages": [
+    {
+      "dir": "iris",
+      "prefix": "",
+      "folders": [
+        "algebra",
+        "base_logic",
+        "bi",
+        "program_logic",
+        "proofmode",
+        "si_logic"
+      ],
+      "ignoredDirs": [
+        "prelude"
+      ]
+    },
+    {
+      "dir": "iris_heap_lang",
+      "prefix": "heap_lang.",
+      "folders": [
+        "lib"
+      ],
+      "ignoredDirs": []
+    }
+  ]
+}

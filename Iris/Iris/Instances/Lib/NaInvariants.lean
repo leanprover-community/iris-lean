@@ -17,7 +17,7 @@ public import Iris.Std.CoPset
 
 namespace Iris
 
-open BI CMRA OFE Iris Std LawfulSet DisjointLeibnizSet COFE
+open BI CMRA OFE Iris Std LawfulSet DisjointLeibnizSet COFE ProofMode
 
 abbrev NaInvF : OFunctorPre :=
   ProdOF (constOF CoPsetDisjL) (constOF (DisjointLeibnizSet PosSet))
@@ -42,7 +42,7 @@ instance coreId_valid_empty_empty : CoreId ((valid (∅ : CoPset), valid (∅ : 
 
 instance isUnit_valid_empty_empty : IsUnit ((valid (∅ : CoPset), valid (∅ : PosSet))) where
   unit_valid := ⟨trivial, trivial⟩
-  unit_left_id := NonExpansive₂.eqv unit_left_id unit_left_id
+  unit_left_id := Prod.ext CMRA.ucmra_unit_left_id CMRA.ucmra_unit_left_id
   pcore_unit := coreId_valid_empty_empty.core_id
 
 namespace NonAtomicInvariant
@@ -128,10 +128,9 @@ theorem own_disjoint {p : NaInvPoolName} {E1 E2 : CoPset} :
 theorem own_union {p : NaInvPoolName} {E1 E2 : CoPset} (Hdisj : E1 ## E2) :
     own (GF := GF) p (E1 ∪ E2) ⊣⊢ own p E1 ∗ own p E2 := by
   refine .trans ?_ iOwn_op
-  refine BI.equiv_iff.mp (NonExpansive.eqv (f := iOwn (E := W.inv) p) ?_)
-  refine .symm <| equiv_prod_ext (disj_op_union Hdisj) ?_
-  refine .trans (disj_op_union disjoint_empty_left) ?_
-  exact .of_eq (by simp)
+  refine (congrArg (iOwn (E := W.inv) p) ?_).to_bi
+  refine .symm (OFE.equiv_prod_ext (disj_op_union Hdisj) ?_)
+  exact (disj_op_union disjoint_empty_left).trans (by simp)
 
 @[rocq_alias na_own_acc]
 theorem own_acc {E2 E1 : CoPset} {tid : NaInvPoolName} (Hsub : E2 ⊆ E1) :
@@ -220,6 +219,24 @@ nonrec theorem inv_acc {p : NaInvPoolName} {E F : CoPset} {N : Namespace} {P : I
     · iapply own_disjoint $$ Htoki Htoki2
     icases Hbad with %Hbad
     exact Hbad i ⟨mem_singleton.mpr rfl, mem_singleton.mpr rfl⟩ |>.elim
+
+@[rocq_alias into_inv_na]
+instance intoInv_na (N : Namespace) (P : IProp GF) :
+    IntoInv (inv p N P) N := {}
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias into_acc_na]
+instance intoAcc_na (p : NaInvPoolName) (E F : CoPset) (N : Namespace) (P : IProp GF) :
+    IntoAcc (X := Unit) (inv p N P) (↑N ⊆ E ∧ ↑N ⊆ F) (own p F) (fupd E E) (fupd E E)
+    (fun _ => iprop(▷ P ∗ own p (F \ ↑N))) (fun _ => iprop(▷ P ∗ own p (F \ ↑N)))
+              (λ _ => some (own p F)) where
+  into_acc := by
+    dsimp only [accessor, Option.getD]
+    intro ⟨hE, hF⟩
+    iintro #Hinv Hown
+    imod inv_acc hE hF $$ Hinv Hown with ⟨_, Hown, _⟩
+    iexists ()
+    iframe
 
 end NonAtomicInvariant
 end Iris

@@ -10,6 +10,14 @@ public meta import Iris.ProofMode.ProofModeM
 
 namespace Iris.ProofMode
 
+public section
+open BI
+
+theorem hyps_replace_ieval [BI PROP] {P Q R : PROP}
+    (h : P ⊢ Q) : R ⊢ <pers> (P -∗ Q) :=
+  persistently_emp_intro.trans <| persistently_mono <| wand_intro <| emp_sep.mp.trans h
+
+
 public meta section
 open Lean Elab Tactic Meta Qq BI Lean.Parser.Tactic
 
@@ -36,7 +44,7 @@ private def iEvalOne {u} {prop : Q(Type u)} (bi : Q(BI $prop))
   let pf ← mkFreshExprSyntheticOpaqueMVar <| if isGoal then q($m ⊢ $ty) else q($ty ⊢ $m)
   let [g] ← evalTacticAt tac pf.mvarId!
     | throwError "ieval: the supplied tactic does not produce exactly one subgoal"
-  let some #[_, _, lhs, rhs] ← g.getType <&> (·.appM? ``Entails)
+  let some ⟨_, _, lhs, rhs⟩ := parseEntails? (← g.getType)
     | throwError "ieval: the goal is not Iris entailment upon applying the supplied tactic"
   let newTy : Q($prop) := if isGoal then rhs else lhs
   m.mvarId!.assign newTy
@@ -65,9 +73,10 @@ private def iEvalCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
       | .pure _ =>
         throwError "ieval: pure hypotheses in the selection pattern is not supported"
       | .ipm ivar =>
-        let some ⟨newE, newHyps, pf⟩ ← evalState.newHyps.evalReplace ivar fun ty => do
+        let some ⟨newE, newHyps, pf⟩ ← evalState.newHyps.replace ivar fun _ _ ty => do
           let ⟨newTy, pf⟩ ← iEvalOne (isGoal := false) bi tac ty
-          return ⟨newTy, (pf : Q($ty ⊢ $newTy))⟩
+          let pf : Q($ty ⊢ $newTy) := pf
+          return ⟨newTy, q(hyps_replace_ieval $pf)⟩
         | throwError m!"ieval: unable to find the hypothesis {ivar.name} in the context"
         pure { newE, newHyps, pf := q($(evalState.pf).trans $pf) }
     let pf' ← addBIGoal evalState.newHyps goal

@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Markus de Medeiros, Michael Sammler, Klaus Kraßnitzer
+-/
 module
 
 public import Iris.HeapLang.PrimitiveLaws
@@ -115,9 +120,7 @@ theorem cons_spec x l ls Φ :
     WP hl(&cons #x &l) {{ Φ }} := by
   iintro Hl HΦ
   wp_rec; wp_pures
-  wp_bind ref(_)
-  iapply wp_alloc
-  iintro !> %l Hl
+  wp_alloc l
   wp_pures
   imodintro
   iapply HΦ
@@ -142,9 +145,7 @@ theorem append_spec l1 ls1 l2 ls2 Φ :
   | cons x xs =>
     icases isList_cons $$ Hl1 with ⟨%l, %tl, %heq, Hpt, Hl⟩
     subst heq; wp_pures
-    wp_bind !_
-    iapply wp_load $$ Hpt
-    iintro !> Hpt
+    wp_load
     wp_pures
     wp_bind &append _ _
     iapply IH $$ Hl Hl2
@@ -177,9 +178,7 @@ theorem partition_spec x l ls Φ :
     simp only
     icases Hl with ⟨%_, %tl, %hl, Hpt, Hl⟩; subst hl
     wp_pures
-    wp_bind !_
-    iapply wp_load $$ [$]
-    iintro !> Hpt
+    wp_load
     wp_pures
     wp_bind &partition _ _
     iapply IH $$ Hl
@@ -231,9 +230,7 @@ theorem quicksort_spec l ls Φ :
     dsimp only
     icases Hl with ⟨%l, %tl, %heq, Hpt, Hl⟩; subst heq
     wp_pures
-    wp_bind !_
-    iapply wp_load $$ [$]
-    iintro !> Hpt
+    wp_load
     wp_pures
     wp_bind &partition _ _
     iapply partition_spec $$ [$]
@@ -317,9 +314,7 @@ theorem wp_checkSorted (v vacc : Val) (l : List Int) (Φ : Val → IProp GF) :
     icases isList_cons $$ H with ⟨%loc, %tlv, %heq, Hpt, Htl⟩
     subst heq
     wp_pures
-    wp_bind !_
-    iapply wp_load $$ Hpt
-    iintro !> Hpt
+    wp_load
     rcases hinv with rfl | ⟨va, rfl, hva⟩
     · wp_pures
       iapply IH $$ %_ %tl %_ %((List.pairwise_cons.mp hsorted).2)
