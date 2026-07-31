@@ -3578,7 +3578,7 @@ example [BI PROP] {P : PROP} {m n : Nat} {T : Nat → Prop}
 
 end iinduction
 
-section icontractive
+section contractive
 
 example [BI PROP] [BILaterContractive PROP] : OFE.Contractive (λP : PROP => iprop(▷ P)) where
   distLater_dist := by
@@ -3588,4 +3588,4 @@ example [BI PROP] [BILaterContractive PROP] : OFE.Contractive (λP : PROP => ipr
   distLater_dist := by
     contractive
 
-end icontractive
+end contractive

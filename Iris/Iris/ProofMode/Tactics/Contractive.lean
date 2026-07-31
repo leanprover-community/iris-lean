@@ -68,18 +68,13 @@ meta def makeMainGoal (goal : MVarId) : TacticM Unit := do
   let goals := goal :: goals.erase goal
   setGoals goals
 
-mutual
-
-meta partial def contractiveRecurse (guarded : Bool) : TacticM Unit := do
-  let _ ← (← getUnsolvedGoals).mapM (contractiveMain · guarded)
-
 meta partial def contractiveMain (goal : MVarId) (guarded : Bool) : TacticM Unit := do
   if ← goal.isAssigned then return
   makeMainGoal goal
 
   -- simplification step (includes application of Dist.rfl)
   if let some _ ← observing? (evalTactic <| ← `(tactic|simp)) then
-    contractiveRecurse guarded;
+    let _ ← (← getUnsolvedGoals).mapM (contractiveMain · guarded)
     return
 
   -- uses an OFE.Contractive instance
@@ -100,8 +95,6 @@ meta partial def contractiveMain (goal : MVarId) (guarded : Bool) : TacticM Unit
     discard <| newGoals.mapM (contractiveMain · guarded)
     return
 
-end
-
 elab "contractive" : tactic => do
   -- intro hypotheses
   evalTactic <| ← `(tactic|intros)
@@ -116,18 +109,13 @@ elab "contractive" : tactic => do
   -- main loop
   contractiveMain (← getMainGoal) false
 
-mutual
-
-meta partial def nonexpRecurse : TacticM Unit := do
-  let _ ← (← getUnsolvedGoals).mapM (nonexpMain ·)
-
 meta partial def nonexpMain (goal : MVarId) : TacticM Unit := do
   if ← goal.isAssigned then return
   makeMainGoal goal
 
   -- simplification step (includes application of Dist.rfl)
   if let some _ ← observing? (evalTactic <| ← `(tactic|simp)) then
-    nonexpRecurse
+    let _ ← (← getUnsolvedGoals).mapM (nonexpMain ·)
     return
 
   -- applies an OFE.Dist hypothesis
@@ -141,8 +129,6 @@ meta partial def nonexpMain (goal : MVarId) : TacticM Unit := do
     replaceMainGoal newGoals
     discard <| newGoals.mapM (nonexpMain ·)
     return
-
-end
 
 elab "nonexp" : tactic => do
   -- intro hypotheses
