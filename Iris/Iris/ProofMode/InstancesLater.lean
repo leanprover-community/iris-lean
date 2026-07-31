@@ -334,18 +334,22 @@ instance (priority := default - 200) intoLaterN_later [BI PROP] only_head n n' m
     [h1 : NatCancel n 1 n' m']
     [h2 : IntoLaterN only_head n' P Q]
     [h3 : MakeLaterN m' Q lQ] : IntoLaterN only_head n iprop(▷ P) lQ where
-  into_laterN := (later_mono h2.1).trans $ (later_laterN _).2.trans $ by
-    rw [h1.1]
-    apply (laterN_add _ _).1.trans (laterN_mono _ h3.1.1)
+  into_laterN := calc
+    _ ⊢ ▷▷^[n']Q      := later_mono h2.into_laterN
+    _ ⊢ ▷^[n' + 1]Q    := (later_laterN _).mpr
+    _ ⊢ ▷^[n] ▷^[m']Q := by rw [h1.1]; exact (laterN_add _ _).mp
+    _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
 
 @[rocq_alias into_laterN_laterN]
 instance (priority := default - 100) intoLaterN_laterN [BI PROP] only_head n m n' m' (P Q lQ : PROP)
     [h1 : NatCancel n m n' m']
     [h2 : IntoLaterN only_head n' P Q]
     [h3 : MakeLaterN m' Q lQ] : IntoLaterN only_head n iprop(▷^[m] P) lQ where
-  into_laterN := (laterN_mono _ h2.1).trans $ (laterN_add _ _).2.trans $ by
-    rw [Nat.add_comm, h1.1]
-    apply (laterN_add _ _).1.trans (laterN_mono _ h3.1.1)
+  into_laterN := calc
+    _ ⊢ ▷^[m] ▷^[n']Q := laterN_mono _ h2.into_laterN
+    _ ⊢ ▷^[m + n']Q    := (laterN_add _ _).mpr
+    _ ⊢ ▷^[n] ▷^[m']Q := by rw [Nat.add_comm, h1.nat_cancel]; exact (laterN_add _ _).mp
+    _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
 
 @[rocq_alias into_laterN_laterN_bool]
 instance (priority := default - 300) intoLaterN_laterN_bool [BI PROP] only_head n (p : Bool) n' m' (P Q lQ : PROP)
