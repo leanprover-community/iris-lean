@@ -2396,7 +2396,7 @@ theorem LimitPreserving.entails [BI PROP] [COFE Nat A] (Φ Ψ : A → PROP) [Φn
     exact fun n => (h' n).to_eq
 
 @[rocq_alias bi.limit_preserving_emp_valid]
-theorem limitPreserving_emp_valid [BI PROP] [COFE A] (Φ : A → PROP)
+theorem limitPreserving_emp_valid [BI PROP] [COFE Nat A] (Φ : A → PROP)
     [OFE.NonExpansive Φ] : LimitPreserving (fun x => ⊢ Φ x) :=
   LimitPreserving.entails (fun _ => iprop(emp)) Φ
 
