@@ -18,7 +18,7 @@ section MaxNat
 
 abbrev MaxNat := Nat
 
-scoped instance : Add MaxNat := ⟨max⟩
+local instance : Add MaxNat := ⟨max⟩
 scoped instance : Associative (Add.add (α := MaxNat)) where
   assoc := Nat.max_assoc
 scoped instance : Commutative (Add.add (α := MaxNat)) where
