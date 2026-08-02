@@ -992,6 +992,7 @@ structure BChain (α : Type _) [SIdx SI] [OFE SI α] (n : SI) where
   bcauchy {m p} (hm : m < n) (hp : p < n) (h : m ≤ p) : bchain p hp ≡{m}≡ bchain m hm
 
 namespace BChain
+
 variable [SIdx SI] [OFE SI α] [OFE SI β]
 
 def map (f : α -n> β) {n : SI} (c : BChain α n) : BChain β n where
@@ -1005,6 +1006,12 @@ def const (a : α) (n : SI) : BChain α n where
 def le {n : SI} (c : BChain α n) {m : SI} (hm : m ≤ n) : BChain α m where
   bchain m' hm' := c.bchain m' (SIdx.lt_le_trans hm' hm)
   bcauchy _ _ h := c.bcauchy _ _ h
+
+@[simp] theorem map_apply {f : α -n> β} {n : SI} {c : BChain α n} {m} {hm : m < n} :
+    (map f c).bchain m hm = f (c.bchain m hm) := rfl
+
+@[simp] theorem const_apply {a : α} {n m : SI} {hm : m < n} :
+    (const a n).bchain m hm = a := rfl
 
 end BChain
 
@@ -1063,9 +1070,9 @@ def ofDiscrete (α : Type _) : COFE SI α :=
 instance [COFE SI α] : COFE SI (ULift α) where
   compl c := ⟨compl (c.map uliftDownHom)⟩
   conv_compl := conv_compl
-  lbcompl := sorry
-  conv_lbcompl := sorry
-  lbcompl_ne := sorry
+  lbcompl hn c := ⟨IsCOFE.lbcompl hn (c.map uliftDownHom)⟩
+  conv_lbcompl hn c _ hm:= IsCOFE.conv_lbcompl hn (c.map uliftDownHom) hm
+  lbcompl_ne hn _ _ _ hc := IsCOFE.lbcompl_ne hn _ _ (fun p hp => hc p hp)
 
 @[rocq_alias unit_ofe_discrete]
 instance : @Discrete SI _ Unit unitOFE :=
@@ -1078,9 +1085,9 @@ def unitCOFE [SIdx SI] : COFE SI Unit :=
   {
     compl _ := ()
     conv_compl := ⟨⟩
-    lbcompl := fun _ _ => ()
-    conv_lbcompl := sorry
-    lbcompl_ne := sorry
+    lbcompl _ _ := ()
+    conv_lbcompl _ _ _ _ := ⟨⟩
+    lbcompl_ne _ _ _ _ _ := ⟨⟩
   }
 
 abbrev IsCOFEFun {α : Type _} (β : α → Type _) [OFEFun (SI := SI) β] := ∀ x : α, IsCOFE SI (β x)
@@ -1100,18 +1107,55 @@ instance instIsCOFEOption [OFE SI α] [IsCOFE SI α] : IsCOFE SI (Option α) whe
       cases h2 : c.chain n with
       | none => exact (h1 ▸ h2 ▸ c.cauchy SIdx.le_0_l).elim
       | some _ => rfl
-  lbcompl := sorry
-  conv_lbcompl := sorry
-  lbcompl_ne := sorry
+  lbcompl {n} hn c :=
+    match c.bchain 0 hn.limit_lt_0 with
+    | .some seed => .some <| IsCOFE.lbcompl hn <| c.map ⟨_, Option.ne_match id inferInstance seed⟩
+    | .none => none
+  conv_lbcompl {n} hn c {m} hm := by
+    cases h1 : c.bchain 0 hn.limit_lt_0 with
+    | none =>
+      refine Eq.dist <| Option.none_is_discrete.discrete ?_
+      exact (h1 ▸ c.bcauchy hn.limit_lt_0 hm SIdx.le_0_l).symm
+    | some seed =>
+      refine (some_dist_some.mpr (IsCOFE.conv_lbcompl hn _ hm)).trans ?_
+      dsimp only [BChain.map_apply]
+      cases h2 : c.bchain m hm with
+      | none => exact (h1 ▸ h2 ▸ c.bcauchy hn.limit_lt_0 hm SIdx.le_0_l).elim
+      | some _ => rfl
+  lbcompl_ne {n} hn c1 c2 {m} hc := by
+    have h0 := hc 0 hn.limit_lt_0
+    cases h1 : c1.bchain 0 hn.limit_lt_0 with
+    | none =>
+      cases h2 : c2.bchain 0 hn.limit_lt_0 with
+      | none => exact .rfl
+      | some _ => rw [h1, h2] at h0; exact h0.elim
+    | some s1 =>
+      cases h2 : c2.bchain 0 hn.limit_lt_0 with
+      | none => rw [h1, h2] at h0; exact h0.elim
+      | some s2 =>
+        rw [h1, h2] at h0
+        refine some_dist_some.mpr (IsCOFE.lbcompl_ne hn _ _ (fun p hp => ?_))
+        simp only [BChain.map_apply]
+        have hp' := hc p hp
+        cases e1 : c1.bchain p hp with
+        | none =>
+          cases e2 : c2.bchain p hp with
+          | none => exact h0
+          | some _ => rw [e1, e2] at hp'; exact hp'.elim
+        | some _ =>
+          cases e2 : c2.bchain p hp with
+          | none => rw [e1, e2] at hp'; exact hp'.elim
+          | some _ => rw [e1, e2] at hp'; exact hp'
+
 #rocq_ignore option_compl "Local Compl definition; folded into Lean's IsCOFE instance."
 
 @[rocq_alias discrete_fun_cofe]
 instance {α : Type _} (β : α → Type _) [∀ x, COFE SI (β x)] : COFE SI ((x : α) → β x) where
   compl c x := compl (c.map (applyHom x))
   conv_compl _ := IsCOFE.conv_compl
-  lbcompl := sorry
-  conv_lbcompl := sorry
-  lbcompl_ne := sorry
+  lbcompl hn c x := IsCOFE.lbcompl hn (c.map (applyHom x))
+  conv_lbcompl hn _ _ hm _ := IsCOFE.conv_lbcompl hn _ hm
+  lbcompl_ne hn _ _ _ hc x := IsCOFE.lbcompl_ne hn _ _ (fun p hp => hc p hp x)
 #rocq_ignore discrete_fun_chain "Local helper; folded into Lean's IsCOFE instance."
 
 @[rocq_alias ofe_mor_cofe]
@@ -1121,18 +1165,24 @@ instance instIsCOFEHom [OFE SI α] [OFE SI β] [IsCOFE SI β] : IsCOFE SI (α -n
     refine conv_compl.trans (.trans ?_ conv_compl.symm)
     exact NonExpansive.ne (f := c.chain n) H
   conv_compl _ := IsCOFE.conv_compl
-  lbcompl := sorry
-  conv_lbcompl := sorry
-  lbcompl_ne := sorry
+  lbcompl {n} hn c := by
+    refine ⟨fun x => IsCOFE.lbcompl hn (c.map (applyNe x)), ⟨fun m x y H => ?_⟩⟩
+    exact IsCOFE.lbcompl_ne hn _ _ (fun p hp => (c.bchain p hp).ne.ne H)
+  conv_lbcompl hn c _ hm := fun _ => IsCOFE.conv_lbcompl hn _ hm
+  lbcompl_ne hn c1 c2 _ hc := fun x => IsCOFE.lbcompl_ne hn _ _ (fun p hp => hc p hp x)
 #rocq_ignore ofe_mor_compl "Inlined in IsCOFE instance"
 
 @[rocq_alias prod_cofe]
 instance instIsCOFEProd [OFE SI α] [OFE SI β] [IsCOFE SI α] [IsCOFE SI β] : IsCOFE SI (α × β) where
   compl c := ⟨compl (c.map ⟨Prod.fst, inferInstance⟩), compl (c.map ⟨Prod.snd, inferInstance⟩)⟩
   conv_compl := ⟨conv_compl, conv_compl⟩
-  lbcompl := sorry
-  conv_lbcompl := sorry
-  lbcompl_ne := sorry
+  lbcompl hn c :=
+    (IsCOFE.lbcompl hn (c.map ⟨Prod.fst, inferInstance⟩),
+     IsCOFE.lbcompl hn (c.map ⟨Prod.snd, inferInstance⟩))
+  conv_lbcompl hn _ _ hm := ⟨IsCOFE.conv_lbcompl hn _ hm, IsCOFE.conv_lbcompl hn _ hm⟩
+  lbcompl_ne hn _ _ _ hc :=
+    ⟨IsCOFE.lbcompl_ne hn _ _ (fun p hp => (hc p hp).1),
+     IsCOFE.lbcompl_ne hn _ _ (fun p hp => (hc p hp).2)⟩
 
 @[rocq_alias sum_cofe]
 instance instIsCOFESum  [OFE SI α] [OFE SI β] [IsCOFE SI α] [IsCOFE SI β] : IsCOFE SI (α ⊕ β) where
@@ -1153,9 +1203,64 @@ instance instIsCOFESum  [OFE SI α] [OFE SI β] [IsCOFE SI α] [IsCOFE SI β] : 
       cases h2 : c.chain n with
       | inl _ => exact (h1 ▸ h2 ▸ c.cauchy SIdx.le_0_l).elim
       | inr _ => simp
-  lbcompl := sorry
-  conv_lbcompl := sorry
-  lbcompl_ne := sorry
+  lbcompl {n} hn c :=
+    match c.bchain 0 hn.limit_lt_0 with
+    | .inl seed =>
+      .inl (IsCOFE.lbcompl hn (c.map ⟨Sum.elim id (Function.const _ seed), inferInstance⟩))
+    | .inr seed =>
+      .inr (IsCOFE.lbcompl hn (c.map ⟨Sum.elim (Function.const _ seed) id, inferInstance⟩))
+  conv_lbcompl {n} hn c {m} hm := by
+    cases h1 : c.bchain 0 hn.limit_lt_0 with
+    | inl seed =>
+      refine (dist_inl (IsCOFE.conv_lbcompl hn _ hm)).trans ?_
+      dsimp only [BChain.map_apply]
+      cases h2 : c.bchain m hm with
+      | inl _ => simp
+      | inr _ => exact (h1 ▸ h2 ▸ c.bcauchy hn.limit_lt_0 hm SIdx.le_0_l).elim
+    | inr seed =>
+      refine (dist_inr (IsCOFE.conv_lbcompl hn _ hm)).trans ?_
+      dsimp only [BChain.map_apply]
+      cases h2 : c.bchain m hm with
+      | inl _ => exact (h1 ▸ h2 ▸ c.bcauchy hn.limit_lt_0 hm SIdx.le_0_l).elim
+      | inr _ => simp
+  lbcompl_ne {n} hn c1 c2 {m} hc := by
+    have h0 := hc 0 hn.limit_lt_0
+    cases h1 : c1.bchain 0 hn.limit_lt_0 with
+    | inl s1 =>
+      cases h2 : c2.bchain 0 hn.limit_lt_0 with
+      | inr _ => rw [h1, h2] at h0; exact h0.elim
+      | inl s2 =>
+        rw [h1, h2] at h0
+        refine dist_inl (IsCOFE.lbcompl_ne hn _ _ (fun p hp => ?_))
+        simp only [BChain.map_apply]
+        have hp' := hc p hp
+        cases e1 : c1.bchain p hp with
+        | inl _ =>
+          cases e2 : c2.bchain p hp with
+          | inl _ => rw [e1, e2] at hp'; exact hp'
+          | inr _ => rw [e1, e2] at hp'; exact hp'.elim
+        | inr _ =>
+          cases e2 : c2.bchain p hp with
+          | inl _ => rw [e1, e2] at hp'; exact hp'.elim
+          | inr _ => exact h0
+    | inr s1 =>
+      cases h2 : c2.bchain 0 hn.limit_lt_0 with
+      | inl _ => rw [h1, h2] at h0; exact h0.elim
+      | inr s2 =>
+        rw [h1, h2] at h0
+        refine dist_inr (IsCOFE.lbcompl_ne hn _ _ (fun p hp => ?_))
+        simp only [BChain.map_apply]
+        have hp' := hc p hp
+        cases e1 : c1.bchain p hp with
+        | inr _ =>
+          cases e2 : c2.bchain p hp with
+          | inr _ => rw [e1, e2] at hp'; exact hp'
+          | inl _ => rw [e1, e2] at hp'; exact hp'.elim
+        | inl _ =>
+          cases e2 : c2.bchain p hp with
+          | inr _ => rw [e1, e2] at hp'; exact hp'.elim
+          | inl _ => exact h0
+
 #rocq_ignore inl_chain "Local helper for `sum_compl`; folded into Lean's IsCOFE instance."
 #rocq_ignore inr_chain "Local helper for `sum_compl`; folded into Lean's IsCOFE instance."
 #rocq_ignore sum_compl "Local Compl definition; folded into Lean's IsCOFE instance."
@@ -1275,6 +1380,12 @@ def optionChain (c : Chain (Option α)) (x : α) : Chain α := by
   have := c.cauchy H; revert this
   cases c.chain i <;> cases c.chain n <;> simp [Dist, Option.Forall₂]
 
+@[rocq_alias option_bchain]
+def optionBChain {n : SI} (c : BChain (Option α) n) (x : α) : BChain α n := by
+  refine ⟨fun m hm => (c.bchain m hm).getD x, fun {m p} hm hp H => ?_⟩
+  have := c.bcauchy hm hp H; revert this
+  cases c.bchain p hp <;> cases c.bchain m hm <;> simp [Dist, Option.Forall₂]
+
 @[rocq_alias option_cofe]
 instance isCOFE_option [IsCOFE SI α] : IsCOFE SI (Option α) where
   compl c := (c 0).map fun x => IsCOFE.compl (optionChain c x)
@@ -1283,9 +1394,35 @@ instance isCOFE_option [IsCOFE SI α] : IsCOFE SI (Option α) where
     rcases c.chain 0 with _|x' <;> rcases e : c.chain n with _|y' <;> simp [Dist, Option.Forall₂]
     refine fun _ => OFE.dist_eqv.trans IsCOFE.conv_compl ?_
     simp [optionChain, e]
-  lbcompl := sorry
-  conv_lbcompl := sorry
-  lbcompl_ne := sorry
+  lbcompl {n} hn c :=
+    (c.bchain 0 hn.limit_lt_0).map fun x => IsCOFE.lbcompl hn (optionBChain c x)
+  conv_lbcompl {n} hn c {m} hm := by
+    have := c.bcauchy hn.limit_lt_0 hm SIdx.le_0_l; revert this
+    rcases c.bchain 0 hn.limit_lt_0 with _ | x' <;> rcases e : c.bchain m hm with _ | y' <;>
+      simp [Dist, Option.Forall₂]
+    refine fun _ => OFE.dist_eqv.trans (IsCOFE.conv_lbcompl hn _ hm) ?_
+    simp [optionBChain, e]
+  lbcompl_ne {n} hn c1 c2 {m} hc := by
+    have h0 := hc 0 hn.limit_lt_0
+    revert h0
+    rcases e1 : c1.bchain 0 hn.limit_lt_0 with _ | x1 <;>
+      rcases e2 : c2.bchain 0 hn.limit_lt_0 with _ | x2 <;>
+      simp only [Option.map, Dist, Option.Forall₂] <;> intro h0
+    · trivial
+    · exact h0.elim
+    · exact h0.elim
+    · refine IsCOFE.lbcompl_ne hn _ _ (fun p hp => ?_)
+      have hp' := hc p hp
+      simp only [optionBChain]
+      cases f1 : c1.bchain p hp with
+      | none =>
+        cases f2 : c2.bchain p hp with
+        | none => exact h0
+        | some _ => rw [f1, f2] at hp'; exact hp'.elim
+      | some _ =>
+        cases f2 : c2.bchain p hp with
+        | none => rw [f1, f2] at hp'; exact hp'.elim
+        | some _ => rw [f1, f2] at hp'; exact hp'
 
 @[rocq_alias optionO_map]
 def optionMap {α β : Type _} [OFE SI α] [OFE SI β] (f : α -n> β) : Option α -n> Option β := by
@@ -1904,6 +2041,13 @@ def laterChain [OFE SI A] (c : Chain (Later A)) : Chain A where
   chain n := (c (SIdx.succ n)).car
   cauchy Hle := c.cauchy (SIdx.succ_le_mono.mp Hle) _ (SIdx.lt_succ_self _)
 
+@[rocq_alias later_limit_bchain]
+def laterLimitBChain [OFE SI A] {n : SI} (c : BChain (Later A) n) (hn : SIdx.Limit n) :
+    BChain A n where
+  bchain m hm := (c.bchain succᵢ m (hn.succ_lt m hm)).car
+  bcauchy {m p} hm hp h :=
+    c.bcauchy (hn.succ_lt m hm) (hn.succ_lt p hp) (SIdx.succ_le_mono.mp h) m (SIdx.lt_succ_self m)
+
 @[rocq_alias later_cofe]
 instance isCOFE_later [OFE SI A] [IsCOFE SI A] : IsCOFE SI (Later A) where
   compl c := Later.next (IsCOFE.compl (laterChain c))
@@ -1912,9 +2056,17 @@ instance isCOFE_later [OFE SI A] [IsCOFE SI A] : IsCOFE SI (Later A) where
     intros m Hlt
     refine (IsCOFE.conv_compl (n := m) (c := laterChain c)).trans ?_
     exact ((c.cauchy <| SIdx.succ_le_of_lt Hlt) m (SIdx.lt_succ_self m)).symm
-  lbcompl := sorry
-  conv_lbcompl := sorry
-  lbcompl_ne := sorry
+  lbcompl {n} hn c := Later.next (IsCOFE.lbcompl hn (laterLimitBChain c hn))
+  conv_lbcompl {n} hn c {m} hm := by
+    simp only [Dist, DistLater]
+    intro p hp
+    refine (IsCOFE.conv_lbcompl hn (laterLimitBChain c hn) (SIdx.lt_trans hp hm)).trans ?_
+    exact (c.bcauchy (hn.succ_lt p (SIdx.lt_trans hp hm)) hm
+      (SIdx.le_succ_l.mpr hp) p (SIdx.lt_succ_self p)).symm
+  lbcompl_ne {n} hn c1 c2 {m} hc := by
+    simp only [Dist, DistLater]
+    intro p hp
+    exact IsCOFE.lbcompl_ne hn _ _ (fun q hq => hc succᵢ q (hn.succ_lt q hq) p hp)
 
 @[rocq_alias laterO_map]
 def laterMap [OFE SI A] [OFE SI B] (f : A -n> B)  : Later A -n> Later B := by
