@@ -360,7 +360,6 @@ end
 /--
 `iCasesPat.should_try_dup_context` determines when iSpecializeCore should try to
 duplicate the separation context.
-The duplication only works if the conclusion of the specialization is persistent.
 -/
 @[rocq_alias intro_pat_intuitionistic, rocq_alias use_tac_specialize_intuitionistic_helper]
 partial def iCasesPat.should_try_dup_context (pat : iCasesPat) : Bool :=
