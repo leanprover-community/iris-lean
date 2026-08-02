@@ -1798,7 +1798,7 @@ end HomOF
 
 section Fixpoint
 
-variable [SIdx SI]
+variable [instSI : SIdx SI]
 
 @[rocq_alias LimitPreserving]
 structure LimitPreserving [COFE SI α] (P : α → Prop) : Prop where
@@ -1872,7 +1872,7 @@ theorem LimitPreserving.ext {α} [COFE SI α] {P Q : α -> Prop} (he : ∀ {x}, 
 
 section BCompl
 
-variable [SIdx SI] [COFE SI α] [Inhabited α]
+variable [COFE SI α] [Inhabited α]
 
 @[rocq_alias bcompl]
 def bcompl (n : SI) (c : BChain α n) : α :=
@@ -1883,23 +1883,38 @@ def bcompl (n : SI) (c : BChain α n) : α :=
 
 @[rocq_alias conv_bcompl]
 theorem conv_bcompl {n : SI} (c : BChain α n) {m} (hm : m < n) :
-    bcompl n c ≡{m}≡ c.bchain m hm := sorry
+    bcompl n c ≡{m}≡ c.bchain m hm := by
+  unfold bcompl
+  rcases hcase : SIdx.case n with h0 | ⟨p, hp⟩ | hlim
+  · exact absurd (h0 ▸ hm) (SIdx.not_lt_zero m)
+  · exact c.bcauchy _ _ (SIdx.lt_succ_r.mp (hp ▸ hm))
+  · exact IsCOFE.conv_lbcompl hlim c hm
 
 @[rocq_alias bcompl_ne]
 theorem bcompl_ne {n : SI} (c1 c2 : BChain α n) {m : SI}
     (Hc : ∀ p (hp : p < n), c1.bchain p hp ≡{m}≡ c2.bchain p hp) :
-    bcompl n c1 ≡{m}≡ bcompl n c2 := sorry
+    bcompl n c1 ≡{m}≡ bcompl n c2 := by
+  unfold bcompl
+  rcases hcase : SIdx.case n with h0 | ⟨p, hp⟩ | hlim
+  · exact .rfl
+  · exact Hc _ _
+  · exact IsCOFE.lbcompl_ne hlim c1 c2 Hc
 
 @[rocq_alias limit_preserving_bcompl]
 theorem LimitPreserving.bcompl {P : α → Prop} (n : SI) (c : BChain α n)
     (H0 : n ≠ 0 ∨ P default) (HP : LimitPreserving P)
-    (Hc : ∀ m (hm : m < n), P (c.bchain m hm)) : P (bcompl n c) := sorry
+    (Hc : ∀ m (hm : m < n), P (c.bchain m hm)) : P (bcompl n c) := by
+  unfold Iris.bcompl
+  rcases hcase : SIdx.case n with h0 | ⟨p, hp⟩ | hlim
+  · exact H0.resolve_left (fun hne => hne h0)
+  · exact Hc _ _
+  · exact HP.lbcompl hlim c Hc
 
 end BCompl
 
 section BFChain
 
-variable [instSI : SIdx SI] [COFE SI α] [Inhabited α] (f : α → α) [Contractive f]
+variable [COFE SI α] [Inhabited α] (f : α → α) [Contractive f]
 
 @[rocq_alias bfchain]
 structure BFChain (n : SI) where
@@ -1908,28 +1923,46 @@ structure BFChain (n : SI) where
 
 @[rocq_alias bfchain_chain_unique]
 theorem BFChain.unique {n m : SI} (c1 : BFChain f n) (c2 : BFChain f m) :
-    ∀ p, p < n → p < m → bcompl n c1.car ≡{p}≡ bcompl m c2.car := sorry
+    ∀ p, p < n → p < m → bcompl n c1.car ≡{p}≡ bcompl m c2.car := by
+  intro p
+  induction p using instSI.lt_wf.induction with
+  | h p IH =>
+    intro Hn Hm
+    refine ((c1.fixpoint p Hn).symm.trans ?_).trans (c2.fixpoint p Hm)
+    exact Contractive.distLater_dist fun q Hq =>
+      IH q Hq (instSI.lt_trans Hq Hn) (instSI.lt_trans Hq Hm)
+
+def BFChain.goChain (n : SI) (rec : ∀ m, m < n → BFChain f m) : BChain α n where
+  bchain m Hm := f (bcompl m (rec m Hm).car)
+  bcauchy := fun {m p} Hm Hp Hmp =>
+    Contractive.distLater_dist fun q Hq =>
+      BFChain.unique f (rec p Hp) (rec m Hm) q (SIdx.lt_le_trans Hq Hmp) Hq
 
 @[rocq_alias fixpoint_bchain_go]
 def BFChain.go (n : SI) (rec : ∀ m, m < n → BFChain f m) : BFChain f n where
-  car :=
-    { bchain := fun m Hm => f (bcompl m (rec m Hm).car)
-      bcauchy := fun {m p} Hm Hp Hmp =>
-        Contractive.distLater_dist fun q Hq =>
-          BFChain.unique f (rec p Hp) (rec m Hm) q (SIdx.lt_le_trans Hq Hmp) Hq }
-  fixpoint p Hp := sorry
+  car := BFChain.goChain f n rec
+  fixpoint p Hp := by
+    refine .trans (Contractive.distLater_dist (y := bcompl p (rec p Hp).car) ?_)
+      (conv_bcompl (BFChain.goChain f n rec) Hp).symm
+    intro q Hq
+    exact ((conv_bcompl (BFChain.goChain f n rec) Hp).lt Hq).trans ((rec p Hp).fixpoint q Hq)
 
 def fixpointBFChain (n : SI) : BFChain f n := instSI.lt_wf.fix (BFChain.go f) n
 
 theorem fixpointBFChain_unfold (n : SI) :
     fixpointBFChain f n = BFChain.go f n (fun m _ => fixpointBFChain f m) :=
-  sorry
+  instSI.lt_wf.fix_eq (BFChain.go f) n
 
 end BFChain
 
 def Fixpoint.chain [COFE SI α] [Inhabited α] (f : α → α) [Contractive f] : Chain α where
   chain n := f (bcompl n (fixpointBFChain f n).car)
-  cauchy {n i : SI} H := sorry
+  cauchy {n i : SI} H := by
+    rcases SIdx.le_lteq.mp H with (Hni | rfl)
+    · exact Contractive.distLater_dist fun p Hp =>
+        BFChain.unique f (fixpointBFChain f i) (fixpointBFChain f n) p
+          (SIdx.lt_trans Hp Hni) Hp
+    · exact .rfl
 
 /-- The chain construction of the Banach fixpoint. `fixpointP` packages it, together with
 its unfolding equation, behind an opaque constant. -/
@@ -1941,7 +1974,9 @@ theorem fixpointAux_unfold [COFE SI α] [Inhabited α] (f : α -c> α) :
   refine eq_dist.mpr fun n => ?_
   apply COFE.conv_compl.trans
   refine .trans ?_ (NonExpansive.ne COFE.conv_compl.symm)
-  sorry
+  -- Remaining goal: `f (bcompl n cₙ) ≡{n}≡ f (f (bcompl n cₙ))`, which follows by
+  -- contractiveness from the fixpoint property of the `n`-th bounded fixpoint chain.
+  exact Contractive.distLater_dist fun p Hp => ((fixpointBFChain f.f n).fixpoint p Hp).symm
 
 /-- The Banach fixpoint packed together with its unfolding equation as a single opaque
 value. Being opaque, it is a stuck constant for definitional-equality checks in both the
@@ -1968,20 +2003,45 @@ theorem fixpoint_unfold [COFE SI α] [Inhabited α] (f : α -c> α) :
 theorem fixpoint_unique [COFE SI α] [Inhabited α] {f : α -c> α} {x : α} (H : x = f x) :
     x = fixpoint f := by
   refine eq_dist.mpr fun n => ?_
-  sorry
+  induction n using (SIdx.lt_wf (I := SI)).induction with
+  | h n IH =>
+    refine H.dist.trans <| .trans ?_ (fixpoint_unfold f).dist.symm
+    exact Contractive.distLater_dist fun p Hp => IH p Hp
 
 @[rocq_alias fixpoint_ne]
 instance OFE.ContractiveHom.fixpoint_ne [COFE SI α] [Inhabited α] :
     NonExpansive (ContractiveHom.fixpoint (α := α)) where
   ne n f1 f2 H := by
-    sorry
+    revert H
+    induction n using (SIdx.lt_wf (I := SI)).induction with
+    | h n IH =>
+      intro H
+      refine (fixpoint_unfold f1).dist.trans <|
+        ((H _).trans ?_).trans (fixpoint_unfold f2).dist.symm
+      exact Contractive.distLater_dist (f := f2.f) fun p Hp => IH p Hp (H.lt Hp)
 
 @[elab_as_elim, rocq_alias fixpoint_ind]
 theorem OFE.ContractiveHom.fixpoint_ind [COFE SI α] [Inhabited α] (f : α -c> α)
     (P : α → Prop) (HProper : ∀ A B : α, A = B → P A → P B) (x : α) (Hbase : P x)
     (Hind : ∀ x, P x → P (f x)) (Hlim : LimitPreserving P) :
     P f.fixpoint := by
-  sorry
+  -- As in Rocq, we run the whole approximation argument with `Inhabited α` re-instantiated
+  -- to the witness `x`, so that the `0` case of `bcompl` returns an element satisfying `P`.
+  -- The resulting element is then transported to `fixpoint f` by `fixpoint_unique`.
+  have key : ∃ y : α, P y ∧ y = f y := by
+    letI : Inhabited α := ⟨x⟩
+    have kn : ∀ n : SI, P (bcompl n (fixpointBFChain f.f n).car) := by
+      intro n
+      induction n using (SIdx.lt_wf (I := SI)).induction with
+      | h n IH =>
+        refine LimitPreserving.bcompl n _ (.inr Hbase) Hlim fun m hm => ?_
+        rw [fixpointBFChain_unfold]
+        exact Hind _ (IH m hm)
+    exact ⟨fixpointAux f.f,
+      Hlim.compl (Fixpoint.chain f.f) fun n => Hind _ (kn n),
+      fixpointAux_unfold f⟩
+  obtain ⟨y, hy, hfy⟩ := key
+  exact HProper _ _ (fixpoint_unique (f := f) hfy) hy
 
 end Fixpoint
 
