@@ -37,24 +37,15 @@ theorem specialize_wand_subgoal [BI PROP] {q : Bool} {A2 A3 A4 Q P1 : PROP} P2
     (sep_mono_right ((sep_mono_left h3).trans ?_))
   exact (sep_mono_right inst.into_wand).trans wand_elim_right
 
-theorem specialize_wand_nest [BI PROP] {e e' e'' out out1' Q out2 : PROP}
+theorem specialize_wand_nest [BI PROP] {e e' e'' goal out out1' Q out2 : PROP}
     {p p1 q : Bool} (inst : IntoWand p q out .in Q .out out2)
-    (h1 : e ⊣⊢ e' ∗ □?p1 out1') (h2 : e' ∗ □?p1 out1' ⊢ e'' ∗ □?q Q) :
-    e ∗ □?p out ⊢ e'' ∗ □?(q && p) out2 := calc
-  _ ⊢ (e'' ∗ □?q Q) ∗ □?p out := sep_mono_left <| h1.mp.trans h2
-  _ ⊢ e'' ∗ □?(q && p) out2   := specialize_wand inst
-
-theorem specialize_wand_nest_modal [BI PROP]
-    {orig e e' e'' goal out out1' Q out2 : PROP} {p p1 q : Bool}
-    (inst : IntoWand p q out .in Q .out out2)
-    (h1 : (e ∗ □?p out ⊢ goal) → orig ⊢ goal) (h2 : e ⊣⊢ e' ∗ □?p1 out1')
-    (h3 : (e'' ∗ □?q Q ⊢ □?p out -∗ goal) → e' ∗ □?p1 out1' ⊢ □?p out -∗ goal)
-    (h4 : e'' ∗ □?(q && p) out2 ⊢ goal) : orig ⊢ goal := by
-  apply h1
+    (h1 : e ⊣⊢ e' ∗ □?p1 out1')
+    (h2 : (e'' ∗ □?q Q ⊢ □?p out -∗ goal) → e' ∗ □?p1 out1' ⊢ □?p out -∗ goal)
+    (h3 : e'' ∗ □?(q && p) out2 ⊢ goal) : e ∗ □?p out ⊢ goal := by
   apply wand_elim_left_trans
-  calc
-    _ ⊢ e' ∗ □?p1 out1' := h2.mp
-    _ ⊢ □?p out -∗ goal := h3 <| wand_intro <| (specialize_wand inst).trans h4
+  refine h1.mp.trans ?_
+  refine h2 <| wand_intro ?_
+  exact (specialize_wand inst).trans h3
 
 theorem specialize_wand_autoframe_spatial [BI PROP] {q : Bool} {A2 A3 Q P1 : PROP} P2
     (inst : IntoWand q false Q .out P1 .out P2)
@@ -117,23 +108,21 @@ open Lean Elab Tactic Meta Qq Std
 
 structure SpecializeState {prop : Q(Type u)} {bi : Q(BI $prop)} (orig goal : Q($prop)) where
   {e : Q($prop)} (hyps : Hyps bi e) (p : Q(Bool)) (out : Q($prop))
-  -- A weaker proposition than `pf`, applicable even when the `.modal` kind is involved
-  (pfCont : Q(($e ∗ □?$p $out ⊢ $goal) → $orig ⊢ $goal))
-  -- Holds when the `.modal` kind is not involved, cannot duplicate context if `pf = none`
-  pf : Option Q($orig ⊢ $e ∗ □?$p $out)
+  pf : Q(($e ∗ □?$p $out ⊢ $goal) → $orig ⊢ $goal)
 
-/--
-  Updates a `SpecializeState` instance by one iteration.
-  Used in all cases in `processWand` except those involving the `.modal` kind.
--/
+private def SpecializeState.updateCont {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
+    {orig goal : Q($prop)} (st : @SpecializeState u prop bi orig goal)
+    {e' : Q($prop)} (hyps' : Hyps bi e') (p' : Q(Bool)) (out' : Q($prop))
+    (pfStep : Q(($e' ∗ □?$p' $out' ⊢ $goal) → $(st.e) ∗ □?$(st.p) $(st.out) ⊢ $goal)) :
+    @SpecializeState u prop bi orig goal :=
+  { hyps := hyps', p := p', out := out', pf := q(fun h => $(st.pf) ($pfStep h)) }
+
 private def SpecializeState.update {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     {orig goal : Q($prop)} (st : @SpecializeState u prop bi orig goal)
     {e' : Q($prop)} (hyps' : Hyps bi e') (p' : Q(Bool)) (out' : Q($prop))
     (pfStep : Q($(st.e) ∗ □?$(st.p) $(st.out) ⊢ $e' ∗ □?$p' $out')) :
     @SpecializeState u prop bi orig goal :=
-  { hyps := hyps', p := p', out := out',
-    pfCont := q(fun pf => $(st.pfCont) ($(pfStep).trans pf)),
-    pf := st.pf.map (fun pf => q($(pf).trans $pfStep)) }
+  st.updateCont hyps' p' out' q($(pfStep).trans)
 
 /--
   Returns `IVarId` values of hypotheses to be included in a subgoal and those to be framed.
@@ -185,8 +174,8 @@ private def finishFrameSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   res.finish λ hyps goal => do
     if trivial then
       let some r ← iTrivial hyps goal
-      | throwError "ispecialize: itrivial could not solve\
-          {← ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
+        | throwError "ispecialize: itrivial could not solve\
+            {← ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
       return r
     else addBIGoal hyps goal <| g.getD .anonymous
 
@@ -209,10 +198,10 @@ private def synthIntoWandPersistent {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
   let ⟨out1, out2, instWand⟩ : (out1 : Q($prop)) × (out2 : Q($prop)) ×
     Q(IntoWand $p true $out .out $out1 .out $out2) ← @synthIntoWand u prop bi p out true
   let some intoPers ← ProofModeM.trySynthInstanceQ q(Persistent $out1)
-  | throwError m!"ispecialize: {out1} is not persistent"
+    | throwError m!"ispecialize: {out1} is not persistent"
   let out1' ← mkFreshExprMVarQ prop
   let some instAbsorb ← ProofModeM.trySynthInstanceQ q(IntoAbsorbingly $out1' $out1)
-  | throwError m!"ispecialize: IntoAbsorbingly type class synthesis failed with {out1}"
+    | throwError m!"ispecialize: IntoAbsorbingly type class synthesis failed with {out1}"
   return ⟨out1, out2, out1', instWand, intoPers, instAbsorb⟩
 
 /-- Used by the cases `.autoframe` and `.goal` in `processWand` with the `.modal` kind. -/
@@ -232,7 +221,7 @@ mutual
 private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q($prop)}
     (specState : @SpecializeState u prop bi orig goal) (spat : Syntax × SpecPat) :
     ProofModeM (@SpecializeState u prop bi orig goal) := do
-  let { e, hyps, p, out, pfCont, pf } := specState
+  let { e, hyps, p, out, pf } := specState
   let ⟨ref, spat⟩ := spat
   withRef ref do
   match spat with
@@ -240,35 +229,24 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
   | .ident i spats =>
     let ivar ← hyps.findWithInfo i
     let ⟨_, hyps', _, out1', p1, _, pf'⟩ := hyps.remove false ivar
-    let ⟨_, hyps'', pNest, outNest, pfContNest, pfNest⟩ ←
-      if spats.isEmpty then
-        -- No nested specialisation patterns
-        pure ⟨_, hyps', p1, out1', q(id), some q(.rfl)⟩
-      else
-        -- There are nested specialisation patterns, requires recursive calls
-        iSpecializeCore hyps' p1 out1' q(iprop(□?$p $out -∗ $goal)) spats
+    let ⟨e'', hyps'', pNest, outNest, pfContNest, _⟩ ←
+      iSpecializeCore hyps' p1 out1' q(iprop(□?$p $out -∗ $goal)) spats
     let p2 := if pNest.constName! == ``true then p else q(false)
     let out2 ← mkFreshExprMVarQ prop
     let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $pNest $out .in $outNest .out $out2)
-    | throwError m!"ispecialize: IntoWand type class synthesis failed with {out} and {outNest}"
-    match pfNest with
-    -- Nested specialisation pattern involves the `.modal` kind
-    | none =>
-      let pfCont := q(specialize_wand_nest_modal $inst $pfCont $pf' $pfContNest)
-      return { hyps := hyps'', p := p2, out := out2, pfCont, pf := none }
-    -- Nested specialisation pattern does not involve the `.modal` kind, or no nested pattern
-    | some pfNest =>
-      let pfStep := q(specialize_wand_nest $inst $pf' $pfNest)
-      return specState.update hyps'' p2 out2 pfStep
+      | throwError m!"ispecialize: IntoWand type class synthesis failed with {out} and {outNest}"
+    let pfStep : Q((($e'' ∗ □?($pNest && $p) $out2 ⊢ $goal) → $e ∗ □?$p $out ⊢ $goal)) :=
+      q(specialize_wand_nest $inst $pf' $pfContNest)
+    return specState.updateCont hyps'' p2 out2 pfStep
   -- A pure Lean hypothesis
   | .pure t => do
     let v ← mkFreshLevelMVar
     let α : Q(Sort v) ← mkFreshExprMVarQ q(Sort v)
     let Φ : Q($α → $prop) ← mkFreshExprMVarQ q($α → $prop)
     let some inst ← ProofModeM.trySynthInstanceQ q(IntoForall $out $Φ)
-    | throwError "ispecialize: {out} is not a Lean premise"
+      | throwError "ispecialize: {out} is not a Lean premise"
     let x ← elabTermEnsuringTypeQ t α
-    have out' : Q($prop) := Expr.headBeta q($Φ $x)
+    let out' : Q($prop) := Expr.headBeta q($Φ $x)
     let newMVarIds ← getMVarsNoDelayed x
     for mvar in newMVarIds do addMVarGoal mvar
     let pfStep : Q($e ∗ □?$p $out ⊢ $e ∗ □?$p $Φ $x) :=
@@ -292,12 +270,13 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     return specState.update hyps p out2 pfStep
   -- Subgoal with `[> H₁ … Hₙ ]` or `[>- H₁ … Hₙ ]`
   | .goal { kind := .modal, negate, trivial, frame := f, hyps := hs, .. } g =>
-    let ⟨_, _, hypsl', hypsr', pf', frameIVars⟩ ← splitFrameHyps hyps hs f negate
-    let ⟨out1, out2, out1', instWand, instModal⟩ ← synthIntoWandModal p out goal
+    let ⟨el, _, hypsl', hypsr', pf', frameIVars⟩ ← splitFrameHyps hyps hs f negate
+    let ⟨_, out2, out1', instWand, instModal⟩ ← synthIntoWandModal p out goal
     let pf'' ← finishFrameSubgoal hypsr' out1' trivial g frameIVars
-    let h := q($(pf').mp.trans (sep_mono_right $pf''))
-    let pfCont := q(fun pf => $pfCont (specialize_modal $h pf $instWand $instModal))
-    return { hyps := hypsl', p := q(false), out := out2, pfCont, pf := none }
+    let h : Q($e ⊢ $el ∗ $out1') := q($(pf').mp.trans (sep_mono_right $pf''))
+    let pfStep : Q(($el ∗ □?false $out2 ⊢ $goal) → $e ∗ □?$p $out ⊢ $goal) :=
+      q(fun k => specialize_modal $h k $instWand $instModal)
+    return specState.updateCont hypsl' q(false) out2 pfStep
   -- Auto-framing with `[$]`
   | .autoframe .spatial => do
     let ⟨out1, out2, inst⟩ ← synthIntoWand p out false
@@ -313,11 +292,12 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     return specState.update hyps p out2 pfStep
   -- Auto-framing with `[>$]`
   | .autoframe .modal =>
-    let ⟨out1, out2, out1', instWand, instModal⟩ ← synthIntoWandModal p out goal
+    let ⟨_, out2, out1', instWand, instModal⟩ ← synthIntoWandModal p out goal
     let res ← iFrame hyps out1' (← SelPat.resolve hyps [.spatial, .intuitionistic])
-    let ⟨_, hyps', pf'⟩ ← res.finishClose
-    let pfCont := q(fun pf => $pfCont (specialize_modal $pf' pf $instWand $instModal))
-    return { hyps := hyps', p := q(false), out := out2, pfCont, pf := none }
+    let ⟨e', hyps', pf'⟩ ← res.finishClose
+    let pfStep : Q(($e' ∗ □?false $out2 ⊢ $goal) → $e ∗ □?$p $out ⊢ $goal) :=
+      q(fun k => specialize_modal $pf' k $instWand $instModal)
+    return specState.updateCont hyps' q(false) out2 pfStep
 
 /-- Specialize a proposition `A` by applying a sequence of specialization patterns.
 
@@ -341,28 +321,39 @@ def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) ×
       Q(($e' ∗ □?$pb $B ⊢ $goal) → $e ∗ □?$pa $A ⊢ $goal) ×
       Option Q($e ∗ □?$pa $A ⊢ $e' ∗ □?$pb $B)) := do
-  let state : SpecializeState _ goal :=
-    { hyps, out := A, p := pa, pfCont := q(id), pf := some q(.rfl) }
-  let ⟨hyps', pb, B, pfCont, pf⟩ ← spats.foldlM processWand state
-  match try_dup_context, pf with
-  | true, some pf =>
-    -- Duplicate context if `B` is persistent and `A` is persistent/affine
-    let B' : Q($prop) ← mkFreshExprMVarQ q($prop)
-    let af ← do match matchBool pa with
-    | .inl _ => pure <| some q(Or.inl (.refl $pa))
-    | .inr _ => do
-      let .some h ← trySynthInstanceQ q(Affine $A) | pure none
-      pure <| some q(Or.inr (a := $pa = true) $h)
-    let inst ← ProofModeM.trySynthInstanceQ q(IntoPersistently $pb $B $B')
-    match inst, af with
-    -- Context duplication does not succeed
-    | none, _ | _, none => return ⟨_, hyps', pb, B, q($(pf).trans), some q($pf)⟩
-    -- Context duplication succeeds
-    | some inst, some af =>
-      let pf := q(specialize_dup_context $inst $pf $af)
-      return ⟨_, hyps, q(true), B', q($(pf).trans), some q($pf)⟩
-  -- No request to duplicate the context, or the `.modal` kind is involved
-  | _, _ => return ⟨_, hyps', pb, B, pfCont, pf⟩
+  -- Return the result directly when there are no nested specialisation patterns
+  if spats.isEmpty then
+    return ⟨_, hyps, pa, A, q(id), some q(.rfl)⟩
+
+  -- Modality-related specialisation patterns involved
+  if spats.any (·.snd.anyModal) then
+    let st ← spats.foldlM processWand { hyps, p := pa, out := A, pf := q(id) }
+    return ⟨_, st.hyps, st.p, st.out, st.pf, none⟩
+
+  -- No modality-related specialisation pattern involved: create a metavariable for the goal
+  let goal : Q($prop) ← mkFreshExprMVarQ prop
+  let st ← spats.foldlM processWand
+    { hyps, p := pa, out := A, pf := q(id (α := $e ∗ □?$pa $A ⊢ $goal)) }
+  unless ← isDefEq goal q(iprop($(st.e) ∗ □?$(st.p) $(st.out))) do
+    throwError "ispecialize: internal error, goal does not match the proof"
+  let stPf : Q(($(st.e) ∗ □?$(st.p) $(st.out) ⊢ $(st.e) ∗ □?$(st.p) $(st.out)) →
+    $e ∗ □?$pa $A ⊢ $(st.e) ∗ □?$(st.p) $(st.out)) := st.pf
+  let pf : Q($e ∗ □?$pa $A ⊢ $(st.e) ∗ □?$(st.p) $(st.out)) := q($stPf .rfl)
+
+  -- Duplicate the context if requested and possible
+  if try_dup_context then
+    let af : Option Q($pa = true ∨ Affine $A) ← match matchBool pa with
+      | .inl _ => pure <| some q(Or.inl (.refl $pa))
+      | .inr _ => do
+        let .some h ← trySynthInstanceQ q(Affine $A) | pure none
+        pure <| some q(Or.inr (a := $pa = true) $h)
+    let some af := af | return ⟨_, st.hyps, st.p, st.out, q($(pf).trans), some pf⟩
+    let B' : Q($prop) ← mkFreshExprMVarQ prop
+    let some inst ← ProofModeM.trySynthInstanceQ q(IntoPersistently $(st.p) $(st.out) $B')
+      | return ⟨_, st.hyps, st.p, st.out, q($(pf).trans), some pf⟩
+    let pfDup := q(specialize_dup_context $inst $pf $af)
+    return ⟨_, hyps, q(true), B', q($(pfDup).trans), some pfDup⟩
+  return ⟨_, st.hyps, st.p, st.out, q($(pf).trans), some pf⟩
 
 end
 

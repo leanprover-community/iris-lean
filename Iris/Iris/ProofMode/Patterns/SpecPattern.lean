@@ -105,6 +105,10 @@ def SpecPat.isModal : SpecPat → Bool
   | .autoframe g => g.isModal
   | _ => false
 
+partial def SpecPat.anyModal : SpecPat → Bool
+  | .ident _ pats => pats.any (SpecPat.anyModal ·.2)
+  | p => p.isModal
+
 #rocq_ignore spec_pat.stack_item "Not necessary in Lean"
 #rocq_ignore spec_pat.parse_go "Not necessary in Lean"
 #rocq_ignore spec_pat.close "Not necessary in Lean"
