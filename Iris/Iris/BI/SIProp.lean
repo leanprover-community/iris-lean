@@ -131,9 +131,9 @@ instance : IsCOFE Nat SiProp where
     closed {n₁ _} h hle := (c.cauchy hle .refl).mp (c n₁ |>.closed h hle)
   }
   conv_compl {_ c} _ hle := c.cauchy hle .refl |>.symm
-  lbcompl := sorry
-  conv_lbcompl := sorry
-  lbcompl_ne := sorry
+  lbcompl := (·.elim)
+  conv_lbcompl := (·.elim)
+  lbcompl_ne := (·.elim)
 
 #rocq_ignore siProp_compl "Included in IsCOFE instance."
 

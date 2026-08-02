@@ -69,9 +69,9 @@ instance Heap.instCOFE [LawfulPartialMap M K] [COFE Nat V] : COFE Nat (M V) wher
     rcases H : get? (c.chain 0) k
     · simp [← PartialMap.chain_get, chain_none_const (c := PartialMap.chain k c) (n := 0) (H▸rfl)]
     · exact IsCOFE.conv_compl
-  lbcompl := sorry
-  conv_lbcompl := sorry
-  lbcompl_ne := sorry
+  lbcompl := (·.elim)
+  conv_lbcompl := (·.elim)
+  lbcompl_ne := (·.elim)
 
 instance instDiscreteHeap [LawfulPartialMap M K] [OFE Nat V] [Discrete V] : Discrete (M V) where
   discrete_0 h := OFE.eq_dist.mpr <| by

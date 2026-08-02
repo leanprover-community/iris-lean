@@ -48,6 +48,11 @@ instance natSIdxFinite : SIdxFinite Nat where
     | zero => left; rfl
     | succ n => right; exists n
 
+def SIdx.Limit.elim {I : Type u} [SIdx I] [SIdxFinite I] {n : I} {C : Sort v}
+    (h : SIdx.Limit n) : C := by
+  exfalso
+  exact SIdx.limit_finite n h
+
 namespace OFE
 
 theorem Dist.leNat [OFE Nat α] {m n} {x y : α} (h : x ≡{n}≡ y) (h' : m ≤ n) : x ≡{m}≡ y :=

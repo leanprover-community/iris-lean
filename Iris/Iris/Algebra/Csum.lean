@@ -153,9 +153,9 @@ instance [OFE Nat α] [OFE Nat β] [IsCOFE Nat α] [IsCOFE Nat β] : IsCOFE Nat 
       show IsCOFE.compl (chainR c b) ≡{n}≡ b'
       refine OFE.Dist.trans COFE.conv_compl ?_
       simp [chainR, en]
-  lbcompl := sorry
-  conv_lbcompl := sorry
-  lbcompl_ne := sorry
+  lbcompl := (·.elim)
+  conv_lbcompl := (·.elim)
+  lbcompl_ne := (·.elim)
 
 #rocq_ignore csum_compl "Included in IsCOFE instance"
 

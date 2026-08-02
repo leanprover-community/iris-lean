@@ -159,9 +159,9 @@ instance : IsCOFE Nat (MonPred I PROP) where
   conv_compl {n c} :=
     IsCOFE.conv_compl (n := n)
       (c := c.map ((⟨Subtype.val, inferInstance⟩ : _ -n> (I.car → PROP)).comp MonPred.toSig))
-  lbcompl := sorry
-  conv_lbcompl := sorry
-  lbcompl_ne := sorry
+  lbcompl := (·.elim)
+  conv_lbcompl := (·.elim)
+  lbcompl_ne := (·.elim)
 
 end OFE
 

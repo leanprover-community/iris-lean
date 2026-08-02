@@ -106,9 +106,9 @@ instance : IsCOFE Nat (UPred M) where
     refine .trans ?_ (c.cauchy Hin _ _ .refl Hv).symm
     refine ⟨fun H => H _ .refl, fun H n' Hn' => ?_⟩
     exact (c.cauchy Hn' _ _ .refl _).mp (mono _ H .rfl Hn')
-  lbcompl := sorry
-  conv_lbcompl := sorry
-  lbcompl_ne := sorry
+  lbcompl := (·.elim)
+  conv_lbcompl := (·.elim)
+  lbcompl_ne := (·.elim)
 
 #rocq_ignore uPred_compl "Inlined in the `IsCOFE` construction"
 

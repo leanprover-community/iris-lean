@@ -119,9 +119,9 @@ instance [OFE Nat α] [IsCOFE Nat α] : IsCOFE Nat (Excl α) where
     obtain _|x' := c.chain 0 <;> rcases e : c.chain n with _|y' <;> simp [Dist]
     refine fun _ => .trans IsCOFE.conv_compl ?_
     simp [exclChain, e]
-  lbcompl := sorry
-  conv_lbcompl := sorry
-  lbcompl_ne := sorry
+  lbcompl := (·.elim)
+  conv_lbcompl := (·.elim)
+  lbcompl_ne := (·.elim)
 
 /-! ## CMRA -/
 @[simp] def Valid : Excl α → Prop
