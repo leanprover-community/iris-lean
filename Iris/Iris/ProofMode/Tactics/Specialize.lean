@@ -218,19 +218,19 @@ private def synthIntoWandModal {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
 
 mutual
 
-private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q($prop)}
+partial def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q($prop)}
     (specState : @SpecializeState u prop bi orig goal) (spat : Syntax × SpecPat) :
     ProofModeM (@SpecializeState u prop bi orig goal) := do
-  let { e, hyps, p, out, pf } := specState
+  let { e, hyps, p, out, .. } := specState
   let ⟨ref, spat⟩ := spat
   withRef ref do
   match spat with
   -- A hypothesis name, possibly with nested specialisation patterns
-  | .ident i spats =>
-    let ivar ← hyps.findWithInfo i
+  | .ident pmt =>
+    let ivar ← hyps.findWithInfo ⟨pmt.term⟩
     let ⟨_, hyps', _, out1', p1, _, pf'⟩ := hyps.remove false ivar
     let ⟨e'', hyps'', pNest, outNest, pfContNest, _⟩ ←
-      iSpecializeCore hyps' p1 out1' q(iprop(□?$p $out -∗ $goal)) spats
+      iSpecializeCore hyps' p1 out1' q(iprop(□?$p $out -∗ $goal)) pmt.spats
     let p2 := if pNest.constName! == ``true then p else q(false)
     let out2 ← mkFreshExprMVarQ prop
     let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $pNest $out .in $outNest .out $out2)
@@ -315,7 +315,7 @@ A tuple containing:
 - `B`: Resulting proposition after applying all patterns
 - `pf`: Proof of `hyps ∗ □?pa A ⊢ hyps' ∗ □?pb B`, =`hyps ∗ □?pa A ⊢ hyps ∗ □ B` if context duplication succeeds
 -/
-def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+partial def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (pa : Q(Bool)) (A : Q($prop)) (goal : Q($prop))
     (spats : List (Syntax × SpecPat)) (try_dup_context : Bool := false) :
     ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) ×

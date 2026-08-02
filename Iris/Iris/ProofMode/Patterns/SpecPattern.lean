@@ -86,13 +86,23 @@ structure SpecGoal where
   hyps : List Ident
 deriving Repr, Inhabited
 
+mutual
+
 @[rocq_alias spec_pat]
 inductive SpecPat
-  | ident (name : Ident) (recursiveSpecPats : List <| Syntax × SpecPat)
+  | ident (pmt : PMTerm)
   | pure (t : Term)
   | goal (goal : SpecGoal) (goalName : Name)
   | autoframe (goal : SpecGoalKind)
   deriving Repr, Inhabited
+
+@[rocq_alias iTrm]
+structure PMTerm where
+  term : Term
+  spats : List (Syntax × SpecPat)
+  deriving Repr, Inhabited
+
+end
 
 @[rocq_alias goal_kind_modal]
 def SpecGoalKind.isModal : SpecGoalKind → Bool
@@ -106,7 +116,7 @@ def SpecPat.isModal : SpecPat → Bool
   | _ => false
 
 partial def SpecPat.anyModal : SpecPat → Bool
-  | .ident _ pats => pats.any (SpecPat.anyModal ·.2)
+  | .ident pmt => pmt.spats.any (SpecPat.anyModal ·.2)
   | p => p.isModal
 
 #rocq_ignore spec_pat.stack_item "Not necessary in Lean"
@@ -122,12 +132,6 @@ def FrameIdent.parse : TSyntax `frameIdent → (Ident ⊕ Ident)
       .inr ⟨e.raw.getAntiquotTerm⟩
     else .inl default -- should not happen
 
-@[rocq_alias iTrm]
-structure PMTerm where
-  term : Term
-  spats : List (Syntax × SpecPat)
-  deriving Repr, Inhabited
-
 def PMTerm.is_nontrivial (pmt : PMTerm) : Bool := !pmt.spats.isEmpty
 
 mutual
@@ -139,7 +143,7 @@ partial def SpecPat.parse (term : Syntax) : MacroM (Syntax × SpecPat) := do
   -- Recursive parsing for nested specialisation patterns
   | `(specPat| ( $pmt:pmTerm )) =>
     let pmt ← PMTerm.parse pmt
-    return ⟨term, .ident ⟨pmt.term⟩ pmt.spats⟩
+    return ⟨term, .ident pmt⟩
   -- No nested specialisation pattern involved
   | _ =>
     match go ⟨stx⟩ with
@@ -147,7 +151,7 @@ partial def SpecPat.parse (term : Syntax) : MacroM (Syntax × SpecPat) := do
     | none => Macro.throwUnsupported
 where
   go : TSyntax `specPat → Option SpecPat
-  | `(specPat| $name:ident) => some <| .ident name []
+  | `(specPat| $name:ident) => some <| .ident ⟨name, []⟩
   | `(specPat| % $term:term) => some <| .pure term
   | `(specPat| [$[-%$negTk]? $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
     let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
