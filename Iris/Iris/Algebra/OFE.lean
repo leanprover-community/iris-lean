@@ -1807,46 +1807,68 @@ structure LimitPreserving [COFE SI α] (P : α → Prop) : Prop where
     (∀ m (hm : m < n), P (c.bchain m hm)) → P (IsCOFE.lbcompl hn c)
 
 @[rocq_alias limit_preserving_const]
-theorem LimitPreserving.const [COFE SI α] {P : Prop} : LimitPreserving fun (_ : α) => P := by
-  sorry -- simp [LimitPreserving]
+theorem LimitPreserving.const [COFE SI α] {P : Prop} : LimitPreserving fun (_ : α) => P where
+  compl _ H := H 0
+  lbcompl hn _ H := H 0 hn.limit_lt_0
 
 @[rocq_alias limit_preserving_discrete]
-theorem LimitPreserving.discrete [COFE SI α] {P : α → Prop} :
-    (∀ {x y : α}, x ≡{0}≡ y → (P x → P y)) → LimitPreserving P :=
-  sorry -- fun Hdisc _ H => Hdisc COFE.conv_compl.symm (H _)
+theorem LimitPreserving.discrete [COFE SI α] {P : α → Prop}
+    (hdiscrete : ∀ {x y : α}, x ≡{0}≡ y → (P x → P y)) : LimitPreserving P where
+  compl _ H := hdiscrete (COFE.conv_compl (n := 0)).symm (H 0)
+  lbcompl hn c H := hdiscrete (IsCOFE.conv_lbcompl hn c hn.limit_lt_0).symm (H 0 hn.limit_lt_0)
 
 @[rocq_alias limit_preserving_and]
 theorem LimitPreserving.and [COFE SI α] {P Q : α → Prop} (HP : LimitPreserving P)
-    (HQ : LimitPreserving Q) : LimitPreserving fun a => P a ∧ Q a :=
-  sorry -- fun _ HPQ => ⟨HP _ (fun n => (HPQ n).left), HQ _ (fun n => (HPQ n).right)⟩
+    (HQ : LimitPreserving Q) : LimitPreserving fun a => P a ∧ Q a where
+  compl c H := by
+    constructor
+    · exact HP.compl c fun n => (H n).left
+    · exact HQ.compl c fun n => (H n).right
+  lbcompl hn c H := by
+    constructor
+    · exact HP.lbcompl hn c fun m hm => (H m hm).left
+    · exact HQ.lbcompl hn c fun m hm => (H m hm).right
 
 @[rocq_alias limit_preserving_forall]
 theorem LimitPreserving.forall [COFE SI α] (P : β → α → Prop) (Hlim : ∀ y, LimitPreserving (P y)) :
-    LimitPreserving (∀ y, P y ·) :=
-  sorry -- fun c H y => Hlim y c (H · y)
+    LimitPreserving (∀ y, P y ·) where
+  compl c H y := (Hlim y).compl c fun n => H n y
+  lbcompl hn c H y := (Hlim y).lbcompl hn c fun m hm => H m hm y
 
 @[rocq_alias limit_preserving_impl]
 theorem LimitPreserving.impl [COFE SI α] (P1 P2 : α → Prop)
     (HP1 : ∀ {x y : α}, x ≡{0}≡ y → P1 x → P1 y)
     (Hcompl : LimitPreserving P2) :
-    LimitPreserving (fun x => P1 x → P2 x) :=
-  sorry -- fun _ Hc HP1c => Hcompl _ <| fun _ => Hc _ (HP1 (COFE.conv_compl' SIdx.le_0_l) HP1c)
+    LimitPreserving (fun x => P1 x → P2 x) where
+  compl c Hc HP1c :=
+    Hcompl.compl c fun n => Hc n (HP1 (COFE.conv_compl' SIdx.le_0_l) HP1c)
+  lbcompl hn c Hc HP1c :=
+    Hcompl.lbcompl hn c fun m hm =>
+      Hc m hm (HP1 ((IsCOFE.conv_lbcompl hn c hm).le SIdx.le_0_l) HP1c)
+
+@[rocq_alias limit_preserving_sidx_finite]
+theorem LimitPreserving.of_sidx_finite [SIdxFinite SI] [COFE SI α] {P : α → Prop} :
+    (∀ c : Chain α, (∀ n, P (c n)) → P (COFE.compl c)) ↔ LimitPreserving P := by
+  constructor <;> intro h
+  · exact { compl := h, lbcompl hn _ _ := absurd hn (SIdx.limit_finite _) }
+  · exact h.compl
 
 @[rocq_alias limit_preserving_equiv]
-theorem LimitPreserving.equiv [COFE SI α] [COFE SI β] (f g : α -n> β) :
+theorem LimitPreserving.equiv [SIdxFinite SI] [COFE SI α] [COFE SI β] (f g : α -n> β) :
     LimitPreserving (fun x => f x = g x) := by
-  sorry
-  -- intro c Hfg
-  -- refine eq_dist.mpr fun n => ?_
-  -- apply (COFE.compl_map _ _).symm.dist.trans
-  -- apply (COFE.conv_compl' SIdx.le_refl).trans
-  -- apply (Hfg _).dist.trans
-  -- exact g.ne.ne COFE.conv_compl.symm
+  apply of_sidx_finite.mp
+  intro c Hfg
+  refine eq_dist.mpr fun n => ?_
+  apply (COFE.compl_map _ _).symm.dist.trans
+  apply (COFE.conv_compl' SIdx.le_refl).trans
+  apply (Hfg _).dist.trans
+  exact g.ne.ne COFE.conv_compl.symm
 
 @[rocq_alias limit_preserving_ext]
 theorem LimitPreserving.ext {α} [COFE SI α] {P Q : α -> Prop} (he : ∀ {x}, (P x ↔ Q x))
-    (hp : LimitPreserving P) : LimitPreserving Q :=
-  sorry -- fun _ => (he.1 <| hp _ <| fun _ => he.2 <| · _)
+    (hp : LimitPreserving P) : LimitPreserving Q where
+  compl c H := he.mp (hp.compl c fun n => he.mpr (H n))
+  lbcompl hn c H := he.mp (hp.lbcompl hn c fun m hm => he.mpr (H m hm))
 
 section BCompl
 
