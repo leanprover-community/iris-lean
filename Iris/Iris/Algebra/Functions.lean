@@ -49,7 +49,7 @@ end insert
 
 section OFE
 
-variable {ι : Type _} [DecidableEq ι] {β : ι → Type _} [∀ i, OFE (β i)]
+variable {ι : Type _} [DecidableEq ι] {β : ι → Type _} [∀ i, OFE Nat (β i)]
 
 @[rocq_alias discrete_funO_ofe_discrete]
 instance instDiscreteFunOfeDiscrete [∀ i, OFE.Discrete (β i)] :
