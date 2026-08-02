@@ -419,7 +419,8 @@ class inductive AndIntoSep {PROP} [BI PROP] : PROP → outParam PROP → PROP �
   | affine (P Q Q' : PROP) [Affine P] [h : FromAffinely Q' Q] : AndIntoSep P P Q Q'
   | affinely (P Q : PROP) : AndIntoSep P iprop(<affine> P) Q Q
 
-attribute [instance] AndIntoSep.affine AndIntoSep.affinely
+attribute [instance (default + 10), ipm_backtrack] AndIntoSep.affine
+attribute [instance, ipm_backtrack] AndIntoSep.affinely
 
 -- IntoSep
 @[rocq_alias into_sep_sep]

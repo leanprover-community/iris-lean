@@ -1856,6 +1856,24 @@ example [BI PROP] (Q : PROP) : Q ∧ <pers> P ⊢ Q := by
   icases HQP with ⟨HQ, _HP⟩
   iexact HQ
 
+/- Tests `icases` on conjunction with persistent right in an affine logic -/
+/--
+ error: unsolved goals
+PROP : Type u_1
+inst✝¹ : BI PROP
+inst✝ : BIAffine PROP
+P Q : PROP
+⊢ 
+  ∗x✝ : P
+  ∗HQ : <pers> Q
+  ⊢ Q
+-/
+#guard_msgs in
+example [BI PROP] [BIAffine PROP] (P Q : PROP) :
+  P ∧ <pers> Q ⊢ Q := by
+  iintro H
+  icases H with ⟨_, HQ⟩
+
 /-- Tests `icases` with nested separating conjunction -/
 example [BI PROP] [BIAffine PROP] (Q : PROP) : P1 ∗ P2 ∗ Q ⊢ Q := by
   iintro HPQ

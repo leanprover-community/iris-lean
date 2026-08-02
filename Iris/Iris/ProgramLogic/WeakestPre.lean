@@ -44,7 +44,8 @@ export StateInterp (stateInterp)
 @[rocq_alias irisGS_gen]
 class IrisGS_gen (hlc : outParam HasLC) (Expr : Type _) {Val : Type _} {State : Type _}
     {Obs : Type _} [Λ : Language Expr State Obs Val] (GF : BundledGFunctors) extends
-    StateInterp State Obs GF, InvGS_gen hlc GF where
+    StateInterp State Obs GF where
+  [invGS : InvGS_gen hlc GF]
   /-- Number of later credits obtained from taking one step in the
   operational semantics of our language. -/
   numLatersPerStep : Nat → Nat
@@ -56,6 +57,8 @@ class IrisGS_gen (hlc : outParam HasLC) (Expr : Type _) {Val : Type _} {State : 
   considered a lower bound. -/
   stateInterp_mono σ ns obs nt :
     iprop(stateInterp σ ns obs nt ⊢ |={∅}=> stateInterp σ (ns + 1) obs nt)
+
+attribute [implicit_reducible, instance] IrisGS_gen.invGS
 
 variable {hlc : outParam HasLC} {Expr State Obs Val}
 variable [Λ : Language Expr State Obs Val]

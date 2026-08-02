@@ -6,7 +6,6 @@ Authors: Lars König
 module
 
 public meta import Lean.Elab.Tactic
-public meta import Lean.Meta.Tactic.Util
 
 public meta section
 
