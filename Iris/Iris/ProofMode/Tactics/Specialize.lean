@@ -282,7 +282,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let pfStep := q(specialize_wand_subgoal $out2 $inst $pf' $pf'')
     return specState.update hypsl q(false) out2 pfStep
   -- Subgoal with `[# H₁ … Hₙ ]` or `[#- H₁ … Hₙ ]`
-  | .goal { kind := .persistent, trivial, frame := f, hyps := hs, .. } g => do
+  | .goal { kind := .intuitionistic, trivial, frame := f, hyps := hs, .. } g => do
     if !hs.isEmpty then
       throwError "ispecialize: the subgoal for the persistent premise should not consume hypotheses"
     let ⟨out1, out2, out1', instWand, instPers, instAbsorb⟩ ← synthIntoWandPersistent p out
@@ -306,7 +306,7 @@ private def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let pfStep := q(specialize_wand_autoframe_spatial $out2 $inst $pf')
     return specState.update hyps' q(false) out2 pfStep
   -- Auto-framing with `[#$]`
-  | .autoframe .persistent =>
+  | .autoframe .intuitionistic =>
     let ⟨out1, out2, out1', instWand, instPers, instAbsorb⟩ ← synthIntoWandPersistent p out
     let pf' ← finishFrameSubgoal hyps out1' true none none
     let pfStep := q(specialize_wand_persistent $out1 $out2 $instWand $instPers $instAbsorb $pf')

@@ -74,7 +74,7 @@ syntax term (colGt " $$ " (colGt ppSpace specPat)+)? : pmTerm
 inductive SpecGoalKind
   | spatial
   | modal
-  | persistent
+  | intuitionistic
   deriving Repr, Inhabited, BEq
 
 @[rocq_alias spec_goal]
@@ -147,15 +147,27 @@ where
   | `(specPat| % $term:term) => some <| .pure term
   | `(specPat| [$[-%$negTk]? $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
     let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .spatial, negate := negTk.isSome, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
+    some <| .goal
+      { kind := .spatial,
+        negate := negTk.isSome,
+        trivial := trivTk.isSome,
+        frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
   | `(specPat| [> $[-%$negTk]? $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
     let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .modal, negate := negTk.isSome, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
+    some <| .goal
+      { kind := .modal,
+        negate := negTk.isSome,
+        trivial := trivTk.isSome,
+        frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
   | `(specPat| [# $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
     let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .persistent, negate := false, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
+    some <| .goal
+      { kind := .intuitionistic,
+        negate := false,
+        trivial := trivTk.isSome,
+        frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
   | `(specPat| [$]) => some <| .autoframe .spatial
-  | `(specPat| [# $]) => some <| .autoframe .persistent
+  | `(specPat| [# $]) => some <| .autoframe .intuitionistic
   | `(specPat| [> $]) => some <| .autoframe .modal
   | _ => none
 
