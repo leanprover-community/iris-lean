@@ -89,17 +89,22 @@ deriving Repr, Inhabited
 mutual
 
 @[rocq_alias spec_pat]
-inductive SpecPat
+inductive SpecPatCase
   | ident (pmt : PMTerm)
   | pure (t : Term)
   | goal (goal : SpecGoal) (goalName : Name)
   | autoframe (goal : SpecGoalKind)
   deriving Repr, Inhabited
 
+structure SpecPat where
+  ref : Syntax
+  spat : SpecPatCase
+  deriving Repr, Inhabited
+
 @[rocq_alias iTrm]
 structure PMTerm where
   term : Term
-  spats : List (Syntax × SpecPat)
+  spats : List SpecPat
   deriving Repr, Inhabited
 
 end
@@ -110,14 +115,16 @@ def SpecGoalKind.isModal : SpecGoalKind → Bool
   | _ => false
 
 @[rocq_alias spec_pat_modal]
-def SpecPat.isModal : SpecPat → Bool
+def SpecPat.isModal (spat : SpecPat) : Bool :=
+  match spat.spat with
   | .goal g _ => g.kind.isModal
   | .autoframe g => g.isModal
   | _ => false
 
-partial def SpecPat.anyModal : SpecPat → Bool
-  | .ident pmt => pmt.spats.any (SpecPat.anyModal ·.2)
-  | p => p.isModal
+partial def SpecPat.anyModal (spat : SpecPat) : Bool :=
+  match spat.spat with
+  | .ident pmt =>  pmt.spats.any SpecPat.anyModal
+  | _ => spat.isModal
 
 #rocq_ignore spec_pat.stack_item "Not necessary in Lean"
 #rocq_ignore spec_pat.parse_go "Not necessary in Lean"
@@ -134,23 +141,7 @@ def FrameIdent.parse : TSyntax `frameIdent → (Ident ⊕ Ident)
 
 def PMTerm.is_nontrivial (pmt : PMTerm) : Bool := !pmt.spats.isEmpty
 
-mutual
-
-@[rocq_alias spec_pat.parse]
-partial def SpecPat.parse (term : Syntax) : MacroM (Syntax × SpecPat) := do
-  let stx ← expandMacros term
-  match stx with
-  -- Recursive parsing for nested specialisation patterns
-  | `(specPat| ( $pmt:pmTerm )) =>
-    let pmt ← PMTerm.parse pmt
-    return ⟨term, .ident pmt⟩
-  -- No nested specialisation pattern involved
-  | _ =>
-    match go ⟨stx⟩ with
-    | some pat => return ⟨term, pat⟩
-    | none => Macro.throwUnsupported
-where
-  go : TSyntax `specPat → Option SpecPat
+def SpecPatCase.parse : TSyntax `specPat → Option SpecPatCase
   | `(specPat| $name:ident) => some <| .ident ⟨name, []⟩
   | `(specPat| % $term:term) => some <| .pure term
   | `(specPat| [$[-%$negTk]? $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
@@ -179,13 +170,27 @@ where
   | `(specPat| [> $]) => some <| .autoframe .modal
   | _ => none
 
+mutual
+
+@[rocq_alias spec_pat.parse]
+partial def SpecPat.parse (term : Syntax) : MacroM SpecPat := do
+  let stx ← expandMacros term
+  match stx with
+  -- Recursive parsing for nested specialisation patterns
+  | `(specPat| ( $pmt:pmTerm )) => return ⟨term, .ident <| ← PMTerm.parse pmt⟩
+  -- No nested specialisation pattern involved
+  | _ =>
+    match SpecPatCase.parse ⟨stx⟩ with
+    | some pat => return ⟨term, pat⟩
+    | none => Macro.throwUnsupported
+
 partial def PMTerm.parse (term : Syntax) : MacroM PMTerm := do
   match ← expandMacros term with
   | `(pmTerm| $trm:term) => return ⟨trm, []⟩
   | `(pmTerm| $trm:term $$ $[$spats:specPat]*) => return ⟨trm, ← parseSpats spats⟩
   | _ => Macro.throwUnsupported
 where
-  parseSpats (spats : TSyntaxArray `specPat) : MacroM (List (Syntax × SpecPat)) :=
-      return (← spats.toList.mapM fun pat => SpecPat.parse pat.raw)
+  parseSpats (spats : TSyntaxArray `specPat) : MacroM (List SpecPat) :=
+    return ← spats.toList.mapM (SpecPat.parse ·.raw)
 
 end

@@ -219,7 +219,7 @@ private def synthIntoWandModal {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
 mutual
 
 partial def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q($prop)}
-    (specState : @SpecializeState u prop bi orig goal) (spat : Syntax × SpecPat) :
+    (specState : @SpecializeState u prop bi orig goal) (spat : SpecPat) :
     ProofModeM (@SpecializeState u prop bi orig goal) := do
   let { e, hyps, p, out, .. } := specState
   let ⟨ref, spat⟩ := spat
@@ -317,7 +317,7 @@ A tuple containing:
 -/
 partial def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (pa : Q(Bool)) (A : Q($prop)) (goal : Q($prop))
-    (spats : List (Syntax × SpecPat)) (try_dup_context : Bool := false) :
+    (spats : List SpecPat) (try_dup_context : Bool := false) :
     ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) ×
       Q(($e' ∗ □?$pb $B ⊢ $goal) → $e ∗ □?$pa $A ⊢ $goal) ×
       Option Q($e ∗ □?$pa $A ⊢ $e' ∗ □?$pb $B)) := do
@@ -326,7 +326,7 @@ partial def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     return ⟨_, hyps, pa, A, q(id), some q(.rfl)⟩
 
   -- Modality-related specialisation patterns involved
-  if spats.any (·.snd.anyModal) then
+  if spats.any (·.anyModal) then
     let st ← spats.foldlM processWand { hyps, p := pa, out := A, pf := q(id) }
     return ⟨_, st.hyps, st.p, st.out, st.pf, none⟩
 

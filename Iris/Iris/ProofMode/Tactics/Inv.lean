@@ -65,7 +65,7 @@ private def reduceWandM (e : Expr) : ProofModeM Expr := do
   Lean.Meta.dsimp e simpContext <&> Prod.fst
 
 private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
-    (hyps : Hyps bi e) (goal : Q($prop)) (ivar : IVarId) (specPat : Option <| Syntax × SpecPat)
+    (hyps : Hyps bi e) (goal : Q($prop)) (ivar : IVarId) (specPat : Option SpecPat)
     (casesPat : iCasesPat) (closePat : Option iCasesPat) :
     ProofModeM Q($e ⊢ $goal) := do
   -- Find the hypothesis from the context
@@ -86,8 +86,8 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
     match specPat with
     | none =>
       iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) goal [⟨← getRef, .autoframe .spatial⟩]
-    | some ⟨stx, specPat⟩ =>
-      iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) goal [⟨stx, specPat⟩]
+    | some specPat =>
+      iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) goal [specPat]
   | throwError "iinv: (internal error) unable to build the proof"
   have : $out'' =Q $Pin := ⟨⟩
   have : $p'' =Q false := ⟨⟩
