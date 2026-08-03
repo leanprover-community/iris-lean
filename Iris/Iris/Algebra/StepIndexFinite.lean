@@ -16,42 +16,28 @@ namespace Iris
 
 @[rocq_alias natSI, rocq_alias nat_sidx_mixin]
 instance natSIdx : SIdx Nat where
-  toLT := instLTNat
-  toLE := instLENat
   zero := 0
   succ := Nat.succ
   lt_trans := Nat.lt_trans
   lt_wf := Nat.lt_wfRel.wf
   lt_trichotomyT n m :=
-    if h : n < m then by left; exact h
-    else if he : n = m then by right; left; exact he
-    else by
-      right; right; apply Nat.lt_of_not_ge
-      change ¬n ≤ m
-      rw [Nat.le_iff_lt_or_eq]
-      intro h'
-      exact h'.elim h he
-  le_lteq {n m} := Nat.le_iff_lt_or_eq
+    if h : n < m then .inl h
+    else if he : n = m then .inr <| .inl he
+    else .inr <| .inr (by omega)
+  le_lteq {_ _} := Nat.le_iff_lt_or_eq
   not_lt_zero n := by simp
   lt_succ_self n := by simp
   succ_le_of_lt h := h
-  weak_case n :=
-    match n with
-    | 0 => by right; intro m h; exact absurd h (Nat.not_lt_zero m)
-    | m + 1 => by left; constructor; rfl
+  weak_case
+    | 0 => .inr (by omega)
+    | m + 1 => .inl ⟨_, rfl⟩
 
 @[rocq_alias nat_sidx_finite]
 instance natSIdxFinite : SIdxFinite Nat where
-  finite_index := by
-    intro n
-    cases n with
-    | zero => left; rfl
-    | succ n => right; exists n
+  finite_index | 0 => .inl rfl | n + 1 => .inr ⟨n, rfl⟩
 
 def SIdx.Limit.elim {I : Type u} [SIdx I] [SIdxFinite I] {n : I} {C : Sort v}
-    (h : SIdx.Limit n) : C := by
-  exfalso
-  exact SIdx.limit_finite n h
+    (h : SIdx.Limit n) : C := SIdx.limit_finite n h |>.elim
 
 namespace OFE
 
@@ -63,7 +49,10 @@ theorem Contractive.succNat [OFE Nat α] [OFE Nat β] (f : α → β) [Contracti
   Contractive.distLater_dist <| distLater_succ.mpr h
 
 instance DiscreteO.instCOFE_Nat {α : Type _} : COFE Nat (DiscreteO α) := DiscreteO.instCOFE
-instance DiscreteO.discrete_Nat {α : Type _} : OFE.Discrete (SI := Nat) (DiscreteO α) := DiscreteO.OFE
+
+instance DiscreteO.discrete_Nat {α : Type _} : OFE.Discrete (SI := Nat) (DiscreteO α) :=
+  DiscreteO.OFE
+
 instance unitCOFE_Nat : COFE Nat Unit := COFE.unitCOFE
 
 end OFE
