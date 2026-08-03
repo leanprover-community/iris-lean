@@ -1176,7 +1176,7 @@ end DiscreteFunURF
 
 section option
 
-open CMRA Option
+open CMRA _root_.Iris.OFE.Option
 
 variable [CMRA α]
 

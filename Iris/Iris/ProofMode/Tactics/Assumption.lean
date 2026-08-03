@@ -11,7 +11,7 @@ public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
 public section
-open BI Std
+open BI _root_.Iris.Std
 
 theorem assumption [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption p .in A Q]
   [TCOr (Affine P') (Absorbing Q)] (h : P ⊣⊢ P' ∗ □?p A) : P ⊢ Q :=

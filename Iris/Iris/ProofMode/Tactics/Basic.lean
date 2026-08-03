@@ -13,7 +13,7 @@ public meta import Iris.ProofMode.ProofModeM
 public meta section
 
 namespace Iris.ProofMode
-open Lean Elab.Tactic Meta Qq BI Std Lean.Elab Term
+open Lean Elab.Tactic Meta Qq BI _root_.Iris.Std Lean.Elab Term
 
 /-- `itrivial` collects tactics to solve trivial Iris goals. It is used by the `//` specialization
 and introduction patterns. One can add new tactics using

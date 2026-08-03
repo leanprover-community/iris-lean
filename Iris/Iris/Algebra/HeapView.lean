@@ -36,7 +36,7 @@ It provides authoritative and fragmental ownership over heap elements with fract
 open Iris
 
 section heapView
-open Std PartialMap Heap OFE CMRA
+open _root_.Iris.Std PartialMap Heap OFE CMRA
 
 variable (K V : Type _) (H : Type _ → Type _) [LawfulPartialMap H K] [CMRA V]
 
@@ -575,7 +575,7 @@ end heapViewFunctor
 end HeapView
 
 section FiniteHeapView
-open Std PartialMap Heap OFE CMRA HeapView
+open _root_.Iris.Std PartialMap Heap OFE CMRA HeapView
 open One DFrac LawfulPartialMap Algebra
 
 variable {K V : Type _} {H : Type _ → Type _} [DecidableEq K] [LawfulFiniteMap H K] [CMRA V]

@@ -22,7 +22,7 @@ theorem apply [BI PROP] {p} {P Q Q1 R : PROP}
       (Entails.trans (sep_mono_left h1) (wand_elim_swap h2.1))
 
 public meta section
-open Lean Elab Tactic Meta Qq Std
+open Lean Elab Tactic Meta Qq _root_.Iris.Std
 
 --  Like `ProofMode.assumption`, but specialized for the `iapply` case
 theorem apply_assumption [BI PROP] {p : Bool} {P A Q : PROP} [inst : FromAssumption p .in A Q]

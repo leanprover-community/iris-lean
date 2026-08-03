@@ -23,7 +23,7 @@ no `rocq_alias` annotations in this file. -/
 @[expose] public section
 namespace Iris.HeapLang
 
-open Iris ProgramLogic Iris.BI Language Language.Notation Std
+open Iris ProgramLogic Iris.BI Language Language.Notation _root_.Std Iris.Std
 
 variable {hlc : HasLC} {GF : BundledGFunctors} [HeapLangGS hlc GF]
 

@@ -152,7 +152,7 @@ end
 /-! ### Thread-pool ghost-state invariant -/
 
 section ghost
-open Iris CMRA Std
+open Iris CMRA _root_.Iris.Std
 
 variable {GF : BundledGFunctors}
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]
@@ -242,7 +242,7 @@ end ghost
 /-! ### Allocation -/
 
 section alloc
-open Iris CMRA Std
+open Iris CMRA _root_.Iris.Std
 
 variable {GF : BundledGFunctors}
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]

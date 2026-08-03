@@ -19,7 +19,7 @@ theorem mod [BI PROP] {e} {Φ} {p p'} {A A' Q Q' : PROP} [he : ElimModal Φ p .o
     (sep_comm.1.trans (sep_mono_right (wand_intro h1))).trans (he.1 hΦ)
 
 public meta section
-open Lean Elab Tactic Meta Qq Std
+open Lean Elab Tactic Meta Qq _root_.Iris.Std
 
 /--
 Eliminate a modality from `A` by transforming the goal from `P ∗ □?p A ⊢ Q` to `P ∗ □?p' A' ⊢ Q'`,

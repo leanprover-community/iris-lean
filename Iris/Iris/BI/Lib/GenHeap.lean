@@ -11,7 +11,7 @@ public import Iris.Std.Namespaces
 
 namespace Iris
 
-open Std Iris.Algebra CMRA BI ProofMode
+open _root_.Iris.Std Iris.Algebra CMRA BI ProofMode
 
 /-! This file provides a generic mechanism for a language-level points-to
 connective `l ↦{dq} v` reflecting the physical heap.  This library is designed
@@ -69,7 +69,7 @@ variable {GF : BundledGFunctors} {L V : Type _}
 variable {H : outParam <| Type _ → Type _} [Std.LawfulFiniteMap H L]
 variable [G : genHeapGS L V GF H]
 
-open Std.FiniteMap Std.PartialMap genHeapGS
+open _root_.Iris.Std.FiniteMap _root_.Iris.Std.PartialMap genHeapGS
 
 /-- State interpretation for the generalized heap.  Owns the value map `σ`
 together with an existentially quantified map of ghost names whose domain is
@@ -449,7 +449,7 @@ section init
 variable {GF : BundledGFunctors}
 variable {L V : Type _} {H : Type _ → Type _} [Std.LawfulFiniteMap H L]
 
-open Std.PartialMap Std.FiniteMap
+open _root_.Iris.Std.PartialMap _root_.Iris.Std.FiniteMap
 
 /-- Initialize `genHeapGS` with explicit ghost names.  The names of the heap
 and the meta-data tables are exposed in the conclusion. -/

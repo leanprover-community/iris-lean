@@ -112,7 +112,7 @@ end Instances
 
 section BasicLemmas
 
-open Iris Std LawfulSet
+open Iris _root_.Iris.Std LawfulSet
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
@@ -244,7 +244,7 @@ end Allocation
 
 section Access
 
-open Iris Std LawfulSet
+open Iris _root_.Iris.Std LawfulSet
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
@@ -331,7 +331,7 @@ end Modification
 
 section Combination
 
-open Iris Std LawfulSet
+open Iris _root_.Iris.Std LawfulSet
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 

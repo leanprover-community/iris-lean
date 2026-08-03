@@ -16,7 +16,7 @@ meta import Lean.Parser.Tactic
 namespace Iris.ProofMode
 
 public section
-open BI Std
+open BI _root_.Iris.Std
 
 theorem rewrite_tac [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p}
     (Ψ : A → PROP) [ne : OFE.NonExpansive Ψ] [heq : IntoInternalEq Q a b]
@@ -52,7 +52,7 @@ theorem rewrite_tac_hyp [BI PROP] {P Q Q' : PROP}
   h1.trans (persistently_mono and_elim_l)
 
 public meta section
-open Lean Elab Tactic Meta Qq BI Std Parser.Tactic
+open Lean Elab Tactic Meta Qq BI _root_.Iris.Std Parser.Tactic
 
 
 namespace IRewrite

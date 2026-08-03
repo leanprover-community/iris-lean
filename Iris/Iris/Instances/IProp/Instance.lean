@@ -15,7 +15,7 @@ public meta import Iris.Std.RocqPorting
 @[expose] public section
 namespace Iris
 
-open COFE Std CMRA
+open COFE _root_.Iris.Std CMRA
 
 /-- Apply an OFunctor at a fixed type -/
 abbrev COFE.OFunctorPre.ap (F : OFunctorPre) (T : Type _) [COFE T] :=
@@ -154,7 +154,7 @@ end ElemG
 
 section Fold
 
-open Iris COFE UPred
+open Iris COFE _root_.Iris.UPred
 
 variable {FF : BundledGFunctors}
 
@@ -173,14 +173,14 @@ theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) = x :=
   refine OFE.eq_dist.mpr fun n => ?_
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm.dist ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
-  apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold]
+  apply OFunctor.map_ne.ne <;> intro _ <;> exact OFE.Iso.hom_inv_dist (iso := OFunctor.Fix.iso)
 
 @[rocq_alias inG_fold_unfold]
 theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) = x := by
   refine OFE.eq_dist.mpr fun n => ?_
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm.dist ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
-  apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold]
+  apply OFunctor.map_ne.ne <;> intro _ <;> exact OFE.Iso.inv_hom_dist (iso := OFunctor.Fix.iso)
 
 theorem IProp.unfoldi_discreteE {v : FF.api τ (IProp FF)} (hv : OFE.DiscreteE v) :
     OFE.DiscreteE (unfoldi.f v) where
@@ -234,7 +234,7 @@ end Fold
 
 section iSingleton
 
-open IProp OFE UPred GenMap
+open IProp OFE _root_.Iris.UPred GenMap
 
 @[rocq_alias iRes_singleton]
 def iSingleton {GF} F [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (v : F.ap (IProp GF)) : IResUR GF :=
@@ -481,7 +481,7 @@ def iOwn {GF F} [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (v : F.ap 
 
 section iOwn
 
-open IProp OFE UPred BI GenMap ProofMode
+open IProp OFE _root_.Iris.UPred BI GenMap ProofMode
 
 variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
 
@@ -821,7 +821,7 @@ end iOwn
 
 section big_op_instances
 
-open IProp OFE UPred BI GenMap ProofMode Algebra Std
+open IProp OFE _root_.Iris.UPred BI GenMap ProofMode Algebra _root_.Iris.Std
 open scoped Iris.Std.PartialMap
 
 variable {GF F} [URFunctorContractive F] [E : ElemG GF F]

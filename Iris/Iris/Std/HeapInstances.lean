@@ -285,7 +285,7 @@ end Std.ExtTreeMap
 
 namespace Classical
 
-open Std Iris.Std
+open _root_.Std Iris.Std
 variable {K} [Ord K] [TransOrd K] [LawfulEqOrd K]
 
 noncomputable scoped instance instUnboundedHeapCompare [InfiniteType K] :

@@ -14,7 +14,7 @@ public meta import Iris.ProofMode.Tactics.Trivial
 namespace Iris.ProofMode
 
 public section
-open BI Std
+open BI _root_.Iris.Std
 
 theorem imp_intro_drop [BI PROP] {P Q A1 A2 : PROP} [inst : FromImp Q A1 A2] (h : P ⊢ A2) : P ⊢ Q :=
   BI.imp_intro (and_elim_left_trans h) |>.trans inst.1
@@ -54,7 +54,7 @@ theorem wand_intro_spatial [BI PROP] {P Q A1 A2 : PROP}
   (wand_intro h).trans inst.from_wand
 
 public meta section
-open Lean Elab Tactic Meta Qq BI Std
+open Lean Elab Tactic Meta Qq BI _root_.Iris.Std
 
 /--
   Used by `iIntroCore` for the pure and quantifier cases.

@@ -268,7 +268,7 @@ theorem frame_exist_no_instantiate [BI PROP] {α} (p : Bool) (R : PROP) (Φ Ψ :
 end tactic_theorems
 
 meta section tactics
-open Lean Elab Meta Std
+open Lean Elab Meta _root_.Iris.Std
 
 def frameInstantiateExistsEnabled : MetaM Bool := do
   return iris.frame.instantiateExists.get (← getOptions)

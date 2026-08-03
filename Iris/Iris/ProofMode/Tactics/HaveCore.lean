@@ -28,7 +28,7 @@ theorem have_asEmpValid [bi : BI PROP] {φ} {P Q : PROP}
   sep_emp.2.trans (sep_mono_right $ intuitionistically_emp.2.trans (intuitionistically_mono (asEmpValid_1 _ h1 h)))
 
 public meta section
-open Lean Elab Tactic Meta Qq Std
+open Lean Elab Tactic Meta Qq _root_.Iris.Std
 
 /--
 Assert a hypothesis from either a hypothesis name or a Lean proof term `tm`.

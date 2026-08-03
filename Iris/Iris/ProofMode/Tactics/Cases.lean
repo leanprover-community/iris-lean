@@ -17,7 +17,7 @@ public meta import Iris.ProofMode.Tactics.Frame
 namespace Iris.ProofMode
 
 public section
-open BI Std
+open BI _root_.Iris.Std
 
 theorem false_elim' [BI PROP] {P Q : PROP} : P ∗ □?p False ⊢ Q :=
   wand_elim_swap <| intuitionisticallyIf_elim.trans false_elim
@@ -64,7 +64,7 @@ theorem spatial_elim [BI PROP] {p} {A A' Q : PROP} [FromAffinely A' A p]
 theorem of_emp_sep [BI PROP] {A Q : PROP} (h : A ⊢ Q) : emp ∗ A ⊢ Q := emp_sep.1.trans h
 
 public meta section
-open Lean Elab Tactic Meta Qq Std
+open Lean Elab Tactic Meta Qq _root_.Iris.Std
 
 private def iCasesEmptyConj {prop : Q(Type u)} (bi : Q(BI $prop))
     {P} (_hyps : Hyps bi P) (p : Q(Bool)) (A goal : Q($prop)) :

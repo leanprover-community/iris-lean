@@ -12,7 +12,7 @@ public import Iris.Std.GenSets
 
 namespace Iris
 
-open Std PartialMap LawfulPartialMap LawfulSet Iris.Algebra CMRA BI ProofMode
+open _root_.Iris.Std PartialMap LawfulPartialMap LawfulSet Iris.Algebra CMRA BI ProofMode
 
 /-! This file defines prophecy-variable bookkeeping.
 A prophecy map associates to each (used) prophecy `p : P` the list of values it

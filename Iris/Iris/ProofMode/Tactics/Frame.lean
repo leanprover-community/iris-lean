@@ -55,7 +55,7 @@ theorem frame_finish_close_emp [BI PROP] {e origE origGoal : PROP}
     origE ⊢ e ∗ origGoal := h1.trans (sep_mono_right <| emp_sep.2.trans wand_elim_right)
 
 public meta section
-open Lean Elab Tactic Meta Qq Std
+open Lean Elab Tactic Meta Qq _root_.Iris.Std
 
 structure FrameResult {u} {prop : Q(Type u)} (bi : Q(BI $prop)) (origE origGoal : Q($prop)) where
   (progress : Bool) (e : Q($prop)) (hyps : Hyps bi e) (goal : Q($prop))

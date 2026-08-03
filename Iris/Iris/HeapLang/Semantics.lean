@@ -17,7 +17,7 @@ import Iris.Std.List
 @[expose] public section
 namespace Iris.HeapLang
 
-open Std
+open _root_.Std Iris.Std
 
 inductive ECtxItem where
   | appL (v2 : Val)

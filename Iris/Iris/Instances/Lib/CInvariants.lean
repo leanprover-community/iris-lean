@@ -20,7 +20,7 @@ public import Iris.Std.List
 
 namespace Iris
 
-open BI CMRA OFE Iris Std LawfulSet Excl COFE ProofMode
+open BI CMRA OFE Iris _root_.Iris.Std LawfulSet Excl COFE ProofMode
 
 /-! # Cancelable Invariants -/
 

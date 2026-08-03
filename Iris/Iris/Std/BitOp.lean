@@ -126,7 +126,7 @@ end Nat
 
 namespace Int
 
-open Nat _root_.Int
+open _root_.FromMathlib.Nat _root_.Int
 
 /-- NB. Copied from Mathlib
 `lor` takes two integers and returns their bitwise `or` -/

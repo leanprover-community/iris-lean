@@ -11,7 +11,7 @@ public meta import Iris.ProofMode.Tactics.Basic
 namespace Iris.ProofMode
 
 public section
-open Qq BI Std
+open Qq BI _root_.Iris.Std
 
 /-- Reified version of ModalityAction -/
 inductive ModalityActionQ (PROP1 : Q(Type u)) (PROP2 : Q(Type u)) : Type where

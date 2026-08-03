@@ -56,7 +56,7 @@ theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B}
     · apply h.trans $ (sep_mono_right (persistentlyIf_of_intuitionisticallyIf.trans into_persistently)).trans sep_elim_right
 
 public meta section
-open Lean Elab Tactic Meta Qq Std
+open Lean Elab Tactic Meta Qq _root_.Iris.Std
 
 structure SpecializeState {prop : Q(Type u)} (bi : Q(BI $prop)) (orig : Q($prop)) where
   (e : Q($prop)) (hyps : Hyps bi e) (p : Q(Bool)) (out : Q($prop))
