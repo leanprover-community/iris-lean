@@ -279,14 +279,18 @@ def Tower.isoAux : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
       (congrArg (fun a => (map ..) a) (map_comp _ _ _ _ _))).symm.dist.trans ?_
     refine .trans (y := map (upN F n) (downN F n) (X (k+n+1))) ?_ ?_
     · refine map_ne.ne (fun Y => ?_) (fun Y => ?_) _
-      · simp [Hom.comp, Tower.embed, Tower.proj, embed, (by omega : k ≤ k+n+1)]
-        have {a e} : down F (k + n) (eqToHom e (upN F a Y)) = upN F n Y := by
-          cases Nat.add_left_cancel (k := n+1) e; exact down_up _
-        exact this.dist
-      · simp [Hom.comp, Tower.embed, Tower.proj, embed, show ¬k+n+1 ≤ k by omega]
-        have {a e} : downN F a (eqToHom e (up F (k + n) Y)) = downN F n Y := by
-          cases Nat.add_left_cancel (m := n+1) e; exact congrArg (fun a => (downN ..) a) (down_up _)
-        exact this.dist
+      · dsimp [Function.comp, Hom.comp, Tower.embed, Tower.proj, embed]
+        split <;> rename_i h
+        · have {a e} : down F (k + n) (eqToHom e (upN F a Y)) = upN F n Y := by
+            cases Nat.add_left_cancel (k := n+1) e; exact down_up _
+          exact this.dist
+        · omega
+      · dsimp [Function.comp, Hom.comp, Tower.embed, Tower.proj, embed]
+        split <;> rename_i h
+        · omega
+        · have {a e} : downN F a (eqToHom e (up F (k + n) Y)) = downN F n Y := by
+            cases Nat.add_left_cancel (m := n+1) e; exact congrArg (fun a => (downN ..) a) (down_up _)
+          exact this.dist
     · have e : k+n+1 = k+1+n := by omega
       suffices ∀ x y, eqToHom e x = y → ∀ m, map (upN F n) (downN F n) x ≡{m}≡ downN F n y by
         refine this _ _ ?_ n
