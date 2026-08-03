@@ -159,21 +159,21 @@ instance frame_impl [BI PROP] (R P1 P2 Q2 : PROP)
 
 @[ipm_backtrack, rocq_alias frame_later]
 instance frame_later [BI PROP] p (R R' P Q Q' : PROP)
-    [h1 : MaybeIntoLaterN true 1 R' R] [h2 : Frame p R P Q] [h3 : MakeLaterN 1 Q Q'] :
+    [h1 : IntoLaterN false true 1 R' R] [h2 : Frame p R P Q] [h3 : MakeLaterN 1 Q Q'] :
     Frame p R' iprop(▷ P) Q' where
   frame :=
     (sep_mono_right h3.make_laterN.2).trans <|
-    (sep_mono_left ((intuitionisticallyIf_mono h1.maybe_into_laterN.into_laterN).trans later_intuitionisticallyIf_2)).trans <|
+    (sep_mono_left ((intuitionisticallyIf_mono h1.into_laterN).trans later_intuitionisticallyIf_2)).trans <|
     later_sep.2.trans <|
     later_mono h2.frame
 
 @[ipm_backtrack, rocq_alias frame_laterN]
 instance frame_laterN [BI PROP] p n (R R' P Q Q' : PROP)
-    [h1 : MaybeIntoLaterN true n R' R] [h2 : Frame p R P Q] [h3 : MakeLaterN n Q Q'] :
+    [h1 : IntoLaterN false true n R' R] [h2 : Frame p R P Q] [h3 : MakeLaterN n Q Q'] :
     Frame p R' iprop(▷^[n] P) Q' where
   frame :=
     (sep_mono_right h3.make_laterN.2).trans <|
-    (sep_mono_left ((intuitionisticallyIf_mono h1.maybe_into_laterN.into_laterN).trans (laterN_intuitionisticallyIf n))).trans <|
+    (sep_mono_left ((intuitionisticallyIf_mono h1.into_laterN).trans (laterN_intuitionisticallyIf n))).trans <|
     (laterN_sep n).2.trans <|
     laterN_mono n h2.frame
 

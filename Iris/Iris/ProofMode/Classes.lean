@@ -229,20 +229,9 @@ other logical connectives. For [inext] it should strip laters below other logica
 but this should not happen while framing.
 -/
 @[ipm_class, rocq_alias IntoLaterN]
-class IntoLaterN {PROP} [BI PROP] (only_head : Bool) (n : Nat) (P : PROP) (Q : outParam $ PROP) where
+class IntoLaterN {PROP} [BI PROP] (strict : Bool) (only_head : Bool) (n : Nat) (P : PROP) (Q : outParam $ PROP) where
   into_laterN : P ⊢ ▷^[n] Q
 export IntoLaterN (into_laterN)
-
-@[ipm_class, rocq_alias MaybeIntoLaterN]
-class MaybeIntoLaterN {PROP} [BI PROP] (only_head : Bool) (n : Nat) (P : PROP) (Q : outParam $ PROP) where
-  maybe_into_laterN : IntoLaterN only_head n P Q
-export MaybeIntoLaterN (maybe_into_laterN)
-
-@[ipm_class]
-class GuardedIntoLaterN {PROP} [BI PROP] (m m' : Nat) (only_head : Bool) (n : Nat)
-    (P : PROP) (Q : outParam $ PROP) where
-  into_laterN_guard : IntoLaterN only_head n P Q
-export GuardedIntoLaterN (into_laterN_guard)
 
 /-- `CombineSepAs` combines two propositions `P` and `Q` into `R` -/
 @[ipm_class, rocq_alias CombineSepAs]
