@@ -1083,7 +1083,7 @@ instance : @Discrete SI _ Unit unitOFE :=
   { discrete_0 _ := Subsingleton.elim _ _ }
 
 @[reducible, rocq_alias unit_cofe]
-def unitCOFE [SIdx SI] : COFE SI Unit :=
+def unitCOFE : COFE SI Unit :=
   letI : OFE SI Unit := unitOFE
   {
     compl _ := ()
