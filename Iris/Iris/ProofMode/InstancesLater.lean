@@ -408,12 +408,12 @@ def intoLaterNLater : SynthTactic := λ e => do
     -- Try `intoLaterN_laterN` and then `intoLaterN_laterN_bool`
     | BIBase.laterIf _ _ p P' =>
       have p : Q(Bool) := p
-      [(q(Bool.toNat $p), P', .laterN), (q(1), P', .laterIf p)]
+      [(q($(p).toNat), P', .laterN), (q(1), P', .laterIf p)]
     | _ => []
 
-  for (m, Pin, kind) in candidates do
+  for ⟨m, Pin, laterKind⟩ in candidates do
     setMCtx mctx0
-    if let some inst ← intoLaterNLaterAux bi strict n oh m Pin kind then
+    if let some inst ← intoLaterNLaterAux bi strict n oh m Pin laterKind then
       return .success inst
   setMCtx mctx0
   return .continue
