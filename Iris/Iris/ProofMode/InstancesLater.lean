@@ -357,18 +357,12 @@ theorem intoLaterN_laterN_bool [BI PROP] strict {strict'} only_head n (p : Bool)
     (h2 : IntoLaterN strict' only_head n' P Q)
     (h3 : MakeLaterN m' Q lQ) : IntoLaterN strict only_head n iprop(▷?p P) lQ where
   into_laterN := by
-    cases p
-    · calc
-        _ ⊢ _ := later_intro
-        _ ⊢ _ := later_mono h2.into_laterN
-        _ ⊢ _ := (later_laterN _).mpr
-        _ ⊢ _ := by rw [h1.nat_cancel]; exact (laterN_add _ _).mp
-        _ ⊢ _ := laterN_mono _ h3.make_laterN.mp
-    · calc
-        _ ⊢ _ := later_mono h2.into_laterN
-        _ ⊢ _ := (later_laterN _).mpr
-        _ ⊢ _ := by rw [h1.nat_cancel]; exact (laterN_add _ _).mp
-        _ ⊢ _ := laterN_mono _ h3.make_laterN.mp
+    calc
+      _ ⊢ ▷ P            := by cases p; exact later_intro; exact BIBase.Entails.rfl
+      _ ⊢ ▷ ▷^[n']Q     := later_mono h2.into_laterN
+      _ ⊢ ▷^[n' + 1]Q    := (later_laterN _).mpr
+      _ ⊢ ▷^[n] ▷^[m']Q := h1.nat_cancel.symm ▸ (laterN_add _ _).mp
+      _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
 
 meta section
 open Lean Elab Meta Std Qq ProofMode
@@ -433,12 +427,12 @@ where
 
     let Q : Q($prop) ← mkFreshExprMVarQ q($prop)
     let some ⟨_, h2⟩ ←
-      (if progress then
+      if progress then
         maybeIntoLaterN oh n' Pin Q
       else do
         let some inst ← synthInstanceRecursiveQ q(IntoLaterN true $oh $n' $Pin $Q)
           | pure none
-        pure <| some <| ⟨q(true), inst⟩)
+        pure <| some <| ⟨q(true), inst⟩
       | return none
 
     let lQ : Q($prop) ← mkFreshExprMVarQ q($prop)
