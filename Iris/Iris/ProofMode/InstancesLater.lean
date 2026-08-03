@@ -369,13 +369,14 @@ open Lean Elab Meta Std Qq ProofMode
 
 def maybeIntoLaterN {prop : Q(Type u)} {bi : Q(BI $prop)}
     (oh : Q(Bool)) (n : Q(Nat)) (P Q : Q($prop)) :
-    MetaM <| Option <| (strict' : Q(Bool)) × Q(IntoLaterN $strict' $oh $n $P $Q) := do
+    MetaM <| Option Q(IntoLaterN false $oh $n $P $Q) := do
   if let some inst ← synthInstanceRecursiveQ q(IntoLaterN true $oh $n $P $Q) then
-    return some ⟨q(true), inst⟩
+    let inst : Q(IntoLaterN false $oh $n $P $Q) := q(⟨$(inst).into_laterN⟩)
+    return some inst
   -- Fallback to the reflexive default
   Q.mvarId!.assign P
   have : $Q =Q $P := ⟨⟩
-  return some ⟨q(false), q(intoLaterN_default $oh $n $P)⟩
+  return some q(intoLaterN_default $oh $n $P)
 
 inductive LaterKind where
   | later
@@ -426,13 +427,13 @@ where
         return !(← isDefEq m m')
 
     let Q : Q($prop) ← mkFreshExprMVarQ q($prop)
-    let some ⟨_, h2⟩ ←
+    let some h2 ←
       if progress then
         maybeIntoLaterN oh n' Pin Q
       else do
         let some inst ← synthInstanceRecursiveQ q(IntoLaterN true $oh $n' $Pin $Q)
           | pure none
-        pure <| some <| ⟨q(true), inst⟩
+        pure <| some inst
       | return none
 
     let lQ : Q($prop) ← mkFreshExprMVarQ q($prop)
