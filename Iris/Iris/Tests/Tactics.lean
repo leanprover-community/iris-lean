@@ -924,10 +924,53 @@ example [BI PROP] [BIUpdate PROP] (P Q : PROP) :
   iapply Hwand
   iexact HP
 
+
 /-- Tests `iapply` of a plain wand under a fancy update, using `intoWand_fupd_args` to balance the
 argument and the result of the wand against the goal's modality. -/
 example [BI PROP] [BIFUpdate PROP] (E1 E2 : CoPset) (P Q : PROP) :
     (P -∗ Q) ⊢ (|={E1,E2}=> P) -∗ |={E1,E2}=> Q := by
+  iintro Hwand HP
+  iapply Hwand
+  iexact HP
+
+/-- Tests `iapply` of a plain wand under a later, using `intoWand_later_args` to balance the
+argument and the result of the wand against the goal's modality. -/
+example [BI PROP] (P Q : PROP) : (P -∗ Q) ⊢ (▷ P) -∗ ▷ Q := by
+  iintro Hwand HP
+  iapply Hwand
+  iexact HP
+
+/-- Tests `iapply` of a plain wand under `▷^[n]`, using `intoWand_laterN_args` to balance the
+argument and the result of the wand against the goal's modality. -/
+example [BI PROP] (n : Nat) (P Q : PROP) : (P -∗ Q) ⊢ (▷^[n] P) -∗ ▷^[n] Q := by
+  iintro Hwand HP
+  iapply Hwand
+  iexact HP
+
+-- `intoWand_later_args` is reached only once `R` has bottomed out: with a `▷` on
+-- `R` itself, both instances match, and the `low` priority of the args instance
+-- means the structure-stripping `intoWand_later` is tried first and wins.
+/--
+[Meta.synthInstance.instances] #[@ProofMode.intoWand_later_args, @ProofMode.intoWand_later]
+[Meta.synthInstance] ✅️ apply @ProofMode.intoWand_later to ProofMode.IntoWand false false iprop(▷ (P -∗ Q))
+-/
+#guard_msgs (whitespace := lax, substring := true) in
+example [BI PROP] (P Q : PROP) : (▷ (P -∗ Q)) ⊢ (▷ P) -∗ ▷ Q := by
+  iintro Hwand HP
+  (set_option trace.Meta.synthInstance true in iapply Hwand)
+  iexact HP
+
+/-- Tests `iapply` of an intuitionistic wand under an `<affine>`, using
+`intoWand_affine_args` to balance the argument and the result of the wand against
+the goal's modality. -/
+example [BI PROP] (P Q : PROP) : □ (P -∗ Q) ⊢ (<affine> P) -∗ <affine> Q := by
+  iintro #Hwand HP
+  iapply Hwand
+  iexact HP
+
+/-- `intoWand_affine_args` is reached only once `R` has bottomed out: with an
+`<affine>` on `R` itself, the structure-stripping `intoWand_affine` wins instead. -/
+example [BI PROP] (P Q : PROP) : (<affine> (P -∗ Q)) ⊢ (<affine> P) -∗ <affine> Q := by
   iintro Hwand HP
   iapply Hwand
   iexact HP
@@ -1497,6 +1540,23 @@ example [BI PROP] (P Q : PROP) :
   · rfl
   iexact H
 
+-- `Q` is not a wand, so no `IntoWand` instance applies. This fails immediately instead of looping by
+-- wrapping the two output slots in ever more modalities.
+/-- error: ispecialize: Q is not a wand
+---
+trace: [Meta.synthInstance] ❌️ IPM: ProofMode.IntoWand false false Q ProofMode.WandMode.unknown ?m.36 ?m.37
+  [Meta.synthInstance] ❌️ IPM: new goal ProofMode.IntoWand false false Q ProofMode.WandMode.unknown ?m.36
+        ?m.37 => ProofMode.IntoWand false false Q ProofMode.WandMode.unknown ?m.36 ?m.37
+    [Meta.synthInstance.tactics] []
+    [Meta.synthInstance.instances] #[]
+  [Meta.synthInstance] result <not-available>
+-/
+#guard_msgs in
+example [BI PROP] [BIUpdate PROP] (P Q: PROP) : Q ⊢ P -∗ Q := by
+  iintro HQ
+  set_option trace.Meta.synthInstance true in
+  ispecialize HQ $$ [$]
+
 end specialize
 
 -- split
@@ -1655,12 +1715,12 @@ PROP : Type u_1
 inst✝¹ : BI PROP
 inst✝ : BIAffine PROP
 P Q : PROP
-⊢ 
+⊢
   ∗x✝ : P
   ∗HQ : <pers> Q
   ⊢ Q
 -/
-#guard_msgs in
+#guard_msgs (whitespace := lax) in
 example [BI PROP] [BIAffine PROP] (P Q : PROP) :
   P ∧ <pers> Q ⊢ Q := by
   iintro H
