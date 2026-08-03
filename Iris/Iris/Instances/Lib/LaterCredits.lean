@@ -325,6 +325,7 @@ theorem le_upd_intro {P : IProp GF} : P ⊢ |==£> P := by
   imodintro
   iexact H
 
+-- set_option trace.Meta.synthInstance true in
 @[rocq_alias le_upd.le_upd_bind]
 theorem le_upd_bind {P Q : IProp GF} : ⊢ (P -∗ |==£> Q) -∗ (|==£> P) -∗ (|==£> Q) := by
   iapply BILoeb.loeb_weak

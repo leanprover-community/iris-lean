@@ -617,8 +617,11 @@ theorem tac_lc_add_laterN_full {GF : BundledGFunctors} [InvGS GF]
   iintro ⟨HP, Hcred⟩
   iapply inst.elim_modal hφ
   isplitl
+  have h1 := h1.nat_cancel
+  simp at h1
+  rw [← h1]
   · ihave H := h2 $$ HP
-    iapply lc_fupd_add_laterN m $$ Hcred
+    iapply lc_fupd_add_laterN n $$ Hcred
     inext
     imodintro
     iapply h3 $$ H
@@ -666,7 +669,7 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
 
     let newC ← mkFreshExprMVarQ q(Nat)
     let newN ← mkFreshExprMVarQ q(Nat)
-    let some hcancel ← synthInstance? q(NatCancel $c $n $newC $newN)
+    let some hcancel ← ProofModeM.trySynthInstanceQ q(NatCancel $c $n $newC $newN)
       | throwError "inext: unable to cancel {n} later credits from {c}"
     let newC : Q(Nat) ← instantiateMVars newC
     unless ← isDefEq newN q(0) do
