@@ -372,7 +372,6 @@ def unitOFE : OFE SI Unit where
 #rocq_ignore unitO "Use the unit type"
 #rocq_ignore unit_dist "Local Dist instance; folded into Lean's OFE Unit instance."
 
--- set_option trace.Meta.synthInstance true in
 instance : @DiscreteE SI _ Unit unitOFE (() : Unit) :=
   letI := unitOFE
   ⟨fun _ => Subsingleton.elim _ _⟩
@@ -1161,55 +1160,24 @@ instance instIsCOFESum  [OFE SI α] [OFE SI β] [IsCOFE SI α] [IsCOFE SI β] : 
     | .inr seed =>
       .inr (IsCOFE.lbcompl hn (c.map ⟨Sum.elim (Function.const _ seed) id, inferInstance⟩))
   conv_lbcompl {n} hn c {m} hm := by
-    cases h1 : c.bchain 0 hn.limit_lt_0 with
-    | inl seed =>
-      refine (dist_inl (IsCOFE.conv_lbcompl hn _ hm)).trans ?_
-      dsimp only [BChain.map_apply]
-      cases h2 : c.bchain m hm with
-      | inl _ => simp
-      | inr _ => exact (h1 ▸ h2 ▸ c.bcauchy hn.limit_lt_0 hm SIdx.le_0_l).elim
-    | inr seed =>
-      refine (dist_inr (IsCOFE.conv_lbcompl hn _ hm)).trans ?_
-      dsimp only [BChain.map_apply]
-      cases h2 : c.bchain m hm with
-      | inl _ => exact (h1 ▸ h2 ▸ c.bcauchy hn.limit_lt_0 hm SIdx.le_0_l).elim
-      | inr _ => simp
+    have hb := c.bcauchy hn.limit_lt_0 hm SIdx.le_0_l
+    cases h1 : c.bchain 0 hn.limit_lt_0 <;> cases h2 : c.bchain m hm <;>
+      rw [h1, h2] at hb <;>
+      first
+      | exact hb.elim
+      | (refine (dist_inl (IsCOFE.conv_lbcompl hn _ hm)).trans ?_; simp [h2])
+      | (refine (dist_inr (IsCOFE.conv_lbcompl hn _ hm)).trans ?_; simp [h2])
   lbcompl_ne {n} hn c1 c2 {m} hc := by
     have h0 := hc 0 hn.limit_lt_0
-    cases h1 : c1.bchain 0 hn.limit_lt_0 with
-    | inl s1 =>
-      cases h2 : c2.bchain 0 hn.limit_lt_0 with rw [h1, h2] at h0
-      | inr _ => exact h0.elim
-      | inl s2 =>
-        refine dist_inl (IsCOFE.lbcompl_ne hn _ _ (fun p hp => ?_))
-        simp only [BChain.map_apply]
-        have hp' := hc p hp
-        cases e1 : c1.bchain p hp with rw [e1] at hp'
-        | inl _ =>
-          cases e2 : c2.bchain p hp with rw [e2] at hp'
-          | inl _ => exact hp'
-          | inr _ => exact hp'.elim
-        | inr _ =>
-          cases e2 : c2.bchain p hp with rw [e2] at hp'
-          | inl _ => exact hp'.elim
-          | inr _ => exact h0
-    | inr s1 =>
-      cases h2 : c2.bchain 0 hn.limit_lt_0 with
-      | inl _ => rw [h1, h2] at h0; exact h0.elim
-      | inr s2 =>
-        rw [h1, h2] at h0
-        refine dist_inr (IsCOFE.lbcompl_ne hn _ _ (fun p hp => ?_))
-        simp only [BChain.map_apply]
-        have hp' := hc p hp
-        cases e1 : c1.bchain p hp with rw [e1] at hp'
-        | inr _ =>
-          cases e2 : c2.bchain p hp with rw [e2] at hp'
-          | inr _ => exact hp'
-          | inl _ => exact hp'.elim
-        | inl _ =>
-          cases e2 : c2.bchain p hp with rw [e2] at hp'
-          | inr _ => exact hp'.elim
-          | inl _ => exact h0
+    cases h1 : c1.bchain 0 hn.limit_lt_0 <;> cases h2 : c2.bchain 0 hn.limit_lt_0 <;>
+      rw [h1, h2] at h0 <;>
+      first
+      | exact h0.elim
+      | refine IsCOFE.lbcompl_ne hn _ _ (fun p hp => ?_) <;>
+        · simp only [BChain.map_apply]
+          have hp' := hc p hp
+          cases e1 : c1.bchain p hp <;> cases e2 : c2.bchain p hp <;>
+            rw [e1, e2] at hp' <;> first | exact hp' | exact hp'.elim | exact h0
 
 #rocq_ignore inl_chain "Local helper for `sum_compl`; folded into Lean's IsCOFE instance."
 #rocq_ignore inr_chain "Local helper for `sum_compl`; folded into Lean's IsCOFE instance."
@@ -1226,19 +1194,24 @@ theorem Sigma.bchain_const_proj1 {P : α → Type _} [∀ x, OFE SI (P x)]
     (c.bchain m hm).fst = (c.bchain 0 hn.limit_lt_0).fst :=
   (c.bcauchy hn.limit_lt_0 hm SIdx.le_0_l).choose
 
+theorem Sigma.dist_cast_of_dist {P : α → Type _} [∀ x, OFE SI (P x)] {n : SI}
+    {x y : Sigma P} (h : x ≡{n}≡ y) {b : α} (hx : x.fst = b) (hy : y.fst = b) :
+    (hx ▸ x.snd : P b) ≡{n}≡ (hy ▸ y.snd : P b) := by
+  obtain ⟨h1, h2⟩ := h
+  obtain ⟨x1, x2⟩ := x
+  obtain ⟨y1, y2⟩ := y
+  simp only at h1 hx
+  subst h1; subst hx
+  exact h2
+
 @[rocq_alias bchain_map_snd]
 def Sigma.bchain_map_snd {P : α → Type _} [∀ x, OFE SI (P x)]
     {n : SI} (hn : SIdx.Limit n) (c : BChain (Sigma P) n) :
     BChain (P (c.bchain 0 hn.limit_lt_0).fst) n where
   bchain m hm := Sigma.bchain_const_proj1 hn c hm ▸ (c.bchain m hm).snd
-  bcauchy {m p} hm hp hle := by
-    obtain ⟨heq, hequiv⟩ := c.bcauchy hm hp hle
-    rw [show Sigma.bchain_const_proj1 hn c hp
-          = heq.trans (Sigma.bchain_const_proj1 hn c hm) from rfl]
-    generalize Sigma.bchain_const_proj1 hn c hm = heq'
-    revert heq' hequiv heq; cases c.bchain p hp; cases c.bchain m hm
-    rintro ⟨⟩ hequiv ⟨⟩
-    exact hequiv
+  bcauchy _ hp hle :=
+    Sigma.dist_cast_of_dist (c.bcauchy _ hp hle)
+      (Sigma.bchain_const_proj1 hn c hp) (Sigma.bchain_const_proj1 hn c _)
 
 theorem Sigma.lbcompl_cast {P : α → Type _} [∀ x, OFE SI (P x)] [∀ x, IsCOFE SI (P x)]
     {a b : α} (eq : a = b) {n : SI} (hn : SIdx.Limit n) (c : BChain (P a) n) :
@@ -1255,28 +1228,13 @@ theorem Sigma.cast_cast {P : α → Type _} {a b c : α} (h1 : a = b) (h2 : b = 
     (h2 ▸ (h1 ▸ x : P b) : P c) = (h1.trans h2) ▸ x := by
   subst h1; subst h2; rfl
 
-theorem Sigma.dist_cast_of_dist {P : α → Type _} [∀ x, OFE SI (P x)] {n : SI}
-    {x y : Sigma P} (h : x ≡{n}≡ y) {b : α} (hx : x.fst = b) (hy : y.fst = b) :
-    (hx ▸ x.snd : P b) ≡{n}≡ (hy ▸ y.snd : P b) := by
-  obtain ⟨h1, h2⟩ := h
-  obtain ⟨x1, x2⟩ := x
-  obtain ⟨y1, y2⟩ := y
-  simp only at h1 hx hy
-  subst h1; subst hx
-  exact h2
-
 @[rocq_alias chain_map_snd]
 def Sigma.chain_map_snd {P : α → Type _} [∀ x, OFE SI (P x)] [∀ x, IsCOFE SI (P x)] (c : Chain (Sigma P)) :
     Chain (P (c 0).fst) where
   chain n := Sigma.chain_const_proj1 c n ▸ (c n).snd
-  cauchy {n i} hle := by
-    obtain ⟨heq, hequiv⟩ := c.cauchy hle
-    clear hle
-    rw [show Sigma.chain_const_proj1 c i = heq.trans (Sigma.chain_const_proj1 c n) by rfl]
-    generalize Sigma.chain_const_proj1 c n = heq'
-    revert heq' hequiv heq; cases c.chain i; cases c.chain n
-    rintro ⟨⟩ hequiv ⟨⟩
-    exact hequiv
+  cauchy {n i} hle :=
+    Sigma.dist_cast_of_dist (c.cauchy hle)
+      (Sigma.chain_const_proj1 c i) (Sigma.chain_const_proj1 c n)
 
 @[rocq_alias sigT_cofe]
 instance {P : α → Type _} [∀ x, OFE SI (P x)] [∀ x, IsCOFE SI (P x)] : IsCOFE SI (Sigma P) where
