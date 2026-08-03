@@ -187,7 +187,6 @@ theorem Discrete.discrete [OFE SI α] [Discrete α] {n : SI} {x y : α} (h : x �
   discrete_0 <| h.le SIdx.le_0_l
 export OFE.Discrete (discrete)
 
-@[rocq_alias ofe_discrete_discrete]
 instance Discrete.toDiscreteE [OFE SI α] [Discrete α] (x : α) : DiscreteE x := ⟨discrete_0⟩
 
 /-- For discrete OFEs, `n`-equivalence implies equivalence for any `n`. -/
