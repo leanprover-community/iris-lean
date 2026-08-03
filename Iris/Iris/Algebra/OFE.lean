@@ -187,6 +187,7 @@ theorem Discrete.discrete [OFE SI α] [Discrete α] {n : SI} {x y : α} (h : x �
   discrete_0 <| h.le SIdx.le_0_l
 export OFE.Discrete (discrete)
 
+@[rocq_alias ofe_discrete_discrete]
 instance Discrete.toDiscreteE [OFE SI α] [Discrete α] (x : α) : DiscreteE x := ⟨discrete_0⟩
 
 /-- For discrete OFEs, `n`-equivalence implies equivalence for any `n`. -/
@@ -624,6 +625,7 @@ instance [OFE SI α] [OFE SI β] : NonExpansive (Prod.snd (α := α) (β := β))
   ⟨fun {_ _ _} h => dist_snd h⟩
 
 /-- Note: Not an instance, due to instance coherence problems. -/
+@[rocq_alias uncurry_ne]
 theorem NonExpansive₂.uncurry [OFE SI α] [OFE SI β] [OFE SI γ] {f : α → β → γ} (hf : NonExpansive₂ f) :
     NonExpansive (Function.uncurry f) :=
   ⟨fun {_ _ _} (h : _ ∧ _) => hf.ne h.1 h.2⟩
@@ -685,7 +687,9 @@ instance : OFE SI (α ⊕ β) where
 
 theorem dist_inl (h : x ≡{n}≡ y) : (.inl x : α ⊕ β) ≡{n}≡ .inl y := h
 theorem dist_inr {x y : β} (h : x ≡{n}≡ y) : (.inr x : α ⊕ β) ≡{n}≡ .inr y := h
+@[rocq_alias inl_ne_inj]
 theorem dist_ext_left {x y : α} (h : (.inl x : α ⊕ β) ≡{n}≡ .inl y) : x ≡{n}≡ y := h
+@[rocq_alias inr_ne_inj]
 theorem dist_ext_right {x y : β} (h : (.inr x : α ⊕ β) ≡{n}≡ .inr y) : x ≡{n}≡ y := h
 
 @[rocq_alias inl_ne]
@@ -1094,60 +1098,6 @@ def unitCOFE : COFE SI Unit :=
   }
 
 abbrev IsCOFEFun {α : Type _} (β : α → Type _) [OFEFun (SI := SI) β] := ∀ x : α, IsCOFE SI (β x)
-
-instance instIsCOFEOption [OFE SI α] [IsCOFE SI α] : IsCOFE SI (Option α) where
-  compl c := match c 0 with
-    | .some seed => .some <| compl <| c.map ⟨_, Option.ne_match id inferInstance seed⟩
-    | .none => none
-  conv_compl {n c} := by
-    cases h1 : c.chain 0 with
-    | none =>
-      refine Eq.dist <| Option.none_is_discrete.discrete ?_
-      exact h1 ▸ c.cauchy (SIdx.le_0_l (n := n)) |>.symm
-    | some seed =>
-      refine (some_dist_some.mpr conv_compl).trans ?_
-      dsimp only [Chain.map_apply]
-      cases h2 : c.chain n with
-      | none => exact (h1 ▸ h2 ▸ c.cauchy SIdx.le_0_l).elim
-      | some _ => rfl
-  lbcompl {n} hn c :=
-    match c.bchain 0 hn.limit_lt_0 with
-    | .some seed => .some <| IsCOFE.lbcompl hn <| c.map ⟨_, Option.ne_match id inferInstance seed⟩
-    | .none => none
-  conv_lbcompl {n} hn c {m} hm := by
-    cases h1 : c.bchain 0 hn.limit_lt_0 with
-    | none =>
-      refine Eq.dist <| Option.none_is_discrete.discrete ?_
-      exact (h1 ▸ c.bcauchy hn.limit_lt_0 hm SIdx.le_0_l).symm
-    | some seed =>
-      refine (some_dist_some.mpr (IsCOFE.conv_lbcompl hn _ hm)).trans ?_
-      dsimp only [BChain.map_apply]
-      cases h2 : c.bchain m hm with
-      | none => exact (h1 ▸ h2 ▸ c.bcauchy hn.limit_lt_0 hm SIdx.le_0_l).elim
-      | some _ => rfl
-  lbcompl_ne {n} hn c1 c2 {m} hc := by
-    have h0 := hc 0 hn.limit_lt_0
-    cases h1 : c1.bchain 0 hn.limit_lt_0 with rw [h1] at h0
-    | none =>
-      cases h2 : c2.bchain 0 hn.limit_lt_0 with
-      | none => rfl
-      | some _ => rw [h2] at h0; exact h0.elim
-    | some s1 =>
-      cases h2 : c2.bchain 0 hn.limit_lt_0 with rw [h2] at h0
-      | none => exact h0.elim
-      | some s2 =>
-        refine some_dist_some.mpr (IsCOFE.lbcompl_ne hn _ _ (fun p hp => ?_))
-        dsimp only [BChain.map_apply]
-        have hp' := hc p hp
-        cases e1 : c1.bchain p hp with rw [e1] at hp'
-        | none =>
-          cases e2 : c2.bchain p hp with rw [e2] at hp'
-          | none => exact h0
-          | some _ => exact hp'.elim
-        | some _ =>
-          cases e2 : c2.bchain p hp with rw [e2] at hp'
-          | none => exact hp'.elim
-          | some _ => exact hp'
 
 #rocq_ignore option_compl "Local Compl definition; folded into Lean's IsCOFE instance."
 
@@ -1949,6 +1899,7 @@ def BFChain.go (n : SI) (rec : ∀ m, m < n → BFChain f m) : BFChain f n where
     intro q Hq
     exact ((conv_bcompl (BFChain.goChain f n rec) Hp).lt Hq).trans ((rec p Hp).fixpoint q Hq)
 
+@[rocq_alias fixpoint_bchain]
 def fixpointBFChain (n : SI) : BFChain f n := instSI.lt_wf.fix (BFChain.go f) n
 
 theorem fixpointBFChain_unfold (n : SI) :
@@ -1957,6 +1908,7 @@ theorem fixpointBFChain_unfold (n : SI) :
 
 end BFChain
 
+@[rocq_alias fixpoint_chain]
 def Fixpoint.chain [COFE SI α] [Inhabited α] (f : α → α) [Contractive f] : Chain α where
   chain n := f (bcompl n (fixpointBFChain f n).car)
   cauchy {n i : SI} H := by
