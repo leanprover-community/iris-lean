@@ -1,6 +1,6 @@
 module
 
-public import IrisDoNightly.SepAlgebra
+public import IrisDoNightly.Legacy.SepAlgebra
 public import Std.Internal
 public import Std.Tactic.Do
 
@@ -26,7 +26,15 @@ def sepConj (P Q : HProp) : HProp :=
 def wand (P Q : HProp) : HProp :=
   fun σ => ∀ σ', σ #ₕ σ' → P σ' → Q (σ ⊎ₕ σ')
 
+/-- `arrayPointsTo l vs` asserts ownership of a contiguous block of cells starting at `l`, holding
+the values `vs` (cell `l + i` holds `vs[i]`). This is the small-footprint assertion for a HeapLang
+array / `bytes`. -/
+def arrayPointsTo (l : Loc) : List Val → HProp
+  | [] => emp
+  | v :: vs => sepConj (pointsTo l v) (arrayPointsTo (l + (1 : Int)) vs)
+
 scoped notation:70 l:max " ↦ " v:max => pointsTo l v
+scoped notation:70 l:max " ↦∗ " vs:max => arrayPointsTo l vs
 scoped infixr:65 " ∗ " => sepConj
 scoped infixr:60 " -∗ " => wand
 
@@ -38,6 +46,17 @@ theorem emp_sepConj (a : HProp) : (sepConj emp a) = a := by
     rwa [State.emp_union]
   · intro ha
     exact ⟨State.emp, σ, State.emp_disjoint σ, (State.emp_union σ).symm, rfl, ha⟩
+
+theorem sepConj_emp (a : HProp) : (sepConj a emp) = a := by
+  funext σ
+  apply propext
+  constructor
+  · rintro ⟨σ₁, σ₂, hd, rfl, ha, rfl⟩
+    rwa [State.union_comm (State.disjoint_comm (State.emp_disjoint σ₁)), State.emp_union]
+  · intro ha
+    exact ⟨σ, State.emp, State.disjoint_comm (State.emp_disjoint σ),
+      (State.union_comm (State.disjoint_comm (State.emp_disjoint σ))).trans (State.emp_union σ) |>.symm,
+      ha, rfl⟩
 
 theorem sepConj_assoc (a b c : HProp) :
     (sepConj (sepConj a b) c) = (sepConj a (sepConj b c)) := by

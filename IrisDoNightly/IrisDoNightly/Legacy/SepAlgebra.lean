@@ -47,7 +47,7 @@ theorem State.get?_single (l l' : Loc) (v : Option Val) :
   rw [ExtTreeMap.getElem?_insert, ExtTreeMap.getElem?_empty]
   by_cases h : l = l'
   · subst h; simp [compare_self]
-  · rw [if_neg (by simpa [compare_eq_iff_eq] using h), if_neg (fun hc => h hc.symm)]
+  · rw [ite_eq_right (by simpa [compare_eq_iff_eq] using h), ite_eq_right (fun hc => h hc.symm)]
 
 theorem State.union_none_iff (σ₁ σ₂ : State) (l : Loc) :
     (σ₁ ⊎ₕ σ₂).get? l = none ↔ σ₁.get? l = none ∧ σ₂.get? l = none := by
