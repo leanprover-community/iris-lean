@@ -760,11 +760,11 @@ variable {α : Type _} [CMRA α]
 
 theorem IdFree.of_dist {x₁ x₂ : α} {n} (e : x₁ ≡{n}≡ x₂) (h : IdFree x₁) : IdFree x₂ where
   id_free0_r z v := fun h₂ =>
-    have ee := Dist.le e (SIdx.le_0_l)
+    have ee := Dist.le e SIdx.le_0_l
     have := calc
-      x₁ • z ≡{(0 : Nat)}≡ x₂ • z := op_left_dist z ee
+      x₁ • z ≡{0}≡ x₂ • z := op_left_dist z ee
       _      ≡{0}≡ x₂ := h₂
-      _      ≡{(0 : Nat)}≡ x₁ := ee.symm
+      _      ≡{0}≡ x₁ := ee.symm
     h.id_free0_r _ ((validN_dist_iff ee).mpr v) this
 
 theorem _root_.Iris.OFE.Dist.idFree {x₁ x₂ : α} (e : x₁ ≡{n}≡ x₂) : IdFree x₁ ↔ IdFree x₂ :=
@@ -774,7 +774,7 @@ theorem _root_.Iris.OFE.Dist.idFree {x₁ x₂ : α} (e : x₁ ≡{n}≡ x₂) :
 
 @[rocq_alias id_freeN_r]
 theorem id_freeN_r {n n'} {x : α} [IdFree x] {y} (v : ✓{n} x) : ¬(x • y ≡{n'}≡ x) :=
-  id_free0_r _ (validN_of_le (SIdx.le_0_l) v) |>.imp (·.le (SIdx.le_0_l))
+  id_free0_r _ (validN_of_le SIdx.le_0_l v) |>.imp (·.le SIdx.le_0_l)
 
 @[rocq_alias id_freeN_l]
 theorem id_freeN_l {n n'} {x : α} [IdFree x] {y} (v : ✓{n} x) : ¬(y • x ≡{n'}≡ x) :=
@@ -1557,26 +1557,23 @@ section unit
 #rocq_ignore unit_core_id "Subsumed by unit_CoreId"
 
 @[rocq_alias unitR, rocq_alias unit_cmra_mixin]
-instance cmraUnit : CMRA Unit :=
-  letI : OFE Nat Unit := unitOFE
-  {
-    pcore _ := some ()
-    op _ _ := ()
-    ValidN _ _ := True
-    Valid _ := True
-    op_ne.ne _ _ _ := id
-    pcore_ne _ _ := ⟨(), rfl, .rfl⟩
-    validN_ne _ := id
-    valid_iff_validN := ⟨fun _ _ => ⟨⟩, fun _ => ⟨⟩⟩
-    validN_succ := id
-    validN_op_left := id
-    assoc := rfl
-    comm := rfl
-    pcore_op_left _ := rfl
-    pcore_idem _ := rfl
-    pcore_op_mono _ _ := ⟨.unit, rfl⟩
-    extend _ _ := ⟨(), (), rfl, .rfl, .rfl⟩
-  }
+instance cmraUnit : CMRA Unit where
+  pcore _ := some ()
+  op _ _ := ()
+  ValidN _ _ := True
+  Valid _ := True
+  op_ne.ne _ _ _ := id
+  pcore_ne _ _ := ⟨(), rfl, .rfl⟩
+  validN_ne _ := id
+  valid_iff_validN := ⟨fun _ _ => ⟨⟩, fun _ => ⟨⟩⟩
+  validN_succ := id
+  validN_op_left := id
+  assoc := rfl
+  comm := rfl
+  pcore_op_left _ := rfl
+  pcore_idem _ := rfl
+  pcore_op_mono _ _ := ⟨.unit, rfl⟩
+  extend _ _ := ⟨(), (), rfl, .rfl, .rfl⟩
 
 end unit
 

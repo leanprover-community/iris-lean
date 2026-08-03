@@ -20,7 +20,6 @@ variable [SIdx SI]
 
 variable {F : ∀ α β [COFE Nat α] [COFE Nat β], Type u} [OFunctorContractive Nat F]
 variable [∀ α [COFE Nat α], IsCOFE Nat (F α α)]
-local instance : COFE Nat Unit := unitCOFE
 variable [inh : Inhabited (F (ULift Unit) (ULift Unit))]
 
 namespace Fix.Impl
