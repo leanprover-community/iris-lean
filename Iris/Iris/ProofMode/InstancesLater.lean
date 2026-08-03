@@ -400,51 +400,61 @@ def intoLaterNLater : SynthTactic := λ e => do
   have oh : Q(Bool) := oh
   have n : Q(Nat) := n
 
-  -- Syntactic match with `▷ P'`, `▷^[m] P'` and `▷?p P'`
-  let some ⟨m, Pin, laterKind⟩ ← do
-      pure <| match_expr P with
-      | BIBase.later _ _ P'     => some (q(1), P', LaterKind.later)
-      | BIBase.laterN _ _ m P'  => some (m, P', LaterKind.laterN)
-      | BIBase.laterIf _ _ p P' => some (q(1), P', LaterKind.laterIf p)
-      | _ => none
-    | return .continue
-  have m : Q(Nat) := m
-  have Pin : Q($prop) := Pin
+  -- Syntactic match with `▷ P'`, `▷^[m] P'` and `▷?p P'`.
+  let candidates : List (Q(Nat) × Q($prop) × LaterKind) :=
+    match_expr P with
+    | BIBase.later _ _ P'     => [(q(1), P', .later)]
+    | BIBase.laterN _ _ m P'  => [(m, P', .laterN)]
+    -- Try `intoLaterN_laterN` and then `intoLaterN_laterN_bool`
+    | BIBase.laterIf _ _ p P' =>
+      have p : Q(Bool) := p
+      [(q(Bool.toNat $p), P', .laterN), (q(1), P', .laterIf p)]
+    | _ => []
 
-  let n' : Q(Nat) ← mkFreshExprMVarQ q(Nat)
-  let m' : Q(Nat) ← mkFreshExprMVarQ q(Nat)
-  let some h1 ← synthInstanceRecursiveQ q(NatCancel $n $m $n' $m')
-    | setMCtx mctx0; return .continue
+  for (m, Pin, kind) in candidates do
+    setMCtx mctx0
+    if let some inst ← intoLaterNLaterAux bi strict n oh m Pin kind then
+      return .success inst
+  setMCtx mctx0
+  return .continue
+where
+  intoLaterNLaterAux {u : Level} {prop : Q(Type u)} (_bi : Q(BI $prop))
+      (strict : Q(Bool)) (n : Q(Nat)) (oh : Q(Bool))
+      (m : Q(Nat)) (Pin : Q($prop)) (kind : LaterKind) : MetaM (Option Expr) := do
+    let n' : Q(Nat) ← mkFreshExprMVarQ q(Nat)
+    let m' : Q(Nat) ← mkFreshExprMVarQ q(Nat)
+    let some h1 ← synthInstanceRecursiveQ q(NatCancel $n $m $n' $m')
+      | return none
 
-  -- Check that progress is made in the recursive search
-  let progress ← withTransparency .instances <|
-    withConfig ({ · with isDefEqStuckEx := false }) do
-      return !(← isDefEq m m')
+    -- Check that progress is made in the recursive search
+    let progress ← withTransparency .instances <|
+      withConfig ({ · with isDefEqStuckEx := false }) do
+        return !(← isDefEq m m')
 
-  let Q : Q($prop) ← mkFreshExprMVarQ q($prop)
-  let some ⟨_, h2⟩ ←
-    if progress then
-      maybeIntoLaterN oh n' Pin Q
-    else do
-      let some inst ← synthInstanceRecursiveQ q(IntoLaterN true $oh $n' $Pin $Q)
-        | pure none
-      pure <| some <| ⟨q(true), inst⟩
-    | setMCtx mctx0; return .continue
+    let Q : Q($prop) ← mkFreshExprMVarQ q($prop)
+    let some ⟨_, h2⟩ ←
+      (if progress then
+        maybeIntoLaterN oh n' Pin Q
+      else do
+        let some inst ← synthInstanceRecursiveQ q(IntoLaterN true $oh $n' $Pin $Q)
+          | pure none
+        pure <| some <| ⟨q(true), inst⟩)
+      | return none
 
-  let lQ : Q($prop) ← mkFreshExprMVarQ q($prop)
-  let some h3 ← synthInstanceRecursiveQ q(MakeLaterN $m' $Q $lQ)
-    | throwError "MakeLaterN type class synthesis fails with {m'} and {Q}"
+    let lQ : Q($prop) ← mkFreshExprMVarQ q($prop)
+    let some h3 ← synthInstanceRecursiveQ q(MakeLaterN $m' $Q $lQ)
+      | throwError "MakeLaterN type class synthesis fails with {m'} and {Q}"
 
-  match laterKind with
-  | .later =>
-    have : $m =Q 1 := ⟨⟩
-    return .success q(intoLaterN_later $strict $oh $n $n' $m' $Pin $Q $lQ $h1 $h2 $h3)
-  | .laterN =>
-    return .success q(intoLaterN_laterN $strict $oh $n $m $n' $m' $Pin $Q $lQ $h1 $h2 $h3)
-  | .laterIf p =>
-    have p : Q(Bool) := p
-    have : $m =Q 1 := ⟨⟩
-    return .success q(intoLaterN_laterN_bool $strict $oh $n $p $n' $m' $Pin $Q $lQ $h1 $h2 $h3)
+    match kind with
+    | .later =>
+      have : $m =Q 1 := ⟨⟩
+      return some q(intoLaterN_later $strict $oh $n $n' $m' $Pin $Q $lQ $h1 $h2 $h3)
+    | .laterN =>
+      return some q(intoLaterN_laterN $strict $oh $n $m $n' $m' $Pin $Q $lQ $h1 $h2 $h3)
+    | .laterIf p =>
+      have p : Q(Bool) := p
+      have : $m =Q 1 := ⟨⟩
+      return some q(intoLaterN_laterN_bool $strict $oh $n $p $n' $m' $Pin $Q $lQ $h1 $h2 $h3)
 
 end
 

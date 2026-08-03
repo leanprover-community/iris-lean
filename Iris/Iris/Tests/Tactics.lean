@@ -1639,7 +1639,7 @@ PROP : Type u_1
 inst✝¹ : BI PROP
 inst✝ : BIAffine PROP
 P Q : PROP
-⊢ 
+⊢ ⏎
   ∗x✝ : P
   ∗HQ : <pers> Q
   ⊢ Q
@@ -2358,6 +2358,14 @@ example [BI PROP] (P Q : PROP) : ⊢ ▷ P -∗ Q -∗ ▷ (P ∗ Q) := by
   inext
   icombine HP HQ as HPQ
   iassumption
+
+/-- Tests `inext` with the handling of `BIBase.laterIf` and other modalities. -/
+example [BI PROP] (p : Bool) (P Q : PROP) : ⊢ □ ▷ P -∗ □ ▷?p ▷ Q -∗ ▷?p ▷ □ (P ∗ Q) := by
+  iintro #HP #HQ
+  inext; inext
+  imodintro
+  icombine HP HQ as HPQ
+  iexact HPQ
 
 variable {GF : BundledGFunctors} [InvGS GF]
 
