@@ -433,6 +433,7 @@ where
       else do
         let some inst ← synthInstanceRecursiveQ q(IntoLaterN true $oh $n' $Pin $Q)
           | pure none
+        let inst : Q(IntoLaterN false «$oh» «$n'» «$Pin» «$Q») := q(⟨$(inst).into_laterN⟩)
         pure <| some inst
       | return none
 
