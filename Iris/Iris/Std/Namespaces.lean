@@ -23,11 +23,13 @@ def nroot : Namespace := List.nil
 def ndot [Pos.Countable A] (N : Namespace) (x : A) : Namespace :=
   (Pos.Countable.encode x) :: N
 
+@[coe]
 def nclose (N : Namespace) : CoPset :=
   CoPset.suffixes ((Pos.flatten N))
 
 instance : CoeOut Namespace CoPset where coe := nclose
 
+@[coe]
 def ofName : Lean.Name → Namespace
   | .anonymous => nroot
   | .str rest str => ndot (ofName rest) str

@@ -29,7 +29,9 @@ class HeapLangGpreS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGp
 attribute [reducible, instance] HeapLangGpreS.heap_pre
 attribute [reducible, instance] HeapLangGpreS.proph_pre
 
-class HeapLangGS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGS_gen hlc GF where
+class HeapLangGS (hlc : outParam HasLC) (GF : BundledGFunctors) where
+  -- not an instance on purpose to avoid diamonds with IrisGS_gen
+  [invGS : InvGS_gen hlc GF]
   heap : genHeapGS Loc (Option Val) GF HeapF
   proph : prophMapGS ProphId (Val × Val) GF ProphMapF
 
@@ -49,9 +51,12 @@ theorem prophMapInterp_nil_append [HeapLangGS hlc GF] (κs : List Observation)
   .rfl
 
 instance HeapLang [HeapLangGS hlc GF] : IrisGS_gen hlc Exp GF where
+  invGS := HeapLangGS.invGS
   numLatersPerStep n := 0
   forkPost v := iprop(True)
-  stateInterp_mono σ ns obs nt := by iintro $
+  stateInterp_mono σ ns obs nt := by
+    let := @HeapLangGS.invGS hlc GF _
+    iintro $
 
 theorem state_interp_step [HeapLangGS hlc GF] (σ : State) (ns : Nat)
     (κs : List Observation) (nt : Nat) :
@@ -501,8 +506,10 @@ theorem wp_faa {l : Loc} {i1 i2 : Int} :
   iframe Hpt
   ipureintro; simp [toVal]; rfl
 
-theorem wp_new_proph :
-    ⊢ WP hl(newProph()) @ s; E {{ v, ∃ p, ∃ pvs, ⌜v = .lit (.prophecy p)⌝ ∗ proph p pvs }} := by
+theorem wp_new_proph Φ :
+    (∀ p pvs, proph p pvs -∗ Φ (.lit (.prophecy p))) -∗
+    WP hl(newProph()) @ s; E {{ Φ }} := by
+  iintro HΦ
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
   icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
@@ -529,13 +536,11 @@ theorem wp_new_proph :
   · rw [show σ₁.usedProphId.insert p' = {p'} ∪ σ₁.usedProphId by
         ext x; simp [Std.ExtTreeSet.mem_insert, Std.ExtTreeSet.mem_union_iff]]
     iexact Hproph'
-  isplitl [Htok]
+  isplitl [HΦ Htok]
   · iexists hl_val(#(BaseLit.prophecy p'))
     isplit
     · ipureintro; simp [toVal]; rfl
-    iexists p', _
-    iframe Htok
-    ipureintro; rfl
+    iapply HΦ $$ [$]
   · simp only [Algebra.BigOpL.bigOpL_nil]; itrivial
 
 theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × Val)}
@@ -605,7 +610,7 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
     iapply HΦ $$ %pvs'' %hpvs'_eq Hele
 
 theorem wp_resolve {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × Val)}
-    (hatom : Language.Atomic Language.Atomicity.StronglyAtomic e) (hne : toVal e = none) :
+    (hatom : Language.Atomic Language.Atomicity.StronglyAtomic e) (hne : toVal e = none := by decide) :
     proph p pvs -∗
     WP e @ s; E {{ r, ∀ pvs', ⌜pvs = (r, w) :: pvs'⌝ -∗ proph p pvs' -∗ Φ r }} -∗
     WP hl(resolve(&e, v(#p), v(&w))) @ s; E {{ Φ }} := by
@@ -617,6 +622,34 @@ theorem wp_resolve {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × Val)}
   iexists pvs
   iframe Hp
   iexact Hcont
+
+theorem wp_resolve_proph {p : ProphId} {w : Val} {pvs : List (Val × Val)} :
+    proph p pvs -∗
+    (∀ pvs', ⌜pvs = (hl_val(#()), w) :: pvs'⌝ -∗ proph p pvs' -∗ Φ hl_val(#())) -∗
+    WP hl(resolveProph(v(#p), v(&w))) @ s; E {{ Φ }} := by
+  iintro proph K
+  let Ki := ECtxItem.resolveL (ECtxItem.appL hl_val(#())) hl_val(#p) hl_val(&w)
+  have shape: hl(resolveProph(#p ,&w)) = fill (Expr := Exp) [Ki] hl(λ _, #()) := by
+    simp [fillItem, Ki, ECtxItem.fill]
+  rw [shape]
+  iapply wp_bind
+  iapply wp_pure_step_fupd (Hφ := ⟨⟩)
+  simp only [Nat.repeat, EctxItemLanguage.fill_cons, fillItem, ECtxItem.fill, EctxItemLanguage.fill_nil, wp_value_iff, Ki]
+  iintro !> !> !> _ !>
+  have hatom : Language.Atomic Language.Atomicity.StronglyAtomic hl((v(λ _, #())) #()) := by
+    constructor
+    intro σ _ _ _ _ h
+    apply prim_step_to_val_always_to_val (κsₐ := []) (σ₁ₐ := σ) ?next h
+    case next =>
+      apply ProgramLogic.EctxLanguage.primStep_of_baseStep
+      simp only [BaseStep.baseStep, val_to_ofVal]
+      constructor
+      rfl
+  iapply wp_resolve hatom (hne := by decide) $$ proph
+  iapply wp_rec rfl
+  simp only [Exp.subst, wp_value_iff]
+  iintro !> !>
+  iassumption
 
 end Lifting
 
