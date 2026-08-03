@@ -4,7 +4,7 @@ keywords = ["math"]
 defaultTargets = ["IrisMath"]
 
 [leanOptions]
-pp.unicode.fun = true 
+pp.unicode.fun = true
 relaxedAutoImplicit = true
 weak.linter.mathlibStandardSet = true
 maxSynthPendingDepth = 3
