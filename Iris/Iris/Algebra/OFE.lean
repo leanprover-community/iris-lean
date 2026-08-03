@@ -1803,7 +1803,7 @@ section Fixpoint
 variable [instSI : SIdx SI]
 
 @[rocq_alias LimitPreserving]
-structure LimitPreserving [COFE SI α] (P : α → Prop) : Prop where
+class LimitPreserving [COFE SI α] (P : α → Prop) : Prop where
   compl (c : Chain α) : (∀ n, P (c n)) → P (COFE.compl c)
   lbcompl {n : SI} (hn : SIdx.Limit n) (c : BChain α n) :
     (∀ m (hm : m < n), P (c.bchain m hm)) → P (IsCOFE.lbcompl hn c)
