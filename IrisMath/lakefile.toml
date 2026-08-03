@@ -13,7 +13,7 @@ linter.style.header = false
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
-rev = "v4.32.2"
+rev = "v4.33.0-rc1"
 
 [[require]]
 name = "iris"
