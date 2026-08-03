@@ -272,10 +272,10 @@ theorem updateP_both_unpersist {q : Qp} {a b : A} :
 
 @[rocq_alias frac_authURF]
 abbrev FracAuthURF (T : COFE.OFunctorPre Nat) [RFunctor T] : COFE.OFunctorPre Nat :=
-  AuthURF (OptionOF (ProdOF Nat (constOF (Qp)) T))
+  AuthURF (OptionOF (ProdOF (constOF (Qp)) T))
 
 @[rocq_alias frac_authRF]
 abbrev FracAuthF (T : COFE.OFunctorPre Nat) [RFunctor T] : COFE.OFunctorPre Nat :=
-  AuthRF (OptionOF (ProdOF Nat (constOF (Qp)) T))
+  AuthRF (OptionOF (ProdOF (constOF (Qp)) T))
 
 end FracAuth

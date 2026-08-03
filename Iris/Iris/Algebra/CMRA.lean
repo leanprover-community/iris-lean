@@ -1722,7 +1722,7 @@ section ProdRF
 open RFunctor
 
 @[rocq_alias prodRF]
-instance instRFunctorProdOF [RFunctor F1] [RFunctor F2] : RFunctor (ProdOF Nat F1 F2) where
+instance instRFunctorProdOF [RFunctor F1] [RFunctor F2] : RFunctor (ProdOF F1 F2) where
   map f g := Prod.mapC (map f g) (map f g)
   map_ne.ne _ _ _ Hx _ _ Hy _ :=
     Prod.map_ne (fun _ => map_ne.ne Hx Hy _) (fun _ => map_ne.ne Hx Hy _)
@@ -1733,7 +1733,7 @@ instance instRFunctorProdOF [RFunctor F1] [RFunctor F2] : RFunctor (ProdOF Nat F
 @[rocq_alias prodRF_contractive]
 instance instRFunctorContractiveProdOF
     [RFunctorContractive F1] [RFunctorContractive F2] :
-    RFunctorContractive (ProdOF Nat F1 F2) where
+    RFunctorContractive (ProdOF F1 F2) where
   map_contractive.1 H _ :=
     Prod.map_ne (fun _ => RFunctorContractive.map_contractive.1 H _)
       (fun _ => RFunctorContractive.map_contractive.1 H _)

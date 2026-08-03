@@ -214,13 +214,13 @@ theorem update_surplus_cancel {p q : Qp} {a b : A} [CMRA.Cancelable b] :
 
 @[rocq_alias ufrac_authURF]
 abbrev UFracAuthURF (T : COFE.OFunctorPre Nat) [RFunctor T] : COFE.OFunctorPre Nat :=
-  AuthURF (OptionOF (ProdOF Nat (constOF UFrac) T))
+  AuthURF (OptionOF (ProdOF (constOF UFrac) T))
 
 #rocq_ignore ufrac_authURF_contractive "Contractiveness is bundled into Lean's RFunctor class"
 
 @[rocq_alias ufrac_authRF]
 abbrev UFracAuthRF (T : COFE.OFunctorPre Nat) [RFunctor T] : COFE.OFunctorPre Nat :=
-  AuthRF (OptionOF (ProdOF Nat (constOF UFrac) T))
+  AuthRF (OptionOF (ProdOF (constOF UFrac) T))
 
 #rocq_ignore ufrac_authRF_contractive "Contractiveness is bundled into Lean's RFunctor class"
 

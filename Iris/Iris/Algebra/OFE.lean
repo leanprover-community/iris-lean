@@ -1545,11 +1545,13 @@ def Prod.mapO (f : A -n> A') (g : B -n> B') : A × B -n> A' × B' where
 instance Prod.mapO_ne : NonExpansive₂ (Prod.mapO (A := A) (A' := A') (B := B) (B' := B')) where
   ne _ _ _ Hf _ _ Hg _ := Prod.map_ne Hf Hg
 
-abbrev ProdOF SI [SIdx SI] (F1 F2 : OFunctorPre SI) : OFunctorPre SI := fun A B => (F1 A B) × (F2 A B)
+abbrev ProdOF {SI} [SIdx SI] (F1 F2 : OFunctorPre SI) :
+    OFunctorPre SI :=
+  fun A B => (F1 A B) × (F2 A B)
 
 open OFunctor in
 @[rocq_alias prodOF]
-instance instOFunctorProdOF [OFunctor SI F1] [OFunctor SI F2] : OFunctor SI (ProdOF SI F1 F2) where
+instance instOFunctorProdOF [OFunctor SI F1] [OFunctor SI F2] : OFunctor SI (ProdOF F1 F2) where
   ofe := inferInstance
   map f g := Prod.mapO (map f g) (map f g)
   map_ne.ne _ _ _ Hx _ _ Hy _ := ⟨map_ne.ne Hx Hy _, map_ne.ne Hx Hy _⟩
@@ -1559,7 +1561,7 @@ instance instOFunctorProdOF [OFunctor SI F1] [OFunctor SI F2] : OFunctor SI (Pro
 open OFunctorContractive in
 @[rocq_alias prodOF_contractive]
 instance instOFunctorContractiveProdOF [OFunctorContractive SI F1] [OFunctorContractive SI F2] :
-    OFunctorContractive SI (ProdOF SI F1 F2) where
+    OFunctorContractive SI (ProdOF F1 F2) where
   map_contractive.1 H _ :=
    Prod.map_ne (fun _ => map_contractive.1 H _) (fun _ => map_contractive.1 H _)
 
@@ -1601,11 +1603,11 @@ def Sum.mapO (f : A -n> A') (g : B -n> B') : A ⊕ B -n> A' ⊕ B' where
 instance Sum.mapO_ne : NonExpansive₂ (Sum.mapO (A := A) (A' := A') (B := B) (B' := B')) where
   ne _ _ _ Hf _ _ Hg _ := Sum.map_ne Hf Hg
 
-abbrev SumOF SI [SIdx SI] (F1 F2 : OFunctorPre SI) : OFunctorPre SI := fun A B => (F1 A B) ⊕ (F2 A B)
+abbrev SumOF {SI} [SIdx SI] (F1 F2 : OFunctorPre SI) : OFunctorPre SI := fun A B => (F1 A B) ⊕ (F2 A B)
 
 open OFunctor in
 @[rocq_alias sumOF]
-instance instOFunctorSumOF [OFunctor SI F1] [OFunctor SI F2] : OFunctor SI (SumOF SI F1 F2) where
+instance instOFunctorSumOF [OFunctor SI F1] [OFunctor SI F2] : OFunctor SI (SumOF F1 F2) where
   ofe := inferInstance
   map f g := Sum.mapO (map f g) (map f g)
   map_ne.ne _ _ _ Hx _ _ Hy x := match x with
@@ -1621,7 +1623,7 @@ instance instOFunctorSumOF [OFunctor SI F1] [OFunctor SI F2] : OFunctor SI (SumO
 open OFunctorContractive in
 @[rocq_alias sumOF_contractive]
 instance instOFunctorContractiveSumOF [OFunctorContractive SI F1] [OFunctorContractive SI F2] :
-    OFunctorContractive SI (SumOF SI F1 F2) where
+    OFunctorContractive SI (SumOF F1 F2) where
   map_contractive.1 H _ :=
     Sum.map_ne (fun _ => map_contractive.1 H _) (fun _ => map_contractive.1 H _)
 
