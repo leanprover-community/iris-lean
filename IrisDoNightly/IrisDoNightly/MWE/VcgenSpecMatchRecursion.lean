@@ -14,8 +14,8 @@ We verify HeapLang codecs by `@[spec]`-registering each function's correctness l
 literally `simp only [prog]; vcgen`: `vcgen` symbolically executes the whole body and leaves the pure
 side goals. We would like the SAME for a recursive body — `simp only [prog]; vcgen [ih]`, where `ih`
 is the induction hypothesis (which is exactly the spec for the recursive call) — leaving the pure side
-goals. See `Codec/Mtf/Cps.lean` (`hlEraseIdx`, `hlNth`) and `Codec/Rle/Cps.lean` (`hlReplicateApp`)
-for cases where a hand-rolled loop makes this work.
+goals. See `Codec/Mtf/Correctness.lean` (`hlEraseIdx_cps`) and `Codec/Rle/Correctness.lean`
+(`hlReplicateApp_cps`) for cases where `vcgen'` makes this work.
 
 ## The gap
 It works ONLY when the recursive call sits at a spot where we can `until`-stop the sweep and
@@ -47,6 +47,7 @@ open Iris.HeapLang
 namespace Iris.HeapLang.Ax.MWE
 
 open HeapLangAxioms
+open scoped Iris.HeapLang.Ax.Auto
 
 variable {wp} [HeapLangAxioms wp]
 

@@ -27,27 +27,18 @@ ties `lzss`'s self-referential copy to `rle`'s `replicate`.  This is the reusabl
 private theorem copyBack_offset_one (b : Int) :
     ∀ (k : Nat) (acc : List Int),
       copyBack 1 k (acc ++ [b]) = acc ++ b :: List.replicate k b := by
-  intro k
-  induction k with
-  | zero => intro acc; simp [copyBack]
-  | succ k ih =>
-    intro acc
-    have hlast : (acc ++ [b]).getD ((acc ++ [b]).length - 1) 0 = b := by simp
-    simp only [copyBack, hlast]
-    rw [ih (acc ++ [b])]
-    simp [List.replicate_succ]
+  intro k; induction k <;> grind [copyBack]
 
 /-- **Trivial round-trip.**  The degenerate all-literals encoder round-trips: the base case every
 `Factors`-valid parse specialises — the hash-chain oracle only ever *improves* the ratio. -/
 private theorem lzssDecode_lit (l : List Int) : lzssDecode [Tok.lit l] = l := by
-  simp [lzssDecode, lzssDecodeAux]
+  grind [lzssDecode, lzssDecodeAux]
 
 /-- A literal `[b]` followed by `copy 1 n` decodes to `b` repeated `n+1` times — `lzss` expressing an
 `rle` run, verified through the shared overlap lemma. -/
 private theorem lzssDecode_run (b : Int) (n : Nat) :
     lzssDecode [Tok.lit [b], Tok.copy 1 n] = b :: List.replicate n b := by
-  have h := copyBack_offset_one b n []
-  simpa [lzssDecode, lzssDecodeAux] using h
+  grind [lzssDecode, lzssDecodeAux, copyBack_offset_one]
 
 theorem hlLength_spec (t : List Int) :
     True ⊑ wp⟦hl(v(&hlLength) v(&(vList t)))⟧
@@ -61,7 +52,7 @@ theorem hlLength_spec (t : List Int) :
     refine Or.inl ⟨_, rfl, ?_⟩
     hl_beta
     vcgen
-    simp [byteVal]
+    grind [byteVal]
   | cons x xs ih =>
     intro
     simp only [hlLength]
@@ -92,7 +83,7 @@ theorem hlSnoc_spec (t : List Int) : ∀ b : Int,
     refine spec_injL ?_                    -- `injl(#())` (right pair element)
     refine spec_val ?_
     refine spec_val ?_
-    simp [byteVal]
+    grind [byteVal]
   | cons x xs ih =>
     intro b
     simp only [hlSnoc]
@@ -107,7 +98,7 @@ theorem hlSnoc_spec (t : List Int) : ∀ b : Int,
     refine spec_pair ?_
     refine spec_val ?_
     refine spec_val ?_
-    simp [byteVal]
+    grind [byteVal]
 
 /-- Bridge between the two indexing conventions: `hlNth`'s model `nthD` (an `Int` index, returning
 `0` off the end) agrees with `List.getD` at the corresponding `Nat` index. -/
@@ -139,7 +130,7 @@ theorem hlCopyBack_spec (k : Nat) : ∀ (off : Nat) (acc : List Int), off ≤ ac
     refine ⟨_, rfl, ?_⟩
     simp only [beq_self_eq_true, ite_true]
     vcgen
-    simp [copyBack]
+    grind [copyBack]
   | succ k ih =>
     intro off acc hpre
     simp only [hlCopyBack]
@@ -194,7 +185,7 @@ theorem hlAppend_spec (xs : List Int) : ∀ ys : List Int,
     refine spec_pair ?_
     refine spec_val ?_
     refine spec_val ?_
-    simp [byteVal]
+    grind [byteVal]
 
 theorem hlLzssDecodeAux_spec (ts : List Tok) : ∀ acc : List Int, WF ts acc →
     True ⊑ wp⟦hl(v(&hlLzssDecodeAux) v(&(tokList ts)) v(&(vList acc)))⟧
@@ -208,7 +199,7 @@ theorem hlLzssDecodeAux_spec (ts : List Tok) : ∀ acc : List Int, WF ts acc →
     refine Or.inl ⟨_, rfl, ?_⟩
     hl_beta
     vcgen
-    simp [lzssDecodeAux]
+    grind [lzssDecodeAux]
   | cons t ts' ih =>
     intro acc hwf
     cases t with
@@ -226,7 +217,7 @@ theorem hlLzssDecodeAux_spec (ts : List Tok) : ∀ acc : List Int, WF ts acc →
       hl_call (hlAppend_spec acc bs)       -- `let acc1 := hlAppend acc bs`
       refine wp_mono ?_ (ih (acc ++ bs) hwf trivial)
       intro v hv; subst hv
-      simp [lzssDecodeAux]
+      grind [lzssDecodeAux]
     | copy off len =>
       simp only [hlLzssDecodeAux, tokList, tokVal]
       hl_beta; hl_beta
@@ -244,7 +235,7 @@ theorem hlLzssDecodeAux_spec (ts : List Tok) : ∀ acc : List Int, WF ts acc →
       hl_call (hlCopyBack_spec len off acc hoff)   -- `let acc2 := hlCopyBack len off acc`
       refine wp_mono ?_ (ih (copyBack off len acc) hwf' trivial)
       intro v hv; subst hv
-      simp [lzssDecodeAux]
+      grind [lzssDecodeAux]
 
 /-- **`lzss` decoder verified heap-free.**  On any well-formed token stream, the HeapLang decoder
 computes exactly the pure model `lzssDecode`. -/

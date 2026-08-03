@@ -8,13 +8,12 @@ import IrisDoNightly.Codec.Mtf
 import IrisDoNightly.Codec.Rle
 import IrisDoNightly.Codec.Lzss
 
--- Proof-automation infrastructure (vcgen-steppable @[spec] set) and framework-gap MWEs
+-- Proof-automation infrastructure (vcgen-steppable @[spec] set) and the framework-gap MWE
 import IrisDoNightly.Codec.Auto
 import IrisDoNightly.Codec.DeltaRoundtrip
 import IrisDoNightly.Codec.RleRoundtrip
 import IrisDoNightly.Codec.PipelineRoundtrip
-import IrisDoNightly.MWE.SubstNormalization
-import IrisDoNightly.MWE.CompositionHang
+import IrisDoNightly.MWE.VcgenSpecMatchRecursion
 
 -- Legacy: the separation-logic experiments, superseded by the heap-free `Codec/` approach
 import IrisDoNightly.Legacy.Array

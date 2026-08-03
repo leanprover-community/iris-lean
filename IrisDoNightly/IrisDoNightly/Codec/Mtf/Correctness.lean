@@ -2,10 +2,17 @@ module
 
 public import IrisDoNightly.Codec.Mtf.Code
 public import IrisDoNightly.Codec.Mtf.Model
+public import IrisDoNightly.Codec.Auto
 import Std.Tactic.Do
 import Std.Internal.Do
 
-/-! # The `mtf` (move-to-front) codec — correctness proofs -/
+/-! # The `mtf` (move-to-front) codec — correctness proofs
+
+Proof shape is **(vcgen-ish) then (grind-ish)** throughout.  The tail-recursive helper `hlEraseIdx`
+is driven end-to-end by `vcgen'` (in an `open scoped …Auto` section); the buried-recursion `hlIndexOf`
+and the constructed-arg-recursion `hlMtfCompress`/`hlMtfDecompress` keep base-`vcgen` stepping (the
+framework gap-2 wall) followed by a `grind` discharge — the `Auto` spec set is *scoped*, so those base
+proofs are unaffected by the import. -/
 
 set_option mvcgen.warning false
 
@@ -30,7 +37,7 @@ public theorem hlIndexOf_spec (t : List Int) : ∀ c : Int,
     refine Or.inl ⟨_, rfl, ?_⟩
     hl_beta
     vcgen
-    simp [idxOf, byteVal]
+    grind [idxOf, byteVal]
   | cons x xs ih =>
     intro c
     simp only [hlIndexOf]
@@ -50,7 +57,7 @@ public theorem hlIndexOf_spec (t : List Int) : ∀ c : Int,
       subst hxc
       simp only [beq_self_eq_true, ite_true]
       vcgen
-      simp [idxOf]
+      grind [idxOf]
     · -- mismatch: `1 +` the index in the tail, the recursion discharged by the IH
       have hb : (hl_val(#x) == hl_val(#c)) = false := by simp [hxc]
       rw [hb]
@@ -60,54 +67,34 @@ public theorem hlIndexOf_spec (t : List Int) : ∀ c : Int,
       intro v hv
       subst hv
       refine spec_val ?_
-      simp only [byteVal, BinOp.eval, Option.some.injEq, exists_eq_left', Val.lit.injEq,
-        BaseLit.int.injEq, idxOf, ite_eq_right hxc]
-      omega
+      grind [byteVal, BinOp.eval, idxOf]
 
-theorem hlEraseIdx_spec (t : List Int) : ∀ r : Int,
-    True ⊑ wp⟦hl(v(&hlEraseIdx) v(&(vList t)) v(&(byteVal r)))⟧
-      (fun v => v = vList (eraseIdx' t r)) := by
+-- === clean CPS helpers (vcgen'-driven, `Auto` spec set opened for this section) ===
+section
+open scoped Iris.HeapLang.Ax.Auto
+
+/-- Tail-recursive `hlEraseIdx`: `vcgen'` does all stepping (the `if r=0` guard auto-splits), then
+`simp_all` discharges both pure branches — (vcgen-ish) then (grind-ish). -/
+public theorem hlEraseIdx_cps (t : List Int) : ∀ r : Int, ∀ Φ : Val → Prop,
+    Φ (vList (eraseIdx' t r)) ⊑ wp⟦hl(v(&hlEraseIdx) v(&(vList t)) v(&(byteVal r)))⟧ Φ := by
   induction t with
-  | nil =>
-    intro r
-    simp only [hlEraseIdx]
-    hl_beta; hl_beta
-    vcgen
-    refine Or.inl ⟨_, rfl, ?_⟩
-    hl_beta
-    vcgen
-    simp [eraseIdx', vList]
+  | nil => intro r Φ; simp only [hlEraseIdx]; vcgen' []; assumption
   | cons x xs ih =>
-    intro r
-    simp only [hlEraseIdx]
-    hl_beta; hl_beta
-    vcgen
-    refine Or.inr ⟨_, rfl, ?_⟩
-    hl_beta
-    hl_projlet                             -- `let x := fst p`
-    hl_projlet                             -- `let xs := snd p`
-    vcgen
-    simp only [byteVal, BinOp.eval, Val.compareSafe, Val.isUnboxed, BaseLit.isUnboxed,
-      Bool.or_true, ite_true, Option.some.injEq, exists_eq_left']
-    refine ⟨_, rfl, ?_⟩
-    by_cases hr : r = 0
-    · -- drop here: return the tail
-      subst hr
-      simp only [beq_self_eq_true, ite_true]
-      vcgen
-      simp [eraseIdx']
-    · -- keep `x`, recurse into the tail
-      have hb : (hl_val(#r) == hl_val(#(0:Int))) = false := by simp [hr]
-      rw [hb]
-      simp only [Bool.false_eq_true, ite_false]
-      hl_binop                             -- `let r' := r - 1`
-      refine spec_injR ?_
-      refine spec_pair ?_
-      refine wp_mono ?_ (ih (r - 1) trivial)
-      intro v hv
-      subst hv
-      refine spec_val ?_
-      simp [eraseIdx', ite_eq_right hr, vList, byteVal]
+    intro r Φ; simp only [hlEraseIdx]; vcgen' [ih] <;> simp_all [eraseIdx', vList, byteVal]
+
+/-- CPS form of `hlIndexOf` — recursion is buried in `#1 + go …` (framework gap-2), so the closed
+`hlIndexOf_spec` above stays base-`vcgen` and the CPS wrapper is derived from it. -/
+public theorem hlIndexOf_cps (t : List Int) (c : Int) (Φ : Val → Prop) :
+    Φ (byteVal (idxOf t c)) ⊑ wp⟦hl(v(&hlIndexOf) v(&(vList t)) v(&(byteVal c)))⟧ Φ := by
+  derive_cps (hlIndexOf_spec t c trivial)
+
+end
+
+/-- Closed `hlEraseIdx` spec — 1-line corollary of the CPS form. -/
+public theorem hlEraseIdx_spec (t : List Int) : ∀ r : Int,
+    True ⊑ wp⟦hl(v(&hlEraseIdx) v(&(vList t)) v(&(byteVal r)))⟧
+      (fun v => v = vList (eraseIdx' t r)) :=
+  fun r _ => hlEraseIdx_cps t r _ rfl
 
 theorem hlMtfCompress_spec (l : List Int) : ∀ tbl : List Int,
     True ⊑ wp⟦hl(v(&hlMtfCompress) v(&(vList tbl)) v(&(vList l)))⟧
@@ -121,7 +108,7 @@ theorem hlMtfCompress_spec (l : List Int) : ∀ tbl : List Int,
     refine Or.inl ⟨_, rfl, ?_⟩
     hl_beta
     vcgen
-    simp [mtfEnc, vList]
+    grind [mtfEnc, vList]
   | cons c cs ih =>
     intro tbl
     simp only [hlMtfCompress]
@@ -147,7 +134,7 @@ theorem hlMtfCompress_spec (l : List Int) : ∀ tbl : List Int,
     intro v hv
     subst hv
     refine spec_val ?_
-    simp [mtfEnc, vList, byteVal]
+    grind [mtfEnc, vList, byteVal]
 
 theorem hlMtfDecompress_spec (l : List Int) : ∀ tbl : List Int,
     True ⊑ wp⟦hl(v(&hlMtfDecompress) v(&(vList tbl)) v(&(vList l)))⟧
@@ -161,7 +148,7 @@ theorem hlMtfDecompress_spec (l : List Int) : ∀ tbl : List Int,
     refine Or.inl ⟨_, rfl, ?_⟩
     hl_beta
     vcgen
-    simp [mtfDec, vList]
+    grind [mtfDec, vList]
   | cons r rs ih =>
     intro tbl
     simp only [hlMtfDecompress]
@@ -186,7 +173,7 @@ theorem hlMtfDecompress_spec (l : List Int) : ∀ tbl : List Int,
     intro v hv
     subst hv
     refine spec_val ?_
-    simp [mtfDec, vList, byteVal]
+    grind [mtfDec, vList, byteVal]
 
 private theorem idxOf_nonneg (tbl : List Int) (c : Int) : 0 ≤ idxOf tbl c := by
   induction tbl <;> grind [idxOf]
@@ -217,5 +204,23 @@ private theorem mtfDec_mtfEnc (l : List Int) : ∀ tbl : List Int, tbl.Nodup →
     intro x hx
     have hxt : x ∈ tbl := hmem x (by simp [hx])
     exact hperm.mem_iff.mp hxt
+
+/-- **End-to-end `mtf` round-trip.**  Decompressing the compression of `l` against a duplicate-free
+table that already contains every byte of `l` returns `l` unchanged — the `mtf` analogue of
+`delta_roundtrip` / `rle_roundtrip`, assembling the compressor/decompressor specs with the model
+round-trip `mtfDec_mtfEnc`. -/
+theorem mtf_roundtrip (tbl l : List Int) (hnd : tbl.Nodup) (hmem : ∀ x ∈ l, x ∈ tbl) :
+    True ⊑ wp⟦hl(v(&hlMtfDecompress) v(&(vList tbl))
+      (v(&hlMtfCompress) v(&(vList tbl)) v(&(vList l))))⟧
+      (fun v => v = vList l) := by
+  refine PartialOrder.rel_trans ?_
+    (spec_bind (ECtxItem.appR hl(v(&hlMtfDecompress) v(&(vList tbl)))))
+  refine PartialOrder.rel_trans (hlMtfCompress_spec l tbl) (wp_mono ?_)
+  intro v hv
+  subst hv
+  refine wp_mono ?_ (hlMtfDecompress_spec (mtfEnc tbl l) tbl trivial)
+  intro v hv
+  subst hv
+  rw [mtfDec_mtfEnc l tbl hnd hmem]
 
 end Iris.HeapLang.Ax

@@ -120,7 +120,7 @@ theorem hlNth_spec (t : List Int) : ∀ r : Int,
     refine Or.inl ⟨_, rfl, ?_⟩
     hl_beta
     vcgen
-    simp [nthD, byteVal]
+    grind [nthD, byteVal]
   | cons x xs ih =>
     intro r
     simp only [hlNth]
@@ -138,7 +138,7 @@ theorem hlNth_spec (t : List Int) : ∀ r : Int,
     · subst hr
       simp only [beq_self_eq_true, ite_true]
       vcgen
-      simp [nthD]
+      grind [nthD]
     · have hb : (hl_val(#r) == hl_val(#(0:Int))) = false := by simp [hr]
       rw [hb]
       simp only [Bool.false_eq_true, ite_false]
@@ -146,7 +146,7 @@ theorem hlNth_spec (t : List Int) : ∀ r : Int,
       refine wp_mono ?_ (ih (r - 1) trivial)
       intro v hv
       subst hv
-      simp [nthD, ite_eq_right hr, byteVal]
+      grind [nthD, byteVal]
 
 end
 

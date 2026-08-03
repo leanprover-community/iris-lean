@@ -16,6 +16,7 @@ open Iris.HeapLang
 namespace Iris.HeapLang.Ax
 
 open HeapLangAxioms
+open scoped Iris.HeapLang.Ax.Auto
 
 variable {wp} [HeapLangAxioms wp]
 
@@ -84,9 +85,8 @@ public theorem deltaDec_deltaEnc (cs : List Int) (h : ∀ x ∈ cs, 0 ≤ x ∧ 
   | cons c cs ih =>
     intro prev
     have hc := h c (by simp)
-    have key : (prev + (c - prev + 256) % 256) % 256 = c := by grind
-    simp only [deltaEnc, deltaDec, key]
-    exact congrArg (c :: ·) (ih (fun x hx => h x (by simp [hx])) c)
+    have hih := ih (fun x hx => h x (by simp [hx]))
+    grind [deltaEnc, deltaDec]
 
 public theorem deltaEnc_mem_range (prev : Int) (l : List Int) :
     ∀ x ∈ deltaEnc prev l, 0 ≤ x ∧ x < 256 := by

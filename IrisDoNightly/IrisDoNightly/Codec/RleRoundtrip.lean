@@ -21,6 +21,7 @@ open Iris.HeapLang
 namespace Iris.HeapLang.Ax
 
 open HeapLangAxioms
+open scoped Iris.HeapLang.Ax.Auto
 
 variable {wp} [HeapLangAxioms wp]
 
