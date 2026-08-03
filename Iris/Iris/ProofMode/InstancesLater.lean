@@ -330,10 +330,10 @@ instance (priority := high) intoLaterN_default_0 [BI PROP] strict only_head (P :
   into_laterN := laterN_intro 0
 
 @[rocq_alias into_laterN_later]
-theorem intoLaterN_later [BI PROP] only_head n n' m' (P Q lQ : PROP)
-    [h1 : NatCancel n 1 n' m']
-    [h2 : IntoLaterN false only_head n' P Q]
-    [h3 : MakeLaterN m' Q lQ] : IntoLaterN strict only_head n iprop(▷ P) lQ where
+theorem intoLaterN_later [BI PROP] strict {strict'} only_head n n' m' (P Q lQ : PROP)
+    (h1 : NatCancel n 1 n' m')
+    (h2 : IntoLaterN strict' only_head n' P Q)
+    (h3 : MakeLaterN m' Q lQ) : IntoLaterN strict only_head n iprop(▷ P) lQ where
   into_laterN := calc
       _ ⊢ ▷▷^[n']Q      := later_mono h2.into_laterN
       _ ⊢ ▷^[n' + 1]Q    := (later_laterN _).mpr
@@ -341,10 +341,10 @@ theorem intoLaterN_later [BI PROP] only_head n n' m' (P Q lQ : PROP)
       _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
 
 @[rocq_alias into_laterN_laterN]
-theorem intoLaterN_laterN [BI PROP] only_head n m n' m' (P Q lQ : PROP)
-    [h1 : NatCancel n m n' m']
-    [h2 : IntoLaterN false only_head n' P Q]
-    [h3 : MakeLaterN m' Q lQ] : IntoLaterN strict only_head n iprop(▷^[m] P) lQ where
+theorem intoLaterN_laterN [BI PROP] strict {strict'} only_head n m n' m' (P Q lQ : PROP)
+    (h1 : NatCancel n m n' m')
+    (h2 : IntoLaterN strict' only_head n' P Q)
+    (h3 : MakeLaterN m' Q lQ) : IntoLaterN strict only_head n iprop(▷^[m] P) lQ where
   into_laterN := calc
       _ ⊢ ▷^[m] ▷^[n']Q := laterN_mono _ h2.into_laterN
       _ ⊢ ▷^[m + n']Q    := (laterN_add _ _).mpr
@@ -352,18 +352,101 @@ theorem intoLaterN_laterN [BI PROP] only_head n m n' m' (P Q lQ : PROP)
       _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
 
 @[ipm_backtrack, rocq_alias into_laterN_laterN_bool]
-instance (priority := default - 300) intoLaterN_laterN_bool [BI PROP] only_head n (p : Bool) n' m' (P Q lQ : PROP)
-    [h1 : NatCancel n 1 n' m']
-    [h2 : IntoLaterN false only_head n' P Q]
-    [h3 : MakeLaterN m' Q lQ] : IntoLaterN strict only_head n iprop(▷?p P) lQ where
+theorem intoLaterN_laterN_bool [BI PROP] strict {strict'} only_head n (p : Bool) n' m' (P Q lQ : PROP)
+    (h1 : NatCancel n 1 n' m')
+    (h2 : IntoLaterN strict' only_head n' P Q)
+    (h3 : MakeLaterN m' Q lQ) : IntoLaterN strict only_head n iprop(▷?p P) lQ where
   into_laterN := by
     cases p
-    · exact (later_intro.trans (later_mono h2.into_laterN)).trans $ (later_laterN _).2.trans $ by
-        rw [h1.1]
-        apply (laterN_add _ _).1.trans (laterN_mono _ h3.1.1)
-    · exact (later_mono h2.into_laterN).trans $ (later_laterN _).2.trans $ by
-        rw [h1.1]
-        apply (laterN_add _ _).1.trans (laterN_mono _ h3.1.1)
+    · calc
+        _ ⊢ _ := later_intro
+        _ ⊢ _ := later_mono h2.into_laterN
+        _ ⊢ _ := (later_laterN _).mpr
+        _ ⊢ _ := by rw [h1.nat_cancel]; exact (laterN_add _ _).mp
+        _ ⊢ _ := laterN_mono _ h3.make_laterN.mp
+    · calc
+        _ ⊢ _ := later_mono h2.into_laterN
+        _ ⊢ _ := (later_laterN _).mpr
+        _ ⊢ _ := by rw [h1.nat_cancel]; exact (laterN_add _ _).mp
+        _ ⊢ _ := laterN_mono _ h3.make_laterN.mp
+
+meta section
+open Lean Elab Meta Std Qq ProofMode
+
+def maybeIntoLaterN {prop : Q(Type u)} {bi : Q(BI $prop)}
+    (oh : Q(Bool)) (n : Q(Nat)) (P Q : Q($prop)) :
+    MetaM <| Option <| (strict' : Q(Bool)) × Q(IntoLaterN $strict' $oh $n $P $Q) := do
+  if let some inst ← synthInstanceRecursiveQ q(IntoLaterN true $oh $n $P $Q) then
+    return some ⟨q(true), inst⟩
+  -- Fallback to the reflexive default
+  Q.mvarId!.assign P
+  have : $Q =Q $P := ⟨⟩
+  return some ⟨q(false), q(intoLaterN_default $oh $n $P)⟩
+
+inductive LaterKind where
+  | later
+  | laterN
+  | laterIf (p : Expr)
+
+@[ipm_tactic_instance IntoLaterN _ _ _ iprop(▷ _) _,
+  IntoLaterN _ _ _ iprop(▷^[_] _) _, IntoLaterN _ _ _ iprop(▷?_ _) _]
+def intoLaterNLater : SynthTactic := λ e => do
+  let mctx0 ← getMCtx
+  let_expr IntoLaterN prop bi strict oh n P _ := e | return .continue
+  have u := e.getAppFn.constLevels![0]!
+  have prop : Q(Type u) := prop
+  have _bi : Q(BI $prop) := bi
+  have strict : Q(Bool) := strict
+  have oh : Q(Bool) := oh
+  have n : Q(Nat) := n
+
+  -- Syntactic match with `▷ P'`, `▷^[m] P'` and `▷?p P'`
+  let some ⟨m, Pin, laterKind⟩ ← do
+      pure <| match_expr P with
+      | BIBase.later _ _ P'     => some (q(1), P', LaterKind.later)
+      | BIBase.laterN _ _ m P'  => some (m, P', LaterKind.laterN)
+      | BIBase.laterIf _ _ p P' => some (q(1), P', LaterKind.laterIf p)
+      | _ => none
+    | return .continue
+  have m : Q(Nat) := m
+  have Pin : Q($prop) := Pin
+
+  let n' : Q(Nat) ← mkFreshExprMVarQ q(Nat)
+  let m' : Q(Nat) ← mkFreshExprMVarQ q(Nat)
+  let some h1 ← synthInstanceRecursiveQ q(NatCancel $n $m $n' $m')
+    | setMCtx mctx0; return .continue
+
+  -- Check that progress is made in the recursive search
+  let progress ← withTransparency .instances <|
+    withConfig ({ · with isDefEqStuckEx := false }) do
+      return !(← isDefEq m m')
+
+  let Q : Q($prop) ← mkFreshExprMVarQ q($prop)
+  let some ⟨_, h2⟩ ←
+    if progress then
+      maybeIntoLaterN oh n' Pin Q
+    else do
+      let some inst ← synthInstanceRecursiveQ q(IntoLaterN true $oh $n' $Pin $Q)
+        | pure none
+      pure <| some <| ⟨q(true), inst⟩
+    | setMCtx mctx0; return .continue
+
+  let lQ : Q($prop) ← mkFreshExprMVarQ q($prop)
+  let some h3 ← synthInstanceRecursiveQ q(MakeLaterN $m' $Q $lQ)
+    | throwError "MakeLaterN type class synthesis fails with {m'} and {Q}"
+
+  match laterKind with
+  | .later =>
+    have : $m =Q 1 := ⟨⟩
+    return .success q(intoLaterN_later $strict $oh $n $n' $m' $Pin $Q $lQ $h1 $h2 $h3)
+  | .laterN =>
+    return .success q(intoLaterN_laterN $strict $oh $n $m $n' $m' $Pin $Q $lQ $h1 $h2 $h3)
+  | .laterIf p =>
+    have p : Q(Bool) := p
+    have : $m =Q 1 := ⟨⟩
+    return .success q(intoLaterN_laterN_bool $strict $oh $n $p $n' $m' $Pin $Q $lQ $h1 $h2 $h3)
+
+end
 
 -- There is no MaybeIntoLaterN in Lean, so we only need one instance
 @[rocq_alias into_laterN_and_l, rocq_alias into_laterN_and_r]
