@@ -1,15 +1,18 @@
 name = "iris"
 defaultTargets = ["Iris", "IrisTest"]
 
+[leanOptions]
+linter.ambiguousOpen = false
+
 [[require]]
 name = "Qq"
 scope = "leanprover-community"
-rev = "v4.32.0"
+rev = "v4.33.0-rc1"
 
 [[require]]
 name = "batteries"
 scope = "leanprover-community"
-rev = "v4.32.0"
+rev = "v4.33.0-rc1"
 
 [[lean_lib]]
 name = "Iris"
