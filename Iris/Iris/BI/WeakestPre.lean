@@ -119,7 +119,7 @@ meta def wpTexanTriple : Lean.Macro
               let xs ← transform xs -- TSyntax cast
               `(iprop(∀ $xs*, $Q:term -∗ Φ $pat))
             | none => `($Q:term -∗ Φ $pat)
-    `(iprop(∀ Φ, $P -∗ ▷ $k -∗ (WP $wpExpr {{ Φ }})))
+    `(iprop(□ ∀ Φ, $P -∗ ▷ $k -∗ (WP $wpExpr {{ Φ }})))
   | _ => Lean.Macro.throwUnsupported
 
 meta def unexpandWpPostcondInner : TSyntax `term → PrettyPrinter.UnexpandM (TSyntax `wpPostcondInner)

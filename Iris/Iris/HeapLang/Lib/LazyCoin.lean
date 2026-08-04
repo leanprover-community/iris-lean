@@ -56,7 +56,7 @@ def coin (cp : Val) (b : Bool) : IProp GF := iprop%
 @[rocq_alias heap_lang.new_coin_spec]
 theorem newCoin.spec : ⊢@{IProp GF}
     {{ True }} hl(&newCoin #()) {{ c b, RET c; coin c b }} := by
-  iintro %Φ - K
+  iintro !> %Φ - K
   unfold newCoin
   wp_pures
   wp_bind newProph()
@@ -79,7 +79,7 @@ theorem newCoin.spec : ⊢@{IProp GF}
 theorem readCoin.spec (cp : Val) (b : Bool) : ⊢@{IProp GF}
     {{ coin cp b }} hl(&readCoin &cp) {{ RET hl_val(#b); coin cp b }} := by
   conv => enter [1,1]; unfold coin
-  iintro %Φ ⟨%c, %p, %pvs, %cp_eq, proph, disj⟩ K
+  iintro !> %Φ ⟨%c, %p, %pvs, %cp_eq, proph, disj⟩ K
   unfold readCoin
   subst cp_eq
   wp_pures

@@ -36,7 +36,7 @@ example {hlc} {GF : BundledGFunctors} [HeapLangGS hlc GF] [SpawnG GF] :
     ⊢ {{ True }} hl(&par_client)
       {{ (l1 l2 : Loc) (life : Int), RET hl_val((#l1, #l2, #life));
          l1 ↦ some hl_val(#21) ∗ l2 ↦ some hl_val(#2) ∗ ⌜life = 42⌝ }} := by
-  iintro %Φ - K
+  iintro !> %Φ - K
   unfold par_client
   wp_alloc l1 with Hl1
   wp_pures
