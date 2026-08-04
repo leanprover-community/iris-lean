@@ -63,7 +63,7 @@ instance fromWand_wandM [BI PROP] (mP1 : Option PROP) (P2 : PROP) :
   from_wand := wandM_sound.mpr
 
 -- IntoWand
--- These three bridge `IntoWand'` goals back into `IntoWand` at priority `100`.
+-- These three instances change `IntoWand'` goals to `IntoWand` at priority `100`.
 -- The `WandMode` parameter of `IntoWand` makes the two classes one, so the args
 -- instances match such goals directly and `(priority := low)` orders them last.
 #rocq_ignore into_wand_wand' "Subsumed by the `WandMode` parameter of `IntoWand`"
@@ -121,8 +121,8 @@ instance intoWand_affinely (p q : Bool) [BI PROP] (R P Q : PROP) [h : IntoWand p
 
 @[rocq_alias into_wand_affine_args]
 instance (priority := low) intoWand_affinely_args (q : Bool) [BI PROP]
-    (s : WandMode.Side) (R P Q : PROP) [h : IntoWand true q R (.balancing s) P Q] :
-    IntoWand true q R (.balancing s) iprop(<affine> P) iprop(<affine> Q) where
+    (s : WandMode.Side) (R P Q : PROP) [h : IntoWand true q R (.matching s) P Q] :
+    IntoWand true q R (.matching s) iprop(<affine> P) iprop(<affine> Q) where
   into_wand := wand_intro <|
     (sep_mono_left <| (affine_affinely _).2.trans <| affinely_mono h.1).trans <|
     (sep_mono_right <| (intuitionisticallyIf_affinely (p := q)).1).trans <|

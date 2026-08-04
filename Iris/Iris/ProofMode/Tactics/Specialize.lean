@@ -18,7 +18,7 @@ open BI
 
 theorem specialize_wand [BI PROP] {q p : Bool} {A1 A2 A3 Q P1 P2 : PROP}
     (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊣⊢ A3 ∗ □?p P1)
-    [h3 : IntoWand q p Q (.balancing .argument) P1 P2] :
+    [h3 : IntoWand q p Q (.matching .argument) P1 P2] :
     A1 ⊢ A3 ∗ □?(p && q) P2 := by
   refine h1.trans <| (sep_mono_left h2.1).trans <| sep_assoc.1.trans (sep_mono_right ?_)
   cases p with
@@ -72,7 +72,7 @@ private def processWand :
     have : $p2 =Q ($p1 && $p) := ⟨⟩
 
     let out₂ ← mkFreshExprMVarQ prop
-    let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p $p1 $out (.balancing .argument) $out₁' $out₂) |
+    let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p $p1 $out (.matching .argument) $out₁' $out₂) |
       throwError m!"ispecialize: cannot instantiate {out} with {out₁'}"
     let pf := q(specialize_wand $pf $pf')
     return { e := e', hyps := hyps', p := p2, out := out₂, pf }

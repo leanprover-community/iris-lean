@@ -78,55 +78,46 @@ class FromWand {PROP} [BI PROP] (P : PROP) (io : InOut)
   from_wand : (Q1 -∗ Q2) ⊢ P
 export FromWand (from_wand)
 
-/--
-[WandMode.Side] names which of the two slots of a two-sided class is the input,
-in the modings that have one: `argument` or `result`.
--/
 inductive WandMode.Side where
   | argument
   | result
 
 /--
-[WandMode] describes the modings of a two-sided class such as `IntoWand`, by
-recording whether each of the argument and result slots is an input or an output.
+[WandMode] describes the modings of a two-sided class `IntoWand`, by recording whether each of the
+argument and result slots is an input or an output.
 
-`unknown` leaves both slots as outputs, and corresponds to Rocq's `IntoWand`
-(Hint Mode `! - -`). `balancing s` makes the slot `s` an input, and corresponds to
-Rocq's `IntoWand'` (Hint Modes `! ! -` and `! - !`).
+`unknown` leaves both slots as outputs, and corresponds to Rocq's `IntoWand` (Hint Mode `- -`).
+`matching s` makes the slot `s` an input, and corresponds to Rocq's `IntoWand'`
+(Hint Modes `! -` and `- !`).
+
+The priority of `matching` mode instances (such as `intoWand_bupd_args`) must stay below that of
+every instance with `unknown` (such as `intoWand_bupd`). This mirrors the priority `100` on
+Rocq's `into_wand_wand'`.
 -/
 inductive WandMode where
   | unknown
-  | balancing (s : WandMode.Side)
+  | matching (s : WandMode.Side)
 
 meta section
 
 /-- Whether the argument slot of a class at mode `m` is an input or an output. -/
 @[reducible]
-def WandMode.Side.argIO : WandMode.Side → InOut
-  | .argument => .in
-  | .result => .out
-
-/-- Whether the result slot of a class at mode `m` is an input or an output. -/
-@[reducible]
-def WandMode.Side.resIO : WandMode.Side → InOut
-  | .argument => .out
-  | .result => .in
-
-/-- Whether the argument slot of a class at mode `m` is an input or an output. -/
-@[reducible]
 def WandMode.argIO : WandMode → InOut
   | .unknown => .out
-  | .balancing s => s.argIO
+  | .matching .argument => .in
+  | .matching .result => .out
+
 
 /-- Whether the result slot of a class at mode `m` is an input or an output. -/
 @[reducible]
 def WandMode.resIO : WandMode → InOut
   | .unknown => .out
-  | .balancing s => s.resIO
+  | .matching .argument => .out
+  | .matching .result => .in
 
 end
 
-#rocq_ignore IntoWand' "the `WandMode` parameter of `IntoWand` subsumes it"
+#rocq_ignore IntoWand' "the `matching` mode of `IntoWand` subsumes it"
 
 @[ipm_class, rocq_alias IntoWand]
 class IntoWand {PROP} [BI PROP] (p q : Bool) (R : PROP) (m : WandMode)

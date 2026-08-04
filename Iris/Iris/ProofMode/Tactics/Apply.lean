@@ -18,7 +18,7 @@ open BI
 
 theorem apply [BI PROP] {p} {P Q Q1 R : PROP}
     (h1 : P ⊢ Q1)
-    [h2 : IntoWand p false Q (.balancing .result) Q1 R] : P ∗ □?p Q ⊢ R :=
+    [h2 : IntoWand p false Q (.matching .result) Q1 R] : P ∗ □?p Q ⊢ R :=
       (Entails.trans (sep_mono_left h1) (wand_elim_swap h2.1))
 
 public meta section
@@ -43,7 +43,7 @@ The proof of `hyps ∗ □?p A ⊢ goal`
 private partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps : Hyps bi e) (p : Q(Bool)) (A : Q($prop)) (goal : Q($prop)) : ProofModeM Q($e ∗ □?$p $A ⊢ $goal) := do
   let B ← mkFreshExprMVarQ q($prop)
   -- if `A := ?B -∗ goal`, add `B` as a new subgoal and conclude `goal`
-  if let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $A (.balancing .result) $B $goal) then
+  if let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $A (.matching .result) $B $goal) then
      let pf ← addBIGoal hyps B
      return q(apply $pf)
 

@@ -61,8 +61,8 @@ instance intoWand_later [BI PROP] (p q : Bool) (R P Q : PROP)
 
 @[rocq_alias into_wand_later_args]
 instance (priority := low) intoWand_later_args [BI PROP] (p q : Bool) (s : WandMode.Side)
-    (R P Q : PROP) [h : IntoWand p q R (.balancing s) P Q] :
-    IntoWand p q R (.balancing s) iprop(▷ P) iprop(▷ Q) where
+    (R P Q : PROP) [h : IntoWand p q R (.matching s) P Q] :
+    IntoWand p q R (.matching s) iprop(▷ P) iprop(▷ Q) where
   into_wand := (intuitionisticallyIf_mono later_intro).trans <| later_intuitionisticallyIf_2.trans <|
     (later_mono h.1).trans <| later_wand.trans <| wand_mono later_intuitionisticallyIf_2 .rfl
 
@@ -75,8 +75,8 @@ instance intoWand_laterN [BI PROP] (n : Nat) (p q : Bool) (R P Q : PROP)
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_wand_laterN_args]
 instance (priority := low) intoWand_laterN_args [BI PROP] (n : Nat) (p q : Bool)
-    (s : WandMode.Side) (R P Q : PROP) [h : IntoWand p q R (.balancing s) P Q] :
-    IntoWand p q R (.balancing s) iprop(▷^[n] P) iprop(▷^[n] Q) where
+    (s : WandMode.Side) (R P Q : PROP) [h : IntoWand p q R (.matching s) P Q] :
+    IntoWand p q R (.matching s) iprop(▷^[n] P) iprop(▷^[n] Q) where
   into_wand := (intuitionisticallyIf_mono (laterN_intro n)).trans <| (laterN_intuitionisticallyIf n).trans <|
     (laterN_mono n h.1).trans <| (laterN_wand n).trans <| wand_mono (laterN_intuitionisticallyIf n) .rfl
 

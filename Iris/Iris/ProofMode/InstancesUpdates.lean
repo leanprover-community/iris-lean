@@ -40,18 +40,10 @@ instance intoWand_bupd (p q : Bool) m (R P Q : PROP)
     wand_intro <| (sep_mono (BIUpdate.mono h.1) intuitionisticallyIf_elim).trans <|
     bupd_sep.trans <| BIUpdate.mono wand_elim_left
 
-/-- Balances the argument and the result of `R` against the goal's modality.
-Since `R` is left untouched, this only terminates when one of the two slots is an
-input, so it is stated as `balancing _` and never at `unknown`. The `Side` is left a
-variable, so this single instance covers both `argument` and `result`.
-
-The priority must stay below that of every instance which strips structure off
-`R` (such as `intoWand_bupd`), so that this is only reached once `R` has bottomed
-out. This mirrors the priority `100` on Rocq's `into_wand_wand'` bridge. -/
 @[rocq_alias into_wand_bupd_args]
 instance (priority := low) intoWand_bupd_args (p q : Bool) (s : WandMode.Side) (R P Q : PROP)
-    [h : IntoWand p false R (.balancing s) P Q] :
-    IntoWand p q R (.balancing s) iprop(|==> P) iprop(|==> Q) where
+    [h : IntoWand p false R (.matching s) P Q] :
+    IntoWand p q R (.matching s) iprop(|==> P) iprop(|==> Q) where
   into_wand := wand_intro_left <|
     (sep_mono intuitionisticallyIf_elim h.into_wand).trans bupd_wand_right
 
@@ -153,14 +145,13 @@ instance intoWand_fupd_persistent E1 E2 (p q : Bool) m (R P Q : PROP)
     wand_intro <| (sep_mono (BIFUpdate.mono h.into_wand) .rfl).trans <|
     fupd_frame_right.trans <| BIFUpdate.mono wand_elim_left
 
--- See `intoWand_bupd_args` for why this is stated as `balancing _` only and why the
--- priority is `low`. The `set_option` is needed because the masks `E1`/`E2` are
--- not determined by the argument and result slots.
+-- The `set_option` is needed because the masks `E1`/`E2` are not determined by the argument
+-- and result slots.
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_wand_fupd_args]
 instance (priority := low) intoWand_fupd_args E1 E2 (p q : Bool) (s : WandMode.Side)
-    (R P Q : PROP) [h : IntoWand p false R (.balancing s) P Q] :
-    IntoWand p q R (.balancing s) iprop(|={E1,E2}=> P) iprop(|={E1,E2}=> Q) where
+    (R P Q : PROP) [h : IntoWand p false R (.matching s) P Q] :
+    IntoWand p q R (.matching s) iprop(|={E1,E2}=> P) iprop(|={E1,E2}=> Q) where
   into_wand := wand_intro_left <|
     (sep_mono intuitionisticallyIf_elim h.into_wand).trans fupd_wand_right
 
