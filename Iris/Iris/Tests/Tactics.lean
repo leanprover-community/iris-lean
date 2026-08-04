@@ -1705,6 +1705,20 @@ example [BI PROP] [BIUpdate PROP] (P Q : PROP) :
   case subgoal => iassumption
   imodintro; iassumption
 
+/-- Tests `ispecialize` using `AddModal` instances for `▷` and `◇`. -/
+example [BI PROP] (P Q R S : PROP) :
+    ⊢ (P -∗ Q) -∗ P -∗ (R -∗ ◇ S) -∗ R -∗ ▷ Q ∗ ◇ S := by
+  iintro HPQ HP HRS HR
+  isplitl [HPQ HP]
+  -- Using `addModal_except_0_later` after `addModal_later` fails and backtrackes.
+  · ispecialize HPQ $$ [> HP]
+    · imodintro; iassumption
+    · inext; iassumption
+  -- Using `addModal_except_0` after `addModal_later_except_0` fails and backtracks
+  · ispecialize HRS $$ [> HR]
+    · imodintro; iassumption
+    · iassumption
+
 end specialize
 
 -- split
@@ -1863,7 +1877,7 @@ PROP : Type u_1
 inst✝¹ : BI PROP
 inst✝ : BIAffine PROP
 P Q : PROP
-⊢ 
+⊢ ⏎
   ∗x✝ : P
   ∗HQ : <pers> Q
   ⊢ Q

@@ -319,7 +319,7 @@ instance (priority := default - 10) elimModal_timeless [BI PROP] p io (P P' Q : 
   elim_modal _ := ((sep_mono ((intuitionisticallyIf_mono into_except0).trans except0_intuitionisticallyIf) except0_intro).trans $ except0_sep.2.trans (except0_mono wand_elim_right)).trans is_except0
 
 /-- AddModal -/
-@[rocq_alias add_modal_later_except_0]
+@[ipm_backtrack, rocq_alias add_modal_later_except_0]
 instance (priority := default + 10) addModal_later_except_0 [BI PROP] (P Q : PROP) [h : Timeless P] :
     AddModal iprop(▷ P) P iprop(◇ Q) where
   add_modal := calc
@@ -328,7 +328,7 @@ instance (priority := default + 10) addModal_later_except_0 [BI PROP] (P Q : PRO
     _ ⊢ ◇ (◇ Q)            := except0_mono wand_elim_right
     _ ⊢ ◇ Q                 := except0_idem.mp
 
-@[rocq_alias add_modal_later]
+@[ipm_backtrack, rocq_alias add_modal_later]
 instance (priority := default + 10) addModal_later [BI PROP] (P Q : PROP) [h : Timeless P] :
     AddModal iprop(▷ P) P iprop(▷ Q) where
   add_modal := calc
