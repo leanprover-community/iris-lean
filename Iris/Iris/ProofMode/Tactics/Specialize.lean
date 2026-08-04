@@ -153,7 +153,6 @@ private def splitFrameHyps {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 /--
   Applying framing and then solve the goal using `itrivial` (when `trivial` is
   `true`) or add the goal into the proof state (when `trivial` is `false`).
-  Used by all `.goal` cases and the `.autoframe persistent` case in `processWand`.
 -/
 private def finishFrameSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (trivial : Bool) (g : Option Name)
