@@ -1524,7 +1524,6 @@ instance absorbingly_persistent [BI PROP] (P : PROP) [Persistent P] :
 
 /-! # The intuitionistic modality -/
 
-@[rocq_alias bi.intuitionistically]
 instance intuitionistically_ne [BI PROP] : OFE.NonExpansive (@intuitionistically PROP _) where
   ne _ _ _ h := affinely_ne.1 (persistently_ne.1 h)
 #rocq_ignore bi.intuitionistically_flip_mono' "Use _mono."
