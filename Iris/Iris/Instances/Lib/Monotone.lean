@@ -107,13 +107,9 @@ theorem monotone_bigSepL_mono [BI PROP] [OFE A] (l : List B) (F : Nat → B → 
   unfold MonotonePred
   intros Φ Ψ
   iintro #H1 %x H2
-  iapply BigSepL.bigSepL_mono (Φ := λn y => F n y Φ x)
-  intro k y h
-  · iintro H
-    iapply hf (Φ := Φ)
-    · sorry -- ⊢ □ ∀ x, Φ x -∗ Ψ x
-    · iexact H
-  · iexact H2
+  iapply BigSepL.bigSepL_impl (Φ := λn y => F n y Φ x) $$ H2
+  iintro !> %k %y #H2 H3
+  iapply hf (Φ := Φ) $$ H1 H3
 
 theorem monotone_or [BI PROP] [OFE A] (F G : (A → PROP) → A → PROP)
       (hf : MonotonePred F) (hg : MonotonePred G) :
