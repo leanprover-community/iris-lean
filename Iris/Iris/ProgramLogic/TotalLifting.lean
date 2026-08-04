@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Fernando Leal. All rights reserved.
+Copyright (c) 2026 Marcelo Fornet. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
@@ -14,9 +14,9 @@ open Iris Language Language.Notation BI
 @[expose] public section
 
 /-!
-The no-fork rules in this file are the intended entry point for Wasm.  They
-make the single-threaded contract explicit (`eₜ = []`) while the underlying
-TWP remains faithful to Iris and can account for forks.
+The no-fork rules in this file make the single-threaded contract explicit
+(`eₜ = []`) while the underlying TWP remains faithful to Iris and can account
+for forks.
 
 All total rules require the operational observation to be empty.  This is a
 semantic requirement of Iris TWP, not proof bookkeeping.

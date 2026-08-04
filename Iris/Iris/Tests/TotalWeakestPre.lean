@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Fernando Leal. All rights reserved.
+Copyright (c) 2026 Marcelo Fornet. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
@@ -21,8 +21,8 @@ measure, which checks that TWP proves termination of *all* successors rather
 than merely finding a terminating execution.
 
 `put` changes the machine state, `stuck` has no successor, steps never fork,
-and all genuine reductions are silent. The latter two properties model the
-initial Wasm integration contract.
+and all genuine reductions are silent. The latter two properties exercise the
+single-threaded, no-observation lifting rules.
 -/
 
 inductive Expr where

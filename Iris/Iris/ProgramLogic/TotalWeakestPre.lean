@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Fernando Leal. All rights reserved.
+Copyright (c) 2026 Marcelo Fornet. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
@@ -22,17 +22,16 @@ contrast to ordinary WP, recursive occurrences are not guarded by a later.
 Consequently, membership in TWP is a finite derivation and adequacy can turn it
 into strong normalization.
 
-The definition remains fork-aware to stay compatible with Iris.  Wasm clients
-are expected to use the no-fork lifting rules in `TotalLifting`: the initial
-target is single-threaded Wasm, so concurrency-specific derived libraries are
-deliberately not duplicated here.
+The definition remains fork-aware to stay compatible with Iris. Clients with
+single-threaded semantics can use the no-fork lifting rules in `TotalLifting`;
+concurrency-specific derived libraries are deliberately not duplicated here.
 
 As in Iris-Rocq, TWP only accepts silent operational steps.  A language with
 observable reductions must expose a silent administrative semantics or provide
 a future trace-sensitive generalization instead of discarding observations.
 
-For Wasm, traps must therefore be represented deliberately: either as values
-in the language's result type, or as non-values excluded by the reducibility
+Traps must therefore be represented deliberately: either as values in the
+language's result type, or as non-values excluded by the reducibility
 obligation. TWP does not silently reinterpret a stuck trap as successful
 termination.
 -/

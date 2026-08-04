@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Fernando Leal. All rights reserved.
+Copyright (c) 2026 Marcelo Fornet. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
@@ -23,9 +23,9 @@ not merely that some execution terminates.
 
 The fork-aware thread-pool predicate below is kept because it is part of the
 Iris-Rocq adequacy argument. Thread-pool ghost-state convenience APIs are not
-ported: they are unrelated to establishing total-WP termination for the
-initial single-threaded Wasm client. Fair termination, trace-sensitive
-liveness, and coinductive progress are intentionally outside this layer.
+ported because they are unrelated to the core total-WP adequacy result. Fair
+termination, trace-sensitive liveness, and coinductive progress are
+intentionally outside this layer.
 -/
 
 @[rocq_alias sn]
@@ -483,7 +483,7 @@ def ExprErasedStep : Expr × State → Expr × State → Prop
   | (e₁, σ₁), (e₂, σ₂) =>
       ∃ (κ : List Obs) (efs : List Expr), (e₁, σ₁) -<κ>-> (e₂, σ₂, efs)
 
-/-- The single-threaded language contract used by the Wasm-facing adequacy
+/-- The single-threaded language contract used by the no-fork adequacy
 corollaries. -/
 class LanguageNoFork (Expr State Obs Val : Type _)
     [Language Expr State Obs Val] : Prop where

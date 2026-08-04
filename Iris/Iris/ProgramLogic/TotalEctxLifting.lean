@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Fernando Leal. All rights reserved.
+Copyright (c) 2026 Marcelo Fornet. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
@@ -14,10 +14,9 @@ open Iris Language.Notation EctxLanguage EctxLanguage.Notation
 @[expose] public section
 
 /-!
-Total base-step rules for evaluation-context languages.  We intentionally stop
-at the generic deterministic/no-fork interface needed by a Wasm language.
-HeapLang primitive laws and concurrent convenience rules are not duplicated:
-they add no capability for the initial single-threaded Wasm consumer.
+Total base-step rules for evaluation-context languages. We intentionally stop
+at the generic deterministic/no-fork interface. HeapLang primitive laws and
+concurrent convenience rules are outside the scope of these generic rules.
 -/
 
 variable {hlc : outParam HasLC} {Expr Ectx State Obs Val}
