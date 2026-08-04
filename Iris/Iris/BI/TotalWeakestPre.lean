@@ -75,9 +75,13 @@ instance twp.pre_mono' [OFE Expr] [OFE CoPset] (s : Stuckness) : BIMonoPred (@tw
               · exact monotone_const
               · apply monotone_sep
                 · apply monotone_id'
-                · apply monotone_bigSepL_mono
+                · apply monotone_bigSepL
                   intros
                   apply monotone_const'
     · irevert H %x
       apply monotone_const
-  mono_pred_ne := sorry
+  mono_pred_ne := by
+    sorry
+
+def twp.def [OFE Expr] [OFE CoPset] (s : Stuckness) (E : CoPset)
+    (e : Expr) (Φ : Val → IProp GF) := bi_least_fixpoint (twp.pre' s) ((E, e), Φ)
