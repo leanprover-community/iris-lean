@@ -259,7 +259,7 @@ partial def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let pf'' ← finishFrameSubgoal hypsr out1 trivial g frameIVars
     let pfStep := q(specialize_wand_subgoal $out2 $inst $pf' $pf'')
     return specState.update hypsl q(false) out2 pfStep
-  -- Subgoal with `[# H₁ … Hₙ ]` or `[#- H₁ … Hₙ ]`
+  -- Subgoal with `[# H₁ … Hₙ ]`
   | .goal { kind := .intuitionistic, trivial, frame := f, hyps := hs, .. } g => do
     if !hs.isEmpty then
       throwError "ispecialize: the subgoal for the persistent premise should not consume hypotheses"
