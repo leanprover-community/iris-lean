@@ -17,7 +17,7 @@ public section
 open BI
 
 theorem specialize_wand [BI PROP] {q p : Bool} {A Q P1 P2 : PROP}
-    (inst : IntoWand q p Q .in P1 .out P2) :
+    (inst : IntoWand q p Q (.matching .argument) P1 P2) :
     (A ∗ □?p P1) ∗ □?q Q ⊢ A ∗ □?(p && q) P2 := by
   refine sep_assoc.mp.trans (sep_mono_right ?_)
   cases p with
@@ -29,7 +29,7 @@ theorem specialize_wand [BI PROP] {q p : Bool} {A Q P1 P2 : PROP}
     _ ⊢ □?q P2               := intuitionisticallyIf_mono <| wand_elim_swap inst.into_wand
 
 theorem specialize_wand_nest [BI PROP] {e e' e'' goal out out1' Q out2 : PROP}
-    {p p1 q : Bool} (inst : IntoWand p q out .in Q .out out2)
+    {p p1 q : Bool} (inst : IntoWand p q out (.matching .argument) Q out2)
     (h1 : e ⊣⊢ e' ∗ □?p1 out1')
     (h2 : (e'' ∗ □?q Q ⊢ □?p out -∗ goal) → e' ∗ □?p1 out1' ⊢ □?p out -∗ goal)
     (h3 : e'' ∗ □?(q && p) out2 ⊢ goal) : e ∗ □?p out ⊢ goal := by
@@ -41,14 +41,14 @@ theorem specialize_wand_nest [BI PROP] {e e' e'' goal out out1' Q out2 : PROP}
 -- TODO: if q is true and A1 is persistent, this proof can guarantee □ P2 instead of P2
 -- see https://gitlab.mpi-sws.org/iris/iris/-/blob/846ed45bed6951035c6204fef365d9a344022ae6/iris/proofmode/coq_tactics.v#L336
 theorem specialize_wand_spatial [BI PROP] {q : Bool} {A2 A3 Q P1 : PROP} P2
-    (inst : IntoWand q false Q .out P1 .out P2)
+    (inst : IntoWand q false Q .unknown P1 P2)
     (h2 : A2 ⊢ A3 ∗ P1) : A2 ∗ □?q Q ⊢ A3 ∗ P2 := calc
   _ ⊢ (A3 ∗ P1) ∗ □?q Q := sep_mono_left h2
   _ ⊢ A3 ∗ P1 ∗ □?q Q   := sep_assoc.mp
   _ ⊢ A3 ∗ P2           := sep_mono_right <| (sep_mono_right inst.into_wand).trans wand_elim_right
 
 theorem specialize_wand_intuitionistic [BI PROP] {q : Bool} {A2 Q P1' : PROP} P1 P2
-    (instWand : IntoWand q true Q .out P1 .out P2) (instPers : Persistent P1)
+    (instWand : IntoWand q true Q .unknown P1 P2) (instPers : Persistent P1)
     (instAbsorb : IntoAbsorbingly P1' P1) (h1 : A2 ⊢ P1') : A2 ∗ □?q Q ⊢ A2 ∗ □?q P2 := by
   have h2 : □ P1 ∗ □?q Q ⊢ □?q P2 := by cases q with
   | false => exact (sep_mono_right instWand.into_wand).trans wand_elim_right
@@ -86,7 +86,7 @@ theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B B'}
 
 theorem specialize_modal [BI PROP] {e e' goal R P1 P1' P2 : PROP} {p : Bool}
     (h1 : e ⊢ e' ∗ P1') (h2 : e' ∗ P2 ⊢ goal)
-    (instWand : IntoWand p false R .out P1 .out P2)
+    (instWand : IntoWand p false R .unknown P1 P2)
     (instModal : AddModal P1' P1 goal) :
     e ∗ □?p R ⊢ goal := calc
   _ ⊢ (e' ∗ P1') ∗ □?p R                := sep_mono_left h1
@@ -175,10 +175,10 @@ private def finishFrameSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 private def synthIntoWand {u} {prop : Q(Type u)} (bi : Q(BI $prop))
     (p : Q(Bool)) (out : Q($prop)) (persistent : Bool) :
     ProofModeM <| (out1 : Q($prop)) × (out2 : Q($prop)) ×
-      Q(IntoWand $p $persistent $out .out $out1 .out $out2) := do
+      Q(IntoWand $p $persistent $out .unknown $out1 $out2) := do
   let out1 ← mkFreshExprMVarQ prop
   let out2 ← mkFreshExprMVarQ prop
-  let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $persistent $out .out $out1 .out $out2)
+  let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $persistent $out .unknown $out1 $out2)
     | throwError m!"ispecialize: {out} is not a wand"
   return ⟨out1, out2, inst⟩
 
@@ -259,7 +259,8 @@ partial def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
       iSpecializeCore hyps' p1 out1' q(iprop(□?$p $out -∗ $goal)) pmt.spats
     let p2 := if pNest.constName! == ``true then p else q(false)
     let out2 ← mkFreshExprMVarQ prop
-    let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $pNest $out .in $outNest .out $out2)
+    let some inst ← ProofModeM.trySynthInstanceQ
+        q(IntoWand $p $pNest $out (.matching .argument) $outNest $out2)
       | throwError m!"ispecialize: IntoWand type class synthesis failed with {out} and {outNest}"
     let pfStep : Q((($e'' ∗ □?($pNest && $p) $out2 ⊢ $goal) → $e ∗ □?$p $out ⊢ $goal)) :=
       q(specialize_wand_nest $inst $pf' $pfContNest)

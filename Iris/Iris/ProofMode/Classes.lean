@@ -78,12 +78,51 @@ class FromWand {PROP} [BI PROP] (P : PROP) (io : InOut)
   from_wand : (Q1 -∗ Q2) ⊢ P
 export FromWand (from_wand)
 
-#rocq_ignore IntoWand' "not used in Lean"
+inductive WandMode.Side where
+  | argument
+  | result
+
+/--
+[WandMode] describes the modings of a two-sided class `IntoWand`, by recording whether each of the
+argument and result slots is an input or an output.
+
+`unknown` leaves both slots as outputs, and corresponds to Rocq's `IntoWand` (Hint Mode `- -`).
+`matching s` makes the slot `s` an input, and corresponds to Rocq's `IntoWand'`
+(Hint Modes `! -` and `- !`).
+
+The priority of `matching` mode instances (such as `intoWand_bupd_args`) must stay below that of
+every instance with `unknown` (such as `intoWand_bupd`). This mirrors the priority `100` on
+Rocq's `into_wand_wand'`.
+-/
+inductive WandMode where
+  | unknown
+  | matching (s : WandMode.Side)
+
+meta section
+
+/-- Whether the argument slot of a class at mode `m` is an input or an output. -/
+@[reducible]
+def WandMode.argIO : WandMode → InOut
+  | .unknown => .out
+  | .matching .argument => .in
+  | .matching .result => .out
+
+
+/-- Whether the result slot of a class at mode `m` is an input or an output. -/
+@[reducible]
+def WandMode.resIO : WandMode → InOut
+  | .unknown => .out
+  | .matching .argument => .out
+  | .matching .result => .in
+
+end
+
+#rocq_ignore IntoWand' "the `matching` mode of `IntoWand` subsumes it"
 
 @[ipm_class, rocq_alias IntoWand]
-class IntoWand {PROP} [BI PROP] (p q : Bool) (R : PROP)
-  (ioP : InOut) (P : semiOutParamIPM ioP PROP)
-  (ioQ : InOut) (Q : semiOutParamIPM ioQ PROP) where
+class IntoWand {PROP} [BI PROP] (p q : Bool) (R : PROP) (m : WandMode)
+  (P : semiOutParamIPM m.argIO PROP)
+  (Q : semiOutParamIPM m.resIO PROP) where
   into_wand : □?p R ⊢ □?q P -∗ Q
 export IntoWand (into_wand)
 
