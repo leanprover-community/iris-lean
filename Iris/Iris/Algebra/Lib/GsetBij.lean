@@ -82,7 +82,7 @@ private theorem rel_mono_valid {n₁ n₂ : Nat}
     (hbij : bijL₁ ≡{n₂}≡ bijL₂)
     (hL : LeibnizSet.valid L₂ ≼{n₂} LeibnizSet.valid L₁) :
     rel n₂ bijL₂ (.valid L₂) := by
-  obtain rfl := (OFE.Discrete.discrete hbij).to_eq
+  obtain rfl := OFE.Discrete.discrete hbij
   exact ⟨subset_trans ((LeibnizSet.included_iff_subset _ _).mp <|
     (CMRA.inc_iff_incN n₂).mpr hL) hrel.1, hrel.2⟩
 
@@ -133,14 +133,9 @@ def elem (a : α) (b : β) : GSetBij (S := S) (α := α) (β := β) :=
 
 private theorem op_op_op_comm {γ : Type _} [CMRA γ]
     {x₁ y₁ x₂ y₂ : γ} :
-    (x₁ • y₁) • (x₂ • y₂) ≡
+    (x₁ • y₁) • (x₂ • y₂) =
       (x₁ • x₂) • (y₁ • y₂) := by
-  calc
-    _ ≡ x₁ • (y₁ • (x₂ • y₂)) := CMRA.assoc.symm
-    _ ≡ x₁ • ((y₁ • x₂) • y₂) := CMRA.assoc.op_r
-    _ ≡ x₁ • ((x₂ • y₁) • y₂) := CMRA.comm.op_l.op_r
-    _ ≡ x₁ • (x₂ • (y₁ • y₂)) := CMRA.assoc.symm.op_r
-    _ ≡ _ := CMRA.assoc
+  grind [CMRA.assoc', CMRA.comm']
 
 @[rocq_alias gset_bij_elem_core_id]
 instance elem_core_id {a : α} {b : β} :
@@ -150,11 +145,9 @@ instance elem_core_id {a : α} {b : β} :
 
 @[rocq_alias gset_bij_auth_dfrac_op]
 theorem auth_dfrac_op {dq₁ dq₂ : DFrac} {L : S} :
-    auth dq₁ L • auth dq₂ L ≡ auth (dq₁ • dq₂) L := by
+    auth dq₁ L • auth dq₂ L = auth (dq₁ • dq₂) L := by
   unfold auth
-  calc
-    _ ≡ _ := op_op_op_comm
-    _ ≡ _ := View.auth_op_auth_eqv.symm.op (CMRA.op_self _)
+  rw [op_op_op_comm, ← View.auth_op_auth_eqv, CMRA.op_self]
 
 @[rocq_alias gset_bij_auth_dfrac_valid]
 theorem auth_dfrac_valid {dq : DFrac} {L : S} :
@@ -183,13 +176,14 @@ theorem auth_dfrac_op_valid {dq₁ dq₂ : DFrac} {L₁ L₂ : S} :
       ✓ (dq₁ • dq₂) ∧ L₁ = L₂ ∧ Bijective L₁ := by
   constructor
   · intro hvalid
-    have heq : L₁ = L₂ := congrArg DiscreteO.car <|
-      View.eq_of_valid_auth <| CMRA.valid_op_left <|
-        op_op_op_comm.valid.mp hvalid
-    subst L₂
-    simpa using auth_dfrac_valid.mp (auth_dfrac_op.valid.mp hvalid)
+    obtain rfl := congrArg DiscreteO.car <|
+      View.eq_of_valid_auth <| by
+        unfold auth at hvalid
+        rw [op_op_op_comm] at hvalid
+        exact CMRA.valid_op_left hvalid
+    simpa only [auth_dfrac_op, auth_dfrac_valid, true_and] using hvalid
   · rintro ⟨hvalid, rfl, hbij⟩
-    exact auth_dfrac_op.valid.mpr <| auth_dfrac_valid.mpr ⟨hvalid, hbij⟩
+    simpa only [auth_dfrac_op, auth_dfrac_valid] using ⟨hvalid, hbij⟩
 
 @[rocq_alias gset_bij_auth_op_valid]
 theorem auth_op_valid {L₁ L₂ : S} :
@@ -201,7 +195,7 @@ theorem both_dfrac_valid {dq : DFrac} {L : S} {a : α} {b : β} :
     ✓ (auth dq L • elem a b) ↔
       ✓ dq ∧ Bijective L ∧ (a, b) ∈ L := by
   rw [auth, elem, ← CMRA.assoc_L, ← View.frag_op_eq,
-    (LeibnizSet.op_union _ _).to_eq, View.auth_op_frag_valid_iff]
+    LeibnizSet.op_union, View.auth_op_frag_valid_iff]
   simp only [rel, forall_const, union_singleton_subset_iff,
     and_comm, and_left_comm]
 
@@ -215,7 +209,7 @@ theorem elem_agree {a₁ : α} {b₁ : β} {a₂ : α} {b₂ : β}
     (h : ✓ (elem (S := S) a₁ b₁ • elem a₂ b₂)) :
     a₁ = a₂ ↔ b₁ = b₂ := by
   unfold elem at h
-  rw [← View.frag_op_eq, (LeibnizSet.op_union _ _).to_eq,
+  rw [← View.frag_op_eq, LeibnizSet.op_union,
     View.frag_valid_iff] at h
   obtain ⟨bijL, hsub, hbij⟩ := h 0
   exact bijective_pair <| bijective_of_subset hbij hsub
