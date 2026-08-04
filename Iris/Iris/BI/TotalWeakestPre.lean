@@ -52,34 +52,9 @@ instance twp.pre_mono' [OFE Expr] [OFE CoPset] (s : Stuckness) : BIMonoPred (@tw
     simp
     cases toVal x.fst.snd
     · irevert H %x
-      simp
-      apply monotone_forall; intro
-      apply monotone_forall; intro
-      apply monotone_forall; intro
-      apply monotone_forall; intro
-      apply monotone_wand
-      · exact antitone_const
-      · apply monotone_fupd
-        apply monotone_sep
-        · exact monotone_const
-        · apply monotone_forall; intro
-          apply monotone_forall; intro
-          apply monotone_forall; intro
-          apply monotone_forall; intro
-          apply monotone_wand
-          · exact monotone_const
-          · apply monotone_fupd
-            apply monotone_sep
-            · exact monotone_const
-            · apply monotone_sep
-              · exact monotone_const
-              · apply monotone_sep
-                · apply monotone_id'
-                · apply monotone_bigSepL
-                  intros
-                  apply monotone_const'
+      apply MonotonePred.monotone
     · irevert H %x
-      apply monotone_const
+      apply MonotonePred.monotone
   mono_pred_ne := by
     sorry
 
