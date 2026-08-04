@@ -22,9 +22,9 @@ theorem liftRel_eq : liftRel (@Eq α) A B ↔ A = B := by
 
 /-- Require that a separation logic with carrier type `PROP` fulfills all necessary axioms. -/
 class BI (PROP : Type _) extends COFE PROP, BI.BIBase PROP where
-  entails_preorder : Preorder Entails
-  equiv_iff {P Q : PROP} : (P ≡ Q) ↔ P ⊣⊢ Q := by simp
-
+  entails_refl {P : PROP} : P ⊢ P
+  entails_trans {P Q R : PROP} : (P ⊢ Q) → (Q ⊢ R) → P ⊢ R
+  equiv_iff {P Q : PROP} : (P = Q) ↔ P ⊣⊢ Q := by rw [OFE.eq_dist]; simp
   and_ne : OFE.NonExpansive₂ and
   or_ne : OFE.NonExpansive₂ or
   imp_ne : OFE.NonExpansive₂ imp
@@ -82,20 +82,26 @@ class BI (PROP : Type _) extends COFE PROP, BI.BIBase PROP where
 
 namespace BI
 
-attribute [instance] BI.entails_preorder
+instance [BIBase PROP] : LE PROP where
+  le := BIBase.Entails
+
+instance BI.entails_preorder [BI PROP] : Std.IsPreorder PROP where
+  le_refl _ := BI.entails_refl
+  le_trans _ _ _ := BI.entails_trans
 
 theorem BIBase.Entails.trans [BI PROP] {P Q R : PROP} (h1 : P ⊢ Q) (h2 : Q ⊢ R) : P ⊢ R :=
-  Transitive.trans h1 h2
+  BI.entails_trans h1 h2
 
-@[simp] theorem BIBase.Entails.rfl [BI PROP] {P : PROP} : P ⊢ P := refl
+@[simp,refl] theorem BIBase.Entails.rfl [BI PROP] {P : PROP} : P ⊢ P := BI.entails_refl
 
 theorem BIBase.Entails.of_eq [BI PROP] {P Q : PROP} (h : P = Q) : P ⊢ Q := h ▸ .rfl
 
 @[simp] theorem BIBase.BiEntails.rfl [BI PROP] {P : PROP} : P ⊣⊢ P := ⟨.rfl, .rfl⟩
 
 theorem BIBase.BiEntails.of_eq [BI PROP] {P Q : PROP} (h : P = Q) : P ⊣⊢ Q := h ▸ .rfl
+theorem _root_.Eq.to_bi [BI PROP] {P Q : PROP} (h : P = Q) : P ⊣⊢ Q := h ▸ .rfl
 
-theorem BIBase.BiEntails.to_eq [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : P = Q := (equiv_iff.mpr h).to_eq
+theorem BIBase.BiEntails.to_eq [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : P = Q := equiv_iff.mpr h
 
 theorem BIBase.BiEntails.symm [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : Q ⊣⊢ P := ⟨h.2, h.1⟩
 
@@ -107,15 +113,11 @@ theorem BIBase.BiEntails.ofMono [BI PROP1] [BI PROP2] {mod : PROP1 → PROP2}
     ∀ {P Q : PROP1}, P ⊣⊢ Q → mod P ⊣⊢ mod Q :=
   fun h => ⟨mono h.1, mono h.2⟩
 
-theorem BIBase.BiEntails.proper [BI PROP] {a a' b b' : PROP} (ha : a ≡ a') (hb : b ≡ b') : (a ⊣⊢ b ↔ a' ⊣⊢ b') where
-  mp h := equiv_iff.1 (ha.symm.trans (equiv_iff.2 h) |>.trans hb)
-  mpr h := equiv_iff.1 (ha.trans (equiv_iff.2 h) |>.trans hb.symm)
-
 export BIBase (
   Entails emp pure and or imp sForall sExists «forall» «exists» sep wand
   persistently BiEntails iff wandIff affinely absorbingly
   intuitionistically later persistentlyIf affinelyIf absorbinglyIf
-  intuitionisticallyIf bigAnd bigOr bigSep Entails.trans BiEntails.trans)
+  intuitionisticallyIf bigAnd bigOr bigSep Entails.trans BiEntails.trans BiEntails.of_eq BiEntails.to_eq)
 
 attribute [rw_mono_rule] BI.sep_mono
 attribute [rw_mono_rule] BI.persistently_mono

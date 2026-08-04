@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 meta import Iris.Std.RocqPorting
+public import Iris.ProofMode
 public import Iris.Std.Relation
 public import Iris.BI.WeakestPre
 

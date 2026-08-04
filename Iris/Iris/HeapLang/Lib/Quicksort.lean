@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Markus de Medeiros, Michael Sammler, Klaus Kraßnitzer
+-/
 module
 
 public import Iris.HeapLang.PrimitiveLaws
@@ -115,9 +120,7 @@ theorem cons_spec x l ls Φ :
     WP hl(&cons #x &l) {{ Φ }} := by
   iintro Hl HΦ
   wp_rec; wp_pures
-  wp_bind ref(_)
-  iapply wp_alloc
-  iintro !> %l Hl
+  wp_alloc l
   wp_pures
   imodintro
   iapply HΦ
@@ -142,9 +145,7 @@ theorem append_spec l1 ls1 l2 ls2 Φ :
   | cons x xs =>
     icases isList_cons $$ Hl1 with ⟨%l, %tl, %heq, Hpt, Hl⟩
     subst heq; wp_pures
-    wp_bind !_
-    iapply wp_load $$ Hpt
-    iintro !> Hpt
+    wp_load
     wp_pures
     wp_bind &append _ _
     iapply IH $$ Hl Hl2
@@ -166,20 +167,18 @@ theorem partition_spec x l ls Φ :
   iintro Hl HΦ
   iloeb as IH generalizing %l %ls %Φ
   wp_rec; wp_pures
-  rw (occs:=[2]) [isList.eq_def]
+  rw [isList.eq_def]
   cases ls with
   | nil =>
-    dsimp only
+    simp only
     icases Hl with %hl; subst hl
     wp_pures; imodintro; simp
     iapply HΦ <;> simp [isList] <;> itrivial
   | cons hd ls =>
-    dsimp only
+    simp only
     icases Hl with ⟨%_, %tl, %hl, Hpt, Hl⟩; subst hl
     wp_pures
-    wp_bind !_
-    iapply wp_load $$ [$]
-    iintro !> Hpt
+    wp_load
     wp_pures
     wp_bind &partition _ _
     iapply IH $$ Hl
@@ -215,7 +214,7 @@ theorem quicksort_spec l ls Φ :
   iintro Hl HΦ
   iloeb as IH generalizing %l %ls %Φ
   wp_rec
-  rw (occs:=[2]) [isList.eq_def]
+  rw [isList.eq_def]
   cases ls with
   | nil =>
     dsimp only
@@ -231,9 +230,7 @@ theorem quicksort_spec l ls Φ :
     dsimp only
     icases Hl with ⟨%l, %tl, %heq, Hpt, Hl⟩; subst heq
     wp_pures
-    wp_bind !_
-    iapply wp_load $$ [$]
-    iintro !> Hpt
+    wp_load
     wp_pures
     wp_bind &partition _ _
     iapply partition_spec $$ [$]
@@ -282,13 +279,12 @@ theorem quicksort_spec l ls Φ :
 theorem wp_makeList (l : List Int) (Φ : Val → IProp GF) :
     (∀ v, isList v l -∗ Φ v) -∗
     WP hl(&(makeList l)) {{ Φ }} := by
-  induction l generalizing Φ with
+  iintro HΦ
+  iinduction l generalizing %Φ HΦ with
   | nil =>
-    iintro HΦ
     unfold makeList
     iapply nil_spec $$ HΦ
   | cons l ls ih =>
-    iintro HΦ
     rw [makeList]
     wp_pures
     wp_bind &(makeList _)
@@ -318,9 +314,7 @@ theorem wp_checkSorted (v vacc : Val) (l : List Int) (Φ : Val → IProp GF) :
     icases isList_cons $$ H with ⟨%loc, %tlv, %heq, Hpt, Htl⟩
     subst heq
     wp_pures
-    wp_bind !_
-    iapply wp_load $$ Hpt
-    iintro !> Hpt
+    wp_load
     rcases hinv with rfl | ⟨va, rfl, hva⟩
     · wp_pures
       iapply IH $$ %_ %tl %_ %((List.pairwise_cons.mp hsorted).2)
