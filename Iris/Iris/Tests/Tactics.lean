@@ -1540,18 +1540,15 @@ example [BI PROP] (P Q : PROP) :
   · rfl
   iexact H
 
--- `Q` is not a wand, so no `IntoWand` instance applies. This fails immediately instead of looping by
--- wrapping the two output slots in ever more modalities.
-/-- error: ispecialize: Q is not a wand
----
-trace: [Meta.synthInstance] ❌️ IPM: ProofMode.IntoWand false false Q ProofMode.WandMode.unknown ?m.36 ?m.37
-  [Meta.synthInstance] ❌️ IPM: new goal ProofMode.IntoWand false false Q ProofMode.WandMode.unknown ?m.36
-        ?m.37 => ProofMode.IntoWand false false Q ProofMode.WandMode.unknown ?m.36 ?m.37
+-- `Q` is not a wand, so no `IntoWand` instance applies. This fails immediately instead of looping with
+-- `into_wand_bupd_args` because the mode does not match.
+set_option pp.mvars false in
+/-- [Meta.synthInstance] ❌️ IPM: new goal ProofMode.IntoWand false false Q ProofMode.WandMode.unknown ?_
+        ?_ => ProofMode.IntoWand false false Q ProofMode.WandMode.unknown ?_ ?_
     [Meta.synthInstance.tactics] []
     [Meta.synthInstance.instances] #[]
-  [Meta.synthInstance] result <not-available>
 -/
-#guard_msgs in
+#guard_msgs (substring := true) in
 example [BI PROP] [BIUpdate PROP] (P Q: PROP) : Q ⊢ P -∗ Q := by
   iintro HQ
   set_option trace.Meta.synthInstance true in
