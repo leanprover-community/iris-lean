@@ -334,7 +334,7 @@ A tuple containing:
 - `hyps'`: Updated hypothesis context, =`hyps` if context duplication succeeds
 - `pb`: Persistence flag for `B`, =`true` if context duplication succeeds
 - `B`: Resulting proposition after applying all patterns
-- `pf`: Proof of `hyps ∗ □?pa A ⊢ hyps' ∗ □?pb B`, =`hyps ∗ □?pa A ⊢ hyps ∗ □ B` if context duplication succeeds
+- `pf`: Proof of `(e' ∗ □?pb B ⊢ goal) → e ∗ □?pa $A ⊢ goal`
 -/
 partial def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (pa : Q(Bool)) (A : Q($prop)) (goal : Q($prop))
