@@ -12,11 +12,18 @@ namespace Iris.Tests.HeapLang.Par
 
 open Iris.HeapLang BI Iris ProgramLogic Spawn Iris.HeapLang.Par
 
+-- Regression test for
+-- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Porting.20iris-tutorial/near/613886178
+-- testing substitution into `par`
+section
+-- `l` is deliberately a free HeapLang variable so we can test that substitution works as intended
 set_option linter.heapLang.freeVars false
 
 example (v : Val) :
     Exp.substStr "l" v hl((l ← #21) ‖ (l ← #2))
       = hl(&par (λ _, v(&v) ← #21) (λ _, v(&v) ← #2)) := rfl
+
+end
 
 def par_client : Exp := hl%
   let l1 := ref(#0);
