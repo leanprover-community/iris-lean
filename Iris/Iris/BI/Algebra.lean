@@ -5,6 +5,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Iris.ProofMode
+public import Iris.Algebra.Lib.DFracAgree
+
 /-! ## Algebra wrappers for BI
 This file provides introduction rules (BI entailments) for (some) CMRA operations and properties.
 -/

@@ -6,8 +6,6 @@ Authors: Haokun Li
 module
 
 public import Iris.Std.GenMultiSets
-public import Batteries.Data.List.Perm
-public import Batteries.Data.List.Count
 
 @[expose] public section
 

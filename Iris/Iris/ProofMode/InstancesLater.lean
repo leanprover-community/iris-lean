@@ -55,29 +55,30 @@ instance fromPure_except0 [BI PROP] (a : Bool) (P : PROP) (φ : Prop)
 
 @[rocq_alias into_wand_later]
 instance intoWand_later [BI PROP] (p q : Bool) (R P Q : PROP)
-    [h : IntoWand p q R ioP P ioQ Q] : IntoWand p q iprop(▷ R) ioP iprop(▷ P) ioQ iprop(▷ Q) where
+    [h : IntoWand p q R m P Q] : IntoWand p q iprop(▷ R) m iprop(▷ P) iprop(▷ Q) where
   into_wand := later_intuitionisticallyIf_2.trans <|
     (later_mono h.1).trans <| later_wand.trans <| wand_mono later_intuitionisticallyIf_2 .rfl
 
-#rocq_ignore into_wand_later_args "IntoWand' is not used in Lean"
--- TODO: see if this is necessary. It is an instance for IntoWand' in Rocq
--- instance intoWand_later_args [BI PROP] (p q : Bool) (R P Q : PROP)
---     [h : IntoWand p q R ioP P ioQ Q] : IntoWand p q R ioP iprop(▷ P) ioQ iprop(▷ Q) where
---   into_wand := (intuitionisticallyIf_mono later_intro).trans <| later_intuitionisticallyIf_2.trans <|
---     (later_mono h.1).trans <| later_wand.trans <| wand_mono later_intuitionisticallyIf_2 .rfl
+@[rocq_alias into_wand_later_args]
+instance (priority := low) intoWand_later_args [BI PROP] (p q : Bool) (s : WandMode.Side)
+    (R P Q : PROP) [h : IntoWand p q R (.matching s) P Q] :
+    IntoWand p q R (.matching s) iprop(▷ P) iprop(▷ Q) where
+  into_wand := (intuitionisticallyIf_mono later_intro).trans <| later_intuitionisticallyIf_2.trans <|
+    (later_mono h.1).trans <| later_wand.trans <| wand_mono later_intuitionisticallyIf_2 .rfl
 
 @[rocq_alias into_wand_laterN]
 instance intoWand_laterN [BI PROP] (n : Nat) (p q : Bool) (R P Q : PROP)
-    [h : IntoWand p q R ioP P ioQ Q] : IntoWand p q iprop(▷^[n] R) ioP iprop(▷^[n] P) ioQ iprop(▷^[n] Q) where
+    [h : IntoWand p q R m P Q] : IntoWand p q iprop(▷^[n] R) m iprop(▷^[n] P) iprop(▷^[n] Q) where
   into_wand := (laterN_intuitionisticallyIf n).trans <|
     (laterN_mono n h.1).trans <| (laterN_wand n).trans <| wand_mono (laterN_intuitionisticallyIf n) .rfl
 
-#rocq_ignore into_wand_laterN_args "IntoWand' is not used in Lean"
--- TODO: see if this is necessary. It is an instance for IntoWand' in Rocq
--- instance intoWand_laterN_args [BI PROP] (n : Nat) (p q : Bool) (R P Q : PROP)
---     [h : IntoWand p q R ioP P ioQ Q] : IntoWand p q R ioP iprop(▷^[n] P) ioQ iprop(▷^[n] Q) where
---   into_wand := (intuitionisticallyIf_mono (laterN_intro n)).trans <| (laterN_intuitionisticallyIf n).trans <|
---     (laterN_mono n h.1).trans <| (laterN_wand n).trans <| wand_mono (laterN_intuitionisticallyIf n) .rfl
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias into_wand_laterN_args]
+instance (priority := low) intoWand_laterN_args [BI PROP] (n : Nat) (p q : Bool)
+    (s : WandMode.Side) (R P Q : PROP) [h : IntoWand p q R (.matching s) P Q] :
+    IntoWand p q R (.matching s) iprop(▷^[n] P) iprop(▷^[n] Q) where
+  into_wand := (intuitionisticallyIf_mono (laterN_intro n)).trans <| (laterN_intuitionisticallyIf n).trans <|
+    (laterN_mono n h.1).trans <| (laterN_wand n).trans <| wand_mono (laterN_intuitionisticallyIf n) .rfl
 
 /-- FromAnd -/
 
