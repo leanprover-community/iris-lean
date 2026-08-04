@@ -252,7 +252,8 @@ partial def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
   match spat with
   -- A hypothesis name, possibly with nested specialisation patterns
   | .ident pmt =>
-    let ivar ← hyps.findWithInfo ⟨pmt.term⟩
+    let some ivar ← try? <| hyps.findWithInfo ⟨pmt.term⟩
+      | throwError "ispecialize: invalid hypothesis {pmt.term}, use ihave instead"
     let ⟨_, hyps', _, out1', p1, _, pf'⟩ := hyps.remove false ivar
     let ⟨e'', hyps'', pNest, outNest, pfContNest⟩ ←
       iSpecializeCore hyps' p1 out1' q(iprop(□?$p $out -∗ $goal)) pmt.spats

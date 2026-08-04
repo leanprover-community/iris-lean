@@ -1778,7 +1778,6 @@ example [BI PROP] (P Q R S : PROP) :
     · imodintro; iassumption
     · iassumption
 
-
 -- `Q` is not a wand, so no `IntoWand` instance applies. This fails immediately instead of looping with
 -- `into_wand_bupd_args` because the mode does not match.
 set_option pp.mvars false in
@@ -1792,6 +1791,14 @@ example [BI PROP] [BIUpdate PROP] (P Q: PROP) : Q ⊢ P -∗ Q := by
   iintro HQ
   set_option trace.Meta.synthInstance true in
   ispecialize HQ $$ [$]
+
+/- Tests `ispecialize` with an invalid hypothesis name in the proof mode term. -/
+/-- error: ispecialize: invalid hypothesis H, use ihave instead -/
+#guard_msgs in
+example [BI PROP] [BIUpdate PROP] (P Q : PROP) :
+    ⊢ (P -∗ Q) -∗ (|==> P) -∗ (|==> Q) := by
+  iintro HPQ HP
+  ispecialize HPQ $$ H
 
 end specialize
 
