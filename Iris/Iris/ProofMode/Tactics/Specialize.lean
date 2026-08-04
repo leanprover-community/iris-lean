@@ -283,20 +283,46 @@ partial def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
   -- Auto-framing with `[$]`, `[>$]` or `[#$]`
   | .autoframe kind => processSpecGoal specState kind none
 
-partial def iSpecializeCoreStrong {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+/-- Specialize a proposition `A` by applying a sequence of specialization patterns.
+
+## Parameters
+- `hyps`: Current proof mode hypothesis context
+- `pa`: Persistence flag for `A`
+- `spats`: List of specialization patterns to apply sequentially
+- `try_dup_context`: Boolean whether specialize should try to duplicate the context. See [iCasesPat.should_try_dup_context]
+
+## Returns
+A tuple containing:
+- `e`: Proposition for `hyps'`
+- `hyps'`: Updated hypothesis context, =`hyps` if context duplication succeeds
+- `pb`: Persistence flag for `B`, =`true` if context duplication succeeds
+- `B`: Resulting proposition after applying all patterns
+- `pf`: Proof of `(e' ∗ □?pb B ⊢ goal) → e ∗ □?pa $A ⊢ goal`
+-/
+partial def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (hyps : Hyps bi e) (pa : Q(Bool)) (A : Q($prop)) (goal : Q($prop))
+    (spats : List SpecPat) (try_dup_context : Bool := false) :
+    ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) ×
+      Q(($e' ∗ □?$pb $B ⊢ $goal) → $e ∗ □?$pa $A ⊢ $goal)) := do
+  if !try_dup_context || spats.any (·.anyModal) then
+    let st ← spats.foldlM processWand { hyps, p := pa, out := A, pf := q(id) }
+    return ⟨_, st.hyps, st.p, st.out, st.pf⟩
+  let ⟨_, hyps', pb, B, pf⟩ ← iSpecializeCoreNoModal hyps pa A spats try_dup_context
+  return ⟨_, hyps', pb, B, q($(pf).trans)⟩
+
+/--
+  For cases where no modality-related specialisation pattern involved.
+  This returns the proof `e ∗ □?pa $A ⊢ (e' ∗ □?pb B ⊢ goal)`.
+-/
+partial def iSpecializeCoreNoModal {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (pa : Q(Bool)) (A : Q($prop))
     (spats : List SpecPat) (try_dup_context : Bool := false) :
     ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) ×
       Q($e ∗ □?$pa $A ⊢ $e' ∗ □?$pb $B)) := do
-  if spats.any (·.anyModal) then
-    throwError "ispecialize: a modality-related specialisation pattern cannot be \
-      used here because the resulting proof would depend on the goal"
-
   -- Return the result directly when there is no specialisation pattern
   if spats.isEmpty then
     return ⟨_, hyps, pa, A, q(.rfl)⟩
 
-  -- No modality-related specialisation pattern involved: create a metavariable for the goal
   let goal : Q($prop) ← mkFreshExprMVarQ prop
   let st ← spats.foldlM processWand
     { hyps, p := pa, out := A, pf := q(id (α := $e ∗ □?$pa $A ⊢ $goal)) }
@@ -319,33 +345,6 @@ partial def iSpecializeCoreStrong {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   let some inst ← ProofModeM.trySynthInstanceQ q(IntoPersistently $(st.p) $(st.out) $B')
     | return ⟨_, st.hyps, st.p, st.out, pf⟩
   return ⟨_, hyps, q(true), B', q(specialize_dup_context $inst $pf $af)⟩
-
-/-- Specialize a proposition `A` by applying a sequence of specialization patterns.
-
-## Parameters
-- `hyps`: Current proof mode hypothesis context
-- `pa`: Persistence flag for `A`
-- `spats`: List of specialization patterns to apply sequentially
-- `try_dup_context`: Boolean whether specialize should try to duplicate the context. See [iCasesPat.should_try_dup_context]
-
-## Returns
-A tuple containing:
-- `e`: Proposition for `hyps'`
-- `hyps'`: Updated hypothesis context, =`hyps` if context duplication succeeds
-- `pb`: Persistence flag for `B`, =`true` if context duplication succeeds
-- `B`: Resulting proposition after applying all patterns
-- `pf`: Proof of `(e' ∗ □?pb B ⊢ goal) → e ∗ □?pa $A ⊢ goal`
--/
-partial def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
-    (hyps : Hyps bi e) (pa : Q(Bool)) (A : Q($prop)) (goal : Q($prop))
-    (spats : List SpecPat) (try_dup_context : Bool := false) :
-    ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) ×
-      Q(($e' ∗ □?$pb $B ⊢ $goal) → $e ∗ □?$pa $A ⊢ $goal)) := do
-  if spats.any (·.anyModal) then
-    let st ← spats.foldlM processWand { hyps, p := pa, out := A, pf := q(id) }
-    return ⟨_, st.hyps, st.p, st.out, st.pf⟩
-  let ⟨_, hyps', pb, B, pf⟩ ← iSpecializeCoreStrong hyps pa A spats try_dup_context
-  return ⟨_, hyps', pb, B, q($(pf).trans)⟩
 
 end
 
