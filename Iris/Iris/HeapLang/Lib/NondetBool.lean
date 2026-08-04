@@ -20,9 +20,9 @@ def nondetBool := hl_val% λ _,
     !l
 
 @[rocq_alias heap_lang.nondet_bool_spec]
-theorem nondetBool.spec : ⊢@{IProp GF}
-    {{ True }} hl(&nondetBool #()) {{ (b : Bool), RET hl_val(#b); True }} := by
-  iintro !> %Φ - K
+theorem nondetBool.spec :
+    {{ (True : IProp GF) }} hl(&nondetBool #()) {{ (b : Bool), RET hl_val(#b); True }} := by
+  iintro %Φ - K
   unfold nondetBool
   wp_alloc l with Hl
   wp_pures
