@@ -94,14 +94,12 @@ theorem monotone_fupd [BI PROP] [BIFUpdate PROP] [OFE A] (F : (A → PROP) → A
   unfold MonotonePred
   intros Φ Ψ
   iintro #H1 %x H2
-  iapply BIFUpdate.mono (P := F Φ x)
-  · iintro H
-    iapply hf Φ Ψ
-    · sorry -- ⊢ □ ∀ x, Φ x -∗ Ψ x
-    · iexact H
-  · iexact H2
+  simp
+  imod H2
+  imodintro
+  iapply hf Φ $$ H1 H2
 
-theorem monotone_bigSepL_mono [BI PROP] [OFE A] (l : List B) (F : Nat → B → (A → PROP) → A → PROP)
+theorem monotone_bigSepL [BI PROP] [OFE A] (l : List B) (F : Nat → B → (A → PROP) → A → PROP)
       (hf : ∀n y, MonotonePred (F n y)) :
     MonotonePred (λΦ : A → PROP => λx : A => bigSepL (λn y => F n y Φ x) l) := by
   unfold MonotonePred
