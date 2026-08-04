@@ -312,7 +312,7 @@ partial def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 
 /--
   For cases where no modality-related specialisation pattern involved.
-  This returns the proof `e ∗ □?pa $A ⊢ (e' ∗ □?pb B ⊢ goal)`.
+  This returns the proof `e ∗ □?pa $A ⊢ e' ∗ □?pb B`.
 -/
 partial def iSpecializeCoreNoModal {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (pa : Q(Bool)) (A : Q($prop))
