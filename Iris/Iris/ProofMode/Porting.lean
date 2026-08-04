@@ -26,7 +26,7 @@ import Iris.Std.RocqPorting
 #rocq_concept proofmode "Tactics" "iAssumption" ported "iassumption"
 #rocq_concept proofmode "Tactics" "iAssumptionCoq" ignored "weird tactic"
 #rocq_concept proofmode "Tactics" "iExFalso" ported "iexfalso"
-#rocq_concept proofmode "Tactics" "iPure (basic)" ported "ipu<re"
+#rocq_concept proofmode "Tactics" "iPure (basic)" ported "ipure"
 #rocq_concept proofmode "Tactics" "iPure (pure destructuring patterns)" ported "ipure ... as ..."
 #rocq_concept proofmode "Tactics" "iEmpIntro" ported "iempintro"
 #rocq_concept proofmode "Tactics" "iPureIntro" ported "ipureintro"
