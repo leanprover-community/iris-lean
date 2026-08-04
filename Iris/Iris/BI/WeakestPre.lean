@@ -104,9 +104,9 @@ meta def wpMacro : Lean.Macro := fun stx => do
       `(Wp.wp $s $E $e $Φ)
   | _ => Lean.Macro.throwUnsupported
 
-@[macro texanTriple]
+@[macro Iris.BI.iprop]
 meta def wpTexanTriple : Lean.Macro
-  | `({{ $P:term }} $wpExpr {{ $[$[$xs]* ,]? RET $pat ; $Q:term }}) => do
+  | `(iprop({{ $P:term }} $wpExpr {{ $[$[$xs]* ,]? RET $pat ; $Q:term }})) => do
 
     let transform (xs : Array (TSyntax [`Lean.binderIdent, `Lean.Parser.Term.bracketedBinder])) : MacroM <| TSyntaxArray [`ident, `Lean.Parser.Term.hole, `Lean.Parser.Term.bracketedBinder] :=
       xs.mapM fun
@@ -120,6 +120,24 @@ meta def wpTexanTriple : Lean.Macro
               `(iprop(∀ $xs*, $Q:term -∗ Φ $pat))
             | none => `($Q:term -∗ Φ $pat)
     `(iprop(□ ∀ Φ, $P -∗ ▷ $k -∗ (WP $wpExpr {{ Φ }})))
+  | _ => Lean.Macro.throwUnsupported
+
+@[macro texanTriple]
+meta def wpTexanTripleTerm : Lean.Macro
+  | `({{ $P:term }} $wpExpr {{ $[$[$xs]* ,]? RET $pat ; $Q:term }}) => do
+
+    let transform (xs : Array (TSyntax [`Lean.binderIdent, `Lean.Parser.Term.bracketedBinder])) : MacroM <| TSyntaxArray [`ident, `Lean.Parser.Term.hole, `Lean.Parser.Term.bracketedBinder] :=
+      xs.mapM fun
+        | `(binderIdent|_) => `(hole|_)
+        | `(binderIdent|$i:ident) => `(ident|$i)
+        | `(bracketedBinder|$x) => `(bracketedBinder|$x)
+
+    let k ← match xs with
+            | some xs =>
+              let xs ← transform xs -- TSyntax cast
+              `(iprop(∀ $xs*, $Q:term -∗ Φ $pat))
+            | none => `($Q:term -∗ Φ $pat)
+    `(⊢ ∀ Φ, $P -∗ ▷ $k -∗ (WP $wpExpr {{ Φ }}))
   | _ => Lean.Macro.throwUnsupported
 
 meta def unexpandWpPostcondInner : TSyntax `term → PrettyPrinter.UnexpandM (TSyntax `wpPostcondInner)
