@@ -71,11 +71,19 @@ theorem NonExpansive.comp [OFE α] [OFE β] [OFE γ] {g : β → γ} {f : α →
 
 #rocq_ignore ne_proper "OFE is Leibniz; use equality"
 
+/-- A non-expansive function respects equivalence. As OFE is Leibniz, this is congruence. -/
+theorem NonExpansive.eqv [OFE α] [OFE β] {f : α → β} (_ : NonExpansive f) {x y : α}
+    (h : x = y) : f x = f y := h ▸ rfl
+
 /-- A function `f : α → β → γ` is non-expansive if it preserves `n`-equivalence in each argument. -/
 class NonExpansive₂ [OFE α] [OFE β] [OFE γ] (f : α → β → γ) where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → ∀ ⦃y₁ y₂⦄, y₁ ≡{n}≡ y₂ → f x₁ y₁ ≡{n}≡ f x₂ y₂
 
 #rocq_ignore ne_proper_2 "OFE is Leibniz; use equality"
+
+/-- A binary non-expansive function respects equivalence. As OFE is Leibniz, this is congruence. -/
+theorem NonExpansive₂.eqv [OFE α] [OFE β] [OFE γ] {f : α → β → γ} (_ : NonExpansive₂ f)
+    {x₁ x₂ : α} (hx : x₁ = x₂) {y₁ y₂ : β} (hy : y₁ = y₂) : f x₁ y₁ = f x₂ y₂ := hx ▸ hy ▸ rfl
 
 /-- Note: Not an instance, for symmetry with NonExpansive₂.ne_left, which cannot be an instance. -/
 theorem NonExpansive₂.ne_right [OFE α] [OFE β] [OFE γ] (f : α → β → γ) [NonExpansive₂ f]

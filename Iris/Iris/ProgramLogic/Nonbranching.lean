@@ -10,6 +10,8 @@ public import Iris.Std.PartialMap
 public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.Adequacy
 public import Iris.ProgramLogic.AbstractLangCompleteness
+public import Std.Internal.Do.WP.Basic
+public import Std.Internal.Do.ExceptPost
 
 namespace Nonbranching
 
