@@ -120,7 +120,7 @@ theorem later_wand {P Q : PROP} : ▷ (P -∗ Q) ⊢ ▷ P -∗ ▷ Q :=
 
 @[rocq_alias bi.later_iff]
 theorem later_iff {P Q : PROP} : ▷ (P ↔ Q) ⊢ (▷ P ↔ ▷ Q) :=
-  later_and.mp.trans <|and_intro (and_elim_l.trans later_imp) (and_elim_r.trans later_imp)
+  later_and.mp.trans <| and_intro (and_elim_l.trans later_imp) (and_elim_r.trans later_imp)
 
 @[rocq_alias bi.later_wand_iff]
 theorem later_wand_iff {P Q : PROP} : ▷ (P ∗-∗ Q) ⊢ ▷ P ∗-∗ ▷ Q :=
@@ -143,8 +143,12 @@ theorem later_absorbingly {P : PROP} : ▷ <absorb> P ⊣⊢ <absorb> ▷ P :=
   ⟨later_sep.mp.trans <| sep_mono true_intro .rfl, (sep_mono later_intro .rfl).trans later_sep.mpr⟩
 
 @[rocq_alias bi.later_affinely]
-theorem later_affinely [BIAffine PROP] {P : PROP} : <affine> ▷ P ⊣⊢ ▷ <affine> P :=
-  ⟨later_affinely_mpr, later_and.mp.trans <| .trans (and_elim_r) (affine_affinely _).mpr⟩
+theorem later_affinely [BIAffine PROP] {P : PROP} : <affine> ▷ P ⊣⊢ ▷ <affine> P := by
+  refine ⟨later_affinely_mpr, ?_⟩
+  calc
+    _ ⊢ ▷ emp ∧ ▷ P := later_and.mp
+    _ ⊢ ▷ P          := and_elim_r
+    _ ⊢ <affine> ▷ P := (affine_affinely _).mpr
 
 @[rocq_alias bi.later_intuitionistically]
 theorem later_intuitionistically [BIAffine PROP] {P : PROP} : □ ▷ P ⊣⊢ ▷ □ P := by
@@ -358,8 +362,10 @@ theorem laterN_true (n : Nat) : ▷^[n] True ⊣⊢@{PROP} True :=
   ⟨true_intro, laterN_intro n⟩
 
 @[rocq_alias bi.laterN_emp]
-theorem laterN_emp [BIAffine PROP] (n : Nat) : ▷^[n] emp ⊣⊢@{PROP} emp :=
-  (laterN_congr n true_emp.symm).trans $ (laterN_true n).trans true_emp
+theorem laterN_emp [BIAffine PROP] (n : Nat) : ▷^[n] emp ⊣⊢@{PROP} emp := calc
+  _ ⊣⊢ ▷^[n]True := laterN_congr n true_emp.symm
+  _ ⊣⊢ True       := laterN_true n
+  _ ⊣⊢ emp        := true_emp
 
 @[rocq_alias bi.laterN_forall]
 theorem laterN_forall (n : Nat) {Φ : α → PROP} : ▷^[n] (∀ a, Φ a) ⊣⊢ (∀ a, ▷^[n] Φ a) := by
@@ -534,8 +540,10 @@ theorem except0_true : ◇ True ⊣⊢ (True : PROP) :=
   ⟨true_intro, except0_intro⟩
 
 @[rocq_alias bi.except_0_emp]
-theorem except0_emp [BIAffine PROP] : ◇ emp ⊣⊢ (emp : PROP) :=
-  (except0_congr true_emp.symm).trans <| except0_true.trans true_emp
+theorem except0_emp [BIAffine PROP] : ◇ emp ⊣⊢ (emp : PROP) := calc
+  _ ⊣⊢ ◇ True := except0_congr true_emp.symm
+  _ ⊣⊢ True    := except0_true
+  _ ⊣⊢ emp     := true_emp
 
 @[rocq_alias bi.except_0_or]
 theorem except0_or {P Q : PROP} : ◇ (P ∨ Q) ⊣⊢ ◇ P ∨ ◇ Q :=
@@ -642,8 +650,11 @@ theorem except0_frame_right {P Q : PROP} : ◇ P ∗ Q ⊢ ◇ (P ∗ Q) :=
 
 @[rocq_alias bi.later_affinely_1]
 theorem later_affinely_mp {P : PROP} [Timeless (PROP := PROP) emp] :
-    ▷ <affine> P ⊢ ◇ <affine> ▷ P :=
-  later_and.1.trans <| (and_mono (Timeless.timeless (P:=emp)) .rfl).trans <| (and_mono_right except0_intro).trans except0_and.2
+    ▷ <affine> P ⊢ ◇ <affine> ▷ P := calc
+  _ ⊢ ▷ emp ∧ ▷ P    := later_and.mp
+  _ ⊢ ◇ emp ∧ ▷ P    := and_mono Timeless.timeless .rfl
+  _ ⊢ ◇ emp ∧ ◇ ▷ P := and_mono_right except0_intro
+  _ ⊢ ◇ (emp ∧ ▷ P)  := except0_and.mpr
 
 @[rocq_alias bi.except_0_persistent]
 instance except0_persistent (P : PROP) [Persistent P] : Persistent iprop(◇ P) :=
