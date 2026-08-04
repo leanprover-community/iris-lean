@@ -229,7 +229,7 @@ partial def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
   | .ident pmt =>
     let ivar ← hyps.findWithInfo ⟨pmt.term⟩
     let ⟨_, hyps', _, out1', p1, _, pf'⟩ := hyps.remove false ivar
-    let ⟨e'', hyps'', pNest, outNest, pfContNest, _⟩ ←
+    let ⟨e'', hyps'', pNest, outNest, pfContNest⟩ ←
       iSpecializeCore hyps' p1 out1' q(iprop(□?$p $out -∗ $goal)) pmt.spats
     let p2 := if pNest.constName! == ``true then p else q(false)
     let out2 ← mkFreshExprMVarQ prop
@@ -299,6 +299,43 @@ partial def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
       q(fun k => specialize_modal $pf' k $instWand $instModal)
     return specState.updateCont hyps' q(false) out2 pfStep
 
+partial def iSpecializeCoreStrong {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (hyps : Hyps bi e) (pa : Q(Bool)) (A : Q($prop))
+    (spats : List SpecPat) (try_dup_context : Bool := false) :
+    ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) ×
+      Q($e ∗ □?$pa $A ⊢ $e' ∗ □?$pb $B)) := do
+  if spats.any (·.anyModal) then
+    throwError "ispecialize: a modality-related specialisation pattern cannot be \
+      used here because the resulting proof would depend on the goal"
+
+  -- Return the result directly when there is no specialisation pattern
+  if spats.isEmpty then
+    return ⟨_, hyps, pa, A, q(.rfl)⟩
+
+  -- No modality-related specialisation pattern involved: create a metavariable for the goal
+  let goal : Q($prop) ← mkFreshExprMVarQ prop
+  let st ← spats.foldlM processWand
+    { hyps, p := pa, out := A, pf := q(id (α := $e ∗ □?$pa $A ⊢ $goal)) }
+  unless ← isDefEq goal q(iprop($(st.e) ∗ □?$(st.p) $(st.out))) do
+    throwError "ispecialize: internal error, goal does not match the proof"
+  let stPf : Q(($(st.e) ∗ □?$(st.p) $(st.out) ⊢ $(st.e) ∗ □?$(st.p) $(st.out)) →
+    $e ∗ □?$pa $A ⊢ $(st.e) ∗ □?$(st.p) $(st.out)) := st.pf
+  let pf : Q($e ∗ □?$pa $A ⊢ $(st.e) ∗ □?$(st.p) $(st.out)) := q($stPf .rfl)
+
+  -- Duplicate the context if requested and possible
+  unless try_dup_context do
+    return ⟨_, st.hyps, st.p, st.out, pf⟩
+  let af : Option Q($pa = true ∨ Affine $A) ← match matchBool pa with
+    | .inl _ => pure <| some q(Or.inl (.refl $pa))
+    | .inr _ => do
+      let .some h ← trySynthInstanceQ q(Affine $A) | pure none
+      pure <| some q(Or.inr (a := $pa = true) $h)
+  let some af := af | return ⟨_, st.hyps, st.p, st.out, pf⟩
+  let B' : Q($prop) ← mkFreshExprMVarQ prop
+  let some inst ← ProofModeM.trySynthInstanceQ q(IntoPersistently $(st.p) $(st.out) $B')
+    | return ⟨_, st.hyps, st.p, st.out, pf⟩
+  return ⟨_, hyps, q(true), B', q(specialize_dup_context $inst $pf $af)⟩
+
 /-- Specialize a proposition `A` by applying a sequence of specialization patterns.
 
 ## Parameters
@@ -319,41 +356,12 @@ partial def iSpecializeCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (pa : Q(Bool)) (A : Q($prop)) (goal : Q($prop))
     (spats : List SpecPat) (try_dup_context : Bool := false) :
     ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) ×
-      Q(($e' ∗ □?$pb $B ⊢ $goal) → $e ∗ □?$pa $A ⊢ $goal) ×
-      Option Q($e ∗ □?$pa $A ⊢ $e' ∗ □?$pb $B)) := do
-  -- Return the result directly when there are no nested specialisation patterns
-  if spats.isEmpty then
-    return ⟨_, hyps, pa, A, q(id), some q(.rfl)⟩
-
-  -- Modality-related specialisation patterns involved
+      Q(($e' ∗ □?$pb $B ⊢ $goal) → $e ∗ □?$pa $A ⊢ $goal)) := do
   if spats.any (·.anyModal) then
     let st ← spats.foldlM processWand { hyps, p := pa, out := A, pf := q(id) }
-    return ⟨_, st.hyps, st.p, st.out, st.pf, none⟩
-
-  -- No modality-related specialisation pattern involved: create a metavariable for the goal
-  let goal : Q($prop) ← mkFreshExprMVarQ prop
-  let st ← spats.foldlM processWand
-    { hyps, p := pa, out := A, pf := q(id (α := $e ∗ □?$pa $A ⊢ $goal)) }
-  unless ← isDefEq goal q(iprop($(st.e) ∗ □?$(st.p) $(st.out))) do
-    throwError "ispecialize: internal error, goal does not match the proof"
-  let stPf : Q(($(st.e) ∗ □?$(st.p) $(st.out) ⊢ $(st.e) ∗ □?$(st.p) $(st.out)) →
-    $e ∗ □?$pa $A ⊢ $(st.e) ∗ □?$(st.p) $(st.out)) := st.pf
-  let pf : Q($e ∗ □?$pa $A ⊢ $(st.e) ∗ □?$(st.p) $(st.out)) := q($stPf .rfl)
-
-  -- Duplicate the context if requested and possible
-  if try_dup_context then
-    let af : Option Q($pa = true ∨ Affine $A) ← match matchBool pa with
-      | .inl _ => pure <| some q(Or.inl (.refl $pa))
-      | .inr _ => do
-        let .some h ← trySynthInstanceQ q(Affine $A) | pure none
-        pure <| some q(Or.inr (a := $pa = true) $h)
-    let some af := af | return ⟨_, st.hyps, st.p, st.out, q($(pf).trans), some pf⟩
-    let B' : Q($prop) ← mkFreshExprMVarQ prop
-    let some inst ← ProofModeM.trySynthInstanceQ q(IntoPersistently $(st.p) $(st.out) $B')
-      | return ⟨_, st.hyps, st.p, st.out, q($(pf).trans), some pf⟩
-    let pfDup := q(specialize_dup_context $inst $pf $af)
-    return ⟨_, hyps, q(true), B', q($(pfDup).trans), some pfDup⟩
-  return ⟨_, st.hyps, st.p, st.out, q($(pf).trans), some pf⟩
+    return ⟨_, st.hyps, st.p, st.out, st.pf⟩
+  let ⟨_, hyps', pb, B, pf⟩ ← iSpecializeCoreStrong hyps pa A spats try_dup_context
+  return ⟨_, hyps', pb, B, q($(pf).trans)⟩
 
 end
 
@@ -383,7 +391,7 @@ elab "ispecialize " colGt pmt:pmTerm : tactic => do
     hyps.removeG true λ name ivar' _ _ => if ivar == ivar' then some name else none
     | throwError "ispecialize: cannot find argument {name}"
 
-  let ⟨_, hyps'', pb, B, pf', _⟩ ← iSpecializeCore hyps' p out goal pmt.spats
+  let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p out goal pmt.spats
   let ⟨_, hyps''', pfEq⟩ := Hyps.add bi name ivar pb B hyps''
   let pf'' ← addBIGoal hyps''' goal
   mvar.assign q(($pf).1.trans <| $(pf') <| $(pfEq).mp.trans $pf'')

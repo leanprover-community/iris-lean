@@ -95,5 +95,5 @@ def iHave {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
   -- assert `term` as hypothesis `A`
   let ⟨_, hyps', p, A, pf⟩ ← iHaveCore hyps pmt.term keep
   -- specialize `A` with `spats`
-  let ⟨_, hyps'', pb, B, pf', _⟩ ← iSpecializeCore hyps' p A goal pmt.spats (try_dup_context := try_dup_context)
+  let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p A goal pmt.spats (try_dup_context := try_dup_context)
   return ⟨_, hyps'', pb, B, q(fun x => $(pf).trans ($pf' x))⟩

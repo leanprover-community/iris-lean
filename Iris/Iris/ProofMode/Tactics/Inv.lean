@@ -82,13 +82,9 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
   let some inst ← ProofModeM.trySynthInstanceQ q(ElimInv $ϕ $X $Pinv $Pin $Pout $close $mPclose $goal $Q')
   | throwError "iinv: invalid invariant {Pinv} (ElimInv type class synthesis failed)"
 
-  let ⟨e'', hyps'', p'', out'', _, some pfPin⟩ ←
-    match specPat with
-    | none =>
-      iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) goal [⟨← getRef, .autoframe .spatial⟩]
-    | some specPat =>
-      iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) goal [specPat]
-  | throwError "iinv: (internal error) unable to build the proof"
+  let ⟨e'', hyps'', p'', out'', pfPin⟩ ←
+    iSpecializeCoreStrong hyps' q(false) q(iprop($Pin -∗ $Pin))
+    [specPat.getD ⟨← getRef, .autoframe .spatial⟩]
   have : $out'' =Q $Pin := ⟨⟩
   have : $p'' =Q false := ⟨⟩
 
