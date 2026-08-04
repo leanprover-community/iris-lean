@@ -34,8 +34,11 @@ theorem later_congr {P Q : PROP} (h : P ⊣⊢ Q) : ▷ P ⊣⊢ ▷ Q :=
 theorem later_true : (▷ True ⊣⊢ (True : PROP)) := ⟨true_intro, later_intro⟩
 
 @[rocq_alias bi.later_emp]
-theorem later_emp [BIAffine PROP] : (▷ emp ⊣⊢ (emp : PROP)) :=
+theorem later_emp [BIAffine PROP] : ▷ emp ⊣⊢ (emp : PROP) :=
   ⟨affine, later_intro⟩
+
+@[rocq_alias bi.later_emp_2]
+theorem later_emp_2 : emp ⊢@{PROP} ▷ emp := later_intro
 
 theorem later_forall_2 {α} {Φ : α → PROP} : (∀ a, ▷ Φ a) ⊢ ▷ ∀ a, Φ a := by
   refine (forall_intro ?_).trans later_sForall_2
@@ -266,6 +269,12 @@ instance later_contractive_bi_loeb [BILaterContractive PROP] : BILoeb PROP where
 
 @[rocq_alias bi.not_not_later_False]
 theorem not_not_later_False [BILoeb PROP] : ⊢@{PROP} ¬ ¬ ▷ False := entails_imp loeb
+
+@[rocq_alias bi.bi_affine_alt_later_emp]
+theorem bi_affine_alt_later_emp [BILoeb PROP] : BIAffine PROP ↔ (▷ emp ⊢@{PROP} emp) := by
+  constructor
+  · exact fun _ => later_emp.mp
+  · exact fun h => ⟨fun Q => ⟨(imp_intro_swap <| (and_mono_left h).trans and_elim_l).trans loeb⟩⟩
 
 @[rocq_alias bi.löb_alt_wand]
 theorem loeb_alt_wand [BIAffine PROP] :
