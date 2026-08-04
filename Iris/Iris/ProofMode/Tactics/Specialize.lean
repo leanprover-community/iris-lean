@@ -257,7 +257,7 @@ partial def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let ⟨_, hyps', _, out1', p1, _, pf'⟩ := hyps.remove false ivar
     let ⟨e'', hyps'', pNest, outNest, pfContNest⟩ ←
       iSpecializeCore hyps' p1 out1' q(iprop(□?$p $out -∗ $goal)) pmt.spats
-    let p2 := if pNest.constName! == ``true then p else q(false)
+    let p2 := if isTrue pNest then p else q(false)
     let out2 ← mkFreshExprMVarQ prop
     let some inst ← ProofModeM.trySynthInstanceQ
         q(IntoWand $p $pNest $out (.matching .argument) $outNest $out2)
