@@ -63,42 +63,45 @@ instance fromWand_wandM [BI PROP] (mP1 : Option PROP) (P2 : PROP) :
   from_wand := wandM_sound.mpr
 
 -- IntoWand
-#rocq_ignore into_wand_wand' "IntoWand' is not used in Lean"
-#rocq_ignore into_wand_impl' "IntoWand' is not used in Lean"
-#rocq_ignore into_wand_wandM' "IntoWand' is not used in Lean"
+-- These three instances change `IntoWand'` goals to `IntoWand` at priority `100`.
+-- The `WandMode` parameter of `IntoWand` makes the two classes one, so the args
+-- instances match such goals directly and `(priority := low)` orders them last.
+#rocq_ignore into_wand_wand' "Subsumed by the `WandMode` parameter of `IntoWand`"
+#rocq_ignore into_wand_impl' "Subsumed by the `WandMode` parameter of `IntoWand`"
+#rocq_ignore into_wand_wandM' "Subsumed by the `WandMode` parameter of `IntoWand`"
 
 @[rocq_alias into_wand_wand]
-instance intoWand_wand (p q : Bool) [BI PROP] (P Q P' : PROP) [h : FromAssumption q ioP P P'] :
-    IntoWand p q iprop(P' -∗ Q) ioP P ioQ Q where
+instance intoWand_wand (p q : Bool) [BI PROP] (P Q P' : PROP) [h : FromAssumption q m.argIO P P'] :
+    IntoWand p q iprop(P' -∗ Q) m P Q where
   into_wand := (intuitionisticallyIf_mono <| wand_mono_left h.1).trans intuitionisticallyIf_elim
 
 -- TODO: compare this with into_wand_impl_false_false, into_wand_impl_false_true, ... in Rocq
 instance intoWand_imp_false [BI PROP] (P Q P' : PROP) [Absorbing P'] [Absorbing iprop(P' → Q)]
-    [h : FromAssumption b ioP P P'] : IntoWand false b iprop(P' → Q) ioP P ioQ Q where
+    [h : FromAssumption b m.argIO P P'] : IntoWand false b iprop(P' → Q) m P Q where
   into_wand := wand_intro <| (sep_mono_right h.1).trans <| by dsimp; exact sep_and.trans imp_elim_left
 
 instance intoWand_imp_true [BI PROP] (P Q P' : PROP) [Affine P']
-    [h : FromAssumption b ioP P P'] : IntoWand true b iprop(P' → Q) ioP P ioQ Q where
+    [h : FromAssumption b m.argIO P P'] : IntoWand true b iprop(P' → Q) m P Q where
   into_wand := wand_intro <| (sep_mono_right h.1).trans <| by
     dsimp; exact sep_and.trans <| imp_elim intuitionistically_elim
 
 @[ipm_backtrack, rocq_alias into_wand_and_l]
 instance intoWand_and_l (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP)
-    [h : IntoWand p q R1 ioP P' ioQ Q'] : IntoWand p q iprop(R1 ∧ R2) ioP P' ioQ Q' where
+    [h : IntoWand p q R1 m P' Q'] : IntoWand p q iprop(R1 ∧ R2) m P' Q' where
   into_wand := (intuitionisticallyIf_mono and_elim_l).trans h.1
 
 @[ipm_backtrack, rocq_alias into_wand_and_r]
 instance intoWand_and_r (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP)
-    [h : IntoWand p q R2 ioP P' ioQ Q'] : IntoWand p q iprop(R1 ∧ R2) ioP P' ioQ Q' where
+    [h : IntoWand p q R2 m P' Q'] : IntoWand p q iprop(R1 ∧ R2) m P' Q' where
   into_wand := (intuitionisticallyIf_mono and_elim_r).trans h.1
 
 instance intoWand_wandIff (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP)
-    [h : IntoWand p q iprop((R1 -∗ R2) ∧ (R2 -∗ R1)) ioP P' ioQ Q'] : IntoWand p q iprop(R1 ∗-∗ R2) ioP P' ioQ Q' := h
+    [h : IntoWand p q iprop((R1 -∗ R2) ∧ (R2 -∗ R1)) m P' Q'] : IntoWand p q iprop(R1 ∗-∗ R2) m P' Q' := h
 
 @[rocq_alias into_wand_wandM]
 instance intoWand_wandM (p q : Bool) [BI PROP] (mP' : Option PROP) (P Q : PROP)
-    [h : FromAssumption q ioP P (mP'.getD emp)] :
-    IntoWand p q iprop(mP' -∗? Q) ioP P ioQ Q where
+    [h : FromAssumption q m.argIO P (mP'.getD emp)] :
+    IntoWand p q iprop(mP' -∗? Q) m P Q where
   into_wand := (intuitionisticallyIf_mono wandM_sound.mp).trans <|
     (intuitionisticallyIf_mono <| wand_mono_left h.1).trans intuitionisticallyIf_elim
 
@@ -106,29 +109,38 @@ instance intoWand_wandM (p q : Bool) [BI PROP] (mP' : Option PROP) (P Q : PROP)
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_wand_forall]
 instance intoWand_forall (p q : Bool) [BI PROP] (Φ : α → PROP) (P Q : PROP) (x : α)
-    [h : IntoWand p q (Φ x) ioP P ioQ Q] : IntoWand p q iprop(∀ x, Φ x) ioP P ioQ Q where
+    [h : IntoWand p q (Φ x) m P Q] : IntoWand p q iprop(∀ x, Φ x) m P Q where
   into_wand := (intuitionisticallyIf_mono <| BI.forall_elim x).trans h.1
 
 @[rocq_alias into_wand_affine]
-instance intoWand_affinely (p q : Bool) [BI PROP] (R P Q : PROP) [h : IntoWand p q R ioP P ioQ Q] :
-    IntoWand p q iprop(<affine> R) ioP iprop(<affine> P) ioQ iprop(<affine> Q) where
+instance intoWand_affinely (p q : Bool) [BI PROP] (R P Q : PROP) [h : IntoWand p q R m P Q] :
+    IntoWand p q iprop(<affine> R) m iprop(<affine> P) iprop(<affine> Q) where
   into_wand := wand_intro <|
     (sep_congr intuitionisticallyIf_affinely intuitionisticallyIf_affinely).1.trans <|
     affinely_sep_mpr.trans <| affinely_mono <| wand_elim h.1
 
+@[rocq_alias into_wand_affine_args]
+instance (priority := low) intoWand_affinely_args (q : Bool) [BI PROP]
+    (s : WandMode.Side) (R P Q : PROP) [h : IntoWand true q R (.matching s) P Q] :
+    IntoWand true q R (.matching s) iprop(<affine> P) iprop(<affine> Q) where
+  into_wand := wand_intro <|
+    (sep_mono_left <| (affine_affinely _).2.trans <| affinely_mono h.1).trans <|
+    (sep_mono_right <| (intuitionisticallyIf_affinely (p := q)).1).trans <|
+    affinely_sep_mpr.trans <| affinely_mono wand_elim_left
+
 @[rocq_alias into_wand_intuitionistically]
 instance intoWand_intuitionistically (p q : Bool) [BI PROP] (R P Q : PROP)
-    [h : IntoWand true q R ioP P ioQ Q] : IntoWand p q iprop(□ R) ioP P ioQ Q where
+    [h : IntoWand true q R m P Q] : IntoWand p q iprop(□ R) m P Q where
   into_wand := (intuitionisticallyIf_mono h.1).trans intuitionisticallyIf_elim
 
 @[rocq_alias into_wand_persistently_true]
 instance intoWand_persistently_true (q : Bool) [BI PROP] (R P Q : PROP)
-    [h : IntoWand true q R ioP P ioQ Q] : IntoWand true q iprop(<pers> R) ioP P ioQ Q where
+    [h : IntoWand true q R m P Q] : IntoWand true q iprop(<pers> R) m P Q where
   into_wand := intuitionistically_persistently.1.trans h.1
 
 @[rocq_alias into_wand_persistently_false]
 instance intoWand_persistently_false (q : Bool) [BI PROP] (R P Q : PROP) [Absorbing R]
-    [h : IntoWand false q R ioP P ioQ Q] : IntoWand false q iprop(<pers> R) ioP P ioQ Q where
+    [h : IntoWand false q R m P Q] : IntoWand false q iprop(<pers> R) m P Q where
   into_wand := persistently_elim.trans h.1
 
 -- FromForall

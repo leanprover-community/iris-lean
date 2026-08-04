@@ -18,7 +18,7 @@ open BI
 
 theorem specialize_wand [BI PROP] {q p : Bool} {A1 A2 A3 Q P1 P2 : PROP}
     (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊣⊢ A3 ∗ □?p P1)
-    [h3 : IntoWand q p Q .in P1 .out P2] :
+    [h3 : IntoWand q p Q (.matching .argument) P1 P2] :
     A1 ⊢ A3 ∗ □?(p && q) P2 := by
   refine h1.trans <| (sep_mono_left h2.1).trans <| sep_assoc.1.trans (sep_mono_right ?_)
   cases p with
@@ -31,13 +31,13 @@ theorem specialize_wand [BI PROP] {q p : Bool} {A1 A2 A3 Q P1 P2 : PROP}
 -- see https://gitlab.mpi-sws.org/iris/iris/-/blob/846ed45bed6951035c6204fef365d9a344022ae6/iris/proofmode/coq_tactics.v#L336
 theorem specialize_wand_subgoal [BI PROP] {q : Bool} {A1 A2 A3 A4 Q P1 : PROP} P2
     (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊣⊢ A3 ∗ A4) (h3 : A4 ⊢ P1)
-    [inst : IntoWand q false Q .out P1 .out P2] : A1 ⊢ A3 ∗ P2 := by
+    [inst : IntoWand q false Q .unknown P1 P2] : A1 ⊢ A3 ∗ P2 := by
   refine h1.trans <| (sep_mono_left h2.1).trans <| sep_assoc.1.trans (sep_mono_right ((sep_mono_left h3).trans ?_))
   exact (sep_mono_right inst.1).trans wand_elim_right
 
 theorem specialize_wand_autoframe [BI PROP] {q : Bool} {A1 A2 A3 Q P1 : PROP} P2
      (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊢ A3 ∗ P1)
-     [inst : IntoWand q false Q .out P1 .out P2] : A1 ⊢ A3 ∗ P2 :=
+     [inst : IntoWand q false Q .unknown P1 P2] : A1 ⊢ A3 ∗ P2 :=
   h1.trans <| (sep_mono_left h2).trans <| sep_assoc.1.trans
     (sep_mono_right ((sep_mono_right inst.into_wand).trans wand_elim_right))
 
@@ -72,7 +72,7 @@ private def processWand :
     have : $p2 =Q ($p1 && $p) := ⟨⟩
 
     let out₂ ← mkFreshExprMVarQ prop
-    let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p $p1 $out .in $out₁' .out $out₂) |
+    let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p $p1 $out (.matching .argument) $out₁' $out₂) |
       throwError m!"ispecialize: cannot instantiate {out} with {out₁'}"
     let pf := q(specialize_wand $pf $pf')
     return { e := e', hyps := hyps', p := p2, out := out₂, pf }
@@ -106,7 +106,7 @@ private def processWand :
       (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
     let out₁ ← mkFreshExprMVarQ prop
     let out₂ ← mkFreshExprMVarQ prop
-    let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
+    let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .unknown $out₁ $out₂)
       | throwError m!"ispecialize: {out} is not a wand"
     let res ← iFrame hypsr' out₁ (frameIVars.map (⟨.ipm ·, true⟩))
     let pf'' ← res.finish λ hyps goal => do
@@ -125,7 +125,7 @@ private def processWand :
       throwError "ispecialize: only spatial kind is supported at the moment"
     let out₁ ← mkFreshExprMVarQ prop
     let out₂ ← mkFreshExprMVarQ prop
-    let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
+    let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .unknown $out₁ $out₂)
       | throwError m!"ispecialize: {out} is not a wand"
     let res ← iFrame hyps out₁ (← SelPat.resolve hyps [.spatial, .intuitionistic])
     let ⟨_, hyps', pf'⟩ ← res.finishClose
