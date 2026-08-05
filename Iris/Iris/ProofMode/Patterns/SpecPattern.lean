@@ -128,6 +128,7 @@ partial def SpecPat.anyModal (spat : SpecPat) : Bool :=
 
 #rocq_ignore spec_pat.stack_item "Not necessary in Lean"
 #rocq_ignore spec_pat.parse_go "Not necessary in Lean"
+#rocq_ignore spec_pat.parse_goal "Not necessary in Lean"
 #rocq_ignore spec_pat.close "Not necessary in Lean"
 #rocq_ignore spec_pat.close_ident "Not necessary in Lean"
 
