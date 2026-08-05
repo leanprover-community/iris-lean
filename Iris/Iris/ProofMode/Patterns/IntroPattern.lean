@@ -95,5 +95,6 @@ partial def IntroPat.parse (term : Syntax) : MacroM (Syntax × IntroPat) := do
 #rocq_ignore intro_pat.close_conj_list "Not necessary in Lean"
 #rocq_ignore intro_pat.close_list "Not necessary in Lean"
 #rocq_ignore intro_pat.parse "Not necessary in Lean"
+#rocq_ignore intro_pat.parse_clear "Not necessary in Lean"
 #rocq_ignore intro_pat.parse_go "Not necessary in Lean"
 #rocq_ignore intro_pat.stack_item "Not necessary in Lean"
