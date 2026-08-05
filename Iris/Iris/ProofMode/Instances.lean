@@ -102,8 +102,10 @@ instance intoWand_wandIff (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP)
 instance intoWand_wandM (p q : Bool) [BI PROP] (mP' : Option PROP) (P Q : PROP)
     [h : FromAssumption q m.argIO P (mP'.getD emp)] :
     IntoWand p q iprop(mP' -∗? Q) m P Q where
-  into_wand := (intuitionisticallyIf_mono wandM_sound.mp).trans <|
-    (intuitionisticallyIf_mono <| wand_mono_left h.1).trans intuitionisticallyIf_elim
+  into_wand := calc
+    _ ⊢ □?p (mP'.getD iprop(emp) -∗ Q) := intuitionisticallyIf_mono wandM_sound.mp
+    _ ⊢ □?p (□?q P -∗ Q)               := intuitionisticallyIf_mono <| wand_mono_left h.1
+    _ ⊢ □?q P -∗ Q                     := intuitionisticallyIf_elim
 
 -- The set_option is ok since this is an instance for an IPM class and thus can create mvars.
 set_option synthInstance.checkSynthOrder false in
@@ -115,18 +117,27 @@ instance intoWand_forall (p q : Bool) [BI PROP] (Φ : α → PROP) (P Q : PROP) 
 @[rocq_alias into_wand_affine]
 instance intoWand_affinely (p q : Bool) [BI PROP] (R P Q : PROP) [h : IntoWand p q R m P Q] :
     IntoWand p q iprop(<affine> R) m iprop(<affine> P) iprop(<affine> Q) where
-  into_wand := wand_intro <|
-    (sep_congr intuitionisticallyIf_affinely intuitionisticallyIf_affinely).1.trans <|
-    affinely_sep_mpr.trans <| affinely_mono <| wand_elim h.1
+  into_wand := by
+    refine wand_intro ?_
+    calc
+      _ ⊢ <affine> □?p R ∗ <affine> □?q P :=
+          (sep_congr intuitionisticallyIf_affinely intuitionisticallyIf_affinely).mp
+      _ ⊢ <affine> (□?p R ∗ □?q P)        := affinely_sep_mpr
+      _ ⊢ <affine> Q                      := affinely_mono <| wand_elim h.into_wand
 
 @[rocq_alias into_wand_affine_args]
 instance (priority := low) intoWand_affinely_args (q : Bool) [BI PROP]
     (s : WandMode.Side) (R P Q : PROP) [h : IntoWand true q R (.matching s) P Q] :
     IntoWand true q R (.matching s) iprop(<affine> P) iprop(<affine> Q) where
-  into_wand := wand_intro <|
-    (sep_mono_left <| (affine_affinely _).2.trans <| affinely_mono h.1).trans <|
-    (sep_mono_right <| (intuitionisticallyIf_affinely (p := q)).1).trans <|
-    affinely_sep_mpr.trans <| affinely_mono wand_elim_left
+  into_wand := by
+    refine wand_intro ?_
+    calc
+      _ ⊢ <affine> (□?q P -∗ Q) ∗ □?q <affine> P :=
+          sep_mono_left <| (affine_affinely _).mpr.trans <| affinely_mono h.into_wand
+      _ ⊢ <affine> (□?q P -∗ Q) ∗ <affine> □?q P :=
+          sep_mono_right <| (intuitionisticallyIf_affinely (p := q)).mp
+      _ ⊢ <affine> ((□?q P -∗ Q) ∗ □?q P) := affinely_sep_mpr
+      _ ⊢ <affine> Q := affinely_mono wand_elim_left
 
 @[rocq_alias into_wand_intuitionistically]
 instance intoWand_intuitionistically (p q : Bool) [BI PROP] (R P Q : PROP)
@@ -176,8 +187,11 @@ instance fromForall_wand_pure [BI PROP] (P Q : PROP) φ
 @[rocq_alias from_forall_intuitionistically]
 instance fromForall_intuitionistically [BI PROP] [BIAffine PROP] [BIPersistentlyForall PROP] {A} P (Φ : A → PROP)
   [FromForall P Φ] : FromForall iprop(□ P) (λ a => iprop(□ (Φ a))) where
-  from_forall := (forall_mono λ _ => persistently_of_intuitionistically).trans $
-    persistently_forall.2.trans $ (persistently_mono (from_forall (P:=P))).trans intuitionistically_iff_persistently.2
+  from_forall := calc
+    _ ⊢ ∀ a, <pers> Φ a := forall_mono λ _ => persistently_of_intuitionistically
+    _ ⊢ <pers> ∀ a, Φ a := persistently_forall.mpr
+    _ ⊢ <pers> P        := persistently_mono from_forall
+    _ ⊢ □ P             := intuitionistically_iff_persistently.mpr
 
 @[rocq_alias from_forall_persistently]
 instance fromForall_persistently [BI PROP] [BIPersistentlyForall PROP] {A} P (Φ : A → PROP)
@@ -206,10 +220,16 @@ instance intoForall_persistently [BI PROP] [BIPersistentlyForall PROP] (P : PROP
 @[ipm_backtrack, rocq_alias into_forall_wand_pure]
 instance intoForall_wand_pure [BI PROP] (P Q : PROP) Φ
     [h : FromPure a P .out Φ] : IntoForall iprop(P -∗ Q) (fun _ : Φ => Q) where
-  into_forall := forall_intro λ hΦ =>
-    emp_sep.2.trans <| (sep_mono_left <|
-      (affinelyIf_emp.mpr.trans (affinelyIf_mono (pure_intro hΦ))).trans
-        h.1).trans wand_elim_right
+  into_forall := by
+    refine forall_intro λ hΦ => ?_
+    calc
+      _ ⊢ emp ∗ (P -∗ Q) := emp_sep.mpr
+      _ ⊢ P ∗ (P -∗ Q)   := sep_mono_left ?_
+      _ ⊢ Q              := wand_elim_right
+    calc
+      _ ⊢ <affine>?a emp := affinelyIf_emp.mpr
+      _ ⊢ <affine>?a ⌜Φ⌝ := affinelyIf_mono <| pure_intro hΦ
+      _ ⊢ P              := h.from_pure
 
 -- FromExists
 instance (priority := default + 10) fromExists_exists [BI PROP] (Φ : α → PROP) :
@@ -261,17 +281,17 @@ instance intoExists_intuitionistically [BI PROP] (P : PROP) (Φ : α → PROP) [
 
 @[ipm_backtrack, rocq_alias into_exist_and_pure]
 instance (priority := default - 10) intoExist_and_pure [BI PROP] (PQ P Q : PROP) (Φ : Prop)
-  [IntoAnd false PQ P Q] [IntoPure P Φ] :
-  IntoExists PQ (λ _ : Φ => Q) where
-  into_exists :=
-    (into_and (p:=false) (P:=PQ)).trans
-      <| (and_mono_left into_pure).trans (pure_elim_left (λ h =>
-              exists_intro (Ψ:=λ _ => Q) h))
+    [IntoAnd false PQ P Q] [IntoPure P Φ] :
+    IntoExists PQ (λ _ : Φ => Q) where
+  into_exists := calc
+    _ ⊢ P ∧ Q   := into_and (p := false)
+    _ ⊢ ⌜Φ⌝ ∧ Q := and_mono_left into_pure
+    _ ⊢ ∃ _, Q  := pure_elim_left <| λ h => exists_intro (Ψ := λ _ => Q) h
 
 @[rocq_alias into_exist_sep_pure]
 instance intoExist_sep_pure [BI PROP] (P Q : PROP) (Φ : Prop)
-  [IntoPure P Φ] [TCOr (Affine P) (Absorbing Q)]:
-  IntoExists iprop(P ∗ Q) (λ _ : Φ => Q) where
+    [IntoPure P Φ] [TCOr (Affine P) (Absorbing Q)]:
+    IntoExists iprop(P ∗ Q) (λ _ : Φ => Q) where
   into_exists :=
     (pure_elim _ ((sep_mono_left into_pure).trans sep_elim_left) (λ h =>
               sep_elim_right.trans <| exists_intro (Ψ:=λ _ => Q) h))
@@ -301,17 +321,23 @@ instance fromAnd_iff [BI PROP] (P1 P2 P1' P2' : PROP) [h : FromAnd iprop((P1 →
 instance (priority := default + 30) fromAnd_sep_persistent_l [BI PROP] (P1 P1' P2 : PROP)
     [Persistent P1] [h : IntoAbsorbingly P1' P1] : FromAnd iprop(P1 ∗ P2) P1' P2 where
   from_and := by
-    refine (and_mono_left h.1).trans <| persistent_and_affinely_sep_left.1.trans <|
-      sep_mono_left <| (affinely_mono ?_).trans intuitionistically_elim
-    exact (absorbingly_mono persistent).trans absorbingly_persistently.1
+    calc
+      _ ⊢ <absorb> P1 ∧ P2          := and_mono_left h.into_absorbingly
+      _ ⊢ <affine> <absorb> P1 ∗ P2 := persistent_and_affinely_sep_left.mp
+      _ ⊢ □ P1 ∗ P2                 := sep_mono_left ?_
+      _ ⊢ P1 ∗ P2                   := sep_mono_left intuitionistically_elim
+    exact affinely_mono <| (absorbingly_mono persistent).trans absorbingly_persistently.mp
 
 @[ipm_backtrack, rocq_alias from_and_sep_persistent_r]
 instance (priority := default + 20) fromAnd_sep_persistent_r [BI PROP] (P1 P2 P2' : PROP)
     [Persistent P2] [h : IntoAbsorbingly P2' P2] : FromAnd iprop(P1 ∗ P2) P1 P2' where
   from_and := by
-    refine (and_mono_right h.1).trans <| persistent_and_affinely_sep_right.1.trans <|
-      sep_mono_right <| (affinely_mono ?_).trans intuitionistically_elim
-    exact (absorbingly_mono persistent).trans absorbingly_persistently.1
+    calc
+      _ ⊢ P1 ∧ <absorb> P2          := and_mono_right h.into_absorbingly
+      _ ⊢ P1 ∗ <affine> <absorb> P2 := persistent_and_affinely_sep_right.mp
+      _ ⊢ P1 ∗ □ P2                 := sep_mono_right ?_
+      _ ⊢ P1 ∗ P2                   := sep_mono_right intuitionistically_elim
+    exact affinely_mono <| (absorbingly_mono persistent).trans absorbingly_persistently.mp
 
 @[rocq_alias from_and_pure]
 instance (priority := default + 50) fromAnd_pure (φ ψ : Prop) [BI PROP] :
@@ -342,19 +368,28 @@ instance intoAnd_iff [BI PROP] p (P1 P2 P1' P2' : PROP) [h : IntoAnd p iprop((P1
 @[ipm_backtrack, rocq_alias into_and_and_affine_l]
 instance intoAnd_and_affine_l [BI PROP] (P Q Q' : PROP) [Affine P]
     [h : FromAffinely Q' Q] : IntoAnd false iprop(P ∧ Q) P Q' where
-  into_and := (and_mono_left (affine_affinely _).2).trans <|
-    affinely_and_left.1.trans <| affinely_and.1.trans <| and_mono (affine_affinely _).1 h.1
+  into_and := calc
+    _ ⊢ <affine> P ∧ Q          := and_mono_left (affine_affinely _).mpr
+    _ ⊢ <affine> (P ∧ Q)        := affinely_and_left.mp
+    _ ⊢ <affine> P ∧ <affine> Q := affinely_and.mp
+    _ ⊢ P ∧ Q'                  := and_mono (affine_affinely _).mp h.from_affinely
 
 @[ipm_backtrack, rocq_alias into_and_and_affine_r]
 instance intoAnd_and_affine_r [BI PROP] (P P' Q : PROP) [Affine Q]
     [h : FromAffinely P' P] : IntoAnd false iprop(P ∧ Q) P' Q where
-  into_and := (and_mono_right (affine_affinely _).2).trans <|
-    affinely_and_right.1.trans <| affinely_and.1.trans <| and_mono h.1 (affine_affinely _).1
+  into_and := calc
+    _ ⊢ P ∧ <affine> Q          := and_mono_right (affine_affinely _).mpr
+    _ ⊢ <affine> (P ∧ Q)        := affinely_and_right.mp
+    _ ⊢ <affine> P ∧ <affine> Q := affinely_and.mp
+    _ ⊢ P' ∧ Q                  := and_mono h.from_affinely (affine_affinely _).mp
 
 @[rocq_alias into_and_sep]
 instance intoAnd_sep [BI PROP] [BIPositive PROP] (P Q : PROP) :
     IntoAnd true iprop(P ∗ Q) P Q where
-  into_and := intuitionistically_sep.1.trans <| and_sep_intuitionistically.2.trans <| intuitionistically_and.2
+  into_and := calc
+    _ ⊢ □ P ∗ □ Q := intuitionistically_sep.mp
+    _ ⊢ □ P ∧ □ Q := and_sep_intuitionistically.mpr
+    _ ⊢ □ (P ∧ Q) := intuitionistically_and.mpr
 
 @[rocq_alias into_and_sep_affine]
 instance intoAnd_sep_affine (p : Bool) [BI PROP] (P Q : PROP)
@@ -370,15 +405,20 @@ instance intoAnd_pure (p : Bool) (φ ψ : Prop) [BI PROP] :
 @[rocq_alias into_and_affinely]
 instance intoAnd_affinely (p : Bool) [BI PROP] (P Q1 Q2 : PROP) [h : IntoAnd p P Q1 Q2] :
     IntoAnd p iprop(<affine> P) iprop(<affine> Q1) iprop(<affine> Q2) where
-  into_and := intuitionisticallyIf_affinely.1.trans <| (affinely_mono h.1).trans <|
-    intuitionisticallyIf_affinely.2.trans (intuitionisticallyIf_mono affinely_and.1)
+  into_and := calc
+    _ ⊢ <affine> □?p P                  := intuitionisticallyIf_affinely.mp
+    _ ⊢ <affine> □?p (Q1 ∧ Q2)          := affinely_mono h.into_and
+    _ ⊢ □?p <affine> (Q1 ∧ Q2)          := intuitionisticallyIf_affinely.mpr
+    _ ⊢ □?p (<affine> Q1 ∧ <affine> Q2) := intuitionisticallyIf_mono affinely_and.mp
 
 @[rocq_alias into_and_intuitionistically]
 instance intoAnd_intuitionistically (p : Bool) [BI PROP] (P Q1 Q2 : PROP) [h : IntoAnd p P Q1 Q2] :
     IntoAnd p iprop(□ P) iprop(□ Q1) iprop(□ Q2) where
-  into_and := (intuitionisticallyIf_comm_iff (q := true)).1.trans <|
-      (intuitionistically_mono h.1).trans <| (intuitionisticallyIf_comm_iff (q := true)).2.trans <|
-      intuitionisticallyIf_mono intuitionistically_and.1
+  into_and := calc
+      _ ⊢ □ □?p P           := (intuitionisticallyIf_comm_iff (q := true)).mp
+      _ ⊢ □ □?p (Q1 ∧ Q2)   := intuitionistically_mono h.into_and
+      _ ⊢ □?p □ (Q1 ∧ Q2)   := (intuitionisticallyIf_comm_iff (q := true)).mpr
+      _ ⊢ □?p (□ Q1 ∧ □ Q2) := intuitionisticallyIf_mono intuitionistically_and.mp
 
 @[rocq_alias into_and_persistently]
 instance intoAnd_persistently (p : Bool) [BI PROP] (P Q1 Q2 : PROP) [h : IntoAnd p P Q1 Q2] :
@@ -387,7 +427,10 @@ instance intoAnd_persistently (p : Bool) [BI PROP] (P Q1 Q2 : PROP) [h : IntoAnd
     refine Entails.trans ?_ (intuitionisticallyIf_mono persistently_and.1)
     cases p
     · exact persistently_mono h.1
-    · exact intuitionistically_persistently.1.trans <| h.1.trans intuitionistically_persistently.2
+    · calc
+        _ ⊢ □ P                := intuitionistically_persistently.1
+        _ ⊢ □?true (Q1 ∧ Q2)   := h.1
+        _ ⊢ □ <pers> (Q1 ∧ Q2) := intuitionistically_persistently.2
 
 -- FromSep
 @[rocq_alias from_sep_sep]
@@ -445,8 +488,11 @@ instance intoSep_and_persistent_l [BI PROP] (P Q P' Q' : PROP) [Persistent P]
   into_sep :=
     match P', inst with
     | _, AndIntoSep.affine (h := h) .. =>
-      (and_mono_left (affine_affinely _).2).trans <| affinely_and_left_right.1.trans <|
-        persistent_and_affinely_sep_left_mp.trans (sep_mono (affine_affinely _).1 h.1)
+      calc
+        _ ⊢ <affine> P ∧ Q          := and_mono_left (affine_affinely _).mpr
+        _ ⊢ P ∧ <affine> Q          := affinely_and_left_right.mp
+        _ ⊢ <affine> P ∗ <affine> Q := persistent_and_affinely_sep_left_mp
+        _ ⊢ P ∗ Q'                  := sep_mono (affine_affinely _).mp h.from_affinely
     | _, AndIntoSep.affinely .. => persistent_and_affinely_sep_left_mp
 
 set_option synthInstance.checkSynthOrder false in
@@ -455,9 +501,12 @@ instance intoSep_and_persistent_r [BI PROP] (P Q P' Q' : PROP) [Persistent Q]
     [inst : AndIntoSep Q Q' P P'] : IntoSep iprop(P ∧ Q) P' Q' where
   into_sep :=
     match P', inst with
-    | _, AndIntoSep.affine (h := h) .. =>
-      (and_mono_right (affine_affinely _).2).trans <| affinely_and_left_right.2.trans <|
-        persistent_and_affinely_sep_right_mp.trans (sep_mono h.1 (affine_affinely _).1)
+    | P', AndIntoSep.affine (h := h) .. =>
+      calc
+        _ ⊢ P ∧ <affine> Q          := and_mono_right (affine_affinely _).mpr
+        _ ⊢ <affine> P ∧ Q          := affinely_and_left_right.mpr
+        _ ⊢ <affine> P ∗ <affine> Q := persistent_and_affinely_sep_right_mp
+        _ ⊢ P' ∗ Q                  := sep_mono h.from_affinely (affine_affinely _).mp
     | _, AndIntoSep.affinely .. => persistent_and_affinely_sep_right_mp
 
 @[rocq_alias into_sep_pure]
@@ -490,15 +539,19 @@ instance intoSep_persistently [BI PROP] [BIPositive PROP] (P Q1 Q2 : PROP)
 instance intoSep_persistently_affine [BI PROP] (P Q1 Q2 : PROP) [h : IntoSep P Q1 Q2]
     [TCOr (Affine Q1) (Absorbing Q2)] [TCOr (Affine Q2) (Absorbing Q1)] :
     IntoSep iprop(<pers> P) iprop(<pers> Q1) iprop(<pers> Q2) where
-  into_sep := (persistently_mono <| h.1.trans sep_and).trans <|
-    persistently_and.1.trans persistently_and_imp_sep
+  into_sep := calc
+    _ ⊢ <pers> (Q1 ∧ Q2)      := persistently_mono <| h.into_sep.trans sep_and
+    _ ⊢ <pers> Q1 ∧ <pers> Q2 := persistently_and.mp
+    _ ⊢ <pers> Q1 ∗ <pers> Q2 := persistently_and_imp_sep
 
 @[ipm_backtrack, rocq_alias into_sep_intuitionistically_affine]
 instance intoSep_intuitionistically_affine [BI PROP] (P Q1 Q2 : PROP) [h : IntoSep P Q1 Q2]
     [TCOr (Affine Q1) (Absorbing Q2)] [TCOr (Affine Q2) (Absorbing Q1)] :
     IntoSep iprop(□ P) iprop(□ Q1) iprop(□ Q2) where
-  into_sep := (intuitionistically_mono <| h.1.trans sep_and).trans <|
-    intuitionistically_and.1.trans and_sep_intuitionistically.1
+  into_sep := calc
+    _ ⊢ □ (Q1 ∧ Q2) := intuitionistically_mono <| h.into_sep.trans sep_and
+    _ ⊢ □ Q1 ∧ □ Q2 := intuitionistically_and.mp
+    _ ⊢ □ Q1 ∗ □ Q2 := and_sep_intuitionistically.mp
 
 -- FromOr
 @[rocq_alias from_or_or]
@@ -652,8 +705,10 @@ instance (priority := default + 20) fromAssumption_intuitionistically_l (p : Boo
 @[rocq_alias from_assumption_intuitionistically_l_true]
 instance (priority := default + 20) fromAssumption_intuitionistically_l_true (p : Bool) [BI PROP]
     (P Q : PROP) [h : FromAssumption p .in P Q] : FromAssumption p .in iprop(□ P) Q where
-  from_assumption := (intuitionisticallyIf_comm_iff (q := true)).1.trans <|
-    intuitionistically_elim.trans h.1
+  from_assumption := calc
+    _ ⊢ □ □?p P := (intuitionisticallyIf_comm_iff (q := true)).1
+    _ ⊢ □?p P   := intuitionistically_elim
+    _ ⊢ Q       := h.from_assumption
 
 @[rocq_alias from_assumption_persistently_l_true]
 instance (priority := default + 30) fromAssumption_persistently_l_true [BI PROP] (P Q : PROP)
@@ -683,8 +738,11 @@ instance fromAssumption_and_l [BI PROP] (p : Bool) (P1 P2 Q : PROP)
     [h : FromAssumption p .in P1 Q] : FromAssumption p .in iprop(P1 ∧ P2) Q where
   from_assumption :=
     match p, h with
-    | true, h => intuitionistically_and.mp.trans (and_elim_l.trans h.1)
-    | false, h => and_elim_l.trans h.1
+    | true, h => calc
+        _ ⊢ □ P1 ∧ □ P2 := intuitionistically_and.mp
+        _ ⊢ □ P1        := and_elim_l
+        _ ⊢ Q           := h.from_assumption
+    | false, h => and_elim_l.trans h.from_assumption
 
 set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack]
@@ -692,7 +750,10 @@ instance fromAssumption_and_r [BI PROP] (p : Bool) (P1 P2 Q : PROP)
     [h : FromAssumption p .in P2 Q] : FromAssumption p .in iprop(P1 ∧ P2) Q where
   from_assumption :=
     match p, h with
-    | true, h => intuitionistically_and.mp.trans (and_elim_r.trans h.1)
+    | true, h => calc
+        _ ⊢ □ P1 ∧ □ P2 := intuitionistically_and.mp
+        _ ⊢ □ P2        := and_elim_r
+        _ ⊢ Q           := h.1
     | false, h => and_elim_r.trans h.1
 
 -- IntoPure
@@ -725,7 +786,10 @@ instance intoPure_exists [BI PROP] (Φ : α → PROP) (φ : α → Prop)
 @[rocq_alias into_pure_pure_sep]
 instance intoPure_pure_sep (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
     [h1 : IntoPure P1 φ1] [h2 : IntoPure P2 φ2] : IntoPure iprop(P1 ∗ P2) (φ1 ∧ φ2) where
-  into_pure := (sep_mono h1.1 h2.1).trans <| sep_and.trans pure_and.1
+  into_pure := calc
+    _ ⊢ ⌜φ1⌝ ∗ ⌜φ2⌝ := sep_mono h1.into_pure h2.into_pure
+    _ ⊢ ⌜φ1⌝ ∧ ⌜φ2⌝ := sep_and
+    _ ⊢ ⌜φ1 ∧ φ2⌝   := pure_and.mp
 
 @[rocq_alias into_pure_affinely]
 instance intoPure_affinely [BI PROP] (P : PROP) (φ : Prop)
@@ -759,48 +823,63 @@ instance fromPure_pure [BI PROP] (φ : Prop) : FromPure (PROP := PROP) false ipr
 instance fromPure_pure_and (a1 a2 : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
     [h1 : FromPure a1 P1 io φ1] [h2 : FromPure a2 P2 io φ2] :
     FromPure (a1 || a2) iprop(P1 ∧ P2) io (φ1 ∧ φ2) where
-  from_pure := (affinelyIf_mono pure_and.2).trans <| affinelyIf_and.1.trans <| by
-    refine and_mono ((affinelyIf_flag_mono ?_).trans h1.1) ((affinelyIf_flag_mono ?_).trans h2.1)
-      <;> simp_all
+  from_pure := by
+    calc
+      _ ⊢ <affine>?(a1 || a2) (⌜φ1⌝ ∧ ⌜φ2⌝) := affinelyIf_mono pure_and.2
+      _ ⊢ <affine>?(a1 || a2) ⌜φ1⌝ ∧ <affine>?(a1 || a2) ⌜φ2⌝ := affinelyIf_and.1
+      _ ⊢ P1 ∧ P2 := and_mono ((affinelyIf_flag_mono ?_).trans h1.1)
+                              ((affinelyIf_flag_mono ?_).trans h2.1) <;> simp_all
 
 @[rocq_alias from_pure_pure_or]
 instance fromPure_pure_or (a1 a2 : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
     [h1 : FromPure a1 P1 io φ1] [h2 : FromPure a2 P2 io φ2] :
     FromPure (a1 || a2) iprop(P1 ∨ P2) io (φ1 ∨ φ2) where
-  from_pure := (affinelyIf_mono pure_or.2).trans <| affinelyIf_or.1.trans <| by
-    refine or_mono ((affinelyIf_flag_mono ?_).trans h1.1) ((affinelyIf_flag_mono ?_).trans h2.1)
-      <;> simp_all
+  from_pure := by
+    calc
+      _ ⊢ <affine>?(a1 || a2) (⌜φ1⌝ ∨ ⌜φ2⌝) := affinelyIf_mono pure_or.2
+      _ ⊢ <affine>?(a1 || a2) ⌜φ1⌝ ∨ <affine>?(a1 || a2) ⌜φ2⌝ := affinelyIf_or.1
+      _ ⊢ P1 ∨ P2 := or_mono ((affinelyIf_flag_mono ?_).trans h1.1)
+                             ((affinelyIf_flag_mono ?_).trans h2.1) <;> simp_all
 
 @[rocq_alias from_pure_pure_impl]
 instance fromPure_pure_imp (a : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
     [h1 : IntoPure P1 φ1] [h2 : FromPure a P2 io φ2] : FromPure a iprop(P1 → P2) io (φ1 → φ2) where
-  from_pure := (affinelyIf_mono pure_imp.1).trans <|
-    (BI.imp_intro <| affinelyIf_and_left.1.trans (affinelyIf_mono imp_elim_left)).trans <|
-    imp_mono h1.1 h2.1
+  from_pure := calc
+    _ ⊢ <affine>?a (⌜φ1⌝ → ⌜φ2⌝) := affinelyIf_mono pure_imp.mp
+    _ ⊢ ⌜φ1⌝ → <affine>?a ⌜φ2⌝   :=
+        imp_intro <| affinelyIf_and_left.mp.trans (affinelyIf_mono imp_elim_left)
+    _ ⊢ P1 → P2                  := imp_mono h1.into_pure h2.from_pure
 
 @[rocq_alias from_pure_exist]
 instance fromPure_exists (a : Bool) [BI PROP] (Φ : α → PROP) (φ : α → Prop)
     [h : ∀ x, FromPure a iprop(Φ x) io (φ x)] : FromPure a iprop(∃ x, Φ x) io (∃ x, φ x) where
-  from_pure := (affinelyIf_mono pure_exists.2).trans <|
-    affinelyIf_exists.1.trans (exists_mono fun x => (h x).1)
+  from_pure := calc
+    _ ⊢ <affine>?a ∃ x, ⌜φ x⌝ := affinelyIf_mono pure_exists.mpr
+    _ ⊢ ∃ x, <affine>?a ⌜φ x⌝ := affinelyIf_exists.mp
+    _ ⊢ ∃ a, Φ a              := exists_mono fun x => (h x).from_pure
 
 @[rocq_alias from_pure_forall]
 instance fromPure_forall (a : Bool) [BI PROP] (Φ : α → PROP) (φ : α → Prop)
     [h : ∀ x, FromPure a iprop(Φ x) io (φ x)] : FromPure a iprop(∀ x, Φ x) io (∀ x, φ x) where
-  from_pure := (affinelyIf_mono pure_forall.1).trans <|
-    affinelyIf_forall.trans (forall_mono fun x => (h x).1)
+  from_pure := calc
+    _ ⊢ <affine>?a ∀ x, ⌜φ x⌝ := affinelyIf_mono pure_forall.1
+    _ ⊢ ∀ x, <affine>?a ⌜φ x⌝ := affinelyIf_forall
+    _ ⊢ ∀ a, Φ a              := forall_mono fun x => (h x).1
 
 @[rocq_alias from_pure_pure_sep_true]
 instance fromPure_pure_sep_true (a1 a2 : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
     [h1 : FromPure a1 P1 io φ1] [h2 : FromPure a2 P2 io φ2] :
     FromPure (a1 && a2) iprop(P1 ∗ P2) io (φ1 ∧ φ2) where
   from_pure := by
-    refine (affinelyIf_mono pure_and.2).trans <| Entails.trans ?_ (sep_mono h1.1 h2.1)
+    calc
+      _ ⊢ <affine>?(a1 && a2) (⌜φ1⌝ ∧ ⌜φ2⌝) := affinelyIf_mono pure_and.2
+      _ ⊢@{PROP} <affine>?a1 ⌜φ1⌝ ∗ <affine>?a2 ⌜φ2⌝ := ?_
+      _ ⊢ P1 ∗ P2 := sep_mono h1.1 h2.1
     exact match a1, a2 with
-    | false, false => persistent_and_sep_mp
-    | false, true => persistent_and_affinely_sep_right.1
-    | true, false => persistent_and_affinely_sep_left.1
-    | true, true => affinely_and.1.trans persistent_and_sep_mp
+      | false, false => persistent_and_sep_mp
+      | false, true => persistent_and_affinely_sep_right.1
+      | true, false => persistent_and_affinely_sep_left.1
+      | true, true => affinely_and.1.trans persistent_and_sep_mp
 
 @[rocq_alias from_pure_pure_wand]
 instance fromPure_pure_wand (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
@@ -808,19 +887,23 @@ instance fromPure_pure_wand (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
     FromPure a iprop(P1 -∗ P2) io (φ1 → φ2) where
   from_pure := match a, or, h2 with
     | false, _, h2 => pure_wand_mpr.trans (wand_mono h1.1 h2.1)
-    | true, TCOr.r, h2 =>
-        (wand_intro <|
-            persistent_and_affinely_sep_left.2.trans <|
-            (and_mono_right (affine_affinely P1).2).trans <|
-            affinely_and_right.1.trans <| affinely_mono <| (and_mono pure_imp.1 h1.1).trans imp_elim_left
-          ).trans (wand_mono_right h2.1)
+    | true, TCOr.r, h2 => by
+      refine (wand_intro ?_).trans (wand_mono_right h2.1)
+      calc
+        _ ⊢ ⌜φ1 → φ2⌝ ∧ P1            := persistent_and_affinely_sep_left.2
+        _ ⊢ ⌜φ1 → φ2⌝ ∧ <affine> P1   := and_mono_right (affine_affinely P1).2
+        _ ⊢ <affine> (⌜φ1 → φ2⌝ ∧ P1) := affinely_and_right.1
+        _ ⊢ <affine> ⌜φ2⌝             := affinely_mono <| (and_mono pure_imp.1 h1.1).trans imp_elim_left
     | true, .l (t := h_teq), _ => nomatch h_teq
 
 @[rocq_alias from_pure_persistently]
 instance fromPure_persistently [BI PROP] (P : PROP) (a : Bool) (φ : Prop)
     [h : FromPure a P io φ] : FromPure false iprop(<pers> P) io φ where
-  from_pure := affinelyIf_elim.trans <| persistently_pure.2.trans <|
-    persistently_affinely.2.trans <| persistently_mono <| affinely_affinelyIf.trans h.1
+  from_pure := calc
+    _ ⊢ ⌜φ⌝      := affinelyIf_elim
+    _ ⊢@{PROP} <pers> ⌜φ⌝ := persistently_pure.2
+    _ ⊢ <pers> <affine> ⌜φ⌝ := persistently_affinely.2
+    _ ⊢ <pers> P := persistently_mono <| affinely_affinelyIf.trans h.1
 
 @[rocq_alias from_pure_affinely_true]
 instance fromPure_affinely_true (a : Bool) [BI PROP] (P : PROP) (φ : Prop)
@@ -830,11 +913,12 @@ instance fromPure_affinely_true (a : Bool) [BI PROP] (P : PROP) (φ : Prop)
 @[rocq_alias from_pure_intuitionistically_true]
 instance fromPure_intuitionistically_true (a : Bool) [BI PROP] (P : PROP) (φ : Prop)
     [h : FromPure a P io φ] : FromPure true iprop(□ P) io φ where
-  from_pure :=
-    (intuitionistically_of_intuitionistic (P := iprop(<affine> ⌜φ⌝))).2.trans <|
-    (intuitionistically_mono <| affinely_idem.2.trans <|
-      affinely_mono <| affinely_affinelyIf).trans <|
-    intuitionistically_affinely.1.trans <| intuitionistically_mono h.1
+  from_pure := calc
+    _ ⊢ □ <affine> ⌜φ⌝            := intuitionistically_of_intuitionistic.2
+    _ ⊢ □ <affine> <affine>?a ⌜φ⌝ :=
+        intuitionistically_mono <| affinely_idem.2.trans <| affinely_mono <| affinely_affinelyIf
+    _ ⊢ □ <affine>?a ⌜φ⌝          := intuitionistically_affinely.1
+    _ ⊢ □ P                       := intuitionistically_mono h.1
 
 @[rocq_alias from_pure_absorbingly]
 instance fromPure_absorbingly (a : Bool) [BI PROP] (P : PROP) (φ : Prop)
@@ -871,19 +955,29 @@ instance fromModal_absorbingly [BI PROP] (P : PROP) :
 -- ElimModal
 @[rocq_alias elim_modal_wand]
 instance elimModal_wand [BI PROP] φ p p' io (P P' Q Q' R : PROP) [h : ElimModal φ p io p' P P' Q Q'] :
-   ElimModal φ p io p' P P' iprop(R -∗ Q) iprop(R -∗ Q') where
-   elim_modal hφ := by
-     apply wand_intro ((sep_assoc.1.trans $ sep_mono_right $ wand_elim $ wand_intro_left $
-       wand_intro_left $ sep_assoc.2.trans _).trans (h.1 hφ))
-     apply (sep_mono_left sep_comm.1).trans (sep_assoc.1.trans $ wand_elim_swap $ wand_elim_swap .rfl)
+    ElimModal φ p io p' P P' iprop(R -∗ Q) iprop(R -∗ Q') where
+  elim_modal hφ := by
+    refine wand_intro ?_
+    calc
+      _ ⊢ □?p P ∗ (□?p' P' -∗ R -∗ Q') ∗ R := sep_assoc.1
+      _ ⊢ □?p P ∗ (□?p' P' -∗ Q') :=
+          sep_mono_right $ wand_elim $ wand_intro_left $ wand_intro_left $ sep_assoc.2.trans ?_
+      _ ⊢ Q := h.1 hφ
+    calc
+      _ ⊢ (R ∗ □?p' P') ∗ (□?p' P' -∗ R -∗ Q') := sep_mono_left sep_comm.1
+      _ ⊢ R ∗ □?p' P' ∗ (□?p' P' -∗ R -∗ Q')   := sep_assoc.1
+      _ ⊢ Q'                                   := wand_elim_swap $ wand_elim_swap .rfl
 
 @[rocq_alias elim_modal_wandM]
 instance elimModal_wandM [BI PROP] φ p p' io (P P' Q Q' : PROP) (mR : Option PROP)
     [h : ElimModal φ p io p' P P' Q Q'] :
     ElimModal φ p io p' P P' iprop(mR -∗? Q) iprop(mR -∗? Q') where
-  elim_modal hφ :=
-    (sep_mono_right <| wand_mono_right wandM_sound.mp).trans <|
-    ((elimModal_wand φ p p' io P P' Q Q' (mR.getD emp)).elim_modal hφ).trans wandM_sound.mpr
+  elim_modal hφ := calc
+    _ ⊢ □?p P ∗ (□?p' P' -∗ mR.getD iprop(emp) -∗ Q') :=
+        sep_mono_right <| wand_mono_right wandM_sound.mp
+    _ ⊢ mR.getD iprop(emp) -∗ Q                       :=
+        (elimModal_wand φ p p' io P P' Q Q' (mR.getD emp)).elim_modal hφ
+    _ ⊢ mR -∗? Q                                      := wandM_sound.mpr
 
 @[rocq_alias elim_modal_forall]
 instance elimModal_forall [BI PROP] φ p p' io P P' (Φ Ψ : α → PROP) [h : ∀ x, ElimModal φ p io p' P P' (Φ x) (Ψ x)] :
@@ -893,7 +987,11 @@ instance elimModal_forall [BI PROP] φ p p' io P P' (Φ Ψ : α → PROP) [h : �
 @[rocq_alias elim_modal_absorbingly_here]
 instance elimModal_absorbingly_here [BI PROP] p io (P Q : PROP) [Absorbing Q] :
   ElimModal True p io false iprop(<absorb> P) P Q Q where
-  elim_modal _ := (sep_mono_left intuitionisticallyIf_elim).trans $ absorbingly_sep_left.1.trans $ absorbing_absorbingly.1.trans wand_elim_right
+  elim_modal _ := calc
+    _ ⊢ <absorb> P ∗ (P -∗ Q)   := sep_mono_left intuitionisticallyIf_elim
+    _ ⊢ <absorb> (P ∗ (P -∗ Q)) := absorbingly_sep_left.1
+    _ ⊢ P ∗ (P -∗ Q)            := absorbing_absorbingly.1
+    _ ⊢ Q                       := wand_elim_right
 
 -- CombineSepAs
 @[rocq_alias maybe_combine_sep_as_default]
