@@ -8,7 +8,6 @@ module
 public import Iris.ProofMode.ClassesMake
 public meta import Iris.ProofMode.Patterns.SelPattern
 public meta import Iris.ProofMode.Tactics.Basic
-
 public meta import Iris.ProofMode.Tactics.Assumption
 public meta import Iris.ProofMode.Tactics.Cases
 public meta import Iris.ProofMode.Patterns.CasesPattern
@@ -24,21 +23,29 @@ declare_syntax_cat generalizingSelPats
 syntax " generalizing " (ppSpace colGt selPat)* : generalizingSelPats
 syntax " generalizing! " (ppSpace colGt selPat)* : generalizingSelPats
 
+@[rocq_alias tac_revert]
 theorem wand_revert [BI PROP] {Δ Δ' P Q : PROP}
     (h1 : Δ ⊣⊢ Δ' ∗ P) (h2 : Δ' ⊢ P -∗ Q) : Δ ⊢ Q :=
   h1.mp.trans (wand_elim h2)
 
+@[rocq_alias tac_forall_revert]
 theorem forall_revert {α} [BI PROP] {Δ : PROP} {Ψ : α → PROP}
     (h : Δ ⊢ BI.forall Ψ) : ∀ x, Δ ⊢ Ψ x :=
   λ x => h.trans (forall_elim x)
 
+@[rocq_alias tac_pure_revert]
 theorem pure_revert [BI PROP] {Δ P Q : PROP} {φ : Prop}
     [hA : MakeAffinely iprop(⌜φ⌝) P]
     (h : Δ ⊢ P -∗ Q) : φ → Δ ⊢ Q := by
   intro hp
-  have hA : (emp : PROP) ⊢ P :=
-    (affinely_emp.mpr.trans <| affinely_mono <| pure_intro hp).trans (hA.make_affinely.mp)
-  exact (sep_emp.mpr.trans (sep_mono .rfl hA)).trans (wand_elim h)
+  calc
+    Δ ⊢ Δ ∗ emp := sep_emp.mpr
+    _ ⊢ Δ ∗ P   := sep_mono_right ?_
+    _ ⊢ Q       := wand_elim h
+  calc
+    _ ⊢ <affine> emp := affinely_emp.mpr
+    _ ⊢ <affine> ⌜φ⌝ := affinely_mono <| pure_intro hp
+    _ ⊢ P            := hA.make_affinely.mp
 
 public meta section
 open Lean Elab Tactic Meta Qq

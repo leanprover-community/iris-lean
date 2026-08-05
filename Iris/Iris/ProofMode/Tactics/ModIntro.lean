@@ -15,54 +15,68 @@ open Qq BI Std
 
 /-- Reified version of ModalityAction -/
 inductive ModalityActionQ (PROP1 : Q(Type u)) (PROP2 : Q(Type u)) : Type where
-| isEmpty
-| forall (C : Q($PROP1 → Prop))
-| transform (C : Q($PROP2 → $PROP1 → Prop))
-| clear
-| id
+  | isEmpty
+  | forall (C : Q($PROP1 → Prop))
+  | transform (C : Q($PROP2 → $PROP1 → Prop))
+  | clear
+  | id
 
-theorem modaction_forall [BI PROP] {p P} (M : Modality PROP PROP) {C} (h : M.action p = .forall C)
-(hC : C P) : □?p P ⊢ M.M iprop(□?p P) := by
-    have hs := M.spec p
-    rw [h] at hs
-    apply (hs _ hC)
+theorem modaction_forall [BI PROP] {p P} (M : Modality PROP PROP) {C}
+    (h : M.action p = .forall C) (hC : C P) : □?p P ⊢ M.M iprop(□?p P) := by
+  have hs := M.spec p
+  rw [h] at hs
+  apply (hs _ hC)
 
 theorem modaction_transform [BI PROP1] [BI PROP2] {p P Q} (M : Modality PROP1 PROP2) {C}
-(h : M.action p = .transform C) (hC : C P Q) : □?p P ⊢ M.M iprop(□?p Q) := by
-    have hs := M.spec p
-    rw [h] at hs
-    apply (hs _ _ hC)
+    (h : M.action p = .transform C) (hC : C P Q) : □?p P ⊢ M.M iprop(□?p Q) := by
+  have hs := M.spec p
+  rw [h] at hs
+  apply (hs _ _ hC)
 
 theorem modaction_clear [BI PROP1] [BI PROP2] {p P} (M : Modality PROP1 PROP2)
-(h : M.action p = .clear) : □?p P ⊢ M.M emp :=
-  match p, h  with
+    (h : M.action p = .clear) : □?p P ⊢ M.M emp :=
+  match p, h with
   | true, _ => affine.trans M.emp
   | false, h => by
     have hs := M.spec false
     simp [h] at hs
-    apply Entails.trans (sep_emp.2.trans (sep_mono true_intro M.emp)) absorbing
+    calc
+      _ ⊢ □?false P ∗ emp := sep_emp.mpr
+      _ ⊢ True ∗ M.M emp  := sep_mono true_intro M.emp
+      _ ⊢ M.M emp         := true_sep.mp
 
-theorem modaction_id [BI PROP] {p P} (M : Modality PROP PROP) (h : M.action p = .id)
-  : □?p P ⊢ M.M iprop(□?p P) := by
-    have hs := M.spec p
-    rw [h] at hs
-    apply hs
+theorem modaction_id [BI PROP] {p P} (M : Modality PROP PROP) (h : M.action p = .id) :
+    □?p P ⊢ M.M iprop(□?p P) := by
+  have hs := M.spec p
+  rw [h] at hs
+  apply hs
 
-theorem modaction_sep_emp_l [BI PROP1] [bi2: BI PROP2] {elhs erhs erhs'} {M : Modality PROP1 PROP2}
-  (h1 : elhs ⊢ M.M emp) (h2 : erhs ⊢ M.M erhs') : elhs ∗ erhs ⊢ M.M iprop(erhs') :=
-  (sep_mono h1 h2).trans $ M.sep.trans (M.mono emp_sep.1)
+theorem modaction_sep_emp_l [BI PROP1] [bi2: BI PROP2]
+    {elhs erhs erhs'} {M : Modality PROP1 PROP2}
+    (h1 : elhs ⊢ M.M emp) (h2 : erhs ⊢ M.M erhs') : elhs ∗ erhs ⊢ M.M iprop(erhs') := calc
+  _ ⊢ M.M emp ∗ M.M erhs'    := sep_mono h1 h2
+  _ ⊢ M.M iprop(emp ∗ erhs') := M.sep
+  _ ⊢ M.M erhs'              := M.mono emp_sep.1
 
-theorem modaction_sep_emp_r [BI PROP1] [bi2: BI PROP2] {elhs elhs' erhs} {M : Modality PROP1 PROP2}
-  (h1 : elhs ⊢ M.M elhs') (h2 : erhs ⊢ M.M emp) : elhs ∗ erhs ⊢ M.M iprop(elhs') :=
-  (sep_mono h1 h2).trans $ M.sep.trans (M.mono sep_emp.1)
+theorem modaction_sep_emp_r [BI PROP1] [bi2: BI PROP2]
+    {elhs elhs' erhs} {M : Modality PROP1 PROP2}
+    (h1 : elhs ⊢ M.M elhs') (h2 : erhs ⊢ M.M emp) : elhs ∗ erhs ⊢ M.M iprop(elhs') := calc
+  _ ⊢ M.M elhs' ∗ M.M emp    := sep_mono h1 h2
+  _ ⊢ M.M iprop(elhs' ∗ emp) := M.sep
+  _ ⊢ M.M elhs'              := M.mono sep_emp.1
 
-theorem modaction_sep [BI PROP1] [bi2: BI PROP2] {elhs erhs elhs' erhs'} {M : Modality PROP1 PROP2}
-  (h1 : elhs ⊢ M.M elhs') (h2 : erhs ⊢ M.M erhs') : elhs ∗ erhs ⊢ M.M iprop(elhs' ∗ erhs') :=
+theorem modaction_sep [BI PROP1] [bi2: BI PROP2]
+    {elhs erhs elhs' erhs'} {M : Modality PROP1 PROP2}
+    (h1 : elhs ⊢ M.M elhs') (h2 : erhs ⊢ M.M erhs') : elhs ∗ erhs ⊢ M.M iprop(elhs' ∗ erhs') :=
   (sep_mono h1 h2).trans M.sep
 
-theorem modintro [BI PROP1] [BI PROP2] {e e'} {α} {Φ M} {sel : α} {P : PROP2} {Q : PROP1}
-[FromModal Φ M sel P Q] (h1 : e ⊢ M.M e') (h2 : e' ⊢ Q) (hΦ : Φ) : e ⊢ P :=
-    (h1.trans (M.mono h2)).trans (from_modal hΦ)
+@[rocq_alias tac_modal_intro]
+theorem modintro [BI PROP1] [BI PROP2] {e e'} {α} {Φ M} {sel : α}
+    {P : PROP2} {Q : PROP1}
+    [FromModal Φ M sel P Q] (h1 : e ⊢ M.M e') (h2 : e' ⊢ Q) (hΦ : Φ) : e ⊢ P := calc
+  e ⊢ M.M e' := h1
+  _ ⊢ M.M Q  := M.mono h2
+  _ ⊢ P      := from_modal hΦ
 
 public meta section
 open Lean Elab Tactic Meta
