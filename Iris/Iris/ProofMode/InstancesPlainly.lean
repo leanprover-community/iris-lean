@@ -25,8 +25,10 @@ instance fromAssumption_plainly_l_true [Sbi PROP] (P Q : PROP)
 @[rocq_alias from_assumption_plainly_l_false]
 instance fromAssumption_plainly_l_false [Sbi PROP] [BIAffine PROP] (P Q : PROP)
     [h : FromAssumption true .in P Q] : FromAssumption false .in iprop(■ P) Q where
-  from_assumption := plainly_elim_persistently.trans <|
-    intuitionistically_iff_persistently.2.trans h.1
+  from_assumption := calc
+    _ ⊢ <pers> P := plainly_elim_persistently
+    _ ⊢ □ P      := intuitionistically_iff_persistently.mpr
+    _ ⊢ Q        := h.from_assumption
 
 /-- FromPure -/
 
@@ -77,11 +79,12 @@ instance intoAnd_plainly [Sbi PROP] (p : Bool) (P Q1 Q2 : PROP)
   into_and := by
     cases p <;> simp only [intuitionisticallyIf, Bool.false_eq_true, ↓reduceIte]
     · exact (plainly_mono h.1).trans plainly_and.1
-    · apply (intuitionistically_idem).2.trans (intuitionistically_mono _)
-      apply (intuitionistically_plainly.trans (plainly_mono h.1)).trans _
-      apply Entails.trans _ (plainly_and.1)
-      apply plainly_mono
-      apply intuitionistically_elim
+    · refine (intuitionistically_idem).2.trans <| intuitionistically_mono ?_
+      calc
+        _ ⊢ ■ □ P         := intuitionistically_plainly
+        _ ⊢ ■ □ (Q1 ∧ Q2) := plainly_mono h.1
+        _ ⊢ ■ (Q1 ∧ Q2)   := plainly_mono intuitionistically_elim
+        _ ⊢ ■ Q1 ∧ ■ Q2   := plainly_and.1
 
 /-- IntoSep -/
 
@@ -95,8 +98,10 @@ instance intoSep_plainly_affine [Sbi PROP] (P Q1 Q2 : PROP)
     [h : IntoSep P Q1 Q2]
     [TCOr (Affine Q1) (Absorbing Q2)] [TCOr (Affine Q2) (Absorbing Q1)] :
     IntoSep iprop(■ P) iprop(■ Q1) iprop(■ Q2) where
-  into_sep := (plainly_mono (h.1.trans sep_and)).trans <|
-    plainly_and.1.trans and_sep_plainly.1
+  into_sep := calc
+    _ ⊢ ■ (Q1 ∧ Q2) := plainly_mono <| h.1.trans sep_and
+    _ ⊢ ■ Q1 ∧ ■ Q2 := plainly_and.1
+    _ ⊢ ■ Q1 ∗ ■ Q2 := and_sep_plainly.1
 
 /-- FromOr -/
 
