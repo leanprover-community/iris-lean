@@ -5,8 +5,7 @@ Authors: Oliver Soeser
 -/
 module
 
-public import Iris.BI.Lib.Fixpoint
-public import Iris.ProofMode.Classes
+public import Iris.ProofMode
 
 @[expose] public section
 
