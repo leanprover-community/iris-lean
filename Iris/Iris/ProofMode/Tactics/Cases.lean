@@ -19,37 +19,53 @@ namespace Iris.ProofMode
 public section
 open BI Std
 
+@[rocq_alias tac_false_destruct]
 theorem false_elim' [BI PROP] {P Q : PROP} : P ∗ □?p False ⊢ Q :=
   wand_elim_swap <| intuitionisticallyIf_elim.trans false_elim
 
+@[rocq_alias tac_exist_destruct]
 theorem exists_elim' [BI PROP] {p} {P A Q : PROP} {Φ : α → PROP} [inst : IntoExists A Φ]
-    (h : ∀ a, P ∗ □?p Φ a ⊢ Q) : P ∗ □?p A ⊢ Q :=
-  (sep_mono_right <| (intuitionisticallyIf_mono inst.1).trans intuitionisticallyIf_exists.1).trans <| sep_exists_left.1.trans (exists_elim h)
+    (h : ∀ a, P ∗ □?p Φ a ⊢ Q) : P ∗ □?p A ⊢ Q := by
+  calc
+    _ ⊢ P ∗ ∃ a, □?p Φ a :=
+        sep_mono_right <| (intuitionisticallyIf_mono inst.1).trans intuitionisticallyIf_exists.1
+    _ ⊢ ∃ a, P ∗ □?p Φ a := sep_exists_left.1
+    _ ⊢ Q                := exists_elim h
 
-theorem sep_and_elim_l [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
+@[rocq_alias tac_and_destruct_choice]
+theorem sep_and_elim_left [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
     (h : P ∗ □?p A1 ⊢ Q) : P ∗ □?p A ⊢ Q :=
   (sep_mono_right <| inst.1.trans <| intuitionisticallyIf_mono and_elim_l).trans h
 
-theorem sep_and_elim_r [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
+theorem sep_and_elim_right [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
     (h : P ∗ □?p A2 ⊢ Q) : P ∗ □?p A ⊢ Q :=
   (sep_mono_right <| inst.1.trans <| intuitionisticallyIf_mono and_elim_r).trans h
 
+@[rocq_alias tac_and_destruct]
 theorem sep_elim_spatial [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoSep A A1 A2]
-    (h : P ∗ A1 ⊢ A2 -∗ Q) : P ∗ A ⊢ Q :=
-  (sep_mono_right inst.1).trans <| sep_assoc.2.trans <| wand_elim h
+    (h : P ∗ A1 ⊢ A2 -∗ Q) : P ∗ A ⊢ Q := calc
+  _ ⊢ P ∗ A1 ∗ A2   := sep_mono_right inst.1
+  _ ⊢ (P ∗ A1) ∗ A2 := sep_assoc.2
+  _ ⊢ Q             := wand_elim h
 
 theorem and_elim_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd true A A1 A2]
-    (h : P ∗ □ A1 ⊢ □ A2 -∗ Q) : P ∗ □ A ⊢ Q :=
-  (sep_mono_right <| inst.1.trans intuitionistically_and_sep.1).trans <|
-  sep_assoc.2.trans <| wand_elim h
+    (h : P ∗ □ A1 ⊢ □ A2 -∗ Q) : P ∗ □ A ⊢ Q := calc
+  _ ⊢ P ∗ □ A1 ∗ □ A2   := sep_mono_right <| inst.1.trans intuitionistically_and_sep.1
+  _ ⊢ (P ∗ □ A1) ∗ □ A2 := sep_assoc.2
+  _ ⊢ Q                 := wand_elim h
 
+@[rocq_alias tac_or_destruct]
 theorem or_elim' [BI PROP] {p} {P A Q A1 A2 : PROP} [inst : IntoOr A A1 A2]
-    (h1 : P ∗ □?p A1 ⊢ Q) (h2 : P ∗ □?p A2 ⊢ Q) : P ∗ □?p A ⊢ Q :=
-  (sep_mono_right <| (intuitionisticallyIf_mono inst.1).trans (intuitionisticallyIf_or _).1).trans <| BI.sep_or_left.1.trans <| or_elim h1 h2
+    (h1 : P ∗ □?p A1 ⊢ Q) (h2 : P ∗ □?p A2 ⊢ Q) : P ∗ □?p A ⊢ Q := calc
+  _ ⊢ P ∗ (□?p A1 ∨ □?p A2)   :=
+      sep_mono_right <| (intuitionisticallyIf_mono inst.1).trans (intuitionisticallyIf_or _).1
+  _ ⊢ P ∗ □?p A1 ∨ P ∗ □?p A2 := sep_or_left.1
+  _ ⊢ Q                       := or_elim h1 h2
 
+@[rocq_alias tac_intuitionistic]
 theorem intuitionistic_elim_spatial [BI PROP] {A A' P Q : PROP}
     [IntoPersistently false A A'] [TCOr (Affine A) (Absorbing Q)]
-    (h : P ∗ □ A' ⊢ Q) : P ∗ A ⊢ Q := (replaces_r to_persistent_spatial).apply h
+  (h : P ∗ □ A' ⊢ Q) : P ∗ A ⊢ Q := (replaces_r to_persistent_spatial).apply h
 
 theorem intuitionistic_elim_intuitionistic [BI PROP] {A A' Q : PROP}
     [inst : IntoPersistently true A A'] (h : P ∗ □ A' ⊢ Q) : P ∗ □ A ⊢ Q :=
@@ -57,9 +73,10 @@ theorem intuitionistic_elim_intuitionistic [BI PROP] {A A' Q : PROP}
     ⟨persistently_of_intuitionistically.trans inst.into_persistently⟩
   intuitionistic_elim_spatial (A := iprop(□ A)) h
 
+@[rocq_alias tac_spatial]
 theorem spatial_elim [BI PROP] {p} {A A' Q : PROP} [FromAffinely A' A p]
     (h : P ∗ A' ⊢ Q) : P ∗ □?p A ⊢ Q :=
-      (sep_mono_right <| (affinelyIf_of_intuitionisticallyIf).trans from_affinely).trans h
+  (sep_mono_right <| (affinelyIf_of_intuitionisticallyIf).trans from_affinely).trans h
 
 theorem of_emp_sep [BI PROP] {A Q : PROP} (h : A ⊢ Q) : emp ∗ A ⊢ Q := emp_sep.1.trans h
 
@@ -102,8 +119,8 @@ private def iCasesAndLR {prop : Q(Type u)} (bi : Q(BI $prop))
   let A2 ← mkFreshExprMVarQ q($prop)
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoAnd $p $A $A1 $A2)
     | return none
-  if right then return some q(sep_and_elim_r $(← k A2))
-  else return some q(sep_and_elim_l $(← k A1))
+  if right then return some q(sep_and_elim_right $(← k A2))
+  else return some q(sep_and_elim_left $(← k A1))
 
 /-- Destruct a conjunction hypothesis [A] into two parts and continue with the left and right subpatterns in sequence. -/
 private def iCasesSep {prop : Q(Type u)} {bi : Q(BI $prop)}

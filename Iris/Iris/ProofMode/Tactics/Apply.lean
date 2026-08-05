@@ -16,19 +16,22 @@ namespace Iris.ProofMode
 public section
 open BI
 
+@[rocq_alias tac_apply]
 theorem apply [BI PROP] {p} {P Q Q1 R : PROP}
     (h1 : P ⊢ Q1)
     [h2 : IntoWand p false Q (.matching .result) Q1 R] : P ∗ □?p Q ⊢ R :=
-      (Entails.trans (sep_mono_left h1) (wand_elim_swap h2.1))
+  (Entails.trans (sep_mono_left h1) (wand_elim_swap h2.1))
 
 public meta section
 open Lean Elab Tactic Meta Qq Std
 
---  Like `ProofMode.assumption`, but specialized for the `iapply` case
+/--  Like `ProofMode.assumption`, but specialized for the `iapply` case. -/
 theorem apply_assumption [BI PROP] {p : Bool} {P A Q : PROP} [inst : FromAssumption p .in A Q]
-  [TCOr (Affine P) (Absorbing Q)]
-  (h : e ⊢ P ∗ □?p A) : e ⊢ Q :=
-  h.trans <| (sep_mono_right inst.1).trans sep_elim_right
+    [TCOr (Affine P) (Absorbing Q)]
+    (h : e ⊢ P ∗ □?p A) : e ⊢ Q := calc
+  _ ⊢ P ∗ □?p A := h
+  _ ⊢ P ∗ Q     := sep_mono_right inst.1
+  _ ⊢ Q         := sep_elim_right
 
 /--
 Apply a hypothesis `A` to the `goal` by eliminating the wands recursively

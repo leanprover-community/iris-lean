@@ -37,26 +37,25 @@ theorem combine_gives_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1 out2 out : PRO
     (inst : CombineSepGives out2 out1 out)
     (pf1 : e ⊣⊢ e1 ∗ □?p1 out1)
     (pf2 : e1 ⊣⊢ e2 ∗ □?p2 out2) :
-    e ⊢ e ∗ □ out :=
-  have pf3 : □?p1 out1 ∗ □?p2 out2 ⊢ <pers> out := calc
-    _ ⊢ □?(p1 && p2) (out1 ∗ out2) := intuitionisticallyIf_sep_conj
-    _ ⊢ □?(p1 && p2) <pers> out    := intuitionisticallyIf_mono <| sep_comm.mp.trans inst.combine_sep_gives
-    _ ⊢ <pers> out                 := intuitionisticallyIf_elim
+    e ⊢ e ∗ □ out := by
   calc
     e ⊢ e1 ∗ □?p1 out1                                   := pf1.mp
     _ ⊢ (e2 ∗ □?p2 out2) ∗ □?p1 out1                     := sep_mono_left pf2.mp
     _ ⊢ e2 ∗ □?p2 out2 ∗ □?p1 out1                       := sep_assoc.mp
     _ ⊢ e2 ∗ □?p1 out1 ∗ □?p2 out2                       := sep_mono_right sep_comm.mp
-    _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∧ (e2 ∗ <pers> out) := and_intro .rfl <| sep_mono_right pf3
+    _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∧ (e2 ∗ <pers> out) := and_intro .rfl <| sep_mono_right ?_
     _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∧ <pers> out        := and_mono_right sep_elim_right
     _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∗ □ out             := persistently_and_intuitionistically_sep_right.mp
     _ ⊢ (e2 ∗ □?p2 out2 ∗ □?p1 out1) ∗ □ out             := sep_mono_left <| sep_mono_right sep_comm.mp
     _ ⊢ ((e2 ∗ □?p2 out2) ∗ □?p1 out1) ∗ □ out           := sep_mono_left sep_assoc.mpr
     _ ⊢ (e1 ∗ □?p1 out1) ∗ □ out                         := sep_mono_left <| sep_mono_left pf2.mpr
     _ ⊢ e ∗ □ out                                        := sep_mono_left pf1.mpr
+  calc
+    _ ⊢ □?(p1 && p2) (out1 ∗ out2) := intuitionisticallyIf_sep_conj
+    _ ⊢ □?(p1 && p2) <pers> out    := intuitionisticallyIf_mono <| sep_comm.mp.trans inst.combine_sep_gives
+    _ ⊢ <pers> out                 := intuitionisticallyIf_elim
 
-/-- Auxiliary lemma for combining hypotheses derived using `CombineSepGives`
-    by conjunction -/
+/-- Auxiliary lemma for combining hypotheses derived using `CombineSepGives` by conjunction -/
 theorem combine_gives_step_conj [BI PROP] {p1 p2 : Bool}
     {e e1 e2 outGives newOutGives outGivesCombined out1 out2 : PROP}
     (instGives : CombineSepGives out2 out1 newOutGives)
@@ -94,6 +93,15 @@ theorem combine_as_gives [BI PROP] {p : Bool} {newE e outAs outGives goal : PROP
   _ ⊢ newE ∗ □?p outAs ∗ □?p □ outGives := sep_mono_right <| sep_mono_right intuitionisticallyIf_intutitionistically.mpr
   _ ⊢ newE ∗ □?p (outAs ∗ □ outGives)   := sep_mono_right intuitionisticallyIf_sep_mpr
   _ ⊢ goal := pfAsGives
+
+#rocq_ignore tac_combine_as "icombine is implemented by iteration with CombineState"
+#rocq_ignore tac_combine_gives "icombine is implemented by iteration with CombineState"
+#rocq_ignore combine_seps_gives_of_envs "icombine is implemented by iteration with CombineState"
+#rocq_ignore combine_seps_as_from_as_gives "icombine is implemented by iteration with CombineState"
+#rocq_ignore combine_seps_as_gives_nil "icombine is implemented by iteration with CombineState"
+#rocq_ignore combine_seps_as_gives_singleton "icombine is implemented by iteration with CombineState"
+#rocq_ignore combine_seps_gives_cons "icombine is implemented by iteration with CombineState"
+#rocq_ignore combine_seps_gives_of_envs "icombine is implemented by iteration with CombineState"
 
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
