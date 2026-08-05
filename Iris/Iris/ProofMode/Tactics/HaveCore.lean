@@ -11,21 +11,25 @@ public meta import Iris.ProofMode.Patterns.ProofModeTerm
 public meta import Iris.ProofMode.Tactics.Basic
 public meta import Iris.ProofMode.Tactics.Specialize
 
-/- This file contains the `iHave` function for asserting a ProofModeTerm.
-   It is separate from the implementation of `ihave` in `Have.lean` since
-   the `ihave` tactic in (`Have.lean`) depends on `Cases.lean`, which in turn
-   depends on `iHave` in this file.
+/-
+  This file contains the `iHave` function for asserting a ProofModeTerm.
+  It is separate from the implementation of `ihave` in `Have.lean` since
+  the `ihave` tactic in (`Have.lean`) depends on `Cases.lean`, which in turn
+  depends on `iHave` in this file.
 -/
-
 
 namespace Iris.ProofMode
 
 public section
 open BI
 
+@[rocq_alias tac_pose_proof]
 theorem have_asEmpValid [bi : BI PROP] {φ} {P Q : PROP}
     [h1 : AsEmpValid .into φ .in PROP bi P] (h : φ) : Q ⊢ Q ∗ □ P :=
-  sep_emp.2.trans (sep_mono_right $ intuitionistically_emp.2.trans (intuitionistically_mono (asEmpValid_1 _ h1 h)))
+  sep_emp.2.trans (sep_mono_right $ intuitionistically_emp.2.trans
+    (intuitionistically_mono (asEmpValid_1 _ h1 h)))
+
+#rocq_ignore tac_pose_proof_hyp "not needed as Expr.lean already provides the infrastructure"
 
 public meta section
 open Lean Elab Tactic Meta Qq Std

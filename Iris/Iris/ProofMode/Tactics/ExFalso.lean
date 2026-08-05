@@ -13,6 +13,7 @@ namespace Iris.ProofMode
 public section
 open BI
 
+@[rocq_alias tac_ex_falso]
 theorem exfalso [BI PROP] {P Q : PROP} (h : P ⊢ False) : P ⊢ Q := h.trans false_elim
 
 public meta section

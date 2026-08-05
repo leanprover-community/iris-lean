@@ -14,9 +14,12 @@ namespace Iris.ProofMode
 public section
 open BI
 
+@[rocq_alias tac_exist]
 theorem from_exists_intro [BI PROP] {Φ : α → PROP} {P Q : PROP} [inst : FromExists P Φ]
-    (a : α) (h : P ⊢ Q) : Φ a ⊢ Q :=
-  ((exists_intro a).trans inst.1).trans h
+    (a : α) (h : P ⊢ Q) : Φ a ⊢ Q := calc
+  _ ⊢ ∃ a, Φ a := exists_intro a
+  _ ⊢ P := inst.from_exists
+  _ ⊢ Q := h
 
 public meta section
 open Lean Elab Tactic Meta Qq
