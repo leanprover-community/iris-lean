@@ -292,7 +292,7 @@ theorem adequateNoFork_efs_nil {e₁ : Expr} {σ₁ s φ} (H : AdequateNoFork s 
     {t₂ σ₂ e₂} (Hsteps : ([e₁], σ₁) -·->ₜₚ* (t₂, σ₂)) (Hmem : e₂ ∈ t₂)
     {κ e' σ' efs} (Hstep : (e₂, σ₂) -<κ>-> (e', σ', efs)) : efs = [] := by
   obtain ⟨t₂a, t₂b, rfl⟩ := List.append_of_mem Hmem
-  have Hlen := H.no_fork (Hsteps.tail ⟨κ, .atomic Hstep t₂a t₂b⟩)
+  have Hlen := H.no_fork (Hsteps.tail ⟨κ, .atomic Hstep t₂a t₂b rfl rfl⟩)
   refine List.length_eq_zero_iff.mp ?_
   simp [List.length_append] at Hlen
   omega
