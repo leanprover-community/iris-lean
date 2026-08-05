@@ -38,12 +38,6 @@ required to be scoped as either `local` or `scoped`: `global` indices are not pe
 
 /--
 `stepindex%` elaborates to the step index type in scope, resolved **eagerly** as a term.
-
-Unlike the `infer_stepindex` tactic this introduces no metavariable. A `by` block becomes a
-synthetic *opaque* metavariable that is only solved once elaboration is otherwise finished, so
-instance resolution that needs the index — `Trans` for `calc`, `CoeFun` to apply a morphism,
-projections on a `Dist` hypothesis — never gets to see it. Resolving here instead makes the
-index concrete from the start.
 -/
 @[expose] elab "stepindex%" : term => do
   let n := siExt.getState (← getEnv)
