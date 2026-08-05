@@ -374,8 +374,8 @@ instance intoLaterN_laterN [BI PROP] only_head n m n' m' (P Q lQ : PROP)
   into_laterN := calc
     _ ⊢ ▷^[m] ▷^[n']Q := laterN_mono _ h2.into_laterN
     _ ⊢ ▷^[m + n']Q    := (laterN_add _ _).mpr
-    _ ⊢ ▷^[n' + m]Q    := by rw [Nat.add_comm]
-    _ ⊢ ▷^[n + m']Q    := by rw [h1.1]
+    _ ⊢ ▷^[n' + m]Q    := Nat.add_comm _ _ ▸ .rfl
+    _ ⊢ ▷^[n + m']Q    := h1.1 ▸ .rfl
     _ ⊢ ▷^[n] ▷^[m']Q := (laterN_add _ _).mp
     _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
 
