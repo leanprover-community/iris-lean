@@ -15,6 +15,8 @@ public import Iris.Instances.IProp
 
 @[expose] public section
 
+local stepindex Nat
+
 /-! ## Later credits -/
 
 namespace Iris
@@ -37,7 +39,7 @@ scoped instance : LeftIdentity (Add.add (α := Credit)) (0 : Credit) where
 scoped instance : LawfulLeftIdentity (Add.add (α := Credit)) (0 : Credit) := ⟨Nat.zero_add⟩
 scoped instance : LeftCancelAdd Credit := ⟨Nat.add_left_cancel⟩
 
-scoped instance : COFE Nat Credit := COFE.ofDiscrete _
+scoped instance : COFE Credit := COFE.ofDiscrete _
 scoped instance : Discrete Credit := ⟨fun h => h⟩
 scoped instance : UCMRA Credit := CommMonoidLike.instUCMRA
 scoped instance : CMRA.Discrete Credit := CommMonoidLike.instDiscrete
@@ -245,7 +247,7 @@ instance {P : IProp GF} : Contractive (le_upd_pre P) where
 #rocq_ignore le_upd.le_upd_unseal "`le_upd` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias le_upd.le_upd]
-def le_upd (P : IProp GF) : IProp GF := fixpoint (le_upd_pre P)
+def le_upd (P : IProp GF) : IProp GF := fixpoint (SI := Nat) (le_upd_pre P)
 
 syntax:max "|==£> " term:40 : term
 

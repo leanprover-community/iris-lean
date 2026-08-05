@@ -11,6 +11,8 @@ public import Iris.Algebra.Updates
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 open OFE
 
@@ -89,9 +91,9 @@ def IsFree {β : α → Type _} (f : (a : α) → Option (β a)) : α → Prop :
 /-! ## OFE -/
 
 section OFE
-variable (β : Type _) [OFE Nat β]
+variable (β : Type _) [OFE β]
 
-instance instOFE_GenMap : OFE Nat (GenMap β) where
+instance instOFE_GenMap : OFE (GenMap β) where
   Dist n := (·.car ≡{n}≡ ·.car)
   dist_eqv.refl _ := Dist.of_eq rfl
   dist_eqv.symm := Dist.symm
@@ -104,9 +106,9 @@ instance instOFE_GenMap : OFE Nat (GenMap β) where
   dist_lt := Dist.lt
 end OFE
 
-theorem GenMap.singleton_discreteE {v : β} [OFE Nat β] [DiscreteE v] :
+theorem GenMap.singleton_discreteE {v : β} [OFE β] [DiscreteE v] :
     DiscreteE (GenMap.singleton (β := β) k v) where
-  discrete {y} H := OFE.eq_dist.mpr <| by
+  discrete {y} H := OFE.eq_dist (SI := Nat) |>.mpr <| by
     intro n γ'
     specialize H γ'
     simp only [GenMap.singleton, GenMap.alter, GenMap.empty, Iris.alter] at H ⊢
@@ -114,8 +116,8 @@ theorem GenMap.singleton_discreteE {v : β} [OFE Nat β] [DiscreteE v] :
     · next heq => simp only [heq, ite_true] at H ⊢; exact (Option.some_is_discrete.discrete H).dist
     · next hne => simp only [hne, ite_false] at H ⊢; exact (Option.none_is_discrete.discrete H).dist
 
-theorem GenMap.empty_discreteE [OFE Nat β] : DiscreteE (GenMap.empty (β := β)) where
-  discrete {y} H := OFE.eq_dist.mpr <| by
+theorem GenMap.empty_discreteE [OFE β] : DiscreteE (GenMap.empty (β := β)) where
+  discrete {y} H := OFE.eq_dist (SI := Nat) |>.mpr <| by
     intro n γ'
     specialize H γ'
     simp only [GenMap.empty] at H ⊢
@@ -190,22 +192,22 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
     ⟨fun Hv n => Hv.validN, fun H => valid_iff_validN.mpr (H ·)⟩
   validN_succ {x n} := validN_succ
   validN_op_left {n x y} := validN_op_left
-  assoc {x y z} := OFE.eq_dist.mpr fun _ a => by
+  assoc {x y z} := OFE.eq_dist (SI := Nat) |>.mpr fun _ a => by
     cases _ : x.car a <;> cases _ : y.car a <;> cases _ : z.car a <;>
     simp_all [op, optionOp]
     exact assoc.dist
-  comm {x y} := OFE.eq_dist.mpr fun _ a => by
+  comm {x y} := OFE.eq_dist (SI := Nat) |>.mpr fun _ a => by
     cases _ : x.car a <;> cases _ : y.car a <;>
     simp_all [op, optionOp]
     exact comm.dist
-  pcore_op_left {x cx} H := OFE.eq_dist.mpr <| by
+  pcore_op_left {x cx} H := OFE.eq_dist (SI := Nat) |>.mpr <| by
     have hcx : cx.car = fun k => CMRA.core (x.car k) := by
       simp [pcore_genmap] at H; exact (congrArg GenMap.car H).symm
     intro n k
     have H : cx.car k = CMRA.core (x.car k) := congrFun hcx k
     simp only [CMRA.op, optionOp, H]
     exact (core_op (x.car k)).dist
-  pcore_idem {x cx} H := OFE.eq_dist.mpr <| by
+  pcore_idem {x cx} H := OFE.eq_dist (SI := Nat) |>.mpr <| by
     have hcx : cx.car = fun k => CMRA.core (x.car k) := by
       simp [pcore_genmap] at H; exact (congrArg GenMap.car H).symm
     simp only [pcore_genmap]
@@ -218,7 +220,7 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
       simp [pcore_genmap] at H; exact (congrArg GenMap.car H).symm
     have hpc_fun : CMRA.pcore x.car = some cx.car := by rw [hcx]; rfl
     obtain ⟨cy, Hcy⟩ := pcore_op_mono hpc_fun y.car
-    refine ⟨⟨cy, ?_⟩, OFE.eq_dist.mpr ?_⟩
+    refine ⟨⟨cy, ?_⟩, OFE.eq_dist (SI := Nat) |>.mpr ?_⟩
     · obtain ⟨N, hN⟩ := op_bound β x y
       refine ⟨N, fun k hk => ?_⟩
       have hxyk := hN k hk
@@ -226,7 +228,7 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
       cases hx : x.car k <;> cases hy : y.car k <;> simp_all
       have hcxy : CMRA.core (x.car • y.car) k = none := by
         simp [CMRA.core, CMRA.pcore, optionCore, hx, hy, CMRA.op, optionOp]
-      have hHeqk := (OFE.eq_dist.mp Hcy) 0 k
+      have hHeqk := (OFE.eq_dist (SI := Nat) |>.mp Hcy) 0 k
       simp only [CMRA.core, CMRA.pcore, optionCore, CMRA.op, optionOp,
         hx, hy, Option.bind] at hHeqk
       cases hcy : cy k <;> simp_all
@@ -239,15 +241,15 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
     have eb := extend_bound β Hv H
     let F k := CMRA.extend (Hv k) (H k)
     exact ⟨⟨fun k => (F k).1, eb.1⟩, ⟨fun k => (F k).2.1, eb.2⟩,
-      OFE.eq_dist.mpr fun _ k => ((F k).2.2.1).dist, fun k => (F k).2.2.2.1, fun k => (F k).2.2.2.2⟩
+      OFE.eq_dist (SI := Nat) |>.mpr fun _ k => ((F k).2.2.1).dist, fun k => (F k).2.2.2.1, fun k => (F k).2.2.2.2⟩
 
 instance instUCMRA_GenMap : UCMRA (GenMap β) where
   unit := GenMap.empty
   unit_valid _ := trivial
-  unit_left_id {x} := OFE.eq_dist.mpr fun _ k => by
+  unit_left_id {x} := OFE.eq_dist (SI := Nat) |>.mpr fun _ k => by
     simp only [CMRA.op, optionOp, empty]
     cases x.car k <;> simp
-  pcore_unit := OFE.eq_dist.mpr fun _ => by
+  pcore_unit := OFE.eq_dist (SI := Nat) |>.mpr fun _ => by
     refine OFE.some_dist_some.mpr fun k => ?_
     simp [empty, CMRA.core, CMRA.pcore, optionCore]
 
@@ -291,7 +293,7 @@ theorem GenMap.validN_singleton_map_in (x : Nat) (y : β) (n : Nat) :
 theorem GenMap.op_singleton_comm {mf : GenMap β} {x : Nat} (y : β)
     (H_free : IsFree mf.car x) :
     GenMap.singleton x y • mf = mf.alter x (some y) := by
-  apply OFE.eq_dist.mpr
+  apply OFE.eq_dist (SI := Nat) |>.mpr
   intro n k
   simp only [IsFree] at H_free
   by_cases heq : k = x
@@ -325,7 +327,7 @@ open COFE CMRA
 abbrev GenMapOF (F : OFunctorPre Nat) : OFunctorPre Nat :=
   fun A B _ _ => GenMap (F A B)
 
-abbrev GenMap.lift [OFE Nat α] [OFE Nat β] (f : α -n> β) : GenMap α -n> GenMap β where
+abbrev GenMap.lift [OFE α] [OFE β] (f : α -n> β) : GenMap α -n> GenMap β where
   f g := ⟨fun t => Option.map f (g.car t), by
     obtain ⟨N, hN⟩ := g.bound
     exact ⟨N, fun k hk => by simp [Option.map, hN k hk]⟩⟩
@@ -343,11 +345,11 @@ instance instOFunctor_GenMapOF (F : OFunctorPre Nat) [OFunctor Nat F] :
     simp only [OFE.Dist, Option.Forall₂, Option.map]
     cases _ : k.car γ <;> simp
     exact OFunctor.map_ne.ne Hx Hy _
-  map_id {α β _ _} x := OFE.eq_dist.mpr <| by
+  map_id {α β _ _} x := OFE.eq_dist (SI := Nat) |>.mpr <| by
     intro _ γ
     simp only [Option.map]; cases _ : x.car γ <;> simp
     exact (OFunctor.map_id _).dist
-  map_comp _ _ _ _ x := OFE.eq_dist.mpr <| by
+  map_comp _ _ _ _ x := OFE.eq_dist (SI := Nat) |>.mpr <| by
     intro _ γ
     simp only [Option.map]; cases _ : x.car γ <;> simp
     exact (OFunctor.map_comp _ _ _ _ _).dist
@@ -366,7 +368,7 @@ instance instURFunctor_GenMapOF (F : COFE.OFunctorPre Nat) [RFunctor F] :
         have hv' := hv z
         simp only [h, CMRA.ValidN, optionValidN] at hv'
         exact Hvalid hv'
-    pcore x := OFE.eq_dist.mpr <| by
+    pcore x := OFE.eq_dist (SI := Nat) |>.mpr <| by
       intro _ γ
       have Hcore := @(URFunctor.map (F := OptionOF F) f g).pcore (x.car γ)
       simp only [CMRA.pcore, optionCore, Option.bind, Option.map, URFunctor.map,
@@ -377,7 +379,7 @@ instance instURFunctor_GenMapOF (F : COFE.OFunctorPre Nat) [RFunctor F] :
         revert Hcore
         cases h' : pcore v <;> cases h'' : pcore ((OFunctor.map f g).f v) <;>
           simp_all <;> exact (·.dist)
-    op z x := OFE.eq_dist.mpr <| by
+    op z x := OFE.eq_dist (SI := Nat) |>.mpr <| by
       intro _ γ
       have Hop := @(URFunctor.map (F := OptionOF F) f g).op (z.car γ) (x.car γ)
       simp only [Option.map, CMRA.op, optionOp, URFunctor.map] at Hop ⊢

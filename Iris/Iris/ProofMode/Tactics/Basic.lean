@@ -10,6 +10,8 @@ meta import Iris.ProofMode.Expr
 meta import Iris.ProofMode.SynthInstance
 public meta import Iris.ProofMode.ProofModeM
 
+local stepindex Nat
+
 public meta section
 
 namespace Iris.ProofMode

@@ -11,6 +11,8 @@ meta import Iris.ProofMode.Patterns.ProofModeTerm
 meta import Iris.ProofMode.Tactics.Assumption
 public meta import Iris.ProofMode.Tactics.HaveCore
 
+local stepindex Nat
+
 namespace Iris.ProofMode
 
 public section

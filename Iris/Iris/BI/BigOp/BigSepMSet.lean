@@ -14,6 +14,8 @@ import Iris.BI.Instances
 import Iris.Std.TC
 meta import Iris.Std.RocqPorting
 
+local stepindex Nat
+
 public section
 
 namespace Iris.BI

@@ -10,6 +10,8 @@ meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 @[rocq_alias local_update]
@@ -41,7 +43,7 @@ theorem LocalUpdate.op {x y z : α}
   refine fun n mz vx e => ⟨h n vx, ?_⟩
   calc
     (z • x) ≡{n}≡ z • (y •? mz) := e.op_r
-    _       ≡{n}≡ (z • y) •? mz := OFE.Dist.symm (CMRA.op_opM_assoc_dist z y mz)
+    _ ≡{n}≡ (z • y) •? mz := OFE.Dist.symm (CMRA.op_opM_assoc_dist z y mz)
 
 @[rocq_alias op_local_update_discrete]
 theorem LocalUpdate.op_discrete [CMRA.Discrete α] (x y z : α)
@@ -58,7 +60,7 @@ theorem LocalUpdate.op_frame (x y x' y' yf : α)
   exists h1
   calc
     x' ≡{n}≡ y' •? (some yf • mz) := h2
-    _  ≡{n}≡ (y' • yf) •? mz      := Option.op_some_opM_assoc_dist.symm
+    _ ≡{n}≡ (y' • yf) •? mz := Option.op_some_opM_assoc_dist.symm
 
 @[rocq_alias cancel_local_update]
 theorem LocalUpdate.cancel (x y z : α) [CMRA.Cancelable x] : (x • y, x • z) ~l~> (y, z) :=
@@ -68,7 +70,7 @@ theorem LocalUpdate.cancel (x y z : α) [CMRA.Cancelable x] : (x • y, x • z)
 theorem LocalUpdate.replace (x y : α) [CMRA.IdFree x] (h : ✓ y) : (x, x) ~l~> (y, y) := by
   intro _ mz vx e
   match mz with
-  | none   => exact ⟨h.validN, .rfl⟩
+  | none => exact ⟨h.validN, .rfl⟩
   | some _ => cases CMRA.id_freeN_r vx e.symm
 
 @[rocq_alias core_id_local_update]
@@ -78,11 +80,11 @@ theorem LocalUpdate.core_id (x y z : α) [CMRA.CoreId y] (inc : y ≼ x) : (x, z
   match mz with
   | none => calc
     y • x ≡{n}≡ y • z := e.op_r
-    _     ≡{n}≡ z • y := CMRA.op_commN
+    _ ≡{n}≡ z • y := CMRA.op_commN
   | some w => calc
     y • x ≡{n}≡ y • (z • w) := CMRA.op_right_dist y e
-    _     ≡{n}≡ (y • z) • w := CMRA.op_assocN
-    _     ≡{n}≡ (z • y) • w := CMRA.op_commN.op_l
+    _ ≡{n}≡ (y • z) • w := CMRA.op_assocN
+    _ ≡{n}≡ (z • y) • w := CMRA.op_commN.op_l
 
 @[rocq_alias local_update_discrete]
 theorem LocalUpdate.discrete [CMRA.Discrete α] (x y x' y' : α) :

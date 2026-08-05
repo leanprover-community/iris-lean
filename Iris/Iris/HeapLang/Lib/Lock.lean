@@ -10,6 +10,8 @@ open BI
 
 @[expose] public section
 
+local stepindex Nat
+
 class Lock (GF : BundledGFunctors) [IrisGS_gen hlc Exp GF] where
   newlock : Val
   acquire : Val

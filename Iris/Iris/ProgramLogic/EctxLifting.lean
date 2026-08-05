@@ -7,6 +7,8 @@ module
 public import Iris.ProgramLogic.Lifting
 public import Iris.ProgramLogic.EctxiLanguage
 
+local stepindex Nat
+
 namespace Iris.ProgramLogic
 
 open Language.Notation EctxLanguage EctxLanguage.Notation

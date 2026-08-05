@@ -16,6 +16,8 @@ open BI Iris ProgramLogic
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace LandinKnot
 
 def landinsKnot : Val := hl_val%

@@ -12,6 +12,8 @@ public import Iris.HeapLang.ProofMode
 public import Iris.HeapLang.Instances
 public import Iris.ProgramLogic.WeakestPre
 
+local stepindex Nat
+
 /-! Tests for the heap-operation tactics (`wp_load`, ...). Unlike the tests in
 `Tests.HeapLang.WeakestPre`, these need the `IrisGS_gen` instance to be the one
 derived from `HeapLangGS`, so no generic `IrisGS_gen` variable is in scope. -/

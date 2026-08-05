@@ -12,6 +12,8 @@ public import Iris.Std.RocqPorting
 
 @[expose] public section
 
+local stepindex Nat
+
 /-!
 # Generic CMRA validity in a BI logic
 

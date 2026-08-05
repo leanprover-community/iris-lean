@@ -16,6 +16,8 @@ meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
+local stepindex Nat
+
 /-! ## Leibniz Set algebras
 This file defines generic set algebras.
 This generic construction specializes to both the union and disjoint-union set CMRAs.
@@ -29,7 +31,7 @@ inductive DisjointLeibnizSet (S : Type _) where
   | valid : S → DisjointLeibnizSet S
   | error : DisjointLeibnizSet S
 
-instance : COFE Nat (DisjointLeibnizSet S) := COFE.ofDiscrete _
+instance : COFE (DisjointLeibnizSet S) := COFE.ofDiscrete _
 
 instance inst_disjointLeibnizSet_DiscreteE {S : Type _} (x : DisjointLeibnizSet S) :
     DiscreteE x := ⟨fun h => h⟩
@@ -300,7 +302,7 @@ end DisjointLeibnizSet
 inductive LeibnizSet (S : Type _) where
   | valid (s : S)
 
-instance : COFE Nat (LeibnizSet S) := COFE.ofDiscrete _
+instance : COFE (LeibnizSet S) := COFE.ofDiscrete _
 
 namespace LeibnizSet
 

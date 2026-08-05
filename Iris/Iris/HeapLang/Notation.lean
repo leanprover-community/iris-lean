@@ -8,6 +8,8 @@ module
 public import Iris.HeapLang.Syntax
 public meta import Lean.PrettyPrinter.Parenthesizer
 
+local stepindex Nat
+
 public meta section
 namespace Iris.HeapLang
 

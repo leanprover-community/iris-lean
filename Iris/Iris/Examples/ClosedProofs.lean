@@ -16,6 +16,8 @@ public import Iris.Std.HeapInstances
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris.Examples.ClosedProofs
 open Iris.BI COFE HeapView Auth Std.LawfulSet
 

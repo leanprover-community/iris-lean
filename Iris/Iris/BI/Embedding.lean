@@ -21,6 +21,8 @@ public import Iris.Algebra.Monoid
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris.BI
 open Iris Iris.Std OFE Iris.Algebra Iris.Algebra.BigOpL Iris.Algebra.BigOpM
 
@@ -428,7 +430,7 @@ theorem embed_si_pure (Pi : SiProp) :
      siPure_siEmpValid_elim⟩
 
 @[rocq_alias embed_internal_eq]
-theorem embed_internal_eq {A : Type _} [OFE Nat A] (x y : A) :
+theorem embed_internal_eq {A : Type _} [OFE A] (x y : A) :
     (embed (iprop(x ≡ y) : P1) : P2) ⊣⊢ x ≡ y :=
   embed_si_pure (SiProp.internalEq x y)
 

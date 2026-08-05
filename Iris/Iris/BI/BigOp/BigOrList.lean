@@ -9,6 +9,8 @@ public import Iris.BI.BigOp.BigOp
 import Iris.BI.DerivedLawsLater
 meta import Iris.Std.RocqPorting
 
+local stepindex Nat
+
 public section
 namespace Iris.BI
 

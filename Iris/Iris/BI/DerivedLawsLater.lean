@@ -17,6 +17,8 @@ public import Iris.Std.RocqPorting
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris.BI
 open Iris.Std BI
 

@@ -33,7 +33,8 @@ class OFE (α : Type _) (SI : Type _ := by infer_stepindex) [SIdx SI] where
 
 open OFE
 
-scoped notation:40 x " ≡{" n "}≡ " y:41 => OFE.Dist (SI := by infer_stepindex) n x y
+scoped notation:40 x " ≡{" n "}≡ " y:41 => OFE.Dist (SI := stepindex%) n x y
+scoped notation:40 x " ≡{" n "}≡@{" S "} " y:41 => OFE.Dist (SI := S) n x y
 
 namespace OFE
 

@@ -7,6 +7,8 @@ module
 public import Iris.HeapLang
 
 @[expose] public section
+
+local stepindex Nat
 namespace Iris.Tests.HeapLang
 
 open Iris.HeapLang

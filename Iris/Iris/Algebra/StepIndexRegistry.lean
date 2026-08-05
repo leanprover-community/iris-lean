@@ -37,6 +37,21 @@ required to be scoped as either `local` or `scoped`: `global` indices are not pe
 @[expose] elab "#stepindex?" : command => do logInfo m!"{siExt.getState (← getEnv)}"
 
 /--
+`stepindex%` elaborates to the step index type in scope, resolved **eagerly** as a term.
+
+Unlike the `infer_stepindex` tactic this introduces no metavariable. A `by` block becomes a
+synthetic *opaque* metavariable that is only solved once elaboration is otherwise finished, so
+instance resolution that needs the index — `Trans` for `calc`, `CoeFun` to apply a morphism,
+projections on a `Dist` hypothesis — never gets to see it. Resolving here instead makes the
+index concrete from the start.
+-/
+@[expose] elab "stepindex%" : term => do
+  let n := siExt.getState (← getEnv)
+  if n.isAnonymous then
+    throwError "stepindex%: no step index in scope; declare one with `local stepindex T`"
+  Term.elabTerm (mkIdent n) none
+
+/--
 Close a goal with the step index type in scope, resolved at the use site.
 
 Does nothing when there is no goal left: as the default value of a parameter this tactic runs

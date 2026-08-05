@@ -18,6 +18,8 @@ open BI Iris ProgramLogic
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace SpinLock
 
 def newlock : Val := hl_val(

@@ -19,6 +19,8 @@ The authoritative camera has 2 types of elements:
 
 @[expose] public section
 
+local stepindex Nat
+
 open Iris
 
 open OFE CMRA UCMRA View
@@ -71,7 +73,7 @@ abbrev Auth (A : Type _) [UCMRA A] :=
 namespace Auth
 variable [UCMRA A]
 
-instance : OFE Nat (Auth A) := View.instOFE
+instance : OFE (Auth A) := View.instOFE
 instance : CMRA (Auth A) := View.instCMRA
 instance : UCMRA (Auth A) := View.instUCMRA
 

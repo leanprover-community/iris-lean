@@ -8,6 +8,8 @@ public import Iris.HeapLang.Notation
 public meta import Lean.Elab.Command
 public meta import Lean.Linter.Util
 
+local stepindex Nat
+
 public meta section
 namespace Iris.HeapLang.Linter
 

@@ -9,6 +9,8 @@ public import Iris.Algebra.Auth
 public import Iris.Algebra.Excl
 meta import Iris.Std.RocqPorting
 
+local stepindex Nat
+
 public section
 
 /-!
@@ -25,7 +27,7 @@ open OFE CMRA Auth Excl Option
 
 namespace ExclAuth
 
-variable [OFE Nat A]
+variable [OFE A]
 
 @[rocq_alias excl_authR]
 abbrev ExclAuthR := Auth (Option (Excl A))

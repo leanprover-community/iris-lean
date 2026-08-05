@@ -12,6 +12,8 @@ meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 @[rocq_alias csum]
@@ -28,13 +30,13 @@ namespace Csum
 
 #rocq_ignore csum_equiv "OFE is Leibniz; use equality"
 
-@[simp, rocq_alias csum_dist] def Dist [OFE Nat α] [OFE Nat β] (n : Nat) : Csum α β → Csum α β → Prop
+@[simp, rocq_alias csum_dist] def Dist [OFE α] [OFE β] (n : Nat) : Csum α β → Csum α β → Prop
   | inl a, inl a' => a ≡{n}≡ a'
   | inr b, inr b' => b ≡{n}≡ b'
   | invalid, invalid => True
   | _, _ => False
 
-theorem dist_eqv [OFE Nat α] [OFE Nat β] {n} : Equivalence (Csum.Dist (α := α) (β := β) n) where
+theorem dist_eqv [OFE α] [OFE β] {n} : Equivalence (Csum.Dist (α := α) (β := β) n) where
   refl {x} := by cases x with
     | inl => exact Dist.rfl
     | inr => exact Dist.rfl
@@ -45,44 +47,44 @@ theorem dist_eqv [OFE Nat α] [OFE Nat β] {n} : Equivalence (Csum.Dist (α := �
       first | trivial | exact h₁.trans h₂ | exact h₂.elim | exact h₁.elim
 
 @[rocq_alias csumO]
-instance [OFE Nat α] [OFE Nat β] : OFE Nat (Csum α β) where
+instance [OFE α] [OFE β] : OFE (Csum α β) where
   Dist := Csum.Dist
   dist_eqv := dist_eqv
   eq_dist {x y} := by
-    cases x <;> cases y <;> simp [Csum.Dist, eq_dist]
+    cases x <;> cases y <;> simp [Csum.Dist, eq_dist (SI := Nat)]
   dist_lt {n x y m} hn hlt := by
     cases x <;> cases y <;> first | exact OFE.Dist.lt hn hlt | exact hn.elim | trivial
 
 #rocq_ignore csum_ofe_mixin "Not needed"
 
 @[rocq_alias Cinl_ne]
-instance [OFE Nat α] [OFE Nat β] : NonExpansive (inl (α := α) (β := β)) where
+instance [OFE α] [OFE β] : NonExpansive (inl (α := α) (β := β)) where
   ne _ _ _ := id
 
 #rocq_ignore Cinl_proper "Derivable using NonExpansive.eqv"
 
 @[rocq_alias Cinr_ne]
-instance [OFE Nat α] [OFE Nat β] : NonExpansive (inr (α := α) (β := β)) where
+instance [OFE α] [OFE β] : NonExpansive (inr (α := α) (β := β)) where
   ne _ _ _ := id
 
 #rocq_ignore Cinr_proper "Derivable using NonExpansive.eqv"
 
 @[rocq_alias Cinl_inj]
-theorem inl_inj [OFE Nat α] [OFE Nat β] {a a' : α} (h : (inl (β := β) a) = inl a') : a = a' :=
+theorem inl_inj [OFE α] [OFE β] {a a' : α} (h : (inl (β := β) a) = inl a') : a = a' :=
   Csum.inl.inj h
 
 @[rocq_alias Cinl_inj_dist]
-theorem inl_injN [OFE Nat α] [OFE Nat β] {a a' : α} (h : inl (β := β) a ≡{n}≡ inl a') : a ≡{n}≡ a' := h
+theorem inl_injN [OFE α] [OFE β] {a a' : α} (h : inl (β := β) a ≡{n}≡ inl a') : a ≡{n}≡ a' := h
 
 @[rocq_alias Cinr_inj]
-theorem inr_inj [OFE Nat α] [OFE Nat β] {b b' : β} (h : (inr (α := α) b) = inr b') : b = b' :=
+theorem inr_inj [OFE α] [OFE β] {b b' : β} (h : (inr (α := α) b) = inr b') : b = b' :=
   Csum.inr.inj h
 
 @[rocq_alias Cinr_inj_dist]
-theorem inr_injN [OFE Nat α] [OFE Nat β] {b b' : β} (h : inr (α := α) b ≡{n}≡ inr b') : b ≡{n}≡ b' := h
+theorem inr_injN [OFE α] [OFE β] {b b' : β} (h : inr (α := α) b ≡{n}≡ inr b') : b ≡{n}≡ b' := h
 
 @[rocq_alias csum_ofe_discrete]
-instance [OFE Nat α] [OFE Nat β] [OFE.Discrete α] [OFE.Discrete β] : OFE.Discrete (Csum α β) where
+instance [OFE α] [OFE β] [OFE.Discrete α] [OFE.Discrete β] : OFE.Discrete (Csum α β) where
   discrete_0 {x y} h := by cases x <;> cases y <;>
     first
       | exact congrArg inl (discrete_0 (α := α) h)
@@ -90,7 +92,7 @@ instance [OFE Nat α] [OFE Nat β] [OFE.Discrete α] [OFE.Discrete β] : OFE.Dis
       | exact h.elim | trivial
 
 @[rocq_alias Cinl_discrete]
-instance [OFE Nat α] [OFE Nat β] {a : α} [DiscreteE a] : DiscreteE (inl (β := β) a) where
+instance [OFE α] [OFE β] {a : α} [DiscreteE a] : DiscreteE (inl (β := β) a) where
   discrete {x} h := by
     cases x with
     | inl => exact congrArg inl (DiscreteE.discrete (x := a) h)
@@ -98,14 +100,14 @@ instance [OFE Nat α] [OFE Nat β] {a : α} [DiscreteE a] : DiscreteE (inl (β :
     | invalid => exact h.elim
 
 @[rocq_alias Cinr_discrete]
-instance [OFE Nat α] [OFE Nat β] {b : β} [DiscreteE b] : DiscreteE (inr (α := α) b) where
+instance [OFE α] [OFE β] {b : β} [DiscreteE b] : DiscreteE (inr (α := α) b) where
   discrete {x} h := by
     cases x with
     | inl => exact h.elim
     | inr => exact congrArg inr (DiscreteE.discrete (x := b) h)
     | invalid => exact h.elim
 
-instance [OFE Nat α] [OFE Nat β] : DiscreteE (@invalid α β) where
+instance [OFE α] [OFE β] : DiscreteE (@invalid α β) where
   discrete {x} h := by
     cases x with
     | inl => exact h.elim
@@ -121,21 +123,21 @@ instance [OFE Nat α] [OFE Nat β] : DiscreteE (@invalid α β) where
   match x with | inr b => b | _ => d
 
 @[rocq_alias csum_chain_l]
-def chainL [OFE Nat α] [OFE Nat β] (c : Chain (Csum α β)) (a : α) : Chain α where
+def chainL [OFE α] [OFE β] (c : Chain (Csum α β)) (a : α) : Chain α where
   chain n := (c n).getInlD a
   cauchy {n i} h := by
     have hc := c.cauchy h; revert hc
     cases c.chain i <;> cases c.chain n <;> simp [OFE.Dist]
 
 @[rocq_alias csum_chain_r]
-def chainR [OFE Nat α] [OFE Nat β] (c : Chain (Csum α β)) (b : β) : Chain β where
+def chainR [OFE α] [OFE β] (c : Chain (Csum α β)) (b : β) : Chain β where
   chain n := (c n).getInrD b
   cauchy {n i} h := by
     have hc := c.cauchy h; revert hc
     cases c.chain i <;> cases c.chain n <;> simp [OFE.Dist]
 
 @[rocq_alias csum_cofe]
-instance [OFE Nat α] [OFE Nat β] [IsCOFE Nat α] [IsCOFE Nat β] : IsCOFE Nat (Csum α β) where
+instance [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where
   compl c :=
     match c 0 with
     | inl a => inl (IsCOFE.compl (chainL c a))
@@ -232,23 +234,23 @@ instance [CMRA α] [CMRA β] : CMRA (Csum α β) where
   pcore_idem {x cx} hpx := by cases x with
     | inl a =>
       obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq hpx
-      exact Option.map_forall₂ inl (CMRA.pcore_idem hpa)
+      exact Option.map_forall₂ (SI := Nat) inl (CMRA.pcore_idem hpa)
     | inr b =>
       obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx
-      exact Option.map_forall₂ inr (CMRA.pcore_idem hpb)
+      exact Option.map_forall₂ (SI := Nat) inr (CMRA.pcore_idem hpb)
     | invalid => simp only [Csum.pcore, Option.some.injEq] at hpx; exact hpx ▸ rfl
   pcore_op_mono {x cx} hpx y := by cases x with
     | inl a =>
       obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq hpx; cases y with
       | inl a' =>
         obtain ⟨cy, hcy⟩ := CMRA.pcore_op_mono hpa a'
-        exact ⟨inl cy, Option.map_forall₂ inl hcy⟩
+        exact ⟨inl cy, Option.map_forall₂ (SI := Nat) inl hcy⟩
       | _ => exact ⟨invalid, rfl⟩
     | inr b =>
       obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx; cases y with
       | inr b' =>
         obtain ⟨cy, hcy⟩ := CMRA.pcore_op_mono hpb b'
-        exact ⟨inr cy, Option.map_forall₂ inr hcy⟩
+        exact ⟨inr cy, Option.map_forall₂ (SI := Nat) inr hcy⟩
       | _ => exact ⟨invalid, rfl⟩
     | invalid =>
       simp only [Csum.pcore, Option.some.injEq] at hpx; exact hpx ▸ ⟨invalid, rfl⟩
@@ -289,11 +291,11 @@ instance [CMRA α] [CMRA β] [CMRA.Discrete α] [CMRA.Discrete β] : CMRA.Discre
 
 @[rocq_alias Cinl_core_id]
 instance [CMRA α] [CMRA β] {a : α} [CoreId a] : CoreId (inl (β := β) a) where
-  core_id := Option.map_forall₂ inl core_id
+  core_id := Option.map_forall₂ (SI := Nat) inl core_id
 
 @[rocq_alias Cinr_core_id]
 instance [CMRA α] [CMRA β] {b : β} [CoreId b] : CoreId (inr (α := α) b) where
-  core_id := Option.map_forall₂ inr core_id
+  core_id := Option.map_forall₂ (SI := Nat) inr core_id
 
 /-! ## Exclusive -/
 
@@ -510,7 +512,7 @@ theorem map_compose (f : α → α') (f' : α' → α'') (g : β → β') (g' : 
   cases x <;> simp
 
 @[rocq_alias csum_map_ext]
-theorem map_ext [OFE Nat α] [OFE Nat α'] [OFE Nat β] [OFE Nat β'] (f f' : α → α') (g g' : β → β')
+theorem map_ext [OFE α] [OFE α'] [OFE β] [OFE β'] (f f' : α → α') (g g' : β → β')
     (hf : ∀ x, f x = f' x) (hg : ∀ x, g x = g' x) (x : Csum α β) :
     map f g x = map f' g' x := by
   cases x with
@@ -519,7 +521,7 @@ theorem map_ext [OFE Nat α] [OFE Nat α'] [OFE Nat β] [OFE Nat β'] (f f' : α
   | invalid => trivial
 
 @[rocq_alias csum_map_cmra_ne]
-theorem map_ne [OFE Nat α] [OFE Nat α'] [OFE Nat β] [OFE Nat β'] {n}
+theorem map_ne [OFE α] [OFE α'] [OFE β] [OFE β'] {n}
     {f f' : α → α'} (hf : ∀ ⦃x₁ x₂⦄, x₁ ≡{n}≡ x₂ → f x₁ ≡{n}≡ f' x₂)
     {g g' : β → β'} (hg : ∀ ⦃x₁ x₂⦄, x₁ ≡{n}≡ x₂ → g x₁ ≡{n}≡ g' x₂)
     {x y : Csum α β} (hxy : x ≡{n}≡ y) :
@@ -530,14 +532,14 @@ theorem map_ne [OFE Nat α] [OFE Nat α'] [OFE Nat β] [OFE Nat β'] {n}
   | invalid => cases y with | invalid => trivial | _ => exact hxy
 
 @[rocq_alias csumO_map]
-def oMap [OFE Nat α] [OFE Nat α'] [OFE Nat β] [OFE Nat β'] (f : α -n> α') (g : β -n> β') :
+def oMap [OFE α] [OFE α'] [OFE β] [OFE β'] (f : α -n> α') (g : β -n> β') :
     Csum α β -n> Csum α' β' where
   f := map f g
   ne := ⟨fun {_n} {_x₁} {_x₂} hxy =>
     map_ne (fun _ _ h => f.ne.1 h) (fun _ _ h => g.ne.1 h) hxy⟩
 
 @[rocq_alias csumO_map_ne]
-theorem oMap_ne [OFE Nat α] [OFE Nat α'] [OFE Nat β] [OFE Nat β'] :
+theorem oMap_ne [OFE α] [OFE α'] [OFE β] [OFE β'] :
     NonExpansive₂ (oMap (α := α) (α' := α') (β := β) (β' := β')) where
   ne _ _ _ hf _ _ hg x := by
     cases x with
@@ -566,14 +568,14 @@ def cMap [CMRA α] [CMRA α'] [CMRA β] [CMRA β']
       show (CMRA.pcore a).map (inl ∘ ⇑fa) = _
       rw [show (CMRA.pcore a).map (inl ∘ ⇑fa) = ((CMRA.pcore a).map fa).map inl from
         (Option.map_map ..).symm]
-      exact Option.map_forall₂ inl (fa.pcore a)
+      exact Option.map_forall₂ (SI := Nat) inl (fa.pcore a)
     | inr b =>
       show ((CMRA.pcore b).map inr).map (map fa fb) = (CMRA.pcore (fb b)).map inr
       rw [Option.map_map]
       show (CMRA.pcore b).map (inr ∘ ⇑fb) = _
       rw [show (CMRA.pcore b).map (inr ∘ ⇑fb) = ((CMRA.pcore b).map fb).map inr from
         (Option.map_map ..).symm]
-      exact Option.map_forall₂ inr (fb.pcore b)
+      exact Option.map_forall₂ (SI := Nat) inr (fb.pcore b)
     | invalid => trivial
   op x y := by cases x <;> cases y <;>
     first | exact congrArg _ (fa.op _ _) | exact congrArg _ (fb.op _ _) | trivial

@@ -12,6 +12,8 @@ public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 @[rocq_alias natSI, rocq_alias nat_sidx_mixin]
@@ -41,18 +43,18 @@ def SIdx.Limit.elim {I : Type u} [SIdx I] [SIdxFinite I] {n : I} {C : Sort v}
 
 namespace OFE
 
-theorem Dist.leNat [OFE Nat α] {m n} {x y : α} (h : x ≡{n}≡ y) (h' : m ≤ n) : x ≡{m}≡ y :=
+theorem Dist.leNat [OFE α] {m n} {x y : α} (h : x ≡{n}≡ y) (h' : m ≤ n) : x ≡{m}≡ y :=
   if hm : m = n then hm ▸ h else h.lt <| Nat.lt_of_le_of_ne h' hm
 
-theorem Contractive.succNat [OFE Nat α] [OFE Nat β] (f : α → β) [Contractive f] {n x y}
+theorem Contractive.succNat [OFE α] [OFE β] (f : α → β) [Contractive f] {n : Nat} {x y}
     (h : x ≡{n}≡ y) : f x ≡{n.succ}≡ f y :=
   Contractive.distLater_dist <| distLater_succ.mpr h
 
-instance DiscreteO.instCOFE_Nat {α : Type _} : COFE Nat (DiscreteO α) := DiscreteO.instCOFE
+instance DiscreteO.instCOFE_Nat {α : Type _} : COFE (DiscreteO α) := DiscreteO.instCOFE
 
-instance DiscreteO.discrete_Nat {α : Type _} : OFE.Discrete (SI := Nat) (DiscreteO α) :=
+instance DiscreteO.discrete_Nat {α : Type _} : OFE.Discrete (DiscreteO α) :=
   DiscreteO.OFE
 
-instance unitCOFE_Nat : COFE Nat Unit := COFE.unitCOFE
+instance unitCOFE_Nat : COFE Unit := COFE.unitCOFE
 
 end OFE

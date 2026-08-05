@@ -8,6 +8,8 @@ module
 public import Iris.ProofMode.Tactics.Revert
 public import Iris.ProofMode.Tactics.RevertIntro
 
+local stepindex Nat
+
 namespace Iris.ProofMode
 
 open Lean Meta Elab.Tactic Qq

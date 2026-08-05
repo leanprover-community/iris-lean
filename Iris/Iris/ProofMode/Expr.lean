@@ -11,6 +11,8 @@ public import Iris.ProofMode.Classes
 public import Iris.Std
 public meta import Iris.Std.Expr
 
+local stepindex Nat
+
 public meta section
 
 namespace Iris.ProofMode

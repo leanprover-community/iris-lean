@@ -11,6 +11,8 @@ public meta import Iris.ProofMode.Patterns.ProofModeTerm
 public meta import Iris.ProofMode.Tactics.Basic
 public meta import Iris.ProofMode.Tactics.Specialize
 
+local stepindex Nat
+
 /- This file contains the `iHave` function for asserting a ProofModeTerm.
    It is separate from the implementation of `ihave` in `Have.lean` since
    the `ihave` tactic in (`Have.lean`) depends on `Cases.lean`, which in turn

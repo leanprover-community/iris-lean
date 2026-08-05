@@ -7,6 +7,8 @@ module
 public import Iris.ProofMode
 public import Iris.ProgramLogic.WeakestPre
 
+local stepindex Nat
+
 public section
 
 namespace Iris.ProgramLogic

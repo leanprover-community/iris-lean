@@ -17,6 +17,8 @@ public import Iris.BI.Plainly
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open Iris OFE BI

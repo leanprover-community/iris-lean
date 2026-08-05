@@ -13,6 +13,8 @@ public import Iris.ProgramLogic.EctxLanguage
 public import Iris.HeapLang.Instances
 public import Qq
 
+local stepindex Nat
+
 namespace Iris.HeapLang
 
 open Lean hiding Expr

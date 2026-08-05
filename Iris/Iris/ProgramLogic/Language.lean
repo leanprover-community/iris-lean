@@ -15,6 +15,8 @@ namespace Iris.ProgramLogic
 
 @[expose] public section
 
+local stepindex Nat
+
 open FromMathlib
 
 variable {Expr Val State Obs : Type _}

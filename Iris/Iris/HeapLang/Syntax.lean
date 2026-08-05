@@ -10,6 +10,8 @@ public import Iris.ProgramLogic.Language
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
+
+local stepindex Nat
 namespace Iris.HeapLang
 
 @[ext, rocq_alias heap_lang.loc]

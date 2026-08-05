@@ -10,6 +10,8 @@ meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 open OFE CMRA
 
@@ -49,7 +51,7 @@ end insert
 
 section OFE
 
-variable {ι : Type _} [DecidableEq ι] {β : ι → Type _} [∀ i, OFE Nat (β i)]
+variable {ι : Type _} [DecidableEq ι] {β : ι → Type _} [∀ i, OFE (β i)]
 
 @[rocq_alias discrete_funO_ofe_discrete]
 instance instDiscreteFunOfeDiscrete [∀ i, OFE.Discrete (β i)] :

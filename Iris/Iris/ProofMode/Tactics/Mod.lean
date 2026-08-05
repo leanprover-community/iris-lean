@@ -9,6 +9,8 @@ import Iris.BI
 public import Iris.ProofMode.Classes
 public meta import Iris.ProofMode.Tactics.Basic
 
+local stepindex Nat
+
 namespace Iris.ProofMode
 
 public section

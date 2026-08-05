@@ -18,6 +18,8 @@ open Language Language.Notation Relation FromMathlib.Relation.TransGen
 
 @[expose] public section
 
+local stepindex Nat
+
 variable {Expr State Obs Val : Type _} [Λ : Language Expr State Obs Val]
 
 /-! ### Multi-step prim reduction on a single thread -/

@@ -12,6 +12,8 @@ public import Iris.ProofMode
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open Std HeapView PartialMap Iris.Algebra CMRA BI ProofMode

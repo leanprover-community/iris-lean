@@ -16,3 +16,5 @@ public import Iris.ProofMode.InstancesUpdates
 public import Iris.ProofMode.Patterns
 public meta import Iris.ProofMode.Tactics
 public import Iris.ProofMode.UnifHints
+
+local stepindex Nat

@@ -14,6 +14,8 @@ public import Init.Data.Vector
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open COFE
@@ -64,7 +66,7 @@ variable (GF : BundledGFunctors)
 def IPre : Type _ := OFunctor.Fix (UPredOF (IResF GF))
 
 @[rocq_alias iProp_solution.iPreProp_cofe]
-instance : COFE Nat (IPre GF) := inferInstanceAs (COFE Nat (OFunctor.Fix _))
+instance : COFE (IPre GF) := inferInstanceAs (COFE (OFunctor.Fix (UPredOF (IResF GF))))
 
 @[rocq_alias iProp_solution.iResUR]
 def IResUR.{u} : Type u := (i : GType) → GenMap (GF i |>.fst (IPre GF) (IPre GF))

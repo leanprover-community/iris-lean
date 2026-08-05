@@ -17,6 +17,8 @@ public import Iris.BI.Extensions
 public import Iris.BI.SIProp
 public meta import Iris.Std.RocqPorting
 
+local stepindex Nat
+
 public section
 
 namespace Iris

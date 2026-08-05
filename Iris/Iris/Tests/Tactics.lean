@@ -19,6 +19,8 @@ public import Iris.ProgramLogic.WeakestPre
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris.Tests
 open BI CMRA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic
 
@@ -2338,7 +2340,7 @@ end inext
 
 section irewrite
 variable {PROP : Type _} [Sbi PROP]
-variable {A B : Type _} [OFE Nat A] [OFE Nat B]
+variable {A B : Type _} [OFE A] [OFE B]
 
 /- Tests `irewrite` rewriting in goal -/
 example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P a)] :

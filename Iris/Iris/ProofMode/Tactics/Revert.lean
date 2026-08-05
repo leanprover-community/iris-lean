@@ -14,6 +14,8 @@ public meta import Iris.ProofMode.Tactics.Cases
 public meta import Iris.ProofMode.Patterns.CasesPattern
 public meta import Lean.Meta.Tactic.TryThis
 
+local stepindex Nat
+
 namespace Iris.ProofMode
 
 public section

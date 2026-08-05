@@ -11,6 +11,8 @@ import Iris.Tests.Instances
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris.Tests
 open Lean Qq BI ProofMode
 

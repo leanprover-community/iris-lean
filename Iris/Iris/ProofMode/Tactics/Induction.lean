@@ -14,6 +14,8 @@ public meta import Iris.ProofMode.Tactics.RevertIntro
 public meta import Iris.ProofMode.Tactics.Revert
 public meta import Lean.Meta.Tactic.TryThis
 
+local stepindex Nat
+
 namespace Iris.ProofMode
 
 public section

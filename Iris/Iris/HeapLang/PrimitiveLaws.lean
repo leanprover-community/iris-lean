@@ -14,6 +14,8 @@ public import Iris.ProofMode
 public import Std.Data.ExtTreeMap
 
 @[expose] public section
+
+local stepindex Nat
 namespace Iris.HeapLang
 
 open Iris ProgramLogic Language.Notation Std FromMathlib

@@ -14,6 +14,8 @@ import Iris.Std.TC
 import Batteries.Data.List.Perm
 meta import Iris.Std.RocqPorting
 
+local stepindex Nat
+
 public section
 
 namespace Iris.BI

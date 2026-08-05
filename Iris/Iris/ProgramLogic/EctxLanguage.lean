@@ -14,6 +14,8 @@ open Language.Notation
 
 @[expose] public section
 
+local stepindex Nat
+
 variable {Expr Val State Obs Ectx : Type _}
 
 /-- Whether a type `Ectx` has the `comp` and `empty` operations expected

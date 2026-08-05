@@ -19,6 +19,8 @@ open ProgramLogic Language.Notation Std Iris.BI
 
 @[expose] public section
 
+local stepindex Nat
+
 /-!
 TODO: AddModal, ElimAcc instances
 -/
@@ -113,7 +115,7 @@ instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
 
 @[rocq_alias wp_def]
 instance wp.def : Wp (IProp GF) (Expr) (Val) Stuckness where
-  wp s := fixpoint (wp.pre s)
+  wp s := fixpoint (SI := Nat) (wp.pre s)
 
 #rocq_ignore wp_aux "We do not use Iris' custom seal/unseal visibility control"
 #rocq_ignore wp' "We do not use Iris' custom seal/unseal visibility control"
@@ -124,8 +126,8 @@ section Wp
 @[rocq_alias wp_unfold]
 theorem wp_unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E {{ Φ }} ⊣⊢ wp.pre s (Wp.wp (PROP := IProp GF) s) E e Φ :=
-  BI.equiv_iff.1 <| OFE.eq_dist.mpr <|
-    fun _n => (fixpoint_unfold (f := (wp.pre s).toContractiveHom)).dist E e Φ
+  BI.equiv_iff.1 <| OFE.eq_dist (SI := Nat) |>.mpr <|
+    fun _n => (fixpoint_unfold (f := (wp.pre s).toContractiveHom)).dist (SI := Nat) E e Φ
 
 @[rocq_alias wp_ne]
 instance wp_ne {s : Stuckness} {E} {e : Expr} :

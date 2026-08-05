@@ -10,6 +10,8 @@ public import Iris.Algebra.IsOp
 import Iris.Algebra.LocalUpdates
 meta import Iris.Std.RocqPorting
 
+local stepindex Nat
+
 /-!
 # Fractional Authoritative Camera
 

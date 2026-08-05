@@ -13,6 +13,8 @@ public import Iris.Instances.IProp
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 open Auth BI MonoNat
 

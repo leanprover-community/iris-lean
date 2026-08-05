@@ -15,6 +15,8 @@ public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
+local stepindex Nat
+
 section UPredInstance
 
 open Iris BI CMRA
@@ -62,12 +64,12 @@ protected def imp (P Q : UPred M) : UPred M where
   holds n x := ∀ {n'} (x' : ValidAt M n'), x.val ≼ x'.val → n' ≤ n → P n' x' → Q n' x'
   mono {_ _ x₁ x₂} H := fun ⟨m₁, Hle⟩ Hn n ⟨x, xP⟩ ⟨m₂, Hxle⟩ Hnle HP => by
     have Hx :=
-      calc x  ≡{n}≡ x₂ • m₂    := Hxle.dist
-           _  ≡{n}≡ (x₁ • m₁) • m₂ := (Hle.le Hnle).op_l
+      calc x ≡{n}≡ x₂ • m₂ := Hxle.dist
+           _ ≡{n}≡ (x₁ • m₁) • m₂ := (Hle.le Hnle).op_l
     refine (uPred_ne (m₂ := ⟨(x₁.val • m₁) • m₂, Hx.validN.mp xP⟩) Hx).mpr (H _ ?_ ?_ ?_)
-    · calc x₁.val = CMRA.op x₁.val unit               := unit_right_id.symm
-           _      ≼ x₁.val • (m₁ • m₂)                := op_mono_right _ inc_unit
-           _      = CMRA.op (CMRA.op x₁.val m₁) m₂    := assoc'
+    · calc x₁.val = CMRA.op x₁.val unit := unit_right_id.symm
+           _ ≼ x₁.val • (m₁ • m₂) := op_mono_right _ inc_unit
+           _ = CMRA.op (CMRA.op x₁.val m₁) m₂ := assoc'
     · exact Nat.le_trans Hnle Hn
     · exact (uPred_ne Hx).mp HP
 
@@ -93,7 +95,7 @@ protected def sExists (Ψ : UPred M → Prop) : UPred M where
 #rocq_ignore uPred_exist_def "`UPred.sExists` is defined directly without `seal`/`unseal`."
 #rocq_ignore uPred_exist_aux "`UPred.sExists` is defined directly without `seal`/`unseal`."
 
-protected def eq [OFE Nat O] (o1 o2 : O) : UPred M where
+protected def eq [OFE O] (o1 o2 : O) : UPred M where
   holds n _ := o1 ≡{n}≡ o2
   mono H1 _ H2 := H1.le H2
 
@@ -105,8 +107,8 @@ protected def sep (P Q : UPred M) : UPred M where
   mono {_ n₂ m₁ m₂} := fun ⟨x₁, x₂, Hx, HP, HQ⟩ ⟨m, Hm⟩ Hn => by
     refine ⟨x₁, x₂ • m, ?_, ?_, ?_⟩
     · calc m₂.val ≡{n₂}≡ m₁ • m := Hm
-          _       ≡{n₂}≡ (x₁ • x₂) • m := (Hx.le Hn).op_l
-          _       ≡{n₂}≡ x₁ • (x₂ • m) := assoc.symm.dist
+          _ ≡{n₂}≡ (x₁ • x₂) • m := (Hx.le Hn).op_l
+          _ ≡{n₂}≡ x₁ • (x₂ • m) := assoc.symm.dist
     · exact P.mono HP (incN_refl x₁) Hn
     · exact Q.mono HQ (incN_op_left n₂ x₂ m) Hn
 
@@ -157,8 +159,8 @@ def ownM (m : M) : UPred M where
   mono {_ n₂ x₁ x₂} := fun ⟨m₁, Hm₁⟩ ⟨m₂, Hm₂⟩ Hn => by
     exists m₁ • m₂
     calc x₂.val ≡{n₂}≡ x₁ • m₂ := Hm₂
-         _      ≡{n₂}≡ (m • m₁) • m₂ := (Hm₁.le Hn).op_l
-         _      ≡{n₂}≡ m • (m₁ • m₂) := assoc.symm.dist
+         _ ≡{n₂}≡ (m • m₁) • m₂ := (Hm₁.le Hn).op_l
+         _ ≡{n₂}≡ m • (m₁ • m₂) := assoc.symm.dist
 
 #rocq_ignore uPred_ownM_unseal "`UPred.ownM` is defined directly without `seal`/`unseal`."
 #rocq_ignore uPred_ownM_def "`UPred.ownM` is defined directly without `seal`/`unseal`."
@@ -233,18 +235,18 @@ instance bupd_ne : OFE.NonExpansive (bupd : UPred M → UPred M) where
       exact OFE.Dist.le Hx (Nat.le_trans Hk Hm)
 
 instance : BIBase (UPred M) where
-  Entails      := UPred.Entails
-  emp          := UPred.emp
-  pure         := UPred.pure
-  and          := UPred.and
-  or           := UPred.or
-  imp          := UPred.imp
-  sForall      := UPred.sForall
-  sExists      := UPred.sExists
-  sep          := UPred.sep
-  wand         := UPred.wand
+  Entails := UPred.Entails
+  emp := UPred.emp
+  pure := UPred.pure
+  and := UPred.and
+  or := UPred.or
+  imp := UPred.imp
+  sForall := UPred.sForall
+  sExists := UPred.sExists
+  sep := UPred.sep
+  wand := UPred.wand
   persistently := UPred.persistently
-  later        := UPred.later
+  later := UPred.later
 
 
 #rocq_ignore uPred.uPred_emp_unseal "Connectives are defined directly without `seal`/`unseal`."
@@ -283,7 +285,7 @@ instance : BI (UPred M) where
   entails_refl := uPred_entails_preorder.le_refl _
   entails_trans := uPred_entails_preorder.le_trans _ _ _
   equiv_iff {_ _} := by
-    rw [OFE.eq_dist]
+    rw [OFE.eq_dist (SI := Nat)]
     constructor <;> intro HE
     · exact ⟨fun n ⟨x, Hv⟩ H => (HE n n x .refl Hv).mp H,
              fun n ⟨x, Hv⟩ H => (HE n n x .refl Hv).mpr H⟩
@@ -298,7 +300,7 @@ instance : BI (UPred M) where
       · exact (H.symm _ _ Hn' Hv').mp H1
       · exact (H'.symm _ _ Hn' Hv').mp H2
   or_ne.ne _ _ _ H _ _ H' _ _ Hn' Hv := by
-    constructor <;> intro H'' <;>  rcases H'' with H'' | H''
+    constructor <;> intro H'' <;> rcases H'' with H'' | H''
     · left; exact (H _ _ Hn' Hv).mp H''
     · right; exact (H' _ _ Hn' Hv).mp H''
     · left; exact (H.symm _ _ Hn' Hv).mp H''
@@ -328,7 +330,7 @@ instance : BI (UPred M) where
       refine HE _ _ Hn Hv ?_
       exact (H _ _ (Nat.le_trans Hn Hn') (validN_op_right Hv)).mp H''
   persistently_ne := persistently_ne
-  later_ne := inferInstanceAs (OFE.NonExpansive UPred.later)
+  later_ne := inferInstanceAs (OFE.NonExpansive (UPred.later (M := M)))
   sForall_ne := fun ⟨HR1, HR2⟩ n' _ Hn' Hx' => by
     constructor
     · intro H p Hp
@@ -375,8 +377,8 @@ instance : BI (UPred M) where
   sep_assoc_l n x := fun ⟨x1, x2, Hx, ⟨y1, y2, Hy, h1, h2⟩, h3⟩ => by
     refine ⟨y1, y2 • x2, ?_, h1, y2, x2, .rfl, h2, h3⟩
     calc x.val ≡{n}≡ x1 • x2 := Hx
-         _     ≡{n}≡ (y1 • y2) • x2 := Hy.op_l
-         _     ≡{n}≡ y1 • (y2 • x2) := assoc.symm.dist
+         _ ≡{n}≡ (y1 • y2) • x2 := Hy.op_l
+         _ ≡{n}≡ y1 • (y2 • x2) := assoc.symm.dist
   wand_intro H _ x HP _ x' Hn _ HQ :=
     H _ _ ⟨x, x', .rfl, UPred.mono _ HP .rfl Hn, HQ⟩
   wand_elim H n x := fun ⟨y1, y2, Hy, HP, HQ⟩ => by
@@ -672,12 +674,12 @@ theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 := by
     exists w1 • w2
     calc
       x.val ≡{n}≡ y1 • y2 := H
-      _     ≡{n}≡ (m1 • w1) • (m2 • w2) := Hw1.op Hw2
-      _     ≡{n}≡ m1 • (w1 • (m2 • w2)) := assoc.symm.dist
-      _     ≡{n}≡ m1 • ((m2 • w2) • w1) := comm'.dist.op_r
-      _     ≡{n}≡ m1 • (m2 • (w2 • w1)) := assoc'.symm.dist.op_r
-      _     ≡{n}≡ (m1 • m2) • (w2 • w1) := assoc.dist
-      _     ≡{n}≡ (m1 • m2) • (w1 • w2) := comm'.dist.op_r
+      _ ≡{n}≡ (m1 • w1) • (m2 • w2) := Hw1.op Hw2
+      _ ≡{n}≡ m1 • (w1 • (m2 • w2)) := assoc.symm.dist
+      _ ≡{n}≡ m1 • ((m2 • w2) • w1) := comm'.dist.op_r
+      _ ≡{n}≡ m1 • (m2 • (w2 • w1)) := assoc'.symm.dist.op_r
+      _ ≡{n}≡ (m1 • m2) • (w2 • w1) := assoc.dist
+      _ ≡{n}≡ (m1 • m2) • (w1 • w2) := comm'.dist.op_r
 
 theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : internalCmraValid m ⊢@{UPred M} False :=
   fun n _ => H n
@@ -809,11 +811,11 @@ theorem intuitionistically_valid {A} [CMRA A] (a : A) :
   · exact intuitionistically_elim
   · exact (persistently_valid_mpr a).trans intuitionistically_iff_persistently.mpr
 
-theorem discrete_valid [CMRA A] [Discrete A] (a : A) :
+theorem discrete_valid [CMRA A] [CMRA.Discrete A] (a : A) :
     internalCmraValid a ⊣⊢@{UPred M} ⌜✓ a⌝ :=
   ⟨fun n _ hv => (valid_iff_validN' n).mpr hv, fun _ _ hv => hv.validN⟩
 
-instance valid_timeless [CMRA A] [Discrete A] {a : A} :
+instance valid_timeless [CMRA A] [CMRA.Discrete A] {a : A} :
     Timeless (internalCmraValid a : UPred M) where
   timeless := by
     refine (later_mono (discrete_valid a).mp).trans ?_
@@ -861,13 +863,13 @@ theorem ownM_updateP [UCMRA M] {x : M} {R : UPred M} (Φ : M → Prop) (Hup : x 
     show ✓{n} (x • (z1 • z2))
     refine validN_ne ?_ z.property
     calc z.val ≡{n}≡ x1 • z2 := Hx
-         _     ≡{n}≡ (x • z1) • z2 := Hz1.op_l
-         _     ≡{n}≡ x • (z1 • z2) := assoc.symm.dist
+         _ ≡{n}≡ (x • z1) • z2 := Hz1.op_l
+         _ ≡{n}≡ x • (z1 • z2) := assoc.symm.dist
   have ⟨y, HΦy, Hvalid_y⟩ := Hup n (some (z1 • z2)) Hvalid
   have Hp := HR (iprop(⌜Φ y⌝ -∗ (UPred.ownM y -∗ UPred.plainly R))) ⟨y, rfl⟩
   have Hcomm : y •? some (z1 • z2) ≡{n}≡ (z2 • z1) • y :=
     calc y • (z1 • z2) ≡{n}≡ y • (z2 • z1) := comm.dist.op_r
-         _             ≡{n}≡ (z2 • z1) • y := comm.symm.dist
+         _ ≡{n}≡ (z2 • z1) • y := comm.symm.dist
   exact Hp n z1 .refl
     (validN_ne comm.dist (validN_op_right Hvalid)) HΦy n y .refl
     (validN_ne Hcomm Hvalid_y) (incN_refl y)

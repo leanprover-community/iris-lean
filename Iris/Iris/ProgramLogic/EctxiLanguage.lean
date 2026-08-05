@@ -14,6 +14,8 @@ open Language.Notation EctxLanguage.Notation FromMathlib
 
 @[expose] public section
 
+local stepindex Nat
+
 variable {Expr Val State Obs EctxItem : Type _}
 
 class EctxItemLanguage (Expr : Type _) (EctxItem State Obs Val : outParam (Type _))

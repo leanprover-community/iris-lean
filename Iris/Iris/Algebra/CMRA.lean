@@ -12,11 +12,13 @@ meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 open OFE
 
 @[rocq_alias cmra]
-class CMRA (α : Type _) extends OFE Nat α where
+class CMRA (α : Type _) extends OFE α where
   pcore : α → Option α
   op : α → α → α
   ValidN : Nat → α → Prop
@@ -50,7 +52,7 @@ class CMRA (α : Type _) extends OFE Nat α where
 #rocq_ignore cmra_ofeO "Not needed."
 
 /-- Reduction of `pcore_op_mono` to regular monotonicity -/
-theorem pcore_op_mono_of_core_op_mono [OFE Nat α] (op : α → α → α) (pcore : α → Option α)
+theorem pcore_op_mono_of_core_op_mono [OFE α] (op : α → α → α) (pcore : α → Option α)
     (h : (∀ x cx y : α, (∃ z, y = op x z) → pcore x = some cx →
       ∃ cy, pcore y = some cy ∧ ∃ z, cy = op cx z))
     (x cx) (e : pcore x = some cx) (y) : ∃ cy, pcore (op x y) = some (op cx cy) :=
@@ -216,9 +218,9 @@ instance : NonExpansive (pcore (α := α)) where
     | .some a, .some b =>
       let ⟨w, hw, ew⟩ := pcore_ne e ex
       calc
-        pcore x ≡{n}≡ some a  := .of_eq ex
-        _       ≡{n}≡ some w  := ew
-        _       ≡{n}≡ pcore y := .of_eq hw.symm
+        pcore x ≡{n}≡ some a := .of_eq ex
+        _ ≡{n}≡ some w := ew
+        _ ≡{n}≡ pcore y := .of_eq hw.symm
     | .some a, .none =>
       let ⟨w, hw, ew⟩ := pcore_ne e ex
       cases hw.symm ▸ ey
@@ -283,7 +285,7 @@ theorem _root_.Iris.OFE.Dist.validN : (x : α) ≡{n}≡ y → (✓{n} x ↔ ✓
 
 @[rocq_alias cmra_validN_le]
 theorem validN_of_le {n n'} {x : α} (le : n' ≤ n) : ✓{n} x → ✓{n'} x :=
-  le.recOn id fun  _ ih vs => ih (validN_succ vs)
+  le.recOn id fun _ ih vs => ih (validN_succ vs)
 
 @[rocq_alias cmra_validN_lt]
 theorem validN_of_lt {n n'} {x : α} (lt : n' < n): ✓{n} x → ✓{n'} x :=
@@ -305,11 +307,11 @@ theorem valid_op_left {x y : α} : ✓ (x • y) → ✓ x :=
 
 theorem validN_opM {x : α} {my : Option α} : ✓{n} (x •? my) → ✓{n} x :=
   match my with
-  | none => id  | some _ => validN_op_left
+  | none => id | some _ => validN_op_left
 
 theorem valid_opM {x : α} {my : Option α} : ✓ (x •? my) → ✓ x :=
   match my with
-  | none => id  | some _ => valid_op_left
+  | none => id | some _ => valid_op_left
 
 theorem validN_op_opM_left {mz : Option α} : ✓{n} (x • y : α) •? mz → ✓{n} x •? mz :=
   match mz with
@@ -317,8 +319,8 @@ theorem validN_op_opM_left {mz : Option α} : ✓{n} (x • y : α) •? mz → 
   | .some z => fun h =>
     have := calc
       (x • y) • z ≡{n}≡ x • (y • z) := op_assocN.symm
-      _           ≡{n}≡ x • (z • y) := op_right_dist x op_commN
-      _           ≡{n}≡ (x • z) • y := op_assocN
+      _ ≡{n}≡ x • (z • y) := op_right_dist x op_commN
+      _ ≡{n}≡ (x • z) • y := op_assocN
     validN_op_left ((Dist.validN this).mp h)
 
 theorem validN_op_opM_right {mz : Option α} (h : ✓{n} (x • y : α) •? mz) : ✓{n} y •? mz :=
@@ -524,8 +526,8 @@ theorem pcore_monoN' {n} {x y : α} {cx} :
     suffices h : cx ≼{n} r from ⟨r, hr, h⟩
     calc
       cx ≡{n}≡ w := ew
-      w  ≼{n}  t := incN_of_inc n et
-      t  ≡{n}≡ r := er
+      w ≼{n} t := incN_of_inc n et
+      t ≡{n}≡ r := er
 
 @[rocq_alias cmra_included_pcore]
 theorem pcore_inc_self {x : α} {cx} (e : pcore x = some cx) : cx ≼ x :=
@@ -751,8 +753,8 @@ variable {α : Type _} [CMRA α]
 
 -- Global Instance id_free_ne n : Proper (dist n ==> iff) (@IdFree A).
 -- Proof.
---   intros x x' EQ%(dist_le _ 0); last lia. rewrite /IdFree.
---   split=> y ?; (rewrite -EQ || rewrite EQ); eauto.
+-- intros x x' EQ%(dist_le _ 0); last lia. rewrite /IdFree.
+-- split=> y ?; (rewrite -EQ || rewrite EQ); eauto.
 -- Qed.
 
 -- Global Instance id_free_proper : Proper (equiv ==> iff) (@IdFree A).
@@ -763,8 +765,8 @@ theorem IdFree.of_dist {x₁ x₂ : α} {n} (e : x₁ ≡{n}≡ x₂) (h : IdFre
     have ee := Dist.le e SIdx.le_0_l
     have := calc
       x₁ • z ≡{0}≡ x₂ • z := op_left_dist z ee
-      _      ≡{0}≡ x₂ := h₂
-      _      ≡{0}≡ x₁ := ee.symm
+      _ ≡{0}≡ x₂ := h₂
+      _ ≡{0}≡ x₁ := ee.symm
     h.id_free0_r _ ((validN_dist_iff ee).mpr v) this
 
 theorem _root_.Iris.OFE.Dist.idFree {x₁ x₂ : α} (e : x₁ ≡{n}≡ x₂) : IdFree x₁ ↔ IdFree x₂ :=
@@ -954,7 +956,7 @@ infixr:25 " -C> " => Hom
 
 instance [CMRA β] : CoeFun (α -C> β) (fun _ => α → β) := ⟨fun F => F.f⟩
 
-instance [CMRA β] : OFE Nat (α -C> β) where
+instance [CMRA β] : OFE (α -C> β) where
   Dist n f g := f.toHom ≡{n}≡ g.toHom
   dist_eqv := {
     refl _ := dist_eqv.refl _
@@ -972,11 +974,11 @@ protected def Hom.id [CMRA α] : α -C> α where
   op _ _ := rfl
 
 -- protected def Hom.comp [CMRA α] [CMRA β] [CMRA γ] (g : β -C> γ) (f : α -C> β) : α -C> γ where
---   toHom := OFE.Hom.comp g.toHom f.toHom
---   hom :=
---     ⟨fun v => g.mor.validN (f.mor.validN v),
---       fun x => sorry,
---       fun x y => sorry⟩
+-- toHom := OFE.Hom.comp g.toHom f.toHom
+-- hom :=
+-- ⟨fun v => g.mor.validN (f.mor.validN v),
+-- fun x => sorry,
+-- fun x y => sorry⟩
 
 #rocq_ignore cmra_morphism_proper "OFE is Leibniz; use equality"
 
@@ -1006,19 +1008,19 @@ section rFunctor
 
 @[rocq_alias rFunctor]
 class RFunctor (F : COFE.OFunctorPre Nat) where
-  [cmra [COFE Nat α] [COFE Nat β] : CMRA (F α β)]
-  map [COFE Nat α₁] [COFE Nat α₂] [COFE Nat β₁] [COFE Nat β₂] :
+  [cmra [COFE α] [COFE β] : CMRA (F α β)]
+  map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -C> F α₂ β₂
-  map_ne [COFE Nat α₁] [COFE Nat α₂] [COFE Nat β₁] [COFE Nat β₂] :
+  map_ne [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     NonExpansive₂ (@map α₁ α₂ β₁ β₂ _ _ _ _)
-  map_id [COFE Nat α] [COFE Nat β] (x : F α β) : map (Hom.id (α := α)) (Hom.id (α := β)) x = x
-  map_comp [COFE Nat α₁] [COFE Nat α₂] [COFE Nat α₃] [COFE Nat β₁] [COFE Nat β₂] [COFE Nat β₃]
+  map_id [COFE α] [COFE β] (x : F α β) : map (Hom.id (α := α)) (Hom.id (α := β)) x = x
+  map_comp [COFE α₁] [COFE α₂] [COFE α₃] [COFE β₁] [COFE β₂] [COFE β₃]
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x = map g g' (map f f' x)
 
 @[rocq_alias rFunctorContractive]
 class RFunctorContractive (F : COFE.OFunctorPre Nat) extends (RFunctor F) where
-  map_contractive [COFE Nat α₁] [COFE Nat α₂] [COFE Nat β₁] [COFE Nat β₂] :
+  map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
 attribute [reducible, instance] RFunctor.cmra
@@ -1026,10 +1028,10 @@ attribute [reducible, instance] RFunctor.cmra
 
 @[rocq_alias rFunctor_to_oFunctor]
 instance RFunctor.toOFunctor [R : RFunctor F] : COFE.OFunctor Nat F where
-  ofe        := RFunctor.cmra.toOFE
-  map a b    := (RFunctor.map a b).toHom
-  map_ne.ne  := RFunctor.map_ne.ne
-  map_id x   := RFunctor.map_id x
+  ofe := RFunctor.cmra.toOFE
+  map a b := (RFunctor.map a b).toHom
+  map_ne.ne := RFunctor.map_ne.ne
+  map_id x := RFunctor.map_id x
   map_comp f g f' g' x := RFunctor.map_comp f g f' g' x
 
 @[rocq_alias rFunctor_to_oFunctor_contractive]
@@ -1043,29 +1045,29 @@ section urFunctor
 
 @[rocq_alias urFunctor]
 class URFunctor (F : COFE.OFunctorPre Nat) where
-  [cmra [COFE Nat α] [COFE Nat β] : UCMRA (F α β)]
-  map [COFE Nat α₁] [COFE Nat α₂] [COFE Nat β₁] [COFE Nat β₂] :
+  [cmra [COFE α] [COFE β] : UCMRA (F α β)]
+  map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -C> F α₂ β₂
-  map_ne [COFE Nat α₁] [COFE Nat α₂] [COFE Nat β₁] [COFE Nat β₂] :
+  map_ne [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     NonExpansive₂ (@map α₁ α₂ β₁ β₂ _ _ _ _)
-  map_id [COFE Nat α] [COFE Nat β] (x : F α β) : map (Hom.id (α := α)) (Hom.id (α := β)) x = x
-  map_comp [COFE Nat α₁] [COFE Nat α₂] [COFE Nat α₃] [COFE Nat β₁] [COFE Nat β₂] [COFE Nat β₃]
+  map_id [COFE α] [COFE β] (x : F α β) : map (Hom.id (α := α)) (Hom.id (α := β)) x = x
+  map_comp [COFE α₁] [COFE α₂] [COFE α₃] [COFE β₁] [COFE β₂] [COFE β₃]
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x = map g g' (map f f' x)
 
 @[rocq_alias urFunctorContractive]
 class URFunctorContractive (F : COFE.OFunctorPre Nat) extends URFunctor F where
-  map_contractive [COFE Nat α₁] [COFE Nat α₂] [COFE Nat β₁] [COFE Nat β₂] :
+  map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
 attribute [reducible, instance] URFunctor.cmra
 
 @[rocq_alias urFunctor_to_rFunctor]
 instance URFunctor.toRFunctor [UF : URFunctor F] : RFunctor F where
-  cmra     := URFunctor.cmra.toCMRA
-  map f g  := URFunctor.map f g
-  map_ne   := URFunctor.map_ne
-  map_id   := URFunctor.map_id
+  cmra := URFunctor.cmra.toCMRA
+  map f g := URFunctor.map f g
+  map_ne := URFunctor.map_ne
+  map_id := URFunctor.map_id
   map_comp := URFunctor.map_comp
 
 @[rocq_alias urFunctor_to_rFunctor_contractive]
@@ -1466,7 +1468,7 @@ theorem eqv_of_inc_exclusive [Exclusive (a : α)] {b : α} (H : some a ≼ some 
     · exact not_valid_of_excl_inc H Hv |>.elim
 
 @[rocq_alias Some_includedN_exclusive]
-theorem dist_of_inc_exclusive [Exclusive (a : α)] {b : α} (H : some a ≼{n} some b) (Hv : ✓{n} b)  :
+theorem dist_of_inc_exclusive [Exclusive (a : α)] {b : α} (H : some a ≼{n} some b) (Hv : ✓{n} b) :
     a ≡{n}≡ b := by
   rcases incN_iff.mp H with (Hcontra|H)
   · simp at Hcontra
@@ -1614,7 +1616,7 @@ instance cmraProd : CMRA (α × β) where
     suffices g : cx ≡{n}≡ (cy₁, cy₂) by simp [hcy₁, hcy₂, g, pcore]
     calc
       cx ≡{n}≡ (cx₁, cx₂) := Dist.of_eq (Option.some.inj hcx).symm
-      _  ≡{n}≡ (cy₁, cy₂) := dist_prod_ext hxy₁ hxy₂
+      _ ≡{n}≡ (cy₁, cy₂) := dist_prod_ext hxy₁ hxy₂
   validN_ne {_} x y H := fun ⟨vx1, vx2⟩ => ⟨H.1.validN.mp vx1, H.2.validN.mp vx2⟩
   valid_iff_validN {x} := by
     refine ⟨fun ⟨va, vb⟩ n => ⟨va.validN, vb.validN⟩, fun h => ⟨?_, ?_⟩⟩
@@ -1682,7 +1684,7 @@ instance instCmraDistreteProd [CMRA.Discrete α] [CMRA.Discrete β] : CMRA.Discr
 @[rocq_alias pair_core_id]
 instance instCoreIdPair {x : α} {y : β} [CMRA.CoreId x] [CMRA.CoreId y] : CMRA.CoreId (α := α × β) ⟨x, y⟩ where
   core_id := by
-    refine (OFE.eq_dist.mpr (fun _ => ?_))
+    refine ((OFE.eq_dist (SI := Nat)).mpr (fun _ => ?_))
     simp only [CMRA.pcore, pcore]
     haveI : NonExpansive (fun b : β => some (x, b)) := ⟨fun _ _ _ H => some_dist_some.mpr (dist_prod_ext .rfl H)⟩
     haveI : NonExpansive ((fun a : α => (CMRA.pcore y).bind fun b : β => pure (a, b))) :=

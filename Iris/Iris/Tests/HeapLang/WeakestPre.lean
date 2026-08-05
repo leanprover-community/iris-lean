@@ -12,6 +12,8 @@ public import Iris.HeapLang.ProofMode
 public import Iris.HeapLang.Instances
 public import Iris.ProgramLogic.WeakestPre
 
+local stepindex Nat
+
 namespace Iris.HeapLang
 
 variable {hlc} {GF : BundledGFunctors} [ι : IrisGS_gen hlc HeapLang.Exp GF]

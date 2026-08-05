@@ -33,6 +33,8 @@ It provides authoritative and fragmental ownership over heap elements with fract
 
 @[expose] public section
 
+local stepindex Nat
+
 open Iris
 
 section heapView
@@ -143,7 +145,6 @@ instance : NonExpansive (Frag k dq : _ → HeapView K V H) where
     · rw [Std.PartialMap.singleton, get?_insert_eq h, get?_singleton_eq h]
       exact dist_prod_ext rfl Hx
     · rw [Std.PartialMap.singleton, get?_insert_ne h, get?_empty, get?_singleton_ne h]
-      rfl
 
 variable {dp dq : DFrac} {n : Nat} {m1 m2 : H V} {k : K} {v1 v2 : V}
 
@@ -264,7 +265,7 @@ theorem auth_op_frag_valid_total_discrete_iff [IsTotal V] [CMRA.Discrete V]
     · exact ⟨x.snd, congrArg Prod.snd (some_eqv_some.mp Hx)⟩
 
 theorem auth_op_frag_one_valid_iff :
-    ✓ Auth dp m1 • Frag k (.own one) v1 ↔ ✓ dp ∧ ✓ v1 ∧ Std.PartialMap.get?  m1 k = some v1 := by
+    ✓ Auth dp m1 • Frag k (.own one) v1 ↔ ✓ dp ∧ ✓ v1 ∧ Std.PartialMap.get? m1 k = some v1 := by
   refine valid_iff_validN.trans ?_
   refine forall_congr' (fun _ => auth_op_frag_one_validN_iff) |>.trans ?_
   refine ⟨fun Hv => ?_, ?_⟩
@@ -417,7 +418,7 @@ theorem update_auth_op_frag
   · simp [get?_insert_ne h]
     intro Hbf
     have Hrel' := Hrel j (df, va)
-    simp only [CMRA.op, Heap.op, get?_merge, get?_singleton_ne h,  exists_and_left] at Hrel'
+    simp only [CMRA.op, Heap.op, get?_merge, get?_singleton_ne h, exists_and_left] at Hrel'
     refine Hrel' ?_
     rw [← Hbf]
     simp [get?_singleton_ne h]
@@ -497,7 +498,7 @@ section heapViewFunctor
 
 open Iris.Std PartialMap
 
-theorem heapR_map_eq [COFE Nat A] [COFE Nat B] [COFE Nat A'] [COFE Nat B'] [RFunctor T] (f : A' -n> A) (g : B -n> B')
+theorem heapR_map_eq [COFE A] [COFE B] [COFE A'] [COFE B'] [RFunctor T] (f : A' -n> A) (g : B -n> B')
     (n : Nat) (m : H (T A B)) (mv : H (DFrac × T A B)) :
     HeapR K (T A B) H n m mv →
     HeapR K (T A' B') H n

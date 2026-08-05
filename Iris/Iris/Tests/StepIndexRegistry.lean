@@ -19,11 +19,23 @@ namespace Iris.Tests
 #guard_msgs in
 example : Type := by infer_stepindex
 
+-- Test the error from `stepindex%` when no index is declared
+
+/-- error: stepindex%: no step index in scope; declare one with `local stepindex T` -/
+#guard_msgs in
+#check (stepindex% : Type)
+
 local stepindex Nat
 
 /-- info: Nat -/
 #guard_msgs in
 #stepindex?
+
+-- Test that `stepindex%` resolves eagerly to a global constant
+
+/-- info: Nat : Type -/
+#guard_msgs in
+#check (stepindex% : Type)
 
 /-- info: Nat : Type -/
 #guard_msgs in
@@ -40,6 +52,12 @@ local stepindex SI
 /-- info: SI : Type -/
 #guard_msgs in
 #check (by infer_stepindex : Type)
+
+-- Test that `stepindex%` also resolves to a section variable
+
+/-- info: SI : Type -/
+#guard_msgs in
+#check (stepindex% : Type)
 
 def sectionIndex : Type := by infer_stepindex
 
@@ -215,5 +233,39 @@ local stepindex Nonexistant
 example : Type := by infer_stepindex
 
 end
+
+section EagerVsLate
+local stepindex Nat
+
+class TD (α : Type) (SI : Type) where d : SI → α → α → Prop
+instance : TD Nat Nat := ⟨fun _ _ _ => True⟩
+instance {n : Nat} : Trans (TD.d (α := Nat) (SI := Nat) n) (TD.d (α := Nat) (SI := Nat) n)
+    (TD.d (α := Nat) (SI := Nat) n) := ⟨fun _ _ => trivial⟩
+
+notation:40 x " ~[" k "]~ " y:41 => TD.d (SI := stepindex%) k x y
+notation:40 x " ~?[" k "]~ " y:41 => TD.d (SI := by infer_stepindex) k x y
+
+-- Test that an eagerly resolved index can be used in `calc`: `Trans` needs the index during
+-- elaboration, so this is the property that `stepindex%` exists to provide
+
+example (a b c : Nat) (n : Nat) (h1 : a ~[n]~ b) (h2 : b ~[n]~ c) : a ~[n]~ c := calc
+  a ~[n]~ b := h1
+  _ ~[n]~ c := h2
+
+-- Test that the tactic form cannot: a `by` block is a synthetic *opaque* metavariable, so
+-- `Trans` is unresolvable even though `n : Nat`. Guards the two against being swapped.
+
+/--
+error: invalid 'calc' step, failed to synthesize `Trans` instance
+  Trans (TD.d ?m.16) (TD.d ?m.22) ?m.25
+
+Hint: Additional diagnostic information may be available using the `set_option diagnostics true` command.
+-/
+#guard_msgs in
+example (a b c : Nat) (n : Nat) (h1 : a ~?[n]~ b) (h2 : b ~?[n]~ c) : a ~?[n]~ c := calc
+  a ~?[n]~ b := h1
+  _ ~?[n]~ c := h2
+
+end EagerVsLate
 
 end Iris.Tests

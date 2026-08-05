@@ -17,6 +17,8 @@ open BI Iris ProgramLogic
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Spawn
 
 def spawn : Val := hl_val%

@@ -10,6 +10,8 @@ public meta import Iris.ProofMode.Tactics.Cases
 public meta import Iris.ProofMode.Patterns.CasesPattern
 public meta import Iris.ProofMode.ClassesMake
 
+local stepindex Nat
+
 namespace Iris.ProofMode
 
 public section

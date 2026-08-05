@@ -16,6 +16,8 @@ open BI Iris ProgramLogic Spawn
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Par
 
 def parN : Namespace := ndot nroot "par"

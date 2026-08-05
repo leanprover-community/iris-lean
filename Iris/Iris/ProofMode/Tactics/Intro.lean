@@ -11,6 +11,8 @@ public meta import Iris.ProofMode.Tactics.Pure
 public meta import Iris.ProofMode.Tactics.ModIntro
 public meta import Iris.ProofMode.Tactics.Trivial
 
+local stepindex Nat
+
 namespace Iris.ProofMode
 
 public section

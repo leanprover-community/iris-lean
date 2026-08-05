@@ -9,6 +9,8 @@ public import Iris.Algebra.COFESolver
 
 @[expose] public section
 
+local stepindex Nat
+
 /-!
 Every OFE is Leibniz, so the fold/unfold isomorphisms of the recursive domain equation solver's
 fixed point can be stated as propositional equalities rather than OFE equivalences.
@@ -25,7 +27,7 @@ tactics for simplification/rewriting.
 section Fix
 open Iris OFE COFE
 
-variable [OFE Nat Val] [OFE Nat Err] [IsCOFE Nat Val] [IsCOFE Nat Err] [Inhabited Err]
+variable [OFE Val] [OFE Err] [IsCOFE Val] [IsCOFE Err] [Inhabited Err]
 
 abbrev DomF : OFunctorPre Nat :=
   SumOF (constOF Val) (SumOF (constOF Err) (SumOF (LaterOF IdOF) (LaterOF (HomOF IdOF IdOF))))
@@ -36,13 +38,13 @@ instance : Inhabited (DomF (Val := Val) (Err := Err) (ULift Unit) (ULift Unit)) 
 end Fix
 
 open Iris OFE COFE in
-abbrev Dom (Val : Type _) (Err : Type _) [OFE Nat Val] [OFE Nat Err] [IsCOFE Nat Val] [IsCOFE Nat Err] [Inhabited Err] :=
+abbrev Dom (Val : Type _) (Err : Type _) [OFE Val] [OFE Err] [IsCOFE Val] [IsCOFE Err] [Inhabited Err] :=
   OFunctor.Fix (DomF (Val := Val) (Err := Err))
 
 namespace Dom
 open Iris OFE COFE
 
-variable [OFE Nat V] [OFE Nat E] [IsCOFE Nat V] [IsCOFE Nat E] [Inhabited E]
+variable [OFE V] [OFE E] [IsCOFE V] [IsCOFE E] [Inhabited E]
 
 def fold : V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom V E) -n> Dom V E :=
   OFunctor.Fix.fold (F := DomF (Val := V) (Err := E))

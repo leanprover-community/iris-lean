@@ -6,6 +6,8 @@ module
 
 public import Iris.BI.Updates
 
+local stepindex Nat
+
 open Iris
 
 variable [BI PROP] [BUpd PROP] [FUpd PROP] (P Q : PROP) (E₁ E₂ : CoPset)

@@ -29,3 +29,5 @@ public meta import Iris.ProofMode.Tactics.Rewrite
 public meta import Iris.ProofMode.Tactics.Specialize
 public meta import Iris.ProofMode.Tactics.Split
 public meta import Iris.ProofMode.Tactics.Trivial
+
+local stepindex Nat

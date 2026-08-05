@@ -8,6 +8,8 @@ module
 public meta import Iris.ProofMode.Patterns.SelPattern
 public meta import Iris.ProofMode.ProofModeM
 
+local stepindex Nat
+
 namespace Iris.ProofMode
 
 public section

@@ -15,6 +15,8 @@ public import Iris.Instances.IProp
 
 @[expose] public section
 
+local stepindex Nat
+
 /-! ## World satisfaction
 This file defines the world satisfaction (wsat) predicate for Iris.
 -/

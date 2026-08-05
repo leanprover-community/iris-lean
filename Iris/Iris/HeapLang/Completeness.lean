@@ -21,6 +21,8 @@ Note: this is not a port. Upstream Iris has no completeness proof, so there are
 no `rocq_alias` annotations in this file. -/
 
 @[expose] public section
+
+local stepindex Nat
 namespace Iris.HeapLang
 
 open Iris ProgramLogic Iris.BI Language Language.Notation Std

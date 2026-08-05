@@ -8,6 +8,8 @@ module
 public meta import Iris.ProofMode.Expr
 public import Iris.ProofMode.Classes
 
+local stepindex Nat
+
 public meta section
 
 namespace Iris.ProofMode

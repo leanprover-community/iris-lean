@@ -15,6 +15,8 @@ public import Iris.Std.Namespaces
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open BI CMRA Agree OFE UPred IProp Std ProofMode COFE Auth ExclAuth Excl PartialMap BigSepM

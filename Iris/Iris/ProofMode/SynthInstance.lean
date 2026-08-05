@@ -9,6 +9,8 @@ public import Qq
 public import Iris.BI
 public import Iris.ProofMode.SynthInstanceAttr
 
+local stepindex Nat
+
 public meta section
 
 /-

@@ -11,6 +11,8 @@ public import Iris.Std.Equivalence
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris.Instances.Classical
 open Iris.BI Iris.Instances.Data Std
 
@@ -42,7 +44,7 @@ instance heapPropPreorder : Std.IsPreorder (HeapProp Val) where
     apply h_xy σ
     exact h_x
 
-instance : COFE Nat (HeapProp Val) := COFE.ofDiscrete _
+instance : COFE (HeapProp Val) := COFE.ofDiscrete _
 
 instance : BI (HeapProp Val) where
   entails_refl := heapPropPreorder.le_refl _

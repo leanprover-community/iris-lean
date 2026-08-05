@@ -18,6 +18,8 @@ public import Lean
 public import Lean.Elab.Tactic.Simp
 public import Qq
 
+local stepindex Nat
+
 namespace Iris.ProofMode
 
 open Lean hiding Expr

@@ -15,6 +15,8 @@ import Iris.Instances.Lib.WSat
 
 @[expose] public section
 
+local stepindex Nat
+
 /-! ## Invariants -/
 
 namespace Iris
@@ -53,7 +55,7 @@ instance inv_contractive (N : Namespace) : Contractive (inv (GF := GF) N) where
     refine forall_ne (fun i => ?_)
     refine imp_ne.ne .rfl ?_
     refine wand_ne.ne .rfl ?_
-    refine (inferInstance : NonExpansive le_upd).ne ?_
+    refine (inferInstance : NonExpansive (le_upd (GF := GF) (hlc := hlc))).ne ?_
     refine sep_ne.ne .rfl ?_
     refine sep_ne.ne .rfl ?_
     refine sep_ne.ne ?_ ?_

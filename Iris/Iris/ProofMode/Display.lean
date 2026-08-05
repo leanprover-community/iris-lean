@@ -10,6 +10,8 @@ public meta import Iris.ProofMode.Expr
 
 public meta import Lean.PrettyPrinter.Delaborator
 
+local stepindex Nat
+
 public meta section
 
 namespace Iris.ProofMode

@@ -20,3 +20,5 @@ public import Iris.Algebra.Heap
 public import Iris.Algebra.View
 public import Iris.Algebra.HeapView
 public import Iris.Algebra.Lib
+
+local stepindex Nat

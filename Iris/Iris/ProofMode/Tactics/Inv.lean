@@ -13,6 +13,8 @@ public meta import Iris.ProofMode.Patterns.IntroPattern
 public meta import Iris.ProofMode.Patterns.SelPattern
 public meta import Iris.ProofMode.ClassesMake
 
+local stepindex Nat
+
 namespace Iris.ProofMode
 
 public section

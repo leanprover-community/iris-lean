@@ -17,6 +17,8 @@ public import Iris.BI.Plainly
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open Iris OFE COFE BI Auth
@@ -62,7 +64,7 @@ instance {E1 E2 : CoPset} : NonExpansive (uPred_fupd (GF := GF) (hlc := hlc) E1 
   ne {_ _ _} h := by
     simp only [uPred_fupd]
     refine wand_ne.ne .rfl ?_
-    refine (inferInstance : NonExpansive le_upd).ne ?_
+    refine (inferInstance : NonExpansive (le_upd (GF := GF) (hlc := hlc))).ne ?_
     refine sep_ne.ne .rfl ?_
     refine sep_ne.ne .rfl h
 

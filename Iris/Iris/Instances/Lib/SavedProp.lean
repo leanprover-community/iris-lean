@@ -14,6 +14,8 @@ public import Iris.ProofMode
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open BI CMRA Agree OFE UPred IProp Std ProofMode COFE

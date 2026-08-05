@@ -10,6 +10,8 @@ public import Iris.Instances.IProp.Instance
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open BI CMRA Excl OFE UPred IProp Std ProofMode

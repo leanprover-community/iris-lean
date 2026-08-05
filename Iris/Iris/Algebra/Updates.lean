@@ -10,6 +10,8 @@ meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 @[rocq_alias cmra_updateP]
@@ -77,9 +79,9 @@ theorem UpdateP.op {P Q R : α → Prop} {x y}
     (CMRA.opM_left_dist mz CMRA.op_commN).trans (CMRA.op_opM_assoc_dist _ _ mz)
   let ⟨w, pw, vw⟩ := uyq n (some (x •? mz)) (CMRA.validN_ne e₁ v)
   have e₂ : w •? some (x •? mz) ≡{n}≡ x •? some (w •? mz) := calc
-    w •? some (x •? mz) ≡{n}≡ (w • x) •? mz       := (CMRA.op_opM_assoc_dist w x mz).symm
-    _                   ≡{n}≡ (x • w) •? mz       := (CMRA.opM_left_dist mz CMRA.op_commN)
-    _                   ≡{n}≡ x •? some (w •? mz) := CMRA.op_opM_assoc_dist x w mz
+    w •? some (x •? mz) ≡{n}≡ (w • x) •? mz := (CMRA.op_opM_assoc_dist w x mz).symm
+    _ ≡{n}≡ (x • w) •? mz := (CMRA.opM_left_dist mz CMRA.op_commN)
+    _ ≡{n}≡ x •? some (w •? mz) := CMRA.op_opM_assoc_dist x w mz
   let ⟨z, pz, vz⟩ := uxp n (some (w •? mz)) (CMRA.validN_ne e₂ vw)
   exact ⟨z • w, pqr z w pz pw, CMRA.validN_ne (CMRA.op_opM_assoc_dist z w mz).symm vz⟩
 
@@ -165,15 +167,15 @@ theorem Update.discrete_total [CMRA.Discrete α] [CMRA.IsTotal α] :
 
 -- (** * Transport *)
 -- Section cmra_transport.
---   Context {SI : sidx} {A B : cmra} (H : A = B).
---   Notation T := (cmra_transport H).
---   Lemma cmra_transport_updateP (P : A → Prop) (Q : B → Prop) x :
---     x ~~>: P → (∀ y, P y → Q (T y)) → T x ~~>: Q.
---   Proof. Admitted.
+-- Context {SI : sidx} {A B : cmra} (H : A = B).
+-- Notation T := (cmra_transport H).
+-- Lemma cmra_transport_updateP (P : A → Prop) (Q : B → Prop) x :
+-- x ~~>: P → (∀ y, P y → Q (T y)) → T x ~~>: Q.
+-- Proof. Admitted.
 
---   Lemma cmra_transport_updateP' (P : A → Prop) x :
---     x ~~>: P → T x ~~>: λ y, ∃ y', y = cmra_transport H y' ∧ P y'.
---   Proof. Admitted.
+-- Lemma cmra_transport_updateP' (P : A → Prop) x :
+-- x ~~>: P → T x ~~>: λ y, ∃ y', y = cmra_transport H y' ∧ P y'.
+-- Proof. Admitted.
 
 -- End cmra_transport.
 
