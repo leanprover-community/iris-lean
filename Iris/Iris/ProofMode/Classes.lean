@@ -296,7 +296,7 @@ class CombineSepGives [BI PROP] (P Q : PROP) (R : outParam PROP) where
 export CombineSepGives (combine_sep_gives)
 
 #rocq_ignore CombineSepsAs "Iteration is done directly within the metaprogram in Lean"
-#rocq_ignore CombineSepsGives "Iteration is done directly within the metaprogram in Lean"
+#rocq_ignore CombineSepsAsGives "Iteration is done directly within the metaprogram in Lean"
 
 @[ipm_class, rocq_alias IntoInv]
 class IntoInv [BI PROP] (P : PROP) (N : Namespace)
