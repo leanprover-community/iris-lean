@@ -14,9 +14,12 @@ namespace Iris.ProofMode
 public section
 open BI
 
+@[rocq_alias tac_modal_elim]
 theorem mod [BI PROP] {e} {Φ} {p p'} {A A' Q Q' : PROP} [he : ElimModal Φ p .out p' A A' Q Q']
-  (h1 : e ∗ □?p' A' ⊢ Q') (hΦ : Φ) : e ∗ □?p A ⊢ Q :=
-    (sep_comm.1.trans (sep_mono_right (wand_intro h1))).trans (he.1 hΦ)
+    (h1 : e ∗ □?p' A' ⊢ Q') (hΦ : Φ) : e ∗ □?p A ⊢ Q := calc
+  _ ⊢ □?p A ∗ e               := sep_comm.mp
+  _ ⊢ □?p A ∗ (□?p' A' -∗ Q') := sep_mono_right <| wand_intro h1
+  _ ⊢ Q                       := he.elim_modal hΦ
 
 public meta section
 open Lean Elab Tactic Meta Qq Std

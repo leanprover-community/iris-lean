@@ -12,26 +12,36 @@ namespace Iris.ProofMode
 public section
 open BI Std
 
+@[rocq_alias tac_pure]
 theorem pure_elim_spatial [BI PROP] {P P' A Q : PROP} {φ : Prop}
     [hA : IntoPure A φ] [or : TCOr (Affine A) (Absorbing Q)]
     (h : P ⊣⊢ P' ∗ A) (h_entails : φ → P' ⊢ Q) : P ⊢ Q :=
   h.1.trans <| match or with
   | TCOr.l =>
-    (sep_mono_right <| (affine_affinely A).2.trans (affinely_mono hA.1)).trans <|
-    persistent_and_affinely_sep_right.2.trans (pure_elim_right h_entails)
+    calc
+      _ ⊢ P' ∗ <affine> ⌜φ⌝ := sep_mono_right <| (affine_affinely A).2.trans (affinely_mono hA.1)
+      _ ⊢ P' ∧ ⌜φ⌝          := persistent_and_affinely_sep_right.2
+      _ ⊢ Q                 := pure_elim_right h_entails
   | TCOr.r =>
-    (sep_mono_right <| hA.1.trans absorbingly_affinely_intro_of_persistent).trans <|
-    absorbingly_sep_left_right.2.trans <| persistent_and_affinely_sep_right.2.trans <|
-    pure_elim_right fun hφ => (absorbingly_mono <| h_entails hφ).trans absorbing
+    calc
+      _ ⊢ P' ∗ <absorb> <affine> ⌜φ⌝ :=
+          sep_mono_right <| hA.1.trans absorbingly_affinely_intro_of_persistent
+      _ ⊢ <absorb> P' ∗ <affine> ⌜φ⌝ := absorbingly_sep_left_right.2
+      _ ⊢ <absorb> P' ∧ ⌜φ⌝          := persistent_and_affinely_sep_right.2
+      _ ⊢ Q                          :=
+          pure_elim_right fun hφ => (absorbingly_mono <| h_entails hφ).trans absorbing
 
 theorem pure_elim_intuitionistic [BI PROP] {P P' A Q : PROP} {φ : Prop}
     [inst : IntoPure A φ] (h : P ⊣⊢ P' ∗ □ A) (h' : φ → P' ⊢ Q) : P ⊢ Q :=
   have : IntoPure iprop(□ A) φ := ⟨intuitionistically_elim.trans inst.into_pure⟩
   pure_elim_spatial h h'
 
+@[rocq_alias tac_pure_intro]
 theorem pure_intro_affine [BI PROP] {Q : PROP} {φ : Prop}
-    (h : FromPure true Q .out φ) [Affine P] (hφ : φ) : P ⊢ Q :=
-  (affine.trans (eq_true hφ ▸ affinely_true.2)).trans h.1
+    (h : FromPure true Q .out φ) [Affine P] (hφ : φ) : P ⊢ Q := calc
+  _ ⊢ emp                 := affine
+  _ ⊢@{PROP} <affine> ⌜φ⌝ := eq_true hφ ▸ affinely_true.mpr
+  _ ⊢ Q                   := h.from_pure
 
 theorem pure_intro_spatial [BI PROP] {Q : PROP} {φ : Prop}
     (h : FromPure false Q .out φ) (hφ : φ) : P ⊢ Q :=
