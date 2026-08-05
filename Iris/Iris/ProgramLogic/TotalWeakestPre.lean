@@ -17,7 +17,9 @@ open ProgramLogic Language.Notation Std OFE
 /-!
 # Total weakest preconditions
 
-The total weakest precondition is the least fixed point of `twp.pre`.
+This file provides the core definition and selected rules for total WP. Total WP
+uses a least fixed point without a later modality and permits only
+observation-free reductions. Further Iris-Rocq rules can be ported separately.
 -/
 
 variable {hlc : outParam HasLC} {Expr State Obs Val}

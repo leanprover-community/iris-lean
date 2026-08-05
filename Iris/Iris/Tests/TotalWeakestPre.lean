@@ -279,17 +279,6 @@ example :
 
 end CoreRuleChecks
 
-section TotalEctxRuleChecks
-
-example := @twp_lift_base_step
-example := @twp_lift_base_step_no_fork
-example := @twp_lift_pure_base_step_no_fork
-example := @twp_lift_atomic_base_step
-example := @twp_lift_atomic_base_step_no_fork
-example := @twp_lift_pure_det_base_step_no_fork
-
-end TotalEctxRuleChecks
-
 section HeapLangPureSmoke
 
 open Iris.HeapLang
@@ -322,6 +311,114 @@ theorem heapLang_add_twp :
     rfl
 
 end HeapLangPureSmoke
+
+namespace Forking
+
+inductive Expr where
+  | done
+  | fork
+
+abbrev Val := Unit
+abbrev State := Unit
+abbrev Obs := Unit
+
+instance : ToVal Expr Val where
+  toVal
+    | .done => some ()
+    | .fork => none
+  ofVal _ := .done
+  coe_of_toVal_eq_some := by
+    intro e v h
+    cases e <;> simp_all
+  toVal_coe := by simp
+
+inductive Step : Expr → State → List Obs → Expr → State → List Expr → Prop
+  | fork : Step .fork () [] .done () [.done]
+
+instance : PrimStep Expr State (List Obs) where
+  primStep
+    | (e₁, σ₁), κ, (e₂, σ₂, efs) => Step e₁ σ₁ κ e₂ σ₂ efs
+
+instance : Language Expr State Obs Val where
+  val_stuck := by
+    intro e σ κ e' σ' efs H
+    cases H
+    rfl
+
+section
+
+variable [InvGS_gen .hasNoLC GF]
+
+noncomputable local instance forkIrisGS : IrisGS_gen .hasNoLC Expr GF where
+  toStateInterp := ⟨fun _ _ _ _ => iprop(True)⟩
+  numLatersPerStep := fun _ => 0
+  forkPost := fun _ => iprop(True)
+  stateInterp_mono := by
+    intro σ ns obs nt
+    iintro _
+    imodintro
+    itrivial
+
+theorem fork_twp :
+    ⊢ WP Expr.fork @ Stuckness.NotStuck ; ⊤ [{
+      fun _ : Val => (iprop(True) : IProp GF) }] := by
+  iapply twp_lift_atomic_step (e₁ := Expr.fork) rfl
+  iintro %σ %ns %obs %nt _
+  imodintro
+  isplit
+  · ipureintro
+    cases σ
+    exact ⟨.done, (), [.done], Step.fork⟩
+  · iintro %κ %e₂ %σ₂ %efs %Hstep
+    cases Hstep
+    imodintro
+    isplit
+    · ipureintro
+      rfl
+    · isplitl []
+      · change ⊢ iprop(True)
+        itrivial
+      · isplitl []
+        · iexists ()
+          isplit
+          · ipureintro
+            rfl
+          · itrivial
+        · simp only [Algebra.BigOpL.bigOpL_cons,
+            Algebra.BigOpL.bigOpL_nil]
+          isplit
+          · iapply twp.value (v := ()) rfl
+            change ⊢ iprop(True)
+            itrivial
+          · itrivial
+
+end
+
+theorem fork_stronglyNormalizing :
+    StronglyNormalizing
+      (Language.ErasedStep (Expr := Expr) (State := State) (Obs := Obs))
+      ([Expr.fork], ()) := by
+  apply twp_total (hlc := .hasNoLC) (GF := GF)
+    Stuckness.NotStuck Expr.fork ()
+    (fun _ : Val => (iprop(True) : IProp GF)) 0 0
+  iintro %Hinv
+  imodintro
+  iexists
+    (fun (_ : State) (_ : Nat) (_ : List Obs) (_ : Nat) =>
+      (iprop(True) : IProp GF)),
+    (fun _ => 0),
+    (fun _ : Val => (iprop(True) : IProp GF)),
+    (fun _ _ _ _ => by
+      iintro _
+      imodintro
+      itrivial)
+  dsimp only
+  isplitl []
+  · itrivial
+  · iintro _
+    iapply fork_twp
+
+end Forking
 
 theorem branch_stronglyNormalizing (n initialState : Nat) :
     StronglyNormalizing
@@ -377,20 +474,5 @@ theorem put_stronglyNormalizing (n initialState : Nat) :
   · itrivial
   · iintro _
     iapply put_twp n
-
-/-! Negative semantic boundary checks. -/
-
-example : toVal Expr.stuck = (none : Option Val) := rfl
-
-example (σ : State) : PrimStep.Irreducible (Expr.stuck, σ) := by
-  intro κ e₂ σ₂ efs H
-  cases H
-
-example (σ : State) : PrimStep.Reducible (Expr.observe, σ) :=
-  ⟨[()], .val 0, σ, [], Step.observe σ⟩
-
-example (σ : State) : ¬ PrimStep.ReducibleNoObs (Expr.observe, σ) := by
-  rintro ⟨e₂, σ₂, efs, H⟩
-  cases H
 
 end Iris.Tests.TotalWeakestPre

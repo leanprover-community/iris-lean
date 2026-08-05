@@ -50,6 +50,15 @@ section ThreadPool
 variable {hlc : HasLC} {GF : BundledGFunctors}
 variable [ι : IrisGS_gen hlc Expr GF]
 
+local instance : OFE (List Expr) := OFE.ofDiscrete _
+
+private theorem list_nonexpansive (Ψ : List Expr → IProp GF) : NonExpansive Ψ := by
+  constructor
+  intro n x y hxy
+  change x = y at hxy
+  subst y
+  rfl
+
 namespace twptp
 
 local instance : OFE CoPset := OFE.ofDiscrete _
@@ -95,8 +104,6 @@ private theorem step_append_inv (r₁ r₂ t' : List Expr) (σ₁ σ₂ : State)
       simp only [List.append_assoc]
       exact .refl _
 
-local instance : OFE (List Expr) := OFE.ofDiscrete _
-
 /-- One unfolding of the total thread-pool predicate. -/
 @[rocq_alias twptp_pre]
 def pre (X : List Expr → IProp GF) (t₁ : List Expr) : IProp GF := iprop(
@@ -135,12 +142,8 @@ theorem pre_mono (X Y : List Expr → IProp GF)
 def get (t : List Expr) : IProp GF :=
   bi_least_fixpoint (pre (ι := ι)) t
 
-instance get_ne : NonExpansive (get (ι := ι)) := by
-  constructor
-  intro n x y hxy
-  change x = y at hxy
-  subst y
-  rfl
+instance get_ne : NonExpansive (get (ι := ι)) :=
+  list_nonexpansive _
 
 @[rocq_alias twptp_unfold]
 theorem unfold (t : List Expr) :
@@ -163,17 +166,12 @@ theorem induction (Ψ : List Expr → IProp GF) [NonExpansive Ψ] :
   iintro !> %t' Hpre
   iapply H' $$ %t' Hpre
 
-private theorem fold_right (Ψ : List Expr → IProp GF) [NonExpansive Ψ]
+private theorem pre_and_get (Ψ : List Expr → IProp GF) [NonExpansive Ψ]
     (t : List Expr) :
     pre (ι := ι) (fun t => iprop(Ψ t ∧ get (ι := ι) t)) t ⊢
       get (ι := ι) t := by
-  letI : NonExpansive
-      (fun t => iprop(Ψ t ∧ get (ι := ι) t)) := by
-    constructor
-    intro n x y hxy
-    change x = y at hxy
-    subst y
-    rfl
+  letI := list_nonexpansive
+    (fun t => iprop(Ψ t ∧ get (ι := ι) t))
   rw [(twptp.unfold (ι := ι) t).to_eq]
   iintro Hpre
   iapply mono_pred (F := pre (ι := ι)) $$ [] %t Hpre
@@ -186,13 +184,7 @@ theorem permutation {t₁ t₁' : List Expr} (Hp : t₁.Perm t₁') :
     get (ι := ι) t₁ ⊢ get (ι := ι) t₁' := by
   let Ψ := fun t : List Expr => iprop(
     ∀ t', ⌜t.Perm t'⌝ -∗ get (ι := ι) t')
-  have hΨ : NonExpansive Ψ := by
-    constructor
-    intro n x y hxy
-    change x = y at hxy
-    subst y
-    rfl
-  letI := hΨ
+  letI := list_nonexpansive Ψ
   iintro Ht
   iapply induction Ψ (ι := ι) ?_ $$ %t₁ Ht %t₁' %Hp
   iintro !> %t Hpre %t' %Htt'
@@ -214,26 +206,14 @@ theorem app (t₁ t₂ : List Expr) :
     get (ι := ι) t₁ -∗ get (ι := ι) t₂ -∗ get (ι := ι) (t₁ ++ t₂) := by
   let Ψ₁ := fun t₁ : List Expr => iprop(
     ∀ t₂, get (ι := ι) t₂ -∗ get (ι := ι) (t₁ ++ t₂))
-  have hΨ₁ : NonExpansive Ψ₁ := by
-    constructor
-    intro n x y hxy
-    change x = y at hxy
-    subst y
-    rfl
-  letI := hΨ₁
+  letI := list_nonexpansive Ψ₁
   iintro H₁
   iapply induction Ψ₁ (ι := ι) ?_ $$ %t₁ H₁ %t₂
   let Ψ₂ := fun t₂ : List Expr => iprop(
     ∀ t₁, pre (ι := ι)
       (fun t => iprop(Ψ₁ t ∧ get (ι := ι) t)) t₁ -∗
       get (ι := ι) (t₁ ++ t₂))
-  have hΨ₂ : NonExpansive Ψ₂ := by
-    constructor
-    intro n x y hxy
-    change x = y at hxy
-    subst y
-    rfl
-  letI := hΨ₂
+  letI := list_nonexpansive Ψ₂
   iintro !> %u₁ Hu₁ %u₂ Hu₂
   iapply induction Ψ₂ (ι := ι) ?_ $$ %u₂ Hu₂ %u₁ Hu₁
   iintro !> %r₂ Hr₂ %r₁ Hr₁
@@ -250,7 +230,7 @@ theorem app (t₁ t₂ : List Expr) :
     iframe %hκ Hσ
     iapply permutation Hperm.symm
     iapply IH₁ $$ %r₂
-    iapply fold_right Ψ₂ r₂ (ι := ι)
+    iapply pre_and_get Ψ₂ r₂ (ι := ι)
     unfold pre
     iexact Hr₂
   · imod Hr₂ $$ %r₂' %σ₁ %ns %κ %κs %σ₂ %nt %Hstep₂ Hσ with
@@ -264,17 +244,7 @@ theorem app (t₁ t₂ : List Expr) :
     unfold pre
     iexact Hr₁
 
-private theorem cons (e : Expr) (es : List Expr) :
-    get (ι := ι) [e] -∗ get (ι := ι) es -∗ get (ι := ι) (e :: es) := by
-  simpa only [List.singleton_append] using app [e] es (ι := ι)
-
-private theorem cons_sep (e : Expr) (es : List Expr) :
-    get (ι := ι) [e] ∗ get (ι := ι) es ⊢ get (ι := ι) (e :: es) := by
-  iintro H
-  icases H with ⟨He, Hes⟩
-  iapply cons e es (ι := ι) $$ He Hes
-
-private theorem nil : ⊢ get (ι := ι) ([] : List Expr) := by
+private theorem get_nil : ⊢ get (ι := ι) ([] : List Expr) := by
   rw [(twptp.unfold (ι := ι) []).to_eq]
   unfold pre
   iintro %t₂ %σ₁ %ns %κ %κs %σ₂ %nt %Hstep
@@ -303,13 +273,13 @@ private theorem step_singleton_inv (e : Expr) (t₂ : List Expr)
       obtain ⟨rfl, rfl, rfl⟩ := hpq
       exact ⟨red', efs, Hprim, by simp_all⟩
 
-private theorem singleton_list (es : List Expr) :
+private theorem bigSepL_get_singleton (es : List Expr) :
     ([∗list] e ∈ es, get (ι := ι) [e]) ⊢ get (ι := ι) es := by
   induction es with
   | nil =>
       simp only [Algebra.BigOpL.bigOpL_nil]
       iintro _
-      exact nil (ι := ι)
+      exact get_nil (ι := ι)
   | cons e es IH =>
       simp only [Algebra.BigOpL.bigOpL_cons]
       iintro Hes
@@ -369,18 +339,16 @@ theorem of_twp (s : Stuckness) (e : Expr) (Φ : Val → IProp GF) :
       imodintro
       iexists (nt + efs.length)
       iframe %hκ Hσ
-      iapply cons_sep e₂ efs (ι := ι)
-      isplitl [IH₂]
+      rw [show e₂ :: efs = [e₂] ++ efs by simp]
+      iapply app [e₂] efs (ι := ι) $$ [IH₂]
       · iapply IH₂ $$ %rfl
-      · iapply singleton_list efs (ι := ι)
+      · iapply bigSepL_get_singleton efs (ι := ι)
         iapply BI.BigSepL.bigSepL_impl $$ Hefs
         iintro !> %k %ef %Hef Hef
         icases Hef with ⟨IHef, -⟩
         iapply IHef $$ %rfl
 
 end twptp
-
-local instance : OFE (List Expr) := OFE.ofDiscrete _
 
 @[rocq_alias twptp_total]
 theorem twptp_total (t : List Expr) (σ : State) (ns nt : Nat) :
@@ -394,13 +362,7 @@ theorem twptp_total (t : List Expr) (σ : State) (ns nt : Nat) :
       |={⊤|}=> ⌜StronglyNormalizing
         (Language.ErasedStep (Expr := Expr) (State := State) (Obs := Obs))
         (t, σ)⌝)
-  have hΨ : NonExpansive Ψ := by
-    constructor
-    intro n x y hxy
-    change x = y at hxy
-    subst y
-    rfl
-  letI := hΨ
+  letI := list_nonexpansive Ψ
   iintro Hσ Ht
   iapply twptp.induction Ψ (ι := ι) ?_ $$ %t Ht %σ %ns %nt Hσ
   iintro !> %t
