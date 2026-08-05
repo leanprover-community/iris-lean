@@ -728,7 +728,7 @@ theorem step_fupdN_plain [BIAffine PROP] {E1 E2 : CoPset} {n : Nat} {P : PROP} [
     calc
       _ ⊢ |={E1}[E2]▷=> |={E1}=> ▷^[n]◇ P := step_fupd_mono ih
       _ ⊢ |={E1}[E2]▷=> ▷^[n]◇ P          := step_fupd_fupd.mpr
-      _ ⊢ (|={E1}=> ▷ ◇ ▷^[n]◇ P)        := step_fupd_plain
+      _ ⊢ |={E1}=> ▷ ◇ ▷^[n]◇ P          := step_fupd_plain
       _ ⊢ |={E1}=> ▷ ▷^[n]◇ ◇ P          := mono <| later_mono <| except0_laterN n
       _ ⊢ |={E1}=> ▷^[n + 1]◇ P            := mono <| laterN_mono (n + 1) except0_idem.mp
 
