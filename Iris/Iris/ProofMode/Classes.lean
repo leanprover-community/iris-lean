@@ -304,16 +304,16 @@ def accessor [BI PROP] {X : Type} (M1 M2 : PROP → PROP) (α β : X → PROP)
   M1 iprop(∃ x, α x ∗ (β x -∗ M2 (mγ x |>.getD emp)))
 
 @[ipm_class, rocq_alias ElimAcc]
-class ElimAcc [BI PROP] {X : Type} (ϕ : outParam Prop) (M1 M2 : PROP → PROP)
+class ElimAcc [BI PROP] {X : Type} (φ : outParam Prop) (M1 M2 : PROP → PROP)
     (α β : X → PROP) (mγ : X → Option PROP) (Q : PROP) (Q' : outParam <| X → PROP) where
-  elim_acc : ϕ → ((∀ x, α x -∗ Q' x) -∗ accessor M1 M2 α β mγ -∗ Q)
+  elim_acc : φ → ((∀ x, α x -∗ Q' x) -∗ accessor M1 M2 α β mγ -∗ Q)
 
 @[ipm_class, rocq_alias IntoAcc]
 class IntoAcc [BI PROP] {X : outParam Type} (Pacc : PROP)
-    (ϕ : outParam Prop) (Pin : outParam <| PROP)
+    (φ : outParam Prop) (Pin : outParam <| PROP)
     (M1 M2 : outParam <| PROP → PROP) (α β : outParam <| X → PROP)
     (mγ : outParam <| X → Option PROP) where
-  into_acc : ϕ → Pacc -∗ Pin -∗ accessor M1 M2 α β mγ
+  into_acc : φ → Pacc -∗ Pin -∗ accessor M1 M2 α β mγ
 
 set_option synthInstance.checkSynthOrder false in
 /-- The type class used for the `iinv` tactic. -/

@@ -135,12 +135,12 @@ private def addIHs {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
 
   -- Iteratively move the induction hypotheses into the intuitionistic context
   for i in ihFVars do
-    let ⟨_u, (ϕ : Q(Prop)), (p : Q($ϕ))⟩ ← inferTypeQ <| mkFVar i
+    let ⟨_u, (φ : Q(Prop)), (p : Q($φ))⟩ ← inferTypeQ <| mkFVar i
 
     -- Obtain the proposition to be introduced into the intuitionistic context
     let Q ← mkFreshExprMVarQ q($prop)
-    let some inst ← ProofModeM.trySynthInstanceQ q(IntoIH $ϕ $e $Q)
-    | throwError m!"iinduction: unable to perform type class synthesis with IntoIH for the induction hypothesis {ϕ}"
+    let some inst ← ProofModeM.trySynthInstanceQ q(IntoIH $φ $e $Q)
+    | throwError m!"iinduction: unable to perform type class synthesis with IntoIH for the induction hypothesis {φ}"
 
     -- Introduce the induction hypothesis into the intuitionistic context
     let nameIdent := mkIdent <| ← i.getUserName

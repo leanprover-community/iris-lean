@@ -1058,35 +1058,35 @@ instance combineSepGives_persistently [BI PROP] (Q1 Q2 P : PROP)
 
 @[rocq_alias elim_inv_acc_without_close]
 instance elimInv_acc_without_close [BI PROP] {X : Type}
-    ϕ1 ϕ2 Pinv Pin (M1 M2 : PROP → PROP) α β mγ Q (Q' : X → PROP)
-    [h1 : IntoAcc Pinv ϕ1 Pin M1 M2 α β mγ]
-    [h2 : ElimAcc ϕ2 M1 M2 α β mγ Q Q'] :
-    ElimInv (ϕ1 ∧ ϕ2) X Pinv Pin α false none Q Q' where
+    φ1 φ2 Pinv Pin (M1 M2 : PROP → PROP) α β mγ Q (Q' : X → PROP)
+    [h1 : IntoAcc Pinv φ1 Pin M1 M2 α β mγ]
+    [h2 : ElimAcc φ2 M1 M2 α β mγ Q Q'] :
+    ElimInv (φ1 ∧ φ2) X Pinv Pin α false none Q Q' where
   elim_inv := by
-    intro ⟨hϕ1, _⟩
+    intro ⟨hφ1, _⟩
     iintro ⟨Hinv, Hin, Hcont⟩
     iapply h2.elim_acc $$ [Hcont]
     · assumption
     · simp only [Option.getD_none, sep_emp.to_eq]; iassumption
-    · iapply h1.into_acc hϕ1 $$ Hinv Hin
+    · iapply h1.into_acc hφ1 $$ Hinv Hin
 
 @[rocq_alias elim_inv_acc_with_close]
 instance elimInv_acc_with_close [BI PROP] {X : Type}
-    ϕ1 ϕ2 Pinv Pin (M1 M2 : PROP → PROP) α β mγ Q (Q' : PROP)
-    [h1 : IntoAcc Pinv ϕ1 Pin M1 M2 α β mγ]
-    [h2 : ∀ R, ElimModal ϕ2 false .in false (M1 R) R Q Q'] :
-    ElimInv (ϕ1 ∧ ϕ2) X Pinv Pin α true
+    φ1 φ2 Pinv Pin (M1 M2 : PROP → PROP) α β mγ Q (Q' : PROP)
+    [h1 : IntoAcc Pinv φ1 Pin M1 M2 α β mγ]
+    [h2 : ∀ R, ElimModal φ2 false .in false (M1 R) R Q Q'] :
+    ElimInv (φ1 ∧ φ2) X Pinv Pin α true
             (some (fun x => iprop(β x -∗ M2 (mγ x |>.getD emp))))
             Q (fun _ => Q') where
   elim_inv := by
-    intro ⟨hϕ1, hϕ2⟩
+    intro ⟨hφ1, hφ2⟩
     have hAcc := h1.into_acc
     unfold accessor at hAcc
     iintro ⟨Hinv, Hin, Hcont⟩
-    iapply (h2 _ |>.elim_modal hϕ2)
+    iapply (h2 _ |>.elim_modal hφ2)
     isplitl [Hinv Hin]
     · dsimp
-      iapply hAcc hϕ1 $$ Hinv Hin
+      iapply hAcc hφ1 $$ Hinv Hin
     · dsimp
       iintro ⟨%_, Hα, Hclose⟩
       iapply Hcont

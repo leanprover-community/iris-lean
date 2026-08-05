@@ -372,8 +372,8 @@ example {Val : Type} [BI PROP] (P Q : Val → PROP) :
   iframe
 
 /-- Tests `iintro` with the pattern for repeating ∀-introduction and premise introduction (`**`) -/
-example {Val : Type} {ϕ : Prop} [BI PROP] (P : Val → Val → PROP) (Q : Val → PROP) :
-    ⊢@{PROP} ∀ x y, P x y -∗ ∀ z, (⌜ϕ⌝ → Q z -∗ P x y ∗ Q z ∗ ⌜ϕ⌝) := by
+example {Val : Type} {φ : Prop} [BI PROP] (P : Val → Val → PROP) (Q : Val → PROP) :
+    ⊢@{PROP} ∀ x y, P x y -∗ ∀ z, (⌜φ⌝ → Q z -∗ P x y ∗ Q z ∗ ⌜φ⌝) := by
   iintro **
   iframe
   ipureintro
@@ -391,14 +391,14 @@ example [BI PROP] (P Q : PROP) : P ⊢ Q := by
   iintro HP !%
 
 /-- Tests `iintro` with introduction patterns coming after `!%` -/
-example {ϕ : Prop} [BI PROP] : ⊢@{PROP} ⌜⌜ϕ⌝ ⊢@{PROP} ⌜ϕ⌝⌝ := by
+example {φ : Prop} [BI PROP] : ⊢@{PROP} ⌜⌜φ⌝ ⊢@{PROP} ⌜φ⌝⌝ := by
   iintro !% %_ !%
   assumption
 
 /-- Tests `iintro` with an introduction pattern for clearing and framing hypotheses (`{ selPats* }`) -/
-example [BI PROP] (P Q R S T : PROP) (ϕ : Prop) :
-    ⊢ □ ⌜ϕ⌝ -∗ P -∗ Q -∗ <affine> R -∗ □ S -∗ □ T -∗ P ∗ Q ∗ T := by
-  iintro %hϕ HP HQ {$HP} HR #HS #HT {HR %hϕ %ϕ $# #}
+example [BI PROP] (P Q R S T : PROP) (φ : Prop) :
+    ⊢ □ ⌜φ⌝ -∗ P -∗ Q -∗ <affine> R -∗ □ S -∗ □ T -∗ P ∗ Q ∗ T := by
+  iintro %hφ HP HQ {$HP} HR #HS #HT {HR %hφ %φ $# #}
   iexact HQ
 
 /-- Tests `iintro` with introduction patterns for rewriting pure equalities -/
