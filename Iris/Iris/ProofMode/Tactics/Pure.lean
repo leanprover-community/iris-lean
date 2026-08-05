@@ -47,6 +47,8 @@ theorem pure_intro_spatial [BI PROP] {Q : PROP} {φ : Prop}
     (h : FromPure false Q .out φ) (hφ : φ) : P ⊢ Q :=
   (pure_intro hφ).trans h.1
 
+#rocq_ignore tac_emp_intro "Not necessary as there is no AffineEnv type class in Lean"
+
 public meta section
 open Lean Elab Tactic Meta Qq
 

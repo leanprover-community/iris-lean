@@ -30,6 +30,11 @@ theorem have_asEmpValid [bi : BI PROP] {φ} {P Q : PROP}
     (intuitionistically_mono (asEmpValid_1 _ h1 h)))
 
 #rocq_ignore tac_pose_proof_hyp "not needed as Expr.lean already provides the infrastructure"
+#rocq_ignore into_emp_valid_forall "Type class IntoEmpValid not needed in Lean"
+#rocq_ignore into_emp_valid_here "Type class IntoEmpValid not needed in Lean"
+#rocq_ignore into_emp_valid_impl "Type class IntoEmpValid not needed in Lean"
+#rocq_ignore into_emp_valid_proj "Type class IntoEmpValid not needed in Lean"
+#rocq_ignore into_emp_valid_tforall "Type class IntoEmpValid not needed in Lean"
 
 public meta section
 open Lean Elab Tactic Meta Qq Std

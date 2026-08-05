@@ -342,6 +342,37 @@ class IntoEmbed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] (P : PROP2) (Q : out
   into_embed : P ⊢ ⎡Q⎤
 export IntoEmbed (into_embed)
 
+#rocq_ignore IntoEmpValid "Not needed as recursion is handled directly by metaprogramming"
+
+#rocq_ignore AffineEnv
+  "Environment-related type classes are not needed as Expr.lean (Hyps) provides the infrastructure"
+#rocq_ignore IntoModalIntuitionisticEnv
+  "Environment-related definitions are not needed as Expr.lean (Hyps) provides the infrastructure"
+#rocq_ignore IntoModalSpatialEnv
+  "Environment-related definitions are not needed as Expr.lean (Hyps) provides the infrastructure"
+#rocq_ignore MaybeIntoLaterNEnvs
+  "Environment-related type classes are not needed as Expr.lean (Hyps) provides the infrastructure"
+#rocq_ignore TransformIntuitionisticEnv
+  "Environment-related type classes are not needed as Expr.lean (Hyps) provides the infrastructure"
+#rocq_ignore TransformSpatialEnv
+  "Environment-related type classes are not needed as Expr.lean (Hyps) provides the infrastructure"
+
+#rocq_ignore transform_intuitionistic_env_nil
+  "Type class IntoModalIntuitionisticEnv is not needed in Lean"
+#rocq_ignore transform_intuitionistic_env_snoc
+  "Type class IntoModalIntuitionisticEnv is not needed in Lean"
+#rocq_ignore transform_intuitionistic_env_snoc_not
+  "Type IntoModalIntuitionisticEnv class is not needed in Lean"
+#rocq_ignore transform_spatial_env_nil "Type class TransformSpatialEnv is not needed in Lean"
+#rocq_ignore transform_spatial_env_snoc "Type class TransformSpatialEnv is not needed in Lean"
+#rocq_ignore transform_spatial_env_snoc_not "Type class TransformSpatialEnv is not needed in Lean"
+#rocq_ignore affine_env_bi "Type class AffineEnv is not needed in Lean"
+#rocq_ignore affine_env_nil "Type class AffineEnv is not needed in Lean"
+#rocq_ignore affine_env_snoc "Type class AffineEnv is not needed in Lean"
+#rocq_ignore affine_env_spatial "Type class AffineEnv is not needed in Lean"
+#rocq_ignore into_laterN_env_sound "Environment-related theorem not relevant in Lean"
+#rocq_ignore into_laterN_envs "Environment-related type class instance not relevant in Lean"
+
 #rocq_ignore elim_inv_tc_opaque "No tc_opaque in Lean"
 #rocq_ignore elim_modal_tc_opaque "No tc_opaque in Lean"
 #rocq_ignore from_and_tc_opaque "No tc_opaque in Lean"

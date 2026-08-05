@@ -70,6 +70,10 @@ theorem frame_finish_close_emp [BI PROP] {e origE origGoal : PROP}
     (h1 : origE ⊢ e ∗ (emp -∗ origGoal)) :
   origE ⊢ e ∗ origGoal := h1.trans (sep_mono_right <| emp_sep.2.trans wand_elim_right)
 
+#rocq_ignore tac_unlock "The definition locked is not used in Lean"
+#rocq_ignore tac_unlock_True "The definition locked is not used in Lean"
+#rocq_ignore tac_unlock_emp "The definition locked is not used in Lean"
+
 public meta section
 open Lean Elab Tactic Meta Qq Std
 
