@@ -312,10 +312,14 @@ theorem false_imp [BI PROP] {P : PROP} : (False → P) ⊣⊢ True :=
 
 @[rocq_alias bi.exist_impl_forall]
 theorem exists_impl_forall [BI PROP] {Ψ : α → PROP} {P : PROP} :
-    ((∃ x, Ψ x) → P) ⊣⊢ ∀ x, Ψ x → P :=
-  ⟨forall_intro fun x => imp_mono (exists_intro x) .rfl,
-   imp_intro <| imp_elim_swap <| exists_elim fun x =>
-     imp_intro <| and_comm.1.trans <| (and_mono (forall_elim x) .rfl).trans imp_elim_left⟩
+    ((∃ x, Ψ x) → P) ⊣⊢ ∀ x, Ψ x → P := by
+  constructor
+  · exact forall_intro fun x => imp_mono (exists_intro x) .rfl
+  · refine imp_intro <| imp_elim_swap <| exists_elim fun x => imp_intro <| ?_
+    calc
+      _ ⊢ (∀ a, Ψ a → P) ∧ Ψ x := and_comm.mp
+      _ ⊢ (Ψ x → P) ∧ Ψ x      := and_mono_left <| forall_elim x
+      _ ⊢ P                    := imp_elim_left
 
 @[rocq_alias bi.forall_unit]
 theorem forall_unit [BI PROP] {Ψ : Unit → PROP} : (∀ x, Ψ x) ⊣⊢ Ψ () :=
@@ -1317,7 +1321,10 @@ theorem decide_emp [BI PROP] [BIAffine PROP] (φ : Prop) [Decidable φ] (P : PRO
   · rw [if_pos h]
     exact ((imp_congr_left <| pure_true h).trans true_imp).symm
   · rw [if_neg h]
-    exact true_emp.symm.trans ((imp_congr_left <| pure_false h).trans false_imp).symm
+    calc
+      _ ⊣⊢ True        := true_emp.symm
+      _ ⊣⊢ (False → P) := false_imp.symm
+      _ ⊣⊢ (⌜φ⌝ → P)   := (imp_congr_left <| pure_false h).symm
 
 /-! # Properties of the persistence modality -/
 
@@ -1486,8 +1493,11 @@ theorem persistently_and_persistently_sep [BI PROP] {P Q : PROP} :
   ⟨persistently_and_imp_sep, and_intro persistently_absorb_l persistently_absorb_right⟩
 
 @[rocq_alias bi.persistently_sep_2]
-theorem persistently_sep_mpr [BI PROP] {P Q : PROP} : <pers> P ∗ <pers> Q ⊢ <pers> (P ∗ Q) :=
-  (persistently_and.trans persistently_and_persistently_sep).2.trans persistently_and_sep
+theorem persistently_sep_mpr [BI PROP] {P Q : PROP} :
+    <pers> P ∗ <pers> Q ⊢ <pers> (P ∗ Q) := calc
+  _ ⊢ <pers> P ∧ <pers> Q := persistently_and_persistently_sep.mpr
+  _ ⊢ <pers> (P ∧ Q)      := persistently_and.mpr
+  _ ⊢ <pers> (P ∗ Q)      := persistently_and_sep
 
 @[rocq_alias bi.persistently_sep]
 theorem persistently_sep [BI PROP] [BIPositive PROP] {P Q : PROP} :
@@ -1760,8 +1770,10 @@ theorem persistently_and_intuitionistically_sep_right [BI PROP] {P Q : PROP} :
   _ ⊣⊢ P ∗ □ Q      := sep_comm
 
 @[rocq_alias bi.and_sep_intuitionistically]
-theorem and_sep_intuitionistically [BI PROP] {P Q : PROP} : □ P ∧ □ Q ⊣⊢ □ P ∗ □ Q :=
-  (affinely_and_right.trans affinely_and).symm.trans persistently_and_intuitionistically_sep_left
+theorem and_sep_intuitionistically [BI PROP] {P Q : PROP} : □ P ∧ □ Q ⊣⊢ □ P ∗ □ Q := calc
+  _ ⊣⊢ <affine> (<pers> P ∧ <pers> Q) := affinely_and.symm
+  _ ⊣⊢ <pers> P ∧ <affine> <pers> Q   := affinely_and_right.symm
+  _ ⊣⊢ □ P ∗ □ Q                      := persistently_and_intuitionistically_sep_left
 
 theorem intuitionistically_and_sep [BI PROP] {P Q : PROP} : □ (P ∧ Q) ⊣⊢ □ P ∗ □ Q :=
   intuitionistically_and.trans and_sep_intuitionistically
