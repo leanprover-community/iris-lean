@@ -128,11 +128,11 @@ theorem later_wand_iff {P Q : PROP} : ▷ (P ∗-∗ Q) ⊢ ▷ P ∗-∗ ▷ Q 
 
 @[rocq_alias bi.later_affinely_2]
 theorem later_affinely_mpr {P : PROP} : <affine> ▷ P ⊢ ▷ <affine> P :=
-  .trans (and_mono later_intro .rfl) later_and.mpr
+  (and_mono_left later_intro).trans later_and.mpr
 
 @[rocq_alias bi.later_intuitionistically_2]
 theorem later_intuitionistically_2 {P : PROP} : □ ▷ P ⊢ ▷ □ P :=
-  .trans (affinely_mono later_persistently.mpr) later_affinely_mpr
+  (affinely_mono later_persistently.mpr).trans later_affinely_mpr
 
 @[rocq_alias bi.later_intuitionistically_if_2]
 theorem later_intuitionisticallyIf_2 {P : PROP} : □?p ▷ P ⊢ ▷ □?p P :=
@@ -140,7 +140,7 @@ theorem later_intuitionisticallyIf_2 {P : PROP} : □?p ▷ P ⊢ ▷ □?p P :=
 
 @[rocq_alias bi.later_absorbingly]
 theorem later_absorbingly {P : PROP} : ▷ <absorb> P ⊣⊢ <absorb> ▷ P :=
-  ⟨later_sep.mp.trans <| sep_mono true_intro .rfl, (sep_mono later_intro .rfl).trans later_sep.mpr⟩
+  ⟨later_sep.mp.trans <| sep_mono_left true_intro, (sep_mono_left later_intro).trans later_sep.mpr⟩
 
 @[rocq_alias bi.later_affinely]
 theorem later_affinely [BIAffine PROP] {P : PROP} : <affine> ▷ P ⊣⊢ ▷ <affine> P := by
@@ -221,15 +221,14 @@ instance bi_later_monoid_sep_entails_homomorphism :
 
 @[rocq_alias bi.löb]
 theorem loeb [BILoeb PROP] {P : PROP} : (▷ P → P) ⊢ P := by
-  apply entails_impl_true.mpr
-  apply loeb_weak
-  apply imp_intro
-  apply (and_mono .rfl and_self.mpr).trans
-  apply (and_mono .rfl (and_mono later_intro .rfl)).trans
-  apply (and_mono later_imp .rfl).trans
-  apply and_assoc.mpr.trans
-  apply (and_mono imp_elim_left .rfl).trans
-  exact imp_elim_right
+  refine entails_impl_true.mpr <| loeb_weak <| imp_intro ?_
+  calc
+    _ ⊢ ▷ ((▷ P → P) → P) ∧ (▷ P → P) ∧ (▷ P → P)         := and_mono_right and_self.mpr
+    _ ⊢ ▷ ((▷ P → P) → P) ∧ ▷ (▷ P → P) ∧ (▷ P → P)      := and_mono_right (and_mono_left later_intro)
+    _ ⊢ (▷ (▷ P → P) → ▷ P) ∧ ▷ (▷ P → P) ∧ (▷ P → P)   := and_mono_left later_imp
+    _ ⊢ ((▷ (▷ P → P) → ▷ P) ∧ ▷ (▷ P → P)) ∧ (▷ P → P) := and_assoc.mpr
+    _ ⊢ ▷ P ∧ (▷ P → P)                                     := and_mono_left imp_elim_left
+    _ ⊢ P                                                     := imp_elim_right
 
 @[rocq_alias bi.löb_alt_strong]
 theorem loeb_weak_of_strong {P : PROP} (H : ∀ P : PROP, (▷ P → P) ⊢ P)
@@ -238,18 +237,21 @@ theorem loeb_weak_of_strong {P : PROP} (H : ∀ P : PROP, (▷ P → P) ⊢ P)
 @[rocq_alias bi.löb_wand_intuitionistically]
 theorem loeb_wand_intuitionistically [BILoeb PROP] {P : PROP} :
     □ (□ ▷ P -∗ P) ⊢ P := by
-  refine .trans ?_ intuitionistically_elim
-  refine .trans ?_ loeb
-  refine imp_intro_swap ?_
-  refine (and_mono (later_mono persistently_of_intuitionistically) .rfl).trans ?_
-  refine (and_mono later_persistently.mp .rfl).trans ?_
-  refine persistently_and_intuitionistically_sep_left.mp.trans ?_
-  refine (sep_mono intuitionistically_idem.mpr .rfl).trans ?_
-  exact intuitionistically_sep_mpr.trans (intuitionistically_mono wand_elim_right)
+  calc
+    _ ⊢ ▷ □ P → □ P := imp_intro_swap ?_
+    _ ⊢ □ P          := loeb
+    _ ⊢ P            := intuitionistically_elim
+  calc
+    _ ⊢ ▷ <pers> P ∧ □ (□ ▷ P -∗ P) := and_mono_left <| later_mono persistently_of_intuitionistically
+    _ ⊢ <pers> ▷ P ∧ □ (□ ▷ P -∗ P) := and_mono_left later_persistently.mp
+    _ ⊢ □ ▷ P ∗ □ (□ ▷ P -∗ P)      := persistently_and_intuitionistically_sep_left.mp
+    _ ⊢ □ □ ▷ P ∗ □ (□ ▷ P -∗ P)    := sep_mono_left intuitionistically_idem.mpr
+    _ ⊢ □ (□ ▷ P ∗ (□ ▷ P -∗ P))    := intuitionistically_sep_mpr
+    _ ⊢ □ P                           := intuitionistically_mono wand_elim_right
 
 @[rocq_alias bi.löb_wand]
 theorem loeb_wand [BILoeb PROP] (P : PROP) : □ (▷ P -∗ P) ⊢ P :=
-  (intuitionistically_mono (wand_mono intuitionistically_elim .rfl)).trans
+  (intuitionistically_mono (wand_mono_left intuitionistically_elim)).trans
     loeb_wand_intuitionistically
 
 open Iris BI OFE Contractive in
@@ -519,7 +521,7 @@ theorem except0_ne : OFE.NonExpansive (BIBase.except0 (PROP:=PROP)) where
 
 @[rw_mono_rule, rocq_alias bi.except_0_mono]
 theorem except0_mono {P Q : PROP} (h : P ⊢ Q) : ◇ P ⊢ ◇ Q :=
-  or_mono .rfl h
+  or_mono_right h
 #rocq_ignore bi.except_0_mono' "Use except0_mono."
 #rocq_ignore bi.except_0_flip_mono' "Use except0_mono"
 #rocq_ignore bi.except_0_proper "Derivable from except0_ne with NonExpansive.eqv"
@@ -549,7 +551,7 @@ theorem except0_emp [BIAffine PROP] : ◇ emp ⊣⊢ (emp : PROP) := calc
 theorem except0_or {P Q : PROP} : ◇ (P ∨ Q) ⊣⊢ ◇ P ∨ ◇ Q :=
   ⟨or_elim (or_intro_l.trans or_intro_l)
     (or_elim (or_intro_l.trans (or_mono_left or_intro_r)) (or_intro_r.trans (or_mono_right or_intro_r))),
-   or_elim (or_mono .rfl or_intro_l) (or_mono .rfl or_intro_r)⟩
+   or_elim (or_mono_right or_intro_l) (or_mono_right or_intro_r)⟩
 
 @[rocq_alias bi.except_0_and]
 theorem except0_and {P Q : PROP} : ◇ (P ∧ Q) ⊣⊢ ◇ P ∧ ◇ Q :=
@@ -624,7 +626,7 @@ theorem except0_persistently {P : PROP} : ◇ <pers> P ⊣⊢ <pers> ◇ P := by
 
 @[rocq_alias bi.except_0_affinely_2]
 theorem except0_affinely {P : PROP} : <affine> ◇ P ⊢ ◇ <affine> P :=
-  (and_mono except0_intro .rfl).trans except0_and.2
+  (and_mono_left except0_intro).trans except0_and.2
 
 @[rocq_alias bi.except_0_intuitionistically_2]
 theorem except0_intuitionistically {P : PROP} : □ ◇ P ⊢ ◇ □ P :=
@@ -642,17 +644,17 @@ theorem except0_absorbingly {P : PROP} : ◇ <absorb> P ⊣⊢ <absorb> ◇ P :=
 
 @[rocq_alias bi.except_0_frame_l]
 theorem except0_frame_left {P Q : PROP} : P ∗ ◇ Q ⊢ ◇ (P ∗ Q) :=
-  (sep_mono except0_intro .rfl).trans except0_sep.2
+  (sep_mono_left except0_intro).trans except0_sep.2
 
 @[rocq_alias bi.except_0_frame_r]
 theorem except0_frame_right {P Q : PROP} : ◇ P ∗ Q ⊢ ◇ (P ∗ Q) :=
-  (sep_mono .rfl except0_intro).trans except0_sep.2
+  (sep_mono_right except0_intro).trans except0_sep.2
 
 @[rocq_alias bi.later_affinely_1]
 theorem later_affinely_mp {P : PROP} [Timeless (PROP := PROP) emp] :
     ▷ <affine> P ⊢ ◇ <affine> ▷ P := calc
   _ ⊢ ▷ emp ∧ ▷ P    := later_and.mp
-  _ ⊢ ◇ emp ∧ ▷ P    := and_mono Timeless.timeless .rfl
+  _ ⊢ ◇ emp ∧ ▷ P    := and_mono_left Timeless.timeless
   _ ⊢ ◇ emp ∧ ◇ ▷ P := and_mono_right except0_intro
   _ ⊢ ◇ (emp ∧ ▷ P)  := except0_and.mpr
 
@@ -716,7 +718,7 @@ instance bi_except0_sep_entails_homomorphism :
 @[rocq_alias bi.timeless_alt]
 theorem timeless_alt [BILoeb PROP] {Q : PROP} :
     Timeless Q ↔ (∀ (P : PROP), (iprop(▷ False) ∧ P ⊢ Q) → (P ⊢ Q)) := by
-  refine ⟨fun hTimeless P hPr => ?_, (⟨later_false_em.trans <| or_mono .rfl <| · _ imp_elim_right⟩)⟩
+  refine ⟨fun hTimeless P hPr => ?_, (⟨later_false_em.trans <| or_mono_right <| · _ imp_elim_right⟩)⟩
   refine .trans (imp_intro_swap ?_) loeb
   calc iprop(▷ Q ∧ P)
     _ ⊢ ◇ Q ∧ P := and_mono_left Timeless.timeless
@@ -861,8 +863,11 @@ theorem timeless_laterN {P : PROP} [Timeless P] (n : Nat) :
   induction n with
   | zero => exact or_intro_r
   | succ n IH =>
-    refine (later_mono IH).trans ?_
-    refine later_or.mp.trans ?_
-    refine or_mono .rfl Timeless.timeless |>.trans ?_
-    refine or_mono .rfl (or_mono_left (later_mono (laterN_intro n))) |>.trans ?_
-    exact or_assoc.mpr.trans (or_mono or_self.mp .rfl)
+    calc
+      _ ⊢ ▷ (▷^[n]False ∨ P)                  := later_mono IH
+      _ ⊢ ▷ ▷^[n]False ∨ ▷ P                 := later_or.mp
+      _ ⊢ ▷ ▷^[n]False ∨ ◇ P                 := or_mono_right Timeless.timeless
+      _ ⊢ ▷ ▷^[n]False ∨ ▷ ▷^[n]False ∨ P   :=
+          or_mono_right <| or_mono_left <| later_mono <| laterN_intro n
+      _ ⊢ (▷ ▷^[n]False ∨ ▷ ▷^[n]False) ∨ P := or_assoc.mpr
+      _ ⊢ ▷^[n + 1]False ∨ P                   := or_mono_left or_self.mp

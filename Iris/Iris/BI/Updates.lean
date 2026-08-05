@@ -465,7 +465,7 @@ theorem fupd_mask_frame_acc {E E' E1 E2 : CoPset} {P Q : PROP}:
   refine sep_emp.2.trans <| (sep_mono_right <| fupd_mask_intro_subseteq hmask).trans ?_
   refine fupd_frame_left.trans <| (BIFUpdate.mono frame_right).trans <| fupd_elim ?_
   refine BIFUpdate.mono <| sep_symm.trans ?_
-  refine (sep_mono ?_ .rfl).trans wand_elim_right
+  refine (sep_mono_left ?_).trans wand_elim_right
   refine forall_intro λ R => wand_intro <| frame_right.trans <| fupd_elim ?_
   exact emp_sep.1.trans <| (fupd_mask_frame_right hdisj).trans <| by simp [subset_union_diff hE]
 
@@ -573,15 +573,15 @@ theorem step_fupd_mask_mono {Eo₁ Eo₂ Ei₁ Ei₂ : CoPset} {P : PROP}
     (Ei₂_Ei₁ : Ei₂ ⊆ Ei₁) (Eo₁_Eo₂ : Eo₁ ⊆ Eo₂) :
     (|={Eo₁}[Ei₁]▷=> P) ⊢ |={Eo₂}[Ei₂]▷=> P := by
   refine emp_sep.2.trans ?_
-  refine (sep_mono (fupd_mask_intro_subseteq Eo₁_Eo₂) .rfl).trans ?_
+  refine (sep_mono_left (fupd_mask_intro_subseteq Eo₁_Eo₂)).trans ?_
   refine frame_right.trans ?_
   refine .trans (mono ?_) (trans (E2 := Eo₁))
   refine fupd_frame_left.trans ?_
   refine .trans (mono ?_) (trans (E2 := Ei₁))
-  refine (sep_mono (fupd_mask_intro_subseteq Ei₂_Ei₁) .rfl).trans ?_
+  refine (sep_mono_left (fupd_mask_intro_subseteq Ei₂_Ei₁)).trans ?_
   refine frame_right.trans ?_
   refine mono ?_
-  refine (sep_mono later_intro .rfl).trans ?_
+  refine (sep_mono_left later_intro).trans ?_
   refine later_sep.2.trans ?_
   refine later_mono ?_
   refine frame_right.trans ?_

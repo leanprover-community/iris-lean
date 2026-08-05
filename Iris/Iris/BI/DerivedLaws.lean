@@ -314,7 +314,7 @@ theorem false_imp [BI PROP] {P : PROP} : (False → P) ⊣⊢ True :=
 theorem exists_impl_forall [BI PROP] {Ψ : α → PROP} {P : PROP} :
     ((∃ x, Ψ x) → P) ⊣⊢ ∀ x, Ψ x → P := by
   constructor
-  · exact forall_intro fun x => imp_mono (exists_intro x) .rfl
+  · exact forall_intro fun x => imp_mono_left (exists_intro x)
   · refine imp_intro <| imp_elim_swap <| exists_elim fun x => imp_intro <| ?_
     calc
       _ ⊢ (∀ a, Ψ a → P) ∧ Ψ x := and_comm.mp
@@ -1583,7 +1583,7 @@ theorem persistently_and_emp {P : PROP} [BI PROP] : <pers> P ⊣⊢ <pers> (emp 
 
 @[rocq_alias bi.persistently_and_sep_elim_emp]
 theorem persistently_and_sep_elim_emp {P Q : PROP} [BI PROP] : <pers> P ∧ Q ⊢ (emp ∧ P) ∗ Q :=
-  (and_mono persistently_and_emp.1 BIBase.Entails.rfl).trans persistently_and_l
+  (and_mono_left persistently_and_emp.1).trans persistently_and_l
 
 @[rocq_alias bi.persistently_and_emp_elim]
 theorem persistently_and_emp_elim {P : PROP} [BI PROP] : emp ∧ <pers> P ⊢ P := calc
@@ -1793,7 +1793,7 @@ theorem self_sep_intuitionistically [BI PROP] {P : PROP} :
   constructor
   · refine and_intro intuitionistically_elim_emp ?_
     exact intuitionistically_sep_idem.mpr.trans <| sep_mono_left intuitionistically_elim
-  · refine and_mono .rfl ?_
+  · refine and_mono_right ?_
     exact (sep_mono_right <| and_elim_r).trans self_sep_persistently.mp
 
 @[rocq_alias bi.intuitionistically_intro]
