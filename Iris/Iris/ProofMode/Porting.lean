@@ -24,7 +24,8 @@ import Iris.Std.RocqPorting
 #rocq_concept proofmode "Tactics" "iUnfold" ported "iunfold"
 #rocq_concept proofmode "Tactics" "iExact" ported "iexact"
 #rocq_concept proofmode "Tactics" "iAssumption" ported "iassumption"
-#rocq_concept proofmode "Tactics" "iAssumptionCoq" ignored "weird tactic"
+#rocq_concept proofmode "Tactics" "iAssumptionCoq" ignored
+  "the entailment can be lifted to the Iris context, and iassumption may then be used directly"
 #rocq_concept proofmode "Tactics" "iExFalso" ported "iexfalso"
 #rocq_concept proofmode "Tactics" "iPure (basic)" ported "ipure"
 #rocq_concept proofmode "Tactics" "iPure (pure destructuring patterns)" ported "ipure ... as ..."
