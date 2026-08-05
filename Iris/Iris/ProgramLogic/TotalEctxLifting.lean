@@ -5,7 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Iris.ProgramLogic.TotalLifting
-public import Iris.ProgramLogic.EctxLifting
+public import Iris.ProgramLogic.EctxiLanguage
 
 namespace Iris.ProgramLogic
 
@@ -13,11 +13,7 @@ open Iris Language.Notation EctxLanguage EctxLanguage.Notation
 
 @[expose] public section
 
-/-!
-Total base-step rules for evaluation-context languages. We intentionally stop
-at the generic deterministic/no-fork interface. HeapLang primitive laws and
-concurrent convenience rules are outside the scope of these generic rules.
--/
+/-! ## Total lifting rules for evaluation-context languages -/
 
 variable {hlc : outParam HasLC} {Expr Ectx State Obs Val}
 variable [Λ : EctxLanguage Expr Ectx State Obs Val]
@@ -151,8 +147,6 @@ theorem twp_lift_atomic_base_step_no_fork (h : toVal e₁ = none) :
       (BaseStep.reducible_of_reducibleNoObs Hred) Hstep
     iapply H $$ %κ %e₂ %σ₂ %eₜ %Hb
 
-/-- Deterministic pure base-step lifting. The explicit non-value premise is
-retained to match Iris-Rocq's public theorem, although `Hred` also implies it. -/
 @[rocq_alias twp_lift_pure_det_base_step_no_fork]
 theorem twp_lift_pure_det_base_step_no_fork [Inhabited State]
     (_h : toVal e₁ = none)

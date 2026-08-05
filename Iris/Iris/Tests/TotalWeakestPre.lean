@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Iris.ProgramLogic.TotalAdequacy
+public import Iris.ProgramLogic.TotalEctxLifting
 public import Iris.ProgramLogic.TotalLifting
 public import Iris.Examples.ClosedProofs
 public import Iris.HeapLang.Instances
@@ -14,16 +15,7 @@ namespace Iris.Tests.TotalWeakestPre
 open Iris BI ProgramLogic ProgramLogic.Language ProgramLogic.Language.Notation
 open Std LawfulSet
 
-/-!
-An intentionally small total-correctness test language. It is deterministic
-except for `branch`: both branch successors decrease the same structural
-measure, which checks that TWP proves termination of *all* successors rather
-than merely finding a terminating execution.
-
-`put` changes the machine state, `stuck` has no successor, steps never fork,
-and all genuine reductions are silent. The latter two properties exercise the
-single-threaded, no-observation lifting rules.
--/
+/-! A small language for total-correctness tests. -/
 
 inductive Expr where
   | val : Nat → Expr
@@ -68,11 +60,6 @@ instance : Language Expr State Obs Val where
 
 instance : LanguageNoFork Expr State Obs Val where
   no_fork H := by cases H <;> rfl
-
-theorem step_noFork {e₁ e₂ : Expr} {σ₁ σ₂ : State}
-    {κ : List Obs} {efs : List Expr}
-    (H : (e₁, σ₁) -<κ>-> (e₂, σ₂, efs)) : efs = [] := by
-  cases H <;> rfl
 
 section Proofs
 
@@ -143,8 +130,6 @@ theorem tick_pureExec (n : Nat) :
     | succ n IH =>
         exact .head (tick_purePrimStep_succ n) IH
 
-/-- Checks the no-credit multi-step `PureExec` rule independently of the
-structural proof above. -/
 theorem tick_twp_via_pureExec (n : Nat) :
     ⊢ WP (Expr.tick n) @ Stuckness.NotStuck ; ⊤ [{
       fun v : Val => (iprop(⌜v = 0⌝) : IProp GF) }] := by
@@ -235,9 +220,9 @@ end Proofs
 
 section CoreRuleChecks
 
-variable {e : Expr} {Φ : Val → IProp GF} {P : IProp GF}
-variable [InvGS_gen .hasNoLC GF]
-noncomputable local instance : IrisGS_gen .hasNoLC Expr GF := testIrisGS
+variable {E : CoPset} {e : Expr} {v : Val}
+variable {Φ : Val → IProp GF} {P Q : IProp GF}
+variable [IrisGS_gen .hasNoLC Expr GF]
 
 example :
     WP e @ Stuckness.NotStuck ; ⊤ [{ Φ }] ⊢
@@ -263,7 +248,47 @@ example :
       WP (id e) @ Stuckness.NotStuck ; ⊤ [{ Φ }] :=
   twp.bind id
 
+example [inst : Language.IntoVal e v] :
+    P ∗ Φ v ⊢ WP e @ Stuckness.NotStuck ; ⊤ [{ w, P ∗ Φ w }] := by
+  iintro ⟨HP, HΦ⟩
+  iframe HP
+  iapply twp.value $$ HΦ
+  exact inst.into_val.symm
+
+/-- error: iframe: cannot frame R 0 -/
+#guard_msgs in
+example (R : Nat → IProp GF) :
+    R 0 ∗ WP e @ Stuckness.NotStuck ; E [{ fun _ => emp }] ⊢
+      WP e @ Stuckness.NotStuck ; E [{ fun _ => iprop(∃ n, R n) }] := by
+  iintro ⟨HR, Hwp⟩
+  iframe HR
+
+example :
+    (|={E}=> P) ∗ (P -∗ WP e @ Stuckness.NotStuck ; E [{ Φ }]) ⊢
+      WP e @ Stuckness.NotStuck ; E [{ Φ }] := by
+  iintro ⟨HP, Hwp⟩
+  imod HP
+  iapply Hwp $$ HP
+
+example :
+    (|==> Q) ∗ (Q -∗ WP e @ Stuckness.NotStuck ; E [{ Φ }]) ⊢
+      WP e @ Stuckness.NotStuck ; E [{ Φ }] := by
+  iintro ⟨HQ, Hwp⟩
+  imod HQ
+  iapply Hwp $$ HQ
+
 end CoreRuleChecks
+
+section TotalEctxRuleChecks
+
+example := @twp_lift_base_step
+example := @twp_lift_base_step_no_fork
+example := @twp_lift_pure_base_step_no_fork
+example := @twp_lift_atomic_base_step
+example := @twp_lift_atomic_base_step_no_fork
+example := @twp_lift_pure_det_base_step_no_fork
+
+end TotalEctxRuleChecks
 
 section HeapLangPureSmoke
 
@@ -282,19 +307,19 @@ noncomputable local instance heapIrisGS :
     imodintro
     itrivial
 
-/-- Existing HeapLang `PureExec` instances are immediately reusable by TWP;
-HeapLang-specific stateful primitive laws remain intentionally out of scope. -/
 theorem heapLang_add_twp :
     ⊢ WP hl(#1 + #2) @ Stuckness.NotStuck ; ⊤ [{
       fun v : Iris.HeapLang.Val =>
         (iprop(⌜v = hl_val(#3)⌝) : IProp GF) }] := by
-  iapply twp_pure_step
-    (instPureExecBinOp (op := .plus)
-      (v1 := hl_val(#1)) (v2 := hl_val(#2)) (v' := hl_val(#3)))
-    (by rfl)
-  iapply twp.value rfl
-  ipureintro
-  rfl
+  iapply twp_lift_pure_det_base_step_no_fork (e₂ := hl(#3)) rfl
+  · intro σ
+    refine ⟨hl(#3), σ, [], ?_⟩
+    constructor <;> rfl
+  · intro σ κ e₂' σ₂ eₜ Hstep
+    cases Hstep <;> simp_all [Iris.HeapLang.BinOp.eval]
+  · iapply twp.value rfl
+    ipureintro
+    rfl
 
 end HeapLangPureSmoke
 
@@ -353,11 +378,7 @@ theorem put_stronglyNormalizing (n initialState : Nat) :
   · iintro _
     iapply put_twp n
 
-/-! Negative semantic boundary checks. `stuck` is a non-value without a
-successor, and `observe` has only a non-silent successor. Consequently neither
-can satisfy the `.NotStuck` reducibility premise of TWP. The no-fork lifting
-API separately exposes `eₜ = []` as a proof obligation, so a forking rule
-cannot be passed to it. -/
+/-! Negative semantic boundary checks. -/
 
 example : toVal Expr.stuck = (none : Option Val) := rfl
 

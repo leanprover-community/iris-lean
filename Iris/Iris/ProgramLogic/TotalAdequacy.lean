@@ -14,21 +14,9 @@ open Language Language.Notation
 
 @[expose] public section
 
-/-! ## Operational termination predicates
+/-! ## Total adequacy -/
 
-`Acc` takes the next configuration as its left argument, so the operational
-relation is flipped.  This definition is constructive and means that every
-reduction tree rooted at the configuration is finite (strong normalization),
-not merely that some execution terminates.
-
-The fork-aware thread-pool predicate below is kept because it is part of the
-Iris-Rocq adequacy argument. Thread-pool ghost-state convenience APIs are not
-ported because they are unrelated to the core total-WP adequacy result. Fair
-termination, trace-sensitive liveness, and coinductive progress are
-intentionally outside this layer.
--/
-
-@[rocq_alias sn]
+/-- Strong normalization for `step`. -/
 def StronglyNormalizing {α : Type _} (step : α → α → Prop) (x : α) : Prop :=
   Acc (flip step) x
 
@@ -38,15 +26,6 @@ theorem intro {α : Type _} {step : α → α → Prop} {x : α}
     (H : ∀ y, step x y → StronglyNormalizing step y) :
     StronglyNormalizing step x :=
   Acc.intro x H
-
-theorem of_irreducible {α : Type _} {step : α → α → Prop} {x : α}
-    (H : ∀ y, ¬ step x y) : StronglyNormalizing step x :=
-  .intro fun y Hxy => (H y Hxy).elim
-
-theorem tail {α : Type _} {step : α → α → Prop} {x y : α}
-    (H : StronglyNormalizing step x) (Hxy : step x y) :
-    StronglyNormalizing step y :=
-  H.inv Hxy
 
 theorem map {α β : Type _} {stepα : α → α → Prop}
     {stepβ : β → β → Prop} (f : β → α)
@@ -118,9 +97,7 @@ private theorem step_append_inv (r₁ r₂ t' : List Expr) (σ₁ σ₂ : State)
 
 local instance : OFE (List Expr) := OFE.ofDiscrete _
 
-/-- One unfolding of the total thread-pool predicate. Every possible pool step
-must be silent, preserve the state interpretation, and recursively establish
-the predicate for the complete successor pool. -/
+/-- One unfolding of the total thread-pool predicate. -/
 @[rocq_alias twptp_pre]
 def pre (X : List Expr → IProp GF) (t₁ : List Expr) : IProp GF := iprop(
   ∀ (t₂ : List Expr) (σ₁ : State) (ns : Nat) (κ κs : List Obs)
@@ -153,8 +130,7 @@ theorem pre_mono (X Y : List Expr → IProp GF)
       ∀ t, pre (ι := ι) X t -∗ pre (ι := ι) Y t :=
   mono_pred (F := pre (ι := ι))
 
-/-- Least-fixed-point predicate governing all future reductions of a thread
-pool. This is the direct Lean counterpart of Iris-Coq's `twptp`. -/
+/-- Total weakest precondition for a thread pool. -/
 @[rocq_alias twptp]
 def get (t : List Expr) : IProp GF :=
   bi_least_fixpoint (pre (ι := ι)) t
@@ -298,8 +274,7 @@ private theorem cons_sep (e : Expr) (es : List Expr) :
   icases H with ⟨He, Hes⟩
   iapply cons e es (ι := ι) $$ He Hes
 
-@[rocq_alias twptp_nil]
-theorem nil : ⊢ get (ι := ι) ([] : List Expr) := by
+private theorem nil : ⊢ get (ι := ι) ([] : List Expr) := by
   rw [(twptp.unfold (ι := ι) []).to_eq]
   unfold pre
   iintro %t₂ %σ₁ %ns %κ %κs %σ₂ %nt %Hstep
@@ -350,7 +325,7 @@ theorem of_twp (s : Stuckness) (e : Expr) (Φ : Val → IProp GF) :
   let Ψ := fun (E : CoPset) (e : Expr) (_ : Val → IProp GF) => iprop(
     ⌜E = ⊤⌝ -∗ get (ι := ι) [e])
   have hΨ : NonExpansive
-      (fun x : twp.Args Expr Val GF => Ψ x.1.1 x.1.2 x.2) := by
+      (fun x : twp.Internal.Args Expr Val GF => Ψ x.1.1 x.1.2 x.2) := by
     constructor
     intro n x y hxy
     rcases x with ⟨⟨EX, eX⟩, ΦX⟩
@@ -443,10 +418,7 @@ theorem twptp_total (t : List Expr) (σ : State) (ns nt : Nat) :
 end ThreadPool
 
 omit Λ in
-/-- General total adequacy. An initialized state interpretation together with
-a total weakest precondition entails strong normalization of the complete
-fork-aware language configuration. As in Iris-Coq, the chosen
-`numLatersPerStep` is abstract because TWP itself does not inspect it. -/
+/-- Total adequacy for thread-pool reduction. -/
 @[rocq_alias twp_total]
 theorem twp_total {hlc : HasLC} {GF : BundledGFunctors}
     [InvGpreS GF] [Language Expr State Obs Val]
@@ -477,30 +449,18 @@ theorem twp_total {hlc : HasLC} {GF : BundledGFunctors}
   iapply twptp.of_twp s e Φ (ι := iG)
   iapply Htwp $$ Hcred
 
-/-- Erased single-thread reduction. Forked expressions remain visible in the
-step witness; clients can rule them out with `LanguageNoFork`. -/
+/-- Erased single-expression reduction. -/
 def ExprErasedStep : Expr × State → Expr × State → Prop
   | (e₁, σ₁), (e₂, σ₂) =>
       ∃ (κ : List Obs) (efs : List Expr), (e₁, σ₁) -<κ>-> (e₂, σ₂, efs)
 
-/-- The single-threaded language contract used by the no-fork adequacy
-corollaries. -/
+/-- A language whose primitive steps do not fork. -/
 class LanguageNoFork (Expr State Obs Val : Type _)
     [Language Expr State Obs Val] : Prop where
   no_fork {e₁ e₂ : Expr} {σ₁ σ₂ : State} {κ : List Obs} {efs : List Expr} :
     (e₁, σ₁) -<κ>-> (e₂, σ₂, efs) → efs = []
 
-theorem exprErasedStep_noFork [LanguageNoFork Expr State Obs Val] {e₁ σ₁ e₂ σ₂}
-    (H : ExprErasedStep (Expr := Expr) (State := State) (Obs := Obs)
-      (e₁, σ₁) (e₂, σ₂)) :
-    ∃ κ, (e₁, σ₁) -<κ>-> (e₂, σ₂, []) := by
-  obtain ⟨κ, efs, Hstep⟩ := H
-  have := LanguageNoFork.no_fork Hstep
-  subst efs
-  exact ⟨κ, Hstep⟩
-
-/-- A fork-aware total-adequacy result specializes to the single-expression
-machine when the language proves that primitive steps never fork. -/
+/-- Derive single-expression normalization from thread-pool normalization. -/
 theorem stronglyNormalizing_expr_of_threadPool
     [LanguageNoFork Expr State Obs Val] {e : Expr} {σ : State}
     (H : StronglyNormalizing
@@ -514,13 +474,6 @@ theorem stronglyNormalizing_expr_of_threadPool
   have hefs : efs = [] := LanguageNoFork.no_fork Hstep
   subst efs
   exact ⟨κ, .atomic Hstep [] []⟩
-
-theorem value_stronglyNormalizing (v : Val) (σ : State) :
-    StronglyNormalizing (ExprErasedStep (Expr := Expr) (Obs := Obs))
-      ((v : Expr), σ) := by
-  apply StronglyNormalizing.of_irreducible
-  rintro ⟨e₂, σ₂⟩ ⟨κ, efs, Hstep⟩
-  exact Language.prim_val_stuck Hstep
 
 end
 end Iris.ProgramLogic

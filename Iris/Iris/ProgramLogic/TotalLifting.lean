@@ -5,7 +5,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Iris.ProgramLogic.TotalWeakestPre
-public import Iris.ProgramLogic.Lifting
 
 namespace Iris.ProgramLogic
 
@@ -13,14 +12,7 @@ open Iris Language Language.Notation BI
 
 @[expose] public section
 
-/-!
-The no-fork rules in this file make the single-threaded contract explicit
-(`eₜ = []`) while the underlying TWP remains faithful to Iris and can account
-for forks.
-
-All total rules require the operational observation to be empty.  This is a
-semantic requirement of Iris TWP, not proof bookkeeping.
--/
+/-! ## Total lifting rules -/
 
 variable {hlc : outParam HasLC} {Expr State Obs Val}
 variable [Λ : Language Expr State Obs Val]

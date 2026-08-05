@@ -17,36 +17,14 @@ open ProgramLogic Language.Notation Std OFE
 /-!
 # Total weakest preconditions
 
-This is the least-fixed-point total weakest precondition from Iris-Rocq.  In
-contrast to ordinary WP, recursive occurrences are not guarded by a later.
-Consequently, membership in TWP is a finite derivation and adequacy can turn it
-into strong normalization.
-
-The definition remains fork-aware to stay compatible with Iris. Clients with
-single-threaded semantics can use the no-fork lifting rules in `TotalLifting`;
-concurrency-specific derived libraries are deliberately not duplicated here.
-
-As in Iris-Rocq, TWP only accepts silent operational steps.  A language with
-observable reductions must expose a silent administrative semantics or provide
-a future trace-sensitive generalization instead of discarding observations.
-
-Traps must therefore be represented deliberately: either as values in the
-language's result type, or as non-values excluded by the reducibility
-obligation. TWP does not silently reinterpret a stuck trap as successful
-termination.
+The total weakest precondition is the least fixed point of `twp.pre`.
 -/
 
 variable {hlc : outParam HasLC} {Expr State Obs Val}
 variable [Λ : Language Expr State Obs Val]
 variable {GF : BundledGFunctors} [ι : IrisGS_gen hlc Expr GF]
 
-/-- The stuckness-dependent reducibility condition used by total WP.
-
-Unlike partial WP's `Stuckness.MaybeReducible`, the `NotStuck` case requires
-the existence of a *silent* primitive step.  This matches Iris-Rocq's
-`reducible_no_obs` premise and prevents an observable transition from being
-used to justify TWP only to be rejected by the step clause immediately
-afterwards. -/
+/-- The stuckness-dependent reducibility condition for total WP. -/
 abbrev Stuckness.MaybeReducibleNoObs : Stuckness → Expr × State → Prop
   | .NotStuck, ρ => PrimStep.ReducibleNoObs ρ
   | .MaybeStuck, _ => True
@@ -57,8 +35,12 @@ local instance : OFE CoPset := OFE.ofDiscrete _
 local instance : OFE Expr := OFE.ofDiscrete _
 local instance : OFE Val := OFE.ofDiscrete _
 
+namespace Internal
+
 abbrev Args (Expr Val : Type _) (GF : BundledGFunctors) :=
   (CoPset × Expr) × (Val → IProp GF)
+
+end Internal
 
 @[rocq_alias twp_pre]
 def pre (s : Stuckness)
@@ -76,35 +58,54 @@ def pre (s : Stuckness)
         twp E e₂ Φ ∗
         [∗list] e' ∈ eₜ, twp ⊤ e' ι.forkPost)
 
+namespace Internal
+
 def pre' (s : Stuckness)
     (X : Args Expr Val GF → IProp GF) : Args Expr Val GF → IProp GF
   | ((E, e), Φ) => pre s (fun E e Φ => X ((E, e), Φ)) E e Φ
 
+end Internal
+
+@[rocq_alias twp_pre_mono]
+theorem pre_mono (s : Stuckness)
+    (X Y : CoPset → Expr → (Val → IProp GF) → IProp GF) :
+    ⊢ □ (∀ E e Φ, X E e Φ -∗ Y E e Φ) -∗
+      ∀ E e Φ, pre s X E e Φ -∗ pre s Y E e Φ := by
+  iintro #H %E %e %Φ Hpre
+  unfold pre
+  cases toVal e with
+  | some =>
+      imod Hpre with Hpre
+      imodintro
+      iexact Hpre
+  | none =>
+      iintro %σ₁ %ns %obs %nt Hσ
+      imod Hpre $$ Hσ with ⟨%Hred, Hstep⟩
+      imodintro
+      iframe %Hred
+      iintro %κ %e₂ %σ₂ %eₜ %Hprim
+      imod Hstep $$ %κ %e₂ %σ₂ %eₜ %Hprim with
+        ⟨%hκ, Hσ, He₂, Hefs⟩
+      imodintro
+      iframe %hκ Hσ
+      isplitl [He₂]
+      · iapply H $$ %E %e₂ %Φ He₂
+      · iapply BI.BigSepL.bigSepL_impl $$ Hefs
+        iintro !> %k %ef %Hef Hef
+        iapply H $$ %⊤ %ef %ι.forkPost Hef
+
+namespace Internal
+
 instance pre'_mono (s : Stuckness) : BIMonoPred (pre' (ι := ι) s) where
   mono_pred := by
     intro X Y _ _
-    iintro #HXY %x
+    iintro #HXY %x HX
     rcases x with ⟨⟨E, e⟩, Φ⟩
-    simp only [pre', pre]
-    iintro HX
-    cases toVal e
-    case some => iexact HX
-    case none =>
-      iintro %σ₁ %ns %obs %nt Hσ
-      imod HX $$ Hσ with ⟨%Hred, H⟩
-      imodintro
-      isplit
-      · ipureintro
-        exact Hred
-      · iintro %κ %e₂ %σ₂ %eₜ %Hstep
-        imod H $$ %κ %e₂ %σ₂ %eₜ %Hstep with ⟨%hκ, Hσ, He, Hefs⟩
-        imodintro
-        iframe %hκ Hσ
-        isplitl [He]
-        · iapply HXY $$ %((E, e₂), Φ) He
-        · iapply BI.BigSepL.bigSepL_impl $$ Hefs
-          iintro !> %k %ef %Hef Hef
-          iapply HXY $$ %((⊤, ef), ι.forkPost) Hef
+    simp only [pre']
+    iapply pre_mono s (fun E e Φ => X ((E, e), Φ))
+      (fun E e Φ => Y ((E, e), Φ)) $$ [] %E %e %Φ HX
+    iintro !> %E %e %Φ H
+    iapply HXY $$ %((E, e), Φ) H
   mono_pred_ne.ne {X} a b h := by
     rcases a with ⟨⟨E₁, e₁⟩, Φ₁⟩
     rcases b with ⟨⟨E₂, e₂⟩, Φ₂⟩
@@ -137,44 +138,17 @@ instance pre'_mono (s : Stuckness) : BIMonoPred (pre' (ι := ι) s) where
         exact ⟨⟨.rfl, .rfl⟩, hΦ⟩
       · exact .rfl
 
-@[rocq_alias twp_pre_mono]
-theorem pre_mono (s : Stuckness)
-    (X Y : CoPset → Expr → (Val → IProp GF) → IProp GF)
-    [NonExpansive (fun x : Args Expr Val GF => X x.1.1 x.1.2 x.2)]
-    [NonExpansive (fun x : Args Expr Val GF => Y x.1.1 x.1.2 x.2)] :
-    ⊢ □ (∀ E e Φ, X E e Φ -∗ Y E e Φ) -∗
-      ∀ E e Φ, pre s X E e Φ -∗ pre s Y E e Φ := by
-  iintro #H %E %e %Φ Hpre
-  unfold pre
-  cases hval : toVal e with
-  | some v =>
-      imod Hpre with Hpre
-      imodintro
-      iexact Hpre
-  | none =>
-      iintro %σ₁ %ns %obs %nt Hσ
-      imod Hpre $$ Hσ with ⟨%Hred, Hstep⟩
-      imodintro
-      iframe %Hred
-      iintro %κ %e₂ %σ₂ %eₜ %Hprim
-      imod Hstep $$ %κ %e₂ %σ₂ %eₜ %Hprim with
-        ⟨%hκ, Hσ, He₂, Hefs⟩
-      imodintro
-      iframe %hκ Hσ
-      isplitl [He₂]
-      · iapply H $$ %E %e₂ %Φ He₂
-      · iapply BI.BigSepL.bigSepL_impl $$ Hefs
-        iintro !> %k %ef %Hef Hef
-        iapply H $$ %⊤ %ef %ι.forkPost Hef
-
-def get (s : Stuckness) (E : CoPset) (e : Expr) (Φ : Val → IProp GF) : IProp GF :=
+def get (s : Stuckness) (E : CoPset) (e : Expr)
+    (Φ : Val → IProp GF) : IProp GF :=
   letI : OFE CoPset := OFE.ofDiscrete _
   letI : OFE Expr := OFE.ofDiscrete _
   letI : OFE Val := OFE.ofDiscrete _
   bi_least_fixpoint (pre' (ι := ι) s) ((E, e), Φ)
 
+end Internal
+
 instance instTotalWp : TotalWp (IProp GF) Expr Val Stuckness where
-  totalWp := get
+  totalWp := Internal.get
 
 section Rules
 
@@ -185,13 +159,14 @@ local instance : OFE Val := OFE.ofDiscrete _
 @[rocq_alias twp_unfold]
 theorem unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E [{ Φ }] ⊣⊢ pre s (TotalWp.totalWp (PROP := IProp GF) s) E e Φ := by
-  change bi_least_fixpoint (pre' (ι := ι) s) ((E, e), Φ) ⊣⊢ _
-  exact BI.equiv_iff.1 (least_fixpoint_unfold (pre' (ι := ι) s))
+  change bi_least_fixpoint (Internal.pre' (ι := ι) s) ((E, e), Φ) ⊣⊢ _
+  exact BI.equiv_iff.1 (least_fixpoint_unfold (Internal.pre' (ι := ι) s))
 
 @[rocq_alias twp_ind]
 theorem induction (s : Stuckness)
     (Ψ : CoPset → Expr → (Val → IProp GF) → IProp GF)
-    [HΨ : NonExpansive (fun x : Args Expr Val GF => Ψ x.1.1 x.1.2 x.2)] :
+    [HΨ : NonExpansive
+      (fun x : Internal.Args Expr Val GF => Ψ x.1.1 x.1.2 x.2)] :
     (⊢ □ (∀ E e Φ,
       pre s (fun E e Φ => iprop(Ψ E e Φ ∧ WP e @ s ; E [{ Φ }])) E e Φ -∗
       Ψ E e Φ)) →
@@ -199,17 +174,18 @@ theorem induction (s : Stuckness)
   intro H
   have H' : ⊢ □ (∀ E e Φ,
       pre s (fun E e Φ =>
-        iprop(Ψ E e Φ ∧ bi_least_fixpoint (pre' (ι := ι) s) ((E, e), Φ)))
+        iprop(Ψ E e Φ ∧
+          bi_least_fixpoint (Internal.pre' (ι := ι) s) ((E, e), Φ)))
         E e Φ -∗ Ψ E e Φ) := by
-    simpa only [TotalWp.totalWp, instTotalWp, get] using H
+    simpa only [TotalWp.totalWp, instTotalWp, Internal.get] using H
   iintro %E %e %Φ
-  change ⊢ bi_least_fixpoint (pre' (ι := ι) s) ((E, e), Φ) -∗ Ψ E e Φ
+  change ⊢ bi_least_fixpoint (Internal.pre' (ι := ι) s) ((E, e), Φ) -∗ Ψ E e Φ
   iintro Htwp
-  iapply least_fixpoint_ind (F := pre' (ι := ι) s)
+  iapply least_fixpoint_ind (F := Internal.pre' (ι := ι) s)
       (Φ := fun x => Ψ x.1.1 x.1.2 x.2) $$ [] Htwp
   iintro !> %x
   rcases x with ⟨⟨E, e⟩, Φ⟩
-  simp only [pre']
+  simp only [Internal.pre']
   iintro Hx
   iapply H'
   iexact Hx
@@ -218,8 +194,8 @@ theorem induction (s : Stuckness)
 instance ne {s : Stuckness} {E} {e : Expr} :
     NonExpansive (TotalWp.totalWp (PROP := IProp GF) s E e) where
   ne {n Φ₁ Φ₂} HΦ := by
-    change bi_least_fixpoint (pre' (ι := ι) s) ((E, e), Φ₁) ≡{n}≡
-      bi_least_fixpoint (pre' (ι := ι) s) ((E, e), Φ₂)
+    change bi_least_fixpoint (Internal.pre' (ι := ι) s) ((E, e), Φ₁) ≡{n}≡
+      bi_least_fixpoint (Internal.pre' (ι := ι) s) ((E, e), Φ₂)
     apply NonExpansive.ne
     exact ⟨⟨.rfl, .rfl⟩, fun v => HΦ v⟩
 
@@ -237,7 +213,7 @@ theorem strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr}
     ∀ E₂ Ψ, ⌜E ⊆ E₂⌝ -∗ (∀ v, Φ v ={E₂}=∗ Ψ v) -∗
       WP e @ s₂ ; E₂ [{ Ψ }])
   have hPred : NonExpansive
-      (fun x : Args Expr Val GF => Pred x.1.1 x.1.2 x.2) := by
+      (fun x : Internal.Args Expr Val GF => Pred x.1.1 x.1.2 x.2) := by
     constructor
     intro n x y h
     rcases x with ⟨⟨EX, eX⟩, ΦX⟩
@@ -387,7 +363,7 @@ theorem bind (K : Expr → Expr) [ctx : Language.Context K]
     ∀ Φ, (∀ v, Ψ v -∗ WP (K (v : Expr)) @ s ; E [{ Φ }]) -∗
       WP (K e) @ s ; E [{ Φ }])
   have hPred : NonExpansive
-      (fun x : Args Expr Val GF => Pred x.1.1 x.1.2 x.2) := by
+      (fun x : Internal.Args Expr Val GF => Pred x.1.1 x.1.2 x.2) := by
     constructor
     intro n x y hxy
     rcases x with ⟨⟨EX, eX⟩, ΨX⟩
@@ -448,44 +424,16 @@ theorem bind (K : Expr → Expr) [ctx : Language.Context K]
 private theorem fold_induction_right
     (Ψ : CoPset → Expr → (Val → IProp GF) → IProp GF)
     (s : Stuckness) (E : CoPset) (e : Expr) (Φ : Val → IProp GF) :
-    (match toVal e with
-    | some v => iprop(|={E}=> Φ v)
-    | none => iprop(
-        ∀ (σ₁ : State) (ns : Nat) (obs : List Obs) (nt : Nat),
-          stateInterp σ₁ ns obs nt ={E,∅}=∗
-          ⌜s.MaybeReducibleNoObs (e, σ₁)⌝ ∗
-          ∀ (κ : List Obs) e₂ σ₂ eₜ,
-            ⌜(e, σ₁) -<κ>-> (e₂, σ₂, eₜ)⌝ ={∅,E}=∗
-            ⌜κ = []⌝ ∗
-            stateInterp σ₂ (ns + 1) obs (nt + eₜ.length) ∗
-            (Ψ E e₂ Φ ∧ WP e₂ @ s ; E [{ Φ }]) ∗
-            [∗list] e' ∈ eₜ,
-              (Ψ ⊤ e' ι.forkPost ∧
-                WP e' @ s ; ⊤ [{ ι.forkPost }]))) ⊢
-    WP e @ s ; E [{ Φ }] := by
+    pre s (fun E e Φ => iprop(Ψ E e Φ ∧ WP e @ s ; E [{ Φ }]))
+      E e Φ ⊢ WP e @ s ; E [{ Φ }] := by
   rw [unfold.to_eq]
-  unfold pre
-  cases hval : toVal e with
-  | some =>
-      exact .rfl
-  | none =>
-      iintro H
-      iintro %σ₁ %ns %obs %nt Hσ
-      imod H $$ Hσ with ⟨%Hred, Hstep⟩
-      imodintro
-      iframe %Hred
-      iintro %κ %e₂ %σ₂ %eₜ %Hprim
-      imod Hstep $$ %κ %e₂ %σ₂ %eₜ %Hprim with
-        ⟨%hκ, Hσ, He₂, Hefs⟩
-      imodintro
-      iframe %hκ Hσ
-      isplitl [He₂]
-      · icases He₂ with ⟨-, He₂⟩
-        iexact He₂
-      · iapply BI.BigSepL.bigSepL_impl $$ Hefs
-        iintro !> %k %ef %Hef Hef
-        icases Hef with ⟨-, Hef⟩
-        iexact Hef
+  iintro Hpre
+  iapply (pre_mono s
+    (fun E e Φ => iprop(Ψ E e Φ ∧ WP e @ s ; E [{ Φ }]))
+    (TotalWp.totalWp s)) $$ [] %E %e %Φ Hpre
+  iintro !> %E %e %Φ H
+  icases H with ⟨-, H⟩
+  iexact H
 
 @[rocq_alias twp_bind_inv]
 theorem bind_inv (K : Expr → Expr) [ctx : Language.Context K]
@@ -498,7 +446,7 @@ theorem bind_inv (K : Expr → Expr) [ctx : Language.Context K]
       TotalWp.totalWp s E e
         (fun v : Val => iprop(WP (K (v : Expr)) @ s ; E [{ Φ }])))
   have hPred : NonExpansive
-      (fun x : Args Expr Val GF => Pred x.1.1 x.1.2 x.2) := by
+      (fun x : Internal.Args Expr Val GF => Pred x.1.1 x.1.2 x.2) := by
     constructor
     intro n x y hxy
     rcases x with ⟨⟨EX, eX⟩, ΦX⟩
@@ -518,17 +466,16 @@ theorem bind_inv (K : Expr → Expr) [ctx : Language.Context K]
   iintro !> %E %e' %Φ IH %e %heq
   subst e'
   rw [unfold.to_eq]
-  unfold pre
   cases he : toVal e with
   | some v =>
-      dsimp only
+      ihave IHfold := fold_induction_right Pred s E (K e) Φ (ι := ι) $$ IH
+      simp only [pre, he]
       have heq := ToVal.coe_of_toVal_eq_some he
       subst e
       imodintro
-      iapply fold_induction_right Pred s E (K (v : Expr)) Φ
-      iexact IH
+      iexact IHfold
   | none =>
-      dsimp only
+      simp only [pre, he]
       have hK : toVal (K e) = none := ctx.toVal_eq_none_fill he
       let unfolded := iprop(
         ∀ (σ₁ : State) (ns : Nat) (obs : List Obs) (nt : Nat),
@@ -723,12 +670,13 @@ variable {s : Stuckness} {E E₁ E₂ : CoPset} {e : Expr}
 variable {Φ Ψ : Val → IProp GF} {P R : IProp GF}
 
 @[rocq_alias frame_twp]
-instance frameTwp {p : Bool} [H : ∀ v, Frame p R (Φ v) (Ψ v)] :
+instance frameTwp {p : Bool}
+    [H : ∀ v, FrameInstantiateExistDisabled p R (Φ v) (Ψ v)] :
     Frame p R (WP e @ s ; E [{ Φ }]) (WP e @ s ; E [{ Ψ }]) where
   frame := by
     refine frame_l.trans ?_
     apply mono
-    exact fun v => (H v).frame
+    exact fun v => (H v).frame_instantiatiate_exist_disabled.frame
 
 -- Iris-Rocq reuses the module-qualified name `is_except_0_wp` here; that alias
 -- is already assigned to partial WP in Lean, so this instance is left unaliased.
