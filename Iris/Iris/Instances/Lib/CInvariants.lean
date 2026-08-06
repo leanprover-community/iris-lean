@@ -96,7 +96,7 @@ instance instFractionalOwn (γ : GName) :
 
 @[rocq_alias cinv_own_as_fractional]
 instance instAsFractionalOwn (γ : GName) (q : Qp) :
-    AsFractional (own (GF := GF) γ q) (fun p : Qp => own γ p) q where
+    AsFractional (own (GF := GF) γ q) ioΦ (fun p : Qp => own γ p) ioq q where
   as_fractional := .rfl
   as_fractional_fractional := instFractionalOwn γ
 
