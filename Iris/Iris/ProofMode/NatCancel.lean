@@ -33,7 +33,7 @@ def natCancelLeaf (n m : Q(Nat)) : MetaM <| Option <| Q(Nat) × Q(Nat) × Expr :
     return some (q((0 : Nat)), q((0 : Nat)), q(Nat.add_comm 0 $m))
   match ← evalNat n, ← evalNat m with
   -- One side evaluates to zero: nothing to do
-  | some 0, some _ | some _, some 0 => return some (n, m, ← mkEqRefl q($n + $m))
+  | some 0, _ | _, some 0 => return some (n, m, ← mkEqRefl q($n + $m))
   -- Subtract `k` on both sides, where `k` is the minimum of `natN` and `natM`
   | some natN, some natM =>
     let k := min natN natM
@@ -53,9 +53,9 @@ partial def natCancelAdd (n m : Q(Nat)) : MetaM <| Option <| Q(Nat) × Q(Nat) ×
     let ⟨n', (hn : Q($n' = $n1' + $n2'))⟩ ← do
       match ← evalNat n1', ← evalNat n2' with
       -- Discard `n1'` when `n1' = 0`: `n1' + n2'` equals `n2'`
-      | some 0, some _ => pure (n2', q((Nat.zero_add $n2').symm))
+      | some 0, _ => pure (n2', q((Nat.zero_add $n2').symm))
       -- Discard `n2'` when `n1' = 0`: `n1' + n2'` equals `n1'`
-      | some _, some 0 => pure (n1', q((Nat.add_zero $n1').symm))
+      | _, some 0 => pure (n1', q((Nat.add_zero $n1').symm))
       | some natA, some natB => let s : Q(Nat) := mkNatLit (natA + natB); pure (s, ← mkEqRefl s)
       | _, _ => let s : Q(Nat) := q($n1' + $n2'); pure (s, ← mkEqRefl s)
     return some (n', m'', (q(by omega) : Q($n' + $m = $n1 + $n2 + $m'')))
