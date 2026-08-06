@@ -61,7 +61,7 @@ where
       else
         `(irisHyp| ∗$(mkIdent name') : $(← unpackIprop (← delab ty)))
       pure (map.insert name idx, acc.push stx)
-    | .sep _ _ _ _ lhs rhs => delabHypotheses lhs (← delabHypotheses rhs acc)
+    | .sep _ _ _ _ _ lhs rhs => delabHypotheses lhs (← delabHypotheses rhs acc)
 
 @[delab app.Iris.ProofMode.HypMarker]
 def delabHypMarker : Delab := do unpackIprop (← withAppArg delab)
