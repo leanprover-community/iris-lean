@@ -121,8 +121,8 @@ end
 
 @[ipm_class, rocq_alias IntoWand]
 class IntoWand {PROP} [BI PROP] (p q : Bool) (R : PROP) (m : WandMode)
-  (P : semiOutParamIPM m.argIO PROP)
-  (Q : semiOutParamIPM m.resIO PROP) where
+    (P : semiOutParamIPM m.argIO PROP)
+    (Q : semiOutParamIPM m.resIO PROP) where
   into_wand : □?p R ⊢ □?q P -∗ Q
 export IntoWand (into_wand)
 
