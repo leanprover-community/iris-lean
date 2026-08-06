@@ -365,9 +365,9 @@ theorem laterN_true (n : Nat) : ▷^[n] True ⊣⊢@{PROP} True :=
 
 @[rocq_alias bi.laterN_emp]
 theorem laterN_emp [BIAffine PROP] (n : Nat) : ▷^[n] emp ⊣⊢@{PROP} emp := calc
-  _ ⊣⊢ ▷^[n]True := laterN_congr n true_emp.symm
-  _ ⊣⊢ True       := laterN_true n
-  _ ⊣⊢ emp        := true_emp
+  _ ⊣⊢ ▷^[n] True := laterN_congr n true_emp.symm
+  _ ⊣⊢ True        := laterN_true n
+  _ ⊣⊢ emp         := true_emp
 
 @[rocq_alias bi.laterN_forall]
 theorem laterN_forall (n : Nat) {Φ : α → PROP} : ▷^[n] (∀ a, Φ a) ⊣⊢ (∀ a, ▷^[n] Φ a) := by
@@ -864,10 +864,10 @@ theorem timeless_laterN {P : PROP} [Timeless P] (n : Nat) :
   | zero => exact or_intro_r
   | succ n IH =>
     calc
-      _ ⊢ ▷ (▷^[n]False ∨ P)                  := later_mono IH
-      _ ⊢ ▷ ▷^[n]False ∨ ▷ P                 := later_or.mp
-      _ ⊢ ▷ ▷^[n]False ∨ ◇ P                 := or_mono_right Timeless.timeless
-      _ ⊢ ▷ ▷^[n]False ∨ ▷ ▷^[n]False ∨ P   :=
+      _ ⊢ ▷ (▷^[n] False ∨ P)                   := later_mono IH
+      _ ⊢ ▷ ▷^[n] False ∨ ▷ P                  := later_or.mp
+      _ ⊢ ▷ ▷^[n] False ∨ ◇ P                  := or_mono_right Timeless.timeless
+      _ ⊢ ▷ ▷^[n] False ∨ ▷ ▷^[n] False ∨ P   :=
           or_mono_right <| or_mono_left <| later_mono <| laterN_intro n
-      _ ⊢ (▷ ▷^[n]False ∨ ▷ ▷^[n]False) ∨ P := or_assoc.mpr
-      _ ⊢ ▷^[n + 1]False ∨ P                   := or_mono_left or_self.mp
+      _ ⊢ (▷ ▷^[n] False ∨ ▷ ▷^[n] False) ∨ P := or_assoc.mpr
+      _ ⊢ ▷^[n + 1] False ∨ P                    := or_mono_left or_self.mp

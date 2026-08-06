@@ -1386,10 +1386,11 @@ theorem persistently_imp [BI PROP] {P Q : PROP} : <pers> (P → Q) ⊢ (<pers> P
   imp_intro <| persistently_and.2.trans (persistently_mono imp_elim_left)
 
 @[rocq_alias bi.persistently_emp_intro]
-theorem persistently_emp_intro [BI PROP] {P : PROP} : P ⊢ <pers> emp := calc
-  _ ⊢ emp ∗ P        := emp_sep.mpr
-  _ ⊢ <pers> emp ∗ P := sep_mono_left persistently_emp_2
-  _ ⊢ <pers> emp     := persistently_absorb_l (Q := P)
+theorem persistently_emp_intro [BI PROP] {P : PROP} : P ⊢ <pers> emp :=
+  calc P
+    _ ⊢ emp ∗ P        := emp_sep.mpr
+    _ ⊢ <pers> emp ∗ P := sep_mono_left persistently_emp_2
+    _ ⊢ <pers> emp     := persistently_absorb_l (Q := P)
 
 @[rocq_alias bi.persistently_emp]
 theorem persistently_emp [BI PROP] : <pers> (emp : PROP) ⊣⊢ True :=
@@ -2515,7 +2516,7 @@ theorem persistent_absorbingly_affinely [BI PROP] {P : PROP}
 
 @[rocq_alias bi.persistent_and_sep_assoc]
 theorem persistent_and_sep_assoc [BI PROP] {P Q R : PROP}
-    [Persistent P] [Absorbing P] : P ∧ (Q ∗ R) ⊣⊢ (P ∧ Q) ∗ R := calc
+    [Persistent P] [Absorbing P] : P ∧ (Q ∗ R) ⊣⊢ (P ∧ Q) ∗ R := calc (iprop(P ∧ Q ∗ R) : PROP)
   _ ⊣⊢ <pers> P ∧ Q ∗ R   := and_congr_left persistently_iff.symm
   _ ⊣⊢ (<pers> P ∧ Q) ∗ R := persistently_and_sep_assoc
   _ ⊣⊢ (P ∧ Q) ∗ R        := sep_congr_left <| and_congr_left persistently_iff
