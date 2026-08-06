@@ -45,14 +45,14 @@ instance intoPure_plainly [Sbi PROP] (P : PROP) (φ : Prop)
 /-- IntoWand -/
 
 @[rocq_alias into_wand_plainly_true]
-instance intoWand_plainly_true [Sbi PROP] (q : Bool) ioP ioQ (R P Q : PROP)
-    [h : IntoWand true q R ioP P ioQ Q] : IntoWand true q iprop(■ R) ioP P ioQ Q where
+instance intoWand_plainly_true [Sbi PROP] (q : Bool) m (R P Q : PROP)
+    [h : IntoWand true q R m P Q] : IntoWand true q iprop(■ R) m P Q where
   into_wand := intuitionistically_plainly_elim.trans h.1
 
 @[rocq_alias into_wand_plainly_false]
-instance intoWand_plainly_false [Sbi PROP] (q : Bool) ioP ioQ (R P Q : PROP)
-    [Absorbing R] [h : IntoWand false q R ioP P ioQ Q] :
-    IntoWand false q iprop(■ R) ioP P ioQ Q where
+instance intoWand_plainly_false [Sbi PROP] (q : Bool) m (R P Q : PROP)
+    [Absorbing R] [h : IntoWand false q R m P Q] :
+    IntoWand false q iprop(■ R) m P Q where
   into_wand := plainly_elim.trans h.1
 
 /-- FromAnd -/

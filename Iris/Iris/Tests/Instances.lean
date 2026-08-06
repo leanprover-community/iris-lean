@@ -73,17 +73,19 @@ section mvars
 variable [BI PROP] (P1 P2 : Nat → PROP)
 
 /- Test creation of mvars -/
-/-- info: solution: IntoWand false false iprop(∀ x, P1 x -∗ P2 x) InOut.out (P1 ?m.24) InOut.out
-  (P2 ?m.24), new goals: [?m.24: Nat] -/
-#guard_msgs in #ipm_synth (IntoWand false false iprop(∀ a, P1 a -∗ P2 a) .out _ .out _)
+set_option pp.mvars false in
+/-- info: solution: IntoWand false false iprop(∀ x, P1 x -∗ P2 x) WandMode.unknown (P1 ?_) (P2 ?_), new goals: [?_: Nat] -/
+#guard_msgs in #ipm_synth (IntoWand false false iprop(∀ a, P1 a -∗ P2 a) .unknown _ _)
 
 /- Test instantiation of forall quantifier -/
-/-- info: solution: IntoWand false false iprop(∀ x, P1 x -∗ P2 x) InOut.in (P1 1) InOut.out (P2 1), new goals: [] -/
-#guard_msgs in #ipm_synth (IntoWand false false iprop(∀ a, P1 a -∗ P2 a) .in (P1 1) .out _)
+/-- info: solution: IntoWand false false iprop(∀ x, P1 x -∗ P2 x) (WandMode.matching WandMode.Side.argument) (P1 1)
+  (P2 1), new goals: [] -/
+#guard_msgs in #ipm_synth (IntoWand false false iprop(∀ a, P1 a -∗ P2 a) (.matching .argument) (P1 1) _)
 
 /- Test instantiation of mvar created outside ipm_synth -/
-/-- info: solution: IntoWand false false iprop(P1 1 -∗ P2 1) InOut.in (P1 1) InOut.out (P2 1), new goals: [] -/
-#guard_msgs in #ipm_synth (IntoWand false false iprop(P1 _ -∗ P2 1) .in (P1 1) .out _)
+/-- info: solution: IntoWand false false iprop(P1 1 -∗ P2 1) (WandMode.matching WandMode.Side.argument) (P1 1)
+  (P2 1), new goals: [] -/
+#guard_msgs in #ipm_synth (IntoWand false false iprop(P1 _ -∗ P2 1) (.matching .argument) (P1 1) _)
 
 end mvars
 
