@@ -83,7 +83,8 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
   | throwError "iinv: invalid invariant {Pinv} (ElimInv type class synthesis failed)"
 
   let ⟨e'', hyps'', p'', out'', pfPin⟩ ←
-    iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) [specPat.getD <| .autoframe .spatial]
+    iSpecializeCoreNoModal hyps' q(false) q(iprop($Pin -∗ $Pin))
+    [specPat.getD ⟨← getRef, .autoframe .spatial⟩]
   have : $out'' =Q $Pin := ⟨⟩
   have : $p'' =Q false := ⟨⟩
 
@@ -101,7 +102,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
       withLocalDeclDQ (← mkFreshUserName .anonymous) X fun x => do
         match closePat with
         | some closePat =>
-          let pf' ← iCasesCore _ hyps'' q($Q'' $x) (.conjunction [casesPat, closePat])
+          let pf' ← iCasesCore hyps'' q($Q'' $x) ⟨closePat.ref, (.conjunction [casesPat, closePat])⟩
             q(false) q(iprop($Pout' $x ∗ $f' $x))
           mkLambdaFVars #[x] pf'
         -- Throw an error if `hclose` is not given, but `mPclose` is not `none`
@@ -110,7 +111,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
   | ~q(none) =>
     let pf : Q(∀ x, $e'' ∗ $Pout x ⊢ $Q' x) ←
       withLocalDeclDQ (← mkFreshUserName .anonymous) X fun x => do
-        let pf' ← iCasesCore _ hyps'' q($Q'' $x) casesPat q(false) q($Pout' $x)
+        let pf' ← iCasesCore hyps'' q($Q'' $x) casesPat q(false) q($Pout' $x)
         mkLambdaFVars #[x] pf'
     return q(tac_inv_elim $inst $hϕ $pf $pfEq $pfPin)
 

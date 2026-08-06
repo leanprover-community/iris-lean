@@ -7,16 +7,21 @@ module
 
 public import Iris.Std.Infinite
 public import Iris.ProgramLogic.Language
+meta import Iris.Std.RocqPorting
 
 @[expose] public section
 namespace Iris.HeapLang
 
-@[ext]
+@[ext, rocq_alias heap_lang.loc]
 structure Loc where
   mk ::
   n : Int
 deriving Inhabited, Repr, DecidableEq
 
+attribute [rocq_alias heap_lang.Loc.inhabited] instInhabitedLoc
+attribute [rocq_alias heap_lang.Loc.eq_dec] instDecidableEqLoc
+
+@[rocq_alias heap_lang.Loc.infinite]
 instance : InfiniteType Loc where
   enum n := .mk n
   enum_inj n m := by grind
@@ -47,7 +52,7 @@ instance : Zero Loc where
 theorem loc_add_n (l : Loc) n :
   (l + n).n = l.n + n := by simp [HAdd.hAdd]
 
-@[ext]
+@[ext, rocq_alias heap_lang.heap_lang.proph_id]
 structure ProphId where
   mk ::
   n : Nat
@@ -78,6 +83,7 @@ inductive Binder where
   | named (name : String)
 deriving Inhabited, Repr, DecidableEq
 
+@[rocq_alias heap_lang.heap_lang.base_lit]
 inductive BaseLit where
   | int (n : Int)
   | bool (b : Bool)
@@ -87,11 +93,13 @@ inductive BaseLit where
   | prophecy (p : ProphId)
 deriving Inhabited, Repr, DecidableEq
 
+@[rocq_alias heap_lang.heap_lang.un_op]
 inductive UnOp where
   | neg
   | minus
 deriving Inhabited, Repr, DecidableEq
 
+@[rocq_alias heap_lang.heap_lang.bin_op]
 inductive BinOp where
   /- We use "tdiv" and "tmod" instead of "div" and "mod" to
       better match the behavior of 'real' languages:
@@ -104,6 +112,7 @@ inductive BinOp where
 deriving Inhabited, Repr, DecidableEq
 
 mutual
+  @[rocq_alias heap_lang.heap_lang.expr]
   inductive Exp : Type where
     /- values -/
     -- This constructor should not be used directly. Use Exp.ofVal instead.
@@ -138,6 +147,7 @@ mutual
     | newProph
     | resolve (e₀ e₁ e₂ : Exp)
   deriving Inhabited, Repr, DecidableEq
+  @[rocq_alias heap_lang.heap_lang.val]
   inductive Val : Type where
     | lit (l : BaseLit)
     | rec_ (f x : Binder) (e : Exp)

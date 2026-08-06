@@ -5,6 +5,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Iris.ProofMode
+public import Iris.Algebra.Lib.DFracAgree
+
 /-! ## Algebra wrappers for BI
 This file provides introduction rules (BI entailments) for (some) CMRA operations and properties.
 -/
@@ -282,7 +284,7 @@ theorem toAgree_includedI (a b : A) :
     show SiProp.internalEq a b ⊢ (∃ c, SiProp.internalEq (toAgree b) (toAgree a • c))
     refine exists_intro_trans (toAgree a) ?_
     refine internalEq_entails.mpr fun n heq => ?_
-    exact (NonExpansive.ne heq.symm).trans (idemp.symm n)
+    exact (NonExpansive.ne heq.symm).trans (Dist.of_eq idemp.symm)
 
 end agree_inclusion
 

@@ -48,8 +48,8 @@ instance : BI (HeapProp Val) where
   entails_refl := heapPropPreorder.le_refl _
   entails_trans := heapPropPreorder.le_trans _ _ _
   equiv_iff {P Q} := ⟨
-    fun h => h.to_eq ▸ ⟨Std.IsPreorder.le_refl P, Std.IsPreorder.le_refl P⟩,
-    fun ⟨h₁, h₂⟩ => OFE.Equiv.of_eq (funext fun σ => propext ⟨h₁ σ, h₂ σ⟩)
+    fun h => h ▸ ⟨Std.IsPreorder.le_refl P, Std.IsPreorder.le_refl P⟩,
+    fun ⟨h₁, h₂⟩ => funext fun σ => propext ⟨h₁ σ, h₂ σ⟩
   ⟩
 
   and_ne          := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩

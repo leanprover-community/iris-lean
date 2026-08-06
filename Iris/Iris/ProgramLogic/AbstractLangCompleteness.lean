@@ -148,8 +148,6 @@ theorem weakestpre_completeness {Cini : List Expr × State} {f : Forking} {γ : 
     · imodintro
       imodintro
       iframe
-      iexists q
-      iframe
       ipureintro ; grind
   · imod AbstractLangCompletenessGen.lang_completeness $$ %HnotStuck' He [Hheap HtpInv]
         with (⟨%K, %e₁, %Hctx, %Heq, %Hval, %Hatom, H⟩|⟨Hheap, Htpinv, H⟩)

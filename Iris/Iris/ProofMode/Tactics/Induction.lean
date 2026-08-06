@@ -145,8 +145,8 @@ private def addIHs {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
     -- Introduce the induction hypothesis into the intuitionistic context
     let nameIdent := mkIdent <| ← i.getUserName
     let binderIdent ← `(binderIdent| $nameIdent:ident)
-    let ⟨_, newHyps⟩ ← Hyps.addWithInfo bi binderIdent q(true) Q st.newHyps
-    let pf := q(revert_IH $p $pfIntHyps $st.pf $inst)
+    let ⟨_, _, newHyps, pf'⟩ ← Hyps.addWithInfo bi binderIdent q(true) Q st.newHyps
+    let pf := q(revert_IH $p $pfIntHyps $st.pf $inst |>.trans $(pf').mp)
 
     st := { newHyps, pf }
 

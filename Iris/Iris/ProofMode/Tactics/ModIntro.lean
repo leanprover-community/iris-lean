@@ -159,7 +159,8 @@ where go {e}
 # Returns
 Proof term of `hyps ⊢ goal`
 -/
-def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop)) (sel : TSyntax `term)
+def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
+  (sel : TSyntax `term)
   (k : ∀ {prop' bi' P}, @Hyps u prop' bi' P → ∀ Q : Q($prop'), ProofModeM Q($P ⊢ $Q) := addBIGoal)
    : ProofModeM (Q($e ⊢ $goal)) := do
     let prop' : Q(Type u) ← mkFreshExprMVarQ q(Type u)
