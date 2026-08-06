@@ -14,12 +14,12 @@ public import Iris.ProofMode
 namespace Iris
 open Iris.Std BI OFE ProofMode
 
-@[rocq_alias Fractional]
+@[ipm_class, rocq_alias Fractional]
 class Fractional [BI PROP] (Φ : Qp → PROP) where
   fractional p q : Φ (p + q) ⊣⊢ Φ p ∗ Φ q
 
-@[rocq_alias AsFractional]
-class AsFractional {PROP : Type u} [BI PROP] (P : PROP) (Φ : Qp → PROP) (q : Qp) where
+@[ipm_class, rocq_alias AsFractional]
+class AsFractional {PROP : Type u} [BI PROP] (P : PROP) (Φ : outParam <| Qp → PROP) (q : outParam Qp) where
   as_fractional : P ⊣⊢ Φ q
   as_fractional_fractional : Fractional Φ
 
@@ -57,19 +57,16 @@ theorem fractional_merge [Fractional Φ] [hP1 : AsFractional P1 Φ q1] [hP2 : As
     P1 ∗ P2 ⊢ Φ (q1 + q2) :=
   (sep_mono hP1.as_fractional.1 hP2.as_fractional.1).trans (Fractional.fractional q1 q2).2
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias from_sep_fractional]
 instance (priority := default - 10) fromSepFractional [hP : AsFractional P Φ (q1 + q2)] :
     FromSep P (Φ q1) (Φ q2) where
   from_sep := (hP.as_fractional_fractional.fractional q1 q2).2.trans hP.as_fractional.2
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_sep_fractional]
 instance (priority := default - 10) intoSepFractional [hP : AsFractional P Φ (q1 + q2)] :
     IntoSep P (Φ q1) (Φ q2) where
   into_sep := hP.as_fractional.1.trans (hP.as_fractional_fractional.fractional q1 q2).1
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias from_sep_fractional_half]
 instance (priority := default - 10) fromSepFractionalHalf [hP : AsFractional P Φ q] :
     FromSep P (Φ q.half) (Φ q.half) where
@@ -77,7 +74,6 @@ instance (priority := default - 10) fromSepFractionalHalf [hP : AsFractional P �
     (Qp.half_add_half q ▸ hP.as_fractional_fractional.fractional q.half q.half).2.trans
     hP.as_fractional.2
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_sep_fractional_half]
 instance (priority := default - 10) intoSepFractionalHalf [hP : AsFractional P Φ q] :
     IntoSep P (Φ q.half) (Φ q.half) where
