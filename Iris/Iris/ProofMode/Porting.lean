@@ -37,7 +37,7 @@ import Iris.Std.RocqPorting
 #rocq_concept proofmode "Tactics" "iPoseProof" ported "ihave _ := _"
 #rocq_concept proofmode "Tactics" "iSpecialize (basic)" ported "ispecialize"
 #rocq_concept proofmode "Tactics" "iSpecialize (duplicate context for persistent conclusion)" ported "ispecialize"
-#rocq_concept proofmode "Tactics" "iSpecialize (all specialization patterns)" missing ""
+#rocq_concept proofmode "Tactics" "iSpecialize (all specialization patterns)" ported "ispecialize"
 #rocq_concept proofmode "Tactics" "iApply" ported "iapply"
 #rocq_concept proofmode "Tactics" "iLeft" ported "ileft"
 #rocq_concept proofmode "Tactics" "iRight" ported "iright"
