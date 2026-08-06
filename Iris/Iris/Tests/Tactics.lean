@@ -2709,7 +2709,7 @@ example (E : CoPset) (P : IProp GF) :
     ⊢ £ (m + n + 6) -∗ ▷^[m + n + 6] (|={E}=> P) -∗ |={E}=> P := by
   iintro Hcred HP
   inext 3 credit: Hcred
-  inext (1 + (3 - 2)) credit: Hcred
+  inext (1 + (3 - .succ 1)) credit: Hcred
   inext 1 credit: Hcred
   inext n credit: Hcred
   inext m credit: Hcred
