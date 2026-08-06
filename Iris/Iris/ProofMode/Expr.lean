@@ -208,17 +208,19 @@ partial def Hyps.getDecl? {u prop bi} (ivar : IVarId) {s}:
 def Hyps.getUserName? {u prop bi} (ivar : IVarId) (h : @Hyps u prop bi s) : Option Name :=
   h.getDecl? ivar |>.map (·.1)
 
-partial def Hyps.spatialIVarIds {u prop bi} :
-    ∀ {s}, @Hyps u prop bi s → List IVarId
-  | _, .emp _ => []
-  | _, .hyp _ _ ivar p _ _ => if isTrue p then [] else [ivar]
-  | _, .sep _ _ _ _ lhs rhs => lhs.spatialIVarIds ++ rhs.spatialIVarIds
+@[specialize]
+def Hyps.foldrLeaves {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {α}
+    (f : Name → IVarId → Q(Bool) → Q($prop) → α → α) :
+    ∀ {s}, @Hyps u prop bi s → α → α
+  | _, .emp _,               acc => acc
+  | _, .hyp _ n ivar p ty _, acc => f n ivar p ty acc
+  | _, .sep _ _ _ _ lhs rhs, acc => foldrLeaves f lhs (foldrLeaves f rhs acc)
 
-partial def Hyps.intuitionisticIVarIds {u prop bi} :
-    ∀ {s}, @Hyps u prop bi s → List IVarId
-  | _, .emp _ => []
-  | _, .hyp _ _ ivar p _ _ => if isTrue p then [ivar] else []
-  | _, .sep _ _ _ _ lhs rhs => lhs.intuitionisticIVarIds ++ rhs.intuitionisticIVarIds
+def Hyps.spatialIVarIds {u prop bi} {s} (hyps : @Hyps u prop bi s) : List IVarId :=
+  hyps.foldrLeaves (fun _ ivar p _ acc => if isTrue p then acc else ivar :: acc) []
+
+def Hyps.intuitionisticIVarIds {u prop bi} {s} (hyps : @Hyps u prop bi s) : List IVarId :=
+  hyps.foldrLeaves (fun _ ivar p _ acc => if isTrue p then ivar :: acc else acc) []
 
 /--
   Given any hypotheses `hyps` representing `e`, filter in all spatial hypotheses
