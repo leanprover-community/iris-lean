@@ -10,6 +10,8 @@ public import Iris.ProofMode
 public import Iris.Instances.IProp
 public import Iris.Instances.Lib.LaterCredits
 public import Iris.Instances.Lib.Token
+public import Iris.ProgramLogic.Language
+public import Iris.ProgramLogic.WeakestPre
 public import Iris.Algebra.CMRA
 public import Iris.Instances.Lib.Invariants
 public import Iris.Instances.Lib.CInvariants
@@ -843,7 +845,7 @@ example [BI PROP] (Q : α → PROP) (a b : α) : (∀ x, ∀ y, ⌜x = a⌝ -∗
   iintro H
   iapply H $$ %_ %b %rfl
 
-/-- error: ispecialize: iprop(P a -∗ Q b) is not a lean premise -/
+/-- error: ispecialize: iprop(P a -∗ Q b) is not a Lean premise -/
 #guard_msgs in
 example [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
@@ -915,6 +917,65 @@ example [BI PROP] (P Q : Nat → PROP) :
 example [BI PROP] (P Q : PROP) : Q ⊢ P -∗ Q := by
   iintro H HP
   iapply H
+
+/-- Tests `iapply` of a plain wand under a basic update, using `intoWand_bupd_args` to balance the
+argument and the result of the wand against the goal's modality. -/
+example [BI PROP] [BIUpdate PROP] (P Q : PROP) :
+    (P -∗ Q) ⊢ (|==> P) -∗ |==> Q := by
+  iintro Hwand HP
+  iapply Hwand
+  iexact HP
+
+
+/-- Tests `iapply` of a plain wand under a fancy update, using `intoWand_fupd_args` to balance the
+argument and the result of the wand against the goal's modality. -/
+example [BI PROP] [BIFUpdate PROP] (E1 E2 : CoPset) (P Q : PROP) :
+    (P -∗ Q) ⊢ (|={E1,E2}=> P) -∗ |={E1,E2}=> Q := by
+  iintro Hwand HP
+  iapply Hwand
+  iexact HP
+
+/-- Tests `iapply` of a plain wand under a later, using `intoWand_later_args` to balance the
+argument and the result of the wand against the goal's modality. -/
+example [BI PROP] (P Q : PROP) : (P -∗ Q) ⊢ (▷ P) -∗ ▷ Q := by
+  iintro Hwand HP
+  iapply Hwand
+  iexact HP
+
+/-- Tests `iapply` of a plain wand under `▷^[n]`, using `intoWand_laterN_args` to balance the
+argument and the result of the wand against the goal's modality. -/
+example [BI PROP] (n : Nat) (P Q : PROP) : (P -∗ Q) ⊢ (▷^[n] P) -∗ ▷^[n] Q := by
+  iintro Hwand HP
+  iapply Hwand
+  iexact HP
+
+-- `intoWand_later_args` is reached only once `R` has bottomed out: with a `▷` on
+-- `R` itself, both instances match, and the `low` priority of the args instance
+-- means the structure-stripping `intoWand_later` is tried first and wins.
+/--
+[Meta.synthInstance.instances] #[@ProofMode.intoWand_later_args, @ProofMode.intoWand_later]
+[Meta.synthInstance] ✅️ apply @ProofMode.intoWand_later to ProofMode.IntoWand false false iprop(▷ (P -∗ Q))
+-/
+#guard_msgs (whitespace := lax, substring := true) in
+example [BI PROP] (P Q : PROP) : (▷ (P -∗ Q)) ⊢ (▷ P) -∗ ▷ Q := by
+  iintro Hwand HP
+  (set_option trace.Meta.synthInstance true in iapply Hwand)
+  iexact HP
+
+/-- Tests `iapply` of an intuitionistic wand under an `<affine>`, using
+`intoWand_affine_args` to balance the argument and the result of the wand against
+the goal's modality. -/
+example [BI PROP] (P Q : PROP) : □ (P -∗ Q) ⊢ (<affine> P) -∗ <affine> Q := by
+  iintro #Hwand HP
+  iapply Hwand
+  iexact HP
+
+/-- `intoWand_affine_args` is reached only once `R` has bottomed out: with an
+`<affine>` on `R` itself, the structure-stripping `intoWand_affine` wins instead. -/
+example [BI PROP] (P Q : PROP) : (<affine> (P -∗ Q)) ⊢ (<affine> P) -∗ <affine> Q := by
+  iintro Hwand HP
+  iapply Hwand
+  iexact HP
 
 end apply
 
@@ -1036,6 +1097,36 @@ example [BI PROP] (P Q : PROP) (h : P ⊢ □ Q) : ⊢ P -∗ P ∗ Q := by
   isplitl
   · iexact HP
   · iexact HQ
+
+/--
+  Tests `ihave` with the specialisation pattern involving modalities.
+  Despite `try_dup_context` being `true`, the context is not duplicated.
+-/
+example [BI PROP] [BIAffine PROP] [BIUpdate PROP] (P : PROP) [Persistent P] :
+    |==> P ⊢ |==> P := by
+  iintro HP
+  ihave #HP : P $$ [> HP //]
+  imodintro
+  iexact HP
+
+/-- Tests `ihave` with the specialisation pattern involving auto-framing with modalities. -/
+example [BI PROP] [BIAffine PROP] [BIUpdate PROP] (P : PROP) [Persistent P] :
+    |==> P ⊢ |==> P := by
+  iintro HP
+  ihave #HP : P $$ [>$]
+  imodintro
+  iexact HP
+
+/--
+  Tests `ihave` with a destruction pattern involving a conjunction of
+  intuitionistic hypotheses.
+-/
+example [BI PROP] (P Q1 Q2 : PROP) [Persistent Q1] [Persistent Q2] :
+    ⊢ P -∗ (P -∗ □ Q1 ∗ □ Q2) -∗ P ∗ (P -∗ □ Q1 ∗ □ Q2) := by
+  iintro HP HPQ
+  ihave ⟨#HQ1, #HQ2⟩ : □ Q1 ∗ □ Q2 $$ [HP HPQ]
+  · iapply HPQ $$ HP
+  · isplitl [HP] <;> iassumption
 
 end ihave
 
@@ -1267,14 +1358,13 @@ example [BI PROP] (Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
 
 -- Test `ispecialize` with failing `//`
 /--
-error: ispecialize: itrivial could not solve ⏎
+error: ispecialize: itrivial could not solve
 ⊢ False
 -/
 #guard_msgs in
 example [BI PROP] (Q : PROP) : ⊢ (False -∗ Q) -∗ Q := by
   iintro HQ
   ispecialize HQ $$ [//]
-
 
 /-- Tests `ispecialize` with named subgoal -/
 example [BI PROP] (Q : PROP) : P ⊢ (⌜True⌝ -∗ P -∗ ⌜True⌝ -∗ Q) -∗ Q := by
@@ -1481,6 +1571,235 @@ example [BI PROP] (P Q : PROP) :
   · rfl
   iexact H
 
+/-- Tests `ispecialize` with subgoals excluding specified hypotheses -/
+example [BI PROP] (P1 P2 P3 Q : PROP) : P1 -∗ P2 -∗ P3 -∗ (P1 -∗ P2 -∗ P3 -∗ Q) -∗ Q := by
+  iintro HP1 HP2 HP3 HPQ
+  ispecialize HPQ $$ [- HP2 HP3] [- HP3] [-]
+  · iexact HP1
+  · iexact HP2
+  · iexact HP3
+  iexact HPQ
+
+/-- Tests `ispecialize` with autoframing for the intuitionistic kind -/
+example [BI PROP] (P1 P2 P3 Q : PROP) :
+    □ P1 -∗ <pers> P2 -∗ □ P3 -∗ (□ P1 -∗ <pers> P2 -∗ <pers> P3 -∗ Q) -∗ Q := by
+  iintro #HP1 HP2 #HP3 HPQ
+  ispecialize HPQ $$ [# $] [$] [# $]
+  iexact HPQ
+
+/--
+  Tests `ispecialize` with autoframing with a persistent hypothesis in the
+  spatial context used twice.
+-/
+example [BI PROP] (φ : Prop) (Q : PROP) :
+    ⌜φ⌝ -∗ (⌜φ⌝ -∗ Q) -∗ (⌜φ⌝ -∗ Q) -∗ ⌜φ⌝ ∗ Q ∗ Q := by
+  iintro HP1 HPQ1 HPQ2
+  ispecialize HPQ1 $$ [# $]
+  ispecialize HPQ2 $$ [# $]
+  iframe
+
+/- Tests `ispecialize` with autoframing, but the premise is not persistent. -/
+/-- error: ispecialize: P is not persistent -/
+#guard_msgs in
+example [BI PROP] (φ : Prop) (P Q : PROP) :
+    P -∗ (P -∗ Q) -∗ True := by
+  iintro HP HPQ
+  ispecialize HPQ $$ [# $]
+
+/-- Tests `ispecialize` for a persistent premise with chosen hypotheses for the subgoal. -/
+example [BI PROP] (P1 P2 P3 Q : PROP) :
+    <pers> P1 -∗ <pers> P2 -∗ <pers> P3 -∗
+    ((<pers> P1 ∗ <pers> P2) -∗ Q) -∗
+    ((<pers> P1 ∗ <pers> P3) -∗ Q) -∗
+    <pers> P1 ∗ <pers> P2 ∗ <pers> P3 ∗ Q ∗ Q := by
+  iintro HP1 HP2 HP3 HPQ12 HPQ13
+  ispecialize HPQ12 $$ [# $HP1]
+  · iexact HP2
+  ispecialize HPQ13 $$ [# $HP1 $HP3]
+  iframe
+
+/-
+  Tests `ispecialize` for handling a persistent premise, except that the
+  premise is not persistent.
+-/
+/-- error: ispecialize: P is not persistent -/
+#guard_msgs in
+example [BI PROP] (φ : Prop) (P Q : PROP) :
+    P -∗ (P -∗ Q) -∗ True := by
+  iintro HP HPQ
+  ispecialize HPQ $$ [# $HP]
+
+/- Tests `ispecialize` with hypotheses chosen to be consumed for a persistent premise. -/
+/-- error: ispecialize: cannot select hypotheses for intuitionistic premise -/
+#guard_msgs in
+example [BI PROP] (φ : Prop) (P Q : PROP) :
+    <pers> P -∗ (<pers> P -∗ Q) -∗ True := by
+  iintro HP HPQ
+  ispecialize HPQ $$ [# HP]
+
+/-- Tests `ispecialize` with nested specialisation patterns. -/
+example [BI PROP] (P Q R S T : PROP) :
+    ⊢ (P -∗ <pers> T -∗ Q) -∗ (Q -∗ <pers> T -∗ R) -∗ (R -∗ S) -∗ P -∗ <pers> T -∗ S := by
+  iintro HPTQ HQTR HRS HP HT
+  ispecialize HRS $$ (HQTR $$ (HPTQ $$ HP [# $HT]) [HT //])
+  iassumption
+
+/--
+  Tests `ispecialize` with `.autoframe .modal` using the type class instance
+  `addModal_bupd` and `addModal_fupd`.
+-/
+example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] (P Q R S : PROP) (E : CoPset) :
+    ⊢ (P -∗ Q) -∗ (R -∗ S) -∗ (|==> P) -∗ (|={E}=> R) -∗ (|==> Q) ∗ (|={E}=> S) := by
+  iintro HPQ HRS HP HR
+  isplitl [HPQ HP]
+  · ispecialize HPQ $$ [>$]
+    imodintro
+    iassumption
+  · ispecialize HRS $$ [>$]
+    imodintro
+    iassumption
+
+/-- Tests `ispecialize` for its use of the type class instance `add_modal_forall`,
+  `add_modal_bupd` and `add_modal_later`. -/
+example [BI PROP] [BIUpdate PROP]
+    (P : PROP) (Q : Nat → PROP) (R S : PROP) [Timeless R] :
+    ⊢ (P -∗ (∀ x, Q x)) -∗ (|==> P) -∗ (R -∗ S) -∗ (▷ R) -∗
+      (∀ x, |==> Q x) ∗ (▷ S) := by
+  iintro HPQ HP HRS HR
+  isplitl [HPQ HP]
+  · ispecialize HPQ $$ [>$]
+    iintro %x
+    ispecialize HPQ $$ %x
+    imodintro
+    iassumption
+  · ispecialize HRS $$ [> HR]
+    · imod HR
+      iassumption
+    · inext
+      iassumption
+
+/-- Tests `ispecialize` for its use of the type class instance `add_modal_fupd_wp`. -/
+example {hlc : HasLC} {Expr State Obs Val : Type _} [Language Expr State Obs Val]
+    {GF : BundledGFunctors} [IrisGS_gen hlc Expr GF]
+    (s : Stuckness) (E : CoPset) (e : Expr) (P : IProp GF) (Φ : Val → IProp GF) :
+    ⊢ (P -∗ WP e @ s ; E {{ Φ }}) -∗ (|={E}=> P) -∗ WP e @ s ; E {{ Φ }} := by
+  iintro HPQ HP
+  ispecialize HPQ $$ [>$]
+  iassumption
+
+/--
+  Tests `ispecialize` with the handling of the modality using the type class
+  instance `addModal_bupd`. The subgoal is manually solved.
+-/
+example [BI PROP] [BIUpdate PROP] (P Q : PROP) :
+    ⊢ (P -∗ Q) -∗ (|==> P) -∗ (|==> Q) := by
+  iintro HPQ HP
+  ispecialize HPQ $$ [> HP]
+  · iassumption
+  · imodintro
+    iassumption
+
+/--
+  Tests `ispecialize` with the handling of the modality, nested patterns and
+  the use of the type class instance `addModal_wand`.
+-/
+example [BI PROP] [BIUpdate PROP] (P Q R : PROP) :
+    ⊢ (P -∗ R) -∗ (Q -∗ P) -∗ (|==> Q) -∗ (|==> R) := by
+  iintro HPR HQP HQ
+  ispecialize HPR $$ (HQP $$ [> HQ //])
+  imodintro
+  iassumption
+
+/--
+  Tests `ispecialize` with the auto-framing with modality, nested patterns and
+  the use of the type class instance `addModal_wand`.
+-/
+example [BI PROP] [BIUpdate PROP] (P Q R : PROP) :
+    ⊢ (P -∗ R) -∗ (Q -∗ P) -∗ (|==> Q) -∗ (|==> R) := by
+  iintro HPR HQP HQ
+  ispecialize HPR $$ (HQP $$ [> $])
+  imodintro
+  iassumption
+
+/- Tests `ispecialize` with an invalid specialisation pattern (duplicated hypotheses). -/
+/-- error: ispecialize: HP used twice for framing -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
+  iintro HP HPQ
+  ispecialize HPQ $$ [$HP $HP]
+
+/- Tests `ispecialize` with an invalid specialisation pattern (duplicated hypotheses). -/
+/-- error: ispecialize: HP cannot be used for both the subgoal and framing -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
+  iintro HP HPQ
+  ispecialize HPQ $$ [HP $HP]
+
+/- Tests `ispecialize` with an invalid hypothesis choice. -/
+/-- error: ispecialize: P is not a wand -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : P ⊢ Q := by
+  iintro HP
+  ispecialize HP $$ [$]
+
+/- Tests `ispecialize` with an invalid specialisation pattern. -/
+/-- error: ispecialize: IntoWand type class synthesis failed with P and Q -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : P ⊢ Q -∗ Q := by
+  iintro HP HQ
+  ispecialize HP $$ HQ
+
+/- Tests `ispecialize` with an invalid specialisation pattern using pure hypotheses. -/
+/-- error: ispecialize: P is not a Lean premise -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : P ⊢ Q := by
+  iintro HP
+  ispecialize HP $$ %(0 : Nat)
+
+/-- Tests `ispecialize` with a specialisation pattern naming the subgoal. -/
+example [BI PROP] [BIUpdate PROP] (P Q : PROP) :
+    ⊢ (P -∗ Q) -∗ (|==> P) -∗ (|==> Q) := by
+  iintro HPQ HP
+  ispecialize HPQ $$ [> HP] as subgoal
+  case subgoal => iassumption
+  imodintro; iassumption
+
+/-- Tests `ispecialize` using `AddModal` instances for `▷` and `◇`. -/
+example [BI PROP] (P Q R S : PROP) :
+    ⊢ (P -∗ Q) -∗ P -∗ (R -∗ ◇ S) -∗ R -∗ ▷ Q ∗ ◇ S := by
+  iintro HPQ HP HRS HR
+  isplitl [HPQ HP]
+  -- Using `addModal_except_0_later` after `addModal_later` fails and backtrackes.
+  · ispecialize HPQ $$ [> HP]
+    · imodintro; iassumption
+    · inext; iassumption
+  -- Using `addModal_except_0` after `addModal_later_except_0` fails and backtracks
+  · ispecialize HRS $$ [> HR]
+    · imodintro; iassumption
+    · iassumption
+
+-- `Q` is not a wand, so no `IntoWand` instance applies. This fails immediately instead of looping with
+-- `into_wand_bupd_args` because the mode does not match.
+set_option pp.mvars false in
+/-- [Meta.synthInstance] ❌️ IPM: new goal ProofMode.IntoWand false false Q ProofMode.WandMode.unknown ?_
+        ?_ => ProofMode.IntoWand false false Q ProofMode.WandMode.unknown ?_ ?_
+    [Meta.synthInstance.tactics] []
+    [Meta.synthInstance.instances] #[]
+-/
+#guard_msgs (substring := true) in
+example [BI PROP] [BIUpdate PROP] (P Q: PROP) : Q ⊢ P -∗ Q := by
+  iintro HQ
+  set_option trace.Meta.synthInstance true in
+  ispecialize HQ $$ [$]
+
+/- Tests `ispecialize` with an invalid hypothesis name in the proof mode term. -/
+/-- error: ispecialize: invalid hypothesis H -/
+#guard_msgs in
+example [BI PROP] [BIUpdate PROP] (P Q : PROP) :
+    ⊢ (P -∗ Q) -∗ (|==> P) -∗ (|==> Q) := by
+  iintro HPQ HP
+  ispecialize HPQ $$ H
+
 end specialize
 
 -- split
@@ -1631,6 +1950,24 @@ example [BI PROP] (Q : PROP) : Q ∧ <pers> P ⊢ Q := by
   iintro HQP
   icases HQP with ⟨HQ, _HP⟩
   iexact HQ
+
+/- Tests `icases` on conjunction with persistent right in an affine logic -/
+/--
+ error: unsolved goals
+PROP : Type u_1
+inst✝¹ : BI PROP
+inst✝ : BIAffine PROP
+P Q : PROP
+⊢ ⏎
+  ∗x✝ : P
+  ∗HQ : <pers> Q
+  ⊢ Q
+-/
+#guard_msgs (whitespace := lax) in
+example [BI PROP] [BIAffine PROP] (P Q : PROP) :
+  P ∧ <pers> Q ⊢ Q := by
+  iintro H
+  icases H with ⟨_, HQ⟩
 
 /-- Tests `icases` with nested separating conjunction -/
 example [BI PROP] [BIAffine PROP] (Q : PROP) : P1 ∗ P2 ∗ Q ⊢ Q := by

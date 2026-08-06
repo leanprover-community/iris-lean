@@ -44,7 +44,8 @@ export StateInterp (stateInterp)
 @[rocq_alias irisGS_gen]
 class IrisGS_gen (hlc : outParam HasLC) (Expr : Type _) {Val : Type _} {State : Type _}
     {Obs : Type _} [Λ : Language Expr State Obs Val] (GF : BundledGFunctors) extends
-    StateInterp State Obs GF, InvGS_gen hlc GF where
+    StateInterp State Obs GF where
+  [invGS : InvGS_gen hlc GF]
   /-- Number of later credits obtained from taking one step in the
   operational semantics of our language. -/
   numLatersPerStep : Nat → Nat
@@ -56,6 +57,8 @@ class IrisGS_gen (hlc : outParam HasLC) (Expr : Type _) {Val : Type _} {State : 
   considered a lower bound. -/
   stateInterp_mono σ ns obs nt :
     iprop(stateInterp σ ns obs nt ⊢ |={∅}=> stateInterp σ (ns + 1) obs nt)
+
+attribute [implicit_reducible, instance] IrisGS_gen.invGS
 
 variable {hlc : outParam HasLC} {Expr State Obs Val}
 variable [Λ : Language Expr State Obs Val]
@@ -679,6 +682,13 @@ instance elimModalFupdWpAtomic_wrongMask :
     Use `iapply fupd_wp; imod (fupd_mask_subseteq E₂)` to adjust the mask of your goal to `E₂`")
     p io false iprop(|={E₁,E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
   elim_modal := nofun
+
+@[rocq_alias add_modal_fupd_wp]
+instance addModalFupdWp : AddModal iprop(|={E}=> P) P (WP e @ s ; E {{ Φ }}) where
+  add_modal := by
+    iintro ⟨H1, H2⟩
+    imod H1
+    iapply H2 $$ H1
 
 @[rocq_alias elim_acc_wp_atomic]
 instance (priority := low) elimAcc_wp_atomic {X} (E₁ E₂ : CoPset) α β (γ : X → Option (IProp GF)) :
