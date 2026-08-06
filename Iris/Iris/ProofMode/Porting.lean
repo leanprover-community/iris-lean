@@ -13,7 +13,8 @@ import Iris.Std.RocqPorting
 #rocq_ignore_file proofmode "tokens.v" "Rocq-specific tokenizer"
 
 #rocq_concept proofmode "Tactics" missing "tactics"
-#rocq_concept proofmode "Tactics" "iSolveSideCondition" ported "iSolveSideconditionAt"
+#rocq_concept proofmode "Tactics" "iSolveSideCondition" ported
+  "iSolveSidecondition (as an internal function)"
 #rocq_concept proofmode "Tactics" "iStartProof (basic)" ported "istart"
 #rocq_concept proofmode "Tactics" "iStartProof (with bi specified)" ported "istart"
 #rocq_concept proofmode "Tactics" "iStopProof" ported "istop"
