@@ -76,8 +76,8 @@ instance intoWand_wand (p q : Bool) [BI PROP] (P Q P' : PROP) [h : FromAssumptio
   into_wand := (intuitionisticallyIf_mono <| wand_mono_left h.1).trans intuitionisticallyIf_elim
 
 @[rocq_alias into_wand_impl_false_true]
-instance intoWand_impl_false_true [BI PROP] (P Q P' : PROP) [Absorbing P']
-    [h : FromAssumption true ioP P P'] : IntoWand false true iprop(P' → Q) ioP P ioQ Q where
+instance intoWand_impl_false_true [BI PROP] (P Q P' : PROP) (m : WandMode) [Absorbing P']
+    [h : FromAssumption true m.argIO P P'] : IntoWand false true iprop(P' → Q) m P Q where
   into_wand := by
     calc
       _ ⊢ <pers> P' → Q           := imp_mono_left persistently_elim
@@ -85,8 +85,9 @@ instance intoWand_impl_false_true [BI PROP] (P Q P' : PROP) [Absorbing P']
       _ ⊢ □ P -∗ Q                := wand_mono_left <| affinely_intro <| Persistent.persistent.trans <| persistently_mono h.from_assumption
 
 @[rocq_alias into_wand_impl_true_false]
-instance intoWand_impl_true_false [BI PROP] (P Q P' P'' : PROP) [h1 : MakeAffinely P P']
-    [h2 : FromAssumption false ioP P'' P'] : IntoWand true false iprop(P → Q) ioP P'' ioQ Q where
+instance intoWand_impl_true_false [BI PROP] (P Q P' P'' : PROP) (m : WandMode)
+    [h1 : MakeAffinely P P'] [h2 : FromAssumption false m.argIO P'' P'] :
+    IntoWand true false iprop(P → Q) m P'' Q where
   into_wand := by
     apply wand_intro
     calc
@@ -98,8 +99,8 @@ instance intoWand_impl_true_false [BI PROP] (P Q P' P'' : PROP) [h1 : MakeAffine
       _ ⊢ Q                      := imp_elim_left
 
 @[rocq_alias into_wand_impl_true_true]
-instance intoWand_impl_true_true [BI PROP] (P Q P' : PROP)
-    [h : FromAssumption true ioP P P'] : IntoWand true true iprop(P' → Q) ioP P ioQ Q where
+instance intoWand_impl_true_true [BI PROP] (P Q P' : PROP) (m : WandMode)
+    [h : FromAssumption true m.argIO P P'] : IntoWand true true iprop(P' → Q) m P Q where
   into_wand := by
     apply wand_intro
     calc
@@ -109,9 +110,9 @@ instance intoWand_impl_true_true [BI PROP] (P Q P' : PROP)
       _ ⊢ Q                := imp_elim_left
 
 @[rocq_alias into_wand_impl_false_false]
-instance intoWand_impl_false_false [BI PROP] (P Q P' P'' : PROP) [Absorbing P]
-    [inst : TCOr (BIAffine PROP) (Persistent P)] [h1 : MakeAffinely P P']
-    [h2 : FromAssumption false ioP P'' P'] : IntoWand false false iprop(P → Q) ioP P'' ioQ Q where
+instance intoWand_impl_false_false [BI PROP] (P Q P' P'' : PROP) (m : WandMode)
+    [Absorbing P] [inst : TCOr (BIAffine PROP) (Persistent P)] [h1 : MakeAffinely P P']
+    [h2 : FromAssumption false m.argIO P'' P'] : IntoWand false false iprop(P → Q) m P'' Q where
   into_wand := by
     apply wand_intro
     match inst with
