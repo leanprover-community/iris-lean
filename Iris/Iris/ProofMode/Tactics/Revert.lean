@@ -67,7 +67,8 @@ private def RevertState.revertLeanPropHyp
     ProofModeM (@RevertState u prop bi origE origGoal) := do
   let { e, hyps, goal, reverted, pf } := st
   let P ← mkFreshExprMVarQ prop
-  let _hA : Q(MakeAffinely iprop(⌜$φ⌝) $P) ← synthInstanceQ q(MakeAffinely iprop(⌜$φ⌝) $P)
+  let some _ ← ProofModeM.trySynthInstanceQ q(MakeAffinely iprop(⌜$φ⌝) $P)
+  | throwError m!"irevert: MakeAffinely type class synthesis failed with {φ}"
   let hp : Q($φ) := mkFVar f
   let goal' : Q($prop) := q(iprop($P -∗ $goal))
   let pf' : Q(($e ⊢ $goal') → ($origE ⊢ $origGoal)) := q(fun h => $pf (pure_revert h $hp))
