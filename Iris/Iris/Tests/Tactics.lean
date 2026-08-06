@@ -1630,7 +1630,7 @@ example [BI PROP] (φ : Prop) (P Q : PROP) :
   ispecialize HPQ $$ [# $HP]
 
 /- Tests `ispecialize` with hypotheses chosen to be consumed for a persistent premise. -/
-/-- error: ispecialize: the subgoal for the persistent premise should not consume hypotheses -/
+/-- error: ispecialize: cannot select hypotheses for intuitionistic premise -/
 #guard_msgs in
 example [BI PROP] (φ : Prop) (P Q : PROP) :
     <pers> P -∗ (<pers> P -∗ Q) -∗ True := by
@@ -1793,7 +1793,7 @@ example [BI PROP] [BIUpdate PROP] (P Q: PROP) : Q ⊢ P -∗ Q := by
   ispecialize HQ $$ [$]
 
 /- Tests `ispecialize` with an invalid hypothesis name in the proof mode term. -/
-/-- error: ispecialize: invalid hypothesis H, use ihave instead -/
+/-- error: ispecialize: invalid hypothesis H -/
 #guard_msgs in
 example [BI PROP] [BIUpdate PROP] (P Q : PROP) :
     ⊢ (P -∗ Q) -∗ (|==> P) -∗ (|==> Q) := by

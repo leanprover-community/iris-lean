@@ -38,16 +38,22 @@ theorem specialize_wand_nest [BI PROP] {e e' e'' goal out out1' Q out2 : PROP}
   refine h2 <| wand_intro ?_
   exact (specialize_wand inst).trans h3
 
--- TODO: if q is true and A1 is persistent, this proof can guarantee □ P2 instead of P2
+-- TODO: if p is true and e' does not contain spatial hyps and AddModal is trivial, this proof can guarantee □ P2 instead of P2 in h2
 -- see https://gitlab.mpi-sws.org/iris/iris/-/blob/846ed45bed6951035c6204fef365d9a344022ae6/iris/proofmode/coq_tactics.v#L336
-theorem specialize_wand_spatial [BI PROP] {q : Bool} {A2 A3 Q P1 : PROP} P2
-    (inst : IntoWand q false Q .unknown P1 P2)
-    (h2 : A2 ⊢ A3 ∗ P1) : A2 ∗ □?q Q ⊢ A3 ∗ P2 := calc
-  _ ⊢ (A3 ∗ P1) ∗ □?q Q := sep_mono_left h2
-  _ ⊢ A3 ∗ P1 ∗ □?q Q   := sep_assoc.mp
-  _ ⊢ A3 ∗ P2           := sep_mono_right <| (sep_mono_right inst.into_wand).trans wand_elim_right
+theorem specialize_wand_modal [BI PROP] {e e' goal R P1 P1' P2 : PROP} {p : Bool}
+    (h1 : e ⊢ e' ∗ P1') (h2 : e' ∗ P2 ⊢ goal)
+    (instWand : IntoWand p false R .unknown P1 P2)
+    (instModal : AddModal P1' P1 goal) :
+    e ∗ □?p R ⊢ goal := calc
+  _ ⊢ (e' ∗ P1') ∗ □?p R                := sep_mono_left h1
+  _ ⊢ (P1' ∗ e') ∗ □?p R                := sep_mono_left sep_comm.mp
+  _ ⊢ P1' ∗ (e' ∗ □?p R)                := sep_assoc.mp
+  _ ⊢ P1' ∗ (e' ∗ (P1 -∗ P2))           := sep_mono_right <| sep_mono_right instWand.into_wand
+  _ ⊢ P1' ∗ ((P2 -∗ goal) ∗ (P1 -∗ P2)) := sep_mono_right <| sep_mono_left <| wand_intro h2
+  _ ⊢ P1' ∗ (P1 -∗ goal)                := sep_mono_right <| sep_comm.mp.trans wand_trans
+  _ ⊢ goal                              := instModal.add_modal
 
-theorem specialize_wand_intuitionistic [BI PROP] {q : Bool} {A2 Q P1' : PROP} P1 P2
+theorem specialize_wand_intuitionistic [BI PROP] {q : Bool} {A2 A3 Q P1' : PROP} P1 P2
     (instWand : IntoWand q true Q .unknown P1 P2) (instPers : Persistent P1)
     (instAbsorb : IntoAbsorbingly P1' P1) (h1 : A2 ⊢ A3 ∗ P1') : A2 ∗ □?q Q ⊢ A2 ∗ □?q P2 := by
   have h2 : □ P1 ∗ □?q Q ⊢ □?q P2 := by cases q with
@@ -85,19 +91,6 @@ theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B B'}
       _ ⊢ P' ∗ <pers> B' := sep_mono_right <| persistentlyIf_of_intuitionisticallyIf.trans into_persistently
       _ ⊢ <pers> B'      := sep_elim_right
 
-theorem specialize_modal [BI PROP] {e e' goal R P1 P1' P2 : PROP} {p : Bool}
-    (h1 : e ⊢ e' ∗ P1') (h2 : e' ∗ P2 ⊢ goal)
-    (instWand : IntoWand p false R .unknown P1 P2)
-    (instModal : AddModal P1' P1 goal) :
-    e ∗ □?p R ⊢ goal := calc
-  _ ⊢ (e' ∗ P1') ∗ □?p R                := sep_mono_left h1
-  _ ⊢ (P1' ∗ e') ∗ □?p R                := sep_mono_left sep_comm.mp
-  _ ⊢ P1' ∗ (e' ∗ □?p R)                := sep_assoc.mp
-  _ ⊢ P1' ∗ (e' ∗ (P1 -∗ P2))           := sep_mono_right <| sep_mono_right instWand.into_wand
-  _ ⊢ P1' ∗ ((P2 -∗ goal) ∗ (P1 -∗ P2)) := sep_mono_right <| sep_mono_left <| wand_intro h2
-  _ ⊢ P1' ∗ (P1 -∗ goal)                := sep_mono_right <| sep_comm.mp.trans wand_trans
-  _ ⊢ goal                              := instModal.add_modal
-
 public meta section
 open Lean Elab Tactic Meta Qq Std
 
@@ -119,39 +112,7 @@ private def SpecializeState.update {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     @SpecializeState u prop bi orig goal :=
   st.updateCont hyps' p' out' q($(pfStep).trans)
 
-/--
-  Returns `IVarId` values of hypotheses to be included in a subgoal and those to be framed.
-  Used by all `.goal` cases in `processWand`.
--/
-private def findFrameIVars {u}  {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
-    (hyps : Hyps bi e) (subgoalIdents frameIdents : List Ident) :
-    ProofModeM <| IVarIdSet × List IVarId := do
-  -- Hypotheses to be included in the subgoal
-  let subgoalIVars ← subgoalIdents.foldlM (return ·.insert <| ← hyps.findWithInfo ·) {}
-  -- Hypotheses to be framed
-  let mut frameIVars : List IVarId := []
-  for i in frameIdents do
-    let ivar ← hyps.findWithInfo i
-    if frameIVars.contains ivar then
-      throwError "ispecialize: {i} used twice for framing"
-    if subgoalIVars.contains ivar then
-      throwError "ispecialize: {i} cannot be used for both the subgoal and framing"
-    frameIVars := ivar :: frameIVars
-  return ⟨subgoalIVars, frameIVars.reverse⟩
-
-/--
-  Split hypotheses into those to be included in a subgoal and those to be framed.
-  Used by the `.goal` cases with the `.spatial` or `.modal` kind.
--/
-private def splitFrameHyps {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
-    (hyps : Hyps bi e) (subgoalIdents frameIdents : List Ident) (negate : Bool) :
-    ProofModeM <| (el : Q($prop)) × (er : Q($prop)) ×
-      Hyps bi el × Hyps bi er × Q($e ⊣⊢ $el ∗ $er) × List IVarId := do
-  let ⟨ivars, frameIVars⟩ ← findFrameIVars hyps subgoalIdents frameIdents
-  let ⟨el, er, hypsl, hypsr, pf⟩ := Hyps.split bi
-    (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
-  return ⟨el, er, hypsl, hypsr, pf, frameIVars⟩
-
+-- TODO: move this somewhere else?
 private def synthIntoWand {u} {prop : Q(Type u)} (bi : Q(BI $prop))
     (p : Q(Bool)) (out : Q($prop)) (persistent : Bool) :
     ProofModeM <| (out1 : Q($prop)) × (out2 : Q($prop)) ×
@@ -167,8 +128,23 @@ private def finishSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     ProofModeM ((e' : Q($prop)) × Hyps bi e' × Q($e ⊢ $e' ∗ $goal)) := do
   match spec with
   -- Generate a subgoal, apply `itrivial` if `//` exists in the pattern
-  | some ⟨{ negate, trivial, frame := f, hyps := hs, .. }, name⟩ =>
-    let ⟨el, _, hypsl, hypsr, pf', frameIVars⟩ ← splitFrameHyps hyps hs f negate
+  | some ⟨{ negate, trivial, frame := frameIdents, hyps := hypIdents, .. }, name⟩ =>
+    -- Hypotheses to be pass to the subgoal
+    let ivars : IVarIdSet ← hypIdents.foldlM (return ·.insert <| ← hyps.findWithInfo ·) {}
+    -- Hypotheses to be framed in the subgoal
+    let mut frameIVars : List IVarId := []
+    for i in frameIdents do
+      let ivar ← hyps.findWithInfo i
+      if frameIVars.contains ivar then
+        throwError "ispecialize: {i} used twice for framing"
+      if ivars.contains ivar then
+        throwError "ispecialize: {i} cannot be used for both the subgoal and framing"
+      frameIVars := ivar :: frameIVars
+    frameIVars := frameIVars.reverse
+
+    let ⟨el, _, hypsl, hypsr, pf'⟩ := Hyps.split bi
+      (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
+      -- let ⟨el, _, hypsl, hypsr, pf', frameIVars⟩ ← splitFrameHyps hyps hs f negate
     let res ← iFrame hypsr goal <| frameIVars.map (⟨.ipm ·, true⟩)
     let pf'' ← res.finish λ hyps goal => do
       if trivial then
@@ -188,33 +164,34 @@ private def finishSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   For handling the specialisation patterns that generate subgoals.
   The argument `spec` is `none` for auto-framing (`[$]`, `[>$]` and `[#$]`).
   Otherwise, it is the `SpecGoal` value paired with the name for the subgoal.
+  Keeping this function outside of the `mutual` block improves compilation time of this file.
 -/
 private def processSpecGoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q($prop)}
     (specState : @SpecializeState u prop bi orig goal) (kind : SpecGoalKind)
     (spec : Option <| SpecGoal × Name) : ProofModeM (@SpecializeState u prop bi orig goal) := do
   let { hyps, p, out, .. } := specState
   match kind with
-  -- Handle `[ H₁ … Hₙ ]`, `[- H₁ … Hₙ ]` and `[$]`
-  | .spatial =>
+  -- Handle `[ H₁ … Hₙ ]`, `[- H₁ … Hₙ ]`, `[$]`, `[> H₁ … Hₙ ]`, `[>- H₁ … Hₙ ]` and `[>$]`
+  | .spatial | .modal =>
     let ⟨out1, out2, inst⟩ ← synthIntoWand bi p out false
-    let ⟨_, hyps', pf⟩ ← finishSubgoal hyps out1 spec
-    let pfStep := q(specialize_wand_spatial $out2 $inst $pf)
-    return specState.update hyps' q(false) out2 pfStep
-  -- Handle `[> H₁ … Hₙ ]`, `[>- H₁ … Hₙ ]` and `[>$]`
-  | .modal =>
-    let ⟨out1, out2, inst⟩ ← synthIntoWand bi p out false
-    let out1' ← mkFreshExprMVarQ prop
-    let some instModal ← ProofModeM.trySynthInstanceQ q(AddModal $out1' $out1 $goal)
-      | throwError m!"ispecialize: AddModal type class synthesis failed with {out1} and {goal}"
+    -- add a modality using `AddModal` for the .modal case
+    let ⟨out1', instModal⟩ : ((out1' : Q($prop)) × Q(AddModal $out1' $out1 $goal)) ←
+      match kind with
+      | .modal =>
+        let out1' ← mkFreshExprMVarQ prop
+        let some instModal ← ProofModeM.trySynthInstanceQ q(AddModal $out1' $out1 $goal)
+          | throwError m!"ispecialize: AddModal type class synthesis failed with {out1} and {goal}"
+        pure ⟨out1', instModal⟩
+      | _ /- .spatial -/ => pure ⟨out1, q(addModal_id _ _)⟩
+
     let ⟨_, hyps', pf⟩ ← finishSubgoal hyps out1' spec
-    let pfStep := q((specialize_modal $pf · $inst $instModal))
+    let pfStep := q((specialize_wand_modal $pf · $inst $instModal))
     return specState.updateCont hyps' q(false) out2 pfStep
   -- Handle `[# H₁ … Hₙ ]` and `[#$]`
   | .intuitionistic =>
     let spec : Option (SpecGoal × Name) ← spec.mapM fun ⟨sg, name⟩ => do
       unless sg.hyps.isEmpty do
-        throwError "ispecialize: the subgoal for the persistent premise should not \
-          consume hypotheses"
+        throwError "ispecialize: cannot select hypotheses for intuitionistic premise"
       return ({ sg with negate := true }, name)
     let ⟨out1, out2, instWand⟩ ← synthIntoWand bi p out true
     let some instPers ← ProofModeM.trySynthInstanceQ q(Persistent $out1)
@@ -238,17 +215,16 @@ partial def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
   -- A hypothesis name, possibly with nested specialisation patterns
   | .ident pmt =>
     let some ivar ← try? <| hyps.findWithInfo ⟨pmt.term⟩
-      | throwError "ispecialize: invalid hypothesis {pmt.term}, use ihave instead"
+      | throwError "ispecialize: invalid hypothesis {pmt.term}"
     let ⟨_, hyps', _, out1', p1, _, pf'⟩ := hyps.remove false ivar
-    let ⟨e'', hyps'', pNest, outNest, pfContNest⟩ ←
+    let ⟨_, hyps'', pNest, outNest, pfContNest⟩ ←
       iSpecializeCore hyps' p1 out1' q(iprop(□?$p $out -∗ $goal)) pmt.spats
     let p2 := if isTrue pNest then p else q(false)
     let out2 ← mkFreshExprMVarQ prop
     let some inst ← ProofModeM.trySynthInstanceQ
         q(IntoWand $p $pNest $out (.matching .argument) $outNest $out2)
       | throwError m!"ispecialize: IntoWand type class synthesis failed with {out} and {outNest}"
-    let pfStep : Q((($e'' ∗ □?($pNest && $p) $out2 ⊢ $goal) → $e ∗ □?$p $out ⊢ $goal)) :=
-      q(specialize_wand_nest $inst $pf' $pfContNest)
+    let pfStep := q(specialize_wand_nest $inst $pf' $pfContNest)
     return specState.updateCont hyps'' p2 out2 pfStep
   -- A pure Lean hypothesis
   | .pure t => do
@@ -261,8 +237,7 @@ partial def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let out' : Q($prop) := Expr.headBeta q($Φ $x)
     let newMVarIds ← getMVarsNoDelayed x
     for mvar in newMVarIds do addMVarGoal mvar
-    let pfStep : Q($e ∗ □?$p $out ⊢ $e ∗ □?$p $Φ $x) :=
-      q(specialize_forall (A2 := $e) (p := $p) $inst $x)
+    let pfStep := q(specialize_forall (A2 := $e) (p := $p) $inst $x)
     return specState.update hyps p out' pfStep
   -- Subgoal with `[ H₁ … Hₙ ]`, `[> H₁ … Hₙ ]`, `[# H₁ … Hₙ ]`, `[- H₁ … Hₙ ]` or `[>- H₁ … Hₙ ]`
   | .goal specGoal name => processSpecGoal specState specGoal.kind (specGoal, name)
@@ -309,6 +284,9 @@ partial def iSpecializeCoreNoModal {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   if spats.isEmpty then
     return ⟨_, hyps, pa, A, q(.rfl)⟩
 
+  -- replacing the goal with an mvar breaks `>` specialization patterns,
+  -- but this is fine since this function assumes that there are no such
+  -- patterns in spats
   let goal : Q($prop) ← mkFreshExprMVarQ prop
   let st ← spats.foldlM processWand
     { hyps, p := pa, out := A, pf := q(id (α := $e ∗ □?$pa $A ⊢ $goal)) }

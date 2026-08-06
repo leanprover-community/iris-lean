@@ -252,7 +252,7 @@ class ElimModal {PROP} [BI PROP] (φ : outParam $ Prop) (p : Bool) (io : InOut)
 export ElimModal (elim_modal)
 
 /--
-`AddModal` is used by `ispecialize` and `iassert` to add a modality to the
+`AddModal` is used by `ispecialize` and `ihave _ : _` to add a modality to the
 goal corresponding to the premise/asserted proposition.
 -/
 @[ipm_class, rocq_alias AddModal]
