@@ -83,7 +83,8 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
   | throwError "iinv: invalid invariant {Pinv} (ElimInv type class synthesis failed)"
 
   let ⟨e'', hyps'', p'', out'', pfPin⟩ ←
-    iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) [specPat.getD <| .autoframe .spatial]
+    iSpecializeCoreNoModal hyps' q(false) q(iprop($Pin -∗ $Pin))
+    [specPat.getD ⟨← getRef, .autoframe .spatial⟩]
   have : $out'' =Q $Pin := ⟨⟩
   have : $p'' =Q false := ⟨⟩
 
