@@ -5,7 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Iris.ProgramLogic.WeakestPre
-public import Iris.Instances.Lib.Monotone
+public import Iris.ProofMode.Tactics.Monotone
 public import Iris.BI.Lib.Fixpoint
 
 namespace Iris
@@ -52,9 +52,9 @@ instance twp.pre_mono' [OFE Expr] [OFE CoPset] [OFE.Discrete Expr] [OFE.Discrete
     simp
     cases toVal x.fst.snd
     · irevert H %x
-      apply MonotonePred.monotone
+      monotone
     · irevert H %x
-      apply MonotonePred.monotone
+      monotone
   mono_pred_ne := by
     intros wp hwp
     constructor
