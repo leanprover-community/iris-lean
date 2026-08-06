@@ -383,7 +383,7 @@ instance intoAnd_and_affine_r [BI PROP] (P P' Q : PROP) [Affine Q]
     _ ⊢ <affine> P ∧ <affine> Q := affinely_and.mp
     _ ⊢ P' ∧ Q                  := and_mono h.from_affinely (affine_affinely _).mp
 
-@[rocq_alias into_and_sep]
+@[ipm_backtrack, rocq_alias into_and_sep]
 instance intoAnd_sep [BI PROP] [BIPositive PROP] (P Q : PROP) :
     IntoAnd true iprop(P ∗ Q) P Q where
   into_and := calc
@@ -391,7 +391,7 @@ instance intoAnd_sep [BI PROP] [BIPositive PROP] (P Q : PROP) :
     _ ⊢ □ P ∧ □ Q := and_sep_intuitionistically.mpr
     _ ⊢ □ (P ∧ Q) := intuitionistically_and.mpr
 
-@[rocq_alias into_and_sep_affine]
+@[ipm_backtrack, rocq_alias into_and_sep_affine]
 instance intoAnd_sep_affine (p : Bool) [BI PROP] (P Q : PROP)
     [TCOr (Affine P) (Absorbing Q)] [TCOr (Affine Q) (Absorbing P)] :
     IntoAnd p iprop(P ∗ Q) P Q where
@@ -657,7 +657,7 @@ instance (priority := default + 30) intoAbsorbingly_true [BI PROP] :
     IntoAbsorbingly (PROP := PROP) iprop(True) emp where
   into_absorbingly := absorbingly_emp.2
 
-@[rocq_alias into_absorbingly_absorbing]
+@[ipm_backtrack, rocq_alias into_absorbingly_absorbing]
 instance (priority := default + 20) intoAbsorbingly_absorbing [BI PROP] (P : PROP) [Absorbing P] :
     IntoAbsorbingly P P where
   into_absorbingly := absorbing_absorbingly.2
@@ -992,6 +992,44 @@ instance elimModal_absorbingly_here [BI PROP] p io (P Q : PROP) [Absorbing Q] :
     _ ⊢ <absorb> (P ∗ (P -∗ Q)) := absorbingly_sep_left.1
     _ ⊢ P ∗ (P -∗ Q)            := absorbing_absorbingly.1
     _ ⊢ Q                       := wand_elim_right
+
+theorem addModal_wand_mp [BI PROP] {P P' Q R : PROP} [h : AddModal P P' Q] :
+    P ∗ (P' -∗ R -∗ Q) ⊢ R -∗ Q := by
+  have h1 : (P' -∗ R -∗ Q) ∗ R ⊢ P' -∗ Q := by
+    apply wand_intro
+    calc
+      _ ⊢ (P' -∗ R -∗ Q) ∗ R ∗ P'   := sep_assoc.mp
+      _ ⊢ (P' -∗ R -∗ Q) ∗ P' ∗ R   := sep_mono_right sep_comm.mp
+      _ ⊢ ((P' -∗ R -∗ Q) ∗ P') ∗ R := sep_assoc.mpr
+      _ ⊢ (R -∗ Q) ∗ R              := sep_mono_left wand_elim_left
+      _ ⊢ Q                         := wand_elim_left
+  apply wand_intro
+  calc
+    _ ⊢ P ∗ (P' -∗ R -∗ Q) ∗ R := sep_assoc.mp
+    _ ⊢ P ∗ (P' -∗ Q)          := sep_mono_right h1
+    _ ⊢ Q                      := h.add_modal
+
+-- AddModal
+@[rocq_alias add_modal_wand]
+instance addModal_wand [BI PROP] (P P' Q R : PROP) [h : AddModal P P' Q] :
+    AddModal P P' iprop(R -∗ Q) where
+  add_modal := addModal_wand_mp
+
+@[rocq_alias add_modal_wandM]
+instance addModal_wandM [BI PROP] (P P' Q : PROP) (mR : Option PROP)
+    [h : AddModal P P' Q] : AddModal P P' iprop(mR -∗? Q) where
+  add_modal := by
+    cases mR with
+    | none => exact h.add_modal
+    | some R => exact addModal_wand_mp
+
+@[rocq_alias add_modal_forall]
+instance addModal_forall {A : Type} [BI PROP] (P P' : PROP) (Φ : A → PROP)
+    [h : ∀ x, AddModal P P' (Φ x)] : AddModal P P' iprop(∀ x, Φ x) where
+  add_modal := by
+    apply forall_intro
+    intro a
+    exact (sep_mono_right (wand_mono .rfl (forall_elim a))).trans (h a).add_modal
 
 -- CombineSepAs
 @[rocq_alias maybe_combine_sep_as_default]

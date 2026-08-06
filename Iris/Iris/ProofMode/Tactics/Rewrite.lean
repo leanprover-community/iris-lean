@@ -9,7 +9,7 @@ public import Iris.BI.InternalEq
 public import Iris.ProofMode.Classes
 public import Iris.Std.TC
 public import Iris.ProofMode.ProofModeM
-public meta import Iris.ProofMode.Patterns.ProofModeTerm
+public meta import Iris.ProofMode.Patterns.SpecPattern
 public meta import Iris.ProofMode.Tactics.HaveCore
 meta import Lean.Parser.Tactic
 
@@ -112,7 +112,12 @@ private def iRewriteCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     (target : Q($prop))
     (occs : Occurrences := Occurrences.all) :
     ProofModeM ((target' : Q($prop)) × Q($e ⊢ <pers> ($target ∗-∗ $target'))) := do
-  let ⟨_, _, _, eq, pf⟩ ← iHave hyps rule.term true
+  let g : Q($prop) ← mkFreshExprMVarQ q($prop)
+  let ⟨e', _, p, eq, pf⟩ ← iHave hyps g rule.term true
+  unless ← isDefEq g q(iprop($e' ∗ □?$p $eq)) do
+    throwError "irewrite: could not pin the equality goal"
+  have : $g =Q iprop($e' ∗ □?$p $eq) := ⟨⟩
+  let pf' : Q($e ⊢ $e' ∗ □?$p $eq) := q($pf .rfl)
 
   let .some sbi ← trySynthInstanceQ q(Sbi $prop)
     | throwError "irewrite: could not synthesize Sbi instance"
@@ -151,10 +156,10 @@ private def iRewriteCore {prop : Q(Type u)} {bi : Q(BI $prop)}
   match rule.direction with
   | .forward =>
     have : $target =Q $Ψ $a := ⟨⟩
-    return ⟨_, q(rewrite_tac $Ψ $pf)⟩
+    return ⟨_, q(rewrite_tac $Ψ $pf')⟩
   | .backward => do
     have : $target =Q $Ψ $b := ⟨⟩
-    return ⟨_, q(rewrite_tac_symm $Ψ $pf)⟩
+    return ⟨_, q(rewrite_tac_symm $Ψ $pf')⟩
 
 def iRewriteGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
     {e} (hyps : Hyps bi e) (rule : IRewrite.Rule) (goal : Q($prop))
