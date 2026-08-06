@@ -28,6 +28,7 @@ theorem specialize_wand [BI PROP] {q p : Bool} {A Q P1 P2 : PROP}
     _ ⊢ □?q (□ P1 ∗ □?q Q)   := intuitionisticallyIf_sep_mpr
     _ ⊢ □?q P2               := intuitionisticallyIf_mono <| wand_elim_swap inst.into_wand
 
+@[rocq_alias tac_specialize]
 theorem specialize_wand_nest [BI PROP] {e e' e'' goal out out1' Q out2 : PROP}
     {p p1 q : Bool} (inst : IntoWand p q out (.matching .argument) Q out2)
     (h1 : e ⊣⊢ e' ∗ □?p1 out1')
@@ -40,6 +41,7 @@ theorem specialize_wand_nest [BI PROP] {e e' e'' goal out out1' Q out2 : PROP}
 
 -- TODO: if p is true and e' does not contain spatial hyps and AddModal is trivial, this proof can guarantee □ P2 instead of P2 in h2
 -- see https://gitlab.mpi-sws.org/iris/iris/-/blob/846ed45bed6951035c6204fef365d9a344022ae6/iris/proofmode/coq_tactics.v#L336
+@[rocq_alias tac_specialize_assert]
 theorem specialize_wand_modal [BI PROP] {e e' goal R P1 P1' P2 : PROP} {p : Bool}
     (h1 : e ⊢ e' ∗ P1') (h2 : e' ∗ P2 ⊢ goal)
     (instWand : IntoWand p false R .unknown P1 P2)
@@ -53,6 +55,7 @@ theorem specialize_wand_modal [BI PROP] {e e' goal R P1 P1' P2 : PROP} {p : Bool
   _ ⊢ P1' ∗ (P1 -∗ goal)                := sep_mono_right <| sep_comm.mp.trans wand_trans
   _ ⊢ goal                              := instModal.add_modal
 
+@[rocq_alias tac_specialize_assert_intuitionistic]
 theorem specialize_wand_intuitionistic [BI PROP] {q : Bool} {A2 A3 Q P1' : PROP} P1 P2
     (instWand : IntoWand q true Q .unknown P1 P2) (instPers : Persistent P1)
     (instAbsorb : IntoAbsorbingly P1' P1) (h1 : A2 ⊢ A3 ∗ P1') : A2 ∗ □?q Q ⊢ A2 ∗ □?q P2 := by
@@ -76,6 +79,7 @@ theorem specialize_wand_intuitionistic [BI PROP] {q : Bool} {A2 A3 Q P1' : PROP}
     _ ⊢ A2 ∗ □ P1 ∗ □?q Q   := sep_assoc.mp
     _ ⊢ A2 ∗ □?q P2         := sep_mono_right h2
 
+@[rocq_alias tac_forall_specialize, rocq_alias tac_specialize_assert_pure]
 theorem specialize_forall [BI PROP] {p : Bool} {A2 P : PROP} {α : Sort _} {Φ : α → PROP}
     (inst : IntoForall P Φ) (a : α) : A2 ∗ □?p P ⊢ A2 ∗ □?p (Φ a) :=
   sep_mono_right <| intuitionisticallyIf_mono <| inst.into_forall.trans (forall_elim a)
@@ -90,6 +94,10 @@ theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B B'}
       _ ⊢ P' ∗ □?pb B    := h1
       _ ⊢ P' ∗ <pers> B' := sep_mono_right <| persistentlyIf_of_intuitionisticallyIf.trans into_persistently
       _ ⊢ <pers> B'      := sep_elim_right
+
+#rocq_ignore tac_specialize_frame "Not needed as there is no locked in Lean"
+#rocq_ignore tac_specialize_intuitionistic_helper "Functionality provided by Expr.lean infrastructure"
+#rocq_ignore tac_specialize_intuitionistic_helper_done "Functionality provided by Expr.lean infrastructure"
 
 public meta section
 open Lean Elab Tactic Meta Qq Std
