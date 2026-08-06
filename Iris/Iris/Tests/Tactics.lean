@@ -1074,7 +1074,7 @@ example [BI PROP] (P Q : PROP) : (□P ∗ Q) -∗ Q := by
 
 /-- Tests `ihave` not removing a destructed hyp -/
 example [BI PROP] [BIAffine PROP] (Q : PROP) :
-  □ (Q ∗ Q) ⊢ (□ (Q ∗ Q) ∗ □ Q) ∗ □ Q := by
+  □ (Q ∗ Q) ⊢ □ (Q ∗ Q) ∗ □ Q ∗ □ Q := by
   iintro #HQ
   ihave ⟨HQ, HQ2⟩ := HQ
   istop
