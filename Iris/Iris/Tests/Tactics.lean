@@ -18,11 +18,12 @@ public import Iris.Instances.Lib.CInvariants
 public import Iris.Instances.Lib.NaInvariants
 public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.WeakestPre
+public import Iris.HeapLang
 
 @[expose] public section
 
 namespace Iris.Tests
-open BI CMRA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic
+open BI CMRA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic HeapLang
 
 /- This file contains tests with various scenarios for all available tactics. -/
 
@@ -2276,6 +2277,28 @@ example [BI PROP] (a b c1 c2 c3 : Prop) (P : Prop → Prop) :
   icases Hpure with %⟨⟨rfl, ((hb : a) | ⟨hc, _, -⟩)⟩, @⟨d : Prop, hd⟩⟩
   · ipureintro <;> grind
   · ipureintro <;> grind
+
+variable {hlc : HasLC} {GF : BundledGFunctors} [ι : HeapLangGS hlc GF]
+
+/--
+  Tests `icases` with the use of `intoSepFractionalHalf` after backtracking
+  from `intoSepFractional`.
+-/
+example (l : Loc) (v : Val) :
+    l ↦ v ⊢ l ↦{.own (.half 1)} v ∗ l ↦{.own (.half 1)} v := by
+  iintro Hl
+  icases Hl with ⟨H1, H2⟩
+  iframe
+
+/--
+  Tests `icases` with the use of `intoSepFractional`, which has higher
+  priority than `intoSepFractionalHalf`.
+-/
+example (l : Loc) (v : Val) :
+    l ↦{.own (q1 + q2)} v ⊢ l ↦{.own q1} v ∗ l ↦{.own q2} v := by
+  iintro Hl
+  icases Hl with ⟨H1, H2⟩
+  iframe
 
 end cases
 
