@@ -77,7 +77,7 @@ instance : OFE (View R) where
     symm H := ⟨H.1.symm, H.2.symm⟩
     trans H1 H2 := ⟨H1.1.trans H2.1, H1.2.trans H2.2⟩
   }
-  eq_dist {x y} := by
+  eq_dist' {x y} := by
     refine ⟨fun H _ => H ▸ ⟨.rfl, .rfl⟩, fun H => ?_⟩
     obtain ⟨xa, xf⟩ := x; obtain ⟨ya, yf⟩ := y
     simp only [View.mk.injEq]
@@ -130,7 +130,8 @@ theorem auth_eqv_inj [UCMRA B] {q1 q2 : DFrac} {a1 a2 : A}
 
 @[rocq_alias view_frag_inj]
 theorem frag_eqv_inj [UCMRA B] {b1 b2 : B}
-    (H : (◯V b1 : View R) = ◯V b2) : b1 = b2 := OFE.eq_dist.mpr fun _ => H.dist.2
+    (H : (◯V b1 : View R) = ◯V b2) : b1 = b2 :=
+  OFE.eq_dist.mpr fun n => (H.dist (n := n)).2
 
 @[rocq_alias view_frag_dist_inj]
 theorem dist_of_frag_dist [UCMRA B] {b1 b2 : B} {n} (H : (◯V b1 : View R) ≡{n}≡ ◯V b2) :

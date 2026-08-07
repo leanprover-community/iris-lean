@@ -69,7 +69,7 @@ instance : OFE (UPred M) where
     refl _ _ _ _ _ := .rfl
     symm H _ _ A B := (H _ _ A B).symm
     trans H1 H2 _ _ A B := (H1 _ _ A B).trans (H2 _ _ A B) }
-  eq_dist {P Q} := by
+  eq_dist' {P Q} := by
     refine ⟨fun h _ _ _ _ _ => h ▸ Iff.rfl, fun h => ?_⟩
     ext n e
     exact h n n e.val (Nat.le_refl n) e.property
@@ -96,6 +96,10 @@ theorem uPred_holds_ne {P Q : UPred M} {n₁ n₂} {x : M}
 
 @[rocq_alias uPred_cofe]
 instance : IsCOFE (UPred M) where
+  -- `Nat` has no limit indices, so the bounded-completion fields are vacuous
+  lbcompl hn _ := hn.elim
+  conv_lbcompl hn _ _ := hn.elim
+  lbcompl_ne hn _ _ _ := hn.elim
   compl c := {
     holds n x := ∀ n', (Hle : n' ≤ n) → (c n') n' (x.le Hle)
     mono {n1 n2 x1 x2 HP Hx12 Hn12 n3 Hn23} := by

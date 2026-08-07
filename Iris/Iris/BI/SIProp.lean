@@ -114,7 +114,7 @@ instance : OFE SiProp where
   dist_eqv.refl _ _ _ := Iff.rfl
   dist_eqv.symm h _ hle := (h hle).symm
   dist_eqv.trans h₁ h₂ _ hle := (h₁ hle).trans (h₂ hle)
-  eq_dist {P Q} := by
+  eq_dist' {P Q} := by
     refine ⟨?_, fun h => ?_⟩
     · rintro rfl _ _ _; exact Iff.rfl
     · obtain ⟨ph, hp⟩ := P; obtain ⟨qh, _⟩ := Q
@@ -126,6 +126,10 @@ instance : OFE SiProp where
 
 @[rocq_alias siProp_cofe]
 instance : IsCOFE SiProp where
+  -- `Nat` has no limit indices, so the bounded-completion fields are vacuous
+  lbcompl hn _ := hn.elim
+  conv_lbcompl hn _ _ := hn.elim
+  lbcompl_ne hn _ _ _ := hn.elim
   compl c := {
     holds n := (c n).holds n
     closed {n₁ _} h hle := (c.cauchy hle .refl).mp (c n₁ |>.closed h hle)

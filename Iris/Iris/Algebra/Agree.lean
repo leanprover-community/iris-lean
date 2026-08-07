@@ -361,7 +361,7 @@ instance instOFE : OFE (Agree α) where
     · induction x, y using Quotient.ind₂ with | _ a b => exact Raw.dist_equiv.symm h
     · induction x, y using Quotient.ind₂ with | _ a b =>
         induction z using Quotient.ind with | _ c => exact Raw.dist_equiv.trans h₁ h₂
-  eq_dist {x y} := by
+  eq_dist' {x y} := by
     induction x, y using Quotient.ind₂ with | _ a b =>
       refine ⟨fun h n => ?_, fun h => sound (Raw.sameElems_of_dist h)⟩
       exact (Raw.dist_congr (Raw.sameElems_equivalence.refl a) (Agree.exact h)).mp

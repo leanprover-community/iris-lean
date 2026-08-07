@@ -23,7 +23,7 @@ namespace PartialMap
 instance instOFE [LawfulPartialMap M K] [OFE V] : OFE (M V) where
   Dist n s0 s1 := get? s0 ≡{n}≡ get? s1
   dist_eqv     := ⟨fun _ => .of_eq rfl, (·.symm), (·.trans ·)⟩
-  eq_dist {s0 s1} := by
+  eq_dist' {s0 s1} := by
     rw [← LawfulPartialMap.equiv_iff_eq]
     exact ⟨fun h n k => Dist.of_eq (h k), fun h k => eq_dist.mpr fun n => h n k⟩
   dist_lt      := dist_lt
@@ -63,6 +63,10 @@ theorem chain_get [LawfulPartialMap M K] [OFE V] (k : K) (c : Chain (M V)) :
 end PartialMap
 
 instance Heap.instCOFE [LawfulPartialMap M K] [COFE V] : COFE (M V) where
+  -- `Nat` has no limit indices, so the bounded-completion fields are vacuous
+  lbcompl hn _ := hn.elim
+  conv_lbcompl hn _ _ := hn.elim
+  lbcompl_ne hn _ _ _ := hn.elim
   compl c := bindAlter (fun _ => COFE.compl <| c.map ⟨_, PartialMap.get?_ne ·⟩) (c 0)
   conv_compl {_ c} k := by
     rw [get?_bindAlter]

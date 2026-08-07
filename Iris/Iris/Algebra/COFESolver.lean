@@ -84,7 +84,7 @@ instance : OFE (Tower F) where
     symm h _ := dist_eqv.symm (h _)
     trans h1 h2 _ := dist_eqv.trans (h1 _) (h2 _)
   }
-  eq_dist {_ _} := by rw [Tower.ext_iff, funext_iff]; simpa only [eq_dist] using forall_comm
+  eq_dist' {_ _} := by rw [Tower.ext_iff, funext_iff]; simpa only [eq_dist] using forall_comm
   dist_lt h1 h2 _ := dist_lt (h1 _) h2
 
 #rocq_ignore solver.tower_equiv "Included in OFE (Tower F) instance"
@@ -97,6 +97,10 @@ def towerChain (c : Chain (Tower F)) (k : Nat) : Chain (A F k) where
   cauchy h := c.cauchy h k
 
 instance : COFE (Tower F) where
+  -- `Nat` has no limit indices, so the bounded-completion fields are vacuous
+  lbcompl hn _ := hn.elim
+  conv_lbcompl hn _ _ := hn.elim
+  lbcompl_ne hn _ _ _ := hn.elim
   compl c := by
     refine ⟨fun k => compl ⟨fun i => c.1 i k, fun h => c.cauchy h k⟩, ?_⟩
     refine OFE.eq_dist.mpr (fun n => ?_)

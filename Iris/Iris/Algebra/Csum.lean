@@ -48,7 +48,7 @@ theorem dist_eqv [OFE α] [OFE β] {n} : Equivalence (Csum.Dist (α := α) (β :
 instance [OFE α] [OFE β] : OFE (Csum α β) where
   Dist := Csum.Dist
   dist_eqv := dist_eqv
-  eq_dist {x y} := by
+  eq_dist' {x y} := by
     cases x <;> cases y <;> simp [Csum.Dist, eq_dist]
   dist_lt {n x y m} hn hlt := by
     cases x <;> cases y <;> first | exact OFE.Dist.lt hn hlt | exact hn.elim | trivial
@@ -136,6 +136,10 @@ def chainR [OFE α] [OFE β] (c : Chain (Csum α β)) (b : β) : Chain β where
 
 @[rocq_alias csum_cofe]
 instance [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where
+  -- `Nat` has no limit indices, so the bounded-completion fields are vacuous
+  lbcompl hn _ := hn.elim
+  conv_lbcompl hn _ _ := hn.elim
+  lbcompl_ne hn _ _ _ := hn.elim
   compl c :=
     match c 0 with
     | inl a => inl (IsCOFE.compl (chainL c a))

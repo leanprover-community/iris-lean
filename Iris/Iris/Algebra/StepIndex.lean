@@ -390,3 +390,28 @@ theorem rec_lim {P : I → Sort v} (s : P 0) (f : ∀ n, P n → P (succᵢ n))
   rec_zero, rec_succ and rec_lim"
 
 end SIdx
+
+@[rocq_alias natSI, rocq_alias nat_sidx_mixin]
+instance natSIdx : SIdx Nat where
+  zero := 0
+  succ := Nat.succ
+  lt_trans := Nat.lt_trans
+  lt_wf := Nat.lt_wfRel.wf
+  lt_trichotomyT n m :=
+    if h : n < m then .inl h
+    else if he : n = m then .inr <| .inl he
+    else .inr <| .inr (by omega)
+  le_lteq {_ _} := Nat.le_iff_lt_or_eq
+  not_lt_zero n := by simp
+  lt_succ_self n := by simp
+  succ_le_of_lt h := h
+  weak_case
+    | 0 => .inr (by omega)
+    | m + 1 => .inl ⟨_, rfl⟩
+
+@[rocq_alias nat_sidx_finite]
+instance natSIdxFinite : SIdxFinite Nat where
+  finite_index | 0 => .inl rfl | n + 1 => .inr ⟨n, rfl⟩
+
+def SIdx.Limit.elim {I : Type u} [SIdx I] [SIdxFinite I] {n : I} {C : Sort v}
+    (h : SIdx.Limit n) : C := SIdx.limit_finite n h |>.elim

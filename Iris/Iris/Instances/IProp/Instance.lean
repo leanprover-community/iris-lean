@@ -460,7 +460,7 @@ instance iSingleton_discreteE {v : F.ap (IProp GF)} [OFE.DiscreteE v] :
         · refine some_dist_some.mpr (Eq.dist ?_)
           refine (congrArg unfoldi.f ?_).trans (IProp.unfoldi_foldi x)
           refine (congrArg E.bundle ?_).trans (ElemG.bundle_unbundle E _)
-          refine OFE.DiscreteE.discrete ?_
+          refine OFE.DiscreteE.discrete (SI := Nat) ?_
           refine (ElemG.unbundle_bundle E v).dist.symm.trans ?_
           refine NonExpansive.ne <| (IProp.foldi_unfoldi _).dist.symm.trans (NonExpansive.ne Hk)
       · rw [GenMap.singleton_map_none hk] at Hk ⊢

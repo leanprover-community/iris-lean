@@ -96,7 +96,7 @@ instance instOFE_GenMap : OFE (GenMap β) where
   dist_eqv.refl _ := Dist.of_eq rfl
   dist_eqv.symm := Dist.symm
   dist_eqv.trans := Dist.trans
-  eq_dist {x y} := by
+  eq_dist' {x y} := by
     refine ⟨fun h _ => h ▸ .rfl, fun h => ?_⟩
     obtain ⟨cx, bx⟩ := x; obtain ⟨cy, by'⟩ := y
     have : cx = cy := eq_dist.mpr h
@@ -298,9 +298,11 @@ theorem GenMap.op_singleton_comm {mf : GenMap β} {x : Nat} (y : β)
   · subst heq
     simp only [CMRA.op, optionOp, alter, Iris.alter, singleton, empty, ↓reduceIte]
     rw [H_free]
+    exact .rfl
   · simp only [CMRA.op, optionOp, alter, Iris.alter, singleton, empty]
     have : x ≠ k := Ne.symm heq
     rw [if_neg this, if_neg this]
+    exact .rfl
 
 theorem GenMap.validN_op_comm {m mf : GenMap β} (x : Nat) (y : β) (H : IsFree mf.car x) :
     ✓{n} m.alter x (some y) • mf ↔ ✓{n} (m • mf).alter x (some y) := by
@@ -311,9 +313,11 @@ theorem GenMap.validN_op_comm {m mf : GenMap β} (x : Nat) (y : β) (H : IsFree 
   · subst heq
     simp only [CMRA.op, alter, Iris.alter, ↓reduceIte, optionOp]
     rw [H]
+    exact .rfl
   · simp only [CMRA.op, alter, Iris.alter]
     have : x ≠ k := Ne.symm heq
     rw [if_neg this, if_neg this]
+    exact .rfl
 
 end CMRA
 

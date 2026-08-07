@@ -49,7 +49,7 @@ theorem dist_eqv [OFE α] {n} : Equivalence (Excl.Dist (α := α) n) where
 instance [OFE α] : OFE (Excl α) where
   Dist := Excl.Dist
   dist_eqv
-  eq_dist {x y} := by
+  eq_dist' {x y} := by
     cases x <;> cases y <;> simp [Excl.Dist, eq_dist]
   dist_lt {n x y m} hn hlt := by
     cases x <;> cases y <;> simp at *
@@ -113,6 +113,10 @@ def exclChain [OFE α] (c : Chain (Excl α)) (a : α) : Chain α := by
 
 @[rocq_alias excl_cofe]
 instance [OFE α] [IsCOFE α] : IsCOFE (Excl α) where
+  -- `Nat` has no limit indices, so the bounded-completion fields are vacuous
+  lbcompl hn _ := hn.elim
+  conv_lbcompl hn _ _ := hn.elim
+  lbcompl_ne hn _ _ _ := hn.elim
   compl c := (c 0).map fun x => IsCOFE.compl (exclChain c x)
   conv_compl {n} c := by
     have := c.cauchy (Nat.zero_le n); revert this
@@ -183,7 +187,7 @@ theorem excl_included [OFE α] {a b : α} :
     fun h => ⟨none, congrArg (fun x => some (excl x)) h.symm⟩⟩
   rcases z with _|z
   · exact (excl_inj hz).symm
-  · exact (hz.dist (n := 0)).elim
+  · exact (hz.dist (n := (0 : Nat))).elim
 
 @[rocq_alias Excl_includedN]
 theorem excl_includedN [OFE α] {a b : α} {n} :

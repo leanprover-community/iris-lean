@@ -143,6 +143,7 @@ instance : NonExpansive (Frag k dq : _ → HeapView K V H) where
     · rw [Std.PartialMap.singleton, get?_insert_eq h, get?_singleton_eq h]
       exact dist_prod_ext rfl Hx
     · rw [Std.PartialMap.singleton, get?_insert_ne h, get?_empty, get?_singleton_ne h]
+      exact .rfl
 
 variable {dp dq : DFrac} {n : Nat} {m1 m2 : H V} {k : K} {v1 v2 : V}
 
