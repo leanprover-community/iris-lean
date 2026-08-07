@@ -41,14 +41,12 @@ theorem minimum_spec (s : Stuckness) (E : CoPset) (Φ : Val → IProp GF) (m n :
   by_cases h : m < n
   · rw [decide_eq_true h]
     wp_pures
-    imodintro
     rw [Int.min_eq_left (by omega)]
-    iexact HΦ
+    itrivial
   · rw [decide_eq_false h]
     wp_pures
-    imodintro
     rw [Int.min_eq_right (by omega)]
-    iexact HΦ
+    itrivial
 
 @[rocq_alias minimum_spec_nat]
 theorem minimum_spec_nat (s : Stuckness) (E : CoPset) (Φ : Val → IProp GF) (m n : Nat) :
@@ -57,7 +55,7 @@ theorem minimum_spec_nat (s : Stuckness) (E : CoPset) (Φ : Val → IProp GF) (m
   iintro HΦ
   iapply minimum_spec
   rw [show min (↑m : Int) ↑n = ↑(min m n) by omega]
-  iexact HΦ
+  itrivial
 
 @[rocq_alias maximum_spec]
 theorem maximum_spec (s : Stuckness) (E : CoPset) (Φ : Val → IProp GF) (m n : Int) :
@@ -69,14 +67,12 @@ theorem maximum_spec (s : Stuckness) (E : CoPset) (Φ : Val → IProp GF) (m n :
   by_cases h : m < n
   · rw [decide_eq_true h]
     wp_pures
-    imodintro
     rw [Int.max_eq_right (by omega)]
-    iexact HΦ
+    itrivial
   · rw [decide_eq_false h]
     wp_pures
-    imodintro
     rw [Int.max_eq_left (by omega)]
-    iexact HΦ
+    itrivial
 
 @[rocq_alias maximum_spec_nat]
 theorem maximum_spec_nat (s : Stuckness) (E : CoPset) (Φ : Val → IProp GF) (m n : Nat) :
@@ -85,7 +81,7 @@ theorem maximum_spec_nat (s : Stuckness) (E : CoPset) (Φ : Val → IProp GF) (m
   iintro HΦ
   iapply maximum_spec
   rw [show max (↑m : Int) ↑n = ↑(max m n) by omega]
-  iexact HΦ
+  itrivial
 
 end Spec
 

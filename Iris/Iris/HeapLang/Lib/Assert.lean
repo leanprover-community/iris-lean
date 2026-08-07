@@ -23,6 +23,7 @@ section Spec
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF]
 
+-- TODO: use wp_smart_apply
 @[rocq_alias wp_assert]
 theorem wp_assert (E : CoPset) (Φ : Val → IProp GF) (e : Exp) :
     WP e @ E {{ v, ⌜v = hl_val(#true)⌝ ∧ ▷ Φ hl_val(#()) }} -∗
@@ -31,11 +32,8 @@ theorem wp_assert (E : CoPset) (Φ : Val → IProp GF) (e : Exp) :
   unfold Exp.assert
   wp_bind &e
   iapply wp_wand $$ HΦ
-  iintro %v ⟨%Heq, HΦ'⟩
-  subst Heq
-  wp_if
-  iapply fupd_intro
-  iexact HΦ'
+  iintro %v ⟨%Heq, _⟩ ; subst Heq
+  wp_if; itrivial
 
 end Spec
 
