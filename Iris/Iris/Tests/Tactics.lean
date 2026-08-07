@@ -3389,6 +3389,22 @@ example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
   iintro HP HQ
   icombine HP HQ as ⟨HNew1, _⟩ gives HNew2
 
+variable {hlc : HasLC} {GF : BundledGFunctors} [ι : HeapLangGS hlc GF]
+
+/-- Tests `icombine` with the use of `combineSepAsFractionalHalf`. -/
+example (l : Loc) (v : Val) :
+    l ↦{.own (.half 1)} v ∗ l ↦{.own (.half 1)} v ⊢ l ↦ v := by
+  iintro ⟨H1, H2⟩
+  icombine H1 H2 as Hl
+  iassumption
+
+/-- Tests `icombine` with the use of `combineSepAsFractional`. -/
+example (l : Loc) (v : Val) :
+    l ↦{.own q1} v ∗ l ↦{.own q2} v ⊢ l ↦{.own (q1 + q2)} v := by
+  iintro ⟨H1, H2⟩
+  icombine H1 H2 as Hl
+  iassumption
+
 end icombine
 
 section iloeb

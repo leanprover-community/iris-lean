@@ -83,6 +83,23 @@ instance (priority := default - 30) intoSepFractionalHalf [hP : AsFractional P .
     hP.as_fractional.1.trans
     (Qp.half_add_half q ▸ hP.as_fractional_fractional.fractional q.half q.half).1
 
+@[ipm_backtrack, rocq_alias combine_sep_as_fractional]
+instance (priority := default - 10) combineSepAsFractional
+    [hP1 : AsFractional P1 .out Φ .out q1] [hP2 : AsFractional P2 .in Φ .out q2] :
+    CombineSepAs P1 P2 (Φ (q1 + q2)) where
+  combine_sep_as :=
+    (sep_mono hP1.as_fractional.mp hP2.as_fractional.mp).trans
+    (hP1.as_fractional_fractional.fractional q1 q2).mpr
+
+@[ipm_backtrack, rocq_alias combine_sep_as_fractional_half]
+instance (priority := default - 10) combineSepAsFractionalHalf
+    [hP : AsFractional P .out Φ .in q.half] :
+    CombineSepAs P P (Φ q) where
+  combine_sep_as := calc
+    _ ⊢ Φ q.half ∗ Φ q.half := sep_mono hP.as_fractional.mp hP.as_fractional.mp
+    _ ⊢ Φ (q.half + q.half) := (hP.as_fractional_fractional.fractional q.half q.half).mpr
+    _ ⊢ Φ q                 := Qp.half_add_half _ ▸ .rfl
+
 end Lemmas
 
 section Divide
