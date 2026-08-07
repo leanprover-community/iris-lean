@@ -53,8 +53,8 @@ The parameters of a class declared with `ipm_class` are categorized into the fol
    parameters, but allow mvars to match terms (see below).
 
 The following constraints apply to the parameters:
-(In the following, semiOut parameters are treated as inputs according to the value of their `InOut`
-argument.)
+(In the following, semiOut parameters are treated as inputs according to the
+value of their `InOut` argument.)
 1. For each synthesis problem, all output parameters must be mvars.
 2. When an input parameter is a mvar, it is not considered to match an instance which does not have
 an mvar at the top-level. This is to prevent accidentally instantiating mvars. Note that this only
@@ -62,8 +62,8 @@ applies for mvars the top-level (matching the behavior of Hint Mode : ! in Rocq)
 simplest version to implement and catches most (all?) of the cases.
 This check 2 is omitted for `uncheckedIn` parameters.
 
-(We are reusing `outParam` from the Lean TC infrastructure since this gives us
-checking synthesis order checking, which is useful (though not perfect).)
+We are reusing `outParam` from the Lean TC infrastructure since this gives us
+checking synthesis order checking, which is useful (though not perfect).
  -/
 inductive ParamKind
   | in
@@ -107,8 +107,9 @@ def addEntry (s : ClassState) (entry : ClassEntry) : ClassState :=
     paramMap := s.paramMap.insert entry.name entry.params }
 
 /--
-Switch the state into persistent mode. We switch to this mode after we read all imported
-.olean files. Recall that we use a `SMap` for implementing the state.
+Switch the state into persistent mode. We switch to this mode after we read
+all imported `.olean` files.
+Recall that we use a `SMap` for implementing the state.
 -/
 def switch (s : ClassState) : ClassState :=
   { s with

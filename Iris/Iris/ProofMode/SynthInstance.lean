@@ -12,23 +12,25 @@ public import Iris.ProofMode.SynthInstanceAttr
 public meta section
 
 /-
-This file implements a custom typeclass synthesis algorithm that is used for the proof mode
-typeclasses.
+This file implements a custom typeclass synthesis algorithm that is used for
+the proof mode typeclasses.
+
 This custom typeclass synthesis is closer to Rocq typeclass search than Lean typeclass synthesis.
 This is necessary since proof mode typeclasses need to be able to instantiate and create new mvars,
 but the standard typeclass synthesis does not support this.
 
-Another problem with standard typeclass synthesis in Lean is that an mvar in an input position
-creates an `IsDefEqStuck` exception when matches against an instances with a term in the input
-position.
+Another problem with standard typeclass synthesis in Lean is that an mvar in an
+input position creates an `IsDefEqStuck` exception when matches against an instances with a
+term in the input position.
+
 This `IsDefEqStuck` exception completely terminates the synthesis without trying other instances.
 This creates problems for example for the `Make...` typeclasses that want to treat such cases as a
 normal matching failure that should not prevent other instances from matching.
 
 See also https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Issues.20with.20typeclasses.20in.20the.20proof.20mode/with/563410548 for discussion.
 
-In addition to the synthInstance family of functions, we provide the following attributes
-and annotations:
+In addition to the synthInstance family of functions, we provide the following
+attributes and annotations:
 
 The `ipm_class` attribute marks that a class should use the IPM synthesis defined in this file.
 For all other classes, the IPM synthesis falls back to standard synthesis, enabling one to use
@@ -41,8 +43,9 @@ can be applied, but its preconditions fail to synthesize. This is not enabled by
 accidental exponential blow-ups.
 
 The `ipm_tactic_instance` attribute on a function of type `SynthTactic` declares a tactic that is
-used to solve synthesis problems for a given pattern. These tactics can call IPM synthesis
-recursively.
+used to solve synthesis problems for a given pattern.
+These tactics can call IPM synthesis recursively.
+
 See Tests/Instances.lean for examples.
 
 The `#imp_synth` command allows testing ipm synthesis, similar to the `#synth` command.
@@ -149,8 +152,8 @@ partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
     return none
 
 /--
-  This function should only be directly used by IPM tactic instances to initiate recursive
-  searches.
+  This function should only be directly used by IPM tactic instances to
+  initiate recursive searches.
 -/
 def synthInstanceRecursive (type : Expr) : MetaM (Option Expr) := do
    let mctx ← getMCtx
@@ -164,8 +167,8 @@ def synthInstanceRecursive (type : Expr) : MetaM (Option Expr) := do
    return none
 
 /--
-  This function should only be directly used by IPM tactic instances to initiate recursive
-  searches.
+  This function should only be directly used by IPM tactic instances to
+  initiate recursive searches.
 -/
 def synthInstanceRecursiveQ (type : Q(Sort u)) : MetaM (Option Q($type)) :=
   synthInstanceRecursive type

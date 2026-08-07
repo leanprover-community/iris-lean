@@ -30,8 +30,10 @@ syntax "itrivial" : tactic
 
 /--
   Attempts to solve the side condition `target`.
+
   When `failOnUnsolved` is set as `true`, this function throws an error when
   the side condition cannot be solved automatically.
+
   Otherwise, when `failOnUnsolved` is set as `false`, the unsolved subgoals
   are added to the proof state for the user.
 -/
