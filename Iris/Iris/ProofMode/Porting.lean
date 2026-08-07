@@ -12,7 +12,7 @@ import Iris.Std.RocqPorting
 #rocq_ignore_file proofmode "string_ident.v" "Rocq-specific string-based ident handling"
 #rocq_ignore_file proofmode "tokens.v" "Rocq-specific tokenizer"
 
-#rocq_concept proofmode "Tactics" missing "tactics"
+#rocq_concept proofmode "Tactics" ported "tactics"
 #rocq_concept proofmode "Tactics" "iSolveSideCondition" ported "iSolveSideconditionAt"
 #rocq_concept proofmode "Tactics" "iStartProof (basic)" ported "istart"
 #rocq_concept proofmode "Tactics" "iStartProof (with bi specified)" ported "istart"
