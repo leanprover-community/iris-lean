@@ -15,12 +15,16 @@ namespace Iris.ProofMode
 public section
 open BI Std
 
+@[rocq_alias tac_clear]
 theorem clear_spatial [BI PROP] {P P' A Q : PROP} [TCOr (Affine A) (Absorbing Q)]
-    (h_rem : P ⊣⊢ P' ∗ A) (h : P' ⊢ Q) : P ⊢ Q :=
-  h_rem.1.trans <| (sep_mono_left h).trans sep_elim_left
+    (h_rem : P ⊣⊢ P' ∗ A) (h : P' ⊢ Q) : P ⊢ Q := calc
+  P ⊢ P' ∗ A := h_rem.1
+  _ ⊢ Q ∗ A  := sep_mono_left h
+  _ ⊢ Q      := sep_elim_left
 
 theorem clear_intuitionistic [BI PROP] {P P' A Q : PROP}
-    (h_rem : P ⊣⊢ P' ∗ □ A) (h : P' ⊢ Q) : P ⊢ Q := clear_spatial h_rem h
+    (h_rem : P ⊣⊢ P' ∗ □ A) (h : P' ⊢ Q) : P ⊢ Q :=
+  clear_spatial h_rem h
 
 public meta section
 open Lean Elab Tactic Meta Qq
@@ -61,7 +65,10 @@ def iClearCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   let mut st : ClearState e goal := { e, hyps, pf := q(id) }
   for ivar in ivars do st ← st.clearProofModeHyp ivar
 
-  -- Lean locals are cleared afterwards; first ensure no remaining hypothesis or goal depends on them.
+  /-
+    Lean locals are cleared afterwards; first ensure no remaining hypothesis or
+    goal depends on them.
+  -/
   for fvar in fvars do
     let _ ← st.hyps.checkRemovableFVar "iclear" fvar (some goal) fvars.contains
 
