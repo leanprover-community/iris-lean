@@ -17,6 +17,8 @@ theorem hyps_replace_ieval [BI PROP] {P Q R : PROP}
     (h : P ⊢ Q) : R ⊢ <pers> (P -∗ Q) :=
   persistently_emp_intro.trans <| persistently_mono <| wand_intro <| emp_sep.mp.trans h
 
+#rocq_ignore tac_eval_in "ieval is implemented by iteration using EvalState"
+#rocq_ignore tac_eval "ieval is implemented by iteration using EvalState"
 
 public meta section
 open Lean Elab Tactic Meta Qq BI Lean.Parser.Tactic
