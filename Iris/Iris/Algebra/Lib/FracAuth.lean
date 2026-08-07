@@ -19,6 +19,8 @@ fraction) and `◯F{q} a` (fragment with fraction). Splitting works differently 
 - `◯F{q1 + q2} (a1 • a2) = ◯F{q1} a1 • ◯F{q2} a2` (splits the lower bound)
 -/
 
+@[expose] public section
+
 open Iris OFE CMRA UCMRA Auth Option
 
 /-! ## Definitions -/
