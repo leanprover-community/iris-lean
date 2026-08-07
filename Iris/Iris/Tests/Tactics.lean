@@ -2277,6 +2277,8 @@ example [BI PROP] (a b c1 c2 c3 : Prop) (P : Prop → Prop) :
   · ipureintro <;> grind
   · ipureintro <;> grind
 
+end cases
+
 section imodintro
 
 /-- Tests `imodintro` for absorbing (intuitionistic: id, spatial: id) -/
@@ -3363,6 +3365,8 @@ example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
     ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <absorb> <affine> (P ∗ Q) ∗ <pers> R := by
   iintro HP HQ
   icombine HP HQ as ⟨HNew1, _⟩ gives HNew2
+
+end icombine
 
 section iloeb
 
