@@ -55,6 +55,7 @@ syntax " [" noWs "{ " wpPostcondInner " }" noWs "] " : wpPostcond
 syntax (name := wp) "WP " wpExpr wpPostcond : term
 
 syntax texanPostcondInner := ((ppSpace (binderIdent <|> bracketedBinder))+ ", ")? " RET " term:min "; " term:min
+
 declare_syntax_cat texanPostcond
 syntax " {" noWs "{ " texanPostcondInner " }" noWs "} " : texanPostcond
 declare_syntax_cat texanPrecond
@@ -62,10 +63,13 @@ syntax " {" noWs "{ " term:min " }" noWs "} " : texanPrecond
 
 syntax (name := texanTriple) texanPrecond wpExpr texanPostcond : term
 
-syntax (name := totalTexanTriple)
-  "[[{" term:min "}]]" wpExpr
-  "[[{" ((ppSpace (binderIdent <|> bracketedBinder))+ ", ")?
-    "RET " term:min "; " term:min "}]]" : term
+
+declare_syntax_cat totalTexanPostcond
+syntax " [" noWs "{ " texanPostcondInner " }" noWs "] " : totalTexanPostcond
+declare_syntax_cat totalTexanPrecond
+syntax " [" noWs "{ " term:min " }" noWs "] " : totalTexanPrecond
+
+syntax (name := totalTexanTriple) totalTexanPrecond wpExpr totalTexanPostcond : term
 
 open Lean in
 meta def parseWpExpr : Lean.TSyntax ``wpExpr → Lean.MacroM (TSyntax `term × TSyntax `term × TSyntax `term) := fun
@@ -127,6 +131,13 @@ meta def parseTexanTriple : Syntax → MacroM Term
               `(iprop(∀ $xs*, $Q:term -∗ Φ $pat))
             | none => `($Q:term -∗ Φ $pat)
     `(∀ Φ, $P -∗ ▷ $k -∗ (WP $wpExpr {{ Φ }}))
+  | `([{ $P:term }] $wpExpr [{ $[$[$xs]* ,]? RET $pat ; $Q:term }]) => do
+    let k ← match xs with
+            | some xs =>
+              let xs ← transformTexanBinders xs
+              `(iprop(∀ $xs*, $Q:term -∗ Φ $pat))
+            | none => `($Q:term -∗ Φ $pat)
+    `(∀ Φ, $P -∗ $k -∗ (WP $wpExpr [{ Φ }]))
   | _ => Lean.Macro.throwUnsupported
 
 @[macro Iris.BI.iprop]
@@ -134,21 +145,7 @@ meta def wpTexanTriple : Lean.Macro
   | `(iprop($P)) => do `(iprop(□ $(← parseTexanTriple P)))
   | _ => Lean.Macro.throwUnsupported
 
-@[macro totalTexanTriple]
-meta def totalWpTexanTriple : Lean.Macro
-  | `([[{ $P:term }]] $wpExpr
-      [[{ $[$[$xs]* ,]? RET $pat ; $Q:term }]]) => do
-    let k ← match xs with
-      | some xs =>
-        let xs ← transformTexanBinders xs
-        `(iprop(∀ $xs*, $Q:term -∗ Φ $pat))
-      | none => `($Q:term -∗ Φ $pat)
-    let (e, s, E) ← parseWpExpr wpExpr
-    `(iprop(∀ Φ, $P -∗ $k -∗
-      TotalWp.totalWp $s $E $e Φ))
-  | _ => Lean.Macro.throwUnsupported
-  
-@[macro texanTriple]
+@[macro texanTriple, macro totalTexanTriple]
 meta def wpTexanTripleTerm : Lean.Macro
   | P => do `(⊢ $(← parseTexanTriple P))
 
