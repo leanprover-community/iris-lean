@@ -2665,7 +2665,7 @@ section inext
 
 /- Tests `inext` failing on non-later goal -/
 set_option pp.mvars false in
-/-- error: imodintro: P is not a modality matching iprop(▷^[?_]?_) -/
+/-- error: imodintro: P is not a modality matching iprop(▷^[?_] ?_) -/
 #guard_msgs in
 example [BI PROP] (P : PROP) : P ⊢ P := by
   iintro HP
