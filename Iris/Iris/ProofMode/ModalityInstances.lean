@@ -79,7 +79,8 @@ def modality_laterN (n : Nat) [BI PROP] : Modality PROP PROP where
 def modality_embed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] : Modality PROP1 PROP2 where
   M := embed
   action _ := .transform IntoEmbed
-  spec := λ p _ P h => (intuitionisticallyIf_mono h.into_embed).trans <| embed_intuitionistically_if_2 P p
+  spec := λ p _ P h =>
+    (intuitionisticallyIf_mono h.into_embed).trans <| embed_intuitionistically_if_2 P p
   emp := embed_emp_2
   mono := (embed_mono ·)
   sep := (BiEmbed.sep _ _).mpr

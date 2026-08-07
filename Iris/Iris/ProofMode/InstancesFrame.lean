@@ -33,32 +33,43 @@ When framing [R] against itself, we leave [True] if possible since it is a weake
 Otherwise we leave [emp]. Only if all those options fail, we start decomposing [R].
 -/
 @[ipm_backtrack, rocq_alias frame_here_absorbing]
-instance (priority := high + 10) frame_here_absorbing [BI PROP] p (R : PROP) [QuickAbsorbing R] :
+instance (priority := high + 10) frame_here_absorbing [BI PROP]
+    p (R : PROP) [QuickAbsorbing R] :
     Frame p R R iprop(True) where
-  frame := sep_comm.1.trans <| (sep_mono_right intuitionisticallyIf_elim).trans quick_absorbing.absorbing
+  frame := calc
+    _ ⊢ True ∗ □?p R := sep_comm.mp
+    _ ⊢ True ∗ R     := sep_mono_right intuitionisticallyIf_elim
+    _ ⊢ R            := quick_absorbing.absorbing
 
 @[ipm_backtrack, rocq_alias frame_here]
-instance (priority := high + 5) frame_here [BI PROP] p (R : PROP) : Frame p R R iprop(emp) where
+instance (priority := high + 5) frame_here [BI PROP] p (R : PROP) :
+    Frame p R R iprop(emp) where
   frame := sep_emp.1.trans intuitionisticallyIf_elim
 
 @[ipm_backtrack, rocq_alias frame_affinely_here_absorbing]
 instance (priority := high + 10) frame_affinely_here_absorbing [BI PROP] p (R : PROP)
     [QuickAbsorbing R] : Frame p iprop(<affine> R) R iprop(True) where
-  frame :=
-    sep_comm.1.trans <|
-    (sep_mono_right (intuitionisticallyIf_elim.trans affinely_elim)).trans quick_absorbing.absorbing
+  frame := calc
+    _ ⊢ True ∗ □?p <affine> R := sep_comm.mp
+    _ ⊢ True ∗ R              := sep_mono_right <| intuitionisticallyIf_elim.trans affinely_elim
+    _ ⊢ R                     := quick_absorbing.absorbing
 
 @[ipm_backtrack, rocq_alias frame_affinely_here]
 instance (priority := high + 10) frame_affinely_here [BI PROP] p (R : PROP) :
     Frame p iprop(<affine> R) R iprop(emp) where
-  frame := sep_emp.1.trans (intuitionisticallyIf_elim.trans affinely_elim)
+  frame := calc
+    _ ⊢ □?p <affine> R := sep_emp.mp
+    _ ⊢ <affine> R     := intuitionisticallyIf_elim
+    _ ⊢ R              := affinely_elim
 
 @[ipm_backtrack, rocq_alias frame_here_pure_persistent]
 instance frame_here_pure_persistent [BI PROP] {a : Bool} {φ : Prop} {Q : PROP}
     [hfp : FromPure a Q .in φ] : Frame true iprop(⌜φ⌝) Q iprop(emp) where
-  frame :=
-    have h : □?true iprop(⌜φ⌝) ∗ emp ⊢ □ iprop(⌜φ⌝) := sep_emp.1
-    h.trans (affinely_of_intuitionistically.trans (affinely_affinelyIf.trans hfp.1))
+  frame := calc
+    _ ⊢ □ ⌜φ⌝               := sep_emp.mp
+    _ ⊢@{PROP} <affine> ⌜φ⌝ := affinely_of_intuitionistically
+    _ ⊢ <affine>?a ⌜φ⌝      := affinely_affinelyIf
+    _ ⊢ Q                   := hfp.1
 
 @[ipm_backtrack, rocq_alias frame_here_pure]
 instance frame_here_pure [BI PROP] {a : Bool} {φ : Prop} {Q : PROP}
@@ -67,15 +78,23 @@ instance frame_here_pure [BI PROP] {a : Bool} {φ : Prop} {Q : PROP}
   frame :=
     sep_emp.1.trans <|
     match hor with
-    | @TCOr.l _ _ heq => by cases heq; refine h1.1
-    | TCOr.r => (affinely_intro .rfl).trans <| affinely_affinelyIf.trans h1.1
+    | @TCOr.l _ _ heq => by cases heq; exact h1.1
+    | TCOr.r =>
+      calc
+        _ ⊢ <affine> ⌜φ⌝   := affinely_intro .rfl
+        _ ⊢ <affine>?a ⌜φ⌝ := affinely_affinelyIf
+        _ ⊢ Q              := h1.1
 
 @[ipm_backtrack, rocq_alias frame_wand]
 instance frame_wand [BI PROP] p (R P1 P2 Q2 : PROP)
     [h : FrameInstantiateExistDisabled p R P2 Q2] :
     Frame p R iprop(P1 -∗ P2) iprop(P1 -∗ Q2) where
-  frame := wand_intro <| sep_assoc.1.trans <| (sep_mono_right wand_elim_left).trans
-    h.frame_instantiatiate_exist_disabled.frame
+  frame := by
+    refine wand_intro ?_
+    calc
+      _ ⊢ □?p R ∗ (P1 -∗ Q2) ∗ P1 := sep_assoc.mp
+      _ ⊢ □?p R ∗ Q2              := sep_mono_right wand_elim_left
+      _ ⊢ P2                      := h.frame_instantiatiate_exist_disabled.frame
 
 @[ipm_backtrack, rocq_alias frame_affinely]
 instance frame_affinely [BI PROP] p (R P Q Q' : PROP)
@@ -86,39 +105,40 @@ instance frame_affinely [BI PROP] p (R P Q Q' : PROP)
     let h_aff : Affine iprop(□?p R) := match hor with
       | @TCOr.l _ _ heq => by cases heq; exact inferInstance
       | @TCOr.r _ _ hq => by have := hq.quick_affine; exact inferInstance
-    (sep_mono_right h2.make_affinely.2).trans <|
-    (sep_mono_left (affine_affinely _).symm.1).trans <|
-    affinely_sep_mpr.trans <|
-    affinely_mono h1.frame
+    calc
+      _ ⊢ □?p R ∗ <affine> Q          := sep_mono_right h2.make_affinely.mpr
+      _ ⊢ <affine> □?p R ∗ <affine> Q := sep_mono_left (affine_affinely _).symm.mp
+      _ ⊢ <affine> (□?p R ∗ Q)        := affinely_sep_mpr
+      _ ⊢ <affine> P                  := affinely_mono h1.frame
 
 @[ipm_backtrack, rocq_alias frame_intuitionistically]
 instance frame_intuitionistically [BI PROP] (R P Q Q' : PROP)
     [h1 : Frame true R P Q] [h2 : MakeIntuitionistically Q Q'] :
     Frame true R iprop(□ P) Q' where
-  frame :=
-    (sep_mono_right h2.make_intuitionistically.2).trans <|
-    (sep_mono_left intuitionistically_idem.2).trans <|
-    intuitionistically_sep_mpr.trans <|
-    intuitionistically_mono h1.frame
+  frame := calc
+    _ ⊢ □ R ∗ □ Q   := sep_mono_right h2.make_intuitionistically.mpr
+    _ ⊢ □ □ R ∗ □ Q := sep_mono_left intuitionistically_idem.mpr
+    _ ⊢ □ (□ R ∗ Q) := intuitionistically_sep_mpr
+    _ ⊢ □ P         := intuitionistically_mono h1.frame
 
 @[ipm_backtrack, rocq_alias frame_absorbingly]
 instance frame_absorbingly [BI PROP] p (R P Q Q' : PROP)
     [h1 : Frame p R P Q] [h2 : MakeAbsorbingly Q Q'] :
     Frame p R iprop(<absorb> P) Q' where
-  frame :=
-    (sep_mono_right h2.make_absorbingly.2).trans <|
-    absorbingly_sep_right.1.trans <|
-    absorbingly_mono h1.frame
+  frame := calc
+    _ ⊢ □?p R ∗ <absorb> Q   := sep_mono_right h2.make_absorbingly.mpr
+    _ ⊢ <absorb> (□?p R ∗ Q) := absorbingly_sep_right.mp
+    _ ⊢ <absorb> P           := absorbingly_mono h1.frame
 
 @[ipm_backtrack, rocq_alias frame_persistently]
 instance frame_persistently [BI PROP] (R P Q Q' : PROP)
     [h1 : Frame true R P Q] [h2 : MakePersistently Q Q'] :
     Frame true R iprop(<pers> P) Q' where
-  frame :=
-    (sep_mono_right h2.make_persistently.2).trans <|
-    (sep_mono_left persistent).trans <|
-    persistently_sep_mpr.trans <|
-    persistently_mono h1.frame
+  frame := calc
+    _ ⊢ □ R ∗ <pers> Q        := sep_mono_right h2.make_persistently.mpr
+    _ ⊢ <pers> □ R ∗ <pers> Q := sep_mono_left persistent
+    _ ⊢ <pers> (□ R ∗ Q)      := persistently_sep_mpr
+    _ ⊢ <pers> P              := persistently_mono h1.frame
 
 @[ipm_backtrack, rocq_alias frame_forall]
 instance frame_forall {α} [BI PROP] p R (Φ Ψ : α → PROP)
@@ -131,71 +151,88 @@ instance frame_forall {α} [BI PROP] p R (Φ Ψ : α → PROP)
 instance frame_impl_persistent [BI PROP] (R P1 P2 Q2 : PROP)
     [h : FrameInstantiateExistDisabled true R P2 Q2] :
     Frame true R iprop(P1 → P2) iprop(P1 → Q2) where
-  frame := imp_intro <|
-    (and_mono_left persistently_and_intuitionistically_sep_left.2).trans <|
-    and_assoc.1.trans <|
-    (and_mono_right (and_comm.1.trans imp_elim_right)).trans <|
-    persistently_and_intuitionistically_sep_left.1.trans
-    h.frame_instantiatiate_exist_disabled.frame
+  frame := by
+    refine imp_intro ?_
+    calc
+      _ ⊢ (<pers> R ∧ (P1 → Q2)) ∧ P1 :=
+          and_mono_left persistently_and_intuitionistically_sep_left.mpr
+      _ ⊢ <pers> R ∧ (P1 → Q2) ∧ P1   := and_assoc.mp
+      _ ⊢ <pers> R ∧ Q2               := and_mono_right <| and_comm.mp.trans imp_elim_right
+      _ ⊢ □ R ∗ Q2                    := persistently_and_intuitionistically_sep_left.mp
+      _ ⊢ P2                          := h.frame_instantiatiate_exist_disabled.frame
 
 /-
 You may wonder why this uses [Persistent] and not [QuickPersistent].
-The reason is that [QuickPersistent] is not needed anywhere else, and even without [QuickPersistent],
+The reason is that [QuickPersistent] is not needed anywhere else, and even without
+[QuickPersistent],
 this instance avoids quadratic complexity: we usually use the [Quick*] classes to not traverse the
-same term over and over again, but here [P1] is encountered at most once. It is hence not worth adding
-a new typeclass just for this extremely rarely used instance.
+same term over and over again, but here [P1] is encountered at most once. It is hence not worth
+adding a new typeclass just for this extremely rarely used instance.
 -/
 @[ipm_backtrack, rocq_alias frame_impl]
 instance frame_impl [BI PROP] (R P1 P2 Q2 : PROP)
     [hp : Persistent P1] [ha : QuickAbsorbing P1]
-    [h : FrameInstantiateExistDisabled false R P2 Q2] : Frame false R iprop(P1 → P2) iprop(P1 → Q2) where
-  frame :=
-    have : Absorbing P1 := ha.quick_absorbing
-    imp_intro <|
-      persistent_and_affinely_sep_right.1.trans <|
-      sep_assoc.1.trans <|
-      (sep_mono_right (sep_comm.1.trans (persistent_and_affinely_sep_left.2.trans imp_elim_right))).trans <|
-      h.frame_instantiatiate_exist_disabled.frame
+    [h : FrameInstantiateExistDisabled false R P2 Q2] :
+    Frame false R iprop(P1 → P2) iprop(P1 → Q2) where
+  frame := by
+    letI := ha.quick_absorbing
+    refine imp_intro ?_
+    calc
+      _ ⊢ (R ∗ (P1 → Q2)) ∗ <affine> P1 := persistent_and_affinely_sep_right.mp
+      _ ⊢ R ∗ (P1 → Q2) ∗ <affine> P1   := sep_assoc.mp
+      _ ⊢ R ∗ Q2                        := sep_mono_right ?_
+      _ ⊢ P2                            := h.frame_instantiatiate_exist_disabled.frame
+    calc
+      _ ⊢ <affine> P1 ∗ (P1 → Q2) := sep_comm.mp
+      _ ⊢ P1 ∧ (P1 → Q2)          := persistent_and_affinely_sep_left.mpr
+      _ ⊢ Q2                      := imp_elim_right
 
 @[ipm_backtrack, rocq_alias frame_later]
 instance frame_later [BI PROP] p (R R' P Q Q' : PROP)
     [h1 : IntoLaterN false true 1 R' R] [h2 : Frame p R P Q] [h3 : MakeLaterN 1 Q Q'] :
     Frame p R' iprop(▷ P) Q' where
-  frame :=
-    (sep_mono_right h3.make_laterN.2).trans <|
-    (sep_mono_left ((intuitionisticallyIf_mono h1.into_laterN).trans later_intuitionisticallyIf_2)).trans <|
-    later_sep.2.trans <|
-    later_mono h2.frame
+  frame := calc
+    _ ⊢ □?p R' ∗ ▷^[1]Q                                     := sep_mono_right h3.make_laterN.mpr
+    _ ⊢ ▷ □?p Nat.repeat later 0 R ∗ ▷^[1]Q                :=
+        sep_mono_left <| (intuitionisticallyIf_mono h1.1).trans later_intuitionisticallyIf_2
+    _ ⊢ ▷ (□?p Nat.repeat later 0 R ∗ Nat.repeat later 0 Q) := later_sep.mpr
+    _ ⊢ ▷ P                                                 := later_mono h2.frame
 
 @[ipm_backtrack, rocq_alias frame_laterN]
 instance frame_laterN [BI PROP] p n (R R' P Q Q' : PROP)
     [h1 : IntoLaterN false true n R' R] [h2 : Frame p R P Q] [h3 : MakeLaterN n Q Q'] :
     Frame p R' iprop(▷^[n] P) Q' where
-  frame :=
-    (sep_mono_right h3.make_laterN.2).trans <|
-    (sep_mono_left ((intuitionisticallyIf_mono h1.into_laterN).trans (laterN_intuitionisticallyIf n))).trans <|
-    (laterN_sep n).2.trans <|
-    laterN_mono n h2.frame
+  frame := calc
+    _ ⊢ □?p R' ∗ ▷^[n]Q      := sep_mono_right h3.make_laterN.mpr
+    _ ⊢ ▷^[n]□?p R ∗ ▷^[n]Q :=
+        sep_mono_left <| (intuitionisticallyIf_mono h1.1).trans (laterN_intuitionisticallyIf n)
+    _ ⊢ ▷^[n](□?p R ∗ Q)     := (laterN_sep n).mpr
+    _ ⊢ ▷^[n]P               := laterN_mono n h2.frame
 
 @[ipm_backtrack, rocq_alias frame_bupd]
 instance frame_bupd [BI PROP] [BIUpdate PROP] p (R P Q Q' : PROP)
     [h : Frame p R P Q] [h2 : MakeBUpd Q Q'] : Frame p R iprop(|==> P) Q' where
-  frame := (sep_mono .rfl h2.1.2).trans <| bupd_frame_left.trans (BIUpdate.mono h.frame)
+  frame := calc
+    _ ⊢ □?p R ∗ |==> Q   := sep_mono_right h2.make_bupd.mpr
+    _ ⊢ |==> (□?p R ∗ Q) := bupd_frame_left
+    _ ⊢ |==> P           := BIUpdate.mono h.frame
 
 @[ipm_backtrack, rocq_alias frame_fupd]
 instance frame_fupd [BI PROP] [BIFUpdate PROP] p (E1 E2 : CoPset) (R P Q Q' : PROP)
     [h : Frame p R P Q] [h2 : MakeFUpd E1 E2 Q Q'] : Frame p R iprop(|={E1,E2}=> P) Q' where
-  frame := (sep_mono .rfl h2.1.2).trans <| fupd_frame_left.trans (BIFUpdate.mono h.frame)
+  frame := calc
+    _ ⊢ □?p R ∗ |={E1, E2}=> Q := sep_mono_right h2.make_fupd.mpr
+    _ ⊢ |={E1, E2}=> □?p R ∗ Q := fupd_frame_left
+    _ ⊢ |={E1, E2}=> P         := BIFUpdate.mono h.frame
 
 @[ipm_backtrack, rocq_alias frame_except_0]
 instance frame_except_0 [BI PROP] p (R P Q Q' : PROP)
     [h1 : Frame p R P Q] [h2 : MakeExcept0 Q Q'] : Frame p R iprop(◇ P) Q' where
-  frame :=
-    (sep_mono_right h2.make_except0.2).trans <|
-    (sep_mono_left except0_intro).trans <|
-    except0_sep.2.trans <|
-    except0_mono h1.frame
-
+  frame := calc
+    _ ⊢ □?p R ∗ ◇ Q    := sep_mono_right h2.make_except0.mpr
+    _ ⊢ ◇ □?p R ∗ ◇ Q := sep_mono_left except0_intro
+    _ ⊢ ◇ (□?p R ∗ Q)  := except0_sep.mpr
+    _ ⊢ ◇ P            := except0_mono h1.frame
 
 section tactic_theorems
 
@@ -214,43 +251,46 @@ theorem maybeFrame_default [BI PROP] (R P : PROP)
 theorem frame_sep_both [BI PROP] (R P1 P2 Q1 Q2 Q' : PROP)
   [h1 : Frame true R P1 Q1] [h2 : Frame true R P2 Q2] [MakeSep Q1 Q2 Q'] :
   Frame true R iprop(P1 ∗ P2) Q' where
-  frame := (sep_mono_right make_sep.2).trans <|
-    (sep_mono_left intuitionistically_sep_idem.2).trans <|
-    sep_sep_sep_comm.1.trans <|
-    sep_mono h1.frame h2.frame
+  frame := calc
+    _ ⊢ □ R ∗ Q1 ∗ Q2         := sep_mono_right make_sep.mpr
+    _ ⊢ (□ R ∗ □ R) ∗ Q1 ∗ Q2 := sep_mono_left intuitionistically_sep_idem.mpr
+    _ ⊢ (□ R ∗ Q1) ∗ □ R ∗ Q2 := sep_sep_sep_comm.mp
+    _ ⊢ P1 ∗ P2               := sep_mono h1.frame h2.frame
 
 @[rocq_alias frame_sep_l]
-theorem frame_sep_l [BI PROP] p (R P1 P2 Q Q' : PROP)
-  [h1 : Frame p R P1 Q] [h2 : MakeSep Q P2 Q'] :
-  Frame p R iprop(P1 ∗ P2) Q' where
-  frame := (sep_mono_right make_sep.2).trans <|
-    sep_assoc.2.trans <|
-    sep_mono_left h1.frame
+theorem frame_sep_left [BI PROP] p (R P1 P2 Q Q' : PROP)
+    [h1 : Frame p R P1 Q] [h2 : MakeSep Q P2 Q'] :
+    Frame p R iprop(P1 ∗ P2) Q' where
+  frame := calc
+    _ ⊢ □?p R ∗ Q ∗ P2   := sep_mono_right make_sep.mpr
+    _ ⊢ (□?p R ∗ Q) ∗ P2 := sep_assoc.mpr
+    _ ⊢ P1 ∗ P2          := sep_mono_left h1.frame
 
 @[rocq_alias frame_sep_r]
-theorem frame_sep_r [BI PROP] p (R P1 P2 Q Q' : PROP)
-  [h1 : Frame p R P2 Q] [h2 : MakeSep P1 Q Q'] :
-  Frame p R iprop(P1 ∗ P2) Q' where
-  frame :=(sep_mono_right make_sep.2).trans <|
-    sep_left_comm.1.trans <|
-    sep_mono_right h1.frame
+theorem frame_sep_right [BI PROP] p (R P1 P2 Q Q' : PROP)
+    [h1 : Frame p R P2 Q] [h2 : MakeSep P1 Q Q'] :
+    Frame p R iprop(P1 ∗ P2) Q' where
+  frame := calc
+    _ ⊢ □?p R ∗ P1 ∗ Q := sep_mono_right make_sep.mpr
+    _ ⊢ P1 ∗ □?p R ∗ Q := sep_left_comm.mp
+    _ ⊢ P1 ∗ P2        := sep_mono_right h1.frame
 
 @[rocq_alias frame_and]
 theorem frame_and [BI PROP] p (R P1 P2 Q1 Q2 Q' : PROP)
-  [h1 : Frame p R P1 Q1] [h2 : Frame p R P2 Q2] [h3 : MakeAnd Q1 Q2 Q'] :
-  Frame p R iprop(P1 ∧ P2) Q' where
+    [h1 : Frame p R P1 Q1] [h2 : Frame p R P2 Q2] [h3 : MakeAnd Q1 Q2 Q'] :
+    Frame p R iprop(P1 ∧ P2) Q' where
   frame := and_intro
     ((sep_mono_right (h3.make_and.2.trans and_elim_l)).trans h1.frame)
     ((sep_mono_right (h3.make_and.2.trans and_elim_r)).trans h2.frame)
 
 @[rocq_alias frame_or_spatial, rocq_alias frame_or_persistent]
 theorem frame_or [BI PROP] p (R P1 P2 Q1 Q2 Q' : PROP)
-  [h1 : Frame p R P1 Q1] [h2 : Frame p R P2 Q2] [h3 : MakeOr Q1 Q2 Q'] :
-  Frame p R iprop(P1 ∨ P2) Q' where
-  frame :=
-    (sep_mono_right h3.make_or.2).trans <|
-    sep_or_left.1.trans <|
-    or_mono h1.frame h2.frame
+    [h1 : Frame p R P1 Q1] [h2 : Frame p R P2 Q2] [h3 : MakeOr Q1 Q2 Q'] :
+    Frame p R iprop(P1 ∨ P2) Q' where
+  frame := calc
+    _ ⊢ □?p R ∗ (Q1 ∨ Q2)       := sep_mono_right h3.make_or.mpr
+    _ ⊢ □?p R ∗ Q1 ∨ □?p R ∗ Q2 := sep_or_left.mp
+    _ ⊢ P1 ∨ P2                 := or_mono h1.frame h2.frame
 
 @[rocq_alias frame_exist]
 theorem frame_exist [BI PROP] {α} (p : Bool) (R : PROP) (Φ : α → PROP)
@@ -335,7 +375,7 @@ def frameSep : SynthTactic := λ e => do
     let Q' : Q($prop) ← mkFreshExprMVarQ q($prop)
     let .some _ ← synthInstanceRecursiveQ q(MakeSep $Q1 $P2 $Q') |
       throwError "MakeSep should always succeed"
-    return .success q(frame_sep_l $p $R $P1 $P2 $Q1 $Q')
+    return .success q(frame_sep_left $p $R $P1 $P2 $Q1 $Q')
   else
     let Q2 : Q($prop) ← mkFreshExprMVarQ q($prop)
     let .some _ ← synthInstanceRecursiveQ q(Frame $p $R $P2 $Q2) |
@@ -343,7 +383,7 @@ def frameSep : SynthTactic := λ e => do
     let Q' : Q($prop) ← mkFreshExprMVarQ q($prop)
     let .some _ ← synthInstanceRecursiveQ q(MakeSep $P1 $Q2 $Q') |
       throwError "MakeSep should always succeed"
-    return .success q(frame_sep_r $p $R $P1 $P2 $Q2 $Q')
+    return .success q(frame_sep_right $p $R $P1 $P2 $Q2 $Q')
 
 @[ipm_tactic_instance Frame _ _ iprop(_ ∧ _) _]
 def frameAnd : SynthTactic := λ e => do
@@ -429,9 +469,12 @@ def frameExist : SynthTactic := λ e => do
     let G ← mkFreshExprMVarQ q($prop)
     have body : Q($prop) := Expr.headBeta q($Φ $a)
     let some inst ← synthInstanceRecursiveQ q(Frame $p $R $body $G) | return none
-    -- If `a` is defEq to `c`, the existential quantifier remains. This can be either since the framing
-    -- did not instantiate the existential quantifer or since the instiation of existentials was disabled.
-    -- The `withConfig` is necessary to disable stuck defEq exceptions.
+
+    /-
+      If `a` is defEq to `c`, the existential quantifier remains. This can be either since the
+      framing did not instantiate the existential quantifer or since the instiation of existentials
+      was disabled. The `withConfig` is necessary to disable stuck defEq exceptions.
+    -/
     if ← withTransparency .none <| withConfig (λ _ => {}) (isDefEq (← instantiateMVars a) c) then
       return some (none, ← mkLambdaFVars #[c] (← instantiateMVars G),
                           ← mkLambdaFVars #[c] (← instantiateMVars inst))
@@ -452,5 +495,6 @@ def frameExist : SynthTactic := λ e => do
     return .success q(frame_exist $p $R $Φ $a $G $inst)
 
 #rocq_ignore frame_exist_helper "Logic already handled in the metaprogram frameExist"
-#rocq_ignore GatherEvarsEq "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
+#rocq_ignore GatherEvarsEq
+  "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
 #rocq_ignore TCCbnTele "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"

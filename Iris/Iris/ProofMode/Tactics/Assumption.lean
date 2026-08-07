@@ -13,16 +13,21 @@ namespace Iris.ProofMode
 public section
 open BI Std
 
+@[rocq_alias tac_assumption]
 theorem assumption [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption p .in A Q]
-  [TCOr (Affine P') (Absorbing Q)] (h : P ⊣⊢ P' ∗ □?p A) : P ⊢ Q :=
-  h.1.trans <| (sep_mono_right inst.1).trans sep_elim_right
+    [TCOr (Affine P') (Absorbing Q)] (h : P ⊣⊢ P' ∗ □?p A) : P ⊢ Q := calc
+  P ⊢ P' ∗ □?p A := h.mp
+  _ ⊢ P' ∗ Q     := sep_mono_right inst.from_assumption
+  _ ⊢ Q          := sep_elim_right
+
+#rocq_ignore tac_assumption_rocq "iAssumptionCoq is not ported to Lean"
 
 public meta section
 open Lean Elab Tactic Meta Qq
 
 /--
   `iassumption` solves the goal with a matching hypothesis from the
-   intuitionistic or spatial context.
+  intuitionistic or spatial context.
 -/
 elab "iassumption" : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do

@@ -41,7 +41,8 @@ def action_spec (p : Bool) : (PROP1 → PROP2) → Prop :=
 
 end ModalityAction
 
-@[rocq_alias modality, rocq_alias modality_mixin, rocq_alias modality_emp, rocq_alias modality_mono, rocq_alias modality_sep]
+@[rocq_alias modality, rocq_alias modality_mixin, rocq_alias modality_emp,
+  rocq_alias modality_mono, rocq_alias modality_sep]
 structure Modality PROP1 PROP2 [BI PROP1] [BI PROP2] where
   M : PROP1 → PROP2
   action : Bool → ModalityAction PROP1 PROP2
@@ -68,6 +69,7 @@ def modality_id [BI PROP] : Modality PROP PROP where
 #rocq_ignore modality_intuitionistic_id "Handled by simplifying action_spec"
 #rocq_ignore modality_spatial_forall "Handled by simplifying action_spec"
 #rocq_ignore modality_spatial_id "Handled by simplifying action_spec"
-#rocq_ignore modality_intuitionistic_forall_big_and "Not necessary due to different env representation"
+#rocq_ignore modality_intuitionistic_forall_big_and
+  "Not necessary due to different env representation"
 #rocq_ignore modality_intuitionistic_id_big_and "Not necessary due to different env representation"
 #rocq_ignore modality_spatial_forall_big_sep "Not necessary due to different env representation"
