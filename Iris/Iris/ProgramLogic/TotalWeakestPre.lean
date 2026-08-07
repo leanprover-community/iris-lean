@@ -43,18 +43,7 @@ def twp.pre' (s : Stuckness) (wp : (CoPset × Expr) × (Val -> IProp GF) -> IPro
 
 instance twp.pre_mono' [OFE Expr] [OFE CoPset] [OFE.Discrete Expr] [OFE.Discrete CoPset]
     (s : Stuckness) : BIMonoPred (@twp.pre' hlc Expr State Obs Val Λ GF ι s) where
-  mono_pred := by
-    intros
-    iintro #H %x
-    rewrite [← Prod.eta x]
-    rewrite [← Prod.eta x.fst]
-    unfold pre' pre
-    simp
-    cases toVal x.fst.snd
-    · irevert H %x
-      monotone
-    · irevert H %x
-      monotone
+  mono_pred := by monotone
   mono_pred_ne := by
     intros wp hwp
     constructor
