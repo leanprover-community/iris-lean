@@ -276,7 +276,7 @@ instance [Hdq : CoreId dq] [Hv1 : CoreId v1] : CoreId (Frag (H := H) k dq v1) wh
     obtain ⟨H⟩ := Hdq
     simp [CMRA.pcore] at H
     simp only [CMRA.pcore, View.Pcore]
-    refine congrArg some (congrArg (View.mk _) (singleton_core_eqv ?_))
+    refine congrArg some (congrArg (View.mk _) (singleton_core_eq ?_))
     simp [CMRA.pcore, Prod.pcore]
     cases h : CMRA.pcore v1
     · exact OFE.not_none_eqv_some (h ▸ Hv1.core_id) |>.elim
