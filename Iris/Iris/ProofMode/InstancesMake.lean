@@ -70,20 +70,20 @@ instance quickAbsorbing_persistently [BI PROP] (P : PROP) :
 /- MakeSep -/
 
 @[rocq_alias make_sep_emp_l]
-instance makeSep_emp_l [BI PROP] (P : PROP) : MakeSep iprop(emp) P P where
+instance makeSep_emp_left [BI PROP] (P : PROP) : MakeSep iprop(emp) P P where
   make_sep := emp_sep
 
 @[rocq_alias make_sep_emp_r]
-instance makeSep_emp_r [BI PROP] (P : PROP) : MakeSep P iprop(emp) P where
+instance makeSep_emp_right [BI PROP] (P : PROP) : MakeSep P iprop(emp) P where
   make_sep := sep_emp
 
 @[ipm_backtrack, rocq_alias make_sep_true_l]
-instance makeSep_true_l [BI PROP] (P : PROP) [h : QuickAbsorbing P] :
+instance makeSep_true_left [BI PROP] (P : PROP) [h : QuickAbsorbing P] :
     MakeSep iprop(True) P P where
   make_sep := have := h.1; true_sep
 
 @[ipm_backtrack, rocq_alias make_sep_true_r]
-instance makeSep_true_r [BI PROP] (P : PROP) [h : QuickAbsorbing P] :
+instance makeSep_true_right [BI PROP] (P : PROP) [h : QuickAbsorbing P] :
     MakeSep P iprop(True) P where
   make_sep := have := h.1; sep_true
 
@@ -95,29 +95,29 @@ instance (priority := low) makeSep_default [BI PROP] (P Q : PROP) :
 /- MakeAnd -/
 
 @[rocq_alias make_and_true_l]
-instance makeAnd_true_l [BI PROP] (P : PROP) : MakeAnd iprop(True) P P where
+instance makeAnd_true_left [BI PROP] (P : PROP) : MakeAnd iprop(True) P P where
   make_and := true_and
 
 @[rocq_alias make_and_true_r]
-instance makeAnd_true_r [BI PROP] (P : PROP) : MakeAnd P iprop(True) P where
+instance makeAnd_true_right [BI PROP] (P : PROP) : MakeAnd P iprop(True) P where
   make_and := and_true
 
 @[ipm_backtrack, rocq_alias make_and_emp_l]
-instance makeAnd_emp_l [BI PROP] (P : PROP) [h : QuickAffine P] :
+instance makeAnd_emp_left [BI PROP] (P : PROP) [h : QuickAffine P] :
     MakeAnd iprop(emp) P P where
   make_and := have := h.1; emp_and
 
 @[ipm_backtrack, rocq_alias make_and_emp_r]
-instance makeAnd_emp_r [BI PROP] (P : PROP) [h : QuickAffine P] :
+instance makeAnd_emp_right [BI PROP] (P : PROP) [h : QuickAffine P] :
     MakeAnd P iprop(emp) P where
   make_and := have := h.1; and_emp
 
 @[rocq_alias make_and_false_l]
-instance makeAnd_false_l [BI PROP] (P : PROP) : MakeAnd iprop(False) P iprop(False) where
+instance makeAnd_false_left [BI PROP] (P : PROP) : MakeAnd iprop(False) P iprop(False) where
   make_and := false_and
 
 @[rocq_alias make_and_false_r]
-instance makeAnd_false_r [BI PROP] (P : PROP) : MakeAnd P iprop(False) iprop(False) where
+instance makeAnd_false_right [BI PROP] (P : PROP) : MakeAnd P iprop(False) iprop(False) where
   make_and := and_false
 
 @[rocq_alias make_and_default]
@@ -127,29 +127,29 @@ instance (priority := low) makeAnd_default [BI PROP] (P Q : PROP) : MakeAnd P Q 
 /- MakeOr -/
 
 @[rocq_alias make_or_true_l]
-instance makeOr_true_l [BI PROP] (P : PROP) : MakeOr iprop(True) P iprop(True) where
+instance makeOr_true_left [BI PROP] (P : PROP) : MakeOr iprop(True) P iprop(True) where
   make_or := true_or
 
 @[rocq_alias make_or_true_r]
-instance makeOr_true_r [BI PROP] (P : PROP) : MakeOr P iprop(True) iprop(True) where
+instance makeOr_true_right [BI PROP] (P : PROP) : MakeOr P iprop(True) iprop(True) where
   make_or := or_true
 
 @[ipm_backtrack, rocq_alias make_or_emp_l]
-instance makeOr_emp_l [BI PROP] (P : PROP) [h : QuickAffine P] :
+instance makeOr_emp_left [BI PROP] (P : PROP) [h : QuickAffine P] :
     MakeOr iprop(emp) P iprop(emp) where
   make_or := have := h.1; emp_or
 
 @[ipm_backtrack, rocq_alias make_or_emp_r]
-instance makeOr_emp_r [BI PROP] (P : PROP) [h : QuickAffine P] :
+instance makeOr_emp_right [BI PROP] (P : PROP) [h : QuickAffine P] :
     MakeOr P iprop(emp) iprop(emp) where
   make_or := have := h.1; or_emp
 
 @[rocq_alias make_or_false_l]
-instance makeOr_false_l [BI PROP] (P : PROP) : MakeOr iprop(False) P P where
+instance makeOr_false_left [BI PROP] (P : PROP) : MakeOr iprop(False) P P where
   make_or := false_or
 
 @[rocq_alias make_or_false_r]
-instance makeOr_false_r [BI PROP] (P : PROP) : MakeOr P iprop(False) P where
+instance makeOr_false_right [BI PROP] (P : PROP) : MakeOr P iprop(False) P where
   make_or := or_false
 
 @[rocq_alias make_or_default]

@@ -15,12 +15,12 @@ public section
 open BI
 
 @[rocq_alias tac_or_l]
-theorem from_or_l [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
+theorem from_or_left [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
     (h1 : P ⊢ A1) : P ⊢ Q :=
   (or_intro_left_trans h1).trans inst.1
 
 @[rocq_alias tac_or_r]
-theorem from_or_r [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
+theorem from_or_right [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
     (h1 : P ⊢ A2) : P ⊢ Q :=
   (or_intro_right_trans h1).trans inst.1
 
@@ -40,7 +40,7 @@ elab "ileft" : tactic => do
     | throwError "ileft: {goal} is not a disjunction"
 
   let m : Q($e ⊢ $A1) ← addBIGoal hyps A1
-  mvar.assign q(from_or_l (Q := $goal) $m)
+  mvar.assign q(from_or_left (Q := $goal) $m)
 
 /--
   `iright` choose the right side of the disjunction in the goal.
@@ -54,4 +54,4 @@ elab "iright" : tactic => do
   let some _ ← ProofModeM.trySynthInstanceQ q(FromOr $goal $A1 $A2)
     | throwError "iright: {goal} is not a disjunction"
   let m : Q($e ⊢ $A2) ← addBIGoal hyps A2
-  mvar.assign q(from_or_r (Q := $goal) $m)
+  mvar.assign q(from_or_right (Q := $goal) $m)

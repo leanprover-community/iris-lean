@@ -354,11 +354,11 @@ inductive RemoveHypCore {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) (α
   | one (a : α) (out' : Q($prop)) (p : Q(Bool)) (eq : $e =Q iprop(□?$p $out'))
   | main (a : α) (_ : RemoveHyp bi e)
 
-theorem remove_l [BI PROP] {P P' Q R : PROP} (h : P ⊣⊢ P' ∗ R) :
+theorem remove_left [BI PROP] {P P' Q R : PROP} (h : P ⊣⊢ P' ∗ R) :
     P ∗ Q ⊣⊢ (P' ∗ Q) ∗ R :=
   (sep_congr_left h).trans sep_right_comm
 
-theorem remove_r [BI PROP] {P Q Q' R : PROP} (h : Q ⊣⊢ Q' ∗ R) :
+theorem remove_right [BI PROP] {P Q Q' R : PROP} (h : Q ⊣⊢ Q' ∗ R) :
     P ∗ Q ⊣⊢ (P ∗ Q') ∗ R :=
   (sep_congr_right h).trans sep_assoc.symm
 
@@ -382,13 +382,13 @@ def Hyps.removeCore : ∀ {e}, Hyps bi e → m (RemoveHypCore bi e α)
       return .main a ⟨elhs, lhs, erhs, out', p, h, q(.rfl)⟩
     | .main a ⟨_, rhs', out, out', p, h, pf⟩ =>
       let hyps' := .mkSep lhs rhs'
-      return .main a ⟨_, hyps', out, out', p, h, q(remove_r $pf)⟩
+      return .main a ⟨_, hyps', out, out', p, h, q(remove_right $pf)⟩
     | .none => match ← lhs.removeCore with
       | .one a out' p h =>
         return .main a ⟨erhs, rhs, elhs, out', p, h, q(sep_comm)⟩
       | .main a ⟨_, lhs', out, out', p, h, pf⟩ =>
         let hyps' := .mkSep lhs' rhs
-        return .main a ⟨_, hyps', out, out', p, h, q(remove_l $pf)⟩
+        return .main a ⟨_, hyps', out, out', p, h, q(remove_left $pf)⟩
       | .none => pure .none
 
 def Hyps.removeG [Monad m] {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q(Prop)}
@@ -417,14 +417,14 @@ theorem Replaces.apply [BI PROP] {P P' Q : PROP}
     (h : Replaces Q P P') (h_entails : P' ⊢ Q) : P ⊢ Q :=
   wand_entails <| (entails_wand h_entails).trans h
 
-theorem replaces_r [BI PROP] {K P Q Q' : PROP} (h : Replaces K Q Q') :
+theorem replaces_right [BI PROP] {K P Q Q' : PROP} (h : Replaces K Q Q') :
     Replaces K iprop(P ∗ Q) iprop(P ∗ Q') :=
   wand_intro <| sep_assoc.2.trans <| wand_elim <|
   (wand_intro <| sep_assoc.1.trans wand_elim_left).trans h
 
-theorem replaces_l [BI PROP] {K P P' Q : PROP} (h : Replaces K P P') :
+theorem replaces_left [BI PROP] {K P P' Q : PROP} (h : Replaces K P P') :
     Replaces K iprop(P ∗ Q) iprop(P' ∗ Q) :=
-  (wand_mono_left sep_comm.1).trans <| (replaces_r h).trans (wand_mono_left sep_comm.1)
+  (wand_mono_left sep_comm.1).trans <| (replaces_right h).trans (wand_mono_left sep_comm.1)
 
 theorem to_persistent_spatial [BI PROP] {P P' Q : PROP}
     [hP : IntoPersistently false P P'] [or : TCOr (Affine P) (Absorbing Q)] :
@@ -452,7 +452,7 @@ theorem replace_hyp {PROP} [BI PROP] {p} {ty ty' e0 : PROP}
     | false => (sep_mono_left intuitionistically_elim).trans <| wand_elim_left
     | true => intuitionistically_sep_mpr.trans <| intuitionistically_mono wand_elim_left
 
-theorem replace_hyp_sep_l {PROP} [BI PROP] {elhs elhs' erhs e0 : PROP}
+theorem replace_hyp_sep_left {PROP} [BI PROP] {elhs elhs' erhs e0 : PROP}
   (h : ∀ P, (elhs ∗ P) ∧ e0 ⊢ elhs' ∗ P) :
   ∀ P, ((elhs ∗ erhs) ∗ P) ∧ e0 ⊢ (elhs' ∗ erhs) ∗ P := fun P =>
   calc iprop(((elhs ∗ erhs) ∗ P) ∧ e0)
@@ -460,7 +460,7 @@ theorem replace_hyp_sep_l {PROP} [BI PROP] {elhs elhs' erhs e0 : PROP}
     _ ⊢ elhs' ∗ (erhs ∗ P) := h _
     _ ⊢ (elhs' ∗ erhs) ∗ P := sep_assoc.2
 
-theorem replace_hyp_sep_r {PROP} [BI PROP] {elhs erhs' erhs e0 : PROP}
+theorem replace_hyp_sep_right {PROP} [BI PROP] {elhs erhs' erhs e0 : PROP}
   (h : ∀ P, (erhs ∗ P) ∧ e0 ⊢ erhs' ∗ P) :
   ∀ P, ((elhs ∗ erhs) ∗ P) ∧ e0 ⊢ (elhs ∗ erhs') ∗ P := fun P =>
   calc iprop(((elhs ∗ erhs) ∗ P) ∧ e0)
@@ -490,9 +490,9 @@ def Hyps.replaceCore : ∀ {e}, Hyps bi e →
     return none
   | _, .sep _ _ _ _ lhs rhs => do
     if let some ⟨_, lhs', pf⟩ ← lhs.replaceCore then
-      return some ⟨_, .mkSep lhs' rhs, q(replace_hyp_sep_l $pf)⟩
+      return some ⟨_, .mkSep lhs' rhs, q(replace_hyp_sep_left $pf)⟩
     if let some ⟨_, rhs', pf⟩ ← rhs.replaceCore then
-      return some ⟨_, .mkSep lhs rhs', q(replace_hyp_sep_r $pf)⟩
+      return some ⟨_, .mkSep lhs rhs', q(replace_hyp_sep_right $pf)⟩
     return none
 
 variable [Monad m] [MonadLiftT MetaM m] {prop : Q(Type u)}

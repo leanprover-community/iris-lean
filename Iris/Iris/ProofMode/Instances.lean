@@ -91,12 +91,12 @@ instance intoWand_imp_true [BI PROP] (P Q P' : PROP) [Affine P']
     dsimp; exact sep_and.trans <| imp_elim intuitionistically_elim
 
 @[ipm_backtrack, rocq_alias into_wand_and_l]
-instance intoWand_and_l (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP)
+instance intoWand_and_left (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP)
     [h : IntoWand p q R1 m P' Q'] : IntoWand p q iprop(R1 ∧ R2) m P' Q' where
   into_wand := (intuitionisticallyIf_mono and_elim_l).trans h.1
 
 @[ipm_backtrack, rocq_alias into_wand_and_r]
-instance intoWand_and_r (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP)
+instance intoWand_and_right (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP)
     [h : IntoWand p q R2 m P' Q'] : IntoWand p q iprop(R1 ∧ R2) m P' Q' where
   into_wand := (intuitionisticallyIf_mono and_elim_r).trans h.1
 
@@ -334,7 +334,7 @@ instance fromAnd_iff [BI PROP] (P1 P2 P1' P2' : PROP)
     FromAnd iprop(P1 ↔ P2) P1' P2' := h
 
 @[ipm_backtrack, rocq_alias from_and_sep_persistent_l]
-instance (priority := default + 30) fromAnd_sep_persistent_l [BI PROP] (P1 P1' P2 : PROP)
+instance (priority := default + 30) fromAnd_sep_persistent_left [BI PROP] (P1 P1' P2 : PROP)
     [Persistent P1] [h : IntoAbsorbingly P1' P1] : FromAnd iprop(P1 ∗ P2) P1' P2 where
   from_and := by
     calc
@@ -345,7 +345,7 @@ instance (priority := default + 30) fromAnd_sep_persistent_l [BI PROP] (P1 P1' P
     exact affinely_mono <| (absorbingly_mono persistent).trans absorbingly_persistently.mp
 
 @[ipm_backtrack, rocq_alias from_and_sep_persistent_r]
-instance (priority := default + 20) fromAnd_sep_persistent_r [BI PROP] (P1 P2 P2' : PROP)
+instance (priority := default + 20) fromAnd_sep_persistent_right [BI PROP] (P1 P2 P2' : PROP)
     [Persistent P2] [h : IntoAbsorbingly P2' P2] : FromAnd iprop(P1 ∗ P2) P1 P2' where
   from_and := by
     calc
@@ -384,7 +384,7 @@ instance intoAnd_iff [BI PROP] p (P1 P2 P1' P2' : PROP)
     IntoAnd p iprop(P1 ↔ P2) P1' P2' := h
 
 @[ipm_backtrack, rocq_alias into_and_and_affine_l]
-instance intoAnd_and_affine_l [BI PROP] (P Q Q' : PROP) [Affine P]
+instance intoAnd_and_affine_left [BI PROP] (P Q Q' : PROP) [Affine P]
     [h : FromAffinely Q' Q] : IntoAnd false iprop(P ∧ Q) P Q' where
   into_and := calc
     _ ⊢ <affine> P ∧ Q          := and_mono_left (affine_affinely _).mpr
@@ -393,7 +393,7 @@ instance intoAnd_and_affine_l [BI PROP] (P Q Q' : PROP) [Affine P]
     _ ⊢ P ∧ Q'                  := and_mono (affine_affinely _).mp h.from_affinely
 
 @[ipm_backtrack, rocq_alias into_and_and_affine_r]
-instance intoAnd_and_affine_r [BI PROP] (P P' Q : PROP) [Affine Q]
+instance intoAnd_and_affine_right [BI PROP] (P P' Q : PROP) [Affine Q]
     [h : FromAffinely P' P] : IntoAnd false iprop(P ∧ Q) P' Q where
   into_and := calc
     _ ⊢ P ∧ <affine> Q          := and_mono_right (affine_affinely _).mpr
@@ -501,7 +501,7 @@ instance intoSep_sep [BI PROP] (P Q : PROP) : IntoSep iprop(P ∗ Q) P Q := ⟨.
 
 set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias into_sep_and_persistent_l]
-instance intoSep_and_persistent_l [BI PROP] (P Q P' Q' : PROP) [Persistent P]
+instance intoSep_and_persistent_left [BI PROP] (P Q P' Q' : PROP) [Persistent P]
     [inst : AndIntoSep P P' Q Q'] : IntoSep iprop(P ∧ Q) P' Q' where
   into_sep :=
     match P', inst with
@@ -515,7 +515,7 @@ instance intoSep_and_persistent_l [BI PROP] (P Q P' Q' : PROP) [Persistent P]
 
 set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias into_sep_and_persistent_r]
-instance intoSep_and_persistent_r [BI PROP] (P Q P' Q' : PROP) [Persistent Q]
+instance intoSep_and_persistent_right [BI PROP] (P Q P' Q' : PROP) [Persistent Q]
     [inst : AndIntoSep Q Q' P P'] : IntoSep iprop(P ∧ Q) P' Q' where
   into_sep :=
     match P', inst with
@@ -696,27 +696,27 @@ instance (priority := default + 100) fromAssumption_exact (p : Bool) [BI PROP]
   from_assumption := intuitionisticallyIf_elim
 
 @[rocq_alias from_assumption_persistently_r]
-instance (priority := default + 30) fromAssumption_persistently_r [BI PROP] ioP (P Q : PROP)
+instance (priority := default + 30) fromAssumption_persistently_right [BI PROP] ioP (P Q : PROP)
     [h : FromAssumption true ioP P Q] : FromAssumption true ioP P iprop(<pers> Q) where
   from_assumption := (persistent (P := iprop(□ P))).trans (persistently_mono h.1)
 
 @[rocq_alias from_assumption_affinely_r]
-instance (priority := default + 30) fromAssumption_affinely_r [BI PROP] ioP (P Q : PROP)
+instance (priority := default + 30) fromAssumption_affinely_right [BI PROP] ioP (P Q : PROP)
     [h : FromAssumption true ioP P Q] : FromAssumption true ioP P iprop(<affine> Q) where
   from_assumption := affinely_idem.2.trans <| affinely_mono h.1
 
 @[rocq_alias from_assumption_intuitionistically_r]
-instance (priority := default + 30) fromAssumption_intuitionistically_r [BI PROP]
+instance (priority := default + 30) fromAssumption_intuitionistically_right [BI PROP]
     ioP (P Q : PROP) [h : FromAssumption true ioP P Q] : FromAssumption true ioP P iprop(□ Q) where
   from_assumption := intuitionistically_idem.2.trans <| intuitionistically_mono h.1
 
 @[rocq_alias from_assumption_absorbingly_r]
-instance (priority := default + 20) fromAssumption_absorbingly_r (p : Bool) [BI PROP]
+instance (priority := default + 20) fromAssumption_absorbingly_right (p : Bool) [BI PROP]
     ioP (P Q : PROP) [h : FromAssumption p ioP P Q] : FromAssumption p ioP P iprop(<absorb> Q) where
   from_assumption := absorbingly_intro.trans <| absorbingly_mono h.1
 
 @[rocq_alias from_assumption_intuitionistically_l]
-instance (priority := default + 20) fromAssumption_intuitionistically_l (p : Bool) [BI PROP]
+instance (priority := default + 20) fromAssumption_intuitionistically_left (p : Bool) [BI PROP]
     (P Q : PROP) [h : FromAssumption true .in P Q] : FromAssumption p .in iprop(□ P) Q where
   from_assumption := intuitionisticallyIf_intutitionistically.1.trans h.1
 
@@ -740,7 +740,7 @@ instance (priority := default + 30) fromAssumption_persistently_l_false [BI PROP
   from_assumption := intuitionistically_iff_persistently.2.trans h.1
 
 @[rocq_alias from_assumption_affinely_l_true]
-instance (priority := default + 20) fromAssumption_affinely_l (p : Bool) [BI PROP]
+instance (priority := default + 20) fromAssumption_affinely_left (p : Bool) [BI PROP]
     (P Q : PROP) [h : FromAssumption p .in P Q] : FromAssumption p .in iprop(<affine> P) Q where
   from_assumption := (intuitionisticallyIf_mono affinely_elim).trans h.1
 
@@ -754,7 +754,7 @@ instance (priority := default + 10) fromAssumption_forall (p : Bool) [BI PROP]
 -- TODO: Do these two instances exist in Rocq? Do we want to have them?
 set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack]
-instance fromAssumption_and_l [BI PROP] (p : Bool) (P1 P2 Q : PROP)
+instance fromAssumption_and_left [BI PROP] (p : Bool) (P1 P2 Q : PROP)
     [h : FromAssumption p .in P1 Q] : FromAssumption p .in iprop(P1 ∧ P2) Q where
   from_assumption :=
     match p, h with
@@ -766,7 +766,7 @@ instance fromAssumption_and_l [BI PROP] (p : Bool) (P1 P2 Q : PROP)
 
 set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack]
-instance fromAssumption_and_r [BI PROP] (p : Bool) (P1 P2 Q : PROP)
+instance fromAssumption_and_right [BI PROP] (p : Bool) (P1 P2 Q : PROP)
     [h : FromAssumption p .in P2 Q] : FromAssumption p .in iprop(P1 ∧ P2) Q where
   from_assumption :=
     match p, h with

@@ -65,7 +65,7 @@ theorem or_elim' [BI PROP] {p} {P A Q A1 A2 : PROP} [inst : IntoOr A A1 A2]
 @[rocq_alias tac_intuitionistic]
 theorem intuitionistic_elim_spatial [BI PROP] {A A' P Q : PROP}
     [IntoPersistently false A A'] [TCOr (Affine A) (Absorbing Q)]
-  (h : P ∗ □ A' ⊢ Q) : P ∗ A ⊢ Q := (replaces_r to_persistent_spatial).apply h
+  (h : P ∗ □ A' ⊢ Q) : P ∗ A ⊢ Q := (replaces_right to_persistent_spatial).apply h
 
 theorem intuitionistic_elim_intuitionistic [BI PROP] {A A' Q : PROP}
     [inst : IntoPersistently true A A'] (h : P ∗ □ A' ⊢ Q) : P ∗ □ A ⊢ Q :=

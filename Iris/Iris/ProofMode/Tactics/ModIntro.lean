@@ -52,14 +52,14 @@ theorem modaction_id [BI PROP] {p P} (M : Modality PROP PROP) (h : M.action p = 
   rw [h] at hs
   apply hs
 
-theorem modaction_sep_emp_l [BI PROP1] [bi2: BI PROP2]
+theorem modaction_sep_emp_left [BI PROP1] [bi2: BI PROP2]
     {elhs erhs erhs'} {M : Modality PROP1 PROP2}
     (h1 : elhs ⊢ M.M emp) (h2 : erhs ⊢ M.M erhs') : elhs ∗ erhs ⊢ M.M iprop(erhs') := calc
   _ ⊢ M.M emp ∗ M.M erhs'    := sep_mono h1 h2
   _ ⊢ M.M iprop(emp ∗ erhs') := M.sep
   _ ⊢ M.M erhs'              := M.mono emp_sep.1
 
-theorem modaction_sep_emp_r [BI PROP1] [bi2: BI PROP2]
+theorem modaction_sep_emp_right [BI PROP1] [bi2: BI PROP2]
     {elhs elhs' erhs} {M : Modality PROP1 PROP2}
     (h1 : elhs ⊢ M.M elhs') (h2 : erhs ⊢ M.M emp) : elhs ∗ erhs ⊢ M.M iprop(elhs') := calc
   _ ⊢ M.M elhs' ∗ M.M emp    := sep_mono h1 h2
@@ -159,9 +159,9 @@ where go {e}
     let ⟨_, rhs', pfrhs⟩ ← go iact sact rhs
     -- TODO: make pruning emp part of mkSep?
     if let .emp _ := lhs' then
-      return ⟨_, rhs', q(modaction_sep_emp_l $pflhs $pfrhs)⟩
+      return ⟨_, rhs', q(modaction_sep_emp_left $pflhs $pfrhs)⟩
     if let .emp _ := rhs' then
-      return ⟨_, lhs', q(modaction_sep_emp_r $pflhs $pfrhs)⟩
+      return ⟨_, lhs', q(modaction_sep_emp_right $pflhs $pfrhs)⟩
     return ⟨_, .mkSep lhs' rhs', q(modaction_sep $pflhs $pfrhs)⟩
 
 /-- Introduce a modality by applying modality actions to transform hypotheses.
