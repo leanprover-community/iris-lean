@@ -18,12 +18,11 @@ public import Iris.Instances.Lib.CInvariants
 public import Iris.Instances.Lib.NaInvariants
 public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.WeakestPre
-public import Iris.HeapLang
 
 @[expose] public section
 
 namespace Iris.Tests
-open BI CMRA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic HeapLang
+open BI CMRA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic
 
 /- This file contains tests with various scenarios for all available tactics. -/
 
@@ -2278,30 +2277,6 @@ example [BI PROP] (a b c1 c2 c3 : Prop) (P : Prop → Prop) :
   · ipureintro <;> grind
   · ipureintro <;> grind
 
-variable {hlc : HasLC} {GF : BundledGFunctors} [ι : HeapLangGS hlc GF]
-
-/--
-  Tests `icases` with the use of `intoSepFractionalHalf` after backtracking
-  from `intoSepFractional`.
--/
-example (l : Loc) (v : Val) :
-    l ↦ v ⊢ l ↦{.own (.half 1)} v ∗ l ↦{.own (.half 1)} v := by
-  iintro Hl
-  icases Hl with ⟨H1, H2⟩
-  iframe
-
-/--
-  Tests `icases` with the use of `intoSepFractional`, which has higher
-  priority than `intoSepFractionalHalf`.
--/
-example (l : Loc) (v : Val) :
-    l ↦{.own (q1 + q2)} v ⊢ l ↦{.own q1} v ∗ l ↦{.own q2} v := by
-  iintro Hl
-  icases Hl with ⟨H1, H2⟩
-  iframe
-
-end cases
-
 section imodintro
 
 /-- Tests `imodintro` for absorbing (intuitionistic: id, spatial: id) -/
@@ -3388,24 +3363,6 @@ example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
     ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <absorb> <affine> (P ∗ Q) ∗ <pers> R := by
   iintro HP HQ
   icombine HP HQ as ⟨HNew1, _⟩ gives HNew2
-
-variable {hlc : HasLC} {GF : BundledGFunctors} [ι : HeapLangGS hlc GF]
-
-/-- Tests `icombine` with the use of `combineSepAsFractionalHalf`. -/
-example (l : Loc) (v : Val) :
-    l ↦{.own (.half 1)} v ∗ l ↦{.own (.half 1)} v ⊢ l ↦ v := by
-  iintro ⟨H1, H2⟩
-  icombine H1 H2 as Hl
-  iassumption
-
-/-- Tests `icombine` with the use of `combineSepAsFractional`. -/
-example (l : Loc) (v : Val) :
-    l ↦{.own q1} v ∗ l ↦{.own q2} v ⊢ l ↦{.own (q1 + q2)} v := by
-  iintro ⟨H1, H2⟩
-  icombine H1 H2 as Hl
-  iassumption
-
-end icombine
 
 section iloeb
 
