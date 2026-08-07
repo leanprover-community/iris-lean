@@ -8,6 +8,7 @@ module
 public import Iris.ProofMode.Patterns.CasesPattern
 public import Iris.ProofMode.Patterns.SelPattern
 meta import Iris.Std.RocqPorting
+
 public import Lean.Syntax
 
 @[expose] public section
@@ -65,6 +66,7 @@ inductive IntroPat
   | clear (selPats : List <| Bool × SelPat)
   deriving Inhabited
 
+/-- Parse the introduction patterns -/
 partial def IntroPat.parse (term : Syntax) : MacroM (Syntax × IntroPat) := do
   match ← expandMacros term with
   | `(introPat| $case:icasesPat) => return (term, .intro (← iCasesPat.parse case))
@@ -89,11 +91,13 @@ partial def IntroPat.parse (term : Syntax) : MacroM (Syntax × IntroPat) := do
       | `(selPatFrame| $∗) => return ⟨true, .spatial⟩
       | _ => Macro.throwUnsupported
 
-#rocq_ignore gallina_ident "Not necessary in Lean"
-#rocq_ignore intro_pat.big_conj "Not necessary in Lean"
-#rocq_ignore intro_pat.close "Not necessary in Lean"
-#rocq_ignore intro_pat.close_conj_list "Not necessary in Lean"
-#rocq_ignore intro_pat.close_list "Not necessary in Lean"
-#rocq_ignore intro_pat.parse "Not necessary in Lean"
-#rocq_ignore intro_pat.parse_go "Not necessary in Lean"
-#rocq_ignore intro_pat.stack_item "Not necessary in Lean"
+#rocq_ignore gallina_ident "Not necessary in Lean, reusing rcases patterns directly"
+#rocq_ignore intro_pat.big_conj "Not necessary in Lean, functionality provided by IntroPat.parse"
+#rocq_ignore intro_pat.close "Not necessary in Lean, functionality provided by IntroPat.parse"
+#rocq_ignore intro_pat.close_conj_list
+  "Not necessary in Lean, functionality provided by IntroPat.parse"
+#rocq_ignore intro_pat.close_list "Not necessary in Lean, functionality provided by IntroPat.parse"
+#rocq_ignore intro_pat.parse "Not necessary in Lean, functionality provided by IntroPat.parse"
+#rocq_ignore intro_pat.parse_clear "Not necessary in Lean, functionality provided by IntroPat.parse"
+#rocq_ignore intro_pat.parse_go "Not necessary in Lean, functionality provided by IntroPat.parse"
+#rocq_ignore intro_pat.stack_item "Not necessary in Lean, functionality provided by IntroPat.parse"

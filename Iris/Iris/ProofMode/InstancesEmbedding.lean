@@ -34,7 +34,8 @@ instance fromModal_embed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] (P : PROP1)
   from_modal _ := .rfl
 
 @[rocq_alias into_embed_embed]
-instance intoEmbed_embed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] (P : PROP1) : IntoEmbed iprop(⎡P⎤ : PROP2) P where
+instance intoEmbed_embed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+    (P : PROP1) : IntoEmbed iprop(⎡P⎤ : PROP2) P where
   into_embed := .rfl
 
 @[rocq_alias into_embed_affinely]

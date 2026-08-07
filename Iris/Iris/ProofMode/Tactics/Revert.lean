@@ -8,7 +8,6 @@ module
 public import Iris.ProofMode.ClassesMake
 public meta import Iris.ProofMode.Patterns.SelPattern
 public meta import Iris.ProofMode.Tactics.Basic
-
 public meta import Iris.ProofMode.Tactics.Assumption
 public meta import Iris.ProofMode.Tactics.Cases
 public meta import Iris.ProofMode.Patterns.CasesPattern
@@ -24,21 +23,29 @@ declare_syntax_cat generalizingSelPats
 syntax " generalizing " (ppSpace colGt selPat)* : generalizingSelPats
 syntax " generalizing! " (ppSpace colGt selPat)* : generalizingSelPats
 
+@[rocq_alias tac_revert]
 theorem wand_revert [BI PROP] {Δ Δ' P Q : PROP}
     (h1 : Δ ⊣⊢ Δ' ∗ P) (h2 : Δ' ⊢ P -∗ Q) : Δ ⊢ Q :=
   h1.mp.trans (wand_elim h2)
 
+@[rocq_alias tac_forall_revert]
 theorem forall_revert {α} [BI PROP] {Δ : PROP} {Ψ : α → PROP}
     (h : Δ ⊢ BI.forall Ψ) : ∀ x, Δ ⊢ Ψ x :=
   λ x => h.trans (forall_elim x)
 
+@[rocq_alias tac_pure_revert]
 theorem pure_revert [BI PROP] {Δ P Q : PROP} {φ : Prop}
     [hA : MakeAffinely iprop(⌜φ⌝) P]
     (h : Δ ⊢ P -∗ Q) : φ → Δ ⊢ Q := by
   intro hp
-  have hA : (emp : PROP) ⊢ P :=
-    (affinely_emp.mpr.trans <| affinely_mono <| pure_intro hp).trans (hA.make_affinely.mp)
-  exact (sep_emp.mpr.trans (sep_mono .rfl hA)).trans (wand_elim h)
+  calc
+    Δ ⊢ Δ ∗ emp := sep_emp.mpr
+    _ ⊢ Δ ∗ P   := sep_mono_right ?_
+    _ ⊢ Q       := wand_elim h
+  calc
+    _ ⊢ <affine> emp := affinely_emp.mpr
+    _ ⊢ <affine> ⌜φ⌝ := affinely_mono <| pure_intro hp
+    _ ⊢ P            := hA.make_affinely.mp
 
 public meta section
 open Lean Elab Tactic Meta Qq
@@ -47,7 +54,8 @@ open Lean Elab Tactic Meta Qq
   `reverted` collects lean variables already reverted. This is necessary for dependency checks
   since they are only cleared from the Lean context for the final goal.
 -/
-private structure RevertState {prop : Q(Type u)} {bi : Q(BI $prop)} (origE origGoal : Q($prop)) where
+private structure RevertState {prop : Q(Type u)} {bi : Q(BI $prop)}
+  (origE origGoal : Q($prop)) where
   (e : Q($prop)) (hyps : Hyps bi e) (goal : Q($prop))
   (reverted : Array FVarId := #[])
   pf : Q(($e ⊢ $goal) → ($origE ⊢ $origGoal))
@@ -67,7 +75,8 @@ private def RevertState.revertLeanPropHyp
     ProofModeM (@RevertState u prop bi origE origGoal) := do
   let { e, hyps, goal, reverted, pf } := st
   let P ← mkFreshExprMVarQ prop
-  let _hA : Q(MakeAffinely iprop(⌜$φ⌝) $P) ← synthInstanceQ q(MakeAffinely iprop(⌜$φ⌝) $P)
+  let some _ ← ProofModeM.trySynthInstanceQ q(MakeAffinely iprop(⌜$φ⌝) $P)
+  | throwError m!"irevert: MakeAffinely type class synthesis failed with {φ}"
   let hp : Q($φ) := mkFVar f
   let goal' : Q($prop) := q(iprop($P -∗ $goal))
   let pf' : Q(($e ⊢ $goal') → ($origE ⊢ $origGoal)) := q(fun h => $pf (pure_revert h $hp))
@@ -192,7 +201,8 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     let leanLines ← missingPureHyps.mapM fun ⟨depId, srcId⟩ => do
       let depDecl ← depId.getDecl
       let srcDecl ← srcId.getDecl
-      return s!"• Lean hypothesis {ppHypName depDecl.userName} depends on {ppHypName srcDecl.userName}"
+      return s!"• Lean hypothesis {ppHypName depDecl.userName} depends \
+        on {ppHypName srcDecl.userName}"
     let irisLines ← missingIrisHyps.mapM fun ⟨depName, _, srcId⟩ => do
       let srcDecl ← srcId.getDecl
       return s!"• Iris hypothesis {ppHypName depName} depends on {ppHypName srcDecl.userName}"
@@ -209,7 +219,8 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     -- Check whether the new selecton pattern may contain any inaccessible names
     let allNamesAccessible :=
       (missingIrisHyps.all fun ⟨name, _, _⟩ => !name.hasMacroScopes) &&
-      !(← allPureFVarsSorted.anyM fun fvarId => do return (← fvarId.getDecl).userName.hasMacroScopes)
+      !(← allPureFVarsSorted.anyM fun fvarId => do
+        return (← fvarId.getDecl).userName.hasMacroScopes)
 
     -- Find the old tactic syntax and generate the new one with missing hypotheses added
     let oldTactic ← getRef
