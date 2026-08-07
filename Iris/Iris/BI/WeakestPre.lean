@@ -119,15 +119,19 @@ meta def wpMacro : Lean.Macro := fun stx => do
       `(Wp.wp $s $E $e $Φ)
   | _ => Lean.Macro.throwUnsupported
 
-@[macro texanTriple]
-meta def wpTexanTriple : Lean.Macro
+meta def parseTexanTriple : Syntax → MacroM Term
   | `({{ $P:term }} $wpExpr {{ $[$[$xs]* ,]? RET $pat ; $Q:term }}) => do
     let k ← match xs with
             | some xs =>
               let xs ← transformTexanBinders xs
               `(iprop(∀ $xs*, $Q:term -∗ Φ $pat))
             | none => `($Q:term -∗ Φ $pat)
-    `(iprop(∀ Φ, $P -∗ ▷ $k -∗ (WP $wpExpr {{ Φ }})))
+    `(∀ Φ, $P -∗ ▷ $k -∗ (WP $wpExpr {{ Φ }}))
+  | _ => Lean.Macro.throwUnsupported
+
+@[macro Iris.BI.iprop]
+meta def wpTexanTriple : Lean.Macro
+  | `(iprop($P)) => do `(iprop(□ $(← parseTexanTriple P)))
   | _ => Lean.Macro.throwUnsupported
 
 @[macro totalTexanTriple]
@@ -143,6 +147,10 @@ meta def totalWpTexanTriple : Lean.Macro
     `(iprop(∀ Φ, $P -∗ $k -∗
       TotalWp.totalWp $s $E $e Φ))
   | _ => Lean.Macro.throwUnsupported
+  
+@[macro texanTriple]
+meta def wpTexanTripleTerm : Lean.Macro
+  | P => do `(⊢ $(← parseTexanTriple P))
 
 meta def unexpandWpPostcondInner : TSyntax `term → PrettyPrinter.UnexpandM (TSyntax `wpPostcondInner)
   | `(fun $v:ident => iprop($Φ:term)) => `(wpPostcondInner|$v:ident, $Φ:term)
