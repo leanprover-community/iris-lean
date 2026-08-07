@@ -14,7 +14,7 @@ public import Iris.ProofMode
 namespace Iris
 open Iris.Std BI OFE ProofMode
 
-@[ipm_class, rocq_alias Fractional]
+@[rocq_alias Fractional]
 class Fractional [BI PROP] (Φ : Qp → PROP) where
   fractional p q : Φ (p + q) ⊣⊢ Φ p ∗ Φ q
 
