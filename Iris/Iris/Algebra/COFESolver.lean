@@ -16,25 +16,25 @@ meta import Iris.Std.RocqPorting
 namespace Iris.COFE.OFunctor
 open OFE
 
-variable [SIdx SI]
+local stepindex Nat
 
-variable {F : ∀ α β [COFE Nat α] [COFE Nat β], Type u} [OFunctorContractive Nat F]
-variable [∀ α [COFE Nat α], IsCOFE Nat (F α α)]
+variable {F : ∀ α β [COFE α] [COFE β], Type u} [OFunctorContractive F]
+variable [∀ α [COFE α], IsCOFE (F α α)]
 variable [inh : Inhabited (F (ULift Unit) (ULift Unit))]
 
 namespace Fix.Impl
 
 variable (F) in
 @[rocq_alias solver.A']
-def A' : Nat → Σ α : Type u, COFE Nat α
+def A' : Nat → Σ α : Type u, COFE α
   | 0 => ⟨ULift Unit, inferInstance⟩
   | n+1 => let ⟨A, _⟩ := A' n; ⟨F A A, inferInstance⟩
 
 variable (F) in
 def A (n : Nat) : Type u := (A' F n).1
 
-instance instA' (n) : COFE Nat (A' F n).1 := (A' F n).2
-instance instA (n) : COFE Nat (A F n) := (A' F n).2
+instance instA' (n) : COFE (A' F n).1 := (A' F n).2
+instance instA (n) : COFE (A F n) := (A' F n).2
 #rocq_ignore solver.A_cofe "Inference succeeds automatically via `instA`/`instA'`"
 
 variable (F) in
@@ -80,14 +80,14 @@ structure Tower : Type u where
 instance : CoeFun (Tower F) (fun _ => ∀ k, A F k) := ⟨Tower.val⟩
 
 @[rocq_alias solver.T]
-instance : OFE Nat (Tower F) where
+instance : OFE (Tower F) where
   Dist n f g := ∀ k, f k ≡{n}≡ g k
   dist_eqv := {
     refl _ _ := dist_eqv.refl _
     symm h _ := dist_eqv.symm (h _)
     trans h1 h2 _ := dist_eqv.trans (h1 _) (h2 _)
   }
-  eq_dist {_ _} := by rw [Tower.ext_iff, funext_iff]; simpa only [eq_dist] using forall_comm
+  eq_dist {_ _} := by rw [Tower.ext_iff, funext_iff]; simpa only [eq_dist (SI := Nat)] using forall_comm
   dist_lt h1 h2 _ := dist_lt (h1 _) h2
 
 #rocq_ignore solver.tower_equiv "Included in OFE (Tower F) instance"
@@ -99,10 +99,10 @@ def towerChain (c : Chain (SI := Nat) (Tower F)) (k : Nat) : Chain (A F k) where
   chain i := c.1 i k
   cauchy h := c.cauchy h k
 
-instance : COFE Nat (Tower F) where
+instance : COFE (Tower F) where
   compl c := by
     refine ⟨fun k => compl ⟨fun i => c.1 i k, fun h => c.cauchy h k⟩, ?_⟩
-    refine OFE.eq_dist.mpr (fun n => ?_)
+    refine (OFE.eq_dist (SI := Nat)).mpr (fun n => ?_)
     refine ((down ..).ne.1 conv_compl).trans <| .trans ?_ conv_compl.symm
     exact (c.chain n).down.dist
   conv_compl _ := conv_compl
@@ -207,7 +207,7 @@ protected def Tower.embed (k) : A F k -n> Tower F := by
 @[rocq_alias solver.embed_f]
 theorem Tower.embed_up (x : A F k) :
     Tower.embed (k+1) (up F k x) = Tower.embed k x := by
-  refine OFE.eq_dist.mpr (fun n i => ?_)
+  refine OFE.eq_dist.mpr (fun (n : Nat) i => ?_)
   dsimp [Tower.embed, embed]; split <;> rename_i h₁
   · simp [Nat.le_of_succ_le h₁]
     suffices ∀ a b (e₁ : k + 1 + a = i) (e₂ : k+b = i),
@@ -324,7 +324,7 @@ variable (F) in
 def Fix : Type u := Tower F
 
 instance : Inhabited (Fix F) := inferInstanceAs (Inhabited (Tower F))
-instance : COFE Nat (Fix F) := inferInstanceAs (COFE Nat (Tower F))
+instance : COFE (Fix F) := inferInstanceAs (COFE (Tower F))
 
 def Fix.iso : OFE.Iso (F (Fix F) (Fix F)) (Fix F) := Tower.iso
 
