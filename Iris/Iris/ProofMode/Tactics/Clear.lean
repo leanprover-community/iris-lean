@@ -65,7 +65,10 @@ def iClearCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   let mut st : ClearState e goal := { e, hyps, pf := q(id) }
   for ivar in ivars do st ← st.clearProofModeHyp ivar
 
-  -- Lean locals are cleared afterwards; first ensure no remaining hypothesis or goal depends on them.
+  /-
+    Lean locals are cleared afterwards; first ensure no remaining hypothesis or
+    goal depends on them.
+  -/
   for fvar in fvars do
     let _ ← st.hyps.checkRemovableFVar "iclear" fvar (some goal) fvars.contains
 

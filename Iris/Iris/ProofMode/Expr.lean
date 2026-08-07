@@ -51,13 +51,15 @@ def mkFreshIVarId [Monad m] [MonadNameGenerator m] (persistent? : Bool) : m IVar
   deriving Inhabited, EmptyCollection, Singleton
 
 def parseName? : Expr → Option (Name × Name × Expr)
-  | .mdata ⟨[(nameAnnotation, .ofName name), (ivarAnnotation, .ofName ivar)]⟩ (.app (.app c _α) e) => do
+  | .mdata ⟨[(nameAnnotation, .ofName name), (ivarAnnotation, .ofName ivar)]⟩
+      (.app (.app c _α) e) => do
     if c.constName? != some ``IrisHyp then
       failure
     some (name, ivar, e)
   | _ => none
 
-def mkNameAnnotation {prop : Q(Type u)} (name : Name) (ivar : IVarId) (e : Q($prop)) : Q($prop) :=
+def mkNameAnnotation {prop : Q(Type u)} (name : Name) (ivar : IVarId)
+    (e : Q($prop)) : Q($prop) :=
   .mdata ⟨[(nameAnnotation, .ofName name), (ivarAnnotation, .ofName ivar.name)]⟩ q(IrisHyp $e)
 
 def getFreshName : TSyntax ``binderIdent → CoreM (Name × Syntax)
@@ -140,7 +142,8 @@ def Hyps.tm : @Hyps _ prop bi s → Q($prop)
   | .emp _ => s
   | .sep tm .. | .hyp tm .. => tm
 
-def Hyps.mkEmp {prop : Q(Type u)} (bi : Q(BI $prop)) (e := q(BI.emp : $prop)) : Hyps bi e := .emp ⟨⟩
+def Hyps.mkEmp {prop : Q(Type u)} (bi : Q(BI $prop)) (e := q(BI.emp : $prop)) : Hyps bi e :=
+  .emp ⟨⟩
 
 def Hyps.mkSep {prop : Q(Type u)} {bi : Q(BI $prop)} {elhs erhs}
     (lhs : Hyps bi elhs) (rhs : Hyps bi erhs) (e := q(BI.sep $elhs $erhs)) : Hyps bi e :=
@@ -153,7 +156,8 @@ def mkIntuitionisticIf {prop : Q(Type u)} (_bi : Q(BI $prop))
   | .inr _ => ⟨e, ⟨⟩⟩
 
 def Hyps.mkHyp {prop : Q(Type u)} (bi : Q(BI $prop))
-    (name : Name) (ivar : IVarId) (p : Q(Bool)) (ty : Q($prop)) (e := q(iprop(□?$p $ty))) : Hyps bi e :=
+    (name : Name) (ivar : IVarId) (p : Q(Bool)) (ty : Q($prop)) (e := q(iprop(□?$p $ty))) :
+    Hyps bi e :=
   .hyp (mkIntuitionisticIf bi p (mkNameAnnotation name ivar ty)) name ivar p ty ⟨⟩
 
 def Hyps.add {prop : Q(Type u)} (bi : Q(BI $prop))
@@ -261,13 +265,13 @@ def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)
   | _, .hyp _ _ ivar p ty _ =>
     if oldIVar == ivar then some (Hyps.mkHyp bi new ivar p ty _) else none
 
-def Hyps.select (ty : Expr) : ∀ {s}, @Hyps u prop bi s → MetaM (IVarId × Q(Bool) × Q($prop))
+def Hyps.select (ty : Expr) :
+    ∀ {s}, @Hyps u prop bi s → MetaM (IVarId × Q(Bool) × Q($prop))
   | _, .emp _ => failure
   | _, .hyp _ _ ivar p ty' _ => do
     let .true ← isDefEq ty ty' | failure
     pure (ivar, p, ty')
   | _, .sep _ _ _ _ lhs rhs => try Hyps.select ty rhs catch _ => Hyps.select ty lhs
-
 
 theorem intuitionistically_sep_dup [BI PROP] {P : PROP} : □ P ⊣⊢ □ P ∗ □ P :=
   intuitionistically_sep_idem.symm
@@ -473,8 +477,11 @@ theorem replace_finish {PROP} [BI PROP] {e e' : PROP}
       _ ⊢ e' := sep_emp.1
 
 variable [Monad m] [MonadLiftT MetaM m] {prop : Q(Type u)} (bi : Q(BI $prop)) (e0 : Q($prop))
-  (ivar : IVarId) (repl : Name → Q(Bool) → (ty : Q($prop)) → m ((ty' : Q($prop)) × Q($e0 ⊢ <pers> ($ty -∗ $ty')))) in
-def Hyps.replaceCore : ∀ {e}, Hyps bi e → m (Option ((e' : Q($prop)) × Hyps bi e' × Q(∀ P, (($e ∗ P) ∧ $e0 ⊢ $e' ∗ P))))
+  (ivar : IVarId)
+  (repl : Name → Q(Bool) → (ty : Q($prop)) →
+          m ((ty' : Q($prop)) × Q($e0 ⊢ <pers> ($ty -∗ $ty')))) in
+def Hyps.replaceCore : ∀ {e}, Hyps bi e →
+    m (Option ((e' : Q($prop)) × Hyps bi e' × Q(∀ P, (($e ∗ P) ∧ $e0 ⊢ $e' ∗ P))))
   | _, .emp _ => return none
   | _, .hyp _ name ivar' p ty _ => do
     if ivar == ivar' then
@@ -488,8 +495,9 @@ def Hyps.replaceCore : ∀ {e}, Hyps bi e → m (Option ((e' : Q($prop)) × Hyps
       return some ⟨_, .mkSep lhs rhs', q(replace_hyp_sep_r $pf)⟩
     return none
 
-variable [Monad m] [MonadLiftT MetaM m] {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)} (hyps : Hyps bi e)
-  (ivar : IVarId) (repl : Name → Q(Bool) → (ty : Q($prop)) → m ((ty' : Q($prop)) × Q($e ⊢ <pers> ($ty -∗ $ty')))) in
+variable [Monad m] [MonadLiftT MetaM m] {prop : Q(Type u)}
+  {bi : Q(BI $prop)} {e : Q($prop)} (hyps : Hyps bi e) (ivar : IVarId)
+  (repl : Name → Q(Bool) → (ty : Q($prop)) → m ((ty' : Q($prop)) × Q($e ⊢ <pers> ($ty -∗ $ty')))) in
 def Hyps.replace : m (Option ((e' : Q($prop)) × Hyps bi e' × Q($e ⊢ $e'))) := do
   let some ⟨_, hyps', pf⟩ ← hyps.replaceCore bi e ivar repl | return none
   return some ⟨_, hyps', q(replace_finish $pf)⟩
@@ -592,13 +600,15 @@ def addHypInfo (stx : Syntax) (name : Name) (ivar : IVarId) (prop : Q(Type u)) (
   let ty := q(HypMarker $ty)
   addLocalVarInfo stx (lctx.mkLocalDecl ⟨ivar.name⟩ name ty) (.fvar ⟨ivar.name⟩) ty isBinder
 
-/-- Hyps.findWithInfo should be used on names obtained from the syntax of a tactic to highlight them correctly. -/
+/-- Hyps.findWithInfo should be used on names obtained from the syntax of a tactic to
+highlight them correctly. -/
 def Hyps.findWithInfo {u prop bi} (hyps : @Hyps u prop bi s) (name : Ident) : MetaM IVarId := do
   let some (ivar, ty) := hyps.find? name.getId | throwError "unknown hypothesis {name}"
   addHypInfo name name.getId ivar prop ty
   pure (ivar)
 
-/-- Hyps.addWithInfo should be used by tactics that introduce a hypothesis based on the name given by the user. -/
+/-- Hyps.addWithInfo should be used by tactics that introduce a hypothesis based on the name
+given by the user. -/
 def Hyps.addWithInfo {prop : Q(Type u)} (bi : Q(BI $prop))
     (name : TSyntax ``binderIdent) (p : Q(Bool)) (ty : Q($prop)) {e} (h : Hyps bi e)
     : MetaM (IVarId × (e' : Q($prop)) × Hyps bi e' × Q(iprop($e ∗ □?$p $ty ⊣⊢ $e'))) := do

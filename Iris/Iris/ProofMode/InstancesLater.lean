@@ -75,7 +75,8 @@ instance (priority := low) intoWand_later_args [BI PROP] (p q : Bool) (s : WandM
 
 @[rocq_alias into_wand_laterN]
 instance intoWand_laterN [BI PROP] (n : Nat) (p q : Bool) (R P Q : PROP)
-    [h : IntoWand p q R m P Q] : IntoWand p q iprop(▷^[n] R) m iprop(▷^[n] P) iprop(▷^[n] Q) where
+    [h : IntoWand p q R m P Q] :
+    IntoWand p q iprop(▷^[n] R) m iprop(▷^[n] P) iprop(▷^[n] Q) where
   into_wand := calc
     _ ⊢ ▷^[n]□?p R            := laterN_intuitionisticallyIf n
     _ ⊢ ▷^[n](□?q P -∗ Q)     := laterN_mono n h.into_wand
@@ -333,8 +334,9 @@ instance intoExcept0_persistently [BI PROP] (P Q : PROP)
 
 /-- ElimModal -/
 @[ipm_backtrack, rocq_alias elim_modal_timeless]
-instance (priority := default - 10) elimModal_timeless [BI PROP] p io (P P' Q : PROP) [IntoExcept0 P P'] [IsExcept0 Q] :
-  ElimModal True p io p P P' Q Q where
+instance (priority := default - 10) elimModal_timeless [BI PROP] p io
+    (P P' Q : PROP) [IntoExcept0 P P'] [IsExcept0 Q] :
+    ElimModal True p io p P P' Q Q where
   elim_modal _ := calc
     _ ⊢ ◇ □?p P' ∗ (□?p P' -∗ Q)    :=
         sep_mono_left <| (intuitionisticallyIf_mono into_except0).trans except0_intuitionisticallyIf
@@ -345,7 +347,8 @@ instance (priority := default - 10) elimModal_timeless [BI PROP] p io (P P' Q : 
 
 /-- AddModal -/
 @[ipm_backtrack, rocq_alias add_modal_later_except_0]
-instance (priority := default + 10) addModal_later_except_0 [BI PROP] (P Q : PROP) [h : Timeless P] :
+instance (priority := default + 10) addModal_later_except_0 [BI PROP]
+    (P Q : PROP) [h : Timeless P] :
     AddModal iprop(▷ P) P iprop(◇ Q) where
   add_modal := calc
     _ ⊢ ◇ P ∗ (P -∗ ◇ Q)   := sep_mono_left h.timeless
@@ -424,12 +427,14 @@ instance intoLaterN_and [BI PROP] n (P1 P2 Q1 Q2 : PROP)
 
 @[rocq_alias into_laterN_forall]
 instance intoLaterN_forall [BI PROP] n (Φ Ψ : α → PROP)
-    [h : ∀ x, IntoLaterN false n (Φ x) (Ψ x)] : IntoLaterN false n iprop(∀ x, Φ x) iprop(∀ x, Ψ x) where
+    [h : ∀ x, IntoLaterN false n (Φ x) (Ψ x)] :
+    IntoLaterN false n iprop(∀ x, Φ x) iprop(∀ x, Ψ x) where
   into_laterN := (forall_mono fun x => (h x).1).trans (laterN_forall n).2
 
 @[rocq_alias into_laterN_exist]
 instance intoLaterN_exists [BI PROP] n (Φ Ψ : α → PROP)
-    [h : ∀ x, IntoLaterN false n (Φ x) (Ψ x)] : IntoLaterN false n iprop(∃ x, Φ x) iprop(∃ x, Ψ x) where
+    [h : ∀ x, IntoLaterN false n (Φ x) (Ψ x)] :
+    IntoLaterN false n iprop(∃ x, Φ x) iprop(∃ x, Ψ x) where
   into_laterN := (exists_mono fun x => (h x).1).trans (laterN_exists_mpr n)
 
 @[rocq_alias into_laterN_or_l, rocq_alias into_laterN_or_r]

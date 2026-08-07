@@ -39,8 +39,12 @@ theorem specialize_wand_nest [BI PROP] {e e' e'' goal out out1' Q out2 : PROP}
   refine h2 <| wand_intro ?_
   exact (specialize_wand inst).trans h3
 
--- TODO: if p is true and e' does not contain spatial hyps and AddModal is trivial, this proof can guarantee □ P2 instead of P2 in h2
--- see https://gitlab.mpi-sws.org/iris/iris/-/blob/846ed45bed6951035c6204fef365d9a344022ae6/iris/proofmode/coq_tactics.v#L336
+
+/-
+  TODO: if `p` is `true` and `e'` does not contain spatial hyps and `AddModal`
+  is trivial, this proof can guarantee `□ P2` instead of `P2` in `h2`.
+-/
+-- see https://gitlab.mpi-sws.org/iris/iris/-/blob/846ed45/iris/proofmode/coq_tactics.v#L336
 @[rocq_alias tac_specialize_assert]
 theorem specialize_wand_modal [BI PROP] {e e' goal R P1 P1' P2 : PROP} {p : Bool}
     (h1 : e ⊢ e' ∗ P1') (h2 : e' ∗ P2 ⊢ goal)
@@ -92,12 +96,15 @@ theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B B'}
   · cases h2 <;> subst_eqs <;> apply sep_elim_left
   · calc
       _ ⊢ P' ∗ □?pb B    := h1
-      _ ⊢ P' ∗ <pers> B' := sep_mono_right <| persistentlyIf_of_intuitionisticallyIf.trans into_persistently
+      _ ⊢ P' ∗ <pers> B' :=
+          sep_mono_right <| persistentlyIf_of_intuitionisticallyIf.trans into_persistently
       _ ⊢ <pers> B'      := sep_elim_right
 
 #rocq_ignore tac_specialize_frame "Not needed as there is no locked in Lean"
-#rocq_ignore tac_specialize_intuitionistic_helper "Functionality provided by Expr.lean infrastructure"
-#rocq_ignore tac_specialize_intuitionistic_helper_done "Functionality provided by Expr.lean infrastructure"
+#rocq_ignore tac_specialize_intuitionistic_helper
+  "Functionality provided by Expr.lean infrastructure"
+#rocq_ignore tac_specialize_intuitionistic_helper_done
+  "Functionality provided by Expr.lean infrastructure"
 
 public meta section
 open Lean Elab Tactic Meta Qq Std
@@ -252,13 +259,15 @@ partial def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
   -- Auto-framing with `[$]`, `[>$]` or `[#$]`
   | .autoframe kind => processSpecGoal specState kind none
 
-/-- Specialize a proposition `A` by applying a sequence of specialization patterns.
+/--
+Specialize a proposition `A` by applying a sequence of specialization patterns.
 
 ## Parameters
 - `hyps`: Current proof mode hypothesis context
 - `pa`: Persistence flag for `A`
 - `spats`: List of specialization patterns to apply sequentially
-- `try_dup_context`: Boolean whether specialize should try to duplicate the context. See [iCasesPat.should_try_dup_context]
+- `try_dup_context`: Boolean whether specialize should try to duplicate the context.
+                     See `iCasesPat.should_try_dup_context`.
 
 ## Returns
 A tuple containing:

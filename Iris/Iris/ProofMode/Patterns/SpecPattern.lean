@@ -14,10 +14,12 @@ namespace Iris.ProofMode
 open Lean
 
 declare_syntax_cat frameIdent
+/--
+  The ident can be preceded by `$` for framing. However, we do not define
+  `syntax "$" ident : frameIdent`. Instead, we rely on the fact that Lean allows
+  `$x` as an identifier, denoting an antiquotation.
+-/
 syntax ident : frameIdent
--- We actually don't want to add the following since it would allow a space between $ and ident.
--- Instead we rely on the fact that Lean allows $x as an identifier, denoting an antiquotation
--- syntax "$" ident : frameIdent
 
 declare_syntax_cat specPat
 declare_syntax_cat pmTerm
@@ -80,9 +82,13 @@ inductive SpecGoalKind
 @[rocq_alias spec_goal]
 structure SpecGoal where
   kind : SpecGoalKind
+  -- Indicates whether `itrivial` should be applied, applicable for the pattern `//`
   trivial : Bool
+  -- Set as `true` for the patterns `[- H1 …]` and `[>- H1 …]`
   negate : Bool
+  -- The list of hypotheses to be framed
   frame : List Ident
+  -- The list of hypotheses to be included in the subgoal without framing
   hyps : List Ident
 deriving Repr, Inhabited
 
@@ -96,11 +102,16 @@ inductive SpecPatCase
   | autoframe (goal : SpecGoalKind)
   deriving Repr, Inhabited
 
+/--
+  The parsed specialisation pattern paired with its syntax, which is useful
+  for precise error highlighting using `withRef`.
+-/
 structure SpecPat where
   ref : Syntax
   spat : SpecPatCase
   deriving Repr, Inhabited
 
+/-- A proof mode term (`H $$ spat1 spat2 …`) is a term paired with specialisation patterns. -/
 @[rocq_alias iTrm]
 structure PMTerm where
   term : Term
@@ -114,6 +125,7 @@ def SpecGoalKind.isModal : SpecGoalKind → Bool
   | modal => true
   | _ => false
 
+/-- Returns `true` for the patterns `[> …]` or `[>$]`. -/
 @[rocq_alias spec_pat_modal]
 def SpecPat.isModal (spat : SpecPat) : Bool :=
   match spat.spat with
@@ -121,16 +133,17 @@ def SpecPat.isModal (spat : SpecPat) : Bool :=
   | .autoframe g => g.isModal
   | _ => false
 
+/-- Returns `true` if the specialisation pattern contains `[> …]` or `[>$]`. -/
 partial def SpecPat.anyModal (spat : SpecPat) : Bool :=
   match spat.spat with
-  | .ident pmt =>  pmt.spats.any SpecPat.anyModal
+  | .ident pmt => pmt.spats.any SpecPat.anyModal
   | _ => spat.isModal
 
-#rocq_ignore spec_pat.stack_item "Not necessary in Lean"
-#rocq_ignore spec_pat.parse_go "Not necessary in Lean"
-#rocq_ignore spec_pat.parse_goal "Not necessary in Lean"
-#rocq_ignore spec_pat.close "Not necessary in Lean"
-#rocq_ignore spec_pat.close_ident "Not necessary in Lean"
+#rocq_ignore spec_pat.stack_item "Not necessary in Lean, functionality provided by SpecPat.parse"
+#rocq_ignore spec_pat.parse_go "Not necessary in Lean, functionality provided by SpecPat.parse"
+#rocq_ignore spec_pat.parse_goal "Not necessary in Lean, functionality provided by SpecPat.parse"
+#rocq_ignore spec_pat.close "Not necessary in Lean, functionality provided by SpecPat.parse"
+#rocq_ignore spec_pat.close_ident "Not necessary in Lean, functionality provided by SpecPat.parse"
 
 def FrameIdent.parse : TSyntax `frameIdent → (Ident ⊕ Ident)
   | `(frameIdent| $name:ident) => .inl name

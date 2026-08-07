@@ -19,14 +19,13 @@ open Lean Elab Tactic Meta Qq
 -/
 elab "iaccu" : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    if !goal.isMVar then
+    unless goal.isMVar do
       throwError m!"iaccu: {goal} is not a metavariable"
 
     let ⟨spatial, pf⟩ := hyps.buildAccuProof
 
     -- Assign and unify the metavariable
-    let defEq ← isDefEq goal spatial
-    if !defEq then
+    unless ← isDefEq goal spatial do
       throwError "iaccu: could not assign goal metavariable to {spatial}"
 
     mvar.assign pf

@@ -33,7 +33,8 @@ When framing [R] against itself, we leave [True] if possible since it is a weake
 Otherwise we leave [emp]. Only if all those options fail, we start decomposing [R].
 -/
 @[ipm_backtrack, rocq_alias frame_here_absorbing]
-instance (priority := high + 10) frame_here_absorbing [BI PROP] p (R : PROP) [QuickAbsorbing R] :
+instance (priority := high + 10) frame_here_absorbing [BI PROP]
+    p (R : PROP) [QuickAbsorbing R] :
     Frame p R R iprop(True) where
   frame := calc
     _ ⊢ True ∗ □?p R := sep_comm.mp
@@ -41,7 +42,8 @@ instance (priority := high + 10) frame_here_absorbing [BI PROP] p (R : PROP) [Qu
     _ ⊢ R            := quick_absorbing.absorbing
 
 @[ipm_backtrack, rocq_alias frame_here]
-instance (priority := high + 5) frame_here [BI PROP] p (R : PROP) : Frame p R R iprop(emp) where
+instance (priority := high + 5) frame_here [BI PROP] p (R : PROP) :
+    Frame p R R iprop(emp) where
   frame := sep_emp.1.trans intuitionisticallyIf_elim
 
 @[ipm_backtrack, rocq_alias frame_affinely_here_absorbing]
@@ -152,7 +154,8 @@ instance frame_impl_persistent [BI PROP] (R P1 P2 Q2 : PROP)
   frame := by
     refine imp_intro ?_
     calc
-      _ ⊢ (<pers> R ∧ (P1 → Q2)) ∧ P1 := and_mono_left persistently_and_intuitionistically_sep_left.mpr
+      _ ⊢ (<pers> R ∧ (P1 → Q2)) ∧ P1 :=
+          and_mono_left persistently_and_intuitionistically_sep_left.mpr
       _ ⊢ <pers> R ∧ (P1 → Q2) ∧ P1   := and_assoc.mp
       _ ⊢ <pers> R ∧ Q2               := and_mono_right <| and_comm.mp.trans imp_elim_right
       _ ⊢ □ R ∗ Q2                    := persistently_and_intuitionistically_sep_left.mp
@@ -160,15 +163,17 @@ instance frame_impl_persistent [BI PROP] (R P1 P2 Q2 : PROP)
 
 /-
 You may wonder why this uses [Persistent] and not [QuickPersistent].
-The reason is that [QuickPersistent] is not needed anywhere else, and even without [QuickPersistent],
+The reason is that [QuickPersistent] is not needed anywhere else, and even without
+[QuickPersistent],
 this instance avoids quadratic complexity: we usually use the [Quick*] classes to not traverse the
-same term over and over again, but here [P1] is encountered at most once. It is hence not worth adding
-a new typeclass just for this extremely rarely used instance.
+same term over and over again, but here [P1] is encountered at most once. It is hence not worth
+adding a new typeclass just for this extremely rarely used instance.
 -/
 @[ipm_backtrack, rocq_alias frame_impl]
 instance frame_impl [BI PROP] (R P1 P2 Q2 : PROP)
     [hp : Persistent P1] [ha : QuickAbsorbing P1]
-    [h : FrameInstantiateExistDisabled false R P2 Q2] : Frame false R iprop(P1 → P2) iprop(P1 → Q2) where
+    [h : FrameInstantiateExistDisabled false R P2 Q2] :
+    Frame false R iprop(P1 → P2) iprop(P1 → Q2) where
   frame := by
     letI := ha.quick_absorbing
     refine imp_intro ?_
@@ -189,7 +194,7 @@ instance frame_later [BI PROP] p (R R' P Q Q' : PROP)
   frame := calc
     _ ⊢ □?p R' ∗ ▷^[1]Q                                     := sep_mono_right h3.make_laterN.mpr
     _ ⊢ ▷ □?p Nat.repeat later 0 R ∗ ▷^[1]Q                :=
-        sep_mono_left <| (intuitionisticallyIf_mono h1.into_laterN).trans later_intuitionisticallyIf_2
+        sep_mono_left <| (intuitionisticallyIf_mono h1.1).trans later_intuitionisticallyIf_2
     _ ⊢ ▷ (□?p Nat.repeat later 0 R ∗ Nat.repeat later 0 Q) := later_sep.mpr
     _ ⊢ ▷ P                                                 := later_mono h2.frame
 
@@ -200,7 +205,7 @@ instance frame_laterN [BI PROP] p n (R R' P Q Q' : PROP)
   frame := calc
     _ ⊢ □?p R' ∗ ▷^[n]Q      := sep_mono_right h3.make_laterN.mpr
     _ ⊢ ▷^[n]□?p R ∗ ▷^[n]Q :=
-        sep_mono_left <| (intuitionisticallyIf_mono h1.into_laterN).trans (laterN_intuitionisticallyIf n)
+        sep_mono_left <| (intuitionisticallyIf_mono h1.1).trans (laterN_intuitionisticallyIf n)
     _ ⊢ ▷^[n](□?p R ∗ Q)     := (laterN_sep n).mpr
     _ ⊢ ▷^[n]P               := laterN_mono n h2.frame
 
@@ -464,9 +469,12 @@ def frameExist : SynthTactic := λ e => do
     let G ← mkFreshExprMVarQ q($prop)
     have body : Q($prop) := Expr.headBeta q($Φ $a)
     let some inst ← synthInstanceRecursiveQ q(Frame $p $R $body $G) | return none
-    -- If `a` is defEq to `c`, the existential quantifier remains. This can be either since the framing
-    -- did not instantiate the existential quantifer or since the instiation of existentials was disabled.
-    -- The `withConfig` is necessary to disable stuck defEq exceptions.
+
+    /-
+      If `a` is defEq to `c`, the existential quantifier remains. This can be either since the
+      framing did not instantiate the existential quantifer or since the instiation of existentials
+      was disabled. The `withConfig` is necessary to disable stuck defEq exceptions.
+    -/
     if ← withTransparency .none <| withConfig (λ _ => {}) (isDefEq (← instantiateMVars a) c) then
       return some (none, ← mkLambdaFVars #[c] (← instantiateMVars G),
                           ← mkLambdaFVars #[c] (← instantiateMVars inst))
@@ -487,5 +495,6 @@ def frameExist : SynthTactic := λ e => do
     return .success q(frame_exist $p $R $Φ $a $G $inst)
 
 #rocq_ignore frame_exist_helper "Logic already handled in the metaprogram frameExist"
-#rocq_ignore GatherEvarsEq "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
+#rocq_ignore GatherEvarsEq
+  "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
 #rocq_ignore TCCbnTele "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"

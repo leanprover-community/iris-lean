@@ -49,12 +49,17 @@ inductive iCasesPatCase
   | mod (pat : iCasesPat)
   deriving Repr, Inhabited
 
+/--
+  The parsed case destruction pattern paired with its syntax, which is useful
+  for precise error highlighting using `withRef`.
+-/
 structure iCasesPat where
   ref : Syntax
   case : iCasesPatCase
 
 end
 
+/-- Parses the case destruction patterns. -/
 partial def iCasesPat.parse (pat : TSyntax `icasesPat) : MacroM iCasesPat := do
   let stx ← expandMacros pat
   match go ⟨stx⟩ with
@@ -63,7 +68,6 @@ partial def iCasesPat.parse (pat : TSyntax `icasesPat) : MacroM iCasesPat := do
 where
   go (stx : TSyntax `icasesPat) : Option iCasesPat :=
     match stx.raw with
-    -- delegate: keep the inner pattern's own ref
     | `(icasesPat| ($pat)) => goAlts pat
     | _ => (goCase stx).map ({ ref := stx.raw, case := · })
 
@@ -79,6 +83,7 @@ where
     | `(icasesPat| >$pat) => go pat |>.map <| .mod
     | _ => none
 
+  -- For recursive parsing of conjunction patterns and disjunction patterns
   goAlts (stx : TSyntax ``icasesPatAlts) : Option iCasesPat :=
     match stx with
     | `(icasesPatAlts| $args|*) =>

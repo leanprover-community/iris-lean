@@ -127,22 +127,26 @@ class IntoWand {PROP} [BI PROP] (p q : Bool) (R : PROP) (m : WandMode)
 export IntoWand (into_wand)
 
 @[ipm_class, rocq_alias FromForall]
-class FromForall {PROP} [BI PROP] (P : PROP) {α : outParam (Sort _)} (Ψ : outParam <| α → PROP) where
+class FromForall {PROP} [BI PROP] (P : PROP)
+    {α : outParam (Sort _)} (Ψ : outParam <| α → PROP) where
   from_forall : (∀ x, Ψ x) ⊢ P
 export FromForall (from_forall)
 
 @[ipm_class, rocq_alias IntoForall]
-class IntoForall {PROP} [BI PROP] (P : PROP) {α : outParam (Sort _)} (Φ : outParam <| α → PROP) where
+class IntoForall {PROP} [BI PROP] (P : PROP)
+    {α : outParam (Sort _)} (Φ : outParam <| α → PROP) where
   into_forall : P ⊢ ∀ x, Φ x
 export IntoForall (into_forall)
 
 @[ipm_class, rocq_alias FromExist]
-class FromExists {PROP} [BI PROP] (P : PROP) {α : outParam (Sort _)} (Φ : outParam <| α → PROP) where
+class FromExists {PROP} [BI PROP] (P : PROP)
+    {α : outParam (Sort _)} (Φ : outParam <| α → PROP) where
   from_exists : (∃ x, Φ x) ⊢ P
 export FromExists (from_exists)
 
 @[ipm_class, rocq_alias IntoExist]
-class IntoExists {PROP} [BI PROP] (P : PROP) {α : outParam (Sort _)} (Φ : outParam <| α → PROP) where
+class IntoExists {PROP} [BI PROP] (P : PROP)
+    {α : outParam (Sort _)} (Φ : outParam <| α → PROP) where
   into_exists : P ⊢ ∃ x, Φ x
 export IntoExists (into_exists)
 
@@ -177,7 +181,8 @@ class IntoOr {PROP} [BI PROP] (P : PROP) (Q1 Q2 : outParam $ PROP) where
 export IntoOr (into_or)
 
 @[ipm_class, rocq_alias IntoInternalEq]
-class IntoInternalEq {PROP} [BI PROP] [Sbi PROP] {A : outParam $ Type _} [ofe : outParam $ OFE A] (P : PROP) (x y : outParam A) where
+class IntoInternalEq {PROP} [BI PROP] [Sbi PROP] {A : outParam $ Type _}
+    [ofe : outParam $ OFE A] (P : PROP) (x y : outParam A) where
   into_internal_eq : P ⊢@{PROP} x ≡ y
 export IntoInternalEq (into_internal_eq)
 
@@ -196,7 +201,8 @@ class IntoAbsorbingly {PROP} [BI PROP] (P : outParam $ PROP) (Q : PROP) where
   into_absorbingly : P ⊢ <absorb> Q
 export IntoAbsorbingly (into_absorbingly)
 
-@[ipm_class, rocq_alias FromAssumption, rocq_alias KnownLFromAssumption, rocq_alias KnownRFromAssumption]
+@[ipm_class, rocq_alias FromAssumption,
+  rocq_alias KnownLFromAssumption, rocq_alias KnownRFromAssumption]
 class FromAssumption {PROP} [BI PROP] (p : Bool) (ioP : InOut)
     (P : semiOutParamIPM ioP PROP) (Q : PROP) where
   from_assumption : □?p P ⊢ Q
@@ -237,7 +243,8 @@ For the IPM TC synthesis, it needs to be an `uncheckedInParam` since it should m
 if the user provides an mvar.
 -/
 @[ipm_class, rocq_alias FromModal]
-class FromModal {PROP1 : outParam $ Type _} {PROP2} {α : outParam <| Type _} [outParam $ BI PROP1] [BI PROP2] (φ : outParam $ Prop)
+class FromModal {PROP1 : outParam $ Type _} {PROP2} {α : outParam <| Type _}
+    [outParam $ BI PROP1] [BI PROP2] (φ : outParam $ Prop)
     (M : outParam $ Modality PROP1 PROP2) (sel : outParam <| uncheckedInParam α) (P : PROP2)
     (Q : outParam $ PROP1) where
   from_modal : φ → M.M Q ⊢ P
@@ -270,15 +277,16 @@ class Frame {PROP} [BI PROP] (p : Bool) (R P : PROP) (Q : outParam $ PROP) where
 export Frame (frame)
 
 @[ipm_class, rocq_alias FrameInstantiateExistDisabled]
-class FrameInstantiateExistDisabled {PROP} [BI PROP] (p : Bool) (R P : PROP) (Q : outParam $ PROP) where
+class FrameInstantiateExistDisabled {PROP} [BI PROP] (p : Bool)
+    (R P : PROP) (Q : outParam $ PROP) where
   frame_instantiatiate_exist_disabled : Frame p R P Q
 export FrameInstantiateExistDisabled (frame_instantiatiate_exist_disabled)
 
 /--
 `IntoLaterN` turns `P` into `▷^[n] Q`.
-The Boolean [only_head] indicates whether laters should only be stripped in head position or also below
-other logical connectives. For [inext] it should strip laters below other logical connectives,
-but this should not happen while framing.
+The Boolean [only_head] indicates whether laters should only be stripped in head position or
+also below other logical connectives. For [inext] it should strip laters below other logical
+connectives, but this should not happen while framing.
 
 The Rocq version uses an `MaybeIntoLaterN` typeclass that avoids unfolding definitions for searches
 that do not make progress. But this is not necessary in Lean since Lean TC synthesis does not unfold
@@ -287,7 +295,8 @@ definitions by default.
 This classes is deliberately not an `ipm_class` to use the more efficient TC synthesis.
 -/
 @[rocq_alias IntoLaterN, rocq_alias MaybeIntoLaterN]
-class IntoLaterN {PROP} [BI PROP] (only_head : Bool) (n : Nat) (P : PROP) (Q : outParam $ PROP) where
+class IntoLaterN {PROP} [BI PROP] (only_head : Bool) (n : Nat)
+    (P : PROP) (Q : outParam $ PROP) where
   into_laterN : P ⊢ ▷^[n] Q
 export IntoLaterN (into_laterN)
 
@@ -298,8 +307,10 @@ class CombineSepAs [BI PROP] (P Q : PROP) (R : outParam PROP) where
 export CombineSepAs (combine_sep_as)
 
 #rocq_ignore MaybeCombineSepAs "No need for progress_indicator"
-#rocq_ignore progress_indicator "No longer required as it is only used by the type class MaybeCombineSepAs"
-#rocq_ignore maybe_combine_sep_as_combine_sep_as "No longer required along with MaybeCombineSepAs"
+#rocq_ignore progress_indicator
+  "No longer required as it is only used by the type class MaybeCombineSepAs"
+#rocq_ignore maybe_combine_sep_as_combine_sep_as
+  "No longer required along with MaybeCombineSepAs"
 
 /-- `CombineSepGives` combines two propositions `P` and `Q` for a proposition
     with the `<pers>` modality -/
@@ -351,7 +362,8 @@ class IntoIH [BI PROP] (φ : Prop) (P : PROP) (Q : outParam PROP) where
 export IntoIH (into_ih)
 
 @[ipm_class, rocq_alias IntoEmbed]
-class IntoEmbed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] (P : PROP2) (Q : outParam PROP1) where
+class IntoEmbed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+    (P : PROP2) (Q : outParam PROP1) where
   into_embed : P ⊢ ⎡Q⎤
 export IntoEmbed (into_embed)
 

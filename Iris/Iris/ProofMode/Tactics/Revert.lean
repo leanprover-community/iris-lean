@@ -54,7 +54,8 @@ open Lean Elab Tactic Meta Qq
   `reverted` collects lean variables already reverted. This is necessary for dependency checks
   since they are only cleared from the Lean context for the final goal.
 -/
-private structure RevertState {prop : Q(Type u)} {bi : Q(BI $prop)} (origE origGoal : Q($prop)) where
+private structure RevertState {prop : Q(Type u)} {bi : Q(BI $prop)}
+  (origE origGoal : Q($prop)) where
   (e : Q($prop)) (hyps : Hyps bi e) (goal : Q($prop))
   (reverted : Array FVarId := #[])
   pf : Q(($e ⊢ $goal) → ($origE ⊢ $origGoal))
@@ -200,7 +201,8 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     let leanLines ← missingPureHyps.mapM fun ⟨depId, srcId⟩ => do
       let depDecl ← depId.getDecl
       let srcDecl ← srcId.getDecl
-      return s!"• Lean hypothesis {ppHypName depDecl.userName} depends on {ppHypName srcDecl.userName}"
+      return s!"• Lean hypothesis {ppHypName depDecl.userName} depends \
+        on {ppHypName srcDecl.userName}"
     let irisLines ← missingIrisHyps.mapM fun ⟨depName, _, srcId⟩ => do
       let srcDecl ← srcId.getDecl
       return s!"• Iris hypothesis {ppHypName depName} depends on {ppHypName srcDecl.userName}"
@@ -217,7 +219,8 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     -- Check whether the new selecton pattern may contain any inaccessible names
     let allNamesAccessible :=
       (missingIrisHyps.all fun ⟨name, _, _⟩ => !name.hasMacroScopes) &&
-      !(← allPureFVarsSorted.anyM fun fvarId => do return (← fvarId.getDecl).userName.hasMacroScopes)
+      !(← allPureFVarsSorted.anyM fun fvarId => do
+        return (← fvarId.getDecl).userName.hasMacroScopes)
 
     -- Find the old tactic syntax and generate the new one with missing hypotheses added
     let oldTactic ← getRef

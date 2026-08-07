@@ -28,6 +28,13 @@ macro_rules | `(tactic| itrivial) => `(tactic| mytac)
 -/
 syntax "itrivial" : tactic
 
+/--
+  Attempts to solve the side condition `target`.
+  When `failOnUnsolved` is set as `true`, this function throws an error when
+  the side condition cannot be solved automatically.
+  Otherwise, when `failOnUnsolved` is set as `false`, the unsolved subgoals
+  are added to the proof state for the user.
+-/
 def iSolveSidecondition (target : Q(Prop)) (failOnUnsolved := true) : ProofModeM Q($target) := do
   let mvar ← mkFreshExprSyntheticOpaqueMVar q($target)
   match ← instantiateMVars target with
@@ -52,7 +59,7 @@ elab "istart" : tactic => do
   replaceMainGoal [mvar]
 
 /--
-  `istart prop` starts the Iris Proof Mode with a specific `prop`.
+  `istart prop` starts the Iris Proof Mode with a specific BI instance.
 -/
 elab "istart " colGt prop:term : tactic => do
   let mvar ← getMainGoal
@@ -68,8 +75,8 @@ elab "istop" : tactic => do
   -- parse goal
   let mvar ← getMainGoal
   mvar.withContext do
-  let goal ← instantiateMVars <| ← mvar.getType
+    let goal ← instantiateMVars <| ← mvar.getType
 
-  -- check if already in proof mode
-  let some irisGoal := parseIrisGoal? goal | throwError "not in proof mode"
-  mvar.setType irisGoal.strip
+    -- check if already in proof mode
+    let some irisGoal := parseIrisGoal? goal | throwError "istop: not in proof mode"
+    mvar.setType irisGoal.strip

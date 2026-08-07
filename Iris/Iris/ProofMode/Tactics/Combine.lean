@@ -26,7 +26,8 @@ theorem combine_as_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1 out2 out : PROP}
   _ ⊢ e2 ∗ □?p2 out2 ∗ □?p1 out1      := sep_assoc.mp
   _ ⊢ e2 ∗ □?p1 out1 ∗ □?p2 out2      := sep_mono_right sep_comm.mp
   _ ⊢ e2 ∗ □?(p1 && p2) (out1 ∗ out2) := sep_mono_right intuitionisticallyIf_sep_conj
-  _ ⊢ e2 ∗ □?(p1 && p2) out           := sep_mono_right <| intuitionisticallyIf_mono <| sep_comm.mp.trans inst.combine_sep_as
+  _ ⊢ e2 ∗ □?(p1 && p2) out           :=
+      sep_mono_right <| intuitionisticallyIf_mono <| sep_comm.mp.trans inst.combine_sep_as
 
 /-- Auxiliary lemma for the base case where up to one hypothesis is given -/
 theorem combine_gives_nil_singleton [BI PROP] {e : PROP} : e ⊢ e ∗ □ True :=
@@ -39,20 +40,21 @@ theorem combine_gives_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1 out2 out : PRO
     (pf2 : e1 ⊣⊢ e2 ∗ □?p2 out2) :
     e ⊢ e ∗ □ out := by
   calc
-    e ⊢ e1 ∗ □?p1 out1                                   := pf1.mp
-    _ ⊢ (e2 ∗ □?p2 out2) ∗ □?p1 out1                     := sep_mono_left pf2.mp
-    _ ⊢ e2 ∗ □?p2 out2 ∗ □?p1 out1                       := sep_assoc.mp
-    _ ⊢ e2 ∗ □?p1 out1 ∗ □?p2 out2                       := sep_mono_right sep_comm.mp
+    e ⊢ e1 ∗ □?p1 out1                          := pf1.mp
+    _ ⊢ (e2 ∗ □?p2 out2) ∗ □?p1 out1            := sep_mono_left pf2.mp
+    _ ⊢ e2 ∗ □?p2 out2 ∗ □?p1 out1              := sep_assoc.mp
+    _ ⊢ e2 ∗ □?p1 out1 ∗ □?p2 out2              := sep_mono_right sep_comm.mp
     _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∧ (e2 ∗ <pers> out) := and_intro .rfl <| sep_mono_right ?_
     _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∧ <pers> out        := and_mono_right sep_elim_right
-    _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∗ □ out             := persistently_and_intuitionistically_sep_right.mp
-    _ ⊢ (e2 ∗ □?p2 out2 ∗ □?p1 out1) ∗ □ out             := sep_mono_left <| sep_mono_right sep_comm.mp
-    _ ⊢ ((e2 ∗ □?p2 out2) ∗ □?p1 out1) ∗ □ out           := sep_mono_left sep_assoc.mpr
-    _ ⊢ (e1 ∗ □?p1 out1) ∗ □ out                         := sep_mono_left <| sep_mono_left pf2.mpr
-    _ ⊢ e ∗ □ out                                        := sep_mono_left pf1.mpr
+    _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∗ □ out    := persistently_and_intuitionistically_sep_right.mp
+    _ ⊢ (e2 ∗ □?p2 out2 ∗ □?p1 out1) ∗ □ out    := sep_mono_left <| sep_mono_right sep_comm.mp
+    _ ⊢ ((e2 ∗ □?p2 out2) ∗ □?p1 out1) ∗ □ out  := sep_mono_left sep_assoc.mpr
+    _ ⊢ (e1 ∗ □?p1 out1) ∗ □ out                := sep_mono_left <| sep_mono_left pf2.mpr
+    _ ⊢ e ∗ □ out                               := sep_mono_left pf1.mpr
   calc
     _ ⊢ □?(p1 && p2) (out1 ∗ out2) := intuitionisticallyIf_sep_conj
-    _ ⊢ □?(p1 && p2) <pers> out    := intuitionisticallyIf_mono <| sep_comm.mp.trans inst.combine_sep_gives
+    _ ⊢ □?(p1 && p2) <pers> out    :=
+        intuitionisticallyIf_mono <| sep_comm.mp.trans inst.combine_sep_gives
     _ ⊢ <pers> out                 := intuitionisticallyIf_elim
 
 /-- Auxiliary lemma for combining hypotheses derived using `CombineSepGives` by conjunction -/
@@ -71,15 +73,20 @@ theorem combine_gives_step_conj [BI PROP] {p1 p2 : Bool}
     _ ⊢ e1 ∗ □?p1 out1               := pf2
     _ ⊢ (e2 ∗ □?p2 out2) ∗ □?p1 out1 := sep_mono_left pf3.mp
     _ ⊢ e2 ∗ □?p2 out2 ∗ □?p1 out1   := sep_assoc.mp
-    _ ⊢ e2 ∗ out2 ∗ out1             := sep_mono_right <| sep_mono intuitionisticallyIf_elim intuitionisticallyIf_elim
+    _ ⊢ e2 ∗ out2 ∗ out1             :=
+        sep_mono_right <| sep_mono intuitionisticallyIf_elim intuitionisticallyIf_elim
     _ ⊢ e2 ∗ <pers> newOutGives      := sep_mono_right instGives.combine_sep_gives
     _ ⊢ <pers> newOutGives           := persistently_absorb_right
   calc
     _ ⊢ e ∗ □ outGives                                          := pf1
-    _ ⊢ (e ∗ □ outGives) ∧ <pers> outGives ∧ <pers> newOutGives := and_intro .rfl <| and_intro pf4 pf5
-    _ ⊢ (e ∗ □ outGives) ∧ <pers> (outGives ∧ newOutGives)      := and_mono_right <| persistently_and.mpr
-    _ ⊢ (e ∗ □ outGives) ∧ <pers> outGivesCombined              := and_mono_right <| persistently_mono instGivesCombined.make_and.mp
-    _ ⊢ (e ∗ □ outGives) ∗ □ outGivesCombined                   := persistently_and_intuitionistically_sep_right.mp
+    _ ⊢ (e ∗ □ outGives) ∧ <pers> outGives ∧ <pers> newOutGives :=
+        and_intro .rfl <| and_intro pf4 pf5
+    _ ⊢ (e ∗ □ outGives) ∧ <pers> (outGives ∧ newOutGives)      :=
+        and_mono_right <| persistently_and.mpr
+    _ ⊢ (e ∗ □ outGives) ∧ <pers> outGivesCombined              :=
+        and_mono_right <| persistently_mono instGivesCombined.make_and.mp
+    _ ⊢ (e ∗ □ outGives) ∗ □ outGivesCombined                   :=
+        persistently_and_intuitionistically_sep_right.mp
     _ ⊢ e ∗ □ outGivesCombined                                  := sep_mono_left sep_elim_left
 
 theorem combine_as_gives [BI PROP] {p : Bool} {newE e outAs outGives goal : PROP}
@@ -90,7 +97,8 @@ theorem combine_as_gives [BI PROP] {p : Bool} {newE e outAs outGives goal : PROP
   e ⊢ e ∗ □ outGives := pfGives
   _ ⊢ (newE ∗ □?p outAs) ∗ □ outGives   := sep_mono_left pfAs
   _ ⊢ newE ∗ □?p outAs ∗ □ outGives     := sep_assoc.mp
-  _ ⊢ newE ∗ □?p outAs ∗ □?p □ outGives := sep_mono_right <| sep_mono_right intuitionisticallyIf_intutitionistically.mpr
+  _ ⊢ newE ∗ □?p outAs ∗ □?p □ outGives :=
+      sep_mono_right <| sep_mono_right intuitionisticallyIf_intutitionistically.mpr
   _ ⊢ newE ∗ □?p (outAs ∗ □ outGives)   := sep_mono_right intuitionisticallyIf_sep_mpr
   _ ⊢ goal := pfAsGives
 
@@ -99,7 +107,8 @@ theorem combine_as_gives [BI PROP] {p : Bool} {newE e outAs outGives goal : PROP
 #rocq_ignore combine_seps_gives_of_envs "icombine is implemented by iteration with CombineState"
 #rocq_ignore combine_seps_as_from_as_gives "icombine is implemented by iteration with CombineState"
 #rocq_ignore combine_seps_as_gives_nil "icombine is implemented by iteration with CombineState"
-#rocq_ignore combine_seps_as_gives_singleton "icombine is implemented by iteration with CombineState"
+#rocq_ignore combine_seps_as_gives_singleton
+  "icombine is implemented by iteration with CombineState"
 #rocq_ignore combine_seps_gives_cons "icombine is implemented by iteration with CombineState"
 #rocq_ignore combine_seps_gives_of_envs "icombine is implemented by iteration with CombineState"
 

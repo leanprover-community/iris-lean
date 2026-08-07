@@ -27,7 +27,8 @@ theorem modaction_forall [BI PROP] {p P} (M : Modality PROP PROP) {C}
   rw [h] at hs
   apply (hs _ hC)
 
-theorem modaction_transform [BI PROP1] [BI PROP2] {p P Q} (M : Modality PROP1 PROP2) {C}
+theorem modaction_transform [BI PROP1] [BI PROP2]
+    {p P Q} (M : Modality PROP1 PROP2) {C}
     (h : M.action p = .transform C) (hC : C P Q) : □?p P ⊢ M.M iprop(□?p Q) := by
   have hs := M.spec p
   rw [h] at hs
@@ -81,8 +82,9 @@ theorem modintro [BI PROP1] [BI PROP2] {e e'} {α} {Φ M} {sel : α}
 public meta section
 open Lean Elab Tactic Meta
 
-private def parseModalityActionQ {prop1 prop2 : Q(Type u)} (act : Q(ModalityAction $prop1 $prop2)) :
-  ProofModeM (ModalityActionQ prop1 prop2) := do
+private def parseModalityActionQ {prop1 prop2 : Q(Type u)}
+    (act : Q(ModalityAction $prop1 $prop2)) :
+    ProofModeM (ModalityActionQ prop1 prop2) := do
   let act ← whnf q($act)
   match_expr act with
   | ModalityAction.isEmpty _ _ => return .isEmpty
@@ -130,7 +132,8 @@ where go {e}
       let .some hC ← trySynthInstanceQ q($C $ty)
         | throwError "imodintro: hypothesis {name} : {ty} does not satisfy {C}"
       -- bridge through defeq since `M.action` cannot unify directly with the pattern (same in other cases)
-      have heq : Q(@ModalityAction.forall $prop1 $C = .forall $C) := q(Eq.refl (ModalityAction.forall $C))
+      have heq : Q(@ModalityAction.forall $prop1 $C = .forall $C) :=
+        q(Eq.refl (ModalityAction.forall $C))
       have heq : Q($(M).action $p = .forall $C) := heq
       return ⟨_, .mkHyp bi1 name ivar p ty, q(modaction_forall $M $heq $hC)⟩
     | .transform C => do
@@ -185,8 +188,10 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
     let sel ← elabTermEnsuringTypeQ (← `(term | iprop($sel))) α
     let Q ← mkFreshExprMVarQ q($prop')
     -- `M Q ⊢ goal`
-    let .some _ ← ProofModeM.trySynthInstanceQ q(@FromModal $prop' $prop $α $bi' $bi $Φ $M $sel $goal $Q)
-      | throwError "imodintro: {goal} is not a modality{if sel.isMVar then m!"" else m!" matching {sel}"}"
+    let .some _ ←
+      ProofModeM.trySynthInstanceQ q(@FromModal $prop' $prop $α $bi' $bi $Φ $M $sel $goal $Q)
+      | throwError "imodintro: {goal} is not a \
+          modality{if sel.isMVar then m!"" else m!" matching {sel}"}"
     -- show the side condition
     let hΦ ← iSolveSidecondition q($Φ)
     -- perform modality actions, get transformed context `hyps'` and `pf : hyps ⊢ M hyps'`
@@ -202,10 +207,9 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
 -/
 elab "imodintro " colGt sel:term : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-  let pf ← iModIntroCore hyps goal sel
+    let pf ← iModIntroCore hyps goal sel
 
-  mvar.assign pf
-
+    mvar.assign pf
 
 /--
   `imodintro sel` introduces the modality at the top of the goal (e.g., `□`,

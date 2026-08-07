@@ -30,14 +30,16 @@ public meta section
 open Lean Elab Tactic Meta Qq
 
 /--
-  `isplit` turns the goal into a conjunction (`∧`) and splits it into two goals, both keeping the entire context.
+  `isplit` turns the goal into a conjunction (`∧`) and splits it into two goals,
+  both keeping the entire context.
 -/
 elab "isplit " : tactic => do
   ProofModeM.runTactic λ mvar { prop, hyps, goal, .. } => do
 
   let A1 ← mkFreshExprMVarQ prop
   let A2 ← mkFreshExprMVarQ prop
-  let some _ ← ProofModeM.trySynthInstanceQ q(FromAnd $goal $A1 $A2) | throwError "isplit: {goal} is not a conjunction"
+  let some _ ← ProofModeM.trySynthInstanceQ q(FromAnd $goal $A1 $A2)
+    | throwError "isplit: {goal} is not a conjunction"
   let m1 ← addBIGoal hyps A1
   let m2 ← addBIGoal hyps A2
   mvar.assign q(from_and_intro (Q := $goal) $m1 $m2)

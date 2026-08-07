@@ -13,9 +13,11 @@ public meta section
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq
 
-/-- [InOut] is used to dynamically determine whether a type class parameter is an input or an output.
-This is important for classes that are used with multiple modings, e.g., IntoWand. Instances can match on
-the InOut parameter to avoid accidentially instantiating outputs if matching on an input was intended.
+/--
+  [InOut] is used to dynamically determine whether a type class parameter is an input or an output.
+  This is important for classes that are used with multiple modings, e.g., IntoWand. Instances can
+  match on the InOut parameter to avoid accidentially instantiating outputs if matching on an input
+  was intended.
 -/
 inductive InOut where
   | in
@@ -36,7 +38,8 @@ Return `true` if `e` is of the form `uncheckedInParam _` or `outParam (unchecked
 The second case is necessary for `FromModal`.
 -/
 def isUncheckedInParam (e : Expr) : Bool :=
-  e.isAppOfArity ``uncheckedInParam 1 || (e.isOutParam && e.appArg!.isAppOfArity ``uncheckedInParam 1)
+  e.isAppOfArity ``uncheckedInParam 1 ||
+    (e.isOutParam && e.appArg!.isAppOfArity ``uncheckedInParam 1)
 
 /--
 The parameters of a class declared with `ipm_class` are categorized into the following categories:
@@ -44,13 +47,14 @@ The parameters of a class declared with `ipm_class` are categorized into the fol
 1. in: This is the default for a parameter when not annotated in another way.
 2. out: These are parameters marked with `outParam`. These parameters must be mvars when starting
    typeclass search.
-3. semiOut: These are parameters marked with `semiOutParamIPM`. The `InOut` argument of `semiOutParamIPM`
-   determines whether the semiOut parameter is treated as an input or an output.
-4. uncheckedIn: These are parameters marked with `uncheckedInParam`. These behave like `in` parameters,
-   but allow mvars to match terms (see below).
+3. semiOut: These are parameters marked with `semiOutParamIPM`. The `InOut` argument of
+   `semiOutParamIPM` determines whether the semiOut parameter is treated as an input or an output.
+4. uncheckedIn: These are parameters marked with `uncheckedInParam`. These behave like `in`
+   parameters, but allow mvars to match terms (see below).
 
 The following constraints apply to the parameters:
-(In the following, semiOut parameters are treated as inputs according to the value of their `InOut` argument.)
+(In the following, semiOut parameters are treated as inputs according to the value of their `InOut`
+argument.)
 1. For each synthesis problem, all output parameters must be mvars.
 2. When an input parameter is a mvar, it is not considered to match an instance which does not have
 an mvar at the top-level. This is to prevent accidentally instantiating mvars. Note that this only
@@ -82,9 +86,10 @@ structure ClassEntry where
   Parameter kinds of class.
   For example, for class
   ```
-  class FromModal {PROP1 : outParam (Type _)} {PROP2} {α : outParam <| Type _} [outParam (BI PROP1)] [BI PROP2]
-    (φ : outParam $ Prop) (M : outParam $ Modality PROP1 PROP2) (sel : outParam (uncheckedInParam α))
-    (P : PROP2) (Q : outParam $ PROP1) where
+  class FromModal {PROP1 : outParam (Type _)} {PROP2}
+    {α : outParam <| Type _} [outParam (BI PROP1)] [BI PROP2]
+    (φ : outParam $ Prop) (M : outParam $ Modality PROP1 PROP2)
+    (sel : outParam (uncheckedInParam α)) (P : PROP2) (Q : outParam $ PROP1) where
   from_modal : φ → M.M Q ⊢ P
   ```
   `params := #[out, in, out, out, in, out, out, uncheckedIn, in, out]`
@@ -102,8 +107,8 @@ def addEntry (s : ClassState) (entry : ClassEntry) : ClassState :=
     paramMap := s.paramMap.insert entry.name entry.params }
 
 /--
-Switch the state into persistent mode. We switch to this mode after we read all imported .olean files.
-Recall that we use a `SMap` for implementing the state.
+Switch the state into persistent mode. We switch to this mode after we read all imported
+.olean files. Recall that we use a `SMap` for implementing the state.
 -/
 def switch (s : ClassState) : ClassState :=
   { s with
@@ -142,7 +147,8 @@ private def parseInOutParam (d : Expr) : Option Expr := do
   if !expr.isAppOfArity ``semiOutParamCore 2 then failure
   some expr.getAppArgs[0]!
 
-private partial def computeParamKinds (params : Array ParamKind) (type : Expr) : Except MessageData (Array ParamKind) :=
+private partial def computeParamKinds (params : Array ParamKind) (type : Expr) :
+    Except MessageData (Array ParamKind) :=
   match type with
   | .forallE _ d b _ =>
     -- we need to check this before outParam since `outParam (uncheckedInParam _)` should be
@@ -167,9 +173,9 @@ private partial def computeParamKinds (params : Array ParamKind) (type : Expr) :
 Check that `type` is a valid IPM synthesis goal.
 Returns `none` if the  goal is not registered with `ipm_class`.
 Returns `some idxs`, where `idxs` is a list of the positions of input parameters whose argument has
-an mvar at the top-level. These are the inputs that, per constraint 3 of `ParamKind`, must only match
-instances which themselves have an mvar at the top-level for that parameter. `uncheckedIn` parameters
-are skipped.
+an mvar at the top-level. These are the inputs that, per constraint 3 of `ParamKind`, must only
+match instances which themselves have an mvar at the top-level for that parameter. `uncheckedIn`
+parameters are skipped.
 -/
 def checkIPMSynthParams (type : Expr) : MetaM (Option (Array Nat)) := do
   forallTelescopeReducing type fun _ typeBody => do
@@ -311,12 +317,14 @@ unsafe def SynthTacticEntrySerialized.deserialize (e : SynthTacticEntrySerialize
 
 
 /-- Environment extension for synth tactics -/
-unsafe initialize synthTacticExt : ScopedEnvExtension (SynthTacticEntrySerialized × Array DiscrTree.Key)
+unsafe initialize synthTacticExt :
+  ScopedEnvExtension (SynthTacticEntrySerialized × Array DiscrTree.Key)
   (SynthTacticEntry × Array DiscrTree.Key) (DiscrTree SynthTacticEntry) ←
   registerScopedEnvExtension {
     mkInitial := return {}
     addEntry := fun dt (n, ks) => dt.insertKeyValue ks n
-    ofOLeanEntry := fun _ (n, ks) => ImportM.runCoreM do return (← n.deserialize (compile:=false), ks)
+    ofOLeanEntry := fun _ (n, ks) => ImportM.runCoreM do
+      return (← n.deserialize (compile:=false), ks)
     toOLeanEntry := fun (n, ks) => (n.serialize, ks)
   }
 
@@ -329,18 +337,19 @@ unsafe initialize registerBuiltinAttribute {
   name := `ipm_tactic_instance
   descr := "tactic instance used by the proof mode instance synthesis"
   -- we ignore TC failures for BI, they should just create metavariables
-  add := fun decl stx kind => MetaM.run' do Elab.Term.TermElabM.run' (ctx := {ignoreTCFailures := true}) do
-    let prio := if stx[1][1].isMissing then some default_prio else stx[1][1].isNatLit?
-    let .some prio := prio | throwError "unknown priority: {stx[1][1]}"
+  add := fun decl stx kind => MetaM.run' do
+    Elab.Term.TermElabM.run' (ctx := {ignoreTCFailures := true}) do
+      let prio := if stx[1][1].isMissing then some default_prio else stx[1][1].isNatLit?
+      let .some prio := prio | throwError "unknown priority: {stx[1][1]}"
 
-    let pats ← stx[2].getSepArgs.mapM λ stx => do
-      let stx ← `(iprop($(TSyntax.mk stx)))
-      Term.elabTerm stx none
+      let pats ← stx[2].getSepArgs.mapM λ stx => do
+        let stx ← `(iprop($(TSyntax.mk stx)))
+        Term.elabTerm stx none
 
-    let tac ← (SynthTacticEntrySerialized.mk prio decl).deserialize (compile:=true)
-    for pat in pats do
-      let key ← DiscrTree.mkPath pat
-      synthTacticExt.add (tac, key) kind
+      let tac ← (SynthTacticEntrySerialized.mk prio decl).deserialize (compile:=true)
+      for pat in pats do
+        let key ← DiscrTree.mkPath pat
+        synthTacticExt.add (tac, key) kind
 }
 
 end IPMTactic

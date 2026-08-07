@@ -58,8 +58,9 @@ A tuple containing:
 - `pf`: Proof of `hyps ⊢ hyps' ∗ □?p out`
 -/
 private def iHaveCore {e} (hyps : @Hyps u prop bi e)
-  (tm : Term) (keep : Bool) :
-  ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) × (out : Q($prop)) × Q($e ⊢ $e' ∗ □?$p $out)) := do
+    (tm : Term) (keep : Bool) :
+    ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) ×
+      (out : Q($prop)) × Q($e ⊢ $e' ∗ □?$p $out)) := do
   if let some ivar ← try? <| hyps.findWithInfo ⟨tm⟩ then
     -- assertion from the Iris context
     let ⟨_, hyps, _, out', p, _, pf⟩ := hyps.remove (!keep) ivar
@@ -71,14 +72,16 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
 
     let ⟨newMVars, _, _⟩ ← forallMetaTelescope ty
     let val := mkAppN val newMVars
-    -- TODO: should we call postprocessAppMVars?
+    -- TODO: should we call `postprocessAppMVars`?
     let newMVarIds ← newMVars.map Expr.mvarId! |>.filterM fun mvarId => not <$> mvarId.isAssigned
     let otherMVarIds ← getMVarsNoDelayed val
     let otherMVarIds := otherMVarIds.filter (!newMVarIds.contains ·)
 
-    -- If the new mvars have type class assumption that could not be solved, register them such
-    -- that they are tried to be solved again at the end of `ProofModeM.runTactic`
-    -- (using `Term.synthesizeSyntheticMVarsNoPostponing`)
+    /-
+      If the new mvars have type class assumption that could not be solved, register them such
+      that they are tried to be solved again at the end of `ProofModeM.runTactic`
+      (using `Term.synthesizeSyntheticMVarsNoPostponing`).
+    -/
     for mvar in newMVars do
       if (← isSyntheticMVar mvar) && !(← mvar.mvarId!.isAssignedOrDelayedAssigned) then
         Term.registerSyntheticMVarWithCurrRef mvar.mvarId! (.typeClass .none)
@@ -104,5 +107,6 @@ def iHave {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
   -- assert `term` as hypothesis `A`
   let ⟨_, hyps', p, A, pf⟩ ← iHaveCore hyps pmt.term keep
   -- specialize `A` with `spats`
-  let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p A goal pmt.spats (try_dup_context := try_dup_context)
+  let ⟨_, hyps'', pb, B, pf'⟩ ←
+    iSpecializeCore hyps' p A goal pmt.spats (try_dup_context := try_dup_context)
   return ⟨_, hyps'', pb, B, q(fun x => $(pf).trans ($pf' x))⟩

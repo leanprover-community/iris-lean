@@ -17,7 +17,8 @@ public section
 open BI Std
 
 @[rocq_alias tac_impl_intro_drop]
-theorem imp_intro_drop [BI PROP] {P Q A1 A2 : PROP} [inst : FromImp Q A1 A2] (h : P ⊢ A2) : P ⊢ Q :=
+theorem imp_intro_drop [BI PROP] {P Q A1 A2 : PROP}
+    [inst : FromImp Q A1 A2] (h : P ⊢ A2) : P ⊢ Q :=
   BI.imp_intro (and_elim_left_trans h) |>.trans inst.1
 
 @[rocq_alias tac_forall_intro]
@@ -70,7 +71,8 @@ theorem wand_intro_spatial [BI PROP] {P Q A1 A2 : PROP}
     [inst : FromWand Q .out A1 A2] (h : P ∗ A1 ⊢ A2) : P ⊢ Q :=
   (wand_intro h).trans inst.from_wand
 
-#rocq_ignore tac_wand_intro_drop "Functionality shared with the case destruction pattern for clearing"
+#rocq_ignore tac_wand_intro_drop
+  "Functionality shared with the case destruction pattern for clearing"
 
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
@@ -127,8 +129,9 @@ This function returns the proof of `P ⊢ Q` to be assigned. The new context is 
 `goals` directly by the tactic.
 -/
 partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
-  {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List (Syntax × IntroPat))
-  (k : ∀ {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}, Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
+    {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List (Syntax × IntroPat))
+    (k : ∀ {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)},
+      Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
     ProofModeM (Q($P ⊢ $Q)) := do
   match pats with
   | [] => k hyps Q
@@ -234,6 +237,6 @@ elab "iintro " pats:(colGt ppSpace introPat)* : tactic => do
   let pats ← liftMacroM <| pats.mapM <| IntroPat.parse
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-  let pf ← iIntroCore hyps goal pats.toList
+    let pf ← iIntroCore hyps goal pats.toList
 
-  mvar.assign pf
+    mvar.assign pf

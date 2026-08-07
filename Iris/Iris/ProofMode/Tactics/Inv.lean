@@ -79,7 +79,8 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
   let close := if closePat.isSome then q(true) else q(false)
   let mPclose ← mkFreshExprMVarQ q(Option ($X → $prop))
   let Q' ← mkFreshExprMVarQ q($X → $prop)
-  let some inst ← ProofModeM.trySynthInstanceQ q(ElimInv $φ $X $Pinv $Pin $Pout $close $mPclose $goal $Q')
+  let some inst ← ProofModeM.trySynthInstanceQ
+    q(ElimInv $φ $X $Pinv $Pin $Pout $close $mPclose $goal $Q')
   | throwError "iinv: invalid invariant {Pinv} (ElimInv type class synthesis failed)"
 
   let ⟨e'', hyps'', p'', out'', pfPin⟩ ←
@@ -137,7 +138,8 @@ syntax (name := iinv) "iinv " colGt term (" $$ " colGt ppSpace specPat)?
     by default the auto-framing of spatial hypotheses.
 -/
 elab_rules : tactic
-  | `(tactic| iinv $t:term $[$$ $spat:specPat]? with $casesPat:icasesPat $[$closePat:icasesPat]?) => do
+  | `(tactic| iinv $t:term $[$$ $spat:specPat]?
+      with $casesPat:icasesPat $[$closePat:icasesPat]?) => do
     -- Parse the introduction and selection patterns
     let specPat ← liftMacroM <| spat.mapM SpecPat.parse
     let casesPat ← liftMacroM <| iCasesPat.parse casesPat

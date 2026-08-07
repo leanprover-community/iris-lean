@@ -64,9 +64,11 @@ def iPureCases (ty : Q(Prop)) (pat : TSyntax `rcasesPat)
   instantiateMVars m
 
 def iPureCore {prop : Q(Type u)} {bi : Q(BI $prop)}
-    (P : Q($prop)) {P' : Q($prop)} (hyps' : Hyps bi P') (p : Q(Bool)) (A Q : Q($prop)) (purePat : TSyntax `rcasesPat)
+    (P : Q($prop)) {P' : Q($prop)} (hyps' : Hyps bi P') (p : Q(Bool))
+    (A Q : Q($prop)) (purePat : TSyntax `rcasesPat)
     (pf : Q($P ⊣⊢ $P' ∗ □?$p $A))
-    (k : ∀ {e'}, Hyps bi e' → (goal' : Q($prop)) → ProofModeM Q($e' ⊢ $goal')) : ProofModeM Q($P ⊢ $Q) := do
+    (k : ∀ {e'}, Hyps bi e' → (goal' : Q($prop)) → ProofModeM Q($e' ⊢ $goal')) :
+    ProofModeM Q($P ⊢ $Q) := do
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
   let some _ ← ProofModeM.trySynthInstanceQ q(IntoPure $A $φ)
   | throwError "ipure: {A} is not pure"
@@ -158,4 +160,6 @@ elab "ipureintro" : tactic => do
 
 -- TODO: what is the best lean automation tactic to call here?
 -- `assumption` is necessary if the goal contains mvars
-macro_rules | `(tactic| itrivial) => `(tactic| (first | ipureintro | exfalso) <;> (first | simp [*] | assumption) <;> done)
+macro_rules
+  | `(tactic| itrivial) =>
+    `(tactic| (first | ipureintro | exfalso) <;> (first | simp [*] | assumption) <;> done)

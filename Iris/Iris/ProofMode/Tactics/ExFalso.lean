@@ -24,5 +24,5 @@ open Lean Elab.Tactic Meta Qq
 -/
 elab "iexfalso" : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-  let m ← addBIGoal hyps q(iprop(False))
-  mvar.assign q(exfalso (Q := $goal) $m)
+    let m ← addBIGoal hyps q(iprop(False))
+    mvar.assign q(exfalso (Q := $goal) $m)

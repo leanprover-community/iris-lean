@@ -50,7 +50,7 @@ private partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
      let pf ← addBIGoal hyps B
      return q(apply $pf)
 
-  -- otherwise, if `A` has the form `?P -∗ ?B`, create a subgoal for `P` and continue with ?B
+  -- otherwise, if `A` has the form `?P -∗ ?B`, create a subgoal for `P` and continue with `?B`
   let some ⟨_, hyps', pb, B, pf⟩ ← try? <| iSpecializeCore hyps p A goal
     [⟨← getRef, .goal {kind := .spatial, negate := false, trivial := false, frame := [], hyps := []} .anonymous⟩]
     | throwError m!"iapply: cannot apply {A} to {goal}"
@@ -77,7 +77,7 @@ elab "iapply " colGt pmt:pmTerm : tactic => do
   -- if `□?p out` directly matches goal, behave like `iexact`
   if let some _ ← ProofModeM.trySynthInstanceQ q(FromAssumption $p .in $out $goal) then
     -- ensure the context can be discarded
-    let LOption.some _ ← trySynthInstanceQ q(TCOr (Affine $e) (Absorbing $goal))
+    let .some _ ← trySynthInstanceQ q(TCOr (Affine $e) (Absorbing $goal))
       | throwError "iapply: the context {e} is not affine and goal not absorbing"
     mvar.assign q($pf apply_assumption)
     return

@@ -140,7 +140,8 @@ private def addIHs {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
     -- Obtain the proposition to be introduced into the intuitionistic context
     let Q ← mkFreshExprMVarQ q($prop)
     let some inst ← ProofModeM.trySynthInstanceQ q(IntoIH $φ $e $Q)
-    | throwError m!"iinduction: unable to perform type class synthesis with IntoIH for the induction hypothesis {φ}"
+    | throwError m!"iinduction: unable to perform type class synthesis with \
+        IntoIH for the induction hypothesis {φ}"
 
     -- Introduce the induction hypothesis into the intuitionistic context
     let nameIdent := mkIdent <| ← i.getUserName
@@ -178,7 +179,8 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (parsedAlts : Option Alts) (altRecName : Option Name) (genSelTargets : List SelTarget) :
     ProofModeM Q($e ⊢ $goal) := do
   let targets := genSelTargets ++
-    (hyps.spatialIVarIds.map ({ kind := .ipm ·, explicit := false })).filter (not <| (genSelTargets.map (·.kind)).contains ·.kind)
+    (hyps.spatialIVarIds.map ({ kind := .ipm ·, explicit := false })).filter
+      (not <| (genSelTargets.map (·.kind)).contains ·.kind)
 
   -- Find the recursor name and constructor names of the inductive datatype
   let fvarType ← liftM <| (inferType <| mkFVar fvar) >>= whnf
@@ -263,8 +265,8 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
                   -- Check that the number of arguments matches what are needed
                   if vars.size > s.fields.size then
                     throwOrLogErrorAt stx <|
-                      s!"iinduction: too many variable names provided at alternative `{ctor}`: ".append
-                      s!"{vars.size} provided, but {s.fields.size} expected"
+                      s!"iinduction: too many variable names provided at alternative `{ctor}`: \
+                        {vars.size} provided, but {s.fields.size} expected"
                   -- Label the arguments with their types, shown when the user hovers over them
                   for ⟨fieldFVar, varStx⟩ in s.fields.zip vars do
                     if let `(binderIdent| $id:ident) := varStx then

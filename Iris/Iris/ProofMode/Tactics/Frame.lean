@@ -113,9 +113,11 @@ def iFrame {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
   for sel in sels do st ← st.step sel
   return st
 
-/-- FrameResult.finish turns a FrameResult into a proof of the original goal given a function k that
+/--
+  FrameResult.finish turns a FrameResult into a proof of the original goal given a function k that
   handles the subgoal remaining after framing. This function k might not be called if the framing
-  made the goal trivial. -/
+  made the goal trivial.
+-/
 def FrameResult.finish {u prop bi origE origGoal} (res : @FrameResult u prop bi origE origGoal)
     (k : ∀ {e}, Hyps bi e → (goal : Q($prop)) → ProofModeM Q($e ⊢ $goal)) :
     ProofModeM Q($origE ⊢ $origGoal) := do
@@ -135,8 +137,9 @@ def FrameResult.finish {u prop bi origE origGoal} (res : @FrameResult u prop bi 
 
 /-- FrameResult.finishClose checks that the original goal was fully solved by framing and gives it
   back with the remaining hypotheses. -/
-def FrameResult.finishClose {u prop bi origE origGoal} (res : @FrameResult u prop bi origE origGoal) :
-  ProofModeM ((e : Q($prop)) × (_ : Hyps bi e) × Q($origE ⊢ $e ∗ $origGoal)) := do
+def FrameResult.finishClose {u prop bi origE origGoal}
+    (res : @FrameResult u prop bi origE origGoal) :
+    ProofModeM ((e : Q($prop)) × (_ : Hyps bi e) × Q($origE ⊢ $e ∗ $origGoal)) := do
   let {e, hyps, goal, pf, ..} := res
   -- try closing the goal for emp or True without calling k
   match goal with
@@ -155,10 +158,10 @@ elab "iframe " pats:(colGt ppSpace selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-  let pats ← SelPat.resolve hyps pats
+    let pats ← SelPat.resolve hyps pats
 
-  let res ← iFrame hyps goal pats
-  mvar.assign (← res.finish (addBIGoal · ·))
+    let res ← iFrame hyps goal pats
+    mvar.assign (← res.finish (addBIGoal · ·))
 
 /--
   `iframe` cancels the spatial hypotheses and solves the goal completely if

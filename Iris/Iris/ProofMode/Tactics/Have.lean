@@ -30,7 +30,8 @@ open Lean Elab Tactic Meta Qq
   `ihave pat := pmt` brings `pmt : pmTerm` into the context and destructs it
   with the case pattern `pat` without consuming the original hypotheses.
 -/
-macro "ihave " colGt pat:icasesPat " := " pmt:pmTerm : tactic => `(tactic | icases +keep $pmt with $pat)
+macro "ihave " colGt pat:icasesPat " := " pmt:pmTerm : tactic =>
+  `(tactic | icases +keep $pmt with $pat)
 
 /--
   `ihave pat : P $$ spat` asserts `P`, proves it with a subgoal built from the
@@ -41,7 +42,8 @@ elab "ihave " colGt pat:icasesPat " : " P:term " $$ " spat:specPat : tactic => d
   let pat ← liftMacroM <| iCasesPat.parse pat
   ProofModeM.runTactic λ mvar { prop, hyps, goal, .. } => do
   let P ← elabTermEnsuringTypeQ (← `(iprop($P))) prop
-  --  establish `P` with `spat`
-  let ⟨_, hyps', p, A, pf⟩ ← iSpecializeCore hyps q(true) q(iprop($P -∗ $P)) goal [spat] (try_dup_context := pat.should_try_dup_context)
+  -- Establish `P` with `spat`
+  let ⟨_, hyps', p, A, pf⟩ ← iSpecializeCore hyps q(true) q(iprop($P -∗ $P))
+    goal [spat] (try_dup_context := pat.should_try_dup_context)
   let pf2 ← iCasesCore hyps' goal pat p A
   mvar.assign q(ihave_assert ($pf $pf2))
