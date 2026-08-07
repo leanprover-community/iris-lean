@@ -19,11 +19,11 @@ open BI Iris ProgramLogic
 
 namespace Arith
 
-@[rocq_alias minimum]
+@[rocq_alias heap_lang.minimum]
 def minimum : Val := hl_val%
   λ m n, if m < n then m else n
 
-@[rocq_alias maximum]
+@[rocq_alias heap_lang.maximum]
 def maximum : Val := hl_val%
   λ m n, if m < n then n else m
 
@@ -31,7 +31,7 @@ section Spec
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF]
 
-@[rocq_alias minimum_spec]
+@[rocq_alias heap_lang.minimum_spec]
 theorem minimum_spec (s : Stuckness) (E : CoPset) (Φ : Val → IProp GF) (m n : Int) :
     ▷ Φ (Val.lit (.int (min m n))) -∗
     WP hl(&minimum #m #n) @ s; E {{ Φ }} := by
@@ -48,7 +48,7 @@ theorem minimum_spec (s : Stuckness) (E : CoPset) (Φ : Val → IProp GF) (m n :
     rw [Int.min_eq_right (by omega)]
     itrivial
 
-@[rocq_alias minimum_spec_nat]
+@[rocq_alias heap_lang.minimum_spec_nat]
 theorem minimum_spec_nat (s : Stuckness) (E : CoPset) (Φ : Val → IProp GF) (m n : Nat) :
     ▷ Φ (Val.lit (.int (Int.ofNat (min m n)))) -∗
     WP hl(&minimum #m #n) @ s; E {{ Φ }} := by
@@ -57,7 +57,7 @@ theorem minimum_spec_nat (s : Stuckness) (E : CoPset) (Φ : Val → IProp GF) (m
   rw [show min (↑m : Int) ↑n = ↑(min m n) by omega]
   itrivial
 
-@[rocq_alias maximum_spec]
+@[rocq_alias heap_lang.maximum_spec]
 theorem maximum_spec (s : Stuckness) (E : CoPset) (Φ : Val → IProp GF) (m n : Int) :
     ▷ Φ (Val.lit (.int (max m n))) -∗
     WP hl(&maximum #m #n) @ s; E {{ Φ }} := by
@@ -74,7 +74,7 @@ theorem maximum_spec (s : Stuckness) (E : CoPset) (Φ : Val → IProp GF) (m n :
     rw [Int.max_eq_left (by omega)]
     itrivial
 
-@[rocq_alias maximum_spec_nat]
+@[rocq_alias heap_lang.maximum_spec_nat]
 theorem maximum_spec_nat (s : Stuckness) (E : CoPset) (Φ : Val → IProp GF) (m n : Nat) :
     ▷ Φ (Val.lit (.int (Int.ofNat (max m n)))) -∗
     WP hl(&maximum #m #n) @ s; E {{ Φ }} := by

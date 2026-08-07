@@ -22,7 +22,7 @@ namespace Unwrap
 
 /-- `unwrap o` unsafely asserts that `o` is `some v` and returns `v`. The
 `none` case is unreachable (it aborts via `assert`). -/
-@[rocq_alias unwrap]
+@[rocq_alias heap_lang.unwrap]
 def unwrap : Val := hl_val%
   λ o,
     match o with
@@ -33,7 +33,7 @@ section Spec
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF]
 
-@[rocq_alias unwrap_spec]
+@[rocq_alias heap_lang.unwrap_spec]
 theorem unwrap_spec (Φ : Val → IProp GF) (v : Val) :
     ▷ Φ v ⊢ WP hl(&unwrap v(some(&v))) {{ Φ }} := by
   iintro HΦ

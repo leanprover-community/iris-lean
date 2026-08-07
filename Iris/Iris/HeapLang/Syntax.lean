@@ -247,7 +247,7 @@ theorem Exp.stuck_subst {x v} : Exp.substStr x v Exp.stuck = Exp.stuck := by
   simp [Exp.stuck, Exp.substStr]
   simp only [substStr, ofVal]
 
-@[rocq_alias assert]
+@[rocq_alias heap_lang.assert]
 def Exp.assert (e : Exp) := Exp.if e (.ofVal $ .lit .unit) Exp.stuck
 
 @[simp]

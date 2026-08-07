@@ -24,7 +24,7 @@ section Spec
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF]
 
 -- TODO: use wp_smart_apply
-@[rocq_alias wp_assert]
+@[rocq_alias heap_lang.wp_assert]
 theorem wp_assert (E : CoPset) (Φ : Val → IProp GF) (e : Exp) :
     WP e @ E {{ v, ⌜v = hl_val(#true)⌝ ∧ ▷ Φ hl_val(#()) }} -∗
     WP hl(assert(&e)) @ E {{ Φ }} := by

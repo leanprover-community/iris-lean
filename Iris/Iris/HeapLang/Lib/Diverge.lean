@@ -19,7 +19,7 @@ open BI Iris ProgramLogic
 
 namespace Diverge
 
-@[rocq_alias diverge]
+@[rocq_alias heap_lang.diverge]
 def diverge : Val := hl_val%
   rec diverge v := diverge v
 
@@ -27,7 +27,7 @@ section Spec
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF]
 
-@[rocq_alias wp_diverge]
+@[rocq_alias heap_lang.wp_diverge]
 theorem wp_diverge (s : Stuckness) (E : CoPset) (Φ : Val → IProp GF) (v : Val) :
     ⊢ WP hl(&diverge &v) @ s; E {{ Φ }} := by
   iloeb as IH
