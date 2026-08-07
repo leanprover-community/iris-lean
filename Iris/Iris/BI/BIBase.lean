@@ -246,7 +246,7 @@ delab_rule intuitionistically
   | `($_ $P) => do ``(iprop(□ $(← unpackIprop P)))
 
 /-- Iterated later modality. -/
-syntax:max "▷^[" term:45 "]" term:40 : term
+syntax:max "▷^[" term:45 "] " term:40 : term
 
 @[rocq_alias bi_laterN]
 def laterN [BIBase PROP] (n : Nat) (P : PROP) : PROP := n.repeat later P
