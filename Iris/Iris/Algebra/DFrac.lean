@@ -26,6 +26,9 @@ inductive DFrac where
 | discard : DFrac
 /-- Ownership of `F` plus knowledge that a fraction has been discarded. -/
 | ownDiscard (f : Qp) : DFrac
+deriving DecidableEq
+
+attribute [rocq_alias dfrac_eq_dec] instDecidableEqDFrac
 
 #rocq_ignore DfracOwn_inj "Not needed"
 #rocq_ignore DfracBoth_inj "Not needed"
@@ -40,6 +43,8 @@ open DFrac OFE.Discrete IsOp
 
 @[rocq_alias dfrac_inhabited]
 instance : Inhabited DFrac := ⟨discard⟩
+
+#rocq_ignore dfrac_countable "std++ `Countable`; Lean has no `Pos.Countable Qp` and does not need one"
 
 def valid : DFrac → Prop
   | .own f        => f.val ≤ 1
