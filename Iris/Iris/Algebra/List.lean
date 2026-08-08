@@ -77,6 +77,15 @@ instance head_ne : NonExpansive (List.head? (α := α)) where
 instance getElem?_ne (i : Nat) : NonExpansive (fun l : List α => l[i]?) where
   ne _ _ _ h := h.getElem? i
 
+@[rocq_alias list_lookup_total_ne]
+instance getD_ne (i : Nat) : NonExpansive₂ (fun (l : List α) (d : α) => l.getD i d) where
+  ne _ _ _ hl _ _ hd := hl.getD hd i
+
+@[rocq_alias list_alter_ne]
+theorem modify_ne {n} {f g : α → α} (Hf : ∀ a b, a ≡{n}≡ b → f a ≡{n}≡ g b) (i : Nat)
+    {l k : List α} (h : l ≡{n}≡ k) : l.modify i f ≡{n}≡ k.modify i g :=
+  h.modify (fun hab => Hf _ _ hab) i
+
 @[rocq_alias list_insert_ne]
 instance set_ne (i : Nat) : NonExpansive₂ (fun (a : α) (l : List α) => l.set i a) where
   ne _ _ _ ha _ _ hl := hl.set ha i
@@ -103,6 +112,15 @@ instance optionToList_ne : NonExpansive (Option.toList (α := α)) where
     cases o with
     | none => cases o' with | none => exact .nil | some _ => exact h.elim
     | some a => cases o' with | none => exact h.elim | some b => exact .cons h .nil
+
+@[rocq_alias list_filter_ne]
+theorem filter_ne {n} {p : α → Bool} (Hp : ∀ a b, a ≡{n}≡ b → p a = p b) {l k : List α}
+    (h : l ≡{n}≡ k) : l.filter p ≡{n}≡ k.filter p :=
+  h.filter (fun hab => Hp _ _ hab)
+
+@[rocq_alias resize_ne]
+instance takeD_ne (m : Nat) : NonExpansive₂ (fun (l : List α) (d : α) => List.takeD m l d) where
+  ne _ _ _ hl _ _ hd := hl.takeD hd m
 
 @[rocq_alias cons_dist_inj]
 theorem cons_dist_inj {n} {x y : α} {l k : List α} (h : x :: l ≡{n}≡ y :: k) :

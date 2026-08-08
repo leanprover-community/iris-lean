@@ -130,6 +130,10 @@ theorem Forall₂.getElem? {R : α → β → Prop} {l : List α} {k : List β}
     | zero => exact hab
     | succ i => exact ih i
 
+theorem Forall₂.getD {R : α → β → Prop} {a : α} {b : β} (hab : R a b) {l : List α} {k : List β}
+    (h : Forall₂ R l k) (i : Nat) : R (l.getD i a) (k.getD i b) :=
+  (h.getElem? i).getD hab
+
 theorem Forall₂.of_getElem? {R : α → β → Prop} {l : List α} {k : List β}
     (h : ∀ (i : Nat), Option.Forall₂ R l[i]? k[i]?) : Forall₂ R l k := by
   induction l generalizing k with
@@ -187,5 +191,31 @@ theorem Forall₂.eraseIdx {R : α → β → Prop} {l : List α} {k : List β}
     (h : Forall₂ R l k) : (i : Nat) → Forall₂ R (l.eraseIdx i) (k.eraseIdx i)
   | 0 => by cases h with | nil => exact .nil | cons _ t => exact t
   | i + 1 => by cases h with | nil => exact .nil | cons hd t => exact .cons hd (t.eraseIdx i)
+
+theorem Forall₂.modify {R : α → β → Prop} {f : α → α} {g : β → β}
+    (hfg : ∀ {a b}, R a b → R (f a) (g b)) {l : List α} {k : List β}
+    (h : Forall₂ R l k) : (i : Nat) → Forall₂ R (l.modify i f) (k.modify i g)
+  | 0 => by cases h with | nil => exact .nil | cons hd t => exact .cons (hfg hd) t
+  | i + 1 => by cases h with | nil => exact .nil | cons hd t => exact .cons hd (t.modify hfg i)
+
+theorem Forall₂.filter {R : α → β → Prop} {p : α → Bool} {q : β → Bool}
+    (hpq : ∀ {a b}, R a b → p a = q b) {l : List α} {k : List β}
+    (h : Forall₂ R l k) : Forall₂ R (l.filter p) (k.filter q) := by
+  induction h with
+  | nil => exact .nil
+  | @cons a b _ _ hab _ ih =>
+    cases hq : q b
+    · rw [List.filter_cons_of_neg (by simp [hpq hab, hq]), List.filter_cons_of_neg (by simp [hq])]
+      exact ih
+    · rw [List.filter_cons_of_pos ((hpq hab).trans hq), List.filter_cons_of_pos hq]
+      exact .cons hab ih
+
+theorem Forall₂.takeD {R : α → β → Prop} {a : α} {b : β} (hab : R a b) {l : List α} {k : List β}
+    (h : Forall₂ R l k) : (n : Nat) → Forall₂ R (List.takeD n l a) (List.takeD n k b)
+  | 0 => .nil
+  | n + 1 => by
+    cases h with
+    | nil => rw [List.takeD_nil, List.takeD_nil]; exact .replicate hab _
+    | cons hd t => rw [List.takeD_succ, List.takeD_succ]; exact .cons hd (t.takeD hab n)
 
 end List
