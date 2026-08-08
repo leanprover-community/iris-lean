@@ -10,10 +10,15 @@ meta import Iris.ProofMode.Expr
 meta import Iris.ProofMode.SynthInstance
 public meta import Iris.ProofMode.ProofModeM
 
+public section
+
+#rocq_ignore tac_start "Functionality already handled by ProofModeM infrastructure"
+#rocq_ignore tac_stop "Functionality already handled by ProofModeM infrastructure"
+
 public meta section
 
 namespace Iris.ProofMode
-open Lean Elab.Tactic Meta Qq BI Std
+open Lean Elab.Tactic Meta Qq BI Std Lean.Elab Term
 
 /-- `itrivial` collects tactics to solve trivial Iris goals. It is used by the `//` specialization
 and introduction patterns. One can add new tactics using
@@ -23,16 +28,27 @@ macro_rules | `(tactic| itrivial) => `(tactic| mytac)
 -/
 syntax "itrivial" : tactic
 
+/--
+  Attempts to solve the side condition `target`.
+
+  When `failOnUnsolved` is set as `true`, this function throws an error when
+  the side condition cannot be solved automatically.
+
+  Otherwise, when `failOnUnsolved` is set as `false`, the unsolved subgoals
+  are added to the proof state for the user.
+-/
 def iSolveSidecondition (target : Q(Prop)) (failOnUnsolved := true) : ProofModeM Q($target) := do
   let mvar ← mkFreshExprSyntheticOpaqueMVar q($target)
   match ← instantiateMVars target with
   | .app (.const ``PMError _) (.lit (.strVal msg)) =>
       throwError "{msg}"
   | _ =>
-      let gs ← evalTacticAt (← `(tactic | trivial)) mvar.mvarId!
+      let gs ← (observing? <|
+        evalTacticAt (← `(tactic | first | trivial | (simp [*] <;> done))) mvar.mvarId!) <&>
+        (·.getD [mvar.mvarId!])
       if !gs.isEmpty then
         if failOnUnsolved then
-          throwError "isolvesidecondition: failed to solve sidecondition {target}"
+          throwError "iSolveSidecondition: failed to solve side condition {target}"
         else
           for g in gs do addMVarGoal g
       return mvar
@@ -45,6 +61,15 @@ elab "istart" : tactic => do
   replaceMainGoal [mvar]
 
 /--
+  `istart prop` starts the Iris Proof Mode with a specific BI instance.
+-/
+elab "istart " colGt prop:term : tactic => do
+  let mvar ← getMainGoal
+  let customProp ← mvar.withContext do elabType prop >>= (instantiateMVars ·)
+  let (mvar, _) ← startProofMode mvar (some customProp)
+  replaceMainGoal [mvar]
+
+/--
   `istop` stops the Iris Proof Mode by turning the goal back
   into plain entailment.
 -/
@@ -52,8 +77,8 @@ elab "istop" : tactic => do
   -- parse goal
   let mvar ← getMainGoal
   mvar.withContext do
-  let goal ← instantiateMVars <| ← mvar.getType
+    let goal ← instantiateMVars <| ← mvar.getType
 
-  -- check if already in proof mode
-  let some irisGoal := parseIrisGoal? goal | throwError "not in proof mode"
-  mvar.setType irisGoal.strip
+    -- check if already in proof mode
+    let some irisGoal := parseIrisGoal? goal | throwError "istop: not in proof mode"
+    mvar.setType irisGoal.strip

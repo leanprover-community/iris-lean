@@ -43,8 +43,8 @@ predicates are functions out of a `BiIndex` that are monotone w.r.t. this order.
 structure BiIndex where
   car : Type _
   [inhabited : Inhabited car]
-  rel : car → car → Prop
-  [preorder : Std.Preorder rel]
+  rel : LE car
+  [preorder : Std.IsPreorder car]
 
 attribute [instance] BiIndex.inhabited BiIndex.preorder
 
@@ -56,7 +56,7 @@ scoped infix:40 " ⊑ᵢ " => BiIndex.rel _
 /-- A `BiIndex` with a bottom element `bot`: every index is above `bot`. -/
 @[rocq_alias BiIndexBottom]
 class BiIndexBottom (I : BiIndex) (bot : I.car) : Prop where
-  bot_le : ∀ i : I.car, I.rel bot i
+  bot_le : ∀ i : I.car, I.rel.le bot i
 
 /-- A monotone predicate over `BiIndex` `I` valued in the base BI `PROP`: a function
 `monPred_at : I → PROP` monotone w.r.t. the index order. -/
@@ -65,7 +65,7 @@ structure MonPred (I : BiIndex) (PROP : Type _) [BIBase PROP] where
   /-- The underlying index-indexed family (Rocq `monPred_at`). -/
   monPred_at : I.car → PROP
   /-- Monotonicity in the index (Rocq `monPred_mono`: `Proper ((⊑) ==> (⊢))`). -/
-  monPred_mono : ∀ {i j : I.car}, I.rel i j → (monPred_at i ⊢ monPred_at j)
+  monPred_mono : ∀ {i j : I.car}, I.rel.le i j → (monPred_at i ⊢ monPred_at j)
 
 namespace MonPred
 
@@ -85,7 +85,7 @@ theorem ext {P Q : MonPred I PROP} (h : ∀ i, P.monPred_at i = Q.monPred_at i) 
 so the result is monotone. -/
 @[rocq_alias monPred_defs.monPred_upclosed]
 def upclosed [BI PROP] (Φ : I.car → PROP) : I.car → PROP :=
-  fun i => iprop(∀ j, ⌜I.rel i j⌝ → Φ j)
+  fun i => iprop(∀ j, ⌜I.rel.le i j⌝ → Φ j)
 
 end MonPred
 
@@ -96,13 +96,14 @@ variable {I : BiIndex} {PROP : Type _} [BI PROP]
 (Rocq `monPredO`). -/
 @[rocq_alias monPredO]
 instance : OFE (MonPred I PROP) where
-  Equiv P Q := ∀ i, P.monPred_at i ≡ Q.monPred_at i
   Dist n P Q := ∀ i, P.monPred_at i ≡{n}≡ Q.monPred_at i
   dist_eqv :=
     { refl _ _ := dist_eqv.refl _
       symm h i := dist_eqv.symm (h i)
       trans h1 h2 i := dist_eqv.trans (h1 i) (h2 i) }
-  equiv_dist {_ _} := by simp only [equiv_dist]; exact forall_comm
+  eq_dist {P Q} := by
+    refine ⟨fun h _ _ => h ▸ .rfl, fun h => ?_⟩
+    exact MonPred.ext fun i => eq_dist.mpr fun n => h n i
   dist_lt h1 h2 i := dist_lt (h1 i) h2
 
 #rocq_ignore monPred_ofe_mixin "Rocq mixin record; subsumed by the OFE instance."
@@ -117,7 +118,7 @@ namespace MonPred
 `monPred_sig`. -/
 @[rocq_alias monPred_sig]
 def toSig :
-    MonPred I PROP -n> { f : I.car → PROP // ∀ {i j : I.car}, I.rel i j → (f i ⊢ f j) } where
+    MonPred I PROP -n> { f : I.car → PROP // ∀ {i j : I.car}, I.rel.le i j → (f i ⊢ f j) } where
   f P := ⟨P.monPred_at, fun h => P.monPred_mono h⟩
   ne.1 _ _ _ h := h
 
@@ -125,28 +126,25 @@ def toSig :
 Rocq `sig_monPred`. -/
 @[rocq_alias sig_monPred]
 def ofSig :
-    { f : I.car → PROP // ∀ {i j : I.car}, I.rel i j → (f i ⊢ f j) } -n> MonPred I PROP where
+    { f : I.car → PROP // ∀ {i j : I.car}, I.rel.le i j → (f i ⊢ f j) } -n> MonPred I PROP where
   f P := ⟨P.val, P.property⟩
   ne.1 _ _ _ h := h
 
 @[rocq_alias sig_monPred_ne]
 theorem ofSig_ne : OFE.NonExpansive (ofSig (I := I) (PROP := PROP)) := ofSig.ne
 
-@[rocq_alias sig_monPred_proper]
-theorem ofSig_proper {P Q : { f : I.car → PROP // ∀ {i j : I.car}, I.rel i j → (f i ⊢ f j) }}
-    (h : P ≡ Q) : ofSig P ≡ ofSig Q := ofSig.ne.eqv h
+#rocq_ignore sig_monPred_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias monPred_sig_ne]
 theorem toSig_ne : OFE.NonExpansive (toSig (I := I) (PROP := PROP)) := toSig.ne
 
-@[rocq_alias monPred_sig_proper]
-theorem toSig_proper {P Q : MonPred I PROP} (h : P ≡ Q) : toSig P ≡ toSig Q := toSig.ne.eqv h
+#rocq_ignore monPred_sig_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias sig_monPred_sig]
 theorem ofSig_toSig (P : MonPred I PROP) : ofSig (toSig P) = P := rfl
 
 @[rocq_alias monPred_sig_monPred]
-theorem toSig_ofSig (P : { f : I.car → PROP // ∀ {i j : I.car}, I.rel i j → (f i ⊢ f j) }) :
+theorem toSig_ofSig (P : { f : I.car → PROP // ∀ {i j : I.car}, I.rel.le i j → (f i ⊢ f j) }) :
     toSig (ofSig P) = P := rfl
 
 end MonPred
@@ -218,7 +216,7 @@ def imp (P Q : MonPred I PROP) : MonPred I PROP where
   monPred_at := MonPred.upclosed (fun i => iprop(P.monPred_at i → Q.monPred_at i))
   monPred_mono h :=
     forall_intro fun k => (forall_elim k).trans
-      (imp_mono_left (pure_mono fun hjk => Transitive.trans h hjk))
+      (imp_mono_left (pure_mono fun hjk => Trans.trans h hjk))
 
 #rocq_ignore monPred_defs.monPred_impl_def "Rocq unsealed definition body; use MonPred.imp."
 #rocq_ignore monPred_defs.monPred_impl_aux "Rocq sealing auxiliary definition."
@@ -278,7 +276,7 @@ def wand (P Q : MonPred I PROP) : MonPred I PROP where
   monPred_at := MonPred.upclosed (fun i => iprop(P.monPred_at i -∗ Q.monPred_at i))
   monPred_mono h :=
     forall_intro fun k => (forall_elim k).trans
-      (imp_mono_left (pure_mono fun hjk => Transitive.trans h hjk))
+      (imp_mono_left (pure_mono fun hjk => Trans.trans h hjk))
 
 #rocq_ignore monPred_defs.monPred_wand_def "Rocq unsealed definition body; use MonPred.wand."
 #rocq_ignore monPred_defs.monPred_wand_aux "Rocq sealing auxiliary definition."
@@ -308,8 +306,8 @@ def later (P : MonPred I PROP) : MonPred I PROP where
 
 @[rocq_alias monPred_defs.monPred_in]
 def monPred_in (j : I.car) : MonPred I PROP where
-  monPred_at i := iprop(⌜I.rel j i⌝)
-  monPred_mono h := pure_mono fun hji => Transitive.trans hji h
+  monPred_at i := iprop(⌜I.rel.le j i⌝)
+  monPred_mono h := pure_mono fun hji => Trans.trans hji h
 
 #rocq_ignore monPred_defs.monPred_in_def "Rocq unsealed definition body; use MonPred.monPred_in."
 #rocq_ignore monPred_defs.monPred_in_aux "Rocq sealing auxiliary definition."
@@ -374,9 +372,7 @@ instance : BIBase (MonPred I PROP) where
 theorem entails_at {P Q : MonPred I PROP} :
     (P ⊢ Q) ↔ ∀ i, P.monPred_at i ⊢ Q.monPred_at i := Iff.rfl
 
-@[rocq_alias monPred_at_equiv]
-theorem equiv_at {P Q : MonPred I PROP} :
-    (P ≡ Q) ↔ ∀ i, P.monPred_at i ≡ Q.monPred_at i := Iff.rfl
+#rocq_ignore monPred_at_equiv "OFE is Leibniz; use equality"
 
 @[rocq_alias monPred_at_dist]
 theorem dist_at {n : Nat} {P Q : MonPred I PROP} :
@@ -391,13 +387,12 @@ theorem dist_at {n : Nat} {P Q : MonPred I PROP} :
 mixins, packaged into `monPredI : bi`). -/
 @[rocq_alias monPredI]
 instance : BI (MonPred I PROP) where
-  entails_preorder :=
-    { refl := entails_at.mpr fun _ => BIBase.Entails.rfl
-      trans := fun h h' => entails_at.mpr fun i => (entails_at.mp h i).trans (entails_at.mp h' i) }
+  entails_refl := entails_at.mpr fun _ => BIBase.Entails.rfl
+  entails_trans := fun h h' => entails_at.mpr fun i => (entails_at.mp h i).trans (entails_at.mp h' i)
   equiv_iff := fun {P Q} =>
-    ⟨fun h => ⟨entails_at.mpr fun i => (equiv_iff.mp (equiv_at.mp h i)).mp,
-              entails_at.mpr fun i => (equiv_iff.mp (equiv_at.mp h i)).mpr⟩,
-     fun h => equiv_at.mpr fun i => equiv_iff.mpr ⟨entails_at.mp h.1 i, entails_at.mp h.2 i⟩⟩
+    ⟨fun h => ⟨entails_at.mpr fun i => BIBase.Entails.of_eq (congrArg (·.monPred_at i) h),
+              entails_at.mpr fun i => BIBase.Entails.of_eq (congrArg (·.monPred_at i) h.symm)⟩,
+     fun h => MonPred.ext fun i => equiv_iff.mpr ⟨entails_at.mp h.1 i, entails_at.mp h.2 i⟩⟩
   and_ne := ⟨fun _ _ _ h _ _ h' =>
     dist_at.mpr fun i => and_ne.ne (dist_at.mp h i) (dist_at.mp h' i)⟩
   or_ne := ⟨fun _ _ _ h _ _ h' => dist_at.mpr fun i => or_ne.ne (dist_at.mp h i) (dist_at.mp h' i)⟩
@@ -430,11 +425,11 @@ instance : BI (MonPred I PROP) where
   or_intro_r := entails_at.mpr fun i => or_intro_r
   or_elim h h' := entails_at.mpr fun i => or_elim (entails_at.mp h i) (entails_at.mp h' i)
   imp_intro {P Q R} h := entails_at.mpr fun i =>
-    forall_intro fun j => imp_intro <| pure_elim_right fun (hij : I.rel i j) =>
+    forall_intro fun j => imp_intro <| pure_elim_right fun (hij : I.rel.le i j) =>
       (P.monPred_mono hij).trans <| imp_intro (entails_at.mp h j)
   imp_elim {P Q R} h := entails_at.mpr fun i =>
     imp_elim <| (entails_at.mp h i).trans <|
-      (forall_elim i).trans <| pure_imp_elim (Reflexive.refl : I.rel i i)
+      (forall_elim i).trans <| pure_imp_elim (Std.Refl.refl i : I.rel.le i i)
   sForall_intro h := entails_at.mpr fun i =>
     MonPred.sForall_at_intro i fun q hΨ => entails_at.mp (h q hΨ) i
   sForall_elim h := entails_at.mpr fun i => MonPred.sForall_at_elim i h
@@ -447,12 +442,12 @@ instance : BI (MonPred I PROP) where
   sep_assoc_l := entails_at.mpr fun i => sep_assoc_l
   wand_intro {P Q R} h := entails_at.mpr fun i => by
     refine forall_intro fun j => imp_intro ?_
-    refine pure_elim_right fun (hij : I.rel i j) => ?_
+    refine pure_elim_right fun (hij : I.rel.le i j) => ?_
     refine wand_intro (sep_symm.trans ?_)
     exact (sep_mono_right (P.monPred_mono hij)).trans (sep_symm.trans (entails_at.mp h j))
   wand_elim {P Q R} h := entails_at.mpr fun i =>
     (sep_mono_left ((entails_at.mp h i).trans
-      ((forall_elim i).trans (pure_imp_elim (Reflexive.refl : I.rel i i))))).trans wand_elim_left
+      ((forall_elim i).trans (pure_imp_elim (Std.Refl.refl i : I.rel.le i i))))).trans wand_elim_left
   persistently_mono h := entails_at.mpr fun i => persistently_mono (entails_at.mp h i)
   persistently_idem_2 := entails_at.mpr fun i => persistently_idem_2
   persistently_emp_2 := entails_at.mpr fun i => persistently_emp_2
@@ -476,9 +471,9 @@ instance : BI (MonPred I PROP) where
     refine (MonPred.sForall_at_elim (q := MonPred.imp (MonPred.pure (Φ r)) (MonPred.later r))
         i ⟨r, rfl⟩).trans ?_
     refine (forall_elim i).trans ?_
-    exact (pure_imp_elim (Reflexive.refl : I.rel i i)).trans (pure_imp_elim hΦ)
+    exact (pure_imp_elim (Std.Refl.refl i : I.rel.le i i)).trans (pure_imp_elim hΦ)
   later_sExists_false := fun {Φ} => entails_at.mpr fun i => by
-    refine later_sExists_false.trans (or_mono BIBase.Entails.rfl ?_)
+    refine later_sExists_false.trans (or_mono_right ?_)
     refine exists_elim fun p => pure_elim_left fun ⟨q, hΦ, hq⟩ => ?_
     subst hq
     exact (and_intro (pure_intro hΦ) BIBase.Entails.rfl).trans
@@ -490,8 +485,8 @@ instance : BI (MonPred I PROP) where
   later_false_em {P} := entails_at.mpr fun i => by
     refine later_false_em.trans (or_mono_right ?_)
     refine forall_intro fun j => imp_intro ?_
-    refine pure_elim_right fun (hij : I.rel i j) => ?_
-    exact imp_mono BIBase.Entails.rfl (P.monPred_mono hij)
+    refine pure_elim_right fun (hij : I.rel.le i j) => ?_
+    exact imp_mono_right (P.monPred_mono hij)
 
 #rocq_ignore monPred_unseal "Rocq unsealing command."
 #rocq_ignore monPred_unseal_bi "Rocq unsealing command."
@@ -517,25 +512,25 @@ instance : BiEmbed PROP (MonPred I PROP) where
   emp_valid_inj _ h := entails_at.mp h (Inhabited.default : I.car)
   emp_2 := entails_at.mpr fun _ => .rfl
   impl_2 _ _ := entails_at.mpr fun i =>
-    (forall_elim i).trans (pure_imp_elim (Reflexive.refl : I.rel i i))
+    (forall_elim i).trans (pure_imp_elim (Std.Refl.refl i : I.rel.le i i))
   forall_2 := fun _Ψ {_} h => entails_at.mpr fun i =>
     sForall_intro fun P hΨ => entails_at.mp (h P hΨ) i
   exist_1 := fun _Ψ {_} h => entails_at.mpr fun i =>
     sExists_elim fun P hΨ => entails_at.mp (h P hΨ) i
-  sep _ _ := BIBase.BiEntails.of_eq rfl
+  sep _ _ := .rfl
   wand_2 _ _ := entails_at.mpr fun i =>
-    (forall_elim i).trans (pure_imp_elim (Reflexive.refl : I.rel i i))
-  persistently _ := BIBase.BiEntails.of_eq rfl
+    (forall_elim i).trans (pure_imp_elim (Std.Refl.refl i : I.rel.le i i))
+  persistently _ := .rfl
 
 #rocq_ignore monPred_embedding_mixin "Rocq mixin record; subsumed by the BiEmbed instance."
 
 @[rocq_alias monPred_bi_embed_emp]
 instance : BiEmbedEmp PROP (MonPred I PROP) where
-  embed_emp_1 := (BIBase.BiEntails.of_eq (MonPred.ext fun _ => rfl)).mp
+  embed_emp_1 := (MonPred.ext fun _ => rfl).to_bi.mp
 
 @[rocq_alias monPred_bi_embed_later]
 instance : BiEmbedLater PROP (MonPred I PROP) where
-  embed_later _ := BIBase.BiEntails.of_eq (MonPred.ext fun _ => rfl)
+  embed_later _ := (MonPred.ext fun _ => rfl).to_bi
 
 end Embedding
 
@@ -603,7 +598,7 @@ instance [BIUpdate PROP] : BIUpdate (MonPred I PROP) where
 
 @[rocq_alias monPred_bi_embed_bupd]
 instance [BIUpdate PROP] : BiEmbedBUpd PROP (MonPred I PROP) where
-  embed_bupd _ := BIBase.BiEntails.of_eq (MonPred.ext fun _ => rfl)
+  embed_bupd _ := (MonPred.ext fun _ => rfl).to_bi
 
 /-- Pointwise fancy update on `MonPred I PROP`. Rocq `monPred_defs.monPred_fupd_def`. -/
 @[rocq_alias monPred_defs.monPred_fupd]
@@ -626,7 +621,7 @@ instance [BIFUpdate PROP] : BIFUpdate (MonPred I PROP) where
   trans := entails_at.mpr fun _ => BIFUpdate.trans
   mask_frame_right_strong h := entails_at.mpr fun i =>
     (BIFUpdate.mono
-      (((forall_elim i).trans (pure_imp_elim (Reflexive.refl : I.rel i i))) : _ ⊢@{PROP} _)).trans
+      (((forall_elim i).trans (pure_imp_elim (Std.Refl.refl i : I.rel.le i i))) : _ ⊢@{PROP} _)).trans
       (BIFUpdate.mask_frame_right_strong h)
   frame_right := entails_at.mpr fun _ => fupd_frame_right
 
@@ -639,7 +634,7 @@ instance [BIUpdate PROP] [BIFUpdate PROP] [BIUpdateFUpdate PROP] :
 
 @[rocq_alias monPred_bi_embed_fupd]
 instance [BIFUpdate PROP] : BiEmbedFUpd PROP (MonPred I PROP) where
-  embed_fupd _ _ _ := BIBase.BiEntails.of_eq (MonPred.ext fun _ => rfl)
+  embed_fupd _ _ _ := (MonPred.ext fun _ => rfl).to_bi
 
 end Updates
 
@@ -655,28 +650,28 @@ variable {I : BiIndex} {PROP : Type _} [BI PROP]
 @[rocq_alias monPred_at_emp]
 theorem monPred_at_emp (i : I.car) :
     (iprop(emp) : MonPred I PROP).monPred_at i ⊣⊢ iprop(emp) :=
-  BIBase.BiEntails.of_eq rfl
+  .rfl
 
 @[rocq_alias monPred_at_pure]
 theorem monPred_at_pure (i : I.car) (φ : Prop) :
     (iprop(⌜φ⌝) : MonPred I PROP).monPred_at i ⊣⊢ iprop(⌜φ⌝) :=
-  BIBase.BiEntails.of_eq rfl
+  .rfl
 
 @[rocq_alias monPred_at_and]
 theorem monPred_at_and (i : I.car) (P Q : MonPred I PROP) :
     (iprop(P ∧ Q)).monPred_at i ⊣⊢ iprop(P.monPred_at i ∧ Q.monPred_at i) :=
-  BIBase.BiEntails.of_eq rfl
+  .rfl
 
 @[rocq_alias monPred_at_or]
 theorem monPred_at_or (i : I.car) (P Q : MonPred I PROP) :
     (iprop(P ∨ Q)).monPred_at i ⊣⊢ iprop(P.monPred_at i ∨ Q.monPred_at i) :=
-  BIBase.BiEntails.of_eq rfl
+  .rfl
 
 @[rocq_alias monPred_at_impl]
 theorem monPred_at_impl (i : I.car) (P Q : MonPred I PROP) :
     (iprop(P → Q)).monPred_at i ⊣⊢
-      iprop(∀ j, ⌜I.rel i j⌝ → (P.monPred_at j → Q.monPred_at j)) :=
-  BIBase.BiEntails.of_eq rfl
+      iprop(∀ j, ⌜I.rel.le i j⌝ → (P.monPred_at j → Q.monPred_at j)) :=
+  .rfl
 
 @[rocq_alias monPred_at_forall]
 theorem monPred_at_forall {α : Sort _} (i : I.car) (Φ : α → MonPred I PROP) :
@@ -694,83 +689,83 @@ theorem monPred_at_exist {α : Sort _} (i : I.car) (Φ : α → MonPred I PROP) 
 @[rocq_alias monPred_at_sep]
 theorem monPred_at_sep (i : I.car) (P Q : MonPred I PROP) :
     (iprop(P ∗ Q)).monPred_at i ⊣⊢ iprop(P.monPred_at i ∗ Q.monPred_at i) :=
-  BIBase.BiEntails.of_eq rfl
+  .rfl
 
 @[rocq_alias monPred_at_wand]
 theorem monPred_at_wand (i : I.car) (P Q : MonPred I PROP) :
     (iprop(P -∗ Q)).monPred_at i ⊣⊢
-      iprop(∀ j, ⌜I.rel i j⌝ → (P.monPred_at j -∗ Q.monPred_at j)) :=
-  BIBase.BiEntails.of_eq rfl
+      iprop(∀ j, ⌜I.rel.le i j⌝ → (P.monPred_at j -∗ Q.monPred_at j)) :=
+  .rfl
 
 @[rocq_alias monPred_at_persistently]
 theorem monPred_at_persistently (i : I.car) (P : MonPred I PROP) :
     (iprop(<pers> P)).monPred_at i ⊣⊢ iprop(<pers> (P.monPred_at i)) :=
-  BIBase.BiEntails.of_eq rfl
+  .rfl
 
 @[rocq_alias monPred_at_later]
 theorem monPred_at_later (i : I.car) (P : MonPred I PROP) :
     (iprop(▷ P)).monPred_at i ⊣⊢ iprop(▷ (P.monPred_at i)) :=
-  BIBase.BiEntails.of_eq rfl
+  .rfl
 
 @[rocq_alias monPred_at_in]
 theorem monPred_at_in (i j : I.car) :
-    (MonPred.monPred_in j : MonPred I PROP).monPred_at i ⊣⊢ iprop(⌜I.rel j i⌝) :=
-  BIBase.BiEntails.of_eq rfl
+    (MonPred.monPred_in j : MonPred I PROP).monPred_at i ⊣⊢ iprop(⌜I.rel.le j i⌝) :=
+  .rfl
 
 @[rocq_alias monPred_at_embed]
 theorem monPred_at_embed (i : I.car) (P : PROP) :
     (MonPred.embed P : MonPred I PROP).monPred_at i ⊣⊢ P :=
-  BIBase.BiEntails.of_eq rfl
+  .rfl
 
 @[rocq_alias monPred_at_objectively]
 theorem monPred_at_objectively (i : I.car) (P : MonPred I PROP) :
     (MonPred.objectively P).monPred_at i ⊣⊢ iprop(∀ j, P.monPred_at j) :=
-  BIBase.BiEntails.of_eq rfl
+  .rfl
 
 @[rocq_alias monPred_at_subjectively]
 theorem monPred_at_subjectively (i : I.car) (P : MonPred I PROP) :
     (MonPred.subjectively P).monPred_at i ⊣⊢ iprop(∃ j, P.monPred_at j) :=
-  BIBase.BiEntails.of_eq rfl
+  .rfl
 
 @[rocq_alias monPred_at_affinely]
 theorem monPred_at_affinely (i : I.car) (P : MonPred I PROP) :
     (iprop(<affine> P) : MonPred I PROP).monPred_at i ⊣⊢ iprop(<affine> (P.monPred_at i)) :=
-  BIBase.BiEntails.of_eq rfl
+  .rfl
 
 @[rocq_alias monPred_at_absorbingly]
 theorem monPred_at_absorbingly (i : I.car) (P : MonPred I PROP) :
     (iprop(<absorb> P) : MonPred I PROP).monPred_at i ⊣⊢ iprop(<absorb> (P.monPred_at i)) :=
-  BIBase.BiEntails.of_eq rfl
+  .rfl
 
 @[rocq_alias monPred_at_intuitionistically]
 theorem monPred_at_intuitionistically (i : I.car) (P : MonPred I PROP) :
     (iprop(□ P) : MonPred I PROP).monPred_at i ⊣⊢ iprop(□ (P.monPred_at i)) :=
-  BIBase.BiEntails.of_eq rfl
+  .rfl
 
 @[rocq_alias monPred_at_affinely_if]
 theorem monPred_at_affinely_if (i : I.car) (p : Bool) (P : MonPred I PROP) :
     (iprop(<affine>?p P) : MonPred I PROP).monPred_at i ⊣⊢ iprop(<affine>?p (P.monPred_at i)) := by
-  cases p <;> exact BIBase.BiEntails.of_eq rfl
+  cases p <;> exact .rfl
 
 @[rocq_alias monPred_at_absorbingly_if]
 theorem monPred_at_absorbingly_if (i : I.car) (p : Bool) (P : MonPred I PROP) :
     (iprop(<absorb>?p P) : MonPred I PROP).monPred_at i ⊣⊢ iprop(<absorb>?p (P.monPred_at i)) := by
-  cases p <;> exact BIBase.BiEntails.of_eq rfl
+  cases p <;> exact .rfl
 
 @[rocq_alias monPred_at_intuitionistically_if]
 theorem monPred_at_intuitionistically_if (i : I.car) (p : Bool) (P : MonPred I PROP) :
     (iprop(□?p P) : MonPred I PROP).monPred_at i ⊣⊢ iprop(□?p (P.monPred_at i)) := by
-  cases p <;> exact BIBase.BiEntails.of_eq rfl
+  cases p <;> exact .rfl
 
 @[rocq_alias monPred_at_persistently_if]
 theorem monPred_at_persistently_if (i : I.car) (p : Bool) (P : MonPred I PROP) :
     (iprop(<pers>?p P) : MonPred I PROP).monPred_at i ⊣⊢ iprop(<pers>?p (P.monPred_at i)) := by
-  cases p <;> exact BIBase.BiEntails.of_eq rfl
+  cases p <;> exact .rfl
 
 @[rocq_alias monPred_at_except_0]
 theorem monPred_at_except_0 (i : I.car) (P : MonPred I PROP) :
     (iprop(◇ P) : MonPred I PROP).monPred_at i ⊣⊢ iprop(◇ (P.monPred_at i)) :=
-  BIBase.BiEntails.of_eq rfl
+  .rfl
 
 @[rocq_alias monPred_at_laterN]
 theorem monPred_at_laterN (n : Nat) (i : I.car) (P : MonPred I PROP) :
@@ -782,24 +777,24 @@ theorem monPred_at_laterN (n : Nat) (i : I.car) (P : MonPred I PROP) :
 @[rocq_alias monPred_at_bupd]
 theorem monPred_at_bupd [BIUpdate PROP] (i : I.car) (P : MonPred I PROP) :
     (iprop(|==> P) : MonPred I PROP).monPred_at i ⊣⊢ iprop(|==> (P.monPred_at i)) :=
-  BIBase.BiEntails.of_eq rfl
+  .rfl
 
 @[rocq_alias monPred_at_fupd]
 theorem monPred_at_fupd [BIFUpdate PROP] (i : I.car) (E1 E2 : CoPset) (P : MonPred I PROP) :
     (iprop(|={E1,E2}=> P) : MonPred I PROP).monPred_at i ⊣⊢ iprop(|={E1,E2}=> (P.monPred_at i)) :=
-  BIBase.BiEntails.of_eq rfl
+  .rfl
 
 @[rocq_alias monPred_at_emp_valid]
 theorem monPred_at_emp_valid (P : MonPred I PROP) : (⊢ P) ↔ ∀ i, ⊢ P.monPred_at i :=
   entails_at
 
 @[rocq_alias monPred_at_mono]
-theorem monPred_at_mono {P Q : MonPred I PROP} {i j : I.car} (h : P ⊢ Q) (hij : I.rel i j) :
+theorem monPred_at_mono {P Q : MonPred I PROP} {i j : I.car} (h : P ⊢ Q) (hij : I.rel.le i j) :
     P.monPred_at i ⊢ Q.monPred_at j :=
   (entails_at.mp h i).trans (Q.monPred_mono hij)
 
 @[rocq_alias monPred_at_flip_mono]
-theorem monPred_at_flip_mono {P Q : MonPred I PROP} {i j : I.car} (h : Q ⊢ P) (hij : I.rel j i) :
+theorem monPred_at_flip_mono {P Q : MonPred I PROP} {i j : I.car} (h : Q ⊢ P) (hij : I.rel.le j i) :
     Q.monPred_at j ⊢ P.monPred_at i :=
   monPred_at_mono h hij
 
@@ -848,12 +843,12 @@ instance monPred_affine (P : MonPred I PROP) [∀ i, Affine (P.monPred_at i)] :
 @[rocq_alias monPred_impl_force]
 theorem monPred_impl_force (i : I.car) (P Q : MonPred I PROP) :
     (iprop(P → Q) : MonPred I PROP).monPred_at i ⊢ iprop(P.monPred_at i → Q.monPred_at i) :=
-  (forall_elim i).trans (pure_imp_elim (Reflexive.refl : I.rel i i))
+  (forall_elim i).trans (pure_imp_elim (Std.Refl.refl i : I.rel.le i i))
 
 @[rocq_alias monPred_wand_force]
 theorem monPred_wand_force (i : I.car) (P Q : MonPred I PROP) :
     (iprop(P -∗ Q) : MonPred I PROP).monPred_at i ⊢ iprop(P.monPred_at i -∗ Q.monPred_at i) :=
-  (forall_elim i).trans (pure_imp_elim (Reflexive.refl : I.rel i i))
+  (forall_elim i).trans (pure_imp_elim (Std.Refl.refl i : I.rel.le i i))
 
 /-! ### The `monPred_in` assertion -/
 
@@ -861,7 +856,7 @@ theorem monPred_wand_force (i : I.car) (P Q : MonPred I PROP) :
 theorem monPred_in_intro (P : MonPred I PROP) :
     P ⊢ iprop(∃ i, MonPred.monPred_in i ∧ ⎡P.monPred_at i⎤) :=
   entails_at.mpr fun j =>
-    (and_intro (pure_intro (Reflexive.refl : I.rel j j)) .rfl).trans <|
+    (and_intro (pure_intro (Std.Refl.refl j : I.rel.le j j)) .rfl).trans <|
       (exists_intro (Ψ := fun i =>
           (iprop(MonPred.monPred_in i ∧ ⎡P.monPred_at i⎤) : MonPred I PROP).monPred_at j) j).trans
         (monPred_at_exist j fun i => iprop(MonPred.monPred_in i ∧ ⎡P.monPred_at i⎤)).mpr
@@ -870,36 +865,36 @@ theorem monPred_in_intro (P : MonPred I PROP) :
 theorem monPred_in_elim (P : MonPred I PROP) (i : I.car) :
     (MonPred.monPred_in i : MonPred I PROP) ⊢ iprop(⎡P.monPred_at i⎤ → P) :=
   entails_at.mpr fun j =>
-    pure_elim (I.rel i j) .rfl fun hij =>
+    pure_elim (I.rel.le i j) .rfl fun hij =>
       forall_intro fun _k => imp_intro_swap <| pure_elim_left fun hjk =>
-        imp_intro <| and_elim_r.trans (P.monPred_mono (Transitive.trans hij hjk))
+        imp_intro <| and_elim_r.trans (P.monPred_mono (Trans.trans hij hjk))
 
 @[rocq_alias monPred_in_mono]
-theorem monPred_in_mono {i j : I.car} (h : I.rel j i) :
+theorem monPred_in_mono {i j : I.car} (h : I.rel.le j i) :
     (MonPred.monPred_in i : MonPred I PROP) ⊢ MonPred.monPred_in j :=
-  entails_at.mpr fun _ => pure_mono fun hik => Transitive.trans h hik
+  entails_at.mpr fun _ => pure_mono fun hik => Trans.trans h hik
 
 #rocq_ignore monPred_in_proper "Use monPred_in_mono."
 
 @[rocq_alias monPred_in_flip_mono]
-theorem monPred_in_flip_mono {i j : I.car} (h : I.rel i j) :
+theorem monPred_in_flip_mono {i j : I.car} (h : I.rel.le i j) :
     (MonPred.monPred_in j : MonPred I PROP) ⊢ MonPred.monPred_in i :=
   monPred_in_mono h
 
 @[rocq_alias monPred_in_persistent]
 instance monPred_in_persistent (i : I.car) :
     Persistent (MonPred.monPred_in i : MonPred I PROP) where
-  persistent := entails_at.mpr fun j => (pure_persistent (I.rel i j)).persistent
+  persistent := entails_at.mpr fun j => (pure_persistent (I.rel.le i j)).persistent
 
 @[rocq_alias monPred_in_absorbing]
 instance monPred_in_absorbing (i : I.car) :
     Absorbing (MonPred.monPred_in i : MonPred I PROP) where
-  absorbing := entails_at.mpr fun j => (pure_absorbing (I.rel i j)).absorbing
+  absorbing := entails_at.mpr fun j => (pure_absorbing (I.rel.le i j)).absorbing
 
 @[rocq_alias monPred_in_timeless]
 instance monPred_in_timeless (i : I.car) :
     Timeless (MonPred.monPred_in i : MonPred I PROP) where
-  timeless := entails_at.mpr fun j => (pure_timeless (I.rel i j)).timeless
+  timeless := entails_at.mpr fun j => (pure_timeless (I.rel.le i j)).timeless
 
 /-! ### Objective predicates -/
 
@@ -943,7 +938,7 @@ instance impl_objective (P Q : MonPred I PROP) [Objective P] [Objective Q] :
     Objective (iprop(P → Q)) where
   objective_at i _j := forall_intro fun k => imp_intro <|
     and_elim_l.trans <|
-      (((forall_elim i).trans (pure_imp_elim (Reflexive.refl : I.rel i i))) : _ ⊢@{PROP} _).trans <|
+      (((forall_elim i).trans (pure_imp_elim (Std.Refl.refl i : I.rel.le i i))) : _ ⊢@{PROP} _).trans <|
       imp_mono (Objective.objective_at k i) (Objective.objective_at i k)
 
 @[rocq_alias wand_objective]
@@ -951,7 +946,7 @@ instance wand_objective (P Q : MonPred I PROP) [Objective P] [Objective Q] :
     Objective (iprop(P -∗ Q)) where
   objective_at i _j := forall_intro fun k => imp_intro <|
     and_elim_l.trans <|
-      (((forall_elim i).trans (pure_imp_elim (Reflexive.refl : I.rel i i))) : _ ⊢@{PROP} _).trans <|
+      (((forall_elim i).trans (pure_imp_elim (Std.Refl.refl i : I.rel.le i i))) : _ ⊢@{PROP} _).trans <|
       wand_mono (Objective.objective_at k i) (Objective.objective_at i k)
 
 @[rocq_alias forall_objective]
@@ -1248,16 +1243,15 @@ section BigOp
 open Iris.Algebra Iris.Algebra.BigOpL Iris.Algebra.BigOpM
 open Iris.BI.BigSepL Iris.BI.BigSepM Iris.BI.BigSepS
 
-@[reducible] def monPred_at_hom {op₁ : MonPred I PROP → MonPred I PROP → MonPred I PROP}
+theorem monPred_at_hom {op₁ : MonPred I PROP → MonPred I PROP → MonPred I PROP}
     {op₂ : PROP → PROP → PROP} {u₁ : MonPred I PROP} {u₂ : PROP}
     [MonoidOps op₁ u₁] [MonoidOps op₂ u₂] (i : I.car)
-    (hop : ∀ {x y}, (op₁ x y).monPred_at i ≡ op₂ (x.monPred_at i) (y.monPred_at i))
-    (hunit : u₁.monPred_at i ≡ u₂) :
-    MonoidHomomorphism op₁ op₂ u₁ u₂ (· ≡ ·) (fun P : MonPred I PROP => P.monPred_at i) where
-  rel_refl := .rfl
-  rel_trans := .trans
-  rel_proper ha hb := ⟨fun h => ha.symm.trans (h.trans hb), fun h => ha.trans (h.trans hb.symm)⟩
-  op_proper ha hb := MonoidOps.op_proper ha hb
+    (hop : ∀ {x y}, (op₁ x y).monPred_at i = op₂ (x.monPred_at i) (y.monPred_at i))
+    (hunit : u₁.monPred_at i = u₂) :
+    MonoidHomomorphism op₁ op₂ u₁ u₂ (· = ·) (fun P : MonPred I PROP => P.monPred_at i) where
+  rel_refl := rfl
+  rel_trans := Eq.trans
+  op_proper ha hb := ha ▸ hb ▸ rfl
   map_ne := monPred_at_ne i
   map_op := hop
   map_unit := hunit
@@ -1265,37 +1259,37 @@ open Iris.BI.BigSepL Iris.BI.BigSepM Iris.BI.BigSepS
 @[rocq_alias monPred_at_monoid_and_homomorphism]
 instance monPred_at_monoid_and_homomorphism (i : I.car) :
     MonoidHomomorphism (BIBase.and (PROP := MonPred I PROP)) (BIBase.and (PROP := PROP))
-      iprop(True) iprop(True) (· ≡ ·) (fun P => P.monPred_at i) :=
-  monPred_at_hom i .rfl .rfl
+      iprop(True) iprop(True) (· = ·) (fun P => P.monPred_at i) :=
+  monPred_at_hom i rfl rfl
 
 @[rocq_alias monPred_at_monoid_or_homomorphism]
 instance monPred_at_monoid_or_homomorphism (i : I.car) :
     MonoidHomomorphism (BIBase.or (PROP := MonPred I PROP)) (BIBase.or (PROP := PROP))
-      iprop(False) iprop(False) (· ≡ ·) (fun P => P.monPred_at i) :=
-  monPred_at_hom i .rfl .rfl
+      iprop(False) iprop(False) (· = ·) (fun P => P.monPred_at i) :=
+  monPred_at_hom i rfl rfl
 
 @[rocq_alias monPred_at_monoid_sep_homomorphism]
 instance monPred_at_monoid_sep_homomorphism (i : I.car) :
     MonoidHomomorphism (BIBase.sep (PROP := MonPred I PROP)) (BIBase.sep (PROP := PROP))
-      BIBase.emp BIBase.emp (· ≡ ·) (fun P => P.monPred_at i) :=
-  monPred_at_hom i .rfl .rfl
+      BIBase.emp BIBase.emp (· = ·) (fun P => P.monPred_at i) :=
+  monPred_at_hom i rfl rfl
 
 @[rocq_alias monPred_at_big_sepL]
 theorem monPred_at_big_sepL {α : Type _} (i : I.car) (Φ : Nat → α → MonPred I PROP) (l : List α) :
     ([∗list] k ↦ x ∈ l, Φ k x).monPred_at i ⊣⊢ [∗list] k ↦ x ∈ l, (Φ k x).monPred_at i :=
-  equiv_iff.mp (bigOpL_hom (H := monPred_at_monoid_sep_homomorphism i) Φ l)
+  (bigOpL_hom (H := monPred_at_monoid_sep_homomorphism i) Φ l).to_bi
 
 @[rocq_alias monPred_at_big_sepM]
 theorem monPred_at_big_sepM {K V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
     (i : I.car) (Φ : K → V → MonPred I PROP) (m : M V) :
     ([∗map] k ↦ x ∈ m, Φ k x).monPred_at i ⊣⊢ [∗map] k ↦ x ∈ m, (Φ k x).monPred_at i :=
-  equiv_iff.mp (bigOpM_hom (ι := monPred_at_monoid_sep_homomorphism i) Φ m)
+  (bigOpM_hom (ι := monPred_at_monoid_sep_homomorphism i) Φ m).to_bi
 
 @[rocq_alias monPred_at_big_sepS]
 theorem monPred_at_big_sepS {S α : Type _} [LawfulFiniteSet S α]
     (i : I.car) (Φ : α → MonPred I PROP) (X : S) :
     ([∗set] x ∈ X, Φ x).monPred_at i ⊣⊢ [∗set] x ∈ X, (Φ x).monPred_at i :=
-  equiv_iff.mp (Iris.Algebra.BigOpS.hom (monPred_at_monoid_sep_homomorphism i) Φ X)
+  (BigOpS.hom (monPred_at_monoid_sep_homomorphism i) Φ X).to_bi
 
 @[rocq_alias big_sepL_objective]
 instance big_sepL_objective {α : Type _} (Φ : Nat → α → MonPred I PROP) (l : List α)
@@ -1321,32 +1315,29 @@ instance big_sepS_objective {S α : Type _} [LawfulFiniteSet S α] (Φ : α → 
 @[rocq_alias monPred_objectively_monoid_and_homomorphism]
 instance monPred_objectively_monoid_and_homomorphism :
     MonoidHomomorphism (BIBase.and (PROP := MonPred I PROP)) BIBase.and iprop(True) iprop(True)
-      (· ≡ ·) MonPred.objectively :=
-  MonoidHomomorphism.ofEquiv monPred_objectively_ne
-    (fun {x y} => equiv_iff.mpr (monPred_objectively_and x y))
-    (equiv_iff.mpr (monPred_objectively_pure True))
+      (· = ·) MonPred.objectively :=
+  MonoidHomomorphism.ofEq monPred_objectively_ne
+    (fun {x y} => (monPred_objectively_and x y).to_eq)
+    (monPred_objectively_pure True).to_eq
 
 @[rocq_alias monPred_objectively_monoid_sep_entails_homomorphism]
 instance monPred_objectively_monoid_sep_entails_homomorphism :
     MonoidHomomorphism (BIBase.sep (PROP := MonPred I PROP)) BIBase.sep BIBase.emp BIBase.emp
       (flip Entails) MonPred.objectively where
-  rel_refl {a} := show a ⊢ a from BIBase.Entails.rfl
-  rel_trans {a b c} h1 h2 := BIBase.Entails.trans (show c ⊢ b from h2) (show b ⊢ a from h1)
-  rel_proper H G :=
-    ⟨fun J => BIBase.Entails.trans (equiv_iff.1 G).mpr (BIBase.Entails.trans J (equiv_iff.1 H).mp),
-     fun J => BIBase.Entails.trans (equiv_iff.1 G).mp (BIBase.Entails.trans J (equiv_iff.1 H).mpr)⟩
+  rel_refl {a} := show a ⊢ a from .rfl
+  rel_trans {a b c} h1 h2 := .trans (show c ⊢ b from h2) (show b ⊢ a from h1)
   op_proper {a a' b b'} h1 h2 := sep_mono (show a' ⊢ a from h1) (show b' ⊢ b from h2)
   map_ne := monPred_objectively_ne
   map_op := fun {x y} => monPred_objectively_sep_2 x y
   map_unit := monPred_objectively_emp.mpr
 
-@[reducible, rocq_alias monPred_objectively_monoid_sep_homomorphism]
-def monPred_objectively_monoid_sep_homomorphism {bot : I.car} [BiIndexBottom I bot] :
+@[rocq_alias monPred_objectively_monoid_sep_homomorphism]
+theorem monPred_objectively_monoid_sep_homomorphism {bot : I.car} [BiIndexBottom I bot] :
     MonoidHomomorphism (BIBase.sep (PROP := MonPred I PROP)) BIBase.sep BIBase.emp BIBase.emp
-      (· ≡ ·) MonPred.objectively :=
-  MonoidHomomorphism.ofEquiv monPred_objectively_ne
-    (fun {x y} => equiv_iff.mpr (monPred_objectively_sep (bot := bot) x y))
-    (equiv_iff.mpr monPred_objectively_emp)
+      (· = ·) MonPred.objectively :=
+  MonoidHomomorphism.ofEq monPred_objectively_ne
+    (fun {x y} => (monPred_objectively_sep (bot := bot) x y).to_eq)
+    monPred_objectively_emp.to_eq
 
 @[rocq_alias monPred_objectively_big_sepL_entails]
 theorem monPred_objectively_big_sepL_entails {α : Type _} (Φ : Nat → α → MonPred I PROP)
@@ -1360,7 +1351,7 @@ theorem monPred_objectively_big_sepL {bot : I.car} [BiIndexBottom I bot] {α : T
     (Φ : Nat → α → MonPred I PROP) (l : List α) :
     MonPred.objectively (iprop([∗list] k ↦ x ∈ l, Φ k x)) ⊣⊢
       [∗list] k ↦ x ∈ l, MonPred.objectively (Φ k x) :=
-  equiv_iff.mp (bigOpL_hom (H := monPred_objectively_monoid_sep_homomorphism (bot := bot)) Φ l)
+  (bigOpL_hom (H := monPred_objectively_monoid_sep_homomorphism (bot := bot)) Φ l).to_bi
 
 @[rocq_alias monPred_objectively_big_sepM_entails]
 theorem monPred_objectively_big_sepM_entails {K V : Type _} {M : Type _ → Type _}
@@ -1374,7 +1365,7 @@ theorem monPred_objectively_big_sepM {bot : I.car} [BiIndexBottom I bot] {K V : 
     {M : Type _ → Type _} [LawfulFiniteMap M K] (Φ : K → V → MonPred I PROP) (m : M V) :
     MonPred.objectively (iprop([∗map] k ↦ x ∈ m, Φ k x)) ⊣⊢
       [∗map] k ↦ x ∈ m, MonPred.objectively (Φ k x) :=
-  equiv_iff.mp (bigOpM_hom (ι := monPred_objectively_monoid_sep_homomorphism (bot := bot)) Φ m)
+  (bigOpM_hom (ι := monPred_objectively_monoid_sep_homomorphism (bot := bot)) Φ m).to_bi
 
 @[rocq_alias monPred_objectively_big_sepS_entails]
 theorem monPred_objectively_big_sepS_entails {S α : Type _} [LawfulFiniteSet S α]
@@ -1388,7 +1379,7 @@ theorem monPred_objectively_big_sepS {bot : I.car} [BiIndexBottom I bot] {S α :
     [LawfulFiniteSet S α] (Φ : α → MonPred I PROP) (X : S) :
     MonPred.objectively (iprop([∗set] x ∈ X, Φ x)) ⊣⊢
       [∗set] x ∈ X, MonPred.objectively (Φ x) :=
-  equiv_iff.mp
+  BIBase.BiEntails.of_eq
     (Iris.Algebra.BigOpS.hom (monPred_objectively_monoid_sep_homomorphism (bot := bot)) Φ X)
 
 end BigOp
@@ -1452,9 +1443,9 @@ instance instSbiMonPred : Sbi (MonPred I PROP) where
       monPred_impl_force i (iprop(⌜Ψi q⌝)) (SiPure.siPure q : MonPred I PROP)
   persistently_imp_siPure {P Q} := entails_at.mpr fun i => by
     refine (forall_elim i).trans ?_
-    refine (pure_imp_elim (Reflexive.refl : I.rel i i)).trans ?_
+    refine (pure_imp_elim (Std.Refl.refl i : I.rel.le i i)).trans ?_
     refine persistently_imp_siPure.trans (persistently_mono ?_)
-    refine forall_intro fun j => imp_intro <| pure_elim_right fun (hij : I.rel i j) => ?_
+    refine forall_intro fun j => imp_intro <| pure_elim_right fun (hij : I.rel.le i j) => ?_
     exact imp_mono_right (Q.monPred_mono hij)
   siPure_later {Pi} :=
     ⟨entails_at.mpr fun _ => siPure_later.mp, entails_at.mpr fun _ => siPure_later.mpr⟩
@@ -1472,7 +1463,7 @@ instance instSbiMonPred : Sbi (MonPred I PROP) where
         iprop(P.monPred_at i ∗-∗ Q.monPred_at i) := fun i =>
       and_mono (monPred_wand_force i P Q) (monPred_wand_force i Q P)
     have hstep : SiEmpValid.siEmpValid (iprop(∀ i, (iprop(P ∗-∗ Q) : MonPred I PROP).monPred_at i))
-        ⊢@{SiProp} ∀ i, internalEq (PROP := SiProp) (P.monPred_at i) (Q.monPred_at i) :=
+        ⊢@{SiProp} ∀ i, P.monPred_at i ≡ Q.monPred_at i :=
       siEmpValid_forall.mp.trans <| forall_mono fun i =>
         (siEmpValid_mono (hforce i)).trans (BI.prop_ext_siEmpValid_mpr _ _)
     refine hstep.trans ?_
@@ -1488,19 +1479,19 @@ instance instSbiMonPred : Sbi (MonPred I PROP) where
 @[rocq_alias monPred_internal_eq_unfold]
 theorem monPred_internal_eq_unfold {A : Type _} [OFE A] :
     (internalEq : A → A → MonPred I PROP) =
-      fun x y => (iprop(⎡(internalEq x y : PROP)⎤) : MonPred I PROP) := rfl
+      fun x y => (iprop(⎡(x ≡ y : PROP)⎤) : MonPred I PROP) := rfl
 
 @[rocq_alias monPred_at_internal_eq]
 theorem monPred_at_internal_eq {A : Type _} [OFE A] (i : I.car) (a b : A) :
-    (internalEq a b : MonPred I PROP).monPred_at i ⊣⊢ internalEq a b :=
-  BIBase.BiEntails.of_eq rfl
+    (iprop(a ≡ b) : MonPred I PROP).monPred_at i ⊣⊢ a ≡ b :=
+  .rfl
 
 @[rocq_alias monPred_at_plainly]
 theorem monPred_at_plainly (i : I.car) (P : MonPred I PROP) :
     (iprop(■ P) : MonPred I PROP).monPred_at i ⊣⊢ iprop(∀ j, ■ (P.monPred_at j)) := by
   show (SiPure.siPure (SiEmpValid.siEmpValid P) : MonPred I PROP).monPred_at i ⊣⊢
     iprop(∀ j, ■ (P.monPred_at j))
-  refine .trans (BIBase.BiEntails.of_eq rfl) ?_
+  refine .trans (.rfl) ?_
   show iprop(<si_pure> (SiEmpValid.siEmpValid (iprop(∀ j, P.monPred_at j) : PROP)) : PROP) ⊣⊢
     iprop(∀ j, ■ (P.monPred_at j))
   calc iprop(<si_pure> (SiEmpValid.siEmpValid (iprop(∀ j, P.monPred_at j) : PROP)) : PROP)
@@ -1510,7 +1501,7 @@ theorem monPred_at_plainly (i : I.car) (P : MonPred I PROP) :
 
 @[rocq_alias monPred_equivI]
 theorem monPred_equivI {PROP' : Type _} [Sbi PROP'] (P Q : MonPred I PROP) :
-    (internalEq P Q : PROP') ⊣⊢ iprop(∀ i, internalEq (P.monPred_at i) (Q.monPred_at i)) := by
+    (P ≡ Q : PROP') ⊣⊢ iprop(∀ i, P.monPred_at i ≡ Q.monPred_at i) := by
   refine ⟨?_, ?_⟩
   · refine forall_intro fun i => ?_
     letI _ := MonPred.monPred_at_ne (PROP := PROP) i
@@ -1528,7 +1519,7 @@ instance si_pure_objective (Pi : SiProp) : Objective (iprop(<si_pure> Pi) : MonP
 
 @[rocq_alias internal_eq_objective]
 instance internal_eq_objective {A : Type _} [OFE A] (x y : A) :
-    Objective (internalEq x y : MonPred I PROP) where
+    Objective (iprop(x ≡ y) : MonPred I PROP) where
   objective_at _ _ := .rfl
 
 @[rocq_alias plainly_objective]
@@ -1563,8 +1554,8 @@ instance monPred_subjectively_plain (P : MonPred I PROP) [Plain P] :
 
 /-! ### `SbiEmpValidExist` for `MonPred` -/
 
-@[reducible, rocq_alias monPred_sbi_emp_valid_exist]
-def monPred_sbi_emp_valid_exist {bot : I.car} [BiIndexBottom I bot] [SbiEmpValidExist PROP] :
+@[rocq_alias monPred_sbi_emp_valid_exist]
+theorem monPred_sbi_emp_valid_exist {bot : I.car} [BiIndexBottom I bot] [SbiEmpValidExist PROP] :
     SbiEmpValidExist (MonPred I PROP) where
   siEmpValid_sExists_1 Ψ := by
     refine (siEmpValid_mono (forall_elim bot)).trans ?_

@@ -14,9 +14,13 @@ namespace Iris.ProofMode
 public section
 open BI
 
-theorem mod [BI PROP] {e} {Φ} {p p'} {A A' Q Q' : PROP} [he : ElimModal Φ p p' A A' Q Q']
-  (h1 : e ∗ □?p' A' ⊢ Q') (hΦ : Φ) : e ∗ □?p A ⊢ Q :=
-    (sep_comm.1.trans (sep_mono_right (wand_intro h1))).trans (he.1 hΦ)
+@[rocq_alias tac_modal_elim]
+theorem mod [BI PROP] {e} {Φ} {p p'} {A A' Q Q' : PROP}
+    [he : ElimModal Φ p .out p' A A' Q Q']
+    (h1 : e ∗ □?p' A' ⊢ Q') (hΦ : Φ) : e ∗ □?p A ⊢ Q := calc
+  _ ⊢ □?p A ∗ e               := sep_comm.mp
+  _ ⊢ □?p A ∗ (□?p' A' -∗ Q') := sep_mono_right <| wand_intro h1
+  _ ⊢ Q                       := he.elim_modal hΦ
 
 public meta section
 open Lean Elab Tactic Meta Qq Std
@@ -33,24 +37,25 @@ Parameters:
 
 Returns a proof of `P ∗ □?p A ⊢ Q`
 -/
-def iModCore {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q : Q($prop)) (p : Q(Bool)) (A : Q($prop))
-   (k : (p' : Q(Bool)) → (A' Q' : Q($prop)) → ProofModeM Q($P ∗ □?$p' $A' ⊢ $Q'))
-   : ProofModeM (Q($P ∗ □?$p $A ⊢ $Q)) := do
-    let Φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
-    let p' : Q(Bool) ← mkFreshExprMVarQ q(Bool)
-    let A' : Q($prop) ← mkFreshExprMVarQ q($prop)
-    let Q' : Q($prop) ← mkFreshExprMVarQ q($prop)
-    -- transform `Q` to `Q'` and `A` to `A'`
-    let .some _ ← ProofModeM.trySynthInstanceQ q(ElimModal $Φ $p $p' $A $A' $Q $Q')
-      | throwError "imod: {A} is not a modality"
-    let hΦ ← iSolveSidecondition q($Φ)
-    let p'' : Q(Bool) ← instantiateMVars p'
-    let A'' ← instantiateMVarsQ A'
-    let Q'' ← instantiateMVarsQ Q'
-    -- establish defeq for type refinement
-    have : $p'' =Q $p' := ⟨⟩
-    have : $A'' =Q $A' := ⟨⟩
-    have : $Q'' =Q $Q' := ⟨⟩
-    -- show `P ∗ □?p' A' ⊢ Q'`
-    let pf ← k p'' A'' Q''
-    return q(mod $pf $hΦ)
+def iModCore {prop : Q(Type u)} (_bi : Q(BI $prop))
+    (P Q : Q($prop)) (p : Q(Bool)) (A : Q($prop))
+    (k : (p' : Q(Bool)) → (A' Q' : Q($prop)) → ProofModeM Q($P ∗ □?$p' $A' ⊢ $Q')) :
+    ProofModeM (Q($P ∗ □?$p $A ⊢ $Q)) := do
+  let Φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
+  let p' : Q(Bool) ← mkFreshExprMVarQ q(Bool)
+  let A' : Q($prop) ← mkFreshExprMVarQ q($prop)
+  let Q' : Q($prop) ← mkFreshExprMVarQ q($prop)
+  -- transform `Q` to `Q'` and `A` to `A'`
+  let .some _ ← ProofModeM.trySynthInstanceQ q(ElimModal $Φ $p .out $p' $A $A' $Q $Q')
+    | throwError "imod: {A} is not a modality"
+  let hΦ ← iSolveSidecondition q($Φ)
+  let p'' : Q(Bool) ← instantiateMVars p'
+  let A'' ← instantiateMVarsQ A'
+  let Q'' ← instantiateMVarsQ Q'
+  -- establish defeq for type refinement
+  have : $p'' =Q $p' := ⟨⟩
+  have : $A'' =Q $A' := ⟨⟩
+  have : $Q'' =Q $Q' := ⟨⟩
+  -- show `P ∗ □?p' A' ⊢ Q'`
+  let pf ← k p'' A'' Q''
+  return q(mod $pf $hΦ)

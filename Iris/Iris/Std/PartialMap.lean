@@ -8,7 +8,6 @@ module
 import Batteries.Data.List.Perm
 import Iris.Std.FromMathlib
 public import Iris.Std.GenSets
-public import Iris.Std.GenSets
 
 /-! ## Partial Maps
 
@@ -149,6 +148,7 @@ def difference (m₁ m₂ : M V) : M V :=
 def zipWith (f : V → V' → V'') (m₁ : M V) (m₂ : M V') : M V'' :=
   bindAlter (fun k v => (get? m₂ k).bind fun v' => some <| f v v') m₁
 
+set_option linter.checkUnivs false in
 def zip (m₁ : M V) (m₂ : M V') : M (V × V') :=
   zipWith (fun x y => (x, y)) m₁ m₂
 
@@ -158,16 +158,18 @@ instance : SDiff (M V) := ⟨difference⟩
 /-- Two PartialMaps are pointwise equivalent. -/
 @[simp] def equiv (m1 m2 : M V) : Prop := ∀ k, get? m1 k = get? m2 k
 
-theorem equiv.refl : ∀ {a : M V}, equiv a a := by simp only [equiv, implies_true]
+@[simp,refl]
+theorem equiv.refl : ∀ a : M V, equiv a a := by simp only [equiv, implies_true]
 
-instance instEquivRefl : Reflexive (@equiv K V M _) := ⟨equiv.refl⟩
+instance instEquivRefl : Std.Refl (@equiv K V M _) where
+  refl := equiv.refl
 
 theorem equiv.trans : ∀ {a b c : M V}, equiv a b → equiv b c → equiv a c := by simp_all
 
 /-- Pointwise equivalence is transitive. -/
 instance instEquivTrans : Trans equiv (@equiv K V M _) equiv := ⟨equiv.trans⟩
 
-@[simp] def equiv.symm :  ∀  (a b : M V), equiv a b → equiv b a :=
+@[simp] theorem equiv.symm :  ∀  (a b : M V), equiv a b → equiv b a :=
   fun _ _ h k => (h k).symm
 
 instance instEquivSymm : Std.Symm (@equiv K V M _) := ⟨equiv.symm⟩

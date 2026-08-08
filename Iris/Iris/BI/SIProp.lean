@@ -110,13 +110,16 @@ def later (P : SiProp) : SiProp where
 def entails (P Q : SiProp) : Prop := ∀ n, P.holds n → Q.holds n
 
 instance : OFE SiProp where
-  Equiv P Q := ∀ {n}, P.holds n ↔ Q.holds n
   Dist n P Q := ∀ {m}, m ≤ n → (P.holds m ↔ Q.holds m)
   dist_eqv.refl _ _ _ := Iff.rfl
   dist_eqv.symm h _ hle := (h hle).symm
   dist_eqv.trans h₁ h₂ _ hle := (h₁ hle).trans (h₂ hle)
-  equiv_dist.mp heq _ _ _ := heq
-  equiv_dist.mpr h n := h n .refl
+  eq_dist {P Q} := by
+    refine ⟨?_, fun h => ?_⟩
+    · rintro rfl _ _ _; exact Iff.rfl
+    · obtain ⟨ph, hp⟩ := P; obtain ⟨qh, _⟩ := Q
+      have : ph = qh := funext fun n => propext (h n .refl)
+      subst this; rfl
   dist_lt h _ _ _ := h (by omega)
 
 #rocq_ignore siProp_ofe_mixin "Not needed in Lean."
@@ -150,17 +153,19 @@ instance : BIBase SiProp where
 #rocq_ignore siProp_wand "Included in BIBase instance."
 #rocq_ignore siProp_persistently "Included in BIBase instance."
 
-instance : Std.Preorder (BIBase.Entails (PROP := SiProp)) where
-  refl _ h := h
-  trans h₁ h₂ n h := h₂ n (h₁ n h)
+instance siPropPreorder : Std.IsPreorder SiProp where
+  le_refl _ _ := id
+  le_trans _ _ _ h₁ h₂ n h := h₂ n (h₁ n h)
 
 /-! ## BI instance -/
 
 @[rocq_alias siPropI]
 instance instBI : BI SiProp where
-  entails_preorder := inferInstance
-  equiv_iff.mp heq := ⟨fun _ => heq.mp, fun _ => heq.mpr⟩
-  equiv_iff.mpr H n := ⟨H.1 n, H.2 n⟩
+  entails_refl := siPropPreorder.le_refl _
+  entails_trans := siPropPreorder.le_trans _ _ _
+  equiv_iff := OFE.eq_dist.trans
+    ⟨fun heq => ⟨fun n hP => (heq n .refl).mp hP, fun n hQ => (heq n .refl).mpr hQ⟩,
+     fun H _ _ _ => ⟨H.1 _, H.2 _⟩⟩
   and_ne.ne _ _ _ h₁ _ _ h₂ m h := ⟨.imp (h₁ h).mp (h₂ h).mp, .imp (h₁ h).mpr (h₂ h).mpr⟩
   or_ne.ne _ _ _ h₁ _ _ h₂ m h := ⟨.imp (h₁ h).mp (h₂ h).mp, .imp (h₁ h).mpr (h₂ h).mpr⟩
   imp_ne.ne _ _ _ h₁ _ _ h₂ m hle := {
@@ -323,7 +328,7 @@ theorem sig_equiv_internalEq [OFE A] (P : A → Prop) (x y : { a : A // P a }) :
 
 @[rocq_alias siProp_primitive.discrete_eq_1]
 theorem discrete_eq_internalEq [OFE A] (a b : A) [Idisc : Std.TCOr (DiscreteE a) (DiscreteE b)] :
-    internalEq a b ⊢ ⌜a ≡ b⌝ := by
+    internalEq a b ⊢ ⌜a = b⌝ := by
   cases Idisc with
   | l => exact fun _ hab => DiscreteE.discrete (hab.le (Nat.zero_le _))
   | r => exact fun _ hab => (DiscreteE.discrete (hab.le (Nat.zero_le _)).symm).symm
@@ -389,8 +394,8 @@ instance cmraValid_timeless [CMRA A] [CMRA.Discrete A] {a : A} :
 theorem pure_soundness {φ : Prop} (h : True ⊢@{SiProp} ⌜φ⌝) : φ := h 0 trivial
 
 @[rocq_alias siProp_primitive.internal_eq_soundness]
-theorem internalEq_soundness [OFE A] {x y : A} (h : True ⊢@{SiProp} internalEq x y) : x ≡ y :=
-  equiv_dist.mpr fun n => h n trivial
+theorem internalEq_soundness [OFE A] {x y : A} (h : True ⊢@{SiProp} internalEq x y) : x = y :=
+  OFE.eq_dist.mpr fun n => h n trivial
 
 @[rocq_alias siProp_primitive.later_soundness]
 theorem later_soundness {P : SiProp} (h : True ⊢ ▷ P) : True ⊢ P := fun n _ => h (n + 1) trivial

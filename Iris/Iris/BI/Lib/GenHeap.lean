@@ -29,7 +29,7 @@ rationale.  To implement the meta machinery we use two extra pieces of ghost
 state in addition to the value map:
 
 - a `ghost_map L gname`, which associates a ghost name with each location;
-- for each such ghost name, a `ReservationMap (Agree (LeibnizO Pos))` storing
+- for each such ghost name, a `ReservationMap (Agree (DiscreteO Pos))` storing
   the actual meta data.  The indirection is required so that `meta_set` is a
   frame-preserving update that does not need to inspect `genHeapInterp`. -/
 
@@ -39,7 +39,7 @@ tree maps over positives. -/
 abbrev MetaResMap (x : Sort _) : Sort _ := Std.ExtTreeMap Pos x compare
 
 /-- The CMRA used to store the meta-data attached to a single location. -/
-abbrev MetaUR : Sort _ := ReservationMap (Agree (LeibnizO Pos)) MetaResMap
+abbrev MetaUR : Sort _ := ReservationMap (Agree (DiscreteO Pos)) MetaResMap
 
 @[rocq_alias gen_heapGpreS]
 class genHeapPreS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ → Type _)
@@ -121,9 +121,9 @@ instance instFractionalPointsTo : Fractional (l ↦{.own ·} v) :=
   inferInstanceAs (Fractional (heapName ↪◯MAP[l]{.own ·} v))
 
 @[rocq_alias pointsto_as_fractional]
-instance instAsFractionalPointsTo : AsFractional (l ↦{.own q} v) (l ↦{.own ·} v) q :=
+instance instAsFractionalPointsTo : AsFractional (l ↦{.own q} v) ioΦ (l ↦{.own ·} v) ioq q :=
   inferInstanceAs
-    (AsFractional (heapName ↪◯MAP[l]{.own q} v) (heapName ↪◯MAP[l]{.own ·} v) q)
+    (AsFractional (heapName ↪◯MAP[l]{.own q} v) ioΦ (heapName ↪◯MAP[l]{.own ·} v) ioq q)
 
 @[rocq_alias pointsto_valid]
 theorem pointsTo_cmraValid : l ↦{dq} v ⊢@{IProp GF} ⌜✓ dq⌝ := by
@@ -179,6 +179,12 @@ theorem pointsTo_unpersist {l : L} {v : V} :
   unfold pointsTo
   iapply ghost_map_elem_unpersist
 
+@[rocq_alias pointsto_persistent]
+instance instPersistentPointsTo (l : L) (v : V) :
+    BI.Persistent (PROP := IProp GF) (l ↦{.discard} v) := by
+  unfold pointsTo
+  infer_instance
+
 /-! ### General properties of `metaInfo` and `metaToken` -/
 
 @[rocq_alias meta_token_timeless]
@@ -211,7 +217,7 @@ theorem metaToken_union_1 {l : L} {E1 E2 : CoPset} (he : E1 ## E2) :
   unfold metaToken
   iintro ⟨%γm, #Hγm, Hm⟩
   -- TODO: why do we need to destruct in a second step?
-  icases (iOwn_ne.eqv (ReservationMap.token_union he).symm) $$ Hm with Hm
+  icases (congrArg (iOwn _) (ReservationMap.token_union he).symm) $$ Hm with Hm
   icases Hm with ⟨Hm1, Hm2⟩
   isplitl [Hm1]
   · iexists γm
@@ -230,7 +236,7 @@ theorem metaToken_union_2 {l : L} {E1 E2 : CoPset} :
   have hdisj : E1 ## E2 := ReservationMap.valid_token_op_iff_disj.mp Hvalid
   iexists γm1
   iframe Hγm1
-  iapply (equiv_iff.mp (iOwn_ne.eqv (ReservationMap.token_union hdisj))).mpr
+  iapply (congrArg (iOwn _) (ReservationMap.token_union hdisj))
   iapply iOwn_op
   iframe
 
@@ -287,16 +293,16 @@ theorem meta_agree {A : Type _} [Pos.Countable A] {l : L} {N : Namespace} {x1 x2
   subst Heq
   icombine Hm1 Hm2 gives %Hvalid
   ipureintro
-  rw [valid_iff (ReservationMap.singleton_op _ _ _).symm
+  rw [(ReservationMap.singleton_op _ _ _).symm
     , ReservationMap.valid_singleton, toAgree_op_valid_iff_eq] at Hvalid
-  exact Pos.encode_inj (LeibnizO.eqv_inj Hvalid)
+  exact Pos.encode_inj (DiscreteO.eqv_inj Hvalid)
 
 @[rocq_alias meta_set]
 theorem meta_set {A : Type _} [Pos.Countable A] {l : L} {E : CoPset} {N : Namespace} (x : A)
     (he : (↑N : CoPset) ⊆ E) : metaToken (GF := GF) l E ==∗ metaInfo l N x := by
   unfold metaToken metaInfo
   iintro ⟨%γm, #Hγm, Hm⟩
-  imod iOwn_update (ReservationMap.alloc (a := toAgree (⟨Pos.Countable.encode x⟩ : LeibnizO Pos))
+  imod iOwn_update (ReservationMap.alloc (a := toAgree (⟨Pos.Countable.encode x⟩ : DiscreteO Pos))
     (he _ (coPpick_nclose N)) Agree.toAgree_valid) $$ Hm with Hm
   imodintro
   iexists γm

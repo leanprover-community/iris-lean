@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 meta import Iris.Std.RocqPorting
+public import Iris.ProofMode
 public import Iris.Std.Relation
 public import Iris.BI.WeakestPre
 
@@ -125,7 +126,7 @@ end Notation
 
 open Notation
 
-def Step.of_primStep {e σ} {obs : List Obs} {e'} {σ' : State} {eₜ}
+theorem Step.of_primStep {e σ} {obs : List Obs} {e'} {σ' : State} {eₜ}
     (H : (e, σ) -<obs>-> (e', σ', eₜ)) {t₁ t₂: List Expr} :
     Step (t₁ ++ e :: t₂, σ) obs (t₁ ++ e' :: t₂ ++ eₜ, σ') :=
   atomic H ..

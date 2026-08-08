@@ -54,6 +54,8 @@ syntax "⌜" term "⌝" : term
 syntax:35 term:36 " ∗ " term:35 : term
 /-- Separating implication. -/
 syntax:25 term:26 " -∗ " term:25 : term
+/-- Separating implication with an optional wand premise. -/
+syntax:25 term:26 " -∗? " term:25 : term
 /-- Persistency modality. `persistently` is a primitive of BI. -/
 syntax:max "<pers> " term:40 : term
 /-- Later modality. `later` is a primitive of BI. -/
@@ -163,6 +165,18 @@ delab_rule iff
 delab_rule wandIff
   | `($_ $P $Q) => do ``(iprop($(← unpackIprop P) ∗-∗ $(← unpackIprop Q)))
 
+@[simp, rocq_alias bi_wandM]
+def wandM [BIBase PROP] (mP : Option PROP) (Q : PROP) : PROP :=
+  match mP with
+  | none => Q
+  | some P => iprop(P -∗ Q)
+
+macro_rules
+  | `(iprop($mP -∗? $Q)) => ``(wandM $mP iprop($Q))
+
+delab_rule wandM
+  | `($_ $mP $Q) => do ``(iprop($mP -∗? $(← unpackIprop Q)))
+
 /-- Affine modality.
 ```
 def affinely (P) := emp ∧ P
@@ -232,11 +246,10 @@ delab_rule intuitionistically
   | `($_ $P) => do ``(iprop(□ $(← unpackIprop P)))
 
 /-- Iterated later modality. -/
-syntax:max "▷^[" term:45 "]" term:40 : term
+syntax:max "▷^[" term:45 "] " term:40 : term
 
 @[rocq_alias bi_laterN]
-def laterN [BIBase PROP] (n : Nat) (P : PROP) : PROP :=
-  match n with | .zero => P | .succ n' => later <| laterN n' P
+def laterN [BIBase PROP] (n : Nat) (P : PROP) : PROP := n.repeat later P
 
 macro_rules
   | `(iprop(▷^[$n] $P))   => ``(laterN $n iprop($P))

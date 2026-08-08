@@ -15,9 +15,13 @@ open Lean Meta Std
 declare_syntax_cat selPat
 
 syntax ident : selPat
+/-- Choose all hypothesis from the pure context. -/
 syntax "%" : selPat
+/-- Choose a specific hypothesis from the pure context. -/
 syntax "%" noWs ident : selPat
+/-- Choose all hypotheses in the intuitionistic context. -/
 syntax "#" : selPat
+/-- Choose all hypotheses in the spatial context. -/
 syntax "∗" : selPat
 
 @[rocq_alias sel_pat]
@@ -29,6 +33,7 @@ inductive SelPat
   | leanIdent (name : Ident)
   deriving Repr, Inhabited
 
+/-- Parse the selection patterns. -/
 @[rocq_alias sel_pat.parse]
 partial def SelPat.parseOne (pat : TSyntax `selPat) : MacroM SelPat := do
   match go ⟨← expandMacros pat⟩ with
@@ -46,29 +51,33 @@ where
 partial def SelPat.parse (pats : TSyntaxArray `selPat) : MacroM (List SelPat) := do
   return (← pats.mapM SelPat.parseOne).toList
 
-#rocq_ignore sel_pat.parse_go "Not necessary in Lean"
-#rocq_ignore sel_pat_pure "Not necessary in Lean"
+#rocq_ignore sel_pat.parse_go "Not necessary in Lean, functionality provided by SelPat.parseOne"
+#rocq_ignore sel_pat_pure "Not necessary in Lean, unused function in Rocq"
 
 public meta section
 
 inductive SelTarget.Kind where
-| pure (id : FVarId)
-| ipm (ivar : IVarId)
+  | pure (id : FVarId)
+  | ipm (ivar : IVarId)
 deriving BEq, Hashable, Repr
 
 @[rocq_alias esel_pat]
 structure SelTarget where
   kind : SelTarget.Kind
-  /- Was this target specified explicitly or is it from a glob like ∗? -/
+  -- Indicates whether the target is specified explicitly or implicitly using `∗`, `#` or `%`
   explicit : Bool
 
-/-- Resolve selection patterns to concrete proofmode hypotheses (`.ipm`) and pure local hypotheses (`.pure`). -/
+/--
+  Resolve selection patterns to concrete proofmode hypotheses (`.ipm`) and pure
+  local hypotheses (`.pure`).
+-/
 def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget)
   | .ident name => do
       let ivar ← hyps.findWithInfo name
       return [⟨.ipm ivar, true⟩]
   | .leanIdent name => do
       let ldecl ← getLocalDeclFromUserName name.getId
+      addLocalVarInfo name (← getLCtx) ldecl.toExpr ldecl.type
       return [⟨.pure ldecl.fvarId, true⟩]
   | .intuitionistic =>
       return hyps.intuitionisticIVarIds.map (⟨.ipm ·, false⟩)
@@ -85,11 +94,15 @@ def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget
         hyps := hyps.push (⟨.pure ldecl.fvarId, false⟩)
       return hyps.toList
 
+/--
+  Resolve a list of selection targets.
+
+  If the user specifies something like `HP ∗` we want to remove `HP`
+  from the expansion of `∗`, but if the user specifies `HP` explicitly
+  twice, it should be kept. This is for example important for `icombine`.
+-/
 def SelPat.resolve (hyps : Hyps bi e) (pats : List SelPat) :
     ProofModeM (List SelTarget) := do
-  -- if the users specifies something like `HP ∗` we want to remove `HP`
-  -- from the expansion of `∗`, but if the user specifies `HP` explicitly
-  -- twice, it should be kept (this is for example important for `icombine`)
   return (← pats.flatMapM (SelPat.resolveOne hyps)).eraseDupsBy
     (λ snd fst => snd.kind == fst.kind && fst.explicit && !snd.explicit)
 

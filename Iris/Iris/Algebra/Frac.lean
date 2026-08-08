@@ -62,30 +62,29 @@ instance instHDivQpQpQp : HDiv Qp Qp Qp where
 def Qp.divide_even (q : Qp) (n : Nat) (hn : 0 < n) : Qp :=
   ⟨q.val / n, Rat.div_pos q.2 (by exact_mod_cast hn)⟩
 
-instance instCOFEQp : COFE Qp := COFE.ofDiscrete _ Eq_Equivalence
-
-instance instLeibnizQp : OFE.Leibniz Qp := ⟨id⟩
+instance instCOFEQp : COFE Qp := COFE.ofDiscrete _
 
 instance instCMRAQp : CMRA Qp where
   pcore _ := none
   op x y := x + y
   ValidN _ x := x.val ≤ 1
   Valid x := x.val ≤ 1
-  op_ne.ne n x1 x2 H := by rw [H]
+  op_ne.ne n x1 x2 H := by rw [(H : x1 = x2)]
   pcore_ne _ H := by rcases H
-  validN_ne H := by rw [H]; exact id
+  validN_ne H := by rw [(H : _ = _)]; exact id
   valid_iff_validN := .symm (forall_const _)
   validN_succ := id
   validN_op_left {n x y} h := by
     show x.val ≤ 1
     have h' : x.val + y.val ≤ 1 := h
     grind
-  assoc := OFE.leibniz.mpr <| Subtype.ext (Rat.add_assoc ..).symm
-  comm := OFE.leibniz.mpr <| Subtype.ext (Rat.add_comm ..)
+  assoc := Subtype.ext (Rat.add_assoc ..).symm
+  comm := Subtype.ext (Rat.add_comm ..)
   pcore_op_left H := by rcases H
   pcore_idem H := by rcases H
   pcore_op_mono H := by rcases H
-  extend {_ x y z} := by rintro H rfl; exists y; exists z
+  extend {_ x y z} := by
+    rintro H He; exact ⟨y, z, He, .rfl, .rfl⟩
 
 
 -- TODO: A different solution to having these bridge lemmas might be to internalize
@@ -105,7 +104,6 @@ instance instCMRAQp : CMRA Qp where
 @[simp, grind =] theorem Qp.lt_iff {x y : Qp} : x < y ↔ x.val < y.val := Iff.rfl
 @[simp] theorem Qp.ext_iff {x y : Qp} : x = y ↔ x.val = y.val := Subtype.ext_iff
 @[simp] theorem Qp.dist_iff {n} {x y : Qp} : x ≡{n}≡ y ↔ x.val = y.val := Subtype.ext_iff
-@[simp] theorem Qp.equiv_iff {x y : Qp} : x ≡ y ↔ x.val = y.val := Subtype.ext_iff
 @[simp, rocq_alias frac_valid_1] theorem Qp.valid_one : ✓ (1 : Qp) := by grind
 @[simp, grind =] theorem Qp.half_add_half (q : Qp) : q.half + q.half = q := Subtype.ext (by grind)
 
@@ -121,8 +119,8 @@ theorem Qp.lt_iff_exists_add {a b : Qp} : a < b ↔ ∃ c : Qp, a + c = b := by
 @[rocq_alias frac_included]
 theorem Frac.inc_iff {p q : Qp} : p ≼ q ↔ p < q := by
   refine ⟨fun ⟨r, Hr⟩ => ?_, fun H => ?_⟩
-  · have := r.2; simp only [Qp.lt_iff, Qp.equiv_iff, Qp.val_op] at *; grind
-  · exact ⟨⟨q.val - p.val, by grind⟩, by simp only [Qp.equiv_iff, Qp.val_op]; grind⟩
+  · have := r.2; simp only [Qp.lt_iff, Qp.ext_iff, Qp.val_op] at *; grind
+  · exact ⟨⟨q.val - p.val, by grind⟩, by simp only [Qp.ext_iff, Qp.val_op]; grind⟩
 
 @[rocq_alias frac_included_weak]
 theorem Frac.le_of_inc {p q : Qp} (H : p ≼ q) : p ≤ q := by
@@ -130,7 +128,7 @@ theorem Frac.le_of_inc {p q : Qp} (H : p ≼ q) : p ≤ q := by
 
 @[rocq_alias frac_cmra_discrete]
 instance instDiscreteQp : CMRA.Discrete Qp where
-  discrete_0 := id
+  discrete_0 := fun h => h
   discrete_valid := id
 
 @[rocq_alias frac_full_exclusive]
@@ -156,10 +154,10 @@ theorem Frac.valid_iff {p : Qp} : ✓ p ↔ p.val ≤ 1 := .rfl
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias frac_is_op]
 instance (priority := default - 10) (q1 q2 : Qp) :
-    IsOpMerge (q1 + q2 : Qp) q1 q2 where
-  is_op := .rfl
+    IsOp .merge (q1 + q2 : Qp) q1 q2 where
+  is_op := rfl
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_frac]
-instance (q : Qp) : IsOp io1 q io2 q.half io3 q.half where
-  is_op := by refine q.ext ?_; grind
+instance (q : Qp) : IsOp d q q.half q.half where
+  is_op := by refine (q.ext ?_); grind

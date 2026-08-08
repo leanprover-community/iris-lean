@@ -170,28 +170,26 @@ theorem lc_fupd_add_later {E1 E2 : CoPset} {P : IProp GF} : ⊢ £ 1 -∗ (▷ |
 @[rocq_alias lc_fupd_add_laterN]
 theorem lc_fupd_add_laterN (n : Nat) {E : CoPset} {P : IProp GF} :
     ⊢ £ n -∗ (▷^[n] |={E}=> P) -∗ |={E}=> P := by
-  induction n generalizing P with
+  iintro Hf Hupd
+  iinduction n with
   | zero =>
-    iintro _ H
-    simp [BIBase.laterN]
-    iexact H
+    dsimp only [BIBase.laterN, Nat.repeat]
+    iexact Hupd
   | succ n IH =>
-    iintro Hf Hupd
     icases Hf with ⟨H1, Hf⟩
     iapply lc_fupd_add_later $$ H1
     inext
     iapply IH $$ [$] [$]
 
-@[rocq_alias lc_fupd_add_step_fupdN ]
+@[rocq_alias lc_fupd_add_step_fupdN]
 theorem lc_fupd_add_step_fupdN (E1 E2 E3: CoPset) (P : IProp GF) (n : Nat) :
-  £ n -∗ (|={E1}[E2]▷=>^[n] |={E1,E3}=> P) -∗ |={E1,E3}=> P := by
-  induction n generalizing P with
+    £ n -∗ (|={E1}[E2]▷=>^[n] |={E1,E3}=> P) -∗ |={E1,E3}=> P := by
+  iintro Hf Hupd
+  iinduction n with
   | zero =>
-    iintro _ H
     simp only [Nat.repeat]
-    iexact H
+    iexact Hupd
   | succ n IH =>
-    iintro Hf Hupd
     simp only [Nat.repeat]
     imod Hupd
     icases Hf with ⟨H1, Hf⟩
@@ -381,8 +379,8 @@ instance isExcept0_fupd_finally (E : CoPset) (P : IProp GF) : IsExcept0 iprop(|=
     iapply except0_mono fupd_intro $$ H
 
 @[rocq_alias elim_modal_bupd_fupd_finally]
-instance elimModal_bupd_fupd_finally p (E : CoPset) (P Q : IProp GF) :
-    ElimModal True p false iprop(|==> P) P iprop(|={E|}=> Q) iprop(|={E|}=> Q) where
+instance elimModal_bupd_fupd_finally p io (E : CoPset) (P Q : IProp GF) :
+    ElimModal True p io false iprop(|==> P) P iprop(|={E|}=> Q) iprop(|={E|}=> Q) where
   elim_modal _ := by
     iintro ⟨H1, H2⟩
     iapply fupd_fupd_finally E E
@@ -392,8 +390,8 @@ instance elimModal_bupd_fupd_finally p (E : CoPset) (P Q : IProp GF) :
     iapply H2 $$ H1
 
 @[rocq_alias elim_modal_fupd_fupd_finally]
-instance elimModal_fupd_fupd_finally p (E1 E2 : CoPset) (P Q : IProp GF) :
-    ElimModal True p false iprop(|={E1,E2}=> P) P iprop(|={E1|}=> Q) iprop(|={E2|}=> Q) where
+instance elimModal_fupd_fupd_finally p io (E1 E2 : CoPset) (P Q : IProp GF) :
+    ElimModal True p io false iprop(|={E1,E2}=> P) P iprop(|={E1|}=> Q) iprop(|={E2|}=> Q) where
   elim_modal _ := by
     iintro ⟨H1, H2⟩
     iapply fupd_fupd_finally E1 E2
@@ -404,12 +402,12 @@ instance elimModal_fupd_fupd_finally p (E1 E2 : CoPset) (P Q : IProp GF) :
 @[rocq_alias step_fupdN_fupd_finally]
 theorem step_fupdN_fupd_finally (E1 E2 : CoPset) (n : Nat) (P : IProp GF) :
     (|={E1}[E2]▷=>^[n] |={E1|}=> P) ⊢ |={E1|}=> ▷^[n] ◇ P := by
-  induction n with
+  iintro HP
+  iinduction n with
   | zero =>
     simp only [Nat.repeat]
     exact fupd_finally_mono except0_intro
   | succ n IH =>
-    iintro HP
     simp only [Nat.repeat]
     imod HP
     iapply fupd_finally_mono (later_laterN n).mpr

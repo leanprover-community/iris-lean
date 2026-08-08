@@ -5,8 +5,8 @@ Authors: Markus de Medeiros
 -/
 module
 
-import Iris.Algebra.DFrac
-import Iris.Algebra.Agree
+public import Iris.Algebra.DFrac
+public import Iris.Algebra.Agree
 meta import Iris.Std.RocqPorting
 
 /-!
@@ -15,6 +15,8 @@ meta import Iris.Std.RocqPorting
 The product of the discardable fraction camera and the agree camera, bundled with
 convenience definitions and lemmas.
 -/
+
+@[expose] public section
 
 namespace Iris
 
@@ -30,7 +32,8 @@ def mk [OFE A] (d : DFrac) (a : A) : DFracAgreeR A := (d, toAgree a)
 
 variable {A : Type _} [OFE A]
 
-instance instLeibniz [Leibniz A] : Leibniz (DFracAgreeR A) := inferInstance
+instance mk_discarded_coreId {a : A} : CoreId (mk .discard a) :=
+  inferInstanceAs (CoreId (DFrac.discard, toAgree a))
 
 @[rocq_alias to_dfrac_agree_ne]
 instance mk_ne {d : DFrac} : NonExpansive (mk d : A → DFracAgreeR A) where
@@ -43,30 +46,26 @@ instance mk_exclusive {a : A} : Exclusive (mk (.own (1 : Qp)) a) := one_exclusiv
 
 @[rocq_alias to_dfrac_agree_discrete]
 instance mk_discrete {d : DFrac} {a : A} [DiscreteE a] : DiscreteE (mk d a) :=
-  ⟨fun h => ⟨is_discrete.discrete h.1, Agree.toAgree.is_discrete.discrete h.2⟩⟩
+  ⟨fun h => Prod.ext (is_discrete.discrete h.1) (Agree.toAgree.is_discrete.discrete h.2)⟩
 
 @[rocq_alias to_dfrac_agree_injN]
 theorem mk_injN {d₁ d₂ : DFrac} {a₁ a₂ : A} (h : mk d₁ a₁ ≡{n}≡ mk d₂ a₂) : d₁ ≡{n}≡ d₂ ∧ a₁ ≡{n}≡ a₂ :=
   ⟨h.1, toAgree.inj h.2⟩
 
 @[rocq_alias to_dfrac_agree_inj]
-theorem mk_inj {d₁ d₂ : DFrac} {a₁ a₂ : A} (h : mk d₁ a₁ ≡ mk d₂ a₂) : d₁ ≡ d₂ ∧ a₁ ≡ a₂ :=
-  ⟨h.1, Agree.toAgree_inj h.2⟩
+theorem mk_inj {d₁ d₂ : DFrac} {a₁ a₂ : A} (h : mk d₁ a₁ = mk d₂ a₂) : d₁ = d₂ ∧ a₁ = a₂ :=
+  ⟨congrArg Prod.fst h, Agree.toAgree_inj (congrArg Prod.snd h)⟩
 
 @[rocq_alias dfrac_agree_op]
-theorem mk_op {d₁ d₂ : DFrac} {a : A} : mk (d₁ • d₂) a ≡ mk d₁ a • mk d₂ a :=
-  ⟨Equiv.rfl, Agree.idemp.symm⟩
+theorem mk_op {d₁ d₂ : DFrac} {a : A} : mk (d₁ • d₂) a = mk d₁ a • mk d₂ a :=
+  equiv_prod_ext rfl Agree.idemp.symm
 
 @[rocq_alias dfrac_agree_op_valid]
-theorem op_valid {d₁ d₂ : DFrac} {a₁ a₂ : A} : ✓ (mk d₁ a₁ • mk d₂ a₂) ↔ ✓ (d₁ • d₂) ∧ a₁ ≡ a₂ := by
+theorem op_valid {d₁ d₂ : DFrac} {a₁ a₂ : A} : ✓ (mk d₁ a₁ • mk d₂ a₂) ↔ ✓ (d₁ • d₂) ∧ a₁ = a₂ := by
   simp only [Valid, Prod.Valid, Prod.op, CMRA.op, mk]
-  exact and_congr_right fun _ => Agree.toAgree_op_valid_iff_equiv
+  exact and_congr_right fun _ => toAgree_op_valid_iff_eq
 
-@[rocq_alias dfrac_agree_op_valid_L]
-theorem op_valid_L [Leibniz A] {d₁ d₂ : DFrac} {a₁ a₂ : A} :
-    ✓ (mk d₁ a₁ • mk d₂ a₂) ↔ ✓ (d₁ • d₂) ∧ a₁ = a₂ := by
-  rw [op_valid]
-  exact and_congr_right fun _ => Leibniz.leibniz
+#rocq_ignore dfrac_agree_op_valid_L "Use op_valid"
 
 @[rocq_alias dfrac_agree_op_validN]
 theorem op_validN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
@@ -78,21 +77,17 @@ theorem op_validN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
 
 @[rocq_alias dfrac_agree_included]
 theorem included {d₁ d₂ : DFrac} {a₁ a₂ : A} :
-    mk d₁ a₁ ≼ mk d₂ a₂ ↔ (d₁ ≼ d₂) ∧ a₁ ≡ a₂ := by
+    mk d₁ a₁ ≼ mk d₂ a₂ ↔ (d₁ ≼ d₂) ∧ a₁ = a₂ := by
   simp only [mk, Included]
   constructor
-  · rintro ⟨⟨zd, za⟩, hd, ha⟩
-    exact ⟨⟨zd, hd⟩, Agree.toAgree_included.mp ⟨za, ha⟩⟩
+  · rintro ⟨⟨zd, za⟩, H⟩
+    exact ⟨⟨zd, congrArg Prod.fst H⟩,
+      Agree.toAgree_included.mp ⟨za, congrArg Prod.snd H⟩⟩
   · rintro ⟨⟨zd, hd⟩, ha⟩
-    refine ⟨(zd, toAgree a₁), hd, ?_⟩
-    show toAgree a₂ ≡ toAgree a₁ • toAgree a₁
-    exact (NonExpansive.eqv ha.symm).trans Agree.idemp.symm
+    refine ⟨(zd, toAgree a₁), equiv_prod_ext hd ?_⟩
+    exact (congrArg toAgree ha.symm).trans Agree.idemp.symm
 
-@[rocq_alias dfrac_agree_included_L]
-theorem included_L [Leibniz A] {d₁ d₂ : DFrac} {a₁ a₂ : A} :
-    mk d₁ a₁ ≼ mk d₂ a₂ ↔ (d₁ ≼ d₂) ∧ a₁ = a₂ := by
-  rw [included]
-  exact and_congr_right fun _ => Leibniz.leibniz
+#rocq_ignore dfrac_agree_included_L "Use included"
 
 @[rocq_alias dfrac_agree_includedN]
 theorem includedN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
@@ -103,18 +98,16 @@ theorem includedN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
     exact ⟨(inc_iff_incN (α := DFrac) n).mpr ⟨zd, hd⟩, Agree.toAgree_includedN.mp ⟨za, ha⟩⟩
   · rintro ⟨hdinc, ha⟩
     obtain ⟨zd, hd⟩ := (inc_iff_incN (α := DFrac) n).mp hdinc
-    exact ⟨(zd, toAgree a₁), hd, (toAgree.ne.ne ha.symm).trans (Equiv.dist Agree.idemp.symm)⟩
+    exact ⟨(zd, toAgree a₁), hd, (toAgree.ne.ne ha.symm).trans Agree.idemp.symm.dist⟩
 
 @[rocq_alias dfrac_agree_update_2]
 theorem update₂ {d₁ d₂ : DFrac} {a₁ a₂ a' : A} (hd : d₁ • d₂ = .own 1) :
     mk d₁ a₁ • mk d₂ a₂ ~~> mk d₁ a' • mk d₂ a' := by
-  have : mk d₁ a₁ • mk d₂ a₂ ≡ (own (1 : Qp), toAgree a₁ • toAgree a₂) :=
-    ⟨hd ▸ Equiv.rfl, Equiv.rfl⟩
   calc
-    _ ≡ (own (1 : Qp), toAgree a₁ • toAgree a₂) := this
+    _ = (own (1 : Qp), toAgree a₁ • toAgree a₂) := hd ▸ rfl
     _ ~~> mk d₁ a' • mk d₂ a' :=
       @Update.exclusive _ _ _ _ one_exclusive_left
-        (op_valid.mpr ⟨hd ▸ valid_own_one, .rfl⟩)
+        (op_valid.mpr ⟨hd ▸ valid_own_one, rfl⟩)
 
 @[rocq_alias dfrac_agree_persist]
 theorem persist {d : DFrac} {a : A} : mk d a ~~> mk .discard a := by
@@ -145,16 +138,14 @@ def mk [OFE A] (q : Qp) (a : A) : DFracAgreeR A := DFracAgree.mk (.own q) a
 variable {A : Type _} [OFE A]
 
 @[rocq_alias frac_agree_op]
-theorem mk_op {q₁ q₂ : Qp} {a : A} : mk (q₁ + q₂) a ≡ mk q₁ a • mk q₂ a :=
+theorem mk_op {q₁ q₂ : Qp} {a : A} : mk (q₁ + q₂) a = mk q₁ a • mk q₂ a :=
   DFracAgree.mk_op (d₁ := .own q₁) (d₂ := .own q₂)
 
 @[rocq_alias frac_agree_op_valid]
 theorem op_valid {q₁ q₂ : Qp} {a₁ a₂ : A} :
-    ✓ (mk q₁ a₁ • mk q₂ a₂) ↔ (q₁ + q₂).val ≤ 1 ∧ a₁ ≡ a₂ := DFracAgree.op_valid
+    ✓ (mk q₁ a₁ • mk q₂ a₂) ↔ (q₁ + q₂).val ≤ 1 ∧ a₁ = a₂ := DFracAgree.op_valid
 
-@[rocq_alias frac_agree_op_valid_L]
-theorem op_valid_L [Leibniz A] {q₁ q₂ : Qp} {a₁ a₂ : A} :
-    ✓ (mk q₁ a₁ • mk q₂ a₂) ↔ (q₁ + q₂).val ≤ 1 ∧ a₁ = a₂ := DFracAgree.op_valid_L
+#rocq_ignore frac_agree_op_valid_L "Use op_valid"
 
 @[rocq_alias frac_agree_op_validN]
 theorem op_validN {q₁ q₂ : Qp} {a₁ a₂ : A} :
@@ -163,11 +154,9 @@ theorem op_validN {q₁ q₂ : Qp} {a₁ a₂ : A} :
 
 @[rocq_alias frac_agree_included]
 theorem included {q₁ q₂ : Qp} {a₁ a₂ : A} :
-    mk q₁ a₁ ≼ mk q₂ a₂ ↔ (own q₁ ≼ own q₂) ∧ a₁ ≡ a₂ := DFracAgree.included
+    mk q₁ a₁ ≼ mk q₂ a₂ ↔ (own q₁ ≼ own q₂) ∧ a₁ = a₂ := DFracAgree.included
 
-@[rocq_alias frac_agree_included_L]
-theorem included_L [Leibniz A] {q₁ q₂ : Qp} {a₁ a₂ : A} :
-    mk q₁ a₁ ≼ mk q₂ a₂ ↔ (own q₁ ≼ own q₂) ∧ a₁ = a₂ := DFracAgree.included_L
+#rocq_ignore frac_agree_included_L "Use included"
 
 @[rocq_alias frac_agree_includedN]
 theorem includedN {q₁ q₂ : Qp} {a₁ a₂ : A} :
@@ -183,7 +172,7 @@ end Frac
 /-! ## Functors -/
 
 @[rocq_alias dfrac_agreeRF]
-abbrev DFracAgreeRF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
+abbrev DFracAgreeRF (T : COFE.OFunctorPre) [COFE.OFunctor T] : COFE.OFunctorPre :=
   ProdOF (constOF DFrac) (AgreeRF T)
 
 end DFracAgree

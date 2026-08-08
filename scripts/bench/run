@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export ROOT_DIR="$(realpath Iris)"
+export BENCH_DIR="$(realpath scripts/bench)"
+export OUTPUT_FILE="$(realpath measurements.jsonl)"
+
+cd "$ROOT_DIR"
+
+echo "Running benchmark: build"
+"$BENCH_DIR/build/run"
+
+echo "Running benchmark: size"
+"$BENCH_DIR/size/run"

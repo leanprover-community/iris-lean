@@ -20,7 +20,7 @@ public import Iris.Std.List
 
 namespace Iris
 
-open BI CMRA OFE Iris Std LawfulSet Excl COFE
+open BI CMRA OFE Iris Std LawfulSet Excl COFE ProofMode
 
 /-! # Cancelable Invariants -/
 
@@ -92,11 +92,11 @@ instance instFractionalOwn (γ : GName) :
   fractional p q := by
     show iOwn (E := W.inv) γ ((none, some (p + q))) ⊣⊢ _
     refine .trans ?_ iOwn_op
-    exact equiv_iff.mp (NonExpansive.eqv (.of_eq rfl))
+    exact equiv_iff.mp rfl
 
 @[rocq_alias cinv_own_as_fractional]
 instance instAsFractionalOwn (γ : GName) (q : Qp) :
-    AsFractional (own (GF := GF) γ q) (fun p : Qp => own γ p) q where
+    AsFractional (own (GF := GF) γ q) ioΦ (fun p : Qp => own γ p) ioq q where
   as_fractional := .rfl
   as_fractional_fractional := instFractionalOwn γ
 
@@ -282,12 +282,33 @@ theorem acc_one (E : CoPset) (N : Namespace) (γ : GName) (P : IProp GF) (Hsub :
     iapply own_one_l $$ Hγ Hγ'
 
 @[rocq_alias cinv_cancel]
-theorem cancel (E : CoPset) (N : Namespace) (γ : GName) (P : IProp GF) (Hsub : ↑N ⊆ E) :
+theorem cancel (E : CoPset) {N : Namespace} {γ : GName} {P : IProp GF} (Hsub : ↑N ⊆ E) :
     ⊢ cinv N γ P -∗ own γ (1 : Qp) ={E}=∗ ▷ P := by
   iintro #Hinv Hγ
   imod acc_one _ _ _ _ Hsub $$ Hinv Hγ with ⟨HP, -⟩
   imodintro
   iexact HP
+
+@[rocq_alias into_inv_cinv]
+instance intoInv_cinv (N : Namespace) (γ : GName) (P : IProp GF) :
+    IntoInv (cinv N γ P) N := {}
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias into_acc_cinv]
+instance intoAcc_cinv (E : CoPset) (N : Namespace) (γ : GName) (P : IProp GF) (p : Qp) :
+    IntoAcc (X := Unit) (cinv N γ P) (↑N ⊆ E) (own γ p) (fupd E (E \ ↑N)) (fupd (E \ ↑N) E)
+      (fun _ => iprop(▷ P ∗ own γ p)) (fun _ => iprop(▷ P)) (λ _ => none) where
+  into_acc := by
+    dsimp only [accessor, Option.getD]
+    iintro %x #Hinv Hown
+    imod acc x $$ Hinv Hown with ⟨HP, Hγ, Hcl⟩
+    imodintro
+    iexists ()
+    isplitl [HP Hγ]
+    · iframe
+    · iintro HP
+      iapply (BIFUpdate.mono true_emp.mp)
+      iapply Hcl $$ HP
 
 end CancelableInvariant
 end Iris

@@ -19,7 +19,7 @@ namespace Iris
 
 open BI CMRA Agree OFE UPred IProp Std ProofMode COFE Auth ExclAuth Excl PartialMap BigSepM
 
-abbrev BoolO := LeibnizO Bool
+abbrev BoolO := DiscreteO Bool
 
 variable (GF : BundledGFunctors)
 
@@ -74,7 +74,7 @@ def slice (N : Namespace) (γ : SliceName) (P : IProp GF) : IProp GF :=
 def box {M : Type _ → Type _} [LawfulFiniteMap M SliceName] (N : Namespace) (f : M Bool)
   (P : IProp GF) : IProp GF :=
   iprop% ∃ Φ : SliceName → IProp GF,
-    ▷ internalEq P ([∗map] γ ↦ _x ∈ f, Φ γ) ∗
+    ▷ (P ≡ ([∗map] γ ↦ _x ∈ f, Φ γ)) ∗
     [∗map] γ ↦ b ∈ f, box_own_auth γ (◯E (⟨b⟩ : BoolO)) ∗ box_own_prop γ (Φ γ) ∗ inv N (slice_inv γ (Φ γ))
 
 @[rocq_alias box_inv_ne]
@@ -112,7 +112,7 @@ theorem box_own_auth_agree {γ : SliceName} {b1 b2 : Bool} :
   iintro H
   icases iOwn_cmraValid $$ H with H
   icases (prod_validI _).mp $$ H with ⟨%H, -⟩
-  ipureintro; exact LeibnizO.eqv_inj $ Iris.ExclAuth.agree_L H
+  ipureintro; exact DiscreteO.eqv_inj (Iris.ExclAuth.agree H)
 
 @[rocq_alias box_own_auth_update]
 theorem box_own_auth_update {γ : SliceName} {b1 b2: Bool} (b3 : Bool) :
@@ -123,13 +123,12 @@ theorem box_own_auth_update {γ : SliceName} {b1 b2: Bool} (b3 : Bool) :
 
 @[rocq_alias box_own_agree]
 theorem box_own_agree (γ : SliceName) (Q1 Q2 : IProp GF) :
-    box_own_prop γ Q1 ∗ box_own_prop γ Q2 ⊢ ▷ internalEq Q1 Q2 := by
+    box_own_prop γ Q1 ∗ box_own_prop γ Q2 ⊢ ▷ (Q1 ≡ Q2) := by
   simp only [box_own_prop, ←iOwn_op.to_eq]
   iintro H
   icases iOwn_cmraValid $$ H with H
   icases (prod_validI _).mp $$ H with ⟨-, H⟩
   rw [option_validI.to_eq, ←(later_equivI ..).to_eq, ←(agree_equivI ..).to_eq]
-  -- TODO: Goal display is broken
   exact (agree_op_invI ..)
 
 @[rocq_alias box_alloc]
@@ -169,9 +168,9 @@ theorem slice_insert_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   · inext
     irewrite [Heq]
     · exact ⟨fun _ _ _ H => (NonExpansive₂.ne_left internalEq _).ne ((sep_ne.ne_right _ _).ne H)⟩
-    rw [(bigSepM_fn_insert_key hfresh).to_eq]; exact internalEq.refl
+    rw [bigSepM_fn_insert_key hfresh]; exact internalEq.refl
   · rw [(bigSepM_fn_insert (g := fun k b P' =>
-        iprop% box_own_auth k (◯E (⟨b⟩ : BoolO)) ∗ box_own_prop k P' ∗ inv N (slice_inv k P')) hfresh).to_eq]
+        iprop% box_own_auth k (◯E (⟨b⟩ : BoolO)) ∗ box_own_prop k P' ∗ inv N (slice_inv k P')) hfresh)]
     unfold box_own_prop box_own_auth; iframe H Hfrag Hprop Hinv
 
 @[rocq_alias slice_delete_empty]
@@ -180,7 +179,7 @@ theorem slice_delete_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     {γ : SliceName} {N : Namespace}
     (Hf : get? f γ = some false) :
     slice N γ Q ∗ ▷?q box N f P ⊢
-    |={E}=> ∃ P', ▷?q (▷ internalEq P iprop(Q ∗ P')) ∗ ▷?q (box N (delete f γ) P') := by
+    |={E}=> ∃ P', ▷?q (▷ (P ≡ iprop(Q ∗ P'))) ∗ ▷?q (box N (delete f γ) P') := by
   unfold slice box
   iintro ⟨⟨#Hprop, #Hinv⟩, %Φ, #Heq, Hbig⟩
   iexists iprop([∗map] γ' ↦ _x ∈ delete f γ, Φ γ')
@@ -281,7 +280,7 @@ theorem slice_delete_full {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     (HE : ↑N ⊆ E) (Hf : PartialMap.get? f γ = some true) :
     slice N γ Q ∗ (▷?q box N f P) ⊢
     |={E}=> ∃ P', ▷ Q ∗
-      (▷?q ▷ internalEq P iprop(Q ∗ P')) ∗ (▷?q box N (delete f γ) P') := by
+      (▷?q ▷ (P ≡ iprop(Q ∗ P'))) ∗ (▷?q box N (delete f γ) P') := by
   iintro ⟨#Hslice, Hbox⟩
   imod slice_empty HE Hf $$ [$Hslice $Hbox] with ⟨HQ, Hbox⟩
   imod slice_delete_empty (get?_insert_eq rfl) $$ [$Hslice $Hbox] with ⟨%P', #Heq, Hbox⟩
@@ -303,7 +302,7 @@ theorem box_fill {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   iintro ⟨⟨%Φ, #Heq, Hbig⟩, HP⟩
   iexists Φ
   isplitr
-  · rw [(bigSepM_map (f := fun x => true)).to_eq]
+  · rw [bigSepM_map (f := fun x => true)]
     iframe Heq
   · ihave Hiff : (▷ (P ↔ ([∗map] γ ↦ x ∈ f, Φ γ))) $$ []
     · inext; iapply internalEq_iff $$ Heq
@@ -311,8 +310,8 @@ theorem box_fill {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     icases Hif $$ HP with HP
     icases bigSepM_later $$ HP with HP
     icombine Hbig HP as Hbig
-    icases bigSepM_sep_eqv $$ Hbig with Hbig
-    rw [(bigSepM_map (f := fun x => true)).to_eq]
+    icases bigSepM_sep_eq $$ Hbig with Hbig
+    rw [bigSepM_map (f := fun x => true)]
     iapply bigSepM_fupd
     iapply bigSepM_impl $$ Hbig
     imodintro
@@ -335,7 +334,7 @@ theorem box_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   ihave >⟨HΦ, H⟩ : iprop(|={E}=> (([∗map] γ ↦ b ∈ f, ▷ Φ γ) ∗
     [∗map] γ ↦ b ∈ f, box_own_auth γ (◯E ⟨false⟩) ∗  box_own_prop γ (Φ γ) ∗
       inv N (slice_inv γ (Φ γ)))) $$ [Hbig]
-  · rw [←bigSepM_sep_eqv.to_eq]
+  · rw [←bigSepM_sep_eq]
     iapply bigSepM_fupd
     iapply bigSepM_impl $$ Hbig
     imodintro
@@ -356,10 +355,10 @@ theorem box_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
       icases internalEq_iff $$ Heq with ⟨-, Himpl⟩
       iapply Himpl $$ HΦ
     · iexists Φ
-      rw [(bigSepM_map (Φ := fun k _ => Φ k)).to_eq]
+      rw [bigSepM_map (Φ := fun k _ => Φ k)]
       isplit
       · inext; itrivial
-      · rw [bigSepM_map.to_eq]; itrivial
+      · rw [bigSepM_map]; itrivial
 
 @[rocq_alias slice_iff]
 theorem slice_iff {M : Type _ → Type _} [LawfulFiniteMap M SliceName]

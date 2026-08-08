@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Michael Sammler, Zongyuan Liu, Yunsong Yang
+Authors: Michael Sammler, Zongyuan Liu, Yunsong Yang, Alvin Tang
 -/
 module
 
@@ -47,7 +47,8 @@ instance : Inhabited (ProofModeM α) where
 
 /-- Create a new BI goal without registering it in the proof mode state. -/
 def mkBIGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
-    {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous) : ProofModeM Q($e ⊢ $goal) := do
+    {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous) :
+    ProofModeM Q($e ⊢ $goal) := do
   let m : Q($e ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
     IrisGoal.toExpr { prop, bi, hyps, goal, .. }
   m.mvarId!.setUserName name
@@ -55,17 +56,19 @@ def mkBIGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
 
 /-- Create a new BI goal with the given hypotheses and goal, and add it to the proof mode state. -/
 def addBIGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
-    {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous) : ProofModeM Q($e ⊢ $goal) := do
+    {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous) :
+    ProofModeM Q($e ⊢ $goal) := do
   let m ← mkBIGoal hyps goal name
   modify ({goals := ·.goals.push m.mvarId!})
   pure m
 
-/-- Run `k` in a context where `fvarIds` are removed from the context.
-The user should check whether the fvars can be cleared using `Hyps.checkRemovableFVar`.
-TODO: calling this function requires specifying `u`. Not clear why.
+/--
+  Run `k` in a context where `fvarIds` are removed from the context.
+  The user should check whether the fvars can be cleared using `Hyps.checkRemovableFVar`.
+  TODO: calling this function requires specifying `u`. Not clear why.
 -/
 def withoutFVars {α : Q(Sort u)} (fvarIds : Array FVarId) (k : ProofModeM Q($α)) :
-  ProofModeM Q($α) := do
+    ProofModeM Q($α) := do
   -- TODO: Is there a better way of doing this that does not require
   -- creating an mvar, using another function than MVarId.clear?
   let m := (← mkFreshExprSyntheticOpaqueMVar α).mvarId!
@@ -78,11 +81,15 @@ def withoutFVars {α : Q(Sort u)} (fvarIds : Array FVarId) (k : ProofModeM Q($α
   m.assign expr
   return expr
 
-/-- Create a new BI goal with the given hypotheses and goal, but without some fvars, and add it to the proof mode state.
-It is the responsibility of the user of this function to check that the variables to clear can actually be cleared (e.g. using
-`Hyps.checkRemovableFVar`). -/
+/--
+  Create a new BI goal with the given hypotheses and goal, but without some
+  fvars, and add it to the proof mode state. It is the responsibility of the
+  user of this function to check that the variables to clear can actually be
+  cleared (e.g. using `Hyps.checkRemovableFVar`).
+-/
 def addBIGoalWithoutFVars {prop : Q(Type u)} {bi : Q(BI $prop)}
-  {e} (hyps : Hyps bi e) (goal : Q($prop)) (toClear : Array FVarId) (name : Name := .anonymous) : ProofModeM Q($e ⊢ $goal) := do
+    {e} (hyps : Hyps bi e) (goal : Q($prop)) (toClear : Array FVarId)
+    (name : Name := .anonymous) : ProofModeM Q($e ⊢ $goal) := do
   withoutFVars (u:=0) toClear (addBIGoal hyps goal name)
 
 /-- Add an existing metavariable as a goal to the proof mode state if it is not already assigned or present. -/
@@ -95,6 +102,30 @@ def addMVarGoal (m : MVarId) (name : Name := .anonymous) : ProofModeM Unit := do
   if !name.isAnonymous then
     m.setUserName name
   modify ({goals := ·.goals.push m})
+
+/--
+  Creates a new proof goal with the given hypotheses (`hyps`), conclusion
+  (`goal`). Run a sequence of tactics with this proof goal and push all
+  subgoals into the proof state.
+
+  The function returns:
+  1. the metavariable of the initial goal,
+  2. a Boolean value indicating whether the `firstTactic` solves all goals,
+     `false` if `firstTactic` is `none`.
+-/
+def addBIGoalRunTactics {prop : Q(Type u)} {bi : Q(BI $prop)}
+    {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous)
+    (firstTactic : Option <| TSyntax `tactic)
+    (tacticSeq : TSyntax `Lean.Parser.Tactic.tacticSeq) :
+    ProofModeM (Q($e ⊢ $goal) × Bool) := do
+  let m ← mkBIGoal hyps goal name
+  -- Run `firstTactic`, if available
+  let subgoals ← firstTactic.elim (pure [m.mvarId!]) (evalTacticAt · m.mvarId!)
+  -- Run the user tactics on each newly generated goal after running `firstTactic`
+  let mut subgoals' := []
+  for s in subgoals do
+    subgoals' := subgoals'.append <| ← evalTacticAt tacticSeq s
+  pure (m, firstTactic.isSome && subgoals.isEmpty)
 
 /-- Try to synthesize a typeclass instance, adding any created metavariables as proof mode goals. -/
 def ProofModeM.trySynthInstanceQ (α : Q(Sort v)) : ProofModeM (Option Q($α)) := do
@@ -109,32 +140,52 @@ def ProofModeM.synthInstanceQ (α : Q(Sort v)) : ProofModeM Q($α) := do
   return e
 
 /-- Initialize proof mode for a metavariable, converting it to an Iris goal. -/
-def startProofMode (mvar : MVarId) : MetaM (MVarId × IrisGoal) := mvar.withContext do
+def startProofMode (mvar : MVarId) (customProp : Option Expr := none) :
+    MetaM (MVarId × IrisGoal) := mvar.withContext do
   -- parse goal
   let goal ← instantiateMVars <| ← mvar.getType
 
   -- check if already in proof mode
   if let some irisGoal := parseIrisGoal? goal then
+    if let some customProp := customProp then
+      unless ← isDefEq irisGoal.prop customProp do
+        throwError m!"istart: currently in the Iris Proof Mode with \
+          {irisGoal.prop} rather than {customProp}"
     return (mvar, irisGoal)
 
   let some goal ← checkTypeQ goal q(Prop)
     | throwError "type mismatch\n{← mkHasTypeButIsExpectedMsg (← inferType goal) q(Prop)}"
   let u ← mkFreshLevelMVar
   let prop ← mkFreshExprMVarQ q(Type u)
+
+  if let some customProp := customProp then
+    unless ← isDefEq prop customProp do
+      throwError "istart: {customProp} is not a valid BI instance type"
+
   let P ← mkFreshExprMVarQ q($prop)
   let bi ← mkFreshExprMVarQ q(BI $prop)
-  let .some (_, mvars) ← ProofMode.trySynthInstanceQ q(AsEmpValid .from $goal .out $prop .out $bi $P)
-    | throwError "istart: {goal} is not an emp valid"
-  if !mvars.isEmpty then throwError "istart does not support creating mvars"
+  let io : Q(InOut) := if customProp.isSome then q(.in) else q(.out)
+  let synthResult ← ProofMode.trySynthInstanceQ q(AsEmpValid .from $goal $io $prop $bi $P)
 
-  let irisGoal := { u, prop, bi, hyps := .mkEmp bi, goal := P, .. }
-  let subgoal : Quoted q(⊢ $P) ←
-    mkFreshExprSyntheticOpaqueMVar (IrisGoal.toExpr irisGoal) (← mvar.getTag)
-  mvar.assign q(asEmpValid_2 $goal $subgoal)
-  pure (subgoal.mvarId!, irisGoal)
+  match synthResult, customProp with
+  | .some (inst, mvars), _ =>
+    if !mvars.isEmpty then throwError "istart does not support creating mvars"
+    let irisGoal := { u, prop, bi, hyps := .mkEmp bi, goal := P, .. }
+    let subgoal : Quoted q(⊢ $P) ←
+      mkFreshExprSyntheticOpaqueMVar (IrisGoal.toExpr irisGoal) (← mvar.getTag)
+    mvar.assign q(asEmpValid_2 $goal $inst $subgoal)
+    pure (subgoal.mvarId!, irisGoal)
+  | _, none =>
+    throwError "istart: {goal} is not an emp valid"
+  | _, some _ =>
+    throwError "istart: {goal} is not an emp valid in {customProp}"
 
-/-- Run a ProofModeM computation on the main goal, ordering resulting goals with dependencies last. -/
-def ProofModeM.runTactic (x : MVarId → IrisGoal → ProofModeM α) (s : ProofModeM.State := {}) : TacticM α := do
+/--
+  Run a ProofModeM computation on the main goal, ordering resulting goals with
+  dependencies last.
+-/
+def ProofModeM.runTactic (x : MVarId → IrisGoal → ProofModeM α)
+    (s : ProofModeM.State := {}) : TacticM α := do
   let (mvar, g) ← startProofMode (← getMainGoal)
   mvar.withContext do
 
