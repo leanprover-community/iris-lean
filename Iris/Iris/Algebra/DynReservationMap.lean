@@ -205,8 +205,9 @@ theorem valid_infinite {x : DynReservationMap A H} (h : x.Valid) :
 theorem valid_disj {x : DynReservationMap A H} (h : x.Valid) (i : Pos) :
     get? x.data i = none ∨ i ∉ x.token := (valid_iff.mp h).right.right.right i
 
-@[rocq_alias dyn_reservation_map_pcore_instance]
 def core (x : DynReservationMap A H) : DynReservationMap A H := mk (CMRA.core x.data) ∅
+
+#rocq_ignore dyn_reservation_map_pcore_instance "Use CMRA core instead"
 
 @[simp]
 theorem core_data (x : DynReservationMap A H) : x.core.data = CMRA.core x.data := rfl
@@ -242,7 +243,7 @@ theorem infinite_op_left {x y : DynReservationMap A H} (vt : ✓{n} (x.token •
 #rocq_ignore dyn_reservation_map_cmra_mixin "Not needed"
 #rocq_ignore dyn_reservation_map_ucmra_mixin "Not needed"
 #rocq_ignore dyn_reservation_mapR "Derivable using UCMRA"
-#rocq_ignore dyn_reservation_map_empty_instance "Part of UCMRA instance (unit field)"
+#rocq_ignore dyn_reservation_map_empty_instance "Part of UCMRA instance"
 
 @[rocq_alias dyn_reservation_mapUR]
 instance instUCMRADynReservationMap : UCMRA (DynReservationMap A H) where

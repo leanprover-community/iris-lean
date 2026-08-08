@@ -308,13 +308,10 @@ theorem op_token (x y : ReservationMap A H): (x • y).token = x.token • y.tok
 theorem included_iff {x y : ReservationMap A H} :
     x ≼ y ↔ x.data ≼ y.data ∧ x.token ≼ y.token := by
   constructor
-  · rintro ⟨z, rfl⟩
-    exact ⟨⟨z.data, rfl⟩, ⟨z.token, rfl⟩⟩
-  · rintro ⟨⟨z₁, hz₁⟩, ⟨z₂, hz₂⟩⟩
-    refine ⟨mk z₁ z₂, ?_⟩
-    obtain ⟨yd, yt⟩ := y
-    subst hz₁ hz₂
-    rfl
+  · exact fun ⟨z, H⟩ => ⟨⟨z.data, H ▸ rfl⟩, ⟨z.token, H ▸ rfl⟩⟩
+  · obtain ⟨yd, yt⟩ := y
+    rintro ⟨⟨z₁, rfl⟩, ⟨z₂, rfl⟩⟩
+    exact ⟨mk z₁ z₂, rfl⟩
 
 @[rocq_alias reservation_map_cmra_discrete]
 instance [CMRA.Discrete A] : CMRA.Discrete (ReservationMap A H) where
@@ -324,7 +321,7 @@ instance [CMRA.Discrete A] : CMRA.Discrete (ReservationMap A H) where
     · exact validN_token_of_validN v
     · exact validN_disj v
 
-#rocq_ignore reservation_map_empty_instance "Part of UCMRA instance (unit field)"
+#rocq_ignore reservation_map_empty_instance "Part of UCMRA instance"
 
 @[rocq_alias reservation_map_data_core_id]
 instance instCoreIdSingleton {a : A} [CoreId a] : CoreId (singleton (H := H) k a) where
