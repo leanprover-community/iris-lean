@@ -55,6 +55,8 @@ open OFE
 variable [LawfulPartialMap H Pos] [OFE A]
 
 #rocq_ignore dyn_reservation_map_ofe_mixin "Not needed"
+#rocq_ignore dyn_reservation_map_equiv "Part of OFE instance"
+#rocq_ignore dyn_reservation_map_dist "Part of OFE instance"
 
 @[rocq_alias dyn_reservation_mapO]
 instance : OFE (DynReservationMap A H) where
@@ -77,6 +79,18 @@ instance instDiscreteDynReservationMap [Discrete A] : Discrete (DynReservationMa
     intro n
     exact ⟨(discrete_0 h.left).dist, (discrete_0 h.right).dist⟩
 
+@[rocq_alias DynReservationMap_ne]
+instance instNonExpansive₂DynReservationMapMk :
+    NonExpansive₂ (DynReservationMap.mk (H := H) (A := A)) where
+  ne _ _ _ hd _ _ ht := ⟨hd, ht⟩
+
+@[rocq_alias dyn_reservation_map_data_proj_ne]
+instance instNonExpansiveDynReservationMapDataProj :
+    NonExpansive (DynReservationMap.data (H := H) (A := A)) where
+  ne _ _ _ h := h.left
+
+#rocq_ignore DynReservationMap_proper "Derivable using NonExpansive.eqv"
+#rocq_ignore dyn_reservation_map_data_proj_proper "Derivable using NonExpansive.eqv"
 #rocq_ignore dyn_reservation_map_data_proper "Derivable using NonExpansive.eqv"
 
 @[rocq_alias dyn_reservation_map_data_ne]
@@ -113,15 +127,20 @@ section
 
 variable [LawfulPartialMap H Pos] [CMRA A]
 
+@[rocq_alias dyn_reservation_map_validN_instance]
 def ValidN (n : Nat) (x : DynReservationMap A H) : Prop :=
   match x.token with
   | .valid e => ✓{n} x.data ∧ setInfinite (⊤ \ e) ∧ ∀ i, get? x.data i = none ∨ i ∉ e
   | .error => False
 
+@[rocq_alias dyn_reservation_map_valid_instance]
 def Valid (x : DynReservationMap A H) : Prop :=
   match x.token with
   | .valid e => ✓ x.data ∧ setInfinite (⊤ \ e) ∧ ∀ i, get? x.data i = none ∨ i ∉ e
   | .error => False
+
+#rocq_ignore dyn_reservation_map_valid_eq "Definitional unfolding of Valid"
+#rocq_ignore dyn_reservation_map_validN_eq "Definitional unfolding of ValidN"
 
 /-- The complement of the token's mask `e` is infinite, i.e. there are always infinitely many keys
 still available to reserve. This is a validity requirement of `DynReservationMap`. -/
@@ -186,6 +205,7 @@ theorem valid_infinite {x : DynReservationMap A H} (h : x.Valid) :
 theorem valid_disj {x : DynReservationMap A H} (h : x.Valid) (i : Pos) :
     get? x.data i = none ∨ i ∉ x.token := (valid_iff.mp h).right.right.right i
 
+@[rocq_alias dyn_reservation_map_pcore_instance]
 def core (x : DynReservationMap A H) : DynReservationMap A H := mk (CMRA.core x.data) ∅
 
 @[simp]
@@ -194,6 +214,7 @@ theorem core_data (x : DynReservationMap A H) : x.core.data = CMRA.core x.data :
 @[simp]
 theorem core_token (x : DynReservationMap A H) : x.core.token = CMRA.core x.token := rfl
 
+@[rocq_alias dyn_reservation_map_op_instance]
 def op (x y : DynReservationMap A H) : DynReservationMap A H :=
   mk (x.data • y.data) (x.token • y.token)
 
@@ -221,6 +242,7 @@ theorem infinite_op_left {x y : DynReservationMap A H} (vt : ✓{n} (x.token •
 #rocq_ignore dyn_reservation_map_cmra_mixin "Not needed"
 #rocq_ignore dyn_reservation_map_ucmra_mixin "Not needed"
 #rocq_ignore dyn_reservation_mapR "Derivable using UCMRA"
+#rocq_ignore dyn_reservation_map_empty_instance "Part of UCMRA instance (unit field)"
 
 @[rocq_alias dyn_reservation_mapUR]
 instance instUCMRADynReservationMap : UCMRA (DynReservationMap A H) where
