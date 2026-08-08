@@ -121,9 +121,9 @@ instance instFractionalPointsTo : Fractional (l ↦{.own ·} v) :=
   inferInstanceAs (Fractional (heapName ↪◯MAP[l]{.own ·} v))
 
 @[rocq_alias pointsto_as_fractional]
-instance instAsFractionalPointsTo : AsFractional (l ↦{.own q} v) (l ↦{.own ·} v) q :=
+instance instAsFractionalPointsTo : AsFractional (l ↦{.own q} v) ioΦ (l ↦{.own ·} v) ioq q :=
   inferInstanceAs
-    (AsFractional (heapName ↪◯MAP[l]{.own q} v) (heapName ↪◯MAP[l]{.own ·} v) q)
+    (AsFractional (heapName ↪◯MAP[l]{.own q} v) ioΦ (heapName ↪◯MAP[l]{.own ·} v) ioq q)
 
 @[rocq_alias pointsto_valid]
 theorem pointsTo_cmraValid : l ↦{dq} v ⊢@{IProp GF} ⌜✓ dq⌝ := by

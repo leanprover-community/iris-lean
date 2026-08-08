@@ -9,6 +9,10 @@ public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
 
+public section
+
+#rocq_ignore tac_rename "No needed as Expr.lean provides the infrastructure"
+
 public meta section
 open Lean Elab Tactic Qq
 
