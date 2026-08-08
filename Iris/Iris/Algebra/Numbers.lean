@@ -40,7 +40,8 @@ namespace CommMonoidLike
 
 open Iris Iris.OFE Add Zero One Associative Commutative LawfulLeftIdentity CMRA
 
-variable [OFE Nat α] [Discrete α]
+local stepindex Nat
+variable [OFE α] [OFE.Discrete α]
 variable [Add α] [Associative (add (α := α))] [Commutative (add (α := α))]
 variable [Zero α] [LawfulLeftIdentity (add (α := α)) zero]
 variable {x y x' y' : α}
@@ -132,7 +133,8 @@ namespace OrdCommMonoidLike
 
 open Iris Iris.OFE Add Zero One Associative Commutative LawfulLeftIdentity CMRA IdempotentOp
 
-variable [OFE Nat α] [OFE.Discrete α]
+local stepindex Nat
+variable [OFE α] [OFE.Discrete α]
 variable [Add α] [Associative (add (α := α))] [Commutative (add (α := α))]
 variable [IdempotentOp (add (α := α))]
 variable [Zero α]
@@ -226,7 +228,8 @@ namespace PosCommMonoidLike
 
 open Iris Iris.OFE Add Zero One Associative Commutative LawfulLeftIdentity CMRA IdempotentOp
 
-variable [OFE Nat α] [Discrete α]
+local stepindex Nat
+variable [OFE α] [Discrete α]
 variable [Add α] [Associative (add (α := α))] [Commutative (add (α := α))]
 variable [IdempotentOp (add (α := α))]
 

@@ -19,7 +19,8 @@ namespace Iris
 
 open BI CMRA OFE Iris Std LawfulSet DisjointLeibnizSet COFE ProofMode
 
-abbrev NaInvF : OFunctorPre Nat :=
+local stepindex Nat
+abbrev NaInvF : OFunctorPre :=
   ProdOF (constOF CoPsetDisjL) (constOF (DisjointLeibnizSet PosSet))
 
 @[rocq_alias na_invG]

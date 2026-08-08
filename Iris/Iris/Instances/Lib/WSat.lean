@@ -87,6 +87,7 @@ def wsat : IProp GF := iprop(
 
 #rocq_ignore invariant_unfold_contractive "Only needed for ownI_contractive which is proved directly"
 
+local stepindex Nat
 @[rocq_alias ownI_contractive]
 instance (i : Pos) : Contractive (ownI (W := W) i) where
   distLater_dist h := by

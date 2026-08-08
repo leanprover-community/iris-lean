@@ -294,6 +294,7 @@ theorem loeb_alt_wand [BIAffine PROP] :
 
 /-! # LaterN -/
 
+local stepindex Nat
 @[rocq_alias bi.laterN_ne]
 theorem laterN_ne (n : Nat) : OFE.NonExpansive (BIBase.laterN (PROP:=PROP) n) where
   ne := by

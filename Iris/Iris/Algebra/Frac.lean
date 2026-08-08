@@ -32,6 +32,7 @@ theorem mul_div_cancel_left {a b : Rat} (ha : a ≠ 0) : a * (b / a) = b := by
 end Rat
 
 namespace Iris
+local stepindex Nat
 
 /-- The type of positive rational numbers, used as fractions -/
 @[rocq_alias fracO, rocq_alias fracR]
@@ -62,7 +63,7 @@ instance instHDivQpQpQp : HDiv Qp Qp Qp where
 def Qp.divide_even (q : Qp) (n : Nat) (hn : 0 < n) : Qp :=
   ⟨q.val / n, Rat.div_pos q.2 (by exact_mod_cast hn)⟩
 
-instance instCOFEQp : COFE Nat Qp := COFE.ofDiscrete _
+instance instCOFEQp : COFE Qp := COFE.ofDiscrete _
 
 instance instCMRAQp : CMRA Qp where
   pcore _ := none

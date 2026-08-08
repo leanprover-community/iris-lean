@@ -18,6 +18,7 @@ section MaxNat
 
 abbrev MaxNat := Nat
 
+local stepindex Nat
 scoped instance : Add MaxNat := ⟨max⟩
 scoped instance : Associative (Add.add (α := MaxNat)) where
   assoc := Nat.max_assoc
@@ -28,7 +29,7 @@ scoped instance : LawfulLeftIdentity (Add.add (α := MaxNat)) (0 : MaxNat) where
   left_id := Nat.zero_max
 scoped instance : Std.IdempotentOp (Add.add (α := MaxNat)) where
   idempotent x := by simp [Add.add]
-scoped instance : COFE Nat MaxNat := COFE.ofDiscrete _
+scoped instance : COFE MaxNat := COFE.ofDiscrete _
 scoped instance : OFE.Discrete MaxNat := ⟨fun h => h⟩
 scoped instance : UCMRA MaxNat := OrdCommMonoidLike.instUCMRAOfLawfulLeftIdentityAddZero
 scoped instance : CMRA.Discrete MaxNat := OrdCommMonoidLike.instDiscrete
@@ -50,6 +51,7 @@ notation "●MN " n => auth (DFrac.own 1) n
 notation "●MN□ " n => auth DFrac.discard n
 notation "◯MN " n => lb n
 
+local stepindex Nat
 scoped instance : OFE.DiscreteE (◯MN n : MonoNat) := Auth.frag_discrete
 scoped instance : OFE.DiscreteE (●MN{dq} n : MonoNat) :=
   ⟨fun h => OFE.discrete h⟩

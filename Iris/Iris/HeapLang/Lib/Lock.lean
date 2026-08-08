@@ -57,6 +57,7 @@ instance instPersistentLockIsLock  γ v R : Persistent (lk.isLock N γ v R) :=
 instance instTimelessLockLocked  γ : Timeless (lk.locked N γ) :=
   lk.locked_timeless γ
 
+local stepindex Nat
 theorem isLock_contractive γ v : OFE.Contractive (lk.isLock N γ v) := by
   rw [contractive_internalEq (PROP := IProp GF)]
   iintro %x₁ %x₂ #HEQ

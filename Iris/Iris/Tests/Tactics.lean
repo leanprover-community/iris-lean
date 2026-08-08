@@ -2336,9 +2336,10 @@ example [BI PROP] (P : PROP) : P ⊢ P := by
 
 end inext
 
+local stepindex Nat
 section irewrite
 variable {PROP : Type _} [Sbi PROP]
-variable {A B : Type _} [OFE Nat A] [OFE Nat B]
+variable {A B : Type _} [OFE A] [OFE B]
 
 /- Tests `irewrite` rewriting in goal -/
 example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P a)] :

@@ -133,6 +133,7 @@ def Frag (k : K) (dq : DFrac) (v : V) : HeapView K V H := ◯V (Std.PartialMap.s
 /-- Fragmental (fractional) ownership over an element in the heap. -/
 def Elem (k : K) (v : DFrac × V) : HeapView K V H := ◯V (Std.PartialMap.singleton k v)
 
+local stepindex Nat
 -- TODO: Do we need this?
 instance : NonExpansive (Auth dq : _ → HeapView K V H) := View.auth_ne
 
@@ -497,7 +498,7 @@ section heapViewFunctor
 
 open Iris.Std PartialMap
 
-theorem heapR_map_eq [COFE Nat A] [COFE Nat B] [COFE Nat A'] [COFE Nat B'] [RFunctor T] (f : A' -n> A) (g : B -n> B')
+theorem heapR_map_eq [COFE A] [COFE B] [COFE A'] [COFE B'] [RFunctor T] (f : A' -n> A) (g : B -n> B')
     (n : Nat) (m : H (T A B)) (mv : H (DFrac × T A B)) :
     HeapR K (T A B) H n m mv →
     HeapR K (T A' B') H n
@@ -529,7 +530,7 @@ theorem heapR_map_eq [COFE Nat A] [COFE Nat B] [COFE Nat A'] [COFE Nat B'] [RFun
       · simp_all
       · exact (Hom.monoN _ _ he)
 
-abbrev HeapViewURF T [RFunctor T] : COFE.OFunctorPre Nat :=
+abbrev HeapViewURF T [RFunctor T] : COFE.OFunctorPre :=
   fun A B _ _ => HeapView K (T A B) H
 
 instance {T} [RFunctor T] : URFunctor (HeapViewURF (H := H) T) where

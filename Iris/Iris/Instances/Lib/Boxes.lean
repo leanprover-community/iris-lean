@@ -23,7 +23,8 @@ abbrev BoolO := DiscreteO Bool
 
 variable (GF : BundledGFunctors)
 
-abbrev BoxF : OFunctorPre Nat :=
+local stepindex Nat
+abbrev BoxF : OFunctorPre :=
   ProdOF (AuthURF (OptionOF (ExclOF (constOF BoolO))))
     (OptionOF (AgreeRF (LaterOF IdOF)))
 

@@ -109,7 +109,8 @@ def later (P : SiProp) : SiProp where
 @[rocq_alias siProp_entails]
 def entails (P Q : SiProp) : Prop := ∀ n, P.holds n → Q.holds n
 
-instance : OFE Nat SiProp where
+local stepindex Nat
+instance : OFE SiProp where
   Dist n P Q := ∀ {m}, m ≤ n → (P.holds m ↔ Q.holds m)
   dist_eqv.refl _ _ _ := Iff.rfl
   dist_eqv.symm h _ hle := (h hle).symm
@@ -125,7 +126,7 @@ instance : OFE Nat SiProp where
 #rocq_ignore siProp_ofe_mixin "Not needed in Lean."
 
 @[rocq_alias siProp_cofe]
-instance : IsCOFE Nat SiProp where
+instance : IsCOFE SiProp where
   compl c := {
     holds n := (c n).holds n
     closed {n₁ _} h hle := (c.cauchy hle .refl).mp (c n₁ |>.closed h hle)
@@ -287,7 +288,7 @@ instance instPersistent (P : SiProp) : Persistent P where
 /-! ## Internal equality -/
 
 @[rocq_alias siProp_internal_eq]
-def internalEq [OFE Nat A] (a₁ a₂ : A) : SiProp where
+def internalEq [OFE A] (a₁ a₂ : A) : SiProp where
   holds n := a₁ ≡{n}≡ a₂
   closed h hle := Dist.le h hle
 
@@ -296,17 +297,17 @@ def internalEq [OFE Nat A] (a₁ a₂ : A) : SiProp where
 #rocq_ignore siProp_internal_eq_unseal "Not needed in Lean."
 
 @[rocq_alias siProp_primitive.internal_eq_ne]
-instance instNonExpansive₂InternalEq [OFE Nat A] : NonExpansive₂ (internalEq (A := A)) where
+instance instNonExpansive₂InternalEq [OFE A] : NonExpansive₂ (internalEq (A := A)) where
   ne _ _ _ h₁ _ _ h₂ _ hle :=
     ⟨fun heq => (Dist.le h₁ hle).symm.trans (heq.trans (Dist.le h₂ hle)),
      fun heq => (Dist.le h₁ hle).trans (heq.trans (Dist.le h₂ hle).symm)⟩
 
 @[rocq_alias siProp_primitive.internal_eq_refl]
-theorem internalEq_refl [OFE Nat A] (P : SiProp) (a : A) : P ⊢ internalEq a a :=
+theorem internalEq_refl [OFE A] (P : SiProp) (a : A) : P ⊢ internalEq a a :=
   fun _ _ => Dist.rfl
 
 @[rocq_alias siProp_primitive.internal_eq_rewrite]
-theorem internalEq_rewrite [OFE Nat A] (a b : A) (Ψ : A → SiProp) [HΨ : NonExpansive Ψ] :
+theorem internalEq_rewrite [OFE A] (a b : A) (Ψ : A → SiProp) [HΨ : NonExpansive Ψ] :
     internalEq a b ⊢ Ψ a → Ψ b :=
   fun _ hab _ hle => (HΨ.ne (.le hab hle) .refl).mp
 
@@ -315,7 +316,7 @@ theorem prop_ext (P Q : SiProp) : (P → Q) ∧ (Q → P) ⊢ internalEq P Q :=
   fun _ ⟨hPQ, hQP⟩ n' hle => ⟨hPQ n' hle, hQP n' hle⟩
 
 @[rocq_alias siProp_primitive.internal_eq_entails]
-theorem internalEq_entails [OFE Nat A] [OFE Nat B] (a₁ a₂ : A) (b₁ b₂ : B) :
+theorem internalEq_entails [OFE A] [OFE B] (a₁ a₂ : A) (b₁ b₂ : B) :
     (internalEq a₁ a₂ ⊢ internalEq b₁ b₂) ↔ (∀ n, a₁ ≡{n}≡ a₂ → b₁ ≡{n}≡ b₂) :=
   Iff.rfl
 
@@ -325,24 +326,24 @@ theorem fun_ext_internalEq [OFEFun (B : A → _)] (g₁ g₂ : (x : A) → B x) 
   fun _ h x => h _ ⟨x, rfl⟩
 
 @[rocq_alias siProp_primitive.sig_equivI_1]
-theorem sig_equiv_internalEq [OFE Nat A] (P : A → Prop) (x y : { a : A // P a }) :
+theorem sig_equiv_internalEq [OFE A] (P : A → Prop) (x y : { a : A // P a }) :
     internalEq x.val y.val ⊢ internalEq x y :=
   fun _ => id
 
 @[rocq_alias siProp_primitive.discrete_eq_1]
-theorem discrete_eq_internalEq [OFE Nat A] (a b : A) [Idisc : Std.TCOr (DiscreteE a) (DiscreteE b)] :
+theorem discrete_eq_internalEq [OFE A] (a b : A) [Idisc : Std.TCOr (DiscreteE a) (DiscreteE b)] :
     internalEq a b ⊢ ⌜a = b⌝ := by
   cases Idisc with
   | l => exact fun _ hab => DiscreteE.discrete (hab.le (Nat.zero_le _))
   | r => exact fun _ hab => (DiscreteE.discrete (hab.le (Nat.zero_le _)).symm).symm
 
 @[rocq_alias siProp_primitive.later_equivI_1]
-theorem later_equiv_internalEq_mp [OFE Nat A] (x y : A) :
+theorem later_equiv_internalEq_mp [OFE A] (x y : A) :
     internalEq (Later.next x) (Later.next y) ⊢ ▷ internalEq x y :=
   fun n h => match n with | .zero => trivial | .succ n => h n n.lt_succ_self
 
 @[rocq_alias siProp_primitive.later_equivI_2]
-theorem later_equiv_internalEq_mpr [OFE Nat A] (x y : A) :
+theorem later_equiv_internalEq_mpr [OFE A] (x y : A) :
     ▷ internalEq x y ⊢ internalEq (Later.next x) (Later.next y) := by
   intro n hP m hlt
   cases n with
@@ -397,7 +398,7 @@ instance cmraValid_timeless [CMRA A] [CMRA.Discrete A] {a : A} :
 theorem pure_soundness {φ : Prop} (h : True ⊢@{SiProp} ⌜φ⌝) : φ := h 0 trivial
 
 @[rocq_alias siProp_primitive.internal_eq_soundness]
-theorem internalEq_soundness [OFE Nat A] {x y : A} (h : True ⊢@{SiProp} internalEq x y) : x = y :=
+theorem internalEq_soundness [OFE A] {x y : A} (h : True ⊢@{SiProp} internalEq x y) : x = y :=
   OFE.eq_dist.mpr fun n => h n trivial
 
 @[rocq_alias siProp_primitive.later_soundness]

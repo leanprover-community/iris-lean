@@ -80,7 +80,8 @@ theorem map'_sameElems {f : α → β} {x y : Raw α} (h : SameElems x y) :
     obtain ⟨b, hb, rfl⟩ := ha
     exact ⟨b, by first | exact h.1 _ hb | exact h.2 _ hb, rfl⟩
 
-variable [OFE Nat α]
+local stepindex Nat
+variable [OFE α]
 
 def dist (n : Nat) (x y : Raw α) : Prop :=
   (∀ a ∈ x.car, ∃ b ∈ y.car, a ≡{n}≡ b) ∧
@@ -227,7 +228,7 @@ theorem toAgree_uninj {x : Raw α} : x.valid → ∃ a, ∀ n, dist n (toAgree a
   · exists a; simp_all [toAgree]
   · simp_all [toAgree]
 
-variable [OFE Nat β] {f : α → β}
+variable [OFE β] {f : α → β}
 
 theorem map'_ne [OFE.NonExpansive f] {x₁ x₂ : Raw α} (h : dist n x₁ x₂) :
     dist n (map' f x₁) (map' f x₂) := by
@@ -347,14 +348,15 @@ end Agree
 
 namespace Agree
 
-variable [OFE Nat α] [OFE Nat β]
+local stepindex Nat
+variable [OFE α] [OFE β]
 
 @[rocq_alias agree_dist]
 def dist (n : Nat) : Agree α → Agree α → Prop :=
   lift₂ (Raw.dist n) (fun _ _ _ _ hac hbd => propext (Raw.dist_congr hac hbd))
 
 @[rocq_alias agree_ofe_mixin]
-instance instOFE : OFE Nat (Agree α) where
+instance instOFE : OFE (Agree α) where
   Dist := dist
   dist_eqv := by
     refine ⟨Quotient.ind fun a => Raw.dist_equiv.refl a, fun {x y} h => ?_, fun {x y z} h₁ h₂ => ?_⟩
@@ -524,7 +526,8 @@ theorem toAgree_def {a : α} : toAgree a = Agree.mk (Agree.Raw.toAgree a) := rfl
 
 section
 
-variable [OFE Nat α]
+local stepindex Nat
+variable [OFE α]
 
 @[rocq_alias to_agree_ne]
 instance instNonExpansive_toAgree : OFE.NonExpansive (@toAgree α) where
@@ -610,7 +613,7 @@ end Agree
 @[rocq_alias to_agree_op_valid_L]
 theorem toAgree_op_valid_iff_eq {a : α} :
     ✓ (toAgree a • toAgree b) ↔ a = b := by
-  rw [OFE.eq_dist]
+  rw [(OFE.eq_dist (SI := Nat))]
   simp [CMRA.valid_iff_validN, Agree.toAgree_op_validN_iff_dist]
 
 #rocq_ignore to_agree_op_inv_L "Use toAgree_op_valid_iff_eq"
@@ -640,7 +643,8 @@ theorem Agree.map'_compose {f : α → β} {g : β → γ} (x : Agree α) :
     Agree.map' (g ∘ f) x = Agree.map' g (Agree.map' f x) :=
   x.ind fun _ => congrArg mk (Raw.ext (by simp [Raw.map'_car, List.map_map]))
 
-variable {α β γ : Type _} [OFE Nat α] [OFE Nat β] [OFE Nat γ] {f : α → β} [hne : OFE.NonExpansive f]
+local stepindex Nat
+variable {α β γ : Type _} [OFE α] [OFE β] [OFE γ] {f : α → β} [hne : OFE.NonExpansive f]
 
 @[rocq_alias agree_map_ne]
 instance instNonExpansive_AgreeMap' : OFE.NonExpansive (Agree.map' f) where
@@ -693,11 +697,12 @@ end agree_map
 
 section agree_rfunctor
 
+local stepindex Nat
 @[rocq_alias agreeRF]
-abbrev AgreeRF (F : COFE.OFunctorPre Nat) : COFE.OFunctorPre Nat :=
+abbrev AgreeRF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
   fun A B _ _ => Agree (F A B)
 
-instance {F} [COFE.OFunctor Nat F] : RFunctor (AgreeRF F) where
+instance {F} [COFE.OFunctor F] : RFunctor (AgreeRF F) where
   map f g := Agree.map (COFE.OFunctor.map f g)
   map_ne.ne _ _ _ Hx _ _ Hy _ := Agree.map_ne <| COFE.OFunctor.map_ne.ne Hx Hy
   map_id x := by
@@ -708,7 +713,7 @@ instance {F} [COFE.OFunctor Nat F] : RFunctor (AgreeRF F) where
     exact Agree.agree_map_ext (fun a => COFE.OFunctor.map_comp f g f' g' a)
 
 @[rocq_alias agreeRF_contractive]
-instance {F} [COFE.OFunctorContractive Nat F] : RFunctorContractive (AgreeRF F) where
+instance {F} [COFE.OFunctorContractive F] : RFunctorContractive (AgreeRF F) where
   map_contractive.1 H _ := Agree.map_ne (COFE.OFunctorContractive.map_contractive.1 H)
 
 end agree_rfunctor

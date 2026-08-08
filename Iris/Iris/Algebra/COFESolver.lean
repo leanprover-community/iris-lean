@@ -275,7 +275,7 @@ def Tower.isoAux : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
   inv.ne.1 n _ _ h := by
     refine conv_compl.trans <| .trans ?_ conv_compl.symm
     exact (map ..).ne.1 (h (n+1))
-  hom_inv {X} := OFE.eq_dist.mpr fun n => by
+  hom_inv {X} := (OFE.eq_dist (SI := Nat)).mpr fun n => by
     intro k
     refine ((down ..).ne.1 (.trans ?_ (X.downN n).dist)).trans X.down.dist
     refine ((map ..).ne.1 (conv_compl.trans
@@ -304,7 +304,7 @@ def Tower.isoAux : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
         refine (map_comp _ _ _ _ _).dist.trans <|
           (ih (Nat.succ.inj e) _).trans (congrArg (fun a => (downN ..) a) ?_).dist
         exact (down_eqToHom _).symm
-  inv_hom := OFE.eq_dist.mpr fun n => by
+  inv_hom := (OFE.eq_dist (SI := Nat)).mpr fun n => by
     refine (conv_compl' n.le_succ).trans ?_
     dsimp [unfoldChain]; rw [down]
     refine ((map_comp _ _ _ _ _).trans

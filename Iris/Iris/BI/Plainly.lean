@@ -416,8 +416,9 @@ instance wand_persistent [Plain P] [Persistent Q] [Absorbing Q] :
     _ ⊢ <pers> (■ P -∗ Q) := persistently_mono (wand_intro_left (sep_and.trans imp_elim_right))
     _ ⊢ <pers> (P -∗ Q)   := persistently_mono (wand_mono plain .rfl)
 
+local stepindex Nat
 @[rocq_alias limit_preserving_Plain]
-theorem limitPreserving_plain {A} [COFE Nat A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
+theorem limitPreserving_plain {A} [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
   LimitPreserving (fun x => Plain (Φ x)) := by
     letI _ : OFE.NonExpansive fun x => iprop(■ Φ x) := .comp inferInstance Φne
     refine ⟨fun c h => ⟨?_⟩, fun hn _ _ => absurd hn (SIdx.limit_finite _)⟩
@@ -722,7 +723,7 @@ instance plainly_timeless (P : PROP) [Timeless P] : Timeless iprop(■ P) :=
   inferInstanceAs (Timeless iprop(<si_pure> <si_emp_valid> P))
 
 @[rocq_alias plainly_internal_eq]
-theorem plainly_internalEq {A} [OFE Nat A] {a b : A} :
+theorem plainly_internalEq {A} [OFE A] {a b : A} :
     iprop(■ (a ≡ b) ⊣⊢@{PROP} a ≡ b) := by
   refine ⟨plainly_elim, ?_⟩
   have : OFE.NonExpansive (β := PROP) (λ x ↦ iprop(■ (a ≡ x))) :=  {
@@ -736,7 +737,7 @@ theorem plainly_internalEq {A} [OFE Nat A] {a b : A} :
     _ ⊢ ■ (a ≡ a) := plainly_mono internalEq.refl
 
 @[rocq_alias internal_eq_plain]
-instance internalEq_plain {A} [OFE Nat A] (a b : A) : Plain (PROP := PROP) iprop(a ≡ b) where
+instance internalEq_plain {A} [OFE A] (a b : A) : Plain (PROP := PROP) iprop(a ≡ b) where
   plain := plainly_internalEq |>.2
 
 @[rocq_alias prop_ext]

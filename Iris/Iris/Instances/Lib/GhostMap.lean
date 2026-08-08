@@ -274,6 +274,7 @@ theorem ghost_map_auth_valid γ (dq : DFrac) (m : H V) :
   iintro %H; ipureintro
   apply auth_valid_iff.mp H
 
+local stepindex Nat
 @[rocq_alias ghost_map_auth_valid_2]
 theorem ghost_map_auth_valid_2 {γ} {dq1 dq2 : DFrac} {m1 m2 : H V} :
     ⊢@{IProp GF} (γ ↪●MAP{dq1} m1) -∗ (γ ↪●MAP{dq2} m2) -∗ ⌜✓ (dq1 • dq2) ∧ m1 = m2⌝ := by

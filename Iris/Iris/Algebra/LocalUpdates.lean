@@ -146,6 +146,7 @@ theorem local_update_unital_discrete [CMRA.Discrete α] (x y x' y' : α) :
     have ⟨vx', e'⟩ := h z ((CMRA.valid_iff_validN' n).mpr vnx) (OFE.discrete e)
     exact ⟨vx'.validN, e'.dist⟩
 
+local stepindex Nat
 @[rocq_alias cancel_local_update_unit]
 theorem cancel_local_update_unit (x y : α) [CMRA.Cancelable x] : (x • y, x) ~l~> (y, CMRA.unit) :=
   have e : (x • y, x • CMRA.unit) = (x • y, x) :=

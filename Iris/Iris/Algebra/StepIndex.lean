@@ -83,6 +83,17 @@ to install two default step indices in the same scope.
 syntax (name := stepindexCmd)
   Term.attrKind "stepindex " ("(" &"inst" " := " term ")")? term : command
 
+open Lean Elab Command in
+private meta def mkModuleUniqueName (base : String) : CommandElabM Name := do
+  let ns ← getCurrNamespace
+  let stem := base ++ "_" ++ (← getMainModule).toString.replace "." "_"
+  let mut nm := Name.mkSimple stem
+  let mut i := 0
+  while (← getEnv).contains (ns ++ nm) do
+    i := i + 1
+    nm := Name.mkSimple s!"{stem}_{i}"
+  return nm
+
 open Lean Elab Command Meta in
 private meta def stepindexCore (k : TSyntax ``Parser.Term.attrKind) (inst? : Option Term)
     (T : Term) : CommandElabM Unit := do
@@ -110,9 +121,10 @@ private meta def stepindexCore (k : TSyntax ``Parser.Term.attrKind) (inst? : Opt
     | some i => `(term| $(mkCIdent ``DefaultSI.mk) $i)
     | none   => `(term| $(mkCIdent ``DefaultSI.mk) inferInstance)
   -- Put the DefaultSI instance in scope
+  let nm ← mkModuleUniqueName "instDefaultSI"
   elabCommand <| ← `(command|
     set_option synthInstance.checkSynthOrder false in
-    $k:attrKind instance (priority := 10000) : DefaultSI $T := $val)
+    public $k:attrKind instance (priority := 10000) $(mkIdent nm) : DefaultSI $T := $val)
   -- Record `T` in the registry, so that `stepindex%` and `infer_stepindex` can resolve the type.
   unless T.raw.isIdent do
     throwError "`stepindex` requires an identifier for the eager registry, but got{indentD T}\n\n\

@@ -38,8 +38,9 @@ instance orMonoidOps [BI PROP] : MonoidOps (or (PROP := PROP)) iprop(False) wher
 
 /-! ## Homomorphism helpers for OFE equivalence -/
 
+local stepindex Nat
 /-- Build a `MonoidHomomorphism` for Leibniz equality from just the essential fields. -/
-theorem MonoidHomomorphism.ofEq [OFE Nat PROP] {op₁ op₂ : PROP → PROP → PROP}
+theorem MonoidHomomorphism.ofEq [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
     {u₁ u₂ : PROP} [MonoidOps op₁ u₁] [MonoidOps op₂ u₂] {f : PROP → PROP}
     (hne : NonExpansive f) (hop : ∀ {x y}, f (op₁ x y) = op₂ (f x) (f y))
     (hunit : f u₁ = u₂) : MonoidHomomorphism op₁ op₂ u₁ u₂ (· = ·) f where
@@ -51,7 +52,7 @@ theorem MonoidHomomorphism.ofEq [OFE Nat PROP] {op₁ op₂ : PROP → PROP → 
   map_unit := hunit
 
 /-- Build a `WeakMonoidHomomorphism` for Leibniz equality from just the essential fields. -/
-theorem WeakMonoidHomomorphism.ofEq [OFE Nat PROP] {op₁ op₂ : PROP → PROP → PROP}
+theorem WeakMonoidHomomorphism.ofEq [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
     {u₁ u₂ : PROP} [MonoidOps op₁ u₁] [MonoidOps op₂ u₂] {f : PROP → PROP}
     (hne : NonExpansive f) (hop : ∀ {x y}, f (op₁ x y) = op₂ (f x) (f y)) :
     WeakMonoidHomomorphism op₁ op₂ u₁ u₂ (· = ·) f where

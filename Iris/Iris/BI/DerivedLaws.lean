@@ -163,6 +163,7 @@ theorem imp_congr_left [BI PROP] {P P' Q : PROP} (h : P ⊣⊢ P') : (P → Q) �
 theorem imp_congr_right [BI PROP] {P Q Q' : PROP} (h : Q ⊣⊢ Q') : (P → Q) ⊣⊢ (P → Q') :=
   imp_congr .rfl h
 
+local stepindex Nat
 @[rocq_alias bi.forall_ne]
 theorem forall_ne [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ≡{n}≡ Ψ a) :
     iprop(∀ a, Φ a) ≡{n}≡ iprop(∀ a, Ψ a) := sForall_ne <| by
@@ -2382,7 +2383,7 @@ instance from_option_persistent [BI PROP] {P : PROP} {Ψ : α → PROP} {mx : Op
 /-! # Limits -/
 
 @[rocq_alias bi.limit_preserving_entails]
-instance LimitPreserving.entails [BI PROP] [COFE Nat A] (Φ Ψ : A → PROP) [Φne : OFE.NonExpansive Φ]
+instance LimitPreserving.entails [BI PROP] [COFE A] (Φ Ψ : A → PROP) [Φne : OFE.NonExpansive Φ]
     [Ψne : OFE.NonExpansive Ψ] : LimitPreserving (λ x ↦ Φ x ⊢ Ψ x) := by
   refine .ext (P := λ x ↦ True ⊣⊢ (Φ x → Ψ x)) (@fun x => ?_) ?_
   · exact ⟨(true_and.2.trans <| imp_elim ·.1), (⟨imp_intro <| true_and.1.trans ·, true_intro⟩)⟩
@@ -2396,26 +2397,26 @@ instance LimitPreserving.entails [BI PROP] [COFE Nat A] (Φ Ψ : A → PROP) [Φ
     exact fun n => (h' n).to_eq
 
 @[rocq_alias bi.limit_preserving_emp_valid]
-instance limitPreserving_emp_valid [BI PROP] [COFE Nat A] (Φ : A → PROP)
+instance limitPreserving_emp_valid [BI PROP] [COFE A] (Φ : A → PROP)
     [OFE.NonExpansive Φ] : LimitPreserving (fun x => ⊢ Φ x) :=
   LimitPreserving.entails (fun _ => iprop(emp)) Φ
 
 @[rocq_alias bi.limit_preserving_Persistent]
-instance limitPreserving_persistent [BI PROP] [COFE Nat A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
+instance limitPreserving_persistent [BI PROP] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
     LimitPreserving (fun x => Persistent (Φ x)) := by
   letI _ : OFE.NonExpansive fun x => iprop(<pers> Φ x) := .comp persistently_ne Φne
   refine ⟨fun c h => ⟨?_⟩, fun hn _ _ => absurd hn (SIdx.limit_finite _)⟩
   refine (LimitPreserving.entails _ (fun x => iprop(<pers> (Φ x)))).compl _ ?_
   exact (fun n => h n |>.persistent)
 
-instance limitPreserving_absorbing [BI PROP] [COFE Nat A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
+instance limitPreserving_absorbing [BI PROP] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
     LimitPreserving (fun x => Absorbing (Φ x)) := by
   letI _ : OFE.NonExpansive fun x => iprop(<absorb> Φ x) := .comp absorbingly_ne Φne
   refine ⟨fun c h => ⟨?_⟩, fun hn _ _ => absurd hn (SIdx.limit_finite _)⟩
   refine (LimitPreserving.entails (fun x => iprop(<absorb> (Φ x))) _).compl _ ?_
   exact (fun n => h n |>.absorbing)
 
-instance limitPreserving_affine [BI PROP] [COFE Nat A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
+instance limitPreserving_affine [BI PROP] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
     LimitPreserving (fun x => Affine (Φ x)) := by
   refine ⟨fun c h => ⟨?_⟩, fun hn _ _ => absurd hn (SIdx.limit_finite _)⟩
   refine (LimitPreserving.entails (fun x => iprop((Φ x))) (fun _ => iprop(emp))).compl _ ?_

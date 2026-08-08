@@ -43,6 +43,7 @@ delab_rule Embed.embed
 
 #rocq_ignore BiEmbedMixin "Use the BiEmbed type class."
 
+local stepindex Nat
 /-- A lawful embedding `⎡·⎤ : PROP1 → PROP2`. The `forall_2`/`exist_1` fields take an
 intro/elim form: for any predicate `Ψ : PROP1 → Prop`, `forall_2` builds
 `R ⊢ ⎡sForall Ψ⎤` from pointwise `R ⊢ ⎡P⎤`, and `exist_1` builds `⎡sExists Ψ⎤ ⊢ R`
@@ -428,7 +429,7 @@ theorem embed_si_pure (Pi : SiProp) :
      siPure_siEmpValid_elim⟩
 
 @[rocq_alias embed_internal_eq]
-theorem embed_internal_eq {A : Type _} [OFE Nat A] (x y : A) :
+theorem embed_internal_eq {A : Type _} [OFE A] (x y : A) :
     (embed (iprop(x ≡ y) : P1) : P2) ⊣⊢ x ≡ y :=
   embed_si_pure (SiProp.internalEq x y)
 

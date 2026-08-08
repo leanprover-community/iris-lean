@@ -79,6 +79,7 @@ def wp.pre (s : Stuckness) (wp : CoPset -> Expr -> (Val -> IProp GF) -> IProp GF
       stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
       wp E e₂ Φ ∗ [∗list] e' ∈ eₜ, wp ⊤ e' ι.forkPost)
 
+local stepindex Nat
 @[rocq_alias wp_pre_contractive]
 instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
   distLater_dist := by
@@ -125,7 +126,7 @@ section Wp
 theorem wp_unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E {{ Φ }} ⊣⊢ wp.pre s (Wp.wp (PROP := IProp GF) s) E e Φ :=
   BI.equiv_iff.1 <| OFE.eq_dist.mpr <|
-    fun _n => (fixpoint_unfold (f := (wp.pre s).toContractiveHom)).dist E e Φ
+    fun _n => (fixpoint_unfold (f := (wp.pre s).toContractiveHom)).dist (SI := Nat) E e Φ
 
 @[rocq_alias wp_ne]
 instance wp_ne {s : Stuckness} {E} {e : Expr} :

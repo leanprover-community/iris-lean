@@ -45,6 +45,7 @@ def spawnInv (γ : GName) (l : Loc) (Ψ : Val → IProp GF) : IProp GF := iprop%
 def joinHandle (l : Loc) (Ψ : Val → IProp GF) : IProp GF := iprop%
   ∃ γ : GName, token γ ∗ inv N (spawnInv γ l Ψ)
 
+local stepindex Nat
 instance spawnInv_ne (γ : GName) (l : Loc) :
     OFE.NonExpansive (spawnInv γ l : (Val → IProp GF) → _) where
   ne _ _ _ HΨ :=

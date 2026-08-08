@@ -1192,8 +1192,9 @@ theorem bigSepL2_lookup_acc_impl {Φ : Nat → A → B → PROP} {l1 : List A} {
       ((and_intro (pure_intro hk2) .rfl).trans imp_elim_right).trans <|
       (and_intro (pure_intro hki) .rfl).trans imp_elim_right
 
+local stepindex Nat
 @[rocq_alias big_sepL2_ne_2]
-theorem bigSepL2_dist_2 [OFE Nat A] [OFE Nat B]
+theorem bigSepL2_dist_2 [OFE A] [OFE B]
     {Φ Ψ : Nat → A → B → PROP} {l1 l1' : List A} {l2 l2' : List B} {n : Nat}
     (hl1 : l1.length = l1'.length) (hl2 : l2.length = l2'.length)
     (hel1 : ∀ {k : Nat} {x x' : A}, l1[k]? = some x → l1'[k]? = some x' → x ≡{n}≡ x')
@@ -1210,7 +1211,7 @@ theorem bigSepL2_dist_2 [OFE Nat A] [OFE Nat B]
     (fun {k} => @hel1 (k + 1)) (fun {k} => @hel2 (k + 1)) (fun {k} => @hf (k + 1))
 
 @[rocq_alias big_sepL2_proper_2]
-theorem bigSepL2_proper_2 [OFE Nat A] [OFE Nat B]
+theorem bigSepL2_proper_2 [OFE A] [OFE B]
     {Φ Ψ : Nat → A → B → PROP} {l1 l1' : List A} {l2 l2' : List B}
     (hl1 : l1.length = l1'.length) (hl2 : l2.length = l2'.length)
     (hel1 : ∀ {k : Nat} {x x' : A}, l1[k]? = some x → l1'[k]? = some x' → x = x')

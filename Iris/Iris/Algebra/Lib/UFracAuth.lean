@@ -47,6 +47,7 @@ notation "◯U{" q "} " a => frag q a
 
 /-! ## NonExpansive instances -/
 
+local stepindex Nat
 @[rocq_alias ufrac_auth_auth_ne]
 nonrec instance auth_ne {q : Qp} : NonExpansive (auth q : A → UFracAuth) where
   ne _ _ _ h := auth_ne.ne ⟨.rfl, h⟩
@@ -213,13 +214,13 @@ theorem update_surplus_cancel {p q : Qp} {a b : A} [CMRA.Cancelable b] :
 /-! ## Functors -/
 
 @[rocq_alias ufrac_authURF]
-abbrev UFracAuthURF (T : COFE.OFunctorPre Nat) [RFunctor T] : COFE.OFunctorPre Nat :=
+abbrev UFracAuthURF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
   AuthURF (OptionOF (ProdOF (constOF UFrac) T))
 
 #rocq_ignore ufrac_authURF_contractive "Contractiveness is bundled into Lean's RFunctor class"
 
 @[rocq_alias ufrac_authRF]
-abbrev UFracAuthRF (T : COFE.OFunctorPre Nat) [RFunctor T] : COFE.OFunctorPre Nat :=
+abbrev UFracAuthRF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
   AuthRF (OptionOF (ProdOF (constOF UFrac) T))
 
 #rocq_ignore ufrac_authRF_contractive "Contractiveness is bundled into Lean's RFunctor class"

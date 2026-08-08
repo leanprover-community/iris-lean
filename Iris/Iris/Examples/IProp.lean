@@ -18,8 +18,9 @@ open Iris.BI COFE
 
 section Example1
 
-abbrev F0 : OFunctorPre Nat := constOF (Agree (DiscreteO String))
-instance discreteO_cofe {α : Type _} : COFE Nat (DiscreteO α) := DiscreteO.instCOFE
+local stepindex Nat
+abbrev F0 : OFunctorPre := constOF (Agree (DiscreteO String))
+instance discreteO_cofe {α : Type _} : COFE (DiscreteO α) := DiscreteO.instCOFE
 instance discreteO_discrete {α : Type _} : OFE.Discrete (SI := Nat) (DiscreteO α) := DiscreteO.OFE
 
 variable {GF} [E0 : ElemG GF F0]
@@ -53,8 +54,9 @@ section Example2
 
 open HeapView One DFrac Agree DiscreteO
 
+local stepindex Nat
 /- Define an OFunctor for the heap. Fractions are concretely `Qp`. -/
-abbrev F1 : OFunctorPre Nat :=
+abbrev F1 : OFunctorPre :=
   constOF <| HeapView Nat (Agree (DiscreteO String)) (Std.ExtTreeMap Nat · compare)
 
 /- Our OFunctor is present in the global list of OFunctors. -/
@@ -100,7 +102,7 @@ variable (Expr State Value : Type _) [OperationalSemantics Expr State Value]
 
 /- Let's say that we are also given two OFunctors, and an interpretation of the state into
    state using these resources. -/
-variable (F3 F4 : OFunctorPre Nat) [RFunctorContractive F3] [RFunctorContractive F4]
+variable (F3 F4 : OFunctorPre) [RFunctorContractive F3] [RFunctorContractive F4]
 variable {GF} [ElemG GF F3] [ElemG GF F4]
 class StateInterpretation (State : Type _) (GF : BundledGFunctors) where
   state_interp : State → IProp GF
@@ -121,6 +123,7 @@ def wp_F (wp : Expr → (Value → IProp GF) → IProp GF) (e : Expr) (Φ : Valu
   ∀ s, @state_interp State _ _ s -∗
     ∃ e' s', ⌜@step _ _ Value _ (e, s) = (e', s') ⌝ ∗ ▷ |==> (@state_interp _ _ _  s' ∗ wp e' Φ))
 
+local stepindex Nat
 instance wp_F_contractive : Contractive (@wp_F Expr State Value _ GF _) where
   distLater_dist {n x y HL} e Φ := by
     refine or_ne.ne (.of_eq rfl) ?_
@@ -143,8 +146,8 @@ theorem wp_unfold (e : Expr) (Φ : Value → IProp GF) :
         ∀ s, @state_interp State _ _ s -∗
           ∃ e' s', ⌜@step _ _ Value _ (e, s) = (e', s') ⌝ ∗
           ▷ |==> (@state_interp _ _ _  s' ∗ wp e' Φ)) := by
-  exact OFE.eq_dist.mpr fun _n => (fixpoint_unfold (f := ⟨(@wp_F Expr State Value _ GF _),
-                                @OFE.ne_of_contractive _ _ _ _ _ _ (@wp_F Expr State Value _ GF _) _⟩)).dist e Φ
+  exact (OFE.eq_dist (SI := Nat)).mpr fun _n => (fixpoint_unfold (f := ⟨(@wp_F Expr State Value _ GF _),
+                                @OFE.ne_of_contractive _ _ _ _ _ _ (@wp_F Expr State Value _ GF _) _⟩)).dist (SI := Nat) e Φ
 
 /- Now, we can derive some example proof rules. First let's prove a rule for pure deterministic steps: -/
 example (e e' : Expr) Φ (Hstep : ∀ {s : State}, @step _ _ Value _ (e, s) = (e', s)) :

@@ -48,8 +48,9 @@ theorem discreteFunInsert_of_ne (f : (a : ι) → β a) (x x' : ι)
 end insert
 
 section OFE
+local stepindex Nat
 
-variable {ι : Type _} [DecidableEq ι] {β : ι → Type _} [∀ i, OFE Nat (β i)]
+variable {ι : Type _} [DecidableEq ι] {β : ι → Type _} [∀ i, OFE (β i)]
 
 @[rocq_alias discrete_funO_ofe_discrete]
 instance instDiscreteFunOfeDiscrete [∀ i, OFE.Discrete (β i)] :
@@ -106,6 +107,7 @@ instance instDiscreteFunCmraDiscrete [∀ i, CMRA.Discrete (β i)] :
     CMRA.Discrete ((i : ι) → β i) where
   discrete_valid h i := CMRA.Discrete.discrete_valid (h i)
 
+local stepindex Nat
 @[rocq_alias discrete_fun_singleton_ne]
 instance instDiscreteFunSingletonNonExpansive (x : ι) :
     NonExpansive (discreteFunSingleton (β := β) x) where

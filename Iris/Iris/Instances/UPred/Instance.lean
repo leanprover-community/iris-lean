@@ -93,7 +93,8 @@ protected def sExists (Ψ : UPred M → Prop) : UPred M where
 #rocq_ignore uPred_exist_def "`UPred.sExists` is defined directly without `seal`/`unseal`."
 #rocq_ignore uPred_exist_aux "`UPred.sExists` is defined directly without `seal`/`unseal`."
 
-protected def eq [OFE Nat O] (o1 o2 : O) : UPred M where
+local stepindex Nat
+protected def eq [OFE O] (o1 o2 : O) : UPred M where
   holds n _ := o1 ≡{n}≡ o2
   mono H1 _ H2 := H1.le H2
 
@@ -195,6 +196,7 @@ protected def emp : UPred M where
 
 end bidefs
 
+local stepindex Nat
 @[rocq_alias uPred_primitive.persistently_ne]
 instance persistently_ne : OFE.NonExpansive UPred.persistently (α := UPred M) where
   ne _ _ _ H _ _ Hn Hx := H _ _ Hn (validN_core Hx)
@@ -283,7 +285,7 @@ instance : BI (UPred M) where
   entails_refl := uPred_entails_preorder.le_refl _
   entails_trans := uPred_entails_preorder.le_trans _ _ _
   equiv_iff {_ _} := by
-    rw [OFE.eq_dist]
+    rw [(OFE.eq_dist (SI := Nat))]
     constructor <;> intro HE
     · exact ⟨fun n ⟨x, Hv⟩ H => (HE n n x .refl Hv).mp H,
              fun n ⟨x, Hv⟩ H => (HE n n x .refl Hv).mpr H⟩

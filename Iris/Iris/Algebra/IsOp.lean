@@ -16,6 +16,7 @@ namespace Iris
 open CMRA ProofMode
 
 section IsOp
+local stepindex Nat
 
 inductive IsOp.Direction
 | merge

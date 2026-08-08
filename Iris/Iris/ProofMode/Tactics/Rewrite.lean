@@ -18,7 +18,8 @@ namespace Iris.ProofMode
 public section
 open BI Std
 
-theorem rewrite_tac [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE Nat A] {a b : A} {p}
+local stepindex Nat
+theorem rewrite_tac [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p}
     (Ψ : A → PROP) [ne : OFE.NonExpansive Ψ] [heq : IntoInternalEq Q a b]
     (h1 : P ⊢ P' ∗ □?p Q)
     : P ⊢ <pers> (Ψ a ∗-∗ Ψ b) :=
@@ -30,7 +31,7 @@ theorem rewrite_tac [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE Nat A] {a b : A
   _ ⊢ <pers> <affine> Ψ a ≡ Ψ b := persistently_affinely.2
   _ ⊢ <pers> (Ψ a ∗-∗ Ψ b) := persistently_mono (affinely_internalEq_wandIff _ _)
 
-theorem rewrite_tac_symm [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE Nat A] {a b : A} {p}
+theorem rewrite_tac_symm [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p}
     (Ψ : A → PROP) [ne : OFE.NonExpansive Ψ] [IntoInternalEq Q a b]
     (h_eq : P ⊢ P' ∗ □?p Q)
     : P ⊢ <pers> (Ψ b ∗-∗ Ψ a) :=
@@ -128,7 +129,7 @@ private def iRewriteCore {prop : Q(Type u)} {bi : Q(BI $prop)}
   let A   : Q(Type v) ← mkFreshExprMVarQ q(Type v)
   let a   : Q($A)     ← mkFreshExprMVarQ q($A)
   let b   : Q($A)     ← mkFreshExprMVarQ q($A)
-  let _ofe : Q(OFE Nat $A) ← mkFreshExprMVarQ q(OFE Nat $A)
+  let _ofe : Q(OFE $A) ← mkFreshExprMVarQ q(OFE $A)
 
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoInternalEq (PROP := $prop) $eq $a $b)
     | throwError "irewrite: {eq} is not an internal equality"

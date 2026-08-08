@@ -53,6 +53,7 @@ instance frac_one_exclusive (b : A) : Exclusive (fracOne, b) where
 
 /-! ## NonExpansive instances -/
 
+local stepindex Nat
 @[rocq_alias frac_auth_auth_ne]
 instance auth_ne {dq : DFrac} : NonExpansive (auth dq : A → FracAuth) where
   ne _ _ _ h := Auth.auth_ne.ne ⟨.rfl, h⟩
@@ -271,11 +272,11 @@ theorem updateP_both_unpersist {q : Qp} {a b : A} :
 /-! ## Functors -/
 
 @[rocq_alias frac_authURF]
-abbrev FracAuthURF (T : COFE.OFunctorPre Nat) [RFunctor T] : COFE.OFunctorPre Nat :=
+abbrev FracAuthURF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
   AuthURF (OptionOF (ProdOF (constOF (Qp)) T))
 
 @[rocq_alias frac_authRF]
-abbrev FracAuthF (T : COFE.OFunctorPre Nat) [RFunctor T] : COFE.OFunctorPre Nat :=
+abbrev FracAuthF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
   AuthRF (OptionOF (ProdOF (constOF (Qp)) T))
 
 end FracAuth

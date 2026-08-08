@@ -16,7 +16,8 @@ public import Iris.Instances.IProp
 namespace Iris
 open Auth BI MonoNat
 
-abbrev MonoNatRF : COFE.OFunctorPre Nat :=
+local stepindex Nat
+abbrev MonoNatRF : COFE.OFunctorPre :=
   AuthURF (constOF MaxNat)
 
 @[rocq_alias mono_natG]

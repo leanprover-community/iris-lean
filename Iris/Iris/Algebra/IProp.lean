@@ -22,7 +22,7 @@ abbrev GType := Nat
 
 set_option linter.checkUnivs false in
 @[rocq_alias gFunctor]
-abbrev GFunctor := Σ F : OFunctorPre Nat, RFunctorContractive F
+abbrev GFunctor := Σ F : OFunctorPre, RFunctorContractive F
 
 set_option linter.checkUnivs false in
 @[rocq_alias gFunctors]
@@ -44,8 +44,9 @@ abbrev GName := Nat
 
 #rocq_ignore gnameO "Use `LeibnizO GName`."
 
+local stepindex Nat
 @[rocq_alias iResF]
-abbrev IResF (GF : BundledGFunctors) : OFunctorPre Nat :=
+abbrev IResF (GF : BundledGFunctors) : OFunctorPre :=
   DiscreteFunOF (fun i => GenMapOF (GF i).fst)
 
 #rocq_ignore subG "Superseded by `ElemG`."
@@ -64,7 +65,7 @@ variable (GF : BundledGFunctors)
 def IPre : Type _ := OFunctor.Fix (UPredOF (IResF GF))
 
 @[rocq_alias iProp_solution.iPreProp_cofe]
-instance : COFE Nat (IPre GF) := inferInstanceAs (COFE Nat (OFunctor.Fix _))
+instance : COFE (IPre GF) := inferInstanceAs (COFE (OFunctor.Fix _))
 
 @[rocq_alias iProp_solution.iResUR]
 def IResUR.{u} : Type u := (i : GType) → GenMap (GF i |>.fst (IPre GF) (IPre GF))

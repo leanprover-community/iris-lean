@@ -49,6 +49,7 @@ instance coreP_affine (P : PROP) [Affine P] : Affine (coreP P) where
     iintro HC
     iapply HC <;> iintro !> !> _ //
 
+local stepindex Nat
 @[rocq_alias coreP_ne]
 instance coreP_ne : NonExpansive (coreP (PROP := PROP)) where
   ne _ _ _ H :=

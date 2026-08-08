@@ -20,20 +20,21 @@ open Iris
 
 abbrev ViewRel (A B : Type _) := Nat → A → B → Prop
 
+local stepindex Nat
 @[rocq_alias view_rel]
-class IsViewRel [OFE Nat A] [UCMRA B] (R : ViewRel A B) where
+class IsViewRel [OFE A] [UCMRA B] (R : ViewRel A B) where
   mono : R n1 a1 b1 → a1 ≡{n2}≡ a2 → b2 ≼{n2} b1 → n2 ≤ n1 → R n2 a2 b2
   rel_validN n a b : R n a b → ✓{n} b
   rel_unit n : ∃ a, R n a UCMRA.unit
 
 @[rocq_alias ViewRelDiscrete]
-class IsViewRelDiscrete [OFE Nat A] [UCMRA B] (R : ViewRel A B) extends IsViewRel R where
+class IsViewRelDiscrete [OFE A] [UCMRA B] (R : ViewRel A B) extends IsViewRel R where
   discrete n a b : R 0 a b → R n a b
 
 namespace ViewRel
 open IsViewRel DFrac
 
-variable [OFE Nat A] [UCMRA B] {R : ViewRel A B} [IsViewRel R]
+variable [OFE A] [UCMRA B] {R : ViewRel A B} [IsViewRel R]
 
 @[rocq_alias view_rel_ne]
 theorem iff_of_dist (Ha : a1 ≡{n}≡ a2) (Hb : b1 ≡{n}≡ b2) : R n a1 b1 ↔ R n a2 b2 :=
@@ -62,7 +63,7 @@ notation "◯V " b => View.Frag b
 namespace View
 section OFE
 open OFE UCMRA
-variable [OFE Nat A] [OFE Nat B] {R : ViewRel A B}
+variable [OFE A] [OFE B] {R : ViewRel A B}
 
 #rocq_ignore view_equiv "OFE is Leibniz; use equality"
 
@@ -70,7 +71,7 @@ variable [OFE Nat A] [OFE Nat B] {R : ViewRel A B}
 def dist (n : Nat) (x y : View R) : Prop := x.auth ≡{n}≡ y.auth ∧ x.frag ≡{n}≡ y.frag
 
 @[rocq_alias view_ofe_mixin]
-instance instOFE : OFE Nat (View R) where
+instance instOFE : OFE (View R) where
   Dist := dist
   dist_eqv := {
     refl _ := ⟨.of_eq rfl, .of_eq rfl⟩
@@ -125,12 +126,12 @@ theorem auth_dist_inj [UCMRA B] {q1 q2 : DFrac} {a1 a2 : A} {n}
 @[rocq_alias view_auth_inj]
 theorem auth_eqv_inj [UCMRA B] {q1 q2 : DFrac} {a1 a2 : A}
     (H : (●V{q1} a1 : View R) = ●V{q2} a2) : q1 = q2 ∧ a1 = a2 := by
-  refine ⟨(auth_dist_inj (n := 0) H.dist).1, OFE.eq_dist.mpr fun n => ?_⟩
+  refine ⟨(auth_dist_inj (n := 0) H.dist).1, (OFE.eq_dist (SI := Nat)).mpr fun n => ?_⟩
   exact (auth_dist_inj H.dist).2
 
 @[rocq_alias view_frag_inj]
 theorem frag_eqv_inj [UCMRA B] {b1 b2 : B}
-    (H : (◯V b1 : View R) = ◯V b2) : b1 = b2 := OFE.eq_dist.mpr fun _ => H.dist.2
+    (H : (◯V b1 : View R) = ◯V b2) : b1 = b2 := (OFE.eq_dist (SI := Nat)).mpr fun _ => H.dist (SI := Nat).2
 
 @[rocq_alias view_frag_dist_inj]
 theorem dist_of_frag_dist [UCMRA B] {b1 b2 : B} {n} (H : (◯V b1 : View R) ≡{n}≡ ◯V b2) :
@@ -151,7 +152,7 @@ end OFE
 section CMRA
 open IsViewRel toAgree OFE DFrac
 
-variable [OFE Nat A] [UCMRA B] {R : ViewRel A B} [IsViewRel R]
+variable [OFE A] [UCMRA B] {R : ViewRel A B} [IsViewRel R]
 
 theorem IsViewRel.of_agree_dist_iff (Hb : b' ≡{n}≡ b) :
     (∃ a', toAgree a ≡{n}≡ toAgree a' ∧ R n a' b') ↔ R n a b := by
@@ -514,7 +515,7 @@ open CMRA in
 theorem auth_inc_auth_op_frag_iff : ((●V{dq1} a1 : View R) ≼ (●V{dq2} a2 : View R) • ◯V b) ↔ (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 = a2 := by
   refine ⟨fun H => ⟨?_, ?_⟩, fun H => ?_⟩
   · exact auth_incN_auth_op_frag_iff (n := 0) |>.mp (CMRA.incN_of_inc _ H) |>.1
-  · refine OFE.eq_dist.mpr (fun n => ?_)
+  · refine (OFE.eq_dist (SI := Nat)).mpr (fun n => ?_)
     exact auth_incN_auth_op_frag_iff |>.mp (CMRA.incN_of_inc _ H) |>.2
   · rcases H with ⟨(⟨q, Hq⟩|Hq), Ha⟩
     · calc (●V{dq1} a1 : View R)
@@ -628,7 +629,7 @@ end CMRA
 
 section Updates
 
-variable [OFE Nat A] [IB : UCMRA B] {R : ViewRel A B} [IsViewRel R]
+variable [OFE A] [IB : UCMRA B] {R : ViewRel A B} [IsViewRel R]
 
 open CMRA DFrac
 
@@ -822,16 +823,16 @@ theorem map_compose {R : ViewRel A B} {R' : ViewRel A' B'} {R'' : ViewRel A'' B'
 
 section mapO
 
-variable [OFE Nat A] [OFE Nat B] [OFE Nat A'] [OFE Nat B'] {R : ViewRel A B} {R' : ViewRel A' B'}
+variable [OFE A] [OFE B] [OFE A'] [OFE B'] {R : ViewRel A B} {R' : ViewRel A' B'}
 
-theorem map_compose' [OFE Nat A''] [OFE Nat B''] {R'' : ViewRel A'' B''}
+theorem map_compose' [OFE A''] [OFE B''] {R'' : ViewRel A'' B''}
     f g (f' : A' -n> A'') (g' : B' -n> B'') (v : View R) :
     View.map R'' (f'.comp f) (g'.comp g) v = View.map R'' f' g' (View.map R' f g v) :=
     map_compose f.f g.f f'.f g'.f v
 
 #rocq_ignore view_map_ext "OFE is Leibniz; use equality"
 
-omit [OFE Nat B] in
+omit [OFE B] in
 theorem map_ne {f1 f2 : A → A'} {g1 g2 : B → B'} [OFE.NonExpansive f1] [OFE.NonExpansive f2]
     (v : View R) (h1 : ∀ a, f1 a ≡{n}≡ f2 a) (h2 : ∀ b, g1 b ≡{n}≡ g2 b) :
     View.map R' f1 g1 v ≡{n}≡ View.map R' f2 g2 v := by
@@ -859,7 +860,7 @@ def mapO (f : A -n> A') (g : B -n> B') : View R -n> View R' where
 end mapO
 
 @[rocq_alias view_map_cmra_morphism]
-def mapC [OFE Nat A] [UCMRA B] [OFE Nat A'] [UCMRA B']
+def mapC [OFE A] [UCMRA B] [OFE A'] [UCMRA B']
     {R : ViewRel A B} [IsViewRel R] {R' : ViewRel A' B'} [IsViewRel R']
     (f : A -n> A') (g : B -C> B') (H : ∀ n a b, R n a b → R' n (f a) (g b)) :
     View R -C> View R' where

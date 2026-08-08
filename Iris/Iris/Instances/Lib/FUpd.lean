@@ -58,6 +58,7 @@ variable {GF : BundledGFunctors} {hlc : HasLC} [InvGS_gen hlc GF]
 def uPred_fupd (E1 E2 : CoPset) (P : IProp GF) : IProp GF :=
   iprop(wsat ∗ ownE E1 -∗ |==£> (wsat ∗ ownE E2 ∗ P))
 
+local stepindex Nat
 instance {E1 E2 : CoPset} : NonExpansive (uPred_fupd (GF := GF) (hlc := hlc) E1 E2) where
   ne {_ _ _} h := by
     simp only [uPred_fupd]
@@ -231,6 +232,7 @@ open ProofMode Std
 
 variable {GF : BundledGFunctors} {hlc : HasLC} [InvGS_gen hlc GF]
 
+local stepindex Nat
 @[rocq_alias fupd_finally_ne]
 instance fupd_finally_ne (E : CoPset) : NonExpansive (fupd_finally (GF := GF) (hlc := hlc) E) where
   ne {_ _ _} h := by

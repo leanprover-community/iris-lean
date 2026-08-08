@@ -21,8 +21,9 @@ def liftRel (R : α → β → Prop) (A : α → Prop) (B : β → Prop) : Prop 
 theorem liftRel_eq : liftRel (@Eq α) A B ↔ A = B := by
   simp [liftRel, forall_and, iff_def, funext_iff]
 
+local stepindex Nat
 /-- Require that a separation logic with carrier type `PROP` fulfills all necessary axioms. -/
-class BI (PROP : Type _) extends COFE Nat PROP, BI.BIBase PROP where
+class BI (PROP : Type _) extends COFE PROP, BI.BIBase PROP where
   entails_refl {P : PROP} : P ⊢ P
   entails_trans {P Q R : PROP} : (P ⊢ Q) → (Q ⊢ R) → P ⊢ R
   equiv_iff {P Q : PROP} : (P = Q) ↔ P ⊣⊢ Q := by rw [OFE.eq_dist]; simp
