@@ -89,9 +89,14 @@ theorem Forall₂.imp {R S : α → β → Prop} (H : ∀ {a b}, R a b → S a b
   | nil => exact .nil
   | cons hab _ ih => exact .cons (H hab) ih
 
+
+
 theorem Forall₂.refl {R : α → α → Prop} (H : ∀ a, R a a) : (l : List α) → Forall₂ R l l
   | [] => .nil
   | _ :: l => .cons (H _) (Forall₂.refl H l)
+
+theorem Forall₂.rfl {R : α → α → Prop} (H : ∀ a, R a a) {l : List α} : Forall₂ R l l :=
+  Forall₂.refl H l
 
 theorem Forall₂.symm {R : α → α → Prop} (H : ∀ {a b}, R a b → R b a) {l k : List α}
     (h : Forall₂ R l k) : Forall₂ R k l := by

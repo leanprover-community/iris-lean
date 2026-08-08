@@ -16,29 +16,25 @@ namespace Iris
 
 open OFE COFE Iris.Algebra
 
-/-
-/-! ## The list OFE -/
+/-! ## The pointwise list OFE -/
 
 section ofe
 variable [OFE α]
 
-theorem forall₂_equiv_of_forall₂_dist : ∀ {l k : List α},
-    (∀ n, List.Forall₂ (Dist n) l k) → List.Forall₂ Equiv l k
-  | [], [], _ => .nil
+theorem forall₂_eq_of_forall₂_dist : ∀ {l k : List α},
+    (∀ n, List.Forall₂ (Dist n) l k) → l = k
+  | [], [], _ => rfl
   | [], _ :: _, h => nomatch h 0
   | _ :: _, [], h => nomatch h 0
-  | _ :: _, _ :: _, h =>
-    .cons (equiv_dist.mpr fun n => (List.forall₂_cons.mp (h n)).1)
-          (forall₂_equiv_of_forall₂_dist fun n => (List.forall₂_cons.mp (h n)).2)
+  | _ :: _, _ :: _, h => List.cons_eq_cons.mpr
+    ⟨eq_dist.mpr (fun n => (List.forall₂_cons.mp <| h n).1),
+     forall₂_eq_of_forall₂_dist fun n => (List.forall₂_cons.mp (h n)).2⟩
 
-/-- `l ≡ k` on lists is the pointwise equivalence `List.Forall₂ (· ≡ ·)`, and
-`l ≡{n}≡ k` is `List.Forall₂ (· ≡{n}≡ ·)`. -/
 @[rocq_alias list_ofe_mixin]
 instance : OFE (List α) where
-  Equiv := List.Forall₂ Equiv
   Dist n := List.Forall₂ (Dist n)
   dist_eqv := List.Forall₂.equivalence dist_eqv
-  equiv_dist := ⟨fun h _ => h.imp Equiv.dist, forall₂_equiv_of_forall₂_dist⟩
+  eq_dist := ⟨fun h _ => h ▸ (List.Forall₂.rfl .refl), forall₂_eq_of_forall₂_dist⟩
   dist_lt h hlt := h.imp fun hab => hab.lt hlt
 #rocq_ignore listO "Use List"
 #rocq_ignore list_dist "Local Dist instance; folded into Lean's OFE (List α) instance."
@@ -48,7 +44,7 @@ theorem list_dist_forall₂ {n} {l k : List α} : l ≡{n}≡ k ↔ List.Forall�
 
 @[rocq_alias list_dist_lookup]
 theorem list_dist_lookup {n} {l k : List α} : l ≡{n}≡ k ↔ ∀ (i : Nat), l[i]? ≡{n}≡ k[i]? :=
-  ⟨fun h i => h.getElem? i, List.forall₂_of_getElem?⟩
+  ⟨fun h i => h.getElem? i, List.Forall₂.of_getElem?⟩
 
 @[rocq_alias cons_ne]
 instance cons_ne : NonExpansive₂ (α := α) List.cons where
@@ -145,18 +141,19 @@ theorem list_singleton_dist_eq {n} {l : List α} {x : α} :
 
 @[rocq_alias list_ofe_discrete]
 instance list_ofe_discrete [Discrete α] : Discrete (List α) where
-  discrete_0 h := h.imp discrete_0
+  discrete_0 h := forall₂_eq_of_forall₂_dist fun _ => h.imp (discrete_0 · ▸ .rfl)
 
 @[rocq_alias nil_discrete]
 instance nil_discrete : DiscreteE ([] : List α) where
-  discrete h := by cases h; exact .nil
+  discrete h := by cases h; rfl
 
 @[rocq_alias cons_discrete]
 instance cons_discrete (x : α) (l : List α) [DiscreteE x] [DiscreteE l] :
     DiscreteE (x :: l) where
   discrete h := by
     cases h with
-    | cons hx hl => exact .cons (‹DiscreteE x›.discrete hx) (‹DiscreteE l›.discrete hl)
+    | cons hx hl =>
+      exact List.cons_eq_cons.mpr ⟨‹DiscreteE x›.discrete hx, ‹DiscreteE l›.discrete hl⟩
 
 @[rocq_alias dist_Permutation]
 theorem dist_Permutation {n} {l1 l2 l3 : List α} (hd : l1 ≡{n}≡ l2) (hp : l2.Perm l3) :
@@ -283,14 +280,14 @@ theorem list_flatMap_ne [OFE α] [OFE β] {n} {f g : α → List β}
     l.flatMap f ≡{n}≡ k.flatMap g := by
   induction h with
   | nil => exact .nil
-  | cons hab _ ih => rw [List.flatMap_cons, List.flatMap_cons]; exact (Hf _ _ hab).append ih
+  | cons hab _ ih => exact (Hf _ _ hab).append ih
 
 @[rocq_alias list_join_ne]
 theorem list_flatten_ne [OFE α] {n} {l k : List (List α)} (h : l ≡{n}≡ k) :
-    l.flatten ≡{n}≡ k.flatten := by
-  induction h with
-  | nil => exact .nil
-  | cons hab _ ih => rw [List.flatten_cons, List.flatten_cons]; exact hab.append ih
+    l.flatten ≡{n}≡ k.flatten :=
+  match h with
+  | .nil => .nil
+  | .cons hab h => hab.append (list_flatten_ne h)
 
 @[rocq_alias zip_with_ne]
 theorem zipWith_ne [OFE α] [OFE β] [OFE γ] {n} {f g : α → β → γ}
@@ -314,7 +311,6 @@ theorem bigOpL_dist_2 {M α : Type _} [OFE M] [OFE α] {op : M → M → M} {uni
   | nil => exact fun _ => .rfl
   | cons hx t ih =>
     intro f g hf
-    rw [BigOpL.bigOpL_cons, BigOpL.bigOpL_cons]
     refine MonoidOps.op_dist (hf 0 _ _ rfl rfl hx) (ih ?_)
     exact fun k y1 y2 h1 h2 hy => hf (k + 1) y1 y2 h1 h2 hy
 
@@ -334,7 +330,7 @@ def listMap [OFE α] [OFE β] (f : α -n> β) : List α -n> List β where
 
 @[rocq_alias listO_map_ne]
 instance listMap_ne [OFE α] [OFE β] : NonExpansive (listMap (α := α) (β := β)) where
-  ne _ _ _ h z := by simpa only [listMap_apply] using list_fmap_ext_ne (l := z) fun x => h x
+  ne _ _ _ h _ := list_fmap_ext_ne fun x => h x
 
 abbrev ListOF (F : OFunctorPre) : OFunctorPre := fun A B _ _ => List (F A B)
 
@@ -344,25 +340,21 @@ variable (F : OFunctorPre)
 instance oFunctorList [OFunctor F] : OFunctor (ListOF F) where
   ofe := _
   map f g := listMap (OFunctor.map f g)
-  map_ne.ne _ _ _ Hx _ _ Hy z := by
-    simpa only [listMap_apply] using
-      list_fmap_ext_ne (l := z) fun x => OFunctor.map_ne.ne Hx Hy x
+  map_ne.ne _ _ _ Hx _ _ Hy z :=
+    list_fmap_ext_ne (l := z) fun x => OFunctor.map_ne.ne Hx Hy x
   map_id z := by
-    simp only [listMap_apply]
     induction z with
-    | nil => exact .nil
-    | cons a _ ih => exact .cons (OFunctor.map_id a) ih
+    | nil => rfl
+    | cons a _ ih => exact List.cons_eq_cons.mpr ⟨OFunctor.map_id a, ih⟩
   map_comp f g f' g' z := by
-    simp only [listMap_apply, List.map_map]
     induction z with
-    | nil => exact .nil
-    | cons a _ ih => exact .cons (OFunctor.map_comp f g f' g' a) ih
+    | nil => rfl
+    | cons a _ ih => exact List.cons_eq_cons.mpr ⟨OFunctor.map_comp f g f' g' a, ih⟩
 
 @[rocq_alias listOF_contractive]
 instance [OFunctorContractive F] : OFunctorContractive (ListOF F) where
   map_contractive.1 H z := by
     have h := (OFunctorContractive.map_contractive (F := F)).distLater_dist H
-    simp only [Function.uncurry]
     induction z with
     | nil => exact .nil
     | cons a _ ih => exact .cons (h a) ih
@@ -370,4 +362,3 @@ instance [OFunctorContractive F] : OFunctorContractive (ListOF F) where
 end functor
 
 end Iris
--/
