@@ -29,19 +29,8 @@ class SIdx (I : Type u) extends LT I, LE I, Zero I where
 
 /-- An opt-in default step index type.
 Warning: typeclass synthesis will become unpredictable if there is ever more than one instance of
-this class in scope at a time. The constructor is private, so the `stepindex` command is the only
-way to introduce an instance: `⟨_⟩`, `where sidx := _`, `{ sidx := _ }` and `DefaultSI.mk` are all
-rejected outside this module.
-
-The class and `dfltSIdx` below must nevertheless stay public. `stepindex` expands to an instance of
-`DefaultSI` in the *caller's* module, and `defaultInstanceExtension` drops entries whose declaration
-is not exported, so a private `dfltSIdx` would leave the mechanism inert in every importing module.
-Only the constructor can be sealed; `stepindex` reaches it via `mkCIdent`, which resolves the
-constant directly instead of going through name resolution.
-
-Note this seals *construction*, not *propagation*: a caller with a carrier already in scope can
-still copy it (`open NatSI in instance : DefaultSI Nat := inferInstance`). That is unavoidable, and
-is a deliberate act rather than an accident.
+this class in scope at a time. It is strongly prefered that you use the `stepindex` command in
+order to declare a default type of step indices in a section.
 -/
 class DefaultSI (SI : outParam (Type u)) where
   private mk ::
@@ -79,6 +68,8 @@ to install two default step indices in the same scope.
   ```
   local stepindex (inst := natSIdx) Nat
   ```
+  This is more stable (it is not doing arbitrary typeclass search at elab time) but is unlikely to
+  be necessary.
 -/
 syntax (name := stepindexCmd)
   Term.attrKind "stepindex " ("(" &"inst" " := " term ")")? term : command

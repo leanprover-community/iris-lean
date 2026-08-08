@@ -40,16 +40,3 @@ instance is in scope.
   match siExt.getState (← getEnv) with
   | .anonymous => Term.elabTerm (← `(_)) expectedType?
   | n => Term.elabTerm (mkIdent n) expectedType?
-
--- /-
--- Close a goal with the step index type in scope, resolved at the use site.
---
--- Does nothing when there is no goal left: as the default value of a parameter this tactic runs
--- even if that parameter was already determined by unification, which must not be an error.
--- -/
--- @[expose] elab "infer_stepindex" : tactic => do
---   if (← getGoals).isEmpty then return
---   match siExt.getState (← getEnv) with
---   | .anonymous =>
---     throwError "infer_stepindex: no step index in scope; declare one with `local stepindex T`"
---   | n => evalTactic (← `(tactic| exact $(mkIdent n)))
