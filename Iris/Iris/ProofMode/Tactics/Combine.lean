@@ -89,6 +89,7 @@ theorem combine_gives_step_conj [BI PROP] {p1 p2 : Bool}
         persistently_and_intuitionistically_sep_right.mp
     _ ⊢ e ∗ □ outGivesCombined                                  := sep_mono_left sep_elim_left
 
+@[rocq_alias tac_combine_as_gives]
 theorem combine_as_gives [BI PROP] {p : Bool} {newE e outAs outGives goal : PROP}
     (pfAs : e ⊢ newE ∗ □?p outAs)
     (pfGives : e ⊢ e ∗ □ outGives)
