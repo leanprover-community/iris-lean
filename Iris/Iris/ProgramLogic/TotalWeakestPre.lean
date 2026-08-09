@@ -44,20 +44,7 @@ def twp.pre' (s : Stuckness) (wp : (CoPset × Expr) × (Val -> IProp GF) -> IPro
 instance twp.pre_mono' [OFE Expr] [OFE CoPset] [OFE.Discrete Expr] [OFE.Discrete CoPset]
     (s : Stuckness) : BIMonoPred (@twp.pre' hlc Expr State Obs Val Λ GF ι s) where
   mono_pred := by monotone
-  mono_pred_ne := by
-    intros wp hwp
-    constructor
-    intros n x₁ x₂ hx
-    rewrite [← Prod.eta x₁, ← Prod.eta x₂]
-    rewrite [← Prod.eta x₁.fst, ← Prod.eta x₂.fst]
-    unfold pre'
-    have := OFE.Discrete.discrete (OFE.dist_fst hx)
-    unfold pre
-    simp_all
-    split
-    · nonexp
-      apply OFE.dist_snd hx
-    · nonexp
+  mono_pred_ne := by nonexp
 
 def twp.def [OFE Expr] [OFE CoPset] (s : Stuckness) (E : CoPset)
     (e : Expr) (Φ : Val → IProp GF) := bi_least_fixpoint (twp.pre' s) ((E, e), Φ)
