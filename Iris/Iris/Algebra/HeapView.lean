@@ -592,7 +592,6 @@ theorem update_big_delete (m m' : H V) :
   | hemp =>
     suffices h : (m \ ∅ : H V) = m by
       rw [bigOpM_frag_empty, CMRA.unit_right_id, h]
-      exact Update.id
     exact eqv_of_Equiv fun j => by simp [get?_difference, get?_empty]
   | hins k v m2 Hm2 IH =>
     suffices h : (m \ Std.insert m2 k v) = delete (m \ m2) k by
@@ -671,8 +670,6 @@ theorem update_big_alloc (m1 m2 : H V) dq
       rw [← CMRA.assoc]
       refine Update.op ?_ ?_
       · rw [← union_insert_left]
-        exact Update.id
       · rw [BigOpM.bigOpM_insert_eq _ _ Hm2]
-        exact Update.id
 
 end FiniteHeapView

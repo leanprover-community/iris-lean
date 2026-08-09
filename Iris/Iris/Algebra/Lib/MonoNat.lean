@@ -36,7 +36,11 @@ scoped instance : CMRA.CoreId (a : MaxNat) := OrdCommMonoidLike.instCoreId _
 
 end MaxNat
 
+@[rocq_alias mono_nat]
 abbrev MonoNat := Auth MaxNat
+
+#rocq_ignore mono_natR "Use the MonoNat type and View.instCMRA typeclass"
+#rocq_ignore mono_natUR "Use the MonoNat type and View.instUCMRA typeclass"
 
 namespace MonoNat
 

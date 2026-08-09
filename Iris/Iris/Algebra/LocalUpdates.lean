@@ -27,6 +27,13 @@ variable [CMRA α]
 @[refl]
 theorem LocalUpdate.id (x : α × α) : x ~l~> x := fun _ _ vx e => ⟨vx, e⟩
 
+theorem LocalUpdate.trans {x y z : α × α} (uxy : x ~l~> y) (uyz : y ~l~> z) : x ~l~> z :=
+  fun n mz vx e => (uxy n mz vx e).elim (uyz n mz)
+
+instance : Trans LocalUpdate LocalUpdate LocalUpdate (α := α × α) where
+  trans := LocalUpdate.trans
+
+#rocq_ignore local_update_preorder "Use LocalUpdate.id and LocalUpdate.trans"
 #rocq_ignore local_update_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias exclusive_local_update]
