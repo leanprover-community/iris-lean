@@ -82,4 +82,38 @@ instance (priority := high) : NatCancel n n 0 0 where
 instance [h : NatCancel n m n' m'] : NatCancel (n + 1) (m + 1) n' m' where
   nat_cancel := by have := h.nat_cancel; grind
 
+/--
+  This type class corresponds to `TCForall` in Rocq's stdpp.
+
+  The core Lean libraries only provide `List.Forall₂` while `List.Forall` is
+  available in Mathlib (`Mathlib.Data.List.Defs`) as a definition.
+  The proposition `∀ x ∈ xs, p x` is typically directly used as an assertion,
+  but `TCForall` as a type class is useful for automatic inference, e.g.,
+  instances that involve `[∗]`.
+-/
+class inductive TCForall (p : α → Prop) : List α → Prop
+  | nil : TCForall p []
+  | cons {x : α} {xs : List α} : p x → TCForall p xs → TCForall p (x :: xs)
+
+/-- Corresponding to `TCForall_Forall` in Rocq's stdpp. -/
+theorem forall_TCForall {α} {p : α → Prop} {xs : List α} : TCForall p xs ↔ ∀ x ∈ xs, p x := by
+  constructor
+  · intro h
+    induction h with
+    | nil => intro _ _; contradiction
+    | cons hx _ ih =>
+      intro y hy
+      cases hy with
+      | head => exact hx
+      | tail _ hy => exact ih _ hy
+  · intro h
+    induction xs with
+    | nil => exact .nil
+    | cons x xs ih =>
+      constructor
+      · exact h x (.head _)
+      · apply ih
+        intro y hy
+        exact h y (.tail _ hy)
+
 end Iris.Std
