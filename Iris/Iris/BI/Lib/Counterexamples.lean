@@ -14,6 +14,11 @@ namespace Iris
 
 open Iris.Std BI ProofMode
 
+/-
+  The excluded middle `P ∨ ¬P` makes the separating conjunction trivial for
+  affine propositions, i.e., `P -∗ P ∗ P`.
+  If every proposition is affine we additionally get `P ∧ Q -∗ P ∗ Q`.
+-/
 namespace AffineEM
 
 variable {PROP : Type _} [BI PROP]
@@ -42,6 +47,11 @@ theorem and_sep [BIAffine PROP] : P ∧ Q ⊢ P ∗ Q := by
 
 end AffineEM
 
+/-
+  The combination of Löb induction `(▷ P → P) ⊢ P` and the classical excluded
+  middle principle `P ∨ ¬P` makes the later operator trivial.
+  In an SBI, the excluded middle axiom results in inconsistentcy due to `⊢ ▷ P → ⊢ P`.
+-/
 namespace LoebEM
 
 @[rocq_alias löb_em.later_anything]
@@ -64,6 +74,7 @@ theorem later_inconsistent [Sbi PROP] (em : ∀ P : PROP, ⊢ P ∨ ¬P) : ⊢@{
 
 end LoebEM
 
+/- We need the `▷` in a "Saved Proposition" construction with name-dependent allocation. -/
 namespace SavedProp
 
 variable [BI PROP] [instAffine : BIAffine PROP] {P Q : PROP}
@@ -138,6 +149,10 @@ theorem contradiction : False := by
 
 end SavedProp
 
+/-
+  This proves that we need the `▷` when opening invariants. We have two
+  paradoxes in this section, but they share the general axiomatization of invariants.
+-/
 namespace Inv
 
 @[rocq_alias inv.mask]
@@ -220,6 +235,7 @@ theorem exists_split_fupd0 {α : Type _} (E : Mask) (Φ : α → PROP) [inst : F
   from_exists :=
     exists_elim <| fun h => fupd_mono <| (exists_intro h).trans inst.from_exists
 
+/- The original paradox, as found in the "Iris from the Ground Up" paper. -/
 section Inv1
 
 variable (gname : Type _) (start finished : gname → PROP)
@@ -295,6 +311,7 @@ theorem saved_cast (γ : gname) :
 @[reducible]
 def notFUpd (P : PROP) : PROP := iprop(□ (P -∗ fupd M1 iprop(False)))
 
+/-- A bad recursive reference: assertion with name `i` does not hold. -/
 @[reducible, rocq_alias inv.A]
 def A (i : gname) : PROP :=
   iprop(∃ P, notFUpd fupd P ∗ saved name inv gname start finished i P)
@@ -366,6 +383,7 @@ theorem contradiction : False := by
 
 end Inv1
 
+/- Another proof showing that we need the `▷` when opening invariants. -/
 section Inv2
 
 variable {gname : Type _} (start finished : gname → PROP)
@@ -453,6 +471,10 @@ end Inv2
 
 end Inv
 
+/-
+  This proves that if we have linear impredicative invariants, we can still
+  drop arbitrary resources (i.e., we can "defeat" linearity).
+-/
 namespace Linear
 
 @[rocq_alias linear.mask]
@@ -516,6 +538,10 @@ theorem leak : P ⊢ fupd M1 M1 (emp : PROP) := by
 
 end Linear
 
+/-
+  For standard step indexing (i.e. not transfinite), the combination of later
+  credits and the [fupd_keep_si_pure'] law with fancy-update modality is unsound.
+-/
 namespace LaterCreditsPlain
 
 variable [instSbi : Sbi PROP] [instBFupd : BIFUpdate PROP]
