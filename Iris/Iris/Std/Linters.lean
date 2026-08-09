@@ -4,5 +4,5 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
-public meta import Iris.Std.RocqPorting
-public meta import Iris.Std.Linters
+public import Iris.Std.Linters.DeclarationNames
+public import Iris.Std.Linters.Style

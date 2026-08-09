@@ -1,6 +1,7 @@
 name = "iris"
 defaultTargets = ["Iris"]
 testDriver = "IrisTest"
+lintDriver = "batteries/runLinter"
 
 [[require]]
 name = "Qq"
@@ -29,3 +30,15 @@ supportInterpreter = true
 name = "check-imports"
 srcDir = "../scripts"
 root = "CheckImports"
+
+[leanOptions]
+linter.missingDocs = false
+weak.linter.iris.style.setOption = false
+weak.linter.iris.style.missingEnd = false
+weak.linter.iris.style.cdot = false
+weak.linter.iris.style.dollarSyntax = false
+weak.linter.iris.style.lambdaSyntax = false
+weak.linter.iris.style.longLine = false
+weak.linter.iris.style.nameCheck = false
+weak.linter.iris.style.openClassical = false
+weak.linter.iris.style.show = false
