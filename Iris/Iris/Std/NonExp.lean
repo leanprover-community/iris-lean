@@ -21,6 +21,6 @@ meta initialize nonexpExt :
 
 meta initialize registerBuiltinAttribute {
   name := `non_exp
-  descr := "Non-expansiveness lemmas to be used by the contractiveness solver"
+  descr := "Non-expansiveness lemmas to be used by the non-expansiveness and contractiveness solvers"
   add := λ decl _ kind => nonexpExt.add decl kind
 }

@@ -6,7 +6,7 @@ Authors: Mario Carneiro, Sebastian Graf, Sergei Stepanenko
 module
 
 public meta import Iris.Std.RocqPorting
-public meta import Iris.Std.Contractive
+public meta import Iris.Std.NonExp
 
 @[expose] public section
 
