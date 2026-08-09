@@ -41,57 +41,29 @@ def mraSetoid (R : α → α → Prop) : Setoid (List α) where
   iseqv := mra_list_equiv_equivalence R
 
 @[rocq_alias mra]
-structure Mra {α : Type _} (R : α → α → Prop) where
-  repr : Quotient (mraSetoid R)
+def Mra {α : Type _} (R : α → α → Prop) := Quotient (mraSetoid R)
 
 namespace Mra
 
 variable {α : Type _} {R : α → α → Prop}
 
-/-- A type equipped with a distinguished binary relation. -/
-class HasEquiv (α : Type _) where
-  equiv : α → α → Prop
-
-/-- A function preserving a relation between its domain and codomain. -/
-class RelHom (S : α → α → Prop) (T : β → β → Prop) (f : α → β) : Prop where
-  map_rel {a b} : S a b → T (f a) (f b)
-
-/-- A binary function preserving relations in both arguments. -/
-class RelHom₂ (S : α → α → Prop) (T : β → β → Prop) (U : γ → γ → Prop)
-    (f : α → β → γ) : Prop where
-  map_rel {a a' b b'} : S a a' → T b b' → U (f a b) (f a' b')
-
-/-- A function reflecting a codomain relation back to its domain. -/
-class RelInjective (S : α → α → Prop) (T : β → β → Prop) (f : α → β) : Prop where
-  injective {a b} : T (f a) (f b) → S a b
-
-/-- A setoid's equivalence is a distinguished binary relation. -/
-instance (priority := low) instHasEquivOfSetoid [s : Setoid α] : HasEquiv α where
-  equiv := (· ≈ ·)
-
-/-- Every binary relation respects equality in both arguments. -/
-instance instRelHom₂EqIff (R : α → α → Prop) :
-    RelHom₂ (fun a b : α ↦ a = b) (fun a b : α ↦ a = b) Iff R where
-  map_rel h₁ h₂ := h₁ ▸ h₂ ▸ Iff.rfl
-
 @[rocq_alias to_mra]
-def toMra (a : α) : Mra R := ⟨Quotient.mk _ [a]⟩
+def toMra (a : α) : Mra R := Quotient.mk _ [a]
 
 @[rocq_alias mra_below]
 def below (a : α) (x : Mra R) : Prop :=
   Quotient.lift (mraBelowList R a) (by
     intro xs ys h
     change mraListEquiv R xs ys at h
-    exact propext (h a)) x.repr
+    exact propext (h a)) x
 
 @[rocq_alias mra_below_to_mra]
 theorem below_to_mra (a b : α) : below a (toMra (R := R) b) ↔ R a b :=
   ⟨fun ⟨_, hc, hac⟩ ↦ List.mem_singleton.mp hc ▸ hac,
     fun hab ↦ ⟨b, List.mem_singleton_self b, hab⟩⟩
 
-#rocq_ignore mra_equiv
-  "Subsumed by the equality-based `COFE (Mra R)` instance on the quotient representation."
-#rocq_ignore mra_equiv_equiv "Subsumed by equality's equivalence laws."
+#rocq_ignore mra_equiv "Use equality."
+#rocq_ignore mra_equiv_equiv "Use equality."
 
 @[rocq_alias mraO]
 instance (R : α → α → Prop) : COFE (Mra R) := COFE.ofDiscrete _
@@ -106,28 +78,27 @@ theorem below_list_append (a : α) (xs ys : List α) :
     · exact ⟨b, List.mem_append.mpr (.inr hb), hab⟩
 
 def append (x y : Mra R) : Mra R :=
-  ⟨Quotient.lift₂ (fun xs ys ↦ Quotient.mk _ (xs ++ ys))
+  Quotient.lift₂ (fun xs ys ↦ Quotient.mk _ (xs ++ ys))
     (by
       intro xs ys xs' ys' hx hy
       change mraListEquiv R xs xs' at hx
       change mraListEquiv R ys ys' at hy
-      apply Quotient.sound
-      intro a
-      rw [below_list_append, below_list_append, hx a, hy a]) x.repr y.repr⟩
+      refine Quotient.sound (fun a => ?_)
+      rw [below_list_append, below_list_append, hx a, hy a]) x y
 
 @[elab_as_elim]
 private theorem quotient_induction_on {motive : Mra R → Prop} (x : Mra R)
-    (h : ∀ xs, motive ⟨Quotient.mk _ xs⟩) : motive x := by
-  obtain ⟨x⟩ := x
-  exact Quotient.inductionOn x h
+    (h : ∀ xs, motive (Quotient.mk _ xs)) : motive x :=
+  Quotient.inductionOn x h
 
 private theorem eq_of_below_iff {x y : Mra R}
     (h : ∀ a, below a x ↔ below a y) : x = y := by
   revert h
-  refine quotient_induction_on x fun _ ↦ ?_
-  refine quotient_induction_on y fun _ ↦ ?_
+  refine quotient_induction_on x fun xs ↦ ?_
+  refine quotient_induction_on y fun ys ↦ ?_
   intro h
-  exact congrArg Mra.mk (Quotient.sound h)
+  apply Quotient.sound
+  exact h
 
 private theorem below_append (a : α) (x y : Mra R) :
     below a (append x y) ↔ below a x ∨ below a y := by
@@ -135,26 +106,10 @@ private theorem below_append (a : α) (x y : Mra R) :
   refine quotient_induction_on y fun ys ↦ ?_
   exact below_list_append a xs ys
 
-theorem append_assoc (x y z : Mra R) : append x (append y z) = append (append x y) z := by
-  refine quotient_induction_on x fun xs ↦ ?_
-  refine quotient_induction_on y fun ys ↦ ?_
-  refine quotient_induction_on z fun zs ↦ ?_
-  exact congrArg Mra.mk <|
-    congrArg (Quotient.mk (mraSetoid R)) (List.append_assoc xs ys zs).symm
-
-theorem append_comm (x y : Mra R) : append x y = append y x := by
-  refine quotient_induction_on x fun _ ↦ ?_
-  refine quotient_induction_on y fun _ ↦ ?_
-  apply congrArg Mra.mk
-  apply Quotient.sound
-  intro a
-  rw [below_list_append, below_list_append, or_comm]
 
 theorem append_idem (x : Mra R) : append x x = x := by
   refine quotient_induction_on x fun _ ↦ ?_
-  apply congrArg Mra.mk
-  apply Quotient.sound
-  intro a
+  refine Quotient.sound fun _ => ?_
   rw [below_list_append, or_self]
 
 #rocq_ignore mra_valid "Replaced by the `Valid` field of the CMRA instance."
@@ -164,16 +119,27 @@ theorem append_idem (x : Mra R) : append x x = x := by
 
 @[rocq_alias mra_cmra_mixin]
 instance (R : α → α → Prop) : CMRA (Mra R) where
-  pcore := some; op := append
-  ValidN _ _ := True; Valid _ := True
+  pcore := some
+  op := append
+  ValidN _ _ := True
+  Valid _ := True
   op_ne.ne _ _ _ h := by rw [h]
   pcore_ne hxy h := ⟨_, (congrArg some hxy.symm).trans h, .rfl⟩
   validN_ne _ := id
   valid_iff_validN := by simp
   validN_succ := id
   validN_op_left _ := trivial
-  assoc := append_assoc ..
-  comm := append_comm ..
+  assoc {x y z} := by
+    refine quotient_induction_on x fun xs ↦ ?_
+    refine quotient_induction_on y fun ys ↦ ?_
+    refine quotient_induction_on z fun zs ↦ ?_
+    exact congrArg (Quotient.mk (mraSetoid R)) (List.append_assoc xs ys zs).symm
+  comm {x y} := by
+    refine quotient_induction_on x fun _ ↦ ?_
+    refine quotient_induction_on y fun _ ↦ ?_
+    apply Quotient.sound
+    intro a
+    rw [below_list_append, below_list_append, or_comm]
   pcore_op_left h :=
     (congrArg (append · _) (Option.some.inj h).symm).trans (append_idem _)
   pcore_idem _ := rfl
@@ -201,10 +167,12 @@ instance : CMRA.Discrete (Mra R) where
 
 @[rocq_alias auth_ucmra_mixin]
 instance (R : α → α → Prop) : UCMRA (Mra R) where
-  unit := ⟨Quotient.mk _ []⟩; unit_valid := trivial
+  unit := Quotient.mk _ []
+  unit_valid := trivial
   unit_left_id := by
-    rintro ⟨x⟩
-    exact Quotient.inductionOn x fun _ ↦ rfl
+    intro x
+    refine quotient_induction_on (R := R) x fun _ ↦ ?_
+    rfl
   pcore_unit := rfl
 
 @[rocq_alias mra_idemp]
@@ -283,22 +251,22 @@ theorem to_mra_rel_injective (S : α → α → Prop) (hR : ∀ {a}, R a a)
     ((rel_iff_of_to_mra_eq hab _).mp hR) ((rel_iff_of_to_mra_eq hab _).mpr hR)
 
 @[rocq_alias to_mra_inj]
-instance inst_to_mra_inj [hR : Std.Refl R]
-    [hanti : Antisymmetric (· = ·) R] :
-    RelInjective (· = ·) (fun a b : Mra R ↦ a = b) toMra where
-  injective := to_mra_rel_injective (fun a b : α ↦ a = b) (hR.refl _) hanti.antisymm
+theorem to_mra_injective [hR : Std.Refl R] [hanti : Antisymmetric (· = ·) R] :
+    Function.Injective (toMra (R := R)) :=
+  fun {_ _} hab ↦
+    to_mra_rel_injective (R := R) (fun a b : α ↦ a = b) (hR.refl _) hanti.antisymm hab
 
 @[rocq_alias to_mra_proper]
-instance [HasEquiv α] [hS : Std.Refl (HasEquiv.equiv (α := α))]
-    [hrel : RelHom₂ HasEquiv.equiv HasEquiv.equiv Iff R] :
-    RelHom HasEquiv.equiv (fun a b : Mra R ↦ a = b) toMra where
-  map_rel := to_mra_rel_proper HasEquiv.equiv (hS.refl _) hrel.map_rel
+theorem to_mra_proper [HasEquiv α] [hS : Std.Refl (α := α) (· ≈ ·)]
+    (hrel : ∀ {a a' b b'}, a ≈ a' → b ≈ b' → ((R a b) ↔ (R a' b'))) {a b : α} :
+    a ≈ b → ((toMra a) : Mra R) = (toMra b) :=
+  to_mra_rel_proper (· ≈ ·) (hS.refl _) hrel
 
 @[rocq_alias to_mra_equiv_inj]
-instance (priority := default - 1) inst_to_mra_equiv_inj [HasEquiv α] [hR : Std.Refl R]
-    [hanti : Antisymmetric HasEquiv.equiv R] :
-    RelInjective HasEquiv.equiv (fun a b : Mra R ↦ a = b) toMra where
-  injective := to_mra_rel_injective HasEquiv.equiv (hR.refl _) hanti.antisymm
+theorem to_mra_equiv_injective [HasEquiv α] [hR : Std.Refl R]
+    [hanti : Antisymmetric (· ≈ ·) R] :
+    ∀ {a b}, toMra (R := R) a = toMra b → a ≈ b :=
+  to_mra_rel_injective (R := R) (· ≈ ·) (hR.refl _) hanti.antisymm
 
 end Mra
 end Iris
