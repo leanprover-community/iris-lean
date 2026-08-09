@@ -29,39 +29,50 @@ syntax irisHyp := ("□" <|> "∗") ident " : " term
 
 syntax irisGoalStx := ppDedent(ppLine irisHyp)* ppDedent(ppLine "⊢ " term)
 
-open Lean.PrettyPrinter
+open Lean.PrettyPrinter.Delaborator SubExpr
+
+def delabIProp : Delab := do
+  annotateCurPos (← unpackIprop (← delab))
+
+/-- Move from the position of a hypothesis node `□?p (IrisHyp ty)` to the position of `ty`. -/
+def withHypType {α} [Inhabited α] (persistent : Bool) (d : DelabM α) : DelabM α :=
+  let d := withMDataExpr <| withAppArg d
+  if persistent then withNaryArg 2 d else d
 
 @[delab app.Iris.ProofMode.Entails']
 def delabIrisGoal : Delab := do
-  let expr ← instantiateMVars <| ← getExpr
-
-  -- extract environment
-  let some { hyps, goal, .. } := parseIrisGoal? expr | failure
-
-  -- delaborate
-  let (_, hyps) ← delabHypotheses hyps ({}, #[])
-  let goal ← unpackIprop (← delab goal)
-
-  -- build syntax
-  return ⟨← `(irisGoalStx| $hyps.reverse* ⊢ $goal:term)⟩
+  let some { hyps, .. } := parseIrisGoal? (← instantiateMVars (← getExpr)) | failure
+  let (_, hypStxs) ← withNaryArg 2 <| delabHypotheses hyps ({}, #[])
+  let goalStx ← withNaryArg 3 delabIProp
+  return ⟨← `(irisGoalStx| $hypStxs.reverse* ⊢ $goalStx:term)⟩
 where
   delabHypotheses {u prop bi s} (hyps : @Hyps u prop bi s)
       (acc : NameMap Nat × Array (TSyntax ``irisHyp)) :
       DelabM (NameMap Nat × Array (TSyntax ``irisHyp)) := do
     match hyps with
     | .emp _ => pure acc
-    | .hyp _ name _ p ty _ =>
-      let mut (map, acc) := acc
-      let (idx, name') ← if let some idx := map.find? name then
-        pure (idx + 1, name.appendAfter <| if idx == 0 then "✝" else "✝" ++ idx.toSuperscriptString)
-      else
-        pure (0, name)
+    | .sep _ _ _ _ lhs rhs =>
+      let acc ← withNaryArg 3 <| delabHypotheses rhs acc
+      withNaryArg 2 <| delabHypotheses lhs acc
+    | .hyp _ name ivar p ty _ =>
+      let (map, acc) := acc
+      let (idx, name') := match map.find? name with
+        | some idx =>
+          (idx + 1, name.appendAfter <|
+            if idx == 0 then "✝" else "✝" ++ idx.toSuperscriptString)
+        | none => (0, name)
+      let pos ← getPos
+      let tyStx ← withHypType (isTrue p) delabIProp
+      let nameStx : Ident :=
+        ⟨(mkIdent name').raw.setInfo (.synthetic ⟨pos.asNat⟩ ⟨pos.asNat⟩)⟩
+      withLCtx ((← getLCtx).mkLocalDecl ⟨ivar.name⟩ name' q(HypMarker $ty))
+          (← getLocalInstances) do
+        addTermInfo pos nameStx (.fvar ⟨ivar.name⟩) (isBinder := true)
       let stx ← if isTrue p then
-        `(irisHyp| □$(mkIdent name') : $(← unpackIprop (← delab ty)))
+        `(irisHyp| □$nameStx : $tyStx)
       else
-        `(irisHyp| ∗$(mkIdent name') : $(← unpackIprop (← delab ty)))
+        `(irisHyp| ∗$nameStx : $tyStx)
       pure (map.insert name idx, acc.push stx)
-    | .sep _ _ _ _ lhs rhs => delabHypotheses lhs (← delabHypotheses rhs acc)
 
 @[delab app.Iris.ProofMode.HypMarker]
 def delabHypMarker : Delab := do unpackIprop (← withAppArg delab)
