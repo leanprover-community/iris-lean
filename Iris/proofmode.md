@@ -198,7 +198,7 @@ instance : BI (Quotient myPropSetoid) where
   ...
 ```
 
-A generalized rewriting approach is also necessary for the entailment relation (similar to rewriting with an implication). Since there was no workaround for rewriting with entailments, this project includes the tactic `rw'` for rewriting with a preorder and monotone rewrite rules. For an entailment with instances of `Reflexive` and `Transitive`, theorems can be annotated with `@[rw_mono_rule]` to indicate that the annotated implication can be used to apply a rewrite term (such as a hypothesis in a proof) to one of the arguments of an operator in a proposition. The tactic `rw'` simplifies the problem by assuming that at most one rewrite rule is applicable for each operator, so backtracking is not required.
+A generalized rewriting approach is also necessary for the entailment relation (similar to rewriting with an implication). Since there was no workaround for rewriting with entailments, this project includes the tactic `rw'` for rewriting with a preorder and monotone rewrite rules. For an entailment with instances of `Refl` and `Trans`, theorems can be annotated with `@[rw_mono_rule]` to indicate that the annotated implication can be used to apply a rewrite term (such as a hypothesis in a proof) to one of the arguments of an operator in a proposition. The tactic `rw'` simplifies the problem by assuming that at most one rewrite rule is applicable for each operator, so backtracking is not required.
 
 Example:
 ```lean

@@ -51,8 +51,10 @@ theorem ne_r {A : Type _} [OFE A] (a : A) :
   NonExpansive₂.ne_right internalEq a
 
 @[rocq_alias internal_eq_refl]
-theorem refl {A : Type _} [OFE A] {P : PROP} {a : A} : P ⊢ a ≡ a :=
-  true_intro.trans <| siPure_pure.mpr.trans <| siPure_mono (SiProp.internalEq_refl _ _)
+theorem refl {A : Type _} [OFE A] {P : PROP} {a : A} : P ⊢ a ≡ a := calc
+  _ ⊢ True                            := true_intro
+  _ ⊢ <si_pure> True                  := siPure_pure.mpr
+  _ ⊢ <si_pure> SiProp.internalEq a a := siPure_mono <| SiProp.internalEq_refl _ _
 
 @[rocq_alias equiv_internal_eq]
 theorem of_equiv {A : Type _} [OFE A] {P : PROP} {a b : A} (h : a = b) :
@@ -77,13 +79,17 @@ theorem rewrite {A : Type _} [OFE A] {a b : A} (Ψ : A → PROP) [hΨ : NonExpan
         refine (persistently_mono (siPure_emp_valid.mpr ?_)).trans persistently_elim
         refine siEmpValid_emp_valid.mpr ?_
         exact wand_intro_left (sep_emp.1.trans <| imp_intro and_elim_r)
-    _ ⊢ True -∗ Ψ a → Ψ b := siPure_siEmpValid_elim
-    _ ⊢ Ψ a → Ψ b := emp_sep.2.trans <| (sep_mono_left true_intro).trans wand_elim_right
+    _ ⊢ True -∗ Ψ a → Ψ b          := siPure_siEmpValid_elim
+    _ ⊢ emp ∗ (True -∗ Ψ a → Ψ b)  := emp_sep.mpr
+    _ ⊢ True ∗ (True -∗ Ψ a → Ψ b) := sep_mono_left true_intro
+    _ ⊢ Ψ a → Ψ b                  := wand_elim_right
 
 @[rocq_alias internal_eq_rewrite']
 theorem rewrite' {A : Type _} [OFE A] {a b : A} (Ψ : A → PROP) [NonExpansive Ψ]
-     (Heq : P ⊢ a ≡ b) (HΨa : P ⊢ Ψ a) : P ⊢ Ψ b :=
-  (and_intro .rfl HΨa).trans <| (and_mono_left Heq).trans <| imp_elim (rewrite Ψ)
+     (Heq : P ⊢ a ≡ b) (HΨa : P ⊢ Ψ a) : P ⊢ Ψ b := calc
+  P ⊢ P ∧ Ψ a     := and_intro .rfl HΨa
+  _ ⊢ a ≡ b ∧ Ψ a := and_mono_left Heq
+  _ ⊢ Ψ b         := imp_elim (rewrite Ψ)
 
 @[rocq_alias internal_eq_sym]
 theorem symm {A : Type _} [OFE A] {a b : A} : a ≡ b ⊢@{PROP} b ≡ a :=

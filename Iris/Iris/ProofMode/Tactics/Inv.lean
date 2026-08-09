@@ -20,10 +20,10 @@ open BI
 
 @[rocq_alias tac_inv_elim]
 theorem tac_inv_elim [BI PROP]
-    {e e' e'' goal : PROP} {ϕ : Prop} {X : Type} {p close : Bool}
+    {e e' e'' goal : PROP} {φ : Prop} {X : Type} {p close : Bool}
     {Pinv Pin : PROP} {mPclose : Option <| X → PROP} {Pout Q' : X → PROP}
-    (inst : ElimInv ϕ X Pinv Pin Pout close mPclose goal Q')
-    (hϕ : ϕ)
+    (inst : ElimInv φ X Pinv Pin Pout close mPclose goal Q')
+    (hφ : φ)
     (pf : match mPclose with
       | none => ∀ x, e'' ∗ Pout x ⊢ Q' x
       | some Pclose => ∀ x, e'' ∗ Pout x ∗ Pclose x ⊢ Q' x)
@@ -71,7 +71,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
   -- Find the hypothesis from the context
   let ⟨_, hyps', _, Pinv, _, _, pfEq⟩ := hyps.remove false ivar
 
-  let ϕ ← mkFreshExprMVarQ q(Prop)
+  let φ ← mkFreshExprMVarQ q(Prop)
   let Pin : Q($prop) ← mkFreshExprMVarQ q($prop)
   let X : Q(Type) ← mkFreshExprMVarQ q(Type)
   let Pout ← mkFreshExprMVarQ q($X → $prop)
@@ -79,7 +79,8 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
   let close := if closePat.isSome then q(true) else q(false)
   let mPclose ← mkFreshExprMVarQ q(Option ($X → $prop))
   let Q' ← mkFreshExprMVarQ q($X → $prop)
-  let some inst ← ProofModeM.trySynthInstanceQ q(ElimInv $ϕ $X $Pinv $Pin $Pout $close $mPclose $goal $Q')
+  let some inst ← ProofModeM.trySynthInstanceQ
+    q(ElimInv $φ $X $Pinv $Pin $Pout $close $mPclose $goal $Q')
   | throwError "iinv: invalid invariant {Pinv} (ElimInv type class synthesis failed)"
 
   let ⟨e'', hyps'', p'', out'', pfPin⟩ ←
@@ -88,7 +89,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
   have : $out'' =Q $Pin := ⟨⟩
   have : $p'' =Q false := ⟨⟩
 
-  let hϕ ← iSolveSidecondition (failOnUnsolved := false) q($ϕ)
+  let hφ ← iSolveSidecondition (failOnUnsolved := false) q($φ)
 
   -- Simplify occurrences of `wandM`, `Option.getD`, pattern matching, etc.
   let Pout' : Q($X → $prop) ← reduceWandM Pout
@@ -107,13 +108,13 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
           mkLambdaFVars #[x] pf'
         -- Throw an error if `hclose` is not given, but `mPclose` is not `none`
         | none => throwError "iinv: missing cases pattern for the closing hypothesis"
-    return q(tac_inv_elim $inst $hϕ $pf $pfEq $pfPin)
+    return q(tac_inv_elim $inst $hφ $pf $pfEq $pfPin)
   | ~q(none) =>
     let pf : Q(∀ x, $e'' ∗ $Pout x ⊢ $Q' x) ←
       withLocalDeclDQ (← mkFreshUserName .anonymous) X fun x => do
         let pf' ← iCasesCore hyps'' q($Q'' $x) casesPat q(false) q($Pout' $x)
         mkLambdaFVars #[x] pf'
-    return q(tac_inv_elim $inst $hϕ $pf $pfEq $pfPin)
+    return q(tac_inv_elim $inst $hφ $pf $pfEq $pfPin)
 
 syntax (name := iinv) "iinv " colGt term (" $$ " colGt ppSpace specPat)?
     " with " colGt icasesPat (colGt icasesPat)? : tactic
@@ -137,7 +138,8 @@ syntax (name := iinv) "iinv " colGt term (" $$ " colGt ppSpace specPat)?
     by default the auto-framing of spatial hypotheses.
 -/
 elab_rules : tactic
-  | `(tactic| iinv $t:term $[$$ $spat:specPat]? with $casesPat:icasesPat $[$closePat:icasesPat]?) => do
+  | `(tactic| iinv $t:term $[$$ $spat:specPat]?
+      with $casesPat:icasesPat $[$closePat:icasesPat]?) => do
     -- Parse the introduction and selection patterns
     let specPat ← liftMacroM <| spat.mapM SpecPat.parse
     let casesPat ← liftMacroM <| iCasesPat.parse casesPat

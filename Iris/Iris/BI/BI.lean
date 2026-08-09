@@ -89,14 +89,19 @@ instance BI.entails_preorder [BI PROP] : Std.IsPreorder PROP where
   le_refl _ := BI.entails_refl
   le_trans _ _ _ := BI.entails_trans
 
+instance [BI PROP] : Std.Refl <| BIBase.Entails (PROP := PROP) where
+  refl _ := BI.entails_refl
+
 theorem BIBase.Entails.trans [BI PROP] {P Q R : PROP} (h1 : P ⊢ Q) (h2 : Q ⊢ R) : P ⊢ R :=
   BI.entails_trans h1 h2
 
 @[simp,refl] theorem BIBase.Entails.rfl [BI PROP] {P : PROP} : P ⊢ P := BI.entails_refl
+@[simp,refl] theorem BIBase.Entails.refl [BI PROP] (P : PROP) : P ⊢ P := BI.entails_refl
 
 theorem BIBase.Entails.of_eq [BI PROP] {P Q : PROP} (h : P = Q) : P ⊢ Q := h ▸ .rfl
 
 @[simp] theorem BIBase.BiEntails.rfl [BI PROP] {P : PROP} : P ⊣⊢ P := ⟨.rfl, .rfl⟩
+@[simp] theorem BIBase.BiEntails.refl [BI PROP] (P : PROP) : P ⊣⊢ P := ⟨.rfl, .rfl⟩
 
 theorem BIBase.BiEntails.of_eq [BI PROP] {P Q : PROP} (h : P = Q) : P ⊣⊢ Q := h ▸ .rfl
 theorem _root_.Eq.to_bi [BI PROP] {P Q : PROP} (h : P = Q) : P ⊣⊢ Q := h ▸ .rfl
