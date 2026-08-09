@@ -78,15 +78,7 @@ GF : BundledGFunctors
 example : ⊢@{IProp GF}  WP hl(((#0 + #1) + #2) + #3) {{ v, True }} := by
   wp_bind ((#0 + _) + _)
 
-/--
-error: Tactic `wp_bind` failed: Cannot unify hl((#2 + &?_)) with any possible evaluation context
-
-hlc : HasLC
-GF : BundledGFunctors
-ι : IrisGS_gen hlc Exp GF
-⊢ ⏎
-  ⊢ WP hl((((#0 + #1) + #2) + #3)) {{ v, True }}
--/
+/-- error: wp_bind: Cannot unify hl((#2 + &?_)) with any possible evaluation context -/
 #guard_msgs in
 example : ⊢@{IProp GF}  WP hl(((#0 + #1) + #2) + #3) {{ v, True }} := by
   wp_bind (#2 + _)
@@ -281,17 +273,7 @@ end wp_lam
 
 section wp_let
 
-/--
-error: Tactic `wp_pure` failed: Cannot find expression to evaluate
-
-hlc : HasLC
-GF✝ : BundledGFunctors
-ι : IrisGS_gen hlc Exp GF✝
-GF : BundledGFunctors
-inst✝ : HeapLangGS hlc GF
-⊢ ⏎
-  ⊢ WP hl(#1; #2) {{ v, ⌜v = hl_val(#2)⌝ }}
--/
+/-- error: wp_pure: Cannot find expression to evaluate -/
 #guard_msgs in
 example : ⊢@{IProp GF} WP hl(#1; #2) {{ v, ⌜v = hl_val(#2)⌝ }} := by
   wp_let
@@ -328,17 +310,7 @@ inst✝ : HeapLangGS hlc GF
 example : ⊢@{IProp GF} WP hl(#1; #2) {{ v, ⌜v = hl_val(#2)⌝ }} := by
   wp_seq
 
-/--
-error: Tactic `wp_pure` failed: Cannot find expression to evaluate
-
-hlc : HasLC
-GF✝ : BundledGFunctors
-ι : IrisGS_gen hlc Exp GF✝
-GF : BundledGFunctors
-inst✝ : HeapLangGS hlc GF
-⊢ ⏎
-  ⊢ WP hl(let x := #1; x) {{ v, ⌜v = hl_val(#1)⌝ }}
--/
+/-- error: wp_pure: Cannot find expression to evaluate -/
 #guard_msgs in
 example : ⊢@{IProp GF} WP hl(let x := #1; x) {{ v, ⌜v = hl_val(#1)⌝ }} := by
   wp_seq
@@ -347,17 +319,7 @@ end wp_seq
 
 section wp_closure
 
-/--
-error: Tactic `wp_pure` failed: Cannot find expression to evaluate
-
-hlc : HasLC
-GF✝ : BundledGFunctors
-ι : IrisGS_gen hlc Exp GF✝
-GF : BundledGFunctors
-inst✝ : HeapLangGS hlc GF
-⊢ ⏎
-  ⊢ WP hl((#1 + #1)) {{ v, ⌜v = hl_val(#2)⌝ }}
--/
+/-- error: wp_pure: Cannot find expression to evaluate -/
 #guard_msgs in
 example : ⊢@{IProp GF} WP hl(#1 + #1) {{ v, ⌜v = hl_val(#2)⌝ }} := by
   wp_closure
@@ -394,17 +356,7 @@ inst✝ : HeapLangGS hlc GF
 example : ⊢@{IProp GF} WP hl(if #true then #1 else #2) {{ v, ⌜v = hl_val(#1)⌝ }} := by
   wp_if
 
-/--
-error: Tactic `wp_pure` failed: Cannot find expression to evaluate
-
-hlc : HasLC
-GF✝ : BundledGFunctors
-ι : IrisGS_gen hlc Exp GF✝
-GF : BundledGFunctors
-inst✝ : HeapLangGS hlc GF
-⊢ ⏎
-  ⊢ WP hl((#1 + #2)) {{ v, ⌜v = hl_val(#3)⌝ }}
--/
+/-- error: wp_pure: Cannot find expression to evaluate -/
 #guard_msgs in
 example : ⊢@{IProp GF} WP hl(#1 + #2) {{ v, ⌜v = hl_val(#3)⌝ }} := by
   wp_if
@@ -413,17 +365,7 @@ end wp_if
 
 section wp_if_true
 
-/--
-error: Tactic `wp_pure` failed: Cannot find expression to evaluate
-
-hlc : HasLC
-GF✝ : BundledGFunctors
-ι : IrisGS_gen hlc Exp GF✝
-GF : BundledGFunctors
-inst✝ : HeapLangGS hlc GF
-⊢ ⏎
-  ⊢ WP hl(if #false then #1 else #2) {{ v, ⌜v = hl_val(#2)⌝ }}
--/
+/-- error: wp_pure: Cannot find expression to evaluate -/
 #guard_msgs in
 example : ⊢@{IProp GF} WP hl(if #false then #1 else #2) {{ v, ⌜v = hl_val(#2)⌝ }} := by
   wp_if_true
@@ -460,17 +402,7 @@ inst✝ : HeapLangGS hlc GF
 example : ⊢@{IProp GF} WP hl(if #false then #1 else #2) {{ v, ⌜v = hl_val(#2)⌝ }} := by
   wp_if_false
 
-/--
-error: Tactic `wp_pure` failed: Cannot find expression to evaluate
-
-hlc : HasLC
-GF✝ : BundledGFunctors
-ι : IrisGS_gen hlc Exp GF✝
-GF : BundledGFunctors
-inst✝ : HeapLangGS hlc GF
-⊢ ⏎
-  ⊢ WP hl(if #true then #1 else #2) {{ v, ⌜v = hl_val(#1)⌝ }}
--/
+/-- error: wp_pure: Cannot find expression to evaluate -/
 #guard_msgs in
 example : ⊢@{IProp GF} WP hl(if #true then #1 else #2) {{ v, ⌜v = hl_val(#1)⌝ }} := by
   wp_if_false
@@ -493,17 +425,7 @@ inst✝ : HeapLangGS hlc GF
 example : ⊢@{IProp GF} WP hl(fst(v((#1, #2)))) {{ v, ⌜v = hl_val(#1)⌝ }} := by
   wp_proj
 
-/--
-error: Tactic `wp_pure` failed: Cannot find expression to evaluate
-
-hlc : HasLC
-GF✝ : BundledGFunctors
-ι : IrisGS_gen hlc Exp GF✝
-GF : BundledGFunctors
-inst✝ : HeapLangGS hlc GF
-⊢ ⏎
-  ⊢ WP hl((#1, #2)) {{ v, ⌜v = hl_val((#1, #2))⌝ }}
--/
+/-- error: wp_pure: Cannot find expression to evaluate -/
 #guard_msgs in
 example : ⊢@{IProp GF} WP hl((#1, #2)) {{ v, ⌜v = hl_val((#1, #2))⌝ }} := by
   wp_proj
@@ -526,17 +448,7 @@ end wp_proj
 
 section wp_inj
 
-/--
-error: Tactic `wp_pure` failed: Cannot find expression to evaluate
-
-hlc : HasLC
-GF✝ : BundledGFunctors
-ι : IrisGS_gen hlc Exp GF✝
-GF : BundledGFunctors
-inst✝ : HeapLangGS hlc GF
-⊢ ⏎
-  ⊢ WP hl(injr((#1 + #1))) {{ v, ⌜v = hl_val(injr(#2))⌝ }}
--/
+/-- error: wp_pure: Cannot find expression to evaluate -/
 #guard_msgs in
 example : ⊢@{IProp GF} WP hl(injr(#1 + #1)) {{ v, ⌜v = hl_val(injr(#2))⌝ }} := by
   wp_inj
@@ -587,17 +499,7 @@ inst✝ : HeapLangGS hlc GF
 example : ⊢@{IProp GF} WP hl((#1, #2)) {{ v, ⌜v = hl_val((#1, #2))⌝ }} := by
   wp_pair
 
-/--
-error: Tactic `wp_pure` failed: Cannot find expression to evaluate
-
-hlc : HasLC
-GF✝ : BundledGFunctors
-ι : IrisGS_gen hlc Exp GF✝
-GF : BundledGFunctors
-inst✝ : HeapLangGS hlc GF
-⊢ ⏎
-  ⊢ WP hl(((#1 + #1), #2)) {{ v, ⌜v = hl_val((#2, #2))⌝ }}
--/
+/-- error: wp_pure: Cannot find expression to evaluate -/
 #guard_msgs in
 example : ⊢@{IProp GF} WP hl((#1 + #1, #2)) {{ v, ⌜v = hl_val((#2, #2))⌝ }} := by
   wp_pair
@@ -606,17 +508,7 @@ end wp_pair
 
 section wp_unop
 
-/--
-error: Tactic `wp_pure` failed: Cannot find expression to evaluate
-
-hlc : HasLC
-GF✝ : BundledGFunctors
-ι : IrisGS_gen hlc Exp GF✝
-GF : BundledGFunctors
-inst✝ : HeapLangGS hlc GF
-⊢ ⏎
-  ⊢ WP hl((#1 + #2)) {{ v, ⌜v = hl_val(#3)⌝ }}
--/
+/-- error: wp_pure: Cannot find expression to evaluate -/
 #guard_msgs in
 example : ⊢@{IProp GF} WP hl(#1 + #2) {{ v, ⌜v = hl_val(#3)⌝ }} := by
   wp_unop
@@ -653,17 +545,7 @@ inst✝ : HeapLangGS hlc GF
 example : ⊢@{IProp GF} WP hl(#1 + #2) {{ v, ⌜v = hl_val(#3)⌝ }} := by
   wp_binop
 
-/--
-error: Tactic `wp_pure` failed: Cannot find expression to evaluate
-
-hlc : HasLC
-GF✝ : BundledGFunctors
-ι : IrisGS_gen hlc Exp GF✝
-GF : BundledGFunctors
-inst✝ : HeapLangGS hlc GF
-⊢ ⏎
-  ⊢ WP hl((~#true)) {{ v, ⌜v = hl_val(#false)⌝ }}
--/
+/-- error: wp_pure: Cannot find expression to evaluate -/
 #guard_msgs in
 example : ⊢@{IProp GF} WP hl(~#true) {{ v, ⌜v = hl_val(#false)⌝ }} := by
   wp_binop
@@ -686,17 +568,7 @@ inst✝ : HeapLangGS hlc GF
 example : ⊢@{IProp GF} WP hl(~#true) {{ v, ⌜v = hl_val(#false)⌝ }} := by
   wp_op
 
-/--
-error: Tactic `wp_pure` failed: Cannot find expression to evaluate
-
-hlc : HasLC
-GF✝ : BundledGFunctors
-ι : IrisGS_gen hlc Exp GF✝
-GF : BundledGFunctors
-inst✝ : HeapLangGS hlc GF
-⊢ ⏎
-  ⊢ WP hl(if #true then #1 else #2) {{ v, ⌜v = hl_val(#1)⌝ }}
--/
+/-- error: wp_pure: Cannot find expression to evaluate -/
 #guard_msgs in
 example : ⊢@{IProp GF} WP hl(if #true then #1 else #2) {{ v, ⌜v = hl_val(#1)⌝ }} := by
   wp_op
@@ -719,17 +591,7 @@ end wp_op
 
 section wp_case
 
-/--
-error: Tactic `wp_pure` failed: Cannot find expression to evaluate
-
-hlc : HasLC
-GF✝ : BundledGFunctors
-ι : IrisGS_gen hlc Exp GF✝
-GF : BundledGFunctors
-inst✝ : HeapLangGS hlc GF
-⊢ ⏎
-  ⊢ WP hl(match injl(#1) with | injl(x) => (x + #1) | injr(y) => y) {{ v, ⌜v = hl_val(#2)⌝ }}
--/
+/-- error: wp_pure: Cannot find expression to evaluate -/
 #guard_msgs in
 example : ⊢@{IProp GF}
     WP hl(match injl(#1) with | injl(x) => x + #1 | injr(y) => y)
@@ -772,17 +634,7 @@ example : ⊢@{IProp GF}
       {{ v, ⌜v = hl_val(#2)⌝ }} := by
   wp_match
 
-/--
-error: Tactic `wp_pure` failed: Cannot find expression to evaluate
-
-hlc : HasLC
-GF✝ : BundledGFunctors
-ι : IrisGS_gen hlc Exp GF✝
-GF : BundledGFunctors
-inst✝ : HeapLangGS hlc GF
-⊢ ⏎
-  ⊢ WP hl(if #true then #1 else #2) {{ v, ⌜v = hl_val(#1)⌝ }}
--/
+/-- error: wp_pure: Cannot find expression to evaluate -/
 #guard_msgs in
 example : ⊢@{IProp GF} WP hl(if #true then #1 else #2) {{ v, ⌜v = hl_val(#1)⌝ }} := by
   wp_match
