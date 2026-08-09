@@ -35,7 +35,7 @@ jobs:
         with:
           name: check-imports
           working-directory: Iris
-          run: lake exe check-imports Iris
+          run: lake exe check-imports --subdirs Iris
 
   build-math:
     runs-on: ubuntu-latest
