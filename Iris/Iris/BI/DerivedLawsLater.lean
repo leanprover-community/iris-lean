@@ -60,7 +60,7 @@ theorem later_exists_mp {Φ : α → PROP} :
     (∃ a, ▷ Φ a) ⊢ ▷ (∃ a, Φ a) :=
   exists_elim (later_mono <| exists_intro ·)
 
-@[rocq_alias later_exists_false]
+@[rocq_alias bi.later_exists_false]
 theorem later_exists_false {Φ : α → PROP} :
     (▷ ∃ a, Φ a) ⊢ ▷ False ∨ ∃ a, ▷ Φ a := by
   apply later_sExists_false.trans

@@ -166,13 +166,13 @@ attribute [rocq_alias bi.persistently_and_sep_elim] BI.persistently_and_l
 attribute [rocq_alias bi.later_mono] BI.later_mono
 attribute [rocq_alias bi.later_intro] BI.later_intro
 
-attribute [rocq_alias bi.later_sep_1, rocq_alias later_sep_2] BI.later_sep
+attribute [rocq_alias bi.later_sep_1, rocq_alias bi.later_sep_2] BI.later_sep
 attribute [rocq_alias bi.later_persistently_1,
            rocq_alias bi.later_persistently_2] BI.later_persistently
 attribute [rocq_alias bi.later_false_em] BI.later_false_em
 
 attribute [rocq_alias bi_cofe] BI.toCOFE
 
-#rocq_ignore bi.ofeO "No coercion required in Lean, use BI.toCOFE.toOFE instead"
+#rocq_ignore bi_ofeO "No coercion required in Lean, use BI.toCOFE.toOFE instead"
 #rocq_ignore bi.pure_ne "No Proper type class in Lean"
 #rocq_ignore bi_rewrite_relation "Rocq-specific setoid-rewriting infrastructure"
