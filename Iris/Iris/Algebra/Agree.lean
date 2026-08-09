@@ -134,7 +134,7 @@ def validN (n : Nat) (x : Raw α) : Prop :=
 
 theorem validN_iff {x : Raw α} :
     x.validN n ↔ ∀ a ∈ x.car, ∀ b ∈ x.car, a ≡{n}≡ b := by
-  rcases x with ⟨⟨⟩ | ⟨a, ⟨⟩| _⟩, _⟩ <;> simp_all [validN, OFE.Dist.rfl]
+  rcases x with ⟨⟨⟩ | ⟨a, ⟨⟩| _⟩, _⟩ <;> simp_all [validN]
 
 theorem validN_congr {x y : Raw α} (h : SameElems x y) : validN n x ↔ validN n y := by
   simp only [validN_iff]
