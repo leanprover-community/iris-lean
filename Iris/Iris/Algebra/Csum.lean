@@ -20,6 +20,9 @@ inductive Csum (α β : Type _) where
   | inr : β → Csum α β
   | invalid : Csum α β
 
+#rocq_ignore maybe_Cinl "std++ `Maybe` class; pattern match instead"
+#rocq_ignore maybe_Cinr "std++ `Maybe` class; pattern match instead"
+
 open Csum OFE CMRA
 
 namespace Csum
@@ -88,6 +91,8 @@ instance [OFE α] [OFE β] [OFE.Discrete α] [OFE.Discrete β] : OFE.Discrete (C
       | exact congrArg inl (discrete_0 (α := α) h)
       | exact congrArg inr (discrete_0 (α := β) h)
       | exact h.elim | trivial
+
+#rocq_ignore csum_leibniz "Not needed"
 
 @[rocq_alias Cinl_discrete]
 instance [OFE α] [OFE β] {a : α} [DiscreteE a] : DiscreteE (inl (β := β) a) where

@@ -175,6 +175,8 @@ end Frac
 abbrev DFracAgreeRF (T : COFE.OFunctorPre) [COFE.OFunctor T] : COFE.OFunctorPre :=
   ProdOF (constOF DFrac) (AgreeRF T)
 
+#rocq_ignore dfrac_agreeRF_contractive "Found by typeclass inference"
+
 end DFracAgree
 
 end Iris
