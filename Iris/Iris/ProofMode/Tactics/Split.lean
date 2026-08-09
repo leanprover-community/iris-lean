@@ -34,12 +34,12 @@ open Lean Elab Tactic Meta Qq
   both keeping the entire context.
 -/
 elab "isplit " : tactic => do
-  ProofModeM.runTactic λ mvar { prop, hyps, goal, .. } => do
+  ProofModeM.runTactic `isplit λ mvar { prop, hyps, goal, .. } => do
 
   let A1 ← mkFreshExprMVarQ prop
   let A2 ← mkFreshExprMVarQ prop
   let some _ ← ProofModeM.trySynthInstanceQ q(FromAnd $goal $A1 $A2)
-    | throwError "isplit: {goal} is not a conjunction"
+    | throwIPMError "{goal} is not a conjunction"
   let m1 ← addBIGoal hyps A1
   let m2 ← addBIGoal hyps A2
   mvar.assign q(from_and_intro (Q := $goal) $m1 $m2)
@@ -53,7 +53,7 @@ private def isplitCore (side : splitSide) (names : Array (TSyntax `ident)) : Tac
     | .splitRight => true
 
   -- extract environment
-  ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
+  ProofModeM.runTactic `isplit λ mvar { prop, bi, hyps, goal, .. } => do
 
   let mut ivars : IVarIdSet := {}
   for name in names do
@@ -62,7 +62,7 @@ private def isplitCore (side : splitSide) (names : Array (TSyntax `ident)) : Tac
   let Q1 ← mkFreshExprMVarQ prop
   let Q2 ← mkFreshExprMVarQ prop
   let some _ ← ProofModeM.trySynthInstanceQ q(FromSep $goal $Q1 $Q2) |
-    throwError "isplit: {goal} is not a separating conjunction"
+    throwIPMError "{goal} is not a separating conjunction"
 
   -- split conjunction
   let ⟨_, _, lhs, rhs, pf⟩ := hyps.split bi (fun _ ivar => ivars.contains ivar == splitRight)

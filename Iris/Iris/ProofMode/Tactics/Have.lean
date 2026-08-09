@@ -40,7 +40,7 @@ macro "ihave " colGt pat:icasesPat " := " pmt:pmTerm : tactic =>
 elab "ihave " colGt pat:icasesPat " : " P:term " $$ " spat:specPat : tactic => do
   let spat ← liftMacroM <| SpecPat.parse spat
   let pat ← liftMacroM <| iCasesPat.parse pat
-  ProofModeM.runTactic λ mvar { prop, hyps, goal, .. } => do
+  ProofModeM.runTactic `ihave λ mvar { prop, hyps, goal, .. } => do
   let P ← elabTermEnsuringTypeQ (← `(iprop($P))) prop
   -- Establish `P` with `spat`
   let ⟨_, hyps', p, A, pf⟩ ← iSpecializeCore hyps q(true) q(iprop($P -∗ $P))

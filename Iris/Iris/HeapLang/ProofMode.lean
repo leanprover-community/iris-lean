@@ -176,9 +176,9 @@ public structure WpGoal where
   hprop : $prop =Q IProp $GF
   hbi : $bi =Q UPred.instBIUPred
 
-public meta def ProofModeM.runTacticWp {α} (k : MVarId → WpGoal → ProofModeM α)
+public meta def ProofModeM.runTacticWp {α} (tacName : Name) (k : MVarId → WpGoal → ProofModeM α)
   : TacticM α := do
-  ProofModeM.runTactic fun mvar {u, prop, bi, hyps, goal, ..} => do
+  ProofModeM.runTactic tacName fun mvar {u, prop, bi, hyps, goal, ..} => do
     let .defEq _ ← isLevelDefEqQ u 0
       | throwError "The goal {goal} must be an `IProp` at universe level 0"
     let ~q(IProp $GF) := prop
@@ -239,7 +239,7 @@ public meta def iWpValueHead {u}
   return some q(tac_wp_value (s:=$s) $pf)
 
 elab "wp_value_head" : tactic =>
-  ProofModeM.runTacticWp fun mvar {bi, hyps, ι, s, E, e, Φ, hbi, ..} => do
+  ProofModeM.runTacticWp `wp_value_head fun mvar {bi, hyps, ι, s, E, e, Φ, hbi, ..} => do
     have : $bi =Q UPred.instBIUPred := hbi
     let some pf ← iWpValueHead hyps ι s E e Φ
       | throwTacticEx `wp_value_head mvar s!"{e} is not a value"
@@ -264,7 +264,7 @@ public theorem tac_wp_expr_simp [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness
   (Δ ⊢ WP e @ s ; E {{ Φ }}) := by simp [*]
 
 elab "wp_expr_simp" : tactic =>
-  ProofModeM.runTacticWp fun mvar {hyps, s, E, e, Φ, ..} => do
+  ProofModeM.runTacticWp `wp_expr_simp fun mvar {hyps, s, E, e, Φ, ..} => do
     let ⟨e', pfeq⟩ ← iWpExprSimp e
     let pf ← addBIGoal hyps q(Wp.wp $s $E $e' $Φ)
     mvar.assign q(tac_wp_expr_simp $pf $pfeq)
@@ -294,7 +294,7 @@ public meta def iWpFinish {u}
   return q(tac_wp_expr_simp $nextPf $pfeq)
 
 elab "wp_finish" : tactic =>
-  ProofModeM.runTacticWp fun mvar {hyps, ι, s, E, e, Φ, ..} => do
+  ProofModeM.runTacticWp `wp_finish fun mvar {hyps, ι, s, E, e, Φ, ..} => do
     let pf ← iWpFinish hyps ι s E e Φ
     mvar.assign pf
 
@@ -305,7 +305,7 @@ public theorem tac_wp_bind [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E 
 
 -- level of hl_exp should be above the level of ; in the heaplang notation to make `wp_bind _ _; wp_rec` work
 elab "wp_bind" colGt ppSpace focus:hl_exp:10 : tactic =>
-  ProofModeM.runTacticWp fun mvar {GF, hyps, s, E, e, Φ, ..} => do
+  ProofModeM.runTacticWp `wp_bind fun mvar {GF, hyps, s, E, e, Φ, ..} => do
     let focus ← elabTermEnsuringTypeQ (←`(hl($focus))) q(HeapLang.Exp)
     trace[wp_bind] s!"Context to bind over: {←ppExpr focus}"
 
@@ -346,7 +346,7 @@ public theorem tac_wp_pure [ι : IrisGS_gen hlc Exp GF] {Δ Δ'} {s : Stuckness}
   iintro $ !> -; itrivial
 
 elab "wp_pure " colGt ppSpace focus:hl_exp:10 : tactic =>
-  ProofModeM.runTacticWp fun mvar {hyps, ι, s, E, e, Φ, ..} => do
+  ProofModeM.runTacticWp `wp_pure fun mvar {hyps, ι, s, E, e, Φ, ..} => do
     let focus ← elabTermEnsuringTypeQ (← `(hl($focus))) q(HeapLang.Exp)
     trace[wp_pure] m!"Focusing with {focus}"
 
@@ -616,7 +616,7 @@ meta def runTacticHeapWp {α} (tacName : Name)
     (k : MVarId → HeapWpGoal → ProofModeM α) : TacticM α := do
   -- Rocq parity: every heap tactic first normalizes pure redexes
   evalTactic (← `(tactic| wp_pures))
-  ProofModeM.runTacticWp fun mvar {hyps, GF, hlc, ι, s, E, e, Φ, hu, hprop, hbi, ..} => do
+  ProofModeM.runTacticWp tacName fun mvar {hyps, GF, hlc, ι, s, E, e, Φ, hu, hprop, hbi, ..} => do
     have ιQ : Q(IrisGS_gen $hlc Exp $GF) := ι
     let ~q(@HeapLang _ _ $hgs) := ιQ
       | throwTacticEx tacName mvar "the goal is not a HeapLang WP"

@@ -387,7 +387,7 @@ example [BI PROP] (n : Nat) (P Q : PROP) : ⊢ □ P -∗ □ Q -∗ ⌜n = n⌝
   rfl
 
 /- Tests `iintro` with pure introduction failure. -/
-/-- error: ipureintro: Q is not pure -/
+/-- error: iintro: Q is not pure -/
 #guard_msgs in
 example [BI PROP] (P Q : PROP) : P ⊢ Q := by
   iintro HP !%
@@ -839,7 +839,7 @@ example [BI PROP] {α} (Q : α → PROP) (a b : α) : (∀ x, ∀ y, ⌜x = a⌝
   iintro H
   iapply H $$ %_ %b %rfl
 
-/-- error: ispecialize: iprop(P a -∗ Q b) is not a Lean premise -/
+/-- error: iapply: iprop(P a -∗ Q b) is not a Lean premise -/
 #guard_msgs in
 example [BI PROP] {α} (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
@@ -2241,7 +2241,7 @@ example [BI PROP] (P : Prop) : ⊢@{PROP} ⌜P⌝ -∗ True := by
   Tests `icases` with a case destruction pattern for rewriting but the
   hypothesis is not a pure hypothesis.
 -/
-/-- error: ipure: P is not pure -/
+/-- error: icases: P is not pure -/
 #guard_msgs in
 example [BI PROP] (P : PROP) : ⊢@{PROP} P -∗ True := by
   iintro HP
@@ -2283,7 +2283,7 @@ example [BI PROP] (P : PROP) : □ P ∗ <affine> P ⊢ <affine> P := by
   iexact HP2
 
 /- Tests `imodintro` for affinely (intuitionistic: id, spatial: forall Affine) failing. -/
-/-- error: imodintro: hypothesis HP2 : P does not satisfy Affine -/
+/-- error: imodintro: hypothesis HP2: P does not satisfy Affine -/
 #guard_msgs in
 example [BI PROP] (P : PROP) : □ P ∗ P ⊢ <affine> P := by
   iintro ⟨#HP1, HP2⟩
@@ -2479,7 +2479,7 @@ example {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BIUpdate PROP1] [BIUpdate 
   iassumption
 
 /- Tests `imodintro` where `intoEmbed_embed` does not apply. -/
-/-- error: imodintro: cannot transform hypothesis HQ : Q with ProofMode.IntoEmbed -/
+/-- error: imodintro: cannot transform hypothesis HQ: Q with ProofMode.IntoEmbed -/
 #guard_msgs in
 example {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
     (P : PROP1) (Q : PROP2) : ⎡P⎤ ∗ Q ⊢@{PROP2} ⎡P⎤ := by
@@ -2563,7 +2563,7 @@ example [BI PROP] [BIFUpdate PROP]
   iexact HP
 
 /- Tests `imod` for no modality. -/
-/-- error: imod: P is not a modality -/
+/-- error: icases: P is not a modality -/
 #guard_msgs in
 example [BI PROP] (P : PROP) : P ⊢ P := by
   iintro HP
@@ -3338,7 +3338,7 @@ example {GF} [TokenG GF] {γ} :
   iexact H
 
 /- Tests `icombine` with an invalid destruction pattern. -/
-/-- error: icases: cannot destruct iprop(<absorb> <affine> (P ∗ Q)) -/
+/-- error: icombine: cannot destruct iprop(<absorb> <affine> (P ∗ Q)) -/
 #guard_msgs in
 example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
     ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <absorb> <affine> (P ∗ Q) ∗ <pers> R := by
