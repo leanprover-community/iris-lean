@@ -89,6 +89,9 @@ instance BI.entails_preorder [BI PROP] : Std.IsPreorder PROP where
   le_refl _ := BI.entails_refl
   le_trans _ _ _ := BI.entails_trans
 
+instance [BI PROP] : Std.Refl <| BIBase.Entails (PROP := PROP) where
+  refl _ := BI.entails_refl
+
 theorem BIBase.Entails.trans [BI PROP] {P Q R : PROP} (h1 : P ⊢ Q) (h2 : Q ⊢ R) : P ⊢ R :=
   BI.entails_trans h1 h2
 

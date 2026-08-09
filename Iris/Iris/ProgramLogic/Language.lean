@@ -492,6 +492,6 @@ theorem erasedStep_pureSteps {t₁ t₂ t₃ : List Expr} {σ₁ σ₂ : State} 
     obtain ⟨rlf, rfl, rfl, rfl⟩ := uniqStep pstep
     have : e -ᵖ-> e' := by grind only [PurePrimStep]
     simp only [PureSteps, List.append_nil, true_and]
-    exact Std.List.Forall₂.append ps_ps₃ <| .cons lastSteps ss_ss₃
+    exact List.Forall₂.append ps_ps₃ <| .cons lastSteps ss_ss₃
 
 end Language

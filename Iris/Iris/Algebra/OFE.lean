@@ -5,6 +5,7 @@ Authors: Mario Carneiro, Sebastian Graf, Sergei Stepanenko
 -/
 module
 
+public import Iris.Std.Option
 public meta import Iris.Std.RocqPorting
 
 @[expose] public section
@@ -379,17 +380,6 @@ def uliftUpHom [OFE α] : α -n> ULift α where
 def uliftDownHom [OFE α] : ULift α -n> α where
   f := ULift.down
   ne.1 _ _ _ := id
-
-def _root_.Option.Forall₂ (R : α → β → Prop) : Option α → Option β → Prop
-  | none, none => True
-  | some a, some b => R a b
-  | _, _ => False
-
-theorem _root_.Option.Forall₂.equivalence {R : α → α → Prop}
-    (H : Equivalence R) : Equivalence (Option.Forall₂ R) where
-  refl | none => trivial | some _ => H.1 _
-  symm {x y} := by cases x <;> cases y <;> simp [Option.Forall₂]; apply H.2
-  trans {x y z} := by cases x <;> cases y <;> cases z <;> simp [Option.Forall₂]; apply H.3
 
 @[rocq_alias option_ofe_mixin]
 instance [OFE α] : OFE (Option α) where
