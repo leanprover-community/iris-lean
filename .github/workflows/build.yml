@@ -31,6 +31,11 @@ jobs:
           name: porting-data
           path: Iris/.lake/porting_data.json
           retention-days: 1
+      - name: Check that all modules are imported by Iris.lean
+        with:
+          name: check-imports
+          working-directory: Iris
+          run: lake exe check-imports Iris
 
   build-math:
     runs-on: ubuntu-latest
@@ -41,6 +46,11 @@ jobs:
           lake-package-directory: IrisMath
           use-mathlib-cache: true
           build-args: "--wfail"
+      - name: Check that all modules are imported by IrisMath.lean
+        with:
+          name: check-imports
+          working-directory: IrisMath
+          run: lake exe check-imports IrisMath
 
   report:
     needs: build

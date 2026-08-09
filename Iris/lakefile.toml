@@ -23,3 +23,8 @@ name = "dumpPortingData"
 srcDir = "Iris/Std"
 root = "DumpPortingData"
 supportInterpreter = true
+
+[[lean_exe]]
+name = "check-imports"
+srcDir = "../scripts"
+root = "CheckImports"
