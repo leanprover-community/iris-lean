@@ -44,8 +44,6 @@ open DFrac OFE.Discrete IsOp
 @[rocq_alias dfrac_inhabited]
 instance : Inhabited DFrac := ⟨discard⟩
 
-#rocq_ignore dfrac_countable "std++ `Countable`; Lean has no `Pos.Countable Qp` and does not need one"
-
 def valid : DFrac → Prop
   | .own f        => f.val ≤ 1
   | .discard      => True
