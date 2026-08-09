@@ -31,7 +31,7 @@ def par : Val := hl_val%
 syntax:55 hl_exp:56 " ‖ " hl_exp:55 : hl_exp
 
 macro_rules
-  | `(hl($e1 ‖ $e2)) => `(hl(&par v(λ _, $e1) v(λ _, $e2)))
+  | `(hl($e1 ‖ $e2)) => `(hl(&par (λ _, $e1) (λ _, $e2)))
 
 section Specs
 
@@ -64,7 +64,7 @@ theorem wp_par (Ψ1 Ψ2 : Val → IProp GF) (e1 e2 : Exp) (Φ : Val → IProp GF
     ⊢ WP hl(&e1) {{ Ψ1 }} -∗
       WP hl(&e2) {{ Ψ2 }} -∗
       (∀ (v1 v2 : Val), Ψ1 v1 ∗ Ψ2 v2 -∗ ▷ Φ hl_val((&v1, &v2))) -∗
-      WP hl(&e1 ‖ &e2) {{ Φ }} := by
+      WP hl(&par v(λ _, &e1) v(λ _, &e2)) {{ Φ }} := by
   iintro H1 H2 H
   iapply par_spec Ψ1 Ψ2 $$ [H1] [H2] [$]
   · wp_pures; iexact H1

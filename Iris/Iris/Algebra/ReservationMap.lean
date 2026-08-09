@@ -59,6 +59,8 @@ open OFE
 variable [LawfulPartialMap H Pos] [OFE A]
 
 #rocq_ignore reservation_map_ofe_mixin "Not needed"
+#rocq_ignore reservation_map_equiv "Part of OFE instance"
+#rocq_ignore reservation_map_dist "Part of OFE instance"
 
 @[rocq_alias reservation_mapO]
 instance : OFE (ReservationMap A H) where
@@ -84,6 +86,19 @@ instance instDiscreteReservationMap [Discrete A] : Discrete (ReservationMap A H)
 instance instNonExpansiveReservationMapData :
     NonExpansive (ReservationMap.mkData (H := H) (A := A)) where
   ne _ _ _ h := ⟨h, rfl⟩
+
+@[rocq_alias ReservationMap_ne]
+instance instNonExpansive₂ReservationMapMk :
+    NonExpansive₂ (ReservationMap.mk (H := H) (A := A)) where
+  ne _ _ _ hd _ _ ht := ⟨hd, ht⟩
+
+@[rocq_alias reservation_map_data_proj_ne]
+instance instNonExpansiveReservationMapDataProj :
+    NonExpansive (ReservationMap.data (H := H) (A := A)) where
+  ne _ _ _ h := h.left
+
+#rocq_ignore ReservationMap_proper "Derivable using NonExpansive.eqv"
+#rocq_ignore reservation_map_data_proj_proper "Derivable using NonExpansive.eqv"
 
 #rocq_ignore reservation_map_data_proper "Derivable using NonExpansive.eqv"
 
@@ -119,15 +134,20 @@ namespace ReservationMap
 
 variable [LawfulPartialMap H Pos] [CMRA A]
 
+@[rocq_alias reservation_map_validN_instance]
 def ValidN (n : Nat) (x : ReservationMap A H) : Prop :=
   match x.token with
   | .valid e => ✓{n} x.data ∧ ∀i, get? x.data i = none ∨ i ∉ e
   | .error => False
 
+@[rocq_alias reservation_map_valid_instance]
 def Valid (x : ReservationMap A H) : Prop :=
   match x.token with
   | .valid e => ✓ x.data ∧ ∀i, get? x.data i = none ∨ i ∉ e
   | .error => False
+
+#rocq_ignore reservation_map_valid_eq "Definitional unfolding of Valid"
+#rocq_ignore reservation_map_validN_eq "Definitional unfolding of ValidN"
 
 theorem validN_iff {n : Nat} {x : ReservationMap A H} :
     x.ValidN n ↔ ✓{n} x.data ∧ ✓{n} x.token ∧ ∀ i, get? x.data i = none ∨ i ∉ x.token := by
@@ -155,9 +175,11 @@ theorem valid_iff {x : ReservationMap A H} :
       exact ⟨vd, disj⟩
     · exact ((h ▸ not_valid_invalid (S := CoPset)) vt)
 
+@[rocq_alias reservation_map_data_proj_validN]
 theorem validN_data_of_validN {n : Nat} {x : ReservationMap A H} (h : x.ValidN n) :
     ✓{n} x.data := (validN_iff.mp h).left
 
+@[rocq_alias reservation_map_token_proj_validN]
 theorem validN_token_of_validN {n : Nat} {x : ReservationMap A H} (h : x.ValidN n) :
     ✓{n} x.token := (validN_iff.mp h).right.left
 
@@ -173,6 +195,7 @@ theorem valid_token_of_valid {x : ReservationMap A H} (h : x.Valid) :
 theorem valid_disj {x : ReservationMap A H} (h : x.Valid) (i : Pos):
     get? x.data i = none ∨ i ∉ x.token := (valid_iff.mp h).right.right i
 
+@[rocq_alias reservation_map_pcore_instance]
 def core (x : ReservationMap A H) : ReservationMap A H := mk (CMRA.core x.data) ∅
 
 @[simp]
@@ -181,6 +204,7 @@ theorem core_data (x : ReservationMap A H) : x.core.data = CMRA.core x.data := r
 @[simp]
 theorem core_token (x : ReservationMap A H) : x.core.token = CMRA.core x.token := rfl
 
+@[rocq_alias reservation_map_op_instance]
 def op (x y : ReservationMap A H) : ReservationMap A H := mk (x.data • y.data) (x.token • y.token)
 
 @[simp]
@@ -280,6 +304,15 @@ theorem op_data (x y : ReservationMap A H): (x • y).data = x.data • y.data :
 @[simp]
 theorem op_token (x y : ReservationMap A H): (x • y).token = x.token • y.token := rfl
 
+@[rocq_alias reservation_map_included]
+theorem included_iff {x y : ReservationMap A H} :
+    x ≼ y ↔ x.data ≼ y.data ∧ x.token ≼ y.token := by
+  constructor
+  · exact fun ⟨z, H⟩ => ⟨⟨z.data, H ▸ rfl⟩, ⟨z.token, H ▸ rfl⟩⟩
+  · obtain ⟨yd, yt⟩ := y
+    rintro ⟨⟨z₁, rfl⟩, ⟨z₂, rfl⟩⟩
+    exact ⟨mk z₁ z₂, rfl⟩
+
 @[rocq_alias reservation_map_cmra_discrete]
 instance [CMRA.Discrete A] : CMRA.Discrete (ReservationMap A H) where
   discrete_valid {_} v := by
@@ -288,6 +321,9 @@ instance [CMRA.Discrete A] : CMRA.Discrete (ReservationMap A H) where
     · exact validN_token_of_validN v
     · exact validN_disj v
 
+#rocq_ignore reservation_map_empty_instance "Part of UCMRA instance"
+
+@[rocq_alias reservation_map_data_core_id]
 instance instCoreIdSingleton {a : A} [CoreId a] : CoreId (singleton (H := H) k a) where
   core_id := OFE.eq_dist.mpr <| by
     refine fun n => OFE.some_dist_some.mpr ⟨?_, .rfl⟩

@@ -187,7 +187,7 @@ scoped macro_rules
 scoped infix:50 " ##ₘ " => PartialMap.disjoint
 
 /-- Submap is reflexive. -/
-theorem subset_refl (m : M V) : m ⊆ m := fun _ _ h => h
+@[refl] theorem subset_refl (m : M V) : m ⊆ m := fun _ _ h => h
 
 /-- Submap is transitive. -/
 theorem subset_trans {m₁ m₂ m₃ : M V} (h₁ : m₁ ⊆ m₂) (h₂ : m₂ ⊆ m₃) : m₁ ⊆ m₃ :=

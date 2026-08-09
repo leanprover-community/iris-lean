@@ -9,7 +9,7 @@ public import Iris.BI.InternalEq
 public import Iris.ProofMode.Classes
 public import Iris.Std.TC
 public import Iris.ProofMode.ProofModeM
-public meta import Iris.ProofMode.Patterns.ProofModeTerm
+public meta import Iris.ProofMode.Patterns.SpecPattern
 public meta import Iris.ProofMode.Tactics.HaveCore
 meta import Lean.Parser.Tactic
 
@@ -20,10 +20,8 @@ open BI Std
 
 theorem rewrite_tac [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p}
     (Ψ : A → PROP) [ne : OFE.NonExpansive Ψ] [heq : IntoInternalEq Q a b]
-    (h1 : P ⊢ P' ∗ □?p Q)
-    : P ⊢ <pers> (Ψ a ∗-∗ Ψ b) :=
-  calc P
-  _ ⊢ P' ∗ a ≡ b := h1.trans (sep_mono_right (intuitionisticallyIf_elim.trans heq.1))
+    (h1 : P ⊢ P' ∗ □?p Q) : P ⊢ <pers> (Ψ a ∗-∗ Ψ b) := calc
+  P ⊢ P' ∗ a ≡ b := h1.trans (sep_mono_right (intuitionisticallyIf_elim.trans heq.1))
   _ ⊢ a ≡ b := sep_elim_right
   _ ⊢ Ψ a ≡ Ψ b := internalEq.of_internalEquiv_ne Ψ
   _ ⊢ <pers> (Ψ a ≡ Ψ b) := persistent
@@ -32,28 +30,26 @@ theorem rewrite_tac [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p
 
 theorem rewrite_tac_symm [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p}
     (Ψ : A → PROP) [ne : OFE.NonExpansive Ψ] [IntoInternalEq Q a b]
-    (h_eq : P ⊢ P' ∗ □?p Q)
-    : P ⊢ <pers> (Ψ b ∗-∗ Ψ a) :=
-      (rewrite_tac Ψ h_eq).trans (persistently_mono and_symm)
+    (h_eq : P ⊢ P' ∗ □?p Q) : P ⊢ <pers> (Ψ b ∗-∗ Ψ a) :=
+  (rewrite_tac Ψ h_eq).trans (persistently_mono and_symm)
 
+@[rocq_alias tac_rewrite]
 theorem rewrite_tac_goal [BI PROP] {P Q Q' : PROP}
     (h1 : P ⊢ <pers> (Q ∗-∗ Q'))
-    (h2 : P ⊢ Q')
-    : P ⊢ Q :=
-    calc P
-      _ ⊢ <pers> (Q ∗-∗ Q') ∧ Q' := and_intro h1 h2
-      _ ⊢ (Q ∗-∗ Q') ∗ Q' := persistently_and_l
-      _ ⊢ (Q' -∗ Q) ∗ Q' := sep_mono_left and_elim_r
-      _ ⊢ Q := wand_elim_left
+    (h2 : P ⊢ Q') : P ⊢ Q :=
+  calc
+    _ ⊢ <pers> (Q ∗-∗ Q') ∧ Q' := and_intro h1 h2
+    _ ⊢ (Q ∗-∗ Q') ∗ Q' := persistently_and_l
+    _ ⊢ (Q' -∗ Q) ∗ Q' := sep_mono_left and_elim_r
+    _ ⊢ Q := wand_elim_left
 
+@[rocq_alias tac_rewrite_in]
 theorem rewrite_tac_hyp [BI PROP] {P Q Q' : PROP}
-    (h1 : P ⊢ <pers> (Q ∗-∗ Q'))
-    : P ⊢ <pers> (Q -∗ Q') :=
+    (h1 : P ⊢ <pers> (Q ∗-∗ Q')) : P ⊢ <pers> (Q -∗ Q') :=
   h1.trans (persistently_mono and_elim_l)
 
 public meta section
 open Lean Elab Tactic Meta Qq BI Std Parser.Tactic
-
 
 namespace IRewrite
 
@@ -116,7 +112,12 @@ private def iRewriteCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     (target : Q($prop))
     (occs : Occurrences := Occurrences.all) :
     ProofModeM ((target' : Q($prop)) × Q($e ⊢ <pers> ($target ∗-∗ $target'))) := do
-  let ⟨_, _, _, eq, pf⟩ ← iHave hyps rule.term true
+  let g : Q($prop) ← mkFreshExprMVarQ q($prop)
+  let ⟨e', _, p, eq, pf⟩ ← iHave hyps g rule.term true
+  unless ← isDefEq g q(iprop($e' ∗ □?$p $eq)) do
+    throwError "irewrite: could not pin the equality goal"
+  have : $g =Q iprop($e' ∗ □?$p $eq) := ⟨⟩
+  let pf' : Q($e ⊢ $e' ∗ □?$p $eq) := q($pf .rfl)
 
   let .some sbi ← trySynthInstanceQ q(Sbi $prop)
     | throwError "irewrite: could not synthesize Sbi instance"
@@ -155,10 +156,10 @@ private def iRewriteCore {prop : Q(Type u)} {bi : Q(BI $prop)}
   match rule.direction with
   | .forward =>
     have : $target =Q $Ψ $a := ⟨⟩
-    return ⟨_, q(rewrite_tac $Ψ $pf)⟩
+    return ⟨_, q(rewrite_tac $Ψ $pf')⟩
   | .backward => do
     have : $target =Q $Ψ $b := ⟨⟩
-    return ⟨_, q(rewrite_tac_symm $Ψ $pf)⟩
+    return ⟨_, q(rewrite_tac_symm $Ψ $pf')⟩
 
 def iRewriteGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
     {e} (hyps : Hyps bi e) (rule : IRewrite.Rule) (goal : Q($prop))

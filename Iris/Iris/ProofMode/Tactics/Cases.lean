@@ -5,7 +5,7 @@ Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang, Alvin Tang
 -/
 module
 
-meta import Iris.ProofMode.Patterns.ProofModeTerm
+meta import Iris.ProofMode.Patterns.SpecPattern
 meta import Iris.ProofMode.Patterns.CasesPattern
 public meta import Iris.ProofMode.Tactics.Mod
 public meta import Iris.ProofMode.Tactics.Pure
@@ -19,37 +19,53 @@ namespace Iris.ProofMode
 public section
 open BI Std
 
+@[rocq_alias tac_false_destruct]
 theorem false_elim' [BI PROP] {P Q : PROP} : P ∗ □?p False ⊢ Q :=
   wand_elim_swap <| intuitionisticallyIf_elim.trans false_elim
 
+@[rocq_alias tac_exist_destruct]
 theorem exists_elim' [BI PROP] {p} {P A Q : PROP} {Φ : α → PROP} [inst : IntoExists A Φ]
-    (h : ∀ a, P ∗ □?p Φ a ⊢ Q) : P ∗ □?p A ⊢ Q :=
-  (sep_mono_right <| (intuitionisticallyIf_mono inst.1).trans intuitionisticallyIf_exists.1).trans <| sep_exists_left.1.trans (exists_elim h)
+    (h : ∀ a, P ∗ □?p Φ a ⊢ Q) : P ∗ □?p A ⊢ Q := by
+  calc
+    _ ⊢ P ∗ ∃ a, □?p Φ a :=
+        sep_mono_right <| (intuitionisticallyIf_mono inst.1).trans intuitionisticallyIf_exists.1
+    _ ⊢ ∃ a, P ∗ □?p Φ a := sep_exists_left.1
+    _ ⊢ Q                := exists_elim h
 
-theorem sep_and_elim_l [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
+@[rocq_alias tac_and_destruct_choice]
+theorem sep_and_elim_left [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
     (h : P ∗ □?p A1 ⊢ Q) : P ∗ □?p A ⊢ Q :=
   (sep_mono_right <| inst.1.trans <| intuitionisticallyIf_mono and_elim_l).trans h
 
-theorem sep_and_elim_r [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
+theorem sep_and_elim_right [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
     (h : P ∗ □?p A2 ⊢ Q) : P ∗ □?p A ⊢ Q :=
   (sep_mono_right <| inst.1.trans <| intuitionisticallyIf_mono and_elim_r).trans h
 
+@[rocq_alias tac_and_destruct]
 theorem sep_elim_spatial [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoSep A A1 A2]
-    (h : P ∗ A1 ⊢ A2 -∗ Q) : P ∗ A ⊢ Q :=
-  (sep_mono_right inst.1).trans <| sep_assoc.2.trans <| wand_elim h
+    (h : P ∗ A1 ⊢ A2 -∗ Q) : P ∗ A ⊢ Q := calc
+  _ ⊢ P ∗ A1 ∗ A2   := sep_mono_right inst.1
+  _ ⊢ (P ∗ A1) ∗ A2 := sep_assoc.2
+  _ ⊢ Q             := wand_elim h
 
 theorem and_elim_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd true A A1 A2]
-    (h : P ∗ □ A1 ⊢ □ A2 -∗ Q) : P ∗ □ A ⊢ Q :=
-  (sep_mono_right <| inst.1.trans intuitionistically_and_sep.1).trans <|
-  sep_assoc.2.trans <| wand_elim h
+    (h : P ∗ □ A1 ⊢ □ A2 -∗ Q) : P ∗ □ A ⊢ Q := calc
+  _ ⊢ P ∗ □ A1 ∗ □ A2   := sep_mono_right <| inst.1.trans intuitionistically_and_sep.1
+  _ ⊢ (P ∗ □ A1) ∗ □ A2 := sep_assoc.2
+  _ ⊢ Q                 := wand_elim h
 
+@[rocq_alias tac_or_destruct]
 theorem or_elim' [BI PROP] {p} {P A Q A1 A2 : PROP} [inst : IntoOr A A1 A2]
-    (h1 : P ∗ □?p A1 ⊢ Q) (h2 : P ∗ □?p A2 ⊢ Q) : P ∗ □?p A ⊢ Q :=
-  (sep_mono_right <| (intuitionisticallyIf_mono inst.1).trans (intuitionisticallyIf_or _).1).trans <| BI.sep_or_left.1.trans <| or_elim h1 h2
+    (h1 : P ∗ □?p A1 ⊢ Q) (h2 : P ∗ □?p A2 ⊢ Q) : P ∗ □?p A ⊢ Q := calc
+  _ ⊢ P ∗ (□?p A1 ∨ □?p A2)   :=
+      sep_mono_right <| (intuitionisticallyIf_mono inst.1).trans (intuitionisticallyIf_or _).1
+  _ ⊢ P ∗ □?p A1 ∨ P ∗ □?p A2 := sep_or_left.1
+  _ ⊢ Q                       := or_elim h1 h2
 
+@[rocq_alias tac_intuitionistic]
 theorem intuitionistic_elim_spatial [BI PROP] {A A' P Q : PROP}
     [IntoPersistently false A A'] [TCOr (Affine A) (Absorbing Q)]
-    (h : P ∗ □ A' ⊢ Q) : P ∗ A ⊢ Q := (replaces_r to_persistent_spatial).apply h
+  (h : P ∗ □ A' ⊢ Q) : P ∗ A ⊢ Q := (replaces_right to_persistent_spatial).apply h
 
 theorem intuitionistic_elim_intuitionistic [BI PROP] {A A' Q : PROP}
     [inst : IntoPersistently true A A'] (h : P ∗ □ A' ⊢ Q) : P ∗ □ A ⊢ Q :=
@@ -57,9 +73,10 @@ theorem intuitionistic_elim_intuitionistic [BI PROP] {A A' Q : PROP}
     ⟨persistently_of_intuitionistically.trans inst.into_persistently⟩
   intuitionistic_elim_spatial (A := iprop(□ A)) h
 
+@[rocq_alias tac_spatial]
 theorem spatial_elim [BI PROP] {p} {A A' Q : PROP} [FromAffinely A' A p]
     (h : P ∗ A' ⊢ Q) : P ∗ □?p A ⊢ Q :=
-      (sep_mono_right <| (affinelyIf_of_intuitionisticallyIf).trans from_affinely).trans h
+  (sep_mono_right <| (affinelyIf_of_intuitionisticallyIf).trans from_affinely).trans h
 
 theorem of_emp_sep [BI PROP] {A Q : PROP} (h : A ⊢ Q) : emp ∗ A ⊢ Q := emp_sep.1.trans h
 
@@ -74,7 +91,10 @@ private def iCasesEmptyConj {prop : Q(Type u)} (bi : Q(BI $prop))
   else
     throwError "icases: cannot destruct {A} as an empty conjunct"
 
-/-- Destruct an existential hypothesis [A] by introducing its witness and continuing with the body [B]. -/
+/--
+  Destruct an existential hypothesis `A` by introducing its witness and
+  continuing with the body `B`.
+-/
 private def iCasesExists {prop : Q(Type u)} {bi : Q(BI $prop)} (pat : TSyntax `rcasesPat)
     (p : Q(Bool)) (P A goal : Q($prop))
     (k : (B : Q($prop)) → ProofModeM Q($P ∗ □?$p $B ⊢ $goal)) :
@@ -93,7 +113,7 @@ private def iCasesExists {prop : Q(Type u)} {bi : Q(BI $prop)} (pat : TSyntax `r
       k (Expr.headBeta (← instantiateMVars B))
   return q(exists_elim' $pf)
 
-/-- Destruct a conjunction hypothesis [A] and continue with only its left or right component. -/
+/-- Destruct a conjunction hypothesis `A` and continue with only its left or right component. -/
 private def iCasesAndLR {prop : Q(Type u)} (bi : Q(BI $prop))
     (p : Q(Bool)) (P A goal : Q($prop)) (right : Bool)
     (k : (B : Q($prop)) → ProofModeM Q($P ∗ □?$p $B ⊢ $goal)) :
@@ -102,10 +122,13 @@ private def iCasesAndLR {prop : Q(Type u)} (bi : Q(BI $prop))
   let A2 ← mkFreshExprMVarQ q($prop)
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoAnd $p $A $A1 $A2)
     | return none
-  if right then return some q(sep_and_elim_r $(← k A2))
-  else return some q(sep_and_elim_l $(← k A1))
+  if right then return some q(sep_and_elim_right $(← k A2))
+  else return some q(sep_and_elim_left $(← k A1))
 
-/-- Destruct a conjunction hypothesis [A] into two parts and continue with the left and right subpatterns in sequence. -/
+/--
+  Destruct a conjunction hypothesis `A` into two parts and continue with the left and right
+  subpatterns in sequence.
+-/
 private def iCasesSep {prop : Q(Type u)} {bi : Q(BI $prop)}
     {P} (hyps : Hyps bi P) (p : Q(Bool)) (A goal : Q($prop))
     (k : ∀ {P}, Hyps bi P → (goal : Q($prop)) → ProofModeM Q($P ⊢ $goal))
@@ -139,7 +162,7 @@ private def iCasesSep {prop : Q(Type u)} {bi : Q(BI $prop)}
       return q((wand_intro $pf).trans $(inst).from_wand)
     return q(sep_elim_spatial (A := $A) $pf)
 
-/-- Destruct a disjunction hypothesis [A] into two cases and continue separately on each branch. -/
+/-- Destruct a disjunction hypothesis `A` into two cases and continue separately on each branch. -/
 private def iCasesOr {prop : Q(Type u)} {bi : Q(BI $prop)}
     (p : Q(Bool)) (P A goal : Q($prop))
     (k1 k2 : (B : Q($prop)) → ProofModeM Q($P ∗ □?$p $B ⊢ $goal)) :
@@ -151,7 +174,7 @@ private def iCasesOr {prop : Q(Type u)} {bi : Q(BI $prop)}
   return q(or_elim' $(← k1 A1) $(← k2 A2))
 
 /--
-Destruct a persistent hypothesis [A] by turning it into an explicit [□ B] and continuing with
+Destruct a persistent hypothesis `A` by turning it into an explicit `□ B` and continuing with
 the persistent body.
 -/
 private def iCasesIntuitionistic {prop : Q(Type u)} {bi : Q(BI $prop)}
@@ -170,7 +193,7 @@ private def iCasesIntuitionistic {prop : Q(Type u)} {bi : Q(BI $prop)}
     return q(intuitionistic_elim_spatial (A := $A) $(← k B))
 
 /--
-Destruct an affine/spatial hypothesis [A] by removing the affinely wrapper and continuing with
+Destruct an affine/spatial hypothesis `A` by removing the affinely wrapper and continuing with
 the spatial body.
 -/
 private def iCasesSpatial {prop : Q(Type u)} {bi : Q(BI $prop)}
@@ -207,33 +230,43 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) :=
   withRef pat.ref do
   match pat.case with
+  -- Ident
   | .one name => do
     let ⟨_, _, hyps', pfEq⟩ ← Hyps.addWithInfo bi name p A hyps
     let pf ← k hyps' goal
     return q($(pfEq).mp.trans $pf)
 
+  -- Clearing a hypothesis (`-`)
   | .clear =>
     let pf ← iClearCoreOne bi q(iprop($P ∗ □?$p $A)) P p A goal q(.rfl)
     pure q($pf $(← k hyps goal))
 
+  -- Framing a hypothesis (`$`)
   | .frame =>
     let ⟨ivar, _, hyps', pfEq⟩ ← Hyps.addWithInfo bi (← `(binderIdent | _)) p A hyps
     let res ← iFrame hyps' goal [⟨.ipm ivar, true⟩]
     let pf ← res.finish k
     return q($(pfEq).mp.trans $pf)
 
+  -- A conjunction (`⟨…⟩`) or a disjunction (`(…)`) that consists of a single element
   | .conjunction [arg] | .disjunction [arg] =>
     iCasesCore hyps goal arg p A k
 
+  -- A disjunction with no component is not valid syntax
   | .disjunction [] => throwUnsupportedSyntax
 
+  -- An empty conjunction (`⟨⟩`)
   | .conjunction [] => iCasesEmptyConj bi hyps p A goal
 
-  -- pure conjunctions are always handled as existentials. There is `intoExist_and_pure` and
-  -- `intoExist_sep_pure` to make this work as expected for pure assertions that are not explicit existentials.
+  /-
+    Pure conjunctions are always handled as existentials. There are
+    `intoExist_and_pure` and `intoExist_sep_pure` to make this work as expected
+    for pure assertions that are not explicit existentials.
+  -/
   | .conjunction (⟨_, .pure arg⟩ :: args) =>
     iCasesExists arg p P A goal (iCasesCore hyps goal ⟨pat.ref, (.conjunction args)⟩ p · k)
 
+  -- A conjunction of multiple elements (`⟨…, …⟩`)
   | .conjunction (arg :: args) =>
     if arg.case matches .clear then
       if let some pf ← iCasesAndLR bi p P A goal true λ B =>
@@ -244,19 +277,24 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
     iCasesSep hyps p A goal k (iCasesCore · · arg p · ·)
       (iCasesCore · · ⟨pat.ref, (.conjunction args)⟩ p · ·)
 
+  -- A disjunction of multiple elements (`(… | …)`)
   | .disjunction (arg :: args) =>
     iCasesOr p P A goal (iCasesCore hyps goal arg p · k)
       (iCasesCore hyps goal ⟨pat.ref, (.disjunction args)⟩ p · k)
 
+  -- Moving a hypothesis to the pure context (`%`)
   | .pure arg =>
     iPureCore q(iprop($P ∗ □?$p $A)) hyps p A goal arg q(.rfl) k
 
+  -- Moving a hypothesis to the intuitionistic context (`#`)
   | .intuitionistic arg =>
     iCasesIntuitionistic p P A goal (iCasesCore hyps goal arg q(true) · k)
 
+  -- Moving a hypothesis to the spatial context (`∗`)
   | .spatial arg =>
     iCasesSpatial p P A goal (iCasesCore hyps goal arg q(false) · k)
 
+  -- Eliminating a modality at the top of the hypothesis and destruct the hypothesis (`>`)
   | .mod arg =>
     iModCore bi P goal p A λ p' A goal' =>
       iCasesCore hyps goal' arg p' A k
@@ -270,21 +308,24 @@ elab "icases" keep:("+keep ")? colGt pmt:pmTerm " with " colGt pat:icasesPat : t
   let pat ← liftMacroM <| iCasesPat.parse pat
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
 
-  -- We keep the persistent hypothesis if it is required by the user (+keep is set by ihave)
-  -- or if we perform specialization
-  let ⟨_, hyps, p, A, pf⟩ ← iHave hyps pmt (keep.isSome || pmt.is_nontrivial)
+  /-
+    We keep the persistent hypothesis if it is required by the user (`+keep` is set by `ihave`)
+    or if we perform specialization.
+  -/
+  let ⟨_, hyps, p, A, pf⟩ ← iHave hyps goal pmt (keep.isSome || pmt.is_nontrivial)
     (try_dup_context := pat.should_try_dup_context)
 
   -- process pattern
   let pf2 ← iCasesCore hyps goal pat p A
 
-  mvar.assign q(($pf).trans $pf2)
+  mvar.assign q($pf $pf2)
 
 /--
   `imod pmt with pat` eliminates the modality at the top of `pmt : pmTerm` into
   the goal and destructs the result with case pattern `pat`.
 -/
-macro "imod" colGt pmt:pmTerm " with " colGt pat:icasesPat : tactic => `(tactic | icases $pmt with >$pat)
+macro "imod" colGt pmt:pmTerm " with " colGt pat:icasesPat : tactic =>
+  `(tactic | icases $pmt with >$pat)
 
 /--
   `imod pmt` eliminates the modality at the top of `pmt : pmTerm` into the goal.
@@ -294,8 +335,6 @@ macro "imod" colGt pmt:pmTerm : tactic =>
   | `(pmTerm | $hyp:ident) => `(tactic | imod $pmt with $hyp:ident)
   | `(pmTerm | $hyp:ident $$ $_*) => `(tactic | imod $pmt with $hyp:ident)
   | _ => `(tactic | imod $pmt with _)
-
--- TODO: remove these shortcuts if they are not used
 
 /--
   `iintuitionistic H` removes hypothesis `H` into the intuitionistic context.
