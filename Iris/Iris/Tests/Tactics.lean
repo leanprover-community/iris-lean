@@ -18,6 +18,8 @@ public import Iris.Instances.Lib.CInvariants
 public import Iris.Instances.Lib.NaInvariants
 public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.WeakestPre
+public import Iris.Instances.Lib.Monotone
+public meta import Iris.ProofMode.Tactics.Monotone
 
 @[expose] public section
 
@@ -4208,3 +4210,45 @@ example (f : α → α) [Contractive f] : Contractive (fun x => (f x, x)) where
     contractive
 
 end contractive
+
+section monotone
+open OFE
+
+variable [BI PROP] [OFE α]
+
+/-- Tests `monotone` closing a goal already in the right form. -/
+example : MonotonePred (PROP := PROP) (A := α) (fun Φ x => iprop(Φ x ∗ Φ x)) where
+  monotone := by monotone
+
+private def wrap0 (wp : α → PROP) (x : α) : PROP := iprop(wp x ∗ wp x)
+private def wrap1 (wp : α → PROP) : α → PROP := wrap0 wp
+private def wrap2 (wp : α → PROP) : α → PROP := wrap1 wp
+
+/-- Tests `monotone` unfolding. -/
+example : MonotonePred (PROP := PROP) (A := α) wrap2 where
+  monotone := by monotone
+
+private def stepPre (wp : α × Option α → PROP) (x : α × Option α) : PROP :=
+  match x.2 with
+  | none => iprop(wp (x.1, none) ∨ wp (x.1, none))
+  | some _ => iprop(wp (x.1, none) ∗ wp (x.1, none))
+
+/-- Tests `monotone` on matches on projections. -/
+example : MonotonePred (PROP := PROP) (A := α × Option α) stepPre where
+  monotone := by monotone
+
+/-- Tests `monotone` directly on a bare entailment goal of right shape. -/
+example (Φ Ψ : α × Option α → PROP) :
+    ⊢ (□ ∀ x, Φ x -∗ Ψ x) -∗ ∀ x, stepPre Φ x -∗ stepPre Ψ x := by
+  monotone
+
+private def choicePre (wp : α × (α ⊕ α) → PROP) (x : α × (α ⊕ α)) : PROP :=
+  match x.2 with
+  | .inl a => iprop(wp (x.1, .inr a) ∨ wp (x.1, .inr a))
+  | .inr a => iprop(wp (x.1, .inl a) ∨ wp (x.1, .inl a))
+
+/-- Tests `monotone` on a non-`Option` type match. -/
+example : MonotonePred (PROP := PROP) (A := α × (α ⊕ α)) choicePre where
+  monotone := by monotone
+
+end monotone

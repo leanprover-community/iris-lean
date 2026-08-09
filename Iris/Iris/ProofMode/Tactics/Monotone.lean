@@ -7,6 +7,8 @@ module
 
 public meta import Iris.Instances.Lib.Monotone
 public meta import Iris.ProofMode
+meta import Lean.Meta.Tactic.Split
+meta import Lean.Meta.Tactic.Repeat
 
 namespace Iris
 
@@ -15,20 +17,54 @@ open Lean Elab Tactic Meta Iris.Std ProofMode Term Macro
 meta partial def etaExpand (e : Expr) : TacticM Unit := do
   let ty ← whnf (← instantiateMVars (← inferType e))
   if ty.isAppOf ``Prod then
-    let stx ← PrettyPrinter.delab e
+    let stx ← exprToSyntax e
     evalTactic (← `(tactic| rw [← Prod.eta $stx]))
     etaExpand (← mkAppM ``Prod.fst #[e])
     etaExpand (← mkAppM ``Prod.snd #[e])
 
-meta def tryUnfoldFn : TacticM Unit := do
-  let _ ← observing? ((← getMainTarget).withApp <| λ _ args => do
-    if let some e := args[3]? then e.withApp <| λ _ args => do
-      if let some e := args[2]? then match e.getAppFn with
-        | .const fn _ => do
-          -- don't unfold primitives
-          if not <| (`Iris.BI.BIBase).isPrefixOf fn then
-            evalTactic <| ← `(tactic|unfold $(mkIdent fn); try simp)
-        | _ => return)
+/-- The RHS of the goal's entailment. -/
+meta def goalRHS? (goal : MVarId) : MetaM (Option Expr) := goal.withContext do
+  let target ← instantiateMVars (← goal.getType)
+  target.withApp fun _ args => pure args[3]?
+
+/-- If the goal contains a pattern match, case on the discriminant. -/
+meta def splitStep (xType : Expr) (name : Name) (goal : MVarId) : TacticM (List MVarId) := do
+  let some wandGoal ← goalRHS? goal | throwError "monotone: no match to split"
+
+  -- find discriminants
+  let some e ← findSplit? wandGoal .match | throwError "monotone: no match to split"
+  let some app ← matchMatcherApp? e | throwError "monotone: no match to split"
+  if app.discrs.isEmpty then throwError "monotone: no match to split"
+  let stxs ← goal.withContext (app.discrs.mapM exprToSyntax : TermElabM (Array Term))
+
+  let goals ← Elab.Tactic.run goal <| evalTactic <| ← `(tactic| cases $[$stxs:term],*)
+  let goals ← (goals.mapM Split.simpMatchTarget : MetaM (List MVarId))
+
+  -- keep `x` available for use by `irevert` by renaming
+  goals.mapM fun g => g.withContext do
+    for decl in (← getLCtx) do
+      if !decl.isImplementationDetail && (← isDefEq decl.type xType) then
+        return ← g.rename decl.fvarId name
+    return g
+
+/-- Check if `fn` is a primitive connective that can be dealt with by typeclass search. -/
+meta def isPrimitiveConnective (fn : Name) : MetaM Bool := do
+  return (`Iris.BI.BIBase).isPrefixOf fn || (← getProjectionFnInfo? fn).any (·.fromClass)
+
+meta def unfoldStep (goal : MVarId) : TacticM (List MVarId) := do
+  let some wandGoal ← goalRHS? goal | throwError "monotone: nothing to unfold"
+  let some fn := wandGoal.withApp fun _ args => (args[2]?.map (·.getAppFn)).bind (·.constName?)
+    | throwError "monotone: nothing to unfold"
+  if ← isPrimitiveConnective fn then
+    throwError "monotone: {fn} is a primitive connective"
+  run goal <| evalTactic <| ← `(tactic|unfold $(mkIdent fn); try simp)
+
+/-- Split if possible, otherwise unfold the goal -/
+meta def monotoneStep (xType : Expr) (name : Name) (goal : MVarId) : TacticM (List MVarId) := do
+  if let some goals ← observing? (splitStep xType name goal) then
+    return goals
+  else
+    unfoldStep goal
 
 elab "monotone" : tactic => do
   let H ← `(icasesPat| H)
@@ -38,21 +74,16 @@ elab "monotone" : tactic => do
   -- introduce hypotheses
   evalTactic <| ← `(tactic|intros; iintro #$H %$x)
 
+  let xType ← withMainContext <| inferType (mkFVar (← getFVarId x))
+
   -- eta-expand the argument
   withMainContext do
     let e := mkFVar (← getFVarId x)
     etaExpand e
 
-  -- unfold twice
-  tryUnfoldFn
-  tryUnfoldFn
+  -- unfold and split as much as possible
+  let newGoals ← repeat' (monotoneStep xType x.getId) [← getMainGoal]
+  setGoals newGoals
 
-  -- split match
-  (← getMainTarget).withApp λ _ args =>
-    args[3]!.withApp λ _ args => do
-      let d := args[2]!.getAppArgs[2]!
-      let stx ← Term.exprToSyntax d
-      evalTactic <| ← `(tactic| try cases $stx:term)
-
-  evalTactic <| ← `(tactic|irevert $H' %$x; apply MonotonePred.monotone)
-  evalTactic <| ← `(tactic|irevert $H' %$x; apply MonotonePred.monotone)
+  -- get the goal in the right form and use typeclass search
+  evalTactic <| ← `(tactic|all_goals (irevert $H' %$x; apply MonotonePred.monotone))
