@@ -24,6 +24,7 @@ section CMRA
 
 variable [CMRA α]
 
+@[refl]
 theorem LocalUpdate.id (x : α × α) : x ~l~> x := fun _ _ vx e => ⟨vx, e⟩
 
 theorem LocalUpdate.trans {x y z : α × α} (uxy : x ~l~> y) (uyz : y ~l~> z) : x ~l~> z :=

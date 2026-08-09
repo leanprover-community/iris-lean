@@ -34,7 +34,7 @@ theorem forall₂_eq_of_forall₂_dist : ∀ {l k : List α},
 instance : OFE (List α) where
   Dist n := List.Forall₂ (Dist n)
   dist_eqv := List.Forall₂.equivalence dist_eqv
-  eq_dist := ⟨fun h _ => h ▸ (List.Forall₂.rfl fun _ => Dist.rfl), forall₂_eq_of_forall₂_dist⟩
+  eq_dist := ⟨fun h _ => h ▸ (List.Forall₂.rfl .refl), forall₂_eq_of_forall₂_dist⟩
   dist_lt h hlt := h.imp fun hab => hab.lt hlt
 #rocq_ignore listO "Use List"
 #rocq_ignore list_dist "Local Dist instance; folded into Lean's OFE (List α) instance."
