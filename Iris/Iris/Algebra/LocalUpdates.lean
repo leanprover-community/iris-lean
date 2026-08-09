@@ -24,6 +24,7 @@ section CMRA
 
 variable [CMRA α]
 
+@[refl]
 theorem LocalUpdate.id (x : α × α) : x ~l~> x := fun _ _ vx e => ⟨vx, e⟩
 
 #rocq_ignore local_update_proper "OFE is Leibniz; use equality"

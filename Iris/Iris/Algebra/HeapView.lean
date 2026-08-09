@@ -544,7 +544,7 @@ instance {T} [RFunctor T] : URFunctor (HeapViewURF (H := H) T) where
       exact RFunctor.map_ne.ne Hx Hy
     · refine fun _ => ?_
       apply PartialMap.map_ne _ _ _
-      exact fun _ => Prod.map_ne (fun _ => rfl) (RFunctor.map_ne.ne Hx Hy)
+      exact fun _ => Prod.map_ne .refl (RFunctor.map_ne.ne Hx Hy)
   map_id x := by
     rw (config := { occs := .pos [2] }) [<- (View.map_id x)]
     refine OFE.eq_dist.mpr (fun n => View.map_ne x (fun a => ?_) (fun b => ?_))
@@ -568,7 +568,7 @@ instance {T} [RFunctorContractive T] : URFunctorContractive (HeapViewURF (H := H
   map_contractive.1 H _ := by
     apply View.map_ne <;> intros <;> apply PartialMap.map_ne
     · exact (RFunctorContractive.map_contractive.1 H)
-    · exact (fun _ => Prod.map_ne (fun _ => rfl) (RFunctorContractive.map_contractive.1 H))
+    · exact (fun _ => Prod.map_ne .refl (RFunctorContractive.map_contractive.1 H))
 
 end heapViewFunctor
 
