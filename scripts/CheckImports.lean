@@ -30,6 +30,18 @@ private def pathToModule (p : FilePath) : String :=
 private def moduleToPath (m : String) : FilePath :=
   FilePath.mk (m.replace "." "/" ++ leanSuffix)
 
+/-- These are not modules and should be excluded from the check. -/
+private def excludedModules : List String :=
+  ["Iris.ProofMode.Porting", "Iris.Std.DumpPortingData"]
+
+/-- Checks whether `moduleName` has a prefix `modulePrefix`. -/
+private def isUnderModule (modulePrefix moduleName : String) : Bool :=
+  moduleName == modulePrefix || moduleName.startsWith (modulePrefix ++ ".")
+
+/-- Checks whether the module is excluded from the check. -/
+private def isExcluded (moduleName : String) : Bool :=
+  excludedModules.any (isUnderModule · moduleName)
+
 /-- Recursively collect all `.lean` files under `dir`. -/
 private partial def collectLeanFiles (dir : FilePath) : IO (List FilePath) := do
   let mut acc := []
@@ -77,6 +89,33 @@ private partial def reachableModules (visited : List String) (paths : List FileP
     else
       reachableModules visited paths
 
+/--
+Check that `rootFile` transitively imports every module under `rootDir`,
+ignoring modules for which the predicate `skip` holds.
+Reports any that are missing, and returns `true` iff the check passes.
+-/
+private def checkDir (rootFile rootDir : FilePath) (skip : String → Bool) : IO Bool := do
+  let expected := ((← collectLeanFiles rootDir).map pathToModule).filter (!skip ·)
+  let reachable ← reachableModules [] [rootFile]
+  let unimported := expected.filter (!reachable.contains ·)
+  if unimported.isEmpty then
+    IO.println s!"check-imports: all {expected.length} modules under \
+      {rootDir} are imported from {rootFile}."
+    return true
+  else
+    IO.eprintln s!"check-imports: {unimported.length} file(s) under \
+      {rootDir} are never imported (directly or transitively) from {rootFile}:"
+    for m in unimported do
+      IO.eprintln s!"  {m}"
+    return false
+
+/-- The immediate subdirectories of `dir`, sorted for deterministic output. -/
+private def immediateSubdirs (dir : FilePath) : IO (List FilePath) := do
+  let mut acc := []
+  for entry in (← dir.readDir) do
+    if (← entry.path.isDir) then acc := entry.path :: acc
+  return (acc.toArray.qsort (·.toString < ·.toString)).toList
+
 def main (args : List String) : IO UInt32 := do
   match args.find? (fun a => !a.startsWith "-") with
   | none =>
@@ -86,17 +125,18 @@ def main (args : List String) : IO UInt32 := do
   | some libName =>
     let rootFile := FilePath.mk <| libName ++ leanSuffix
     let rootDir := FilePath.mk libName
-    -- Traverse the directory to collect all the modules
-    let expected := (← collectLeanFiles rootDir).map pathToModule
-    -- Check if any modules under the directory are not imported by the entry-point module
-    let unimported := expected.filter (!(← reachableModules [] [rootFile]).contains ·)
-    if unimported.isEmpty then
-      IO.println s!"check-imports: all {expected.length} modules under \
-        {rootDir} are imported from {rootFile}."
-      return 0
-    else
-      IO.eprintln s!"check-imports: {unimported.length} file(s) under \
-        {rootDir} are never imported (directly or transitively) from {rootFile}:"
-      for m in unimported do
-        IO.eprintln s!"  {m}"
-      return 1
+    -- Check imports by the top-level entry-point module
+    let mut ok := (← checkDir rootFile rootDir isExcluded)
+    -- Check imports in immediate sub-modules (useful when they are also entry-point modules)
+    if args.contains "--subdirs" then
+      for subDir in (← immediateSubdirs rootDir) do
+        let subFile := FilePath.mk <| subDir.toString ++ leanSuffix
+        if ← subFile.pathExists then
+          let libPrefix := pathToModule subDir ++ ".Lib"
+          ok := ok &&
+            (← checkDir subFile subDir (fun m => isExcluded m || isUnderModule libPrefix m))
+        else
+          IO.eprintln s!"check-imports: no entry-point file {subFile} for directory {subDir}."
+          ok := false
+
+    return if ok then 0 else 1
