@@ -53,6 +53,7 @@ variable {GF : BundledGFunctors} {hlc : HasLC} [InvGS_gen hlc GF]
 #rocq_ignore uPred_fupd_def "`uPred_fupd` is defined directly without `seal`/`unseal`."
 #rocq_ignore uPred_fupd_aux "`uPred_fupd` is defined directly without `seal`/`unseal`."
 #rocq_ignore uPred_fupd_unseal "`uPred_fupd` is defined directly without `seal`/`unseal`."
+#rocq_ignore tac_lc_add_laterN_split "Rocq proof-mode/Ltac helper (`tac_` lemma); superseded by the Lean proof-mode implementation."
 
 @[rocq_alias uPred_fupd]
 def uPred_fupd (E1 E2 : CoPset) (P : IProp GF) : IProp GF :=
