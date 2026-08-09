@@ -588,10 +588,6 @@ theorem contradiction [BILoeb PROP] : False := by
     dsimp [BIBase.laterN, Nat.repeat]
     iexfalso; iexact Hfalse
   | succ n IH =>
-    ihave Hfalse := Hfalse
-    /- Necessary to unfold `▷^[n + 1]` as `▷ ▷^[n]`, or else we get
-       `∗Hfalse : ▷^[n + 1] False` after `imod`. -/
-    icases (later_laterN n).mp $$ Hfalse with Hfalse
     imod lc_fupd_elim_later_keep
       lc_fupd_elim_later fupd_keep_si_pure' $$ Hlc Hfalse with ⟨Hlc, Hfalse⟩
     iapply IH $$ Hlc Hfalse

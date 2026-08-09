@@ -33,6 +33,10 @@ instance fromAssumption_except0 [BI PROP] (p : Bool) (P Q : PROP)
     [h : FromAssumption p ioP P Q] : FromAssumption p ioP P iprop(◇ Q) where
   from_assumption := h.1.trans except0_intro
 
+instance fromAssumption_later_laterN [BI PROP] (p : Bool) (P Q : PROP)
+    [h : FromAssumption p .in iprop(▷^[n] P) Q] :
+    FromAssumption p .in iprop(▷^[n + 1] P) iprop(▷ Q) where
+  from_assumption := later_intuitionisticallyIf_2.trans (later_mono h.from_assumption)
 
 /-- FromPure -/
 
