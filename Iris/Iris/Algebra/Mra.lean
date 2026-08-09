@@ -40,11 +40,9 @@ def mraSetoid (R : α → α → Prop) : Setoid (List α) where
   r := mraListEquiv R
   iseqv := mra_list_equiv_equivalence R
 
-abbrev MraRepr {α : Type _} (R : α → α → Prop) := Quotient (mraSetoid R)
-
 @[rocq_alias mra]
 structure Mra {α : Type _} (R : α → α → Prop) where
-  repr : MraRepr R
+  repr : Quotient (mraSetoid R)
 
 namespace Mra
 
@@ -93,8 +91,7 @@ theorem below_to_mra (a b : α) : below a (toMra (R := R) b) ↔ R a b :=
 
 #rocq_ignore mra_equiv
   "Subsumed by the equality-based `COFE (Mra R)` instance on the quotient representation."
-#rocq_ignore mra_equiv_equiv
-  "Subsumed by equality's equivalence laws; Lean's `Equivalence` is not a typeclass."
+#rocq_ignore mra_equiv_equiv "Subsumed by equality's equivalence laws."
 
 @[rocq_alias mraO]
 instance (R : α → α → Prop) : COFE (Mra R) := COFE.ofDiscrete _
@@ -103,17 +100,10 @@ theorem below_list_append (a : α) (xs ys : List α) :
     mraBelowList R a (xs ++ ys) ↔ mraBelowList R a xs ∨ mraBelowList R a ys := by
   constructor
   · rintro ⟨b, hb, hab⟩
-    exact (List.mem_append.mp hb).elim
-      (fun h ↦ .inl ⟨b, h, hab⟩) (fun h ↦ .inr ⟨b, h, hab⟩)
+    exact (List.mem_append.mp hb).elim (fun h ↦ .inl ⟨b, h, hab⟩) (fun h ↦ .inr ⟨b, h, hab⟩)
   · rintro (⟨b, hb, hab⟩ | ⟨b, hb, hab⟩)
     · exact ⟨b, List.mem_append.mpr (.inl hb), hab⟩
     · exact ⟨b, List.mem_append.mpr (.inr hb), hab⟩
-
-theorem list_equiv_append {xs xs' ys ys' : List α}
-    (hx : mraListEquiv R xs xs') (hy : mraListEquiv R ys ys') :
-    mraListEquiv R (xs ++ ys) (xs' ++ ys') := by
-  intro a
-  rw [below_list_append, below_list_append, hx a, hy a]
 
 def append (x y : Mra R) : Mra R :=
   ⟨Quotient.lift₂ (fun xs ys ↦ Quotient.mk _ (xs ++ ys))
@@ -121,7 +111,9 @@ def append (x y : Mra R) : Mra R :=
       intro xs ys xs' ys' hx hy
       change mraListEquiv R xs xs' at hx
       change mraListEquiv R ys ys' at hy
-      exact Quotient.sound (list_equiv_append hx hy)) x.repr y.repr⟩
+      apply Quotient.sound
+      intro a
+      rw [below_list_append, below_list_append, hx a, hy a]) x.repr y.repr⟩
 
 @[elab_as_elim]
 private theorem quotient_induction_on {motive : Mra R → Prop} (x : Mra R)
@@ -165,14 +157,12 @@ theorem append_idem (x : Mra R) : append x x = x := by
   intro a
   rw [below_list_append, or_self]
 
-#rocq_ignore mra_valid "Replaced by the `Valid` field of `Iris.Mra.instCMRA`."
-#rocq_ignore mra_validN "Replaced by the `ValidN` field of `Iris.Mra.instCMRA`."
-#rocq_ignore mra_op "Replaced by the `op` field of `Iris.Mra.instCMRA`."
-#rocq_ignore mra_pcore "Replaced by the `pcore` field of `Iris.Mra.instCMRA`."
-#rocq_ignore mra_cmra_mixin
-  "Replaced by direct `Iris.Mra.instCMRA`; iris-lean does not separate CMRA mixins."
+#rocq_ignore mra_valid "Replaced by the `Valid` field of the CMRA instance."
+#rocq_ignore mra_validN "Replaced by the `ValidN` field of the CMRA instance."
+#rocq_ignore mra_op "Replaced by the `op` field of the CMRA instance."
+#rocq_ignore mra_pcore "Replaced by the `pcore` field of the CMRA instance."
 
-@[rocq_alias mraR]
+@[rocq_alias mra_cmra_mixin]
 instance (R : α → α → Prop) : CMRA (Mra R) where
   pcore := some; op := append
   ValidN _ _ := True; Valid _ := True
@@ -191,6 +181,8 @@ instance (R : α → α → Prop) : CMRA (Mra R) where
     ⟨y, congrArg (fun z ↦ some (append z y)) (Option.some.inj h)⟩
   extend _ h := ⟨_, _, h, .rfl, .rfl⟩
 
+#rocq_ignore mraR "Use Mra."
+
 @[rocq_alias mra_cmra_total]
 instance : CMRA.IsTotal (Mra R) where
   total x := ⟨x, rfl⟩
@@ -204,11 +196,10 @@ instance : CMRA.Discrete (Mra R) where
   discrete_0 := id
   discrete_valid := id
 
-#rocq_ignore mra_unit "Replaced by the `unit` field of `Iris.Mra.instUCMRA`."
-#rocq_ignore auth_ucmra_mixin
-  "Replaced by direct `Iris.Mra.instUCMRA`; iris-lean does not separate UCMRA mixins."
+#rocq_ignore mra_unit "Replaced by the `unit` field of UCMRA instance."
+#rocq_ignore mraUR "Use Mra."
 
-@[rocq_alias mraUR]
+@[rocq_alias auth_ucmra_mixin]
 instance (R : α → α → Prop) : UCMRA (Mra R) where
   unit := ⟨Quotient.mk _ []⟩; unit_valid := trivial
   unit_left_id := by
@@ -223,34 +214,32 @@ theorem idem (x : Mra R) : x • x = x := append_idem x
 theorem inc_iff (x y : Mra R) : x ≼ y ↔ y = x • y :=
   ⟨fun h ↦ (CMRA.op_core_right_of_inc h).symm, fun h ↦ ⟨y, h⟩⟩
 
-private theorem append_to_mra_eq_of_rel [hR : Trans R R R] (h : R a b) :
-    append (toMra (R := R) a) (toMra b) = toMra b := by
+@[rocq_alias to_mra_R_op]
+theorem to_mra_op_of_rel [hR : Trans R R R] (a b : α) (h : R a b) :
+    toMra (R := R) a • toMra b = toMra b := by
+  change append (toMra a) (toMra b) = toMra b
   refine eq_of_below_iff fun c ↦ ?_
   rw [below_append, below_to_mra, below_to_mra]
   constructor
   · exact fun hca_or_hcb ↦ hca_or_hcb.elim (fun hca ↦ hR.trans hca h) id
   · exact .inr
 
-@[rocq_alias to_mra_R_op]
-theorem to_mra_op_of_rel [hR : Trans R R R] (a b : α) (h : R a b) :
-    toMra (R := R) a • toMra b = toMra b :=
-  append_to_mra_eq_of_rel h
-
-private theorem rel_of_to_mra_inc [Std.Refl R] [Trans R R R]
-    (h : toMra (R := R) a ≼ toMra b) : R a b := by
-  obtain ⟨z, hz⟩ := h
-  rw [← below_to_mra (R := R) a b, hz]
-  exact (below_append a (toMra a) z).mpr <|
-    .inl ((below_to_mra a a).mpr (Std.Refl.refl a))
-
 @[rocq_alias to_mra_included]
 theorem to_mra_inc_iff [Std.Refl R] [Trans R R R] (a b : α) :
-    toMra (R := R) a ≼ toMra b ↔ R a b :=
-  ⟨rel_of_to_mra_inc, fun h ↦ ⟨toMra b, (to_mra_op_of_rel a b h).symm⟩⟩
+    toMra (R := R) a ≼ toMra b ↔ R a b := by
+  constructor
+  · rintro ⟨z, hz⟩
+    rw [← below_to_mra (R := R) a b, hz]
+    exact (below_append a (toMra a) z).mpr <|
+      .inl ((below_to_mra a a).mpr (Std.Refl.refl a))
+  · exact fun h ↦ ⟨toMra b, (to_mra_op_of_rel a b h).symm⟩
 
-private theorem local_update_grow_eq [hR : Trans R R R] (h : R a b)
-    (haz : toMra (R := R) a = append x z) :
-    toMra b = append (toMra b) z := by
+@[rocq_alias mra_local_update_grow]
+theorem local_update_grow [hR : Trans R R R] (a : α) (x : Mra R) (b : α) (h : R a b) :
+    (toMra (R := R) a, x) ~l~> (toMra b, toMra b) := by
+  refine (local_update_unital_discrete ..).mpr fun z _ haz ↦ ⟨trivial, ?_⟩
+  change toMra b = append (toMra b) z
+  change toMra a = append x z at haz
   refine eq_of_below_iff fun c ↦ ?_
   rw [below_to_mra, below_append, below_to_mra]
   constructor
@@ -261,12 +250,6 @@ private theorem local_update_grow_eq [hR : Trans R R R] (h : R a b)
       rw [← below_to_mra (R := R) c a, haz, below_append]
       exact .inr hcz
 
-@[rocq_alias mra_local_update_grow]
-theorem local_update_grow [hR : Trans R R R] (a : α) (x : Mra R) (b : α) (h : R a b) :
-    (toMra (R := R) a, x) ~l~> (toMra b, toMra b) := by
-  refine (local_update_unital_discrete ..).mpr fun z _ haz ↦ ⟨trivial, ?_⟩
-  exact local_update_grow_eq h haz
-
 @[rocq_alias mra_local_update_get_frag]
 theorem local_update_get_frag [Std.Refl R] [Trans R R R] (a b : α) (h : R b a) :
     (toMra (R := R) a, UCMRA.unit) ~l~> (toMra a, toMra b) := by
@@ -274,15 +257,6 @@ theorem local_update_get_frag [Std.Refl R] [Trans R R R] (a b : α) (h : R b a) 
   calc
     toMra a = toMra b • toMra a := (to_mra_op_of_rel b a h).symm
     _ = toMra b • z := congrArg (toMra b • ·) (haz.trans CMRA.unit_left_id)
-
-private theorem to_mra_eq_of_rel {S : α → α → Prop} (hS : ∀ {a}, S a a)
-    (hrel : ∀ {a a' b b'}, S a a' → S b b' → (R a b ↔ R a' b'))
-    (hab : S a b) : toMra (R := R) a = toMra b :=
-  eq_of_below_iff fun c ↦ by
-    calc
-      below c (toMra a) ↔ R c a := below_to_mra c a
-      _ ↔ R c b := hrel hS hab
-      _ ↔ below c (toMra b) := (below_to_mra c b).symm
 
 private theorem rel_iff_of_to_mra_eq (hab : toMra (R := R) a = toMra b) (c : α) :
     R c a ↔ R c b := by
@@ -295,33 +269,35 @@ private theorem rel_iff_of_to_mra_eq (hab : toMra (R := R) a = toMra b) (c : α)
 theorem to_mra_rel_proper (S : α → α → Prop) (hS : ∀ {a}, S a a)
     (hrel : ∀ {a a' b b'}, S a a' → S b b' → (R a b ↔ R a' b')) :
     ∀ {a b}, S a b → toMra (R := R) a = toMra b :=
-  fun hab ↦ to_mra_eq_of_rel hS hrel hab
+  fun {a b} hab ↦ eq_of_below_iff fun c ↦ by
+    calc
+      below c (toMra a) ↔ R c a := below_to_mra c a
+      _ ↔ R c b := hrel hS hab
+      _ ↔ below c (toMra b) := (below_to_mra c b).symm
 
 @[rocq_alias to_mra_rel_inj]
 theorem to_mra_rel_injective (S : α → α → Prop) (hR : ∀ {a}, R a a)
     (hanti : ∀ {a b}, R a b → R b a → S a b) :
     ∀ {a b}, toMra (R := R) a = toMra b → S a b :=
   fun hab ↦ hanti
-    ((rel_iff_of_to_mra_eq hab _).mp hR)
-    ((rel_iff_of_to_mra_eq hab _).mpr hR)
+    ((rel_iff_of_to_mra_eq hab _).mp hR) ((rel_iff_of_to_mra_eq hab _).mpr hR)
 
 @[rocq_alias to_mra_inj]
-instance (priority := default + 1) [hR : Std.Refl R]
-    [hanti : Antisymmetric (fun a b : α ↦ a = b) R] :
-    RelInjective (fun a b : α ↦ a = b) (fun a b : Mra R ↦ a = b) toMra where
-  injective := to_mra_rel_injective (fun a b : α ↦ a = b)
-    (hR.refl _) hanti.antisymm
+instance inst_to_mra_inj [hR : Std.Refl R]
+    [hanti : Antisymmetric (· = ·) R] :
+    RelInjective (· = ·) (fun a b : Mra R ↦ a = b) toMra where
+  injective := to_mra_rel_injective (fun a b : α ↦ a = b) (hR.refl _) hanti.antisymm
 
 @[rocq_alias to_mra_proper]
 instance [HasEquiv α] [hS : Std.Refl (HasEquiv.equiv (α := α))]
-    [hrel : RelHom₂ (HasEquiv.equiv (α := α)) HasEquiv.equiv Iff R] :
-    RelHom (HasEquiv.equiv (α := α)) (fun a b : Mra R ↦ a = b) toMra where
+    [hrel : RelHom₂ HasEquiv.equiv HasEquiv.equiv Iff R] :
+    RelHom HasEquiv.equiv (fun a b : Mra R ↦ a = b) toMra where
   map_rel := to_mra_rel_proper HasEquiv.equiv (hS.refl _) hrel.map_rel
 
 @[rocq_alias to_mra_equiv_inj]
-instance (priority := default) [HasEquiv α] [hR : Std.Refl R]
-    [hanti : Antisymmetric (HasEquiv.equiv (α := α)) R] :
-    RelInjective (HasEquiv.equiv (α := α)) (fun a b : Mra R ↦ a = b) toMra where
+instance (priority := default - 1) inst_to_mra_equiv_inj [HasEquiv α] [hR : Std.Refl R]
+    [hanti : Antisymmetric HasEquiv.equiv R] :
+    RelInjective HasEquiv.equiv (fun a b : Mra R ↦ a = b) toMra where
   injective := to_mra_rel_injective HasEquiv.equiv (hR.refl _) hanti.antisymm
 
 end Mra
