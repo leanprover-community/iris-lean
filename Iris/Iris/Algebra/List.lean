@@ -34,7 +34,7 @@ theorem forall₂_eq_of_forall₂_dist : ∀ {l k : List α},
 instance : OFE (List α) where
   Dist n := List.Forall₂ (Dist n)
   dist_eqv := List.Forall₂.equivalence dist_eqv
-  eq_dist := ⟨fun h _ => h ▸ (List.Forall₂.rfl .refl), forall₂_eq_of_forall₂_dist⟩
+  eq_dist := ⟨fun h _ => h ▸ (List.Forall₂.rfl fun _ => Dist.rfl), forall₂_eq_of_forall₂_dist⟩
   dist_lt h hlt := h.imp fun hab => hab.lt hlt
 #rocq_ignore listO "Use List"
 #rocq_ignore list_dist "Local Dist instance; folded into Lean's OFE (List α) instance."
@@ -248,9 +248,9 @@ section higher_order
 
 @[rocq_alias list_fmap_ne]
 theorem list_fmap_ne [OFE α] [OFE β] {n} {f g : α → β}
-    (Hf : ∀ a b, a ≡{n}≡ b → f a ≡{n}≡ g b) {l k : List α} (h : l ≡{n}≡ k) :
+    (Hf : ∀ {a b}, a ≡{n}≡ b → f a ≡{n}≡ g b) {l k : List α} (h : l ≡{n}≡ k) :
     l.map f ≡{n}≡ k.map g :=
-  h.map fun hab => Hf _ _ hab
+  h.map (Hf ·)
 
 @[rocq_alias list_fmap_ext_ne]
 theorem list_fmap_ext_ne [OFE α] [OFE β] {n} {f g : α → β} {l : List α}
@@ -269,12 +269,12 @@ theorem list_fmap_dist_inj [OFE α] [OFE β] {n} {f : α → β}
 
 @[rocq_alias list_omap_ne]
 theorem list_omap_ne [OFE α] [OFE β] {n} {f g : α → Option β}
-    (Hf : ∀ a b, a ≡{n}≡ b → f a ≡{n}≡ g b) {l k : List α} (h : l ≡{n}≡ k) :
+    (Hf : ∀ {a b}, a ≡{n}≡ b → f a ≡{n}≡ g b) {l k : List α} (h : l ≡{n}≡ k) :
     l.filterMap f ≡{n}≡ k.filterMap g := by
   induction h with
   | nil => exact .nil
   | @cons a b _ _ hab _ ih =>
-    have ho := Hf a b hab
+    have ho := Hf hab
     rw [List.filterMap_cons, List.filterMap_cons]
     revert ho
     cases f a <;> cases g b <;> intro ho
@@ -309,12 +309,12 @@ theorem list_flatten_ne [OFE α] {n} {l k : List (List α)} (h : l ≡{n}≡ k) 
 
 @[rocq_alias zip_with_ne]
 theorem zipWith_ne [OFE α] [OFE β] [OFE γ] {n} {f g : α → β → γ}
-    (Hf : ∀ a b c d, a ≡{n}≡ b → c ≡{n}≡ d → f a c ≡{n}≡ g b d) :
+    (Hf : ∀ {a b c d}, a ≡{n}≡ b → c ≡{n}≡ d → f a c ≡{n}≡ g b d) :
     ∀ {l1 l2 : List α} {k1 k2 : List β}, l1 ≡{n}≡ l2 → k1 ≡{n}≡ k2 →
       List.zipWith f l1 k1 ≡{n}≡ List.zipWith g l2 k2
   | _, _, _, _, .nil, _ => .nil
   | _, _, _, _, .cons _ _, .nil => .nil
-  | _, _, _, _, .cons ha ta, .cons hb tb => .cons (Hf _ _ _ _ ha hb) (zipWith_ne Hf ta tb)
+  | _, _, _, _, .cons ha ta, .cons hb tb => .cons (Hf ha hb) (zipWith_ne Hf ta tb)
 
 end higher_order
 
@@ -323,14 +323,14 @@ end higher_order
 @[rocq_alias big_opL_ne_2]
 theorem bigOpL_dist_2 {M α : Type _} [OFE M] [OFE α] {op : M → M → M} {unit : M} [MonoidOps op unit]
     {n : Nat} {l1 l2 : List α} (hl : l1 ≡{n}≡ l2) : ∀ {f g : Nat → α → M},
-    (∀ (k : Nat) y1 y2, l1[k]? = some y1 → l2[k]? = some y2 → y1 ≡{n}≡ y2 → f k y1 ≡{n}≡ g k y2) →
+    (∀ {k : Nat} {y1 y2}, l1[k]? = some y1 → l2[k]? = some y2 → y1 ≡{n}≡ y2 → f k y1 ≡{n}≡ g k y2) →
     bigOpL op f l1 ≡{n}≡ bigOpL op g l2 := by
   induction hl with
   | nil => exact fun _ => .rfl
   | cons hx t ih =>
     intro f g hf
-    refine MonoidOps.op_dist (hf 0 _ _ rfl rfl hx) (ih ?_)
-    exact fun k y1 y2 h1 h2 hy => hf (k + 1) y1 y2 h1 h2 hy
+    refine MonoidOps.op_dist (hf rfl rfl hx) (ih ?_)
+    exact fun h1 h2 hy => hf h1 h2 hy
 
 /-! ## The list functor -/
 
