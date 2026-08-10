@@ -426,12 +426,8 @@ instance : BI (UPred M) where
     | _+1, _, H => .inr @fun | 0, _, Hx'le, _, _ => P.mono H Hx'le.incN (Nat.zero_le _)
 
 
-#rocq_ignore pure_intro "Inlined in `uPredI` construction"
-#rocq_ignore pure_elim' "Inlined in `uPredI` construction"
-#rocq_ignore pure_ne "Inlined in `uPredI` construction; nonexpansiveness of `⌜·⌝` is supplied generically."
-#rocq_ignore uPred_primitive.entails_anti_sym "Supplied via the `equiv_iff` field of the `BI (UPred M)` instance."
-#rocq_ignore uPred_primitive.equiv_entails "Supplied as the `equiv_iff` field of the `BI (UPred M)` instance."
-#rocq_ignore uPred_primitive.persistently_elim "Subsumed by the generic BI `persistently_elim` (UPred is affine, so every `P` is `Absorbing`)."
+#rocq_ignore uPred_primitive.entails_anti_sym "Use `equiv_iff`"
+#rocq_ignore uPred_primitive.equiv_entails "Use `equiv_iff`"
 
 #rocq_ignore uPred_primitive.and_elim_l "Inlined in `uPredI` construction"
 #rocq_ignore uPred_primitive.and_elim_r "Inlined in `uPredI` construction"
