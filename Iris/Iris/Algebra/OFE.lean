@@ -156,7 +156,7 @@ instance ne_of_contractive [OFE α] [OFE β] (f : α → β) [Contractive f] : N
 instance [OFE α] [OFE β] {x : β} : Contractive (fun _ : α => x) where
   distLater_dist := fun _ => Dist.rfl
 
-/-- The discrete OFE obtained from an equivalence relation `Equiv` -/
+/-- The discrete OFE obtained from an equality relation `Eq` -/
 @[reducible, rocq_alias discrete_ofe_mixin]
 def ofDiscrete (α : Type _) : OFE α where
   Dist _ := Eq
@@ -169,19 +169,19 @@ def ofDiscrete (α : Type _) : OFE α where
 class DiscreteE {α : Type _} [OFE α] (x : α) : Prop where
   discrete : x ≡{0}≡ y → x = y
 
-/-- A discrete OFE is one where equivalence is implied by `0`-equivalence. -/
+/-- A discrete OFE is one where equality is implied by `0`-equivalence. -/
 @[rocq_alias OfeDiscrete]
 class Discrete (α : Type _) [OFE α] where
   discrete_0 {x y : α} : x ≡{0}≡ y → x = y
 export OFE.Discrete (discrete_0)
 
 @[rocq_alias Discrete_proper]
-theorem discreteE_eqv [OFE α] {x y : α} (h : x = y) : DiscreteE x ↔ DiscreteE y := h ▸ Iff.rfl
+theorem discreteE_eq [OFE α] {x y : α} (h : x = y) : DiscreteE x ↔ DiscreteE y := h ▸ Iff.rfl
 
 #rocq_ignore ofe_discrete_subrelation "Not needed"
 #rocq_ignore discrete_ofe_discrete "Not needed"
 
-/-- For discrete OFEs, `n`-equivalence implies equivalence for any `n`. -/
+/-- For discrete OFEs, `n`-equivalence implies equality. -/
 @[rocq_alias discrete]
 theorem Discrete.discrete [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{n}≡ y) : x = y :=
   discrete_0 (h.le (Nat.zero_le _))
@@ -189,7 +189,7 @@ export OFE.Discrete (discrete)
 
 instance Discrete.toDiscreteE [OFE α] [Discrete α] (x : α) : DiscreteE x := ⟨discrete_0⟩
 
-/-- For discrete OFEs, `n`-equivalence implies equivalence for any `n`. -/
+/-- For discrete OFEs, `0`-equivalence implies equivalence for any `n`. -/
 theorem Discrete.discrete_n [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{0}≡ y) : x ≡{n}≡ y :=
   (discrete h).dist
 export OFE.Discrete (discrete_n)
@@ -994,7 +994,7 @@ theorem compl_const [COFE α] (a : α) : compl (Chain.const a) = a :=
 @[simp] theorem discrete_cofe_compl [COFE α] [OFE.Discrete α] (c : Chain α) : compl c = c 0 :=
   Discrete.discrete_0 conv_compl
 
-/-- The discrete COFE obtained from an equivalence relation `Equiv` -/
+/-- The discrete COFE obtained from an equality relation `Eq` -/
 @[reducible, rocq_alias discrete_cofe]
 def ofDiscrete (α : Type _) : COFE α :=
   let _ := OFE.ofDiscrete α
