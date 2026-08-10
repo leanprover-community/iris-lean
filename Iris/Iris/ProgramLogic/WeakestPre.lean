@@ -191,7 +191,7 @@ theorem wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
 @[rocq_alias wp_value_fupd']
 theorem wp_value_fupd' {s : Stuckness} {E} {Φ : Val → IProp GF} {v : Val} :
     WP (v : Expr) @ s ; E {{ Φ }} ⊣⊢ |={E}=> Φ v := by
-  simp [wp_unfold.to_eq, toVal_coe, BI.BIBase.BiEntails.rfl, wp.pre]
+  simp [wp_unfold.to_eq, toVal_coe, wp.pre]
 
 @[rocq_alias wp_strong_mono]
 theorem wp_strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : Val → IProp GF}

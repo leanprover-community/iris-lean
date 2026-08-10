@@ -89,7 +89,7 @@ private def iCasesEmptyConj {prop : Q(Type u)} (bi : Q(BI $prop))
   if let .defEq _ ← isDefEqQ A q(iprop(False)) then
     return q(false_elim')
   else
-    throwError "icases: cannot destruct {A} as an empty conjunct"
+    throwIPMError "cannot destruct {A} as an empty conjunct"
 
 /--
   Destruct an existential hypothesis `A` by introducing its witness and
@@ -103,13 +103,13 @@ private def iCasesExists {prop : Q(Type u)} {bi : Q(BI $prop)} (pat : TSyntax `r
   let α : Q(Sort v) ← mkFreshExprMVarQ q(Sort v)
   let Φ : Q($α → $prop) ← mkFreshExprMVarQ q($α → $prop)
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoExists $A $Φ)
-  | throwError "icases: {A} is not an existential quantifier"
+  | throwIPMError "{A} is not an existential quantifier"
   let pf : Q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) ←
     iPureCases q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) pat fun g => do
       let B : Q($prop) ← mkFreshExprMVarQ q($prop)
       -- TODO: Is this the right way to check this?
       unless ← withTransparency .none <| isDefEq (← g.getType) q($P ∗ □?$p $B ⊢ $goal) do
-        throwError "icases: unexpected goal {goal} after intro pattern"
+        throwIPMError "unexpected goal {goal} after intro pattern"
       k (Expr.headBeta (← instantiateMVars B))
   return q(exists_elim' $pf)
 
@@ -141,23 +141,23 @@ private def iCasesSep {prop : Q(Type u)} {bi : Q(BI $prop)}
   match matchBool p with
   | .inl _ =>
     let .some _ ← ProofModeM.trySynthInstanceQ q(IntoAnd $p $A $A1 $A2)
-      | throwError "icases: cannot destruct {A}"
+      | throwIPMError "cannot destruct {A}"
     let goal' := q(iprop(□ $A2 -∗ $goal))
     let pf ← k1 hyps goal' A1 fun hyps goal' => do
       let goal'' ← mkFreshExprMVarQ q($prop)
       let .some inst ← ProofModeM.trySynthInstanceQ q(FromWand $goal' .in iprop(□ $A2) $goal'')
-        | throwError "icases: internal error: {goal'} is not a wand"
+        | throwIPMError "internal error: {goal'} is not a wand"
       let pf ← k2 hyps goal'' A2 k
       return q((wand_intro $pf).trans $(inst).from_wand)
     return q(and_elim_intuitionistic $pf)
   | .inr _ =>
     let .some _ ← ProofModeM.trySynthInstanceQ q(IntoSep $A $A1 $A2)
-      | throwError "icases: cannot destruct {A}"
+      | throwIPMError "cannot destruct {A}"
     let goal' := q(iprop($A2 -∗ $goal))
     let pf ← k1 hyps goal' A1 fun hyps goal' => do
       let goal'' ← mkFreshExprMVarQ q($prop)
       let .some inst ← ProofModeM.trySynthInstanceQ q(FromWand $goal' .in $A2 $goal'')
-        | throwError "icases: internal error: {goal'} is not a wand"
+        | throwIPMError "internal error: {goal'} is not a wand"
       let pf ← k2 hyps goal'' A2 k
       return q((wand_intro $pf).trans $(inst).from_wand)
     return q(sep_elim_spatial (A := $A) $pf)
@@ -170,7 +170,7 @@ private def iCasesOr {prop : Q(Type u)} {bi : Q(BI $prop)}
   let A1 ← mkFreshExprMVarQ q($prop)
   let A2 ← mkFreshExprMVarQ q($prop)
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoOr $A $A1 $A2)
-    | throwError "icases: {A} is not a disjunction"
+    | throwIPMError "{A} is not a disjunction"
   return q(or_elim' $(← k1 A1) $(← k2 A2))
 
 /--
@@ -183,13 +183,13 @@ private def iCasesIntuitionistic {prop : Q(Type u)} {bi : Q(BI $prop)}
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) := do
   let B ← mkFreshExprMVarQ q($prop)
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPersistently $p $A $B)
-    | throwError "icases: {A} not persistent"
+    | throwIPMError "{A} not persistent"
   match matchBool p with
   | .inl _ =>
     return q(intuitionistic_elim_intuitionistic $(← k B))
   | .inr _ =>
     let .some _ ← trySynthInstanceQ q(TCOr (Affine $A) (Absorbing $goal))
-      | throwError "icases: {A} not affine and the goal not absorbing"
+      | throwIPMError "{A} not affine and the goal not absorbing"
     return q(intuitionistic_elim_spatial (A := $A) $(← k B))
 
 /--
@@ -306,7 +306,7 @@ elab "icases" keep:("+keep ")? colGt pmt:pmTerm " with " colGt pat:icasesPat : t
   -- parse syntax
   let pmt ← liftMacroM <| PMTerm.parse pmt
   let pat ← liftMacroM <| iCasesPat.parse pat
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `icases λ mvar { hyps, goal, .. } => do
 
   /-
     We keep the persistent hypothesis if it is required by the user (`+keep` is set by `ihave`)

@@ -36,7 +36,7 @@ def iClearCoreOne {prop : Q(Type u)} (_bi : Q(BI $prop)) (e e' : Q($prop))
     | .inl _ => return q(clear_intuitionistic (Q := $goal) $pf)
     | .inr _ =>
       let .some _ ← trySynthInstanceQ q(TCOr (Affine $out) (Absorbing $goal))
-        | throwError "iclear: {out} is not affine and the goal not absorbing"
+        | throwIPMError "{out} is not affine and the goal not absorbing"
       return q(clear_spatial (A:=$out) $pf)
 
 private structure ClearState {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (origE goal : Q($prop)) where
@@ -81,6 +81,6 @@ def iClearCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 elab "iclear " pats:(colGt ppSpace selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `iclear λ mvar { hyps, goal, .. } => do
     let pf ← iClearCore hyps goal pats (addBIGoalWithoutFVars · ·)
     mvar.assign pf
