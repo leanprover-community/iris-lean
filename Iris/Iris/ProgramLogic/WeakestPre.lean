@@ -70,8 +70,7 @@ abbrev Stuckness.MaybeReducible : Stuckness → Expr × State → Prop
 | _, _ => True
 
 @[rocq_alias wp_pre]
-def wp.pre (s : Stuckness) (wp : CoPset -> Expr -> (Val -> IProp GF) -> IProp GF) (E : CoPset)
-    (e₁ : Expr) (Φ : Val -> IProp GF) : IProp GF :=
+guarded def wp (s : Stuckness) (E : CoPset) (e₁ : Expr) (Φ : Val -> IProp GF) : IProp GF :=
   match toVal e₁ with
   | some v => iprop(|={E}=> Φ v)
   | none => iprop(∀ (σ₁ : State) (ns : Nat) (obs obs' : List Obs) (nt : Nat),
@@ -82,13 +81,9 @@ def wp.pre (s : Stuckness) (wp : CoPset -> Expr -> (Val -> IProp GF) -> IProp GF
       stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
       wp E e₂ Φ ∗ [∗list] e' ∈ eₜ, wp ⊤ e' ι.forkPost)
 
-@[rocq_alias wp_pre_contractive]
-instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
-  distLater_dist := by contractive
-
 @[rocq_alias wp_def]
-instance wp.def : Wp (IProp GF) (Expr) (Val) Stuckness where
-  wp s := fixpoint (wp.pre s)
+instance wp.instWp : Wp (IProp GF) (Expr) (Val) Stuckness where
+  wp s := wp.def s
 
 #rocq_ignore wp_aux "We do not use Iris' custom seal/unseal visibility control"
 #rocq_ignore wp' "We do not use Iris' custom seal/unseal visibility control"

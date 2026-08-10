@@ -218,22 +218,18 @@ section Upd
 variable {GF : BundledGFunctors} {hlc : HasLC} [LcGS hlc GF]
 
 @[rocq_alias le_upd.le_upd_pre]
-def le_upd_pre (P le_upd : IProp GF) : IProp GF :=
+guarded def le_upd (P : IProp GF) : IProp GF :=
   iprop(∀ n, lc_supply n ==∗
     ▷^[n.succ] False ∨
     (lc_supply n ∗ P) ∨
     (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ le_upd))
-
-@[rocq_alias le_upd.le_upd_pre_contractive]
-instance {P : IProp GF} : Contractive (le_upd_pre P) where
-  distLater_dist := by contractive
 
 #rocq_ignore le_upd.le_upd_def "`le_upd` is defined directly without `seal`/`unseal`."
 #rocq_ignore le_upd.le_upd_aux "`le_upd` is defined directly without `seal`/`unseal`."
 #rocq_ignore le_upd.le_upd_unseal "`le_upd` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias le_upd.le_upd]
-def le_upd (P : IProp GF) : IProp GF := fixpoint (le_upd_pre P)
+def le_upd (P : IProp GF) : IProp GF := le_upd.def P
 
 syntax:max "|==£> " term:40 : term
 
@@ -248,7 +244,7 @@ theorem le_upd_unfold {P : IProp GF} :
   (|==£> P) ⊣⊢
   ∀ n, lc_supply n ==∗
     ▷^[n.succ] False ∨ (lc_supply n ∗ P) ∨ (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ |==£> P) :=
-    (fixpoint_unfold ⟨le_upd_pre P, inferInstance⟩).to_bi.trans .rfl
+    (fixpoint_unfold ⟨le_upd.pre P, inferInstance⟩).to_bi.trans .rfl
 
 @[rocq_alias le_upd.le_upd_ne]
 instance : NonExpansive (le_upd (GF := GF)) where

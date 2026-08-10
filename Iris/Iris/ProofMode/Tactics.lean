@@ -14,6 +14,7 @@ public meta import Iris.ProofMode.Tactics.Exact
 public meta import Iris.ProofMode.Tactics.ExFalso
 public meta import Iris.ProofMode.Tactics.Exists
 public meta import Iris.ProofMode.Tactics.Frame
+public meta import Iris.ProofMode.Tactics.Guarded
 public meta import Iris.ProofMode.Tactics.Have
 public meta import Iris.ProofMode.Tactics.HaveCore
 public meta import Iris.ProofMode.Tactics.Induction

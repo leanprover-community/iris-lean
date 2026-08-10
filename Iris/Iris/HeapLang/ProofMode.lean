@@ -186,7 +186,7 @@ public meta def ProofModeM.runTacticWp {α} (k : MVarId → WpGoal → ProofMode
     let ~q(UPred.instBIUPred) := bi
       | throwError "Expected the BI implementation of `IProp` to be `UPred.instBIUPred`"
 
-    let ~q(Wp.wp (A := Stuckness) (Expr := Exp) (self := wp.def (ι := $ι)) $s $E $e $Φ) := goal
+    let ~q(Wp.wp (A := Stuckness) (Expr := Exp) (self := wp.instWp (ι := $ι)) $s $E $e $Φ) := goal
       | throwError "The goal {goal} must be a WP"
     k mvar {hyps, ι, s, E, e, Φ, hu:=⟨⟩, hprop:=⟨⟩, hbi:=⟨⟩ }
 
@@ -216,8 +216,8 @@ public meta def iWpValueHead {u}
   (_hu : QuotedLevelDefEq u 0 := ⟨⟩)
   (_hprop : $prop =Q IProp $GF := ⟨⟩)
   (_hbi : $bi =Q UPred.instBIUPred := ⟨⟩)
-  (κ : Q(Wp $prop Exp Val Stuckness) := q(wp.def))
-  (_hwp : $κ =Q wp.def := ⟨⟩) :
+  (κ : Q(Wp $prop Exp Val Stuckness) := q(wp.instWp))
+  (_hwp : $κ =Q wp.instWp := ⟨⟩) :
     ProofModeM (Option Q($ehyps ⊢ Wp.wp $s $E $e $Φ)) := do
   let ~q(ProgramLogic.ToVal.ofVal $v) := e
     | return none
@@ -285,8 +285,8 @@ public meta def iWpFinish {u}
   (_hu : QuotedLevelDefEq u 0 := ⟨⟩)
   (_hprop : $prop =Q IProp $GF := ⟨⟩)
   (_hbi : $bi =Q UPred.instBIUPred := ⟨⟩)
-  (κ : Q(Wp $prop Exp Val Stuckness) := q(wp.def))
-  (_hwp : $κ =Q wp.def := ⟨⟩) :
+  (κ : Q(Wp $prop Exp Val Stuckness) := q(wp.instWp))
+  (_hwp : $κ =Q wp.instWp := ⟨⟩) :
     ProofModeM (Q($ehyps ⊢ Wp.wp $s $E $e $Φ)) := do
   let ⟨e', pfeq⟩ ← iWpExprSimp e
   let nextPf ← (← iWpValueHead hyps ι s E e' Φ).getDM
@@ -549,7 +549,7 @@ meta def finishHeapOp {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(HasLC)}
     (hyps : Hyps bi ehyps) (hgs : Q(HeapLangGS $hlc $GF))
     (s : Q(Stuckness)) (E : Q(CoPset)) (K : Q(List ECtxItem)) (r : Q(Val)) (Φ : Q(Val → $prop))
     (_hu : QuotedLevelDefEq u 0 := ⟨⟩) (_hprop : $prop =Q IProp $GF := ⟨⟩)
-    (κ : Q(Wp $prop Exp Val Stuckness) := q(wp.def)) (_hwp : $κ =Q wp.def := ⟨⟩) :
+    (κ : Q(Wp $prop Exp Val Stuckness) := q(wp.instWp)) (_hwp : $κ =Q wp.instWp := ⟨⟩) :
     ProofModeM Q($ehyps ⊢ Wp.wp (self := $κ) $s $E (ProgramLogic.fill $K (Exp.ofVal $r)) $Φ) := do
   let ⟨inner, .up _⟩ ← HeapLang.fillQ K q(Exp.ofVal $r)
   iWpFinish hyps q(@HeapLang $hlc $GF $hgs) s E inner Φ (κ := κ)
@@ -787,7 +787,7 @@ elab "wp_cmpxchg" " with" colGt ppSpace h1:binderIdent colGt ppSpace h2:binderId
 
     let (sucName, _) ← getFreshName h1
     let pfSuc : Q($v = $v1 → ($eΔ'' ∗ pointsTo $l (DFrac.own 1) (some $v2) ⊢
-      Wp.wp (self := wp.def (ι := @HeapLang $hlc $GF $hgs)) $s $E
+      Wp.wp (self := wp.instWp (ι := @HeapLang $hlc $GF $hgs)) $s $E
         (ProgramLogic.fill $K (Exp.ofVal (Expr := Exp)
           (Val.pair $v (Val.lit (BaseLit.bool true))))) $Φ)) ←
         Qq.withLocalDeclDQ sucName q($v = $v1) fun _h => do
@@ -797,7 +797,7 @@ elab "wp_cmpxchg" " with" colGt ppSpace h1:binderIdent colGt ppSpace h2:binderId
 
     let (failName, _) ← getFreshName h2
     let pfFail : Q($v ≠ $v1 → $eΔ' ⊢
-      Wp.wp (self := wp.def (ι := @HeapLang $hlc $GF $hgs)) $s $E
+      Wp.wp (self := wp.instWp (ι := @HeapLang $hlc $GF $hgs)) $s $E
         (ProgramLogic.fill $K (Exp.ofVal (Expr := Exp)
           (Val.pair $v (Val.lit (BaseLit.bool false))))) $Φ) ←
         Qq.withLocalDeclDQ failName q($v ≠ $v1) fun _h => do
@@ -840,7 +840,7 @@ elab "wp_alloc" colGt ppSpace loc:binderIdent " with" colGt ppSpace hyp:binderId
     let (locName, _) ← getFreshName loc
 
     let pfCont : Q(∀ l : Loc, $eΔ' ∗ pointsTo l (DFrac.own 1) (some $v) ⊢
-        Wp.wp (self := wp.def (ι := @HeapLang $hlc $GF $hgs)) $s $E
+        Wp.wp (self := wp.instWp (ι := @HeapLang $hlc $GF $hgs)) $s $E
           (ProgramLogic.fill $K (Exp.ofVal (Expr := Exp) (Val.lit (BaseLit.loc l)))) $Φ) ←
       Qq.withLocalDeclDQ locName q(Loc) fun l => do
         let ⟨_, _, hyps'', pfEq⟩ ← hyps'.addWithInfo bi hyp q(false)
