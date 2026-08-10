@@ -22,10 +22,12 @@ variable {σ : State} {P Q : IProp GF} {Φ : Val → IProp GF}
 
 @[rocq_alias wp_lift_step_fupdN]
 theorem wp_lift_step_fupdN (h : toVal e₁ = none) :
-    (∀ σ₁ ns (obs obs' : List Obs) nt,
-      stateInterp σ₁ ns (obs ++ obs') nt ={E,∅}=∗
+    (∀ σ₁ ns (obs : List Obs) nt,
+      stateInterp σ₁ ns obs nt ={E,∅}=∗
       ⌜s.MaybeReducible (e₁, σ₁)⌝ ∗
-      ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>-> (e₂,σ₂, eₜ)⌝ -∗
+      ∀ e₂ σ₂ eₜ κ obs',
+        ⌜obs = κ ++ obs'⌝ -∗
+        ⌜(e₁, σ₁) -<κ>-> (e₂,σ₂, eₜ)⌝ -∗
         £ (ι.numLatersPerStep ns + 1) ={∅}▷=∗^[ι.numLatersPerStep ns + 1] |={∅,E}=>
         stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
         WP e₂ @ s; E {{ Φ }} ∗
@@ -34,24 +36,26 @@ theorem wp_lift_step_fupdN (h : toVal e₁ = none) :
 
 @[rocq_alias wp_lift_step_fupd]
 theorem wp_lift_step_fupd (h : toVal e₁ = none) :
-    (∀ σ₁ ns (obs obs' : List Obs) nt,
-      stateInterp σ₁ ns (obs ++ obs') nt ={E,∅}=∗
+    (∀ σ₁ ns (obs : List Obs) nt,
+      stateInterp σ₁ ns obs nt ={E,∅}=∗
       ⌜s.MaybeReducible (e₁, σ₁)⌝ ∗
-      ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>-> (e₂,σ₂, eₜ)⌝ -∗
+      ∀ e₂ σ₂ eₜ κ obs',
+        ⌜obs = κ ++ obs'⌝ -∗
+        ⌜(e₁, σ₁) -<κ>-> (e₂,σ₂, eₜ)⌝ -∗
         £ 1 ={∅}=∗ ▷ |={∅,E}=>
         stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length ) ∗
         WP e₂ @ s; E {{ Φ }} ∗
         [∗list] ef ∈ eₜ, WP ef @ s; ⊤ {{ ι.forkPost }})
     ⊢ WP e₁ @ s; E {{ Φ }} := by
   refine .trans ?_ <| wp_lift_step_fupdN h
-  iintro Hwp %σ₁ %ns %obs %obs' %nt Hσ
+  iintro Hwp %σ₁ %ns %obs %nt Hσ
   imod Hwp $$ Hσ with ⟨$, Hwp⟩
-  iintro !> %e₂ %σ₂ %eₜ %Hstep Hcred
+  iintro !> %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Hstep Hcred
   ihave Hcred := lc_weaken 1 (Nat.le_add_left 1 (ι.numLatersPerStep ns)) $$ Hcred
   refine .trans ?_ <| step_fupd_mono <|
     (laterN_intro _).trans <| step_fupdN_intro Std.LawfulSet.empty_subset
   iintro ⟨Hwp, Hcred⟩
-  imod Hwp $$ %_ %_ %_ %Hstep Hcred with Hwp
+  imod Hwp $$ %_ %_ %_ %_ %_ %Hsplit %Hstep Hcred with Hwp
   iapply step_fupd_intro Std.LawfulSet.empty_subset
   iassumption
 
@@ -62,32 +66,34 @@ theorem wp_lift_stuck (h : toVal e = none) :
   iintro H
   rw [wp_unfold.to_eq]
   simp only [wp.pre, h]
-  iintro %σ₁ %ns %obs %obs' %nt Hσ
+  iintro %σ₁ %ns %obs %nt Hσ
   imod H $$ Hσ with %Hirr
   replace ⟨_, Hirr⟩ := Hirr
   imodintro
   isplit
   · ipureintro; simp [Stuckness.MaybeReducible]
-  iintro %e₂ %σ₂ %eₜ %Hstep
-  nomatch Hirr obs e₂ σ₂ eₜ Hstep
+  iintro %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Hstep
+  nomatch Hirr κ e₂ σ₂ eₜ Hstep
 
 /-! ## Derived lifting lemmas -/
 
 @[rocq_alias wp_lift_step]
 theorem wp_lift_step (h : toVal e₁ = none) :
-    (∀ σ₁ ns obs obs' nt, stateInterp σ₁ ns (obs ++ obs') nt ={E,∅}=∗
+    (∀ σ₁ ns obs nt, stateInterp σ₁ ns obs nt ={E,∅}=∗
       ⌜s.MaybeReducible (e₁, σ₁)⌝ ∗
-      ▷ ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ)⌝ -∗ £ 1 ={∅,E}=∗
+      ▷ ∀ e₂ σ₂ eₜ κ obs',
+        ⌜obs = κ ++ obs'⌝ -∗
+        ⌜(e₁, σ₁) -<κ>-> (e₂, σ₂, eₜ)⌝ -∗ £ 1 ={∅,E}=∗
         stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
         WP e₂ @ s; E {{ Φ }} ∗
         [∗list] ef ∈ eₜ, WP ef @ s; ⊤ {{ ι.forkPost }})
     ⊢ WP e₁ @ s; E {{ Φ }} := by
   iintro H
   iapply wp_lift_step_fupd h
-  iintro %σ₁ %ns %obs %obs' %nt Hσ
-  imod H $$ %_ %_ %_ %_ %_ Hσ with ⟨$, H⟩
-  iintro !> %e₂ %σ₂ %eₜ %Hstep Hcred !> !>
-  iapply H $$ %_ %_ %_ %Hstep Hcred
+  iintro %σ₁ %ns %obs %nt Hσ
+  imod H $$ %_ %_ %_ %_ Hσ with ⟨$, H⟩
+  iintro !> %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Hstep Hcred !> !>
+  iapply H $$ %_ %_ %_ %_ %_ %Hsplit %Hstep Hcred
 
 @[rocq_alias wp_lift_pure_step_no_fork]
 theorem wp_lift_pure_step_no_fork [Inhabited State] (E₂ : CoPset) :
@@ -98,15 +104,16 @@ theorem wp_lift_pure_step_no_fork [Inhabited State] (E₂ : CoPset) :
   iintro %Hsafe %Hpure H
   have Hnone : toVal e₁ = none := by grind [Hsafe default]
   iapply wp_lift_step Hnone
-  iintro %σ₁ %ns %obs %obs' %nt Hσ
+  iintro %σ₁ %ns %obs %nt Hσ
   imod H
   iapply fupd_mask_intro Std.LawfulSet.empty_subset
   iintro Hclose
   isplit
   · ipureintro; cases s <;> grind -- TODO: Why is `grind [cases S]` not enough?
   inext
-  iintro %e₂ %σ₂ %eₜ %Hstep Hcred
+  iintro %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Hstep Hcred
   obtain ⟨rfl, rfl, rfl⟩ := Hpure _ _ _ _ _ Hstep
+  subst Hsplit
   dsimp only [List.nil_append, List.length_nil]
   imod ι.stateInterp_mono $$ Hσ with $
   imod Hclose
@@ -123,7 +130,7 @@ theorem wp_lift_pure_stuck [Inhabited State] :
   iintro %Hstuck -
   have ⟨toVal_e, _⟩ := Hstuck default
   iapply wp_lift_stuck toVal_e
-  iintro %σ %ns %obs' %nt -
+  iintro %σ %ns %obs %nt -
   iapply fupd_mask_intro Std.LawfulSet.empty_subset
   iintro -
   ipureintro
@@ -131,21 +138,23 @@ theorem wp_lift_pure_stuck [Inhabited State] :
 
 @[rocq_alias wp_lift_atomic_step_fupd]
 theorem wp_lift_atomic_step_fupd (h : toVal e₁ = none) (E₂ : CoPset) :
-    (∀ σ₁ ns obs obs' nt, stateInterp σ₁ ns (obs ++ obs') nt ={E₁}=∗
+    (∀ σ₁ ns obs nt, stateInterp σ₁ ns obs nt ={E₁}=∗
       ⌜s.MaybeReducible (e₁, σ₁)⌝ ∗
-      ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ)⌝ -∗ £ 1 ={E₁}[E₂]▷=∗
+      ∀ e₂ σ₂ eₜ κ obs',
+        ⌜obs = κ ++ obs'⌝ -∗
+        ⌜(e₁, σ₁) -<κ>-> (e₂, σ₂, eₜ)⌝ -∗ £ 1 ={E₁}[E₂]▷=∗
         stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
         (∃ v, ⌜(toVal e₂) = some v⌝ ∧ Φ v) ∗
         [∗list] ef ∈ eₜ, WP ef @ s; ⊤ {{ ι.forkPost }})
     ⊢ WP e₁ @ s; E₁ {{ Φ }} := by
   iintro H
   iapply wp_lift_step_fupd h
-  iintro %σ₁ %ns %obs %obs' %nt Hσ₁
+  iintro %σ₁ %ns %obs %nt Hσ₁
   imod H $$ Hσ₁ with ⟨$, H⟩
   iapply fupd_mask_intro Std.LawfulSet.empty_subset
-  iintro Hclose %e₂ %σ₂ %eₜ %Hstep Hcred
+  iintro Hclose %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Hstep Hcred
   imod Hclose with -
-  imod H $$ %_ %_ %_ %Hstep Hcred with H
+  imod H $$ %_ %_ %_ %_ %_ %Hsplit %Hstep Hcred with H
   iapply fupd_mask_intro Std.LawfulSet.empty_subset
   iintro Hclose !>
   imod Hclose with -
@@ -154,19 +163,21 @@ theorem wp_lift_atomic_step_fupd (h : toVal e₁ = none) (E₂ : CoPset) :
 
 @[rocq_alias wp_lift_atomic_step]
 theorem wp_lift_atomic_step (h : toVal e₁ = none) :
-    (∀ σ₁ ns obs obs' nt, stateInterp σ₁ ns (obs ++ obs') nt ={E}=∗
+    (∀ σ₁ ns obs nt, stateInterp σ₁ ns obs nt ={E}=∗
       ⌜s.MaybeReducible (e₁, σ₁)⌝ ∗
-      ▷ ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ)⌝ -∗ £ 1 ={E}=∗
+      ▷ ∀ e₂ σ₂ eₜ κ obs',
+        ⌜obs = κ ++ obs'⌝ -∗
+        ⌜(e₁, σ₁) -<κ>-> (e₂, σ₂, eₜ)⌝ -∗ £ 1 ={E}=∗
         stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length ) ∗
         (∃ v, ⌜(toVal e₂) = some v⌝ ∧ Φ v) ∗
         [∗list] ef ∈ eₜ, WP ef @ s; ⊤ {{ ι.forkPost }})
     ⊢ WP e₁ @ s; E {{ Φ }} := by
   iintro H
   iapply wp_lift_atomic_step_fupd (E₂ := E) h
-  iintro %σ₁ %ns %obs %obs' %nt Hσ₁
+  iintro %σ₁ %ns %obs %nt Hσ₁
   imod H $$ [$] with ⟨$, H⟩
-  iintro !> %e₂ %σ₂ %eₜ %Hstep Hcred !> !>
-  iapply H $$ %_ %_ %_ %Hstep Hcred
+  iintro !> %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Hstep Hcred !> !>
+  iapply H $$ %_ %_ %_ %_ %_ %Hsplit %Hstep Hcred
 
 @[rocq_alias wp_lift_pure_det_step_no_fork]
 theorem wp_lift_pure_det_step_no_fork [Inhabited State] (E₂ : CoPset)

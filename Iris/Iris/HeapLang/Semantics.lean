@@ -202,6 +202,8 @@ theorem State.initHeap_self {σ : State} {l : Loc} {v : Option Val}
   simp only [State.initHeap, Int.toNat_one, List.range_one, List.foldl_cons, List.foldl_nil,
     Int.cast_ofNat_Int, hl, hins]
 
+def stuckTerm : Exp := .app (.ofVal (.lit (.int 0))) (.ofVal (.lit (.int 0)))
+
 inductive BaseStep : Exp → State → List Observation → Exp → State → List Exp → Prop where
   | recS (f x : Binder) (e : Exp) (σ : State) :
       BaseStep (.rec_ f x e) σ [] (.ofVal (.rec_ f x e)) σ []
@@ -272,11 +274,23 @@ inductive BaseStep : Exp → State → List Observation → Exp → State → Li
       BaseStep .newProph σ
                [] (.ofVal (.lit (.prophecy p)))
                { σ with usedProphId := σ.usedProphId.insert p } []
-  | resolveS (p : ProphId) (v : Val) (e : Exp) (σ : State) (w : Val) (σ' : State)
-             (κs : List Observation) (ts : List Exp) :
-      BaseStep e σ κs (.ofVal v) σ' ts →
-      σ.usedProphId.contains p →
+  | resolveStepS (e e' : Exp) (σ : State) (v w : Val) (σ' : State)
+                 (κs : List Observation) (efs : List Exp) :
+      ProgramLogic.ToVal.toVal e' = none →
+      BaseStep e σ κs e' σ' efs →
+      BaseStep (.resolve e  (.ofVal v) (.ofVal w)) σ κs
+               (.resolve e' (.ofVal v) (.ofVal w)) σ' efs
+  | resolveFinalS (p : ProphId) (v : Val) (e : Exp) (σ : State) (w : Val) (σ' : State)
+                  (κs : List Observation) (efs : List Exp) :
+      (ProgramLogic.ToVal.toVal e = none → BaseStep e σ κs (.ofVal v) σ' efs) →
+      (∀ v', ProgramLogic.ToVal.toVal e = some v' → v = v' ∧ σ' = σ ∧ κs = [] ∧ efs = []) →
+      p ∈ σ'.usedProphId →
       BaseStep (.resolve e (.ofVal (.lit (.prophecy p))) (.ofVal w)) σ
-               (κs ++ [(p, (v, w))]) (.ofVal v) σ' ts
+               (κs ++ [(p, (v, w))]) (.ofVal v) σ' efs
+  | resolveFinalWrongS (v : Val) (vp : Val) (e : Exp) (σ : State) (w : Val) (σ' : State)
+                       (κs : List Observation) (efs : List Exp) :
+      BaseStep e σ κs (.ofVal v) σ' efs →
+      (∀ p, vp = .lit (.prophecy p) → p ∉ σ'.usedProphId) →
+      BaseStep (.resolve e (.ofVal vp) (.ofVal w)) σ κs stuckTerm σ' efs
 
 end Iris.HeapLang
