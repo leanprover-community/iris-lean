@@ -193,6 +193,10 @@ scoped instance : CMRA.Discrete α where
 #rocq_ignore max_Z_cmra_discrete "Use scoped Discrete instance"
 #rocq_ignore min_nat_cmra_discrete "Use scoped Discrete instance"
 
+scoped instance : CMRA.IsTotal α where
+  total x := ⟨x, rfl⟩
+#rocq_ignore max_Z_cmra_total "Use scoped IsTotal instance"
+
 scoped instance (a : α) : CMRA.CoreId a where
   core_id := by simp [pcore]
 #rocq_ignore max_nat_core_id "Use scoped CoreId instance"
@@ -207,7 +211,7 @@ scoped instance [LawfulLeftIdentity (add (α := α)) zero] : UCMRA α where
 #rocq_ignore max_natUR "Use Nat with scoped UCMRA instance"
 #rocq_ignore max_nat_ucmra_mixin "Not needed"
 #rocq_ignore max_nat_unit_instance "Use UCMRA instance"
-#rocq_ignore max_Z_unit_instance "Use UCMRA instance"
+#rocq_ignore max_Z_unit_instance "Not needed: MaxZ has no unit, see MonoZ"
 
 scoped instance [LeftCancelAdd α] {a : α} : Cancelable a where
   cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ discrete
