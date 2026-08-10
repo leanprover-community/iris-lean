@@ -16,27 +16,62 @@ open _root_.Std (Associative Commutative LeftIdentity LawfulLeftIdentity)
 
 section MaxNat
 
-abbrev MaxNat := Nat
+@[grind cases]
+structure MaxNat where
+  ofNat ::
+  toNat : Nat
 
-scoped instance : Add MaxNat := ⟨max⟩
-scoped instance : Associative (Add.add (α := MaxNat)) where
-  assoc := Nat.max_assoc
-scoped instance : Commutative (Add.add (α := MaxNat)) where
-  comm := Nat.max_comm
-scoped instance : Zero MaxNat := ⟨0⟩
-scoped instance : LawfulLeftIdentity (Add.add (α := MaxNat)) (0 : MaxNat) where
-  left_id := Nat.zero_max
-scoped instance : Std.IdempotentOp (Add.add (α := MaxNat)) where
-  idempotent x := by simp [Add.add]
+instance : OfNat MaxNat n where ofNat := .ofNat n
+
+@[grind]
+def MaxNat.max (a b : MaxNat) : MaxNat where
+  toNat := a.toNat.max b.toNat
+
+scoped instance : Add MaxNat where add := .max
+-- scoped instance : Max MaxNat where max := .max
+scoped instance : LE MaxNat where le a b := a.toNat ≤ b.toNat
+
+@[simp, grind =]
+theorem MaxNat.le_toNat (a b : MaxNat) : a ≤ b ↔ a.toNat ≤ b.toNat := by rfl
+
+@[simp, grind =]
+theorem MaxNat.toNat_add (a b : MaxNat) : (a + b).toNat = a.toNat.max b.toNat := rfl
+
+@[simp, grind =]
+theorem MaxNat.add_ofNat (a b : Nat) : (MaxNat.ofNat a + MaxNat.ofNat b) = MaxNat.ofNat (a.max b) := rfl
+
+@[grind =_]
+theorem MaxNat.toNat_zero : (0 : MaxNat).toNat = 0 := rfl
+
+@[grind =]
+theorem MaxNat.zero_ofNat : (0 : MaxNat) = .ofNat 0 := rfl
+
+theorem MaxNat.eq_toNat (a b : MaxNat) : a = b ↔ a.toNat = b.toNat := by
+  constructor
+  · rintro rfl; rfl
+  · cases a; cases b; rintro rfl; rfl
+
+scoped instance : Associative (α := MaxNat) (· + ·) where
+  assoc := by grind
+scoped instance : Commutative (α := MaxNat) (· + ·) where
+  comm := by grind
+scoped instance : LawfulLeftIdentity (α := MaxNat) (· + ·) (0 : MaxNat) where
+  left_id a := by grind
+scoped instance : Std.IdempotentOp (α := MaxNat) (· + ·) where
+  idempotent x := by grind
 scoped instance : COFE MaxNat := COFE.ofDiscrete _
 scoped instance : OFE.Discrete MaxNat := ⟨fun h => h⟩
-scoped instance : UCMRA MaxNat := OrdCommMonoidLike.instUCMRAOfLawfulLeftIdentityAddZero
+scoped instance : UCMRA MaxNat := OrdCommMonoidLike.instUCMRAOfLawfulLeftIdentityHAddZero
 scoped instance : CMRA.Discrete MaxNat := OrdCommMonoidLike.instDiscrete
 scoped instance : CMRA.CoreId (a : MaxNat) := OrdCommMonoidLike.instCoreId _
 
 end MaxNat
 
+@[rocq_alias mono_nat]
 abbrev MonoNat := Auth MaxNat
+
+#rocq_ignore mono_natR "Use the MonoNat type and View.instCMRA typeclass"
+#rocq_ignore mono_natUR "Use the MonoNat type and View.instUCMRA typeclass"
 
 namespace MonoNat
 
@@ -83,7 +118,7 @@ theorem auth_dfrac_op (dq1 dq2 : DFrac) (n : MaxNat) :
 
 @[rocq_alias mono_nat_lb_op]
 theorem lb_op (n1 n2 : MaxNat) :
-  (◯MN (max n1 n2) : MonoNat) = ((◯MN n1) • (◯MN n2) : MonoNat) :=
+  (◯MN (n1 + n2) : MonoNat) = ((◯MN n1) • (◯MN n2) : MonoNat) :=
   Auth.frag_op
 
 @[rocq_alias mono_nat_auth_lb_op]
@@ -92,14 +127,13 @@ theorem auth_lb_op (dq : DFrac) (n : MaxNat) :
   refine .trans ?_ CMRA.assoc'
   simp only [lb, ←Auth.frag_op]
   refine congrArg ((●{dq} n) • ·) ?_
-  simp [CMRA.op, Add.add]
+  simp [CMRA.op, Add.add, MaxNat.max]
 
 @[rocq_alias mono_nat_lb_op_le_l]
 theorem lb_op_le_l (n n' : MaxNat) (h : n' ≤ n) :
   (◯MN n : MonoNat) = ((◯MN n') • (◯MN n) : MonoNat) := by
   rw [←lb_op]
-  congr
-  simp only [h, Nat.max_eq_right]
+  grind
 
 @[rocq_alias mono_nat_auth_dfrac_valid]
 theorem auth_dfrac_valid (dq : DFrac) (n : MaxNat) :
@@ -145,8 +179,10 @@ theorem both_dfrac_valid (dq : DFrac) (n m : MaxNat) :
   · intro ⟨hdq, ⟨k, hk⟩, _⟩; refine ⟨hdq, ?_⟩
     simp only [CMRA.op, Add.add] at hk
     grind
-  · intro ⟨hdq, hle⟩; refine ⟨hdq, ⟨0, ?_⟩, trivial⟩
-    simp [CMRA.op, Add.add, Nat.max_eq_left hle]
+  · intro ⟨hdq, hle⟩
+    refine ⟨hdq, ⟨0, ?_⟩, trivial⟩
+    dsimp only [CMRA.op, Add.add]
+    grind
 
 @[rocq_alias mono_nat_both_valid]
 theorem both_valid (n m : MaxNat) :
@@ -174,7 +210,13 @@ theorem update {n : MaxNat} (n' : MaxNat) (h : n ≤ n') :
   refine ⟨trivial, ?_⟩
   cases mz with | none => rfl | some z =>
   simp only [CMRA.op?, CMRA.op, Add.add] at hn ⊢
-  exact OFE.Dist.of_eq (Nat.max_eq_left (Nat.le_trans (hn ▸ Nat.le_max_right n z) h)).symm
+  refine OFE.Dist.of_eq ?_
+  simp only [MaxNat.eq_toNat, MaxNat.max]
+  refine Nat.max_eq_left ?_ |>.symm
+  refine Nat.le_trans ?_ h
+  refine hn ▸ ?_
+  simp only [MaxNat.max]
+  apply Nat.le_max_right
 
 @[rocq_alias mono_nat_auth_persist]
 theorem auth_persist (n : MaxNat) (dq : DFrac) :
