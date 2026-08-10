@@ -7,7 +7,7 @@ public import Iris.Algebra.CMRA
 public import Iris.Algebra.COFESolver
 public import Iris.Algebra.Csum
 public import Iris.Algebra.DFrac
--- public import Iris.Algebra.DynReservationMap
+public import Iris.Algebra.DynReservationMap
 public import Iris.Algebra.Excl
 public import Iris.Algebra.Frac
 public import Iris.Algebra.Functions
