@@ -28,4 +28,4 @@ def iTrivial {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps : Hyps bi e)
     -- itrivial failed, so we fail
     return none
   -- itrivial succeed, but did not fully solve the goal. This should not happen.
-  throwError "itrivial: itrivial should not make partial progress"
+  throwIPMError "itrivial should not make partial progress"

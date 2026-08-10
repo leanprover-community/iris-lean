@@ -90,13 +90,13 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
       addMVarGoal mvar
 
     let ty ← instantiateMVars <| ← inferType val
-    if ! (← Meta.isProp ty) then throwError m!"ihave: {val} is not a Prop"
+    if ! (← Meta.isProp ty) then throwIPMError "{val} is not a Prop"
     have ty : Q(Prop) := ty
     have val : Q($ty) := val
 
     let hyp ← mkFreshExprMVarQ q($prop)
     let some _ ← ProofModeM.trySynthInstanceQ q(AsEmpValid .into $ty .in $prop $bi $hyp)
-      | throwError m!"ihave: {ty} is not an entailment"
+      | throwIPMError "{ty} is not an entailment"
 
     return ⟨_, hyps, q(true), hyp, q(have_asEmpValid $val)⟩
 
