@@ -52,6 +52,10 @@ end
 
 section
 
+/-
+  Tests delaboration of an IPM goal with only separating conjunctions and
+  separating implications involved.
+-/
 /--
 info:
 ⋆ ∗HP1 : P
@@ -82,6 +86,7 @@ example [BI PROP] (P Q R : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -
   . iexact HR
   iexact HPQ
 
+/- Tests delaboration of an IPM goal with modalities involved. -/
 /--
 info:
 ⋆ ∗HP1 : <absorb> P1
@@ -89,7 +94,7 @@ info:
   ∗HP3 : <absorb> <affine> P3
   ∗HP4 : <absorb> <affine> P4
   ∗H : <absorb> (P1 ∗ P2 ∗ <affine> (P3 ∗ P4)) -∗ Q
-⊢ Q : Prop
+  ⊢ Q : Prop
 ⋆ HP1 (binder) : <absorb> P1
   ⋆ <absorb> P1 : PROP
     ⋆ P1 : PROP
@@ -123,6 +128,7 @@ example [BI PROP] {P1 P2 Q : PROP} :
   iapply H
   iexact HNew
 
+/- Tests delaboration of an IPM goal with pure hypotheses involved. -/
 /--
 info:
 ⋆ □H1 : ⌜m = 2⌝
@@ -172,6 +178,7 @@ example [BI PROP] (m n : Nat) (a b c : Prop) :
   ipureintro
   and_intros <;> rfl
 
+/- Tests delaboration of an IPM goal with universal quantifier involved. -/
 /--
 info:
 ⋆ □Hwand : ∀ x, Q -∗ ⌜x = n⌝
