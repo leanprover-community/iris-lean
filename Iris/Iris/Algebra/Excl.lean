@@ -19,6 +19,8 @@ inductive Excl α where
   | excl : α → Excl α
   | invalid : Excl α
 
+#rocq_ignore maybe_Excl "std++ `Maybe` class; pattern match instead"
+
 namespace Excl
 open OFE
 

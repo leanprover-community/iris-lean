@@ -41,6 +41,8 @@ instance : OFE.Discrete UFrac := ⟨fun h => h⟩
 
 @[simp] theorem dist_iff {n} {x y : UFrac} : x ≡{n}≡ y ↔ x = y := Iff.rfl
 
+#rocq_ignore ufrac_ra_mixin "Use CMRA instance"
+
 @[rocq_alias ufracR]
 instance : CMRA UFrac where
   pcore _ := none

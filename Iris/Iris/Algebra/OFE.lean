@@ -47,6 +47,7 @@ theorem Dist.le [OFE α] {m n} {x y : α} (h : x ≡{n}≡ y) (h' : m ≤ n) : x
 #rocq_ignore dist_S "Subsumed by `Dist.lt`/`Dist.le`."
 
 @[simp, refl] theorem Dist.rfl [OFE α] {n} {x : α} : x ≡{n}≡ x := dist_eqv.1 _
+@[simp, refl] theorem Dist.refl [OFE α] {n} (x : α) : x ≡{n}≡ x := dist_eqv.1 _
 @[symm] theorem Dist.symm [OFE α] {n} {x : α} : x ≡{n}≡ y → y ≡{n}≡ x := dist_eqv.2
 theorem Dist.trans [OFE α] {n} {x : α} : x ≡{n}≡ y → y ≡{n}≡ z → x ≡{n}≡ z := dist_eqv.3
 theorem Dist.of_eq [OFE α] {x y : α} : x = y → x ≡{n}≡ y := (· ▸ .rfl)
@@ -93,6 +94,7 @@ theorem NonExpansive₂.ne_left [OFE α] [OFE β] [OFE γ] (f : α → β → γ
 def DistLater [OFE α] (n : Nat) (x y : α) : Prop := ∀ m, m < n → x ≡{m}≡ y
 
 @[simp, refl] theorem DistLater.rfl [OFE α] {n} {x : α} : DistLater n x x := fun _ _ => .rfl
+@[simp, refl] theorem DistLater.refl [OFE α] {n} (x : α) : DistLater n x x := fun _ _ => .rfl
 @[symm] theorem DistLater.symm [OFE α] {n} {x : α} (h : DistLater n x y) : DistLater n y x :=
   fun _ hm => (h _ hm).symm
 theorem DistLater.trans [OFE α] {n} {x : α} (h1 : DistLater n x y) (h2 : DistLater n y z) :
@@ -101,7 +103,7 @@ theorem DistLater.trans [OFE α] {n} {x : α} (h1 : DistLater n x y) (h2 : DistL
 /-- `DistLater n`-equivalence is an equivalence relation. -/
 @[rocq_alias dist_later_equivalence]
 theorem distLater_eqv [OFE α] {n} : Equivalence (α := α) (DistLater n) where
-  refl _ := DistLater.rfl
+  refl := DistLater.refl
   symm h := h.symm
   trans h1 := h1.trans
 
