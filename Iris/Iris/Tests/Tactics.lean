@@ -970,6 +970,33 @@ example [BI PROP] (P Q : PROP) : (<affine> (P -∗ Q)) ⊢ (<affine> P) -∗ <af
   iapply Hwand
   iexact HP
 
+inductive R where
+  | R_Constr (n : Int) (r : R)
+/-- Test `iapply` with a `match` in a hypothesis, regression test for
+https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/iapply.20doesn.27t.20work.20with.20matches.3F/near/615255205 -/
+example [BI PROP] (P : PROP) :
+    (∀ t,
+      (match t with
+      | R.R_Constr _ _ => True) -∗ P) -∗
+    (match t with
+    | R.R_Constr _ _ => True) -∗ P := by
+  iintro Hwand Ht
+  iapply Hwand
+  iapply Ht
+
+/-- Test `iapply` with other match, regression test for
+https://github.com/leanprover-community/iris-lean/issues/145 -/
+example [BI PROP] (Q : PROP) : Q ⊢ Q := by
+  iintro HQ
+  have H: (∀ b (Q: PROP),
+    (match b with
+     | true => iprop(Q)
+     | false => iprop(Q))
+    ⊢ Q) := by rintro ⟨⟩ <;> simp
+  iapply H
+  case b => exact true
+  itrivial
+
 end iapply
 
 section ihave
