@@ -97,7 +97,7 @@ elab "ieval " "(" tac:tacticSeq ")" : tactic => do
   hypotheses chosen by the selection pattern `spats`. Pure hypotheses are not
   supported by this tactic.
 -/
-elab "ieval " "(" tacs:tacticSeq ")" " in " spats:(colGt ppSpace selPat)+ : tactic => do
+elab "ieval " "(" tacs:tacticSeq ")" " at " spats:(colGt ppSpace selPat)+ : tactic => do
   let selPats ← liftMacroM <| SelPat.parse spats
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
@@ -118,18 +118,18 @@ elab "ieval " "(" tacs:tacticSeq ")" " in " spats:(colGt ppSpace selPat)+ : tact
   respectively.
 -/
 syntax "isimp" optConfig (discharger)? (&" only")? (simpArgs)?
-  (" in " (colGt ppSpace selPat)+)? : tactic
+  (" at " (colGt ppSpace selPat)+)? : tactic
 
 private def elabSimp (simp : TSyntax `tactic)
     (spats : Option (TSyntaxArray `selPat)) : TacticM Unit :=
   match spats with
   | none       => do evalTactic (← `(tactic| ieval ($simp:tactic)))
-  | some spats => do evalTactic (← `(tactic| ieval ($simp:tactic) in $spats*))
+  | some spats => do evalTactic (← `(tactic| ieval ($simp:tactic) at $spats*))
 
 elab_rules : tactic
-  | `(tactic| isimp $cfg* $[$disch]? $[[$args,*]]? $[in $spats*]?) => do
+  | `(tactic| isimp $cfg* $[$disch]? $[[$args,*]]? $[at $spats*]?) => do
       elabSimp (← `(tactic| simp $cfg* $[$disch]? $[[$args,*]]?)) spats
-  | `(tactic| isimp $cfg* $[$disch]? only $[[$args,*]]? $[in $spats*]?) => do
+  | `(tactic| isimp $cfg* $[$disch]? only $[[$args,*]]? $[at $spats*]?) => do
       elabSimp (← `(tactic| simp $cfg* $[$disch]? only $[[$args,*]]?)) spats
 
 /-- `iunfold hs` applies `unfold hs` to the proof goal. This is shorthand for `ieval (unfold)`. -/
@@ -140,5 +140,5 @@ macro "iunfold " hs:ident,+ : tactic => `(tactic| ieval (unfold $hs*))
   the selection pattern `spats`. Pure hypotheses are not supported by this tactic.
   This is shorthand for `ieval (unfold hs) in spats`.
 -/
-macro "iunfold " hs:ident,+ " in " spats:(colGt ppSpace selPat)* : tactic =>
-  `(tactic| ieval (unfold $hs*) in $spats*)
+macro "iunfold " hs:ident,+ " at " spats:(colGt ppSpace selPat)* : tactic =>
+  `(tactic| ieval (unfold $hs*) at $spats*)
