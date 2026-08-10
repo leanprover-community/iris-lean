@@ -637,7 +637,7 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
     Term.synthesizeSyntheticMVarsNoPostponing
     instantiateMVars n
 
-  ProofModeM.runTactic λ mvar { u, prop, bi, e, hyps, goal, .. } => do
+  ProofModeM.runTactic `inext λ mvar { u, prop, bi, e, hyps, goal, .. } => do
     let .defEq _ ← isLevelDefEqQ u 0
       | throwError "inext: the goal must be an `IProp` at universe level 0"
     let ~q(IProp $GF) := prop
