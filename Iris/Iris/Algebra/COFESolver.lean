@@ -11,7 +11,7 @@ meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
-#rocq_ignore solution "Use OFE.iso + Inhabited + COFE."
+#rocq_ignore solution "Use OFE.iso + Inhabited + COFE"
 
 namespace Iris.COFE.OFunctor
 open OFE
@@ -50,7 +50,7 @@ variable (F) in
 def up (k : Nat) : A F k -n> A F (k+1) := (updown F k).1
 
 variable (F) in
--- rocq_alias solver.g
+@[rocq_alias solver.g]
 def down (k : Nat) : A F (k+1) -n> A F k := (updown F k).2
 
 #rocq_ignore solver.f_S "Not needed"
@@ -174,6 +174,8 @@ def embed : A F k -n> A F i :=
 #rocq_ignore solver.coerce_id "Not needed"
 #rocq_ignore solver.coerce_proper "Inlined in embed"
 #rocq_ignore solver.embed_ne "Implicit in embed"
+#rocq_ignore solver.gg_gg "Inlined in Tower.embed"
+#rocq_ignore solver.ff_ff "Inlined in Tower.embed_up"
 
 @[rocq_alias solver.embed]
 protected def Tower.embed (k) : A F k -n> Tower F := by
@@ -203,6 +205,9 @@ protected def Tower.embed (k) : A F k -n> Tower F := by
       dsimp [downN, Hom.comp]
       rw [down_eqToHom (Nat.add_right_comm i a 1)]
       apply ih
+
+#rocq_ignore solver.embed' "Lean's Tower.embed is already a bundled non-expansive map"
+#rocq_ignore solver.g_embed_coerce "Inlined in Tower.embed, as its well-definedness obligation"
 
 @[rocq_alias solver.embed_f]
 theorem Tower.embed_up (x : A F k) :

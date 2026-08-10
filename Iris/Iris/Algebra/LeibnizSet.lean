@@ -5,6 +5,7 @@ Authors: Sergei Stepanenko, Zongyuan Liu
 -/
 module
 
+public import Iris.Algebra.BigOp
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.OFE
 public import Iris.Algebra.LocalUpdates
@@ -25,11 +26,22 @@ OFE/CMRA on the element type.
 
 open Iris Std CMRA OFE LawfulSet
 
+local stepindex Nat
+
 inductive DisjointLeibnizSet (S : Type _) where
   | valid : S → DisjointLeibnizSet S
   | error : DisjointLeibnizSet S
 
-local stepindex Nat
+#rocq_ignore GSet_inj "Use the constructor injectivity lemma DisjointLeibnizSet.valid.inj"
+
+#rocq_ignore set_unfold_gset_eq "std++ `SetUnfold` instance for `set_solver`; no counterpart in Lean"
+#rocq_ignore set_unfold_gset_included
+  "std++ `SetUnfold` instance for `set_solver`; use LeibnizSet.included_iff_subset"
+#rocq_ignore set_unfold_gset_disj_included
+  "std++ `SetUnfold` instance for `set_solver`; use DisjointLeibnizSet.included_iff_subset"
+#rocq_ignore set_unfold_gset_disj_valid_op
+  "std++ `SetUnfold` instance for `set_solver`; use DisjointLeibnizSet.valid_op_iff_disj"
+
 instance : COFE (DisjointLeibnizSet S) := COFE.ofDiscrete _
 
 instance inst_disjointLeibnizSet_DiscreteE {S : Type _} (x : DisjointLeibnizSet S) :
@@ -379,6 +391,20 @@ theorem localUpdate (X Y X' : S) (H : X ⊆ X') :
     simp only [op?, op] at e ⊢
     have hZ : Z ⊆ X' := subset_trans union_subset_right (valid.inj e ▸ H)
     rw [union_comm, union_subset_absorption hZ]
+
+end LeibnizSet
+
+namespace LeibnizSet
+open Algebra
+
+variable {S : Type _} [LawfulFiniteSet S A]
+
+@[rocq_alias big_opS_singletons]
+theorem bigOpS_singletons (X : S) :
+    ([^ CMRA.op set] x ∈ X, (valid {x} : LeibnizSet S)) = .valid X := by
+  induction X using FiniteSet.set_ind with
+  | hemp => exact BigOpS.bigOpS_empty
+  | hadd x X hx ih => rw [insert_union, BigOpS.bigOpS_insert hx, ih, op_union]
 
 end LeibnizSet
 

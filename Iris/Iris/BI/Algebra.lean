@@ -5,6 +5,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Iris.ProofMode
+public import Iris.Algebra.Lib.DFracAgree
+
 /-! ## Algebra wrappers for BI
 This file provides introduction rules (BI entailments) for (some) CMRA operations and properties.
 -/
@@ -258,8 +260,10 @@ theorem agree_op_equiv_toAgreeI (x y : Agree A) (a : A) :
     letI : NonExpansive (x • ·) := CMRA.op_ne
     have H21 : x • y ≡ toAgree a ⊢@{PROP} x • x ≡ toAgree a := by
       exact (and_intro (H1.trans (internalEq.of_internalEquiv_ne (x • ·))) .rfl).trans internalEq.trans
-    have H22 : x • y ≡ toAgree a ⊢@{PROP} x • x ≡ x := by
-      exact emp_sep.2.trans (sep_mono_left (internalEq.of_equiv Agree.idemp)) |>.trans sep_elim_left
+    have H22 : x • y ≡ toAgree a ⊢@{PROP} x • x ≡ x := calc
+      _ ⊢ emp ∗ x • y ≡ toAgree a       := emp_sep.mpr
+      _ ⊢ x • x ≡ x ∗ x • y ≡ toAgree a := sep_mono_left <| internalEq.of_equiv Agree.idemp
+      _ ⊢ x • x ≡ x                     := sep_elim_left
     refine (and_intro (H22.trans internalEq.symm) H21).trans internalEq.trans
   apply and_intro H1
   exact (and_intro (H1.trans internalEq.symm) H2).trans internalEq.trans

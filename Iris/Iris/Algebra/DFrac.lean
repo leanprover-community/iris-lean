@@ -26,6 +26,9 @@ inductive DFrac where
 | discard : DFrac
 /-- Ownership of `F` plus knowledge that a fraction has been discarded. -/
 | ownDiscard (f : Qp) : DFrac
+deriving DecidableEq
+
+attribute [rocq_alias dfrac_eq_dec] instDecidableEqDFrac
 
 #rocq_ignore DfracOwn_inj "Not needed"
 #rocq_ignore DfracBoth_inj "Not needed"

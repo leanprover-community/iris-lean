@@ -1,21 +1,7 @@
 module
 
 public import Iris.Std.CoPset
-public import Iris.BI
-public meta import Iris.BI
-public import Iris.BI.BIBase
-public meta import Iris.Std.Rewrite
-public import Std
-meta import Lean
-public import Lean
-
 public import Iris.BI.BI
-public import Iris.BI.Classes
-public import Iris.BI.DerivedLaws
-public import Iris.BI.DerivedLawsLater
-public import Iris.BI.Extensions
-public import Iris.BI.SIProp
-public meta import Iris.Std.RocqPorting
 
 public section
 
@@ -118,10 +104,8 @@ meta def wpMacro : Lean.Macro := fun stx => do
       `(Wp.wp $s $E $e $Φ)
   | _ => Lean.Macro.throwUnsupported
 
-@[macro texanTriple]
-meta def wpTexanTriple : Lean.Macro
+meta def parseTexanTriple : Syntax → MacroM Term
   | `({{ $P:term }} $wpExpr {{ $[$[$xs]* ,]? RET $pat ; $Q:term }}) => do
-
     let transform (xs : Array (TSyntax [`Lean.binderIdent, `Lean.Parser.Term.bracketedBinder])) : MacroM <| TSyntaxArray [`ident, `Lean.Parser.Term.hole, `Lean.Parser.Term.bracketedBinder] :=
       xs.mapM fun
         | `(binderIdent|_) => `(hole|_)
@@ -133,8 +117,17 @@ meta def wpTexanTriple : Lean.Macro
               let xs ← transform xs -- TSyntax cast
               `(iprop(∀ $xs*, $Q:term -∗ Φ $pat))
             | none => `($Q:term -∗ Φ $pat)
-    `(iprop(∀ Φ, $P -∗ ▷ $k -∗ (WP $wpExpr {{ Φ }})))
+    `(∀ Φ, $P -∗ ▷ $k -∗ (WP $wpExpr {{ Φ }}))
   | _ => Lean.Macro.throwUnsupported
+
+@[macro Iris.BI.iprop]
+meta def wpTexanTriple : Lean.Macro
+  | `(iprop($P)) => do `(iprop(□ $(← parseTexanTriple P)))
+  | _ => Lean.Macro.throwUnsupported
+
+@[macro texanTriple]
+meta def wpTexanTripleTerm : Lean.Macro
+  | P => do `(⊢ $(← parseTexanTriple P))
 
 meta def unexpandWpPostcondInner : TSyntax `term → PrettyPrinter.UnexpandM (TSyntax `wpPostcondInner)
   | `(fun $v:ident => iprop($Φ:term)) => `(wpPostcondInner|$v:ident, $Φ:term)

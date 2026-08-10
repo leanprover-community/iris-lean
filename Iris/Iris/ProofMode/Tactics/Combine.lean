@@ -26,7 +26,8 @@ theorem combine_as_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1 out2 out : PROP}
   _ ⊢ e2 ∗ □?p2 out2 ∗ □?p1 out1      := sep_assoc.mp
   _ ⊢ e2 ∗ □?p1 out1 ∗ □?p2 out2      := sep_mono_right sep_comm.mp
   _ ⊢ e2 ∗ □?(p1 && p2) (out1 ∗ out2) := sep_mono_right intuitionisticallyIf_sep_conj
-  _ ⊢ e2 ∗ □?(p1 && p2) out           := sep_mono_right <| intuitionisticallyIf_mono <| sep_comm.mp.trans inst.combine_sep_as
+  _ ⊢ e2 ∗ □?(p1 && p2) out           :=
+      sep_mono_right <| intuitionisticallyIf_mono <| sep_comm.mp.trans inst.combine_sep_as
 
 /-- Auxiliary lemma for the base case where up to one hypothesis is given -/
 theorem combine_gives_nil_singleton [BI PROP] {e : PROP} : e ⊢ e ∗ □ True :=
@@ -37,26 +38,26 @@ theorem combine_gives_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1 out2 out : PRO
     (inst : CombineSepGives out2 out1 out)
     (pf1 : e ⊣⊢ e1 ∗ □?p1 out1)
     (pf2 : e1 ⊣⊢ e2 ∗ □?p2 out2) :
-    e ⊢ e ∗ □ out :=
-  have pf3 : □?p1 out1 ∗ □?p2 out2 ⊢ <pers> out := calc
-    _ ⊢ □?(p1 && p2) (out1 ∗ out2) := intuitionisticallyIf_sep_conj
-    _ ⊢ □?(p1 && p2) <pers> out    := intuitionisticallyIf_mono <| sep_comm.mp.trans inst.combine_sep_gives
-    _ ⊢ <pers> out                 := intuitionisticallyIf_elim
+    e ⊢ e ∗ □ out := by
   calc
-    e ⊢ e1 ∗ □?p1 out1                                   := pf1.mp
-    _ ⊢ (e2 ∗ □?p2 out2) ∗ □?p1 out1                     := sep_mono_left pf2.mp
-    _ ⊢ e2 ∗ □?p2 out2 ∗ □?p1 out1                       := sep_assoc.mp
-    _ ⊢ e2 ∗ □?p1 out1 ∗ □?p2 out2                       := sep_mono_right sep_comm.mp
-    _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∧ (e2 ∗ <pers> out) := and_intro .rfl <| sep_mono_right pf3
+    e ⊢ e1 ∗ □?p1 out1                          := pf1.mp
+    _ ⊢ (e2 ∗ □?p2 out2) ∗ □?p1 out1            := sep_mono_left pf2.mp
+    _ ⊢ e2 ∗ □?p2 out2 ∗ □?p1 out1              := sep_assoc.mp
+    _ ⊢ e2 ∗ □?p1 out1 ∗ □?p2 out2              := sep_mono_right sep_comm.mp
+    _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∧ (e2 ∗ <pers> out) := and_intro .rfl <| sep_mono_right ?_
     _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∧ <pers> out        := and_mono_right sep_elim_right
-    _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∗ □ out             := persistently_and_intuitionistically_sep_right.mp
-    _ ⊢ (e2 ∗ □?p2 out2 ∗ □?p1 out1) ∗ □ out             := sep_mono_left <| sep_mono_right sep_comm.mp
-    _ ⊢ ((e2 ∗ □?p2 out2) ∗ □?p1 out1) ∗ □ out           := sep_mono_left sep_assoc.mpr
-    _ ⊢ (e1 ∗ □?p1 out1) ∗ □ out                         := sep_mono_left <| sep_mono_left pf2.mpr
-    _ ⊢ e ∗ □ out                                        := sep_mono_left pf1.mpr
+    _ ⊢ (e2 ∗ □?p1 out1 ∗ □?p2 out2) ∗ □ out    := persistently_and_intuitionistically_sep_right.mp
+    _ ⊢ (e2 ∗ □?p2 out2 ∗ □?p1 out1) ∗ □ out    := sep_mono_left <| sep_mono_right sep_comm.mp
+    _ ⊢ ((e2 ∗ □?p2 out2) ∗ □?p1 out1) ∗ □ out  := sep_mono_left sep_assoc.mpr
+    _ ⊢ (e1 ∗ □?p1 out1) ∗ □ out                := sep_mono_left <| sep_mono_left pf2.mpr
+    _ ⊢ e ∗ □ out                               := sep_mono_left pf1.mpr
+  calc
+    _ ⊢ □?(p1 && p2) (out1 ∗ out2) := intuitionisticallyIf_sep_conj
+    _ ⊢ □?(p1 && p2) <pers> out    :=
+        intuitionisticallyIf_mono <| sep_comm.mp.trans inst.combine_sep_gives
+    _ ⊢ <pers> out                 := intuitionisticallyIf_elim
 
-/-- Auxiliary lemma for combining hypotheses derived using `CombineSepGives`
-    by conjunction -/
+/-- Auxiliary lemma for combining hypotheses derived using `CombineSepGives` by conjunction -/
 theorem combine_gives_step_conj [BI PROP] {p1 p2 : Bool}
     {e e1 e2 outGives newOutGives outGivesCombined out1 out2 : PROP}
     (instGives : CombineSepGives out2 out1 newOutGives)
@@ -72,17 +73,23 @@ theorem combine_gives_step_conj [BI PROP] {p1 p2 : Bool}
     _ ⊢ e1 ∗ □?p1 out1               := pf2
     _ ⊢ (e2 ∗ □?p2 out2) ∗ □?p1 out1 := sep_mono_left pf3.mp
     _ ⊢ e2 ∗ □?p2 out2 ∗ □?p1 out1   := sep_assoc.mp
-    _ ⊢ e2 ∗ out2 ∗ out1             := sep_mono_right <| sep_mono intuitionisticallyIf_elim intuitionisticallyIf_elim
+    _ ⊢ e2 ∗ out2 ∗ out1             :=
+        sep_mono_right <| sep_mono intuitionisticallyIf_elim intuitionisticallyIf_elim
     _ ⊢ e2 ∗ <pers> newOutGives      := sep_mono_right instGives.combine_sep_gives
     _ ⊢ <pers> newOutGives           := persistently_absorb_right
   calc
     _ ⊢ e ∗ □ outGives                                          := pf1
-    _ ⊢ (e ∗ □ outGives) ∧ <pers> outGives ∧ <pers> newOutGives := and_intro .rfl <| and_intro pf4 pf5
-    _ ⊢ (e ∗ □ outGives) ∧ <pers> (outGives ∧ newOutGives)      := and_mono_right <| persistently_and.mpr
-    _ ⊢ (e ∗ □ outGives) ∧ <pers> outGivesCombined              := and_mono_right <| persistently_mono instGivesCombined.make_and.mp
-    _ ⊢ (e ∗ □ outGives) ∗ □ outGivesCombined                   := persistently_and_intuitionistically_sep_right.mp
+    _ ⊢ (e ∗ □ outGives) ∧ <pers> outGives ∧ <pers> newOutGives :=
+        and_intro .rfl <| and_intro pf4 pf5
+    _ ⊢ (e ∗ □ outGives) ∧ <pers> (outGives ∧ newOutGives)      :=
+        and_mono_right <| persistently_and.mpr
+    _ ⊢ (e ∗ □ outGives) ∧ <pers> outGivesCombined              :=
+        and_mono_right <| persistently_mono instGivesCombined.make_and.mp
+    _ ⊢ (e ∗ □ outGives) ∗ □ outGivesCombined                   :=
+        persistently_and_intuitionistically_sep_right.mp
     _ ⊢ e ∗ □ outGivesCombined                                  := sep_mono_left sep_elim_left
 
+@[rocq_alias tac_combine_as_gives]
 theorem combine_as_gives [BI PROP] {p : Bool} {newE e outAs outGives goal : PROP}
     (pfAs : e ⊢ newE ∗ □?p outAs)
     (pfGives : e ⊢ e ∗ □ outGives)
@@ -91,9 +98,20 @@ theorem combine_as_gives [BI PROP] {p : Bool} {newE e outAs outGives goal : PROP
   e ⊢ e ∗ □ outGives := pfGives
   _ ⊢ (newE ∗ □?p outAs) ∗ □ outGives   := sep_mono_left pfAs
   _ ⊢ newE ∗ □?p outAs ∗ □ outGives     := sep_assoc.mp
-  _ ⊢ newE ∗ □?p outAs ∗ □?p □ outGives := sep_mono_right <| sep_mono_right intuitionisticallyIf_intutitionistically.mpr
+  _ ⊢ newE ∗ □?p outAs ∗ □?p □ outGives :=
+      sep_mono_right <| sep_mono_right intuitionisticallyIf_intutitionistically.mpr
   _ ⊢ newE ∗ □?p (outAs ∗ □ outGives)   := sep_mono_right intuitionisticallyIf_sep_mpr
   _ ⊢ goal := pfAsGives
+
+#rocq_ignore tac_combine_as "icombine is implemented by iteration with CombineState"
+#rocq_ignore tac_combine_gives "icombine is implemented by iteration with CombineState"
+#rocq_ignore combine_seps_gives_of_envs "icombine is implemented by iteration with CombineState"
+#rocq_ignore combine_seps_as_from_as_gives "icombine is implemented by iteration with CombineState"
+#rocq_ignore combine_seps_as_gives_nil "icombine is implemented by iteration with CombineState"
+#rocq_ignore combine_seps_as_gives_singleton
+  "icombine is implemented by iteration with CombineState"
+#rocq_ignore combine_seps_gives_cons "icombine is implemented by iteration with CombineState"
+#rocq_ignore combine_seps_gives_of_envs "icombine is implemented by iteration with CombineState"
 
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
@@ -134,7 +152,7 @@ private def CombineState.combineProofModeHyp {u prop bi origE goal} :
   | { newHyps, p := p1, outAs, pfAs, outGives, pfGives, .. }, ivar => do
     let some (_, ⟨_, hyps2, _, out2, p2, _, pf2⟩) ←
         newHyps.removeG false <| fun _ ivar' _ _ => return guard <| ivar' == ivar
-    | throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
+    | throwIPMError "propositions in the spatial context cannot be used as arguments multiple times"
 
     -- Type class instance search for the `as` syntax
     let newOutAs ← mkFreshExprMVarQ q($prop)
@@ -211,10 +229,10 @@ private def iCombineParseSelPats {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
   targets.mapM fun t =>
     match t.kind with
     | .ipm iVarId => pure iVarId
-    | .pure _      => throwError "icombine: invalid selection pattern with pure propositions"
+    | .pure _      => throwIPMError "invalid selection pattern with pure propositions"
 
 private def throwNoInstanceForGives : ProofModeM Unit := do
-  throwError "icombine: no type class instance to combine propositions"
+  throwIPMError "no type class instance to combine propositions"
 
 /--
   `icombine patSels as patAs` combines the hypotheses specified by the selection
@@ -228,7 +246,7 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
     " as " colGt patAs:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse patAs
 
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `icombine λ mvar { hyps, goal, .. } => do
     let hs ← iCombineParseSelPats hyps patSels
     let st ← iCombineCore hs hyps goal
 
@@ -248,7 +266,7 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
     " gives " colGt patGives:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse patGives
 
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `icombine λ mvar { hyps, goal, .. } => do
     let hs ← iCombineParseSelPats hyps patSels
     let {outGives, pfGives, ..} ← iCombineCore hs hyps goal
 
@@ -277,7 +295,7 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
   let pat1 ← liftMacroM <| iCasesPat.parse patAs
   let pat2 ← liftMacroM <| iCasesPat.parse patGives
 
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `icombine λ mvar { hyps, goal, .. } => do
     let hs ← iCombineParseSelPats hyps patSels
     let st@{outGives, pfGives, ..} ← iCombineCore hs hyps goal
 

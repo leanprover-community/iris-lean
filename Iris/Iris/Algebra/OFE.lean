@@ -6,6 +6,7 @@ Authors: Mario Carneiro, Sebastian Graf, Sergei Stepanenko
 module
 
 public import Iris.Algebra.StepIndex
+public import Iris.Std.Option
 public meta import Iris.Std.RocqPorting
 
 @[expose] public section
@@ -53,9 +54,10 @@ theorem Dist.le [OFE α] {m n : SI} {x y : α} (h : x ≡{n}≡ y) (h' : m ≤ n
 #rocq_ignore dist_le' "Use Dist.le"
 #rocq_ignore dist_S "Subsumed by `Dist.lt`/`Dist.le`."
 
-@[simp, refl] theorem Dist.rfl [OFE α] {n : SI} {x : α} : x ≡{n}≡ x := dist_eqv.1 _
-@[symm] theorem Dist.symm [OFE α] {n : SI} {x : α} : x ≡{n}≡ y → y ≡{n}≡ x := dist_eqv.2
-theorem Dist.trans [OFE α] {n : SI} {x : α} : x ≡{n}≡ y → y ≡{n}≡ z → x ≡{n}≡ z := dist_eqv.3
+@[simp, refl] theorem Dist.rfl [OFE α] {n} {x : α} : x ≡{n}≡ x := dist_eqv.1 _
+@[simp, refl] theorem Dist.refl [OFE α] {n} (x : α) : x ≡{n}≡ x := dist_eqv.1 _
+@[symm] theorem Dist.symm [OFE α] {n} {x : α} : x ≡{n}≡ y → y ≡{n}≡ x := dist_eqv.2
+theorem Dist.trans [OFE α] {n} {x : α} : x ≡{n}≡ y → y ≡{n}≡ z → x ≡{n}≡ z := dist_eqv.3
 theorem Dist.of_eq [OFE α] {x y : α} : x = y → x ≡{n}≡ y := (· ▸ .rfl)
 
 #rocq_ignore ofe_equivalence "OFE is Leibniz; use equality"
@@ -99,16 +101,17 @@ theorem NonExpansive₂.ne_left [OFE α] [OFE β] [OFE γ] (f : α → β → γ
 @[rocq_alias dist_later]
 def DistLater [OFE α] (n : SI) (x y : α) : Prop := ∀ m, m < n → x ≡{m}≡ y
 
-@[simp, refl] theorem DistLater.rfl [OFE α] {n : SI} {x : α} : DistLater n x x := fun _ _ => .rfl
-@[symm] theorem DistLater.symm [OFE α] {n : SI} {x : α} (h : DistLater n x y) : DistLater n y x :=
+@[simp, refl] theorem DistLater.rfl [OFE α] {n} {x : α} : DistLater n x x := fun _ _ => .rfl
+@[simp, refl] theorem DistLater.refl [OFE α] {n} (x : α) : DistLater n x x := fun _ _ => .rfl
+@[symm] theorem DistLater.symm [OFE α] {n} {x : α} (h : DistLater n x y) : DistLater n y x :=
   fun _ hm => (h _ hm).symm
 theorem DistLater.trans [OFE α] {n : SI} {x : α} (h1 : DistLater n x y) (h2 : DistLater n y z) :
     DistLater n x z := fun _ hm => (h1 _ hm).trans (h2 _ hm)
 
 /-- `DistLater n`-equivalence is an equivalence relation. -/
 @[rocq_alias dist_later_equivalence]
-theorem distLater_eqv [OFE α] {n : SI} : Equivalence (α := α) (DistLater n) where
-  refl _ := DistLater.rfl
+theorem distLater_eqv [OFE α] {n} : Equivalence (α := α) (DistLater n) where
+  refl := DistLater.refl
   symm h := h.symm
   trans h1 := h1.trans
 
@@ -394,17 +397,6 @@ def uliftUpHom [OFE α] : α -n> ULift α where
 def uliftDownHom [OFE α] : ULift α -n> α where
   f := ULift.down
   ne.1 _ _ _ := id
-
-def _root_.Option.Forall₂ (R : α → β → Prop) : Option α → Option β → Prop
-  | none, none => True
-  | some a, some b => R a b
-  | _, _ => False
-
-theorem _root_.Option.Forall₂.equivalence {R : α → α → Prop}
-    (H : Equivalence R) : Equivalence (Option.Forall₂ R) where
-  refl | none => trivial | some _ => H.1 _
-  symm {x y} := by cases x <;> cases y <;> simp [Option.Forall₂]; apply H.2
-  trans {x y z} := by cases x <;> cases y <;> cases z <;> simp [Option.Forall₂]; apply H.3
 
 @[rocq_alias option_ofe_mixin]
 instance [OFE α] : OFE (Option α) where

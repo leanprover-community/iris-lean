@@ -19,7 +19,7 @@ variable [BI PROP] [BUpd PROP] [FUpd PROP] (P Q : PROP) (E₁ E₂ : CoPset)
 #check P ==∗ Q
 
 
-/-- info: iprop(P ={E₁, E₂}=∗ Q) : PROP -/
+/-- info: iprop(P ={E₁,E₂}=∗ Q) : PROP -/
 #guard_msgs in
 #check iprop(P ={E₁,E₂}=∗ Q)
 

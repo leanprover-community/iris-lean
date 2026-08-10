@@ -35,6 +35,8 @@ structure Agree.Raw α where
   not_nil : car ≠ []
 attribute [simp] Agree.Raw.not_nil
 
+#rocq_ignore agree_eq "Use Agree.Raw.ext"
+
 namespace Agree.Raw
 
 def toAgree (a : α) : Raw α := ⟨[a], by simp⟩
@@ -135,7 +137,7 @@ def validN (n : Nat) (x : Raw α) : Prop :=
 
 theorem validN_iff {x : Raw α} :
     x.validN n ↔ ∀ a ∈ x.car, ∀ b ∈ x.car, a ≡{n}≡ b := by
-  rcases x with ⟨⟨⟩ | ⟨a, ⟨⟩| _⟩, _⟩ <;> simp_all [validN, OFE.Dist.rfl]
+  rcases x with ⟨⟨⟩ | ⟨a, ⟨⟩| _⟩, _⟩ <;> simp_all [validN]
 
 theorem validN_congr {x y : Raw α} (h : SameElems x y) : validN n x ↔ validN n y := by
   simp only [validN_iff]
@@ -473,8 +475,8 @@ theorem idemp {x : Agree α} : x • x = x := op_idemp
 
 #rocq_ignore agree_validN_proper "Derivable from Agree.validN_ne using NonExpansive.eqv"
 #rocq_ignore agree_op_proper "Derivable from Agree.op_ne₂ using NonExpansive₂.eqv"
-#rocq_ignore to_agree_op_inv "Use the general op_invN theorem."
-#rocq_ignore to_agree_op_invN "Use the general op_inv theorem."
+#rocq_ignore to_agree_op_invN "Use the general Agree.op_invN theorem"
+#rocq_ignore to_agree_op_inv "Use the general Agree.op_inv theorem"
 
 @[rocq_alias agree_cmra_discrete]
 instance instCMRADiscrete [OFE.Discrete α] : CMRA.Discrete (Agree α) where

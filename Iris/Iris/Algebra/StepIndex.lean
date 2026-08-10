@@ -131,6 +131,7 @@ meta def elabStepindex : CommandElab := fun stx => do
 /-- The step-indexing successor operator. -/
 scoped prefix:max "succᵢ" => SIdx.succ
 
+@[rocq_alias SIdxFinite]
 class SIdxFinite (I : Type u) [SIdx I] where
   finite_index : ∀ n : I, n = 0 ∨ ∃ m, n = succᵢ m
 

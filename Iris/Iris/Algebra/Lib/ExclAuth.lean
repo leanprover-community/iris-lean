@@ -108,12 +108,16 @@ theorem update {a b a' : A} : ((●E a) • ◯E b) ~~> ((●E a') • ◯E a') 
 /-! ## Functors -/
 
 @[rocq_alias excl_authURF]
-abbrev ExclAuthURF (T : COFE.OFunctorPre) [URFunctor T] : COFE.OFunctorPre :=
+abbrev ExclAuthURF (T : COFE.OFunctorPre) [COFE.OFunctor T] : COFE.OFunctorPre :=
   AuthURF (OptionOF (ExclOF T))
 
+#rocq_ignore excl_authURF_contractive "Found by typeclass inference"
+
 @[rocq_alias excl_authRF]
-abbrev ExclAuthRF (T : COFE.OFunctorPre) [URFunctor T] : COFE.OFunctorPre :=
+abbrev ExclAuthRF (T : COFE.OFunctorPre) [COFE.OFunctor T] : COFE.OFunctorPre :=
   AuthRF (OptionOF (ExclOF T))
+
+#rocq_ignore excl_authRF_contractive "Found by typeclass inference"
 
 end ExclAuth
 end Iris

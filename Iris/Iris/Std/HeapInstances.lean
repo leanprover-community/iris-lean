@@ -6,7 +6,6 @@ Authors: Alok Singh, Markus de Medeiros
 module
 
 public import Iris.Std.PartialMap
-public import Iris.Std.Infinite
 public import Std.Data.TreeMap
 public import Std.Data.ExtTreeMap
 

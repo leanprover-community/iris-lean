@@ -78,32 +78,75 @@ class FromWand {PROP} [BI PROP] (P : PROP) (io : InOut)
   from_wand : (Q1 -∗ Q2) ⊢ P
 export FromWand (from_wand)
 
-#rocq_ignore IntoWand' "not used in Lean"
+inductive WandMode.Side where
+  | argument
+  | result
+
+/--
+[WandMode] describes the modings of a two-sided class `IntoWand`, by recording whether each of the
+argument and result slots is an input or an output.
+
+`unknown` leaves both slots as outputs, and corresponds to Rocq's `IntoWand` (Hint Mode `- -`).
+`matching s` makes the slot `s` an input, and corresponds to Rocq's `IntoWand'`
+(Hint Modes `! -` and `- !`).
+
+The priority of `matching` mode instances (such as `intoWand_bupd_args`) must stay below that of
+every instance with `unknown` (such as `intoWand_bupd`). This mirrors the priority `100` on
+Rocq's `into_wand_wand'`.
+-/
+inductive WandMode where
+  | unknown
+  | matching (s : WandMode.Side)
+
+meta section
+
+/-- Whether the argument slot of a class at mode `m` is an input or an output. -/
+@[reducible]
+def WandMode.argIO : WandMode → InOut
+  | .unknown => .out
+  | .matching .argument => .in
+  | .matching .result => .out
+
+
+/-- Whether the result slot of a class at mode `m` is an input or an output. -/
+@[reducible]
+def WandMode.resIO : WandMode → InOut
+  | .unknown => .out
+  | .matching .argument => .out
+  | .matching .result => .in
+
+end
+
+#rocq_ignore IntoWand' "the `matching` mode of `IntoWand` subsumes it"
 
 @[ipm_class, rocq_alias IntoWand]
-class IntoWand {PROP} [BI PROP] (p q : Bool) (R : PROP)
-  (ioP : InOut) (P : semiOutParamIPM ioP PROP)
-  (ioQ : InOut) (Q : semiOutParamIPM ioQ PROP) where
+class IntoWand {PROP} [BI PROP] (p q : Bool) (R : PROP) (m : WandMode)
+    (P : semiOutParamIPM m.argIO PROP)
+    (Q : semiOutParamIPM m.resIO PROP) where
   into_wand : □?p R ⊢ □?q P -∗ Q
 export IntoWand (into_wand)
 
 @[ipm_class, rocq_alias FromForall]
-class FromForall {PROP} [BI PROP] (P : PROP) {α : outParam (Sort _)} (Ψ : outParam <| α → PROP) where
+class FromForall {PROP} [BI PROP] (P : PROP)
+    {α : outParam (Sort _)} (Ψ : outParam <| α → PROP) where
   from_forall : (∀ x, Ψ x) ⊢ P
 export FromForall (from_forall)
 
 @[ipm_class, rocq_alias IntoForall]
-class IntoForall {PROP} [BI PROP] (P : PROP) {α : outParam (Sort _)} (Φ : outParam <| α → PROP) where
+class IntoForall {PROP} [BI PROP] (P : PROP)
+    {α : outParam (Sort _)} (Φ : outParam <| α → PROP) where
   into_forall : P ⊢ ∀ x, Φ x
 export IntoForall (into_forall)
 
 @[ipm_class, rocq_alias FromExist]
-class FromExists {PROP} [BI PROP] (P : PROP) {α : outParam (Sort _)} (Φ : outParam <| α → PROP) where
+class FromExists {PROP} [BI PROP] (P : PROP)
+    {α : outParam (Sort _)} (Φ : outParam <| α → PROP) where
   from_exists : (∃ x, Φ x) ⊢ P
 export FromExists (from_exists)
 
 @[ipm_class, rocq_alias IntoExist]
-class IntoExists {PROP} [BI PROP] (P : PROP) {α : outParam (Sort _)} (Φ : outParam <| α → PROP) where
+class IntoExists {PROP} [BI PROP] (P : PROP)
+    {α : outParam (Sort _)} (Φ : outParam <| α → PROP) where
   into_exists : P ⊢ ∃ x, Φ x
 export IntoExists (into_exists)
 
@@ -139,7 +182,8 @@ export IntoOr (into_or)
 
 local stepindex Nat
 @[ipm_class, rocq_alias IntoInternalEq]
-class IntoInternalEq {PROP} [BI PROP] [Sbi PROP] {A : outParam $ Type _} [ofe : outParam $ OFE A] (P : PROP) (x y : outParam A) where
+class IntoInternalEq {PROP} [BI PROP] [Sbi PROP] {A : outParam $ Type _}
+    [ofe : outParam $ OFE A] (P : PROP) (x y : outParam A) where
   into_internal_eq : P ⊢@{PROP} x ≡ y
 export IntoInternalEq (into_internal_eq)
 
@@ -158,7 +202,8 @@ class IntoAbsorbingly {PROP} [BI PROP] (P : outParam $ PROP) (Q : PROP) where
   into_absorbingly : P ⊢ <absorb> Q
 export IntoAbsorbingly (into_absorbingly)
 
-@[ipm_class, rocq_alias FromAssumption, rocq_alias KnownLFromAssumption, rocq_alias KnownRFromAssumption]
+@[ipm_class, rocq_alias FromAssumption,
+  rocq_alias KnownLFromAssumption, rocq_alias KnownRFromAssumption]
 class FromAssumption {PROP} [BI PROP] (p : Bool) (ioP : InOut)
     (P : semiOutParamIPM ioP PROP) (Q : PROP) where
   from_assumption : □?p P ⊢ Q
@@ -199,7 +244,8 @@ For the IPM TC synthesis, it needs to be an `uncheckedInParam` since it should m
 if the user provides an mvar.
 -/
 @[ipm_class, rocq_alias FromModal]
-class FromModal {PROP1 : outParam $ Type _} {PROP2} {α : outParam <| Type _} [outParam $ BI PROP1] [BI PROP2] (φ : outParam $ Prop)
+class FromModal {PROP1 : outParam $ Type _} {PROP2} {α : outParam <| Type _}
+    [outParam $ BI PROP1] [BI PROP2] (φ : outParam $ Prop)
     (M : outParam $ Modality PROP1 PROP2) (sel : outParam <| uncheckedInParam α) (P : PROP2)
     (Q : outParam $ PROP1) where
   from_modal : φ → M.M Q ⊢ P
@@ -213,21 +259,35 @@ class ElimModal {PROP} [BI PROP] (φ : outParam $ Prop) (p : Bool) (io : InOut)
   elim_modal : φ → □?p P ∗ (□?p' P' -∗ Q') ⊢ Q
 export ElimModal (elim_modal)
 
+/--
+`AddModal` is used by `ispecialize` and `ihave _ : _` to add a modality to the
+goal corresponding to the premise/asserted proposition.
+-/
+@[ipm_class, rocq_alias AddModal]
+class AddModal {PROP} [BI PROP] (P : outParam $ PROP) (P' Q : PROP) where
+  add_modal : P ∗ (P' -∗ Q) ⊢ Q
+export AddModal (add_modal)
+
+@[rocq_alias add_modal_id]
+theorem addModal_id {PROP} [BI PROP] (P Q : PROP) : AddModal P P Q where
+  add_modal := wand_elim_right
+
 @[ipm_class, rocq_alias Frame]
 class Frame {PROP} [BI PROP] (p : Bool) (R P : PROP) (Q : outParam $ PROP) where
   frame : □?p R ∗ Q ⊢ P
 export Frame (frame)
 
 @[ipm_class, rocq_alias FrameInstantiateExistDisabled]
-class FrameInstantiateExistDisabled {PROP} [BI PROP] (p : Bool) (R P : PROP) (Q : outParam $ PROP) where
+class FrameInstantiateExistDisabled {PROP} [BI PROP] (p : Bool)
+    (R P : PROP) (Q : outParam $ PROP) where
   frame_instantiatiate_exist_disabled : Frame p R P Q
 export FrameInstantiateExistDisabled (frame_instantiatiate_exist_disabled)
 
 /--
 `IntoLaterN` turns `P` into `▷^[n] Q`.
-The Boolean [only_head] indicates whether laters should only be stripped in head position or also below
-other logical connectives. For [inext] it should strip laters below other logical connectives,
-but this should not happen while framing.
+The Boolean [only_head] indicates whether laters should only be stripped in head position or
+also below other logical connectives. For [inext] it should strip laters below other logical
+connectives, but this should not happen while framing.
 
 The Rocq version uses an `MaybeIntoLaterN` typeclass that avoids unfolding definitions for searches
 that do not make progress. But this is not necessary in Lean since Lean TC synthesis does not unfold
@@ -236,7 +296,8 @@ definitions by default.
 This classes is deliberately not an `ipm_class` to use the more efficient TC synthesis.
 -/
 @[rocq_alias IntoLaterN, rocq_alias MaybeIntoLaterN]
-class IntoLaterN {PROP} [BI PROP] (only_head : Bool) (n : Nat) (P : PROP) (Q : outParam $ PROP) where
+class IntoLaterN {PROP} [BI PROP] (only_head : Bool) (n : Nat)
+    (P : PROP) (Q : outParam $ PROP) where
   into_laterN : P ⊢ ▷^[n] Q
 export IntoLaterN (into_laterN)
 
@@ -247,8 +308,10 @@ class CombineSepAs [BI PROP] (P Q : PROP) (R : outParam PROP) where
 export CombineSepAs (combine_sep_as)
 
 #rocq_ignore MaybeCombineSepAs "No need for progress_indicator"
-#rocq_ignore progress_indicator "No longer required as it is only used by the type class MaybeCombineSepAs"
-#rocq_ignore maybe_combine_sep_as_combine_sep_as "No longer required along with MaybeCombineSepAs"
+#rocq_ignore progress_indicator
+  "No longer required as it is only used by the type class MaybeCombineSepAs"
+#rocq_ignore maybe_combine_sep_as_combine_sep_as
+  "No longer required along with MaybeCombineSepAs"
 
 /-- `CombineSepGives` combines two propositions `P` and `Q` for a proposition
     with the `<pers>` modality -/
@@ -256,6 +319,9 @@ export CombineSepAs (combine_sep_as)
 class CombineSepGives [BI PROP] (P Q : PROP) (R : outParam PROP) where
   combine_sep_gives : P ∗ Q ⊢ <pers> R
 export CombineSepGives (combine_sep_gives)
+
+#rocq_ignore CombineSepsAs "Iteration is done directly within the metaprogram in Lean"
+#rocq_ignore CombineSepsAsGives "Iteration is done directly within the metaprogram in Lean"
 
 @[ipm_class, rocq_alias IntoInv]
 class IntoInv [BI PROP] (P : PROP) (N : Namespace)
@@ -266,16 +332,16 @@ def accessor [BI PROP] {X : Type} (M1 M2 : PROP → PROP) (α β : X → PROP)
   M1 iprop(∃ x, α x ∗ (β x -∗ M2 (mγ x |>.getD emp)))
 
 @[ipm_class, rocq_alias ElimAcc]
-class ElimAcc [BI PROP] {X : Type} (ϕ : outParam Prop) (M1 M2 : PROP → PROP)
+class ElimAcc [BI PROP] {X : Type} (φ : outParam Prop) (M1 M2 : PROP → PROP)
     (α β : X → PROP) (mγ : X → Option PROP) (Q : PROP) (Q' : outParam <| X → PROP) where
-  elim_acc : ϕ → ((∀ x, α x -∗ Q' x) -∗ accessor M1 M2 α β mγ -∗ Q)
+  elim_acc : φ → ((∀ x, α x -∗ Q' x) -∗ accessor M1 M2 α β mγ -∗ Q)
 
 @[ipm_class, rocq_alias IntoAcc]
 class IntoAcc [BI PROP] {X : outParam Type} (Pacc : PROP)
-    (ϕ : outParam Prop) (Pin : outParam <| PROP)
+    (φ : outParam Prop) (Pin : outParam <| PROP)
     (M1 M2 : outParam <| PROP → PROP) (α β : outParam <| X → PROP)
     (mγ : outParam <| X → Option PROP) where
-  into_acc : ϕ → Pacc -∗ Pin -∗ accessor M1 M2 α β mγ
+  into_acc : φ → Pacc -∗ Pin -∗ accessor M1 M2 α β mγ
 
 set_option synthInstance.checkSynthOrder false in
 /-- The type class used for the `iinv` tactic. -/
@@ -297,9 +363,41 @@ class IntoIH [BI PROP] (φ : Prop) (P : PROP) (Q : outParam PROP) where
 export IntoIH (into_ih)
 
 @[ipm_class, rocq_alias IntoEmbed]
-class IntoEmbed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] (P : PROP2) (Q : outParam PROP1) where
+class IntoEmbed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+    (P : PROP2) (Q : outParam PROP1) where
   into_embed : P ⊢ ⎡Q⎤
 export IntoEmbed (into_embed)
+
+#rocq_ignore IntoEmpValid "Not needed as recursion is handled directly by metaprogramming"
+
+#rocq_ignore AffineEnv
+  "Environment-related type classes are not needed as Expr.lean (Hyps) provides the infrastructure"
+#rocq_ignore IntoModalIntuitionisticEnv
+  "Environment-related definitions are not needed as Expr.lean (Hyps) provides the infrastructure"
+#rocq_ignore IntoModalSpatialEnv
+  "Environment-related definitions are not needed as Expr.lean (Hyps) provides the infrastructure"
+#rocq_ignore MaybeIntoLaterNEnvs
+  "Environment-related type classes are not needed as Expr.lean (Hyps) provides the infrastructure"
+#rocq_ignore TransformIntuitionisticEnv
+  "Environment-related type classes are not needed as Expr.lean (Hyps) provides the infrastructure"
+#rocq_ignore TransformSpatialEnv
+  "Environment-related type classes are not needed as Expr.lean (Hyps) provides the infrastructure"
+
+#rocq_ignore transform_intuitionistic_env_nil
+  "Type class IntoModalIntuitionisticEnv is not needed in Lean"
+#rocq_ignore transform_intuitionistic_env_snoc
+  "Type class IntoModalIntuitionisticEnv is not needed in Lean"
+#rocq_ignore transform_intuitionistic_env_snoc_not
+  "Type IntoModalIntuitionisticEnv class is not needed in Lean"
+#rocq_ignore transform_spatial_env_nil "Type class TransformSpatialEnv is not needed in Lean"
+#rocq_ignore transform_spatial_env_snoc "Type class TransformSpatialEnv is not needed in Lean"
+#rocq_ignore transform_spatial_env_snoc_not "Type class TransformSpatialEnv is not needed in Lean"
+#rocq_ignore affine_env_bi "Type class AffineEnv is not needed in Lean"
+#rocq_ignore affine_env_nil "Type class AffineEnv is not needed in Lean"
+#rocq_ignore affine_env_snoc "Type class AffineEnv is not needed in Lean"
+#rocq_ignore affine_env_spatial "Type class AffineEnv is not needed in Lean"
+#rocq_ignore into_laterN_env_sound "Environment-related theorem not relevant in Lean"
+#rocq_ignore into_laterN_envs "Environment-related type class instance not relevant in Lean"
 
 #rocq_ignore elim_inv_tc_opaque "No tc_opaque in Lean"
 #rocq_ignore elim_modal_tc_opaque "No tc_opaque in Lean"

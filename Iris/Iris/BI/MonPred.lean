@@ -477,7 +477,7 @@ instance : BI (MonPred I PROP) where
     refine (forall_elim i).trans ?_
     exact (pure_imp_elim (Std.Refl.refl i : I.rel.le i i)).trans (pure_imp_elim hΦ)
   later_sExists_false := fun {Φ} => entails_at.mpr fun i => by
-    refine later_sExists_false.trans (or_mono BIBase.Entails.rfl ?_)
+    refine later_sExists_false.trans (or_mono_right ?_)
     refine exists_elim fun p => pure_elim_left fun ⟨q, hΦ, hq⟩ => ?_
     subst hq
     exact (and_intro (pure_intro hΦ) BIBase.Entails.rfl).trans
@@ -490,7 +490,7 @@ instance : BI (MonPred I PROP) where
     refine later_false_em.trans (or_mono_right ?_)
     refine forall_intro fun j => imp_intro ?_
     refine pure_elim_right fun (hij : I.rel.le i j) => ?_
-    exact imp_mono BIBase.Entails.rfl (P.monPred_mono hij)
+    exact imp_mono_right (P.monPred_mono hij)
 
 #rocq_ignore monPred_unseal "Rocq unsealing command."
 #rocq_ignore monPred_unseal_bi "Rocq unsealing command."

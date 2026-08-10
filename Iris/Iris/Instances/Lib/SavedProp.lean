@@ -63,7 +63,7 @@ instance saved_anything_fractional (γ : GName) (x : F.ap (IProp GF)) :
 @[rocq_alias saved_anything_as_fractional]
 instance saved_anything_as_fractional (γ : GName) (x : F.ap (IProp GF)) (q : Qp) :
     AsFractional (saved_anything_own γ (.own q) x)
-      (fun q => saved_anything_own γ (.own q) x) q where
+      ioΦ (fun q => saved_anything_own γ (.own q) x) ioq q where
   as_fractional := .rfl
   as_fractional_fractional := saved_anything_fractional γ x
 
@@ -209,7 +209,7 @@ instance saved_prop_fractional (γ : GName) (P : IProp GF) :
 
 @[rocq_alias saved_prop_as_fractional]
 instance saved_prop_as_fractional (γ : GName) (P : IProp GF) (q : Qp) :
-    AsFractional (saved_prop_own γ (.own q) P) (fun q => saved_prop_own γ (.own q) P) q where
+    AsFractional (saved_prop_own γ (.own q) P) ioΦ (fun q => saved_prop_own γ (.own q) P) ioq q where
   as_fractional := .rfl
   as_fractional_fractional := saved_prop_fractional γ P
 
@@ -312,7 +312,7 @@ instance saved_pred_fractional (γ : GName) (Φ : A → IProp GF) :
 
 @[rocq_alias saved_pred_as_fractional]
 instance saved_pred_as_fractional (γ : GName) (Φ : A → IProp GF) (q : Qp) :
-    AsFractional (saved_pred_own γ (.own q) Φ) (fun q => saved_pred_own γ (.own q) Φ) q where
+    AsFractional (saved_pred_own γ (.own q) Φ) ioΦ (fun q => saved_pred_own γ (.own q) Φ) ioq q where
   as_fractional := .rfl
   as_fractional_fractional := saved_pred_fractional γ Φ
 

@@ -10,6 +10,7 @@ public import Iris.Algebra.OFE
 public import Iris.Algebra.Frac
 public import Iris.Algebra.DFrac
 public import Iris.Algebra.Agree
+public import Iris.Algebra.BigOp
 public import Iris.Algebra.Updates
 public import Iris.Algebra.LocalUpdates
 meta import Iris.Std.RocqPorting
@@ -388,6 +389,41 @@ instance [CMRA.CoreId b] : CMRA.CoreId ((●V{.discard} a : View R) • ◯V b) 
 instance {b b1 b2 : B} [h : IsOp d b b1 b2] :
     IsOp d (◯V b : View R) (◯V b1) (◯V b2) where
   is_op := by rw [h.is_op]; exact frag_op_eq
+
+section BigOp
+open Algebra Std
+
+@[rocq_alias view_frag_sep_homomorphism]
+instance : MonoidHomomorphism CMRA.op CMRA.op UCMRA.unit UCMRA.unit (· = ·)
+    (Frag : B → View R) where
+  rel_refl := rfl
+  rel_trans := Eq.trans
+  op_proper h₁ h₂ := h₁ ▸ h₂ ▸ rfl
+  map_ne := frag_ne
+  map_op := frag_op_eq
+  map_unit := rfl
+
+@[rocq_alias big_opL_view_frag]
+theorem bigOpL_frag (g : Nat → C → B) (l : List C) :
+    (◯V ([^ CMRA.op list] k ↦ x ∈ l, g k x) : View R) = [^ CMRA.op list] k ↦ x ∈ l, ◯V (g k x) :=
+  BigOpL.bigOpL_hom _ _
+
+@[rocq_alias big_opM_view_frag]
+theorem bigOpM_frag [LawfulFiniteMap M' K] (g : K → C → B) (m : M' C) :
+    (◯V ([^ CMRA.op map] k ↦ x ∈ m, g k x) : View R) = [^ CMRA.op map] k ↦ x ∈ m, ◯V (g k x) :=
+  BigOpM.bigOpM_hom _ _
+
+@[rocq_alias big_opS_view_frag]
+theorem bigOpS_frag [LawfulFiniteSet S' C] (g : C → B) (X : S') :
+    (◯V ([^ CMRA.op set] x ∈ X, g x) : View R) = [^ CMRA.op set] x ∈ X, ◯V (g x) :=
+  BigOpS.hom inferInstance _ _
+
+@[rocq_alias big_opMS_view_frag]
+theorem bigOpMS_frag [LawfulFiniteMultiSet MS' C] (g : C → B) (X : MS') :
+    (◯V ([^ CMRA.op mset] x ∈ X, g x) : View R) = [^ CMRA.op mset] x ∈ X, ◯V (g x) :=
+  BigOpMS.hom inferInstance _ _
+
+end BigOp
 
 @[rocq_alias view_auth_dfrac_op_invN]
 theorem dist_of_validN_auth (H : ✓{n} ((●V{dq1} a1 : View R) • ●V{dq2} a2)) : a1 ≡{n}≡ a2 := by
@@ -856,6 +892,10 @@ instance (f : A → A') (g : B → B') [OFE.NonExpansive f] [hne : OFE.NonExpans
 def mapO (f : A -n> A') (g : B -n> B') : View R -n> View R' where
   f := View.map R' f g
   ne := inferInstance
+
+@[rocq_alias viewO_map_ne]
+instance mapO_ne : OFE.NonExpansive₂ (mapO (R := R) (R' := R')) where
+  ne _ _ _ hf _ _ hg v := map_ne v (hf ·) (hg ·)
 
 end mapO
 
