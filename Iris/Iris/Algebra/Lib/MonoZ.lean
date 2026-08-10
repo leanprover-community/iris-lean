@@ -14,9 +14,6 @@ meta import Iris.Std.RocqPorting
 
 /-!
 # Authoritative CMRA over `MaxZ`
-
-The authoritative element is a monotonically increasing `Int`, while a fragment is a lower
-bound. Unlike `MaxNat`, `MaxZ` has no unit, so the underlying UCMRA is `Option MaxZ`.
 -/
 
 namespace Iris
@@ -89,9 +86,6 @@ abbrev MonoZ := Auth (Option MaxZ)
 
 namespace MonoZ
 
-/-- The authoritative element. The definition includes the fragment at the same value so that
-`MonoZ.included` holds; without this trick a frame-preserving update lemma would be required
-instead. -/
 @[rocq_alias mono_Z_auth]
 def auth (dq : DFrac) (n : MaxZ) : MonoZ := (●{dq} some n) • (◯ some n)
 @[rocq_alias mono_Z_lb]
@@ -127,7 +121,6 @@ theorem lb_op (n1 n2 : MaxZ) : (◯MZ (n1 + n2) : MonoZ) = ((◯MZ n1) • (◯M
 theorem auth_lb_op (dq : DFrac) (n : MaxZ) : (●MZ{dq} n : MonoZ) = (●MZ{dq} n) • (◯MZ n) :=
   (CMRA.op_core_left_of_inc (CMRA.inc_op_right ..)).symm
 
-/-- Rephrasing of `MonoZ.lb_op`, useful for weakening a fragment to a smaller lower bound. -/
 @[rocq_alias mono_Z_lb_op_le_l]
 theorem lb_op_le_l (n n' : MaxZ) (h : n' ≤ n) :
     (◯MZ n : MonoZ) = ((◯MZ n') • (◯MZ n) : MonoZ) :=
