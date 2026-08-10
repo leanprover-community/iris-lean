@@ -6,6 +6,7 @@ Authors: Lars König, Alex Keizer
 module
 
 public import Iris.BI.BIBase
+public import Iris.BI.Telescopes
 public import Iris.BI.Updates
 
 @[expose] public section
@@ -74,6 +75,23 @@ variable [BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → 
 #guard_msgs in #check iprop(P ∗ Q)
 /-- info: iprop(P ∗ Q ∗ R) : PROP -/
 #guard_msgs in #check iprop(P ∗ (Q ∗ R))
+
+section Telescopes
+open Iris.Std
+variable [BI PROP] {TT : Tele} (Ψt : TT.Arg → PROP) (Φt : TT.Arg → TT.Arg → PROP)
+
+/-- info: iprop(∀.. x, Ψt x) : PROP -/
+#guard_msgs in #check iprop(∀.. x, Ψt x)
+/-- info: iprop(∀.. x y, Φt x y) : PROP -/
+#guard_msgs in #check iprop(∀.. x y, Φt x y)
+/-- info: iprop(∃.. x, Ψt x) : PROP -/
+#guard_msgs in #check iprop(∃.. x, Ψt x)
+/-- info: iprop(∃.. x y, Φt x y) : PROP -/
+#guard_msgs in #check iprop(∃.. x y, Φt x y)
+/-- info: iprop((∀.. x, Ψt x) ∗ ∃.. y, Ψt y) : PROP -/
+#guard_msgs in #check iprop((∀.. x, Ψt x) ∗ ∃.. y, Ψt y)
+
+end Telescopes
 
 /-- info: iprop(P -∗ Q) : PROP -/
 #guard_msgs in #check iprop(P -∗ Q)
