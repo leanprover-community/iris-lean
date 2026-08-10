@@ -184,7 +184,7 @@ theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) = x :
 
 @[rocq_alias iProp_unfold_equivI]
 theorem IProp.unfold_equivI (P Q : IProp FF) :
-    (iprop(IProp.unfold FF P ≡ IProp.unfold FF Q) : IProp FF) ⊢ (iprop(P ≡ Q) : IProp FF) := by
+    (IProp.unfold FF P ≡ IProp.unfold FF Q) ⊢@{IProp FF} P ≡ Q := by
   have h := BI.internalEq.of_internalEquiv_ne (PROP := IProp FF) (IProp.fold FF)
     (x := IProp.unfold FF P) (y := IProp.unfold FF Q)
   rw [IProp.fold_unfold, IProp.fold_unfold] at h
