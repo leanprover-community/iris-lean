@@ -25,15 +25,38 @@ open _root_.Std (Associative Commutative IdempotentOp)
 
 section MaxZ
 
-abbrev MaxZ := Int
+@[grind cases]
+structure MaxZ where
+  ofInt ::
+  toInt : Int
 
-scoped instance : Add MaxZ := ⟨max⟩
-scoped instance : Associative (Add.add (α := MaxZ)) where
-  assoc := Int.max_assoc
-scoped instance : Commutative (Add.add (α := MaxZ)) where
-  comm := Int.max_comm
-scoped instance : IdempotentOp (Add.add (α := MaxZ)) where
-  idempotent x := by simp [Add.add]
+@[grind]
+def MaxZ.max (a b : MaxZ) : MaxZ where
+  toInt := Max.max a.toInt b.toInt
+
+scoped instance : Add MaxZ where add := .max
+scoped instance : LE MaxZ where le a b := a.toInt ≤ b.toInt
+
+@[simp, grind =]
+theorem MaxZ.le_toInt (a b : MaxZ) : a ≤ b ↔ a.toInt ≤ b.toInt := by rfl
+
+@[simp, grind =]
+theorem MaxZ.toInt_add (a b : MaxZ) : (a + b).toInt = Max.max a.toInt b.toInt := rfl
+
+@[simp, grind =]
+theorem MaxZ.add_ofInt (a b : Int) : (MaxZ.ofInt a + MaxZ.ofInt b) = MaxZ.ofInt (Max.max a b) := rfl
+
+theorem MaxZ.eq_toInt (a b : MaxZ) : a = b ↔ a.toInt = b.toInt := by
+  constructor
+  · rintro rfl; rfl
+  · cases a; cases b; rintro rfl; rfl
+
+scoped instance : Associative (α := MaxZ) (· + ·) where
+  assoc := by grind
+scoped instance : Commutative (α := MaxZ) (· + ·) where
+  comm := by grind
+scoped instance : IdempotentOp (α := MaxZ) (· + ·) where
+  idempotent x := by grind
 scoped instance : COFE MaxZ := COFE.ofDiscrete _
 scoped instance : OFE.Discrete MaxZ := ⟨fun h => h⟩
 scoped instance : CMRA MaxZ := OrdCommMonoidLike.instCMRA
@@ -89,7 +112,7 @@ theorem auth_dfrac_op (dq1 dq2 : DFrac) (n : MaxZ) :
   congrArg (((●{dq1} some n) • ◯ some n) • ·) CMRA.comm'
 
 @[rocq_alias mono_Z_lb_op]
-theorem lb_op (n1 n2 : MaxZ) : (◯MZ (max n1 n2) : MonoZ) = ((◯MZ n1) • (◯MZ n2) : MonoZ) :=
+theorem lb_op (n1 n2 : MaxZ) : (◯MZ (n1 + n2) : MonoZ) = ((◯MZ n1) • (◯MZ n2) : MonoZ) :=
   Auth.frag_op (b1 := some n1) (b2 := some n2)
 
 @[rocq_alias mono_Z_auth_lb_op]
@@ -97,13 +120,14 @@ theorem auth_lb_op (dq : DFrac) (n : MaxZ) : (●MZ{dq} n : MonoZ) = (●MZ{dq} 
   refine .trans ?_ CMRA.assoc'
   simp only [lb, ← Auth.frag_op]
   refine congrArg ((●{dq} some n) • ·) ?_
-  simp [CMRA.op, Add.add]
+  simp [CMRA.op, Add.add, MaxZ.max]
 
 /-- Rephrasing of `MonoZ.lb_op`, useful for weakening a fragment to a smaller lower bound. -/
 @[rocq_alias mono_Z_lb_op_le_l]
 theorem lb_op_le_l (n n' : MaxZ) (h : n' ≤ n) :
     (◯MZ n : MonoZ) = ((◯MZ n') • (◯MZ n) : MonoZ) := by
-  rw [← lb_op, Int.max_eq_right h]
+  rw [← lb_op]
+  grind
 
 @[rocq_alias mono_Z_auth_dfrac_valid]
 theorem auth_dfrac_valid (dq : DFrac) (n : MaxZ) : (✓ (●MZ{dq} n : MonoZ)) ↔ ✓ dq :=
@@ -146,8 +170,10 @@ theorem both_dfrac_valid (dq : DFrac) (n m : MaxZ) :
   · intro ⟨hdq, ⟨k, hk⟩, _⟩; refine ⟨hdq, ?_⟩
     simp only [CMRA.op, Add.add] at hk
     grind
-  · intro ⟨hdq, hle⟩; refine ⟨hdq, ⟨n, ?_⟩, trivial⟩
-    simp [CMRA.op, Add.add, Int.max_eq_left hle]
+  · intro ⟨hdq, hle⟩
+    refine ⟨hdq, ⟨n, ?_⟩, trivial⟩
+    dsimp only [CMRA.op, Add.add]
+    grind
 
 @[rocq_alias mono_Z_both_valid]
 theorem both_valid (n m : MaxZ) : (✓ ((●MZ n) • (◯MZ m) : MonoZ)) ↔ m ≤ n := by
@@ -155,8 +181,11 @@ theorem both_valid (n m : MaxZ) : (✓ ((●MZ n) • (◯MZ m) : MonoZ)) ↔ m 
   exact ⟨fun h => h.2, fun h => ⟨DFrac.valid_own_one, h⟩⟩
 
 @[rocq_alias mono_Z_lb_mono]
-theorem lb_mono (n1 n2 : MaxZ) (h : n1 ≤ n2) : (◯MZ n1 : MonoZ) ≼ ◯MZ n2 :=
-  Auth.frag_inc_of_inc <| Option.some_inc_some_iff_is_total.mpr ⟨n2, (Int.max_eq_right h).symm⟩
+theorem lb_mono (n1 n2 : MaxZ) (h : n1 ≤ n2) : (◯MZ n1 : MonoZ) ≼ ◯MZ n2 := by
+  refine Auth.frag_inc_of_inc (Option.some_inc_some_iff_is_total.mpr ?_)
+  exists n2
+  simp only [CMRA.op, Add.add]
+  grind
 
 @[rocq_alias mono_Z_included]
 theorem included (dq : DFrac) (n : MaxZ) : (◯MZ n : MonoZ) ≼ ●MZ{dq} n :=
@@ -167,7 +196,13 @@ theorem update {n : MaxZ} (n' : MaxZ) (h : n ≤ n') : (●MZ n : MonoZ) ~~> ●
   refine Auth.auth_update (LocalUpdate.option fun _ mz _ hn => ⟨trivial, ?_⟩)
   cases mz with | none => rfl | some z =>
   simp only [CMRA.op?, CMRA.op, Add.add] at hn ⊢
-  exact OFE.Dist.of_eq (Int.max_eq_left (Int.le_trans (hn ▸ Int.le_max_right n z) h)).symm
+  refine OFE.Dist.of_eq ?_
+  simp only [MaxZ.eq_toInt, MaxZ.max]
+  refine Int.max_eq_left ?_ |>.symm
+  refine Int.le_trans ?_ h
+  refine hn ▸ ?_
+  simp only [MaxZ.max]
+  apply Int.le_max_right
 
 @[rocq_alias mono_Z_auth_persist]
 theorem auth_persist (n : MaxZ) (dq : DFrac) : (●MZ{dq} n : MonoZ) ~~> ●MZ□ n :=
