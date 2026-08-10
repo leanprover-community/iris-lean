@@ -279,10 +279,6 @@ theorem mem_of_forall_dist {a : α} {l : List α} (h : ∀ n, ∃ b ∈ l, a ≡
       · exact absurd (hd.le (Nat.le_max_right n n₀)) hn₀
       · exact ⟨b, hb', hd.le (Nat.le_max_left n n₀)⟩
 
-theorem exists_forall_dist {a : α} {l : List α}
-    (h : ∀ n, ∃ b ∈ l, a ≡{n}≡ b) : ∃ b ∈ l, ∀ n, a ≡{n}≡ b :=
-  ⟨a, mem_of_forall_dist h, fun _ => .rfl⟩
-
 theorem sameElems_of_dist {x y : Raw α} (h : ∀ n, dist n x y) : SameElems x y :=
   have key : ∀ {x y : Raw α}, (∀ n, dist n x y) → ∀ a ∈ x.car, a ∈ y.car :=
     fun h _ ha => mem_of_forall_dist fun n => (h n).1 _ ha
@@ -307,34 +303,34 @@ def Agree (α : Type u) : Type u := Quotient (Raw.instSetoid (α := α))
 
 namespace Agree
 
-def mk (x : Raw α) : Agree α := Quotient.mk _ x
+def mk (x : Raw α) : Agree α := ofQuotient.mk _ x
 
 @[elab_as_elim, induction_eliminator]
 theorem ind {motive : Agree α → Prop} (mk : ∀ x : Raw α, motive (Agree.mk x)) (x : Agree α) :
-    motive x := Quotient.ind mk x
+    motive x := ofQuotient.ind mk x
 
 @[elab_as_elim]
 theorem ind₂ {motive : Agree α → Agree α → Prop}
     (mk : ∀ x y : Raw α, motive (Agree.mk x) (Agree.mk y)) (x y : Agree α) : motive x y :=
-  Quotient.ind₂ mk x y
+  ofQuotient.ind₂ mk x y
 
 @[elab_as_elim]
 theorem ind₃ {motive : Agree α → Agree α → Agree α → Prop}
     (mk : ∀ x y z : Raw α, motive (Agree.mk x) (Agree.mk y) (Agree.mk z)) (x y z : Agree α) :
-    motive x y z := ind₂ (fun x y => Quotient.ind (mk x y)) x y z
+    motive x y z := ofQuotient.ind₃ mk x y z
 
-theorem sound {x y : Raw α} (h : Raw.SameElems x y) : mk x = mk y := Quotient.sound h
+theorem sound {x y : Raw α} (h : Raw.SameElems x y) : mk x = mk y := ofQuotient.sound h
 
-theorem exact {x y : Raw α} (h : mk x = mk y) : Raw.SameElems x y := Quotient.exact h
+theorem exact {x y : Raw α} (h : mk x = mk y) : Raw.SameElems x y := ofQuotient.exact h
 
-theorem mk_eq {x y : Raw α} : mk x = mk y ↔ Raw.SameElems x y := ⟨exact, sound⟩
+theorem mk_eq {x y : Raw α} : mk x = mk y ↔ Raw.SameElems x y := ofQuotient.mk_eq
 
 def lift {γ : Sort w} (f : Raw α → γ) (resp : ∀ x y, Raw.SameElems x y → f x = f y) :
-    Agree α → γ := Quotient.lift f resp
+    Agree α → γ := ofQuotient.lift f resp
 
 def lift₂ {γ : Sort w} (f : Raw α → Raw α → γ)
     (resp : ∀ a b c d, Raw.SameElems a c → Raw.SameElems b d → f a b = f c d) :
-    Agree α → Agree α → γ := Quotient.lift₂ f resp
+    Agree α → Agree α → γ := ofQuotient.lift₂ f resp
 
 @[simp] theorem lift_mk {γ : Sort w} (f : Raw α → γ) (resp) (x : Raw α) :
     lift f resp (mk x) = f x := rfl
@@ -363,7 +359,7 @@ variable [OFE α] [OFE β]
 
 @[rocq_alias agree_ofe_mixin]
 instance instOFE : OFE (Agree α) :=
-  OFE.ofQuotient _ (Raw.dist) Raw.dist_equiv Raw.dist_lt fun _ _ => Raw.sameElems_iff_dist
+  OFE.ofQuotient Raw.dist Raw.dist_equiv Raw.dist_lt fun _ _ => Raw.sameElems_iff_dist
 
 #rocq_ignore agreeO "Use Agree with a typeclass instance instead."
 #rocq_ignore agree_equiv "Defined in Agree OFE instance."
@@ -624,8 +620,7 @@ open Agree (Raw)
 
 @[rocq_alias agree_map]
 def Agree.map' (f : α → β) : Agree α → Agree β :=
-  Agree.lift (fun x => Agree.mk (Raw.map' f x))
-    (fun _ _ h => Agree.sound (Raw.map'_sameElems h))
+  OFE.ofQuotient.map (Raw.map' f) fun _ _ h => Raw.map'_sameElems h
 
 @[simp] theorem Agree.map'_mk (f : α → β) {x : Raw α} :
     Agree.map' f (Agree.mk x) = Agree.mk (Raw.map' f x) := rfl
