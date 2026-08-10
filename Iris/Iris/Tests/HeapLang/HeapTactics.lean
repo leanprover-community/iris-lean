@@ -319,10 +319,16 @@ example {hlc'} {GF' : BundledGFunctors} [IrisGS_gen hlc' Exp GF']
   wp_load
 
 -- heap tactics reject goals that are not WPs at all
-/-- error: wp_load: The goal P must be a WP -/
+/-- error: wp_load: the goal is not a WP -/
 #guard_msgs (whitespace := lax) in
 example {P : IProp GF} : P ⊢ P := by
   iintro HP
+  wp_load
+
+-- the `wp_pures` prologue can reduce the expression to a value, leaving no redex
+/-- error: wp_load: the expression has been reduced to a value, there is no redex left -/
+#guard_msgs (whitespace := lax) in
+example : ⊢@{IProp GF} WP hl(if #true then #1 else #0) {{ v, True }} := by
   wp_load
 
 end goal_shape

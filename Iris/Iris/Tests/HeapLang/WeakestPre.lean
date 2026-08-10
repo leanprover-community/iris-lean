@@ -219,6 +219,92 @@ example (n : Int) : ⊢@{IProp GF} WP hl((#1 * #2 <<< #3 ≤ #n + (#1 &&& #2 ^^^
 
 end wp_pure
 
+section wp_pures
+
+-- a step whose side condition survives is not taken (`compareSafe` is stuck here)
+/--
+error: unsolved goals
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+v1 v2 : Val
+⊢ ⏎
+  ⊢ WP hl((v(&v1) = v(&v2))) {{ v, True }}
+-/
+#guard_msgs in
+example (v1 v2 : Val) : ⊢@{IProp GF} WP hl(&v1 = &v2) {{ v, True }} := by
+  wp_pures
+
+-- steps before the guarded one still fire
+/--
+error: unsolved goals
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+v1 v2 : Val
+⊢ ⏎
+  ⊢ WP hl((v(&v1) = v(&v2))) {{ v, True }}
+-/
+#guard_msgs in
+example (v1 v2 : Val) :
+    ⊢@{IProp GF} WP hl(if #true then (&v1 = &v2) else #false) {{ v, True }} := by
+  wp_pures
+
+-- `wp_pure` itself stays permissive and hands the side condition back
+/--
+error: unsolved goals
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+v1 v2 : Val
+⊢ ⏎
+  ⊢ |={⊤}=> True
+
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+v1 v2 : Val
+⊢ v1.compareSafe v2 = true
+-/
+#guard_msgs in
+example (v1 v2 : Val) : ⊢@{IProp GF} WP hl(&v1 = &v2) {{ v, True }} := by
+  wp_pure
+
+-- with no step to take, `wp_pures` still strips the weakest precondition off a value
+/--
+error: unsolved goals
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+⊢ ⏎
+  ⊢ |={⊤}=> ⌜hl_val(#1) = hl_val(#1)⌝
+-/
+#guard_msgs in
+example : ⊢@{IProp GF} WP hl(v(#1)) {{ v, ⌜v = hl_val(#1)⌝ }} := by
+  wp_pures
+
+-- ... and succeeds without doing anything when the expression is stuck
+/--
+error: unsolved goals
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+l : Loc
+⊢ ⏎
+  ⊢ WP hl(!#l) {{ v, True }}
+-/
+#guard_msgs in
+example (l : Loc) : ⊢@{IProp GF} WP hl(!#l) {{ v, True }} := by
+  wp_pures
+
+-- neither branch applies when the goal is not a weakest precondition
+/-- error: wp_finish: The goal iprop(True) must be a WP -/
+#guard_msgs in
+example : ⊢@{IProp GF} (True : IProp GF) := by
+  wp_pures
+
+end wp_pures
+
 section pure_tactics
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF]
