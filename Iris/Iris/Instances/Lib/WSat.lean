@@ -89,12 +89,7 @@ def wsat : IProp GF := iprop(
 
 @[rocq_alias ownI_contractive]
 instance (i : Pos) : Contractive (ownI (W := W) i) where
-  distLater_dist h := by
-    unfold ownI
-    refine NonExpansive.ne ?_
-    refine NonExpansive.ne ?_
-    refine NonExpansive.ne ?_
-    exact Contractive.distLater_dist h
+  distLater_dist := by contractive
 
 @[rocq_alias ownI_persistent]
 instance (i : Pos) (P : IProp GF) : Persistent (ownI (W := W) i P) := by

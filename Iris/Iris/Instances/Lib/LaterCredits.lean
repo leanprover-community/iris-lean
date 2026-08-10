@@ -12,6 +12,7 @@ public import Iris.Algebra.Numbers
 public import Iris.ProofMode
 public import Iris.BI.Algebra
 public import Iris.Instances.IProp
+public import Iris.ProofMode.Tactics.Contractive
 
 @[expose] public section
 
@@ -225,20 +226,7 @@ def le_upd_pre (P le_upd : IProp GF) : IProp GF :=
 
 @[rocq_alias le_upd.le_upd_pre_contractive]
 instance {P : IProp GF} : Contractive (le_upd_pre P) where
-  distLater_dist {n x y} H := by
-    simp only [le_upd_pre]
-    refine forall_ne (fun i => ?_)
-    refine wand_ne.ne .rfl ?_
-    refine UPred.bupd_ne.ne ?_
-    refine or_ne.ne .rfl ?_
-    refine or_ne.ne .rfl ?_
-    refine exists_ne (fun m => ?_)
-    refine sep_ne.ne .rfl ?_
-    refine sep_ne.ne .rfl ?_
-    refine Contractive.distLater_dist ?_
-    cases n
-    · exact distLater_zero
-    · exact distLater_succ.mpr (distLater_succ.mp H)
+  distLater_dist := by contractive
 
 #rocq_ignore le_upd.le_upd_def "`le_upd` is defined directly without `seal`/`unseal`."
 #rocq_ignore le_upd.le_upd_aux "`le_upd` is defined directly without `seal`/`unseal`."

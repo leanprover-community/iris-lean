@@ -312,7 +312,7 @@ theorem loeb_alt_wand [BIAffine PROP] :
 /-! # LaterN -/
 
 @[rocq_alias bi.laterN_ne]
-theorem laterN_ne (n : Nat) : OFE.NonExpansive (BIBase.laterN (PROP:=PROP) n) where
+instance laterN_ne (n : Nat) : OFE.NonExpansive (BIBase.laterN (PROP:=PROP) n) where
   ne := by
     induction n with
     | zero => exact fun _ _ _ h => h
@@ -518,7 +518,7 @@ instance bi_laterN_sep_entails_homomorphism (n : Nat) :
 /-! # Except0 -/
 
 @[rocq_alias bi.except_0_ne]
-theorem except0_ne : OFE.NonExpansive (BIBase.except0 (PROP:=PROP)) where
+instance except0_ne : OFE.NonExpansive (BIBase.except0 (PROP:=PROP)) where
   ne _ _ _ h := or_ne.ne .rfl h
 
 @[rw_mono_rule, rocq_alias bi.except_0_mono]

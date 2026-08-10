@@ -7,6 +7,7 @@ module
 
 public import Iris.Std.Option
 public meta import Iris.Std.RocqPorting
+public meta import Iris.Std.NonExp
 
 @[expose] public section
 
@@ -62,6 +63,8 @@ instance [OFE α] {n : Nat} : Trans (OFE.Dist n) (OFE.Dist n) (OFE.Dist n : α �
 class NonExpansive [OFE α] [OFE β] (f : α → β) where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → f x₁ ≡{n}≡ f x₂
 
+attribute [non_exp] NonExpansive.ne
+
 instance id_ne [OFE α] : NonExpansive (@id α) := ⟨fun _ _ _ h => h⟩
 
 instance const_ne [OFE α] [OFE β] {x : α} : NonExpansive (Function.const β x) := ⟨fun _ _ _ _ => .rfl⟩
@@ -76,6 +79,8 @@ theorem NonExpansive.comp [OFE α] [OFE β] [OFE γ] {g : β → γ} {f : α →
 /-- A function `f : α → β → γ` is non-expansive if it preserves `n`-equivalence in each argument. -/
 class NonExpansive₂ [OFE α] [OFE β] [OFE γ] (f : α → β → γ) where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → ∀ ⦃y₁ y₂⦄, y₁ ≡{n}≡ y₂ → f x₁ y₁ ≡{n}≡ f x₂ y₂
+
+attribute [non_exp] NonExpansive₂.ne
 
 #rocq_ignore ne_proper_2 "OFE is Leibniz; use equality"
 
