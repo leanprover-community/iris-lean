@@ -568,8 +568,8 @@ instance {x : Agree α} : CMRA.Cancelable x where
     (Agree.op_invN hval).symm.trans (Agree.op_invN ((OFE.Dist.validN heq).mp hval))
 
 @[rocq_alias agree_core_id]
-instance (a : α) : CMRA.CoreId (toAgree a) where
-  core_id := by simp [CMRA.pcore]
+instance (x : Agree α) : CMRA.CoreId x where
+  core_id := pcore_some
 
 @[simp, rocq_alias to_agree_includedN]
 theorem toAgree_includedN {a b : α} : toAgree a ≼{n} toAgree b ↔ a ≡{n}≡ b := by
