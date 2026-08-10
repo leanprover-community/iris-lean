@@ -23,15 +23,6 @@ partial def collectTags {α} (t : Widget.TaggedText α)
   | .tag a t'  => collectTags t' (acc.push (t'.stripTags, a))
 
 /--
-  Delaborators record their info as `ofDelabTermInfo`; hand-rolled
-  `Elab.withInfoContext'` sites record `ofTermInfo`. Accept either.
--/
-def asTermInfo? : Info → Option TermInfo
-  | .ofTermInfo ti      => some ti
-  | .ofDelabTermInfo ti => some ti.toTermInfo
-  | _                   => none
-
-/--
   Report, for each hoverable region of the pretty-printed `e`,
   the text and the type its popup would show.
 -/
@@ -40,7 +31,12 @@ def hoverReport (e : Expr) : MetaM MessageData := do
   let mut lines : Array MessageData := #[]
   for (txt, tag) in collectTags (Widget.TaggedText.prettyTagged fmt) do
     let some info := infos.get? tag.fst | continue
-    let some ti := asTermInfo? info | continue
+    -- Delaboration info in `ofTermInfo`/`ofDelabTermInfo`
+    let ti := match info with
+    | .ofTermInfo ti      => some ti
+    | .ofDelabTermInfo ti => some ti.toTermInfo
+    | _                   => none
+    let some ti := ti | continue
     let ty ← withLCtx ti.lctx (← getLocalInstances) do
       try ppExpr (← inferType ti.expr)
       catch _ => pure "<not typable>"
