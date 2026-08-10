@@ -62,19 +62,44 @@ theorem WeakMonoidHomomorphism.ofEq [OFE PROP] {op₁ op₂ : PROP → PROP → 
   map_ne := hne
   map_op := hop
 
-/-- Big separating conjunction over a list with index access. -/
+/--
+Big separating conjunction over a list with index access.
+- Big separating conjunction over a list: `[∗list] x ∈ l, P x`.
+- Big separating conjunction over a list, with the index bound: `[∗list] i ↦ x ∈ l, P i x`.
+- Big separating conjunction over two lists in lockstep: `[∗list] x; y ∈ l1; l2, P x y`.
+- Big separating conjunction over two lists in lockstep, with the index bound:
+  `[∗list] i ↦ x; y ∈ l1; l2, P i x y`.
+-/
 abbrev bigSepL [BI PROP] {A : Type _} (Φ : Nat → A → PROP) (l : List A) : PROP :=
   bigOpL sep Φ l
 
-/-- Big conjunction over a list with index access. -/
+/--
+Big conjunction over a list with index access.
+
+- Big conjunction over a list: `[∧list] x ∈ l, P x`.
+- Big conjunction over a list, with the index bound: `[∧list] i ↦ x ∈ l, P i x`.
+-/
 abbrev bigAndL [BI PROP] {A : Type _} (Φ : Nat → A → PROP) (l : List A) : PROP :=
   bigOpL and Φ l
 
-/-- Big disjunction over a list with index access. -/
+/--
+Big disjunction over a list with index access.
+
+- Big disjunction over a list: `[∨list] x ∈ l, P x`.
+- Big disjunction over a list, with the index bound: `[∨list] i ↦ x ∈ l, P i x`.
+-/
 abbrev bigOrL [BI PROP] {A : Type _} (Φ : Nat → A → PROP) (l : List A) : PROP :=
   bigOpL or Φ l
 
-@[rocq_alias big_sepL2, expose] def bigSepL2 [BI PROP] {A B : Type _} (Φ : Nat → A → B → PROP)
+/--
+Big separating conjunction over two lists in lockstep.
+
+- Big separating conjunction over two lists: `[∗list] x;y ∈ l1; l2, P x y`.
+- Big separating conjunction over two lists, with the index bound:
+  `[∗list] i ↦ x; y ∈ l1; l2, P i x y`.
+-/
+@[rocq_alias big_sepL2, expose]
+def bigSepL2 [BI PROP] {A B : Type _} (Φ : Nat → A → B → PROP)
     (l1 : List A) (l2 : List B) : PROP :=
   match l1, l2 with
   | [], [] => emp
@@ -86,14 +111,22 @@ end List
 public section Map
 open Iris.Algebra Iris.Std OFE BIBase
 
-/-- Big separating conjunction over a map with key access. -/
-abbrev bigSepM [BI PROP] {K : Type _} {V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
-    (Φ : K → V → PROP) (m : M V) : PROP :=
+/--
+Big separating conjunction over a finite map's values, with key access.
+- Big separating conjunction over a map: `[∗map] v ∈ m, P v`.
+- Big separating conjunction over a map, with the key bound: `[∗map] k ↦ v ∈ m, P k v`.
+-/
+abbrev bigSepM [BI PROP] {K : Type _} {V : Type _} {M : Type _ → Type _}
+    [LawfulFiniteMap M K] (Φ : K → V → PROP) (m : M V) : PROP :=
   bigOpM sep Φ m
 
-/-- Big conjunction over a map with key access. -/
-abbrev bigAndM [BI PROP] {K : Type _} {V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
-    (Φ : K → V → PROP) (m : M V) : PROP :=
+/--
+Big conjunction over a finite map's values, with key access.
+- Big conjunction over a map: `[∧map] v ∈ m, P v`.
+- Big conjunction over a map, with the key bound: `[∧map] k ↦ v ∈ m, P k v`.
+-/
+abbrev bigAndM [BI PROP] {K : Type _} {V : Type _} {M : Type _ → Type _}
+    [LawfulFiniteMap M K] (Φ : K → V → PROP) (m : M V) : PROP :=
   bigOpM and Φ m
 
 end Map
@@ -101,54 +134,47 @@ end Map
 public section Set
 open Iris.Algebra Iris.Std OFE BIBase
 
-/-- Big separating conjunction over a finite set. -/
-abbrev bigSepS [BI PROP] {A : Type _} {S : Type _} [FiniteSet S A] (Φ : A → PROP) (s : S) : PROP :=
+/--
+Big separating conjunction over a finite set: `[∗set] x ∈ s, P x`.
+-/
+abbrev bigSepS [BI PROP] {A : Type _} {S : Type _}
+    [FiniteSet S A] (Φ : A → PROP) (s : S) : PROP :=
   bigOpS sep Φ s
 
-/-- Big separating conjunction over a finite multiset. -/
-abbrev bigSepMS [BI PROP] {A : Type _} {MS : Type _} [FiniteMultiSet MS A] (Φ : A → PROP) (X : MS) : PROP :=
+/--
+Big separating conjunction over a finite multiset: `[∗mset] x ∈ X, P x`.
+-/
+abbrev bigSepMS [BI PROP] {A : Type _} {MS : Type _}
+    [FiniteMultiSet MS A] (Φ : A → PROP) (X : MS) : PROP :=
   bigOpMS sep Φ X
 
 end Set
 
 public meta section
 open Lean PrettyPrinter Delaborator SubExpr
+
 /-! ## Notation -/
 
-/-- Big separating conjunction over a list: `[∗list] x ∈ l, P x`. -/
-syntax "[∗list] " ident " ∈ " term ", " term : term
-/-- Big separating conjunction over a list, with the index bound: `[∗list] i ↦ x ∈ l, P i x`. -/
-syntax "[∗list] " ident " ↦ " ident " ∈ " term ", " term : term
-/-- Big separating conjunction over two lists in lockstep: `[∗list] x;y ∈ l1;l2, P x y`. -/
-syntax "[∗list] " ident ";" ident " ∈ " term ";" term ", " term : term
-/-- Big separating conjunction over two lists in lockstep, with the index bound. -/
-syntax "[∗list] " ident " ↦ " ident ";" ident " ∈ " term ";" term ", " term : term
+@[inherit_doc bigSepL] syntax "[∗list] " ident " ∈ " term ", " term : term
+@[inherit_doc bigSepL] syntax "[∗list] " ident " ↦ " ident " ∈ " term ", " term : term
+@[inherit_doc bigSepL] syntax "[∗list] " ident ";" ident " ∈ " term ";" term ", " term : term
+@[inherit_doc bigSepL] syntax "[∗list] " ident " ↦ " ident ";" ident " ∈ " term ";" term ", " term : term
 
-/-- Big conjunction over a list: `[∧list] x ∈ l, P x`. -/
-syntax "[∧list] " ident " ∈ " term ", " term : term
-/-- Big conjunction over a list, with the index bound: `[∧list] i ↦ x ∈ l, P i x`. -/
-syntax "[∧list] " ident " ↦ " ident " ∈ " term ", " term : term
+@[inherit_doc bigAndL] syntax "[∧list] " ident " ∈ " term ", " term : term
+@[inherit_doc bigAndL] syntax "[∧list] " ident " ↦ " ident " ∈ " term ", " term : term
 
-/-- Big disjunction over a list: `[∨list] x ∈ l, P x`. -/
-syntax "[∨list] " ident " ∈ " term ", " term : term
-/-- Big disjunction over a list, with the index bound: `[∨list] i ↦ x ∈ l, P i x`. -/
-syntax "[∨list] " ident " ↦ " ident " ∈ " term ", " term : term
+@[inherit_doc bigOrL] syntax "[∨list] " ident " ∈ " term ", " term : term
+@[inherit_doc bigOrL] syntax "[∨list] " ident " ↦ " ident " ∈ " term ", " term : term
 
-/-- Big separating conjunction over a finite map's values: `[∗map] v ∈ m, P v`. -/
-syntax "[∗map] " ident " ∈ " term ", " term : term
-/-- Big separating conjunction over a finite map, with the key bound: `[∗map] k ↦ v ∈ m, P k v`. -/
-syntax "[∗map] " ident " ↦ " ident " ∈ " term ", " term : term
+@[inherit_doc bigSepM] syntax "[∗map] " ident " ∈ " term ", " term : term
+@[inherit_doc bigSepM] syntax "[∗map] " ident " ↦ " ident " ∈ " term ", " term : term
 
-/-- Big conjunction over a finite map's values: `[∧map] v ∈ m, P v`. -/
-syntax "[∧map] " ident " ∈ " term ", " term : term
-/-- Big conjunction over a finite map, with the key bound: `[∧map] k ↦ v ∈ m, P k v`. -/
-syntax "[∧map] " ident " ↦ " ident " ∈ " term ", " term : term
+@[inherit_doc bigAndM] syntax "[∧map] " ident " ∈ " term ", " term : term
+@[inherit_doc bigAndM] syntax "[∧map] " ident " ↦ " ident " ∈ " term ", " term : term
 
-/-- Big separating conjunction over a finite set: `[∗set] x ∈ s, P x`. -/
-syntax "[∗set] " ident " ∈ " term ", " term : term
+@[inherit_doc bigSepS] syntax "[∗set] " ident " ∈ " term ", " term : term
 
-/-- Big separating conjunction over a finite multiset: `[∗mset] x ∈ X, P x`. -/
-syntax "[∗mset] " ident " ∈ " term ", " term : term
+@[inherit_doc bigSepMS] syntax "[∗mset] " ident " ∈ " term ", " term : term
 
 macro_rules
   | `([∗list]%$tk $x:ident ∈ $l, $P) => do

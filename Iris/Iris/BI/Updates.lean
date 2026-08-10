@@ -19,14 +19,19 @@ public import Iris.Std.CoPset
 namespace Iris
 open Iris.Std BI
 
+/--
+Basic update modality.
+
+- `|==> P` is the basic update modality.
+- `P ==∗ Q` is shorthand for `|==> P -∗ Q`.
+-/
 @[rocq_alias BUpd]
 class BUpd (PROP : Type _) where
   bupd : PROP → PROP
 export BUpd (bupd)
 
-/-- Basic update modality. -/
+attribute [inherit_doc BUpd] BUpd.bupd
 syntax "|==> " term:40 : term
-/-- Basic update modality with a wand: `P ==∗ Q` is a shorthand for `|==> P -∗ Q`. -/
 syntax:25 term:26 " ==∗ " term:25 : term
 
 macro_rules
@@ -41,21 +46,32 @@ delab_rule BUpd.bupd
 delab_rule BIBase.wand
   | `($_ $P iprop(|==> $Q)) => do `(iprop($(← unpackIprop P) ==∗ $Q))
 
+/--
+Fancy update modality.
+
+- `|={E1,E2}=> P` changes the mask from `E1` to `E2`.
+- `|={E}=> P` is shorthand for `|={E,E}=> P`.
+- `P ={E1,E2}=∗ Q` is shorthand for `|={E1,E2}=> P -∗ Q`.
+- `P ={E}=∗ Q` is shorthand for `|={E}=> P -∗ Q`.
+- `|={E1}[E2]▷=> P` is a one-step fancy update.
+- `|={E}▷=> P` is a one-step fancy update with a fixed mask.
+- `|={E1}[E2]▷^n=> P` is a fancy update taking `n` steps.
+- `|={E}▷^n=> P` is a fancy update taking `n` steps with a fixed mask.
+- `|={E1}[E2]▷=>^[n] P` iterates the one-step fancy update `n` times.
+- `|={E}▷=>^[n] P` iterates the one-step fancy update `n` times with a fixed mask.
+
+The wand form `P ={E1,E2}=∗ Q` is a shorthand for `|={E1,E2}=> P -∗ Q`.
+The wand forms of the other notations are analogous.
+-/
 @[rocq_alias FUpd]
 class FUpd (PROP : Type _) where
   fupd : CoPset → CoPset → PROP → PROP
 export FUpd (fupd)
 
-/-- Fancy update modality (`|={E1,E2}=>`) with a mask change from `E1` to `E2`. -/
+attribute [inherit_doc FUpd] FUpd.fupd
 syntax "|={" term ", " term "}=> " term : term
-/-- Fancy update modality with a wand: `P ={E1,E2}=∗ Q` is a shorthand for `|={E1,E2}=> P -∗ Q`. -/
 syntax:25 term:26 " ={" term "," term "}=∗ " term:25 : term
-/-- Fancy update modality with a fixed mask: `|={E}=> P` is a shorthand for `|={E,E}=> P`. -/
 syntax "|={" term "}=> " term : term
-/--
-  Fancy update modality with a fixed mask and a wand:
-  `P ={E}=∗ Q` is a shorthand for `|={E}=> P -∗ Q`.
--/
 syntax:25 term:26 " ={" term "}=∗ " term:25 : term
 
 macro_rules
@@ -80,19 +96,9 @@ delab_rule BIBase.wand
   | `($_ $P iprop(|={$E₁,$E₂}=> $Q)) => do `(iprop($(← unpackIprop P) ={$E₁,$E₂}=∗ $Q))
   | `($_ $P iprop(|={$E₁}=> $Q)) => do `(iprop($(← unpackIprop P) ={$E₁}=∗ $Q))
 
-/--
-  Fancy update taking one step:
-  `|={E1}[E2]▷=> P` is a shorthand for `|={E1,E2}=> ▷ (|={E2,E1}=> P)`.
--/
 syntax "|={" term "}[" term "]▷=> " term : term
-/--
-  Fancy update taking one step with a wand: `P =={E1}[E2]▷=∗ Q` is a
-  shorthand for `|={E1}[E2]=> P -∗ Q`.
--/
 syntax:25 term:26 " ={" term "}[" term "]▷=∗ " term:25 : term
-/-- Fancy update taking one step with a fixed mask. -/
 syntax "|={" term "}▷=> " term : term
-/-- Fancy update taking one step with a fixed mask and a wand. -/
 syntax:25 term:26 " ={" term "}▷=∗ " term:25 : term
 
 macro_rules
@@ -119,13 +125,9 @@ delab_rule BIBase.wand
   | `($_ $Q iprop(|={$E₁}▷=> $P)) => do
     `(iprop($(← unpackIprop Q) ={$E₁}▷=∗ $P))
 
-/-- Fancy update taking `n` steps. -/
 syntax "|={" term "}[" term "]▷^" term "=> " term : term
-/-- Fancy update taking `n` steps with a wand. -/
 syntax:25 term:26 " ={" term "}[" term "]▷^" term "=∗ " term:25 : term
-/-- Fancy update taking `n` steps with a fixed mask. -/
 syntax "|={" term "}▷^" term "=> " term : term
-/-- Fancy update taking `n` steps with a fixed mask and a wand. -/
 syntax:25 term:26 " ={" term "}▷^" term "=∗ " term:25 : term
 
 macro_rules
@@ -152,13 +154,9 @@ delab_rule BIBase.wand
   | `($_ $Q iprop(|={$E₁}▷^$n=> $P)) => do
     `(iprop($(← unpackIprop Q) ={$E₁}▷^$n=∗ $P))
 
-/-- Iterated one-step fancy update: `n` repetitions of `|={E1}[E2]▷=>`. -/
 syntax "|={" term "}[" term "]▷=>^[" term "] " term : term
-/-- Iterated one-step fancy update with a wand. -/
 syntax:25 term:26 " ={" term "}[" term "]▷=∗^[" term "] " term:25 : term
-/-- Iterated one-step fancy update with a fixed mask. -/
 syntax "|={" term "}▷=>^[" term "] " term : term
-/-- Iterated one-step fancy update with a fixed mask and a wand. -/
 syntax:25 term:26 " ={" term "}▷=∗^[" term "] " term:25 : term
 
 macro_rules

@@ -34,11 +34,15 @@ class SiPure (PROP : Type _) where
   siPure : SiProp → PROP
 export SiPure (siPure)
 
+attribute [inherit_doc SiPure] SiPure.siPure
+
 /-- Step-indexed validity of BI propositions. -/
 @[rocq_alias SiEmpValid]
 class SiEmpValid (PROP : Type _) where
   siEmpValid : PROP → SiProp
 export SiEmpValid (siEmpValid)
+
+attribute [inherit_doc SiEmpValid] SiEmpValid.siEmpValid
 
 section Notation
 
