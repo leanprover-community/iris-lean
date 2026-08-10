@@ -368,8 +368,8 @@ theorem InvImage.equivalence {α : Sort u} {β : Sort v}
   symm := H.symm
   trans := H.trans
 
-@[reducible, rocq_alias unit_ofe_mixin]
-def unitOFE : OFE Unit where
+@[rocq_alias unit_ofe_mixin]
+instance unitOFE : OFE Unit where
   Dist _ _ _ := True
   dist_eqv := ⟨fun _ => ⟨⟩, id, fun _ => id⟩
   eq_dist := by simp
@@ -1107,8 +1107,8 @@ instance : @Discrete SI _ Unit unitOFE :=
   letI : OFE Unit := unitOFE
   { discrete_0 _ := Subsingleton.elim _ _ }
 
-@[reducible, rocq_alias unit_cofe]
-def unitCOFE : COFE Unit :=
+@[rocq_alias unit_cofe]
+instance unitCOFE : COFE Unit :=
   letI : OFE Unit := unitOFE
   {
     compl _ := ()
