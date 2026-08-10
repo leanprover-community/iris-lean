@@ -22,31 +22,26 @@ partial def collectTags {α} (t : Widget.TaggedText α)
   | .append ts => ts.foldl (init := acc) fun acc t => collectTags t acc
   | .tag a t'  => collectTags t' (acc.push (t'.stripTags, a))
 
-/--
-  Report, for each hoverable region of the pretty-printed `e`,
-  the text and the type its popup would show.
--/
-def hoverReport (e : Expr) : MetaM MessageData := do
-  let ⟨fmt, infos⟩ ← PrettyPrinter.ppExprWithInfos e
-  let mut lines : Array MessageData := #[]
-  for (txt, tag) in collectTags (Widget.TaggedText.prettyTagged fmt) do
-    let some info := infos.get? tag.fst | continue
-    -- Delaboration info in `ofTermInfo`/`ofDelabTermInfo`
-    let ti := match info with
-    | .ofTermInfo ti      => some ti
-    | .ofDelabTermInfo ti => some ti.toTermInfo
-    | _                   => none
-    let some ti := ti | continue
-    let ty ← withLCtx ti.lctx (← getLocalInstances) do
-      try ppExpr (← inferType ti.expr)
-      catch _ => pure "<not typable>"
-    lines := lines.push
-      m!"⋆ {txt.trimAscii}{if ti.isBinder then " (binder)" else ""} : {ty}"
-  return MessageData.joinSep lines.toList "\n"
-
-elab "trace_iris_delab" : tactic => do
+/-- Traverse the delaborated syntax and print the type signature information. -/
+elab "trace_delab" : tactic => do
   let g ← Tactic.getMainGoal
-  g.withContext do logInfo (← hoverReport (← g.getType))
+  g.withContext do
+    let ⟨fmt, infos⟩ ← g.getType >>= (PrettyPrinter.ppExprWithInfos ·)
+    let mut lines : Array MessageData := #[]
+    for (txt, tag) in collectTags (Widget.TaggedText.prettyTagged fmt) do
+      let some info := infos.get? tag.fst | continue
+      -- Delaboration info in `ofTermInfo`/`ofDelabTermInfo`
+      let ti := match info with
+      | .ofTermInfo ti      => some ti
+      | .ofDelabTermInfo ti => some ti.toTermInfo
+      | _                   => none
+      let some ti := ti | continue
+      let ty ← withLCtx ti.lctx (← getLocalInstances) do
+        try ppExpr (← inferType ti.expr)
+        catch _ => pure "<not typable>"
+      lines := lines.push
+        m!"⋆ {txt.trimAscii}{if ti.isBinder then " (binder)" else ""} : {ty}"
+    logInfo <| MessageData.joinSep lines.toList "\n"
 
 end
 
@@ -80,7 +75,7 @@ info:
 #guard_msgs (whitespace := lax) in
 example [BI PROP] (P Q R : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
   iintro HP1 HP2 HR HPQ
-  trace_iris_delab
+  trace_delab
   ispecialize HPQ $$ [$HP1 HP2] [-]
   . iexact HP2
   . iexact HR
@@ -123,7 +118,7 @@ example [BI PROP] {P1 P2 Q : PROP} :
     ⊢ <absorb> P1 -∗ <absorb> P2 -∗ <absorb> <affine> P3 -∗ <absorb> <affine> P4 -∗
       (<absorb> (P1 ∗ P2 ∗ <affine> (P3 ∗ P4)) -∗ Q) -∗ Q := by
   iintro HP1 HP2 HP3 HP4 H
-  trace_iris_delab
+  trace_delab
   icombine HP1 HP2 HP3 HP4 as HNew
   iapply H
   iexact HNew
@@ -170,7 +165,7 @@ info:
 example [BI PROP] (m n : Nat) (a b c : Prop) :
     ⊢@{PROP} ⌜m = 2⌝ -∗ ⌜3 = n⌝ -∗ ⌜a = b⌝ -∗ ⌜b = c⌝ -∗ ⌜m.succ = n ∧ a = c⌝ := by
   iintro #H1 H2 #H3 H4
-  trace_iris_delab
+  trace_delab
   icases H1 with %rfl
   icases H2 with %rfl
   icases H3 with %rfl
@@ -199,7 +194,7 @@ info:
 example [BI PROP] (Q : PROP) (n : Nat) :
   □ (∀ x, Q -∗ ⌜x = n⌝) ⊢ Q -∗ False := by
   iintro #Hwand HQ
-  trace_iris_delab
+  trace_delab
   icases Hwand $$ %1 HQ with %_
   icases Hwand $$ %2 HQ with %_
   grind
