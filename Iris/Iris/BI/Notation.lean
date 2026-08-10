@@ -48,9 +48,11 @@ syntax:min "iprop% " term:min : term
 macro_rules
   | `(iprop% $t) => `(iprop($t))
 
+/-- Used by macro elaboration rules for linking source information to connectives. -/
 meta def wrapIprop (tk : Syntax) (c : Name) : Ident :=
   mkCIdentFrom tk c (canonical := true)
 
+/-- A variant of `wrapIprop` where the operator spans over two tokens (e.g. `⌜·⌝`). -/
 meta def wrapIpropSpan (tk1 tk2 : Syntax) (c : Name) : Ident :=
   match tk1.getPos?, tk2.getTailPos? with
   | some pos, some endPos => ⟨(mkCIdent c).raw.setInfo (.synthetic pos endPos (canonical := true))⟩
