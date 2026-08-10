@@ -14,8 +14,9 @@ public meta section
 namespace Iris.BI
 open Lean Lean.Macro Lean.Parser.Term
 
--- define `iprop` embedding in `term`
+/-- `iprop(P)` embeds a separation logic proposition `P` into `term`. -/
 syntax:max (name := iprop) "iprop(" term ")" : term
+/-- `term(t)` escapes from an `iprop(…)` embedding. -/
 syntax:max "term(" term ")" : term
 
 -- allow fallback to `term`
@@ -39,10 +40,22 @@ macro_rules
 
 macro:max "iprop(" P:term " : " t:term ")" : term => `((iprop($P) : $t))
 
--- paren-less form: eats the rest of the term at minimum precedence
+/--
+  `iprop% P` is `iprop(P)` without parentheses; it consumes the remainder of
+  the term at minimum precedence.
+-/
 syntax:min "iprop% " term:min : term
 macro_rules
   | `(iprop% $t) => `(iprop($t))
+
+meta def wrapIprop (tk : Syntax) (c : Name) : Ident :=
+  mkCIdentFrom tk c (canonical := true)
+
+meta def wrapIpropSpan (tk1 tk2 : Syntax) (c : Name) : Ident :=
+  match tk1.getPos?, tk2.getTailPos? with
+  | some pos, some endPos => ⟨(mkCIdent c).raw.setInfo (.synthetic pos endPos (canonical := true))⟩
+  | none, _ => wrapIprop tk2 c
+  | _, none => wrapIprop tk1 c
 
 /-- Retain the syntax source information for correct delaboration. -/
 def keepInfo (src : Syntax) (t : Term) : Term :=

@@ -26,7 +26,7 @@ step-index, and `siEmpValid : PROP → SiProp` that expresses that a proposition
 -/
 
 namespace Iris
-open OFE BI
+open OFE BI Iris.BI.BIBase
 
 /-- Embedding of step-indexed propositions into a BI. -/
 @[rocq_alias SiPure]
@@ -46,8 +46,8 @@ syntax "<si_pure> " term:40 : term
 syntax "<si_emp_valid> " term:40 : term
 
 macro_rules
-  | `(iprop(<si_pure> $P)) => ``(SiPure.siPure iprop($P))
-  | `(iprop(<si_emp_valid> $P)) => ``(SiEmpValid.siEmpValid iprop($P))
+  | `(iprop(<si_pure>%$tk $P)) => ``($(wrapIprop tk ``SiPure.siPure) iprop($P))
+  | `(iprop(<si_emp_valid>%$tk $P)) => ``($(wrapIprop tk ``SiEmpValid.siEmpValid) iprop($P))
 
 delab_rule SiPure.siPure
   | `($_ $P) => do ``(iprop(<si_pure> $(← BI.unpackIprop P)))

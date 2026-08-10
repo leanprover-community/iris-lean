@@ -8,6 +8,7 @@ module
 public import Iris.Algebra.Monoid
 public import Iris.Algebra.BigOp
 public import Iris.BI.DerivedLaws
+public import Iris.BI.Notation
 import Lean
 
 namespace Iris.BI
@@ -114,73 +115,101 @@ public meta section
 open Lean PrettyPrinter Delaborator SubExpr
 /-! ## Notation -/
 
--- Notation for bigSepL without index
+/-- Big separating conjunction over a list: `[∗list] x ∈ l, P x`. -/
 syntax "[∗list] " ident " ∈ " term ", " term : term
--- Notation for bigSepL with index
+/-- Big separating conjunction over a list, with the index bound: `[∗list] i ↦ x ∈ l, P i x`. -/
 syntax "[∗list] " ident " ↦ " ident " ∈ " term ", " term : term
--- Notation for bigSepL2 without index
+/-- Big separating conjunction over two lists in lockstep: `[∗list] x;y ∈ l1;l2, P x y`. -/
 syntax "[∗list] " ident ";" ident " ∈ " term ";" term ", " term : term
--- Notation for bigSepL2 with index
+/-- Big separating conjunction over two lists in lockstep, with the index bound. -/
 syntax "[∗list] " ident " ↦ " ident ";" ident " ∈ " term ";" term ", " term : term
 
--- Notation for bigAndL without index
+/-- Big conjunction over a list: `[∧list] x ∈ l, P x`. -/
 syntax "[∧list] " ident " ∈ " term ", " term : term
--- Notation for bigAndL with index
+/-- Big conjunction over a list, with the index bound: `[∧list] i ↦ x ∈ l, P i x`. -/
 syntax "[∧list] " ident " ↦ " ident " ∈ " term ", " term : term
 
--- Notation for bigOrL without index
+/-- Big disjunction over a list: `[∨list] x ∈ l, P x`. -/
 syntax "[∨list] " ident " ∈ " term ", " term : term
--- Notation for bigOrL with index
+/-- Big disjunction over a list, with the index bound: `[∨list] i ↦ x ∈ l, P i x`. -/
 syntax "[∨list] " ident " ↦ " ident " ∈ " term ", " term : term
 
--- Notation for bigSepM without key
+/-- Big separating conjunction over a finite map's values: `[∗map] v ∈ m, P v`. -/
 syntax "[∗map] " ident " ∈ " term ", " term : term
--- Notation for bigSepM with key
+/-- Big separating conjunction over a finite map, with the key bound: `[∗map] k ↦ v ∈ m, P k v`. -/
 syntax "[∗map] " ident " ↦ " ident " ∈ " term ", " term : term
 
--- Notation for bigAndM without key
+/-- Big conjunction over a finite map's values: `[∧map] v ∈ m, P v`. -/
 syntax "[∧map] " ident " ∈ " term ", " term : term
--- Notation for bigAndM with key
+/-- Big conjunction over a finite map, with the key bound: `[∧map] k ↦ v ∈ m, P k v`. -/
 syntax "[∧map] " ident " ↦ " ident " ∈ " term ", " term : term
 
--- Notation for bigSepS
+/-- Big separating conjunction over a finite set: `[∗set] x ∈ s, P x`. -/
 syntax "[∗set] " ident " ∈ " term ", " term : term
 
--- Notation for bigSepMS
+/-- Big separating conjunction over a finite multiset: `[∗mset] x ∈ X, P x`. -/
 syntax "[∗mset] " ident " ∈ " term ", " term : term
 
 macro_rules
-  | `([∗list] $x:ident ∈ $l, $P) => `(bigSepL (fun _ $x => $P) $l)
-  | `([∗list] $k:ident ↦ $x:ident ∈ $l, $P) => `(bigSepL (fun $k $x => $P) $l)
-  | `([∧list] $x:ident ∈ $l, $P) => `(bigAndL (fun _ $x => $P) $l)
-  | `([∧list] $k:ident ↦ $x:ident ∈ $l, $P) => `(bigAndL (fun $k $x => $P) $l)
-  | `([∨list] $x:ident ∈ $l, $P) => `(bigOrL (fun _ $x => $P) $l)
-  | `([∨list] $k:ident ↦ $x:ident ∈ $l, $P) => `(bigOrL (fun $k $x => $P) $l)
-  | `([∗list] $x1:ident;$x2:ident ∈ $l1;$l2, $P) => `(bigSepL2 (fun _ $x1 $x2 => $P) $l1 $l2)
-  | `([∗list] $k:ident ↦ $x1:ident;$x2:ident ∈ $l1;$l2, $P) => `(bigSepL2 (fun $k $x1 $x2 => $P) $l1 $l2)
-  | `([∗map] $x:ident ∈ $m, $P) => `(bigSepM (fun _ $x => $P) $m)
-  | `([∗map] $k:ident ↦ $x:ident ∈ $m, $P) => `(bigSepM (fun $k $x => $P) $m)
-  | `([∧map] $x:ident ∈ $m, $P) => `(bigAndM (fun _ $x => $P) $m)
-  | `([∧map] $k:ident ↦ $x:ident ∈ $m, $P) => `(bigAndM (fun $k $x => $P) $m)
-  | `([∗set] $x:ident ∈ $s, $P) => `(bigSepS (fun $x => $P) $s)
-  | `([∗mset] $x:ident ∈ $X, $P) => `(bigSepMS (fun $x => $P) $X)
+  | `([∗list]%$tk $x:ident ∈ $l, $P) => do
+      `($(wrapIprop tk ``bigSepL) (fun _ $x => $P) $l)
+  | `([∗list]%$tk $k:ident ↦ $x:ident ∈ $l, $P) => do
+      `($(wrapIprop tk ``bigSepL) (fun $k $x => $P) $l)
+  | `([∧list]%$tk $x:ident ∈ $l, $P) => do
+      `($(wrapIprop tk ``bigAndL) (fun _ $x => $P) $l)
+  | `([∧list]%$tk $k:ident ↦ $x:ident ∈ $l, $P) => do
+      `($(wrapIprop tk ``bigAndL) (fun $k $x => $P) $l)
+  | `([∨list]%$tk $x:ident ∈ $l, $P) => do
+      `($(wrapIprop tk ``bigOrL) (fun _ $x => $P) $l)
+  | `([∨list]%$tk $k:ident ↦ $x:ident ∈ $l, $P) => do
+      `($(wrapIprop tk ``bigOrL) (fun $k $x => $P) $l)
+  | `([∗list]%$tk $x1:ident;$x2:ident ∈ $l1;$l2, $P) => do
+      `($(wrapIprop tk ``bigSepL2) (fun _ $x1 $x2 => $P) $l1 $l2)
+  | `([∗list]%$tk $k:ident ↦ $x1:ident;$x2:ident ∈ $l1;$l2, $P) => do
+      `($(wrapIprop tk ``bigSepL2) (fun $k $x1 $x2 => $P) $l1 $l2)
+  | `([∗map]%$tk $x:ident ∈ $m, $P) => do
+      `($(wrapIprop tk ``bigSepM) (fun _ $x => $P) $m)
+  | `([∗map]%$tk $k:ident ↦ $x:ident ∈ $m, $P) => do
+      `($(wrapIprop tk ``bigSepM) (fun $k $x => $P) $m)
+  | `([∧map]%$tk $x:ident ∈ $m, $P) => do
+      `($(wrapIprop tk ``bigAndM) (fun _ $x => $P) $m)
+  | `([∧map]%$tk $k:ident ↦ $x:ident ∈ $m, $P) => do
+      `($(wrapIprop tk ``bigAndM) (fun $k $x => $P) $m)
+  | `([∗set]%$tk $x:ident ∈ $s, $P) => do
+      `($(wrapIprop tk ``bigSepS) (fun $x => $P) $s)
+  | `([∗mset]%$tk $x:ident ∈ $X, $P) => do
+      `($(wrapIprop tk ``bigSepMS) (fun $x => $P) $X)
 
 -- iprop macro rules
 macro_rules
-  | `(iprop([∗list] $x:ident ∈ $l, $P)) => `(bigSepL (fun _ $x => iprop($P)) $l)
-  | `(iprop([∗list] $k:ident ↦ $x:ident ∈ $l, $P)) => `(bigSepL (fun $k $x => iprop($P)) $l)
-  | `(iprop([∧list] $x:ident ∈ $l, $P)) => `(bigAndL (fun _ $x => iprop($P)) $l)
-  | `(iprop([∧list] $k:ident ↦ $x:ident ∈ $l, $P)) => `(bigAndL (fun $k $x => iprop($P)) $l)
-  | `(iprop([∨list] $x:ident ∈ $l, $P)) => `(bigOrL (fun _ $x => iprop($P)) $l)
-  | `(iprop([∨list] $k:ident ↦ $x:ident ∈ $l, $P)) => `(bigOrL (fun $k $x => iprop($P)) $l)
-  | `(iprop([∗list] $x1:ident;$x2:ident ∈ $l1;$l2, $P)) => `(bigSepL2 (fun _ $x1 $x2 => iprop($P)) $l1 $l2)
-  | `(iprop([∗list] $k:ident ↦ $x1:ident;$x2:ident ∈ $l1;$l2, $P)) => `(bigSepL2 (fun $k $x1 $x2 => iprop($P)) $l1 $l2)
-  | `(iprop([∗map] $x:ident ∈ $m, $P)) => `(bigSepM (fun _ $x => iprop($P)) $m)
-  | `(iprop([∗map] $k:ident ↦ $x:ident ∈ $m, $P)) => `(bigSepM (fun $k $x => iprop($P)) $m)
-  | `(iprop([∧map] $x:ident ∈ $m, $P)) => `(bigAndM (fun _ $x => iprop($P)) $m)
-  | `(iprop([∧map] $k:ident ↦ $x:ident ∈ $m, $P)) => `(bigAndM (fun $k $x => iprop($P)) $m)
-  | `(iprop([∗set] $x:ident ∈ $s, $P)) => `(bigSepS (fun $x => iprop($P)) $s)
-  | `(iprop([∗mset] $x:ident ∈ $X, $P)) => `(bigSepMS (fun $x => iprop($P)) $X)
+  | `(iprop([∗list]%$tk $x:ident ∈ $l, $P)) => do
+      `($(wrapIprop tk ``bigSepL) (fun _ $x => iprop($P)) $l)
+  | `(iprop([∗list]%$tk $k:ident ↦ $x:ident ∈ $l, $P)) => do
+      `($(wrapIprop tk ``bigSepL) (fun $k $x => iprop($P)) $l)
+  | `(iprop([∧list]%$tk $x:ident ∈ $l, $P)) => do
+      `($(wrapIprop tk ``bigAndL) (fun _ $x => iprop($P)) $l)
+  | `(iprop([∧list]%$tk $k:ident ↦ $x:ident ∈ $l, $P)) => do
+      `($(wrapIprop tk ``bigAndL) (fun $k $x => iprop($P)) $l)
+  | `(iprop([∨list]%$tk $x:ident ∈ $l, $P)) => do
+      `($(wrapIprop tk ``bigOrL) (fun _ $x => iprop($P)) $l)
+  | `(iprop([∨list]%$tk $k:ident ↦ $x:ident ∈ $l, $P)) => do
+      `($(wrapIprop tk ``bigOrL) (fun $k $x => iprop($P)) $l)
+  | `(iprop([∗list]%$tk $x1:ident;$x2:ident ∈ $l1;$l2, $P)) => do
+      `($(wrapIprop tk ``bigSepL2) (fun _ $x1 $x2 => iprop($P)) $l1 $l2)
+  | `(iprop([∗list]%$tk $k:ident ↦ $x1:ident;$x2:ident ∈ $l1;$l2, $P)) => do
+      `($(wrapIprop tk ``bigSepL2) (fun $k $x1 $x2 => iprop($P)) $l1 $l2)
+  | `(iprop([∗map]%$tk $x:ident ∈ $m, $P)) => do
+      `($(wrapIprop tk ``bigSepM) (fun _ $x => iprop($P)) $m)
+  | `(iprop([∗map]%$tk $k:ident ↦ $x:ident ∈ $m, $P)) => do
+      `($(wrapIprop tk ``bigSepM) (fun $k $x => iprop($P)) $m)
+  | `(iprop([∧map]%$tk $x:ident ∈ $m, $P)) => do
+      `($(wrapIprop tk ``bigAndM) (fun _ $x => iprop($P)) $m)
+  | `(iprop([∧map]%$tk $k:ident ↦ $x:ident ∈ $m, $P)) => do
+      `($(wrapIprop tk ``bigAndM) (fun $k $x => iprop($P)) $m)
+  | `(iprop([∗set]%$tk $x:ident ∈ $s, $P)) => do
+      `($(wrapIprop tk ``bigSepS) (fun $x => iprop($P)) $s)
+  | `(iprop([∗mset]%$tk $x:ident ∈ $X, $P)) => do
+      `($(wrapIprop tk ``bigSepMS) (fun $x => iprop($P)) $X)
 
 /-- Helper to delaborate a bigOpL-shaped lambda body into list notation.
     `opConst` is checked against the `op` argument; `mkWithIdx` / `mkNoIdx` build syntax. -/
