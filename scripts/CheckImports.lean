@@ -3,140 +3,157 @@ Copyright (c) 2026 Alvin Tang. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alvin Tang
 -/
+import Lean.Data.Name
+import Lean.Util.Path
+import Lean.Elab.ParseImportsFast
+import Std.Data.HashMap
+import Std.Data.HashSet
 
 /-
-This script checks that all modules under a directory (e.g. `Iris`, `IrisMath`)
-are imported by the corresponding entry-point file (e.g. `Iris.lean`, `IrisMath.lean`).
+This script checks that the modules of a library (e.g. `Iris`, `IrisMath`) are
+imported by the entry-point files of the directories containing them.
+
+The project is assumed to be organised so that every directory `Foo` is accompanied by
+a module `Foo.lean` acting as its entry point: `Iris/BI/` by `Iris/BI.lean`,
+`Iris/BI/BigOp/` by `Iris/BI/BigOp.lean`, and so on. The check is therefore recursive:
+for every directory, its entry point must transitively import every module below it.
+Directories listed in `detachedDirs` are the only exception, see below.
 
 Run the script using `lake exe check-imports <LibraryName>`. For example,
-`lake exe check-imports Iris` checks that every `.lean` file under `Iris/` is
-reachable from `Iris.lean`.
+`lake exe check-imports Iris` checks `Iris.lean` against all of `Iris/`, then
+`Iris/Algebra.lean` against `Iris/Algebra/`, and so on down the tree.
 
 Returns `0` if all modules are imported, `1` if that list is non-empty, or
 `2` if the check fails for another reason (e.g. module not found).
 -/
 
 open System (FilePath)
+open Lean SearchPath
 
-abbrev leanSuffix := ".lean"
+/-- Root of the package sources: the module `A.B` lives in `<srcDir>/A/B.lean`. -/
+private def srcDir : FilePath := ⟨"."⟩
 
-/-- Convert path name to module name (e.g. `Iris/BI/BIBase.lean` to `Iris.BI.BIBase`). -/
-private def pathToModule (p : FilePath) : String :=
-  let s := p.toString
-  let s := if s.endsWith leanSuffix then s.dropEnd leanSuffix.length else s
-  (s.replace "\\" "/").replace "/" "."
+/-- Search path used to resolve a module to a source file *of this package*. Imports of
+`Init`, `Std`, `Batteries` or `Qq` resolve to `none` here and are hence not followed. -/
+private def srcPath : SearchPath := [⟨"."⟩]
 
-/-- Convert module name to path name (e.g. `Iris.BI.BIBase` to `Iris/BI/BIBase.lean`). -/
-private def moduleToPath (m : String) : FilePath :=
-  FilePath.mk (m.replace "." "/" ++ leanSuffix)
+/-- The source file of a module, e.g. `Iris.BI` to `./Iris/BI.lean`. -/
+private def moduleFile (mod : Name) : FilePath :=
+  modToFilePath srcDir mod "lean"
 
-/-- These are not modules and should be excluded from the check. -/
-private def excludedModules : List String :=
-  ["Iris.ProofMode.Porting", "Iris.Std.DumpPortingData"]
+/-- The directory holding the submodules of a module, e.g. `Iris.BI` to `./Iris/BI`. -/
+private def moduleDir (mod : Name) : FilePath :=
+  (moduleFile mod).withExtension ""
 
-/-- Checks whether `moduleName` has a prefix `modulePrefix`. -/
-private def isUnderModule (modulePrefix moduleName : String) : Bool :=
-  moduleName == modulePrefix || moduleName.startsWith (modulePrefix ++ ".")
+/-- These are not modules and should be excluded from the check everywhere. -/
+private def excludedModules : Array Name :=
+  #[`Iris.ProofMode.Porting, `Iris.Std.DumpPortingData]
+
+/--
+Directories whose entry point is deliberately *not* imported by the entry point of
+their parent directory, e.g. `Iris/Algebra.lean` does not import `Iris/Algebra/Lib.lean`.
+
+Such a directory is exempt from the check of its immediate parent only: every further
+ancestor still has to reach it (`Iris.lean` imports `Iris/Algebra/Lib.lean` directly),
+and its own entry point still has to cover everything below it.
+-/
+private def detachedDirs : Array Name :=
+  #[`Iris.Algebra.Lib, `Iris.BI.Lib, `Iris.HeapLang.Lib, `Iris.Instances.Lib]
 
 /-- Checks whether the module is excluded from the check. -/
-private def isExcluded (moduleName : String) : Bool :=
-  excludedModules.any (isUnderModule · moduleName)
+private def isExcluded (mod : Name) : Bool :=
+  excludedModules.any (·.isPrefixOf mod)
 
-/-- Recursively collect all `.lean` files under `dir`. -/
-private partial def collectLeanFiles (dir : FilePath) : IO (List FilePath) := do
-  let mut acc := []
-  for entry in (← dir.readDir) do
-    let p := entry.path
-    if (← p.isDir) then
-      acc := acc ++ (← collectLeanFiles p)
-    else if p.extension == some "lean" then
-      acc := p :: acc
-  return acc
-
-/-- Given a line of code that imports a module, return the imported module name. -/
-private def importOfLine (line : String) : Option String :=
-  -- Strip trailing comments on the line
-  let line := ((line.splitOn "--").headD line).trimAscii
-  -- Normalise tabs to spaces
-  let toks := ((line.replace "\t" " ").splitOn " ").filter (· ≠ "")
-  -- Strip leading modifiers
-  let rec dropMods : List String → List String
-    | "public" :: rest => dropMods rest
-    | "meta" :: rest => dropMods rest
-    | "private" :: rest => dropMods rest
-    | rest => rest
-  -- Remove the leading `import` keyword
-  match dropMods toks with
-  | "import" :: modName :: _ => some modName
-  | _ => none
-
-private def parseImports (contents : String) : List String :=
-  (contents.splitOn "\n").filterMap importOfLine
+/-- Checks whether `mod` is exempt from the check performed for the entry point `entry`. -/
+private def isSkipped (entry mod : Name) : Bool :=
+  isExcluded mod || detachedDirs.any fun dir => dir.getPrefix == entry && dir.isPrefixOf mod
 
 /--
-Transitive closure of the import graph, following files that exist on
-disk starting from the given worklist.
+All modules whose source file lies in the directory of `root`, sorted by name.
+For `root = Iris`, the file `Iris/BI/Lemmas.lean` yields the module `Iris.BI.Lemmas`.
 -/
-private partial def reachableModules (visited : List String) (paths : List FilePath) :
-    IO (List String) := do
-  match paths with
-  | [] => return visited
-  | path :: paths => do
-    if ← path.pathExists then
-      let newMods := (parseImports <| ← IO.FS.readFile path).filter (!visited.contains ·)
-      let visited := newMods.foldl (fun acc m => m :: acc) visited
-      reachableModules visited (newMods.map moduleToPath ++ paths)
-    else
-      reachableModules visited paths
+private def modulesUnder (root : Name) : IO (Array Name) := do
+  let collect : StateT (Array Name) IO PUnit :=
+    forEachModuleInDir (moduleDir root) fun mod => modify (·.push (root ++ mod))
+  let (_, mods) ← collect.run #[]
+  return mods.qsort (·.toString < ·.toString)
 
-/--
-Check that `rootFile` transitively imports every module under `rootDir`,
-ignoring modules for which the predicate `skip` holds.
-Reports any that are missing, and returns `true` iff the check passes.
--/
-private def checkDir (rootFile rootDir : FilePath) (skip : String → Bool) : IO Bool := do
-  let expected := ((← collectLeanFiles rootDir).map pathToModule).filter (!skip ·)
-  let reachable ← reachableModules [] [rootFile]
-  let unimported := expected.filter (!reachable.contains ·)
-  if unimported.isEmpty then
-    IO.println s!"check-imports: all {expected.length} modules under \
-      {rootDir} are imported from {rootFile}."
-    return true
-  else
-    IO.eprintln s!"check-imports: {unimported.length} file(s) under \
-      {rootDir} are never imported (directly or transitively) from {rootFile}:"
-    for m in unimported do
-      IO.eprintln s!"  {m}"
-    return false
+/-- The import graph of the given modules. -/
+private def importGraph (modules : Array Name) : IO (Std.HashMap Name (Array Name)) := do
+  let mut graph := ∅
+  for m in modules do
+    -- Find the direct imports of `module`
+    let some file ← findModuleWithExt srcPath "lean" m | continue
+    let header ← parseImports' (← IO.FS.readFile file) file.toString
+    graph := graph.insert m (header.imports.map (·.module))
+  return graph
 
-/-- The immediate subdirectories of `dir`, sorted for deterministic output. -/
-private def immediateSubdirs (dir : FilePath) : IO (List FilePath) := do
-  let mut acc := []
-  for entry in (← dir.readDir) do
-    if (← entry.path.isDir) then acc := entry.path :: acc
-  return (acc.toArray.qsort (·.toString < ·.toString)).toList
+/-- Transitive closure of the import graph starting from `entry`. -/
+private def reachableFrom (graph : Std.HashMap Name (Array Name)) (entry : Name) :
+    Std.HashSet Name := Id.run do
+  let mut visited : Std.HashSet Name := ∅
+  let mut frontier := #[entry]
+  while !frontier.isEmpty do
+    let current := frontier
+    frontier := #[]
+    for mod in current do
+      unless visited.contains mod do
+        visited := visited.insert mod
+        frontier := frontier ++ graph.getD mod #[]
+  return visited
+
+/-- Every namespace with at least one module strictly below it, i.e. every directory of
+the library, including `root` itself. Sorted, so that a directory precedes its children. -/
+private def directoriesUnder (root : Name) (all : Array Name) : Array Name := Id.run do
+  let mut dirs := #[root]
+  let mut seen : Std.HashSet Name := (∅ : Std.HashSet Name).insert root
+  for mod in all do
+    -- Add the chain of directories from the one containing `mod` up to `root`
+    let mut dir := mod.getPrefix
+    while root.isPrefixOf dir && !seen.contains dir do
+      seen := seen.insert dir
+      dirs := dirs.push dir
+      dir := dir.getPrefix
+  return dirs.qsort (·.toString < ·.toString)
 
 def main (args : List String) : IO UInt32 := do
-  match args.find? (fun a => !a.startsWith "-") with
-  | none =>
-    IO.eprintln
-      "usage: check-imports <LibraryName> (e.g. `lake exe check-imports Iris`)"
-    return 2
-  | some libName =>
-    let rootFile := FilePath.mk <| libName ++ leanSuffix
-    let rootDir := FilePath.mk libName
-    -- Check imports by the top-level entry-point module
-    let mut ok := (← checkDir rootFile rootDir isExcluded)
-    -- Check imports in immediate sub-modules (useful when they are also entry-point modules)
-    if args.contains "--subdirs" then
-      for subDir in (← immediateSubdirs rootDir) do
-        let subFile := FilePath.mk <| subDir.toString ++ leanSuffix
-        if ← subFile.pathExists then
-          let libPrefix := pathToModule subDir ++ ".Lib"
-          ok := ok &&
-            (← checkDir subFile subDir (fun m => isExcluded m || isUnderModule libPrefix m))
-        else
-          IO.eprintln s!"check-imports: no entry-point file {subFile} for directory {subDir}."
-          ok := false
-
+  match args with
+  | [libName] =>
+    let root := libName.toName
+    -- Check the validity of the argument (top-level entry point module)
+    unless (← (moduleFile root).pathExists) && (← (moduleDir root).isDir) do
+      IO.eprintln s!"check-imports: expected an entry-point file {moduleFile root} \
+        next to a directory {moduleDir root}."
+      return 2
+    -- Find all modules under the top-level directory
+    let all ← modulesUnder root
+    let graph ← importGraph (all.push root)
+    let mut ok := true
+    let mut checked := 0
+    for dir in directoriesUnder root all do
+      if isExcluded dir then continue
+      unless (← (moduleFile dir).pathExists) do
+        IO.eprintln s!"check-imports: no entry-point file {moduleFile dir} \
+          for directory {moduleDir dir}."
+        ok := false
+        continue
+      checked := checked + 1
+      let reachable := reachableFrom graph dir
+      -- The modules of `all` that the entry point of the directory `dir` must import
+      let expectedUnder := all.filter
+        fun mod => mod != dir && dir.isPrefixOf mod && !isSkipped dir mod
+      let missing := expectedUnder.filter (!reachable.contains ·)
+      unless missing.isEmpty do
+        IO.eprintln s!"check-imports: {missing.size} file(s) under {dir} are never \
+          imported (directly or transitively) from {moduleFile dir}:"
+        for mod in missing do
+          IO.eprintln s!"  {mod}"
+        ok := false
+    if ok then
+      IO.println s!"check-imports: all {all.size} modules under {root} are imported \
+        from the entry point of their directory ({checked} entry points checked)."
     return if ok then 0 else 1
+  -- Return error for invalid arguments
+  | _ =>
+    IO.eprintln "usage: check-imports <LibraryName> (e.g. `lake exe check-imports Iris`)"
+    return 2
