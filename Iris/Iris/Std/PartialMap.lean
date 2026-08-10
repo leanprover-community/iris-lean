@@ -394,6 +394,14 @@ theorem insert_delete {m : M V} {i : K} {x : V} :
   · rw [get?_insert_eq h, get?_insert_eq h]
   · rw [get?_insert_ne h, get?_delete_ne h, get?_insert_ne h]
 
+theorem delete_insert {m : M V} {i : K} {x : V} :
+    delete (insert m i x) i = delete m i := by
+  apply equiv_iff_eq.mp
+  intro j
+  by_cases h : i = j
+  · rw [get?_delete_eq h, get?_delete_eq h]
+  · rw [get?_delete_ne h, get?_insert_ne h, get?_delete_ne h]
+
 theorem insert_insert_comm {m : M V} {i j : K} {x y : V} (h : i ≠ j) :
     insert (insert m i x) j y = insert (insert m j y) i x := by
   apply equiv_iff_eq.mp
