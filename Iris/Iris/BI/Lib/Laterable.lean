@@ -16,6 +16,7 @@ namespace Iris
 
 section Laterable
 open BI OFE Std ProofMode
+local stepindex Nat
 
 /-- Require that the proposition `P` is laterable. -/
 @[rocq_alias Laterable]
