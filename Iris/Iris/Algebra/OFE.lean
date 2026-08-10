@@ -211,32 +211,21 @@ theorem Discrete.discrete_iff_0 [OFE α] [Discrete α] (n) {x y : α} : x ≡{0}
 
 #rocq_ignore ofe_leibniz_subrelation "Generalized-rewriting subrelation; not needed in Lean."
 
-/-- The setoid on `X` identifying points that agree at every step index:
-`x ≈ y ↔ ∀ n, dist n x y`. -/
-@[reducible]
-def QuotientO {X : Type u} (dist : Nat → X → X → Prop) (heqv : ∀ {n}, Equivalence (dist n)) :
-    Setoid X where
-  r x y := ∀ n, dist n x y
-  iseqv :=
-    ⟨fun _ _ => heqv.refl _,
-     fun h n => heqv.symm (h n),
-     fun h₁ h₂ n => heqv.trans (h₁ n) (h₂ n)⟩
-
-/--
-EXPERIMENT: Explicit use of quotients to force quotiented (by Equiv) OFE to be Leibniz by
-quotienting by propositional equality.
-https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Evaluating.20a.20specialization.20to.20Leibnize.20OFE.27s/with/606745235
-
-Build a `Leibniz` OFE from a step-indexed distance `dist` satisfying the OFE distance axioms
-by quotienting the carrier `X` by the OFE equivalence `fun x y => ∀ n, dist n x y`. -/
-@[reducible] def mkQuotient {X : Type u} (dist : Nat → X → X → Prop)
+/-- Build a Leibniz OFE on `Quotient s` from a step-indexed distance `dist` on the carrier,
+given that the setoid relation coincides with the OFE equivalence `fun x y => ∀ n, dist n x y`
+(hypothesis `hs`). Quotienting forces the resulting OFE equality to be Leibniz, while
+`Quotient.sound`/`Quotient.exact` keep speaking about the domain relation `s.r`. See
+https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Evaluating.20a.20specialization.20to.20Leibnize.20OFE.27s/with/606745235 -/
+@[reducible] def ofQuotient {X : Type u} {s : Setoid X} (dist : Nat → X → X → Prop)
     (heqv : ∀ {n}, Equivalence (dist n))
-    (hlt : ∀ {n m : Nat} {x y : X}, dist n x y → m < n → dist m x y) :
-    OFE (Quotient (QuotientO dist heqv)) :=
-  letI D : Nat → Quotient (QuotientO dist heqv) → Quotient (QuotientO dist heqv) → Prop :=
-    fun n => Quotient.lift₂ (dist n) fun _ _ _ _ hac hbd => propext
-      ⟨fun h => heqv.trans (heqv.trans (heqv.symm (hac n)) h) (hbd n),
-       fun h => heqv.trans (heqv.trans (hac n) h) (heqv.symm (hbd n))⟩
+    (hlt : ∀ {n m : Nat} {x y : X}, dist n x y → m < n → dist m x y)
+    (hs : ∀ x y : X, s.r x y ↔ ∀ n, dist n x y) : OFE (Quotient s) :=
+  letI D : Nat → Quotient s → Quotient s → Prop :=
+    fun n => Quotient.lift₂ (dist n) fun _ _ _ _ hac hbd => propext <|
+      have hac' := (hs _ _).mp hac
+      have hbd' := (hs _ _).mp hbd
+      ⟨fun h => heqv.trans (heqv.trans (heqv.symm (hac' n)) h) (hbd' n),
+       fun h => heqv.trans (heqv.trans (hac' n) h) (heqv.symm (hbd' n))⟩
   { Dist := D
     dist_eqv := by
       refine ⟨Quotient.ind fun a => heqv.refl a, fun {x y} h => ?_, fun {x y z} h₁ h₂ => ?_⟩
@@ -245,54 +234,62 @@ by quotienting the carrier `X` by the OFE equivalence `fun x y => ∀ n, dist n 
           induction z using Quotient.ind with | _ c => exact heqv.trans h₁ h₂
     eq_dist {x y} := by
       induction x, y using Quotient.ind₂ with | _ a b =>
-        exact ⟨fun h n => Quotient.exact h n, fun h => Quotient.sound fun n => h n⟩
+        exact ⟨fun h n => (hs _ _).mp (Quotient.exact h) n,
+               fun h => Quotient.sound ((hs _ _).mpr h)⟩
     dist_lt := fun {n x y m} h hlt' => by
       induction x, y using Quotient.ind₂ with | _ a b => exact hlt h hlt' }
 
-namespace mkQuotient
+namespace ofQuotient
 
-variable {X : Type u} {dist : Nat → X → X → Prop} {heqv : ∀ {n}, Equivalence (dist n)}
+variable {X : Type u} {s : Setoid X}
 
-@[reducible] def mk (x : X) : Quotient (QuotientO dist heqv) := Quotient.mk _ x
+@[reducible] def mk (s : Setoid X) (x : X) : Quotient s := Quotient.mk s x
 
-@[elab_as_elim] theorem ind {motive : Quotient (QuotientO dist heqv) → Prop}
-    (h : ∀ x : X, motive (mk x)) (q : Quotient (QuotientO dist heqv)) : motive q :=
-  Quotient.ind h q
+@[elab_as_elim] theorem ind {motive : Quotient s → Prop}
+    (mk : ∀ x : X, motive (mk s x)) (q : Quotient s) : motive q :=
+  Quotient.ind mk q
 
-theorem sound {x y : X} (h : ∀ n, dist n x y) :
-    (mk x : Quotient (QuotientO dist heqv)) = mk y := Quotient.sound h
+@[elab_as_elim] theorem ind₂ {motive : Quotient s → Quotient s → Prop}
+    (mk : ∀ x y : X, motive (mk s x) (mk s y)) (x y : Quotient s) : motive x y :=
+  Quotient.ind₂ mk x y
 
-theorem mk_eq {x y : X} :
-    (mk x : Quotient (QuotientO dist heqv)) = mk y ↔ ∀ n, dist n x y :=
-  ⟨Quotient.exact, sound⟩
+@[elab_as_elim] theorem ind₃ {motive : Quotient s → Quotient s → Quotient s → Prop}
+    (mk : ∀ x y z : X, motive (mk s x) (mk s y) (mk s z)) (x y z : Quotient s) :
+    motive x y z :=
+  ind₂ (fun x y => Quotient.ind (mk x y)) x y z
+
+theorem sound {x y : X} (h : s.r x y) : mk s x = mk s y := Quotient.sound h
+
+theorem exact {x y : X} (h : mk s x = mk s y) : s.r x y := Quotient.exact h
+
+theorem mk_eq {x y : X} : mk s x = mk s y ↔ s.r x y := ⟨exact, sound⟩
 
 @[reducible] def lift {β : Sort v} (f : X → β)
-    (resp : ∀ x y, (∀ n, dist n x y) → f x = f y) :
-    Quotient (QuotientO dist heqv) → β := Quotient.lift f resp
+    (resp : ∀ x y, s.r x y → f x = f y) : Quotient s → β := Quotient.lift f resp
 
 @[simp] theorem lift_mk {β : Sort v} (f : X → β) (resp) (x : X) :
-    lift (dist := dist) (heqv := heqv) f resp (mk x) = f x := rfl
+    lift (s := s) f resp (mk s x) = f x := rfl
 
 @[reducible] def lift₂ {β : Sort v} (f : X → X → β)
-    (resp : ∀ a b c d, (∀ n, dist n a c) → (∀ n, dist n b d) → f a b = f c d) :
-    Quotient (QuotientO dist heqv) → Quotient (QuotientO dist heqv) → β := Quotient.lift₂ f resp
+    (resp : ∀ a b c d, s.r a c → s.r b d → f a b = f c d) :
+    Quotient s → Quotient s → β := Quotient.lift₂ f resp
 
 @[simp] theorem lift₂_mk {β : Sort v} (f : X → X → β) (resp) (x y : X) :
-    lift₂ (dist := dist) (heqv := heqv) f resp (mk x) (mk y) = f x y := rfl
+    lift₂ (s := s) f resp (mk s x) (mk s y) = f x y := rfl
 
-@[reducible] def map {X' : Type u'} {dist' : Nat → X' → X' → Prop} {heqv' : ∀ {n}, Equivalence (dist' n)}
-    (f : X → X') (hf : ∀ n x y, dist n x y → dist' n (f x) (f y)) :
-    Quotient (QuotientO dist heqv) → Quotient (QuotientO dist' heqv') :=
-  Quotient.lift (fun x => mk (f x)) (fun _ _ h => Quotient.sound fun n => hf n _ _ (h n))
+@[reducible] def map {X' : Type u'} {s' : Setoid X'} (f : X → X')
+    (hf : ∀ x y, s.r x y → s'.r (f x) (f y)) : Quotient s → Quotient s' :=
+  Quotient.lift (fun x => mk s' (f x)) (fun _ _ h => sound (hf _ _ h))
 
-@[simp] theorem map_mk {X' : Type u'} {dist' : Nat → X' → X' → Prop}
-    {heqv' : ∀ {n}, Equivalence (dist' n)} (f : X → X') (hf) (x : X) :
-    map (dist := dist) (heqv := heqv) (dist' := dist') (heqv' := heqv') f hf (mk x) = mk (f x) := rfl
+@[simp] theorem map_mk {X' : Type u'} {s' : Setoid X'} (f : X → X') (hf) (x : X) :
+    map (s := s) (s' := s') f hf (mk s x) = mk s' (f x) := rfl
 
-theorem dist_mk {hlt : ∀ {n m : Nat} {x y : X}, dist n x y → m < n → dist m x y}
-    {n} {x y : X} : (mkQuotient dist heqv hlt).Dist n (mk x) (mk y) ↔ dist n x y := Iff.rfl
+theorem dist_mk {dist : Nat → X → X → Prop} {heqv : ∀ {n}, Equivalence (dist n)}
+    {hlt : ∀ {n m : Nat} {x y : X}, dist n x y → m < n → dist m x y}
+    {hs : ∀ x y : X, s.r x y ↔ ∀ n, dist n x y} {n} {x y : X} :
+    (ofQuotient dist heqv hlt hs).Dist n (mk s x) (mk s y) ↔ dist n x y := Iff.rfl
 
-end mkQuotient
+end ofQuotient
 
 /-- A morphism between OFEs, written `α -n> β`, is defined to be a function that is
 non-expansive. -/
