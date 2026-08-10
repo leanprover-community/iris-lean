@@ -85,6 +85,15 @@ instance {l : List α} : CoreId (●ML□ l) := by
   unfold auth
   infer_instance
 
+theorem lb_nil : ◯ML ([] : List α) = UCMRA.unit := by
+  unfold lb
+  rw [toMaxPrefixList_nil]
+  rfl
+
+instance : IsUnit (◯ML ([] : List α)) := by
+  rw [lb_nil]
+  infer_instance
+
 @[rocq_alias mono_list_auth_dfrac_op]
 theorem auth_dfrac_op (dq1 dq2 : DFrac) (l : List α) :
     ●ML{dq1 • dq2} l = ●ML{dq1} l • ●ML{dq2} l := by

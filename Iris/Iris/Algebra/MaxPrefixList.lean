@@ -31,9 +31,9 @@ namespace Iris
 
 open OFE CMRA Std
 
-/-- The extensional finite map from list indices to agreed-upon elements underlying
-`MaxPrefixList`. Naming the map *functor* (rather than its application) keeps the value type in
-last position, so `?M ?V` unifies against it correctly. -/
+-- Named as a *functor* rather than an application so that the value type stays in last
+-- position: `?M ?V` then unifies against `MaxPrefixListMap (Agree α)` correctly.
+/-- The extensional finite map from list indices to agreed-upon elements. -/
 abbrev MaxPrefixListMap : Type _ → Type _ := (Std.ExtTreeMap Nat · compare)
 
 @[rocq_alias max_prefix_list, rocq_alias max_prefix_listR, rocq_alias max_prefix_listUR]
@@ -47,7 +47,7 @@ variable {α β : Type _}
 
 theorem toMap_inj {x y : MaxPrefixList α} (h : x.toMap = y.toMap) : x = y := congrArg ofMap h
 
-/-! ## Algebraic structure, transported from the underlying map -/
+/-! ## Algebraic structure, inherited from the underlying map -/
 
 section Instances
 
@@ -59,19 +59,18 @@ instance : OFE (MaxPrefixList α) where
   eq_dist := ⟨fun h _ => h ▸ .rfl, fun h => toMap_inj (eq_dist.mpr h)⟩
   dist_lt h hlt := h.lt hlt
 
-@[simp] theorem dist_toMap {n} {x y : MaxPrefixList α} :
+@[local simp] theorem dist_toMap {n} {x y : MaxPrefixList α} :
     x ≡{n}≡ y ↔ x.toMap ≡{n}≡ y.toMap := .rfl
 
+-- Every `Agree` element is its own core, so the core here is the identity; `pcore_toMap`
+-- records that this agrees with the core of the underlying map.
 instance : CMRA (MaxPrefixList α) where
-  pcore x := (CMRA.pcore x.toMap).map ofMap
+  pcore x := some x
   op x y := ofMap (x.toMap • y.toMap)
   ValidN n x := ✓{n} x.toMap
   Valid x := ✓ x.toMap
   op_ne.ne _ _ _ h := dist_toMap.mpr (CMRA.op_ne.ne h)
-  pcore_ne hd hcx := by
-    obtain ⟨m, hm, rfl⟩ := Option.map_eq_some_iff.mp hcx
-    obtain ⟨cy, hcy, hd'⟩ := CMRA.pcore_ne hd hm
-    exact ⟨ofMap cy, by simp [hcy], hd'⟩
+  pcore_ne hd hcx := ⟨_, rfl, Option.some.inj hcx ▸ hd⟩
   validN_ne hd hv := CMRA.validN_ne hd hv
   valid_iff_validN := CMRA.valid_iff_validN
   validN_succ := CMRA.validN_succ
@@ -79,39 +78,46 @@ instance : CMRA (MaxPrefixList α) where
   assoc := toMap_inj CMRA.assoc
   comm := toMap_inj CMRA.comm
   pcore_op_left hcx := by
-    obtain ⟨m, hm, rfl⟩ := Option.map_eq_some_iff.mp hcx
-    exact toMap_inj (CMRA.pcore_op_left hm)
-  pcore_idem hcx := by
-    obtain ⟨m, hm, rfl⟩ := Option.map_eq_some_iff.mp hcx
-    simp [CMRA.pcore_idem hm]
+    obtain rfl := Option.some.inj hcx
+    exact toMap_inj (op_self _)
+  pcore_idem _ := rfl
   pcore_op_mono hcx y := by
-    obtain ⟨m, hm, rfl⟩ := Option.map_eq_some_iff.mp hcx
-    obtain ⟨cy, hcy⟩ := CMRA.pcore_op_mono hm y.toMap
-    exact ⟨ofMap cy, by simp [hcy]⟩
+    obtain rfl := Option.some.inj hcx
+    exact ⟨y, rfl⟩
   extend hv hd := by
     obtain ⟨m₁, m₂, heq, h₁, h₂⟩ := CMRA.extend hv hd
     exact ⟨ofMap m₁, ofMap m₂, toMap_inj heq, h₁, h₂⟩
 
-@[simp] theorem toMap_op (x y : MaxPrefixList α) : (x • y).toMap = x.toMap • y.toMap := rfl
-@[simp] theorem pcore_toMap (x : MaxPrefixList α) : pcore x = (pcore x.toMap).map ofMap := rfl
-@[simp] theorem validN_toMap {n} {x : MaxPrefixList α} : ✓{n} x ↔ ✓{n} x.toMap := .rfl
-@[simp] theorem valid_toMap {x : MaxPrefixList α} : ✓ x ↔ ✓ x.toMap := .rfl
+@[local simp] theorem toMap_op (x y : MaxPrefixList α) :
+    (x • y).toMap = x.toMap • y.toMap := rfl
+@[local simp] theorem pcore_eq_some (x : MaxPrefixList α) : pcore x = some x := rfl
+@[local simp] theorem validN_toMap {n} {x : MaxPrefixList α} : ✓{n} x ↔ ✓{n} x.toMap := .rfl
+@[local simp] theorem valid_toMap {x : MaxPrefixList α} : ✓ x ↔ ✓ x.toMap := .rfl
+
+/-- The core agrees with the core of the underlying map. -/
+theorem pcore_toMap (x : MaxPrefixList α) : pcore x = (pcore x.toMap).map ofMap := by
+  simp [core_id (x := x.toMap)]
 
 instance : UCMRA (MaxPrefixList α) where
   unit := ofMap UCMRA.unit
   unit_valid := valid_toMap.mpr UCMRA.unit_valid
   unit_left_id := toMap_inj UCMRA.unit_left_id
-  pcore_unit := by simp [UCMRA.pcore_unit]
+  pcore_unit := rfl
 
 -- Rocq calls this `mono_list_lb_core_id`, a name `mono_list.v` reuses for the fragment; the
 -- alias is attached there, on `MonoList.instCoreIdLb`.
 instance (x : MaxPrefixList α) : CoreId x where
-  core_id := by simp [core_id (x := x.toMap)]
+  core_id := rfl
 
-@[simp] theorem incN_toMap {n} {x y : MaxPrefixList α} : x ≼{n} y ↔ x.toMap ≼{n} y.toMap :=
+instance [OFE.Discrete α] : CMRA.Discrete (MaxPrefixList α) where
+  discrete_0 h := toMap_inj (OFE.discrete_0 h)
+  discrete_valid := CMRA.discrete_valid (α := MaxPrefixListMap (Agree α))
+
+@[local simp] theorem incN_toMap {n} {x y : MaxPrefixList α} :
+    x ≼{n} y ↔ x.toMap ≼{n} y.toMap :=
   ⟨fun ⟨z, h⟩ => ⟨z.toMap, h⟩, fun ⟨m, h⟩ => ⟨ofMap m, h⟩⟩
 
-@[simp] theorem inc_toMap {x y : MaxPrefixList α} : x ≼ y ↔ x.toMap ≼ y.toMap :=
+@[local simp] theorem inc_toMap {x y : MaxPrefixList α} : x ≼ y ↔ x.toMap ≼ y.toMap :=
   ⟨fun ⟨z, h⟩ => ⟨z.toMap, congrArg toMap h⟩,
    fun ⟨m, h⟩ => ⟨ofMap m, toMap_inj h⟩⟩
 
@@ -121,13 +127,10 @@ def homLift [OFE β] (f : MaxPrefixListMap (Agree α) -C> MaxPrefixListMap (Agre
   f x := ofMap (f x.toMap)
   ne.ne _ _ _ h := dist_toMap.mpr (f.ne.ne h)
   validN := f.validN
-  pcore x := by
-    show Option.map _ ((CMRA.pcore x.toMap).map ofMap) = (CMRA.pcore (f x.toMap)).map ofMap
-    rw [← f.pcore x.toMap]
-    cases CMRA.pcore x.toMap <;> rfl
+  pcore _ := rfl
   op x y := toMap_inj (f.op x.toMap y.toMap)
 
-@[simp] theorem toMap_homLift [OFE β]
+@[local simp] theorem toMap_homLift [OFE β]
     (f : MaxPrefixListMap (Agree α) -C> MaxPrefixListMap (Agree β)) (x : MaxPrefixList α) :
     (homLift f x).toMap = f x.toMap := rfl
 
@@ -135,21 +138,28 @@ end Instances
 
 /-! ## The canonical embedding of lists -/
 
-@[rocq_alias to_max_prefix_list]
-def toMaxPrefixList (l : List α) : MaxPrefixList α :=
-  ofMap (Std.PartialMap.map toAgree (FiniteMap.map_seq 0 l))
+/-- `l`, agreed upon and placed at the indices `start`, `start + 1`, … -/
+def ofListFrom (start : Nat) (l : List α) : MaxPrefixList α :=
+  ofMap (Std.PartialMap.map toAgree (FiniteMap.map_seq start l))
 
-/-- Lookup in the tail segment of a list, as it appears on the right of `toMaxPrefixList_app`. -/
-private theorem get?_agree_map_seq {start i : Nat} {l : List α} :
-    get? (Std.PartialMap.map (M := MaxPrefixListMap) toAgree (FiniteMap.map_seq start l)) i
+@[rocq_alias to_max_prefix_list]
+def toMaxPrefixList (l : List α) : MaxPrefixList α := ofListFrom 0 l
+
+theorem get?_ofListFrom {start i : Nat} {l : List α} :
+    get? (ofListFrom start l).toMap i
       = (if start ≤ i then l[i - start]? else none).map toAgree := by
-  rw [LawfulPartialMap.get?_map, LawfulFiniteMap.get?_map_seq]
+  rw [ofListFrom, LawfulPartialMap.get?_map, LawfulFiniteMap.get?_map_seq]
 
 theorem get?_toMaxPrefixList {i : Nat} {l : List α} :
     get? (toMaxPrefixList l).toMap i = l[i]?.map toAgree := by
-  simp [toMaxPrefixList, get?_agree_map_seq]
+  simp [toMaxPrefixList, get?_ofListFrom]
 
 variable [OFE α]
+
+theorem toMaxPrefixList_nil : toMaxPrefixList ([] : List α) = UCMRA.unit := by
+  refine toMap_inj (LawfulPartialMap.equiv_iff_eq.mp fun i => ?_)
+  rw [get?_toMaxPrefixList, List.getElem?_nil]
+  exact (LawfulPartialMap.get?_empty i).symm
 
 /-! ## Setoid properties -/
 
@@ -192,10 +202,9 @@ theorem toMaxPrefixList_validN {n} (l : List α) : ✓{n} toMaxPrefixList l :=
 
 @[rocq_alias to_max_prefix_list_app]
 theorem toMaxPrefixList_app (l1 l2 : List α) :
-    toMaxPrefixList (l1 ++ l2) = toMaxPrefixList l1
-      • ofMap (Std.PartialMap.map toAgree (FiniteMap.map_seq l1.length l2)) := by
+    toMaxPrefixList (l1 ++ l2) = toMaxPrefixList l1 • ofListFrom l1.length l2 := by
   refine toMap_inj (LawfulPartialMap.equiv_iff_eq.mp fun i => ?_)
-  rw [toMap_op, Heap.get?_op, get?_toMaxPrefixList, get?_toMaxPrefixList, get?_agree_map_seq,
+  rw [toMap_op, Heap.get?_op, get?_toMaxPrefixList, get?_toMaxPrefixList, get?_ofListFrom,
     List.getElem?_append]
   by_cases hi : i < l1.length
   · rw [if_pos hi, if_neg (by omega)]
