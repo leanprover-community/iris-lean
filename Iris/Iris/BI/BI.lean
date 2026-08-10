@@ -21,6 +21,8 @@ theorem liftRel_eq : liftRel (@Eq α) A B ↔ A = B := by
   simp [liftRel, forall_and, iff_def, funext_iff]
 
 /-- Require that a separation logic with carrier type `PROP` fulfills all necessary axioms. -/
+@[rocq_alias bi, rocq_alias BiMixin,
+  rocq_alias BiPersistentlyMixin, rocq_alias BiLaterMixin]
 class BI (PROP : Type _) extends COFE PROP, BI.BIBase PROP where
   entails_refl {P : PROP} : P ⊢ P
   entails_trans {P Q R : PROP} : (P ⊢ Q) → (Q ⊢ R) → P ⊢ R
@@ -85,18 +87,24 @@ namespace BI
 instance [BIBase PROP] : LE PROP where
   le := BIBase.Entails
 
-instance BI.entails_preorder [BI PROP] : Std.IsPreorder PROP where
+@[rocq_alias bi.entails_po]
+instance entails_preorder [BI PROP] : Std.IsPreorder PROP where
   le_refl _ := BI.entails_refl
   le_trans _ _ _ := BI.entails_trans
+
+instance [BI PROP] : Std.Refl <| BIBase.Entails (PROP := PROP) where
+  refl _ := BI.entails_refl
 
 theorem BIBase.Entails.trans [BI PROP] {P Q R : PROP} (h1 : P ⊢ Q) (h2 : Q ⊢ R) : P ⊢ R :=
   BI.entails_trans h1 h2
 
 @[simp,refl] theorem BIBase.Entails.rfl [BI PROP] {P : PROP} : P ⊢ P := BI.entails_refl
+@[simp,refl] theorem BIBase.Entails.refl [BI PROP] (P : PROP) : P ⊢ P := BI.entails_refl
 
 theorem BIBase.Entails.of_eq [BI PROP] {P Q : PROP} (h : P = Q) : P ⊢ Q := h ▸ .rfl
 
 @[simp] theorem BIBase.BiEntails.rfl [BI PROP] {P : PROP} : P ⊣⊢ P := ⟨.rfl, .rfl⟩
+@[simp] theorem BIBase.BiEntails.refl [BI PROP] (P : PROP) : P ⊣⊢ P := ⟨.rfl, .rfl⟩
 
 theorem BIBase.BiEntails.of_eq [BI PROP] {P Q : PROP} (h : P = Q) : P ⊣⊢ Q := h ▸ .rfl
 theorem _root_.Eq.to_bi [BI PROP] {P Q : PROP} (h : P = Q) : P ⊣⊢ Q := h ▸ .rfl
@@ -119,5 +127,54 @@ export BIBase (
   intuitionistically later persistentlyIf affinelyIf absorbinglyIf
   intuitionisticallyIf bigAnd bigOr bigSep Entails.trans BiEntails.trans BiEntails.of_eq BiEntails.to_eq)
 
-attribute [rw_mono_rule] BI.sep_mono
-attribute [rw_mono_rule] BI.persistently_mono
+attribute [rocq_alias bi.equiv_entails] BI.equiv_iff
+attribute [rocq_alias bi.and_ne] BI.and_ne
+attribute [rocq_alias bi.or_ne] BI.or_ne
+attribute [rocq_alias bi.impl_ne] BI.imp_ne
+attribute [rocq_alias bi.sep_ne] BI.sep_ne
+attribute [rocq_alias bi.wand_ne] BI.wand_ne
+attribute [rocq_alias bi.persistently_ne] BI.persistently_ne
+attribute [rocq_alias bi.later_ne] BI.later_ne
+
+attribute [rocq_alias bi.pure_intro] BI.pure_intro
+attribute [rocq_alias bi.pure_elim'] BI.pure_elim'
+
+attribute [rocq_alias bi.and_elim_l] BI.and_elim_l
+attribute [rocq_alias bi.and_elim_r] BI.and_elim_r
+attribute [rocq_alias bi.and_intro] BI.and_intro
+
+attribute [rocq_alias bi.or_intro_l] BI.or_intro_l
+attribute [rocq_alias bi.or_intro_r] BI.or_intro_r
+attribute [rocq_alias bi.or_elim] BI.or_elim
+
+attribute [rocq_alias bi.impl_intro_r] BI.imp_intro
+attribute [rocq_alias bi.impl_elim_l'] BI.imp_elim
+
+attribute [rw_mono_rule, rocq_alias bi.sep_mono] BI.sep_mono
+attribute [rocq_alias bi.emp_sep_1, rocq_alias bi.emp_sep_2] BI.emp_sep
+attribute [rocq_alias bi.sep_comm'] BI.sep_symm
+attribute [rocq_alias bi.sep_assoc'] BI.sep_assoc_l
+
+attribute [rocq_alias bi.wand_intro_r] BI.wand_intro
+attribute [rocq_alias bi.wand_elim_l'] BI.wand_elim
+
+attribute [rw_mono_rule, rocq_alias bi.persistently_mono] BI.persistently_mono
+attribute [rocq_alias bi.persistently_idemp_2] BI.persistently_idem_2
+attribute [rocq_alias bi.persistently_and_2] BI.persistently_and_2
+attribute [rocq_alias bi.persistently_emp_2] BI.persistently_emp_2
+attribute [rocq_alias bi.persistently_exist_1] BI.persistently_sExists_1
+attribute [rocq_alias bi.persistently_and_sep_elim] BI.persistently_and_l
+
+attribute [rocq_alias bi.later_mono] BI.later_mono
+attribute [rocq_alias bi.later_intro] BI.later_intro
+
+attribute [rocq_alias bi.later_sep_1, rocq_alias bi.later_sep_2] BI.later_sep
+attribute [rocq_alias bi.later_persistently_1,
+           rocq_alias bi.later_persistently_2] BI.later_persistently
+attribute [rocq_alias bi.later_false_em] BI.later_false_em
+
+attribute [rocq_alias bi_cofe] BI.toCOFE
+
+#rocq_ignore bi_ofeO "No coercion required in Lean, use BI.toCOFE.toOFE instead"
+#rocq_ignore bi.pure_ne "No Proper type class in Lean"
+#rocq_ignore bi_rewrite_relation "Rocq-specific setoid-rewriting infrastructure"

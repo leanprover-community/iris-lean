@@ -12,30 +12,42 @@ namespace Iris.ProofMode
 public section
 open BI Std
 
+@[rocq_alias tac_pure]
 theorem pure_elim_spatial [BI PROP] {P P' A Q : PROP} {φ : Prop}
     [hA : IntoPure A φ] [or : TCOr (Affine A) (Absorbing Q)]
     (h : P ⊣⊢ P' ∗ A) (h_entails : φ → P' ⊢ Q) : P ⊢ Q :=
   h.1.trans <| match or with
   | TCOr.l =>
-    (sep_mono_right <| (affine_affinely A).2.trans (affinely_mono hA.1)).trans <|
-    persistent_and_affinely_sep_right.2.trans (pure_elim_right h_entails)
+    calc
+      _ ⊢ P' ∗ <affine> ⌜φ⌝ := sep_mono_right <| (affine_affinely A).2.trans (affinely_mono hA.1)
+      _ ⊢ P' ∧ ⌜φ⌝          := persistent_and_affinely_sep_right.2
+      _ ⊢ Q                 := pure_elim_right h_entails
   | TCOr.r =>
-    (sep_mono_right <| hA.1.trans absorbingly_affinely_intro_of_persistent).trans <|
-    absorbingly_sep_left_right.2.trans <| persistent_and_affinely_sep_right.2.trans <|
-    pure_elim_right fun hφ => (absorbingly_mono <| h_entails hφ).trans absorbing
+    calc
+      _ ⊢ P' ∗ <absorb> <affine> ⌜φ⌝ :=
+          sep_mono_right <| hA.1.trans absorbingly_affinely_intro_of_persistent
+      _ ⊢ <absorb> P' ∗ <affine> ⌜φ⌝ := absorbingly_sep_left_right.2
+      _ ⊢ <absorb> P' ∧ ⌜φ⌝          := persistent_and_affinely_sep_right.2
+      _ ⊢ Q                          :=
+          pure_elim_right fun hφ => (absorbingly_mono <| h_entails hφ).trans absorbing
 
 theorem pure_elim_intuitionistic [BI PROP] {P P' A Q : PROP} {φ : Prop}
     [inst : IntoPure A φ] (h : P ⊣⊢ P' ∗ □ A) (h' : φ → P' ⊢ Q) : P ⊢ Q :=
   have : IntoPure iprop(□ A) φ := ⟨intuitionistically_elim.trans inst.into_pure⟩
   pure_elim_spatial h h'
 
+@[rocq_alias tac_pure_intro]
 theorem pure_intro_affine [BI PROP] {Q : PROP} {φ : Prop}
-    (h : FromPure true Q .out φ) [Affine P] (hφ : φ) : P ⊢ Q :=
-  (affine.trans (eq_true hφ ▸ affinely_true.2)).trans h.1
+    (h : FromPure true Q .out φ) [Affine P] (hφ : φ) : P ⊢ Q := calc
+  _ ⊢ emp                 := affine
+  _ ⊢@{PROP} <affine> ⌜φ⌝ := eq_true hφ ▸ affinely_true.mpr
+  _ ⊢ Q                   := h.from_pure
 
 theorem pure_intro_spatial [BI PROP] {Q : PROP} {φ : Prop}
     (h : FromPure false Q .out φ) (hφ : φ) : P ⊢ Q :=
   (pure_intro hφ).trans h.1
+
+#rocq_ignore tac_emp_intro "Not necessary as there is no AffineEnv type class in Lean"
 
 public meta section
 open Lean Elab Tactic Meta Qq
@@ -52,24 +64,26 @@ def iPureCases (ty : Q(Prop)) (pat : TSyntax `rcasesPat)
   instantiateMVars m
 
 def iPureCore {prop : Q(Type u)} {bi : Q(BI $prop)}
-    (P : Q($prop)) {P' : Q($prop)} (hyps' : Hyps bi P') (p : Q(Bool)) (A Q : Q($prop)) (purePat : TSyntax `rcasesPat)
+    (P : Q($prop)) {P' : Q($prop)} (hyps' : Hyps bi P') (p : Q(Bool))
+    (A Q : Q($prop)) (purePat : TSyntax `rcasesPat)
     (pf : Q($P ⊣⊢ $P' ∗ □?$p $A))
-    (k : ∀ {e'}, Hyps bi e' → (goal' : Q($prop)) → ProofModeM Q($e' ⊢ $goal')) : ProofModeM Q($P ⊢ $Q) := do
+    (k : ∀ {e'}, Hyps bi e' → (goal' : Q($prop)) → ProofModeM Q($e' ⊢ $goal')) :
+    ProofModeM Q($P ⊢ $Q) := do
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
   let some _ ← ProofModeM.trySynthInstanceQ q(IntoPure $A $φ)
-  | throwError "ipure: {A} is not pure"
+  | throwIPMError "{A} is not pure"
   let f ← iPureCases q($φ → ($(hyps'.tm) ⊢ $Q)) purePat <| fun g => do
     let some ⟨_, _, tm, goal'⟩ := parseEntails? (← instantiateMVars (← g.getType))
-      | throwError "ipure: unable to parse the Iris entailment {← g.getType}"
+      | throwIPMError "unable to parse the Iris entailment {← g.getType}"
     let some ⟨_, hyps'⟩ := parseHyps? bi tm
-      | throwError "ipure: unable to parse the Iris context {tm}"
+      | throwIPMError "unable to parse the Iris context {tm}"
     return (← k hyps' goal' : Expr)
   have : $hyps'.tm =Q $P' := ⟨⟩
   match matchBool p with
   | .inl _ => return q(pure_elim_intuitionistic $pf $f)
   | .inr _ =>
     let .some _ ← trySynthInstanceQ q(TCOr (Affine $A) (Absorbing $Q))
-    | throwError "ipure: {A} is not affine and the goal not absorbing"
+    | throwIPMError "{A} is not affine and the goal not absorbing"
     return q(pure_elim_spatial (A := $A) $pf $f)
 
 def iPureIntroCore {u} {prop : Q(Type u)} (_bi : Q(BI $prop))
@@ -78,7 +92,7 @@ def iPureIntroCore {u} {prop : Q(Type u)} (_bi : Q(BI $prop))
   let b : Q(Bool) ← mkFreshExprMVarQ q(Bool)
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
   let .some h ← ProofModeM.trySynthInstanceQ q(FromPure $b $goal .out $φ)
-  | throwError "ipureintro: {goal} is not pure"
+  | throwIPMError "{goal} is not pure"
   let m : Q($φ) ← mkFreshExprSyntheticOpaqueMVar (← instantiateMVars φ)
 
   let pf : Q($e ⊢ $goal) ← do
@@ -86,13 +100,13 @@ def iPureIntroCore {u} {prop : Q(Type u)} (_bi : Q(BI $prop))
     | .const ``true _ =>
       have : $b =Q true := ⟨⟩
       let .some _ ← trySynthInstanceQ q(Affine $e)
-        | throwError "ipureintro: context is not affine"
+        | throwIPMError "context is not affine"
       pure q(pure_intro_affine (P := $e) (Q := $goal) $h $m)
     | .const ``false _ =>
       have : $b =Q false := ⟨⟩
       pure q(pure_intro_spatial (P := $e) (Q := $goal) $h $m)
     -- the following indicates a bug in the typeclass instances that generate b
-    | _ => throwError "ipureintro: bug in typeclass instances, cannot reduce {b} to true or false"
+    | _ => throwIPMError "bug in typeclass instances, cannot reduce {b} to true or false"
 
   return ⟨pf, m.mvarId!⟩
 
@@ -101,7 +115,7 @@ def iPureIntroCore {u} {prop : Q(Type u)} (_bi : Q(BI $prop))
   Lean context.
 -/
 elab "ipure " colGt hyp:ident : tactic => do
-  ProofModeM.runTactic λ mvar { bi, e, hyps, goal, .. } => do
+  ProofModeM.runTactic `ipure λ mvar { bi, e, hyps, goal, .. } => do
 
   let ivar ← hyps.findWithInfo hyp
   let ⟨_, hyps', _, out', p, _, pf⟩ := hyps.remove true ivar
@@ -115,7 +129,7 @@ elab "ipure " colGt hyp:ident : tactic => do
   regular Lean context and destructs it using the `rcases` destruction pattern.
 -/
 elab "ipure " colGt hyp:ident " with " pat:rcasesPat : tactic => do
-  ProofModeM.runTactic λ mvar { bi, e, hyps, goal, .. } => do
+  ProofModeM.runTactic `ipure λ mvar { bi, e, hyps, goal, .. } => do
 
   let ivar ← hyps.findWithInfo hyp
   let ⟨_, hyps', _, out', p, _, pf⟩ := hyps.remove true ivar
@@ -128,22 +142,24 @@ elab "ipure " colGt hyp:ident " with " pat:rcasesPat : tactic => do
   `iempintro` solves an `emp` goal, provided that the spatial context is affine.
 -/
 elab "iempintro" : tactic => do
-  ProofModeM.runTactic λ mvar { prop, e, goal, .. } => do
+  ProofModeM.runTactic `iempintro λ mvar { prop, e, goal, .. } => do
 
-  let .true ← isDefEq goal q(emp : $prop) | throwError "goal is not `emp`"
+  let .true ← isDefEq goal q(emp : $prop) | throwIPMError "goal is not `emp`"
   let .some _ ← trySynthInstanceQ q(Affine $e)
-    | throwError "iempintro: context is not affine"
+    | throwIPMError "context is not affine"
   mvar.assign q(affine (P := $e))
 
 /--
   `ipureintro` turns a goal of the form `⌜φ⌝` into the Lean goal `φ`.
 -/
 elab "ipureintro" : tactic => do
-  ProofModeM.runTactic λ mvar { bi, e, goal, .. } => do
+  ProofModeM.runTactic `ipureintro λ mvar { bi, e, goal, .. } => do
     let ⟨pf, m⟩ ← iPureIntroCore bi e goal
     addMVarGoal m
     mvar.assign pf
 
 -- TODO: what is the best lean automation tactic to call here?
 -- `assumption` is necessary if the goal contains mvars
-macro_rules | `(tactic| itrivial) => `(tactic| (first | ipureintro | exfalso) <;> (first | simp [*] | assumption) <;> done)
+macro_rules
+  | `(tactic| itrivial) =>
+    `(tactic| (first | ipureintro | exfalso) <;> (first | simp [*] | assumption) <;> done)

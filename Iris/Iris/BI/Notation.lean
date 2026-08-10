@@ -15,7 +15,7 @@ namespace Iris.BI
 open Lean Lean.Macro Lean.Parser.Term
 
 -- define `iprop` embedding in `term`
-syntax:max "iprop(" term ")" : term
+syntax:max (name := iprop) "iprop(" term ")" : term
 syntax:max "term(" term ")" : term
 
 -- allow fallback to `term`

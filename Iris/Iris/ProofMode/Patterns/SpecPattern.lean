@@ -1,12 +1,12 @@
 /-
 Copyright (c) 2025 Oliver Soeser. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Oliver Soeser, Zongyuan Liu, Yunsong Yang, Michael Sammler
+Authors: Oliver Soeser, Zongyuan Liu, Yunsong Yang, Michael Sammler, Alvin Tang
 -/
 module
 
 public import Lean.Syntax
-meta import Iris.Std.RocqPorting
+public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -14,100 +14,197 @@ namespace Iris.ProofMode
 open Lean
 
 declare_syntax_cat frameIdent
+/--
+  The ident can be preceded by `$` for framing. However, we do not define
+  `syntax "$" ident : frameIdent`. Instead, we rely on the fact that Lean allows
+  `$x` as an identifier, denoting an antiquotation.
+-/
 syntax ident : frameIdent
--- We actually don't want to add the following since it would allow a space between $ and ident.
--- Instead we rely on the fact that Lean allows $x as an identifier, denoting an antiquotation
--- syntax "$" ident : frameIdent
 
 declare_syntax_cat specPat
+declare_syntax_cat pmTerm
 
 syntax ident : specPat
+/-- Use a proof or a tactic sequence to match a pure hypothesis in the premise. -/
 syntax "%" term:max : specPat
-syntax "[" frameIdent* optional("//") "]" optional(" as " ident) : specPat
-syntax "[" "-" frameIdent* optional("//") "]" optional(" as " ident) : specPat
-syntax "[>" frameIdent* optional("//") "]" optional(" as " ident) : specPat
-syntax "[>" "-" frameIdent* optional("//") "]" optional(" as " ident) : specPat
-syntax "[#" frameIdent* optional("//") "]" optional(" as " ident) : specPat
+/--
+  `[ H₁ … Hₙ ]` generates a subgoal for the premise with `H₁ … Hₙ` as the
+  hypotheses chosen for the context of the subgoal. `[- H₁ … Hₙ ]` is analogous
+  with all but `H₁ … Hₙ` as the chosen hypotheses. `[ H₁ … Hₙ ]` and
+  `[- H₁ … Hₙ // ]` attempt to solve the subgoal using `itrivial`.
+-/
+syntax "[" ("-")? (colGt ppSpace frameIdent)* (" //")? " ]" (" as " colGt ident)? : specPat
+/--
+  `[> H₁ … Hₙ ]` generates a subgoal for the premise with `H₁ … Hₙ` as the
+  hypotheses chosen for the context of the subgoal wrapped in a modality.
+  `[> H₁ … Hₙ ]` is analogous with all but `H₁ … Hₙ` as the chosen hypotheses.
+  `[ H₁ … Hₙ // ]` and `[> H₁ … Hₙ // ]` also attempt to solve the subgoal
+  using `itrivial`.
+-/
+syntax "[>" ("-")? (colGt ppSpace frameIdent)* (" //")? " ]" (" as " colGt ident)? : specPat
+/--
+  `[# $H₁ … $Hₙ ]` generates a subgoal for the persistent premise
+  with all hypotheses in the context available for the subgoal. The hypotheses
+  `$H₁ … $Hₙ` are framed.
+  `[# $H₁ … $Hₙ // ]` further attempts to solve the subgoal using `itrivial`.
+-/
+syntax "[#" (colGt ppSpace frameIdent)* (" //")? " ]" (" as " colGt ident)? : specPat
+/--
+  `[$]` solves the subgoal by framing, first with spatial hypotheses, and
+  then with intuitionistic hypotheses. Spatial hypotheses that are not framed
+  are carried over to the subsequent goal.
+-/
 syntax "[" "$" "]" : specPat
+/-- `[>$]` solves the subgoal by wrapping the premise with the modality and then by framing. -/
 syntax "[>" "$" "]" : specPat
+/-- `[#$]` solves the subgoal for the persistent premise by framing. -/
 syntax "[#" "$" "]" : specPat
+/--
+  `(H $$ spat₁ … spatₙ)` specialises the hypothesis `H` with the specialisation
+  patterns `spat₁ … spatₙ` before the resultant hypothesis is itself used for
+  matching a premise.
+-/
+syntax "(" pmTerm ")" : specPat
+/--
+  The proof mode term `H $$ spat₁ … spatₙ` refers to `H`, a hypothesis or a
+  Lean term whose conclusion is an entailment, with the specialisation patterns
+  `spat₁ … spatₙ` applied to its premises.
+-/
+syntax term (colGt " $$ " (colGt ppSpace specPat)+)? : pmTerm
 
 @[rocq_alias goal_kind]
 inductive SpecGoalKind
   | spatial
-  -- TODO: implement
   | modal
-  -- TODO: implement
   | intuitionistic
   deriving Repr, Inhabited, BEq
 
 @[rocq_alias spec_goal]
 structure SpecGoal where
   kind : SpecGoalKind
+  -- Indicates whether `itrivial` should be applied, applicable for the pattern `//`
   trivial : Bool
+  -- Set as `true` for the patterns `[- H1 …]` and `[>- H1 …]`
   negate : Bool
+  -- The list of hypotheses to be framed
   frame : List Ident
+  -- The list of hypotheses to be included in the subgoal without framing
   hyps : List Ident
 deriving Repr, Inhabited
 
--- see https://gitlab.mpi-sws.org/iris/iris/-/blob/master/iris/proofmode/spec_patterns.v?ref_type=heads#L15
+mutual
+
 @[rocq_alias spec_pat]
-inductive SpecPat
-  | ident (name : Ident)
+inductive SpecPatCase
+  | ident (pmt : PMTerm)
   | pure (t : Term)
   | goal (goal : SpecGoal) (goalName : Name)
   | autoframe (goal : SpecGoalKind)
   deriving Repr, Inhabited
+
+/--
+  The parsed specialisation pattern paired with its syntax, which is useful
+  for precise error highlighting using `withRef`.
+-/
+structure SpecPat where
+  ref : Syntax
+  spat : SpecPatCase
+  deriving Repr, Inhabited
+
+/-- A proof mode term (`H $$ spat1 spat2 …`) is a term paired with specialisation patterns. -/
+@[rocq_alias iTrm]
+structure PMTerm where
+  term : Term
+  spats : List SpecPat
+  deriving Repr, Inhabited
+
+end
 
 @[rocq_alias goal_kind_modal]
 def SpecGoalKind.isModal : SpecGoalKind → Bool
   | modal => true
   | _ => false
 
+/-- Returns `true` for the patterns `[> …]` or `[>$]`. -/
 @[rocq_alias spec_pat_modal]
-def SpecPat.isModal : SpecPat → Bool
+def SpecPat.isModal (spat : SpecPat) : Bool :=
+  match spat.spat with
   | .goal g _ => g.kind.isModal
   | .autoframe g => g.isModal
   | _ => false
 
-#rocq_ignore spec_pat.stack_item "Not necessary in Lean"
-#rocq_ignore spec_pat.parse_go "Not necessary in Lean"
-#rocq_ignore spec_pat.close "Not necessary in Lean"
-#rocq_ignore spec_pat.close_ident "Not necessary in Lean"
+/-- Returns `true` if the specialisation pattern contains `[> …]` or `[>$]`. -/
+partial def SpecPat.anyModal (spat : SpecPat) : Bool :=
+  match spat.spat with
+  | .ident pmt => pmt.spats.any SpecPat.anyModal
+  | _ => spat.isModal
+
+#rocq_ignore spec_pat.stack_item "Not necessary in Lean, functionality provided by SpecPat.parse"
+#rocq_ignore spec_pat.parse_go "Not necessary in Lean, functionality provided by SpecPat.parse"
+#rocq_ignore spec_pat.parse_goal "Not necessary in Lean, functionality provided by SpecPat.parse"
+#rocq_ignore spec_pat.close "Not necessary in Lean, functionality provided by SpecPat.parse"
+#rocq_ignore spec_pat.close_ident "Not necessary in Lean, functionality provided by SpecPat.parse"
 
 def FrameIdent.parse : TSyntax `frameIdent → (Ident ⊕ Ident)
   | `(frameIdent| $name:ident) => .inl name
   | e =>
-    -- Antiquotations start with $, so if we find one, it is a framing assumption
+    -- Antiquotations start with `$`, so if we find one, it is a framing assumption
     if e.raw.isAntiquot then
       .inr ⟨e.raw.getAntiquotTerm⟩
     else .inl default -- should not happen
 
-@[rocq_alias spec_pat.parse]
-def SpecPat.parse (pat : Syntax) : MacroM SpecPat := do
-  match go ⟨← expandMacros pat⟩ with
-  | none => Macro.throwUnsupported
-  | some pat => return pat
-where
-  go : TSyntax `specPat → Option SpecPat
-  | `(specPat| $name:ident) => some <| .ident name
+def PMTerm.is_nontrivial (pmt : PMTerm) : Bool := !pmt.spats.isEmpty
+
+def SpecPatCase.parse : TSyntax `specPat → Option SpecPatCase
+  | `(specPat| $name:ident) => some <| .ident ⟨name, []⟩
   | `(specPat| % $term:term) => some <| .pure term
-  | `(specPat| [$[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
+  | `(specPat| [$[-%$negTk]? $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
     let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .spatial, negate := false, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
-  | `(specPat| [- $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
+    some <| .goal
+      { kind := .spatial,
+        negate := negTk.isSome,
+        trivial := trivTk.isSome,
+        frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
+  | `(specPat| [> $[-%$negTk]? $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
     let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .spatial, negate := true, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
-  | `(specPat| [> $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
-    let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .modal, negate := false, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
-  | `(specPat| [> - $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
-    let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .modal, negate := true, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
+    some <| .goal
+      { kind := .modal,
+        negate := negTk.isSome,
+        trivial := trivTk.isSome,
+        frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
   | `(specPat| [# $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
     let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .intuitionistic, negate := false, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
+    some <| .goal
+      { kind := .intuitionistic,
+        negate := false,
+        trivial := trivTk.isSome,
+        frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
   | `(specPat| [$]) => some <| .autoframe .spatial
   | `(specPat| [# $]) => some <| .autoframe .intuitionistic
   | `(specPat| [> $]) => some <| .autoframe .modal
   | _ => none
+
+mutual
+
+@[rocq_alias spec_pat.parse]
+partial def SpecPat.parse (term : Syntax) : MacroM SpecPat := do
+  let stx ← expandMacros term
+  match stx with
+  -- Recursive parsing for nested specialisation patterns
+  | `(specPat| ( $pmt:pmTerm )) => return ⟨term, .ident <| ← PMTerm.parse pmt⟩
+  -- No nested specialisation pattern involved
+  | _ =>
+    match SpecPatCase.parse ⟨stx⟩ with
+    | some pat => return ⟨term, pat⟩
+    | none => Macro.throwUnsupported
+
+partial def PMTerm.parse (term : Syntax) : MacroM PMTerm := do
+  match ← expandMacros term with
+  | `(pmTerm| $trm:term) => return ⟨trm, []⟩
+  | `(pmTerm| $trm:term $$ $[$spats:specPat]*) => return ⟨trm, ← parseSpats spats⟩
+  | _ => Macro.throwUnsupported
+where
+  parseSpats (spats : TSyntaxArray `specPat) : MacroM (List SpecPat) :=
+    return ← spats.toList.mapM (SpecPat.parse ·.raw)
+
+end
