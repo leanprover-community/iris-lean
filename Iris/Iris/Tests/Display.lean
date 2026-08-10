@@ -66,10 +66,12 @@ info:
   ⋆ R : PROP
 ⋆ HPQ (binder) : P ∗ P -∗ R -∗ Q
   ⋆ P ∗ P -∗ R -∗ Q : PROP
-    ⋆ P : PROP
-    ⋆ P : PROP
-    ⋆ R : PROP
-    ⋆ Q : PROP
+    ⋆ P ∗ P : PROP
+      ⋆ P : PROP
+      ⋆ P : PROP
+    ⋆ R -∗ Q : PROP
+      ⋆ R : PROP
+      ⋆ Q : PROP
 ⋆ Q : PROP
 -/
 #guard_msgs (whitespace := lax) in
@@ -98,19 +100,24 @@ info:
     ⋆ P2 : PROP
 ⋆ HP3 (binder) : <absorb> <affine> P3
   ⋆ <absorb> <affine> P3 : PROP
-    ⋆ P3 : PROP
+    ⋆ <affine> P3 : PROP
+      ⋆ P3 : PROP
 ⋆ HP4 (binder) : <absorb> <affine> P4
   ⋆ <absorb> <affine> P4 : PROP
-    ⋆ P4 : PROP
+    ⋆ <affine> P4 : PROP
+      ⋆ P4 : PROP
 ⋆ H (binder) : <absorb> (P1 ∗ P2 ∗ <affine> (P3 ∗ P4)) -∗ Q
   ⋆ <absorb> (P1 ∗ P2 ∗ <affine> (P3 ∗ P4)) -∗ Q : PROP
-    ⋆ (P1 ∗ P2 ∗ <affine> (P3 ∗ P4)) : PROP
-      ⋆ P1 : PROP
-      ⋆ P2 : PROP
-      ⋆ (P3 ∗ P4) : PROP
-        ⋆ P3 : PROP
-        ⋆ P4 : PROP
-  ⋆ Q : PROP
+    ⋆ <absorb> (P1 ∗ P2 ∗ <affine> (P3 ∗ P4)) : PROP
+      ⋆ (P1 ∗ P2 ∗ <affine> (P3 ∗ P4)) : PROP
+        ⋆ P1 : PROP
+        ⋆ P2 ∗ <affine> (P3 ∗ P4) : PROP
+        ⋆ P2 : PROP
+      ⋆ <affine> (P3 ∗ P4) : PROP
+        ⋆ (P3 ∗ P4) : PROP
+          ⋆ P3 : PROP
+          ⋆ P4 : PROP
+    ⋆ Q : PROP
 ⋆ Q : PROP
 -/
 #guard_msgs (whitespace := lax) in
@@ -182,10 +189,12 @@ info:
 ⋆ Hwand (binder) : ∀ x, Q -∗ ⌜x = n⌝
   ⋆ ∀ x, Q -∗ ⌜x = n⌝ : PROP
     ⋆ x : Nat
-    ⋆ Q : PROP
-    ⋆ x = n : Prop
-      ⋆ x : Nat
-      ⋆ n : Nat
+    ⋆ Q -∗ ⌜x = n⌝ : PROP
+      ⋆ Q : PROP
+      ⋆ ⌜x = n⌝ : PROP
+        ⋆ x = n : Prop
+          ⋆ x : Nat
+          ⋆ n : Nat
 ⋆ HQ (binder) : Q
   ⋆ Q : PROP
 ⋆ False : PROP

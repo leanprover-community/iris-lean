@@ -44,19 +44,26 @@ syntax:min "iprop% " term:min : term
 macro_rules
   | `(iprop% $t) => `(iprop($t))
 
+/-- Retain the syntax source information for correct delaboration. -/
+def keepInfo (src : Syntax) (t : Term) : Term :=
+  match src.getHeadInfo with
+  | info@(.synthetic ..) => ⟨t.raw.setInfo info⟩
+  | _                    => t
+
 /-- Remove an `iprop` quotation from a `term` syntax object. -/
-partial def unpackIprop [Monad m] [MonadRef m] [MonadQuotation m] : Term → m Term
-  | `(iprop($P))             => do `($P)
-  | `($P:ident)              => do `($P)
-  | `(?$P:ident)             => do `(?$P)
-  | `(($P))                  => do `(($(← unpackIprop P)))
-  | `($P $[ $Q]*)            => do ``($P $[ $Q]*)
-  | `(if $c then $t else $e) => do
+partial def unpackIprop [Monad m] [MonadRef m] [MonadQuotation m] (stx : Term) : m Term := do
+  match stx with
+  | `(iprop($P))             => return keepInfo stx (← `($P))
+  | `($P:ident)              => `($P)
+  | `(?$P:ident)             => `(?$P)
+  | `(($P))                  => return keepInfo stx (← `(($(← unpackIprop P))))
+  | `($P $[ $Q]*)            => return keepInfo stx (← ``($P $[ $Q]*))
+  | `(if $c then $t else $e) =>
     let t ← unpackIprop t
     let e ← unpackIprop e
     `(if $c then $t else $e)
-  | `(($P : $t))             => do ``(($(← unpackIprop P) : $t))
-  | `(match $[$g:generalizingParam]? $[$mot:motive]? $[$x:matchDiscr],* with $[$alts:matchAlt]*) => do
+  | `(($P : $t))             => ``(($(← unpackIprop P) : $t))
+  | `(match $[$g:generalizingParam]? $[$mot:motive]? $[$x:matchDiscr],* with $[$alts:matchAlt]*) =>
       -- The following type ascriptions look redundant, but, without them, the ``(match ...)`
       -- syntax quotation below fails with an error about types containing metavariables.
       let g : Option (TSyntax ``generalizingParam) := g
