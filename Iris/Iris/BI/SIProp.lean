@@ -287,8 +287,8 @@ attribute [rocq_alias siProp_primitive.later_forall_2] BI.later_sForall_2
 attribute [rocq_alias siProp_primitive.later_exist_false] BI.later_sExists_false
 attribute [rocq_alias siProp_primitive.later_false_em] BI.later_false_em
 
-#rocq_ignore siProp_pure_forall "BiPureForall is not ported."
-#rocq_ignore siProp_primitive.pure_forall_2 "BiPureForall is not ported."
+#rocq_ignore siProp_pure_forall "Not necessary due to classical logic, see BiPureForall."
+#rocq_ignore siProp_primitive.pure_forall_2 "Not necessary due to classical logic, see BiPureForall."
 
 #rocq_ignore siProp_bi_later_mixin "Not needed in Lean."
 #rocq_ignore siProp_bi_mixin "Not needed in Lean."
