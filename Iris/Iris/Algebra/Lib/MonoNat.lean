@@ -12,61 +12,6 @@ public import Iris.Algebra.Numbers
 
 namespace Iris
 
-open _root_.Std (Associative Commutative LeftIdentity LawfulLeftIdentity)
-
-section MaxNat
-
-@[grind cases]
-structure MaxNat where
-  ofNat ::
-  toNat : Nat
-
-instance : OfNat MaxNat n where ofNat := .ofNat n
-
-@[grind]
-def MaxNat.max (a b : MaxNat) : MaxNat where
-  toNat := a.toNat.max b.toNat
-
-scoped instance : Add MaxNat where add := .max
--- scoped instance : Max MaxNat where max := .max
-scoped instance : LE MaxNat where le a b := a.toNat ≤ b.toNat
-
-@[simp, grind =]
-theorem MaxNat.le_toNat (a b : MaxNat) : a ≤ b ↔ a.toNat ≤ b.toNat := by rfl
-
-@[simp, grind =]
-theorem MaxNat.toNat_add (a b : MaxNat) : (a + b).toNat = a.toNat.max b.toNat := rfl
-
-@[simp, grind =]
-theorem MaxNat.add_ofNat (a b : Nat) : (MaxNat.ofNat a + MaxNat.ofNat b) = MaxNat.ofNat (a.max b) := rfl
-
-@[grind =_]
-theorem MaxNat.toNat_zero : (0 : MaxNat).toNat = 0 := rfl
-
-@[grind =]
-theorem MaxNat.zero_ofNat : (0 : MaxNat) = .ofNat 0 := rfl
-
-theorem MaxNat.eq_toNat (a b : MaxNat) : a = b ↔ a.toNat = b.toNat := by
-  constructor
-  · rintro rfl; rfl
-  · cases a; cases b; rintro rfl; rfl
-
-scoped instance : Associative (α := MaxNat) (· + ·) where
-  assoc := by grind
-scoped instance : Commutative (α := MaxNat) (· + ·) where
-  comm := by grind
-scoped instance : LawfulLeftIdentity (α := MaxNat) (· + ·) (0 : MaxNat) where
-  left_id a := by grind
-scoped instance : Std.IdempotentOp (α := MaxNat) (· + ·) where
-  idempotent x := by grind
-scoped instance : COFE MaxNat := COFE.ofDiscrete _
-scoped instance : OFE.Discrete MaxNat := ⟨fun h => h⟩
-scoped instance : UCMRA MaxNat := OrdCommMonoidLike.instUCMRAOfLawfulLeftIdentityHAddZero
-scoped instance : CMRA.Discrete MaxNat := OrdCommMonoidLike.instDiscrete
-scoped instance : CMRA.CoreId (a : MaxNat) := OrdCommMonoidLike.instCoreId _
-
-end MaxNat
-
 @[rocq_alias mono_nat]
 abbrev MonoNat := Auth MaxNat
 

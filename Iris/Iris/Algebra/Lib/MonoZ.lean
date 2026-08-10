@@ -18,66 +18,6 @@ meta import Iris.Std.RocqPorting
 
 namespace Iris
 
-open _root_.Std (Associative Commutative IdempotentOp)
-
-section MaxZ
-
-@[grind cases]
-structure MaxZ where
-  ofInt ::
-  toInt : Int
-
-@[grind]
-def MaxZ.max (a b : MaxZ) : MaxZ where
-  toInt := Max.max a.toInt b.toInt
-
-scoped instance : Add MaxZ where add := .max
-scoped instance : LE MaxZ where le a b := a.toInt ≤ b.toInt
-
-@[simp, grind =]
-theorem MaxZ.le_toInt (a b : MaxZ) : a ≤ b ↔ a.toInt ≤ b.toInt := by rfl
-
-@[simp, grind =]
-theorem MaxZ.toInt_add (a b : MaxZ) : (a + b).toInt = Max.max a.toInt b.toInt := rfl
-
-@[simp, grind =]
-theorem MaxZ.add_ofInt (a b : Int) : (MaxZ.ofInt a + MaxZ.ofInt b) = MaxZ.ofInt (Max.max a b) := rfl
-
-theorem MaxZ.eq_toInt (a b : MaxZ) : a = b ↔ a.toInt = b.toInt := by
-  constructor
-  · rintro rfl; rfl
-  · cases a; cases b; rintro rfl; rfl
-
-scoped instance : Associative (α := MaxZ) (· + ·) where
-  assoc := by grind
-scoped instance : Commutative (α := MaxZ) (· + ·) where
-  comm := by grind
-scoped instance : IdempotentOp (α := MaxZ) (· + ·) where
-  idempotent x := by grind
-scoped instance : COFE MaxZ := COFE.ofDiscrete _
-scoped instance : OFE.Discrete MaxZ := ⟨fun h => h⟩
-scoped instance : CMRA MaxZ := OrdCommMonoidLike.instCMRA
-scoped instance : CMRA.Discrete MaxZ := OrdCommMonoidLike.instDiscrete
-scoped instance : CMRA.IsTotal MaxZ := OrdCommMonoidLike.instIsTotal
-scoped instance : CMRA.CoreId (a : MaxZ) := OrdCommMonoidLike.instCoreId _
-
-@[simp, grind =]
-theorem MaxZ.toInt_op (a b : MaxZ) : (a • b).toInt = Max.max a.toInt b.toInt := rfl
-
-@[rocq_alias max_Z_included]
-theorem MaxZ.inc_iff {a b : MaxZ} : a ≼ b ↔ a ≤ b :=
-  ⟨fun ⟨_, hz⟩ => by grind, fun h => ⟨b, (eq_toInt ..).mpr (by grind)⟩⟩
-
-@[rocq_alias max_Z_local_update]
-theorem MaxZ.local_update {a b a' : MaxZ} (h : a ≤ a') : (a, b) ~l~> (a', a') := by
-  refine fun _ mz _ hn => ⟨trivial, OFE.Dist.of_eq ?_⟩
-  cases mz with | none => rfl | some z =>
-  replace hn : a = b • z := hn
-  simp only [CMRA.op?, eq_toInt]
-  grind
-
-end MaxZ
-
 @[rocq_alias mono_Z]
 abbrev MonoZ := Auth (Option MaxZ)
 
