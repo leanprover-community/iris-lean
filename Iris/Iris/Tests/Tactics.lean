@@ -970,6 +970,33 @@ example [BI PROP] (P Q : PROP) : (<affine> (P -∗ Q)) ⊢ (<affine> P) -∗ <af
   iapply Hwand
   iexact HP
 
+inductive R where
+  | R_Constr (n : Int) (r : R)
+/-- Test `iapply` with a `match` in a hypothesis, regression test for
+https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/iapply.20doesn.27t.20work.20with.20matches.3F/near/615255205 -/
+example [BI PROP] (P : PROP) :
+    (∀ t,
+      (match t with
+      | R.R_Constr _ _ => True) -∗ P) -∗
+    (match t with
+    | R.R_Constr _ _ => True) -∗ P := by
+  iintro Hwand Ht
+  iapply Hwand
+  iapply Ht
+
+/-- Test `iapply` with other match, regression test for
+https://github.com/leanprover-community/iris-lean/issues/145 -/
+example [BI PROP] (Q : PROP) : Q ⊢ Q := by
+  iintro HQ
+  have H: (∀ b (Q: PROP),
+    (match b with
+     | true => iprop(Q)
+     | false => iprop(Q))
+    ⊢ Q) := by rintro ⟨⟩ <;> simp
+  iapply H
+  case b => exact true
+  itrivial
+
 end iapply
 
 section ihave
@@ -3805,13 +3832,13 @@ example [BI PROP] {u v w x y z : Nat} :
     ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ ∗ ⌜w + z = 2⌝ ∗ ⌜u = 0⌝ := by
   iintro ⟨H1, H2, H3⟩
   -- Simplify `(x + y) + 3 = 4` as `x + y = 1`
-  isimp in H1
+  isimp at H1
   isplitl [H1]
   -- Simplify `(x + y).succ = 2` as `x + y = 1`
   · isimp
     iexact H1
   -- Simplify the goal `w + z + 1 = Nat.succ 2` as `w + z = 2` and `u + v = v` as `u = 0`
-  · ieval (simp) in H2 H3
+  · ieval (simp) at H2 H3
     iframe
 
 /- Tests `isimp` with a pure hypothesis in the selection pattern. -/
@@ -3820,14 +3847,14 @@ example [BI PROP] {u v w x y z : Nat} :
 example [BI PROP] {x y : Nat} :
     ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ := by
   iintro #H
-  isimp in %x H
+  isimp at %x H
 
 /- Tests `isimp` with the simplification failing. -/
 /-- error: `simp` made no progress -/
 #guard_msgs in
 example [BI PROP] {x y : Nat} : ⌜x = 0⌝ ⊢@{PROP} ⌜x = 0⌝ := by
   iintro #H
-  isimp in H
+  isimp at H
 
 /-- Tests `isimp` with variants of `simp`. -/
 example [BI PROP] {m n p q : Nat} (h1 : m = n + 1) (h2 : r = t) (h3 : s = t) :
@@ -3842,7 +3869,7 @@ example [BI PROP] {m n p q : Nat} (h1 : m = n + 1) (h2 : r = t) (h3 : s = t) :
     · isimp [*]
       itrivial
     -- Simplification only with specific rules
-    · isimp only [Nat.add_comm] in H
+    · isimp only [Nat.add_comm] at H
       isimp only [Nat.add_comm]
       iexact H
 
@@ -3853,7 +3880,7 @@ private def def4 := def3
 example [BI PROP] : ⌜def4 = 10⌝ ⊢@{PROP} ⌜10 = 10⌝ ∗ ⌜def4 = 10⌝ := by
   iintro #H
   -- Unfold definitions in an Iris hypothesis
-  iunfold def4, def3 in H
+  iunfold def4, def3 at H
   iframe H
   -- Unfold definitions in the proof goal
   iunfold def4, def3
@@ -3866,7 +3893,7 @@ example [BI PROP] : ⌜def4 = 10⌝ ⊢@{PROP} ⌜10 = 10⌝ ∗ ⌜def4 = 10⌝
 example [BI PROP] {x y : Nat} (_ : False) :
     ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ := by
   iintro H
-  ieval (contradiction) in H
+  ieval (contradiction) at H
 
 /- Tests `ieval` where the supplied tactic produces more than one subgoal. -/
 /-- error: ieval: the supplied tactic does not produce exactly one subgoal -/
@@ -3874,7 +3901,7 @@ example [BI PROP] {x y : Nat} (_ : False) :
 example [BI PROP] {x y : Nat} (h : False) :
     ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ := by
   iintro H
-  ieval (cases x) in H
+  ieval (cases x) at H
 
 /- Tests `ieval` where the given tactic breaks the Iris entailment. -/
 /-- error: ieval: the goal is not Iris entailment upon applying the supplied tactic -/
@@ -3882,7 +3909,7 @@ example [BI PROP] {x y : Nat} (h : False) :
 example [BI PROP] {x y : Nat} :
     ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ := by
   iintro H
-  ieval (exfalso) in H
+  ieval (exfalso) at H
 
 end ieval
 
