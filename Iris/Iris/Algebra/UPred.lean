@@ -50,21 +50,23 @@ theorem UPred.mono_unpacked {M : Type _} [UCMRA M] (P : UPred M) {n1 n2 : Nat} {
     (Hle : n2 ≤ n1) : P.holds_unpacked n2 x2 Hx2 :=
   P.mono HP Hxle Hle
 
+/-- The definition of UPred is equivalent to separately proving pointwise down-closure,
+non-expansivity, and monotonicity. -/
 @[rocq_alias uPred_alt]
 theorem uPred_alt {M : Type _} [UCMRA M] (P : Nat → M → Prop) :
-    (∀ n1 n2 (x1 x2 : M), P n1 x1 → x1 ≼{n1} x2 → n2 ≤ n1 → P n2 x2) ↔
-    ((∀ (x : M) n1 n2, n2 ≤ n1 → P n1 x → P n2 x) ∧
-     (∀ n (x1 x2 : M), x1 ≡{n}≡ x2 → ∀ m, m ≤ n → (P m x1 ↔ P m x2)) ∧
-     (∀ n (x1 x2 : M), x1 ≼{n} x2 → ∀ m, m ≤ n → P m x1 → P m x2)) := by
+    (∀ {n1 n2} {x1 x2 : M}, P n1 x1 → x1 ≼{n1} x2 → n2 ≤ n1 → P n2 x2) ↔
+    ((∀ {x : M} {n1 n2}, n2 ≤ n1 → P n1 x → P n2 x) ∧
+     (∀ {n} {x1 x2 : M}, x1 ≡{n}≡ x2 → ∀ m, m ≤ n → (P m x1 ↔ P m x2)) ∧
+     (∀ {n} {x1 x2 : M}, x1 ≼{n} x2 → ∀ m, m ≤ n → P m x1 → P m x2)) := by
   constructor
   · intro H
-    refine ⟨fun x n1 n2 Hle HP => H n1 n2 x x HP IncludedN.rfl Hle, ?_, ?_⟩
-    · refine fun n x1 x2 He m Hm => ⟨fun HP => ?_, fun HP => ?_⟩
-      · exact H m m x1 x2 HP (incN_of_dist_of_incN (He.le Hm) IncludedN.rfl) (Nat.le_refl _)
-      · exact H m m x2 x1 HP (incN_of_dist_of_incN (He.le Hm).symm IncludedN.rfl) (Nat.le_refl _)
-    · exact fun n x1 x2 Hinc m Hm HP => H m m x1 x2 HP (incN_of_incN_le Hm Hinc) (Nat.le_refl _)
+    refine ⟨fun Hle HP => H HP .rfl Hle, ?_, ?_⟩
+    · refine fun He m Hm => ⟨fun HP => ?_, fun HP => ?_⟩
+      · exact H HP (incN_of_dist_of_incN (He.le Hm) .rfl) (Nat.le_refl _)
+      · exact H HP (incN_of_dist_of_incN (He.le Hm).symm .rfl) (Nat.le_refl _)
+    · exact fun Hinc m Hm HP => H HP (incN_of_incN_le Hm Hinc) (Nat.le_refl _)
   · refine fun ⟨Hdc, _, Hmono⟩ n1 n2 x1 x2 HP Hinc Hle => ?_
-    exact Hmono n2 x1 x2 (incN_of_incN_le Hle Hinc) n2 (Nat.le_refl _) (Hdc x1 n1 n2 Hle HP)
+    exact Hmono (incN_of_incN_le Hle Hinc) n2 (Nat.le_refl _) (Hdc Hle HP)
 
 instance [UCMRA M] : Inhabited (UPred M) :=
   ⟨fun _ _ => True, fun _ _ _ => ⟨⟩⟩
