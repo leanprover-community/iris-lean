@@ -29,7 +29,7 @@ namespace NatCancel
 /-- Cases where cancellation happens without recursing -/
 def natCancelLeaf (n m : Q(Nat)) : MetaM <| Option <| Q(Nat) × Q(Nat) × Expr := do
   -- Syntactically equal operands cancel completely
-  if ← withNewMCtxDepth <| withConfig ({ · with isDefEqStuckEx := false }) <| isDefEq n m then
+  if ← withNewMCtxDepth <| isDefEq n m then
     return some (q((0 : Nat)), q((0 : Nat)), q(Nat.add_comm 0 $m))
   match ← evalNat n, ← evalNat m with
   -- One side evaluates to zero: nothing to do

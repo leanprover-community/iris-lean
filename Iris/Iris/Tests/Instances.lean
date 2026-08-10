@@ -359,7 +359,7 @@ end semiOutParam
 
 section NatCancel
 
-variable (m n : Nat)
+variable (m n p q : Nat)
 
 /- Cancellation of `1` on both sides, with the numeral in a rightmost position. -/
 /-- info: solution: NatCancel (m + n + 1) 1 (m + n) 0, new goals: [] -/
@@ -380,6 +380,11 @@ variable (m n : Nat)
 /-- info: solution: NatCancel (m + n) n m 0, new goals: [] -/
 #guard_msgs in
 #ipm_synth (NatCancel (m + n) n _ _)
+
+/- Cancellation of multiple variables on both sides. -/
+/-- info: solution: NatCancel (m + (3 + (p + n))) (p + q + 2) (m + (1 + n)) q, new goals: [] -/
+#guard_msgs in
+#ipm_synth (NatCancel (m + (3 + (p + n))) (p + q + 2) _ _)
 
 /- Cancellation of zero, leaving both sides unchanged. -/
 /-- info: solution: NatCancel (m + n) 0 (m + n) 0, new goals: [] -/

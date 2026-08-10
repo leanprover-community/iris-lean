@@ -487,8 +487,7 @@ where
       | return none
 
     -- Check that progress is made in the recursive search
-    let progress ← withTransparency .instances <|
-      withConfig ({ · with isDefEqStuckEx := false }) do
+    let progress ← withTransparency .instances <| do
         return !(← isDefEq m m')
 
     let Q : Q($prop) ← mkFreshExprMVarQ q($prop)
