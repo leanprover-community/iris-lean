@@ -78,8 +78,6 @@ theorem imp_elim_left [BI PROP] {P Q : PROP} : (P → Q) ∧ P ⊢ Q := imp_elim
 @[rocq_alias bi.impl_elim_r]
 theorem imp_elim_right [BI PROP] {P Q : PROP} : P ∧ (P → Q) ⊢ Q := imp_elim_swap .rfl
 
-theorem imp_elim_alt [BI PROP] {P Q R : PROP} (h : P ⊢ Q → R) : P ∧ Q ⊢ R := imp_elim h
-
 @[rocq_alias bi.False_elim]
 theorem false_elim [BI PROP] {P : PROP} : False ⊢ P := pure_elim' False.elim
 
@@ -1038,6 +1036,7 @@ instance sep_affine [BI PROP] (P Q : PROP) [Affine P] [Affine Q] : Affine iprop(
 instance affinely_affine [BI PROP] (P : PROP) : Affine iprop(<affine> P) where
   affine := affinely_elim_emp
 
+@[rocq_alias bi_inhabited]
 instance [BIBase PROP] : Inhabited PROP where
   default := emp
 

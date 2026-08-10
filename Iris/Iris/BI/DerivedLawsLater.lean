@@ -40,6 +40,7 @@ theorem later_emp [BIAffine PROP] : ▷ emp ⊣⊢ (emp : PROP) :=
 @[rocq_alias bi.later_emp_2]
 theorem later_emp_2 : emp ⊢@{PROP} ▷ emp := later_intro
 
+@[rocq_alias bi.later_forall_2]
 theorem later_forall_2 {α} {Φ : α → PROP} : (∀ a, ▷ Φ a) ⊢ ▷ ∀ a, Φ a := by
   refine (forall_intro ?_).trans later_sForall_2
   intro P
@@ -59,6 +60,7 @@ theorem later_exists_mp {Φ : α → PROP} :
     (∃ a, ▷ Φ a) ⊢ ▷ (∃ a, Φ a) :=
   exists_elim (later_mono <| exists_intro ·)
 
+@[rocq_alias bi.later_exist_false]
 theorem later_exists_false {Φ : α → PROP} :
     (▷ ∃ a, Φ a) ⊢ ▷ False ∨ ∃ a, ▷ Φ a := by
   apply later_sExists_false.trans
