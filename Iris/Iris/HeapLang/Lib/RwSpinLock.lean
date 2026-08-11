@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors:
+Authors: Markus de Medeiros
 -/
 module
 
@@ -92,9 +92,9 @@ prove `writerLocked_exclusive`. -/
 @[rocq_alias heap_lang.rw_state_inv]
 def rwStateInv (γ : GName) (l : Loc) (Φ : Qp → IProp GF) : IProp GF := iprop%
   ∃ z : Int, l ↦ some hl_val(#z) ∗
-    (⌜z = -1⌝ ∗ own γ (●{.own Qp.quarter} valid ∅)
+    (⌜z = -1⌝ ∗ own γ (●{.own Qp.quarter} (.ofSet ∅))
      ∨ ⌜0 ≤ z⌝ ∗ ∃ (q : Qp) (g : ReaderFracs),
-         own γ (● valid g) ∗
+         own γ (● .ofSet g) ∗
          ⌜size g = z.toNat⌝ ∗
          ⌜fold Qp.add q g = 1⌝ ∗
          Φ q)
@@ -110,10 +110,10 @@ instance instIsRwLockPersistent (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
     Persistent (isRwLock γ lk Φ) := by unfold isRwLock; infer_instance
 
 @[rocq_alias heap_lang.reader_locked]
-def readerLocked (γ : GName) (q : Qp) : IProp GF := own γ (◯ valid {q})
+def readerLocked (γ : GName) (q : Qp) : IProp GF := own γ (◯ .ofSet {q})
 
 @[rocq_alias heap_lang.writer_locked]
-def writerLocked (γ : GName) : IProp GF := own γ (●{.own Qp.threeQuarters} valid ∅)
+def writerLocked (γ : GName) : IProp GF := own γ (●{.own Qp.threeQuarters} .ofSet ∅)
 
 instance instReaderLockedTimeless (γ : GName) (q : Qp) :
     Timeless (readerLocked (GF := GF) γ q) := by unfold readerLocked; infer_instance
@@ -124,10 +124,10 @@ instance instWriterLockedTimeless (γ : GName) :
 /-- Full authoritative ownership of the empty reader set splits into the quarter kept by
 `rwStateInv` and the three quarters owned by `writerLocked`. -/
 theorem own_auth_empty_split (γ : GName) :
-    own (GF := GF) γ (●{.own Qp.quarter} valid (∅ : ReaderFracs)) ∗
-      own γ (●{.own Qp.threeQuarters} valid ∅) ⊣⊢ own γ (● valid (∅ : ReaderFracs)) := by
-  have hsplit : (● valid (∅ : ReaderFracs) : Auth (LeibnizMultiSet ReaderFracs))
-      = (●{.own Qp.quarter} valid (∅ : ReaderFracs)) • ●{.own Qp.threeQuarters} valid ∅ := by
+    own (GF := GF) γ (●{.own Qp.quarter} .ofSet (∅ : ReaderFracs)) ∗
+      own γ (●{.own Qp.threeQuarters} .ofSet ∅) ⊣⊢ own γ (● .ofSet (∅ : ReaderFracs)) := by
+  have hsplit : (● .ofSet (∅ : ReaderFracs) : Auth (LeibnizMultiSet ReaderFracs))
+      = (●{.own Qp.quarter} LeibnizMultiSet.ofSet (∅ : ReaderFracs)) • ●{.own Qp.threeQuarters} LeibnizMultiSet.ofSet ∅ := by
     rw [← Auth.auth_dfrac_op, DFrac.op_own, Qp.quarter_add_threeQuarters]
   rw [hsplit]
   exact iOwn_op.symm
@@ -193,12 +193,12 @@ theorem isRwLock_iff (γ : GName) (lk : Val) (Φ Ψ : Qp → IProp GF) :
 
 @[rocq_alias heap_lang.auth_valid_gmultiset_singleton]
 theorem auth_valid_singleton {MS : Type _} [LawfulMultiSet MS A] {dq : DFrac} {v : A} {g : MS}
-    (h : ✓ ((●{dq} valid g : Auth (LeibnizMultiSet MS)) • ◯ valid {v})) : v ∈ g :=
+    (h : ✓ ((●{dq} .ofSet g : Auth (LeibnizMultiSet MS)) • ◯ LeibnizMultiSet.ofSet {v})) : v ∈ g :=
   singleton_subset_iff.mp (included_iff_subset.mp (Auth.both_dfrac_valid_discrete.mp h).2.1)
 
 @[rocq_alias heap_lang.own_auth_gmultiset_singleton_2]
 theorem own_auth_singleton_2 {γ : GName} {dq : DFrac} {v : Qp} {g : ReaderFracs} :
-    own (GF := GF) γ (●{dq} valid g) ∗ own γ (◯ valid {v}) ⊢ ⌜v ∈ g⌝ := by
+    own (GF := GF) γ (●{dq} .ofSet g) ∗ own γ (◯ .ofSet {v}) ⊢ ⌜v ∈ g⌝ := by
   iintro ⟨Hauth, Hfrag⟩
   icombine Hauth Hfrag gives %Hvalid
   ipureintro
@@ -210,7 +210,7 @@ theorem newlock_spec (Φ : Qp → IProp GF) {P : IProp GF} {ioΦ ioq}
     {{ P }} hl(&newlock #()) {{ lk γ, RET lk; isRwLock γ lk Φ }} := by
   iintro %φ HP Hφ
   wp_rec
-  imod iOwn_alloc (F := RwSpinLockF) (● valid ∅) (Auth.auth_valid.mpr trivial) with ⟨%γ, Hγ⟩
+  imod iOwn_alloc (F := RwSpinLockF) (● .ofSet ∅) (Auth.auth_valid.mpr trivial) with ⟨%γ, Hγ⟩
   wp_alloc l with Hl
   imod inv_alloc rwLockN ⊤ (rwStateInv γ l Φ) $$ [Hl Hγ HP] with #Hinv
   · unfold rwStateInv
@@ -284,8 +284,8 @@ theorem tryAcquireReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
     · rw [Qp.half_add_half]
       iexact HΦ
     icases HΦdup $$ %q.half %q.half HΦ with ⟨HΦ, HΦgive⟩
-    have halloc : (● valid g : Auth (LeibnizMultiSet ReaderFracs)) ~~>
-        (● valid (g ⊎ {q.half})) • ◯ valid ({q.half} : ReaderFracs) :=
+    have halloc : (● .ofSet g : Auth (LeibnizMultiSet ReaderFracs)) ~~>
+        (● LeibnizMultiSet.ofSet (g ⊎ {q.half})) • ◯ LeibnizMultiSet.ofSet ({q.half} : ReaderFracs) :=
       Auth.auth_update_alloc (localUpdate (Y := ∅) disjUnion_empty_right.symm)
     imod iOwn_update halloc $$ Hauth with ⟨Hauth, Hview⟩
     imod G2 $$ [Hl Hauth HΦ]
@@ -377,8 +377,8 @@ theorem releaseReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) (q : Q
       omega
     omega
   have hdealloc :
-      ((● valid g : Auth (LeibnizMultiSet ReaderFracs)) • ◯ valid ({q} : ReaderFracs)) ~~>
-        ● valid (g \ {q}) :=
+      ((● .ofSet g : Auth (LeibnizMultiSet ReaderFracs)) • ◯ LeibnizMultiSet.ofSet ({q} : ReaderFracs)) ~~>
+        ● .ofSet (g \ {q}) :=
     Auth.auth_update_dealloc (localUpdate (Y' := ∅) (by
       rw [disjUnion_empty_right, disjUnion_comm, ← disjUnion_singleton_difference Hmem]))
   imod iOwn_update_op (F := RwSpinLockF) hdealloc $$ [$Hauth $Hlocked] with Hauth
@@ -494,7 +494,7 @@ theorem releaseWriter_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
   icases G1 with ⟨%z, Hl, Hz⟩
   wp_store
   icases Hz with (⟨-, Hquarter⟩ | ⟨-, %q, %g, Hauth, -, -, -⟩)
-  · ihave Hauth : iprop(own γ (● valid (∅ : ReaderFracs))) $$ [Hquarter Hlocked]
+  · ihave Hauth : iprop(own γ (● .ofSet (∅ : ReaderFracs))) $$ [Hquarter Hlocked]
     · iapply (own_auth_empty_split γ).mp
       iframe Hquarter Hlocked
     imod G2 $$ [Hl Hauth HΦ]
