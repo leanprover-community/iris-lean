@@ -142,7 +142,6 @@ where go {e}
         | throwIPMError "cannot transform hypothesis {name}: {ty} with {C}"
       have heq : Q(@ModalityAction.transform $prop1 $prop2 $C = .transform $C) :=
         q(Eq.refl (ModalityAction.transform $C))
-      have hC : Q($C $ty $ty') := hC
       have heq : Q($(M).action $p = .transform $C) := heq
       return ⟨_, .mkHyp bi1 name ivar p ty', q(modaction_transform $M $heq $hC)⟩
     | .clear =>

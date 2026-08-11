@@ -449,7 +449,7 @@ instance (priority := default - 10) intoLaterN_and_left [BI PROP]
 instance (priority := default - 11) intoLaterN_and_right [BI PROP]
     progress n (P P2 Q2 : PROP)
     [h : IntoLaterN (progress := true) (only_head := false) n P2 Q2] :
-    IntoLaterN progress (progress := false) n iprop(P ∧ P2) iprop(P ∧ Q2) where
+    IntoLaterN progress (only_head := false) n iprop(P ∧ P2) iprop(P ∧ Q2) where
   into_laterN := (and_mono (laterN_intro n) h.1).trans (laterN_and n).2
 
 @[ipm_backtrack, rocq_alias into_laterN_forall]

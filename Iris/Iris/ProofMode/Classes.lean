@@ -289,7 +289,10 @@ also below other logical connectives. For [inext] it should strip laters below o
 connectives, but this should not happen while framing.
 
 Instead of implementing `MaybeIntoLaterN` as in Rocq, we introduce `progress`
-as an additional parameter of `IntoLaterN` to indicate whether any later modality is stripped.
+as an additional parameter of `IntoLaterN` to indicate the instance must strip at least one
+later modality. Recursive instances should set `progress` to `true` in the call to
+`IntoLaterN` for the subexpression such that the recursive instance only applies when something
+changes in the subexpression. Otherwise, the default instance `intoLaterN_default` applies.
 -/
 @[ipm_class, rocq_alias MaybeIntoLaterN, rocq_alias IntoLaterN]
 class IntoLaterN {PROP} [BI PROP] (progress only_head : Bool) (n : Nat)

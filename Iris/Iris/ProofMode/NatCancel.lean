@@ -15,6 +15,7 @@ namespace Iris.ProofMode
   Type class for natural number cancellation. Given a number `n` and a
   number `m` that should be cancelled (subtracted) from `n`, compute a new `n'`
   and a remainder `m'` that could not be cancelled.
+  `stuck` is `true` if nothing was cancelled.
 -/
 @[ipm_class]
 class NatCancel (n m : Nat) (n' m' : outParam Nat) (stuck : outParam Bool) : Prop where
