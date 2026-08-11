@@ -71,7 +71,7 @@ instance bi_tc_pre_mono [Sbi PROP] [OFE A] (R : A → A → PROP) [NonExpansive�
   mono_pred := by
     intro Φ Ψ hΦ hΨ
     iintro #Hmono %x₁ H
-    iunfold biTcPre in H
+    iunfold biTcPre at H
     iunfold biTcPre
     icases H with ⟨H | ⟨%x', HR, Hrec⟩⟩
     · ileft; itrivial
@@ -149,7 +149,7 @@ theorem bi_nsteps_add_inv (n m : Nat) (x z : A) :
   | succ n ih =>
     rw [Nat.succ_add]
     iintro H
-    iunfold biNsteps in H
+    iunfold biNsteps at H
     icases H with ⟨%y, HR, Hrest⟩
     icases ih $$ Hrest with ⟨%y', Hn, Hm⟩
     iexists y'
@@ -343,9 +343,9 @@ instance bi_tc_persistent [∀ x y, Persistent (R x y)] (x y : A) :
 @[rocq_alias bi_nsteps_once_inv]
 theorem bi_nsteps_once_inv (x y : A) : biNsteps R 1 x y -∗ R x y := by
   iintro Hn
-  iunfold biNsteps in Hn
+  iunfold biNsteps at Hn
   icases Hn with ⟨%x', H, Heq⟩
-  iunfold biNsteps in Heq
+  iunfold biNsteps at Heq
   irewrite [Heq] at H
   · exact NonExpansive₂.ne_right R x
   itrivial
@@ -356,7 +356,7 @@ theorem bi_nsteps_trans (n m : Nat) (x y z : A) :
   iinduction n generalizing %x with
   | zero =>
       iintro Heq
-      iunfold biNsteps in Heq
+      iunfold biNsteps at Heq
       simp only [Nat.zero_add]
       irewrite [Heq]
       · exact ⟨fun _ _ _ h => wand_ne.ne .rfl (NonExpansive₂.ne h .rfl)⟩
@@ -431,7 +431,7 @@ theorem bi_tc_nsteps (x y : A) :
         icases bi_nsteps_inv_right R n x y $$ Hn with ⟨%x', Hprev, HR⟩
         cases n with
         | zero =>
-            iunfold biNsteps in Hprev
+            iunfold biNsteps at Hprev
             irewrite [←Hprev] at HR
             · exact NonExpansive₂.ne_left R y
             iapply bi_tc_once; itrivial
@@ -457,7 +457,7 @@ theorem bi_rtc_nsteps (x y : A) : biRtc R x y ⊣⊢ ∃ n, biNsteps R n x y := 
   · iintro ⟨%n, Hn⟩
     iinduction n generalizing! %y with
     | zero =>
-        iunfold biNsteps in Hn
+        iunfold biNsteps at Hn
         irewrite [Hn]
         iapply bi_rtc_refl
     | succ n ih =>
