@@ -295,12 +295,12 @@ theorem of_twp (s : Stuckness) (e : Expr) (Φ : Val → IProp GF) :
   let Ψ := fun (E : CoPset) (e : Expr) (_ : Val → IProp GF) => iprop(
     ⌜E = ⊤⌝ -∗ get (ι := ι) [e])
   have hΨ : NonExpansive
-      (fun x : twp.Internal.Args Expr Val GF => Ψ x.1.1 x.1.2 x.2) := by
+      (fun x : twp.Internal.Args Expr Val GF => Ψ x.1 x.2.1 x.2.2) := by
     constructor
     intro n x y hxy
-    rcases x with ⟨⟨EX, eX⟩, ΦX⟩
-    rcases y with ⟨⟨EY, eY⟩, ΦY⟩
-    rcases hxy with ⟨⟨hE, he⟩, _⟩
+    rcases x with ⟨EX, eX, ΦX⟩
+    rcases y with ⟨EY, eY, ΦY⟩
+    rcases hxy with ⟨hE, he, _⟩
     change EX = EY at hE
     change eX = eY at he
     subst EY
