@@ -147,6 +147,9 @@ instance frame_forall {α} [BI PROP] p R (Φ Ψ : α → PROP)
   frame := forall_intro λ a =>
     (sep_mono_right (forall_elim a)).trans (h a).frame_instantiatiate_exist_disabled.frame
 
+#rocq_ignore frame_tforall
+  "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
+
 @[ipm_backtrack, rocq_alias frame_impl_persistent]
 instance frame_impl_persistent [BI PROP] (R P1 P2 Q2 : PROP)
     [h : FrameInstantiateExistDisabled true R P2 Q2] :
@@ -297,6 +300,9 @@ theorem frame_exist [BI PROP] {α} (p : Bool) (R : PROP) (Φ : α → PROP)
     (a : α) (Q : PROP) (inst : Frame p R (Φ a) Q) :
     Frame p R iprop(BI.exists Φ) Q where
   frame := inst.frame.trans <| exists_intro a
+
+#rocq_ignore frame_texist
+  "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
 
 @[rocq_alias frame_exist_no_instantiate]
 theorem frame_exist_no_instantiate [BI PROP] {α} (p : Bool) (R : PROP) (Φ Ψ : α → PROP)

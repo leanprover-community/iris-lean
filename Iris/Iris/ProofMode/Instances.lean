@@ -48,6 +48,9 @@ instance asEmpValid_forall {α} [bi : BI PROP] (Φ : α → Prop) (P : α → PR
   as_emp_valid := ⟨λ hd h => forall_intro λ x => (hP x).1.1 hd (h x),
                    λ hd h x => (hP x).1.2 hd $ h.trans (forall_elim x)⟩
 
+#rocq_ignore as_emp_valid_tforall
+  "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
+
 -- FromImp
 @[rocq_alias from_impl_impl]
 instance fromImp_imp [BI PROP] (P1 P2 : PROP) : FromImp iprop(P1 → P2) P1 P2 := ⟨.rfl⟩
@@ -120,6 +123,9 @@ instance intoWand_forall (p q : Bool) [BI PROP] (Φ : α → PROP) (P Q : PROP) 
     [h : IntoWand p q (Φ x) m P Q] : IntoWand p q iprop(∀ x, Φ x) m P Q where
   into_wand := (intuitionisticallyIf_mono <| BI.forall_elim x).trans h.1
 
+#rocq_ignore into_wand_tforall
+  "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
+
 @[rocq_alias into_wand_affine]
 instance intoWand_affinely (p q : Bool) [BI PROP]
     (R P Q : PROP) [h : IntoWand p q R m P Q] :
@@ -166,10 +172,16 @@ instance intoWand_persistently_false (q : Bool) [BI PROP] (R P Q : PROP) [Absorb
 instance fromForall_forall [BI PROP] (Φ : α → PROP) :
   FromForall (BIBase.forall Φ) Φ := ⟨.rfl⟩
 
+#rocq_ignore from_forall_tforall
+  "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
+
 @[rocq_alias from_forall_pure]
 instance fromForall_pure [BI PROP] (Φ : α → Prop) :
     FromForall (PROP := PROP) iprop(⌜∀ a, Φ a⌝) (λ a => iprop(⌜Φ a⌝)) :=
   ⟨pure_forall.2⟩
+
+#rocq_ignore from_tforall_pure
+  "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
 
 @[rocq_alias from_forall_pure_not]
 instance fromForall_pure_not [BI PROP] (Φ :Prop) :
@@ -212,6 +224,9 @@ instance intoForall_forall [BI PROP] (Φ : α → PROP) :
     IntoForall iprop(∀ a, Φ a) Φ where
   into_forall := .rfl
 
+#rocq_ignore into_forall_tforall
+  "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
+
 @[rocq_alias into_forall_affinely]
 instance intoForall_affinely [BI PROP] (P : PROP) (Φ : α → PROP) [h : IntoForall P Φ] :
     IntoForall iprop(<affine> P) (fun a => iprop(<affine> (Φ a))) where
@@ -251,6 +266,9 @@ instance fromExists_pure (φ : α → Prop) [BI PROP] :
     FromExists (PROP := PROP) iprop(⌜∃ x, φ x⌝) (fun a => iprop(⌜φ a⌝)) where
   from_exists := pure_exists.1
 
+#rocq_ignore from_exist_texist
+  "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
+
 @[rocq_alias from_exist_affinely]
 instance fromExists_affinely [BI PROP] (P : PROP) (Φ : α → PROP) [h : FromExists P Φ] :
     FromExists iprop(<affine> P) (fun a => iprop(<affine> (Φ a))) where
@@ -276,6 +294,9 @@ instance fromExists_persistently [BI PROP] (P : PROP) (Φ : α → PROP) [h : Fr
 -- IntoExists
 @[rocq_alias into_exist_exist]
 instance intoExists_exists [BI PROP] (Φ : α → PROP) : IntoExists (BI.exists Φ) Φ := ⟨.rfl⟩
+
+#rocq_ignore into_exist_texist
+  "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
 
 @[rocq_alias into_exist_pure]
 instance intoExists_pure (φ : α → Prop) [BI PROP] :
@@ -751,6 +772,9 @@ instance (priority := default + 10) fromAssumption_forall (p : Bool) [BI PROP]
     FromAssumption p .in iprop(∀ x, Φ x) Q where
   from_assumption := (intuitionisticallyIf_mono <| forall_elim x).trans h.1
 
+#rocq_ignore from_assumption_tforall
+  "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
+
 -- TODO: Do these two instances exist in Rocq? Do we want to have them?
 set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack]
@@ -803,6 +827,11 @@ instance intoPure_pure_imp (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
 instance intoPure_exists [BI PROP] (Φ : α → PROP) (φ : α → Prop)
     [h : ∀ x, IntoPure (Φ x) (φ x)] : IntoPure iprop(∃ x, Φ x) (∃ x, φ x) where
   into_pure := (exists_mono fun x => (h x).1).trans pure_exists.1
+
+#rocq_ignore into_pure_texist
+  "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
+#rocq_ignore into_pure_tforall
+  "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
 
 @[rocq_alias into_pure_pure_sep]
 instance intoPure_pure_sep (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
@@ -881,6 +910,9 @@ instance fromPure_exists (a : Bool) [BI PROP] (Φ : α → PROP) (φ : α → Pr
     _ ⊢ ∃ x, <affine>?a ⌜φ x⌝ := affinelyIf_exists.mp
     _ ⊢ ∃ a, Φ a              := exists_mono fun x => (h x).from_pure
 
+#rocq_ignore from_pure_texist
+  "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
+
 @[rocq_alias from_pure_forall]
 instance fromPure_forall (a : Bool) [BI PROP] (Φ : α → PROP) (φ : α → Prop)
     [h : ∀ x, FromPure a iprop(Φ x) io (φ x)] : FromPure a iprop(∀ x, Φ x) io (∀ x, φ x) where
@@ -888,6 +920,9 @@ instance fromPure_forall (a : Bool) [BI PROP] (Φ : α → PROP) (φ : α → Pr
     _ ⊢ <affine>?a ∀ x, ⌜φ x⌝ := affinelyIf_mono pure_forall.1
     _ ⊢ ∀ x, <affine>?a ⌜φ x⌝ := affinelyIf_forall
     _ ⊢ ∀ a, Φ a              := forall_mono fun x => (h x).1
+
+#rocq_ignore from_pure_tforall
+  "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
 
 @[rocq_alias from_pure_pure_sep_true]
 instance fromPure_pure_sep_true (a1 a2 : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
@@ -1012,6 +1047,9 @@ instance elimModal_forall [BI PROP] φ p p' io P P' (Φ Ψ : α → PROP)
   elim_modal hφ := forall_intro λ a =>
     (sep_mono_right (wand_mono_right (forall_elim a))).trans ((h a).1 hφ)
 
+#rocq_ignore elim_modal_tforall
+  "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
+
 @[rocq_alias elim_modal_absorbingly_here]
 instance elimModal_absorbingly_here [BI PROP] p io (P Q : PROP) [Absorbing Q] :
   ElimModal True p io false iprop(<absorb> P) P Q Q where
@@ -1058,6 +1096,9 @@ instance addModal_forall {A : Type} [BI PROP] (P P' : PROP) (Φ : A → PROP)
     apply forall_intro
     intro a
     exact (sep_mono_right (wand_mono .rfl (forall_elim a))).trans (h a).add_modal
+
+#rocq_ignore add_modal_tforall
+  "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
 
 -- CombineSepAs
 @[rocq_alias maybe_combine_sep_as_default]
