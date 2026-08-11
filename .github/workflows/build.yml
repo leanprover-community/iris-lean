@@ -22,6 +22,9 @@ jobs:
         with:
           lake-package-directory: Iris
           build-args: "--wfail"
+      - name: Check that all modules are imported by Iris.lean and other entry-point modules
+        working-directory: Iris
+        run: lake exe check-imports Iris
       - name: Dump porting data
         working-directory: Iris
         run: lake exe dumpPortingData
@@ -41,6 +44,9 @@ jobs:
           lake-package-directory: IrisMath
           use-mathlib-cache: true
           build-args: "--wfail"
+      - name: Check that all modules are imported by IrisMath.lean
+        working-directory: IrisMath
+        run: lake exe check-imports IrisMath
 
   report:
     needs: build

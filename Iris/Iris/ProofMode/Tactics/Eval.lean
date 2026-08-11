@@ -45,9 +45,9 @@ private def iEvalOne {u} {prop : Q(Type u)} (bi : Q(BI $prop))
   let m : Q($prop) ← mkFreshExprMVar q($prop)
   let pf ← mkFreshExprSyntheticOpaqueMVar <| if isGoal then q($m ⊢ $ty) else q($ty ⊢ $m)
   let [g] ← evalTacticAt tac pf.mvarId!
-    | throwError "ieval: the supplied tactic does not produce exactly one subgoal"
+    | throwIPMError "the supplied tactic does not produce exactly one subgoal"
   let some ⟨_, _, lhs, rhs⟩ := parseEntails? (← g.getType)
-    | throwError "ieval: the goal is not Iris entailment upon applying the supplied tactic"
+    | throwIPMError "the goal is not Iris entailment upon applying the supplied tactic"
   let newTy : Q($prop) := if isGoal then rhs else lhs
   m.mvarId!.assign newTy
   g.assign (q(.rfl) : Q($newTy ⊢ $newTy))
@@ -73,13 +73,13 @@ private def iEvalCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     for selTarget in selTargets do
       evalState ← match selTarget.kind with
       | .pure _ =>
-        throwError "ieval: pure hypotheses in the selection pattern is not supported"
+        throwIPMError "pure hypotheses in the selection pattern is not supported"
       | .ipm ivar =>
         let some ⟨newE, newHyps, pf⟩ ← evalState.newHyps.replace ivar fun _ _ ty => do
           let ⟨newTy, pf⟩ ← iEvalOne (isGoal := false) bi tac ty
           let pf : Q($ty ⊢ $newTy) := pf
           return ⟨newTy, q(hyps_replace_ieval $pf)⟩
-        | throwError m!"ieval: unable to find the hypothesis {ivar.name} in the context"
+        | throwIPMError "unable to find the hypothesis {ivar.name} in the context"
         pure { newE, newHyps, pf := q($(evalState.pf).trans $pf) }
     let pf' ← addBIGoal evalState.newHyps goal
     return q($(evalState.pf).trans $pf')
@@ -88,7 +88,7 @@ private def iEvalCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   `ieval (tac)` applies the tactic sequence `tac` to the proof goal.
 -/
 elab "ieval " "(" tac:tacticSeq ")" : tactic => do
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `ieval λ mvar { hyps, goal, .. } => do
     let pf ← iEvalCore hyps goal tac none
     mvar.assign pf
 
@@ -97,10 +97,10 @@ elab "ieval " "(" tac:tacticSeq ")" : tactic => do
   hypotheses chosen by the selection pattern `spats`. Pure hypotheses are not
   supported by this tactic.
 -/
-elab "ieval " "(" tacs:tacticSeq ")" " in " spats:(colGt ppSpace selPat)+ : tactic => do
+elab "ieval " "(" tacs:tacticSeq ")" " at " spats:(colGt ppSpace selPat)+ : tactic => do
   let selPats ← liftMacroM <| SelPat.parse spats
 
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `ieval λ mvar { hyps, goal, .. } => do
     let selTargets ← SelPat.resolve hyps selPats
     let pf ← iEvalCore hyps goal tacs selTargets
     mvar.assign pf
@@ -118,18 +118,18 @@ elab "ieval " "(" tacs:tacticSeq ")" " in " spats:(colGt ppSpace selPat)+ : tact
   respectively.
 -/
 syntax "isimp" optConfig (discharger)? (&" only")? (simpArgs)?
-  (" in " (colGt ppSpace selPat)+)? : tactic
+  (" at " (colGt ppSpace selPat)+)? : tactic
 
 private def elabSimp (simp : TSyntax `tactic)
     (spats : Option (TSyntaxArray `selPat)) : TacticM Unit :=
   match spats with
   | none       => do evalTactic (← `(tactic| ieval ($simp:tactic)))
-  | some spats => do evalTactic (← `(tactic| ieval ($simp:tactic) in $spats*))
+  | some spats => do evalTactic (← `(tactic| ieval ($simp:tactic) at $spats*))
 
 elab_rules : tactic
-  | `(tactic| isimp $cfg* $[$disch]? $[[$args,*]]? $[in $spats*]?) => do
+  | `(tactic| isimp $cfg* $[$disch]? $[[$args,*]]? $[at $spats*]?) => do
       elabSimp (← `(tactic| simp $cfg* $[$disch]? $[[$args,*]]?)) spats
-  | `(tactic| isimp $cfg* $[$disch]? only $[[$args,*]]? $[in $spats*]?) => do
+  | `(tactic| isimp $cfg* $[$disch]? only $[[$args,*]]? $[at $spats*]?) => do
       elabSimp (← `(tactic| simp $cfg* $[$disch]? only $[[$args,*]]?)) spats
 
 /-- `iunfold hs` applies `unfold hs` to the proof goal. This is shorthand for `ieval (unfold)`. -/
@@ -140,5 +140,5 @@ macro "iunfold " hs:ident,+ : tactic => `(tactic| ieval (unfold $hs*))
   the selection pattern `spats`. Pure hypotheses are not supported by this tactic.
   This is shorthand for `ieval (unfold hs) in spats`.
 -/
-macro "iunfold " hs:ident,+ " in " spats:(colGt ppSpace selPat)* : tactic =>
-  `(tactic| ieval (unfold $hs*) in $spats*)
+macro "iunfold " hs:ident,+ " at " spats:(colGt ppSpace selPat)* : tactic =>
+  `(tactic| ieval (unfold $hs*) at $spats*)

@@ -92,7 +92,7 @@ private def parseModalityActionQ {prop1 prop2 : Q(Type u)}
   | ModalityAction.transform _ _ C => return .transform C
   | ModalityAction.clear _ _ => return .clear
   | ModalityAction.id _ => return .id
-  | _ => throwError "imodintro: unknown modality action {act}"
+  | _ => throwIPMError "unknown modality action {act}"
 
 /--
 Applies modality actions to transform proof mode context.
@@ -125,12 +125,12 @@ where go {e}
     let p' := isTrue p
     let act := if p' then iact else sact
     match act with
-    | .isEmpty => throwError "imodintro: {if p' then "intuitionistic" else "spatial"} context is not empty"
+    | .isEmpty => throwIPMError "{if p' then "intuitionistic" else "spatial"} context is not empty"
     | .forall C => do
       have : $prop1 =Q $prop2 := ⟨⟩
       have : $bi1 =Q $bi2 := ⟨⟩
       let .some hC ← trySynthInstanceQ q($C $ty)
-        | throwError "imodintro: hypothesis {name} : {ty} does not satisfy {C}"
+        | throwIPMError "hypothesis {name}: {ty} does not satisfy {C}"
       -- bridge through defeq since `M.action` cannot unify directly with the pattern (same in other cases)
       have heq : Q(@ModalityAction.forall $prop1 $C = .forall $C) :=
         q(Eq.refl (ModalityAction.forall $C))
@@ -139,7 +139,7 @@ where go {e}
     | .transform C => do
       let ty' ← mkFreshExprMVarQ q($prop1)
       let .some hC ← trySynthInstanceQ q($C $ty $ty')
-        | throwError "imodintro: cannot transform hypothesis {name} : {ty} with {C}"
+        | throwIPMError "cannot transform hypothesis {name}: {ty} with {C}"
       have heq : Q(@ModalityAction.transform $prop1 $prop2 $C = .transform $C) :=
         q(Eq.refl (ModalityAction.transform $C))
       have heq : Q($(M).action $p = .transform $C) := heq
@@ -190,7 +190,7 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
     -- `M Q ⊢ goal`
     let .some _ ←
       ProofModeM.trySynthInstanceQ q(@FromModal $prop' $prop $α $bi' $bi $Φ $M $sel $goal $Q)
-      | throwError "imodintro: {goal} is not a \
+      | throwIPMError "{goal} is not a \
           modality{if sel.isMVar then m!"" else m!" matching {sel}"}"
     -- show the side condition
     let hΦ ← iSolveSidecondition q($Φ)
@@ -206,7 +206,7 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
   The tactic succeeds only when the selector term `sel` matches the modality.
 -/
 elab "imodintro " colGt sel:term : tactic => do
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `imodintro λ mvar { hyps, goal, .. } => do
     let pf ← iModIntroCore hyps goal sel
 
     mvar.assign pf

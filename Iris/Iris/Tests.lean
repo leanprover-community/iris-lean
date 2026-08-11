@@ -1,5 +1,6 @@
 module
 
+public import Iris.Tests.Display
 public import Iris.Tests.HeapLang
 public import Iris.Tests.Instances
 public import Iris.Tests.InstancesImport
