@@ -32,10 +32,13 @@ variable {GF} [HeapLangGS hlc GF]
 
 theorem wp_landinsKnot (P : Val → IProp GF) (Q : Val → Val → IProp GF) (F v1 : Val) :
     {{ (∀ (f v2 : Val),
-          iprop({{ (∀ (v3 : Val),
-                iprop({{ P v3 }} hl(&f &v3) {{ u, RET u; Q u v3 }})) ∗ P v2 }}
-            hl(&F &f &v2) {{ u, RET u; Q u v2 }})) ∗ P v1 }}
-      hl(&landinsKnot &F &v1) {{ u, RET u; Q u v1 }} := by
+          {{ (∀ (v3 : Val),
+              {{ P v3 }} hl(&f &v3) {{ u, RET u; Q u v3 }}) ∗ P v2 }}
+          hl(&F &f &v2)
+          {{ u, RET u; Q u v2 }}) ∗
+        P v1 }}
+    hl(&landinsKnot &F &v1)
+    {{ u, RET u; Q u v1 }} := by
   iintro %Φ ⟨#H, HP⟩ HQ
   wp_bind &landinsKnot _
   wp_rec
