@@ -15,6 +15,7 @@ public import Iris.Instances.IProp
 public import Iris.Instances.Lib.WSat
 public import Iris.Instances.Lib.LaterCredits
 public import Iris.BI.Plainly
+public import Iris.Std
 
 @[expose] public section
 
@@ -583,5 +584,124 @@ theorem fupd_soundness_no_lc_unfold [InvGpreS GF] m E :
 end StepIndexed
 
 end Iris
+
+public section
+
+open Lean Elab Tactic Meta Qq Iris.BI Iris Iris.ProofMode Iris.Std
+
+@[rocq_alias tac_lc_add_laterN_split]
+theorem tac_lc_add_laterN_split {GF : BundledGFunctors} [InvGS GF]
+    {φ : Prop} {n m newM : Nat} {E : CoPset} {P Q goal : IProp GF} {stuck : Bool}
+    (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
+    (h1 : NatCancel m n newM 0 stuck) (h2 : P ∗ £ newM ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
+    P ∗ £ m ⊢ goal := by
+  have h1 : m = n + newM := by have := h1.nat_cancel; omega
+  subst h1
+  iintro ⟨HP, Hcred⟩
+  iapply inst.elim_modal hφ
+  isplitl
+  · icases lc_split.mp $$ Hcred with ⟨Hn, Hm⟩
+    icombine HP Hm as H
+    ihave H := h2 $$ H
+    iapply lc_fupd_add_laterN n $$ Hn
+    inext
+    imodintro
+    iapply h3 $$ H
+  · iintro _ //
+
+theorem tac_lc_add_laterN_full {GF : BundledGFunctors} [InvGS GF]
+    {φ : Prop} {m : Nat} {E : CoPset} {P Q goal : IProp GF} {stuck : Bool}
+    (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
+    (h1 : NatCancel m n 0 0 stuck)
+    (h2 : P ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
+    P ∗ £ m ⊢ goal := by
+  iintro ⟨HP, Hcred⟩
+  iapply inst.elim_modal hφ
+  isplitl
+  have h1 := h1.nat_cancel
+  simp at h1
+  rw [← h1]
+  · ihave H := h2 $$ HP
+    iapply lc_fupd_add_laterN n $$ Hcred
+    inext
+    imodintro
+    iapply h3 $$ H
+  · iintro _ //
+
+public meta section
+
+elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
+  let n : Q(Nat) ← match t with
+  | none => pure <| mkNatLit 1
+  | some t => do
+    let n ← Term.elabTermEnsuringType t q(Nat)
+    Term.synthesizeSyntheticMVarsNoPostponing
+    instantiateMVars n
+
+  ProofModeM.runTactic `inext λ mvar { u, prop, bi, e, hyps, goal, .. } => do
+    let .defEq _ ← isLevelDefEqQ u 0
+      | throwError "inext: the goal must be an `IProp` at universe level 0"
+    let ~q(IProp $GF) := prop
+      | throwError "inext: the goal must be an `IProp`"
+    let .some _ ← trySynthInstanceQ q(InvGS $GF)
+      | throwError "inext: requires an InvGS (HasLC) context"
+    let ~q(UPred.instBIUPred) := bi
+      | throwError "Expected the BI implementation of `IProp` to be `UPred.instBIUPred`"
+
+    -- Search for the later credit hypothesis from the context
+    let ivar ← hyps.findWithInfo h
+    let some ⟨name, _, p, ty⟩ := hyps.getDecl? ivar
+      | throwError m!"inext: unknown hypothesis {h}"
+    if isTrue p then throwError "inext: {h} is not in the spatial context"
+    let ~q(£ $c) := ty
+      | throwError m!"inext: {h} is not a spatial later credit hypothesis"
+    let ⟨e', hyps', _, _, _, _, pfEq⟩ := hyps.remove false ivar
+
+    let φ ← mkFreshExprMVarQ q(Prop)
+    let E ← mkFreshExprMVarQ q(CoPset)
+    let Q' ← mkFreshExprMVarQ q($prop)
+    let some inst ← ProofModeM.trySynthInstanceQ q(ElimModal $φ false .in false iprop(|={$E}=> $goal) $goal $goal $Q')
+    | throwError "inext: ElimModal type class synthesis failed with {goal}"
+    unless ← isDefEq Q' goal do
+      throwError "inext: eliminating the fancy update does not preserve the goal {goal}"
+    have inst : Q(ElimModal $φ false .in false iprop(|={$E}=> $goal) $goal $goal $goal) := inst
+
+    let hφ ← iSolveSidecondition q($φ)
+
+    let newC ← mkFreshExprMVarQ q(Nat)
+    let newN ← mkFreshExprMVarQ q(Nat)
+    let stuck ← mkFreshExprMVarQ q(Bool)
+    let some hcancel ← ProofModeM.trySynthInstanceQ q(NatCancel $c $n $newC $newN $stuck)
+      | throwError "inext: unable to cancel {n} later credits from {c}"
+    let newC : Q(Nat) ← instantiateMVars newC
+    unless ← isDefEq newN q(0) do
+      throwError "inext: insufficient credits"
+
+    let modality := q(@modality_laterN $prop $n $bi)
+
+    match newC.nat? with
+    -- Later credits used up, discard the later credits hypothesis
+    | some 0 =>
+      let ⟨_, newHyps', pfModAction⟩ ← iModAction hyps' modality
+      let pf ← addBIGoal newHyps' goal
+      have pfEq : Q($e ⊣⊢ $e' ∗ £ $c) := pfEq
+      have hcancel : Q(NatCancel $c $n 0 0 $stuck) := hcancel
+      let pf' : Q($e' ∗ £ $c ⊢ $goal) := q(tac_lc_add_laterN_full $inst $hφ $hcancel $pfModAction $pf)
+      mvar.assign q($(pfEq).mp.trans $pf')
+    -- Update the later credits hypothesis and introduce it into the context
+    | _ =>
+      let newTy : Q($prop) := q(£ $newC)
+      let ⟨_, newHyps, pfNewHyps⟩ := Hyps.add _ name ivar q(false) newTy hyps'
+      let ⟨_, newHyps', pfModAction⟩ ← iModAction newHyps modality
+      let pf ← addBIGoal newHyps' goal
+      have hcancel : Q(NatCancel $c $n $newC 0 $stuck) := hcancel
+      have pfEq : Q($e ⊣⊢ $e' ∗ £ $c) := pfEq
+      let pf'' : Q($e' ∗ £ $c ⊢ $goal) :=
+        q(tac_lc_add_laterN_split $inst $hφ $hcancel ($(pfNewHyps).mp.trans $pfModAction) $pf)
+      mvar.assign q($(pfEq).mp.trans $pf'')
+
+end
+
+end
 
 end
