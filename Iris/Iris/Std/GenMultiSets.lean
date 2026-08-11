@@ -136,6 +136,10 @@ theorem singleton_subset_iff {x : A} {X : MS} : ({x} : MS) ⊆ X ↔ x ∈ X whe
     · subst hax; rw [multiplicity_singleton_eq]; exact h
     · rw [multiplicity_singleton_ne hax]; omega
 
+@[grind =]
+theorem difference_self {X : MS} : X \ X = (∅ : MS) :=
+  LawfulMultiSet.ext fun _ => by rw [multiplicity_difference, multiplicity_empty]; omega
+
 theorem disjUnion_difference_of_subseteq {X Y : MS} (h : Y ⊆ X) : X = Y ⊎ (X \ Y) := by
   refine LawfulMultiSet.ext fun a => ?_
   grind [subset_iff.mp h a, multiplicity_disjUnion, multiplicity_difference]

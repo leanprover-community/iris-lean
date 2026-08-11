@@ -135,13 +135,15 @@ theorem own_auth_singleton_2 {γ : GName} {dq : DFrac} {v : Qp} {g : ReaderFracs
 theorem auth_alloc_singleton {g : ReaderFracs} {v : Qp} :
     (● .ofSet g : Auth (LeibnizMultiSet ReaderFracs)) ~~>
       (● LeibnizMultiSet.ofSet (g ⊎ {v})) • ◯ LeibnizMultiSet.ofSet {v} :=
-  Auth.auth_update_alloc (localUpdate (Y := ∅) disjUnion_empty_right.symm)
+  Auth.auth_update_alloc (localUpdate_alloc (X := g) (Y := ∅) (X' := {v}))
 
-theorem auth_dealloc_singleton {g : ReaderFracs} {v : Qp} (h : v ∈ g) :
+theorem auth_dealloc_singleton {g : ReaderFracs} {v : Qp} :
     ((● .ofSet g : Auth (LeibnizMultiSet ReaderFracs)) • ◯ LeibnizMultiSet.ofSet {v}) ~~>
-      ● LeibnizMultiSet.ofSet (g \ {v}) :=
-  Auth.auth_update_dealloc (localUpdate (Y' := ∅) (by
-    rw [disjUnion_empty_right, disjUnion_comm, ← disjUnion_singleton_difference h]))
+      ● LeibnizMultiSet.ofSet (g \ {v}) := by
+  refine Auth.auth_update_dealloc ?_
+  have h := localUpdate_dealloc (X := g) (Y := ({v} : ReaderFracs)) (X' := {v})
+    (subset_iff.mpr fun _ => Nat.le_refl _)
+  rwa [difference_self] at h
 
 theorem own_auth_empty_split (γ : GName) :
     own (GF := GF) γ (●{.own Qp.quarter} .ofSet (∅ : ReaderFracs)) ∗
@@ -333,8 +335,7 @@ theorem releaseReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) (q : Q
   icases Hz with (⟨-, Hempty⟩ | ⟨%Hge, %q', %g, Hauth, %Hsize, %Hsum, HΦq'⟩)
   · iexfalso; iapply own_auth_empty_frag_False $$ [$Hempty $Hlocked]
   ihave %Hmem := own_auth_singleton_2 $$ [$Hauth $Hlocked]
-  imod iOwn_update_op (F := RwSpinLockF) (auth_dealloc_singleton Hmem)
-    $$ [$Hauth $Hlocked] with Hauth
+  imod iOwn_update_op (F := RwSpinLockF) auth_dealloc_singleton $$ [$Hauth $Hlocked] with Hauth
   ihave HΦsum : iprop(Φ (q + q')) $$ [HΦ HΦq']
   · iapply HΦdup $$ %q %q' [$HΦ $HΦq']
   have hpos : 0 < z := by
