@@ -218,6 +218,113 @@ example (n : Int) : ⊢@{IProp GF} WP hl((#1 * #2 <<< #3 ≤ #n + (#1 &&& #2 ^^^
 
 end wp_pure
 
+section wp_pures
+
+-- a step whose side condition survives is not taken (`compareSafe` is stuck here)
+/-- trace:
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+v1 v2 : Val
+⊢ ⏎
+  ⊢ WP hl((v(&v1) = v(&v2))) {{ v, True }}
+-/
+#guard_msgs (trace, drop error) in
+example (v1 v2 : Val) : ⊢@{IProp GF} WP hl(&v1 = &v2) {{ v, True }} := by
+  wp_pures
+  trace_state
+
+-- steps before the guarded one still fire
+/-- trace:
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+v1 v2 : Val
+⊢ ⏎
+  ⊢ WP hl((v(&v1) = v(&v2))) {{ v, True }}
+-/
+#guard_msgs (trace, drop error) in
+example (v1 v2 : Val) :
+    ⊢@{IProp GF} WP hl(if #true then (&v1 = &v2) else #false) {{ v, True }} := by
+  wp_pures
+  trace_state
+
+-- `wp_pure` itself stays permissive and hands the side condition back
+/-- trace:
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+v1 v2 : Val
+⊢ ⏎
+  ⊢ |={⊤}=> True
+
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+v1 v2 : Val
+⊢ v1.compareSafe v2 = true
+-/
+#guard_msgs (trace, drop error) in
+example (v1 v2 : Val) : ⊢@{IProp GF} WP hl(&v1 = &v2) {{ v, True }} := by
+  wp_pure
+  trace_state
+
+-- with no step to take, `wp_pures` still strips the weakest precondition off a value
+/-- trace:
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+⊢ ⏎
+  ⊢ |={⊤}=> ⌜hl_val(#1) = hl_val(#1)⌝
+-/
+#guard_msgs (trace, drop error) in
+example : ⊢@{IProp GF} WP hl(v(#1)) {{ v, ⌜v = hl_val(#1)⌝ }} := by
+  wp_pures
+  trace_state
+
+-- ... and succeeds without doing anything when the expression is stuck
+/-- trace:
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+l : Loc
+⊢ ⏎
+  ⊢ WP hl(!#l) {{ v, True }}
+-/
+#guard_msgs (trace, drop error) in
+example (l : Loc) : ⊢@{IProp GF} WP hl(!#l) {{ v, True }} := by
+  wp_pures
+  trace_state
+
+-- neither branch applies when the goal is not a weakest precondition
+/-- error: wp_finish: The goal iprop(True) must be a WP -/
+#guard_msgs in
+example : ⊢@{IProp GF} True := by
+  wp_pures
+
+-- the guard counts only the goals the step produced, not those already open
+/-- trace:
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+⊢ ⏎
+  ⊢ |={⊤}=> True
+
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+⊢ ⏎
+  ⊢ True
+-/
+#guard_msgs (trace, drop error) in
+example : ⊢@{IProp GF} (WP hl(if #true then #1 else #0) {{ v, True }} ∧ True) := by
+  istart
+  isplit
+  wp_pures
+  trace_state
+
+end wp_pures
+
 section pure_tactics
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF]
