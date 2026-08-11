@@ -2683,13 +2683,13 @@ example [BI PROP] (P Q : PROP) : ⊢ ▷ P -∗ Q -∗ ▷ (P ∗ Q) := by
   icombine HP HQ as HPQ
   iassumption
 
-/-- Tests `inext` where the outmost `BIBase.laterIf` and `BIBase.later` are both stripped. -/
+/-- Tests `inext` where the outermost `▷?p` in `H` and `▷` in the goal are both stripped. -/
 example [BI PROP] (p : Bool) (P : PROP) : ▷?p P -∗ ▷ P := by
   iintro H
   inext
   iassumption
 
-/-- Tests `inext` with the handling of `BIBase.laterIf` and other modalities. -/
+/-- Tests `inext` with the handling of `▷?p` and other modalities. -/
 example [BI PROP] (p : Bool) (P Q : PROP) :
     ⊢ □ ▷ P -∗ □ ▷?p ▷ Q -∗ ▷?p ▷ □ (P ∗ Q) := by
   iintro #HP #HQ
@@ -2698,7 +2698,7 @@ example [BI PROP] (p : Bool) (P Q : PROP) :
   icombine HP HQ as HPQ
   iexact HPQ
 
-/-- Tests `inext` where the two `BIBase.later` are stripped, leaving the two `BIBase.laterIf` -/
+/-- Tests `inext` where the two `▷` are stripped, retaining the two `▷?p`. -/
 example [BI PROP] (p : Bool) (P : PROP) (h : ▷?p P -∗ ▷?p P) : ▷?p ▷ P -∗ ▷▷?p P := by
   iintro H
   inext

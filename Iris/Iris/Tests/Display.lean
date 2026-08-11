@@ -226,14 +226,14 @@ info: fun {PROP} [BI PROP] p P => iprop(▷?p P) : {PROP : Type u_1} → [BI PRO
 #guard_msgs in
 #check fun {PROP} [BI PROP] (p : Bool) (P : PROP) => iprop(▷^[p.toNat] P)
 
-/- `▷^[0]` is always delaborated as the same syntax, no `laterIf` involved. -/
+/- `▷^[0]` is always delaborated as the same syntax, no `▷?false` involved. -/
 /--
 info: fun {PROP} [BI PROP] P => iprop(▷^[0] P) : {PROP : Type u_1} → [BI PROP] → PROP → PROP
 -/
 #guard_msgs in
 #check fun {PROP} [BI PROP] (P : PROP) => iprop(▷^[0] P)
 
-/- `▷^[1]` is always delaborated as the same syntax, no `laterIf` involved. -/
+/- `▷^[1]` is always delaborated as the same syntax, no `▷?true` involved. -/
 /--
 info: fun {PROP} [BI PROP] P => iprop(▷^[1] P) : {PROP : Type u_1} → [BI PROP] → PROP → PROP
 -/
