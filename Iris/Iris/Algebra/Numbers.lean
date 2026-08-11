@@ -41,8 +41,8 @@ namespace CommMonoidLike
 open Iris Iris.OFE Add Zero One Associative Commutative LawfulLeftIdentity CMRA
 
 variable [OFE α] [Discrete α]
-variable [Add α] [Associative (add (α := α))] [Commutative (add (α := α))]
-variable [Zero α] [LawfulLeftIdentity (add (α := α)) zero]
+variable [Add α] [Associative (α := α) (· + ·)] [Commutative (α := α) (· + ·)]
+variable [Zero α] [LawfulLeftIdentity (α := α) (· + ·) zero]
 variable {x y x' y' : α}
 
 scoped instance : CMRA α where
@@ -133,8 +133,8 @@ namespace OrdCommMonoidLike
 open Iris Iris.OFE Add Zero One Associative Commutative LawfulLeftIdentity CMRA IdempotentOp
 
 variable [OFE α] [OFE.Discrete α]
-variable [Add α] [Associative (add (α := α))] [Commutative (add (α := α))]
-variable [IdempotentOp (add (α := α))]
+variable [Add α] [Associative (α := α) (· + ·)] [Commutative (α := α) (· + ·)]
+variable [IdempotentOp (α := α) (· + ·)]
 variable [Zero α]
 variable {x y x' y' : α}
 
@@ -199,7 +199,7 @@ scoped instance (a : α) : CMRA.CoreId a where
 #rocq_ignore max_Z_core_id "Use scoped CoreId instance"
 #rocq_ignore min_nat_core_id "Use scoped CoreId instance"
 
-scoped instance [LawfulLeftIdentity (add (α := α)) zero] : UCMRA α where
+scoped instance [LawfulLeftIdentity (α := α) (· + ·) zero] : UCMRA α where
   unit := zero
   unit_valid := trivial
   unit_left_id := left_id _
@@ -227,8 +227,8 @@ namespace PosCommMonoidLike
 open Iris Iris.OFE Add Zero One Associative Commutative LawfulLeftIdentity CMRA IdempotentOp
 
 variable [OFE α] [Discrete α]
-variable [Add α] [Associative (add (α := α))] [Commutative (add (α := α))]
-variable [IdempotentOp (add (α := α))]
+variable [Add α] [Associative (α := α) (· + ·)] [Commutative (α := α) (· + ·)]
+variable [IdempotentOp (α := α) (· + ·)]
 
 variable {x y x' y' : α}
 

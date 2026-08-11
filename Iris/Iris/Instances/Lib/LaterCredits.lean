@@ -379,6 +379,10 @@ theorem le_upd_mono {P Q : IProp GF} (Hent : P ⊢ Q) : (|==£> P) ⊢ (|==£> Q
   iapply le_upd_intro
   exact Hent
 
+#rocq_ignore le_upd.le_upd_mono' "Subsumed by `le_upd_mono` (the `Proper` morphism form is not used in Lean)."
+#rocq_ignore le_upd.le_upd_flip_mono' "Subsumed by `le_upd_mono` (the `Proper` morphism form is not used in Lean)."
+#rocq_ignore le_upd.le_upd_equiv_proper "Subsumed by the NonExpansive instance `le_upd_ne`."
+
 @[rocq_alias le_upd.le_upd_trans]
 theorem le_upd_trans {P : IProp GF} : (|==£> |==£> P) ⊢ |==£> P := by
   iintro H
