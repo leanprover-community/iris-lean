@@ -11,14 +11,12 @@ public meta import Iris.Std.DelabRule
 public meta import Iris.Std.Rewrite
 public import Iris.Std.BigOp
 public meta import Iris.Std.RocqPorting
-public meta import Lean.PrettyPrinter.Delaborator
 
 @[expose] public section
 
 namespace Iris.BI
 open Iris.Std
 open Lean
-open Lean Lean.Macro Lean.Parser.Term Lean PrettyPrinter Delaborator SubExpr
 
 /--
 The basic components of a bunched implication (BI) algebra.
@@ -32,7 +30,7 @@ The primitive connectives and modalities are:
 - `⌜φ⌝` embeds a pure Lean proposition `φ` as a separation logic proposition.
 - `emp` is the unit of separating conjunction.
 - `P ∗ Q` is separating conjunction.
-- `P -∗ Q` is separating implication (the separating wand).
+- `P -∗ Q` is separating implication (the magic wand).
 - `<pers> P` is the persistently modality.
 - `▷ P` is the later modality.
 - `P ∧ Q` is conjunction.

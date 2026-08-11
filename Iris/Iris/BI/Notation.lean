@@ -5,14 +5,12 @@ Authors: Lars König, Alex Keizer
 -/
 module
 
-public meta import Lean.PrettyPrinter.Delaborator
-meta import Lean.PrettyPrinter.Delaborator.Builtins
 meta import Lean.Parser.Term
 
 public meta section
 
 namespace Iris.BI
-open Lean Lean.Macro Lean.Parser.Term Lean PrettyPrinter Delaborator SubExpr
+open Lean Lean.Parser.Term
 
 /- `iprop(P)` embeds a separation logic proposition `P` into `term`. -/
 syntax:max (name := iprop) "iprop(" term ")" : term
@@ -35,7 +33,7 @@ macro_rules
               $[$alts:matchAlt]*)) => do
         let alts ← alts.mapM <| fun
           | `(matchAltExpr| | $[$lhs]|* => $rhs) => `(matchAltExpr| | $[$lhs]|* => iprop($rhs))
-          | _ => throwUnsupported
+          | _ => Macro.throwUnsupported
         `(match $[$g:generalizingParam]? $[$m:motive]? $[$x:matchDiscr],* with $[$alts:matchAlt]*)
 
 macro:max "iprop(" P:term " : " t:term ")" : term => `((iprop($P) : $t))
