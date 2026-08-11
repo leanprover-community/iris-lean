@@ -38,8 +38,8 @@ meta def guardedMkExplicitBinder (i : Ident) (t : Term)
     : CommandElabM (TSyntax ``Lean.Parser.Term.bracketedBinder) :=
   `(bracketedBinder| ($i : $t))
 
-/-- Recursive definition via guarded fixpoints. -/
-elab mods:declModifiers "guarded " "def " name:ident binders:guardedExplicitBinder*
+/-- Recursive definition via the guarded fixpoint. -/
+elab mods:declModifiers "guarded " name:ident binders:guardedExplicitBinder*
     " : " ty:term " := " body:term : command => do
   let mut names : Array Ident := #[]
   let mut types : Array Term := #[]
@@ -51,11 +51,11 @@ elab mods:declModifiers "guarded " "def " name:ident binders:guardedExplicitBind
 
   -- Determine the arity at which `name` recurses
   let some arity := guardedSelfArity name.getId body
-    | throwErrorAt name "guarded def: no recursive occurrence of '{name.getId}' found in the body"
+    | throwErrorAt name "guarded fixpoint def: no recursive occurrence of '{name.getId}' found in the body"
 
   if arity > names.size then
     throwErrorAt name
-      "guarded def: recursive call arity {arity} exceeds the parameter count {names.size}"
+      "guarded fixpoint def: recursive call arity {arity} exceeds the parameter count {names.size}"
 
   -- Split the arguments - prefixes are the arguments that stay fixed
   -- (e.g. for `wp`, the prefixes would be just `s : Stuckness`)
@@ -76,10 +76,11 @@ elab mods:declModifiers "guarded " "def " name:ident binders:guardedExplicitBind
     $mods:declModifiers def $preName:ident $prefixBinders* $selfBinder $suffixBinders* : $ty := $body)
   elabCommand declPre
 
-  -- apply prefix arguments and leading implicit arguments
   let preFullName := (← getCurrNamespace) ++ preName.getId
   let some preInfo := (← getEnv).find? preFullName
-    | throwErrorAt name "guarded def: could not find generated declaration {preFullName}"
+    | throwErrorAt name "guarded fixpoint def: could not find generated declaration {preFullName}"
+
+  -- apply prefix arguments and leading implicit arguments
   let autoBoundNames := guardedLeadingAutoBoundNames preInfo.type
   let autoArgs : Array Term ← autoBoundNames.mapM fun n => do
     let s ← `(Lean.Parser.Term.namedArgument| ($(mkIdent n) := $(mkIdent n)))

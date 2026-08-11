@@ -70,7 +70,7 @@ abbrev Stuckness.MaybeReducible : Stuckness → Expr × State → Prop
 | _, _ => True
 
 @[rocq_alias wp_pre]
-guarded def wp (s : Stuckness) (E : CoPset) (e₁ : Expr) (Φ : Val -> IProp GF) : IProp GF :=
+guarded wp (s : Stuckness) (E : CoPset) (e₁ : Expr) (Φ : Val -> IProp GF) : IProp GF :=
   match toVal e₁ with
   | some v => iprop(|={E}=> Φ v)
   | none => iprop(∀ (σ₁ : State) (ns : Nat) (obs obs' : List Obs) (nt : Nat),

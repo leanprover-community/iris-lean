@@ -7,6 +7,7 @@ module
 public import Iris.ProgramLogic.WeakestPre
 public import Iris.ProofMode.Tactics.Monotone
 public import Iris.BI.Lib.Fixpoint
+public meta import Iris.ProofMode.Tactics.Fixpoint
 
 namespace Iris
 
@@ -25,8 +26,8 @@ abbrev Stuckness.MaybeReducibleNoObs : Stuckness → Expr × State → Prop
 | _, _ => True
 
 @[rocq_alias twp_pre]
-def twp.pre (s : Stuckness) (wp : CoPset -> Expr -> (Val -> IProp GF) -> IProp GF) (E : CoPset)
-    (e₁ : Expr) (Φ : Val -> IProp GF) : IProp GF :=
+leastfix twp (s : Stuckness) [OFE CoPset] [OFE.Discrete CoPset] [OFE Expr] [OFE.Discrete Expr]
+    (E : CoPset) (e₁ : Expr) (Φ : Val -> IProp GF) : IProp GF :=
   match toVal e₁ with
   | some v => iprop(|={E}=> Φ v)
   | none => iprop(∀ (σ₁ : State) (ns : Nat) (obs' : List Obs) (nt : Nat),
@@ -34,17 +35,4 @@ def twp.pre (s : Stuckness) (wp : CoPset -> Expr -> (Val -> IProp GF) -> IProp G
     ⌜s.MaybeReducibleNoObs (e₁, σ₁)⌝ ∗
     ∀ obs e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ)⌝ ={E,∅}=∗
       ⌜obs = []⌝ ∗ stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
-      wp E e₂ Φ ∗ [∗list] e' ∈ eₜ, wp ⊤ e' ι.forkPost)
-
-open Function in
-@[rocq_alias twp_pre']
-def twp.pre' (s : Stuckness) (wp : (CoPset × Expr) × (Val -> IProp GF) -> IProp GF) :=
-    uncurry <| uncurry <| @twp.pre hlc Expr State Obs Val Λ GF ι s (curry <| curry wp)
-
-instance twp.pre_mono' [OFE Expr] [OFE CoPset] [OFE.Discrete Expr] [OFE.Discrete CoPset]
-    (s : Stuckness) : BIMonoPred (@twp.pre' hlc Expr State Obs Val Λ GF ι s) where
-  mono_pred := by monotone
-  mono_pred_ne := by nonexp
-
-def twp.def [OFE Expr] [OFE CoPset] (s : Stuckness) (E : CoPset)
-    (e : Expr) (Φ : Val → IProp GF) := bi_least_fixpoint (twp.pre' s) ((E, e), Φ)
+      twp E e₂ Φ ∗ [∗list] e' ∈ eₜ, twp ⊤ e' ι.forkPost)

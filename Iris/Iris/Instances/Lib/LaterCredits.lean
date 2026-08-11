@@ -218,7 +218,7 @@ section Upd
 variable {GF : BundledGFunctors} {hlc : HasLC} [LcGS hlc GF]
 
 @[rocq_alias le_upd.le_upd_pre]
-guarded def le_upd (P : IProp GF) : IProp GF :=
+guarded le_upd (P : IProp GF) : IProp GF :=
   iprop(∀ n, lc_supply n ==∗
     ▷^[n.succ] False ∨
     (lc_supply n ∗ P) ∨
