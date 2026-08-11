@@ -391,200 +391,124 @@ instance addModal_except_0_later [BI PROP] (P Q : PROP) :
     _ ⊢ ◇ (▷ Q)            := except0_mono wand_elim_right
     _ ⊢ ▷ Q                 := except0_later
 
-/-- IntoLaterN -/
-@[ipm_backtrack, rocq_alias maybe_into_laterN_default]
-instance (priority := low) intoLaterN_default [BI PROP] only_head n (P : PROP) :
-    IntoLaterN false only_head n P P where
-  into_laterN := laterN_intro n
+/-- GuardedIntoLaterN -/
+instance (priority := high) guardedIntoLaterN_stuck [BI PROP] m only_head n (P Q : PROP)
+    [h : IntoLaterN only_head n P Q] : GuardedIntoLaterN m m only_head n P Q where
+  into_laterN_guard := ⟨h.into_laterN⟩
 
-@[ipm_backtrack, rocq_alias into_laterN_0, rocq_alias maybe_into_laterN_default_0]
-instance (priority := high) intoLaterN_default_0 [BI PROP] strict only_head (P : PROP) :
-    IntoLaterN strict only_head 0 P P where
+instance (priority := low) guardedIntoLaterN_progress [BI PROP] m m' only_head n (P Q : PROP)
+    [h : MaybeIntoLaterN only_head n P Q] : GuardedIntoLaterN m m' only_head n P Q where
+  into_laterN_guard := ⟨h.maybe_into_laterN.into_laterN⟩
+
+/-- MaybeIntoLaterN -/
+@[ipm_backtrack, rocq_alias maybe_into_laterN_default]
+instance (priority := low) maybeIntoLaterN_default [BI PROP] only_head n (P : PROP) :
+    MaybeIntoLaterN only_head n P P where
+  maybe_into_laterN := ⟨laterN_intro n⟩
+
+@[ipm_backtrack, rocq_alias maybe_into_laterN_default_0]
+instance (priority := high) maybeIntoLaterN_default_0 [BI PROP] only_head (P : PROP) :
+    MaybeIntoLaterN only_head 0 P P where
+  maybe_into_laterN := ⟨laterN_intro 0⟩
+
+@[ipm_backtrack]
+instance (priority := high) maybeIntoLaterN_of_intoLaterN [BI PROP] only_head n (P Q : PROP)
+    [h : IntoLaterN only_head n P Q] : MaybeIntoLaterN only_head n P Q where
+  maybe_into_laterN := ⟨h.into_laterN⟩
+
+/-- IntoLaterN -/
+@[ipm_backtrack, rocq_alias into_laterN_0]
+instance (priority := high) intoLaterN_default_0 [BI PROP] only_head (P : PROP) :
+    IntoLaterN only_head 0 P P where
   into_laterN := laterN_intro 0
 
-@[rocq_alias into_laterN_later]
-theorem intoLaterN_later [BI PROP] strict {strict'} only_head n n' m' (P Q lQ : PROP)
-    (h1 : NatCancel n 1 n' m')
-    (h2 : IntoLaterN strict' only_head n' P Q)
-    (h3 : MakeLaterN m' Q lQ) : IntoLaterN strict only_head n iprop(▷ P) lQ where
+@[ipm_backtrack, rocq_alias into_laterN_later]
+instance (priority := default - 200) intoLaterN_later [BI PROP] only_head n n' m' (P Q lQ : PROP)
+    [h1 : NatCancel n 1 n' m']
+    [h2 : GuardedIntoLaterN 1 m' only_head n' P Q]
+    [h3 : MakeLaterN m' Q lQ] : IntoLaterN only_head n iprop(▷ P) lQ where
   into_laterN := calc
-      _ ⊢ ▷▷^[n']Q      := later_mono h2.into_laterN
+      _ ⊢ ▷▷^[n']Q      := later_mono h2.into_laterN_guard.into_laterN
       _ ⊢ ▷^[n' + 1]Q    := (later_laterN _).mpr
       _ ⊢ ▷^[n] ▷^[m']Q := by rw [h1.1]; exact (laterN_add _ _).mp
       _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
 
-@[rocq_alias into_laterN_laterN]
-theorem intoLaterN_laterN [BI PROP] strict {strict'} only_head n m n' m' (P Q lQ : PROP)
-    (h1 : NatCancel n m n' m')
-    (h2 : IntoLaterN strict' only_head n' P Q)
-    (h3 : MakeLaterN m' Q lQ) : IntoLaterN strict only_head n iprop(▷^[m] P) lQ where
+@[ipm_backtrack, rocq_alias into_laterN_laterN]
+instance (priority := default - 100) intoLaterN_laterN [BI PROP] only_head n m n' m' (P Q lQ : PROP)
+    [h1 : NatCancel n m n' m']
+    [h2 : GuardedIntoLaterN m m' only_head n' P Q]
+    [h3 : MakeLaterN m' Q lQ] : IntoLaterN only_head n iprop(▷^[m] P) lQ where
   into_laterN := calc
-      _ ⊢ ▷^[m] ▷^[n']Q := laterN_mono _ h2.into_laterN
+      _ ⊢ ▷^[m] ▷^[n']Q := laterN_mono _ h2.into_laterN_guard.into_laterN
       _ ⊢ ▷^[m + n']Q    := (laterN_add _ _).mpr
       _ ⊢ ▷^[n] ▷^[m']Q := by rw [Nat.add_comm, h1.nat_cancel]; exact (laterN_add _ _).mp
       _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
 
 @[ipm_backtrack, rocq_alias into_laterN_laterN_bool]
-theorem intoLaterN_laterN_bool [BI PROP] strict {strict'} only_head n
-    (p : Bool) n' m' (P Q lQ : PROP)
-    (h1 : NatCancel n 1 n' m')
-    (h2 : IntoLaterN strict' only_head n' P Q)
-    (h3 : MakeLaterN m' Q lQ) : IntoLaterN strict only_head n iprop(▷?p P) lQ where
+instance (priority := default - 300) intoLaterN_laterN_bool [BI PROP] only_head n (p : Bool) n' m' (P Q lQ : PROP)
+    [h1 : NatCancel n 1 n' m']
+    [h2 : GuardedIntoLaterN 1 m' only_head n' P Q]
+    [h3 : MakeLaterN m' Q lQ] : IntoLaterN only_head n iprop(▷?p P) lQ where
   into_laterN := by
     calc
       _ ⊢ ▷ P            := by cases p; exact later_intro; exact BIBase.Entails.rfl
-      _ ⊢ ▷ ▷^[n']Q     := later_mono h2.into_laterN
+      _ ⊢ ▷ ▷^[n']Q     := later_mono h2.into_laterN_guard.into_laterN
       _ ⊢ ▷^[n' + 1]Q    := (later_laterN _).mpr
       _ ⊢ ▷^[n] ▷^[m']Q := h1.nat_cancel.symm ▸ (laterN_add _ _).mp
       _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
 
-meta section
-open Lean Elab Meta Std Qq ProofMode
-
-def maybeIntoLaterN {prop : Q(Type u)} {bi : Q(BI $prop)}
-    (oh : Q(Bool)) (n : Q(Nat)) (P Q : Q($prop)) :
-    MetaM <| Option Q(IntoLaterN false $oh $n $P $Q) := do
-  if let some inst ← synthInstanceRecursiveQ q(IntoLaterN true $oh $n $P $Q) then
-    let inst : Q(IntoLaterN false $oh $n $P $Q) := q(⟨$(inst).into_laterN⟩)
-    return some inst
-  -- Fallback to the reflexive default
-  Q.mvarId!.assign P
-  have : $Q =Q $P := ⟨⟩
-  return some q(intoLaterN_default $oh $n $P)
-
-inductive LaterKind where
-  | later
-  | laterN
-  | laterIf (p : Expr)
-
-@[ipm_tactic_instance IntoLaterN _ _ _ iprop(▷ _) _,
-  IntoLaterN _ _ _ iprop(▷^[_] _) _, IntoLaterN _ _ _ iprop(▷?_ _) _]
-def intoLaterNLater : SynthTactic := λ e => do
-  let mctx0 ← getMCtx
-  let_expr IntoLaterN prop bi strict oh n P _ := e | return .continue
-  have u := e.getAppFn.constLevels![0]!
-  have prop : Q(Type u) := prop
-  have _bi : Q(BI $prop) := bi
-  have strict : Q(Bool) := strict
-  have oh : Q(Bool) := oh
-  have n : Q(Nat) := n
-
-  -- Syntactic match with `▷ P'`, `▷^[m] P'` and `▷?p P'`.
-  let candidates : List (Q(Nat) × Q($prop) × LaterKind) :=
-    match_expr P with
-    | BIBase.later _ _ P'     => [(q(1), P', .later)]
-    | BIBase.laterN _ _ m P'  => [(m, P', .laterN)]
-    -- Try `intoLaterN_laterN` and then `intoLaterN_laterN_bool`
-    | BIBase.laterIf _ _ p P' =>
-      have p : Q(Bool) := p
-      [(q($(p).toNat), P', .laterN), (q(1), P', .laterIf p)]
-    | _ => []
-
-  for ⟨m, Pin, laterKind⟩ in candidates do
-    setMCtx mctx0
-    if let some inst ← intoLaterNLaterAux bi strict n oh m Pin laterKind then
-      return .success inst
-  setMCtx mctx0
-  return .continue
-where
-  intoLaterNLaterAux {u : Level} {prop : Q(Type u)} (_bi : Q(BI $prop))
-      (strict : Q(Bool)) (n : Q(Nat)) (oh : Q(Bool))
-      (m : Q(Nat)) (Pin : Q($prop)) (kind : LaterKind) : MetaM (Option Expr) := do
-    let n' : Q(Nat) ← mkFreshExprMVarQ q(Nat)
-    let m' : Q(Nat) ← mkFreshExprMVarQ q(Nat)
-    let some h1 ← synthInstanceRecursiveQ q(NatCancel $n $m $n' $m')
-      | return none
-
-    -- Check that progress is made in the recursive search
-    let progress ← withTransparency .instances <| do
-        return !(← isDefEq m m')
-
-    let Q : Q($prop) ← mkFreshExprMVarQ q($prop)
-    let some h2 ←
-      if progress then
-        maybeIntoLaterN oh n' Pin Q
-      else do
-        let some inst ← synthInstanceRecursiveQ q(IntoLaterN true $oh $n' $Pin $Q)
-          | pure none
-        let inst : Q(IntoLaterN false «$oh» «$n'» «$Pin» «$Q») := q(⟨$(inst).into_laterN⟩)
-        pure <| some inst
-      | return none
-
-    let lQ : Q($prop) ← mkFreshExprMVarQ q($prop)
-    let some h3 ← synthInstanceRecursiveQ q(MakeLaterN $m' $Q $lQ)
-      | throwError "MakeLaterN type class synthesis fails with {m'} and {Q}"
-
-    match kind with
-    | .later =>
-      have : $m =Q 1 := ⟨⟩
-      return some q(intoLaterN_later $strict $oh $n $n' $m' $Pin $Q $lQ $h1 $h2 $h3)
-    | .laterN =>
-      return some q(intoLaterN_laterN $strict $oh $n $m $n' $m' $Pin $Q $lQ $h1 $h2 $h3)
-    | .laterIf p =>
-      have p : Q(Bool) := p
-      have : $m =Q 1 := ⟨⟩
-      return some q(intoLaterN_laterN_bool $strict $oh $n $p $n' $m' $Pin $Q $lQ $h1 $h2 $h3)
-
-end
-
--- There is no MaybeIntoLaterN in Lean, so we only need one instance
 @[rocq_alias into_laterN_and_l, rocq_alias into_laterN_and_r]
 instance intoLaterN_and [BI PROP] n (P1 P2 Q1 Q2 : PROP)
-    [h1 : IntoLaterN strict false n P1 Q1] [h2 : IntoLaterN strict false n P2 Q2] :
-    IntoLaterN strict false n iprop(P1 ∧ P2) iprop(Q1 ∧ Q2) where
+    [h1 : IntoLaterN false n P1 Q1] [h2 : IntoLaterN false n P2 Q2] :
+    IntoLaterN false n iprop(P1 ∧ P2) iprop(Q1 ∧ Q2) where
   into_laterN := (and_mono h1.1 h2.1).trans (laterN_and n).2
 
 @[rocq_alias into_laterN_forall]
 instance intoLaterN_forall [BI PROP] n (Φ Ψ : α → PROP)
-    [h : ∀ x, IntoLaterN strict false n (Φ x) (Ψ x)] :
-    IntoLaterN strict false n iprop(∀ x, Φ x) iprop(∀ x, Ψ x) where
+    [h : ∀ x, IntoLaterN false n (Φ x) (Ψ x)] : IntoLaterN false n iprop(∀ x, Φ x) iprop(∀ x, Ψ x) where
   into_laterN := (forall_mono fun x => (h x).1).trans (laterN_forall n).2
 
 @[rocq_alias into_laterN_exist]
 instance intoLaterN_exists [BI PROP] n (Φ Ψ : α → PROP)
-    [h : ∀ x, IntoLaterN strict false n (Φ x) (Ψ x)] :
-    IntoLaterN strict false n iprop(∃ x, Φ x) iprop(∃ x, Ψ x) where
+    [h : ∀ x, IntoLaterN false n (Φ x) (Ψ x)] : IntoLaterN false n iprop(∃ x, Φ x) iprop(∃ x, Ψ x) where
   into_laterN := (exists_mono fun x => (h x).1).trans (laterN_exists_mpr n)
 
 @[rocq_alias into_laterN_or_l, rocq_alias into_laterN_or_r]
 instance intoLaterN_or [BI PROP] n (P1 P2 Q1 Q2 : PROP)
-    [h1 : IntoLaterN strict false n P1 Q1] [h2 : IntoLaterN strict false n P2 Q2] :
-    IntoLaterN strict false n iprop(P1 ∨ P2) iprop(Q1 ∨ Q2) where
+    [h1 : IntoLaterN false n P1 Q1] [h2 : IntoLaterN false n P2 Q2] :
+    IntoLaterN false n iprop(P1 ∨ P2) iprop(Q1 ∨ Q2) where
   into_laterN := (or_mono h1.1 h2.1).trans (laterN_or n).2
 
 @[rocq_alias into_later_affinely]
 instance intoLaterN_affinely [BI PROP] n (P Q : PROP)
-    [h : IntoLaterN strict false n P Q] :
-    IntoLaterN strict false n iprop(<affine> P) iprop(<affine> Q) where
+    [h : IntoLaterN false n P Q] : IntoLaterN false n iprop(<affine> P) iprop(<affine> Q) where
   into_laterN := (affinely_mono h.1).trans (laterN_affinely n)
 
 @[rocq_alias into_later_intuitionistically]
 instance intoLaterN_intuitionistically [BI PROP] n (P Q : PROP)
-    [h : IntoLaterN strict false n P Q] : IntoLaterN strict false n iprop(□ P) iprop(□ Q) where
+    [h : IntoLaterN false n P Q] : IntoLaterN false n iprop(□ P) iprop(□ Q) where
   into_laterN := (intuitionistically_mono h.1).trans (laterN_intuitionistically n)
 
 @[rocq_alias into_later_absorbingly]
 instance intoLaterN_absorbingly [BI PROP] n (P Q : PROP)
-    [h : IntoLaterN strict false n P Q] :
-    IntoLaterN strict false n iprop(<absorb> P) iprop(<absorb> Q) where
+    [h : IntoLaterN false n P Q] : IntoLaterN false n iprop(<absorb> P) iprop(<absorb> Q) where
   into_laterN := (absorbingly_mono h.1).trans (laterN_absorbingly n).2
 
 @[rocq_alias into_later_persistently]
 instance intoLaterN_persistently [BI PROP] n (P Q : PROP)
-    [h : IntoLaterN strict false n P Q] :
-    IntoLaterN strict false n iprop(<pers> P) iprop(<pers> Q) where
+    [h : IntoLaterN false n P Q] : IntoLaterN false n iprop(<pers> P) iprop(<pers> Q) where
   into_laterN := (persistently_mono h.1).trans (laterN_persistently n).2
 
 @[ipm_backtrack, rocq_alias into_laterN_sep_l]
 instance (priority := default - 10) intoLaterN_sep_left [BI PROP] n (P1 P2 Q1 Q2 : PROP)
-    [h1 : IntoLaterN true false n P1 Q1] [h2 : IntoLaterN false false n P2 Q2] :
-    IntoLaterN strict false n iprop(P1 ∗ P2) iprop(Q1 ∗ Q2) where
-  into_laterN := (sep_mono h1.1 h2.1).trans (laterN_sep n).2
+    [h1 : IntoLaterN false n P1 Q1] [h2 : MaybeIntoLaterN false n P2 Q2] :
+    IntoLaterN false n iprop(P1 ∗ P2) iprop(Q1 ∗ Q2) where
+  into_laterN := (sep_mono h1.1 h2.1.1).trans (laterN_sep n).2
 
 @[ipm_backtrack, rocq_alias into_laterN_sep_r]
 instance (priority := default - 11) intoLaterN_sep_right [BI PROP] n (P P2 Q2 : PROP)
-    [h : IntoLaterN true false n P2 Q2] :
-    IntoLaterN strict false n iprop(P ∗ P2) iprop(P ∗ Q2) where
+    [h : IntoLaterN false n P2 Q2] :
+    IntoLaterN false n iprop(P ∗ P2) iprop(P ∗ Q2) where
   into_laterN := (sep_mono (laterN_intro n) h.into_laterN).trans (laterN_sep n).mpr
 
 @[rocq_alias maybe_combine_sep_as_later]
