@@ -261,6 +261,10 @@ def mapFold {A : Type _} (f : K → V → A → A) (a : A) (m : M V) : A :=
 def map_seq [FiniteMap M Nat] (start : Nat) (l : List V) : M V :=
   PartialMap.ofList (l.mapIdx (fun i v => (start + i, v)))
 
+/-- The map sending every element of the finite set `s` to `a`. -/
+def ofSet [FiniteSet S K] (a : V) (s : S) : M V :=
+  PartialMap.ofList ((FiniteSet.toList s).map (·, a))
+
 def dom_set [LawfulSet S K] (m : M V) : S :=
   LawfulSet.ofList (mapFold (fun k _ acc => k :: acc) [] m)
 
@@ -955,6 +959,35 @@ theorem NoDupKeys_noDup {L : List (K × V)} : NoDupKeys L → L.Nodup := by
 
 theorem nodup_toList {m : M V} : (toList m).Nodup :=
   NoDupKeys_noDup toList_noDupKeys
+
+theorem noDupKeys_map_const [LawfulFiniteSet S K] {a : V} {s : S} :
+    NoDupKeys ((FiniteSet.toList s).map (·, a) : List (K × V)) := by
+  simpa [NoDupKeys, List.map_map, Function.comp_def] using FiniteSet.toList_nodup (m := s)
+
+theorem get?_ofSet_of_mem [DecidableEq K] [LawfulFiniteSet S K] {a : V} {s : S} {k : K}
+    (h : k ∈ s) : get? (FiniteMap.ofSet (M := M) a s) k = some a :=
+  get?_ofList_some (List.mem_map_of_mem (FiniteSet.mem_toList.mpr h)) noDupKeys_map_const
+
+theorem get?_ofSet_of_not_mem [LawfulFiniteSet S K] {a : V} {s : S} {k : K}
+    (h : k ∉ s) : get? (FiniteMap.ofSet (M := M) a s) k = none :=
+  get?_ofList_none (fun ⟨_, hv⟩ => by
+    obtain ⟨_, hmem, rfl, _⟩ := by simpa using hv
+    exact h (FiniteSet.mem_toList.mp hmem)) noDupKeys_map_const
+
+theorem ofSet_empty [LawfulFiniteSet S K] {a : V} : (FiniteMap.ofSet a (∅ : S) : M V) = ∅ :=
+  equiv_iff_eq.mp fun k => by rw [get?_ofSet_of_not_mem mem_empty, get?_empty]
+
+theorem ofSet_insert [DecidableEq K] [LawfulFiniteSet S K] {a : V} {x : K} {s : S} :
+    (FiniteMap.ofSet a (Insert.insert x s) : M V) = insert (FiniteMap.ofSet a s) x a := by
+  refine equiv_iff_eq.mp fun k => ?_
+  by_cases hk : x = k
+  · subst hk
+    rw [get?_insert_eq rfl, get?_ofSet_of_mem (LawfulSet.mem_insert.mpr (.inl rfl))]
+  · rw [get?_insert_ne hk]
+    by_cases hks : k ∈ s
+    · rw [get?_ofSet_of_mem (LawfulSet.mem_insert.mpr (.inr hks)), get?_ofSet_of_mem hks]
+    · rw [get?_ofSet_of_not_mem fun hc => (LawfulSet.mem_insert.mp hc).elim
+        (fun h => hk h.symm) hks, get?_ofSet_of_not_mem hks]
 
 theorem ofList_toList [DecidableEq K] {m : M V} :
     ofList (toList m) = m := by

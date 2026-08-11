@@ -7,6 +7,7 @@ module
 
 public import Iris.Algebra.Monoid
 public import Iris.Algebra.CMRA
+public import Iris.Algebra.Heap
 import Batteries.Data.List.Perm
 public import Iris.Std.List
 public import Iris.Std.PartialMap
@@ -439,7 +440,7 @@ theorem bigOpM_const_unit_eq [DecidableEq K] (m : M' V) :
 
 @[rocq_alias big_opM_fmap]
 theorem bigOpM_map_eq (h : V → B) (Φ : K → B → M) (m : M' V) :
-    ([^ op map] k ↦ x ∈ PartialMap.map h m, Φ k x) = ([^ op map] k ↦ v ∈ m, Φ k (h v)) :=
+    ([^ op map] k ↦ x ∈ Std.PartialMap.map h m, Φ k x) = ([^ op map] k ↦ v ∈ m, Φ k (h v)) :=
   (bigOpL_eq_of_perm _ LawfulFiniteMap.toList_map).trans (bigOpL_map_eq _ _ _)
 
 @[rocq_alias big_opM_omap]
@@ -597,6 +598,27 @@ theorem bigOpM_weak_hom [DecidableEq K] [ι : WeakMonoidHomomorphism op₁ op₂
       show (LawfulFiniteMap.toList m) = [] from List.nil_eq.mpr Hk |>.symm]
   rfl
 
+@[rocq_alias big_opM_ne_2]
+theorem bigOpM_dist_2 [OFE V] {Φ Ψ : K → V → M} {m₁ m₂ : M' V} {n : Nat} (hm : m₁ ≡{n}≡ m₂)
+    (hf : ∀ {k y₁ y₂}, get? m₁ k = some y₁ → get? m₂ k = some y₂ → y₁ ≡{n}≡ y₂ →
+      Φ k y₁ ≡{n}≡ Ψ k y₂) :
+    ([^ op map] k ↦ y ∈ m₁, Φ k y) ≡{n}≡ ([^ op map] k ↦ y ∈ m₂, Ψ k y) :=
+  bigOpM_gen_proper_2 OFE.Dist.of_eq OFE.dist_equivalence op_dist
+    (PartialMap.isSome_get?_eq_of_dist hm) fun {k _ _} h₁ h₂ => hf h₁ h₂ <| by
+      have hmk := hm k
+      rw [h₁, h₂] at hmk
+      exact OFE.some_dist_some.mp hmk
+
+open Classical in
+@[rocq_alias big_opM_singletons]
+theorem bigOpM_singletons [CMRA V] (m : M' V) :
+    ([^ CMRA.op map] k ↦ x ∈ m, PartialMap.singleton k x) = m := by
+  induction m using LawfulFiniteMap.induction_on with
+  | hemp => exact bigOpM_empty _
+  | hins i x m hi ih =>
+    rw [bigOpM_insert_eq _ x hi, ih]
+    exact (equiv_iff_eq.mp (Heap.insert_equiv_singleton_op_singleton hi)).symm
+
 #rocq_ignore big_opM_ne' "Use bigOpM_dist"
 #rocq_ignore big_opM_proper' "Use bigOpM_eq"
 
@@ -636,6 +658,21 @@ theorem bigOpS_const_unit (s : S) : ([^ op set] _x ∈ s, unit) = unit := by
 @[rocq_alias big_opS_singleton]
 theorem bigOpS_singleton {Φ : A → M} {a : A} : ([^ op set] x ∈ ({a} : S), Φ x) = Φ a := by
   simp only [bigOpS, toList_singleton]; exact bigOpL_singleton_eq _ _
+
+open Classical in
+@[rocq_alias big_opS_gset_to_gmap]
+theorem bigOpS_ofSet {M' : Type _ → Type _} {V : Type _} [LawfulFiniteMap M' A] [CMRA V]
+    (a : V) (s : S) :
+    ([^ CMRA.op set] k ∈ s, (PartialMap.singleton k a : M' V)) = FiniteMap.ofSet a s := by
+  induction s using set_ind with
+  | hemp =>
+    rw [bigOpS_empty, LawfulFiniteMap.ofSet_empty]
+    rfl
+  | hadd x X hx ih =>
+    refine (bigOpS_insert hx).trans ?_
+    rw [ih, LawfulFiniteMap.ofSet_insert]
+    exact (LawfulPartialMap.equiv_iff_eq.mp
+      (Heap.insert_equiv_singleton_op_singleton (LawfulFiniteMap.get?_ofSet_of_not_mem hx))).symm
 
 @[rocq_alias big_opS_union]
 theorem bigOpS_union {Φ : A → M} {s₁ s₂ : S} (Hdisj : s₁ ## s₂) :
