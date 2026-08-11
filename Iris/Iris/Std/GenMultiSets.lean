@@ -72,42 +72,52 @@ theorem subset_iff [MultiSet MS A] {X Y : MS} :
 
 variable [LawfulMultiSet MS A]
 
+@[grind =]
 theorem mem_singleton_iff {x a : A} : x ∈ ({a} : MS) ↔ x = a := by
   rw [mem_iff_multiplicity_pos]
   by_cases hxa : x = a
   · subst hxa; simp [multiplicity_singleton_eq]
   · simp [multiplicity_singleton_ne hxa, hxa]
 
+@[grind =]
 theorem mem_disjUnion_iff {x : A} {X Y : MS} : x ∈ (X ⊎ Y) ↔ x ∈ X ∨ x ∈ Y := by
   rw [mem_iff_multiplicity_pos, mem_iff_multiplicity_pos, mem_iff_multiplicity_pos,
     multiplicity_disjUnion]
   omega
 
+@[grind =]
 theorem mem_union_iff {x : A} {X Y : MS} : x ∈ (X ∪ Y) ↔ x ∈ X ∨ x ∈ Y := by
   rw [mem_iff_multiplicity_pos, mem_iff_multiplicity_pos, mem_iff_multiplicity_pos,
     multiplicity_union]
   omega
 
+@[grind =]
 theorem mem_inter_iff {x : A} {X Y : MS} : x ∈ (X ∩ Y) ↔ x ∈ X ∧ x ∈ Y := by
   rw [mem_iff_multiplicity_pos, mem_iff_multiplicity_pos, mem_iff_multiplicity_pos,
     multiplicity_intersection]
   omega
 
+@[grind =]
 theorem disjUnion_comm {X Y : MS} : X ⊎ Y = Y ⊎ X :=
   LawfulMultiSet.ext fun _ => by rw [multiplicity_disjUnion, multiplicity_disjUnion]; omega
 
+@[grind =]
 theorem disjUnion_assoc {X Y Z : MS} : (X ⊎ Y) ⊎ Z = X ⊎ (Y ⊎ Z) :=
   LawfulMultiSet.ext fun _ => by simp only [multiplicity_disjUnion]; omega
 
+@[grind =]
 theorem disjUnion_empty_left {X : MS} : (∅ : MS) ⊎ X = X :=
   LawfulMultiSet.ext fun _ => by rw [multiplicity_disjUnion, multiplicity_empty]; omega
 
+@[grind =]
 theorem disjUnion_empty_right {X : MS} : X ⊎ (∅ : MS) = X :=
   LawfulMultiSet.ext fun _ => by rw [multiplicity_disjUnion, multiplicity_empty]; omega
 
+@[grind .]
 theorem disjUnion_subset_left {X Y : MS} : X ⊆ X ⊎ Y :=
   subset_iff.mpr fun _ => by rw [multiplicity_disjUnion]; omega
 
+@[grind .]
 theorem disjUnion_left_inj {X Y Z : MS} (h : X ⊎ Y = X ⊎ Z) : Y = Z :=
   LawfulMultiSet.ext fun a => by
     have := congrArg (MultiSet.multiplicity a) h
