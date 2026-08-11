@@ -49,14 +49,7 @@ instance token_timeless (γ : GName) : Timeless (token (GF := GF) γ) := by
 theorem token_alloc_strong (P : GName → Prop) (HP : PredInfinite P) :
     ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ token γ := by
   unfold token
-  iapply iOwn_alloc_strong _ P _ trivial
-  intro N
-  have choice := HP (List.range N)
-  exists choice.choose
-  refine ⟨?_, choice.choose_spec.left⟩
-  have hle := choice.choose_spec.right
-  rw [List.mem_range] at hle
-  exact Nat.not_lt.mp hle
+  exact iOwn_alloc_strong _ P HP.exists_ge trivial
 
 @[rocq_alias token_alloc]
 theorem token_alloc : ⊢@{IProp GF} |==> ∃ γ, token γ := by

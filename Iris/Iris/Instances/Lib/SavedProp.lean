@@ -73,10 +73,7 @@ theorem saved_anything_alloc_strong (x : F.ap (IProp GF)) (I : GName → Prop) (
     (Hdq : ✓ dq) (HI : PredInfinite I) :
     ⊢@{IProp GF} |==> ∃ γ, ⌜I γ⌝ ∗ saved_anything_own γ dq x := by
   unfold saved_anything_own
-  refine iOwn_alloc_strong _ I ?_ ⟨Hdq, toAgree_valid⟩
-  intro N
-  obtain ⟨k, hk, hnk⟩ := HI (List.range N)
-  exact ⟨k, Nat.not_lt.mp (fun h => hnk (List.mem_range.mpr h)), hk⟩
+  exact iOwn_alloc_strong _ I HI.exists_ge ⟨Hdq, toAgree_valid⟩
 
 @[rocq_alias saved_anything_alloc_cofinite]
 theorem saved_anything_alloc_cofinite (x : F.ap (IProp GF)) (G : List GName) (dq : DFrac)
