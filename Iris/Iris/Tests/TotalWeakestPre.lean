@@ -35,9 +35,7 @@ instance : ToVal Expr Val where
     | .val n => some n
     | _ => none
   ofVal := .val
-  coe_of_toVal_eq_some := by
-    intro e v h
-    cases e <;> simp_all
+  coe_of_toVal_eq_some := by grind
   toVal_coe := by simp
 
 inductive Step : Expr → State → List Obs → Expr → State → List Expr → Prop
@@ -54,167 +52,86 @@ instance : PrimStep Expr State (List Obs) where
     | (e₁, σ₁), κ, (e₂, σ₂, efs) => Step e₁ σ₁ κ e₂ σ₂ efs
 
 instance : Language Expr State Obs Val where
-  val_stuck := by
-    intro e σ κ e' σ' efs H
+  val_stuck H := by
     cases H <;> rfl
 
 instance : LanguageNoFork Expr State Obs Val where
-  no_fork H := by cases H <;> rfl
+  no_fork H := by
+    cases H <;> rfl
 
 section Proofs
 
 noncomputable abbrev GF := Iris.Examples.ClosedProofs.GF
 
-variable [InvGS_gen .hasNoLC GF]
-
-noncomputable local instance testIrisGS : IrisGS_gen .hasNoLC Expr GF where
+noncomputable abbrev trivialIrisGS {Expr State Obs Val}
+    [Language Expr State Obs Val] [InvGS_gen .hasNoLC GF] : IrisGS_gen .hasNoLC Expr GF where
   toStateInterp := ⟨fun _ _ _ _ => iprop(True)⟩
   numLatersPerStep := fun _ => 0
   forkPost := fun _ => iprop(True)
-  stateInterp_mono := by
-    intro σ ns obs nt
-    iintro _
-    imodintro
-    itrivial
+  stateInterp_mono := fun _ _ _ _ => fupd_intro
 
-theorem tick_twp (n : Nat) :
-    ⊢ WP (Expr.tick n) @ Stuckness.NotStuck ; ⊤ [{
-      fun v : Val => (iprop(⌜v = 0⌝) : IProp GF) }] := by
-  induction n with
-  | zero =>
-      iapply twp_lift_pure_det_step_no_fork
-        (e₂ := Expr.val 0)
-      · intro σ
-        exact ⟨.val 0, σ, [], Step.tickZero σ⟩
-      · intro σ₁ κ e₂' σ₂ efs H
-        cases H
-        exact ⟨rfl, rfl, rfl, rfl⟩
-      · imodintro
-        iapply twp.value rfl
-        ipureintro
-        rfl
-  | succ n IH =>
-      iapply twp_lift_pure_det_step_no_fork
-        (e₂ := Expr.tick n)
-      · intro σ
-        exact ⟨.tick n, σ, [], Step.tickSucc n σ⟩
-      · intro σ₁ κ e₂' σ₂ efs H
-        cases H
-        exact ⟨rfl, rfl, rfl, rfl⟩
-      · imodintro
-        iapply IH
-
-omit [InvGS_gen .hasNoLC GF] in
-theorem tick_purePrimStep_succ (n : Nat) :
-    Expr.tick (n + 1) -ᵖ-> Expr.tick n where
-  safe σ := ⟨.tick n, σ, [], Step.tickSucc n σ⟩
-  deterministic H := by
-    cases H
-    exact ⟨rfl, rfl, rfl, rfl⟩
-
-omit [InvGS_gen .hasNoLC GF] in
-theorem tick_purePrimStep_zero :
-    Expr.tick 0 -ᵖ-> Expr.val 0 where
-  safe σ := ⟨.val 0, σ, [], Step.tickZero σ⟩
-  deterministic H := by
-    cases H
-    exact ⟨rfl, rfl, rfl, rfl⟩
-
-omit [InvGS_gen .hasNoLC GF] in
 theorem tick_pureExec (n : Nat) :
     PureExec True (n + 1) (Expr.tick n) (Expr.val 0) where
-  pureExec _ := by
-    induction n with
-    | zero =>
-        exact .once tick_purePrimStep_zero
-    | succ n IH =>
-        exact .head (tick_purePrimStep_succ n) IH
+  pureExec _ := Nat.rec (.once {
+      safe σ := ⟨.val 0, σ, [], Step.tickZero σ⟩
+      deterministic | .tickZero _ => ⟨rfl, rfl, rfl, rfl⟩ })
+    (fun n IH => .head {
+      safe σ := ⟨.tick n, σ, [], Step.tickSucc n σ⟩
+      deterministic | .tickSucc _ _ => ⟨rfl, rfl, rfl, rfl⟩ } IH) n
 
-theorem tick_twp_via_pureExec (n : Nat) :
-    ⊢ WP (Expr.tick n) @ Stuckness.NotStuck ; ⊤ [{
-      fun v : Val => (iprop(⌜v = 0⌝) : IProp GF) }] := by
-  iapply twp_pure_step (tick_pureExec n) trivial
-  iapply twp.value rfl
-  ipureintro
-  rfl
+variable [InvGS_gen .hasNoLC GF]
 
-theorem put_twp (n : Nat) :
-    ⊢ WP (Expr.put n) @ Stuckness.NotStuck ; ⊤ [{
-      fun v : Val => (iprop(⌜v = n⌝) : IProp GF) }] := by
+noncomputable local instance testIrisGS : IrisGS_gen .hasNoLC Expr GF :=
+  trivialIrisGS (State := State) (Obs := Obs) (Val := Val)
+
+private noncomputable abbrev eqPost (n : Nat) : Val → IProp GF := fun v => iprop(⌜v = n⌝)
+private abbrev zeroTwpSpec (e : Expr) : Prop := ⊢ WP e @ Stuckness.NotStuck ; ⊤ [{ eqPost 0 }]
+
+theorem tick_twp (n : Nat) : zeroTwpSpec (.tick n) :=
+  (pure_intro rfl).trans (twp.value' (v := 0) (Φ := eqPost 0)) |>.trans (twp_pure_step (tick_pureExec n) trivial)
+
+theorem put_twp (n : Nat) : ⊢ WP (Expr.put n) @ Stuckness.NotStuck ; ⊤ [{ eqPost n }] := by
   iapply twp_lift_atomic_step_no_fork (e₁ := Expr.put n) rfl
-  iintro %σ %ns %obs %nt _
-  imodintro
+  iintro %σ %ns %obs %nt _ !>
   isplit
-  · ipureintro
-    exact ⟨.val n, n, [], Step.put n σ⟩
-  · iintro %κ %e₂ %σ₂ %efs %Hstep
-    cases Hstep
-    imodintro
-    isplit
-    · ipureintro
-      rfl
-    · isplit
-      · ipureintro
-        rfl
-      · isplit
-        · itrivial
-        · iexists n
-          isplit
-          · ipureintro
-            rfl
-          · ipureintro
-            rfl
+  · exact BI.pure_intro ⟨.val n, n, [], Step.put n σ⟩
+  · iintro %κ %e₂ %σ₂ %efs %⟨⟩
+    exact (sep_intro_emp_valid_left (by itrivial) <| sep_intro_emp_valid_left (by itrivial) <| sep_intro_emp_valid_right
+      .rfl (exists_intro_trans n <| (pure_intro ⟨rfl, rfl⟩).trans pure_and.2)).trans fupd_intro
 
-theorem branch_twp (n : Nat) :
-    ⊢ WP (Expr.branch n) @ Stuckness.NotStuck ; ⊤ [{
-      fun v : Val => (iprop(⌜v = 0⌝) : IProp GF) }] := by
+theorem branch_twp (n : Nat) : zeroTwpSpec (.branch n) := by
   induction n with
   | zero =>
-      iapply twp_lift_pure_det_step_no_fork
-        (e₂ := Expr.val 0)
-      · intro σ
-        exact ⟨.val 0, σ, [], Step.branchZero σ⟩
-      · intro σ₁ κ e₂' σ₂ efs H
-        cases H
-        exact ⟨rfl, rfl, rfl, rfl⟩
-      · imodintro
-        iapply twp.value rfl
-        ipureintro
-        rfl
+      exact (pure_intro rfl).trans (twp.value (Φ := eqPost 0) rfl) |>.trans fupd_intro |>.trans <|
+        twp_lift_pure_det_step_no_fork (e₂ := Expr.val 0) (fun σ => ⟨.val 0, σ, [], Step.branchZero σ⟩)
+          (fun _ _ _ _ _ (.branchZero _) => ⟨rfl, rfl, rfl, rfl⟩)
   | succ n IH =>
       iapply twp_lift_step_no_fork (e₁ := Expr.branch (n + 1)) rfl
       iintro %σ %ns %obs %nt _
       iapply fupd_mask_intro empty_subset
       iintro Hclose
       isplit
-      · ipureintro
-        exact ⟨.branch n, σ, [], Step.branchLeft n σ⟩
-      · iintro %κ %e₂ %σ₂ %efs %Hstep
-        cases Hstep
-        · imod Hclose
-          imodintro
-          isplit
-          · ipureintro
-            rfl
-          · isplit
-            · ipureintro
-              rfl
-            · isplitl []
-              · change ⊢ iprop(True)
-                itrivial
-              · iapply IH
-        · imod Hclose
-          imodintro
-          isplit
-          · ipureintro
-            rfl
-          · isplit
-            · ipureintro
-              rfl
-            · isplitl []
-              · change ⊢ iprop(True)
-                itrivial
-              · iapply tick_twp n
+      · exact BI.pure_intro ⟨.branch n, σ, [], Step.branchLeft n σ⟩
+      · iintro %κ %e₂ %σ₂ %efs %⟨⟩
+        all_goals
+          imod Hclose with -
+          exact (BI.sep_intro_emp_valid_left (BI.pure_intro rfl) <| BI.sep_intro_emp_valid_left (BI.pure_intro rfl) <|
+            BI.sep_intro_emp_valid_right .rfl (by first | exact IH | exact tick_twp n)).trans fupd_intro
+
+omit [InvGS_gen .hasNoLC GF] in
+private theorem stronglyNormalizing_of_twp {Expr State Obs Val}
+    [Language Expr State Obs Val] {e : Expr} {initialState : State} {Φ : Val → IProp GF}
+    (Hwp : ∀ [InvGS_gen .hasNoLC GF],
+      let _ : IrisGS_gen .hasNoLC Expr GF :=
+        trivialIrisGS (State := State) (Obs := Obs) (Val := Val);
+      ⊢ WP e @ Stuckness.NotStuck ; ⊤ [{ Φ }]) :
+    StronglyNormalizing
+      (Language.ErasedStep (Expr := Expr) (State := State) (Obs := Obs))
+      ([e], initialState) := by
+  apply twp_total (hlc := .hasNoLC) (GF := GF) Stuckness.NotStuck e initialState Φ 0 0
+  iintro %Hinv !>
+  iexists (fun _ _ _ _ => iprop(True)), (fun _ => 0), (fun _ => iprop(True)), fun _ _ _ _ => fupd_intro
+  exact BI.sep_intro_emp_valid_left BI.true_intro <| BI.wand_intro_left (BI.true_intro.trans Hwp)
 
 end Proofs
 
@@ -249,11 +166,8 @@ example :
   twp.bind id
 
 example [inst : Language.IntoVal e v] :
-    P ∗ Φ v ⊢ WP e @ Stuckness.NotStuck ; ⊤ [{ w, P ∗ Φ w }] := by
-  iintro ⟨HP, HΦ⟩
-  iframe HP
-  iapply twp.value $$ HΦ
-  exact inst.into_val.symm
+    P ∗ Φ v ⊢ WP e @ Stuckness.NotStuck ; ⊤ [{ w, P ∗ Φ w }] :=
+  twp.value (Φ := fun w => iprop(P ∗ Φ w)) inst.into_val.symm
 
 /-- error: iframe: cannot frame R 0 -/
 #guard_msgs in
@@ -265,17 +179,13 @@ example (R : Nat → IProp GF) :
 
 example :
     (|={E}=> P) ∗ (P -∗ WP e @ Stuckness.NotStuck ; E [{ Φ }]) ⊢
-      WP e @ Stuckness.NotStuck ; E [{ Φ }] := by
-  iintro ⟨HP, Hwp⟩
-  imod HP
-  iapply Hwp $$ HP
+      WP e @ Stuckness.NotStuck ; E [{ Φ }] :=
+  fupd_wand_right.trans twp.fupd_twp
 
 example :
     (|==> Q) ∗ (Q -∗ WP e @ Stuckness.NotStuck ; E [{ Φ }]) ⊢
-      WP e @ Stuckness.NotStuck ; E [{ Φ }] := by
-  iintro ⟨HQ, Hwp⟩
-  imod HQ
-  iapply Hwp $$ HQ
+      WP e @ Stuckness.NotStuck ; E [{ Φ }] :=
+  bupd_wand_right.trans (BIUpdateFUpdate.fupd_of_bupd.trans twp.fupd_twp)
 
 end CoreRuleChecks
 
@@ -285,30 +195,15 @@ open Iris.HeapLang
 
 variable [InvGS_gen .hasNoLC GF]
 
-noncomputable local instance heapIrisGS :
-    IrisGS_gen .hasNoLC Iris.HeapLang.Exp GF where
-  toStateInterp := ⟨fun _ _ _ _ => iprop(True)⟩
-  numLatersPerStep := fun _ => 0
-  forkPost := fun _ => iprop(True)
-  stateInterp_mono := by
-    intro σ ns obs nt
-    iintro _
-    imodintro
-    itrivial
+noncomputable local instance heapIrisGS : IrisGS_gen .hasNoLC Iris.HeapLang.Exp GF :=
+  trivialIrisGS (State := Iris.HeapLang.State) (Obs := Iris.HeapLang.Observation)
+    (Val := Iris.HeapLang.Val)
 
-theorem heapLang_add_twp :
-    ⊢ WP hl(#1 + #2) @ Stuckness.NotStuck ; ⊤ [{
-      fun v : Iris.HeapLang.Val =>
-        (iprop(⌜v = hl_val(#3)⌝) : IProp GF) }] := by
-  iapply twp_lift_pure_det_base_step_no_fork (e₂ := hl(#3)) rfl
-  · intro σ
-    refine ⟨hl(#3), σ, [], ?_⟩
-    constructor <;> rfl
-  · intro σ κ e₂' σ₂ eₜ Hstep
-    cases Hstep <;> simp_all [Iris.HeapLang.BinOp.eval]
-  · iapply twp.value rfl
-    ipureintro
-    rfl
+private noncomputable abbrev addPost : Iris.HeapLang.Val → IProp GF := fun v => iprop(⌜v = hl_val(#3)⌝)
+
+theorem heapLang_add_twp : ⊢ WP hl(#1 + #2) @ Stuckness.NotStuck ; ⊤ [{ addPost }] :=
+  (pure_intro rfl).trans (twp.value' (v := hl_val(#3)) (Φ := addPost)) |>.trans
+    (twp_pure_step Iris.HeapLang.instPureExecBinOp rfl)
 
 end HeapLangPureSmoke
 
@@ -327,9 +222,7 @@ instance : ToVal Expr Val where
     | .done => some ()
     | .fork => none
   ofVal _ := .done
-  coe_of_toVal_eq_some := by
-    intro e v h
-    cases e <;> simp_all
+  coe_of_toVal_eq_some := by grind
   toVal_coe := by simp
 
 inductive Step : Expr → State → List Obs → Expr → State → List Expr → Prop
@@ -340,139 +233,53 @@ instance : PrimStep Expr State (List Obs) where
     | (e₁, σ₁), κ, (e₂, σ₂, efs) => Step e₁ σ₁ κ e₂ σ₂ efs
 
 instance : Language Expr State Obs Val where
-  val_stuck := by
-    intro e σ κ e' σ' efs H
-    cases H
-    rfl
+  val_stuck | .fork => rfl
 
 section
 
 variable [InvGS_gen .hasNoLC GF]
 
-noncomputable local instance forkIrisGS : IrisGS_gen .hasNoLC Expr GF where
-  toStateInterp := ⟨fun _ _ _ _ => iprop(True)⟩
-  numLatersPerStep := fun _ => 0
-  forkPost := fun _ => iprop(True)
-  stateInterp_mono := by
-    intro σ ns obs nt
-    iintro _
-    imodintro
-    itrivial
+noncomputable local instance forkIrisGS : IrisGS_gen .hasNoLC Expr GF :=
+  trivialIrisGS (State := State) (Obs := Obs) (Val := Val)
 
 theorem fork_twp :
     ⊢ WP Expr.fork @ Stuckness.NotStuck ; ⊤ [{
       fun _ : Val => (iprop(True) : IProp GF) }] := by
   iapply twp_lift_atomic_step (e₁ := Expr.fork) rfl
-  iintro %σ %ns %obs %nt _
-  imodintro
+  iintro %⟨⟩ %ns %obs %nt _ !>
   isplit
-  · ipureintro
-    cases σ
-    exact ⟨.done, (), [.done], Step.fork⟩
-  · iintro %κ %e₂ %σ₂ %efs %Hstep
-    cases Hstep
-    imodintro
-    isplit
-    · ipureintro
-      rfl
-    · isplitl []
-      · change ⊢ iprop(True)
-        itrivial
-      · isplitl []
-        · iexists ()
-          isplit
-          · ipureintro
-            rfl
-          · itrivial
-        · simp only [Algebra.BigOpL.bigOpL_cons,
-            Algebra.BigOpL.bigOpL_nil]
-          isplit
-          · iapply twp.value (v := ()) rfl
-            change ⊢ iprop(True)
-            itrivial
-          · itrivial
+  · exact BI.pure_intro ⟨.done, (), [.done], Step.fork⟩
+  · iintro %κ %e₂ %σ₂ %efs %⟨⟩
+    exact (sep_intro_emp_valid_left (PROP := IProp GF) (pure_intro rfl) <| sep_intro_emp_valid_right .rfl <|
+      sep_intro_emp_valid_left (exists_intro_trans () <| and_intro (pure_intro rfl) true_intro)
+      ((true_intro.trans (twp.value' (v := ()) (Φ := fun _ => iprop(True)))).trans sep_emp.mpr)).trans fupd_intro
 
 end
 
 theorem fork_stronglyNormalizing :
     StronglyNormalizing
       (Language.ErasedStep (Expr := Expr) (State := State) (Obs := Obs))
-      ([Expr.fork], ()) := by
-  apply twp_total (hlc := .hasNoLC) (GF := GF)
-    Stuckness.NotStuck Expr.fork ()
-    (fun _ : Val => (iprop(True) : IProp GF)) 0 0
-  iintro %Hinv
-  imodintro
-  iexists
-    (fun (_ : State) (_ : Nat) (_ : List Obs) (_ : Nat) =>
-      (iprop(True) : IProp GF)),
-    (fun _ => 0),
-    (fun _ : Val => (iprop(True) : IProp GF)),
-    (fun _ _ _ _ => by
-      iintro _
-      imodintro
-      itrivial)
-  dsimp only
-  isplitl []
-  · itrivial
-  · iintro _
-    iapply fork_twp
+      ([Expr.fork], ()) :=
+  stronglyNormalizing_of_twp (fun [_] => fork_twp)
 
 end Forking
 
 theorem branch_stronglyNormalizing (n initialState : Nat) :
     StronglyNormalizing
       (Language.ErasedStep (Expr := Expr) (State := State) (Obs := Obs))
-      ([Expr.branch n], initialState) := by
-  apply twp_total (hlc := .hasNoLC) (GF := GF)
-    Stuckness.NotStuck (Expr.branch n) initialState
-    (fun v : Val => (iprop(⌜v = 0⌝) : IProp GF)) 0 0
-  iintro %Hinv
-  imodintro
-  iexists
-    (fun (_ : State) (_ : Nat) (_ : List Obs) (_ : Nat) =>
-      (iprop(True) : IProp GF)),
-    (fun _ => 0),
-    (fun _ : Val => (iprop(True) : IProp GF)),
-    (fun _ _ _ _ => by
-      iintro _
-      imodintro
-      itrivial)
-  dsimp only
-  isplitl []
-  · itrivial
-  · iintro _
-    iapply branch_twp n
+      ([Expr.branch n], initialState) :=
+  stronglyNormalizing_of_twp (fun [_] => branch_twp n)
 
 theorem branch_singleMachine_stronglyNormalizing (n initialState : Nat) :
     StronglyNormalizing
       (ExprErasedStep (Expr := Expr) (State := State) (Obs := Obs))
       (Expr.branch n, initialState) :=
-  stronglyNormalizing_expr_of_threadPool
-    (branch_stronglyNormalizing n initialState)
+  stronglyNormalizing_expr_of_threadPool (branch_stronglyNormalizing n initialState)
 
 theorem put_stronglyNormalizing (n initialState : Nat) :
     StronglyNormalizing
       (Language.ErasedStep (Expr := Expr) (State := State) (Obs := Obs))
-      ([Expr.put n], initialState) := by
-  apply twp_total (hlc := .hasNoLC) (GF := GF)
-    Stuckness.NotStuck (Expr.put n) initialState
-    (fun v : Val => (iprop(⌜v = n⌝) : IProp GF)) 0 0
-  iintro %Hinv
-  imodintro
-  iexists
-    (fun (_ : State) (_ : Nat) (_ : List Obs) (_ : Nat) =>
-      (iprop(True) : IProp GF)),
-    (fun _ => 0),
-    (fun _ : Val => (iprop(True) : IProp GF)),
-    (fun _ _ _ _ => by
-      iintro _
-      imodintro
-      itrivial)
-  dsimp only
-  isplitl []
-  · itrivial
-  · iintro _
-    iapply put_twp n
+      ([Expr.put n], initialState) :=
+  stronglyNormalizing_of_twp (fun [_] => put_twp n)
 
 end Iris.Tests.TotalWeakestPre

@@ -10,7 +10,7 @@ public import Iris.ProofMode
 
 namespace Iris
 
-open ProgramLogic Language.Notation Std OFE
+open ProgramLogic Language Language.Notation Std OFE BI
 
 @[expose] public section
 
@@ -80,12 +80,11 @@ theorem pre_mono (s : Stuckness) (X Y : CoPset → Expr → (Val → IProp GF) �
       iframe %Hred
       iintro !> %κ %e₂ %σ₂ %eₜ Hprim
       imod Hstep $$ Hprim with ⟨%hκ, Hσ, He₂, Hefs⟩
-      imodintro
       iframe %hκ Hσ
       isplitl [He₂]
       · iapply H $$ He₂
       · iapply BI.BigSepL.bigSepL_impl $$ Hefs
-        iintro !> %k %ef %Hef Hef
+        iintro !> !> %k %ef %Hef Hef
         iapply H $$ Hef
 
 namespace Internal
@@ -93,40 +92,22 @@ namespace Internal
 instance pre'_mono (s : Stuckness) : BIMonoPred (pre' (ι := ι) s) where
   mono_pred := by
     intro X Y _ _
-    iintro #HXY %x HX
-    rcases x with ⟨E, e, Φ⟩
+    iintro #HXY %⟨E, e, Φ⟩ HX
     unfold pre'
     iapply pre_mono s (fun E e Φ => X (E, e, Φ)) (fun E e Φ => Y (E, e, Φ)) $$ [] [$]
     iintro !> %E %e %Φ H
     iapply HXY $$ H
-  mono_pred_ne.ne {n} := fun ⟨E₁, e₁, Φ₁⟩ ⟨E₂, e₂, Φ₂⟩ ⟨hE, he, hΦ⟩ => by
-    change E₁ = E₂ at hE
-    change e₁ = e₂ at he
-    subst E₂
-    subst e₂
+  mono_pred_ne.ne {n} := fun ⟨E₁, e₁, Φ₁⟩ ⟨E₂, e₂, Φ₂⟩ ⟨hE, he, hΦ⟩ =>
+    (show E₁ = E₂ from hE) ▸ (show e₁ = e₂ from he) ▸ by
     simp only [pre', pre]
     match toVal e₁ with
     | some v => exact BIFUpdate.ne.ne (hΦ v)
     | none =>
-      refine BI.forall_ne fun _ => ?_
-      refine BI.forall_ne fun _ => ?_
-      refine BI.forall_ne fun _ => ?_
-      refine BI.forall_ne fun _ => ?_
-      refine BI.wand_ne.ne .rfl ?_
-      refine BIFUpdate.ne.ne ?_
-      refine BI.sep_ne.ne .rfl ?_
-      refine BI.forall_ne fun _ => ?_
-      refine BI.forall_ne fun _ => ?_
-      refine BI.forall_ne fun _ => ?_
-      refine BI.forall_ne fun _ => ?_
-      refine BI.wand_ne.ne .rfl ?_
-      refine BIFUpdate.ne.ne ?_
-      refine BI.sep_ne.ne .rfl ?_
-      refine BI.sep_ne.ne .rfl ?_
-      refine BI.sep_ne.ne ?_ ?_
-      · apply NonExpansive.ne
-        exact ⟨.rfl, .rfl, hΦ⟩
-      · rfl
+      refine forall_ne fun _ => forall_ne fun _ => forall_ne fun _ => forall_ne fun _ =>
+        wand_ne.ne .rfl <| BIFUpdate.ne.ne <| sep_ne.ne .rfl <| forall_ne fun _ => forall_ne fun e =>
+        forall_ne fun _ => forall_ne fun _ => wand_ne.ne .rfl <| BIFUpdate.ne.ne <|
+        sep_ne.ne .rfl <| sep_ne.ne .rfl <| sep_ne.ne ?_ .rfl
+      exact NonExpansive.ne (show (E₁, e, Φ₁) ≡{n}≡ (E₁, e, Φ₂) from ⟨.rfl, .rfl, hΦ⟩)
 
 def get (s : Stuckness) (E : CoPset) (e : Expr) (Φ : Val → IProp GF) : IProp GF :=
   bi_least_fixpoint (pre' s) (E, e, Φ)
@@ -147,29 +128,28 @@ theorem unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
 theorem induction (s : Stuckness) (Ψ : CoPset → Expr → (Val → IProp GF) → IProp GF)
     [HΨ : NonExpansive (fun x : Internal.Args Expr Val GF => Ψ x.1 x.2.1 x.2.2)] :
     (⊢ □ (∀ E e Φ, pre s (fun E e Φ => iprop(Ψ E e Φ ∧ WP e @ s ; E [{ Φ }])) E e Φ -∗ Ψ E e Φ)) →
-    ⊢ ∀ E e Φ, WP e @ s ; E [{ Φ }] -∗ Ψ E e Φ := by
-  intro H
+    ⊢ ∀ E e Φ, WP e @ s ; E [{ Φ }] -∗ Ψ E e Φ := fun H => by
   iintro %E %e %Φ
   change ⊢ bi_least_fixpoint (Internal.pre' s) (E, e, Φ) -∗ Ψ E e Φ
-  iintro Htwp
-  iapply least_fixpoint_ind (F := Internal.pre' s) (Φ := fun x => Ψ x.1 x.2.1 x.2.2) $$ [] Htwp
+  iapply least_fixpoint_ind (F := Internal.pre' s) (Φ := fun x => Ψ x.1 x.2.1 x.2.2) $$ []
   iintro !> %⟨E, e, Φ⟩
-  simp only [Internal.pre']
-  simp only [TotalWp.totalWp, Internal.get] at H
+  simp only [Internal.pre', TotalWp.totalWp, Internal.get] at H ⊢
   iapply H
 
 @[rocq_alias twp_ne]
 instance ne {s : Stuckness} {E} {e : Expr} :
     NonExpansive (TotalWp.totalWp (PROP := IProp GF) s E e) where
-  ne {n Φ₁ Φ₂} HΦ := by
-    change bi_least_fixpoint (Internal.pre' s) (E, e, Φ₁) ≡{n}≡ _
-    apply NonExpansive.ne
-    exact ⟨.rfl, .rfl, HΦ⟩
+  ne {n Φ₁ Φ₂} HΦ := NonExpansive.ne (f := bi_least_fixpoint (Internal.pre' s))
+    (show (E, e, Φ₁) ≡{n}≡ (E, e, Φ₂) from ⟨.rfl, .rfl, HΦ⟩)
 
 @[rocq_alias twp_value_fupd']
 theorem value_fupd' {s : Stuckness} {E} {Φ : Val → IProp GF} {v : Val} :
     WP (v : Expr) @ s ; E [{ Φ }] ⊣⊢ |={E}=> Φ v := by
   simp [unfold.to_eq, pre, toVal_coe]
+
+@[rocq_alias twp_value_fupd]
+theorem value_fupd {s : Stuckness} {E} {e : Expr} {v : Val} {Φ : Val → IProp GF} (h : e = v) :
+    WP e @ s ; E [{ Φ }] ⊣⊢ |={E}=> Φ v := h ▸ value_fupd'
 
 @[rocq_alias twp_strong_mono]
 theorem strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr}
@@ -178,60 +158,47 @@ theorem strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr}
       (∀ v, Φ v ={E₂}=∗ Ψ v) -∗ WP e @ s₂ ; E₂ [{ Ψ }] := by
   let Pred := fun (E : CoPset) (e : Expr) (Φ : Val → IProp GF) => iprop%
     ∀ E₂ Ψ, ⌜E ⊆ E₂⌝ -∗ (∀ v, Φ v ={E₂}=∗ Ψ v) -∗ WP e @ s₂ ; E₂ [{ Ψ }]
-  have hPred : NonExpansive (fun x : Internal.Args Expr Val GF => Pred x.1 x.2.1 x.2.2) := by
-    constructor
-    intro n ⟨EX, eX, ΦX⟩ ⟨EY, eY, ΦY⟩ ⟨hE', he', hΦ⟩
-    change EX = EY at hE'
-    change eX = eY at he'
-    subst EY
-    subst eY
-    refine BI.forall_ne fun _ => ?_
-    refine BI.forall_ne fun _ => ?_
-    refine BI.wand_ne.ne .rfl ?_
-    refine BI.wand_ne.ne ?_ .rfl
-    refine BI.forall_ne fun v => ?_
-    exact BI.wand_ne.ne (hΦ v) .rfl
+  have hPred : NonExpansive (fun x : Internal.Args Expr Val GF => Pred x.1 x.2.1 x.2.2) :=
+    ⟨fun _ _ _ ⟨hE, he, hΦ⟩ => hE ▸ he ▸ forall_ne fun _ => forall_ne fun _ => wand_ne.ne .rfl <|
+      wand_ne.ne (forall_ne fun v => wand_ne.ne (hΦ v) .rfl) .rfl⟩
   iintro H HΦ
   iapply induction s₁ Pred $$ H [//] [$]
   · iintro !> %E %e₁ %Φ₁ IH %E' %Ψ' %hE'
-    rw [unfold.to_eq]
-    unfold pre
-    cases hval : toVal e₁ with
-    | some v =>
-      iintro HpostSome
-      imod fupd_mask_mono hE' $$ IH with HΦv
-      iapply HpostSome $$ HΦv
-    | none =>
-      iintro HpostNone
+    simp only [(unfold (s := s₂) (E := E') (e := e₁) (Φ := Ψ')).to_eq, pre]
+    cases hval : toVal e₁
+    all_goals iintro Hpost
+    next =>
       iintro %σ₁ %ns %obs %nt Hσ
       imod fupd_mask_subseteq hE' with Hclose
       imod IH $$ Hσ with ⟨%Hred, Hstep⟩
-      imodintro
-      isplit
-      · ipureintro
+      have Hred' : s₂.MaybeReducibleNoObs (e₁, σ₁) := by
         simp only [LE.le] at hs
         grind [cases Stuckness]
-      · iintro %κ %e₂ %σ₂ %eₜ Hprim
-        imod Hstep $$ Hprim with ⟨%hκ, Hσ, He₂, Hefs⟩
-        imod Hclose
-        imodintro
-        iframe %hκ Hσ
-        isplitl [He₂ HpostNone]
-        · icases He₂ with ⟨IH₂, -⟩
-          iapply IH₂ $$ [//] HpostNone
-        · iapply BI.BigSepL.bigSepL_impl $$ Hefs
-          iintro !> %k %ef %Hef Hef
-          icases Hef with ⟨IHef, -⟩
-          iapply IHef $$ %⊤ %ι.forkPost %LawfulSet.subset_refl
-          iintro %v Hv
-          itrivial
+      iframe %Hred'
+      iintro !> %κ %e₂ %σ₂ %eₜ Hprim
+      imod Hstep $$ Hprim with ⟨%hκ, Hσ, ⟨IH₂, -⟩, Hefs⟩
+      imod Hclose
+      iframe %hκ Hσ
+      isplitl [IH₂ Hpost]
+      · iapply IH₂ $$ [//] Hpost
+      · iapply BI.BigSepL.bigSepL_impl $$ Hefs
+        iintro !> !> %k %ef %Hef ⟨IHef, -⟩
+        iapply IHef $$ %⊤ %ι.forkPost %LawfulSet.subset_refl
+        iintro %v $
+    next =>
+      imod fupd_mask_mono hE' $$ IH with HΦv
+      iapply Hpost $$ HΦv
+
+private theorem strong_mono_with {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : Val → IProp GF}
+    (hs : s₁ ≤ s₂) (hE : E₁ ⊆ E₂) (H : ∀ v, ⊢ Φ v ={E₂}=∗ Ψ v) :
+    WP e @ s₁ ; E₁ [{ Φ }] ⊢ WP e @ s₂ ; E₂ [{ Ψ }] :=
+  sep_elim_emp_valid_right (forall_intro H) (wand_elim (wand_entails (strong_mono hs hE)))
 
 @[rocq_alias fupd_twp]
 theorem fupd_twp {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} :
     (|={E}=> WP e @ s ; E [{ Φ }]) ⊢ WP e @ s ; E [{ Φ }] := by
-  rw [unfold.to_eq]
+  simp only [(unfold (e := e)).to_eq, pre]
   iintro H
-  unfold pre
   cases toVal e
   · iintro %σ %ns %obs %nt Hσ
     imod H $$ Hσ with $
@@ -239,50 +206,37 @@ theorem fupd_twp {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} :
 
 @[rocq_alias twp_fupd]
 theorem twp_fupd {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} :
-    WP e @ s ; E [{ v, |={E}=> Φ v }] ⊢ WP e @ s ; E [{ Φ }] := by
-  iintro H
-  iapply strong_mono (Std.IsPreorder.le_refl _) LawfulSet.subset_refl $$ H
-  iintro %v $
+    WP e @ s ; E [{ v, |={E}=> Φ v }] ⊢ WP e @ s ; E [{ Φ }] :=
+  strong_mono_with (Std.IsPreorder.le_refl _) LawfulSet.subset_refl fun _ => BI.wand_rfl
 
 @[rocq_alias twp_atomic]
 theorem atomic {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}
     {Φ : Val → IProp GF} [hatom : Language.Atomic ↑s e] :
     (|={E₁,E₂}=> WP e @ s ; E₂ [{ v, |={E₂,E₁}=> Φ v }]) ⊢ WP e @ s ; E₁ [{ Φ }] := by
-  rw [unfold.to_eq, unfold.to_eq]
+  simp only [(unfold (e := e)).to_eq, pre]
   iintro H
-  unfold pre
   cases he : toVal e with
   | some v => icases H with > >$
   | none =>
     iintro %σ₁ %ns %obs %nt Hσ
     imod H $$ Hσ with >⟨$, Hstep⟩
-    imodintro
+    iintro !> %κ %e₂ %σ₂ %eₜ %Hprim
     cases s
-    · iintro %κ %e₂ %σ₂ %eₜ %Hprim
-      imod Hstep $$ %κ %e₂ %σ₂ %eₜ %Hprim with ⟨%hκ, Hσ, He₂, Hefs⟩
+    · imod Hstep $$ %κ %e₂ %σ₂ %eₜ %Hprim with ⟨%hκ, Hσ, He₂, Hefs⟩
       cases he₂ : toVal e₂ with
       | some v₂ =>
-        rw [unfold.to_eq]
-        simp only [pre, he₂]
-        icases He₂ with > >He₂
+        imod (value_fupd (ToVal.coe_of_toVal_eq_some he₂).symm).mp $$ He₂ with >He₂
         iframe %hκ Hσ Hefs
-        simp only [unfold.to_eq, pre, he₂]
-        itrivial
+        iapply (value_fupd (ToVal.coe_of_toVal_eq_some he₂).symm).mpr $$ He₂
       | none =>
-        rw [unfold.to_eq]
-        simp only [pre, he₂]
+        simp only [(unfold (e := e₂)).to_eq, pre, he₂]
         imod He₂ $$ %σ₂ %(ns + 1) %obs %(nt + eₜ.length) Hσ with ⟨%Hred₂, _⟩
-        exact (Language.not_reducible_iff_irreducible.mpr (hatom.atomic Hprim))
-          (Language.reducible_of_reducibleNoObs Hred₂) |>.elim
-    · iintro %κ %e₂ %σ₂ %eₜ %Hprim
-      imod Hstep $$ [//] with ⟨%hκ, Hσ, He₂, Hefs⟩
+        exact ((not_reducible_iff_irreducible.mpr (hatom.atomic Hprim)) (reducible_of_reducibleNoObs Hred₂)).elim
+    · imod Hstep $$ [//] with ⟨%hκ, Hσ, He₂, Hefs⟩
       have ⟨v₂, hv₂⟩ := Option.isSome_iff_exists.mp (hatom.atomic Hprim)
-      rw [unfold.to_eq]
-      simp only [pre, hv₂]
-      imod He₂ with >He₂
+      imod (value_fupd (ToVal.coe_of_toVal_eq_some hv₂).symm).mp $$ He₂ with >He₂
       iframe %hκ Hσ Hefs
-      simp only [unfold.to_eq, pre, hv₂]
-      itrivial
+      iapply (value_fupd (ToVal.coe_of_toVal_eq_some hv₂).symm).mpr $$ He₂
 
 @[rocq_alias twp_bind]
 theorem bind (K : Expr → Expr) [ctx : Language.Context K]
@@ -292,62 +246,34 @@ theorem bind (K : Expr → Expr) [ctx : Language.Context K]
   let Pred := fun (E : CoPset) (e : Expr) (Ψ : Val → IProp GF) => iprop%
     ∀ Φ, (∀ v, Ψ v -∗ WP (K v) @ s ; E [{ Φ }]) -∗
       WP (K e) @ s ; E [{ Φ }]
-  letI : NonExpansive (fun x : Internal.Args Expr Val GF => Pred x.1 x.2.1 x.2.2) := by
-    constructor
-    intro n ⟨EX, eX, ΨX⟩ ⟨EY, eY, ΨY⟩ ⟨hE, he, hΨ⟩
-    change EX = EY at hE
-    change eX = eY at he
-    subst EY
-    subst eY
-    refine BI.forall_ne fun _ => ?_
-    refine BI.wand_ne.ne ?_ .rfl
-    refine BI.forall_ne fun v => ?_
-    exact BI.wand_ne.ne (hΨ v) .rfl
+  letI : NonExpansive (fun x : Internal.Args Expr Val GF => Pred x.1 x.2.1 x.2.2) :=
+    ⟨fun _ _ _ ⟨hE, he, hΨ⟩ => hE ▸ he ▸ BI.forall_ne fun _ =>
+      BI.wand_ne.ne (BI.forall_ne fun v => BI.wand_ne.ne (hΨ v) .rfl) .rfl⟩
   iintro H
   iapply induction s Pred $$ H
   · iintro !> %E %e %Ψ
-    cases he : toVal e with
-    | some v =>
+    cases he : toVal e
+    all_goals
       simp only [pre, he]
       iintro Hpre %Φ Hcont
-      rw [← (ToVal.coe_of_toVal_eq_some he)]
-      ispecialize Hcont $$ %v
-      iapply fupd_twp
-      iapply (fupd_wand_left (P := Ψ v))
-      iframe
-    | none =>
-      simp only [pre, he]
-      iintro Hpre %Φ Hcont
-      rw [unfold.to_eq]
-      unfold pre
-      simp only [ctx.toVal_eq_none_fill he]
+    next =>
+      simp only [(unfold (e := K e)).to_eq, pre, ctx.toVal_eq_none_fill he]
       iintro %σ₁ %ns %obs %nt Hσ
       imod Hpre $$ Hσ with ⟨%Hred, Hstep⟩
-      imodintro
-      isplit
-      · ipureintro
-        cases s
-        · exact Language.Context.reducibleNoObs_fill (K := K) Hred
-        · trivial
-      · iintro %κ %e₂ %σ₂ %eₜ %HKstep
-        obtain ⟨e₂', rfl, Hprim⟩ := ctx.primStep_fill_inv he HKstep
-        imod Hstep $$ [//] with ⟨%hκ, Hσ, He₂, Hefs⟩
-        iframe %hκ Hσ
-        isplitl [He₂ Hcont]
-        · icases He₂ with ⟨IH, -⟩
-          iapply IH $$ Hcont
-        · iapply BI.BigSepL.bigSepL_impl $$ Hefs
-          iintro !> %k %ef %Hef !>⟨-, $⟩
+      have Hred' : s.MaybeReducibleNoObs (K e, σ₁) := by grind [Language.Context.reducibleNoObs_fill]
+      iframe %Hred'
+      iintro !> %κ %e₂ %σ₂ %eₜ %HKstep
+      obtain ⟨e₂', rfl, Hprim⟩ := ctx.primStep_fill_inv he HKstep
+      imod Hstep $$ [//] with ⟨%hκ, Hσ, ⟨IH, -⟩, Hefs⟩
+      iframe %hκ Hσ
+      isplitl [IH Hcont]
+      · iapply IH $$ Hcont
+      · iapply BI.BigSepL.bigSepL_mono_of_forall BI.and_elim_r $$ Hefs
+    next v =>
+      rw [← (ToVal.coe_of_toVal_eq_some he)]
+      ispecialize Hcont $$ %v
+      iapply (fupd_wand_left (P := Ψ v)).trans fupd_twp $$ [$]
   · iintro %_ $
-
-private theorem fold_induction_right
-    (Ψ : CoPset → Expr → (Val → IProp GF) → IProp GF)
-    (s : Stuckness) (E : CoPset) (e : Expr) (Φ : Val → IProp GF) :
-    pre s (fun E e Φ => iprop(Ψ E e Φ ∧ WP e @ s ; E [{ Φ }])) E e Φ ⊢ WP e @ s ; E [{ Φ }] := by
-  rw [unfold.to_eq]
-  iintro Hpre
-  iapply pre_mono s (fun E e Φ => iprop(Ψ E e Φ ∧ WP e @ s ; E [{ Φ }])) $$ [] %E %e %Φ Hpre
-  iintro !> %E %e %Φ ⟨-, $⟩
 
 @[rocq_alias twp_bind_inv]
 theorem bind_inv (K : Expr → Expr) [ctx : Language.Context K]
@@ -357,62 +283,43 @@ theorem bind_inv (K : Expr → Expr) [ctx : Language.Context K]
   let Pred := fun (E : CoPset) (e' : Expr) (Φ : Val → IProp GF) => iprop%
     ∀ e, ⌜e' = K e⌝ -∗
       TotalWp.totalWp s E e (fun v : Val => iprop(WP (K v) @ s ; E [{ Φ }]))
-  letI : NonExpansive (fun x : Internal.Args Expr Val GF => Pred x.1 x.2.1 x.2.2) := by
-    constructor
-    intro n ⟨EX, eX, ΦX⟩ ⟨EY, eY, ΦY⟩ ⟨hE, he, hΦ⟩
-    change EX = EY at hE
-    change eX = eY at he
-    subst EY
-    subst eY
-    refine BI.forall_ne fun _ => ?_
-    refine BI.wand_ne.ne .rfl ?_
-    apply NonExpansive.ne
-    exact fun _ => NonExpansive.ne hΦ
+  letI : NonExpansive (fun x : Internal.Args Expr Val GF => Pred x.1 x.2.1 x.2.2) :=
+    ⟨fun _ _ _ ⟨hE, he, hΦ⟩ => hE ▸ he ▸ BI.forall_ne fun _ =>
+      BI.wand_ne.ne .rfl (NonExpansive.ne fun _ => NonExpansive.ne hΦ)⟩
   iintro H
   iapply induction s Pred $$ H %e %rfl
   iintro !> %E %e' %Φ IH %e %heq
-  subst e'
-  rw [unfold.to_eq]
+  rw [heq, unfold.to_eq]
   cases he : toVal e with
   | some v =>
-      ihave IHfold := fold_induction_right $$ IH
-      simp only [pre, he]
-      rw [← (ToVal.coe_of_toVal_eq_some he)]
+      ihave IHfold : iprop(WP (K e) @ s ; E [{ Φ }]) $$ [IH]
+      · rw [unfold.to_eq]
+        iapply pre_mono s (fun E e Φ => iprop(Pred E e Φ ∧ WP e @ s ; E [{ Φ }])) $$ [] %E %(K e) %Φ IH
+        iintro !> %E %e %Φ ⟨-, $⟩
+      simp only [pre, ← ToVal.coe_of_toVal_eq_some he, toVal_coe]
       itrivial
   | none =>
       simp only [pre, he, ctx.toVal_eq_none_fill he]
       iintro %σ₁ %ns %obs %nt Hσ
       imod IH $$ Hσ with ⟨%Hred, Hstep⟩
-      imodintro
-      isplit
-      · ipureintro
-        cases s
-        · exact Language.Context.reducibleNoObs_fill_inv (K := K) he Hred
-        · trivial
-      · iintro %κ %e₂ %σ₂ %eₜ %Hprim
-        imod Hstep $$ %_ %_ %_ %_ %(ctx.primStep_fill Hprim) with ⟨$, $, He₂, Hefs⟩
-        imodintro
-        isplitl [He₂]
-        · icases He₂ with ⟨IH₂, -⟩
-          iapply IH₂ $$ %e₂ %rfl
-        · iapply BI.BigSepL.bigSepL_impl $$ Hefs
-          iintro !> %k %ef %Hef ⟨-, $⟩
+      have Hred' : s.MaybeReducibleNoObs (e, σ₁) := by grind [Language.Context.reducibleNoObs_fill_inv]
+      iframe %Hred'
+      iintro !> %κ %e₂ %σ₂ %eₜ %Hprim
+      imod Hstep $$ %_ %_ %_ %_ %(ctx.primStep_fill Hprim) with ⟨$, $, ⟨IH₂, -⟩, Hefs⟩
+      isplitl [IH₂]
+      · iapply IH₂ $$ %e₂ %rfl
+      · iapply BI.BigSepL.bigSepL_mono_of_forall BI.and_elim_r $$ Hefs
 
 @[rocq_alias twp_mono]
 theorem mono {s : Stuckness} {E} {e : Expr} {Φ Ψ : Val → IProp GF}
     (H : ∀ v, Φ v ⊢ Ψ v) :
-    WP e @ s ; E [{ Φ }] ⊢ WP e @ s ; E [{ Ψ }] := by
-  iintro Hwp
-  iapply strong_mono (Std.IsPreorder.le_refl _) LawfulSet.subset_refl $$ Hwp
-  iintro %v Hv
-  iapply H $$ [$]
+    WP e @ s ; E [{ Φ }] ⊢ WP e @ s ; E [{ Ψ }] :=
+  strong_mono_with (Std.IsPreorder.le_refl _) LawfulSet.subset_refl fun v => entails_wand ((H v).trans fupd_intro)
 
 @[rocq_alias twp_stuck_mono]
 theorem stuck_mono {s₁ s₂ : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} (H : s₁ ≤ s₂) :
-    WP e @ s₁ ; E [{ Φ }] ⊢ WP e @ s₂ ; E [{ Φ }] := by
-  iintro Hwp
-  iapply strong_mono H LawfulSet.subset_refl $$ Hwp
-  iintro %v $
+    WP e @ s₁ ; E [{ Φ }] ⊢ WP e @ s₂ ; E [{ Φ }] :=
+  strong_mono_with H LawfulSet.subset_refl fun _ => BI.entails_wand fupd_intro
 
 @[rocq_alias twp_stuck_weaken]
 theorem stuck_weaken {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} :
@@ -422,99 +329,73 @@ theorem stuck_weaken {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} :
 @[rocq_alias twp_mask_mono]
 theorem mask_mono {s : Stuckness} {E₁ E₂} {e : Expr} {Φ : Val → IProp GF}
     (H : E₁ ⊆ E₂) :
-    WP e @ s ; E₁ [{ Φ }] ⊢ WP e @ s ; E₂ [{ Φ }] := by
-  iintro Hwp
-  iapply strong_mono (Std.IsPreorder.le_refl _) H $$ Hwp
-  iintro %v $
-
-@[rocq_alias twp_value_fupd]
-theorem value_fupd {s : Stuckness} {E} {e : Expr} {v : Val} {Φ : Val → IProp GF} (h : e = v) :
-    WP e @ s ; E [{ Φ }] ⊣⊢ |={E}=> Φ v := by
-  simp [h, value_fupd']
+    WP e @ s ; E₁ [{ Φ }] ⊢ WP e @ s ; E₂ [{ Φ }] :=
+  strong_mono_with (Std.IsPreorder.le_refl _) H fun _ => BI.entails_wand fupd_intro
 
 @[rocq_alias twp_value']
 theorem value' {s : Stuckness} {E} {v : Val} {Φ : Val → IProp GF} :
-    Φ v ⊢ WP (v : Expr) @ s ; E [{ Φ }] := by
-  simp [value_fupd'.to_eq, fupd_intro]
+    Φ v ⊢ WP (v : Expr) @ s ; E [{ Φ }] := fupd_intro.trans value_fupd'.mpr
 
 @[rocq_alias twp_value]
 theorem value {s : Stuckness} {E} {e : Expr} {v : Val} {Φ : Val → IProp GF} (h : e = v) :
-    Φ v ⊢ WP e @ s ; E [{ Φ }] := by
-  simp [h, value']
+    Φ v ⊢ WP e @ s ; E [{ Φ }] := h ▸ value'
 
 @[rocq_alias twp_frame_l]
 theorem frame_l {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF}
     {R : IProp GF} :
-    R ∗ WP e @ s ; E [{ Φ }] ⊢ WP e @ s ; E [{ v, R ∗ Φ v }] := by
-  iintro ⟨HR, Hwp⟩
-  iapply strong_mono (Std.IsPreorder.le_refl _) LawfulSet.subset_refl $$ Hwp
-  iintro %v $ //
+    R ∗ WP e @ s ; E [{ Φ }] ⊢ WP e @ s ; E [{ v, R ∗ Φ v }] :=
+  (BI.sep_mono_left (BI.forall_intro fun _ => BI.wand_intro fupd_intro)).trans <|
+    BI.wand_elim_swap (BI.wand_entails (strong_mono (Std.IsPreorder.le_refl _) LawfulSet.subset_refl))
 
 @[rocq_alias twp_frame_r]
 theorem frame_r {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} {R : IProp GF} :
-    WP e @ s ; E [{ Φ }] ∗ R ⊢ WP e @ s ; E [{ v, Φ v ∗ R }] := by
-  rw [BI.sep_comm.to_eq]
-  refine frame_l.trans (mono fun v => BI.sep_comm.mp)
+    WP e @ s ; E [{ Φ }] ∗ R ⊢ WP e @ s ; E [{ v, Φ v ∗ R }] :=
+  BI.sep_comm.mp.trans (frame_l.trans (mono fun _ => BI.sep_comm.mp))
 
 @[rocq_alias twp_wand]
 theorem wand {s : Stuckness} {E} {e : Expr} {Φ Ψ : Val → IProp GF} :
     WP e @ s ; E [{ Φ }] ⊢
-      (∀ v, Φ v -∗ Ψ v) -∗ WP e @ s ; E [{ Ψ }] := by
-  iintro Hwp H
-  iapply strong_mono (Std.IsPreorder.le_refl _) LawfulSet.subset_refl $$ Hwp
-  iintro %v Hv
-  imodintro
-  iapply H $$ Hv
+      (∀ v, Φ v -∗ Ψ v) -∗ WP e @ s ; E [{ Ψ }] :=
+  BI.wand_intro <| frame_r.trans <| mono fun v => (BI.sep_mono_right (BI.forall_elim v)).trans BI.wand_elim_right
 
 @[rocq_alias twp_wand_l]
 theorem wand_l {s : Stuckness} {E} {e : Expr} {Φ Ψ : Val → IProp GF} :
-    (∀ v, Φ v -∗ Ψ v) ∗ WP e @ s ; E [{ Φ }] ⊢ WP e @ s ; E [{ Ψ }] := by
-  iintro ⟨H, Hwp⟩
-  iapply wand $$ Hwp H
+    (∀ v, Φ v -∗ Ψ v) ∗ WP e @ s ; E [{ Φ }] ⊢ WP e @ s ; E [{ Ψ }] :=
+  BI.wand_elim_swap wand
 
 @[rocq_alias twp_wand_r]
 theorem wand_r {s : Stuckness} {E} {e : Expr} {Φ Ψ : Val → IProp GF} :
-    WP e @ s ; E [{ Φ }] ∗ (∀ v, Φ v -∗ Ψ v) ⊢ WP e @ s ; E [{ Ψ }] := by
-  iintro ⟨Hwp, H⟩
-  iapply wand $$ Hwp H
+    WP e @ s ; E [{ Φ }] ∗ (∀ v, Φ v -∗ Ψ v) ⊢ WP e @ s ; E [{ Ψ }] :=
+  BI.wand_elim wand
 
 @[rocq_alias twp_frame_wand]
 theorem frame_wand {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} {R : IProp GF} :
-    R ⊢ (WP e @ s ; E [{ v, R -∗ Φ v }]) -∗ WP e @ s ; E [{ Φ }] := by
-  iintro HR Hwp
-  iapply wand $$ Hwp
-  iintro %v HΦ
-  iapply HΦ $$ HR
+    R ⊢ (WP e @ s ; E [{ v, R -∗ Φ v }]) -∗ WP e @ s ; E [{ Φ }] :=
+  BI.wand_intro_left (frame_r.trans (mono fun _ => BI.wand_elim_left))
 
 @[rocq_alias twp_wp]
 theorem to_wp {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E [{ Φ }] ⊢ WP e @ s ; E {{ Φ }} := by
   iloeb as IH generalizing %E %e %Φ
-  rw [wp_unfold.to_eq, unfold.to_eq]
-  unfold wp.pre pre
+  simp only [(wp_unfold (e := e)).to_eq, (unfold (e := e)).to_eq, wp.pre, pre]
   cases hval : toVal e
   case some v => iintro $
   case none =>
     iintro H %σ %ns %κ %κs %nt Hσ
     imod H $$ Hσ with ⟨%Hred, H⟩
-    imodintro
-    isplit
-    · ipureintro
-      cases s
-      · exact Language.reducible_of_reducibleNoObs Hred
-      · trivial
-    · iintro %e₂ %σ₂ %eₜ %Hstep _
-      iapply step_fupdN_intro Std.LawfulSet.empty_subset
-      rw [(BI.later_laterN _).to_eq]
-      iintro !> !>
-      imod H $$ %κ %e₂ %σ₂ %eₜ %Hstep with ⟨%⟨⟩, Hσ, He₂, Hefs⟩
-      simp only [List.nil_append]
-      iframe Hσ
-      isplitl [He₂]
-      · iapply IH $$ He₂
-      · iapply BI.BigSepL.bigSepL_impl $$ Hefs
-        iintro !> %k %ef %Hef !>Hef
-        iapply IH $$ Hef
+    have Hred' : s.MaybeReducible (e, σ) := by grind
+    iframe %Hred'
+    iintro !> %e₂ %σ₂ %eₜ %Hstep _
+    iapply step_fupdN_intro Std.LawfulSet.empty_subset
+    iintro !>
+    imod H $$ %κ %e₂ %σ₂ %eₜ %Hstep with ⟨%⟨⟩, Hσ, He₂, Hefs⟩
+    simp only [List.nil_append]
+    iframe Hσ
+    isplitl [He₂]
+    · iapply IH $$ He₂
+    · iapply BI.BigSepL.bigSepL_impl $$ Hefs
+      iintro !> %k %ef %Hef !>Hef
+      iapply IH $$ Hef
 
 section ProofMode
 
@@ -526,37 +407,24 @@ variable {Φ Ψ : Val → IProp GF} {P R : IProp GF}
 @[rocq_alias frame_twp]
 instance frameTwp {p : Bool} [H : ∀ v, FrameInstantiateExistDisabled p R (Φ v) (Ψ v)] :
     Frame p R (WP e @ s ; E [{ Φ }]) (WP e @ s ; E [{ Ψ }]) where
-  frame := by
-    refine frame_l.trans (mono fun v => ?_)
-    exact (H v).frame_instantiatiate_exist_disabled.frame
+  frame := frame_l.trans (mono fun v => (H v).frame_instantiatiate_exist_disabled.frame)
 
 -- Iris-Rocq reuses the module-qualified name `is_except_0_wp` here; that alias
 -- is already assigned to partial WP in Lean, so this instance is left unaliased.
 instance isExcept0Twp : IsExcept0 (WP e @ s ; E [{ Φ }]) where
-  is_except0 :=
-    calc iprop(◇ _)
-      _ ⊢ ◇ |={E}=> _ := BI.except0_mono fupd_intro
-      _ ⊢ |={E}=> _ := BIFUpdate.except0
-      _ ⊢ WP e @ s ; E [{ Φ }] := fupd_twp
+  is_except0 := (BI.except0_mono fupd_intro).trans (BIFUpdate.except0.trans fupd_twp)
 
 @[rocq_alias elim_modal_fupd_twp]
 instance (priority := default + 10) elimModalFupdTwp p :
     ElimModal True p io false iprop(|={E}=> P) P (WP e @ s ; E [{ Φ }]) (WP e @ s ; E [{ Φ }]) where
-  elim_modal := by
-    iintro %_ ⟨H, G⟩
-    icases BI.intuitionisticallyIf_elim $$ H with H
-    iapply fupd_twp
-    imod H
-    iapply G $$ H
+  elim_modal _ := (sep_mono_left intuitionisticallyIf_elim).trans (fupd_wand_right.trans fupd_twp)
 
 @[rocq_alias elim_modal_bupd_twp]
 instance elimModalBupdTwp p :
     ElimModal True p io false iprop(|==> P) P (WP e @ s ; E [{ Φ }]) (WP e @ s ; E [{ Φ }]) where
-  elim_modal := by
-    rintro ⟨⟩
-    refine BI.sep_mono (BI.intuitionisticallyIf_mono
-      (BIUpdateFUpdate.fupd_of_bupd (E := E))) .rfl |>.trans ?_
-    apply elimModalFupdTwp _ |>.elim_modal ⟨⟩ (io := io)
+  elim_modal := fun ⟨⟩ =>
+    (BI.sep_mono_left (BI.intuitionisticallyIf_mono (BIUpdateFUpdate.fupd_of_bupd (E := E)))).trans
+      (elimModalFupdTwp _ |>.elim_modal ⟨⟩ (io := io))
 
 /-- The same diagnostic as partial WP: changing masks through a non-atomic
 TWP goal requires an explicit leading update. -/
@@ -572,13 +440,7 @@ instance elimModalFupdTwp_wrongMask :
 instance elimModalFupdTwpAtomic :
     ElimModal (Language.Atomic ↑s e) p io false iprop(|={E₁,E₂}=> P) P
       (WP e @ s ; E₁ [{ Φ }]) (WP e @ s ; E₂ [{ v, |={E₂,E₁}=> Φ v }]) where
-  elim_modal := by
-    rintro hatomic
-    iintro ⟨H, G⟩
-    icases BI.intuitionisticallyIf_elim $$ H with H
-    iapply atomic
-    imod H
-    iapply G $$ H
+  elim_modal _ := (sep_mono_left intuitionisticallyIf_elim).trans (fupd_wand_right.trans atomic)
 
 @[rocq_alias elim_modal_fupd_twp_atomic_wrong_mask]
 instance elimModalFupdTwpAtomic_wrongMask :

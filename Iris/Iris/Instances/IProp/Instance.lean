@@ -170,25 +170,19 @@ def IProp.foldi : FF.api τ (IPre FF) -n> FF.api τ (IProp FF) :=
 
 @[rocq_alias inG_unfold_fold]
 theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) = x := by
-  refine OFE.eq_dist.mpr fun n => ?_
-  refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm.dist ?_
-  refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
-  apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold]
+  have h : (IProp.unfold FF).comp (IProp.fold FF) = OFE.Hom.id := OFE.Hom.ext <| funext (IProp.unfold_fold FF)
+  rw [unfoldi, foldi, ← OFunctor.map_comp, h, OFunctor.map_id]
 
 @[rocq_alias inG_fold_unfold]
 theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) = x := by
-  refine OFE.eq_dist.mpr fun n => ?_
-  refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm.dist ?_
-  refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
-  apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold]
+  have h : (IProp.fold FF).comp (IProp.unfold FF) = OFE.Hom.id := OFE.Hom.ext <| funext (IProp.fold_unfold FF)
+  rw [unfoldi, foldi, ← OFunctor.map_comp, h, OFunctor.map_id]
 
 @[rocq_alias iProp_unfold_equivI]
 theorem IProp.unfold_equivI (P Q : IProp FF) :
     (IProp.unfold FF P ≡ IProp.unfold FF Q) ⊢@{IProp FF} P ≡ Q := by
-  have h := BI.internalEq.of_internalEquiv_ne (PROP := IProp FF) (IProp.fold FF)
+  simpa only [IProp.fold_unfold] using BI.internalEq.of_internalEquiv_ne (PROP := IProp FF) (IProp.fold FF)
     (x := IProp.unfold FF P) (y := IProp.unfold FF Q)
-  rw [IProp.fold_unfold, IProp.fold_unfold] at h
-  exact h
 
 theorem IProp.unfoldi_discreteE {v : FF.api τ (IProp FF)} (hv : OFE.DiscreteE v) :
     OFE.DiscreteE (unfoldi.f v) where
