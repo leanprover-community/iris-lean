@@ -44,6 +44,10 @@ instance ndisjoint : Iris.Std.Disjoint Namespace where
 
 theorem nclose_root : ↑nroot = CoPset.full := by rfl
 
+-- `trivial` tries `apply_rfl`; keep its definitional equality check from evaluating concrete
+-- namespace encodings through `CoPset.suffixesRaw`.
+attribute [irreducible] nclose
+
 theorem nclose_subseteq [Pos.Countable A] N (x : A) : (↑N.@x : CoPset) ⊆ (↑N : CoPset) := by
   intros p
   simp only [nclose, CoPset.elem_suffixes]
