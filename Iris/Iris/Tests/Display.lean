@@ -45,7 +45,7 @@ elab "trace_delab" : tactic => do
 
 end
 
-section
+section InfoViewIPM
 
 /-
   Tests delaboration of an IPM goal with only separating conjunctions and
@@ -208,7 +208,7 @@ example [BI PROP] (Q : PROP) (n : Nat) :
   icases Hwand $$ %2 HQ with %_
   grind
 
-end
+end InfoViewIPM
 
 section LaterIf
 
