@@ -5,7 +5,7 @@ Authors: Markus de Medeiros
 -/
 module
 
-public import Iris.Algebra.LeibnizMultiSet
+public import Iris.Algebra.Lib.MultiSetAuth
 public import Iris.HeapLang.Lib.RwLock
 public import Iris.HeapLang.PrimitiveLaws
 public import Iris.HeapLang.ProofMode
@@ -117,12 +117,7 @@ instance instReaderLockedTimeless (γ : GName) (q : Qp) :
 instance instWriterLockedTimeless (γ : GName) :
     Timeless (writerLocked (GF := GF) γ) := by unfold writerLocked; infer_instance
 
-/-! ## Helper lemmas for "auth of a multiset" -/
-
-@[rocq_alias heap_lang.auth_valid_gmultiset_singleton]
-theorem auth_valid_singleton {MS : Type _} [LawfulMultiSet MS A] {dq : DFrac} {v : A} {g : MS}
-    (h : ✓ ((●{dq} .ofSet g : Auth (LeibnizMultiSet MS)) • ◯ LeibnizMultiSet.ofSet {v})) : v ∈ g :=
-  singleton_subset_iff.mp (included_iff_subset.mp (Auth.both_dfrac_valid_discrete.mp h).2.1)
+/-! ## Ghost-state lemmas for the reader set -/
 
 @[rocq_alias heap_lang.own_auth_gmultiset_singleton_2]
 theorem own_auth_singleton_2 {γ : GName} {dq : DFrac} {v : Qp} {g : ReaderFracs} :
@@ -131,19 +126,6 @@ theorem own_auth_singleton_2 {γ : GName} {dq : DFrac} {v : Qp} {g : ReaderFracs
   icombine Hauth Hfrag gives %Hvalid
   ipureintro
   exact auth_valid_singleton Hvalid
-
-theorem auth_alloc_singleton {g : ReaderFracs} {v : Qp} :
-    (● .ofSet g : Auth (LeibnizMultiSet ReaderFracs)) ~~>
-      (● LeibnizMultiSet.ofSet (g ⊎ {v})) • ◯ LeibnizMultiSet.ofSet {v} :=
-  Auth.auth_update_alloc (localUpdate_alloc (X := g) (Y := ∅) (X' := {v}))
-
-theorem auth_dealloc_singleton {g : ReaderFracs} {v : Qp} :
-    ((● .ofSet g : Auth (LeibnizMultiSet ReaderFracs)) • ◯ LeibnizMultiSet.ofSet {v}) ~~>
-      ● LeibnizMultiSet.ofSet (g \ {v}) := by
-  refine Auth.auth_update_dealloc ?_
-  have h := localUpdate_dealloc (X := g) (Y := ({v} : ReaderFracs)) (X' := {v})
-    (subset_iff.mpr fun _ => Nat.le_refl _)
-  rwa [difference_self] at h
 
 theorem own_auth_empty_split (γ : GName) :
     own (GF := GF) γ (●{.own Qp.quarter} .ofSet (∅ : ReaderFracs)) ∗
@@ -167,7 +149,7 @@ theorem own_auth_empty_frag_False {γ : GName} {dq : DFrac} {v : Qp} :
     own γ (●{dq} .ofSet (∅ : ReaderFracs)) ∗ own γ (◯ .ofSet {v}) ⊢@{IProp GF} False := by
   iintro H
   ihave %Hmem := own_auth_singleton_2 $$ H
-  simp [mem_iff_multiplicity_pos, multiplicity_empty] at Hmem
+  simp at Hmem
 
 /-! ## Re-establishing the lock invariant -/
 
@@ -339,8 +321,7 @@ theorem releaseReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) (q : Q
   ihave HΦsum : iprop(Φ (q + q')) $$ [HΦ HΦq']
   · iapply HΦdup $$ %q %q' [$HΦ $HΦq']
   have hpos : 0 < z := by
-    have : size g ≠ 0 := fun h => by
-      simp [size_eq_zero_iff.mp h, mem_iff_multiplicity_pos, multiplicity_empty] at Hmem
+    have : size g ≠ 0 := fun h => by simp [size_eq_zero_iff.mp h] at Hmem
     omega
   have hsize : size (g \ {q}) = (z + -1).toNat := by
     rw [size_difference (singleton_subset_iff.mpr Hmem), size_singleton, Hsize]; omega
