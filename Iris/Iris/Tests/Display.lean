@@ -209,3 +209,35 @@ example [BI PROP] (Q : PROP) (n : Nat) :
   grind
 
 end
+
+section LaterIf
+
+/- `▷?p P` is always delaborated as the same syntax. -/
+/--
+info: fun {PROP} [BI PROP] p P => iprop(▷?p P) : {PROP : Type u_1} → [BI PROP] → Bool → PROP → PROP
+-/
+#guard_msgs in
+#check fun {PROP} [BI PROP] (p : Bool) (P : PROP) => iprop(▷?p P)
+
+/- `▷^[p.toNat]` is always delaborated as `▷?p P`. -/
+/--
+info: fun {PROP} [BI PROP] p P => iprop(▷?p P) : {PROP : Type u_1} → [BI PROP] → Bool → PROP → PROP
+-/
+#guard_msgs in
+#check fun {PROP} [BI PROP] (p : Bool) (P : PROP) => iprop(▷^[p.toNat] P)
+
+/- `▷^[0]` is always delaborated as the same syntax, no `laterIf` involved. -/
+/--
+info: fun {PROP} [BI PROP] P => iprop(▷^[0] P) : {PROP : Type u_1} → [BI PROP] → PROP → PROP
+-/
+#guard_msgs in
+#check fun {PROP} [BI PROP] (P : PROP) => iprop(▷^[0] P)
+
+/- `▷^[1]` is always delaborated as the same syntax, no `laterIf` involved. -/
+/--
+info: fun {PROP} [BI PROP] P => iprop(▷^[1] P) : {PROP : Type u_1} → [BI PROP] → PROP → PROP
+-/
+#guard_msgs in
+#check fun {PROP} [BI PROP] (P : PROP) => iprop(▷^[1] P)
+
+end LaterIf
