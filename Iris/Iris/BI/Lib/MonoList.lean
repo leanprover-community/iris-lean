@@ -18,10 +18,6 @@ Wraps the `MonoList` RA, providing three assertions:
 - an authoritative proposition `γ ↪●ML{dq} l` for the authoritative list `l`;
 - a persistent assertion `γ ↪◯ML l` witnessing that the authoritative list is at least `l`;
 - a persistent assertion `γ ↪◯ML[i] a` witnessing that index `i` holds `a`.
-
-The key rules are `auth_lb_own_valid`, which asserts that an auth at `l` and a lower bound at
-`l'` imply `l' <+: l`, and `auth_own_update`, which grows the auth element by appending only. At
-any time the auth list can be snapshotted with `lb_own_get` to produce a persistent lower bound.
 -/
 
 @[expose] public section
@@ -43,11 +39,7 @@ namespace MonoList
 
 variable {GF : BundledGFunctors} {α : Type _} [MonoListG GF α]
 
-/-! ## Reflecting `DiscreteO` through lists
-
-Rocq indexes the RA by `leibnizO A`; here the discrete OFE on `α` is `DiscreteO α`, so the
-ghost-state definitions carry lists through `DiscreteO.mk` and the lemmas reflect back.
--/
+/-! ## Helper functions -/
 
 theorem map_mk_inj : ∀ {l1 l2 : List α}, l1.map DiscreteO.mk = l2.map DiscreteO.mk → l1 = l2
   | [], [], _ => rfl
@@ -93,8 +85,8 @@ notation γ " ↪●ML□ " l => auth_own γ DFrac.discard l
 notation γ " ↪◯ML " l => lb_own γ l
 
 @[rocq_alias mono_list_idx_own]
-def idx_own (γ : GName) (i : Nat) (a : α) : IProp GF :=
-  iprop(∃ l, ⌜l[i]? = some a⌝ ∗ lb_own γ l)
+def idx_own (γ : GName) (i : Nat) (a : α) : IProp GF := iprop%
+  ∃ l, ⌜l[i]? = some a⌝ ∗ lb_own γ l
 
 notation γ " ↪◯ML[" i "] " a => idx_own γ i a
 
@@ -137,9 +129,6 @@ instance {γ} {l : List α} :
     unfold auth_own
     rw [← iOwn_op.to_eq]
     exact (congrArg (iOwn _) (auth_dfrac_op (.own p) (.own q) _)).to_bi
-
-#rocq_ignore mono_list_auth_own_as_fractional
-  "Follows from the Fractional instance via fractional_as_fractional"
 
 /-! ## Agreement -/
 
