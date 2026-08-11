@@ -300,7 +300,28 @@ example (l : Loc) : ⊢@{IProp GF} WP hl(!#l) {{ v, True }} := by
 -- neither branch applies when the goal is not a weakest precondition
 /-- error: wp_finish: The goal iprop(True) must be a WP -/
 #guard_msgs in
-example : ⊢@{IProp GF} (True : IProp GF) := by
+example : ⊢@{IProp GF} True := by
+  wp_pures
+
+-- the guard counts only the goals the step produced, not those already open
+/--
+error: unsolved goals
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+⊢ ⏎
+  ⊢ |={⊤}=> True
+
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+⊢ ⏎
+  ⊢ True
+-/
+#guard_msgs in
+example : ⊢@{IProp GF} (WP hl(if #true then #1 else #0) {{ v, True }} ∧ True) := by
+  istart
+  isplit
   wp_pures
 
 end wp_pures
