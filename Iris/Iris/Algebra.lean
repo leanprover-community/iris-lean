@@ -17,7 +17,10 @@ public import Iris.Algebra.HeapView
 public import Iris.Algebra.IProp
 public import Iris.Algebra.IsOp
 public import Iris.Algebra.LeibnizSet
+public import Iris.Algebra.List
 public import Iris.Algebra.LocalUpdates
+public import Iris.Algebra.Mra
+public import Iris.Algebra.IProp
 public import Iris.Algebra.OFE
 public import Iris.Algebra.ReservationMap
 public import Iris.Algebra.StepIndex
