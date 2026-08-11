@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
-public import Iris.ProofMode
+public import Iris.BI.BI
+public import Iris.BI.Cmra
 public import Iris.Algebra.Lib.DFracAgree
 
 /-! ## Algebra wrappers for BI
@@ -146,7 +147,9 @@ theorem auth_op_frag_validI [Sbi PROP] (dp : DFrac) (m : H V) k dq v :
     · exists z
     exact Hincl
   · refine siPure_mono ?_
-    iintro ⟨%v', ⟨%dq', %Hdp', %Hlookup, H⟩⟩
+    refine exists_elim fun v' => exists_elim fun dq' => ?_
+    refine pure_elim_left fun Hdp' => ?_
+    refine pure_elim_left fun Hlookup => ?_
     refine siPure_and.mpr.trans ?_
     refine siPure_mono (and_exists_left.mp.trans (exists_elim (fun c => ?_)))
     intro n ⟨h1, h2⟩

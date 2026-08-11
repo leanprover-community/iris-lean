@@ -378,7 +378,27 @@ elab "wp_pure " colGt ppSpace focus:hl_exp:10 : tactic =>
     mvar.assign pf
 
 macro "wp_pure" : tactic => `(tactic| wp_pure _)
-macro "wp_pures" : tactic => `(tactic| repeat wp_pure)
+
+/-- A single `wp_pure` step that must leave exactly one goal, Rocq's `wp_pure _; []`. Fails
+if the step spawns a goal besides the continuation, such as an undischarged side condition
+of the reduction. -/
+elab "wp_pure_step" : tactic => focus do
+  evalTactic (← `(tactic| wp_pure))
+  -- we run under `focus` so we only see the unsolved goals of `wp_pure` 
+  let goals ← getUnsolvedGoals
+  unless goals.length == 1 do
+    throwError "the pure reduction step must leave exactly one goal, it left {
+      goals.length}:{indentD <| .joinSep (goals.map fun g => m!"{g}") Format.line}"
+
+/-- Reduce all pure redexes at the head of the weakest precondition, then simplify the
+resulting expression and strip the weakest precondition if it has become a value.
+
+A pure step whose side condition cannot be discharged is not taken. -/
+macro "wp_pures" : tactic =>
+  -- Rocq: `first [progress repeat (wp_pure _; []) | wp_finish]`
+  `(tactic| first
+    | (wp_pure_step; repeat wp_pure_step)
+    | wp_finish)
 
 macro "wp_rec" : tactic => `(tactic | (wp_bind _ _; iapply $(mkIdent `wp_rec):ident; rfl; imodintro; wp_finish))
 
@@ -628,8 +648,16 @@ HeapLang WP (from the `HeapLangGS` instance), and strip the WP's step modality
 off the hypotheses. -/
 meta def runTacticHeapWp {α} (tacName : Name)
     (k : MVarId → HeapWpGoal → ProofModeM α) : TacticM α := do
-  -- Rocq parity: every heap tactic first normalizes pure redexes
-  evalTactic (← `(tactic| wp_pures))
+  -- Rocq parity: every heap tactic first normalizes pure redexes. `wp_pures` only fails
+  -- when the goal is not a WP, which is this tactic's failure to report, not `wp_finish`'s
+  try evalTactic (← `(tactic| wp_pures))
+  catch _ => throwError "{tacName}: the goal is not a WP"
+  -- `wp_pures` fails on a goal that is not a WP, so if it leaves one, the pure steps have
+  -- reduced the expression to a value
+  let goalType ← instantiateMVars (← (← getMainGoal).getType)
+  if let some {goal, ..} := parseIrisGoal? goalType then
+    unless goal.consumeMData.isAppOf ``Wp.wp do
+      throwError "{tacName}: the expression has been reduced to a value, there is no redex left"
   ProofModeM.runTacticWp tacName fun mvar {hyps, GF, hlc, ι, s, E, e, Φ, hu, hprop, hbi, ..} => do
     have ιQ : Q(IrisGS_gen $hlc Exp $GF) := ι
     let ~q(@HeapLang _ _ $hgs) := ιQ
@@ -660,7 +688,7 @@ elab "wp_load" : tactic =>
 
     mvar.assign q(tac_wp_load (ι := $hgs) (Δ' := $eΔ') $pfLater $pfSplit $pfCont)
 
-elab "wp_store" : tactic =>
+elab "wp_store" : tactic => do
   runTacticHeapWp `wp_store fun mvar {bi, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
     let some {result := (l, v'), K, ..} ← findECtx e fun e' => do
         let ~q(Exp.store (Exp.ofVal (Val.lit (BaseLit.loc $l))) (Exp.ofVal $v')) := e' | failure
@@ -677,8 +705,11 @@ elab "wp_store" : tactic =>
     let pfCont ← finishHeapOp hyps''' hgs s E K q(hl_val(#())) Φ
 
     mvar.assign q(tac_wp_store (ι := $hgs) (Δ' := $eΔ') $pfLater $pfSplit <| $(pf''').mp.trans $pfCont)
+  -- a store's result is often discarded by a `;`, so try stepping through the
+  -- sequencing redex using `wp_seq`
+  evalTactic (← `(tactic| try wp_seq))
 
-elab "wp_xchg" : tactic =>
+elab "wp_xchg" : tactic => do
   runTacticHeapWp `wp_xchg fun mvar {bi, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
     let some {result := (l, v'), K, ..} ← findECtx e fun e' => do
         let ~q(Exp.xchg (Exp.ofVal (Val.lit (BaseLit.loc $l))) (Exp.ofVal $v')) := e' | failure
@@ -695,6 +726,8 @@ elab "wp_xchg" : tactic =>
     let pfCont ← finishHeapOp hyps''' hgs s E K v Φ
 
     mvar.assign q(tac_wp_xchg (ι := $hgs) (Δ' := $eΔ') $pfLater $pfSplit <| $(pf''').mp.trans $pfCont)
+  -- like in `wp_store`, an `xchg` often discards its result, so try `wp_seq`
+  evalTactic (← `(tactic| try wp_seq))
 
 elab "wp_faa" : tactic =>
   runTacticHeapWp `wp_faa fun mvar {bi, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do

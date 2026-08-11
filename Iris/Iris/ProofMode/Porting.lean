@@ -12,7 +12,7 @@ import Iris.Std.RocqPorting
 #rocq_ignore_file proofmode "string_ident.v" "Rocq-specific string-based ident handling"
 #rocq_ignore_file proofmode "tokens.v" "Rocq-specific tokenizer"
 
-#rocq_concept proofmode "Tactics" missing "tactics"
+#rocq_concept proofmode "Tactics" ported "tactics"
 #rocq_concept proofmode "Tactics" "iSolveSideCondition" ported
   "iSolveSidecondition (as an internal function)"
 #rocq_concept proofmode "Tactics" "iStartProof (basic)" ported "istart"
@@ -47,7 +47,7 @@ import Iris.Std.RocqPorting
 #rocq_concept proofmode "Tactics" "iExists" ported "iexists"
 #rocq_concept proofmode "Tactics" "iModIntro" ported "imodintro"
 #rocq_concept proofmode "Tactics" "iNext (basic)" ported "inext"
-#rocq_concept proofmode "Tactics" "iNext (with later credits)" missing ""
+#rocq_concept proofmode "Tactics" "iNext (with later credits)" ported "inext _ credit: _"
 #rocq_concept proofmode "Tactics" "iMod" ported "imod"
 #rocq_concept proofmode "Tactics" "iDestruct (basic)" ported "icases"
 #rocq_concept proofmode "Tactics" "iDestruct (all destruct patterns)" ported "icases"

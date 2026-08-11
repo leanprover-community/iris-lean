@@ -8,7 +8,7 @@ pp.unicode.fun = true
 relaxedAutoImplicit = true
 weak.linter.mathlibStandardSet = true
 maxSynthPendingDepth = 3
-linter.style.header = false
+weak.linter.style.header = false
 
 [[require]]
 name = "mathlib"
@@ -21,3 +21,8 @@ path = "../Iris/"
 
 [[lean_lib]]
 name = "IrisMath"
+
+[[lean_exe]]
+name = "check-imports"
+srcDir = "../scripts"
+root = "CheckImports"
