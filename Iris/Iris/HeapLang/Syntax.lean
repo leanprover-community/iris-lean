@@ -52,6 +52,17 @@ instance : Zero Loc where
 theorem loc_add_n (l : Loc) n :
   (l + n).n = l.n + n := by simp [HAdd.hAdd]
 
+@[rocq_alias heap_lang.Loc.add_assoc]
+theorem loc_add_assoc (l : Loc) (i j : Int) : l + i + j = l + (i + j) := by
+  ext; simp [Int.add_assoc]
+
+@[simp, rocq_alias heap_lang.Loc.add_0]
+theorem loc_add_zero (l : Loc) : l + (0 : Int) = l := by ext; simp
+
+@[rocq_alias heap_lang.Loc.add_inj]
+theorem loc_add_inj {l : Loc} {i j : Int} (h : l + i = l + j) : i = j := by
+  have := congrArg Loc.n h; simp only [loc_add_n] at this; omega
+
 @[ext, rocq_alias heap_lang.heap_lang.proph_id]
 structure ProphId where
   mk ::

@@ -154,6 +154,23 @@ theorem get?_allocCells {l : Loc} {n : Nat} {v : Option Val} {k : Loc} :
       = if (∃ i, i < n ∧ k = l + (i : Int)) then some v else none := by
   simp [allocCells, get?_foldl_insert, Std.LawfulPartialMap.get?_empty]
 
+@[simp]
+theorem allocCells_zero {l : Loc} {v : Option Val} : allocCells l 0 v = ∅ := rfl
+
+/-- `allocCells` peels off its *last* cell. -/
+theorem allocCells_succ {l : Loc} {n : Nat} {v : Option Val} :
+    allocCells l (n + 1) v = Std.insert (M := HeapF) (allocCells l n v) (l + (n : Int)) v := by
+  rw [allocCells, List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil]
+  rfl
+
+theorem get?_allocCells_self {l : Loc} {n : Nat} {v : Option Val} :
+    PartialMap.get? (M := HeapF) (allocCells l n v) (l + (n : Int)) = none := by
+  rw [get?_allocCells, if_neg]
+  rintro ⟨i, hi, hik⟩
+  have := congrArg Loc.n hik
+  simp only [loc_add_n] at this
+  omega
+
 theorem initHeap_heap_eq {σ : State} {l : Loc} {n : Int} {v : Option Val} :
     Std.PartialMap.equiv (M := HeapF) (σ.initHeap l n v).heap
       (Std.PartialMap.union (allocCells l n.toNat v) σ.heap) := by

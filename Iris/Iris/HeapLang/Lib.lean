@@ -1,6 +1,7 @@
 module
 
 public import Iris.HeapLang.Lib.Arith
+public import Iris.HeapLang.Lib.Array
 public import Iris.HeapLang.Lib.Assert
 public import Iris.HeapLang.Lib.Diverge
 public import Iris.HeapLang.Lib.LandinsKnot

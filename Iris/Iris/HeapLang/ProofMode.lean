@@ -9,6 +9,7 @@ public import Iris.ProofMode
 public import Iris.HeapLang.Tactic
 public import Iris.HeapLang.Instances
 public import Iris.HeapLang.PrimitiveLaws
+public import Iris.HeapLang.DerivedLaws
 public import Iris.ProgramLogic.WeakestPre
 public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.EctxLanguage
@@ -556,7 +557,20 @@ public theorem tac_wp_faa [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
     Δ ⊢ WP (ProgramLogic.fill K hl(faa(#l, #z2))) @ s ; E {{ Φ }} :=
   tac_wp_heap_op rfl wp_faa hlater hsplit hcont
 
--- TODO: port `tac_wp_allocN` once `array` and `wp_allocN` are ported
+/-- Like `tac_wp_alloc`, but for a multi-cell allocation. The meta tokens handed out by
+`wp_allocN` are dropped; use `wp_allocN` directly when they are needed. -/
+public theorem tac_wp_allocN [ι : HeapLangGS hlc GF] {Δ Δ' : IProp GF}
+    {s : Stuckness} {E : CoPset} {K : List ECtxItem} {v : Val} {n : Int} {Φ}
+    (hn : 0 < n)
+    (hlater : Δ ⊢ ▷ Δ')
+    (hcont : ∀ l : Loc, Δ' ∗ (l ↦∗ List.replicate n.toNat v) ⊢
+      WP (ProgramLogic.fill K (Exp.ofVal (Expr := Exp) hl_val(#l))) @ s ; E {{ Φ }}) :
+    Δ ⊢ WP (ProgramLogic.fill K hl(allocn(#n, &v))) @ s ; E {{ Φ }} := by
+  refine hlater.trans ?_
+  refine .trans ?_ (wp_bind (ProgramLogic.fill K))
+  refine .trans ?_ (wand_entails (wp_allocN v hn))
+  exact later_mono <| forall_intro fun l =>
+    wand_intro <| (sep_mono_right sep_elim_left).trans (hcont l)
 
 /-! ## Shared machinery for the heap tactics -/
 
@@ -885,6 +899,33 @@ elab "wp_alloc" colGt ppSpace loc:binderIdent " with" colGt ppSpace hyp:binderId
     mvar.assign q(tac_wp_alloc (ι := $hgs) (Δ' := $eΔ') $pfLater $pfCont)
 
 macro "wp_alloc" colGt ppSpace loc:binderIdent : tactic => `(tactic| wp_alloc $loc with _)
+
+elab "wp_allocN" colGt ppSpace loc:binderIdent " with" colGt ppSpace hyp:binderIdent : tactic =>
+  runTacticHeapWp `wp_allocN fun mvar {bi, GF, hlc, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
+    let some {result := (n, v), K, ..} ← findECtx e fun e' => do
+        let ~q(Exp.allocN (Exp.ofVal (Val.lit (BaseLit.int $n))) (Exp.ofVal $v)) := e' | failure
+        return (n, v)
+      | throwIPMError "cannot find an `allocn` redex"
+    trace[wp_heap.redex] "allocn {n} {v}; K = {K}"
+
+    -- a non-positive allocation is stuck, so the bound is the caller's to discharge
+    let pfPos ← iSolveSidecondition q(0 < $n) (failOnUnsolved := false)
+
+    let (locName, _) ← getFreshName loc
+
+    let pfCont : Q(∀ l : Loc, $eΔ' ∗ array l (DFrac.own 1) (List.replicate ($n).toNat $v) ⊢
+        Wp.wp (self := wp.def (ι := @HeapLang $hlc $GF $hgs)) $s $E
+          (ProgramLogic.fill $K (Exp.ofVal (Expr := Exp) (Val.lit (BaseLit.loc l)))) $Φ) ←
+      Qq.withLocalDeclDQ locName q(Loc) fun l => do
+        let ⟨_, _, hyps'', pfEq⟩ ← hyps'.addWithInfo bi hyp q(false)
+          q(array $l (DFrac.own 1) (List.replicate ($n).toNat $v))
+
+        let pf ← finishHeapOp hyps'' hgs s E K q(Val.lit (BaseLit.loc $l)) Φ
+        mkLambdaFVars #[l] q($(pfEq).mp.trans $pf)
+
+    mvar.assign q(tac_wp_allocN (ι := $hgs) (Δ' := $eΔ') $pfPos $pfLater $pfCont)
+
+macro "wp_allocN" colGt ppSpace loc:binderIdent : tactic => `(tactic| wp_allocN $loc with _)
 
 -- Register the trace classes emitted by the tactics above; enables
 -- `set_option trace.wp_bind true` (and analogously for the others).

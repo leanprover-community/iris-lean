@@ -100,6 +100,15 @@ instance (priority := default - 10) combineSepAsFractionalHalf
     _ ⊢ Φ (q.half + q.half) := (hP.as_fractional_fractional.fractional q.half q.half).mpr
     _ ⊢ Φ q                 := Qp.half_add_half _ ▸ .rfl
 
+@[rocq_alias fractional_big_sepL]
+instance fractional_bigSepL {A : Type _} {l : List A} {Ψ : Nat → A → Qp → PROP}
+    [∀ k x, Fractional (Ψ k x)] : Fractional (fun q => iprop([∗list] k ↦ x ∈ l, Ψ k x q)) where
+  fractional p q :=
+    ⟨(BigSepL.bigSepL_mono_of_forall fun {_ _} => (Fractional.fractional p q).1).trans
+      BigSepL.bigSepL_sep_eqv.1,
+     BigSepL.bigSepL_sep_eqv.2.trans
+      (BigSepL.bigSepL_mono_of_forall fun {_ _} => (Fractional.fractional p q).2)⟩
+
 end Lemmas
 
 section Divide

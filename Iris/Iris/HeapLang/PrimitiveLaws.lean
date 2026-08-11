@@ -240,6 +240,76 @@ theorem wp_alloc (v : Val) (Φ : Val → IProp GF ) :
   isplit; ipureintro; rfl
   iapply HΦ $$ [$]
 
+/-! ## Multi-cell allocation
+
+The usable rules for `allocN` stated in terms of the `array` proposition are derived in
+`Iris.HeapLang.DerivedLaws`. -/
+
+@[rocq_alias heap_lang.heap_array_to_seq_pointsto]
+theorem allocCells_toSeq_pointsTo {l : Loc} {v : Val} {n : Nat} :
+    ([∗map] l' ↦ ov ∈ allocCells l n (some v), l' ↦ ov) ⊢
+      [∗list] i ∈ List.range n, (l + Int.ofNat i) ↦ some v := by
+  induction n with
+  | zero =>
+    rw [allocCells_zero, List.range_zero]
+    exact BI.BigSepM.bigSepM_empty.1.trans BI.BigSepL.bigSepL_nil.2
+  | succ n ih =>
+    rw [allocCells_succ, List.range_succ]
+    refine (BI.BigSepM.bigSepM_insert get?_allocCells_self).1.trans ?_
+    refine .trans ?_ BI.BigSepL.bigSepL_snoc.2
+    exact BI.sep_comm.1.trans (BI.sep_mono ih .rfl)
+
+@[rocq_alias heap_lang.heap_array_to_seq_meta]
+theorem allocCells_toSeq_metaToken {l : Loc} {v : Option Val} {n : Nat} :
+    ([∗map] l' ↦ _ov ∈ allocCells l n v, metaToken l' ⊤) ⊢
+      [∗list] i ∈ List.range n, metaToken (l + Int.ofNat i) ⊤ := by
+  induction n with
+  | zero =>
+    rw [allocCells_zero, List.range_zero]
+    exact BI.BigSepM.bigSepM_empty.1.trans BI.BigSepL.bigSepL_nil.2
+  | succ n ih =>
+    rw [allocCells_succ, List.range_succ]
+    refine (BI.BigSepM.bigSepM_insert (Φ := fun l' _ => iprop(metaToken l' ⊤))
+      get?_allocCells_self).1.trans ?_
+    refine .trans ?_ BI.BigSepL.bigSepL_snoc.2
+    exact BI.sep_comm.1.trans (BI.sep_mono ih .rfl)
+
+@[rocq_alias heap_lang.wp_allocN_seq]
+theorem wp_allocN_seq (v : Val) {n : Int} (hn : 0 < n) :
+    ▷ (∀ l : Loc, ([∗list] i ∈ List.range n.toNat,
+          (l + Int.ofNat i) ↦ some v ∗ metaToken (l + Int.ofNat i) ⊤) -∗ Φ (.lit <| .loc l)) -∗
+    WP hl(allocn(#n, &v)) @ s; E {{ Φ }} := by
+  iintro HΦ
+  iapply wp_lift_atomic_step rfl
+  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
+  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
+  obtain ⟨l, hfresh⟩ := exists_fresh_block σ₁.heap n
+  have Hred : BaseStep.Reducible (hl(allocn(#n, &v)), σ₁) :=
+    ⟨[], .ofVal (.lit (.loc l)), σ₁.initHeap l n v, [], .allocNS n v σ₁ l hn hfresh⟩
+  isplitr
+  · ipureintro
+    cases s <;> simp only [Stuckness.MaybeReducible]
+    exact primStep_reducible_of_baseStep_reducible Hred
+  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  rcases baseStep_of_primStep_of_baseStep_reducible Hred Heq
+  rename_i l' _hn' hfresh'
+  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  simp only [stateInterp, Algebra.BigOpL.bigOpL_nil]
+  imod genHeap_alloc_big (allocCells l' n.toNat v) σ₁.heap (allocCells_disjoint hfresh') $$ Hσ
+    with ⟨Hσ, Hpts, Htok⟩
+  imodintro
+  isplitl [Hσ Hproph]
+  · iframe Hproph
+    iapply genHeapInterp_eqv (.symm _ _ initHeap_heap_eq) $$ Hσ
+  isplit <;> try itrivial
+  iexists hl_val(#(BaseLit.loc l'))
+  isplit; ipureintro; rfl
+  iapply HΦ
+  iapply BI.BigSepL.bigSepL_sep_eqv.2
+  isplitl [Hpts]
+  · iapply allocCells_toSeq_pointsTo $$ Hpts
+  · iapply allocCells_toSeq_metaToken $$ Htok
+
 theorem wp_load {l : Loc} {q} {v : Val} Φ :
     ▷ l ↦{q} some v -∗
     ▷ (l ↦{q} some v -∗ Φ v) -∗
@@ -623,6 +693,7 @@ theorem wp_resolve {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × Val)}
   iframe Hp
   iexact Hcont
 
+@[rocq_alias heap_lang.wp_resolve_proph]
 theorem wp_resolve_proph {p : ProphId} {w : Val} {pvs : List (Val × Val)} :
     proph p pvs -∗
     (∀ pvs', ⌜pvs = (hl_val(#()), w) :: pvs'⌝ -∗ proph p pvs' -∗ Φ hl_val(#())) -∗
