@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors:
+Authors: Markus de Medeiros
 -/
 module
 
@@ -10,12 +10,7 @@ public import Iris.Algebra.IsOp
 public import Iris.Algebra.MaxPrefixList
 meta import Iris.Std.RocqPorting
 
-/-!
-# Monotone lists
-
-Authoritative CMRA of append-only lists, where the fragment represents a snapshot of the list,
-and the authoritative element can only grow by appending.
--/
+/-! # Monotone lists -/
 
 @[expose] public section
 
@@ -32,13 +27,10 @@ namespace MonoList
 
 open MaxPrefixList
 
-/-- The authoritative element. The definition includes the fragment at the same value so that
-`MonoList.included` holds; without this trick a frame-preserving update would be needed. -/
 @[rocq_alias mono_list_auth]
 def auth (dq : DFrac) (l : List α) : MonoList α :=
   (●{dq} toMaxPrefixList l) • ◯ toMaxPrefixList l
 
-/-- The fragment: a snapshot recording that `l` is a prefix of the authoritative list. -/
 @[rocq_alias mono_list_lb]
 def lb (l : List α) : MonoList α := ◯ toMaxPrefixList l
 
@@ -127,8 +119,7 @@ instance {dq dq1 dq2 : DFrac} {l : List α} [h : IsOp d dq dq1 dq2] :
 
 @[rocq_alias mono_list_auth_dfrac_validN]
 theorem auth_dfrac_validN {n} (dq : DFrac) (l : List α) : ✓{n} (●ML{dq} l) ↔ ✓ dq := by
-  unfold auth
-  rw [Auth.both_dfrac_validN]
+  rw [auth, Auth.both_dfrac_validN]
   exact ⟨fun h => h.1, fun h => ⟨h, incN_refl _, toMaxPrefixList_validN _⟩⟩
 
 @[rocq_alias mono_list_auth_validN]
@@ -137,8 +128,7 @@ theorem auth_validN {n} (l : List α) : ✓{n} (●ML l) :=
 
 @[rocq_alias mono_list_auth_dfrac_valid]
 theorem auth_dfrac_valid (dq : DFrac) (l : List α) : ✓ (●ML{dq} l) ↔ ✓ dq := by
-  unfold auth
-  rw [Auth.both_dfrac_valid]
+  rw [auth, Auth.both_dfrac_valid]
   exact ⟨fun h => h.1, fun h => ⟨h, fun _ => incN_refl _, toMaxPrefixList_valid _⟩⟩
 
 @[rocq_alias mono_list_auth_valid]
@@ -165,8 +155,7 @@ theorem auth_op_validN {n} (l1 l2 : List α) : ✓{n} (●ML l1 • ●ML l2) �
 @[rocq_alias mono_list_auth_dfrac_op_valid]
 theorem auth_dfrac_op_valid (dq1 dq2 : DFrac) (l1 l2 : List α) :
     ✓ (●ML{dq1} l1 • ●ML{dq2} l2) ↔ ✓ (dq1 • dq2) ∧ l1 = l2 := by
-  rw [valid_iff_validN, eq_dist]
-  simp only [auth_dfrac_op_validN]
+  simp only [valid_iff_validN, eq_dist, auth_dfrac_op_validN]
   exact ⟨fun h => ⟨(h 0).1, fun n => (h n).2⟩, fun ⟨hdq, hl⟩ n => ⟨hdq, hl n⟩⟩
 
 @[rocq_alias mono_list_auth_op_valid]
@@ -179,8 +168,7 @@ theorem auth_op_valid (l1 l2 : List α) : ✓ (●ML l1 • ●ML l2) ↔ False 
 @[rocq_alias mono_list_both_dfrac_validN]
 theorem both_dfrac_validN {n} (dq : DFrac) (l1 l2 : List α) :
     ✓{n} (●ML{dq} l1 • ◯ML l2) ↔ ✓ dq ∧ ∃ l, l1 ≡{n}≡ l2 ++ l := by
-  unfold auth lb
-  rw [← assoc', ← Auth.frag_op, Auth.both_dfrac_validN]
+  rw [auth, lb, ← assoc', ← Auth.frag_op, Auth.both_dfrac_validN]
   refine ⟨fun ⟨hdq, hinc, _⟩ => ⟨hdq, ?_⟩, fun ⟨hdq, hl⟩ => ⟨hdq, ?_, ?_⟩⟩
   · exact toMaxPrefixList_incN_iff.mp (incN_trans (incN_op_right ..) hinc)
   · have hinc := op_monoN_right (toMaxPrefixList l1) (toMaxPrefixList_incN_iff.mpr hl)
@@ -220,8 +208,7 @@ theorem both_valid_prefix (l1 l2 : List α) : ✓ (●ML l1 • ◯ML l2) ↔ l2
 
 @[rocq_alias mono_list_lb_op_validN]
 theorem lb_op_validN {n} (l1 l2 : List α) :
-    ✓{n} (◯ML l1 • ◯ML l2)
-      ↔ (∃ l, l2 ≡{n}≡ l1 ++ l) ∨ (∃ l, l1 ≡{n}≡ l2 ++ l) := by
+    ✓{n} (◯ML l1 • ◯ML l2) ↔ (∃ l, l2 ≡{n}≡ l1 ++ l) ∨ (∃ l, l1 ≡{n}≡ l2 ++ l) := by
   unfold lb
   rw [Auth.frag_op_validN, toMaxPrefixList_op_validN]
 
