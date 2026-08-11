@@ -116,10 +116,11 @@ theorem disjUnion_left_inj {X Y Z : MS} (h : X ⊎ Y = X ⊎ Z) : Y = Z :=
 
 theorem singleton_subset_iff {x : A} {X : MS} : ({x} : MS) ⊆ X ↔ x ∈ X where
   mp h := by
-    have hx := subset_iff.mp h x
-    rw [multiplicity_singleton_eq] at hx
     rw [mem_iff_multiplicity_pos]
-    omega
+    calc 0
+      _ < 1 := Nat.one_pos
+      _ = MultiSet.multiplicity x ({x} : MS) := multiplicity_singleton_eq.symm
+      _ ≤ MultiSet.multiplicity x X := subset_iff.mp h x
   mpr h := subset_iff.mpr fun a => by
     by_cases hax : a = x
     · subst hax; rw [multiplicity_singleton_eq]; exact h
@@ -127,18 +128,15 @@ theorem singleton_subset_iff {x : A} {X : MS} : ({x} : MS) ⊆ X ↔ x ∈ X whe
 
 theorem disjUnion_difference_of_subseteq {X Y : MS} (h : Y ⊆ X) : X = Y ⊎ (X \ Y) := by
   refine LawfulMultiSet.ext fun a => ?_
-  rw [multiplicity_disjUnion, multiplicity_difference]
-  have := subset_iff.mp h a
-  omega
+  grind [subset_iff.mp h a, multiplicity_disjUnion, multiplicity_difference]
 
 theorem disjUnion_singleton_difference {x : A} {X : MS} (h : x ∈ X) : X = {x} ⊎ (X \ {x}) := by
   refine LawfulMultiSet.ext fun a => ?_
   rw [multiplicity_disjUnion, multiplicity_difference]
   by_cases hax : a = x
   · subst hax
-    rw [multiplicity_singleton_eq]
     have : 0 < MultiSet.multiplicity a X := h
-    omega
+    grind [multiplicity_singleton_eq]
   · rw [multiplicity_singleton_ne hax]; omega
 
 end Lemmas
@@ -171,13 +169,10 @@ end FiniteLemmas
 
 namespace FiniteMultiSet
 
-/-- The cardinality (size) of a finite multiset, defined as the length of its list
-representation. -/
+/-- The cardinality (size) of a finite multiset -/
 def size [FiniteMultiSet MS A] (X : MS) : Nat :=
   (toList X).length
 
-/-- Fold over a finite multiset. Unlike `FiniteSet.fold`, the accumulator comes last, so that
-`fold` on a commutative monoid reads as a sum. -/
 def fold [FiniteMultiSet MS A] {β : Type _} (f : A → β → β) (b : β) (X : MS) : β :=
   (toList X).foldr f b
 
