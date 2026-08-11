@@ -2707,13 +2707,15 @@ example [BI PROP] (p : Bool) (P : PROP) (h : ▷?p P -∗ ▷?p P) : ▷?p ▷ P
 /--
   Tests `inext` where synthesis using `intoLaterN_sep_left` fails and
   uses `intoLaterN_sep_right` after backtracking.
-  The later modality in `▷ Q` is stripped from `HPQ` instead of the outmost `▷?p`.
+  The later modality in `▷ Q` is stripped from `HPQ1` instead of the outermost `▷?p`.
+  Analogous for `∧` and `∨`.
 -/
-example [BI PROP] (p : Bool) (P Q R : PROP) (h : ▷?p (P ∗ Q) -∗ ▷ R) :
-    ▷?p (P ∗ ▷ Q) ⊢ ▷▷ R := by
-  iintro HPQ
+example [BI PROP] (p : Bool) (P Q R : PROP)
+    (h : ▷?p (P ∗ Q) -∗ ▷?p (P ∧ Q) -∗ ▷?p (P ∨ Q) -∗ ▷ R) :
+    ▷?p (▷ P ∗ ▷ Q) ∗ ▷?p (▷ P ∧ ▷ Q) ∗ ▷?p (▷ P ∨ ▷ Q) ⊢ ▷▷ R := by
+  iintro ⟨HPQ1, HPQ2, HPQ3⟩
   inext
-  iapply h $$ HPQ
+  iapply h $$ HPQ1 HPQ2 HPQ3
 
 variable {GF : BundledGFunctors} [InvGS GF]
 

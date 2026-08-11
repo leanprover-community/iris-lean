@@ -391,124 +391,129 @@ instance addModal_except_0_later [BI PROP] (P Q : PROP) :
     _ ⊢ ◇ (▷ Q)            := except0_mono wand_elim_right
     _ ⊢ ▷ Q                 := except0_later
 
-/-- GuardedIntoLaterN -/
-instance (priority := high) guardedIntoLaterN_stuck [BI PROP] m only_head n (P Q : PROP)
-    [h : IntoLaterN only_head n P Q] : GuardedIntoLaterN m m only_head n P Q where
-  into_laterN_guard := ⟨h.into_laterN⟩
-
-instance (priority := low) guardedIntoLaterN_progress [BI PROP] m m' only_head n (P Q : PROP)
-    [h : MaybeIntoLaterN only_head n P Q] : GuardedIntoLaterN m m' only_head n P Q where
-  into_laterN_guard := ⟨h.maybe_into_laterN.into_laterN⟩
-
 /-- MaybeIntoLaterN -/
-@[ipm_backtrack, rocq_alias maybe_into_laterN_default]
-instance (priority := low) maybeIntoLaterN_default [BI PROP] only_head n (P : PROP) :
-    MaybeIntoLaterN only_head n P P where
-  maybe_into_laterN := ⟨laterN_intro n⟩
-
-@[ipm_backtrack, rocq_alias maybe_into_laterN_default_0]
-instance (priority := high) maybeIntoLaterN_default_0 [BI PROP] only_head (P : PROP) :
-    MaybeIntoLaterN only_head 0 P P where
-  maybe_into_laterN := ⟨laterN_intro 0⟩
-
-@[ipm_backtrack]
-instance (priority := high) maybeIntoLaterN_of_intoLaterN [BI PROP] only_head n (P Q : PROP)
-    [h : IntoLaterN only_head n P Q] : MaybeIntoLaterN only_head n P Q where
-  maybe_into_laterN := ⟨h.into_laterN⟩
-
-/-- IntoLaterN -/
-@[ipm_backtrack, rocq_alias into_laterN_0]
-instance (priority := high) intoLaterN_default_0 [BI PROP] only_head (P : PROP) :
-    IntoLaterN only_head 0 P P where
+@[rocq_alias into_laterN_0, rocq_alias maybe_into_laterN_default_0]
+instance (priority := high) intoLaterN_0 [BI PROP] progress only_head (P : PROP) :
+    IntoLaterN progress only_head 0 P P where
   into_laterN := laterN_intro 0
 
+-- the identity: only when no progress is required
+@[rocq_alias maybe_into_laterN_default]
+instance (priority := low) maybeIntoLaterN_default [BI PROP] only_head n (P : PROP) :
+    IntoLaterN false only_head n P P where
+  into_laterN := laterN_intro n
+
 @[ipm_backtrack, rocq_alias into_laterN_later]
-instance (priority := default - 200) intoLaterN_later [BI PROP] only_head n n' m' (P Q lQ : PROP)
-    [h1 : NatCancel n 1 n' m']
-    [h2 : GuardedIntoLaterN 1 m' only_head n' P Q]
-    [h3 : MakeLaterN m' Q lQ] : IntoLaterN only_head n iprop(▷ P) lQ where
+instance (priority := default - 200) intoLaterN_later [BI PROP] stuck only_head n n' m' (P Q lQ : PROP)
+    [h1 : NatCancel n 1 n' m' stuck]
+    [h2 : IntoLaterN stuck only_head n' P Q]
+    [h3 : MakeLaterN m' Q lQ] : IntoLaterN progress only_head n iprop(▷ P) lQ where
   into_laterN := calc
-      _ ⊢ ▷▷^[n']Q      := later_mono h2.into_laterN_guard.into_laterN
+      _ ⊢ ▷▷^[n']Q      := later_mono h2.into_laterN
       _ ⊢ ▷^[n' + 1]Q    := (later_laterN _).mpr
       _ ⊢ ▷^[n] ▷^[m']Q := by rw [h1.1]; exact (laterN_add _ _).mp
       _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
 
 @[ipm_backtrack, rocq_alias into_laterN_laterN]
-instance (priority := default - 100) intoLaterN_laterN [BI PROP] only_head n m n' m' (P Q lQ : PROP)
-    [h1 : NatCancel n m n' m']
-    [h2 : GuardedIntoLaterN m m' only_head n' P Q]
-    [h3 : MakeLaterN m' Q lQ] : IntoLaterN only_head n iprop(▷^[m] P) lQ where
+instance (priority := default - 100) intoLaterN_laterN [BI PROP] progress stuck only_head n m n' m' (P Q lQ : PROP)
+    [h1 : NatCancel n m n' m' stuck]
+    [h2 : IntoLaterN stuck only_head n' P Q]
+    [h3 : MakeLaterN m' Q lQ] : IntoLaterN progress only_head n iprop(▷^[m] P) lQ where
   into_laterN := calc
-      _ ⊢ ▷^[m] ▷^[n']Q := laterN_mono _ h2.into_laterN_guard.into_laterN
+      _ ⊢ ▷^[m] ▷^[n']Q := laterN_mono _ h2.into_laterN
       _ ⊢ ▷^[m + n']Q    := (laterN_add _ _).mpr
       _ ⊢ ▷^[n] ▷^[m']Q := by rw [Nat.add_comm, h1.nat_cancel]; exact (laterN_add _ _).mp
       _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
 
 @[ipm_backtrack, rocq_alias into_laterN_laterN_bool]
-instance (priority := default - 300) intoLaterN_laterN_bool [BI PROP] only_head n (p : Bool) n' m' (P Q lQ : PROP)
-    [h1 : NatCancel n 1 n' m']
-    [h2 : GuardedIntoLaterN 1 m' only_head n' P Q]
-    [h3 : MakeLaterN m' Q lQ] : IntoLaterN only_head n iprop(▷?p P) lQ where
+instance (priority := default - 300) intoLaterN_laterN_bool [BI PROP] progress stuck only_head n (p : Bool) n' m' (P Q lQ : PROP)
+    [h1 : NatCancel n 1 n' m' stuck]
+    [h2 : IntoLaterN stuck only_head n' P Q]
+    [h3 : MakeLaterN m' Q lQ] : IntoLaterN progress only_head n iprop(▷?p P) lQ where
   into_laterN := by
     calc
       _ ⊢ ▷ P            := by cases p; exact later_intro; exact BIBase.Entails.rfl
-      _ ⊢ ▷ ▷^[n']Q     := later_mono h2.into_laterN_guard.into_laterN
+      _ ⊢ ▷ ▷^[n']Q     := later_mono h2.into_laterN
       _ ⊢ ▷^[n' + 1]Q    := (later_laterN _).mpr
       _ ⊢ ▷^[n] ▷^[m']Q := h1.nat_cancel.symm ▸ (laterN_add _ _).mp
       _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
 
-@[rocq_alias into_laterN_and_l, rocq_alias into_laterN_and_r]
-instance intoLaterN_and [BI PROP] n (P1 P2 Q1 Q2 : PROP)
-    [h1 : IntoLaterN false n P1 Q1] [h2 : IntoLaterN false n P2 Q2] :
-    IntoLaterN false n iprop(P1 ∧ P2) iprop(Q1 ∧ Q2) where
+@[ipm_backtrack, rocq_alias into_laterN_and_l]
+instance (priority := default - 10) intoLaterN_and_left [BI PROP]
+    progress n (P1 P2 Q1 Q2 : PROP)
+    [h1 : IntoLaterN true  false n P1 Q1]
+    [h2 : IntoLaterN false false n P2 Q2] :
+    IntoLaterN progress false n iprop(P1 ∧ P2) iprop(Q1 ∧ Q2) where
   into_laterN := (and_mono h1.1 h2.1).trans (laterN_and n).2
 
-@[rocq_alias into_laterN_forall]
-instance intoLaterN_forall [BI PROP] n (Φ Ψ : α → PROP)
-    [h : ∀ x, IntoLaterN false n (Φ x) (Ψ x)] : IntoLaterN false n iprop(∀ x, Φ x) iprop(∀ x, Ψ x) where
+@[ipm_backtrack, rocq_alias into_laterN_and_r]
+instance (priority := default - 11) intoLaterN_and_right [BI PROP]
+    progress n (P P2 Q2 : PROP)
+    [h : IntoLaterN true false n P2 Q2] :
+    IntoLaterN progress false n iprop(P ∧ P2) iprop(P ∧ Q2) where
+  into_laterN := (and_mono (laterN_intro n) h.1).trans (laterN_and n).2
+
+@[ipm_backtrack, rocq_alias into_laterN_forall]
+instance intoLaterN_forall [BI PROP] n (Φ Ψ : α → PROP) progress
+    [h : ∀ x, IntoLaterN (progress := true) (only_head := false) n (Φ x) (Ψ x)] :
+    IntoLaterN progress false n iprop(∀ x, Φ x) iprop(∀ x, Ψ x) where
   into_laterN := (forall_mono fun x => (h x).1).trans (laterN_forall n).2
 
-@[rocq_alias into_laterN_exist]
-instance intoLaterN_exists [BI PROP] n (Φ Ψ : α → PROP)
-    [h : ∀ x, IntoLaterN false n (Φ x) (Ψ x)] : IntoLaterN false n iprop(∃ x, Φ x) iprop(∃ x, Ψ x) where
+@[ipm_backtrack, rocq_alias into_laterN_exist]
+instance intoLaterN_exists [BI PROP] n (Φ Ψ : α → PROP) progress
+    [h : ∀ x, IntoLaterN (progress := true) (only_head := false) n (Φ x) (Ψ x)] :
+    IntoLaterN progress false n iprop(∃ x, Φ x) iprop(∃ x, Ψ x) where
   into_laterN := (exists_mono fun x => (h x).1).trans (laterN_exists_mpr n)
 
-@[rocq_alias into_laterN_or_l, rocq_alias into_laterN_or_r]
-instance intoLaterN_or [BI PROP] n (P1 P2 Q1 Q2 : PROP)
-    [h1 : IntoLaterN false n P1 Q1] [h2 : IntoLaterN false n P2 Q2] :
-    IntoLaterN false n iprop(P1 ∨ P2) iprop(Q1 ∨ Q2) where
+@[ipm_backtrack, rocq_alias into_laterN_or_l]
+instance (priority := default - 10) intoLaterN_or_left [BI PROP]
+    progress n (P1 P2 Q1 Q2 : PROP)
+    [h1 : IntoLaterN true  false n P1 Q1]
+    [h2 : IntoLaterN false false n P2 Q2] :
+    IntoLaterN progress false n iprop(P1 ∨ P2) iprop(Q1 ∨ Q2) where
   into_laterN := (or_mono h1.1 h2.1).trans (laterN_or n).2
 
-@[rocq_alias into_later_affinely]
+@[ipm_backtrack, rocq_alias into_laterN_or_r]
+instance (priority := default - 11) intoLaterN_or_right [BI PROP]
+    progress n (P P2 Q2 : PROP)
+    [h : IntoLaterN true false n P2 Q2] :
+    IntoLaterN progress false n iprop(P ∨ P2) iprop(P ∨ Q2) where
+  into_laterN := (or_mono (laterN_intro n) h.1).trans (laterN_or n).2
+
+@[ipm_backtrack, rocq_alias into_later_affinely]
 instance intoLaterN_affinely [BI PROP] n (P Q : PROP)
-    [h : IntoLaterN false n P Q] : IntoLaterN false n iprop(<affine> P) iprop(<affine> Q) where
+    [h : IntoLaterN (progress := true) false n P Q] :
+    IntoLaterN progress false n iprop(<affine> P) iprop(<affine> Q) where
   into_laterN := (affinely_mono h.1).trans (laterN_affinely n)
 
-@[rocq_alias into_later_intuitionistically]
+@[ipm_backtrack, rocq_alias into_later_intuitionistically]
 instance intoLaterN_intuitionistically [BI PROP] n (P Q : PROP)
-    [h : IntoLaterN false n P Q] : IntoLaterN false n iprop(□ P) iprop(□ Q) where
+    [h : IntoLaterN (progress := true) false n P Q] :
+    IntoLaterN progress false n iprop(□ P) iprop(□ Q) where
   into_laterN := (intuitionistically_mono h.1).trans (laterN_intuitionistically n)
 
-@[rocq_alias into_later_absorbingly]
+@[ipm_backtrack, rocq_alias into_later_absorbingly]
 instance intoLaterN_absorbingly [BI PROP] n (P Q : PROP)
-    [h : IntoLaterN false n P Q] : IntoLaterN false n iprop(<absorb> P) iprop(<absorb> Q) where
+    [h : IntoLaterN (progress := true) false n P Q] :
+    IntoLaterN progress false n iprop(<absorb> P) iprop(<absorb> Q) where
   into_laterN := (absorbingly_mono h.1).trans (laterN_absorbingly n).2
 
-@[rocq_alias into_later_persistently]
+@[ipm_backtrack, rocq_alias into_later_persistently]
 instance intoLaterN_persistently [BI PROP] n (P Q : PROP)
-    [h : IntoLaterN false n P Q] : IntoLaterN false n iprop(<pers> P) iprop(<pers> Q) where
+    [h : IntoLaterN (progress := true) false n P Q] :
+    IntoLaterN progress false n iprop(<pers> P) iprop(<pers> Q) where
   into_laterN := (persistently_mono h.1).trans (laterN_persistently n).2
 
 @[ipm_backtrack, rocq_alias into_laterN_sep_l]
 instance (priority := default - 10) intoLaterN_sep_left [BI PROP] n (P1 P2 Q1 Q2 : PROP)
-    [h1 : IntoLaterN false n P1 Q1] [h2 : MaybeIntoLaterN false n P2 Q2] :
-    IntoLaterN false n iprop(P1 ∗ P2) iprop(Q1 ∗ Q2) where
-  into_laterN := (sep_mono h1.1 h2.1.1).trans (laterN_sep n).2
+    [h1 : IntoLaterN (progress := true) false n P1 Q1] [h2 : IntoLaterN false false n P2 Q2] :
+    IntoLaterN progress false n iprop(P1 ∗ P2) iprop(Q1 ∗ Q2) where
+  into_laterN := (sep_mono h1.1 h2.1).trans (laterN_sep n).2
 
 @[ipm_backtrack, rocq_alias into_laterN_sep_r]
 instance (priority := default - 11) intoLaterN_sep_right [BI PROP] n (P P2 Q2 : PROP)
-    [h : IntoLaterN false n P2 Q2] :
-    IntoLaterN false n iprop(P ∗ P2) iprop(P ∗ Q2) where
+    [h : IntoLaterN (progress := true) false n P2 Q2] :
+    IntoLaterN progress false n iprop(P ∗ P2) iprop(P ∗ Q2) where
   into_laterN := (sep_mono (laterN_intro n) h.into_laterN).trans (laterN_sep n).mpr
 
 @[rocq_alias maybe_combine_sep_as_later]

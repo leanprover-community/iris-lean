@@ -287,22 +287,15 @@ export FrameInstantiateExistDisabled (frame_instantiatiate_exist_disabled)
 The Boolean [only_head] indicates whether laters should only be stripped in head position or
 also below other logical connectives. For [inext] it should strip laters below other logical
 connectives, but this should not happen while framing.
+
+Instead of implementing `MaybeIntoLaterN` as in Rocq, we introduce `progress`
+as an additional parameter of `IntoLaterN` to indicate whether any later modality is stripped.
 -/
-@[ipm_class, rocq_alias IntoLaterN]
-class IntoLaterN {PROP} [BI PROP] (only_head : Bool) (n : Nat) (P : PROP) (Q : outParam $ PROP) where
+@[ipm_class, rocq_alias MaybeIntoLaterN, rocq_alias IntoLaterN]
+class IntoLaterN {PROP} [BI PROP] (progress only_head : Bool) (n : Nat)
+    (P : PROP) (Q : outParam PROP) where
   into_laterN : P ⊢ ▷^[n] Q
 export IntoLaterN (into_laterN)
-
-@[ipm_class, rocq_alias MaybeIntoLaterN]
-class MaybeIntoLaterN {PROP} [BI PROP] (only_head : Bool) (n : Nat) (P : PROP) (Q : outParam $ PROP) where
-  maybe_into_laterN : IntoLaterN only_head n P Q
-export MaybeIntoLaterN (maybe_into_laterN)
-
-@[ipm_class]
-class GuardedIntoLaterN {PROP} [BI PROP] (m m' : Nat) (only_head : Bool) (n : Nat)
-    (P : PROP) (Q : outParam $ PROP) where
-  into_laterN_guard : IntoLaterN only_head n P Q
-export GuardedIntoLaterN (into_laterN_guard)
 
 /-- `CombineSepAs` combines two propositions `P` and `Q` into `R` -/
 @[ipm_class, rocq_alias CombineSepAs]

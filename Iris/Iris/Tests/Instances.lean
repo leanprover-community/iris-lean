@@ -362,38 +362,38 @@ section NatCancel
 variable (m n p q : Nat)
 
 /- Cancellation of `1` on both sides, with the numeral in a rightmost position. -/
-/-- info: solution: NatCancel (m + n + 1) 1 (m + n) 0, new goals: [] -/
+/-- info: solution: NatCancel (m + n + 1) 1 (m + n) 0 false, new goals: [] -/
 #guard_msgs in
-#ipm_synth (NatCancel (m + n + 1) 1 _ _)
+#ipm_synth (NatCancel (m + n + 1) 1 _ _ _)
 
 /- Cancellation of `1` on both sides, with the numeral in a middle position. -/
-/-- info: solution: NatCancel (m + 1 + n) 1 (m + n) 0, new goals: [] -/
+/-- info: solution: NatCancel (m + 1 + n) 1 (m + n) 0 false, new goals: [] -/
 #guard_msgs in
-#ipm_synth (NatCancel (m + 1 + n) 1 _ _)
+#ipm_synth (NatCancel (m + 1 + n) 1 _ _ _)
 
 /- Cancellation of `1` on both sides, with the numeral in a leftmost position. -/
-/-- info: solution: NatCancel 1 (m + n + 1) 0 (m + n), new goals: [] -/
+/-- info: solution: NatCancel 1 (m + n + 1) 0 (m + n) false, new goals: [] -/
 #guard_msgs in
-#ipm_synth (NatCancel 1 (m + n + 1) _ _)
+#ipm_synth (NatCancel 1 (m + n + 1) _ _ _)
 
 /- Cancellation of a variable `n` on both sides. -/
-/-- info: solution: NatCancel (m + n) n m 0, new goals: [] -/
+/-- info: solution: NatCancel (m + n) n m 0 false, new goals: [] -/
 #guard_msgs in
-#ipm_synth (NatCancel (m + n) n _ _)
+#ipm_synth (NatCancel (m + n) n _ _ _)
 
 /- Cancellation of multiple variables on both sides. -/
-/-- info: solution: NatCancel (m + (3 + (p + n))) (p + q + 2) (m + (1 + n)) q, new goals: [] -/
+/-- info: solution: NatCancel (m + (3 + (p + n))) (p + q + 2) (m + (1 + n)) q false, new goals: [] -/
 #guard_msgs in
-#ipm_synth (NatCancel (m + (3 + (p + n))) (p + q + 2) _ _)
+#ipm_synth (NatCancel (m + (3 + (p + n))) (p + q + 2) _ _ _)
 
 /- Cancellation of zero, leaving both sides unchanged. -/
-/-- info: solution: NatCancel (m + n) 0 (m + n) 0, new goals: [] -/
+/-- info: solution: NatCancel (m + n) 0 (m + n) 0 true, new goals: [] -/
 #guard_msgs in
-#ipm_synth (NatCancel (m + n) 0 _ _)
+#ipm_synth (NatCancel (m + n) 0 _ _ _)
 
 /- Cancellation of `3` on both sides, with separated numerals on one side.  -/
-/-- info: solution: NatCancel (1 + m + 2) 3 m 0, new goals: [] -/
+/-- info: solution: NatCancel (1 + m + 2) 3 m 0 false, new goals: [] -/
 #guard_msgs in
-#ipm_synth (NatCancel (1 + m + 2) 3 _ _)
+#ipm_synth (NatCancel (1 + m + 2) 3 _ _ _)
 
 end NatCancel

@@ -591,9 +591,9 @@ open Lean Elab Tactic Meta Qq Iris.BI Iris Iris.ProofMode Iris.Std
 
 @[rocq_alias tac_lc_add_laterN_split]
 theorem tac_lc_add_laterN_split {GF : BundledGFunctors} [InvGS GF]
-    {φ : Prop} {n m newM : Nat} {E : CoPset} {P Q goal : IProp GF}
+    {φ : Prop} {n m newM : Nat} {E : CoPset} {P Q goal : IProp GF} {stuck : Bool}
     (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
-    (h1 : NatCancel m n newM 0) (h2 : P ∗ £ newM ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
+    (h1 : NatCancel m n newM 0 stuck) (h2 : P ∗ £ newM ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
     P ∗ £ m ⊢ goal := by
   have h1 : m = n + newM := by have := h1.nat_cancel; omega
   subst h1
@@ -610,9 +610,9 @@ theorem tac_lc_add_laterN_split {GF : BundledGFunctors} [InvGS GF]
   · iintro _ //
 
 theorem tac_lc_add_laterN_full {GF : BundledGFunctors} [InvGS GF]
-    {φ : Prop} {m : Nat} {E : CoPset} {P Q goal : IProp GF}
+    {φ : Prop} {m : Nat} {E : CoPset} {P Q goal : IProp GF} {stuck : Bool}
     (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
-    (h1 : NatCancel m n 0 0)
+    (h1 : NatCancel m n 0 0 stuck)
     (h2 : P ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
     P ∗ £ m ⊢ goal := by
   iintro ⟨HP, Hcred⟩
@@ -670,7 +670,8 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
 
     let newC ← mkFreshExprMVarQ q(Nat)
     let newN ← mkFreshExprMVarQ q(Nat)
-    let some hcancel ← ProofModeM.trySynthInstanceQ q(NatCancel $c $n $newC $newN)
+    let stuck ← mkFreshExprMVarQ q(Bool)
+    let some hcancel ← ProofModeM.trySynthInstanceQ q(NatCancel $c $n $newC $newN $stuck)
       | throwError "inext: unable to cancel {n} later credits from {c}"
     let newC : Q(Nat) ← instantiateMVars newC
     unless ← isDefEq newN q(0) do
@@ -684,7 +685,7 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
       let ⟨_, newHyps', pfModAction⟩ ← iModAction hyps' modality
       let pf ← addBIGoal newHyps' goal
       have pfEq : Q($e ⊣⊢ $e' ∗ £ $c) := pfEq
-      have hcancel : Q(NatCancel $c $n 0 0) := hcancel
+      have hcancel : Q(NatCancel $c $n 0 0 $stuck) := hcancel
       let pf' : Q($e' ∗ £ $c ⊢ $goal) := q(tac_lc_add_laterN_full $inst $hφ $hcancel $pfModAction $pf)
       mvar.assign q($(pfEq).mp.trans $pf')
     -- Update the later credits hypothesis and introduce it into the context
@@ -693,7 +694,7 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
       let ⟨_, newHyps, pfNewHyps⟩ := Hyps.add _ name ivar q(false) newTy hyps'
       let ⟨_, newHyps', pfModAction⟩ ← iModAction newHyps modality
       let pf ← addBIGoal newHyps' goal
-      have hcancel : Q(NatCancel $c $n $newC 0) := hcancel
+      have hcancel : Q(NatCancel $c $n $newC 0 $stuck) := hcancel
       have pfEq : Q($e ⊣⊢ $e' ∗ £ $c) := pfEq
       let pf'' : Q($e' ∗ £ $c ⊢ $goal) :=
         q(tac_lc_add_laterN_split $inst $hφ $hcancel ($(pfNewHyps).mp.trans $pfModAction) $pf)

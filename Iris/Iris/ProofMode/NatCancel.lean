@@ -17,7 +17,7 @@ namespace Iris.ProofMode
   and a remainder `m'` that could not be cancelled.
 -/
 @[ipm_class]
-class NatCancel (n m : Nat) (n' m' : outParam Nat) : Prop where
+class NatCancel (n m : Nat) (n' m' : outParam Nat) (stuck : outParam Bool) : Prop where
   nat_cancel : n' + m = n + m'
 export NatCancel (nat_cancel)
 
@@ -72,12 +72,13 @@ partial def natCancel (n m : Q(Nat)) : MetaM <| Q(Nat) × Q(Nat) × Expr := do
 
 end
 
-@[ipm_tactic_instance NatCancel _ _ _ _]
+@[ipm_tactic_instance NatCancel _ _ _ _ _]
 def instNatCancel : SynthTactic := λ e => do
-  let_expr NatCancel n m _ _ := e | return .continue
+  let_expr NatCancel n m _ _ _ := e | return .continue
   let ⟨m, n⟩ : Q(Nat) × Q(Nat) := (m, n)
   let ⟨n', m', (pf : Q($n' + $m = $n + $m'))⟩ ← natCancel n m
-  return .success (q(⟨$pf⟩) : Q(NatCancel $n $m $n' $m'))
+  let stuck : Q(Bool) := if ← withNewMCtxDepth (isDefEq m m') then q(true) else q(false)
+  return .success (q(⟨$pf⟩) : Q(NatCancel $n $m $n' $m' $stuck))
 
 end NatCancel
 

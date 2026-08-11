@@ -44,8 +44,9 @@ instance fromModal_internalEq_next [Sbi PROP] [OFE A] (x y : A) :
 
 @[ipm_backtrack, rocq_alias into_laterN_Next]
 instance intoLaterN_internalEq_next [Sbi PROP] [OFE A] (x y : A)
-    only_head n n' [h : NatCancel n 1 n' 0] :
-    IntoLaterN (PROP := PROP) only_head n iprop(Later.next x ≡ Later.next y) iprop(x ≡ y) where
+    only_head n n' [h : NatCancel n 1 n' 0 stuck] :
+    IntoLaterN progress (PROP := PROP) only_head n
+      iprop(Later.next x ≡ Later.next y) iprop(x ≡ y) where
   into_laterN := by
     refine (later_equivI_mp x y).trans ?_
     have hcancel : n' + 1 = n := by have := h.nat_cancel; omega
