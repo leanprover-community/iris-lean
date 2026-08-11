@@ -3,6 +3,7 @@ module
 public import Iris.Algebra.Agree
 public import Iris.Algebra.Auth
 public import Iris.Algebra.BigOp
+public import Iris.Algebra.Chain
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.COFESolver
 public import Iris.Algebra.Csum
