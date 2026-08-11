@@ -10,6 +10,7 @@ public import Iris.Algebra.Auth
 public import Iris.Algebra.Numbers
 public import Iris.ProofMode
 public import Iris.BI.Algebra
+public import Iris.BI.Notation
 public import Iris.Instances.IProp
 public import Iris.Instances.Lib.WSat
 public import Iris.Instances.Lib.LaterCredits
@@ -210,20 +211,20 @@ def fupd_finally [InvGS_gen hlc GF] (E : CoPset) (P : IProp GF) : IProp GF :=
 #rocq_ignore fupd_finally_aux "Not needed"
 #rocq_ignore fupd_finally_unseal "Not needed"
 
-
 syntax "|={" term "|}=> " term : term
 syntax:25 term:26 "={" term "|}=∗ " term:25 : term
 
 macro_rules
-  | `(iprop(|={$E|}=> $P))  => ``(fupd_finally $E iprop($P))
-  | `(iprop($P ={$E|}=∗ $Q))  => ``(BIBase.wand iprop($P) (fupd_finally $E iprop($Q)))
+  | `(iprop(|={%$tk1 $E |}=>%$tk2 $P))  =>
+    ``($(wrapIpropSpan tk1 tk2 ``fupd_finally) $E iprop($P))
+  | `(iprop($P ={%$tk1 $E |}=∗%$tk2 $Q))  =>
+    ``(BIBase.wand iprop($P) ($(wrapIpropSpan tk1 tk2 ``fupd_finally) $E iprop($Q)))
   | `($P ={$E|}=∗ $Q)  => ``(⊢ $P ={$E|}=∗ $Q)
 
 delab_rule fupd_finally
   | `($_ $E $P) => do
       let P ← Iris.BI.unpackIprop P
       ``(iprop(|={$E|}=> $P))
-
 
 section fupd_finally
 

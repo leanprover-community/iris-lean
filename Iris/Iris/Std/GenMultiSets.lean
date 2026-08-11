@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Haokun Li. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Haokun Li
+Authors: Haokun Li, Markus de Medeiros
 -/
 module
 
@@ -72,42 +72,52 @@ theorem subset_iff [MultiSet MS A] {X Y : MS} :
 
 variable [LawfulMultiSet MS A]
 
+@[grind =]
 theorem mem_singleton_iff {x a : A} : x ∈ ({a} : MS) ↔ x = a := by
   rw [mem_iff_multiplicity_pos]
   by_cases hxa : x = a
   · subst hxa; simp [multiplicity_singleton_eq]
   · simp [multiplicity_singleton_ne hxa, hxa]
 
+@[grind =]
 theorem mem_disjUnion_iff {x : A} {X Y : MS} : x ∈ (X ⊎ Y) ↔ x ∈ X ∨ x ∈ Y := by
   rw [mem_iff_multiplicity_pos, mem_iff_multiplicity_pos, mem_iff_multiplicity_pos,
     multiplicity_disjUnion]
   omega
 
+@[grind =]
 theorem mem_union_iff {x : A} {X Y : MS} : x ∈ (X ∪ Y) ↔ x ∈ X ∨ x ∈ Y := by
   rw [mem_iff_multiplicity_pos, mem_iff_multiplicity_pos, mem_iff_multiplicity_pos,
     multiplicity_union]
   omega
 
+@[grind =]
 theorem mem_inter_iff {x : A} {X Y : MS} : x ∈ (X ∩ Y) ↔ x ∈ X ∧ x ∈ Y := by
   rw [mem_iff_multiplicity_pos, mem_iff_multiplicity_pos, mem_iff_multiplicity_pos,
     multiplicity_intersection]
   omega
 
+@[grind =]
 theorem disjUnion_comm {X Y : MS} : X ⊎ Y = Y ⊎ X :=
   LawfulMultiSet.ext fun _ => by rw [multiplicity_disjUnion, multiplicity_disjUnion]; omega
 
+@[grind =]
 theorem disjUnion_assoc {X Y Z : MS} : (X ⊎ Y) ⊎ Z = X ⊎ (Y ⊎ Z) :=
   LawfulMultiSet.ext fun _ => by simp only [multiplicity_disjUnion]; omega
 
+@[grind =]
 theorem disjUnion_empty_left {X : MS} : (∅ : MS) ⊎ X = X :=
   LawfulMultiSet.ext fun _ => by rw [multiplicity_disjUnion, multiplicity_empty]; omega
 
+@[grind =]
 theorem disjUnion_empty_right {X : MS} : X ⊎ (∅ : MS) = X :=
   LawfulMultiSet.ext fun _ => by rw [multiplicity_disjUnion, multiplicity_empty]; omega
 
+@[grind .]
 theorem disjUnion_subset_left {X Y : MS} : X ⊆ X ⊎ Y :=
   subset_iff.mpr fun _ => by rw [multiplicity_disjUnion]; omega
 
+@[grind .]
 theorem disjUnion_left_inj {X Y Z : MS} (h : X ⊎ Y = X ⊎ Z) : Y = Z :=
   LawfulMultiSet.ext fun a => by
     have := congrArg (MultiSet.multiplicity a) h
@@ -116,10 +126,11 @@ theorem disjUnion_left_inj {X Y Z : MS} (h : X ⊎ Y = X ⊎ Z) : Y = Z :=
 
 theorem singleton_subset_iff {x : A} {X : MS} : ({x} : MS) ⊆ X ↔ x ∈ X where
   mp h := by
-    have hx := subset_iff.mp h x
-    rw [multiplicity_singleton_eq] at hx
     rw [mem_iff_multiplicity_pos]
-    omega
+    calc 0
+      _ < 1 := Nat.one_pos
+      _ = MultiSet.multiplicity x ({x} : MS) := multiplicity_singleton_eq.symm
+      _ ≤ MultiSet.multiplicity x X := subset_iff.mp h x
   mpr h := subset_iff.mpr fun a => by
     by_cases hax : a = x
     · subst hax; rw [multiplicity_singleton_eq]; exact h
@@ -127,18 +138,15 @@ theorem singleton_subset_iff {x : A} {X : MS} : ({x} : MS) ⊆ X ↔ x ∈ X whe
 
 theorem disjUnion_difference_of_subseteq {X Y : MS} (h : Y ⊆ X) : X = Y ⊎ (X \ Y) := by
   refine LawfulMultiSet.ext fun a => ?_
-  rw [multiplicity_disjUnion, multiplicity_difference]
-  have := subset_iff.mp h a
-  omega
+  grind [subset_iff.mp h a, multiplicity_disjUnion, multiplicity_difference]
 
 theorem disjUnion_singleton_difference {x : A} {X : MS} (h : x ∈ X) : X = {x} ⊎ (X \ {x}) := by
   refine LawfulMultiSet.ext fun a => ?_
   rw [multiplicity_disjUnion, multiplicity_difference]
   by_cases hax : a = x
   · subst hax
-    rw [multiplicity_singleton_eq]
     have : 0 < MultiSet.multiplicity a X := h
-    omega
+    grind [multiplicity_singleton_eq]
   · rw [multiplicity_singleton_ne hax]; omega
 
 end Lemmas
@@ -171,13 +179,10 @@ end FiniteLemmas
 
 namespace FiniteMultiSet
 
-/-- The cardinality (size) of a finite multiset, defined as the length of its list
-representation. -/
+/-- The cardinality (size) of a finite multiset -/
 def size [FiniteMultiSet MS A] (X : MS) : Nat :=
   (toList X).length
 
-/-- Fold over a finite multiset. Unlike `FiniteSet.fold`, the accumulator comes last, so that
-`fold` on a commutative monoid reads as a sum. -/
 def fold [FiniteMultiSet MS A] {β : Type _} (f : A → β → β) (b : β) (X : MS) : β :=
   (toList X).foldr f b
 

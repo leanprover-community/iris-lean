@@ -95,13 +95,13 @@ meta def parseWpPostcond (stx : TSyntax `wpPostcond) : MacroM (TSyntax `term × 
 @[macro wp]
 meta def wpMacro : Lean.Macro := fun stx => do
   match stx with
-  | `(WP $expr $postcond) =>
+  | `(WP%$tk $expr $postcond) =>
     let (e, s, E) ← parseWpExpr expr
     let (Φ, useTotal?) ← parseWpPostcond postcond
     if useTotal? then
       `(TotalWp.totalWp $s $E $e $Φ)
     else
-      `(Wp.wp $s $E $e $Φ)
+      `($(BI.wrapIpropSpan tk stx ``Wp.wp) $s $E $e $Φ)
   | _ => Lean.Macro.throwUnsupported
 
 meta def parseTexanTriple : Syntax → MacroM Term
