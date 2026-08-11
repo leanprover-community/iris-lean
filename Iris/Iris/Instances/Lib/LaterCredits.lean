@@ -250,7 +250,7 @@ def le_upd (P : IProp GF) : IProp GF := fixpoint (le_upd_pre P)
 syntax:max "|==£> " term:40 : term
 
 macro_rules
-| `(iprop(|==£> $P)) => ``(le_upd iprop($P))
+| `(iprop(|==£>%$tk $P)) => ``($(wrapIprop tk ``le_upd) iprop($P))
 
 delab_rule le_upd
 | `($_ $P) => do ``(iprop(|==£> $(← unpackIprop P)))
@@ -378,6 +378,10 @@ theorem le_upd_mono {P Q : IProp GF} (Hent : P ⊢ Q) : (|==£> P) ⊢ (|==£> Q
   iintro H
   iapply le_upd_intro
   exact Hent
+
+#rocq_ignore le_upd.le_upd_mono' "Subsumed by `le_upd_mono` (the `Proper` morphism form is not used in Lean)."
+#rocq_ignore le_upd.le_upd_flip_mono' "Subsumed by `le_upd_mono` (the `Proper` morphism form is not used in Lean)."
+#rocq_ignore le_upd.le_upd_equiv_proper "Subsumed by the NonExpansive instance `le_upd_ne`."
 
 @[rocq_alias le_upd.le_upd_trans]
 theorem le_upd_trans {P : IProp GF} : (|==£> |==£> P) ⊢ |==£> P := by
@@ -511,7 +515,7 @@ def le_upd_finally [LcGS hlc GF] (P : IProp GF) : IProp GF :=
 syntax:max "|==£|> " term:40 : term
 
 macro_rules
-| `(iprop(|==£|> $P)) => ``(le_upd_finally iprop($P))
+| `(iprop(|==£|>%$tk $P)) => ``($(wrapIprop tk ``le_upd_finally) iprop($P))
 
 delab_rule le_upd_finally
 | `($_ $P) => do ``(iprop(|==£|> $(← unpackIprop P)))

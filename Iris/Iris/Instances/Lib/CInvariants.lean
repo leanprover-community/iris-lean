@@ -33,6 +33,9 @@ class CInvG (GF : BundledGFunctors) where
 
 attribute [reducible, instance] CInvG.inv
 
+#rocq_ignore «cinvΣ» "Superseded by the `CInvG` typeclass on `BundledGFunctors`."
+#rocq_ignore «subG_cinvΣ» "Superseded by Lean's direct `ElemG` typeclass synthesis."
+
 namespace CancelableInvariant
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF] [W : CInvG GF]
