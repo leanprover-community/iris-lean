@@ -525,17 +525,17 @@ example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗
   iexact H
 
 /- Tests that `irevert` clears binder info (see https://github.com/leanprover-community/iris-lean/pull/393#issuecomment-4506443579). -/
-/--
-error: unsolved goals
+/-- trace:
 PROP : Type u_1
 inst✝ : BI PROP
 P : PROP
 ⊢ ⏎
   ⊢ ∀ x, P
 -/
-#guard_msgs in
+#guard_msgs (trace, drop error) in
 example [BI PROP] (P : PROP) {x : Nat} : ⊢ P := by
   irevert %x
+  trace_state
 
 /- Tests `irevert` failing with dependency. -/
 /-- info: Try this:
@@ -1963,8 +1963,7 @@ example [BI PROP] (P Q : PROP) : Q ∧ <pers> P ⊢ Q := by
   iexact HQ
 
 /- Tests `icases` on conjunction with persistent right in an affine logic. -/
-/--
- error: unsolved goals
+/-- trace:
 PROP : Type u_1
 inst✝¹ : BI PROP
 inst✝ : BIAffine PROP
@@ -1974,11 +1973,12 @@ P Q : PROP
   ∗HQ : <pers> Q
   ⊢ Q
 -/
-#guard_msgs (whitespace := lax) in
+#guard_msgs (whitespace := lax, trace, drop all) in
 example [BI PROP] [BIAffine PROP] (P Q : PROP) :
   P ∧ <pers> Q ⊢ Q := by
   iintro H
   icases H with ⟨_, HQ⟩
+  trace_state
 
 /-- Tests `icases` with nested separating conjunction. -/
 example [BI PROP] [BIAffine PROP] (P1 P2 Q : PROP) : P1 ∗ P2 ∗ Q ⊢ Q := by
@@ -2824,8 +2824,7 @@ example [BI PROP] (P : PROP) : P ⊢ P := by
   iframe HP
 
 /- Tests `iframe` not closing goal with non-affine assumption. -/
-/--
-error: unsolved goals
+/-- trace:
 PROP : Type u_1
 inst✝ : BI PROP
 P Q : PROP
@@ -2833,10 +2832,11 @@ P Q : PROP
   ∗HQ : Q
   ⊢ emp
 -/
-#guard_msgs in
+#guard_msgs (trace, drop error) in
 example [BI PROP] (P Q : PROP) : P ∗ Q ⊢ P := by
   iintro ⟨HP, HQ⟩
   iframe HP
+  trace_state
 
 /- Tests `iframe` closing goal with absorbing goal. -/
 example [BI PROP] (P Q : PROP) : <absorb> P ∗ Q ⊢ <absorb> P := by
@@ -3008,8 +3008,7 @@ example [BI PROP] {α} (a : α) {β} (b : β) (P : PROP)
   iframe HS HP HR HQ
 
 /- Tests `iframe` with multiple existential quantifiers framed at once. -/
-/--
-error: unsolved goals
+/-- trace:
 PROP : Type u_1
 inst✝ : BI PROP
 α : Sort u_2
@@ -3018,11 +3017,12 @@ Q : α → PROP
 ⊢ ⏎
   ⊢ «exists» fun {n} => Q n
 -/
-#guard_msgs in
+#guard_msgs (trace, drop error) in
 example [BI PROP] {α} (P : PROP) (Q : α → PROP) :
     ⊢ P -∗ BI.exists fun {n} => iprop(Q n  ∗ P) := by
   iintro HP
   iframe HP
+  trace_state
 
 /- Tests `iframe` with existential quantifers in various orders. -/
 example [BI PROP] {α} (a : α) {β} (b : β) {γ} (c : γ)
@@ -3379,24 +3379,23 @@ section iloeb
 variable {PROP : Type u} [ι₁ : BI PROP] [ι₂ : BILoeb PROP]
 
 /- Tests `iloeb` basic. -/
-/--
-error: unsolved goals
+/-- trace:
 PROP : Type u
 ι₁ : BI PROP
 ι₂ : BILoeb PROP
 P Q : PROP
 ⊢ ⏎
-  □IHH : ▷ (P -∗ Q)
+  □IH : ▷ (P -∗ Q)
   ⊢ P -∗ Q
 -/
-#guard_msgs in
+#guard_msgs (trace, drop error) in
 example (P Q : PROP) :
     P ⊢ Q := by
-  iloeb as IHH
+  iloeb as IH
+  trace_state
 
 /- Tests `iloeb` automatically generalizing spatial context. -/
-/--
-error: unsolved goals
+/-- trace:
 PROP : Type u
 ι₁ : BI PROP
 ι₂ : BILoeb PROP
@@ -3406,15 +3405,15 @@ P Q : PROP
   ∗HP : P
   ⊢ Q
 -/
-#guard_msgs in
+#guard_msgs (trace, drop error) in
 example (P Q : PROP) :
     P ⊢ Q := by
   iintro HP
   iloeb as IH
+  trace_state
 
 /- Tests `iloeb` not automatically generalizing persistent context. -/
-/--
-error: unsolved goals
+/-- trace:
 PROP : Type u
 ι₁ : BI PROP
 ι₂ : BILoeb PROP
@@ -3425,15 +3424,15 @@ P₁ P₂ Q : PROP
   ∗HP2 : P₂
   ⊢ Q
 -/
-#guard_msgs in
+#guard_msgs (trace, drop error) in
 example (P₁ P₂ Q : PROP) :
     ⊢ □ P₁ -∗ P₂ -∗ Q := by
   iintro #HP1 HP2
   iloeb as IH
+  trace_state
 
 /- Tests reordering spatial hypothesis in `iloeb`. -/
-/--
-error: unsolved goals
+/-- trace:
 PROP : Type u
 ι₁ : BI PROP
 ι₂ : BILoeb PROP
@@ -3445,15 +3444,15 @@ P₁ P₂ P₃ Q : PROP
   ∗HP2 : P₂
   ⊢ Q
 -/
-#guard_msgs in
+#guard_msgs (trace, drop error) in
 example (P₁ P₂ P₃ Q : PROP) :
     ⊢ □ P₁ -∗ P₂ -∗ P₃ -∗ Q := by
   iintro #HP1 HP2 HP3
   iloeb as IH generalizing HP3
+  trace_state
 
 /- Tests `iloeb` with pure hypothesis. -/
-/--
-error: unsolved goals
+/-- trace:
 PROP : Type u
 ι₁ : BI PROP
 ι₂ : BILoeb PROP
@@ -3466,16 +3465,15 @@ h1 : H₁ n
   ∗p : P n
   ⊢ Q n
 -/
-#guard_msgs in
+#guard_msgs (trace, drop error) in
 example (n : Nat) (H₁ : Nat → Prop) (P Q : Nat → PROP) :
     H₁ n → ⊢ P n -∗ Q n := by
   iintro %h1 p
   iloeb as IH generalizing %n %h1
-
+  trace_state
 
 /- Tests `iloeb` with pure hypothesis in affine logic. -/
-/--
-error: unsolved goals
+/-- trace:
 PROP : Type u
 ι₁ : BI PROP
 ι₂ : BILoeb PROP
@@ -3489,11 +3487,12 @@ h1 : H₁ n
   ∗p : P n
   ⊢ Q n
 -/
-#guard_msgs in
+#guard_msgs (trace, drop error) in
 example [i : BIAffine PROP] (n : Nat) (H₁ : Nat → Prop) (P Q : Nat → PROP) :
     H₁ n → ⊢ P n -∗ Q n := by
   iintro %h1 p
   iloeb as IH generalizing %n %h1
+  trace_state
 
 variable {PROP : Type u} [ι₁ : BI PROP] in
 /- Tests `iloeb` failing without `BILoeb`. -/
@@ -3539,8 +3538,7 @@ example {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop} {h1 : Q n} {_ : (Q n) 
   iloeb as IH generalizing %n
 
 /- Same test as above, except `generalizing!` is used. -/
-/--
-error: unsolved goals
+/-- trace:
 PROP : Type u
 ι₁ : BI PROP
 ι₂ : BILoeb PROP
@@ -3554,11 +3552,12 @@ x✝ : Q n → Prop
   □x✝ : T n
   ⊢ □ P n
 -/
-#guard_msgs in
+#guard_msgs (trace, drop error) in
 example {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop} {h1 : Q n} {_ : (Q n) → Prop} :
     ⊢ □ T n -∗ □ P n := by
   iintro #_
   iloeb as IH generalizing! %n
+  trace_state
 
 end iloeb
 

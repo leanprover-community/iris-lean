@@ -115,8 +115,7 @@ example {l : Loc} {v v' v'' : Val} :
 
 -- Rocq parity (`first [wp_seq|wp_finish]`): a store in sequencing position discards its
 -- `#()` result, so `wp_store` steps through the `;` instead of leaving a pure redex behind
-/--
-error: unsolved goals
+/-- trace:
 hlc : HasLC
 GF : BundledGFunctors
 ι : HeapLangGS hlc GF
@@ -129,16 +128,16 @@ v v' : Val
   ∗Hpt : l ↦ some v'
   ⊢ WP hl(!#l) @ s ; E {{ w, ⌜w = v'⌝ ∗ l ↦ some v' }}
 -/
-#guard_msgs (whitespace := lax) in
+#guard_msgs (whitespace := lax, trace, drop error) in
 example {l : Loc} {v v' : Val} :
     (l ↦ some v) ⊢
       WP hl(v(#l) ← &v'; !v(#l)) @ s ; E {{ w, ⌜w = v'⌝ ∗ l ↦ some v' }} := by
   iintro Hpt
   wp_store
+  trace_state
 
 -- the fast-forward is *only* for the sequencing redex: a `let` binding the result stays
-/--
-error: unsolved goals
+/-- trace:
 hlc : HasLC
 GF : BundledGFunctors
 ι : HeapLangGS hlc GF
@@ -151,12 +150,13 @@ v v' : Val
   ∗Hpt : l ↦ some v'
   ⊢ WP hl(let x := #(); !#l) @ s ; E {{ _r, l ↦ some v' }}
 -/
-#guard_msgs (whitespace := lax) in
+#guard_msgs (whitespace := lax, trace, drop error) in
 example {l : Loc} {v v' : Val} :
     (l ↦ some v) ⊢
       WP hl(let x := v(#l) ← &v'; !v(#l)) @ s ; E {{ _r, l ↦ some v' }} := by
   iintro Hpt
   wp_store
+  trace_state
 
 /-- error: wp_store: cannot find a points-to hypothesis for l ↦{DFrac.own 1} _ -/
 #guard_msgs (whitespace := lax) in
