@@ -566,11 +566,17 @@ instance intoLaterN_persistently [BI PROP] n (P Q : PROP)
     IntoLaterN strict false n iprop(<pers> P) iprop(<pers> Q) where
   into_laterN := (persistently_mono h.1).trans (laterN_persistently n).2
 
-@[rocq_alias into_laterN_sep_l, rocq_alias into_laterN_sep_r]
-instance intoLaterN_sep [BI PROP] n (P1 P2 Q1 Q2 : PROP)
-    [h1 : IntoLaterN strict false n P1 Q1] [h2 : IntoLaterN strict false n P2 Q2] :
+@[ipm_backtrack, rocq_alias into_laterN_sep_l]
+instance (priority := default - 10) intoLaterN_sep_left [BI PROP] n (P1 P2 Q1 Q2 : PROP)
+    [h1 : IntoLaterN true false n P1 Q1] [h2 : IntoLaterN false false n P2 Q2] :
     IntoLaterN strict false n iprop(P1 ∗ P2) iprop(Q1 ∗ Q2) where
   into_laterN := (sep_mono h1.1 h2.1).trans (laterN_sep n).2
+
+@[ipm_backtrack, rocq_alias into_laterN_sep_r]
+instance (priority := default - 11) intoLaterN_sep_right [BI PROP] n (P P2 Q2 : PROP)
+    [h : IntoLaterN true false n P2 Q2] :
+    IntoLaterN strict false n iprop(P ∗ P2) iprop(P ∗ Q2) where
+  into_laterN := (sep_mono (laterN_intro n) h.into_laterN).trans (laterN_sep n).mpr
 
 @[rocq_alias maybe_combine_sep_as_later]
 instance combineSepAs_later [BI PROP] (Q1 Q2 P : PROP)

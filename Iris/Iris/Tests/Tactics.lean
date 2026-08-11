@@ -2683,13 +2683,37 @@ example [BI PROP] (P Q : PROP) : ⊢ ▷ P -∗ Q -∗ ▷ (P ∗ Q) := by
   icombine HP HQ as HPQ
   iassumption
 
+/-- Tests `inext` where the outmost `BIBase.laterIf` and `BIBase.later` are both stripped. -/
+example [BI PROP] (p : Bool) (P : PROP) : ▷?p P -∗ ▷ P := by
+  iintro H
+  inext
+  iassumption
+
 /-- Tests `inext` with the handling of `BIBase.laterIf` and other modalities. -/
-example [BI PROP] (p : Bool) (P Q : PROP) : ⊢ □ ▷ P -∗ □ ▷?p ▷ Q -∗ ▷?p ▷ □ (P ∗ Q) := by
+example [BI PROP] (p : Bool) (P Q : PROP) :
+    ⊢ □ ▷ P -∗ □ ▷?p ▷ Q -∗ ▷?p ▷ □ (P ∗ Q) := by
   iintro #HP #HQ
   inext; inext
   imodintro
   icombine HP HQ as HPQ
   iexact HPQ
+
+/-- Tests `inext` where the two `BIBase.later` are stripped, leaving the two `BIBase.laterIf` -/
+example [BI PROP] (p : Bool) (P : PROP) (h : ▷?p P -∗ ▷?p P) : ▷?p ▷ P -∗ ▷▷?p P := by
+  iintro H
+  inext
+  iapply h $$ H
+
+/--
+  Tests `inext` where synthesis using `intoLaterN_sep_left` fails and
+  uses `intoLaterN_sep_right` after backtracking.
+  The later modality in `▷ Q` is stripped from `HPQ` instead of the outmost `▷?p`.
+-/
+example [BI PROP] (p : Bool) (P Q R : PROP) (h : ▷?p (P ∗ Q) -∗ ▷ R) :
+    ▷?p (P ∗ ▷ Q) ⊢ ▷▷ R := by
+  iintro HPQ
+  inext
+  iapply h $$ HPQ
 
 variable {GF : BundledGFunctors} [InvGS GF]
 
