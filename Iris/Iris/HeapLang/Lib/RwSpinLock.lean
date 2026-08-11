@@ -75,7 +75,7 @@ attribute [reducible, instance] RwSpinLockG.elemG
 
 section proof
 
--- `iinv` exhausts the default recursion budget on the goals below.
+-- FIXME: `iinv` exhausts the default recursion budget on the goals below.
 set_option maxRecDepth 2000
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF] [RwSpinLockG GF]
@@ -96,7 +96,6 @@ def rwStateInv (γ : GName) (l : Loc) (Φ : Qp → IProp GF) : IProp GF := iprop
          ⌜fold Qp.add q g = 1⌝ ∗
          Φ q)
 
-/-- The `▷` before `internalFractional` survives steps, which eases re-establishing it. -/
 @[rocq_alias heap_lang.is_rw_lock]
 def isRwLock (γ : GName) (lk : Val) (Φ : Qp → IProp GF) : IProp GF := iprop%
   ▷ internalFractional Φ ∗ ∃ l : Loc, ⌜lk = hl_val(#l)⌝ ∗ inv rwLockN (rwStateInv γ l Φ)
@@ -131,8 +130,7 @@ theorem own_auth_empty_split (γ : GName) :
     own (GF := GF) γ (●{.own Qp.quarter} .ofSet (∅ : ReaderFracs)) ∗
       own γ (●{.own Qp.threeQuarters} .ofSet ∅) ⊣⊢ own γ (● .ofSet (∅ : ReaderFracs)) := by
   have hsplit : (● .ofSet (∅ : ReaderFracs) : Auth (LeibnizMultiSet ReaderFracs))
-      = (●{.own Qp.quarter} LeibnizMultiSet.ofSet (∅ : ReaderFracs)) •
-        ●{.own Qp.threeQuarters} LeibnizMultiSet.ofSet ∅ := by
+      = (●{.own Qp.quarter} ofSet (∅ : ReaderFracs)) • ●{.own Qp.threeQuarters} ofSet ∅ := by
     rw [← Auth.auth_dfrac_op, DFrac.op_own, Qp.quarter_add_threeQuarters]
   rw [hsplit]
   exact iOwn_op.symm
