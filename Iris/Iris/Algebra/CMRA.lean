@@ -2304,14 +2304,13 @@ def ofInjRestrictValidity [CMRA α] [OFE β]
     (f : α → Option β) (g : β → α)
     -- `g` is non-expansive and injective w.r.t. OFE equality
     (g_dist : ∀ n (y₁ y₂ : β), y₁ ≡{n}≡ y₂ ↔ g y₁ ≡{n}≡ g y₂)
-    -- `g` is surjective into the part of `α` where `f` returns `some` (and `f` its inverse)
+    -- `g` is surjective into the part of `α` where `f` returns `some`, and `f` is its inverse
     (gf_dist : ∀ (x : α) (y : β) n, f x ≡{n}≡ some y ↔ g y ≡{n}≡ x)
-    -- `g` commutes with `pcore` (on the part where it is defined) and `op`
+    -- `g` commutes with `pcore` (where it is defined) and with `op`
     (g_pcore_dist : ∀ (y cy : β) n,
       pcore y ≡{n}≡ some cy ↔ CMRA.pcore (g y) ≡{n}≡ some (g cy))
     (g_op : ∀ y₁ y₂, g (op y₁ y₂) = g y₁ • g y₂)
-    -- `g` also commutes with `opM` when the right-hand side is produced by `f`, and cancels
-    -- the `f`
+    -- `g` also commutes with `opM` when the right-hand side is produced by `f`, cancelling it
     (g_opM_f : ∀ (x : α) (y : β), g ((f x).elim y (op y)) = g y • x)
     -- the validity predicate on `β` restricts the one on `α`
     (g_validN : ∀ n (y : β), ValidN n y → ✓{n} (g y))
@@ -2321,68 +2320,49 @@ def ofInjRestrictValidity [CMRA α] [OFE β]
     (validN_le : ∀ n n' (y : β), ValidN n y → n' ≤ n → ValidN n' y)
     (validN_op_left : ∀ n (y₁ y₂ : β), ValidN n (op y₁ y₂) → ValidN n y₁) :
     CMRA β :=
-  have g_ne : ∀ {n} {y₁ y₂ : β}, y₁ ≡{n}≡ y₂ → g y₁ ≡{n}≡ g y₂ := (g_dist _ _ _).mp
-  have g_eq : ∀ y₁ y₂ : β, y₁ = y₂ ↔ g y₁ = g y₂ := fun y₁ y₂ =>
-    eq_dist.trans <| Iff.trans (forall_congr' fun n => g_dist n y₁ y₂) eq_dist.symm
-  have g_pcore : ∀ y cy : β, pcore y = some cy ↔ CMRA.pcore (g y) = some (g cy) :=
-    fun y cy => eq_dist.trans <|
-      Iff.trans (forall_congr' fun n => g_pcore_dist y cy n) eq_dist.symm
-  have gf : ∀ (x : α) (y : β), f x = some y ↔ g y = x := fun x y =>
-    eq_dist.trans <| Iff.trans (forall_congr' fun n => gf_dist x y n) eq_dist.symm
-  have pcore_op_left : ∀ y cy : β, pcore y = some cy → op cy y = y := fun y cy h =>
-    (g_eq ..).mpr <| (g_op ..).trans <| CMRA.pcore_op_left ((g_pcore ..).mp h)
-  have pcore_idem : ∀ y cy : β, pcore y = some cy → pcore cy = some cy := fun y cy h =>
-    (g_pcore ..).mpr <| CMRA.pcore_idem ((g_pcore ..).mp h)
+  have g_ne : ∀ {n} {y₁ y₂ : β}, y₁ ≡{n}≡ y₂ → g y₁ ≡{n}≡ g y₂ := (g_dist ..).mp
+  have g_eq : ∀ {y₁ y₂ : β}, y₁ = y₂ ↔ g y₁ = g y₂ :=
+    eq_dist.trans <| (forall_congr' fun n => g_dist n _ _).trans eq_dist.symm
+  have g_pcore : ∀ {y cy : β}, pcore y = some cy ↔ CMRA.pcore (g y) = some (g cy) :=
+    eq_dist.trans <| (forall_congr' fun n => g_pcore_dist _ _ n).trans eq_dist.symm
+  have gf : ∀ {x : α} {y : β}, f x = some y ↔ g y = x :=
+    eq_dist.trans <| (forall_congr' fun n => gf_dist _ _ n).trans eq_dist.symm
+  have pcore_op_left : ∀ {y cy : β}, pcore y = some cy → op cy y = y := fun h =>
+    g_eq.mpr <| (g_op ..).trans <| CMRA.pcore_op_left (g_pcore.mp h)
+  have pcore_idem : ∀ {y cy : β}, pcore y = some cy → pcore cy = some cy := fun h =>
+    g_pcore.mpr <| CMRA.pcore_idem (g_pcore.mp h)
   { pcore, op, Valid, ValidN
-    op_ne := ⟨fun _ _ _ h => (g_dist ..).mpr <| by
-      rw [g_op, g_op]; exact (g_ne h).op_r⟩
-    pcore_ne := fun {n y₁ y₂ cy₁} h hcy => by
-      have hd : pcore y₂ ≡{n}≡ some cy₁ := by
-        refine (g_pcore_dist y₂ cy₁ n).mpr ?_
-        obtain ⟨c, hc, hcd⟩ := CMRA.pcore_ne (g_ne h) ((g_pcore ..).mp hcy)
-        rw [hc]
-        exact hcd.symm
-      cases hp : pcore y₂ with
-      | none => rw [hp] at hd; exact absurd hd (by simp [Dist, Option.Forall₂])
-      | some w => rw [hp] at hd; exact ⟨w, rfl, hd.symm⟩
-    validN_ne := fun {_ _ _} h hv => validN_ne _ _ _ h hv
+    op_ne.ne _ _ _ h := (g_dist ..).mpr <|
+      (g_op ..).dist.trans <| (g_ne h).op_r.trans (g_op ..).symm.dist
+    pcore_ne h hcy :=
+      let ⟨c, hc, hcd⟩ := CMRA.pcore_ne (g_ne h) (g_pcore.mp hcy)
+      dist_some <| (g_pcore_dist ..).mpr <| hc.dist.trans <| some_dist_some.mpr hcd.symm
+    validN_ne h hv := validN_ne _ _ _ h hv
     valid_iff_validN := valid_validN _
-    validN_succ := fun hv => validN_le _ _ _ hv (Nat.le_succ _)
-    validN_op_left := fun hv => validN_op_left _ _ _ hv
-    assoc := (g_eq ..).mpr <| by rw [g_op, g_op, g_op, g_op]; exact CMRA.assoc
-    comm := (g_eq ..).mpr <| by rw [g_op, g_op]; exact CMRA.comm
-    pcore_op_left := fun h => pcore_op_left _ _ h
-    pcore_idem := fun h => pcore_idem _ _ h
+    validN_succ hv := validN_le _ _ _ hv (Nat.le_succ _)
+    validN_op_left hv := validN_op_left _ _ _ hv
+    assoc := g_eq.mpr <| by
+      simp only [g_op]
+      exact CMRA.assoc
+    comm := g_eq.mpr <| (g_op ..).trans <| CMRA.comm.trans (g_op ..).symm
+    pcore_op_left := pcore_op_left
+    pcore_idem := pcore_idem
     pcore_op_mono := fun {y cy} h z => by
-      obtain ⟨c, hc⟩ := CMRA.pcore_op_mono ((g_pcore ..).mp h) (g z)
-      rw [← g_op] at hc
-      rw [← g_opM_f c cy] at hc
-      match hfc : f c with
-      | some w =>
-        refine ⟨w, (g_pcore ..).mpr ?_⟩
-        rw [hc, hfc]
-        rfl
-      | none =>
-        refine ⟨cy, (g_pcore ..).mpr ?_⟩
-        rw [hc, hfc]
-        exact congrArg _ (congrArg g (pcore_op_left cy cy (pcore_idem y cy h)).symm)
-    extend := fun {n y z₁ z₂} hv he => by
+      obtain ⟨c, hc⟩ := CMRA.pcore_op_mono (g_pcore.mp h) (g z)
+      obtain ⟨w, hw⟩ : ∃ w, (f c).elim cy (op cy) = op cy w :=
+        match f c with
+        | some w => ⟨w, rfl⟩
+        | none => ⟨cy, (pcore_op_left (pcore_idem h)).symm⟩
+      rw [← g_op, ← g_opM_f c cy, hw] at hc
+      exact ⟨w, g_pcore.mpr hc⟩
+    extend := fun hv he => by
       obtain ⟨x₁, x₂, hx, hx₁, hx₂⟩ :=
         CMRA.extend (g_validN _ _ hv) (((g_dist ..).mp he).trans (g_op ..).dist)
-      have hfx₁ : f x₁ ≡{n}≡ some z₁ := (gf_dist x₁ z₁ n).mpr hx₁.symm
-      have hfx₂ : f x₂ ≡{n}≡ some z₂ := (gf_dist x₂ z₂ n).mpr hx₂.symm
-      cases hf₁ : f x₁ with
-      | none => rw [hf₁] at hfx₁; exact absurd hfx₁ (by simp [Dist, Option.Forall₂])
-      | some w₁ =>
-        cases hf₂ : f x₂ with
-        | none => rw [hf₂] at hfx₂; exact absurd hfx₂ (by simp [Dist, Option.Forall₂])
-        | some w₂ =>
-          have hgw₁ : g w₁ = x₁ := (gf ..).mp hf₁
-          have hgw₂ : g w₂ = x₂ := (gf ..).mp hf₂
-          refine ⟨w₁, w₂, (g_eq ..).mpr ?_, (g_dist ..).mpr ?_, (g_dist ..).mpr ?_⟩
-          · rw [g_op, hgw₁, hgw₂]; exact hx
-          · rw [hgw₁]; exact hx₁
-          · rw [hgw₂]; exact hx₂ }
+      obtain ⟨w₁, hw₁, hd₁⟩ := distSome ((gf_dist ..).mpr hx₁.symm)
+      obtain ⟨w₂, hw₂, hd₂⟩ := distSome ((gf_dist ..).mpr hx₂.symm)
+      refine ⟨w₁, w₂, g_eq.mpr ?_, hd₁.symm, hd₂.symm⟩
+      rw [g_op, gf.mp hw₁, gf.mp hw₂]
+      exact hx }
 
 /-- Constructing a CMRA through an isomorphism that may restrict validity. -/
 @[reducible, rocq_alias iso_cmra_mixin_restrict_validity]
@@ -2391,9 +2371,9 @@ def ofIsoRestrictValidity [CMRA α] [OFE β]
     (f : α → β) (g : β → α)
     -- `g` is non-expansive and injective w.r.t. OFE equality
     (g_dist : ∀ n (y₁ y₂ : β), y₁ ≡{n}≡ y₂ ↔ g y₁ ≡{n}≡ g y₂)
-    -- `g` is surjective (and `f` its inverse)
+    -- `g` is surjective, and `f` is its inverse
     (gf : ∀ x : α, g (f x) = x)
-    -- `g` commutes with `pcore` and `op`
+    -- `g` commutes with `pcore` and with `op`
     (g_pcore : ∀ y : β, CMRA.pcore (g y) = (pcore y).map g)
     (g_op : ∀ y₁ y₂, g (op y₁ y₂) = g y₁ • g y₂)
     -- the validity predicate on `β` restricts the one on `α`
@@ -2409,10 +2389,10 @@ def ofIsoRestrictValidity [CMRA α] [OFE β]
       fun h => (g_dist ..).mpr <| (gf x).dist.trans h.symm⟩)
     (fun y cy n => by
       rw [g_pcore]
-      cases hp : pcore y with
-      | none => simp [Dist, Option.Forall₂]
+      cases pcore y with
+      | none => simp
       | some z => exact g_dist n z cy)
-    g_op (fun x y => (g_op y (f x)).trans (congrArg (g y • ·) (gf x)))
+    g_op (fun x y => (g_op y (f x)).trans <| congrArg (g y • ·) (gf x))
     g_validN validN_ne valid_validN validN_le validN_op_left
 
 /-- Constructing a CMRA through an isomorphism. -/
@@ -2422,7 +2402,7 @@ def ofIso [CMRA α] [OFE β]
     (f : α → β) (g : β → α)
     -- `g` is non-expansive and injective w.r.t. OFE equality
     (g_dist : ∀ n (y₁ y₂ : β), y₁ ≡{n}≡ y₂ ↔ g y₁ ≡{n}≡ g y₂)
-    -- `g` is surjective (and `f` its inverse)
+    -- `g` is surjective, and `f` is its inverse
     (gf : ∀ x : α, g (f x) = x)
     -- `g` commutes with `pcore`, `op`, `Valid` and `ValidN`
     (g_pcore : ∀ y : β, CMRA.pcore (g y) = (pcore y).map g)
@@ -2433,10 +2413,10 @@ def ofIso [CMRA α] [OFE β]
   ofIsoRestrictValidity pcore op Valid ValidN f g g_dist gf g_pcore g_op
     (fun n y => (g_validN n y).mpr)
     (fun n y₁ y₂ h hv =>
-      (g_validN n y₂).mp <| CMRA.validN_ne ((g_dist ..).mp h) ((g_validN n y₁).mpr hv))
+      (g_validN n y₂).mp <| CMRA.validN_ne ((g_dist ..).mp h) <| (g_validN n y₁).mpr hv)
     (fun y => (g_valid y).symm.trans <|
-      CMRA.valid_iff_validN.trans (forall_congr' fun n => g_validN n y))
-    (fun n n' y hv hle => (g_validN n' y).mp <| CMRA.validN_of_le hle ((g_validN n y).mpr hv))
+      CMRA.valid_iff_validN.trans <| forall_congr' fun n => g_validN n y)
+    (fun n n' y hv hle => (g_validN n' y).mp <| CMRA.validN_of_le hle <| (g_validN n y).mpr hv)
     (fun n y₁ y₂ hv => (g_validN n y₁).mp <| CMRA.validN_op_left <|
       g_op y₁ y₂ ▸ (g_validN n (op y₁ y₂)).mpr hv)
 
