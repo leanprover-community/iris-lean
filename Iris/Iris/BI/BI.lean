@@ -28,7 +28,7 @@ local stepindex Nat
 class BI (PROP : Type _) extends COFE PROP, BI.BIBase PROP where
   entails_refl {P : PROP} : P ⊢ P
   entails_trans {P Q R : PROP} : (P ⊢ Q) → (Q ⊢ R) → P ⊢ R
-  equiv_iff {P Q : PROP} : (P = Q) ↔ P ⊣⊢ Q := by rw [OFE.eq_dist]; simp
+  equiv_iff {P Q : PROP} : (P = Q) ↔ P ⊣⊢ Q := by rw [(OFE.eq_dist _)]; simp
   and_ne : OFE.NonExpansive₂ and
   or_ne : OFE.NonExpansive₂ or
   imp_ne : OFE.NonExpansive₂ imp

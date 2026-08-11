@@ -40,3 +40,10 @@ instance is in scope.
   match siExt.getState (← getEnv) with
   | .anonymous => Term.elabTerm (← `(_)) expectedType?
   | n => Term.elabTerm (mkIdent n) expectedType?
+
+@[expose] elab "infer_stepindex" : tactic => do
+  if (← getGoals).isEmpty then return
+  match siExt.getState (← getEnv) with
+  | .anonymous =>
+    throwError "infer_stepindex: no step index in scope; declare one with `local stepindex T`"
+  | n => evalTactic (← `(tactic| exact $(mkIdent n)))

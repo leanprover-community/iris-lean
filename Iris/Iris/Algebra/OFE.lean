@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2023 Mario Carneiro. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mario Carneiro, Sebastian Graf, Sergei Stepanenko
+Authors: Mario Carneiro, Sebastian Graf, Sergei Stepanenko, Markus de Medeiros
 -/
 module
 
@@ -18,7 +18,7 @@ namespace Iris
 class OFE {SI : Type _} [SIdx SI] (α : Type _) where
   Dist : SI → α → α → Prop
   dist_eqv : Equivalence (Dist n)
-  eq_dist : x = y ↔ ∀ n, Dist n x y
+  eq_dist' : x = y ↔ ∀ n, Dist n x y
   dist_lt : Dist n x y → m < n → Dist m x y
 
 /-- Thin abbreviation for `OFE (SI := SI) α`. -/
@@ -35,6 +35,9 @@ class abbrev IOFE (SI : Type _) [SIdx SI] (α : Type _) := OFE (SI := SI) α
 open OFE
 
 scoped notation:40 x " ≡{" n "}≡ " y:41 => OFE.Dist n x y (SI := stepindex%)
+
+abbrev OFE.eq_dist (SI := by infer_stepindex) [SIdx SI] {α} [self : IOFE SI α] {x y : α} :
+  x = y ↔ ∀ n, OFE.Dist (SI:=SI) n x y := OFE.eq_dist'
 
 namespace OFE
 
@@ -135,7 +138,7 @@ theorem distLater_succ [OFE α] {n : SI} {x y : α} : DistLater (SIdx.succ n) x 
   ⟨(·.dist_lt (SIdx.lt_succ_self _)), fun h1 _ h2 => h1.le (SIdx.lt_succ_r.mp h2)⟩
 
 theorem distLater_soundness [OFE α] {x y : α} (H : ∀ n, DistLater n x y → x ≡{n}≡ y) : x = y := by
-  refine eq_dist.mpr fun (n : SI) => ?_
+  refine (eq_dist ..).mpr fun (n : SI) => ?_
   induction n using instSI.lt_wf.induction with
   | _ n IH => exact H n IH
 
@@ -169,7 +172,7 @@ instance [OFE α] [OFE β] {x : β} : Contractive (fun _ : α => x) where
 def ofDiscrete (α : Type _) : OFE α where
   Dist _ := Eq
   dist_eqv := ⟨congrFun rfl, (Eq.symm ·), (· ▸ ·)⟩
-  eq_dist := (forall_const _).symm
+  eq_dist' := (forall_const _).symm
   dist_lt h _ := h
 
 /-- A discrete element in an OFE -/
@@ -251,7 +254,7 @@ by quotienting the carrier `X` by the OFE equivalence `fun x y => ∀ n, dist n 
       · induction x, y using Quotient.ind₂ with | _ a b => exact heqv.symm h
       · induction x, y using Quotient.ind₂ with | _ a b =>
           induction z using Quotient.ind with | _ c => exact heqv.trans h₁ h₂
-    eq_dist {x y} := by
+    eq_dist' {x y} := by
       induction x, y using Quotient.ind₂ with | _ a b =>
         exact ⟨fun h n => Quotient.exact h n, fun h => Quotient.sound fun n => h n⟩
     dist_lt := fun {n x y m} h hlt' => by
@@ -375,7 +378,7 @@ theorem InvImage.equivalence {α : Sort u} {β : Sort v}
 instance unitOFE : OFE Unit where
   Dist _ _ _ := True
   dist_eqv := ⟨fun _ => ⟨⟩, id, fun _ => id⟩
-  eq_dist := by simp
+  eq_dist' := by simp
   dist_lt _ _ := ⟨⟩
 #rocq_ignore unitO "Use the unit type"
 #rocq_ignore unit_dist "Local Dist instance; folded into Lean's OFE Unit instance."
@@ -387,7 +390,7 @@ instance : @DiscreteE SI _ Unit unitOFE (() : Unit) :=
 instance [OFE α] : OFE (ULift α) where
   Dist n x y := x.down ≡{n}≡ y.down
   dist_eqv := InvImage.equivalence dist_eqv
-  eq_dist {x y} := by cases x; cases y; rw [ULift.up.injEq]; exact eq_dist
+  eq_dist' {x y} := by cases x; cases y; rw [ULift.up.injEq]; exact (eq_dist _)
   dist_lt := dist_lt
 
 def uliftUpHom [OFE α] : α -n> ULift α where
@@ -402,7 +405,7 @@ def uliftDownHom [OFE α] : ULift α -n> α where
 instance [OFE α] : OFE (Option α) where
   Dist n := Option.Forall₂ (Dist n)
   dist_eqv := Option.Forall₂.equivalence dist_eqv
-  eq_dist {x y} := by cases x <;> cases y <;> simp [Option.Forall₂, eq_dist (SI := SI)]
+  eq_dist' {x y} := by cases x <;> cases y <;> simp [Option.Forall₂, eq_dist (SI := SI)]
   dist_lt {_ x y _} := by cases x <;> cases y <;> simp [Option.Forall₂]; apply dist_lt
 #rocq_ignore optionO "Use Option"
 #rocq_ignore option_dist "Local Dist instance; folded into Lean's OFE (Option α) instance."
@@ -506,7 +509,7 @@ instance [OFEFun (SI := SI) (β : α → _)] : OFE ((x : α) → β x) where
     symm h _ := dist_eqv.symm (h _)
     trans h1 h2 _ := dist_eqv.trans (h1 _) (h2 _)
   }
-  eq_dist {_ _} := by rw [funext_iff]; simpa only [eq_dist (SI := SI)] using forall_comm
+  eq_dist' {_ _} := by rw [funext_iff]; simpa only [eq_dist _] using forall_comm
   dist_lt h1 h2 _ := dist_lt (h1 _) h2
 #rocq_ignore discrete_funO "Use a function type"
 #rocq_ignore discrete_fun "Lean uses `(x : α) → β x` directly with `OFEFun`."
@@ -521,7 +524,7 @@ instance [OFE α] [OFE β] : OFE (α -n> β) where
     symm h := dist_eqv.symm h
     trans h1 h2 := dist_eqv.trans h1 h2
   }
-  eq_dist {_ _} := Hom.ext_iff.trans eq_dist
+  eq_dist' {_ _} := Hom.ext_iff.trans eq_dist
   dist_lt := dist_lt
 #rocq_ignore ofe_morO "Use Hom type"
 #rocq_ignore ofe_mor_equiv "Inlined in OFE (α -n> β) instance"
@@ -549,7 +552,7 @@ instance [OFE α] [OFE β] : OFE (α -c> β) where
     symm h := dist_eqv.symm h
     trans h1 h2 := dist_eqv.trans h1 h2
   }
-  eq_dist {_ _} := ContractiveHom.ext_iff.trans eq_dist
+  eq_dist' {_ _} := ContractiveHom.ext_iff.trans eq_dist
   dist_lt := dist_lt
 
 def applyHom [OFEFun (SI := SI) (β : α → _)] (x : α) : ((x : α) → β x) -n> β x where
@@ -582,7 +585,7 @@ instance [OFE α] [OFE β] : OFE (α × β) where
     symm h := ⟨dist_eqv.symm h.1, dist_eqv.symm h.2⟩
     trans h1 h2 := ⟨dist_eqv.trans h1.1 h2.1, dist_eqv.trans h1.2 h2.2⟩
   }
-  eq_dist {_ _} := by rw [Prod.ext_iff]; simp only [eq_dist (SI := SI), forall_and]
+  eq_dist' {_ _} := by rw [Prod.ext_iff]; simp only [eq_dist _, forall_and]
   dist_lt h1 h2 := ⟨dist_lt h1.1 h2, dist_lt h1.2 h2⟩
 #rocq_ignore prodO "Use product type"
 #rocq_ignore prod_dist "Implicit in Prod OFE"
@@ -666,10 +669,10 @@ instance : OFE (α ⊕ β) where
     | .inl _, .inr _, _ => h1.elim
     | _, .inr _, .inl _ => h2.elim
   }
-  eq_dist {a b} := by
+  eq_dist' {a b} := by
     match a, b with
-    | .inl _, .inl _ => rw [Sum.inl.injEq]; exact eq_dist
-    | .inr _, .inr _ => rw [Sum.inr.injEq]; exact eq_dist
+    | .inl _, .inl _ => rw [Sum.inl.injEq]; exact eq_dist _
+    | .inr _, .inr _ => rw [Sum.inr.injEq]; exact eq_dist _
     | .inl _, .inr _ => exact ⟨fun h => (nomatch h), fun x => (x 0).elim⟩
     | .inr _, .inl _ => exact ⟨fun h => (nomatch h), fun x => (x 0).elim⟩
   dist_lt {_ a b} := match a, b with
@@ -731,7 +734,7 @@ end sum
 instance [OFE α] (P : α → Prop) : OFE (Subtype P) where
   Dist n x y := x.val ≡{n}≡ y.val
   dist_eqv := ⟨fun _ => .rfl, Dist.symm, Dist.trans⟩
-  eq_dist {_ _} := Subtype.ext_iff.trans eq_dist
+  eq_dist' {_ _} := Subtype.ext_iff.trans eq_dist
   dist_lt := dist_lt
 #rocq_ignore sigO "Use subtype"
 #rocq_ignore sig_equiv "Local Equiv instance; folded into Lean's OFE (Subtype P) instance."
@@ -770,12 +773,12 @@ instance instOFESigma (P : α → Type _) [∀ x, OFE (P x)] : OFE (Sigma P) whe
         | ⟨heq, H⟩, ⟨heq', H'⟩ =>
           ⟨heq.trans heq', by simp only at heq heq'; subst heq; subst heq'; exact H.trans H'⟩
   }
-  eq_dist {x y} := by
+  eq_dist' {x y} := by
     refine ⟨fun h n => h ▸ ⟨rfl, .rfl⟩, fun h => ?_⟩
     obtain ⟨heq, _⟩ := h 0
     obtain ⟨xf, xs⟩ := x; obtain ⟨yf, ys⟩ := y
     simp only at heq; subst heq
-    exact congrArg _ (eq_dist.mpr fun n => (h n).2)
+    exact congrArg _ ((eq_dist _).mpr fun n => (h n).2)
   dist_lt {_ x y} := match x, y with
     | ⟨x, xH⟩, ⟨y, yH⟩ => fun
       | ⟨heq, H⟩ => fun hlt => ⟨heq, by simp only at heq; subst heq; exact dist_lt H hlt⟩
@@ -1063,13 +1066,13 @@ theorem conv_compl' [COFE α] {c : Chain α} {n i} (h : n ≤ i) : compl c ≡{n
 @[rocq_alias compl_chain_map]
 theorem compl_map [COFE α] [COFE β] (f : α -n> β) (c : Chain α) :
     compl (Chain.map f c) = f (compl c) := by
-  refine OFE.eq_dist.mpr (fun (n : SI) => ?_)
+  refine (OFE.eq_dist _).mpr (fun (n : SI) => ?_)
   exact Dist.trans conv_compl (NonExpansive.ne (Dist.symm conv_compl))
 
 /-- Constant chains complete to their constant value -/
 @[simp, rocq_alias compl_chain_const]
 theorem compl_const [COFE α] (a : α) : compl (Chain.const a) = a :=
-  OFE.eq_dist.mpr (fun _ => conv_compl)
+  (OFE.eq_dist _).mpr (fun _ => conv_compl)
 
 /-- Completion of discrete COFEs is the constant value. -/
 @[simp] theorem discrete_cofe_compl [COFE α] [OFE.Discrete α] (c : Chain α) : compl c = c 0 :=
@@ -1728,8 +1731,8 @@ instance instOFunctorHomOF [OFunctor F1] [OFunctor F2] : OFunctor (HomOF F1 F2) 
   ofe := inferInstance
   map f g := Hom.map (map (F := F1) g f) (map (F := F2) f g)
   map_ne.ne _ _ _ Hf _ _ Hg := NonExpansive₂.ne (map_ne.ne Hg Hf) (map_ne.ne Hf Hg)
-  map_id x := (OFE.eq_dist (SI := SI)).mpr fun _ a => ((map_id _).trans (congrArg x.f (map_id a))).dist
-  map_comp _ _ _ _ x := (OFE.eq_dist (SI := SI)).mpr  fun _ _ =>
+  map_id x := (OFE.eq_dist _).mpr fun _ a => ((map_id _).trans (congrArg x.f (map_id a))).dist
+  map_comp _ _ _ _ x := (OFE.eq_dist _).mpr fun _ _ =>
     ((map_comp _ _ _ _ _).trans (congrArg _ (congrArg _ (congrArg x.f (map_comp _ _ _ _ _))))).dist
 
 open OFunctorContractive in
@@ -1809,7 +1812,7 @@ theorem LimitPreserving.equiv [SIdxFinite SI] [COFE α] [COFE β] (f g : α -n> 
     LimitPreserving (fun x => f x = g x) := by
   apply of_sidx_finite.mp
   intro c Hfg
-  refine (eq_dist (SI := SI)).mpr fun n => ?_
+  refine (eq_dist _).mpr fun n => ?_
   apply (COFE.compl_map _ _).symm.dist.trans
   apply (COFE.conv_compl' SIdx.le_refl).trans
   apply (Hfg _).dist.trans
@@ -1924,7 +1927,7 @@ def fixpointAux [COFE α] [Inhabited α] (f : α → α) [Contractive f] : α :=
 
 theorem fixpointAux_unfold [COFE α] [Inhabited α] (f : α -c> α) :
     fixpointAux f = f (fixpointAux f) := by
-  refine eq_dist.mpr fun (n : SI) => ?_
+  refine (eq_dist _).mpr fun (n : SI) => ?_
   apply COFE.conv_compl.trans
   refine .trans ?_ (NonExpansive.ne COFE.conv_compl.symm)
   exact Contractive.distLater_dist fun p Hp => ((fixpointBFChain f.f n).fixpoint p Hp).symm
@@ -1953,7 +1956,7 @@ theorem fixpoint_unfold [COFE α] [Inhabited α] (f : α -c> α) :
 @[rocq_alias fixpoint_unique]
 theorem fixpoint_unique [COFE α] [Inhabited α] {f : α -c> α} {x : α} (h : x = f x) :
     x = fixpoint f := by
-  refine eq_dist.mpr fun (n : SI) => ?_
+  refine (eq_dist _).mpr fun (n : SI) => ?_
   induction n using instSI.lt_wf.induction with
   | h n ih =>
     exact h.dist.trans <| Dist.trans (Contractive.distLater_dist ih) (fixpoint_unfold f).dist.symm
@@ -2114,9 +2117,9 @@ local stepindex SI
 instance isOFE_later [OFE A] : OFE (Later A) where
   Dist n x y := DistLater n x.car y.car
   dist_eqv := ⟨fun _ => .rfl, .symm, .trans⟩
-  eq_dist {x y} := by
+  eq_dist' {x y} := by
     obtain ⟨a⟩ := x; obtain ⟨b⟩ := y
-    simp only [Later.next.injEq, eq_dist (SI := SI)]
+    simp only [Later.next.injEq, eq_dist _]
     exact ⟨fun H n => (H n).distLater, fun H n => (H (SIdx.succ n)).dist_lt (SIdx.lt_succ_self n)⟩
   dist_lt Hxy Hmn _ Hkm := Hxy _ (SIdx.lt_trans Hkm Hmn)
 #rocq_ignore laterO "Use the later type"

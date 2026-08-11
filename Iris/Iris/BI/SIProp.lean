@@ -115,7 +115,7 @@ instance : OFE SiProp where
   dist_eqv.refl _ _ _ := Iff.rfl
   dist_eqv.symm h _ hle := (h hle).symm
   dist_eqv.trans h₁ h₂ _ hle := (h₁ hle).trans (h₂ hle)
-  eq_dist {P Q} := by
+  eq_dist' {P Q} := by
     refine ⟨?_, fun h => ?_⟩
     · rintro rfl _ _ _; exact Iff.rfl
     · obtain ⟨ph, hp⟩ := P; obtain ⟨qh, _⟩ := Q
@@ -167,7 +167,7 @@ instance siPropPreorder : Std.IsPreorder SiProp where
 instance instBI : BI SiProp where
   entails_refl := siPropPreorder.le_refl _
   entails_trans := siPropPreorder.le_trans _ _ _
-  equiv_iff := OFE.eq_dist.trans
+  equiv_iff := (OFE.eq_dist _).trans
     ⟨fun heq => ⟨fun n hP => (heq n .refl).mp hP, fun n hQ => (heq n .refl).mpr hQ⟩,
      fun H _ _ _ => ⟨H.1 _, H.2 _⟩⟩
   and_ne.ne _ _ _ h₁ _ _ h₂ m h := ⟨.imp (h₁ h).mp (h₂ h).mp, .imp (h₁ h).mpr (h₂ h).mpr⟩
@@ -399,7 +399,7 @@ theorem pure_soundness {φ : Prop} (h : True ⊢@{SiProp} ⌜φ⌝) : φ := h 0 
 
 @[rocq_alias siProp_primitive.internal_eq_soundness]
 theorem internalEq_soundness [OFE A] {x y : A} (h : True ⊢@{SiProp} internalEq x y) : x = y :=
-  OFE.eq_dist.mpr fun n => h n trivial
+  (OFE.eq_dist _).mpr fun n => h n trivial
 
 @[rocq_alias siProp_primitive.later_soundness]
 theorem later_soundness {P : SiProp} (h : True ⊢ ▷ P) : True ⊢ P := fun n _ => h (n + 1) trivial

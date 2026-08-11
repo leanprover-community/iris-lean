@@ -102,9 +102,9 @@ instance : OFE (MonPred I PROP) where
     { refl _ _ := dist_eqv.refl _
       symm h i := dist_eqv.symm (h i)
       trans h1 h2 i := dist_eqv.trans (h1 i) (h2 i) }
-  eq_dist {P Q} := by
+  eq_dist' {P Q} := by
     refine ⟨fun h _ _ => h ▸ .rfl, fun h => ?_⟩
-    exact MonPred.ext fun i => eq_dist.mpr fun n => h n i
+    exact MonPred.ext fun i => (eq_dist _).mpr fun n => h n i
   dist_lt h1 h2 i := dist_lt (h1 i) h2
 
 #rocq_ignore monPred_ofe_mixin "Rocq mixin record; subsumed by the OFE instance."

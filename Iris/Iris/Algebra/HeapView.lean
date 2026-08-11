@@ -270,7 +270,7 @@ theorem auth_op_frag_one_valid_iff :
   refine forall_congr' (fun _ => auth_op_frag_one_validN_iff) |>.trans ?_
   refine ⟨fun Hv => ?_, ?_⟩
   · exact ⟨Hv 0 |>.1, valid_iff_validN.mpr (Hv · |>.2.1),
-      OFE.eq_dist.mpr (Hv · |>.2.2)⟩
+      (OFE.eq_dist _).mpr (Hv · |>.2.2)⟩
   · exact fun ⟨Hdp, Hv, Hl⟩ n => ⟨Hdp, Hv.validN, Hl.dist⟩
 
 instance [Hdq : CoreId dq] [Hv1 : CoreId v1] : CoreId (Frag (H := H) k dq v1) where
@@ -549,7 +549,7 @@ instance {T} [RFunctor T] : URFunctor (HeapViewURF (H := H) T) where
       exact fun _ => Prod.map_ne .refl (RFunctor.map_ne.ne Hx Hy)
   map_id x := by
     rw (config := { occs := .pos [2] }) [<- (View.map_id x)]
-    refine OFE.eq_dist.mpr (fun n => View.map_ne x (fun a => ?_) (fun b => ?_))
+    refine (OFE.eq_dist _).mpr (fun n => View.map_ne x (fun a => ?_) (fun b => ?_))
     · exact (COFE.OFunctor.map_id (F := PartialMapOF H T) a).dist
     · refine OFE.Dist.trans ?_ (map_id _ b).dist
       apply PartialMap.map_ne
@@ -557,7 +557,7 @@ instance {T} [RFunctor T] : URFunctor (HeapViewURF (H := H) T) where
   map_comp f g f' g' x := by
     simp [View.mapC]
     rw [<- View.map_compose']
-    refine OFE.eq_dist.mpr (fun n => View.map_ne x (fun a => (?_ : _ = _).dist) (fun b => (?_ : _ = _).dist))
+    refine (OFE.eq_dist _).mpr (fun n => View.map_ne x (fun a => (?_ : _ = _).dist) (fun b => (?_ : _ = _).dist))
     · exact (inferInstance : URFunctor (PartialMapOF H T)).map_comp _ _ _ _ a
     · simp only [Prod.mapC, CMRA.Hom.id, PartialMap.mapC]
       refine .trans ?_ (PartialMap.map_compose _ _ _ _)

@@ -52,8 +52,8 @@ theorem dist_eqv [OFE α] {n} : Equivalence (Excl.Dist (α := α) n) where
 instance [OFE α] : OFE (Excl α) where
   Dist := Excl.Dist
   dist_eqv
-  eq_dist {x y} := by
-    cases x <;> cases y <;> simp [Excl.Dist, eq_dist (SI := Nat)]
+  eq_dist' {x y} := by
+    cases x <;> cases y <;> simp [Excl.Dist, (eq_dist _)]
   dist_lt {n x y m} hn hlt := by
     cases x <;> cases y <;> simp at *
     exact Dist.lt hn hlt
