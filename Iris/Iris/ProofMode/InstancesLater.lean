@@ -399,7 +399,7 @@ instance (priority := high) intoLaterN_0 [BI PROP] progress only_head (P : PROP)
 
 -- the identity: only when no progress is required
 @[rocq_alias maybe_into_laterN_default]
-instance (priority := low) maybeIntoLaterN_default [BI PROP] only_head n (P : PROP) :
+instance (priority := low) intoLaterN_default [BI PROP] only_head n (P : PROP) :
     IntoLaterN (progress := false) only_head n P P where
   into_laterN := laterN_intro n
 
@@ -409,10 +409,10 @@ instance (priority := default - 200) intoLaterN_later [BI PROP] stuck only_head 
     [h2 : IntoLaterN stuck only_head n' P Q]
     [h3 : MakeLaterN m' Q lQ] : IntoLaterN progress only_head n iprop(▷ P) lQ where
   into_laterN := calc
-      _ ⊢ ▷▷^[n']Q      := later_mono h2.into_laterN
-      _ ⊢ ▷^[n' + 1]Q    := (later_laterN _).mpr
-      _ ⊢ ▷^[n] ▷^[m']Q := by rw [h1.1]; exact (laterN_add _ _).mp
-      _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
+    _ ⊢ ▷▷^[n']Q      := later_mono h2.into_laterN
+    _ ⊢ ▷^[n' + 1]Q    := (later_laterN _).mpr
+    _ ⊢ ▷^[n] ▷^[m']Q := by rw [h1.1]; exact (laterN_add _ _).mp
+    _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
 
 @[ipm_backtrack, rocq_alias into_laterN_laterN]
 instance (priority := default - 100) intoLaterN_laterN [BI PROP] progress stuck only_head n m n' m' (P Q lQ : PROP)
@@ -420,23 +420,22 @@ instance (priority := default - 100) intoLaterN_laterN [BI PROP] progress stuck 
     [h2 : IntoLaterN stuck only_head n' P Q]
     [h3 : MakeLaterN m' Q lQ] : IntoLaterN progress only_head n iprop(▷^[m] P) lQ where
   into_laterN := calc
-      _ ⊢ ▷^[m] ▷^[n']Q := laterN_mono _ h2.into_laterN
-      _ ⊢ ▷^[m + n']Q    := (laterN_add _ _).mpr
-      _ ⊢ ▷^[n] ▷^[m']Q := by rw [Nat.add_comm, h1.nat_cancel]; exact (laterN_add _ _).mp
-      _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
+    _ ⊢ ▷^[m] ▷^[n']Q := laterN_mono _ h2.into_laterN
+    _ ⊢ ▷^[m + n']Q    := (laterN_add _ _).mpr
+    _ ⊢ ▷^[n] ▷^[m']Q := by rw [Nat.add_comm, h1.nat_cancel]; exact (laterN_add _ _).mp
+    _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
 
 @[ipm_backtrack, rocq_alias into_laterN_laterN_bool]
 instance (priority := default - 300) intoLaterN_laterN_bool [BI PROP] progress stuck only_head n (p : Bool) n' m' (P Q lQ : PROP)
     [h1 : NatCancel n 1 n' m' stuck]
     [h2 : IntoLaterN stuck only_head n' P Q]
     [h3 : MakeLaterN m' Q lQ] : IntoLaterN progress only_head n iprop(▷?p P) lQ where
-  into_laterN := by
-    calc
-      _ ⊢ ▷ P            := by cases p; exact later_intro; exact BIBase.Entails.rfl
-      _ ⊢ ▷ ▷^[n']Q     := later_mono h2.into_laterN
-      _ ⊢ ▷^[n' + 1]Q    := (later_laterN _).mpr
-      _ ⊢ ▷^[n] ▷^[m']Q := h1.nat_cancel.symm ▸ (laterN_add _ _).mp
-      _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
+  into_laterN := calc
+    _ ⊢ ▷ P            := by cases p; exact later_intro; exact BIBase.Entails.rfl
+    _ ⊢ ▷ ▷^[n']Q     := later_mono h2.into_laterN
+    _ ⊢ ▷^[n' + 1]Q    := (later_laterN _).mpr
+    _ ⊢ ▷^[n] ▷^[m']Q := h1.nat_cancel.symm ▸ (laterN_add _ _).mp
+    _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
 
 @[ipm_backtrack, rocq_alias into_laterN_and_l]
 instance (priority := default - 10) intoLaterN_and_left [BI PROP]
