@@ -40,7 +40,7 @@ open MultiSet
 
 instance : CMRA (LeibnizMultiSet MS) where
   pcore _ := some (ofSet ∅)
-  op | ofSet X, ofSet  Y => ofSet (X ⊎ Y)
+  op | ofSet X, ofSet Y => ofSet (X ⊎ Y)
   ValidN _ _ := True
   Valid _ := True
   op_ne.ne _ _ _ H := by rw [(H : _ = _)]
@@ -75,6 +75,7 @@ instance : CMRA.IsTotal (LeibnizMultiSet MS) where
 
 @[rocq_alias gmultiset_op]
 theorem op_disjUnion (X Y : MS) : (ofSet X) • (ofSet Y) = ofSet (X ⊎ Y) := rfl
+attribute [local grind =] op_disjUnion
 
 @[rocq_alias gmultiset_core]
 theorem core_eq_empty (X : LeibnizMultiSet MS) : core X = ofSet ∅ := rfl
@@ -86,14 +87,12 @@ theorem opM_disjUnion (X : LeibnizMultiSet MS) (mY : Option (LeibnizMultiSet MS)
 
 @[rocq_alias gmultiset_included]
 theorem included_iff_subset {X Y : MS} : ofSet X ≼ ofSet Y ↔ X ⊆ Y where
-  mp | ⟨.ofSet _, h⟩ => ofSet.inj h ▸ disjUnion_subset_left
+  mp | ⟨_, h⟩ => ofSet.inj h ▸ disjUnion_subset_left
   mpr h := ⟨ofSet (Y \ X), congrArg ofSet (disjUnion_difference_of_subseteq h)⟩
 
 @[rocq_alias gmultiset_cancelable]
 instance (X : LeibnizMultiSet MS) : CMRA.Cancelable X :=
-  discrete_cancelable fun {Y Z} _ h => by
-    cases X; cases Y; cases Z
-    exact congrArg ofSet (disjUnion_left_inj (ofSet.inj h))
+  discrete_cancelable fun {Y Z} _ h => by grind
 
 @[rocq_alias gmultiset_update]
 theorem update (X Y : MS) : ofSet X ~~> ofSet Y := fun _ _ _ => trivial
@@ -103,13 +102,7 @@ theorem localUpdate {X Y X' Y' : MS} (h : X ⊎ Y' = X' ⊎ Y) :
     (ofSet X, ofSet Y) ~l~> (ofSet X', ofSet Y') := by
   refine (local_update_unital_discrete ..).mpr fun ⟨Z⟩ _ e => ⟨trivial, ?_⟩
   refine congrArg ofSet (LawfulMultiSet.ext fun a => ?_)
-  have : multiplicity a X + multiplicity a Y' = multiplicity a X' + multiplicity a Y := by
-    simp [← multiplicity_disjUnion, congrArg (multiplicity a) h]
-  have : multiplicity a X = multiplicity a Y + multiplicity a Z := by
-    simp [← multiplicity_disjUnion, congrArg (multiplicity a) (ofSet.inj e)]
-  suffices H : multiplicity a X' = multiplicity a Y' + multiplicity a Z  by
-    simp [← multiplicity_disjUnion, H]
-  omega
+  grind [multiplicity_disjUnion]
 
 @[rocq_alias gmultiset_local_update_alloc]
 theorem localUpdate_alloc {X Y X' : MS} :
@@ -121,9 +114,7 @@ theorem localUpdate_dealloc {X Y X' : MS} (h : X' ⊆ Y) :
     (ofSet X, ofSet Y) ~l~> (ofSet (X \ X'), ofSet (Y \ X')) := by
   refine LocalUpdate.total_valid fun _ _ inc => localUpdate (LawfulMultiSet.ext fun a => ?_)
   simp only [multiplicity_disjUnion, multiplicity_difference]
-  have _ : multiplicity a Y ≤ multiplicity a X  := subset_iff.mp (included_iff_subset.mp inc) a
-  have _ : multiplicity a X' ≤ multiplicity a Y := subset_iff.mp h a
-  omega
+  grind [subset_iff, included_iff_subset]
 
 end LeibnizMultiSet
 
