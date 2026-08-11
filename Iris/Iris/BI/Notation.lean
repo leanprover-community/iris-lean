@@ -6,17 +6,17 @@ Authors: Lars König, Alex Keizer
 module
 
 public meta import Lean.PrettyPrinter.Delaborator
-
+meta import Lean.PrettyPrinter.Delaborator.Builtins
 meta import Lean.Parser.Term
 
 public meta section
 
 namespace Iris.BI
-open Lean Lean.Macro Lean.Parser.Term
+open Lean Lean.Macro Lean.Parser.Term Lean PrettyPrinter Delaborator SubExpr
 
-/-- `iprop(P)` embeds a separation logic proposition `P` into `term`. -/
+/- `iprop(P)` embeds a separation logic proposition `P` into `term`. -/
 syntax:max (name := iprop) "iprop(" term ")" : term
-/-- `term(t)` escapes from an `iprop(…)` embedding. -/
+/- `term(t)` escapes from an `iprop(…)` embedding. -/
 syntax:max "term(" term ")" : term
 
 -- allow fallback to `term`

@@ -11,12 +11,14 @@ public meta import Iris.Std.DelabRule
 public meta import Iris.Std.Rewrite
 public import Iris.Std.BigOp
 public meta import Iris.Std.RocqPorting
+public meta import Lean.PrettyPrinter.Delaborator
 
 @[expose] public section
 
 namespace Iris.BI
 open Iris.Std
 open Lean
+open Lean Lean.Macro Lean.Parser.Term Lean PrettyPrinter Delaborator SubExpr
 
 /--
 The basic components of a bunched implication (BI) algebra.
@@ -228,18 +230,18 @@ def absorbingly [BIBase PROP] (P : PROP) : PROP := iprop(True ∗ P)
 syntax:max "<affine> " term:40 : term
 syntax:max "<absorb> " term:40 : term
 
+/-- Bidirectional entailment on separation logic propositions. -/
 structure BiEntails [BIBase PROP] (P Q : PROP) where
   mp : P ⊢ Q
   mpr : Q ⊢ P
 
+/-- Entailment on separation logic propositions with an empty context. -/
 @[rocq_alias bi_emp_valid]
 def EmpValid [BIBase PROP] (P : PROP) : Prop := emp ⊢ P
 
-/-- Entailment on separation logic propositions with an empty context. -/
 macro:25 "⊢ " P:term:25 : term => ``(EmpValid iprop($P))
 macro:25 "⊢@{ " PROP:term " } " P:term:25 : term =>
   ``(EmpValid (PROP:=$PROP) iprop($P))
-/-- Bidirectional entailment on separation logic propositions. -/
 macro:25 P:term:29 " ⊣⊢ " Q:term:29 : term => ``(BiEntails iprop($P) iprop($Q))
 macro:25 P:term:29 " ⊣⊢@{ " PROP:term " } " Q:term:29 : term =>
   ``(BiEntails (PROP:=$PROP) iprop($P) iprop($Q))
