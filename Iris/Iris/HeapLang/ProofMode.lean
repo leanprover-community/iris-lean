@@ -646,7 +646,7 @@ elab "wp_load" : tactic =>
 
     mvar.assign q(tac_wp_load (ι := $hgs) (Δ' := $eΔ') $pfLater $pfSplit $pfCont)
 
-elab "wp_store" : tactic =>
+elab "wp_store" : tactic => do
   runTacticHeapWp `wp_store fun mvar {bi, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
     let some {result := (l, v'), K, ..} ← findECtx e fun e' => do
         let ~q(Exp.store (Exp.ofVal (Val.lit (BaseLit.loc $l))) (Exp.ofVal $v')) := e' | failure
@@ -663,8 +663,11 @@ elab "wp_store" : tactic =>
     let pfCont ← finishHeapOp hyps''' hgs s E K q(hl_val(#())) Φ
 
     mvar.assign q(tac_wp_store (ι := $hgs) (Δ' := $eΔ') $pfLater $pfSplit <| $(pf''').mp.trans $pfCont)
+  -- a store's result is often discarded by a `;`, so try stepping through the
+  -- sequencing redex using `wp_seq`
+  evalTactic (← `(tactic| try wp_seq))
 
-elab "wp_xchg" : tactic =>
+elab "wp_xchg" : tactic => do
   runTacticHeapWp `wp_xchg fun mvar {bi, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
     let some {result := (l, v'), K, ..} ← findECtx e fun e' => do
         let ~q(Exp.xchg (Exp.ofVal (Val.lit (BaseLit.loc $l))) (Exp.ofVal $v')) := e' | failure
@@ -681,6 +684,8 @@ elab "wp_xchg" : tactic =>
     let pfCont ← finishHeapOp hyps''' hgs s E K v Φ
 
     mvar.assign q(tac_wp_xchg (ι := $hgs) (Δ' := $eΔ') $pfLater $pfSplit <| $(pf''').mp.trans $pfCont)
+  -- like in `wp_store`, an `xchg` often discards its result, so try `wp_seq`
+  evalTactic (← `(tactic| try wp_seq))
 
 elab "wp_faa" : tactic =>
   runTacticHeapWp `wp_faa fun mvar {bi, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do

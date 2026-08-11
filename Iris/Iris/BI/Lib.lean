@@ -2,6 +2,7 @@ module
 
 public import Iris.BI.Lib.BUpdPlain
 public import Iris.BI.Lib.Core
+public import Iris.BI.Lib.Counterexamples
 public import Iris.BI.Lib.Fixpoint
 public import Iris.BI.Lib.FixpointBanach
 public import Iris.BI.Lib.Fractional
