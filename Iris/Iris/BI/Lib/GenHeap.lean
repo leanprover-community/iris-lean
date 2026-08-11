@@ -85,12 +85,20 @@ def pointsTo (l : L) (dq : DFrac) (v : V) : IProp GF := heapName ↪◯MAP[l]{dq
 notation:50 l:50 " ↦{" dq "} " v:50 => pointsTo l dq v
 notation:50 l:50 " ↦ " v:50 => pointsTo l (DFrac.own 1) v
 
+#rocq_ignore pointsto_def "Rocq unsealed definition body; use pointsTo."
+#rocq_ignore pointsto_aux "Rocq sealing auxiliary definition."
+#rocq_ignore pointsto_unseal "Rocq unsealing lemma."
+
 /-- The token witnessing that no meta data has been associated with the
 namespace mask `E` at location `l`. -/
 @[rocq_alias meta_token]
 def metaToken (l : L) (E : CoPset) : IProp GF := iprop%
   ∃ γm, (metaName ↪◯MAP[l]{.discard} γm) ∗
     iOwn (E := genHeapPreS.metaData (L := L) (V := V)) γm (ReservationMap.mkToken E)
+
+#rocq_ignore meta_token_def "Rocq unsealed definition body; use metaToken."
+#rocq_ignore meta_token_aux "Rocq sealing auxiliary definition."
+#rocq_ignore meta_token_unseal "Rocq unsealing lemma."
 
 /-- Persistent assertion that the meta-data `x : A` has been associated with
 namespace `N` to the location `l`.  The type `A` must be `Pos.Countable`. -/
@@ -99,6 +107,10 @@ def metaInfo [Pos.Countable A] (l : L) (N : Namespace) (x : A) : IProp GF := ipr
   ∃ γm, (metaName ↪◯MAP[l]{.discard} γm) ∗
     iOwn (E := genHeapPreS.metaData (L := L) (V := V)) γm
       (.singleton (CoPset.pick (↑N)) (toAgree ⟨Pos.Countable.encode x⟩))
+
+#rocq_ignore meta_def "Rocq unsealed definition body; use metaInfo."
+#rocq_ignore meta_aux "Rocq sealing auxiliary definition."
+#rocq_ignore meta_unseal "Rocq unsealing lemma."
 
 end definitions
 
@@ -145,12 +157,24 @@ theorem pointsTo_agree : l ↦{dq₁} v₁ ∗ l ↦{dq₂} v₂ ⊢@{IProp GF} 
   unfold pointsTo
   iapply ghost_map_elem_agree
 
+@[rocq_alias pointsto_combine_sep_gives]
+instance instCombineSepGivesPointsTo (l : L) (dq₁ dq₂ : DFrac) (v₁ v₂ : V) :
+    CombineSepGives (l ↦{dq₁} v₁) (l ↦{dq₂} v₂) iprop(⌜✓ (dq₁ • dq₂) ∧ v₁ = v₂⌝) :=
+  inferInstanceAs (CombineSepGives (heapName ↪◯MAP[l]{dq₁} v₁) (heapName ↪◯MAP[l]{dq₂} v₂) _)
+
 @[rocq_alias pointsto_combine]
 theorem pointsTo_combine :
     l ↦{dq₁} v₁ ∗ l ↦{dq₂} v₂ ⊢@{IProp GF} l ↦{dq₁ • dq₂} v₁ ∗ ⌜v₁ = v₂⌝ := by
   unfold pointsTo
   iintro ⟨H₁, H₂⟩
   iapply ghost_map_elem_combine $$ H₁ H₂
+
+/-- Lower priority than `combineSepAsFractional`, which kicks in for `DFrac.own`. -/
+@[rocq_alias pointsto_combine_as]
+instance (priority := default - 20) instCombineSepAsPointsTo
+    (l : L) (dq₁ dq₂ : DFrac) (v₁ v₂ : V) :
+    CombineSepAs (l ↦{dq₁} v₁) (l ↦{dq₂} v₂) (l ↦{dq₁ • dq₂} v₁) :=
+  inferInstanceAs (CombineSepAs (heapName ↪◯MAP[l]{dq₁} v₁) (heapName ↪◯MAP[l]{dq₂} v₂) _)
 
 @[rocq_alias pointsto_frac_ne]
 theorem pointsTo_frac_ne {l₁ l₂ : L} {dq₁ dq₂ : DFrac} {v₁ v₂ : V}
@@ -184,6 +208,14 @@ instance instPersistentPointsTo (l : L) (v : V) :
     BI.Persistent (PROP := IProp GF) (l ↦{.discard} v) := by
   unfold pointsTo
   infer_instance
+
+/-! ### Framing support -/
+
+@[rocq_alias frame_pointsto]
+instance (priority := high) instFramePointsTo (p : Bool) (l : L) (v : V) (q₁ q₂ r : Qp)
+    [FrameFractionalQp q₁ q₂ r] :
+    Frame p (l ↦{.own q₁} v) (l ↦{.own q₂} v) (l ↦{.own r} v) :=
+  frame_fractional (Φ := (l ↦{.own ·} v)) (qR := q₁) (qP := q₂)
 
 /-! ### General properties of `metaInfo` and `metaToken` -/
 

@@ -6,6 +6,7 @@ Authors: Markus de Medeiros, Puming Liu
 module
 
 public import Iris.Algebra.CMRA
+public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.OFE
 public import Iris.Std.Set
 public import Iris.Std.PartialMap
@@ -562,6 +563,71 @@ theorem inc_dom_inc {m1 m2 : M V} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (do
 nonrec instance [HD : CMRA.Discrete V] [LawfulPartialMap M K] : Discrete (M V) where
   discrete_0 {_ _} H := OFE.eq_dist.mpr fun _ k => (OFE.Discrete.discrete_0 (H k)).dist
   discrete_valid {_} := (CMRA.Discrete.discrete_valid <| · ·)
+
+section LocalUpdates
+
+variable {m m1 m2 m1' m2' : M V} {i : K} {x y x' y' : V}
+
+@[rocq_alias gmap_local_update]
+theorem local_update (h : ∀ j, (get? m1 j, get? m2 j) ~l~> (get? m1' j, get? m2' j)) :
+    ((m1, m2) : M V × M V) ~l~> (m1', m2') := by
+  refine local_update_unital.mpr fun n z hv he => ?_
+  have key j : ✓{n} get? m1' j ∧ get? m1' j ≡{n}≡ get? m2' j • get? z j := by
+    refine h j n (some (get? z j)) (hv j) ?_
+    show get? m1 j ≡{n}≡ get? m2 j • get? z j
+    rw [← get?_op]
+    exact he j
+  refine ⟨fun j => (key j).1, fun j => ?_⟩
+  show get? m1' j ≡{n}≡ get? (m2' • z) j
+  rw [get?_op]
+  exact (key j).2
+
+variable [DecidableEq K]
+
+@[rocq_alias alloc_local_update]
+theorem alloc_local_update (hi : get? m1 i = none) (hx : ✓ x) :
+    ((m1, m2) : M V × M V) ~l~> (insert m1 i x, insert m2 i x) := by
+  refine local_update fun j => ?_
+  by_cases hij : i = j
+  · subst hij
+    rw [get?_insert_eq rfl, get?_insert_eq rfl, hi]
+    exact LocalUpdate.alloc_option _ hx
+  · rw [get?_insert_ne hij, get?_insert_ne hij]
+
+@[rocq_alias alloc_singleton_local_update]
+theorem alloc_singleton_local_update (hi : get? m i = none) (hx : ✓ x) :
+    ((m, ∅) : M V × M V) ~l~> (insert m i x, {[i := x]}) :=
+  alloc_local_update hi hx
+
+@[rocq_alias insert_local_update]
+theorem insert_local_update (h1 : get? m1 i = some x) (h2 : get? m2 i = some y)
+    (h : (x, y) ~l~> (x', y')) :
+    ((m1, m2) : M V × M V) ~l~> (insert m1 i x', insert m2 i y') := by
+  refine local_update fun j => ?_
+  by_cases hij : i = j
+  · subst hij
+    rw [get?_insert_eq rfl, get?_insert_eq rfl, h1, h2]
+    exact h.option
+  · rw [get?_insert_ne hij, get?_insert_ne hij]
+
+@[rocq_alias singleton_local_update_any]
+theorem singleton_local_update_any (h : ∀ x, get? m i = some x → (x, y) ~l~> (x', y')) :
+    ((m, {[i := y]}) : M V × M V) ~l~> (insert m i x', {[i := y']}) := by
+  refine local_update fun j => ?_
+  by_cases hij : i = j
+  · subst hij
+    rw [get?_singleton_eq rfl, get?_singleton_eq rfl, get?_insert_eq rfl]
+    rcases hm : get? m i with _ | x
+    · exact fun _ mz _ he => nomatch mz, he
+    · exact (h x hm).option
+  · rw [get?_insert_ne hij, get?_singleton_ne hij, get?_singleton_ne hij]
+
+@[rocq_alias singleton_local_update]
+theorem singleton_local_update (hm : get? m i = some x) (h : (x, y) ~l~> (x', y')) :
+    ((m, {[i := y]}) : M V × M V) ~l~> (insert m i x', {[i := y']}) :=
+  singleton_local_update_any fun _ hx => (Option.some.inj (hm ▸ hx)) ▸ h
+
+end LocalUpdates
 
 end Heap
 

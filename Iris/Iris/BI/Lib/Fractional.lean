@@ -25,6 +25,12 @@ class AsFractional {PROP : Type u} [BI PROP] (P : PROP) (ioΦ : InOut)
   as_fractional : P ⊣⊢ Φ q
   as_fractional_fractional : Fractional Φ
 
+/-- `FrameFractionalQp qR qP r` is used for fractional framing: it subtracts the
+fraction `qR` from `qP`, leaving `r`.  See `frame_fractional` for how it is used. -/
+@[rocq_alias FrameFractionalQp]
+class FrameFractionalQp (qR qP : Qp) (r : outParam Qp) where
+  frame_fractional_qp : qP = qR + r
+
 section Lemmas
 variable {PROP : Type _} [BI PROP] {P P1 P2 : PROP} {Φ : Qp → PROP} {q q1 q2 : Qp}
 
@@ -99,6 +105,29 @@ instance (priority := default - 10) combineSepAsFractionalHalf
     _ ⊢ Φ q.half ∗ Φ q.half := sep_mono hP.as_fractional.mp hP.as_fractional.mp
     _ ⊢ Φ (q.half + q.half) := (hP.as_fractional_fractional.fractional q.half q.half).mpr
     _ ⊢ Φ q                 := Qp.half_add_half _ ▸ .rfl
+
+@[rocq_alias frame_fractional_qp_add_l]
+instance frameFractionalQpAddLeft (q q' : Qp) : FrameFractionalQp q (q + q') q' := ⟨rfl⟩
+
+@[rocq_alias frame_fractional_qp_add_r]
+instance frameFractionalQpAddRight (q q' : Qp) : FrameFractionalQp q' (q + q') q :=
+  ⟨Subtype.ext (Rat.add_comm ..)⟩
+
+@[rocq_alias frame_fractional_qp_half]
+instance frameFractionalQpHalf (q : Qp) : FrameFractionalQp q.half q q.half :=
+  ⟨(Qp.half_add_half q).symm⟩
+
+/-- Not an instance, for performance reasons; concrete instances are provided for
+particular fractional assertions such as `↦`. -/
+@[rocq_alias frame_fractional]
+theorem frame_fractional [hR : AsFractional R .in Φ .in qR] [hP : AsFractional P .in Φ .in qP]
+    [hr : FrameFractionalQp qR qP r] : Frame p R P (Φ r) where
+  frame := calc
+    _ ⊢ R ∗ Φ r    := sep_mono_left intuitionisticallyIf_elim
+    _ ⊢ Φ qR ∗ Φ r := sep_mono_left hR.as_fractional.mp
+    _ ⊢ Φ (qR + r) := (hP.as_fractional_fractional.fractional qR r).mpr
+    _ ⊢ Φ qP       := hr.frame_fractional_qp ▸ .rfl
+    _ ⊢ P          := hP.as_fractional.mpr
 
 end Lemmas
 
