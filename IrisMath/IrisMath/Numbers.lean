@@ -29,23 +29,7 @@ open scoped CommMonoidLike
 scoped instance : COFE ℝ := COFE.ofDiscrete ℝ
 scoped instance : OFE.Discrete ℝ := ⟨fun h => h⟩
 
-/-- info: CommMonoidLike.instUCMRA -/
-#guard_msgs in
-#synth UCMRA ℝ
-
 scoped instance : LeftCancelAdd ℝ := ⟨add_left_cancel⟩
-
-/-- info: CommMonoidLike.instDiscrete -/
-#guard_msgs in
-#synth CMRA.Discrete ℝ
-
-/-- info: fun x ↦ CommMonoidLike.instCancelableOfLeftCancelAdd -/
-#guard_msgs in
-#synth ∀ x : ℝ, CMRA.Cancelable x
-
-/-- info: CommMonoidLike.instCoreIdOfNat -/
-#guard_msgs in
-#synth CMRA.CoreId (0 : ℝ)
 
 theorem op_eq {x y : ℝ} : CMRA.op x y = x + y := rfl
 
@@ -67,21 +51,10 @@ open scoped CommMonoidLike
 scoped instance : COFE ℝ≥0∞ := COFE.ofDiscrete ℝ≥0∞
 scoped instance : OFE.Discrete ℝ≥0∞ := ⟨fun h => h⟩
 
-/-- info: CommMonoidLike.instUCMRA -/
-#guard_msgs in
-#synth UCMRA ℝ≥0∞
-
-/-- info: CommMonoidLike.instDiscrete -/
-#guard_msgs in
-#synth CMRA.Discrete ℝ≥0∞
-
-/-- info: CommMonoidLike.instCoreIdOfNat -/
-#guard_msgs in
-#synth CMRA.CoreId (0 : ℝ≥0∞)
+scoped instance : LawfulAddLE ℝ≥0∞ := ⟨le_iff_exists_add⟩
 
 theorem op_eq {x y : ℝ≥0∞} : CMRA.op x y = x + y := rfl
 
-theorem inc_iff {x y : ℝ≥0∞} : x ≼ y ↔ x ≤ y := by
-  rw [CommMonoidLike.included_iff, ← le_iff_exists_add]
+theorem inc_iff {x y : ℝ≥0∞} : x ≼ y ↔ x ≤ y := CommMonoidLike.inc_iff_le
 
 end ENNReal

@@ -33,6 +33,12 @@ class IdentityFree (α : Type _) [Add α] where
 class LeftCancelAdd (α : Type _) [Add α] where
   cancel_left {x₁ x₂ y : α} : y + x₁ = y + x₂ → x₁ = x₂
 
+class LawfulAddLE (α : Type _) [Add α] [LE α] where
+  le_iff_exists_add {x y : α} : x ≤ y ↔ ∃ z, y = x + z
+
+class LawfulAddLT (α : Type _) [Add α] [LT α] where
+  lt_iff_exists_add {x y : α} : x < y ↔ ∃ z, y = x + z
+
 open Add Commutative in
 theorem LeftCancelAdd.cancel_right {x₁ x₂ y : α} [Add α] [LeftCancelAdd α]
     [Commutative (add (α := α))] (h : add x₁ y = add x₂ y) : x₁ = x₂ := by
@@ -49,7 +55,7 @@ variable [Add α] [Associative (α := α) (· + ·)] [Commutative (α := α) (·
 variable [Zero α] [LawfulLeftIdentity (α := α) (· + ·) zero]
 variable {x y x' y' : α}
 
-scoped instance : CMRA α where
+scoped instance instCMRA : CMRA α where
   pcore _ := some zero
   op := add
   ValidN _ _ := True
@@ -69,6 +75,7 @@ scoped instance : CMRA α where
     exists zero
     rw [left_id (op := add) _]
   extend _ h := ⟨_, _, discrete h, .rfl, .rfl⟩
+
 #rocq_ignore natR "Use the (ℕ, +) Constant Core CMRA."
 #rocq_ignore nat_ra_mixin "Use the (ℕ, +) Constant Core CMRA."
 #rocq_ignore nat_op_instance "Use the (ℕ, +) Constant Core CMRA."
@@ -82,11 +89,11 @@ scoped instance : CMRA α where
 #rocq_ignore Z_valid_instance "Use the (ℤ, +) Constant Core CMRA"
 #rocq_ignore Z_validN_instance "Use the (ℤ, +) Constant Core CMRA"
 
-scoped instance : CMRA.Discrete α where discrete_valid := id
+scoped instance instDiscrete : CMRA.Discrete α where discrete_valid := id
 #rocq_ignore nat_cmra_discrete "Use the (ℕ, +) Constant Core instance."
 #rocq_ignore Z_cmra_discrete "Use the (ℤ, +) Constant Core instance."
 
-scoped instance : UCMRA α where
+scoped instance instUCMRA : UCMRA α where
   unit := zero
   unit_valid := trivial
   unit_left_id := pcore_op_left rfl
@@ -99,7 +106,7 @@ scoped instance : UCMRA α where
 #rocq_ignore Z_ucmra_mixin "Use the (ℤ, +) Constant Core UCMRA."
 #rocq_ignore Z_unit_instance "Use the (ℤ, +) Constant Core UCMRA."
 
-scoped instance [LeftCancelAdd α] {a : α} : Cancelable a where
+scoped instance instCancelable [LeftCancelAdd α] {a : α} : Cancelable a where
   cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ discrete
 #rocq_ignore nat_cancelable "Use the (ℕ, +) Constant Core instance."
 #rocq_ignore Z_cancelable "Use the (ℤ, +) Constant Core instance."
@@ -107,10 +114,14 @@ scoped instance [LeftCancelAdd α] {a : α} : Cancelable a where
 @[rocq_alias nat_op, rocq_alias Z_op]
 theorem op_eq {x y : α} : x • y = x + y := rfl
 
-theorem included_iff {x y : α} : x ≼ y ↔ ∃ z, y = x + z := by
-  refine ⟨fun ⟨z, hz⟩ => ⟨z, hz⟩, fun ⟨z, hz⟩ => ⟨z, hz⟩⟩
+theorem included_iff {x y : α} : x ≼ y ↔ ∃ z, y = x + z := Iff.rfl
+
+@[rocq_alias nat_included]
+theorem inc_iff_le [LE α] [LawfulAddLE α] {x y : α} : x ≼ y ↔ x ≤ y :=
+  included_iff.trans LawfulAddLE.le_iff_exists_add.symm
 
 /-- Sufficient condition for a local update on a LeftCancelAdd structure, such as (ℕ, +) -/
+@[rocq_alias nat_local_update, rocq_alias Z_local_update]
 theorem leftCancelAdd_local_update [LeftCancelAdd α] (h : add x y' = add x' y) :
     (x, y) ~l~> (x', y') := by
   refine discrete_unital_triv_local_update (fun _ => trivial) @fun z hz => ?_
@@ -122,10 +133,15 @@ theorem leftCancelAdd_local_update [LeftCancelAdd α] (h : add x y' = add x' y) 
     _ = add y' (add z y) := by rw [comm (op := add) z]
     _ = add (add y' z) y := by rw [assoc (op := add)]
 
-scoped instance {a : α} : DiscreteE a := ⟨fun H => discrete H⟩
+scoped instance instDiscreteE {a : α} : DiscreteE a := ⟨fun H => discrete H⟩
 
-scoped instance : CoreId (α := α) 0 where
-  core_id := by rfl
+scoped instance instCoreIdZero : CoreId (α := α) 0 where
+  core_id := rfl
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias nat_is_op, rocq_alias Z_is_op]
+scoped instance instIsOp {x y : α} : IsOp d (x + y) x y where
+  is_op := rfl
 
 end CommMonoidLike
 
@@ -140,7 +156,7 @@ variable [IdempotentOp (α := α) (· + ·)]
 variable [Zero α]
 variable {x y x' y' : α}
 
-scoped instance : CMRA α where
+scoped instance instCMRA : CMRA α where
   pcore := some
   op := add
   ValidN _ _ := True
@@ -163,6 +179,7 @@ scoped instance : CMRA α where
     rintro ⟨rfl⟩ z
     exists z
   extend _ h := ⟨_, _, discrete h, .rfl, .rfl⟩
+
 
 #rocq_ignore max_natO "Use the (ℕ, max) Universal Core CMRA."
 #rocq_ignore max_natR "Use the (ℕ, max) Universal Core CMRA."
@@ -194,26 +211,27 @@ scoped instance : CMRA.Discrete α where
 #rocq_ignore max_Z_cmra_discrete "Use the (ℤ, max) Universal Core instance."
 #rocq_ignore min_nat_cmra_discrete "Use the (ℕ, min) Universal Core instance."
 
-scoped instance : CMRA.IsTotal α where
+scoped instance instIsTotal : CMRA.IsTotal α where
   total x := ⟨x, rfl⟩
 #rocq_ignore max_Z_cmra_total "Use the (ℤ, max) Universal Core instance."
 
-scoped instance (a : α) : CMRA.CoreId a where
-  core_id := by simp [pcore]
+scoped instance instCoreId (a : α) : CMRA.CoreId a where
+  core_id := rfl
 #rocq_ignore max_nat_core_id "Use the (ℕ, max) Universal Core instance."
 #rocq_ignore max_Z_core_id "Use the (ℤ, max) Universal Core instance."
 #rocq_ignore min_nat_core_id "Use the (ℕ, min) Universal Core instance."
 
-scoped instance [LawfulLeftIdentity (α := α) (· + ·) zero] : UCMRA α where
+scoped instance instUCMRA [LawfulLeftIdentity (α := α) (· + ·) zero] : UCMRA α where
   unit := zero
   unit_valid := trivial
   unit_left_id := left_id _
   pcore_unit := rfl
+#rocq_ignore max_Z_unit_instance "Rocq has no `max_Z_UCMRA`."
 #rocq_ignore max_natUR "Use the (ℕ, max) Universal Core instance."
 #rocq_ignore max_nat_ucmra_mixin "Use the (ℕ, max) Universal Core instance."
 #rocq_ignore max_nat_unit_instance "Use the (ℕ, max) Universal Core instance."
 
-scoped instance [LeftCancelAdd α] {a : α} : Cancelable a where
+scoped instance instCancelable [LeftCancelAdd α] {a : α} : Cancelable a where
   cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ discrete
 
 omit [Zero α] in
@@ -232,22 +250,21 @@ theorem idem_local_update {x y x' : α} (h : x ≼ x') : (x, y) ~l~> (x', x') :=
   replace hn : x = y • z := discrete hn
   exact (CMRA.op_core_left_of_inc <| .trans ⟨y, hn.trans CMRA.comm'⟩ h).symm
 
-scoped instance {a : α} : DiscreteE a := ⟨fun H => discrete H⟩
+scoped instance instDiscreteE {a : α} : DiscreteE a := ⟨fun H => discrete H⟩
 
 end OrdCommMonoidLike
 
 /- NoCore core -/
 namespace PosCommMonoidLike
 
-open Iris Iris.OFE Add Zero One Associative Commutative LawfulLeftIdentity CMRA IdempotentOp
+open Iris Iris.OFE Add Zero One Associative Commutative LawfulLeftIdentity CMRA
 
 variable [OFE α] [Discrete α]
 variable [Add α] [Associative (α := α) (· + ·)] [Commutative (α := α) (· + ·)]
-variable [IdempotentOp (α := α) (· + ·)]
 
 variable {x y x' y' : α}
 
-scoped instance : CMRA α where
+scoped instance instCMRA : CMRA α where
   pcore _ := none
   op := add
   ValidN _ _ := True
@@ -271,17 +288,31 @@ scoped instance : CMRA α where
 #rocq_ignore pos_valid_instance "Use (PNat, +) No Core CMRA."
 #rocq_ignore pos_validN_instance "Use (PNat, +) No Core CMRA."
 
-scoped instance : CMRA.Discrete α where
+scoped instance instDiscrete : CMRA.Discrete α where
   discrete_valid := id
 #rocq_ignore pos_cmra_discrete "Use (PNat, +) No Core instance."
 
-scoped instance [LeftCancelAdd α] {a : α} : Cancelable a where
+scoped instance instCancelable [LeftCancelAdd α] {a : α} : Cancelable a where
   cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ discrete
 #rocq_ignore pos_cancelable "Use (PNat, +) No Core instance."
 
-scoped instance [IdentityFree α] {a : α} : CMRA.IdFree a where
+scoped instance instIdFree [IdentityFree α] {a : α} : CMRA.IdFree a where
   id_free0_r _ _ h := IdentityFree.id_free <| discrete h
 #rocq_ignore pos_id_free "Use (PNat, +) No Core instance."
+
+@[rocq_alias pos_op_add]
+theorem op_eq {x y : α} : x • y = x + y := rfl
+
+theorem included_iff {x y : α} : x ≼ y ↔ ∃ z, y = x + z := Iff.rfl
+
+@[rocq_alias pos_included]
+theorem inc_iff_lt [LT α] [LawfulAddLT α] {x y : α} : x ≼ y ↔ x < y :=
+  included_iff.trans LawfulAddLT.lt_iff_exists_add.symm
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias pos_is_op]
+scoped instance instIsOp {x y : α} : IsOp d (x + y) x y where
+  is_op := rfl
 
 end PosCommMonoidLike
 
@@ -318,7 +349,8 @@ theorem MaxNat.le_toNat (a b : MaxNat) : a ≤ b ↔ a.toNat ≤ b.toNat := by r
 theorem MaxNat.toNat_add (a b : MaxNat) : (a + b).toNat = a.toNat.max b.toNat := rfl
 
 @[simp, grind =]
-theorem MaxNat.add_ofNat (a b : Nat) : (MaxNat.ofNat a + MaxNat.ofNat b) = MaxNat.ofNat (a.max b) := rfl
+theorem MaxNat.add_ofNat (a b : Nat) :
+    (MaxNat.ofNat a + MaxNat.ofNat b) = MaxNat.ofNat (a.max b) := rfl
 
 @[grind =_]
 theorem MaxNat.toNat_zero : (0 : MaxNat).toNat = 0 := rfl
@@ -337,7 +369,7 @@ scoped instance : LawfulLeftIdentity (α := MaxNat) (· + ·) (0 : MaxNat) where
 scoped instance : Std.IdempotentOp (α := MaxNat) (· + ·) where idempotent x := by grind
 scoped instance : COFE MaxNat := COFE.ofDiscrete _
 scoped instance : OFE.Discrete MaxNat := ⟨fun h => h⟩
-scoped instance : UCMRA MaxNat := OrdCommMonoidLike.instUCMRAOfLawfulLeftIdentityHAddZero
+scoped instance : UCMRA MaxNat := OrdCommMonoidLike.instUCMRA
 scoped instance : CMRA.Discrete MaxNat := OrdCommMonoidLike.instDiscrete
 scoped instance : CMRA.CoreId (a : MaxNat) := OrdCommMonoidLike.instCoreId _
 
@@ -378,7 +410,8 @@ theorem MaxInt.le_toInt (a b : MaxInt) : a ≤ b ↔ a.toInt ≤ b.toInt := by r
 theorem MaxInt.toInt_add (a b : MaxInt) : (a + b).toInt = Max.max a.toInt b.toInt := rfl
 
 @[simp, grind =]
-theorem MaxInt.add_ofInt (a b : Int) : (MaxInt.ofInt a + MaxInt.ofInt b) = MaxInt.ofInt (Max.max a b) := rfl
+theorem MaxInt.add_ofInt (a b : Int) :
+    (MaxInt.ofInt a + MaxInt.ofInt b) = MaxInt.ofInt (Max.max a b) := rfl
 
 theorem MaxInt.eq_toInt (a b : MaxInt) : a = b ↔ a.toInt = b.toInt := by
   constructor
