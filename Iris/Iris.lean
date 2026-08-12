@@ -13,4 +13,3 @@ public import Iris.Instances.Lib
 public import Iris.ProgramLogic
 public import Iris.ProofMode
 public import Iris.Std
-public import Iris.Tests
