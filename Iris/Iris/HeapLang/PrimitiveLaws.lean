@@ -34,13 +34,7 @@ attribute [reducible, instance] HeapLangGpreS.proph_pre
 #rocq_ignore heap_lang.subG_heapGpreS "Superseded by Lean's direct `ElemG` typeclass synthesis."
 
 /-! ### The heap_lang points-to assertion
-
-Rocq's `iris_heap_lang/primitive_laws.v` seals a heap_lang-specific `pointsto`
-whose only job is to pin `gen_heap`'s value type to `option val`, and then
-re-proves the `gen_heap` lemmas through that seal. HeapLang here uses
-`gen_heap`'s `pointsTo` at `Option Val` directly -- `l ↦ some v` -- so those
-lemmas are the ones aliased in `Iris/BI/Lib/GenHeap.lean`, and they serve the
-`heap_lang.pointsto_*` names too. -/
+The HeapLang points-to assertion is taken from `gen_heap`. -/
 
 attribute [rocq_alias heap_lang.pointsto] pointsTo
 attribute [rocq_alias heap_lang.pointsto_timeless] instTimelessPointsTo
