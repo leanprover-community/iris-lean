@@ -6,6 +6,7 @@ Authors: Lars König, Alex Keizer
 module
 
 meta import Lean.Parser.Term
+public import Iris.Init
 
 public meta section
 

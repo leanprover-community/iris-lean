@@ -7,6 +7,7 @@ module
 
 public import Lean.Syntax
 public meta import Iris.Std.RocqPorting
+public import Iris.Init
 
 @[expose] public section
 

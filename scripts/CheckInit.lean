@@ -122,6 +122,13 @@ def main (args : List String) : IO UInt32 := do
     -- The modules of the library that are subject to the check, and the ones that fail it
     let expected := all.filter fun mod =>
       !isExcluded mod && !dependencies.contains mod
+
+    let minimal := expected.filter fun mod =>
+      (graph.getD mod #[]).all fun i => dependencies.contains i || !graph.contains i
+    IO.eprintln s!"check-init: minimal set of modules to import {moduleFile init}:"
+    for m in minimal do
+      IO.eprintln s!"  {m}"
+
     let exempt := all.filter fun mod =>
       !isExcluded mod && mod != init && dependencies.contains mod
     let missing := expected.filter (!importers.contains ·)

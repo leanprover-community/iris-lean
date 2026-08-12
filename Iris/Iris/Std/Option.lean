@@ -6,6 +6,8 @@ Authors: Markus de Medeiros
 
 module
 
+public import Iris.Init
+
 @[expose] public section
 
 namespace Option
