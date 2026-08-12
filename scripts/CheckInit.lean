@@ -44,14 +44,6 @@ private def moduleFile (mod : Name) : FilePath :=
 private def moduleDir (mod : Name) : FilePath :=
   (moduleFile mod).withExtension ""
 
-/-- These are not modules and should be excluded from the check everywhere. -/
-private def excludedModules : Array Name :=
-  #[`Iris.ProofMode.Porting, `Iris.Std.DumpPortingData]
-
-/-- Checks whether the module is excluded from the check. -/
-private def isExcluded (mod : Name) : Bool :=
-  excludedModules.any (·.isPrefixOf mod)
-
 /--
 All modules whose source file lies in the directory of `root`, sorted by name.
 For `root = Iris`, the file `Iris/BI/Lemmas.lean` yields the module `Iris.BI.Lemmas`.
@@ -120,8 +112,7 @@ def main (args : List String) : IO UInt32 := do
     -- The modules that `init` itself depends on; these cannot import it back
     let dependencies := reachableFrom graph init
     -- The modules of the library that are subject to the check, and the ones that fail it
-    let expected := all.filter fun mod =>
-      !isExcluded mod && !dependencies.contains mod
+    let expected := all.filter (!dependencies.contains ·)
 
     let minimal := expected.filter fun mod =>
       (graph.getD mod #[]).all fun i => dependencies.contains i || !graph.contains i
@@ -129,8 +120,7 @@ def main (args : List String) : IO UInt32 := do
     for m in minimal do
       IO.eprintln s!"  {m}"
 
-    let exempt := all.filter fun mod =>
-      !isExcluded mod && mod != init && dependencies.contains mod
+    let exempt := all.filter fun mod => mod != init && dependencies.contains mod
     let missing := expected.filter (!importers.contains ·)
     unless missing.isEmpty do
       IO.eprintln s!"check-init: {missing.size} module(s) of {root} never import \

@@ -45,10 +45,6 @@ private def moduleFile (mod : Name) : FilePath :=
 private def moduleDir (mod : Name) : FilePath :=
   (moduleFile mod).withExtension ""
 
-/-- These are not modules and should be excluded from the check everywhere. -/
-private def excludedModules : Array Name :=
-  #[`Iris.ProofMode.Porting, `Iris.Std.DumpPortingData]
-
 /--
 Directories whose entry point is deliberately *not* imported by the entry point of
 their parent directory, e.g. `Iris/Algebra.lean` does not import `Iris/Algebra/Lib.lean`.
@@ -60,13 +56,9 @@ and its own entry point still has to cover everything below it.
 private def detachedDirs : Array Name :=
   #[`Iris.Algebra.Lib, `Iris.BI.Lib, `Iris.HeapLang.Lib, `Iris.Instances.Lib]
 
-/-- Checks whether the module is excluded from the check. -/
-private def isExcluded (mod : Name) : Bool :=
-  excludedModules.any (·.isPrefixOf mod)
-
 /-- Checks whether `mod` is exempt from the check performed for the entry point `entry`. -/
 private def isSkipped (entry mod : Name) : Bool :=
-  isExcluded mod || detachedDirs.any fun dir => dir.getPrefix == entry && dir.isPrefixOf mod
+  detachedDirs.any fun dir => dir.getPrefix == entry && dir.isPrefixOf mod
 
 /--
 All modules whose source file lies in the directory of `root`, sorted by name.
@@ -131,7 +123,6 @@ def main (args : List String) : IO UInt32 := do
     let mut ok := true
     let mut checked := 0
     for dir in directoriesUnder root all do
-      if isExcluded dir then continue
       unless (← (moduleFile dir).pathExists) do
         IO.eprintln s!"check-imports: no entry-point file {moduleFile dir} \
           for directory {moduleDir dir}."
@@ -141,7 +132,8 @@ def main (args : List String) : IO UInt32 := do
       let reachable := reachableFrom graph dir
       -- The modules of `all` that the entry point of the directory `dir` must import
       let expectedUnder := all.filter
-        fun mod => mod != dir && dir.isPrefixOf mod && !isSkipped dir mod
+        fun mod => mod != dir && dir.isPrefixOf mod &&
+          !(detachedDirs.any fun d => d.getPrefix == dir && d.isPrefixOf mod)
       let missing := expectedUnder.filter (!reachable.contains ·)
       unless missing.isEmpty do
         IO.eprintln s!"check-imports: {missing.size} file(s) under {dir} are never \
