@@ -109,15 +109,12 @@ theorem spawn_spec (Ψ : Val → IProp GF) (f : Val) :
   iapply wp_wand $$ Hf
   iintro %v HΨ
   wp_pures
-  iapply wp_atomic
-  imod inv_acc (fun _ _ => CoPset.mem_full) $$ Hinv with ⟨Hpt, Hclose⟩
+  iinv Hinv with Hpt
+  · simp; infer_instance -- TODO: iinv should solve this
   unfold spawnInv
   icases Hpt with ⟨%_, Hl, _⟩
-  imodintro
   wp_store
-  iapply Hclose
-  inext
-  iexists _; iframe Hl
+  imodintro; iframe Hl; imodintro
   iright; iexists v; isplit
   · itrivial
   · iframe
@@ -134,33 +131,21 @@ theorem join_spec (Ψ : Val → IProp GF) (l : Loc) :
   iloeb as IH
   wp_rec
   wp_bind !_
-  iapply wp_atomic
-  imod inv_acc (fun _ _ => CoPset.mem_full) $$ Hinv with ⟨Hpt, Hclose⟩
+  iinv Hinv with Hpt
+  · simp; infer_instance -- TODO: iinv should solve this
   unfold spawnInv
   icases Hpt with ⟨%lv, Hl, Hcond⟩
-  imodintro
-  wp_load
+  wp_load; imodintro; iframe Hl
   icases Hcond with (%Heq | ⟨%w, %Heq, (HΨw | Hγ')⟩) <;> subst Heq
-  · imod Hclose $$ [Hl]
-    · inext
-      iexists _
-      iframe Hl
-      ileft; itrivial
-    imodintro
+  · isplitr
+    · ileft; itrivial
     wp_pures
     iapply IH $$ HΦ Hγ
-  · imod Hclose $$ [Hl Hγ]
-    · inext
-      iexists _; iframe Hl
-      iright; iexists w; isplit
-      · itrivial
-      · iframe
-    imodintro
+  · isplitl [Hγ]
+    · iright; iframe Hγ; itrivial
     wp_pures
     iapply HΦ $$ HΨw
-  · iexfalso
-    iapply token_exclusive
-    iframe
+  · icombine Hγ Hγ' gives %⟨⟩
 
 end Specs
 
