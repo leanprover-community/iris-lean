@@ -37,6 +37,5 @@ theorem nondetBool.spec :
     iapply K $$ [//]
   · inext
     iinv Hinv with >⟨%b, Hl⟩
-    · simp; infer_instance
     wp_store
     iframe
