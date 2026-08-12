@@ -28,3 +28,8 @@ supportInterpreter = true
 name = "check-imports"
 srcDir = "../scripts"
 root = "CheckImports"
+
+[[lean_exe]]
+name = "check-init"
+srcDir = "../scripts"
+root = "CheckInit"
