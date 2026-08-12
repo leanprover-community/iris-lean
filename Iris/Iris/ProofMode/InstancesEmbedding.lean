@@ -14,7 +14,7 @@ public import Iris.ProofMode.ModalityInstances
 namespace Iris.ProofMode
 open BI
 
-section
+section BiEmbed
 
 variable {PROP1 PROP2 : Type u} [bi1 : BI PROP1] [bi2 : BI PROP2] [biEmbed : BiEmbed PROP1 PROP2]
 
@@ -226,4 +226,104 @@ instance fromForall_embed {α : Sort _} (P : PROP1) (Ψ : α → PROP1) [inst : 
 instance intoInv_embed (P : PROP1) (N : Namespace) [IntoInv P N] :
     IntoInv iprop(⎡P⎤ : PROP2) N := {}
 
-end
+/-! ### IsExcept0 -/
+
+@[rocq_alias is_except_0_embed]
+instance isExcept0_embed [BiEmbedLater PROP1 PROP2] (P : PROP1)
+    [IsExcept0 P] : IsExcept0 iprop(⎡P⎤ : PROP2) where
+  is_except0 := sorry
+
+/-! ### FromModal -/
+
+@[rocq_alias from_modal_later_embed]
+instance fromModal_later_embed [BiEmbedLater PROP1 PROP2]
+    {α : Type _} (φ : Prop) (sel : α) (n : Nat) (P Q : PROP1)
+    [FromModal φ (modality_laterN n) sel P Q] :
+    FromModal φ (modality_laterN n) sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
+  from_modal := sorry
+
+/-! ### IntoExcept0 -/
+
+@[rocq_alias into_except_0_embed]
+instance intoExcept0_embed [BiEmbedLater PROP1 PROP2] (P Q : PROP1) [IntoExcept0 P Q] :
+    IntoExcept0 iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
+  into_except0 := sorry
+
+/-! ### IntoLater -/
+
+@[rocq_alias into_later_embed]
+instance intoLater_embed (n : Nat) (P Q : PROP1) progress
+    [IntoLaterN (progress := true) (only_head := false) n P Q] :
+    IntoLaterN progress (only_head := false) n iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
+  into_laterN := sorry
+
+end BiEmbed
+
+section SbiEmbed
+
+variable {P1 P2 : Type u} [Sbi P1] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
+
+@[rocq_alias from_modal_plainly_embed]
+instance (priority := low) fromModal_plainly_embed {α : Type _} (φ : Prop) (sel : α)
+    (P Q : P1) [FromModal φ modality_plainly sel P Q] :
+    FromModal φ modality_plainly sel iprop(⎡P⎤ : P2) iprop(⎡Q⎤) where
+  from_modal := sorry
+
+@[rocq_alias into_internal_eq_embed]
+instance intoInternalEq_embed {A : Type _} [OFE A] (x y : A) (P : P1)
+    [IntoInternalEq P x y] : IntoInternalEq iprop(⎡P⎤ : P2) x y where
+  into_internal_eq := sorry
+
+end SbiEmbed
+
+section BiBUpdEmbed
+
+variable {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+  [BIUpdate PROP1] [BIUpdate PROP2] [BiEmbedBUpd PROP1 PROP2]
+
+@[rocq_alias elim_modal_embed_bupd_goal]
+instance elimModal_embed_bupd_goal (φ : Prop) (p : Bool) (io : InOut) (p' : Bool)
+    (P P' : PROP2) (Q Q' : PROP1)
+    [ElimModal φ p io p' P P' iprop(|==> ⎡Q⎤) iprop(|==> ⎡Q'⎤)] :
+    ElimModal φ p io p' P P' iprop(⎡|==> Q⎤) iprop(⎡|==> Q'⎤) where
+  elim_modal := sorry
+
+@[rocq_alias elim_modal_embed_bupd_hyp]
+instance elimModal_embed_bupd_hyp (φ : Prop) (p : Bool) (io : InOut) (p' : Bool)
+    (P : PROP1) (P' Q Q' : PROP2)
+    [ElimModal φ p io p' iprop(|==> ⎡P⎤) P' Q Q'] :
+    ElimModal φ p io p' iprop(⎡|==> P⎤) P' Q Q' where
+  elim_modal := sorry
+
+@[rocq_alias add_modal_embed_bupd_goal]
+instance addModal_embed_bupd_goal (P P' : PROP2) (Q : PROP1)
+    [AddModal P P' iprop(|==> ⎡Q⎤)] : AddModal P P' iprop(⎡|==> Q⎤) where
+  add_modal := sorry
+
+end BiBUpdEmbed
+
+section BiFUpdEmbed
+
+variable {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+  [BIFUpdate PROP1] [BIFUpdate PROP2] [BiEmbedFUpd PROP1 PROP2]
+
+@[rocq_alias elim_modal_embed_fupd_goal]
+instance elimModal_embed_fupd_goal (φ : Prop) (p : Bool) (io : InOut) (p' : Bool)
+    (E1 E2 E3 : CoPset) (P P' : PROP2) (Q Q' : PROP1)
+    [ElimModal φ p io p' P P' iprop(|={E1,E3}=> ⎡Q⎤) iprop(|={E2,E3}=> ⎡Q'⎤)] :
+    ElimModal φ p io p' P P' iprop(⎡|={E1,E3}=> Q⎤) iprop(⎡|={E2,E3}=> Q'⎤) where
+  elim_modal := sorry
+
+@[rocq_alias elim_modal_embed_fupd_hyp]
+instance elimModal_embed_fupd_hyp (φ : Prop) (p : Bool) (io : InOut) (p' : Bool)
+    (E1 E2 : CoPset) (P : PROP1) (P' Q Q' : PROP2)
+    [ElimModal φ p io p' iprop(|={E1,E2}=> ⎡P⎤) P' Q Q'] :
+    ElimModal φ p io p' iprop(⎡|={E1,E2}=> P⎤) P' Q Q' where
+  elim_modal := sorry
+
+@[rocq_alias add_modal_embed_fupd_goal]
+instance addModal_embed_fupd_goal (E1 E2 : CoPset) (P P' : PROP2) (Q : PROP1)
+    [AddModal P P' iprop(|={E1,E2}=> ⎡Q⎤)] : AddModal P P' iprop(⎡|={E1,E2}=> Q⎤) where
+  add_modal := sorry
+
+end BiFUpdEmbed
