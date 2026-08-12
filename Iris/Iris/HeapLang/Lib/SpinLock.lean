@@ -130,37 +130,29 @@ theorem try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   icases Hlock with ⟨%l, %Heq, #Hinv⟩
   subst Heq
   wp_bind cmpXchg(_,_,_)
-  iapply wp_atomic
-  imod inv_acc $$ Hinv with ⟨G1, G2⟩
-  · simp
+  iinv Hinv with G1
+  · simp; infer_instance -- TODO: iinv should solve this
   unfold lockInv
-  imodintro
   icases G1 with ⟨%b, Hpt, Hcond⟩
   cases b
   · simp only [Bool.false_eq_true, ↓reduceIte]
     wp_cmpxchg_suc
-    imod G2 $$ [Hpt]
-    · iexists true
-      simp only [↓reduceIte]
-      iframe
-    · imodintro
-      wp_pure
-      imodintro
-      iapply Hcont $$ [Hcond]
-      simp only [↓reduceIte]
-      iframe
+    imodintro
+    isplitl [Hpt]
+    · iframe; simp; itrivial
+    wp_pures
+    imodintro
+    iapply Hcont $$ [Hcond]
+    simp only [↓reduceIte]; iframe
   · simp only [↓reduceIte]
     wp_cmpxchg_fail
-    imod G2 $$ [Hpt]
-    · iexists true
-      simp only [↓reduceIte]
-      iframe
-    · imodintro
-      wp_pure
-      imodintro
-      iapply Hcont
-      simp only [Bool.false_eq_true, ↓reduceIte]
-      itrivial
+    imodintro
+    isplitl [Hpt]
+    · iframe; simp; itrivial
+    wp_pures
+    imodintro
+    iapply Hcont $$ [Hcond]
+    simp only [Bool.false_eq_true, ↓reduceIte]; itrivial
 
 @[rocq_alias heap_lang.spin_lock.acquire_spec]
 theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
@@ -195,21 +187,14 @@ theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
   unfold isLock
   icases Hlock with ⟨%l, %Heq, #Hinv⟩
   subst Heq
-  iapply wp_atomic
-  imod inv_acc $$ Hinv with ⟨G1, G2⟩
-  · simp
+  iinv Hinv with G1
+  · simp; infer_instance -- TODO: iinv should solve this
   unfold lockInv
-  imodintro
   icases G1 with ⟨%b, Hpt, Hcond⟩
   wp_store
-  imod G2 $$ [- Hcont]
-  · inext
-    iexists false
-    simp only [Bool.false_eq_true, ↓reduceIte]
-    iframe
-  · imodintro
-    iapply Hcont
-    itrivial
+  imodintro; iframe Hpt
+  simp only [Bool.false_eq_true, ↓reduceIte]; iframe
+  iapply Hcont; itrivial
 
 end Specs
 
