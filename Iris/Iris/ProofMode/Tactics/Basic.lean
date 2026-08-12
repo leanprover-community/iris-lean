@@ -5,10 +5,10 @@ Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
 module
 
-import Iris.ProofMode.Classes
-meta import Iris.ProofMode.Expr
-meta import Iris.ProofMode.SynthInstance
-public meta import Iris.ProofMode.ProofModeM
+public import Iris.ProofMode.Classes
+public import Iris.ProofMode.Expr
+public import Iris.ProofMode.SynthInstance
+public import Iris.ProofMode.ProofModeM
 
 public section
 

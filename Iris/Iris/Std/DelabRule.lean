@@ -5,8 +5,8 @@ Authors: Lars König
 -/
 module
 
-public meta import Lean.PrettyPrinter.Delaborator
-public meta import Lean.Parser.Term
+public import Lean.PrettyPrinter.Delaborator
+public import Lean.Parser.Term
 public import Iris.Init
 
 public meta section

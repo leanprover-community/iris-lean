@@ -6,7 +6,6 @@ Authors: Michael Sammler, Alvin Tang
 module
 
 public meta import Iris.ProofMode.Patterns.SelPattern
-public meta import Iris.ProofMode.ProofModeM
 
 namespace Iris.ProofMode
 

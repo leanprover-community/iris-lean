@@ -5,13 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 import Iris.BI
-public import Iris.BI.InternalEq
-public import Iris.ProofMode.Classes
-public import Iris.Std.TC
-public import Iris.ProofMode.ProofModeM
-public meta import Iris.ProofMode.Patterns.SpecPattern
-public meta import Iris.ProofMode.Tactics.HaveCore
-meta import Lean.Parser.Tactic
+public import Iris.ProofMode.Tactics.HaveCore
 
 namespace Iris.ProofMode
 
