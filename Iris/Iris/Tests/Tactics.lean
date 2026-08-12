@@ -2676,6 +2676,125 @@ example [BI PROP] (P : PROP) : P ⊢ P := by
   iintro HP
   inext
 
+/-- Tests `inext`. -/
+example [BI PROP] (P Q : PROP) : ⊢ ▷ P -∗ Q -∗ ▷ (P ∗ Q) := by
+  iintro HP HQ
+  inext
+  icombine HP HQ as HPQ
+  iassumption
+
+/-- Tests `inext` where the outermost `▷?p` in `H` and `▷` in the goal are both stripped. -/
+example [BI PROP] (p : Bool) (P : PROP) : ▷?p P -∗ ▷ P := by
+  iintro H
+  inext
+  iassumption
+
+/-- Tests `inext` with the handling of `▷?p` and other modalities. -/
+example [BI PROP] (p : Bool) (P Q : PROP) :
+    ⊢ □ ▷ P -∗ □ ▷?p ▷ Q -∗ ▷?p ▷ □ (P ∗ Q) := by
+  iintro #HP #HQ
+  inext; inext
+  imodintro
+  icombine HP HQ as HPQ
+  iexact HPQ
+
+/-- Tests `inext` where the two `▷` are stripped, retaining the two `▷?p`. -/
+example [BI PROP] (p : Bool) (P : PROP) (h : ▷?p P -∗ ▷?p P) : ▷?p ▷ P -∗ ▷▷?p P := by
+  iintro H
+  inext
+  iapply h $$ H
+
+/--
+  Tests `inext` where synthesis using `intoLaterN_sep_left` fails and
+  uses `intoLaterN_sep_right` after backtracking.
+  The later modality in `▷ Q` is stripped from `HPQ1` instead of the outermost `▷?p`.
+  Analogous for `∧` and `∨`.
+-/
+example [BI PROP] (p : Bool) (P Q R : PROP)
+    (h : ▷?p (P ∗ Q) -∗ ▷?p (P ∧ Q) -∗ ▷?p (P ∨ Q) -∗ ▷ R) :
+    ▷?p (▷ P ∗ ▷ Q) ∗ ▷?p (▷ P ∧ ▷ Q) ∗ ▷?p (▷ P ∨ ▷ Q) ⊢ ▷▷ R := by
+  iintro ⟨HPQ1, HPQ2, HPQ3⟩
+  inext
+  iapply h $$ HPQ1 HPQ2 HPQ3
+
+variable {GF : BundledGFunctors} [InvGS GF]
+
+/- Tests `inext` with later credits consumption. -/
+example (E : CoPset) (P : IProp GF) : ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  -- No later credits consumed, equivalent to a no-op
+  inext 0 credit: Hcred
+  -- One later credit is consumed by default when the amount is not specified
+  inext credit: Hcred
+  iassumption
+
+/- Tests `inext` with insufficient credits. -/
+/-- error: inext: insufficient credits -/
+#guard_msgs in
+example (E : CoPset) (P : IProp GF) : ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  inext 2 credit: Hcred
+
+/- Tests `inext` with multiple credits consumed. -/
+example (E : CoPset) (P : IProp GF) :
+    ⊢ £ (m + n + 6) -∗ ▷^[m + n + 6] (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  inext 3 credit: Hcred
+  inext (1 + (3 - .succ 1)) credit: Hcred
+  inext 1 credit: Hcred
+  inext n credit: Hcred
+  inext m credit: Hcred
+  iassumption
+
+/- Tests `inext` for later credits with later modalities expressed in terms of `Nat` variables. -/
+example (m n p q : Nat) (E : CoPset) (P : IProp GF) :
+    ⊢ £ (1 + m + n + p + q + 3) -∗ ▷^[n + m + 4 + p + q] (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  inext (m + q) credit: Hcred
+  inext (p + n) credit: Hcred
+  inext 4 credit: Hcred
+  iassumption
+
+/- Tests `inext` where `intoLaterN_later` should not apply and `intoLaterN_laterN_bool` applies instead -/
+example (p : Bool) (P : IProp GF) (E : CoPset) :
+    ⊢ £ 1 -∗ ▷?p P -∗ ▷ (|={E}=> P) -∗ |={E}=> (P ∗ P) := by
+  iintro Hcred H HQ
+  inext credit: Hcred
+  isplitl [HQ] <;> iassumption
+
+/- Tests `inext` for later credits with an invalid hypothesis choice. -/
+/-- error: inext: Hcred is not a spatial later credit hypothesis -/
+#guard_msgs in
+example (E : CoPset) (P Q : IProp GF) : ⊢ Q -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  inext credit: Hcred
+
+/- Tests `inext` for later credits with the hypothesis not in the spatial context. -/
+/-- error: inext: Hcred is not in the spatial context -/
+#guard_msgs in
+example (E : CoPset) (P : IProp GF) : ⊢ □ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro #Hcred HP
+  inext credit: Hcred
+
+/- Tests `inext` with an `IProp GF` entailment where `InvGS GF` is not available. -/
+/-- error: inext: requires an InvGS (HasLC) context -/
+#guard_msgs in
+example [InvGS_gen .hasNoLC GF] (E : CoPset) (P : IProp GF) :
+    ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  inext credit: Hcred
+
+variable {Expr State Obs Val} [Λ : Language Expr State Obs Val]
+variable {GF : BundledGFunctors}
+variable [IrisGS_gen .hasLC Expr GF]
+variable {E : CoPset} {e : Expr} {Φ : Val → IProp GF}
+
+/- Tests `inext` for later credits with `WP`. -/
+example : £ 1 ∗ ▷ WP e @ E {{ Φ }} ⊢ WP e @ E {{ Φ }} := by
+  iintro ⟨Hcred, Hwp⟩
+  inext credit: Hcred
+  iassumption
+
 end inext
 
 section irewrite
@@ -3570,6 +3689,18 @@ variable {hlc : HasLC} {GF : BundledGFunctors} [InvGS_gen hlc GF] {N : Namespace
   `intoAcc_inv` where the side condition is trivial.
 -/
 example {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
+  iintro #Hinv
+  iinv Hinv with #H
+  imodintro
+  isplit
+  · iexact H
+  · imodintro
+    inext
+    iexact H
+
+/-- Tests `iinv` with a concrete namespace whose closure is expensive to unfold.
+Regression test for https://github.com/leanprover-community/iris-lean/issues/557 -/
+example {P : IProp GF} : inv `long_name iprop(<pers> P) ={⊤}=∗ ▷ P := by
   iintro #Hinv
   iinv Hinv with #H
   imodintro

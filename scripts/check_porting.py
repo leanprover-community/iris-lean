@@ -170,14 +170,35 @@ def qualify(name: str, rel_path: str) -> str:
     return (pkg.prefix if pkg else "") + name
 
 
+def qualify_local(name: str, rel_path: str) -> str:
+    """Qualify a file-local name with its Rocq source filename.
+
+    This is used only when the short name is ambiguous across source files.
+
+    >>> qualify_local("lock_inv", "iris_heap_lang/lib/spin_lock.v")
+    'heap_lang.spin_lock.lock_inv'
+    >>> qualify_local("helper", "iris/algebra/ofe.v")
+    'ofe.helper'
+    """
+    pkg = package_of(rel_path)
+    stem = rel_path.rsplit("/", 1)[-1].removesuffix(".v")
+    return f"{pkg.prefix if pkg else ''}{stem}.{name}"
+
+
 def unqualify(name: str, rel_path: str) -> str:
     """Strip that prefix again for display; the section already shows it.
 
     >>> unqualify("heap_lang.pointsto", "iris_heap_lang/primitive_laws.v")
     'pointsto'
+    >>> unqualify("heap_lang.spin_lock.lock_inv", "iris_heap_lang/lib/spin_lock.v")
+    'lock_inv'
     """
     pkg = package_of(rel_path)
-    return name.removeprefix(pkg.prefix) if pkg else name
+    short = name.removeprefix(pkg.prefix) if pkg else name
+    if pkg:
+        source_prefix = rel_path.rsplit("/", 1)[-1].removesuffix(".v") + "."
+        short = short.removeprefix(source_prefix)
+    return short
 
 
 def split_path(rel_path: str) -> tuple[str, str, str]:
@@ -230,13 +251,13 @@ _DEF_KEYWORDS = (
     r"Fact|Remark|Example|Canonical\s+Structure"
 )
 
-# Matches a named definition line. Captures the identifier (group 1).
+# Matches a named definition line. Captures the modifiers and identifier.
 # Handles optional prefixes like "Global", "Local", "Program", "#[export]".
 # Identifiers may contain apostrophes (e.g., csum_updateP'_l).
 _DEF_RE = re.compile(
-    rf"^\s*(?:(?:Global|Local|Program|#\[(?:export|global)\])\s+)*"
+    rf"^\s*(?P<modifiers>(?:(?:Global|Local|Program|#\[(?:export|global|local)\])\s+)*)"
     rf"(?:{_DEF_KEYWORDS})\s+"
-    rf"(\w[\w']*)",
+    rf"(?P<identifier>\w[\w']*)",
     re.MULTILINE,
 )
 
@@ -292,30 +313,43 @@ def _strip_comments(text: str) -> str:
     return "".join(out)
 
 
-def parse_rocq_file(text: str) -> list[str]:
-    """Extract fully-qualified definition names from a Rocq .v file.
+@dataclass(frozen=True)
+class ParsedDefinition:
+    name: str
+    is_local: bool = False
+
+
+def parse_rocq_file(text: str) -> list[ParsedDefinition]:
+    """Extract definitions and their locality from a Rocq .v file.
 
     Module prefixes are included; Section prefixes are not.
 
     A mutual block declares one name per `with` clause:
 
     >>> parse_rocq_file("Inductive expr :=\\n | Val (v : val)\\nwith val :=\\n | LitV.")
-    ['expr', 'val']
+    [ParsedDefinition(name='expr', is_local=False), ParsedDefinition(name='val', is_local=False)]
 
     Only at column 0, so an indented `with` -- a mutual helper local to another
     definition's body -- contributes no name:
 
     >>> parse_rocq_file("Fixpoint f x := 0\\n  with g y := 1.")
-    ['f']
+    [ParsedDefinition(name='f', is_local=False)]
+
+    `Local` and `#[local]` declarations retain that information so collisions
+    between private names in separate libraries can be disambiguated later:
+
+    >>> parse_rocq_file("Local Definition helper := 0.\\n#[local] Instance instFoo : Foo := {}.")
+    [ParsedDefinition(name='helper', is_local=True), ParsedDefinition(name='instFoo', is_local=True)]
     """
     text = _strip_comments(text)
     # A mutual `with` sometimes sits alone on its line, the name following on the
     # next. Join the two so the line-based matching below sees one head.
     text = re.sub(r"^with[ \t]*\n[ \t]*", "with ", text, flags=re.MULTILINE)
 
-    names: list[str] = []
+    definitions: list[ParsedDefinition] = []
     module_stack: list[str] = []  # current Module nesting, used for name qualification
     section_names: set[str] = set()  # track Section names so End can distinguish them
+    mutual_is_local = False  # `with` clauses inherit the head declaration's locality
 
     for line in text.split("\n"):
         # Track Module open (but not Module Type, which is a signature)
@@ -344,12 +378,56 @@ def parse_rocq_file(text: str) -> list[str]:
 
         # Extract definition name and qualify with Module prefix. A mutual
         # block's `with` clauses declare names too, so they count as well.
-        if m := _DEF_RE.match(line) or _WITH_DEF_RE.match(line):
+        if m := _DEF_RE.match(line):
+            ident = m.group("identifier")
+            modifiers = m.group("modifiers")
+            mutual_is_local = "Local" in modifiers.split() or "#[local]" in modifiers.split()
+            qualified = ".".join([*module_stack, ident]) if module_stack else ident
+            definitions.append(ParsedDefinition(qualified, mutual_is_local))
+        elif m := _WITH_DEF_RE.match(line):
             ident = m.group(1)
             qualified = ".".join([*module_stack, ident]) if module_stack else ident
-            names.append(qualified)
+            definitions.append(ParsedDefinition(qualified, mutual_is_local))
 
-    return names
+    return definitions
+
+
+def qualify_definitions(
+    parsed: dict[str, list[ParsedDefinition]],
+) -> dict[str, list[str]]:
+    """Apply package prefixes and disambiguate file-local name collisions.
+
+    Unique local names retain the existing short alias convention. If the same
+    qualified short name occurs in multiple files, local occurrences gain their
+    source filename so every declaration has a distinct key.
+
+    >>> qualified = qualify_definitions({
+    ...   "iris_heap_lang/lib/spin_lock.v": [ParsedDefinition("lock_inv", True)],
+    ...   "iris_heap_lang/lib/ticket_lock.v": [ParsedDefinition("lock_inv", True)],
+    ... })
+    >>> qualified["iris_heap_lang/lib/spin_lock.v"]
+    ['heap_lang.spin_lock.lock_inv']
+    >>> qualified["iris_heap_lang/lib/ticket_lock.v"]
+    ['heap_lang.ticket_lock.lock_inv']
+    """
+    base_names = {
+        path: [qualify(definition.name, path) for definition in definitions]
+        for path, definitions in parsed.items()
+    }
+    files_by_name: dict[str, set[str]] = defaultdict(set)
+    for path, names in base_names.items():
+        for name in names:
+            files_by_name[name].add(path)
+    ambiguous = {name for name, files in files_by_name.items() if len(files) > 1}
+
+    return {
+        path: [
+            qualify_local(definition.name, path)
+            if definition.is_local and base_name in ambiguous else base_name
+            for definition, base_name in zip(definitions, base_names[path], strict=True)
+        ]
+        for path, definitions in parsed.items()
+    }
 
 
 # ============================================================================
@@ -424,7 +502,7 @@ def download_iris_rocq(commit: str, cache_dir: Path) -> tuple[dict[str, list[str
     log(f"Downloaded {len(tarball_data) / 1024:.0f} KB, parsing...")
 
     # Parse every .v file under the tracked source roots.
-    definitions: dict[str, list[str]] = {}
+    parsed: dict[str, list[ParsedDefinition]] = {}
     with tarfile.open(fileobj=io.BytesIO(tarball_data), mode="r:gz") as tf:
         for member in tf.getmembers():
             if not member.isfile() or not member.name.endswith(".v"):
@@ -439,10 +517,13 @@ def download_iris_rocq(commit: str, cache_dir: Path) -> tuple[dict[str, list[str
             fobj = tf.extractfile(member)
             if fobj is None:
                 continue
-            names = parse_rocq_file(fobj.read().decode("utf-8", errors="replace"))
-            defs = [qualify(n, rel_path) for n in names]
-            if defs:
-                definitions[rel_path] = defs
+            parsed_definitions = parse_rocq_file(
+                fobj.read().decode("utf-8", errors="replace")
+            )
+            if parsed_definitions:
+                parsed[rel_path] = parsed_definitions
+
+    definitions = qualify_definitions(parsed)
 
     # Cache the parsed definitions so we don't re-download next time.
     cache_file.parent.mkdir(parents=True, exist_ok=True)
@@ -575,6 +656,7 @@ def compute_report(
 
     Names arrive already qualified by their package prefix, so `pointsto` from
     `iris` and `heap_lang.pointsto` from `iris_heap_lang` are distinct keys.
+    Ambiguous file-local names also carry their source filename.
     """
     report = Report(rocq_commit=rocq_commit, lean_rev=lean_rev, concepts=concepts)
 

@@ -51,14 +51,11 @@ theorem wp_landinsKnot (P : Val → IProp GF) (Q : Val → Val → IProp GF) (F 
   iloeb as IH generalizing %v1 %Φ
   wp_rec
   wp_bind !_
-  iapply wp_atomic
-  imod inv_acc $$ Hinv with ⟨Hr, Hcl⟩
-  simp only [CoPset.subseteq_top]
-  imodintro
+  iinv Hinv with >Hr
+  · simp; infer_instance -- TODO: iinv should solve this
   wp_load
-  imod Hcl $$ Hr
-  iapply H $$ [HP] [$]
-  iframe HP
+  imodintro; iframe
+  iapply H $$ [$HP] [$]
   iintro %v3 !> %Φ HP HQ
   iapply IH $$ HP HQ
 

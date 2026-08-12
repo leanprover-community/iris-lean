@@ -167,7 +167,8 @@ instance intoExcept0_plainly [Sbi PROP] (P Q : PROP)
 
 @[rocq_alias into_later_plainly]
 instance intoLaterN_plainly [Sbi PROP] (n : Nat) (P Q : PROP)
-    [h : IntoLaterN false n P Q] : IntoLaterN false n iprop(■ P) iprop(■ Q) where
+    [h : IntoLaterN (progress := true) (only_head := false) n P Q] :
+    IntoLaterN progress (only_head := false) n iprop(■ P) iprop(■ Q) where
   into_laterN := (plainly_mono h.1).trans (laterN_plainly n).2
 
 end Iris.ProofMode
