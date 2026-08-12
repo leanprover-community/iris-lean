@@ -21,7 +21,20 @@ open OFE CMRA
 variable {α : Type _} [OFE α]
 
 @[rocq_alias mono_listR, rocq_alias mono_listUR]
-abbrev MonoList (α : Type _) [OFE α] := Auth (MaxPrefixList α)
+def MonoList (α : Type _) [OFE α] := Auth (MaxPrefixList α)
+
+instance : OFE (MonoList α) :=
+  Auth.instOFE
+
+instance : CMRA (MonoList α) :=
+  Auth.instCMRA
+
+instance : UCMRA (MonoList α) :=
+  Auth.instUCMRA
+
+instance instDiscrete [OFE.Discrete α] : CMRA.Discrete (MonoList α) := by
+  unfold MonoList
+  infer_instance
 
 namespace MonoList
 
@@ -69,16 +82,16 @@ theorem lb_inj {l1 l2 : List α} (h : ◯ML l1 = ◯ML l2) : l1 = l2 :=
 
 @[rocq_alias mono_list_lb_core_id]
 instance {l : List α} : CoreId (◯ML l) := by
-  unfold lb
+  unfold lb MonoList
   infer_instance
 
 @[rocq_alias mono_list_auth_core_id]
 instance {l : List α} : CoreId (●ML□ l) := by
-  unfold auth
+  unfold auth MonoList
   infer_instance
 
 theorem lb_nil : ◯ML ([] : List α) = UCMRA.unit := by
-  unfold lb
+  unfold lb MonoList
   rw [toMaxPrefixList_nil]
   rfl
 
@@ -89,22 +102,23 @@ instance : IsUnit (◯ML ([] : List α)) := by
 @[rocq_alias mono_list_auth_dfrac_op]
 theorem auth_dfrac_op (dq1 dq2 : DFrac) (l : List α) :
     ●ML{dq1 • dq2} l = ●ML{dq1} l • ●ML{dq2} l := by
-  unfold auth
-  rw [op_op_op_comm, ← Auth.frag_op, op_self, Auth.auth_dfrac_op]
+  unfold auth MonoList
+  rw [Algebra.MonoidOps.op_op_op_comm (M := Auth (MaxPrefixList α)) (op := (· • ·)),
+    ← Auth.frag_op, op_self, Auth.auth_dfrac_op]
 
 @[rocq_alias mono_list_lb_op_l]
 theorem lb_op_left {l1 l2 : List α} (h : l1 <+: l2) : ◯ML l1 • ◯ML l2 = ◯ML l2 := by
-  unfold lb
+  unfold lb MonoList
   rw [← Auth.frag_op, toMaxPrefixList_op_left h]
 
 @[rocq_alias mono_list_lb_op_r]
 theorem lb_op_right {l1 l2 : List α} (h : l1 <+: l2) : ◯ML l2 • ◯ML l1 = ◯ML l2 := by
-  unfold lb
+  unfold lb MonoList
   rw [← Auth.frag_op, toMaxPrefixList_op_right h]
 
 @[rocq_alias mono_list_auth_lb_op]
 theorem auth_lb_op (dq : DFrac) (l : List α) : ●ML{dq} l = ●ML{dq} l • ◯ML l := by
-  unfold auth lb
+  unfold auth lb MonoList
   rw [← assoc', ← Auth.frag_op, op_self]
 
 set_option synthInstance.checkSynthOrder false in
@@ -119,7 +133,8 @@ instance {dq dq1 dq2 : DFrac} {l : List α} [h : IsOp d dq dq1 dq2] :
 
 @[rocq_alias mono_list_auth_dfrac_validN]
 theorem auth_dfrac_validN {n} (dq : DFrac) (l : List α) : ✓{n} (●ML{dq} l) ↔ ✓ dq := by
-  rw [auth, Auth.both_dfrac_validN]
+  unfold auth MonoList
+  rw [Auth.both_dfrac_validN]
   exact ⟨fun h => h.1, fun h => ⟨h, incN_refl _, toMaxPrefixList_validN _⟩⟩
 
 @[rocq_alias mono_list_auth_validN]
@@ -128,7 +143,8 @@ theorem auth_validN {n} (l : List α) : ✓{n} (●ML l) :=
 
 @[rocq_alias mono_list_auth_dfrac_valid]
 theorem auth_dfrac_valid (dq : DFrac) (l : List α) : ✓ (●ML{dq} l) ↔ ✓ dq := by
-  rw [auth, Auth.both_dfrac_valid]
+  unfold auth MonoList
+  rw [Auth.both_dfrac_valid]
   exact ⟨fun h => h.1, fun h => ⟨h, fun _ => incN_refl _, toMaxPrefixList_valid _⟩⟩
 
 @[rocq_alias mono_list_auth_valid]
@@ -139,8 +155,8 @@ theorem auth_valid (l : List α) : ✓ (●ML l) :=
 theorem auth_dfrac_op_validN {n} (dq1 dq2 : DFrac) (l1 l2 : List α) :
     ✓{n} (●ML{dq1} l1 • ●ML{dq2} l2) ↔ ✓ (dq1 • dq2) ∧ l1 ≡{n}≡ l2 := by
   refine ⟨fun h => ?_, fun ⟨hdq, hl⟩ => ?_⟩
-  · unfold auth at h
-    rw [op_op_op_comm] at h
+  · unfold auth MonoList at h
+    rw [Algebra.MonoidOps.op_op_op_comm (M := Auth (MaxPrefixList α)) (op := (· • ·))] at h
     have ⟨hdq, ha, _⟩ := Auth.auth_dfrac_op_validN.mp (validN_op_left h)
     exact ⟨hdq, toMaxPrefixList_dist_inj ha⟩
   · refine (Dist.validN (auth_ne.ne hl.symm).op_r).mpr ?_
@@ -168,7 +184,8 @@ theorem auth_op_valid (l1 l2 : List α) : ✓ (●ML l1 • ●ML l2) ↔ False 
 @[rocq_alias mono_list_both_dfrac_validN]
 theorem both_dfrac_validN {n} (dq : DFrac) (l1 l2 : List α) :
     ✓{n} (●ML{dq} l1 • ◯ML l2) ↔ ✓ dq ∧ ∃ l, l1 ≡{n}≡ l2 ++ l := by
-  rw [auth, lb, ← assoc', ← Auth.frag_op, Auth.both_dfrac_validN]
+  unfold auth lb MonoList
+  rw [← assoc', ← Auth.frag_op, Auth.both_dfrac_validN]
   refine ⟨fun ⟨hdq, hinc, _⟩ => ⟨hdq, ?_⟩, fun ⟨hdq, hl⟩ => ⟨hdq, ?_, ?_⟩⟩
   · exact toMaxPrefixList_incN_iff.mp (incN_trans (incN_op_right ..) hinc)
   · have hinc := op_monoN_right (toMaxPrefixList l1) (toMaxPrefixList_incN_iff.mpr hl)
@@ -183,8 +200,8 @@ theorem both_validN {n} (l1 l2 : List α) :
 
 @[rocq_alias mono_list_both_dfrac_valid]
 theorem both_dfrac_valid (dq : DFrac) (l1 l2 : List α) :
-    ✓ (●ML{dq} l1 • ◯ML l2) ↔ ✓ dq ∧ ∃ l, l1 = l2 ++ l := by
-  unfold auth lb
+    ✓ (●ML{dq} l1 • ◯ML l2) ↔ ✓ dq ∧ l2 <+: l1 := by
+  unfold auth lb MonoList
   rw [← assoc', ← Auth.frag_op, Auth.both_dfrac_valid, ← inc_iff_forall_incN]
   refine ⟨fun ⟨hdq, hinc, _⟩ => ⟨hdq, ?_⟩, fun ⟨hdq, hl⟩ => ⟨hdq, ?_, ?_⟩⟩
   · exact toMaxPrefixList_inc_iff.mp (inc_trans (inc_op_right ..) hinc)
@@ -192,37 +209,26 @@ theorem both_dfrac_valid (dq : DFrac) (l1 l2 : List α) :
     rwa [op_self] at hinc
   · exact toMaxPrefixList_valid _
 
+#rocq_ignore mono_list_both_dfrac_valid_L "Use both_dfrac_valid"
+
 @[rocq_alias mono_list_both_valid]
-theorem both_valid (l1 l2 : List α) : ✓ (●ML l1 • ◯ML l2) ↔ ∃ l, l1 = l2 ++ l := by
+theorem both_valid (l1 l2 : List α) : ✓ (●ML l1 • ◯ML l2) ↔ l2 <+: l1 := by
   rw [both_dfrac_valid]
   exact ⟨fun h => h.2, fun h => ⟨DFrac.valid_own_one, h⟩⟩
 
-@[rocq_alias mono_list_both_dfrac_valid_L]
-theorem both_dfrac_valid_prefix (dq : DFrac) (l1 l2 : List α) :
-    ✓ (●ML{dq} l1 • ◯ML l2) ↔ ✓ dq ∧ l2 <+: l1 :=
-  (both_dfrac_valid ..).trans (and_congr_right' (exists_congr fun _ => eq_comm))
-
-@[rocq_alias mono_list_both_valid_L]
-theorem both_valid_prefix (l1 l2 : List α) : ✓ (●ML l1 • ◯ML l2) ↔ l2 <+: l1 :=
-  (both_valid ..).trans (exists_congr fun _ => eq_comm)
+#rocq_ignore mono_list_both_valid_L "Use both_valid"
 
 @[rocq_alias mono_list_lb_op_validN]
 theorem lb_op_validN {n} (l1 l2 : List α) :
     ✓{n} (◯ML l1 • ◯ML l2) ↔ (∃ l, l2 ≡{n}≡ l1 ++ l) ∨ (∃ l, l1 ≡{n}≡ l2 ++ l) := by
-  unfold lb
+  unfold lb MonoList
   rw [Auth.frag_op_validN, toMaxPrefixList_op_validN]
-
-@[rocq_alias mono_list_lb_op_valid]
-theorem lb_op_valid (l1 l2 : List α) :
-    ✓ (◯ML l1 • ◯ML l2) ↔ (∃ l, l2 = l1 ++ l) ∨ (∃ l, l1 = l2 ++ l) := by
-  unfold lb
-  rw [Auth.frag_op_valid, toMaxPrefixList_op_valid]
 
 @[rocq_alias mono_list_lb_op_valid_L]
 theorem lb_op_valid_prefix (l1 l2 : List α) :
     ✓ (◯ML l1 • ◯ML l2) ↔ l1 <+: l2 ∨ l2 <+: l1 := by
-  unfold lb
-  rw [Auth.frag_op_valid, toMaxPrefixList_op_valid_prefix]
+  unfold lb MonoList
+  rw [Auth.frag_op_valid, toMaxPrefixList_op_valid]
 
 #rocq_ignore mono_list_lb_op_valid_1_L "Use lb_op_valid_prefix.mp"
 #rocq_ignore mono_list_lb_op_valid_2_L "Use lb_op_valid_prefix.mpr"

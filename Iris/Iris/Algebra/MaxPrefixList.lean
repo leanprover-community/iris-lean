@@ -28,7 +28,7 @@ abbrev MaxPrefixListMap : Type _ → Type _ :=
   (Std.ExtTreeMap Nat · compare)
 
 @[rocq_alias max_prefix_list, rocq_alias max_prefix_listR, rocq_alias max_prefix_listUR]
-abbrev MaxPrefixList : Type _ → Type _ :=
+def MaxPrefixList : Type _ → Type _ :=
   (MaxPrefixListMap <| Agree ·)
 
 namespace MaxPrefixList
@@ -41,18 +41,18 @@ variable [OFE α]
 
 /-- OFE instance on [MaxPrefixList], inherited from the OFE on the underlying map. -/
 instance instOFE : OFE (MaxPrefixList α) :=
-  PartialMap.instOFE (M := MaxPrefixListMap) (K := Nat) (V := Agree α)
+  PartialMap.instOFE (M:= MaxPrefixListMap) (V := Agree α)
 
 /-- CMRA instance on [MaxPrefixList], inherited from the CMRA on the underlying map. -/
 instance instCMRA : CMRA (MaxPrefixList α) :=
-  Heap.instStoreCMRA (M := MaxPrefixListMap) (K := Nat) (V := Agree α)
+  Heap.instStoreCMRA (M:= MaxPrefixListMap) (V := Agree α)
 
 /-- UCMRA instance on [MaxPrefixList], inherited from the UCMRA on the underlying map. -/
 instance instUCMRA : UCMRA (MaxPrefixList α) :=
-  Heap.instStoreUCMRA (M := MaxPrefixListMap) (K := Nat) (V := Agree α)
+  Heap.instStoreUCMRA  (M:= MaxPrefixListMap) (V := Agree α)
 
 instance instCoreId (x : MaxPrefixList α) : CoreId x :=
-  Heap.instCoreId (M := MaxPrefixListMap) (K := Nat) (V := Agree α) (m := x)
+  Heap.instCoreId (M:= MaxPrefixListMap) (V := Agree α)
 
 instance instDiscrete [OFE.Discrete α] : CMRA.Discrete (MaxPrefixList α) where
   discrete_0 := OFE.discrete_0 (α := MaxPrefixListMap (Agree α))
@@ -76,7 +76,7 @@ theorem get?_ofListFrom {start i : Nat} {l : List α} :
 
 theorem get?_toMaxPrefixList {i : Nat} {l : List α} :
     get? (M := MaxPrefixListMap) (toMaxPrefixList l) i = l[i]?.map toAgree := by
-  simp [toMaxPrefixList, get?_ofListFrom]
+  grind [get?_ofListFrom, toMaxPrefixList]
 
 variable [OFE α]
 
@@ -112,35 +112,34 @@ theorem toMaxPrefixList_inj {l1 l2 : List α}
 
 /-! ## CMRA Properties -/
 
-@[rocq_alias to_max_prefix_list_valid]
+@[local grind ., rocq_alias to_max_prefix_list_valid]
 theorem toMaxPrefixList_valid (l : List α) : ✓ toMaxPrefixList l := fun i => by
   rw [get?_toMaxPrefixList]
   cases l[i]? with
   | none => trivial
   | some a => exact Agree.toAgree_valid
 
-@[rocq_alias to_max_prefix_list_validN]
+@[local grind ., rocq_alias to_max_prefix_list_validN]
 theorem toMaxPrefixList_validN {n} (l : List α) : ✓{n} toMaxPrefixList l :=
   (toMaxPrefixList_valid l).validN
 
-@[rocq_alias to_max_prefix_list_app]
+@[local grind =, rocq_alias to_max_prefix_list_app]
 theorem toMaxPrefixList_app (l1 l2 : List α) :
     toMaxPrefixList (l1 ++ l2) = toMaxPrefixList l1 • ofListFrom l1.length l2 := by
+  unfold MaxPrefixList
   refine LawfulPartialMap.equiv_iff_eq (M := MaxPrefixListMap).mp fun i => ?_
   rw [Heap.get?_op, get?_toMaxPrefixList, get?_toMaxPrefixList, get?_ofListFrom, List.getElem?_append]
-  by_cases hi : i < l1.length
-  · rw [if_pos hi, if_neg (by omega)]
-    cases l1[i]? <;> simp [op, optionOp]
-  · rw [if_neg hi, if_pos (by omega), List.getElem?_eq_none (by omega : l1.length ≤ i)]
-    cases l2[i - l1.length]? <;> simp [op, optionOp]
+  have op_none (x : Option (Agree α)) : x • none = x ∧ none • x = x :=
+    ⟨unit_right_id, unit_left_id⟩
+  grind
 
-@[rocq_alias to_max_prefix_list_op_l]
+@[local grind →, rocq_alias to_max_prefix_list_op_l]
 theorem toMaxPrefixList_op_left {l1 l2 : List α} (h : l1 <+: l2) :
     toMaxPrefixList l1 • toMaxPrefixList l2 = toMaxPrefixList l2 := by
   obtain ⟨l, rfl⟩ := h
-  rw [toMaxPrefixList_app, assoc', op_self]
+  grind [assoc', op_self]
 
-@[rocq_alias to_max_prefix_list_op_r]
+@[local grind →, rocq_alias to_max_prefix_list_op_r]
 theorem toMaxPrefixList_op_right {l1 l2 : List α} (h : l1 <+: l2) :
     toMaxPrefixList l2 • toMaxPrefixList l1 = toMaxPrefixList l2 :=
   comm'.trans (toMaxPrefixList_op_left h)
@@ -161,14 +160,11 @@ theorem toMaxPrefixList_incN_aux {n} {l1 l2 : List α}
   refine list_dist_lookup.mpr fun i => ?_
   have hi := Heap.lookup_incN (M := MaxPrefixListMap).mp h i
   rw [get?_toMaxPrefixList, get?_toMaxPrefixList] at hi
-  rw [List.getElem?_append]
   rcases Option.incN_iff_is_total.mp hi with hnone | ⟨a1, a2, ha1, ha2, ha⟩
-  · have hlen : l1.length ≤ i := List.getElem?_eq_none_iff.mp (by simpa using hnone)
-    refine .of_eq ?_
-    rw [if_neg (by omega), List.getElem?_drop, show l1.length + (i - l1.length) = i by omega]
+  · refine .of_eq (by grind)
   · obtain ⟨x1, hx1, rfl⟩ := Option.map_eq_some_iff.mp ha1
     obtain ⟨x2, hx2, rfl⟩ := Option.map_eq_some_iff.mp ha2
-    rw [hx2, if_pos (List.getElem?_eq_some_iff.mp hx1).1, hx1]
+    rw [List.getElem?_append, hx2, if_pos (List.getElem?_eq_some_iff.mp hx1).1, hx1]
     exact some_dist_some.mpr (Agree.toAgree_includedN.mp ha).symm
 
 @[rocq_alias to_max_prefix_list_includedN]
@@ -176,21 +172,16 @@ theorem toMaxPrefixList_incN_iff {n} {l1 l2 : List α} :
     toMaxPrefixList l1 ≼{n} toMaxPrefixList l2 ↔ ∃ l, l2 ≡{n}≡ l1 ++ l := by
   refine ⟨fun h => ⟨_, toMaxPrefixList_incN_aux h⟩, fun ⟨l, hl⟩ => ?_⟩
   refine incN_of_incN_of_dist ?_ (toMaxPrefixList_ne.ne hl).symm
-  rw [toMaxPrefixList_app]
-  exact incN_of_inc n (inc_op_left ..)
+  grind [incN_of_inc, inc_op_left]
 
 @[rocq_alias to_max_prefix_list_included]
 theorem toMaxPrefixList_inc_iff {l1 l2 : List α} :
-    toMaxPrefixList l1 ≼ toMaxPrefixList l2 ↔ ∃ l, l2 = l1 ++ l := by
-  refine ⟨fun h => ⟨_, eq_dist.mpr fun n => toMaxPrefixList_incN_aux (incN_of_inc n h)⟩, ?_⟩
-  rintro ⟨l, rfl⟩
-  rw [toMaxPrefixList_app]
-  exact inc_op_left ..
+    toMaxPrefixList l1 ≼ toMaxPrefixList l2 ↔ l1 <+: l2 := by
+  refine ⟨fun h => ⟨_, eq_dist.mpr fun n =>
+    (toMaxPrefixList_incN_aux (incN_of_inc n h)).symm⟩, ?_⟩
+  grind [inc_op_left]
 
-@[rocq_alias to_max_prefix_list_included_L]
-theorem toMaxPrefixList_inc_iff_prefix {l1 l2 : List α} :
-    toMaxPrefixList l1 ≼ toMaxPrefixList l2 ↔ l1 <+: l2 :=
-  toMaxPrefixList_inc_iff.trans (exists_congr fun _ => eq_comm)
+#rocq_ignore to_max_prefix_list_included_L "Use toMaxPrefixList_inc_iff"
 
 @[rocq_alias to_max_prefix_list_op_validN_aux]
 theorem toMaxPrefixList_op_validN_aux {n} {l1 l2 : List α} (hlen : l1.length ≤ l2.length)
@@ -202,21 +193,15 @@ theorem toMaxPrefixList_op_validN_aux {n} {l1 l2 : List α} (hlen : l1.length �
     exact h i
   rw [List.getElem?_append]
   cases h1 : l1[i]? with
-  | none =>
-    have hlen1 : l1.length ≤ i := List.getElem?_eq_none_iff.mp h1
-    refine .of_eq ?_
-    rw [if_neg (by omega), List.getElem?_drop, show l1.length + (i - l1.length) = i by omega]
+  | none => refine .of_eq (by grind)
   | some x1 =>
-    have hlt := (List.getElem?_eq_some_iff.mp h1).1
     cases h2 : l2[i]? with
-    | none =>
-      grind
+    | none => grind
     | some x2 =>
-      rw [if_pos hlt]
       rw [h1, h2] at hi
-      have hv : ✓{n} (toAgree x1 • toAgree x2) := by
-        simpa [op, optionOp, Option.some_validN] using hi
-      exact some_dist_some.mpr (Agree.toAgree_op_validN_iff_dist.mp hv).symm
+      rw [if_pos (List.getElem?_eq_some_iff.mp h1).1]
+      refine some_dist_some.mpr (Agree.toAgree_op_validN_iff_dist.mp ?_).symm
+      simpa [op, optionOp, Option.some_validN] using hi
 
 @[rocq_alias to_max_prefix_list_op_validN]
 theorem toMaxPrefixList_op_validN {n} {l1 l2 : List α} :
@@ -228,43 +213,28 @@ theorem toMaxPrefixList_op_validN {n} {l1 l2 : List α} :
     · exact .inr ⟨_, toMaxPrefixList_op_validN_aux (by omega) (comm'.dist.validN.mp h)⟩
   · rintro (⟨l, hl⟩ | ⟨l, hl⟩)
     · refine (Dist.validN (toMaxPrefixList_ne.ne hl).op_r).mpr ?_
-      rw [toMaxPrefixList_op_left (List.prefix_append ..)]
-      exact toMaxPrefixList_validN _
+      grind [List.prefix_append]
     · refine (Dist.validN (toMaxPrefixList_ne.ne hl).op_l).mpr ?_
-      rw [toMaxPrefixList_op_right (List.prefix_append ..)]
-      exact toMaxPrefixList_validN _
+      grind [List.prefix_append]
 
 @[rocq_alias to_max_prefix_list_op_valid]
 theorem toMaxPrefixList_op_valid {l1 l2 : List α} :
-    ✓ (toMaxPrefixList l1 • toMaxPrefixList l2)
-      ↔ (∃ l, l2 = l1 ++ l) ∨ (∃ l, l1 = l2 ++ l) := by
+    ✓ (toMaxPrefixList l1 • toMaxPrefixList l2) ↔ l1 <+: l2 ∨ l2 <+: l1 := by
   refine ⟨fun h => ?_, ?_⟩
   · by_cases hlen : l1.length ≤ l2.length
-    · exact .inl ⟨_, eq_dist.mpr fun n => toMaxPrefixList_op_validN_aux hlen h.validN⟩
+    · exact .inl ⟨_, eq_dist.mpr fun n => (toMaxPrefixList_op_validN_aux hlen h.validN).symm⟩
     · exact .inr ⟨_, eq_dist.mpr fun n =>
-        toMaxPrefixList_op_validN_aux (by omega) (comm'.dist.validN.mp h.validN)⟩
-  · rintro (⟨l, rfl⟩ | ⟨l, rfl⟩)
-    · rw [toMaxPrefixList_op_left (List.prefix_append ..)]
-      exact toMaxPrefixList_valid _
-    · rw [toMaxPrefixList_op_right (List.prefix_append ..)]
-      exact toMaxPrefixList_valid _
+        (toMaxPrefixList_op_validN_aux (by omega) (comm'.dist.validN.mp h.validN)).symm⟩
+  · rintro (⟨l, rfl⟩ | ⟨l, rfl⟩) <;> grind [List.prefix_append]
 
-@[rocq_alias to_max_prefix_list_op_valid_L]
-theorem toMaxPrefixList_op_valid_prefix {l1 l2 : List α} :
-    ✓ (toMaxPrefixList l1 • toMaxPrefixList l2) ↔ l1 <+: l2 ∨ l2 <+: l1 :=
-  toMaxPrefixList_op_valid.trans
-    (or_congr (exists_congr fun _ => eq_comm) (exists_congr fun _ => eq_comm))
+#rocq_ignore to_max_prefix_list_op_valid_L "Use toMaxPrefixList_op_valid"
 
 /-! ## Updates -/
 
 @[rocq_alias max_prefix_list_local_update]
 theorem local_update {l1 l2 : List α} (h : l1 <+: l2) :
     (toMaxPrefixList l1, toMaxPrefixList l1) ~l~> (toMaxPrefixList l2, toMaxPrefixList l2) := by
-  obtain ⟨l, rfl⟩ := h
-  rw [toMaxPrefixList_app, comm' (x := toMaxPrefixList l1)]
-  refine LocalUpdate.op fun n _ => ?_
-  rw [comm', ← toMaxPrefixList_app]
-  exact toMaxPrefixList_validN _
+  grind [LocalUpdate.op, comm']
 
 end MaxPrefixList
 

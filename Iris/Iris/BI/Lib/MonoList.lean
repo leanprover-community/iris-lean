@@ -58,8 +58,7 @@ theorem map_mk_prefix {l1 l2 : List α} (h : l1.map DiscreteO.mk <+: l2.map Disc
 theorem prefix_getElem? {l1 l2 : List α} {i : Nat} {a : α} (h : l1 <+: l2)
     (hi : l1[i]? = some a) : l2[i]? = some a := by
   obtain ⟨t, rfl⟩ := h
-  rw [List.getElem?_append_left (List.getElem?_eq_some_iff.mp hi).1]
-  exact hi
+  grind
 
 /-! ## Definitions -/
 
@@ -159,7 +158,7 @@ theorem auth_lb_own_valid (γ : GName) (dq : DFrac) (l1 l2 : List α) :
   iintro H1 H2
   icases iOwn_cmraValid_op $$ [$H1 $H2] with %Hvalid
   ipureintro
-  obtain ⟨hdq, hpre⟩ := (both_dfrac_valid_prefix ..).mp Hvalid
+  obtain ⟨hdq, hpre⟩ := (both_dfrac_valid ..).mp Hvalid
   exact ⟨hdq, map_mk_prefix hpre⟩
 
 @[rocq_alias mono_list_lb_own_valid]
@@ -180,9 +179,7 @@ theorem idx_agree (γ : GName) (i : Nat) (a1 a2 : α) :
   icases H2 with ⟨%l2, %Hl2, H2⟩
   icases lb_own_valid γ l1 l2 $$ H1 H2 with %Hpre
   ipureintro
-  rcases Hpre with hpre | hpre
-  · exact Option.some.inj (Hl2 ▸ prefix_getElem? hpre Hl1).symm
-  · exact Option.some.inj (Hl1 ▸ prefix_getElem? hpre Hl2)
+  grind [prefix_getElem?]
 
 @[rocq_alias mono_list_auth_idx_lookup]
 theorem auth_idx_lookup (γ : GName) (dq : DFrac) (l : List α) (i : Nat) (a : α) :
@@ -224,9 +221,7 @@ theorem idx_own_get (γ : GName) {l : List α} (i : Nat) (a : α) (h : l[i]? = s
   unfold idx_own
   iintro H
   iexists l
-  iframe H
-  ipureintro
-  exact h
+  iframe H %h
 
 /-! ## Allocation and updates -/
 
@@ -236,7 +231,7 @@ theorem own_alloc (l : List α) :
   unfold auth_own lb_own
   imod iOwn_alloc (F := constOF (MonoList (DiscreteO α)))
       (●ML (l.map DiscreteO.mk) • ◯ML (l.map DiscreteO.mk)) with ⟨%γ, H⟩
-  · exact (both_valid ..).mpr ⟨[], (List.append_nil _).symm⟩
+  · exact (both_valid ..).mpr List.prefix_rfl
   imodintro
   iexists γ
   icases iOwn_op $$ H with ⟨$, $⟩
@@ -249,8 +244,7 @@ theorem auth_own_update (γ : GName) {l : List α} (l' : List α) (h : l <+: l')
   · unfold auth_own
     iapply iOwn_update $$ H
     exact update _ (h.map _)
-  · imodintro
-    ihave #$ := lb_own_get $$ Hauth
+  · ihave #$ := lb_own_get $$ Hauth
     iframe
 
 @[rocq_alias mono_list_auth_own_update_app]
@@ -271,9 +265,7 @@ theorem auth_own_unpersist (γ : GName) (l : List α) :
     ⊢@{IProp GF} (γ ↪●ML□ l) ==∗ ∃ q, γ ↪●ML{DFrac.own q} l := by
   unfold auth_own
   iintro H
-  imod iOwn_updateP (auth_unpersist _) $$ H with ⟨%a, %Ha, H⟩
-  obtain ⟨q, rfl⟩ := Ha
-  imodintro
+  imod iOwn_updateP (auth_unpersist _) $$ H with ⟨%a, %⟨q, rfl⟩, H⟩
   iexists q
   iframe
 
