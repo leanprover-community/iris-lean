@@ -80,19 +80,25 @@ instance : ToString ParamKind where
     | .uncheckedIn => "uncheckedIn"
 
 section IPMClasses
+
 structure ClassEntry where
   name      : Name
   /--
   Parameter kinds of class.
   For example, for class
   ```
-  class FromModal {PROP1 : outParam (Type _)} {PROP2}
-    {α : outParam <| Type _} [outParam (BI PROP1)] [BI PROP2]
-    (φ : outParam $ Prop) (M : outParam $ Modality PROP1 PROP2)
-    (sel : outParam (uncheckedInParam α)) (P : PROP2) (Q : outParam $ PROP1) where
+  class FromModal {PROP1 : outParam <| uncheckedInParam <| Type _}
+    {PROP2} {α : outParam <| uncheckedInParam <| Type _}
+    [outParam <| uncheckedInParam <| BI PROP1] [BI PROP2] (φ : outParam Prop)
+    (M : outParam <| uncheckedInParam <| Modality PROP1 PROP2)
+    (sel : outParam <| uncheckedInParam α) (P : PROP2) (Q : outParam PROP1) where
   from_modal : φ → M.M Q ⊢ P
   ```
-  `params := #[out, in, out, out, in, out, out, uncheckedIn, in, out]`
+  we have :
+  ```
+  params := #[uncheckedIn, in, uncheckedIn, uncheckedIn, in, out,
+              uncheckedIn, uncheckedIn, in, out]`
+  ```
   -/
   params : Array ParamKind
 

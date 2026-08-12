@@ -1080,7 +1080,7 @@ instance elimModal_forall [BI PROP] φ p p' io P P' (Φ Ψ : α → PROP)
 
 @[rocq_alias elim_modal_absorbingly_here]
 instance elimModal_absorbingly_here [BI PROP] p io (P Q : PROP) [Absorbing Q] :
-  ElimModal True p io false iprop(<absorb> P) P Q Q where
+    ElimModal True p io false iprop(<absorb> P) P Q Q where
   elim_modal _ := calc
     _ ⊢ <absorb> P ∗ (P -∗ Q)   := sep_mono_left intuitionisticallyIf_elim
     _ ⊢ <absorb> (P ∗ (P -∗ Q)) := absorbingly_sep_left.1
