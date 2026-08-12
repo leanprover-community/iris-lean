@@ -70,9 +70,11 @@ their parent directory, e.g. `Iris/Algebra.lean` does not import `Iris/Algebra/L
 private def detachedDirs : Array Name :=
   #[`Iris.Algebra.Lib, `Iris.BI.Lib, `Iris.HeapLang.Lib, `Iris.Instances.Lib]
 
-/-- Modules that are deliberately not imported by the entry point of their directory,
+/--
+Modules that are deliberately not imported by the entry point of their directory,
 e.g. `Iris/Std/DumpPortingData.lean` is the root of an executable rather than a part of
-the library proper. -/
+the library proper.
+-/
 private def detachedModules : Array Name :=
   #[`Iris.Std.DumpPortingData, `Iris.Foo.Bar]
 
