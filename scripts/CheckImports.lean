@@ -50,16 +50,16 @@ Returns `0` if all checks pass, `1` if any of the checks fails, or
 open System (FilePath)
 open Lean SearchPath
 
-/-- Root of the package sources: the module `A.B` lives in `<srcDir>/A/B.lean`. -/
-private def srcDir : FilePath := ⟨"."⟩
-
-/-- Search path used to resolve a module to a source file *of this package*. Imports of
-`Init`, `Std`, `Batteries` or `Qq` resolve to `none` here and are hence not followed. -/
+/--
+Search path used to resolve a module to a source file of this package.
+Imports of `Init`, `Std`, `Batteries` or `Qq` resolve to `none` here and are
+hence not followed.
+-/
 private def srcPath : SearchPath := [⟨"."⟩]
 
 /-- The source file of a module, e.g. `Iris.BI` to `./Iris/BI.lean`. -/
 private def moduleFile (mod : Name) : FilePath :=
-  modToFilePath srcDir mod "lean"
+  modToFilePath ⟨"."⟩ mod "lean"
 
 /-- The directory holding the submodules of a module, e.g. `Iris.BI` to `./Iris/BI`. -/
 private def moduleDir (mod : Name) : FilePath :=
@@ -76,13 +76,13 @@ e.g. `Iris/Std/DumpPortingData.lean` is the root of an executable rather than a 
 the library proper.
 -/
 private def detachedModules : Array Name :=
-  #[`Iris.Std.DumpPortingData, `Iris.Foo.Bar]
+  #[`Iris.Std.DumpPortingData, `Iris.ProofMode.Porting]
 
 /-- All modules of the library, i.e. `root` and everything in its directory, sorted. -/
 private def libraryModules (root : Name) : IO (Array Name) := do
   let collect : StateT (Array Name) IO PUnit :=
     forEachModuleInDir (moduleDir root) fun mod => modify (·.push (root ++ mod))
-  let (_, mods) ← collect.run #[]
+  let ⟨_, mods⟩ ← collect.run #[]
   return (mods.push root).qsort (·.toString < ·.toString)
 
 /-- The import graph of the given modules. -/
@@ -186,15 +186,14 @@ private def checkInit (root : Name) (all : Array Name)
   return true
 
 def main (args : List String) : IO UInt32 := do
-  let (entryPoints, initModule, minimalOnly, libName?) := match args with
+  let ⟨entryPoints, initModule, minimalOnly, libName?⟩ := match args with
     | ["--entry-points-only", lib] => (true, false, false, some lib)
     | ["--init-only", lib] => (false, true, false, some lib)
     | ["--minimal-init", lib] => (false, true, true, some lib)
     | [lib] => (true, true, false, some lib)
     | _ => (false, false, false, none)
   let some libName := libName?
-    | do
-      IO.eprintln "usage: check-imports [--entry-points-only | --init-only | \
+    | do IO.eprintln "usage: check-imports [--entry-points-only | --init-only | \
         --minimal-init] <LibraryName> (e.g. `lake exe check-imports Iris`)"
       return 2
   let root := libName.toName
