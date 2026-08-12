@@ -23,7 +23,7 @@ jobs:
           lake-package-directory: Iris
           build-args: "--wfail"
           test: true
-      - name: Check that all modules are imported by Iris.lean and other entry-point modules
+      - name: Check Iris.lean, Init.lean and other entry-point module imports
         working-directory: Iris
         run: lake exe check-imports Iris
       - name: Dump porting data
