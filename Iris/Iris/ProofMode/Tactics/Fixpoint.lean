@@ -141,12 +141,12 @@ meta def elabFixpointDef (fixpoint : Name) (mods : TSyntax ``Lean.Parser.Command
   elabCommand declDef
 
 /-- Recursive definition via the least fixpoint. -/
-elab mods:declModifiers "leastfix " name:ident binders:fixpointBinder*
+elab mods:declModifiers "fix " name:ident binders:fixpointBinder*
     " : " ty:term " := " body:term : command =>
   elabFixpointDef ``bi_least_fixpoint mods name binders ty body
 
 /-- Recursive definition via the greatest fixpoint. -/
-elab mods:declModifiers "greatestfix " name:ident binders:fixpointBinder*
+elab mods:declModifiers "cofix " name:ident binders:fixpointBinder*
     " : " ty:term " := " body:term : command =>
   elabFixpointDef ``bi_greatest_fixpoint mods name binders ty body
 

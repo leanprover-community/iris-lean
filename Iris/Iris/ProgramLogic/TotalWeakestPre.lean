@@ -26,7 +26,7 @@ abbrev Stuckness.MaybeReducibleNoObs : Stuckness → Expr × State → Prop
 | _, _ => True
 
 @[rocq_alias twp_pre]
-leastfix twp (s : Stuckness) [OFE CoPset] [OFE.Discrete CoPset] [OFE Expr] [OFE.Discrete Expr]
+fix twp (s : Stuckness) [OFE CoPset] [OFE.Discrete CoPset] [OFE Expr] [OFE.Discrete Expr]
     (E : CoPset) (e₁ : Expr) (Φ : Val -> IProp GF) : IProp GF :=
   match toVal e₁ with
   | some v => iprop(|={E}=> Φ v)
