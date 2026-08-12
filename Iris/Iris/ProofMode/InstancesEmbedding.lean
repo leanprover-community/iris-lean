@@ -16,7 +16,7 @@ open BI
 
 section BiEmbed
 
-variable {PROP1 PROP2 : Type u} [bi1 : BI PROP1] [bi2 : BI PROP2] [biEmbed : BiEmbed PROP1 PROP2]
+variable {PROP1 PROP2 : Type u} [bi1 : BI PROP1] [bi2 : BI PROP2] [BiEmbed PROP1 PROP2]
 
 /-! ### AsEmpValid -/
 
@@ -90,12 +90,12 @@ instance fromPure_embed (a : Bool) (P : PROP1) (ioφ : InOut) φ
 /-! ### IntoPersistently -/
 
 @[rocq_alias into_persistent_embed]
-instance intoPersistently_embed (p : Bool) (P Q : PROP1) [inst : IntoPersistently p P Q] :
+instance intoPersistently_embed p (P Q : PROP1) [inst : IntoPersistently p P Q] :
     IntoPersistently p iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
   into_persistently := calc
     _ ⊢ ⎡<pers>?p P⎤ := (embed_persistently_if P p).mpr
     _ ⊢ ⎡<pers> Q⎤   := embed_mono inst.into_persistently
-    _ ⊢ <pers> ⎡Q⎤   := (biEmbed.persistently Q).mp
+    _ ⊢ <pers> ⎡Q⎤   := (BiEmbed.persistently Q).mp
 
 /-! ### IntoWand -/
 
@@ -126,7 +126,7 @@ instance (priority := low) intoWand_affine_embed_false (q : Bool) (m : WandMode)
 /-! ### FromWand -/
 
 @[rocq_alias from_wand_embed]
-instance fromWand_embed (io : InOut) (P Q1 Q2 : PROP1) [inst : FromWand P io Q1 Q2] :
+instance fromWand_embed io (P Q1 Q2 : PROP1) [inst : FromWand P io Q1 Q2] :
     FromWand iprop(⎡P⎤ : PROP2) io iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
   from_wand := (embed_wand Q1 Q2).mpr.trans (embed_mono inst.from_wand)
 
@@ -167,7 +167,7 @@ instance combineSepGives_embed (Q1 Q2 P : PROP1) [inst : CombineSepGives Q1 Q2 P
 /-! ### IntoAnd -/
 
 @[rocq_alias into_and_embed]
-instance intoAnd_embed (p : Bool) (P Q1 Q2 : PROP1) [inst : IntoAnd p P Q1 Q2] :
+instance intoAnd_embed p (P Q1 Q2 : PROP1) [inst : IntoAnd p P Q1 Q2] :
     IntoAnd p iprop(⎡P⎤ : PROP2) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
   into_and := sorry
 
@@ -230,32 +230,31 @@ instance intoInv_embed (P : PROP1) (N : Namespace) [IntoInv P N] :
 
 @[rocq_alias is_except_0_embed]
 instance isExcept0_embed [BiEmbedLater PROP1 PROP2] (P : PROP1)
-    [IsExcept0 P] : IsExcept0 iprop(⎡P⎤ : PROP2) where
-  is_except0 := sorry
+    [inst : IsExcept0 P] : IsExcept0 iprop(⎡P⎤ : PROP2) where
+  is_except0 := (embed_except_0 P).mpr.trans (embed_mono inst.is_except0)
 
 /-! ### FromModal -/
 
 @[rocq_alias from_modal_later_embed]
-instance fromModal_later_embed [BiEmbedLater PROP1 PROP2]
-    {α : Type _} (φ : Prop) (sel : α) (n : Nat) (P Q : PROP1)
-    [FromModal φ (modality_laterN n) sel P Q] :
+instance fromModal_later_embed [BiEmbedLater PROP1 PROP2] {α} φ (sel : α) n (P Q : PROP1)
+    [inst : FromModal φ (modality_laterN n) sel P Q] :
     FromModal φ (modality_laterN n) sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
-  from_modal := sorry
+  from_modal h := (embed_laterN n Q).mpr.trans (embed_mono <| inst.from_modal h)
 
 /-! ### IntoExcept0 -/
 
 @[rocq_alias into_except_0_embed]
-instance intoExcept0_embed [BiEmbedLater PROP1 PROP2] (P Q : PROP1) [IntoExcept0 P Q] :
+instance intoExcept0_embed [BiEmbedLater PROP1 PROP2] (P Q : PROP1) [inst : IntoExcept0 P Q] :
     IntoExcept0 iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
-  into_except0 := sorry
+  into_except0 := (embed_mono inst.into_except0).trans (embed_except_0 Q).mp
 
 /-! ### IntoLater -/
 
 @[rocq_alias into_later_embed]
-instance intoLater_embed (n : Nat) (P Q : PROP1) progress
-    [IntoLaterN (progress := true) (only_head := false) n P Q] :
+instance intoLater_embed [BiEmbedLater PROP1 PROP2] (n : Nat) (P Q : PROP1) progress
+    [inst : IntoLaterN (progress := true) (only_head := false) n P Q] :
     IntoLaterN progress (only_head := false) n iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
-  into_laterN := sorry
+  into_laterN := (embed_mono inst.into_laterN).trans (embed_laterN n Q).mp
 
 end BiEmbed
 
@@ -264,7 +263,7 @@ section SbiEmbed
 variable {P1 P2 : Type u} [Sbi P1] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
 
 @[rocq_alias from_modal_plainly_embed]
-instance (priority := low) fromModal_plainly_embed {α : Type _} (φ : Prop) (sel : α)
+instance (priority := low) fromModal_plainly_embed {α : Type _} φ (sel : α)
     (P Q : P1) [FromModal φ modality_plainly sel P Q] :
     FromModal φ modality_plainly sel iprop(⎡P⎤ : P2) iprop(⎡Q⎤) where
   from_modal := sorry
@@ -276,54 +275,68 @@ instance intoInternalEq_embed {A : Type _} [OFE A] (x y : A) (P : P1)
 
 end SbiEmbed
 
-section BiBUpdEmbed
+section BiEmbedBUpd
+open BiEmbedBUpd
 
 variable {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
   [BIUpdate PROP1] [BIUpdate PROP2] [BiEmbedBUpd PROP1 PROP2]
 
 @[rocq_alias elim_modal_embed_bupd_goal]
-instance elimModal_embed_bupd_goal (φ : Prop) (p : Bool) (io : InOut) (p' : Bool)
-    (P P' : PROP2) (Q Q' : PROP1)
+instance elimModal_embed_bupd_goal φ p io p' (P P' : PROP2) (Q Q' : PROP1)
     [ElimModal φ p io p' P P' iprop(|==> ⎡Q⎤) iprop(|==> ⎡Q'⎤)] :
     ElimModal φ p io p' P P' iprop(⎡|==> Q⎤) iprop(⎡|==> Q'⎤) where
-  elim_modal := sorry
+  elim_modal h := calc
+    _ ⊢ □?p P ∗ (□?p' P' ==∗ ⎡Q'⎤) := sep_mono_right <| wand_mono_right (embed_bupd Q').mp
+    _ ⊢ |==> ⎡Q⎤                   := elim_modal h
+    _ ⊢ ⎡|==> Q⎤                   := (embed_bupd Q).mpr
 
 @[rocq_alias elim_modal_embed_bupd_hyp]
-instance elimModal_embed_bupd_hyp (φ : Prop) (p : Bool) (io : InOut) (p' : Bool)
-    (P : PROP1) (P' Q Q' : PROP2)
+instance elimModal_embed_bupd_hyp φ p io p' (P : PROP1) (P' Q Q' : PROP2)
     [ElimModal φ p io p' iprop(|==> ⎡P⎤) P' Q Q'] :
     ElimModal φ p io p' iprop(⎡|==> P⎤) P' Q Q' where
-  elim_modal := sorry
+  elim_modal h :=
+    (sep_mono_left (intuitionisticallyIf_congr <| embed_bupd P).mp).trans (elim_modal h)
 
 @[rocq_alias add_modal_embed_bupd_goal]
 instance addModal_embed_bupd_goal (P P' : PROP2) (Q : PROP1)
     [AddModal P P' iprop(|==> ⎡Q⎤)] : AddModal P P' iprop(⎡|==> Q⎤) where
-  add_modal := sorry
+  add_modal := calc
+    _ ⊢ P ∗ (P' ==∗ ⎡Q⎤) := sep_mono_right <| wand_mono_right (embed_bupd Q).mp
+    _ ⊢ |==> ⎡Q⎤         := add_modal
+    _ ⊢ ⎡|==> Q⎤         := (embed_bupd Q).mpr
 
-end BiBUpdEmbed
+end BiEmbedBUpd
 
-section BiFUpdEmbed
+section BiEmbedFUpd
+open BiEmbedFUpd
 
 variable {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
   [BIFUpdate PROP1] [BIFUpdate PROP2] [BiEmbedFUpd PROP1 PROP2]
 
 @[rocq_alias elim_modal_embed_fupd_goal]
-instance elimModal_embed_fupd_goal (φ : Prop) (p : Bool) (io : InOut) (p' : Bool)
+instance elimModal_embed_fupd_goal φ p io p'
     (E1 E2 E3 : CoPset) (P P' : PROP2) (Q Q' : PROP1)
     [ElimModal φ p io p' P P' iprop(|={E1,E3}=> ⎡Q⎤) iprop(|={E2,E3}=> ⎡Q'⎤)] :
     ElimModal φ p io p' P P' iprop(⎡|={E1,E3}=> Q⎤) iprop(⎡|={E2,E3}=> Q'⎤) where
-  elim_modal := sorry
+  elim_modal h := calc
+    _ ⊢ □?p P ∗ (□?p' P' ={E2,E3}=∗ ⎡Q'⎤) := sep_mono_right <| wand_mono_right (embed_fupd ..).mp
+    _ ⊢ |={E1, E3}=> ⎡Q⎤                  := elim_modal h
+    _ ⊢ ⎡|={E1, E3}=> Q⎤                  := (embed_fupd E1 E3 Q).mpr
 
 @[rocq_alias elim_modal_embed_fupd_hyp]
-instance elimModal_embed_fupd_hyp (φ : Prop) (p : Bool) (io : InOut) (p' : Bool)
+instance elimModal_embed_fupd_hyp φ p io p'
     (E1 E2 : CoPset) (P : PROP1) (P' Q Q' : PROP2)
     [ElimModal φ p io p' iprop(|={E1,E2}=> ⎡P⎤) P' Q Q'] :
     ElimModal φ p io p' iprop(⎡|={E1,E2}=> P⎤) P' Q Q' where
-  elim_modal := sorry
+  elim_modal h :=
+    (sep_mono_left (intuitionisticallyIf_congr <| embed_fupd E1 E2 P).mp).trans (elim_modal h)
 
 @[rocq_alias add_modal_embed_fupd_goal]
 instance addModal_embed_fupd_goal (E1 E2 : CoPset) (P P' : PROP2) (Q : PROP1)
     [AddModal P P' iprop(|={E1,E2}=> ⎡Q⎤)] : AddModal P P' iprop(⎡|={E1,E2}=> Q⎤) where
-  add_modal := sorry
+  add_modal := calc
+    _ ⊢ P ∗ (P' ={E1,E2}=∗ ⎡Q⎤) := sep_mono_right <| wand_mono_right (embed_fupd E1 E2 Q).mp
+    _ ⊢ |={E1, E2}=> ⎡Q⎤        := add_modal
+    _ ⊢ ⎡|={E1, E2}=> Q⎤        := (embed_fupd E1 E2 Q).mpr
 
-end BiFUpdEmbed
+end BiEmbedFUpd
