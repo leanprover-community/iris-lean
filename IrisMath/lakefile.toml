@@ -1,7 +1,8 @@
 name = "irismath"
 version = "0.1.0"
 keywords = ["math"]
-defaultTargets = ["IrisMath", "IrisMathTest"]
+defaultTargets = ["IrisMath"]
+testDriver = "IrisMathTest"
 
 [leanOptions]
 pp.unicode.fun = true 
@@ -24,6 +25,7 @@ name = "IrisMath"
 
 [[lean_lib]]
 name = "IrisMathTest"
+globs = ["IrisMathTest.+"]
 
 [[lean_exe]]
 name = "check-imports"
