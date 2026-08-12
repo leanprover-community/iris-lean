@@ -18,6 +18,12 @@ declare_syntax_cat fixpointBinder
 syntax "(" ident+ " : " term ")" : fixpointBinder
 syntax "[" term "]" : fixpointBinder
 
+declare_syntax_cat fixpointMonotoneClause
+syntax "monotone_by " Lean.Parser.Tactic.tacticSeq : fixpointMonotoneClause
+
+declare_syntax_cat fixpointNonexpClause
+syntax "nonexp_by " Lean.Parser.Tactic.tacticSeq : fixpointNonexpClause
+
 /-- Determines the (syntactic) arity of the first application of `name`. -/
 meta partial def fixpointSelfArity (name : Name) (stx : Syntax) : Option Nat :=
   match stx with
@@ -46,6 +52,8 @@ meta def fixpointMkExplicitBinder (i : Ident) (t : Term)
 
 meta def elabFixpointDef (fixpoint : Name) (mods : TSyntax ``Lean.Parser.Command.declModifiers)
     (name : Ident) (binders : Array (TSyntax `fixpointBinder)) (ty : Term) (body : Term)
+    (monoBy : Option (TSyntax `fixpointMonotoneClause))
+    (neBy : Option (TSyntax `fixpointNonexpClause))
     : CommandElabM Unit := do
   let mut names : Array Ident := #[]
   let mut types : Array Term := #[]
@@ -124,13 +132,24 @@ meta def elabFixpointDef (fixpoint : Name) (mods : TSyntax ``Lean.Parser.Command
   elabCommand declPre'
 
   -- monotonicity instance
+  let monoTac ← match monoBy with
+    | some clause =>
+      let `(fixpointMonotoneClause| monotone_by $ts) := clause | throwUnsupportedSyntax
+      pure ts
+    | none => `(Lean.Parser.Tactic.tacticSeq| monotone)
+  let neTac ← match neBy with
+    | some clause =>
+      let `(fixpointNonexpClause| nonexp_by $ts) := clause | throwUnsupportedSyntax
+      pure ts
+    | none => `(Lean.Parser.Tactic.tacticSeq| nonexp)
+
   let preMonoName := mkIdentFrom name (name.getId ++ `pre_mono')
   let monoBinders := instBinders ++ prefixBinders
   let pre'App ← `(@$pre'Name:ident $leadingArgs* $prefixArgs*)
   let declMono ← `(command|
     instance $preMonoName:ident $monoBinders* : BIMonoPred $pre'App where
-      mono_pred := by monotone
-      mono_pred_ne := by nonexp)
+      mono_pred := by $monoTac
+      mono_pred_ne := by $neTac)
   elabCommand declMono
 
   -- definition: fixpoint of the uncurried pre-definition
@@ -142,12 +161,14 @@ meta def elabFixpointDef (fixpoint : Name) (mods : TSyntax ``Lean.Parser.Command
 
 /-- Recursive definition via the least fixpoint. -/
 elab mods:declModifiers "fix " name:ident binders:fixpointBinder*
-    " : " ty:term " := " body:term : command =>
-  elabFixpointDef ``bi_least_fixpoint mods name binders ty body
+    " : " ty:term " := " body:term
+    monoPf:(fixpointMonotoneClause)? nePf:(fixpointNonexpClause)? : command =>
+  elabFixpointDef ``bi_least_fixpoint mods name binders ty body monoPf nePf
 
 /-- Recursive definition via the greatest fixpoint. -/
 elab mods:declModifiers "cofix " name:ident binders:fixpointBinder*
-    " : " ty:term " := " body:term : command =>
-  elabFixpointDef ``bi_greatest_fixpoint mods name binders ty body
+    " : " ty:term " := " body:term
+    monoPf:(fixpointMonotoneClause)? nePf:(fixpointNonexpClause)? : command =>
+  elabFixpointDef ``bi_greatest_fixpoint mods name binders ty body monoPf nePf
 
 end Iris

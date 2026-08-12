@@ -15,6 +15,9 @@ open Lean Elab Command Meta Term
 declare_syntax_cat guardedExplicitBinder
 syntax "(" ident+ " : " term ")" : guardedExplicitBinder
 
+declare_syntax_cat guardedContractiveClause
+syntax "contractive_by " Lean.Parser.Tactic.tacticSeq : guardedContractiveClause
+
 /-- Determines the (syntactic) arity of the first application of `name`. -/
 meta partial def guardedSelfArity (name : Name) (stx : Syntax) : Option Nat :=
   match stx with
@@ -40,7 +43,7 @@ meta def guardedMkExplicitBinder (i : Ident) (t : Term)
 
 /-- Recursive definition via the guarded fixpoint. -/
 elab mods:declModifiers "guarded " name:ident binders:guardedExplicitBinder*
-    " : " ty:term " := " body:term : command => do
+    " : " ty:term " := " body:term contractiveBy:(guardedContractiveClause)? : command => do
   let mut names : Array Ident := #[]
   let mut types : Array Term := #[]
   for b in binders do
@@ -89,9 +92,14 @@ elab mods:declModifiers "guarded " name:ident binders:guardedExplicitBinder*
   let preApp ← `($preName:ident $prefixArgs* $autoArgs*)
 
   -- contractivity instance
+  let contractiveTac ← match contractiveBy with
+    | some clause =>
+      let `(guardedContractiveClause| contractive_by $ts) := clause | throwUnsupportedSyntax
+      pure ts
+    | none => `(Lean.Parser.Tactic.tacticSeq| contractive)
   let contractiveName := mkIdentFrom name (name.getId ++ `pre ++ `contractive)
   let declContr ← `(command| instance $contractiveName:ident $prefixBinders* :
-                  OFE.Contractive $preApp where distLater_dist := by contractive)
+                  OFE.Contractive $preApp where distLater_dist := by $contractiveTac)
   elabCommand declContr
 
   -- definition: fixpoint of the pre-definition
