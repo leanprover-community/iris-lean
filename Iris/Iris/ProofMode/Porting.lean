@@ -3,7 +3,6 @@ Copyright (c) 2026. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu
 -/
-module
 
 import Iris.Init
 
