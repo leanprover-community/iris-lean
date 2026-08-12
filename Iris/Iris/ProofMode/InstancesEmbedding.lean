@@ -52,9 +52,9 @@ instance intoEmbed_affinely [BIUpdate PROP1] [BIUpdate PROP2]
 /-! ### IntoPure -/
 
 @[rocq_alias into_pure_embed]
-instance intoPure_embed (P : PROP1) (φ : Prop) [IntoPure P φ] :
+instance intoPure_embed (P : PROP1) (φ : Prop) [inst : IntoPure P φ] :
     IntoPure iprop(⎡P⎤ : PROP2) φ where
-  into_pure := sorry
+  into_pure := (embed_mono inst.into_pure).trans (embed_pure φ).mp
 
 /-! ### FromPure -/
 
@@ -66,35 +66,38 @@ instance fromPure_embed (a : Bool) (P : PROP1) (ioφ : InOut) (φ : Prop)
 /-! ### IntoPersistently -/
 
 @[rocq_alias into_persistent_embed]
-instance intoPersistently_embed (p : Bool) (P Q : PROP1) [IntoPersistently p P Q] :
+instance intoPersistently_embed (p : Bool) (P Q : PROP1) [inst : IntoPersistently p P Q] :
     IntoPersistently p iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
-  into_persistently := sorry
+  into_persistently := calc
+    _ ⊢ ⎡<pers>?p P⎤ := (embed_persistently_if P p).mpr
+    _ ⊢ ⎡<pers> Q⎤   := embed_mono inst.into_persistently
+    _ ⊢ <pers> ⎡Q⎤   := (biEmbed.persistently Q).mp
 
 /-! ### FromModal -/
 
 @[rocq_alias from_modal_id_embed]
 instance (priority := low) fromModal_id_embed {α : Type _} (φ : Prop) (sel : α)
-    (P Q : PROP1) [FromModal φ modality_id sel P Q] :
+    (P Q : PROP1) [inst : FromModal φ modality_id sel P Q] :
     FromModal φ modality_id sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
-  from_modal := sorry
+  from_modal h := embed_mono <| inst.from_modal h
 
 @[rocq_alias from_modal_affinely_embed]
 instance (priority := low) fromModal_affinely_embed {α : Type _} (φ : Prop) (sel : α)
-    (P Q : PROP1) [FromModal φ modality_affinely sel P Q] :
+    (P Q : PROP1) [inst : FromModal φ modality_affinely sel P Q] :
     FromModal φ modality_affinely sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
-  from_modal := sorry
+  from_modal h := (embed_affinely_2 Q).trans (embed_mono <| inst.from_modal h)
 
 @[rocq_alias from_modal_persistently_embed]
 instance (priority := low) fromModal_persistently_embed {α : Type _} (φ : Prop) (sel : α)
-    (P Q : PROP1) [FromModal φ modality_persistently sel P Q] :
+    (P Q : PROP1) [inst : FromModal φ modality_persistently sel P Q] :
     FromModal φ modality_persistently sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
-  from_modal := sorry
+  from_modal h := (embed_persistently Q).mpr.trans (embed_mono <| inst.from_modal h)
 
 @[rocq_alias from_modal_intuitionistically_embed]
 instance (priority := low) fromModal_intuitionistically_embed {α : Type _} (φ : Prop) (sel : α)
-    (P Q : PROP1) [FromModal φ modality_intuitionistically sel P Q] :
+    (P Q : PROP1) [inst : FromModal φ modality_intuitionistically sel P Q] :
     FromModal φ modality_intuitionistically sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
-  from_modal := sorry
+  from_modal h := (embed_intuitionistically_2 Q).trans (embed_mono <| inst.from_modal h)
 
 /-! ### IntoWand -/
 
@@ -131,6 +134,7 @@ instance fromWand_embed (io : InOut) (P Q1 Q2 : PROP1) [FromWand P io Q1 Q2] :
 instance fromImp_embed (P Q1 Q2 : PROP1) [FromImp P Q1 Q2] :
     FromImp iprop(⎡P⎤ : PROP2) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
   from_imp := sorry
+
 @[rocq_alias from_and_embed]
 instance fromAnd_embed (P Q1 Q2 : PROP1) [FromAnd P Q1 Q2] :
     FromAnd iprop(⎡P⎤ : PROP2) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
