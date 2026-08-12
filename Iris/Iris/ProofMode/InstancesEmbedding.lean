@@ -37,25 +37,25 @@ instance fromModal_embed (P : PROP1) :
     FromModal True (modality_embed (PROP2 := PROP2)) iprop(⎡P⎤ : PROP2) iprop(⎡P⎤) P where
   from_modal _ := .rfl
 
-@[rocq_alias from_modal_id_embed]
+@[ipm_backtrack, rocq_alias from_modal_id_embed]
 instance (priority := low) fromModal_id_embed {α} φ (sel : α)
     (P Q : PROP1) [inst : FromModal φ modality_id sel P Q] :
     FromModal φ modality_id sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
   from_modal h := embed_mono <| inst.from_modal h
 
-@[rocq_alias from_modal_affinely_embed]
+@[ipm_backtrack, rocq_alias from_modal_affinely_embed]
 instance (priority := low) fromModal_affinely_embed {α} φ (sel : α)
     (P Q : PROP1) [inst : FromModal φ modality_affinely sel P Q] :
     FromModal φ modality_affinely sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
   from_modal h := (embed_affinely_2 Q).trans (embed_mono <| inst.from_modal h)
 
-@[rocq_alias from_modal_persistently_embed]
+@[ipm_backtrack, rocq_alias from_modal_persistently_embed]
 instance (priority := low) fromModal_persistently_embed {α} φ (sel : α)
     (P Q : PROP1) [inst : FromModal φ modality_persistently sel P Q] :
     FromModal φ modality_persistently sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
   from_modal h := (embed_persistently Q).mpr.trans (embed_mono <| inst.from_modal h)
 
-@[rocq_alias from_modal_intuitionistically_embed]
+@[ipm_backtrack, rocq_alias from_modal_intuitionistically_embed]
 instance (priority := low) fromModal_intuitionistically_embed {α} φ (sel : α)
     (P Q : PROP1) [inst : FromModal φ modality_intuitionistically sel P Q] :
     FromModal φ modality_intuitionistically sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
@@ -116,9 +116,9 @@ instance intoWand_embed p q m (R P Q : PROP1) [inst : IntoWand p q R m P Q] :
   elimination keeps the affine modality.
 -/
 @[rocq_alias into_wand_affine_embed_true]
-instance (priority := low) intoWand_affine_embed_true q m
-    (P Q R : PROP1) [inst : IntoWand true q R .unknown P Q] :
-    IntoWand true q iprop(⎡R⎤ : PROP2) m iprop(<affine> ⎡P⎤) iprop(<affine> ⎡Q⎤) where
+instance (priority := low) intoWand_affine_embed_true q
+    (P Q R : PROP1) [inst : IntoWand true q R (.matching s) P Q] :
+    IntoWand true q iprop(⎡R⎤ : PROP2) (.matching s) iprop(<affine> ⎡P⎤) iprop(<affine> ⎡Q⎤) where
   into_wand := by
     refine (intuitionistically_intro_intuitionistically <|
       (embed_intuitionistically_2 R).trans (embed_mono inst.into_wand)).trans (wand_intro_left ?_)
@@ -269,7 +269,7 @@ instance isExcept0_embed [BiEmbedLater PROP1 PROP2] (P : PROP1)
 
 /-! ### FromModal -/
 
-@[rocq_alias from_modal_later_embed]
+@[ipm_backtrack, rocq_alias from_modal_later_embed]
 instance fromModal_later_embed [BiEmbedLater PROP1 PROP2] {α} φ (sel : α) n (P Q : PROP1)
     [inst : FromModal φ (modality_laterN n) sel P Q] :
     FromModal φ (modality_laterN n) sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
@@ -296,7 +296,7 @@ section SbiEmbed
 
 variable [Sbi P1] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
 
-@[rocq_alias from_modal_plainly_embed]
+@[ipm_backtrack, rocq_alias from_modal_plainly_embed]
 instance (priority := low) fromModal_plainly_embed {α} φ (sel : α)
     (P Q : P1) [inst : FromModal φ modality_plainly sel P Q] :
     FromModal φ modality_plainly sel iprop(⎡P⎤ : P2) iprop(⎡Q⎤) where
