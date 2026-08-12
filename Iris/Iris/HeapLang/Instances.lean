@@ -64,7 +64,7 @@ theorem fill_isSome_empty {K : List ECtxItem} {e : Exp}
     have h2 := EctxLanguage.fill_val (K := K') (e := fillItem Ki e) h
     simp [fillItem_expToVal_none] at h2
 
-local macro "solve_subredex_values" : tactic =>
+macro "solve_subredex_values" : tactic =>
   `(tactic|
     (apply subredexes_are_values
      intro Ki e_inner heq
