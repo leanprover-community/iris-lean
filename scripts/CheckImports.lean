@@ -70,14 +70,6 @@ their parent directory, e.g. `Iris/Algebra.lean` does not import `Iris/Algebra/L
 private def detachedDirs : Array Name :=
   #[`Iris.Algebra.Lib, `Iris.BI.Lib, `Iris.HeapLang.Lib, `Iris.Instances.Lib]
 
-/--
-Modules that are deliberately not imported by the entry point of their directory,
-e.g. `Iris/Std/DumpPortingData.lean` is the root of an executable rather than a part of
-the library proper.
--/
-private def detachedModules : Array Name :=
-  #[`Iris.Std.DumpPortingData, `Iris.ProofMode.Porting]
-
 /-- All modules of the library, i.e. `root` and everything in its directory, sorted. -/
 private def libraryModules (root : Name) : IO (Array Name) := do
   let collect : StateT (Array Name) IO PUnit :=
@@ -138,8 +130,7 @@ private def checkEntryPoints (root : Name) (all : Array Name)
     let reachable := reachableFrom graph dir
     -- The modules that the entry point of the directory `dir` must import
     let expected := all.filter fun mod => mod != dir && dir.isPrefixOf mod &&
-      !(detachedDirs.any fun d => d.getPrefix == dir && d.isPrefixOf mod) &&
-      !detachedModules.contains mod
+      !(detachedDirs.any fun d => d.getPrefix == dir && d.isPrefixOf mod)
     let missing := expected.filter (!reachable.contains ·)
     unless missing.isEmpty do
       report s!"check-imports: {missing.size} file(s) under {dir} are never imported \

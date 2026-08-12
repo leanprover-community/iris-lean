@@ -21,7 +21,7 @@ globs = ["IrisTest.+"]
 
 [[lean_exe]]
 name = "dumpPortingData"
-srcDir = "Iris/Std"
+srcDir = "../scripts"
 root = "DumpPortingData"
 supportInterpreter = true
 
