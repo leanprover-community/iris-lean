@@ -42,9 +42,20 @@ instance instOFE [LawfulPartialMap M K] [OFE V] : OFE (M V) where
   f x := of_fun x
   ne.1 {_ _ _} H k := by simp only [get_of_fun, H k]
 
+#rocq_ignore gmapO_leibniz "OFE is Leibniz; use equality"
+
 @[rocq_alias lookup_ne]
 instance get?_ne [LawfulPartialMap M K] [OFE V] (k : K) : NonExpansive (get? · k : M V → Option V) where
   ne {_ _ _} Ht := Ht k
+
+/-- Total lookup is non-expansive in the map. -/
+@[rocq_alias lookup_total_ne]
+instance getD_ne [LawfulPartialMap M K] [OFE V] (k : K) (d : V) :
+    NonExpansive (PartialMap.getD · k d : M V → V) where
+  ne {_ m₁ m₂} Ht := by
+    have h := Ht k
+    rcases h₁ : get? m₁ k with _ | v <;> rcases h₂ : get? m₂ k with _ | w <;>
+      simp_all [PartialMap.getD, OFE.Dist, Option.Forall₂]
 
 @[rocq_alias insert_ne]
 instance [LawfulPartialMap M K] [OFE V] (k : K) : NonExpansive₂ (insert · k · : M V → V → M V) where
@@ -100,32 +111,53 @@ theorem zipWith_dist [LawfulPartialMap M K] [OFE V] [OFE V'] [OFE V''] {n : Nat}
     {f g : V → V' → V''} {m₁ m₁' : M V} {m₂ m₂' : M V'}
     (Hf : ∀ {v v' w w'}, v ≡{n}≡ v' → w ≡{n}≡ w' → f v w ≡{n}≡ g v' w')
     (H₁ : m₁ ≡{n}≡ m₁') (H₂ : m₂ ≡{n}≡ m₂') :
-    PartialMap.zipWith f m₁ m₂ ≡{n}≡ PartialMap.zipWith g m₁' m₂' := by
-  intro k
-  specialize H₁ k
-  specialize H₂ k
-  revert H₁ H₂
-  simp only [OFE.Dist, Option.Forall₂, LawfulPartialMap.get?_zipWith]
-  cases get? m₁ k <;> cases get? m₁' k <;> cases get? m₂ k <;> cases get? m₂' k <;> simp_all
+    PartialMap.zipWith f m₁ m₂ ≡{n}≡ PartialMap.zipWith g m₁' m₂' :=
+  bindAlter_dist (fun {k _ _} Hv => by
+    have h := H₂ k
+    revert h
+    cases get? m₂ k <;> cases get? m₂' k <;> simp_all [OFE.Dist, Option.Forall₂]) H₁
 
 theorem isSome_get?_eq_of_dist [LawfulPartialMap M K] [OFE V] {n : Nat} {m₁ m₂ : M V}
     (H : m₁ ≡{n}≡ m₂) (k : K) : (get? m₁ k).isSome = (get? m₂ k).isSome := by
   specialize H k
   revert H
-  simp only [OFE.Dist, Option.Forall₂]
-  cases get? m₁ k <;> cases get? m₂ k <;> simp_all
+  cases get? m₁ k <;> cases get? m₂ k <;> simp_all [OFE.Dist, Option.Forall₂]
 
 @[rocq_alias gmap_union_ne]
 instance [LawfulPartialMap M K] [OFE V] : NonExpansive₂ ((· ∪ ·) : M V → M V → M V) where
   ne _ {_ _} H₁ {_ _} H₂ := merge_dist (fun H _ => H) H₁ H₂
 
+/-- `intersectionWith` is non-expansive in the combining function and in both maps. -/
+@[rocq_alias intersection_with_ne]
+theorem intersectionWith_dist [LawfulPartialMap M K] [OFE V] {n : Nat}
+    {f g : K → V → V → Option V} {m₁ m₁' m₂ m₂' : M V}
+    (Hf : ∀ {k v v' w w'}, v ≡{n}≡ v' → w ≡{n}≡ w' → f k v w ≡{n}≡ g k v' w')
+    (H₁ : m₁ ≡{n}≡ m₁') (H₂ : m₂ ≡{n}≡ m₂') :
+    PartialMap.intersectionWith f m₁ m₂ ≡{n}≡ PartialMap.intersectionWith g m₁' m₂' :=
+  bindAlter_dist (fun {k _ _} Hv => by
+    have h := H₂ k
+    revert h
+    cases get? m₂ k <;> cases get? m₂' k <;> simp_all [OFE.Dist, Option.Forall₂]) H₁
+
+/-- `differenceWith` is non-expansive in the combining function and in both maps. -/
+@[rocq_alias difference_with_ne]
+theorem differenceWith_dist [LawfulPartialMap M K] [OFE V] {n : Nat}
+    {f g : K → V → V → Option V} {m₁ m₁' m₂ m₂' : M V}
+    (Hf : ∀ {k v v' w w'}, v ≡{n}≡ v' → w ≡{n}≡ w' → f k v w ≡{n}≡ g k v' w')
+    (H₁ : m₁ ≡{n}≡ m₁') (H₂ : m₂ ≡{n}≡ m₂') :
+    PartialMap.differenceWith f m₁ m₂ ≡{n}≡ PartialMap.differenceWith g m₁' m₂' :=
+  bindAlter_dist (fun {k _ _} Hv => by
+    have h := H₂ k
+    revert h
+    cases get? m₂ k <;> cases get? m₂' k <;> simp_all [OFE.Dist, Option.Forall₂]) H₁
+
+@[rocq_alias gmap_intersection_ne]
+instance [LawfulPartialMap M K] [OFE V] : NonExpansive₂ ((· ∩ ·) : M V → M V → M V) where
+  ne _ {_ _} H₁ {_ _} H₂ := intersectionWith_dist (fun H _ => H) H₁ H₂
+
+@[rocq_alias gmap_difference_ne]
 instance [LawfulPartialMap M K] [OFE V] : NonExpansive₂ ((· \ ·) : M V → M V → M V) where
-  ne _ {m₁ m₁'} H₁ {_ m₂'} H₂ k := by
-    specialize H₁ k
-    revert H₁
-    simp only [OFE.Dist, Option.Forall₂, LawfulPartialMap.get?_difference,
-      isSome_get?_eq_of_dist H₂ k]
-    cases get? m₁ k <;> cases get? m₁' k <;> cases get? m₂' k <;> simp_all
+  ne _ {_ _} H₁ {_ _} H₂ := differenceWith_dist (fun _ _ => .of_eq rfl) H₁ H₂
 
 @[rocq_alias gmap_disjoint_ne]
 theorem disjoint_dist_iff [LawfulPartialMap M K] [OFE V] {n : Nat} {m₁ m₁' m₂ m₂' : M V}
@@ -417,6 +449,12 @@ instance instStoreUCMRA : UCMRA (M V) where
   pcore_unit := OFE.eq_dist.mpr fun _ => by
     refine OFE.some_dist_some.mpr fun k => ?_
     simp [get?_bindAlter, get?_empty]
+
+@[rocq_alias gmap_op_empty_l_L]
+theorem op_empty_left {m : M V} : (∅ : M V) • m = m := CMRA.unit_left_id_L
+
+@[rocq_alias gmap_op_empty_r]
+theorem op_empty_right {m : M V} : m • (∅ : M V) = m := CMRA.unit_right_id_L
 
 instance instIsTotalHeap : IsTotal (M V) where
   total _ := Option.isSome_iff_exists.mp rfl
@@ -1224,5 +1262,10 @@ instance {F} [RFunctorContractive F] : URFunctorContractive (PartialMapOF H F) w
   map_contractive.1 H m := by
     apply map_ne _ _
     exact (RFunctorContractive.map_contractive.1 H)
+
+-- The unital functor instances above already give the non-unital ones, through
+-- `URFunctor.toRFunctor` and `URFunctorContractive.toRFunctorContractive`.
+#rocq_ignore gmapRF "Found by typeclass inference"
+#rocq_ignore gmapRF_contractive "Found by typeclass inference"
 
 end PartialMap

@@ -660,7 +660,7 @@ theorem bigOpS_singleton {Φ : A → M} {a : A} : ([^ op set] x ∈ ({a} : S), �
   simp only [bigOpS, toList_singleton]; exact bigOpL_singleton_eq _ _
 
 open Classical in
-@[rocq_alias big_opS_gset_to_gmap]
+@[rocq_alias big_opS_gset_to_gmap, rocq_alias big_opS_gset_to_gmap_L]
 theorem bigOpS_ofSet {M' : Type _ → Type _} {V : Type _} [LawfulFiniteMap M' A] [CMRA V]
     (a : V) (s : S) :
     ([^ CMRA.op set] k ∈ s, (PartialMap.singleton k a : M' V)) = FiniteMap.ofSet a s := by
