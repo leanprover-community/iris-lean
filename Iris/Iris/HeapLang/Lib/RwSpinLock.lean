@@ -75,9 +75,6 @@ attribute [reducible, instance] RwSpinLockG.elemG
 
 section proof
 
--- FIXME: `iinv` exhausts the default recursion budget on the goals below.
-set_option maxRecDepth 2000
-
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF] [RwSpinLockG GF]
 
 def rwLockN : Namespace := nroot .@ "rw_lock"
