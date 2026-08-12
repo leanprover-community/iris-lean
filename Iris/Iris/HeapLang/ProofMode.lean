@@ -190,11 +190,13 @@ public meta def ProofModeM.runTacticWp {α} (tacName : Name) (k : MVarId → WpG
       | throwIPMError "The goal {goal} must be a WP"
     k mvar {hyps, ι, s, E, e, Φ, hu:=⟨⟩, hprop:=⟨⟩, hbi:=⟨⟩ }
 
+@[rocq_alias heap_lang.tac_wp_value]
 public theorem tac_wp_value [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {v : Val} {Φ : Val → IProp GF}
   (H : Δ ⊢ |={E}=> Φ v) :
   (Δ ⊢ WP (v : Exp) @ s ; E {{ Φ }}) :=
   H.trans (wp_value_fupd ⟨rfl⟩).2
 
+@[rocq_alias heap_lang.tac_wp_value_nofupd]
 public theorem tac_wp_value_nofupd [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {v : Val} {Φ : Val → IProp GF}
   (H : Δ ⊢ Φ v) :
   (Δ ⊢ WP (v : Exp) @ s ; E {{ Φ }}) :=
@@ -258,6 +260,7 @@ public meta def iWpExprSimp (e : Q(Exp)) :
   let ⟨res, _⟩ ← Meta.simp e simpctx (simprocs:=#[procs])
   return ⟨res.expr, ← res.getProof' e⟩
 
+@[rocq_alias heap_lang.tac_wp_expr_eval]
 public theorem tac_wp_expr_simp [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {e e' : Exp} {Φ : Val → IProp GF}
   (h : Δ ⊢ WP e' @ s ; E {{ Φ }})
   (heq : e = e') :
@@ -298,6 +301,7 @@ elab "wp_finish" : tactic =>
     let pf ← iWpFinish hyps ι s E e Φ
     mvar.assign pf
 
+@[rocq_alias heap_lang.tac_wp_bind]
 public theorem tac_wp_bind [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {K : List ECtxItem} {e' : Exp} {Φ : Val → IProp GF}
   (H : Δ ⊢ WP e' @ s ; E {{ v, WP (ProgramLogic.fill K (Exp.ofVal (Expr:=Exp) v)) @ s; E {{ Φ }} }}) :
     (Δ ⊢ WP (ProgramLogic.fill K e') @ s ; E {{ Φ }}) :=
@@ -331,6 +335,7 @@ elab "wp_bind" colGt ppSpace focus:hl_exp:10 : tactic =>
       let pf ← addBIGoal hyps q(Wp.wp $s $E $e' $Φ')
       mvar.assign q(tac_wp_bind $pf)
 
+@[rocq_alias heap_lang.tac_wp_pure]
 public theorem tac_wp_pure [ι : IrisGS_gen hlc Exp GF] {Δ Δ'} {s : Stuckness} {E : CoPset} {K : List ECtxItem} {e₁ e₂ : Exp} {φ : Prop} {n : Nat} {Φ : Val → IProp GF} :
     ProgramLogic.Language.PureExec φ n e₁ e₂ →
     φ →
@@ -373,7 +378,27 @@ elab "wp_pure " colGt ppSpace focus:hl_exp:10 : tactic =>
     mvar.assign pf
 
 macro "wp_pure" : tactic => `(tactic| wp_pure _)
-macro "wp_pures" : tactic => `(tactic| repeat wp_pure)
+
+/-- A single `wp_pure` step that must leave exactly one goal, Rocq's `wp_pure _; []`. Fails
+if the step spawns a goal besides the continuation, such as an undischarged side condition
+of the reduction. -/
+elab "wp_pure_step" : tactic => focus do
+  evalTactic (← `(tactic| wp_pure))
+  -- we run under `focus` so we only see the unsolved goals of `wp_pure` 
+  let goals ← getUnsolvedGoals
+  unless goals.length == 1 do
+    throwError "the pure reduction step must leave exactly one goal, it left {
+      goals.length}:{indentD <| .joinSep (goals.map fun g => m!"{g}") Format.line}"
+
+/-- Reduce all pure redexes at the head of the weakest precondition, then simplify the
+resulting expression and strip the weakest precondition if it has become a value.
+
+A pure step whose side condition cannot be discharged is not taken. -/
+macro "wp_pures" : tactic =>
+  -- Rocq: `first [progress repeat (wp_pure _; []) | wp_finish]`
+  `(tactic| first
+    | (wp_pure_step; repeat wp_pure_step)
+    | wp_finish)
 
 macro "wp_rec" : tactic => `(tactic | (wp_bind _ _; iapply $(mkIdent `wp_rec):ident; rfl; imodintro; wp_finish))
 
@@ -427,6 +452,7 @@ theorem tac_wp_heap_op [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' P P' : IProp GF}
   iapply hcont
   iframe
 
+@[rocq_alias heap_lang.tac_wp_alloc]
 public theorem tac_wp_alloc [ι : HeapLangGS hlc GF] {Δ Δ' : IProp GF}
     {s : Stuckness} {E : CoPset} {K : List ECtxItem} {v : Val} {Φ}
     (hlater : Δ ⊢ ▷ Δ')
@@ -438,6 +464,7 @@ public theorem tac_wp_alloc [ι : HeapLangGS hlc GF] {Δ Δ' : IProp GF}
   refine .trans ?_ (wand_entails (wp_alloc v _))
   exact later_mono <| forall_intro fun l => wand_intro (hcont l)
 
+@[rocq_alias heap_lang.tac_wp_free]
 public theorem tac_wp_free [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
     {s : Stuckness} {E : CoPset} {K : List ECtxItem} {l : Loc} {v : Val} {Φ}
     (hlater : Δ ⊢ ▷ Δ')
@@ -446,6 +473,7 @@ public theorem tac_wp_free [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
     Δ ⊢ WP (ProgramLogic.fill K hl(free(#l))) @ s ; E {{ Φ }} :=
   tac_wp_heap_op rfl wp_free hlater hsplit (sep_elim_left.trans hcont)
 
+@[rocq_alias heap_lang.tac_wp_load]
 public theorem tac_wp_load [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF} {p : Bool}
     {s : Stuckness} {E : CoPset} {K : List ECtxItem} {l : Loc} {q} {v : Val} {Φ}
     (hlater : Δ ⊢ ▷ Δ')
@@ -459,6 +487,7 @@ public theorem tac_wp_load [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF} {p 
   refine later_mono ?_
   exact (lookup_split hsplit).trans (sep_mono .rfl (wand_mono .rfl hcont))
 
+@[rocq_alias heap_lang.tac_wp_store]
 public theorem tac_wp_store [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
     {s : Stuckness} {E : CoPset} {K : List ECtxItem} {l : Loc} {v v' : Val} {Φ}
     (hlater : Δ ⊢ ▷ Δ')
@@ -475,6 +504,7 @@ public theorem tac_wp_store [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
   refine .trans sep_comm.mp ?_
   exact sep_mono .rfl (wand_intro hcont)
 
+@[rocq_alias heap_lang.tac_wp_xchg]
 public theorem tac_wp_xchg [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
     {s : Stuckness} {E : CoPset} {K : List ECtxItem} {l : Loc} {v v' : Val} {Φ}
     (hlater : Δ ⊢ ▷ Δ')
@@ -484,6 +514,7 @@ public theorem tac_wp_xchg [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
     Δ ⊢ WP (ProgramLogic.fill K hl(xchg(#l, &v'))) @ s ; E {{ Φ }} :=
   tac_wp_heap_op rfl wp_xchg hlater hsplit hcont
 
+@[rocq_alias heap_lang.tac_wp_cmpxchg_fail]
 public theorem tac_wp_cmpXchg_fail [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF} {p : Bool}
     {s : Stuckness} {E : CoPset} {K : List ECtxItem} {l : Loc} {q} {v v1 v2 : Val} {Φ}
     (hlater : Δ ⊢ ▷ Δ')
@@ -504,6 +535,7 @@ public theorem tac_wp_cmpXchg_fail [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp
   iapply hcont
   iapply Hrestore $$ HP
 
+@[rocq_alias heap_lang.tac_wp_cmpxchg_suc]
 public theorem tac_wp_cmpXchg_suc [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
     {s : Stuckness} {E : CoPset} {K : List ECtxItem} {l : Loc} {v v1 v2 : Val} {Φ}
     (hlater : Δ ⊢ ▷ Δ')
@@ -514,6 +546,7 @@ public theorem tac_wp_cmpXchg_suc [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp 
     Δ ⊢ WP (ProgramLogic.fill K hl(cmpXchg(v(#l), v(&v1), v(&v2)))) @ s ; E {{ Φ }} :=
   tac_wp_heap_op rfl (wp_cmpXchg_true rfl rfl hsafe (decide_eq_true heq)) hlater hsplit hcont
 
+@[rocq_alias heap_lang.tac_wp_cmpxchg]
 public theorem tac_wp_cmpXchg [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
     {s : Stuckness} {E : CoPset} {K : List ECtxItem} {l : Loc} {v v1 v2 : Val} {Φ}
     (hlater : Δ ⊢ ▷ Δ')
@@ -527,6 +560,7 @@ public theorem tac_wp_cmpXchg [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
   if heq : v = v1 then tac_wp_cmpXchg_suc hlater hsplit heq hsafe (hsuc heq)
   else tac_wp_cmpXchg_fail (p := false) hlater hsplit heq hsafe (hfail heq)
 
+@[rocq_alias heap_lang.tac_wp_faa]
 public theorem tac_wp_faa [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
     {s : Stuckness} {E : CoPset} {K : List ECtxItem} {l : Loc} {z1 z2 : Int} {Φ}
     (hlater : Δ ⊢ ▷ Δ')
@@ -614,8 +648,16 @@ HeapLang WP (from the `HeapLangGS` instance), and strip the WP's step modality
 off the hypotheses. -/
 meta def runTacticHeapWp {α} (tacName : Name)
     (k : MVarId → HeapWpGoal → ProofModeM α) : TacticM α := do
-  -- Rocq parity: every heap tactic first normalizes pure redexes
-  evalTactic (← `(tactic| wp_pures))
+  -- Rocq parity: every heap tactic first normalizes pure redexes. `wp_pures` only fails
+  -- when the goal is not a WP, which is this tactic's failure to report, not `wp_finish`'s
+  try evalTactic (← `(tactic| wp_pures))
+  catch _ => throwError "{tacName}: the goal is not a WP"
+  -- `wp_pures` fails on a goal that is not a WP, so if it leaves one, the pure steps have
+  -- reduced the expression to a value
+  let goalType ← instantiateMVars (← (← getMainGoal).getType)
+  if let some {goal, ..} := parseIrisGoal? goalType then
+    unless goal.consumeMData.isAppOf ``Wp.wp do
+      throwError "{tacName}: the expression has been reduced to a value, there is no redex left"
   ProofModeM.runTacticWp tacName fun mvar {hyps, GF, hlc, ι, s, E, e, Φ, hu, hprop, hbi, ..} => do
     have ιQ : Q(IrisGS_gen $hlc Exp $GF) := ι
     let ~q(@HeapLang _ _ $hgs) := ιQ
