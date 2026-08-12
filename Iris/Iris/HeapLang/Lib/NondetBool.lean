@@ -32,7 +32,6 @@ theorem nondetBool.spec :
   · inext
     wp_pures
     iinv Hinv with >⟨%b, Hl⟩
-    · simp; infer_instance -- TODO: iinv should solve this
     wp_load
     iintro !> {$Hl}
     iapply K $$ [//]

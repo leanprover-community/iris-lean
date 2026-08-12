@@ -52,7 +52,6 @@ theorem wp_landinsKnot (P : Val → IProp GF) (Q : Val → Val → IProp GF) (F 
   wp_rec
   wp_bind !_
   iinv Hinv with >Hr
-  · simp; infer_instance -- TODO: iinv should solve this
   wp_load
   imodintro; iframe
   iapply H $$ [$HP] [$]
