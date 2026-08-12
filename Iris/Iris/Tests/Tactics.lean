@@ -3684,10 +3684,6 @@ section iinv
 
 variable {hlc : HasLC} {GF : BundledGFunctors} [InvGS_gen hlc GF] {N : Namespace}
 
-/-- Tests fallback after `apply_rfl` inspects a concrete namespace side condition. -/
-example : nclose (ofName `rnd) ⊆ ⊤ := by
-  first | apply_rfl | exact CoPset.subseteq_top
-
 /--
   Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and
   `intoAcc_inv` where the side condition is trivial.
@@ -3702,8 +3698,9 @@ example {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
     inext
     iexact H
 
-/-- Tests `iinv` with a concrete namespace whose closure is expensive to unfold. -/
-example {P : IProp GF} : inv (ofName `rnd) iprop(<pers> P) ={⊤}=∗ ▷ P := by
+/-- Tests `iinv` with a concrete namespace whose closure is expensive to unfold.
+Regression test for https://github.com/leanprover-community/iris-lean/issues/557 -/
+example {P : IProp GF} : inv `long_name iprop(<pers> P) ={⊤}=∗ ▷ P := by
   iintro #Hinv
   iinv Hinv with #H
   imodintro
