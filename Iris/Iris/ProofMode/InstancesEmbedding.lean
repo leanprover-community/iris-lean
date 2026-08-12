@@ -16,7 +16,7 @@ open BI
 
 section BiEmbed
 
-variable {PROP1 PROP2 : Type u} [bi1 : BI PROP1] [bi2 : BI PROP2] [BiEmbed PROP1 PROP2]
+variable [bi1 : BI PROP1] [bi2 : BI PROP2] [BiEmbed PROP1 PROP2]
 
 /-! ### AsEmpValid -/
 
@@ -294,7 +294,7 @@ end BiEmbed
 
 section SbiEmbed
 
-variable {P1 P2 : Type u} [Sbi P1] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
+variable [Sbi P1] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
 
 @[rocq_alias from_modal_plainly_embed]
 instance (priority := low) fromModal_plainly_embed {α} φ (sel : α)
@@ -312,7 +312,7 @@ end SbiEmbed
 section BiEmbedBUpd
 open BiEmbedBUpd
 
-variable {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+variable [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
   [BIUpdate PROP1] [BIUpdate PROP2] [BiEmbedBUpd PROP1 PROP2]
 
 @[rocq_alias elim_modal_embed_bupd_goal]
@@ -344,8 +344,7 @@ end BiEmbedBUpd
 section BiEmbedFUpd
 open BiEmbedFUpd
 
-variable {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
-  [BIFUpdate PROP1] [BIFUpdate PROP2] [BiEmbedFUpd PROP1 PROP2]
+variable [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] [BIFUpdate PROP1] [BIFUpdate PROP2] [BiEmbedFUpd PROP1 PROP2]
 
 @[rocq_alias elim_modal_embed_fupd_goal]
 instance elimModal_embed_fupd_goal φ p io p'
