@@ -37,6 +37,30 @@ instance fromModal_embed (P : PROP1) :
     FromModal True (modality_embed (PROP2 := PROP2)) iprop(⎡P⎤ : PROP2) iprop(⎡P⎤) P where
   from_modal _ := .rfl
 
+@[rocq_alias from_modal_id_embed]
+instance (priority := low) fromModal_id_embed {α} φ (sel : α)
+    (P Q : PROP1) [inst : FromModal φ modality_id sel P Q] :
+    FromModal φ modality_id sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
+  from_modal h := embed_mono <| inst.from_modal h
+
+@[rocq_alias from_modal_affinely_embed]
+instance (priority := low) fromModal_affinely_embed {α} φ (sel : α)
+    (P Q : PROP1) [inst : FromModal φ modality_affinely sel P Q] :
+    FromModal φ modality_affinely sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
+  from_modal h := (embed_affinely_2 Q).trans (embed_mono <| inst.from_modal h)
+
+@[rocq_alias from_modal_persistently_embed]
+instance (priority := low) fromModal_persistently_embed {α} φ (sel : α)
+    (P Q : PROP1) [inst : FromModal φ modality_persistently sel P Q] :
+    FromModal φ modality_persistently sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
+  from_modal h := (embed_persistently Q).mpr.trans (embed_mono <| inst.from_modal h)
+
+@[rocq_alias from_modal_intuitionistically_embed]
+instance (priority := low) fromModal_intuitionistically_embed {α} φ (sel : α)
+    (P Q : PROP1) [inst : FromModal φ modality_intuitionistically sel P Q] :
+    FromModal φ modality_intuitionistically sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
+  from_modal h := (embed_intuitionistically_2 Q).trans (embed_mono <| inst.from_modal h)
+
 /-! ### IntoEmbed -/
 
 @[rocq_alias into_embed_embed]
@@ -52,14 +76,14 @@ instance intoEmbed_affinely [BIUpdate PROP1] [BIUpdate PROP2]
 /-! ### IntoPure -/
 
 @[rocq_alias into_pure_embed]
-instance intoPure_embed (P : PROP1) (φ : Prop) [inst : IntoPure P φ] :
+instance intoPure_embed (P : PROP1) φ [inst : IntoPure P φ] :
     IntoPure iprop(⎡P⎤ : PROP2) φ where
   into_pure := (embed_mono inst.into_pure).trans (embed_pure φ).mp
 
 /-! ### FromPure -/
 
 @[rocq_alias from_pure_embed]
-instance fromPure_embed (a : Bool) (P : PROP1) (ioφ : InOut) (φ : Prop)
+instance fromPure_embed (a : Bool) (P : PROP1) (ioφ : InOut) φ
     [FromPure a P ioφ φ] : FromPure a iprop(⎡P⎤ : PROP2) ioφ φ where
   from_pure := sorry
 
@@ -73,147 +97,128 @@ instance intoPersistently_embed (p : Bool) (P Q : PROP1) [inst : IntoPersistentl
     _ ⊢ ⎡<pers> Q⎤   := embed_mono inst.into_persistently
     _ ⊢ <pers> ⎡Q⎤   := (biEmbed.persistently Q).mp
 
-/-! ### FromModal -/
-
-@[rocq_alias from_modal_id_embed]
-instance (priority := low) fromModal_id_embed {α : Type _} (φ : Prop) (sel : α)
-    (P Q : PROP1) [inst : FromModal φ modality_id sel P Q] :
-    FromModal φ modality_id sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
-  from_modal h := embed_mono <| inst.from_modal h
-
-@[rocq_alias from_modal_affinely_embed]
-instance (priority := low) fromModal_affinely_embed {α : Type _} (φ : Prop) (sel : α)
-    (P Q : PROP1) [inst : FromModal φ modality_affinely sel P Q] :
-    FromModal φ modality_affinely sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
-  from_modal h := (embed_affinely_2 Q).trans (embed_mono <| inst.from_modal h)
-
-@[rocq_alias from_modal_persistently_embed]
-instance (priority := low) fromModal_persistently_embed {α : Type _} (φ : Prop) (sel : α)
-    (P Q : PROP1) [inst : FromModal φ modality_persistently sel P Q] :
-    FromModal φ modality_persistently sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
-  from_modal h := (embed_persistently Q).mpr.trans (embed_mono <| inst.from_modal h)
-
-@[rocq_alias from_modal_intuitionistically_embed]
-instance (priority := low) fromModal_intuitionistically_embed {α : Type _} (φ : Prop) (sel : α)
-    (P Q : PROP1) [inst : FromModal φ modality_intuitionistically sel P Q] :
-    FromModal φ modality_intuitionistically sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
-  from_modal h := (embed_intuitionistically_2 Q).trans (embed_mono <| inst.from_modal h)
-
 /-! ### IntoWand -/
 
 @[rocq_alias into_wand_embed]
 instance intoWand_embed (p q : Bool) (m : WandMode) (R P Q : PROP1)
-    [IntoWand p q R m P Q] :
+    [inst : IntoWand p q R m P Q] :
     IntoWand p q iprop(⎡R⎤ : PROP2) m iprop(⎡P⎤) iprop(⎡Q⎤) where
-  into_wand := sorry
+  into_wand := calc
+    _ ⊢ ⎡□?p R⎤        := embed_intuitionistically_if_2 R p
+    _ ⊢ ⎡□?q P -∗ Q⎤   := embed_mono inst.into_wand
+    _ ⊢ ⎡□?q P⎤ -∗ ⎡Q⎤ := (embed_wand iprop(□?q P) Q).mp
+    _ ⊢ □?q ⎡P⎤ -∗ ⎡Q⎤ := wand_mono_left <| embed_intuitionistically_if_2 P q
 
 /-- When the wand `⎡R⎤` sits in the intuitionistic context, the result of wand
 elimination keeps the affine modality. -/
 @[rocq_alias into_wand_affine_embed_true]
 instance (priority := low) intoWand_affine_embed_true (q : Bool) (m : WandMode)
-    (P Q R : PROP1) [IntoWand true q R .unknown P Q] :
+    (P Q R : PROP1) [inst : IntoWand true q R .unknown P Q] :
     IntoWand true q iprop(⎡R⎤ : PROP2) m iprop(<affine> ⎡P⎤) iprop(<affine> ⎡Q⎤) where
   into_wand := sorry
 
 @[rocq_alias into_wand_affine_embed_false]
 instance (priority := low) intoWand_affine_embed_false (q : Bool) (m : WandMode)
-    (P Q R : PROP1) [IntoWand false q R (.matching .argument) iprop(<affine> P) Q] :
+    (P Q R : PROP1) [inst : IntoWand false q R (.matching .argument) iprop(<affine> P) Q] :
     IntoWand false q iprop(⎡R⎤ : PROP2) m iprop(<affine> ⎡P⎤) iprop(⎡Q⎤) where
   into_wand := sorry
 
 /-! ### FromWand -/
 
 @[rocq_alias from_wand_embed]
-instance fromWand_embed (io : InOut) (P Q1 Q2 : PROP1) [FromWand P io Q1 Q2] :
+instance fromWand_embed (io : InOut) (P Q1 Q2 : PROP1) [inst : FromWand P io Q1 Q2] :
     FromWand iprop(⎡P⎤ : PROP2) io iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
-  from_wand := sorry
+  from_wand := (embed_wand Q1 Q2).mpr.trans (embed_mono inst.from_wand)
 
 /-! ### FromImp -/
 
 @[rocq_alias from_impl_embed]
-instance fromImp_embed (P Q1 Q2 : PROP1) [FromImp P Q1 Q2] :
+instance fromImp_embed (P Q1 Q2 : PROP1) [inst : FromImp P Q1 Q2] :
     FromImp iprop(⎡P⎤ : PROP2) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
-  from_imp := sorry
+  from_imp := (embed_impl Q1 Q2).mpr.trans (embed_mono inst.from_imp)
 
 @[rocq_alias from_and_embed]
-instance fromAnd_embed (P Q1 Q2 : PROP1) [FromAnd P Q1 Q2] :
+instance fromAnd_embed (P Q1 Q2 : PROP1) [inst : FromAnd P Q1 Q2] :
     FromAnd iprop(⎡P⎤ : PROP2) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
-  from_and := sorry
+  from_and := (embed_and Q1 Q2).mpr.trans (embed_mono inst.from_and)
 
 @[rocq_alias from_sep_embed]
-instance fromSep_embed (P Q1 Q2 : PROP1) [FromSep P Q1 Q2] :
+instance fromSep_embed (P Q1 Q2 : PROP1) [inst : FromSep P Q1 Q2] :
     FromSep iprop(⎡P⎤ : PROP2) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
-  from_sep := sorry
+  from_sep := (embed_sep Q1 Q2).mpr.trans (embed_mono inst.from_sep)
 
 /-! ### CombineSepAs -/
 
 @[rocq_alias maybe_combine_sep_as_embed]
-instance combineSepAs_embed (Q1 Q2 P : PROP1) [CombineSepAs Q1 Q2 P] :
+instance combineSepAs_embed (Q1 Q2 P : PROP1) [inst : CombineSepAs Q1 Q2 P] :
     CombineSepAs iprop(⎡Q1⎤ : PROP2) iprop(⎡Q2⎤) iprop(⎡P⎤) where
-  combine_sep_as := sorry
+  combine_sep_as := (embed_sep Q1 Q2).mpr.trans (embed_mono inst.combine_sep_as)
 
 /-! ### CombineSepGives -/
 
 @[rocq_alias combine_sep_gives_embed]
-instance combineSepGives_embed (Q1 Q2 P : PROP1) [CombineSepGives Q1 Q2 P] :
+instance combineSepGives_embed (Q1 Q2 P : PROP1) [inst : CombineSepGives Q1 Q2 P] :
     CombineSepGives iprop(⎡Q1⎤ : PROP2) iprop(⎡Q2⎤) iprop(⎡P⎤) where
-  combine_sep_gives := sorry
+  combine_sep_gives := calc
+    _ ⊢ ⎡Q1 ∗ Q2⎤  := (embed_sep Q1 Q2).mpr
+    _ ⊢ ⎡<pers> P⎤ := embed_mono inst.combine_sep_gives
+    _ ⊢ <pers> ⎡P⎤ := (embed_persistently P).mp
 
 /-! ### IntoAnd -/
 
 @[rocq_alias into_and_embed]
-instance intoAnd_embed (p : Bool) (P Q1 Q2 : PROP1) [IntoAnd p P Q1 Q2] :
+instance intoAnd_embed (p : Bool) (P Q1 Q2 : PROP1) [inst : IntoAnd p P Q1 Q2] :
     IntoAnd p iprop(⎡P⎤ : PROP2) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
   into_and := sorry
 
 /-! ### IntoSep -/
 
 @[rocq_alias into_sep_embed]
-instance intoSep_embed (P Q1 Q2 : PROP1) [IntoSep P Q1 Q2] :
+instance intoSep_embed (P Q1 Q2 : PROP1) [inst : IntoSep P Q1 Q2] :
     IntoSep iprop(⎡P⎤ : PROP2) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
-  into_sep := sorry
+  into_sep := (embed_mono inst.into_sep).trans (embed_sep Q1 Q2).mp
 
 /-! ### FromOr -/
 
 @[rocq_alias from_or_embed]
-instance fromOr_embed (P Q1 Q2 : PROP1) [FromOr P Q1 Q2] :
+instance fromOr_embed (P Q1 Q2 : PROP1) [inst : FromOr P Q1 Q2] :
     FromOr iprop(⎡P⎤ : PROP2) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
-  from_or := sorry
+  from_or := (embed_or Q1 Q2).mpr.trans (embed_mono inst.from_or)
 
 /-! ### IntoOr -/
 
 @[rocq_alias into_or_embed]
-instance intoOr_embed (P Q1 Q2 : PROP1) [IntoOr P Q1 Q2] :
+instance intoOr_embed (P Q1 Q2 : PROP1) [inst : IntoOr P Q1 Q2] :
     IntoOr iprop(⎡P⎤ : PROP2) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
-  into_or := sorry
+  into_or := (embed_mono inst.into_or).trans (embed_or Q1 Q2).mp
 
 /-! ### FromExists -/
 
 @[rocq_alias from_exist_embed]
-instance fromExists_embed {α : Sort _} (P : PROP1) (Φ : α → PROP1) [FromExists P Φ] :
+instance fromExists_embed {α : Sort _} (P : PROP1) (Φ : α → PROP1) [inst : FromExists P Φ] :
     FromExists iprop(⎡P⎤ : PROP2) (fun a => iprop(⎡Φ a⎤)) where
-  from_exists := sorry
+  from_exists := (embed_exist Φ).mpr.trans (embed_mono inst.from_exists)
 
 /-! ### IntoExists -/
 
 @[rocq_alias into_exist_embed]
-instance intoExists_embed {α : Sort _} (P : PROP1) (Φ : α → PROP1) [IntoExists P Φ] :
+instance intoExists_embed {α : Sort _} (P : PROP1) (Φ : α → PROP1) [inst : IntoExists P Φ] :
     IntoExists iprop(⎡P⎤ : PROP2) (fun a => iprop(⎡Φ a⎤)) where
-  into_exists := sorry
+  into_exists := (embed_mono inst.into_exists).trans (embed_exist Φ).mp
 
 /-! ### IntoForall -/
 
 @[rocq_alias into_forall_embed]
-instance intoForall_embed {α : Sort _} (P : PROP1) (Φ : α → PROP1) [IntoForall P Φ] :
+instance intoForall_embed {α : Sort _} (P : PROP1) (Φ : α → PROP1) [inst : IntoForall P Φ] :
     IntoForall iprop(⎡P⎤ : PROP2) (fun a => iprop(⎡Φ a⎤)) where
-  into_forall := sorry
+  into_forall := (embed_mono inst.into_forall).trans (embed_forall Φ).mp
 
 /-! ### FromForall -/
 
 @[rocq_alias from_forall_embed]
-instance fromForall_embed {α : Sort _} (P : PROP1) (Ψ : α → PROP1) [FromForall P Ψ] :
+instance fromForall_embed {α : Sort _} (P : PROP1) (Ψ : α → PROP1) [inst : FromForall P Ψ] :
     FromForall iprop(⎡P⎤ : PROP2) (fun a => iprop(⎡Ψ a⎤)) where
-  from_forall := sorry
+  from_forall := (embed_forall Ψ).mpr.trans (embed_mono inst.from_forall)
 
 /-! ### IntoInv -/
 
