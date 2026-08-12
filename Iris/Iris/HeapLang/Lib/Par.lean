@@ -18,8 +18,10 @@ open BI Iris ProgramLogic Spawn
 
 namespace Par
 
+@[rocq_alias heap_lang.parN]
 def parN : Namespace := ndot nroot "par"
 
+@[rocq_alias heap_lang.par]
 def par : Val := hl_val%
   λ e1 e2,
     let handle := &spawn e1;
@@ -37,6 +39,7 @@ section Specs
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF] [SpawnG GF]
 
+@[rocq_alias heap_lang.par_spec]
 theorem par_spec (Ψ1 Ψ2 : Val → IProp GF) (f1 f2 : Val) (Φ : Val → IProp GF) :
     ⊢ WP hl(&f1 #()) {{ Ψ1 }} -∗
       WP hl(&f2 #()) {{ Ψ2 }} -∗
@@ -60,6 +63,7 @@ theorem par_spec (Ψ1 Ψ2 : Val → IProp GF) (f1 f2 : Val) (Φ : Val → IProp 
   wp_pures
   iexact HΦ
 
+@[rocq_alias heap_lang.wp_par]
 theorem wp_par (Ψ1 Ψ2 : Val → IProp GF) (e1 e2 : Exp) (Φ : Val → IProp GF) :
     ⊢ WP hl(&e1) {{ Ψ1 }} -∗
       WP hl(&e2) {{ Ψ2 }} -∗
