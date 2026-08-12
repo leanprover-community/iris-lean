@@ -21,7 +21,7 @@ open BI Iris Std ProgramLogic CMRA OFE LeibnizMultiSet FiniteMultiSet
 
 namespace RwSpinLock
 
-@[rocq_alias heap_lang.newlock]
+@[rocq_alias heap_lang.rw_spin_lock.newlock]
 def newlock : Val := hl_val(
   λ _, ref(#0))
 
@@ -214,7 +214,7 @@ theorem isRwLock_iff (γ : GName) (lk : Val) (Φ Ψ : Qp → IProp GF) :
     iapply rwStateInv_mono $$ [] Hinv
     iintro %q HΨ; iapply Hiff $$ HΨ
 
-@[rocq_alias heap_lang.newlock_spec]
+@[rocq_alias heap_lang.rw_spin_lock.newlock_spec]
 theorem newlock_spec (Φ : Qp → IProp GF) {P : IProp GF} {ioΦ ioq}
     [hP : AsFractional P ioΦ Φ ioq 1] :
     {{ P }} hl(&newlock #()) {{ lk γ, RET lk; isRwLock γ lk Φ }} := by
