@@ -92,3 +92,10 @@ class MakeFUpd {PROP} [BI PROP] [BIFUpdate PROP] (E1 E2 : CoPset)
     (P : PROP) (Q : outParam PROP) where
   make_fupd : (|={E1,E2}=> P) ⊣⊢ Q
 export MakeFUpd (make_fupd)
+
+/-- The class `MakeEmbed P Q` is used to compute `Q := ⎡P⎤`. -/
+@[ipm_class, rocq_alias MakeEmbed, rocq_alias KnownMakeEmbed]
+class MakeEmbed {PROP1 PROP2} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+    (P : PROP1) (Q : outParam PROP2) where
+  make_embed : (⎡P⎤ : PROP2) ⊣⊢ Q
+export MakeEmbed (make_embed)
