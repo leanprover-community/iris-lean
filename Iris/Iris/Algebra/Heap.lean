@@ -119,7 +119,6 @@ theorem isSome_get?_eq_of_dist [LawfulPartialMap M K] [OFE V] {n : Nat} {m₁ m�
 instance [LawfulPartialMap M K] [OFE V] : NonExpansive₂ ((· ∪ ·) : M V → M V → M V) where
   ne _ {_ _} H₁ {_ _} H₂ := merge_dist (fun H _ => H) H₁ H₂
 
-@[rocq_alias gmap_difference_ne]
 instance [LawfulPartialMap M K] [OFE V] : NonExpansive₂ ((· \ ·) : M V → M V → M V) where
   ne _ {m₁ m₁'} H₁ {_ m₂'} H₂ k := by
     specialize H₁ k
