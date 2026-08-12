@@ -5,7 +5,6 @@ public import Iris.Std.BitOp
 public import Iris.Std.Classes
 public import Iris.Std.CoPset
 public import Iris.Std.DelabRule
-public import Iris.Std.DumpPortingData
 public import Iris.Std.Equivalence
 public import Iris.Std.Expr
 public import Iris.Std.FromMathlib
