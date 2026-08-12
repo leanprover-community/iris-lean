@@ -11,7 +11,7 @@ public import Iris.ProofMode.SynthInstanceAttr
 
 public meta section
 
-/-
+/-!
 This file implements a custom typeclass synthesis algorithm that is used for
 the proof mode typeclasses.
 

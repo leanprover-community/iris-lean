@@ -14,6 +14,8 @@ public import Iris.ProofMode.ModalityInstances
 namespace Iris.ProofMode
 open BI
 
+/-! ### AsEmpValid -/
+
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias as_emp_valid_embed]
 instance (priority := low) asEmpValid_embed
@@ -28,10 +30,14 @@ instance (priority := low) asEmpValid_embed
     · intro hd hP
       apply inst.as_emp_valid_0.as_emp_valid.right hd <| (embed_emp_valid P).mp hP
 
+/-! ### FromModal -/
+
 @[rocq_alias from_modal_embed]
 instance fromModal_embed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] (P : PROP1) :
     FromModal True (modality_embed (PROP2 := PROP2)) iprop(⎡P⎤ : PROP2) iprop(⎡P⎤) P where
   from_modal _ := .rfl
+
+/-! ### IntoEmbed -/
 
 @[rocq_alias into_embed_embed]
 instance intoEmbed_embed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
