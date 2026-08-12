@@ -5,7 +5,6 @@ Authors: Zongyuan Liu
 -/
 module
 
-import Lean
 public import Iris.Init
 
 /-!
