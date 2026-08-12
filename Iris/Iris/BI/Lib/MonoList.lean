@@ -129,6 +129,12 @@ instance {γ} {l : List α} :
     rw [← iOwn_op.to_eq]
     exact (congrArg (iOwn _) (auth_dfrac_op (.own p) (.own q) _)).to_bi
 
+@[rocq_alias mono_list_auth_own_as_fractional]
+instance {γ} {l : List α} q :
+   AsFractional (PROP := IProp GF) (γ ↪●ML{.own q} l) ioΦ (γ ↪●ML{.own ·} l) ioq q where
+  as_fractional := .rfl
+  as_fractional_fractional := inferInstance
+
 /-! ## Agreement -/
 
 @[rocq_alias mono_list_auth_own_agree]
@@ -168,7 +174,7 @@ theorem lb_own_valid (γ : GName) (l1 l2 : List α) :
   iintro H1 H2
   icases iOwn_cmraValid_op $$ [$H1 $H2] with %Hvalid
   ipureintro
-  exact (lb_op_valid_prefix ..).mp Hvalid |>.imp map_mk_prefix map_mk_prefix
+  exact (lb_op_valid ..).mp Hvalid |>.imp map_mk_prefix map_mk_prefix
 
 @[rocq_alias mono_list_idx_agree]
 theorem idx_agree (γ : GName) (i : Nat) (a1 a2 : α) :

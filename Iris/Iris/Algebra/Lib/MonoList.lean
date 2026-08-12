@@ -224,14 +224,15 @@ theorem lb_op_validN {n} (l1 l2 : List α) :
   unfold lb MonoList
   rw [Auth.frag_op_validN, toMaxPrefixList_op_validN]
 
-@[rocq_alias mono_list_lb_op_valid_L]
-theorem lb_op_valid_prefix (l1 l2 : List α) :
+@[rocq_alias mono_list_lb_op_valid]
+theorem lb_op_valid (l1 l2 : List α) :
     ✓ (◯ML l1 • ◯ML l2) ↔ l1 <+: l2 ∨ l2 <+: l1 := by
   unfold lb MonoList
   rw [Auth.frag_op_valid, toMaxPrefixList_op_valid]
 
-#rocq_ignore mono_list_lb_op_valid_1_L "Use lb_op_valid_prefix.mp"
-#rocq_ignore mono_list_lb_op_valid_2_L "Use lb_op_valid_prefix.mpr"
+#rocq_ignore mono_list_lb_op_valid_L "Use lb_op_valid"
+#rocq_ignore mono_list_lb_op_valid_1_L "Use lb_op_valid.mp"
+#rocq_ignore mono_list_lb_op_valid_2_L "Use lb_op_valid.mpr"
 
 @[rocq_alias mono_list_lb_mono]
 theorem lb_mono {l1 l2 : List α} (h : l1 <+: l2) : ◯ML l1 ≼ ◯ML l2 :=
