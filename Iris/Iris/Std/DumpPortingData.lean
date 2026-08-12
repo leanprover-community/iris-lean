@@ -5,7 +5,7 @@ Authors: Zongyuan Liu
 -/
 
 import Lean
-import Iris.Std.RocqPorting
+import Iris.Init
 
 /-!
 # Dump Porting Data

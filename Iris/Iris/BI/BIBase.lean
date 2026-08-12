@@ -10,7 +10,6 @@ public import Iris.Std.Classes
 public meta import Iris.Std.DelabRule
 public meta import Iris.Std.Rewrite
 public import Iris.Std.BigOp
-public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 

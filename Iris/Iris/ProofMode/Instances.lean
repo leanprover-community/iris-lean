@@ -11,7 +11,6 @@ public import Iris.ProofMode.ClassesMake
 public import Iris.ProofMode.ModalityInstances
 public import Iris.ProofMode.Expr
 public import Iris.Std.TC
-public import Iris.Std.RocqPorting
 public import Iris.ProofMode.Tactics
 public import Iris.ProofMode.Display
 

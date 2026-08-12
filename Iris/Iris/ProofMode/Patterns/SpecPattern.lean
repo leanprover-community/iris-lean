@@ -6,7 +6,6 @@ Authors: Oliver Soeser, Zongyuan Liu, Yunsong Yang, Michael Sammler, Alvin Tang
 module
 
 public import Lean.Syntax
-public meta import Iris.Std.RocqPorting
 public import Iris.Init
 
 @[expose] public section
