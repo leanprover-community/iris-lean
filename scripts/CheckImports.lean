@@ -141,9 +141,12 @@ private def checkEntryPoints (root : Name) (all : Array Name)
       entry point of their directory ({checked} entry points checked)."
   return ok
 
-/-- Every module must transitively import `Init`, unless `Init` depends on it. -/
+/--
+  Every module must transitively import `Init`, unless `Init` depends on it.
+  When `minimalOnly` is `true`, only print the minimal set of modules that should import `Init`.
+-/
 private def checkInit (root : Name) (all : Array Name)
-    (graph : Std.HashMap Name (Array Name)) : IO Bool := do
+    (graph : Std.HashMap Name (Array Name)) (minimalOnly : Bool) : IO Bool := do
   let init := root ++ `Init
   -- The reversed import graph: reachability from `init` in it is the set of importers
   let mut rev := ∅
@@ -154,6 +157,12 @@ private def checkInit (root : Name) (all : Array Name)
   -- The modules that `init` itself depends on; these cannot import it back
   let dependencies := reachableFrom graph init
   let expected := all.filter (!dependencies.contains ·)
+  if minimalOnly then
+    -- The modules with no non-exempt import: importing `init` from these suffices
+    let minimal := expected.filter fun mod =>
+      (graph.getD mod #[]).all fun i => dependencies.contains i || !graph.contains i
+    report s!"check-imports: it suffices to import `{init}` in {minimal.size} module(s):" minimal
+    return true
   let missing := expected.filter (!importers.contains ·)
   unless missing.isEmpty do
     report s!"check-imports: {missing.size} module(s) of {root} never import (directly \
@@ -168,15 +177,16 @@ private def checkInit (root : Name) (all : Array Name)
   return true
 
 def main (args : List String) : IO UInt32 := do
-  let (entryPoints, initModule, libName?) := match args with
-    | ["--entry-points-only", lib] => (true, false, some lib)
-    | ["--init-only", lib] => (false, true, some lib)
-    | [lib] => (true, true, some lib)
-    | _ => (false, false, none)
+  let (entryPoints, initModule, minimalOnly, libName?) := match args with
+    | ["--entry-points-only", lib] => (true, false, false, some lib)
+    | ["--init-only", lib] => (false, true, false, some lib)
+    | ["--minimal-init", lib] => (false, true, true, some lib)
+    | [lib] => (true, true, false, some lib)
+    | _ => (false, false, false, none)
   let some libName := libName?
     | do
-      IO.eprintln "usage: check-imports [--entry-points-only | --init-only] <LibraryName> \
-        (e.g. `lake exe check-imports Iris`)"
+      IO.eprintln "usage: check-imports [--entry-points-only | --init-only | \
+        --minimal-init] <LibraryName> (e.g. `lake exe check-imports Iris`)"
       return 2
   let root := libName.toName
   unless (← (moduleFile root).pathExists) && (← (moduleDir root).isDir) do
@@ -193,5 +203,5 @@ def main (args : List String) : IO UInt32 := do
   if entryPoints then
     ok := (← checkEntryPoints root all graph) && ok
   if initModule then
-    ok := (← checkInit root all graph) && ok
+    ok := (← checkInit root all graph minimalOnly) && ok
   return if ok then 0 else 1
