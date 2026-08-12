@@ -26,7 +26,7 @@ theorem nondetBool.spec :
   unfold nondetBool
   wp_alloc l with Hl
   wp_pures
-  imod inv_alloc `n ⊤ iprop(∃ (b : Bool), l ↦ hl_val(#b)) $$ [$Hl] with #Hinv
+  imod inv_alloc `rnd ⊤ iprop(∃ (b : Bool), l ↦ hl_val(#b)) $$ [$Hl] with #Hinv
   wp_bind fork(_)
   iapply wp_fork $$ [K] []
   · inext

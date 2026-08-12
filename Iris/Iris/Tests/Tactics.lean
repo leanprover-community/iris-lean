@@ -3698,6 +3698,18 @@ example {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
     inext
     iexact H
 
+/-- Tests `iinv` with a concrete namespace whose closure is expensive to unfold.
+Regression test for https://github.com/leanprover-community/iris-lean/issues/557 -/
+example {P : IProp GF} : inv `long_name iprop(<pers> P) ={⊤}=∗ ▷ P := by
+  iintro #Hinv
+  iinv Hinv with #H
+  imodintro
+  isplit
+  · iexact H
+  · imodintro
+    inext
+    iexact H
+
 /--
   Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and
   `intoAcc_inv` where the side condition is trivial.
