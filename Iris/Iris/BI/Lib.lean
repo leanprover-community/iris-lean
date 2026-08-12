@@ -8,6 +8,7 @@ public import Iris.BI.Lib.FixpointBanach
 public import Iris.BI.Lib.Fractional
 public import Iris.BI.Lib.GenHeap
 public import Iris.BI.Lib.Laterable
+public import Iris.BI.Lib.MonoList
 public import Iris.BI.Lib.MonoNat
 public import Iris.BI.Lib.MonoZ
 public import Iris.BI.Lib.ProphMap
