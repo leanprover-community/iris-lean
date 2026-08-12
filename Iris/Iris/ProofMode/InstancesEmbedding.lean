@@ -83,9 +83,12 @@ instance intoPure_embed (P : PROP1) φ [inst : IntoPure P φ] :
 /-! ### FromPure -/
 
 @[rocq_alias from_pure_embed]
-instance fromPure_embed (a : Bool) (P : PROP1) (ioφ : InOut) φ
-    [FromPure a P ioφ φ] : FromPure a iprop(⎡P⎤ : PROP2) ioφ φ where
-  from_pure := sorry
+instance fromPure_embed a (P : PROP1) ioφ φ [inst : FromPure a P ioφ φ] :
+    FromPure a iprop(⎡P⎤ : PROP2) ioφ φ where
+  from_pure := calc
+    _ ⊢ <affine>?a ⎡(⌜φ⌝ : PROP1)⎤ := affinelyIf_mono (embed_pure φ).mpr
+    _ ⊢ ⎡<affine>?a ⌜φ⌝⎤           := embed_affinely_if_2 _ a
+    _ ⊢ ⎡P⎤                        := embed_mono inst.from_pure
 
 /-! ### IntoPersistently -/
 
@@ -100,8 +103,7 @@ instance intoPersistently_embed p (P Q : PROP1) [inst : IntoPersistently p P Q] 
 /-! ### IntoWand -/
 
 @[rocq_alias into_wand_embed]
-instance intoWand_embed (p q : Bool) (m : WandMode) (R P Q : PROP1)
-    [inst : IntoWand p q R m P Q] :
+instance intoWand_embed p q m (R P Q : PROP1) [inst : IntoWand p q R m P Q] :
     IntoWand p q iprop(⎡R⎤ : PROP2) m iprop(⎡P⎤) iprop(⎡Q⎤) where
   into_wand := calc
     _ ⊢ ⎡□?p R⎤        := embed_intuitionistically_if_2 R p
@@ -109,19 +111,45 @@ instance intoWand_embed (p q : Bool) (m : WandMode) (R P Q : PROP1)
     _ ⊢ ⎡□?q P⎤ -∗ ⎡Q⎤ := (embed_wand iprop(□?q P) Q).mp
     _ ⊢ □?q ⎡P⎤ -∗ ⎡Q⎤ := wand_mono_left <| embed_intuitionistically_if_2 P q
 
-/-- When the wand `⎡R⎤` sits in the intuitionistic context, the result of wand
-elimination keeps the affine modality. -/
+/--
+  When the wand `⎡R⎤` sits in the intuitionistic context, the result of wand
+  elimination keeps the affine modality.
+-/
 @[rocq_alias into_wand_affine_embed_true]
-instance (priority := low) intoWand_affine_embed_true (q : Bool) (m : WandMode)
+instance (priority := low) intoWand_affine_embed_true q m
     (P Q R : PROP1) [inst : IntoWand true q R .unknown P Q] :
     IntoWand true q iprop(⎡R⎤ : PROP2) m iprop(<affine> ⎡P⎤) iprop(<affine> ⎡Q⎤) where
-  into_wand := sorry
+  into_wand := by
+    refine (intuitionistically_intro_intuitionistically <|
+      (embed_intuitionistically_2 R).trans (embed_mono inst.into_wand)).trans (wand_intro_left ?_)
+    cases q
+    · calc
+        _ ⊢ <affine> ⎡P⎤ ∗ <affine> ⎡P -∗ Q⎤ := sep_mono_right affinely_of_intuitionistically
+        _ ⊢ <affine> (⎡P⎤ ∗ ⎡P -∗ Q⎤)        := affinely_sep_mpr
+        _ ⊢ <affine> ⎡P ∗ (P -∗ Q)⎤          := affinely_mono (embed_sep P iprop(P -∗ Q)).mpr
+        _ ⊢ <affine> ⎡Q⎤                     := affinely_mono <| embed_mono wand_elim_right
+    · calc
+        _ ⊢ □ ⎡P⎤ ∗ □ ⎡□ P -∗ Q⎤ := sep_mono_left (intuitionistically_mono affinely_elim)
+        _ ⊢ □ ⎡□ P⎤ ∗ □ ⎡□ P -∗ Q⎤ :=
+              sep_mono_left (intuitionistically_intro_intuitionistically
+                (embed_intuitionistically_2 P))
+        _ ⊢ □ (⎡□ P⎤ ∗ ⎡□ P -∗ Q⎤) := intuitionistically_sep_mpr
+        _ ⊢ □ ⎡□ P ∗ (□ P -∗ Q)⎤   :=
+              intuitionistically_mono (embed_sep iprop(□ P) iprop(□ P -∗ Q)).mpr
+        _ ⊢ □ ⎡Q⎤                  := intuitionistically_mono <| embed_mono wand_elim_right
+        _ ⊢ <affine> ⎡Q⎤           := affinely_of_intuitionistically
 
 @[rocq_alias into_wand_affine_embed_false]
-instance (priority := low) intoWand_affine_embed_false (q : Bool) (m : WandMode)
+instance (priority := low) intoWand_affine_embed_false q m
     (P Q R : PROP1) [inst : IntoWand false q R (.matching .argument) iprop(<affine> P) Q] :
     IntoWand false q iprop(⎡R⎤ : PROP2) m iprop(<affine> ⎡P⎤) iprop(⎡Q⎤) where
-  into_wand := sorry
+  into_wand := by
+    calc
+      _ ⊢ ⎡□?q (<affine> P) -∗ Q⎤   := embed_mono inst.into_wand
+      _ ⊢ ⎡□?q (<affine> P)⎤ -∗ ⎡Q⎤ := (embed_wand iprop(□?q (<affine> P)) Q).mp
+      _ ⊢ □?q (<affine> ⎡P⎤) -∗ ⎡Q⎤ := wand_mono_left ?_
+    exact (intuitionisticallyIf_mono (embed_affinely_2 P)).trans
+          (embed_intuitionistically_if_2 iprop(<affine> P) q)
 
 /-! ### FromWand -/
 
@@ -169,7 +197,13 @@ instance combineSepGives_embed (Q1 Q2 P : PROP1) [inst : CombineSepGives Q1 Q2 P
 @[rocq_alias into_and_embed]
 instance intoAnd_embed p (P Q1 Q2 : PROP1) [inst : IntoAnd p P Q1 Q2] :
     IntoAnd p iprop(⎡P⎤ : PROP2) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
-  into_and := sorry
+  into_and := by
+    refine intuitionisticallyIf_intro_intuitionisticallyIf ?_
+    calc
+      _ ⊢ ⎡□?p P⎤         := embed_intuitionistically_if_2 P p
+      _ ⊢ ⎡□?p (Q1 ∧ Q2)⎤ := embed_mono inst.into_and
+      _ ⊢ ⎡Q1 ∧ Q2⎤       := embed_mono intuitionisticallyIf_elim
+      _ ⊢ ⎡Q1⎤ ∧ ⎡Q2⎤     := (embed_and Q1 Q2).mp
 
 /-! ### IntoSep -/
 
@@ -263,15 +297,15 @@ section SbiEmbed
 variable {P1 P2 : Type u} [Sbi P1] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
 
 @[rocq_alias from_modal_plainly_embed]
-instance (priority := low) fromModal_plainly_embed {α : Type _} φ (sel : α)
-    (P Q : P1) [FromModal φ modality_plainly sel P Q] :
+instance (priority := low) fromModal_plainly_embed {α} φ (sel : α)
+    (P Q : P1) [inst : FromModal φ modality_plainly sel P Q] :
     FromModal φ modality_plainly sel iprop(⎡P⎤ : P2) iprop(⎡Q⎤) where
-  from_modal := sorry
+  from_modal h := (embed_plainly Q).mpr.trans (embed_mono <| inst.from_modal h)
 
 @[rocq_alias into_internal_eq_embed]
-instance intoInternalEq_embed {A : Type _} [OFE A] (x y : A) (P : P1)
-    [IntoInternalEq P x y] : IntoInternalEq iprop(⎡P⎤ : P2) x y where
-  into_internal_eq := sorry
+instance intoInternalEq_embed {A} [OFE A] (x y : A) (P : P1)
+    [inst : IntoInternalEq P x y] : IntoInternalEq iprop(⎡P⎤ : P2) x y where
+  into_internal_eq := (embed_mono inst.into_internal_eq).trans (embed_internal_eq x y).mp
 
 end SbiEmbed
 
