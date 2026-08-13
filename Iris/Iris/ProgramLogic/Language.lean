@@ -19,15 +19,15 @@ open FromMathlib
 
 variable {Expr Val State Obs : Type _}
 
-/-- The discrete (Leibniz) OFE on expressions. -/
+/-- The discrete OFE on expressions. -/
 @[rocq_alias exprO]
 abbrev exprO (Expr : Type _) := DiscreteO Expr
 
-/-- The discrete (Leibniz) OFE on values. -/
+/-- The discrete OFE on values. -/
 @[rocq_alias valO]
 abbrev valO (Val : Type _) := DiscreteO Val
 
-/-- The discrete (Leibniz) OFE on states. -/
+/-- The discrete OFE on states. -/
 @[rocq_alias stateO]
 abbrev stateO (State : Type _) := DiscreteO State
 
