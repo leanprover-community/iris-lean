@@ -92,8 +92,8 @@ instance isExcept0_bupd (P : PROP)
   is_except0 := except0_bupd.trans <| BIUpdate.mono h.1
 
 @[rocq_alias from_modal_bupd]
-instance fromModal_bupd (P : PROP) :
-    FromModal True modality_id iprop(|==> P) iprop(|==> P) P where
+instance fromModal_bupd io (P : PROP) :
+    FromModal io True modality_id iprop(|==> P) iprop(|==> P) P where
   from_modal := by simp [modality_id]; exact BIUpdate.intro
 
 @[rocq_alias elim_modal_bupd]
@@ -208,13 +208,13 @@ instance isExcept0_fupd E1 E2 (P : PROP) : IsExcept0 iprop(|={E1,E2}=> P) where
   is_except0 := except0
 
 @[rocq_alias from_modal_fupd]
-instance fromModal_fupd E (P : PROP) :
-    FromModal True modality_id iprop(|={E}=> P) iprop(|={E}=> P) P where
+instance fromModal_fupd E io (P : PROP) :
+    FromModal io True modality_id iprop(|={E}=> P) iprop(|={E}=> P) P where
   from_modal := by simp [modality_id]; exact fupd_intro
 
 @[rocq_alias from_modal_fupd_wrong_mask]
-instance (priority := low) fromModal_fupd_wrongMask E1 E2 (P : PROP) :
-    FromModal (PMError "Only non-mask-changing update modalities can be introduced directly.
+instance (priority := low) fromModal_fupd_wrongMask E1 E2 io (P : PROP) :
+    FromModal io (PMError "Only non-mask-changing update modalities can be introduced directly.
       Use `iapply (fupd_mask_intro ...)` to introduce a mask-changing fancy update.")
       modality_id iprop(|={E1,E2}=> P) iprop(|={E1,E2}=> P) P where
   from_modal h := by cases h

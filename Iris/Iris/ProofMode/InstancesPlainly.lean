@@ -152,8 +152,8 @@ instance fromForall_plainly [Sbi PROP] (P : PROP) {α : Sort _} (Φ : α → PRO
 /-! ### FromModal -/
 
 @[rocq_alias from_modal_plainly]
-instance fromModal_plainly [Sbi PROP] (P : PROP) :
-  FromModal True modality_plainly iprop(■ P) iprop(■ P) P where
+instance fromModal_plainly [Sbi PROP] io (P : PROP) :
+  FromModal io True modality_plainly iprop(■ P) iprop(■ P) P where
   from_modal := by simp [modality_plainly]
 
 /-! ### IntoExcept0 -/

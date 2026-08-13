@@ -464,7 +464,7 @@ instance {P : IProp GF} : IsExcept0 (le_upd P) where
   is_except0 := except_0_le_upd
 
 @[rocq_alias le_upd.from_modal_le_upd]
-instance {P : IProp GF} : FromModal True modality_id (le_upd P) (le_upd P) P where
+instance {P : IProp GF} io : FromModal io True modality_id (le_upd P) (le_upd P) P where
   from_modal := by
     simp only [modality_id, id_eq, forall_const]
     iapply le_upd_intro

@@ -25,20 +25,26 @@ example [BIUpdate PROP1] (P : PROP1) : ⎡P⎤ ⊢@{PROP2} ⎡|==> P⎤ := by
   imodintro (|==> _)
   iexact HP
 
-/-- Tests `imodintro` prefers `fromModal_embed` over `fromModal_affinely_embed`. -/
-example (P : PROP1) [Affine P] : ⎡P⎤ ⊢@{PROP2} ⎡<affine> P⎤ := by
-  iintro HP
-  imodintro _
-  imodintro (<affine> _)
-  iexact HP
-
-/-- Tests `imodintro` prefers `fromModal_embed` over `fromModal_persistently_embed`. -/
-example
-    (P : PROP1) : □ ⎡P⎤ ⊢@{PROP2} ⎡<pers> P⎤ := by
-  iintro #HP
-  imodintro _
-  imodintro (<pers> _)
-  iexact HP
+/--
+  Tests `imodintro` prefers `fromModal_embed` over
+  `fromModal_affinely_embed`, `fromModal_persistently_embed` and
+  `fromModal_intuitionistically_embed` when the modality is not specified
+  in the tactic.
+-/
+example (P Q R : PROP1) [Affine P] :
+    ⎡P⎤ ∗ □ ⎡Q⎤ ∗ □ ⎡R⎤ ⊢@{PROP2} ⎡<affine> P⎤ ∗ ⎡<pers> Q⎤ ∗ ⎡□ R⎤ := by
+  iintro ⟨HP, #HQ, #HR⟩
+  isplitl [HP]
+  · imodintro _
+    imodintro (<affine> _)
+    iexact HP
+  · isplitl [HQ]
+    · imodintro _
+      imodintro (<pers> _)
+      iexact HQ
+    · imodintro _
+      imodintro (□ _)
+      iexact HR
 
 /-- Tests `imodintro` prefers `fromModal_embed` over `fromModal_plainly_embed`. -/
 example {P1 P2 : Type u} [Sbi P1] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
@@ -64,21 +70,68 @@ example [BIUpdate PROP1]
   Tests `FromModal` instances with the selector not fixed.
   The default instance `modality_embed` is used.
 -/
-/-- info: solution: FromModal True modality_embed
+/-- info: solution: FromModal InOut.out True modality_embed
 ⎡<affine> P⎤ ⎡<affine> P⎤ iprop(<affine> P), new goals: [] -/
 #guard_msgs in
 variable (P : PROP1) in
-#ipm_synth FromModal (α := PROP2) _ _ _ iprop(⎡<affine> P⎤ : PROP2) _
+#ipm_synth FromModal .out (α := PROP2) _ _ _ iprop(⎡<affine> P⎤ : PROP2) _
 
 /-
   Tests `FromModal` instances with the selector fixed: the low priority
   instances are reachable only once the selector rules out `modality_embed`.
 -/
 /-- info: solution:
-FromModal True modality_intuitionistically iprop(□ P) ⎡□ P⎤ ⎡P⎤, new goals: [] -/
+FromModal InOut.out True modality_intuitionistically iprop(□ P) ⎡□ P⎤ ⎡P⎤, new goals: [] -/
 #guard_msgs in
 variable (P : PROP1) in
-#ipm_synth FromModal _ _ iprop(□ P) iprop(⎡□ P⎤ : PROP2) _
+#ipm_synth FromModal .out _ _ iprop(□ P) iprop(⎡□ P⎤ : PROP2) _
+
+/-
+  Tests `FromModal` synthesis that is done by `fromModal_intuitionistically_embed`,
+  with `io = InOut.in`.
+-/
+/-- info: solution:
+FromModal InOut.in True modality_intuitionistically iprop(□ P) iprop(□ P) P, new goals: [] -/
+#guard_msgs in
+variable (P : PROP1) in
+#ipm_synth FromModal .in _ modality_intuitionistically iprop(□ P) iprop(□ P : PROP1) _
+
+/- Tests `FromModal` synthesis with `io = InOut.in` along with an unfixed selector. -/
+/-- info: solution:
+FromModal InOut.in True modality_id iprop(|==> P) iprop(|==> P) P, new goals: [] -/
+#guard_msgs in
+variable (P : PROP1) [BIUpdate PROP1] in
+#ipm_synth FromModal .in (α := PROP1) _ modality_id _ iprop(|==> P : PROP1) _
+
+/-
+  Tests `FromModal` synthesis with nested embeddings.
+-/
+/-- info: solution:
+FromModal InOut.out True modality_affinely iprop(<affine> P) ⎡⎡<affine> P⎤⎤ ⎡⎡P⎤⎤, new goals: [] -/
+#guard_msgs in
+variable {PROP3 : Type u} [BI PROP3] [BiEmbed PROP2 PROP3] (P : PROP1) in
+#ipm_synth FromModal .out _ _ iprop(<affine> P) iprop(⎡(⎡<affine> P⎤ : PROP2)⎤ : PROP3) _
+
+/-
+  Tests `FromModal` synthesis with the `InOut` parameter not matching the fact
+  that `PROP1` is supplied.
+-/
+/-- error:
+parameter #1 PROP1 of FromModal InOut.out ?m.7 ?m.8 iprop(□ P) iprop(□ P) ?m.13
+is an out parameter that is not an mvar
+-/
+#guard_msgs in
+variable (P : PROP1) in
+#ipm_synth FromModal (PROP1 := PROP1) .out _ _ iprop(□ P) iprop(□ P : PROP1) _
+
+/-
+  Same test as about, except `io = InOut.in`.
+  Synthesis finds nothing as all instances should have a concrete modality.
+-/
+/-- info: None -/
+#guard_msgs in
+variable (P : PROP1) in
+#ipm_synth FromModal .in (α := PROP1) _ _ iprop(□ P) iprop(□ P : PROP1) _
 
 /-
   Tests `imodintro` with the selection for `FromModal` fixed.
