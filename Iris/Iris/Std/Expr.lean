@@ -6,6 +6,7 @@ Authors: Lars König
 module
 
 public import Lean.Meta
+public import Iris.Init
 
 @[expose] public section
 

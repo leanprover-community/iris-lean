@@ -5,14 +5,12 @@ Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang, Alvin Tang
 -/
 module
 
-meta import Iris.ProofMode.Patterns.SpecPattern
-meta import Iris.ProofMode.Patterns.CasesPattern
-public meta import Iris.ProofMode.Tactics.Mod
-public meta import Iris.ProofMode.Tactics.Pure
-public meta import Iris.ProofMode.Tactics.Clear
-public meta import Iris.ProofMode.Tactics.Basic
-public meta import Iris.ProofMode.Tactics.HaveCore
-public meta import Iris.ProofMode.Tactics.Frame
+public import Iris.ProofMode.Tactics.Mod
+public import Iris.ProofMode.Tactics.Pure
+public import Iris.ProofMode.Tactics.Clear
+public import Iris.ProofMode.Tactics.Basic
+public import Iris.ProofMode.Tactics.HaveCore
+public import Iris.ProofMode.Tactics.Frame
 
 namespace Iris.ProofMode
 

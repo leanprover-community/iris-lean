@@ -9,7 +9,6 @@ public import Iris.Algebra.CMRA
 public import Iris.Algebra.OFE
 public import Iris.Algebra.Frac
 public import Iris.Algebra.IsOp
-meta import Iris.Std.RocqPorting
 
 /-!
 # The UFrac CMRA

@@ -3,6 +3,7 @@ module
 public import Iris.Algebra.Agree
 public import Iris.Algebra.Auth
 public import Iris.Algebra.BigOp
+public import Iris.Algebra.Chain
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.COFESolver
 public import Iris.Algebra.Csum
@@ -16,9 +17,12 @@ public import Iris.Algebra.Heap
 public import Iris.Algebra.HeapView
 public import Iris.Algebra.IProp
 public import Iris.Algebra.IsOp
+public import Iris.Algebra.LeibnizMultiSet
 public import Iris.Algebra.LeibnizSet
 public import Iris.Algebra.List
 public import Iris.Algebra.LocalUpdates
+public import Iris.Algebra.MaxPrefixList
+public import Iris.Algebra.Numbers
 public import Iris.Algebra.Mra
 public import Iris.Algebra.IProp
 public import Iris.Algebra.OFE

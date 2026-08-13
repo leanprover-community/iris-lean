@@ -5,6 +5,8 @@ Authors: Lars König
 -/
 module
 
+public import Iris.Init
+
 @[expose] public section
 
 namespace Iris.Std
@@ -38,7 +40,6 @@ class inductive TCEq {α : Sort _} (a : α) : α → Prop
 
 instance {α : Sort _} {a : α} : TCEq a a := TCEq.refl
 
-
 /-- Type class version of `Ite`, i.e. a type class for which an instance exists if the boolean
 condition is `true` and an instance of `T` is present or the condition is `false` and an instance
 of `U` is present.
@@ -60,27 +61,6 @@ unif_hint (b : Bool) where
   |- false && b ≟ false
 unif_hint (b : Bool) where
   |- true && b ≟ b
-
-/-- Type class for natural number cancellation. Given a number `n` and a number `m` that should
-be cancelled (subtracted) from `n`, compute a new `n'` and a remainder `m'` that could not be cancelled. -/
-class NatCancel (n m : Nat) (n' m' : outParam Nat) : Prop where
-  nat_cancel : n' + m = n + m'
-export NatCancel (nat_cancel)
-
-instance (priority := low) : NatCancel n m n m where
-  nat_cancel := by simp
-
-instance (priority := high) : NatCancel 0 m 0 m where
-  nat_cancel := rfl
-
-instance (priority := high) : NatCancel n 0 n 0 where
-  nat_cancel := Nat.add_zero n
-
-instance (priority := high) : NatCancel n n 0 0 where
-  nat_cancel := by simp
-
-instance [h : NatCancel n m n' m'] : NatCancel (n + 1) (m + 1) n' m' where
-  nat_cancel := by have := h.nat_cancel; grind
 
 /--
   This type class corresponds to `TCForall` in Rocq's stdpp.

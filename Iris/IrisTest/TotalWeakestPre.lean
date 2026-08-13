@@ -10,7 +10,7 @@ public import Iris.ProgramLogic.TotalLifting
 public import Iris.Examples.ClosedProofs
 public import Iris.HeapLang.Instances
 
-namespace Iris.Tests.TotalWeakestPre
+namespace IrisTest.TotalWeakestPre
 
 open Iris BI ProgramLogic ProgramLogic.Language ProgramLogic.Language.Notation
 open Std LawfulSet
@@ -282,4 +282,4 @@ theorem put_stronglyNormalizing (n initialState : Nat) :
       ([Expr.put n], initialState) :=
   stronglyNormalizing_of_twp (fun [_] => put_twp n)
 
-end Iris.Tests.TotalWeakestPre
+end IrisTest.TotalWeakestPre

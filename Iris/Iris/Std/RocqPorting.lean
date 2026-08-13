@@ -5,8 +5,8 @@ Authors: Markus de Medeiros, Zongyuan Liu
 -/
 module
 
-import Lean
-public meta import Lean
+import Lean.Elab.DeclarationRange
+public meta import Lean.Elab.Command
 
 /-!
 # Rocq Porting Infrastructure
@@ -62,6 +62,16 @@ Definitions outside the main `iris/` package carry a package prefix.
 For the heap_lang package (`iris_heap_lang/` upstream) write:
 ```
 @[rocq_alias heap_lang.pointsto]
+```
+
+File-local declarations normally follow the same convention. If a local name
+occurs in multiple tracked Rocq files, include the source filename to make the
+aliases distinct. For example, both
+`iris_heap_lang/lib/spin_lock.v` and `iris_heap_lang/lib/ticket_lock.v` contain a
+local `lock_inv`, so their aliases are:
+```
+@[rocq_alias heap_lang.spin_lock.lock_inv]
+@[rocq_alias heap_lang.ticket_lock.lock_inv]
 ```
 -/
 

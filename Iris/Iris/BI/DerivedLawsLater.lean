@@ -13,7 +13,6 @@ public import Iris.BI.BigOp.BigOp
 public import Iris.Std.Classes
 public import Iris.Std.Rewrite
 public import Iris.Std.TC
-public import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -452,10 +451,6 @@ instance laterN_persistent (n : Nat) (P : PROP) [Persistent P] :
   | succ n _ =>
     dsimp only [BIBase.laterN, Nat.repeat] at *
     exact later_persistent
-
-instance instPersistentLaterIf [BI PROP] (P : PROP) [Persistent P] (p : Bool) :
-    Persistent iprop(▷?p P) := by
-  cases p <;> simp [BIBase.laterIf] <;> infer_instance
 
 @[rocq_alias bi.laterN_absorbing]
 instance laterN_absorbing (n : Nat) (P : PROP) [Absorbing P] :

@@ -9,7 +9,7 @@ public import Iris.HeapLang
 
 @[expose] public section
 
-namespace Iris.Tests
+namespace IrisTest
 open Iris
 
 /- This section checks whether the syntax is recognized correctly for all combinations -/
