@@ -29,7 +29,7 @@ theorem forall₂_eq_of_forall₂_dist : ∀ {l k : List α},
   | [], _ :: _, h => nomatch h 0
   | _ :: _, [], h => nomatch h 0
   | _ :: _, _ :: _, h => List.cons_eq_cons.mpr
-    ⟨(eq_dist _).mpr (fun n => (List.forall₂_cons.mp <| h n).1),
+    ⟨eq_dist_2 (fun n => (List.forall₂_cons.mp <| h n).1),
      forall₂_eq_of_forall₂_dist fun n => (List.forall₂_cons.mp (h n)).2⟩
 
 @[rocq_alias list_ofe_mixin]

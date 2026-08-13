@@ -53,7 +53,7 @@ instance [OFE α] : OFE (Excl α) where
   Dist := Excl.Dist
   dist_eqv
   eq_dist' {x y} := by
-    cases x <;> cases y <;> simp [Excl.Dist, (eq_dist _)]
+    cases x <;> cases y <;> simp [Excl.Dist, eq_dist (SI:=_)]
   dist_lt {n x y m} hn hlt := by
     cases x <;> cases y <;> simp at *
     exact Dist.lt hn hlt
