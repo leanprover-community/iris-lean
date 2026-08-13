@@ -5,8 +5,8 @@ Authors: Markus de Medeiros
 -/
 module
 
-import Lean
 public meta import Lean
+public import Iris.Init
 
 /-!
 # Step Index Registry
