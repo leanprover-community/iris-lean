@@ -8,6 +8,7 @@ public import Iris.ProofMode.Display
 public import Iris.ProofMode.InstancesUpdates
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 open Iris.Std BI
@@ -32,7 +33,6 @@ open OFE
 
 variable [Sbi PROP]
 
-local stepindex Nat
 @[rocq_alias bupd_alt_ne]
 instance BUpdPlain_ne : NonExpansive (BUpdPlain (PROP := PROP)) where
   ne _ _ _ H := forall_ne fun _ => wand_ne.ne (wand_ne.ne H .rfl) .rfl

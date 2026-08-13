@@ -14,6 +14,7 @@ import Lean
 namespace Iris.BI
 
 public section List
+local stepindex Nat
 open Iris.Algebra Iris.Std OFE BIBase
 
 
@@ -39,7 +40,6 @@ instance orMonoidOps [BI PROP] : MonoidOps (or (PROP := PROP)) iprop(False) wher
 
 /-! ## Homomorphism helpers for OFE equivalence -/
 
-local stepindex Nat
 /-- Build a `MonoidHomomorphism` for Leibniz equality from just the essential fields. -/
 theorem MonoidHomomorphism.ofEq [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
     {u₁ u₂ : PROP} [MonoidOps op₁ u₁] [MonoidOps op₂ u₂] {f : PROP → PROP}

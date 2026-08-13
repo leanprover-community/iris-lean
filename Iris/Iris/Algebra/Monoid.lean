@@ -10,6 +10,7 @@ public import Iris.Algebra.StepIndexFinite
 meta import Iris.Std.RocqPorting
 
 public section
+local stepindex Nat
 
 namespace Iris.Algebra
 
@@ -21,7 +22,6 @@ namespace Iris.Algebra
 
 open OFE
 
-local stepindex Nat
 
 /-- A commutative monoid on an OFE, used for big operators.
 The operation must be non-expansive, associative, commutative, and have a left identity. -/

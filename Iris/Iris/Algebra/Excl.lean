@@ -9,6 +9,7 @@ public import Iris.Algebra.CMRA
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 
@@ -23,7 +24,6 @@ inductive Excl α where
 
 namespace Excl
 open OFE
-local stepindex Nat
 
 /-! ## COFE -/
 

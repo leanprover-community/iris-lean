@@ -17,6 +17,7 @@ convenience definitions and lemmas.
 -/
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 
@@ -24,7 +25,6 @@ open OFE CMRA DFrac
 
 namespace DFracAgree
 
-local stepindex Nat
 @[rocq_alias dfrac_agreeR]
 abbrev DFracAgreeR (A : Type _) [OFE A] := DFrac × Agree A
 

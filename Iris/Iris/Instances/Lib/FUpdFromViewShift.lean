@@ -16,6 +16,7 @@ public import Iris.Instances.Lib.LaterCredits
 public import Iris.BI.Plainly
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 
@@ -29,7 +30,6 @@ variable {M : Type u} [UCMRA M] (vs : CoPset → CoPset → UPred M → UPred M 
 abbrev fupd_vs (E1 E2 : CoPset) (P : UPred M) : UPred M :=
   iprop(∃ R, R ∗ vs E1 E2 R P)
 
-local stepindex Nat
 @[rocq_alias fupd_ne]
 instance fupd_vs_ne (E1 E2 : CoPset) [vs_ne : ∀ E1 E2, NonExpansive₂ (vs E1 E2)] :
     NonExpansive (fupd_vs vs E1 E2) where

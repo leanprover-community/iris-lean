@@ -14,6 +14,7 @@ public import Iris.Std.PartialMap
 public import Iris.Std.Namespaces
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 
@@ -23,7 +24,6 @@ abbrev BoolO := DiscreteO Bool
 
 variable (GF : BundledGFunctors)
 
-local stepindex Nat
 abbrev BoxF : OFunctorPre :=
   ProdOF (AuthURF (OptionOF (ExclOF (constOF BoolO))))
     (OptionOF (AgreeRF (LaterOF IdOF)))

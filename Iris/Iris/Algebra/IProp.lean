@@ -13,6 +13,7 @@ public import Iris.Algebra.COFESolver
 public import Init.Data.Vector
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 
@@ -44,7 +45,6 @@ abbrev GName := Nat
 
 #rocq_ignore gnameO "Use `LeibnizO GName`."
 
-local stepindex Nat
 @[rocq_alias iResF]
 abbrev IResF (GF : BundledGFunctors) : OFunctorPre :=
   DiscreteFunOF (fun i => GenMapOF (GF i).fst)

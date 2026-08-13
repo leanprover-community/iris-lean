@@ -10,6 +10,7 @@ public import Iris.Algebra.Excl
 meta import Iris.Std.RocqPorting
 
 public section
+local stepindex Nat
 
 /-!
 # Exclusive Authoritative CMRA
@@ -25,7 +26,6 @@ open OFE CMRA Auth Excl Option
 
 namespace ExclAuth
 
-local stepindex Nat
 variable [OFE A]
 
 @[rocq_alias excl_authR]

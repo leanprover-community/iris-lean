@@ -9,6 +9,7 @@ public import Iris.ProofMode
 public import Iris.Instances.IProp.Instance
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 
@@ -21,7 +22,6 @@ The `token γ` assertion provides ownership of the token named `γ`,
 and the key lemma `token_exclusive` proves only one token exists.
 -/
 
-local stepindex Nat
 abbrev TokenF : COFE.OFunctorPre := constOF (Excl Unit)
 
 @[rocq_alias tokenG]

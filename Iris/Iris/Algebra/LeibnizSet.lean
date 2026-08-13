@@ -16,6 +16,7 @@ public import Iris.Std.CoPset
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
+local stepindex Nat
 
 /-! ## Leibniz Set algebras
 This file defines generic set algebras.
@@ -26,7 +27,6 @@ OFE/CMRA on the element type.
 
 open Iris Std CMRA OFE LawfulSet
 
-local stepindex Nat
 
 inductive DisjointLeibnizSet (S : Type _) where
   | valid : S → DisjointLeibnizSet S

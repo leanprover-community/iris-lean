@@ -14,6 +14,7 @@ public import Iris.Std.CoPset
 import Iris.Instances.Lib.WSat
 
 @[expose] public section
+local stepindex Nat
 
 /-! ## Invariants -/
 
@@ -45,7 +46,6 @@ open ProofMode
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
-local stepindex Nat
 @[rocq_alias inv_contractive]
 instance inv_contractive (N : Namespace) : Contractive (inv (GF := GF) N) where
   distLater_dist {n x y} H := by

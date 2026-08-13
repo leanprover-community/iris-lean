@@ -8,6 +8,7 @@ public import Iris.Algebra.OFE
 public import Iris.Algebra.COFESolver
 
 @[expose] public section
+local stepindex Nat
 
 /-!
 Every OFE is Leibniz, so the fold/unfold isomorphisms of the recursive domain equation solver's
@@ -25,7 +26,6 @@ tactics for simplification/rewriting.
 section Fix
 open Iris OFE COFE
 
-local stepindex Nat
 variable [OFE Val] [OFE Err] [IsCOFE Val] [IsCOFE Err] [Inhabited Err]
 
 abbrev DomF : OFunctorPre :=
@@ -36,7 +36,6 @@ instance : Inhabited (DomF (Val := Val) (Err := Err) (ULift Unit) (ULift Unit)) 
 
 end Fix
 
-local stepindex Nat
 open Iris OFE COFE in
 abbrev Dom (Val : Type _) (Err : Type _) [OFE Val] [OFE Err] [IsCOFE Val] [IsCOFE Err] [Inhabited Err] :=
   OFunctor.Fix (DomF (Val := Val) (Err := Err))

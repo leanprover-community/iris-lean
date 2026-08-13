@@ -32,6 +32,7 @@ It provides authoritative and fragmental ownership over heap elements with fract
 -/
 
 @[expose] public section
+local stepindex Nat
 
 open Iris
 
@@ -133,7 +134,6 @@ def Frag (k : K) (dq : DFrac) (v : V) : HeapView K V H := ◯V (Std.PartialMap.s
 /-- Fragmental (fractional) ownership over an element in the heap. -/
 def Elem (k : K) (v : DFrac × V) : HeapView K V H := ◯V (Std.PartialMap.singleton k v)
 
-local stepindex Nat
 -- TODO: Do we need this?
 instance : NonExpansive (Auth dq : _ → HeapView K V H) := View.auth_ne
 

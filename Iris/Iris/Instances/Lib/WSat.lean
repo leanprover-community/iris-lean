@@ -14,6 +14,7 @@ public import Iris.Std.HeapInstances
 public import Iris.Instances.IProp
 
 @[expose] public section
+local stepindex Nat
 
 /-! ## World satisfaction
 This file defines the world satisfaction (wsat) predicate for Iris.
@@ -87,7 +88,6 @@ def wsat : IProp GF := iprop(
 
 #rocq_ignore invariant_unfold_contractive "Only needed for ownI_contractive which is proved directly"
 
-local stepindex Nat
 @[rocq_alias ownI_contractive]
 instance (i : Pos) : Contractive (ownI (W := W) i) where
   distLater_dist h := by

@@ -9,12 +9,12 @@ public import Iris.BI
 public import Iris.ProofMode
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 open Iris.Std BI OFE
 
 
-local stepindex Nat
 @[rocq_alias BiMonoPred]
 class BIMonoPred [BI PROP] [OFE A] (F : (A → PROP) → (A → PROP)) where
   mono_pred {Φ Ψ : A → PROP} [NonExpansive Φ] [NonExpansive Ψ] :

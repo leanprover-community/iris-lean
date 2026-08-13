@@ -12,11 +12,11 @@ public import Iris.ProofMode
 public import Iris.Instances.IProp
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 open Auth BI MonoNat
 
-local stepindex Nat
 abbrev MonoNatRF : COFE.OFunctorPre :=
   AuthURF (constOF MaxNat)
 

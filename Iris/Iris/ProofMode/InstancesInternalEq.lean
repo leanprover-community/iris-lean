@@ -11,6 +11,7 @@ public import Iris.ProofMode.NatCancel
 import Iris.Std.RocqPorting
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris.ProofMode
 open Iris.BI Iris.Std
@@ -19,7 +20,6 @@ section internalEq
 
 variable {PROP} [Sbi PROP]
 
-local stepindex Nat
 @[rocq_alias from_pure_internal_eq]
 instance fromPure_internalEq [Sbi PROP] [OFE A] (a b : A) :
     FromPure (PROP := PROP) false iprop(a ≡ b) io (a = b) where

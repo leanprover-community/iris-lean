@@ -14,6 +14,7 @@ public import Iris.BI.SIProp
 public meta import Iris.Std.RocqPorting
 
 @[expose] public section
+local stepindex Nat
 
 
 /-!
@@ -61,7 +62,6 @@ delab_rule SiEmpValid.siEmpValid
 
 end Notation
 
-local stepindex Nat
 /-- The `Sbi` class: a BI with step-indexed structure. -/
 @[rocq_alias Sbi]
 class Sbi (PROP : Type _) extends BI PROP, SiPure PROP, SiEmpValid PROP where

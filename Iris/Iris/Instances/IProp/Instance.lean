@@ -13,11 +13,11 @@ public import Iris.Instances.UPred
 public meta import Iris.Std.RocqPorting
 
 @[expose] public section
+local stepindex Nat
 namespace Iris
 
 open COFE Std CMRA
 
-local stepindex Nat
 /-- Apply an OFunctor at a fixed type -/
 abbrev COFE.OFunctorPre.ap (F : OFunctorPre) (T : Type _) [COFE T] :=
   F T T

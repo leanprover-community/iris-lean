@@ -12,13 +12,13 @@ public import Iris.Algebra
 public import Iris.Std.HeapInstances
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris.Examples
 open Iris.BI COFE
 
 section Example1
 
-local stepindex Nat
 abbrev F0 : OFunctorPre := constOF (Agree (DiscreteO String))
 
 variable {GF} [E0 : ElemG GF F0]
@@ -52,7 +52,6 @@ section Example2
 
 open HeapView One DFrac Agree DiscreteO
 
-local stepindex Nat
 /- Define an OFunctor for the heap. Fractions are concretely `Qp`. -/
 abbrev F1 : OFunctorPre :=
   constOF <| HeapView Nat (Agree (DiscreteO String)) (Std.ExtTreeMap Nat · compare)
@@ -121,7 +120,6 @@ def wp_F (wp : Expr → (Value → IProp GF) → IProp GF) (e : Expr) (Φ : Valu
   ∀ s, @state_interp State _ _ s -∗
     ∃ e' s', ⌜@step _ _ Value _ (e, s) = (e', s') ⌝ ∗ ▷ |==> (@state_interp _ _ _  s' ∗ wp e' Φ))
 
-local stepindex Nat
 instance wp_F_contractive : Contractive (@wp_F Expr State Value _ GF _) where
   distLater_dist {n x y HL} e Φ := by
     refine or_ne.ne (.of_eq rfl) ?_

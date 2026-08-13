@@ -18,6 +18,7 @@ The authoritative camera has 2 types of elements:
 -/
 
 @[expose] public section
+local stepindex Nat
 
 open Iris
 
@@ -56,7 +57,6 @@ theorem authViewRel_unit_iff {n : Nat} {a : A} : AuthViewRel n a unit ↔ ✓{n}
 theorem authViewRel_exists_iff {n : Nat} {b : A} : (∃ a, AuthViewRel n a b) ↔ ✓{n} b :=
   ⟨fun ⟨_, h⟩ => IsViewRel.rel_validN _ _ _ h, (⟨b, incN_refl b, ·⟩)⟩
 
-local stepindex Nat
 @[rocq_alias auth_view_rel_discrete]
 instance [OFE.Discrete A] [CMRA.Discrete A] : IsViewRelDiscrete (AuthViewRel (A := A)) where
   discrete _ _ _ h := ⟨incN_of_inc _ ((inc_iff_incN 0).mpr h.1), (discrete_valid h.2).validN⟩
@@ -72,7 +72,6 @@ abbrev Auth (A : Type _) [UCMRA A] :=
 namespace Auth
 variable [UCMRA A]
 
-local stepindex Nat
 instance : OFE (Auth A) := View.instOFE
 instance : CMRA (Auth A) := View.instCMRA
 instance : UCMRA (Auth A) := View.instUCMRA

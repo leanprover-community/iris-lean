@@ -9,6 +9,7 @@ public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.Numbers
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 
@@ -30,7 +31,6 @@ notation "●MN " n => auth (DFrac.own 1) n
 notation "●MN□ " n => auth DFrac.discard n
 notation "◯MN " n => lb n
 
-local stepindex Nat
 scoped instance : OFE.DiscreteE (◯MN n : MonoNat) := Auth.frag_discrete
 scoped instance : OFE.DiscreteE (●MN{dq} n : MonoNat) :=
   ⟨fun h => OFE.discrete h⟩

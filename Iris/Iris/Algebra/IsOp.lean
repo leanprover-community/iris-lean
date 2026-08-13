@@ -10,13 +10,13 @@ public import Iris.ProofMode.SynthInstanceAttr
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 
 open CMRA ProofMode
 
 section IsOp
-local stepindex Nat
 
 inductive IsOp.Direction
 | merge

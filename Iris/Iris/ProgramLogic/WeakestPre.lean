@@ -18,6 +18,7 @@ namespace Iris
 open ProgramLogic Language.Notation Std Iris.BI
 
 @[expose] public section
+local stepindex Nat
 
 /-!
 TODO: AddModal, ElimAcc instances
@@ -82,7 +83,6 @@ def wp.pre (s : Stuckness) (wp : CoPset -> Expr -> (Val -> IProp GF) -> IProp GF
       stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
       wp E e₂ Φ ∗ [∗list] e' ∈ eₜ, wp ⊤ e' ι.forkPost)
 
-local stepindex Nat
 @[rocq_alias wp_pre_contractive]
 instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
   distLater_dist := by

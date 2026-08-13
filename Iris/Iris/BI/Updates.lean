@@ -15,6 +15,7 @@ public import Iris.BI.Plainly
 public import Iris.Std.CoPset
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 open Iris.Std BI
@@ -200,7 +201,6 @@ delab_rule BIBase.wand
   | `($_ $Q iprop(|={$E₁}▷=>^[$n] $P)) => do
     `(iprop($(← unpackIprop Q) ={$E₁}▷=∗^[$n] $P))
 
-local stepindex Nat
 @[rocq_alias BiBUpd]
 class BIUpdate (PROP : Type _) [BI PROP] extends BUpd PROP where
   [bupd_ne : OFE.NonExpansive (BUpd.bupd (PROP := PROP))]

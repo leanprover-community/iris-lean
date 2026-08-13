@@ -6,10 +6,10 @@ public import Iris
 /-! Measure Theoretic CMRA -/
 
 @[expose] public section
+local stepindex Nat
 
 noncomputable section
 
-local stepindex Nat
 
 open Iris ProbabilityTheory MeasureTheory
 

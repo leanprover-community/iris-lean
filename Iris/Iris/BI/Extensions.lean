@@ -10,6 +10,7 @@ public import Iris.BI.Classes
 public import Iris.BI.BI
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris.BI
 
@@ -30,7 +31,6 @@ class BILoeb (PROP : Type _) [BI PROP] where
   loeb_weak {P : PROP} : (▷ P ⊢ P) → True ⊢ P
 export BILoeb (loeb_weak)
 
-local stepindex Nat
 @[rocq_alias BiLaterContractive]
 class BILaterContractive (PROP : Type _) [BI PROP] extends OFE.Contractive later (α := PROP)
 

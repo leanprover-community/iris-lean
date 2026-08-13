@@ -16,6 +16,7 @@ public import Iris.Std.TC
 public import Iris.Std.RocqPorting
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris.BI
 open Iris.Std BI
@@ -311,7 +312,6 @@ theorem loeb_alt_wand [BIAffine PROP] :
 
 /-! # LaterN -/
 
-local stepindex Nat
 @[rocq_alias bi.laterN_ne]
 theorem laterN_ne (n : Nat) : OFE.NonExpansive (BIBase.laterN (PROP:=PROP) n) where
   ne := by

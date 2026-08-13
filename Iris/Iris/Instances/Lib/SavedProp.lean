@@ -13,6 +13,7 @@ public import Iris.BI.InternalEq
 public import Iris.ProofMode
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 
@@ -20,7 +21,6 @@ open BI CMRA Agree OFE UPred IProp Std ProofMode COFE
 
 /-! ## Saved anything -/
 
-local stepindex Nat
 @[rocq_alias savedAnythingG]
 class SavedAnythingG (GF : BundledGFunctors) (F : OFunctorPre) [OFunctorContractive F] where
   [elemG : ElemG GF (DFracAgree.DFracAgreeRF F)]

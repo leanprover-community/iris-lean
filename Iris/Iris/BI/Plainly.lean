@@ -17,6 +17,7 @@ public import Iris.BI.InternalEq
 public import Iris.Std.Positives
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 open BI
@@ -443,7 +444,6 @@ instance wand_persistent [Plain P] [Persistent Q] [Absorbing Q] :
     _ ⊢ <pers> (■ P -∗ Q) := persistently_mono (wand_intro_left (sep_and.trans imp_elim_right))
     _ ⊢ <pers> (P -∗ Q)   := persistently_mono (wand_mono_left plain)
 
-local stepindex Nat
 @[rocq_alias limit_preserving_Plain]
 theorem limitPreserving_plain {A} [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
   LimitPreserving (fun x => Plain (Φ x)) := by

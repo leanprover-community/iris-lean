@@ -18,6 +18,7 @@ This version follows Iris Rocq in fixing the underlying type of fractions to be 
 -/
 
 @[expose] public section
+local stepindex Nat
 
 namespace Rat
 
@@ -32,7 +33,6 @@ theorem mul_div_cancel_left {a b : Rat} (ha : a ≠ 0) : a * (b / a) = b := by
 end Rat
 
 namespace Iris
-local stepindex Nat
 
 /-- The type of positive rational numbers, used as fractions -/
 @[rocq_alias fracO, rocq_alias fracR]

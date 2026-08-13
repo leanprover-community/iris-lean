@@ -12,6 +12,7 @@ public import Iris.Algebra.LeibnizSet
 namespace Iris
 
 @[expose] public section
+local stepindex Nat
 
 open Iris Std PartialMap
 
@@ -56,7 +57,6 @@ section OFE
 
 open OFE
 
-local stepindex Nat
 variable [LawfulPartialMap H Pos] [OFE A]
 
 #rocq_ignore reservation_map_ofe_mixin "Not needed"
@@ -218,7 +218,6 @@ theorem op_token' (x y : ReservationMap A H) : (x.op y).token = x.token • y.to
 #rocq_ignore reservation_map_ucmra_mixin "Not needed"
 #rocq_ignore reservation_mapR "Derivable using UCMRA"
 
-local stepindex Nat
 @[rocq_alias reservation_mapUR]
 instance : UCMRA (ReservationMap A H) where
   pcore := some ∘ core

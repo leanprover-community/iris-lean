@@ -20,6 +20,7 @@ public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.WeakestPre
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris.Tests
 open BI CMRA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic
@@ -2797,7 +2798,6 @@ example : £ 1 ∗ ▷ WP e @ E {{ Φ }} ⊢ WP e @ E {{ Φ }} := by
 
 end inext
 
-local stepindex Nat
 section irewrite
 
 variable {PROP : Type _} [Sbi PROP]

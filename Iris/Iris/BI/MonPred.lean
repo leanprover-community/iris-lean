@@ -33,6 +33,7 @@ The following Rocq names from `monpred.v` are not yet ported:
 -/
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris.BI
 open Iris Iris.Std OFE
@@ -92,7 +93,6 @@ end MonPred
 section OFE
 variable {I : BiIndex} {PROP : Type _} [BI PROP]
 
-local stepindex Nat
 /-- Pointwise OFE: `P ≡ Q := ∀ i, P i ≡ Q i`, `P ≡{n}≡ Q := ∀ i, P i ≡{n}≡ Q i`
 (Rocq `monPredO`). -/
 @[rocq_alias monPredO]
@@ -802,7 +802,6 @@ theorem monPred_at_flip_mono {P Q : MonPred I PROP} {i j : I.car} (h : Q ⊢ P) 
     Q.monPred_at j ⊢ P.monPred_at i :=
   monPred_at_mono h hij
 
-local stepindex Nat
 @[rocq_alias monPred_at_ne]
 theorem monPred_at_ne (i : I.car) :
     OFE.NonExpansive (fun P : MonPred I PROP => P.monPred_at i) :=

@@ -11,6 +11,7 @@ public import Iris.Algebra.IsOp
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 
@@ -82,7 +83,6 @@ theorem map'_sameElems {f : α → β} {x y : Raw α} (h : SameElems x y) :
     obtain ⟨b, hb, rfl⟩ := ha
     exact ⟨b, by first | exact h.1 _ hb | exact h.2 _ hb, rfl⟩
 
-local stepindex Nat
 variable [OFE α]
 
 def dist (n : Nat) (x y : Raw α) : Prop :=
@@ -356,7 +356,6 @@ end Agree
 
 namespace Agree
 
-local stepindex Nat
 variable [OFE α] [OFE β]
 
 @[rocq_alias agree_ofe_mixin]
@@ -519,7 +518,6 @@ theorem toAgree_def {a : α} : toAgree a = Agree.mk (Agree.Raw.toAgree a) := rfl
 
 section
 
-local stepindex Nat
 variable [OFE α]
 
 @[rocq_alias to_agree_ne]
@@ -635,7 +633,6 @@ theorem Agree.map'_compose {f : α → β} {g : β → γ} (x : Agree α) :
     Agree.map' (g ∘ f) x = Agree.map' g (Agree.map' f x) :=
   x.ind fun _ => congrArg mk (Raw.ext (by simp [Raw.map'_car, List.map_map]))
 
-local stepindex Nat
 variable {α β γ : Type _} [OFE α] [OFE β] [OFE γ] {f : α → β} [hne : OFE.NonExpansive f]
 
 @[rocq_alias agree_map_ne]
@@ -689,7 +686,6 @@ end agree_map
 
 section agree_rfunctor
 
-local stepindex Nat
 @[rocq_alias agreeRF]
 abbrev AgreeRF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
   fun A B _ _ => Agree (F A B)

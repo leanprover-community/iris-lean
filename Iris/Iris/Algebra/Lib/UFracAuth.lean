@@ -21,6 +21,7 @@ fragment's resource to its payload.
 -/
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 open OFE CMRA UCMRA Auth Option UFrac
@@ -47,7 +48,6 @@ notation "◯U{" q "} " a => frag q a
 
 /-! ## NonExpansive instances -/
 
-local stepindex Nat
 @[rocq_alias ufrac_auth_auth_ne]
 nonrec instance auth_ne {q : Qp} : NonExpansive (auth q : A → UFracAuth) where
   ne _ _ _ h := auth_ne.ne ⟨.rfl, h⟩

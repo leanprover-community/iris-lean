@@ -17,6 +17,7 @@ public import Iris.Std.CoPset
 public import Iris.Std.List
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 
@@ -24,7 +25,6 @@ open BI CMRA OFE Iris Std LawfulSet Excl COFE ProofMode
 
 /-! # Cancelable Invariants -/
 
-local stepindex Nat
 abbrev CInvF : OFunctorPre :=
   ProdOF (constOF (Option (Excl Unit))) (constOF (Option Qp))
 

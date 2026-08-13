@@ -9,6 +9,7 @@ public import Iris.Algebra.CMRA
 public import Iris.Algebra.OFE
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 open CMRA
@@ -79,7 +80,6 @@ section UPred
 variable [UCMRA M]
 
 open UPred
-local stepindex Nat
 
 @[rocq_alias uPredO]
 instance : OFE (UPred M) where

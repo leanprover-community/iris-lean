@@ -7,13 +7,13 @@ module
 public import Iris.BI
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 open Iris.Std BI BI.BIBase OFE
 
 section Laws
 
-local stepindex Nat
 @[rocq_alias fixpoint_plain]
 theorem fixpoint_plain [Sbi PROP] {A : Type _} (F : (A → PROP) → A → PROP) [Contractive F] :
     (∀ Φ, (∀ x, Plain (Φ x)) → (∀ x, Plain (F Φ x))) → ∀ x, Plain (fixpoint F x) := by

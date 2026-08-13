@@ -11,6 +11,7 @@ public import Iris.BI.InternalEq
 public import Iris.Std.RocqPorting
 
 @[expose] public section
+local stepindex Nat
 
 /-!
 # Generic CMRA validity in a BI logic
@@ -35,7 +36,6 @@ macro_rules
 delab_rule internalCmraValid
   | `($_ $a) => ``(iprop(✓ $a))
 
-local stepindex Nat
 @[rocq_alias internal_cmra_valid_ne]
 instance internalCmraValid_ne : NonExpansive (internalCmraValid (PROP := PROP) (A := A)) where
   ne _ _ _ h := siPure_ne.ne (instNonExpansiveCmraValid.ne h)
@@ -126,7 +126,6 @@ macro_rules
 delab_rule internalCmraIncluded
   | `($_ $a $b) => ``(iprop($a ≼ $b))
 
-local stepindex Nat
 @[rocq_alias internal_included_nonexpansive]
 instance internalCmraIncluded_ne :
     NonExpansive₂ (internalCmraIncluded (PROP := PROP) (A := A)) where

@@ -11,12 +11,12 @@ public import Iris.Std.List
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 
 open OFE COFE Iris.Algebra
 
-local stepindex Nat
 
 /-! ## The pointwise list OFE -/
 

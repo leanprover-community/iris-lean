@@ -20,6 +20,7 @@ public import Iris.Algebra.OFE
 public import Iris.Algebra.Monoid
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris.BI
 open Iris Iris.Std OFE Iris.Algebra Iris.Algebra.BigOpL Iris.Algebra.BigOpM
@@ -49,7 +50,6 @@ delab_rule Embed.embed
 
 #rocq_ignore BiEmbedMixin "Use the BiEmbed type class."
 
-local stepindex Nat
 /-- A lawful embedding `⎡·⎤ : PROP1 → PROP2`. The `forall_2`/`exist_1` fields take an
 intro/elim form: for any predicate `Ψ : PROP1 → Prop`, `forall_2` builds
 `R ⊢ ⎡sForall Ψ⎤` from pointwise `R ⊢ ⎡P⎤`, and `exist_1` builds `⎡sExists Ψ⎤ ⊢ R`

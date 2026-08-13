@@ -11,10 +11,10 @@ public import Iris.Algebra.StepIndexFinite
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 open OFE
-local stepindex Nat
 
 @[rocq_alias cmra]
 class CMRA (α : Type _) extends OFE α where

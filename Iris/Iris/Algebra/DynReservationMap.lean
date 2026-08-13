@@ -17,6 +17,7 @@ public import Iris.Algebra.LeibnizSet
 namespace Iris
 
 @[expose] public section
+local stepindex Nat
 
 open Std PartialMap
 
@@ -52,7 +53,6 @@ section OFE
 
 open OFE
 
-local stepindex Nat
 variable [LawfulPartialMap H Pos] [OFE A]
 
 #rocq_ignore dyn_reservation_map_ofe_mixin "Not needed"
@@ -246,7 +246,6 @@ theorem infinite_op_left {x y : DynReservationMap A H} (vt : ✓{n} (x.token •
 #rocq_ignore dyn_reservation_mapR "Derivable using UCMRA"
 #rocq_ignore dyn_reservation_map_empty_instance "Part of UCMRA instance"
 
-local stepindex Nat
 @[rocq_alias dyn_reservation_mapUR]
 instance instUCMRADynReservationMap : UCMRA (DynReservationMap A H) where
   pcore := some ∘ core

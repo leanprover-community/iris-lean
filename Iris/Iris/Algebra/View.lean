@@ -16,12 +16,12 @@ public import Iris.Algebra.LocalUpdates
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
+local stepindex Nat
 
 open Iris
 
 abbrev ViewRel (A B : Type _) := Nat → A → B → Prop
 
-local stepindex Nat
 @[rocq_alias view_rel]
 class IsViewRel [OFE A] [UCMRA B] (R : ViewRel A B) where
   mono : R n1 a1 b1 → a1 ≡{n2}≡ a2 → b2 ≼{n2} b1 → n2 ≤ n1 → R n2 a2 b2

@@ -10,13 +10,13 @@ public import Iris.Algebra.StepIndexFinite
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
+local stepindex Nat
 
 #rocq_ignore solution "Use OFE.iso + Inhabited + COFE"
 
 namespace Iris.COFE.OFunctor
 open OFE
 
-local stepindex Nat
 
 variable {F : ∀ α β [COFE α] [COFE β], Type u} [OFunctorContractive F]
 variable [∀ α [COFE α], IsCOFE (F α α)]

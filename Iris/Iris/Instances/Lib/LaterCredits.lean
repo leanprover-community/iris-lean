@@ -14,6 +14,7 @@ public import Iris.BI.Algebra
 public import Iris.Instances.IProp
 
 @[expose] public section
+local stepindex Nat
 
 /-! ## Later credits -/
 
@@ -37,7 +38,6 @@ scoped instance : LeftIdentity (Add.add (α := Credit)) (0 : Credit) where
 scoped instance : LawfulLeftIdentity (Add.add (α := Credit)) (0 : Credit) := ⟨Nat.zero_add⟩
 scoped instance : LeftCancelAdd Credit := ⟨Nat.add_left_cancel⟩
 
-local stepindex Nat
 scoped instance : COFE Credit := COFE.ofDiscrete _
 scoped instance : Discrete Credit := ⟨fun h => h⟩
 scoped instance : UCMRA Credit := CommMonoidLike.instUCMRA
@@ -224,7 +224,6 @@ def le_upd_pre (P le_upd : IProp GF) : IProp GF :=
     (lc_supply n ∗ P) ∨
     (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ le_upd))
 
-local stepindex Nat
 @[rocq_alias le_upd.le_upd_pre_contractive]
 instance {P : IProp GF} : Contractive (le_upd_pre P) where
   distLater_dist {n x y} H := by
@@ -525,7 +524,6 @@ delab_rule le_upd_finally
 section le_upd_finally_rules
 variable {hlc : HasLC} [LcGS hlc GF]
 
-local stepindex Nat
 @[rocq_alias le_upd.le_upd_finally_ne]
 instance le_upd_finally_ne : NonExpansive (le_upd_finally (GF := GF)) where
   ne _ _ _ H := by

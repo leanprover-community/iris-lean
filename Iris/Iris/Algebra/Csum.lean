@@ -11,6 +11,7 @@ public import Iris.Algebra.LocalUpdates
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 
@@ -31,7 +32,6 @@ namespace Csum
 
 #rocq_ignore csum_equiv "OFE is Leibniz; use equality"
 
-local stepindex Nat
 @[simp, rocq_alias csum_dist] def Dist [OFE α] [OFE β] (n : Nat) : Csum α β → Csum α β → Prop
   | inl a, inl a' => a ≡{n}≡ a'
   | inr b, inr b' => b ≡{n}≡ b'

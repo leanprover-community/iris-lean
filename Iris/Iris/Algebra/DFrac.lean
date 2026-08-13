@@ -14,6 +14,7 @@ public import Iris.Algebra.IsOp
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 
@@ -33,7 +34,6 @@ attribute [rocq_alias dfrac_eq_dec] instDecidableEqDFrac
 #rocq_ignore DfracOwn_inj "Not needed"
 #rocq_ignore DfracBoth_inj "Not needed"
 
-local stepindex Nat
 @[simp] instance : COFE DFrac := COFE.ofDiscrete _
 instance : OFE.Discrete DFrac := ⟨fun h => h⟩
 #rocq_ignore dfracO "Use DFrac type with typeclass inference"

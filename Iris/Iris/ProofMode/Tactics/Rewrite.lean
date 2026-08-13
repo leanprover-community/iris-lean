@@ -16,9 +16,9 @@ meta import Lean.Parser.Tactic
 namespace Iris.ProofMode
 
 public section
+local stepindex Nat
 open BI Std
 
-local stepindex Nat
 theorem rewrite_tac [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p}
     (Ψ : A → PROP) [ne : OFE.NonExpansive Ψ] [heq : IntoInternalEq Q a b]
     (h1 : P ⊢ P' ∗ □?p Q) : P ⊢ <pers> (Ψ a ∗-∗ Ψ b) := calc

@@ -20,6 +20,7 @@ fraction) and `◯F{q} a` (fragment with fraction). Splitting works differently 
 -/
 
 @[expose] public section
+local stepindex Nat
 
 open Iris OFE CMRA UCMRA Auth Option
 
@@ -55,7 +56,6 @@ instance frac_one_exclusive (b : A) : Exclusive (fracOne, b) where
 
 /-! ## NonExpansive instances -/
 
-local stepindex Nat
 @[rocq_alias frac_auth_auth_ne]
 instance auth_ne {dq : DFrac} : NonExpansive (auth dq : A → FracAuth) where
   ne _ _ _ h := Auth.auth_ne.ne ⟨.rfl, h⟩

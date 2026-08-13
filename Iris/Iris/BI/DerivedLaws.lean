@@ -15,6 +15,7 @@ public import Iris.Std.TC
 import Iris.Std.RocqPorting
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris.BI
 open Iris.Std BI
@@ -165,7 +166,6 @@ theorem imp_congr_left [BI PROP] {P P' Q : PROP} (h : P ⊣⊢ P') : (P → Q) �
 theorem imp_congr_right [BI PROP] {P Q Q' : PROP} (h : Q ⊣⊢ Q') : (P → Q) ⊣⊢ (P → Q') :=
   imp_congr .rfl h
 
-local stepindex Nat
 @[rocq_alias bi.forall_ne]
 theorem forall_ne [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ≡{n}≡ Ψ a) :
     iprop(∀ a, Φ a) ≡{n}≡ iprop(∀ a, Ψ a) := sForall_ne <| by

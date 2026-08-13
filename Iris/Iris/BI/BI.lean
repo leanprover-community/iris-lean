@@ -10,6 +10,7 @@ public import Iris.Algebra.StepIndexFinite
 public import Iris.BI.BIBase
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 open Iris.Std OFE
@@ -21,7 +22,6 @@ def liftRel (R : α → β → Prop) (A : α → Prop) (B : β → Prop) : Prop 
 theorem liftRel_eq : liftRel (@Eq α) A B ↔ A = B := by
   simp [liftRel, forall_and, iff_def, funext_iff]
 
-local stepindex Nat
 /-- Require that a separation logic with carrier type `PROP` fulfills all necessary axioms. -/
 @[rocq_alias bi, rocq_alias BiMixin,
   rocq_alias BiPersistentlyMixin, rocq_alias BiLaterMixin]

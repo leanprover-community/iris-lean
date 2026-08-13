@@ -11,6 +11,7 @@ public import Iris.ProofMode.Modalities
 public import Iris.Std.Namespaces
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris.ProofMode
 open Iris.BI
@@ -180,7 +181,6 @@ class IntoOr {PROP} [BI PROP] (P : PROP) (Q1 Q2 : outParam $ PROP) where
   into_or : P ⊢ Q1 ∨ Q2
 export IntoOr (into_or)
 
-local stepindex Nat
 @[ipm_class, rocq_alias IntoInternalEq]
 class IntoInternalEq {PROP} [BI PROP] [Sbi PROP] {A : outParam $ Type _}
     [ofe : outParam $ OFE A] (P : PROP) (x y : outParam A) where

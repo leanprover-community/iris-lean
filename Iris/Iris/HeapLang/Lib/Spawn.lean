@@ -12,11 +12,11 @@ public import Iris.HeapLang.PrimitiveLaws
 public import Iris.HeapLang.ProofMode
 
 namespace Iris.HeapLang
-local stepindex Nat
 
 open BI Iris ProgramLogic
 
 @[expose] public section
+local stepindex Nat
 
 namespace Spawn
 
