@@ -3,10 +3,11 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Alvin Tang
 -/
-module
+module -- shake: keep-all
 
-public import Lean.Data.Name
-public import Iris.Init
+public import Lean.Data.Name -- shake: keep
+public import Iris.Init -- shake: keep
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

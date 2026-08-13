@@ -8,9 +8,8 @@ module
 public import Iris.HeapLang.Lib.Lock
 public import Iris.Instances.Lib.Token
 public import Iris.Instances.Lib.Invariants
-public import Iris.Std.Namespaces
 public import Iris.HeapLang.PrimitiveLaws
-public import Iris.HeapLang.ProofMode
+import Iris.HeapLang.ProofMode
 
 namespace Iris.HeapLang
 

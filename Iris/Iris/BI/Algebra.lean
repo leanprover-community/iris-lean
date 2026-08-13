@@ -4,9 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
-public import Iris.BI.BI
 public import Iris.BI.Cmra
 public import Iris.Algebra.Lib.DFracAgree
+public import Iris.Algebra.Auth
+public import Iris.Algebra.HeapView
+import Iris.BI.DerivedLaws
+import Iris.Std.RocqPorting
+import Std.Tactic.BVDecide.Normalize.Prop
 
 /-! ## Algebra wrappers for BI
 This file provides introduction rules (BI entailments) for (some) CMRA operations and properties.

@@ -3,9 +3,11 @@ Copyright (c) 2026 Yunsong Yang. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yunsong Yang, Michael Sammler, Alvin Tang
 -/
-module
+module -- shake: keep-all
 
-public import Iris.ProofMode.Tactics.RevertIntro
+public import Iris.ProofMode.Tactics.RevertIntro -- shake: keep
+public meta import Lean.Meta.Tactic.ElimInfo -- shake: keep
+public meta import Lean.Meta.Tactic.Generalize -- shake: keep
 
 namespace Iris.ProofMode
 

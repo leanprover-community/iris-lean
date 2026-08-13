@@ -7,6 +7,7 @@ module
 
 public import Iris.Algebra.DFrac
 public import Iris.Algebra.Agree
+import Iris.Std.RocqPorting
 
 /-!
 # The DFrac Agree Camera

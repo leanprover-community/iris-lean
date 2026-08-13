@@ -6,10 +6,10 @@ Authors: Markus de Medeiros, Zongyuan Liu, Remy Seassau
 module
 
 
-public import Iris.BI
-public import Iris.BI.BigOp
-public import Iris.Algebra
-public import Iris.Instances.UPred
+public import Iris.Algebra.IProp
+public import Iris.Instances.UPred.Instance
+public import Iris.ProofMode.Classes
+import Iris.Std.RocqPorting
 
 @[expose] public section
 namespace Iris

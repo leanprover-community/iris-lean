@@ -5,8 +5,9 @@ Authors: Lars König
 -/
 module
 
-public import Lean.Meta
-public import Iris.Init
+public import Iris.Init -- shake: keep
+public import Lean.Expr
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

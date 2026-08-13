@@ -6,10 +6,9 @@ Authors: Markus de Medeiros
 module
 
 public import Iris.Algebra.BigOp
-public import Iris.Algebra.CMRA
 public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.Updates
-public import Iris.Std.GenMultiSets
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

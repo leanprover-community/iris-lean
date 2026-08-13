@@ -3,10 +3,11 @@ Copyright (c) 2026 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
-module
+module -- shake: keep-all
 
-import Iris.ProofMode.Modalities
-public meta import Iris.ProofMode.Tactics.Basic
+public meta import Iris.ProofMode.Tactics.Basic -- shake: keep
+public import Iris.ProofMode.Tactics.Basic
+import Std.Do.Triple.SpecLemmas
 
 namespace Iris.ProofMode
 

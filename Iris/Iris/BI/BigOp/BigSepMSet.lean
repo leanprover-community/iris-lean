@@ -7,11 +7,11 @@ module
 
 public import Iris.BI.BigOp.BigOp
 import Iris.BI.BigOp.BigSepList
-import Iris.BI.BigOp.BigSepMap
 import Iris.BI.BigOp.BigSepSet
 import Iris.BI.DerivedLawsLater
 import Iris.BI.Instances
-import Iris.Std.TC
+import Iris.BI.DerivedLaws
+import Iris.Std.RocqPorting
 
 public section
 

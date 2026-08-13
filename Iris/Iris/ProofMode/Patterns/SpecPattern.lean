@@ -3,10 +3,11 @@ Copyright (c) 2025 Oliver Soeser. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oliver Soeser, Zongyuan Liu, Yunsong Yang, Michael Sammler, Alvin Tang
 -/
-module
+module -- shake: keep-all
 
-public import Lean.Syntax
-public import Iris.Init
+public import Lean.Syntax -- shake: keep
+public import Iris.Init -- shake: keep
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

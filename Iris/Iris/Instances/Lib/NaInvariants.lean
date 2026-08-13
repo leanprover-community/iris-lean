@@ -5,13 +5,7 @@ Authors: Markus de Medeiros
 -/
 module
 
-public import Iris.ProofMode
-public import Iris.Instances.IProp.Instance
-public import Iris.Instances.Lib.FUpd
 public import Iris.Instances.Lib.Invariants
-public import Iris.Algebra.LeibnizSet
-public import Iris.Std.Namespaces
-public import Iris.Std.CoPset
 
 @[expose] public section
 

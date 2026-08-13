@@ -5,8 +5,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Iris.Algebra.Auth
-public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.Numbers
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

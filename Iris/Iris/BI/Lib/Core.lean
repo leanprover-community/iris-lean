@@ -6,8 +6,7 @@ Authors: Alvin Tang
 
 module
 
-public import Iris.BI
-public import Iris.ProofMode
+public import Iris.ProofMode -- shake: keep
 
 @[expose] public section
 

@@ -6,6 +6,8 @@ Authors: Lars König
 module
 
 public import Iris.Instances.Classical.Instance
+import Iris.Std.DelabRule
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

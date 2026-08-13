@@ -6,14 +6,8 @@ Authors: Markus de Medeiros
 module
 
 public import Iris.HeapLang.PrimitiveLaws
-public import Iris.BI.BigOp.BigSepSet
-public import Iris.ProgramLogic.ThreadPool
-public import Iris.ProgramLogic.AbstractWeakestPre
-public import Iris.ProgramLogic.AbstractLangCompleteness
 public import Iris.ProgramLogic.AbstractEctxLangCompleteness
-public import Iris.Instances.Lib.CInvariants
-public import Iris.Instances.Lib.GhostMap
-public import Iris.ProofMode
+import Iris.ProgramLogic.Lifting
 
 /-! # HeapLang completeness
 

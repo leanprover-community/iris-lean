@@ -3,10 +3,12 @@ Copyright (c) 2025 Oliver Soeser. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oliver Soeser, Yunsong Yang
 -/
-module
+module -- shake: keep-all
 
-public import Iris.ProofMode.ClassesMake
-public meta import Iris.ProofMode.Patterns.SelPattern
+public import Iris.ProofMode.ClassesMake -- shake: keep
+public meta import Iris.ProofMode.Patterns.SelPattern -- shake: keep
+public import Iris.ProofMode.Patterns.SelPattern
+public meta import Lean.Meta.Tactic.TryThis
 
 namespace Iris.ProofMode
 

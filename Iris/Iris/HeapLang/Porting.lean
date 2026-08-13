@@ -5,7 +5,8 @@ Authors: Markus de Medeiros
 -/
 module
 
-public import Iris.Init
+public import Iris.Init -- shake: keep
+import Iris.Std.RocqPorting
 
 /-!
 # HeapLang porting bookkeeping

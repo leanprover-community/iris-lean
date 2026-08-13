@@ -3,10 +3,11 @@ Copyright (c) 2026 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler, Alvin Tang
 -/
-module
+module -- shake: keep-all
 
-public import Qq
-public import Iris.BI.Notation
+public import Qq -- shake: keep
+public import Iris.BI.Notation -- shake: keep
+import Iris.Std.RocqPorting
 
 public meta section
 

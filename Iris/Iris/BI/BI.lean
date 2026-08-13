@@ -7,6 +7,9 @@ module
 
 public import Iris.Algebra.OFE
 public import Iris.BI.BIBase
+import Iris.Std.Rewrite
+import Iris.Std.RocqPorting
+import Std.Tactic.BVDecide.Normalize.Prop
 
 @[expose] public section
 

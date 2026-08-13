@@ -6,9 +6,8 @@ Authors: Zongyuan Liu, Markus de Medeiros
 module
 
 public import Iris.Algebra.Auth
-public import Iris.Algebra.IsOp
 public import Iris.Algebra.UFrac
-import Iris.Algebra.LocalUpdates
+import Iris.Std.RocqPorting
 
 /-!
 # Unbounded Fractional Authoritative Camera

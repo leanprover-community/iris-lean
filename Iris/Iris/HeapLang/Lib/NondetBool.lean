@@ -1,9 +1,8 @@
 module
 
-public import Iris.ProgramLogic.WeakestPre
-public import Iris.HeapLang.ProofMode
 public import Iris.HeapLang.PrimitiveLaws
-public import Iris.Instances.Lib.Invariants
+import Iris.HeapLang.ProofMode
+import Iris.Instances.Lib.Invariants
 
 namespace Iris.HeapLang
 

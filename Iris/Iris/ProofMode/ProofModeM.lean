@@ -3,11 +3,14 @@ Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler, Zongyuan Liu, Yunsong Yang, Alvin Tang
 -/
-module
+module -- shake: keep-all
 
-public meta import Iris.ProofMode.Expr
-public import Iris.ProofMode.SynthInstance
-public import Iris.ProofMode.Classes
+public meta import Iris.ProofMode.Expr -- shake: keep
+public import Iris.ProofMode.SynthInstance -- shake: keep
+public import Iris.ProofMode.Classes -- shake: keep
+public import Iris.ProofMode.Expr
+public import Lean.Elab.Tactic.Basic
+public meta import Std.Do.Triple.SpecLemmas
 
 public meta section
 

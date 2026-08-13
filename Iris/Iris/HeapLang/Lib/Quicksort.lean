@@ -6,7 +6,8 @@ Authors: Markus de Medeiros, Michael Sammler, Klaus Kraßnitzer
 module
 
 public import Iris.HeapLang.PrimitiveLaws
-public import Iris.HeapLang.ProofMode
+import Iris.HeapLang.ProofMode
+import Std.Tactic.BVDecide.Normalize.BitVec
 
 namespace Iris.HeapLang
 

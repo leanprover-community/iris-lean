@@ -5,9 +5,11 @@ Authors: Markus de Medeiros
 -/
 module
 
-public import Iris.BI.Sbi
 public import Iris.BI.Plainly
-public import Iris.BI.InternalEq
+import Iris.BI.DerivedLaws
+import Iris.BI.DerivedLawsLater
+import Iris.Std.DelabRule
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

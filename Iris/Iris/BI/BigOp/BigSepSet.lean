@@ -9,7 +9,9 @@ public import Iris.BI.BigOp.BigOp
 import Iris.BI.BigOp.BigSepList
 import Iris.BI.DerivedLawsLater
 import Iris.BI.Instances
-import Iris.Std.TC
+public import Iris.Std.TC
+import Iris.BI.DerivedLaws
+import Iris.Std.RocqPorting
 
 public section
 

@@ -3,10 +3,9 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
-module
+module -- shake: keep-all
 
-import Iris.BI
-public import Iris.ProofMode.Tactics.Basic
+public import Iris.ProofMode.Tactics.Basic -- shake: keep
 
 namespace Iris.ProofMode
 public section

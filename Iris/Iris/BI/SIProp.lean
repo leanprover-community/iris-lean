@@ -5,11 +5,10 @@ Authors: Markus de Medeiros
 -/
 module
 
-public import Iris.BI.BI
 public import Iris.BI.Extensions
-public import Iris.BI.Classes
-public import Iris.BI.DerivedLaws
 public import Iris.Algebra.CMRA
+public import Iris.Std.TC
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

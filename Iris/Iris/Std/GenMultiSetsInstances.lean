@@ -6,6 +6,8 @@ Authors: Haokun Li
 module
 
 public import Iris.Std.GenMultiSets
+import Iris.Init -- shake: keep
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

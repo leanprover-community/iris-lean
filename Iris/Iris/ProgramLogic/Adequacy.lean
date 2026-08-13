@@ -5,11 +5,7 @@ Authors: Haokun Li, Sergei Stepanenko, Zongyuan Liu
 -/
 module
 
-public import Iris.Algebra
-public import Iris.BI
-public import Iris.ProofMode
 public import Iris.ProgramLogic.WeakestPre
-public import Iris.Std.FromMathlib
 
 namespace Iris.ProgramLogic
 

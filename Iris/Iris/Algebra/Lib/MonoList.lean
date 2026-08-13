@@ -6,9 +6,8 @@ Authors: Markus de Medeiros
 module
 
 public import Iris.Algebra.Auth
-public import Iris.Algebra.IsOp
 public import Iris.Algebra.MaxPrefixList
-meta import Iris.Std.RocqPorting
+import Iris.Std.RocqPorting
 
 /-! # Monotone lists -/
 

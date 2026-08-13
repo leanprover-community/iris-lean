@@ -6,9 +6,8 @@ Authors: Сухарик (@suhr)
 
 module
 
-public import Iris.Instances.IProp
 public import Iris.BI.Lib.Fractional
-public import Iris.ProofMode
+public import Iris.Instances.IProp.Instance
 
 @[expose] public section
 

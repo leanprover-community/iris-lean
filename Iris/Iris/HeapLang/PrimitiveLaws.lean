@@ -1,17 +1,11 @@
 module
 
-public import Iris.HeapLang.Syntax
-public import Iris.HeapLang.Semantics
-public import Iris.HeapLang.Notation
 public import Iris.HeapLang.Instances
-public import Iris.ProgramLogic.WeakestPre
 public import Iris.ProgramLogic.Adequacy
-public import Iris.ProgramLogic.Lifting
 public import Iris.BI.Lib.GenHeap
 public import Iris.BI.Lib.ProphMap
-public import Iris.Std.GenSetsInstances
-public import Iris.ProofMode
-public import Std.Data.ExtTreeMap
+import Iris.ProgramLogic.Lifting
+import Std.Tactic.BVDecide.Normalize.Prop
 
 @[expose] public section
 namespace Iris.HeapLang

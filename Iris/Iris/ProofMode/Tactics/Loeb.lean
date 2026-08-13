@@ -3,10 +3,10 @@ Copyright (c) 2026 Fernando Leal. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Fernando Leal
 -/
-module
+module -- shake: keep-all
 
-public import Iris.ProofMode.Tactics.Revert
-public import Iris.ProofMode.Tactics.RevertIntro
+public import Iris.ProofMode.Tactics.Revert -- shake: keep
+public import Iris.ProofMode.Tactics.RevertIntro -- shake: keep
 
 namespace Iris.ProofMode
 

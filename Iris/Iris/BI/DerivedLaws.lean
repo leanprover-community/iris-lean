@@ -5,13 +5,11 @@ Authors: Lars König, Mario Carneiro, Markus de Medeiros, Michael Sammler, Alvin
 -/
 module
 
-public import Iris.BI.Classes
 public import Iris.BI.Extensions
-public import Iris.BI.BI
-public import Iris.Std.Nat
 public import Iris.Std.Classes
-public import Iris.Std.Rewrite
 public import Iris.Std.TC
+import Iris.Std.Rewrite
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

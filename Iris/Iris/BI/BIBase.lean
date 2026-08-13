@@ -6,10 +6,11 @@ Authors: Lars König, Mario Carneiro
 module
 
 public import Iris.BI.Notation
-public import Iris.Std.Classes
-public import Iris.Std.DelabRule
-public import Iris.Std.Rewrite
 public import Iris.Std.BigOp
+public meta import Lean.PrettyPrinter.Delaborator.Builtins
+import Iris.Std.DelabRule
+import Iris.Std.RocqPorting
+import Lean.PrettyPrinter.Delaborator.Basic
 
 @[expose] public section
 

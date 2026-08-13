@@ -5,12 +5,13 @@ Authors: Markus de Medeiros, Mario Carneiro, Viet Anh Nguyen
 -/
 module
 
-public import Iris.BI
-public import Iris.Algebra.OFE
-public import Iris.Algebra.CMRA
 public import Iris.Algebra.UPred
-public import Iris.Algebra.Updates
 public import Iris.BI.Lib.BUpdPlain
+public import Iris.BI.Cmra
+import Iris.BI.DerivedLaws
+import Iris.BI.DerivedLawsLater
+import Iris.Std.RocqPorting
+import Std.Tactic.BVDecide.Normalize.Prop
 
 @[expose] public section
 

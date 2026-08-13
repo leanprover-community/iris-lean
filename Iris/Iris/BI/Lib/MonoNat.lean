@@ -5,11 +5,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Iris.Algebra.Lib.MonoNat
-public import Iris.Algebra.Auth
-public import Iris.BI
 public import Iris.BI.Lib.Fractional
-public import Iris.ProofMode
-public import Iris.Instances.IProp
+public import Iris.Instances.IProp.Instance
 
 @[expose] public section
 

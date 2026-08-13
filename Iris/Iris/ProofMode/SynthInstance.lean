@@ -3,10 +3,12 @@ Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
-module
+module -- shake: keep-all
 
-public import Iris.BI
-public import Iris.ProofMode.SynthInstanceAttr
+public import Iris.BI -- shake: keep
+public import Iris.ProofMode.SynthInstanceAttr -- shake: keep
+public meta import Iris.ProofMode.SynthInstanceAttr
+import Iris.Std.RocqPorting
 
 public meta section
 

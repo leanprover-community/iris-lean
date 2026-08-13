@@ -4,15 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
-public import Iris.ProofMode
-public import Iris.Algebra.IProp
-public import Iris.Algebra.Auth
-public import Iris.Instances.UPred.Instance
-public import Iris.Instances.IProp.Instance
-public import Iris.Instances.Lib.WSat
-public import Iris.Instances.Lib.LaterCredits
-public import Iris.Instances.Lib.Invariants
-public import Iris.Std.HeapInstances
+public import Iris.Instances.Lib.Invariants -- shake: keep
 
 @[expose] public section
 

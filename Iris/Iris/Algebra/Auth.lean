@@ -6,7 +6,7 @@ Authors: Alexander Bai
 module
 
 public import Iris.Algebra.View
-public import Iris.Algebra.LocalUpdates
+import Iris.Std.RocqPorting
 
 /-!
 # Authoritative Camera

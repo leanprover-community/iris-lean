@@ -5,8 +5,7 @@ Authors: Markus de Medeiros
 -/
 module
 
-public import Iris.BI
-public import Iris.ProofMode
+public import Iris.ProofMode -- shake: keep
 
 @[expose] public section
 

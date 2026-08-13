@@ -6,6 +6,8 @@ Authors: Remy Seassau, Markus de Medeiros, Sergei Stepanenko
 module
 
 public import Iris.Std.Infinite
+import Iris.Init -- shake: keep
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

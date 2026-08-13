@@ -1,13 +1,9 @@
 module
 
-import Iris.Std.Positives
-public import Iris.Std.CoPset
-public import Iris.Std.PartialMap
-public import Iris.Algebra.CMRA
 public import Iris.Algebra.Heap
 public import Iris.Algebra.IsOp
-public import Iris.Algebra.Updates
 public import Iris.Algebra.LeibnizSet
+import Iris.Std.RocqPorting
 
 namespace Iris
 

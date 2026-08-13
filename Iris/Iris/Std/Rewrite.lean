@@ -5,7 +5,9 @@ Authors: Lars König
 -/
 module
 
-public import Iris.Std.Tactic
+public import Iris.Std.Tactic -- shake: keep
+import Iris.Std.RocqPorting
+import Lean.Attributes
 
 public meta section
 

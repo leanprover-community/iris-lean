@@ -5,9 +5,9 @@ Authors: Lars König
 -/
 module
 
-meta import Lean.Elab.Tactic.ElabTerm
-public import Lean.Elab.Tactic
-public import Iris.Init
+public import Iris.Init -- shake: keep
+public meta import Lean.Elab.Tactic.ElabTerm
+import Iris.Std.RocqPorting
 
 public meta section
 

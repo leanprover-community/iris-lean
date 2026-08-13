@@ -3,11 +3,10 @@ Copyright (c) 2026 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
-module
+module -- shake: keep-all
 
-import Iris.BI
-import Iris.ProofMode.Classes
-public meta import Iris.ProofMode.Patterns.SelPattern
+public meta import Iris.ProofMode.Patterns.SelPattern -- shake: keep
+public import Iris.ProofMode.Patterns.SelPattern
 
 namespace Iris.ProofMode
 

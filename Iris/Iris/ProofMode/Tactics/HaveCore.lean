@@ -3,12 +3,11 @@ Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler, Zongyuan Liu
 -/
-module
+module -- shake: keep-all
 
-import Iris.BI
-import Iris.ProofMode.Classes
-public meta import Iris.ProofMode.Patterns.SpecPattern
-public meta import Iris.ProofMode.Tactics.Specialize
+public meta import Iris.ProofMode.Patterns.SpecPattern -- shake: keep
+public meta import Iris.ProofMode.Tactics.Specialize -- shake: keep
+public import Iris.ProofMode.Tactics.Specialize
 
 /-
   This file contains the `iHave` function for asserting a ProofModeTerm.

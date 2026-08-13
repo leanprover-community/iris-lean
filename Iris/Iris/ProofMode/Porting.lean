@@ -3,9 +3,10 @@ Copyright (c) 2026. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu
 -/
-module
+module -- shake: keep-all
 
-import Iris.Init
+import Iris.Init -- shake: keep
+import Iris.Std.RocqPorting
 
 #rocq_ignore_file proofmode "base.v" "Rocq-specific basic functionality"
 #rocq_ignore_file proofmode "coq_tactics.v" "Tracked via the Tactics concept"

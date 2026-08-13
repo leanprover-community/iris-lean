@@ -5,19 +5,11 @@ Authors: Haokun Li
 -/
 module
 
-public import Iris.BI.BI
-public import Iris.BI.BIBase
-public import Iris.BI.DerivedLaws
-public import Iris.BI.DerivedLawsLater
-public import Iris.BI.Classes
-public import Iris.BI.Notation
 public import Iris.BI.Updates
-public import Iris.BI.Plainly
-public import Iris.BI.Sbi
-public import Iris.BI.InternalEq
-public import Iris.BI.BigOp
-public import Iris.Algebra.OFE
-public import Iris.Algebra.Monoid
+import Iris.BI.DerivedLaws
+import Iris.BI.DerivedLawsLater
+import Iris.Std.DelabRule
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

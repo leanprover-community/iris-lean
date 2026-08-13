@@ -3,12 +3,14 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler, Alvin Tang
 -/
-module
+module -- shake: keep-all
 
-public meta import Iris.ProofMode.Patterns.SpecPattern
-public import Iris.ProofMode.Patterns.CasesPattern
-public import Iris.ProofMode.Tactics.Trivial
-public import Iris.ProofMode.Tactics.Frame
+public meta import Iris.ProofMode.Patterns.SpecPattern -- shake: keep
+public import Iris.ProofMode.Patterns.CasesPattern -- shake: keep
+public import Iris.ProofMode.Tactics.Trivial -- shake: keep
+public import Iris.ProofMode.Tactics.Frame -- shake: keep
+public meta import Iris.ProofMode.Patterns.CasesPattern
+public import Iris.ProofMode.Patterns.SpecPattern
 
 namespace Iris.ProofMode
 

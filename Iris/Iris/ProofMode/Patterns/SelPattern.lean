@@ -3,9 +3,9 @@ Copyright (c) 2026 Yunsong Yang. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yunsong Yang
 -/
-module
+module -- shake: keep-all
 
-public import Iris.ProofMode.ProofModeM
+public import Iris.ProofMode.ProofModeM -- shake: keep
 
 @[expose] public section
 

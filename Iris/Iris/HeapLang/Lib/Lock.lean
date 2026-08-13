@@ -1,7 +1,6 @@
 module
 
 public import Iris.ProgramLogic.WeakestPre
-public import Iris.HeapLang.Notation
 public import Iris.HeapLang.Instances
 
 namespace Iris.HeapLang

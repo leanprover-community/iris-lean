@@ -6,10 +6,8 @@ Authors: Markus de Medeiros
 module
 
 public import Iris.Algebra.Lib.MonoList
-public import Iris.BI
 public import Iris.BI.Lib.Fractional
-public import Iris.ProofMode
-public import Iris.Instances.IProp
+public import Iris.Instances.IProp.Instance
 
 /-!
 # Ghost state for append-only lists

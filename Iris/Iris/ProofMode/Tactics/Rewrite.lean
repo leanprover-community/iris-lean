@@ -2,10 +2,12 @@
 Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-module
+module -- shake: keep-all
 
-import Iris.BI
-public import Iris.ProofMode.Tactics.HaveCore
+public import Iris.ProofMode.Tactics.HaveCore -- shake: keep
+public meta import Lean.Elab.ConfigEval.MetaInstances -- shake: keep
+public meta import Lean.Elab.ConfigEval.DeriveEvalExpr -- shake: keep
+import Lean.Elab.ConfigEval.Commands
 
 namespace Iris.ProofMode
 

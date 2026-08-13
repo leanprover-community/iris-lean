@@ -1,11 +1,6 @@
 module
-public import Iris.Algebra
 public import Iris.Algebra.ReservationMap
-public import Iris.BI.Lib.Fractional
 public import Iris.Instances.Lib.GhostMap
-public import Iris.Instances.IProp
-public import Iris.Std.HeapInstances
-public import Iris.Std.Namespaces
 
 @[expose] public section
 

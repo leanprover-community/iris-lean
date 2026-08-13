@@ -1,8 +1,8 @@
 module
 
-public import Iris.HeapLang
-public import Iris.BI
-public import Iris.HeapLang.Lib.NondetBool
+public import Iris.HeapLang.PrimitiveLaws
+import Iris.HeapLang.Lib.NondetBool
+import Iris.HeapLang.ProofMode
 
 namespace Iris.HeapLang
 

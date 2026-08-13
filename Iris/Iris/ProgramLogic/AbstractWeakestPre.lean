@@ -4,15 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
-public import Iris.Algebra
-public import Iris.Instances.Lib.FUpd
 public import Iris.Instances.Lib.Invariants
-public import Iris.BI
-public import Iris.BI.WeakestPre
-public import Iris.ProofMode
-public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.EctxLanguage
-public import Iris.Std.CoPset
 public import Iris.ProgramLogic.WeakestPre
 
 namespace Iris

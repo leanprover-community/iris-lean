@@ -4,14 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
-public import Iris.Algebra
-public import Iris.ProofMode
-public import Iris.BI.InternalEq
-public import Iris.BI.BigOp.BigSepMap
-public import Iris.BI.Algebra
-public import Iris.Std.GenSetsInstances
-public import Iris.Std.HeapInstances
-public import Iris.Instances.IProp
+public import Iris.ProofMode -- shake: keep
+public import Iris.Algebra.LeibnizSet
+public import Iris.Instances.IProp.Instance
+import Std.Tactic.BVDecide.Normalize.Prop
 
 @[expose] public section
 

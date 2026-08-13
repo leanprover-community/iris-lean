@@ -4,17 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
-public import Iris.Algebra
-public import Iris.BI
-public import Iris.ProofMode
-public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.Adequacy
 public import Iris.ProgramLogic.ThreadPool
 public import Iris.ProgramLogic.AbstractWeakestPre
-public import Iris.Instances.Lib.Invariants
 public import Iris.Instances.Lib.CInvariants
-public import Iris.Instances.Lib.GhostMap
-public import Iris.Std.FromMathlib
 
 namespace Iris.ProgramLogic
 

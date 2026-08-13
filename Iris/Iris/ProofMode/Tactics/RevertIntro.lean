@@ -3,9 +3,9 @@ Copyright (c) 2026 Fernando Leal. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Fernando Leal
 -/
-module
-public import Iris.ProofMode.Tactics.Intro
-public import Iris.ProofMode.Tactics.Revert
+module -- shake: keep-all
+public import Iris.ProofMode.Tactics.Intro -- shake: keep
+public import Iris.ProofMode.Tactics.Revert -- shake: keep
 
 namespace Iris.ProofMode
 

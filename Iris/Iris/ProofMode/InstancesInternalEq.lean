@@ -3,11 +3,12 @@ Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Sergei Stepanenko, Michael Sammler
 -/
-module
+module -- shake: keep-all
 
-public import Iris.ProofMode.Classes
-public import Iris.ProofMode.ModalityInstances
-public import Iris.ProofMode.NatCancel
+public import Iris.ProofMode.Classes -- shake: keep
+public import Iris.ProofMode.ModalityInstances -- shake: keep
+public import Iris.ProofMode.NatCancel -- shake: keep
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

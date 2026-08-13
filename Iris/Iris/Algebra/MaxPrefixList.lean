@@ -10,7 +10,7 @@ public import Iris.Algebra.Heap
 public import Iris.Algebra.List
 public import Iris.Algebra.LocalUpdates
 public import Iris.Std.HeapInstances
-meta import Iris.Std.RocqPorting
+import Iris.Std.RocqPorting
 
 /-! # Max prefix lists
 

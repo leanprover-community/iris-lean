@@ -3,9 +3,11 @@ Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros, Michael Sammler
 -/
-module
+module -- shake: keep-all
 
-public import Iris.BI
+public import Iris.BI -- shake: keep
+import Iris.Std.RocqPorting
+import Std.Tactic.BVDecide.Normalize.Prop
 
 @[expose] public section
 

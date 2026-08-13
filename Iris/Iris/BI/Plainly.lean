@@ -5,16 +5,13 @@ Authors: Markus de Medeiros, Fernando Leal
 -/
 module
 
-public import Iris.Algebra
-public import Iris.BI.Sbi
-public import Iris.BI.Classes
-public import Iris.BI.BigOp
-public import Iris.BI.BI
-public import Iris.BI.BIBase
-public import Iris.BI.DerivedLaws
-public import Iris.BI.DerivedLawsLater
 public import Iris.BI.InternalEq
 public import Iris.Std.Positives
+public import Iris.BI.BigOp.BigOp
+import Iris.BI.BigOp.BigSepList
+import Iris.BI.DerivedLaws
+import Iris.BI.DerivedLawsLater
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

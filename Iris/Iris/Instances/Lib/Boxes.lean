@@ -5,13 +5,8 @@ Authors: Sergei Stepanenko, Xiaoyang Lu, Zongyuan Liu
 -/
 module
 
-public import Iris.Algebra
 public import Iris.Algebra.Lib.ExclAuth
-public import Iris.ProofMode
-public import Iris.Instances.IProp
 public import Iris.Instances.Lib.Invariants
-public import Iris.Std.PartialMap
-public import Iris.Std.Namespaces
 
 @[expose] public section
 

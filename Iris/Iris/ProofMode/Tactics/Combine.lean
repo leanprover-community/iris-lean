@@ -3,10 +3,10 @@ Copyright (c) 2026 Alvin Tang. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alvin Tang, Michael Sammler
 -/
-module
+module -- shake: keep-all
 
-public import Iris.ProofMode.Tactics.Cases
-public import Iris.ProofMode.ClassesMake
+public import Iris.ProofMode.Tactics.Cases -- shake: keep
+public import Iris.ProofMode.ClassesMake -- shake: keep
 
 namespace Iris.ProofMode
 

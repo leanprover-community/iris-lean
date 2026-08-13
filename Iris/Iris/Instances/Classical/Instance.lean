@@ -5,9 +5,9 @@ Authors: Lars König
 -/
 module
 
-public import Iris.BI
-public import Iris.Instances.Data
-public import Iris.Std.Equivalence
+public import Iris.BI.BI
+public import Iris.Instances.Data.State
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

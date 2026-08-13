@@ -6,13 +6,11 @@ Authors: Sergei Stepanenko, Zongyuan Liu
 module
 
 public import Iris.Algebra.BigOp
-public import Iris.Algebra.CMRA
-public import Iris.Algebra.OFE
 public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.Updates
-public import Iris.Std.GenSets
-public import Iris.Std.Infinite
 public import Iris.Std.CoPset
+import Iris.Std.RocqPorting
+import Std.Data.DTreeMap.Internal.Balancing
 
 @[expose] public section
 

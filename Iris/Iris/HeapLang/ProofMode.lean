@@ -5,16 +5,13 @@ Authors: Fernando Leal, Klaus Kraßnitzer
 -/
 module
 
-public import Iris.ProofMode
 public import Iris.HeapLang.Tactic
-public import Iris.HeapLang.Instances
 public import Iris.HeapLang.PrimitiveLaws
-public import Iris.ProgramLogic.WeakestPre
-public import Iris.ProgramLogic.Language
-public import Iris.ProgramLogic.EctxLanguage
-public import Iris.ProgramLogic.EctxiLanguage
-public import Iris.ProgramLogic.Lifting
-public import Lean.Elab.Tactic.Simp
+public meta import Lean.Meta.Tactic.Simp.BuiltinSimprocs.Core
+public meta import Lean.Meta.Tactic.Simp.BuiltinSimprocs.String
+public import Std.Tactic.BVDecide.Normalize.Prop
+import Iris.ProgramLogic.Lifting
+import Lean.Meta.Tactic.Simp.Simproc
 
 namespace Iris.ProofMode
 

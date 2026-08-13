@@ -5,11 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Iris.ProgramLogic.Language
-public import Iris.ProgramLogic.EctxLanguage
-public import Iris.ProgramLogic.Adequacy
 public import Iris.Instances.Lib.GhostMap
-public import Iris.Std.FromMathlib
-public import Batteries.Data.List.Lemmas
 
 namespace Iris.ProgramLogic
 

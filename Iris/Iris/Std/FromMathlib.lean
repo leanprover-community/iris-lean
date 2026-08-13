@@ -5,7 +5,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Batteries.Data.List.Basic
-public import Iris.Init
+public import Iris.Init -- shake: keep
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

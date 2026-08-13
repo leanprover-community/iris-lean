@@ -3,12 +3,11 @@ Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler, Alvin Tang
 -/
-module
+module -- shake: keep-all
 
-public import Iris.ProofMode.Patterns.CasesPattern
-public import Iris.ProofMode.Patterns.SelPattern
-
-public import Lean.Syntax
+public import Iris.ProofMode.Patterns.CasesPattern -- shake: keep
+public import Iris.ProofMode.Patterns.SelPattern -- shake: keep
+public import Lean.Syntax -- shake: keep
 
 @[expose] public section
 

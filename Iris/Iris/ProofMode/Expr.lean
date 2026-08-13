@@ -3,12 +3,14 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang
 -/
-module
+module -- shake: keep-all
 
-public import Iris.BI
-public import Iris.ProofMode.Classes
-public import Iris.Std
-public meta import Iris.Std.Expr
+public import Iris.BI -- shake: keep
+public import Iris.ProofMode.Classes -- shake: keep
+public import Iris.Std -- shake: keep
+public meta import Iris.Std.Expr -- shake: keep
+public meta import Iris.BI.BI
+public meta import Iris.Std.Qq
 
 public meta section
 

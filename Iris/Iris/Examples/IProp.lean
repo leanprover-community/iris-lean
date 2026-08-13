@@ -5,11 +5,8 @@ Authors: Markus de Medeiros
 -/
 module
 
-public import Iris.BI
-public import Iris.ProofMode
-public import Iris.Instances.IProp
-public import Iris.Algebra
-public import Iris.Std.HeapInstances
+public import Iris.ProofMode -- shake: keep
+public import Iris.Instances.IProp.Instance
 
 @[expose] public section
 

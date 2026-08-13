@@ -5,15 +5,12 @@ Authors: Zongyuan Liu, Markus de Medeiros, Sergei Stepanenko
 -/
 module
 
-public import Iris.Algebra.Monoid
 public import Iris.Algebra.CMRA
-import Batteries.Data.List.Perm
 public import Iris.Std.List
 public import Iris.Std.PartialMap
-public import Iris.Std.GenSets
 public import Iris.Std.GenMultiSets
-public import Iris.Std.Positives
-public import Iris.Std.Equivalence
+import Iris.Std.Equivalence
+import Iris.Std.RocqPorting
 
 namespace Iris.Algebra
 

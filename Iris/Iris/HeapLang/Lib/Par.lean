@@ -6,9 +6,7 @@ Authors: Zongyuan Liu
 module
 
 public import Iris.HeapLang.Lib.Spawn
-public import Iris.Std.Namespaces
-public import Iris.HeapLang.PrimitiveLaws
-public import Iris.HeapLang.ProofMode
+import Iris.HeapLang.ProofMode
 
 namespace Iris.HeapLang
 

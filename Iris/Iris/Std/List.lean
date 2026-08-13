@@ -5,11 +5,11 @@ Authors: Zongyuan Liu, Markus de Medeiros
 -/
 module
 
-public import Iris.Std.FromMathlib
-public import Iris.Std.Classes
 public import Iris.Std.Option
-import Batteries.Data.List.Basic
-import Batteries.Data.List.Perm
+public import Batteries.Data.List.Basic
+import Batteries.Data.List.Lemmas
+import Iris.Std.RocqPorting
+import Std.Data.DTreeMap.Internal.Operations
 
 /-! # List Lemmas -/
 

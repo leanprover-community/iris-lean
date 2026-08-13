@@ -5,12 +5,8 @@ Authors: Markus de Medeiros
 -/
 module
 
-public import Iris.Instances.IProp
-public import Iris.Algebra.Lib.DFracAgree
 public import Iris.BI.Lib.Fractional
-public import Iris.BI.Algebra
-public import Iris.BI.InternalEq
-public import Iris.ProofMode
+public import Iris.Instances.IProp.Instance
 
 @[expose] public section
 

@@ -5,10 +5,11 @@ Authors: Zongyuan Liu
 -/
 module
 
-public import Iris.Algebra.Monoid
 public import Iris.Algebra.BigOp
-public import Iris.BI.DerivedLaws
-public import Iris.BI.Notation
+public import Iris.BI.Extensions
+import Iris.BI.DerivedLaws
+import Iris.Std.RocqPorting
+import Lean.Expr
 
 namespace Iris.BI
 

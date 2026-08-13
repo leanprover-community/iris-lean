@@ -5,9 +5,8 @@ Authors: Markus de Medeiros
 -/
 module
 
-public import Iris.Algebra.OFE
 public import Iris.Algebra.BigOp
-public import Iris.Std.List
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

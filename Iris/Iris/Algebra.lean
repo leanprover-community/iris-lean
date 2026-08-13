@@ -24,10 +24,10 @@ public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.MaxPrefixList
 public import Iris.Algebra.Numbers
 public import Iris.Algebra.Mra
-public import Iris.Algebra.IProp
 public import Iris.Algebra.OFE
 public import Iris.Algebra.ReservationMap
 public import Iris.Algebra.StepIndex
 public import Iris.Algebra.UFrac
 public import Iris.Algebra.Updates
 public import Iris.Algebra.UPred
+import Iris.Std.RocqPorting

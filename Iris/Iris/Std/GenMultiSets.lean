@@ -5,8 +5,9 @@ Authors: Haokun Li, Markus de Medeiros
 -/
 module
 
-public import Iris.Std.GenSets
-public import Batteries.Data.List.Perm
+public import Batteries.Data.List.Perm -- shake: keep
+import Iris.Init -- shake: keep
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

@@ -5,8 +5,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 module
 
-public import Std.Data.ExtTreeSet
-public import Iris.Std.CoPset
+public import Iris.Std.GenSets
+public import Std.Data.ExtTreeSet.Lemmas
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

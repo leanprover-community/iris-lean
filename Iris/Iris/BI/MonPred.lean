@@ -5,20 +5,13 @@ Authors: Haokun Li, Sergei Stepanenko
 -/
 module
 
-public import Iris.BI.BI
-public import Iris.BI.BIBase
-public import Iris.BI.DerivedLaws
-public import Iris.BI.DerivedLawsLater
-public import Iris.BI.Extensions
-public import Iris.BI.Classes
+public import Iris.BI.DerivedLaws -- shake: keep
+public import Iris.BI.DerivedLawsLater -- shake: keep
 public import Iris.BI.Embedding
-public import Iris.BI.Updates
-public import Iris.BI.Plainly
-public import Iris.BI.Sbi
-public import Iris.BI.BigOp.BigOp
-public import Iris.BI.BigOp.BigSepList
-public import Iris.BI.BigOp.BigSepMap
-public import Iris.BI.BigOp.BigSepSet
+import Iris.BI.BigOp.BigSepList
+import Iris.BI.BigOp.BigSepMap
+import Iris.BI.BigOp.BigSepSet
+import Iris.Std.RocqPorting
 
 /-! ### TODO
 

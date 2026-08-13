@@ -4,14 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
-public import Iris.ProofMode
-public import Iris.Algebra.IProp
+public import Iris.ProofMode -- shake: keep
 public import Iris.Algebra.LeibnizSet
 public import Iris.Instances.UPred.Instance
-public import Iris.Instances.IProp.Instance
-public import Iris.Std.GenSetsInstances
-public import Iris.Std.CoPset
-public import Iris.Std.GenSets
 
 @[expose] public section
 

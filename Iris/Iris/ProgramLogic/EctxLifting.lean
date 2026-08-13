@@ -4,8 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
-public import Iris.ProgramLogic.Lifting
-public import Iris.ProgramLogic.EctxiLanguage
+public import Iris.ProgramLogic.EctxLanguage
+public import Iris.ProgramLogic.WeakestPre
+import Iris.ProgramLogic.Lifting
 
 namespace Iris.ProgramLogic
 

@@ -3,14 +3,14 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang, Alvin Tang
 -/
-module
+module -- shake: keep-all
 
-public import Iris.ProofMode.Tactics.Mod
-public import Iris.ProofMode.Tactics.Pure
-public import Iris.ProofMode.Tactics.Clear
-public import Iris.ProofMode.Tactics.Basic
-public import Iris.ProofMode.Tactics.HaveCore
-public import Iris.ProofMode.Tactics.Frame
+public import Iris.ProofMode.Tactics.Mod -- shake: keep
+public import Iris.ProofMode.Tactics.Pure -- shake: keep
+public import Iris.ProofMode.Tactics.Clear -- shake: keep
+public import Iris.ProofMode.Tactics.Basic -- shake: keep
+public import Iris.ProofMode.Tactics.HaveCore -- shake: keep
+public import Iris.ProofMode.Tactics.Frame -- shake: keep
 
 namespace Iris.ProofMode
 

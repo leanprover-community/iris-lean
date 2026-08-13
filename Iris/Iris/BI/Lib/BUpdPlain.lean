@@ -1,11 +1,7 @@
 module
 
-public import Iris.Std
-public import Iris.Algebra.Updates
-public import Iris.ProofMode.Classes
-public import Iris.ProofMode.Tactics
-public import Iris.ProofMode.Display
-public import Iris.ProofMode.InstancesUpdates
+public import Iris.BI.Updates
+import Iris.ProofMode.InstancesUpdates
 
 @[expose] public section
 

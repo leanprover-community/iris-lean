@@ -3,10 +3,11 @@ Copyright (c) 2026 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
-module
+module -- shake: keep-all
 
-public import Iris.Algebra.CMRA
-public import Iris.ProofMode.Classes
+public import Iris.Algebra.CMRA -- shake: keep
+public import Iris.ProofMode.Classes -- shake: keep
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

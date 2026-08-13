@@ -4,14 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
-public import Iris.Algebra
-public import Iris.ProofMode
-public import Iris.BI.Algebra
-public import Iris.Std.Namespaces
-public import Iris.Instances.IProp
 public import Iris.Instances.Lib.FUpd
-public import Iris.Std.CoPset
-import Iris.Instances.Lib.WSat
 
 @[expose] public section
 

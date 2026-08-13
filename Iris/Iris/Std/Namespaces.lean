@@ -6,8 +6,8 @@ Authors: Remy Seassau, Markus de Medeiros, Sergei Stepanenko
 module
 
 public import Iris.Std.CoPset
-public import Iris.Std.Positives
-public import Iris.Std.GenSets
+import Iris.Std.RocqPorting
+import Std.Data.DTreeMap.Internal.Operations
 
 @[expose] public section
 

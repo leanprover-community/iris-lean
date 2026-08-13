@@ -6,7 +6,8 @@ Authors: Lars König, Alex Keizer
 module
 
 import Lean.Parser.Term
-public import Iris.Init
+public import Iris.Init -- shake: keep
+import Iris.Std.RocqPorting
 
 public meta section
 

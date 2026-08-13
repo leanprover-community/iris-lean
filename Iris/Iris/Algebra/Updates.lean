@@ -6,6 +6,7 @@ Authors: Сухарик (@suhr)
 module
 
 public import Iris.Algebra.CMRA
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

@@ -5,14 +5,15 @@ Authors: Markus de Medeiros, Remy Seassau, Yunsong Yang
 -/
 module
 
-public import Iris.BI.BI
-public import Iris.BI.BIBase
-public import Iris.BI.Classes
-public import Iris.BI.DerivedLaws
-public import Iris.BI.Notation
-public import Iris.Algebra
 public import Iris.BI.Plainly
 public import Iris.Std.CoPset
+import Iris.BI.BigOp.BigSepList
+import Iris.BI.DerivedLaws
+import Iris.BI.DerivedLawsLater
+import Iris.Std.DelabRule
+import Iris.Std.Nat
+import Iris.Std.RocqPorting
+import Lean.PrettyPrinter.Delaborator.Basic
 
 @[expose] public section
 

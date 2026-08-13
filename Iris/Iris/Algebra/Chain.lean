@@ -6,7 +6,7 @@ Authors: Sergei Stepanenko
 module
 
 public import Iris.Algebra.OFE
-meta import Iris.Std.RocqPorting
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

@@ -7,9 +7,7 @@ module
 
 public import Iris.Algebra.Heap
 public import Iris.Algebra.View
-public import Iris.Algebra.DFrac
-public import Iris.Algebra.Frac
-public import Iris.Algebra.BigOp
+import Iris.Std.RocqPorting
 
 /-!
 # Heap Views

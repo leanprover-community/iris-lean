@@ -5,10 +5,9 @@ Authors: Alex Bai, Klaus Kraßnitzer
 -/
 module
 
-public import Iris.Instances.Lib.Invariants
-public import Iris.Std.Namespaces
 public import Iris.HeapLang.PrimitiveLaws
-public import Iris.HeapLang.ProofMode
+import Iris.HeapLang.ProofMode
+import Iris.Instances.Lib.Invariants
 
 namespace Iris.HeapLang
 

@@ -3,10 +3,10 @@ Copyright (c) 2025 Oliver Soeser. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oliver Soeser, Michael Sammler
 -/
-module
+module -- shake: keep-all
 
-public import Iris.BI
-public import Iris.ProofMode.Tactics.HaveCore
+public import Iris.BI -- shake: keep
+public import Iris.ProofMode.Tactics.HaveCore -- shake: keep
 
 namespace Iris.ProofMode
 

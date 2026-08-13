@@ -5,11 +5,8 @@ Authors: Markus de Medeiros
 -/
 module
 
-public import Iris.ProgramLogic.WeakestPre
-public import Iris.HeapLang.Notation
-public import Iris.HeapLang.Instances
 public import Iris.HeapLang.PrimitiveLaws
-public import Iris.HeapLang.ProofMode
+import Iris.HeapLang.ProofMode
 
 namespace Iris.HeapLang
 

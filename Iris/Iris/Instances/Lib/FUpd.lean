@@ -5,17 +5,8 @@ Authors: Sergei Stepanenko, Zongyuan Liu
 -/
 module
 
-public import Iris.Algebra
-public import Iris.Algebra.Auth
-public import Iris.Algebra.Numbers
-public import Iris.ProofMode
-public import Iris.BI.Algebra
-public import Iris.BI.Notation
-public import Iris.Instances.IProp
 public import Iris.Instances.Lib.WSat
 public import Iris.Instances.Lib.LaterCredits
-public import Iris.BI.Plainly
-public import Iris.Std
 
 @[expose] public section
 

@@ -5,12 +5,9 @@ Authors: Markus de Medeiros, Mario Carneiro
 -/
 module
 
-public import Iris.Algebra.CMRA
-public import Iris.Algebra.OFE
 public import Iris.Algebra.Frac
 public import Iris.Algebra.Updates
-public import Iris.Algebra.LocalUpdates
-public import Iris.Algebra.IsOp
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

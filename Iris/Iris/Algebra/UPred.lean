@@ -6,7 +6,7 @@ Authors: Markus de Medeiros
 module
 
 public import Iris.Algebra.CMRA
-public import Iris.Algebra.OFE
+import Iris.Std.RocqPorting
 
 @[expose] public section
 

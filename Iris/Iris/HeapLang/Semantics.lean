@@ -5,13 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Iris.HeapLang.Syntax
-public import Iris.HeapLang.Linter
-public import Std.Data.ExtTreeMap
-public import Std.Data.ExtTreeSet
-public import Iris.Std.BitOp
-public import Iris.Std.PartialMap
-public import Iris.Std.HeapInstances
-import Iris.Std.List
+import Std.Tactic.BVDecide.Normalize.Prop
 
 @[expose] public section
 namespace Iris.HeapLang

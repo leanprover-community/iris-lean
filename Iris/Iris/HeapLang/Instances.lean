@@ -5,14 +5,10 @@ Authors: Sergei Stepanenko, Markus de Medeiros
 -/
 module
 
-public import Iris.HeapLang.Syntax
 public import Iris.HeapLang.Notation
 public import Iris.HeapLang.Semantics
 public import Iris.ProgramLogic.EctxiLanguage
-public import Std.Data.ExtTreeMap
-public import Std.Data.ExtTreeSet
-public import Iris.Std.FromMathlib
-public import Iris.Std.GenSetsInstances
+import Std.Tactic.BVDecide.Normalize.Prop
 
 @[expose] public section
 namespace Iris.HeapLang

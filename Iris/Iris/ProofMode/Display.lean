@@ -3,9 +3,11 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
-module
+module -- shake: keep-all
 
-public import Iris.ProofMode.Expr
+public import Iris.ProofMode.Expr -- shake: keep
+public import Lean.PrettyPrinter.Delaborator.Basic
+meta import Iris.ProofMode.Expr
 
 public meta section
 
