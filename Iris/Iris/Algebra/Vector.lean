@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors:
+Authors: Markus de Medeiros
 -/
 module
 
@@ -63,16 +63,12 @@ end ofe
 section cofe
 variable [COFE α]
 
-/-- `Vector.toList` as a nonexpansive map, used to project a chain of vectors onto a chain of its
-underlying lists. -/
 def vecToListHom : Vector α n -n> List α where
   f := Vector.toList
   ne := ⟨fun _ _ _ h => h⟩
 
 @[simp] theorem vecToListHom_apply {v : Vector α n} : vecToListHom v = v.toList := rfl
 
-/-- The completion of a chain of vectors is `0`-equivalent to the chain's first element, hence has
-the right length. -/
 theorem length_compl_vecToListHom (c : Chain (Vector α n)) :
     (compl (c.map vecToListHom)).length = n :=
   (length_dist (n := 0) conv_compl).trans Vector.length_toList
