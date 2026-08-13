@@ -628,6 +628,28 @@ theorem tac_lc_add_laterN_full {GF : BundledGFunctors} [InvGS GF]
     iapply h3 $$ H
   · iintro _ //
 
+theorem tac_lc_add_laterN_split' {GF : BundledGFunctors} [InvGS GF]
+    {φ : Prop} {n m newM : Nat} {stuck : Bool} {E : CoPset}
+    {e P R Q goal : IProp GF}
+    (heq : e ⊣⊢ P ∗ £ m)
+    (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
+    (hc : NatCancel m n newM 0 stuck)
+    (hR : P ∗ £ newM ⊣⊢ R) (h2 : R ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
+    e ⊢ goal := by
+  refine heq.mp.trans ?_
+  exact
+    (tac_lc_add_laterN_split inst hφ hc (hR.mp.trans h2) h3)
+
+theorem tac_lc_add_laterN_full' {GF : BundledGFunctors} [InvGS GF]
+    {φ : Prop} {n m : Nat} {stuck : Bool} {E : CoPset}
+    {e P Q goal : IProp GF}
+    (heq : e ⊣⊢ P ∗ £ m)
+    (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
+    (hc : NatCancel m n 0 0 stuck)
+    (h2 : P ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
+    e ⊢ goal :=
+  heq.mp.trans (tac_lc_add_laterN_full inst hφ hc h2 h3)
+
 public meta section
 
 elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
@@ -643,7 +665,7 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
       | throwError "inext: the goal must be an `IProp` at universe level 0"
     let ~q(IProp $GF) := prop
       | throwError "inext: the goal must be an `IProp`"
-    let .some _ ← trySynthInstanceQ q(InvGS $GF)
+    let .some instInvGS ← trySynthInstanceQ q(InvGS $GF)
       | throwError "inext: requires an InvGS (HasLC) context"
     let ~q(UPred.instBIUPred) := bi
       | throwError "Expected the BI implementation of `IProp` to be `UPred.instBIUPred`"
@@ -678,27 +700,27 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
       throwError "inext: insufficient credits"
 
     let modality := q(@modality_laterN $prop $n $bi)
+    let mkLC (k : Expr) : Expr := mkApp ty.appFn! k
 
     match newC.nat? with
     -- Later credits used up, discard the later credits hypothesis
     | some 0 =>
-      let ⟨_, newHyps', pfModAction⟩ ← iModAction hyps' modality
+      let ⟨eQ, newHyps', pfModAction⟩ ← iModAction hyps' modality
       let pf ← addBIGoal newHyps' goal
-      have pfEq : Q($e ⊣⊢ $e' ∗ £ $c) := pfEq
-      have hcancel : Q(NatCancel $c $n 0 0 $stuck) := hcancel
-      let pf' : Q($e' ∗ £ $c ⊢ $goal) := q(tac_lc_add_laterN_full $inst $hφ $hcancel $pfModAction $pf)
-      mvar.assign q($(pfEq).mp.trans $pf')
+      mvar.assign <| mkAppN (.const ``tac_lc_add_laterN_full' [])
+        #[GF, instInvGS, φ, n, c, stuck, E,
+          e, e', eQ, goal,
+          pfEq, inst, hφ, hcancel, pfModAction, pf]
     -- Update the later credits hypothesis and introduce it into the context
     | _ =>
-      let newTy : Q($prop) := q(£ $newC)
-      let ⟨_, newHyps, pfNewHyps⟩ := Hyps.add _ name ivar q(false) newTy hyps'
-      let ⟨_, newHyps', pfModAction⟩ ← iModAction newHyps modality
+      let newTy := mkLC newC
+      let ⟨eAdd, newHyps, pfNewHyps⟩ := Hyps.add _ name ivar q(false) newTy hyps'
+      let ⟨eQ, newHyps', pfModAction⟩ ← iModAction newHyps modality
       let pf ← addBIGoal newHyps' goal
-      have hcancel : Q(NatCancel $c $n $newC 0 $stuck) := hcancel
-      have pfEq : Q($e ⊣⊢ $e' ∗ £ $c) := pfEq
-      let pf'' : Q($e' ∗ £ $c ⊢ $goal) :=
-        q(tac_lc_add_laterN_split $inst $hφ $hcancel ($(pfNewHyps).mp.trans $pfModAction) $pf)
-      mvar.assign q($(pfEq).mp.trans $pf'')
+      mvar.assign <| mkAppN (.const ``tac_lc_add_laterN_split' [])
+        #[GF, instInvGS, φ, n, c, newC, stuck, E,
+          e, e', eAdd, eQ, goal,
+          pfEq, inst, hφ, hcancel, pfNewHyps, pfModAction, pf]
 
 end
 
