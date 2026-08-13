@@ -746,6 +746,8 @@ section derived
 ## Ported from base_logic/derived.v
 -/
 
+#rocq_ignore uPred.ownM_proper "OFE is Leibniz; use equality"
+
 @[rocq_alias uPred.intuitionistically_ownM]
 theorem intuitionistically_ownM (a : M) [CoreId a] : □ ownM a ⊣⊢ ownM a := by
   refine ⟨intuitionistically_elim, ?_⟩
@@ -786,9 +788,54 @@ instance ownM_persistent (a : M) [CoreId a] : Persistent (ownM a) where
     refine persistently_mono ?_
     simp only [core_eqv_self, BIBase.Entails.rfl]
 
+@[rocq_alias uPred.uPred_ownM_sep_homomorphism]
+instance ownM_sep_homomorphism :
+    Algebra.MonoidHomomorphism op sep (unit : M) emp (· = ·) ownM where
+  rel_refl := rfl
+  rel_trans := Eq.trans
+  op_proper ha hb := ha ▸ hb ▸ rfl
+  map_ne := ownM_ne
+  map_op := (ownM_op ..).to_eq
+  map_unit := ownM_unit'.to_eq.trans true_emp.to_eq
+
 @[rocq_alias uPred.bupd_soundness]
 theorem bupd_soundness {P : UPred M} [Plain P] : (⊢ |==> P) → ⊢ P :=
   fun h => h.trans bupd_elim
+
+@[rocq_alias uPred.modality]
+inductive Modality where
+  | bupd
+  | later
+  | persistently
+  | plainly
+
+@[rocq_alias uPred.denote_modality]
+def Modality.denote : Modality → UPred M → UPred M
+  | .bupd, P => iprop(|==> P)
+  | .later, P => iprop(▷ P)
+  | .persistently, P => iprop(<pers> P)
+  | .plainly, P => iprop(■ P)
+
+@[rocq_alias uPred.denote_modalities]
+def Modality.denoteAll (ms : List Modality) (P : UPred M) : UPred M := ms.foldr denote P
+
+theorem Modality.denoteAll_laterN {P : UPred M} [Plain P] :
+    ∀ ms : List Modality, denoteAll ms P ⊢ ▷^[ms.length] P
+  | [] => .rfl
+  | .bupd :: ms => (bupd_mono (denoteAll_laterN ms)).trans (bupd_elim.trans later_intro)
+  | .later :: ms => later_mono (denoteAll_laterN ms)
+  | .persistently :: ms =>
+    (persistently_mono (denoteAll_laterN ms)).trans (persistently_elim.trans later_intro)
+  | .plainly :: ms => (plainly_mono (denoteAll_laterN ms)).trans (plainly_elim.trans later_intro)
+
+/-- Soundness under an arbitrary nesting of modalities, for plain propositions. -/
+@[rocq_alias uPred.modal_soundness]
+theorem modal_soundness {P : UPred M} [Plain P] (ms : List Modality)
+    (h : ⊢ Modality.denoteAll ms P) : ⊢ P :=
+  laterN_soundness (h.trans (Modality.denoteAll_laterN ms))
+
+@[rocq_alias uPred.consistency]
+theorem consistency : ¬ (⊢@{UPred M} False) := pure_soundness
 
 end derived
 

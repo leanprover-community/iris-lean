@@ -1694,6 +1694,15 @@ theorem some_inc_some_iff_is_total [IsTotal α] {a b : α} : some a ≼ some b �
   · exact ⟨_, H.symm.trans (op_core a).symm⟩
   · exact H
 
+@[rocq_alias option_fmap_mono]
+theorem map_mono {β : Type _} [CMRA β] (f : α → β) {ma mb : Option α}
+    (hf : ∀ x y : α, x ≼ y → f x ≼ f y) (h : ma ≼ mb) : ma.map f ≼ mb.map f := by
+  rcases inc_iff.mp h with rfl | ⟨a, b, rfl, rfl, hab⟩
+  · exact ⟨mb.map f, by cases mb.map f <;> rfl⟩
+  · rcases hab with rfl | hab
+    · exact .rfl
+    · exact some_inc_some_iff.mpr (.inr (hf a b hab))
+
 @[rocq_alias Some_includedN_total]
 theorem some_incN_some_iff_is_total [IsTotal α] {a b : α} : some a ≼{n} some b ↔ a ≼{n} b := by
   apply some_incN_some_iff.trans
@@ -2124,15 +2133,6 @@ section OptionMor
 open CMRA
 
 variable {α β : Type _} [CMRA α] [CMRA β]
-
-@[rocq_alias option_fmap_mono]
-theorem Option.map_mono (f : α → β) (hf : ∀ a b : α, a ≼ b → f a ≼ f b)
-    {ma mb : Option α} (h : ma ≼ mb) : ma.map f ≼ mb.map f := by
-  rcases Option.inc_iff.mp h with rfl | ⟨a, b, rfl, rfl, hab⟩
-  · exact Option.inc_iff.mpr (.inl rfl)
-  · rcases hab with rfl | hab
-    · exact Option.some_inc_some_of_eq rfl
-    · exact Option.some_inc_some_of_inc (hf a b hab)
 
 @[rocq_alias option_fmap_cmra_morphism]
 def Option.mapC (f : α -C> β) : Option α -C> Option β where
