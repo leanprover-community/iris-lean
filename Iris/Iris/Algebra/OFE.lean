@@ -5,7 +5,7 @@ Authors: Mario Carneiro, Sebastian Graf, Sergei Stepanenko
 -/
 module
 
-public meta import Iris.Std.RocqPorting
+public import Iris.Std.Option
 
 @[expose] public section
 
@@ -46,6 +46,7 @@ theorem Dist.le [OFE α] {m n} {x y : α} (h : x ≡{n}≡ y) (h' : m ≤ n) : x
 #rocq_ignore dist_S "Subsumed by `Dist.lt`/`Dist.le`."
 
 @[simp, refl] theorem Dist.rfl [OFE α] {n} {x : α} : x ≡{n}≡ x := dist_eqv.1 _
+@[simp, refl] theorem Dist.refl [OFE α] {n} (x : α) : x ≡{n}≡ x := dist_eqv.1 _
 @[symm] theorem Dist.symm [OFE α] {n} {x : α} : x ≡{n}≡ y → y ≡{n}≡ x := dist_eqv.2
 theorem Dist.trans [OFE α] {n} {x : α} : x ≡{n}≡ y → y ≡{n}≡ z → x ≡{n}≡ z := dist_eqv.3
 theorem Dist.of_eq [OFE α] {x y : α} : x = y → x ≡{n}≡ y := (· ▸ .rfl)
@@ -92,6 +93,7 @@ theorem NonExpansive₂.ne_left [OFE α] [OFE β] [OFE γ] (f : α → β → γ
 def DistLater [OFE α] (n : Nat) (x y : α) : Prop := ∀ m, m < n → x ≡{m}≡ y
 
 @[simp, refl] theorem DistLater.rfl [OFE α] {n} {x : α} : DistLater n x x := fun _ _ => .rfl
+@[simp, refl] theorem DistLater.refl [OFE α] {n} (x : α) : DistLater n x x := fun _ _ => .rfl
 @[symm] theorem DistLater.symm [OFE α] {n} {x : α} (h : DistLater n x y) : DistLater n y x :=
   fun _ hm => (h _ hm).symm
 theorem DistLater.trans [OFE α] {n} {x : α} (h1 : DistLater n x y) (h2 : DistLater n y z) :
@@ -100,7 +102,7 @@ theorem DistLater.trans [OFE α] {n} {x : α} (h1 : DistLater n x y) (h2 : DistL
 /-- `DistLater n`-equivalence is an equivalence relation. -/
 @[rocq_alias dist_later_equivalence]
 theorem distLater_eqv [OFE α] {n} : Equivalence (α := α) (DistLater n) where
-  refl _ := DistLater.rfl
+  refl := DistLater.refl
   symm h := h.symm
   trans h1 := h1.trans
 
@@ -153,7 +155,7 @@ instance ne_of_contractive [OFE α] [OFE β] (f : α → β) [Contractive f] : N
 instance [OFE α] [OFE β] {x : β} : Contractive (fun _ : α => x) where
   distLater_dist := fun _ => Dist.rfl
 
-/-- The discrete OFE obtained from an equivalence relation `Equiv` -/
+/-- The discrete OFE obtained from an equality relation `Eq` -/
 @[reducible, rocq_alias discrete_ofe_mixin]
 def ofDiscrete (α : Type _) : OFE α where
   Dist _ := Eq
@@ -166,19 +168,19 @@ def ofDiscrete (α : Type _) : OFE α where
 class DiscreteE {α : Type _} [OFE α] (x : α) : Prop where
   discrete : x ≡{0}≡ y → x = y
 
-/-- A discrete OFE is one where equivalence is implied by `0`-equivalence. -/
+/-- A discrete OFE is one where equality is implied by `0`-equivalence. -/
 @[rocq_alias OfeDiscrete]
 class Discrete (α : Type _) [OFE α] where
   discrete_0 {x y : α} : x ≡{0}≡ y → x = y
 export OFE.Discrete (discrete_0)
 
 @[rocq_alias Discrete_proper]
-theorem discreteE_eqv [OFE α] {x y : α} (h : x = y) : DiscreteE x ↔ DiscreteE y := h ▸ Iff.rfl
+theorem discreteE_eq [OFE α] {x y : α} (h : x = y) : DiscreteE x ↔ DiscreteE y := h ▸ Iff.rfl
 
 #rocq_ignore ofe_discrete_subrelation "Not needed"
 #rocq_ignore discrete_ofe_discrete "Not needed"
 
-/-- For discrete OFEs, `n`-equivalence implies equivalence for any `n`. -/
+/-- For discrete OFEs, `n`-equivalence implies equality. -/
 @[rocq_alias discrete]
 theorem Discrete.discrete [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{n}≡ y) : x = y :=
   discrete_0 (h.le (Nat.zero_le _))
@@ -186,7 +188,7 @@ export OFE.Discrete (discrete)
 
 instance Discrete.toDiscreteE [OFE α] [Discrete α] (x : α) : DiscreteE x := ⟨discrete_0⟩
 
-/-- For discrete OFEs, `n`-equivalence implies equivalence for any `n`. -/
+/-- For discrete OFEs, `0`-equivalence implies equivalence for any `n`. -/
 theorem Discrete.discrete_n [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{0}≡ y) : x ≡{n}≡ y :=
   (discrete h).dist
 export OFE.Discrete (discrete_n)
@@ -208,32 +210,21 @@ theorem Discrete.discrete_iff_0 [OFE α] [Discrete α] (n) {x y : α} : x ≡{0}
 
 #rocq_ignore ofe_leibniz_subrelation "Generalized-rewriting subrelation; not needed in Lean."
 
-/-- The setoid on `X` identifying points that agree at every step index:
-`x ≈ y ↔ ∀ n, dist n x y`. -/
-@[reducible]
-def QuotientO {X : Type u} (dist : Nat → X → X → Prop) (heqv : ∀ {n}, Equivalence (dist n)) :
-    Setoid X where
-  r x y := ∀ n, dist n x y
-  iseqv :=
-    ⟨fun _ _ => heqv.refl _,
-     fun h n => heqv.symm (h n),
-     fun h₁ h₂ n => heqv.trans (h₁ n) (h₂ n)⟩
-
-/--
-EXPERIMENT: Explicit use of quotients to force quotiented (by Equiv) OFE to be Leibniz by
-quotienting by propositional equality.
-https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Evaluating.20a.20specialization.20to.20Leibnize.20OFE.27s/with/606745235
-
-Build a `Leibniz` OFE from a step-indexed distance `dist` satisfying the OFE distance axioms
-by quotienting the carrier `X` by the OFE equivalence `fun x y => ∀ n, dist n x y`. -/
-@[reducible] def mkQuotient {X : Type u} (dist : Nat → X → X → Prop)
+/-- Build a Leibniz OFE on `Quotient s` from a step-indexed distance `dist` on the carrier,
+given that the setoid relation coincides with the OFE equivalence `fun x y => ∀ n, dist n x y`
+(hypothesis `hs`). Quotienting forces the resulting OFE equality to be Leibniz, while
+`Quotient.sound`/`Quotient.exact` keep speaking about the domain relation `s.r`. See
+https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Evaluating.20a.20specialization.20to.20Leibnize.20OFE.27s/with/606745235 -/
+@[reducible] def ofQuotient {X : Type u} {s : Setoid X} (dist : Nat → X → X → Prop)
     (heqv : ∀ {n}, Equivalence (dist n))
-    (hlt : ∀ {n m : Nat} {x y : X}, dist n x y → m < n → dist m x y) :
-    OFE (Quotient (QuotientO dist heqv)) :=
-  letI D : Nat → Quotient (QuotientO dist heqv) → Quotient (QuotientO dist heqv) → Prop :=
-    fun n => Quotient.lift₂ (dist n) fun _ _ _ _ hac hbd => propext
-      ⟨fun h => heqv.trans (heqv.trans (heqv.symm (hac n)) h) (hbd n),
-       fun h => heqv.trans (heqv.trans (hac n) h) (heqv.symm (hbd n))⟩
+    (hlt : ∀ {n m : Nat} {x y : X}, dist n x y → m < n → dist m x y)
+    (hs : ∀ x y : X, s.r x y ↔ ∀ n, dist n x y) : OFE (Quotient s) :=
+  letI D : Nat → Quotient s → Quotient s → Prop :=
+    fun n => Quotient.lift₂ (dist n) fun _ _ _ _ hac hbd => propext <|
+      have hac' := (hs _ _).mp hac
+      have hbd' := (hs _ _).mp hbd
+      ⟨fun h => heqv.trans (heqv.trans (heqv.symm (hac' n)) h) (hbd' n),
+       fun h => heqv.trans (heqv.trans (hac' n) h) (heqv.symm (hbd' n))⟩
   { Dist := D
     dist_eqv := by
       refine ⟨Quotient.ind fun a => heqv.refl a, fun {x y} h => ?_, fun {x y z} h₁ h₂ => ?_⟩
@@ -242,54 +233,62 @@ by quotienting the carrier `X` by the OFE equivalence `fun x y => ∀ n, dist n 
           induction z using Quotient.ind with | _ c => exact heqv.trans h₁ h₂
     eq_dist {x y} := by
       induction x, y using Quotient.ind₂ with | _ a b =>
-        exact ⟨fun h n => Quotient.exact h n, fun h => Quotient.sound fun n => h n⟩
+        exact ⟨fun h n => (hs _ _).mp (Quotient.exact h) n,
+               fun h => Quotient.sound ((hs _ _).mpr h)⟩
     dist_lt := fun {n x y m} h hlt' => by
       induction x, y using Quotient.ind₂ with | _ a b => exact hlt h hlt' }
 
-namespace mkQuotient
+namespace ofQuotient
 
-variable {X : Type u} {dist : Nat → X → X → Prop} {heqv : ∀ {n}, Equivalence (dist n)}
+variable {X : Type u} {s : Setoid X}
 
-@[reducible] def mk (x : X) : Quotient (QuotientO dist heqv) := Quotient.mk _ x
+@[reducible] def mk (s : Setoid X) (x : X) : Quotient s := Quotient.mk s x
 
-@[elab_as_elim] theorem ind {motive : Quotient (QuotientO dist heqv) → Prop}
-    (h : ∀ x : X, motive (mk x)) (q : Quotient (QuotientO dist heqv)) : motive q :=
-  Quotient.ind h q
+@[elab_as_elim] theorem ind {motive : Quotient s → Prop}
+    (mk : ∀ x : X, motive (mk s x)) (q : Quotient s) : motive q :=
+  Quotient.ind mk q
 
-theorem sound {x y : X} (h : ∀ n, dist n x y) :
-    (mk x : Quotient (QuotientO dist heqv)) = mk y := Quotient.sound h
+@[elab_as_elim] theorem ind₂ {motive : Quotient s → Quotient s → Prop}
+    (mk : ∀ x y : X, motive (mk s x) (mk s y)) (x y : Quotient s) : motive x y :=
+  Quotient.ind₂ mk x y
 
-theorem mk_eq {x y : X} :
-    (mk x : Quotient (QuotientO dist heqv)) = mk y ↔ ∀ n, dist n x y :=
-  ⟨Quotient.exact, sound⟩
+@[elab_as_elim] theorem ind₃ {motive : Quotient s → Quotient s → Quotient s → Prop}
+    (mk : ∀ x y z : X, motive (mk s x) (mk s y) (mk s z)) (x y z : Quotient s) :
+    motive x y z :=
+  ind₂ (fun x y => Quotient.ind (mk x y)) x y z
+
+theorem sound {x y : X} (h : s.r x y) : mk s x = mk s y := Quotient.sound h
+
+theorem exact {x y : X} (h : mk s x = mk s y) : s.r x y := Quotient.exact h
+
+theorem mk_eq {x y : X} : mk s x = mk s y ↔ s.r x y := ⟨exact, sound⟩
 
 @[reducible] def lift {β : Sort v} (f : X → β)
-    (resp : ∀ x y, (∀ n, dist n x y) → f x = f y) :
-    Quotient (QuotientO dist heqv) → β := Quotient.lift f resp
+    (resp : ∀ x y, s.r x y → f x = f y) : Quotient s → β := Quotient.lift f resp
 
 @[simp] theorem lift_mk {β : Sort v} (f : X → β) (resp) (x : X) :
-    lift (dist := dist) (heqv := heqv) f resp (mk x) = f x := rfl
+    lift (s := s) f resp (mk s x) = f x := rfl
 
 @[reducible] def lift₂ {β : Sort v} (f : X → X → β)
-    (resp : ∀ a b c d, (∀ n, dist n a c) → (∀ n, dist n b d) → f a b = f c d) :
-    Quotient (QuotientO dist heqv) → Quotient (QuotientO dist heqv) → β := Quotient.lift₂ f resp
+    (resp : ∀ a b c d, s.r a c → s.r b d → f a b = f c d) :
+    Quotient s → Quotient s → β := Quotient.lift₂ f resp
 
 @[simp] theorem lift₂_mk {β : Sort v} (f : X → X → β) (resp) (x y : X) :
-    lift₂ (dist := dist) (heqv := heqv) f resp (mk x) (mk y) = f x y := rfl
+    lift₂ (s := s) f resp (mk s x) (mk s y) = f x y := rfl
 
-@[reducible] def map {X' : Type u'} {dist' : Nat → X' → X' → Prop} {heqv' : ∀ {n}, Equivalence (dist' n)}
-    (f : X → X') (hf : ∀ n x y, dist n x y → dist' n (f x) (f y)) :
-    Quotient (QuotientO dist heqv) → Quotient (QuotientO dist' heqv') :=
-  Quotient.lift (fun x => mk (f x)) (fun _ _ h => Quotient.sound fun n => hf n _ _ (h n))
+@[reducible] def map {X' : Type u'} {s' : Setoid X'} (f : X → X')
+    (hf : ∀ x y, s.r x y → s'.r (f x) (f y)) : Quotient s → Quotient s' :=
+  Quotient.lift (fun x => mk s' (f x)) (fun _ _ h => sound (hf _ _ h))
 
-@[simp] theorem map_mk {X' : Type u'} {dist' : Nat → X' → X' → Prop}
-    {heqv' : ∀ {n}, Equivalence (dist' n)} (f : X → X') (hf) (x : X) :
-    map (dist := dist) (heqv := heqv) (dist' := dist') (heqv' := heqv') f hf (mk x) = mk (f x) := rfl
+@[simp] theorem map_mk {X' : Type u'} {s' : Setoid X'} (f : X → X') (hf) (x : X) :
+    map (s := s) (s' := s') f hf (mk s x) = mk s' (f x) := rfl
 
-theorem dist_mk {hlt : ∀ {n m : Nat} {x y : X}, dist n x y → m < n → dist m x y}
-    {n} {x y : X} : (mkQuotient dist heqv hlt).Dist n (mk x) (mk y) ↔ dist n x y := Iff.rfl
+theorem dist_mk {dist : Nat → X → X → Prop} {heqv : ∀ {n}, Equivalence (dist n)}
+    {hlt : ∀ {n m : Nat} {x y : X}, dist n x y → m < n → dist m x y}
+    {hs : ∀ x y : X, s.r x y ↔ ∀ n, dist n x y} {n} {x y : X} :
+    (ofQuotient dist heqv hlt hs).Dist n (mk s x) (mk s y) ↔ dist n x y := Iff.rfl
 
-end mkQuotient
+end ofQuotient
 
 /-- A morphism between OFEs, written `α -n> β`, is defined to be a function that is
 non-expansive. -/
@@ -379,17 +378,6 @@ def uliftUpHom [OFE α] : α -n> ULift α where
 def uliftDownHom [OFE α] : ULift α -n> α where
   f := ULift.down
   ne.1 _ _ _ := id
-
-def _root_.Option.Forall₂ (R : α → β → Prop) : Option α → Option β → Prop
-  | none, none => True
-  | some a, some b => R a b
-  | _, _ => False
-
-theorem _root_.Option.Forall₂.equivalence {R : α → α → Prop}
-    (H : Equivalence R) : Equivalence (Option.Forall₂ R) where
-  refl | none => trivial | some _ => H.1 _
-  symm {x y} := by cases x <;> cases y <;> simp [Option.Forall₂]; apply H.2
-  trans {x y z} := by cases x <;> cases y <;> cases z <;> simp [Option.Forall₂]; apply H.3
 
 @[rocq_alias option_ofe_mixin]
 instance [OFE α] : OFE (Option α) where
@@ -1005,7 +993,7 @@ theorem compl_const [COFE α] (a : α) : compl (Chain.const a) = a :=
 @[simp] theorem discrete_cofe_compl [COFE α] [OFE.Discrete α] (c : Chain α) : compl c = c 0 :=
   Discrete.discrete_0 conv_compl
 
-/-- The discrete COFE obtained from an equivalence relation `Equiv` -/
+/-- The discrete COFE obtained from an equality relation `Eq` -/
 @[reducible, rocq_alias discrete_cofe]
 def ofDiscrete (α : Type _) : COFE α :=
   let _ := OFE.ofDiscrete α

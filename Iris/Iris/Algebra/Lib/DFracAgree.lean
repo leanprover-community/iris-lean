@@ -7,7 +7,6 @@ module
 
 public import Iris.Algebra.DFrac
 public import Iris.Algebra.Agree
-meta import Iris.Std.RocqPorting
 
 /-!
 # The DFrac Agree Camera
@@ -174,6 +173,8 @@ end Frac
 @[rocq_alias dfrac_agreeRF]
 abbrev DFracAgreeRF (T : COFE.OFunctorPre) [COFE.OFunctor T] : COFE.OFunctorPre :=
   ProdOF (constOF DFrac) (AgreeRF T)
+
+#rocq_ignore dfrac_agreeRF_contractive "Found by typeclass inference"
 
 end DFracAgree
 

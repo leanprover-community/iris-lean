@@ -9,7 +9,6 @@ public import Iris.Algebra.Auth
 public import Iris.Algebra.IsOp
 public import Iris.Algebra.UFrac
 import Iris.Algebra.LocalUpdates
-meta import Iris.Std.RocqPorting
 
 /-!
 # Unbounded Fractional Authoritative Camera
@@ -216,13 +215,13 @@ theorem update_surplus_cancel {p q : Qp} {a b : A} [CMRA.Cancelable b] :
 abbrev UFracAuthURF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
   AuthURF (OptionOF (ProdOF (constOF UFrac) T))
 
-#rocq_ignore ufrac_authURF_contractive "Contractiveness is bundled into Lean's RFunctor class"
+#rocq_ignore ufrac_authURF_contractive "Found by typeclass inference"
 
 @[rocq_alias ufrac_authRF]
 abbrev UFracAuthRF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
   AuthRF (OptionOF (ProdOF (constOF UFrac) T))
 
-#rocq_ignore ufrac_authRF_contractive "Contractiveness is bundled into Lean's RFunctor class"
+#rocq_ignore ufrac_authRF_contractive "Found by typeclass inference"
 
 end UFracAuth
 

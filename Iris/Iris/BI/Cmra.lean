@@ -8,7 +8,6 @@ module
 public import Iris.BI.Sbi
 public import Iris.BI.Plainly
 public import Iris.BI.InternalEq
-public import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -30,7 +29,7 @@ variable [Sbi PROP] [CMRA A]
 def internalCmraValid (a : A) : PROP := siPure (cmraValid a)
 
 macro_rules
-  | `(iprop(✓ $a)) => ``(internalCmraValid $a)
+  | `(iprop(✓%$tk $a)) => ``($(wrapIprop tk ``internalCmraValid) $a)
 
 delab_rule internalCmraValid
   | `($_ $a) => ``(iprop(✓ $a))
@@ -51,7 +50,7 @@ theorem internalCmraValid_intro {P : PROP} {a : A} (h : Valid a) :
 
 @[rocq_alias internal_cmra_valid_elim]
 theorem internalCmraValid_elim (a : A) : ✓ a ⊢@{PROP} ⌜✓{0} a⌝ :=
-  calc internalCmraValid a
+  calc iprop(✓ a)
     _ ⊢ <si_pure> ⌜✓{0} a⌝ := siPure_mono cmraValid_elim
     _ ⊢ ⌜✓{0} a⌝ := siPure_pure.mp
 

@@ -11,7 +11,6 @@ public import Iris.Algebra.CMRA
 public import Iris.Algebra.UPred
 public import Iris.Algebra.Updates
 public import Iris.BI.Lib.BUpdPlain
-public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -425,9 +424,11 @@ instance : BI (UPred M) where
     | 0, _, _ => .inl trivial
     | _+1, _, H => .inr @fun | 0, _, Hx'le, _, _ => P.mono H Hx'le.incN (Nat.zero_le _)
 
-
 #rocq_ignore pure_intro "Inlined in `uPredI` construction"
 #rocq_ignore pure_elim' "Inlined in `uPredI` construction"
+
+#rocq_ignore uPred_primitive.entails_anti_sym "Use `equiv_iff`"
+#rocq_ignore uPred_primitive.equiv_entails "Use `equiv_iff`"
 
 #rocq_ignore uPred_primitive.and_elim_l "Inlined in `uPredI` construction"
 #rocq_ignore uPred_primitive.and_elim_r "Inlined in `uPredI` construction"

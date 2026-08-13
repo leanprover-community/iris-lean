@@ -7,7 +7,7 @@ module
 public import Iris.HeapLang
 
 @[expose] public section
-namespace Iris.Tests.HeapLang.Linter
+namespace IrisTest.HeapLang.Linter
 
 open Iris.HeapLang
 
@@ -99,4 +99,4 @@ Note: This linter can be disabled with `set_option linter.heapLang.freeVars fals
 #guard_msgs(drop info, check warning) in
 #check hl(let c := ref(#0); &(hl(c ← #1)))
 
-end Iris.Tests.HeapLang.Linter
+end IrisTest.HeapLang.Linter

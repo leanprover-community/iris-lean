@@ -28,6 +28,7 @@ class TokenG (GF : BundledGFunctors) where [elemG : ElemG GF TokenF]
 
 attribute [reducible, instance] TokenG.elemG
 
+#rocq_ignore «tokenΣ» "Superseded by the `TokenG` typeclass on `BundledGFunctors`."
 #rocq_ignore «subG_tokenΣ» "Superseded by Lean's direct `ElemG` typeclass synthesis."
 
 variable {GF : BundledGFunctors} [TokenG GF]

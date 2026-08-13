@@ -6,10 +6,10 @@ Authors: Lars König, Mario Carneiro, Michael Sammler, Alvin Tang
 module
 
 public meta import Iris.ProofMode.Patterns.IntroPattern
-public meta import Iris.ProofMode.Tactics.Cases
-public meta import Iris.ProofMode.Tactics.Pure
-public meta import Iris.ProofMode.Tactics.ModIntro
-public meta import Iris.ProofMode.Tactics.Trivial
+public import Iris.ProofMode.Tactics.Cases
+public import Iris.ProofMode.Tactics.Pure
+public import Iris.ProofMode.Tactics.ModIntro
+public import Iris.ProofMode.Tactics.Trivial
 
 namespace Iris.ProofMode
 
@@ -94,14 +94,14 @@ private def iIntroCoreForallIntro {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
   let Φ ← mkFreshExprMVarQ q($α → $prop)
   match ← ProofModeM.trySynthInstanceQ q(FromForall $Q $Φ), k' with
   | none, none =>
-    throwError "iintro: {Q} cannot be turned into a universal quantifier or pure hypothesis"
+    throwIPMError "{Q} cannot be turned into a universal quantifier or pure hypothesis"
   | none, some k' => k'
   | some _, _ =>
     let pf : Q(∀ x, $P ⊢ $Φ x) ← iPureCases q(∀ x, $P ⊢ $Φ x) pat fun g => do
       let B : Q($prop) ← mkFreshExprMVarQ q($prop)
       -- TODO: Is this the right way to check this?
       unless ← withTransparency .none <| isDefEq (← g.getType) q($P ⊢ $B) do
-        throwError "iintro: internal error: unexpected goal after intro pattern"
+        throwIPMError "unexpected goal after intro pattern"
       k g (Expr.headBeta (← instantiateMVars B))
     return q(from_forall_intro (Q := $Q) $pf)
 
@@ -204,28 +204,28 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       match pat.case, fromImp with
       | .intuitionistic p, some _ =>
         let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPersistently false $A1 $B)
-          | throwError "iintro: {A1} not persistent"
+          | throwIPMError "{A1} not persistent"
         let pf ← iCasesCore hyps A2 p q(true) B (iIntroCore · · pats k)
         return q(imp_intro_intuitionistic (Q := $Q) $pf)
       | .intuitionistic p, none =>
         let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $Q .out $A1 $A2)
-          | throwError "iintro: {Q} not a wand"
+          | throwIPMError "{Q} not a wand"
         let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPersistently false $A1 $B)
-          | throwError "iintro: {A1} not persistent"
+          | throwIPMError "{A1} not persistent"
         let .some _ ← trySynthInstanceQ q(TCOr (Affine $A1) (Absorbing $A2))
-          | throwError "iintro: {A1} not affine and the goal not absorbing"
+          | throwIPMError "{A1} not affine and the goal not absorbing"
         let pf ← iCasesCore hyps A2 p q(true) B (iIntroCore · · pats k)
         return q(wand_intro_intuitionistic (A1 := $A1) (Q := $Q) $pf)
       | _, some _ =>
         -- should always succeed
         let _ ← ProofModeM.synthInstanceQ q(FromAffinely $B $A1)
         let .some _ ← trySynthInstanceQ q(TCOr (Persistent $A1) (Intuitionistic $P))
-          | throwError "iintro: {A1} is not persistent and spatial context is non-empty"
+          | throwIPMError "{A1} is not persistent and spatial context is non-empty"
         let pf ← iCasesCore hyps A2 pat q(false) B (iIntroCore · · pats k)
         return q(imp_intro_spatial (Q := $Q) $pf)
       | _, none =>
         let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $Q .out $A1 $A2)
-          | throwError "iintro: {Q} not a wand"
+          | throwIPMError "{Q} not a wand"
         let pf ← iCasesCore hyps A2 pat q(false) A1 (iIntroCore · · pats k)
         return q(wand_intro_spatial (A1 := $A1) (Q := $Q) $pf)
 
@@ -236,7 +236,7 @@ elab "iintro " pats:(colGt ppSpace introPat)* : tactic => do
   -- parse syntax
   let pats ← liftMacroM <| pats.mapM <| IntroPat.parse
 
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `iintro λ mvar { hyps, goal, .. } => do
     let pf ← iIntroCore hyps goal pats.toList
 
     mvar.assign pf

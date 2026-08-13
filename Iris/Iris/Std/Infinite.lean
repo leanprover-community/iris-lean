@@ -62,7 +62,7 @@ theorem fresh [InfiniteType A] (X : _root_.List A) : ∃ a : A, a ∉ X := by
   let Nalloc := X.length
   let L := _root_.List.range (Nalloc + 1)
   have hnodup : L.map (InfiniteType.enum (T := A)) |>.Nodup :=
-    nodup_map_of_injective (fun _ _ => InfiniteType.enum_inj _ _) _root_.List.nodup_range
+    List.nodup_map_of_injective (fun _ _ => InfiniteType.enum_inj _ _) List.nodup_range
   have hsub : L.map InfiniteType.enum ⊆ X := by
     intro _ ha
     obtain ⟨_, _, rfl⟩ := _root_.List.mem_map.mp ha

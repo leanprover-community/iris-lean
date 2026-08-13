@@ -4,8 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
-meta import Iris.Std.RocqPorting
-
 public import Iris.ProgramLogic.Language
 
 namespace Iris.ProgramLogic

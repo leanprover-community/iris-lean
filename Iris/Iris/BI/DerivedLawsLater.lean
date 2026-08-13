@@ -13,7 +13,6 @@ public import Iris.BI.BigOp.BigOp
 public import Iris.Std.Classes
 public import Iris.Std.Rewrite
 public import Iris.Std.TC
-public import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -40,6 +39,7 @@ theorem later_emp [BIAffine PROP] : ▷ emp ⊣⊢ (emp : PROP) :=
 @[rocq_alias bi.later_emp_2]
 theorem later_emp_2 : emp ⊢@{PROP} ▷ emp := later_intro
 
+@[rocq_alias bi.later_forall_2]
 theorem later_forall_2 {α} {Φ : α → PROP} : (∀ a, ▷ Φ a) ⊢ ▷ ∀ a, Φ a := by
   refine (forall_intro ?_).trans later_sForall_2
   intro P
@@ -59,6 +59,7 @@ theorem later_exists_mp {Φ : α → PROP} :
     (∃ a, ▷ Φ a) ⊢ ▷ (∃ a, Φ a) :=
   exists_elim (later_mono <| exists_intro ·)
 
+@[rocq_alias bi.later_exist_false]
 theorem later_exists_false {Φ : α → PROP} :
     (▷ ∃ a, Φ a) ⊢ ▷ False ∨ ∃ a, ▷ Φ a := by
   apply later_sExists_false.trans
@@ -450,10 +451,6 @@ instance laterN_persistent (n : Nat) (P : PROP) [Persistent P] :
   | succ n _ =>
     dsimp only [BIBase.laterN, Nat.repeat] at *
     exact later_persistent
-
-instance instPersistentLaterIf [BI PROP] (P : PROP) [Persistent P] (p : Bool) :
-    Persistent iprop(▷?p P) := by
-  cases p <;> simp [BIBase.laterIf] <;> infer_instance
 
 @[rocq_alias bi.laterN_absorbing]
 instance laterN_absorbing (n : Nat) (P : PROP) [Absorbing P] :

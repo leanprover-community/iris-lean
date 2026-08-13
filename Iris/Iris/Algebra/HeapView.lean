@@ -544,7 +544,7 @@ instance {T} [RFunctor T] : URFunctor (HeapViewURF (H := H) T) where
       exact RFunctor.map_ne.ne Hx Hy
     · refine fun _ => ?_
       apply PartialMap.map_ne _ _ _
-      exact fun _ => Prod.map_ne (fun _ => rfl) (RFunctor.map_ne.ne Hx Hy)
+      exact fun _ => Prod.map_ne .refl (RFunctor.map_ne.ne Hx Hy)
   map_id x := by
     rw (config := { occs := .pos [2] }) [<- (View.map_id x)]
     refine OFE.eq_dist.mpr (fun n => View.map_ne x (fun a => ?_) (fun b => ?_))
@@ -568,7 +568,7 @@ instance {T} [RFunctorContractive T] : URFunctorContractive (HeapViewURF (H := H
   map_contractive.1 H _ := by
     apply View.map_ne <;> intros <;> apply PartialMap.map_ne
     · exact (RFunctorContractive.map_contractive.1 H)
-    · exact (fun _ => Prod.map_ne (fun _ => rfl) (RFunctorContractive.map_contractive.1 H))
+    · exact (fun _ => Prod.map_ne .refl (RFunctorContractive.map_contractive.1 H))
 
 end heapViewFunctor
 
@@ -592,7 +592,6 @@ theorem update_big_delete (m m' : H V) :
   | hemp =>
     suffices h : (m \ ∅ : H V) = m by
       rw [bigOpM_frag_empty, CMRA.unit_right_id, h]
-      exact Update.id
     exact eqv_of_Equiv fun j => by simp [get?_difference, get?_empty]
   | hins k v m2 Hm2 IH =>
     suffices h : (m \ Std.insert m2 k v) = delete (m \ m2) k by
@@ -671,8 +670,6 @@ theorem update_big_alloc (m1 m2 : H V) dq
       rw [← CMRA.assoc]
       refine Update.op ?_ ?_
       · rw [← union_insert_left]
-        exact Update.id
       · rw [BigOpM.bigOpM_insert_eq _ _ Hm2]
-        exact Update.id
 
 end FiniteHeapView

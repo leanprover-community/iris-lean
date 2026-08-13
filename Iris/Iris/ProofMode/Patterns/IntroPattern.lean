@@ -7,7 +7,6 @@ module
 
 public import Iris.ProofMode.Patterns.CasesPattern
 public import Iris.ProofMode.Patterns.SelPattern
-meta import Iris.Std.RocqPorting
 
 public import Lean.Syntax
 
