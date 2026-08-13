@@ -5,8 +5,8 @@ Authors: Markus de Medeiros, Zongyuan Liu
 -/
 module
 
-import Lean
-public meta import Lean
+import Lean.Elab.DeclarationRange
+public meta import Lean.Elab.Command
 
 /-!
 # Rocq Porting Infrastructure

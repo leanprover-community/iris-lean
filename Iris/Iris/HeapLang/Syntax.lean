@@ -7,7 +7,6 @@ module
 
 public import Iris.Std.Infinite
 public import Iris.ProgramLogic.Language
-meta import Iris.Std.RocqPorting
 
 @[expose] public section
 namespace Iris.HeapLang

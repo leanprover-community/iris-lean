@@ -6,6 +6,7 @@ Authors: Lars König, Alvin Tang
 module
 
 public import Lean.Data.Name
+public import Iris.Init
 
 @[expose] public section
 

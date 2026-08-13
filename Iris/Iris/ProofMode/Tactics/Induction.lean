@@ -5,14 +5,7 @@ Authors: Yunsong Yang, Michael Sammler, Alvin Tang
 -/
 module
 
-public meta import Iris.ProofMode.Tactics.Basic
-public meta import Iris.ProofMode.Tactics.Assumption
-public meta import Iris.ProofMode.Tactics.Cases
-public meta import Iris.ProofMode.Patterns.CasesPattern
-public meta import Iris.ProofMode.ClassesMake
-public meta import Iris.ProofMode.Tactics.RevertIntro
-public meta import Iris.ProofMode.Tactics.Revert
-public meta import Lean.Meta.Tactic.TryThis
+public import Iris.ProofMode.Tactics.RevertIntro
 
 namespace Iris.ProofMode
 

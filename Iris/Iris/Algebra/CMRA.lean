@@ -7,7 +7,6 @@ module
 
 public import Iris.Algebra.OFE
 public import Iris.Algebra.Monoid
-meta import Iris.Std.RocqPorting
 
 @[expose] public section
 

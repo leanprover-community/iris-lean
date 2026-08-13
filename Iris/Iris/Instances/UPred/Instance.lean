@@ -11,7 +11,6 @@ public import Iris.Algebra.CMRA
 public import Iris.Algebra.UPred
 public import Iris.Algebra.Updates
 public import Iris.BI.Lib.BUpdPlain
-public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 

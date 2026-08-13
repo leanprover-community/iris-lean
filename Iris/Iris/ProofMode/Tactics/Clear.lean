@@ -6,9 +6,7 @@ Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang
 module
 
 import Iris.BI
-import Iris.ProofMode.Classes
 public meta import Iris.ProofMode.Patterns.SelPattern
-public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
 
