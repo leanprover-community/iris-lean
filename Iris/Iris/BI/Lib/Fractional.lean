@@ -163,3 +163,55 @@ theorem fractional_divide_equal {Φ : Qp → PROP} [Fractional Φ] (q : Qp) (n :
   grind
 
 end Divide
+
+/-! ## Internal fractional
+
+`internalFractional Φ` internalises `Fractional Φ` into the logic, so that it can be kept in an
+invariant and transported along an internal `∗-∗`. -/
+
+section InternalFractional
+variable {PROP : Type _} [BI PROP] {Φ Ψ : Qp → PROP}
+
+@[rocq_alias internal_fractional]
+def internalFractional (Φ : Qp → PROP) : PROP := iprop(□ ∀ p q, Φ (p + q) ∗-∗ Φ p ∗ Φ q)
+
+@[rocq_alias internal_fractional_ne]
+instance internalFractional_ne : NonExpansive (internalFractional (PROP := PROP)) where
+  ne _ _ _ h := intuitionistically_ne.ne <|
+    forall_ne fun p => forall_ne fun q => wandIff_ne.ne (h _) (sep_ne.ne (h p) (h q))
+
+#rocq_ignore internal_fractional_proper "OFE equivalence is Lean equality; use `congrArg`."
+
+@[rocq_alias internal_fractional_affine]
+instance internalFractional_affine : Affine (internalFractional Φ) := by
+  unfold internalFractional; infer_instance
+
+@[rocq_alias internal_fractional_persistent]
+instance internalFractional_persistent : Persistent (internalFractional Φ) := by
+  unfold internalFractional; infer_instance
+
+@[rocq_alias fractional_internal_fractional]
+theorem fractional_internalFractional (h : Fractional Φ) : ⊢ internalFractional Φ := by
+  unfold internalFractional
+  iintro !> %p %q
+  iapply equiv_wandIff (h.fractional p q)
+
+@[rocq_alias internal_fractional_iff]
+theorem internalFractional_iff :
+    □ (∀ q, Φ q ∗-∗ Ψ q) ⊢ internalFractional Φ -∗ internalFractional Ψ := by
+  unfold internalFractional
+  iintro #Hiff #Hdup !> %p %q
+  isplit
+  · iintro HΨ
+    icases Hdup $$ %p %q (Hiff $$ %(p + q) HΨ) with ⟨H1, H2⟩
+    isplitl [H1]
+    · iapply Hiff $$ H1
+    · iapply Hiff $$ H2
+  · iintro ⟨H1, H2⟩
+    iapply Hiff
+    iapply Hdup
+    isplitl [H1]
+    · iapply Hiff $$ H1
+    · iapply Hiff $$ H2
+
+end InternalFractional
