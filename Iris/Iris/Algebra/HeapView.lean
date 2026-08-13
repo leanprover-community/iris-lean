@@ -522,7 +522,7 @@ theorem heapR_map_eq [COFE A] [COFE B] [COFE A'] [COFE B'] [RFunctor T] (f : A' 
       constructor <;> simp_all
       exact (NonExpansive.ne he2)
     · right
-      rw [<-Prod.incN_iff] at *
+      rw [Prod.mk_incN_mk] at *
       rcases he with ⟨_ , he⟩
       constructor
       · simp_all
