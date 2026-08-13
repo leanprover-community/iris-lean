@@ -5,7 +5,8 @@ Authors: Markus de Medeiros
 -/
 module
 
-public import Iris.Algebra.Lib.MultiSetAuth
+public import Iris.Algebra.Auth
+public import Iris.Algebra.LeibnizMultiSet
 public import Iris.HeapLang.Lib.RwLock
 public import Iris.HeapLang.PrimitiveLaws
 public import Iris.HeapLang.ProofMode
@@ -115,6 +116,12 @@ instance instWriterLockedTimeless (γ : GName) :
 
 /-! ## Ghost-state lemmas for the reader set -/
 
+@[rocq_alias heap_lang.auth_valid_gmultiset_singleton]
+theorem auth_valid_singleton {dq : DFrac} {v : Qp} {g : ReaderFracs}
+    (h : ✓ ((●{dq} .ofSet g : Auth (LeibnizMultiSet ReaderFracs)) •
+      ◯ LeibnizMultiSet.ofSet {v})) : v ∈ g :=
+  singleton_subset_iff.mp (included_iff_subset.mp (Auth.both_dfrac_valid_discrete.mp h).2.1)
+
 @[rocq_alias heap_lang.own_auth_gmultiset_singleton_2]
 theorem own_auth_singleton_2 {γ : GName} {dq : DFrac} {v : Qp} {g : ReaderFracs} :
     own (GF := GF) γ (●{dq} .ofSet g) ∗ own γ (◯ .ofSet {v}) ⊢ ⌜v ∈ g⌝ := by
@@ -123,16 +130,7 @@ theorem own_auth_singleton_2 {γ : GName} {dq : DFrac} {v : Qp} {g : ReaderFracs
   ipureintro
   exact auth_valid_singleton Hvalid
 
-theorem own_auth_empty_split (γ : GName) :
-    own (GF := GF) γ (●{.own Qp.quarter} .ofSet (∅ : ReaderFracs)) ∗
-      own γ (●{.own Qp.threeQuarters} .ofSet ∅) ⊣⊢ own γ (● .ofSet (∅ : ReaderFracs)) := by
-  have hsplit : (● .ofSet (∅ : ReaderFracs) : Auth (LeibnizMultiSet ReaderFracs))
-      = (●{.own Qp.quarter} ofSet (∅ : ReaderFracs)) • ●{.own Qp.threeQuarters} ofSet ∅ := by
-    rw [← Auth.auth_dfrac_op, DFrac.op_own, Qp.quarter_add_threeQuarters]
-  rw [hsplit]
-  exact iOwn_op.symm
-
-theorem own_auth_auth_False {γ : GName} {q₁ q₂ : Qp} {g₁ g₂ : ReaderFracs}
+private theorem own_auth_auth_False {γ : GName} {q₁ q₂ : Qp} {g₁ g₂ : ReaderFracs}
     (h : ¬ (q₁ + q₂).val ≤ 1) :
     own γ (●{.own q₁} .ofSet g₁) ∗ own γ (●{.own q₂} .ofSet g₂) ⊢@{IProp GF} False := by
   iintro ⟨H₁, H₂⟩
@@ -140,15 +138,9 @@ theorem own_auth_auth_False {γ : GName} {q₁ q₂ : Qp} {g₁ g₂ : ReaderFra
   rw [Auth.auth_dfrac_op_valid, DFrac.op_own, DFrac.valid_own] at Hvalid
   grind
 
-theorem own_auth_empty_frag_False {γ : GName} {dq : DFrac} {v : Qp} :
-    own γ (●{dq} .ofSet (∅ : ReaderFracs)) ∗ own γ (◯ .ofSet {v}) ⊢@{IProp GF} False := by
-  iintro H
-  ihave %Hmem := own_auth_singleton_2 $$ H
-  simp at Hmem
-
 /-! ## Re-establishing the lock invariant -/
 
-theorem rwStateInv_readLocked {γ : GName} {l : Loc} {Φ : Qp → IProp GF} {z : Int} {q : Qp}
+private theorem rwStateInv_readLocked {γ : GName} {l : Loc} {Φ : Qp → IProp GF} {z : Int} {q : Qp}
     {g : ReaderFracs} (hz : 0 ≤ z) (hsize : size g = z.toNat) (hfold : fold Qp.add q g = 1) :
     l ↦ some hl_val(#z) ∗ own γ (● .ofSet g) ∗ Φ q ⊢ rwStateInv γ l Φ := by
   unfold rwStateInv
@@ -157,20 +149,12 @@ theorem rwStateInv_readLocked {γ : GName} {l : Loc} {Φ : Qp → IProp GF} {z :
   iright; iframe %hz
   iexists q, g; iframe ∗ %
 
-theorem rwStateInv_unlocked {γ : GName} {l : Loc} {Φ : Qp → IProp GF} :
+private theorem rwStateInv_unlocked {γ : GName} {l : Loc} {Φ : Qp → IProp GF} :
     l ↦ some hl_val(#(0 : Int)) ∗ own γ (● .ofSet (∅ : ReaderFracs)) ∗ Φ 1
     ⊢ rwStateInv γ l Φ :=
   rwStateInv_readLocked (by omega) (by rw [size_empty]; rfl) fold_empty
 
-theorem rwStateInv_writeLocked {γ : GName} {l : Loc} {Φ : Qp → IProp GF} :
-    l ↦ some hl_val(#(-1 : Int)) ∗ own γ (●{.own Qp.quarter} .ofSet (∅ : ReaderFracs))
-    ⊢ rwStateInv γ l Φ := by
-  unfold rwStateInv
-  iintro ⟨Hl, Hauth⟩
-  iexists (-1); iframe Hl
-  ileft; iframe Hauth; itrivial
-
-theorem rwStateInv_mono {γ : GName} {l : Loc} (Φ Ψ : Qp → IProp GF) :
+private theorem rwStateInv_mono {γ : GName} {l : Loc} (Φ Ψ : Qp → IProp GF) :
     (∀ q, Φ q -∗ Ψ q) ⊢ rwStateInv γ l Φ -∗ rwStateInv γ l Ψ := by
   unfold rwStateInv
   iintro Hmono ⟨%z, Hl, (Hneg | ⟨Hge, %q, %g, Hauth, Hsize, Hfold, HΦ⟩)⟩
@@ -187,8 +171,11 @@ theorem writerLocked_exclusive (γ : GName) :
 
 @[rocq_alias heap_lang.writer_locked_not_reader_locked]
 theorem writerLocked_not_readerLocked (γ : GName) (q : Qp) :
-    writerLocked γ ∗ readerLocked γ q ⊢@{IProp GF} False :=
-  own_auth_empty_frag_False
+    writerLocked γ ∗ readerLocked γ q ⊢@{IProp GF} False := by
+  iintro H
+  unfold writerLocked readerLocked
+  ihave %Hmem := own_auth_singleton_2 $$ H
+  simp at Hmem
 
 @[rocq_alias heap_lang.is_rw_lock_iff]
 theorem isRwLock_iff (γ : GName) (lk : Val) (Φ Ψ : Qp → IProp GF) :
@@ -196,10 +183,10 @@ theorem isRwLock_iff (γ : GName) (lk : Val) (Φ Ψ : Qp → IProp GF) :
   unfold isRwLock
   iintro ⟨#HΦdup, %l, %Heq, #Hlockinv⟩ #Hiff
   subst Heq
-  isplitl []
+  isplit
   · inext; iapply internalFractional_iff $$ Hiff HΦdup
   iexists l
-  isplitl []; itrivial
+  isplit; itrivial
   iapply inv_iff $$ Hlockinv
   inext
   imodintro
@@ -216,18 +203,18 @@ theorem newlock_spec (Φ : Qp → IProp GF) {P : IProp GF} {ioΦ ioq}
     [hP : AsFractional P ioΦ Φ ioq 1] :
     {{ P }} hl(&newlock #()) {{ lk γ, RET lk; isRwLock γ lk Φ }} := by
   iintro %φ HP Hφ
-  wp_rec
-  imod iOwn_alloc (F := RwSpinLockF) (● .ofSet ∅) (Auth.auth_valid.mpr trivial) with ⟨%γ, Hγ⟩
+  wp_lam
+  imod iOwn_alloc (F := RwSpinLockF) (● .ofSet ∅) with ⟨%γ, Hγ⟩
+  · exact Auth.auth_valid.mpr trivial
   wp_alloc l with Hl
-  imod inv_alloc rwLockN ⊤ (rwStateInv γ l Φ) $$ [Hl Hγ HP] with #Hinv
+  imod inv_alloc rwLockN ⊤ (rwStateInv γ l Φ) $$ [- Hφ] with #Hinv
   · iapply rwStateInv_unlocked
-    iframe Hl Hγ
+    iframe
     iapply hP.as_fractional.mp $$ HP
-  imodintro
   iapply Hφ
   unfold isRwLock
-  isplitl []
-  · inext; iapply fractional_internalFractional hP.as_fractional_fractional
+  isplitl
+  · iapply fractional_internalFractional hP.as_fractional_fractional
   iexists l; iframe Hinv; itrivial
 
 @[rocq_alias heap_lang.try_acquire_reader_spec]
@@ -238,9 +225,9 @@ theorem tryAcquireReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
   unfold isRwLock internalFractional readerLocked rwStateInv
   iintro %φ ⟨#HΦdup, %l, %Heq, #Hlockinv⟩ Hφ
   subst Heq
-  wp_rec
+  wp_lam
   wp_bind !_
-  iinv Hlockinv with ⟨%z, Hl, Hz⟩ Hclose
+  iinv Hlockinv with ⟨%z, >Hl, Hz⟩ Hclose
   wp_load
   imod Hclose $$ [$Hl $Hz] with -
   imodintro
@@ -249,35 +236,39 @@ theorem tryAcquireReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
   case neg =>
     rw [decide_eq_false hle]
     wp_pures
-    iapply Hφ; simp only [Bool.false_eq_true, ↓reduceIte]; itrivial
+    iapply Hφ
+    simp only [Bool.false_eq_true, ↓reduceIte]; itrivial
   rw [decide_eq_true hle]
   wp_pures
   wp_bind cmpXchg(_, _, _)
-  iinv Hlockinv with ⟨%z', Hl, Hz⟩ Hclose
+  iinv Hlockinv with ⟨%z', >Hl, Hz⟩ Hclose
   wp_cmpxchg with hsuc hfail
   · obtain rfl : z = z' := by simpa using hsuc.symm
     icases Hz with (⟨%Hneg, -⟩ | ⟨-, %q, %g, Hauth, %Hsize, %Hfold, HΦ⟩)
     · omega
-    ihave ⟨HΦ, HΦgive⟩ : iprop(Φ q.half ∗ Φ q.half) $$ [HΦ]
-    · iapply HΦdup $$ %q.half %q.half
-      rw [Qp.half_add_half]; iexact HΦ
-    imod iOwn_update (auth_alloc_singleton (v := q.half)) $$ Hauth with ⟨Hauth, Hview⟩
-    have hsize : size (g ⊎ {q.half}) = (z + 1).toNat := by
-      rw [size_disjUnion, size_singleton, Hsize]; omega
-    have hfold : fold Qp.add q.half (g ⊎ {q.half}) = 1 := by
-      rw [fold_disjUnion (f := Qp.add) fun x y z => Qp.add_left_comm y x z, fold_singleton,
-        show Qp.add q.half q.half = q from Qp.half_add_half q]
-      exact Hfold
+    ieval (rewrite [← Qp.half_add_half q]) at HΦ
+    icases HΦdup $$ %q.half %q.half HΦ with ⟨HΦ, HΦgive⟩
+    imod iOwn_update
+      (a' := ((● LeibnizMultiSet.ofSet (g ⊎ {q.half})) •
+        ◯ LeibnizMultiSet.ofSet {q.half} : Auth (LeibnizMultiSet ReaderFracs))) $$ Hauth with
+      ⟨Hauth, Hview⟩
+    · refine Auth.auth_update_alloc ?_
+      have h := localUpdate_alloc (X := g) (Y := (∅ : ReaderFracs)) (X' := {q.half})
+      rwa [disjUnion_empty_left] at h
     imod Hclose $$ [Hl Hauth HΦ] with -
-    · iapply rwStateInv_readLocked (by omega) hsize hfold; iframe
+    · iapply rwStateInv_readLocked (by omega) $$ [$]
+      · rw [size_disjUnion, size_singleton, Hsize]; omega
+      · rwa [fold_disjUnion (f := Qp.add) fun x y z => Qp.add_left_comm y x z, fold_singleton,
+          show Qp.add q.half q.half = q from Qp.half_add_half q]
     imodintro
     wp_pures
     iapply Hφ; simp only [↓reduceIte]
-    iexists q.half; iframe Hview HΦgive
+    iexists q.half; iframe
   · imod Hclose $$ [$Hl $Hz] with -
     imodintro
     wp_pures
-    iapply Hφ; simp only [Bool.false_eq_true, ↓reduceIte]; itrivial
+    iapply Hφ
+    simp only [Bool.false_eq_true, ↓reduceIte]; itrivial
 
 @[rocq_alias heap_lang.acquire_reader_spec]
 theorem acquireReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
@@ -290,10 +281,15 @@ theorem acquireReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
   iapply tryAcquireReader_spec $$ Hislock
   iintro !> %b Hb
   cases b
-  · wp_pure; iapply IH; inext; iexact Hφ
-  · wp_pure; imodintro; simp only [↓reduceIte]
+  · wp_if_false
+    iapply IH
+    iframe
+  · wp_if_true
+    imodintro
+    simp only [↓reduceIte]
     icases Hb with ⟨%q, Hlocked, HΦ⟩
-    iapply Hφ $$ %q; iframe Hlocked HΦ
+    iapply Hφ $$ %q
+    iframe
 
 @[rocq_alias heap_lang.release_reader_spec]
 theorem releaseReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) (q : Qp) :
@@ -302,33 +298,35 @@ theorem releaseReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) (q : Q
   unfold isRwLock internalFractional readerLocked rwStateInv
   iintro %φ ⟨⟨#HΦdup, %l, %Heq, #Hlockinv⟩, Hlocked, HΦ⟩ Hφ
   subst Heq
-  wp_rec
+  wp_lam
   wp_bind faa(_, _)
   iinv Hlockinv with ⟨%z, Hl, Hz⟩ Hclose
   wp_faa
   icases Hz with (⟨-, Hempty⟩ | ⟨%Hge, %q', %g, Hauth, %Hsize, %Hsum, HΦq'⟩)
-  · iexfalso; iapply own_auth_empty_frag_False $$ [$Hempty $Hlocked]
+  · iexfalso
+    ihave %Hmem := own_auth_singleton_2 $$ [$]
+    simp at Hmem
   ihave %Hmem := own_auth_singleton_2 $$ [$Hauth $Hlocked]
-  imod iOwn_update_op (F := RwSpinLockF) auth_dealloc_singleton $$ [$Hauth $Hlocked] with Hauth
-  ihave HΦsum : iprop(Φ (q + q')) $$ [HΦ HΦq']
-  · iapply HΦdup $$ %q %q' [$HΦ $HΦq']
-  have hpos : 0 < z := by
-    have : size g ≠ 0 := fun h => by simp [size_eq_zero_iff.mp h] at Hmem
-    omega
-  have hsize : size (g \ {q}) = (z + -1).toNat := by
-    rw [size_difference (singleton_subset_iff.mpr Hmem), size_singleton, Hsize]; omega
-  have hfold : fold Qp.add (q + q') (g \ {q}) = 1 :=
-    calc fold Qp.add (Qp.add q q') (g \ {q})
-        = Qp.add q (fold Qp.add q' (g \ {q})) :=
-          fold_comm_acc (g := Qp.add q) fun x y => Qp.add_left_comm x q y
+  icombine Hauth Hlocked as Hown
+  imod iOwn_update (F := RwSpinLockF) (a' := ● .ofSet (g \ {q})) $$ Hown with Hown
+  · refine Auth.auth_update_dealloc ?_
+    have h := localUpdate_dealloc (X := g) (X' := {q}) subset_refl
+    rwa [difference_self] at h
+  imod Hclose $$ [-Hφ] with -
+  · inext
+    ispecialize HΦdup $$ %q %q' [$HΦ $HΦq']
+    iapply rwStateInv_readLocked $$ [$]
+    · have : size g ≠ 0 := fun h => by simp [size_eq_zero_iff.mp h] at Hmem
+      omega
+    · rw [size_difference (singleton_subset_iff.mpr Hmem), size_singleton, Hsize]; omega
+    · calc fold Qp.add (Qp.add q q') (g \ {q}) = Qp.add q (fold Qp.add q' (g \ {q})) :=
+          fold_comm_acc fun x y => Qp.add_left_comm x q y
       _ = fold Qp.add (fold Qp.add q' (g \ {q})) {q} := fold_singleton.symm
       _ = fold Qp.add q' ({q} ⊎ (g \ {q})) :=
-          (fold_disjUnion (f := Qp.add) fun x y z => Qp.add_left_comm y x z).symm
+          (fold_disjUnion fun x y z => Qp.add_left_comm y x z).symm
       _ = fold Qp.add q' g :=
-          congrArg (fold Qp.add q') (disjUnion_singleton_difference Hmem).symm
+          congrArg _ (disjUnion_singleton_difference Hmem).symm
       _ = 1 := Hsum
-  imod Hclose $$ [Hl Hauth HΦsum] with -
-  · iapply rwStateInv_readLocked (by omega) hsize hfold; iframe
   imodintro
   wp_pures
   iapply Hφ; itrivial
@@ -336,8 +334,7 @@ theorem releaseReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) (q : Q
 @[rocq_alias heap_lang.try_acquire_writer_spec]
 theorem tryAcquireWriter_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
     {{ isRwLock γ lk Φ }} hl(&tryAcquireWriter &lk)
-    {{ (b : Bool), RET hl_val(#b);
-       if b then (writerLocked γ ∗ Φ 1) else True }} := by
+    {{ (b : Bool), RET hl_val(#b); if b then (writerLocked γ ∗ Φ 1) else True }} := by
   unfold isRwLock writerLocked rwStateInv
   iintro %φ ⟨#HΦdup, %l, %Heq, #Hlockinv⟩ Hφ
   subst Heq
@@ -355,7 +352,9 @@ theorem tryAcquireWriter_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
     -- FIXME: Frac.op_eq should not be needed
     icases Hauth with ⟨Hauth, Hgive⟩
     imod Hclose $$ [Hl Hauth] with -
-    · iapply rwStateInv_writeLocked; iframe
+    · inext
+      iexists (-1); iframe Hl
+      ileft; iframe; itrivial
     imodintro
     wp_pures
     iapply Hφ; simp only [↓reduceIte]
