@@ -26,6 +26,7 @@ public import Iris.Algebra.Numbers
 public import Iris.Algebra.Mra
 public import Iris.Algebra.IProp
 public import Iris.Algebra.OFE
+public import Iris.Algebra.Porting
 public import Iris.Algebra.ReservationMap
 public import Iris.Algebra.StepIndex
 public import Iris.Algebra.UFrac
