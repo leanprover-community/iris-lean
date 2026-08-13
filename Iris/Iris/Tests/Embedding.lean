@@ -21,31 +21,31 @@ variable {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
 -/
 example [BIUpdate PROP1] (P : PROP1) : ⎡P⎤ ⊢@{PROP2} ⎡|==> P⎤ := by
   iintro HP
-  imodintro
-  imodintro
+  imodintro _
+  imodintro (|==> _)
   iexact HP
 
 /-- Tests `imodintro` prefers `fromModal_embed` over `fromModal_affinely_embed`. -/
 example (P : PROP1) [Affine P] : ⎡P⎤ ⊢@{PROP2} ⎡<affine> P⎤ := by
   iintro HP
-  imodintro
-  imodintro
+  imodintro _
+  imodintro (<affine> _)
   iexact HP
 
 /-- Tests `imodintro` prefers `fromModal_embed` over `fromModal_persistently_embed`. -/
 example
     (P : PROP1) : □ ⎡P⎤ ⊢@{PROP2} ⎡<pers> P⎤ := by
   iintro #HP
-  imodintro
-  imodintro
+  imodintro _
+  imodintro (<pers> _)
   iexact HP
 
 /-- Tests `imodintro` prefers `fromModal_embed` over `fromModal_plainly_embed`. -/
 example {P1 P2 : Type u} [Sbi P1] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
     (P : P1) [Plain P] : □ ⎡P⎤ ⊢@{P2} ⎡■ P⎤ := by
   iintro #HP
-  imodintro
-  imodintro
+  imodintro _
+  imodintro (■ _)
   iexact HP
 
 /--
@@ -55,8 +55,8 @@ example {P1 P2 : Type u} [Sbi P1] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
 example [BIUpdate PROP1]
     [BiEmbed PROP1 PROP2] (P Q : PROP1) : ⎡P⎤ ∗ ⎡P -∗ Q⎤ ⊢@{PROP2} ⎡|==> Q⎤ := by
   iintro ⟨HP, HPQ⟩
-  imodintro
-  imodintro
+  imodintro _
+  imodintro (|==> _)
   ispecialize HPQ $$ HP
   iexact HPQ
 
