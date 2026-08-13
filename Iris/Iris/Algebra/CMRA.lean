@@ -48,7 +48,7 @@ class CMRA (α : Type _) extends OFE α where
 #rocq_ignore cmra_ofeO "Not needed."
 
 /-- Reduction of `pcore_op_mono` to regular monotonicity -/
-theorem pcore_op_mono_of_core_op_mono [OFE α] (op : α → α → α) (pcore : α → Option α)
+theorem pcore_op_mono_of_core_op_mono (op : α → α → α) (pcore : α → Option α)
     (h : (∀ x cx y : α, (∃ z, y = op x z) → pcore x = some cx →
       ∃ cy, pcore y = some cy ∧ ∃ z, cy = op cx z))
     (x cx) (e : pcore x = some cx) (y) : ∃ cy, pcore (op x y) = some (op cx cy) :=
@@ -120,8 +120,7 @@ def core (x : α) := (pcore x).getD x
 class Discrete (α : Type _) [CMRA α] extends OFE.Discrete α where
   discrete_valid {x : α} : ✓{0} x → ✓ x
 export Discrete (discrete_valid)
-#rocq_ignore discrete_cmra_discrete "Folded into Lean's CMRA.Discrete typeclass"
-#rocq_ignore discrete_cmra_mixin "Lean uses the CMRA + CMRA.Discrete typeclasses directly."
+#rocq_ignore RAMixin "Bundled record of RA laws; Lean passes them as arguments to `CMRA.ofDiscrete`."
 #rocq_ignore discrete_validN_instance "Use CMRA instance"
 
 end CMRA
@@ -932,8 +931,6 @@ end UCMRA
 
 section Hom
 
--- TODO: Typeclass
-
 /-- A morphism between CMRAs, written `α -C> β`, is defined to be a non-expansive function which
 preserves `validN`, `pcore` and `op`. -/
 @[ext, rocq_alias CmraMorphism]
@@ -1016,7 +1013,7 @@ class RFunctorContractive (F : COFE.OFunctorPre) extends (RFunctor F) where
 
 attribute [reducible, instance] RFunctor.cmra
 
-#rocq_ignore rFunctor_apply "Just apply the underlying `OFunctorPre"
+#rocq_ignore rFunctor_apply "Just apply the underlying `OFunctorPre`"
 
 @[rocq_alias rFunctor_to_oFunctor]
 instance RFunctor.toOFunctor [R : RFunctor F] : COFE.OFunctor F where
@@ -1054,7 +1051,7 @@ class URFunctorContractive (F : COFE.OFunctorPre) extends URFunctor F where
 
 attribute [reducible, instance] URFunctor.cmra
 
-#rocq_ignore urFunctor_apply "Just apply the underlying `OFunctorPre"
+#rocq_ignore urFunctor_apply "Just apply the underlying `OFunctorPre`"
 
 @[rocq_alias urFunctor_to_rFunctor]
 instance URFunctor.toRFunctor [UF : URFunctor F] : RFunctor F where
@@ -1204,11 +1201,13 @@ transport lemmas are replaced by `transpAp` and the `OFE.transpAp_*` family in
 #rocq_ignore cmra_transport "Use `transpAp`"
 #rocq_ignore cmra_transport_trans "Use `transpAp` with `Eq.trans`"
 #rocq_ignore cmra_transport_ne "Use `OFE.transpAp_eqv_mp`"
-#rocq_ignore cmra_transport_proper "Use `OFE.transpAp_eqv_mp`"
+#rocq_ignore cmra_transport_proper "OFE is Leibniz; use equality"
 #rocq_ignore cmra_transport_op "Use `OFE.transpAp_op_mp`"
 #rocq_ignore cmra_transport_core "Use `OFE.transpAp_pcore_mp`"
-#rocq_ignore cmra_transport_validN "Use `OFE.transpAp_validN_mp`"
-#rocq_ignore cmra_transport_valid "Use `OFE.transpAp_validN_mp` with `CMRA.valid_iff_validN`"
+#rocq_ignore cmra_transport_validN
+  "Use `OFE.transpAp_validN_mp` and its converse `OFE.validN_transpAp_mp`"
+#rocq_ignore cmra_transport_valid
+  "Use `OFE.transpAp_validN_mp`/`OFE.validN_transpAp_mp` with `CMRA.valid_iff_validN`"
 #rocq_ignore cmra_transport_discrete "No counterpart; see the `transpAp` family"
 #rocq_ignore cmra_transport_core_id "No counterpart; see the `transpAp` family"
 
@@ -1293,8 +1292,9 @@ theorem inc_iff {f g : ∀ x, β x} : f ≼ g ↔ ∀ x, f x ≼ g x := by
 
 end DiscreteFun
 
+@[rocq_alias discrete_fun_map_cmra_morphism]
 def mapCodHomC {α : Type _} {β₁ β₂ : α → Type _}
-    [∀ x, CMRA (β₁ x)] [∀ x, IsTotal (β₁ x)] [∀ x, CMRA (β₂ x)] [∀ x, IsTotal (β₂ x)]
+    [∀ x, UCMRA (β₁ x)] [∀ x, UCMRA (β₂ x)]
     (F : ∀ x, β₁ x -C> β₂ x) : (∀ x, β₁ x) -C> (∀ x, β₂ x) where
   toHom := mapCodHom fun x => (F x).toHom
   validN h x := (F x).validN (h x)
@@ -1608,9 +1608,17 @@ theorem incN_iff_is_total [IsTotal α] {ma mb : Option α} :
     · simp
     · exact .inr ⟨a, b, rfl, rfl, .inr Hinc⟩
 
-@[rocq_alias Some_includedN, rocq_alias Some_includedN_1, rocq_alias Some_includedN_2]
+@[rocq_alias Some_includedN]
 theorem some_incN_some_iff {a b : α} : some a ≼{n} some b ↔ a ≡{n}≡ b ∨ a ≼{n} b := by
   apply incN_iff.trans; simp
+
+@[rocq_alias Some_includedN_1]
+theorem dist_or_incN_of_some_incN_some {a b : α} (h : some a ≼{n} some b) :
+    a ≡{n}≡ b ∨ a ≼{n} b := some_incN_some_iff.mp h
+
+@[rocq_alias Some_includedN_2]
+theorem some_incN_some_of_dist_or_incN {a b : α} (h : a ≡{n}≡ b ∨ a ≼{n} b) :
+    some a ≼{n} some b := some_incN_some_iff.mpr h
 
 @[rocq_alias Some_includedN_mono]
 theorem some_incN_some_of_incN {a b : α} (h : a ≼{n} b) : some a ≼{n} some b :=
@@ -1624,9 +1632,17 @@ theorem some_incN_some_of_dist {a b : α} (h : a ≡{n}≡ b) : some a ≼{n} so
 theorem isSome_of_some_incN {a : α} {mb : Option α} (h : some a ≼{n} mb) : mb.isSome := by
   rcases incN_iff.mp h with h | ⟨_, _, _, rfl, _⟩ <;> simp_all
 
-@[rocq_alias Some_included, rocq_alias Some_included_1, rocq_alias Some_included_2]
+@[rocq_alias Some_included]
 theorem some_inc_some_iff {a b : α} : some a ≼ some b ↔ a = b ∨ a ≼ b := by
   apply inc_iff.trans; simp
+
+@[rocq_alias Some_included_1]
+theorem eq_or_inc_of_some_inc_some {a b : α} (h : some a ≼ some b) : a = b ∨ a ≼ b :=
+  some_inc_some_iff.mp h
+
+@[rocq_alias Some_included_2]
+theorem some_inc_some_of_eq_or_inc {a b : α} (h : a = b ∨ a ≼ b) : some a ≼ some b :=
+  some_inc_some_iff.mpr h
 
 @[rocq_alias Some_included_mono]
 theorem some_inc_some_of_inc {a b : α} (h : a ≼ b) : some a ≼ some b :=
@@ -2366,6 +2382,62 @@ def ofIso [CMRA α] [OFE β]
     (fun n n' y hv hle => (g_validN n' y).mp <| CMRA.validN_of_le hle <| (g_validN n y).mpr hv)
     (fun n y₁ y₂ hv => (g_validN n y₁).mp <| CMRA.validN_op_left <|
       g_op y₁ y₂ ▸ (g_validN n (op y₁ y₂)).mpr hv)
+
+@[reducible, rocq_alias discrete_cmra_mixin]
+def ofDiscrete [OFE α] [OFE.Discrete α]
+    (pcore : α → Option α) (op : α → α → α) (Valid : α → Prop)
+    (assoc : ∀ x y z : α, op x (op y z) = op (op x y) z)
+    (comm : ∀ x y : α, op x y = op y x)
+    (pcore_op_left : ∀ x cx : α, pcore x = some cx → op cx x = x)
+    (pcore_idem : ∀ x cx : α, pcore x = some cx → pcore cx = some cx)
+    (pcore_mono : ∀ x cx y : α, (∃ z, y = op x z) → pcore x = some cx →
+      ∃ cy, pcore y = some cy ∧ ∃ z, cy = op cx z)
+    (valid_op_left : ∀ x y : α, Valid (op x y) → Valid x) :
+    CMRA α where
+  pcore := pcore
+  op := op
+  ValidN _ := Valid
+  Valid := Valid
+  op_ne.ne _ _ _ h := (congrArg (op _) (OFE.discrete h)).dist
+  pcore_ne h hcx := ⟨_, (OFE.discrete h) ▸ hcx, .rfl⟩
+  validN_ne h hv := (OFE.discrete h) ▸ hv
+  valid_iff_validN := (forall_const Nat).symm
+  validN_succ := id
+  validN_op_left := valid_op_left _ _
+  assoc := assoc ..
+  comm := comm ..
+  pcore_op_left := pcore_op_left _ _
+  pcore_idem := pcore_idem _ _
+  pcore_op_mono := pcore_op_mono_of_core_op_mono op pcore pcore_mono _ _
+  extend _ h := ⟨_, _, OFE.discrete h, .rfl, .rfl⟩
+
+@[reducible, rocq_alias ra_total_mixin]
+def ofDiscreteTotal [OFE α] [OFE.Discrete α]
+    (core : α → α) (op : α → α → α) (Valid : α → Prop)
+    (assoc : ∀ x y z : α, op x (op y z) = op (op x y) z)
+    (comm : ∀ x y : α, op x y = op y x)
+    (core_op_left : ∀ x : α, op (core x) x = x)
+    (core_idem : ∀ x : α, core (core x) = core x)
+    (core_mono : ∀ x y : α, (∃ z, y = op x z) → ∃ z, core y = op (core x) z)
+    (valid_op_left : ∀ x y : α, Valid (op x y) → Valid x) :
+    CMRA α :=
+  ofDiscrete (fun x => some (core x)) op Valid assoc comm
+    (fun _ _ h => Option.some.inj h ▸ core_op_left _)
+    (fun _ _ h => Option.some.inj h ▸ congrArg some (core_idem _))
+    (fun _ _ _ hy h => ⟨core _, rfl, Option.some.inj h ▸ core_mono _ _ hy⟩)
+    valid_op_left
+
+section OfDiscrete
+
+@[rocq_alias discrete_cmra_discrete]
+instance ofDiscrete_discrete [OFE α] [OFE.Discrete α] (pcore : α → Option α)
+  (op : α → α → α) (Valid : α → Prop)
+  h₁ h₂ h₃ h₄ h₅ h₆ :
+    @CMRA.Discrete α (ofDiscrete pcore op Valid h₁ h₂ h₃ h₄ h₅ h₆) :=
+  letI := ofDiscrete pcore op Valid h₁ h₂ h₃ h₄ h₅ h₆
+  { discrete_valid := id }
+
+end OfDiscrete
 
 end CMRA
 end CmraMixin
