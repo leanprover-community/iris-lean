@@ -889,6 +889,7 @@ def BUpdPlain_pred [UCMRA M] (P : UPred M) (y : M) : UPred M where
     ⟨z, validN_of_le Hn Hz1, P.mono Hz2 (incN_refl z) Hn⟩
 
 /-- The alternative definition entails the ordinary basic update -/
+@[rocq_alias bupd_alt_bupd]
 theorem BUpdPlain_bupd [UCMRA M] (P : UPred M) : BUpdPlain P ⊢ |==> P := by
   intro _ _ H k y Hkn Hxy
   have := (H _ ⟨BUpdPlain_pred P y, rfl⟩) k y Hkn Hxy ?_
@@ -898,11 +899,13 @@ theorem BUpdPlain_bupd [UCMRA M] (P : UPred M) : BUpdPlain P ⊢ |==> P := by
     rw [plainly_eq_uPred_plainly]
     refine ⟨z, validN_ne op_commN Hvyz, HP⟩
 
+@[rocq_alias bupd_alt_bupd_iff]
 theorem BUpdPlain_bupd_iff [UCMRA M] (P : UPred M) : BUpdPlain P ⊣⊢ |==> P :=
   ⟨BUpdPlain_bupd P, BUpd_BUpdPlain (PROP := UPred M)⟩
 
+@[rocq_alias ownM_updateP]
 theorem ownM_updateP [UCMRA M] {x : M} {R : UPred M} (Φ : M → Prop) (Hup : x ~~>: Φ) :
-    ownM x ∗ (∀ y, iprop(⌜Φ y⌝) -∗ ownM y -∗ ■ R) ⊢ ■ R := by
+    iprop(ownM x ∗ ∀ y, ⌜Φ y⌝ -∗ ownM y -∗ ■ R) ⊢ ■ R := by
   rw [plainly_eq_uPred_plainly]
   intro n z ⟨x1, z2, Hx, ⟨z1, Hz1⟩, HR⟩
   have Hvalid : ✓{n} (x •? some (z1 • z2)) := by
@@ -920,4 +923,6 @@ theorem ownM_updateP [UCMRA M] {x : M} {R : UPred M} (Φ : M → Prop) (Hup : x 
     (validN_ne comm.dist (validN_op_right Hvalid)) HΦy n y .refl
     (validN_ne Hcomm Hvalid_y) (incN_refl y)
 
-section UPredAlt
+end UPredAlt
+
+end UPredInstance
