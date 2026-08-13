@@ -16,11 +16,7 @@ namespace Iris
 
 open BI DFrac DFracAgree ProofMode
 
-/-! ## Ghost variable
-
-A simple "ghost variable" of arbitrary type with fractional ownership.
-Can be mutated when fully owned.
--/
+/-! ## Ghost variable -/
 
 abbrev GhostVarF (A : Type) : COFE.OFunctorPre := constOF (DFracAgreeR (DiscreteO A))
 
@@ -58,27 +54,22 @@ instance (γ : GName) (a : A) : Persistent (PROP := IProp GF) (γ ↪VAR{.discar
 @[rocq_alias ghost_var_fractional]
 instance ghost_var_fractional (γ : GName) (a : A) :
     Fractional (PROP := IProp GF) (fun q : Qp => γ ↪VAR{.own q} a) where
-  fractional p q := by
-    unfold ghost_var
-    exact .trans (BIBase.BiEntails.of_eq (congrArg (iOwn γ) Frac.mk_op)) iOwn_op
+  fractional _ _  := (BiEntails.of_eq (congrArg (iOwn γ) Frac.mk_op)).trans iOwn_op
 
 @[rocq_alias ghost_var_as_fractional]
 instance (γ : GName) (a : A) (q : Qp) :
-    AsFractional (PROP := IProp GF) (γ ↪VAR{.own q} a) ioΦ
-      (fun q => γ ↪VAR{.own q} a) ioq q where
+    AsFractional (PROP := IProp GF) (γ ↪VAR{.own q} a) ioΦ (fun q => γ ↪VAR{.own q} a) ioq q where
   as_fractional := .rfl
   as_fractional_fractional := ghost_var_fractional γ a
 
 @[rocq_alias ghost_var_alloc_strong]
 theorem ghost_var_alloc_strong (a : A) (P : GName → Prop) (HP : PredInfinite P) :
-    ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ γ ↪VAR a := by
-  unfold ghost_var
-  exact iOwn_alloc_strong _ P HP.exists_ge (mk_valid.mpr valid_own_one)
+    ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ γ ↪VAR a :=
+  iOwn_alloc_strong _ _ HP.exists_ge (mk_valid.mpr valid_own_one)
 
 @[rocq_alias ghost_var_alloc]
-theorem ghost_var_alloc (a : A) : ⊢@{IProp GF} |==> ∃ γ, γ ↪VAR a := by
-  unfold ghost_var
-  exact iOwn_alloc _ (mk_valid.mpr valid_own_one)
+theorem ghost_var_alloc (a : A) : ⊢@{IProp GF} |==> ∃ γ, γ ↪VAR a :=
+  iOwn_alloc _ (mk_valid.mpr valid_own_one)
 
 @[rocq_alias ghost_var_valid_2]
 theorem ghost_var_valid_2 (γ : GName) (a1 : A) (dq1 : DFrac) (a2 : A) (dq2 : DFrac) :
@@ -90,7 +81,6 @@ theorem ghost_var_valid_2 (γ : GName) (a1 : A) (dq1 : DFrac) (a2 : A) (dq2 : DF
   ipureintro
   exact ⟨Hq, DiscreteO.eqv_inj Ha⟩
 
-/-- Almost all the time, this is all you really need. -/
 @[rocq_alias ghost_var_agree]
 theorem ghost_var_agree (γ : GName) (a1 : A) (dq1 : DFrac) (a2 : A) (dq2 : DFrac) :
     ⊢@{IProp GF} (γ ↪VAR{dq1} a1) -∗ (γ ↪VAR{dq2} a2) -∗ ⌜a1 = a2⌝ := by
@@ -112,25 +102,22 @@ instance (priority := default - 20) (γ : GName) (a1 : A) (dq1 : DFrac) (a2 : A)
     (dq : DFrac) [h : IsOp .merge dq dq1 dq2] :
     CombineSepAs (PROP := IProp GF) (γ ↪VAR{dq1} a1) (γ ↪VAR{dq2} a2) (γ ↪VAR{dq} a1) where
   combine_sep_as := by
-    -- This cannot be a single `icombine`, since the instance providing that is what we are proving.
     iintro ⟨H1, H2⟩
     icombine H1 H2 gives %⟨-, rfl⟩
     unfold ghost_var
     rw [h.is_op, mk_op]
     icombine H1 H2 as $
 
-/-- This is just an instance of fractionality above, but that can be hard to find. -/
 @[rocq_alias ghost_var_split]
 theorem ghost_var_split (γ : GName) (a : A) (q1 q2 : Qp) :
     ⊢@{IProp GF} (γ ↪VAR{.own (q1 + q2)} a) -∗ (γ ↪VAR{.own q1} a) ∗ (γ ↪VAR{.own q2} a) := by
   iintro ⟨$, $⟩
 
-/-- Update the ghost variable to new value `b`. -/
 @[rocq_alias ghost_var_update]
 theorem ghost_var_update (b : A) (γ : GName) (a : A) :
     ⊢@{IProp GF} (γ ↪VAR a) ==∗ γ ↪VAR b := by
   unfold ghost_var
-  iapply iOwn_update (Update.exclusive (mk_valid.mpr valid_own_one))
+  iapply iOwn_update (.exclusive (mk_valid.mpr valid_own_one))
 
 @[rocq_alias ghost_var_update_2]
 theorem ghost_var_update_2 (b : A) (γ : GName) (a1 : A) (q1 : Qp) (a2 : A) (q2 : Qp)
