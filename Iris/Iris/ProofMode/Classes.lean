@@ -246,19 +246,31 @@ def FromModal.ModalityStatus.toInOut : FromModal.ModalityStatus → InOut
 end
 
 /--
-`FromModal` turns a goal `P : PROP2` into a modality `M : PROP1 → PROP2` applied to `Q : PROP1`
-under condition `φ`.
+`FromModal` turns a goal `P : PROP2` into a modality `M : PROP1 → PROP2` applied
+to `Q : PROP1` under condition `φ`.
 
-`sel` is an input that can be provided by the user to match on the desired modality to introduce.
-It needs to be an `outParam` to make Lean happy since `PROP1` is an `outParam`.
-For the IPM TC synthesis, it needs to be an `uncheckedInParam` since it should match all modalities
-if the user provides an mvar.
+The parameter `modStatus` indicates when the modality is known.
+When `modStatus = .matchGoal`, `PROP1` and the modality is determined by the
+proof goal. When `modStatus = .known`, the modality is already fixed. Hence,
+the synthesis direction of the modality `M` and `PROP1` depends on `modStatus`.
+
+The selector `sel` is an input that can be provided by the user to match on the
+desired modality to introduce. This is unique in a sense that the metavariable
+is supplied as an input (e.g. when the user writes `imodintro _`).
+This is why `uncheckedInParam` is used so that all modalities can be matched by
+IPM type class synthesis.
+It also needs to be an `outParam` as `PROP1` can be an output parameter.
+
+When the user leaves the selector unspecified, `α`, as the type of `sel`,
+can be a metavariable.
+However, it can also be concrete while `PROP1` and `M` are still metavariables.
+See `fromModal_embed`, where `sel` lives in the concrete type `PROP2`.
 -/
 @[ipm_class, rocq_alias FromModal]
 class FromModal (modStatus : FromModal.ModalityStatus)
     {PROP1 : semiOutParamIPM modStatus.toInOut (Type _)}
     {PROP2} {α : outParam <| uncheckedInParam <| Type _}
-    [uncheckedInParam <| BI PROP1] [BI PROP2] (φ : outParam Prop)
+    [semiOutParamIPM modStatus.toInOut (BI PROP1)] [BI PROP2] (φ : outParam Prop)
     (M : semiOutParamIPM modStatus.toInOut (Modality PROP1 PROP2))
     (sel : outParam <| uncheckedInParam α) (P : PROP2) (Q : outParam PROP1) where
   from_modal : φ → M.M Q ⊢ P
