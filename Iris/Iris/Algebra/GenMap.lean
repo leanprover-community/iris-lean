@@ -232,7 +232,7 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
         hx, hy, Option.bind] at hHeqk
       cases hcy : cy k <;> simp_all
     · intro n k
-      have hHeqk := (OFE.eq_dist_1 (SI:=Nat) Hcy) n k
+      have hHeqk := (OFE.eq_dist_1 Hcy) n k
       simp [CMRA.core, CMRA.pcore, optionCore, CMRA.op, optionOp] at hHeqk ⊢
       exact hHeqk
   extend {n x y1 y2} := by

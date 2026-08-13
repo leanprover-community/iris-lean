@@ -104,7 +104,7 @@ instance instDiscreteEDynReservationMapMk {a : H A} [DiscreteE a] :
     DiscreteE (DynReservationMap.mk a b) where
   discrete := fun h => OFE.eq_dist_2 <| by
     intro n
-    exact ⟨(DiscreteE.discrete h.1).dist (SI := Nat), (DiscreteE.discrete h.2).dist (SI := Nat)⟩
+    exact ⟨(DiscreteE.discrete h.1).dist, (DiscreteE.discrete h.2).dist⟩
 
 @[rocq_alias dyn_reservation_map_data_discrete]
 instance instDiscreteEDynReservationMapSingleton {a : A} [DiscreteE a] :
@@ -606,7 +606,7 @@ theorem reserve (Q : DynReservationMap A H → Prop)
         ∀ i, get? mf i = none ∨ i ∉ Ef := by
     match mz with
     | none =>
-      exact ⟨∅, ∅, OFE.eq_dist_2 (SI:=Nat) (by exact fun n =>
+      exact ⟨∅, ∅, OFE.eq_dist_2 (by exact fun n =>
         ⟨(CMRA.unit_left_id_dist (∅ : H A)).symm,
           Dist.of_eq (pcore_op_left_L rfl).symm⟩), Heap.valid_empty.validN, top_infinite,
         fun i => .inl (get?_empty i)⟩
