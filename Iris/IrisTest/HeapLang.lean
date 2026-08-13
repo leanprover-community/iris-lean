@@ -1,5 +1,6 @@
 module
 
+public import Iris.Init -- shake: keep
 public import IrisTest.HeapLang.Linter
 public import IrisTest.HeapLang.Notation
 public import IrisTest.HeapLang.WeakestPre

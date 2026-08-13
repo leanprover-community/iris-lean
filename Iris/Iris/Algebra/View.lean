@@ -5,11 +5,11 @@ Authors: Markus de Medeiros, Puming Liu
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.DFrac
 public import Iris.Algebra.Agree
 public import Iris.Algebra.BigOp
 public import Iris.Algebra.LocalUpdates
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

@@ -5,10 +5,10 @@ Authors: Zongyuan Liu, Markus de Medeiros
 -/
 module
 
+public import Iris.Init -- shake: keep
 import Batteries.Data.List.Perm
 import Iris.Std.FromMathlib
 public import Iris.Std.GenSets
-import Iris.Std.RocqPorting
 import Std.Data.DTreeMap.Internal.Operations
 
 /-! ## Partial Maps

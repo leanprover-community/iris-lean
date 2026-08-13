@@ -5,9 +5,9 @@ Authors: Markus de Medeiros
 -/
 module
 
+public import Iris.Init -- shake: keep
 import Batteries.Data.List.Perm
 import Iris.Std.List
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

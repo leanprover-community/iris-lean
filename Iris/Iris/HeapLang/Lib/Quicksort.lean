@@ -5,9 +5,9 @@ Authors: Markus de Medeiros, Michael Sammler, Klaus Kraßnitzer
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.HeapLang.PrimitiveLaws
 import Iris.HeapLang.ProofMode
-import Std.Tactic.BVDecide.Normalize.BitVec
 
 namespace Iris.HeapLang
 

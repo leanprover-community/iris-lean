@@ -5,10 +5,10 @@ Authors: Zongyuan Liu
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.Heap
 public import Iris.Algebra.IsOp
 public import Iris.Algebra.LeibnizSet
-import Iris.Std.RocqPorting
 
 namespace Iris
 

@@ -1,5 +1,6 @@
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.ProgramLogic.AbstractEctxLangCompleteness
 public import Iris.ProgramLogic.AbstractLangCompleteness
 public import Iris.ProgramLogic.AbstractWeakestPre

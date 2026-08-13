@@ -5,10 +5,10 @@ Authors: Markus de Medeiros
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.UPred
 public import Iris.Algebra.GenMap
 public import Iris.Algebra.COFESolver
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

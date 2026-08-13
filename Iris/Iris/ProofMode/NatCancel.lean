@@ -5,8 +5,8 @@ Authors: Alvin Tang
 -/
 module -- shake: keep-all
 
+public import Iris.Init -- shake: keep
 public import Iris.ProofMode.SynthInstance -- shake: keep
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

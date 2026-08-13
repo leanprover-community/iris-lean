@@ -5,9 +5,8 @@ Authors: Lars König, Alvin Tang
 -/
 module -- shake: keep-all
 
-public import Lean.Data.Name -- shake: keep
 public import Iris.Init -- shake: keep
-import Iris.Std.RocqPorting
+public import Lean.Data.Name -- shake: keep
 
 @[expose] public section
 

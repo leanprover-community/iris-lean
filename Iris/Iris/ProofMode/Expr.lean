@@ -5,6 +5,7 @@ Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang
 -/
 module -- shake: keep-all
 
+public import Iris.Init -- shake: keep
 public import Iris.BI -- shake: keep
 public import Iris.ProofMode.Classes -- shake: keep
 public import Iris.Std -- shake: keep

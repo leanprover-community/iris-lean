@@ -5,6 +5,7 @@ Authors: Markus de Medeiros, Sergei Stepanenko
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.ProofMode -- shake: keep
 public import Iris.Instances.IProp.Instance
 

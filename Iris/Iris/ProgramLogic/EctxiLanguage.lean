@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.ProgramLogic.EctxLanguage
-import Std.Tactic.BVDecide.Normalize.Prop
 
 namespace Iris.ProgramLogic
 

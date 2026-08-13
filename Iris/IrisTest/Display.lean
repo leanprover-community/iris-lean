@@ -6,6 +6,7 @@ Authors: Alvin Tang
 
 module
 
+public import Iris.Init -- shake: keep
 import Lean
 public import Iris.ProofMode
 

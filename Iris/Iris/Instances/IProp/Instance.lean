@@ -6,10 +6,9 @@ Authors: Markus de Medeiros, Zongyuan Liu, Remy Seassau
 module
 
 
-public import Iris.Algebra.IProp
+public import Iris.Init -- shake: keep
 public import Iris.Instances.UPred.Instance
 public import Iris.ProofMode.Classes
-import Iris.Std.RocqPorting
 
 @[expose] public section
 namespace Iris

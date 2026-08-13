@@ -7,7 +7,7 @@ module
 
 public import Iris.Init -- shake: keep
 public meta import Lean.Elab.Tactic.ElabTerm
-import Iris.Std.RocqPorting
+public import Lean.Elab.Tactic -- shake: keep
 
 public meta section
 

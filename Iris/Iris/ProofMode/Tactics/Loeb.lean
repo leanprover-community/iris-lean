@@ -5,6 +5,7 @@ Authors: Fernando Leal
 -/
 module -- shake: keep-all
 
+public import Iris.Init -- shake: keep
 public import Iris.ProofMode.Tactics.Revert -- shake: keep
 public import Iris.ProofMode.Tactics.RevertIntro -- shake: keep
 

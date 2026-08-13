@@ -1,5 +1,5 @@
 module
-public import Iris.Algebra.ReservationMap
+public import Iris.Init -- shake: keep
 public import Iris.Instances.Lib.GhostMap
 
 @[expose] public section

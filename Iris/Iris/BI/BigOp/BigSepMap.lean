@@ -5,13 +5,13 @@ Authors: Zongyuan Liu
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.BI.BigOp.BigOp
 import Iris.BI.BigOp.BigSepList
 import Iris.BI.DerivedLawsLater
 import Iris.BI.Instances
 public import Iris.Std.TC
 import Iris.BI.DerivedLaws
-import Iris.Std.RocqPorting
 
 public section
 

@@ -6,8 +6,7 @@ Authors: Mario Carneiro
 module
 
 public import Iris.Init -- shake: keep
-public import Qq.MetaM
-import Iris.Std.RocqPorting
+public import Qq -- shake: keep
 
 @[expose] public section
 open Qq Lean

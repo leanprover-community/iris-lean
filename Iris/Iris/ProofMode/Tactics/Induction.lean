@@ -5,6 +5,7 @@ Authors: Yunsong Yang, Michael Sammler, Alvin Tang
 -/
 module -- shake: keep-all
 
+public import Iris.Init -- shake: keep
 public import Iris.ProofMode.Tactics.RevertIntro -- shake: keep
 public meta import Lean.Meta.Tactic.ElimInfo -- shake: keep
 public meta import Lean.Meta.Tactic.Generalize -- shake: keep

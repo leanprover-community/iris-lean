@@ -5,6 +5,7 @@ Authors: Michael Sammler
 -/
 module -- shake: keep-all
 
+public import Iris.Init -- shake: keep
 public meta import Iris.ProofMode.Tactics.Cases -- shake: keep
 public import Iris.ProofMode.Tactics.Cases
 

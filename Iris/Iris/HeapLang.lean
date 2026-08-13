@@ -1,5 +1,6 @@
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.HeapLang.Completeness
 public import Iris.HeapLang.Instances
 public import Iris.HeapLang.Linter

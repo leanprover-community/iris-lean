@@ -4,9 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.BI.DerivedLaws
 public import Iris.BI.Plainly
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

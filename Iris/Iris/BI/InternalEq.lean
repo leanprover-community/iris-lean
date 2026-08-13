@@ -5,13 +5,12 @@ Authors: Markus de Medeiros
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.BI.Sbi
 public import Iris.Algebra.Csum
 public import Iris.Algebra.Excl
 import Iris.BI.DerivedLaws
 import Iris.BI.DerivedLawsLater
-import Iris.Std.DelabRule
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

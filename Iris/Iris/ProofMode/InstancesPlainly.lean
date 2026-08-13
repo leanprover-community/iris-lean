@@ -5,11 +5,11 @@ Authors: Michael Sammler
 -/
 module -- shake: keep-all
 
+public import Iris.Init -- shake: keep
 public import Iris.BI -- shake: keep
 public import Iris.ProofMode.Classes -- shake: keep
 public import Iris.ProofMode.ModalityInstances -- shake: keep
 public import Iris.Std.TC -- shake: keep
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

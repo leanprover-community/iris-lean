@@ -1,8 +1,9 @@
 module
 
-import all Init.Data.Nat.Bitwise.Basic
 public import Iris.Init -- shake: keep
-import Iris.Std.RocqPorting
+import all Init.Data.Nat.Bitwise.Basic
+public import Batteries.Data.Int -- shake: keep
+public import Batteries.Data.Nat.Bitwise -- shake: keep
 
 @[expose] public section
 

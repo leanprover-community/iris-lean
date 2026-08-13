@@ -1,5 +1,6 @@
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Std.BigOp
 public import Iris.Std.BitOp
 public import Iris.Std.Classes
@@ -24,7 +25,6 @@ public import Iris.Std.Prod
 public import Iris.Std.Qq
 public import Iris.Std.Relation
 public import Iris.Std.Rewrite
-public import Iris.Std.RocqPorting
 public import Iris.Std.Set
 public import Iris.Std.Tactic
 public import Iris.Std.TC

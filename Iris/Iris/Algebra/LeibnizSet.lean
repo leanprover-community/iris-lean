@@ -5,11 +5,11 @@ Authors: Sergei Stepanenko, Zongyuan Liu
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.BigOp
 public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.Updates
 public import Iris.Std.CoPset
-import Iris.Std.RocqPorting
 import Std.Data.DTreeMap.Internal.Balancing
 
 @[expose] public section

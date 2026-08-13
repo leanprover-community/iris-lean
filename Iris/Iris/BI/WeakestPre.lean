@@ -1,9 +1,9 @@
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Std.CoPset
 public import Iris.BI.Notation
 import Iris.BI.BIBase
-import Iris.Std.RocqPorting
 
 public section
 

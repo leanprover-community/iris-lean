@@ -5,6 +5,7 @@ Authors: Lars König, Mario Carneiro, Michael Sammler, Alvin Tang
 -/
 module -- shake: keep-all
 
+public import Iris.Init -- shake: keep
 public import Iris.BI -- shake: keep
 public import Iris.ProofMode.Classes -- shake: keep
 public import Iris.ProofMode.ClassesMake -- shake: keep
@@ -13,7 +14,6 @@ public import Iris.ProofMode.Expr -- shake: keep
 public import Iris.Std.TC -- shake: keep
 public import Iris.ProofMode.Tactics -- shake: keep
 public import Iris.ProofMode.Display -- shake: keep
-import Std.Tactic.BVDecide.Normalize.Prop
 
 @[expose] public section
 

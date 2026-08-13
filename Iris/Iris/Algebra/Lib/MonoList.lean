@@ -5,9 +5,9 @@ Authors: Markus de Medeiros
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.Auth
 public import Iris.Algebra.MaxPrefixList
-import Iris.Std.RocqPorting
 
 /-! # Monotone lists -/
 

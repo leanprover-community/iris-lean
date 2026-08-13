@@ -5,9 +5,9 @@ Authors: Sergei Stepanenko, Zongyuan Liu
 -/
 module
 
-public import Iris.Algebra.Numbers
+public import Iris.Init -- shake: keep
 public import Iris.ProofMode -- shake: keep
-public import Iris.Instances.IProp.Instance
+public import Iris.Instances.IProp -- shake: keep
 
 @[expose] public section
 

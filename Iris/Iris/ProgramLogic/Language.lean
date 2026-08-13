@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.ProofMode -- shake: keep
-import Std.Tactic.BVDecide.Normalize.Prop
 
 #rocq_ignore LanguageMixin "This feature was implemented differently using typeclasses"
 #rocq_ignore language      "This feature was implemented differently using typeclasses"

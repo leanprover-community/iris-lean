@@ -1,5 +1,6 @@
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.ProofMode.Classes
 public import Iris.ProofMode.ClassesMake
 public import Iris.ProofMode.Display

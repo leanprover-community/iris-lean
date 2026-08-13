@@ -5,6 +5,7 @@ Authors: Michael Sammler, Fernando Leal, Klaus Kraßnitzer
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.HeapLang.Lib.Lock
 public import Iris.Instances.Lib.Token
 public import Iris.Instances.Lib.Invariants

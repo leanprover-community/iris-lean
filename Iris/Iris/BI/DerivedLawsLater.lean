@@ -5,10 +5,9 @@ Authors: Michael Sammler
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.BI.BigOp.BigOp
 import Iris.BI.DerivedLaws
-import Iris.Std.Rewrite
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

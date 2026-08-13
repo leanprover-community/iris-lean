@@ -5,9 +5,9 @@ Authors: Michael Sammler, Alvin Tang
 -/
 module -- shake: keep-all
 
+public import Iris.Init -- shake: keep
 public import Qq -- shake: keep
 public import Iris.BI.Notation -- shake: keep
-import Iris.Std.RocqPorting
 
 public meta section
 

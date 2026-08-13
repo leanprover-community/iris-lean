@@ -5,6 +5,7 @@ Authors: Michael Sammler
 -/
 module
 
+public import Iris.Init -- shake: keep
 import IrisTest.Instances
 
 /- This file tests that IPM tactic instances declared in other files are imported and applied correctly. -/

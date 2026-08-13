@@ -5,8 +5,8 @@ Authors: Сухарик (@suhr), Mario Carneiro
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.CMRA
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

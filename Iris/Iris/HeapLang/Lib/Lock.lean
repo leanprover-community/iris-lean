@@ -1,5 +1,6 @@
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.ProgramLogic.WeakestPre
 public import Iris.HeapLang.Instances
 

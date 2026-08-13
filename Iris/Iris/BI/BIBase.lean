@@ -5,12 +5,13 @@ Authors: Lars König, Mario Carneiro
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.BI.Notation
 public import Iris.Std.BigOp
 public meta import Lean.PrettyPrinter.Delaborator.Builtins
-import Iris.Std.DelabRule
-import Iris.Std.RocqPorting
-import Lean.PrettyPrinter.Delaborator.Basic
+public import Iris.Std.DelabRule -- shake: keep
+public import Iris.Std.Classes -- shake: keep
+public import Iris.Std.Rewrite -- shake: keep
 
 @[expose] public section
 

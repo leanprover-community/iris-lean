@@ -1,7 +1,7 @@
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Std.FromMathlib
-import Iris.Std.RocqPorting
 
 open FromMathlib
 

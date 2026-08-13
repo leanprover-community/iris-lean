@@ -4,10 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module -- shake: keep-all
 
+public import Iris.Init -- shake: keep
 public import Iris.ProofMode.Tactics.HaveCore -- shake: keep
 public meta import Lean.Elab.ConfigEval.MetaInstances -- shake: keep
 public meta import Lean.Elab.ConfigEval.DeriveEvalExpr -- shake: keep
-import Lean.Elab.ConfigEval.Commands
 
 namespace Iris.ProofMode
 

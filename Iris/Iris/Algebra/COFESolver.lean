@@ -5,8 +5,8 @@ Authors: Mario Carneiro, Sebastian Graf
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.OFE
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

@@ -5,11 +5,11 @@ Authors: Alok Singh, Markus de Medeiros
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Std.PartialMap
 public import Std.Data.TreeMap -- shake: keep
 public import Std.Data.ExtTreeMap -- shake: keep
 import Batteries.Data.List.Lemmas
-import Iris.Std.RocqPorting
 
 /-!
 # Heap Instances for Standard Types

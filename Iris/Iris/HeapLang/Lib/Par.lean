@@ -5,8 +5,9 @@ Authors: Zongyuan Liu
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.HeapLang.Lib.Spawn
-import Iris.HeapLang.ProofMode
+public import Iris.HeapLang.ProofMode -- shake: keep
 
 namespace Iris.HeapLang
 

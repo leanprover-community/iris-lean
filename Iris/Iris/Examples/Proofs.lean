@@ -5,6 +5,7 @@ Authors: Lars König
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.ProofMode -- shake: keep
 
 @[expose] public section

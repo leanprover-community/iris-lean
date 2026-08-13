@@ -5,8 +5,7 @@ Authors: Zongyuan Liu
 -/
 module -- shake: keep-all
 
-import Iris.Init -- shake: keep
-import Iris.Std.RocqPorting
+public import Iris.Init -- shake: keep
 
 #rocq_ignore_file proofmode "base.v" "Rocq-specific basic functionality"
 #rocq_ignore_file proofmode "coq_tactics.v" "Tracked via the Tactics concept"

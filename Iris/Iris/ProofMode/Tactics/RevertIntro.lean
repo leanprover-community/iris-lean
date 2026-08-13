@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Fernando Leal
 -/
 module -- shake: keep-all
+public import Iris.Init -- shake: keep
 public import Iris.ProofMode.Tactics.Intro -- shake: keep
 public import Iris.ProofMode.Tactics.Revert -- shake: keep
 

@@ -5,13 +5,12 @@ Authors: Haokun Li, Sergei Stepanenko
 -/
 module
 
-public import Iris.BI.DerivedLaws -- shake: keep
+public import Iris.Init -- shake: keep
 public import Iris.BI.DerivedLawsLater -- shake: keep
 public import Iris.BI.Embedding
 import Iris.BI.BigOp.BigSepList
 import Iris.BI.BigOp.BigSepMap
 import Iris.BI.BigOp.BigSepSet
-import Iris.Std.RocqPorting
 
 /-! ### TODO
 

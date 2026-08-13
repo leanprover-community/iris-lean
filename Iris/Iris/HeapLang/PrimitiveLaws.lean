@@ -1,11 +1,11 @@
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.HeapLang.Instances
 public import Iris.ProgramLogic.Adequacy
 public import Iris.BI.Lib.GenHeap
 public import Iris.BI.Lib.ProphMap
 import Iris.ProgramLogic.Lifting
-import Std.Tactic.BVDecide.Normalize.Prop
 
 @[expose] public section
 namespace Iris.HeapLang

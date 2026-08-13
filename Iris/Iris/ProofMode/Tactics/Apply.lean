@@ -5,6 +5,7 @@ Authors: Oliver Soeser, Michael Sammler
 -/
 module -- shake: keep-all
 
+public import Iris.Init -- shake: keep
 public import Iris.BI -- shake: keep
 public import Iris.ProofMode.Tactics.HaveCore -- shake: keep
 

@@ -5,15 +5,13 @@ Authors: Markus de Medeiros, Remy Seassau, Yunsong Yang
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.BI.Plainly
-public import Iris.Std.CoPset
 import Iris.BI.BigOp.BigSepList
-import Iris.BI.DerivedLaws
+public import Iris.BI.DerivedLaws -- shake: keep
 import Iris.BI.DerivedLawsLater
-import Iris.Std.DelabRule
 import Iris.Std.Nat
-import Iris.Std.RocqPorting
-import Lean.PrettyPrinter.Delaborator.Basic
+public import Iris.Algebra -- shake: keep
 
 @[expose] public section
 

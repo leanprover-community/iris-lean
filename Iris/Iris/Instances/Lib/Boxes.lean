@@ -5,6 +5,7 @@ Authors: Sergei Stepanenko, Xiaoyang Lu, Zongyuan Liu
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.Lib.ExclAuth
 public import Iris.Instances.Lib.Invariants
 

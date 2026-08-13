@@ -5,6 +5,7 @@ Authors: Fernando Leal, Klaus Kraßnitzer
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.BI
 public import Iris.Instances
 public import Iris.HeapLang.Notation

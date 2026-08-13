@@ -5,11 +5,11 @@ Authors: Zongyuan Liu, Sergei Stepanenko
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Std.Classes
 public import Iris.Std.Infinite
 import Batteries.Data.List.Perm
 import Iris.Std.List
-import Iris.Std.RocqPorting
 import Std.Data.DTreeMap.Internal.Operations
 
 @[expose] public section

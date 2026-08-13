@@ -5,11 +5,12 @@ Authors: Zongyuan Liu, Markus de Medeiros
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Std.Option
-public import Batteries.Data.List.Basic
 import Batteries.Data.List.Lemmas
-import Iris.Std.RocqPorting
 import Std.Data.DTreeMap.Internal.Operations
+public import Iris.Std.FromMathlib -- shake: keep
+public import Iris.Std.Classes -- shake: keep
 
 /-! # List Lemmas -/
 

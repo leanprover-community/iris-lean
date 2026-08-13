@@ -5,8 +5,8 @@ Authors: Leo Stefanesco, Puming Liu, Sergei Stepanenko
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.IsOp
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

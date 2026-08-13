@@ -5,8 +5,8 @@ Authors: Mario Carneiro, Сухарик (@suhr), Markus de Medeiros, Puming Liu
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.Monoid
-import Iris.Std.RocqPorting
 import Std.Data.DTreeMap.Internal.Operations
 
 @[expose] public section

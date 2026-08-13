@@ -5,8 +5,8 @@ Authors: Zongyuan Liu
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.Updates
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

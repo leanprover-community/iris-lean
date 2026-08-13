@@ -1,5 +1,6 @@
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.Agree
 public import Iris.Algebra.Auth
 public import Iris.Algebra.BigOp
@@ -30,4 +31,3 @@ public import Iris.Algebra.StepIndex
 public import Iris.Algebra.UFrac
 public import Iris.Algebra.Updates
 public import Iris.Algebra.UPred
-import Iris.Std.RocqPorting

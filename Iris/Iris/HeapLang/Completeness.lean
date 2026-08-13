@@ -5,6 +5,7 @@ Authors: Markus de Medeiros
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.HeapLang.PrimitiveLaws
 public import Iris.ProgramLogic.AbstractEctxLangCompleteness
 import Iris.ProgramLogic.Lifting

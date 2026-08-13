@@ -5,9 +5,9 @@ Authors: Markus de Medeiros
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.DFrac
 public import Iris.Algebra.Agree
-import Iris.Std.RocqPorting
 
 /-!
 # The DFrac Agree Camera

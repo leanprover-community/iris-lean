@@ -5,13 +5,13 @@ Authors: Markus de Medeiros, Fernando Leal
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.BI.InternalEq
 public import Iris.Std.Positives
 public import Iris.BI.BigOp.BigOp
 import Iris.BI.BigOp.BigSepList
 import Iris.BI.DerivedLaws
 import Iris.BI.DerivedLawsLater
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

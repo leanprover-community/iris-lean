@@ -5,9 +5,9 @@ Authors: Michael Sammler
 -/
 module -- shake: keep-all
 
+public import Iris.Init -- shake: keep
 public meta import Iris.ProofMode.Tactics.Basic -- shake: keep
 public import Iris.ProofMode.Tactics.Basic
-import Std.Do.Triple.SpecLemmas
 
 namespace Iris.ProofMode
 

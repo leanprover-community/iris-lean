@@ -5,8 +5,8 @@ Authors: Michael Sammler
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.ProgramLogic.Language
-import Std.Tactic.BVDecide.Normalize.Prop
 
 @[expose] public section
 namespace Iris.HeapLang

@@ -5,6 +5,7 @@ Authors: Michael Sammler, Zongyuan Liu, Yunsong Yang, Alvin Tang
 -/
 module -- shake: keep-all
 
+public import Iris.Init -- shake: keep
 public meta import Iris.ProofMode.Expr -- shake: keep
 public import Iris.ProofMode.SynthInstance -- shake: keep
 public import Iris.ProofMode.Classes -- shake: keep

@@ -1,5 +1,6 @@
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.BI.Lib.BUpdPlain
 public import Iris.BI.Lib.Core
 public import Iris.BI.Lib.Counterexamples

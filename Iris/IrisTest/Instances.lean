@@ -5,6 +5,7 @@ Authors: Michael Sammler
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.BI
 public import Iris.ProofMode.SynthInstance
 public import Iris.ProofMode.Instances

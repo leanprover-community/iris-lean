@@ -5,6 +5,7 @@ Authors: Haokun Li, Sergei Stepanenko, Zongyuan Liu
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.ProgramLogic.WeakestPre
 
 namespace Iris.ProgramLogic

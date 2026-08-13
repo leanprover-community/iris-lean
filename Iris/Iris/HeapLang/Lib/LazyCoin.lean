@@ -1,5 +1,6 @@
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.HeapLang.PrimitiveLaws
 import Iris.HeapLang.Lib.NondetBool
 import Iris.HeapLang.ProofMode

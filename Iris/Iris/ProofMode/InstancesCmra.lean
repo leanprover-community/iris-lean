@@ -5,9 +5,9 @@ Authors: Michael Sammler
 -/
 module -- shake: keep-all
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.CMRA -- shake: keep
 public import Iris.ProofMode.Classes -- shake: keep
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

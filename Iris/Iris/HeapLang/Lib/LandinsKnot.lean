@@ -5,6 +5,7 @@ Authors: Alex Bai, Klaus Kraßnitzer
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.HeapLang.PrimitiveLaws
 import Iris.HeapLang.ProofMode
 import Iris.Instances.Lib.Invariants

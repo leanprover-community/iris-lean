@@ -5,6 +5,7 @@ Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
 module -- shake: keep-all
 
+public import Iris.Init -- shake: keep
 public import Iris.ProofMode.Tactics.Basic -- shake: keep
 
 namespace Iris.ProofMode

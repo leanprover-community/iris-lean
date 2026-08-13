@@ -5,6 +5,7 @@ Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang, Alvin Tang
 -/
 module -- shake: keep-all
 
+public import Iris.Init -- shake: keep
 public import Iris.ProofMode.Tactics.Mod -- shake: keep
 public import Iris.ProofMode.Tactics.Pure -- shake: keep
 public import Iris.ProofMode.Tactics.Clear -- shake: keep

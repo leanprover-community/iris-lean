@@ -5,8 +5,8 @@ Authors: Alexander Bai
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.View
-import Iris.Std.RocqPorting
 
 /-!
 # Authoritative Camera

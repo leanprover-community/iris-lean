@@ -5,6 +5,7 @@ Authors: Sergei Stepanenko, Zongyuan Liu
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Instances.Lib.WSat
 public import Iris.Instances.Lib.LaterCredits
 

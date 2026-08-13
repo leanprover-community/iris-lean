@@ -5,6 +5,7 @@ Authors: Markus de Medeiros
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.BI.Lib.MonoNat
 
 @[expose] public section

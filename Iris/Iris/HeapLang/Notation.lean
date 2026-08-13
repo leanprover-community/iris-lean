@@ -5,6 +5,7 @@ Authors: Michael Sammler
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.HeapLang.Syntax
 
 public meta section

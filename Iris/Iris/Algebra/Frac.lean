@@ -5,8 +5,8 @@ Authors: Markus de Medeiros, Shreyas Srinivas, Mario Carneiro
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.IsOp
-import Iris.Std.RocqPorting
 
 /-!
 # The Frac CMRA

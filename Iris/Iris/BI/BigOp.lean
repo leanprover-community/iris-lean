@@ -1,5 +1,6 @@
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.BI.BigOp.BigAndList
 public import Iris.BI.BigOp.BigAndMap
 public import Iris.BI.BigOp.BigOp
@@ -8,4 +9,3 @@ public import Iris.BI.BigOp.BigSepList
 public import Iris.BI.BigOp.BigSepMap
 public import Iris.BI.BigOp.BigSepMSet
 public import Iris.BI.BigOp.BigSepSet
-import Iris.Std.RocqPorting

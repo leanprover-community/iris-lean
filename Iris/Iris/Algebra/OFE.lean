@@ -5,8 +5,8 @@ Authors: Mario Carneiro, Sebastian Graf, Sergei Stepanenko
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Std.Option
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

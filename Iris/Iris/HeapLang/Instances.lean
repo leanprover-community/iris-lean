@@ -5,10 +5,10 @@ Authors: Sergei Stepanenko, Markus de Medeiros
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.HeapLang.Notation
 public import Iris.HeapLang.Semantics
 public import Iris.ProgramLogic.EctxiLanguage
-import Std.Tactic.BVDecide.Normalize.Prop
 
 @[expose] public section
 namespace Iris.HeapLang

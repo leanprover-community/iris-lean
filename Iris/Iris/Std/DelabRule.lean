@@ -6,7 +6,8 @@ Authors: Lars König
 module
 
 public import Iris.Init -- shake: keep
-import Iris.Std.RocqPorting
+public import Lean.PrettyPrinter.Delaborator -- shake: keep
+public import Lean.Parser.Term -- shake: keep
 
 public meta section
 

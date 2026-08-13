@@ -5,8 +5,8 @@ Authors: Lars König
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.BI.Classes
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

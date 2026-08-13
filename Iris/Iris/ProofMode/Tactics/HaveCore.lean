@@ -5,6 +5,7 @@ Authors: Michael Sammler, Zongyuan Liu
 -/
 module -- shake: keep-all
 
+public import Iris.Init -- shake: keep
 public meta import Iris.ProofMode.Patterns.SpecPattern -- shake: keep
 public meta import Iris.ProofMode.Tactics.Specialize -- shake: keep
 public import Iris.ProofMode.Tactics.Specialize

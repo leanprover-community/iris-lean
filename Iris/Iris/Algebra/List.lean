@@ -5,8 +5,8 @@ Authors: Markus de Medeiros
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.BigOp
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

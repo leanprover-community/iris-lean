@@ -5,10 +5,10 @@ Authors: Markus de Medeiros
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.BigOp
 public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.Updates
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

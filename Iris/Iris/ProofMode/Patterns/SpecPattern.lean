@@ -5,9 +5,8 @@ Authors: Oliver Soeser, Zongyuan Liu, Yunsong Yang, Michael Sammler, Alvin Tang
 -/
 module -- shake: keep-all
 
-public import Lean.Syntax -- shake: keep
 public import Iris.Init -- shake: keep
-import Iris.Std.RocqPorting
+public import Lean.Syntax -- shake: keep
 
 @[expose] public section
 

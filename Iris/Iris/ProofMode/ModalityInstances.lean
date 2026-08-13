@@ -5,9 +5,9 @@ Authors: Markus de Medeiros, Michael Sammler
 -/
 module -- shake: keep-all
 
+public import Iris.Init -- shake: keep
 public import Iris.ProofMode.Classes -- shake: keep
 public import Iris.BI.Instances -- shake: keep
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

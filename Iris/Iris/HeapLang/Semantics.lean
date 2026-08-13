@@ -4,8 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.HeapLang.Syntax
-import Std.Tactic.BVDecide.Normalize.Prop
+public import Iris.HeapLang.Linter -- shake: keep
 
 @[expose] public section
 namespace Iris.HeapLang

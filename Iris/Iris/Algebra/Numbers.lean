@@ -5,9 +5,9 @@ Authors: Shreyas Srinivas, Markus de Medeiros, Fernando Leal
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.IsOp
 public import Iris.Algebra.LocalUpdates
-import Iris.Std.RocqPorting
 
 /-! ## Numbers CMRAs
 For simple numerical types which form commutative monoids, there are three classes of CMRA:

@@ -1,5 +1,6 @@
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Examples.ClosedProofs
 public import Iris.Examples.Fix
 public import Iris.Examples.HeapLang

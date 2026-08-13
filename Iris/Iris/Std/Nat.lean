@@ -6,7 +6,6 @@ Authors: Markus de Medeiros
 module
 
 public import Iris.Init -- shake: keep
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

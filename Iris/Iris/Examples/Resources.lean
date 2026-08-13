@@ -5,8 +5,8 @@ Authors: Markus de Medeiros
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.ProofMode -- shake: keep
-public import Iris.Algebra.IProp
 public import Iris.Instances.UPred.Instance
 
 @[expose] public section

@@ -5,9 +5,9 @@ Authors: Markus de Medeiros, Puming Liu
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.Heap
 public import Iris.Algebra.View
-import Iris.Std.RocqPorting
 
 /-!
 # Heap Views

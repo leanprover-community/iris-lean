@@ -5,6 +5,7 @@ Authors: Lars König, Oliver Soeser, Michael Sammler, Yunsong Yang, Alvin Tang
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.BI
 public import Iris.ProofMode
 public import Iris.Instances.IProp

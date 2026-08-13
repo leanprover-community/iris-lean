@@ -5,12 +5,12 @@ Authors: Markus de Medeiros
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.Agree
 public import Iris.Algebra.Heap
 public import Iris.Algebra.List
 public import Iris.Algebra.LocalUpdates
 public import Iris.Std.HeapInstances
-import Iris.Std.RocqPorting
 
 /-! # Max prefix lists
 

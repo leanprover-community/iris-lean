@@ -1,5 +1,6 @@
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Instances.Lib.Boxes
 public import Iris.Instances.Lib.CInvariants
 public import Iris.Instances.Lib.FUpd

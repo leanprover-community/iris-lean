@@ -5,12 +5,12 @@ Authors: Zongyuan Liu, Markus de Medeiros, Sergei Stepanenko
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.CMRA
 public import Iris.Std.List
 public import Iris.Std.PartialMap
 public import Iris.Std.GenMultiSets
 import Iris.Std.Equivalence
-import Iris.Std.RocqPorting
 
 namespace Iris.Algebra
 

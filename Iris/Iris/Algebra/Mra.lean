@@ -5,9 +5,9 @@ Authors: Zongyuan Liu
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.LocalUpdates
 public import Iris.Std.Classes
-import Iris.Std.RocqPorting
 
 /-!
 # Monotone resource algebras

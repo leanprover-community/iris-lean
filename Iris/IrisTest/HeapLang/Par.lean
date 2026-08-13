@@ -5,6 +5,7 @@ Authors: Klaus Kraßnitzer
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.HeapLang.Lib.Par
 
 @[expose] public section

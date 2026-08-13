@@ -1,5 +1,6 @@
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.BI.Algebra
 public import Iris.BI.BI
 public import Iris.BI.BIBase
@@ -19,4 +20,3 @@ public import Iris.BI.Sbi
 public import Iris.BI.SIProp
 public import Iris.BI.Updates
 public import Iris.BI.WeakestPre
-import Iris.Std.RocqPorting

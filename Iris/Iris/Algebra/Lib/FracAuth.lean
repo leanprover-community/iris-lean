@@ -5,8 +5,8 @@ Authors: Markus de Medeiros
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.Auth
-import Iris.Std.RocqPorting
 
 /-!
 # Fractional Authoritative Camera

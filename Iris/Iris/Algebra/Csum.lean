@@ -5,9 +5,9 @@ Authors: Markus de Medeiros
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.Updates
 public import Iris.Algebra.LocalUpdates
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

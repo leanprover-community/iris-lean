@@ -5,6 +5,7 @@ Authors: Zongyuan Liu, Klaus Kraßnitzer
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Instances.Lib.Token
 public import Iris.Instances.Lib.Invariants
 public import Iris.HeapLang.PrimitiveLaws

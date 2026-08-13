@@ -5,8 +5,8 @@ Authors: Markus de Medeiros
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.Algebra.Frac
-import Iris.Std.RocqPorting
 
 /-!
 # The UFrac CMRA

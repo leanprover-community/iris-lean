@@ -5,6 +5,7 @@ Authors: Lars König, Mario Carneiro
 -/
 module -- shake: keep-all
 
+public import Iris.Init -- shake: keep
 public import Iris.ProofMode.Expr -- shake: keep
 public import Lean.PrettyPrinter.Delaborator.Basic
 meta import Iris.ProofMode.Expr

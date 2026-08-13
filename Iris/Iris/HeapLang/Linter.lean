@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
-public meta import Lean.Elab.Command
+public import Iris.Init -- shake: keep
 import Iris.HeapLang.Notation
 
 public meta section

@@ -1,5 +1,6 @@
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.HeapLang.Lib.Arith
 public import Iris.HeapLang.Lib.Assert
 public import Iris.HeapLang.Lib.Diverge

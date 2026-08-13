@@ -5,13 +5,10 @@ Authors: Fernando Leal, Klaus Kraßnitzer
 -/
 module
 
+public import Iris.Init -- shake: keep
 public import Iris.HeapLang.Tactic
 public import Iris.HeapLang.PrimitiveLaws
-public meta import Lean.Meta.Tactic.Simp.BuiltinSimprocs.Core
-public meta import Lean.Meta.Tactic.Simp.BuiltinSimprocs.String
-public import Std.Tactic.BVDecide.Normalize.Prop
-import Iris.ProgramLogic.Lifting
-import Lean.Meta.Tactic.Simp.Simproc
+public import Iris.ProgramLogic.Lifting -- shake: keep
 
 namespace Iris.ProofMode
 
