@@ -142,9 +142,10 @@ instance (priority := low) intoWand_affine_embed_true q
         _ ⊢ <affine> ⎡Q⎤           := affinely_of_intuitionistically
 
 @[rocq_alias into_wand_affine_embed_false]
-instance (priority := low) intoWand_affine_embed_false q m
-    (P Q R : PROP1) [inst : IntoWand false q R (.matching .argument) iprop(<affine> P) Q] :
-    IntoWand (PROP := PROP2) false q iprop(⎡R⎤) m iprop(<affine> ⎡P⎤) iprop(⎡Q⎤) where
+instance (priority := low) intoWand_affine_embed_false q (P Q R : PROP1)
+    [inst : IntoWand false q R (.matching .argument) iprop(<affine> P) Q] :
+    IntoWand (PROP := PROP2) false q iprop(⎡R⎤) (.matching .argument)
+      iprop(<affine> ⎡P⎤) iprop(⎡Q⎤) where
   into_wand := by
     calc
       _ ⊢ ⎡□?q (<affine> P) -∗ Q⎤   := embed_mono inst.into_wand
