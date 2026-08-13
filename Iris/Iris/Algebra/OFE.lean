@@ -45,10 +45,10 @@ theorem OFE.eq_dist_1 {SI} [SIdx SI] {α} [self : IOFE SI α] {x y : α} :
 theorem OFE.eq_dist_2 {SI} [SIdx SI] {α} [self : IOFE SI α] {x y : α} :
   (∀ n, OFE.Dist (SI:=SI) n x y) → x = y := OFE.eq_dist.mpr
 
-namespace OFE
-
-variable [instSI : SIdx SI]
+variable {SI : Type _} [instSI : SIdx SI]
 local stepindex SI
+
+namespace OFE
 
 
 @[rocq_alias dist_equivalence]
@@ -930,9 +930,6 @@ instance [SIdx SI] [IOFE SI α] : CoeFun (Chain (SI := SI) α) (fun _ => SI → 
 
 namespace Chain
 
-variable {SI : Type _} [SIdx SI]
-local stepindex SI
-
 /-- The constant chain. -/
 @[rocq_alias chain_const]
 def const [OFE α] (a : α) : Chain α where
@@ -999,9 +996,6 @@ structure BChain (α : Type _) [SIdx SI] [IOFE SI α] (n : SI) where
   bcauchy {m p} (hm : m < n) (hp : p < n) (h : m ≤ p) : bchain p hp ≡{m}≡ bchain m hm
 
 namespace BChain
-
-variable [SIdx SI]
-local stepindex SI
 variable [OFE α] [OFE β]
 
 @[rocq_alias bchain_map]
@@ -1050,9 +1044,6 @@ class abbrev ICOFE (SI : Type _) [SIdx SI] (α : Type _) := COFE (SI := SI) α
 
 namespace COFE
 export IsCOFE (compl conv_compl)
-
-variable {SI : Type _} [SIdx SI]
-local stepindex SI
 
 @[rocq_alias conv_compl_le]
 theorem conv_compl' [COFE α] {c : Chain α} {n i} (h : n ≤ i) : compl c ≡{n}≡ c i :=
@@ -1316,10 +1307,6 @@ end COFE
   car : α
 
 section DiscreteO
-
-variable {SI : Type _} [SIdx SI]
-local stepindex SI
-
 instance : COFE (DiscreteO α) := COFE.ofDiscrete _
 instance {α : Type _} : OFE.Discrete (DiscreteO α) := ⟨fun h => h⟩
 
@@ -1335,9 +1322,6 @@ end DiscreteO
 
 section DiscreteFunOF
 open COFE
-
-variable [SIdx SI]
-local stepindex SI
 
 abbrev DiscreteFunOF {C : Type _} (F : C → OFunctorPre) : OFunctorPre :=
   fun A B _ _ => (c : C) → F c A B
@@ -1359,9 +1343,6 @@ instance oFunctor_discreteFunOF_contractive {C} (F : C → OFunctorPre)
 end DiscreteFunOF
 
 section Option
-
-variable [SIdx SI]
-local stepindex SI
 variable [OFE α]
 
 @[rocq_alias option_chain]
@@ -1454,9 +1435,6 @@ end Option
 section OptionOF
 open COFE
 
-variable [SIdx SI]
-local stepindex SI
-
 abbrev OptionOF (F : OFunctorPre) : OFunctorPre :=
   fun A B _ _ => Option (F A B)
 
@@ -1489,9 +1467,6 @@ end OptionOF
 section ProdOF
 
 open COFE
-
-variable [SIdx SI]
-local stepindex SI
 variable [OFE A] [OFE A'] [OFE B] [OFE B']
 
 @[rocq_alias prod_map_ne]
@@ -1547,9 +1522,6 @@ end ProdOF
 section SumOF
 
 open COFE
-
-variable [SIdx SI]
-local stepindex SI
 variable [OFE A] [OFE A'] [OFE B] [OFE B']
 
 @[rocq_alias sum_map_ne]
@@ -1612,9 +1584,6 @@ section SigmaOF
 
 open COFE
 
-variable [SIdx SI]
-local stepindex SI
-
 @[rocq_alias sigT_map]
 def Sigma.mapO {P1 P2 : A → Type _} [∀ x, OFE (P1 x)] [∀ x, OFE (P2 x)] :
   ((a : A) → P1 a -n> P2 a) -n> Sigma P1 -n> Sigma P2 where
@@ -1647,9 +1616,6 @@ section constOF
 
 open COFE
 
-variable [SIdx SI]
-local stepindex SI
-
 abbrev constOF (B : Type) : OFunctorPre := fun _ _ _ _ => B
 
 @[rocq_alias constOF]
@@ -1670,9 +1636,6 @@ section IdOF
 
 open COFE
 
-variable [SIdx SI]
-local stepindex SI
-
 abbrev IdOF : OFunctorPre := fun (_ : Type _) (B : Type _) (_ : COFE _) (_ : COFE B) => B
 
 open OFunctor in
@@ -1690,8 +1653,6 @@ section HomOF
 
 open COFE
 
-variable [SIdx SI]
-local stepindex SI
 variable [OFE A] [OFE A'] [OFE B] [OFE B']
 
 @[rocq_alias ofe_morO_map]
@@ -1735,9 +1696,6 @@ instance instOFunctorContractiveHomOF [OFunctorContractive F1] [OFunctorContract
 end HomOF
 
 section Fixpoint
-
-variable [instSI : SIdx SI]
-local stepindex SI
 
 @[rocq_alias LimitPreserving]
 class LimitPreserving [COFE α] (P : α → Prop) : Prop where
@@ -1984,9 +1942,6 @@ section FixpointAB
 
 open OFE
 
-variable [SIdx SI]
-local stepindex SI
-
 instance [OFE α] [OFE β] [OFE γ] : CoeFun (α -c> β -n> γ) (fun _ => α → β → γ) := ⟨fun f x => (f.f x).f⟩
 instance [OFE α] [OFE β] [OFE γ] : CoeFun (α -c> β -c> γ) (fun _ => α → β → γ) := ⟨fun f x => (f.f x).f⟩
 
@@ -2092,9 +2047,6 @@ end FixpointAB
 
 section Later
 
-variable [SIdx SI]
-local stepindex SI
-
 @[rocq_alias later] structure Later (A : Type u) : Type u where
   next :: car : A
 
@@ -2162,9 +2114,6 @@ end Later
 section LaterOF
 open COFE
 
-variable [SIdx SI]
-local stepindex SI
-
 abbrev LaterOF (F : OFunctorPre) : OFunctorPre :=
   fun A B _ _ => Later (F A B)
 
@@ -2185,7 +2134,7 @@ instance instOFunctorContractiveLater [OFunctor F] : OFunctorContractive (LaterO
 
 end LaterOF
 
-theorem OFE.cast_dist [SIdx SI] [Iα : IOFE SI α] [Iβ : IOFE SI β] {x y : α}
-    (Ht : α = β) (HIt : Iα = Ht ▸ Iβ)  (H : x ≡{(n : SI)}≡ y) :
+theorem OFE.cast_dist [Iα : OFE α] [Iβ : OFE β] {x y : α}
+    (Ht : α = β) (HIt : Iα = Ht ▸ Iβ)  (H : x ≡{n}≡ y) :
     (Ht ▸ x) ≡{n}≡ (Ht ▸ y) := by
   subst Ht; subst HIt; exact H
