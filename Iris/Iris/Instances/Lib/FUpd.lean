@@ -652,6 +652,11 @@ theorem tac_lc_add_laterN_full' {GF : BundledGFunctors} [InvGS GF]
 
 public meta section
 
+/-- The `ElimModal` instance shape needed to eliminate a fancy update at the goal. -/
+abbrev ElimFUpdGoal (GF : BundledGFunctors) [InvGS GF]
+    (φ : Prop) (E : CoPset) (goal Q : IProp GF) : Prop :=
+  ElimModal φ false .in false iprop(|={E}=> goal) goal goal Q
+
 elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
   let n : Q(Nat) ← match t with
   | none => pure <| mkNatLit 1
@@ -661,45 +666,42 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
     instantiateMVars n
 
   ProofModeM.runTactic `inext λ mvar { u, prop, bi, e, hyps, goal, .. } => do
-    let .defEq _ ← isLevelDefEqQ u 0
-      | throwError "inext: the goal must be an `IProp` at universe level 0"
-    let ~q(IProp $GF) := prop
-      | throwError "inext: the goal must be an `IProp`"
-    let .some instInvGS ← trySynthInstanceQ q(InvGS $GF)
-      | throwError "inext: requires an InvGS (HasLC) context"
-    let ~q(UPred.instBIUPred) := bi
-      | throwError "Expected the BI implementation of `IProp` to be `UPred.instBIUPred`"
-
     -- Search for the later credit hypothesis from the context
     let ivar ← hyps.findWithInfo h
     let some ⟨name, _, p, ty⟩ := hyps.getDecl? ivar
       | throwError m!"inext: unknown hypothesis {h}"
     if isTrue p then throwError "inext: {h} is not in the spatial context"
-    let ~q(£ $c) := ty
+    let some #[_, _, _, c] := Expr.appM? ty ``lc
       | throwError m!"inext: {h} is not a spatial later credit hypothesis"
+    let some #[GF] := Expr.appM? prop ``IProp
+      | throwError "inext: the goal must be an `IProp`"
     let ⟨e', hyps', _, _, _, _, pfEq⟩ := hyps.remove false ivar
+    let .some instInvGS ← trySynthInstance (mkApp (.const ``InvGS []) GF)
+      | throwError "inext: requires an InvGS (HasLC) context"
 
     let φ ← mkFreshExprMVarQ q(Prop)
     let E ← mkFreshExprMVarQ q(CoPset)
     let Q' ← mkFreshExprMVarQ q($prop)
-    let some inst ← ProofModeM.trySynthInstanceQ q(ElimModal $φ false .in false iprop(|={$E}=> $goal) $goal $goal $Q')
+    let elimTy := mkAppN (.const ``ElimFUpdGoal []) #[GF, instInvGS, φ, E, goal, Q']
+    let .some ⟨inst, _⟩ ← ProofMode.trySynthInstance elimTy
     | throwError "inext: ElimModal type class synthesis failed with {goal}"
     unless ← isDefEq Q' goal do
       throwError "inext: eliminating the fancy update does not preserve the goal {goal}"
-    have inst : Q(ElimModal $φ false .in false iprop(|={$E}=> $goal) $goal $goal $goal) := inst
 
     let hφ ← iSolveSidecondition q($φ)
 
     let newC ← mkFreshExprMVarQ q(Nat)
     let newN ← mkFreshExprMVarQ q(Nat)
     let stuck ← mkFreshExprMVarQ q(Bool)
+    have c : Q(Nat) := c
     let some hcancel ← ProofModeM.trySynthInstanceQ q(NatCancel $c $n $newC $newN $stuck)
       | throwError "inext: unable to cancel {n} later credits from {c}"
     let newC : Q(Nat) ← instantiateMVars newC
     unless ← isDefEq newN q(0) do
       throwError "inext: insufficient credits"
 
-    let modality := q(@modality_laterN $prop $n $bi)
+    have modality : Q(@Modality $prop $prop $bi $bi) :=
+      mkAppN (.const ``modality_laterN [.zero]) #[prop, n, bi]
     let mkLC (k : Expr) : Expr := mkApp ty.appFn! k
 
     match newC.nat? with
