@@ -448,7 +448,7 @@ variable (q : Qp) in
 /-
   Splitting a pair:
   `isOp_pair`, `isOp_pair_core_id_l`, `isOp_pair_core_id_r` and `isOp_some` are used.
-  Backtracking is involved after `isOp_pair_core_id_r` fails to split the first
+  Backtracking is involved after `isOp_pair_core_id_r` fails to split the second
   half of the pair.
 -/
 /-- info:
