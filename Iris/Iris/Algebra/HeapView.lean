@@ -276,7 +276,7 @@ instance [Hdq : CoreId dq] [Hv1 : CoreId v1] : CoreId (Frag (H := H) k dq v1) wh
     obtain ⟨H⟩ := Hdq
     simp [CMRA.pcore] at H
     simp only [CMRA.pcore, View.Pcore]
-    refine congrArg some (congrArg (View.mk _) (singleton_core_eqv ?_))
+    refine congrArg some (congrArg (View.mk _) (singleton_core_eq ?_))
     simp [CMRA.pcore, Prod.pcore]
     cases h : CMRA.pcore v1
     · exact OFE.not_none_eqv_some (h ▸ Hv1.core_id) |>.elim
@@ -522,7 +522,7 @@ theorem heapR_map_eq [COFE A] [COFE B] [COFE A'] [COFE B'] [RFunctor T] (f : A' 
       constructor <;> simp_all
       exact (NonExpansive.ne he2)
     · right
-      rw [<-Prod.incN_iff] at *
+      rw [Prod.mk_incN_mk] at *
       rcases he with ⟨_ , he⟩
       constructor
       · simp_all

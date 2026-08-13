@@ -8,7 +8,6 @@ module
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.OFE
 public import Iris.Algebra.IsOp
-meta import Iris.Std.RocqPorting
 
 /-!
 # The Frac CMRA

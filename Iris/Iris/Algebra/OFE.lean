@@ -6,7 +6,6 @@ Authors: Mario Carneiro, Sebastian Graf, Sergei Stepanenko
 module
 
 public import Iris.Std.Option
-public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -366,6 +365,15 @@ instance : OFE Unit where
 
 instance : DiscreteE (() : Unit) := ⟨fun _ => Subsingleton.elim _ _⟩
 
+@[rocq_alias Empty_set_ofe_mixin]
+instance : OFE Empty where
+  Dist _ _ _ := True
+  dist_eqv := ⟨fun _ => ⟨⟩, id, fun _ => id⟩
+  eq_dist {x} := x.elim
+  dist_lt _ _ := ⟨⟩
+#rocq_ignore Empty_setO "Use the empty type"
+#rocq_ignore Empty_set_dist "Local Dist instance; folded into Lean's OFE Empty instance."
+
 instance [OFE α] : OFE (ULift α) where
   Dist n x y := x.down ≡{n}≡ y.down
   dist_eqv := InvImage.equivalence dist_eqv
@@ -427,6 +435,13 @@ theorem dist_some [OFE α] {n mx y} (h : mx ≡{n}≡ some y) :
     match mx with
     | some t => ⟨t, rfl, (e2 ▸ e1 : some t ≡{n}≡ some y)⟩
     | none => False.elim (e2 ▸ e1 : none ≡{n}≡ some y)
+
+/-- Data-valued form of `dist_some`, for building the witnesses of `CMRA.extend`. -/
+def distSome [OFE α] {n} {mx : Option α} {y : α} (h : mx ≡{n}≡ some y) :
+    (z : α) ×' mx = some z ∧ y ≡{n}≡ z :=
+  match mx, h with
+  | some _, h => ⟨_, rfl, h.symm⟩
+  | none, h => h.elim
 
 instance [OFE α] [Discrete α] : Discrete (Option α) where
   discrete_0 {x y} H :=
@@ -1014,6 +1029,15 @@ instance : COFE Unit where
   compl _ := ()
   conv_compl := ⟨⟩
 
+@[rocq_alias Empty_set_ofe_discrete]
+instance : Discrete Empty where
+  discrete_0 {x} _ := x.elim
+
+@[rocq_alias Empty_set_cofe]
+instance : COFE Empty where
+  compl c := (c 0).elim
+  conv_compl {_ c} := (c 0).elim
+
 abbrev IsCOFEFun {α : Type _} (β : α → Type _) [OFEFun β] := ∀ x : α, IsCOFE (β x)
 
 instance instIsCOFEOption [OFE α] [IsCOFE α] : IsCOFE (Option α) where
@@ -1147,6 +1171,75 @@ theorem DiscreteO.eqv_inj {x y : α} (H : DiscreteO.mk x = DiscreteO.mk y) : x =
 
 theorem DiscreteO.dist_inj {x y : α} {n} (H : DiscreteO.mk x ≡{n}≡ DiscreteO.mk y) : x = y :=
   DiscreteO.eqv_inj <| discrete H
+
+section ComposeOF
+open COFE
+
+/-- The composition of two functors, `F₁` applied to `F₂`. -/
+abbrev ComposeOF (F₁ F₂ : OFunctorPre) [OFunctor F₂]
+    [∀ α β, [COFE α] → [COFE β] → IsCOFE (F₂ α β)] : OFunctorPre :=
+  fun α β _ _ => F₁ (F₂ β α) (F₂ α β)
+
+theorem COFE.OFunctor.map_id_eq {F : OFunctorPre} [OFunctor F] [COFE α] [COFE β] :
+    OFunctor.map (F := F) (Hom.id (α := α)) (Hom.id (α := β)) = Hom.id :=
+  Hom.ext (funext fun y => OFunctor.map_id y)
+
+theorem COFE.OFunctor.map_comp_eq {F : OFunctorPre} [OFunctor F]
+    [COFE α₁] [COFE α₂] [COFE α₃] [COFE β₁] [COFE β₂] [COFE β₃]
+    (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) :
+    OFunctor.map (F := F) (f.comp g) (g'.comp f') =
+      (OFunctor.map g g').comp (OFunctor.map f f') :=
+  Hom.ext (funext fun y => OFunctor.map_comp f g f' g' y)
+
+theorem COFE.OFunctorContractive.map_distLater {F : OFunctorPre} [OFunctorContractive F]
+    [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] {n} {f₁ f₂ : α₂ -n> α₁} {g₁ g₂ : β₁ -n> β₂}
+    (hf : DistLater n f₁ f₂) (hg : DistLater n g₁ g₂) (x : F α₁ β₁) :
+    OFunctor.map f₁ g₁ x ≡{n}≡ OFunctor.map f₂ g₂ x :=
+  map_contractive.1 (x := (f₁, g₁)) (y := (f₂, g₂)) (fun m hm => ⟨hf m hm, hg m hm⟩) x
+
+variable {F₁ F₂ : OFunctorPre} [OFunctor F₂] [∀ α β, [COFE α] → [COFE β] → IsCOFE (F₂ α β)]
+
+open OFunctor in
+@[rocq_alias oFunctor_oFunctor_compose]
+instance oFunctor_composeOF [OFunctor F₁] : OFunctor (ComposeOF F₁ F₂) where
+  ofe := _
+  map f g := map (F := F₁) (map (F := F₂) g f) (map (F := F₂) f g)
+  map_ne.ne _ _ _ hf _ _ hg _ :=
+    (map_ne (F := F₁)).ne (fun _ => (map_ne (F := F₂)).ne hg hf _)
+      (fun _ => (map_ne (F := F₂)).ne hf hg _) _
+  map_id _ := by
+    simp only [map_id_eq]
+    rfl
+  map_comp _ _ _ _ _ := by
+    simp only [map_comp_eq]
+    rfl
+
+open OFunctor OFunctorContractive in
+@[rocq_alias oFunctor_oFunctor_compose_contractive_1]
+instance oFunctor_composeOF_contractive_left [OFunctorContractive F₁] :
+    OFunctorContractive (ComposeOF F₁ F₂) where
+  map_contractive := ⟨fun {_ _ _} h x =>
+    map_distLater (F := F₁)
+      (fun m hm _ => (map_ne (F := F₂)).ne (h m hm).2 (h m hm).1 _)
+      (fun m hm _ => (map_ne (F := F₂)).ne (h m hm).1 (h m hm).2 _) x⟩
+
+end ComposeOF
+
+section ComposeOFContractive
+open COFE OFunctor OFunctorContractive
+
+variable {F₁ F₂ : OFunctorPre} [OFunctorContractive F₂]
+  [∀ α β, [COFE α] → [COFE β] → IsCOFE (F₂ α β)]
+
+@[rocq_alias oFunctor_oFunctor_compose_contractive_2]
+instance oFunctor_composeOF_contractive_right [OFunctor F₁] :
+    OFunctorContractive (ComposeOF F₁ F₂) where
+  map_contractive := ⟨fun {_ _ _} h x =>
+    (map_ne (F := F₁)).ne
+      (fun _ => map_distLater (F := F₂) (fun m hm => (h m hm).2) (fun m hm => (h m hm).1) _)
+      (fun _ => map_distLater (F := F₂) (fun m hm => (h m hm).1) (fun m hm => (h m hm).2) _) x⟩
+
+end ComposeOFContractive
 
 section DiscreteFunOF
 open COFE

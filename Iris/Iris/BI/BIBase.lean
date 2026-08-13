@@ -5,12 +5,11 @@ Authors: Lars König, Mario Carneiro
 -/
 module
 
-public meta import Iris.BI.Notation
+public import Iris.BI.Notation
 public import Iris.Std.Classes
-public meta import Iris.Std.DelabRule
-public meta import Iris.Std.Rewrite
+public import Iris.Std.DelabRule
+public import Iris.Std.Rewrite
 public import Iris.Std.BigOp
-public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -279,12 +278,26 @@ delab_rule intuitionistically
 def laterN [BIBase PROP] (n : Nat) (P : PROP) : PROP := n.repeat later P
 
 syntax:max "▷^[" term:45 "] " term:40 : term
+syntax:max "▷?" term:max ppHardSpace term:40 : term
 
 macro_rules
-  | `(iprop(▷^[%$tk1 $n ]%$tk2 $P))   => ``($(wrapIpropSpan tk1 tk2 ``laterN) $n iprop($P))
+  | `(iprop(▷^[%$tk1 $n ]%$tk2 $P)) => ``($(wrapIpropSpan tk1 tk2 ``laterN) $n iprop($P))
+  | `(iprop(▷?%$tk $p $P))          => ``($(wrapIprop tk ``laterN) (Bool.toNat $p) iprop($P))
 
-delab_rule laterN
-  | `($_ $n $P) => do ``(iprop(▷^[$n] $(← unpackIprop P)))
+open Lean PrettyPrinter Delaborator SubExpr in
+/--
+Delaborator for `laterN`. Prints `▷?p P` when the exponent is `Bool.toNat p`, i.e. when the
+term came from the `▷?` notation, and `▷^[n] P` otherwise.
+-/
+@[app_delab laterN]
+meta def delabLaterN : Delab := whenPPOption getPPNotation <| withOverApp 4 do
+  let P ← withNaryArg 3 do unpackIprop (← delab)
+  if (← getExpr).appFn!.appArg!.isAppOfArity ``Bool.toNat 1 then
+    let p ← withNaryArg 2 <| withAppArg delab
+    `(iprop(▷?$p $P))
+  else
+    let n ← withNaryArg 2 delab
+    `(iprop(▷^[$n] $P))
 
 /--
   Conditional persistently modality:
@@ -310,24 +323,17 @@ def absorbinglyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then 
 -/
 @[rocq_alias bi_intuitionistically_if]
 def intuitionisticallyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then □ P else P)
-/--
-  Conditional later modality:
-  `▷?p P` is equivalent to `▷ P` when `p` is `true`, otherwise equivalent to `P`.
--/
-@[reducible] def laterIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(▷^[p.toNat] P)
 
 syntax:max "<pers>?" term:max ppHardSpace term:40 : term
 syntax:max "<affine>?" term:max ppHardSpace term:40 : term
 syntax:max "<absorb>?" term:max ppHardSpace term:40 : term
 syntax:max "□?" term:max ppHardSpace term:40 : term
-syntax:max "▷?" term:max ppHardSpace term:40 : term
 
 macro_rules
   | `(iprop(<pers>?%$tk $p $P))   => ``($(wrapIprop tk ``persistentlyIf) $p iprop($P))
   | `(iprop(<affine>?%$tk $p $P)) => ``($(wrapIprop tk ``affinelyIf) $p iprop($P))
   | `(iprop(<absorb>?%$tk $p $P)) => ``($(wrapIprop tk ``absorbinglyIf) $p iprop($P))
   | `(iprop(□?%$tk $p $P))        => ``($(wrapIprop tk ``intuitionisticallyIf) $p iprop($P))
-  | `(iprop(▷?%$tk $p $P))       => ``($(wrapIprop tk ``laterIf) $p iprop($P))
 
 delab_rule persistentlyIf
   | `($_ $p $P) => do ``(iprop(<pers>?$p $(← unpackIprop P)))
@@ -337,8 +343,6 @@ delab_rule absorbinglyIf
   | `($_ $p $P) => do ``(iprop(<absorb>?$p $(← unpackIprop P)))
 delab_rule intuitionisticallyIf
   | `($_ $p $P) => do ``(iprop(□?$p $(← unpackIprop P)))
-delab_rule laterIf
-  | `($_ $p $P) => do ``(iprop(▷?$p $(← unpackIprop P)))
 
 /-- Fold the conjunction `∧` over a list of separation logic propositions. -/
 def bigAnd [BIBase PROP] (Ps : List PROP) : PROP := bigOp and iprop(True) Ps

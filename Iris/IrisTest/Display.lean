@@ -9,9 +9,8 @@ module
 import Lean
 public import Iris.ProofMode
 
-open Lean Elab Meta
-
-namespace Iris.Tests
+namespace IrisTest
+open Lean Elab Meta Iris
 
 meta section
 
@@ -45,7 +44,7 @@ elab "trace_delab" : tactic => do
 
 end
 
-section
+section InfoViewIPM
 
 /-
   Tests delaboration of an IPM goal with only separating conjunctions and
@@ -208,4 +207,36 @@ example [BI PROP] (Q : PROP) (n : Nat) :
   icases Hwand $$ %2 HQ with %_
   grind
 
-end
+end InfoViewIPM
+
+section LaterIf
+
+/- `▷?p P` is always delaborated as the same syntax. -/
+/--
+info: fun {PROP} [BI PROP] p P => iprop(▷?p P) : {PROP : Type u_1} → [BI PROP] → Bool → PROP → PROP
+-/
+#guard_msgs in
+#check fun {PROP} [BI PROP] (p : Bool) (P : PROP) => iprop(▷?p P)
+
+/- `▷^[p.toNat]` is always delaborated as `▷?p P`. -/
+/--
+info: fun {PROP} [BI PROP] p P => iprop(▷?p P) : {PROP : Type u_1} → [BI PROP] → Bool → PROP → PROP
+-/
+#guard_msgs in
+#check fun {PROP} [BI PROP] (p : Bool) (P : PROP) => iprop(▷^[p.toNat] P)
+
+/- `▷^[0]` is always delaborated as the same syntax, no `▷?false` involved. -/
+/--
+info: fun {PROP} [BI PROP] P => iprop(▷^[0] P) : {PROP : Type u_1} → [BI PROP] → PROP → PROP
+-/
+#guard_msgs in
+#check fun {PROP} [BI PROP] (P : PROP) => iprop(▷^[0] P)
+
+/- `▷^[1]` is always delaborated as the same syntax, no `▷?true` involved. -/
+/--
+info: fun {PROP} [BI PROP] P => iprop(▷^[1] P) : {PROP : Type u_1} → [BI PROP] → PROP → PROP
+-/
+#guard_msgs in
+#check fun {PROP} [BI PROP] (P : PROP) => iprop(▷^[1] P)
+
+end LaterIf

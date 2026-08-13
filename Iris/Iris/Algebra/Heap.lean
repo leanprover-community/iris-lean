@@ -11,6 +11,8 @@ public import Iris.Algebra.OFE
 public import Iris.Algebra.IsOp
 public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.Updates
+public import Iris.Algebra.List
+public import Iris.Algebra.BigOp
 public import Iris.Std.Infinite
 public import Iris.Std.Set
 public import Iris.Std.PartialMap
@@ -26,7 +28,7 @@ open OFE
 
 namespace PartialMap
 
-@[rocq_alias gmap_dist, rocq_alias gmap_ofe_mixin, rocq_alias gmapO]
+@[rocq_alias gmap_ofe_mixin, rocq_alias gmapO]
 instance instOFE [LawfulPartialMap M K] [OFE V] : OFE (M V) where
   Dist n s0 s1 := get? s0 ≡{n}≡ get? s1
   dist_eqv     := ⟨fun _ => .of_eq rfl, (·.symm), (·.trans ·)⟩
@@ -34,6 +36,8 @@ instance instOFE [LawfulPartialMap M K] [OFE V] : OFE (M V) where
     rw [← LawfulPartialMap.equiv_iff_eq]
     exact ⟨fun h n k => Dist.of_eq (h k), fun h k => eq_dist.mpr fun n => h n k⟩
   dist_lt      := dist_lt
+
+#rocq_ignore gmap_dist "Included in the OFE instance"
 
 @[simp] def toMap [LawfulPartialMap M K] [OFE V] : (M V) -n> (K → Option V) where
   f x := get? x
@@ -43,9 +47,20 @@ instance instOFE [LawfulPartialMap M K] [OFE V] : OFE (M V) where
   f x := of_fun x
   ne.1 {_ _ _} H k := by simp only [get_of_fun, H k]
 
+#rocq_ignore gmapO_leibniz "OFE is Leibniz; use equality"
+
 @[rocq_alias lookup_ne]
 instance get?_ne [LawfulPartialMap M K] [OFE V] (k : K) : NonExpansive (get? · k : M V → Option V) where
   ne {_ _ _} Ht := Ht k
+
+/-- Total lookup is non-expansive in the map. -/
+@[rocq_alias lookup_total_ne]
+instance getD_ne [LawfulPartialMap M K] [OFE V] (k : K) (d : V) :
+    NonExpansive (PartialMap.getD · k d : M V → V) where
+  ne {_ m₁ m₂} Ht := by
+    have h := Ht k
+    rcases h₁ : get? m₁ k with _ | v <;> rcases h₂ : get? m₂ k with _ | w <;>
+      simp_all [PartialMap.getD, OFE.Dist, Option.Forall₂]
 
 @[rocq_alias insert_ne]
 instance [LawfulPartialMap M K] [OFE V] (k : K) : NonExpansive₂ (insert · k · : M V → V → M V) where
@@ -101,33 +116,53 @@ theorem zipWith_dist [LawfulPartialMap M K] [OFE V] [OFE V'] [OFE V''] {n : Nat}
     {f g : V → V' → V''} {m₁ m₁' : M V} {m₂ m₂' : M V'}
     (Hf : ∀ {v v' w w'}, v ≡{n}≡ v' → w ≡{n}≡ w' → f v w ≡{n}≡ g v' w')
     (H₁ : m₁ ≡{n}≡ m₁') (H₂ : m₂ ≡{n}≡ m₂') :
-    PartialMap.zipWith f m₁ m₂ ≡{n}≡ PartialMap.zipWith g m₁' m₂' := by
-  intro k
-  specialize H₁ k
-  specialize H₂ k
-  revert H₁ H₂
-  simp only [OFE.Dist, Option.Forall₂, LawfulPartialMap.get?_zipWith]
-  cases get? m₁ k <;> cases get? m₁' k <;> cases get? m₂ k <;> cases get? m₂' k <;> simp_all
+    PartialMap.zipWith f m₁ m₂ ≡{n}≡ PartialMap.zipWith g m₁' m₂' :=
+  bindAlter_dist (fun {k _ _} Hv => by
+    have h := H₂ k
+    revert h
+    cases get? m₂ k <;> cases get? m₂' k <;> simp_all [OFE.Dist, Option.Forall₂]) H₁
 
 theorem isSome_get?_eq_of_dist [LawfulPartialMap M K] [OFE V] {n : Nat} {m₁ m₂ : M V}
     (H : m₁ ≡{n}≡ m₂) (k : K) : (get? m₁ k).isSome = (get? m₂ k).isSome := by
   specialize H k
   revert H
-  simp only [OFE.Dist, Option.Forall₂]
-  cases get? m₁ k <;> cases get? m₂ k <;> simp_all
+  cases get? m₁ k <;> cases get? m₂ k <;> simp_all [OFE.Dist, Option.Forall₂]
 
 @[rocq_alias gmap_union_ne]
 instance [LawfulPartialMap M K] [OFE V] : NonExpansive₂ ((· ∪ ·) : M V → M V → M V) where
   ne _ {_ _} H₁ {_ _} H₂ := merge_dist (fun H _ => H) H₁ H₂
 
+/-- `intersectionWith` is non-expansive in the combining function and in both maps. -/
+@[rocq_alias intersection_with_ne]
+theorem intersectionWith_dist [LawfulPartialMap M K] [OFE V] {n : Nat}
+    {f g : K → V → V → Option V} {m₁ m₁' m₂ m₂' : M V}
+    (Hf : ∀ {k v v' w w'}, v ≡{n}≡ v' → w ≡{n}≡ w' → f k v w ≡{n}≡ g k v' w')
+    (H₁ : m₁ ≡{n}≡ m₁') (H₂ : m₂ ≡{n}≡ m₂') :
+    PartialMap.intersectionWith f m₁ m₂ ≡{n}≡ PartialMap.intersectionWith g m₁' m₂' :=
+  bindAlter_dist (fun {k _ _} Hv => by
+    have h := H₂ k
+    revert h
+    cases get? m₂ k <;> cases get? m₂' k <;> simp_all [OFE.Dist, Option.Forall₂]) H₁
+
+/-- `differenceWith` is non-expansive in the combining function and in both maps. -/
+@[rocq_alias difference_with_ne]
+theorem differenceWith_dist [LawfulPartialMap M K] [OFE V] {n : Nat}
+    {f g : K → V → V → Option V} {m₁ m₁' m₂ m₂' : M V}
+    (Hf : ∀ {k v v' w w'}, v ≡{n}≡ v' → w ≡{n}≡ w' → f k v w ≡{n}≡ g k v' w')
+    (H₁ : m₁ ≡{n}≡ m₁') (H₂ : m₂ ≡{n}≡ m₂') :
+    PartialMap.differenceWith f m₁ m₂ ≡{n}≡ PartialMap.differenceWith g m₁' m₂' :=
+  bindAlter_dist (fun {k _ _} Hv => by
+    have h := H₂ k
+    revert h
+    cases get? m₂ k <;> cases get? m₂' k <;> simp_all [OFE.Dist, Option.Forall₂]) H₁
+
+@[rocq_alias gmap_intersection_ne]
+instance [LawfulPartialMap M K] [OFE V] : NonExpansive₂ ((· ∩ ·) : M V → M V → M V) where
+  ne _ {_ _} H₁ {_ _} H₂ := intersectionWith_dist (fun H _ => H) H₁ H₂
+
 @[rocq_alias gmap_difference_ne]
 instance [LawfulPartialMap M K] [OFE V] : NonExpansive₂ ((· \ ·) : M V → M V → M V) where
-  ne _ {m₁ m₁'} H₁ {_ m₂'} H₂ k := by
-    specialize H₁ k
-    revert H₁
-    simp only [OFE.Dist, Option.Forall₂, LawfulPartialMap.get?_difference,
-      isSome_get?_eq_of_dist H₂ k]
-    cases get? m₁ k <;> cases get? m₁' k <;> cases get? m₂' k <;> simp_all
+  ne _ {_ _} H₁ {_ _} H₂ := differenceWith_dist (fun _ _ => .of_eq rfl) H₁ H₂
 
 @[rocq_alias gmap_disjoint_ne]
 theorem disjoint_dist_iff [LawfulPartialMap M K] [OFE V] {n : Nat} {m₁ m₁' m₂ m₂' : M V}
@@ -151,10 +186,33 @@ theorem union_dist_iff [LawfulPartialMap M K] [OFE V] {n : Nat} {m m₁ m₂ : M
       LawfulPartialMap.get?_filter, LawfulPartialMap.get?_zipWith]
     cases get? m k <;> cases get? m₁ k <;> cases get? m₂ k <;> simp_all
 
+open Iris.Algebra in
+@[rocq_alias big_opM_ne_2]
+theorem bigOpM_dist_2 [LawfulFiniteMap M' K] [OFE M] [MonoidOps op unit] [OFE V]
+    {Φ Ψ : K → V → M} {m₁ m₂ : M' V} {n : Nat} (hm : m₁ ≡{n}≡ m₂)
+    (hf : ∀ {k y₁ y₂}, get? m₁ k = some y₁ → get? m₂ k = some y₂ → y₁ ≡{n}≡ y₂ →
+      Φ k y₁ ≡{n}≡ Ψ k y₂) :
+    ([^ op map] k ↦ y ∈ m₁, Φ k y) ≡{n}≡ ([^ op map] k ↦ y ∈ m₂, Ψ k y) :=
+  BigOpM.bigOpM_gen_proper_2 OFE.Dist.of_eq OFE.dist_equivalence MonoidOps.op_dist
+    (PartialMap.isSome_get?_eq_of_dist hm) fun {k _ _} h₁ h₂ => hf h₁ h₂ <| by
+      have hmk := hm k
+      rw [h₁, h₂] at hmk
+      exact OFE.some_dist_some.mp hmk
+
 @[rocq_alias gmap_dom_ne]
 theorem dom_eq_of_dist [LawfulPartialMap M K] [OFE V] {n : Nat} {m₁ m₂ : M V}
     (H : m₁ ≡{n}≡ m₂) : PartialMap.dom m₁ = PartialMap.dom m₂ :=
   funext fun k => congrArg (· = true) (isSome_get?_eq_of_dist H k)
+
+/-- Building a map out of a list of consecutive keys is non-expansive. -/
+@[rocq_alias map_seq_ne]
+instance [LawfulFiniteMap M Nat] [OFE V] (start : Nat) :
+    NonExpansive (FiniteMap.map_seq (M := M) start : List V → M V) where
+  ne {_ _ _} h k := by
+    rw [LawfulFiniteMap.get?_map_seq, LawfulFiniteMap.get?_map_seq]
+    split
+    · exact NonExpansive.ne (f := fun l : List V => l[k - start]?) h
+    · exact .rfl
 
 /-- Project a chain of stores through its kth coordinate to a chain of values. -/
 @[rocq_alias gmap_chain]
@@ -175,6 +233,8 @@ instance Heap.instCOFE [LawfulPartialMap M K] [COFE V] : COFE (M V) where
     rcases H : get? (c.chain 0) k
     · simp [← PartialMap.chain_get, chain_none_const (c := PartialMap.chain k c) (n := 0) (H▸rfl)]
     · exact IsCOFE.conv_compl
+
+#rocq_ignore gmap_compl "Included in COFE instance"
 
 @[rocq_alias gmap_ofe_discrete]
 instance instDiscreteHeap [LawfulPartialMap M K] [OFE V] [Discrete V] : Discrete (M V) where
@@ -420,6 +480,12 @@ instance instStoreUCMRA : UCMRA (M V) where
     refine OFE.some_dist_some.mpr fun k => ?_
     simp [get?_bindAlter, get?_empty]
 
+@[rocq_alias gmap_op_empty_l_L]
+theorem op_empty_left {m : M V} : (∅ : M V) • m = m := CMRA.unit_left_id_L
+
+@[rocq_alias gmap_op_empty_r]
+theorem op_empty_right {m : M V} : m • (∅ : M V) = m := CMRA.unit_right_id_L
+
 instance instIsTotalHeap : IsTotal (M V) where
   total _ := Option.isSome_iff_exists.mp rfl
 
@@ -531,9 +597,9 @@ theorem insert_equiv_singleton_op_singleton {m : M V} (Hemp : get? m i = none) :
   · rw [← He, Hemp]
   · cases (get? m k) <;> rfl
 
-theorem insert_eq_singleton_op_singleton [IsoFunMap M K] {m : M V} (Hemp : get? m i = none) :
+theorem insert_eq_singleton_op_singleton {m : M V} (Hemp : get? m i = none) :
     insert m i x = singleton i x • m :=
-  IsoFunMap.ext (insert_equiv_singleton_op_singleton Hemp)
+  equiv_iff_eq.mp (insert_equiv_singleton_op_singleton Hemp)
 
 theorem core_empty : core (∅ : M V) = ∅ := OFE.eq_dist.mpr <| by
   intro n k
@@ -547,26 +613,20 @@ theorem core_singleton_equiv {i : K} {x : V} {cx : V} (Hpcore : CMRA.pcore x = s
   simp [← Hpcore, core, CMRA.pcore, get?_singleton, get?_bindAlter]
   split <;> rfl
 
-theorem singleton_core_eq [IsoFunMap M K] {i : K} {x : V} {cx} (Hpcore : CMRA.pcore x = some cx) :
-    core (singleton i x : M V) = singleton i cx  :=
-  IsoFunMap.ext (core_singleton_equiv Hpcore)
-
-open Classical in
 @[rocq_alias singleton_core]
-theorem singleton_core_eqv {i : K} {x : V} {cx} (Hpcore : CMRA.pcore x = some cx) :
-    core (singleton i x : M V) = singleton i cx := OFE.eq_dist.mpr <| by
-  intro n k
-  simp [core, CMRA.pcore, get?_singleton, get?_bindAlter]
-  split <;> first | exact Hpcore.dist | trivial
+theorem singleton_core_eq {i : K} {x : V} {cx} (Hpcore : CMRA.pcore x = some cx) :
+    core (singleton i x : M V) = singleton i cx  :=
+  equiv_iff_eq.mp (core_singleton_equiv Hpcore)
 
 @[rocq_alias singleton_core_total]
 theorem singleton_core_total [IsTotal V] {i : K} {x : V} :
     equiv (core <| singleton i x : M V) ((singleton i (core x))) :=
   core_singleton_equiv (pcore_eq_core x)
 
-theorem singleton_core_total_eq [IsTotal V] [IsoFunMap M K] {i : K} {x : V} :
+@[rocq_alias singleton_core_total]
+theorem singleton_core_total_eq [IsTotal V] {i : K} {x : V} :
     core (singleton i x : M V) = singleton i (core x) :=
-  IsoFunMap.ext singleton_core_total
+  equiv_iff_eq.mp singleton_core_total
 
 open Classical in
 @[rocq_alias singleton_op]
@@ -576,9 +636,10 @@ theorem singleton_op_singleton {i : K} {x y : V} :
   simp only [CMRA.op, Heap.op, get?_merge, get?_singleton]
   split <;> simp [Option.merge]
 
-theorem singleton_op_singleton_eq [IsoFunMap M K] {i : K} {x y : V} :
+@[rocq_alias singleton_op]
+theorem singleton_op_singleton_eq {i : K} {x y : V} :
     (singleton i x : M V) • (singleton i y) = (singleton i (x • y)) :=
-  IsoFunMap.ext singleton_op_singleton
+  equiv_iff_eq.mp singleton_op_singleton
 
 open Classical in
 set_option synthInstance.checkSynthOrder false in
@@ -689,7 +750,8 @@ theorem exclusive_singleton_inc_iff {m : M V} (He : Exclusive x) (Hv : ✓ m) :
   · exists x
 
 @[rocq_alias singleton_included]
-theorem singleton_inc_singleton_iff : (singleton i x : M V) ≼ (singleton i y : M V) ↔ some x ≼ some y := by
+theorem singleton_inc_singleton_iff :
+    (singleton i x : M V) ≼ (singleton i y : M V) ↔ some x ≼ some y := by
   refine singleton_inc_iff.trans ⟨fun ⟨z, Hz, Hxz⟩ => ?_, fun H => ?_⟩
   · exact (Hz.symm.trans <| get?_singleton_eq rfl) ▸ Hxz
   · refine ⟨y, ?_, H⟩
@@ -739,9 +801,10 @@ theorem insert_op_equiv {m1 m2 : M V} :
   · simp [CMRA.op, get?_insert_eq He, get?_merge]
   · simp [CMRA.op, get?_insert_ne He, get?_merge]
 
-theorem insert_op_eq [IsoFunMap M K] {m1 m2 : M (Option V)} :
+@[rocq_alias insert_op]
+theorem insert_op_eq {m1 m2 : M (Option V)} :
     (insert (m1 • m2) i (x • y)) = (insert m1 i x • insert m2 i y) :=
-  IsoFunMap.ext insert_op_equiv
+  equiv_iff_eq.mp insert_op_equiv
 
 @[rocq_alias gmap_op_union]
 theorem disjoint_op_equiv_union {m1 m2 : M V} (Hd : Set.Disjoint (dom m1) (dom m2)) :
@@ -752,9 +815,9 @@ theorem disjoint_op_equiv_union {m1 m2 : M V} (Hd : Set.Disjoint (dom m1) (dom m
   refine (Hd j ?_).elim
   simp_all [dom]
 
-theorem disjoint_op_eq_union [IsoFunMap M K] {m1 m2 : M V} (H : Set.Disjoint (dom m1) (dom m2)) :
+theorem disjoint_op_eq_union {m1 m2 : M V} (H : Set.Disjoint (dom m1) (dom m2)) :
     m1 • m2 = union m1 m2 :=
-  IsoFunMap.ext (disjoint_op_equiv_union H)
+  equiv_iff_eq.mp (disjoint_op_equiv_union H)
 
 @[rocq_alias gmap_op_valid0_disjoint]
 theorem valid0_disjoint_dom {m1 m2 : M V} (Hv : ✓{0} (m1 • m2)) (H : ∀ {k x}, get? m1 k = some x → Exclusive x) :
@@ -792,6 +855,34 @@ theorem map_mono [CMRA V'] (f : V → V') (hf : ∀ x y : V, x ≼ y → f x ≼
   refine lookup_inc.mpr fun i => ?_
   obtain ⟨z, hz⟩ := Option.map_mono f hf (lookup_inc.mp Hinc i)
   exact ⟨z, by rw [get?_map, get?_map, hz]⟩
+
+open Iris.Algebra in
+open Classical in
+@[rocq_alias big_opM_singletons]
+theorem bigOpM_singletons {M' : Type _ → Type _} {K V : Type _}
+    [LawfulFiniteMap M' K] [CMRA V] (m : M' V) :
+    ([^ CMRA.op map] k ↦ x ∈ m, PartialMap.singleton k x) = m := by
+  induction m using LawfulFiniteMap.induction_on with
+  | hemp => exact BigOpM.bigOpM_empty _
+  | hins i x m hi ih =>
+    rw [BigOpM.bigOpM_insert_eq _ x hi, ih]
+    exact (equiv_iff_eq.mp (Heap.insert_equiv_singleton_op_singleton hi)).symm
+
+open Iris.Algebra in
+open Classical in
+@[rocq_alias big_opS_gset_to_gmap, rocq_alias big_opS_gset_to_gmap_L]
+theorem bigOpS_ofSet {A S : Type _} [LawfulFiniteSet S A] {M' : Type _ → Type _}
+    {V : Type _} [LawfulFiniteMap M' A] [CMRA V] (a : V) (s : S) :
+    ([^ CMRA.op set] k ∈ s, (PartialMap.singleton k a : M' V)) = FiniteMap.ofSet a s := by
+  induction s using FiniteSet.set_ind with
+  | hemp =>
+    rw [BigOpS.bigOpS_empty, LawfulFiniteMap.ofSet_empty]
+    rfl
+  | hadd x X hx ih =>
+    refine (BigOpS.bigOpS_insert hx).trans ?_
+    rw [ih, LawfulFiniteMap.ofSet_insert]
+    exact (LawfulPartialMap.equiv_iff_eq.mp
+      (Heap.insert_equiv_singleton_op_singleton (LawfulFiniteMap.get?_ofSet_of_not_mem hx))).symm
 
 @[rocq_alias gmap_cmra_discrete]
 nonrec instance [HD : CMRA.Discrete V] [LawfulPartialMap M K] : Discrete (M V) where
@@ -867,12 +958,6 @@ variable [LawfulFiniteMap M K]
 
 namespace Heap
 
-theorem get?_eq_none_of_not_mem_keys {m : M V} {i : K}
-    (hi : i ∉ (toList m).map (·.1)) : get? m i = none := by
-  rcases hm : get? m i with _ | v
-  · rfl
-  · exact absurd (List.mem_map_of_mem (toList_get.mpr hm)) hi
-
 variable [CMRA V]
 
 open Classical in
@@ -882,8 +967,11 @@ theorem alloc_updateP_strong_dep {Q : M V → Prop} {I : K → Prop} {m : M V} {
     (hQ : ∀ i, get? m i = none → I i → Q (insert m i (f i))) : m ~~>: Q := by
   refine UpdateP.total.mpr fun n mf hv => ?_
   obtain ⟨i, hIi, hi⟩ := hI ((toList (m • mf)).map (·.1))
-  obtain ⟨hmi, hmfi⟩ := (Option.op_none_iff _ _).mp <|
-    get?_op m mf ▸ get?_eq_none_of_not_mem_keys hi
+  obtain ⟨hmi, hmfi⟩ := (Option.op_none_iff _ _).mp (by
+    rw [← get?_op m mf (i := i)]
+    rcases hm : get? (m • mf) i with _ | v
+    · rfl
+    · exact absurd (List.mem_map_of_mem (toList_get.mpr hm)) hi)
   refine ⟨insert m i (f i), hQ i hmi hIi, fun k => ?_⟩
   by_cases hk : i = k
   · subst hk
@@ -1226,5 +1314,10 @@ instance {F} [RFunctorContractive F] : URFunctorContractive (PartialMapOF H F) w
   map_contractive.1 H m := by
     apply map_ne _ _
     exact (RFunctorContractive.map_contractive.1 H)
+
+-- The unital functor instances above already give the non-unital ones, through
+-- `URFunctor.toRFunctor` and `URFunctorContractive.toRFunctorContractive`.
+#rocq_ignore gmapRF "Found by typeclass inference"
+#rocq_ignore gmapRF_contractive "Found by typeclass inference"
 
 end PartialMap

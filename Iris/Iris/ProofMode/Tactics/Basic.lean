@@ -5,10 +5,10 @@ Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
 module
 
-import Iris.ProofMode.Classes
-meta import Iris.ProofMode.Expr
-meta import Iris.ProofMode.SynthInstance
-public meta import Iris.ProofMode.ProofModeM
+public import Iris.ProofMode.Classes
+public import Iris.ProofMode.Expr
+public import Iris.ProofMode.SynthInstance
+public import Iris.ProofMode.ProofModeM
 
 public section
 
@@ -44,7 +44,7 @@ def iSolveSidecondition (target : Q(Prop)) (failOnUnsolved := true) : ProofModeM
       throwError "{msg}"
   | _ =>
       let gs ← (observing? <|
-        evalTacticAt (← `(tactic | first | trivial | (simp [*] <;> done))) mvar.mvarId!) <&>
+        evalTacticAt (← `(tactic | (and_intros <;> (first | trivial | infer_instance | (simp [*] <;> done))))) mvar.mvarId!) <&>
         (·.getD [mvar.mvarId!])
       if !gs.isEmpty then
         if failOnUnsolved then

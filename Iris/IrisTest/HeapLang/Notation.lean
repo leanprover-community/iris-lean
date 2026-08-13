@@ -7,9 +7,9 @@ module
 public import Iris.HeapLang
 
 @[expose] public section
-namespace Iris.Tests.HeapLang
+namespace IrisTest.HeapLang
 
-open Iris.HeapLang
+open Iris HeapLang
 
 section test
 
@@ -343,4 +343,4 @@ variable (p : ProphId) (w : Val) (e : Exp)
 
 end test
 
-end Iris.Tests.HeapLang
+end IrisTest.HeapLang
