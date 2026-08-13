@@ -241,7 +241,6 @@ theorem tryAcquireReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
   wp_rec
   wp_bind !_
   iinv Hlockinv with ⟨%z, Hl, Hz⟩ Hclose
-  · simp; infer_instance
   wp_load
   imod Hclose $$ [$Hl $Hz] with -
   imodintro
@@ -255,7 +254,6 @@ theorem tryAcquireReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
   wp_pures
   wp_bind cmpXchg(_, _, _)
   iinv Hlockinv with ⟨%z', Hl, Hz⟩ Hclose
-  · simp; infer_instance
   wp_cmpxchg with hsuc hfail
   · obtain rfl : z = z' := by simpa using hsuc.symm
     icases Hz with (⟨%Hneg, -⟩ | ⟨-, %q, %g, Hauth, %Hsize, %Hfold, HΦ⟩)
@@ -307,7 +305,6 @@ theorem releaseReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) (q : Q
   wp_rec
   wp_bind faa(_, _)
   iinv Hlockinv with ⟨%z, Hl, Hz⟩ Hclose
-  · simp; infer_instance
   wp_faa
   icases Hz with (⟨-, Hempty⟩ | ⟨%Hge, %q', %g, Hauth, %Hsize, %Hsum, HΦq'⟩)
   · iexfalso; iapply own_auth_empty_frag_False $$ [$Hempty $Hlocked]
@@ -347,7 +344,6 @@ theorem tryAcquireWriter_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
   wp_lam
   wp_bind cmpXchg(_, _, _)
   iinv Hlockinv with ⟨%z, >Hl, Hz⟩ Hclose
-  · simp; infer_instance
   wp_cmpxchg with hsuc hfail
   · obtain rfl : z = 0 := by simpa using hsuc
     icases Hz with (⟨%Hneg, -⟩ | ⟨-, %q, %g, Hauth, %Hsize, %Hfold, HΦ⟩)
@@ -393,7 +389,6 @@ theorem releaseWriter_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
   subst Heq
   wp_lam
   iinv Hlockinv with ⟨%z, >Hl, Hz⟩ Hclose
-  · simp; infer_instance
   wp_store
   icases Hz with (⟨-, Hquarter⟩ | ⟨-, %-, %-, Hauth, -⟩)
   · icombine Hquarter Hlocked as Hown
