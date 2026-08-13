@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors:
+Authors: Markus de Medeiros
 -/
 module
 
@@ -16,23 +16,6 @@ meta import Iris.Std.RocqPorting
 
 /-!
 # Propositions for reasoning about monotone partial bijections
-
-This library provides two propositions `set_bij_own_auth γ dq L` and `set_bij_own_elem γ a b`,
-where `L` is a bijection between types `A` and `B` represented by a set `S` of associations
-`A × B`. The idea is that `set_bij_own_auth γ dq L` is an authoritative bijection `L`, while
-`set_bij_own_elem γ a b` is a persistent resource saying `L` associates `a` and `b`.
-
-The main use case is in a logical relation-based proof where `L` maintains the association between
-locations `A` in one execution and `B` in another (perhaps of different types, if the logical
-relation relates two different semantics).
-
-The association `L` is always bijective, so that if `a` is mapped to `b`, there should be no other
-mappings for either `a` or `b`; the `set_bij_own_extend` update theorem enforces that new mappings
-respect this property, and `set_bij_own_elem_agree` allows the user to exploit bijectivity. The
-bijection grows monotonically, so that the set of associations only grows; this is captured by the
-persistence of `set_bij_own_elem`.
-
-This library is a logical, ownership-based wrapper around `SetBij`.
 -/
 
 namespace Iris
