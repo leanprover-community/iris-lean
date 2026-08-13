@@ -15,6 +15,7 @@ public import Iris.Std.Infinite
 public import Iris.Std.CoPset
 
 @[expose] public section
+local stepindex Nat
 
 /-! ## Leibniz Set algebras
 This file defines generic set algebras.
@@ -24,6 +25,7 @@ OFE/CMRA on the element type.
 -/
 
 open Iris Std CMRA OFE LawfulSet
+
 
 inductive DisjointLeibnizSet (S : Type _) where
   | valid : S → DisjointLeibnizSet S

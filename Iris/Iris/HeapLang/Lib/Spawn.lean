@@ -16,6 +16,7 @@ namespace Iris.HeapLang
 open BI Iris ProgramLogic
 
 @[expose] public section
+local stepindex Nat
 
 namespace Spawn
 

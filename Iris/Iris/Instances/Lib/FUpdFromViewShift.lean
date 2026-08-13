@@ -16,6 +16,7 @@ public import Iris.Instances.Lib.LaterCredits
 public import Iris.BI.Plainly
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 

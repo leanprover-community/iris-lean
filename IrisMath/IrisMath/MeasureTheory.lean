@@ -6,8 +6,10 @@ public import Iris
 /-! Measure Theoretic CMRA -/
 
 @[expose] public section
+local stepindex Nat
 
 noncomputable section
+
 
 open Iris ProbabilityTheory MeasureTheory
 
@@ -22,5 +24,5 @@ def RandomVariable (δ : Type _) (μ : Measure Ω) : Type _ := Quotient (aeSetoi
 instance (δ : Type _) (μ : Measure Ω) : OFE (RandomVariable δ μ) where
   Dist _ := (· = ·)
   dist_eqv := eq_equivalence
-  eq_dist := (forall_const _).symm
+  eq_dist' := (forall_const _).symm
   dist_lt h _ := h
