@@ -152,11 +152,16 @@ theorem Frac.valid_iff {p : Qp} : ✓ p ↔ p.val ≤ 1 := .rfl
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias frac_is_op]
-instance (priority := default - 10) (q1 q2 : Qp) :
-    IsOp .merge (q1 + q2 : Qp) q1 q2 where
+instance (priority := default - 100) isOpFrac_merge (q1 q2 : Qp) :
+    IsOp .merge (q1 + q2) q1 q2 where
   is_op := rfl
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_frac]
-instance (q : Qp) : IsOp d q q.half q.half where
+instance isOpFrac_half d (q : Qp) : IsOp d q q.half q.half where
   is_op := by refine (q.ext ?_); grind
+
+set_option synthInstance.checkSynthOrder false in
+instance (priority := default + 100) isOpFrac_split (q1 q2 : Qp) :
+    IsOp .split (q1 + q2) q1 q2 where
+  is_op := rfl
