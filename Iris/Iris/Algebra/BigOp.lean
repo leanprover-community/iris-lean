@@ -7,7 +7,6 @@ module
 
 public import Iris.Algebra.Monoid
 public import Iris.Algebra.CMRA
-public import Iris.Algebra.Heap
 import Batteries.Data.List.Perm
 public import Iris.Std.List
 public import Iris.Std.PartialMap
@@ -261,25 +260,6 @@ theorem bigOpL_zip_op_eq {B : Type v} {l₁ : List A} {l₂ : List B} {Φ : Nat 
     ([^ op list] k ↦ xy ∈ l₁.zip l₂, op (Φ k xy.1) (Ψ k xy.2)) =
     op ([^ op list] k ↦ x ∈ l₁, Φ k x) ([^ op list] k ↦ x ∈ l₂, Ψ k x) :=
   bigOpL_zipWith_op_eq rfl rfl hlen
-
-section CMRA
-variable {M : Type _} [CMRA M]
-
-@[rocq_alias big_opL_None]
-theorem bigOpL_none {f : Nat → A → Option M} {l : List A} :
-    ([^ CMRA.op list] k ↦ x ∈ l, f k x) = none ↔ ∀ k x, l[k]? = some x → f k x = none := by
-  induction l generalizing f with
-  | nil => exact iff_of_true rfl (by simp)
-  | cons a l ih =>
-    rw [bigOpL_cons, Iris.Option.op_none_iff, ih]
-    refine ⟨fun ⟨h0, hl⟩ k x hx => ?_, fun h => ⟨h 0 a rfl, fun k x hx => h (k + 1) x hx⟩⟩
-    match k with
-    | 0 =>
-      simp only [List.getElem?_cons_zero, Option.some.injEq] at hx
-      exact hx ▸ h0
-    | k + 1 => exact hl k x hx
-
-end CMRA
 
 #rocq_ignore big_opL_ne' "Use bigOpL_dist"
 #rocq_ignore big_opL_proper' "Use bigOpL_eq"
@@ -563,20 +543,6 @@ theorem bigOpM_sep_zip_eq {A : Type _} {B : Type _}
     op ([^ op map] k ↦ x ∈ m1, h1 k x) ([^ op map] k ↦ x ∈ m2, h2 k x) :=
   bigOpM_sep_zipWith_eq _ _ rfl rfl hdom
 
-section CMRA
-variable {M : Type _} [CMRA M]
-
-@[rocq_alias big_opM_None]
-theorem bigOpM_none {f : K → V → Option M} {m : M' V} :
-    ([^ CMRA.op map] k ↦ x ∈ m, f k x) = none ↔ ∀ k x, get? m k = some x → f k x = none := by
-  simp only [bigOpM, bigOpL_none]
-  refine ⟨fun h k x hk => ?_,
-    fun h i kx hi => h kx.1 kx.2 (toList_get.mp (List.mem_of_getElem? hi))⟩
-  obtain ⟨i, hi⟩ := List.mem_iff_getElem?.mp (toList_get.mpr hk)
-  exact h i (k, x) hi
-
-end CMRA
-
 variable {M₁} [OFE M₁]
 variable {M₂} [OFE M₂]
 variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
@@ -597,26 +563,15 @@ theorem bigOpM_weak_hom [DecidableEq K] [ι : WeakMonoidHomomorphism op₁ op₂
       show (LawfulFiniteMap.toList m) = [] from List.nil_eq.mpr Hk |>.symm]
   rfl
 
-@[rocq_alias big_opM_ne_2]
-theorem bigOpM_dist_2 [OFE V] {Φ Ψ : K → V → M} {m₁ m₂ : M' V} {n : Nat} (hm : m₁ ≡{n}≡ m₂)
-    (hf : ∀ {k y₁ y₂}, get? m₁ k = some y₁ → get? m₂ k = some y₂ → y₁ ≡{n}≡ y₂ →
-      Φ k y₁ ≡{n}≡ Ψ k y₂) :
-    ([^ op map] k ↦ y ∈ m₁, Φ k y) ≡{n}≡ ([^ op map] k ↦ y ∈ m₂, Ψ k y) :=
-  bigOpM_gen_proper_2 OFE.Dist.of_eq OFE.dist_equivalence op_dist
-    (PartialMap.isSome_get?_eq_of_dist hm) fun {k _ _} h₁ h₂ => hf h₁ h₂ <| by
-      have hmk := hm k
-      rw [h₁, h₂] at hmk
-      exact OFE.some_dist_some.mp hmk
-
-open Classical in
-@[rocq_alias big_opM_singletons]
-theorem bigOpM_singletons [CMRA V] (m : M' V) :
-    ([^ CMRA.op map] k ↦ x ∈ m, PartialMap.singleton k x) = m := by
-  induction m using LawfulFiniteMap.induction_on with
-  | hemp => exact bigOpM_empty _
-  | hins i x m hi ih =>
-    rw [bigOpM_insert_eq _ x hi, ih]
-    exact (equiv_iff_eq.mp (Heap.insert_equiv_singleton_op_singleton hi)).symm
+-- open Classical in
+-- @[rocq_alias big_opM_singletons]
+-- theorem bigOpM_singletons [CMRA V] (m : M' V) :
+--     ([^ CMRA.op map] k ↦ x ∈ m, PartialMap.singleton k x) = m := by
+--   induction m using LawfulFiniteMap.induction_on with
+--   | hemp => exact bigOpM_empty _
+--   | hins i x m hi ih =>
+--     rw [bigOpM_insert_eq _ x hi, ih]
+--     exact (equiv_iff_eq.mp (Heap.insert_equiv_singleton_op_singleton hi)).symm
 
 #rocq_ignore big_opM_ne' "Use bigOpM_dist"
 #rocq_ignore big_opM_proper' "Use bigOpM_eq"
@@ -658,20 +613,20 @@ theorem bigOpS_const_unit (s : S) : ([^ op set] _x ∈ s, unit) = unit := by
 theorem bigOpS_singleton {Φ : A → M} {a : A} : ([^ op set] x ∈ ({a} : S), Φ x) = Φ a := by
   simp only [bigOpS, toList_singleton]; exact bigOpL_singleton_eq _ _
 
-open Classical in
-@[rocq_alias big_opS_gset_to_gmap, rocq_alias big_opS_gset_to_gmap_L]
-theorem bigOpS_ofSet {M' : Type _ → Type _} {V : Type _} [LawfulFiniteMap M' A] [CMRA V]
-    (a : V) (s : S) :
-    ([^ CMRA.op set] k ∈ s, (PartialMap.singleton k a : M' V)) = FiniteMap.ofSet a s := by
-  induction s using set_ind with
-  | hemp =>
-    rw [bigOpS_empty, LawfulFiniteMap.ofSet_empty]
-    rfl
-  | hadd x X hx ih =>
-    refine (bigOpS_insert hx).trans ?_
-    rw [ih, LawfulFiniteMap.ofSet_insert]
-    exact (LawfulPartialMap.equiv_iff_eq.mp
-      (Heap.insert_equiv_singleton_op_singleton (LawfulFiniteMap.get?_ofSet_of_not_mem hx))).symm
+-- open Classical in
+-- @[rocq_alias big_opS_gset_to_gmap, rocq_alias big_opS_gset_to_gmap_L]
+-- theorem bigOpS_ofSet {M' : Type _ → Type _} {V : Type _} [LawfulFiniteMap M' A] [CMRA V]
+--     (a : V) (s : S) :
+--     ([^ CMRA.op set] k ∈ s, (PartialMap.singleton k a : M' V)) = FiniteMap.ofSet a s := by
+--   induction s using set_ind with
+--   | hemp =>
+--     rw [bigOpS_empty, LawfulFiniteMap.ofSet_empty]
+--     rfl
+--   | hadd x X hx ih =>
+--     refine (bigOpS_insert hx).trans ?_
+--     rw [ih, LawfulFiniteMap.ofSet_insert]
+--     exact (LawfulPartialMap.equiv_iff_eq.mp
+--       (Heap.insert_equiv_singleton_op_singleton (LawfulFiniteMap.get?_ofSet_of_not_mem hx))).symm
 
 @[rocq_alias big_opS_union]
 theorem bigOpS_union {Φ : A → M} {s₁ s₂ : S} (Hdisj : s₁ ## s₂) :
@@ -737,19 +692,6 @@ theorem bigOpS_gen_proper (R : M → M → Prop) {Φ Ψ : A → M} {s : S}
 
 #rocq_ignore big_opS_ne' "Use bigOpS_dist"
 #rocq_ignore big_opS_proper' "Use bigOpS_eq"
-
-section CMRA
-variable {M : Type _} [CMRA M]
-
-@[rocq_alias big_opS_None]
-theorem bigOpS_none {f : A → Option M} {s : S} :
-    ([^ CMRA.op set] x ∈ s, f x) = none ↔ ∀ x, x ∈ s → f x = none := by
-  simp only [bigOpS, bigOpL_none]
-  refine ⟨fun h x hx => ?_, fun h k x hi => h x (FiniteSet.mem_toList.mp (List.mem_of_getElem? hi))⟩
-  obtain ⟨i, hi⟩ := List.mem_iff_getElem?.mp (FiniteSet.mem_toList.mpr hx)
-  exact h i x hi
-
-end CMRA
 
 section Homomorphism
 
@@ -875,20 +817,6 @@ theorem bigOpMS_gen_proper (R : M → M → Prop) {Φ Ψ : A → M} {X : MS}
   exact List.mem_of_getElem? hy
 
 #rocq_ignore big_opMS_ext "Merged into bigOpMS_eq"
-
-section CMRA
-variable {M : Type _} [CMRA M]
-
-@[rocq_alias big_opMS_None]
-theorem bigOpMS_none {f : A → Option M} {X : MS} :
-    ([^ CMRA.op mset] x ∈ X, f x) = none ↔ ∀ x, x ∈ X → f x = none := by
-  simp only [bigOpMS, bigOpL_none]
-  refine ⟨fun h x hx => ?_,
-    fun h k x hi => h x (LawfulFiniteMultiSet.mem_toList.mp (List.mem_of_getElem? hi))⟩
-  obtain ⟨i, hi⟩ := List.mem_iff_getElem?.mp (LawfulFiniteMultiSet.mem_toList.mpr hx)
-  exact h i x hi
-
-end CMRA
 
 section Homomorphism
 

@@ -58,22 +58,6 @@ class RepFunMap (T : Type _ → Type _) (K : outParam (Type _)) [PartialMap T K]
   get_of_fun (f : K → Option V) (k : K) : get? (of_fun f) k = f k
 export RepFunMap (of_fun get_of_fun)
 
-/-- IsoFunStore: The map T is isomorphic to the type of functions out of `K`. In
-other words, equality of T is the same as equality of functions, so the CMRA on
-these partial functions is leibniz. -/
-class IsoFunMap (T : Type _ → Type _) (K : outParam (Type _)) [PartialMap T K]
-  extends RepFunMap T K where
-  of_fun_get {t : T V} : of_fun (get? t) = t
-export IsoFunMap (of_fun_get)
-
-@[ext]
-theorem IsoFunMap.ext [PartialMap T K] [IsoFunMap T K] {t1 t2 : T V}
-    (h : ∀ k, get? t1 k = get? t2 k) : t1 = t2 := by
-  rw [← of_fun_get (t := t1), ← of_fun_get (t := t2)]
-  congr 1
-  funext k
-  exact h k
-
 /-- An AllocHeap is a heap which can allocate elements under some condition. -/
 class Heap (M : Type _ → Type _) (K : outParam (Type _)) extends PartialMap M K where
   notFull : M V → Prop
