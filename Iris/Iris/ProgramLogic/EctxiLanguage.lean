@@ -7,13 +7,6 @@ module
 public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.EctxLanguage
 
-#rocq_ignore EctxiLanguageMixin    "This feature was implemented differently using typeclasses"
-#rocq_ignore ectxiLanguage         "This feature was implemented differently using typeclasses"
-#rocq_ignore ectxi_lang_ectx_mixin "This feature was implemented differently using typeclasses"
-#rocq_ignore ectxi_lang_ectx
-  "Canonical `ectxLanguage` structure; the EctxLanguage instance is `EctxLanguageOfEctxi`."
-#rocq_ignore ectxi_lang "Canonical `language` structure; the Language instance is `LanguageOfEctx`."
-
 namespace Iris.ProgramLogic
 
 open Language.Notation EctxLanguage.Notation FromMathlib
@@ -22,6 +15,7 @@ open Language.Notation EctxLanguage.Notation FromMathlib
 
 variable {Expr Val State Obs EctxItem : Type _}
 
+@[rocq_alias ectxiLanguage, rocq_alias EctxiLanguageMixin]
 class EctxItemLanguage (Expr : Type _) (EctxItem State Obs Val : outParam (Type _))
     extends ToVal Expr Val, BaseStep Expr State Obs where
   fillItem : EctxItem → Expr → Expr
@@ -102,7 +96,7 @@ theorem baseStep_fill_eq_val_absurd {K : Ectx} {e e' : Expr} {σ σ' : State}
 -- be able to match on `toVal`, since as it stands `grind` patterns cannot include `=`,
 -- which means `toVal e = none` is not as well supported.
 
-@[rocq_alias EctxLanguageOfEctxi]
+@[rocq_alias EctxLanguageOfEctxi, rocq_alias ectxi_lang_ectx, rocq_alias ectxi_lang_ectx_mixin]
 instance instEctxLanguage : EctxLanguage Expr Λ.Ectx State Obs Val where
   fill_val K e := fill_val
   step_by_val {K K' e₁ e₁' σ₁ obs e₂ σ₂ eₜ} hfill hred hstep := by
@@ -127,6 +121,10 @@ instance instEctxLanguage : EctxLanguage Expr Λ.Ectx State Obs Val where
     cases K using List.reverseRec
     · intro; right; rfl
     · simp_all; grind
+
+-- The `language` derived from an `EctxItemLanguage` is the generic `Language` instance built by
+-- `EctxLanguage.instLanguage` (`LanguageOfEctx`), specialized to `instEctxLanguage`.
+attribute [rocq_alias ectxi_lang] Iris.ProgramLogic.EctxLanguage.instLanguage
 
 theorem fill_not_val {K} {e : Expr} : toVal e = none → toVal (fill K e) = none := by
   grind only [=> EctxLanguage.fill_not_val]

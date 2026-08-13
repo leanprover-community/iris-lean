@@ -6,11 +6,6 @@ module
 
 public import Iris.ProgramLogic.Language
 
-#rocq_ignore EctxLanguageMixin "This feature was implemented differently using typeclasses"
-#rocq_ignore ectxLanguage      "This feature was implemented differently using typeclasses"
-#rocq_ignore ectx_lang_mixin   "This feature was implemented differently using typeclasses"
-#rocq_ignore ectx_lang "Canonical `language` structure; the Language instance is `LanguageOfEctx`."
-
 namespace Iris.ProgramLogic
 
 open Language.Notation
@@ -151,6 +146,7 @@ end BaseStep
 This typeclass is defined in terms of a base step relation `baseStep`,
 a type of evaluation contexts `Ectx` and a set of values `Val`, and
 extended with theorems that relate these concepts to one another. -/
+@[rocq_alias ectxLanguage, rocq_alias EctxLanguageMixin]
 class EctxLanguage (Expr  : Type _) (Ectx State Obs Val : outParam (Type _))
   extends BaseStep Expr State Obs, ToVal Expr Val, EvContext Expr Ectx where
   /-- Removing a context out of a value gives a value -/
@@ -196,7 +192,7 @@ theorem fill_not_val K (e : Expr) : (toVal e) = none → (toVal (fill K e)) = no
 def SubredexesAreValues (e : Expr) :=
   ∀ {K : Ectx} {e'}, e = fill K e' → toVal e' = none → K = empty
 
-@[rocq_alias LanguageOfEctx]
+@[rocq_alias LanguageOfEctx, rocq_alias ectx_lang, rocq_alias ectx_lang_mixin]
 instance instLanguage : Language Expr State Obs Val where
   val_stuck {e σ obs e' σ' eₜ} primStep := by
     rcases primStep with ⟨bstep⟩

@@ -9,12 +9,7 @@ public import Iris.Std.Relation
 public import Iris.Std.TC
 public import Iris.BI.WeakestPre
 
-#rocq_ignore LanguageMixin "This feature was implemented differently using typeclasses"
-#rocq_ignore language      "This feature was implemented differently using typeclasses"
-#rocq_ignore cfg    "Configurations are represented inline as `List Expr × State`."
-#rocq_ignore exprO  "Canonical Leibniz OFE on expressions; not applicable in Lean."
-#rocq_ignore valO   "Canonical Leibniz OFE on values; not applicable in Lean."
-#rocq_ignore stateO "Canonical Leibniz OFE on states; not applicable in Lean."
+#rocq_ignore cfg "Configurations are represented inline as `List Expr × State`."
 
 namespace Iris.ProgramLogic
 
@@ -23,6 +18,18 @@ namespace Iris.ProgramLogic
 open FromMathlib
 
 variable {Expr Val State Obs : Type _}
+
+/-- The discrete (Leibniz) OFE on expressions. -/
+@[rocq_alias exprO]
+abbrev exprO (Expr : Type _) := DiscreteO Expr
+
+/-- The discrete (Leibniz) OFE on values. -/
+@[rocq_alias valO]
+abbrev valO (Val : Type _) := DiscreteO Val
+
+/-- The discrete (Leibniz) OFE on states. -/
+@[rocq_alias stateO]
+abbrev stateO (State : Type _) := DiscreteO State
 
 class ToVal (Expr : Type _) (Val : outParam (Type _)) where
   toVal : Expr → Option Val
@@ -99,6 +106,7 @@ end PrimStep
 
 open PrimStep
 
+@[rocq_alias language, rocq_alias LanguageMixin]
 class Language (Expr : Type _) (State : outParam (Type _)) (Obs : outParam (Type _))
     (Val : outParam (Type _)) extends PrimStep Expr State (List Obs), ToVal Expr Val where
   /-- Values in a language should not reduce -/
