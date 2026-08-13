@@ -802,8 +802,6 @@ instance ownM_sep_homomorphism :
 theorem bupd_soundness {P : UPred M} [Plain P] : (⊢ |==> P) → ⊢ P :=
   fun h => h.trans bupd_elim
 
-/-- The modalities of `UPred`, used to state soundness under an arbitrary nesting of
-modalities. -/
 @[rocq_alias uPred.modality]
 inductive Modality where
   | bupd
@@ -821,8 +819,6 @@ def Modality.denote : Modality → UPred M → UPred M
 @[rocq_alias uPred.denote_modalities]
 def Modality.denoteAll (ms : List Modality) (P : UPred M) : UPred M := ms.foldr denote P
 
-/-- A nesting of modalities over a plain proposition entails that proposition under as many
-`▷`s as there are modalities. -/
 theorem Modality.denoteAll_laterN {P : UPred M} [Plain P] :
     ∀ ms : List Modality, denoteAll ms P ⊢ ▷^[ms.length] P
   | [] => .rfl
@@ -838,7 +834,6 @@ theorem modal_soundness {P : UPred M} [Plain P] (ms : List Modality)
     (h : ⊢ Modality.denoteAll ms P) : ⊢ P :=
   laterN_soundness (h.trans (Modality.denoteAll_laterN ms))
 
-/-- Consistency: `False` is not derivable, not even under modalities. -/
 @[rocq_alias uPred.consistency]
 theorem consistency : ¬ (⊢@{UPred M} False) := pure_soundness
 
