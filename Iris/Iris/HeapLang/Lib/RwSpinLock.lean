@@ -22,42 +22,42 @@ open BI Iris Std ProgramLogic CMRA OFE LeibnizMultiSet FiniteMultiSet
 namespace RwSpinLock
 
 @[rocq_alias heap_lang.rw_spin_lock.newlock]
-def newlock : Val := hl_val(
-  λ _, ref(#0))
+def newlock : Val := hl_val%
+  λ _, ref(#0)
 
 @[rocq_alias heap_lang.try_acquire_reader]
-def tryAcquireReader : Val := hl_val(
+def tryAcquireReader : Val := hl_val%
   λ l,
     let n := !l;
     if #0 ≤ n
       then cas(l, n, n + #1)
-      else #false)
+      else #false
 
 @[rocq_alias heap_lang.acquire_reader]
-def acquireReader : Val := hl_val(
+def acquireReader : Val := hl_val%
   rec acquire l :=
     if (&tryAcquireReader l)
       then #()
-      else acquire l)
+      else acquire l
 
 @[rocq_alias heap_lang.release_reader]
-def releaseReader : Val := hl_val(
-  λ l, faa(l, #(-1 : Int)); #())
+def releaseReader : Val := hl_val%
+  λ l, faa(l, #(-1 : Int)); #()
 
 @[rocq_alias heap_lang.try_acquire_writer]
-def tryAcquireWriter : Val := hl_val(
-  λ l, cas(l, #0, #(-1 : Int)))
+def tryAcquireWriter : Val := hl_val%
+  λ l, cas(l, #0, #(-1 : Int))
 
 @[rocq_alias heap_lang.acquire_writer]
-def acquireWriter : Val := hl_val(
+def acquireWriter : Val := hl_val%
   rec acquire l :=
     if (&tryAcquireWriter l)
       then #()
-      else acquire l)
+      else acquire l
 
 @[rocq_alias heap_lang.release_writer]
-def releaseWriter : Val := hl_val(
-  λ l, l ← #0)
+def releaseWriter : Val := hl_val%
+  λ l, l ← #0
 
 abbrev ReaderFracs := ListPerm Qp
 
@@ -83,8 +83,8 @@ abbrev own (γ : GName) (a : Auth (LeibnizMultiSet ReaderFracs)) : IProp GF :=
   iOwn (F := RwSpinLockF) γ a
 
 /-- The quarter kept while write-locked contradicts `readerLocked`; `writerLocked` owns the rest. -/
-@[rocq_alias heap_lang.rw_state_inv, reducible]
-def rwStateInv (γ : GName) (l : Loc) (Φ : Qp → IProp GF) : IProp GF := iprop%
+@[rocq_alias heap_lang.rw_state_inv]
+abbrev rwStateInv (γ : GName) (l : Loc) (Φ : Qp → IProp GF) : IProp GF := iprop%
   ∃ z : Int, l ↦ some hl_val(#z) ∗
     (⌜z = -1⌝ ∗ own γ (●{.own Qp.quarter} (.ofSet ∅))
      ∨ ⌜0 ≤ z⌝ ∗ ∃ (q : Qp) (g : ReaderFracs),
@@ -340,13 +340,13 @@ theorem releaseReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) (q : Q
 theorem tryAcquireWriter_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
     {{ isRwLock γ lk Φ }} hl(&tryAcquireWriter &lk)
     {{ (b : Bool), RET hl_val(#b);
-       if b then iprop(writerLocked γ ∗ Φ 1) else iprop(True) }} := by
+       if b then (writerLocked γ ∗ Φ 1) else True }} := by
   unfold isRwLock writerLocked rwStateInv
   iintro %φ ⟨#HΦdup, %l, %Heq, #Hlockinv⟩ Hφ
   subst Heq
-  wp_rec
+  wp_lam
   wp_bind cmpXchg(_, _, _)
-  iinv Hlockinv with ⟨%z, Hl, Hz⟩ Hclose
+  iinv Hlockinv with ⟨%z, >Hl, Hz⟩ Hclose
   · simp; infer_instance
   wp_cmpxchg with hsuc hfail
   · obtain rfl : z = 0 := by simpa using hsuc
@@ -355,7 +355,9 @@ theorem tryAcquireWriter_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
     obtain rfl : g = ∅ := size_eq_zero_iff.mp (by simpa using Hsize)
     rw [fold_empty] at Hfold
     subst Hfold
-    icases (own_auth_empty_split γ).mpr $$ Hauth with ⟨Hauth, Hgive⟩
+    ieval (rewrite [← Qp.quarter_add_threeQuarters, ← Frac.op_eq]) at Hauth
+    -- FIXME: Frac.op_eq should not be needed
+    icases Hauth with ⟨Hauth, Hgive⟩
     imod Hclose $$ [Hl Hauth] with -
     · iapply rwStateInv_writeLocked; iframe
     imodintro
@@ -378,9 +380,9 @@ theorem acquireWriter_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
   iapply tryAcquireWriter_spec $$ Hislock
   iintro !> %b Hb
   cases b
-  · wp_pure; iapply IH; inext; iexact Hφ
-  · wp_pure; imodintro; simp only [↓reduceIte]
-    iapply Hφ; iframe Hb
+  · wp_if_false; iapply IH; itrivial
+  · wp_if_true; iapply Hφ;
+    simp only [↓reduceIte]; iframe Hb
 
 @[rocq_alias heap_lang.release_writer_spec]
 theorem releaseWriter_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
@@ -389,16 +391,15 @@ theorem releaseWriter_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
   unfold isRwLock writerLocked rwStateInv
   iintro %φ ⟨⟨#HΦdup, %l, %Heq, #Hlockinv⟩, Hlocked, HΦ⟩ Hφ
   subst Heq
-  wp_rec
-  iinv Hlockinv with ⟨%z, Hl, Hz⟩ Hclose
+  wp_lam
+  iinv Hlockinv with ⟨%z, >Hl, Hz⟩ Hclose
   · simp; infer_instance
   wp_store
-  icases Hz with (⟨-, Hquarter⟩ | ⟨-, %q, %g, Hauth, -, -, -⟩)
-  · ihave Hauth : iprop(own γ (● .ofSet (∅ : ReaderFracs))) $$ [Hquarter Hlocked]
-    · iapply (own_auth_empty_split γ).mp; iframe Hquarter Hlocked
-    imod Hclose $$ [Hl Hauth HΦ] with -
+  icases Hz with (⟨-, Hquarter⟩ | ⟨-, %-, %-, Hauth, -⟩)
+  · icombine Hquarter Hlocked as Hown
+    rw [Qp.quarter_add_threeQuarters]
+    imod Hclose $$ [Hl Hown HΦ] with -
     · iapply rwStateInv_unlocked; iframe
-    imodintro
     iapply Hφ; itrivial
   · iexfalso; iapply own_auth_auth_False (q₁ := 1) (by grind) $$ [$Hauth $Hlocked]
 

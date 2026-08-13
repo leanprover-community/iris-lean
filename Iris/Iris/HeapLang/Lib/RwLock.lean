@@ -73,18 +73,19 @@ instance instTimelessWriterLocked γ : Timeless (rw.writerLocked L γ) :=
 instance isRwLock_contractive γ lk : Contractive (rw.isRwLock L γ lk) := by
   rw [contractive_internalEq (PROP := IProp GF)]
   iintro %Φ₁ %Φ₂ #HEQ
-  ihave #HΦ : iprop(▷ ∀ q, Φ₁ q ≡ Φ₂ q) $$ [HEQ]
-  · iapply later_mono (discreteFun_equivI Φ₁ Φ₂).mp $$ [$]
+  ihave #HΦ : ▷ ∀ q, Φ₁ q ≡ Φ₂ q $$ [HEQ]
+  · inext
+    iapply (discreteFun_equivI Φ₁ Φ₂).mp $$ [$]
   iapply prop_ext
   imodintro
   isplit
-  · iintro #H
+  · iintro H
     iapply rw.isRwLock_iff $$ H
     iintro !> !> %q
     irewrite [HΦ $$ %q]
     · exact ⟨fun _ _ _ h => wandIff_ne.ne h .rfl⟩
     · iapply equiv_wandIff; exact .rfl
-  · iintro #H
+  · iintro H
     iapply rw.isRwLock_iff $$ H
     iintro !> !> %q
     irewrite [HΦ $$ %q]
