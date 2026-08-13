@@ -2134,15 +2134,6 @@ open CMRA
 
 variable {α β : Type _} [CMRA α] [CMRA β]
 
-@[rocq_alias option_fmap_mono]
-theorem Option.map_mono (f : α → β) (hf : ∀ a b : α, a ≼ b → f a ≼ f b)
-    {ma mb : Option α} (h : ma ≼ mb) : ma.map f ≼ mb.map f := by
-  rcases Option.inc_iff.mp h with rfl | ⟨a, b, rfl, rfl, hab⟩
-  · exact Option.inc_iff.mpr (.inl rfl)
-  · rcases hab with rfl | hab
-    · exact Option.some_inc_some_of_eq rfl
-    · exact Option.some_inc_some_of_inc (hf a b hab)
-
 @[rocq_alias option_fmap_cmra_morphism]
 def Option.mapC (f : α -C> β) : Option α -C> Option β where
   toHom := optionMap f.toHom
