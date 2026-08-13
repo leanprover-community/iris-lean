@@ -5,7 +5,6 @@ Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang
 -/
 module
 
-public meta import Qq
 public import Iris.BI
 public import Iris.ProofMode.Classes
 public import Iris.Std

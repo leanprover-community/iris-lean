@@ -12,7 +12,6 @@ public import Iris.Std.Nat
 public import Iris.Std.Classes
 public import Iris.Std.Rewrite
 public import Iris.Std.TC
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

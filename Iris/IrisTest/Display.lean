@@ -9,9 +9,8 @@ module
 import Lean
 public import Iris.ProofMode
 
-open Lean Elab Meta
-
-namespace Iris.Tests
+namespace IrisTest
+open Lean Elab Meta Iris
 
 meta section
 

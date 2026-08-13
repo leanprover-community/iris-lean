@@ -12,7 +12,6 @@ import Iris.BI.Instances
 import Iris.BI.BigOp.BigSepSet
 import Iris.Std.TC
 import Batteries.Data.List.Perm
-meta import Iris.Std.RocqPorting
 
 public section
 
