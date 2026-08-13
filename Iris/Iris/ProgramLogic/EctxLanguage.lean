@@ -6,6 +6,11 @@ module
 
 public import Iris.ProgramLogic.Language
 
+#rocq_ignore EctxLanguageMixin "This feature was implemented differently using typeclasses"
+#rocq_ignore ectxLanguage      "This feature was implemented differently using typeclasses"
+#rocq_ignore ectx_lang_mixin   "This feature was implemented differently using typeclasses"
+#rocq_ignore ectx_lang "Canonical `language` structure; the Language instance is `LanguageOfEctx`."
+
 namespace Iris.ProgramLogic
 
 open Language.Notation
