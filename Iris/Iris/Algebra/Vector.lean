@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026. All rights reserved.
+Copyright (c) 2026 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
@@ -38,11 +38,11 @@ instance vec_ofe_discrete [Discrete α] : Discrete (Vector α n) where
   discrete_0 h := Vector.toList_inj.mp (discrete_0 (vec_dist_toList.mp h))
 
 @[rocq_alias vnil_discrete]
-instance Vector.nil_discrete : DiscreteE (#v[] : Vector α 0) where
+instance vec_nil_discrete : DiscreteE (#v[] : Vector α 0) where
   discrete h := Vector.toList_inj.mp (DiscreteE.discrete (x := []) (vec_dist_toList.mp h))
 
 /-- Discreteness of a vector transfers to its underlying list. -/
-instance Vector.toList_discrete (v : Vector α n) [DiscreteE v] : DiscreteE v.toList where
+instance vec_toList_discrete (v : Vector α n) [DiscreteE v] : DiscreteE v.toList where
   discrete {l} h := by
     have hl : l.length = n := by rw [← h.length_eq, Vector.length_toList]
     have hv : v = Vector.ofList l hl :=
@@ -50,7 +50,7 @@ instance Vector.toList_discrete (v : Vector α n) [DiscreteE v] : DiscreteE v.to
     rw [hv, Vector.toList_ofList]
 
 @[rocq_alias vcons_discrete]
-instance Vector.cons_discrete (x : α) (v : Vector α n) [DiscreteE x] [DiscreteE v] :
+instance vec_cons_discrete (x : α) (v : Vector α n) [DiscreteE x] [DiscreteE v] :
     DiscreteE (v.cons x) where
   discrete h := Vector.toList_inj.mp <| by
     rw [Vector.toList_cons]
@@ -89,14 +89,14 @@ section proper
 variable [OFE α]
 
 @[rocq_alias vcons_ne]
-instance Vector.cons_ne : NonExpansive₂ (Vector.cons (α := α) (n := n)) where
+instance vec_cons_ne : NonExpansive₂ (Vector.cons (α := α) (n := n)) where
   ne _ _ _ hx _ _ hv := by
     simp only [vec_dist_toList, Vector.toList_cons]
     exact .cons hx (vec_dist_toList.mp hv)
 #rocq_ignore vcons_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias vlookup_ne]
-instance Vector.getElem_ne (i : Nat) (h : i < n) :
+instance vec_getElem_ne (i : Nat) (h : i < n) :
     NonExpansive (fun v : Vector α n => v[i]) where
   ne _ _ _ hv := by
     have hd := (vec_dist_toList.mp hv).getElem? i
@@ -105,7 +105,7 @@ instance Vector.getElem_ne (i : Nat) (h : i < n) :
 #rocq_ignore vlookup_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias vec_to_list_ne]
-instance Vector.toList_ne : NonExpansive (Vector.toList (α := α) (n := n)) where
+instance vec_toList_ne : NonExpansive (Vector.toList (α := α) (n := n)) where
   ne _ _ _ h := vec_dist_toList.mp h
 #rocq_ignore vec_to_list_proper "OFE is Leibniz; use equality"
 

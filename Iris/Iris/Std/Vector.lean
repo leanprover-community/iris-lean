@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026. All rights reserved.
+Copyright (c) 2026 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors:
+Authors: Markus de Medeiros
 -/
 module
 
@@ -20,9 +20,9 @@ def ofList (l : List α) (h : l.length = n) : Vector α n := ⟨l.toArray, by si
   simp [ofList]
 
 /-- Prepend an element to a vector. -/
-def cons (x : α) (v : Vector α n) : Vector α (n + 1) := ofList (x :: v.toList) (by simp)
+def cons (x : α) (v : Vector α n) : Vector α (n + 1) := v.insertIdx 0 x
 
 @[simp] theorem toList_cons {x : α} {v : Vector α n} : (cons x v).toList = x :: v.toList := by
-  simp [cons]
+  simp [cons, Vector.insertIdx, Vector.toList]
 
 end Vector
