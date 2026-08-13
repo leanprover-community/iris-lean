@@ -78,7 +78,7 @@ instance : OFE (DynReservationMap A H) where
 instance instDiscreteDynReservationMap [Discrete A] : Discrete (DynReservationMap A H) where
   discrete_0 h := OFE.eq_dist_2 <| by
     intro n
-    exact ⟨(discrete_0 h.left).dist (SI := Nat), (discrete_0 h.right).dist (SI := Nat)⟩
+    exact ⟨(discrete_0 h.left).dist, (discrete_0 h.right).dist⟩
 
 @[rocq_alias DynReservationMap_ne]
 instance instNonExpansive₂DynReservationMapMk :

@@ -36,6 +36,7 @@ open OFE
 
 scoped notation:40 x " ≡{" n "}≡ " y:41 => OFE.Dist n x y (SI := stepindex%)
 
+-- `OFE.eq_dist` is `OFE.eq_dist'` with fixed implicit annotations
 theorem OFE.eq_dist {SI} [SIdx SI] {α} [self : IOFE SI α] {x y : α} :
   x = y ↔ ∀ n, OFE.Dist (SI:=SI) n x y := OFE.eq_dist'
 

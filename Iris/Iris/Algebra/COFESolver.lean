@@ -95,7 +95,7 @@ instance : OFE (Tower F) where
 #rocq_ignore solver.tower_ofe_mixin "Not needed"
 
 @[rocq_alias solver.tower_chain]
-def towerChain (c : Chain (SI := Nat) (Tower F)) (k : Nat) : Chain (A F k) where
+def towerChain (c : Chain (Tower F)) (k : Nat) : Chain (A F k) where
   chain i := c.1 i k
   cauchy h := c.cauchy h k
 
