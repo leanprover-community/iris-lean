@@ -58,22 +58,6 @@ class RepFunMap (T : Type _ → Type _) (K : outParam (Type _)) [PartialMap T K]
   get_of_fun (f : K → Option V) (k : K) : get? (of_fun f) k = f k
 export RepFunMap (of_fun get_of_fun)
 
-/-- IsoFunStore: The map T is isomorphic to the type of functions out of `K`. In
-other words, equality of T is the same as equality of functions, so the CMRA on
-these partial functions is leibniz. -/
-class IsoFunMap (T : Type _ → Type _) (K : outParam (Type _)) [PartialMap T K]
-  extends RepFunMap T K where
-  of_fun_get {t : T V} : of_fun (get? t) = t
-export IsoFunMap (of_fun_get)
-
-@[ext]
-theorem IsoFunMap.ext [PartialMap T K] [IsoFunMap T K] {t1 t2 : T V}
-    (h : ∀ k, get? t1 k = get? t2 k) : t1 = t2 := by
-  rw [← of_fun_get (t := t1), ← of_fun_get (t := t2)]
-  congr 1
-  funext k
-  exact h k
-
 /-- An AllocHeap is a heap which can allocate elements under some condition. -/
 class Heap (M : Type _ → Type _) (K : outParam (Type _)) extends PartialMap M K where
   notFull : M V → Prop
@@ -116,6 +100,9 @@ def mem (m : M V) (k : K) : Prop := (get? m k).isSome
 /-- Keys can be tested for membership in partial maps using `∈`. -/
 instance : Membership K (M V) := ⟨fun m k => (get? m k).isSome⟩
 
+/-- Total lookup: the value stored at `k`, or `d` when `k` is absent. -/
+def getD (m : M V) (k : K) (d : V) : V := (get? m k).getD d
+
 /-- Universal quantification over map entries. -/
 def all (P : K → V → Prop) (m : M V) : Prop :=
   ∀ k v, get? m k = some v → P k v
@@ -141,9 +128,21 @@ def filterMap (f : V → Option V) : M V → M V :=
 def filter (φ : K → V → Bool) : M V → M V :=
   bindAlter (fun k v => if φ k v then some v else none)
 
+/-- Intersection with a combining function: a key present in both maps is combined with `f`,
+every other key is dropped. -/
+def intersectionWith (f : K → V → V → Option V) (m₁ m₂ : M V) : M V :=
+  bindAlter (fun k v => (get? m₂ k).bind (f k v)) m₁
+
+/-- Intersection: keep the entries of `m₁` whose keys also occur in `m₂`. -/
+def intersection (m₁ m₂ : M V) : M V := intersectionWith (fun _ v _ => some v) m₁ m₂
+
+/-- Difference with a combining function: a key present in both maps is combined with `f`,
+a key present only in `m₁` is kept. -/
+def differenceWith (f : K → V → V → Option V) (m₁ m₂ : M V) : M V :=
+  bindAlter (fun k v => (get? m₂ k).elim (some v) (f k v)) m₁
+
 /-- Difference: remove all keys in `m₂` from `m₁`. -/
-def difference (m₁ m₂ : M V) : M V :=
-  bindAlter (fun k v => if (get? m₂ k).isSome then none else some v) m₁
+def difference (m₁ m₂ : M V) : M V := differenceWith (fun _ _ _ => none) m₁ m₂
 
 def zipWith (f : V → V' → V'') (m₁ : M V) (m₂ : M V') : M V'' :=
   bindAlter (fun k v => (get? m₂ k).bind fun v' => some <| f v v') m₁
@@ -151,6 +150,9 @@ def zipWith (f : V → V' → V'') (m₁ : M V) (m₂ : M V') : M V'' :=
 set_option linter.checkUnivs false in
 def zip (m₁ : M V) (m₂ : M V') : M (V × V') :=
   zipWith (fun x y => (x, y)) m₁ m₂
+
+/-- Partial maps support the intersection operation `∩` via intersection. -/
+instance : Inter (M V) := ⟨intersection⟩
 
 /-- Partial maps support the set difference operation `\` via difference. -/
 instance : SDiff (M V) := ⟨difference⟩
@@ -260,6 +262,10 @@ def mapFold {A : Type _} (f : K → V → A → A) (a : A) (m : M V) : A :=
 /-- Convert a list to a map with sequential natural number keys starting from `start`. -/
 def map_seq [FiniteMap M Nat] (start : Nat) (l : List V) : M V :=
   PartialMap.ofList (l.mapIdx (fun i v => (start + i, v)))
+
+/-- The map sending every element of the finite set `s` to `a`. -/
+def ofSet [FiniteSet S K] (a : V) (s : S) : M V :=
+  PartialMap.ofList ((FiniteSet.toList s).map (·, a))
 
 def dom_set [LawfulSet S K] (m : M V) : S :=
   LawfulSet.ofList (mapFold (fun k _ acc => k :: acc) [] m)
@@ -632,9 +638,22 @@ theorem get?_delete_isSome [DecidableEq K] {m : M V} {i j : K} :
   rw [get?_delete]
   split <;> simp_all
 
+theorem get?_intersectionWith {f : K → V → V → Option V} {m₁ m₂ : M V} {k : K} :
+    get? (intersectionWith f m₁ m₂) k = (get? m₁ k).bind fun v => (get? m₂ k).bind (f k v) := by
+  simp only [PartialMap.intersectionWith, get?_bindAlter]
+
+theorem get?_differenceWith {f : K → V → V → Option V} {m₁ m₂ : M V} {k : K} :
+    get? (differenceWith f m₁ m₂) k = (get? m₁ k).bind fun v => (get? m₂ k).elim (some v) (f k v) := by
+  simp only [PartialMap.differenceWith, get?_bindAlter]
+
+theorem get?_intersection {m₁ m₂ : M V} {k : K} :
+    get? (m₁ ∩ m₂) k = if (get? m₂ k).isSome then get? m₁ k else none := by
+  simp only [Inter.inter, PartialMap.intersection, get?_intersectionWith]
+  cases hm2 : get? m₂ k <;> cases hm1 : get? m₁ k <;> simp
+
 theorem get?_difference {m₁ m₂ : M V} {k : K} :
     get? (m₁ \ m₂) k = if (get? m₂ k).isSome then none else get? m₁ k := by
-  simp only [SDiff.sdiff, PartialMap.difference, get?_bindAlter]
+  simp only [SDiff.sdiff, PartialMap.difference, get?_differenceWith]
   cases hm2 : get? m₂ k <;> cases hm1 : get? m₁ k <;> simp
 
 theorem disjoint_difference_right {m₁ m₂ : M V} :
@@ -955,6 +974,35 @@ theorem NoDupKeys_noDup {L : List (K × V)} : NoDupKeys L → L.Nodup := by
 
 theorem nodup_toList {m : M V} : (toList m).Nodup :=
   NoDupKeys_noDup toList_noDupKeys
+
+theorem noDupKeys_map_const [LawfulFiniteSet S K] {a : V} {s : S} :
+    NoDupKeys ((FiniteSet.toList s).map (·, a) : List (K × V)) := by
+  simpa [NoDupKeys, List.map_map, Function.comp_def] using FiniteSet.toList_nodup (m := s)
+
+theorem get?_ofSet_of_mem [DecidableEq K] [LawfulFiniteSet S K] {a : V} {s : S} {k : K}
+    (h : k ∈ s) : get? (FiniteMap.ofSet (M := M) a s) k = some a :=
+  get?_ofList_some (List.mem_map_of_mem (FiniteSet.mem_toList.mpr h)) noDupKeys_map_const
+
+theorem get?_ofSet_of_not_mem [LawfulFiniteSet S K] {a : V} {s : S} {k : K}
+    (h : k ∉ s) : get? (FiniteMap.ofSet (M := M) a s) k = none :=
+  get?_ofList_none (fun ⟨_, hv⟩ => by
+    obtain ⟨_, hmem, rfl, _⟩ := by simpa using hv
+    exact h (FiniteSet.mem_toList.mp hmem)) noDupKeys_map_const
+
+theorem ofSet_empty [LawfulFiniteSet S K] {a : V} : (FiniteMap.ofSet a (∅ : S) : M V) = ∅ :=
+  equiv_iff_eq.mp fun k => by rw [get?_ofSet_of_not_mem mem_empty, get?_empty]
+
+theorem ofSet_insert [DecidableEq K] [LawfulFiniteSet S K] {a : V} {x : K} {s : S} :
+    (FiniteMap.ofSet a (Insert.insert x s) : M V) = insert (FiniteMap.ofSet a s) x a := by
+  refine equiv_iff_eq.mp fun k => ?_
+  by_cases hk : x = k
+  · subst hk
+    rw [get?_insert_eq rfl, get?_ofSet_of_mem (LawfulSet.mem_insert.mpr (.inl rfl))]
+  · rw [get?_insert_ne hk]
+    by_cases hks : k ∈ s
+    · rw [get?_ofSet_of_mem (LawfulSet.mem_insert.mpr (.inr hks)), get?_ofSet_of_mem hks]
+    · rw [get?_ofSet_of_not_mem fun hc => (LawfulSet.mem_insert.mp hc).elim
+        (fun h => hk h.symm) hks, get?_ofSet_of_not_mem hks]
 
 theorem ofList_toList [DecidableEq K] {m : M V} :
     ofList (toList m) = m := by

@@ -70,7 +70,14 @@ instance instHasSubsetMultiSet [MultiSet MS A] : HasSubset MS :=
 theorem subset_iff [MultiSet MS A] {X Y : MS} :
     X ⊆ Y ↔ ∀ a, MultiSet.multiplicity a X ≤ MultiSet.multiplicity a Y := Iff.rfl
 
+@[refl]
+theorem subset_refl [MultiSet MS A] {X : MS} : X ⊆ X := subset_iff.mpr fun _ => Nat.le_refl _
+
 variable [LawfulMultiSet MS A]
+
+@[simp]
+theorem not_mem_empty {a : A} : a ∉ (∅ : MS) := by
+  rw [mem_iff_multiplicity_pos, multiplicity_empty]; omega
 
 @[grind =]
 theorem mem_singleton_iff {x a : A} : x ∈ ({a} : MS) ↔ x = a := by
@@ -135,6 +142,10 @@ theorem singleton_subset_iff {x : A} {X : MS} : ({x} : MS) ⊆ X ↔ x ∈ X whe
     by_cases hax : a = x
     · subst hax; rw [multiplicity_singleton_eq]; exact h
     · rw [multiplicity_singleton_ne hax]; omega
+
+@[grind =]
+theorem difference_self {X : MS} : X \ X = (∅ : MS) :=
+  LawfulMultiSet.ext fun _ => by rw [multiplicity_difference, multiplicity_empty]; omega
 
 theorem disjUnion_difference_of_subseteq {X Y : MS} (h : Y ⊆ X) : X = Y ⊎ (X \ Y) := by
   refine LawfulMultiSet.ext fun a => ?_
