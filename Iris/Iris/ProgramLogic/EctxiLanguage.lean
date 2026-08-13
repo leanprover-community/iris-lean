@@ -122,8 +122,6 @@ instance instEctxLanguage : EctxLanguage Expr Λ.Ectx State Obs Val where
     · intro; right; rfl
     · simp_all; grind
 
--- The `language` derived from an `EctxItemLanguage` is the generic `Language` instance built by
--- `EctxLanguage.instLanguage` (`LanguageOfEctx`), specialized to `instEctxLanguage`.
 attribute [rocq_alias ectxi_lang] Iris.ProgramLogic.EctxLanguage.instLanguage
 
 theorem fill_not_val {K} {e : Expr} : toVal e = none → toVal (fill K e) = none := by
