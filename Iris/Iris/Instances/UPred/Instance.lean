@@ -715,13 +715,13 @@ theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
 
 @[rocq_alias uPred.ownM_forall, rocq_alias uPred_primitive.ownM_forall]
 theorem ownM_forall (f : A → M) :
-  (∀ a, ownM (f a)) ⊢ ∃ z, ownM z ∧ (∀ a, ∃ xf, UPred.eq z (f a • xf)) := by
+  (∀ a, ownM (f a)) ⊢ ∃ z, ownM z ∧ (∀ a, ∃ xf, z ≡ f a • xf) := by
   intro _ x Hf
-  refine ⟨iprop(ownM x ∧ ∀ a, ∃ xf, UPred.eq x.val (f a • xf)), ⟨x, rfl⟩, ?_⟩
+  refine ⟨iprop(ownM x ∧ ∀ a, ∃ xf, x.val ≡ f a • xf), ⟨x, rfl⟩, ?_⟩
   refine ⟨incN_refl x.val, ?_⟩
   rintro p ⟨a, rfl⟩
   rcases Hf (ownM (f a)) ⟨a, rfl⟩ with ⟨xf, Hxf⟩
-  exact ⟨(UPred.eq x.val (f a • xf)), ⟨xf, rfl⟩, Hxf⟩
+  exact ⟨iprop(x.val ≡ f a • xf), ⟨xf, rfl⟩, Hxf⟩
 
 @[rocq_alias uPred.later_ownM, rocq_alias uPred_primitive.later_ownM]
 theorem later_ownM (a : M) : ▷ ownM a ⊢ ∃ b, ownM b ∧ ▷ <si_pure> (SiProp.internalEq a b)
