@@ -162,6 +162,11 @@ instance isOpFrac_half d (q : Qp) : IsOp d q q.half q.half where
   is_op := by refine (q.ext ?_); grind
 
 set_option synthInstance.checkSynthOrder false in
+/--
+  The sum operator `+` is not automatically unfolded as the CMRA operator (`•`).
+  As a result, `isOpSplit_op` does not automatically apply, and this instance
+  is required.
+-/
 instance (priority := default + 100) isOpFrac_split (q1 q2 : Qp) :
     IsOp .split (q1 + q2) q1 q2 where
   is_op := rfl
