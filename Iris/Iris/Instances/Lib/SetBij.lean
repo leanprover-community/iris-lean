@@ -81,31 +81,24 @@ variable {γ : GName} {dq dq₁ dq₂ : DFrac} {L L₁ L₂ : S}
 
 @[rocq_alias gset_bij_own_auth_timeless]
 instance : Timeless (PROP := IProp GF) (γ ↪●BIJ{dq} L) := by
-  unfold set_bij_own_auth
-  infer_instance
+  unfold set_bij_own_auth; infer_instance
 
 @[rocq_alias gset_bij_own_auth_persistent]
 instance : Persistent (PROP := IProp GF) (γ ↪●BIJ{.discard} L) := by
-  unfold set_bij_own_auth auth
-  infer_instance
+  unfold set_bij_own_auth auth; infer_instance
 
 @[rocq_alias gset_bij_own_elem_timeless]
 instance (a : A) (b : B) : Timeless (PROP := IProp GF) (γ ↪◯BIJ⟨a, b⟩) := by
-  unfold set_bij_own_elem
-  infer_instance
+  unfold set_bij_own_elem; infer_instance
 
 @[rocq_alias gset_bij_own_elem_persistent]
 instance (a : A) (b : B) : Persistent (PROP := IProp GF) (γ ↪◯BIJ⟨a, b⟩) := by
-  unfold set_bij_own_elem
-  infer_instance
+  unfold set_bij_own_elem; infer_instance
 
 @[rocq_alias gset_bij_own_auth_fractional]
 instance : Fractional (PROP := IProp GF) fun q => γ ↪●BIJ{.own q} L where
-  fractional p q := by
-    unfold set_bij_own_auth
-    refine .trans ?_ iOwn_op
-    refine BIBase.BiEntails.of_eq ?_
-    exact congrArg (iOwn γ) (auth_op_auth (dq₁ := .own p) (dq₂ := .own q) (L := L)).symm
+  fractional p q :=
+    .trans (.of_eq (congrArg (iOwn γ) (auth_op_auth (dq₁ := .own p) (dq₂ := .own q)).symm)) iOwn_op
 
 @[rocq_alias gset_bij_own_auth_as_fractional]
 instance (q : Qp) : AsFractional (PROP := IProp GF) (γ ↪●BIJ{.own q} L)
@@ -113,39 +106,29 @@ instance (q : Qp) : AsFractional (PROP := IProp GF) (γ ↪●BIJ{.own q} L)
   as_fractional := .rfl
   as_fractional_fractional := inferInstance
 
+/-- Turn the internal validity of a composite `SetBij` resource into a pure fact. -/
+private theorem cmraValid_op_pure {a₁ a₂ : SetBij S} {φ : Prop} (h : ✓ (a₁ • a₂) → φ) :
+    iOwn (E := SetBijG.elem) γ a₁ ∗ iOwn (E := SetBijG.elem) γ a₂ ⊢@{IProp GF} ⌜φ⌝ :=
+  iOwn_cmraValid_op.trans <| internalCmraValid_discrete.mp.trans <| pure_mono h
+
 @[rocq_alias gset_bij_own_auth_agree]
 theorem set_bij_own_auth_agree :
     (γ ↪●BIJ{dq₁} L₁) ∗ (γ ↪●BIJ{dq₂} L₂) ⊢@{IProp GF}
-      ⌜✓ (dq₁ • dq₂) ∧ L₁ = L₂ ∧ SetBijective L₁⌝ := by
-  unfold set_bij_own_auth
-  iintro ⟨H1, H2⟩
-  icombine H1 H2 gives %H
-  ipureintro
-  exact auth_op_auth_valid_iff.mp H
+      ⌜✓ (dq₁ • dq₂) ∧ L₁ = L₂ ∧ SetBijective L₁⌝ :=
+  cmraValid_op_pure auth_op_auth_valid_iff.mp
 
 @[rocq_alias gset_bij_own_auth_exclusive]
-theorem set_bij_own_auth_exclusive : (γ ↪●BIJ L₁) ∗ (γ ↪●BIJ L₂) ⊢@{IProp GF} False := by
-  unfold set_bij_own_auth
-  iintro ⟨H1, H2⟩
-  icombine H1 H2 gives %H
-  exact (auth_one_op_auth_one_valid_iff.mp H).elim
+theorem set_bij_own_auth_exclusive : (γ ↪●BIJ L₁) ∗ (γ ↪●BIJ L₂) ⊢@{IProp GF} False :=
+  (cmraValid_op_pure (φ := False) auth_one_op_auth_one_valid_iff.mp).trans (pure_elim' False.elim)
 
 @[rocq_alias gset_bij_own_valid]
-theorem set_bij_own_valid : (γ ↪●BIJ{dq} L) ⊢@{IProp GF} ⌜✓ dq ∧ SetBijective L⌝ := by
-  unfold set_bij_own_auth
-  refine iOwn_cmraValid.trans ?_
-  iintro %h
-  ipureintro
-  exact auth_valid_iff.mp h
+theorem set_bij_own_valid : (γ ↪●BIJ{dq} L) ⊢@{IProp GF} ⌜✓ dq ∧ SetBijective L⌝ :=
+  iOwn_cmraValid.trans <| internalCmraValid_discrete.mp.trans <| pure_mono auth_valid_iff.mp
 
 @[rocq_alias gset_bij_own_elem_agree]
 theorem set_bij_own_elem_agree (a a' : A) (b b' : B) :
-    (γ ↪◯BIJ⟨a, b⟩) ∗ (γ ↪◯BIJ⟨a', b'⟩) ⊢@{IProp GF} ⌜a = a' ↔ b = b'⌝ := by
-  unfold set_bij_own_elem
-  iintro ⟨H1, H2⟩
-  icombine H1 H2 gives %H
-  ipureintro
-  exact elem_agree H
+    (γ ↪◯BIJ⟨a, b⟩) ∗ (γ ↪◯BIJ⟨a', b'⟩) ⊢@{IProp GF} ⌜a = a' ↔ b = b'⌝ :=
+  cmraValid_op_pure elem_agree
 
 @[rocq_alias gset_bij_own_elem_get]
 theorem set_bij_own_elem_get (a : A) (b : B) (h : (a, b) ∈ L) :
@@ -154,12 +137,8 @@ theorem set_bij_own_elem_get (a : A) (b : B) (h : (a, b) ∈ L) :
 
 @[rocq_alias gset_bij_elem_of]
 theorem set_bij_elem_of (a : A) (b : B) :
-    (γ ↪●BIJ{dq} L) ∗ (γ ↪◯BIJ⟨a, b⟩) ⊢@{IProp GF} ⌜(a, b) ∈ L⌝ := by
-  unfold set_bij_own_auth set_bij_own_elem
-  iintro ⟨H1, H2⟩
-  icombine H1 H2 gives %H
-  ipureintro
-  exact (auth_op_elem_valid_iff.mp H).2.2
+    (γ ↪●BIJ{dq} L) ∗ (γ ↪◯BIJ⟨a, b⟩) ⊢@{IProp GF} ⌜(a, b) ∈ L⌝ :=
+  cmraValid_op_pure fun h => (auth_op_elem_valid_iff.mp h).2.2
 
 end lemmas
 
@@ -173,25 +152,20 @@ theorem set_bij_own_elem_get_big :
     (γ ↪●BIJ{dq} L) ⊢@{IProp GF} [∗set] ab ∈ L, γ ↪◯BIJ⟨ab.1, ab.2⟩ := by
   refine .trans ?_ bigSepS_forall.mpr
   iintro H %⟨a, b⟩ %hab
-  iapply set_bij_own_elem_get a b hab
-  iexact H
+  iapply set_bij_own_elem_get a b hab $$ H
 
 @[rocq_alias gset_bij_own_alloc]
 theorem set_bij_own_alloc (L : S) (h : SetBijective L) :
     ⊢@{IProp GF} |==> ∃ γ, (γ ↪●BIJ L) ∗ [∗set] ab ∈ L, γ ↪◯BIJ⟨ab.1, ab.2⟩ := by
   imod (iOwn_alloc (E := SetBijG.elem) (auth (.own 1) L) (auth_one_valid_iff.mpr h)) with ⟨%γ, G⟩
-  imodintro
-  iexists γ
+  imodintro; iexists γ
   iapply persistent_entails_left set_bij_own_elem_get_big
-  iunfold set_bij_own_auth
-  iexact G
+  iunfold set_bij_own_auth; iexact G
 
 @[rocq_alias gset_bij_own_alloc_empty]
 theorem set_bij_own_alloc_empty : ⊢@{IProp GF} |==> ∃ γ, γ ↪●BIJ (∅ : S) := by
-  imod (set_bij_own_alloc (∅ : S) .empty) with ⟨%γ, H, -⟩
-  imodintro
-  iexists γ
-  iexact H
+  imod (set_bij_own_alloc (∅ : S) SetBijective.empty) with ⟨%γ, H, -⟩
+  imodintro; iexists γ; iexact H
 
 end finiteLemmas
 
@@ -213,16 +187,13 @@ theorem set_bij_own_extend_internal (a : A) (b : B) :
   iintro ⟨Ha, Hb, HL⟩
   ihave %h₁ : ⌜∀ b', (a, b') ∉ L⌝ $$ [Ha HL]
   · iintro %b' %hmem
-    iapply Ha $$ %b'
-    iapply set_bij_own_elem_get a b' hmem
-    iexact HL
+    iapply Ha $$ %b' [HL]
+    iapply set_bij_own_elem_get a b' hmem $$ HL
   ihave %h₂ : ⌜∀ a', (a', b) ∉ L⌝ $$ [Hb HL]
   · iintro %a' %hmem
-    iapply Hb $$ %a'
-    iapply set_bij_own_elem_get a' b hmem
-    iexact HL
-  iapply set_bij_own_extend a b h₁ h₂
-  iexact HL
+    iapply Hb $$ %a' [HL]
+    iapply set_bij_own_elem_get a' b hmem $$ HL
+  iapply set_bij_own_extend a b h₁ h₂ $$ HL
 
 end updates
 
