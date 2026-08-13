@@ -92,8 +92,8 @@ instance isExcept0_bupd (P : PROP)
   is_except0 := except0_bupd.trans <| BIUpdate.mono h.1
 
 @[rocq_alias from_modal_bupd]
-instance fromModal_bupd io (P : PROP) :
-    FromModal io True modality_id iprop(|==> P) iprop(|==> P) P where
+instance fromModal_bupd modStatus (P : PROP) :
+    FromModal modStatus True modality_id iprop(|==> P) iprop(|==> P) P where
   from_modal := by simp [modality_id]; exact BIUpdate.intro
 
 @[rocq_alias elim_modal_bupd]

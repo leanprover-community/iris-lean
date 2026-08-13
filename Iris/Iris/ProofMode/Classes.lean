@@ -231,6 +231,20 @@ class IntoExcept0 {PROP} [BI PROP] (P : PROP) (Q : outParam PROP) where
   into_except0 : P ⊢ ◇ Q
 export IntoExcept0 (into_except0)
 
+/-- Indicates whether the modality is already known or should be determined by the proof goal. -/
+inductive FromModal.ModalityStatus where
+  | matchGoal
+  | known
+
+meta section
+
+@[reducible]
+def FromModal.ModalityStatus.toInOut : FromModal.ModalityStatus → InOut
+  | .matchGoal => .out
+  | .known => .in
+
+end
+
 /--
 `FromModal` turns a goal `P : PROP2` into a modality `M : PROP1 → PROP2` applied to `Q : PROP1`
 under condition `φ`.
@@ -241,10 +255,11 @@ For the IPM TC synthesis, it needs to be an `uncheckedInParam` since it should m
 if the user provides an mvar.
 -/
 @[ipm_class, rocq_alias FromModal]
-class FromModal (io : InOut) {PROP1 : semiOutParamIPM io (Type _)}
+class FromModal (modStatus : FromModal.ModalityStatus)
+    {PROP1 : semiOutParamIPM modStatus.toInOut (Type _)}
     {PROP2} {α : outParam <| uncheckedInParam <| Type _}
     [uncheckedInParam <| BI PROP1] [BI PROP2] (φ : outParam Prop)
-    (M : semiOutParamIPM io (Modality PROP1 PROP2))
+    (M : semiOutParamIPM modStatus.toInOut (Modality PROP1 PROP2))
     (sel : outParam <| uncheckedInParam α) (P : PROP2) (Q : outParam PROP1) where
   from_modal : φ → M.M Q ⊢ P
 export FromModal (from_modal)

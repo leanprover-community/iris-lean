@@ -1016,29 +1016,29 @@ instance fromPure_absorbingly (a : Bool) [BI PROP] (P : PROP) (φ : Prop)
 /-! ### FromModal -/
 
 @[rocq_alias from_modal_affinely]
-instance (priority := default + 10) fromModal_affinely [BI PROP] io (P : PROP) :
-  FromModal io True modality_affinely iprop(<affine> P) iprop(<affine> P) P where
+instance (priority := default + 10) fromModal_affinely [BI PROP] modStatus (P : PROP) :
+  FromModal modStatus True modality_affinely iprop(<affine> P) iprop(<affine> P) P where
   from_modal := by simp [modality_affinely]
 
 @[rocq_alias from_modal_persistently]
-instance (priority := default + 10) fromModal_persistently [BI PROP] io (P : PROP) :
-  FromModal io True modality_persistently iprop(<pers> P) iprop(<pers> P) P where
+instance (priority := default + 10) fromModal_persistently [BI PROP] modStatus (P : PROP) :
+  FromModal modStatus True modality_persistently iprop(<pers> P) iprop(<pers> P) P where
   from_modal := by simp [modality_persistently]
 
 @[rocq_alias from_modal_intuitionistically]
-instance (priority := default + 20) fromModal_intuitionistically [BI PROP] io (P : PROP) :
-    FromModal io True modality_intuitionistically iprop(□ P) iprop(□ P) P where
+instance (priority := default + 20) fromModal_intuitionistically [BI PROP] modStatus (P : PROP) :
+    FromModal modStatus True modality_intuitionistically iprop(□ P) iprop(□ P) P where
   from_modal := by simp [modality_intuitionistically]
 
 @[ipm_backtrack, rocq_alias from_modal_intuitionistically_affine_bi]
 instance (priority := default + 30) fromModal_intuitionistically_affine_bi
-    [BI PROP] [BIAffine PROP] (P : PROP) io :
-    FromModal io True modality_persistently iprop(□ P) iprop(□ P) P where
+    [BI PROP] [BIAffine PROP] (P : PROP) modStatus :
+    FromModal modStatus True modality_persistently iprop(□ P) iprop(□ P) P where
   from_modal := by simp [modality_persistently]; apply intuitionistically_iff_persistently.2
 
 @[rocq_alias from_modal_absorbingly]
-instance fromModal_absorbingly [BI PROP] (P : PROP) io :
-  FromModal io True modality_id iprop(<absorb> P) iprop(<absorb> P) P where
+instance fromModal_absorbingly [BI PROP] (P : PROP) modStatus :
+  FromModal modStatus True modality_id iprop(<absorb> P) iprop(<absorb> P) P where
   from_modal := by simp [modality_id]; apply absorbingly_intro
 
 /-! ### ElimModal -/

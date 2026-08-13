@@ -74,7 +74,7 @@ theorem modaction_sep [BI PROP1] [bi2: BI PROP2]
 @[rocq_alias tac_modal_intro]
 theorem modintro [BI PROP1] [BI PROP2] {e e'} {α Φ M} {sel : α}
     {P : PROP2} {Q : PROP1}
-    [inst : FromModal .out Φ M sel P Q] (h1 : e ⊢ M.M e') (h2 : e' ⊢ Q) (hΦ : Φ) : e ⊢ P := calc
+    [inst : FromModal .matchGoal Φ M sel P Q] (h1 : e ⊢ M.M e') (h2 : e' ⊢ Q) (hΦ : Φ) : e ⊢ P := calc
   e ⊢ M.M e' := h1
   _ ⊢ M.M Q  := M.mono h2
   _ ⊢ P      := inst.from_modal hΦ
@@ -189,7 +189,7 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
     let Q ← mkFreshExprMVarQ q($prop')
     -- `M Q ⊢ goal`
     let .some _ ←
-      ProofModeM.trySynthInstanceQ q(@FromModal .out $prop' $prop $α $bi' $bi $Φ $M $sel $goal $Q)
+      ProofModeM.trySynthInstanceQ q(@FromModal .matchGoal $prop' $prop $α $bi' $bi $Φ $M $sel $goal $Q)
       | throwIPMError "{goal} is not a \
           modality{if sel.isMVar then m!"" else m!" matching {sel}"}"
     -- show the side condition
