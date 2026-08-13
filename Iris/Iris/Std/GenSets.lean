@@ -841,6 +841,30 @@ theorem diff_not_finite_finite_ne_empty {X Y : S} (hX : setInfinite X) (hY : set
 
 end GenLemmas
 
+/-! ### Sequences of naturals -/
+
+section NatSeq
+
+variable {S : Type _} [LawfulSet S Nat] {start len : Nat}
+
+/-- The set `{start, start + 1, …, start + len - 1}`. -/
+def setSeq (start len : Nat) : S := ofList (List.range' start len)
+
+theorem mem_setSeq {x : Nat} : x ∈ (setSeq start len : S) ↔ start ≤ x ∧ x < start + len := by
+  rw [setSeq, ← mem_ofList, List.mem_range'_1]
+
+@[simp]
+theorem setSeq_zero : (setSeq start 0 : S) = ∅ := ofList_nil
+
+theorem setSeq_succ : (setSeq start (len + 1) : S) = {start + len} ∪ setSeq start len := by
+  ext x; rw [mem_union, mem_singleton, mem_setSeq, mem_setSeq]; omega
+
+theorem disjoint_singleton_setSeq {x : Nat} (h : start + len ≤ x) :
+    ({x} : S) ## setSeq start len :=
+  disjoint_singleton_left.mpr fun hx => absurd (mem_setSeq.mp hx) (by omega)
+
+end NatSeq
+
 end LawfulSet
 
 namespace FiniteSet
