@@ -13,7 +13,7 @@ public meta import Iris.Algebra.StepIndexRegistry
 namespace Iris
 
 @[rocq_alias sidx, rocq_alias SIdxMixin]
-class SIdx (I : Type u) extends LT I, LE I, Zero I where
+class SIdx (I : outParam <| Type u) extends LT I, LE I, Zero I where
   succ : I → I
   lt_trans : ∀ {n m p : I}, n < m → m < p → n < p
   lt_wf : WellFounded ((· < ·) : I → I → Prop)
@@ -111,9 +111,9 @@ private meta def stepindexCore (k : TSyntax ``Parser.Term.attrKind) (inst? : Opt
     | none   => `(term| $(mkCIdent ``DefaultSI.mk) inferInstance)
   -- Put the DefaultSI instance in scope
   let nm ← mkModuleUniqueName "instDefaultSI"
-  elabCommand <| ← `(command|
-    set_option synthInstance.checkSynthOrder false in
-    public $k:attrKind instance (priority := 10000) $(mkIdent nm) : DefaultSI $T := $val)
+  -- elabCommand <| ← `(command|
+    -- set_option synthInstance.checkSynthOrder false in
+    -- public $k:attrKind instance (priority := 10000) $(mkIdent nm) : DefaultSI $T := $val)
   -- Record `T` in the registry, so that `stepindex%` and `infer_stepindex` can resolve the type.
   unless T.raw.isIdent do
     throwError "`stepindex` requires an identifier for the eager registry, but got{indentD T}\n\n\

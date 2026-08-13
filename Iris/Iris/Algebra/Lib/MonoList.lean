@@ -25,7 +25,7 @@ variable {α : Type _} [OFE α]
 def MonoList (α : Type _) [OFE α] := Auth (MaxPrefixList α)
 
 instance : OFE (MonoList α) :=
-  Auth.instOFE
+  Auth.instOFENat
 
 instance : CMRA (MonoList α) :=
   Auth.instCMRA
