@@ -380,9 +380,7 @@ instance unitOFE : OFE Unit where
 #rocq_ignore unitO "Use the unit type"
 #rocq_ignore unit_dist "Local Dist instance; folded into Lean's OFE Unit instance."
 
-instance : @DiscreteE SI _ Unit unitOFE (() : Unit) :=
-  letI := unitOFE
-  ⟨fun _ => Subsingleton.elim _ _⟩
+instance : DiscreteE (() : Unit) := ⟨fun _ => Subsingleton.elim _ _⟩
 
 instance [OFE α] : OFE (ULift α) where
   Dist n x y := x.down ≡{n}≡ y.down
@@ -499,7 +497,7 @@ theorem Option.bind_equiv [OFE α] [OFE β] {x : Option α} {f g : α → Option
 abbrev OFEFun {α : Type _} (β : α → Type _) := ∀ a, OFE (β a)
 
 @[rocq_alias discrete_fun_ofe_mixin]
-instance [OFEFun (SI := SI) (β : α → _)] : OFE ((x : α) → β x) where
+instance [OFEFun (β : α → _)] : OFE ((x : α) → β x) where
   Dist n f g := ∀ x, f x ≡{n}≡ g x
   dist_eqv := {
     refl _ _ := dist_eqv.refl _
@@ -552,7 +550,7 @@ instance [OFE α] [OFE β] : OFE (α -c> β) where
   eq_dist' {_ _} := ContractiveHom.ext_iff.trans eq_dist
   dist_lt := dist_lt
 
-def applyHom [OFEFun (SI := SI) (β : α → _)] (x : α) : ((x : α) → β x) -n> β x where
+def applyHom [OFEFun (β : α → _)] (x : α) : ((x : α) → β x) -n> β x where
   f f := f x
   ne.1 _ _ _ H := H x
 
@@ -564,7 +562,7 @@ instance [OFE α] [OFE β] : NonExpansive (applyNe (α := α) (β := β)) where
   ne _ _ _ H f := f.ne.1 H
 
 @[rocq_alias discrete_funO_map]
-def mapCodHom [OFEFun (β₁ : α → _)] [OFEFun (SI := SI) β₂]
+def mapCodHom [OFEFun (β₁ : α → _)] [OFEFun β₂]
     (F : ∀ x, β₁ x -n> β₂ x) : ((x : α) → β₁ x) -n> ((x : α) → β₂ x) where
   f f x := F x (f x)
   ne.1 _ _ _ H x := (F x).ne.1 (H x)
@@ -1095,22 +1093,18 @@ instance [COFE α] : COFE (ULift α) where
   lbcompl_ne hn _ _ _ hc := IsCOFE.lbcompl_ne hn _ _ (fun p hp => hc p hp)
 
 @[rocq_alias unit_ofe_discrete]
-instance : @Discrete SI _ Unit unitOFE :=
-  letI : OFE Unit := unitOFE
-  { discrete_0 _ := Subsingleton.elim _ _ }
+instance : Discrete Unit where
+  discrete_0 _ := Subsingleton.elim _ _
 
 @[rocq_alias unit_cofe]
-instance unitCOFE : COFE Unit :=
-  letI : OFE Unit := unitOFE
-  {
-    compl _ := ()
-    conv_compl := ⟨⟩
-    lbcompl _ _ := ()
-    conv_lbcompl _ _ _ _ := ⟨⟩
-    lbcompl_ne _ _ _ _ _ := ⟨⟩
-  }
+instance : COFE Unit where
+  compl _ := ()
+  conv_compl := ⟨⟩
+  lbcompl _ _ := ()
+  conv_lbcompl _ _ _ _ := ⟨⟩
+  lbcompl_ne _ _ _ _ _ := ⟨⟩
 
-abbrev IsCOFEFun {α : Type _} (β : α → Type _) [OFEFun (SI := SI) β] := ∀ x : α, IsCOFE (β x)
+abbrev IsCOFEFun {α : Type _} (β : α → Type _) [OFEFun β] := ∀ x : α, IsCOFE (β x)
 
 #rocq_ignore option_compl "Local Compl definition; folded into Lean's IsCOFE instance."
 
@@ -1325,23 +1319,16 @@ section DiscreteO
 variable {SI : Type _} [SIdx SI]
 local stepindex SI
 
-@[reducible]
-def DiscreteO.instCOFE {α : Type _} : COFE (DiscreteO α) := COFE.ofDiscrete _
-
-theorem DiscreteO.OFE {α : Type _} :
-    @OFE.Discrete SI _ (DiscreteO α) (OFE.ofDiscrete _) :=
-  letI := OFE.ofDiscrete (DiscreteO α)
-  ⟨id⟩
+instance : COFE (DiscreteO α) := COFE.ofDiscrete _
+instance {α : Type _} : OFE.Discrete (DiscreteO α) := ⟨fun h => h⟩
 
 #rocq_ignore leibnizO_leibniz "Not needed"
 
 theorem DiscreteO.eqv_inj {x y : α} (H : DiscreteO.mk x = DiscreteO.mk y) : x = y :=
   congrArg DiscreteO.car H
 
-theorem DiscreteO.dist_inj {α : Type _} {x y : α} {n : SI} :
-    letI : COFE (DiscreteO α) := DiscreteO.instCOFE
-    DiscreteO.mk x ≡{n}≡ DiscreteO.mk y → x = y :=
-  fun H => DiscreteO.eqv_inj H
+theorem DiscreteO.dist_inj {x y : α} {n} (H : DiscreteO.mk x ≡{n}≡ DiscreteO.mk y) : x = y :=
+  DiscreteO.eqv_inj <| discrete H
 
 end DiscreteO
 

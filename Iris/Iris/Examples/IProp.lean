@@ -20,8 +20,6 @@ section Example1
 
 local stepindex Nat
 abbrev F0 : OFunctorPre := constOF (Agree (DiscreteO String))
-instance discreteO_cofe {α : Type _} : COFE (DiscreteO α) := DiscreteO.instCOFE
-instance discreteO_discrete {α : Type _} : OFE.Discrete (SI := Nat) (DiscreteO α) := DiscreteO.OFE
 
 variable {GF} [E0 : ElemG GF F0]
 
