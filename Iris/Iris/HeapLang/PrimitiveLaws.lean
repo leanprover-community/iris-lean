@@ -22,6 +22,7 @@ section HeapLangGS
 
 abbrev ProphMapF := fun V => Std.ExtTreeMap ProphId V compare
 
+@[rocq_alias heap_lang.heapGpreS]
 class HeapLangGpreS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGpreS GF where
   heap_pre : genHeapPreS Loc (Option Val) GF HeapF
   proph_pre : prophMapPreS ProphId (Val × Val) GF ProphMapF
@@ -29,6 +30,31 @@ class HeapLangGpreS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGp
 attribute [reducible, instance] HeapLangGpreS.heap_pre
 attribute [reducible, instance] HeapLangGpreS.proph_pre
 
+#rocq_ignore heap_lang.«heapΣ» "Superseded by the `HeapLangGpreS` typeclass on `BundledGFunctors`."
+#rocq_ignore heap_lang.subG_heapGpreS "Superseded by Lean's direct `ElemG` typeclass synthesis."
+
+/-! ### The heap_lang points-to assertion
+The HeapLang points-to assertion is taken from `gen_heap`. -/
+
+attribute [rocq_alias heap_lang.pointsto] pointsTo
+attribute [rocq_alias heap_lang.pointsto_timeless] instTimelessPointsTo
+attribute [rocq_alias heap_lang.pointsto_fractional] instFractionalPointsTo
+attribute [rocq_alias heap_lang.pointsto_as_fractional] instAsFractionalPointsTo
+attribute [rocq_alias heap_lang.pointsto_valid] pointsTo_cmraValid
+attribute [rocq_alias heap_lang.pointsto_valid_2] pointsTo_op_cmraValid
+attribute [rocq_alias heap_lang.pointsto_agree] pointsTo_agree
+attribute [rocq_alias heap_lang.pointsto_combine] pointsTo_combine
+attribute [rocq_alias heap_lang.pointsto_frac_ne] pointsTo_frac_ne
+attribute [rocq_alias heap_lang.pointsto_ne] pointsTo_ne
+attribute [rocq_alias heap_lang.pointsto_persist] pointsTo_persist
+attribute [rocq_alias heap_lang.pointsto_unpersist] pointsTo_unpersist
+attribute [rocq_alias heap_lang.pointsto_persistent] instPersistentPointsTo
+
+#rocq_ignore heap_lang.pointsto_def "Rocq sealing auxiliary definition."
+#rocq_ignore heap_lang.pointsto_aux "Rocq sealing auxiliary definition."
+#rocq_ignore heap_lang.pointsto_unseal "Rocq unsealing lemma."
+
+@[rocq_alias heap_lang.heapGS_gen]
 class HeapLangGS (hlc : outParam HasLC) (GF : BundledGFunctors) where
   -- not an instance on purpose to avoid diamonds with IrisGS_gen
   [invGS : InvGS_gen hlc GF]
@@ -50,6 +76,7 @@ theorem prophMapInterp_nil_append [HeapLangGS hlc GF] (κs : List Observation)
     (ps : Std.ExtTreeSet ProphId) : prophMapInterp ([] ++ κs) ps ⊣⊢ prophMapInterp κs ps :=
   .rfl
 
+@[rocq_alias heap_lang.heapGS_irisGS]
 instance HeapLang [HeapLangGS hlc GF] : IrisGS_gen hlc Exp GF where
   invGS := HeapLangGS.invGS
   numLatersPerStep n := 0
@@ -99,6 +126,7 @@ end HeapLangGS
 
 section Adequacy
 
+@[rocq_alias heap_lang.heap_adequacy]
 theorem heap_adequacy [HeapLangGpreS .hasLC GF] (e : Exp) σ (φ : Val → Prop)
     (Hwp : ∀ [HeapLangGS .hasLC GF], ⊢@{IProp GF} (WP e {{ v, ⌜φ v⌝ }})) :
     adequate .NotStuck e σ (fun v _ => φ v) := by
@@ -146,6 +174,7 @@ theorem wp_rec {f x : Binder} {e : Exp} {vf v : Val}
   dsimp only [Nat.repeat]
   iintro !> !> !> -; iframe
 
+@[rocq_alias heap_lang.wp_fork]
 theorem wp_fork {e : Exp} :
     ▷ Φ (hl_val(#())) -∗
     ▷ WP e @ s; ⊤ {{ _v, True }} -∗
@@ -174,6 +203,7 @@ theorem wp_fork {e : Exp} :
   · iapply BI.BigSepL.bigSepL_singleton
     iframe Hwp
 
+@[rocq_alias heap_lang.wp_fork_fupd]
 theorem wp_fork_fupd {e : Exp} :
     (▷ |={E}=> (WP e @ s; ⊤ {{ _v, True }} ∗ Φ (hl_val(#())))) ⊢
       WP hl(fork(&e)) @ s; E {{ Φ }} := by
@@ -202,6 +232,7 @@ theorem wp_fork_fupd {e : Exp} :
   · iapply BI.BigSepL.bigSepL_singleton
     iframe Hwp
 
+@[rocq_alias heap_lang.wp_alloc]
 theorem wp_alloc (v : Val) (Φ : Val → IProp GF ) :
     ▷ (∀ l : Loc, l ↦ some v -∗ Φ (.lit $ .loc l)) -∗
     WP hl(ref(&v)) @ s; E {{ Φ }} := by
@@ -240,6 +271,7 @@ theorem wp_alloc (v : Val) (Φ : Val → IProp GF ) :
   isplit; ipureintro; rfl
   iapply HΦ $$ [$]
 
+@[rocq_alias heap_lang.wp_load]
 theorem wp_load {l : Loc} {q} {v : Val} Φ :
     ▷ l ↦{q} some v -∗
     ▷ (l ↦{q} some v -∗ Φ v) -∗
@@ -274,6 +306,7 @@ theorem wp_load {l : Loc} {q} {v : Val} Φ :
   · ipureintro; simp [toVal]; rfl
   · iapply HΦ $$ [$]
 
+@[rocq_alias heap_lang.wp_store]
 theorem wp_store {l : Loc} {v v' : Val} Φ :
     ▷ l ↦ some v' -∗
     ▷ (l ↦ some v -∗ Φ hl_val(#())) -∗
@@ -312,6 +345,7 @@ theorem wp_store {l : Loc} {v v' : Val} Φ :
   · ipureintro; rfl
   · iapply HΦ $$ [$]
 
+@[rocq_alias heap_lang.wp_cmpxchg_fail]
 theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v2 : Val}
     (Heq1 : toVal e1 = .some v1) (Heq2 : toVal e2 = .some v2) (Heq3 : v'.compareSafe v1)
     (Heq4 : decide (v' = v1) = false) :
@@ -355,6 +389,7 @@ theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp
   ipureintro
   simp
 
+@[rocq_alias heap_lang.wp_cmpxchg_suc]
 theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v2 : Val}
     (Heq1 : toVal e1 = .some v1) (Heq2 : toVal e2 = .some v2) (Heq3 : v'.compareSafe v1)
     (Heq4 : decide (v' = v1) = true) :
@@ -400,6 +435,7 @@ theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v
   ipureintro; simp [toVal]
   rfl
 
+@[rocq_alias heap_lang.wp_free]
 theorem wp_free {l : Loc} {v : Val} :
     ▷ (l ↦ some v) ⊢ WP hl(free(#l)) @ s; E {{ v'', ⌜v'' = hl_val(#())⌝ ∗ l ↦ none }} := by
   iintro >Hpt
@@ -434,6 +470,7 @@ theorem wp_free {l : Loc} {v : Val} :
   simp [toVal]
   rfl
 
+@[rocq_alias heap_lang.wp_xchg]
 theorem wp_xchg {l : Loc} {v w : Val} :
     ▷ (l ↦ some v) ⊢ WP hl(xchg(#l, &w)) @ s; E {{ v'', ⌜v'' = v⌝ ∗ l ↦ some w }} := by
   iintro >Hpt
@@ -469,6 +506,7 @@ theorem wp_xchg {l : Loc} {v w : Val} :
   iframe Hpt
   ipureintro; simp [toVal]; rfl
 
+@[rocq_alias heap_lang.wp_faa]
 theorem wp_faa {l : Loc} {i1 i2 : Int} :
     ▷ (l ↦ some hl_val(#i1))
     ⊢ WP hl(faa(#l, #i2)) @ s; E {{ v'', ⌜v'' = hl_val(#i1)⌝ ∗ l ↦ some hl_val(#(i1 + i2)) }} := by
@@ -506,6 +544,7 @@ theorem wp_faa {l : Loc} {i1 i2 : Int} :
   iframe Hpt
   ipureintro; simp [toVal]; rfl
 
+@[rocq_alias heap_lang.wp_new_proph]
 theorem wp_new_proph Φ :
     (∀ p pvs, proph p pvs -∗ Φ (.lit (.prophecy p))) -∗
     WP hl(newProph()) @ s; E {{ Φ }} := by
@@ -543,6 +582,7 @@ theorem wp_new_proph Φ :
     iapply HΦ $$ [$]
   · simp only [Algebra.BigOpL.bigOpL_nil]; itrivial
 
+@[rocq_alias heap_lang.wp_resolve_strong]
 theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × Val)}
     (hatom : Language.Atomic Language.Atomicity.StronglyAtomic e) (hne : toVal e = none) :
     proph p pvs -∗
@@ -609,6 +649,7 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
     iapply wp_value'
     iapply HΦ $$ %pvs'' %hpvs'_eq Hele
 
+@[rocq_alias heap_lang.wp_resolve]
 theorem wp_resolve {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × Val)}
     (hatom : Language.Atomic Language.Atomicity.StronglyAtomic e) (hne : toVal e = none := by decide) :
     proph p pvs -∗
@@ -623,6 +664,7 @@ theorem wp_resolve {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × Val)}
   iframe Hp
   iexact Hcont
 
+@[rocq_alias heap_lang.wp_resolve_proph]
 theorem wp_resolve_proph {p : ProphId} {w : Val} {pvs : List (Val × Val)} :
     proph p pvs -∗
     (∀ pvs', ⌜pvs = (hl_val(#()), w) :: pvs'⌝ -∗ proph p pvs' -∗ Φ hl_val(#())) -∗

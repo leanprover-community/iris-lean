@@ -5,6 +5,8 @@ Authors: Mario Carneiro
 -/
 module
 
+public import Iris.Init
+
 @[expose] public section
 
 theorem equivalence_eq : Equivalence (@Eq α) := ⟨.refl, .symm, .trans⟩

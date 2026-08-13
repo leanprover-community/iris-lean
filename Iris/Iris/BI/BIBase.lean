@@ -5,12 +5,11 @@ Authors: Lars König, Mario Carneiro
 -/
 module
 
-public meta import Iris.BI.Notation
+public import Iris.BI.Notation
 public import Iris.Std.Classes
-public meta import Iris.Std.DelabRule
-public meta import Iris.Std.Rewrite
+public import Iris.Std.DelabRule
+public import Iris.Std.Rewrite
 public import Iris.Std.BigOp
-public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 

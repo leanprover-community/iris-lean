@@ -13,7 +13,6 @@ public import Iris.Algebra.Agree
 public import Iris.Algebra.BigOp
 public import Iris.Algebra.Updates
 public import Iris.Algebra.LocalUpdates
-meta import Iris.Std.RocqPorting
 
 @[expose] public section
 

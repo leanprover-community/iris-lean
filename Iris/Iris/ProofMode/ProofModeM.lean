@@ -6,6 +6,7 @@ Authors: Michael Sammler, Zongyuan Liu, Yunsong Yang, Alvin Tang
 module
 
 public meta import Iris.ProofMode.Expr
+public import Iris.ProofMode.SynthInstance
 public import Iris.ProofMode.Classes
 
 public meta section

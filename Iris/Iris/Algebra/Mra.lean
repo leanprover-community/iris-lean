@@ -7,7 +7,6 @@ module
 
 public import Iris.Algebra.LocalUpdates
 public import Iris.Std.Classes
-meta import Iris.Std.RocqPorting
 
 /-!
 # Monotone resource algebras

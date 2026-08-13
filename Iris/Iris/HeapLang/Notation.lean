@@ -6,7 +6,7 @@ Authors: Michael Sammler
 module
 
 public import Iris.HeapLang.Syntax
-public meta import Lean.PrettyPrinter.Parenthesizer
+public import Lean.PrettyPrinter.Parenthesizer
 
 public meta section
 namespace Iris.HeapLang

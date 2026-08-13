@@ -21,8 +21,8 @@ public import Iris.ProgramLogic.WeakestPre
 
 @[expose] public section
 
-namespace Iris.Tests
-open BI CMRA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic
+namespace IrisTest
+open Iris BI CMRA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic
 
 /- This file contains tests with various scenarios for all available tactics. -/
 
@@ -3689,6 +3689,18 @@ variable {hlc : HasLC} {GF : BundledGFunctors} [InvGS_gen hlc GF] {N : Namespace
   `intoAcc_inv` where the side condition is trivial.
 -/
 example {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
+  iintro #Hinv
+  iinv Hinv with #H
+  imodintro
+  isplit
+  · iexact H
+  · imodintro
+    inext
+    iexact H
+
+/-- Tests `iinv` with a concrete namespace whose closure is expensive to unfold.
+Regression test for https://github.com/leanprover-community/iris-lean/issues/557 -/
+example {P : IProp GF} : inv `long_name iprop(<pers> P) ={⊤}=∗ ▷ P := by
   iintro #Hinv
   iinv Hinv with #H
   imodintro
