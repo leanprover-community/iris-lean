@@ -16,6 +16,8 @@ public import Iris.Std.Positives
 public import Iris.Std.Equivalence
 meta import Iris.Std.RocqPorting
 
+local stepindex Nat
+
 namespace Iris.Algebra
 
 /-! # Big Operators
@@ -26,7 +28,6 @@ These are parameterized by a monoid operation and include theorems about their p
 
 open OFE Iris.Std
 
-local stepindex Nat
 @[rocq_alias big_opL, expose] public def bigOpL {M : Type u} {A : Type v} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
     (Φ : Nat → A → M) (l : List A) : M :=
   match l with
