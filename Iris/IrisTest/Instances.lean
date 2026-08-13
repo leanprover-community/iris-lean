@@ -403,65 +403,60 @@ open Iris Iris.CMRA Iris.ProofMode
 private def Qp.quarter : Qp := ⟨1 / 4, by grind⟩
 private def Qp.threeQuarters : Qp := ⟨3 / 4, by grind⟩
 
+/- Splitting a sum: `isOpFrac_split` is used instead of `isOpFrac_half`. -/
 /-- info:
   solution: IsOp IsOp.Direction.split (Qp.threeQuarters + Qp.quarter) Qp.threeQuarters Qp.quarter,
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth (IsOp (α := Qp) .split (Qp.threeQuarters + Qp.quarter) _ _)
+#ipm_synth (IsOp .split (Qp.threeQuarters + Qp.quarter) _ _)
 
+/- Splitting a CMRA operation: `isOpFrac_split` is used instead of `isOpFrac_half`. -/
 /-- info:
   solution: IsOp IsOp.Direction.split (Qp.threeQuarters • Qp.quarter) Qp.threeQuarters Qp.quarter,
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth (IsOp (α := Qp) .split (Qp.threeQuarters • Qp.quarter) _ _)
+#ipm_synth (IsOp .split (Qp.threeQuarters • Qp.quarter) _ _)
 
+/- Splitting a `Qp` value, where `isOpFrac_split` is not applicable: use `isOpFrac_half`. -/
 /-- info:
   solution: IsOp IsOp.Direction.split q q.half q.half,
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
 variable (q : Qp) in
-#ipm_synth (IsOp (α := Qp) .split q _ _)
+#ipm_synth (IsOp .split q _ _)
 
+/- Merging two `Qp` values: `isOpFrac_half` is not applicable, use `isOpFrac_merge`. -/
 /-- info:
   solution: IsOp IsOp.Direction.merge (Qp.quarter + Qp.threeQuarters) Qp.quarter Qp.threeQuarters,
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth (IsOp (α := Qp) .merge _ Qp.quarter Qp.threeQuarters)
+#ipm_synth (IsOp .merge _ Qp.quarter Qp.threeQuarters)
 
+/- Merging two `Qp` values: `isOpFrac_half` is applicable and preferred for eliminating `.half`. -/
 /-- info:
   solution: IsOp IsOp.Direction.merge q q.half q.half,
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
 variable (q : Qp) in
-#ipm_synth (IsOp (α := Qp) .merge _ q.half q.half)
+#ipm_synth (IsOp .merge _ q.half q.half)
 
-/-- info:
-  solution: IsOp IsOp.Direction.split (q1 + q2, q3 + q4) (q1, q3) (q2, q4),
-  new goals: []
+/-
+  Splitting a pair:
+  `isOp_pair`, `isOp_pair_core_id_l`, `isOp_pair_core_id_r` and `isOp_some` are used.
+  Backtracking is involved after `isOp_pair_core_id_r` fails to split the first
+  half of the pair.
 -/
-#guard_msgs (whitespace := lax) in
-variable (q1 q2 q3 q4 : Qp) in
-#ipm_synth (IsOp (α := Qp × Qp) .split (q1 + q2, q3 + q4) _ _)
-
 /-- info:
-  solution: IsOp IsOp.Direction.split (q, q1 + q2) (q.half, q1) (q.half, q2),
+  solution: IsOp IsOp.Direction.split (some (q, q1 + q2)) (some (q.half, q1)) (some (q.half, q2)),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
 variable (q1 q2 q : Qp) in
-#ipm_synth (IsOp (α := Qp × Qp) .split (q, q1 + q2) _ _)
-
-/-- info:
-  solution: IsOp IsOp.Direction.split (some (q1 + q2)) (some q1) (some q2),
-  new goals: []
--/
-#guard_msgs (whitespace := lax) in
-variable (q1 q2 : Qp) in
-#ipm_synth (IsOp (α := Option Qp) .split (some (q1 + q2)) _ _)
+#ipm_synth (IsOp .split (some (q, q1 + q2)) _ _)
 
 end IsOp
