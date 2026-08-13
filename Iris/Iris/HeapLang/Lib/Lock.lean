@@ -5,11 +5,13 @@ public import Iris.HeapLang.Notation
 public import Iris.HeapLang.Instances
 
 namespace Iris.HeapLang
+local stepindex Nat
 
 open BI
 
 @[expose] public section
 
+@[rocq_alias heap_lang.lock]
 class Lock (GF : BundledGFunctors) [IrisGS_gen hlc Exp GF] where
   newlock : Val
   acquire : Val
@@ -57,7 +59,7 @@ instance instPersistentLockIsLock  γ v R : Persistent (lk.isLock N γ v R) :=
 instance instTimelessLockLocked  γ : Timeless (lk.locked N γ) :=
   lk.locked_timeless γ
 
-local stepindex Nat
+@[rocq_alias heap_lang.is_lock_contractive]
 theorem isLock_contractive γ v : OFE.Contractive (lk.isLock N γ v) := by
   rw [contractive_internalEq (PROP := IProp GF)]
   iintro %x₁ %x₂ #HEQ
@@ -81,6 +83,9 @@ instance is_lock_ne γ v : OFE.NonExpansive (lk.isLock N γ v) :=
   letI _ := isLock_contractive N γ v
   OFE.ne_of_contractive _
 
+#rocq_ignore heap_lang.is_lock_proper "OFE is Leibniz; use equality"
+
+@[rocq_alias heap_lang.newlock_spec]
 theorem newlock_spec R :
     ⊢ □ ∀ (Φ : Val → IProp GF),
     R -∗ (∀ (v : Val) (γ : lk.name), lk.isLock N γ v R -∗ Φ v) -∗

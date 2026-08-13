@@ -95,7 +95,6 @@ theorem readCoin.spec (cp : Val) (b : Bool) :
     wp_pures
     wp_bind &nondetBool _; iapply nondetBool.spec $$ [//]; iintro !> %b -
     wp_store
-    wp_pure; wp_pure
     wp_bind resolveProph(_, _); iapply wp_resolve_proph $$ proph
     iintro %pvs' %pvs_eq proph
     subst pvs_eq

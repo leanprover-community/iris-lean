@@ -10,20 +10,22 @@ public import Iris.Algebra.Csum
 public import Iris.Algebra.Excl
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 open BI OFE Iris.Std
 
-local stepindex Nat
-/-- Internal equality in a BI with step-indexed structure, defined as
-`siPure (SiProp.internalEq a b)`. -/
+/--
+  Internal equality in a BI with step-indexed structure, where `a ≡ b` is
+  defined as `siPure (SiProp.internalEq a b)`.
+-/
 @[rocq_alias internal_eq]
 def internalEq [Sbi PROP] {A : Type _} [OFE A] (a b : A) : PROP :=
   iprop(<si_pure> (SiProp.internalEq a b))
 
 syntax:40 term:40 " ≡ " term:41 : term
 macro_rules
-  | `(iprop($a ≡ $b)) => ``(internalEq $a $b)
+  | `(iprop($a ≡%$tk $b)) => ``($(wrapIprop tk ``internalEq) $a $b)
 
 delab_rule internalEq
   | `($_ $a $b) => ``(iprop($a ≡ $b))

@@ -183,6 +183,14 @@ theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) = x :
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
   apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold]
 
+@[rocq_alias iProp_unfold_equivI]
+theorem IProp.unfold_equivI (P Q : IProp FF) :
+    (IProp.unfold FF P ≡ IProp.unfold FF Q) ⊢@{IProp FF} P ≡ Q := by
+  have h := BI.internalEq.of_internalEquiv_ne (PROP := IProp FF) (IProp.fold FF)
+    (x := IProp.unfold FF P) (y := IProp.unfold FF Q)
+  rw [IProp.fold_unfold, IProp.fold_unfold] at h
+  exact h
+
 theorem IProp.unfoldi_discreteE {v : FF.api τ (IProp FF)} (hv : OFE.DiscreteE v) :
     OFE.DiscreteE (unfoldi.f v) where
   discrete h := (congrArg unfoldi.f (hv.discrete

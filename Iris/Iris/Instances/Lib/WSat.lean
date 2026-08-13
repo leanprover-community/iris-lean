@@ -255,7 +255,7 @@ theorem ownI_close {i : Pos} {P : IProp GF} : wsat ∗ ownI i P ∗ ▷ P ∗ ow
       iapply bigSepM_delete HEQ
       isplitl [HE HProp]; ileft; isplitr [HE]
       · inext
-        iapply internalEq.rewrite (Ψ := fun x => x) (hΨ := OFE.id_ne) $$ [H] HProp
+        iapply internalEq.rewrite (Ψ := fun x => x) (hΨ := OFE.id_ne) (a := P) $$ [H] HProp
         iapply internalEq.symm; iassumption
       · iassumption
       iassumption

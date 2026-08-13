@@ -7,7 +7,7 @@ module
 
 public import Iris.ProofMode.Classes
 public import Iris.ProofMode.ModalityInstances
-public import Iris.Std.TC
+public import Iris.ProofMode.NatCancel
 import Iris.Std.RocqPorting
 
 @[expose] public section
@@ -43,15 +43,16 @@ instance fromModal_internalEq_next [Sbi PROP] [OFE A] (x y : A) :
       iprop(▷ (x ≡ y) : PROP) iprop(Later.next x ≡ Later.next y) iprop(x ≡ y) where
   from_modal _ := later_equivI_mpr x y
 
-@[rocq_alias into_laterN_Next]
+@[ipm_backtrack, rocq_alias into_laterN_Next]
 instance intoLaterN_internalEq_next [Sbi PROP] [OFE A] (x y : A)
-    only_head n n' [h : NatCancel n 1 n' 0] :
-    IntoLaterN (PROP := PROP) only_head n iprop(Later.next x ≡ Later.next y)
-      iprop(x ≡ y) where
-  into_laterN := (later_equivI_mp x y).trans (by
+    progress stuck only_head n n' [h : NatCancel n 1 n' 0 stuck] :
+    IntoLaterN progress (PROP := PROP) only_head n
+      iprop(Later.next x ≡ Later.next y) iprop(x ≡ y) where
+  into_laterN := by
+    refine (later_equivI_mp x y).trans ?_
     have hcancel : n' + 1 = n := by have := h.nat_cancel; omega
     rw [← hcancel]
-    exact later_mono (laterN_intro n'))
+    exact later_mono (laterN_intro n')
 
 -- IntoInternalEq
 @[rocq_alias into_internal_eq_internal_eq]

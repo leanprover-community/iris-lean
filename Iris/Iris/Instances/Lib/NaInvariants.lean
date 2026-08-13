@@ -75,6 +75,8 @@ instance instContractive_inv (p : NaInvPoolName) (N : Namespace) :
 instance instNonExpansive_inv (p : NaInvPoolName) (N : Namespace) : NonExpansive (inv (GF := GF) p N) :=
   ne_of_contractive _
 
+#rocq_ignore na_inv_proper "Subsumed by the NonExpansive instance `na_inv_ne`."
+
 @[rocq_alias na_inv_persistent]
 instance instPersistentInv (p : NaInvPoolName) (N : Namespace) (P : IProp GF) :
     Persistent (inv p N P) := by

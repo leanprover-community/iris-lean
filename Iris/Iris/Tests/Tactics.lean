@@ -525,17 +525,17 @@ example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗
   iexact H
 
 /- Tests that `irevert` clears binder info (see https://github.com/leanprover-community/iris-lean/pull/393#issuecomment-4506443579). -/
-/--
-error: unsolved goals
+/-- trace:
 PROP : Type u_1
 inst✝ : BI PROP
 P : PROP
 ⊢ ⏎
   ⊢ ∀ x, P
 -/
-#guard_msgs in
+#guard_msgs (trace, drop error) in
 example [BI PROP] (P : PROP) {x : Nat} : ⊢ P := by
   irevert %x
+  trace_state
 
 /- Tests `irevert` failing with dependency. -/
 /-- info: Try this:
@@ -1963,8 +1963,7 @@ example [BI PROP] (P Q : PROP) : Q ∧ <pers> P ⊢ Q := by
   iexact HQ
 
 /- Tests `icases` on conjunction with persistent right in an affine logic. -/
-/--
- error: unsolved goals
+/-- trace:
 PROP : Type u_1
 inst✝¹ : BI PROP
 inst✝ : BIAffine PROP
@@ -1974,11 +1973,12 @@ P Q : PROP
   ∗HQ : <pers> Q
   ⊢ Q
 -/
-#guard_msgs (whitespace := lax) in
+#guard_msgs (whitespace := lax, trace, drop all) in
 example [BI PROP] [BIAffine PROP] (P Q : PROP) :
   P ∧ <pers> Q ⊢ Q := by
   iintro H
   icases H with ⟨_, HQ⟩
+  trace_state
 
 /-- Tests `icases` with nested separating conjunction. -/
 example [BI PROP] [BIAffine PROP] (P1 P2 Q : PROP) : P1 ∗ P2 ∗ Q ⊢ Q := by
@@ -2676,6 +2676,125 @@ example [BI PROP] (P : PROP) : P ⊢ P := by
   iintro HP
   inext
 
+/-- Tests `inext`. -/
+example [BI PROP] (P Q : PROP) : ⊢ ▷ P -∗ Q -∗ ▷ (P ∗ Q) := by
+  iintro HP HQ
+  inext
+  icombine HP HQ as HPQ
+  iassumption
+
+/-- Tests `inext` where the outermost `▷?p` in `H` and `▷` in the goal are both stripped. -/
+example [BI PROP] (p : Bool) (P : PROP) : ▷?p P -∗ ▷ P := by
+  iintro H
+  inext
+  iassumption
+
+/-- Tests `inext` with the handling of `▷?p` and other modalities. -/
+example [BI PROP] (p : Bool) (P Q : PROP) :
+    ⊢ □ ▷ P -∗ □ ▷?p ▷ Q -∗ ▷?p ▷ □ (P ∗ Q) := by
+  iintro #HP #HQ
+  inext; inext
+  imodintro
+  icombine HP HQ as HPQ
+  iexact HPQ
+
+/-- Tests `inext` where the two `▷` are stripped, retaining the two `▷?p`. -/
+example [BI PROP] (p : Bool) (P : PROP) (h : ▷?p P -∗ ▷?p P) : ▷?p ▷ P -∗ ▷▷?p P := by
+  iintro H
+  inext
+  iapply h $$ H
+
+/--
+  Tests `inext` where synthesis using `intoLaterN_sep_left` fails and
+  uses `intoLaterN_sep_right` after backtracking.
+  The later modality in `▷ Q` is stripped from `HPQ1` instead of the outermost `▷?p`.
+  Analogous for `∧` and `∨`.
+-/
+example [BI PROP] (p : Bool) (P Q R : PROP)
+    (h : ▷?p (P ∗ Q) -∗ ▷?p (P ∧ Q) -∗ ▷?p (P ∨ Q) -∗ ▷ R) :
+    ▷?p (▷ P ∗ ▷ Q) ∗ ▷?p (▷ P ∧ ▷ Q) ∗ ▷?p (▷ P ∨ ▷ Q) ⊢ ▷▷ R := by
+  iintro ⟨HPQ1, HPQ2, HPQ3⟩
+  inext
+  iapply h $$ HPQ1 HPQ2 HPQ3
+
+variable {GF : BundledGFunctors} [InvGS GF]
+
+/- Tests `inext` with later credits consumption. -/
+example (E : CoPset) (P : IProp GF) : ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  -- No later credits consumed, equivalent to a no-op
+  inext 0 credit: Hcred
+  -- One later credit is consumed by default when the amount is not specified
+  inext credit: Hcred
+  iassumption
+
+/- Tests `inext` with insufficient credits. -/
+/-- error: inext: insufficient credits -/
+#guard_msgs in
+example (E : CoPset) (P : IProp GF) : ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  inext 2 credit: Hcred
+
+/- Tests `inext` with multiple credits consumed. -/
+example (E : CoPset) (P : IProp GF) :
+    ⊢ £ (m + n + 6) -∗ ▷^[m + n + 6] (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  inext 3 credit: Hcred
+  inext (1 + (3 - .succ 1)) credit: Hcred
+  inext 1 credit: Hcred
+  inext n credit: Hcred
+  inext m credit: Hcred
+  iassumption
+
+/- Tests `inext` for later credits with later modalities expressed in terms of `Nat` variables. -/
+example (m n p q : Nat) (E : CoPset) (P : IProp GF) :
+    ⊢ £ (1 + m + n + p + q + 3) -∗ ▷^[n + m + 4 + p + q] (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  inext (m + q) credit: Hcred
+  inext (p + n) credit: Hcred
+  inext 4 credit: Hcred
+  iassumption
+
+/- Tests `inext` where `intoLaterN_later` should not apply and `intoLaterN_laterN_bool` applies instead -/
+example (p : Bool) (P : IProp GF) (E : CoPset) :
+    ⊢ £ 1 -∗ ▷?p P -∗ ▷ (|={E}=> P) -∗ |={E}=> (P ∗ P) := by
+  iintro Hcred H HQ
+  inext credit: Hcred
+  isplitl [HQ] <;> iassumption
+
+/- Tests `inext` for later credits with an invalid hypothesis choice. -/
+/-- error: inext: Hcred is not a spatial later credit hypothesis -/
+#guard_msgs in
+example (E : CoPset) (P Q : IProp GF) : ⊢ Q -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  inext credit: Hcred
+
+/- Tests `inext` for later credits with the hypothesis not in the spatial context. -/
+/-- error: inext: Hcred is not in the spatial context -/
+#guard_msgs in
+example (E : CoPset) (P : IProp GF) : ⊢ □ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro #Hcred HP
+  inext credit: Hcred
+
+/- Tests `inext` with an `IProp GF` entailment where `InvGS GF` is not available. -/
+/-- error: inext: requires an InvGS (HasLC) context -/
+#guard_msgs in
+example [InvGS_gen .hasNoLC GF] (E : CoPset) (P : IProp GF) :
+    ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+  iintro Hcred HP
+  inext credit: Hcred
+
+variable {Expr State Obs Val} [Λ : Language Expr State Obs Val]
+variable {GF : BundledGFunctors}
+variable [IrisGS_gen .hasLC Expr GF]
+variable {E : CoPset} {e : Expr} {Φ : Val → IProp GF}
+
+/- Tests `inext` for later credits with `WP`. -/
+example : £ 1 ∗ ▷ WP e @ E {{ Φ }} ⊢ WP e @ E {{ Φ }} := by
+  iintro ⟨Hcred, Hwp⟩
+  inext credit: Hcred
+  iassumption
+
 end inext
 
 local stepindex Nat
@@ -2825,8 +2944,7 @@ example [BI PROP] (P : PROP) : P ⊢ P := by
   iframe HP
 
 /- Tests `iframe` not closing goal with non-affine assumption. -/
-/--
-error: unsolved goals
+/-- trace:
 PROP : Type u_1
 inst✝ : BI PROP
 P Q : PROP
@@ -2834,10 +2952,11 @@ P Q : PROP
   ∗HQ : Q
   ⊢ emp
 -/
-#guard_msgs in
+#guard_msgs (trace, drop error) in
 example [BI PROP] (P Q : PROP) : P ∗ Q ⊢ P := by
   iintro ⟨HP, HQ⟩
   iframe HP
+  trace_state
 
 /- Tests `iframe` closing goal with absorbing goal. -/
 example [BI PROP] (P Q : PROP) : <absorb> P ∗ Q ⊢ <absorb> P := by
@@ -3009,8 +3128,7 @@ example [BI PROP] {α} (a : α) {β} (b : β) (P : PROP)
   iframe HS HP HR HQ
 
 /- Tests `iframe` with multiple existential quantifiers framed at once. -/
-/--
-error: unsolved goals
+/-- trace:
 PROP : Type u_1
 inst✝ : BI PROP
 α : Sort u_2
@@ -3019,11 +3137,12 @@ Q : α → PROP
 ⊢ ⏎
   ⊢ «exists» fun {n} => Q n
 -/
-#guard_msgs in
+#guard_msgs (trace, drop error) in
 example [BI PROP] {α} (P : PROP) (Q : α → PROP) :
     ⊢ P -∗ BI.exists fun {n} => iprop(Q n  ∗ P) := by
   iintro HP
   iframe HP
+  trace_state
 
 /- Tests `iframe` with existential quantifers in various orders. -/
 example [BI PROP] {α} (a : α) {β} (b : β) {γ} (c : γ)
@@ -3380,24 +3499,23 @@ section iloeb
 variable {PROP : Type u} [ι₁ : BI PROP] [ι₂ : BILoeb PROP]
 
 /- Tests `iloeb` basic. -/
-/--
-error: unsolved goals
+/-- trace:
 PROP : Type u
 ι₁ : BI PROP
 ι₂ : BILoeb PROP
 P Q : PROP
 ⊢ ⏎
-  □IHH : ▷ (P -∗ Q)
+  □IH : ▷ (P -∗ Q)
   ⊢ P -∗ Q
 -/
-#guard_msgs in
+#guard_msgs (trace, drop error) in
 example (P Q : PROP) :
     P ⊢ Q := by
-  iloeb as IHH
+  iloeb as IH
+  trace_state
 
 /- Tests `iloeb` automatically generalizing spatial context. -/
-/--
-error: unsolved goals
+/-- trace:
 PROP : Type u
 ι₁ : BI PROP
 ι₂ : BILoeb PROP
@@ -3407,15 +3525,15 @@ P Q : PROP
   ∗HP : P
   ⊢ Q
 -/
-#guard_msgs in
+#guard_msgs (trace, drop error) in
 example (P Q : PROP) :
     P ⊢ Q := by
   iintro HP
   iloeb as IH
+  trace_state
 
 /- Tests `iloeb` not automatically generalizing persistent context. -/
-/--
-error: unsolved goals
+/-- trace:
 PROP : Type u
 ι₁ : BI PROP
 ι₂ : BILoeb PROP
@@ -3426,15 +3544,15 @@ P₁ P₂ Q : PROP
   ∗HP2 : P₂
   ⊢ Q
 -/
-#guard_msgs in
+#guard_msgs (trace, drop error) in
 example (P₁ P₂ Q : PROP) :
     ⊢ □ P₁ -∗ P₂ -∗ Q := by
   iintro #HP1 HP2
   iloeb as IH
+  trace_state
 
 /- Tests reordering spatial hypothesis in `iloeb`. -/
-/--
-error: unsolved goals
+/-- trace:
 PROP : Type u
 ι₁ : BI PROP
 ι₂ : BILoeb PROP
@@ -3446,15 +3564,15 @@ P₁ P₂ P₃ Q : PROP
   ∗HP2 : P₂
   ⊢ Q
 -/
-#guard_msgs in
+#guard_msgs (trace, drop error) in
 example (P₁ P₂ P₃ Q : PROP) :
     ⊢ □ P₁ -∗ P₂ -∗ P₃ -∗ Q := by
   iintro #HP1 HP2 HP3
   iloeb as IH generalizing HP3
+  trace_state
 
 /- Tests `iloeb` with pure hypothesis. -/
-/--
-error: unsolved goals
+/-- trace:
 PROP : Type u
 ι₁ : BI PROP
 ι₂ : BILoeb PROP
@@ -3467,16 +3585,15 @@ h1 : H₁ n
   ∗p : P n
   ⊢ Q n
 -/
-#guard_msgs in
+#guard_msgs (trace, drop error) in
 example (n : Nat) (H₁ : Nat → Prop) (P Q : Nat → PROP) :
     H₁ n → ⊢ P n -∗ Q n := by
   iintro %h1 p
   iloeb as IH generalizing %n %h1
-
+  trace_state
 
 /- Tests `iloeb` with pure hypothesis in affine logic. -/
-/--
-error: unsolved goals
+/-- trace:
 PROP : Type u
 ι₁ : BI PROP
 ι₂ : BILoeb PROP
@@ -3490,11 +3607,12 @@ h1 : H₁ n
   ∗p : P n
   ⊢ Q n
 -/
-#guard_msgs in
+#guard_msgs (trace, drop error) in
 example [i : BIAffine PROP] (n : Nat) (H₁ : Nat → Prop) (P Q : Nat → PROP) :
     H₁ n → ⊢ P n -∗ Q n := by
   iintro %h1 p
   iloeb as IH generalizing %n %h1
+  trace_state
 
 variable {PROP : Type u} [ι₁ : BI PROP] in
 /- Tests `iloeb` failing without `BILoeb`. -/
@@ -3540,8 +3658,7 @@ example {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop} {h1 : Q n} {_ : (Q n) 
   iloeb as IH generalizing %n
 
 /- Same test as above, except `generalizing!` is used. -/
-/--
-error: unsolved goals
+/-- trace:
 PROP : Type u
 ι₁ : BI PROP
 ι₂ : BILoeb PROP
@@ -3555,11 +3672,12 @@ x✝ : Q n → Prop
   □x✝ : T n
   ⊢ □ P n
 -/
-#guard_msgs in
+#guard_msgs (trace, drop error) in
 example {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop} {h1 : Q n} {_ : (Q n) → Prop} :
     ⊢ □ T n -∗ □ P n := by
   iintro #_
   iloeb as IH generalizing! %n
+  trace_state
 
 end iloeb
 
@@ -3572,6 +3690,18 @@ variable {hlc : HasLC} {GF : BundledGFunctors} [InvGS_gen hlc GF] {N : Namespace
   `intoAcc_inv` where the side condition is trivial.
 -/
 example {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
+  iintro #Hinv
+  iinv Hinv with #H
+  imodintro
+  isplit
+  · iexact H
+  · imodintro
+    inext
+    iexact H
+
+/-- Tests `iinv` with a concrete namespace whose closure is expensive to unfold.
+Regression test for https://github.com/leanprover-community/iris-lean/issues/557 -/
+example {P : IProp GF} : inv `long_name iprop(<pers> P) ={⊤}=∗ ▷ P := by
   iintro #Hinv
   iinv Hinv with #H
   imodintro

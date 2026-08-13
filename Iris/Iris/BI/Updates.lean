@@ -9,6 +9,7 @@ public import Iris.BI.BI
 public import Iris.BI.BIBase
 public import Iris.BI.Classes
 public import Iris.BI.DerivedLaws
+public import Iris.BI.Notation
 public import Iris.Algebra
 public import Iris.BI.Plainly
 public import Iris.Std.CoPset
@@ -18,52 +19,82 @@ public import Iris.Std.CoPset
 namespace Iris
 open Iris.Std BI
 
+/--
+Basic update modality.
+
+- `|==> P` is the basic update modality.
+- `P ==∗ Q` is shorthand for `|==> P -∗ Q`.
+-/
 @[rocq_alias BUpd]
 class BUpd (PROP : Type _) where
   bupd : PROP → PROP
 export BUpd (bupd)
 
+attribute [inherit_doc BUpd] BUpd.bupd
 syntax "|==> " term:40 : term
 syntax:25 term:26 " ==∗ " term:25 : term
 
 macro_rules
-  | `(iprop(|==> $P))  => ``(BUpd.bupd iprop($P))
-  | `(iprop($P ==∗ $Q))  => ``(BIBase.wand iprop($P) (BUpd.bupd iprop($Q)))
-  | `($P ==∗ $Q)  => ``(⊢ $P ==∗ $Q)
+  | `(iprop(|==>%$tk $P))   => ``($(wrapIprop tk ``BUpd.bupd) iprop($P))
+  | `(iprop($P ==∗%$tk $Q)) =>
+    ``(BIBase.wand iprop($P) ($(wrapIprop tk ``BUpd.bupd) iprop($Q)))
+  | `($P ==∗%$tk $Q)        => ``(⊢ $P ==∗%$tk $Q)
 
 delab_rule BUpd.bupd
-  | `($_ $P) => do ``(iprop(|==> $(← Iris.BI.unpackIprop P)))
+  | `($_ $P) => do ``(iprop(|==> $(← unpackIprop P)))
 
 delab_rule BIBase.wand
-  | `($_ $P iprop(|==> $Q)) => do `(iprop($(←Iris.BI.unpackIprop P) ==∗ $Q))
+  | `($_ $P iprop(|==> $Q)) => do `(iprop($(← unpackIprop P) ==∗ $Q))
 
+/--
+Fancy update modality.
+
+- `|={E1,E2}=> P` changes the mask from `E1` to `E2`.
+- `|={E}=> P` is shorthand for `|={E,E}=> P`.
+- `P ={E1,E2}=∗ Q` is shorthand for `|={E1,E2}=> P -∗ Q`.
+- `P ={E}=∗ Q` is shorthand for `|={E}=> P -∗ Q`.
+- `|={E1}[E2]▷=> P` is a one-step fancy update.
+- `|={E}▷=> P` is a one-step fancy update with a fixed mask.
+- `|={E1}[E2]▷^n=> P` is a fancy update taking `n` steps.
+- `|={E}▷^n=> P` is a fancy update taking `n` steps with a fixed mask.
+- `|={E1}[E2]▷=>^[n] P` iterates the one-step fancy update `n` times.
+- `|={E}▷=>^[n] P` iterates the one-step fancy update `n` times with a fixed mask.
+
+The wand form `P ={E1,E2}=∗ Q` is a shorthand for `|={E1,E2}=> P -∗ Q`.
+The wand forms of the other notations are analogous.
+-/
 @[rocq_alias FUpd]
 class FUpd (PROP : Type _) where
   fupd : CoPset → CoPset → PROP → PROP
 export FUpd (fupd)
 
+attribute [inherit_doc FUpd] FUpd.fupd
 syntax "|={" term ", " term "}=> " term : term
 syntax:25 term:26 " ={" term "," term "}=∗ " term:25 : term
 syntax "|={" term "}=> " term : term
 syntax:25 term:26 " ={" term "}=∗ " term:25 : term
 
 macro_rules
-  | `(iprop(|={$E1,$E2}=> $P))  => ``(FUpd.fupd $E1 $E2 iprop($P))
-  | `(iprop($P ={$E1,$E2}=∗ $Q))  => ``(BIBase.wand iprop($P) (FUpd.fupd $E1 $E2 iprop($Q)))
-  | `(iprop(|={$E1}=> $P))  => ``(FUpd.fupd $E1 $E1 iprop($P))
-  | `(iprop($P ={$E1}=∗ $Q))  => ``(BIBase.wand iprop($P) (FUpd.fupd $E1 $E1 iprop($Q)))
-  | `($P ={$E1,$E2}=∗ $Q)  => ``(⊢ $P ={$E1,$E2}=∗ $Q)
-  | `($P ={$E1}=∗ $Q)  => ``(⊢ $P ={$E1}=∗ $Q)
+  | `(iprop(|={%$tk1 $E1,$E2 }=>%$tk2 $P))   => do
+      ``($(wrapIpropSpan tk1 tk2 ``FUpd.fupd) $E1 $E2 iprop($P))
+  | `(iprop($P ={%$tk1 $E1,$E2 }=∗%$tk2 $Q)) => do
+      ``(BIBase.wand iprop($P) ($(wrapIpropSpan tk1 tk2 ``FUpd.fupd) $E1 $E2 iprop($Q)))
+  | `(iprop(|={%$tk1 $E1}=>%$tk2 $P))       => do
+      ``($(wrapIpropSpan tk1 tk2 ``FUpd.fupd) $E1 $E1 iprop($P))
+  | `(iprop($P ={%$tk1 $E1 }=∗%$tk2 $Q))     => do
+      ``(BIBase.wand iprop($P) ($(wrapIpropSpan tk1 tk2 ``FUpd.fupd) $E1 $E1 iprop($Q)))
+  | `($P ={%$tk $E1,$E2}=∗ $Q)        => ``(⊢ $P ={%$tk $E1,$E2}=∗ $Q)
+  | `($P ={%$tk $E1}=∗ $Q)            => ``(⊢ $P ={%$tk $E1}=∗ $Q)
 
 delab_rule FUpd.fupd
   | `($_ $E1 $E2 $P) => do
-      let P ← Iris.BI.unpackIprop P
+      let P ← unpackIprop P
       if E1 == E2 then ``(iprop(|={$E1}=> $P))
       else ``(iprop(|={$E1,$E2}=> $P))
 
 delab_rule BIBase.wand
-  | `($_ $P iprop(|={$E₁,$E₂}=> $Q)) => do `(iprop($(←Iris.BI.unpackIprop P) ={$E₁,$E₂}=∗ $Q))
-  | `($_ $P iprop(|={$E₁}=> $Q)) => do `(iprop($(←Iris.BI.unpackIprop P) ={$E₁}=∗ $Q))
+  | `($_ $P iprop(|={$E₁,$E₂}=> $Q)) => do `(iprop($(← unpackIprop P) ={$E₁,$E₂}=∗ $Q))
+  | `($_ $P iprop(|={$E₁}=> $Q)) => do `(iprop($(← unpackIprop P) ={$E₁}=∗ $Q))
 
 syntax "|={" term "}[" term "]▷=> " term : term
 syntax:25 term:26 " ={" term "}[" term "]▷=∗ " term:25 : term
@@ -71,24 +102,28 @@ syntax "|={" term "}▷=> " term : term
 syntax:25 term:26 " ={" term "}▷=∗ " term:25 : term
 
 macro_rules
-  | `(iprop(|={$E1}[$E2]▷=> $P))  => ``(iprop(|={$E1,$E2}=> ▷ (|={$E2,$E1}=> iprop($P))))
-  | `(iprop($P ={$E1}[$E2]▷=∗ $Q))  => ``(iprop(iprop($P) -∗ |={$E1}[$E2]▷=> iprop($Q)))
-  | `(iprop(|={$E1}▷=> $P))  => ``(iprop(|={$E1}[$E1]▷=> iprop($P)))
-  | `(iprop($P ={$E1}▷=∗ $Q))  => ``(iprop(iprop($P) ={$E1}[$E1]▷=∗ iprop($Q)))
+  | `(iprop(|={%$tk $E1}[$E2]▷=> $P))   =>
+    ``(iprop(|={%$tk $E1,$E2}=> ▷ (|={$E2,$E1}=> iprop($P))))
+  | `(iprop($P ={%$tk $E1}[$E2]▷=∗ $Q)) =>
+    ``(iprop(iprop($P) -∗ |={%$tk $E1}[$E2]▷=> iprop($Q)))
+  | `(iprop(|={%$tk $E1}▷=> $P))        =>
+    ``(iprop(|={%$tk $E1}[$E1]▷=> iprop($P)))
+  | `(iprop($P ={%$tk $E1}▷=∗ $Q))      =>
+    ``(iprop(iprop($P) ={%$tk $E1}[$E1]▷=∗ iprop($Q)))
 
 delab_rule FUpd.fupd
   | `($_ $E₁ $E₂ iprop(▷ |={$E₂',$E₁'}=> $P)) => do
     unless E₁ == E₁' ∧ E₂ == E₂' do throw ()
-    `(iprop(|={$E₁}[$E₂]▷=> $(←Iris.BI.unpackIprop P)))
+    `(iprop(|={$E₁}[$E₂]▷=> $(← unpackIprop P)))
   | `($_ $E₁ $E₁' iprop(▷ |={$E₁''}=> $P)) => do
     unless E₁ == E₁' ∧ E₁' == E₁'' do throw ()
-    `(iprop(|={$E₁}▷=> $(←Iris.BI.unpackIprop P)))
+    `(iprop(|={$E₁}▷=> $(← unpackIprop P)))
 
 delab_rule BIBase.wand
   | `($_ $Q iprop(|={$E₁}[$E₂]▷=> $P)) => do
-    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}[$E₂]▷=∗ $P))
+    `(iprop($(← unpackIprop Q) ={$E₁}[$E₂]▷=∗ $P))
   | `($_ $Q iprop(|={$E₁}▷=> $P)) => do
-    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}▷=∗ $P))
+    `(iprop($(← unpackIprop Q) ={$E₁}▷=∗ $P))
 
 syntax "|={" term "}[" term "]▷^" term "=> " term : term
 syntax:25 term:26 " ={" term "}[" term "]▷^" term "=∗ " term:25 : term
@@ -96,24 +131,28 @@ syntax "|={" term "}▷^" term "=> " term : term
 syntax:25 term:26 " ={" term "}▷^" term "=∗ " term:25 : term
 
 macro_rules
-  | `(iprop(|={$E1}[$E2]▷^$n=> $P))  => ``(iprop(|={$E1,$E2}=> ▷^[$n] (|={$E2,$E1}=> iprop($P))))
-  | `(iprop($P ={$E1}[$E2]▷^$n=∗ $Q))  => ``(iprop(iprop($P) -∗ |={$E1}[$E2]▷^$n=> iprop($Q)))
-  | `(iprop(|={$E1}▷^$n=> $P))  => ``(iprop(|={$E1}[$E1]▷^$n=> iprop($P)))
-  | `(iprop($P ={$E1}▷^$n=∗ $Q))  => ``(iprop(iprop($P) ={$E1}[$E1]▷^$n=∗ iprop($Q)))
+  | `(iprop(|={%$tk $E1}[$E2]▷^$n=> $P))   =>
+      ``(iprop(|={%$tk $E1,$E2}=> ▷^[$n] (|={$E2,$E1}=> iprop($P))))
+  | `(iprop($P ={%$tk $E1}[$E2]▷^$n=∗ $Q)) =>
+      ``(iprop(iprop($P) -∗ |={%$tk $E1}[$E2]▷^$n=> iprop($Q)))
+  | `(iprop(|={%$tk $E1}▷^$n=> $P))        =>
+      ``(iprop(|={%$tk $E1}[$E1]▷^$n=> iprop($P)))
+  | `(iprop($P ={%$tk $E1}▷^$n=∗ $Q))      =>
+      ``(iprop(iprop($P) ={%$tk $E1}[$E1]▷^$n=∗ iprop($Q)))
 
 delab_rule FUpd.fupd
   | `($_ $E₁ $E₂ iprop(▷^[$n] |={$E₂',$E₁'}=> $P)) => do
     unless E₁ == E₁' ∧ E₂ == E₂' do throw ()
-    `(iprop(|={$E₁}[$E₂]▷^$n=> $(←Iris.BI.unpackIprop P)))
+    `(iprop(|={$E₁}[$E₂]▷^$n=> $(← unpackIprop P)))
   | `($_ $E₁ $E₁' iprop(▷^[$n] |={$E₁''}=> $P)) => do
     unless E₁ == E₁' ∧ E₁' == E₁'' do throw ()
-    `(iprop(|={$E₁}▷^$n=> $(←Iris.BI.unpackIprop P)))
+    `(iprop(|={$E₁}▷^$n=> $(← unpackIprop P)))
 
 delab_rule BIBase.wand
   | `($_ $Q iprop(|={$E₁}[$E₂]▷^$n=> $P)) => do
-    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}[$E₂]▷^$n=∗ $P))
+    `(iprop($(← unpackIprop Q) ={$E₁}[$E₂]▷^$n=∗ $P))
   | `($_ $Q iprop(|={$E₁}▷^$n=> $P)) => do
-    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}▷^$n=∗ $P))
+    `(iprop($(← unpackIprop Q) ={$E₁}▷^$n=∗ $P))
 
 syntax "|={" term "}[" term "]▷=>^[" term "] " term : term
 syntax:25 term:26 " ={" term "}[" term "]▷=∗^[" term "] " term:25 : term
@@ -121,10 +160,16 @@ syntax "|={" term "}▷=>^[" term "] " term : term
 syntax:25 term:26 " ={" term "}▷=∗^[" term "] " term:25 : term
 
 macro_rules
-  | `(iprop(|={ $E1 }[ $E2 ]▷=>^[ $n ] $P))  => ``(Nat.repeat (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q)) $n iprop($P))
-  | `(iprop($P ={ $E1 }[ $E2 ]▷=∗^[ $n ] $Q))  => ``(BIBase.wand iprop($P) (Nat.repeat (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q)) $n iprop($Q)))
-  | `(iprop(|={ $E1 }▷=>^[ $n ] $P))  => ``(Nat.repeat (fun Q => iprop(|={ $E1 }[ $E1 ]▷=> Q)) $n iprop($P))
-  | `(iprop($P ={ $E1 }▷=∗^[ $n ] $Q))  => ``(BIBase.wand iprop($P) (Nat.repeat (fun Q => iprop(|={ $E1 }[ $E1 ]▷=> Q)) $n iprop($Q)))
+  | `(iprop(|={%$tk $E1 }[ $E2 ]▷=>^[ $n ] $P))   =>
+      ``(Nat.repeat (fun Q => iprop(|={%$tk $E1 }[ $E2 ]▷=> Q)) $n iprop($P))
+  | `(iprop($P ={%$tk $E1 }[ $E2 ]▷=∗^[ $n ] $Q)) =>
+      ``(BIBase.wand iprop($P)
+         (Nat.repeat (fun Q => iprop(|={%$tk $E1 }[ $E2 ]▷=> Q)) $n iprop($Q)))
+  | `(iprop(|={%$tk $E1 }▷=>^[ $n ] $P))          =>
+      ``(Nat.repeat (fun Q => iprop(|={%$tk $E1 }[ $E1 ]▷=> Q)) $n iprop($P))
+  | `(iprop($P ={%$tk $E1 }▷=∗^[ $n ] $Q))        =>
+      ``(BIBase.wand iprop($P)
+         (Nat.repeat (fun Q => iprop(|={%$tk $E1 }[ $E1 ]▷=> Q)) $n iprop($Q)))
 
 open Lean.PrettyPrinter.Delaborator SubExpr in
 @[app_delab Nat.repeat]
@@ -151,9 +196,9 @@ meta def delabStepFUpdN : Delab :=  do
 
 delab_rule BIBase.wand
   | `($_ $Q iprop(|={$E₁}[$E₂]▷=>^[$n] $P)) => do
-    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}[$E₂]▷=∗^[$n] $P))
+    `(iprop($(← unpackIprop Q) ={$E₁}[$E₂]▷=∗^[$n] $P))
   | `($_ $Q iprop(|={$E₁}▷=>^[$n] $P)) => do
-    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}▷=∗^[$n] $P))
+    `(iprop($(← unpackIprop Q) ={$E₁}▷=∗^[$n] $P))
 
 local stepindex Nat
 @[rocq_alias BiBUpd]

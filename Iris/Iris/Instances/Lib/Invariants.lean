@@ -65,6 +65,8 @@ instance inv_contractive (N : Namespace) : Contractive (inv (GF := GF) N) where
 @[rocq_alias inv_ne]
 instance inv_ne (N : Namespace) : NonExpansive (inv (GF := GF) N) := ne_of_contractive _
 
+#rocq_ignore inv_proper "Subsumed by the NonExpansive instance `inv_ne`."
+
 @[rocq_alias inv_persistent]
 instance inv_persistent (N : Namespace) (P : IProp GF) : Persistent (inv N P) := by
   simp only [inv]

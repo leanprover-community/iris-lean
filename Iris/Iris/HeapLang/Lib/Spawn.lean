@@ -12,6 +12,7 @@ public import Iris.HeapLang.PrimitiveLaws
 public import Iris.HeapLang.ProofMode
 
 namespace Iris.HeapLang
+local stepindex Nat
 
 open BI Iris ProgramLogic
 
@@ -19,33 +20,41 @@ open BI Iris ProgramLogic
 
 namespace Spawn
 
+@[rocq_alias heap_lang.spawn]
 def spawn : Val := hl_val%
   λ f,
     let c := ref(none());
     fork(c ← some(f #()));
     c
 
+@[rocq_alias heap_lang.join]
 def join : Val := hl_val%
   rec join c :=
     match !c with
     | some(x) => x
     | none() => join c
 
+@[rocq_alias heap_lang.spawnG]
 abbrev SpawnG (GF : BundledGFunctors) := TokenG GF
+
+#rocq_ignore heap_lang.«spawnΣ» "Superseded by the `SpawnG` typeclass on `BundledGFunctors`."
+#rocq_ignore heap_lang.«subG_spawnΣ» "Superseded by Lean's direct `ElemG` typeclass synthesis."
 
 section Predicates
 
 variable [HeapLangGS hlc GF] [SpawnG GF] (N : Namespace)
 
+@[rocq_alias heap_lang.spawn_inv]
 def spawnInv (γ : GName) (l : Loc) (Ψ : Val → IProp GF) : IProp GF := iprop%
   ∃ lv : Val, (l ↦ some lv) ∗
     (⌜lv = hl_val(none())⌝ ∨
      ∃ w : Val, ⌜lv = hl_val(some(&w))⌝ ∗ (Ψ w ∨ token γ))
 
+@[rocq_alias heap_lang.join_handle]
 def joinHandle (l : Loc) (Ψ : Val → IProp GF) : IProp GF := iprop%
   ∃ γ : GName, token γ ∗ inv N (spawnInv γ l Ψ)
 
-local stepindex Nat
+@[rocq_alias heap_lang.spawn_inv_ne]
 instance spawnInv_ne (γ : GName) (l : Loc) :
     OFE.NonExpansive (spawnInv γ l : (Val → IProp GF) → _) where
   ne _ _ _ HΨ :=
@@ -54,6 +63,7 @@ instance spawnInv_ne (γ : GName) (l : Loc) :
         or_ne.ne .rfl <| exists_ne fun w =>
           sep_ne.ne .rfl <| or_ne.ne (HΨ w) .rfl
 
+@[rocq_alias heap_lang.join_handle_ne]
 instance joinHandle_ne (l : Loc) :
     OFE.NonExpansive (joinHandle N l : (Val → IProp GF) → _) where
   ne _ _ _ HΨ :=
@@ -67,6 +77,7 @@ section Specs
 
 variable [HeapLangGS hlc GF] [SpawnG GF] (N : Namespace)
 
+@[rocq_alias heap_lang.spawn_spec]
 theorem spawn_spec (Ψ : Val → IProp GF) (f : Val) :
     ⊢ □ ∀ (Φ : Val → IProp GF),
       WP hl(&f #()) {{ Ψ }} -∗
@@ -99,19 +110,16 @@ theorem spawn_spec (Ψ : Val → IProp GF) (f : Val) :
   iapply wp_wand $$ Hf
   iintro %v HΨ
   wp_pures
-  iapply wp_atomic
-  imod inv_acc (fun _ _ => CoPset.mem_full) $$ Hinv with ⟨Hpt, Hclose⟩
+  iinv Hinv with Hpt
   unfold spawnInv
   icases Hpt with ⟨%_, Hl, _⟩
-  imodintro
   wp_store
-  iapply Hclose
-  inext
-  iexists _; iframe Hl
+  imodintro; iframe Hl; imodintro
   iright; iexists v; isplit
   · itrivial
   · iframe
 
+@[rocq_alias heap_lang.join_spec]
 theorem join_spec (Ψ : Val → IProp GF) (l : Loc) :
     ⊢ □ ∀ (Φ : Val → IProp GF),
       joinHandle N l Ψ -∗
@@ -123,33 +131,20 @@ theorem join_spec (Ψ : Val → IProp GF) (l : Loc) :
   iloeb as IH
   wp_rec
   wp_bind !_
-  iapply wp_atomic
-  imod inv_acc (fun _ _ => CoPset.mem_full) $$ Hinv with ⟨Hpt, Hclose⟩
+  iinv Hinv with Hpt
   unfold spawnInv
   icases Hpt with ⟨%lv, Hl, Hcond⟩
-  imodintro
-  wp_load
+  wp_load; imodintro; iframe Hl
   icases Hcond with (%Heq | ⟨%w, %Heq, (HΨw | Hγ')⟩) <;> subst Heq
-  · imod Hclose $$ [Hl]
-    · inext
-      iexists _
-      iframe Hl
-      ileft; itrivial
-    imodintro
+  · isplitr
+    · ileft; itrivial
     wp_pures
     iapply IH $$ HΦ Hγ
-  · imod Hclose $$ [Hl Hγ]
-    · inext
-      iexists _; iframe Hl
-      iright; iexists w; isplit
-      · itrivial
-      · iframe
-    imodintro
+  · isplitl [Hγ]
+    · iright; iframe Hγ; itrivial
     wp_pures
     iapply HΦ $$ HΨw
-  · iexfalso
-    iapply token_exclusive
-    iframe
+  · icombine Hγ Hγ' gives %⟨⟩
 
 end Specs
 

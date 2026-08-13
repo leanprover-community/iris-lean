@@ -45,7 +45,7 @@ elab "trace_delab" : tactic => do
 
 end
 
-section
+section InfoViewIPM
 
 /-
   Tests delaboration of an IPM goal with only separating conjunctions and
@@ -66,10 +66,12 @@ info:
   ⋆ R : PROP
 ⋆ HPQ (binder) : P ∗ P -∗ R -∗ Q
   ⋆ P ∗ P -∗ R -∗ Q : PROP
-    ⋆ P : PROP
-    ⋆ P : PROP
-    ⋆ R : PROP
-    ⋆ Q : PROP
+    ⋆ P ∗ P : PROP
+      ⋆ P : PROP
+      ⋆ P : PROP
+    ⋆ R -∗ Q : PROP
+      ⋆ R : PROP
+      ⋆ Q : PROP
 ⋆ Q : PROP
 -/
 #guard_msgs (whitespace := lax) in
@@ -98,19 +100,24 @@ info:
     ⋆ P2 : PROP
 ⋆ HP3 (binder) : <absorb> <affine> P3
   ⋆ <absorb> <affine> P3 : PROP
-    ⋆ P3 : PROP
+    ⋆ <affine> P3 : PROP
+      ⋆ P3 : PROP
 ⋆ HP4 (binder) : <absorb> <affine> P4
   ⋆ <absorb> <affine> P4 : PROP
-    ⋆ P4 : PROP
+    ⋆ <affine> P4 : PROP
+      ⋆ P4 : PROP
 ⋆ H (binder) : <absorb> (P1 ∗ P2 ∗ <affine> (P3 ∗ P4)) -∗ Q
   ⋆ <absorb> (P1 ∗ P2 ∗ <affine> (P3 ∗ P4)) -∗ Q : PROP
-    ⋆ (P1 ∗ P2 ∗ <affine> (P3 ∗ P4)) : PROP
-      ⋆ P1 : PROP
-      ⋆ P2 : PROP
-      ⋆ (P3 ∗ P4) : PROP
-        ⋆ P3 : PROP
-        ⋆ P4 : PROP
-  ⋆ Q : PROP
+    ⋆ <absorb> (P1 ∗ P2 ∗ <affine> (P3 ∗ P4)) : PROP
+      ⋆ (P1 ∗ P2 ∗ <affine> (P3 ∗ P4)) : PROP
+        ⋆ P1 : PROP
+        ⋆ P2 ∗ <affine> (P3 ∗ P4) : PROP
+        ⋆ P2 : PROP
+      ⋆ <affine> (P3 ∗ P4) : PROP
+        ⋆ (P3 ∗ P4) : PROP
+          ⋆ P3 : PROP
+          ⋆ P4 : PROP
+    ⋆ Q : PROP
 ⋆ Q : PROP
 -/
 #guard_msgs (whitespace := lax) in
@@ -182,10 +189,12 @@ info:
 ⋆ Hwand (binder) : ∀ x, Q -∗ ⌜x = n⌝
   ⋆ ∀ x, Q -∗ ⌜x = n⌝ : PROP
     ⋆ x : Nat
-    ⋆ Q : PROP
-    ⋆ x = n : Prop
-      ⋆ x : Nat
-      ⋆ n : Nat
+    ⋆ Q -∗ ⌜x = n⌝ : PROP
+      ⋆ Q : PROP
+      ⋆ ⌜x = n⌝ : PROP
+        ⋆ x = n : Prop
+          ⋆ x : Nat
+          ⋆ n : Nat
 ⋆ HQ (binder) : Q
   ⋆ Q : PROP
 ⋆ False : PROP
@@ -199,4 +208,36 @@ example [BI PROP] (Q : PROP) (n : Nat) :
   icases Hwand $$ %2 HQ with %_
   grind
 
-end
+end InfoViewIPM
+
+section LaterIf
+
+/- `▷?p P` is always delaborated as the same syntax. -/
+/--
+info: fun {PROP} [BI PROP] p P => iprop(▷?p P) : {PROP : Type u_1} → [BI PROP] → Bool → PROP → PROP
+-/
+#guard_msgs in
+#check fun {PROP} [BI PROP] (p : Bool) (P : PROP) => iprop(▷?p P)
+
+/- `▷^[p.toNat]` is always delaborated as `▷?p P`. -/
+/--
+info: fun {PROP} [BI PROP] p P => iprop(▷?p P) : {PROP : Type u_1} → [BI PROP] → Bool → PROP → PROP
+-/
+#guard_msgs in
+#check fun {PROP} [BI PROP] (p : Bool) (P : PROP) => iprop(▷^[p.toNat] P)
+
+/- `▷^[0]` is always delaborated as the same syntax, no `▷?false` involved. -/
+/--
+info: fun {PROP} [BI PROP] P => iprop(▷^[0] P) : {PROP : Type u_1} → [BI PROP] → PROP → PROP
+-/
+#guard_msgs in
+#check fun {PROP} [BI PROP] (P : PROP) => iprop(▷^[0] P)
+
+/- `▷^[1]` is always delaborated as the same syntax, no `▷?true` involved. -/
+/--
+info: fun {PROP} [BI PROP] P => iprop(▷^[1] P) : {PROP : Type u_1} → [BI PROP] → PROP → PROP
+-/
+#guard_msgs in
+#check fun {PROP} [BI PROP] (P : PROP) => iprop(▷^[1] P)
+
+end LaterIf

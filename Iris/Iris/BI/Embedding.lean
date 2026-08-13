@@ -26,15 +26,21 @@ open Iris Iris.Std OFE Iris.Algebra Iris.Algebra.BigOpL Iris.Algebra.BigOpM
 
 /-! ## The `Embed` operation `⎡·⎤` -/
 
-/-- The embedding operation `⎡·⎤ : A → B`. `B` is intentionally *not*
-an `outParam`: the target logic is fixed by the expected type, not inferred. -/
+/--
+The embedding operation `⎡·⎤ : A → B`.
+
+`B` is intentionally *not* an `outParam`: the target logic is fixed by the
+expected type, not inferred.
+-/
 @[rocq_alias Embed]
 class Embed (A B : Type _) where
   embed : A → B
 export Embed (embed)
 
+attribute [inherit_doc Embed] Embed.embed
+
 syntax "⎡" term "⎤" : term
-macro_rules | `(iprop(⎡$P⎤)) => ``(Embed.embed iprop($P))
+macro_rules | `(iprop(⎡%$tk1 $P ⎤%$tk2)) => ``($(wrapIpropSpan tk1 tk2 ``Embed.embed) iprop($P))
 
 delab_rule Embed.embed
   | `($_ $P) => do ``(⎡$(← unpackIprop P)⎤)

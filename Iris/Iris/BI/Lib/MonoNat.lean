@@ -27,6 +27,9 @@ class MonoNatG (GF : BundledGFunctors) where
 
 attribute [reducible, instance] MonoNatG.elem
 
+#rocq_ignore «mono_natΣ» "Superseded by the `MonoNatG` typeclass on `BundledGFunctors`."
+#rocq_ignore «subG_mono_natΣ» "Superseded by Lean's direct `ElemG` typeclass synthesis."
+
 namespace MonoNat
 
 variable {GF : BundledGFunctors} [MonoNatG GF]
@@ -36,9 +39,17 @@ open MonoNatG
 def auth_own (γ : GName) (dq : DFrac) (n : MaxNat) : IProp GF :=
   iOwn (E := elem) γ (MonoNat.auth dq n)
 
+#rocq_ignore mono_nat_auth_own_def "`mono_nat_auth_own` is defined directly without `seal`/`unseal`."
+#rocq_ignore mono_nat_auth_own_aux "`mono_nat_auth_own` is defined directly without `seal`/`unseal`."
+#rocq_ignore mono_nat_auth_own_unseal "`mono_nat_auth_own` is defined directly without `seal`/`unseal`."
+
 @[rocq_alias mono_nat_lb_own]
 def lb_own (γ : GName) (n : MaxNat) : IProp GF :=
   iOwn (E := elem) γ (MonoNat.lb n)
+
+#rocq_ignore mono_nat_lb_own_def "`mono_nat_lb_own` is defined directly without `seal`/`unseal`."
+#rocq_ignore mono_nat_lb_own_aux "`mono_nat_lb_own` is defined directly without `seal`/`unseal`."
+#rocq_ignore mono_nat_lb_own_unseal "`mono_nat_lb_own` is defined directly without `seal`/`unseal`."
 
 notation γ " ↪●MN{" dq "} " n => auth_own γ dq n
 notation γ " ↪●MN " n => auth_own γ (DFrac.own 1) n
@@ -74,6 +85,12 @@ instance {γ n} : Fractional (PROP := IProp GF) (fun q : Qp => γ ↪●MN{.own 
     unfold auth_own
     rw [←iOwn_op.to_eq]
     exact (congrArg (iOwn _) (auth_dfrac_op (.own p) (.own q) _)).to_bi
+
+@[rocq_alias mono_nat_auth_own_as_fractional]
+instance {γ n} (q : Qp) :
+    AsFractional (PROP := IProp GF) (γ ↪●MN{.own q} n) ioΦ (fun q : Qp => γ ↪●MN{.own q} n) ioq q where
+  as_fractional := .rfl
+  as_fractional_fractional := inferInstance
 
 @[rocq_alias mono_nat_auth_own_agree]
 theorem auth_own_agree (γ : GName) (dq1 dq2 : DFrac) (n1 n2 : MaxNat) :
