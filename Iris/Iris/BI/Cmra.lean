@@ -8,7 +8,6 @@ module
 public import Iris.BI.Sbi
 public import Iris.BI.Plainly
 public import Iris.BI.InternalEq
-public import Iris.Std.RocqPorting
 
 @[expose] public section
 local stepindex Nat

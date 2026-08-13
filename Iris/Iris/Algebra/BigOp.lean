@@ -14,7 +14,6 @@ public import Iris.Std.GenSets
 public import Iris.Std.GenMultiSets
 public import Iris.Std.Positives
 public import Iris.Std.Equivalence
-meta import Iris.Std.RocqPorting
 
 local stepindex Nat
 

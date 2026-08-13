@@ -5,7 +5,6 @@ Authors: Lars König
 -/
 module
 
-public import Iris.Std.RocqPorting
 public import Iris.BI.Classes
 public import Iris.BI.BI
 

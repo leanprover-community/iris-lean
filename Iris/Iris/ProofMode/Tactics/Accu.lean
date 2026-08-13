@@ -5,7 +5,7 @@ Authors: Michael Sammler, Alvin Tang
 -/
 module
 
-public meta import Iris.ProofMode.ProofModeM
+public import Iris.ProofMode.ProofModeM
 
 namespace Iris.ProofMode
 

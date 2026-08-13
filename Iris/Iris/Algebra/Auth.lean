@@ -7,7 +7,6 @@ module
 
 public import Iris.Algebra.View
 public import Iris.Algebra.LocalUpdates
-meta import Iris.Std.RocqPorting
 
 /-!
 # Authoritative Camera

@@ -6,7 +6,6 @@ Authors: Oliver Soeser, Mario Carneiro
 module
 
 public import Iris.Algebra.CMRA
-meta import Iris.Std.RocqPorting
 
 @[expose] public section
 local stepindex Nat

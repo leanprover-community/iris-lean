@@ -5,7 +5,6 @@ Authors: Michael Sammler, Alvin Tang, Markus de Medeiros
 -/
 module
 
-public meta import Iris.Std.RocqPorting
 public import Iris.Std.Classes
 public meta import Iris.Algebra.StepIndexRegistry
 

@@ -13,7 +13,6 @@ public import Iris.Algebra.Updates
 public import Iris.Std.GenSets
 public import Iris.Std.Infinite
 public import Iris.Std.CoPset
-meta import Iris.Std.RocqPorting
 
 @[expose] public section
 local stepindex Nat

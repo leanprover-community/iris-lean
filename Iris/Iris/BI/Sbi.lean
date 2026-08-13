@@ -11,7 +11,6 @@ public import Iris.BI.DerivedLaws
 public import Iris.BI.DerivedLawsLater
 public import Iris.BI.Extensions
 public import Iris.BI.SIProp
-public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 local stepindex Nat

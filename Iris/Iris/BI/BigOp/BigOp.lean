@@ -9,7 +9,6 @@ public import Iris.Algebra.Monoid
 public import Iris.Algebra.BigOp
 public import Iris.BI.DerivedLaws
 public import Iris.BI.Notation
-import Lean
 
 namespace Iris.BI
 

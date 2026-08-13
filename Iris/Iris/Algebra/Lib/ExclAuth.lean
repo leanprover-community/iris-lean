@@ -7,7 +7,6 @@ module
 
 public import Iris.Algebra.Auth
 public import Iris.Algebra.Excl
-meta import Iris.Std.RocqPorting
 
 public section
 local stepindex Nat

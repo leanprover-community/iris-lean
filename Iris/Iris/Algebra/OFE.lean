@@ -7,7 +7,6 @@ module
 
 public import Iris.Algebra.StepIndex
 public import Iris.Std.Option
-public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 

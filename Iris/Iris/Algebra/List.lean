@@ -8,7 +8,6 @@ module
 public import Iris.Algebra.OFE
 public import Iris.Algebra.BigOp
 public import Iris.Std.List
-meta import Iris.Std.RocqPorting
 
 @[expose] public section
 local stepindex Nat

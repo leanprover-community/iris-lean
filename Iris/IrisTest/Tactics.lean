@@ -22,8 +22,8 @@ public import Iris.ProgramLogic.WeakestPre
 @[expose] public section
 local stepindex Nat
 
-namespace Iris.Tests
-open BI CMRA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic
+namespace IrisTest
+open Iris BI CMRA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic
 
 /- This file contains tests with various scenarios for all available tactics. -/
 

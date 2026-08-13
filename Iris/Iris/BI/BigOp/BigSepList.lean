@@ -9,7 +9,6 @@ public import Iris.BI.BigOp.BigOp
 import Iris.BI.DerivedLawsLater
 import Iris.BI.Instances
 import Iris.Std.TC
-meta import Iris.Std.RocqPorting
 
 public section
 local stepindex Nat
