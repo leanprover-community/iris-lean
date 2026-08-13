@@ -6,6 +6,7 @@ Authors: Michael Sammler
 module
 
 public import Iris.BI
+public import Iris.Algebra.Frac
 public import Iris.ProofMode.SynthInstance
 public import Iris.ProofMode.Instances
 public import Iris.ProofMode.InstancesMake
@@ -395,3 +396,72 @@ variable (m n p q : Nat)
 #ipm_synth (NatCancel (1 + m + 2) 3 _ _ _)
 
 end NatCancel
+
+section IsOp
+open Iris Iris.CMRA Iris.ProofMode
+
+private def Qp.quarter : Qp := ⟨1 / 4, by grind⟩
+private def Qp.threeQuarters : Qp := ⟨3 / 4, by grind⟩
+
+/-- info:
+  solution: IsOp IsOp.Direction.split (Qp.threeQuarters + Qp.quarter) Qp.threeQuarters Qp.quarter,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth (IsOp (α := Qp) .split (Qp.threeQuarters + Qp.quarter) _ _)
+
+/-- info:
+  solution: IsOp IsOp.Direction.split (Qp.threeQuarters • Qp.quarter) Qp.threeQuarters Qp.quarter,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth (IsOp (α := Qp) .split (Qp.threeQuarters • Qp.quarter) _ _)
+
+/-- info:
+  solution: IsOp IsOp.Direction.split q q.half q.half,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (q : Qp) in
+#ipm_synth (IsOp (α := Qp) .split q _ _)
+
+/-- info:
+  solution: IsOp IsOp.Direction.merge (Qp.quarter + Qp.threeQuarters) Qp.quarter Qp.threeQuarters,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth (IsOp (α := Qp) .merge _ Qp.quarter Qp.threeQuarters)
+
+/-- info:
+  solution: IsOp IsOp.Direction.merge q q.half q.half,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (q : Qp) in
+#ipm_synth (IsOp (α := Qp) .merge _ q.half q.half)
+
+/-- info:
+  solution: IsOp IsOp.Direction.split (q1 + q2, q3 + q4) (q1, q3) (q2, q4),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (q1 q2 q3 q4 : Qp) in
+#ipm_synth (IsOp (α := Qp × Qp) .split (q1 + q2, q3 + q4) _ _)
+
+/-- info:
+  solution: IsOp IsOp.Direction.split (q, q1 + q2) (q.half, q1) (q.half, q2),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (q1 q2 q : Qp) in
+#ipm_synth (IsOp (α := Qp × Qp) .split (q, q1 + q2) _ _)
+
+/-- info:
+  solution: IsOp IsOp.Direction.split (some (q1 + q2)) (some q1) (some q2),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (q1 q2 : Qp) in
+#ipm_synth (IsOp (α := Option Qp) .split (some (q1 + q2)) _ _)
+
+end IsOp
