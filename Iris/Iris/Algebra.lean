@@ -32,3 +32,4 @@ public import Iris.Algebra.StepIndex
 public import Iris.Algebra.UFrac
 public import Iris.Algebra.Updates
 public import Iris.Algebra.UPred
+public import Iris.Algebra.Vector
