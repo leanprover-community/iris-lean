@@ -131,7 +131,6 @@ theorem try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   subst Heq
   wp_bind cmpXchg(_,_,_)
   iinv Hinv with G1
-  · simp; infer_instance -- TODO: iinv should solve this
   unfold lockInv
   icases G1 with ⟨%b, Hpt, Hcond⟩
   cases b
@@ -188,7 +187,6 @@ theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
   icases Hlock with ⟨%l, %Heq, #Hinv⟩
   subst Heq
   iinv Hinv with G1
-  · simp; infer_instance -- TODO: iinv should solve this
   unfold lockInv
   icases G1 with ⟨%b, Hpt, Hcond⟩
   wp_store

@@ -6,8 +6,7 @@ Authors: Lars König, Mario Carneiro, Michael Sammler, Alvin Tang
 module
 
 public meta import Iris.ProofMode.Patterns.SpecPattern
-public meta import Iris.ProofMode.Patterns.CasesPattern
-public meta import Iris.ProofMode.Tactics.Basic
+public import Iris.ProofMode.Patterns.CasesPattern
 public import Iris.ProofMode.Tactics.Trivial
 public import Iris.ProofMode.Tactics.Frame
 

@@ -5,7 +5,6 @@ Authors: Michael Sammler, Alvin Tang
 -/
 module
 
-public meta import Iris.Std.RocqPorting
 public import Iris.Std.Classes
 
 @[expose] public section

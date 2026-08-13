@@ -5,6 +5,8 @@ Authors: Lars König, Mario Carneiro
 -/
 module
 
+public import Iris.Init
+
 @[expose] public section
 
 namespace Iris.Std

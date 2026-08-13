@@ -8,7 +8,6 @@ module
 public import Iris.Std.CoPset
 public import Iris.Std.Positives
 public import Iris.Std.GenSets
-meta import Iris.Std.RocqPorting
 
 @[expose] public section
 

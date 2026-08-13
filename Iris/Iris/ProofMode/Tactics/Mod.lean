@@ -7,7 +7,7 @@ module
 
 import Iris.BI
 public import Iris.ProofMode.Classes
-public meta import Iris.ProofMode.Tactics.Basic
+public import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
 

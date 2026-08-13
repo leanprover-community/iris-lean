@@ -10,7 +10,6 @@ public import Iris.BI.Extensions
 public import Iris.BI.Classes
 public import Iris.BI.DerivedLaws
 public import Iris.Algebra.CMRA
-public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 

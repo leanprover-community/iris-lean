@@ -110,7 +110,6 @@ theorem spawn_spec (Ψ : Val → IProp GF) (f : Val) :
   iintro %v HΨ
   wp_pures
   iinv Hinv with Hpt
-  · simp; infer_instance -- TODO: iinv should solve this
   unfold spawnInv
   icases Hpt with ⟨%_, Hl, _⟩
   wp_store
@@ -132,7 +131,6 @@ theorem join_spec (Ψ : Val → IProp GF) (l : Loc) :
   wp_rec
   wp_bind !_
   iinv Hinv with Hpt
-  · simp; infer_instance -- TODO: iinv should solve this
   unfold spawnInv
   icases Hpt with ⟨%lv, Hl, Hcond⟩
   wp_load; imodintro; iframe Hl

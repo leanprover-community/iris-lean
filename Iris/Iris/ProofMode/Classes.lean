@@ -6,9 +6,7 @@ Authors: Lars König, Michael Sammler, Yunsong Yang, Alvin Tang
 module
 
 public import Iris.BI
-public meta import Iris.ProofMode.SynthInstance
 public import Iris.ProofMode.Modalities
-public import Iris.Std.Namespaces
 
 @[expose] public section
 
