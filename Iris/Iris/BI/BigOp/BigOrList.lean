@@ -9,6 +9,7 @@ public import Iris.BI.BigOp.BigOp
 import Iris.BI.DerivedLawsLater
 
 public section
+local stepindex Nat
 namespace Iris.BI
 
 open Iris.Algebra BigOpL BIBase

@@ -12,6 +12,7 @@ public import Iris.Instances.IProp.Instance
 public import Iris.Algebra.Agree
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris.Examples
 open Iris.BI COFE

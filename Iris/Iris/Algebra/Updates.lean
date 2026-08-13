@@ -8,6 +8,7 @@ module
 public import Iris.Algebra.CMRA
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 

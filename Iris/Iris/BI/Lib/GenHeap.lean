@@ -8,6 +8,7 @@ public import Iris.Std.HeapInstances
 public import Iris.Std.Namespaces
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 

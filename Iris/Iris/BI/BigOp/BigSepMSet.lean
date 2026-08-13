@@ -14,6 +14,7 @@ import Iris.BI.Instances
 import Iris.Std.TC
 
 public section
+local stepindex Nat
 
 namespace Iris.BI
 

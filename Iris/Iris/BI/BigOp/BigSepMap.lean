@@ -14,6 +14,7 @@ import Iris.Std.TC
 import Batteries.Data.List.Perm
 
 public section
+local stepindex Nat
 
 namespace Iris.BI
 

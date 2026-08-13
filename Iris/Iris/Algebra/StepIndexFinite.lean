@@ -15,7 +15,7 @@ public meta import Iris.Std.RocqPorting
 namespace Iris
 
 @[rocq_alias natSI, rocq_alias nat_sidx_mixin]
-instance natSIdx : SIdx Nat where
+instance natSIdx : SIdxRaw Nat where
   zero := 0
   succ := Nat.succ
   lt_trans := Nat.lt_trans
@@ -32,6 +32,8 @@ instance natSIdx : SIdx Nat where
     | 0 => .inr (by omega)
     | m + 1 => .inl ⟨_, rfl⟩
 
+local stepindex Nat
+
 @[rocq_alias nat_sidx_finite]
 instance natSIdxFinite : SIdxFinite Nat where
   finite_index | 0 => .inl rfl | n + 1 => .inr ⟨n, rfl⟩
@@ -40,8 +42,6 @@ def SIdx.Limit.elim {I : Type u} [SIdx I] [SIdxFinite I] {n : I} {C : Sort v}
     (h : SIdx.Limit n) : C := SIdx.limit_finite n h |>.elim
 
 namespace OFE
-
-local stepindex Nat
 
 theorem Dist.leNat [OFE α] {m n} {x y : α} (h : x ≡{n}≡ y) (h' : m ≤ n) : x ≡{m}≡ y :=
   if hm : m = n then hm ▸ h else h.lt <| Nat.lt_of_le_of_ne h' hm
