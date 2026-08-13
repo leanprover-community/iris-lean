@@ -9,7 +9,7 @@ public import Iris.HeapLang
 
 @[expose] public section
 
-namespace Iris.Tests
+namespace IrisTest
 open Iris
 
 /- This section checks whether the syntax is recognized correctly for all combinations -/
@@ -287,4 +287,3 @@ info: iprop(□ ∀ Φ, P -∗ (▷ ∀ x, Q -∗ Φ x) -∗ WP hl(if (#1 < #2) 
 #guard_msgs in #check iprop({{ P }} hl(#1) {{ v, RET v; ⌜v = hl_val(#1)⌝ }} : PROP)
 
 end HeapLangTestTexanTriple
-

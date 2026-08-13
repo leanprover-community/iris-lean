@@ -5,13 +5,7 @@ Authors: Michael Sammler, Alvin Tang
 -/
 module
 
-public meta import Iris.ProofMode.Tactics.Assumption
-public meta import Iris.ProofMode.Tactics.Cases
-public meta import Iris.ProofMode.Tactics.Intro
-public meta import Iris.ProofMode.Patterns.CasesPattern
-public meta import Iris.ProofMode.Patterns.IntroPattern
-public meta import Iris.ProofMode.Patterns.SelPattern
-public meta import Iris.ProofMode.ClassesMake
+public import Iris.ProofMode.Tactics.Cases
 
 namespace Iris.ProofMode
 

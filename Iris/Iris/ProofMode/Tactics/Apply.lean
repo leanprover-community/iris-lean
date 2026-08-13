@@ -5,11 +5,8 @@ Authors: Oliver Soeser, Michael Sammler
 -/
 module
 
-import Iris.BI
-import Iris.ProofMode.Classes
-meta import Iris.ProofMode.Patterns.SpecPattern
-meta import Iris.ProofMode.Tactics.Assumption
-public meta import Iris.ProofMode.Tactics.HaveCore
+public import Iris.BI
+public import Iris.ProofMode.Tactics.HaveCore
 
 namespace Iris.ProofMode
 

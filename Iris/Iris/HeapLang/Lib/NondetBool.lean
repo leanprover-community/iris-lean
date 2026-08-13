@@ -26,18 +26,16 @@ theorem nondetBool.spec :
   unfold nondetBool
   wp_alloc l with Hl
   wp_pures
-  imod inv_alloc `n ⊤ iprop(∃ (b : Bool), l ↦ hl_val(#b)) $$ [$Hl] with #Hinv
+  imod inv_alloc `rnd ⊤ iprop(∃ (b : Bool), l ↦ hl_val(#b)) $$ [$Hl] with #Hinv
   wp_bind fork(_)
   iapply wp_fork $$ [K] []
   · inext
     wp_pures
     iinv Hinv with >⟨%b, Hl⟩
-    · simp; infer_instance -- TODO: iinv should solve this
     wp_load
     iintro !> {$Hl}
     iapply K $$ [//]
   · inext
     iinv Hinv with >⟨%b, Hl⟩
-    · simp; infer_instance
     wp_store
     iframe

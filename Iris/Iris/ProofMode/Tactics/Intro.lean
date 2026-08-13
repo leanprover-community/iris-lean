@@ -6,10 +6,10 @@ Authors: Lars König, Mario Carneiro, Michael Sammler, Alvin Tang
 module
 
 public meta import Iris.ProofMode.Patterns.IntroPattern
-public meta import Iris.ProofMode.Tactics.Cases
-public meta import Iris.ProofMode.Tactics.Pure
-public meta import Iris.ProofMode.Tactics.ModIntro
-public meta import Iris.ProofMode.Tactics.Trivial
+public import Iris.ProofMode.Tactics.Cases
+public import Iris.ProofMode.Tactics.Pure
+public import Iris.ProofMode.Tactics.ModIntro
+public import Iris.ProofMode.Tactics.Trivial
 
 namespace Iris.ProofMode
 
