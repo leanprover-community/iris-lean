@@ -836,8 +836,6 @@ open BUpdPlain CMRA UPred
 ## Compatibility between the UPred model of BUpd and the BUpd construction for generic Sbi instances
 -/
 
-/-- The predicate instantiating the universally quantified `R` in `BUpdPlain` to derive `|==> P`:
-`P` holds of some resource composable with the frame `y`. -/
 def BUpdPlain_pred [UCMRA M] (P : UPred M) (y : M) : UPred M where
   holds k _ := ∃ x'', ∃ H : ✓{k} (x'' • y), P k ⟨x'', validN_op_left H⟩
   mono {_ _ _ _} := fun ⟨z, Hz1, Hz2⟩ _ Hn =>
