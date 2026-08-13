@@ -42,14 +42,14 @@ class IsOp [CMRA α]
 set_option synthInstance.checkSynthOrder false in
 /-- Merging with `•` should have the lowest priority. -/
 @[rocq_alias is_op_op]
-instance (priority := default - 100) isOpMerge_op [CMRA α] (a b : α) :
+instance (priority := low) isOpMerge_op [CMRA α] (a b : α) :
     IsOp .merge (a • b) a b where
   is_op := rfl
 
 set_option synthInstance.checkSynthOrder false in
 /-- Splitting with `•` should have the highest priority. -/
 @[rocq_alias is_op_lr_op]
-instance (priority := default + 100) isOpSplit_op [CMRA α] (a b : α) :
+instance (priority := high) isOpSplit_op [CMRA α] (a b : α) :
     IsOp .split (a • b) a b where
   is_op := rfl
 
