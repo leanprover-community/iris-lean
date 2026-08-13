@@ -34,37 +34,38 @@ instance (priority := low) asEmpValid_embed d φ io (P : PROP1)
 
 @[rocq_alias from_modal_embed]
 instance fromModal_embed (P : PROP1) :
-    FromModal True (modality_embed (PROP2 := PROP2)) iprop(⎡P⎤ : PROP2) iprop(⎡P⎤) P where
+    FromModal (PROP1 := PROP1) True (modality_embed : Modality PROP1 PROP2)
+      iprop(⎡P⎤ : PROP2) iprop(⎡P⎤) P where
   from_modal _ := .rfl
 
 @[ipm_backtrack, rocq_alias from_modal_id_embed]
 instance (priority := low) fromModal_id_embed {α} φ (sel : α)
     (P Q : PROP1) [inst : FromModal φ modality_id sel P Q] :
-    FromModal φ modality_id sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
+    FromModal (PROP1 := PROP2) φ modality_id sel iprop(⎡P⎤) iprop(⎡Q⎤) where
   from_modal h := embed_mono <| inst.from_modal h
 
 @[ipm_backtrack, rocq_alias from_modal_affinely_embed]
 instance (priority := low) fromModal_affinely_embed {α} φ (sel : α)
     (P Q : PROP1) [inst : FromModal φ modality_affinely sel P Q] :
-    FromModal φ modality_affinely sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
+    FromModal (PROP1 := PROP2) φ modality_affinely sel iprop(⎡P⎤) iprop(⎡Q⎤) where
   from_modal h := (embed_affinely_2 Q).trans (embed_mono <| inst.from_modal h)
 
 @[ipm_backtrack, rocq_alias from_modal_persistently_embed]
 instance (priority := low) fromModal_persistently_embed {α} φ (sel : α)
     (P Q : PROP1) [inst : FromModal φ modality_persistently sel P Q] :
-    FromModal φ modality_persistently sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
+    FromModal (PROP1 := PROP2) φ modality_persistently sel iprop(⎡P⎤) iprop(⎡Q⎤) where
   from_modal h := (embed_persistently Q).mpr.trans (embed_mono <| inst.from_modal h)
 
 @[ipm_backtrack, rocq_alias from_modal_intuitionistically_embed]
 instance (priority := low) fromModal_intuitionistically_embed {α} φ (sel : α)
     (P Q : PROP1) [inst : FromModal φ modality_intuitionistically sel P Q] :
-    FromModal φ modality_intuitionistically sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
+    FromModal (PROP1 := PROP2) φ modality_intuitionistically sel iprop(⎡P⎤) iprop(⎡Q⎤) where
   from_modal h := (embed_intuitionistically_2 Q).trans (embed_mono <| inst.from_modal h)
 
 /-! ### IntoEmbed -/
 
 @[rocq_alias into_embed_embed]
-instance intoEmbed_embed (P : PROP1) : IntoEmbed iprop(⎡P⎤ : PROP2) P where
+instance intoEmbed_embed (P : PROP1) : IntoEmbed (PROP1 := PROP1) (PROP2 := PROP2) iprop(⎡P⎤) P where
   into_embed := .rfl
 
 @[rocq_alias into_embed_affinely]
@@ -77,14 +78,14 @@ instance intoEmbed_affinely [BIUpdate PROP1] [BIUpdate PROP2]
 
 @[rocq_alias into_pure_embed]
 instance intoPure_embed (P : PROP1) φ [inst : IntoPure P φ] :
-    IntoPure iprop(⎡P⎤ : PROP2) φ where
+    IntoPure (PROP := PROP2) iprop(⎡P⎤) φ where
   into_pure := (embed_mono inst.into_pure).trans (embed_pure φ).mp
 
 /-! ### FromPure -/
 
 @[rocq_alias from_pure_embed]
 instance fromPure_embed a (P : PROP1) ioφ φ [inst : FromPure a P ioφ φ] :
-    FromPure a iprop(⎡P⎤ : PROP2) ioφ φ where
+    FromPure (PROP := PROP2) a iprop(⎡P⎤) ioφ φ where
   from_pure := calc
     _ ⊢ <affine>?a ⎡(⌜φ⌝ : PROP1)⎤ := affinelyIf_mono (embed_pure φ).mpr
     _ ⊢ ⎡<affine>?a ⌜φ⌝⎤           := embed_affinely_if_2 _ a
@@ -94,7 +95,7 @@ instance fromPure_embed a (P : PROP1) ioφ φ [inst : FromPure a P ioφ φ] :
 
 @[rocq_alias into_persistent_embed]
 instance intoPersistently_embed p (P Q : PROP1) [inst : IntoPersistently p P Q] :
-    IntoPersistently p iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
+    IntoPersistently (PROP := PROP2) p iprop(⎡P⎤) iprop(⎡Q⎤) where
   into_persistently := calc
     _ ⊢ ⎡<pers>?p P⎤ := (embed_persistently_if P p).mpr
     _ ⊢ ⎡<pers> Q⎤   := embed_mono inst.into_persistently
@@ -104,7 +105,7 @@ instance intoPersistently_embed p (P Q : PROP1) [inst : IntoPersistently p P Q] 
 
 @[rocq_alias into_wand_embed]
 instance intoWand_embed p q m (R P Q : PROP1) [inst : IntoWand p q R m P Q] :
-    IntoWand p q iprop(⎡R⎤ : PROP2) m iprop(⎡P⎤) iprop(⎡Q⎤) where
+    IntoWand (PROP := PROP2) p q iprop(⎡R⎤) m iprop(⎡P⎤) iprop(⎡Q⎤) where
   into_wand := calc
     _ ⊢ ⎡□?p R⎤        := embed_intuitionistically_if_2 R p
     _ ⊢ ⎡□?q P -∗ Q⎤   := embed_mono inst.into_wand
@@ -118,7 +119,8 @@ instance intoWand_embed p q m (R P Q : PROP1) [inst : IntoWand p q R m P Q] :
 @[rocq_alias into_wand_affine_embed_true]
 instance (priority := low) intoWand_affine_embed_true q
     (P Q R : PROP1) [inst : IntoWand true q R (.matching s) P Q] :
-    IntoWand true q iprop(⎡R⎤ : PROP2) (.matching s) iprop(<affine> ⎡P⎤) iprop(<affine> ⎡Q⎤) where
+    IntoWand (PROP := PROP2) true q iprop(⎡R⎤)
+      (.matching s) iprop(<affine> ⎡P⎤) iprop(<affine> ⎡Q⎤) where
   into_wand := by
     refine (intuitionistically_intro_intuitionistically <|
       (embed_intuitionistically_2 R).trans (embed_mono inst.into_wand)).trans (wand_intro_left ?_)
@@ -142,7 +144,7 @@ instance (priority := low) intoWand_affine_embed_true q
 @[rocq_alias into_wand_affine_embed_false]
 instance (priority := low) intoWand_affine_embed_false q m
     (P Q R : PROP1) [inst : IntoWand false q R (.matching .argument) iprop(<affine> P) Q] :
-    IntoWand false q iprop(⎡R⎤ : PROP2) m iprop(<affine> ⎡P⎤) iprop(⎡Q⎤) where
+    IntoWand (PROP := PROP2) false q iprop(⎡R⎤) m iprop(<affine> ⎡P⎤) iprop(⎡Q⎤) where
   into_wand := by
     calc
       _ ⊢ ⎡□?q (<affine> P) -∗ Q⎤   := embed_mono inst.into_wand
@@ -155,24 +157,24 @@ instance (priority := low) intoWand_affine_embed_false q m
 
 @[rocq_alias from_wand_embed]
 instance fromWand_embed io (P Q1 Q2 : PROP1) [inst : FromWand P io Q1 Q2] :
-    FromWand iprop(⎡P⎤ : PROP2) io iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
+    FromWand (PROP := PROP2) iprop(⎡P⎤) io iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
   from_wand := (embed_wand Q1 Q2).mpr.trans (embed_mono inst.from_wand)
 
 /-! ### FromImp -/
 
 @[rocq_alias from_impl_embed]
 instance fromImp_embed (P Q1 Q2 : PROP1) [inst : FromImp P Q1 Q2] :
-    FromImp iprop(⎡P⎤ : PROP2) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
+    FromImp (PROP := PROP2) iprop(⎡P⎤) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
   from_imp := (embed_impl Q1 Q2).mpr.trans (embed_mono inst.from_imp)
 
 @[rocq_alias from_and_embed]
 instance fromAnd_embed (P Q1 Q2 : PROP1) [inst : FromAnd P Q1 Q2] :
-    FromAnd iprop(⎡P⎤ : PROP2) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
+    FromAnd (PROP := PROP2) iprop(⎡P⎤) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
   from_and := (embed_and Q1 Q2).mpr.trans (embed_mono inst.from_and)
 
 @[rocq_alias from_sep_embed]
 instance fromSep_embed (P Q1 Q2 : PROP1) [inst : FromSep P Q1 Q2] :
-    FromSep iprop(⎡P⎤ : PROP2) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
+    FromSep (PROP := PROP2) iprop(⎡P⎤) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
   from_sep := (embed_sep Q1 Q2).mpr.trans (embed_mono inst.from_sep)
 
 /-! ### CombineSepAs -/
@@ -196,7 +198,7 @@ instance combineSepGives_embed (Q1 Q2 P : PROP1) [inst : CombineSepGives Q1 Q2 P
 
 @[rocq_alias into_and_embed]
 instance intoAnd_embed p (P Q1 Q2 : PROP1) [inst : IntoAnd p P Q1 Q2] :
-    IntoAnd p iprop(⎡P⎤ : PROP2) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
+    IntoAnd (PROP := PROP2) p iprop(⎡P⎤) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
   into_and := by
     refine intuitionisticallyIf_intro_intuitionisticallyIf ?_
     calc
@@ -209,62 +211,62 @@ instance intoAnd_embed p (P Q1 Q2 : PROP1) [inst : IntoAnd p P Q1 Q2] :
 
 @[rocq_alias into_sep_embed]
 instance intoSep_embed (P Q1 Q2 : PROP1) [inst : IntoSep P Q1 Q2] :
-    IntoSep iprop(⎡P⎤ : PROP2) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
+    IntoSep (PROP := PROP2) iprop(⎡P⎤) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
   into_sep := (embed_mono inst.into_sep).trans (embed_sep Q1 Q2).mp
 
 /-! ### FromOr -/
 
 @[rocq_alias from_or_embed]
 instance fromOr_embed (P Q1 Q2 : PROP1) [inst : FromOr P Q1 Q2] :
-    FromOr iprop(⎡P⎤ : PROP2) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
+    FromOr (PROP := PROP2) iprop(⎡P⎤) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
   from_or := (embed_or Q1 Q2).mpr.trans (embed_mono inst.from_or)
 
 /-! ### IntoOr -/
 
 @[rocq_alias into_or_embed]
 instance intoOr_embed (P Q1 Q2 : PROP1) [inst : IntoOr P Q1 Q2] :
-    IntoOr iprop(⎡P⎤ : PROP2) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
+    IntoOr (PROP := PROP2) iprop(⎡P⎤) iprop(⎡Q1⎤) iprop(⎡Q2⎤) where
   into_or := (embed_mono inst.into_or).trans (embed_or Q1 Q2).mp
 
 /-! ### FromExists -/
 
 @[rocq_alias from_exist_embed]
 instance fromExists_embed {α : Sort _} (P : PROP1) (Φ : α → PROP1) [inst : FromExists P Φ] :
-    FromExists iprop(⎡P⎤ : PROP2) (fun a => iprop(⎡Φ a⎤)) where
+    FromExists (PROP := PROP2) iprop(⎡P⎤) (fun a => iprop(⎡Φ a⎤)) where
   from_exists := (embed_exist Φ).mpr.trans (embed_mono inst.from_exists)
 
 /-! ### IntoExists -/
 
 @[rocq_alias into_exist_embed]
 instance intoExists_embed {α : Sort _} (P : PROP1) (Φ : α → PROP1) [inst : IntoExists P Φ] :
-    IntoExists iprop(⎡P⎤ : PROP2) (fun a => iprop(⎡Φ a⎤)) where
+    IntoExists (PROP := PROP2) iprop(⎡P⎤) (fun a => iprop(⎡Φ a⎤)) where
   into_exists := (embed_mono inst.into_exists).trans (embed_exist Φ).mp
 
 /-! ### IntoForall -/
 
 @[rocq_alias into_forall_embed]
 instance intoForall_embed {α : Sort _} (P : PROP1) (Φ : α → PROP1) [inst : IntoForall P Φ] :
-    IntoForall iprop(⎡P⎤ : PROP2) (fun a => iprop(⎡Φ a⎤)) where
+    IntoForall (PROP := PROP2) iprop(⎡P⎤) (fun a => iprop(⎡Φ a⎤)) where
   into_forall := (embed_mono inst.into_forall).trans (embed_forall Φ).mp
 
 /-! ### FromForall -/
 
 @[rocq_alias from_forall_embed]
 instance fromForall_embed {α : Sort _} (P : PROP1) (Ψ : α → PROP1) [inst : FromForall P Ψ] :
-    FromForall iprop(⎡P⎤ : PROP2) (fun a => iprop(⎡Ψ a⎤)) where
+    FromForall (PROP := PROP2) iprop(⎡P⎤) (fun a => iprop(⎡Ψ a⎤)) where
   from_forall := (embed_forall Ψ).mpr.trans (embed_mono inst.from_forall)
 
 /-! ### IntoInv -/
 
 @[rocq_alias into_inv_embed]
 instance intoInv_embed (P : PROP1) (N : Namespace) [IntoInv P N] :
-    IntoInv iprop(⎡P⎤ : PROP2) N := {}
+    IntoInv (PROP := PROP2) iprop(⎡P⎤) N := {}
 
 /-! ### IsExcept0 -/
 
 @[rocq_alias is_except_0_embed]
 instance isExcept0_embed [BiEmbedLater PROP1 PROP2] (P : PROP1)
-    [inst : IsExcept0 P] : IsExcept0 iprop(⎡P⎤ : PROP2) where
+    [inst : IsExcept0 P] : IsExcept0 (PROP := PROP2) iprop(⎡P⎤) where
   is_except0 := (embed_except_0 P).mpr.trans (embed_mono inst.is_except0)
 
 /-! ### FromModal -/
@@ -272,14 +274,14 @@ instance isExcept0_embed [BiEmbedLater PROP1 PROP2] (P : PROP1)
 @[ipm_backtrack, rocq_alias from_modal_later_embed]
 instance fromModal_later_embed [BiEmbedLater PROP1 PROP2] {α} φ (sel : α) n (P Q : PROP1)
     [inst : FromModal φ (modality_laterN n) sel P Q] :
-    FromModal φ (modality_laterN n) sel iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
+    FromModal (PROP1 := PROP2) φ (modality_laterN n) sel iprop(⎡P⎤) iprop(⎡Q⎤) where
   from_modal h := (embed_laterN n Q).mpr.trans (embed_mono <| inst.from_modal h)
 
 /-! ### IntoExcept0 -/
 
 @[rocq_alias into_except_0_embed]
 instance intoExcept0_embed [BiEmbedLater PROP1 PROP2] (P Q : PROP1) [inst : IntoExcept0 P Q] :
-    IntoExcept0 iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
+    IntoExcept0 (PROP := PROP2) iprop(⎡P⎤) iprop(⎡Q⎤) where
   into_except0 := (embed_mono inst.into_except0).trans (embed_except_0 Q).mp
 
 /-! ### IntoLater -/
@@ -287,7 +289,7 @@ instance intoExcept0_embed [BiEmbedLater PROP1 PROP2] (P Q : PROP1) [inst : Into
 @[rocq_alias into_later_embed]
 instance intoLater_embed [BiEmbedLater PROP1 PROP2] (n : Nat) (P Q : PROP1) progress
     [inst : IntoLaterN (progress := true) (only_head := false) n P Q] :
-    IntoLaterN progress (only_head := false) n iprop(⎡P⎤ : PROP2) iprop(⎡Q⎤) where
+    IntoLaterN (PROP := PROP2) progress (only_head := false) n iprop(⎡P⎤) iprop(⎡Q⎤) where
   into_laterN := (embed_mono inst.into_laterN).trans (embed_laterN n Q).mp
 
 end BiEmbed
