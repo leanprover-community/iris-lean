@@ -8,7 +8,6 @@ module
 public import Iris.Algebra.Auth
 public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.Numbers
-meta import Iris.Std.RocqPorting
 
 @[expose] public section
 

@@ -5,7 +5,9 @@ Authors: Lars König
 -/
 module
 
-public meta import Lean.Elab.Tactic
+meta import Lean.Elab.Tactic.ElabTerm
+public import Lean.Elab.Tactic
+public import Iris.Init
 
 public meta section
 

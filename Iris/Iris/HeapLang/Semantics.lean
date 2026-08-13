@@ -9,7 +9,6 @@ public import Iris.HeapLang.Linter
 public import Std.Data.ExtTreeMap
 public import Std.Data.ExtTreeSet
 public import Iris.Std.BitOp
-public import Iris.Std.RocqPorting
 public import Iris.Std.PartialMap
 public import Iris.Std.HeapInstances
 import Iris.Std.List

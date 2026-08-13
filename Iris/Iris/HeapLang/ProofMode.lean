@@ -14,9 +14,7 @@ public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.EctxLanguage
 public import Iris.ProgramLogic.EctxiLanguage
 public import Iris.ProgramLogic.Lifting
-public import Lean
 public import Lean.Elab.Tactic.Simp
-public import Qq
 
 namespace Iris.ProofMode
 
@@ -384,7 +382,7 @@ if the step spawns a goal besides the continuation, such as an undischarged side
 of the reduction. -/
 elab "wp_pure_step" : tactic => focus do
   evalTactic (← `(tactic| wp_pure))
-  -- we run under `focus` so we only see the unsolved goals of `wp_pure` 
+  -- we run under `focus` so we only see the unsolved goals of `wp_pure`
   let goals ← getUnsolvedGoals
   unless goals.length == 1 do
     throwError "the pure reduction step must leave exactly one goal, it left {

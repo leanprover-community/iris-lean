@@ -10,8 +10,8 @@ public import Iris.ProofMode
 
 @[expose] public section
 
-namespace Iris.Tests
-open BI ProofMode
+namespace IrisTest
+open Iris BI ProofMode
 
 variable {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
 

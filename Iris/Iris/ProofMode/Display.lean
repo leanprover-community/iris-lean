@@ -5,9 +5,7 @@ Authors: Lars König, Mario Carneiro
 -/
 module
 
-public meta import Iris.BI.Notation
-public meta import Iris.ProofMode.Expr
-public meta import Lean.PrettyPrinter.Delaborator
+public import Iris.ProofMode.Expr
 
 public meta section
 

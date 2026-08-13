@@ -6,7 +6,6 @@ Authors: Michael Sammler, Yunsong Yang
 module
 
 public import Iris.BI
-public meta import Iris.ProofMode.SynthInstance
 
 @[expose] public section
 

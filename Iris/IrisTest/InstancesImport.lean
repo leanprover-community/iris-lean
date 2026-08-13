@@ -5,14 +5,14 @@ Authors: Michael Sammler
 -/
 module
 
-import Iris.Tests.Instances
+import IrisTest.Instances
 
 /- This file tests that IPM tactic instances declared in other files are imported and applied correctly. -/
 
 @[expose] public section
 
-namespace Iris.Tests
-open Lean Qq BI ProofMode
+namespace IrisTest
+open Lean Iris Qq BI ProofMode
 
 variable {PROP} [BI PROP] (P : PROP)
 

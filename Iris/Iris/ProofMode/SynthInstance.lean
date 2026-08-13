@@ -5,7 +5,6 @@ Authors: Michael Sammler
 -/
 module
 
-public import Qq
 public import Iris.BI
 public import Iris.ProofMode.SynthInstanceAttr
 

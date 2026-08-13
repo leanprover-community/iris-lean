@@ -8,7 +8,6 @@ module
 public import Iris.ProofMode.Classes
 public import Iris.ProofMode.ModalityInstances
 public import Iris.ProofMode.NatCancel
-import Iris.Std.RocqPorting
 
 @[expose] public section
 
