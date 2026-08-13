@@ -101,7 +101,7 @@ meta def elabFixpointDef (fixpoint : Name) (mods : TSyntax ``Lean.Parser.Command
   -- pre-definition: the original body but with self-reference as an argument
   let preName := mkIdentFrom name (name.getId ++ `pre)
   let declPre ← `(command|
-    $mods:declModifiers def $preName:ident $prefixBinders* $selfBinder $suffixBinders* : $ty := $body)
+    def $preName:ident $prefixBinders* $selfBinder $suffixBinders* : $ty := $body)
   elabCommand declPre
 
   let preFullName := (← getCurrNamespace) ++ preName.getId
@@ -153,10 +153,10 @@ meta def elabFixpointDef (fixpoint : Name) (mods : TSyntax ``Lean.Parser.Command
   elabCommand declMono
 
   -- definition: fixpoint of the uncurried pre-definition
-  let defName := mkIdentFrom name (name.getId ++ `def)
+  let defName := mkIdentFrom name (name.getId)
   let defBinders := instBinders ++ prefixBinders ++ suffixBinders
   let declDef ← `(command|
-    def $defName:ident $defBinders* : $ty := $(mkIdent fixpoint) ($pre'Name $prefixArgs*) $argPair)
+    $mods:declModifiers def $defName:ident $defBinders* : $ty := $(mkIdent fixpoint) ($pre'Name $prefixArgs*) $argPair)
   elabCommand declDef
 
 /-- Recursive definition via the least fixpoint. -/

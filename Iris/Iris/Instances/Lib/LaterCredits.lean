@@ -217,7 +217,9 @@ section Upd
 
 variable {GF : BundledGFunctors} {hlc : HasLC} [LcGS hlc GF]
 
-@[rocq_alias le_upd.le_upd_pre]
+#rocq_ignore le_upd.le_upd_pre "`le_upd` is defined directly using `guarded`"
+
+@[rocq_alias le_upd.le_upd]
 guarded le_upd (P : IProp GF) : IProp GF :=
   iprop(∀ n, lc_supply n ==∗
     ▷^[n.succ] False ∨
@@ -227,9 +229,6 @@ guarded le_upd (P : IProp GF) : IProp GF :=
 #rocq_ignore le_upd.le_upd_def "`le_upd` is defined directly without `seal`/`unseal`."
 #rocq_ignore le_upd.le_upd_aux "`le_upd` is defined directly without `seal`/`unseal`."
 #rocq_ignore le_upd.le_upd_unseal "`le_upd` is defined directly without `seal`/`unseal`."
-
-@[rocq_alias le_upd.le_upd]
-def le_upd (P : IProp GF) : IProp GF := le_upd.def P
 
 syntax:max "|==£> " term:40 : term
 

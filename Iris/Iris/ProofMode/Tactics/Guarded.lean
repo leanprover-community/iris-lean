@@ -76,7 +76,7 @@ elab mods:declModifiers "guarded " name:ident binders:guardedExplicitBinder*
   -- pre-definition: the original body but with self-reference as an argument
   let preName := mkIdentFrom name (name.getId ++ `pre)
   let declPre ← `(command|
-    $mods:declModifiers def $preName:ident $prefixBinders* $selfBinder $suffixBinders* : $ty := $body)
+    def $preName:ident $prefixBinders* $selfBinder $suffixBinders* : $ty := $body)
   elabCommand declPre
 
   let preFullName := (← getCurrNamespace) ++ preName.getId
@@ -103,9 +103,9 @@ elab mods:declModifiers "guarded " name:ident binders:guardedExplicitBinder*
   elabCommand declContr
 
   -- definition: fixpoint of the pre-definition
-  let defName := mkIdentFrom name (name.getId ++ `def)
+  let defName := mkIdentFrom name (name.getId)
   let declDef ← `(command|
-    def $defName:ident $prefixBinders* : $selfType := fixpoint $preApp)
+    $mods:declModifiers def $defName:ident $prefixBinders* : $selfType := fixpoint $preApp)
   elabCommand declDef
 
 end Iris

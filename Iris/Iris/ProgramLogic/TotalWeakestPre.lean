@@ -25,7 +25,12 @@ abbrev Stuckness.MaybeReducibleNoObs : Stuckness → Expr × State → Prop
 | .NotStuck, (e₁, σ₁) => PrimStep.ReducibleNoObs (e₁, σ₁)
 | _, _ => True
 
-@[rocq_alias twp_pre]
+#rocq_ignore twp_pre "Total weakest preconditions are defined directly using `fix`"
+#rocq_ignore twp_pre_mono "Total weakest preconditions are defined directly using `fix`"
+#rocq_ignore twp_pre' "Total weakest preconditions are defined directly using `fix`"
+#rocq_ignore twp_pre_mono' "Total weakest preconditions are defined directly using `fix`"
+
+@[rocq_alias twp_def]
 fix twp (s : Stuckness) [OFE CoPset] [OFE.Discrete CoPset] [OFE Expr] [OFE.Discrete Expr]
     (E : CoPset) (e₁ : Expr) (Φ : Val -> IProp GF) : IProp GF :=
   match toVal e₁ with
