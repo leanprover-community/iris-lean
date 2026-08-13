@@ -8,6 +8,7 @@ public import Iris.ProofMode.Display
 public import Iris.ProofMode.InstancesUpdates
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 open Iris.Std BI

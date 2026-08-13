@@ -16,6 +16,7 @@ convenience definitions and lemmas.
 -/
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 

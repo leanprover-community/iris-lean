@@ -12,6 +12,7 @@ public import Iris.Algebra
 public import Iris.Std.HeapInstances
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris.Examples
 open Iris.BI COFE
@@ -141,8 +142,8 @@ theorem wp_unfold (e : Expr) (Φ : Value → IProp GF) :
         ∀ s, @state_interp State _ _ s -∗
           ∃ e' s', ⌜@step _ _ Value _ (e, s) = (e', s') ⌝ ∗
           ▷ |==> (@state_interp _ _ _  s' ∗ wp e' Φ)) := by
-  exact OFE.eq_dist.mpr fun _n => (fixpoint_unfold (f := ⟨(@wp_F Expr State Value _ GF _),
-                                @OFE.ne_of_contractive _ _ _ _ (@wp_F Expr State Value _ GF _) _⟩)).dist e Φ
+  exact OFE.eq_dist_2 fun _n => (fixpoint_unfold (f := ⟨(@wp_F Expr State Value _ GF _),
+                                @OFE.ne_of_contractive _ _ _ _ _ _ (@wp_F Expr State Value _ GF _) _⟩)).dist (SI := Nat) e Φ
 
 /- Now, we can derive some example proof rules. First let's prove a rule for pure deterministic steps: -/
 example (e e' : Expr) Φ (Hstep : ∀ {s : State}, @step _ _ Value _ (e, s) = (e', s)) :

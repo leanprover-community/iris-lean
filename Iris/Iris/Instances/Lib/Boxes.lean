@@ -14,6 +14,7 @@ public import Iris.Std.PartialMap
 public import Iris.Std.Namespaces
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 

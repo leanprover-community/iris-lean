@@ -9,6 +9,7 @@ public import Iris.Algebra.Auth
 public import Iris.Algebra.Excl
 
 public section
+local stepindex Nat
 
 /-!
 # Exclusive Authoritative CMRA
@@ -77,7 +78,7 @@ theorem agreeN {a b : A} (h : ✓{n} (●E a) • ◯E b) : a ≡{n}≡ b :=
 
 @[rocq_alias excl_auth_agree]
 theorem agree {a b : A} (h : ✓ (●E a) • ◯E b) : a = b :=
-  OFE.eq_dist.mpr fun _ => agreeN (Valid.validN h)
+  OFE.eq_dist_2 fun _ => agreeN (Valid.validN h)
 
 #rocq_ignore excl_auth_agree_L "Use agree"
 

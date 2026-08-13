@@ -13,6 +13,7 @@ public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.IsOp
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 

@@ -20,6 +20,7 @@ fragment's resource to its payload.
 -/
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 open OFE CMRA UCMRA Auth Option UFrac
@@ -92,7 +93,7 @@ theorem agreeN {n : Nat} {p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{p} 
 
 @[rocq_alias ufrac_auth_agree]
 theorem agree {p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{p} b) : a = b :=
-  eq_dist.mpr (agreeN <| valid_iff_validN.mp h ·)
+  eq_dist_2 (agreeN <| valid_iff_validN.mp h ·)
 
 #rocq_ignore ufrac_auth_agree_L "Use agree"
 

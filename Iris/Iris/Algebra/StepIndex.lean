@@ -1,18 +1,19 @@
 /-
 Copyright (c) 2026 Alvin Tang. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Michael Sammler, Alvin Tang
+Authors: Michael Sammler, Alvin Tang, Markus de Medeiros
 -/
 module
 
 public import Iris.Std.Classes
+public meta import Iris.Algebra.StepIndexRegistry
 
 @[expose] public section
 
 namespace Iris
 
 @[rocq_alias sidx, rocq_alias SIdxMixin]
-class SIdx (I : Type u) extends LT I, LE I, Zero I where
+class SIdx (I : outParam <| Type u) extends LT I, LE I, Zero I where
   succ : I → I
   lt_trans : ∀ {n m p : I}, n < m → m < p → n < p
   lt_wf : WellFounded ((· < ·) : I → I → Prop)
@@ -22,6 +23,109 @@ class SIdx (I : Type u) extends LT I, LE I, Zero I where
   lt_succ_self : ∀ n : I, n < succ n
   succ_le_of_lt : ∀ {n m : I}, n < m → succ n ≤ m
   weak_case : ∀ n : I, (Σ' m : I, n = succ m) ⊕' ∀ m : I, m < n → succ m < n
+
+
+/-- An opt-in default step index type.
+Warning: typeclass synthesis will become unpredictable if there is ever more than one instance of
+this class in scope at a time. It is strongly prefered that you use the `stepindex` command in
+order to declare a default type of step indices in a section.
+-/
+class DefaultSI (SI : outParam (Type u)) where
+  private mk ::
+  sidx : SIdx SI
+
+/-- Default instance for the step index type.
+If no step indices are found, look for a `DefaultSI` instance, and use that. -/
+@[default_instance, reducible]
+def dfltSIdx {SI : Type u} [d : DefaultSI SI] : SIdx SI := d.sidx
+
+
+open Lean Parser in
+/--
+`stepindex T` installs `T` as the ambient step index of the current scope:
+it synthesizes `SIdx T` and registers the result as a `DefaultSI T` carrier, unlocking abbreviated
+notations such as `OFE α` instead of `OFE (SI := SI) α`. Optionally, the `SIdx` instance you would
+like to use can be provided using `stepindex (inst := ...) T`.
+
+The command requires a `local` or `scoped` modifier; the global form is rejected, since a global
+default step index would silently apply to every module that imports this one. It is also an error
+to install two default step indices in the same scope.
+
+#### Examples
+
+- Declare the type of step indices to be natural numbers whenever the current scope is open:
+  ```
+  scoped stepindex Nat
+  ```
+- Declare that the type of step indices in this local scope will be generic:
+  ```
+  variable {SI : Type _} [SIdx SI]
+  local stepindex SI
+  ```
+- Pick a particular `SIdx` instance rather than whichever one synthesis finds:
+  ```
+  local stepindex (inst := natSIdx) Nat
+  ```
+  This is more stable (it is not doing arbitrary typeclass search at elab time) but is unlikely to
+  be necessary.
+-/
+syntax (name := stepindexCmd)
+  Term.attrKind "stepindex " ("(" &"inst" " := " term ")")? term : command
+
+open Lean Elab Command in
+private meta def mkModuleUniqueName (base : String) : CommandElabM Name := do
+  let ns ← getCurrNamespace
+  let stem := base ++ "_" ++ (← getMainModule).toString.replace "." "_"
+  let mut nm := Name.mkSimple stem
+  let mut i := 0
+  while (← getEnv).contains (ns ++ nm) do
+    i := i + 1
+    nm := Name.mkSimple s!"{stem}_{i}"
+  return nm
+
+open Lean Elab Command Meta in
+private meta def stepindexCore (k : TSyntax ``Parser.Term.attrKind) (inst? : Option Term)
+    (T : Term) : CommandElabM Unit := do
+  if k.raw[0].isNone then
+    throwError "`stepindex` must be `local` or `scoped`\n\n\
+      A global step index would apply to every module importing this one, and `DefaultSI` must \
+      have at most one instance in scope."
+  -- Sanity check: if the provided (or synthesized) DefaultSI instance already exists, abort.
+  runTermElabM fun _ => do
+    let Te ← Term.elabType T
+    let sidxTy ← mkAppM ``SIdx #[Te]
+    match inst? with
+    | some i => discard <| Term.elabTermEnsuringType i sidxTy
+    | none =>
+      unless (← trySynthInstance sidxTy) matches .some _ do
+        throwError "`stepindex` requires a `SIdx` instance for{indentExpr Te}\n\
+          but none is available in this scope"
+    let u ← mkFreshLevelMVar
+    let ty ← mkFreshExprMVar (mkSort (.succ u))
+    if let .some e ← trySynthInstance (mkApp (mkConst ``DefaultSI [u]) ty) then
+      throwError "a step index is already installed in this scope:{indentExpr e}\n\
+        `DefaultSI` must be unique -- open a new `section` to change it"
+  -- Construct a DefaultSI instance
+  let val ← match inst? with
+    | some i => `(term| $(mkCIdent ``DefaultSI.mk) $i)
+    | none   => `(term| $(mkCIdent ``DefaultSI.mk) inferInstance)
+  -- Put the DefaultSI instance in scope
+  let nm ← mkModuleUniqueName "instDefaultSI"
+  -- elabCommand <| ← `(command|
+    -- set_option synthInstance.checkSynthOrder false in
+    -- public $k:attrKind instance (priority := 10000) $(mkIdent nm) : DefaultSI $T := $val)
+  -- Record `T` in the registry, so that `stepindex%` and `infer_stepindex` can resolve the type.
+  unless T.raw.isIdent do
+    throwError "`stepindex` requires an identifier for the eager registry, but got{indentD T}\n\n\
+      Introduce an abbreviation first, e.g. `abbrev MySI := ...` then `local stepindex MySI`."
+  siExt.add T.raw.getId (← liftMacroM <| toAttributeKind k)
+
+open Lean Elab Command in
+@[command_elab stepindexCmd]
+meta def elabStepindex : CommandElab := fun stx => do
+  let `(command| $k:attrKind stepindex $[(inst := $i)]? $T:term) := stx
+    | throwUnsupportedSyntax
+  stepindexCore k i T
 
 /-- The step-indexing successor operator. -/
 scoped prefix:max "succᵢ" => SIdx.succ

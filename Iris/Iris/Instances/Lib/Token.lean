@@ -9,6 +9,7 @@ public import Iris.ProofMode
 public import Iris.Instances.IProp.Instance
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 

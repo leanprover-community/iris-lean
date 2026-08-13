@@ -7,8 +7,10 @@ module
 
 public import Iris.Algebra.OFE
 public import Iris.Algebra.Monoid
+public import Iris.Algebra.StepIndexFinite
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 open OFE
@@ -715,7 +717,7 @@ variable {α : Type _} [CMRA α]
 
 @[rocq_alias cancelable]
 theorem cancelable {x y z : α} [Cancelable x] (v : ✓(x • y)) (e : x • y = x • z) : y = z :=
-  OFE.eq_dist.mpr fun _ => cancelableN v.validN e.dist
+  OFE.eq_dist_2 fun _ => cancelableN v.validN e.dist
 
 @[rocq_alias discrete_cancelable]
 theorem discrete_cancelable {x : α} [Discrete α]
@@ -758,7 +760,7 @@ variable {α : Type _} [CMRA α]
 
 theorem IdFree.of_dist {x₁ x₂ : α} {n} (e : x₁ ≡{n}≡ x₂) (h : IdFree x₁) : IdFree x₂ where
   id_free0_r z v := fun h₂ =>
-    have ee := Dist.le e (Nat.zero_le _)
+    have ee := Dist.le e SIdx.le_0_l
     have := calc
       x₁ • z ≡{0}≡ x₂ • z := op_left_dist z ee
       _      ≡{0}≡ x₂ := h₂
@@ -772,7 +774,7 @@ theorem _root_.Iris.OFE.Dist.idFree {x₁ x₂ : α} (e : x₁ ≡{n}≡ x₂) :
 
 @[rocq_alias id_freeN_r]
 theorem id_freeN_r {n n'} {x : α} [IdFree x] {y} (v : ✓{n} x) : ¬(x • y ≡{n'}≡ x) :=
-  id_free0_r _ (validN_of_le (Nat.zero_le _) v) |>.imp (·.le (Nat.zero_le _))
+  id_free0_r _ (validN_of_le SIdx.le_0_l v) |>.imp (·.le SIdx.le_0_l)
 
 @[rocq_alias id_freeN_l]
 theorem id_freeN_l {n n'} {x : α} [IdFree x] {y} (v : ✓{n} x) : ¬(y • x ≡{n'}≡ x) :=
@@ -959,7 +961,7 @@ instance [CMRA β] : OFE (α -C> β) where
     symm h := dist_eqv.symm h
     trans h1 h2 := dist_eqv.trans h1 h2
   }
-  eq_dist {_ _} := Hom.ext_iff.trans eq_dist
+  eq_dist' {_ _} := Hom.ext_iff.trans eq_dist
   dist_lt := dist_lt
 
 @[rocq_alias cmra_morphism_id]
@@ -1009,7 +1011,7 @@ class RFunctor (F : COFE.OFunctorPre) where
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -C> F α₂ β₂
   map_ne [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     NonExpansive₂ (@map α₁ α₂ β₁ β₂ _ _ _ _)
-  map_id [COFE α] [COFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x = x
+  map_id [COFE α] [COFE β] (x : F α β) : map (Hom.id (α := α)) (Hom.id (α := β)) x = x
   map_comp [COFE α₁] [COFE α₂] [COFE α₃] [COFE β₁] [COFE β₂] [COFE β₃]
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x = map g g' (map f f' x)
@@ -1046,7 +1048,7 @@ class URFunctor (F : COFE.OFunctorPre) where
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -C> F α₂ β₂
   map_ne [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     NonExpansive₂ (@map α₁ α₂ β₁ β₂ _ _ _ _)
-  map_id [COFE α] [COFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x = x
+  map_id [COFE α] [COFE β] (x : F α β) : map (Hom.id (α := α)) (Hom.id (α := β)) x = x
   map_comp [COFE α₁] [COFE α₂] [COFE α₃] [COFE β₁] [COFE β₂] [COFE β₃]
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x = map g g' (map f f' x)
@@ -1680,7 +1682,7 @@ instance instCmraDistreteProd [CMRA.Discrete α] [CMRA.Discrete β] : CMRA.Discr
 @[rocq_alias pair_core_id]
 instance instCoreIdPair {x : α} {y : β} [CMRA.CoreId x] [CMRA.CoreId y] : CMRA.CoreId (α := α × β) ⟨x, y⟩ where
   core_id := by
-    refine (OFE.eq_dist.mpr (fun _ => ?_))
+    refine (OFE.eq_dist_2 (fun _ => ?_))
     simp only [CMRA.pcore, pcore]
     haveI : NonExpansive (fun b : β => some (x, b)) := ⟨fun _ _ _ H => some_dist_some.mpr (dist_prod_ext .rfl H)⟩
     haveI : NonExpansive ((fun a : α => (CMRA.pcore y).bind fun b : β => pure (a, b))) :=

@@ -17,6 +17,7 @@ A variant of the Frac CMRA with unbounded validity (>1).
 -/
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 

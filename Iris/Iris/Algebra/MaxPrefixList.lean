@@ -19,6 +19,7 @@ Here, the term "List" be being used liberally: it is implemented with an ExtTree
 the List type itself. However, there is an embedding of Lists in to this data structure. -/
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 

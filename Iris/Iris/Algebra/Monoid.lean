@@ -6,8 +6,10 @@ Authors: Zongyuan Liu
 module
 
 public import Iris.Algebra.OFE
+public import Iris.Algebra.StepIndexFinite
 
 public section
+local stepindex Nat
 
 namespace Iris.Algebra
 
@@ -18,6 +20,7 @@ namespace Iris.Algebra
 -/
 
 open OFE
+
 
 /-- A commutative monoid on an OFE, used for big operators.
 The operation must be non-expansive, associative, commutative, and have a left identity. -/

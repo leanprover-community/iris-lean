@@ -8,6 +8,7 @@ module
 public import Iris.Algebra.CMRA
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 
@@ -50,8 +51,8 @@ theorem dist_eqv [OFE α] {n} : Equivalence (Excl.Dist (α := α) n) where
 instance [OFE α] : OFE (Excl α) where
   Dist := Excl.Dist
   dist_eqv
-  eq_dist {x y} := by
-    cases x <;> cases y <;> simp [Excl.Dist, eq_dist]
+  eq_dist' {x y} := by
+    cases x <;> cases y <;> simp [Excl.Dist, eq_dist (SI:=_)]
   dist_lt {n x y m} hn hlt := by
     cases x <;> cases y <;> simp at *
     exact Dist.lt hn hlt
@@ -120,6 +121,9 @@ instance [OFE α] [IsCOFE α] : IsCOFE (Excl α) where
     obtain _|x' := c.chain 0 <;> rcases e : c.chain n with _|y' <;> simp [Dist]
     refine fun _ => .trans IsCOFE.conv_compl ?_
     simp [exclChain, e]
+  lbcompl := (·.elim)
+  conv_lbcompl := (·.elim)
+  lbcompl_ne := (·.elim)
 
 /-! ## CMRA -/
 @[simp] def Valid : Excl α → Prop
@@ -184,7 +188,7 @@ theorem excl_included [OFE α] {a b : α} :
     fun h => ⟨none, congrArg (fun x => some (excl x)) h.symm⟩⟩
   rcases z with _|z
   · exact (excl_inj hz).symm
-  · exact (hz.dist (n := 0)).elim
+  · exact (hz.dist (SI := Nat) (n := 0)).elim
 
 @[rocq_alias Excl_includedN]
 theorem excl_includedN [OFE α] {a b : α} {n} :

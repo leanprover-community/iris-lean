@@ -85,3 +85,13 @@ theorem limit_iff_isSuccLimit {o : Ordinal} : SIdx.Limit o ↔ Order.IsSuccLimit
     · intro _ hm
       exact h.succ_lt hm
     · exact h.pos.ne'
+
+section Test
+local stepindex Ordinal
+variable [I : OFE α]
+
+/-- info: OFE.Dist : Ordinal.{u_1} → α → α → Prop -/
+#guard_msgs in
+#check I.Dist (α := α)
+
+end Test

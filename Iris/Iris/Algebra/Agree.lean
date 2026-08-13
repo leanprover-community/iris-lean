@@ -10,6 +10,7 @@ public import Iris.Algebra.OFE
 public import Iris.Algebra.IsOp
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris
 
@@ -390,7 +391,7 @@ theorem op_assoc {x y z : Agree α} : op x (op y z) = op (op x y) z :=
   OFE.eq_dist.mpr (ind₃ (fun _ _ _ => Raw.op_assoc) x y z)
 
 theorem op_idemp {x : Agree α} : op x x = x :=
-  OFE.eq_dist.mpr (x.ind fun _ => Raw.idemp)
+  OFE.eq_dist_2 (x.ind fun _ => Raw.idemp)
 
 @[rocq_alias agree_validN_ne]
 theorem validN_ne {x y : Agree α} : x ≡{n}≡ y → validN n x → validN n y :=
@@ -486,7 +487,7 @@ theorem includedN {x y : Agree α} : x ≼{n} y ↔ y ≡{n}≡ y • x := by
 
 @[rocq_alias agree_included]
 theorem included {x y : Agree α} : x ≼ y ↔ y = y • x :=
-  ⟨fun ⟨z, h⟩ => OFE.eq_dist.mpr fun _ => includedN.mp ⟨z, h.dist⟩,
+  ⟨fun ⟨z, h⟩ => OFE.eq_dist_2 fun _ => includedN.mp ⟨z, h.dist⟩,
    fun h => ⟨y, h.trans op_comm⟩⟩
 
 @[rocq_alias agree_valid_includedN]
@@ -530,7 +531,7 @@ theorem Agree.toAgree_injN {a b : α} : toAgree a ≡{n}≡ toAgree b → a ≡{
 
 @[rocq_alias to_agree_inj]
 theorem Agree.toAgree_inj {a b : α} : toAgree a = toAgree b → a = b :=
-  fun heq => OFE.eq_dist.mpr fun _ => toAgree_injN heq.dist
+  fun heq => OFE.eq_dist_2 fun _ => toAgree_injN heq.dist
 
 @[simp] theorem Agree.toAgree_validN {a : α} : ✓{n} toAgree a := Raw.toAgree_validN (a := a) (n := n)
 
@@ -543,7 +544,7 @@ theorem Agree.toAgree_uninjN {x : Agree α} : ✓{n} x → ∃ a, toAgree a ≡{
 
 @[rocq_alias to_agree_uninj]
 theorem Agree.toAgree_uninj {x : Agree α} : ✓ x → ∃ a, toAgree a = x :=
-  x.ind fun _ h => (Raw.toAgree_uninj h).imp fun _ h => OFE.eq_dist.mpr fun n => h n
+  x.ind fun _ h => (Raw.toAgree_uninj h).imp fun _ h => OFE.eq_dist_2 fun n => h n
 
 instance toAgree.ne : OFE.NonExpansive (toAgree : α → Agree α) := instNonExpansive_toAgree
 
@@ -595,7 +596,7 @@ theorem toAgree_op_validN_iff_dist {a b : α} :
 
 @[rocq_alias to_agree_discrete]
 instance toAgree.is_discrete {a : α} [OFE.DiscreteE a] : OFE.DiscreteE (toAgree a) where
-  discrete {y} := y.ind fun _ h => OFE.eq_dist.mpr (Raw.toAgree_discrete h)
+  discrete {y} := y.ind fun _ h => OFE.eq_dist_2 (Raw.toAgree_discrete h)
 
 end Agree
 
@@ -665,7 +666,7 @@ theorem Agree.map_ne {f g : α → β} [OFE.NonExpansive f] [OFE.NonExpansive g]
 @[rocq_alias agree_map_ext]
 theorem Agree.agree_map_ext {f g : α → β} [OFE.NonExpansive f] [OFE.NonExpansive g] {x : Agree α}
     (H : ∀ a, f a = g a) : map f x = map g x :=
-  OFE.eq_dist.mpr fun _ => map_ne (H · |>.dist)
+  OFE.eq_dist_2 fun _ => map_ne (H · |>.dist)
 
 @[rocq_alias agree_map_id]
 theorem Agree.map_id (x : Agree α) : Agree.map id x = x :=
