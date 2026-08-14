@@ -6,6 +6,7 @@ Authors: Michael Sammler
 module
 
 public import Iris.BI
+public import Iris.Algebra.Frac
 public import Iris.ProofMode.SynthInstance
 public import Iris.ProofMode.Instances
 public import Iris.ProofMode.InstancesMake
@@ -395,3 +396,86 @@ variable (m n p q : Nat)
 #ipm_synth (NatCancel (1 + m + 2) 3 _ _ _)
 
 end NatCancel
+
+section IsOp
+open Iris CMRA ProofMode
+
+variable (q q1 q2 : Qp)
+
+/- Splitting a sum: `isOpFrac_split` is used instead of `isOpFrac_half`. -/
+/-- info:
+  solution: IsOp IsOp.Direction.split (q1 + q2) q1 q2,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IsOp .split (q1 + q2 : Qp) _ _
+
+/- Splitting a CMRA operation: `isOpFrac_split` is used instead of `isOpFrac_half`. -/
+/-- info:
+  solution: IsOp IsOp.Direction.split (q1 • q2) q1 q2,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IsOp .split (q1 • q2) _ _
+
+/- Splitting a `Qp` value, where `isOpFrac_split` is not applicable: use `isOpFrac_half`. -/
+/-- info:
+  solution: IsOp IsOp.Direction.split q q.half q.half,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IsOp .split q _ _
+
+/- Merging two `Qp` values: `isOpFrac_half` is not applicable, use `isOpFrac_merge`. -/
+/-- info:
+  solution: IsOp IsOp.Direction.merge (q1 + q2) q1 q2,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IsOp .merge _ q1 q2
+
+/- Merging two `Qp` values: `isOpFrac_half` is applicable and preferred for eliminating `.half`. -/
+/-- info:
+  solution: IsOp IsOp.Direction.merge q q.half q.half,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IsOp .merge _ q.half q.half
+
+/-
+  Splitting a pair:
+  `isOp_pair`, `isOp_pair_core_id_l`, `isOp_pair_core_id_r` and `isOp_some` are used.
+  Backtracking is involved after `isOp_pair_core_id_r` fails to split the second
+  half of the pair.
+-/
+/-- info:
+  solution: IsOp IsOp.Direction.split (some (q, q1 + q2)) (some (q.half, q1)) (some (q.half, q2)),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IsOp .split (some (q, q1 + q2)) _ _
+
+/-
+  Merging `Qp.quarter` and `Qp.threeQuarters`:
+  `isOpFrac_quarters_left` and `isOpFrac_quarters_right` take precedence over `isOpFrac_merge`.
+-/
+/-- info:
+  solution: IsOp IsOp.Direction.merge (One.one, One.one)
+    (Qp.quarter, Qp.threeQuarters) (Qp.threeQuarters, Qp.quarter),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IsOp .merge _ (Qp.quarter, Qp.threeQuarters) (Qp.threeQuarters, Qp.quarter)
+
+/-
+  Split `Qp.one`: `isOpFrac_half` takes precedence over
+  `isOpFrac_quarters_left`/`isOpFrac_quarters_right`.
+-/
+/-- info:
+  solution: IsOp IsOp.Direction.split One.one One.one.half One.one.half,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IsOp .split instQpOne.one _ _
+
+end IsOp
