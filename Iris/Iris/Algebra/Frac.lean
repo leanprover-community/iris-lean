@@ -58,6 +58,12 @@ def Qp.div (x y : Qp) : Qp := ⟨x.val / y.val, Rat.div_pos x.2 y.2⟩
 instance instHDivQpQpQp : HDiv Qp Qp Qp where
   hDiv := Qp.div
 
+/-- The fraction `1/4`. -/
+def Qp.quarter : Qp := ⟨1 / 4, by grind⟩
+
+/-- The fraction `3/4`. -/
+def Qp.threeQuarters : Qp := ⟨3 / 4, by grind⟩
+
 def Qp.divide_even (q : Qp) (n : Nat) (hn : 0 < n) : Qp :=
   ⟨q.val / n, Rat.div_pos q.2 (by exact_mod_cast hn)⟩
 
@@ -85,7 +91,6 @@ instance instCMRAQp : CMRA Qp where
   extend {_ x y z} := by
     rintro H He; exact ⟨y, z, He, .rfl, .rfl⟩
 
-
 -- TODO: A different solution to having these bridge lemmas might be to internalize
 -- positivity into the CMRA's validity predicate, removing the sybtype, and having Qp
 -- become just a Leibniz CMRA over Rat. This admits two-way coercions to Rat for the automation.
@@ -93,6 +98,8 @@ instance instCMRAQp : CMRA Qp where
 @[simp, grind =] theorem Qp.val_add (x y : Qp) : (x + y).val = x.val + y.val := rfl
 @[simp, grind =] theorem Qp.val_one : (1 : Qp).val = 1 := rfl
 @[simp, grind =] theorem Qp.val_half (q : Qp) : q.half.val = q.val / 2 := rfl
+@[simp, grind =] theorem Qp.val_quarter : Qp.quarter.val = 1 / 4 := rfl
+@[simp, grind =] theorem Qp.val_threeQuarters : Qp.threeQuarters.val = 3 / 4 := rfl
 @[simp, grind =] theorem Qp.val_div (x y : Qp) : (x / y).val = x.val / y.val := rfl
 @[simp, grind =] theorem Qp.val_divide_even (q : Qp) (n : Nat) (hn : 0 < n) :
     (q.divide_even n hn).val = q.val / n := rfl
@@ -105,6 +112,9 @@ instance instCMRAQp : CMRA Qp where
 @[simp] theorem Qp.dist_iff {n} {x y : Qp} : x ≡{n}≡ y ↔ x.val = y.val := Subtype.ext_iff
 @[simp, rocq_alias frac_valid_1] theorem Qp.valid_one : ✓ (1 : Qp) := by grind
 @[simp, grind =] theorem Qp.half_add_half (q : Qp) : q.half + q.half = q := Subtype.ext (by grind)
+@[grind =] theorem Qp.add_left_comm (x y z : Qp) : x + (y + z) = y + (x + z) := by grind
+@[simp, grind =] theorem Qp.quarter_add_threeQuarters : Qp.quarter + Qp.threeQuarters = 1 := by
+  grind
 
 theorem Qp.lt_iff_exists_add {a b : Qp} : a < b ↔ ∃ c : Qp, a + c = b := by
   refine ⟨fun h => ⟨⟨b.val - a.val, by have := Qp.lt_iff.mp h; grind⟩, Subtype.ext (by grind)⟩, ?_⟩
@@ -152,11 +162,27 @@ theorem Frac.valid_iff {p : Qp} : ✓ p ↔ p.val ≤ 1 := .rfl
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias frac_is_op]
-instance (priority := default - 10) (q1 q2 : Qp) :
-    IsOp .merge (q1 + q2 : Qp) q1 q2 where
+instance (priority := low) isOpFrac_merge (q1 q2 : Qp) :
+    IsOp .merge (q1 + q2) q1 q2 where
   is_op := rfl
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_frac]
-instance (q : Qp) : IsOp d q q.half q.half where
+instance isOpFrac_half d (q : Qp) : IsOp d q q.half q.half where
   is_op := by refine (q.ext ?_); grind
+
+set_option synthInstance.checkSynthOrder false in
+/--
+  The sum operator `+` is not automatically unfolded as the CMRA operator (`•`).
+  As a result, `isOpSplit_op` does not automatically apply, and this instance
+  is required.
+-/
+instance (priority := high) isOpFrac_split (q1 q2 : Qp) :
+    IsOp .split (q1 + q2) q1 q2 where
+  is_op := rfl
+
+instance (priority := default - 500) isOpFrac_quarters_left d : IsOp d instQpOne.one Qp.quarter Qp.threeQuarters where
+  is_op := by refine Qp.ext_iff.mpr ?_; grind [instQpOne]
+
+instance (priority := default - 500) isOpFrac_quarters_right d : IsOp d instQpOne.one Qp.threeQuarters Qp.quarter where
+  is_op := by refine Qp.ext_iff.mpr ?_; grind [instQpOne]
