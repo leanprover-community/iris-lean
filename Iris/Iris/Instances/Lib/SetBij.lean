@@ -37,11 +37,11 @@ section definitions
 variable {A B S : Type _} [LawfulSet S (A × B)] [SetBijG GF A B S]
 
 @[rocq_alias gset_bij_own_auth]
-public def set_bij_own_auth (γ : GName) (dq : DFrac) (L : S) : IProp GF :=
+def set_bij_own_auth (γ : GName) (dq : DFrac) (L : S) : IProp GF :=
   iOwn (E := SetBijG.elem) γ (auth dq L)
 
 @[rocq_alias gset_bij_own_elem]
-public def set_bij_own_elem (γ : GName) (a : A) (b : B) : IProp GF :=
+def set_bij_own_elem (γ : GName) (a : A) (b : B) : IProp GF :=
   iOwn (E := SetBijG.elem) γ (elem (S := S) a b)
 
 #rocq_ignore gset_bij_own_auth_def "Not needed"
@@ -91,13 +91,14 @@ instance (q : Qp) : AsFractional (PROP := IProp GF) (γ ↪●BIJ{.own q} L)
 
 /-- Turn the internal validity of a composite `SetBij` resource into a pure fact. -/
 private theorem cmraValid_op_pure {a₁ a₂ : SetBij S} {φ : Prop} (h : ✓ (a₁ • a₂) → φ) :
-    iOwn (E := SetBijG.elem) γ a₁ ∗ iOwn (E := SetBijG.elem) γ a₂ ⊢@{IProp GF} ⌜φ⌝ :=
-  iOwn_cmraValid_op.trans <| internalCmraValid_discrete.mp.trans <| pure_mono h
+    iOwn (E := SetBijG.elem) γ a₁ ∗ iOwn (E := SetBijG.elem) γ a₂ ⊢@{IProp GF} ⌜φ⌝ := by
+  iintro H
+  icases iOwn_cmraValid_op $$ H with %Hv
+  ipureintro; exact (h Hv)
 
 @[rocq_alias gset_bij_own_auth_agree]
 theorem set_bij_own_auth_agree :
-    (γ ↪●BIJ{dq₁} L₁) ∗ (γ ↪●BIJ{dq₂} L₂) ⊢@{IProp GF}
-      ⌜✓ (dq₁ • dq₂) ∧ L₁ = L₂ ∧ SetBijective L₁⌝ :=
+    (γ ↪●BIJ{dq₁} L₁) ∗ (γ ↪●BIJ{dq₂} L₂) ⊢@{IProp GF} ⌜✓ (dq₁ • dq₂) ∧ L₁ = L₂ ∧ SetBijective L₁⌝ :=
   cmraValid_op_pure auth_op_auth_valid_iff.mp
 
 @[rocq_alias gset_bij_own_auth_exclusive]
@@ -109,7 +110,7 @@ theorem set_bij_own_valid : (γ ↪●BIJ{dq} L) ⊢@{IProp GF} ⌜✓ dq ∧ Se
   iOwn_cmraValid.trans <| internalCmraValid_discrete.mp.trans <| pure_mono auth_valid_iff.mp
 
 @[rocq_alias gset_bij_own_elem_agree]
-theorem set_bij_own_elem_agree (a a' : A) (b b' : B) :
+theorem set_bij_own_elem_agree {a a' : A} {b b' : B} :
     (γ ↪◯BIJ⟨a, b⟩) ∗ (γ ↪◯BIJ⟨a', b'⟩) ⊢@{IProp GF} ⌜a = a' ↔ b = b'⌝ :=
   cmraValid_op_pure elem_agree
 
@@ -133,9 +134,10 @@ variable {γ : GName} {dq : DFrac} {L : S}
 @[rocq_alias gset_bij_own_elem_get_big]
 theorem set_bij_own_elem_get_big :
     (γ ↪●BIJ{dq} L) ⊢@{IProp GF} [∗set] ab ∈ L, γ ↪◯BIJ⟨ab.1, ab.2⟩ := by
-  refine .trans ?_ bigSepS_forall.mpr
-  iintro H %⟨a, b⟩ %hab
-  iapply set_bij_own_elem_get a b hab $$ H
+  iintro H
+  iapply bigSepS_forall
+  iintro %⟨a, b⟩ %hab
+  iapply set_bij_own_elem_get _ _ hab $$ H
 
 @[rocq_alias gset_bij_own_alloc]
 theorem set_bij_own_alloc (L : S) (h : SetBijective L) :
@@ -147,7 +149,7 @@ theorem set_bij_own_alloc (L : S) (h : SetBijective L) :
 
 @[rocq_alias gset_bij_own_alloc_empty]
 theorem set_bij_own_alloc_empty : ⊢@{IProp GF} |==> ∃ γ, γ ↪●BIJ (∅ : S) := by
-  imod (set_bij_own_alloc (∅ : S) SetBijective.empty) with ⟨%γ, H, -⟩
+  imod (set_bij_own_alloc ∅ SetBijective.empty) with ⟨%γ, H, -⟩
   imodintro; iexists γ; iexact H
 
 end finiteLemmas
@@ -159,24 +161,30 @@ variable {γ : GName} {L : S}
 
 @[rocq_alias gset_bij_own_extend]
 theorem set_bij_own_extend (a : A) (b : B) (ha : ∀ b', (a, b') ∉ L) (hb : ∀ a', (a', b) ∉ L) :
-    (γ ↪●BIJ L) ⊢@{IProp GF} |==> ((γ ↪●BIJ ({(a, b)} ∪ L)) ∗ γ ↪◯BIJ⟨a, b⟩) :=
-  (iOwn_update (auth_extend ha hb)).trans <| BIUpdate.mono <| persistent_entails_left <|
-    set_bij_own_elem_get a b (mem_union.mpr (.inl (mem_singleton.mpr rfl)))
+    ⊢@{IProp GF} (γ ↪●BIJ L) ==∗ ((γ ↪●BIJ ({(a, b)} ∪ L)) ∗ γ ↪◯BIJ⟨a, b⟩) := by
+  iintro Hauth
+  ihave Hauth : (γ ↪●BIJ {(a, b)} ∪ L) $$ [> Hauth]
+  · unfold set_bij_own_auth
+    iapply (iOwn_update (auth_extend ha hb)) $$ Hauth
+  imodintro
+  isplit
+  · itrivial
+  iapply set_bij_own_elem_get _ _ (mem_union.mpr (.inl (mem_singleton.mpr rfl))) $$ Hauth
 
 @[rocq_alias gset_bij_own_extend_internal]
 theorem set_bij_own_extend_internal (a : A) (b : B) :
-    iprop((∀ b' : B, (γ ↪◯BIJ⟨a, b'⟩) -∗ False) ∗ (∀ a' : A, (γ ↪◯BIJ⟨a', b⟩) -∗ False) ∗
-      (γ ↪●BIJ L)) ⊢@{IProp GF} |==> ((γ ↪●BIJ ({(a, b)} ∪ L)) ∗ γ ↪◯BIJ⟨a, b⟩) := by
+    ⊢@{IProp GF} (∀ b' : B, (γ ↪◯BIJ⟨a, b'⟩) -∗ False) ∗ (∀ a' : A, (γ ↪◯BIJ⟨a', b⟩) -∗ False) ∗
+      (γ ↪●BIJ L) ==∗ ((γ ↪●BIJ ({(a, b)} ∪ L)) ∗ γ ↪◯BIJ⟨a, b⟩) := by
   iintro ⟨Ha, Hb, HL⟩
   ihave %h₁ : ⌜∀ b', (a, b') ∉ L⌝ $$ [Ha HL]
   · iintro %b' %hmem
     iapply Ha $$ %b' [HL]
-    iapply set_bij_own_elem_get a b' hmem $$ HL
+    iapply set_bij_own_elem_get _ _ hmem $$ HL
   ihave %h₂ : ⌜∀ a', (a', b) ∉ L⌝ $$ [Hb HL]
   · iintro %a' %hmem
     iapply Hb $$ %a' [HL]
-    iapply set_bij_own_elem_get a' b hmem $$ HL
-  iapply set_bij_own_extend a b h₁ h₂ $$ HL
+    iapply set_bij_own_elem_get _ _ hmem $$ HL
+  iapply set_bij_own_extend _ _ h₁ h₂ $$ HL
 
 end updates
 

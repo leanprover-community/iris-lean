@@ -99,47 +99,43 @@ theorem auth_op_auth_eq : ((auth dq₁ L₁ : SetBij S) • auth dq₂ L₂)
     = ((●V{dq₁} valid L₁ : SetBij S) • ●V{dq₂} valid L₂) • ◯V valid (L₁ ∪ L₂) := by
   rw [auth, auth, ← frag_op_union]
   exact Algebra.MonoidOps.op_op_op_comm
+attribute [local grind =] auth_op_auth_eq
 
 @[rocq_alias gset_bij_auth_dfrac_op]
 theorem auth_op_auth : ((auth dq₁ L : SetBij S) • auth dq₂ L) = auth (dq₁ • dq₂) L := by
-  rw [auth_op_auth_eq, union_idem, ← auth_op_auth_eqv, auth]
+  grind [union_idem, auth_op_auth_eqv, auth]
+attribute [local grind =] auth_op_auth
 
 @[rocq_alias gset_bij_auth_dfrac_valid]
 theorem auth_valid_iff : ✓ (auth dq L : SetBij S) ↔ ✓ dq ∧ SetBijective L := by
   rw [auth, auth_op_frag_valid_iff]
   exact and_congr_right fun _ => ⟨fun h => (h 0).2, fun h _ => ⟨subset_refl, h⟩⟩
+attribute [local grind =] auth_valid_iff
 
 @[rocq_alias gset_bij_auth_valid]
-theorem auth_one_valid_iff : ✓ (auth (.own 1) L : SetBij S) ↔ SetBijective L :=
-  auth_valid_iff.trans <| and_iff_right_iff_imp.mpr fun _ => DFrac.valid_own_one
+theorem auth_one_valid_iff : ✓ (auth (.own 1) L : SetBij S) ↔ SetBijective L := by
+  grind [DFrac.valid_own_one]
 
 @[rocq_alias gset_bij_auth_empty_dfrac_valid]
-theorem auth_empty_valid_iff : ✓ (auth dq (∅ : S) : SetBij S) ↔ ✓ dq :=
-  auth_valid_iff.trans <| and_iff_left_iff_imp.mpr fun _ => SetBijective.empty
+theorem auth_empty_valid_iff : ✓ (auth dq (∅ : S) : SetBij S) ↔ ✓ dq := by
+  grind [SetBijective.empty]
 
 @[rocq_alias gset_bij_auth_empty_valid]
-theorem auth_one_empty_valid : ✓ (auth (.own 1) (∅ : S) : SetBij S) :=
-  auth_empty_valid_iff.mpr DFrac.valid_own_one
+theorem auth_one_empty_valid : ✓ (auth (.own 1) (∅ : S) : SetBij S) := by
+  grind [auth_empty_valid_iff, DFrac.valid_own_one]
 
 @[rocq_alias gset_bij_auth_dfrac_op_valid]
-theorem auth_op_auth_valid_iff : ✓ ((auth dq₁ L₁ : SetBij S) • auth dq₂ L₂)
+theorem auth_op_auth_valid_iff : ✓ (auth dq₁ L₁ • auth dq₂ L₂)
     ↔ ✓ (dq₁ • dq₂) ∧ L₁ = L₂ ∧ SetBijective L₁ := by
-  refine ⟨fun h => ?_, fun ⟨hdq, rfl, hbij⟩ => ?_⟩
-  · rw [auth_op_auth_eq] at h
-    obtain ⟨hdq, hL, hrel⟩ := View.auth_op_auth_valid_iff.mp (valid_op_left h)
-    exact ⟨hdq, valid.inj hL, (hrel 0).2⟩
-  · rw [auth_op_auth]
-    exact auth_valid_iff.mpr ⟨hdq, hbij⟩
+  grind [View.auth_op_auth_valid_iff, valid_op_left]
 
 @[rocq_alias gset_bij_auth_op_valid]
 theorem auth_one_op_auth_one_valid_iff :
     ✓ ((auth (.own 1) L₁ : SetBij S) • auth (.own 1) L₂) ↔ False := by
-  rw [auth_op_auth_eq]
-  exact ⟨fun h => View.auth_one_op_auth_one_valid_iff.mp (valid_op_left h), False.elim⟩
+  grind [View.auth_one_op_auth_one_valid_iff, valid_op_left]
 
 @[rocq_alias bij_both_dfrac_valid]
-theorem auth_op_elem_valid_iff : ✓ ((auth dq L : SetBij S) • elem a b)
-    ↔ ✓ dq ∧ SetBijective L ∧ (a, b) ∈ L := by
+theorem auth_op_elem_valid_iff : ✓ (auth dq L • elem a b) ↔ ✓ dq ∧ SetBijective L ∧ (a, b) ∈ L := by
   rw [auth, elem, ← assoc_L, frag_op_union, auth_op_frag_valid_iff]
   exact and_congr_right fun _ =>
     ⟨fun h => ⟨(h 0).2, (h 0).1 _ (mem_union.mpr (.inr (mem_singleton.mpr rfl)))⟩,
@@ -147,25 +143,24 @@ theorem auth_op_elem_valid_iff : ✓ ((auth dq L : SetBij S) • elem a b)
        ⟨fun _ hx => (mem_union.mp hx).elim id (mem_singleton.mp · ▸ hmem), hbij⟩⟩
 
 @[rocq_alias bij_both_valid]
-theorem auth_one_op_elem_valid_iff : ✓ ((auth (.own 1) L : SetBij S) • elem a b)
-    ↔ SetBijective L ∧ (a, b) ∈ L :=
-  auth_op_elem_valid_iff.trans <| and_iff_right_iff_imp.mpr fun _ => DFrac.valid_own_one
+theorem auth_one_op_elem_valid_iff : ✓ (auth (.own 1) L • elem a b) ↔ SetBijective L ∧ (a, b) ∈ L := by
+  grind [auth_op_elem_valid_iff, DFrac.valid_own_one]
 
 @[rocq_alias gset_bij_elem_agree]
-theorem elem_agree (h : ✓ ((elem a₁ b₁ : SetBij S) • elem a₂ b₂)) : a₁ = a₂ ↔ b₁ = b₂ := by
+theorem elem_agree (h : ✓ ((elem a₁ b₁ • elem a₂ b₂) : SetBij S)) : a₁ = a₂ ↔ b₁ = b₂ := by
   rw [elem, elem, frag_op_union, frag_valid_iff] at h
   obtain ⟨⟨_⟩, hsub, hbij⟩ := h 0
   exact SetBijective.eq_iff (hbij.mono hsub) (mem_union.mpr (.inl (mem_singleton.mpr rfl)))
     (mem_union.mpr (.inr (mem_singleton.mpr rfl)))
 
 @[rocq_alias bij_view_included]
-theorem elem_inc_auth (h : (a, b) ∈ L) : (elem a b : SetBij S) ≼ auth dq L :=
+theorem elem_inc_auth (h : (a, b) ∈ L) : elem a b ≼ auth dq L :=
   inc_trans (frag_inc_of_inc <| (included_iff_subset ..).mpr fun _ hx => mem_singleton.mp hx ▸ h)
     (inc_op_right ..)
 
 @[rocq_alias gset_bij_auth_extend]
 theorem auth_extend (ha : ∀ b', (a, b') ∉ L) (hb : ∀ a', (a', b) ∉ L) :
-    (auth (.own 1) L : SetBij S) ~~> auth (.own 1) ({(a, b)} ∪ L) := by
+    auth (.own 1) L ~~> auth (.own 1) ({(a, b)} ∪ L) := by
   refine auth_one_op_frag_update fun _ bf h => ?_
   obtain ⟨_⟩ := bf
   rw [op_union] at h ⊢
