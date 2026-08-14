@@ -587,38 +587,41 @@ end Iris
 
 public section
 
-open Lean Elab Tactic Meta Qq Iris.BI Iris Iris.ProofMode Iris.Std
+open Lean Tactic Meta Qq Iris BI ProofMode
 
 @[rocq_alias tac_lc_add_laterN_split]
 theorem tac_lc_add_laterN_split {GF : BundledGFunctors} [InvGS GF]
-    {n m newM : Nat} {E : CoPset} {P Q goal : IProp GF} {stuck : Bool}
-    (inst : AddModal iprop(|={E}=> goal) goal goal)
-    (h1 : NatCancel m n newM 0 stuck) (h2 : P ∗ £ newM ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
-    P ∗ £ m ⊢ goal := by
-  have h1 : m = n + newM := by have := h1.nat_cancel; omega
-  subst h1
+    {φ : Prop} {n m newM : Nat} {stuck : Bool} {E : CoPset}
+    {e P R Q goal : IProp GF}
+    (heq : e ⊣⊢ P ∗ £ m)
+    (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
+    (hc : NatCancel m n newM 0 stuck)
+    (hR : P ∗ £ newM ⊣⊢ R) (h2 : R ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
+    e ⊢ goal := by
+  have hm : m = n + newM := by have := hc.nat_cancel; omega
+  subst hm
+  refine heq.mp.trans ?_
   iintro ⟨HP, Hcred⟩
-  iapply inst.add_modal
+  iapply inst.elim_modal hφ
   isplitl
   · icases lc_split.mp $$ Hcred with ⟨Hn, Hm⟩
     icombine HP Hm as H
-    ihave H := h2 $$ H
+    ihave H := (hR.mp.trans h2) $$ H
     iapply lc_fupd_add_laterN n $$ Hn
     inext
     imodintro
     iapply h3 $$ H
   · iintro _ //
 
-/--
-  For the special case where the later credit amount reaches zero, and
-  the later credit hypothesis is dropped.
--/
 theorem tac_lc_add_laterN_full {GF : BundledGFunctors} [InvGS GF]
-    {n m : Nat} {E : CoPset} {P Q goal : IProp GF} {stuck : Bool}
-    (inst : AddModal iprop(|={E}=> goal) goal goal)
-    (h1 : NatCancel m n 0 0 stuck) (h2 : P ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
-    P ∗ £ m ⊢ goal :=
-  tac_lc_add_laterN_split inst h1 (sep_elim_left.trans h2) h3
+    {φ : Prop} {n m : Nat} {stuck : Bool} {E : CoPset}
+    {e P Q goal : IProp GF}
+    (heq : e ⊣⊢ P ∗ £ m)
+    (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
+    (hc : NatCancel m n 0 0 stuck)
+    (h2 : P ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
+    e ⊢ goal :=
+  tac_lc_add_laterN_split heq inst hφ hc .rfl (sep_elim_left.trans h2) h3
 
 public meta section
 
@@ -631,8 +634,8 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
   let n : Q(Nat) ← match t with
   | none => pure <| mkNatLit 1
   | some t => do
-    let n ← Term.elabTermEnsuringType t q(Nat)
-    Term.synthesizeSyntheticMVarsNoPostponing
+    let n ← Lean.Elab.Term.elabTermEnsuringType t q(Nat)
+    Lean.Elab.Term.synthesizeSyntheticMVarsNoPostponing
     instantiateMVars n
 
   ProofModeM.runTactic `inext λ mvar { u, prop, bi, e, hyps, goal, .. } => do
@@ -683,7 +686,6 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
           e, e', eQ, goal, pfEq, inst, hφ, hcancel, pfModAction, pf]
     -- Update the later credits hypothesis and introduce it into the context
     | _ =>
-      -- The new expression `£ newC`
       let newTy := mkApp ty.appFn! newC
       let ⟨eAdd, newHyps, pfNewHyps⟩ := Hyps.add _ name ivar q(false) newTy hyps'
       let ⟨eQ, newHyps', pfModAction⟩ ← iModAction newHyps modality
