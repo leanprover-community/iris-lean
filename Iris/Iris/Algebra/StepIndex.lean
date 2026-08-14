@@ -13,7 +13,7 @@ public meta import Iris.Algebra.StepIndexRegistry
 namespace Iris
 
 @[rocq_alias sidx, rocq_alias SIdxMixin]
-class SIdxRaw (I : Type u) extends LT I, LE I, Zero I where
+class SIdx (I : outParam <| Type u) extends LT I, LE I, Zero I where
   succ : I → I
   lt_trans : ∀ {n m p : I}, n < m → m < p → n < p
   lt_wf : WellFounded ((· < ·) : I → I → Prop)
@@ -30,21 +30,15 @@ Warning: typeclass synthesis will become unpredictable if there is ever more tha
 this class in scope at a time. It is strongly prefered that you use the `stepindex` command in
 order to declare a default type of step indices in a section.
 -/
-class SIdx (SI : outParam (Type u)) where
+class DefaultSI (SI : outParam (Type u)) where
   private mk ::
-  sidx : SIdxRaw SI
-instance {SI} [SIdx SI] : LT SI := SIdx.sidx.toLT
-instance {SI} [SIdx SI] : LE SI := SIdx.sidx.toLE
-instance {SI} [SIdx SI] : Zero SI := SIdx.sidx.toZero
-def SIdx.succ {SI} [SIdx SI] : SI → SI := sidx.succ
-theorem SIdx.lt_trans {SI} [SIdx SI] : ∀ {n m p : SI}, n < m → m < p → n < p := sidx.lt_trans
-theorem SIdx.lt_wf {SI} [SIdx SI] : WellFounded ((· < ·) : SI → SI → Prop) := sidx.lt_wf
-def SIdx.lt_trichotomyT {SI} [SIdx SI] : ∀ n m : SI, n < m ⊕' n = m ⊕' m < n := sidx.lt_trichotomyT
-theorem SIdx.le_lteq {SI} [SIdx SI] : ∀ {m n : SI}, n ≤ m ↔ n < m ∨ n = m := sidx.le_lteq
-theorem SIdx.not_lt_zero {SI} [SIdx SI] : ∀ n : SI, ¬n < 0 := sidx.not_lt_zero
-theorem SIdx.lt_succ_self {SI} [SIdx SI] : ∀ n : SI, n < succ n := sidx.lt_succ_self
-theorem SIdx.succ_le_of_lt {SI} [SIdx SI] : ∀ {n m : SI}, n < m → succ n ≤ m := sidx.succ_le_of_lt
-def SIdx.weak_case {SI} [SIdx SI] : ∀ n : SI, (Σ' m : SI, n = succ m) ⊕' ∀ m : SI, m < n → succ m < n := sidx.weak_case
+  sidx : SIdx SI
+
+/-- Default instance for the step index type.
+If no step indices are found, look for a `DefaultSI` instance, and use that. -/
+@[default_instance, reducible]
+def dfltSIdx {SI : Type u} [d : DefaultSI SI] : SIdx SI := d.sidx
+
 
 open Lean Parser in
 /--
@@ -96,14 +90,10 @@ private meta def stepindexCore (k : TSyntax ``Parser.Term.attrKind) (inst? : Opt
     throwError "`stepindex` must be `local` or `scoped`\n\n\
       A global step index would apply to every module importing this one, and `DefaultSI` must \
       have at most one instance in scope."
-  -- TODO: REMOVE THIS HACK!!!
-  if T.raw.getId == `SI then
-    siExt.add T.raw.getId (← liftMacroM <| toAttributeKind k)
-    return
   -- Sanity check: if the provided (or synthesized) DefaultSI instance already exists, abort.
   runTermElabM fun _ => do
     let Te ← Term.elabType T
-    let sidxTy ← mkAppM ``SIdxRaw #[Te]
+    let sidxTy ← mkAppM ``SIdx #[Te]
     match inst? with
     | some i => discard <| Term.elabTermEnsuringType i sidxTy
     | none =>
@@ -112,19 +102,18 @@ private meta def stepindexCore (k : TSyntax ``Parser.Term.attrKind) (inst? : Opt
           but none is available in this scope"
     let u ← mkFreshLevelMVar
     let ty ← mkFreshExprMVar (mkSort (.succ u))
-    if let .some e ← trySynthInstance (mkApp (mkConst ``SIdx [u]) ty) then
+    if let .some e ← trySynthInstance (mkApp (mkConst ``DefaultSI [u]) ty) then
       throwError "a step index is already installed in this scope:{indentExpr e}\n\
         `DefaultSI` must be unique -- open a new `section` to change it"
   -- Construct a DefaultSI instance
   let val ← match inst? with
-    | some i => `(term| $(mkCIdent ``SIdx.mk) $i)
-    | none   => `(term| $(mkCIdent ``SIdx.mk) inferInstance)
+    | some i => `(term| $(mkCIdent ``DefaultSI.mk) $i)
+    | none   => `(term| $(mkCIdent ``DefaultSI.mk) inferInstance)
   -- Put the DefaultSI instance in scope
   let nm ← mkModuleUniqueName "instDefaultSI"
-  elabCommand <| ← `(command|
-    set_option synthInstance.checkSynthOrder false in
-    @[reducible]
-    public $k:attrKind instance (priority := 10000) $(mkIdent nm) : SIdx $T := $val)
+  -- elabCommand <| ← `(command|
+    -- set_option synthInstance.checkSynthOrder false in
+    -- public $k:attrKind instance (priority := 10000) $(mkIdent nm) : DefaultSI $T := $val)
   -- Record `T` in the registry, so that `stepindex%` and `infer_stepindex` can resolve the type.
   unless T.raw.isIdent do
     throwError "`stepindex` requires an identifier for the eager registry, but got{indentD T}\n\n\
