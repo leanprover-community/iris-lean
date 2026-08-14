@@ -378,20 +378,4 @@ instance [OFunctorContractive F] : OFunctorContractive (ListOF F) where
 
 end functor
 
-section MapSeq
-
-open Std OFE
-
-/-- Building a map out of a list of consecutive keys is non-expansive. -/
-@[rocq_alias map_seq_ne]
-instance [LawfulFiniteMap M Nat] [OFE V] (start : Nat) :
-    NonExpansive (FiniteMap.map_seq (M := M) start : List V → M V) where
-  ne {_ _ _} h k := by
-    rw [LawfulFiniteMap.get?_map_seq, LawfulFiniteMap.get?_map_seq]
-    split
-    · exact NonExpansive.ne (f := fun l : List V => l[k - start]?) h
-    · exact .rfl
-
-end MapSeq
-
 end Iris

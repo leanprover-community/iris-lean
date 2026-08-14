@@ -623,7 +623,6 @@ theorem singleton_core_total [IsTotal V] {i : K} {x : V} :
     equiv (core <| singleton i x : M V) ((singleton i (core x))) :=
   core_singleton_equiv (pcore_eq_core x)
 
-@[rocq_alias singleton_core_total]
 theorem singleton_core_total_eq [IsTotal V] {i : K} {x : V} :
     core (singleton i x : M V) = singleton i (core x) :=
   equiv_iff_eq.mp singleton_core_total
@@ -636,7 +635,6 @@ theorem singleton_op_singleton {i : K} {x y : V} :
   simp only [CMRA.op, Heap.op, get?_merge, get?_singleton]
   split <;> simp [Option.merge]
 
-@[rocq_alias singleton_op]
 theorem singleton_op_singleton_eq {i : K} {x y : V} :
     (singleton i x : M V) • (singleton i y) = (singleton i (x • y)) :=
   equiv_iff_eq.mp singleton_op_singleton
@@ -801,7 +799,6 @@ theorem insert_op_equiv {m1 m2 : M V} :
   · simp [CMRA.op, get?_insert_eq He, get?_merge]
   · simp [CMRA.op, get?_insert_ne He, get?_merge]
 
-@[rocq_alias insert_op]
 theorem insert_op_eq {m1 m2 : M (Option V)} :
     (insert (m1 • m2) i (x • y)) = (insert m1 i x • insert m2 i y) :=
   equiv_iff_eq.mp insert_op_equiv
