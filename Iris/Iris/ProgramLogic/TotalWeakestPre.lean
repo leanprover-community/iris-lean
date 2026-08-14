@@ -196,11 +196,6 @@ theorem strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : Val 
     · imod fupd_mask_mono hE' $$ IH with HΦv
       iapply Hpost $$ HΦv
 
-private theorem strong_mono_with {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : Val → IProp GF}
-    (hs : s₁ ≤ s₂) (hE : E₁ ⊆ E₂) (H : ∀ v, ⊢ Φ v ={E₂}=∗ Ψ v) :
-    WP e @ s₁ ; E₁ [{ Φ }] ⊢ WP e @ s₂ ; E₂ [{ Ψ }] :=
-  sep_elim_emp_valid_right (forall_intro H) (wand_elim (wand_entails (strong_mono hs hE)))
-
 @[rocq_alias fupd_twp]
 theorem fupd_twp {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} :
     (|={E}=> WP e @ s ; E [{ Φ }]) ⊢ WP e @ s ; E [{ Φ }] := by
@@ -215,7 +210,8 @@ theorem fupd_twp {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} :
 theorem twp_fupd {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E [{ v, |={E}=> Φ v }] ⊢ WP e @ s ; E [{ Φ }] := by
   iintro H
-  iapply strong_mono_with (Std.IsPreorder.le_refl _) LawfulSet.subset_refl fun _ => BI.wand_rfl $$ H
+  iapply strong_mono (Std.IsPreorder.le_refl _) LawfulSet.subset_refl $$ H
+  iintro %_ $
 
 @[rocq_alias twp_atomic]
 theorem atomic {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}
@@ -350,7 +346,7 @@ theorem mono {s : Stuckness} {E} {e : Expr} {Φ Ψ : Val → IProp GF}
     (H : ∀ v, Φ v ⊢ Ψ v) :
     WP e @ s ; E [{ Φ }] ⊢ WP e @ s ; E [{ Ψ }] := by
   iintro H
-  iapply strong_mono_with (Std.IsPreorder.le_refl _) LawfulSet.subset_refl $$ H
+  iapply strong_mono (Std.IsPreorder.le_refl _) LawfulSet.subset_refl $$ H
   iintro %v _
   iapply H $$ [$]
 
@@ -358,7 +354,8 @@ theorem mono {s : Stuckness} {E} {e : Expr} {Φ Ψ : Val → IProp GF}
 theorem stuck_mono {s₁ s₂ : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} (H : s₁ ≤ s₂) :
     WP e @ s₁ ; E [{ Φ }] ⊢ WP e @ s₂ ; E [{ Φ }] := by
   iintro H
-  iapply strong_mono_with H LawfulSet.subset_refl fun _ => entails_wand fupd_intro $$ H
+  iapply strong_mono H LawfulSet.subset_refl $$ H
+  iintro %_ $
 
 @[rocq_alias twp_stuck_weaken]
 theorem stuck_weaken {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} :
@@ -370,7 +367,7 @@ theorem mask_mono {s : Stuckness} {E₁ E₂} {e : Expr} {Φ : Val → IProp GF}
     (H : E₁ ⊆ E₂) :
     WP e @ s ; E₁ [{ Φ }] ⊢ WP e @ s ; E₂ [{ Φ }] := by
   iintro H
-  iapply strong_mono_with (Std.IsPreorder.le_refl _) H $$ H
+  iapply strong_mono (Std.IsPreorder.le_refl _) H $$ H
   iintro %_ $
 
 @[rocq_alias twp_value']
