@@ -478,7 +478,7 @@ theorem incN_of_incN_le {n n'} {x y : α} (l1 : n' ≤ n) : x ≼{n} y → x ≼
 theorem inc0_of_incN {n} {x y : α} : x ≼{n} y → x ≼{0} y := incN_of_incN_le (Nat.zero_le n)
 theorem IncludedN.le {n n'} {x y : α} : n' ≤ n → x ≼{n} y → x ≼{n'} y := incN_of_incN_le
 
-@[rocq_alias cmra_includedN_S]
+@[rocq_alias cmra.cmra_includedN_S]
 theorem incN_of_incN_succ {n} {x y : α} : x ≼{n.succ} y → x ≼{n} y :=
   incN_of_incN_le (Nat.le_succ n)
 theorem IncludedN.succ {n} {x y : α} : x ≼{n.succ} y → x ≼{n} y := incN_of_incN_succ

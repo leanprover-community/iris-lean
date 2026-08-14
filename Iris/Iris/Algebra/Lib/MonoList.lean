@@ -80,7 +80,7 @@ theorem lb_inj {l1 l2 : List α} (h : ◯ML l1 = ◯ML l2) : l1 = l2 :=
 
 /-! ## Operation -/
 
-@[rocq_alias mono_list_lb_core_id]
+@[rocq_alias mono_list.mono_list_lb_core_id]
 instance {l : List α} : CoreId (◯ML l) := by
   unfold lb MonoList
   infer_instance

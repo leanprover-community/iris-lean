@@ -170,14 +170,15 @@ def qualify(name: str, rel_path: str) -> str:
     return (pkg.prefix if pkg else "") + name
 
 
-def qualify_local(name: str, rel_path: str) -> str:
-    """Qualify a file-local name with its Rocq source filename.
+def qualify_ambiguous(name: str, rel_path: str) -> str:
+    """Qualify an ambiguous name with its Rocq source filename.
 
-    This is used only when the short name is ambiguous across source files.
+    This is used whenever the short name occurs in multiple source files,
+    regardless of whether the declarations are local or exported.
 
-    >>> qualify_local("lock_inv", "iris_heap_lang/lib/spin_lock.v")
+    >>> qualify_ambiguous("lock_inv", "iris_heap_lang/lib/spin_lock.v")
     'heap_lang.spin_lock.lock_inv'
-    >>> qualify_local("helper", "iris/algebra/ofe.v")
+    >>> qualify_ambiguous("helper", "iris/algebra/ofe.v")
     'ofe.helper'
     """
     pkg = package_of(rel_path)
@@ -395,11 +396,11 @@ def parse_rocq_file(text: str) -> list[ParsedDefinition]:
 def qualify_definitions(
     parsed: dict[str, list[ParsedDefinition]],
 ) -> dict[str, list[str]]:
-    """Apply package prefixes and disambiguate file-local name collisions.
+    """Apply package prefixes and disambiguate cross-file name collisions.
 
-    Unique local names retain the existing short alias convention. If the same
-    qualified short name occurs in multiple files, local occurrences gain their
-    source filename so every declaration has a distinct key.
+    Unique names retain the existing short alias convention. If the same
+    qualified short name occurs in multiple files, every occurrence gains its
+    source filename so each Rocq declaration has a distinct key.
 
     >>> qualified = qualify_definitions({
     ...   "iris_heap_lang/lib/spin_lock.v": [ParsedDefinition("lock_inv", True)],
@@ -422,8 +423,8 @@ def qualify_definitions(
 
     return {
         path: [
-            qualify_local(definition.name, path)
-            if definition.is_local and base_name in ambiguous else base_name
+            qualify_ambiguous(definition.name, path)
+            if base_name in ambiguous else base_name
             for definition, base_name in zip(definitions, base_names[path], strict=True)
         ]
         for path, definitions in parsed.items()
