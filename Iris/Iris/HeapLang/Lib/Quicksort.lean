@@ -215,21 +215,16 @@ theorem quicksort_spec l ls Φ :
   iloeb as IH generalizing %l %ls %Φ
   wp_rec
   rw [isList.eq_def]
-  cases ls with
+  cases ls with dsimp only
   | nil =>
-    dsimp only
     iclear IH
-    icases Hl with %heq; subst heq
+    icases Hl with %rfl
     wp_pures
     imodintro
-    iapply HΦ $$ %_ %([])
-    · unfold isList; itrivial
-    · itrivial
-    · itrivial
+    iapply HΦ $$ %_ %([]) [] [//] [//]
+    unfold isList; itrivial
   | cons head tail =>
-    dsimp only
     icases Hl with ⟨%l, %tl, %heq, Hpt, Hl⟩; subst heq
-    wp_pures
     wp_load
     wp_pures
     wp_bind &partition _ _

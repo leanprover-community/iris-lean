@@ -33,7 +33,7 @@ attribute [reducible, instance] TokenG.elemG
 
 variable {GF : BundledGFunctors} [TokenG GF]
 
-@[rocq_alias token]
+@[rocq_alias token.token]
 def token (γ : GName) : IProp GF := iOwn (F := TokenF) γ (excl ())
 
 #rocq_ignore token_aux "`token` is defined directly without `seal`/`unseal`."
