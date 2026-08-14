@@ -10,7 +10,6 @@ import Iris.BI.BigOp.BigSepList
 import Iris.BI.DerivedLawsLater
 import Iris.BI.Instances
 import Iris.Std.TC
-meta import Iris.Std.RocqPorting
 
 public section
 

@@ -11,7 +11,6 @@ public import Iris.Algebra.Frac
 public import Iris.Algebra.Updates
 public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.IsOp
-meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -26,6 +25,9 @@ inductive DFrac where
 | discard : DFrac
 /-- Ownership of `F` plus knowledge that a fraction has been discarded. -/
 | ownDiscard (f : Qp) : DFrac
+deriving DecidableEq
+
+attribute [rocq_alias dfrac_eq_dec] instDecidableEqDFrac
 
 #rocq_ignore DfracOwn_inj "Not needed"
 #rocq_ignore DfracBoth_inj "Not needed"

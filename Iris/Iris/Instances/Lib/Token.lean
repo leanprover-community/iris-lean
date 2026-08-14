@@ -28,11 +28,12 @@ class TokenG (GF : BundledGFunctors) where [elemG : ElemG GF TokenF]
 
 attribute [reducible, instance] TokenG.elemG
 
+#rocq_ignore «tokenΣ» "Superseded by the `TokenG` typeclass on `BundledGFunctors`."
 #rocq_ignore «subG_tokenΣ» "Superseded by Lean's direct `ElemG` typeclass synthesis."
 
 variable {GF : BundledGFunctors} [TokenG GF]
 
-@[rocq_alias token]
+@[rocq_alias token.token]
 def token (γ : GName) : IProp GF := iOwn (F := TokenF) γ (excl ())
 
 #rocq_ignore token_aux "`token` is defined directly without `seal`/`unseal`."

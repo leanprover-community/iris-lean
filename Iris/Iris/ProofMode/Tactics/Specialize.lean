@@ -6,8 +6,7 @@ Authors: Lars König, Mario Carneiro, Michael Sammler, Alvin Tang
 module
 
 public meta import Iris.ProofMode.Patterns.SpecPattern
-public meta import Iris.ProofMode.Patterns.CasesPattern
-public meta import Iris.ProofMode.Tactics.Basic
+public import Iris.ProofMode.Patterns.CasesPattern
 public import Iris.ProofMode.Tactics.Trivial
 public import Iris.ProofMode.Tactics.Frame
 
@@ -28,6 +27,7 @@ theorem specialize_wand [BI PROP] {q p : Bool} {A Q P1 P2 : PROP}
     _ ⊢ □?q (□ P1 ∗ □?q Q)   := intuitionisticallyIf_sep_mpr
     _ ⊢ □?q P2               := intuitionisticallyIf_mono <| wand_elim_swap inst.into_wand
 
+@[rocq_alias tac_specialize]
 theorem specialize_wand_nest [BI PROP] {e e' e'' goal out out1' Q out2 : PROP}
     {p p1 q : Bool} (inst : IntoWand p q out (.matching .argument) Q out2)
     (h1 : e ⊣⊢ e' ∗ □?p1 out1')
@@ -38,8 +38,13 @@ theorem specialize_wand_nest [BI PROP] {e e' e'' goal out out1' Q out2 : PROP}
   refine h2 <| wand_intro ?_
   exact (specialize_wand inst).trans h3
 
--- TODO: if p is true and e' does not contain spatial hyps and AddModal is trivial, this proof can guarantee □ P2 instead of P2 in h2
--- see https://gitlab.mpi-sws.org/iris/iris/-/blob/846ed45bed6951035c6204fef365d9a344022ae6/iris/proofmode/coq_tactics.v#L336
+
+/-
+  TODO: if `p` is `true` and `e'` does not contain spatial hyps and `AddModal`
+  is trivial, this proof can guarantee `□ P2` instead of `P2` in `h2`.
+-/
+-- see https://gitlab.mpi-sws.org/iris/iris/-/blob/846ed45/iris/proofmode/coq_tactics.v#L336
+@[rocq_alias tac_specialize_assert]
 theorem specialize_wand_modal [BI PROP] {e e' goal R P1 P1' P2 : PROP} {p : Bool}
     (h1 : e ⊢ e' ∗ P1') (h2 : e' ∗ P2 ⊢ goal)
     (instWand : IntoWand p false R .unknown P1 P2)
@@ -53,6 +58,7 @@ theorem specialize_wand_modal [BI PROP] {e e' goal R P1 P1' P2 : PROP} {p : Bool
   _ ⊢ P1' ∗ (P1 -∗ goal)                := sep_mono_right <| sep_comm.mp.trans wand_trans
   _ ⊢ goal                              := instModal.add_modal
 
+@[rocq_alias tac_specialize_assert_intuitionistic]
 theorem specialize_wand_intuitionistic [BI PROP] {q : Bool} {A2 A3 Q P1' : PROP} P1 P2
     (instWand : IntoWand q true Q .unknown P1 P2) (instPers : Persistent P1)
     (instAbsorb : IntoAbsorbingly P1' P1) (h1 : A2 ⊢ A3 ∗ P1') : A2 ∗ □?q Q ⊢ A2 ∗ □?q P2 := by
@@ -76,6 +82,7 @@ theorem specialize_wand_intuitionistic [BI PROP] {q : Bool} {A2 A3 Q P1' : PROP}
     _ ⊢ A2 ∗ □ P1 ∗ □?q Q   := sep_assoc.mp
     _ ⊢ A2 ∗ □?q P2         := sep_mono_right h2
 
+@[rocq_alias tac_forall_specialize, rocq_alias tac_specialize_assert_pure]
 theorem specialize_forall [BI PROP] {p : Bool} {A2 P : PROP} {α : Sort _} {Φ : α → PROP}
     (inst : IntoForall P Φ) (a : α) : A2 ∗ □?p P ⊢ A2 ∗ □?p (Φ a) :=
   sep_mono_right <| intuitionisticallyIf_mono <| inst.into_forall.trans (forall_elim a)
@@ -88,8 +95,15 @@ theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B B'}
   · cases h2 <;> subst_eqs <;> apply sep_elim_left
   · calc
       _ ⊢ P' ∗ □?pb B    := h1
-      _ ⊢ P' ∗ <pers> B' := sep_mono_right <| persistentlyIf_of_intuitionisticallyIf.trans into_persistently
+      _ ⊢ P' ∗ <pers> B' :=
+          sep_mono_right <| persistentlyIf_of_intuitionisticallyIf.trans into_persistently
       _ ⊢ <pers> B'      := sep_elim_right
+
+#rocq_ignore tac_specialize_frame "Not needed as there is no locked in Lean"
+#rocq_ignore tac_specialize_intuitionistic_helper
+  "Functionality provided by Expr.lean infrastructure"
+#rocq_ignore tac_specialize_intuitionistic_helper_done
+  "Functionality provided by Expr.lean infrastructure"
 
 public meta section
 open Lean Elab Tactic Meta Qq Std
@@ -120,7 +134,7 @@ private def synthIntoWand {u} {prop : Q(Type u)} (bi : Q(BI $prop))
   let out1 ← mkFreshExprMVarQ prop
   let out2 ← mkFreshExprMVarQ prop
   let some inst ← ProofModeM.trySynthInstanceQ q(IntoWand $p $persistent $out .unknown $out1 $out2)
-    | throwError m!"ispecialize: {out} is not a wand"
+    | throwIPMError "{out} is not a wand"
   return ⟨out1, out2, inst⟩
 
 private def finishSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
@@ -136,9 +150,9 @@ private def finishSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     for i in frameIdents do
       let ivar ← hyps.findWithInfo i
       if frameIVars.contains ivar then
-        throwError "ispecialize: {i} used twice for framing"
+        throwIPMError "{i} used twice for framing"
       if ivars.contains ivar then
-        throwError "ispecialize: {i} cannot be used for both the subgoal and framing"
+        throwIPMError "{i} cannot be used for both the subgoal and framing"
       frameIVars := ivar :: frameIVars
     frameIVars := frameIVars.reverse
 
@@ -149,7 +163,7 @@ private def finishSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     let pf'' ← res.finish λ hyps goal => do
       if trivial then
         let some r ← iTrivial hyps goal
-          | throwError "ispecialize: itrivial could not solve\
+          | throwIPMError "itrivial could not solve\
               {← ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
         return r
       else addBIGoal hyps goal name
@@ -180,7 +194,7 @@ private def processSpecGoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal
       | .modal =>
         let out1' ← mkFreshExprMVarQ prop
         let some instModal ← ProofModeM.trySynthInstanceQ q(AddModal $out1' $out1 $goal)
-          | throwError m!"ispecialize: AddModal type class synthesis failed with {out1} and {goal}"
+          | throwIPMError "AddModal type class synthesis failed with {out1} and {goal}"
         pure ⟨out1', instModal⟩
       | _ /- .spatial -/ => pure ⟨out1, q(addModal_id _ _)⟩
 
@@ -191,14 +205,14 @@ private def processSpecGoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal
   | .intuitionistic =>
     let spec : Option (SpecGoal × Name) ← spec.mapM fun ⟨sg, name⟩ => do
       unless sg.hyps.isEmpty do
-        throwError "ispecialize: cannot select hypotheses for intuitionistic premise"
+        throwIPMError "cannot select hypotheses for intuitionistic premise"
       return ({ sg with negate := true }, name)
     let ⟨out1, out2, instWand⟩ ← synthIntoWand bi p out true
     let some instPers ← ProofModeM.trySynthInstanceQ q(Persistent $out1)
-      | throwError m!"ispecialize: {out1} is not persistent"
+      | throwIPMError "{out1} is not persistent"
     let out1' ← mkFreshExprMVarQ prop
     let some instAbsorb ← ProofModeM.trySynthInstanceQ q(IntoAbsorbingly $out1' $out1)
-      | throwError m!"ispecialize: IntoAbsorbingly type class synthesis failed with {out1}"
+      | throwIPMError "IntoAbsorbingly type class synthesis failed with {out1}"
     let ⟨_, _, pf⟩ ← finishSubgoal hyps out1' spec
     let pfStep := q(specialize_wand_intuitionistic $out1 $out2 $instWand $instPers $instAbsorb $pf)
     return specState.update hyps p out2 pfStep
@@ -215,7 +229,7 @@ partial def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
   -- A hypothesis name, possibly with nested specialisation patterns
   | .ident pmt =>
     let some ivar ← try? <| hyps.findWithInfo ⟨pmt.term⟩
-      | throwError "ispecialize: invalid hypothesis {pmt.term}"
+      | throwIPMError "invalid hypothesis {pmt.term}"
     let ⟨_, hyps', _, out1', p1, _, pf'⟩ := hyps.remove false ivar
     let ⟨_, hyps'', pNest, outNest, pfContNest⟩ ←
       iSpecializeCore hyps' p1 out1' q(iprop(□?$p $out -∗ $goal)) pmt.spats
@@ -223,7 +237,7 @@ partial def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let out2 ← mkFreshExprMVarQ prop
     let some inst ← ProofModeM.trySynthInstanceQ
         q(IntoWand $p $pNest $out (.matching .argument) $outNest $out2)
-      | throwError m!"ispecialize: IntoWand type class synthesis failed with {out} and {outNest}"
+      | throwIPMError "IntoWand type class synthesis failed with {out} and {outNest}"
     let pfStep := q(specialize_wand_nest $inst $pf' $pfContNest)
     return specState.updateCont hyps'' p2 out2 pfStep
   -- A pure Lean hypothesis
@@ -232,7 +246,7 @@ partial def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
     let α : Q(Sort v) ← mkFreshExprMVarQ q(Sort v)
     let Φ : Q($α → $prop) ← mkFreshExprMVarQ q($α → $prop)
     let some inst ← ProofModeM.trySynthInstanceQ q(IntoForall $out $Φ)
-      | throwError "ispecialize: {out} is not a Lean premise"
+      | throwIPMError "{out} is not a Lean premise"
     let x ← elabTermEnsuringTypeQ t α
     let out' : Q($prop) := Expr.headBeta q($Φ $x)
     let newMVarIds ← getMVarsNoDelayed x
@@ -244,13 +258,15 @@ partial def processWand {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {orig goal : Q
   -- Auto-framing with `[$]`, `[>$]` or `[#$]`
   | .autoframe kind => processSpecGoal specState kind none
 
-/-- Specialize a proposition `A` by applying a sequence of specialization patterns.
+/--
+Specialize a proposition `A` by applying a sequence of specialization patterns.
 
 ## Parameters
 - `hyps`: Current proof mode hypothesis context
 - `pa`: Persistence flag for `A`
 - `spats`: List of specialization patterns to apply sequentially
-- `try_dup_context`: Boolean whether specialize should try to duplicate the context. See [iCasesPat.should_try_dup_context]
+- `try_dup_context`: Boolean whether specialize should try to duplicate the context.
+                     See `iCasesPat.should_try_dup_context`.
 
 ## Returns
 A tuple containing:
@@ -291,7 +307,7 @@ partial def iSpecializeCoreNoModal {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   let st ← spats.foldlM processWand
     { hyps, p := pa, out := A, pf := q(id (α := $e ∗ □?$pa $A ⊢ $goal)) }
   unless ← isDefEq goal q(iprop($(st.e) ∗ □?$(st.p) $(st.out))) do
-    throwError "ispecialize: internal error, goal does not match the proof"
+    throwIPMError "internal error, goal does not match the proof"
   let stPf : Q(($(st.e) ∗ □?$(st.p) $(st.out) ⊢ $(st.e) ∗ □?$(st.p) $(st.out)) →
     $e ∗ □?$pa $A ⊢ $(st.e) ∗ □?$(st.p) $(st.out)) := st.pf
   let pf : Q($e ∗ □?$pa $A ⊢ $(st.e) ∗ □?$(st.p) $(st.out)) := q($stPf .rfl)
@@ -329,14 +345,14 @@ partial def iCasesPat.should_try_dup_context (pat : iCasesPat) : Bool :=
 -/
 elab "ispecialize " colGt pmt:pmTerm : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
-  ProofModeM.runTactic λ mvar { bi, hyps, goal, .. } => do
+  ProofModeM.runTactic `ispecialize λ mvar { bi, hyps, goal, .. } => do
   -- Hypothesis must be in the context, otherwise use `ihave`
   let name := ⟨pmt.term⟩
   let some ivar ← try? <| hyps.findWithInfo name
-    | throwError "ispecialize: {name} should be a hypothesis, use ihave instead"
+    | throwIPMError "{name} should be a hypothesis, use ihave instead"
   let some ⟨name, _, hyps', _, out, p, _, pf⟩ := Id.run <|
     hyps.removeG true λ name ivar' _ _ => if ivar == ivar' then some name else none
-    | throwError "ispecialize: cannot find argument {name}"
+    | throwIPMError "cannot find argument {name}"
 
   let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p out goal pmt.spats
   let ⟨_, hyps''', pfEq⟩ := Hyps.add bi name ivar pb B hyps''

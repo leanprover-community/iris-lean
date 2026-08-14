@@ -20,24 +20,22 @@ def nondetBool := hl_val% λ _,
     !l
 
 @[rocq_alias heap_lang.nondet_bool_spec]
-theorem nondetBool.spec : ⊢@{IProp GF}
-    {{ True }} hl(&nondetBool #()) {{ (b : Bool), RET hl_val(#b); True }} := by
+theorem nondetBool.spec :
+    {{ (True : IProp GF) }} hl(&nondetBool #()) {{ (b : Bool), RET hl_val(#b); True }} := by
   iintro %Φ - K
   unfold nondetBool
   wp_alloc l with Hl
   wp_pures
-  imod inv_alloc `n ⊤ iprop(∃ (b : Bool), l ↦ hl_val(#b)) $$ [$Hl] with #Hinv
+  imod inv_alloc `rnd ⊤ iprop(∃ (b : Bool), l ↦ hl_val(#b)) $$ [$Hl] with #Hinv
   wp_bind fork(_)
   iapply wp_fork $$ [K] []
   · inext
     wp_pures
     iinv Hinv with >⟨%b, Hl⟩
-    · simp; infer_instance -- TODO: iinv should solve this
     wp_load
     iintro !> {$Hl}
     iapply K $$ [//]
   · inext
     iinv Hinv with >⟨%b, Hl⟩
-    · simp; infer_instance
     wp_store
     iframe

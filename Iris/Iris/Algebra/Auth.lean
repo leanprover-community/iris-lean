@@ -7,7 +7,6 @@ module
 
 public import Iris.Algebra.View
 public import Iris.Algebra.LocalUpdates
-meta import Iris.Std.RocqPorting
 
 /-!
 # Authoritative Camera
@@ -85,13 +84,11 @@ instance : UCMRA (Auth A) := View.instUCMRA
 @[rocq_alias auth_auth]
 abbrev auth (dq : DFrac) (a : A) : Auth A := View.Auth dq a
 
-abbrev authFull (a : A) : Auth A := Auth (DFrac.own 1) a
-
 @[rocq_alias auth_frag]
 abbrev frag (b : A) : Auth A := Frag b
 
 notation "●{" dq "} " a => auth dq a
-notation "● " a => authFull a
+notation "● " a => auth (DFrac.own 1) a
 notation "◯ " b => frag b
 
 @[rocq_alias auth_auth_ne]
@@ -186,14 +183,32 @@ instance {a b1 b2 : A} [h : IsOp d a b1 b2] :
     IsOp d (◯ a : Auth A) (◯ b1) (◯ b2) where
   is_op := (congrArg frag h.is_op).trans frag_op
 
--- TODO: auth_frag_sep_homomorphism
+#rocq_ignore auth_frag_sep_homomorphism "Found by typeclass inference from the View.Frag instance"
 
-/- TODO: BigOPs
-    big_opL_auth_frag
-    big_opM_auth_frag
-    big_opS_auth_frag
-    big_opMS_auth_frag
--/
+section BigOp
+open Algebra Std
+
+@[rocq_alias big_opL_auth_frag]
+theorem bigOpL_frag (g : Nat → C → A) (l : List C) :
+    (◯ ([^ CMRA.op list] k ↦ x ∈ l, g k x) : Auth A) = [^ CMRA.op list] k ↦ x ∈ l, ◯ (g k x) :=
+  View.bigOpL_frag _ _
+
+@[rocq_alias big_opM_auth_frag]
+theorem bigOpM_frag [LawfulFiniteMap M' K] (g : K → C → A) (m : M' C) :
+    (◯ ([^ CMRA.op map] k ↦ x ∈ m, g k x) : Auth A) = [^ CMRA.op map] k ↦ x ∈ m, ◯ (g k x) :=
+  View.bigOpM_frag _ _
+
+@[rocq_alias big_opS_auth_frag]
+theorem bigOpS_frag [LawfulFiniteSet S' C] (g : C → A) (X : S') :
+    (◯ ([^ CMRA.op set] x ∈ X, g x) : Auth A) = [^ CMRA.op set] x ∈ X, ◯ (g x) :=
+  View.bigOpS_frag _ _
+
+@[rocq_alias big_opMS_auth_frag]
+theorem bigOpMS_frag [LawfulFiniteMultiSet MS' C] (g : C → A) (X : MS') :
+    (◯ ([^ CMRA.op mset] x ∈ X, g x) : Auth A) = [^ CMRA.op mset] x ∈ X, ◯ (g x) :=
+  View.bigOpMS_frag _ _
+
+end BigOp
 
 /-! ## Validity -/
 

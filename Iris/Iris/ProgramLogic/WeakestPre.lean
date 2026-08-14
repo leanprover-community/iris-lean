@@ -191,7 +191,7 @@ theorem wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
 @[rocq_alias wp_value_fupd']
 theorem wp_value_fupd' {s : Stuckness} {E} {Φ : Val → IProp GF} {v : Val} :
     WP (v : Expr) @ s ; E {{ Φ }} ⊣⊢ |={E}=> Φ v := by
-  simp [wp_unfold.to_eq, toVal_coe, BI.BIBase.BiEntails.rfl, wp.pre]
+  simp [wp_unfold.to_eq, toVal_coe, wp.pre]
 
 @[rocq_alias wp_strong_mono]
 theorem wp_strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : Val → IProp GF}
@@ -629,7 +629,7 @@ instance frameWp {p : Bool} [H : ∀ v, FrameInstantiateExistDisabled p R (Φ v)
     apply wp_mono
     exact fun v => (H v).frame_instantiatiate_exist_disabled.frame
 
-@[rocq_alias is_except_0_wp]
+@[rocq_alias weakestpre.is_except_0_wp]
 instance isExcept0Wp : IsExcept0 (WP e @ s ; E {{ Φ }}) where
   is_except0 :=
     calc iprop(◇ _)

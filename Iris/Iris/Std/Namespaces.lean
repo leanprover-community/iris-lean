@@ -8,7 +8,6 @@ module
 public import Iris.Std.CoPset
 public import Iris.Std.Positives
 public import Iris.Std.GenSets
-meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -42,7 +41,11 @@ infix:80 ".@" => ndot
 instance ndisjoint : Iris.Std.Disjoint Namespace where
   disjoint N1 N2 := nclose N1 ## nclose N2
 
-theorem nclose_root : ↑nroot = CoPset.full := by rfl
+theorem nclose_root : ↑nroot = CoPset.full := by
+  ext p
+  simp only [nclose, Pos.flatten, nroot, Pos.flattenGo, CoPset.elem_suffixes,
+    CoPset.mem_full, iff_true, HAppend.hAppend, Pos.app]
+  exists p
 
 theorem nclose_subseteq [Pos.Countable A] N (x : A) : (↑N.@x : CoPset) ⊆ (↑N : CoPset) := by
   intros p

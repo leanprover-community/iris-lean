@@ -8,9 +8,9 @@ module
 public import Iris.HeapLang.Lib.Par
 
 @[expose] public section
-namespace Iris.Tests.HeapLang.Par
+namespace IrisTest.HeapLang.Par
 
-open Iris.HeapLang BI Iris ProgramLogic Spawn Iris.HeapLang.Par
+open Iris HeapLang BI Iris ProgramLogic Spawn Iris.HeapLang.Par
 
 -- Regression test for
 -- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Porting.20iris-tutorial/near/613886178
@@ -33,7 +33,7 @@ def par_client : Exp := hl%
   (l1, l2, life)
 
 example {hlc} {GF : BundledGFunctors} [HeapLangGS hlc GF] [SpawnG GF] :
-    ⊢ {{ True }} hl(&par_client)
+    {{ True }} hl(&par_client)
       {{ (l1 l2 : Loc) (life : Int), RET hl_val((#l1, #l2, #life));
          l1 ↦ some hl_val(#21) ∗ l2 ↦ some hl_val(#2) ∗ ⌜life = 42⌝ }} := by
   iintro %Φ - K
@@ -58,5 +58,5 @@ example {hlc} {GF : BundledGFunctors} [HeapLangGS hlc GF] [SpawnG GF] :
     iframe
     itrivial
 
-end Iris.Tests.HeapLang.Par
+end IrisTest.HeapLang.Par
 end

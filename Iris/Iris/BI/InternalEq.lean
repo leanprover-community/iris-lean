@@ -14,15 +14,17 @@ public import Iris.Algebra.Excl
 namespace Iris
 open BI OFE Iris.Std
 
-/-- Internal equality in a BI with step-indexed structure, defined as
-`siPure (SiProp.internalEq a b)`. -/
+/--
+  Internal equality in a BI with step-indexed structure, where `a ≡ b` is
+  defined as `siPure (SiProp.internalEq a b)`.
+-/
 @[rocq_alias internal_eq]
 def internalEq [Sbi PROP] {A : Type _} [OFE A] (a b : A) : PROP :=
   iprop(<si_pure> (SiProp.internalEq a b))
 
 syntax:40 term:40 " ≡ " term:41 : term
 macro_rules
-  | `(iprop($a ≡ $b)) => ``(internalEq $a $b)
+  | `(iprop($a ≡%$tk $b)) => ``($(wrapIprop tk ``internalEq) $a $b)
 
 delab_rule internalEq
   | `($_ $a $b) => ``(iprop($a ≡ $b))
@@ -51,8 +53,10 @@ theorem ne_r {A : Type _} [OFE A] (a : A) :
   NonExpansive₂.ne_right internalEq a
 
 @[rocq_alias internal_eq_refl]
-theorem refl {A : Type _} [OFE A] {P : PROP} {a : A} : P ⊢ a ≡ a :=
-  true_intro.trans <| siPure_pure.mpr.trans <| siPure_mono (SiProp.internalEq_refl _ _)
+theorem refl {A : Type _} [OFE A] {P : PROP} {a : A} : P ⊢ a ≡ a := calc
+  _ ⊢ True                            := true_intro
+  _ ⊢ <si_pure> True                  := siPure_pure.mpr
+  _ ⊢ <si_pure> SiProp.internalEq a a := siPure_mono <| SiProp.internalEq_refl _ _
 
 @[rocq_alias equiv_internal_eq]
 theorem of_equiv {A : Type _} [OFE A] {P : PROP} {a b : A} (h : a = b) :
@@ -77,13 +81,17 @@ theorem rewrite {A : Type _} [OFE A] {a b : A} (Ψ : A → PROP) [hΨ : NonExpan
         refine (persistently_mono (siPure_emp_valid.mpr ?_)).trans persistently_elim
         refine siEmpValid_emp_valid.mpr ?_
         exact wand_intro_left (sep_emp.1.trans <| imp_intro and_elim_r)
-    _ ⊢ True -∗ Ψ a → Ψ b := siPure_siEmpValid_elim
-    _ ⊢ Ψ a → Ψ b := emp_sep.2.trans <| (sep_mono_left true_intro).trans wand_elim_right
+    _ ⊢ True -∗ Ψ a → Ψ b          := siPure_siEmpValid_elim
+    _ ⊢ emp ∗ (True -∗ Ψ a → Ψ b)  := emp_sep.mpr
+    _ ⊢ True ∗ (True -∗ Ψ a → Ψ b) := sep_mono_left true_intro
+    _ ⊢ Ψ a → Ψ b                  := wand_elim_right
 
 @[rocq_alias internal_eq_rewrite']
 theorem rewrite' {A : Type _} [OFE A] {a b : A} (Ψ : A → PROP) [NonExpansive Ψ]
-     (Heq : P ⊢ a ≡ b) (HΨa : P ⊢ Ψ a) : P ⊢ Ψ b :=
-  (and_intro .rfl HΨa).trans <| (and_mono_left Heq).trans <| imp_elim (rewrite Ψ)
+     (Heq : P ⊢ a ≡ b) (HΨa : P ⊢ Ψ a) : P ⊢ Ψ b := calc
+  P ⊢ P ∧ Ψ a     := and_intro .rfl HΨa
+  _ ⊢ a ≡ b ∧ Ψ a := and_mono_left Heq
+  _ ⊢ Ψ b         := imp_elim (rewrite Ψ)
 
 @[rocq_alias internal_eq_sym]
 theorem symm {A : Type _} [OFE A] {a b : A} : a ≡ b ⊢@{PROP} b ≡ a :=
@@ -173,7 +181,7 @@ theorem option_none_some_equivI {A : Type _} [OFE A] (a : A) :
     (none : Option A) ≡ some a ⊣⊢@{PROP} False :=
   ⟨symm.trans (option_some_none_equivI a).1, false_elim⟩
 
-@[rocq_alias excl_equivI]
+@[rocq_alias internal_eq.excl_equivI]
 theorem excl_equivI_excl {O : Type _} [OFE O] (a b : O) :
     Excl.excl a ≡ Excl.excl b ⊣⊢@{PROP} a ≡ b := by
   refine ⟨?_, of_internalEquiv_ne Excl.excl⟩
@@ -198,7 +206,7 @@ theorem excl_equivI_invalid_excl {O : Type _} [OFE O] (a : O) :
     (Excl.invalid : Excl O) ≡ Excl.excl a ⊣⊢@{PROP} False :=
   ⟨symm.trans (excl_equivI_excl_invalid a).1, false_elim⟩
 
-@[rocq_alias csum_equivI]
+@[rocq_alias internal_eq.csum_equivI]
 theorem csum_equivI {A B : Type _} [OFE A] [OFE B] (sx sy : Csum A B) :
     sx ≡ sy ⊣⊢@{PROP}
       match sx, sy with

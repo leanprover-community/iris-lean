@@ -8,7 +8,6 @@ module
 import Iris.BI
 import Iris.ProofMode.Classes
 public meta import Iris.ProofMode.Patterns.SelPattern
-public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
 
@@ -19,40 +18,60 @@ theorem frame_init [BI PROP] {e goal : PROP} :
     e ⊢ e ∗ (goal -∗ goal) :=
   sep_emp.2.trans (sep_mono_right (wand_intro emp_sep.1))
 
+@[rocq_alias tac_frame]
 theorem frame_hyp [BI PROP] {p} {e e' origE goal goal' origGoal R : PROP}
     (h1 : origE ⊢ e ∗ (goal -∗ origGoal))
     [h2 : Frame p R goal goal']
     (h3 : e ⊣⊢ e' ∗ □?p R) :
-    origE ⊢ e' ∗ (goal' -∗ origGoal) :=
-  h1.trans <| (sep_mono_left h3.1).trans <| sep_assoc.1.trans <|
-  sep_mono_right (wand_intro (sep_assoc.1.trans <| (sep_mono_right sep_comm.1).trans <|
-    sep_assoc.2.trans <| (sep_mono_left h2.frame).trans wand_elim_right))
+    origE ⊢ e' ∗ (goal' -∗ origGoal) := by
+  calc
+    _ ⊢ e ∗ (goal -∗ origGoal)            := h1
+    _ ⊢ (e' ∗ □?p R) ∗ (goal -∗ origGoal) := sep_mono_left h3.mp
+    _ ⊢ e' ∗ □?p R ∗ (goal -∗ origGoal)   := sep_assoc.mp
+    _ ⊢ e' ∗ (goal' -∗ origGoal)          := sep_mono_right <| wand_intro ?_
+  calc
+    _ ⊢ □?p R ∗ (goal -∗ origGoal) ∗ goal'   := sep_assoc.mp
+    _ ⊢ □?p R ∗ goal' ∗ (goal -∗ origGoal)   := sep_mono_right sep_comm.mp
+    _ ⊢ (□?p R ∗ goal') ∗ (goal -∗ origGoal) := sep_assoc.mpr
+    _ ⊢ goal ∗ (goal -∗ origGoal)            := sep_mono_left h2.frame
+    _ ⊢ origGoal                             := wand_elim_right
 
+@[rocq_alias tac_frame_pure]
 theorem frame_pure [BI PROP] {origE e goal goal' origGoal : PROP} (φ : Prop)
     (h1 : origE ⊢ e ∗ (goal -∗ origGoal))
     [h2 : Frame true iprop(⌜φ⌝) goal goal'] (h : φ) :
-    origE ⊢ e ∗ (goal' -∗ origGoal) :=
-  have h_box : emp ⊢ □?true iprop(⌜φ⌝) := affinely_intro ((pure_intro h).trans persistent)
-  h1.trans <| sep_mono_right <| wand_intro <|
-    emp_sep.2.trans <| (sep_mono_left h_box).trans <|
-    (sep_mono_right sep_comm.1).trans <| sep_assoc.2.trans <|
-    (sep_mono_left h2.frame).trans wand_elim_right
+    origE ⊢ e ∗ (goal' -∗ origGoal) := by
+  refine h1.trans <| sep_mono_right <| wand_intro ?_
+  calc
+    _ ⊢ emp ∗ (goal -∗ origGoal) ∗ goal'     := emp_sep.mpr
+    _ ⊢ □ ⌜φ⌝ ∗ (goal -∗ origGoal) ∗ goal'   :=
+        sep_mono_left <| affinely_intro ((pure_intro h).trans persistent)
+    _ ⊢ □ ⌜φ⌝ ∗ goal' ∗ (goal -∗ origGoal)   := sep_mono_right sep_comm.mp
+    _ ⊢ (□ ⌜φ⌝ ∗ goal') ∗ (goal -∗ origGoal) := sep_assoc.mpr
+    _ ⊢ goal ∗ (goal -∗ origGoal)            := sep_mono_left h2.frame
+    _ ⊢ origGoal                             := wand_elim_right
 
 theorem frame_finish [BI PROP] {e origE goal origGoal : PROP}
     (h1 : origE ⊢ e ∗ (goal -∗ origGoal)) (h2 : e ⊢ goal) :
-    origE ⊢ origGoal :=
-  h1.trans ((sep_mono_left h2).trans wand_elim_right)
+    origE ⊢ origGoal := calc
+  _ ⊢ e ∗ (goal -∗ origGoal)    := h1
+  _ ⊢ goal ∗ (goal -∗ origGoal) := sep_mono_left h2
+  _ ⊢ origGoal                  := wand_elim_right
 
 theorem frame_true_done [BI PROP] (P : PROP) : P ⊢ True :=
   pure_intro .intro
 
 theorem frame_finish_close_true [BI PROP] {e origE origGoal : PROP}
     (h1 : origE ⊢ e ∗ (True -∗ origGoal)) :
-    origE ⊢ e ∗ origGoal := h1.trans (sep_mono_right <| true_sep_mpr.trans wand_elim_right)
+  origE ⊢ e ∗ origGoal := h1.trans (sep_mono_right <| true_sep_mpr.trans wand_elim_right)
 
 theorem frame_finish_close_emp [BI PROP] {e origE origGoal : PROP}
     (h1 : origE ⊢ e ∗ (emp -∗ origGoal)) :
-    origE ⊢ e ∗ origGoal := h1.trans (sep_mono_right <| emp_sep.2.trans wand_elim_right)
+  origE ⊢ e ∗ origGoal := h1.trans (sep_mono_right <| emp_sep.2.trans wand_elim_right)
+
+#rocq_ignore tac_unlock "The definition locked is not used in Lean"
+#rocq_ignore tac_unlock_True "The definition locked is not used in Lean"
+#rocq_ignore tac_unlock_emp "The definition locked is not used in Lean"
 
 public meta section
 open Lean Elab Tactic Meta Qq Std
@@ -69,20 +88,20 @@ private def FrameResult.step {u prop bi origE origGoal} :
     if let .some _ ← ProofModeM.trySynthInstanceQ q(Frame $p $out' $goal $goal') then
       return ⟨true, e', hyps', goal', q(frame_hyp $pf $hrem)⟩
     if explicit then
-      throwError "iframe: cannot frame {out'}"
+      throwIPMError "cannot frame {out'}"
     else
       return st
   | st@{e, hyps, goal, pf, ..}, {explicit, kind := .pure fvar, ..} => do
     let ty ← fvar.getType
     if ! (← Meta.isProp ty) then
-      throwError "iframe: {← fvar.getUserName} is not a Prop"
+      throwIPMError "{← fvar.getUserName} is not a Prop"
     have φ : Q(Prop) := ty
     have t : Q($φ) := Expr.fvar fvar
     let goal' ← mkFreshExprMVarQ q($prop)
     if let .some _ ← ProofModeM.trySynthInstanceQ q(Frame true iprop(⌜$φ⌝) $goal $goal') then
       return ⟨true, e, hyps, goal', q(frame_pure $φ $pf $t)⟩
     if explicit then
-      throwError "iframe: cannot frame ⌜{φ}⌝"
+      throwIPMError "cannot frame ⌜{φ}⌝"
     else
       return st
 
@@ -93,9 +112,11 @@ def iFrame {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
   for sel in sels do st ← st.step sel
   return st
 
-/-- FrameResult.finish turns a FrameResult into a proof of the original goal given a function k that
+/--
+  FrameResult.finish turns a FrameResult into a proof of the original goal given a function k that
   handles the subgoal remaining after framing. This function k might not be called if the framing
-  made the goal trivial. -/
+  made the goal trivial.
+-/
 def FrameResult.finish {u prop bi origE origGoal} (res : @FrameResult u prop bi origE origGoal)
     (k : ∀ {e}, Hyps bi e → (goal : Q($prop)) → ProofModeM Q($e ⊢ $goal)) :
     ProofModeM Q($origE ⊢ $origGoal) := do
@@ -115,8 +136,9 @@ def FrameResult.finish {u prop bi origE origGoal} (res : @FrameResult u prop bi 
 
 /-- FrameResult.finishClose checks that the original goal was fully solved by framing and gives it
   back with the remaining hypotheses. -/
-def FrameResult.finishClose {u prop bi origE origGoal} (res : @FrameResult u prop bi origE origGoal) :
-  ProofModeM ((e : Q($prop)) × (_ : Hyps bi e) × Q($origE ⊢ $e ∗ $origGoal)) := do
+def FrameResult.finishClose {u prop bi origE origGoal}
+    (res : @FrameResult u prop bi origE origGoal) :
+    ProofModeM ((e : Q($prop)) × (_ : Hyps bi e) × Q($origE ⊢ $e ∗ $origGoal)) := do
   let {e, hyps, goal, pf, ..} := res
   -- try closing the goal for emp or True without calling k
   match goal with
@@ -124,7 +146,7 @@ def FrameResult.finishClose {u prop bi origE origGoal} (res : @FrameResult u pro
     return ⟨e, hyps, q(frame_finish_close_emp $pf)⟩
   | ~q(iprop(True)) =>
     return ⟨e, hyps, q(frame_finish_close_true $pf)⟩
-  | _ => throwError "iframe: cannot solve {origGoal} by framing"
+  | _ => throwIPMError "cannot solve {origGoal} by framing"
 
 /--
   `iframe pats` cancels the hypotheses specified by the selection pattern `pats`
@@ -134,11 +156,11 @@ def FrameResult.finishClose {u prop bi origE origGoal} (res : @FrameResult u pro
 elab "iframe " pats:(colGt ppSpace selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-  let pats ← SelPat.resolve hyps pats
+  ProofModeM.runTactic `iframe λ mvar { hyps, goal, .. } => do
+    let pats ← SelPat.resolve hyps pats
 
-  let res ← iFrame hyps goal pats
-  mvar.assign (← res.finish (addBIGoal · ·))
+    let res ← iFrame hyps goal pats
+    mvar.assign (← res.finish (addBIGoal · ·))
 
 /--
   `iframe` cancels the spatial hypotheses and solves the goal completely if

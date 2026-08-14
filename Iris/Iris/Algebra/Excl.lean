@@ -6,7 +6,6 @@ Authors: Oliver Soeser, Mario Carneiro
 module
 
 public import Iris.Algebra.CMRA
-meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -18,6 +17,8 @@ section excl
 inductive Excl α where
   | excl : α → Excl α
   | invalid : Excl α
+
+#rocq_ignore maybe_Excl "std++ `Maybe` class; pattern match instead"
 
 namespace Excl
 open OFE

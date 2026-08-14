@@ -8,7 +8,6 @@ module
 public import Iris.Algebra.Auth
 public import Iris.Algebra.IsOp
 import Iris.Algebra.LocalUpdates
-meta import Iris.Std.RocqPorting
 
 /-!
 # Fractional Authoritative Camera
@@ -18,6 +17,8 @@ fraction) and `◯F{q} a` (fragment with fraction). Splitting works differently 
 - `●F{dq1 • dq2} a = ●F{dq1} a • ●F{dq2} a` (duplicates knowledge)
 - `◯F{q1 + q2} (a1 • a2) = ◯F{q1} a1 • ◯F{q2} a2` (splits the lower bound)
 -/
+
+@[expose] public section
 
 open Iris OFE CMRA UCMRA Auth Option
 
@@ -274,8 +275,12 @@ theorem updateP_both_unpersist {q : Qp} {a b : A} :
 abbrev FracAuthURF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
   AuthURF (OptionOF (ProdOF (constOF (Qp)) T))
 
+#rocq_ignore frac_authURF_contractive "Found by typeclass inference"
+
 @[rocq_alias frac_authRF]
-abbrev FracAuthF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
+abbrev FracAuthRF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
   AuthRF (OptionOF (ProdOF (constOF (Qp)) T))
+
+#rocq_ignore frac_authRF_contractive "Found by typeclass inference"
 
 end FracAuth

@@ -8,24 +8,32 @@ module
 import Iris.BI
 import Iris.ProofMode.Classes
 public meta import Iris.ProofMode.Patterns.SpecPattern
-public meta import Iris.ProofMode.Tactics.Basic
 public meta import Iris.ProofMode.Tactics.Specialize
 
-/- This file contains the `iHave` function for asserting a ProofModeTerm.
-   It is separate from the implementation of `ihave` in `Have.lean` since
-   the `ihave` tactic in (`Have.lean`) depends on `Cases.lean`, which in turn
-   depends on `iHave` in this file.
+/-
+  This file contains the `iHave` function for asserting a ProofModeTerm.
+  It is separate from the implementation of `ihave` in `Have.lean` since
+  the `ihave` tactic in (`Have.lean`) depends on `Cases.lean`, which in turn
+  depends on `iHave` in this file.
 -/
-
 
 namespace Iris.ProofMode
 
 public section
 open BI
 
+@[rocq_alias tac_pose_proof]
 theorem have_asEmpValid [bi : BI PROP] {φ} {P Q : PROP}
     [h1 : AsEmpValid .into φ .in PROP bi P] (h : φ) : Q ⊢ Q ∗ □ P :=
-  sep_emp.2.trans (sep_mono_right $ intuitionistically_emp.2.trans (intuitionistically_mono (asEmpValid_1 _ h1 h)))
+  sep_emp.2.trans (sep_mono_right $ intuitionistically_emp.2.trans
+    (intuitionistically_mono (asEmpValid_1 _ h1 h)))
+
+#rocq_ignore tac_pose_proof_hyp "not needed as Expr.lean already provides the infrastructure"
+#rocq_ignore into_emp_valid_forall "Type class IntoEmpValid not needed in Lean"
+#rocq_ignore into_emp_valid_here "Type class IntoEmpValid not needed in Lean"
+#rocq_ignore into_emp_valid_impl "Type class IntoEmpValid not needed in Lean"
+#rocq_ignore into_emp_valid_proj "Type class IntoEmpValid not needed in Lean"
+#rocq_ignore into_emp_valid_tforall "Type class IntoEmpValid not needed in Lean"
 
 public meta section
 open Lean Elab Tactic Meta Qq Std
@@ -49,8 +57,9 @@ A tuple containing:
 - `pf`: Proof of `hyps ⊢ hyps' ∗ □?p out`
 -/
 private def iHaveCore {e} (hyps : @Hyps u prop bi e)
-  (tm : Term) (keep : Bool) :
-  ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) × (out : Q($prop)) × Q($e ⊢ $e' ∗ □?$p $out)) := do
+    (tm : Term) (keep : Bool) :
+    ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) ×
+      (out : Q($prop)) × Q($e ⊢ $e' ∗ □?$p $out)) := do
   if let some ivar ← try? <| hyps.findWithInfo ⟨tm⟩ then
     -- assertion from the Iris context
     let ⟨_, hyps, _, out', p, _, pf⟩ := hyps.remove (!keep) ivar
@@ -62,14 +71,16 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
 
     let ⟨newMVars, _, _⟩ ← forallMetaTelescope ty
     let val := mkAppN val newMVars
-    -- TODO: should we call postprocessAppMVars?
+    -- TODO: should we call `postprocessAppMVars`?
     let newMVarIds ← newMVars.map Expr.mvarId! |>.filterM fun mvarId => not <$> mvarId.isAssigned
     let otherMVarIds ← getMVarsNoDelayed val
     let otherMVarIds := otherMVarIds.filter (!newMVarIds.contains ·)
 
-    -- If the new mvars have type class assumption that could not be solved, register them such
-    -- that they are tried to be solved again at the end of `ProofModeM.runTactic`
-    -- (using `Term.synthesizeSyntheticMVarsNoPostponing`)
+    /-
+      If the new mvars have type class assumption that could not be solved, register them such
+      that they are tried to be solved again at the end of `ProofModeM.runTactic`
+      (using `Term.synthesizeSyntheticMVarsNoPostponing`).
+    -/
     for mvar in newMVars do
       if (← isSyntheticMVar mvar) && !(← mvar.mvarId!.isAssignedOrDelayedAssigned) then
         Term.registerSyntheticMVarWithCurrRef mvar.mvarId! (.typeClass .none)
@@ -78,13 +89,13 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
       addMVarGoal mvar
 
     let ty ← instantiateMVars <| ← inferType val
-    if ! (← Meta.isProp ty) then throwError m!"ihave: {val} is not a Prop"
+    if ! (← Meta.isProp ty) then throwIPMError "{val} is not a Prop"
     have ty : Q(Prop) := ty
     have val : Q($ty) := val
 
     let hyp ← mkFreshExprMVarQ q($prop)
     let some _ ← ProofModeM.trySynthInstanceQ q(AsEmpValid .into $ty .in $prop $bi $hyp)
-      | throwError m!"ihave: {ty} is not an entailment"
+      | throwIPMError "{ty} is not an entailment"
 
     return ⟨_, hyps, q(true), hyp, q(have_asEmpValid $val)⟩
 
@@ -95,5 +106,6 @@ def iHave {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
   -- assert `term` as hypothesis `A`
   let ⟨_, hyps', p, A, pf⟩ ← iHaveCore hyps pmt.term keep
   -- specialize `A` with `spats`
-  let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p A goal pmt.spats (try_dup_context := try_dup_context)
+  let ⟨_, hyps'', pb, B, pf'⟩ ←
+    iSpecializeCore hyps' p A goal pmt.spats (try_dup_context := try_dup_context)
   return ⟨_, hyps'', pb, B, q(fun x => $(pf).trans ($pf' x))⟩

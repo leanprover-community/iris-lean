@@ -7,7 +7,6 @@ module
 
 public import Iris.Std.Infinite
 public import Iris.ProgramLogic.Language
-meta import Iris.Std.RocqPorting
 
 @[expose] public section
 namespace Iris.HeapLang
@@ -42,8 +41,24 @@ instance : Std.LawfulEqOrd Loc where
     intros l₁ l₂; unfold compare; unfold instOrdLoc; simp;
     intros h; ext; assumption
 
+attribute [rocq_alias heap_lang.Loc.eq_spec] Loc.ext_iff
+
+@[rocq_alias heap_lang.Loc.add]
 instance : HAdd Loc Int Loc where
   hAdd l i := ⟨l.n + i⟩
+
+-- Rocq's `Loc` carries a `Prop`-valued order `Loc.le`/`Loc.lt` together with its
+-- decidability and order-theoretic properties. `Loc` has no `LE`/`LT` instance here:
+-- comparison goes through `Ord Loc` above, and the order itself is the `Int` order
+-- on the `Loc.n` field, so all of these are `Int` facts.
+#rocq_ignore heap_lang.Loc.le "Use the `Int` order on `Loc.n`; comparison is the `Ord Loc` instance."
+#rocq_ignore heap_lang.Loc.lt "Use the `Int` order on `Loc.n`; comparison is the `Ord Loc` instance."
+#rocq_ignore heap_lang.Loc.le_dec "Decidable via the `Int` order on `Loc.n`."
+#rocq_ignore heap_lang.Loc.lt_dec "Decidable via the `Int` order on `Loc.n`."
+#rocq_ignore heap_lang.Loc.le_po "Follows from the `Int` order on `Loc.n`, with `Loc.ext_iff` for antisymmetry."
+#rocq_ignore heap_lang.Loc.le_total "Follows from the `Int` order on `Loc.n`."
+#rocq_ignore heap_lang.Loc.le_ngt "Follows from the `Int` order on `Loc.n`."
+#rocq_ignore heap_lang.Loc.le_lteq "Follows from the `Int` order on `Loc.n`, with `Loc.ext_iff`."
 
 instance : Zero Loc where
   zero := ⟨0⟩
@@ -93,11 +108,15 @@ inductive BaseLit where
   | prophecy (p : ProphId)
 deriving Inhabited, Repr, DecidableEq
 
+attribute [rocq_alias heap_lang.heap_lang.base_lit_eq_dec] instDecidableEqBaseLit
+
 @[rocq_alias heap_lang.heap_lang.un_op]
 inductive UnOp where
   | neg
   | minus
 deriving Inhabited, Repr, DecidableEq
+
+attribute [rocq_alias heap_lang.heap_lang.un_op_eq_dec] instDecidableEqUnOp
 
 @[rocq_alias heap_lang.heap_lang.bin_op]
 inductive BinOp where
@@ -110,6 +129,8 @@ inductive BinOp where
   | le | lt | eq /- relations -/
   | offset /- pointer offset -/
 deriving Inhabited, Repr, DecidableEq
+
+attribute [rocq_alias heap_lang.heap_lang.bin_op_eq_dec] instDecidableEqBinOp
 
 mutual
   @[rocq_alias heap_lang.heap_lang.expr]
@@ -157,6 +178,11 @@ mutual
   deriving Inhabited, Repr, DecidableEq
 end
 
+attribute [rocq_alias heap_lang.heap_lang.expr_eq_dec] instDecidableEqExp
+attribute [rocq_alias heap_lang.heap_lang.val_eq_dec] instDecidableEqVal
+attribute [rocq_alias heap_lang.heap_lang.expr_inhabited] instInhabitedExp
+attribute [rocq_alias heap_lang.heap_lang.val_inhabited] instInhabitedVal
+
 def Exp.isVal : Exp → Bool
   | .val _ => true
   | _ => false
@@ -197,6 +223,7 @@ instance : Coe Unit BaseLit where
 
 attribute [coe] BaseLit.int BaseLit.bool BaseLit.loc BaseLit.prophecy
 
+@[rocq_alias heap_lang.heap_lang.subst]
 def Exp.substStr (x : String) (v : Val) (e : Exp) : Exp :=
   match e with
   | .val _ => e
@@ -223,21 +250,29 @@ def Exp.substStr (x : String) (v : Val) (e : Exp) : Exp :=
   | .newProph => .newProph
   | .resolve e₀ e₁ e₂ => .resolve (e₀.substStr x v) (e₁.substStr x v) (e₂.substStr x v)
 
+@[rocq_alias heap_lang.heap_lang.subst']
 def Exp.subst (x : Binder) (v : Val) (e : Exp) : Exp :=
   if let .named x := x then Exp.substStr x v e else e
 
+@[rocq_alias heap_lang.heap_lang.lit_is_unboxed]
 def BaseLit.isUnboxed : BaseLit → Bool
   | .prophecy _ | .poison => false
   | _ => true
 
+@[rocq_alias heap_lang.heap_lang.val_is_unboxed]
 def Val.isUnboxed : Val → Bool
   | .lit l => l.isUnboxed
   | .injL (.lit l) => l.isUnboxed
   | .injR (.lit l) => l.isUnboxed
   | _ => false
 
+@[rocq_alias heap_lang.heap_lang.vals_compare_safe]
 def Val.compareSafe (v1 v2 : Val) : Bool :=
   v1.isUnboxed || v2.isUnboxed
+
+-- Rocq states unboxedness as a `Prop` and derives decidability; here it is `Bool`-valued.
+#rocq_ignore heap_lang.heap_lang.lit_is_unboxed_dec "`BaseLit.isUnboxed` is `Bool`-valued; decidability is definitional."
+#rocq_ignore heap_lang.heap_lang.val_is_unboxed_dec "`Val.isUnboxed` is `Bool`-valued; decidability is definitional."
 
 section Derived
 def Exp.stuck : Exp := Exp.app (.ofVal $ .lit $ .int 0) (.ofVal $ .lit $ .int 0)
@@ -247,6 +282,7 @@ theorem Exp.stuck_subst {x v} : Exp.substStr x v Exp.stuck = Exp.stuck := by
   simp [Exp.stuck, Exp.substStr]
   simp only [substStr, ofVal]
 
+@[rocq_alias heap_lang.assert]
 def Exp.assert (e : Exp) := Exp.if e (.ofVal $ .lit .unit) Exp.stuck
 
 @[simp]

@@ -6,7 +6,6 @@ Authors: Michael Sammler, Yunsong Yang
 module
 
 public import Iris.BI
-public meta import Iris.ProofMode.SynthInstance
 
 @[expose] public section
 
@@ -87,6 +86,7 @@ export MakeBUpd (make_bupd)
 
 /-- The class [MakeFUpd E1 E2 P Q] is used to compute `Q := |={E1, E2}=> P`. -/
 @[ipm_class]
-class MakeFUpd {PROP} [BI PROP] [BIFUpdate PROP] (E1 E2 : CoPset) (P : PROP) (Q : outParam $ PROP) where
+class MakeFUpd {PROP} [BI PROP] [BIFUpdate PROP] (E1 E2 : CoPset)
+    (P : PROP) (Q : outParam $ PROP) where
   make_fupd : (|={E1,E2}=> P) ⊣⊢ Q
 export MakeFUpd (make_fupd)
