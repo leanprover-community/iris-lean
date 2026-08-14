@@ -137,7 +137,7 @@ where go {e}
       have heq : Q(@ModalityAction.id $prop1 = .id) := q(Eq.refl (ModalityAction.id))
       have heq : Q($(M).action $p = .id) := heq
       return ⟨_, .mkHyp bi1 name ivar p ty, q(modaction_id $M $heq)⟩
-  | .sep _ _ _ _ _ lhs rhs => do
+  | .sep _ _ _ _ lhs rhs => do
     let ⟨_, lhs', pflhs⟩ ← go iact sact lhs
     let ⟨_, rhs', pfrhs⟩ ← go iact sact rhs
     -- TODO: make pruning emp part of mkSep?

@@ -128,19 +128,13 @@ This means that the ivar correctly caches whether it refers to a persistent hypo
 -/
 inductive Hyps {prop : Q(Type u)} (bi : Q(BI $prop)) : (e : Q($prop)) → Type where
   | emp (_ : $e =Q emp) : Hyps bi e
-  | sep (tm elhs erhs : Q($prop)) (size : Nat) (_ : $e =Q iprop($elhs ∗ $erhs))
+  | sep (tm elhs erhs : Q($prop)) (_ : $e =Q iprop($elhs ∗ $erhs))
         (lhs : Hyps bi elhs) (rhs : Hyps bi erhs) : Hyps bi e
   | hyp (tm : Q($prop)) (name : Name) (ivar : IVarId) (p : Q(Bool)) (ty : Q($prop))
         (_ : $e =Q iprop(□?$p $ty)) : Hyps bi e
 deriving Repr
 
 instance : Inhabited (Hyps bi s) := ⟨.emp ⟨⟩⟩
-
-@[inline]
-def Hyps.size : @Hyps u prop bi s → Nat
-  | .emp _ => 0
-  | .hyp .. => 1
-  | .sep _ _ _ n .. => n
 
 def Hyps.tm : @Hyps _ prop bi s → Q($prop)
   | .emp _ => s
@@ -150,7 +144,7 @@ def Hyps.mkEmp {prop : Q(Type u)} (bi : Q(BI $prop)) (e := q(BI.emp : $prop)) : 
 
 def Hyps.mkSep {prop : Q(Type u)} {bi : Q(BI $prop)} {elhs erhs}
     (lhs : Hyps bi elhs) (rhs : Hyps bi erhs) (e := q(BI.sep $elhs $erhs)) : Hyps bi e :=
-  .sep q(BI.sep $(lhs.tm) $(rhs.tm) : $prop) elhs erhs (lhs.size + rhs.size) ⟨⟩ lhs rhs
+  .sep q(BI.sep $(lhs.tm) $(rhs.tm) : $prop) elhs erhs ⟨⟩ lhs rhs
 
 def mkIntuitionisticIf {prop : Q(Type u)} (_bi : Q(BI $prop))
     (p : Q(Bool)) (e : Q($prop)) : {A : Q($prop) // $A =Q iprop(□?$p $e)} :=
@@ -175,7 +169,7 @@ partial def parseHyps? {prop : Q(Type u)} (bi : Q(BI $prop)) (expr : Expr) :
   if let some #[_, _, P, Q] := appM? expr ``sep then
     let ⟨elhs, lhs⟩ ← parseHyps? bi P
     let ⟨erhs, rhs⟩ ← parseHyps? bi Q
-    some ⟨q(BI.sep $elhs $erhs), .sep expr elhs erhs (lhs.size + rhs.size) ⟨⟩ lhs rhs⟩
+    some ⟨q(BI.sep $elhs $erhs), .sep expr elhs erhs ⟨⟩ lhs rhs⟩
   else if expr.isAppOfArity ``emp 2 then
     some ⟨expr, .emp ⟨⟩⟩
   else if let some #[_, _, P] := appM? expr ``intuitionistically then
@@ -189,7 +183,7 @@ partial def Hyps.find? {u prop bi} (name : Name) :
     ∀ {s}, @Hyps u prop bi s → Option (IVarId × Q($prop))
   | _, .emp _ => none
   | _, .hyp _ name' ivar _ ty _ => if name == name' then (ivar, ty) else none
-  | _, .sep _ _ _ _ _ lhs rhs => rhs.find? name <|> lhs.find? name
+  | _, .sep _ _ _ _ lhs rhs => rhs.find? name <|> lhs.find? name
 
 partial def Hyps.findM? [Monad m] {prop : Q(Type u)} {bi : Q(BI $prop)}
     (p : Name → IVarId → Q(Bool) → Q($prop) → m Bool) :
@@ -200,7 +194,7 @@ partial def Hyps.findM? [Monad m] {prop : Q(Type u)} {bi : Q(BI $prop)}
       return some (name, ivar, bp, ty)
     else
       return none
-  | _, .sep _ _ _ _ _ lhs rhs => do
+  | _, .sep _ _ _ _ lhs rhs => do
     match ← rhs.findM? p with
     | some res => return some res
     | none => lhs.findM? p
@@ -209,7 +203,7 @@ partial def Hyps.getDecl? {u prop bi} (ivar : IVarId) {s}:
     @Hyps u prop bi s → Option (Name × IVarId × Q(Bool) × Q($prop))
   | .emp _ => none
   | .hyp _ name ivar' p ty _ => if ivar == ivar' then (name, ivar, p, ty) else none
-  | .sep _ _ _ _ _ lhs rhs => rhs.getDecl? ivar <|> lhs.getDecl? ivar
+  | .sep _ _ _ _ lhs rhs => rhs.getDecl? ivar <|> lhs.getDecl? ivar
 
 def Hyps.getUserName? {u prop bi} (ivar : IVarId) (h : @Hyps u prop bi s) : Option Name :=
   h.getDecl? ivar |>.map (·.1)
@@ -220,7 +214,7 @@ def Hyps.foldrLeaves {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {α}
     ∀ {s}, @Hyps u prop bi s → α → α
   | _, .emp _,               acc => acc
   | _, .hyp _ n ivar p ty _, acc => f n ivar p ty acc
-  | _, .sep _ _ _ _ _ lhs rhs, acc => foldrLeaves f lhs (foldrLeaves f rhs acc)
+  | _, .sep _ _ _ _ lhs rhs, acc => foldrLeaves f lhs (foldrLeaves f rhs acc)
 
 def Hyps.spatialIVarIds {u prop bi} {s} (hyps : @Hyps u prop bi s) : List IVarId :=
   hyps.foldrLeaves (fun _ ivar p _ acc => if isTrue p then acc else ivar :: acc) []
@@ -252,7 +246,7 @@ def Hyps.buildAccuProof {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
           let pf : Q($e' ⊢ iprop(emp)) := pf
           ⟨ty, q((sep_mono_right $pf).trans sep_emp.mp)⟩
         else ⟨q(iprop($ty ∗ $spatialProps)), q(sep_mono_right $pf)⟩
-    | .sep _ _ _ _ _ lhs rhs =>
+    | .sep _ _ _ _ lhs rhs =>
       let ⟨spatialPropsR, pfR⟩ := buildAccuProofAux rhs spatialProps pf
       let ⟨spatialPropsLR, pfLR⟩ := buildAccuProofAux lhs spatialPropsR pfR
       ⟨q($spatialPropsLR), q(sep_assoc.mp.trans $pfLR)⟩
@@ -260,7 +254,7 @@ def Hyps.buildAccuProof {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 variable (oldIVar : IVarId) (new : Name) {prop : Q(Type u)} {bi : Q(BI $prop)} in
 def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)
   | _, .emp _ => none
-  | _, .sep _ _ _ _ _ lhs rhs =>
+  | _, .sep _ _ _ _ lhs rhs =>
     match rhs.rename with
     | some rhs' => some (.mkSep lhs rhs' _)
     | none => match lhs.rename with
@@ -274,7 +268,7 @@ def Hyps.select (ty : Expr) : ∀ {s}, @Hyps u prop bi s → MetaM (IVarId × Q(
   | _, .hyp _ _ ivar p ty' _ => do
     let .true ← isDefEq ty ty' | failure
     pure (ivar, p, ty')
-  | _, .sep _ _ _ _ _ lhs rhs => try Hyps.select ty rhs catch _ => Hyps.select ty lhs
+  | _, .sep _ _ _ _ lhs rhs => try Hyps.select ty rhs catch _ => Hyps.select ty lhs
 
 
 theorem intuitionistically_sep_dup [BI PROP] {P : PROP} : □ P ⊣⊢ □ P ∗ □ P :=
@@ -318,7 +312,7 @@ def Hyps.splitCore : ∀ {e}, Hyps bi e → SplitResult bi e
       have : $ehyp =Q iprop(□ $ty) := ⟨⟩
       .split h h q(intuitionistically_sep_dup)
     | .inr _ => if toRight name ivar then .right else .left
-  | _, .sep _ _ _ _ _ lhs rhs =>
+  | _, .sep _ _ _ _ lhs rhs =>
     let resl := lhs.splitCore
     let resr := rhs.splitCore
     match resl, resr with
@@ -380,7 +374,7 @@ def Hyps.removeCore : ∀ {e}, Hyps bi e → m (RemoveHypCore bi e α)
       | _, _ => return .one a ty p ⟨⟩
     else
       return .none
-  | _, .sep _ elhs erhs _ _ lhs rhs => do
+  | _, .sep _ elhs erhs _ lhs rhs => do
     match ← rhs.removeCore with
     | .one a out' p h =>
       return .main a ⟨elhs, lhs, erhs, out', p, h, q(.rfl)⟩
@@ -489,7 +483,7 @@ def Hyps.replaceCore : ∀ {e}, Hyps bi e → m (Option ((e' : Q($prop)) × Hyps
       let ⟨ty', pf⟩ ← repl name p ty
       return some ⟨_, .mkHyp bi name ivar p ty', q(replace_hyp $pf)⟩
     return none
-  | _, .sep _ _ _ _ _ lhs rhs => do
+  | _, .sep _ _ _ _ lhs rhs => do
     if let some ⟨_, lhs', pf⟩ ← lhs.replaceCore then
       return some ⟨_, .mkSep lhs' rhs, q(replace_hyp_sep_l $pf)⟩
     if let some ⟨_, rhs', pf⟩ ← rhs.replaceCore then
@@ -509,7 +503,7 @@ section dependency
 partial def Hyps.findDependencyOnFVar {prop : Q(Type u)} {bi : Q(BI $prop)}
     (fvarId : FVarId) : ∀ {e}, Hyps bi e → Option (Name × IVarId × Q(Bool) × Q($prop))
   | _, .emp _ => none
-  | _, .sep _ _ _ _ _ lhs rhs =>
+  | _, .sep _ _ _ _ lhs rhs =>
       lhs.findDependencyOnFVar fvarId <|> rhs.findDependencyOnFVar fvarId
   | _, .hyp _ name ivar p ty _ =>
       if (ty : Expr).containsFVar fvarId then some (name, ivar, p, ty)
@@ -629,7 +623,7 @@ def Hyps.buildIntuitionisticProof {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     match matchBool p with
     | .inl _ => some q(intuitionistically_idem.mpr)
     | .inr _ => none
-  | .sep _ _ _ _ _ lhs rhs => do
+  | .sep _ _ _ _ lhs rhs => do
     let pfL ← buildIntuitionisticProof lhs
     let pfR ← buildIntuitionisticProof rhs
     some q((sep_mono $pfL $pfR).trans intuitionistically_sep_mpr)
