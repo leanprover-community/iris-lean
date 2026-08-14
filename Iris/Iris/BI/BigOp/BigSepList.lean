@@ -1219,7 +1219,7 @@ theorem bigSepL2_proper_2 [OFE A] [OFE B]
       Φ k y1 y2 ⊣⊢ Ψ k y1' y2') :
     ([∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) ⊣⊢
       ([∗list] k ↦ x1;x2 ∈ l1';l2', Ψ k x1 x2) :=
-  equiv_iff.mp <| OFE.eq_dist.mpr fun _ =>
+  equiv_iff.mp <| OFE.eq_dist_2 fun _ =>
     bigSepL2_dist_2 hl1 hl2 (fun h1 h2 => OFE.Dist.of_eq (hel1 h1 h2))
       (fun h1 h2 => OFE.Dist.of_eq (hel2 h1 h2))
       (fun h1 h2 _ h3 h4 _ => (equiv_iff.mpr (hf h1 h2 (hel1 h1 h2) h3 h4 (hel2 h3 h4))).dist)

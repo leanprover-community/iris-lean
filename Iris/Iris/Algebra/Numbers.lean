@@ -49,7 +49,7 @@ namespace CommMonoidLike
 
 open Iris Iris.OFE Add Zero One Associative Commutative LawfulLeftIdentity CMRA
 
-variable [OFE α] [Discrete α]
+variable [OFE α] [OFE.Discrete α]
 variable [Add α] [Associative (α := α) (· + ·)] [Commutative (α := α) (· + ·)]
 variable [Zero α] [LawfulLeftIdentity (α := α) (· + ·) zero]
 variable {x y x' y' : α}
@@ -230,7 +230,7 @@ namespace PosCommMonoidLike
 
 open Iris Iris.OFE Add Zero One Associative Commutative LawfulLeftIdentity CMRA
 
-variable [OFE α] [Discrete α]
+variable [OFE α] [OFE.Discrete α]
 variable [Add α] [Associative (α := α) (· + ·)] [Commutative (α := α) (· + ·)]
 
 variable {x y x' y' : α}
