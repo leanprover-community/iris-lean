@@ -162,71 +162,13 @@ def Hyps.mkHyp {prop : Q(Type u)} (bi : Q(BI $prop))
     (name : Name) (ivar : IVarId) (p : Q(Bool)) (ty : Q($prop)) (e := q(iprop(□?$p $ty))) : Hyps bi e :=
   .hyp (mkIntuitionisticIf bi p (mkNameAnnotation name ivar ty)) name ivar p ty ⟨⟩
 
-/-- A `Hyps` tree together with a proof that it represents `e`. -/
-structure HypsEq {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) where
-  (e' : Q($prop)) (hyps : Hyps bi e') (pf : Q($e ⊣⊢ $e'))
-
-def wbDelta : Nat := 3
-def wbGamma : Nat := 2
-
-/-- Rebuild `lhs ∗ rhs` when `rhs` may be one element too heavy. -/
-private def Hyps.balanceR {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
-    {elhs erhs : Q($prop)} (lhs : Hyps bi elhs) (rhs : Hyps bi erhs) :
-    HypsEq bi q(iprop($elhs ∗ $erhs)) :=
-  let ln := lhs.size; let rn := rhs.size
-  if ln + rn ≤ 1 || rn ≤ wbDelta * ln then ⟨_, .mkSep lhs rhs, q(.rfl)⟩ else
-  match rhs with
-  | .sep _ erl err _ _ rl rr =>
-    have : $erhs =Q iprop($erl ∗ $err) := ⟨⟩
-    if rl.size < wbGamma * rr.size then
-      -- single:  A ∗ (B ∗ C)  ⇝  (A ∗ B) ∗ C
-      ⟨_, .mkSep (.mkSep lhs rl) rr, q(sep_assoc.symm)⟩
-    else match rl with
-      | .sep _ erll erlr _ _ rll rlr =>
-        have : $erl =Q iprop($erll ∗ $erlr) := ⟨⟩
-        -- double:  A ∗ ((B ∗ C) ∗ D)  ⇝  (A ∗ B) ∗ (C ∗ D)
-        ⟨_, .mkSep (.mkSep lhs rll) (.mkSep rlr rr), q((sep_congr_right sep_assoc).trans sep_assoc.symm)⟩
-      | _ => ⟨_, .mkSep lhs rhs, q(.rfl)⟩
-  | _ => ⟨_, .mkSep lhs rhs, q(.rfl)⟩
-
-/-- Rebuild `lhs ∗ rhs` when `lhs` may be one element too heavy. -/
-private def Hyps.balanceL {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
-    {elhs erhs : Q($prop)} (lhs : Hyps bi elhs) (rhs : Hyps bi erhs) :
-    HypsEq bi q(iprop($elhs ∗ $erhs)) :=
-  let ln := lhs.size; let rn := rhs.size
-  if ln + rn ≤ 1 || ln ≤ wbDelta * rn then ⟨_, .mkSep lhs rhs, q(.rfl)⟩ else
-  match lhs with
-  | .sep _ ell elr _ _ ll lr =>
-    have : $elhs =Q iprop($ell ∗ $elr) := ⟨⟩
-    if lr.size < wbGamma * ll.size then
-      -- single:  (A ∗ B) ∗ C  ⇝  A ∗ (B ∗ C)
-      ⟨_, .mkSep ll (.mkSep lr rhs), q(sep_assoc)⟩
-    else match lr with
-      | .sep _ elrl elrr _ _ lrl lrr =>
-        have : $elr =Q iprop($elrl ∗ $elrr) := ⟨⟩
-        -- double:  (A ∗ (B ∗ C)) ∗ D  ⇝  (A ∗ B) ∗ (C ∗ D)
-        ⟨_, .mkSep (.mkSep ll lrl) (.mkSep lrr rhs), q((sep_congr_left sep_assoc.symm).trans sep_assoc)⟩
-      | _ => ⟨_, .mkSep lhs rhs, q(.rfl)⟩
-  | _ => ⟨_, .mkSep lhs rhs, q(.rfl)⟩
-
-/-- Append `leaf` at the right end of `hyps`, rebalancing on the way back up. -/
-private def Hyps.snoc {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
-    {e ehyp : Q($prop)} (hyps : Hyps bi e) (leaf : Hyps bi ehyp) :
-    HypsEq bi q(iprop($e ∗ $ehyp)) :=
-  match hyps with
-  | .emp _  => ⟨_, leaf, q(emp_sep)⟩
-  | .hyp .. => ⟨_, .mkSep hyps leaf, q(.rfl)⟩
-  | .sep _ elhs erhs _ _ lhs rhs =>
-    have : $e =Q iprop($elhs ∗ $erhs) := ⟨⟩
-    let ⟨_, rhs', pfR⟩ := rhs.snoc leaf              -- erhs ∗ ehyp ⊣⊢ erhs'
-    let ⟨_, hyps', pfB⟩ := Hyps.balanceR lhs rhs'    -- elhs ∗ erhs' ⊣⊢ e''
-    ⟨_, hyps', q(sep_assoc.trans ((sep_congr_right $pfR).trans $pfB))⟩
-
 def Hyps.add {prop : Q(Type u)} (bi : Q(BI $prop))
-    (name : Name) (ivar : IVarId) (p : Q(Bool)) (ty : Q($prop)) {e} (h : Hyps bi e) :
-    (e' : Q($prop)) × Hyps bi e' × Q(iprop($e ∗ □?$p $ty ⊣⊢ $e')) :=
-  let ⟨e', hyps', pf⟩ := h.snoc <| Hyps.mkHyp bi name ivar p ty
-  ⟨e', hyps', pf⟩
+    (name : Name) (ivar : IVarId) (p : Q(Bool)) (ty : Q($prop)) {e} (h : Hyps bi e)
+    : (e' : Q($prop)) × Hyps bi e' × Q(iprop($e ∗ □?$p $ty ⊣⊢ $e')) :=
+  match h with
+  -- Adding a hypothesis to `emp` creates a `.hyp` node instead of a `.sep` node
+  | .emp _ => ⟨_, .mkHyp bi name ivar p ty, q(emp_sep)⟩
+  | _ => ⟨_, .mkSep h (.mkHyp bi name ivar p ty), q(.rfl)⟩
 
 partial def parseHyps? {prop : Q(Type u)} (bi : Q(BI $prop)) (expr : Expr) :
     Option ((s : Q($prop)) × Hyps bi s) := do
@@ -441,18 +383,16 @@ def Hyps.removeCore : ∀ {e}, Hyps bi e → m (RemoveHypCore bi e α)
   | _, .sep _ elhs erhs _ _ lhs rhs => do
     match ← rhs.removeCore with
     | .one a out' p h =>
-      -- the whole right child was a leaf and is gone; nothing to rebalance here
       return .main a ⟨elhs, lhs, erhs, out', p, h, q(.rfl)⟩
     | .main a ⟨_, rhs', out, out', p, h, pf⟩ =>
-      -- the right child shrank ⇒ the left may now be too heavy
-      let ⟨_, hyps', bal⟩ := Hyps.balanceL lhs rhs'
-      return .main a ⟨_, hyps', out, out', p, h, q((remove_r $pf).trans (sep_congr_left $bal))⟩
+      let hyps' := .mkSep lhs rhs'
+      return .main a ⟨_, hyps', out, out', p, h, q(remove_r $pf)⟩
     | .none => match ← lhs.removeCore with
       | .one a out' p h =>
         return .main a ⟨erhs, rhs, elhs, out', p, h, q(sep_comm)⟩
       | .main a ⟨_, lhs', out, out', p, h, pf⟩ =>
-        let ⟨_, hyps', bal⟩ := Hyps.balanceR lhs' rhs
-        return .main a ⟨_, hyps', out, out', p, h, q((remove_l $pf).trans (sep_congr_left $bal))⟩
+        let hyps' := .mkSep lhs' rhs
+        return .main a ⟨_, hyps', out, out', p, h, q(remove_l $pf)⟩
       | .none => pure .none
 
 def Hyps.removeG [Monad m] {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q(Prop)}
