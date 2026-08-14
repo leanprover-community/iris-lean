@@ -58,6 +58,8 @@ def Qp.div (x y : Qp) : Qp := ⟨x.val / y.val, Rat.div_pos x.2 y.2⟩
 instance instHDivQpQpQp : HDiv Qp Qp Qp where
   hDiv := Qp.div
 
+def Qp.one : Qp := ⟨1, by grind⟩
+
 /-- The fraction `1/4`. -/
 def Qp.quarter : Qp := ⟨1 / 4, by grind⟩
 
@@ -180,3 +182,9 @@ set_option synthInstance.checkSynthOrder false in
 instance (priority := high) isOpFrac_split (q1 q2 : Qp) :
     IsOp .split (q1 + q2) q1 q2 where
   is_op := rfl
+
+instance (priority := default - 500) isOpFrac_quarters_left d : IsOp d Qp.one Qp.quarter Qp.threeQuarters where
+  is_op := by refine Qp.ext_iff.mpr ?_; grind [Qp.one]
+
+instance (priority := default - 500) isOpFrac_quarters_right d : IsOp d Qp.one Qp.threeQuarters Qp.quarter where
+  is_op := by refine Qp.ext_iff.mpr ?_; grind [Qp.one]

@@ -408,7 +408,7 @@ variable (q q1 q2 : Qp)
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth (IsOp .split (q1 + q2 : Qp) _ _)
+#ipm_synth IsOp .split (q1 + q2 : Qp) _ _
 
 /- Splitting a CMRA operation: `isOpFrac_split` is used instead of `isOpFrac_half`. -/
 /-- info:
@@ -416,7 +416,7 @@ variable (q q1 q2 : Qp)
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth (IsOp .split (q1 • q2) _ _)
+#ipm_synth IsOp .split (q1 • q2) _ _
 
 /- Splitting a `Qp` value, where `isOpFrac_split` is not applicable: use `isOpFrac_half`. -/
 /-- info:
@@ -424,7 +424,7 @@ variable (q q1 q2 : Qp)
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth (IsOp .split q _ _)
+#ipm_synth IsOp .split q _ _
 
 /- Merging two `Qp` values: `isOpFrac_half` is not applicable, use `isOpFrac_merge`. -/
 /-- info:
@@ -432,7 +432,7 @@ variable (q q1 q2 : Qp)
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth (IsOp .merge _ q1 q2)
+#ipm_synth IsOp .merge _ q1 q2
 
 /- Merging two `Qp` values: `isOpFrac_half` is applicable and preferred for eliminating `.half`. -/
 /-- info:
@@ -440,7 +440,7 @@ variable (q q1 q2 : Qp)
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth (IsOp .merge _ q.half q.half)
+#ipm_synth IsOp .merge _ q.half q.half
 
 /-
   Splitting a pair:
@@ -453,6 +453,29 @@ variable (q q1 q2 : Qp)
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth (IsOp .split (some (q, q1 + q2)) _ _)
+#ipm_synth IsOp .split (some (q, q1 + q2)) _ _
+
+/-
+  Merging `Qp.quarter` and `Qp.threeQuarters`:
+  `isOpFrac_quarters_left` and `isOpFrac_quarters_right` take precedence over `isOpFrac_merge`.
+-/
+/-- info:
+  solution: IsOp IsOp.Direction.merge (Qp.one, Qp.one)
+    (Qp.quarter, Qp.threeQuarters) (Qp.threeQuarters, Qp.quarter),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IsOp .merge _ (Qp.quarter, Qp.threeQuarters) (Qp.threeQuarters, Qp.quarter)
+
+/-
+  Split `Qp.one`: `isOpFrac_half` takes precedence over
+  `isOpFrac_quarters_left`/`isOpFrac_quarters_right`.
+-/
+/-- info:
+  solution: IsOp IsOp.Direction.split Qp.one Qp.one.half Qp.one.half,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IsOp .split Qp.one _ _
 
 end IsOp
