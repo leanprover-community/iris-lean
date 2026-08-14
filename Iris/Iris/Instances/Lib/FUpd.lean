@@ -644,6 +644,8 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
     let some ⟨name, _, p, ty⟩ := hyps.getDecl? ivar
       | throwError m!"inext: unknown hypothesis {h}"
     if isTrue p then throwError "inext: {h} is not in the spatial context"
+    -- We use direct `Expr` manipulation here and below since `Qq` makes compiling this function very slow
+    --- see https://github.com/leanprover-community/iris-lean/pull/633
     let some #[_, _, _, c] := Expr.appM? ty ``lc
       | throwError m!"inext: {h} is not a spatial later credit hypothesis"
     let some #[GF] := Expr.appM? prop ``IProp
