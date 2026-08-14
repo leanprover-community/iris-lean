@@ -50,9 +50,9 @@ meta def fixpointMkExplicitBinder (i : Ident) (t : Term)
     : CommandElabM (TSyntax ``Lean.Parser.Term.bracketedBinder) :=
   `(bracketedBinder| ($i : $t))
 
-meta def elabFixpointDef (fixpoint : Name) (mods : TSyntax ``Lean.Parser.Command.declModifiers)
-    (name : Ident) (binders : Array (TSyntax `fixpointBinder)) (ty : Term) (body : Term)
-    (monoBy : Option (TSyntax `fixpointMonotoneClause))
+meta def elabFixpointDef (fixpoint : Name) (unfolding : Name) (mods : TSyntax ``Lean.Parser.Command.declModifiers)
+    (name : Ident) (binders : Array (TSyntax `fixpointBinder))
+    (ty : Term) (body : Term) (monoBy : Option (TSyntax `fixpointMonotoneClause))
     (neBy : Option (TSyntax `fixpointNonexpClause))
     : CommandElabM Unit := do
   let mut names : Array Ident := #[]
@@ -159,16 +159,26 @@ meta def elabFixpointDef (fixpoint : Name) (mods : TSyntax ``Lean.Parser.Command
     $mods:declModifiers def $defName:ident $defBinders* : $ty := $(mkIdent fixpoint) ($pre'Name $prefixArgs*) $argPair)
   elabCommand declDef
 
+  -- unfolding lemma
+  let unfoldName := mkIdentFrom name (name.getId ++ `unfold)
+  let suffixArgs : Array Term := suffixNames.map id
+  let declUnfold ← `(command|
+    theorem $unfoldName:ident $defBinders* :
+        $defName $prefixArgs* $suffixArgs* =
+          @$preNameFull:ident $leadingArgs* $prefixArgs* ($defName $prefixArgs*) $suffixArgs* :=
+      $(mkIdent unfolding) (F := $pre'App))
+  elabCommand declUnfold
+
 /-- Recursive definition via the least fixpoint. -/
 elab mods:declModifiers "fix " name:ident binders:fixpointBinder*
     " : " ty:term " := " body:term
     monoPf:(fixpointMonotoneClause)? nePf:(fixpointNonexpClause)? : command =>
-  elabFixpointDef ``bi_least_fixpoint mods name binders ty body monoPf nePf
+  elabFixpointDef ``bi_least_fixpoint ``least_fixpoint_unfold mods name binders ty body monoPf nePf
 
 /-- Recursive definition via the greatest fixpoint. -/
 elab mods:declModifiers "cofix " name:ident binders:fixpointBinder*
     " : " ty:term " := " body:term
     monoPf:(fixpointMonotoneClause)? nePf:(fixpointNonexpClause)? : command =>
-  elabFixpointDef ``bi_greatest_fixpoint mods name binders ty body monoPf nePf
+  elabFixpointDef ``bi_greatest_fixpoint ``greatest_fixpoint_unfold mods name binders ty body monoPf nePf
 
 end Iris

@@ -108,4 +108,11 @@ elab mods:declModifiers "guarded " name:ident binders:guardedExplicitBinder*
     $mods:declModifiers def $defName:ident $prefixBinders* : $selfType := fixpoint $preApp)
   elabCommand declDef
 
+  -- unfolding lemma
+  let unfoldName := mkIdentFrom name (name.getId ++ `unfold)
+  let declUnfold ← `(command|
+    theorem $unfoldName:ident $prefixBinders* : $defName $prefixArgs* = $preApp ($defName $prefixArgs*) :=
+    fixpoint_unfold (f := ($preApp).toContractiveHom))
+  elabCommand declUnfold
+
 end Iris
