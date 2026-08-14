@@ -113,29 +113,48 @@ def iModAction {prop1 prop2 : Q(Type u)} {bi1 : Q(BI $prop1)} {bi2} {e}
   -- pre-compute the actions
   let iact ← parseModalityActionQ q($(M).action true)
   let sact ← parseModalityActionQ q($(M).action false)
-  go iact sact hyps
-where go {e}
-  (iact : ModalityActionQ prop1 prop2)
-  (sact : ModalityActionQ prop1 prop2)
-  (hyps : @Hyps u prop2 bi2 e) :
-  ProofModeM ((e' : _) × Hyps bi1 e' × Q($e ⊢ $(M).M $e')) :=
-  match hyps with
-  | .emp _ => return ⟨_, .mkEmp bi1, q($(M).emp)⟩
-  | .hyp _ name ivar p ty _ =>
-    let p' := isTrue p
-    let act := if p' then iact else sact
-    match act with
-    | .isEmpty => throwIPMError "{if p' then "intuitionistic" else "spatial"} context is not empty"
+  have : $e =Q $(sepFoldE bi2 hyps.toArray) := ⟨⟩     -- canonical-shape invariant
+  go iact sact hyps.toArray (hyps.toArray.size - 1) e
+where
+  go (iact sact : ModalityActionQ prop1 prop2) (hs : Array (Hyp prop2)) (i : Nat)
+      (epre : Q($prop2)) :        -- caller guarantees `epre = sepFoldE bi2 hs[0…i]`
+      ProofModeM ((e' : Q($prop1)) × Hyps bi1 e' × Q($epre ⊢ $(M).M $e')) := do
+    match i, hs[i]? with
+    | _, none => return ⟨_, .mkEmp bi1, q(sorry)⟩          -- empty context
+    | 0, some h =>
+      let ⟨o, pfR⟩ ← step iact sact h
+      return ⟨_, Hyps.ofArray bi1 o.toArray, pfR⟩
+    | i+1, some h =>
+      let ⟨_, accL, pfL⟩ ← go iact sact hs i (sepFoldE bi2 (hs.extract 0 (i+1)))
+      let ⟨o, pfR⟩ ← step iact sact h
+      match accL.toArray.isEmpty, o with
+      | true,  none    => return ⟨_, .mkEmp bi1,
+                                   q(sorry)⟩
+      | true,  some h' => return ⟨_, Hyps.ofArray bi1 #[h'],
+                                   q(sorry)⟩
+      | false, none    => return ⟨_, accL,
+                                   q(sorry)⟩
+      | false, some h' => return ⟨_, Hyps.ofArray bi1 (accL.toArray.push h'),
+                                   q(sorry)⟩
+  /-- Image of one hypothesis under the modality: `none` means it is cleared.
+      Returns a proof of `□?p ty ⊢ M.M X` where `X` is `emp` or the image. -/
+  step (iact sact : ModalityActionQ prop1 prop2) (h : Hyp prop2) :
+      ProofModeM ((o : Option (Hyp prop1)) ×
+                  Q($((h.e bi2).1) ⊢ $(M).M $(sepFoldE bi1 o.toArray))) := do
+    let p' := h.persistent?
+    let p  := h.p; let ty := h.ty; let name := h.name; let ivar := h.ivar
+    match if p' then iact else sact with
+    | .isEmpty =>
+      throwIPMError "{if p' then "intuitionistic" else "spatial"} context is not empty"
     | .forall C => do
       have : $prop1 =Q $prop2 := ⟨⟩
       have : $bi1 =Q $bi2 := ⟨⟩
       let .some hC ← ProofModeM.trySynthInstanceQ q($C $ty)
         | throwIPMError "hypothesis {name}: {ty} does not satisfy {C}"
-      -- bridge through defeq since `M.action` cannot unify directly with the pattern (same in other cases)
       have heq : Q(@ModalityAction.forall $prop1 $C = .forall $C) :=
         q(Eq.refl (ModalityAction.forall $C))
       have heq : Q($(M).action $p = .forall $C) := heq
-      return ⟨_, .mkHyp bi1 name ivar p ty, q(modaction_forall $M $heq $hC)⟩
+      return ⟨some { name, ivar, p, ty }, q(sorry)⟩
     | .transform C => do
       let ty' ← mkFreshExprMVarQ q($prop1)
       let .some hC ← ProofModeM.trySynthInstanceQ q($C $ty $ty')
@@ -143,26 +162,18 @@ where go {e}
       have heq : Q(@ModalityAction.transform $prop1 $prop2 $C = .transform $C) :=
         q(Eq.refl (ModalityAction.transform $C))
       have heq : Q($(M).action $p = .transform $C) := heq
-      return ⟨_, .mkHyp bi1 name ivar p ty', q(modaction_transform $M $heq $hC)⟩
-    | .clear =>
-       have heq : Q(@ModalityAction.clear $prop1 $prop2 = .clear) := q(Eq.refl (ModalityAction.clear))
-       have heq : Q($(M).action $p = @ModalityAction.clear $prop1 $prop2) := heq
-       return ⟨_, .mkEmp bi1, q(modaction_clear $M $heq)⟩
-    | .id =>
+      return ⟨some { name, ivar, p, ty := ty' }, q(sorry)⟩
+    | .clear => do
+      have heq : Q(@ModalityAction.clear $prop1 $prop2 = .clear) :=
+        q(Eq.refl (ModalityAction.clear))
+      have heq : Q($(M).action $p = @ModalityAction.clear $prop1 $prop2) := heq
+      return ⟨none, q(sorry)⟩
+    | .id => do
       have : $prop1 =Q $prop2 := ⟨⟩
       have : $bi1 =Q $bi2 := ⟨⟩
       have heq : Q(@ModalityAction.id $prop1 = .id) := q(Eq.refl (ModalityAction.id))
       have heq : Q($(M).action $p = .id) := heq
-      return ⟨_, .mkHyp bi1 name ivar p ty, q(modaction_id $M $heq)⟩
-  | .sep _ _ _ _ lhs rhs => do
-    let ⟨_, lhs', pflhs⟩ ← go iact sact lhs
-    let ⟨_, rhs', pfrhs⟩ ← go iact sact rhs
-    -- TODO: make pruning emp part of mkSep?
-    if let .emp _ := lhs' then
-      return ⟨_, rhs', q(modaction_sep_emp_left $pflhs $pfrhs)⟩
-    if let .emp _ := rhs' then
-      return ⟨_, lhs', q(modaction_sep_emp_right $pflhs $pfrhs)⟩
-    return ⟨_, .mkSep lhs' rhs', q(modaction_sep $pflhs $pfrhs)⟩
+      return ⟨some { name, ivar, p, ty }, q(sorry)⟩
 
 /-- Introduce a modality by applying modality actions to transform hypotheses.
 

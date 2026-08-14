@@ -81,6 +81,97 @@ def conj (p1 p2 : Q(Bool)) : Q(Bool) :=
   | .inl _, .inl _ => q(true)
   | _, _           => q(false)
 
+def mkIntuitionisticIf {prop : Q(Type u)} (_bi : Q(BI $prop))
+    (p : Q(Bool)) (e : Q($prop)) : {A : Q($prop) // $A =Q iprop(□?$p $e)} :=
+  match matchBool p with
+  | .inl _ => ⟨q(iprop(□ $e)), ⟨⟩⟩
+  | .inr _ => ⟨e, ⟨⟩⟩
+
+section Hyp
+
+structure Hyp (prop : Q(Type u)) where
+  name : Name
+  ivar : IVarId
+  p : Q(Bool)
+  ty : Q($prop)
+  deriving Inhabited, Repr
+
+/-- The un-annotated proposition of this hypothesis: `□?p ty`. -/
+def Hyp.e {prop : Q(Type u)} (bi : Q(BI $prop)) (h : Hyp prop) :
+    {A : Q($prop) // $A =Q iprop(□?$(h.p) $(h.ty))} :=
+  mkIntuitionisticIf bi h.p h.ty
+
+def Hyp.tm {prop : Q(Type u)} (bi : Q(BI $prop)) (h : Hyp prop) : Q($prop) :=
+  mkIntuitionisticIf bi h.p (mkNameAnnotation h.name h.ivar h.ty)
+
+def Hyp.persistent? (h : Hyp prop) : Bool := isTrue h.p
+
+def Hyp.spatial? (h : Hyp prop) : Bool := !isTrue h.p
+
+@[inline] def sepFold {prop : Q(Type u)} (bi : Q(BI $prop))
+    (proj : Hyp prop → Q($prop)) (hs : Array (Hyp prop)) : Q($prop) :=
+  if h : 0 < hs.size then
+    hs.foldl (init := proj hs[0]) (start := 1) fun acc x => q(iprop($acc ∗ $(proj x)))
+  else q(emp)
+
+def sepFoldE {prop : Q(Type u)} (bi : Q(BI $prop)) (hs : Array (Hyp prop)) : Q($prop) :=
+  sepFold bi (fun h => (h.e bi).1) hs
+
+def sepFoldTm {prop : Q(Type u)} (bi : Q(BI $prop)) (hs : Array (Hyp prop)) : Q($prop) :=
+  sepFold bi (·.tm bi) hs
+
+end Hyp
+
+section Theorems
+open Iris BI
+
+-- base cases (first element)
+theorem part_init_l [BI PROP] {x : PROP}     : x ⊣⊢ x ∗ emp := sep_emp.symm
+theorem part_init_r [BI PROP] {x : PROP}     : x ⊣⊢ emp ∗ x := emp_sep.symm
+theorem part_init_b [BI PROP] {x : PROP}     : □ x ⊣⊢ □ x ∗ □ x := intuitionistically_sep_idem.symm
+
+-- general step, both sides already non-empty
+theorem part_l [BI PROP] {A L R x : PROP} (h : A ⊣⊢ L ∗ R) : A ∗ x ⊣⊢ (L ∗ x) ∗ R :=
+  (sep_congr_left h).trans sep_right_comm
+theorem part_r [BI PROP] {A L R x : PROP} (h : A ⊣⊢ L ∗ R) : A ∗ x ⊣⊢ L ∗ (R ∗ x) :=
+  (sep_congr_left h).trans sep_assoc
+theorem part_b [BI PROP] {A L R x : PROP} (h : A ⊣⊢ L ∗ R) :
+    A ∗ □ x ⊣⊢ (L ∗ □ x) ∗ (R ∗ □ x) :=
+  (sep_congr h intuitionistically_sep_idem.symm).trans sep_sep_sep_comm
+
+-- boundary steps, needed only to avoid emitting `emp ∗ _` / `_ ∗ emp` in the results
+theorem part_l_of_emptyL [BI PROP] {A R x : PROP} (h : A ⊣⊢ emp ∗ R) : A ∗ x ⊣⊢ x ∗ R :=
+  (sep_congr_left (h.trans emp_sep)).trans sep_comm
+theorem part_r_of_emptyR [BI PROP] {A L x : PROP} (h : A ⊣⊢ L ∗ emp) : A ∗ x ⊣⊢ L ∗ x :=
+  sep_congr_left (h.trans sep_emp)
+theorem part_b_of_emptyL [BI PROP] {A R x : PROP} (h : A ⊣⊢ emp ∗ R) :
+    A ∗ □ x ⊣⊢ □ x ∗ (R ∗ □ x) :=
+  calc
+    _ ⊣⊢ (emp ∗ R) ∗ □ x := sep_congr_left h
+    _ ⊣⊢ R ∗ □ x         := sep_congr_left emp_sep
+    _ ⊣⊢ □ x ∗ (R ∗ □ x) := by
+      have : □ x ∗ (R ∗ □ x) ⊣⊢ R ∗ □ x :=
+        calc
+          _ ⊣⊢ (□ x ∗ R) ∗ □ x := sep_assoc.symm
+          _ ⊣⊢ (R ∗ □ x) ∗ □ x := sep_congr_left sep_comm
+          _ ⊣⊢ R ∗ (□ x ∗ □ x) := sep_assoc
+          _ ⊣⊢ R ∗ □ x         := sep_congr_right intuitionistically_sep_idem
+      exact this.symm
+
+theorem part_b_of_emptyR [BI PROP] {A L x : PROP} (h : A ⊣⊢ L ∗ emp) :
+    A ∗ □ x ⊣⊢ (L ∗ □ x) ∗ □ x :=
+  calc
+    _ ⊣⊢ (L ∗ emp) ∗ □ x := sep_congr_left h
+    _ ⊣⊢ L ∗ □ x         := sep_congr_left sep_emp
+    _ ⊣⊢ (L ∗ □ x) ∗ □ x := by
+      have : (L ∗ □ x) ∗ □ x ⊣⊢ L ∗ □ x :=
+        calc
+          _ ⊣⊢ L ∗ (□ x ∗ □ x) := sep_assoc
+          _ ⊣⊢ L ∗ □ x         := sep_congr_right intuitionistically_sep_idem
+      exact this.symm
+
+end Theorems
+
 section hyps
 
 /--
@@ -127,86 +218,74 @@ See https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/What
 
 This means that the ivar correctly caches whether it refers to a persistent hypothesis or not.
 -/
-inductive Hyps {prop : Q(Type u)} (bi : Q(BI $prop)) : (e : Q($prop)) → Type where
-  | emp (_ : $e =Q emp) : Hyps bi e
-  | sep (tm elhs erhs : Q($prop)) (_ : $e =Q iprop($elhs ∗ $erhs))
-        (lhs : Hyps bi elhs) (rhs : Hyps bi erhs) : Hyps bi e
-  | hyp (tm : Q($prop)) (name : Name) (ivar : IVarId) (p : Q(Bool)) (ty : Q($prop))
-        (_ : $e =Q iprop(□?$p $ty)) : Hyps bi e
-deriving Repr
+structure Hyps {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) where
+  private mk ::
+  /-- the hypotheses in context order; the *only* representation of the context -/
+  toArray : Array (Hyp prop)
+  /-- cached annotated term, definitionally equal to `e` (see `sepFoldTm`) -/
+  tm : Q($prop)
+  deriving Repr
 
-instance : Inhabited (Hyps bi s) := ⟨.emp ⟨⟩⟩
+def Hyps.ofArray {prop : Q(Type u)} (bi : Q(BI $prop)) (hs : Array (Hyp prop))
+    (e := sepFoldE bi hs) : Hyps bi e :=
+  ⟨hs, sepFoldTm bi hs⟩
 
-def Hyps.tm : @Hyps _ prop bi s → Q($prop)
-  | .emp _ => s
-  | .sep tm .. | .hyp tm .. => tm
+instance : Inhabited (Hyps bi s) := ⟨sorry⟩
+
+-- def Hyps.tm : @Hyps _ prop bi s → Q($prop)
+--   | .emp _ => s
+--   | .sep tm .. | .hyp tm .. => tm
 
 def Hyps.mkEmp {prop : Q(Type u)} (bi : Q(BI $prop)) (e := q(BI.emp : $prop)) : Hyps bi e :=
-  .emp ⟨⟩
-
-def Hyps.mkSep {prop : Q(Type u)} {bi : Q(BI $prop)} {elhs erhs}
-    (lhs : Hyps bi elhs) (rhs : Hyps bi erhs) (e := q(BI.sep $elhs $erhs)) : Hyps bi e :=
-  .sep q(BI.sep $(lhs.tm) $(rhs.tm) : $prop) elhs erhs ⟨⟩ lhs rhs
-
-def mkIntuitionisticIf {prop : Q(Type u)} (_bi : Q(BI $prop))
-    (p : Q(Bool)) (e : Q($prop)) : {A : Q($prop) // $A =Q iprop(□?$p $e)} :=
-  match matchBool p with
-  | .inl _ => ⟨q(iprop(□ $e)), ⟨⟩⟩
-  | .inr _ => ⟨e, ⟨⟩⟩
+  Hyps.ofArray bi #[] e
 
 def Hyps.mkHyp {prop : Q(Type u)} (bi : Q(BI $prop))
     (name : Name) (ivar : IVarId) (p : Q(Bool)) (ty : Q($prop)) (e := q(iprop(□?$p $ty))) :
     Hyps bi e :=
-  .hyp (mkIntuitionisticIf bi p (mkNameAnnotation name ivar ty)) name ivar p ty ⟨⟩
+  Hyps.ofArray bi #[{ name, ivar, p, ty }] e
 
 def Hyps.add {prop : Q(Type u)} (bi : Q(BI $prop))
     (name : Name) (ivar : IVarId) (p : Q(Bool)) (ty : Q($prop)) {e} (h : Hyps bi e)
     : (e' : Q($prop)) × Hyps bi e' × Q(iprop($e ∗ □?$p $ty ⊣⊢ $e')) :=
-  match h with
-  -- Adding a hypothesis to `emp` creates a `.hyp` node instead of a `.sep` node
-  | .emp _ => ⟨_, .mkHyp bi name ivar p ty, q(emp_sep)⟩
-  | _ => ⟨_, .mkSep h (.mkHyp bi name ivar p ty), q(.rfl)⟩
+  let hyp : Hyp prop := { name, ivar, p, ty }
+  if h.toArray.isEmpty then
+    have : $e =Q emp := ⟨⟩
+    ⟨_, Hyps.mkHyp bi name ivar p ty, q(emp_sep)⟩
+  else
+    ⟨_, Hyps.ofArray bi (h.toArray.push hyp), q(sorry)⟩
 
 partial def parseHyps? {prop : Q(Type u)} (bi : Q(BI $prop)) (expr : Expr) :
     Option ((s : Q($prop)) × Hyps bi s) := do
-  if let some #[_, _, P, Q] := appM? expr ``sep then
-    let ⟨elhs, lhs⟩ ← parseHyps? bi P
-    let ⟨erhs, rhs⟩ ← parseHyps? bi Q
-    some ⟨q(BI.sep $elhs $erhs), .sep expr elhs erhs ⟨⟩ lhs rhs⟩
-  else if expr.isAppOfArity ``emp 2 then
-    some ⟨expr, .emp ⟨⟩⟩
-  else if let some #[_, _, P] := appM? expr ``intuitionistically then
-    let (name, ivar, (ty : Q($prop))) ← parseName? P
-    some ⟨q(iprop(□ $ty)), .hyp expr name ⟨ivar, true⟩ q(true) ty ⟨⟩⟩
-  else
-    let (name, ivar, ty) ← parseName? expr
-    some ⟨ty, .hyp expr name ⟨ivar, false⟩ q(false) ty ⟨⟩⟩
+  let hs ← go expr #[]
+  some ⟨_, Hyps.ofArray bi hs⟩
+where
+  parseLeaf? (e : Expr) : Option (Hyp prop) :=
+    if let some #[_, _, P] := appM? e ``intuitionistically then do
+      let (name, ivar, ty) ← parseName? P
+      some { name, ivar := ⟨ivar, true⟩, p := q(true), ty }
+    else do
+      let (name, ivar, ty) ← parseName? e
+      some { name, ivar := ⟨ivar, false⟩, p := q(false), ty }
+  go (e : Expr) (acc : Array (Hyp prop)) : Option (Array (Hyp prop)) := do
+    if let some #[_, _, P, Q] := appM? e ``sep then do
+      let acc ← go P acc
+      some (acc.push (← parseLeaf? Q))
+    else if e.isAppOfArity ``emp 2 && acc.isEmpty then
+      some acc
+    else
+      some (acc.push (← parseLeaf? e))
 
-partial def Hyps.find? {u prop bi} (name : Name) :
-    ∀ {s}, @Hyps u prop bi s → Option (IVarId × Q($prop))
-  | _, .emp _ => none
-  | _, .hyp _ name' ivar _ ty _ => if name == name' then (ivar, ty) else none
-  | _, .sep _ _ _ _ lhs rhs => rhs.find? name <|> lhs.find? name
+partial def Hyps.find? {u prop bi e} (name : Name)
+    (h : @Hyps u prop bi e) : Option (IVarId × Q($prop)) :=
+  h.toArray.findSomeRev? fun x => if name == x.name then some (x.ivar, x.ty) else none
 
 partial def Hyps.findM? [Monad m] {prop : Q(Type u)} {bi : Q(BI $prop)}
     (p : Name → IVarId → Q(Bool) → Q($prop) → m Bool) :
-    ∀ {e}, Hyps bi e → m (Option (Name × IVarId × Q(Bool) × Q($prop)))
-  | _, .emp _ => return none
-  | _, .hyp _ name ivar bp ty _ => do
-    if ← p name ivar bp ty then
-      return some (name, ivar, bp, ty)
-    else
-      return none
-  | _, .sep _ _ _ _ lhs rhs => do
-    match ← rhs.findM? p with
-    | some res => return some res
-    | none => lhs.findM? p
+    ∀ {e}, Hyps bi e → m (Option (Name × IVarId × Q(Bool) × Q($prop))) := sorry
 
 partial def Hyps.getDecl? {u prop bi} (ivar : IVarId) {s}:
-    @Hyps u prop bi s → Option (Name × IVarId × Q(Bool) × Q($prop))
-  | .emp _ => none
-  | .hyp _ name ivar' p ty _ => if ivar == ivar' then (name, ivar, p, ty) else none
-  | .sep _ _ _ _ lhs rhs => rhs.getDecl? ivar <|> lhs.getDecl? ivar
+    @Hyps u prop bi s → Option (Name × IVarId × Q(Bool) × Q($prop)) := fun h =>
+  h.toArray.findSomeRev? fun x => if ivar == x.ivar then some (x.name, x.ivar, x.p, x.ty) else none
 
 def Hyps.getUserName? {u prop bi} (ivar : IVarId) (h : @Hyps u prop bi s) : Option Name :=
   h.getDecl? ivar |>.map (·.1)
@@ -214,10 +293,7 @@ def Hyps.getUserName? {u prop bi} (ivar : IVarId) (h : @Hyps u prop bi s) : Opti
 @[specialize]
 def Hyps.foldrLeaves {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {α}
     (f : Name → IVarId → Q(Bool) → Q($prop) → α → α) :
-    ∀ {s}, @Hyps u prop bi s → α → α
-  | _, .emp _,               acc => acc
-  | _, .hyp _ n ivar p ty _, acc => f n ivar p ty acc
-  | _, .sep _ _ _ _ lhs rhs, acc => foldrLeaves f lhs (foldrLeaves f rhs acc)
+    ∀ {s}, @Hyps u prop bi s → α → α := sorry
 
 def Hyps.spatialIVarIds {u prop bi} {s} (hyps : @Hyps u prop bi s) : List IVarId :=
   hyps.foldrLeaves (fun _ ivar p _ acc => if isTrue p then acc else ivar :: acc) []
@@ -237,42 +313,20 @@ def Hyps.buildAccuProof {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   where
     buildAccuProofAux {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e e' : Q($prop)}
       (hyps : Hyps bi e) (spatialProps : Q($prop)) (pf : Q($e' ⊢ $spatialProps)) :
-      (newSpatialProps : Q($prop)) × Q($e ∗ $e' ⊢ $newSpatialProps) :=
-    match hyps with
-    | .emp _ => ⟨spatialProps, q(emp_sep.mp.trans $pf)⟩
-    | .hyp _ _ _ p ty _ =>
-      match matchBool p with
-      | .inl _ =>
-        ⟨spatialProps, q((sep_mono_left intuitionistically_elim_emp).trans (emp_sep.mp.trans $pf))⟩
-      | .inr _ =>
-        if spatialProps == q(iprop(emp)) then
-          let pf : Q($e' ⊢ iprop(emp)) := pf
-          ⟨ty, q((sep_mono_right $pf).trans sep_emp.mp)⟩
-        else ⟨q(iprop($ty ∗ $spatialProps)), q(sep_mono_right $pf)⟩
-    | .sep _ _ _ _ lhs rhs =>
-      let ⟨spatialPropsR, pfR⟩ := buildAccuProofAux rhs spatialProps pf
-      let ⟨spatialPropsLR, pfLR⟩ := buildAccuProofAux lhs spatialPropsR pfR
-      ⟨q($spatialPropsLR), q(sep_assoc.mp.trans $pfLR)⟩
+      (newSpatialProps : Q($prop)) × Q($e ∗ $e' ⊢ $newSpatialProps) := sorry
 
 variable (oldIVar : IVarId) (new : Name) {prop : Q(Type u)} {bi : Q(BI $prop)} in
-def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)
-  | _, .emp _ => none
-  | _, .sep _ _ _ _ lhs rhs =>
-    match rhs.rename with
-    | some rhs' => some (.mkSep lhs rhs' _)
-    | none => match lhs.rename with
-      | some lhs' => some (.mkSep lhs' rhs _)
-      | none => none
-  | _, .hyp _ _ ivar p ty _ =>
-    if oldIVar == ivar then some (Hyps.mkHyp bi new ivar p ty _) else none
+def Hyps.rename {e} (h : Hyps bi e) : Option (Hyps bi e) := do
+  let i ← h.toArray.findIdx? (·.ivar == oldIVar)     -- rhs-first, as before
+  let hs := h.toArray.modify i ({ · with name := new })
+  some ⟨hs, sepFoldTm bi hs⟩     -- `e` unchanged; only `tm` is rebuilt
 
 def Hyps.select (ty : Expr) :
-    ∀ {s}, @Hyps u prop bi s → MetaM (IVarId × Q(Bool) × Q($prop))
-  | _, .emp _ => failure
-  | _, .hyp _ _ ivar p ty' _ => do
-    let .true ← isDefEq ty ty' | failure
-    pure (ivar, p, ty')
-  | _, .sep _ _ _ _ lhs rhs => try Hyps.select ty rhs catch _ => Hyps.select ty lhs
+    ∀ {s}, @Hyps u prop bi s → MetaM (IVarId × Q(Bool) × Q($prop)) := fun h => do
+  let some r ← h.toArray.findSomeRevM? fun x => do
+    if ← isDefEq ty x.ty then pure (some (x.ivar, x.p, x.ty)) else pure none
+    | failure
+  pure r
 
 theorem intuitionistically_sep_dup [BI PROP] {P : PROP} : □ P ⊣⊢ □ P ∗ □ P :=
   intuitionistically_sep_idem.symm
@@ -283,62 +337,9 @@ theorem emp_sep_rev [BI PROP] {P : PROP} : P ⊣⊢ emp ∗ P := emp_sep.symm
 
 section split
 
-theorem split_es [BI PROP] {Q Q1 Q2 : PROP} (h : Q ⊣⊢ Q1 ∗ Q2) : emp ∗ Q ⊣⊢ Q1 ∗ Q2 :=
-  emp_sep.trans h
-theorem split_ls [BI PROP] {P Q Q1 Q2 : PROP} (h : Q ⊣⊢ Q1 ∗ Q2) : P ∗ Q ⊣⊢ (P ∗ Q1) ∗ Q2 :=
-  (sep_congr_right h).trans sep_assoc.symm
-theorem split_rs [BI PROP] {P Q Q1 Q2 : PROP} (h : Q ⊣⊢ Q1 ∗ Q2) : P ∗ Q ⊣⊢ Q1 ∗ (P ∗ Q2) :=
-  (sep_congr_right h).trans sep_left_comm
-theorem split_se [BI PROP] {P P1 P2 : PROP} (h : P ⊣⊢ P1 ∗ P2) : P ∗ emp ⊣⊢ P1 ∗ P2 :=
-  sep_emp.trans h
-theorem split_sl [BI PROP] {P Q P1 P2 : PROP} (h : P ⊣⊢ P1 ∗ P2) : P ∗ Q ⊣⊢ (P1 ∗ Q) ∗ P2 :=
-  (sep_congr_left h).trans sep_right_comm
-theorem split_sr [BI PROP] {P Q P1 P2 : PROP} (h : P ⊣⊢ P1 ∗ P2) : P ∗ Q ⊣⊢ P1 ∗ (P2 ∗ Q) :=
-  (sep_congr_left h).trans sep_assoc
-theorem split_ss [BI PROP] {P Q P1 P2 Q1 Q2 : PROP}
-    (h1 : P ⊣⊢ P1 ∗ P2) (h2 : Q ⊣⊢ Q1 ∗ Q2) : P ∗ Q ⊣⊢ (P1 ∗ Q1) ∗ (P2 ∗ Q2) :=
-  (sep_congr h1 h2).trans sep_sep_sep_comm
-
-inductive SplitResult {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) where
-  | emp (_ : $e =Q BI.emp)
-  | left
-  | right
-  | split {elhs erhs : Q($prop)} (lhs : Hyps bi elhs) (rhs : Hyps bi erhs)
-          (pf : Q($e ⊣⊢ $elhs ∗ $erhs))
-
-variable {prop : Q(Type u)} (bi : Q(BI $prop)) (toRight : Name → IVarId → Bool) in
-def Hyps.splitCore : ∀ {e}, Hyps bi e → SplitResult bi e
-  | _, .emp _ => .emp ⟨⟩
-  | ehyp, h@(.hyp _ name ivar b ty _) =>
-    match matchBool b with
-    | .inl _ =>
-      have : $ehyp =Q iprop(□ $ty) := ⟨⟩
-      .split h h q(intuitionistically_sep_dup)
-    | .inr _ => if toRight name ivar then .right else .left
-  | _, .sep _ _ _ _ lhs rhs =>
-    let resl := lhs.splitCore
-    let resr := rhs.splitCore
-    match resl, resr with
-    | .emp _, .emp _ | .left, .emp _ | .emp _, .left | .left, .left => .left
-    | .right, .emp _ | .emp _, .right | .right, .right => .right
-    | .left, .right => .split lhs rhs q(.rfl)
-    | .right, .left => .split rhs lhs q(sep_comm)
-    | .emp _, .split r1 r2 rpf => .split r1 r2 q(split_es $rpf)
-    | .left, .split r1 r2 rpf => .split (lhs.mkSep r1) r2 q(split_ls $rpf)
-    | .right, .split r1 r2 rpf => .split r1 (lhs.mkSep r2) q(split_rs $rpf)
-    | .split l1 l2 lpf, .emp _ => .split l1 l2 q(split_se $lpf)
-    | .split l1 l2 lpf, .left => .split (l1.mkSep rhs) l2 q(split_sl $lpf)
-    | .split l1 l2 lpf, .right => .split l1 (l2.mkSep rhs) q(split_sr $lpf)
-    | .split l1 l2 lpf, .split r1 r2 rpf => .split (l1.mkSep r1) (l2.mkSep r2) q(split_ss $lpf $rpf)
-
 def Hyps.split {prop : Q(Type u)} (bi : Q(BI $prop)) (toRight : Name → IVarId → Bool)
     {e} (hyps : Hyps bi e) :
-    (elhs erhs : Q($prop)) × Hyps bi elhs × Hyps bi erhs × Q($e ⊣⊢ $elhs ∗ $erhs) :=
-  match hyps.splitCore bi toRight with
-  | .emp _ => ⟨_, _, hyps, hyps, q(sep_emp_rev)⟩
-  | .left => ⟨_, _, hyps, .mkEmp bi, q(sep_emp_rev)⟩
-  | .right => ⟨_, _, .mkEmp bi, hyps, q(emp_sep_rev)⟩
-  | .split lhs rhs pf => ⟨_, _, lhs, rhs, pf⟩
+    (elhs erhs : Q($prop)) × Hyps bi elhs × Hyps bi erhs × Q($e ⊣⊢ $elhs ∗ $erhs) := sorry
 
 end split
 
@@ -350,56 +351,10 @@ structure RemoveHyp {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) where
   (pf : Q($e ⊣⊢ $e' ∗ $out))
   deriving Inhabited
 
-inductive RemoveHypCore {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) (α : Type) where
-  | none
-  | one (a : α) (out' : Q($prop)) (p : Q(Bool)) (eq : $e =Q iprop(□?$p $out'))
-  | main (a : α) (_ : RemoveHyp bi e)
-
-theorem remove_left [BI PROP] {P P' Q R : PROP} (h : P ⊣⊢ P' ∗ R) :
-    P ∗ Q ⊣⊢ (P' ∗ Q) ∗ R :=
-  (sep_congr_left h).trans sep_right_comm
-
-theorem remove_right [BI PROP] {P Q Q' R : PROP} (h : Q ⊣⊢ Q' ∗ R) :
-    P ∗ Q ⊣⊢ (P ∗ Q') ∗ R :=
-  (sep_congr_right h).trans sep_assoc.symm
-
-variable [Monad m] {prop : Q(Type u)} (bi : Q(BI $prop)) (rp : Bool)
-  (check : Name → IVarId → Q(Bool) → Q($prop) → m (Option α)) in
-/-- If `rp` is true, the hyp will be removed even if it is in the intuitionistic context. -/
-def Hyps.removeCore : ∀ {e}, Hyps bi e → m (RemoveHypCore bi e α)
-  | _, .emp _ => pure .none
-  | e, h@(.hyp _ name ivar p ty _) => do
-    if let some a ← check name ivar p ty then
-      match matchBool p, rp with
-      | .inl _, false =>
-        have : $e =Q iprop(□ $ty) := ⟨⟩
-        return .main a ⟨e, h, e, ty, q(true), ⟨⟩, q(intuitionistically_sep_dup)⟩
-      | _, _ => return .one a ty p ⟨⟩
-    else
-      return .none
-  | _, .sep _ elhs erhs _ lhs rhs => do
-    match ← rhs.removeCore with
-    | .one a out' p h =>
-      return .main a ⟨elhs, lhs, erhs, out', p, h, q(.rfl)⟩
-    | .main a ⟨_, rhs', out, out', p, h, pf⟩ =>
-      let hyps' := .mkSep lhs rhs'
-      return .main a ⟨_, hyps', out, out', p, h, q(remove_right $pf)⟩
-    | .none => match ← lhs.removeCore with
-      | .one a out' p h =>
-        return .main a ⟨erhs, rhs, elhs, out', p, h, q(sep_comm)⟩
-      | .main a ⟨_, lhs', out, out', p, h, pf⟩ =>
-        let hyps' := .mkSep lhs' rhs
-        return .main a ⟨_, hyps', out, out', p, h, q(remove_left $pf)⟩
-      | .none => pure .none
-
 def Hyps.removeG [Monad m] {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q(Prop)}
     (rp : Bool) (hyps : Hyps bi e)
     (check : Name → IVarId → Q(Bool) → Q($prop) → m (Option α)) :
-    m (Option (α × RemoveHyp bi e)) := do
-  match ← hyps.removeCore bi rp check with
-  | .none => return none
-  | .one a out' p h => return some ⟨a, _, .mkEmp bi, e, out', p, h, q(emp_sep_rev)⟩
-  | .main a res => return some (a, res)
+    m (Option (α × RemoveHyp bi e)) := sorry
 
 def Hyps.remove {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (rp : Bool) (hyps : Hyps bi e) (ivar : IVarId) : RemoveHyp bi e :=
@@ -477,44 +432,50 @@ theorem replace_finish {PROP} [BI PROP] {e e' : PROP}
       _ ⊢ e' ∗ emp := h _
       _ ⊢ e' := sep_emp.1
 
-variable [Monad m] [MonadLiftT MetaM m] {prop : Q(Type u)} (bi : Q(BI $prop)) (e0 : Q($prop))
-  (ivar : IVarId)
-  (repl : Name → Q(Bool) → (ty : Q($prop)) →
-          m ((ty' : Q($prop)) × Q($e0 ⊢ <pers> ($ty -∗ $ty')))) in
-def Hyps.replaceCore : ∀ {e}, Hyps bi e →
-    m (Option ((e' : Q($prop)) × Hyps bi e' × Q(∀ P, (($e ∗ P) ∧ $e0 ⊢ $e' ∗ P))))
-  | _, .emp _ => return none
-  | _, .hyp _ name ivar' p ty _ => do
-    if ivar == ivar' then
-      let ⟨ty', pf⟩ ← repl name p ty
-      return some ⟨_, .mkHyp bi name ivar p ty', q(replace_hyp $pf)⟩
-    return none
-  | _, .sep _ _ _ _ lhs rhs => do
-    if let some ⟨_, lhs', pf⟩ ← lhs.replaceCore then
-      return some ⟨_, .mkSep lhs' rhs, q(replace_hyp_sep_left $pf)⟩
-    if let some ⟨_, rhs', pf⟩ ← rhs.replaceCore then
-      return some ⟨_, .mkSep lhs rhs', q(replace_hyp_sep_right $pf)⟩
-    return none
+/-- Extend a congruence proof about the fold of `hs[:k]` to the fold of `hs[:hs.size]`. -/
+private def replaceLift {prop : Q(Type u)} (bi : Q(BI $prop)) (e0 : Q($prop))
+    (hs : Array (Hyp prop)) :
+    (k : Nat) → (a a' : Q($prop)) → Q(∀ P, (($a ∗ P) ∧ $e0 ⊢ $a' ∗ P)) →
+    (b b' : Q($prop)) × Q(∀ P, (($b ∗ P) ∧ $e0 ⊢ $b' ∗ P))
+  | k, a, a', pf =>
+    if h : k < hs.size then
+      let ⟨x, _⟩ := hs[k].e bi          -- destructuring keeps the `=Q` in scope for Qq
+      replaceLift bi e0 hs (k + 1) q(iprop($a ∗ $x)) q(iprop($a' ∗ $x)) q(replace_hyp_sep_left $pf)
+    else ⟨a, a', pf⟩
+  termination_by k => hs.size - k
 
 variable [Monad m] [MonadLiftT MetaM m] {prop : Q(Type u)}
   {bi : Q(BI $prop)} {e : Q($prop)} (hyps : Hyps bi e) (ivar : IVarId)
   (repl : Name → Q(Bool) → (ty : Q($prop)) → m ((ty' : Q($prop)) × Q($e ⊢ <pers> ($ty -∗ $ty')))) in
 def Hyps.replace : m (Option ((e' : Q($prop)) × Hyps bi e' × Q($e ⊢ $e'))) := do
-  let some ⟨_, hyps', pf⟩ ← hyps.replaceCore bi e ivar repl | return none
-  return some ⟨_, hyps', q(replace_finish $pf)⟩
+  let hs := hyps.toArray
+  -- forward scan, first match — same order as the old `lhs`-before-`rhs` recursion
+  let some i := hs.findIdx? (·.ivar == ivar) | return none
+  let x := hs[i]!
+  let ⟨ty', pf0⟩ ← repl x.name x.p x.ty
+  let x' : Hyp prop := { x with ty := ty' }
+  let ⟨xe,  _⟩ := x.e bi
+  let ⟨xe', _⟩ := x'.e bi
+  sorry
+  -- -- focus on `hs[i]`, then step out of the innermost `∗` if there is a prefix
+  -- let ⟨_, _, pf⟩ :=
+  --   if i == 0 then
+  --     replaceLift bi e xe xe' 1 q(replace_hyp $pf0)
+  --   else
+  --     let pre := sepFoldE bi hs[0:i]        -- fold of the prefix; unchanged by the replacement
+  --     replaceLift bi e q($pre ∗ $xe) q($pre ∗ $xe') (i + 1)
+  --       q(replace_hyp_sep_right (replace_hyp $pf0))
+  -- return some ⟨_, Hyps.ofArray bi (hs.set! i x'), q(replace_finish $pf)⟩
+
 
 end replace
+
 
 section dependency
 
 partial def Hyps.findDependencyOnFVar {prop : Q(Type u)} {bi : Q(BI $prop)}
-    (fvarId : FVarId) : ∀ {e}, Hyps bi e → Option (Name × IVarId × Q(Bool) × Q($prop))
-  | _, .emp _ => none
-  | _, .sep _ _ _ _ lhs rhs =>
-      lhs.findDependencyOnFVar fvarId <|> rhs.findDependencyOnFVar fvarId
-  | _, .hyp _ name ivar p ty _ =>
-      if (ty : Expr).containsFVar fvarId then some (name, ivar, p, ty)
-      else none
+    (fvarId : FVarId) : ∀ {e}, Hyps bi e → Option (Name × IVarId × Q(Bool) × Q($prop)) :=
+  fun h =>  h.toArray.findSome? fun x => if (x.ty : Expr).containsFVar fvarId then some (x.name, x.ivar, x.p, x.ty) else none
 
 /-- Check that removing the Lean local `fvarId` leaves no dangling dependencies in the
 proofmode context, an optional goal, or remaining Lean locals not accepted by `allowedDep`. -/
@@ -626,13 +587,4 @@ def Hyps.addWithInfo {prop : Q(Type u)} (bi : Q(BI $prop))
 -/
 def Hyps.buildIntuitionisticProof {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) : Option Q($e ⊢ □ $e) :=
-  match hyps with
-  | .emp _ => some q(intuitionistically_emp.mpr)
-  | .hyp _ _ _ p _ _ =>
-    match matchBool p with
-    | .inl _ => some q(intuitionistically_idem.mpr)
-    | .inr _ => none
-  | .sep _ _ _ _ lhs rhs => do
-    let pfL ← buildIntuitionisticProof lhs
-    let pfR ← buildIntuitionisticProof rhs
-    some q((sep_mono $pfL $pfR).trans intuitionistically_sep_mpr)
+  sorry
