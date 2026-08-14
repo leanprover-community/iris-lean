@@ -591,14 +591,14 @@ open Lean Elab Tactic Meta Qq Iris.BI Iris Iris.ProofMode Iris.Std
 
 @[rocq_alias tac_lc_add_laterN_split]
 theorem tac_lc_add_laterN_split {GF : BundledGFunctors} [InvGS GF]
-    {φ : Prop} {n m newM : Nat} {E : CoPset} {P Q goal : IProp GF} {stuck : Bool}
-    (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
+    {n m newM : Nat} {E : CoPset} {P Q goal : IProp GF} {stuck : Bool}
+    (inst : AddModal iprop(|={E}=> goal) goal goal)
     (h1 : NatCancel m n newM 0 stuck) (h2 : P ∗ £ newM ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
     P ∗ £ m ⊢ goal := by
   have h1 : m = n + newM := by have := h1.nat_cancel; omega
   subst h1
   iintro ⟨HP, Hcred⟩
-  iapply inst.elim_modal hφ
+  iapply inst.add_modal
   isplitl
   · icases lc_split.mp $$ Hcred with ⟨Hn, Hm⟩
     icombine HP Hm as H
@@ -609,46 +609,16 @@ theorem tac_lc_add_laterN_split {GF : BundledGFunctors} [InvGS GF]
     iapply h3 $$ H
   · iintro _ //
 
+/--
+  For the special case where the later credit amount reaches zero, and
+  the later credit hypothesis is dropped.
+-/
 theorem tac_lc_add_laterN_full {GF : BundledGFunctors} [InvGS GF]
-    {φ : Prop} {m : Nat} {E : CoPset} {P Q goal : IProp GF} {stuck : Bool}
-    (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
-    (h1 : NatCancel m n 0 0 stuck)
-    (h2 : P ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
-    P ∗ £ m ⊢ goal := by
-  iintro ⟨HP, Hcred⟩
-  iapply inst.elim_modal hφ
-  isplitl
-  have h1 := h1.nat_cancel
-  simp at h1
-  rw [← h1]
-  · ihave H := h2 $$ HP
-    iapply lc_fupd_add_laterN n $$ Hcred
-    inext
-    imodintro
-    iapply h3 $$ H
-  · iintro _ //
-
-theorem tac_lc_add_laterN_split' {GF : BundledGFunctors} [InvGS GF]
-    {φ : Prop} {n m newM : Nat} {stuck : Bool} {E : CoPset}
-    {e P R Q goal : IProp GF}
-    (heq : e ⊣⊢ P ∗ £ m)
-    (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
-    (hc : NatCancel m n newM 0 stuck)
-    (hR : P ∗ £ newM ⊣⊢ R) (h2 : R ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
-    e ⊢ goal := by
-  refine heq.mp.trans ?_
-  exact
-    (tac_lc_add_laterN_split inst hφ hc (hR.mp.trans h2) h3)
-
-theorem tac_lc_add_laterN_full' {GF : BundledGFunctors} [InvGS GF]
-    {φ : Prop} {n m : Nat} {stuck : Bool} {E : CoPset}
-    {e P Q goal : IProp GF}
-    (heq : e ⊣⊢ P ∗ £ m)
-    (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
-    (hc : NatCancel m n 0 0 stuck)
-    (h2 : P ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
-    e ⊢ goal :=
-  heq.mp.trans (tac_lc_add_laterN_full inst hφ hc h2 h3)
+    {n m : Nat} {E : CoPset} {P Q goal : IProp GF} {stuck : Bool}
+    (inst : AddModal iprop(|={E}=> goal) goal goal)
+    (h1 : NatCancel m n 0 0 stuck) (h2 : P ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
+    P ∗ £ m ⊢ goal :=
+  tac_lc_add_laterN_split inst h1 (sep_elim_left.trans h2) h3
 
 public meta section
 
@@ -696,33 +666,31 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
     have c : Q(Nat) := c
     let some hcancel ← ProofModeM.trySynthInstanceQ q(NatCancel $c $n $newC $newN $stuck)
       | throwError "inext: unable to cancel {n} later credits from {c}"
-    let newC : Q(Nat) ← instantiateMVars newC
     unless ← isDefEq newN q(0) do
       throwError "inext: insufficient credits"
 
     have modality : Q(@Modality $prop $prop $bi $bi) :=
-      mkAppN (.const ``modality_laterN [.zero]) #[prop, n, bi]
-    let mkLC (k : Expr) : Expr := mkApp ty.appFn! k
+      mkAppN (.const ``modality_laterN [u]) #[prop, n, bi]
 
+    let newC : Q(Nat) ← instantiateMVars newC
     match newC.nat? with
     -- Later credits used up, discard the later credits hypothesis
     | some 0 =>
       let ⟨eQ, newHyps', pfModAction⟩ ← iModAction hyps' modality
       let pf ← addBIGoal newHyps' goal
-      mvar.assign <| mkAppN (.const ``tac_lc_add_laterN_full' [])
+      mvar.assign <| mkAppN (.const ``tac_lc_add_laterN_full [])
         #[GF, instInvGS, φ, n, c, stuck, E,
-          e, e', eQ, goal,
-          pfEq, inst, hφ, hcancel, pfModAction, pf]
+          e, e', eQ, goal, pfEq, inst, hφ, hcancel, pfModAction, pf]
     -- Update the later credits hypothesis and introduce it into the context
     | _ =>
-      let newTy := mkLC newC
+      -- The new expression `£ newC`
+      let newTy := mkApp ty.appFn! newC
       let ⟨eAdd, newHyps, pfNewHyps⟩ := Hyps.add _ name ivar q(false) newTy hyps'
       let ⟨eQ, newHyps', pfModAction⟩ ← iModAction newHyps modality
       let pf ← addBIGoal newHyps' goal
-      mvar.assign <| mkAppN (.const ``tac_lc_add_laterN_split' [])
+      mvar.assign <| mkAppN (.const ``tac_lc_add_laterN_split [])
         #[GF, instInvGS, φ, n, c, newC, stuck, E,
-          e, e', eAdd, eQ, goal,
-          pfEq, inst, hφ, hcancel, pfNewHyps, pfModAction, pf]
+          e, e', eAdd, eQ, goal, pfEq, inst, hφ, hcancel, pfNewHyps, pfModAction, pf]
 
 end
 
