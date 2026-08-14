@@ -279,7 +279,7 @@ class Context (K : Expr → Expr) where
     (K e, σ) -<obs>-> (K_e', σ', eₜ) →
     ∃ e', K_e' = K e' ∧ (e, σ) -<obs>-> (e', σ', eₜ)
 
-attribute [rocq_alias fill_not_val] Context.toVal_eq_none_fill
+attribute [rocq_alias ectx_language.fill_not_val] Context.toVal_eq_none_fill
 -- attribute [rocq_alias fill_step] Context.primStep_fill
 -- attribute [rocq_alias fill_step_inv] Context.primStep_fill_inv
 
