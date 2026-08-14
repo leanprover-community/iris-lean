@@ -398,26 +398,25 @@ variable (m n p q : Nat)
 end NatCancel
 
 section IsOp
-open Iris Iris.CMRA Iris.ProofMode
+open Iris CMRA ProofMode
 
-private def Qp.quarter : Qp := ⟨1 / 4, by grind⟩
-private def Qp.threeQuarters : Qp := ⟨3 / 4, by grind⟩
+variable (q q1 q2 : Qp)
 
 /- Splitting a sum: `isOpFrac_split` is used instead of `isOpFrac_half`. -/
 /-- info:
-  solution: IsOp IsOp.Direction.split (Qp.threeQuarters + Qp.quarter) Qp.threeQuarters Qp.quarter,
+  solution: IsOp IsOp.Direction.split (q1 + q2) q1 q2,
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth (IsOp .split (Qp.threeQuarters + Qp.quarter) _ _)
+#ipm_synth (IsOp .split (q1 + q2 : Qp) _ _)
 
 /- Splitting a CMRA operation: `isOpFrac_split` is used instead of `isOpFrac_half`. -/
 /-- info:
-  solution: IsOp IsOp.Direction.split (Qp.threeQuarters • Qp.quarter) Qp.threeQuarters Qp.quarter,
+  solution: IsOp IsOp.Direction.split (q1 • q2) q1 q2,
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth (IsOp .split (Qp.threeQuarters • Qp.quarter) _ _)
+#ipm_synth (IsOp .split (q1 • q2) _ _)
 
 /- Splitting a `Qp` value, where `isOpFrac_split` is not applicable: use `isOpFrac_half`. -/
 /-- info:
@@ -425,16 +424,15 @@ private def Qp.threeQuarters : Qp := ⟨3 / 4, by grind⟩
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-variable (q : Qp) in
 #ipm_synth (IsOp .split q _ _)
 
 /- Merging two `Qp` values: `isOpFrac_half` is not applicable, use `isOpFrac_merge`. -/
 /-- info:
-  solution: IsOp IsOp.Direction.merge (Qp.quarter + Qp.threeQuarters) Qp.quarter Qp.threeQuarters,
+  solution: IsOp IsOp.Direction.merge (q1 + q2) q1 q2,
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth (IsOp .merge _ Qp.quarter Qp.threeQuarters)
+#ipm_synth (IsOp .merge _ q1 q2)
 
 /- Merging two `Qp` values: `isOpFrac_half` is applicable and preferred for eliminating `.half`. -/
 /-- info:
@@ -442,7 +440,6 @@ variable (q : Qp) in
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-variable (q : Qp) in
 #ipm_synth (IsOp .merge _ q.half q.half)
 
 /-
@@ -456,7 +453,6 @@ variable (q : Qp) in
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-variable (q1 q2 q : Qp) in
 #ipm_synth (IsOp .split (some (q, q1 + q2)) _ _)
 
 end IsOp
