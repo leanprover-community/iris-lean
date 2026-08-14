@@ -15,7 +15,6 @@ public import Iris.Algebra.Updates
 public import Iris.Algebra.LocalUpdates
 
 @[expose] public section
-local stepindex Nat
 
 open Iris
 
@@ -131,7 +130,7 @@ theorem auth_eqv_inj [UCMRA B] {q1 q2 : DFrac} {a1 a2 : A}
 
 @[rocq_alias view_frag_inj]
 theorem frag_eqv_inj [UCMRA B] {b1 b2 : B}
-    (H : (◯V b1 : View R) = ◯V b2) : b1 = b2 := OFE.eq_dist_2 fun _ => H.dist (SI := Nat).2
+    (H : (◯V b1 : View R) = ◯V b2) : b1 = b2 := OFE.eq_dist_2 fun _ => H.dist.2
 
 @[rocq_alias view_frag_dist_inj]
 theorem dist_of_frag_dist [UCMRA B] {b1 b2 : B} {n} (H : (◯V b1 : View R) ≡{n}≡ ◯V b2) :

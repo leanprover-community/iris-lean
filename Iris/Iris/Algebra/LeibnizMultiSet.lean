@@ -12,7 +12,6 @@ public import Iris.Algebra.Updates
 public import Iris.Std.GenMultiSets
 
 @[expose] public section
-local stepindex Nat
 
 /-! ## The multiset union CMRA -/
 

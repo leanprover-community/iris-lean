@@ -17,7 +17,6 @@ public import Iris.BI.InternalEq
 public import Iris.Std.Positives
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
 open BI
@@ -448,7 +447,7 @@ instance wand_persistent [Plain P] [Persistent Q] [Absorbing Q] :
 theorem limitPreserving_plain {A} [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
   LimitPreserving (fun x => Plain (Φ x)) := by
     letI _ : OFE.NonExpansive fun x => iprop(■ Φ x) := .comp inferInstance Φne
-    refine ⟨fun c h => ⟨?_⟩, fun hn _ _ => absurd hn (SIdx.limit_finite _)⟩
+    refine ⟨fun c h => ⟨?_⟩⟩
     refine (LimitPreserving.entails _ (fun x => iprop(■ (Φ x)))).compl _ ?_
     exact (fun n => h n |>.plain)
 

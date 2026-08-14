@@ -10,12 +10,10 @@ public import Iris.Algebra.BigOp
 public import Iris.Std.List
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
 
 open OFE COFE Iris.Algebra
-
 
 /-! ## The pointwise list OFE -/
 
@@ -240,9 +238,6 @@ theorem listComplGo_conv_compl {n : Nat} (c : Chain (List α)) :
 instance : IsCOFE (List α) where
   compl c := listComplGo (c 0) c
   conv_compl {n c} := listComplGo_conv_compl c (c 0) (c.cauchy (Nat.zero_le n)).symm
-  lbcompl := (·.elim)
-  conv_lbcompl := (·.elim)
-  lbcompl_ne := (·.elim)
 
 end cofe
 

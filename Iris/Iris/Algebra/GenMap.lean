@@ -10,7 +10,6 @@ public import Iris.Algebra.CMRA
 public import Iris.Algebra.Updates
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
 open OFE
@@ -227,7 +226,7 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
       cases hx : x.car k <;> cases hy : y.car k <;> simp_all
       have hcxy : CMRA.core (x.car • y.car) k = none := by
         simp [CMRA.core, CMRA.pcore, optionCore, hx, hy, CMRA.op, optionOp]
-      have hHeqk := (OFE.eq_dist_1 (SI:=Nat) Hcy) 0 k
+      have hHeqk := (OFE.eq_dist_1 Hcy) 0 k
       simp only [CMRA.core, CMRA.pcore, optionCore, CMRA.op, optionOp,
         hx, hy, Option.bind] at hHeqk
       cases hcy : cy k <;> simp_all

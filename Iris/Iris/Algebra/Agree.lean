@@ -10,7 +10,6 @@ public import Iris.Algebra.OFE
 public import Iris.Algebra.IsOp
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
 

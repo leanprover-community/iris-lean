@@ -6,10 +6,8 @@ Authors: Mario Carneiro, Sebastian Graf
 module
 
 public import Iris.Algebra.OFE
-public import Iris.Algebra.StepIndexFinite
 
 @[expose] public section
-local stepindex Nat
 
 #rocq_ignore solution "Use OFE.iso + Inhabited + COFE"
 
@@ -86,7 +84,7 @@ instance : OFE (Tower F) where
     symm h _ := dist_eqv.symm (h _)
     trans h1 h2 _ := dist_eqv.trans (h1 _) (h2 _)
   }
-  eq_dist' {_ _} := by rw [Tower.ext_iff, funext_iff]; simpa only [eq_dist (SI:=_)] using forall_comm
+  eq_dist' {_ _} := by rw [Tower.ext_iff, funext_iff]; simpa only [eq_dist] using forall_comm
   dist_lt h1 h2 _ := dist_lt (h1 _) h2
 
 #rocq_ignore solver.tower_equiv "Included in OFE (Tower F) instance"
@@ -105,9 +103,6 @@ instance : COFE (Tower F) where
     refine ((down ..).ne.1 conv_compl).trans <| .trans ?_ conv_compl.symm
     exact (c.chain n).down.dist
   conv_compl _ := conv_compl
-  lbcompl := (·.elim)
-  conv_lbcompl := (·.elim)
-  lbcompl_ne := (·.elim)
 
 #rocq_ignore solver.tower_cofe "Use IsCOFE instance"
 #rocq_ignore solver.tower_compl "Use IsCOFE instance"

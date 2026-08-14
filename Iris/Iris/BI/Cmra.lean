@@ -10,7 +10,6 @@ public import Iris.BI.Plainly
 public import Iris.BI.InternalEq
 
 @[expose] public section
-local stepindex Nat
 
 /-!
 # Generic CMRA validity in a BI logic

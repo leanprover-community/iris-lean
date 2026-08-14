@@ -13,7 +13,6 @@ public import Iris.BI.InternalEq
 public import Iris.ProofMode
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
 

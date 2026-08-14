@@ -13,7 +13,6 @@ public import Iris.Algebra.COFESolver
 public import Init.Data.Vector
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
 

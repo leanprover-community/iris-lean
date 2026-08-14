@@ -12,7 +12,6 @@ public import Iris
 -/
 
 @[expose] public section
-local stepindex Nat
 
 /-- Relationship between Mathlib's AddZeroClass to the Stdlib Std.LawfulLeftIdentity on Add. -/
 instance AddZeroClass.to_isLawfulLeftIdentity {M : Type _} [AddZeroClass M] :

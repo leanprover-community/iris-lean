@@ -7,10 +7,8 @@ module
 
 public import Iris.Algebra.OFE
 public import Iris.Algebra.Monoid
-public import Iris.Algebra.StepIndexFinite
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
 open OFE
@@ -760,7 +758,7 @@ variable {α : Type _} [CMRA α]
 
 theorem IdFree.of_dist {x₁ x₂ : α} {n} (e : x₁ ≡{n}≡ x₂) (h : IdFree x₁) : IdFree x₂ where
   id_free0_r z v := fun h₂ =>
-    have ee := Dist.le e SIdx.le_0_l
+    have ee := Dist.le e (Nat.zero_le _)
     have := calc
       x₁ • z ≡{0}≡ x₂ • z := op_left_dist z ee
       _      ≡{0}≡ x₂ := h₂
@@ -774,7 +772,7 @@ theorem _root_.Iris.OFE.Dist.idFree {x₁ x₂ : α} (e : x₁ ≡{n}≡ x₂) :
 
 @[rocq_alias id_freeN_r]
 theorem id_freeN_r {n n'} {x : α} [IdFree x] {y} (v : ✓{n} x) : ¬(x • y ≡{n'}≡ x) :=
-  id_free0_r _ (validN_of_le SIdx.le_0_l v) |>.imp (·.le SIdx.le_0_l)
+  id_free0_r _ (validN_of_le (Nat.zero_le _) v) |>.imp (·.le (Nat.zero_le _))
 
 @[rocq_alias id_freeN_l]
 theorem id_freeN_l {n n'} {x : α} [IdFree x] {y} (v : ✓{n} x) : ¬(y • x ≡{n'}≡ x) :=

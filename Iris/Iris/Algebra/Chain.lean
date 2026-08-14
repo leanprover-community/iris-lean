@@ -6,11 +6,9 @@ Authors: Sergei Stepanenko
 module
 
 public import Iris.Algebra.OFE
-public import Iris.Algebra.StepIndexFinite
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
 
@@ -147,9 +145,6 @@ noncomputable def diagonal (c : Chain (Completion α)) : Completion α :=
 noncomputable instance instIsCOFE : IsCOFE (Completion α) where
   compl := diagonal
   conv_compl {n c} := Classical.choose_spec (exists_limit c) n
-  lbcompl := (·.elim)
-  conv_lbcompl := (·.elim)
-  lbcompl_ne := (·.elim)
 
 def complete [IsCOFE α] : Completion α -n> α where
   f := lift COFE.compl fun x y h => OFE.eq_dist.mpr fun n =>

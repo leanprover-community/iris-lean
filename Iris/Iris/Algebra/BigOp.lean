@@ -15,8 +15,6 @@ public import Iris.Std.GenMultiSets
 public import Iris.Std.Positives
 public import Iris.Std.Equivalence
 
-local stepindex Nat
-
 namespace Iris.Algebra
 
 /-! # Big Operators

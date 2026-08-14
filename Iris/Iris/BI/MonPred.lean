@@ -33,7 +33,6 @@ The following Rocq names from `monpred.v` are not yet ported:
 -/
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris.BI
 open Iris Iris.Std OFE
@@ -160,9 +159,6 @@ instance : IsCOFE (MonPred I PROP) where
   conv_compl {n c} :=
     IsCOFE.conv_compl (n := n)
       (c := c.map ((⟨Subtype.val, inferInstance⟩ : _ -n> (I.car → PROP)).comp MonPred.toSig))
-  lbcompl := (·.elim)
-  conv_lbcompl := (·.elim)
-  lbcompl_ne := (·.elim)
 
 end OFE
 

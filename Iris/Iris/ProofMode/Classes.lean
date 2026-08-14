@@ -9,7 +9,6 @@ public import Iris.BI
 public import Iris.ProofMode.Modalities
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris.ProofMode
 open Iris.BI

@@ -18,7 +18,6 @@ coincides with `R`.
 -/
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
 

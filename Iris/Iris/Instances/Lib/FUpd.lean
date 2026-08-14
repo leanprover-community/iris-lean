@@ -18,7 +18,6 @@ public import Iris.BI.Plainly
 public import Iris.Std
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
 

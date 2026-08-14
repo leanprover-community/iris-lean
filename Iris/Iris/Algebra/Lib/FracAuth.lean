@@ -19,7 +19,6 @@ fraction) and `◯F{q} a` (fragment with fraction). Splitting works differently 
 -/
 
 @[expose] public section
-local stepindex Nat
 
 open Iris OFE CMRA UCMRA Auth Option
 

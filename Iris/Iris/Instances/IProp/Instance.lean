@@ -12,7 +12,6 @@ public import Iris.Algebra
 public import Iris.Instances.UPred
 
 @[expose] public section
-local stepindex Nat
 namespace Iris
 
 open COFE Std CMRA

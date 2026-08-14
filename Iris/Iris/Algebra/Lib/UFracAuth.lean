@@ -20,7 +20,6 @@ fragment's resource to its payload.
 -/
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
 open OFE CMRA UCMRA Auth Option UFrac

@@ -20,7 +20,6 @@ public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.WeakestPre
 
 @[expose] public section
-local stepindex Nat
 
 namespace IrisTest
 open Iris BI CMRA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic

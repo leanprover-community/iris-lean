@@ -13,7 +13,6 @@ This file provides introduction rules (BI entailments) for (some) CMRA operation
 -/
 
 @[expose] public section
-local stepindex Nat
 
 -- TODO: Need sbi_unfold to make these proofs less horrific
 namespace Iris

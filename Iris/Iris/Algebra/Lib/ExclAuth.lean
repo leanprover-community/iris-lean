@@ -9,7 +9,6 @@ public import Iris.Algebra.Auth
 public import Iris.Algebra.Excl
 
 public section
-local stepindex Nat
 
 /-!
 # Exclusive Authoritative CMRA

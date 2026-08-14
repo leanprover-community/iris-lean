@@ -13,7 +13,6 @@ public import Iris.Algebra.Updates
 public import Iris.BI.Lib.BUpdPlain
 
 @[expose] public section
-local stepindex Nat
 
 section UPredInstance
 

@@ -9,7 +9,6 @@ public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.Numbers
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
 

@@ -9,7 +9,6 @@ public import Iris.Algebra.CMRA
 public import Iris.ProofMode.SynthInstanceAttr
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
 
