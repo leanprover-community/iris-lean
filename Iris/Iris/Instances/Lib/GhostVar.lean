@@ -79,7 +79,7 @@ theorem ghost_var_valid_2 (γ : GName) (a1 : A) (dq1 : DFrac) (a2 : A) (dq2 : DF
   icombine Hvar1 Hvar2 gives %H
   obtain ⟨Hq, Ha⟩ := op_valid.mp H
   ipureintro
-  exact ⟨Hq, DiscreteO.eqv_inj Ha⟩
+  grind
 
 @[rocq_alias ghost_var_agree]
 theorem ghost_var_agree (γ : GName) (a1 : A) (dq1 : DFrac) (a2 : A) (dq2 : DFrac) :
@@ -126,7 +126,7 @@ theorem ghost_var_update_2 (b : A) (γ : GName) (a1 : A) (q1 : Qp) (a2 : A) (q2 
       (γ ↪VAR{.own q1} b) ∗ (γ ↪VAR{.own q2} b) := by
   unfold ghost_var
   iintro H1 H2
-  iapply BIUpdate.mono iOwn_op.mp
+  ieval (rewrite [← iOwn_op.to_eq])
   iapply iOwn_update_op (Frac.update₂ Hq) $$ [$H1 $H2]
 
 @[rocq_alias ghost_var_update_halves]
