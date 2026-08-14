@@ -460,7 +460,7 @@ variable (q q1 q2 : Qp)
   `isOpFrac_quarters_left` and `isOpFrac_quarters_right` take precedence over `isOpFrac_merge`.
 -/
 /-- info:
-  solution: IsOp IsOp.Direction.merge (Qp.one, Qp.one)
+  solution: IsOp IsOp.Direction.merge (One.one, One.one)
     (Qp.quarter, Qp.threeQuarters) (Qp.threeQuarters, Qp.quarter),
   new goals: []
 -/
@@ -472,10 +472,10 @@ variable (q q1 q2 : Qp)
   `isOpFrac_quarters_left`/`isOpFrac_quarters_right`.
 -/
 /-- info:
-  solution: IsOp IsOp.Direction.split Qp.one Qp.one.half Qp.one.half,
+  solution: IsOp IsOp.Direction.split One.one One.one.half One.one.half,
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth IsOp .split Qp.one _ _
+#ipm_synth IsOp .split instQpOne.one _ _
 
 end IsOp
