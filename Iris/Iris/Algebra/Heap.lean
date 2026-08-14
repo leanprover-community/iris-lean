@@ -648,7 +648,7 @@ instance {d : IsOp.Direction} {i : K} {x x₁ x₂ : V} [h : IsOp d x x₁ x₂]
 open Classical in
 @[rocq_alias gmap_core_id]
 theorem coreId_of_get? {m : M V} (h : ∀ {i x}, get? m i = some x → CoreId x) : CoreId m where
-  core_id := OFE.eq_dist.mpr fun _ => by
+  core_id := OFE.eq_dist_2 fun _ => by
     refine OFE.some_dist_some.mpr fun k => ?_
     rw [get?_bindAlter]
     rcases hk : get? m k with _ | v

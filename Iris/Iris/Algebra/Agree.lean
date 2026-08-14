@@ -272,7 +272,7 @@ theorem mem_of_forall_dist {a : α} {l : List α} (h : ∀ n, ∃ b ∈ l, a ≡
     by_cases hc : a = c
     · exact hc ▸ List.mem_cons_self
     · refine List.mem_cons_of_mem _ (ih fun n => ?_)
-      obtain ⟨n₀, hn₀⟩ := Classical.not_forall.mp fun hall => hc (OFE.eq_dist.mpr hall)
+      obtain ⟨n₀, hn₀⟩ := Classical.not_forall.mp fun hall => hc (OFE.eq_dist_2 hall)
       obtain ⟨b, hb, hd⟩ := h (max n n₀)
       rcases List.mem_cons.mp hb with rfl | hb'
       · exact absurd (hd.le (Nat.le_max_right n n₀)) hn₀
@@ -381,13 +381,13 @@ theorem dist_mk {n} {x y : Raw α} : mk x ≡{n}≡ mk y ↔ Raw.dist n x y := .
 
 @[rocq_alias agree_comm]
 theorem op_comm {x y : Agree α} : op x y = op y x :=
-  OFE.eq_dist.mpr (ind₂ (fun _ _ => Raw.op_comm) x y)
+  OFE.eq_dist_2 (ind₂ (fun _ _ => Raw.op_comm) x y)
 
 theorem op_commN {x y : Agree α} : op x y ≡{n}≡ op y x := op_comm.dist
 
 @[rocq_alias agree_assoc]
 theorem op_assoc {x y z : Agree α} : op x (op y z) = op (op x y) z :=
-  OFE.eq_dist.mpr (ind₃ (fun _ _ _ => Raw.op_assoc) x y z)
+  OFE.eq_dist_2 (ind₃ (fun _ _ _ => Raw.op_assoc) x y z)
 
 theorem op_idemp {x : Agree α} : op x x = x :=
   OFE.eq_dist_2 (x.ind fun _ => Raw.idemp)
@@ -417,7 +417,7 @@ theorem op_invN {x y : Agree α} : validN n (op x y) → x ≡{n}≡ y :=
 
 @[rocq_alias agree_op_inv]
 theorem op_inv {x y : Agree α} : valid (op x y) → x = y :=
-  ind₂ (fun _ _ h => OFE.eq_dist.mpr (Raw.op_inv h)) x y
+  ind₂ (fun _ _ h => OFE.eq_dist_2 (Raw.op_inv h)) x y
 
 @[rocq_alias agree_cmra_mixin]
 instance instCMRA : CMRA (Agree α) where
@@ -468,11 +468,11 @@ theorem idemp {x : Agree α} : x • x = x := op_idemp
 
 @[rocq_alias agree_cmra_discrete]
 instance instCMRADiscrete [OFE.Discrete α] : CMRA.Discrete (Agree α) where
-  discrete_0 {x y} := ind₂ (fun _ _ h => OFE.eq_dist.mpr (Raw.discrete_0 h)) x y
+  discrete_0 {x y} := ind₂ (fun _ _ h => OFE.eq_dist_2 (Raw.discrete_0 h)) x y
   discrete_valid {x} := x.ind fun _ => Raw.discrete_valid
 
 instance instDiscrete [OFE.Discrete α] : OFE.Discrete (Agree α) where
-  discrete_0 {x y} := ind₂ (fun _ _ h => OFE.eq_dist.mpr (Raw.discrete_0 h)) x y
+  discrete_0 {x y} := ind₂ (fun _ _ h => OFE.eq_dist_2 (Raw.discrete_0 h)) x y
 
 @[rocq_alias agree_includedN]
 theorem includedN {x y : Agree α} : x ≼{n} y ↔ y ≡{n}≡ y • x := by

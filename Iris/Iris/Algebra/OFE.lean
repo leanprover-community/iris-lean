@@ -380,7 +380,7 @@ instance : DiscreteE (() : Unit) := ⟨fun _ => Subsingleton.elim _ _⟩
 instance : OFE Empty where
   Dist _ _ _ := True
   dist_eqv := ⟨fun _ => ⟨⟩, id, fun _ => id⟩
-  eq_dist {x} := x.elim
+  eq_dist' {x} := x.elim
   dist_lt _ _ := ⟨⟩
 #rocq_ignore Empty_setO "Use the empty type"
 #rocq_ignore Empty_set_dist "Local Dist instance; folded into Lean's OFE Empty instance."
