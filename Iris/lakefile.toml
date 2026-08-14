@@ -1,6 +1,7 @@
 name = "iris"
 defaultTargets = ["Iris"]
 testDriver = "IrisTest"
+precompileModules = true
 
 [[require]]
 name = "Qq"
