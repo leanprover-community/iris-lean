@@ -64,9 +64,10 @@ For the heap_lang package (`iris_heap_lang/` upstream) write:
 @[rocq_alias heap_lang.pointsto]
 ```
 
-File-local declarations normally follow the same convention. If a local name
-occurs in multiple tracked Rocq files, include the source filename to make the
-aliases distinct. For example, both
+Declarations normally follow the same convention. If a name occurs in multiple
+tracked Rocq files, include the source filename for every occurrence to make the
+aliases distinct. This applies to exported as well as file-local declarations.
+For example, both
 `iris_heap_lang/lib/spin_lock.v` and `iris_heap_lang/lib/ticket_lock.v` contain a
 local `lock_inv`, so their aliases are:
 ```

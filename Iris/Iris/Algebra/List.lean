@@ -234,7 +234,7 @@ theorem listComplGo_conv_compl {n : Nat} (c : Chain (List α)) :
         exact hxs.symm
       · simp [Chain.map_apply, tailHom_apply, hcn]
 
-@[rocq_alias list_cofe]
+@[rocq_alias list.list_cofe]
 instance : IsCOFE (List α) where
   compl c := listComplGo (c 0) c
   conv_compl {n c} := listComplGo_conv_compl c (c 0) (c.cauchy (Nat.zero_le n)).symm

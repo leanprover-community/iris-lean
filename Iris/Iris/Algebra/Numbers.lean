@@ -54,26 +54,14 @@ variable [Add α] [Associative (α := α) (· + ·)] [Commutative (α := α) (·
 variable [Zero α] [LawfulLeftIdentity (α := α) (· + ·) zero]
 variable {x y x' y' : α}
 
-scoped instance instCMRA : CMRA α where
-  pcore _ := some zero
-  op := add
-  ValidN _ _ := True
-  Valid _ := True
-  op_ne.ne _ _ _ h := by rw [discrete h]
-  pcore_ne _ := dist_some ∘ Dist.of_eq
-  validN_ne _ _ := .intro
-  valid_iff_validN := .symm <| forall_const Nat
-  validN_succ := (·)
-  validN_op_left := id
-  assoc {_ _ _} := by rw [assoc (op := add)]
-  comm {_ _} := by rw [comm (op := add)]
-  pcore_op_left {_ _} := by rintro ⟨rfl⟩; rw [left_id (op := add) _]
-  pcore_idem := by simp
-  pcore_op_mono {_ _} := by
-    rintro ⟨rfl⟩ _
-    exists zero
-    rw [left_id (op := add) _]
-  extend _ h := ⟨_, _, discrete h, .rfl, .rfl⟩
+scoped instance instCMRA : CMRA α :=
+  CMRA.ofDiscreteTotal (fun _ => zero) add (fun _ => True)
+    (fun x y z => (Associative.assoc (op := add) x y z).symm)
+    (Commutative.comm (op := add))
+    (fun _ => left_id (op := add) _)
+    (fun _ => rfl)
+    (fun _ _ _ => ⟨zero, (left_id (op := add) _).symm⟩)
+    (fun _ _ _ => trivial)
 
 #rocq_ignore natR "Use the (ℕ, +) Constant Core CMRA."
 #rocq_ignore nat_ra_mixin "Use the (ℕ, +) Constant Core CMRA."
@@ -155,30 +143,14 @@ variable [IdempotentOp (α := α) (· + ·)]
 variable [Zero α]
 variable {x y x' y' : α}
 
-scoped instance instCMRA : CMRA α where
-  pcore := some
-  op := add
-  ValidN _ _ := True
-  Valid _ := True
-  op_ne.ne _ _ _ h := by rw [discrete h]
-  pcore_ne {_ y _ _} h := by
-    rintro ⟨rfl⟩
-    exact ⟨y, congrArg _ <| discrete h.symm, .rfl⟩
-  validN_ne _ _ := .intro
-  valid_iff_validN := .symm <| forall_const Nat
-  validN_succ := (·)
-  validN_op_left := id
-  assoc {_ _ _} := by rw [assoc (op := add)]
-  comm {_ _} := by rw [comm (op := add)]
-  pcore_op_left {_ _} := by
-    rintro ⟨rfl⟩
-    exact idempotent _
-  pcore_idem := by simp
-  pcore_op_mono {a b} := by
-    rintro ⟨rfl⟩ z
-    exists z
-  extend _ h := ⟨_, _, discrete h, .rfl, .rfl⟩
-
+scoped instance instCMRA : CMRA α :=
+  CMRA.ofDiscreteTotal id add (fun _ => True)
+    (fun x y z => (Associative.assoc (op := add) x y z).symm)
+    (Commutative.comm (op := add))
+    (fun _ => idempotent _)
+    (fun _ => rfl)
+    (fun _ _ h => h)
+    (fun _ _ _ => trivial)
 
 #rocq_ignore max_natO "Use the (ℕ, max) Universal Core CMRA."
 #rocq_ignore max_natR "Use the (ℕ, max) Universal Core CMRA."
@@ -263,23 +235,15 @@ variable [Add α] [Associative (α := α) (· + ·)] [Commutative (α := α) (·
 
 variable {x y x' y' : α}
 
-scoped instance instCMRA : CMRA α where
-  pcore _ := none
-  op := add
-  ValidN _ _ := True
-  Valid _ := True
-  op_ne.ne _ _ _ h := by rw [discrete h]
-  pcore_ne _ := by rintro ⟨rfl⟩
-  validN_ne _ _ := .intro
-  valid_iff_validN := .symm <| forall_const Nat
-  validN_succ := (·)
-  validN_op_left := id
-  assoc {_ _ _} := by rw [assoc (op := add)]
-  comm {_ _} := by rw [comm (op := add)]
-  pcore_op_left {_ _} := by rintro ⟨rfl⟩
-  pcore_idem := by simp
-  pcore_op_mono {_ _} := by rintro ⟨rfl⟩
-  extend _ h := ⟨_, _, discrete h, .rfl, .rfl⟩
+scoped instance instCMRA : CMRA α :=
+  CMRA.ofDiscrete (fun _ => none) add (fun _ => True)
+    (fun x y z => (Associative.assoc (op := add) x y z).symm)
+    (Commutative.comm (op := add))
+    (by rintro _ _ ⟨⟩)
+    (by rintro _ _ ⟨⟩)
+    (by rintro _ _ _ _ ⟨⟩)
+    (fun _ _ _ => trivial)
+
 #rocq_ignore positiveR "Use (PNat, +) No Core CMRA."
 #rocq_ignore pos_ra_mixin "Use (PNat, +) No Core CMRA."
 #rocq_ignore pos_op_instance "Use (PNat, +) No Core CMRA."

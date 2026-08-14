@@ -1345,7 +1345,7 @@ theorem persistently_absorb_right [BI PROP] {P Q : PROP} : P ∗ <pers> Q ⊢ <p
 theorem absorbingly_persistently [BI PROP] {P : PROP} : <absorb> <pers> P ⊣⊢ <pers> P :=
   ⟨persistently_absorb_right, absorbingly_intro⟩
 
-@[rocq_alias bi.persistently_absorbing]
+@[rocq_alias derived_laws.bi.persistently_absorbing]
 instance persistently_absorbing [BI PROP] (P : PROP) : Absorbing iprop(<pers> P) where
   absorbing := absorbingly_persistently.1
 
