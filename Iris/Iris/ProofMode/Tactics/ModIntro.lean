@@ -113,29 +113,58 @@ def iModAction {prop1 prop2 : Q(Type u)} {bi1 : Q(BI $prop1)} {bi2} {e}
   -- pre-compute the actions
   let iact ← parseModalityActionQ q($(M).action true)
   let sact ← parseModalityActionQ q($(M).action false)
-  have : $e =Q $(sepFoldE bi2 hyps.toArray) := ⟨⟩     -- canonical-shape invariant
   go iact sact hyps.toArray (hyps.toArray.size - 1) e
 where
   go (iact sact : ModalityActionQ prop1 prop2) (hs : Array (Hyp prop2)) (i : Nat)
       (epre : Q($prop2)) :        -- caller guarantees `epre = sepFoldE bi2 hs[0…i]`
       ProofModeM ((e' : Q($prop1)) × Hyps bi1 e' × Q($epre ⊢ $(M).M $e')) := do
     match i, hs[i]? with
-    | _, none => return ⟨_, .mkEmp bi1, q(sorry)⟩          -- empty context
-    | 0, some h =>
+    | _, none =>                                            -- empty context
+      have eEmp : Q($prop1) := sepFoldE bi1 #[]
+      have pf0 : Q((emp : $prop2) ⊢ $(M).M (emp : $prop1)) := q($(M).emp)
+      have pf : Q($epre ⊢ $(M).M $eEmp) := pf0
+      return ⟨eEmp, Hyps.ofArray bi1 #[] eEmp, pf⟩
+    | 0, some h =>                                          -- no `∗` above `hs[0]`
       let ⟨o, pfR⟩ ← step iact sact h
-      return ⟨_, Hyps.ofArray bi1 o.toArray, pfR⟩
+      have eR : Q($prop1) := sepFoldE bi1 o.toArray
+      have pf : Q($epre ⊢ $(M).M $eR) := pfR
+      return ⟨eR, Hyps.ofArray bi1 o.toArray eR, pf⟩
     | i+1, some h =>
-      let ⟨_, accL, pfL⟩ ← go iact sact hs i (sepFoldE bi2 (hs.extract 0 (i+1)))
+      -- bind every meta-level fold as an opaque atom before any `q(…)`
+      have preL : Q($prop2) := sepFoldE bi2 (hs.extract 0 (i+1))
+      let ⟨eL, accL, pfL⟩ ← go iact sact hs i preL
       let ⟨o, pfR⟩ ← step iact sact h
+      have xe : Q($prop2) := (h.e bi2).1
+      have eR : Q($prop1) := sepFoldE bi1 o.toArray
+      have pfR : Q($xe ⊢ $(M).M $eR) := pfR
       match accL.toArray.isEmpty, o with
-      | true,  none    => return ⟨_, .mkEmp bi1,
-                                   q(sorry)⟩
-      | true,  some h' => return ⟨_, Hyps.ofArray bi1 #[h'],
-                                   q(sorry)⟩
-      | false, none    => return ⟨_, accL,
-                                   q(sorry)⟩
-      | false, some h' => return ⟨_, Hyps.ofArray bi1 (accL.toArray.push h'),
-                                   q(sorry)⟩
+      | true, none =>
+        -- `accL` empty ⇒ `eL` is `emp`; `o` cleared ⇒ `eR` is `emp`
+        have pfLE : Q($preL ⊢ $(M).M (emp : $prop1)) := pfL
+        have pfRE : Q($xe ⊢ $(M).M (emp : $prop1)) := pfR
+        have pf0 : Q(iprop($preL ∗ $xe) ⊢ $(M).M (emp : $prop1)) :=
+          q(modaction_sep_emp_left $pfLE $pfRE)
+        have pf : Q($epre ⊢ $(M).M $eR) := pf0
+        return ⟨eR, Hyps.ofArray bi1 o.toArray eR, pf⟩
+      | true, some _ =>
+        have pfLE : Q($preL ⊢ $(M).M (emp : $prop1)) := pfL
+        have pf0 : Q(iprop($preL ∗ $xe) ⊢ $(M).M $eR) :=
+          q(modaction_sep_emp_left $pfLE $pfR)
+        have pf : Q($epre ⊢ $(M).M $eR) := pf0
+        return ⟨eR, Hyps.ofArray bi1 o.toArray eR, pf⟩
+      | false, none =>
+        have pfRE : Q($xe ⊢ $(M).M (emp : $prop1)) := pfR
+        have pf0 : Q(iprop($preL ∗ $xe) ⊢ $(M).M $eL) :=
+          q(modaction_sep_emp_right $pfL $pfRE)
+        have pf : Q($epre ⊢ $(M).M $eL) := pf0
+        return ⟨eL, accL, pf⟩
+      | false, some h' =>
+        have pf0 : Q(iprop($preL ∗ $xe) ⊢ $(M).M iprop($eL ∗ $eR)) :=
+          q(modaction_sep $pfL $pfR)
+        have pf : Q($epre ⊢ $(M).M iprop($eL ∗ $eR)) := pf0
+        return ⟨q(iprop($eL ∗ $eR)),
+                Hyps.ofArray bi1 (accL.toArray.push h') q(iprop($eL ∗ $eR)),
+                pf⟩
   /-- Image of one hypothesis under the modality: `none` means it is cleared.
       Returns a proof of `□?p ty ⊢ M.M X` where `X` is `emp` or the image. -/
   step (iact sact : ModalityActionQ prop1 prop2) (h : Hyp prop2) :
@@ -151,10 +180,15 @@ where
       have : $bi1 =Q $bi2 := ⟨⟩
       let .some hC ← ProofModeM.trySynthInstanceQ q($C $ty)
         | throwIPMError "hypothesis {name}: {ty} does not satisfy {C}"
+      -- bridge through defeq since `M.action` cannot unify directly with the pattern
       have heq : Q(@ModalityAction.forall $prop1 $C = .forall $C) :=
         q(Eq.refl (ModalityAction.forall $C))
       have heq : Q($(M).action $p = .forall $C) := heq
-      return ⟨some { name, ivar, p, ty }, q(sorry)⟩
+      have pf0 : Q(iprop(□?$p $ty) ⊢ $(M).M iprop(□?$p $ty)) :=
+        q(modaction_forall $M $heq $hC)
+      let h' : Hyp prop1 := { name, ivar, p, ty }
+      have pf : Q($((h.e bi2).1) ⊢ $(M).M $(sepFoldE bi1 (some h').toArray)) := pf0
+      return ⟨some h', pf⟩
     | .transform C => do
       let ty' ← mkFreshExprMVarQ q($prop1)
       let .some hC ← ProofModeM.trySynthInstanceQ q($C $ty $ty')
@@ -162,19 +196,30 @@ where
       have heq : Q(@ModalityAction.transform $prop1 $prop2 $C = .transform $C) :=
         q(Eq.refl (ModalityAction.transform $C))
       have heq : Q($(M).action $p = .transform $C) := heq
-      return ⟨some { name, ivar, p, ty := ty' }, q(sorry)⟩
+      have pf0 : Q(iprop(□?$p $ty) ⊢ $(M).M iprop(□?$p $ty')) :=
+        q(modaction_transform $M $heq $hC)
+      let h' : Hyp prop1 := { name, ivar, p, ty := ty' }
+      have pf : Q($((h.e bi2).1) ⊢ $(M).M $(sepFoldE bi1 (some h').toArray)) := pf0
+      return ⟨some h', pf⟩
     | .clear => do
       have heq : Q(@ModalityAction.clear $prop1 $prop2 = .clear) :=
         q(Eq.refl (ModalityAction.clear))
       have heq : Q($(M).action $p = @ModalityAction.clear $prop1 $prop2) := heq
-      return ⟨none, q(sorry)⟩
+      have pf0 : Q(iprop(□?$p $ty) ⊢ $(M).M (emp : $prop1)) :=
+        q(modaction_clear $M $heq)
+      have pf : Q($((h.e bi2).1) ⊢
+                  $(M).M $(sepFoldE bi1 (none : Option (Hyp prop1)).toArray)) := pf0
+      return ⟨none, pf⟩
     | .id => do
       have : $prop1 =Q $prop2 := ⟨⟩
       have : $bi1 =Q $bi2 := ⟨⟩
       have heq : Q(@ModalityAction.id $prop1 = .id) := q(Eq.refl (ModalityAction.id))
       have heq : Q($(M).action $p = .id) := heq
-      return ⟨some { name, ivar, p, ty }, q(sorry)⟩
-
+      have pf0 : Q(iprop(□?$p $ty) ⊢ $(M).M iprop(□?$p $ty)) :=
+        q(modaction_id $M $heq)
+      let h' : Hyp prop1 := { name, ivar, p, ty }
+      have pf : Q($((h.e bi2).1) ⊢ $(M).M $(sepFoldE bi1 (some h').toArray)) := pf0
+      return ⟨some h', pf⟩
 /-- Introduce a modality by applying modality actions to transform hypotheses.
 
 # Parameters

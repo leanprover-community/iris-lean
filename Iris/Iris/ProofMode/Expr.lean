@@ -203,7 +203,12 @@ def Hyps.add {prop : Q(Type u)} (bi : Q(BI $prop))
     have : $e =Q emp := ⟨⟩
     ⟨_, Hyps.mkHyp bi name ivar p ty, q(emp_sep)⟩
   else
-    ⟨_, Hyps.ofArray bi (h.toArray.push hyp), q(sorry)⟩
+    -- `sepFoldE bi (hs.push hyp)` is *literally* the `Expr` `e ∗ xe`, so the
+    -- equivalence is `.rfl`; only the `□?p ty` ↦ `xe` reduction needs bridging.
+    have xe : Q($prop) := (hyp.e bi).1
+    have pf0 : Q(iprop($e ∗ $xe) ⊣⊢ iprop($e ∗ $xe)) := q(.rfl)
+    have pf  : Q(iprop($e ∗ □?$p $ty) ⊣⊢ iprop($e ∗ $xe)) := pf0
+    ⟨q(iprop($e ∗ $xe)), Hyps.ofArray bi (h.toArray.push hyp) q(iprop($e ∗ $xe)), pf⟩
 
 partial def parseHyps? {prop : Q(Type u)} (bi : Q(BI $prop)) (expr : Expr) :
     Option ((s : Q($prop)) × Hyps bi s) := do
