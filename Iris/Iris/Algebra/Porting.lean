@@ -7,4 +7,4 @@ module
 
 import Iris.Init
 
-#rocq_ignore_file algebra "sts.v" "Historical code without a good reason to exist in the library"
+#rocq_ignore_file algebra "sts.v" "Historical code, nowadays it is preferred to encode the transition system as a CMRA"
