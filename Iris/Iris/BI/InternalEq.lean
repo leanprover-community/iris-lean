@@ -181,7 +181,7 @@ theorem option_none_some_equivI {A : Type _} [OFE A] (a : A) :
     (none : Option A) ≡ some a ⊣⊢@{PROP} False :=
   ⟨symm.trans (option_some_none_equivI a).1, false_elim⟩
 
-@[rocq_alias excl_equivI]
+@[rocq_alias internal_eq.excl_equivI]
 theorem excl_equivI_excl {O : Type _} [OFE O] (a b : O) :
     Excl.excl a ≡ Excl.excl b ⊣⊢@{PROP} a ≡ b := by
   refine ⟨?_, of_internalEquiv_ne Excl.excl⟩
@@ -206,7 +206,7 @@ theorem excl_equivI_invalid_excl {O : Type _} [OFE O] (a : O) :
     (Excl.invalid : Excl O) ≡ Excl.excl a ⊣⊢@{PROP} False :=
   ⟨symm.trans (excl_equivI_excl_invalid a).1, false_elim⟩
 
-@[rocq_alias csum_equivI]
+@[rocq_alias internal_eq.csum_equivI]
 theorem csum_equivI {A B : Type _} [OFE A] [OFE B] (sx sy : Csum A B) :
     sx ≡ sy ⊣⊢@{PROP}
       match sx, sy with

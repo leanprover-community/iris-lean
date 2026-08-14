@@ -261,25 +261,6 @@ theorem bigOpL_zip_op_eq {B : Type v} {l₁ : List A} {l₂ : List B} {Φ : Nat 
     op ([^ op list] k ↦ x ∈ l₁, Φ k x) ([^ op list] k ↦ x ∈ l₂, Ψ k x) :=
   bigOpL_zipWith_op_eq rfl rfl hlen
 
-section CMRA
-variable {M : Type _} [CMRA M]
-
-@[rocq_alias big_opL_None]
-theorem bigOpL_none {f : Nat → A → Option M} {l : List A} :
-    ([^ CMRA.op list] k ↦ x ∈ l, f k x) = none ↔ ∀ k x, l[k]? = some x → f k x = none := by
-  induction l generalizing f with
-  | nil => exact iff_of_true rfl (by simp)
-  | cons a l ih =>
-    rw [bigOpL_cons, Iris.Option.op_none_iff, ih]
-    refine ⟨fun ⟨h0, hl⟩ k x hx => ?_, fun h => ⟨h 0 a rfl, fun k x hx => h (k + 1) x hx⟩⟩
-    match k with
-    | 0 =>
-      simp only [List.getElem?_cons_zero, Option.some.injEq] at hx
-      exact hx ▸ h0
-    | k + 1 => exact hl k x hx
-
-end CMRA
-
 #rocq_ignore big_opL_ne' "Use bigOpL_dist"
 #rocq_ignore big_opL_proper' "Use bigOpL_eq"
 #rocq_ignore big_opL_permutation' "Use bigOpL_eq_of_perm"
@@ -562,20 +543,6 @@ theorem bigOpM_sep_zip_eq {A : Type _} {B : Type _}
     op ([^ op map] k ↦ x ∈ m1, h1 k x) ([^ op map] k ↦ x ∈ m2, h2 k x) :=
   bigOpM_sep_zipWith_eq _ _ rfl rfl hdom
 
-section CMRA
-variable {M : Type _} [CMRA M]
-
-@[rocq_alias big_opM_None]
-theorem bigOpM_none {f : K → V → Option M} {m : M' V} :
-    ([^ CMRA.op map] k ↦ x ∈ m, f k x) = none ↔ ∀ k x, get? m k = some x → f k x = none := by
-  simp only [bigOpM, bigOpL_none]
-  refine ⟨fun h k x hk => ?_,
-    fun h i kx hi => h kx.1 kx.2 (toList_get.mp (List.mem_of_getElem? hi))⟩
-  obtain ⟨i, hi⟩ := List.mem_iff_getElem?.mp (toList_get.mpr hk)
-  exact h i (k, x) hi
-
-end CMRA
-
 variable {M₁} [OFE M₁]
 variable {M₂} [OFE M₂]
 variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
@@ -701,19 +668,6 @@ theorem bigOpS_gen_proper (R : M → M → Prop) {Φ Ψ : A → M} {s : S}
 #rocq_ignore big_opS_ne' "Use bigOpS_dist"
 #rocq_ignore big_opS_proper' "Use bigOpS_eq"
 
-section CMRA
-variable {M : Type _} [CMRA M]
-
-@[rocq_alias big_opS_None]
-theorem bigOpS_none {f : A → Option M} {s : S} :
-    ([^ CMRA.op set] x ∈ s, f x) = none ↔ ∀ x, x ∈ s → f x = none := by
-  simp only [bigOpS, bigOpL_none]
-  refine ⟨fun h x hx => ?_, fun h k x hi => h x (FiniteSet.mem_toList.mp (List.mem_of_getElem? hi))⟩
-  obtain ⟨i, hi⟩ := List.mem_iff_getElem?.mp (FiniteSet.mem_toList.mpr hx)
-  exact h i x hi
-
-end CMRA
-
 section Homomorphism
 
 variable {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M₂]
@@ -838,20 +792,6 @@ theorem bigOpMS_gen_proper (R : M → M → Prop) {Φ Ψ : A → M} {X : MS}
   exact List.mem_of_getElem? hy
 
 #rocq_ignore big_opMS_ext "Merged into bigOpMS_eq"
-
-section CMRA
-variable {M : Type _} [CMRA M]
-
-@[rocq_alias big_opMS_None]
-theorem bigOpMS_none {f : A → Option M} {X : MS} :
-    ([^ CMRA.op mset] x ∈ X, f x) = none ↔ ∀ x, x ∈ X → f x = none := by
-  simp only [bigOpMS, bigOpL_none]
-  refine ⟨fun h x hx => ?_,
-    fun h k x hi => h x (LawfulFiniteMultiSet.mem_toList.mp (List.mem_of_getElem? hi))⟩
-  obtain ⟨i, hi⟩ := List.mem_iff_getElem?.mp (LawfulFiniteMultiSet.mem_toList.mpr hx)
-  exact h i x hi
-
-end CMRA
 
 section Homomorphism
 
