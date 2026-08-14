@@ -408,14 +408,15 @@ macro "wp_unop" : tactic => `(tactic | wp_pure (&(Exp.unop _ _)))
 macro "wp_binop" : tactic => `(tactic | wp_pure (&(Exp.binop _ _ _)))
 macro "wp_op" : tactic => `(tactic | first | wp_unop | wp_binop)
 macro "wp_lam" : tactic => `(tactic | wp_rec)
-macro "wp_let" : tactic => `(tactic | (wp_pure (rec _ &(.named _) := _); wp_lam))
-macro "wp_seq" : tactic => `(tactic | (wp_pure (rec _ _ := _); wp_lam))
+-- use `wp_pure (_ _)` in `wp_let`, `wp_seq` and `wp_match` because no unfolding is needed
+macro "wp_let" : tactic => `(tactic | (wp_pure (rec _ &(.named _) := _); wp_pure (_ _)))
+macro "wp_seq" : tactic => `(tactic | (wp_pure (rec _ _ := _); wp_pure (_ _)))
 macro "wp_proj" : tactic => `(tactic | first | wp_pure (fst(_)) | wp_pure (snd(_)))
 macro "wp_case" : tactic => `(tactic | wp_pure (&(Exp.case _ _ _)))
 macro "wp_inj" : tactic => `(tactic | first | wp_pure (injl(_)) | wp_pure (injr(_)))
 macro "wp_pair" : tactic => `(tactic | wp_pure ((_, _)))
 macro "wp_closure" : tactic => `(tactic | wp_pure (rec &_ &_ := _))
-macro "wp_match" : tactic => `(tactic | (wp_case; wp_closure; wp_lam))
+macro "wp_match" : tactic => `(tactic | (wp_case; wp_closure; wp_pure (_ _)))
 
 /-! ## Tactic lemmas for the heap tactics -/
 

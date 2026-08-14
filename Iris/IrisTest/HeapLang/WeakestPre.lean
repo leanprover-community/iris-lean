@@ -398,6 +398,22 @@ example : ⊢@{IProp GF} WP hl(let x := #1; x + #1) {{ v, ⌜v = hl_val(#2)⌝ }
   wp_let
   trace_state
 
+-- the evaluation context stays in the goal instead of moving into the postcondition
+/-- trace:
+hlc : HasLC
+GF✝ : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF✝
+GF : BundledGFunctors
+inst✝ : HeapLangGS hlc GF
+l : Loc
+⊢ ⏎
+  ⊢ WP hl((!#l + #1)) {{ v, True }}
+-/
+#guard_msgs (trace, drop error) in
+example (l : Loc) : ⊢@{IProp GF} WP hl((let x := #l; !x) + #1) {{ v, True }} := by
+  wp_let
+  trace_state
+
 end wp_let
 
 section wp_seq
@@ -420,6 +436,22 @@ example : ⊢@{IProp GF} WP hl(#1; #2) {{ v, ⌜v = hl_val(#2)⌝ }} := by
 #guard_msgs in
 example : ⊢@{IProp GF} WP hl(let x := #1; x) {{ v, ⌜v = hl_val(#1)⌝ }} := by
   wp_seq
+
+-- the evaluation context stays in the goal instead of moving into the postcondition
+/-- trace:
+hlc : HasLC
+GF✝ : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF✝
+GF : BundledGFunctors
+inst✝ : HeapLangGS hlc GF
+l : Loc
+⊢ ⏎
+  ⊢ WP hl((!#l + #1)) {{ v, True }}
+-/
+#guard_msgs (trace, drop error) in
+example (l : Loc) : ⊢@{IProp GF} WP hl((#(); !#l) + #1) {{ v, True }} := by
+  wp_seq
+  trace_state
 
 end wp_seq
 
@@ -737,6 +769,23 @@ inst✝ : HeapLangGS hlc GF
 example : ⊢@{IProp GF}
     WP hl(match v(injl(#1)) with | injl(x) => x + #1 | injr(y) => y)
       {{ v, ⌜v = hl_val(#2)⌝ }} := by
+  wp_match
+  trace_state
+
+-- the evaluation context stays in the goal instead of moving into the postcondition
+/-- trace:
+hlc : HasLC
+GF✝ : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF✝
+GF : BundledGFunctors
+inst✝ : HeapLangGS hlc GF
+l : Loc
+⊢ ⏎
+  ⊢ WP hl((!#l + #1)) {{ v, True }}
+-/
+#guard_msgs (trace, drop error) in
+example (l : Loc) : ⊢@{IProp GF}
+    WP hl((match v(injl(#l)) with | injl(x) => !x | injr(y) => y) + #1) {{ v, True }} := by
   wp_match
   trace_state
 
