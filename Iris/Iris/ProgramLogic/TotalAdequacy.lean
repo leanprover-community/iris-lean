@@ -178,8 +178,8 @@ theorem of_twp (s : Stuckness) (e : Expr) (Φ : Val → IProp GF) :
       (fun x : twp.Internal.Args Expr Val GF => Ψ x.1 x.2.1 x.2.2) :=
     ⟨fun _ _ _ ⟨hE, he, _⟩ => hE ▸ he ▸ .rfl⟩
   iintro He
-  iapply twp.induction s Ψ (ι := ι) ?_ $$ He %rfl
-  iintro !> %E %e %Φ
+  iapply twp.induction s Ψ (ι := ι) $$ [] He %rfl
+  iintro !> %e %E %Φ
   cases he : toVal e
   all_goals
     simp only [twp.pre, he]
