@@ -156,16 +156,16 @@ theorem wp_inv_open_maybe_of_not_val {e : Expr} {E₁ E₂ : CoPset} {Φ : Val �
       (|={E₂, E₁}=> Wp.wp (Val := Val) Stuckness.NotStuck E₁ e Φ))
     ⊢ Wp.wp (Val := Val) Stuckness.NotStuck E₁ e Φ := by
   iintro H
-  rw [wp_unfold.to_eq, wp.pre, Hnv]
+  rw [wp_unfold.to_eq, wp'.pre, Hnv]
   simp only
   imod H with (⟨%K, %e', %Hctx, %Haux, %hato, Hwp⟩| >$)
   subst Haux
   icases wp_unfold $$ Hwp with Hwp
-  unfold wp.pre
+  unfold wp'.pre
   rcases He' : toVal e' with (_|v'); rotate_left
   · imod Hwp; imod Hwp
     icases wp_unfold $$ Hwp with Hwp
-    simp only [wp.pre, coe_of_toVal_eq_some He', Hnv]
+    simp only [wp'.pre, coe_of_toVal_eq_some He', Hnv]
     itrivial
   · dsimp only
     iintro %σ %n %κ %κs %n₂ Hσ
@@ -181,7 +181,7 @@ theorem wp_inv_open_maybe_of_not_val {e : Expr} {E₁ E₂ : CoPset} {Φ : Val �
     imod Hc with ⟨Hst, Hwp, $⟩
     replace Hprim : PrimStep.Irreducible (e₂, σ₂) := hato.atomic Hprim
     icases wp_unfold $$ Hwp with Hwp
-    unfold wp.pre
+    unfold wp'.pre
     rcases He₂' : toVal e₂ with (_|v₂) <;> dsimp only
     · imod Hwp $$ %_ %_ %κs %.nil [Hst] with ⟨%Hredu, H⟩
       · rw [List.append_nil κs]; iframe

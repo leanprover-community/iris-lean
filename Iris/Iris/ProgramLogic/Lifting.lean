@@ -30,7 +30,7 @@ theorem wp_lift_step_fupdN (h : toVal e₁ = none) :
         stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
         WP e₂ @ s; E {{ Φ }} ∗
         [∗list] ef ∈ eₜ, WP ef @ s; ⊤ {{ ι.forkPost }})
-    ⊢ WP e₁ @ s; E {{ Φ }} := by simp [(wp_unfold (e := e₁)).to_eq, wp.pre, h]
+    ⊢ WP e₁ @ s; E {{ Φ }} := by simp [(wp_unfold (e := e₁)).to_eq, wp'.pre, h]
 
 @[rocq_alias wp_lift_step_fupd]
 theorem wp_lift_step_fupd (h : toVal e₁ = none) :
@@ -61,7 +61,7 @@ theorem wp_lift_stuck (h : toVal e = none) :
     ⊢ WP e @ E ? {{ Φ }} := by
   iintro H
   rw [wp_unfold.to_eq]
-  simp only [wp.pre, h]
+  simp only [wp'.pre, h]
   iintro %σ₁ %ns %obs %obs' %nt Hσ
   imod H $$ Hσ with %Hirr
   replace ⟨_, Hirr⟩ := Hirr
