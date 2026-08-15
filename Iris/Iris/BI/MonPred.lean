@@ -1581,21 +1581,19 @@ instance monPred_bi_bupd_sbi [BIUpdate PROP] [BIBUpdateSbi PROP] :
   bupd_si_pure Pi := entails_at.mpr fun _ => BIBUpdateSbi.bupd_si_pure Pi
 
 @[rocq_alias monPred_bi_fupd_sbi]
-instance monPred_bi_fupd_sbi [BIFUpdate PROP] [BIFUpdatePlainly PROP] :
-    BIFUpdatePlainly (MonPred I PROP) where
+instance monPred_bi_fupd_sbi [BIFUpdate PROP] [BIFUpdateSbi PROP] :
+    BIFUpdateSbi (MonPred I PROP) where
   fupd_keep_si_pure E' Pi R := entails_at.mpr fun i => by
     refine (and_mono_right
       (monPred_wand_force i (SiPure.siPure Pi : MonPred I PROP) (iprop(|={_}=> R)))).trans ?_
-    exact BIFUpdatePlainly.fupd_keep_si_pure E' Pi (R.monPred_at i)
-  fupd_plainly_later E P := entails_at.mpr fun i => by
-    refine (later_mono
-      (BIFUpdate.mono ((monPred_at_plainly i P).mp.trans (forall_elim i)))).trans ?_
-    exact BIFUpdatePlainly.fupd_plainly_later E (P.monPred_at i)
-  fupd_plainly_sForall_2 E Φ := entails_at.mpr fun i => by
-    refine (BIFUpdate.mono
-      ((monPred_at_plainly i (BIBase.sForall Φ)).mp.trans (forall_elim i))).trans ?_
-    exact BIFUpdatePlainly.fupd_plainly_sForall_2 E
-      (fun p => ∃ q : MonPred I PROP, Φ q ∧ q.monPred_at i = p)
+    exact BIFUpdateSbi.fupd_keep_si_pure E' Pi (R.monPred_at i)
+  fupd_si_pure_later E P := entails_at.mpr fun i => BIFUpdateSbi.fupd_si_pure_later E P
+  fupd_si_pure_sForall_2 E Φ := entails_at.mpr fun i => by
+    refine .trans ?_ (BIFUpdateSbi.fupd_si_pure_sForall_2 (PROP := PROP) E Φ)
+    refine (monPred_at_forall i
+      (fun q : SiProp => iprop(⌜Φ q⌝ → |={E}=> <si_pure> q))).mp.trans ?_
+    exact forall_mono fun q =>
+      monPred_impl_force i (iprop(⌜Φ q⌝)) (iprop(|={E}=> <si_pure> q) : MonPred I PROP)
 
 end Sbi
 
