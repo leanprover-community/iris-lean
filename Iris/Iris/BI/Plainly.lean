@@ -580,11 +580,11 @@ instance or_plain (P Q : PROP)[Plain P] [Plain Q]: Plain iprop(P ∨ Q) where
   plain := .trans (or_mono plain plain) plainly_or_mpr
 
 @[rocq_alias forall_plain]
-instance forall_plain {A} (Ψ : A → PROP) : [∀ x, Plain (Ψ x)] → Plain iprop(∀ x, Ψ x) where
+instance forall_plain {A : Sort _} (Ψ : A → PROP) : [∀ x, Plain (Ψ x)] → Plain iprop(∀ x, Ψ x) where
   plain := .trans (forall_mono (fun _ => plain)) plainly_forall_mpr
 
 @[rocq_alias exist_plain]
-instance exists_plain (Ψ : A → PROP) : [∀ x, Plain (Ψ x)] → Plain iprop(∃ x, Ψ x) where
+instance exists_plain {A : Sort _} (Ψ : A → PROP) : [∀ x, Plain (Ψ x)] → Plain iprop(∃ x, Ψ x) where
   plain := .trans (exists_mono (fun _ => plain)) plainly_exists_mpr
 
 @[rocq_alias impl_plain]
