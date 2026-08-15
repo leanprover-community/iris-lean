@@ -210,3 +210,86 @@ example (P Q : PROP1) : (<affine> ⎡P -∗ Q⎤) ⊢@{PROP2} (<affine> ⎡P⎤)
   iintro Hwand HP
   iapply Hwand
   iexact HP
+
+section Frame
+
+/-
+  The instance `frame_here` has a higher priority than `frame_embed` so that
+  it gives `emp` rather than `⎡emp⎤`.
+-/
+/-- info:
+  solution: Frame false ⎡P⎤ ⎡P⎤ iprop(emp),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (P : PROP1) in
+#ipm_synth Frame (PROP := PROP2) false iprop(⎡P⎤) iprop(⎡P⎤) _
+
+/- The instance `makeEmbed_default` is used for framing within an embedding. -/
+/-- info:
+  solution: Frame false ⎡P⎤ ⎡P ∗ Q⎤ ⎡Q⎤,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (P Q : PROP1) in
+#ipm_synth Frame (PROP := PROP2) false iprop(⎡P⎤) iprop(⎡P ∗ Q⎤) _
+
+-- Exercises `makeEmbed_pure`: residual should be `⌜φ⌝ : PROP2`, not `⎡⌜φ⌝⎤`.
+
+/-
+  The instance `makeEmbed_pure` has a higher priority so that the remaining
+  proposition is `⌜φ⌝` rather than `⎡⌜φ⌝⎤`.
+ -/
+/-- info:
+  solution: Frame false ⎡P⎤ ⎡P ∗ ⌜φ⌝⎤ iprop(⌜φ⌝),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (P : PROP1) (φ : Prop) in
+#ipm_synth Frame (PROP := PROP2) false iprop(⎡P⎤) iprop(⎡P ∗ ⌜φ⌝⎤) _
+
+/-
+  The instance `makeEmbed_emp` has a higher priority than `makeEmbed_default`
+  so that it gives `emp` rather than `⎡emp⎤`.
+-/
+/-- info:
+  solution: Frame true ⎡P⎤ ⎡□ P⎤ iprop(emp),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable [BiEmbedEmp PROP1 PROP2] (P : PROP1) in
+-- set_option trace.Meta.synthInstance true in
+#ipm_synth Frame (PROP := PROP2) true iprop(⎡P⎤) iprop(⎡□ P⎤) _
+
+/- The instance `frame_here_pure_persistent` has a higher priority than `frame_pure_embed`. -/
+/-- info:
+  solution: Frame true iprop(⌜φ⌝) ⎡⌜φ⌝⎤ iprop(emp),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (φ : Prop) in
+#ipm_synth Frame (PROP := PROP2) true iprop(⌜φ⌝) iprop(⎡(⌜φ⌝ : PROP1)⎤) _
+
+/-
+  The instance `frame_here_pure` fails and results in backtracking.
+  The instances `frame_pure_embed` and `quickAbsorbing_pure` are used.
+-/
+/-- info:
+  solution: Frame false iprop(⌜φ⌝) ⎡⌜φ⌝ ∗ P⎤ ⎡True ∗ P⎤,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (P : PROP1) (φ : Prop) in
+#ipm_synth Frame (PROP := PROP2) false iprop(⌜φ⌝) iprop(⎡⌜φ⌝ ∗ P⎤) _
+
+/- The instance `frame_eq_embed` is used. -/
+/-- info:
+  solution: Frame false iprop(a ≡ b) ⎡a ≡ b ∗ P⎤ ⎡P⎤,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable [Sbi P1] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
+  [OFE A] (a b : A) (P : P1) in
+#ipm_synth Frame (PROP := P2) false iprop(a ≡ b) iprop(⎡(a ≡ b) ∗ P⎤) _
+
+end Frame
