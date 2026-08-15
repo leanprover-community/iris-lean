@@ -13,6 +13,8 @@ public import Iris.ProofMode
 namespace IrisTest
 open Iris BI ProofMode
 
+section IPMInstances
+
 variable {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
 
 /-
@@ -211,7 +213,11 @@ example (P Q : PROP1) : (<affine> ⎡P -∗ Q⎤) ⊢@{PROP2} (<affine> ⎡P⎤)
   iapply Hwand
   iexact HP
 
+end IPMInstances
+
 section Frame
+
+variable {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
 
 /-
   The instance `frame_here` has a higher priority than `frame_embed` so that
@@ -282,14 +288,33 @@ variable (φ : Prop) in
 variable (P : PROP1) (φ : Prop) in
 #ipm_synth Frame (PROP := PROP2) false iprop(⌜φ⌝) iprop(⎡⌜φ⌝ ∗ P⎤) _
 
+end Frame
+
+section
+
+variable [Sbi PROP1] [Sbi PROP2]
+  [BiEmbed PROP1 PROP2] [BiEmbedSbi PROP1 PROP2]
+
 /- The instance `frame_eq_embed` is used. -/
 /-- info:
   solution: Frame false iprop(a ≡ b) ⎡a ≡ b ∗ P⎤ ⎡P⎤,
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-variable [Sbi P1] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
-  [OFE A] (a b : A) (P : P1) in
-#ipm_synth Frame (PROP := P2) false iprop(a ≡ b) iprop(⎡(a ≡ b) ∗ P⎤) _
+variable [OFE A] (a b : A) (P : PROP1) in
+#ipm_synth Frame (PROP := PROP2) false iprop(a ≡ b) iprop(⎡(a ≡ b) ∗ P⎤) _
 
-end Frame
+example {A : Type _} [OFE A] (x y : A) (P Q : PROP1) (φ ψ : Prop) (hψ : ψ) :
+    □ ⎡P⎤ ∗ ⌜φ⌝ ∗ (x ≡ y) ∗ ⎡Q⎤ ⊢@{PROP2} ⎡□ P⎤ ∗ ⎡(⌜φ⌝ ∗ ⌜ψ⌝ : PROP1)⎤ ∗ ⎡(x ≡ y) ∗ Q⎤ := by
+  iintro ⟨#H1, H2, H3, H4⟩
+  -- `frame_embed`: cancelling `⎡P⎤` against `⎡□ P⎤`
+  iframe H1
+  -- `frame_pure_embed`: cancelling `⌜φ⌝` against itself in `⎡⌜φ⌝ ∗ ⌜ψ⌝⎤`
+  iframe H2
+  -- `frame_eq_embed`: cancelling `x ≡ y` against itself in `⎡x ≡ y ∗ Q⎤`
+  iframe H3
+  -- `frame_here`: cancelling `⎡Q⎤` against itself
+  iframe H4
+  itrivial
+
+end
