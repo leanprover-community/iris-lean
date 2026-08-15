@@ -37,7 +37,7 @@ export EctxItemLanguage (fillItem)
 
 -- attribute [rocq_alias fill_item] EctxItemLanguage.fillItem
 attribute [rocq_alias fill_item_inj] EctxItemLanguage.fillItem_inj
-attribute [rocq_alias fill_item_val] EctxItemLanguage.fillItem
+attribute [rocq_alias fill_item_val] EctxItemLanguage.fillItem_val
 attribute [rocq_alias fill_item_no_val_inj] EctxItemLanguage.fillItem_no_val_inj
 
 attribute [simp] EctxItemLanguage.fillItem_inj

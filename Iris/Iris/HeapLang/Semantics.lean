@@ -93,6 +93,15 @@ instance : Inhabited State := ⟨.empty, .empty⟩
 
 attribute [rocq_alias heap_lang.heap_lang.state_inhabited] instInhabitedState
 
+-- Rocq threads state updates through the two `state_upd_*` functions; in Lean that role is
+-- played by record-update syntax, as in `State.initHeap` below.
+#rocq_ignore heap_lang.heap_lang.state_upd_heap
+  "Lean updates the `State` record directly: `{ σ with heap := f σ.heap }`."
+#rocq_ignore heap_lang.heap_lang.state_upd_used_proph_id
+  "Lean updates the `State` record directly: `{ σ with usedProphId := f σ.usedProphId }`."
+#rocq_ignore heap_lang.heap_lang.stateO
+  "Canonical Leibniz OFE on `state`; Lean uses the generic `stateO State`, i.e. `DiscreteO State`."
+
 @[rocq_alias heap_lang.heap_lang.observation]
 abbrev Observation := ProphId × (Val × Val)
 
@@ -101,6 +110,44 @@ def UnOp.eval : UnOp → Val → Option Val
   | .neg,   .lit (.bool b) => some (.lit (.bool (!b)))
   | .minus, .lit (.int n)  => some (.lit (.int (-n)))
   | _,      _              => none
+
+/-- Binary operations on two integer literals. `BinOp.eval` agrees with this on integers
+(`BinOp.eval_lit_int`); `.eq` is listed here because Rocq's `bin_op_eval_int` does, even though
+`BinOp.eval` routes equality through `Val.compareSafe`. -/
+@[rocq_alias heap_lang.heap_lang.bin_op_eval_int]
+def BinOp.evalInt : BinOp → Int → Int → Option BaseLit
+  | .plus,   n1, n2 => some (.int (n1 + n2))
+  | .minus,  n1, n2 => some (.int (n1 - n2))
+  | .mult,   n1, n2 => some (.int (n1 * n2))
+  | .tdiv,   n1, n2 => some (.int (n1.tdiv n2))
+  | .tmod,   n1, n2 => some (.int (n1.tmod n2))
+  | .and,    n1, n2 => some (.int (n1 &&& n2))
+  | .or,     n1, n2 => some (.int (n1 ||| n2))
+  | .xor,    n1, n2 => some (.int (n1 ^^^ n2))
+  | .shiftl, n1, n2 => some (.int (n1 <<< n2))
+  | .shiftr, n1, n2 => some (.int (n1 >>> n2))
+  | .le,     n1, n2 => some (.bool (n1 ≤ n2))
+  | .lt,     n1, n2 => some (.bool (n1 < n2))
+  | .eq,     n1, n2 => some (.bool (n1 = n2))
+  | .offset, _,  _  => none -- Pointer arithmetic
+
+/-- Binary operations on two boolean literals; see `BinOp.eval_lit_bool`. -/
+@[rocq_alias heap_lang.heap_lang.bin_op_eval_bool]
+def BinOp.evalBool : BinOp → Bool → Bool → Option BaseLit
+  | .and, b1, b2 => some (.bool (b1 && b2))
+  | .or,  b1, b2 => some (.bool (b1 || b2))
+  | .xor, b1, b2 => some (.bool (b1 ^^ b2))
+  | .eq,  b1, b2 => some (.bool (b1 == b2))
+  | _,    _,  _  => none
+
+/-- Binary operations whose left argument is a location: pointer arithmetic and the comparison
+of two locations. See `BinOp.eval_lit_loc`. -/
+@[rocq_alias heap_lang.heap_lang.bin_op_eval_loc]
+def BinOp.evalLoc : BinOp → Loc → BaseLit → Option BaseLit
+  | .offset, l1, .int off => some (.loc (l1 + off))
+  | .le,     l1, .loc l2  => some (.bool (l1 ≤ l2))
+  | .lt,     l1, .loc l2  => some (.bool (l1 < l2))
+  | _,       _,  _        => none
 
 @[rocq_alias heap_lang.heap_lang.bin_op_eval]
 def BinOp.eval : BinOp → Val → Val → Option Val
@@ -122,7 +169,25 @@ def BinOp.eval : BinOp → Val → Val → Option Val
   | .eq,     v1,              v2              =>
       if v1.compareSafe v2 then some (.lit (.bool (v1 == v2))) else none
   | .offset, .lit (.loc l),   .lit (.int n)   => some (.lit (.loc (l + n)))
+  | .le,     .lit (.loc l1),  .lit (.loc l2)  => some (.lit (.bool (l1 ≤ l2)))
+  | .lt,     .lit (.loc l1),  .lit (.loc l2)  => some (.lit (.bool (l1 < l2)))
   | _,       _,               _               => none
+
+theorem BinOp.eval_lit_int (op : BinOp) (n1 n2 : Int) :
+    BinOp.eval op (.lit (.int n1)) (.lit (.int n2)) = (Val.lit <$> op.evalInt n1 n2) := by
+  cases op <;> simp [BinOp.eval, BinOp.evalInt, Val.compareSafe, BaseLit.isUnboxed, Val.isUnboxed]
+    <;> by_cases h : n1 = n2 <;> simp [h]
+
+theorem BinOp.eval_lit_bool (op : BinOp) (b1 b2 : Bool) :
+    BinOp.eval op (.lit (.bool b1)) (.lit (.bool b2)) = (Val.lit <$> op.evalBool b1 b2) := by
+  cases b1 <;> cases b2 <;> cases op <;> rfl
+
+/-- Unlike the integer and boolean cases, this one needs `op ≠ .eq`: Rocq's `bin_op_eval`
+dispatches `EqOp` before it ever reaches `bin_op_eval_loc`, and `BinOp.eval` likewise routes
+equality of two locations through `Val.compareSafe`. -/
+theorem BinOp.eval_lit_loc (op : BinOp) (l : Loc) (lit : BaseLit) (hop : op ≠ .eq) :
+    BinOp.eval op (.lit (.loc l)) (.lit lit) = (Val.lit <$> op.evalLoc l lit) := by
+  cases op <;> cases lit <;> simp_all [BinOp.eval, BinOp.evalLoc]
 
 abbrev HeapF := fun V => Std.ExtTreeMap Loc V compare
 
@@ -287,5 +352,26 @@ inductive BaseStep : Exp → State → List Observation → Exp → State → Li
       σ.usedProphId.contains p →
       BaseStep (.resolve e (.ofVal (.lit (.prophecy p))) (.ofVal w)) σ
                (κs ++ [(p, (v, w))]) (.ofVal v) σ' ts
+
+/-- Allocation always has a step available: `Loc.fresh` picks a block that the heap does not
+use. -/
+@[rocq_alias heap_lang.heap_lang.alloc_fresh]
+theorem alloc_fresh (v : Val) (n : Int) (σ : State) (hn : 0 < n) :
+    BaseStep (.allocN (.ofVal (.lit (.int n))) (.ofVal v)) σ []
+      (.ofVal (.lit (.loc (Loc.fresh σ.heap.keys))))
+      (σ.initHeap (Loc.fresh σ.heap.keys) n v) [] :=
+  .allocNS n v σ _ hn fun i hi0 _ => by
+    simpa [State.get?, PartialMap.get?, getElem?_eq_none_iff, ← Std.ExtTreeMap.mem_keys]
+      using Loc.fresh_fresh _ hi0
+
+/-- Creating a prophecy variable always has a step available. Rocq names the fresh identifier
+with stdpp's `fresh`; `ProphId` has no computable fresh element here, so the identifier is
+existentially quantified. -/
+@[rocq_alias heap_lang.heap_lang.new_proph_id_fresh]
+theorem new_proph_id_fresh (σ : State) :
+    ∃ p : ProphId, BaseStep .newProph σ []
+      (.ofVal (.lit (.prophecy p))) { σ with usedProphId := σ.usedProphId.insert p } [] :=
+  let ⟨p, hp⟩ := _root_.Iris.Std.List.fresh σ.usedProphId.toList
+  ⟨p, .newProphS σ p (hp <| Std.ExtTreeSet.mem_toList.mpr <| Std.ExtTreeSet.mem_iff_contains.mpr ·)⟩
 
 end Iris.HeapLang
