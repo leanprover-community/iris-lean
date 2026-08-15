@@ -215,7 +215,7 @@ instance instPersistentPointsTo (l : L) (v : V) :
 instance (priority := high) instFramePointsTo (p : Bool) (l : L) (v : V) (q₁ q₂ r : Qp)
     [FrameFractionalQp q₁ q₂ r] :
     Frame p (l ↦{.own q₁} v) (l ↦{.own q₂} v) (l ↦{.own r} v) :=
-  frame_fractional (Φ := (l ↦{.own ·} v)) (qR := q₁) (qP := q₂)
+  frame_fractional (l ↦{.own ·} v) q₁ q₂ r
 
 /-! ### General properties of `metaInfo` and `metaToken` -/
 
