@@ -796,8 +796,12 @@ theorem fupd_plainly_forall_2 [BIAffine PROP] {E : CoPset} {Φ : α → PROP} :
   let Ψi : SiProp → Prop := fun q => ∃ a, q = iprop(<si_emp_valid> (Φ a))
   have h : (∀ a, |={E}=> ■ Φ a) ⊢ ∀ q, ⌜Ψi q⌝ → |={E}=> <si_pure> q :=
     forall_intro fun _ => imp_intro <| pure_elim_right fun ⟨a, hq⟩ => hq ▸ forall_elim a
-  (h.trans (BIFUpdateSbi.fupd_si_pure_sForall_2 E Ψi)).trans <| mono <|
-    forall_intro fun a => (siPure_mono (sForall_elim ⟨a, rfl⟩)).trans siPure_siEmpValid_elim
+  calc
+    _ ⊢ ∀ q, ⌜Ψi q⌝ → |={E}=> <si_pure> q := h
+    _ ⊢ |={E}=> <si_pure> sForall Ψi      := BIFUpdateSbi.fupd_si_pure_sForall_2 E Ψi
+    _ ⊢ |={E}=> ∀ a, Φ a                  :=
+        mono <| forall_intro fun a =>
+          (siPure_mono (sForall_elim ⟨a, rfl⟩)).trans siPure_siEmpValid_elim
 
 @[rocq_alias fupd_plainly_elim]
 theorem fupd_plainly_elim [BIAffine PROP] {E : CoPset} {P : PROP} : ■ P ⊢ |={E}=> P :=
@@ -811,27 +815,33 @@ theorem fupd_plain_forall_2 [BIAffine PROP] {E : CoPset} {Φ : α → PROP} [∀
 @[rocq_alias fupd_plain_forall]
 theorem fupd_plain_forall [BIAffine PROP] {E1 E2 : CoPset} {Φ : α → PROP}
     [inst : ∀ a, Plain (Φ a)] (h : E2 ⊆ E1) :
-    (|={E1,E2}=> ∀ a, Φ a) ⊣⊢ ∀ a, |={E1,E2}=> Φ a :=
-  ⟨fupd_forall, calc
-    _ ⊢ ∀ a, |={E1}=> Φ a    := forall_mono fun _ => fupd_plain_mask
-    _ ⊢ |={E1}=> ∀ a, Φ a    := fupd_plain_forall_2
-    _ ⊢ |={E1,E2}=> ∀ a, Φ a := fupd_elim <| calc
-          _ ⊢ ■ (∀ a, Φ a)             := sorry -- Plain.plain
-          _ ⊢ |={E1,E2}=> ■ (∀ a, Φ a) := fupd_mask_intro_discard h
-          _ ⊢ |={E1,E2}=> |={E2}=> _   := mono fupd_plainly_elim
-          _ ⊢ |={E1,E2}=> ∀ a, Φ a     := trans⟩
+    (|={E1,E2}=> ∀ a, Φ a) ⊣⊢ ∀ a, |={E1,E2}=> Φ a := by
+  constructor
+  · exact fupd_forall
+  · calc
+      _ ⊢ ∀ a, |={E1}=> Φ a    := forall_mono fun _ => fupd_plain_mask
+      _ ⊢ |={E1}=> ∀ a, Φ a    := fupd_plain_forall_2
+      _ ⊢ |={E1,E2}=> ∀ a, Φ a := fupd_elim ?_
+    calc
+      _ ⊢ ■ (∀ a, Φ a)             := (forall_mono (fun a => (inst a).plain)).trans plainly_forall_mpr
+      _ ⊢ |={E1,E2}=> ■ (∀ a, Φ a) := fupd_mask_intro_discard h
+      _ ⊢ |={E1,E2}=> |={E2}=> _   := mono fupd_plainly_elim
+      _ ⊢ |={E1,E2}=> ∀ a, Φ a     := trans
 
 @[rocq_alias step_fupd_plain_forall]
 theorem step_fupd_plain_forall [BIAffine PROP] {Eo Ei : CoPset} {Φ : α → PROP}
     [∀ a, Plain (Φ a)] (h : Ei ⊆ Eo) :
-    (|={Eo}[Ei]▷=> ∀ a, Φ a) ⊣⊢ ∀ a, |={Eo}[Ei]▷=> Φ a :=
-  ⟨forall_intro fun a => step_fupd_mono (forall_elim a), calc
-    _ ⊢ ∀ a, |={Eo}=> ▷ ◇ Φ a    := forall_mono fun _ => step_fupd_plain
-    _ ⊢ |={Eo}=> ∀ a, ▷ ◇ Φ a    := (fupd_plain_forall LawfulSet.subset_refl).mpr
-    _ ⊢ |={Eo}[Ei]▷=> ∀ a, Φ a   := fupd_elim <| calc
-          _ ⊢ ▷ ∀ a, ◇ Φ a               := later_forall.mpr
-          _ ⊢ ▷ ◇ ∀ a, Φ a               := later_mono except0_forall.mpr
-          _ ⊢ |={Eo}[Ei]▷=> ◇ ∀ a, Φ a   := step_fupd_intro h
-          _ ⊢ |={Eo}[Ei]▷=> ∀ a, Φ a     := mono (later_mono fupd_except0)⟩
+    (|={Eo}[Ei]▷=> ∀ a, Φ a) ⊣⊢ ∀ a, |={Eo}[Ei]▷=> Φ a := by
+  constructor
+  · exact forall_intro fun a => step_fupd_mono (forall_elim a)
+  · calc
+      _ ⊢ ∀ a, |={Eo}=> ▷ ◇ Φ a := forall_mono fun _ => step_fupd_plain
+      _ ⊢ |={Eo}=> ∀ a, ▷ ◇ Φ a := (fupd_plain_forall LawfulSet.subset_refl).mpr
+      _ ⊢ |={Eo}[Ei]▷=> ∀ a, Φ a := fupd_elim ?_
+    calc
+      _ ⊢ ▷ ∀ a, ◇ Φ a              := later_forall.mpr
+      _ ⊢ ▷ ◇ ∀ a, Φ a              := later_mono except0_forall.mpr
+      _ ⊢ |={Eo}[Ei]▷=> ◇ ∀ a, Φ a  := step_fupd_intro h
+      _ ⊢ |={Eo}[Ei]▷=> ∀ a, Φ a     := mono <| later_mono fupd_except0
 
 end StepFUpdPlainlyLaws
