@@ -157,18 +157,27 @@ instance (priority := default + 20) intoWand_forall_prop_true (p : Bool) [BI PRO
     (m : WandMode) (φ : Prop) (P : PROP) :
     IntoWand p true iprop(∀ _ : φ, P) m iprop(⌜φ⌝) P where
   into_wand := by
-    haveI : Absorbing P := by sorry
-    calc
-       _ ⊢ ∀ (x : φ), P := intuitionisticallyIf_elim
-       _ ⊢ ⌜φ⌝ -∗ P     := pure_wand_forall.mpr
-       _ ⊢ □ ⌜φ⌝ -∗ P   := wand_mono_left intuitionistically_elim
+    refine wand_intro (pure_elim φ ?_ fun hφ => ?_)
+    · exact (sep_mono_right intuitionistically_elim).trans sep_elim_right
+    · calc
+        _ ⊢ □?p ∀ a, P := sep_elim_left
+        _ ⊢ ∀ a, P     := intuitionisticallyIf_elim
+        _ ⊢ P          := forall_elim hφ
 
 @[ipm_backtrack, rocq_alias into_wand_forall_prop_false]
 instance (priority := default + 10) intoWand_forall_prop_false (p : Bool) [BI PROP]
     (m : WandMode) (φ : Prop) (Pφ P' P : PROP)
     [h1 : MakeAffinely iprop(⌜φ⌝) Pφ] [h2 : FromAssumption false m.argIO P' Pφ] :
     IntoWand p false iprop(∀ _ : φ, P) m P' P where
-  into_wand := sorry
+  into_wand := by
+    have h := h2.from_assumption.trans h1.make_affinely.mpr
+    refine wand_intro (pure_elim φ ?_ fun hφ => ?_)
+    · exact (sep_mono_right (h.trans affinely_elim)).trans sep_elim_right
+    · calc
+        _ ⊢ (□?p ∀ a, P) ∗ <affine> ⌜φ⌝ := sep_mono_right h
+        _ ⊢ □?p ∀ a, P                  := sep_elim_left
+        _ ⊢ ∀ a, P                      := intuitionisticallyIf_elim
+        _ ⊢ P                           := forall_elim hφ
 
 -- The set_option is ok since this is an instance for an IPM class and thus can create mvars.
 set_option synthInstance.checkSynthOrder false in
@@ -304,7 +313,13 @@ instance intoForall_imp_pure [BI PROP] (a : Bool) (φ : Prop) (P Q : PROP)
     [h : FromPure a P .out φ] [or : TCOr (TCEq a false) (BIAffine PROP)] :
     IntoForall iprop(P → Q) (fun _ : φ => Q) where
   into_forall := by
-    sorry
+    refine forall_intro fun hφ => ?_
+    refine (and_intro .rfl ?_).trans imp_elim_left
+    refine Entails.trans ?_ h.from_pure
+    exact match a, or with
+      | false, _ => pure_intro hφ
+      | true, TCOr.r => (affine_affinely _).mpr.trans (affinely_mono <| pure_intro hφ)
+      | true, TCOr.l (t := heq) => nomatch heq
 
 @[rocq_alias into_forall_wand]
 instance (priority := default - 10) intoForall_wand [BI PROP] (P Q : PROP) :
@@ -941,9 +956,16 @@ instance intoPure_pure_wand [BI PROP] (a : Bool) (φ1 φ2 : Prop) (P1 P2 : PROP)
     [h1 : FromPure a P1 .out φ1] [h2 : IntoPure P2 φ2] :
     IntoPure iprop(P1 -∗ P2) (φ1 → φ2) where
   into_pure := by
-    have h1 := h1.from_pure
-    have h2 := h2.into_pure
-    sorry
+    calc
+      _ ⊢ <affine>?a ⌜φ1⌝ -∗ ⌜φ2⌝ := wand_mono h1.from_pure h2.into_pure
+      _ ⊢ <affine> ⌜φ1⌝ -∗ ⌜φ2⌝   := wand_mono_left affinely_affinelyIf
+      _ ⊢ ⌜φ1⌝ → ⌜φ2⌝             := imp_intro <| pure_elim_right fun hφ1 => ?_
+      _ ⊢ ⌜φ1 → φ2⌝               := pure_imp.mpr
+    calc
+      _ ⊢ emp ∗ (<affine> ⌜φ1⌝ -∗ ⌜φ2⌝)           := emp_sep.mpr
+      _ ⊢ <affine> ⌜φ1⌝ ∗ (<affine> ⌜φ1⌝ -∗ ⌜φ2⌝) :=
+          sep_mono_left <| affinely_intro <| pure_intro hφ1
+      _ ⊢ ⌜φ2⌝                                    := wand_elim_right
 
 -- FromPure
 @[rocq_alias from_pure_emp]
