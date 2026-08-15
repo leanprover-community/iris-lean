@@ -107,7 +107,7 @@ theorem lift_atomic_base_step_no_fork (h : toVal e₁ = none) :
   isimp
   itrivial
 
-@[rocq_alias lift_pure_det_base_step_no_fork]
+@[rocq_alias twp_lift_pure_det_base_step_no_fork]
 theorem lift_pure_det_base_step_no_fork [Inhabited State]
     (_h : toVal e₁ = none)
     (Hred : ∀ σ, BaseStep.ReducibleNoObs (e₁, σ))
