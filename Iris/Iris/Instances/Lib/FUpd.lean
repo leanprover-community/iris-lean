@@ -359,10 +359,10 @@ instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .h
       iapply fupd_finally_forall
       iintro %hq
       iapply fupd_fupd_finally
+      -- TODO: replace with `imod H $$ %q %hq with #Hq` once `intoForall_imp_pure` is available
       have h : ⊢@{IProp GF} ⌜Ψi q⌝ := by ipureintro; exact hq
       ihave Hq := h
-      ispecialize H $$ %q Hq
-      imod H with #Hq
+      imod H $$ %q Hq with #Hq
       imodintro
       iapply fupd_finally_intro
       iintro !> //
