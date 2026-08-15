@@ -152,7 +152,7 @@ instance intoWand_wandM (p q : Bool) [BI PROP] (mP' : Option PROP) (P Q : PROP)
     _ ⊢ □?p (□?q P -∗ Q)               := intuitionisticallyIf_mono <| wand_mono_left h.1
     _ ⊢ □?q P -∗ Q                     := intuitionisticallyIf_elim
 
-@[rocq_alias into_wand_forall_prop_true]
+@[ipm_backtrack, rocq_alias into_wand_forall_prop_true]
 instance (priority := default + 20) intoWand_forall_prop_true (p : Bool) [BI PROP]
     (m : WandMode) (φ : Prop) (P : PROP) :
     IntoWand p true iprop(∀ _ : φ, P) m iprop(⌜φ⌝) P where
@@ -163,13 +163,12 @@ instance (priority := default + 20) intoWand_forall_prop_true (p : Bool) [BI PRO
        _ ⊢ ⌜φ⌝ -∗ P     := pure_wand_forall.mpr
        _ ⊢ □ ⌜φ⌝ -∗ P   := wand_mono_left intuitionistically_elim
 
-@[rocq_alias into_wand_forall_prop_false]
+@[ipm_backtrack, rocq_alias into_wand_forall_prop_false]
 instance (priority := default + 10) intoWand_forall_prop_false (p : Bool) [BI PROP]
-    (m : WandMode) (φ : Prop) (Pφ P : PROP) [h : MakeAffinely iprop(⌜φ⌝) Pφ] :
-    IntoWand p false iprop(∀ _ : φ, P) m Pφ P where
-  into_wand := by
-    simp
-    sorry
+    (m : WandMode) (φ : Prop) (Pφ P' P : PROP)
+    [h1 : MakeAffinely iprop(⌜φ⌝) Pφ] [h2 : FromAssumption false m.argIO P' Pφ] :
+    IntoWand p false iprop(∀ _ : φ, P) m P' P where
+  into_wand := sorry
 
 -- The set_option is ok since this is an instance for an IPM class and thus can create mvars.
 set_option synthInstance.checkSynthOrder false in
