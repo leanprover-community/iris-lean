@@ -181,6 +181,16 @@ instance intoSep_except0 [BI PROP] (P Q1 Q2 : PROP)
     [h : IntoSep P Q1 Q2] : IntoSep iprop(◇ P) iprop(◇ Q1) iprop(◇ Q2) where
   into_sep := (except0_mono h.1).trans except0_sep.1
 
+@[rocq_alias into_sep_affinely_later]
+instance intoSep_affinely_later [BI PROP] [Timeless (emp : PROP)]
+    (P Q1 Q2 : PROP) [inst : IntoSep P Q1 Q2] [Affine Q1] [Affine Q2] :
+    IntoSep iprop(<affine> ▷ P) iprop(<affine> ▷ Q1) iprop(<affine> ▷ Q2) where
+  into_sep := by
+    calc
+      <affine> ▷ P ⊢ <affine> ▷ (Q1 ∗ Q2) := affinely_mono <| later_mono inst.into_sep
+      _ ⊢ <affine> (▷ Q1 ∗ ▷ Q2) := affinely_mono later_sep.mp
+      _ ⊢ <affine> ▷ Q1 ∗ <affine> ▷ Q2 := sorry
+
 /-- FromOr -/
 
 @[rocq_alias from_or_later]

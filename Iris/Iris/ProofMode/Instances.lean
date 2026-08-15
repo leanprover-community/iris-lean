@@ -152,6 +152,25 @@ instance intoWand_wandM (p q : Bool) [BI PROP] (mP' : Option PROP) (P Q : PROP)
     _ ⊢ □?p (□?q P -∗ Q)               := intuitionisticallyIf_mono <| wand_mono_left h.1
     _ ⊢ □?q P -∗ Q                     := intuitionisticallyIf_elim
 
+@[rocq_alias into_wand_forall_prop_true]
+instance (priority := default + 20) intoWand_forall_prop_true (p : Bool) [BI PROP]
+    (m : WandMode) (φ : Prop) (P : PROP) :
+    IntoWand p true iprop(∀ _ : φ, P) m iprop(⌜φ⌝) P where
+  into_wand := by
+    haveI : Absorbing P := by sorry
+    calc
+       _ ⊢ ∀ (x : φ), P := intuitionisticallyIf_elim
+       _ ⊢ ⌜φ⌝ -∗ P     := pure_wand_forall.mpr
+       _ ⊢ □ ⌜φ⌝ -∗ P   := wand_mono_left intuitionistically_elim
+
+@[rocq_alias into_wand_forall_prop_false]
+instance (priority := default + 10) intoWand_forall_prop_false (p : Bool) [BI PROP]
+    (m : WandMode) (φ : Prop) (Pφ P : PROP) [h : MakeAffinely iprop(⌜φ⌝) Pφ] :
+    IntoWand p false iprop(∀ _ : φ, P) m Pφ P where
+  into_wand := by
+    simp
+    sorry
+
 -- The set_option is ok since this is an instance for an IPM class and thus can create mvars.
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_wand_forall]
@@ -281,7 +300,29 @@ instance intoForall_wand_pure [BI PROP] (P Q : PROP) Φ
       _ ⊢ <affine>?a ⌜Φ⌝ := affinelyIf_mono <| pure_intro hΦ
       _ ⊢ P              := h.from_pure
 
+@[ipm_backtrack, rocq_alias into_forall_impl_pure]
+instance intoForall_imp_pure [BI PROP] (a : Bool) (φ : Prop) (P Q : PROP)
+    [h : FromPure a P .out φ] [or : TCOr (TCEq a false) (BIAffine PROP)] :
+    IntoForall iprop(P → Q) (fun _ : φ => Q) where
+  into_forall := by
+    sorry
+
+@[rocq_alias into_forall_wand]
+instance (priority := default - 10) intoForall_wand [BI PROP] (P Q : PROP) :
+    IntoForall iprop(P -∗ Q) (fun _ : (⊢ P) => Q) where
+  into_forall := forall_intro fun h => calc
+    _ ⊢ emp ∗ (P -∗ Q) := emp_sep.mpr
+    _ ⊢ P ∗ (P -∗ Q)   := sep_mono_left h
+    _ ⊢ Q              := wand_elim_right
+
+@[rocq_alias into_forall_impl]
+instance (priority := default - 10) intoForall_imp [BI PROP] [BIAffine PROP] (P Q : PROP) :
+    IntoForall iprop(P → Q) (fun _ : (⊢ P) => Q) where
+  into_forall := forall_intro fun h =>
+    (and_intro .rfl (affine.trans h)).trans imp_elim_left
+
 -- FromExists
+@[rocq_alias from_exist_exist]
 instance (priority := default + 10) fromExists_exists [BI PROP] (Φ : α → PROP) :
     FromExists iprop(∃ a, Φ a) Φ := ⟨.rfl⟩
 
@@ -399,6 +440,11 @@ instance (priority := default + 50) fromAnd_pure (φ ψ : Prop) [BI PROP] :
     FromAnd (PROP := PROP) iprop(⌜φ ∧ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝) where
   from_and := pure_and.1
 
+@[rocq_alias from_and_pure_iff]
+instance (priority := default + 50) fromAnd_pure_iff (φ ψ : Prop) [BI PROP] :
+    FromAnd (PROP := PROP) iprop(⌜φ ↔ ψ⌝) iprop(⌜φ → ψ⌝) iprop(⌜ψ → φ⌝) where
+  from_and := pure_and.mp.trans <| pure_mono fun h => ⟨h.left, h.right⟩
+
 @[rocq_alias from_and_persistently]
 instance (priority := default + 40) fromAnd_persistently [BI PROP] (P Q1 Q2 : PROP)
     [h : FromAnd P Q1 Q2] : FromAnd iprop(<pers> P) iprop(<pers> Q1) iprop(<pers> Q2) where
@@ -504,6 +550,11 @@ instance (priority := default - 20) fromSep_and [BI PROP] (P1 P2 : PROP)
 instance (priority := default + 20) fromSep_pure (φ ψ : Prop) [BI PROP] :
     FromSep (PROP := PROP) iprop(⌜φ ∧ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝) where
   from_sep := pure_sep.1
+
+@[rocq_alias from_sep_pure_iff]
+instance (priority := default + 20) fromSep_pure_iff (φ ψ : Prop) [BI PROP] :
+    FromSep (PROP := PROP) iprop(⌜φ ↔ ψ⌝) iprop(⌜φ → ψ⌝) iprop(⌜ψ → φ⌝) where
+  from_sep := pure_sep.mp.trans <| pure_mono fun h => ⟨h.left, h.right⟩
 
 @[rocq_alias from_sep_affinely]
 instance (priority := default + 10) fromSep_affinely [BI PROP] (P Q1 Q2 : PROP)
@@ -870,6 +921,30 @@ instance intoPure_absorbingly [BI PROP] (P : PROP) (φ : Prop)
 instance intoPure_persistently [BI PROP] (P : PROP) (φ : Prop)
     [h : IntoPure P φ] : IntoPure iprop(<pers> P) φ where
   into_pure := (persistently_mono h.1).trans persistently_elim
+
+/--
+  The Rocq instance has `BiPureForall PROP` as a premise. This premise is not
+  necessary in Lean, as `pure_forall` is provable classically for every BI,
+  and thus `BiPureForall` is ignored in Lean.
+-/
+@[rocq_alias into_pure_forall]
+instance intoPure_forall {α} [BI PROP] (Φ : α → PROP) (φ : α → Prop)
+    [h : ∀ x, IntoPure (Φ x) (φ x)] : IntoPure iprop(∀ x, Φ x) (∀ x, φ x) where
+  into_pure := (forall_mono fun x => (h x).into_pure).trans pure_forall.mpr
+
+/--
+  The Rocq instance has `BiPureForall PROP` as a premise. This premise is not
+  necessary in Lean, as `(⌜φ1⌝ → ⌜φ2⌝) ⊢ ⌜φ1 → φ2⌝` is provable directly using
+  `pure_imp` in Lean.
+-/
+@[rocq_alias into_pure_pure_wand]
+instance intoPure_pure_wand [BI PROP] (a : Bool) (φ1 φ2 : Prop) (P1 P2 : PROP)
+    [h1 : FromPure a P1 .out φ1] [h2 : IntoPure P2 φ2] :
+    IntoPure iprop(P1 -∗ P2) (φ1 → φ2) where
+  into_pure := by
+    have h1 := h1.from_pure
+    have h2 := h2.into_pure
+    sorry
 
 -- FromPure
 @[rocq_alias from_pure_emp]
