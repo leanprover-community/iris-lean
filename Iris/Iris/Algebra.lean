@@ -5,6 +5,7 @@ public import Iris.Algebra.Auth
 public import Iris.Algebra.BigOp
 public import Iris.Algebra.Chain
 public import Iris.Algebra.CMRA
+public import Iris.Algebra.CMRABigOp
 public import Iris.Algebra.COFESolver
 public import Iris.Algebra.Csum
 public import Iris.Algebra.DFrac
@@ -26,8 +27,10 @@ public import Iris.Algebra.Numbers
 public import Iris.Algebra.Mra
 public import Iris.Algebra.IProp
 public import Iris.Algebra.OFE
+public import Iris.Algebra.Porting
 public import Iris.Algebra.ReservationMap
 public import Iris.Algebra.StepIndex
 public import Iris.Algebra.UFrac
 public import Iris.Algebra.Updates
 public import Iris.Algebra.UPred
+public import Iris.Algebra.Vector
