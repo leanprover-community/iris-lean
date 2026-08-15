@@ -12,6 +12,4 @@ public import Iris.Instances
 public import Iris.Instances.Lib
 public import Iris.ProgramLogic
 public import Iris.ProofMode
-public import Iris.ProgramLogic.TotalAdequacy
-public import Iris.ProgramLogic.TotalEctxLifting
 public import Iris.Std
