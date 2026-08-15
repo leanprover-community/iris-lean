@@ -163,7 +163,7 @@ attribute [rocq_alias bi.persistently_idemp_2] BI.persistently_idem_2
 attribute [rocq_alias bi.persistently_and_2] BI.persistently_and_2
 attribute [rocq_alias bi.persistently_emp_2] BI.persistently_emp_2
 attribute [rocq_alias bi.persistently_exist_1] BI.persistently_sExists_1
-attribute [rocq_alias bi.interface.persistently_absorbing] BI.persistently_absorb_l
+attribute [rocq_alias bi.bi.persistently_absorbing] BI.persistently_absorb_l
 attribute [rocq_alias bi.persistently_and_sep_elim] BI.persistently_and_l
 
 attribute [rocq_alias bi.later_mono] BI.later_mono
