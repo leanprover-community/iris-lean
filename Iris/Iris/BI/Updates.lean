@@ -803,10 +803,6 @@ theorem fupd_plainly_forall_2 [BIAffine PROP] {E : CoPset} {Φ : α → PROP} :
         mono <| forall_intro fun a =>
           (siPure_mono (sForall_elim ⟨a, rfl⟩)).trans siPure_siEmpValid_elim
 
-@[rocq_alias fupd_plainly_elim]
-theorem fupd_plainly_elim [BIAffine PROP] {E : CoPset} {P : PROP} : ■ P ⊢ |={E}=> P :=
-  fupd_intro.trans (fupd_plainly_mask E E)
-
 @[rocq_alias fupd_plain_forall_2]
 theorem fupd_plain_forall_2 [BIAffine PROP] {E : CoPset} {Φ : α → PROP} [∀ a, Plain (Φ a)] :
     (∀ a, |={E}=> Φ a) ⊢ |={E}=> ∀ a, Φ a :=
@@ -825,7 +821,7 @@ theorem fupd_plain_forall [BIAffine PROP] {E1 E2 : CoPset} {Φ : α → PROP}
     calc
       _ ⊢ ■ (∀ a, Φ a)             := Plain.plain
       _ ⊢ |={E1,E2}=> ■ (∀ a, Φ a) := fupd_mask_intro_discard h
-      _ ⊢ |={E1,E2}=> |={E2}=> _   := mono fupd_plainly_elim
+      _ ⊢ |={E1,E2}=> |={E2}=> _   := mono <| fupd_intro.trans (fupd_plainly_mask E E)
       _ ⊢ |={E1,E2}=> ∀ a, Φ a     := trans
 
 @[rocq_alias step_fupd_plain_forall]
