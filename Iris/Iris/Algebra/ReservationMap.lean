@@ -386,7 +386,7 @@ theorem data_op (a b : H A) : mkData (a • b) = mkData a • mkData b := by
 theorem singleton_op k (a b : A) :
     singleton (H := H) k (a • b) = singleton (H := H) k a • singleton k b := by
   have he : (({[k := a]} : H A) • {[k := b]}) = {[k := a • b]} :=
-    OFE.eq_dist_2 fun n i => Dist.of_eq (Heap.singleton_op_singleton i)
+    Heap.singleton_op_singleton
   exact (congrArg mkData he.symm).trans (data_op _ _)
 
 theorem token_op (a b : CoPset) (h : a ## b) :
