@@ -839,11 +839,26 @@ example [BI PROP] {α} (Q : α → PROP) (a b : α) : (∀ x, ∀ y, ⌜x = a⌝
   iintro H
   iapply H $$ %_ %b %rfl
 
-/-- error: iapply: iprop(P a -∗ Q b) is not a Lean premise -/
+/-
+  Tests `iapply` with an invalid attempt to specialise a wand premise using a
+  subgoal intended for discharging a pure premise.
+-/
+/-- error: iapply: Q b is not a Lean premise -/
 #guard_msgs in
-example [BI PROP] {α} (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
+example [BI PROP] {α} (P Q R : α → PROP) (a b c : α) :
+    (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b -∗ R c := by
   iintro H HP
-  iapply H $$ %a %b %_ HP
+  iapply H $$ %a %b HP %_
+
+/-
+  Tests `iapply` with a specialisation pattern discharging a wand premise as
+  a subgoal (`⊢ P a`).
+-/
+example [BI PROP] {α} (P Q : α → PROP) (a b : α) (h : ⊢ P a) :
+    (∀ x, ∀ y, P x -∗ Q y) ⊢ □ P a -∗ Q b := by
+  iintro H #HP
+  iapply H $$ %a %b %_
+  exact h
 
 /-- Tests `iapply` using unification for foralls. -/
 example [BI PROP] {α} (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
