@@ -821,7 +821,7 @@ theorem fupd_plain_forall [BIAffine PROP] {E1 E2 : CoPset} {Φ : α → PROP}
     calc
       _ ⊢ ■ (∀ a, Φ a)             := Plain.plain
       _ ⊢ |={E1,E2}=> ■ (∀ a, Φ a) := fupd_mask_intro_discard h
-      _ ⊢ |={E1,E2}=> |={E2}=> _   := mono <| fupd_intro.trans (fupd_plainly_mask E E)
+      _ ⊢ |={E1,E2}=> |={E2}=> _   := mono <| fupd_intro.trans <| fupd_plainly_mask E2 E2
       _ ⊢ |={E1,E2}=> ∀ a, Φ a     := trans
 
 @[rocq_alias step_fupd_plain_forall]
