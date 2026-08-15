@@ -84,7 +84,7 @@ instance is_lock_ne γ v : OFE.NonExpansive (lk.isLock N γ v) :=
 
 #rocq_ignore heap_lang.is_lock_proper "OFE is Leibniz; use equality"
 
-@[rocq_alias heap_lang.newlock_spec]
+@[rocq_alias heap_lang.lock.newlock_spec]
 theorem newlock_spec R :
     ⊢ □ ∀ (Φ : Val → IProp GF),
     R -∗ (∀ (v : Val) (γ : lk.name), lk.isLock N γ v R -∗ Φ v) -∗

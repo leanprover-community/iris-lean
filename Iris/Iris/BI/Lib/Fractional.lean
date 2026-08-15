@@ -25,10 +25,10 @@ class AsFractional {PROP : Type u} [BI PROP] (P : PROP) (ioΦ : InOut)
   as_fractional : P ⊣⊢ Φ q
   as_fractional_fractional : Fractional Φ
 
-/-- `FrameFractionalQp qR qP r` is used for fractional framing: it subtracts the
-fraction `qR` from `qP`, leaving `r`.  See `frame_fractional` for how it is used. -/
+/-- `FrameFractionalQp` is used for fractional framing: it subtracts the fraction of the
+hypothesis from the fraction of the goal, computing `r := qP - qR`. See `frame_fractional`. -/
 @[rocq_alias FrameFractionalQp]
-class FrameFractionalQp (qR qP : Qp) (r : outParam Qp) where
+class FrameFractionalQp (qR qP : Qp) (r : outParam Qp) : Prop where
   frame_fractional_qp : qP = qR + r
 
 section Lemmas
@@ -117,16 +117,17 @@ instance frameFractionalQpAddRight (q q' : Qp) : FrameFractionalQp q' (q + q') q
 instance frameFractionalQpHalf (q : Qp) : FrameFractionalQp q.half q q.half :=
   ⟨(Qp.half_add_half q).symm⟩
 
-/-- Not an instance, for performance reasons; concrete instances are provided for
-particular fractional assertions such as `↦`. -/
+/-- Not an instance because of performance; concrete fractional assertions provide their own
+`Frame` instances by applying this lemma. `Φ` is explicit because it is rarely inferrable. -/
 @[rocq_alias frame_fractional]
-theorem frame_fractional [hR : AsFractional R .in Φ .in qR] [hP : AsFractional P .in Φ .in qP]
-    [hr : FrameFractionalQp qR qP r] : Frame p R P (Φ r) where
+theorem frame_fractional (Φ : Qp → PROP) (qR qP r : Qp) {p : Bool} {R : PROP}
+    [hR : AsFractional R .in Φ .in qR] [hP : AsFractional P .in Φ .in qP]
+    [hq : FrameFractionalQp qR qP r] : Frame p R P (Φ r) where
   frame := calc
     _ ⊢ R ∗ Φ r    := sep_mono_left intuitionisticallyIf_elim
     _ ⊢ Φ qR ∗ Φ r := sep_mono_left hR.as_fractional.mp
-    _ ⊢ Φ (qR + r) := (hP.as_fractional_fractional.fractional qR r).mpr
-    _ ⊢ Φ qP       := hr.frame_fractional_qp ▸ .rfl
+    _ ⊢ Φ (qR + r) := (hR.as_fractional_fractional.fractional qR r).mpr
+    _ ⊢ Φ qP       := (BIBase.BiEntails.of_eq (congrArg Φ hq.frame_fractional_qp)).mpr
     _ ⊢ P          := hP.as_fractional.mpr
 
 end Lemmas

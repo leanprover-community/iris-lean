@@ -110,9 +110,7 @@ theorem own_excl_alloc (P : GName → Prop) (HP : PredInfinite P) :
     ((some (Excl.excl ()), none) • (none, some (1 : Qp)) :
       CInvF (IProp GF) (IProp GF)) P ?_
     ⟨trivial, Qp.valid_one⟩ with ⟨%γ, %HPγ, Hown⟩
-  · intro N
-    obtain ⟨γ, HPγ, Hγ⟩ := HP (List.range (N + 1))
-    exact ⟨γ, by grind, HPγ⟩
+  · exact HP.exists_ge
   · imodintro
     iexists γ
     -- NOTE: Ideally, iframe would discharge this pure goal

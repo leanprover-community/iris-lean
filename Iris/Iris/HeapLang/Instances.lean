@@ -235,7 +235,7 @@ instance instAtomicFree {s} {v : Val} : Atomic s hl(free(&v)) where
 instance instAtomicXchg {s} {v1 v2 : Val} : Atomic s hl(xchg(&v1, &v2)) where
   atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
 
-@[rocq_alias heap_lang.faa_atomic]
+@[rocq_alias heap_lang.class_instances.faa_atomic]
 instance instAtomicFaa {s} {v1 v2 : Val} : Atomic s hl(faa(&v1, &v2)) where
   atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
 

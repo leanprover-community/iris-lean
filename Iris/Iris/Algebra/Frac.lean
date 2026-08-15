@@ -162,11 +162,27 @@ theorem Frac.valid_iff {p : Qp} : ✓ p ↔ p.val ≤ 1 := .rfl
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias frac_is_op]
-instance (priority := default - 10) (q1 q2 : Qp) :
-    IsOp .merge (q1 + q2 : Qp) q1 q2 where
+instance (priority := low) isOpFrac_merge (q1 q2 : Qp) :
+    IsOp .merge (q1 + q2) q1 q2 where
   is_op := rfl
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_frac]
-instance (q : Qp) : IsOp d q q.half q.half where
+instance isOpFrac_half d (q : Qp) : IsOp d q q.half q.half where
   is_op := by refine (q.ext ?_); grind
+
+set_option synthInstance.checkSynthOrder false in
+/--
+  The sum operator `+` is not automatically unfolded as the CMRA operator (`•`).
+  As a result, `isOpSplit_op` does not automatically apply, and this instance
+  is required.
+-/
+instance (priority := high) isOpFrac_split (q1 q2 : Qp) :
+    IsOp .split (q1 + q2) q1 q2 where
+  is_op := rfl
+
+instance (priority := default - 500) isOpFrac_quarters_left d : IsOp d instQpOne.one Qp.quarter Qp.threeQuarters where
+  is_op := by refine Qp.ext_iff.mpr ?_; grind [instQpOne]
+
+instance (priority := default - 500) isOpFrac_quarters_right d : IsOp d instQpOne.one Qp.threeQuarters Qp.quarter where
+  is_op := by refine Qp.ext_iff.mpr ?_; grind [instQpOne]
