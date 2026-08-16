@@ -5,7 +5,7 @@ Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
 module
 
-public meta import Iris.ProofMode.Tactics.Basic
+public import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
 
@@ -71,19 +71,19 @@ def iPureCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     ProofModeM Q($P ⊢ $Q) := do
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
   let some _ ← ProofModeM.trySynthInstanceQ q(IntoPure $A $φ)
-  | throwError "ipure: {A} is not pure"
+  | throwIPMError "{A} is not pure"
   let f ← iPureCases q($φ → ($(hyps'.tm) ⊢ $Q)) purePat <| fun g => do
     let some ⟨_, _, tm, goal'⟩ := parseEntails? (← instantiateMVars (← g.getType))
-      | throwError "ipure: unable to parse the Iris entailment {← g.getType}"
+      | throwIPMError "unable to parse the Iris entailment {← g.getType}"
     let some ⟨_, hyps'⟩ := parseHyps? bi tm
-      | throwError "ipure: unable to parse the Iris context {tm}"
+      | throwIPMError "unable to parse the Iris context {tm}"
     return (← k hyps' goal' : Expr)
   have : $hyps'.tm =Q $P' := ⟨⟩
   match matchBool p with
   | .inl _ => return q(pure_elim_intuitionistic $pf $f)
   | .inr _ =>
     let .some _ ← trySynthInstanceQ q(TCOr (Affine $A) (Absorbing $Q))
-    | throwError "ipure: {A} is not affine and the goal not absorbing"
+    | throwIPMError "{A} is not affine and the goal not absorbing"
     return q(pure_elim_spatial (A := $A) $pf $f)
 
 def iPureIntroCore {u} {prop : Q(Type u)} (_bi : Q(BI $prop))
@@ -92,7 +92,7 @@ def iPureIntroCore {u} {prop : Q(Type u)} (_bi : Q(BI $prop))
   let b : Q(Bool) ← mkFreshExprMVarQ q(Bool)
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
   let .some h ← ProofModeM.trySynthInstanceQ q(FromPure $b $goal .out $φ)
-  | throwError "ipureintro: {goal} is not pure"
+  | throwIPMError "{goal} is not pure"
   let m : Q($φ) ← mkFreshExprSyntheticOpaqueMVar (← instantiateMVars φ)
 
   let pf : Q($e ⊢ $goal) ← do
@@ -100,13 +100,13 @@ def iPureIntroCore {u} {prop : Q(Type u)} (_bi : Q(BI $prop))
     | .const ``true _ =>
       have : $b =Q true := ⟨⟩
       let .some _ ← trySynthInstanceQ q(Affine $e)
-        | throwError "ipureintro: context is not affine"
+        | throwIPMError "context is not affine"
       pure q(pure_intro_affine (P := $e) (Q := $goal) $h $m)
     | .const ``false _ =>
       have : $b =Q false := ⟨⟩
       pure q(pure_intro_spatial (P := $e) (Q := $goal) $h $m)
     -- the following indicates a bug in the typeclass instances that generate b
-    | _ => throwError "ipureintro: bug in typeclass instances, cannot reduce {b} to true or false"
+    | _ => throwIPMError "bug in typeclass instances, cannot reduce {b} to true or false"
 
   return ⟨pf, m.mvarId!⟩
 
@@ -115,7 +115,7 @@ def iPureIntroCore {u} {prop : Q(Type u)} (_bi : Q(BI $prop))
   Lean context.
 -/
 elab "ipure " colGt hyp:ident : tactic => do
-  ProofModeM.runTactic λ mvar { bi, e, hyps, goal, .. } => do
+  ProofModeM.runTactic `ipure λ mvar { bi, e, hyps, goal, .. } => do
 
   let ivar ← hyps.findWithInfo hyp
   let ⟨_, hyps', _, out', p, _, pf⟩ := hyps.remove true ivar
@@ -129,7 +129,7 @@ elab "ipure " colGt hyp:ident : tactic => do
   regular Lean context and destructs it using the `rcases` destruction pattern.
 -/
 elab "ipure " colGt hyp:ident " with " pat:rcasesPat : tactic => do
-  ProofModeM.runTactic λ mvar { bi, e, hyps, goal, .. } => do
+  ProofModeM.runTactic `ipure λ mvar { bi, e, hyps, goal, .. } => do
 
   let ivar ← hyps.findWithInfo hyp
   let ⟨_, hyps', _, out', p, _, pf⟩ := hyps.remove true ivar
@@ -142,18 +142,18 @@ elab "ipure " colGt hyp:ident " with " pat:rcasesPat : tactic => do
   `iempintro` solves an `emp` goal, provided that the spatial context is affine.
 -/
 elab "iempintro" : tactic => do
-  ProofModeM.runTactic λ mvar { prop, e, goal, .. } => do
+  ProofModeM.runTactic `iempintro λ mvar { prop, e, goal, .. } => do
 
-  let .true ← isDefEq goal q(emp : $prop) | throwError "goal is not `emp`"
+  let .true ← isDefEq goal q(emp : $prop) | throwIPMError "goal is not `emp`"
   let .some _ ← trySynthInstanceQ q(Affine $e)
-    | throwError "iempintro: context is not affine"
+    | throwIPMError "context is not affine"
   mvar.assign q(affine (P := $e))
 
 /--
   `ipureintro` turns a goal of the form `⌜φ⌝` into the Lean goal `φ`.
 -/
 elab "ipureintro" : tactic => do
-  ProofModeM.runTactic λ mvar { bi, e, goal, .. } => do
+  ProofModeM.runTactic `ipureintro λ mvar { bi, e, goal, .. } => do
     let ⟨pf, m⟩ ← iPureIntroCore bi e goal
     addMVarGoal m
     mvar.assign pf

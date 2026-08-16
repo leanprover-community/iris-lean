@@ -12,7 +12,6 @@ public import Iris.Std.Nat
 public import Iris.Std.Classes
 public import Iris.Std.Rewrite
 public import Iris.Std.TC
-import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -77,8 +76,6 @@ theorem imp_elim_left [BI PROP] {P Q : PROP} : (P → Q) ∧ P ⊢ Q := imp_elim
 
 @[rocq_alias bi.impl_elim_r]
 theorem imp_elim_right [BI PROP] {P Q : PROP} : P ∧ (P → Q) ⊢ Q := imp_elim_swap .rfl
-
-theorem imp_elim_alt [BI PROP] {P Q R : PROP} (h : P ⊢ Q → R) : P ∧ Q ⊢ R := imp_elim h
 
 @[rocq_alias bi.False_elim]
 theorem false_elim [BI PROP] {P : PROP} : False ⊢ P := pure_elim' False.elim
@@ -1038,6 +1035,7 @@ instance sep_affine [BI PROP] (P Q : PROP) [Affine P] [Affine Q] : Affine iprop(
 instance affinely_affine [BI PROP] (P : PROP) : Affine iprop(<affine> P) where
   affine := affinely_elim_emp
 
+@[rocq_alias bi_inhabited]
 instance [BIBase PROP] : Inhabited PROP where
   default := emp
 
@@ -1347,7 +1345,7 @@ theorem persistently_absorb_right [BI PROP] {P Q : PROP} : P ∗ <pers> Q ⊢ <p
 theorem absorbingly_persistently [BI PROP] {P : PROP} : <absorb> <pers> P ⊣⊢ <pers> P :=
   ⟨persistently_absorb_right, absorbingly_intro⟩
 
-@[rocq_alias bi.persistently_absorbing]
+@[rocq_alias derived_laws.bi.persistently_absorbing]
 instance persistently_absorbing [BI PROP] (P : PROP) : Absorbing iprop(<pers> P) where
   absorbing := absorbingly_persistently.1
 
@@ -2547,8 +2545,8 @@ theorem LimitPreserving.entails [BI PROP] [COFE A] (Φ Ψ : A → PROP) [Φne : 
        f x := iprop(Φ x → Ψ x),
        ne.ne _ {_ _} x := imp_ne.ne (Φne.ne x) (Ψne.ne x)
     }
-    refine fun c h' => ?_
-    refine BIBase.BiEntails.of_eq (LimitPreserving.equiv f g _ ?_)
+    refine ⟨fun c h' => ?_⟩
+    refine BIBase.BiEntails.of_eq ((LimitPreserving.equiv f g).compl _ ?_)
     exact fun n => (h' n).to_eq
 
 @[rocq_alias bi.limit_preserving_emp_valid]
@@ -2557,24 +2555,24 @@ theorem limitPreserving_emp_valid [BI PROP] [COFE A] (Φ : A → PROP)
   LimitPreserving.entails (fun _ => iprop(emp)) Φ
 
 @[rocq_alias bi.limit_preserving_Persistent]
-instance limitPreserving_persistent [BI PROP] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
- LimitPreserving (fun x => Persistent (Φ x)) := by
+theorem limitPreserving_persistent [BI PROP] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
+    LimitPreserving (fun x => Persistent (Φ x)) := by
   letI _ : OFE.NonExpansive fun x => iprop(<pers> Φ x) := .comp persistently_ne Φne
-  refine fun c h => ⟨?_⟩
-  refine LimitPreserving.entails _ (fun x => iprop(<pers> (Φ x))) _ ?_
+  refine ⟨fun c h => ⟨?_⟩⟩
+  refine (LimitPreserving.entails _ (fun x => iprop(<pers> (Φ x)))).compl _ ?_
   exact (fun n => h n |>.persistent)
 
-instance limitPreserving_absorbing [BI PROP] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
- LimitPreserving (fun x => Absorbing (Φ x)) := by
+theorem limitPreserving_absorbing [BI PROP] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
+    LimitPreserving (fun x => Absorbing (Φ x)) := by
   letI _ : OFE.NonExpansive fun x => iprop(<absorb> Φ x) := .comp absorbingly_ne Φne
-  refine fun c h => ⟨?_⟩
-  refine LimitPreserving.entails (fun x => iprop(<absorb> (Φ x))) _ _ ?_
+  refine ⟨fun c h => ⟨?_⟩⟩
+  refine (LimitPreserving.entails (fun x => iprop(<absorb> (Φ x))) _).compl _ ?_
   exact (fun n => h n |>.absorbing)
 
-instance limitPreserving_affine [BI PROP] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
- LimitPreserving (fun x => Affine (Φ x)) := by
-  refine fun c h => ⟨?_⟩
-  refine LimitPreserving.entails (fun x => iprop((Φ x))) (fun _ => iprop(emp)) _ ?_
+theorem limitPreserving_affine [BI PROP] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
+    LimitPreserving (fun x => Affine (Φ x)) := by
+  refine ⟨fun c h => ⟨?_⟩⟩
+  refine (LimitPreserving.entails (fun x => iprop((Φ x))) (fun _ => iprop(emp))).compl _ ?_
   exact (fun n => h n |>.affine)
 
 @[rocq_alias bi.iter_modal_intro]

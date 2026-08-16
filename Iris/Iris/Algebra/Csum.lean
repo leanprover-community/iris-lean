@@ -8,7 +8,6 @@ module
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.Updates
 public import Iris.Algebra.LocalUpdates
-meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -19,6 +18,9 @@ inductive Csum (α β : Type _) where
   | inl : α → Csum α β
   | inr : β → Csum α β
   | invalid : Csum α β
+
+#rocq_ignore maybe_Cinl "std++ `Maybe` class; pattern match instead"
+#rocq_ignore maybe_Cinr "std++ `Maybe` class; pattern match instead"
 
 open Csum OFE CMRA
 
@@ -48,7 +50,7 @@ theorem dist_eqv [OFE α] [OFE β] {n} : Equivalence (Csum.Dist (α := α) (β :
 instance [OFE α] [OFE β] : OFE (Csum α β) where
   Dist := Csum.Dist
   dist_eqv := dist_eqv
-  eq_dist {x y} := by
+  eq_dist' {x y} := by
     cases x <;> cases y <;> simp [Csum.Dist, eq_dist]
   dist_lt {n x y m} hn hlt := by
     cases x <;> cases y <;> first | exact OFE.Dist.lt hn hlt | exact hn.elim | trivial
@@ -88,6 +90,8 @@ instance [OFE α] [OFE β] [OFE.Discrete α] [OFE.Discrete β] : OFE.Discrete (C
       | exact congrArg inl (discrete_0 (α := α) h)
       | exact congrArg inr (discrete_0 (α := β) h)
       | exact h.elim | trivial
+
+#rocq_ignore csum_leibniz "Not needed"
 
 @[rocq_alias Cinl_discrete]
 instance [OFE α] [OFE β] {a : α} [DiscreteE a] : DiscreteE (inl (β := β) a) where

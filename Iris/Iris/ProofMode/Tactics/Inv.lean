@@ -5,13 +5,7 @@ Authors: Michael Sammler, Alvin Tang
 -/
 module
 
-public meta import Iris.ProofMode.Tactics.Assumption
-public meta import Iris.ProofMode.Tactics.Cases
-public meta import Iris.ProofMode.Tactics.Intro
-public meta import Iris.ProofMode.Patterns.CasesPattern
-public meta import Iris.ProofMode.Patterns.IntroPattern
-public meta import Iris.ProofMode.Patterns.SelPattern
-public meta import Iris.ProofMode.ClassesMake
+public import Iris.ProofMode.Tactics.Cases
 
 namespace Iris.ProofMode
 
@@ -81,7 +75,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
   let Q' ← mkFreshExprMVarQ q($X → $prop)
   let some inst ← ProofModeM.trySynthInstanceQ
     q(ElimInv $φ $X $Pinv $Pin $Pout $close $mPclose $goal $Q')
-  | throwError "iinv: invalid invariant {Pinv} (ElimInv type class synthesis failed)"
+  | throwIPMError "invalid invariant {Pinv} (ElimInv type class synthesis failed)"
 
   let ⟨e'', hyps'', p'', out'', pfPin⟩ ←
     iSpecializeCoreNoModal hyps' q(false) q(iprop($Pin -∗ $Pin))
@@ -107,7 +101,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
             q(false) q(iprop($Pout' $x ∗ $f' $x))
           mkLambdaFVars #[x] pf'
         -- Throw an error if `hclose` is not given, but `mPclose` is not `none`
-        | none => throwError "iinv: missing cases pattern for the closing hypothesis"
+        | none => throwIPMError "missing cases pattern for the closing hypothesis"
     return q(tac_inv_elim $inst $hφ $pf $pfEq $pfPin)
   | ~q(none) =>
     let pf : Q(∀ x, $e'' ∗ $Pout x ⊢ $Q' x) ←
@@ -145,7 +139,7 @@ elab_rules : tactic
     let casesPat ← liftMacroM <| iCasesPat.parse casesPat
     let closePat ← liftMacroM <| closePat.mapM iCasesPat.parse
 
-    ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+    ProofModeM.runTactic `iinv λ mvar { hyps, goal, .. } => do
       -- Find the invariant hypothesis
       let ivar ← do match ← try? <| hyps.findWithInfo ⟨t⟩ with
       -- Hypothesis supplied by the user: return the `IVarId` value of the invariant directly
@@ -155,7 +149,7 @@ elab_rules : tactic
         let N ← elabTermEnsuringTypeQ t q(Namespace)
         let some (_, ivar, _, _) ← hyps.findM? fun _ _ _ ty =>
             return (← ProofModeM.trySynthInstanceQ q(IntoInv $ty $N)).isSome
-          | throwError m!"iinv: invariant hypothesis with the namespace {N} not found"
+          | throwIPMError "invariant hypothesis with the namespace {N} not found"
         pure ivar
 
       let pf ← iInvCore hyps goal ivar specPat casesPat closePat

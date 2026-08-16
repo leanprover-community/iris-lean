@@ -5,6 +5,8 @@ Authors: Lars König
 -/
 module
 
+public import Iris.Init
+
 @[expose] public section
 
 namespace Iris.Std
@@ -38,7 +40,6 @@ class inductive TCEq {α : Sort _} (a : α) : α → Prop
 
 instance {α : Sort _} {a : α} : TCEq a a := TCEq.refl
 
-
 /-- Type class version of `Ite`, i.e. a type class for which an instance exists if the boolean
 condition is `true` and an instance of `T` is present or the condition is `false` and an instance
 of `U` is present.
@@ -61,25 +62,38 @@ unif_hint (b : Bool) where
 unif_hint (b : Bool) where
   |- true && b ≟ b
 
-/-- Type class for natural number cancellation. Given a number `n` and a number `m` that should
-be cancelled (subtracted) from `n`, compute a new `n'` and a remainder `m'` that could not be cancelled. -/
-class NatCancel (n m : Nat) (n' m' : outParam Nat) : Prop where
-  nat_cancel : n' + m = n + m'
-export NatCancel (nat_cancel)
+/--
+  This type class corresponds to `TCForall` in Rocq's stdpp.
 
-instance (priority := low) : NatCancel n m n m where
-  nat_cancel := by simp
+  The core Lean libraries only provide `List.Forall₂` while `List.Forall` is
+  available in Mathlib (`Mathlib.Data.List.Defs`) as a definition.
+  The proposition `∀ x ∈ xs, p x` is typically directly used as an assertion,
+  but `TCForall` as a type class is useful for automatic inference, e.g.,
+  instances that involve `[∗]`.
+-/
+class inductive TCForall (p : α → Prop) : List α → Prop
+  | nil : TCForall p []
+  | cons {x : α} {xs : List α} : p x → TCForall p xs → TCForall p (x :: xs)
 
-instance (priority := high) : NatCancel 0 m 0 m where
-  nat_cancel := rfl
-
-instance (priority := high) : NatCancel n 0 n 0 where
-  nat_cancel := Nat.add_zero n
-
-instance (priority := high) : NatCancel n n 0 0 where
-  nat_cancel := by simp
-
-instance [h : NatCancel n m n' m'] : NatCancel (n + 1) (m + 1) n' m' where
-  nat_cancel := by have := h.nat_cancel; grind
+/-- Corresponding to `TCForall_Forall` in Rocq's stdpp. -/
+theorem forall_TCForall {α} {p : α → Prop} {xs : List α} : TCForall p xs ↔ ∀ x ∈ xs, p x := by
+  constructor
+  · intro h
+    induction h with
+    | nil => intro _ _; contradiction
+    | cons hx _ ih =>
+      intro y hy
+      cases hy with
+      | head => exact hx
+      | tail _ hy => exact ih _ hy
+  · intro h
+    induction xs with
+    | nil => exact .nil
+    | cons x xs ih =>
+      constructor
+      · exact h x (.head _)
+      · apply ih
+        intro y hy
+        exact h y (.tail _ hy)
 
 end Iris.Std

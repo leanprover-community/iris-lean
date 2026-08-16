@@ -8,7 +8,8 @@ module
 public import Iris.BI
 public import Iris.ProofMode.Classes
 public import Iris.ProofMode.ClassesMake
-public meta import Iris.ProofMode.Expr
+public import Iris.ProofMode.Expr
+public import Iris.ProofMode.SynthInstance
 public import Iris.Std.TC
 
 public meta section
@@ -189,7 +190,8 @@ instance frame_impl [BI PROP] (R P1 P2 Q2 : PROP)
 
 @[ipm_backtrack, rocq_alias frame_later]
 instance frame_later [BI PROP] p (R R' P Q Q' : PROP)
-    [h1 : IntoLaterN true 1 R' R] [h2 : Frame p R P Q] [h3 : MakeLaterN 1 Q Q'] :
+    [h1 : IntoLaterN (progress := false) (only_head := true) 1 R' R]
+    [h2 : Frame p R P Q] [h3 : MakeLaterN 1 Q Q'] :
     Frame p R' iprop(▷ P) Q' where
   frame := calc
     _ ⊢ □?p R' ∗ ▷^[1]Q                                     := sep_mono_right h3.make_laterN.mpr
@@ -200,7 +202,8 @@ instance frame_later [BI PROP] p (R R' P Q Q' : PROP)
 
 @[ipm_backtrack, rocq_alias frame_laterN]
 instance frame_laterN [BI PROP] p n (R R' P Q Q' : PROP)
-    [h1 : IntoLaterN true n R' R] [h2 : Frame p R P Q] [h3 : MakeLaterN n Q Q'] :
+    [h1 : IntoLaterN (progress := false) (only_head := true) n R' R]
+    [h2 : Frame p R P Q] [h3 : MakeLaterN n Q Q'] :
     Frame p R' iprop(▷^[n] P) Q' where
   frame := calc
     _ ⊢ □?p R' ∗ ▷^[n]Q      := sep_mono_right h3.make_laterN.mpr
@@ -233,6 +236,40 @@ instance frame_except_0 [BI PROP] p (R P Q Q' : PROP)
     _ ⊢ ◇ □?p R ∗ ◇ Q := sep_mono_left except0_intro
     _ ⊢ ◇ (□?p R ∗ Q)  := except0_sep.mpr
     _ ⊢ ◇ P            := except0_mono h1.frame
+
+theorem frame_embed_core [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+    {p : Bool} {R P Q : PROP1} {Q' : PROP2}
+    (h1 : Frame p R P Q) (h2 : MakeEmbed Q Q') :
+    □?p ⎡R⎤ ∗ Q' ⊢ ⎡P⎤ := calc
+  _ ⊢ □?p ⎡R⎤ ∗ ⎡Q⎤ := sep_mono_right h2.make_embed.mpr
+  _ ⊢ ⎡□?p R⎤ ∗ ⎡Q⎤ := sep_mono_left <| embed_intuitionistically_if_2 R p
+  _ ⊢ ⎡□?p R ∗ Q⎤   := (embed_sep _ _).mpr
+  _ ⊢ ⎡P⎤           := embed_mono h1.frame
+
+@[ipm_backtrack, rocq_alias frame_embed]
+instance frame_embed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+    (p : Bool) (R P Q : PROP1) (Q' : PROP2)
+    [h1 : Frame p R P Q] [h2 : MakeEmbed Q Q'] :
+    Frame p iprop(⎡R⎤) iprop(⎡P⎤) Q' where
+  frame := frame_embed_core h1 h2
+
+@[ipm_backtrack, rocq_alias frame_pure_embed]
+instance (priority := default - 1) frame_pure_embed
+    [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+    (p : Bool) (φ : Prop) (P Q : PROP1) (Q' : PROP2)
+    [h1 : Frame p iprop(⌜φ⌝) P Q] [h2 : MakeEmbed Q Q'] :
+    Frame p iprop(⌜φ⌝) iprop(⎡P⎤) Q' where
+  frame := (sep_mono_left <| intuitionisticallyIf_mono (embed_pure φ).mpr).trans
+    (frame_embed_core h1 h2)
+
+@[ipm_backtrack, rocq_alias frame_eq_embed]
+instance (priority := default - 1) frame_eq_embed
+    [Sbi P1] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
+    (p : Bool) {A : Type _} [OFE A] (a b : A) (P Q : P1) (Q' : P2)
+    [h1 : Frame p iprop(a ≡ b) P Q] [h2 : MakeEmbed Q Q'] :
+    Frame p iprop(a ≡ b) iprop(⎡P⎤) Q' where
+  frame := (sep_mono_left <| intuitionisticallyIf_mono (embed_internal_eq a b).mpr).trans
+    (frame_embed_core h1 h2)
 
 section tactic_theorems
 

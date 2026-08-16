@@ -7,7 +7,7 @@ module
 
 import Iris.BI
 public import Iris.ProofMode.Classes
-public meta import Iris.ProofMode.Tactics.Basic
+public import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
 
@@ -47,7 +47,7 @@ def iModCore {prop : Q(Type u)} (_bi : Q(BI $prop))
   let Q' : Q($prop) ← mkFreshExprMVarQ q($prop)
   -- transform `Q` to `Q'` and `A` to `A'`
   let .some _ ← ProofModeM.trySynthInstanceQ q(ElimModal $Φ $p .out $p' $A $A' $Q $Q')
-    | throwError "imod: {A} is not a modality"
+    | throwIPMError "{A} is not a modality"
   let hΦ ← iSolveSidecondition q($Φ)
   let p'' : Q(Bool) ← instantiateMVars p'
   let A'' ← instantiateMVarsQ A'

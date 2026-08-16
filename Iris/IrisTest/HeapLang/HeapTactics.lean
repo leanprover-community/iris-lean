@@ -69,21 +69,7 @@ example {l : Loc} {v : Val} :
   imodintro
   iapply HΦ $$ Hl
 
-/--
-error: Tactic `wp_load` failed: cannot find a points-to hypothesis for l ↦{?_} _
-
-hlc : HasLC
-GF : BundledGFunctors
-ι : HeapLangGS hlc GF
-s : Stuckness
-E : CoPset
-Φ : Val → IProp GF
-l l' : Loc
-v : Val
-⊢
-  ∗Hpt : l' ↦ some v
-  ⊢ WP hl(!#l) @ s ; E {{ Φ }}
--/
+/-- error: wp_load: cannot find a points-to hypothesis for l ↦{?_} _ -/
 #guard_msgs (whitespace := lax) in
 set_option pp.mvars false in
 example {l l' : Loc} {v : Val} :
@@ -91,21 +77,7 @@ example {l l' : Loc} {v : Val} :
   iintro Hpt
   wp_load
 
-/--
-error: Tactic `wp_load` failed: cannot find a `load` redex
-
-hlc : HasLC
-GF : BundledGFunctors
-ι : HeapLangGS hlc GF
-s : Stuckness
-E : CoPset
-Φ : Val → IProp GF
-l : Loc
-v v' : Val
-⊢
-  ∗Hpt : l ↦ some v
-  ⊢ WP hl(#l ← v(&v')) @ s ; E {{ Φ }}
--/
+/-- error: wp_load: cannot find a `load` redex -/
 #guard_msgs (whitespace := lax) in
 example {l : Loc} {v v' : Val} :
     (l ↦ some v) ⊢ WP hl(v(#l) ← &v') @ s ; E {{ Φ }} := by
@@ -141,9 +113,9 @@ example {l : Loc} {v v' v'' : Val} :
   imodintro
   iframe
 
-/--
-error: Tactic `wp_store` failed: cannot find a points-to hypothesis for l ↦{DFrac.own 1} _
-
+-- Rocq parity (`first [wp_seq|wp_finish]`): a store in sequencing position discards its
+-- `#()` result, so `wp_store` steps through the `;` instead of leaving a pure redex behind
+/-- trace:
 hlc : HasLC
 GF : BundledGFunctors
 ι : HeapLangGS hlc GF
@@ -151,12 +123,42 @@ s : Stuckness
 E : CoPset
 Φ : Val → IProp GF
 l : Loc
-dq : DFrac
 v v' : Val
 ⊢
-  ∗Hpt : l ↦{dq} some v
-  ⊢ WP hl(#l ← v(&v')) @ s ; E {{ Φ }}
+  ∗Hpt : l ↦ some v'
+  ⊢ WP hl(!#l) @ s ; E {{ w, ⌜w = v'⌝ ∗ l ↦ some v' }}
 -/
+#guard_msgs (whitespace := lax, trace, drop error) in
+example {l : Loc} {v v' : Val} :
+    (l ↦ some v) ⊢
+      WP hl(v(#l) ← &v'; !v(#l)) @ s ; E {{ w, ⌜w = v'⌝ ∗ l ↦ some v' }} := by
+  iintro Hpt
+  wp_store
+  trace_state
+
+-- the fast-forward is *only* for the sequencing redex: a `let` binding the result stays
+/-- trace:
+hlc : HasLC
+GF : BundledGFunctors
+ι : HeapLangGS hlc GF
+s : Stuckness
+E : CoPset
+Φ : Val → IProp GF
+l : Loc
+v v' : Val
+⊢
+  ∗Hpt : l ↦ some v'
+  ⊢ WP hl(let x := #(); !#l) @ s ; E {{ _r, l ↦ some v' }}
+-/
+#guard_msgs (whitespace := lax, trace, drop error) in
+example {l : Loc} {v v' : Val} :
+    (l ↦ some v) ⊢
+      WP hl(let x := v(#l) ← &v'; !v(#l)) @ s ; E {{ _r, l ↦ some v' }} := by
+  iintro Hpt
+  wp_store
+  trace_state
+
+/-- error: wp_store: cannot find a points-to hypothesis for l ↦{DFrac.own 1} _ -/
 #guard_msgs (whitespace := lax) in
 example {l : Loc} {dq : DFrac} {v v' : Val} :
     (l ↦{dq} some v) ⊢ WP hl(v(#l) ← &v') @ s ; E {{ Φ }} := by
@@ -188,22 +190,7 @@ example {l : Loc} {z : Int} :
   itrivial
 
 -- `wp_faa` failing: writes need full ownership, fractional is rejected
-/--
-error: Tactic `wp_faa` failed: cannot find a points-to hypothesis for l ↦{DFrac.own 1} _
-
-hlc : HasLC
-GF : BundledGFunctors
-ι : HeapLangGS hlc GF
-s : Stuckness
-E : CoPset
-Φ : Val → IProp GF
-l : Loc
-dq : DFrac
-z : Int
-⊢
-  ∗Hpt : l ↦{dq} some hl_val(#z)
-  ⊢ WP hl(faa(#l, #1)) @ s ; E {{ Φ }}
--/
+/-- error: wp_faa: cannot find a points-to hypothesis for l ↦{DFrac.own 1} _ -/
 #guard_msgs (whitespace := lax) in
 example {l : Loc} {dq : DFrac} {z : Int} :
     (l ↦{dq} some hl_val(#z)) ⊢ WP hl(faa(#l, #1)) @ s ; E {{ Φ }} := by
@@ -211,21 +198,7 @@ example {l : Loc} {dq : DFrac} {z : Int} :
   wp_faa
 
 -- `wp_faa` failing: the stored value must be an integer literal
-/--
-error: Tactic `wp_faa` failed: the points-to hypothesis for location l does not store an integer
-
-hlc : HasLC
-GF : BundledGFunctors
-ι : HeapLangGS hlc GF
-s : Stuckness
-E : CoPset
-Φ : Val → IProp GF
-l : Loc
-v : Val
-⊢
-  ∗Hpt : l ↦ some v
-  ⊢ WP hl(faa(#l, #1)) @ s ; E {{ Φ }}
--/
+/-- error: wp_faa: the points-to hypothesis for location l does not store an integer -/
 #guard_msgs (whitespace := lax) in
 example {l : Loc} {v : Val} :
     (l ↦ some v) ⊢ WP hl(faa(#l, #1)) @ s ; E {{ Φ }} := by
@@ -253,10 +226,9 @@ example {l : Loc} {v v' : Val} :
   iframe
   itrivial
 
--- `wp_xchg` failing: writes need full ownership, fractional is rejected
+-- Rocq parity: like `wp_store`, an `xchg` in sequencing position discards its result
 /--
-error: Tactic `wp_xchg` failed: cannot find a points-to hypothesis for l ↦{DFrac.own 1} _
-
+error: unsolved goals
 hlc : HasLC
 GF : BundledGFunctors
 ι : HeapLangGS hlc GF
@@ -264,12 +236,20 @@ s : Stuckness
 E : CoPset
 Φ : Val → IProp GF
 l : Loc
-dq : DFrac
 v v' : Val
 ⊢
-  ∗Hpt : l ↦{dq} some v
-  ⊢ WP hl(xchg(#l, v(&v'))) @ s ; E {{ Φ }}
+  ∗Hpt : l ↦ some v'
+  ⊢ WP hl(!#l) @ s ; E {{ w, ⌜w = v'⌝ ∗ l ↦ some v' }}
 -/
+#guard_msgs (whitespace := lax) in
+example {l : Loc} {v v' : Val} :
+    (l ↦ some v) ⊢
+      WP hl(xchg(#l, &v'); !v(#l)) @ s ; E {{ w, ⌜w = v'⌝ ∗ l ↦ some v' }} := by
+  iintro Hpt
+  wp_xchg
+
+-- `wp_xchg` failing: writes need full ownership, fractional is rejected
+/-- error: wp_xchg: cannot find a points-to hypothesis for l ↦{DFrac.own 1} _ -/
 #guard_msgs (whitespace := lax) in
 example {l : Loc} {dq : DFrac} {v v' : Val} :
     (l ↦{dq} some v) ⊢ WP hl(xchg(#l, &v')) @ s ; E {{ Φ }} := by
@@ -298,22 +278,7 @@ example {l l' : Loc} {v w : Val} :
   iframe
 
 -- `wp_free` failing: deallocation needs full ownership, fractional is rejected
-/--
-error: Tactic `wp_free` failed: cannot find a points-to hypothesis for l ↦{DFrac.own 1} _
-
-hlc : HasLC
-GF : BundledGFunctors
-ι : HeapLangGS hlc GF
-s : Stuckness
-E : CoPset
-Φ : Val → IProp GF
-l : Loc
-dq : DFrac
-v : Val
-⊢
-  ∗Hpt : l ↦{dq} some v
-  ⊢ WP hl(free(#l)) @ s ; E {{ Φ }}
--/
+/-- error: wp_free: cannot find a points-to hypothesis for l ↦{DFrac.own 1} _ -/
 #guard_msgs (whitespace := lax) in
 example {l : Loc} {dq : DFrac} {v : Val} :
     (l ↦{dq} some v) ⊢ WP hl(free(#l)) @ s ; E {{ Φ }} := by
@@ -360,22 +325,7 @@ example {l : Loc} {v2 : Val} :
   itrivial
 
 -- `wp_cmpxchg_suc` failing: a successful CAS writes, so fractional is rejected
-/--
-error: Tactic `wp_cmpxchg_suc` failed: cannot find a points-to hypothesis for l ↦{DFrac.own 1} _
-
-hlc : HasLC
-GF : BundledGFunctors
-ι : HeapLangGS hlc GF
-s : Stuckness
-E : CoPset
-Φ : Val → IProp GF
-l : Loc
-dq : DFrac
-v2 : Val
-⊢
-  ∗Hl : l ↦{dq} some hl_val(#1)
-  ⊢ WP hl(cmpXchg(#l, #1, v(&v2))) @ s ; E {{ Φ }}
--/
+/-- error: wp_cmpxchg_suc: cannot find a points-to hypothesis for l ↦{DFrac.own 1} _ -/
 #guard_msgs (whitespace := lax) in
 example {l : Loc} {dq : DFrac} {v2 : Val} :
     (l ↦{dq} some hl_val(#1)) ⊢
@@ -428,23 +378,7 @@ end wp_cmpxchg
 section goal_shape
 
 -- heap tactics reject WPs over a non-HeapLang `IrisGS_gen` instance
-/--
-error: Tactic `wp_load` failed: the goal is not a HeapLang WP
-
-hlc : HasLC
-GF : BundledGFunctors
-ι : HeapLangGS hlc GF
-s : Stuckness
-E : CoPset
-Φ✝ : Val → IProp GF
-hlc' : HasLC
-GF' : BundledGFunctors
-inst✝ : IrisGS_gen hlc' Exp GF'
-e : Exp
-Φ : Val → IProp GF'
-⊢
-  ⊢ WP e @ s ; E {{ Φ }}
--/
+/-- error: wp_load: the goal is not a HeapLang WP -/
 #guard_msgs (whitespace := lax) in
 example {hlc'} {GF' : BundledGFunctors} [IrisGS_gen hlc' Exp GF']
     {e : Exp} {Φ : Val → IProp GF'} :
@@ -452,12 +386,16 @@ example {hlc'} {GF' : BundledGFunctors} [IrisGS_gen hlc' Exp GF']
   wp_load
 
 -- heap tactics reject goals that are not WPs at all
-/--
-error: The goal P must be a WP
--/
+/-- error: wp_load: the goal is not a WP -/
 #guard_msgs (whitespace := lax) in
 example {P : IProp GF} : P ⊢ P := by
   iintro HP
+  wp_load
+
+-- the `wp_pures` prologue can reduce the expression to a value, leaving no redex
+/-- error: wp_load: the expression has been reduced to a value, there is no redex left -/
+#guard_msgs (whitespace := lax) in
+example : ⊢@{IProp GF} WP hl(if #true then #1 else #0) {{ v, True }} := by
   wp_load
 
 end goal_shape

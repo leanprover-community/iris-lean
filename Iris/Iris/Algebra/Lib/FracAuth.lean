@@ -8,7 +8,6 @@ module
 public import Iris.Algebra.Auth
 public import Iris.Algebra.IsOp
 import Iris.Algebra.LocalUpdates
-meta import Iris.Std.RocqPorting
 
 /-!
 # Fractional Authoritative Camera
@@ -108,7 +107,7 @@ theorem agreeN {dq : DFrac} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F b) : a �
 
 @[rocq_alias frac_auth_agree]
 theorem agree {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F b) : a = b :=
-  OFE.eq_dist.mpr fun n => agreeN (valid_iff_validN.mp h n)
+  OFE.eq_dist_2 fun n => agreeN (valid_iff_validN.mp h n)
 
 #rocq_ignore frac_auth_agree_L "Use agree"
 
@@ -276,8 +275,12 @@ theorem updateP_both_unpersist {q : Qp} {a b : A} :
 abbrev FracAuthURF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
   AuthURF (OptionOF (ProdOF (constOF (Qp)) T))
 
+#rocq_ignore frac_authURF_contractive "Found by typeclass inference"
+
 @[rocq_alias frac_authRF]
-abbrev FracAuthF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
+abbrev FracAuthRF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
   AuthRF (OptionOF (ProdOF (constOF (Qp)) T))
+
+#rocq_ignore frac_authRF_contractive "Found by typeclass inference"
 
 end FracAuth

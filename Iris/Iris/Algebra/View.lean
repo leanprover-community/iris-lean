@@ -10,9 +10,9 @@ public import Iris.Algebra.OFE
 public import Iris.Algebra.Frac
 public import Iris.Algebra.DFrac
 public import Iris.Algebra.Agree
+public import Iris.Algebra.BigOp
 public import Iris.Algebra.Updates
 public import Iris.Algebra.LocalUpdates
-meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -70,18 +70,18 @@ variable [OFE A] [OFE B] {R : ViewRel A B}
 def dist (n : Nat) (x y : View R) : Prop := x.auth ≡{n}≡ y.auth ∧ x.frag ≡{n}≡ y.frag
 
 @[rocq_alias view_ofe_mixin]
-instance : OFE (View R) where
+instance instOFE : OFE (View R) where
   Dist := dist
   dist_eqv := {
     refl _ := ⟨.of_eq rfl, .of_eq rfl⟩
     symm H := ⟨H.1.symm, H.2.symm⟩
     trans H1 H2 := ⟨H1.1.trans H2.1, H1.2.trans H2.2⟩
   }
-  eq_dist {x y} := by
+  eq_dist' {x y} := by
     refine ⟨fun H _ => H ▸ ⟨.rfl, .rfl⟩, fun H => ?_⟩
     obtain ⟨xa, xf⟩ := x; obtain ⟨ya, yf⟩ := y
     simp only [View.mk.injEq]
-    exact ⟨eq_dist.mpr fun n => (H n).1, eq_dist.mpr fun n => (H n).2⟩
+    exact ⟨eq_dist_2 fun n => (H n).1, eq_dist_2 fun n => (H n).2⟩
   dist_lt H Hn := ⟨dist_lt H.1 Hn, dist_lt H.2 Hn⟩
 
 #rocq_ignore viewO "Use the plain View type and typeclass inference"
@@ -125,12 +125,12 @@ theorem auth_dist_inj [UCMRA B] {q1 q2 : DFrac} {a1 a2 : A} {n}
 @[rocq_alias view_auth_inj]
 theorem auth_eqv_inj [UCMRA B] {q1 q2 : DFrac} {a1 a2 : A}
     (H : (●V{q1} a1 : View R) = ●V{q2} a2) : q1 = q2 ∧ a1 = a2 := by
-  refine ⟨(auth_dist_inj (n := 0) H.dist).1, OFE.eq_dist.mpr fun n => ?_⟩
+  refine ⟨(auth_dist_inj (n := 0) H.dist).1, OFE.eq_dist_2 fun n => ?_⟩
   exact (auth_dist_inj H.dist).2
 
 @[rocq_alias view_frag_inj]
 theorem frag_eqv_inj [UCMRA B] {b1 b2 : B}
-    (H : (◯V b1 : View R) = ◯V b2) : b1 = b2 := OFE.eq_dist.mpr fun _ => H.dist.2
+    (H : (◯V b1 : View R) = ◯V b2) : b1 = b2 := OFE.eq_dist_2 fun _ => H.dist.2
 
 @[rocq_alias view_frag_dist_inj]
 theorem dist_of_frag_dist [UCMRA B] {b1 b2 : B} {n} (H : (◯V b1 : View R) ≡{n}≡ ◯V b2) :
@@ -388,6 +388,41 @@ instance {b b1 b2 : B} [h : IsOp d b b1 b2] :
     IsOp d (◯V b : View R) (◯V b1) (◯V b2) where
   is_op := by rw [h.is_op]; exact frag_op_eq
 
+section BigOp
+open Algebra Std
+
+@[rocq_alias view_frag_sep_homomorphism]
+instance : MonoidHomomorphism CMRA.op CMRA.op UCMRA.unit UCMRA.unit (· = ·)
+    (Frag : B → View R) where
+  rel_refl := rfl
+  rel_trans := Eq.trans
+  op_proper h₁ h₂ := h₁ ▸ h₂ ▸ rfl
+  map_ne := frag_ne
+  map_op := frag_op_eq
+  map_unit := rfl
+
+@[rocq_alias big_opL_view_frag]
+theorem bigOpL_frag (g : Nat → C → B) (l : List C) :
+    (◯V ([^ CMRA.op list] k ↦ x ∈ l, g k x) : View R) = [^ CMRA.op list] k ↦ x ∈ l, ◯V (g k x) :=
+  BigOpL.bigOpL_hom _ _
+
+@[rocq_alias big_opM_view_frag]
+theorem bigOpM_frag [LawfulFiniteMap M' K] (g : K → C → B) (m : M' C) :
+    (◯V ([^ CMRA.op map] k ↦ x ∈ m, g k x) : View R) = [^ CMRA.op map] k ↦ x ∈ m, ◯V (g k x) :=
+  BigOpM.bigOpM_hom _ _
+
+@[rocq_alias big_opS_view_frag]
+theorem bigOpS_frag [LawfulFiniteSet S' C] (g : C → B) (X : S') :
+    (◯V ([^ CMRA.op set] x ∈ X, g x) : View R) = [^ CMRA.op set] x ∈ X, ◯V (g x) :=
+  BigOpS.hom inferInstance _ _
+
+@[rocq_alias big_opMS_view_frag]
+theorem bigOpMS_frag [LawfulFiniteMultiSet MS' C] (g : C → B) (X : MS') :
+    (◯V ([^ CMRA.op mset] x ∈ X, g x) : View R) = [^ CMRA.op mset] x ∈ X, ◯V (g x) :=
+  BigOpMS.hom inferInstance _ _
+
+end BigOp
+
 @[rocq_alias view_auth_dfrac_op_invN]
 theorem dist_of_validN_auth (H : ✓{n} ((●V{dq1} a1 : View R) • ●V{dq2} a2)) : a1 ≡{n}≡ a2 := by
   rcases H with ⟨_, _, H, _⟩
@@ -399,7 +434,7 @@ theorem dist_of_validN_auth (H : ✓{n} ((●V{dq1} a1 : View R) • ●V{dq2} a
 @[rocq_alias view_auth_dfrac_op_inv_L]
 theorem eq_of_valid_auth
     (H : ✓ ((●V{dq1} a1 : View R) • ●V{dq2} a2)) : a1 = a2 :=
-  OFE.eq_dist.mpr fun _ => dist_of_validN_auth H.validN
+  OFE.eq_dist_2 fun _ => dist_of_validN_auth H.validN
 
 @[rocq_alias view_auth_dfrac_validN]
 theorem auth_validN_iff : ✓{n} (●V{dq} a : View R) ↔ ✓{n}dq ∧ R n a UCMRA.unit :=
@@ -460,7 +495,7 @@ theorem auth_op_auth_valid_iff : ✓ ((●V{dq1} a1 : View R) • ●V{dq2} a2) 
   refine ⟨fun H => ?_, fun H n => ?_⟩
   · simp [valid, CMRA.op, op, optionOp, CMRA.ValidN, ValidN] at H
     let Hn n := dist_of_validN_auth <| H n
-    refine ⟨(H 0).1, OFE.eq_dist.mpr Hn, fun n => ?_⟩
+    refine ⟨(H 0).1, OFE.eq_dist_2 Hn, fun n => ?_⟩
     · rcases (H n) with ⟨_, _, Hl, H⟩
       apply mono H ?_ CMRA.incN_unit n.le_refl
       apply toAgree.inj (Hl.symm.trans ?_)
@@ -514,7 +549,7 @@ open CMRA in
 theorem auth_inc_auth_op_frag_iff : ((●V{dq1} a1 : View R) ≼ (●V{dq2} a2 : View R) • ◯V b) ↔ (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 = a2 := by
   refine ⟨fun H => ⟨?_, ?_⟩, fun H => ?_⟩
   · exact auth_incN_auth_op_frag_iff (n := 0) |>.mp (CMRA.incN_of_inc _ H) |>.1
-  · refine OFE.eq_dist.mpr (fun n => ?_)
+  · refine OFE.eq_dist_2 (fun n => ?_)
     exact auth_incN_auth_op_frag_iff |>.mp (CMRA.incN_of_inc _ H) |>.2
   · rcases H with ⟨(⟨q, Hq⟩|Hq), Ha⟩
     · calc (●V{dq1} a1 : View R)
@@ -855,6 +890,10 @@ instance (f : A → A') (g : B → B') [OFE.NonExpansive f] [hne : OFE.NonExpans
 def mapO (f : A -n> A') (g : B -n> B') : View R -n> View R' where
   f := View.map R' f g
   ne := inferInstance
+
+@[rocq_alias viewO_map_ne]
+instance mapO_ne : OFE.NonExpansive₂ (mapO (R := R) (R' := R')) where
+  ne _ _ _ hf _ _ hg v := map_ne v (hf ·) (hg ·)
 
 end mapO
 

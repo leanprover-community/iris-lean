@@ -6,7 +6,6 @@ Authors: Сухарик (@suhr)
 module
 
 public import Iris.Algebra.CMRA
-meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -42,6 +41,7 @@ theorem UpdateP.of_update {x y : α} (h : x ~~> y) : x ~~>: (y = ·) :=
 theorem UpdateP.id {P : α → Prop} {x} (h : P x) : x ~~>: P :=
   fun _ _ v => ⟨x, h, v⟩
 
+@[refl]
 theorem Update.id {x : α} : x ~~> x := fun _ _ h => h
 
 theorem Update.trans {x y z : α} (uxy : x ~~> y) (uyz : y ~~> z) : x ~~> z :=
@@ -63,11 +63,18 @@ theorem UpdateP.weaken {x : α} (uxp : x ~~>: P) (pq : ∀ y, P y → Q y) : x ~
 theorem Update.exclusive {x y : α} [CMRA.Exclusive x] (vy : ✓ y) : x ~~> y :=
   fun _ _ P => CMRA.none_of_excl_valid_op P ▸ vy.validN
 
+instance [CMRA α] : Std.Refl (Update (α := α)) where
+  refl _ := Update.id
+
 instance [CMRA α] : Trans Update Update Update (α := α) where
   trans := Update.trans
 
 instance [CMRA α] : Trans Update UpdateP UpdateP (α := α) where
   trans := Update.transP
+
+#rocq_ignore cmra_update_preorder "Split into the Std.Refl and Trans instances above"
+#rocq_ignore cmra_update_proper_update "Rocq setoid-rewriting instance; use Update.trans"
+#rocq_ignore cmra_update_flip_proper_update "Rocq setoid-rewriting instance; use Update.trans"
 
 @[rocq_alias cmra_updateP_op]
 theorem UpdateP.op {P Q R : α → Prop} {x y}
@@ -91,6 +98,9 @@ theorem UpdateP.op' {P Q : α → Prop} {x y : α} (uxp : x ~~>: P) (uyq : y ~~>
 @[rocq_alias cmra_update_op]
 theorem Update.op {x₁ x₂ y₁ y₂ : α} (xy₁ : x₁ ~~> y₁) (xy₂ : x₂ ~~> y₂) : x₁ • x₂ ~~> y₁ • y₂ :=
   .of_updateP <| .op (.of_update xy₁) (.of_update xy₂) fun _ _ ez ew => ez ▸ ew ▸ rfl
+
+#rocq_ignore cmra_update_op_proper "Rocq setoid-rewriting instance; use Update.op"
+#rocq_ignore cmra_update_op_flip_proper "Rocq setoid-rewriting instance; use Update.op"
 
 @[rocq_alias cmra_update_op_l]
 theorem Update.op_l {x y : α} : x • y ~~> x := fun _ _ => CMRA.validN_op_opM_left

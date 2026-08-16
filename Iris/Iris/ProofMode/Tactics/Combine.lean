@@ -5,10 +5,8 @@ Authors: Alvin Tang, Michael Sammler
 -/
 module
 
-public meta import Iris.ProofMode.Tactics.Assumption
-public meta import Iris.ProofMode.Tactics.Cases
-public meta import Iris.ProofMode.Patterns.CasesPattern
-public meta import Iris.ProofMode.ClassesMake
+public import Iris.ProofMode.Tactics.Cases
+public import Iris.ProofMode.ClassesMake
 
 namespace Iris.ProofMode
 
@@ -89,6 +87,7 @@ theorem combine_gives_step_conj [BI PROP] {p1 p2 : Bool}
         persistently_and_intuitionistically_sep_right.mp
     _ ⊢ e ∗ □ outGivesCombined                                  := sep_mono_left sep_elim_left
 
+@[rocq_alias tac_combine_as_gives]
 theorem combine_as_gives [BI PROP] {p : Bool} {newE e outAs outGives goal : PROP}
     (pfAs : e ⊢ newE ∗ □?p outAs)
     (pfGives : e ⊢ e ∗ □ outGives)
@@ -151,7 +150,7 @@ private def CombineState.combineProofModeHyp {u prop bi origE goal} :
   | { newHyps, p := p1, outAs, pfAs, outGives, pfGives, .. }, ivar => do
     let some (_, ⟨_, hyps2, _, out2, p2, _, pf2⟩) ←
         newHyps.removeG false <| fun _ ivar' _ _ => return guard <| ivar' == ivar
-    | throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
+    | throwIPMError "propositions in the spatial context cannot be used as arguments multiple times"
 
     -- Type class instance search for the `as` syntax
     let newOutAs ← mkFreshExprMVarQ q($prop)
@@ -228,10 +227,10 @@ private def iCombineParseSelPats {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
   targets.mapM fun t =>
     match t.kind with
     | .ipm iVarId => pure iVarId
-    | .pure _      => throwError "icombine: invalid selection pattern with pure propositions"
+    | .pure _      => throwIPMError "invalid selection pattern with pure propositions"
 
 private def throwNoInstanceForGives : ProofModeM Unit := do
-  throwError "icombine: no type class instance to combine propositions"
+  throwIPMError "no type class instance to combine propositions"
 
 /--
   `icombine patSels as patAs` combines the hypotheses specified by the selection
@@ -245,7 +244,7 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
     " as " colGt patAs:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse patAs
 
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `icombine λ mvar { hyps, goal, .. } => do
     let hs ← iCombineParseSelPats hyps patSels
     let st ← iCombineCore hs hyps goal
 
@@ -265,7 +264,7 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
     " gives " colGt patGives:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse patGives
 
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `icombine λ mvar { hyps, goal, .. } => do
     let hs ← iCombineParseSelPats hyps patSels
     let {outGives, pfGives, ..} ← iCombineCore hs hyps goal
 
@@ -294,7 +293,7 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
   let pat1 ← liftMacroM <| iCasesPat.parse patAs
   let pat2 ← liftMacroM <| iCasesPat.parse patGives
 
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `icombine λ mvar { hyps, goal, .. } => do
     let hs ← iCombineParseSelPats hyps patSels
     let st@{outGives, pfGives, ..} ← iCombineCore hs hyps goal
 

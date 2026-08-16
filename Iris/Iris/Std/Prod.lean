@@ -5,6 +5,8 @@ Authors: Lars König
 -/
 module
 
+public import Iris.Init
+
 @[expose] public section
 
 namespace Prod
