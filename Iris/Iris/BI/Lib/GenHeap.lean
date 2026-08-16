@@ -171,7 +171,7 @@ theorem pointsTo_combine :
 
 /-- Lower priority than `combineSepAsFractional`, which kicks in for `DFrac.own`. -/
 @[rocq_alias pointsto_combine_as]
-instance (priority := default - 20) instCombineSepAsPointsTo
+instance (priority := default - 15) instCombineSepAsPointsTo
     (l : L) (dq₁ dq₂ : DFrac) (v₁ v₂ : V) :
     CombineSepAs (l ↦{dq₁} v₁) (l ↦{dq₂} v₂) (l ↦{dq₁ • dq₂} v₁) :=
   inferInstanceAs (CombineSepAs (heapName ↪◯MAP[l]{dq₁} v₁) (heapName ↪◯MAP[l]{dq₂} v₂) _)
