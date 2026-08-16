@@ -724,12 +724,11 @@ theorem ownM_forall (f : A → M) :
   exact ⟨iprop(x.val ≡ f a • xf), ⟨xf, rfl⟩, Hxf⟩
 
 @[rocq_alias uPred.later_ownM, rocq_alias uPred_primitive.later_ownM]
-theorem later_ownM (a : M) : ▷ ownM a ⊢ ∃ b, ownM b ∧ ▷ <si_pure> (SiProp.internalEq a b)
-  | 0, _, _ =>
-    ⟨iprop(ownM unit ∧ ▷ <si_pure> (SiProp.internalEq a unit)), ⟨unit, rfl⟩, incN_unit, trivial⟩
+theorem later_ownM (a : M) : ▷ ownM a ⊢ ∃ b, ownM b ∧ ▷ (a ≡ b)
+  | 0, _, _ => ⟨iprop(ownM unit ∧ ▷ (a ≡ unit)), ⟨unit, rfl⟩, incN_unit, trivial⟩
   | n+1, x, ⟨y, hx⟩ => by
     let ⟨a', y', hx', ha', hy'⟩ := extend (validN_succ x.property) hx
-    refine ⟨iprop(ownM a' ∧ ▷ <si_pure> (SiProp.internalEq a a')), ⟨a', rfl⟩, ?_, ?_⟩
+    refine ⟨iprop(ownM a' ∧ ▷ (a ≡ a')), ⟨a', rfl⟩, ?_, ?_⟩
     · exact (incN_iff_right hx'.dist).mpr (incN_op_left (n + 1) a' y')
     · exact OFE.Dist.symm ha'
 

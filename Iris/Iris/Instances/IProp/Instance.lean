@@ -10,7 +10,7 @@ public import Iris.BI
 public import Iris.BI.BigOp
 public import Iris.Algebra
 public import Iris.Instances.UPred
-public import Iris.ProofMode.InstancesCmra
+public import Iris.ProofMode
 
 @[expose] public section
 namespace Iris
@@ -605,14 +605,18 @@ instance iOwn_timeless {a : F.ap (IProp GF)} [OFE.DiscreteE a] : BI.Timeless (iO
 @[rocq_alias later_own]
 theorem later_iOwn {a : F.ap (IProp GF)} : ▷ iOwn γ a ⊢ ◇ ∃ b, iOwn γ b ∧ ▷ (a ≡ b) := by
   unfold iOwn
-  refine (UPred.later_ownM _).trans (exists_elim fun r => ?_)
-  refine .trans (and_mono_right ((later_mono internalEq.symm).trans later_internalEq_iSingleton)) ?_
-  refine .trans (and_mono_left except0_intro) (except0_and.mpr.trans (except0_mono ?_))
-  refine and_exists_left.mp.trans (exists_mono fun b => ?_)
-  refine and_exists_left.mp.trans (exists_elim fun r' => ?_)
-  refine and_assoc.mpr.trans (and_mono_left ?_)
-  refine .trans ?_ (UPred.ownM_mono (CMRA.inc_op_left _ r'))
-  exact internalEq.rewrite' UPred.ownM and_elim_r and_elim_l
+  iintro Hlater
+  -- one step ago the resource was some `r` with `iSingleton F γ a ≡ r`
+  icases UPred.later_ownM _ $$ Hlater with ⟨%r, Hown, Heq⟩
+  -- so `r` is itself a singleton at `γ`, holding some `b` with `▷ (a ≡ b)`
+  imod (later_mono internalEq.symm).trans later_internalEq_iSingleton $$ Heq with ⟨%b, %r', Hr, Hab⟩
+  irewrite [Hr] at Hown
+  imodintro
+  iexists b
+  isplit
+  · iapply UPred.ownM_mono (CMRA.inc_op_left _ r')
+    iexact Hown
+  · iexact Hab
 
 theorem validN_iSingleton_op {mf : IResUR GF} {y} :
     ✓{n} mf →
@@ -795,12 +799,10 @@ theorem iOwn_updateP {P γ a} (Hupd : a ~~>: P) : iOwn γ a ⊢ |==> ∃ a' : F.
 
 @[rocq_alias own_update]
 theorem iOwn_update {γ} {a a' : F.ap (IProp GF)} (Hupd : a ~~> a') : iOwn γ a ⊢ |==> iOwn γ a' := by
-  apply (iOwn_updateP <| UpdateP.of_update Hupd).trans
-  apply BIUpdate.mono
-  refine BI.exists_elim (fun m => ?_)
-  apply BI.pure_elim (a' = m) BI.sep_elim_left
-  rintro rfl
-  exact BI.sep_elim_right
+  refine (iOwn_updateP <| UpdateP.of_update Hupd).trans (BIUpdate.mono ?_)
+  iintro ⟨%m, %hm, Hown⟩
+  subst hm
+  iexact Hown
 
 @[rocq_alias own_valid_3]
 theorem iOwn_cmraValid_op_op {a1 a2 a3 : F.ap (IProp GF)} :
@@ -834,12 +836,10 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
     · have h_unit : IsUnit (IProp.unfoldi (E.bundle ε)) := IProp.unfoldi_bundle_unit
       apply CMRA.validN_ne h_unit.unit_left_id.dist.symm
       apply extract_frame_validN (Hv E.τ) h_at
-
-  · apply BIUpdate.mono
-    refine BI.exists_elim (fun y => ?_)
-    apply BI.pure_elim (iSingleton F γ ε = y) BI.and_elim_l
-    rintro rfl
-    exact BI.and_elim_r
+  · refine BIUpdate.mono ?_
+    iintro ⟨%y, %hy, Hown⟩
+    subst hy
+    iexact Hown
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_sep_own]
