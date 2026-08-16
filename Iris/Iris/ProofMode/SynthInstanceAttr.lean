@@ -87,17 +87,18 @@ structure ClassEntry where
   Parameter kinds of class.
   For example, for class
   ```
-  class FromModal (modStatus : FromModal.ModalityStatus)
-    {PROP1 : semiOutParamIPM modStatus.toInOut (Type _)}
-    {PROP2} {α : outParam <| uncheckedInParam <| Type _}
-    [semiOutParamIPM modStatus.toInOut (BI PROP1)] [BI PROP2] (φ : outParam Prop)
-    (M : semiOutParamIPM modStatus.toInOut (Modality PROP1 PROP2))
-    (sel : outParam <| uncheckedInParam α) (P : PROP2) (Q : outParam PROP1) where
-  from_modal : φ → M.M Q ⊢ P
+  class FromModal (io : InOut)
+      {PROP1 : semiOutParamIPM io (Type _)}
+      {PROP2} {α : outParam <| uncheckedInParam <| Type _}
+      [semiOutParamIPM io (BI PROP1)] [BI PROP2]
+      (M : semiOutParamIPM io (Modality PROP1 PROP2))
+      (φ : outParam Prop)
+      (sel : outParam <| uncheckedInParam α) (P : PROP2) (Q : outParam PROP1) where
+    from_modal : φ → M.M Q ⊢ P
   ```
   we have :
   ```
-  params := #[in, semiOut, in, uncheckedIn, semiOut, in, out, semiOut, uncheckedIn, in, out]`
+  params := #[in, semiOut, in, uncheckedIn, semiOut, in, semiOut, out, uncheckedIn, in, out]`
   ```
   -/
   params : Array ParamKind

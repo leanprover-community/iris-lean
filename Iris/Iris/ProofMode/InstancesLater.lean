@@ -296,18 +296,18 @@ instance isExcept0_later [BI PROP] (P : PROP) : IsExcept0 iprop(▷ P) where
 /-! ### FromModal -/
 
 @[rocq_alias from_modal_later]
-instance fromModal_later [BI PROP] modStatus (P : PROP) :
-  FromModal modStatus True (modality_laterN 1) iprop(▷^[1] P) iprop(▷ P) P where
+instance fromModal_later [BI PROP] io (P : PROP) :
+  FromModal io (modality_laterN 1) True iprop(▷^[1] P) iprop(▷ P) P where
   from_modal _ := .rfl
 
 @[rocq_alias from_modal_laterN]
-instance fromModal_laterN [BI PROP] modStatus (P : PROP) n :
-  FromModal modStatus True (modality_laterN n) iprop(▷^[n] P) iprop(▷^[n] P) P where
+instance fromModal_laterN [BI PROP] io (P : PROP) n :
+  FromModal io (modality_laterN n) True iprop(▷^[n] P) iprop(▷^[n] P) P where
   from_modal _ := .rfl
 
 @[rocq_alias from_modal_except_0]
-instance fromModal_except0 [BI PROP] modStatus (P : PROP) :
-  FromModal modStatus True modality_id iprop(◇ P) iprop(◇ P) P where
+instance fromModal_except0 [BI PROP] io (P : PROP) :
+  FromModal io modality_id True iprop(◇ P) iprop(◇ P) P where
   from_modal _ := except0_intro
 
 /-! ### IntoExcept0 -/

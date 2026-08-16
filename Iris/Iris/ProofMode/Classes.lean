@@ -231,28 +231,10 @@ class IntoExcept0 {PROP} [BI PROP] (P : PROP) (Q : outParam PROP) where
   into_except0 : P ⊢ ◇ Q
 export IntoExcept0 (into_except0)
 
-/-- Indicates whether the modality is already known or should be determined by the proof goal. -/
-inductive FromModal.ModalityStatus where
-  | matchGoal
-  | known
-
-meta section
-
-@[reducible]
-def FromModal.ModalityStatus.toInOut : FromModal.ModalityStatus → InOut
-  | .matchGoal => .out
-  | .known => .in
-
-end
-
 /--
 `FromModal` turns a goal `P : PROP2` into a modality `M : PROP1 → PROP2` applied
-to `Q : PROP1` under condition `φ`.
-
-The parameter `modStatus` indicates when the modality is known.
-When `modStatus = .matchGoal`, `PROP1` and the modality is determined by the
-proof goal. When `modStatus = .known`, the modality is already fixed. Hence,
-the synthesis direction of the modality `M` and `PROP1` depends on `modStatus`.
+to `Q : PROP1` under condition `φ`. The modality `M` is usually an output, except
+for specific recursive instances for embedding.
 
 The selector `sel` is an input that can be provided by the user to match on the
 desired modality to introduce. This is unique in a sense that the metavariable
@@ -260,18 +242,14 @@ is supplied as an input (e.g. when the user writes `imodintro _`).
 This is why `uncheckedInParam` is used so that all modalities can be matched by
 IPM type class synthesis.
 It also needs to be an `outParam` as `PROP1` can be an output parameter.
-
-When the user leaves the selector unspecified, `α`, as the type of `sel`,
-can be a metavariable.
-However, it can also be concrete while `PROP1` and `M` are still metavariables.
-See `fromModal_embed`, where `sel` lives in the concrete type `PROP2`.
 -/
 @[ipm_class, rocq_alias FromModal]
-class FromModal (modStatus : FromModal.ModalityStatus)
-    {PROP1 : semiOutParamIPM modStatus.toInOut (Type _)}
+class FromModal (io : InOut)
+    {PROP1 : semiOutParamIPM io (Type _)}
     {PROP2} {α : outParam <| uncheckedInParam <| Type _}
-    [semiOutParamIPM modStatus.toInOut (BI PROP1)] [BI PROP2] (φ : outParam Prop)
-    (M : semiOutParamIPM modStatus.toInOut (Modality PROP1 PROP2))
+    [semiOutParamIPM io (BI PROP1)] [BI PROP2]
+    (M : semiOutParamIPM io (Modality PROP1 PROP2))
+    (φ : outParam Prop)
     (sel : outParam <| uncheckedInParam α) (P : PROP2) (Q : outParam PROP1) where
   from_modal : φ → M.M Q ⊢ P
 export FromModal (from_modal)

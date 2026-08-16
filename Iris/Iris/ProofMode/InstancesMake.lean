@@ -290,17 +290,17 @@ instance (priority := low) makeFUpd_default [BI PROP] [BIFUpdate PROP] E1 E2 (P 
 
 @[rocq_alias make_embed_pure]
 instance makeEmbed_pure [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] φ :
-    MakeEmbed iprop(⌜φ⌝ : PROP1) iprop(⌜φ⌝ : PROP2) where
+    MakeEmbed (PROP1:=PROP1) (PROP2:=PROP2) iprop(⌜φ⌝) iprop(⌜φ⌝) where
   make_embed := embed_pure φ
 
 @[ipm_backtrack, rocq_alias make_embed_emp]
 instance makeEmbed_emp [BI PROP1] [BI PROP2]
     [BiEmbed PROP1 PROP2] [BiEmbedEmp PROP1 PROP2] :
-    MakeEmbed iprop(emp : PROP1) iprop(emp : PROP2) where
+    MakeEmbed (PROP1:=PROP1) (PROP2:=PROP2) iprop(emp) iprop(emp) where
   make_embed := embed_emp
 
 @[rocq_alias make_embed_default]
 instance (priority := low) makeEmbed_default [BI PROP1] [BI PROP2]
     [BiEmbed PROP1 PROP2] (P : PROP1) :
-    MakeEmbed P iprop(⎡P⎤ : PROP2) where
+    MakeEmbed (PROP2:=PROP2) P iprop(⎡P⎤) where
   make_embed := .rfl

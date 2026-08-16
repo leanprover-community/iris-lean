@@ -368,8 +368,8 @@ theorem fupd_finally_mask_mono (E1 E2 : CoPset) (P : IProp GF) (H : E1 ⊆ E2) :
   iapply fupd_mask_intro_discard H $$ Hupd
 
 @[rocq_alias from_modal_fupd_finally]
-instance fromModal_fupd_finally (E : CoPset) modStatus (P : IProp GF) :
-    FromModal modStatus True modality_plainly iprop(|={E|}=> P) iprop(|={E|}=> P) P where
+instance fromModal_fupd_finally (E : CoPset) io (P : IProp GF) :
+    FromModal io modality_plainly True iprop(|={E|}=> P) iprop(|={E|}=> P) P where
   from_modal _ := fupd_finally_intro E P
 
 @[rocq_alias is_except_0_fupd_finally]

@@ -261,8 +261,8 @@ def modality_make_laterable [BI PROP] [Timeless (emp : PROP)] : Modality PROP PR
   sep := make_laterable_sep
 
 @[rocq_alias from_modal_make_laterable]
-instance fromModal_make_laterable [BI PROP] [Timeless (emp : PROP)] modStatus (P : PROP) :
-    FromModal modStatus True modality_make_laterable
+instance fromModal_make_laterable [BI PROP] [Timeless (emp : PROP)] io (P : PROP) :
+    FromModal io modality_make_laterable True
       (make_laterable P) (make_laterable P) P where
   from_modal := by
     iintro %_ HP
