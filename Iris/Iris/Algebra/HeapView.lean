@@ -232,7 +232,7 @@ nonrec theorem auth_one_op_auth_one_valid_iff :
 
 @[rocq_alias gmap_view_frag_op]
 theorem frag_op_eqv : Frag (H := H) k (dp • dq) (v1 • v2) = Frag (H := H) k dp v1 • Frag k dq v2 :=
-  congrArg (◯V ·) (eqv_of_Equiv (singleton_op_singleton (x := (dp, v1)) (y := (dq, v2)))).symm
+  congrArg (◯V ·) (singleton_op_singleton (x := (dp, v1)) (y := (dq, v2))).symm
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias gmap_view_frag_mut_is_op]
@@ -352,7 +352,7 @@ theorem frag_valid_iff : ✓ Frag (H := H) k dq v1 ↔ ✓ dq ∧ ✓ v1 := by
 theorem frag_op_validN_iff :
     ✓{n} Frag (H := H) k dp v1 • Frag k dq v2 ↔ ✓ (dp • dq) ∧ ✓{n} (v1 • v2) := by
   refine View.frag_validN_iff.trans <| (HeapR.exists_iff_validN ..).trans ?_
-  refine (validN_dist_iff (eqv_of_Equiv singleton_op_singleton).dist).trans ?_
+  refine (validN_dist_iff (Dist.of_eq singleton_op_singleton)).trans ?_
   exact singleton_validN_iff
 
 @[rocq_alias gmap_view_frag_op_valid]
@@ -362,7 +362,7 @@ theorem frag_op_valid_iff :
   suffices (∀ (n : Nat), ✓{n} dp • dq ∧ ✓{n} v1 • v2) ↔ ✓ dp • dq ∧ ✓ v1 • v2 by
     refine (forall_congr' (fun _ => ?_)).trans this
     refine (HeapR.exists_iff_validN ..).trans ?_
-    refine (validN_dist_iff (eqv_of_Equiv singleton_op_singleton).dist).trans ?_
+    refine (validN_dist_iff (Dist.of_eq singleton_op_singleton)).trans ?_
     exact singleton_validN_iff
   refine ⟨fun H => ?_, fun ⟨Hp, Hv⟩ n => ?_⟩
   · exact ⟨valid_iff_validN.mpr (H · |>.1), valid_iff_validN.mpr (H · |>.2)⟩
