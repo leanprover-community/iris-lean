@@ -21,19 +21,19 @@ section ofe
 variable [OFE α]
 
 theorem forall₂_eq_of_forall₂_dist : ∀ {l k : List α},
-    (∀ n, List.Forall₂ (Dist n) l k) → l = k
+    (∀ n, List.Forall₂ (· ≡{n}≡ ·) l k) → l = k
   | [], [], _ => rfl
   | [], _ :: _, h => nomatch h 0
   | _ :: _, [], h => nomatch h 0
   | _ :: _, _ :: _, h => List.cons_eq_cons.mpr
-    ⟨eq_dist.mpr (fun n => (List.forall₂_cons.mp <| h n).1),
+    ⟨eq_dist_2 (fun n => (List.forall₂_cons.mp <| h n).1),
      forall₂_eq_of_forall₂_dist fun n => (List.forall₂_cons.mp (h n)).2⟩
 
 @[rocq_alias list_ofe_mixin]
 instance : OFE (List α) where
   Dist n := List.Forall₂ (Dist n)
   dist_eqv := List.Forall₂.equivalence dist_eqv
-  eq_dist := ⟨fun h _ => h ▸ (List.Forall₂.rfl .refl), forall₂_eq_of_forall₂_dist⟩
+  eq_dist' := ⟨fun h _ => h ▸ (List.Forall₂.rfl .refl), forall₂_eq_of_forall₂_dist⟩
   dist_lt h hlt := h.imp fun hab => hab.lt hlt
 #rocq_ignore listO "Use List"
 #rocq_ignore list_dist "Local Dist instance; folded into Lean's OFE (List α) instance."
@@ -234,7 +234,7 @@ theorem listComplGo_conv_compl {n : Nat} (c : Chain (List α)) :
         exact hxs.symm
       · simp [Chain.map_apply, tailHom_apply, hcn]
 
-@[rocq_alias list_cofe]
+@[rocq_alias list.list_cofe]
 instance : IsCOFE (List α) where
   compl c := listComplGo (c 0) c
   conv_compl {n c} := listComplGo_conv_compl c (c 0) (c.cauchy (Nat.zero_le n)).symm

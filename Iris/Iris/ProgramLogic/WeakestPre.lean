@@ -127,7 +127,7 @@ section Wp
 @[rocq_alias wp_unfold]
 theorem wp_unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E {{ Φ }} ⊣⊢ wp.pre s (Wp.wp (PROP := IProp GF) s) E e Φ :=
-  BI.equiv_iff.1 <| OFE.eq_dist.mpr <|
+  BI.equiv_iff.1 <| OFE.eq_dist_2 <|
     fun _n => (fixpoint_unfold (f := (wp.pre s).toContractiveHom)).dist E e Φ
 
 @[rocq_alias wp_ne]
@@ -629,7 +629,7 @@ instance frameWp {p : Bool} [H : ∀ v, FrameInstantiateExistDisabled p R (Φ v)
     apply wp_mono
     exact fun v => (H v).frame_instantiatiate_exist_disabled.frame
 
-@[rocq_alias is_except_0_wp]
+@[rocq_alias weakestpre.is_except_0_wp]
 instance isExcept0Wp : IsExcept0 (WP e @ s ; E {{ Φ }}) where
   is_except0 :=
     calc iprop(◇ _)

@@ -174,7 +174,7 @@ class EctxLanguage (Expr  : Type _) (Ectx State Obs Val : outParam (Type _))
 attribute [rocq_alias val_base_stuck] EctxLanguage.val_stuck
 attribute [rocq_alias fill_val] EctxLanguage.fill_val
 attribute [rocq_alias step_by_val] EctxLanguage.step_by_val
-attribute [rocq_alias base_ctx_step_val] EctxLanguage.base_ctx_step_val
+attribute [rocq_alias ectx_language.base_ctx_step_val] EctxLanguage.base_ctx_step_val
 
 attribute [grind .] EctxLanguage.val_stuck
 attribute [grind →] EctxLanguage.base_ctx_step_val

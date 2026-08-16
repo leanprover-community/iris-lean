@@ -147,7 +147,7 @@ noncomputable instance instIsCOFE : IsCOFE (Completion α) where
   conv_compl {n c} := Classical.choose_spec (exists_limit c) n
 
 def complete [IsCOFE α] : Completion α -n> α where
-  f := lift COFE.compl fun x y h => OFE.eq_dist.mpr fun n =>
+  f := lift COFE.compl fun x y h => OFE.eq_dist_2 fun n =>
     (COFE.conv_compl (c := x)).trans ((h n).trans (COFE.conv_compl (c := y)).symm)
   ne.ne {n x y} h := by
     induction x, y using ind₂ with
@@ -217,7 +217,7 @@ theorem map_ext_ne {β : Type v} [OFE β] (f g : α -n> β) (x : Completion α) 
 @[rocq_alias chain_map_ext]
 theorem map_ext {β : Type v} [OFE β] (f g : α -n> β) (x : Completion α)
     (h : ∀ a, f a = g a) : map f x = map g x := by
-  apply OFE.eq_dist.mpr
+  apply OFE.eq_dist_2
   intro n
   exact map_ext_ne f g x fun a => (h a).dist
 

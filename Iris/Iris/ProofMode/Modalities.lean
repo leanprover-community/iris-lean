@@ -60,6 +60,11 @@ def modality_id [BI PROP] : Modality PROP PROP where
   mono := by simp
   sep := by simp
 
+attribute [rw_mono_rule] Modality.mono
+
+#rocq_ignore modality_mono' "No Proper type class in Lean, use rw_mono_rule instead"
+#rocq_ignore modality_flip_mono' "No Proper type class in Lean, use rw_mono_rule instead"
+#rocq_ignore modality_proper "No Proper type class in Lean, use rw_mono_rule instead"
 #rocq_ignore modality_intuitionistic_transform "Handled by simplifying action_spec"
 #rocq_ignore modality_and_transform "Handled by simplifying action_spec"
 #rocq_ignore modality_spatial_transform "Handled by simplifying action_spec"
