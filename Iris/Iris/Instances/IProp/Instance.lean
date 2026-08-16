@@ -491,23 +491,19 @@ instance iSingleton_discreteE {v : F.ap (IProp GF)} [OFE.DiscreteE v] :
       simp [iSingleton, dif_neg h, GenMap.empty_map_lookup] at Hk ⊢
       exact (Option.none_is_discrete.discrete Hk).dist
 
+theorem iSingleton_eq_discreteFunSingleton {v : F.ap (IProp GF)} :
+    iSingleton F γ v = discreteFunSingleton E.τ (GenMap.singleton γ (unfoldi (E.bundle v))) :=
+  funext fun τ' => by
+    by_cases h : τ' = E.τ
+    · subst h; simp only [iSingleton, ↓reduceDIte, discreteFunSingleton_self]
+    · simp only [iSingleton, h, ↓reduceDIte, discreteFunSingleton_of_ne _ (Ne.symm h)]
+      rfl
+
 theorem iSingleton_op_alter {r : IResUR GF} {v : GF.api E.τ (IPre GF)}
     (h : (r E.τ).car γ = some v) :
     iSingleton F γ (E.unbundle (foldi v)) • discreteFunInsert E.τ ((r E.τ).alter γ none) r = r := by
-  funext τ'
-  refine GenMap.ext (funext fun γ' => ?_)
-  show _ = (r τ').car γ'
-  by_cases hτ : τ' = E.τ
-  · subst hτ
-    simp only [CMRA.op, discreteFunInsert_self, iSingleton, ↓reduceDIte]
-    by_cases hγ : γ' = γ
-    · subst hγ
-      simp [GenMap.singleton_map_in, GenMap.alter, Iris.alter, optionOp, h,
-        ElemG.bundle_unbundle, IProp.unfoldi_foldi]
-    · simp [GenMap.singleton_map_none hγ, GenMap.alter, Iris.alter, optionOp, Ne.symm hγ]
-  · simp only [CMRA.op, discreteFunInsert_of_ne _ _ _ _ (Ne.symm hτ), iSingleton, hτ,
-      ↓reduceDIte, GenMap.empty_map_lookup]
-    cases (r τ').car γ' <;> rfl
+  rw [iSingleton_eq_discreteFunSingleton, ElemG.bundle_unbundle, IProp.unfoldi_foldi]
+  exact discreteFunSingleton_op_insert (GenMap.singleton_op_alter_none _ h)
 
 open BI in
 @[rocq_alias later_internal_eq_iRes_singleton]
@@ -1011,12 +1007,15 @@ theorem iResProject_below {z : IResUR GF} {c : F.ap (IProp GF)}
 @[rocq_alias iRes_project_above]
 theorem iResProject_above {z : IResUR GF} {c : F.ap (IProp GF)} :
     iSingleton F γ c ≼ z ⊢@{IProp GF} some c ≼ iResProject F γ z := by
-  refine siPure_exist.mp.trans (exists_elim fun x => ?_)
-  refine (internalEq.of_internalEquiv_ne (iResProject F γ)).trans ?_
-  refine .trans ?_ siPure_exist.mpr
-  refine exists_intro_trans (iResProject F γ x) ?_
-  rw [iResProject_op, iResProject_iSingleton]
-  exact .rfl
+  refine (internalCmraIncluded_map (iResProject F γ) iResProject_op).trans ?_
+  rw [iResProject_iSingleton]
+
+/-- Nothing is owned at `γ` when the projection there is `none`. -/
+theorem iResProject_none_incl_false {z : IResUR GF} (a : F.ap (IProp GF))
+    (hz : iResProject F γ z = none) : iSingleton F γ a ≼ z ⊢@{IProp GF} False := by
+  refine iResProject_above.trans ?_
+  rw [hz]
+  exact option_includedI.mp
 
 @[rocq_alias own_forall]
 theorem iOwn_forall {B : Type _} [hB : Inhabited B] (γ : GName) (f : B → F.ap (IProp GF)) :
@@ -1029,13 +1028,8 @@ theorem iOwn_forall {B : Type _} [hB : Inhabited B] (γ : GName) (f : B → F.ap
   iintro Hown
   icases hforall $$ Hown with ⟨%z, Hown, #Hincl⟩
   rcases hc : iResProject F γ z with _ | c
-  · have hfalse : iSingleton F γ (f default) ≼ z ⊢@{IProp GF} False := by
-      refine iResProject_above.trans ?_
-      rw [hc]
-      refine siPure_exist.mp.trans (exists_elim fun mx => ?_)
-      cases mx <;> exact internalEq.symm.trans (option_some_none_equivI _).mp
-    iexfalso
-    iapply hfalse
+  · iexfalso
+    iapply iResProject_none_incl_false (f default) hc
     iexact Hincl
   · iexists c
     isplitl [Hown]

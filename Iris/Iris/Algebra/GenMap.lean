@@ -126,6 +126,18 @@ theorem GenMap.empty_discreteE [OFE β] : DiscreteE (GenMap.empty (β := β)) wh
   obtain ⟨cb, bb⟩ := b
   simp at h; subst h; rfl
 
+theorem GenMap.alter_of_lookup {g : GenMap β} {x : Nat} {y : Option β} (h : g.car x = y) :
+    g.alter x y = g :=
+  GenMap.ext <| funext fun k => by
+    simp only [alter, Iris.alter]
+    split
+    next heq => exact heq ▸ h.symm
+    next => rfl
+
+theorem GenMap.alter_alter (g : GenMap β) (x : Nat) (y y' : Option β) :
+    (g.alter x y).alter x y' = g.alter x y' :=
+  GenMap.ext <| funext fun _ => by simp only [alter, Iris.alter]; split <;> rfl
+
 /-! ## CMRA -/
 
 section CMRA
@@ -301,6 +313,11 @@ theorem GenMap.op_singleton_comm {mf : GenMap β} {x : Nat} (y : β)
   · simp only [CMRA.op, optionOp, alter, Iris.alter, singleton, empty]
     have : x ≠ k := Ne.symm heq
     rw [if_neg this, if_neg this]
+
+theorem GenMap.singleton_op_alter_none {g : GenMap β} {x : Nat} {y : β} (h : g.car x = some y) :
+    GenMap.singleton x y • g.alter x none = g := by
+  rw [op_singleton_comm _ y (by simp [IsFree, alter, Iris.alter]), alter_alter,
+    alter_of_lookup h]
 
 theorem GenMap.validN_op_comm {m mf : GenMap β} (x : Nat) (y : β) (H : IsFree mf.car x) :
     ✓{n} m.alter x (some y) • mf ↔ ✓{n} (m • mf).alter x (some y) := by
