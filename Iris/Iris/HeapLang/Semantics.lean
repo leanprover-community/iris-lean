@@ -168,16 +168,15 @@ theorem allocCells_zero {l : Loc} {v : Option Val} : allocCells l 0 v = ∅ := r
 /-- `allocCells` peels off its *last* cell. -/
 theorem allocCells_succ {l : Loc} {n : Nat} {v : Option Val} :
     allocCells l (n + 1) v = Std.insert (M := HeapF) (allocCells l n v) (l + (n : Int)) v := by
-  rw [allocCells, List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil]
-  rfl
+  rw [allocCells, List.range_succ, List.foldl_append]; rfl
 
 theorem get?_allocCells_self {l : Loc} {n : Nat} {v : Option Val} :
     PartialMap.get? (M := HeapF) (allocCells l n v) (l + (n : Int)) = none := by
   rw [get?_allocCells, if_neg]
   rintro ⟨i, hi, hik⟩
-  have := congrArg Loc.n hik
-  simp only [loc_add_n] at this
-  omega
+  suffices H : l.n + ↑n = l.n + ↑i by omega
+  simp_all
+  exact loc_add_inj hik
 
 theorem initHeap_heap_eq {σ : State} {l : Loc} {n : Int} {v : Option Val} :
     Std.PartialMap.equiv (M := HeapF) (σ.initHeap l n v).heap
