@@ -10,10 +10,12 @@ public import Iris.Algebra.Auth
 public import Iris.Algebra.Numbers
 public import Iris.ProofMode
 public import Iris.BI.Algebra
+public import Iris.BI.Notation
 public import Iris.Instances.IProp
 public import Iris.Instances.Lib.WSat
 public import Iris.Instances.Lib.LaterCredits
 public import Iris.BI.Plainly
+public import Iris.Std
 
 @[expose] public section
 
@@ -210,20 +212,20 @@ def fupd_finally [InvGS_gen hlc GF] (E : CoPset) (P : IProp GF) : IProp GF :=
 #rocq_ignore fupd_finally_aux "Not needed"
 #rocq_ignore fupd_finally_unseal "Not needed"
 
-
 syntax "|={" term "|}=> " term : term
 syntax:25 term:26 "={" term "|}=∗ " term:25 : term
 
 macro_rules
-  | `(iprop(|={$E|}=> $P))  => ``(fupd_finally $E iprop($P))
-  | `(iprop($P ={$E|}=∗ $Q))  => ``(BIBase.wand iprop($P) (fupd_finally $E iprop($Q)))
+  | `(iprop(|={%$tk1 $E |}=>%$tk2 $P))  =>
+    ``($(wrapIpropSpan tk1 tk2 ``fupd_finally) $E iprop($P))
+  | `(iprop($P ={%$tk1 $E |}=∗%$tk2 $Q))  =>
+    ``(BIBase.wand iprop($P) ($(wrapIpropSpan tk1 tk2 ``fupd_finally) $E iprop($Q)))
   | `($P ={$E|}=∗ $Q)  => ``(⊢ $P ={$E|}=∗ $Q)
 
 delab_rule fupd_finally
   | `($_ $E $P) => do
       let P ← Iris.BI.unpackIprop P
       ``(iprop(|={$E|}=> $P))
-
 
 section fupd_finally
 
@@ -582,5 +584,120 @@ theorem fupd_soundness_no_lc_unfold [InvGpreS GF] m E :
 end StepIndexed
 
 end Iris
+
+public section
+
+open Lean Tactic Meta Qq Iris BI ProofMode
+
+@[rocq_alias tac_lc_add_laterN_split]
+theorem tac_lc_add_laterN_split {GF : BundledGFunctors} [InvGS GF]
+    {φ : Prop} {n m newM : Nat} {stuck : Bool} {E : CoPset}
+    {e P R Q goal : IProp GF}
+    (heq : e ⊣⊢ P ∗ £ m)
+    (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
+    (hc : NatCancel m n newM 0 stuck)
+    (hR : P ∗ £ newM ⊣⊢ R) (h2 : R ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
+    e ⊢ goal := by
+  have hm : m = n + newM := by have := hc.nat_cancel; omega
+  subst hm
+  refine heq.mp.trans ?_
+  iintro ⟨HP, Hcred⟩
+  iapply inst.elim_modal hφ
+  isplitl
+  · icases lc_split.mp $$ Hcred with ⟨Hn, Hm⟩
+    icombine HP Hm as H
+    ihave H := (hR.mp.trans h2) $$ H
+    iapply lc_fupd_add_laterN n $$ Hn
+    inext
+    imodintro
+    iapply h3 $$ H
+  · iintro _ //
+
+theorem tac_lc_add_laterN_full {GF : BundledGFunctors} [InvGS GF]
+    {φ : Prop} {n m : Nat} {stuck : Bool} {E : CoPset}
+    {e P Q goal : IProp GF}
+    (heq : e ⊣⊢ P ∗ £ m)
+    (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
+    (hc : NatCancel m n 0 0 stuck)
+    (h2 : P ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
+    e ⊢ goal :=
+  tac_lc_add_laterN_split heq inst hφ hc .rfl (sep_elim_left.trans h2) h3
+
+public meta section
+
+/-- The `ElimModal` instance shape needed to eliminate a fancy update at the goal. -/
+abbrev ElimFUpdGoal (GF : BundledGFunctors) [InvGS GF]
+    (φ : Prop) (E : CoPset) (goal Q : IProp GF) : Prop :=
+  ElimModal φ false .in false iprop(|={E}=> goal) goal goal Q
+
+elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
+  let n : Q(Nat) ← match t with
+  | none => pure <| mkNatLit 1
+  | some t => do
+    let n ← Lean.Elab.Term.elabTermEnsuringType t q(Nat)
+    Lean.Elab.Term.synthesizeSyntheticMVarsNoPostponing
+    instantiateMVars n
+
+  ProofModeM.runTactic `inext λ mvar { u, prop, bi, e, hyps, goal, .. } => do
+    -- Search for the later credit hypothesis from the context
+    let ivar ← hyps.findWithInfo h
+    let some ⟨name, _, p, ty⟩ := hyps.getDecl? ivar
+      | throwError m!"inext: unknown hypothesis {h}"
+    if isTrue p then throwError "inext: {h} is not in the spatial context"
+    -- We use direct `Expr` manipulation here and below since `Qq` makes compiling this function very slow
+    --- see https://github.com/leanprover-community/iris-lean/pull/633
+    let some #[_, _, _, c] := Expr.appM? ty ``lc
+      | throwError m!"inext: {h} is not a spatial later credit hypothesis"
+    let some #[GF] := Expr.appM? prop ``IProp
+      | throwError "inext: the goal must be an `IProp`"
+    let ⟨e', hyps', _, _, _, _, pfEq⟩ := hyps.remove false ivar
+    let .some instInvGS ← trySynthInstance (mkApp (.const ``InvGS []) GF)
+      | throwError "inext: requires an InvGS (HasLC) context"
+
+    let φ ← mkFreshExprMVarQ q(Prop)
+    let E ← mkFreshExprMVarQ q(CoPset)
+    let Q' ← mkFreshExprMVarQ q($prop)
+    let elimTy := mkAppN (.const ``ElimFUpdGoal []) #[GF, instInvGS, φ, E, goal, Q']
+    let .some ⟨inst, _⟩ ← ProofMode.trySynthInstance elimTy
+    | throwError "inext: ElimModal type class synthesis failed with {goal}"
+    unless ← isDefEq Q' goal do
+      throwError "inext: eliminating the fancy update does not preserve the goal {goal}"
+
+    let hφ ← iSolveSidecondition q($φ)
+
+    let newC ← mkFreshExprMVarQ q(Nat)
+    let newN ← mkFreshExprMVarQ q(Nat)
+    let stuck ← mkFreshExprMVarQ q(Bool)
+    have c : Q(Nat) := c
+    let some hcancel ← ProofModeM.trySynthInstanceQ q(NatCancel $c $n $newC $newN $stuck)
+      | throwError "inext: unable to cancel {n} later credits from {c}"
+    unless ← isDefEq newN q(0) do
+      throwError "inext: insufficient credits"
+
+    have modality : Q(@Modality $prop $prop $bi $bi) :=
+      mkAppN (.const ``modality_laterN [u]) #[prop, n, bi]
+
+    let newC : Q(Nat) ← instantiateMVars newC
+    match newC.nat? with
+    -- Later credits used up, discard the later credits hypothesis
+    | some 0 =>
+      let ⟨eQ, newHyps', pfModAction⟩ ← iModAction hyps' modality
+      let pf ← addBIGoal newHyps' goal
+      mvar.assign <| mkAppN (.const ``tac_lc_add_laterN_full [])
+        #[GF, instInvGS, φ, n, c, stuck, E,
+          e, e', eQ, goal, pfEq, inst, hφ, hcancel, pfModAction, pf]
+    -- Update the later credits hypothesis and introduce it into the context
+    | _ =>
+      let newTy := mkApp ty.appFn! newC
+      let ⟨eAdd, newHyps, pfNewHyps⟩ := Hyps.add _ name ivar q(false) newTy hyps'
+      let ⟨eQ, newHyps', pfModAction⟩ ← iModAction newHyps modality
+      let pf ← addBIGoal newHyps' goal
+      mvar.assign <| mkAppN (.const ``tac_lc_add_laterN_split [])
+        #[GF, instInvGS, φ, n, c, newC, stuck, E,
+          e, e', eAdd, eQ, goal, pfEq, inst, hφ, hcancel, pfNewHyps, pfModAction, pf]
+
+end
+
+end
 
 end

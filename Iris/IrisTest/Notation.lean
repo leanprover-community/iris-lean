@@ -11,8 +11,8 @@ public import Iris.BI.Updates
 
 @[expose] public section
 
-namespace Iris.Tests
-open Iris.BI
+namespace IrisTest
+open Iris BI
 
 /-! This file contains tests for the predefined separation logic notations. -/
 
@@ -261,4 +261,4 @@ def f (g : A R → (R → PROP) → PROP) :
 
 end MWE
 
-end Iris.Tests
+end IrisTest
