@@ -391,7 +391,6 @@ theorem releaseWriter_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
   wp_store
   icases Hz with (⟨-, Hquarter⟩ | ⟨-, %-, %-, Hauth, -⟩)
   · icombine Hquarter Hlocked as Hown
-    rw [Qp.quarter_add_threeQuarters]
     imod Hclose $$ [Hl Hown HΦ] with -
     · iapply rwStateInv_unlocked; iframe
     iapply Hφ; itrivial
