@@ -2169,7 +2169,7 @@ def isoCofeSubtype' [COFE α] [OFE β] (P : α → Prop) (f : ∀ x, P x → β)
     (Pg : ∀ y, P (g y))
     (g_dist : ∀ n (y1 y2 : β), y1 ≡{n}≡ y2 ↔ g y1 ≡{n}≡ g y2)
     (gf : ∀ x (Hx : P x), g (f x Hx) = x) (Hlimit : LimitPreserving P) : IsCOFE β :=
-  isoCofeSubtype P f g g_dist gf fun c => Hlimit (c.map g) fun n => Pg (c n)
+  isoCofeSubtype P f g g_dist gf fun c => Hlimit.compl (c.map g) fun n => Pg (c n)
 
 @[reducible, rocq_alias iso_cofe]
 def isoCofe [COFE α] [OFE β] (f : α → β) (g : β -n> α)
@@ -2189,7 +2189,7 @@ instance [OFE α] [OFE β] : OFE (Iso α β) where
   Dist n I1 I2 := I1.hom ≡{n}≡ I2.hom ∧ I1.inv ≡{n}≡ I2.inv
   dist_eqv := ⟨fun _ => ⟨.rfl, .rfl⟩, fun ⟨h1, h2⟩ => ⟨h1.symm, h2.symm⟩,
     fun ⟨a1, a2⟩ ⟨b1, b2⟩ => ⟨a1.trans b1, a2.trans b2⟩⟩
-  eq_dist {_ _} := ⟨fun h _ => h ▸ ⟨.rfl, .rfl⟩,
+  eq_dist' {_ _} := ⟨fun h _ => h ▸ ⟨.rfl, .rfl⟩,
     fun H => Iso.ext (eq_dist.mpr fun n => (H n).1) (eq_dist.mpr fun n => (H n).2)⟩
   dist_lt h hlt := ⟨h.1.lt hlt, h.2.lt hlt⟩
 #rocq_ignore ofe_iso_dist "Local Dist instance; folded into Lean's OFE (Iso α β) instance."
