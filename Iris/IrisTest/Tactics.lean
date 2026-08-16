@@ -844,11 +844,26 @@ example [BI PROP] {α} (Q : α → PROP) (a b : α) : (∀ x, ∀ y, ⌜x = a⌝
   iintro H
   iapply H $$ %_ %b %rfl
 
-/-- error: iapply: iprop(P a -∗ Q b) is not a Lean premise -/
+/-
+  Tests `iapply` with an invalid attempt to specialise a wand premise using a
+  subgoal intended for discharging a pure premise.
+-/
+/-- error: iapply: Q b is not a Lean premise -/
 #guard_msgs in
-example [BI PROP] {α} (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
+example [BI PROP] {α} (P Q : α → PROP) (a b : α) :
+    (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
-  iapply H $$ %a %b %_ HP
+  iapply H $$ %a %b HP %_
+
+/-
+  Tests `iapply` with a specialization pattern discharging a wand premise as
+  a subgoal (`⊢ P a`).
+-/
+example [BI PROP] {α} (P Q : α → PROP) (a b : α) (h : ⊢ P a) :
+    (∀ x, ∀ y, P x -∗ Q y) ⊢ □ P a -∗ Q b := by
+  iintro H #HP
+  iapply H $$ %a %b %_
+  exact h
 
 /-- Tests `iapply` using unification for foralls. -/
 example [BI PROP] {α} (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
@@ -1123,7 +1138,7 @@ example [BI PROP] (P Q : PROP) (h : P ⊢ □ Q) : ⊢ P -∗ P ∗ Q := by
   · iexact HQ
 
 /--
-  Tests `ihave` with the specialisation pattern involving modalities.
+  Tests `ihave` with the specialization pattern involving modalities.
   Despite `try_dup_context` being `true`, the context is not duplicated.
 -/
 example [BI PROP] [BIAffine PROP] [BIUpdate PROP] (P : PROP) [Persistent P] :
@@ -1133,7 +1148,7 @@ example [BI PROP] [BIAffine PROP] [BIUpdate PROP] (P : PROP) [Persistent P] :
   imodintro
   iexact HP
 
-/-- Tests `ihave` with the specialisation pattern involving auto-framing with modalities. -/
+/-- Tests `ihave` with the specialization pattern involving auto-framing with modalities. -/
 example [BI PROP] [BIAffine PROP] [BIUpdate PROP] (P : PROP) [Persistent P] :
     |==> P ⊢ |==> P := by
   iintro HP
@@ -1655,7 +1670,7 @@ example [BI PROP] (φ : Prop) (P Q : PROP) :
   iintro HP HPQ
   ispecialize HPQ $$ [# HP]
 
-/-- Tests `ispecialize` with nested specialisation patterns. -/
+/-- Tests `ispecialize` with nested specialization patterns. -/
 example [BI PROP] (P Q R S T : PROP) :
     ⊢ (P -∗ <pers> T -∗ Q) -∗ (Q -∗ <pers> T -∗ R) -∗ (R -∗ S) -∗ P -∗ <pers> T -∗ S := by
   iintro HPTQ HQTR HRS HP HT
@@ -1739,14 +1754,14 @@ example [BI PROP] [BIUpdate PROP] (P Q R : PROP) :
   imodintro
   iassumption
 
-/- Tests `ispecialize` with an invalid specialisation pattern (duplicated hypotheses). -/
+/- Tests `ispecialize` with an invalid specialization pattern (duplicated hypotheses). -/
 /-- error: ispecialize: HP used twice for framing -/
 #guard_msgs in
 example [BI PROP] (P Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
   iintro HP HPQ
   ispecialize HPQ $$ [$HP $HP]
 
-/- Tests `ispecialize` with an invalid specialisation pattern (duplicated hypotheses). -/
+/- Tests `ispecialize` with an invalid specialization pattern (duplicated hypotheses). -/
 /-- error: ispecialize: HP cannot be used for both the subgoal and framing -/
 #guard_msgs in
 example [BI PROP] (P Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
@@ -1760,21 +1775,21 @@ example [BI PROP] (P Q : PROP) : P ⊢ Q := by
   iintro HP
   ispecialize HP $$ [$]
 
-/- Tests `ispecialize` with an invalid specialisation pattern. -/
+/- Tests `ispecialize` with an invalid specialization pattern. -/
 /-- error: ispecialize: IntoWand type class synthesis failed with P and Q -/
 #guard_msgs in
 example [BI PROP] (P Q : PROP) : P ⊢ Q -∗ Q := by
   iintro HP HQ
   ispecialize HP $$ HQ
 
-/- Tests `ispecialize` with an invalid specialisation pattern using pure hypotheses. -/
+/- Tests `ispecialize` with an invalid specialization pattern using pure hypotheses. -/
 /-- error: ispecialize: P is not a Lean premise -/
 #guard_msgs in
 example [BI PROP] (P Q : PROP) : P ⊢ Q := by
   iintro HP
   ispecialize HP $$ %(0 : Nat)
 
-/-- Tests `ispecialize` with a specialisation pattern naming the subgoal. -/
+/-- Tests `ispecialize` with a specialization pattern naming the subgoal. -/
 example [BI PROP] [BIUpdate PROP] (P Q : PROP) :
     ⊢ (P -∗ Q) -∗ (|==> P) -∗ (|==> Q) := by
   iintro HPQ HP
@@ -3413,7 +3428,7 @@ example [BI PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ □ R -∗ R ∗ P ∗ Q :=
 example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
     {a1 a2 a3 b c : F.ap (IProp GF)} [IsOp .merge b a2 a3] [IsOp .merge c a1 b] :
     ⊢ iOwn γ a1 -∗ iOwn γ a2 -∗ iOwn γ a3 -∗
-      iOwn γ c ∗ internalCmraValid (a2 • a3) ∗ internalCmraValid (a1 • b) := by
+      iOwn γ c ∗ ✓ (a2 • a3) ∗ ✓ (a1 • b) := by
   iintro H1 H2 H3
   icombine H1 H2 H3 as Hnew1 gives ⟨Hnew2, Hnew3⟩
   isplitl
@@ -3780,7 +3795,7 @@ example [CInvG GF] {γ : GName} {p : Qp} :
 
 /--
   Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd`,
-  `intoAcc_cinv` and a specialisation pattern. -/
+  `intoAcc_cinv` and a specialization pattern. -/
 example [CInvG GF] {γ : GName} {p1 p2 : Qp} {P : IProp GF} :
     cinv N γ iprop(<pers> P) ∗ own γ p1 ∗ own γ p2
     ⊢@{IProp GF} |={⊤}=> own γ p1 ∗ own γ p2 ∗ ▷ P := by
