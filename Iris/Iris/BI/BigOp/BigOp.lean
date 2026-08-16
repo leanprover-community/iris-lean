@@ -128,6 +128,11 @@ abbrev bigAndM [BI PROP] {K : Type _} {V : Type _} {M : Type _ → Type _}
     [LawfulFiniteMap M K] (Φ : K → V → PROP) (m : M V) : PROP :=
   bigOpM and Φ m
 
+/--
+Big separating conjunction over two finite maps in lockstep.
+- Big separating conjunction over two maps: `[∗map] v1; v2 ∈ m1;m2, P v1 v2`.
+- Big separating conjunction over two maps, with the key bound: `[∗map] k ↦ v1;v2 ∈ m1;m2, P k v1 v2`.
+-/
 @[rocq_alias big_sepM2_def, rocq_alias big_sepM2, expose]
 def bigSepM2 {PROP : Type _} [BI PROP] {K : Type _} {A B : Type u} {M : Type _ → Type _}
  [LawfulFiniteMap M K] (Φ : K → A → B → PROP) (m1 : M A) (m2 : M B) : PROP :=
@@ -174,8 +179,8 @@ open Lean PrettyPrinter Delaborator SubExpr
 @[inherit_doc bigSepM] syntax "[∗map] " ident " ∈ " term ", " term : term
 @[inherit_doc bigSepM] syntax "[∗map] " ident " ↦ " ident " ∈ " term ", " term : term
 
-syntax "[∗map] " ident ";" ident " ∈ " term ";" term ", " term : term
-syntax "[∗map] " ident " ↦ " ident ";" ident " ∈ " term ";" term ", " term : term
+@[inherit_doc bigSepM2] syntax "[∗map] " ident ";" ident " ∈ " term ";" term ", " term : term
+@[inherit_doc bigSepM2] syntax "[∗map] " ident " ↦ " ident ";" ident " ∈ " term ";" term ", " term : term
 
 
 @[inherit_doc bigAndM] syntax "[∧map] " ident " ∈ " term ", " term : term
