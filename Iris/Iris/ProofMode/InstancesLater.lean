@@ -16,7 +16,7 @@ public import Iris.ProofMode.NatCancel
 namespace Iris.ProofMode
 open Iris.BI Iris.Std
 
-/-- FromAssumption -/
+/-! ### FromAssumption -/
 
 @[rocq_alias from_assumption_later]
 instance fromAssumption_later [BI PROP] (p : Bool) (P Q : PROP)
@@ -43,7 +43,7 @@ instance (priority := default + 10) fromAssumption_later_laterN [BI PROP] n (p :
     FromAssumption p .in iprop(▷^[n + 1] P) iprop(▷ Q) where
   from_assumption := later_intuitionisticallyIf_2.trans (later_mono h.from_assumption)
 
-/-- FromPure -/
+/-! ### FromPure -/
 
 @[rocq_alias from_pure_later]
 instance fromPure_later [BI PROP] (a : Bool) (P : PROP) (φ : Prop)
@@ -60,7 +60,7 @@ instance fromPure_except0 [BI PROP] (a : Bool) (P : PROP) (φ : Prop)
     [h : FromPure a P io φ] : FromPure a iprop(◇ P) io φ where
   from_pure := h.1.trans except0_intro
 
-/-- IntoWand -/
+/-! ### IntoWand -/
 
 @[rocq_alias into_wand_later]
 instance intoWand_later [BI PROP] (p q : Bool) (R P Q : PROP)
@@ -104,7 +104,7 @@ instance (priority := low) intoWand_laterN_args [BI PROP] (n : Nat) (p q : Bool)
     _ ⊢ ▷^[n]□?q P -∗ ▷^[n]Q := laterN_wand n
     _ ⊢ □?q ▷^[n]P -∗ ▷^[n]Q := wand_mono_left <| laterN_intuitionisticallyIf n
 
-/-- FromAnd -/
+/-! ### FromAnd -/
 
 @[rocq_alias from_and_later]
 instance fromAnd_later [BI PROP] (P Q1 Q2 : PROP)
@@ -121,7 +121,7 @@ instance fromAnd_except0 [BI PROP] (P Q1 Q2 : PROP)
     [h : FromAnd P Q1 Q2] : FromAnd iprop(◇ P) iprop(◇ Q1) iprop(◇ Q2) where
   from_and := except0_and.2.trans (except0_mono h.1)
 
-/-- FromSep -/
+/-! ### FromSep -/
 
 @[rocq_alias from_sep_later]
 instance fromSep_later [BI PROP] (P Q1 Q2 : PROP)
@@ -138,7 +138,7 @@ instance fromSep_except0 [BI PROP] (P Q1 Q2 : PROP)
     [h : FromSep P Q1 Q2] : FromSep iprop(◇ P) iprop(◇ Q1) iprop(◇ Q2) where
   from_sep := except0_sep.2.trans (except0_mono h.1)
 
-/-- IntoAnd -/
+/-! ### IntoAnd -/
 
 @[rocq_alias into_and_later]
 instance intoAnd_later [BI PROP] (p : Bool) (P Q1 Q2 : PROP)
@@ -164,7 +164,7 @@ instance intoAnd_except0 [BI PROP] (p : Bool) (P Q1 Q2 : PROP)
     _ ⊢ ◇ (Q1 ∧ Q2)  := except0_mono <| h.into_and.trans intuitionisticallyIf_elim
     _ ⊢ ◇ Q1 ∧ ◇ Q2 := except0_and.mp
 
-/-- IntoSep -/
+/-! ### IntoSep -/
 
 @[rocq_alias into_sep_later]
 instance intoSep_later [BI PROP] (P Q1 Q2 : PROP)
@@ -181,7 +181,7 @@ instance intoSep_except0 [BI PROP] (P Q1 Q2 : PROP)
     [h : IntoSep P Q1 Q2] : IntoSep iprop(◇ P) iprop(◇ Q1) iprop(◇ Q2) where
   into_sep := (except0_mono h.1).trans except0_sep.1
 
-/-- FromOr -/
+/-! ### FromOr -/
 
 @[rocq_alias from_or_later]
 instance fromOr_later [BI PROP] (P Q1 Q2 : PROP)
@@ -198,7 +198,7 @@ instance fromOr_except0 [BI PROP] (P Q1 Q2 : PROP)
     [h : FromOr P Q1 Q2] : FromOr iprop(◇ P) iprop(◇ Q1) iprop(◇ Q2) where
   from_or := except0_or.2.trans (except0_mono h.1)
 
-/-- IntoOr -/
+/-! ### IntoOr -/
 
 @[rocq_alias into_or_later]
 instance intoOr_later [BI PROP] (P Q1 Q2 : PROP)
@@ -215,7 +215,7 @@ instance intoOr_except0 [BI PROP] (P Q1 Q2 : PROP)
     [h : IntoOr P Q1 Q2] : IntoOr iprop(◇ P) iprop(◇ Q1) iprop(◇ Q2) where
   into_or := (except0_mono h.1).trans except0_or.1
 
-/-- FromExists -/
+/-! ### FromExists -/
 
 @[rocq_alias from_exist_later]
 instance fromExists_later [BI PROP] (P : PROP) (Φ : α → PROP)
@@ -232,7 +232,8 @@ instance fromExists_except0 [BI PROP] (P : PROP) (Φ : α → PROP)
     [h : FromExists P Φ] : FromExists iprop(◇ P) (fun a => iprop(◇ Φ a)) where
   from_exists := except0_exists_mpr.trans (except0_mono h.1)
 
-/-- IntoExists -/
+/-! ### IntoExists -/
+
 @[rocq_alias into_exist_later]
 instance intoExists_later [BI PROP] [Inhabited α] (P : PROP) (Φ : α → PROP)
     [h : IntoExists P Φ] : IntoExists iprop(▷ P) (fun a => iprop(▷ Φ a)) where
@@ -248,7 +249,7 @@ instance intoExists_except0 [BI PROP] [Inhabited α] (P : PROP) (Φ : α → PRO
     [h : IntoExists P Φ] : IntoExists iprop(◇ P) (fun a => iprop(◇ Φ a)) where
   into_exists := (except0_mono h.1).trans (except0_exists.1)
 
-/-- IntoForall -/
+/-! ### IntoForall -/
 
 @[rocq_alias into_forall_later]
 instance intoForall_later [BI PROP] (P : PROP) (Φ : α → PROP)
@@ -265,7 +266,8 @@ instance intoForall_except0 [BI PROP] (P : PROP) (Φ : α → PROP)
     [h : IntoForall P Φ] : IntoForall iprop(◇ P) (fun a => iprop(◇ Φ a)) where
   into_forall := (except0_mono h.1).trans except0_forall.1
 
-/-- FromForall -/
+/-! ### FromForall -/
+
 @[rocq_alias from_forall_later]
 instance fromForall_later [BI PROP] (P : PROP) (Φ : α → PROP)
     [h : FromForall P Φ] : FromForall iprop(▷ P) (fun a => iprop(▷ Φ a)) where
@@ -281,7 +283,8 @@ instance fromForall_except0 [BI PROP] (P : PROP) (Φ : α → PROP)
     [h : FromForall P Φ] : FromForall iprop(◇ P) (fun a => iprop(◇ Φ a)) where
   from_forall := except0_forall.2.trans (except0_mono h.1)
 
-/-- IsExcept0 -/
+/-! ### IsExcept0 -/
+
 @[rocq_alias is_except_0_except_0]
 instance isExcept0_except0 [BI PROP] (P : PROP) : IsExcept0 iprop(◇ P) where
   is_except0 := (except0_idem.1)
@@ -290,23 +293,24 @@ instance isExcept0_except0 [BI PROP] (P : PROP) : IsExcept0 iprop(◇ P) where
 instance isExcept0_later [BI PROP] (P : PROP) : IsExcept0 iprop(▷ P) where
   is_except0 := except0_later
 
-/-- FromModal -/
+/-! ### FromModal -/
+
 @[rocq_alias from_modal_later]
-instance fromModal_later [BI PROP] (P : PROP) :
-  FromModal True (modality_laterN 1) iprop(▷^[1] P) iprop(▷ P) P where
+instance fromModal_later [BI PROP] io (P : PROP) :
+  FromModal io (modality_laterN 1) True iprop(▷^[1] P) iprop(▷ P) P where
   from_modal _ := .rfl
 
 @[rocq_alias from_modal_laterN]
-instance fromModal_laterN [BI PROP] (P : PROP) n :
-  FromModal True (modality_laterN n) iprop(▷^[n] P) iprop(▷^[n] P) P where
+instance fromModal_laterN [BI PROP] io (P : PROP) n :
+  FromModal io (modality_laterN n) True iprop(▷^[n] P) iprop(▷^[n] P) P where
   from_modal _ := .rfl
 
 @[rocq_alias from_modal_except_0]
-instance fromModal_except0 [BI PROP] (P : PROP) :
-  FromModal True modality_id iprop(◇ P) iprop(◇ P) P where
+instance fromModal_except0 [BI PROP] io (P : PROP) :
+  FromModal io modality_id True iprop(◇ P) iprop(◇ P) P where
   from_modal _ := except0_intro
 
-/-- IntoExcept0 -/
+/-! ### IntoExcept0 -/
 @[rocq_alias into_except_0_except_0]
 instance intoExcept0_except0 [BI PROP] (P : PROP) : IntoExcept0 iprop(◇ P) P where
   into_except0 := .rfl
@@ -341,7 +345,8 @@ instance intoExcept0_persistently [BI PROP] (P Q : PROP)
     [h : IntoExcept0 P Q] : IntoExcept0 iprop(<pers> P) iprop(<pers> Q) where
   into_except0 := (persistently_mono h.1).trans except0_persistently.2
 
-/-- ElimModal -/
+/-! ### ElimModal -/
+
 @[ipm_backtrack, rocq_alias elim_modal_timeless]
 instance (priority := default - 10) elimModal_timeless [BI PROP] p io
     (P P' Q : PROP) [IntoExcept0 P P'] [IsExcept0 Q] :
@@ -354,7 +359,8 @@ instance (priority := default - 10) elimModal_timeless [BI PROP] p io
     _ ⊢ ◇ Q                         := except0_mono wand_elim_right
     _ ⊢ Q                            := is_except0
 
-/-- AddModal -/
+/-! ### AddModal -/
+
 @[ipm_backtrack, rocq_alias add_modal_later_except_0]
 instance (priority := default + 10) addModal_later_except_0 [BI PROP]
     (P Q : PROP) [h : Timeless P] :
@@ -391,7 +397,8 @@ instance addModal_except_0_later [BI PROP] (P Q : PROP) :
     _ ⊢ ◇ (▷ Q)            := except0_mono wand_elim_right
     _ ⊢ ▷ Q                 := except0_later
 
-/-- IntoLaterN -/
+/-! ### IntoLaterN -/
+
 @[rocq_alias into_laterN_0, rocq_alias maybe_into_laterN_default_0]
 instance (priority := high) intoLaterN_0 [BI PROP] progress only_head (P : PROP) :
     IntoLaterN progress only_head 0 P P where
@@ -518,28 +525,32 @@ instance (priority := default - 11) intoLaterN_sep_right [BI PROP]
     IntoLaterN progress (only_head := false) n iprop(P ∗ P2) iprop(P ∗ Q2) where
   into_laterN := (sep_mono (laterN_intro n) h.into_laterN).trans (laterN_sep n).mpr
 
+/-! ### CombineSepAs -/
+
 @[rocq_alias maybe_combine_sep_as_later]
 instance combineSepAs_later [BI PROP] (Q1 Q2 P : PROP)
-  [h : CombineSepAs Q1 Q2 P] :
-  CombineSepAs iprop(▷ Q1) iprop(▷ Q2) iprop(▷ P) where
+    [h : CombineSepAs Q1 Q2 P] :
+    CombineSepAs iprop(▷ Q1) iprop(▷ Q2) iprop(▷ P) where
   combine_sep_as := later_sep.mpr.trans (later_mono h.combine_sep_as)
 
 @[rocq_alias maybe_combine_sep_as_laterN]
 instance combineSepAs_laterN [BI PROP] (Q1 Q2 P : PROP)
-  [h : CombineSepAs Q1 Q2 P] :
-  CombineSepAs iprop(▷^[n] Q1) iprop(▷^[n] Q2) iprop(▷^[n] P) where
+    [h : CombineSepAs Q1 Q2 P] :
+    CombineSepAs iprop(▷^[n] Q1) iprop(▷^[n] Q2) iprop(▷^[n] P) where
   combine_sep_as := (laterN_sep n).mpr.trans (laterN_mono n h.combine_sep_as)
 
 @[rocq_alias maybe_combine_sep_as_except_0]
 instance combineSepAs_except0 [BI PROP] (Q1 Q2 P : PROP)
-  [h : CombineSepAs Q1 Q2 P] :
-  CombineSepAs iprop(◇ Q1) iprop(◇ Q2) iprop(◇ P) where
+    [h : CombineSepAs Q1 Q2 P] :
+    CombineSepAs iprop(◇ Q1) iprop(◇ Q2) iprop(◇ P) where
   combine_sep_as := except0_sep.mpr.trans (except0_mono h.combine_sep_as)
+
+/-! ### CombineSepGives -/
 
 @[rocq_alias maybe_combine_sep_gives_later]
 instance combineSepGives_later [BI PROP] (Q1 Q2 P : PROP)
-  [h : CombineSepGives Q1 Q2 P] :
-  CombineSepGives iprop(▷ Q1) iprop(▷ Q2) iprop(▷ P) where
+    [h : CombineSepGives Q1 Q2 P] :
+    CombineSepGives iprop(▷ Q1) iprop(▷ Q2) iprop(▷ P) where
   combine_sep_gives := by calc
     ▷ Q1 ∗ ▷ Q2 ⊢ ▷ (Q1 ∗ Q2) := later_sep.mpr
     _             ⊢ ▷ <pers> P  := later_mono h.combine_sep_gives
@@ -547,8 +558,8 @@ instance combineSepGives_later [BI PROP] (Q1 Q2 P : PROP)
 
 @[rocq_alias maybe_combine_sep_gives_laterN]
 instance combineSepGives_laterN [BI PROP] (Q1 Q2 P : PROP)
-  [h : CombineSepGives Q1 Q2 P] :
-  CombineSepGives iprop(▷^[n] Q1) iprop(▷^[n] Q2) iprop(▷^[n] P) where
+    [h : CombineSepGives Q1 Q2 P] :
+    CombineSepGives iprop(▷^[n] Q1) iprop(▷^[n] Q2) iprop(▷^[n] P) where
   combine_sep_gives := by calc
     ▷^[n] Q1 ∗ ▷^[n] Q2 ⊢ ▷^[n] (Q1 ∗ Q2) := (laterN_sep n).mpr
     _                     ⊢ ▷^[n] <pers> P  := laterN_mono n h.combine_sep_gives
@@ -556,8 +567,8 @@ instance combineSepGives_laterN [BI PROP] (Q1 Q2 P : PROP)
 
 @[rocq_alias maybe_combine_sep_gives_except_0]
 instance combineSepGives_except0 [BI PROP] (Q1 Q2 P : PROP)
-  [h : CombineSepGives Q1 Q2 P] :
-  CombineSepGives iprop(◇ Q1) iprop(◇ Q2) iprop(◇ P) where
+    [h : CombineSepGives Q1 Q2 P] :
+    CombineSepGives iprop(◇ Q1) iprop(◇ Q2) iprop(◇ P) where
   combine_sep_gives := by calc
     ◇ Q1 ∗ ◇ Q2 ⊢ ◇ (Q1 ∗ Q2) := except0_sep.mpr
     _             ⊢ ◇ <pers> P  := except0_mono h.combine_sep_gives
