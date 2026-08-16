@@ -1,28 +1,22 @@
 /-
 Copyright (c) 2026. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors:
+Authors: Markus de Medeiros
 -/
 module
 
 public import Iris.HeapLang
 public import Iris.HeapLang.Lib.NondetBool
 
-/-! # The clairvoyant coin
-
-The clairvoyant coin predicts all the values that it will *non-deterministically* choose
-throughout the execution of the program. This can be seen in the spec. The predicate `coin c bs`
-expresses that `bs` is the list of all the values of the coin in the future. The `readCoin`
-operation always returns the head of `bs` and the `tossCoin` operation takes the `tail` of `bs`. -/
+/-! # The clairvoyant coin -/
 
 namespace Iris.HeapLang
 
--- type Coin := Ref Bool × ProphId
--- `@[rocq_alias heap_lang.new_coin]` clashes with `lazy_coin.v`'s `new_coin`.
+@[rocq_alias heap_lang.new_coin]
 def newCoin := hl_val%
   λ _, (ref(&nondetBool #()), newProph())
 
--- `@[rocq_alias heap_lang.read_coin]` clashes with `lazy_coin.v`'s `read_coin`.
+@[rocq_alias heap_lang.read_coin]
 def readCoin := hl_val% λ cp, !fst(cp)
 
 @[rocq_alias heap_lang.toss_coin]
@@ -43,21 +37,18 @@ section Proofs
 def prophecyToListBool (vs : List (Val × Val)) : List Bool :=
   vs.map (·.2 = hl_val(#true))
 
--- No Rocq counterpart: upstream `destruct`s the tossed boolean at each use site instead.
 @[simp, grind =]
 theorem prophecyToListBool_cons (vs : List (Val × Val)) (v : Val) (b : Bool) :
     prophecyToListBool ((v, hl_val(#b)) :: vs) = b :: prophecyToListBool vs := by
   cases b <;> rfl
 
--- `@[rocq_alias heap_lang.coin]` clashes with `lazy_coin.v`'s `coin`.
-/-- `cp` is a pair of `c` and `p`, where `p` is a prophecy predicting every future value of the
-    coin, `bs` is the list of those values, and `c` points to the head of `bs`. -/
+@[rocq_alias heap_lang.coin]
 def coin (cp : Val) (bs : List Bool) : IProp GF := iprop%
   ∃ (c : Loc) (p : ProphId) (vs : List (Val × Val)),
   ⌜cp = hl_val((#c, #p))⌝ ∗ ⌜bs ≠ []⌝ ∗ ⌜bs.tail = prophecyToListBool vs⌝ ∗
   proph p vs ∗ bs.head?.elim iprop(∃ (b : Bool), c ↦ hl_val(#b)) (fun b => iprop(c ↦ hl_val(#b)))
 
--- `@[rocq_alias heap_lang.new_coin_spec]` clashes with `lazy_coin.v`'s `new_coin_spec`.
+@[rocq_alias heap_lang.new_coin_spec]
 theorem newCoin.spec :
     {{ True }} hl(&newCoin #()) {{ c bs, RET c; coin (GF := GF) c bs }} := by
   iunfold coin
@@ -78,7 +69,7 @@ theorem newCoin.spec :
   isimp
   iframe
 
--- `@[rocq_alias heap_lang.read_coin_spec]` clashes with `lazy_coin.v`'s `read_coin_spec`.
+@[rocq_alias heap_lang.read_coin_spec]
 theorem readCoin.spec (cp : Val) (bs : List Bool) :
     {{ coin (GF := GF) cp bs }} hl(&readCoin &cp)
     {{ (b : Bool) bs', RET hl_val(#b); ⌜bs = b :: bs'⌝ ∗ coin cp bs }} := by
