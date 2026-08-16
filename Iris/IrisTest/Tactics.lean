@@ -435,6 +435,11 @@ example [BI PROP] (a b c1 c2 c3 : Prop) (P : Prop → Prop) :
   · grind
   · grind
 
+/-- Tests `iintro` with an introduction involving substitution of an equality (`%rfl`). -/
+example [BI PROP] n (P Q : Nat → PROP) : (<affine> ⌜n = 0⌝ ∗ P 0 ∗ Q n) ⊢ P n ∗ Q n := by
+  iintro ⟨%rfl, Hp⟩
+  iexact Hp
+
 end iintro
 
 section irevert
@@ -2296,6 +2301,12 @@ example [BI PROP] (a b c1 c2 c3 : Prop) (P : Prop → Prop) :
   icases Hpure with %⟨⟨rfl, ((hb : a) | ⟨hc, _, -⟩)⟩, @⟨d : Prop, hd⟩⟩
   · ipureintro <;> grind
   · ipureintro <;> grind
+
+/-- Tests `icases` with a case destruction pattern involving substitution (`%rfl`). -/
+example [BI PROP] n (P : Nat → PROP) : (<affine> ⌜n = 0⌝ ∗ P 0) ⊢ P n := by
+  iintro H
+  icases H with ⟨%rfl, Hp⟩
+  iexact Hp
 
 end icases
 
