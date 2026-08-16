@@ -1,25 +1,12 @@
 /-
 Copyright (c) 2026. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors:
+Authors: Markus de Medeiros
 -/
 module
 
 public import Iris.HeapLang.DerivedLaws
 public import Iris.HeapLang.ProofMode
-
-/-! # Array utilities
-
-* `arrayFree`, to deallocate an entire array in one go.
-* `arrayCopyTo`, a function which copies to an array in-place.
-* Using `arrayCopyTo` we also implement `arrayClone`, which allocates a fresh array and copies
-  to it.
-* `arrayInit`, to create and initialize an array with a given function. Specifically,
-  `arrayInit n f` creates a new array of size `n` in which the `i`th element is initialized
-  with `f #i`.
-
-Iris-Lean has no total weakest precondition yet, so only the partial (`wp_`) versions of the
-specifications are ported. -/
 
 namespace Iris.HeapLang
 
@@ -61,6 +48,14 @@ def arrayInit : Val := hl_val%
     &arrayInitLoop src #(0 : Int) n f;
     src
 
+/-- Normal form for stepping a loop counter: `l + ↑(i+1)` splits off the trailing `+ 1`. -/
+theorem loc_add_ofNat_succ (l : Loc) (i : Nat) :
+    l + Int.ofNat (i + 1) = l + Int.ofNat i + (1 : Int) := by
+  rw [loc_add_assoc]; congr 1
+
+/-- A loop starting at index `0` points at the array base `l`. -/
+theorem loc_add_ofNat_zero (l : Loc) : l + Int.ofNat 0 = l := loc_add_zero l
+
 section Proof
 
 variable {GF : BundledGFunctors} {hlc : HasLC} [HeapLangGS hlc GF]
@@ -70,23 +65,18 @@ theorem wp_array_free (s : Stuckness) (E : CoPset) (l : Loc) (vs : List Val) (n 
     (hn : n = vs.length) :
     {{ (l ↦∗ vs : IProp GF) }} hl(&arrayFree #l #n) @ s; E {{ RET hl_val(#()); True }} := by
   subst hn
-  induction vs generalizing l with
+  iintro %Φ Hl HΦ
+  iinduction vs generalizing %l Hl HΦ with
   | nil =>
-    iintro %Φ Hl HΦ
-    wp_rec
-    wp_pures
+    wp_rec; wp_pures
     rw [decide_eq_true (show ((([] : List Val).length : Int) ≤ 0) by simp)]
     wp_pures
-    iapply HΦ
-    itrivial
+    iapply HΦ $$ [$]
   | cons w vs ih =>
-    iintro %Φ Hl HΦ
     icases array_cons.1 $$ Hl with ⟨Hw, Hl⟩
-    wp_rec
-    wp_pures
+    wp_rec; wp_pures
     rw [decide_eq_false (show ¬ (((w :: vs).length : Int) ≤ 0) by simp)]
-    wp_free
-    wp_pures
+    wp_free; wp_pures
     rw [show (((w :: vs).length : Int) - 1) = (vs.length : Int) by simp]
     iapply ih $$ Hl HΦ
 
@@ -96,42 +86,30 @@ theorem wp_array_copy_to (s : Stuckness) (E : CoPset) (dst src : Loc) (vdst vsrc
     {{ (dst ↦∗ vdst ∗ src ↦∗{dq} vsrc : IProp GF) }} hl(&arrayCopyTo #dst #src #n) @ s; E
     {{ RET hl_val(#()); dst ↦∗ vsrc ∗ src ↦∗{dq} vsrc }} := by
   subst hdst
-  revert hsrc
-  induction vdst generalizing dst src vsrc with
+  iintro %Φ ⟨Hdst, Hsrc⟩ HΦ
+  iinduction vdst generalizing %dst %src %vsrc %hsrc Hdst Hsrc HΦ with
   | nil =>
     cases vsrc with
-    | cons v2 vsrc =>
-      exact fun hsrc => absurd hsrc (by simp; omega)
+    | cons v2 vsrc => exact absurd hsrc (by grind)
     | nil =>
-      intro _
-      iintro %Φ ⟨Hdst, Hsrc⟩ HΦ
-      wp_rec
-      wp_pures
+      wp_rec; wp_pures
       rw [decide_eq_true (show ((([] : List Val).length : Int) ≤ 0) by simp)]
       wp_pures
-      iapply HΦ
-      iframe
+      iapply HΦ $$ [$]
   | cons v1 vdst ih =>
     cases vsrc with
-    | nil =>
-      exact fun hsrc => absurd hsrc (by simp; omega)
+    | nil => exact absurd hsrc (by simp; omega)
     | cons v2 vsrc =>
-      intro hsrc
-      iintro %Φ ⟨Hdst, Hsrc⟩ HΦ
       icases array_cons.1 $$ Hdst with ⟨Hv1, Hdst⟩
       icases array_cons.1 $$ Hsrc with ⟨Hv2, Hsrc⟩
-      wp_rec
-      wp_pures
+      wp_rec; wp_pures
       rw [decide_eq_false (show ¬ (((v1 :: vdst).length : Int) ≤ 0) by simp)]
-      wp_load
-      wp_store
-      wp_pures
+      wp_load; wp_store; wp_pures
       rw [show (((v1 :: vdst).length : Int) - 1) = (vdst.length : Int) by simp]
-      iapply ih (dst + (1 : Int)) (src + (1 : Int)) vsrc (by simp at hsrc; omega) $$
-        %Φ [$Hdst $Hsrc] [Hv1 Hv2 HΦ]
+      iapply ih $$ %(dst + (1 : Int)) %(src + (1 : Int)) %vsrc %(by simp at hsrc; omega)
+        [$Hdst] [$Hsrc] [Hv1 Hv2 HΦ]
       iintro !> ⟨Hdst, Hsrc⟩
-      iapply HΦ
-      iframe
+      iapply HΦ $$ [$]
 
 @[rocq_alias heap_lang.wp_array_clone]
 theorem wp_array_clone (s : Stuckness) (E : CoPset) (l : Loc) (dq : DFrac) (vl : List Val)
@@ -147,8 +125,7 @@ theorem wp_array_clone (s : Stuckness) (E : CoPset) (l : Loc) (dq : DFrac) (vl :
     (by simp only [List.length_replicate]; omega) hvl $$ [$Hdst $Hvl]
   iintro !> ⟨Hdst, Hl⟩
   wp_pures
-  iapply HΦ
-  iframe
+  iapply HΦ $$ [$]
 
 section ArrayInit
 
@@ -163,11 +140,10 @@ theorem wp_array_init_loop (s : Stuckness) (E : CoPset) (l : Loc) (i k : Nat) (n
     {{ vs, RET hl_val(#()); ⌜vs.length = k⌝ ∗ (l + Int.ofNat i) ↦∗ vs ∗
         [∗list] j ↦ v ∈ vs, Q (i + j) v }} := by
   subst hn
-  induction k generalizing i with
+  iintro %Φ ⟨Hl, Hf⟩ HΦ
+  iinduction k generalizing %i Hl Hf HΦ with
   | zero =>
-    iintro %Φ ⟨Hl, Hf⟩ HΦ
-    wp_rec
-    wp_pures
+    wp_rec; wp_pures
     simp only [Nat.add_zero, beq_self_eq_true]
     wp_pures
     imodintro
@@ -175,9 +151,7 @@ theorem wp_array_init_loop (s : Stuckness) (E : CoPset) (l : Loc) (i k : Nat) (n
     isimp only [array_nil.to_eq, BigSepL.bigSepL_nil.to_eq]
     itrivial
   | succ k ih =>
-    iintro %Φ ⟨Hl, Hf⟩ HΦ
-    wp_rec
-    wp_pures
+    wp_rec; wp_pures
     rw [show (hl_val(#(Int.ofNat i)) == hl_val(#(Int.ofNat (i + (k + 1))))) = false by
       simp; omega]
     wp_pures
@@ -192,19 +166,16 @@ theorem wp_array_init_loop (s : Stuckness) (E : CoPset) (l : Loc) (i k : Nat) (n
     wp_pures
     rw [show Int.ofNat i + 1 = Int.ofNat (i + 1) from rfl,
       show Int.ofNat (i + (k + 1)) = Int.ofNat (i + 1 + k) by congr 1; omega]
-    iapply ih (i + 1) $$ %Φ [HSl HSf] [Hl Hv HΦ]
-    · rw [show l + Int.ofNat (i + 1) = l + Int.ofNat i + (1 : Int) from
-        (loc_add_assoc l (Int.ofNat i) 1).symm]
+    iapply ih $$ %(i + 1) [HSl] [$HSf] [Hl Hv HΦ]
+    · rw [loc_add_ofNat_succ]
       iframe
     · iintro !> %vs ⟨%hlen, HSl, Hvs⟩
       iapply HΦ $$ %(v :: vs)
-      rw [show l + Int.ofNat (i + 1) = l + Int.ofNat i + (1 : Int) from
-        (loc_add_assoc l (Int.ofNat i) 1).symm]
+      rw [loc_add_ofNat_succ]
       ieval (simp only [show ∀ j, i + 1 + j = i + (j + 1) from fun j => by omega]) at Hvs
       iframe Hl HSl
       isplitl []
-      · ipureintro
-        simp [hlen]
+      · ipureintro; simp [hlen]
       · iapply BigSepL.bigSepL_cons.2
         iframe
 
@@ -220,18 +191,17 @@ theorem wp_array_init (s : Stuckness) (E : CoPset) (n : Int) (f : Val) (hn : 0 <
   wp_pures
   wp_bind &arrayInitLoop _ _ _ _
   iapply wp_array_init_loop Q s E src 0 n.toNat n f (by simp; omega) $$ [Hl Hf]
-  · rw [show src + Int.ofNat 0 = src from loc_add_zero src, List.range_eq_range']
+  · rw [loc_add_ofNat_zero, List.range_eq_range']
     iframe
   · iintro !> %vs ⟨%hlen, Hl, Hvs⟩
     wp_pures
     imodintro
     iapply HΦ $$ %src %vs
-    rw [show src + Int.ofNat 0 = src from loc_add_zero src]
+    rw [loc_add_ofNat_zero]
     ieval (simp only [Nat.zero_add]) at Hvs
-    isplitl []
-    · ipureintro
-      omega
-    · iframe Hl Hvs
+    iframe Hl Hvs
+    ipureintro
+    omega
 
 end ArrayInit
 
@@ -252,10 +222,9 @@ theorem wp_array_init_fmap (s : Stuckness) (E : CoPset) (n : Int) (f : Val) (hn 
   icases BigSepL.bigSepL_exists_eq $$ Hvs with ⟨%xs, %heq, Hxs⟩
   subst heq
   iapply HΦ $$ %l %xs
-  isplitl []
-  · ipureintro
-    simpa using hlen
-  · iframe Hl Hxs
+  iframe Hl Hxs
+  ipureintro
+  simpa using hlen
 
 end ArrayInitFmap
 

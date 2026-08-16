@@ -580,7 +580,10 @@ public theorem tac_wp_allocN [ι : HeapLangGS hlc GF] {Δ Δ' : IProp GF}
     Δ ⊢ WP (ProgramLogic.fill K hl(allocn(#n, &v))) @ s ; E {{ Φ }} := by
   refine hlater.trans ?_
   refine .trans ?_ (wp_bind (ProgramLogic.fill K))
-  refine .trans ?_ (wand_entails (wp_allocN v hn))
+  -- `wp_allocN` is now a Texan triple `⊢ ∀ Φ, True -∗ ▷ (…) -∗ WP …`; peel the `∀ Φ`
+  -- and the trivial `True` precondition to recover the wand this proof consumes.
+  refine .trans ?_ (wand_entails (true_intro.trans
+    (wand_entails ((wp_allocN v hn).trans (forall_elim _)))))
   exact later_mono <| forall_intro fun l =>
     wand_intro <| (sep_mono_right sep_elim_left).trans (hcont l)
 

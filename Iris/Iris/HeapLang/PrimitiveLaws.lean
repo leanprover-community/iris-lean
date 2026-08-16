@@ -271,19 +271,14 @@ theorem wp_alloc (v : Val) (Φ : Val → IProp GF ) :
   isplit; ipureintro; rfl
   iapply HΦ $$ [$]
 
-/-! ## Multi-cell allocation
-
-The usable rules for `allocN` stated in terms of the `array` proposition are derived in
-`Iris.HeapLang.DerivedLaws`. -/
+/-! ## Multi-cell allocation -/
 
 @[rocq_alias heap_lang.heap_array_to_seq_pointsto]
 theorem allocCells_toSeq_pointsTo {l : Loc} {v : Val} {n : Nat} :
     ([∗map] l' ↦ ov ∈ allocCells l n (some v), l' ↦ ov) ⊢
       [∗list] i ∈ List.range n, (l + Int.ofNat i) ↦ some v := by
   induction n with
-  | zero =>
-    rw [allocCells_zero, List.range_zero]
-    exact BI.BigSepM.bigSepM_empty.1.trans BI.BigSepL.bigSepL_nil.2
+  | zero => exact BI.BigSepM.bigSepM_empty.1.trans BI.BigSepL.bigSepL_nil.2
   | succ n ih =>
     rw [allocCells_succ, List.range_succ]
     refine (BI.BigSepM.bigSepM_insert get?_allocCells_self).1.trans ?_
@@ -295,9 +290,7 @@ theorem allocCells_toSeq_metaToken {l : Loc} {v : Option Val} {n : Nat} :
     ([∗map] l' ↦ _ov ∈ allocCells l n v, metaToken l' ⊤) ⊢
       [∗list] i ∈ List.range n, metaToken (l + Int.ofNat i) ⊤ := by
   induction n with
-  | zero =>
-    rw [allocCells_zero, List.range_zero]
-    exact BI.BigSepM.bigSepM_empty.1.trans BI.BigSepL.bigSepL_nil.2
+  | zero => exact BI.BigSepM.bigSepM_empty.1.trans BI.BigSepL.bigSepL_nil.2
   | succ n ih =>
     rw [allocCells_succ, List.range_succ]
     refine (BI.BigSepM.bigSepM_insert (Φ := fun l' _ => iprop(metaToken l' ⊤))
@@ -308,7 +301,7 @@ theorem allocCells_toSeq_metaToken {l : Loc} {v : Option Val} {n : Nat} :
 @[rocq_alias heap_lang.wp_allocN_seq]
 theorem wp_allocN_seq (v : Val) {n : Int} (hn : 0 < n) :
     ▷ (∀ l : Loc, ([∗list] i ∈ List.range n.toNat,
-          (l + Int.ofNat i) ↦ some v ∗ metaToken (l + Int.ofNat i) ⊤) -∗ Φ (.lit <| .loc l)) -∗
+        (l + Int.ofNat i) ↦ some v ∗ metaToken (l + Int.ofNat i) ⊤) -∗ Φ (.lit <| .loc l)) -∗
     WP hl(allocn(#n, &v)) @ s; E {{ Φ }} := by
   iintro HΦ
   iapply wp_lift_atomic_step rfl
@@ -329,9 +322,8 @@ theorem wp_allocN_seq (v : Val) {n : Int} (hn : 0 < n) :
   imod genHeap_alloc_big (allocCells l' n.toNat v) σ₁.heap (allocCells_disjoint hfresh') $$ Hσ
     with ⟨Hσ, Hpts, Htok⟩
   imodintro
-  isplitl [Hσ Hproph]
-  · iframe Hproph
-    iapply genHeapInterp_eqv (.symm _ _ initHeap_heap_eq) $$ Hσ
+  ihave Hσ := genHeapInterp_eqv (.symm _ _ initHeap_heap_eq) $$ Hσ
+  iframe Hproph Hσ
   isplit <;> try itrivial
   iexists hl_val(#(BaseLit.loc l'))
   isplit; ipureintro; rfl
