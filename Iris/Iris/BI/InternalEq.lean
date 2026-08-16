@@ -14,15 +14,17 @@ public import Iris.Algebra.Excl
 namespace Iris
 open BI OFE Iris.Std
 
-/-- Internal equality in a BI with step-indexed structure, defined as
-`siPure (SiProp.internalEq a b)`. -/
+/--
+  Internal equality in a BI with step-indexed structure, where `a ≡ b` is
+  defined as `siPure (SiProp.internalEq a b)`.
+-/
 @[rocq_alias internal_eq]
 def internalEq [Sbi PROP] {A : Type _} [OFE A] (a b : A) : PROP :=
   iprop(<si_pure> (SiProp.internalEq a b))
 
 syntax:40 term:40 " ≡ " term:41 : term
 macro_rules
-  | `(iprop($a ≡ $b)) => ``(internalEq $a $b)
+  | `(iprop($a ≡%$tk $b)) => ``($(wrapIprop tk ``internalEq) $a $b)
 
 delab_rule internalEq
   | `($_ $a $b) => ``(iprop($a ≡ $b))
@@ -179,7 +181,7 @@ theorem option_none_some_equivI {A : Type _} [OFE A] (a : A) :
     (none : Option A) ≡ some a ⊣⊢@{PROP} False :=
   ⟨symm.trans (option_some_none_equivI a).1, false_elim⟩
 
-@[rocq_alias excl_equivI]
+@[rocq_alias internal_eq.excl_equivI]
 theorem excl_equivI_excl {O : Type _} [OFE O] (a b : O) :
     Excl.excl a ≡ Excl.excl b ⊣⊢@{PROP} a ≡ b := by
   refine ⟨?_, of_internalEquiv_ne Excl.excl⟩
@@ -204,7 +206,7 @@ theorem excl_equivI_invalid_excl {O : Type _} [OFE O] (a : O) :
     (Excl.invalid : Excl O) ≡ Excl.excl a ⊣⊢@{PROP} False :=
   ⟨symm.trans (excl_equivI_excl_invalid a).1, false_elim⟩
 
-@[rocq_alias csum_equivI]
+@[rocq_alias internal_eq.csum_equivI]
 theorem csum_equivI {A B : Type _} [OFE A] [OFE B] (sx sy : Csum A B) :
     sx ≡ sy ⊣⊢@{PROP}
       match sx, sy with

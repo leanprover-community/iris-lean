@@ -8,7 +8,8 @@ module
 public import Iris.BI
 public import Iris.ProofMode.Classes
 public import Iris.ProofMode.ClassesMake
-public meta import Iris.ProofMode.Expr
+public import Iris.ProofMode.Expr
+public import Iris.ProofMode.SynthInstance
 public import Iris.Std.TC
 
 public meta section
@@ -189,7 +190,8 @@ instance frame_impl [BI PROP] (R P1 P2 Q2 : PROP)
 
 @[ipm_backtrack, rocq_alias frame_later]
 instance frame_later [BI PROP] p (R R' P Q Q' : PROP)
-    [h1 : IntoLaterN true 1 R' R] [h2 : Frame p R P Q] [h3 : MakeLaterN 1 Q Q'] :
+    [h1 : IntoLaterN (progress := false) (only_head := true) 1 R' R]
+    [h2 : Frame p R P Q] [h3 : MakeLaterN 1 Q Q'] :
     Frame p R' iprop(▷ P) Q' where
   frame := calc
     _ ⊢ □?p R' ∗ ▷^[1]Q                                     := sep_mono_right h3.make_laterN.mpr
@@ -200,7 +202,8 @@ instance frame_later [BI PROP] p (R R' P Q Q' : PROP)
 
 @[ipm_backtrack, rocq_alias frame_laterN]
 instance frame_laterN [BI PROP] p n (R R' P Q Q' : PROP)
-    [h1 : IntoLaterN true n R' R] [h2 : Frame p R P Q] [h3 : MakeLaterN n Q Q'] :
+    [h1 : IntoLaterN (progress := false) (only_head := true) n R' R]
+    [h2 : Frame p R P Q] [h3 : MakeLaterN n Q Q'] :
     Frame p R' iprop(▷^[n] P) Q' where
   frame := calc
     _ ⊢ □?p R' ∗ ▷^[n]Q      := sep_mono_right h3.make_laterN.mpr

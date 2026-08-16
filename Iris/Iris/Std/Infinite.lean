@@ -76,6 +76,11 @@ end Iris.Std.List
 /-- A predicate is *infinite* if it has a witness outside every finite list. -/
 def PredInfinite (P : α → Prop) : Prop := ∀ xs : List α, ∃ x, P x ∧ x ∉ xs
 
+theorem PredInfinite.exists_ge {P : Nat → Prop} (HP : PredInfinite P) (N : Nat) :
+    ∃ k, N ≤ k ∧ P k :=
+  (HP (List.range N)).elim fun k ⟨hk, hmem⟩ =>
+    ⟨k, Nat.not_lt.mp fun h => hmem (List.mem_range.mpr h), hk⟩
+
 theorem PredInfinite.true [InfiniteType α] : PredInfinite (fun _ : α => True) :=
   fun xs => (Iris.Std.List.fresh xs).elim fun a ha => ⟨a, trivial, ha⟩
 

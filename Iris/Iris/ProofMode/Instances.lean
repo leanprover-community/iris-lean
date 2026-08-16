@@ -11,7 +11,6 @@ public import Iris.ProofMode.ClassesMake
 public import Iris.ProofMode.ModalityInstances
 public import Iris.ProofMode.Expr
 public import Iris.Std.TC
-public import Iris.Std.RocqPorting
 public import Iris.ProofMode.Tactics
 public import Iris.ProofMode.Display
 
@@ -78,17 +77,57 @@ instance intoWand_wand (p q : Bool) [BI PROP]
     IntoWand p q iprop(P' -∗ Q) m P Q where
   into_wand := (intuitionisticallyIf_mono <| wand_mono_left h.1).trans intuitionisticallyIf_elim
 
--- TODO: compare this with into_wand_impl_false_false, into_wand_impl_false_true, ... in Rocq
-instance intoWand_imp_false [BI PROP]
-    (P Q P' : PROP) [Absorbing P'] [Absorbing iprop(P' → Q)]
-    [h : FromAssumption b m.argIO P P'] : IntoWand false b iprop(P' → Q) m P Q where
-  into_wand := wand_intro <| (sep_mono_right h.1).trans <|
-    by dsimp; exact sep_and.trans imp_elim_left
+@[rocq_alias into_wand_impl_false_true]
+instance intoWand_impl_false_true [BI PROP] (P Q P' : PROP) (m : WandMode) [Absorbing P']
+    [h : FromAssumption true m.argIO P P'] : IntoWand false true iprop(P' → Q) m P Q where
+  into_wand := by
+    calc
+      _ ⊢ <pers> P' → Q           := imp_mono_left persistently_elim
+      _ ⊢ <affine> <pers> P' -∗ Q := persistent_impl_wand_affinely.mp
+      _ ⊢ □ P -∗ Q                := wand_mono_left <| affinely_intro <| Persistent.persistent.trans <| persistently_mono h.from_assumption
 
-instance intoWand_imp_true [BI PROP] (P Q P' : PROP) [Affine P']
-    [h : FromAssumption b m.argIO P P'] : IntoWand true b iprop(P' → Q) m P Q where
-  into_wand := wand_intro <| (sep_mono_right h.1).trans <| by
-    dsimp; exact sep_and.trans <| imp_elim intuitionistically_elim
+@[rocq_alias into_wand_impl_true_false]
+instance intoWand_impl_true_false [BI PROP] (P Q P' P'' : PROP) (m : WandMode)
+    [h1 : MakeAffinely P P'] [h2 : FromAssumption false m.argIO P'' P'] :
+    IntoWand true false iprop(P → Q) m P'' Q where
+  into_wand := by
+    apply wand_intro
+    calc
+      _ ⊢ □ (P → Q) ∗ P'         := sep_mono_right h2.from_assumption
+      _ ⊢ □ (P → Q) ∗ <affine> P := sep_mono_right h1.make_affinely.mpr
+      _ ⊢ □ (P → Q) ∧ <affine> P := sep_and
+      _ ⊢ (P → Q) ∧ <affine> P   := and_mono_left intuitionistically_elim
+      _ ⊢ (P → Q) ∧ P            := and_mono_right affinely_elim
+      _ ⊢ Q                      := imp_elim_left
+
+@[rocq_alias into_wand_impl_true_true]
+instance intoWand_impl_true_true [BI PROP] (P Q P' : PROP) (m : WandMode)
+    [h : FromAssumption true m.argIO P P'] : IntoWand true true iprop(P' → Q) m P Q where
+  into_wand := by
+    apply wand_intro
+    calc
+      _ ⊢ □ (P' → Q) ∧ □ P := sep_and
+      _ ⊢ (P' → Q) ∧ □ P   := and_mono_left intuitionistically_elim
+      _ ⊢ (P' → Q) ∧ P'    := and_mono_right h.from_assumption
+      _ ⊢ Q                := imp_elim_left
+
+@[rocq_alias into_wand_impl_false_false]
+instance intoWand_impl_false_false [BI PROP] (P Q P' P'' : PROP) (m : WandMode)
+    [Absorbing P] [inst : TCOr (BIAffine PROP) (Persistent P)] [h1 : MakeAffinely P P']
+    [h2 : FromAssumption false m.argIO P'' P'] : IntoWand false false iprop(P → Q) m P'' Q where
+  into_wand := by
+    apply wand_intro
+    match inst with
+    | TCOr.l => calc
+      _ ⊢ (P → Q) ∗ P'                   := sep_mono_right <| h2.from_assumption
+      _ ⊢ (P → Q) ∗ <affine> P           := sep_mono_right <| h1.make_affinely.mpr
+      _ ⊢ (<affine> P -∗ Q) ∗ <affine> P := sep_mono_left <| imp_wand_1.trans <| wand_mono_left affinely_elim
+      _ ⊢ Q                              := wand_elim_left
+    | TCOr.r => calc
+      _ ⊢ (P → Q) ∗ P'                   := sep_mono_right <| h2.from_assumption
+      _ ⊢ (P → Q) ∗ <affine> P           := sep_mono_right <| h1.make_affinely.mpr
+      _ ⊢ (<affine> P -∗ Q) ∗ <affine> P := sep_mono_left persistent_impl_wand_affinely.mp
+      _ ⊢ Q                              := wand_elim_left
 
 @[ipm_backtrack, rocq_alias into_wand_and_l]
 instance intoWand_and_left (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP)

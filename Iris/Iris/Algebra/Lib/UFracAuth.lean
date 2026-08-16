@@ -9,7 +9,6 @@ public import Iris.Algebra.Auth
 public import Iris.Algebra.IsOp
 public import Iris.Algebra.UFrac
 import Iris.Algebra.LocalUpdates
-meta import Iris.Std.RocqPorting
 
 /-!
 # Unbounded Fractional Authoritative Camera
@@ -93,7 +92,7 @@ theorem agreeN {n : Nat} {p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{p} 
 
 @[rocq_alias ufrac_auth_agree]
 theorem agree {p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{p} b) : a = b :=
-  eq_dist.mpr (agreeN <| valid_iff_validN.mp h ·)
+  eq_dist_2 (agreeN <| valid_iff_validN.mp h ·)
 
 #rocq_ignore ufrac_auth_agree_L "Use agree"
 

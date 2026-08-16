@@ -113,6 +113,51 @@ example {l : Loc} {v v' v'' : Val} :
   imodintro
   iframe
 
+-- Rocq parity (`first [wp_seq|wp_finish]`): a store in sequencing position discards its
+-- `#()` result, so `wp_store` steps through the `;` instead of leaving a pure redex behind
+/-- trace:
+hlc : HasLC
+GF : BundledGFunctors
+ι : HeapLangGS hlc GF
+s : Stuckness
+E : CoPset
+Φ : Val → IProp GF
+l : Loc
+v v' : Val
+⊢
+  ∗Hpt : l ↦ some v'
+  ⊢ WP hl(!#l) @ s ; E {{ w, ⌜w = v'⌝ ∗ l ↦ some v' }}
+-/
+#guard_msgs (whitespace := lax, trace, drop error) in
+example {l : Loc} {v v' : Val} :
+    (l ↦ some v) ⊢
+      WP hl(v(#l) ← &v'; !v(#l)) @ s ; E {{ w, ⌜w = v'⌝ ∗ l ↦ some v' }} := by
+  iintro Hpt
+  wp_store
+  trace_state
+
+-- the fast-forward is *only* for the sequencing redex: a `let` binding the result stays
+/-- trace:
+hlc : HasLC
+GF : BundledGFunctors
+ι : HeapLangGS hlc GF
+s : Stuckness
+E : CoPset
+Φ : Val → IProp GF
+l : Loc
+v v' : Val
+⊢
+  ∗Hpt : l ↦ some v'
+  ⊢ WP hl(let x := #(); !#l) @ s ; E {{ _r, l ↦ some v' }}
+-/
+#guard_msgs (whitespace := lax, trace, drop error) in
+example {l : Loc} {v v' : Val} :
+    (l ↦ some v) ⊢
+      WP hl(let x := v(#l) ← &v'; !v(#l)) @ s ; E {{ _r, l ↦ some v' }} := by
+  iintro Hpt
+  wp_store
+  trace_state
+
 /-- error: wp_store: cannot find a points-to hypothesis for l ↦{DFrac.own 1} _ -/
 #guard_msgs (whitespace := lax) in
 example {l : Loc} {dq : DFrac} {v v' : Val} :
@@ -180,6 +225,28 @@ example {l : Loc} {v v' : Val} :
   imodintro
   iframe
   itrivial
+
+-- Rocq parity: like `wp_store`, an `xchg` in sequencing position discards its result
+/--
+error: unsolved goals
+hlc : HasLC
+GF : BundledGFunctors
+ι : HeapLangGS hlc GF
+s : Stuckness
+E : CoPset
+Φ : Val → IProp GF
+l : Loc
+v v' : Val
+⊢
+  ∗Hpt : l ↦ some v'
+  ⊢ WP hl(!#l) @ s ; E {{ w, ⌜w = v'⌝ ∗ l ↦ some v' }}
+-/
+#guard_msgs (whitespace := lax) in
+example {l : Loc} {v v' : Val} :
+    (l ↦ some v) ⊢
+      WP hl(xchg(#l, &v'); !v(#l)) @ s ; E {{ w, ⌜w = v'⌝ ∗ l ↦ some v' }} := by
+  iintro Hpt
+  wp_xchg
 
 -- `wp_xchg` failing: writes need full ownership, fractional is rejected
 /-- error: wp_xchg: cannot find a points-to hypothesis for l ↦{DFrac.own 1} _ -/
@@ -319,10 +386,16 @@ example {hlc'} {GF' : BundledGFunctors} [IrisGS_gen hlc' Exp GF']
   wp_load
 
 -- heap tactics reject goals that are not WPs at all
-/-- error: wp_load: The goal P must be a WP -/
+/-- error: wp_load: the goal is not a WP -/
 #guard_msgs (whitespace := lax) in
 example {P : IProp GF} : P ⊢ P := by
   iintro HP
+  wp_load
+
+-- the `wp_pures` prologue can reduce the expression to a value, leaving no redex
+/-- error: wp_load: the expression has been reduced to a value, there is no redex left -/
+#guard_msgs (whitespace := lax) in
+example : ⊢@{IProp GF} WP hl(if #true then #1 else #0) {{ v, True }} := by
   wp_load
 
 end goal_shape

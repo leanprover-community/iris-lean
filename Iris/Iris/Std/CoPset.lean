@@ -492,6 +492,9 @@ theorem coPsetSuffixes_wf p : coPsetWf (CoPsetRaw.suffixesRaw p) := by
   induction p <;> simp [CoPsetRaw.suffixesRaw, coPsetWf] <;>
   apply node'_wf <;> simp_all [coPsetWf]
 
+-- `suffixes` is irreducible since computing `CoPsetRaw.suffixesRaw easily
+-- hits the recursion limit, see https://github.com/leanprover-community/iris-lean/issues/557
+@[irreducible]
 def suffixes (p : Pos) : CoPset :=
   ⟨CoPsetRaw.suffixesRaw p, coPsetSuffixes_wf p⟩
 
@@ -499,13 +502,13 @@ theorem elem_suffixes {p q} : p ∈ suffixes q <-> ∃ q', p = q' ++ q := by
   constructor
   · induction q generalizing p with
     | xI q IH =>
-      simp only [suffixes, CoPsetRaw.suffixesRaw, Membership.mem, elem_of_node]
+      simp only [suffixes, CoPsetRaw.suffixesRaw, Membership.mem, elem_of_node] at IH |-
       intros Hin
       cases p <;> simp [CoPsetRaw.ElemOf] at Hin
       obtain ⟨q', rfl⟩ := IH Hin
       exact ⟨q', rfl⟩
     | xO q IH =>
-      simp only [suffixes, CoPsetRaw.suffixesRaw, Membership.mem, elem_of_node]
+      simp only [suffixes, CoPsetRaw.suffixesRaw, Membership.mem, elem_of_node] at IH |-
       intros Hin
       cases p <;> simp [CoPsetRaw.ElemOf] at Hin
       obtain ⟨q', rfl⟩ := IH Hin

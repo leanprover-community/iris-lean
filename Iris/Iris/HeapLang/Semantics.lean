@@ -9,7 +9,6 @@ public import Iris.HeapLang.Linter
 public import Std.Data.ExtTreeMap
 public import Std.Data.ExtTreeSet
 public import Iris.Std.BitOp
-public import Iris.Std.RocqPorting
 public import Iris.Std.PartialMap
 public import Iris.Std.HeapInstances
 import Iris.Std.List
@@ -19,6 +18,7 @@ namespace Iris.HeapLang
 
 open Std
 
+@[rocq_alias heap_lang.heap_lang.ectx_item]
 inductive ECtxItem where
   | appL (v2 : Val)
   | appR (e1 : Exp)
@@ -51,6 +51,7 @@ inductive ECtxItem where
   | resolveR (e0 e1 : Exp)
   deriving Inhabited, Repr, DecidableEq
 
+@[rocq_alias heap_lang.heap_lang.fill_item]
 def ECtxItem.fill (Ki : ECtxItem) (e : Exp) : Exp :=
   match Ki with
   | .appL v2        => .app e (.ofVal v2)
@@ -83,19 +84,25 @@ def ECtxItem.fill (Ki : ECtxItem) (e : Exp) : Exp :=
   | .resolveM e0 v2   => .resolve e0 e (.ofVal v2)
   | .resolveR e0 e1   => .resolve e0 e1 e
 
+@[rocq_alias heap_lang.heap_lang.state]
 structure State where
   heap : Std.ExtTreeMap Loc (Option Val)
   usedProphId : Std.ExtTreeSet ProphId
 
 instance : Inhabited State := ⟨.empty, .empty⟩
 
+attribute [rocq_alias heap_lang.heap_lang.state_inhabited] instInhabitedState
+
+@[rocq_alias heap_lang.heap_lang.observation]
 abbrev Observation := ProphId × (Val × Val)
 
+@[rocq_alias heap_lang.heap_lang.un_op_eval]
 def UnOp.eval : UnOp → Val → Option Val
   | .neg,   .lit (.bool b) => some (.lit (.bool (!b)))
   | .minus, .lit (.int n)  => some (.lit (.int (-n)))
   | _,      _              => none
 
+@[rocq_alias heap_lang.heap_lang.bin_op_eval]
 def BinOp.eval : BinOp → Val → Val → Option Val
   | .plus,   .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 + n2)))
   | .minus,  .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 - n2)))
@@ -119,6 +126,7 @@ def BinOp.eval : BinOp → Val → Val → Option Val
 
 abbrev HeapF := fun V => Std.ExtTreeMap Loc V compare
 
+@[rocq_alias heap_lang.heap_lang.state_init_heap]
 abbrev State.initHeap (σ : State) (l : Loc) (n : Int) (v : Option Val) : State :=
   { σ with heap := (List.range n.toNat).foldl
             (fun h (i : Nat) => Std.insert (M := HeapF) h (l + (i : Int)) v) σ.heap }
@@ -202,6 +210,7 @@ theorem State.initHeap_self {σ : State} {l : Loc} {v : Option Val}
   simp only [State.initHeap, Int.toNat_one, List.range_one, List.foldl_cons, List.foldl_nil,
     Int.cast_ofNat_Int, hl, hins]
 
+@[rocq_alias heap_lang.heap_lang.base_step]
 inductive BaseStep : Exp → State → List Observation → Exp → State → List Exp → Prop where
   | recS (f x : Binder) (e : Exp) (σ : State) :
       BaseStep (.rec_ f x e) σ [] (.ofVal (.rec_ f x e)) σ []

@@ -8,7 +8,7 @@ public import Iris.ProgramLogic.Language
 
 @[expose] public section
 
-namespace Iris.Tests
+namespace IrisTest
 open Iris ProgramLogic Language Notation
 
 /-! This section provides tests for notation used for the Language interface. -/
