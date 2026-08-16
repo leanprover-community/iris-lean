@@ -181,6 +181,7 @@ instance intoSep_except0 [BI PROP] (P Q1 Q2 : PROP)
     [h : IntoSep P Q1 Q2] : IntoSep iprop(◇ P) iprop(◇ Q1) iprop(◇ Q2) where
   into_sep := (except0_mono h.1).trans except0_sep.1
 
+/- FIXME: This instance is overly specific, generalize it. -/
 @[rocq_alias into_sep_affinely_later]
 instance intoSep_affinely_later [BI PROP] [Timeless (emp : PROP)]
     (P Q1 Q2 : PROP) [inst : IntoSep P Q1 Q2] [Affine Q1] [Affine Q2] :
