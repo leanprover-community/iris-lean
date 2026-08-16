@@ -117,18 +117,15 @@ theorem bigSepM2_flip (Φ : K → A → B → PROP) (m1 : M A) (m2 : M B) :
     ([∗map] k ↦ x2;x1 ∈ m2;m1, Φ k x1 x2) ⊣⊢ [∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2 := by
   refine (bigSepM2_alt _ m2 m1).trans <| (and_congr (pure_congr eq_comm) ?_).trans <|
     (bigSepM2_alt Φ m1 m2).symm
-  exact BiEntails.of_eq <| (congrArg
-    (fun m : M (B × A) => bigSepM (fun k xy => Φ k xy.2 xy.1) m)
-    ((LawfulPartialMap.equiv_iff_eq
-      (m₁ := zipWith (fun (x : B) (y : A) => (x, y)) m2 m1)
-      (m₂ := map (fun xy => (xy.2, xy.1))
-        (zipWith (fun (x : A) (y : B) => (x, y)) m1 m2))).mp fun k ↦ by
-        simp only [LawfulPartialMap.get?_zipWith, LawfulPartialMap.get?_map]
-        cases get? m1 k <;> cases get? m2 k <;> rfl)).trans <|
-    BigOpM.bigOpM_map_eq
-      (fun (xy : A × B) => (xy.2, xy.1))
-      (fun k (xy : B × A) => Φ k xy.2 xy.1)
-      (zipWith (fun (x : A) (y : B) => (x, y)) m1 m2)
+  refine (BiEntails.of_eq <| congrArg
+    (fun m : M (B × A) => bigSepM (fun k xy => Φ k xy.2 xy.1) m) ?_).trans
+    (BiEntails.of_eq <| BigOpM.bigOpM_map_eq
+      (fun (xy : A × B) => (xy.2, xy.1)) (fun k (xy : B × A) => Φ k xy.2 xy.1)
+      (zipWith (fun (x : A) (y : B) => (x, y)) m1 m2))
+  apply LawfulPartialMap.equiv_iff_eq.mp
+  intro k
+  simp only [LawfulPartialMap.get?_zipWith, LawfulPartialMap.get?_map]
+  cases get? m1 k <;> cases get? m2 k <;> rfl
 
 @[simp, rocq_alias big_sepM2_empty]
 theorem bigSepM2_empty (Φ : K → A → B → PROP) :
@@ -136,14 +133,13 @@ theorem bigSepM2_empty (Φ : K → A → B → PROP) :
   change iprop(⌜PartialMap.dom (∅ : M A) = PartialMap.dom (∅ : M B)⌝ ∧
     [∗map] k ↦ xy ∈ zipWith (fun (x : A) (y : B) => (x, y)) ∅ ∅, Φ k xy.1 xy.2) ⊣⊢ emp
   refine (and_congr .rfl (BiEntails.of_eq <| congrArg
-    (fun m : M (A × B) => bigSepM (fun k xy => Φ k xy.1 xy.2) m)
-    ((LawfulPartialMap.eq_empty_iff
-      (m := zipWith (fun (x : A) (y : B) => (x, y)) (∅ : M A) (∅ : M B))).mpr
-      fun _ => by grind))).trans ?_
-  exact (and_congr
-    (pure_true (φ := PartialMap.dom (∅ : M A) = PartialMap.dom (∅ : M B)) <|
-      funext fun k => propext (by grind [PartialMap.dom]))
-    (BigSepM.bigSepM_empty (V := A × B) (Φ := fun k xy => Φ k xy.1 xy.2))).trans true_and
+    (fun m : M (A × B) => bigSepM (fun k xy => Φ k xy.1 xy.2) m) ?_)).trans <|
+    (and_congr
+      (pure_true (φ := PartialMap.dom (∅ : M A) = PartialMap.dom (∅ : M B)) <|
+        funext fun k => propext (by grind [PartialMap.dom]))
+      (BigSepM.bigSepM_empty (V := A × B) (Φ := fun k xy => Φ k xy.1 xy.2))).trans true_and
+  apply LawfulPartialMap.eq_empty_iff.mpr
+  grind
 
 @[rocq_alias big_sepM2_empty']
 theorem bigSepM2_empty_intro (P : PROP) [Affine P] (Φ : K → A → B → PROP) :
@@ -448,13 +444,12 @@ theorem bigSepM2_fst_snd (Φ : K → A → B → PROP) (m : M (A × B)) :
       [∗map] k ↦ xy ∈ m, Φ k xy.1 xy.2 := by
   refine (bigSepM2_alt Φ (map Prod.fst m) (map Prod.snd m)).trans ?_
   rw [LawfulPartialMap.dom_map, LawfulPartialMap.dom_map]
-  exact (and_congr (pure_true rfl) (BiEntails.of_eq <| congrArg
-    (fun n : M (A × B) => bigSepM (fun k xy => Φ k xy.1 xy.2) n)
-    ((LawfulPartialMap.equiv_iff_eq
-      (m₁ := zipWith (fun (x : A) (y : B) => (x, y)) (map Prod.fst m) (map Prod.snd m))
-      (m₂ := m)).mp fun k ↦ by
-      simp only [LawfulPartialMap.get?_zipWith, LawfulPartialMap.get?_map]
-      cases get? m k <;> rfl))).trans true_and
+  refine (and_congr (pure_true rfl) (BiEntails.of_eq <| congrArg
+    (fun n : M (A × B) => bigSepM (fun k xy => Φ k xy.1 xy.2) n) ?_)).trans true_and
+  apply LawfulPartialMap.equiv_iff_eq.mp
+  intro k
+  simp only [LawfulPartialMap.get?_zipWith, LawfulPartialMap.get?_map]
+  cases get? m k <;> rfl
 
 @[rocq_alias big_sepM2_fmap]
 theorem bigSepM2_map {A' B' : Type u} (f : A → A') (g : B → B')
@@ -464,18 +459,16 @@ theorem bigSepM2_map {A' B' : Type u} (f : A → A') (g : B → B')
     (and_congr (pure_congr ?_) ?_).trans <|
       (bigSepM2_alt (fun k x1 x2 => Φ k (f x1) (g x2)) m1 m2).symm
   · simp only [LawfulPartialMap.dom_map]
-  · exact BiEntails.of_eq <| (congrArg
-      (fun m : M (A' × B') => bigSepM (fun k xy => Φ k xy.1 xy.2) m)
-      ((LawfulPartialMap.equiv_iff_eq
-        (m₁ := zipWith (fun (x : A') (y : B') => (x, y)) (map f m1) (map g m2))
-        (m₂ := map (fun xy => (f xy.1, g xy.2))
-          (zipWith (fun (x : A) (y : B) => (x, y)) m1 m2))).mp fun k ↦ by
-          simp only [LawfulPartialMap.get?_zipWith, LawfulPartialMap.get?_map]
-          cases get? m1 k <;> cases get? m2 k <;> rfl)).trans <|
-      BigOpM.bigOpM_map_eq
+  · refine (BiEntails.of_eq <| congrArg
+      (fun m : M (A' × B') => bigSepM (fun k xy => Φ k xy.1 xy.2) m) ?_).trans
+      (BiEntails.of_eq <| BigOpM.bigOpM_map_eq
         (fun (xy : A × B) => (f xy.1, g xy.2))
         (fun k (xy : A' × B') => Φ k xy.1 xy.2)
-        (zipWith (fun (x : A) (y : B) => (x, y)) m1 m2)
+        (zipWith (fun (x : A) (y : B) => (x, y)) m1 m2))
+    apply LawfulPartialMap.equiv_iff_eq.mp
+    intro k
+    simp only [LawfulPartialMap.get?_zipWith, LawfulPartialMap.get?_map]
+    cases get? m1 k <;> cases get? m2 k <;> rfl
 
 @[rocq_alias big_sepM2_fmap_l]
 theorem bigSepM2_map_left {A' : Type u} (f : A → A') (Φ : K → A' → B → PROP) (m1 : M A) (m2 : M B) :
@@ -715,26 +708,27 @@ theorem bigSepM2_union_inv_left [DecidableEq K] (Φ : K → A → B → PROP)
       refine (bigSepM2_delete_left Φ (insert (m1 ∪ m2) i x) m' i x
         (LawfulPartialMap.get?_insert_eq rfl)).1.trans <|
         exists_elim fun y => pure_elim_left fun hy => ?_
-      refine (sep_mono_right (BiEntails.of_eq <| congrArg
-        (fun n : M A => bigSepM2 Φ n (delete m' i))
-        (LawfulPartialMap.delete_insert_cancel
-          (LawfulPartialMap.get?_union_none.mpr ⟨hi, hm2i⟩))).1).trans ?_
-      refine (sep_mono_right (ih m2 (delete m' i) hdisj')).trans <|
-        sep_exists_left.1.trans <| exists_elim fun n1 =>
-          sep_exists_left.1.trans <| exists_elim fun n2 => ?_
-      refine sep_and_left.trans <| (and_mono_left sep_elim_right).trans <|
-        pure_elim_left fun hUnion => sep_and_left.trans <|
-          (and_mono_left sep_elim_right).trans <| pure_elim_left fun hDisj => ?_
-      match (LawfulPartialMap.get?_union_none (m₁ := n1) (m₂ := n2) (i := i)).mp (by
-        rw [← hUnion, LawfulPartialMap.get?_delete_eq rfl]) with
-      | ⟨hn1, hn2⟩ =>
-        refine exists_intro_trans (insert n1 i y) <| exists_intro_trans n2 ?_
-        refine and_intro (pure_intro (by
-          rw [← LawfulPartialMap.union_insert_left, ← hUnion,
-            LawfulPartialMap.insert_delete_cancel hy])) (and_intro (pure_intro <|
-          (LawfulPartialMap.disjoint_insert_left_iff hn1).mpr ⟨hn2, hDisj⟩) ?_)
-        exact sep_assoc.symm.1.trans <| sep_mono_left <|
-          (bigSepM2_insert Φ m1 n1 i x y hi hn1).2
+      refine (sep_mono_right (BiEntails.of_eq
+        (Q := bigSepM2 Φ (m1 ∪ m2) (delete m' i)) <| congrArg
+        (fun n : M A => bigSepM2 Φ n (delete m' i)) ?_).1).trans ?_
+      · apply LawfulPartialMap.delete_insert_cancel
+        exact LawfulPartialMap.get?_union_none.mpr ⟨hi, hm2i⟩
+      · refine (sep_mono_right (ih m2 (delete m' i) hdisj')).trans <|
+          sep_exists_left.1.trans <| exists_elim fun n1 =>
+            sep_exists_left.1.trans <| exists_elim fun n2 => ?_
+        refine sep_and_left.trans <| (and_mono_left sep_elim_right).trans <|
+          pure_elim_left fun hUnion => sep_and_left.trans <|
+            (and_mono_left sep_elim_right).trans <| pure_elim_left fun hDisj => ?_
+        match (LawfulPartialMap.get?_union_none (m₁ := n1) (m₂ := n2) (i := i)).mp (by
+          rw [← hUnion, LawfulPartialMap.get?_delete_eq rfl]) with
+        | ⟨hn1, hn2⟩ =>
+          refine exists_intro_trans (insert n1 i y) <| exists_intro_trans n2 ?_
+          refine and_intro (pure_intro (by
+            rw [← LawfulPartialMap.union_insert_left, ← hUnion,
+              LawfulPartialMap.insert_delete_cancel hy])) (and_intro (pure_intro <|
+            (LawfulPartialMap.disjoint_insert_left_iff hn1).mpr ⟨hn2, hDisj⟩) ?_)
+          exact sep_assoc.symm.1.trans <| sep_mono_left <|
+            (bigSepM2_insert Φ m1 n1 i x y hi hn1).2
 
 @[rocq_alias big_sepM2_union_inv_r]
 theorem bigSepM2_union_inv_right [DecidableEq K] (Φ : K → A → B → PROP)
@@ -753,15 +747,15 @@ theorem bigSepM2_union_inv_right [DecidableEq K] (Φ : K → A → B → PROP)
 theorem bigSepM_bigSepM2_diag (Φ : K → A → A → PROP) (m : M A) :
     ([∗map] k ↦ x ∈ m, Φ k x x) ⊢ [∗map] k ↦ x1;x2 ∈ m;m, Φ k x1 x2 := by
   refine (and_intro (pure_intro rfl) ?_).trans (bigSepM2_alt Φ m m).2
-  exact (BiEntails.of_eq <|
+  refine (BiEntails.of_eq <|
     (BigOpM.bigOpM_map_eq (op := sep) (unit := (emp : PROP))
       (fun x : A => (x, x)) (fun k xy => Φ k xy.1 xy.2) m).symm.trans <|
-    congrArg (fun n : M (A × A) => bigSepM (fun k xy => Φ k xy.1 xy.2) n)
-      ((LawfulPartialMap.equiv_iff_eq
-        (m₁ := zipWith (fun (x : A) (y : A) => (x, y)) m m)
-        (m₂ := map (fun x : A => (x, x)) m)).mp fun k ↦ by
-        simp only [LawfulPartialMap.get?_zipWith, LawfulPartialMap.get?_map]
-        cases get? m k <;> rfl).symm).1
+    congrArg (fun n : M (A × A) => bigSepM (fun k xy => Φ k xy.1 xy.2) n) ?_).1
+  apply Eq.symm
+  apply LawfulPartialMap.equiv_iff_eq.mp
+  intro k
+  simp only [LawfulPartialMap.get?_zipWith, LawfulPartialMap.get?_map]
+  cases get? m k <;> rfl
 
 @[rocq_alias big_sepM2_ne_2]
 theorem bigSepM2_dist_2 (A B : Type uV) [OFE A] [OFE B]
