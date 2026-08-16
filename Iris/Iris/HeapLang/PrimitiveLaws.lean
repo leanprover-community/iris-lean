@@ -181,20 +181,20 @@ theorem wp_fork {e : Exp} :
     WP hl(fork(&e)) @ s; E {{ Φ }} := by
   iintro HΦ Hwp
   iapply wp_lift_atomic_step rfl
-  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
+  iintro %σ₁ %ns %obs %nt Hσ !>
+  icases (stateInterp_split σ₁ ns obs nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   have Hred : BaseStep.Reducible (hl(fork(&e)), σ₁) :=
     ⟨[], hl(#BaseLit.unit), σ₁, [e], by constructor⟩
   isplitr
   · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
     exact (primStep_reducible_of_baseStep_reducible Hred)
-  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  iintro !> %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Heq Hcr
   cases baseStep_of_primStep_of_baseStep_reducible Hred Heq
-  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  subst Hsplit
   imodintro
   isplitl [Hσ Hproph]
-  · iapply (stateInterp_split σ₁ (ns + 1) obs' (nt + [e].length)).mpr
+  · iapply (stateInterp_split σ₁ (ns + 1) obs (nt + [e].length)).mpr
     iframe
   isplitr [Hwp]
   · iexists _
@@ -209,21 +209,21 @@ theorem wp_fork_fupd {e : Exp} :
       WP hl(fork(&e)) @ s; E {{ Φ }} := by
   iintro HeΦ
   iapply wp_lift_atomic_step rfl
-  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
+  iintro %σ₁ %ns %obs %nt Hσ !>
+  icases (stateInterp_split σ₁ ns obs nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   have Hred : BaseStep.Reducible (hl(fork(&e)), σ₁) :=
     ⟨[], hl(#BaseLit.unit), σ₁, [e], by constructor⟩
   isplitr
   · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
     exact primStep_reducible_of_baseStep_reducible Hred
-  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  iintro !> %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Heq Hcr
   cases baseStep_of_primStep_of_baseStep_reducible Hred Heq
-  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  subst Hsplit
   imod HeΦ with ⟨Hwp, HΦ⟩
   imodintro
   isplitl [Hσ Hproph]
-  · iapply (stateInterp_split σ₁ (ns + 1) obs' (nt + [e].length)).mpr
+  · iapply (stateInterp_split σ₁ (ns + 1) obs (nt + [e].length)).mpr
     iframe Hσ Hproph
   isplitr [Hwp]
   · iexists _
@@ -238,8 +238,8 @@ theorem wp_alloc (v : Val) (Φ : Val → IProp GF ) :
     WP hl(ref(&v)) @ s; E {{ Φ }} := by
   iintro HΦ
   iapply wp_lift_atomic_step rfl
-  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
+  iintro %σ₁ %ns %obs %nt Hσ !>
+  icases (stateInterp_split σ₁ ns obs nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   let l := (List.fresh σ₁.heap.keys).choose
   have Hne : σ₁.get? l = .none := by
     simpa [State.get?, get?, getElem?_eq_none_iff, ←Std.ExtTreeMap.mem_keys]
@@ -255,10 +255,10 @@ theorem wp_alloc (v : Val) (Φ : Val → IProp GF ) :
   · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
     exact primStep_reducible_of_baseStep_reducible Hred
-  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  iintro !> %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Heq Hcr
   rcases baseStep_of_primStep_of_baseStep_reducible Hred Heq
   rename_i l' Hpo Hi
-  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  subst Hsplit
   simp only [stateInterp, Int.cast_ofNat_Int, Algebra.BigOpL.bigOpL_nil, Int.toNat_one,
     List.range_one, List.foldl_cons, List.foldl_nil]
   specialize Hi 0 (by simp) (by simp)
@@ -278,8 +278,8 @@ theorem wp_load {l : Loc} {q} {v : Val} Φ :
     WP hl(!v(#l)) @ s; E {{ Φ }} := by
   iintro >Hpt HΦ
   iapply wp_lift_atomic_step rfl
-  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
+  iintro %σ₁ %ns %obs %nt Hσ !>
+  icases (stateInterp_split σ₁ ns obs nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   ihave %Hpt : ⌜σ₁.get? l = v⌝ $$ [Hσ Hpt]
   · ihave >%_ := genHeap_valid $$ [$Hσ $Hpt]
     itrivial
@@ -291,13 +291,13 @@ theorem wp_load {l : Loc} {q} {v : Val} Φ :
   · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
     exact primStep_reducible_of_baseStep_reducible Hred
-  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  iintro !> %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Heq Hcr
   cases baseStep_of_primStep_of_baseStep_reducible Hred Heq
   rename_i v'' H
   rw [Hpt] at H; simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some,
     Option.some.injEq] at H
   subst H
-  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  subst Hsplit
   simp only [stateInterp, Algebra.BigOpL.bigOpL_nil]
   iframe Hσ Hproph
   imodintro
@@ -313,8 +313,8 @@ theorem wp_store {l : Loc} {v v' : Val} Φ :
     WP hl(v(#l) ← &v) @ s; E {{ Φ }} := by
   iintro >Hpt HΦ
   iapply wp_lift_atomic_step rfl
-  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
+  iintro %σ₁ %ns %obs %nt Hσ !>
+  icases (stateInterp_split σ₁ ns obs nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   ihave %Hpt : ⌜σ₁.get? l = .some (.some v')⌝ $$ [Hσ Hpt]
   · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
     itrivial
@@ -326,13 +326,13 @@ theorem wp_store {l : Loc} {v v' : Val} Φ :
   · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
     exact primStep_reducible_of_baseStep_reducible Hred
-  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  iintro !> %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Heq Hcr
   cases baseStep_of_primStep_of_baseStep_reducible Hred Heq
   rename_i v'' H
   rw [Hpt] at H; simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some,
     Option.some.injEq] at H
   subst H
-  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  subst Hsplit
   simp only [stateInterp, Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int,
     List.foldl_nil, Algebra.BigOpL.bigOpL_nil]
   rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
@@ -354,8 +354,8 @@ theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp
           {{ v'', ⌜v'' = hl_val((&v', #false))⌝ ∗ l ↦{q} some v' }}) := by
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
-  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
+  iintro %σ₁ %ns %obs %nt Hσ !>
+  icases (stateInterp_split σ₁ ns obs nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   ihave %Hpt : ⌜σ₁.get? l = .some (.some v')⌝ $$ [Hσ Hpt]
   · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
     itrivial
@@ -368,13 +368,13 @@ theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp
   · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
     exact primStep_reducible_of_baseStep_reducible Hred
-  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  iintro !> %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Heq Hcr
   cases baseStep_of_primStep_of_baseStep_reducible Hred Heq
   rename_i Heq4 H
   rw [Hpt] at H
   simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some, Option.some.injEq] at H
   subst H
-  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  subst Hsplit
   simp only [Algebra.BigOpL.bigOpL_nil]
   subst Heq4; simp only [toVal] at Heq1 Heq2
   obtain ⟨rfl⟩ := Heq1
@@ -398,8 +398,8 @@ theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v
         {{ v'', ⌜v'' = hl_val((&v', #true))⌝ ∗ l ↦ some v2 }} := by
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
-  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
+  iintro %σ₁ %ns %obs %nt Hσ !>
+  icases (stateInterp_split σ₁ ns obs nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   ihave %Hpt : ⌜σ₁.get? l = .some (.some v')⌝ $$ [Hσ Hpt]
   · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
     itrivial
@@ -412,13 +412,13 @@ theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v
   · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
     exact primStep_reducible_of_baseStep_reducible Hred
-  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  iintro !> %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Heq Hcr
   cases baseStep_of_primStep_of_baseStep_reducible Hred Heq
   rename_i v1' v2' vl' _ _ Heq4 H
   rw [Hpt] at H
   simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some, Option.some.injEq] at H
   subst H
-  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  subst Hsplit
   simp only [stateInterp, Algebra.BigOpL.bigOpL_nil]
   subst Heq4; simp only [toVal] at Heq1 Heq2
   obtain ⟨rfl⟩ := Heq1
@@ -440,8 +440,8 @@ theorem wp_free {l : Loc} {v : Val} :
     ▷ (l ↦ some v) ⊢ WP hl(free(#l)) @ s; E {{ v'', ⌜v'' = hl_val(#())⌝ ∗ l ↦ none }} := by
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
-  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
+  iintro %σ₁ %ns %obs %nt Hσ !>
+  icases (stateInterp_split σ₁ ns obs nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   ihave %Hpt : ⌜σ₁.get? l = .some (.some v)⌝ $$ [Hσ Hpt]
   · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
     itrivial
@@ -454,9 +454,9 @@ theorem wp_free {l : Loc} {v : Val} :
   · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
     exact primStep_reducible_of_baseStep_reducible Hred
-  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  iintro !> %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Heq Hcr
   rcases baseStep_of_primStep_of_baseStep_reducible Hred Heq with ⟨v'', H⟩
-  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  subst Hsplit
   simp only [stateInterp, Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int,
     List.foldl_nil, Algebra.BigOpL.bigOpL_nil]
   rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
@@ -475,8 +475,8 @@ theorem wp_xchg {l : Loc} {v w : Val} :
     ▷ (l ↦ some v) ⊢ WP hl(xchg(#l, &w)) @ s; E {{ v'', ⌜v'' = v⌝ ∗ l ↦ some w }} := by
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
-  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
+  iintro %σ₁ %ns %obs %nt Hσ !>
+  icases (stateInterp_split σ₁ ns obs nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   ihave %Hpt : ⌜σ₁.get? l = .some (.some v)⌝ $$ [Hσ Hpt]
   · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
     itrivial
@@ -488,13 +488,13 @@ theorem wp_xchg {l : Loc} {v w : Val} :
   · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
     exact primStep_reducible_of_baseStep_reducible Hred
-  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  iintro !> %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Heq Hcr
   rcases baseStep_of_primStep_of_baseStep_reducible Hred Heq
   rename_i v1' H
   obtain rfl : v = v1' := by
     simp only [Hpt, Option.pure_def, Option.bind_eq_bind, Option.bind_some, Option.some.injEq] at H
     exact H
-  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  subst Hsplit
   simp only [stateInterp, Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int,
     List.foldl_nil, Algebra.BigOpL.bigOpL_nil]
   rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
@@ -512,8 +512,8 @@ theorem wp_faa {l : Loc} {i1 i2 : Int} :
     ⊢ WP hl(faa(#l, #i2)) @ s; E {{ v'', ⌜v'' = hl_val(#i1)⌝ ∗ l ↦ some hl_val(#(i1 + i2)) }} := by
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
-  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
+  iintro %σ₁ %ns %obs %nt Hσ !>
+  icases (stateInterp_split σ₁ ns obs nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   ihave %Hpt : ⌜σ₁.get? l = .some (.some (Val.lit (.int i1)))⌝ $$ [Hσ Hpt]
   · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
     itrivial
@@ -525,13 +525,13 @@ theorem wp_faa {l : Loc} {i1 i2 : Int} :
   · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
     exact primStep_reducible_of_baseStep_reducible Hred
-  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  iintro !> %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Heq Hcr
   cases baseStep_of_primStep_of_baseStep_reducible Hred Heq
   rename_i i1' H
   obtain rfl : i1 = i1' := by
     simp only [Hpt, Option.some.injEq, Val.lit.injEq, BaseLit.int.injEq] at H
     exact H
-  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  subst Hsplit
   simp only [stateInterp, Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int,
     List.foldl_nil, Algebra.BigOpL.bigOpL_nil]
   rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
@@ -550,8 +550,8 @@ theorem wp_new_proph Φ :
     WP hl(newProph()) @ s; E {{ Φ }} := by
   iintro HΦ
   iapply wp_lift_atomic_step rfl
-  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
+  iintro %σ₁ %ns %obs %nt Hσ !>
+  icases (stateInterp_split σ₁ ns obs nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   obtain ⟨pf, Hpf⟩ := Iris.Std.List.fresh σ₁.usedProphId.toList
   have Hpf_contains : ¬ σ₁.usedProphId.contains pf := by
     intro hc; exact Hpf (Std.ExtTreeSet.mem_toList.mpr hc)
@@ -561,13 +561,13 @@ theorem wp_new_proph Φ :
   · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
     exact primStep_reducible_of_baseStep_reducible Hred
-  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  iintro !> %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Heq Hcr
   cases baseStep_of_primStep_of_baseStep_reducible Hred Heq
   rename_i p' Hp'
-  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  subst Hsplit
   have Hp'_mem : p' ∉ σ₁.usedProphId :=
     fun hmem => Hp' (Std.ExtTreeSet.mem_iff_contains.symm.mp hmem)
-  imod ProphMap.new_proph p' σ₁.usedProphId obs' Hp'_mem $$ Hproph with ⟨Hproph', Htok⟩
+  imod ProphMap.new_proph p' σ₁.usedProphId obs Hp'_mem $$ Hproph with ⟨Hproph', Htok⟩
   imodintro
   simp only [stateInterp]
   iframe Hσ
@@ -591,9 +591,9 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
     WP hl(resolve(&e, v(#p), v(&w))) @ s; E {{ Φ }} := by
   iintro Hp HWPe
   iapply wp_lift_step_fupdN rfl
-  iintro %σ₁ %ns %obs %obs' %nt Hσ
-  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hheap, Hpmap⟩
-  icases ProphMap.agree (obs ++ obs') σ₁.usedProphId p pvs $$ [$Hpmap $Hp] with %Hagree
+  iintro %σ₁ %ns %obs %nt Hσ
+  icases (stateInterp_split σ₁ ns obs nt).mp $$ Hσ with ⟨Hheap, Hpmap⟩
+  icases ProphMap.agree obs σ₁.usedProphId p pvs $$ [$Hpmap $Hp] with %Hagree
   have hredR : Stuckness.MaybeReducible s (e, σ₁) →
       Stuckness.MaybeReducible s (hl(resolve(&e, v(#p), v(&w))), σ₁) := fun Hred_e => by
     cases s <;> simp only [Stuckness.MaybeReducible] at Hred_e ⊢
@@ -602,52 +602,35 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
   ihave HWPe : iprop(WP e @ s; E {{ v_e, ∃ pvs', proph p pvs' ∗
       ∀ pvs'', ⌜pvs' = (v_e, w) :: pvs''⌝ -∗ proph p pvs'' -∗ Φ v_e }}) $$ [Hp HWPe]
   · iapply HWPe; iexact Hp
-  ihave HWPe := (show iprop(WP e @ s; E {{ v_e, ∃ pvs', proph p pvs' ∗
-      ∀ pvs'', ⌜pvs' = (v_e, w) :: pvs''⌝ -∗ proph p pvs'' -∗ Φ v_e }}) ⊢ _
-    by rw [wp_unfold.to_eq]) $$ HWPe
-  cases obs using List.reverseRec with
-  | nil =>
-    ihave Hσ_e : iprop(stateInterp σ₁ ns ([] ++ obs') nt) $$ [Hheap Hpmap]
-    · iapply (stateInterp_split σ₁ ns ([] ++ obs') nt).mpr; iframe Hheap; iexact Hpmap
-    simp only [wp.pre, hne]
-    imod HWPe $$ %_ %_ %_ %_ %_ Hσ_e with ⟨%Hred_e, _⟩
-    imodintro
-    isplitr
-    · ipureintro; exact hredR Hred_e
-    iintro %e₂ %σ₂ %eₜ %Hstep _
-    exfalso
-    obtain ⟨_, _, hκ_eq, _, _⟩ := step_resolve_decompose Hstep
-    exact List.cons_ne_nil _ _ (List.append_eq_nil_iff.mp hκ_eq.symm).2
-  | append_singleton init lastObs ih =>
-    clear ih
-    have hassoc : (init ++ [lastObs]) ++ obs' = init ++ (lastObs :: obs') := by simp
-    ihave Hσ_e : iprop(stateInterp σ₁ ns (init ++ (lastObs :: obs')) nt) $$ [Hheap Hpmap]
-    · iapply (stateInterp_split σ₁ ns (init ++ (lastObs :: obs')) nt).mpr
-      iframe Hheap; rw [← hassoc]; iexact Hpmap
-    simp only [wp.pre, hne]
-    imod HWPe $$ %_ %_ %_ %_ %_ Hσ_e with ⟨%Hred_e, HWPe⟩
-    imodintro
-    isplitr
-    · ipureintro; exact hredR Hred_e
-    iintro %e₂ %σ₂ %eₜ %Hstep Hcred
-    obtain ⟨κ_inner, v_inner, hκ_eq, rfl, Hbase_e⟩ := step_resolve_decompose Hstep
-    obtain ⟨rfl, rfl⟩ := (by simpa using congrArg List.reverse hκ_eq : lastObs = _ ∧ init = κ_inner)
-    ispecialize HWPe $$ %_ %_ %_ %(EctxLanguage.primStep_of_baseStep Hbase_e) Hcred
-    iapply step_fupdN_wand $$ HWPe
-    iintro HWPe
-    imod HWPe with ⟨Hσ_post, HWPval, Hefs⟩
-    icases (stateInterp_split σ₂ (ns + 1) ((p, (v_inner, w)) :: obs') (nt + eₜ.length)).mp
-      $$ Hσ_post with ⟨Hheap_e, Hpmap_e⟩
-    imod wp_value_fupd'.mp $$ HWPval with ⟨%pvs', Hele, HΦ⟩
-    icombine Hpmap_e Hele as Hcomb
-    imod (ProphMap.resolve_proph p (v_inner, w) obs' σ₂.usedProphId pvs') $$ Hcomb
-      with ⟨%pvs'', %hpvs'_eq, Hpmap_e, Hele⟩
-    imodintro
-    iframe
-    isplitl [Hheap_e Hpmap_e]
-    · iapply (stateInterp_split σ₂ (ns + 1) obs' (nt + eₜ.length)).mpr $$ [$]
-    iapply wp_value'
-    iapply HΦ $$ %pvs'' %hpvs'_eq Hele
+  ihave HWPe := wp_unfold.mp $$ HWPe
+  isimp only [wp.pre, hne] in HWPe
+  ihave Hσ_e : iprop(stateInterp σ₁ ns obs nt) $$ [Hheap Hpmap]
+  · iapply (stateInterp_split σ₁ ns obs nt).mpr; iframe Hheap; iexact Hpmap
+  imod HWPe $$ %_ %_ %_ %_ Hσ_e with ⟨%Hred_e, HWPe⟩
+  imodintro
+  isplitr
+  · ipureintro; exact hredR Hred_e
+  iintro %e₂ %σ₂ %eₜ %κ %obs' %Hsplit %Hstep Hcred
+  obtain ⟨κ_inner, v_inner, hκ_eq, rfl, Hbase_e⟩ := step_resolve_decompose Hstep
+  have Hsplit_e : obs = κ_inner ++ ((p, (v_inner, w)) :: obs') := by
+    rw [Hsplit, hκ_eq]; simp [List.append_assoc]
+  ispecialize HWPe $$ %_ %_ %_ %κ_inner %((p, (v_inner, w)) :: obs') %Hsplit_e
+    %(EctxLanguage.primStep_of_baseStep Hbase_e) Hcred
+  iapply step_fupdN_wand $$ HWPe
+  iintro HWPe
+  imod HWPe with ⟨Hσ_post, HWPval, Hefs⟩
+  icases (stateInterp_split σ₂ (ns + 1) ((p, (v_inner, w)) :: obs') (nt + eₜ.length)).mp
+    $$ Hσ_post with ⟨Hheap_e, Hpmap_e⟩
+  imod wp_value_fupd'.mp $$ HWPval with ⟨%pvs', Hele, HΦ⟩
+  icombine Hpmap_e Hele as Hcomb
+  imod (ProphMap.resolve_proph p (v_inner, w) obs' σ₂.usedProphId pvs') $$ Hcomb
+    with ⟨%pvs'', %hpvs'_eq, Hpmap_e, Hele⟩
+  imodintro
+  iframe
+  isplitl [Hheap_e Hpmap_e]
+  · iapply (stateInterp_split σ₂ (ns + 1) obs' (nt + eₜ.length)).mpr $$ [$]
+  iapply wp_value'
+  iapply HΦ $$ %pvs'' %hpvs'_eq Hele
 
 @[rocq_alias heap_lang.wp_resolve]
 theorem wp_resolve {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × Val)}

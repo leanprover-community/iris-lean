@@ -74,10 +74,12 @@ def wp.pre (s : Stuckness) (wp : CoPset -> Expr -> (Val -> IProp GF) -> IProp GF
     (e₁ : Expr) (Φ : Val -> IProp GF) : IProp GF :=
   match toVal e₁ with
   | some v => iprop(|={E}=> Φ v)
-  | none => iprop(∀ (σ₁ : State) (ns : Nat) (obs obs' : List Obs) (nt : Nat),
-    stateInterp σ₁ ns (obs ++ obs') nt ={E,∅}=∗
+  | none => iprop(∀ (σ₁ : State) (ns : Nat) (obs : List Obs) (nt : Nat),
+    stateInterp σ₁ ns obs nt ={E,∅}=∗
     ⌜s.MaybeReducible (e₁, σ₁)⌝ ∗
-    ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ)⌝ -∗
+    ∀ e₂ σ₂ eₜ κ obs',
+      ⌜obs = κ ++ obs'⌝ -∗
+      ⌜(e₁, σ₁) -<κ>-> (e₂, σ₂, eₜ)⌝ -∗
       £ (ι.numLatersPerStep ns + 1) ={∅}▷=∗^[ι.numLatersPerStep ns + 1] |={∅,E}=>
       stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
       wp E e₂ Φ ∗ [∗list] e' ∈ eₜ, wp ⊤ e' ι.forkPost)
@@ -94,7 +96,6 @@ instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
       refine BI.forall_ne (fun σ₁ => ?_)
       refine BI.forall_ne (fun ns => ?_)
       refine BI.forall_ne (fun obs => ?_)
-      refine BI.forall_ne (fun obs' => ?_)
       refine BI.forall_ne (fun nt => ?_)
       refine BI.wand_ne.ne .rfl ?_
       refine BIFUpdate.ne.ne ?_
@@ -102,6 +103,9 @@ instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
       refine BI.forall_ne (fun e₂  => ?_)
       refine BI.forall_ne (fun σ₂ => ?_)
       refine BI.forall_ne (fun eₜ => ?_)
+      refine BI.forall_ne (fun κ => ?_)
+      refine BI.forall_ne (fun obs' => ?_)
+      refine BI.wand_ne.ne .rfl ?_
       refine BI.wand_ne.ne .rfl ?_
       refine BI.wand_ne.ne .rfl ?_
       refine BIFUpdate.ne.ne ?_
@@ -144,7 +148,6 @@ instance wp_ne {s : Stuckness} {E} {e : Expr} :
       refine BI.forall_ne fun σ₁ => ?_
       refine BI.forall_ne fun ns => ?_
       refine BI.forall_ne fun obs => ?_
-      refine BI.forall_ne fun obs' => ?_
       refine BI.forall_ne fun nt => ?_
       refine BI.wand_ne.ne .rfl ?_
       refine BIFUpdate.ne.ne ?_
@@ -152,6 +155,9 @@ instance wp_ne {s : Stuckness} {E} {e : Expr} :
       refine BI.forall_ne fun e₂  => ?_
       refine BI.forall_ne fun σ₂ => ?_
       refine BI.forall_ne fun eₜ => ?_
+      refine BI.forall_ne fun κ => ?_
+      refine BI.forall_ne fun obs' => ?_
+      refine BI.wand_ne.ne .rfl ?_
       refine BI.wand_ne.ne .rfl ?_
       refine BI.wand_ne.ne .rfl ?_
       refine step_fupdN_contractive.distLater_dist fun m n_m => ?_
@@ -171,7 +177,6 @@ theorem wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
     refine BI.forall_ne fun σ₁ => ?_
     refine BI.forall_ne fun ns => ?_
     refine BI.forall_ne fun obs => ?_
-    refine BI.forall_ne fun obs' => ?_
     refine BI.forall_ne fun nt => ?_
     refine BI.wand_ne.ne .rfl ?_
     refine BIFUpdate.ne.ne ?_
@@ -179,6 +184,9 @@ theorem wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
     refine BI.forall_ne fun e₂  => ?_
     refine BI.forall_ne fun σ₂ => ?_
     refine BI.forall_ne fun eₜ => ?_
+    refine BI.forall_ne fun κ => ?_
+    refine BI.forall_ne fun obs' => ?_
+    refine BI.wand_ne.ne .rfl ?_
     refine BI.wand_ne.ne .rfl ?_
     refine BI.wand_ne.ne .rfl ?_
     refine step_fupdN_contractive.distLater_dist fun m n_m => ?_
@@ -204,7 +212,7 @@ theorem wp_strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : V
   match toVal e with
   | none =>
     dsimp only
-    iintro %σ₁ %ns %obs %obs' %nt Hσ
+    iintro %σ₁ %ns %obs %nt Hσ
     imod fupd_mask_subseteq hE with Hclose
     icases H $$ Hσ with >⟨%h, H⟩
     imodintro
@@ -212,9 +220,9 @@ theorem wp_strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : V
     · simp only [LE.le] at hs
       ipureintro
       grind [cases Stuckness]
-    · iintro %e₂ %σ₂ %eₜ #hstep hc
+    · iintro %e₂ %σ₂ %eₜ %κ %obs' #hsplit #hstep hc
       dsimp only [Nat.repeat]
-      imod H $$ hstep hc with H
+      imod H $$ hsplit hstep hc with H
       iintro !> !>; imod H; iintro !>
       iapply step_fupdN_wand $$ H
       iintro >⟨aux, H, Hefs⟩
@@ -246,7 +254,7 @@ theorem fupd_wp {s : Stuckness}{E}{e : Expr} {Φ : Val → IProp GF} :
     iassumption
   | none =>
     simp only [wp.pre, h]
-    iintro %σ₁ %ns %obs %obs' %nt
+    iintro %σ₁ %ns %obs %nt
     imod H with H
     iassumption
 
@@ -278,12 +286,12 @@ theorem wp_atomic {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {Φ : Val → IPro
     iassumption
   | none =>
     simp only [wp.pre, He]
-    iintro %σ₁ %ns %obs %obs' %nt Hσ
+    iintro %σ₁ %ns %obs %nt Hσ
     imod H
     imod H $$ Hσ with ⟨$, H⟩
     imodintro
-    iintro %e2 %σ2 %efs %Hstep Hcred
-    ihave aux := H $$ %e2 %σ2 %efs %Hstep Hcred
+    iintro %e2 %σ2 %efs %κ %obs' %Hsplit %Hstep Hcred
+    ihave aux := H $$ %e2 %σ2 %efs %κ %obs' %Hsplit %Hstep Hcred
     iapply step_fupdN_wand $$ aux
     iintro >(⟨Hσ,H,Hefs⟩)
     irevert %ι
@@ -298,8 +306,8 @@ theorem wp_atomic {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {Φ : Val → IPro
         iframe
       | none =>
         iintro %ι
-        icases H $$ %σ2 %(ns +1) %([]) %_ %(nt + efs.length) [Hσ] with >⟨%h, _⟩
-        · exact .rfl
+        ispecialize H $$ %σ2 %(ns + 1) %obs' %(nt + efs.length)
+        icases H $$ Hσ with >⟨%h, _⟩
         exact ((Language.not_reducible_iff_irreducible.mpr (ι.atomic Hstep)) h).elim
     | .MaybeStuck =>
       iintro %ι
@@ -322,18 +330,18 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P: IProp 
   simp only [wp_unfold.to_eq]
   iintro Hupd Hwp
   simp only [wp.pre, h]
-  iintro %σ₁ %ns %obs %obs' %nt Hσ₁
+  iintro %σ₁ %ns %obs %nt Hσ₁
   imod Hupd $$ Hσ₁ with ⟨%k, %m, Hσ₁, %h, Hpost⟩; subst h
   imod Hwp $$ Hσ₁ with ⟨$,Hwp⟩
   imodintro
-  iintro %e₂ %σ₂ %efs %Hstep Hc
+  iintro %e₂ %σ₂ %efs %κ %obs' %Hsplit %Hstep Hc
   simp only [lc_split.to_eq]
   icases Hc with ⟨Hc,Hone⟩
   ihave Hc := lc_weaken _ (Htri m k) $$ Hc
   icases lc_split $$ Hc with ⟨Hm, Hk⟩
   icombine Hm Hone as Hm
   dsimp only [Nat.repeat]
-  ihave Hwp := Hwp $$ [//] [Hm]
+  ihave Hwp := Hwp $$ %e₂ %σ₂ %efs %κ %obs' [//] [//] [Hm]
   · simp [lc_split.to_eq]; itrivial
   iapply step_fupd_wand $$ Hwp; iintro Hwp
   iapply step_fupdN_le (n := ι.numLatersPerStep m) (by grind only) LawfulSet.subset_refl
@@ -363,14 +371,14 @@ theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IP
   | n+1 =>
     simp only [wp_unfold.to_eq]
     simp only [wp.pre, toVal_e]
-    iintro H %σ₁ %ns %obs %obs' %nt Hσ₁
+    iintro H %σ₁ %ns %obs %nt Hσ₁
     by_cases Hn : n ≤ ι.numLatersPerStep ns
     · icases H with ⟨-, ⟨Hp, Hwp⟩⟩
       imod Hp
       dsimp only [Nat.repeat]
       imod Hwp $$ Hσ₁ with ⟨$, H⟩
-      iintro !> %e₂ %σ₂ %efs %Hstep Hcred
-      icases H $$ %_ %_ %_ %Hstep Hcred with H
+      iintro !> %e₂ %σ₂ %efs %κ %obs' %Hsplit %Hstep Hcred
+      icases H $$ %_ %_ %_ %_ %_ %Hsplit %Hstep Hcred with H
       imod H; imod Hp
       iintro !> !>
       imod H; imod Hp
@@ -417,16 +425,17 @@ theorem wp_bind_iff (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness
     dsimp only
     simp only [wp.pre, κ.toVal_eq_none_fill h, Nat.repeat]
     isplit <;>
-    (iintro H %σ₁ %step %obs %obs' %n Hσ; imod H $$ [$] with ⟨%_, H⟩; imodintro; isplit)
+    (iintro H %σ₁ %step %obs %n Hσ; imod H $$ [$] with ⟨%_, H⟩; imodintro; isplit)
     · ipureintro; grind only [cases Stuckness, Language.Context.reducible_fill]
-    · iintro %e₂ %σ₂ %efs %HKstep Hcred
+    · iintro %e₂ %σ₂ %efs %κ' %obs' %Hsplit %HKstep Hcred
       obtain ⟨e₂', rfl, Hstep⟩ := κ.primStep_fill_inv h HKstep
-      icases H $$ %e₂' %σ₂ %efs %Hstep Hcred with >H; imodintro; imodintro
+      icases H $$ %e₂' %σ₂ %efs %κ' %obs' %Hsplit %Hstep Hcred with >H; imodintro; imodintro
       imod H; imodintro; iapply step_fupdN_wand $$ H; iintro H
       imod H with ⟨$, H, $⟩; imodintro; iapply IH $$ H
     · ipureintro; grind only [cases Stuckness, Language.Context.reducible_fill_inv]
-    · iintro %e₂ %σ₂ %efs %Hstep Hcred
-      icases H $$ %(K e₂) %σ₂ %efs %(κ.primStep_fill Hstep) Hcred with >H; imodintro; imodintro
+    · iintro %e₂ %σ₂ %efs %κ' %obs' %Hsplit %Hstep Hcred
+      icases H $$ %(K e₂) %σ₂ %efs %κ' %obs' %Hsplit %(κ.primStep_fill Hstep) Hcred with >H
+      imodintro; imodintro
       imod H; imodintro; iapply step_fupdN_wand $$ H; iintro H
       imod H with ⟨$, H, $⟩; imodintro; iapply IH $$ H
 
