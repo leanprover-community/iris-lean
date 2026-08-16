@@ -272,7 +272,7 @@ theorem mem_of_forall_dist {a : α} {l : List α} (h : ∀ n, ∃ b ∈ l, a ≡
     by_cases hc : a = c
     · exact hc ▸ List.mem_cons_self
     · refine List.mem_cons_of_mem _ (ih fun n => ?_)
-      obtain ⟨n₀, hn₀⟩ := Classical.not_forall.mp fun hall => hc (OFE.eq_dist.mpr hall)
+      obtain ⟨n₀, hn₀⟩ := Classical.not_forall.mp fun hall => hc (OFE.eq_dist_2 hall)
       obtain ⟨b, hb, hd⟩ := h (max n n₀)
       rcases List.mem_cons.mp hb with rfl | hb'
       · exact absurd (hd.le (Nat.le_max_right n n₀)) hn₀
@@ -381,16 +381,16 @@ theorem dist_mk {n} {x y : Raw α} : mk x ≡{n}≡ mk y ↔ Raw.dist n x y := .
 
 @[rocq_alias agree_comm]
 theorem op_comm {x y : Agree α} : op x y = op y x :=
-  OFE.eq_dist.mpr (ind₂ (fun _ _ => Raw.op_comm) x y)
+  OFE.eq_dist_2 (ind₂ (fun _ _ => Raw.op_comm) x y)
 
 theorem op_commN {x y : Agree α} : op x y ≡{n}≡ op y x := op_comm.dist
 
 @[rocq_alias agree_assoc]
 theorem op_assoc {x y z : Agree α} : op x (op y z) = op (op x y) z :=
-  OFE.eq_dist.mpr (ind₃ (fun _ _ _ => Raw.op_assoc) x y z)
+  OFE.eq_dist_2 (ind₃ (fun _ _ _ => Raw.op_assoc) x y z)
 
 theorem op_idemp {x : Agree α} : op x x = x :=
-  OFE.eq_dist.mpr (x.ind fun _ => Raw.idemp)
+  OFE.eq_dist_2 (x.ind fun _ => Raw.idemp)
 
 @[rocq_alias agree_validN_ne]
 theorem validN_ne {x y : Agree α} : x ≡{n}≡ y → validN n x → validN n y :=
@@ -417,7 +417,7 @@ theorem op_invN {x y : Agree α} : validN n (op x y) → x ≡{n}≡ y :=
 
 @[rocq_alias agree_op_inv]
 theorem op_inv {x y : Agree α} : valid (op x y) → x = y :=
-  ind₂ (fun _ _ h => OFE.eq_dist.mpr (Raw.op_inv h)) x y
+  ind₂ (fun _ _ h => OFE.eq_dist_2 (Raw.op_inv h)) x y
 
 @[rocq_alias agree_cmra_mixin]
 instance instCMRA : CMRA (Agree α) where
@@ -468,11 +468,11 @@ theorem idemp {x : Agree α} : x • x = x := op_idemp
 
 @[rocq_alias agree_cmra_discrete]
 instance instCMRADiscrete [OFE.Discrete α] : CMRA.Discrete (Agree α) where
-  discrete_0 {x y} := ind₂ (fun _ _ h => OFE.eq_dist.mpr (Raw.discrete_0 h)) x y
+  discrete_0 {x y} := ind₂ (fun _ _ h => OFE.eq_dist_2 (Raw.discrete_0 h)) x y
   discrete_valid {x} := x.ind fun _ => Raw.discrete_valid
 
 instance instDiscrete [OFE.Discrete α] : OFE.Discrete (Agree α) where
-  discrete_0 {x y} := ind₂ (fun _ _ h => OFE.eq_dist.mpr (Raw.discrete_0 h)) x y
+  discrete_0 {x y} := ind₂ (fun _ _ h => OFE.eq_dist_2 (Raw.discrete_0 h)) x y
 
 @[rocq_alias agree_includedN]
 theorem includedN {x y : Agree α} : x ≼{n} y ↔ y ≡{n}≡ y • x := by
@@ -486,7 +486,7 @@ theorem includedN {x y : Agree α} : x ≼{n} y ↔ y ≡{n}≡ y • x := by
 
 @[rocq_alias agree_included]
 theorem included {x y : Agree α} : x ≼ y ↔ y = y • x :=
-  ⟨fun ⟨z, h⟩ => OFE.eq_dist.mpr fun _ => includedN.mp ⟨z, h.dist⟩,
+  ⟨fun ⟨z, h⟩ => OFE.eq_dist_2 fun _ => includedN.mp ⟨z, h.dist⟩,
    fun h => ⟨y, h.trans op_comm⟩⟩
 
 @[rocq_alias agree_valid_includedN]
@@ -530,7 +530,7 @@ theorem Agree.toAgree_injN {a b : α} : toAgree a ≡{n}≡ toAgree b → a ≡{
 
 @[rocq_alias to_agree_inj]
 theorem Agree.toAgree_inj {a b : α} : toAgree a = toAgree b → a = b :=
-  fun heq => OFE.eq_dist.mpr fun _ => toAgree_injN heq.dist
+  fun heq => OFE.eq_dist_2 fun _ => toAgree_injN heq.dist
 
 @[simp] theorem Agree.toAgree_validN {a : α} : ✓{n} toAgree a := Raw.toAgree_validN (a := a) (n := n)
 
@@ -543,7 +543,7 @@ theorem Agree.toAgree_uninjN {x : Agree α} : ✓{n} x → ∃ a, toAgree a ≡{
 
 @[rocq_alias to_agree_uninj]
 theorem Agree.toAgree_uninj {x : Agree α} : ✓ x → ∃ a, toAgree a = x :=
-  x.ind fun _ h => (Raw.toAgree_uninj h).imp fun _ h => OFE.eq_dist.mpr fun n => h n
+  x.ind fun _ h => (Raw.toAgree_uninj h).imp fun _ h => OFE.eq_dist_2 fun n => h n
 
 instance toAgree.ne : OFE.NonExpansive (toAgree : α → Agree α) := instNonExpansive_toAgree
 
@@ -595,7 +595,7 @@ theorem toAgree_op_validN_iff_dist {a b : α} :
 
 @[rocq_alias to_agree_discrete]
 instance toAgree.is_discrete {a : α} [OFE.DiscreteE a] : OFE.DiscreteE (toAgree a) where
-  discrete {y} := y.ind fun _ h => OFE.eq_dist.mpr (Raw.toAgree_discrete h)
+  discrete {y} := y.ind fun _ h => OFE.eq_dist_2 (Raw.toAgree_discrete h)
 
 end Agree
 
@@ -665,7 +665,7 @@ theorem Agree.map_ne {f g : α → β} [OFE.NonExpansive f] [OFE.NonExpansive g]
 @[rocq_alias agree_map_ext]
 theorem Agree.agree_map_ext {f g : α → β} [OFE.NonExpansive f] [OFE.NonExpansive g] {x : Agree α}
     (H : ∀ a, f a = g a) : map f x = map g x :=
-  OFE.eq_dist.mpr fun _ => map_ne (H · |>.dist)
+  OFE.eq_dist_2 fun _ => map_ne (H · |>.dist)
 
 @[rocq_alias agree_map_id]
 theorem Agree.map_id (x : Agree α) : Agree.map id x = x :=

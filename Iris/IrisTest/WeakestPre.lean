@@ -192,6 +192,56 @@ variable (P Q : PROP)
 
 end TestTexanTriple
 
+section TestTotalTexanTriple
+
+variable (PROP Expr Val A : Type _) [BI PROP]
+variable [TotalWp PROP Expr Val A] [TotalWp PROP Expr Val Stuckness]
+variable (e : Expr) (s : A) (E : CoPset) (P Q : PROP) (v : Val)
+
+/-- info: ⊢ ∀ Φ, P -∗ (Q -∗ Φ v) -∗ WP e @ s ; E [{ Φ }] : Prop -/
+#guard_msgs in #check [{ P }] e @ s ; E [{ RET v; Q }]
+
+/-- info: ⊢ ∀ Φ, P -∗ (Q -∗ Φ v) -∗ WP e @ E [{ Φ }] : Prop -/
+#guard_msgs in #check [{ P }] e @ E [{ RET v; Q }]
+
+/-- info: ⊢ ∀ Φ, P -∗ (Q -∗ Φ v) -∗ WP e @ E ? [{ Φ }] : Prop -/
+#guard_msgs in #check [{ P }] e @ E ? [{ RET v; Q }]
+
+/-- info: ⊢ ∀ Φ, P -∗ (Q -∗ Φ v) -∗ WP e [{ Φ }] : Prop -/
+#guard_msgs in #check [{ P }] e [{ RET v; Q }]
+
+/-- info: ⊢ ∀ Φ, P -∗ (Q -∗ Φ v) -∗ WP e ? [{ Φ }] : Prop -/
+#guard_msgs in #check [{ P }] e ? [{ RET v; Q }]
+
+/-- info: ⊢ ∀ Φ, P -∗ (∀ x, Q -∗ Φ x) -∗ WP e [{ Φ }] : Prop -/
+#guard_msgs in #check [{ P }] e [{ (x : Val), RET x; Q }]
+
+/-- info: ⊢ ∀ Φ, P -∗ (∀ x, Q -∗ Φ v) -∗ WP e [{ Φ }] : Prop -/
+#guard_msgs in #check [{ P }] e [{ _, RET v; Q }]
+
+/-- info: iprop(□ ∀ Φ, P -∗ (Q -∗ Φ v) -∗ WP e @ s ; E [{ Φ }] ) : PROP -/
+#guard_msgs in #check iprop([{ P }] e @ s ; E [{ RET v; Q }])
+
+/-- info: iprop(□ ∀ Φ, P -∗ (Q -∗ Φ v) -∗ WP e @ E [{ Φ }] ) : PROP -/
+#guard_msgs in #check iprop([{ P }] e @ E [{ RET v; Q }])
+
+/-- info: iprop(□ ∀ Φ, P -∗ (Q -∗ Φ v) -∗ WP e @ E ? [{ Φ }] ) : PROP -/
+#guard_msgs in #check iprop([{ P }] e @ E ? [{ RET v; Q }])
+
+/-- info: iprop(□ ∀ Φ, P -∗ (Q -∗ Φ v) -∗ WP e [{ Φ }] ) : PROP -/
+#guard_msgs in #check iprop([{ P }] e [{ RET v; Q }])
+
+/-- info: iprop(□ ∀ Φ, P -∗ (Q -∗ Φ v) -∗ WP e ? [{ Φ }] ) : PROP -/
+#guard_msgs in #check iprop([{ P }] e ? [{ RET v; Q }])
+
+/-- info: iprop(□ ∀ Φ, P -∗ (∀ x, Q -∗ Φ x) -∗ WP e [{ Φ }] ) : PROP -/
+#guard_msgs in #check iprop([{ P }] e [{ (x : Val), RET x; Q }])
+
+/-- info: iprop(□ ∀ Φ, P -∗ (∀ x, Q -∗ Φ v) -∗ WP e [{ Φ }] ) : PROP -/
+#guard_msgs in #check iprop([{ P }] e [{ _, RET v; Q }])
+
+end TestTotalTexanTriple
+
 section HeapLangTestWP
 set_option linter.unusedVariables false
 

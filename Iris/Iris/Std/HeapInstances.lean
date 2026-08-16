@@ -16,7 +16,7 @@ This file provides a library of `PartialMap`, `Heap`, and `UnboundedHeap`
 instances for types from the Lean standard library.
 
 ## Instances
-- Plain functions: `PartialMap`, `IsoFunMap`
+- Plain functions: `PartialMap`
 - Functions into `Option`: `Heap`
 - Classical functions into `Option`: `UnboundedHeap`
 - Association lists: `UnboundedHeap`
