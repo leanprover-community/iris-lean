@@ -141,29 +141,20 @@ private theorem lockInv_mono {γ : GName} {lo ln : Loc} (R₁ R₂ : IProp GF) :
     (R₁ -∗ R₂) ⊢ lockInv γ lo ln R₁ -∗ lockInv γ lo ln R₂ := by
   unfold lockInv
   iintro HR ⟨%o, %n, Hlo, Hln, Hauth, Hstate⟩
-  iexists o, n
   iframe Hlo Hln Hauth
   icases Hstate with (⟨Howner, HR₁⟩ | Hissued)
-  · ileft; iframe Howner
-    iapply HR $$ HR₁
-  · iright; iframe Hissued
+  · ileft; iframe Howner; iapply HR $$ HR₁
+  · iright; iframe
 
 @[rocq_alias heap_lang.ticket_lock.is_lock_iff]
 theorem isLock_iff (γ : GName) (lk : Val) (R₁ R₂ : IProp GF) :
     isLock γ lk R₁ ⊢ (▷ □ (R₁ ∗-∗ R₂)) -∗ isLock γ lk R₂ := by
   unfold isLock
   iintro ⟨%lo, %ln, %Heq, #Hinv⟩ #HR
-  iexists lo, ln
-  isplit; itrivial
+  iframe %Heq
   iapply inv_iff $$ Hinv
   inext; imodintro
-  isplit
-  · iintro Hlockinv
-    iapply lockInv_mono $$ [] Hlockinv
-    iintro HR₁; iapply HR $$ HR₁
-  · iintro Hlockinv
-    iapply lockInv_mono $$ [] Hlockinv
-    iintro HR₂; iapply HR $$ HR₂
+  isplit <;> (iintro Hlockinv; iapply lockInv_mono $$ [] Hlockinv; iintro HR'; iapply HR $$ HR')
 
 /-! ## Specifications -/
 
@@ -184,11 +175,9 @@ theorem newlock_spec :
   imod inv_alloc ticketLockN E (lockInv γ lo ln R) $$ [Hlo Hln Hauth Howner HR] with #Hinv
   · unfold lockInv
     iexists 0, 0
-    iframe Hlo Hln Hauth
-    ileft; iframe Howner HR
+    iframe Hlo Hln Hauth; ileft; iframe
   imodintro
   unfold isLock
-  iexists lo, ln
   iframe Hinv
   itrivial
 
@@ -197,8 +186,7 @@ theorem waitLoop_spec (γ : GName) (lk : Val) (x : Nat) (R : IProp GF) :
     {{ isLock γ lk R ∗ issued γ x }} hl(&waitLoop #x &lk)
     {{ RET hl_val(#()); locked γ ∗ R }} := by
   unfold isLock issued locked lockInv
-  iintro %Φ ⟨⟨%lo, %ln, %Heq, #Hinv⟩, Hissued⟩ HΦ
-  subst Heq
+  iintro %Φ ⟨⟨%lo, %ln, %rfl, #Hinv⟩, Hissued⟩ HΦ
   iloeb as IH
   wp_rec
   wp_pures
@@ -209,21 +197,16 @@ theorem waitLoop_spec (γ : GName) (lk : Val) (x : Nat) (R : IProp GF) :
   · subst hxo
     icases Hstate with (⟨Howner, HR⟩ | Hissued')
     · imod Hclose $$ [Hlo Hln Hauth Hissued] with -
-      · iexists x, n
-        iframe Hlo Hln Hauth
-        iright; iframe Hissued
+      · iframe Hlo Hln Hauth; iright; iframe
       imodintro
       wp_pures
       rw [beq_self_eq_true]
       wp_pures
       iapply HΦ
       imodintro
-      iframe HR
-      iexists x; iframe Howner
+      iframe
     · iexfalso; iapply own_ticket_exclusive $$ [$Hissued $Hissued']
-  · imod Hclose $$ [Hlo Hln Hauth Hstate] with -
-    · iexists o, n
-      iframe Hlo Hln Hauth Hstate
+  · imod Hclose $$ [$Hlo $Hln $Hauth $Hstate] with -
     imodintro
     wp_pures
     rw [beq_eq_false_iff_ne.mpr (by simp; omega)]
@@ -233,10 +216,8 @@ theorem waitLoop_spec (γ : GName) (lk : Val) (x : Nat) (R : IProp GF) :
 @[rocq_alias heap_lang.ticket_lock.acquire_spec]
 theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
     {{ isLock γ lk R }} hl(&acquire &lk) {{ RET hl_val(#()); locked γ ∗ R }} := by
-  iintro %Φ #Hlock Hcont
   unfold isLock lockInv
-  icases Hlock with ⟨%lo, %ln, %Heq, #Hinv⟩
-  subst Heq
+  iintro %Φ ⟨%lo, %ln, %rfl, #Hinv⟩ Hcont
   iloeb as IH
   wp_rec
   wp_pures
@@ -259,14 +240,12 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
     imod Hclose $$ [Hlo Hln Hauth Hstate] with -
     · iexists o', n' + 1
       rw [Int.natCast_succ]
-      iframe Hlo Hln Hauth Hstate
+      iframe
     imodintro
     wp_pures
     iapply waitLoop_spec $$ [Hissued] Hcont
     unfold isLock issued lockInv
-    iframe Hissued
-    iexists lo, ln
-    iframe Hinv
+    iframe Hissued Hinv
     itrivial
   · imod Hclose $$ [$Hlo $Hln $Hauth $Hstate] with -
     imodintro
@@ -277,8 +256,7 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
 theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
     {{ isLock γ lk R ∗ locked γ ∗ R }} hl(&release &lk) {{ RET hl_val(#()); True }} := by
   unfold isLock locked lockInv
-  iintro %Φ ⟨⟨%lo, %ln, %Heq, #Hinv⟩, ⟨%o, Howner⟩, HR⟩ Hcont
-  subst Heq
+  iintro %Φ ⟨⟨%lo, %ln, %rfl, #Hinv⟩, ⟨%o, Howner⟩, HR⟩ Hcont
   wp_rec
   wp_pures
   wp_bind !_
@@ -299,13 +277,11 @@ theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
       with ⟨Hauth, Howner⟩
   · exact Auth.auth_update
       (LocalUpdate.prod_1 _ _ (LocalUpdate.option (LocalUpdate.exclusive trivial)))
-  · iapply iOwn_op.mpr
-    iframe Hauth Howner
+  · iapply iOwn_op.mpr; iframe
   imod Hclose $$ [Hlo Hln Hauth Howner HR] with -
   · iexists o + 1, n'
     rw [Int.natCast_succ]
-    iframe Hlo Hln Hauth
-    ileft; iframe Howner HR
+    iframe Hlo Hln Hauth; ileft; iframe
   iapply Hcont; itrivial
 
 end proof
