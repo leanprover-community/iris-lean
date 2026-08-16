@@ -37,8 +37,7 @@ section Proofs
 def prophecyToListBool (vs : List (Val × Val)) : List Bool :=
   vs.map (·.2 = hl_val(#true))
 
-@[simp, grind =]
-theorem prophecyToListBool_cons (vs : List (Val × Val)) (v : Val) (b : Bool) :
+private theorem prophecyToListBool_cons (vs : List (Val × Val)) (v : Val) (b : Bool) :
     prophecyToListBool ((v, hl_val(#b)) :: vs) = b :: prophecyToListBool vs := by
   cases b <;> rfl
 
@@ -53,8 +52,7 @@ theorem newCoin.spec :
     {{ True }} hl(&newCoin #()) {{ c bs, RET c; coin (GF := GF) c bs }} := by
   iunfold coin
   iintro %Φ - K
-  unfold newCoin
-  wp_pures
+  wp_lam
   wp_bind newProph()
   iapply wp_new_proph
   iintro %p %pvs Hp
@@ -62,7 +60,7 @@ theorem newCoin.spec :
   iapply nondetBool.spec $$ [//]
   iintro !> %b -
   wp_alloc c with Hc
-  wp_pures
+  wp_pair
   iintro !>
   iapply K $$ %_ %(b :: prophecyToListBool pvs)
   iexists c, p, pvs
@@ -74,12 +72,10 @@ theorem readCoin.spec (cp : Val) (bs : List Bool) :
     {{ coin (GF := GF) cp bs }} hl(&readCoin &cp)
     {{ (b : Bool) bs', RET hl_val(#b); ⌜bs = b :: bs'⌝ ∗ coin cp bs }} := by
   iunfold coin
-  iintro %Φ ⟨%c, %p, %pvs, %cp_eq, %hne, %htl, Hp, Hb⟩ K
-  subst cp_eq
+  iintro %Φ ⟨%c, %p, %pvs, %rfl, %hne, %htl, Hp, Hb⟩ K
   obtain ⟨b, bs, rfl⟩ := List.exists_cons_of_ne_nil hne
   isimp at Hb
-  unfold readCoin
-  wp_pures
+  wp_lam
   wp_load
   iintro !>
   iapply K $$ %b %bs
@@ -93,11 +89,10 @@ theorem tossCoin.spec (cp : Val) (bs : List Bool) :
     {{ coin (GF := GF) cp bs }} hl(&tossCoin &cp)
     {{ (b : Bool) bs', RET hl_val(#()); ⌜bs = b :: bs'⌝ ∗ coin cp bs' }} := by
   iunfold coin
-  iintro %Φ ⟨%c, %p, %pvs, %cp_eq, %hne, %htl, Hp, Hb⟩ K
-  subst cp_eq
+  iintro %Φ ⟨%c, %p, %pvs, %rfl, %hne, %htl, Hp, Hb⟩ K
   obtain ⟨b, bs, rfl⟩ := List.exists_cons_of_ne_nil hne
   isimp at Hb
-  unfold tossCoin
+  wp_lam
   wp_pures
   wp_bind &nondetBool _
   iapply nondetBool.spec $$ [//]
@@ -107,7 +102,7 @@ theorem tossCoin.spec (cp : Val) (bs : List Bool) :
   iapply wp_resolve_proph $$ Hp
   iintro %pvs' %rfl Hp
   simp only [List.tail_cons, prophecyToListBool_cons] at htl
-  wp_pures
+  wp_seq
   iintro !>
   iapply K $$ %b %bs
   isplitr; itrivial
