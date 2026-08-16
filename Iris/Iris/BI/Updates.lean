@@ -790,7 +790,10 @@ theorem sForall_eq_forall {Φ : α → PROP} :
   ⟨forall_intro fun a => sForall_elim ⟨a, rfl⟩,
    sForall_intro fun _ ⟨a, hp⟩ => hp ▸ forall_elim a⟩
 
-@[rocq_alias fupd_si_pure_forall_2]
+/--
+  Proves that the Rocq class field `fupd_siPure_forall_2` for `BIFUpdSbi`
+  follows from `BIFUpdateSbi.fupd_si_pure_sForall_2`.
+-/
 theorem fupd_siPure_forall_2 {E : CoPset} {A : Sort _} {Φi : A → SiProp} :
     (∀ x, |={E}=> <si_pure> Φi x) ⊢@{PROP} |={E}=> ∀ x, <si_pure> Φi x := calc
   _ ⊢ ∀ q, ⌜∃ x, q = Φi x⌝ → |={E}=> <si_pure> q :=
