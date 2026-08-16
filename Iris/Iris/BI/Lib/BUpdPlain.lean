@@ -92,10 +92,9 @@ theorem BUpd_BUpdPlain [BIUpdate PROP] [BIBUpdateSbi PROP] [BIAffine PROP] {P : 
   imod HP
   iapply Hx $$ HP
 
--- FIXME: no `@[rocq_alias own_updateP]`: the short name is already claimed by
--- `base_logic/lib/own.v`'s `own_updateP`, aliased to `Iris.iOwn_updateP`.
 /-- We get the usual rule for frame preserving updates if we have an `own`
 connective satisfying the following rule w.r.t. interaction with plainly. -/
+@[rocq_alias bupd_alt.own_updateP]
 theorem own_updateP [UCMRA M] {own : M → PROP} {x : M} {Φ : M → Prop}
   (own_updateP_plainly : ∀ (x : M) (Φ : M → Prop) (R : PROP),
     (x ~~>: Φ) → iprop(own x ∗ ∀ y, ⌜Φ y⌝ -∗ own y -∗ ■ R) ⊢ ■ R)

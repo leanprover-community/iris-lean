@@ -45,3 +45,6 @@ theorem Iterate.head_induction_on {b : α} {motive : ∀ (n : Nat) (a : α), Ite
     apply ih
     · exact head _ hyz _ rfl
     · exact fun _ h1 h2 => head _ h1 (h2.tail _ hyz)
+
+abbrev StronglyNormalizing {α : Type _} (step : α → α → Prop) (x : α) : Prop :=
+  Acc (flip step) x

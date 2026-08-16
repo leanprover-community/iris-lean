@@ -42,8 +42,8 @@ attribute [rocq_alias heap_lang.pointsto_fractional] instFractionalPointsTo
 attribute [rocq_alias heap_lang.pointsto_as_fractional] instAsFractionalPointsTo
 attribute [rocq_alias heap_lang.pointsto_valid] pointsTo_cmraValid
 attribute [rocq_alias heap_lang.pointsto_valid_2] pointsTo_op_cmraValid
-attribute [rocq_alias heap_lang.pointsto_agree] pointsTo_agree
-attribute [rocq_alias heap_lang.pointsto_combine] pointsTo_combine
+attribute [rocq_alias heap_lang.primitive_laws.pointsto_agree] pointsTo_agree
+attribute [rocq_alias heap_lang.primitive_laws.pointsto_combine] pointsTo_combine
 attribute [rocq_alias heap_lang.pointsto_frac_ne] pointsTo_frac_ne
 attribute [rocq_alias heap_lang.pointsto_ne] pointsTo_ne
 attribute [rocq_alias heap_lang.pointsto_persist] pointsTo_persist
