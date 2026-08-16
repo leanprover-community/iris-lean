@@ -12,11 +12,11 @@ public import Iris.HeapLang.Lib.NondetBool
 
 namespace Iris.HeapLang
 
-@[rocq_alias heap_lang.new_coin]
+@[rocq_alias heap_lang.clairvoyant_coin.new_coin]
 def newCoin := hl_val%
   λ _, (ref(&nondetBool #()), newProph())
 
-@[rocq_alias heap_lang.read_coin]
+@[rocq_alias heap_lang.clairvoyant_coin.read_coin]
 def readCoin := hl_val% λ cp, !fst(cp)
 
 @[rocq_alias heap_lang.toss_coin]
@@ -41,13 +41,13 @@ private theorem prophecyToListBool_cons (vs : List (Val × Val)) (v : Val) (b : 
     prophecyToListBool ((v, hl_val(#b)) :: vs) = b :: prophecyToListBool vs := by
   cases b <;> rfl
 
-@[rocq_alias heap_lang.coin]
+@[rocq_alias heap_lang.clairvoyant_coin.coin]
 def coin (cp : Val) (bs : List Bool) : IProp GF := iprop%
   ∃ (c : Loc) (p : ProphId) (vs : List (Val × Val)),
   ⌜cp = hl_val((#c, #p))⌝ ∗ ⌜bs ≠ []⌝ ∗ ⌜bs.tail = prophecyToListBool vs⌝ ∗
   proph p vs ∗ bs.head?.elim iprop(∃ (b : Bool), c ↦ hl_val(#b)) (fun b => iprop(c ↦ hl_val(#b)))
 
-@[rocq_alias heap_lang.new_coin_spec]
+@[rocq_alias heap_lang.clairvoyant_coin.new_coin_spec]
 theorem newCoin.spec :
     {{ True }} hl(&newCoin #()) {{ c bs, RET c; coin (GF := GF) c bs }} := by
   iunfold coin
@@ -67,7 +67,7 @@ theorem newCoin.spec :
   isimp
   iframe
 
-@[rocq_alias heap_lang.read_coin_spec]
+@[rocq_alias heap_lang.clairvoyant_coin.read_coin_spec]
 theorem readCoin.spec (cp : Val) (bs : List Bool) :
     {{ coin (GF := GF) cp bs }} hl(&readCoin &cp)
     {{ (b : Bool) bs', RET hl_val(#b); ⌜bs = b :: bs'⌝ ∗ coin cp bs }} := by
