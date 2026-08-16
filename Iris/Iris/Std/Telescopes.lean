@@ -5,6 +5,8 @@ Authors: Markus de Medeiros
 -/
 module
 
+public import Iris.Init
+
 /-!
 # Telescopes
 
