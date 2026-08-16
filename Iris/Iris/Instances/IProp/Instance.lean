@@ -555,24 +555,8 @@ theorem iOwn_op {a1 a2 : F.ap (IProp GF)} : iOwn γ (a1 • a2) ⊣⊢ iOwn γ a
 
 @[rocq_alias own_mono]
 theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ a1) : iOwn γ a1 ⊢ iOwn γ a2 := by
-  rcases H with ⟨ac, Hac⟩
-  rintro n x ⟨clos, Hclos⟩
-  refine ⟨iSingleton F γ ac • clos, Hclos.trans <| fun τ' γ' => ?_⟩
-  refine .trans ?_ CMRA.op_assocN.symm
-  rw [iResUR_op_eval]
-  simp [iSingleton]
-  split
-  next h =>
-    obtain ⟨rfl, rfl⟩ := h; refine Dist.op_l ?_
-    by_cases heq : γ' = γ
-    · simp only [heq, GenMap.singleton_map_in]
-      apply some_dist_some.mpr
-      apply Eq.dist
-      apply (congrArg unfoldi.f (congrArg E.bundle Hac)).trans
-      apply (congrArg unfoldi.f (bundle_op a2 ac)).trans
-      exact (RFunctor.map (fold GF) (unfold GF)).op _ _
-    · simp only [singleton_map_none heq, CMRA.op, optionOp, Dist.rfl]
-  next => simp [GenMap.empty_map_lookup]; exact Dist.op_l Dist.rfl
+  obtain ⟨c, rfl⟩ := H
+  exact iOwn_op.mp.trans BI.sep_elim_left
 
 @[rocq_alias own_valid]
 theorem iOwn_cmraValid {a : F.ap (IProp GF)} : iOwn γ a ⊢ ✓ a :=
