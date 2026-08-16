@@ -238,6 +238,8 @@ class LawfulPartialMap (M : Type _ → Type _) (K : outParam (Type _))
       get? (merge op m₁ m₂) k = Option.merge (op k) (get? m₁ k) (get? m₂ k)
   /-- Pointwise-equivalent maps are equal (extensionality). -/
   equiv_iff_eq {m₁ m₂ : M V} : PartialMap.equiv m₁ m₂ ↔ m₁ = m₂
+attribute [grind =] LawfulPartialMap.get?_empty
+
 export LawfulPartialMap (get?_empty get?_insert_eq get?_insert_ne get?_delete_eq
   get?_delete_ne get?_bindAlter get?_merge equiv_iff_eq)
 
@@ -278,6 +280,7 @@ open PartialMap
 
 variable {K V : Type _} {M : Type _ → Type _} [LawfulPartialMap M K]
 
+@[grind =]
 theorem get?_insert [DecidableEq K] {m : M V} {k k' : K} {v : V} :
     get? (insert m k v) k' = if k = k' then some v else get? m k' := by
   split <;> rename_i h
@@ -289,6 +292,7 @@ theorem dom_insert_iff [DecidableEq K] {m : M V} {k k' : K} {v : V} :
   simp only [PartialMap.dom, get?_insert]
   by_cases h : k = k' <;> simp [h]
 
+@[grind =]
 theorem get?_delete [DecidableEq K] {m : M V} {k k' : K} :
     get? (delete m k) k' = if k = k' then none else get? m k' := by
   split <;> rename_i h
