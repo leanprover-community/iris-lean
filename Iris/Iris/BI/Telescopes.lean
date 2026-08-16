@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors:
+Authors: Markus de Medeiros
 -/
 module
 
@@ -30,6 +30,7 @@ def texist [BI PROP] {TT : Tele} (Ψ : TT.Arg → PROP) : PROP :=
 /-- Telescopic universal quantification. -/
 macro "∀.." xs:explicitBinders ", " P:term : term => do
   return ⟨← expandExplicitBinders ``tforall xs P⟩
+
 /-- Telescopic existential quantification. -/
 macro "∃.." xs:explicitBinders ", " P:term : term => do
   return ⟨← expandExplicitBinders ``texist xs P⟩
@@ -96,11 +97,14 @@ theorem tforall_ne {Φ Ψ : TT.Arg → PROP} (h : ∀ x, Φ x ≡{n}≡ Ψ x) :
   rw [(tforall_forall Φ).to_eq, (tforall_forall Ψ).to_eq]
   exact forall_ne h
 
-@[rw_mono_rule]
 theorem tforall_congr {Φ Ψ : TT.Arg → PROP} (h : ∀ x, Φ x ⊣⊢ Ψ x) :
     tforall Φ ⊣⊢ tforall Ψ :=
-  (tforall_forall Φ).trans <| (forall_congr h).trans (tforall_forall Ψ).symm
-#rocq_ignore bi_tforall_proper "iris-lean has no setoid `Proper` instances; use `tforall_congr`."
+  calc tforall Φ
+    _ ⊣⊢ ∀ x, Φ x := tforall_forall Φ
+    _ ⊣⊢ ∀ x, Ψ x := forall_congr h
+    _ ⊣⊢ tforall Ψ := (tforall_forall Ψ).symm
+
+#rocq_ignore bi_tforall_proper "Use `tforall_congr`."
 
 @[rocq_alias bi_texist_ne]
 theorem texist_ne {Φ Ψ : TT.Arg → PROP} (h : ∀ x, Φ x ≡{n}≡ Ψ x) :
@@ -108,11 +112,14 @@ theorem texist_ne {Φ Ψ : TT.Arg → PROP} (h : ∀ x, Φ x ≡{n}≡ Ψ x) :
   rw [(texist_exist Φ).to_eq, (texist_exist Ψ).to_eq]
   exact exists_ne h
 
-@[rw_mono_rule]
 theorem texist_congr {Φ Ψ : TT.Arg → PROP} (h : ∀ x, Φ x ⊣⊢ Ψ x) :
     texist Φ ⊣⊢ texist Ψ :=
-  (texist_exist Φ).trans <| (exists_congr h).trans (texist_exist Ψ).symm
-#rocq_ignore bi_texist_proper "iris-lean has no setoid `Proper` instances; use `texist_congr`."
+  calc texist Φ
+    _ ⊣⊢ ∃ x, Φ x := texist_exist Φ
+    _ ⊣⊢ ∃ x, Ψ x := exists_congr h
+    _ ⊣⊢ texist Ψ := (texist_exist Ψ).symm
+
+#rocq_ignore bi_texist_proper "Use `texist_congr`."
 
 @[rocq_alias bi_tforall_absorbing]
 instance tforall_absorbing (Ψ : TT.Arg → PROP) [∀ x, Absorbing (Ψ x)] :
