@@ -238,7 +238,7 @@ theorem bigAndM_toList {Φ : K → V → PROP} {m : M V} :
 
 @[rocq_alias big_andM_fmap]
 theorem bigAndM_map {Φ : K → V → PROP} {m : M V} {f : V → V} :
-    ([∧map] k ↦ y ∈ Std.PartialMap.map f m, Φ k y) = [∧map] k ↦ y ∈ m, Φ k (f y) :=
+    ([∧map] k ↦ y ∈ PartialMap.map f m, Φ k y) = [∧map] k ↦ y ∈ m, Φ k (f y) :=
   bigOpM_map_eq f Φ m
 
 @[rocq_alias big_andM_omap]

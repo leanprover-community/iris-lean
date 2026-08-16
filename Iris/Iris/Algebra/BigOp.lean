@@ -419,7 +419,7 @@ theorem bigOpM_const_unit_eq [DecidableEq K] (m : M' V) :
 
 @[rocq_alias big_opM_fmap]
 theorem bigOpM_map_eq (h : V → B) (Φ : K → B → M) (m : M' V) :
-    ([^ op map] k ↦ x ∈ Std.PartialMap.map h m, Φ k x) = ([^ op map] k ↦ v ∈ m, Φ k (h v)) :=
+    ([^ op map] k ↦ x ∈ PartialMap.map h m, Φ k x) = ([^ op map] k ↦ v ∈ m, Φ k (h v)) :=
   (bigOpL_eq_of_perm _ LawfulFiniteMap.toList_map).trans (bigOpL_map_eq _ _ _)
 
 @[rocq_alias big_opM_omap]
