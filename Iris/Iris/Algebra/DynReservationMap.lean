@@ -66,16 +66,16 @@ instance : OFE (DynReservationMap A H) where
     symm h := ⟨h.left.symm, h.right.symm⟩,
     trans h₁ h₂ := ⟨h₁.left.trans h₂.left, h₁.right.trans h₂.right⟩
   }
-  eq_dist {x y} := by
+  eq_dist' {x y} := by
     refine ⟨fun h _ => h ▸ ⟨.rfl, .rfl⟩, fun H => ?_⟩
     obtain ⟨xd, xt⟩ := x; obtain ⟨yd, yt⟩ := y
     simp only [DynReservationMap.mk.injEq]
-    exact ⟨eq_dist.mpr fun n => (H n).1, eq_dist.mpr fun n => (H n).2⟩
+    exact ⟨eq_dist_2 fun n => (H n).1, eq_dist_2 fun n => (H n).2⟩
   dist_lt h lt := ⟨dist_lt h.left lt, dist_lt h.right lt⟩
 
 @[rocq_alias dyn_reservation_map_ofe_discrete]
 instance instDiscreteDynReservationMap [Discrete A] : Discrete (DynReservationMap A H) where
-  discrete_0 h := OFE.eq_dist.mpr <| by
+  discrete_0 h := OFE.eq_dist_2 <| by
     intro n
     exact ⟨(discrete_0 h.left).dist, (discrete_0 h.right).dist⟩
 
@@ -101,7 +101,7 @@ instance instNonExpansiveDynReservationMapSingleton :
 @[rocq_alias DynReservationMap_discrete]
 instance instDiscreteEDynReservationMapMk {a : H A} [DiscreteE a] :
     DiscreteE (DynReservationMap.mk a b) where
-  discrete := fun h => OFE.eq_dist.mpr <| by
+  discrete := fun h => OFE.eq_dist_2 <| by
     intro n
     exact ⟨(DiscreteE.discrete h.1).dist, (DiscreteE.discrete h.2).dist⟩
 
@@ -304,9 +304,9 @@ instance instUCMRADynReservationMap : UCMRA (DynReservationMap A H) where
         refine .inr fun HK => bb ?_
         refine (mem_iff_of_validN_union (validN_token_of_validN v) i).mpr ?_
         exact .inl HK
-  assoc := eq_dist.mpr <| by refine fun _ => ⟨?_, ?_⟩ <;> exact CMRA.assoc.dist
-  comm := eq_dist.mpr <| by refine fun _ => ⟨?_, ?_⟩ <;> exact CMRA.comm.dist
-  pcore_op_left {x cx} h := eq_dist.mpr <| by
+  assoc := eq_dist_2 <| by refine fun _ => ⟨?_, ?_⟩ <;> exact CMRA.assoc.dist
+  comm := eq_dist_2 <| by refine fun _ => ⟨?_, ?_⟩ <;> exact CMRA.comm.dist
+  pcore_op_left {x cx} h := eq_dist_2 <| by
     refine fun n => ⟨?_, ?_⟩
     · simp only [←Option.some_inj.mp h, op_data', core_data]
       exact (core_op x.data).dist
@@ -318,7 +318,7 @@ instance instUCMRADynReservationMap : UCMRA (DynReservationMap A H) where
   pcore_op_mono {x cx} h y := by
     obtain ⟨z, hz⟩ := core_op_mono x.data y.data
     obtain ⟨w, hw⟩ := core_op_mono x.token y.token
-    refine ⟨mk z w, eq_dist.mpr ?_⟩
+    refine ⟨mk z w, eq_dist_2 ?_⟩
     refine fun n => ⟨?_, ?_⟩
     · simp only [op_data', core_data, (Option.some_inj.mp h.symm)]
       exact hz.dist
@@ -326,16 +326,16 @@ instance instUCMRADynReservationMap : UCMRA (DynReservationMap A H) where
       exact hw.dist
   extend {n x y₁ y₂} v exy := by
     obtain ⟨z₁, z₂, xzz, zy₁, zy₂⟩ := CMRA.extend (validN_data_of_validN v) exy.left
-    refine ⟨mk z₁ y₁.token, mk z₂ y₂.token, eq_dist.mpr ?_, ⟨zy₁, rfl⟩, ⟨zy₂, rfl⟩⟩
+    refine ⟨mk z₁ y₁.token, mk z₂ y₂.token, eq_dist_2 ?_, ⟨zy₁, rfl⟩, ⟨zy₂, rfl⟩⟩
     exact fun m => ⟨xzz.dist, exy.right⟩
   unit := mk ∅ ∅
   unit_valid := valid_iff.mpr ⟨Heap.valid_empty, valid_set,
     show setInfinite ((⊤ : CoPset) \ ∅) by rw [diff_empty]; exact top_infinite,
     fun _ => .inr (mem_empty _)⟩
-  unit_left_id {x} := OFE.eq_dist.mpr <| by
+  unit_left_id {x} := OFE.eq_dist_2 <| by
     exact fun n => ⟨(Algebra.MonoidOps.op_left_id : (∅ : H A) • x.data = x.data).dist,
       (pcore_op_left' rfl).dist⟩
-  pcore_unit := eq_dist.mpr <| by exact fun n => ⟨Heap.core_empty.dist, .rfl⟩
+  pcore_unit := eq_dist_2 <| by exact fun n => ⟨Heap.core_empty.dist, .rfl⟩
 
 @[simp]
 theorem op_data (x y : DynReservationMap A H) : (x • y).data = x.data • y.data := rfl
@@ -349,7 +349,7 @@ theorem included {x y : DynReservationMap A H} :
   refine ⟨fun ⟨z, hz⟩ => ⟨⟨z.data, congrArg (·.data) hz⟩,
     ⟨z.token, congrArg (·.token) hz⟩⟩, ?_⟩
   exact fun ⟨⟨z₁, hz₁⟩, ⟨z₂, hz₂⟩⟩ =>
-    ⟨mk z₁ z₂, eq_dist.mpr (by exact fun n => ⟨hz₁.dist, hz₂.dist⟩)⟩
+    ⟨mk z₁ z₂, eq_dist_2 (by exact fun n => ⟨hz₁.dist, hz₂.dist⟩)⟩
 
 @[rocq_alias dyn_reservation_map_data_proj_validN]
 theorem data_proj_validN {n} {x : DynReservationMap A H} (h : ✓{n} x) : ✓{n} x.data :=
@@ -376,7 +376,7 @@ theorem split_validN {x : DynReservationMap A H} (vx : ✓{n} x) :
   | error => exact (not_validN_invalid (S := CoPset) (validN_token_of_validN vx)).elim
   | valid t =>
     refine ⟨xd, t, ?_⟩
-    apply OFE.eq_dist.mpr
+    refine OFE.eq_dist_2 ?_
     refine fun m => ⟨?_, ?_⟩
     · exact (show xd = xd • (∅ : H A) from Algebra.MonoidOps.op_right_id.symm).dist
     · exact (pcore_op_left' rfl).symm.dist
@@ -405,7 +405,7 @@ theorem valid_token {e : CoPset} :
 @[rocq_alias dyn_reservation_map_data_op]
 theorem mkData_op k (a b : A) :
     mkData (H := H) k (a • b) = mkData (H := H) k a • mkData k b := by
-  apply OFE.eq_dist.mpr
+  refine OFE.eq_dist_2 ?_
   refine fun _ => ⟨(fun i => Dist.of_eq (Heap.singleton_op_singleton i).symm),
     Dist.of_eq (pcore_op_right_L rfl).symm⟩
 
@@ -424,7 +424,7 @@ instance {d : IsOp.Direction} {a b₁ b₂ : A} [hv : IsOp d a b₁ b₂] :
 @[rocq_alias dyn_reservation_map_token_union]
 theorem token_union {e₁ e₂} (he : e₁ ## e₂) :
     mkToken (H := H) (A := A) (e₁ ∪ e₂) = mkToken (H := H) (A := A) e₁ • mkToken e₂ := by
-  apply OFE.eq_dist.mpr
+  refine OFE.eq_dist_2 ?_
   refine fun n => ⟨fun i => ?_, ?_⟩
   · simpa only [mkToken, get?_empty, op_data, Heap.get?_op] using .rfl
   · simp [mkToken, CMRA.op, he]
@@ -527,7 +527,7 @@ theorem alloc {e k} {a : A} (hke : k ∈ e) (va : ✓ a) :
           validN_op_left ((assoc' (α := DynReservationMap A H)) ▸ vedt))
     change ✓{n} mkData k a • z
     rw [ze, assoc', ← (show mk ({[k := a]} • d) ∅ = mkData k a • mk d ∅ from
-      OFE.eq_dist.mpr <| by exact fun n => ⟨.rfl, Dist.of_eq (pcore_op_right_L rfl).symm⟩)]
+      OFE.eq_dist_2 <| by exact fun n => ⟨.rfl, Dist.of_eq (pcore_op_right_L rfl).symm⟩)]
     refine validN_data_op_token ?_ (infinite_data_op_token vdt) ?_
     · refine validN_data_of_validN <| valid_mkData_op_data_of_valid_op? ?_ ?_
       · exact validN_data_of_validN
@@ -560,7 +560,7 @@ theorem updateP {P} {Q : DynReservationMap A H → Prop} k a (ap : a ~~>: P)
     refine ⟨mkData k y, apq y py, ?_⟩
     simp only [CMRA.op?] at vaz ⊢
     rw [ze, assoc', ← (show mk ({[k := y]} • d) ∅ = mkData k y • mk d ∅ from
-      OFE.eq_dist.mpr <| by exact fun n => ⟨.rfl, Dist.of_eq (pcore_op_right_L rfl).symm⟩)]
+      OFE.eq_dist_2 <| by exact fun n => ⟨.rfl, Dist.of_eq (pcore_op_right_L rfl).symm⟩)]
     refine validN_data_op_token ?_ (infinite_data_op_token vdt) ?_
     · exact validN_data_of_validN <| valid_mkData_op_data_of_valid_op?
         (validN_data_of_validN (validN_op_left vdt)) vy
@@ -605,7 +605,7 @@ theorem reserve (Q : DynReservationMap A H → Prop)
         ∀ i, get? mf i = none ∨ i ∉ Ef := by
     match mz with
     | none =>
-      exact ⟨∅, ∅, OFE.eq_dist.mpr (by exact fun n =>
+      exact ⟨∅, ∅, OFE.eq_dist_2 (by exact fun n =>
         ⟨(CMRA.unit_left_id_dist (∅ : H A)).symm,
           Dist.of_eq (pcore_op_left_L rfl).symm⟩), Heap.valid_empty.validN, top_infinite,
         fun i => .inl (get?_empty i)⟩

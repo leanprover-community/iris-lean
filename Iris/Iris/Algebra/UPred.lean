@@ -87,7 +87,7 @@ instance : OFE (UPred M) where
     refl _ _ _ _ _ := .rfl
     symm H _ _ A B := (H _ _ A B).symm
     trans H1 H2 _ _ A B := (H1 _ _ A B).trans (H2 _ _ A B) }
-  eq_dist {P Q} := by
+  eq_dist' {P Q} := by
     refine ⟨fun h _ _ _ _ _ => h ▸ Iff.rfl, fun h => ?_⟩
     ext n e
     exact h n n e.val (Nat.le_refl n) e.property
@@ -148,11 +148,11 @@ instance [URFunctor F] : COFE.OFunctor (UPredOF F) where
   map_ne.ne _ _ _ Hx _ _ Hy _ _ z2 Hn _ := by
     simp only [uPred_map]
     exact uPred_ne <| URFunctor.map_ne.ne (Hy.le Hn) (Hx.le Hn) z2
-  map_id x := OFE.eq_dist.mpr <| by
+  map_id x := OFE.eq_dist_2 <| by
     intro _ _ z _ _
     simp only [uPred_map]
     simp only [URFunctor.map_id]
-  map_comp f g f' g' x := OFE.eq_dist.mpr <| by
+  map_comp f g f' g' x := OFE.eq_dist_2 <| by
     intro _ _ H _ _
     simp only [uPred_map]
     simp only [URFunctor.map_comp]

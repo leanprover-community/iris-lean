@@ -94,21 +94,28 @@ private def iCasesEmptyConj {prop : Q(Type u)} (bi : Q(BI $prop))
   continuing with the body `B`.
 -/
 private def iCasesExists {prop : Q(Type u)} {bi : Q(BI $prop)} (pat : TSyntax `rcasesPat)
-    (p : Q(Bool)) (P A goal : Q($prop))
-    (k : (B : Q($prop)) → ProofModeM Q($P ∗ □?$p $B ⊢ $goal)) :
+    (p : Q(Bool)) {P : Q($prop)} (hyps : Hyps bi P) (A goal : Q($prop))
+    (k : ∀ {P' : Q($prop)}, Hyps bi P' → (B goal' : Q($prop)) →
+      ProofModeM Q($P' ∗ □?$p $B ⊢ $goal')) :
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) := do
   let v ← mkFreshLevelMVar
   let α : Q(Sort v) ← mkFreshExprMVarQ q(Sort v)
   let Φ : Q($α → $prop) ← mkFreshExprMVarQ q($α → $prop)
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoExists $A $Φ)
   | throwIPMError "{A} is not an existential quantifier"
-  let pf : Q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) ←
-    iPureCases q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) pat fun g => do
+  let pf : Q(∀ x, $hyps.tm ∗ □?$p $Φ x ⊢ $goal) ←
+    iPureCases q(∀ x, $hyps.tm ∗ □?$p $Φ x ⊢ $goal) pat fun g => do
+      let newTm : Q($prop) ← mkFreshExprMVarQ q($prop)
       let B : Q($prop) ← mkFreshExprMVarQ q($prop)
-      -- TODO: Is this the right way to check this?
-      unless ← withTransparency .none <| isDefEq (← g.getType) q($P ∗ □?$p $B ⊢ $goal) do
-        throwIPMError "unexpected goal {goal} after intro pattern"
-      k (Expr.headBeta (← instantiateMVars B))
+      let goal' : Q($prop) ← mkFreshExprMVarQ q($prop)
+      unless ← withTransparency .none <|
+          isDefEq (← g.getType) q($newTm ∗ □?$p $B ⊢ $goal') do
+        throwIPMError "unexpected goal {← g.getType} after intro pattern"
+      let tm' ← instantiateMVars newTm
+      let some ⟨_, hyps'⟩ := parseHyps? bi tm'
+        | throwIPMError "unable to parse the Iris context {tm'}"
+      return (← k hyps' (Expr.headBeta (← instantiateMVars B)) (← instantiateMVars goal'))
+  have : $hyps.tm =Q $P := ⟨⟩
   return q(exists_elim' $pf)
 
 /-- Destruct a conjunction hypothesis `A` and continue with only its left or right component. -/
@@ -262,7 +269,8 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
     for pure assertions that are not explicit existentials.
   -/
   | .conjunction (⟨_, .pure arg⟩ :: args) =>
-    iCasesExists arg p P A goal (iCasesCore hyps goal ⟨pat.ref, (.conjunction args)⟩ p · k)
+    iCasesExists arg p hyps A goal fun hyps' B goal' =>
+      iCasesCore hyps' goal' ⟨pat.ref, (.conjunction args)⟩ p B k
 
   -- A conjunction of multiple elements (`⟨…, …⟩`)
   | .conjunction (arg :: args) =>
