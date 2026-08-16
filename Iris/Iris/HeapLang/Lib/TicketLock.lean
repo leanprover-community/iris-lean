@@ -169,10 +169,9 @@ theorem isLock_iff (γ : GName) (lk : Val) (R₁ R₂ : IProp GF) :
 
 @[rocq_alias heap_lang.ticket_lock.newlock_spec_delay_init]
 theorem newlock_spec :
-    ⊢ □ ∀ (Φ : Val → IProp GF),
-      (∀ (v : Val) (γ : GName), (∀ R E, R ={E}=∗ isLock γ v R) -∗ Φ v) -∗
-      WP hl(&newlock #()) {{ Φ }} := by
-  iintro !> %Φ Hcont
+    {{ True }} hl(&newlock #())
+    {{ v γ, RET v; ∀ R E, R ={E}=∗ isLock (GF := GF) γ v R }} := by
+  iintro %Φ - Hcont
   wp_rec
   wp_alloc ln with Hln
   wp_alloc lo with Hlo
@@ -233,9 +232,8 @@ theorem waitLoop_spec (γ : GName) (lk : Val) (x : Nat) (R : IProp GF) :
 
 @[rocq_alias heap_lang.ticket_lock.acquire_spec]
 theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
-    ⊢ □ ∀ (Φ : Val → IProp GF),
-      isLock γ lk R -∗ (locked γ ∗ R -∗ Φ hl_val(#())) -∗ WP hl(&acquire &lk) {{ Φ }} := by
-  iintro !> %Φ #Hlock Hcont
+    {{ isLock γ lk R }} hl(&acquire &lk) {{ RET hl_val(#()); locked γ ∗ R }} := by
+  iintro %Φ #Hlock Hcont
   unfold isLock lockInv
   icases Hlock with ⟨%lo, %ln, %Heq, #Hinv⟩
   subst Heq
@@ -277,11 +275,9 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
 
 @[rocq_alias heap_lang.ticket_lock.release_spec]
 theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
-    ⊢ □ ∀ (Φ : Val → IProp GF),
-      isLock γ lk R ∗ locked γ ∗ R -∗ (True -∗ Φ hl_val(#())) -∗
-      WP hl(&release &lk) {{ Φ }} := by
+    {{ isLock γ lk R ∗ locked γ ∗ R }} hl(&release &lk) {{ RET hl_val(#()); True }} := by
   unfold isLock locked lockInv
-  iintro !> %Φ ⟨⟨%lo, %ln, %Heq, #Hinv⟩, ⟨%o, Howner⟩, HR⟩ Hcont
+  iintro %Φ ⟨⟨%lo, %ln, %Heq, #Hinv⟩, ⟨%o, Howner⟩, HR⟩ Hcont
   subst Heq
   wp_rec
   wp_pures
