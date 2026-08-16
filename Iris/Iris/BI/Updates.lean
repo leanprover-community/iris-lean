@@ -790,18 +790,20 @@ theorem sForall_eq_forall {Φ : α → PROP} :
   ⟨forall_intro fun a => sForall_elim ⟨a, rfl⟩,
    sForall_intro fun _ ⟨a, hp⟩ => hp ▸ forall_elim a⟩
 
+@[rocq_alias fupd_si_pure_forall_2]
+theorem fupd_siPure_forall_2 {E : CoPset} {A : Sort _} {Φi : A → SiProp} :
+    (∀ x, |={E}=> <si_pure> Φi x) ⊢@{PROP} |={E}=> ∀ x, <si_pure> Φi x := calc
+  _ ⊢ ∀ q, ⌜∃ x, q = Φi x⌝ → |={E}=> <si_pure> q :=
+      forall_intro fun _ => imp_intro_swap <| pure_elim_left fun ⟨x, hx⟩ => hx ▸ forall_elim x
+  _ ⊢@{PROP} |={E}=> <si_pure> (sForall fun q => ∃ x, q = Φi x) :=
+      BIFUpdateSbi.fupd_si_pure_sForall_2 E _
+  _ ⊢ |={E}=> ∀ x, <si_pure> Φi x :=
+      mono <| forall_intro fun x => siPure_mono (sForall_elim ⟨x, rfl⟩)
+
 @[rocq_alias fupd_plainly_forall_2]
 theorem fupd_plainly_forall_2 [BIAffine PROP] {E : CoPset} {Φ : α → PROP} :
     (∀ a, |={E}=> ■ Φ a) ⊢ |={E}=> ∀ a, Φ a :=
-  let Ψi : SiProp → Prop := fun q => ∃ a, q = iprop(<si_emp_valid> (Φ a))
-  have h : (∀ a, |={E}=> ■ Φ a) ⊢ ∀ q, ⌜Ψi q⌝ → |={E}=> <si_pure> q :=
-    forall_intro fun _ => imp_intro <| pure_elim_right fun ⟨a, hq⟩ => hq ▸ forall_elim a
-  calc
-    _ ⊢ ∀ q, ⌜Ψi q⌝ → |={E}=> <si_pure> q := h
-    _ ⊢ |={E}=> <si_pure> sForall Ψi      := BIFUpdateSbi.fupd_si_pure_sForall_2 E Ψi
-    _ ⊢ |={E}=> ∀ a, Φ a                  :=
-        mono <| forall_intro fun a =>
-          (siPure_mono (sForall_elim ⟨a, rfl⟩)).trans siPure_siEmpValid_elim
+  fupd_siPure_forall_2.trans <| mono <| forall_mono fun _ => siPure_siEmpValid_elim
 
 @[rocq_alias fupd_plain_forall_2]
 theorem fupd_plain_forall_2 [BIAffine PROP] {E : CoPset} {Φ : α → PROP} [∀ a, Plain (Φ a)] :
