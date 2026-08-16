@@ -8,9 +8,9 @@ module
 public import Iris.HeapLang.Lib.Par
 
 @[expose] public section
-namespace Iris.Tests.HeapLang.Par
+namespace IrisTest.HeapLang.Par
 
-open Iris.HeapLang BI Iris ProgramLogic Spawn Iris.HeapLang.Par
+open Iris HeapLang BI Iris ProgramLogic Spawn Iris.HeapLang.Par
 
 -- Regression test for
 -- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Porting.20iris-tutorial/near/613886178
@@ -58,5 +58,5 @@ example {hlc} {GF : BundledGFunctors} [HeapLangGS hlc GF] [SpawnG GF] :
     iframe
     itrivial
 
-end Iris.Tests.HeapLang.Par
+end IrisTest.HeapLang.Par
 end

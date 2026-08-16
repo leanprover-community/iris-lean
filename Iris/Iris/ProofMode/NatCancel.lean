@@ -5,7 +5,7 @@ Authors: Alvin Tang
 -/
 module
 
-public meta import Iris.ProofMode.SynthInstance
+public import Iris.ProofMode.SynthInstance
 
 @[expose] public section
 

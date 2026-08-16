@@ -7,11 +7,6 @@ module
 
 public import Iris.ProofMode.ClassesMake
 public meta import Iris.ProofMode.Patterns.SelPattern
-public meta import Iris.ProofMode.Tactics.Basic
-public meta import Iris.ProofMode.Tactics.Assumption
-public meta import Iris.ProofMode.Tactics.Cases
-public meta import Iris.ProofMode.Patterns.CasesPattern
-public meta import Lean.Meta.Tactic.TryThis
 
 namespace Iris.ProofMode
 

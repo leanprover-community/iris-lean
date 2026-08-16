@@ -20,19 +20,27 @@ open BI Iris ProgramLogic
 
 namespace SpinLock
 
+@[rocq_alias heap_lang.spin_lock.newlock]
 def newlock : Val := hl_val(
   λ _, ref(#false))
+@[rocq_alias heap_lang.try_acquire]
 def tryAcquire : Val := hl_val(
   λ l, snd(cmpXchg(l, #false, #true)))
+@[rocq_alias heap_lang.spin_lock.acquire]
 def acquire : Val := hl_val(
   rec acquire l :=
     if (&tryAcquire l)
       then #()
       else acquire l)
+@[rocq_alias heap_lang.spin_lock.release]
 def release : Val := hl_val(
   λ l, l ← #false)
 
+@[rocq_alias heap_lang.spin_lockG]
 abbrev SpinLockG (GF : BundledGFunctors) := TokenG GF
+
+#rocq_ignore heap_lang.«spin_lockΣ» "Superseded by the `SpinLockG` typeclass on `BundledGFunctors`."
+#rocq_ignore heap_lang.«subG_spin_lockΣ» "Superseded by Lean's direct `ElemG` typeclass synthesis."
 
 def spinlockN : Namespace := ndot nroot "spinlock"
 
@@ -40,11 +48,14 @@ section Predicates
 
 variable [HeapLangGS hlc GF] [SpinLockG GF]
 
+@[rocq_alias heap_lang.spin_lock.locked]
 def locked (γ : GName) : IProp GF := token γ
 
+@[rocq_alias heap_lang.spin_lock.lock_inv]
 def lockInv (γ : GName) (l : Loc) (R : IProp GF) : IProp GF := iprop%
   ∃ b : Bool, (l ↦ some hl_val(#b)) ∗ (if b then True else locked γ ∗ R)
 
+@[rocq_alias heap_lang.spin_lock.is_lock]
 def isLock (γ : GName) (lk : Val) (R : IProp GF) : IProp GF := iprop%
   ∃ l : Loc, ⌜lk = Val.lit (.loc l)⌝ ∧ inv spinlockN (lockInv γ l R)
 
@@ -54,9 +65,11 @@ instance instIsLockPersistent (γ : GName) (lk : Val) (R : IProp GF) : Persisten
 instance instLockedTimeless (γ : GName) : Timeless (locked (GF := GF) γ) := by
   unfold locked; infer_instance
 
+@[rocq_alias heap_lang.spin_lock.locked_exclusive]
 theorem instLockedExclusive (γ : GName) : locked γ ∗ locked γ ⊢@{IProp GF} False :=
   token_exclusive γ
 
+@[rocq_alias heap_lang.spin_lock.is_lock_iff]
 theorem is_lock_iff (γ : GName) (lk : Val) (R₁ R₂ : IProp GF) :
     isLock γ lk R₁ ⊢ (▷ □ (R₁ ∗-∗ R₂)) -∗ isLock γ lk R₂ := by
   unfold isLock lockInv
@@ -83,6 +96,7 @@ section Specs
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF] [SpinLockG GF]
 
+@[rocq_alias heap_lang.spin_lock.newlock_spec_delay_init]
 theorem newlock_spec :
   ⊢ □ ∀ (Φ : Val → IProp GF),
     (∀ (v : Val) (γ : GName), (∀ R E, R ={E}=∗ isLock γ v R) -∗ Φ v) -∗
@@ -104,6 +118,7 @@ theorem newlock_spec :
   iframe
   itrivial
 
+@[rocq_alias heap_lang.try_acquire_spec]
 theorem try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
     ⊢ □ ∀ (Φ : Val → IProp GF),
     isLock γ lk R -∗
@@ -115,38 +130,30 @@ theorem try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   icases Hlock with ⟨%l, %Heq, #Hinv⟩
   subst Heq
   wp_bind cmpXchg(_,_,_)
-  iapply wp_atomic
-  imod inv_acc $$ Hinv with ⟨G1, G2⟩
-  · simp
+  iinv Hinv with G1
   unfold lockInv
-  imodintro
   icases G1 with ⟨%b, Hpt, Hcond⟩
   cases b
   · simp only [Bool.false_eq_true, ↓reduceIte]
     wp_cmpxchg_suc
-    imod G2 $$ [Hpt]
-    · iexists true
-      simp only [↓reduceIte]
-      iframe
-    · imodintro
-      wp_pure
-      imodintro
-      iapply Hcont $$ [Hcond]
-      simp only [↓reduceIte]
-      iframe
+    imodintro
+    isplitl [Hpt]
+    · iframe; simp; itrivial
+    wp_pures
+    imodintro
+    iapply Hcont $$ [Hcond]
+    simp only [↓reduceIte]; iframe
   · simp only [↓reduceIte]
     wp_cmpxchg_fail
-    imod G2 $$ [Hpt]
-    · iexists true
-      simp only [↓reduceIte]
-      iframe
-    · imodintro
-      wp_pure
-      imodintro
-      iapply Hcont
-      simp only [Bool.false_eq_true, ↓reduceIte]
-      itrivial
+    imodintro
+    isplitl [Hpt]
+    · iframe; simp; itrivial
+    wp_pures
+    imodintro
+    iapply Hcont $$ [Hcond]
+    simp only [Bool.false_eq_true, ↓reduceIte]; itrivial
 
+@[rocq_alias heap_lang.spin_lock.acquire_spec]
 theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   ⊢ □ ∀ (Φ : Val → IProp GF),
     isLock γ lk R -∗
@@ -168,6 +175,7 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
     simp only [if_pos]
     iframe
 
+@[rocq_alias heap_lang.spin_lock.release_spec]
 theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
   ⊢ □ ∀ (Φ : Val → IProp GF),
     isLock γ lk R ∗ (locked γ ∗ R) -∗
@@ -178,25 +186,17 @@ theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
   unfold isLock
   icases Hlock with ⟨%l, %Heq, #Hinv⟩
   subst Heq
-  iapply wp_atomic
-  imod inv_acc $$ Hinv with ⟨G1, G2⟩
-  · simp
+  iinv Hinv with G1
   unfold lockInv
-  imodintro
   icases G1 with ⟨%b, Hpt, Hcond⟩
   wp_store
-  imod G2 $$ [- Hcont]
-  · inext
-    iexists false
-    simp only [Bool.false_eq_true, ↓reduceIte]
-    iframe
-  · imodintro
-    iapply Hcont
-    itrivial
+  imodintro; iframe Hpt
+  simp only [Bool.false_eq_true, ↓reduceIte]; iframe
+  iapply Hcont; itrivial
 
 end Specs
 
-@[implicit_reducible]
+@[implicit_reducible, rocq_alias heap_lang.spin_lock]
 def instLock [HeapLangGS hlc GF] : Lock GF where
   newlock := newlock
   acquire := acquire

@@ -10,7 +10,6 @@ public import Iris.BI.Extensions
 public import Iris.BI.Classes
 public import Iris.BI.DerivedLaws
 public import Iris.Algebra.CMRA
-public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -115,7 +114,7 @@ instance : OFE SiProp where
   dist_eqv.refl _ _ _ := Iff.rfl
   dist_eqv.symm h _ hle := (h hle).symm
   dist_eqv.trans h₁ h₂ _ hle := (h₁ hle).trans (h₂ hle)
-  eq_dist {P Q} := by
+  eq_dist' {P Q} := by
     refine ⟨?_, fun h => ?_⟩
     · rintro rfl _ _ _; exact Iff.rfl
     · obtain ⟨ph, hp⟩ := P; obtain ⟨qh, _⟩ := Q
@@ -439,7 +438,7 @@ theorem pure_soundness {φ : Prop} (h : True ⊢@{SiProp} ⌜φ⌝) : φ := h 0 
 
 @[rocq_alias siProp_primitive.internal_eq_soundness]
 theorem internalEq_soundness [OFE A] {x y : A} (h : True ⊢@{SiProp} internalEq x y) : x = y :=
-  OFE.eq_dist.mpr fun n => h n trivial
+  OFE.eq_dist_2 fun n => h n trivial
 
 @[rocq_alias siProp_primitive.later_soundness]
 theorem later_soundness {P : SiProp} (h : True ⊢ ▷ P) : True ⊢ P := fun n _ => h (n + 1) trivial
