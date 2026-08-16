@@ -590,9 +590,7 @@ instance iOwn_timeless {a : F.ap (IProp GF)} [OFE.DiscreteE a] : BI.Timeless (iO
 theorem later_iOwn {a : F.ap (IProp GF)} : ▷ iOwn γ a ⊢ ◇ ∃ b, iOwn γ b ∧ ▷ (a ≡ b) := by
   unfold iOwn
   iintro Hlater
-  -- one step ago the resource was some `r` with `iSingleton F γ a ≡ r`
   icases UPred.later_ownM _ $$ Hlater with ⟨%r, Hown, Heq⟩
-  -- so `r` is itself a singleton at `γ`, holding some `b` with `▷ (a ≡ b)`
   imod (later_mono internalEq.symm).trans later_internalEq_iSingleton $$ Heq with ⟨%b, %r', Hr, Hab⟩
   irewrite [Hr] at Hown
   imodintro
