@@ -25,7 +25,7 @@ namespace Counter
 def newcounter : Val := hl_val%
   λ _, ref(#0)
 
-@[rocq_alias heap_lang.incr]
+@[rocq_alias heap_lang.counter.incr]
 def incr : Val := hl_val%
   rec incr l :=
     let n := !l;
@@ -46,15 +46,15 @@ while the invariant is open as a premise. -/
 
 section CounterProof
 
-variable {GF : BundledGFunctors} [HeapLangGS hlc GF] (N : Namespace)
+variable {GF : BundledGFunctors} [HeapLangGS hlc GF]
 
 /-- The shared counter invariant: the location holds `n`, tracked by the ghost state `A n`. -/
-abbrev counterInv (A : Nat → IProp GF) (l : Loc) : IProp GF := iprop(
-  ∃ n : Nat, A n ∗ (l ↦ some hl_val(#n)))
+abbrev counterInv (A : Nat → IProp GF) (l : Loc) : IProp GF := iprop%
+  ∃ n : Nat, A n ∗ l ↦ some hl_val(#n)
 
-theorem incr_spec (A : Nat → IProp GF) (P Q : IProp GF) (l : Loc)
+private theorem incr_spec {A : Nat → IProp GF} (P : IProp GF) (Q : IProp GF) (l : Loc)
     (hupd : ∀ c : Nat, iprop(A c ∗ P) ⊢ iprop(|==> (A (c + 1) ∗ Q))) :
-    {{ inv N (counterInv A l) ∗ P }} hl(&incr #l) {{ RET hl_val(#()); Q }} := by
+    {{ inv N (counterInv A l) ∧ P }} hl(&incr #l) {{ RET hl_val(#()); Q }} := by
   iintro %Φ ⟨#Hinv, HP⟩ Hφ
   iloeb as IH
   wp_rec
@@ -74,16 +74,16 @@ theorem incr_spec (A : Nat → IProp GF) (P Q : IProp GF) (l : Loc)
     · inext; iexists (c + 1); rw [show ((c + 1 : Nat) : Int) = 1 + (c : Int) by omega]; iframe
     imodintro
     wp_pures
-    iapply Hφ $$ [> $HQ]
+    iapply Hφ $$ HQ
   · imod Hclose $$ [HA Hl] with -
     · inext; iexists c'; iframe
     imodintro
     wp_pures
-    iapply IH $$ [$HP] [$Hφ]
+    iapply IH $$ HP Hφ
 
-theorem read_spec (A : Nat → IProp GF) (P : IProp GF) (Ψ : Nat → IProp GF) (l : Loc)
+private theorem read_spec {A : Nat → IProp GF} (P : IProp GF) (Ψ : Nat → IProp GF) (l : Loc)
     (hupd : ∀ c : Nat, iprop(A c ∗ P) ⊢ iprop(|==> (A c ∗ Ψ c))) :
-    {{ inv N (counterInv A l) ∗ P }} hl(&read #l) {{ c, RET hl_val(#c); Ψ c }} := by
+    {{ inv N (counterInv A l) ∧ P }} hl(&read #l) {{ c, RET hl_val(#c); Ψ c }} := by
   iintro %Φ ⟨#Hinv, HP⟩ Hφ
   wp_lam
   iinv Hinv with ⟨%c, HA, Hl⟩ Hclose
@@ -92,7 +92,7 @@ theorem read_spec (A : Nat → IProp GF) (P : IProp GF) (Ψ : Nat → IProp GF) 
   imod Hclose $$ [HA Hl] with -
   · inext; iexists c; iframe
   imodintro
-  iapply Hφ $$ [$HΨ]
+  iapply Hφ $$ HΨ
 
 end CounterProof
 
@@ -119,12 +119,11 @@ abbrev mcounterAuth (γ : GName) (n : Nat) : IProp GF := iOwn (F := MCounterRF) 
 abbrev mcounterFrag (γ : GName) (n : Nat) : IProp GF := iOwn (F := MCounterRF) γ (◯ MaxNat.ofNat n)
 
 @[rocq_alias heap_lang.mcounter_inv]
-abbrev mcounterInv (γ : GName) (l : Loc) : IProp GF := iprop(
-  ∃ n : Nat, mcounterAuth γ n ∗ (l ↦ some hl_val(#n)))
+abbrev mcounterInv (γ : GName) (l : Loc) : IProp GF := counterInv (mcounterAuth γ) l
 
 @[reducible, rocq_alias heap_lang.mcounter]
-def mcounter (l : Loc) (n : Nat) : IProp GF := iprop(
-  ∃ γ, inv N (mcounterInv γ l) ∧ mcounterFrag γ n)
+def mcounter (l : Loc) (n : Nat) : IProp GF := iprop%
+  ∃ γ, inv N (mcounterInv γ l) ∧ mcounterFrag γ n
 
 @[rocq_alias heap_lang.mcounter_persistent]
 instance mcounter_persistent (l : Loc) (n : Nat) : Persistent (mcounter (GF := GF) N l n) :=
@@ -139,49 +138,30 @@ theorem newcounter_mono_spec :
   imod iOwn_alloc (F := MCounterRF)
     (((● MaxNat.ofNat 0) • (◯ MaxNat.ofNat 0)) : Auth MaxNat) with ⟨%γ, Hγ, Hγ'⟩
   · exact auth_both_valid_2 trivial (MaxNat.inc_iff.mpr (by simp))
-  imod inv_alloc N ⊤ (mcounterInv γ l) $$ [Hl Hγ] with #Hinv
+  imod inv_alloc N _ (mcounterInv γ l) $$ [Hl Hγ] with #Hinv
   · iexists 0; iframe
   imodintro
   iapply Hφ
   iexists γ
   iframe Hinv Hγ'
 
-/-- Bumping the counter: the authoritative element goes from `c` to `c + 1`, and the caller's
-fragment from `n` to `n + 1`. -/
-theorem mcounter_incr_update (γ : GName) (n c : Nat) :
-    iprop(mcounterAuth (GF := GF) γ c ∗ mcounterFrag γ n) ⊢
-      iprop(|==> (mcounterAuth γ (c + 1) ∗ mcounterFrag γ (n + 1))) := by
-  iintro ⟨Hγ, Hγf⟩
-  icombine Hγ Hγf gives %Hv
-  have hle : n ≤ c := by have := (auth_both_valid_discrete.mp Hv).1; grind [MaxNat.inc_iff]
-  imod iOwn_update_op
-      (a' := (((● MaxNat.ofNat (c + 1)) • (◯ MaxNat.ofNat (c + 1))) : Auth MaxNat)) $$
-      [$Hγ $Hγf] with ⟨Hγ, Hγf⟩
-  · exact auth_update (MaxNat.local_update (by grind))
-  imodintro
-  iframe Hγ
-  iapply iOwn_mono $$ Hγf
-  exact frag_inc_of_inc (MaxNat.inc_iff.mpr (by simp only [MaxNat.le_toNat]; omega))
-
-/-- Reading the counter: the fragment is raised to the observed value `c`, which is at least `j`. -/
-theorem mcounter_read_update (γ : GName) (j c : Nat) :
-    iprop(mcounterAuth (GF := GF) γ c ∗ mcounterFrag γ j) ⊢
-      iprop(|==> (mcounterAuth γ c ∗ (⌜j ≤ c⌝ ∗ mcounterFrag γ c))) := by
-  iintro ⟨Hγ, Hγf⟩
-  icombine Hγ Hγf gives %Hv
-  have hle : j ≤ c := by have := (auth_both_valid_discrete.mp Hv).1; grind [MaxNat.inc_iff]
-  imod iOwn_update_op
-      (a' := (((● MaxNat.ofNat c) • (◯ MaxNat.ofNat c)) : Auth MaxNat)) $$ [$Hγ $Hγf] with ⟨Hγ, Hγf⟩
-  · exact auth_update (MaxNat.local_update (by simp))
-  imodintro
-  iframe %hle Hγ Hγf
-
 @[rocq_alias heap_lang.incr_mono_spec]
 theorem incr_mono_spec (l : Loc) (n : Nat) :
     {{ mcounter (GF := GF) N l n }} hl(&incr #l) {{ RET hl_val(#()); mcounter N l (n + 1) }} := by
   iintro %Φ Hc Hφ
   icases Hc with ⟨%γ, #Hinv, Hγf⟩
-  iapply incr_spec N _ _ _ l (mcounter_incr_update γ n) $$ [$Hinv $Hγf] [Hφ]
+  iapply incr_spec (mcounterFrag γ n) (mcounterFrag γ (n + 1)) l $$ [$Hinv $Hγf] [Hφ]
+  · iintro %c ⟨Hγ, Hγf⟩
+    icombine Hγ Hγf gives %Hv
+    imod iOwn_update_op
+      (a' := (((● MaxNat.ofNat (c + 1)) • (◯ MaxNat.ofNat (c + 1))) : Auth MaxNat)) $$
+      [$Hγ $Hγf] with ⟨Hγ, Hγf⟩
+    · exact auth_update (MaxNat.local_update (by grind))
+    imodintro
+    iframe Hγ
+    iapply iOwn_mono $$ Hγf
+    refine frag_inc_of_inc (MaxNat.inc_iff.mpr ?_)
+    grind [auth_both_valid_discrete.mp Hv, MaxNat.inc_iff]
   iintro !> Hγf
   iapply Hφ
   iexists γ
@@ -193,7 +173,16 @@ theorem read_mono_spec (l : Loc) (j : Nat) :
     {{ i, RET hl_val(#i); ⌜j ≤ i⌝ ∧ mcounter N l i }} := by
   iintro %Φ Hc Hφ
   icases Hc with ⟨%γ, #Hinv, Hγf⟩
-  iapply read_spec N _ _ _ l (mcounter_read_update γ j) $$ [$Hinv $Hγf] [Hφ]
+  iapply read_spec (mcounterFrag γ j) (fun c => iprop% ⌜j ≤ c⌝ ∗ mcounterFrag γ c) l $$ [$Hinv $Hγf] [Hφ]
+  · iintro %c ⟨Hγ, Hγf⟩
+    icombine Hγ Hγf gives %Hv
+    imod iOwn_update_op
+      (a' := (((● MaxNat.ofNat c) • (◯ MaxNat.ofNat c)) : Auth MaxNat)) $$ [$Hγ $Hγf] with ⟨Hγ, Hγf⟩
+    · exact auth_update (MaxNat.local_update (by simp))
+    imodintro
+    iframe Hγ Hγf
+    ipureintro
+    grind [auth_both_valid_discrete.mp Hv, MaxNat.inc_iff]
   iintro !> %c ⟨%hle, Hγf⟩
   iapply Hφ
   iframe %hle
@@ -222,8 +211,7 @@ variable {GF : BundledGFunctors} [HeapLangGS hlc GF] [CCounterG GF] (N : Namespa
 abbrev ccounterAuth (γ : GName) (n : Nat) : IProp GF := iOwn (F := CCounterRF) γ (●F n)
 
 @[rocq_alias heap_lang.ccounter_inv]
-abbrev ccounterInv (γ : GName) (l : Loc) : IProp GF := iprop(
-  ∃ n : Nat, ccounterAuth γ n ∗ (l ↦ some hl_val(#n)))
+abbrev ccounterInv (γ : GName) (l : Loc) : IProp GF := counterInv (ccounterAuth γ) l
 
 @[rocq_alias heap_lang.ccounter_ctx]
 abbrev ccounterCtx (γ : GName) (l : Loc) : IProp GF := inv N (ccounterInv γ l)
@@ -252,52 +240,30 @@ theorem newcounter_contrib_spec :
   iapply Hφ
   iframe Hinv Hγ'
 
-/-- Bumping the counter, with the caller holding the `q`-fraction of the contributions. -/
-theorem ccounter_incr_update (γ : GName) (q : Qp) (n c : Nat) :
-    iprop(ccounterAuth (GF := GF) γ c ∗ ccounter γ q n) ⊢
-      iprop(|==> (ccounterAuth γ (c + 1) ∗ ccounter γ q (n + 1))) := by
-  iintro ⟨Hγ, Hγf⟩
-  imod iOwn_update_op (a' := CMRA.op (●F (c + 1)) (◯F{q} (n + 1))) $$ [$Hγ $Hγf] with ⟨Hγ, Hγf⟩
-  · exact FracAuth.update (CommMonoidLike.leftCancelAdd_local_update
-      (by show c + (n + 1) = c + 1 + n; omega))
-  imodintro
-  iframe
-
-/-- The caller's contributions are a lower bound on the counter. -/
-theorem ccounter_read_le (γ : GName) (q : Qp) (n c : Nat) :
-    iprop(ccounterAuth (GF := GF) γ c ∗ ccounter γ q n) ⊢
-      iprop(|==> (ccounterAuth γ c ∗ (⌜n ≤ c⌝ ∗ ccounter γ q n))) := by
-  iintro ⟨Hγ, Hγf⟩
-  icombine Hγ Hγf gives %Hv
-  have hle : n ≤ c := by
-    have ⟨z, hz⟩ := CommMonoidLike.included_iff.mp (FracAuth.included_total Hv)
-    omega
-  imodintro
-  iframe %hle Hγ Hγf
-
-/-- A caller holding *all* the contributions knows the counter exactly. -/
-theorem ccounter_read_agree (γ : GName) (n c : Nat) :
-    iprop(ccounterAuth (GF := GF) γ c ∗ ccounter γ 1 n) ⊢
-      iprop(|==> (ccounterAuth γ c ∗ (⌜c = n⌝ ∗ ccounter γ 1 n))) := by
-  iintro ⟨Hγ, Hγf⟩
-  icombine Hγ Hγf gives %Hv
-  have heq : c = n := FracAuth.agree Hv
-  imodintro
-  iframe %heq Hγ Hγf
-
 @[rocq_alias heap_lang.incr_contrib_spec]
 theorem incr_contrib_spec (γ : GName) (l : Loc) (q : Qp) (n : Nat) :
     {{ ccounterCtx (GF := GF) N γ l ∗ ccounter γ q n }} hl(&incr #l)
     {{ RET hl_val(#()); ccounter γ q (n + 1) }} := by
   iintro %Φ ⟨#Hctx, Hγf⟩ Hφ
-  iapply incr_spec N _ _ _ l (ccounter_incr_update γ q n) $$ [$Hctx $Hγf] [$Hφ]
+  iapply incr_spec (ccounter γ q n) (ccounter γ q (n+1)) l $$ [$Hctx $Hγf] Hφ
+  iintro %c ⟨Hγ, Hγf⟩
+  imod iOwn_update_op (a' := CMRA.op (●F (c + 1)) (◯F{q} (n + 1))) $$ [$Hγ $Hγf] with ⟨Hγ, Hγf⟩
+  · exact FracAuth.update (CommMonoidLike.leftCancelAdd_local_update (by grind))
+  imodintro
+  iframe
 
 @[rocq_alias heap_lang.read_contrib_spec]
 theorem read_contrib_spec (γ : GName) (l : Loc) (q : Qp) (n : Nat) :
     {{ ccounterCtx (GF := GF) N γ l ∗ ccounter γ q n }} hl(&read #l)
     {{ c, RET hl_val(#c); ⌜n ≤ c⌝ ∧ ccounter γ q n }} := by
   iintro %Φ ⟨#Hctx, Hγf⟩ Hφ
-  iapply read_spec N _ _ _ l (ccounter_read_le γ q n) $$ [$Hctx $Hγf] [Hφ]
+  iapply read_spec (ccounter γ q n) (fun c => iprop% ⌜n ≤ c⌝ ∗ ccounter γ q n) l  $$ [$Hctx $Hγf] [Hφ]
+  · iintro %c ⟨Hγ, Hγf⟩
+    icombine Hγ Hγf gives %Hv
+    iframe Hγ Hγf
+    ipureintro
+    have ⟨z, hz⟩ := CommMonoidLike.included_iff.mp (FracAuth.included_total Hv)
+    omega
   iintro !> %c ⟨%hle, Hγf⟩
   iapply Hφ
   iframe %hle Hγf
@@ -307,7 +273,13 @@ theorem read_contrib_spec_1 (γ : GName) (l : Loc) (n : Nat) :
     {{ ccounterCtx (GF := GF) N γ l ∗ ccounter γ 1 n }} hl(&read #l)
     {{ RET hl_val(#n); ccounter γ 1 n }} := by
   iintro %Φ ⟨#Hctx, Hγf⟩ Hφ
-  iapply read_spec N _ _ _ l (ccounter_read_agree γ n) $$ [$Hctx $Hγf] [Hφ]
+  iapply read_spec (ccounter γ 1 n) (fun c => iprop% ⌜c = n⌝ ∗ ccounter γ 1 n) l $$ [$Hctx $Hγf] [Hφ]
+  · iintro %c ⟨Hγ, Hγf⟩
+    icombine Hγ Hγf gives %Hv
+    imodintro
+    iframe Hγ Hγf
+    ipureintro
+    exact FracAuth.agree Hv
   iintro !> %c ⟨%heq, Hγf⟩
   subst heq
   iapply Hφ $$ Hγf
