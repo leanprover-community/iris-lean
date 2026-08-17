@@ -173,14 +173,16 @@ theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) = x :=
   refine OFE.eq_dist_2 fun n => ?_
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm.dist ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
-  apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold]
+  apply OFunctor.map_ne.ne <;> intro _ <;> simp only [IProp.unfold, IProp.fold] <;>
+    first | exact OFE.Iso.hom_inv_dist _ | exact OFE.Iso.inv_hom_dist _
 
 @[rocq_alias inG_fold_unfold]
 theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) = x := by
   refine OFE.eq_dist_2 fun n => ?_
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm.dist ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
-  apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold]
+  apply OFunctor.map_ne.ne <;> intro _ <;> simp only [IProp.unfold, IProp.fold] <;>
+    first | exact OFE.Iso.hom_inv_dist _ | exact OFE.Iso.inv_hom_dist _
 
 @[rocq_alias iProp_unfold_equivI]
 theorem IProp.unfold_equivI (P Q : IProp FF) :
