@@ -15,4 +15,5 @@ public import Iris.HeapLang.Lib.RwLock
 public import Iris.HeapLang.Lib.RwSpinLock
 public import Iris.HeapLang.Lib.Spawn
 public import Iris.HeapLang.Lib.SpinLock
+public import Iris.HeapLang.Lib.TicketLock
 public import Iris.HeapLang.Lib.Unwrap
