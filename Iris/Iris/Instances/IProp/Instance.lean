@@ -770,7 +770,7 @@ theorem singleton_updateP {a : F.ap (IProp GF)} (Hupd : a ~~>: P) :
       simp [CMRA.op, iSingleton, h_tau] at h_frame_valid ⊢
       exact h_frame_valid
 
-@[rocq_alias own.own_updateP]
+@[rocq_alias own_updateP]
 theorem iOwn_updateP {P γ a} (Hupd : a ~~>: P) : iOwn γ a ⊢ |==> ∃ a' : F.ap (IProp GF), ⌜P a'⌝ ∗ iOwn γ a' := by
   refine .trans (Q := iprop(|==> ∃ m, ⌜ ∃ a', m = (iSingleton F γ a') ∧ P a' ⌝ ∧ UPred.ownM m)) ?_ ?_
   · apply UPred.bupd_ownM_updateP
