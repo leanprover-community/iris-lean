@@ -234,27 +234,6 @@ theorem bigSepL_map {B : Type _} (f : A → B) {Φ : Nat → B → PROP} {l : Li
     ([∗list] k ↦ y ∈ l.map f, Φ k y) = [∗list] k ↦ x ∈ l, Φ k (f x) :=
   bigOpL_map_eq f Φ l
 
-/-- Collect the witnesses of a list of existentials whose elements are all in the image of `g`. -/
-@[rocq_alias heap_lang.big_sepL_exists_eq]
-theorem bigSepL_exists_eq [BIAffine PROP] {B : Type _} {g : B → A} {Ψ : Nat → B → PROP}
-    {l : List A} :
-    ([∗list] k ↦ y ∈ l, ∃ x, ⌜y = g x⌝ ∗ Ψ k x) ⊢
-      ∃ xs, ⌜l = xs.map g⌝ ∗ [∗list] k ↦ x ∈ xs, Ψ k x := by
-  induction l generalizing Ψ with
-  | nil =>
-    refine .trans ?_ (exists_intro ([] : List B))
-    exact emp_sep.2.trans (sep_mono (pure_intro rfl) .rfl)
-  | cons y l ih =>
-    refine (sep_mono_right ih).trans <| sep_exists_left.1.trans <| exists_elim fun xs => ?_
-    refine sep_exists_right.1.trans <| exists_elim fun x => ?_
-    refine pure_elim (y = g x) (sep_elim_left.trans sep_elim_left) fun hy => ?_
-    refine pure_elim (l = xs.map g) (sep_elim_right.trans sep_elim_left) fun hl => ?_
-    refine .trans ?_ (exists_intro (Ψ := fun ys =>
-      iprop(⌜y :: l = List.map g ys⌝ ∗ ([∗list] k ↦ z ∈ ys, Ψ k z))) (x :: xs))
-    refine (sep_mono sep_elim_right sep_elim_right).trans <| emp_sep.2.trans <|
-      sep_mono (pure_intro ?_) .rfl
-    simp [hy, hl]
-
 @[rocq_alias big_sepL_omap]
 theorem bigSepL_filterMap {B : Type _} (f : A → Option B) {Φ : B → PROP} {l : List A} :
     ([∗list] y ∈ l.filterMap f, Φ y) = [∗list] x ∈ l, (f x).elim emp Φ :=

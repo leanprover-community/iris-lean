@@ -47,6 +47,9 @@ attribute [rocq_alias heap_lang.Loc.eq_spec] Loc.ext_iff
 instance : HAdd Loc Int Loc where
   hAdd l i := ⟨l.n + i⟩
 
+instance : HAdd Loc Nat Loc where
+  hAdd l i := ⟨l.n + i⟩
+
 -- Rocq's `Loc` carries a `Prop`-valued order `Loc.le`/`Loc.lt` together with its
 -- decidability and order-theoretic properties. `Loc` has no `LE`/`LT` instance here:
 -- comparison goes through `Ord Loc` above, and the order itself is the `Int` order

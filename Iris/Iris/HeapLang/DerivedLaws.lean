@@ -21,7 +21,7 @@ variable {l : Loc} {dq : DFrac} {v : Val} {vs : List Val}
 /-- Predicate for asserting ownership over a contiguous array. -/
 @[rocq_alias heap_lang.array]
 def array (l : Loc) (dq : DFrac) (vs : List Val) : IProp GF :=
-  iprop([∗list] i ↦ v ∈ vs, (l + Int.ofNat i) ↦{dq} some v)
+  iprop% [∗list] i ↦ v ∈ vs, (l + i) ↦{dq} (v: Val)
 
 @[inherit_doc array] notation:50 l:50 " ↦∗{" dq "} " vs:50 => array l dq vs
 @[inherit_doc array] notation:50 l:50 " ↦∗ " vs:50 => array l (DFrac.own 1) vs
@@ -47,16 +47,18 @@ theorem array_nil : (l ↦∗{dq} [] : IProp GF) ⊣⊢ emp := .rfl
 theorem array_singleton : (l ↦∗{dq} [v] : IProp GF) ⊣⊢ l ↦{dq} some v := by
   unfold array
   refine BigSepL.bigSepL_singleton.trans (.of_eq ?_)
-  rw [show l + Int.ofNat 0 = l from loc_add_zero l]
+  rw [show l + 0 = l from loc_add_zero l]
 
 @[rocq_alias heap_lang.array_app]
 theorem array_app {ws : List Val} :
-    (l ↦∗{dq} (vs ++ ws) : IProp GF) ⊣⊢ l ↦∗{dq} vs ∗ (l + Int.ofNat vs.length) ↦∗{dq} ws := by
+    (l ↦∗{dq} (vs ++ ws) : IProp GF) ⊣⊢ l ↦∗{dq} vs ∗ (l + vs.length) ↦∗{dq} ws := by
   unfold array
   refine BigSepL.bigSepL_append.trans ?_
   refine (sep_congr_right (.of_eq ?_))
   refine BigSepL.bigSepL_eq_of_forall_eq <| @fun k x => ?_
-  congr 1; ext; simp; omega
+  congr 1; ext
+  change l.n + ((k + vs.length : Nat) : Int) = (l.n + (vs.length : Int)) + (k : Int)
+  omega
 
 @[rocq_alias heap_lang.array_cons]
 theorem array_cons :
@@ -64,8 +66,8 @@ theorem array_cons :
   unfold array
   refine BigSepL.bigSepL_cons.trans ?_
   refine sep_congr (.of_eq ?_) (.of_eq (BigSepL.bigSepL_eq_of_forall_eq @fun k x => ?_))
-  · rw [show l + Int.ofNat 0 = l from loc_add_zero l]
-  · congr 1; ext; simp; omega
+  · rw [show l + 0 = l from loc_add_zero l]
+  · congr 1; ext; change l.n + (k + 1 : Nat) = (l.n + 1) + k; omega
 
 @[rocq_alias heap_lang.array_cons_frame]
 instance (priority := high) frameArrayCons {R Q : IProp GF}
@@ -80,36 +82,23 @@ theorem update_array {off : Nat} (h : vs[off]? = some v) :
   BigSepL.bigSepL_insert_acc h
 
 /-- The array `vs` is unchanged when the element read out of it is written back. -/
-theorem set_getElem?_self {off : Nat} (h : vs[off]? = some v) : vs.set off v = vs := by
+private theorem set_getElem?_self {off : Nat} (h : vs[off]? = some v) : vs.set off v = vs := by
   obtain ⟨hlt, rfl⟩ := List.getElem?_eq_some_iff.mp h
   exact List.set_getElem_self hlt
 
 /-- `update_array` specialised to a read: the array is restored unchanged. -/
-theorem update_array_read {off : Nat} (h : vs[off]? = some v) :
-    (l ↦∗{dq} vs : IProp GF) ⊢ (l + Int.ofNat off) ↦{dq} some v ∗
-      ((l + Int.ofNat off) ↦{dq} some v -∗ l ↦∗{dq} vs) := by
+private theorem update_array_read {off : Nat} (h : vs[off]? = some v) :
+    (l ↦∗{dq} vs : IProp GF) ⊢ (l + off) ↦{dq} some v ∗ ((l + off) ↦{dq} some v -∗ l ↦∗{dq} vs) := by
   refine (update_array h).trans ?_
   refine sep_mono_right ?_
   refine (forall_elim v).trans (wand_mono .rfl ?_)
   exact (BiEntails.of_eq (congrArg (array l dq) (set_getElem?_self h))).1
 
-/-- Recast a primitive law whose postcondition pins the returned value into continuation-passing
-form, framing the continuation across the step. -/
-theorem wp_cps_of_pure_post {e : Exp} {P P' : IProp GF} {r : Val}
-    (hval : toVal e = none) (hwp : ▷ P ⊢ WP e @ s; E {{ v', ⌜v' = r⌝ ∗ P' }}) :
-    ▷ P ∗ ▷ (P' -∗ Φ r) ⊢ WP e @ s; E {{ Φ }} := by
-  refine (sep_mono hwp .rfl).trans (sep_comm.1.trans ?_)
-  refine (wp_frame_step_l' hval LawfulSet.subset_refl).trans (wp_mono fun _ => ?_)
-  iintro ⟨Hcont, %hv, HP'⟩
-  subst hv
-  iapply Hcont $$ HP'
-
 /-! ## Rules for allocation -/
 
 @[rocq_alias heap_lang.pointsto_seq_array]
 theorem pointsTo_seq_array {n : Nat} :
-    ([∗list] i ∈ List.range n, (l + Int.ofNat i) ↦{dq} some v) ⊢
-      (l ↦∗{dq} List.replicate n v : IProp GF) := by
+    ([∗list] i ∈ List.range n, (l + i) ↦{dq} some v) ⊢ l ↦∗{dq} List.replicate n v := by
   unfold array
   induction n with
   | zero => exact .rfl
@@ -119,144 +108,336 @@ theorem pointsTo_seq_array {n : Nat} :
     simp only [List.length_replicate]
     exact sep_mono ih .rfl
 
-@[rocq_alias heap_lang.wp_allocN]
-theorem wp_allocN (v : Val) {n : Int} (hn : 0 < n) :
-    {{ True }} hl(allocn(#n, &v)) @ s; E
-    {{ l, RET hl_val(#l); (l ↦∗ List.replicate n.toNat v ∗
-      [∗list] i ∈ List.range n.toNat, metaToken (l + Int.ofNat i) ⊤ : IProp GF) }} := by
+@[rocq_alias heap_lang.twp_allocN]
+theorem twp_allocN (v : Val) {n : Int} (hn : 0 < n) :
+    [{ True }] hl(allocn(#n, &v)) @ s; E
+    [{ l, RET hl_val(#l); l ↦∗ List.replicate n.toNat v ∗
+      [∗list] i ∈ List.range n.toNat, metaToken (l + i) ⊤ }] := by
   iintro %Φ _ HΦ
-  iapply wp_allocN_seq v hn
-  iintro !> %l Hl
+  iapply twp_allocN_seq hn
+  · itrivial
+  iintro %l Hl
   icases BigSepL.bigSepL_sep_eqv.1 $$ Hl with ⟨Hpts, Htok⟩
   iapply HΦ
   iframe Htok
   iapply pointsTo_seq_array $$ Hpts
 
+@[rocq_alias heap_lang.wp_allocN]
+theorem wp_allocN (v : Val) {n : Int} (hn : 0 < n) :
+    {{ True }} hl(allocn(#n, &v)) @ s; E
+    {{ l, RET hl_val(#l); l ↦∗ List.replicate n.toNat v ∗
+      [∗list] i ∈ List.range n.toNat, metaToken (l + i) ⊤ }} := by
+  iintro %Φ _ HΦ
+  iapply twp.wp_step _ rfl $$ HΦ
+  iapply twp_allocN v hn
+  · itrivial
+  iintro %l H HΦ
+  iapply HΦ
+  itrivial
+
+@[rocq_alias heap_lang.twp_allocN_vec]
+theorem twp_allocN_vec (v : Val) {n : Int} (hn : 0 < n) :
+    [{ True }] hl(allocn(#n, &v)) @ s; E
+    [{ l, RET hl_val(#l); l ↦∗ (Vector.replicate n.toNat v).toList ∗
+        [∗list] i ∈ List.range n.toNat, metaToken (l + i) ⊤ }] :=
+  Vector.toList_replicate ▸ twp_allocN v hn
+
 @[rocq_alias heap_lang.wp_allocN_vec]
 theorem wp_allocN_vec (v : Val) {n : Int} (hn : 0 < n) :
     {{ True }} hl(allocn(#n, &v)) @ s; E
-    {{ l, RET hl_val(#l); (l ↦∗ (Vector.replicate n.toNat v).toList ∗
-        [∗list] i ∈ List.range n.toNat, metaToken (l + Int.ofNat i) ⊤ : IProp GF) }} :=
-  Vector.toList_replicate ▸ wp_allocN v hn
+    {{ l, RET hl_val(#l); l ↦∗ (Vector.replicate n.toNat v).toList ∗
+        [∗list] i ∈ List.range n.toNat, metaToken (l + i) ⊤ }} := by
+  iintro %Φ _ HΦ
+  iapply twp.wp_step _ rfl $$ HΦ
+  iapply twp_allocN_vec v hn
+  · itrivial
+  iintro %l H HΦ
+  iapply HΦ
+  itrivial
 
 /-! ## Rules for accessing array elements -/
 
-@[rocq_alias heap_lang.wp_load_offset]
-theorem wp_load_offset {off : Nat} (h : vs[off]? = some v) :
-    {{ ▷ l ↦∗{dq} vs }} hl(!v(#(l + Int.ofNat off))) @ s; E
-    {{ RET v; (l ↦∗{dq} vs : IProp GF) }} := by
+@[rocq_alias heap_lang.twp_load_offset]
+theorem twp_load_offset {off : Nat} (h : vs[off]? = some v) :
+    [{ l ↦∗{dq} vs }] hl(!v(#(l + off))) @ s; E
+    [{ RET v; (l ↦∗{dq} vs : IProp GF) }] := by
   iintro %Φ Hl HΦ
-  icases (later_mono (update_array_read h)).trans later_sep.1 $$ Hl with ⟨Hpt, Hclose⟩
-  iapply wp_load $$ Hpt
-  iintro !> Hpt
+  icases update_array_read h $$ Hl with ⟨Hpt, Hclose⟩
+  iapply twp_load $$ Hpt
+  iintro Hpt
   iapply HΦ
   iapply Hclose $$ Hpt
 
+@[rocq_alias heap_lang.wp_load_offset]
+theorem wp_load_offset {off : Nat} (h : vs[off]? = some v) :
+    {{ ▷ l ↦∗{dq} vs }} hl(!v(#(l + off))) @ s; E
+    {{ RET v; (l ↦∗{dq} vs : IProp GF) }} := by
+  iintro %Φ >Hl HΦ
+  iapply twp.wp_step _ rfl $$ HΦ
+  iapply twp_load_offset h $$ Hl
+  iintro H HΦ
+  iapply HΦ
+  itrivial
+
+@[rocq_alias heap_lang.twp_load_offset_vec]
+theorem twp_load_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} :
+    [{ l ↦∗{dq} ws.toList }] hl(!v(#(l + off.val))) @ s; E
+    [{ RET ws[off]; (l ↦∗{dq} ws.toList : IProp GF) }] :=
+  twp_load_offset (by simp)
+
 @[rocq_alias heap_lang.wp_load_offset_vec]
 theorem wp_load_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} :
-    {{ ▷ l ↦∗{dq} ws.toList }} hl(!v(#(l + Int.ofNat off.val))) @ s; E
-    {{ RET ws[off]; (l ↦∗{dq} ws.toList : IProp GF) }} :=
-  wp_load_offset (by simp)
+    {{ ▷ l ↦∗{dq} ws.toList }} hl(!v(#(l + off.val))) @ s; E
+    {{ RET ws[off]; (l ↦∗{dq} ws.toList : IProp GF) }} := by
+  iintro %Φ >Hl HΦ
+  iapply twp.wp_step _ rfl $$ HΦ
+  iapply twp_load_offset_vec $$ Hl
+  iintro H HΦ
+  iapply HΦ
+  itrivial
+
+@[rocq_alias heap_lang.twp_store_offset]
+theorem twp_store_offset {off : Nat} {w : Val} (h : vs[off]? = some w) :
+    [{ l ↦∗ vs }] hl(v(#(l + off)) ← &v) @ s; E
+    [{ RET hl_val(#()); (l ↦∗ vs.set off v : IProp GF) }] := by
+  iintro %Φ Hl HΦ
+  icases update_array (dq := .own 1) h $$ Hl with ⟨Hpt, Hclose⟩
+  iapply twp_store $$ Hpt
+  iintro Hpt
+  iapply HΦ
+  iapply Hclose $$ %v Hpt
 
 @[rocq_alias heap_lang.wp_store_offset]
 theorem wp_store_offset {off : Nat} {w : Val} (h : vs[off]? = some w) :
-    {{ ▷ l ↦∗ vs }} hl(v(#(l + Int.ofNat off)) ← &v) @ s; E
+    {{ ▷ l ↦∗ vs }} hl(v(#(l + off)) ← &v) @ s; E
     {{ RET hl_val(#()); (l ↦∗ vs.set off v : IProp GF) }} := by
-  iintro %Φ Hl HΦ
-  icases (later_mono (update_array (dq := .own 1) h)).trans later_sep.1 $$ Hl with ⟨Hpt, Hclose⟩
-  iapply wp_store $$ Hpt
-  iintro !> Hpt
+  iintro %Φ >Hl HΦ
+  iapply twp.wp_step _ rfl $$ HΦ
+  iapply twp_store_offset h $$ Hl
+  iintro H HΦ
   iapply HΦ
-  iapply Hclose $$ %v Hpt
+  itrivial
+
+@[rocq_alias heap_lang.twp_store_offset_vec]
+theorem twp_store_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} :
+    [{ l ↦∗ ws.toList }] hl(v(#(l + Int.ofNat off.val)) ← &v) @ s; E
+    [{ RET hl_val(#()); (l ↦∗ (ws.set off v).toList : IProp GF) }] := by
+  rw [Vector.toList_set]
+  exact twp_store_offset (w := ws[off]) (by simp)
 
 @[rocq_alias heap_lang.wp_store_offset_vec]
 theorem wp_store_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} :
     {{ ▷ l ↦∗ ws.toList }} hl(v(#(l + Int.ofNat off.val)) ← &v) @ s; E
     {{ RET hl_val(#()); (l ↦∗ (ws.set off v).toList : IProp GF) }} := by
-  rw [Vector.toList_set]
-  exact wp_store_offset (w := ws[off]) (by simp)
+  iintro %Φ >Hl HΦ
+  iapply twp.wp_step _ rfl $$ HΦ
+  iapply twp_store_offset_vec $$ Hl
+  iintro H HΦ
+  iapply HΦ
+  itrivial
 
-@[rocq_alias heap_lang.wp_xchg_offset]
-theorem wp_xchg_offset {off : Nat} {w : Val} (h : vs[off]? = some v) :
-    {{ ▷ l ↦∗ vs }} hl(xchg(#(l + Int.ofNat off), &w)) @ s; E
-    {{ RET v; (l ↦∗ vs.set off w : IProp GF) }} := by
+@[rocq_alias heap_lang.twp_xchg_offset]
+theorem twp_xchg_offset {off : Nat} {w : Val} (h : vs[off]? = some v) :
+    [{ l ↦∗ vs }] hl(xchg(#(l + off), &w)) @ s; E
+    [{ RET v; (l ↦∗ vs.set off w : IProp GF) }] := by
   iintro %Φ Hl HΦ
-  icases (later_mono (update_array (dq := .own 1) h)).trans later_sep.1 $$ Hl with ⟨Hpt, Hclose⟩
-  iapply wp_cps_of_pure_post rfl wp_xchg
-  iframe Hpt
-  iintro !> Hpt
+  icases update_array (dq := .own 1) h $$ Hl with ⟨Hpt, Hclose⟩
+  iapply twp_xchg $$ Hpt
+  iintro Hpt
   iapply HΦ
   iapply Hclose $$ %w Hpt
 
+@[rocq_alias heap_lang.wp_xchg_offset]
+theorem wp_xchg_offset {off : Nat} {w : Val} (h : vs[off]? = some v) :
+    {{ ▷ l ↦∗ vs }} hl(xchg(#(l + off), &w)) @ s; E
+    {{ RET v; (l ↦∗ vs.set off w : IProp GF) }} := by
+  iintro %Φ >Hl HΦ
+  iapply twp.wp_step _ rfl $$ HΦ
+  iapply twp_xchg_offset h $$ Hl
+  iintro H HΦ
+  iapply HΦ
+  itrivial
+
+@[rocq_alias heap_lang.twp_xchg_offset_vec]
+theorem twp_xchg_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} :
+    [{ l ↦∗ ws.toList }] hl(xchg(#(l + off.val), &v)) @ s; E
+    [{ RET ws[off]; (l ↦∗ (ws.set off v).toList : IProp GF) }] := by
+  rw [Vector.toList_set]
+  exact twp_xchg_offset (by simp)
+
 @[rocq_alias heap_lang.wp_xchg_offset_vec]
 theorem wp_xchg_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} :
-    {{ ▷ l ↦∗ ws.toList }} hl(xchg(#(l + Int.ofNat off.val), &v)) @ s; E
+    {{ ▷ l ↦∗ ws.toList }} hl(xchg(#(l + off.val), &v)) @ s; E
     {{ RET ws[off]; (l ↦∗ (ws.set off v).toList : IProp GF) }} := by
-  rw [Vector.toList_set]
-  exact wp_xchg_offset (by simp)
+  iintro %Φ >Hl HΦ
+  iapply twp.wp_step _ rfl $$ HΦ
+  iapply twp_xchg_offset_vec $$ Hl
+  iintro H HΦ
+  iapply HΦ
+  itrivial
+
+@[rocq_alias heap_lang.twp_cmpxchg_suc_offset]
+theorem twp_cmpXchg_true_offset {off : Nat} {v1 v2 : Val} (h : vs[off]? = some v)
+    (heq : v = v1) (hsafe : v.compareSafe v1) :
+    [{ l ↦∗ vs }] hl(cmpXchg(#(l + off), &v1, &v2)) @ s; E
+    [{ RET hl_val((&v, #true)); (l ↦∗ vs.set off v2 : IProp GF) }] := by
+  iintro %Φ Hl HΦ
+  icases update_array (dq := .own 1) h $$ Hl with ⟨Hpt, Hclose⟩
+  iapply twp_cmpXchg_true heq hsafe $$ Hpt
+  iintro Hpt
+  iapply HΦ
+  iapply Hclose $$ %v2 Hpt
 
 @[rocq_alias heap_lang.wp_cmpxchg_suc_offset]
 theorem wp_cmpXchg_true_offset {off : Nat} {v1 v2 : Val} (h : vs[off]? = some v)
     (heq : v = v1) (hsafe : v.compareSafe v1) :
-    {{ ▷ l ↦∗ vs }} hl(cmpXchg(#(l + Int.ofNat off), &v1, &v2)) @ s; E
+    {{ ▷ l ↦∗ vs }} hl(cmpXchg(#(l + off), &v1, &v2)) @ s; E
     {{ RET hl_val((&v, #true)); (l ↦∗ vs.set off v2 : IProp GF) }} := by
-  iintro %Φ Hl HΦ
-  icases (later_mono (update_array (dq := .own 1) h)).trans later_sep.1 $$ Hl with ⟨Hpt, Hclose⟩
-  iapply wp_cps_of_pure_post rfl (wp_cmpXchg_true rfl rfl hsafe (decide_eq_true heq))
-  iframe Hpt
-  iintro !> Hpt
+  iintro %Φ >Hl HΦ
+  iapply twp.wp_step _ rfl $$ HΦ
+  iapply twp_cmpXchg_true_offset h heq hsafe $$ Hl
+  iintro H HΦ
   iapply HΦ
-  iapply Hclose $$ %v2 Hpt
+  itrivial
+
+@[rocq_alias heap_lang.twp_cmpxchg_suc_offset_vec]
+theorem twp_cmpXchg_true_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} {v1 v2 : Val}
+    (heq : ws[off] = v1) (hsafe : ws[off].compareSafe v1) :
+    [{ l ↦∗ ws.toList }] hl(cmpXchg(#(l + off.val), &v1, &v2)) @ s; E
+    [{ RET hl_val((&ws[off], #true)); (l ↦∗ (ws.set off v2).toList : IProp GF) }] := by
+  rw [Vector.toList_set]
+  exact twp_cmpXchg_true_offset (by simp) heq hsafe
 
 @[rocq_alias heap_lang.wp_cmpxchg_suc_offset_vec]
 theorem wp_cmpXchg_true_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} {v1 v2 : Val}
     (heq : ws[off] = v1) (hsafe : ws[off].compareSafe v1) :
-    {{ ▷ l ↦∗ ws.toList }} hl(cmpXchg(#(l + Int.ofNat off.val), &v1, &v2)) @ s; E
+    {{ ▷ l ↦∗ ws.toList }} hl(cmpXchg(#(l + off.val), &v1, &v2)) @ s; E
     {{ RET hl_val((&ws[off], #true)); (l ↦∗ (ws.set off v2).toList : IProp GF) }} := by
-  rw [Vector.toList_set]
-  exact wp_cmpXchg_true_offset (by simp) heq hsafe
+  iintro %Φ >Hl HΦ
+  iapply twp.wp_step _ rfl $$ HΦ
+  iapply twp_cmpXchg_true_offset_vec heq hsafe $$ Hl
+  iintro H HΦ
+  iapply HΦ
+  itrivial
+
+@[rocq_alias heap_lang.twp_cmpxchg_fail_offset]
+theorem twp_cmpXchg_fail_offset {off : Nat} {v1 v2 : Val} (h : vs[off]? = some v)
+    (hne : v ≠ v1) (hsafe : v.compareSafe v1) :
+    [{ l ↦∗{dq} vs }] hl(cmpXchg(#(l + off), &v1, &v2)) @ s; E
+    [{ RET hl_val((&v, #false)); (l ↦∗{dq} vs : IProp GF) }] := by
+  iintro %Φ Hl HΦ
+  icases update_array_read h $$ Hl with ⟨Hpt, Hclose⟩
+  iapply twp_cmpXchg_fail hne hsafe $$ Hpt
+  iintro Hpt
+  iapply HΦ
+  iapply Hclose $$ Hpt
 
 @[rocq_alias heap_lang.wp_cmpxchg_fail_offset]
 theorem wp_cmpXchg_fail_offset {off : Nat} {v1 v2 : Val} (h : vs[off]? = some v)
     (hne : v ≠ v1) (hsafe : v.compareSafe v1) :
-    {{ ▷ l ↦∗{dq} vs }} hl(cmpXchg(#(l + Int.ofNat off), &v1, &v2)) @ s; E
+    {{ ▷ l ↦∗{dq} vs }} hl(cmpXchg(#(l + off), &v1, &v2)) @ s; E
     {{ RET hl_val((&v, #false)); (l ↦∗{dq} vs : IProp GF) }} := by
-  iintro %Φ Hl HΦ
-  icases (later_mono (update_array_read h)).trans later_sep.1 $$ Hl with ⟨Hpt, Hclose⟩
-  iapply wp_cps_of_pure_post rfl (wp_cmpXchg_fail rfl rfl hsafe (decide_eq_false hne))
-  iframe Hpt
-  iintro !> Hpt
+  iintro %Φ >Hl HΦ
+  iapply twp.wp_step _ rfl $$ HΦ
+  iapply twp_cmpXchg_fail_offset h hne hsafe $$ Hl
+  iintro H HΦ
   iapply HΦ
-  iapply Hclose $$ Hpt
+  itrivial
+
+@[rocq_alias heap_lang.twp_cmpxchg_fail_offset_vec]
+theorem twp_cmpXchg_fail_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} {v1 v2 : Val}
+    (hne : ws[off] ≠ v1) (hsafe : ws[off].compareSafe v1) :
+    [{ l ↦∗{dq} ws.toList }] hl(cmpXchg(#(l + off.val), &v1, &v2)) @ s; E
+    [{ RET hl_val((&ws[off], #false)); (l ↦∗{dq} ws.toList : IProp GF) }] :=
+  twp_cmpXchg_fail_offset (by simp) hne hsafe
 
 @[rocq_alias heap_lang.wp_cmpxchg_fail_offset_vec]
 theorem wp_cmpXchg_fail_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} {v1 v2 : Val}
     (hne : ws[off] ≠ v1) (hsafe : ws[off].compareSafe v1) :
-    {{ ▷ l ↦∗{dq} ws.toList }} hl(cmpXchg(#(l + Int.ofNat off.val), &v1, &v2)) @ s; E
-    {{ RET hl_val((&ws[off], #false)); (l ↦∗{dq} ws.toList : IProp GF) }} :=
-  wp_cmpXchg_fail_offset (by simp) hne hsafe
+    {{ ▷ l ↦∗{dq} ws.toList }} hl(cmpXchg(#(l + off.val), &v1, &v2)) @ s; E
+    {{ RET hl_val((&ws[off], #false)); (l ↦∗{dq} ws.toList : IProp GF) }} := by
+  iintro %Φ >Hl HΦ
+  iapply twp.wp_step _ rfl $$ HΦ
+  iapply twp_cmpXchg_fail_offset_vec hne hsafe $$ Hl
+  iintro H HΦ
+  iapply HΦ
+  itrivial
+
+@[rocq_alias heap_lang.twp_faa_offset]
+theorem twp_faa_offset {off : Nat} {i1 i2 : Int} (h : vs[off]? = some hl_val(#i1)) :
+    [{ l ↦∗ vs }] hl(faa(#(l + off), #i2)) @ s; E
+    [{ RET hl_val(#i1); (l ↦∗ vs.set off hl_val(#(i1 + i2)) : IProp GF) }] := by
+  iintro %Φ Hl HΦ
+  icases update_array (dq := .own 1) h $$ Hl with ⟨Hpt, Hclose⟩
+  iapply twp_faa $$ Hpt
+  iintro Hpt
+  iapply HΦ
+  iapply Hclose $$ %hl_val(#(i1 + i2)) Hpt
 
 @[rocq_alias heap_lang.wp_faa_offset]
 theorem wp_faa_offset {off : Nat} {i1 i2 : Int} (h : vs[off]? = some hl_val(#i1)) :
-    {{ ▷ l ↦∗ vs }} hl(faa(#(l + Int.ofNat off), #i2)) @ s; E
+    {{ ▷ l ↦∗ vs }} hl(faa(#(l + off), #i2)) @ s; E
     {{ RET hl_val(#i1); (l ↦∗ vs.set off hl_val(#(i1 + i2)) : IProp GF) }} := by
-  iintro %Φ Hl HΦ
-  icases (later_mono (update_array (dq := .own 1) h)).trans later_sep.1 $$ Hl with ⟨Hpt, Hclose⟩
-  iapply wp_cps_of_pure_post rfl wp_faa
-  iframe Hpt
-  iintro !> Hpt
+  iintro %Φ >Hl HΦ
+  iapply twp.wp_step _ rfl $$ HΦ
+  iapply twp_faa_offset h $$ Hl
+  iintro H HΦ
   iapply HΦ
-  iapply Hclose $$ %hl_val(#(i1 + i2)) Hpt
+  itrivial
+
+@[rocq_alias heap_lang.twp_faa_offset_vec]
+theorem twp_faa_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} {i1 i2 : Int}
+    (h : ws[off] = hl_val(#i1)) :
+    [{ l ↦∗ ws.toList }] hl(faa(#(l + off.val), #i2)) @ s; E
+    [{ RET hl_val(#i1); (l ↦∗ (ws.set off hl_val(#(i1 + i2))).toList : IProp GF) }] := by
+  rw [Vector.toList_set]
+  exact twp_faa_offset (by simpa using h)
 
 @[rocq_alias heap_lang.wp_faa_offset_vec]
 theorem wp_faa_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} {i1 i2 : Int}
     (h : ws[off] = hl_val(#i1)) :
-    {{ ▷ l ↦∗ ws.toList }} hl(faa(#(l + Int.ofNat off.val), #i2)) @ s; E
+    {{ ▷ l ↦∗ ws.toList }} hl(faa(#(l + off.val), #i2)) @ s; E
     {{ RET hl_val(#i1); (l ↦∗ (ws.set off hl_val(#(i1 + i2))).toList : IProp GF) }} := by
-  rw [Vector.toList_set]
-  exact wp_faa_offset (by simpa using h)
+  iintro %Φ >Hl HΦ
+  iapply twp.wp_step _ rfl $$ HΦ
+  iapply twp_faa_offset_vec h $$ Hl
+  iintro H HΦ
+  iapply HΦ
+  itrivial
 
 /-! ## Derived prophecy laws -/
+
+@[rocq_alias heap_lang.wp_resolve_proph]
+theorem wp_resolve_proph {p : ProphId} {w : Val} {pvs : List (Val × Val)} :
+    {{proph p pvs}} hl(resolveProph(v(#p), v(&w))) @ s; E
+      {{ pvs', RET hl_val(#()); ⌜pvs = (hl_val(#()), w) :: pvs'⌝ ∗ proph p pvs' }} := by
+  iintro %Φ proph K
+  let Ki := ECtxItem.resolveL (ECtxItem.appL hl_val(#())) hl_val(#p) hl_val(&w)
+  have shape : hl(resolveProph(#p, &w)) = fill [Ki] hl(λ _, #()) := by
+    simp [fillItem, Ki, ECtxItem.fill]
+  rw [shape]
+  iapply wp_bind
+  iapply wp_pure_step_fupd (Hφ := ⟨⟩)
+  simp only [Nat.repeat, EctxItemLanguage.fill_cons, fillItem, ECtxItem.fill,
+    EctxItemLanguage.fill_nil, wp_value_iff, Ki]
+  iintro !> !> !> _ !>
+  have hatom : Language.Atomic Language.Atomicity.StronglyAtomic hl((v(λ _, #())) #()) := by
+    constructor
+    intro σ _ _ _ _ h
+    dsimp only []
+    apply prim_step_to_val_always_to_val (κsₐ := []) (σ₁ₐ := σ) (σ₂ₐ := σ) (efsₐ := []) ?h h
+    case h =>
+      apply ProgramLogic.EctxLanguage.primStep_of_baseStep
+      simp only [BaseStep.baseStep, val_to_ofVal]
+      constructor
+      rfl
+  iapply wp_resolve hatom (hne := by decide) $$ proph
+  iapply wp_rec rfl
+  simp only [Exp.subst, wp_value_iff]
+  iintro !> !>
+  iintro %pvs' HEq Hp
+  iapply K
+  iframe
 
 @[rocq_alias heap_lang.wp_resolve_cmpxchg_suc]
 theorem wp_resolve_cmpXchg_true {p : ProphId} {pvs : List (Val × Val)} {v1 v2 w : Val}
@@ -268,8 +449,7 @@ theorem wp_resolve_cmpXchg_true {p : ProphId} {pvs : List (Val × Val)} {v1 v2 w
         IProp GF) }} := by
   iintro %Φ ⟨Hp, Hl⟩ HΦ
   iapply wp_resolve inferInstance (hne := rfl) $$ Hp
-  iapply wp_cps_of_pure_post rfl (wp_cmpXchg_true rfl rfl hsafe (decide_eq_true rfl))
-  iframe Hl
+  iapply wp_cmpXchg_true rfl rfl hsafe (decide_eq_true rfl) $$ Hl
   iintro !> Hl %pvs' %heq Hp
   iapply HΦ
   iexists pvs'
@@ -285,8 +465,7 @@ theorem wp_resolve_cmpXchg_fail {p : ProphId} {pvs : List (Val × Val)} {v1 v2 w
         IProp GF) }} := by
   iintro %Φ ⟨Hp, Hl⟩ HΦ
   iapply wp_resolve inferInstance (hne := rfl) $$ Hp
-  iapply wp_cps_of_pure_post rfl (wp_cmpXchg_fail rfl rfl hsafe (decide_eq_false hne))
-  iframe Hl
+  iapply wp_cmpXchg_fail rfl rfl hsafe (decide_eq_false hne) $$ Hl
   iintro !> Hl %pvs' %heq Hp
   iapply HΦ
   iexists pvs'
