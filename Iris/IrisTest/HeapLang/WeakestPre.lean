@@ -347,9 +347,8 @@ example : ⊢@{IProp GF} WP hl(v(λ x, x + #1) #1) {{ v, ⌜v = hl_val(#2)⌝ }}
   wp_lam
   trace_state
 
-/--
-error: iapply: cannot apply WP hl(v(&?_) v(&?_)) @ ?_ ; ?_ {{ ?_ }} to WP hl(let x := #1; (x + #1)) {{ v, ⌜v = hl_val(#2)⌝ }}
--/
+-- the head is still a closure expression, so there is no beta redex yet
+/-- error: wp_rec: Cannot find expression to evaluate -/
 #guard_msgs in
 example : ⊢@{IProp GF} WP hl((λ x, x + #1) #1) {{ v, ⌜v = hl_val(#2)⌝ }} := by
   wp_lam
@@ -368,14 +367,94 @@ example : ⊢@{IProp GF} WP hl(&addOne #1) {{ v, ⌜v = hl_val(#2)⌝ }} := by
   wp_lam
   trace_state
 
-/--
-error: iapply: cannot apply WP hl(v(&?_) v(&?_)) @ ?_ ; ?_ {{ ?_ }} to WP hl(v(&addOne) (#1 + #1)) {{ v, ⌜v = hl_val(#3)⌝ }}
--/
+-- the argument is not a value yet, so the application is not a redex
+/-- error: wp_rec: Cannot find expression to evaluate -/
 #guard_msgs in
 example : ⊢@{IProp GF} WP hl(&addOne (#1 + #1)) {{ v, ⌜v = hl_val(#3)⌝ }} := by
   wp_lam
 
 end wp_lam
+
+section wp_rec
+
+def readIt : Val := hl_val% λ l, !l
+
+def loopIt : Val := hl_val% rec f x := f x
+
+def callIt : Val := hl_val% rec f x := x #()
+
+def notARec : Val := hl_val% #3
+
+-- unfolding the head to find the redex does not lose the surrounding evaluation context
+/-- trace:
+hlc : HasLC
+GF✝ : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF✝
+GF : BundledGFunctors
+inst✝ : HeapLangGS hlc GF
+l : Loc
+⊢ ⏎
+  ⊢ WP hl((!#l + #1)) {{ v, True }}
+-/
+#guard_msgs (trace, drop error) in
+example (l : Loc) : ⊢@{IProp GF} WP hl(&readIt #l + #1) {{ v, True }} := by
+  wp_rec
+  trace_state
+
+-- the recursive call reads as the definition rather than as its expansion
+/-- trace:
+hlc : HasLC
+GF✝ : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF✝
+GF : BundledGFunctors
+inst✝ : HeapLangGS hlc GF
+v : Val
+⊢ ⏎
+  ⊢ WP hl(v(&loopIt) v(&v)) {{ v, True }}
+-/
+#guard_msgs (trace, drop error) in
+example (v : Val) : ⊢@{IProp GF} WP hl(&loopIt &v) {{ v, True }} := by
+  wp_rec
+  trace_state
+
+-- an argument that happens to be the same closure is left as written, not folded too
+/-- trace:
+hlc : HasLC
+GF✝ : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF✝
+GF : BundledGFunctors
+inst✝ : HeapLangGS hlc GF
+⊢ ⏎
+  ⊢ WP hl((v(rec f x := x #())) #()) {{ v, True }}
+-/
+#guard_msgs (trace, drop error) in
+example : ⊢@{IProp GF} WP hl(&callIt v(rec f x := x #())) {{ v, True }} := by
+  wp_rec
+  trace_state
+
+-- `wp_pures` never unfolds a head, so it terminates on a recursive definition
+/-- trace:
+hlc : HasLC
+GF✝ : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF✝
+GF : BundledGFunctors
+inst✝ : HeapLangGS hlc GF
+v : Val
+⊢ ⏎
+  ⊢ WP hl(v(&loopIt) v(&v)) {{ v, True }}
+-/
+#guard_msgs (trace, drop error) in
+example (v : Val) : ⊢@{IProp GF} WP hl(&loopIt &v) {{ v, True }} := by
+  wp_pures
+  trace_state
+
+-- a head that unfolds to something other than a closure is reported as such
+/-- error: wp_rec: head of application does not reduce to a rec-value: notARec -/
+#guard_msgs in
+example (v : Val) : ⊢@{IProp GF} WP hl(&notARec &v) {{ v, True }} := by
+  wp_rec
+
+end wp_rec
 
 section wp_let
 

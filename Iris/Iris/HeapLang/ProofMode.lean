@@ -306,7 +306,7 @@ public theorem tac_wp_bind [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E 
     (Δ ⊢ WP (ProgramLogic.fill K e') @ s ; E {{ Φ }}) :=
   H.trans (wp_bind (ProgramLogic.fill K))
 
--- level of hl_exp should be above the level of ; in the heaplang notation to make `wp_bind _ _; wp_rec` work
+-- `hl_exp` must bind tighter than `;` in the heaplang notation so `wp_bind _ _; tac` parses
 elab "wp_bind" colGt ppSpace focus:hl_exp:10 : tactic =>
   ProofModeM.runTacticWp `wp_bind fun mvar {GF, hyps, s, E, e, Φ, ..} => do
     let focus ← elabTermEnsuringTypeQ (←`(hl($focus))) q(HeapLang.Exp)
@@ -349,32 +349,72 @@ public theorem tac_wp_pure [ι : IrisGS_gen hlc Exp GF] {Δ Δ'} {s : Stuckness}
   refine .trans (BI.laterN_mono _ H) ?_
   iintro $ !> -; itrivial
 
+/-- Shared core of `wp_pure` and `wp_rec`; `unfoldHead` retries a stuck head at whnf. -/
+public meta def iWpPure {u}
+  {GF : Q(BundledGFunctors.{0, 0, 0})}
+  {hlc : Q(HasLC)}
+  {prop : Q(Type u)}
+  {bi : Q(BI $prop)}
+  {ehyps : Q($prop)}
+  (hyps : Hyps bi ehyps)
+  (ι : Q(IrisGS_gen $hlc Exp $GF))
+  (s : Q(Stuckness))
+  (E : Q(CoPset))
+  (e : Q(Exp))
+  (Φ : Q(Val → $prop))
+  (focus : Q(Exp))
+  (unfoldHead : Bool := false)
+
+  (_hu : QuotedLevelDefEq u 0 := ⟨⟩)
+  (_hprop : $prop =Q IProp $GF := ⟨⟩)
+  (_hbi : $bi =Q UPred.instBIUPred := ⟨⟩)
+  (κ : Q(Wp $prop Exp Val Stuckness) := q(wp.def))
+  (_hwp : $κ =Q wp.def := ⟨⟩) :
+    ProofModeM (Q($ehyps ⊢ Wp.wp $s $E $e $Φ)) := do
+  trace[wp_pure] m!"Focusing with {focus}"
+  -- `findECtx` swallows predicate errors, so the unfold branch stashes its message here
+  let errMsg ← IO.mkRef m!"Cannot find expression to evaluate"
+
+  let synthPureExec (e₁ : Q(Exp)) : ProofModeM (Q(Prop) × Q(Nat) × Q(Exp) × Lean.Expr) := do
+    let φ ← mkFreshExprMVarQ q(Prop)
+    let n ← mkFreshExprMVarQ q(Nat)
+    let e₂ ← mkFreshExprMVarQ q(Exp)
+    let some inst ← ProofModeM.trySynthInstanceQ q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂)
+      | failure
+    return (φ, n, e₂, inst)
+
+  let some {result := (φ, n, e₂, inst), K, e' := e₁, ..} ← findECtx e fun e₁ => do
+    guard <| ← isDefEq e₁ focus
+    synthPureExec e₁ <|> do
+      guard unfoldHead
+      let ~q(Exp.app (Exp.ofVal $f) (Exp.ofVal $a)) := e₁ | failure
+      let f' : Q(Val) ← whnf f
+      let ~q(Val.rec_ $fb $xb $body) := f' | do
+        errMsg.set m!"head of application does not reduce to a rec-value: {f}"
+        failure
+      -- the unfolded application is definitionally `e₁`, so its instance applies to `e₁`
+      let (φ, n, e₂, inst) ← synthPureExec q(Exp.app (Exp.ofVal $f') (Exp.ofVal $a))
+      -- substitute the folded head, as Rocq's `pure_beta` does with `v1`, not a rewrite
+      let e₂' := q(Exp.subst $xb $a (Exp.subst $fb $f $body))
+      guard <| ← isDefEq e₂ e₂'
+      return (φ, n, e₂', inst)
+    | throwIPMError (← errMsg.get)
+  have inst : Q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂) := inst
+
+  let ⟨_, hyps', pf⟩ ← iModAction hyps q(modality_laterN $n)
+
+  let ⟨inner, .up _⟩ ← HeapLang.fillQ K e₂
+
+  let nextPf ← iWpFinish hyps' ι s E inner Φ
+
+  let HΦ ← iSolveSidecondition φ (failOnUnsolved := false)
+
+  return q(tac_wp_pure $inst $HΦ $pf $nextPf)
+
 elab "wp_pure " colGt ppSpace focus:hl_exp:10 : tactic =>
   ProofModeM.runTacticWp `wp_pure fun mvar {hyps, ι, s, E, e, Φ, ..} => do
     let focus ← elabTermEnsuringTypeQ (← `(hl($focus))) q(HeapLang.Exp)
-    trace[wp_pure] m!"Focusing with {focus}"
-
-    let some {result := (φ, n, e₂, inst), K, e' := e₁, heq := _} ← findECtx e fun e₁ => do
-      guard <| ← isDefEq e₁ focus
-      let φ ← mkFreshExprMVarQ q(Prop)
-      let n ← mkFreshExprMVarQ q(Nat)
-      let e₂ ← mkFreshExprMVarQ q(Exp)
-      let some inst ← ProofModeM.trySynthInstanceQ q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂) | failure
-      return (φ, n, e₂, inst)
-      | throwIPMError "Cannot find expression to evaluate"
-    have inst : Q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂) := inst
-
-    let ⟨_, hyps', pf⟩ ← iModAction hyps q(modality_laterN $n)
-
-    let ⟨inner, .up _⟩ ← HeapLang.fillQ K e₂
-
-    let nextPf ← iWpFinish hyps' ι s E inner Φ
-
-    let HΦ ← iSolveSidecondition q($φ) (failOnUnsolved := false)
-
-    let pf := q(tac_wp_pure $inst $HΦ $pf $nextPf)
-
-    mvar.assign pf
+    mvar.assign <| ← iWpPure hyps ι s E e Φ focus
 
 macro "wp_pure" : tactic => `(tactic| wp_pure _)
 
@@ -399,7 +439,11 @@ macro "wp_pures" : tactic =>
     | (wp_pure_step; repeat wp_pure_step)
     | wp_finish)
 
-macro "wp_rec" : tactic => `(tactic | (wp_bind _ _; iapply $(mkIdent `wp_rec):ident; rfl; imodintro; wp_finish))
+/-- Beta-reduce the innermost application, unfolding a head hidden behind a definition. -/
+elab "wp_rec" : tactic =>
+  ProofModeM.runTacticWp `wp_rec fun mvar {hyps, ι, s, E, e, Φ, ..} => do
+    let focus ← elabTermEnsuringTypeQ (← `(hl(_ _))) q(HeapLang.Exp)
+    mvar.assign <| ← iWpPure hyps ι s E e Φ focus (unfoldHead := true)
 
 macro "wp_if" : tactic => `(tactic | wp_pure (if _ then _ else _))
 macro "wp_if_true" : tactic => `(tactic | wp_pure (if #true then _ else _))
