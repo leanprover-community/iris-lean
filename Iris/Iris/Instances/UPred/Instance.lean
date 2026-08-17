@@ -424,7 +424,7 @@ instance : BI (UPred M) where
     | 0, _, _ => .inl trivial
     | _+1, _, H => .inr @fun | 0, _, Hx'le, _, _ => P.mono H Hx'le.incN (Nat.zero_le _)
 
-#rocq_ignore pure_ne "No Proper type class in Lean"
+#rocq_ignore pure_ne "Direct consequence of propext"
 #rocq_ignore pure_intro "Inlined in `uPredI` construction"
 #rocq_ignore pure_elim' "Inlined in `uPredI` construction"
 
