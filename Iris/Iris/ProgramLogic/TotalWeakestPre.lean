@@ -425,7 +425,7 @@ theorem frame_wand {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} {R : I
   iapply HΦ $$ [$]
 
 @[rocq_alias twp_wp_step]
-theorem wp_step {s : Stuckness}  E (e: Expr) P {Φ : Val → IProp GF} (toVal_e : toVal e = none) :
+theorem wp_step {s : Stuckness} {E} {e: Expr} P {Φ : Val → IProp GF} (toVal_e : toVal e = none) :
     ▷ P -∗ WP e @ s; E [{ v, P ={E}=∗ Φ v }] -∗ WP e @ s; E {{ Φ }} := by
  iintro HP Hwp
  iapply wp_step_fupd toVal_e LawfulSet.subset_refl $$ [$HP]

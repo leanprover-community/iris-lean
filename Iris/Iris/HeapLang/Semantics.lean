@@ -136,8 +136,89 @@ abbrev State.get? (σ : State) (l : Loc) : Option (Option Val) :=
 
 /-! ### Multi-cell allocation -/
 
-def allocCells (l : Loc) (n : Nat) (v : Option Val) : HeapF (Option Val) :=
-  (List.range n).foldl (fun h (i : Nat) => Std.insert (M := HeapF) h (l + (i : Int)) v) ∅
+@[rocq_alias heap_lang.heap_lang.heap_array]
+def heapArray (l : Loc) (vs : List (Option Val)) : HeapF (Option Val) :=
+  match vs with
+  | .nil => ∅
+  | v :: vs' => Std.insert (M := HeapF) (heapArray (l + (1 : Int)) vs') l v
+
+abbrev allocCells (l : Loc) (n : Nat) (v : Option Val) : HeapF (Option Val) :=
+  heapArray l (List.replicate n v)
+
+@[simp]
+theorem heapArray_nil {l : Loc} : heapArray l [] = (∅ : HeapF (Option Val)) := rfl
+
+@[rocq_alias heap_lang.heap_lang.heap_array_singleton]
+theorem heapArray_singleton {l : Loc} : heapArray l [v] = PartialMap.singleton l v := rfl
+
+theorem heapArray_snoc {l : Loc} {vs : List (Option Val)} {v : Option Val} :
+    heapArray l (vs ++ [v]) =
+      Std.insert (M := HeapF) (heapArray l vs) (l + (vs.length : Int)) v := by
+  induction vs generalizing l with
+  | nil => simp [heapArray]
+  | cons w vs ih =>
+    simp only [List.cons_append, heapArray, List.length_cons]
+    rw [ih, Std.LawfulPartialMap.insert_insert_comm]
+    · congr 1
+      rw [loc_add_assoc]
+      congr 1
+      omega
+    · intro h
+      have := congrArg Loc.n h
+      simp only [loc_add_n] at this
+      omega
+
+@[rocq_alias heap_lang.heap_lang.heap_array_lookup]
+theorem get?_heapArray {l : Loc} {vs : List (Option Val)} {ow : Option Val} {k : Loc} :
+    PartialMap.get? (M := HeapF) (heapArray l vs) k = some ow ↔
+      ∃ j : Nat, k = l + (j : Int) ∧ vs[j]? = some ow := by
+  induction vs generalizing l with
+  | nil => simp [heapArray, Std.LawfulPartialMap.get?_empty]
+  | cons v vs ih =>
+    rw [heapArray, Std.LawfulPartialMap.get?_insert]
+    have hadd (j : Nat) :
+        l + (1 : Int) + (j : Int) = l + ((j + 1 : Nat) : Int) := by
+      rw [loc_add_assoc, Int.add_comm (1 : Int)]
+      congr 1
+    constructor
+    · split
+      · rename_i hlk
+        intro how
+        exact ⟨0, by simpa using hlk.symm, by simpa using how⟩
+      · intro hget
+        obtain ⟨j, hkj, hj⟩ := ih.mp hget
+        exact ⟨j + 1, hkj.trans (hadd j), by simpa using hj⟩
+    · rintro ⟨_ | j, hkj, hj⟩
+      · rw [if_pos (by simpa using hkj.symm)]
+        simpa using hj
+      · rw [if_neg]
+        · exact ih.mpr ⟨j, hkj.trans (hadd j).symm, by simpa using hj⟩
+        · intro hlk
+          have := congrArg Loc.n (hlk.trans hkj)
+          simp only [loc_add_n] at this
+          omega
+
+@[rocq_alias heap_lang.heap_lang.heap_array_map_disjoint]
+theorem heapArray_disjoint {l : Loc} {vs : List (Option Val)} {m : HeapF (Option Val)}
+    (hf : ∀ i : Int, 0 ≤ i → i < (vs.length : Int) →
+      PartialMap.get? (M := HeapF) m (l + i) = none) :
+    PartialMap.disjoint (M := HeapF) (heapArray l vs) m := by
+  intro k ⟨h1, h2⟩
+  rcases hget : PartialMap.get? (M := HeapF) (heapArray l vs) k with _ | ow
+  · simp [hget] at h1
+  · obtain ⟨i, hki, hvi⟩ := get?_heapArray.mp hget
+    have hi := (List.getElem?_eq_some_iff.mp hvi).1
+    rw [hki, hf (i : Int) (Int.natCast_nonneg i) (by omega)] at h2
+    simp at h2
+
+theorem get?_heapArray_self {l : Loc} {vs : List (Option Val)} :
+    PartialMap.get? (M := HeapF) (heapArray l vs) (l + (vs.length : Int)) = none := by
+  rcases hget : PartialMap.get? (M := HeapF) (heapArray l vs)
+    (l + (vs.length : Int)) with _ | ow
+  · rfl
+  · obtain ⟨i, hik, hvi⟩ := get?_heapArray.mp hget
+    have hi := (List.getElem?_eq_some_iff.mp hvi).1
+    exact False.elim (Nat.ne_of_lt hi (Int.ofNat_inj.mp (loc_add_inj hik).symm))
 
 theorem get?_foldl_insert (l : Loc) (v : Option Val) (m : HeapF (Option Val)) (n : Nat) (k : Loc) :
     PartialMap.get? (M := HeapF) ((List.range n).foldl
@@ -160,7 +241,30 @@ theorem get?_foldl_insert (l : Loc) (v : Option Val) (m : HeapF (Option Val)) (n
 theorem get?_allocCells {l : Loc} {n : Nat} {v : Option Val} {k : Loc} :
     PartialMap.get? (M := HeapF) (allocCells l n v) k
       = if (∃ i, i < n ∧ k = l + (i : Int)) then some v else none := by
-  simp [allocCells, get?_foldl_insert, Std.LawfulPartialMap.get?_empty]
+  by_cases h : ∃ i, i < n ∧ k = l + (i : Int)
+  · rw [if_pos h]
+    obtain ⟨i, hi, hki⟩ := h
+    apply get?_heapArray.mpr
+    exact ⟨i, hki, List.getElem?_replicate_of_lt hi⟩
+  · rw [if_neg h]
+    rcases hget : PartialMap.get? (M := HeapF) (allocCells l n v) k with _ | ow
+    · rfl
+    · obtain ⟨i, hki, hvi⟩ := get?_heapArray.mp hget
+      have hi := (List.getElem?_eq_some_iff.mp hvi).1
+      exact False.elim (h ⟨i, by simpa using hi, hki⟩)
+
+@[simp]
+theorem allocCells_zero {l : Loc} {v : Option Val} : allocCells l 0 v = ∅ := rfl
+
+/-- `allocCells` peels off its *last* cell. -/
+theorem allocCells_succ {l : Loc} {n : Nat} {v : Option Val} :
+    allocCells l (n + 1) v = Std.insert (M := HeapF) (allocCells l n v) (l + (n : Int)) v := by
+  rw [allocCells, List.replicate_succ', heapArray_snoc, List.length_replicate]
+
+theorem get?_allocCells_self {l : Loc} {n : Nat} {v : Option Val} :
+    PartialMap.get? (M := HeapF) (allocCells l n v) (l + (n : Int)) = none := by
+  simpa [allocCells] using
+    (get?_heapArray_self (l := l) (vs := List.replicate n v))
 
 theorem initHeap_heap_eq {σ : State} {l : Loc} {n : Int} {v : Option Val} :
     Std.PartialMap.equiv (M := HeapF) (σ.initHeap l n v).heap
@@ -175,14 +279,12 @@ theorem initHeap_heap_eq {σ : State} {l : Loc} {n : Int} {v : Option Val} :
 
 theorem allocCells_disjoint {l : Loc} {n : Int} {v : Val} {m : HeapF (Option Val)}
     (hf : ∀ i : Int, 0 ≤ i → i < n → PartialMap.get? (M := HeapF) m (l + i) = none) :
-    Std.PartialMap.disjoint (M := HeapF) (allocCells l n.toNat (some v)) m := by
-  intro k ⟨h1, h2⟩
-  rw [get?_allocCells] at h1
-  split at h1 <;> rename_i hcond
-  · obtain ⟨i, hi, hki⟩ := hcond
-    rw [hki, hf (i : Int) (Int.natCast_nonneg i) (by omega)] at h2
-    simp at h2
-  · simp at h1
+    Std.PartialMap.disjoint (M := HeapF) (allocCells l n.toNat v) m := by
+  apply heapArray_disjoint
+  intro i hi hin
+  apply hf i hi
+  simp only [List.length_replicate] at hin
+  omega
 
 theorem exists_fresh_block (m : HeapF (Option Val)) (n : Int) :
     ∃ l : Loc, ∀ i : Int, 0 ≤ i → i < n → PartialMap.get? (M := HeapF) m (l + i) = none := by
