@@ -587,7 +587,7 @@ public theorem tac_wp_faa [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
     Δ ⊢ WP (ProgramLogic.fill K hl(faa(#l, #z2))) @ s ; E {{ Φ }} :=
   tac_wp_heap_op rfl (wp_exact_of_triple wp_faa) hlater hsplit hcont
 
-@[rocq_alias tac_wp_allocN]
+@[rocq_alias heap_lang.tac_wp_allocN]
 public theorem tac_wp_allocN [ι : HeapLangGS hlc GF] {Δ Δ' : IProp GF}
     {s : Stuckness} {E : CoPset} {K : List ECtxItem} {v : Val} {n : Int} {Φ}
     (hn : 0 < n)
