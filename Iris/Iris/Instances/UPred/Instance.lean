@@ -715,21 +715,20 @@ theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
 
 @[rocq_alias uPred.ownM_forall, rocq_alias uPred_primitive.ownM_forall]
 theorem ownM_forall (f : A → M) :
-  (∀ a, ownM (f a)) ⊢ ∃ z, ownM z ∧ (∀ a, ∃ xf, UPred.eq z (f a • xf)) := by
+  (∀ a, ownM (f a)) ⊢ ∃ z, ownM z ∧ (∀ a, ∃ xf, z ≡ f a • xf) := by
   intro _ x Hf
-  refine ⟨iprop(ownM x ∧ ∀ a, ∃ xf, UPred.eq x.val (f a • xf)), ⟨x, rfl⟩, ?_⟩
+  refine ⟨iprop(ownM x ∧ ∀ a, ∃ xf, x.val ≡ f a • xf), ⟨x, rfl⟩, ?_⟩
   refine ⟨incN_refl x.val, ?_⟩
   rintro p ⟨a, rfl⟩
   rcases Hf (ownM (f a)) ⟨a, rfl⟩ with ⟨xf, Hxf⟩
-  exact ⟨(UPred.eq x.val (f a • xf)), ⟨xf, rfl⟩, Hxf⟩
+  exact ⟨iprop(x.val ≡ f a • xf), ⟨xf, rfl⟩, Hxf⟩
 
 @[rocq_alias uPred.later_ownM, rocq_alias uPred_primitive.later_ownM]
-theorem later_ownM (a : M) : ▷ ownM a ⊢ ∃ b, ownM b ∧ ▷ <si_pure> (SiProp.internalEq a b)
-  | 0, _, _ =>
-    ⟨iprop(ownM unit ∧ ▷ <si_pure> (SiProp.internalEq a unit)), ⟨unit, rfl⟩, incN_unit, trivial⟩
+theorem later_ownM (a : M) : ▷ ownM a ⊢ ∃ b, ownM b ∧ ▷ (a ≡ b)
+  | 0, _, _ => ⟨iprop(ownM unit ∧ ▷ (a ≡ unit)), ⟨unit, rfl⟩, incN_unit, trivial⟩
   | n+1, x, ⟨y, hx⟩ => by
     let ⟨a', y', hx', ha', hy'⟩ := extend (validN_succ x.property) hx
-    refine ⟨iprop(ownM a' ∧ ▷ <si_pure> (SiProp.internalEq a a')), ⟨a', rfl⟩, ?_, ?_⟩
+    refine ⟨iprop(ownM a' ∧ ▷ (a ≡ a')), ⟨a', rfl⟩, ?_, ?_⟩
     · exact (incN_iff_right hx'.dist).mpr (incN_op_left (n + 1) a' y')
     · exact OFE.Dist.symm ha'
 

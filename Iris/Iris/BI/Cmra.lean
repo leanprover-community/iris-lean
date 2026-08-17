@@ -192,6 +192,13 @@ theorem internalCmraIncluded_trans {a b c : A} :
   refine Entails.trans ?_ (internalEq.trans (b := (b • b')))
   exact and_intro and_elim_r (and_elim_left_trans (BI.internalEq_entails.mpr (fun n heq => op_left_dist _ heq)))
 
+/-- The internal `≼` is monotone under any nonexpansive map commuting with `•`. -/
+theorem internalCmraIncluded_map {B : Type _} [CMRA B] (g : A → B) [NonExpansive g]
+    (hg : ∀ x y : A, g (x • y) = g x • g y) {a b : A} :
+    a ≼ b ⊢@{PROP} g a ≼ g b :=
+  siPure_mono <| BI.exists_elim fun c => BI.exists_intro_trans (g c) <| by
+    rw [← hg]; exact internalEq.of_internalEquiv_ne g
+
 @[rocq_alias internal_included_timeless]
 instance internalCmraIncluded_timeless {a b : A} [CMRA.Discrete A] :
     Timeless (PROP := PROP) iprop(a ≼ b) := by
