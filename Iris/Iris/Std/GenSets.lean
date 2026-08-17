@@ -850,7 +850,8 @@ variable {S : Type _} [LawfulSet S Nat] {start len : Nat}
 /-- The set `{start, start + 1, …, start + len - 1}`. -/
 def setSeq (start len : Nat) : S := ofList (List.range' start len)
 
-theorem mem_setSeq {x : Nat} : x ∈ (setSeq start len : S) ↔ start ≤ x ∧ x < start + len := by
+theorem mem_setSeq {x : Nat} :
+    x ∈ (setSeq start len : S) ↔ start ≤ x ∧ x < start + len := by
   rw [setSeq, ← mem_ofList, List.mem_range'_1]
 
 @[simp]

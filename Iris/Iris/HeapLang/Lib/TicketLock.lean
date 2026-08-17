@@ -60,7 +60,8 @@ class TicketLockG (GF : BundledGFunctors) where [elemG : ElemG GF TicketLockF]
 
 attribute [reducible, instance] TicketLockG.elemG
 
-#rocq_ignore heap_lang.«tlockΣ» "Superseded by the `TicketLockG` typeclass on `BundledGFunctors`."
+#rocq_ignore heap_lang.«tlockΣ»
+  "Superseded by the `TicketLockG` typeclass on `BundledGFunctors`."
 #rocq_ignore heap_lang.«subG_tlockΣ» "Superseded by Lean's direct `ElemG` typeclass synthesis."
 
 section proof
@@ -166,7 +167,8 @@ theorem newlock_spec :
   wp_rec
   wp_alloc ln with Hln
   wp_alloc lo with Hlo
-  imod iOwn_alloc (F := TicketLockF) ((auth 0 0 : TicketR) • owner 0) with ⟨%γ, ⟨Hauth, Howner⟩⟩
+  imod iOwn_alloc (F := TicketLockF) ((auth 0 0 : TicketR) • owner 0) with
+    ⟨%γ, ⟨Hauth, Howner⟩⟩
   · exact Auth.auth_both_valid_2 ⟨trivial, trivial⟩ (inc_refl _)
   wp_pures
   imodintro
@@ -191,7 +193,7 @@ theorem waitLoop_spec (γ : GName) (lk : Val) (x : Nat) (R : IProp GF) :
   wp_rec
   wp_pures
   wp_bind !_
-  iinv Hinv with ⟨%o, %n, >Hlo, Hln, Hauth, Hstate⟩ Hclose
+  iinv Hinv with ⟨%o, %n, >Hlo, >Hln, >Hauth, Hstate⟩ Hclose
   wp_load
   by_cases hxo : x = o
   · subst hxo
@@ -209,7 +211,7 @@ theorem waitLoop_spec (γ : GName) (lk : Val) (x : Nat) (R : IProp GF) :
   · imod Hclose $$ [$Hlo $Hln $Hauth $Hstate] with -
     imodintro
     wp_pures
-    rw [beq_eq_false_iff_ne.mpr (by simp; omega)]
+    rw [beq_eq_false_iff_ne.mpr (by simp only [ne_eq, Val.lit.injEq, BaseLit.int.injEq]; omega)]
     wp_pures
     iapply IH $$ Hissued HΦ
 
@@ -222,7 +224,7 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   wp_rec
   wp_pures
   wp_bind !_
-  iinv Hinv with ⟨%o, %n, Hlo, >Hln, Hauth, Hstate⟩ Hclose
+  iinv Hinv with ⟨%o, %n, >Hlo, >Hln, >Hauth, Hstate⟩ Hclose
   wp_load
   imod Hclose $$ [$Hlo $Hln $Hauth $Hstate] with -
   imodintro
@@ -230,7 +232,7 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   wp_bind cmpXchg(_, _, _)
   iinv Hinv with ⟨%o', %n', >Hlo, >Hln, >Hauth, Hstate⟩ Hclose
   wp_cmpxchg with hsuc hfail
-  · obtain rfl : n' = n := by simp at hsuc; omega
+  · obtain rfl : n' = n := by simp only [Val.lit.injEq, BaseLit.int.injEq] at hsuc; omega
     imod iOwn_update (a' := (auth o' (n' + 1) : TicketR) • ticket n') $$ Hauth
       with ⟨Hauth, Hissued⟩
     · refine Auth.auth_update_alloc ?_
