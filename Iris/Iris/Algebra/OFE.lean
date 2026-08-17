@@ -186,7 +186,7 @@ theorem ne_dist_later [OFE α] [OFE β] (f : α → β) [NonExpansive f] {n x y}
     (h : DistLater n x y) : DistLater n (f x) (f y) := fun m hm => NonExpansive.ne (h m hm)
 
 @[rocq_alias dist_pointwise_lt]
-theorem dist_pointwise_lt [OFE α] [OFE β] {n m} {f g : α → β} (hlt : m < n)
+theorem dist_pointwise_lt [OFE β] {n m} {f g : α → β} (hlt : m < n)
     (hp : ∀ a, DistLater n (f a) (g a)) : ∀ a, f a ≡{m}≡ g a := fun a => hp a m hlt
 
 /-- Constant functions are contractive. -/
