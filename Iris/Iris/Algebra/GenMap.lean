@@ -130,9 +130,7 @@ theorem GenMap.alter_of_lookup {g : GenMap β} {x : Nat} {y : Option β} (h : g.
     g.alter x y = g :=
   GenMap.ext <| funext fun k => by
     simp only [alter, Iris.alter]
-    split
-    next heq => exact heq ▸ h.symm
-    next => rfl
+    grind
 
 theorem GenMap.alter_alter (g : GenMap β) (x : Nat) (y y' : Option β) :
     (g.alter x y).alter x y' = g.alter x y' :=

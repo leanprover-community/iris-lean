@@ -255,11 +255,11 @@ variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
 theorem iResUR_op_eval (c1 c2 : IResUR GF) : (c1 • c2) τ' γ' = (c1 τ' γ') • (c2 τ' γ') := by
   simp [CMRA.op, optionOp]
 
-instance IResUR.lookup.ne {τ : GType} {γ : GName} :
+instance IResUR.lookup_ne {τ : GType} {γ : GName} :
     NonExpansive (fun r : IResUR GF => (r τ).car γ) where
   ne {_ _ _} H := H τ γ
 
-instance ElemG.unbundle_foldi.ne :
+instance ElemG.unbundle_foldi_ne :
     NonExpansive (fun v : GF.api E.τ (IPre GF) => E.unbundle (foldi v)) where
   ne {_ _ _} H := ElemG.unbundle.ne.ne (foldi.ne.ne H)
 
@@ -1000,7 +1000,7 @@ theorem iResProject_none_incl_false {z : IResUR GF} (a : F.ap (IProp GF))
   exact option_includedI.mp
 
 @[rocq_alias own_forall]
-theorem iOwn_forall {B : Type _} [hB : Inhabited B] (γ : GName) (f : B → F.ap (IProp GF)) :
+theorem iOwn_forall {B : Type _} [Inhabited B] (γ : GName) (f : B → F.ap (IProp GF)) :
     (∀ b, iOwn γ (f b)) ⊢ ∃ c, iOwn γ c ∗ ∀ b, some (f b) ≼ some c := by
   have hforall : (∀ b, UPred.ownM (iSingleton F γ (f b))) ⊢@{IProp GF}
       ∃ z, UPred.ownM z ∧ ∀ b, iSingleton F γ (f b) ≼ z :=
@@ -1032,12 +1032,17 @@ theorem iOwn_forall_total [CMRA.IsTotal (F.ap (IProp GF))] {B : Type _} [Inhabit
 @[rocq_alias own_and]
 theorem iOwn_and {a1 a2 : F.ap (IProp GF)} :
     (iOwn γ a1 ∧ iOwn γ a2) ⊢ ∃ c, iOwn γ c ∗ some a1 ≼ some c ∗ some a2 ≼ some c := by
-  refine and_forall_ite.mp.trans ?_
-  refine (forall_mono fun b => ?_).trans
-    ((iOwn_forall γ fun b : Bool => if b then a1 else a2).trans ?_)
-  · cases b <;> exact .rfl
-  · refine exists_mono fun _ => sep_mono_right ?_
-    exact (and_intro (forall_elim true) (forall_elim false)).trans persistent_and_sep_mp
+  iintro H
+  ihave Hall : (∀ b : Bool, iOwn γ (bif b then a1 else a2)) $$ [H]
+  · iintro %b
+    cases b
+    · simp only [cond_false]; icases H with ⟨-, $⟩
+    · simp only [cond_true]; icases H with ⟨$, -⟩
+  · icases iOwn_forall γ (fun b : Bool => bif b then a1 else a2) $$ Hall with ⟨%c, Hown, #Hincl⟩
+    iexists c; iframe Hown
+    isplit
+    · ihave #H1 := Hincl $$ %true; isimp only [cond_true] at H1; iexact H1
+    · ihave #H2 := Hincl $$ %false; isimp only [cond_false] at H2; iexact H2
 
 @[rocq_alias own_and_total]
 theorem iOwn_and_total [CMRA.IsTotal (F.ap (IProp GF))] {a1 a2 : F.ap (IProp GF)} :
@@ -1046,17 +1051,14 @@ theorem iOwn_and_total [CMRA.IsTotal (F.ap (IProp GF))] {a1 a2 : F.ap (IProp GF)
     sep_mono_right (sep_mono Some_included_totalI.mp Some_included_totalI.mp)
 
 @[rocq_alias own_forall_pred]
-theorem iOwn_forall_pred {B : Type _} (γ : GName) (φ : B → Prop) (f : B → F.ap (IProp GF))
-    (h : ∃ b, φ b) :
+theorem iOwn_forall_pred {B : Type _} (γ : GName) (φ : B → Prop) [Inhabited (Subtype φ)]
+  (f : B → F.ap (IProp GF)) :
     (∀ b, ⌜φ b⌝ -∗ iOwn γ (f b)) ⊢ ∃ c, iOwn γ c ∗ ∀ b, ⌜φ b⌝ -∗ some (f b) ≼ some c := by
-  obtain ⟨b₀, hb₀⟩ := h
   iintro Hown
   ihave ⟨%c, Hown, #Hincl⟩ :=
-    iOwn_forall (hB := ⟨⟨b₀, hb₀⟩⟩) γ (fun b : Subtype φ => f b.val) $$ [Hown]
+    iOwn_forall γ (fun b : Subtype φ => f b.val) $$ [Hown]
   · iintro %b
-    iapply Hown
-    ipureintro
-    exact b.property
+    iapply Hown $$ %_ %b.property
   · iexists c
     isplitl [Hown]
     · iexact Hown
@@ -1065,9 +1067,9 @@ theorem iOwn_forall_pred {B : Type _} (γ : GName) (φ : B → Prop) (f : B → 
 
 @[rocq_alias own_forall_pred_total]
 theorem iOwn_forall_pred_total [CMRA.IsTotal (F.ap (IProp GF))] {B : Type _} (γ : GName)
-    (φ : B → Prop) (f : B → F.ap (IProp GF)) (h : ∃ b, φ b) :
+    (φ : B → Prop) [Inhabited (Subtype φ)] (f : B → F.ap (IProp GF)) :
     (∀ b, ⌜φ b⌝ -∗ iOwn γ (f b)) ⊢ ∃ c, iOwn γ c ∗ ∀ b, ⌜φ b⌝ -∗ f b ≼ c :=
-  (iOwn_forall_pred γ φ f h).trans <| exists_mono fun _ =>
+  (iOwn_forall_pred γ φ f).trans <| exists_mono fun _ =>
     sep_mono_right (forall_mono fun _ => wand_mono_right Some_included_totalI.mp)
 
 @[rocq_alias own_and_discrete_total]
