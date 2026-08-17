@@ -1,6 +1,7 @@
 module
 
 public import Iris.HeapLang.Completeness
+public import Iris.HeapLang.DerivedLaws
 public import Iris.HeapLang.Instances
 public import Iris.HeapLang.Linter
 public import Iris.HeapLang.Metatheory
