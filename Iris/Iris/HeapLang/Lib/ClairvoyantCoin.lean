@@ -54,8 +54,8 @@ theorem newCoin.spec :
   iintro %Φ - K
   wp_lam
   wp_bind newProph()
-  iapply wp_new_proph
-  iintro %p %pvs Hp
+  iapply wp_new_proph $$ [//]
+  iintro %pvs %p !> proph
   wp_bind &nondetBool _
   iapply nondetBool.spec $$ [//]
   iintro !> %b -
@@ -100,7 +100,7 @@ theorem tossCoin.spec (cp : Val) (bs : List Bool) :
   wp_store
   wp_bind resolveProph(_, _)
   iapply wp_resolve_proph $$ Hp
-  iintro %pvs' %rfl Hp
+  iintro !> %pvs' ⟨%rfl, Hp⟩
   simp only [List.tail_cons, prophecyToListBool_cons] at htl
   wp_seq
   iintro !>
