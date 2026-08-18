@@ -10,6 +10,7 @@ public import Iris.Algebra.Frac
 public import Iris.ProofMode.SynthInstance
 public import Iris.ProofMode.Instances
 public import Iris.ProofMode.InstancesMake
+public import Iris.ProofMode.InstancesUpdates
 public import Iris.ProofMode.NatCancel
 
 @[expose] public section
@@ -598,3 +599,34 @@ variable (p : Bool) in
 #ipm_synth (IntoWand p true iprop(∀ _ : φ, P) (.matching .argument) iprop(⌜φ⌝) _)
 
 end ProofModeInstances
+
+section TCSideCondition
+
+variable [Sbi PROP] [BIFUpdate PROP] [BIFUpdateSbi PROP] [BIAffine PROP]
+variable (E : CoPset) (Ψ : Nat → PROP) [∀ n, Plain (Ψ n)]
+
+/- Tests `fromForall_fupd` with the side condition `E ⊆ E` discharged. -/
+/-- info:
+  solution: FromForall iprop(|={E}=> ∀ x, Ψ x) fun a => iprop(|={E}=> Ψ a),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth @FromForall PROP _ iprop(|={E,E}=> ∀ x, Ψ x) (_ : Type) _
+
+/- Tests `fromForall_fupd` with the side condition `E ⊆ ⊤` discharged. -/
+/-- info:
+  solution: FromForall iprop(|={⊤, E}=> ∀ x, Ψ x) fun a => iprop(|={⊤, E}=> Ψ a),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth @FromForall PROP _ iprop(|={⊤,E}=> ∀ x, Ψ x) (_ : Type) _
+
+/- Tests `fromForall_fupd` with the side condition `∅ ⊆ E` discharged. -/
+/-- info:
+  solution: FromForall iprop(|={E, ∅}=> ∀ x, Ψ x) fun a => iprop(|={E, ∅}=> Ψ a),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth @FromForall PROP _ iprop(|={E,∅}=> ∀ x, Ψ x) (_ : Type) _
+
+end TCSideCondition

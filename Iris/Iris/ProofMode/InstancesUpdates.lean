@@ -305,26 +305,18 @@ section SBIFancyUpdate
 
 variable {PROP} [Sbi PROP] [BIFUpdate PROP] [BIFUpdateSbi PROP] [BIAffine PROP]
 
-private theorem subset {E1 E2 : CoPset}
-    (inst : TCOr (TCEq E1 E2) (TCOr (TCEq E1 ⊤) (TCEq E2 ∅))) : E2 ⊆ E1 := by
-  match inst with
-  | @TCOr.l _ _ instEq               => rw [instEq.to_eq]
-  | @TCOr.r _ _ (@TCOr.l _ _ instEq) => rw [instEq.to_eq]; exact CoPset.subseteq_top
-  | @TCOr.r _ _ (@TCOr.r _ _ instEq) => rw [instEq.to_eq]; exact LawfulSet.empty_subset
-
 @[ipm_backtrack, rocq_alias from_forall_fupd]
 instance fromForall_fupd E1 E2 (P : PROP) {α : Type _} (Φ : α → PROP)
-    -- TODO: generalize this to `TCSidecondition (E1 ⊆ E2)`, which uses iSolveSidecondition
-    [hm : TCOr (TCEq E1 E2) (TCOr (TCEq E1 ⊤) (TCEq E2 ∅))]
+    [inst : TCSideCondition (E2 ⊆ E1)]
     [h : FromForall P Φ] [∀ a, Plain (Φ a)] :
     FromForall iprop(|={E1,E2}=> P) (fun a => iprop(|={E1,E2}=> Φ a)) where
-  from_forall := (fupd_plain_forall (subset hm)).mpr.trans (mono h.from_forall)
+  from_forall := (fupd_plain_forall inst.sidecondition).mpr.trans (mono h.from_forall)
 
 @[ipm_backtrack, rocq_alias from_forall_step_fupd]
 instance fromForall_stepFupd E1 E2 (P : PROP) (Φ : α → PROP)
-    [hm : TCOr (TCEq E1 E2) (TCOr (TCEq E1 ⊤) (TCEq E2 ∅))]
+    [inst : TCSideCondition (E2 ⊆ E1)]
     [h : FromForall P Φ] [∀ a, Plain (Φ a)] :
     FromForall iprop(|={E1}[E2]▷=> P) (fun a => iprop(|={E1}[E2]▷=> Φ a)) where
-  from_forall := (step_fupd_plain_forall (subset hm)).mpr.trans (step_fupd_mono h.from_forall)
+  from_forall := (step_fupd_plain_forall inst.sidecondition).mpr.trans (step_fupd_mono h.from_forall)
 
 end SBIFancyUpdate

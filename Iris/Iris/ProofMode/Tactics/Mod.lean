@@ -7,6 +7,7 @@ module
 
 import Iris.BI
 public import Iris.ProofMode.Classes
+public import Iris.ProofMode.SolveSideCondition
 public import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
