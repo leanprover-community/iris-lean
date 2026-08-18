@@ -21,8 +21,33 @@ This file provides introduction rules (BI entailments) for (some) CMRA operation
 
 @[expose] public section
 
--- TODO: Need sbi_unfold to make these proofs less horrific
 namespace Iris
+
+/-- Fold a `BI` goal built from `⌜⌝`, `∧`, `∨`, `∃`, `∀`, `▷`, `≡`, `✓` and `≼` into a single
+`<si_pure>`, leaving the corresponding statement about `SiProp`s. The BI has to be named,
+as folding `⌜⌝` would otherwise loop on the `SiProp`s it produces. -/
+local macro "sbi_fold" p:term : tactic =>
+  `(tactic| simp only [Iris.internalCmraValid, Iris.internalCmraIncluded, Iris.internalEq,
+      ← (Iris.siPure_pure (PROP := $p)).to_eq, ← (Iris.siPure_and (PROP := $p)).to_eq,
+      ← (Iris.siPure_or (PROP := $p)).to_eq, ← (Iris.siPure_exist (PROP := $p)).to_eq,
+      ← (Iris.siPure_forall (PROP := $p)).to_eq, ← (Iris.siPure_later (PROP := $p)).to_eq])
+
+/-- Unfold `SiProp.holds` of the connectives into their meta-level meaning. -/
+local macro "sbi_holds" : tactic =>
+  `(tactic| simp only [Iris.SiProp.pure_holds, Iris.SiProp.and_holds, Iris.SiProp.or_holds,
+      Iris.SiProp.sep_holds, Iris.SiProp.exists_holds, Iris.SiProp.forall_holds,
+      Iris.SiProp.later_holds_zero, Iris.SiProp.later_holds_succ,
+      Iris.SiProp.internalEq_holds, Iris.SiProp.cmraValid_holds, Iris.siPure_holds])
+
+/-- Reduce a `⊣⊢` goal to the step-indexed statement `_ ↔ _` at an arbitrary index. -/
+local macro "sbi_iff" p:term : tactic =>
+  `(tactic| (sbi_fold $p
+             refine Iris.siPure_mono_bi (Iris.SiProp.biEntails_of_iff fun _ => ?_)
+             try sbi_holds))
+
+/-- Reduce a `⊢` goal to the step-indexed statement `_ → _` at an arbitrary index. -/
+local macro "sbi_mono" p:term : tactic =>
+  `(tactic| (sbi_fold $p; refine Iris.siPure_mono fun _ => ?_; try sbi_holds))
 
 section prod
 
@@ -31,29 +56,12 @@ open BI Std BIBase.BiEntails
 @[rocq_alias prod_validI]
 theorem prod_validI [Sbi PROP] [CMRA A] [CMRA B] (x : A × B) :
     ✓ x ⊣⊢@{PROP} ✓ x.1 ∧ ✓ x.2 := by
-  simp only [internalCmraValid]
-  refine .trans ?_ siPure_and
-  refine siPure_mono_bi ?_
-  cases x with | mk x1 x2 =>
-  exact ⟨fun _ => id, fun _ => id⟩
+  sbi_iff PROP; exact .rfl
 
 @[rocq_alias prod_includedI]
 theorem prod_includedI [Sbi PROP] [CMRA A] [CMRA B] (x y : A × B) :
     x ≼ y ⊣⊢@{PROP} x.1 ≼ y.1 ∧ x.2 ≼ y.2 := by
-  simp only [internalCmraIncluded, internalEq]
-  refine .trans (siPure_mono_bi ?_) siPure_and
-  refine siPure_exist.symm.trans ?_
-  refine .trans ?_ (and_congr_left siPure_exist)
-  refine .trans ?_ (and_congr_right siPure_exist)
-  refine .trans (siPure_mono_bi ?_) siPure_and
-  cases x with | mk x1 x2 =>
-  cases y with | mk y1 y2 =>
-  simp only [CMRA.op, Prod.op]
-  constructor
-  · rintro n ⟨P, ⟨w, rfl⟩, hP⟩
-    exact ⟨⟨_, ⟨w.fst, rfl⟩, hP.1⟩, ⟨_, ⟨w.snd, rfl⟩, hP.2⟩⟩
-  · rintro n ⟨⟨P1, ⟨w1, rfl⟩, hP1⟩, ⟨P2, ⟨w2, rfl⟩, hP2⟩⟩
-    exact ⟨_, ⟨(w1, w2), rfl⟩, hP1, hP2⟩
+  sbi_iff PROP; exact Prod.incN_def
 
 end prod
 
@@ -63,52 +71,25 @@ open BI Std BIBase.BiEntails
 
 @[rocq_alias option_validI]
 theorem option_validI [Sbi PROP] [CMRA A] {mx : Option A} :
-  ✓ mx ⊣⊢@{PROP} mx.elim iprop(True) internalCmraValid :=
-  match mx with
-  | none => ⟨true_intro, internalCmraValid_intro trivial⟩
-  | some _ => .rfl
+  ✓ mx ⊣⊢@{PROP} mx.elim iprop(True) internalCmraValid := by
+  cases mx <;> sbi_iff PROP <;> exact .rfl
 
 @[rocq_alias option_includedI]
 theorem option_includedI [Sbi PROP] [CMRA A] {mx my : Option A} :
   mx ≼ my ⊣⊢@{PROP}
     mx.elim iprop(True) fun x => my.elim iprop(False) fun y => iprop((x ≼ y) ∨ (x ≡ y)) := by
-  rcases mx with _ | x <;> rcases my with _ | y
-  · exact ⟨true_intro, internalCmraIncluded_intro (Option.inc_iff.mpr (.inl rfl))⟩
-  · exact ⟨true_intro, internalCmraIncluded_intro (Option.inc_iff.mpr (.inl rfl))⟩
-  · refine ⟨?_, false_elim⟩
-    refine .trans (siPure_mono ?_) siPure_pure.mp
-    rintro n ⟨_, ⟨c, rfl⟩, hc⟩
-    rcases c with _ | c <;> exact hc
-  · simp only [internalCmraIncluded, internalEq]
-    refine .trans (siPure_mono_bi ⟨fun n h => ?_, fun n h => ?_⟩) siPure_or
-    · obtain ⟨_, ⟨c, rfl⟩, hc⟩ := h
-      rcases Option.some_incN_some_iff.mp ⟨c, hc⟩ with heqv | ⟨c, hc⟩
-      · exact .inr heqv
-      · exact .inl ⟨_, ⟨c, rfl⟩, hc⟩
-    · have ⟨c, hc⟩ : (some x : Option A) ≼{n} some y := by
-        rcases h with ⟨_, ⟨c, rfl⟩, hc⟩ | heqv
-        · exact Option.some_incN_some_iff.mpr (.inr ⟨c, hc⟩)
-        · exact Option.some_incN_some_iff.mpr (.inl heqv)
-      exact ⟨_, ⟨c, rfl⟩, hc⟩
+  rcases mx with _ | x <;> rcases my with _ | y <;>
+    try exact internalCmraIncluded_pure fun _ => by simp [Option.incN_iff]
+  sbi_iff PROP; exact Option.some_incN_some_iff.trans Or.comm
 
 @[rocq_alias option_included_totalI]
 theorem option_included_totalI [Sbi PROP] [CMRA A] [CMRA.IsTotal A] {mx my : Option A} :
   mx ≼ my ⊣⊢@{PROP}
     mx.elim iprop(True) fun x => my.elim iprop(False) fun y => iprop(x ≼ y) := by
-  rcases mx with _ | x <;> rcases my with _ | y
-  · exact ⟨true_intro, internalCmraIncluded_intro (Option.inc_iff.mpr (.inl rfl))⟩
-  · exact ⟨true_intro, internalCmraIncluded_intro (Option.inc_iff.mpr (.inl rfl))⟩
-  · refine ⟨?_, false_elim⟩
-    refine .trans (siPure_mono ?_) siPure_pure.mp
-    rintro n ⟨_, ⟨c, rfl⟩, hc⟩
-    rcases c with _ | c <;> exact hc
-  · refine siPure_mono_bi ⟨fun n h => ?_, fun n h => ?_⟩
-    · obtain ⟨_, ⟨c, rfl⟩, hc⟩ := h
-      obtain ⟨c, hc⟩ := Option.some_incN_some_iff_is_total.mp ⟨c, hc⟩
-      exact ⟨_, ⟨c, rfl⟩, hc⟩
-    · obtain ⟨_, ⟨c, rfl⟩, hc⟩ := h
-      obtain ⟨c, hc⟩ := Option.some_incN_some_iff_is_total.mpr ⟨c, hc⟩
-      exact ⟨_, ⟨c, rfl⟩, hc⟩
+  rcases mx with _ | x <;> rcases my with _ | y <;>
+    first
+    | exact internalCmraIncluded_iff fun _ => by simp [Option.incN_iff_is_total]
+    | exact internalCmraIncluded_pure fun _ => by simp [Option.incN_iff_is_total]
 
 @[rocq_alias Some_included_totalI]
 theorem Some_included_totalI [Sbi PROP] [CMRA A] [CMRA.IsTotal A] {x y : A} :
@@ -129,83 +110,26 @@ theorem auth_op_frag_validI [Sbi PROP] (dp : DFrac) (m : H V) k dq v :
   ✓ (Auth dp m • Frag k dq v) ⊣⊢@{PROP}
     ∃ v' dq', ⌜✓ dp⌝ ∧ ⌜get? m k = .some v'⌝ ∧ ✓ (dq', v') ∧
       some (dq, v) ≼ some (dq', v') := by
-  suffices H :
-    (<si_pure> SiProp.cmraValid (HeapView.Auth dp m • Frag k dq v) ⊣⊢@{PROP}
-    (<si_pure> ∃ x x_1, ⌜✓ dp⌝ ∧ ⌜get? m k = some x⌝ ∧ SiProp.cmraValid (x_1, x) ∧
-        ∃ c, some (x_1, x) ≡ some (dq, v) • c)) by
-    simp only [internalCmraValid, internalCmraIncluded, H.to_eq, siPure_exist.to_eq,
-      siPure_and.to_eq, siPure_pure.to_eq, BIBase.BiEntails.rfl]
-  constructor
-  · refine siPure_mono fun n => ?_
-    simp only [SiProp.cmraValid, auth_op_frag_validN_iff]
-    intro ⟨v', dq', Hdp, Hlookup, Hvalid, ⟨z, Hincl⟩⟩
-    apply SiProp.instBI.sExists_intro
-    · exists v'
-    apply SiProp.instBI.sExists_intro
-    · exists dq'
-    refine ⟨Hdp, Hlookup, Hvalid, ?_⟩
-    apply SiProp.instBI.sExists_intro
-    · exists z
-    exact Hincl
-  · refine siPure_mono ?_
-    refine exists_elim fun v' => exists_elim fun dq' => ?_
-    refine pure_elim_left fun Hdp' => ?_
-    refine pure_elim_left fun Hlookup => ?_
-    refine siPure_and.mpr.trans ?_
-    refine siPure_mono (and_exists_left.mp.trans (exists_elim (fun c => ?_)))
-    intro n ⟨h1, h2⟩
-    apply auth_op_frag_validN_iff.mpr
-    exists v', dq'
-    simp only at h1
-    simp [Hdp', Hlookup, h1]
-    exists c
+  sbi_iff PROP; exact auth_op_frag_validN_iff
 
 @[rocq_alias gmap_view_both_validI]
 theorem auth_op_frag_one_validI [Sbi PROP] (dp : DFrac) (m : H V) k v :
   ✓ (Auth dp m • Frag k (.own One.one) v) ⊣⊢@{PROP}
     ⌜✓ dp⌝ ∧ ✓ v ∧ get? m k ≡ .some v := by
-  simp only [internalCmraValid, internalEq, ←siPure_and.to_eq]
-  rw [←siPure_pure.to_eq, ←siPure_and.to_eq]
-  constructor
-  · refine siPure_mono fun n => ?_
-    simp only [SiProp.cmraValid, auth_op_frag_one_validN_iff]
-    exact id
-  · refine siPure_mono fun n => ?_
-    simp only [SiProp.cmraValid, auth_op_frag_one_validN_iff]
-    exact id
+  sbi_iff PROP; exact auth_op_frag_one_validN_iff
 
 @[rocq_alias gmap_view_both_validI_total]
 theorem auth_op_frag_validI_total [Sbi PROP] [CMRA.IsTotal V] (dp : DFrac) (m : H V) k dq v :
   ✓ (Auth dp m • Frag k dq v) ⊢@{PROP}
     ∃ v', ⌜✓ dp⌝ ∧ ⌜✓ dq⌝ ∧ ⌜get? m k = .some v'⌝ ∧
       ✓ v' ∧ v ≼ v' := by
-  suffices H : (<si_pure> SiProp.cmraValid (HeapView.Auth dp m • Frag k dq v) ⊢@{PROP}
-      <si_pure> (∃ v', ⌜✓ dp⌝ ∧ ⌜✓ dq⌝ ∧ ⌜get? m k = some v'⌝ ∧ SiProp.cmraValid v' ∧
-        ∃ c, v' ≡ v • c)) by
-    simp only [internalCmraValid, internalCmraIncluded, siPure_exist.to_eq, siPure_and.to_eq,
-      siPure_pure.to_eq] at H ⊢
-    exact H
-  refine siPure_mono fun n hvalid => ?_
-  have ⟨v', Hdp, Hdq, Hlookup, Hv', ⟨z, Hincl⟩⟩ := auth_op_frag_validN_total_iff hvalid
-  apply SiProp.instBI.sExists_intro
-  · exists v'
-  refine ⟨Hdp, Hdq, Hlookup, Hv', ?_⟩
-  apply SiProp.instBI.sExists_intro
-  · exists z
-  exact Hincl
+  sbi_mono PROP; exact auth_op_frag_validN_total_iff
 
 @[rocq_alias gmap_view_frag_op_validI]
 theorem frag_op_frag_validI [Sbi PROP] k dq1 dq2 v1 v2 :
   ✓ (Frag (H := H) (V := V) k dq1 v1 • Frag k dq2 v2) ⊣⊢@{PROP}
     ⌜✓ (dq1 • dq2)⌝ ∧ ✓ (v1 • v2) := by
-  simp only [←(and_congr_left siPure_pure).to_eq, internalCmraValid, ←siPure_and.to_eq]
-  constructor
-  · refine siPure_mono fun n => ?_
-    simp only [SiProp.cmraValid, frag_op_validN_iff]
-    exact id
-  · refine siPure_mono fun n => ?_
-    simp only [SiProp.cmraValid, frag_op_validN_iff]
-    exact id
+  sbi_iff PROP; exact frag_op_validN_iff
 
 end heap_view
 
@@ -217,9 +141,7 @@ variable [Sbi PROP] [OFE A]
 
 @[rocq_alias agree_equivI]
 theorem agree_equivI {a b : A} : toAgree a ≡ toAgree b ⊣⊢@{PROP} a ≡ b := by
-  refine ⟨siPure_mono fun _ => Agree.toAgree_injN, ?_⟩
-  refine siPure_mono fun n => ?_
-  apply NonExpansive.ne
+  sbi_iff PROP; exact ⟨Agree.toAgree_injN, (NonExpansive.ne ·)⟩
 
 @[rocq_alias agree_op_invI]
 theorem agree_op_invI {x y : Agree A} : ✓ (x • y) ⊢@{PROP} x ≡ y :=
@@ -227,70 +149,36 @@ theorem agree_op_invI {x y : Agree A} : ✓ (x • y) ⊢@{PROP} x ≡ y :=
 
 @[rocq_alias to_agree_validI]
 theorem toAgree_validI (a : A) :
-    ⊢@{PROP} ✓ (toAgree a) := by
-  refine internalCmraValid_intro fun n => ?_
-  simp
+    ⊢@{PROP} ✓ (toAgree a) :=
+  internalCmraValid_intro fun _ => by simp
 
 @[rocq_alias to_agree_op_validI]
 theorem toAgree_op_validI (a b : A) :
-    ✓ (toAgree a • toAgree b) ⊣⊢@{PROP} a ≡ b :=
-  ⟨siPure_mono fun _ => toAgree_op_validN_iff_dist.mp,
-   siPure_mono fun _ => toAgree_op_validN_iff_dist.mpr⟩
+    ✓ (toAgree a • toAgree b) ⊣⊢@{PROP} a ≡ b := by
+  sbi_iff PROP; exact toAgree_op_validN_iff_dist
 
 @[rocq_alias to_agree_uninjI]
 theorem toAgree_uninjI (x : Agree A) :
     ✓ x ⊢@{PROP} ∃ a, toAgree a ≡ x := by
-  refine .trans (siPure_mono fun n hvalid => ?_) siPure_exist.mp
-  have ⟨a, heq⟩ := toAgree_uninjN hvalid
-  apply SiProp.instBI.sExists_intro
-  · exists a
-  exact heq
-
-
--- TODO: Needs cleanup with better internalEq machinery
+  sbi_mono PROP; exact fun h => toAgree_uninjN h
 
 @[rocq_alias agree_op_equiv_to_agreeI]
 theorem agree_op_equiv_toAgreeI (x y : Agree A) (a : A) :
     x • y ≡ toAgree a ⊢@{PROP} x ≡ y ∧ y ≡ toAgree a := by
-  have H1 : x • y ≡ toAgree a ⊢@{PROP} x ≡ y := by
-    refine absorbingly_internalEq (x • y) (toAgree a) |>.mpr.trans ?_
-    refine (absorbingly_mono ?_).trans absorbing
-    refine internalEq.rewrite' internalCmraValid internalEq.symm ?_ |>.trans agree_op_invI
-    refine emp_sep.2.trans ?_
-    refine (sep_mono_left (toAgree_validI a)) |>.trans ?_
-    exact sep_elim_left
-  have H2 : x • y ≡ toAgree a ⊢@{PROP} x ≡ toAgree a := by
-    letI : NonExpansive (x • ·) := CMRA.op_ne
-    have H21 : x • y ≡ toAgree a ⊢@{PROP} x • x ≡ toAgree a := by
-      exact (and_intro (H1.trans (internalEq.of_internalEquiv_ne (x • ·))) .rfl).trans internalEq.trans
-    have H22 : x • y ≡ toAgree a ⊢@{PROP} x • x ≡ x := calc
-      _ ⊢ emp ∗ x • y ≡ toAgree a       := emp_sep.mpr
-      _ ⊢ x • x ≡ x ∗ x • y ≡ toAgree a := sep_mono_left <| internalEq.of_equiv Agree.idemp
-      _ ⊢ x • x ≡ x                     := sep_elim_left
-    refine (and_intro (H22.trans internalEq.symm) H21).trans internalEq.trans
-  apply and_intro H1
-  exact (and_intro (H1.trans internalEq.symm) H2).trans internalEq.trans
+  sbi_mono PROP; intro h
+  have hxy := op_invN (h.validN.mpr toAgree_validN)
+  exact ⟨hxy, ((Dist.of_eq idemp).symm.trans hxy.symm.op_l).trans h⟩
 
 @[rocq_alias agree_includedI]
 theorem agree_includedI (x y : Agree A) :
     x ≼ y ⊣⊢@{PROP} y ≡ x • y := by
-  constructor
-  · refine siPure_mono (exists_elim (fun c => ?_))
-    exact (fun n Heq => (includedN.mp ⟨c, Heq⟩).trans op_commN)
-  · refine siPure_mono (exists_intro_trans y ?_)
-    rfl
+  sbi_iff PROP
+  exact includedN.trans ⟨(·.trans op_commN), (·.trans op_commN)⟩
 
 @[rocq_alias to_agree_includedI]
 theorem toAgree_includedI (a b : A) :
     toAgree a ≼ toAgree b ⊣⊢@{PROP} a ≡ b := by
-  constructor
-  · refine siPure_mono (exists_elim (fun c => ?_))
-    exact (fun n Heq => toAgree_includedN.mp ⟨c, Heq⟩)
-  · refine siPure_mono ?_
-    show SiProp.internalEq a b ⊢ (∃ c, SiProp.internalEq (toAgree b) (toAgree a • c))
-    refine exists_intro_trans (toAgree a) ?_
-    refine internalEq_entails.mpr fun n heq => ?_
-    exact (NonExpansive.ne heq.symm).trans (Dist.of_eq idemp.symm)
+  sbi_iff PROP; exact toAgree_includedN
 
 end agree_inclusion
 
@@ -302,59 +190,35 @@ variable [Sbi PROP] [UCMRA A]
 @[rocq_alias auth_auth_dfrac_validI]
 theorem auth_dfrac_validI (dq : DFrac) (a : A) :
     ✓ (●{dq} a : Auth A) ⊣⊢@{PROP} ⌜✓ dq⌝ ∧ ✓ a := by
-  simp only [←(and_congr_left siPure_pure).to_eq, internalCmraValid, ←siPure_and.to_eq]
-  refine ⟨siPure_mono fun n => ?_, siPure_mono fun n => ?_⟩
-  all_goals simp only [SiProp.cmraValid, auth_dfrac_validN]; exact id
+  sbi_iff PROP; exact auth_dfrac_validN
 
 @[rocq_alias auth_auth_validI]
 theorem auth_validI (a : A) : ✓ (● a : Auth A) ⊣⊢@{PROP} ✓ a := by
-  refine ⟨siPure_mono fun n => ?_, siPure_mono fun n => ?_⟩
-  all_goals simpa only [SiProp.cmraValid, auth_validN] using id
+  sbi_iff PROP; exact auth_validN
 
 @[rocq_alias auth_auth_dfrac_op_validI]
 theorem auth_dfrac_op_validI (dq1 dq2 : DFrac) (a1 a2 : A) :
     ✓ ((●{dq1} a1) • (●{dq2} a2)) ⊣⊢@{PROP}
       ⌜✓ (dq1 • dq2)⌝ ∧ a1 ≡ a2 ∧ ✓ a1 := by
-  simp only [←(and_congr_left siPure_pure).to_eq, internalEq, internalCmraValid
-    , ←(siPure_and.trans (and_congr_right siPure_and)).to_eq]
-  refine ⟨siPure_mono fun n => ?_, siPure_mono fun n => ?_⟩
-  all_goals simp only [SiProp.cmraValid, auth_dfrac_op_validN]; exact id
+  sbi_iff PROP; exact auth_dfrac_op_validN
 
 @[rocq_alias auth_frag_validI]
 theorem frag_validI (a : A) :
     ✓ (◯ a : Auth A) ⊣⊢@{PROP} ✓ a := by
-  refine ⟨siPure_mono fun n => ?_, siPure_mono fun n => ?_⟩
-  all_goals simpa only [SiProp.cmraValid, frag_validN] using id
+  sbi_iff PROP; exact frag_validN
 
 @[rocq_alias auth_both_dfrac_validI]
 theorem both_dfrac_validI (dq : DFrac) (a b : A) :
     ✓ ((●{dq} a) • ◯ b) ⊣⊢@{PROP}
     ⌜✓ dq⌝ ∧ b ≼ a ∧ ✓ a := by
-  simp only [internalCmraValid, internalCmraIncluded, ←(and_congr siPure_pure siPure_and).to_eq]
-  simp only [←siPure_and.to_eq, BI.and_exists_right.to_eq, BI.and_exists_left.to_eq]
-  refine siPure_mono_bi ?_
-  refine ⟨siPure_mono fun n => ?_, ?_⟩
-  · simp only [both_dfrac_validN]
-    intro ⟨hv, ⟨c, hi⟩, hvn⟩
-    apply SiProp.instBI.sExists_intro
-    · exists c
-    · exact ⟨hv, ⟨hi, hvn⟩⟩
-  · refine siPure_mono ?_
-    refine exists_elim fun c n ⟨hv, ⟨hi, hvn⟩⟩ => ?_
-    exact both_dfrac_validN.mpr ⟨hv, (by exists c), hvn⟩
+  sbi_iff PROP; exact both_dfrac_validN
 
 @[rocq_alias auth_both_validI]
 theorem auth_both_validI (a b : A) :
     ✓ ((● a : Auth A) • ◯ b) ⊣⊢@{PROP}
       b ≼ a ∧ ✓ a := by
-  simp only [internalCmraIncluded, internalCmraValid, ←siPure_and.to_eq, BI.and_exists_right.to_eq]
-  refine siPure_mono_bi ?_
-  simp only [SiProp.cmraValid, both_dfrac_validN]
-  refine ⟨fun n ⟨_, ⟨⟨c, hi⟩, hvn⟩⟩ => ?_, ?_⟩
-  · apply SiProp.instBI.sExists_intro
-    · exists c
-    exact ⟨hi, hvn⟩
-  · exact exists_elim fun c n ⟨hi, hvn⟩ => ⟨DFrac.valid_own_one, ⟨⟨c, hi⟩, hvn⟩⟩
+  sbi_iff PROP; exact ⟨fun h => (both_dfrac_validN.mp h).2,
+    fun h => both_dfrac_validN.mpr ⟨DFrac.valid_own_one, h⟩⟩
 
 end auth
 
@@ -366,10 +230,7 @@ open BI
 @[rocq_alias dfrac_agree_validI]
 theorem dfrac_agree_validI (dq : DFrac) (x : A) :
     internalCmraValid (DFracAgree.mk dq x) ⊣⊢@{PROP} ⌜✓ dq⌝ := by
-  refine (prod_validI (DFracAgree.mk dq x)).trans ⟨?_, ?_⟩
-  · exact and_elim_l.trans internalCmraValid_discrete.mp
-  · exact and_intro internalCmraValid_discrete.mpr
-      (sep_elim_emp_valid_left (toAgree_validI x) sep_elim_left)
+  sbi_iff PROP; exact ⟨fun h => h.1, fun h => ⟨h, by simp [DFracAgree.mk]⟩⟩
 
 @[rocq_alias dfrac_agree_validI_2]
 theorem dfrac_agree_validI_2 (dq1 dq2 : DFrac) (x y : A) :
@@ -411,40 +272,25 @@ theorem f_homom_includedI [CMRA A] [CMRA B] (x y : A) (f : A → B) [NonExpansiv
 theorem id_freeI_r [CMRA A] (x y : A) [IdFree x] :
     ⊢@{PROP} ✓ x -∗ (x • y) ≡ x -∗ False := by
   have H : iprop((x • y) ≡ x ∗ ✓ x) ⊢@{PROP} False := by
-    refine siPure_and_sep.mpr.trans ?_
-    refine .trans (siPure_mono fun n h => ?_) siPure_pure.mp
-    exact id_freeN_r h.2 h.1
+    refine siPure_and_sep.mpr.trans ?_; sbi_mono PROP; exact fun h => id_freeN_r h.2 h.1
   exact wand_intro_left (wand_intro_left ((sep_mono_right sep_emp.mp).trans H))
 
 @[rocq_alias id_freeI_l]
 theorem id_freeI_l [CMRA A] (x y : A) [IdFree x] :
     ⊢@{PROP} ✓ x -∗ (y • x) ≡ x -∗ False := by
   have H : iprop((y • x) ≡ x ∗ ✓ x) ⊢@{PROP} False := by
-    refine siPure_and_sep.mpr.trans ?_
-    refine .trans (siPure_mono fun n h => ?_) siPure_pure.mp
-    exact id_freeN_l h.2 h.1
+    refine siPure_and_sep.mpr.trans ?_; sbi_mono PROP; exact fun h => id_freeN_l h.2 h.1
   exact wand_intro_left (wand_intro_left ((sep_mono_right sep_emp.mp).trans H))
 
 @[rocq_alias cmra_later_opI]
 theorem cmra_later_opI [CMRA A] [CMRA.IsTotal A] (x y1 y2 : A) :
     ▷ (✓ x ∧ x ≡ y1 • y2) ⊢@{PROP}
       ∃ z1 z2, x ≡ z1 • z2 ∧ ▷ (z1 ≡ y1) ∧ ▷ (z2 ≡ y2) := by
-  suffices H : (<si_pure> (▷ (SiProp.cmraValid x ∧ SiProp.internalEq x (y1 • y2)))
-      ⊢@{PROP} <si_pure> (∃ z1 z2, SiProp.internalEq x (z1 • z2) ∧
-        ▷ (SiProp.internalEq z1 y1) ∧ ▷ (SiProp.internalEq z2 y2))) by
-    simp only [internalCmraValid, internalEq, siPure_exist.to_eq, siPure_and.to_eq,
-      siPure_later.to_eq] at H ⊢
-    exact H
-  refine siPure_mono fun n => ?_
-  cases n with
-  | zero =>
-    intro _
-    exact ⟨_, ⟨x, rfl⟩, _, ⟨core x, rfl⟩, (op_core_dist x).symm, trivial, trivial⟩
-  | succ n =>
-    intro hn
-    obtain ⟨hv, he⟩ := hn
-    obtain ⟨z1, z2, hx, hz1, hz2⟩ := extend' hv he
-    exact ⟨_, ⟨z1, rfl⟩, _, ⟨z2, rfl⟩, Dist.of_eq hx, hz1, hz2⟩
+  sbi_fold PROP; refine siPure_mono fun n => ?_; cases n <;> sbi_holds
+  · exact fun _ => ⟨x, core x, (op_core_dist x).symm, trivial, trivial⟩
+  · exact fun ⟨hv, he⟩ =>
+      have ⟨z1, z2, hx, hz1, hz2⟩ := extend' hv he
+      ⟨z1, z2, Dist.of_eq hx, hz1, hz2⟩
 
 end generic
 
@@ -455,10 +301,7 @@ variable [Sbi PROP]
 @[rocq_alias discrete_fun_validI]
 theorem discrete_fun_validI {ι : Type _} {β : ι → Type _} [∀ i, UCMRA (β i)]
     (g : ∀ i, β i) : ✓ g ⊣⊢@{PROP} ∀ i, ✓ (g i) := by
-  simp only [internalCmraValid, ← siPure_forall.to_eq]
-  refine siPure_mono_bi ⟨fun n h P => ?_, fun n h => ?_⟩
-  · rintro ⟨i, rfl⟩; exact h i
-  · exact fun i => h _ ⟨i, rfl⟩
+  sbi_iff PROP; exact .rfl
 
 end discrete_fun
 
@@ -473,29 +316,20 @@ theorem excl_equivI (x y : Excl A) :
       | excl a, excl b => iprop(a ≡ b)
       | invalid, invalid => iprop(True)
       | _, _ => iprop(False) := by
-  cases x <;> cases y
-  · exact BI.excl_equivI_excl _ _
-  · exact BI.excl_equivI_excl_invalid _
-  · exact BI.excl_equivI_invalid_excl _
-  · exact BI.excl_equivI_invalid _
+  cases x <;> cases y <;> sbi_iff PROP <;> exact .rfl
 
 @[rocq_alias excl_validI]
 theorem excl_validI (x : Excl A) :
     ✓ x ⊣⊢@{PROP} ⌜x ≠ Excl.invalid⌝ := by
+  sbi_iff PROP
   cases x with
-  | excl a => exact ⟨pure_intro nofun, internalCmraValid_intro trivial⟩
-  | invalid =>
-    exact ⟨.trans (siPure_mono fun _ h => h.elim) siPure_pure.mp,
-      pure_elim' fun h => (h rfl).elim⟩
+  | excl a => exact ⟨fun _ => nofun, fun _ => trivial⟩
+  | invalid => exact ⟨fun h => h.elim, fun h => (h rfl).elim⟩
 
 @[rocq_alias excl_includedI]
 theorem excl_includedI (x y : Excl A) :
-    x ≼ y ⊣⊢@{PROP} ⌜y = Excl.invalid⌝ := by
-  refine ⟨?_, ?_⟩
-  · refine .trans (siPure_mono fun n h => ?_) siPure_pure.mp
-    obtain ⟨_, ⟨c, rfl⟩, hc⟩ := h
-    exact (incN_iff n).mp ⟨c, hc⟩
-  · exact pure_elim' fun h => internalCmraIncluded_intro (inc_iff.mpr h)
+    x ≼ y ⊣⊢@{PROP} ⌜y = Excl.invalid⌝ :=
+  internalCmraIncluded_pure incN_iff
 
 end excl
 
@@ -520,13 +354,7 @@ theorem csum_validI [CMRA A] [CMRA B] (x : Csum A B) :
       | inl a => iprop(✓ a)
       | inr b => iprop(✓ b)
       | invalid => iprop(False) := by
-  cases x with
-  | inl a => exact .rfl
-  | inr b => exact .rfl
-  | invalid =>
-    refine ⟨?_, false_elim⟩
-    refine .trans (siPure_mono fun n h => ?_) siPure_pure.mp
-    exact h.elim
+  cases x <;> sbi_iff PROP <;> exact .rfl
 
 @[rocq_alias csum_includedI]
 theorem csum_includedI [CMRA A] [CMRA B] (x y : Csum A B) :
@@ -536,44 +364,10 @@ theorem csum_includedI [CMRA A] [CMRA B] (x y : Csum A B) :
       | inr a, inr b => iprop(a ≼ b)
       | _, invalid => iprop(True)
       | _, _ => iprop(False) := by
-  cases x <;> cases y
-  · simp only [internalCmraIncluded, internalEq]
-    refine siPure_mono_bi ⟨fun n h => ?_, fun n h => ?_⟩
-    · obtain ⟨_, ⟨c, rfl⟩, hc⟩ := h
-      rcases c with c | c | _
-      · exact ⟨_, ⟨c, rfl⟩, hc⟩
-      · exact hc.elim
-      · exact hc.elim
-    · obtain ⟨_, ⟨c, rfl⟩, hc⟩ := h
-      exact ⟨_, ⟨inl c, rfl⟩, hc⟩
-  · refine ⟨?_, false_elim⟩
-    refine .trans (siPure_mono ?_) siPure_pure.mp
-    rintro n ⟨_, ⟨c, rfl⟩, hc⟩
-    rcases c with c | c | _ <;> exact hc
-  · exact ⟨true_intro, internalCmraIncluded_intro (Csum.invalid_included _)⟩
-  · refine ⟨?_, false_elim⟩
-    refine .trans (siPure_mono ?_) siPure_pure.mp
-    rintro n ⟨_, ⟨c, rfl⟩, hc⟩
-    rcases c with c | c | _ <;> exact hc
-  · simp only [internalCmraIncluded, internalEq]
-    refine siPure_mono_bi ⟨fun n h => ?_, fun n h => ?_⟩
-    · obtain ⟨_, ⟨c, rfl⟩, hc⟩ := h
-      rcases c with c | c | _
-      · exact hc.elim
-      · exact ⟨_, ⟨c, rfl⟩, hc⟩
-      · exact hc.elim
-    · obtain ⟨_, ⟨c, rfl⟩, hc⟩ := h
-      exact ⟨_, ⟨inr c, rfl⟩, hc⟩
-  · exact ⟨true_intro, internalCmraIncluded_intro (Csum.invalid_included _)⟩
-  · refine ⟨?_, false_elim⟩
-    refine .trans (siPure_mono ?_) siPure_pure.mp
-    rintro n ⟨_, ⟨c, rfl⟩, hc⟩
-    exact hc
-  · refine ⟨?_, false_elim⟩
-    refine .trans (siPure_mono ?_) siPure_pure.mp
-    rintro n ⟨_, ⟨c, rfl⟩, hc⟩
-    exact hc
-  · exact ⟨true_intro, internalCmraIncluded_intro (Csum.invalid_included _)⟩
+  cases x <;> cases y <;>
+    first
+    | exact internalCmraIncluded_iff fun _ => by simp [Csum.includedN]
+    | exact internalCmraIncluded_pure fun _ => by simp [Csum.includedN]
 
 end csum
 
@@ -584,61 +378,36 @@ variable [Sbi PROP] [OFE A]
 @[rocq_alias list_equivI]
 theorem list_equivI (l1 l2 : List A) :
     l1 ≡ l2 ⊣⊢@{PROP} ∀ (i : Nat), (l1[i]? : Option A) ≡ (l2[i]? : Option A) := by
-  simp only [internalEq, ← siPure_forall.to_eq]
-  refine siPure_mono_bi ⟨fun n h P => ?_, fun n h => ?_⟩
-  · rintro ⟨i, rfl⟩; exact list_dist_lookup.mp h i
-  · exact list_dist_lookup.mpr fun i => h _ ⟨i, rfl⟩
+  sbi_iff PROP; exact list_dist_lookup
 
 end list
 
-section gmap
+section heap
 open BI CMRA Std PartialMap
 variable [Sbi PROP] {M : Type _ → Type _} {K : Type _} [LawfulPartialMap M K]
 
 @[rocq_alias gmap_equivI]
-theorem gmap_equivI [OFE V] (m1 m2 : M V) :
+theorem heap_equivI [OFE V] (m1 m2 : M V) :
     m1 ≡ m2 ⊣⊢@{PROP} ∀ i, get? m1 i ≡ get? m2 i := by
-  simp only [internalEq, ← siPure_forall.to_eq]
-  refine siPure_mono_bi ⟨fun n h P => ?_, fun n h => ?_⟩
-  · rintro ⟨i, rfl⟩; exact h i
-  · exact fun i => h _ ⟨i, rfl⟩
+  sbi_iff PROP; exact .rfl
 
 @[rocq_alias gmap_validI]
-theorem gmap_validI [CMRA V] (m : M V) :
+theorem heap_validI [CMRA V] (m : M V) :
     ✓ m ⊣⊢@{PROP} ∀ i, ✓ (get? m i) := by
-  simp only [internalCmraValid, ← siPure_forall.to_eq]
-  refine siPure_mono_bi ⟨fun n h P => ?_, fun n h => ?_⟩
-  · rintro ⟨i, rfl⟩; exact h i
-  · exact fun i => h _ ⟨i, rfl⟩
+  sbi_iff PROP; exact .rfl
 
 @[rocq_alias singleton_validI]
 theorem singleton_validI [CMRA V] (i : K) (x : V) :
-    ✓ (PartialMap.singleton i x : M V) ⊣⊢@{PROP} ✓ x :=
-  ⟨siPure_mono fun _ => Heap.singleton_validN_iff.mp,
-   siPure_mono fun _ => Heap.singleton_validN_iff.mpr⟩
+    ✓ (PartialMap.singleton i x : M V) ⊣⊢@{PROP} ✓ x := by
+  sbi_iff PROP; exact Heap.singleton_validN_iff
 
 @[rocq_alias gmap_union_equiv_eqI]
-theorem gmap_union_equiv_eqI [OFE V] (m m1 m2 : M V) :
+theorem heap_union_equiv_eqI [OFE V] (m m1 m2 : M V) :
     m ≡ m1 ∪ m2 ⊣⊢@{PROP}
       ∃ m1' m2', ⌜m = m1' ∪ m2'⌝ ∧ m1' ≡ m1 ∧ m2' ≡ m2 := by
-  suffices H : (<si_pure> SiProp.internalEq m (m1 ∪ m2) ⊣⊢@{PROP}
-      (<si_pure> (∃ m1' m2', ⌜m = m1' ∪ m2'⌝ ∧ SiProp.internalEq m1' m1 ∧
-        SiProp.internalEq m2' m2))) by
-    simp only [internalEq, H.to_eq, siPure_exist.to_eq, siPure_and.to_eq, siPure_pure.to_eq,
-      BIBase.BiEntails.rfl]
-  constructor
-  · refine siPure_mono fun n h => ?_
-    obtain ⟨m1', m2', heq, h1, h2⟩ := _root_.PartialMap.union_dist_iff.mp h
-    apply SiProp.instBI.sExists_intro
-    · exists m1'
-    apply SiProp.instBI.sExists_intro
-    · exists m2'
-    exact ⟨heq, h1, h2⟩
-  · refine siPure_mono fun n h => ?_
-    obtain ⟨_, ⟨m1', rfl⟩, _, ⟨m2', rfl⟩, heq, h1, h2⟩ := h
-    exact _root_.PartialMap.union_dist_iff.mpr ⟨m1', m2', heq, h1, h2⟩
+  sbi_iff PROP; exact _root_.PartialMap.union_dist_iff
 
-end gmap
+end heap
 
 section view
 open BI CMRA View ViewRel IsViewRel
@@ -648,17 +417,14 @@ variable [Sbi PROP] [OFE A] [UCMRA B] {R : ViewRel A B} [IsViewRel R]
 theorem view_both_dfrac_validI_1 (relI : SiProp) (dq : DFrac) (a : A) (b : B)
     (H : ∀ n, R n a b → relI.holds n) :
     ✓ ((●V{dq} a : View R) • ◯V b) ⊢@{PROP} ⌜✓ dq⌝ ∧ <si_pure> relI := by
-  refine .trans (siPure_mono (Qi := iprop(⌜✓ dq⌝ ∧ relI)) fun n hn => ?_)
-    (siPure_and.mp.trans (and_mono_left siPure_pure.mp))
-  exact ⟨(auth_op_frag_validN_iff.mp hn).1, H n (auth_op_frag_validN_iff.mp hn).2⟩
+  sbi_mono PROP
+  exact fun hn => ⟨(auth_op_frag_validN_iff.mp hn).1, H _ (auth_op_frag_validN_iff.mp hn).2⟩
 
 @[rocq_alias view_both_dfrac_validI_2]
 theorem view_both_dfrac_validI_2 (relI : SiProp) (dq : DFrac) (a : A) (b : B)
     (H : ∀ n, relI.holds n → R n a b) :
     ⌜✓ dq⌝ ∧ <si_pure> relI ⊢@{PROP} ✓ ((●V{dq} a : View R) • ◯V b) := by
-  refine .trans ((and_mono_left siPure_pure.mpr).trans siPure_and.mpr)
-    (siPure_mono (Pi := iprop(⌜✓ dq⌝ ∧ relI)) fun n hn => ?_)
-  exact auth_op_frag_validN_iff.mpr ⟨hn.1, H n hn.2⟩
+  sbi_mono PROP; exact fun hn => auth_op_frag_validN_iff.mpr ⟨hn.1, H _ hn.2⟩
 
 @[rocq_alias view_both_dfrac_validI]
 theorem view_both_dfrac_validI (relI : SiProp) (dq : DFrac) (a : A) (b : B)
@@ -690,13 +456,9 @@ theorem view_both_validI (relI : SiProp) (a : A) (b : B)
 theorem view_auth_dfrac_validI (relI : SiProp) (dq : DFrac) (a : A)
     (H : ∀ n, relI.holds n ↔ R n a UCMRA.unit) :
     ✓ (●V{dq} a : View R) ⊣⊢@{PROP} ⌜✓ dq⌝ ∧ <si_pure> relI := by
-  refine ⟨?_, ?_⟩
-  · refine .trans (siPure_mono (Qi := iprop(⌜✓ dq⌝ ∧ relI)) fun n hn => ?_)
-      (siPure_and.mp.trans (and_mono_left siPure_pure.mp))
-    exact ⟨(auth_validN_iff.mp hn).1, (H n).mpr (auth_validN_iff.mp hn).2⟩
-  · refine .trans ((and_mono_left siPure_pure.mpr).trans siPure_and.mpr)
-      (siPure_mono (Pi := iprop(⌜✓ dq⌝ ∧ relI)) fun n hn => ?_)
-    exact auth_validN_iff.mpr ⟨hn.1, (H n).mp hn.2⟩
+  sbi_iff PROP
+  exact ⟨fun hn => ⟨(auth_validN_iff.mp hn).1, (H _).mpr (auth_validN_iff.mp hn).2⟩,
+    fun hn => auth_validN_iff.mpr ⟨hn.1, (H _).mp hn.2⟩⟩
 
 @[rocq_alias view_auth_validI]
 theorem view_auth_validI (relI : SiProp) (a : A)
