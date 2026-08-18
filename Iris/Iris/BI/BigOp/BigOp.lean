@@ -449,17 +449,17 @@ def delabBigSepM2 : Delab := do
   unless e.isApp do failure
   unless e.getAppFn.isConstOf ``bigSepM2 do failure
   let args := e.getAppArgs
-  unless args.size == 7 do failure
-  let fn := args[4]!
-  let l1 ← withNaryArg 5 delab
-  let l2 ← withNaryArg 6 delab
+  unless args.size == 10 do failure
+  let fn := args[7]!
+  let m1 ← withNaryArg 8 delab
+  let m2 ← withNaryArg 9 delab
   match fn with
   | .lam kn _ body1 _ =>
     match body1 with
     | .lam x1n _ body2 _ =>
       match body2 with
       | .lam x2n _ _ _ =>
-        let (kUsed, P) ← withNaryArg 4 <|
+        let (kUsed, P) ← withNaryArg 7 <|
           withBindingBody' kn (fun kFVar => return kFVar.fvarId!) fun kFVarId => do
             let innerBody := (← getExpr).bindingBody!.bindingBody!
             let kUsed := innerBody.containsFVar kFVarId
@@ -469,9 +469,9 @@ def delabBigSepM2 : Delab := do
         let x2 := mkIdent x2n
         if kUsed then
           let k := mkIdent kn
-          `([∗map]  $k ↦ $x1;$x2 ∈ $l1;$l2, $P)
+          `([∗map]  $k ↦ $x1;$x2 ∈ $m1;$m2, $P)
         else
-          `([∗map]  $x1;$x2 ∈ $l1;$l2, $P)
+          `([∗map]  $x1;$x2 ∈ $m1;$m2, $P)
       | _ => failure
     | _ => failure
   | _ => failure
@@ -629,6 +629,7 @@ section MapTests
 open Iris.Std OFE BIBase
 variable [BI PROP] {K : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
   (P : Nat → PROP) (Q : K → Nat → PROP) (m : M Nat)
+  (Q2 : Nat → Nat → PROP) (Q2' : K → Nat → Nat → PROP) (m1 m2 : M Nat)
 
 -- bigSepM without key
 /-- info: [∗map] x ∈ m, P x : PROP -/
@@ -645,6 +646,14 @@ variable [BI PROP] {K : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
 -- bigAndM with key
 /-- info: [∧map] k ↦ x ∈ m, Q k x : PROP -/
 #guard_msgs in #check [∧map] k ↦ x ∈ m, Q k x
+
+-- bigSepM2 without key
+/-- info: [∗map] x1;x2 ∈ m1;m2, Q2 x1 x2 : PROP -/
+#guard_msgs in #check [∗map] x1;x2 ∈ m1;m2, Q2 x1 x2
+
+-- bigSepM2 with key
+/-- info: [∗map] k ↦ x1;x2 ∈ m1;m2, Q2' k x1 x2 : PROP -/
+#guard_msgs in #check [∗map] k ↦ x1;x2 ∈ m1;m2, Q2' k x1 x2
 
 end MapTests
 
