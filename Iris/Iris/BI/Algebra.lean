@@ -71,10 +71,7 @@ theorem option_validI [Sbi PROP] [CMRA A] {mx : Option A} :
 @[rocq_alias option_includedI]
 theorem option_includedI [Sbi PROP] [CMRA A] {mx my : Option A} :
   mx ≼ my ⊣⊢@{PROP}
-    match mx, my with
-      | some x, some y => iprop((x ≼ y) ∨ (x ≡ y))
-      | none, _ => iprop(True)
-      | some _, none => iprop(False) := by
+    mx.elim iprop(True) fun x => my.elim iprop(False) fun y => iprop((x ≼ y) ∨ (x ≡ y)) := by
   rcases mx with _ | x <;> rcases my with _ | y
   · exact ⟨true_intro, internalCmraIncluded_intro (Option.inc_iff.mpr (.inl rfl))⟩
   · exact ⟨true_intro, internalCmraIncluded_intro (Option.inc_iff.mpr (.inl rfl))⟩
@@ -97,10 +94,7 @@ theorem option_includedI [Sbi PROP] [CMRA A] {mx my : Option A} :
 @[rocq_alias option_included_totalI]
 theorem option_included_totalI [Sbi PROP] [CMRA A] [CMRA.IsTotal A] {mx my : Option A} :
   mx ≼ my ⊣⊢@{PROP}
-    match mx, my with
-      | some x, some y => iprop(x ≼ y)
-      | none, _ => iprop(True)
-      | some _, none => iprop(False) := by
+    mx.elim iprop(True) fun x => my.elim iprop(False) fun y => iprop(x ≼ y) := by
   rcases mx with _ | x <;> rcases my with _ | y
   · exact ⟨true_intro, internalCmraIncluded_intro (Option.inc_iff.mpr (.inl rfl))⟩
   · exact ⟨true_intro, internalCmraIncluded_intro (Option.inc_iff.mpr (.inl rfl))⟩
@@ -487,13 +481,12 @@ theorem excl_equivI (x y : Excl A) :
 
 @[rocq_alias excl_validI]
 theorem excl_validI (x : Excl A) :
-    ✓ x ⊣⊢@{PROP} match x with | invalid => iprop(False) | _ => iprop(True) := by
+    ✓ x ⊣⊢@{PROP} ⌜x ≠ Excl.invalid⌝ := by
   cases x with
-  | excl a => exact ⟨true_intro, internalCmraValid_intro trivial⟩
+  | excl a => exact ⟨pure_intro nofun, internalCmraValid_intro trivial⟩
   | invalid =>
-    refine ⟨?_, false_elim⟩
-    refine .trans (siPure_mono fun n h => ?_) siPure_pure.mp
-    exact h.elim
+    exact ⟨.trans (siPure_mono fun _ h => h.elim) siPure_pure.mp,
+      pure_elim' fun h => (h rfl).elim⟩
 
 @[rocq_alias excl_includedI]
 theorem excl_includedI (x y : Excl A) :
