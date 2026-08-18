@@ -149,7 +149,7 @@ theorem bigSepM2_dist (Φ Ψ : K → A → B → PROP) (m1 : M A) (m2 : M B) (n 
     h h1 h2
 
 @[rocq_alias big_sepM2_proper]
-theorem bigSepM2_eqv (Φ Ψ : K → A → B → PROP) (m1 : M A) (m2 : M B)
+theorem bigSepM2_eqv {Φ Ψ : K → A → B → PROP} {m1 : M A} {m2 : M B}
     (h : ∀ {k x1 x2}, get? m1 k = some x1 → get? m2 k = some x2 → Φ k x1 x2 ⊣⊢ Ψ k x1 x2) :
     ([∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2) ⊣⊢ [∗map] k ↦ x1;x2 ∈ m1;m2, Ψ k x1 x2 :=
   ⟨bigSepM2_mono fun h1 h2 => (h h1 h2).1, bigSepM2_mono fun h1 h2 => (h h1 h2).2⟩
@@ -192,7 +192,7 @@ theorem bigSepM2_flip_mono (Φ Ψ : K → A → B → PROP) (m1 : M A) (m2 : M B
 theorem bigSepM2_eqv_of_forall (Φ Ψ : K → A → B → PROP) (m1 : M A) (m2 : M B)
     (h : ∀ {k x1 x2}, Φ k x1 x2 ⊣⊢ Ψ k x1 x2) :
     ([∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2) ⊣⊢ [∗map] k ↦ x1;x2 ∈ m1;m2, Ψ k x1 x2 :=
-  bigSepM2_eqv Φ Ψ m1 m2 fun _ _ => h
+  bigSepM2_eqv fun _ _ => h
 
 @[rocq_alias big_sepM2_closed]
 theorem bigSepM2_closed (P : PROP → Prop) (Φ : K → A → B → PROP) (m1 : M A) (m2 : M B)
