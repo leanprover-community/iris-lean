@@ -48,6 +48,22 @@ instance asEmpValid_forall {α} [bi : BI PROP] (Φ : α → Prop) (P : α → PR
   as_emp_valid := ⟨λ hd h => forall_intro λ x => (hP x).1.1 hd (h x),
                    λ hd h x => (hP x).1.2 hd $ h.trans (forall_elim x)⟩
 
+@[rocq_alias as_emp_valid_tforall]
+instance asEmpValid_tforall {TT : Tele} [bi : BI PROP] (φ : TT.Arg → Prop)
+    (P : TT.Arg → PROP) d io [hP : ∀ x, AsEmpValid d (φ x) io PROP bi (P x)] :
+    AsEmpValid d (Tele.tforall φ) io PROP bi (BI.tforall P) where
+  as_emp_valid := by
+    constructor
+    · refine fun hd h => .trans ?_ (tforall_forall P).mpr
+      apply forall_intro
+      exact fun x => (hP x).as_emp_valid.left hd ((Tele.tforall_forall φ).mp h x)
+    · refine fun hd h => (Tele.tforall_forall φ).mpr ?_
+      refine fun x => (hP x).as_emp_valid.right hd ?_
+      calc
+        _ ⊢ tforall P := h
+        _ ⊢ ∀ x, P x  := (tforall_forall P).mp
+        _ ⊢ P x       := forall_elim x
+
 /-! ### FromImp -/
 
 @[rocq_alias from_impl_impl]
