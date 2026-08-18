@@ -102,6 +102,10 @@ def Stuck [ToVal Expr Val] : Expr × State → Prop
 def NotStuck [ToVal Expr Val] : Expr × State → Prop
   | (e, σ) => (toVal e).isSome ∨ Reducible (e, σ)
 
+abbrev ReducibleOrNotVal [ToVal Expr Val] : Stuckness → Expr × State → Prop
+  | .NotStuck, ρ => PrimStep.Reducible ρ
+  | _, (e, _) => toVal e = none
+
 end PrimStep
 
 open PrimStep

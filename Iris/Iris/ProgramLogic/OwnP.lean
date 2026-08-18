@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors:
+Authors: Markus de Medeiros
 -/
 module
 
@@ -9,42 +9,24 @@ public import Iris.Algebra.Lib.ExclAuth
 public import Iris.ProgramLogic.Adequacy
 public import Iris.ProgramLogic.EctxLifting
 
-/-!
-# Iris-2.0-style ownership of the global state
-
-This module provides an interface to handling ownership of the global state that
-works more like Iris 2.0 did. The state interpretation (in WP) is fixed to be
-authoritative ownership of the entire state (using the `Excl` RA). Users can
-then put the corresponding fragment into an invariant on their own to establish
-a more interesting notion of ownership, such as the standard heap with disjoint
-union.
--/
+/-! # Iris-2.0-style ownership of the global state -/
 
 namespace Iris.ProgramLogic
 
-open BI ExclAuth Language Language.Notation Std.LawfulSet
+open BI ExclAuth Language Language.Notation Std.LawfulSet Iris.ProgramLogic.PrimStep
 
 @[expose] public section
 
-/-- The ghost state of `ownP`: exclusive authoritative ownership of a state. -/
 abbrev ownPRF (State : Type) : COFE.OFunctorPre := constOF (ExclAuthR (A := stateO State))
 
-/-- Unlike Iris Rocq's `ownPGS Λ Σ`, this is indexed by the state rather than by the language:
-`ownP` owns a state and nothing else, so keying the class on the language would leave it
-undetermined at every use site. The language enters only through `ownPG_irisGS`.
-
-As in Iris Rocq, `invGS` is fixed at `HasLC` and is a plain field rather than a parent: making
-it an instance would give `InvGS_gen` a second resolution path alongside `IrisGS_gen.invGS`. -/
 @[rocq_alias ownPGS]
 class OwnPGS (State : Type) (GF : BundledGFunctors) where
-  -- not an instance on purpose to avoid diamonds with `IrisGS_gen`
   [invGS : InvGS GF]
   [inG : ElemG GF (ownPRF State)]
   name : GName
 
 attribute [reducible, instance] OwnPGS.inG
 
-/-- Indexed by the state rather than by the language, like `OwnPGS`. -/
 @[rocq_alias ownPGpreS]
 class OwnPGpreS (State : Type) (GF : BundledGFunctors) extends InvGpreS GF where
   inG : ElemG GF (ownPRF State)
@@ -61,13 +43,6 @@ variable {GF : BundledGFunctors}
 section Language
 
 variable [Language Expr State Obs Val]
-
-/-- The side condition of the `ownP` lifting lemmas: a `NotStuck` expression must be reducible,
-a `MaybeStuck` one must at least not be a value. Contrast `Stuckness.MaybeReducible`, which is
-always accompanied by a separate "not a value" hypothesis. -/
-abbrev ReducibleOrNotVal : Stuckness → Expr × State → Prop
-  | .NotStuck, ρ => PrimStep.Reducible ρ
-  | _, (e, _) => toVal e = none
 
 @[rocq_alias ownPG_irisGS]
 instance ownPG_irisGS [ι : OwnPGS State GF] : IrisGS_gen .hasLC Expr GF where
@@ -90,8 +65,7 @@ theorem ownP_adequacy [OwnPGpreS State GF] (s : Stuckness) (e : Expr) (σ : Stat
     (Hwp : ∀ [OwnPGS State GF], ownP (GF := GF) σ ⊢ WP e @ s; ⊤ {{ v, ⌜φ v⌝ }}) :
     adequate s e σ (fun v _ => φ v) := by
   unfold ownP at Hwp
-  refine wp_adequacy (GF := GF) s e σ φ ?_
-  intro _ κs
+  refine wp_adequacy (GF := GF) s e σ φ @fun _ κs => ?_
   imod iOwn_alloc (F := ownPRF State)
     ((●E (⟨σ⟩ : stateO State)) • ◯E (⟨σ⟩ : stateO State)) valid with ⟨%γ, Hσ, Hσf⟩
   letI : OwnPGS State GF := ⟨γ⟩
@@ -123,10 +97,6 @@ theorem ownP_invariance [OwnPGpreS State GF] (s : Stuckness) (e : Expr) (σ₁ :
   imod Hφ with ⟨%σ', Hσf, %Hφ⟩
   icombine Hσ Hσf gives %Hvalid
   ipureintro; exact DiscreteO.eqv_inj (agree Hvalid) ▸ Hφ
-
-/-! ## Lifting
-
-All lifting lemmas defined here discard later credits. -/
 
 section Lifting
 
@@ -181,7 +151,7 @@ theorem ownP_lift_step :
 
 @[rocq_alias ownP_lift_stuck]
 theorem ownP_lift_stuck :
-    (|={E,∅}=> ∃ σ, ⌜PrimStep.Stuck (e, σ)⌝ ∗ ▷ ownP σ) ⊢ WP e @ E ?{{ Φ }} := by
+    (|={E,∅}=> ∃ σ, ⌜Stuck (e, σ)⌝ ∗ ▷ ownP σ) ⊢ WP e @ E ?{{ Φ }} := by
   iintro H
   cases hv : toVal e
   · iapply wp_lift_stuck hv
@@ -196,7 +166,7 @@ theorem ownP_lift_stuck :
 
 @[rocq_alias ownP_lift_pure_step]
 theorem ownP_lift_pure_step [Inhabited State] (Hsafe : ∀ σ₁, ReducibleOrNotVal s (e₁, σ₁))
-    (Hpure : ∀ σ₁ obs e₂ σ₂ eₜ, (e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ) → obs = [] ∧ σ₂ = σ₁) :
+    (Hpure : ∀ {σ₁ obs e₂ σ₂ eₜ}, (e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ) → obs = [] ∧ σ₂ = σ₁) :
     (▷ ∀ obs e₂ eₜ σ, ⌜(e₁, σ) -<obs>-> (e₂, σ, eₜ)⌝ →
       WP e₂ @ s; E {{ Φ }} ∗ [∗list] ef ∈ eₜ, WP ef @ s; ⊤ {{ _v, True }})
     ⊢ WP e₁ @ s; E {{ Φ }} := by
@@ -208,7 +178,7 @@ theorem ownP_lift_pure_step [Inhabited State] (Hsafe : ∀ σ₁, ReducibleOrNot
   isplit
   · ipureintro; cases s <;> grind
   iintro !> %e₂ %σ₂ %eₜ %Hstep Hcred
-  obtain ⟨rfl, rfl⟩ := Hpure _ _ _ _ _ Hstep
+  obtain ⟨rfl, rfl⟩ := Hpure Hstep
   imod Hclose
   imodintro
   iframe Hσ
@@ -241,7 +211,7 @@ theorem ownP_lift_atomic_step (Hsafe : ReducibleOrNotVal s (e₁, σ₁)) :
 @[rocq_alias ownP_lift_atomic_det_step]
 theorem ownP_lift_atomic_det_step {v₂ : Val} {eₜ : List Expr}
     (Hsafe : ReducibleOrNotVal s (e₁, σ₁))
-    (Hdet : ∀ obs' e₂' σ₂' eₜ', (e₁, σ₁) -<obs'>-> (e₂', σ₂', eₜ') →
+    (Hdet : ∀ {obs' e₂' σ₂' eₜ'}, (e₁, σ₁) -<obs'>-> (e₂', σ₂', eₜ') →
       σ₂' = σ₂ ∧ toVal e₂' = some v₂ ∧ eₜ' = eₜ) :
     ▷ ownP σ₁ ∗ ▷ (ownP σ₂ -∗ Φ v₂ ∗ [∗list] ef ∈ eₜ, WP ef @ s; ⊤ {{ _v, True }})
     ⊢ WP e₁ @ s; E {{ Φ }} := by
@@ -249,13 +219,13 @@ theorem ownP_lift_atomic_det_step {v₂ : Val} {eₜ : List Expr}
   iapply ownP_lift_atomic_step Hsafe
   iframe Hσ₁
   iintro !> %obs' %e₂' %σ₂' %eₜ' %Hstep Hσ₂'
-  obtain ⟨rfl, hv, rfl⟩ := Hdet _ _ _ _ Hstep
+  obtain ⟨rfl, hv, rfl⟩ := Hdet Hstep
   simp only [hv, Option.elim_some]
   iapply Hσ₂ $$ Hσ₂'
 
 @[rocq_alias ownP_lift_atomic_det_step_no_fork]
 theorem ownP_lift_atomic_det_step_no_fork {v₂ : Val} (Hsafe : ReducibleOrNotVal s (e₁, σ₁))
-    (Hdet : ∀ obs' e₂' σ₂' eₜ', (e₁, σ₁) -<obs'>-> (e₂', σ₂', eₜ') →
+    (Hdet : ∀ {obs' e₂' σ₂' eₜ'}, (e₁, σ₁) -<obs'>-> (e₂', σ₂', eₜ') →
       σ₂' = σ₂ ∧ toVal e₂' = some v₂ ∧ eₜ' = []) :
     {{ ▷ ownP (GF := GF) σ₁ }} e₁ @ s; E {{ RET v₂; ownP σ₂ }} := by
   iintro %Φ Hσ₁ Hσ₂
@@ -268,7 +238,7 @@ theorem ownP_lift_atomic_det_step_no_fork {v₂ : Val} (Hsafe : ReducibleOrNotVa
 @[rocq_alias ownP_lift_pure_det_step_no_fork]
 theorem ownP_lift_pure_det_step_no_fork [Inhabited State]
     (Hsafe : ∀ σ₁, ReducibleOrNotVal s (e₁, σ₁))
-    (Hpuredet : ∀ σ₁ obs e₂' σ₂ eₜ', (e₁, σ₁) -<obs>-> (e₂', σ₂, eₜ') →
+    (Hpuredet : ∀ {σ₁ obs e₂' σ₂ eₜ'}, (e₁, σ₁) -<obs>-> (e₂', σ₂, eₜ') →
       obs = [] ∧ σ₂ = σ₁ ∧ e₂' = e₂ ∧ eₜ' = []) :
     ▷ WP e₂ @ s; E {{ Φ }} ⊢ WP e₁ @ s; E {{ Φ }} := by
   iintro Hwp
@@ -327,13 +297,13 @@ theorem ownP_lift_base_stuck (Hsav : SubredexesAreValues e) :
 
 @[rocq_alias ownP_lift_pure_base_step]
 theorem ownP_lift_pure_base_step [Inhabited State] (Hbred : ∀ σ₁, BaseStep.Reducible (e₁, σ₁))
-    (Hpure : ∀ σ₁ obs e₂ σ₂ eₜ, (e₁, σ₁) -<obs>->ᵇ (e₂, σ₂, eₜ) → obs = [] ∧ σ₂ = σ₁) :
+    (Hpure : ∀ {σ₁ obs e₂ σ₂ eₜ}, (e₁, σ₁) -<obs>->ᵇ (e₂, σ₂, eₜ) → obs = [] ∧ σ₂ = σ₁) :
     (▷ ∀ obs e₂ eₜ σ, ⌜(e₁, σ) -<obs>->ᵇ (e₂, σ, eₜ)⌝ →
       WP e₂ @ s; E {{ Φ }} ∗ [∗list] ef ∈ eₜ, WP ef @ s; ⊤ {{ _v, True }})
     ⊢ WP e₁ @ s; E {{ Φ }} := by
   iintro H
   iapply ownP_lift_pure_step (fun σ => reducibleOrNotVal_of_baseStep_reducible (Hbred σ))
-    fun σ _ _ _ _ h => Hpure _ _ _ _ _ (baseStep_of_primStep_of_baseStep_reducible (Hbred σ) h)
+    fun h => Hpure (baseStep_of_primStep_of_baseStep_reducible (Hbred _) h)
   iintro !> %obs %e₂ %eₜ %σ %Hstep
   iapply H $$ %_ %_ %_ %_
   ipureintro; exact baseStep_of_primStep_of_baseStep_reducible (Hbred σ) Hstep
@@ -353,30 +323,30 @@ theorem ownP_lift_atomic_base_step (Hbred : BaseStep.Reducible (e₁, σ₁)) :
 @[rocq_alias ownP_lift_atomic_det_base_step]
 theorem ownP_lift_atomic_det_base_step {v₂ : Val} {eₜ : List Expr}
     (Hbred : BaseStep.Reducible (e₁, σ₁))
-    (Hdet : ∀ obs' e₂' σ₂' eₜ', (e₁, σ₁) -<obs'>->ᵇ (e₂', σ₂', eₜ') →
+    (Hdet : ∀ {obs' e₂' σ₂' eₜ'}, (e₁, σ₁) -<obs'>->ᵇ (e₂', σ₂', eₜ') →
       σ₂' = σ₂ ∧ toVal e₂' = some v₂ ∧ eₜ' = eₜ) :
     ▷ ownP σ₁ ∗ ▷ (ownP σ₂ -∗ Φ v₂ ∗ [∗list] ef ∈ eₜ, WP ef @ s; ⊤ {{ _v, True }})
     ⊢ WP e₁ @ s; E {{ Φ }} :=
   ownP_lift_atomic_det_step (reducibleOrNotVal_of_baseStep_reducible Hbred)
-    fun _ _ _ _ h => Hdet _ _ _ _ (baseStep_of_primStep_of_baseStep_reducible Hbred h)
+    fun h => Hdet (baseStep_of_primStep_of_baseStep_reducible Hbred h)
 
 @[rocq_alias ownP_lift_atomic_det_base_step_no_fork]
 theorem ownP_lift_atomic_det_base_step_no_fork {v₂ : Val} {obs : List Obs}
     (Hbred : BaseStep.Reducible (e₁, σ₁))
-    (Hdet : ∀ obs' e₂' σ₂' eₜ', (e₁, σ₁) -<obs'>->ᵇ (e₂', σ₂', eₜ') →
+    (Hdet : ∀ {obs' e₂' σ₂' eₜ'}, (e₁, σ₁) -<obs'>->ᵇ (e₂', σ₂', eₜ') →
       obs' = obs ∧ σ₂' = σ₂ ∧ toVal e₂' = some v₂ ∧ eₜ' = []) :
     {{ ▷ ownP (GF := GF) σ₁ }} e₁ @ s; E {{ RET v₂; ownP σ₂ }} :=
   ownP_lift_atomic_det_step_no_fork (reducibleOrNotVal_of_baseStep_reducible Hbred)
-    fun _ _ _ _ h => (Hdet _ _ _ _ (baseStep_of_primStep_of_baseStep_reducible Hbred h)).2
+    fun h => (Hdet (baseStep_of_primStep_of_baseStep_reducible Hbred h)).2
 
 @[rocq_alias ownP_lift_pure_det_base_step_no_fork]
 theorem ownP_lift_pure_det_base_step_no_fork [Inhabited State]
     (Hbred : ∀ σ₁, BaseStep.Reducible (e₁, σ₁))
-    (Hpuredet : ∀ σ₁ obs e₂' σ₂ eₜ', (e₁, σ₁) -<obs>->ᵇ (e₂', σ₂, eₜ') →
+    (Hpuredet : ∀ {σ₁ obs e₂' σ₂ eₜ'}, (e₁, σ₁) -<obs>->ᵇ (e₂', σ₂, eₜ') →
       obs = [] ∧ σ₂ = σ₁ ∧ e₂' = e₂ ∧ eₜ' = []) :
     ▷ WP e₂ @ s; E {{ Φ }} ⊢ WP e₁ @ s; E {{ Φ }} :=
   ownP_lift_pure_det_step_no_fork (fun σ => reducibleOrNotVal_of_baseStep_reducible (Hbred σ))
-    fun σ _ _ _ _ h => Hpuredet _ _ _ _ _ (baseStep_of_primStep_of_baseStep_reducible (Hbred σ) h)
+    fun h => Hpuredet (baseStep_of_primStep_of_baseStep_reducible (Hbred _) h)
 
 end EctxLifting
 
