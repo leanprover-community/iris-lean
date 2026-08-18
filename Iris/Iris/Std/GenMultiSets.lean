@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Haokun Li. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Haokun Li
+Authors: Haokun Li, Markus de Medeiros
 -/
 module
 
@@ -70,43 +70,94 @@ instance instHasSubsetMultiSet [MultiSet MS A] : HasSubset MS :=
 theorem subset_iff [MultiSet MS A] {X Y : MS} :
     X ⊆ Y ↔ ∀ a, MultiSet.multiplicity a X ≤ MultiSet.multiplicity a Y := Iff.rfl
 
+@[refl]
+theorem subset_refl [MultiSet MS A] {X : MS} : X ⊆ X := subset_iff.mpr fun _ => Nat.le_refl _
+
 variable [LawfulMultiSet MS A]
 
+@[simp]
+theorem not_mem_empty {a : A} : a ∉ (∅ : MS) := by
+  rw [mem_iff_multiplicity_pos, multiplicity_empty]; omega
+
+@[grind =]
 theorem mem_singleton_iff {x a : A} : x ∈ ({a} : MS) ↔ x = a := by
   rw [mem_iff_multiplicity_pos]
   by_cases hxa : x = a
   · subst hxa; simp [multiplicity_singleton_eq]
   · simp [multiplicity_singleton_ne hxa, hxa]
 
+@[grind =]
 theorem mem_disjUnion_iff {x : A} {X Y : MS} : x ∈ (X ⊎ Y) ↔ x ∈ X ∨ x ∈ Y := by
   rw [mem_iff_multiplicity_pos, mem_iff_multiplicity_pos, mem_iff_multiplicity_pos,
     multiplicity_disjUnion]
   omega
 
+@[grind =]
 theorem mem_union_iff {x : A} {X Y : MS} : x ∈ (X ∪ Y) ↔ x ∈ X ∨ x ∈ Y := by
   rw [mem_iff_multiplicity_pos, mem_iff_multiplicity_pos, mem_iff_multiplicity_pos,
     multiplicity_union]
   omega
 
+@[grind =]
 theorem mem_inter_iff {x : A} {X Y : MS} : x ∈ (X ∩ Y) ↔ x ∈ X ∧ x ∈ Y := by
   rw [mem_iff_multiplicity_pos, mem_iff_multiplicity_pos, mem_iff_multiplicity_pos,
     multiplicity_intersection]
   omega
 
+@[grind =]
+theorem disjUnion_comm {X Y : MS} : X ⊎ Y = Y ⊎ X :=
+  LawfulMultiSet.ext fun _ => by rw [multiplicity_disjUnion, multiplicity_disjUnion]; omega
+
+@[grind =]
+theorem disjUnion_assoc {X Y Z : MS} : (X ⊎ Y) ⊎ Z = X ⊎ (Y ⊎ Z) :=
+  LawfulMultiSet.ext fun _ => by simp only [multiplicity_disjUnion]; omega
+
+@[grind =]
+theorem disjUnion_empty_left {X : MS} : (∅ : MS) ⊎ X = X :=
+  LawfulMultiSet.ext fun _ => by rw [multiplicity_disjUnion, multiplicity_empty]; omega
+
+@[grind =]
+theorem disjUnion_empty_right {X : MS} : X ⊎ (∅ : MS) = X :=
+  LawfulMultiSet.ext fun _ => by rw [multiplicity_disjUnion, multiplicity_empty]; omega
+
+@[grind .]
+theorem disjUnion_subset_left {X Y : MS} : X ⊆ X ⊎ Y :=
+  subset_iff.mpr fun _ => by rw [multiplicity_disjUnion]; omega
+
+@[grind .]
+theorem disjUnion_left_inj {X Y Z : MS} (h : X ⊎ Y = X ⊎ Z) : Y = Z :=
+  LawfulMultiSet.ext fun a => by
+    have := congrArg (MultiSet.multiplicity a) h
+    rw [multiplicity_disjUnion, multiplicity_disjUnion] at this
+    omega
+
+theorem singleton_subset_iff {x : A} {X : MS} : ({x} : MS) ⊆ X ↔ x ∈ X where
+  mp h := by
+    rw [mem_iff_multiplicity_pos]
+    calc 0
+      _ < 1 := Nat.one_pos
+      _ = MultiSet.multiplicity x ({x} : MS) := multiplicity_singleton_eq.symm
+      _ ≤ MultiSet.multiplicity x X := subset_iff.mp h x
+  mpr h := subset_iff.mpr fun a => by
+    by_cases hax : a = x
+    · subst hax; rw [multiplicity_singleton_eq]; exact h
+    · rw [multiplicity_singleton_ne hax]; omega
+
+@[grind =]
+theorem difference_self {X : MS} : X \ X = (∅ : MS) :=
+  LawfulMultiSet.ext fun _ => by rw [multiplicity_difference, multiplicity_empty]; omega
+
 theorem disjUnion_difference_of_subseteq {X Y : MS} (h : Y ⊆ X) : X = Y ⊎ (X \ Y) := by
   refine LawfulMultiSet.ext fun a => ?_
-  rw [multiplicity_disjUnion, multiplicity_difference]
-  have := subset_iff.mp h a
-  omega
+  grind [subset_iff.mp h a, multiplicity_disjUnion, multiplicity_difference]
 
 theorem disjUnion_singleton_difference {x : A} {X : MS} (h : x ∈ X) : X = {x} ⊎ (X \ {x}) := by
   refine LawfulMultiSet.ext fun a => ?_
   rw [multiplicity_disjUnion, multiplicity_difference]
   by_cases hax : a = x
   · subst hax
-    rw [multiplicity_singleton_eq]
     have : 0 < MultiSet.multiplicity a X := h
-    omega
+    grind [multiplicity_singleton_eq]
   · rw [multiplicity_singleton_ne hax]; omega
 
 end Lemmas
@@ -122,7 +173,7 @@ theorem eq_empty_of_toList_nil {X : MS} (h : toList X = []) : X = ∅ := by
     rw [← mem_iff_multiplicity_pos, ← mem_toList, h]; simp
   omega
 
-theorem multiset_ind {motive : MS → Prop} (empty : motive ∅)
+@[elab_as_elim] theorem multiset_ind {motive : MS → Prop} (empty : motive ∅)
     (disjUnion_singleton : ∀ a X, motive X → motive ({a} ⊎ X)) (X : MS) : motive X := by
   match hl : toList X with
   | [] => exact eq_empty_of_toList_nil hl ▸ empty
@@ -136,5 +187,57 @@ decreasing_by
   simp only [List.length_append, List.length_cons, List.length_nil]; omega
 
 end FiniteLemmas
+
+namespace FiniteMultiSet
+
+/-- The cardinality (size) of a finite multiset -/
+def size [FiniteMultiSet MS A] (X : MS) : Nat :=
+  (toList X).length
+
+def fold [FiniteMultiSet MS A] {β : Type _} (f : A → β → β) (b : β) (X : MS) : β :=
+  (toList X).foldr f b
+
+section Lemmas
+
+variable {MS : Type _} {A : Type _} [LawfulFiniteMultiSet MS A]
+
+theorem size_empty : size (∅ : MS) = 0 := by rw [size, toList_empty, List.length_nil]
+
+theorem size_singleton {a : A} : size ({a} : MS) = 1 := by
+  rw [size, toList_singleton, List.length_singleton]
+
+theorem size_disjUnion {X Y : MS} : size (X ⊎ Y) = size X + size Y := by
+  rw [size, toList_disjUnion.length_eq, List.length_append, size, size]
+
+theorem size_eq_zero_iff {X : MS} : size X = 0 ↔ X = ∅ where
+  mp h := eq_empty_of_toList_nil (List.eq_nil_of_length_eq_zero h)
+  mpr h := h ▸ size_empty
+
+theorem size_difference {X Y : MS} (h : Y ⊆ X) : size (X \ Y) = size X - size Y := by
+  rw [congrArg size (disjUnion_difference_of_subseteq h), size_disjUnion]
+  omega
+
+variable {β : Type _} {f : A → β → β} {b : β}
+
+theorem fold_empty : fold f b (∅ : MS) = b := by rw [fold, toList_empty, List.foldr_nil]
+
+theorem fold_singleton {a : A} : fold f b ({a} : MS) = f a b := by
+  rw [fold, toList_singleton, List.foldr_cons, List.foldr_nil]
+
+theorem fold_disjUnion (hf : ∀ x y z, f y (f x z) = f x (f y z)) {X Y : MS} :
+    fold f b (X ⊎ Y) = fold f (fold f b Y) X := by
+  simp only [fold]
+  rw [toList_disjUnion.foldr_eq' (fun x _ y _ => hf x y), List.foldr_append]
+
+theorem fold_comm_acc {g : β → β} (hg : ∀ x y, f x (g y) = g (f x y)) {X : MS} :
+    fold f (g b) X = g (fold f b X) := by
+  rw [fold, fold]
+  induction toList X with
+  | nil => rfl
+  | cons a l ih => rw [List.foldr_cons, List.foldr_cons, ih, hg]
+
+end Lemmas
+
+end FiniteMultiSet
 
 end Iris.Std

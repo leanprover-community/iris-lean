@@ -5,7 +5,6 @@ public import Iris.Std.BitOp
 public import Iris.Std.Classes
 public import Iris.Std.CoPset
 public import Iris.Std.DelabRule
-/- public import Iris.Std.DumpPortingData -/
 public import Iris.Std.Equivalence
 public import Iris.Std.Expr
 public import Iris.Std.FromMathlib
@@ -18,6 +17,7 @@ public import Iris.Std.Infinite
 public import Iris.Std.List
 public import Iris.Std.Namespaces
 public import Iris.Std.Nat
+public import Iris.Std.Option
 public import Iris.Std.PartialMap
 public import Iris.Std.Positives
 public import Iris.Std.Prod
@@ -28,4 +28,6 @@ public import Iris.Std.RocqPorting
 public import Iris.Std.Set
 public import Iris.Std.Tactic
 public import Iris.Std.TC
+public import Iris.Std.Telescopes
 public import Iris.Std.Try
+public import Iris.Std.Vector

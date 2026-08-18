@@ -101,9 +101,9 @@ instance : OFE (MonPred I PROP) where
     { refl _ _ := dist_eqv.refl _
       symm h i := dist_eqv.symm (h i)
       trans h1 h2 i := dist_eqv.trans (h1 i) (h2 i) }
-  eq_dist {P Q} := by
+  eq_dist' {P Q} := by
     refine ⟨fun h _ _ => h ▸ .rfl, fun h => ?_⟩
-    exact MonPred.ext fun i => eq_dist.mpr fun n => h n i
+    exact MonPred.ext fun i => eq_dist_2 fun n => h n i
   dist_lt h1 h2 i := dist_lt (h1 i) h2
 
 #rocq_ignore monPred_ofe_mixin "Rocq mixin record; subsumed by the OFE instance."
@@ -155,7 +155,7 @@ instance : IsCOFE (MonPred I PROP) where
     let cf := c.map ((⟨Subtype.val, inferInstance⟩ : _ -n> (I.car → PROP)).comp MonPred.toSig)
     { monPred_at := fun i => COFE.compl cf i
       monPred_mono := fun {i j} h =>
-        LimitPreserving.entails (applyHom i) (applyHom j) cf (fun n => (c n).monPred_mono h) }
+        (LimitPreserving.entails (applyHom i) (applyHom j)).compl cf (fun n => (c n).monPred_mono h) }
   conv_compl {n c} :=
     IsCOFE.conv_compl (n := n)
       (c := c.map ((⟨Subtype.val, inferInstance⟩ : _ -n> (I.car → PROP)).comp MonPred.toSig))
@@ -473,7 +473,7 @@ instance : BI (MonPred I PROP) where
     refine (forall_elim i).trans ?_
     exact (pure_imp_elim (Std.Refl.refl i : I.rel.le i i)).trans (pure_imp_elim hΦ)
   later_sExists_false := fun {Φ} => entails_at.mpr fun i => by
-    refine later_sExists_false.trans (or_mono BIBase.Entails.rfl ?_)
+    refine later_sExists_false.trans (or_mono_right ?_)
     refine exists_elim fun p => pure_elim_left fun ⟨q, hΦ, hq⟩ => ?_
     subst hq
     exact (and_intro (pure_intro hΦ) BIBase.Entails.rfl).trans
@@ -486,7 +486,7 @@ instance : BI (MonPred I PROP) where
     refine later_false_em.trans (or_mono_right ?_)
     refine forall_intro fun j => imp_intro ?_
     refine pure_elim_right fun (hij : I.rel.le i j) => ?_
-    exact imp_mono BIBase.Entails.rfl (P.monPred_mono hij)
+    exact imp_mono_right (P.monPred_mono hij)
 
 #rocq_ignore monPred_unseal "Rocq unsealing command."
 #rocq_ignore monPred_unseal_bi "Rocq unsealing command."

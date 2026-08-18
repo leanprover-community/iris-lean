@@ -6,7 +6,6 @@ Authors: Zongyuan Liu
 module
 
 public import Iris.Algebra.Updates
-meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -188,6 +187,18 @@ theorem discreteFunSingleton_op_eq {x : ι} (y₁ y₂ : β x) :
     · rw [discreteFunSingleton_of_ne y₁ h, discreteFunSingleton_of_ne y₂ h,
         discreteFunSingleton_of_ne _ h]
       exact unit_left_id
+
+/-- Splitting off a singleton: if `y • y'` recovers `f` at `x`, then `y` together with `f`
+updated at `x` to `y'` recovers all of `f`. -/
+theorem discreteFunSingleton_op_insert {x : ι} {y y' : β x} {f : (a : ι) → β a}
+    (h : y • y' = f x) :
+    discreteFunSingleton x y • discreteFunInsert x y' f = f :=
+  funext fun x' => by
+    by_cases hx : x = x'
+    · subst hx; simpa only [DiscreteFun.op_apply, discreteFunSingleton_self,
+        discreteFunInsert_self] using h
+    · simp only [DiscreteFun.op_apply, discreteFunSingleton_of_ne y hx,
+        discreteFunInsert_of_ne (h := hx) .., unit_left_id]
 
 @[rocq_alias discrete_fun_insert_updateP]
 theorem discreteFunInsert_updateP {x : ι} {P : β x → Prop} {Q : ((a : ι) → β a) → Prop}

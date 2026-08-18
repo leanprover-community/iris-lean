@@ -7,7 +7,6 @@ module
 
 public import Iris.Algebra.CMRA
 public import Iris.ProofMode.Classes
-import Iris.Std.RocqPorting
 
 @[expose] public section
 

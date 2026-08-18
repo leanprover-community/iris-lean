@@ -5,7 +5,7 @@ Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
 module
 
-public meta import Iris.ProofMode.Tactics.Assumption
+public import Iris.ProofMode.Tactics.Assumption
 
 namespace Iris.ProofMode
 
@@ -13,16 +13,16 @@ public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
 /--
-  `iexact H` solves the goal with the hypothesis `H`.
+  `iexact H` solves the goal by matching it with the hypothesis `H`.
 -/
 elab "iexact " colGt hyp:ident : tactic => do
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `iexact λ mvar { hyps, goal, .. } => do
   let ivar ← hyps.findWithInfo hyp
   let ⟨e', _, _, out, p, _, pf⟩ := hyps.remove true ivar
 
   let some _ ← ProofModeM.trySynthInstanceQ q(FromAssumption $p .in $out $goal)
-    | throwError "iexact: cannot unify {out} and {goal}"
+    | throwIPMError "cannot unify {out} and {goal}"
   let .some _ ← trySynthInstanceQ q(TCOr (Affine $e') (Absorbing $goal))
-    | throwError "iexact: context is not affine or goal is not absorbing"
+    | throwIPMError "context is not affine or goal is not absorbing"
 
   mvar.assign q(assumption (Q := $goal) $pf)

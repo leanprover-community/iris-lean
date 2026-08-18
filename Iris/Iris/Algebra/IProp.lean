@@ -84,6 +84,14 @@ def IProp.unfold : IProp GF -n> IPre GF :=
 def IProp.fold : IPre GF -n> IProp GF :=
   OFE.Iso.inv <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
 
+@[rocq_alias iProp_solution.iProp_fold_unfold]
+theorem IProp.fold_unfold (P : IProp GF) : IProp.fold GF (IProp.unfold GF P) = P :=
+  OFunctor.Fix.iso (F := UPredOF (IResF GF)) |>.inv_hom
+
+@[rocq_alias iProp_solution.iProp_unfold_fold]
+theorem IProp.unfold_fold (P : IPre GF) : IProp.unfold GF (IProp.fold GF P) = P :=
+  OFunctor.Fix.iso (F := UPredOF (IResF GF)) |>.hom_inv
+
 end IProp
 
 end Iris

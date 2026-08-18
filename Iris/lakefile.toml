@@ -1,5 +1,6 @@
 name = "iris"
-defaultTargets = ["Iris", "IrisTest"]
+defaultTargets = ["Iris"]
+testDriver = "IrisTest"
 
 [[require]]
 name = "Qq"
@@ -16,10 +17,15 @@ name = "Iris"
 
 [[lean_lib]]
 name = "IrisTest"
-globs = ["Iris.*"]
+globs = ["IrisTest.+"]
 
 [[lean_exe]]
 name = "dumpPortingData"
-srcDir = "Iris/Std"
+srcDir = "../scripts"
 root = "DumpPortingData"
 supportInterpreter = true
+
+[[lean_exe]]
+name = "check-imports"
+srcDir = "../scripts"
+root = "CheckImports"

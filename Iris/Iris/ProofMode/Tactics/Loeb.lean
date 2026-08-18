@@ -12,6 +12,10 @@ namespace Iris.ProofMode
 
 open Lean Meta Elab.Tactic Qq
 
+public section
+
+#rocq_ignore tac_löb "No need for a dedicated theorem as iRevertIntro is used"
+
 public meta section
 
 syntax (name := iloeb) "iloeb" " as " binderIdent (generalizingSelPats)? : tactic
@@ -21,7 +25,7 @@ private def iLoebCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (IH : TSyntax `Lean.binderIdent) : ProofModeM Q($e ⊢ $goal) :=
   iRevertIntro hyps goal targets fun {prop _ _} hyps goal k => do
     let some _ ← ProofModeM.trySynthInstanceQ q(BI.BILoeb $prop)
-      | throwError m!"iloeb: no `{←ppExpr q(BI.BILoeb $prop)}` instance found"
+      | throwIPMError "no `{←ppExpr q(BI.BILoeb $prop)}` instance found"
     let pf := q(BI.loeb_wand_intuitionistically (P := $goal))
     let pf' ← do
       -- We have applied `BI.loeb_wand_intuitionistically`
@@ -46,19 +50,19 @@ elab_rules : tactic
   | `(tactic| iloeb as $IH:binderIdent generalizing $hs:selPat*) => do
     let pats ← Elab.liftMacroM <| SelPat.parse hs
 
-    ProofModeM.runTactic fun mvid { hyps, goal, .. } => do
+    ProofModeM.runTactic `iloeb fun mvid { hyps, goal, .. } => do
       -- Parse the selection patterns provided by the tactic user
       let targets : List SelTarget ← SelPat.resolve hyps (pats ++ [.spatial])
 
       -- Check for dependencies with the hypotheses in the selection targets
-      checkDependentHyps "iloeb" hyps targets none hs
+      checkDependentHyps hyps targets none hs
         (fun pats => `(tactic| iloeb as $IH generalizing $pats*))
         (fun pats => `(tactic| iloeb as $IH generalizing! $pats*))
 
       let expr ← iLoebCore hyps goal targets IH
       mvid.assign expr
   | `(tactic| iloeb as $IH:binderIdent $[generalizing! $hs:selPat*]?) => do
-    ProofModeM.runTactic fun mvid { hyps, goal, .. } => do
+    ProofModeM.runTactic `iloeb fun mvid { hyps, goal, .. } => do
       let targets ← do match hs with
       | none =>
         SelPat.resolve hyps [.spatial]

@@ -18,8 +18,10 @@ open BI Iris ProgramLogic Spawn
 
 namespace Par
 
+@[rocq_alias heap_lang.parN]
 def parN : Namespace := ndot nroot "par"
 
+@[rocq_alias heap_lang.par]
 def par : Val := hl_val%
   λ e1 e2,
     let handle := &spawn e1;
@@ -31,12 +33,13 @@ def par : Val := hl_val%
 syntax:55 hl_exp:56 " ‖ " hl_exp:55 : hl_exp
 
 macro_rules
-  | `(hl($e1 ‖ $e2)) => `(hl(&par v(λ _, $e1) v(λ _, $e2)))
+  | `(hl($e1 ‖ $e2)) => `(hl(&par (λ _, $e1) (λ _, $e2)))
 
 section Specs
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF] [SpawnG GF]
 
+@[rocq_alias heap_lang.par_spec]
 theorem par_spec (Ψ1 Ψ2 : Val → IProp GF) (f1 f2 : Val) (Φ : Val → IProp GF) :
     ⊢ WP hl(&f1 #()) {{ Ψ1 }} -∗
       WP hl(&f2 #()) {{ Ψ2 }} -∗
@@ -60,11 +63,12 @@ theorem par_spec (Ψ1 Ψ2 : Val → IProp GF) (f1 f2 : Val) (Φ : Val → IProp 
   wp_pures
   iexact HΦ
 
+@[rocq_alias heap_lang.wp_par]
 theorem wp_par (Ψ1 Ψ2 : Val → IProp GF) (e1 e2 : Exp) (Φ : Val → IProp GF) :
     ⊢ WP hl(&e1) {{ Ψ1 }} -∗
       WP hl(&e2) {{ Ψ2 }} -∗
       (∀ (v1 v2 : Val), Ψ1 v1 ∗ Ψ2 v2 -∗ ▷ Φ hl_val((&v1, &v2))) -∗
-      WP hl(&e1 ‖ &e2) {{ Φ }} := by
+      WP hl(&par v(λ _, &e1) v(λ _, &e2)) {{ Φ }} := by
   iintro H1 H2 H
   iapply par_spec Ψ1 Ψ2 $$ [H1] [H2] [$]
   · wp_pures; iexact H1

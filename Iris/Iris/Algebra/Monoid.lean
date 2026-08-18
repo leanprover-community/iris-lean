@@ -6,7 +6,6 @@ Authors: Zongyuan Liu
 module
 
 public import Iris.Algebra.OFE
-meta import Iris.Std.RocqPorting
 
 public section
 

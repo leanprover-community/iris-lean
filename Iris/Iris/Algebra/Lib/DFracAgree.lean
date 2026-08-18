@@ -7,7 +7,6 @@ module
 
 public import Iris.Algebra.DFrac
 public import Iris.Algebra.Agree
-meta import Iris.Std.RocqPorting
 
 /-!
 # The DFrac Agree Camera
@@ -43,6 +42,9 @@ instance mk_ne {d : DFrac} : NonExpansive (mk d : A → DFracAgreeR A) where
 
 @[rocq_alias to_dfrac_agree_exclusive]
 instance mk_exclusive {a : A} : Exclusive (mk (.own (1 : Qp)) a) := one_exclusive_left
+
+theorem mk_valid {d : DFrac} {a : A} : ✓ mk d a ↔ ✓ d :=
+  ⟨And.left, (⟨·, Agree.toAgree_valid⟩)⟩
 
 @[rocq_alias to_dfrac_agree_discrete]
 instance mk_discrete {d : DFrac} {a : A} [DiscreteE a] : DiscreteE (mk d a) :=
@@ -174,6 +176,8 @@ end Frac
 @[rocq_alias dfrac_agreeRF]
 abbrev DFracAgreeRF (T : COFE.OFunctorPre) [COFE.OFunctor T] : COFE.OFunctorPre :=
   ProdOF (constOF DFrac) (AgreeRF T)
+
+#rocq_ignore dfrac_agreeRF_contractive "Found by typeclass inference"
 
 end DFracAgree
 

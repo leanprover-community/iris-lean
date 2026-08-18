@@ -7,8 +7,7 @@ module
 
 public import Iris.ProofMode.Classes
 public import Iris.ProofMode.ModalityInstances
-public import Iris.Std.TC
-import Iris.Std.RocqPorting
+public import Iris.ProofMode.NatCancel
 
 @[expose] public section
 
@@ -19,10 +18,14 @@ section internalEq
 
 variable {PROP} [Sbi PROP]
 
+/-! ### FromPure -/
+
 @[rocq_alias from_pure_internal_eq]
 instance fromPure_internalEq [Sbi PROP] [OFE A] (a b : A) :
     FromPure (PROP := PROP) false iprop(a ≡ b) io (a = b) where
   from_pure := internalEq.of_pure
+
+/-! ### IntoPure -/
 
 @[ipm_backtrack, rocq_alias into_pure_eq]
 instance intoPure_internalEq [Sbi PROP] [OFE A] (a b : A)
@@ -36,23 +39,29 @@ instance (priority := default + 10) intoPure_internalEq_leibniz [Sbi PROP] [OFE 
     IntoPure (PROP := PROP) iprop(a ≡ b) (a = b) where
   into_pure := discrete_eq_mp
 
+/-! ### FromModal -/
+
 @[rocq_alias from_modal_Next]
-instance fromModal_internalEq_next [Sbi PROP] [OFE A] (x y : A) :
-    FromModal (PROP1 := PROP) (PROP2 := PROP) True (modality_laterN 1)
+instance fromModal_internalEq_next [Sbi PROP] [OFE A] io (x y : A) :
+    FromModal (PROP1 := PROP) (PROP2 := PROP) io (modality_laterN 1) True
       iprop(▷ (x ≡ y) : PROP) iprop(Later.next x ≡ Later.next y) iprop(x ≡ y) where
   from_modal _ := later_equivI_mpr x y
 
-@[rocq_alias into_laterN_Next]
+/-! ### IntoLaterN -/
+
+@[ipm_backtrack, rocq_alias into_laterN_Next]
 instance intoLaterN_internalEq_next [Sbi PROP] [OFE A] (x y : A)
-    only_head n n' [h : NatCancel n 1 n' 0] :
-    IntoLaterN (PROP := PROP) only_head n iprop(Later.next x ≡ Later.next y)
-      iprop(x ≡ y) where
-  into_laterN := (later_equivI_mp x y).trans (by
+    progress stuck only_head n n' [h : NatCancel n 1 n' 0 stuck] :
+    IntoLaterN progress (PROP := PROP) only_head n
+      iprop(Later.next x ≡ Later.next y) iprop(x ≡ y) where
+  into_laterN := by
+    refine (later_equivI_mp x y).trans ?_
     have hcancel : n' + 1 = n := by have := h.nat_cancel; omega
     rw [← hcancel]
-    exact later_mono (laterN_intro n'))
+    exact later_mono (laterN_intro n')
 
--- IntoInternalEq
+/-! ### IntoInternalEq -/
+
 @[rocq_alias into_internal_eq_internal_eq]
 instance intoInternalEq_internalEq [Sbi PROP] [OFE A] (x y : A) :
     IntoInternalEq (PROP := PROP) iprop(x ≡ y) x y where

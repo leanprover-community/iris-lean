@@ -68,6 +68,11 @@ directory argument of `#rocq_ignore_file` / `#rocq_concept`:
 #rocq_ignore_file heap_lang.lib "diverge.v"  "Not needed"
 ```
 
+Declarations use the short convention unless the same name occurs in multiple
+tracked files. Every ambiguous occurrence includes its source filename, so the
+two local `lock_inv` declarations in the spin and ticket locks are
+`heap_lang.spin_lock.lock_inv` and `heap_lang.ticket_lock.lock_inv`.
+
 ## Configuration Files
 
 - **`scripts/ROCQ_REVISION`** -- The Iris-Rocq commit SHA to track against.

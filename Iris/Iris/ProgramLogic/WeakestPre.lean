@@ -127,7 +127,7 @@ section Wp
 @[rocq_alias wp_unfold]
 theorem wp_unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E {{ Φ }} ⊣⊢ wp.pre s (Wp.wp (PROP := IProp GF) s) E e Φ :=
-  BI.equiv_iff.1 <| OFE.eq_dist.mpr <|
+  BI.equiv_iff.1 <| OFE.eq_dist_2 <|
     fun _n => (fixpoint_unfold (f := (wp.pre s).toContractiveHom)).dist E e Φ
 
 @[rocq_alias wp_ne]
@@ -191,7 +191,7 @@ theorem wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
 @[rocq_alias wp_value_fupd']
 theorem wp_value_fupd' {s : Stuckness} {E} {Φ : Val → IProp GF} {v : Val} :
     WP (v : Expr) @ s ; E {{ Φ }} ⊣⊢ |={E}=> Φ v := by
-  simp [wp_unfold.to_eq, toVal_coe, BI.BIBase.BiEntails.rfl, wp.pre]
+  simp [wp_unfold.to_eq, toVal_coe, wp.pre]
 
 @[rocq_alias wp_strong_mono]
 theorem wp_strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : Val → IProp GF}
@@ -629,7 +629,7 @@ instance frameWp {p : Bool} [H : ∀ v, FrameInstantiateExistDisabled p R (Φ v)
     apply wp_mono
     exact fun v => (H v).frame_instantiatiate_exist_disabled.frame
 
-@[rocq_alias is_except_0_wp]
+@[rocq_alias weakestpre.is_except_0_wp]
 instance isExcept0Wp : IsExcept0 (WP e @ s ; E {{ Φ }}) where
   is_except0 :=
     calc iprop(◇ _)
@@ -682,6 +682,13 @@ instance elimModalFupdWpAtomic_wrongMask :
     Use `iapply fupd_wp; imod (fupd_mask_subseteq E₂)` to adjust the mask of your goal to `E₂`")
     p io false iprop(|={E₁,E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
   elim_modal := nofun
+
+@[rocq_alias add_modal_fupd_wp]
+instance addModalFupdWp : AddModal iprop(|={E}=> P) P (WP e @ s ; E {{ Φ }}) where
+  add_modal := by
+    iintro ⟨H1, H2⟩
+    imod H1
+    iapply H2 $$ H1
 
 @[rocq_alias elim_acc_wp_atomic]
 instance (priority := low) elimAcc_wp_atomic {X} (E₁ E₂ : CoPset) α β (γ : X → Option (IProp GF)) :

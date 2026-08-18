@@ -33,6 +33,9 @@ class CInvG (GF : BundledGFunctors) where
 
 attribute [reducible, instance] CInvG.inv
 
+#rocq_ignore «cinvΣ» "Superseded by the `CInvG` typeclass on `BundledGFunctors`."
+#rocq_ignore «subG_cinvΣ» "Superseded by Lean's direct `ElemG` typeclass synthesis."
+
 namespace CancelableInvariant
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF] [W : CInvG GF]
@@ -96,7 +99,7 @@ instance instFractionalOwn (γ : GName) :
 
 @[rocq_alias cinv_own_as_fractional]
 instance instAsFractionalOwn (γ : GName) (q : Qp) :
-    AsFractional (own (GF := GF) γ q) (fun p : Qp => own γ p) q where
+    AsFractional (own (GF := GF) γ q) ioΦ (fun p : Qp => own γ p) ioq q where
   as_fractional := .rfl
   as_fractional_fractional := instFractionalOwn γ
 
@@ -107,9 +110,7 @@ theorem own_excl_alloc (P : GName → Prop) (HP : PredInfinite P) :
     ((some (Excl.excl ()), none) • (none, some (1 : Qp)) :
       CInvF (IProp GF) (IProp GF)) P ?_
     ⟨trivial, Qp.valid_one⟩ with ⟨%γ, %HPγ, Hown⟩
-  · intro N
-    obtain ⟨γ, HPγ, Hγ⟩ := HP (List.range (N + 1))
-    exact ⟨γ, by grind, HPγ⟩
+  · exact HP.exists_ge
   · imodintro
     iexists γ
     -- NOTE: Ideally, iframe would discharge this pure goal

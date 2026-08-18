@@ -9,7 +9,6 @@ public import Iris.Algebra.CMRA
 public import Iris.Algebra.OFE
 public import Iris.Algebra.Frac
 public import Iris.Algebra.IsOp
-meta import Iris.Std.RocqPorting
 
 /-!
 # The UFrac CMRA
@@ -40,6 +39,8 @@ namespace UFrac
 instance : OFE.Discrete UFrac := ⟨fun h => h⟩
 
 @[simp] theorem dist_iff {n} {x y : UFrac} : x ≡{n}≡ y ↔ x = y := Iff.rfl
+
+#rocq_ignore ufrac_ra_mixin "Use CMRA instance"
 
 @[rocq_alias ufracR]
 instance : CMRA UFrac where
