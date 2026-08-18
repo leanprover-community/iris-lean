@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
-public import Iris.ProofMode
+public import Iris.BI.BI
+public import Iris.BI.Cmra
 public import Iris.Algebra.Lib.DFracAgree
 
 /-! ## Algebra wrappers for BI
@@ -146,7 +147,9 @@ theorem auth_op_frag_validI [Sbi PROP] (dp : DFrac) (m : H V) k dq v :
     · exists z
     exact Hincl
   · refine siPure_mono ?_
-    iintro ⟨%v', ⟨%dq', %Hdp', %Hlookup, H⟩⟩
+    refine exists_elim fun v' => exists_elim fun dq' => ?_
+    refine pure_elim_left fun Hdp' => ?_
+    refine pure_elim_left fun Hlookup => ?_
     refine siPure_and.mpr.trans ?_
     refine siPure_mono (and_exists_left.mp.trans (exists_elim (fun c => ?_)))
     intro n ⟨h1, h2⟩
@@ -259,8 +262,10 @@ theorem agree_op_equiv_toAgreeI (x y : Agree A) (a : A) :
     letI : NonExpansive (x • ·) := CMRA.op_ne
     have H21 : x • y ≡ toAgree a ⊢@{PROP} x • x ≡ toAgree a := by
       exact (and_intro (H1.trans (internalEq.of_internalEquiv_ne (x • ·))) .rfl).trans internalEq.trans
-    have H22 : x • y ≡ toAgree a ⊢@{PROP} x • x ≡ x := by
-      exact emp_sep.2.trans (sep_mono_left (internalEq.of_equiv Agree.idemp)) |>.trans sep_elim_left
+    have H22 : x • y ≡ toAgree a ⊢@{PROP} x • x ≡ x := calc
+      _ ⊢ emp ∗ x • y ≡ toAgree a       := emp_sep.mpr
+      _ ⊢ x • x ≡ x ∗ x • y ≡ toAgree a := sep_mono_left <| internalEq.of_equiv Agree.idemp
+      _ ⊢ x • x ≡ x                     := sep_elim_left
     refine (and_intro (H22.trans internalEq.symm) H21).trans internalEq.trans
   apply and_intro H1
   exact (and_intro (H1.trans internalEq.symm) H2).trans internalEq.trans

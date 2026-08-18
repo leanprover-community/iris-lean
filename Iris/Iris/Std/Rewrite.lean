@@ -5,7 +5,7 @@ Authors: Lars König
 -/
 module
 
-public meta import Iris.Std.Tactic
+public import Iris.Std.Tactic
 
 public meta section
 

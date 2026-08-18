@@ -26,15 +26,21 @@ open Iris Iris.Std OFE Iris.Algebra Iris.Algebra.BigOpL Iris.Algebra.BigOpM
 
 /-! ## The `Embed` operation `⎡·⎤` -/
 
-/-- The embedding operation `⎡·⎤ : A → B`. `B` is intentionally *not*
-an `outParam`: the target logic is fixed by the expected type, not inferred. -/
+/--
+The embedding operation `⎡·⎤ : A → B`.
+
+`B` is intentionally *not* an `outParam`: the target logic is fixed by the
+expected type, not inferred.
+-/
 @[rocq_alias Embed]
 class Embed (A B : Type _) where
   embed : A → B
 export Embed (embed)
 
+attribute [inherit_doc Embed] Embed.embed
+
 syntax "⎡" term "⎤" : term
-macro_rules | `(iprop(⎡$P⎤)) => ``(Embed.embed iprop($P))
+macro_rules | `(iprop(⎡%$tk1 $P ⎤%$tk2)) => ``($(wrapIpropSpan tk1 tk2 ``Embed.embed) iprop($P))
 
 delab_rule Embed.embed
   | `($_ $P) => do ``(⎡$(← unpackIprop P)⎤)
@@ -174,14 +180,18 @@ theorem embed_exist {A : Sort _} (Φ : A → PROP1) : (⎡∃ x, Φ x⎤ : PROP2
 
 -- `∧`/`∨` use a Bool-indexed `∀`/`∃` encoding; see `and_forall_ite`/`or_exists_ite`.
 @[rocq_alias embed_and]
-theorem embed_and (P Q : PROP1) : (⎡P ∧ Q⎤ : PROP2) ⊣⊢ ⎡P⎤ ∧ ⎡Q⎤ :=
-  (embed_congr and_forall_ite).trans <| (embed_forall _).trans <|
-    (forall_congr fun b => by cases b <;> exact .rfl).trans and_forall_ite.symm
+theorem embed_and (P Q : PROP1) : (⎡P ∧ Q⎤ : PROP2) ⊣⊢ ⎡P⎤ ∧ ⎡Q⎤ := calc
+  _ ⊣⊢ ⎡∀ b, if b = true then P else Q⎤   := embed_congr and_forall_ite
+  _ ⊣⊢ ∀ x, ⎡if x = true then P else Q⎤   := embed_forall _
+  _ ⊣⊢ ∀ a, if a = true then ⎡P⎤ else ⎡Q⎤ := forall_congr fun b => by cases b <;> exact .rfl
+  _ ⊣⊢ ⎡P⎤ ∧ ⎡Q⎤                          := and_forall_ite.symm
 
 @[rocq_alias embed_or]
-theorem embed_or (P Q : PROP1) : (⎡P ∨ Q⎤ : PROP2) ⊣⊢ ⎡P⎤ ∨ ⎡Q⎤ :=
-  (embed_congr or_exists_ite).trans <| (embed_exist _).trans <|
-    (exists_congr fun b => by cases b <;> exact .rfl).trans or_exists_ite.symm
+theorem embed_or (P Q : PROP1) : (⎡P ∨ Q⎤ : PROP2) ⊣⊢ ⎡P⎤ ∨ ⎡Q⎤ := calc
+  _ ⊣⊢ ⎡∃ b, if b = true then P else Q⎤   := embed_congr or_exists_ite
+  _ ⊣⊢ ∃ x, ⎡if x = true then P else Q⎤   := embed_exist _
+  _ ⊣⊢ ∃ a, if a = true then ⎡P⎤ else ⎡Q⎤ := exists_congr fun b => by cases b <;> exact .rfl
+  _ ⊣⊢ ⎡P⎤ ∨ ⎡Q⎤                          := or_exists_ite.symm
 
 @[rocq_alias embed_impl]
 theorem embed_impl (P Q : PROP1) : (⎡P → Q⎤ : PROP2) ⊣⊢ (⎡P⎤ → ⎡Q⎤) :=
@@ -213,13 +223,16 @@ theorem embed_emp [BiEmbedEmp PROP1 PROP2] : (⎡(emp : PROP1)⎤ : PROP2) ⊣�
   ⟨BiEmbedEmp.embed_emp_1, embed_emp_2⟩
 
 @[rocq_alias embed_pure]
-theorem embed_pure (φ : Prop) : (⎡(⌜φ⌝ : PROP1)⎤ : PROP2) ⊣⊢ ⌜φ⌝ :=
-  (embed_congr (pure_alt φ)).trans <| (embed_exist _).trans <|
-    (exists_congr fun _ =>
-      ⟨true_intro
-      , (imp_intro and_elim_r).trans <|
-        (embed_impl_2 emp emp).trans (embed_mono true_intro)⟩).trans
-    (pure_alt φ).symm
+theorem embed_pure (φ : Prop) : (⎡(⌜φ⌝ : PROP1)⎤ : PROP2) ⊣⊢ ⌜φ⌝ := by
+  calc
+    _ ⊣⊢ ⎡∃ x, True⎤ := embed_congr (pure_alt φ)
+    _ ⊣⊢ ∃ x, ⎡True⎤ := embed_exist _
+    _ ⊣⊢ ∃ a, True   := exists_congr fun _ => ⟨true_intro, ?_⟩
+    _ ⊣⊢ ⌜φ⌝         := (pure_alt φ).symm
+  calc
+    _ ⊢ ⎡emp⎤ → ⎡emp⎤ := imp_intro and_elim_r
+    _ ⊢ ⎡emp → emp⎤   := embed_impl_2 emp emp
+    _ ⊢ ⎡True⎤        := embed_mono true_intro
 
 @[rocq_alias embed_iff]
 theorem embed_iff (P Q : PROP1) : (⎡P ↔ Q⎤ : PROP2) ⊣⊢ (⎡P⎤ ↔ ⎡Q⎤) :=
@@ -310,9 +323,10 @@ theorem embed_except_0 [BiEmbedLater PROP1 PROP2] (P : PROP1) :
 @[rocq_alias embed_timeless]
 instance embed_timeless [BiEmbedLater PROP1 PROP2] (P : PROP1) [Timeless P] :
     Timeless (embed P : PROP2) where
-  timeless :=
-    ((BiEmbedLater.embed_later P).mpr.trans (embed_mono Timeless.timeless)).trans
-      (embed_except_0 P).mp
+  timeless := calc
+    _ ⊢ ⎡▷ P⎤ := (BiEmbedLater.embed_later P).mpr
+    _ ⊢ ⎡◇ P⎤ := embed_mono Timeless.timeless
+    _ ⊢ ◇ ⎡P⎤ := (embed_except_0 P).mp
 
 /-! ### Monoid homomorphisms -/
 
@@ -455,12 +469,14 @@ instance embed_plain (P : P1) [Plain P] : Plain (embed P : P2) where
 theorem embed_internal_inj {P3 : Type _} [Sbi P3] (P Q : P1) :
     ((embed P : P2) ≡ embed Q : P3) ⊢ P ≡ Q := by
   refine siPure_mono ?_
-  refine (prop_ext_siEmpValid_equiv (embed P) (embed Q)).mp.trans ?_
-  refine (siEmpValid_and.mp.trans ?_).trans (prop_ext_siEmpValid_equiv P Q).mpr
-  exact (and_mono
-      ((siEmpValid_mono (embed_wand_2 P Q)).trans (BiEmbedSbi.embed_si_emp_valid iprop(P -∗ Q)).mp)
-      ((siEmpValid_mono (embed_wand_2 Q P)).trans (BiEmbedSbi.embed_si_emp_valid iprop(Q -∗ P)).mp)
-    ).trans siEmpValid_and.mpr
+  calc
+    _ ⊢ <si_emp_valid> (⎡P⎤ ∗-∗ ⎡Q⎤)                              := (prop_ext_siEmpValid_equiv (embed P) (embed Q)).mp
+    _ ⊢ <si_emp_valid> (⎡P⎤ -∗ ⎡Q⎤) ∧ <si_emp_valid> (⎡Q⎤ -∗ ⎡P⎤) := siEmpValid_and.mp
+    _ ⊢ <si_emp_valid> (P -∗ Q) ∧ <si_emp_valid> (Q -∗ P)         := and_mono ?_ ?_
+    _ ⊢ <si_emp_valid> ((P -∗ Q) ∧ (Q -∗ P))                      := siEmpValid_and.mpr
+    _ ⊢ SiProp.internalEq P Q                                     := (prop_ext_siEmpValid_equiv P Q).mpr
+  exact (siEmpValid_mono (embed_wand_2 P Q)).trans (BiEmbedSbi.embed_si_emp_valid iprop(P -∗ Q)).mp
+  exact (siEmpValid_mono (embed_wand_2 Q P)).trans (BiEmbedSbi.embed_si_emp_valid iprop(Q -∗ P)).mp
 
 end
 

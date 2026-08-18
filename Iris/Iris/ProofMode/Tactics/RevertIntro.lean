@@ -41,7 +41,8 @@ def iRevertIntro
       let onePat : iCasesPat := ⟨ident, .one ident⟩
       let case : iCasesPatCase := if ivar.persistent? then .intuitionistic onePat else .one ident
       return (name, .intro ⟨ident, case⟩)
-  trace[irevertintro] s!"Calling `iRevertIntro` with {names.map (·.1)} on context {←ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
+  trace[irevertintro] s!"Calling `iRevertIntro` with {names.map (·.1)} on \
+    context {←ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
   iRevertCore hs hyps goal fun hyps goal => do
     k hyps goal fun hyps goal k' => do
       iIntroCore hyps goal names k'

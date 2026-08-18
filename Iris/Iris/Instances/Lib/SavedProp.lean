@@ -62,7 +62,7 @@ instance saved_anything_fractional (γ : GName) (x : F.ap (IProp GF)) :
 @[rocq_alias saved_anything_as_fractional]
 instance saved_anything_as_fractional (γ : GName) (x : F.ap (IProp GF)) (q : Qp) :
     AsFractional (saved_anything_own γ (.own q) x)
-      (fun q => saved_anything_own γ (.own q) x) q where
+      ioΦ (fun q => saved_anything_own γ (.own q) x) ioq q where
   as_fractional := .rfl
   as_fractional_fractional := saved_anything_fractional γ x
 
@@ -73,10 +73,7 @@ theorem saved_anything_alloc_strong (x : F.ap (IProp GF)) (I : GName → Prop) (
     (Hdq : ✓ dq) (HI : PredInfinite I) :
     ⊢@{IProp GF} |==> ∃ γ, ⌜I γ⌝ ∗ saved_anything_own γ dq x := by
   unfold saved_anything_own
-  refine iOwn_alloc_strong _ I ?_ ⟨Hdq, toAgree_valid⟩
-  intro N
-  obtain ⟨k, hk, hnk⟩ := HI (List.range N)
-  exact ⟨k, Nat.not_lt.mp (fun h => hnk (List.mem_range.mpr h)), hk⟩
+  exact iOwn_alloc_strong _ I HI.exists_ge ⟨Hdq, toAgree_valid⟩
 
 @[rocq_alias saved_anything_alloc_cofinite]
 theorem saved_anything_alloc_cofinite (x : F.ap (IProp GF)) (G : List GName) (dq : DFrac)
@@ -208,7 +205,7 @@ instance saved_prop_fractional (γ : GName) (P : IProp GF) :
 
 @[rocq_alias saved_prop_as_fractional]
 instance saved_prop_as_fractional (γ : GName) (P : IProp GF) (q : Qp) :
-    AsFractional (saved_prop_own γ (.own q) P) (fun q => saved_prop_own γ (.own q) P) q where
+    AsFractional (saved_prop_own γ (.own q) P) ioΦ (fun q => saved_prop_own γ (.own q) P) ioq q where
   as_fractional := .rfl
   as_fractional_fractional := saved_prop_fractional γ P
 
@@ -311,7 +308,7 @@ instance saved_pred_fractional (γ : GName) (Φ : A → IProp GF) :
 
 @[rocq_alias saved_pred_as_fractional]
 instance saved_pred_as_fractional (γ : GName) (Φ : A → IProp GF) (q : Qp) :
-    AsFractional (saved_pred_own γ (.own q) Φ) (fun q => saved_pred_own γ (.own q) Φ) q where
+    AsFractional (saved_pred_own γ (.own q) Φ) ioΦ (fun q => saved_pred_own γ (.own q) Φ) ioq q where
   as_fractional := .rfl
   as_fractional_fractional := saved_pred_fractional γ Φ
 

@@ -9,7 +9,6 @@ public import Iris.BI.BigOp.BigOp
 import Iris.BI.DerivedLawsLater
 import Iris.BI.Instances
 import Iris.Std.TC
-meta import Iris.Std.RocqPorting
 
 public section
 
@@ -95,11 +94,11 @@ theorem bigSepL_id_mono {Ps Qs : List PROP} (hlen : Ps.length = Qs.length)
   bigOpL_gen_proper_2 (· ⊢ ·) .rfl sep_mono hlen (h _ _ _ · ·)
 
 @[rocq_alias big_sepL_persistent_id]
-theorem bigSepL_persistent_id {Ps : List PROP} (hPs : ∀ P, P ∈ Ps → Persistent P) :
+instance bigSepL_persistent_id {Ps : List PROP} [hPs : TCForall Persistent Ps] :
     Persistent ([∗list] P ∈ Ps, P) where
   persistent := bigOpL_closed (P := fun Q => Q ⊢ <pers> Q) persistently_emp_2
     (fun hx hy => (sep_mono hx hy).trans persistently_sep_mpr)
-    (fun hget => (hPs _ (List.mem_iff_getElem?.mpr ⟨_, hget⟩)).persistent)
+    (fun hget => (forall_TCForall.mp hPs _ (List.mem_iff_getElem?.mpr ⟨_, hget⟩)).persistent)
 
 @[rocq_alias big_sepL_persistent]
 theorem bigSepL_persistent {Φ : Nat → A → PROP} {l : List A}
@@ -120,11 +119,11 @@ instance bigSepL_persistent_inst {Φ : Nat → A → PROP} {l : List A} [∀ k x
   bigSepL_persistent fun _ => inferInstance
 
 @[rocq_alias big_sepL_affine_id]
-theorem bigSepL_affine_id {Ps : List PROP} (hPs : ∀ P, P ∈ Ps → Affine P) :
+instance bigSepL_affine_id {Ps : List PROP} [hPs : TCForall Affine Ps] :
     Affine ([∗list] P ∈ Ps, P) where
   affine := bigOpL_closed (P := fun Q => Q ⊢ emp) .rfl
     (fun hx hy => (sep_mono hx hy).trans sep_emp.1)
-    (fun hget => (hPs _ (List.mem_iff_getElem?.mpr ⟨_, hget⟩)).affine)
+    (fun hget => (forall_TCForall.mp hPs _ (List.mem_iff_getElem?.mpr ⟨_, hget⟩)).affine)
 
 @[rocq_alias big_sepL_nil_affine]
 instance bigSepL_nil_affine_inst {Φ : Nat → A → PROP} :
@@ -144,12 +143,12 @@ instance bigSepL_affine_inst {Φ : Nat → A → PROP} {l : List A} [∀ k x, Af
   bigSepL_affine fun _ => inferInstance
 
 @[rocq_alias big_sepL_timeless_id]
-theorem bigSepL_timeless_id [Timeless (emp : PROP)] {Ps : List PROP}
-    (hPs : ∀ {P}, P ∈ Ps → Timeless P) :
+instance bigSepL_timeless_id [Timeless (emp : PROP)] {Ps : List PROP}
+    [hPs : TCForall Timeless Ps] :
     Timeless ([∗list] P ∈ Ps, P) where
   timeless := bigOpL_closed (P := fun Q => ▷ Q ⊢ ◇ Q) Timeless.timeless
     (fun hx hy => later_sep.1.trans ((sep_mono hx hy).trans except0_sep.2))
-    (fun hget => hPs (List.mem_iff_getElem?.mpr ⟨_, hget⟩) |>.timeless)
+    (fun hget => forall_TCForall.mp hPs _ (List.mem_iff_getElem?.mpr ⟨_, hget⟩) |>.timeless)
 
 @[rocq_alias big_sepL_timeless]
 theorem bigSepL_timeless [Timeless (emp : PROP)] {Φ : Nat → A → PROP} {l : List A}
@@ -1220,7 +1219,7 @@ theorem bigSepL2_proper_2 [OFE A] [OFE B]
       Φ k y1 y2 ⊣⊢ Ψ k y1' y2') :
     ([∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) ⊣⊢
       ([∗list] k ↦ x1;x2 ∈ l1';l2', Ψ k x1 x2) :=
-  equiv_iff.mp <| OFE.eq_dist.mpr fun _ =>
+  equiv_iff.mp <| OFE.eq_dist_2 fun _ =>
     bigSepL2_dist_2 hl1 hl2 (fun h1 h2 => OFE.Dist.of_eq (hel1 h1 h2))
       (fun h1 h2 => OFE.Dist.of_eq (hel2 h1 h2))
       (fun h1 h2 _ h3 h4 _ => (equiv_iff.mpr (hf h1 h2 (hel1 h1 h2) h3 h4 (hel2 h3 h4))).dist)

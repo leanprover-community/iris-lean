@@ -13,141 +13,153 @@ public import Iris.ProofMode.ClassesMake
 namespace Iris.ProofMode
 open Iris.BI
 
-/- For classes that are not ipm_classes (like QuickAffine and QuickAbsorbing), the BIAffine
+/- For classes that are not IPM classes (like QuickAffine and QuickAbsorbing), the BIAffine
   instances must have a higher priority than the instances that match on the proposition
   since if the proposition P is a meta variable, instances that try to match on it will generate an
   IsDefEqStuck exception, which aborts the typeclass search completely. -/
 
-/- QuickAffine -/
+/-! ### QuickAffine -/
+
 @[rocq_alias bi_affine_quick_affine]
-instance (priority := default + 10) quickAffine_biAffine [BI PROP] (P : PROP) [BIAffine PROP] :
-  QuickAffine P where
+instance (priority := default + 10) quickAffine_biAffine [BI PROP]
+    (P : PROP) [BIAffine PROP] :
+    QuickAffine P where
   quick_affine := inferInstance
 
 @[rocq_alias False_quick_affine]
 instance quickAffine_False [BI PROP] :
-  QuickAffine (PROP:=PROP) iprop(False) where
+    QuickAffine (PROP:=PROP) iprop(False) where
   quick_affine := inferInstance
 
 @[rocq_alias emp_quick_affine]
 instance quickAffine_emp [BI PROP] :
-  QuickAffine (PROP:=PROP) iprop(emp) where
+    QuickAffine (PROP:=PROP) iprop(emp) where
   quick_affine := inferInstance
 
 @[rocq_alias affinely_quick_affine]
 instance quickAffine_affinely [BI PROP] (P : PROP) :
-  QuickAffine iprop(<affine> P) where
+    QuickAffine iprop(<affine> P) where
   quick_affine := inferInstance
 
 @[rocq_alias intuitionistically_quick_affine]
 instance quickAffine_intuitionistically [BI PROP] (P : PROP) :
-  QuickAffine iprop(□ P) where
+    QuickAffine iprop(□ P) where
   quick_affine := inferInstance
 
-/- QuickAbsorbing -/
+/-! ### QuickAbsorbing -/
+
 @[rocq_alias bi_affine_quick_absorbing]
-instance (priority := default + 10) quickAbsorbing_biAffine [BI PROP] (P : PROP) [BIAffine PROP] :
-  QuickAbsorbing P where
+instance (priority := default + 10) quickAbsorbing_biAffine [BI PROP]
+    (P : PROP) [BIAffine PROP] :
+    QuickAbsorbing P where
   quick_absorbing := inferInstance
 
 @[rocq_alias pure_quick_absorbing]
 instance quickAbsorbing_pure [BI PROP] (P : Prop) :
-  QuickAbsorbing (PROP:=PROP) iprop(⌜P⌝) where
+    QuickAbsorbing (PROP:=PROP) iprop(⌜P⌝) where
   quick_absorbing := inferInstance
 
 @[rocq_alias absorbingly_quick_absorbing]
 instance quickAbsorbing_absorbingly [BI PROP] (P : PROP) :
-  QuickAbsorbing iprop(<absorb> P) where
+    QuickAbsorbing iprop(<absorb> P) where
   quick_absorbing := inferInstance
 
 @[rocq_alias persistently_quick_absorbing]
 instance quickAbsorbing_persistently [BI PROP] (P : PROP) :
-  QuickAbsorbing iprop(<pers> P) where
+    QuickAbsorbing iprop(<pers> P) where
   quick_absorbing := inferInstance
 
-/- MakeSep -/
+/-! ### MakeSep -/
 
 @[rocq_alias make_sep_emp_l]
-instance makeSep_emp_l [BI PROP] (P : PROP) : MakeSep iprop(emp) P P where
+instance makeSep_emp_left [BI PROP] (P : PROP) : MakeSep iprop(emp) P P where
   make_sep := emp_sep
 
 @[rocq_alias make_sep_emp_r]
-instance makeSep_emp_r [BI PROP] (P : PROP) : MakeSep P iprop(emp) P where
+instance makeSep_emp_right [BI PROP] (P : PROP) : MakeSep P iprop(emp) P where
   make_sep := sep_emp
 
 @[ipm_backtrack, rocq_alias make_sep_true_l]
-instance makeSep_true_l [BI PROP] (P : PROP) [h : QuickAbsorbing P] : MakeSep iprop(True) P P where
+instance makeSep_true_left [BI PROP] (P : PROP) [h : QuickAbsorbing P] :
+    MakeSep iprop(True) P P where
   make_sep := have := h.1; true_sep
 
 @[ipm_backtrack, rocq_alias make_sep_true_r]
-instance makeSep_true_r [BI PROP] (P : PROP) [h : QuickAbsorbing P] : MakeSep P iprop(True) P where
+instance makeSep_true_right [BI PROP] (P : PROP) [h : QuickAbsorbing P] :
+    MakeSep P iprop(True) P where
   make_sep := have := h.1; sep_true
 
 @[rocq_alias make_sep_default]
-instance (priority:=low) makeSep_default [BI PROP] (P Q : PROP) : MakeSep P Q iprop(P ∗ Q) where
+instance (priority := low) makeSep_default [BI PROP] (P Q : PROP) :
+    MakeSep P Q iprop(P ∗ Q) where
   make_sep := .rfl
 
-/- MakeAnd -/
+/-! ### MakeAnd -/
 
 @[rocq_alias make_and_true_l]
-instance makeAnd_true_l [BI PROP] (P : PROP) : MakeAnd iprop(True) P P where
+instance makeAnd_true_left [BI PROP] (P : PROP) : MakeAnd iprop(True) P P where
   make_and := true_and
 
 @[rocq_alias make_and_true_r]
-instance makeAnd_true_r [BI PROP] (P : PROP) : MakeAnd P iprop(True) P where
+instance makeAnd_true_right [BI PROP] (P : PROP) : MakeAnd P iprop(True) P where
   make_and := and_true
 
 @[ipm_backtrack, rocq_alias make_and_emp_l]
-instance makeAnd_emp_l [BI PROP] (P : PROP) [h : QuickAffine P] : MakeAnd iprop(emp) P P where
+instance makeAnd_emp_left [BI PROP] (P : PROP) [h : QuickAffine P] :
+    MakeAnd iprop(emp) P P where
   make_and := have := h.1; emp_and
 
 @[ipm_backtrack, rocq_alias make_and_emp_r]
-instance makeAnd_emp_r [BI PROP] (P : PROP) [h : QuickAffine P] : MakeAnd P iprop(emp) P where
+instance makeAnd_emp_right [BI PROP] (P : PROP) [h : QuickAffine P] :
+    MakeAnd P iprop(emp) P where
   make_and := have := h.1; and_emp
 
 @[rocq_alias make_and_false_l]
-instance makeAnd_false_l [BI PROP] (P : PROP) : MakeAnd iprop(False) P iprop(False) where
+instance makeAnd_false_left [BI PROP] (P : PROP) : MakeAnd iprop(False) P iprop(False) where
   make_and := false_and
 
 @[rocq_alias make_and_false_r]
-instance makeAnd_false_r [BI PROP] (P : PROP) : MakeAnd P iprop(False) iprop(False) where
+instance makeAnd_false_right [BI PROP] (P : PROP) : MakeAnd P iprop(False) iprop(False) where
   make_and := and_false
 
 @[rocq_alias make_and_default]
-instance (priority:=low) makeAnd_default [BI PROP] (P Q : PROP) : MakeAnd P Q iprop(P ∧ Q) where
+instance (priority := low) makeAnd_default [BI PROP] (P Q : PROP) : MakeAnd P Q iprop(P ∧ Q) where
   make_and := .rfl
 
-/- MakeOr -/
+/-! ### MakeOr -/
 
 @[rocq_alias make_or_true_l]
-instance makeOr_true_l [BI PROP] (P : PROP) : MakeOr iprop(True) P iprop(True) where
+instance makeOr_true_left [BI PROP] (P : PROP) : MakeOr iprop(True) P iprop(True) where
   make_or := true_or
 
 @[rocq_alias make_or_true_r]
-instance makeOr_true_r [BI PROP] (P : PROP) : MakeOr P iprop(True) iprop(True) where
+instance makeOr_true_right [BI PROP] (P : PROP) : MakeOr P iprop(True) iprop(True) where
   make_or := or_true
 
 @[ipm_backtrack, rocq_alias make_or_emp_l]
-instance makeOr_emp_l [BI PROP] (P : PROP) [h : QuickAffine P] : MakeOr iprop(emp) P iprop(emp) where
+instance makeOr_emp_left [BI PROP] (P : PROP) [h : QuickAffine P] :
+    MakeOr iprop(emp) P iprop(emp) where
   make_or := have := h.1; emp_or
 
 @[ipm_backtrack, rocq_alias make_or_emp_r]
-instance makeOr_emp_r [BI PROP] (P : PROP) [h : QuickAffine P] : MakeOr P iprop(emp) iprop(emp) where
+instance makeOr_emp_right [BI PROP] (P : PROP) [h : QuickAffine P] :
+    MakeOr P iprop(emp) iprop(emp) where
   make_or := have := h.1; or_emp
 
 @[rocq_alias make_or_false_l]
-instance makeOr_false_l [BI PROP] (P : PROP) : MakeOr iprop(False) P P where
+instance makeOr_false_left [BI PROP] (P : PROP) : MakeOr iprop(False) P P where
   make_or := false_or
 
 @[rocq_alias make_or_false_r]
-instance makeOr_false_r [BI PROP] (P : PROP) : MakeOr P iprop(False) P where
+instance makeOr_false_right [BI PROP] (P : PROP) : MakeOr P iprop(False) P where
   make_or := or_false
 
 @[rocq_alias make_or_default]
-instance (priority:=low) makeOr_default [BI PROP] (P Q : PROP) : MakeOr P Q iprop(P ∨ Q) where
+instance (priority := low) makeOr_default [BI PROP] (P Q : PROP) :
+    MakeOr P Q iprop(P ∨ Q) where
   make_or := .rfl
 
-/- MakeAffinely -/
+/-! ### MakeAffinely -/
 
 @[ipm_backtrack, rocq_alias make_affinely_affine]
 instance (priority := high) makeAffinely_affine [BI PROP] (P : PROP) [Affine P] :
@@ -164,7 +176,8 @@ instance (priority := low) makeAffinely_default [BI PROP] (P : PROP) :
     MakeAffinely P iprop(<affine> P) where
   make_affinely := .rfl
 
-/- MakeAbsorbingly -/
+/-! ### MakeAbsorbingly -/
+
 @[ipm_backtrack, rocq_alias make_absorbingly_absorbing]
 instance (priority := high) makeAbsorbingly_absorbing [BI PROP] (P : PROP) [Absorbing P] :
     MakeAbsorbingly P P where
@@ -180,7 +193,7 @@ instance (priority := low) makeAbsorbingly_default [BI PROP] (P : PROP) :
     MakeAbsorbingly P iprop(<absorb> P) where
   make_absorbingly := .rfl
 
-/- MakePersistently -/
+/-! ### MakePersistently -/
 @[rocq_alias make_persistently_emp]
 instance (priority := high) makePersistently_emp [BI PROP] :
     MakePersistently (PROP := PROP) iprop(emp) iprop(True) where
@@ -196,7 +209,7 @@ instance (priority := low) makePersistently_default [BI PROP] (P : PROP) :
     MakePersistently P iprop(<pers> P) where
   make_persistently := .rfl
 
-/- MakeIntuitionistically -/
+/-! ### MakeIntuitionistically -/
 
 @[rocq_alias make_intuitionistically_emp]
 instance (priority := high) makeIntuitionistically_emp [BI PROP] :
@@ -218,7 +231,7 @@ instance (priority := low) makeIntuitionistically_default [BI PROP] (P : PROP) :
     MakeIntuitionistically P iprop(□ P) where
   make_intuitionistically := .rfl
 
-/- MakeLaterN -/
+/-! ### MakeLaterN -/
 
 instance makeLaterN_0 [BI PROP] (P : PROP) : MakeLaterN 0 P P where
   make_laterN := .rfl
@@ -241,7 +254,7 @@ instance (priority := high) makeLaterN_emp [BI PROP] [BIAffine PROP] n :
     MakeLaterN (PROP:=PROP) n iprop(emp) iprop(emp) where
   make_laterN := laterN_emp n
 
-/- MakeExcept0 -/
+/-! ### MakeExcept0 -/
 
 @[rocq_alias make_except_0_True]
 instance makeExcept0_True [BI PROP] :
@@ -253,7 +266,7 @@ instance (priority := low) makeExcept0_default [BI PROP] (P : PROP) :
     MakeExcept0 P iprop(◇ P) where
   make_except0 := .rfl
 
-/- MakeBUpd -/
+/-! ### MakeBUpd -/
 
 instance makeBUpd_True [BI PROP] [BIUpdate PROP] :
     MakeBUpd (PROP:=PROP) iprop(True) iprop(True) where
@@ -263,7 +276,7 @@ instance (priority := low) makeBUpd_default [BI PROP] [BIUpdate PROP] (P : PROP)
     MakeBUpd P iprop(|==> P) where
   make_bupd := .rfl
 
-/- MakeFUpd -/
+/-! ### MakeFUpd -/
 
 instance makeFUpd_True [BI PROP] [BIFUpdate PROP] E :
     MakeFUpd (PROP:=PROP) E E iprop(True) iprop(True) where
@@ -272,3 +285,22 @@ instance makeFUpd_True [BI PROP] [BIFUpdate PROP] E :
 instance (priority := low) makeFUpd_default [BI PROP] [BIFUpdate PROP] E1 E2 (P : PROP) :
     MakeFUpd E1 E2 P iprop(|={E1, E2}=> P) where
   make_fupd := .rfl
+
+/-! ### MakeEmbed -/
+
+@[rocq_alias make_embed_pure]
+instance makeEmbed_pure [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] φ :
+    MakeEmbed (PROP1:=PROP1) (PROP2:=PROP2) iprop(⌜φ⌝) iprop(⌜φ⌝) where
+  make_embed := embed_pure φ
+
+@[ipm_backtrack, rocq_alias make_embed_emp]
+instance makeEmbed_emp [BI PROP1] [BI PROP2]
+    [BiEmbed PROP1 PROP2] [BiEmbedEmp PROP1 PROP2] :
+    MakeEmbed (PROP1:=PROP1) (PROP2:=PROP2) iprop(emp) iprop(emp) where
+  make_embed := embed_emp
+
+@[rocq_alias make_embed_default]
+instance (priority := low) makeEmbed_default [BI PROP1] [BI PROP2]
+    [BiEmbed PROP1 PROP2] (P : PROP1) :
+    MakeEmbed (PROP2:=PROP2) P iprop(⎡P⎤) where
+  make_embed := .rfl

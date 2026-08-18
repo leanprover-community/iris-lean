@@ -59,6 +59,8 @@ open OFE
 variable [LawfulPartialMap H Pos] [OFE A]
 
 #rocq_ignore reservation_map_ofe_mixin "Not needed"
+#rocq_ignore reservation_map_equiv "Part of OFE instance"
+#rocq_ignore reservation_map_dist "Part of OFE instance"
 
 @[rocq_alias reservation_mapO]
 instance : OFE (ReservationMap A H) where
@@ -68,22 +70,35 @@ instance : OFE (ReservationMap A H) where
     symm h := ⟨h.left.symm, h.right.symm⟩,
     trans h₁ h₂ := ⟨h₁.left.trans h₂.left, h₁.right.trans h₂.right⟩
   }
-  eq_dist {x y} := by
+  eq_dist' {x y} := by
     refine ⟨fun h _ => h ▸ ⟨.rfl, .rfl⟩, fun H => ?_⟩
     obtain ⟨xd, xt⟩ := x; obtain ⟨yd, yt⟩ := y
     simp only [ReservationMap.mk.injEq]
-    exact ⟨eq_dist.mpr fun n => (H n).1, eq_dist.mpr fun n => (H n).2⟩
+    exact ⟨eq_dist_2 fun n => (H n).1, eq_dist_2 fun n => (H n).2⟩
   dist_lt h lt := ⟨dist_lt h.left lt, dist_lt h.right lt⟩
 
 @[rocq_alias reservation_map_ofe_discrete]
 instance instDiscreteReservationMap [Discrete A] : Discrete (ReservationMap A H) where
-  discrete_0 h := OFE.eq_dist.mpr <| by
+  discrete_0 h := OFE.eq_dist_2 <| by
     intro n
     exact ⟨(discrete_0 h.left).dist, (discrete_0 h.right).dist⟩
 
 instance instNonExpansiveReservationMapData :
     NonExpansive (ReservationMap.mkData (H := H) (A := A)) where
   ne _ _ _ h := ⟨h, rfl⟩
+
+@[rocq_alias ReservationMap_ne]
+instance instNonExpansive₂ReservationMapMk :
+    NonExpansive₂ (ReservationMap.mk (H := H) (A := A)) where
+  ne _ _ _ hd _ _ ht := ⟨hd, ht⟩
+
+@[rocq_alias reservation_map_data_proj_ne]
+instance instNonExpansiveReservationMapDataProj :
+    NonExpansive (ReservationMap.data (H := H) (A := A)) where
+  ne _ _ _ h := h.left
+
+#rocq_ignore ReservationMap_proper "Derivable using NonExpansive.eqv"
+#rocq_ignore reservation_map_data_proj_proper "Derivable using NonExpansive.eqv"
 
 #rocq_ignore reservation_map_data_proper "Derivable using NonExpansive.eqv"
 
@@ -95,7 +110,7 @@ instance instNonExpansiveReservationMapSingleton :
 @[rocq_alias ReservationMap_discrete]
 instance instDiscreteEReservationMapMk {a : H A} [DiscreteE a] :
     DiscreteE (ReservationMap.mk a b) where
-  discrete := fun h => OFE.eq_dist.mpr <| by
+  discrete := fun h => OFE.eq_dist_2 <| by
     intro n
     exact ⟨(DiscreteE.discrete h.1).dist, (DiscreteE.discrete h.2).dist⟩
 
@@ -119,15 +134,20 @@ namespace ReservationMap
 
 variable [LawfulPartialMap H Pos] [CMRA A]
 
+@[rocq_alias reservation_map_validN_instance]
 def ValidN (n : Nat) (x : ReservationMap A H) : Prop :=
   match x.token with
   | .valid e => ✓{n} x.data ∧ ∀i, get? x.data i = none ∨ i ∉ e
   | .error => False
 
+@[rocq_alias reservation_map_valid_instance]
 def Valid (x : ReservationMap A H) : Prop :=
   match x.token with
   | .valid e => ✓ x.data ∧ ∀i, get? x.data i = none ∨ i ∉ e
   | .error => False
+
+#rocq_ignore reservation_map_valid_eq "Definitional unfolding of Valid"
+#rocq_ignore reservation_map_validN_eq "Definitional unfolding of ValidN"
 
 theorem validN_iff {n : Nat} {x : ReservationMap A H} :
     x.ValidN n ↔ ✓{n} x.data ∧ ✓{n} x.token ∧ ∀ i, get? x.data i = none ∨ i ∉ x.token := by
@@ -155,9 +175,11 @@ theorem valid_iff {x : ReservationMap A H} :
       exact ⟨vd, disj⟩
     · exact ((h ▸ not_valid_invalid (S := CoPset)) vt)
 
+@[rocq_alias reservation_map_data_proj_validN]
 theorem validN_data_of_validN {n : Nat} {x : ReservationMap A H} (h : x.ValidN n) :
     ✓{n} x.data := (validN_iff.mp h).left
 
+@[rocq_alias reservation_map_token_proj_validN]
 theorem validN_token_of_validN {n : Nat} {x : ReservationMap A H} (h : x.ValidN n) :
     ✓{n} x.token := (validN_iff.mp h).right.left
 
@@ -173,6 +195,7 @@ theorem valid_token_of_valid {x : ReservationMap A H} (h : x.Valid) :
 theorem valid_disj {x : ReservationMap A H} (h : x.Valid) (i : Pos):
     get? x.data i = none ∨ i ∉ x.token := (valid_iff.mp h).right.right i
 
+@[rocq_alias reservation_map_pcore_instance]
 def core (x : ReservationMap A H) : ReservationMap A H := mk (CMRA.core x.data) ∅
 
 @[simp]
@@ -181,6 +204,7 @@ theorem core_data (x : ReservationMap A H) : x.core.data = CMRA.core x.data := r
 @[simp]
 theorem core_token (x : ReservationMap A H) : x.core.token = CMRA.core x.token := rfl
 
+@[rocq_alias reservation_map_op_instance]
 def op (x y : ReservationMap A H) : ReservationMap A H := mk (x.data • y.data) (x.token • y.token)
 
 @[simp]
@@ -246,39 +270,48 @@ instance : UCMRA (ReservationMap A H) where
         refine .inr fun HK => bb ?_
         refine (mem_iff_of_validN_union (validN_token_of_validN v) i).mpr ?_
         exact .inl HK
-  assoc := OFE.eq_dist.mpr <| by refine fun _ => ⟨?_, ?_⟩ <;> exact CMRA.assoc.dist
-  comm := OFE.eq_dist.mpr <| by refine fun _ => ⟨?_, ?_⟩ <;> exact CMRA.comm.dist
-  pcore_op_left {x cx} h := OFE.eq_dist.mpr <| by
+  assoc := OFE.eq_dist_2 <| by refine fun _ => ⟨?_, ?_⟩ <;> exact CMRA.assoc.dist
+  comm := OFE.eq_dist_2 <| by refine fun _ => ⟨?_, ?_⟩ <;> exact CMRA.comm.dist
+  pcore_op_left {x cx} h := OFE.eq_dist_2 <| by
     refine fun n => ⟨?_, ?_⟩
     · simp only [←Option.some_inj.mp h, op_data', core_data]; exact (core_op x.data).dist
     · simp [←Option.some_inj.mp h, op_token', core_token, core_op_L]
-  pcore_idem {x cx} h := OFE.eq_dist.mpr <| by
+  pcore_idem {x cx} h := OFE.eq_dist_2 <| by
     refine fun n => ⟨?_, ?_⟩
     · simp only [←Option.some_inj.mp h, core_data]; exact (core_idem x.data).dist
     · simp [←Option.some_inj.mp h, core_token, core_idem_L]
   pcore_op_mono {x cx} h y := by
     obtain ⟨z, hz⟩ := core_op_mono x.data y.data
     obtain ⟨w, hw⟩ := core_op_mono x.token y.token
-    refine ⟨mk z w, OFE.eq_dist.mpr ?_⟩
+    refine ⟨mk z w, OFE.eq_dist_2 ?_⟩
     refine fun n => ⟨?_, ?_⟩
     · simp only [op_data', core_data, (Option.some_inj.mp h.symm)]; exact hz.dist
     · simp only [core_token, op_token', (Option.some_inj.mp h.symm)]; exact hw.dist
   extend {n x y₁ y₂} v exy := by
     obtain ⟨z₁, z₂, xzz, zy₁, zy₂⟩ := CMRA.extend (validN_data_of_validN v) exy.left
-    refine ⟨mk z₁ y₁.token, mk z₂ y₂.token, OFE.eq_dist.mpr ?_, ⟨zy₁, rfl⟩, ⟨zy₂, rfl⟩⟩
+    refine ⟨mk z₁ y₁.token, mk z₂ y₂.token, OFE.eq_dist_2 ?_, ⟨zy₁, rfl⟩, ⟨zy₂, rfl⟩⟩
     exact fun m => ⟨xzz.dist, exy.right⟩
   unit := mk ∅ ∅
   unit_valid := ⟨Heap.valid_empty, fun _ => .inr CoPset.mem_empty⟩
-  unit_left_id {x} := OFE.eq_dist.mpr <| by
+  unit_left_id {x} := OFE.eq_dist_2 <| by
     refine fun n => ⟨?_, (pcore_op_left' rfl).dist⟩
     exact (Algebra.MonoidOps.op_left_id : (∅ : H A) • x.data = x.data).dist
-  pcore_unit := OFE.eq_dist.mpr <| by exact fun n => ⟨Heap.core_empty.dist, .rfl⟩
+  pcore_unit := OFE.eq_dist_2 <| by exact fun n => ⟨Heap.core_empty.dist, .rfl⟩
 
 @[simp]
 theorem op_data (x y : ReservationMap A H): (x • y).data = x.data • y.data := rfl
 
 @[simp]
 theorem op_token (x y : ReservationMap A H): (x • y).token = x.token • y.token := rfl
+
+@[rocq_alias reservation_map_included]
+theorem included_iff {x y : ReservationMap A H} :
+    x ≼ y ↔ x.data ≼ y.data ∧ x.token ≼ y.token := by
+  constructor
+  · exact fun ⟨z, H⟩ => ⟨⟨z.data, H ▸ rfl⟩, ⟨z.token, H ▸ rfl⟩⟩
+  · obtain ⟨yd, yt⟩ := y
+    rintro ⟨⟨z₁, rfl⟩, ⟨z₂, rfl⟩⟩
+    exact ⟨mk z₁ z₂, rfl⟩
 
 @[rocq_alias reservation_map_cmra_discrete]
 instance [CMRA.Discrete A] : CMRA.Discrete (ReservationMap A H) where
@@ -288,8 +321,11 @@ instance [CMRA.Discrete A] : CMRA.Discrete (ReservationMap A H) where
     · exact validN_token_of_validN v
     · exact validN_disj v
 
+#rocq_ignore reservation_map_empty_instance "Part of UCMRA instance"
+
+@[rocq_alias reservation_map_data_core_id]
 instance instCoreIdSingleton {a : A} [CoreId a] : CoreId (singleton (H := H) k a) where
-  core_id := OFE.eq_dist.mpr <| by
+  core_id := OFE.eq_dist_2 <| by
     refine fun n => OFE.some_dist_some.mpr ⟨?_, .rfl⟩
     exact (core_eqv_self (PartialMap.singleton k a : H A)).dist
 
@@ -301,7 +337,7 @@ theorem split_valid {x : ReservationMap A H} (vx : ✓ x) :
     exact ((not_valid_invalid (S := CoPset)) (hh ▸ (valid_token_of_valid vx))).elim
   | .valid t =>
     refine ⟨xd, t, ?_⟩
-    apply OFE.eq_dist.mpr
+    refine OFE.eq_dist_2 ?_
     refine fun n => ⟨?_, ?_⟩
     · simp only [mkData, mkToken, op_data]
       exact Algebra.MonoidOps.op_right_id.symm.dist
@@ -316,7 +352,7 @@ theorem split_validN {x : ReservationMap A H} (vx : ✓{n} x) :
   | .error => exact ((not_valid_invalid (S := CoPset)) (hh ▸ H)).elim
   | .valid t =>
     refine ⟨xd, t, ?_⟩
-    apply OFE.eq_dist.mpr
+    refine OFE.eq_dist_2 ?_
     refine fun m => ⟨?_, ?_⟩
     · simp only [mkData, mkToken, op_data]
       exact Algebra.MonoidOps.op_right_id.symm.dist
@@ -340,7 +376,7 @@ theorem valid_token : ✓ (mkToken (H := H) (A := A) e) :=
   ⟨Heap.valid_empty, fun i => .inl (get?_empty i)⟩
 
 theorem data_op (a b : H A) : mkData (a • b) = mkData a • mkData b := by
-  apply OFE.eq_dist.mpr
+  refine OFE.eq_dist_2 ?_
   refine fun n => ⟨?_, ?_⟩
   · simp only [mkData, op_data]; exact .rfl
   · simp only [mkData, op_token]
@@ -349,13 +385,11 @@ theorem data_op (a b : H A) : mkData (a • b) = mkData a • mkData b := by
 @[rocq_alias reservation_map_data_op]
 theorem singleton_op k (a b : A) :
     singleton (H := H) k (a • b) = singleton (H := H) k a • singleton k b := by
-  have he : (({[k := a]} : H A) • {[k := b]}) = {[k := a • b]} :=
-    OFE.eq_dist.mpr fun n i => Dist.of_eq (Heap.singleton_op_singleton i)
-  exact (congrArg mkData he.symm).trans (data_op _ _)
+  exact (congrArg mkData Heap.singleton_op_singleton.symm).trans (data_op _ _)
 
 theorem token_op (a b : CoPset) (h : a ## b) :
     mkToken (H := H) (A := A) (a ∪ b) = mkToken (H := H) (A := A) a • mkToken b := by
-  apply OFE.eq_dist.mpr
+  refine OFE.eq_dist_2 ?_
   refine fun n => ⟨?_, ?_⟩
   · simp only [mkToken, op_data]
     exact Algebra.MonoidOps.op_left_id.symm.dist
@@ -416,7 +450,7 @@ instance {d : IsOp.Direction} {a b₁ b₂ : A} [hv : IsOp d a b₁ b₂] :
 @[rocq_alias reservation_map_token_union]
 theorem token_union {e₁ e₂} (he : e₁ ## e₂) :
     mkToken (H := H) (A := A) (e₁ ∪ e₂) = mkToken (H := H) (A := A) e₁ • mkToken e₂ := by
-  apply OFE.eq_dist.mpr
+  refine OFE.eq_dist_2 ?_
   refine fun n => ⟨fun i => ?_, ?_⟩
   · simpa only [mkToken, get?_empty, op_data, Heap.get?_op] using .rfl
   · simp [mkToken, CMRA.op, he]

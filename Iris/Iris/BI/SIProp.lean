@@ -10,7 +10,6 @@ public import Iris.BI.Extensions
 public import Iris.BI.Classes
 public import Iris.BI.DerivedLaws
 public import Iris.Algebra.CMRA
-public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -109,12 +108,13 @@ def later (P : SiProp) : SiProp where
 @[rocq_alias siProp_entails]
 def entails (P Q : SiProp) : Prop := ∀ n, P.holds n → Q.holds n
 
+@[rocq_alias siPropO]
 instance : OFE SiProp where
   Dist n P Q := ∀ {m}, m ≤ n → (P.holds m ↔ Q.holds m)
   dist_eqv.refl _ _ _ := Iff.rfl
   dist_eqv.symm h _ hle := (h hle).symm
   dist_eqv.trans h₁ h₂ _ hle := (h₁ hle).trans (h₂ hle)
-  eq_dist {P Q} := by
+  eq_dist' {P Q} := by
     refine ⟨?_, fun h => ?_⟩
     · rintro rfl _ _ _; exact Iff.rfl
     · obtain ⟨ph, hp⟩ := P; obtain ⟨qh, _⟩ := Q
@@ -122,6 +122,10 @@ instance : OFE SiProp where
       subst this; rfl
   dist_lt h _ _ _ := h (by omega)
 
+#rocq_ignore siProp_equiv' "OFE is Leibniz; use equality."
+#rocq_ignore siProp_equiv "OFE is Leibniz; use equality."
+#rocq_ignore siProp_dist' "Inlined in the `OFE` construction."
+#rocq_ignore siProp_dist "Inlined in the `OFE` construction."
 #rocq_ignore siProp_ofe_mixin "Not needed in Lean."
 
 @[rocq_alias siProp_cofe]
@@ -153,6 +157,7 @@ instance : BIBase SiProp where
 #rocq_ignore siProp_wand "Included in BIBase instance."
 #rocq_ignore siProp_persistently "Included in BIBase instance."
 
+@[rocq_alias siProp_primitive.entails_po]
 instance siPropPreorder : Std.IsPreorder SiProp where
   le_refl _ _ := id
   le_trans _ _ _ h₁ h₂ n h := h₂ n (h₁ n h)
@@ -244,7 +249,45 @@ instance instBI : BI SiProp where
 @[rocq_alias siProp_primitive.pure_ne]
 theorem pure_dist_of_iff {Φ Ψ : Prop} (H : Φ ↔ Ψ) : pure Φ ≡{n}≡ pure Ψ := fun _ => iff_comm.mp H.symm
 
-#rocq_ignore siProp_pure_forall "BiPureForall is not ported."
+/-! The primitive laws of `siProp` are the fields of the `siPropI` instance above; each one
+is named in Lean by the corresponding `BI` field, so the Rocq names alias those. -/
+
+attribute [rocq_alias siProp_primitive.equiv_entails,
+           rocq_alias siProp_primitive.entails_anti_symm] BI.equiv_iff
+
+attribute [rocq_alias siProp_primitive.pure_intro] BI.pure_intro
+attribute [rocq_alias siProp_primitive.pure_elim'] BI.pure_elim'
+
+attribute [rocq_alias siProp_primitive.and_ne] BI.and_ne
+attribute [rocq_alias siProp_primitive.and_elim_l] BI.and_elim_l
+attribute [rocq_alias siProp_primitive.and_elim_r] BI.and_elim_r
+attribute [rocq_alias siProp_primitive.and_intro] BI.and_intro
+
+attribute [rocq_alias siProp_primitive.or_ne] BI.or_ne
+attribute [rocq_alias siProp_primitive.or_intro_l] BI.or_intro_l
+attribute [rocq_alias siProp_primitive.or_intro_r] BI.or_intro_r
+attribute [rocq_alias siProp_primitive.or_elim] BI.or_elim
+
+attribute [rocq_alias siProp_primitive.impl_ne] BI.imp_ne
+attribute [rocq_alias siProp_primitive.impl_intro_r] BI.imp_intro
+attribute [rocq_alias siProp_primitive.impl_elim_l'] BI.imp_elim
+
+attribute [rocq_alias siProp_primitive.forall_ne] BI.sForall_ne
+attribute [rocq_alias siProp_primitive.forall_intro] BI.sForall_intro
+attribute [rocq_alias siProp_primitive.forall_elim] BI.sForall_elim
+
+attribute [rocq_alias siProp_primitive.exist_ne] BI.sExists_ne
+attribute [rocq_alias siProp_primitive.exist_intro] BI.sExists_intro
+attribute [rocq_alias siProp_primitive.exist_elim] BI.sExists_elim
+
+attribute [rocq_alias siProp_primitive.later_mono] BI.later_mono
+attribute [rocq_alias siProp_primitive.later_intro] BI.later_intro
+attribute [rocq_alias siProp_primitive.later_forall_2] BI.later_sForall_2
+attribute [rocq_alias siProp_primitive.later_exist_false] BI.later_sExists_false
+attribute [rocq_alias siProp_primitive.later_false_em] BI.later_false_em
+
+#rocq_ignore siProp_pure_forall "Not necessary due to classical logic, see BiPureForall."
+#rocq_ignore siProp_primitive.pure_forall_2 "Not necessary due to classical logic, see BiPureForall."
 
 #rocq_ignore siProp_bi_later_mixin "Not needed in Lean."
 #rocq_ignore siProp_bi_mixin "Not needed in Lean."
@@ -271,7 +314,7 @@ theorem pure_dist_of_iff {Φ Ψ : Prop} (H : Φ ↔ Ψ) : pure Φ ≡{n}≡ pure
 instance instBIAffine : BIAffine SiProp where
   affine _ := { affine := fun _ _ => trivial }
 
-@[rocq_alias siProp_later_contractive]
+@[rocq_alias siProp_later_contractive, rocq_alias siProp_primitive.later_contractive]
 instance instBILaterContractive : BILaterContractive SiProp where
   distLater_dist h m hle := match m with | .zero => .rfl | .succ k => h k (by omega) .refl
 
@@ -395,7 +438,7 @@ theorem pure_soundness {φ : Prop} (h : True ⊢@{SiProp} ⌜φ⌝) : φ := h 0 
 
 @[rocq_alias siProp_primitive.internal_eq_soundness]
 theorem internalEq_soundness [OFE A] {x y : A} (h : True ⊢@{SiProp} internalEq x y) : x = y :=
-  OFE.eq_dist.mpr fun n => h n trivial
+  OFE.eq_dist_2 fun n => h n trivial
 
 @[rocq_alias siProp_primitive.later_soundness]
 theorem later_soundness {P : SiProp} (h : True ⊢ ▷ P) : True ⊢ P := fun n _ => h (n + 1) trivial
