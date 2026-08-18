@@ -644,7 +644,7 @@ theorem incN_refl (x : α) : x ≼{n} x := (inc_refl _).incN
 #rocq_ignore cmra_includedN_preorder "Reflexivity is incN_refl; transitivity is the Trans instance"
 
 @[rocq_alias cmra_included_core]
-theorem core_inc_self {x : α} [CoreId x] : core x ≼ x :=
+theorem core_inc_self {x : α} : core x ≼ x :=
   ⟨x, (core_op x).symm⟩
 
 @[rocq_alias cmra_core_monoN]
@@ -1446,6 +1446,8 @@ theorem some_core [IsTotal α] (a : α) : some (CMRA.core a) = CMRA.core (some a
 @[rocq_alias Some_core_id]
 instance some_core_id (a : α) [CoreId a] : CoreId (some a : Option α) where
   core_id := by simp [pcore_some]; exact CoreId.core_id
+
+instance none_core_id : CoreId (none : Option α) := ⟨rfl⟩
 
 @[rocq_alias option_core_id]
 instance option_core_id (ma : Option α) [∀ x : α, CoreId x] : CoreId ma where

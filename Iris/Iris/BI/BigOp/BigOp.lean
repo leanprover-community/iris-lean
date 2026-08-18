@@ -128,6 +128,17 @@ abbrev bigAndM [BI PROP] {K : Type _} {V : Type _} {M : Type _ → Type _}
     [LawfulFiniteMap M K] (Φ : K → V → PROP) (m : M V) : PROP :=
   bigOpM and Φ m
 
+/--
+Big separating conjunction over two finite maps in lockstep.
+- Big separating conjunction over two maps: `[∗map] v1; v2 ∈ m1;m2, P v1 v2`.
+- Big separating conjunction over two maps, with the key bound: `[∗map] k ↦ v1;v2 ∈ m1;m2, P k v1 v2`.
+-/
+@[rocq_alias big_sepM2_def, rocq_alias big_sepM2, expose]
+def bigSepM2 {PROP : Type _} [BI PROP] {K : Type _} {A B : Type u} {M : Type _ → Type _}
+ [LawfulFiniteMap M K] (Φ : K → A → B → PROP) (m1 : M A) (m2 : M B) : PROP :=
+  iprop(⌜PartialMap.dom m1 = PartialMap.dom m2⌝ ∧
+    bigSepM (fun k xy => Φ k xy.1 xy.2) (PartialMap.zipWith (fun (x : A) (y : B) => (x, y)) m1 m2))
+
 end Map
 
 public section Set
@@ -156,8 +167,8 @@ open Lean PrettyPrinter Delaborator SubExpr
 
 @[inherit_doc bigSepL] syntax "[∗list] " ident " ∈ " term ", " term : term
 @[inherit_doc bigSepL] syntax "[∗list] " ident " ↦ " ident " ∈ " term ", " term : term
-@[inherit_doc bigSepL] syntax "[∗list] " ident ";" ident " ∈ " term ";" term ", " term : term
-@[inherit_doc bigSepL] syntax "[∗list] " ident " ↦ " ident ";" ident " ∈ " term ";" term ", " term : term
+@[inherit_doc bigSepL2] syntax "[∗list] " ident ";" ident " ∈ " term ";" term ", " term : term
+@[inherit_doc bigSepL2] syntax "[∗list] " ident " ↦ " ident ";" ident " ∈ " term ";" term ", " term : term
 
 @[inherit_doc bigAndL] syntax "[∧list] " ident " ∈ " term ", " term : term
 @[inherit_doc bigAndL] syntax "[∧list] " ident " ↦ " ident " ∈ " term ", " term : term
@@ -167,6 +178,10 @@ open Lean PrettyPrinter Delaborator SubExpr
 
 @[inherit_doc bigSepM] syntax "[∗map] " ident " ∈ " term ", " term : term
 @[inherit_doc bigSepM] syntax "[∗map] " ident " ↦ " ident " ∈ " term ", " term : term
+
+@[inherit_doc bigSepM2] syntax "[∗map] " ident ";" ident " ∈ " term ";" term ", " term : term
+@[inherit_doc bigSepM2] syntax "[∗map] " ident " ↦ " ident ";" ident " ∈ " term ";" term ", " term : term
+
 
 @[inherit_doc bigAndM] syntax "[∧map] " ident " ∈ " term ", " term : term
 @[inherit_doc bigAndM] syntax "[∧map] " ident " ↦ " ident " ∈ " term ", " term : term
@@ -196,6 +211,10 @@ macro_rules
       `($(wrapIprop tk ``bigSepM) (fun _ $x => $P) $m)
   | `([∗map]%$tk $k:ident ↦ $x:ident ∈ $m, $P) => do
       `($(wrapIprop tk ``bigSepM) (fun $k $x => $P) $m)
+  | `([∗map] $x1:ident;$x2:ident ∈ $m1;$m2, $P) =>
+      `(bigSepM2 (fun _ $x1 $x2 => $P) $m1 $m2)
+  | `([∗map] $k:ident ↦ $x1:ident;$x2:ident ∈ $m1;$m2, $P) =>
+      `(bigSepM2 (fun $k $x1 $x2 => $P) $m1 $m2)
   | `([∧map]%$tk $x:ident ∈ $m, $P) => do
       `($(wrapIprop tk ``bigAndM) (fun _ $x => $P) $m)
   | `([∧map]%$tk $k:ident ↦ $x:ident ∈ $m, $P) => do
@@ -204,6 +223,7 @@ macro_rules
       `($(wrapIprop tk ``bigSepS) (fun $x => $P) $s)
   | `([∗mset]%$tk $x:ident ∈ $X, $P) => do
       `($(wrapIprop tk ``bigSepMS) (fun $x => $P) $X)
+
 
 -- iprop macro rules
 macro_rules
@@ -227,6 +247,10 @@ macro_rules
       `($(wrapIprop tk ``bigSepM) (fun _ $x => iprop($P)) $m)
   | `(iprop([∗map]%$tk $k:ident ↦ $x:ident ∈ $m, $P)) => do
       `($(wrapIprop tk ``bigSepM) (fun $k $x => iprop($P)) $m)
+  | `(iprop([∗map] $x1:ident;$x2:ident ∈ $m1;$m2, $P)) =>
+      `(bigSepM2 (fun _ $x1 $x2 => iprop($P)) $m1 $m2)
+  | `(iprop([∗map] $k:ident ↦ $x1:ident;$x2:ident ∈ $m1;$m2, $P)) =>
+      `(bigSepM2 (fun $k $x1 $x2 => iprop($P)) $m1 $m2)
   | `(iprop([∧map]%$tk $x:ident ∈ $m, $P)) => do
       `($(wrapIprop tk ``bigAndM) (fun _ $x => iprop($P)) $m)
   | `(iprop([∧map]%$tk $k:ident ↦ $x:ident ∈ $m, $P)) => do
@@ -418,6 +442,40 @@ private def delabBigOpSBody (fn : Expr) (sArg phiArg : Nat)
     mk x s P
   | _ => failure
 
+/-- Delaborator for `bigSepM2` -/
+@[delab app.Iris.BI.bigSepM2]
+def delabBigSepM2 : Delab := do
+  let e ← getExpr
+  unless e.isApp do failure
+  unless e.getAppFn.isConstOf ``bigSepM2 do failure
+  let args := e.getAppArgs
+  unless args.size == 10 do failure
+  let fn := args[7]!
+  let m1 ← withNaryArg 8 delab
+  let m2 ← withNaryArg 9 delab
+  match fn with
+  | .lam kn _ body1 _ =>
+    match body1 with
+    | .lam x1n _ body2 _ =>
+      match body2 with
+      | .lam x2n _ _ _ =>
+        let (kUsed, P) ← withNaryArg 7 <|
+          withBindingBody' kn (fun kFVar => return kFVar.fvarId!) fun kFVarId => do
+            let innerBody := (← getExpr).bindingBody!.bindingBody!
+            let kUsed := innerBody.containsFVar kFVarId
+            let P ← withBindingBody x1n <| withBindingBody x2n <| delab
+            return (kUsed, P)
+        let x1 := mkIdent x1n
+        let x2 := mkIdent x2n
+        if kUsed then
+          let k := mkIdent kn
+          `([∗map]  $k ↦ $x1;$x2 ∈ $m1;$m2, $P)
+        else
+          `([∗map]  $x1;$x2 ∈ $m1;$m2, $P)
+      | _ => failure
+    | _ => failure
+  | _ => failure
+
 /-- Delaborator for `bigSepS` -/
 @[delab app.Iris.BI.bigSepS]
 def delabBigSepS : Delab := do
@@ -571,6 +629,7 @@ section MapTests
 open Iris.Std OFE BIBase
 variable [BI PROP] {K : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
   (P : Nat → PROP) (Q : K → Nat → PROP) (m : M Nat)
+  (Q2 : Nat → Nat → PROP) (Q2' : K → Nat → Nat → PROP) (m1 m2 : M Nat)
 
 -- bigSepM without key
 /-- info: [∗map] x ∈ m, P x : PROP -/
@@ -587,6 +646,14 @@ variable [BI PROP] {K : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
 -- bigAndM with key
 /-- info: [∧map] k ↦ x ∈ m, Q k x : PROP -/
 #guard_msgs in #check [∧map] k ↦ x ∈ m, Q k x
+
+-- bigSepM2 without key
+/-- info: [∗map] x1;x2 ∈ m1;m2, Q2 x1 x2 : PROP -/
+#guard_msgs in #check [∗map] x1;x2 ∈ m1;m2, Q2 x1 x2
+
+-- bigSepM2 with key
+/-- info: [∗map] k ↦ x1;x2 ∈ m1;m2, Q2' k x1 x2 : PROP -/
+#guard_msgs in #check [∗map] k ↦ x1;x2 ∈ m1;m2, Q2' k x1 x2
 
 end MapTests
 
