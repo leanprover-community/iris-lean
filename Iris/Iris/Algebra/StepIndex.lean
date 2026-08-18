@@ -25,6 +25,10 @@ class SIdx (I : Type u) extends LT I, LE I, Zero I where
   weak_case : ∀ n : I, (Σ' m : I, n = succ m) ⊕' ∀ m : I, m < n → succ m < n
 
 
+/- Namespace holding `scoped macro_rules` that fill the step index at class binders.
+`stepindex` opens it, so the rules stay inert in any scope with no ambient step index. -/
+namespace StepIndexSugar end StepIndexSugar
+
 /-- An opt-in default step index type.
 Warning: typeclass synthesis will become unpredictable if there is ever more than one instance of
 this class in scope at a time. It is strongly prefered that you use the `stepindex` command in
@@ -114,6 +118,8 @@ private meta def stepindexCore (k : TSyntax ``Parser.Term.attrKind) (inst? : Opt
   elabCommand <| ← `(command|
     set_option synthInstance.checkSynthOrder false in
     public $k:attrKind instance (priority := 10000) $(mkIdent nm) : DefaultSI $T := $val)
+  -- Activate the binder sugar in `StepIndexSugar` for the rest of this scope.
+  elabCommand <| ← `(command| open $(mkIdent `Iris.StepIndexSugar):ident)
   -- Record `T` in the registry, so that `stepindex%` and `infer_stepindex` can resolve the type.
   unless T.raw.isIdent do
     throwError "`stepindex` requires an identifier for the eager registry, but got{indentD T}\n\n\

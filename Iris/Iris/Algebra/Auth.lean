@@ -71,7 +71,7 @@ abbrev Auth (A : Type _) [UCMRA A] :=
 namespace Auth
 variable [UCMRA A]
 
-instance : OFE (Auth A) := View.instOFE
+instance instOFE : OFE (Auth A) := View.instOFE
 instance : CMRA (Auth A) := View.instCMRA
 instance : UCMRA (Auth A) := View.instUCMRA
 

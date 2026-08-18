@@ -20,6 +20,39 @@ class OFE {SI : Type _} [SIdx SI] (α : Type _) where
   eq_dist' : x = y ↔ ∀ n, Dist n x y
   dist_lt : Dist n x y → m < n → Dist m x y
 
+/-
+Fill the step index eagerly at class binders.
+
+`[OFE α]` leaves both the step-index type and its `SIdx` instance open, so synthesis runs, gets
+stuck on a metavariable, and reruns once per round of the elaborator's postponement loop until
+`dfltSIdx` fires as a default instance. That costs `k² + 4k` aborted searches for `k` such binders in
+one header, and `2.5k² + 3.5k` with auto-bound implicits.
+
+Each rule supplies both halves up front: the type from the `stepindex%` registry, and the instance as
+`dfltSIdx`, which is exactly the term the default instance would have produced. Nothing is ever
+searched for with an open metavariable, so the cost per binder drops to zero and stays there, and
+every elaborated signature keeps the shape it had before.
+
+Both halves are needed. Leaving the type as `_` keeps the searches (42 aborts for three `Discrete`
+binders, 22 for two `IsCOFE`); letting synthesis supply the instance instead of writing `dfltSIdx`
+puts `instSI` in exported signatures, which breaks six downstream modules.
+
+The rules live in `Iris.StepIndexSugar` and are `scoped`, so they do nothing until that namespace is
+opened -- `stepindex` opens it, so a scope with no ambient step index is unaffected. `scoped`
+resolves at the use site, so one `open` also covers rules added to the namespace further down this
+file, whatever namespace or section they sit in. They must be declared at `Iris` level, though:
+inside `namespace OFE`, `namespace StepIndexSugar` means `Iris.OFE.StepIndexSugar`, and the rules are
+then silently inert.
+
+A rule captures its name, since the right-hand side resolves here rather than at the use site. A file
+that installs a step index and declares its own class of the same name would get this one instead.
+`CMRA.Discrete` is the one such collision in the library, so `Discrete` has no rule; check for
+collisions before adding one.
+-/
+namespace StepIndexSugar
+scoped macro_rules | `(OFE $x) => `(@OFE stepindex% dfltSIdx $x)
+end StepIndexSugar
+
 /-- Thin abbreviation for `OFE (SI := SI) α`. -/
 class abbrev IOFE (SI : Type _) [SIdx SI] (α : Type _) := OFE (SI := SI) α
 
@@ -190,6 +223,11 @@ class DiscreteE {α : Type _} [OFE α] (x : α) : Prop where
 class Discrete (α : Type _) [OFE α] where
   discrete_0 {x y : α} : x ≡{0}≡ y → x = y
 export OFE.Discrete (discrete_0)
+
+/- `Discrete` cannot join `StepIndexSugar`: `CMRA.Discrete` shares the name, and a rule resolves its
+right-hand side here, so a sugared scope in `CMRA.lean` would silently get this class instead. A
+`local` rule stays in this file. All nine `[Discrete _]` binders here precede `end OFE`. -/
+local macro_rules | `(Discrete $x) => `(Discrete (SI := stepindex%) (instSI := dfltSIdx) $x)
 
 @[rocq_alias Discrete_proper]
 theorem discreteE_eq [OFE α] {x y : α} (h : x = y) : DiscreteE x ↔ DiscreteE y := h ▸ Iff.rfl
@@ -497,7 +535,7 @@ theorem Option.bind_equiv [OFE α] [OFE β] {x : Option α} {f g : α → Option
 abbrev OFEFun {α : Type _} (β : α → Type _) := ∀ a, OFE (β a)
 
 @[rocq_alias discrete_fun_ofe_mixin]
-instance [OFEFun (β : α → _)] : OFE ((x : α) → β x) where
+instance instForall [OFEFun (β : α → _)] : OFE ((x : α) → β x) where
   Dist n f g := ∀ x, f x ≡{n}≡ g x
   dist_eqv := {
     refl _ _ := dist_eqv.refl _
@@ -919,6 +957,14 @@ def Iso.comp [OFE α] [OFE β] [OFE γ] (iso1 : Iso β γ) (iso2 : Iso α β) : 
 
 end OFE
 
+namespace StepIndexSugar
+scoped macro_rules
+  | `(NonExpansive $x) => `(NonExpansive (SI := stepindex%) (instSI := dfltSIdx) $x)
+  | `(NonExpansive₂ $x) => `(NonExpansive₂ (SI := stepindex%) (instSI := dfltSIdx) $x)
+  | `(Contractive $x) => `(Contractive (SI := stepindex%) (instSI := dfltSIdx) $x)
+  | `(DiscreteE $x) => `(DiscreteE (SI := stepindex%) (instSI := dfltSIdx) $x)
+end StepIndexSugar
+
 /-- A chain in an OFE is a `Nat`-indexed sequence of elements that is upward-closed in terms of
 `n`-equivalence. -/
 @[rocq_alias chain] structure Chain {SI : Type _} [SIdx SI] (α : Type _) [IOFE SI α] where
@@ -1040,6 +1086,12 @@ class abbrev COFE {SI : Type _} [SIdx SI] (α : Type _) := IOFE SI α, IsICOFE S
 
 /-- Complete ordered family of equivalences -/
 class abbrev ICOFE (SI : Type _) [SIdx SI] (α : Type _) := COFE (SI := SI) α
+
+namespace StepIndexSugar
+scoped macro_rules
+  | `(IsCOFE $x) => `(@IsCOFE stepindex% $x dfltSIdx inferInstance)
+  | `(COFE $x)   => `(@COFE stepindex% dfltSIdx $x)
+end StepIndexSugar
 
 namespace COFE
 export IsCOFE (compl conv_compl)
@@ -1300,6 +1352,12 @@ class OFunctorContractive (F : OFunctorPre) extends OFunctor F where
 attribute [reducible, instance] OFunctor.ofe
 
 end COFE
+
+namespace StepIndexSugar
+scoped macro_rules
+  | `(OFunctor $x) => `(COFE.OFunctor (SI := stepindex%) (instSI := dfltSIdx) $x)
+  | `(OFunctorContractive $x) => `(COFE.OFunctorContractive (SI := stepindex%) (instSI := dfltSIdx) $x)
+end StepIndexSugar
 
 /- Discrete OFE structure on a type -/
 @[ext] structure DiscreteO (α : Type _) where
@@ -1701,6 +1759,11 @@ class LimitPreserving [COFE α] (P : α → Prop) : Prop where
   compl (c : Chain α) : (∀ n, P (c n)) → P (COFE.compl c)
   lbcompl {n : SI} (hn : SIdx.Limit n) (c : BChain α n) :
     (∀ m (hm : m < n), P (c.bchain m hm)) → P (IsCOFE.lbcompl hn c)
+
+namespace StepIndexSugar
+scoped macro_rules
+  | `(LimitPreserving $x) => `(LimitPreserving (SI := stepindex%) (instSI := dfltSIdx) $x)
+end StepIndexSugar
 
 @[rocq_alias limit_preserving_const]
 theorem LimitPreserving.const [COFE α] {P : Prop} : LimitPreserving fun (_ : α) => P where
