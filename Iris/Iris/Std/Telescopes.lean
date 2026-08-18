@@ -67,6 +67,38 @@ def fold {B : Type v} (step : (A : Type u) → (A → B) → B) : {TT : Tele.{u}
   | .nil, f => ULift.down f
   | .cons _, f => step _ fun x => fold step (f x)
 
+/-- Telescopic universal quantification at `Prop`. -/
+def tforall : {TT : Tele.{u}} → (TT.Arg → Prop) → Prop
+  | .nil,    Ψ => Ψ .nil
+  | .cons _, Ψ => ∀ x, tforall fun xs => Ψ (.cons x xs)
+
+/-- Telescopic existential quantification at `Prop`. -/
+def texist : {TT : Tele.{u}} → (TT.Arg → Prop) → Prop
+  | .nil,    Ψ => Ψ .nil
+  | .cons _, Ψ => ∃ x, texist fun xs => Ψ (.cons x xs)
+
+theorem tforall_forall {TT : Tele} (Ψ : TT.Arg → Prop) : tforall Ψ ↔ ∀ x, Ψ x := by
+  induction TT with
+  | nil =>
+    constructor
+    · exact fun h _ => h
+    · exact fun h => h .nil
+  | cons b ih =>
+    constructor
+    · exact fun h x => (ih x.fst _).mp (h x.fst) x.snd
+    · exact fun h x => (ih x _).mpr fun xs => h ⟨x, xs⟩
+
+theorem texist_exist {TT : Tele} (Ψ : TT.Arg → Prop) : texist Ψ ↔ ∃ x, Ψ x := by
+  induction TT with
+  | nil =>
+    constructor
+    · exact fun h => ⟨.nil, h⟩
+    · exact fun ⟨_, h⟩ => h
+  | cons b ih =>
+    constructor
+    · exact fun ⟨x, h⟩ => let ⟨xs, h⟩ := (ih x _).mp h; ⟨⟨x, xs⟩, h⟩
+    · exact fun ⟨x, h⟩ => ⟨x.fst, (ih x.fst _).mpr ⟨x.snd, h⟩⟩
+
 end Tele
 
 end Iris.Std
