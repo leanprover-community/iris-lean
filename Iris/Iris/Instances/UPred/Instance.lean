@@ -650,7 +650,7 @@ instance : BIUpdate (UPred M) where
 #rocq_ignore uPred_bupd_mixin "Inlined in BIUpdate instance construction"
 
 @[rocq_alias uPred_primitive.bupd_si_pure]
-theorem bupd_si_pure (Pi : SiProp) : (|==> <si_pure> Pi : UPred M) ⊢ <si_pure> Pi := by
+theorem bupd_siPure (Pi : SiProp) : (|==> <si_pure> Pi : UPred M) ⊢ <si_pure> Pi := by
   intro n x Hv
   have L : ✓{n} x.val • unit := unit_right_id.symm.dist.validN.1 x.property
   let ⟨_, _, Hv'⟩ := Hv n unit n.le_refl L
@@ -658,7 +658,7 @@ theorem bupd_si_pure (Pi : SiProp) : (|==> <si_pure> Pi : UPred M) ⊢ <si_pure>
 
 @[rocq_alias uPred_bi_bupd_sbi]
 instance : BIBUpdateSbi (UPred M) where
-  bupd_si_pure := bupd_si_pure
+  bupd_siPure := bupd_siPure
 
 @[rocq_alias uPred_primitive.ownM_valid, rocq_alias uPred.ownM_valid]
 theorem ownM_valid (m : M) : ownM m ⊢ internalCmraValid m := fun _ h hp => hp.validN h.property

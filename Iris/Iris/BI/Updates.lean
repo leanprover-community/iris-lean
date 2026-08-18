@@ -229,16 +229,16 @@ class BIUpdateFUpdate (PROP : Type _) [BI PROP] [BIUpdate PROP] [BIFUpdate PROP]
 
 @[rocq_alias BiFUpdSbi]
 class BIFUpdateSbi (PROP : Type _) [BI PROP] [BIFUpdate PROP] [Sbi PROP] where
-  fupd_keep_si_pure {E} E' Pi (R : PROP) :
+  fupd_keep_siPure {E} E' Pi (R : PROP) :
     (|={E,E'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E}=∗ R) ⊢ |={E}=> R
-  fupd_si_pure_later (E : CoPset) (Pi : SiProp) :
+  fupd_siPure_later (E : CoPset) (Pi : SiProp) :
     (▷ |={E}=> <si_pure> Pi) ⊢@{PROP} |={E}=> ▷ ◇ <si_pure> Pi
-  fupd_si_pure_sForall_2 (E : CoPset) (Ψi : SiProp → Prop) :
+  fupd_siPure_sForall_2 (E : CoPset) (Ψi : SiProp → Prop) :
     (∀ q, ⌜Ψi q⌝ → |={E}=> <si_pure> q) ⊢@{PROP} |={E}=> <si_pure> (sForall Ψi)
 
 @[rocq_alias BiBUpdSbi]
 class BIBUpdateSbi (PROP : Type _) [BI PROP] [BIUpdate PROP] [Sbi PROP] where
-  bupd_si_pure (Pi : SiProp) : iprop(|==> <si_pure> Pi ⊢@{PROP} <si_pure> Pi)
+  bupd_siPure (Pi : SiProp) : iprop(|==> <si_pure> Pi ⊢@{PROP} <si_pure> Pi)
 
 section BUpdLaws
 
@@ -337,7 +337,7 @@ open BIUpdate
 
 @[rocq_alias bupd_plainly]
 theorem bupd_plainly {P : PROP} : (|==> ■ P) ⊢ ■ P :=
-  BIBUpdateSbi.bupd_si_pure (SiEmpValid.siEmpValid P)
+  BIBUpdateSbi.bupd_siPure (SiEmpValid.siEmpValid P)
 
 @[rocq_alias bupd_plainly_elim]
 theorem bupd_plainly_elim {P : PROP} [Absorbing P] : (|==> ■ P) ⊢ P :=
@@ -720,24 +720,24 @@ variable [Sbi PROP] [BIFUpdate PROP] [BIFUpdateSbi PROP]
 open BIFUpdate BIFUpdateSbi
 
 @[rocq_alias fupd_keep_si_pure]
-theorem fupd_keep_si_pure {E1 E2 : CoPset} E2' Pi {R : PROP} :
+theorem fupd_keep_siPure {E1 E2 : CoPset} E2' Pi {R : PROP} :
     (|={E1,E2'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E1,E2}=∗ R) ⊢ |={E1,E2}=> R := calc
   _ ⊢ (|={E1, E2'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E1}=∗ |={E1, E2}=> R) :=
       and_mono_right <| wand_mono_right fupd_intro
   _ ⊢ |={E1}=> |={E1, E2}=> R :=
-      BIFUpdateSbi.fupd_keep_si_pure E2' Pi iprop(|={E1,E2}=> R)
+      BIFUpdateSbi.fupd_keep_siPure E2' Pi iprop(|={E1,E2}=> R)
   _ ⊢ |={E1, E2}=> R := trans
 
 @[rocq_alias fupd_keep_plainly]
 theorem fupd_keep_plainly [BIAffine PROP] {E1 E2 : CoPset} E2' (P : PROP) {R : PROP} :
   (|={E1,E2'}=> ■ P) ∧ (P ={E1,E2}=∗ R) ⊢ |={E1,E2}=> R :=
   (and_mono_right (wand_mono_left siPure_siEmpValid_elim)).trans <|
-    fupd_keep_si_pure E2' (SiEmpValid.siEmpValid P)
+    fupd_keep_siPure E2' (SiEmpValid.siEmpValid P)
 
 @[rocq_alias fupd_plainly_later]
 theorem fupd_plainly_later [BIAffine PROP] (E : CoPset) (P : PROP) :
     (▷ |={E}=> ■ P) ⊢ |={E}=> ▷ ◇ P :=
-  (BIFUpdateSbi.fupd_si_pure_later E iprop(<si_emp_valid> P)).trans <|
+  (BIFUpdateSbi.fupd_siPure_later E iprop(<si_emp_valid> P)).trans <|
     mono <| later_mono <| except0_mono siPure_siEmpValid_elim
 
 @[rocq_alias fupd_keep_plain]
@@ -791,15 +791,15 @@ theorem sForall_eq_forall {Φ : α → PROP} :
    sForall_intro fun _ ⟨a, hp⟩ => hp ▸ forall_elim a⟩
 
 /--
-  Proves that the Rocq class field `fupd_siPure_forall_2` for `BIFUpdSbi`
-  follows from `BIFUpdateSbi.fupd_si_pure_sForall_2`.
+  Proves that the Rocq class field `fupd_si_pure_forall_2` for `BIFUpdSbi`
+  follows from `BIFUpdateSbi.fupd_siPure_sForall_2`.
 -/
 theorem fupd_siPure_forall_2 {E : CoPset} {A : Sort _} {Φi : A → SiProp} :
     (∀ x, |={E}=> <si_pure> Φi x) ⊢@{PROP} |={E}=> ∀ x, <si_pure> Φi x := calc
   _ ⊢ ∀ q, ⌜∃ x, q = Φi x⌝ → |={E}=> <si_pure> q :=
       forall_intro fun _ => imp_intro_swap <| pure_elim_left fun ⟨x, hx⟩ => hx ▸ forall_elim x
   _ ⊢@{PROP} |={E}=> <si_pure> (sForall fun q => ∃ x, q = Φi x) :=
-      BIFUpdateSbi.fupd_si_pure_sForall_2 E _
+      BIFUpdateSbi.fupd_siPure_sForall_2 E _
   _ ⊢ |={E}=> ∀ x, <si_pure> Φi x :=
       mono <| forall_intro fun x => siPure_mono (sForall_elim ⟨x, rfl⟩)
 

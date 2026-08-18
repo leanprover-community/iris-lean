@@ -1409,12 +1409,12 @@ instance : SiEmpValid (MonPred I PROP) where
 #rocq_ignore monPred_si_emp_valid_unseal "Rocq unsealing lemma."
 
 @[rocq_alias monPred_si_pure_unfold]
-theorem monPred_si_pure_unfold :
+theorem monPred_siPure_unfold :
     (SiPure.siPure : SiProp → MonPred I PROP) =
       fun Pi => (iprop(⎡(<si_pure> Pi : PROP)⎤) : MonPred I PROP) := rfl
 
 @[rocq_alias monPred_si_emp_valid_unfold]
-theorem monPred_si_emp_valid_unfold :
+theorem monPred_siEmpValid_unfold :
     (SiEmpValid.siEmpValid : MonPred I PROP → SiProp) =
       fun P => SiEmpValid.siEmpValid (iprop(∀ i, P.monPred_at i) : PROP) := rfl
 
@@ -1514,7 +1514,7 @@ theorem monPred_equivI {PROP' : Type _} [Sbi PROP'] (P Q : MonPred I PROP) :
 /-! ### Objective and plain instances -/
 
 @[rocq_alias si_pure_objective]
-instance si_pure_objective (Pi : SiProp) : Objective (iprop(<si_pure> Pi) : MonPred I PROP) where
+instance siPure_objective (Pi : SiProp) : Objective (iprop(<si_pure> Pi) : MonPred I PROP) where
   objective_at _ _ := .rfl
 
 @[rocq_alias internal_eq_objective]
@@ -1570,26 +1570,26 @@ theorem monPred_sbi_emp_valid_exist {bot : I.car} [BiIndexBottom I bot] [SbiEmpV
 
 @[rocq_alias monPred_bi_embed_sbi]
 instance monPred_bi_embed_sbi : BiEmbedSbi PROP (MonPred I PROP) where
-  embed_si_emp_valid _P :=
+  embed_siEmpValid _P :=
     ⟨siEmpValid_mono (forall_elim (default : I.car)),
      siEmpValid_mono (forall_intro fun _ => .rfl)⟩
-  embed_si_pure_1 _ := .rfl
+  embed_siPure_1 _ := .rfl
 
 @[rocq_alias monPred_bi_bupd_sbi]
 instance monPred_bi_bupd_sbi [BIUpdate PROP] [BIBUpdateSbi PROP] :
     BIBUpdateSbi (MonPred I PROP) where
-  bupd_si_pure Pi := entails_at.mpr fun _ => BIBUpdateSbi.bupd_si_pure Pi
+  bupd_siPure Pi := entails_at.mpr fun _ => BIBUpdateSbi.bupd_siPure Pi
 
 @[rocq_alias monPred_bi_fupd_sbi]
 instance monPred_bi_fupd_sbi [BIFUpdate PROP] [BIFUpdateSbi PROP] :
     BIFUpdateSbi (MonPred I PROP) where
-  fupd_keep_si_pure E' Pi R := entails_at.mpr fun i => by
+  fupd_keep_siPure E' Pi R := entails_at.mpr fun i => by
     refine (and_mono_right
       (monPred_wand_force i (SiPure.siPure Pi : MonPred I PROP) (iprop(|={_}=> R)))).trans ?_
-    exact BIFUpdateSbi.fupd_keep_si_pure E' Pi (R.monPred_at i)
-  fupd_si_pure_later E P := entails_at.mpr fun i => BIFUpdateSbi.fupd_si_pure_later E P
-  fupd_si_pure_sForall_2 E Φ := entails_at.mpr fun i => by
-    refine .trans ?_ (BIFUpdateSbi.fupd_si_pure_sForall_2 (PROP := PROP) E Φ)
+    exact BIFUpdateSbi.fupd_keep_siPure E' Pi (R.monPred_at i)
+  fupd_siPure_later E P := entails_at.mpr fun i => BIFUpdateSbi.fupd_siPure_later E P
+  fupd_siPure_sForall_2 E Φ := entails_at.mpr fun i => by
+    refine .trans ?_ (BIFUpdateSbi.fupd_siPure_sForall_2 (PROP := PROP) E Φ)
     refine (monPred_at_forall i
       (fun q : SiProp => iprop(⌜Φ q⌝ → |={E}=> <si_pure> q))).mp.trans ?_
     exact forall_mono fun q =>

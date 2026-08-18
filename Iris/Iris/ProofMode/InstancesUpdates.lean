@@ -314,6 +314,7 @@ private theorem subset {E1 E2 : CoPset}
 
 @[ipm_backtrack, rocq_alias from_forall_fupd]
 instance fromForall_fupd E1 E2 (P : PROP) {α : Type _} (Φ : α → PROP)
+    -- TODO: generalize this to `TCSidecondition (E1 ⊆ E2)`, which uses iSolveSidecondition
     [hm : TCOr (TCEq E1 E2) (TCOr (TCEq E1 ⊤) (TCEq E2 ∅))]
     [h : FromForall P Φ] [∀ a, Plain (Φ a)] :
     FromForall iprop(|={E1,E2}=> P) (fun a => iprop(|={E1,E2}=> Φ a)) where

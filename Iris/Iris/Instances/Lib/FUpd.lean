@@ -327,7 +327,7 @@ theorem fupd_finally_keep {E : CoPset} (P : IProp GF) {Q : IProp GF} [TCOr (TCEq
 @[rocq_alias uPred_bi_fupd_sbi_no_lc]
 instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .hasNoLC GF] :
     BIFUpdateSbi (IProp GF) where
-  fupd_keep_si_pure E' Pi R := by
+  fupd_keep_siPure E' Pi R := by
     iintro H
     iapply fupd_keep iprop(<si_pure> Pi)
     isplit
@@ -336,7 +336,7 @@ instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .h
       iapply BIFUpdate.mono (fupd_finally_intro E' iprop(<si_pure> Pi))
       iapply BIFUpdate.mono Plain.plain $$ H
     · icases H with ⟨-, $⟩
-  fupd_si_pure_later _ P := by
+  fupd_siPure_later _ P := by
     simp only [fupd, uPred_fupd]
     iintro H ⟨Hwsat, HE⟩
     ihave #HP : ▷ ◇ <si_pure> P $$ [H Hwsat HE]
@@ -348,7 +348,7 @@ instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .h
     iframe
     inext; imod HP; imodintro
     iexact HP
-  fupd_si_pure_sForall_2 E Ψi := by
+  fupd_siPure_sForall_2 E Ψi := by
     iintro H
     iapply fupd_keep iprop(<si_pure> (sForall Ψi))
     isplit
