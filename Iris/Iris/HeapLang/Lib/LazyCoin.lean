@@ -59,10 +59,9 @@ theorem newCoin.spec :
   iintro %Φ - K
   unfold newCoin
   wp_pures
-  wp_bind newProph()
-  iapply wp_new_proph
+  wp_apply wp_new_proph
   · itrivial
-  iintro !> %pvs %p Hp
+  iintro %pvs %p Hp
   wp_alloc l with Hl
   wp_pures
   iintro !>
@@ -94,10 +93,9 @@ theorem readCoin.spec (cp : Val) (b : Bool) :
     iframe; ipureintro; rfl
   · wp_load
     wp_pures
-    wp_bind &nondetBool _; iapply nondetBool.spec $$ [//]; iintro !> %b -
+    wp_apply nondetBool.spec $$ [//] with %b -
     wp_store
-    wp_bind resolveProph(_, _); iapply wp_resolve_proph $$ proph
-    iintro !> %pvs' ⟨%pvs_eq, proph⟩
+    wp_apply wp_resolve_proph $$ proph with %pvs' ⟨%pvs_eq, proph⟩
     subst pvs_eq
     wp_pures
     iintro !>
