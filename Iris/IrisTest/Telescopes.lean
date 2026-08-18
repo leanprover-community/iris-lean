@@ -5,7 +5,7 @@ Authors: Alvin Tang
 -/
 module
 
-public import Iris.ProofMode.Instances
+public import Iris.ProofMode
 public import Iris.Std.Telescopes
 public import Iris.BI.Telescopes
 
@@ -106,3 +106,21 @@ example [BI PROP] {TT : Tele} (Φ Ψ : TT.Arg → PROP) :
   iintro Hwand ⟨%x, HΦ⟩
   iexists x
   iapply Hwand $$ HΦ
+
+/- Tests `frame_tforall` and `frame_texist`. -/
+/--
+  □HR : R
+  ∗HΦ : ∀.. x, Φ x
+  ∗HΨ : ∃.. y, Ψ y
+  ⊢ tforall Φ ∗ texist Ψ
+-/
+#guard_msgs (trace, substring := true) in
+example [BI PROP] {TT : Tele} (R : PROP) (Φ Ψ : TT.Arg → PROP) :
+    ⊢ iprop(□ R -∗ (∀.. x, Φ x) -∗ (∃.. y, Ψ y) -∗
+            (∀.. x, R ∗ Φ x) ∗ (∃.. y, R ∗ Ψ y)) := by
+  iintro #HR HΦ HΨ
+  iframe HR
+  trace_state
+  isplitl [HΦ]
+  · iexact HΦ
+  · iexact HΨ
