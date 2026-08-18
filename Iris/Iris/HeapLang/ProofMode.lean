@@ -417,6 +417,149 @@ macro "wp_pair" : tactic => `(tactic | wp_pure ((_, _)))
 macro "wp_closure" : tactic => `(tactic | wp_pure (rec &_ &_ := _))
 macro "wp_match" : tactic => `(tactic | (wp_case; wp_closure; wp_lam))
 
+/-! ## The `wp_apply` tactics -/
+
+/-- use `A` directly if it matches `goal`, else eliminate its wands -/
+meta def iWpApplyHyp {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
+    {e' : Q($prop)} (hyps : Hyps bi e') (p : Q(Bool)) (A : Q($prop)) (goal : Q($prop)) :
+    ProofModeM Q($e' ∗ □?$p $A ⊢ $goal) := do
+  if let some _ ← ProofModeM.trySynthInstanceQ q(FromAssumption $p .in $A $goal) then
+    let .some _ ← trySynthInstanceQ q(Std.TCOr (Affine $e') (Absorbing $goal))
+      | throwIPMError "the context {e'} is not affine and goal not absorbing"
+    return q(apply_assumption)
+  iApplyCore hyps p A goal
+
+/-- Pose `pmt`, then apply it at a decomposition `e = K[e']` pushing `K` into the
+postcondition via `tac_wp_bind`. `premisesOut` gets the application's goals on success -/
+meta def iWpApplyCore {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(HasLC)}
+    {prop : Q(Type u)} {bi : Q(BI $prop)} {ehyps : Q($prop)}
+    (hyps : Hyps bi ehyps) (ι : Q(IrisGS_gen $hlc Exp $GF)) (s : Q(Stuckness)) (E : Q(CoPset))
+    (e : Q(Exp)) (Φ : Q(Val → $prop)) (pmt : PMTerm)
+    (premisesOut : IO.Ref (Array MVarId × Array MVarId))
+    (_hu : QuotedLevelDefEq u 0 := ⟨⟩) (_hprop : $prop =Q IProp $GF := ⟨⟩)
+    (_hbi : $bi =Q UPred.instBIUPred := ⟨⟩)
+    (κ : Q(Wp $prop Exp Val Stuckness) := q(wp.def)) (_hwp : $κ =Q wp.def := ⟨⟩) :
+    ProofModeM Q($ehyps ⊢ Wp.wp $s $E $e $Φ) := do
+  let beforePose := (← get).goals.size
+  let ⟨eΔ, hyps', p, A, posePf⟩ ← iHave hyps q(Wp.wp $s $E $e $Φ) pmt true
+  let afterPose := (← get).goals.size
+  let some {result := pf, ..} ←
+    findECtxOutermost (α := Q($eΔ ∗ □?$p $A ⊢ Wp.wp $s $E $e $Φ)) e fun K e' => do
+      trace[wp_apply] m!"trying to apply {A} to {e'}"
+      match K with
+      | ~q([]) =>
+        let pf ← iWpApplyHyp hyps' p A q(Wp.wp $s $E $e' $Φ)
+        pure (pf : Lean.Expr)
+      | _ =>
+        let Φ' : Q(Val → IProp $GF) ←
+          Qq.withLocalDeclDQ `v q(Val) fun v => do
+            mkLambdaFVars #[v] <|
+              q(Wp.wp $s $E $(← HeapLang.fill K q(.ofVal $v)) $Φ)
+        have _ : $Φ' =Q (fun v : Val =>
+          Wp.wp (PROP := IProp $GF) $s $E (ProgramLogic.fill $K (v : Exp)) $Φ) := ⟨⟩
+        let pf ← iWpApplyHyp hyps' p A q(Wp.wp $s $E $e' $Φ')
+        pure (q(tac_wp_bind $pf) : Lean.Expr)
+    | throwIPMError "cannot apply {A}"
+  premisesOut.set ((← get).goals.extract afterPose, (← get).goals.extract beforePose afterPose)
+  return q($posePf $pf)
+
+/-- Strip a leading `▷` and simplify WP expressions, in the application's goals only -/
+meta def wpApplyPostPass (premises : Array MVarId) : TacticM (Array MVarId) := do
+  let post ← `(tactic| (try inext; try wp_expr_simp))
+  let mut out : Array MVarId := #[]
+  let mut produced : Array MVarId := #[]
+  for g in (← getGoals) do
+    if premises.contains g && !(← g.isAssigned) then
+      let new := (← Tactic.run g (evalTactic post)).toArray
+      out := out ++ new
+      produced := produced ++ new
+    else
+      out := out.push g
+  setGoals out.toList
+  return produced
+
+/-- Apply and post-pass, return the application's goals. Dependee mvars (a lemma's `?Φ`)
+are registered before the snapshot, so they stay out of `premises` despite sorting last. -/
+meta def runWpApply (tacName : Name) (pmt : PMTerm) :
+    TacticM (Array MVarId × Array MVarId) := do
+  let premises ← IO.mkRef ((#[], #[]) : Array MVarId × Array MVarId)
+  ProofModeM.runTacticWp tacName fun mvar {hyps, ι, s, E, e, Φ, ..} => do
+    mvar.assign (← iWpApplyCore hyps ι s E e Φ pmt premises)
+  let (application, specialisation) ← premises.get
+  return (← wpApplyPostPass application, specialisation)
+
+/-- Needed for `wp_apply ... with`. Introduce into the last goal the application produced,
+or a `$$` goal if it produced none. -/
+meta def wpApplyIntro (tacName : Name) (produced specialisation : Array MVarId)
+    (pats : Array (TSyntax `introPat)) : TacticM Unit := do
+  if pats.isEmpty then return
+  let fallback ← specialisation.filterM fun g => return !(← g.isAssigned)
+  let some last := produced.back? <|> fallback.back?
+    | throwError "{tacName}: no goal left for the `with` patterns"
+  let new ← Tactic.run last (evalTactic (← `(tactic| iintro $pats*)))
+  setGoals <| (← getGoals).flatMap fun g => if g == last then new else [g]
+
+/--
+`wp_apply lem` poses the lemma `lem`, whose conclusion must be a `WP e' ...`, and applies
+it to the goal `WP e ...` after binding an evaluation context `K` with `e = K[e']`.
+Premises of `lem` become new goals; a leading `▷` in a premise is stripped, and WP
+premises have their expression simplified. `wp_apply lem $$ pats` additionally
+specialises the premises of `lem` with the given specialisation patterns, and
+`wp_apply lem with %v Hv` introduces into the last goal the application produced.
+-/
+syntax (name := wpApply) "wp_apply " colGt pmTerm
+  (" with" (colGt ppSpace introPat)+)? : tactic
+
+elab_rules : tactic
+  | `(tactic| wp_apply $pmt:pmTerm $[with $pats*]?) => do
+    let (produced, spec) ← runWpApply `wp_apply (← liftMacroM <| PMTerm.parse pmt)
+    wpApplyIntro `wp_apply produced spec (pats.getD #[])
+
+/-- bound on `wp_smart_apply`'s pure steps. -/
+meta def smartApplyFuel : Nat := 10000
+
+/-- Retry the application after single pure steps, bounded. `with` runs after the loop:
+retrying a failed introduction would roll back an application that already succeeded. -/
+meta def runWpSmartApply (pmt : PMTerm) (pats : Array (TSyntax `introPat)) :
+    TacticM Unit := do
+  let mut firstErr : Option Exception := none
+  for _ in [0:smartApplyFuel] do
+    let s ← Tactic.saveState
+    let attempt ←
+      try
+        pure <| Sum.inl (← runWpApply `wp_smart_apply pmt)
+      catch e =>
+        -- an interrupt or heartbeat exhaustion is not a failed application: do not retry it
+        if e.isInterrupt || e.isMaxHeartbeat then throw e else pure (Sum.inr e)
+    match attempt with
+    | .inl (produced, spec) =>
+      wpApplyIntro `wp_smart_apply produced spec pats
+      return
+    | .inr applyErr =>
+      s.restore
+      -- report iteration 0's error: later ones concern goals the user never saw
+      let deadEndErr := firstErr.getD applyErr
+      firstErr := some deadEndErr
+      try evalTactic (← `(tactic| wp_pure_step))
+      catch _ =>
+        s.restore
+        throw deadEndErr
+  throwError "wp_smart_apply: fuel exhausted after {smartApplyFuel} pure steps"
+
+/--
+`wp_smart_apply lem` is like `wp_apply lem`, but when the lemma does not apply,
+it takes single pure steps (`wp_pure`) and retries, until the lemma applies or
+no pure step is possible. `$$` and `with` behave as for `wp_apply`. The retry is
+bounded under `smartApplyFuel` so the tactic does not diverge.
+-/
+syntax (name := wpSmartApply) "wp_smart_apply " colGt pmTerm
+  (" with" (colGt ppSpace introPat)+)? : tactic
+
+elab_rules : tactic
+  | `(tactic| wp_smart_apply $pmt:pmTerm $[with $pats*]?) => do
+    runWpSmartApply (← liftMacroM <| PMTerm.parse pmt) (pats.getD #[])
+
+
 /-! ## Tactic lemmas for the heap tactics -/
 
 /-- Hand out looked-up hypothesis and a wand that restores the context
@@ -944,6 +1087,7 @@ macro "wp_alloc" colGt ppSpace loc:binderIdent : tactic => `(tactic| wp_alloc $l
 -- `set_option trace.wp_bind true` (and analogously for the others).
 initialize registerTraceClass `wp_bind
 initialize registerTraceClass `wp_pure
+initialize registerTraceClass `wp_apply
 initialize registerTraceClass `wp_heap
 initialize registerTraceClass `wp_heap.redex (inherited := true)
 initialize registerTraceClass `wp_heap.lookup (inherited := true)
