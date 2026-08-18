@@ -186,13 +186,11 @@ theorem bigSepM2_closed (P : PROP → Prop) (Φ : K → A → B → PROP) (m1 : 
     P ([∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2) := by
   classical
   by_cases hdom : PartialMap.dom m1 = PartialMap.dom m2
-  · exact (hproper (bigSepM2_alt.trans <|
-      (and_congr (pure_true hdom) .rfl).trans true_and)).mpr <|
-    bigOpM_closed hemp (fun hx hy => hsep _ _ hx hy) fun hget =>
-      let ⟨h1, h2⟩ := get?_zipWith_prod_eq_some hget
-      h h1 h2
-  · exact (hproper (bigSepM2_alt.trans <|
-      (and_congr (pure_false hdom) .rfl).trans false_and)).mpr hfalse
+  · refine (hproper <| bigSepM2_alt.trans <| (and_congr (pure_true hdom) .rfl).trans true_and).mpr ?_
+    refine bigOpM_closed hemp (fun hx hy => hsep _ _ hx hy) fun hget => ?_
+    obtain ⟨h1, h2⟩ := get?_zipWith_prod_eq_some hget
+    exact h h1 h2
+  · exact (hproper <| bigSepM2_alt.trans <| (and_congr (pure_false hdom) .rfl).trans false_and).mpr hfalse
 
 @[rocq_alias big_sepM2_persistent]
 theorem bigSepM2_persistent (Φ : K → A → B → PROP) (m1 : M A) (m2 : M B)
@@ -408,8 +406,8 @@ theorem bigSepM2_sep_eqv {Φ Ψ : K → A → B → PROP} {m1 : M A} {m2 : M B} 
       ([∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2) ∗ [∗map] k ↦ x1;x2 ∈ m1;m2, Ψ k x1 x2 := by
   refine (and_congr_right <| BiEntails.of_eq bigSepM_sep_eq).trans ?_
   refine persistent_and_affinely_sep_left.trans <| (sep_congr_left persistent_sep_dup).trans ?_
-  exact sep_sep_sep_comm.trans <| sep_congr persistent_and_affinely_sep_left.symm
-          persistent_and_affinely_sep_left.symm
+  refine sep_sep_sep_comm.trans ?_
+  exact sep_congr persistent_and_affinely_sep_left.symm persistent_and_affinely_sep_left.symm
 
 @[rocq_alias big_sepM2_sep_2]
 theorem bigSepM2_sep_eqv_symm (Φ Ψ : K → A → B → PROP) {m1 : M A} {m2 : M B} :
@@ -438,9 +436,9 @@ theorem bigSepM2_affinely_pure_elim (φ : K → A → B → Prop) {m1 : M A} {m2
       [∗map] k ↦ x1;x2 ∈ m1;m2, (<affine> ⌜φ k x1 x2⌝ : PROP) := by
   refine and_intro (affinely_elim.trans <| pure_intro hdom) ?_ |>.trans <|
     (bigSepM2_alt_lookup (Φ := fun k x1 x2 => iprop(<affine> ⌜φ k x1 x2⌝))).mpr
-  exact (affinely_mono <| pure_mono fun hall k xy hget =>
-      let ⟨h1, h2⟩ := get?_zipWith_prod_eq_some hget
-      hall k xy.1 xy.2 h1 h2).trans bigSepM_affinely_pure_elim
+  refine (affinely_mono <| pure_mono fun hall k xy hget => ?_).trans bigSepM_affinely_pure_elim
+  obtain ⟨h1, h2⟩ := get?_zipWith_prod_eq_some hget
+  exact hall k xy.1 xy.2 h1 h2
 
 @[rocq_alias big_sepM2_pure]
 theorem bigSepM2_pure [BIAffine PROP] (φ : K → A → B → Prop) (m1 : M A) (m2 : M B) :
@@ -449,8 +447,8 @@ theorem bigSepM2_pure [BIAffine PROP] (φ : K → A → B → Prop) (m1 : M A) (
         ∀ k x1 x2, get? m1 k = some x1 → get? m2 k = some x2 → φ k x1 x2⌝ := by
   refine ⟨(and_intro bigSepM2_lookup_iff bigSepM2_pure_intro).trans pure_and.1,
     pure_elim _ .rfl fun ⟨hdom, hall⟩ => ?_ ⟩
-  exact (pure_intro hall).trans <| (affine_affinely _).2.trans <|
-        (bigSepM2_affinely_pure_elim φ hdom).trans <| bigSepM2_mono fun _ _ => affinely_elim
+  refine (pure_intro hall).trans <| (affine_affinely _).2.trans ?_
+  exact (bigSepM2_affinely_pure_elim φ hdom).trans <| bigSepM2_mono fun _ _ => affinely_elim
 
 @[rocq_alias big_sepM2_persistently]
 theorem bigSepM2_persistently [BIAffine PROP] (Φ : K → A → B → PROP) (m1 : M A) (m2 : M B) :
@@ -477,17 +475,16 @@ theorem bigSepM2_forall [BIAffine PROP] (Φ : K → A → B → PROP) (m1 : M A)
       ⌜∀ k, (get? m1 k).isSome ↔ (get? m2 k).isSome⌝ ∧
         ∀ k x1 x2, ⌜get? m1 k = some x1⌝ → ⌜get? m2 k = some x2⌝ → Φ k x1 x2 := by
   refine ⟨and_intro bigSepM2_lookup_iff ?_, ?_⟩
-  · exact forall_intro fun k => forall_intro fun x1 => forall_intro fun x2 =>
-      imp_intro_swap <| pure_elim_left fun h1 =>
-        imp_intro_swap <| pure_elim_left fun h2 => bigSepM2_lookup h1 h2
-  · exact pure_elim_left fun hdom =>
-      (and_intro (pure_intro hdom)
-        ((forall_intro fun k => forall_intro fun x : A × B =>
-          imp_intro_swap <| pure_elim_left fun hget =>
-            let ⟨h1, h2⟩ := get?_zipWith_prod_eq_some hget
-            (forall_elim k).trans <| (forall_elim x.1).trans <|
-              (forall_elim x.2).trans <| (pure_imp_elim h1).trans <|
-                pure_imp_elim h2).trans bigSepM_forall.2)).trans <| bigSepM2_alt_lookup.mpr
+  · refine forall_intro fun k => forall_intro fun x1 => forall_intro fun x2 => ?_
+    refine imp_intro_swap <| pure_elim_left fun h1 => ?_
+    exact imp_intro_swap <| pure_elim_left fun h2 => bigSepM2_lookup h1 h2
+  · refine pure_elim_left fun hdom => ?_
+    refine (and_intro (pure_intro hdom) ?_).trans bigSepM2_alt_lookup.mpr
+    refine (forall_intro fun k => forall_intro fun x : A × B => ?_).trans bigSepM_forall.2
+    refine imp_intro_swap <| pure_elim_left fun hget => ?_
+    obtain ⟨h1, h2⟩ := get?_zipWith_prod_eq_some hget
+    refine (forall_elim k).trans <| (forall_elim x.1).trans <| (forall_elim x.2).trans ?_
+    exact (pure_imp_elim h1).trans <| pure_imp_elim h2
 
 @[rocq_alias big_sepM2_impl]
 theorem bigSepM2_impl {Φ Ψ : K → A → B → PROP} {m1 : M A} {m2 : M B} :
@@ -496,9 +493,10 @@ theorem bigSepM2_impl {Φ Ψ : K → A → B → PROP} {m1 : M A} {m2 : M B} :
       [∗map] k ↦ x1;x2 ∈ m1;m2, Ψ k x1 x2 := by
   refine wand_intro <| (sep_mono_left (and_intro bigSepM2_lookup_iff .rfl)).trans ?_
   refine sep_and_right.trans <| (and_mono_left sep_elim_left).trans <| pure_elim_left fun hdom => ?_
-  exact (sep_mono_right <|
-    bigSepM2_intro (fun k x1 x2 => iprop(Φ k x1 x2 -∗ Ψ k x1 x2)) m1 m2 hdom).trans <|
-    bigSepM2_sep_eqv.mpr.trans <| bigSepM2_mono fun _ _ => wand_elim_right
+  refine (sep_mono_right <|
+    bigSepM2_intro (fun k x1 x2 => iprop(Φ k x1 x2 -∗ Ψ k x1 x2)) m1 m2 hdom).trans ?_
+  refine bigSepM2_sep_eqv.mpr.trans ?_
+  exact bigSepM2_mono fun _ _ => wand_elim_right
 
 @[rocq_alias big_sepM2_wand]
 theorem bigSepM2_wand (Φ Ψ : K → A → B → PROP) (m1 : M A) (m2 : M B) :
@@ -519,12 +517,12 @@ theorem bigSepM2_lookup_acc_impl [DecidableEq K] {Φ : K → A → B → PROP}
   refine (sep_mono bigSepM2_impl ?_).trans wand_elim_left
   refine intuitionistically_mono <| forall_intro fun k => forall_intro fun y1 => ?_
   refine forall_intro fun y2 => imp_intro_swap <| pure_elim_left fun hd1 => imp_intro_swap ?_
-  exact pure_elim_left fun hd2 =>
-        match get?_delete_some_iff.mp hd1, get?_delete_some_iff.mp hd2 with
-        | ⟨hne, hm1⟩, ⟨_, hm2⟩ => by
-          refine (forall_elim k).trans <| (forall_elim y1).trans <| (forall_elim y2).trans ?_
-          exact (pure_imp_elim hm1).trans <| (pure_imp_elim hm2).trans <|
-            pure_imp_elim fun hki => hne hki.symm
+  refine pure_elim_left fun hd2 => ?_
+  obtain ⟨hne, hm1⟩ := get?_delete_some_iff.mp hd1
+  obtain ⟨_, hm2⟩ := get?_delete_some_iff.mp hd2
+  refine (forall_elim k).trans <| (forall_elim y1).trans <| (forall_elim y2).trans ?_
+  refine (pure_imp_elim hm1).trans <| (pure_imp_elim hm2).trans ?_
+  exact pure_imp_elim fun hki => hne hki.symm
 
 @[rocq_alias big_sepM2_later_1]
 theorem bigSepM2_later_1 [BIAffine PROP] {Φ : K → A → B → PROP} {m1 : M A} {m2 : M B} :
@@ -553,11 +551,13 @@ theorem bigSepM2_sepM {Φ1 : K → A → PROP} {Φ2 : K → B → PROP}
       ([∗map] k ↦ x1 ∈ m1, Φ1 k x1) ∗ [∗map] k ↦ x2 ∈ m2, Φ2 k x2 := by
   refine bigSepM2_sep_eqv.trans <| sep_congr ?_ ?_
   · refine bigSepM2_alt_lookup.trans <| (and_congr (pure_true hdom) ?_).trans true_and
-    exact BiEntails.of_eq <| (bigOpM_map_eq Prod.fst Φ1 (zipWith _ m1 m2)).symm.trans <|
-      congrArg _ (equiv_iff_eq.mp fun k => by cases h1 : get? m1 k <;> cases h2 : get? m2 k <;> grind)
+    refine BiEntails.of_eq <| (bigOpM_map_eq Prod.fst Φ1 (zipWith _ m1 m2)).symm.trans ?_
+    refine congrArg _ <| equiv_iff_eq.mp fun k => ?_
+    cases h1 : get? m1 k <;> cases h2 : get? m2 k <;> grind
   · refine bigSepM2_alt_lookup.trans <| (and_congr (pure_true hdom) ?_).trans true_and
-    exact BiEntails.of_eq <| (bigOpM_map_eq Prod.snd Φ2 (zipWith _ m1 m2)).symm.trans <|
-      congrArg _ (equiv_iff_eq.mp fun k => by cases h1 : get? m1 k <;> cases h2 : get? m2 k <;> grind)
+    refine BiEntails.of_eq <| (bigOpM_map_eq Prod.snd Φ2 (zipWith _ m1 m2)).symm.trans ?_
+    refine congrArg _ <| equiv_iff_eq.mp fun k => ?_
+    cases h1 : get? m1 k <;> cases h2 : get? m2 k <;> grind
 
 @[rocq_alias big_sepM2_sepM_2]
 theorem bigSepM2_sepM_2 (Φ1 : K → A → PROP) (Φ2 : K → B → PROP)
@@ -574,35 +574,29 @@ theorem bigSepM2_union_inv_left [DecidableEq K] (Φ : K → A → B → PROP)
         ([∗map] k ↦ x;y ∈ m1;m1', Φ k x y) ∗ [∗map] k ↦ x;y ∈ m2;m2', Φ k x y) := by
   induction m1 using LawfulFiniteMap.induction_on generalizing m2 m' with
   | hemp =>
-    simp only [union_empty_left]
+    rw [union_empty_left]
     refine exists_intro_trans ∅ <| exists_intro_trans m' ?_
-    exact and_intro (pure_intro union_empty_left.symm)
-      (and_intro (pure_intro <| disjoint_empty_left m')
-        (emp_sep.2.trans <| sep_mono_left (bigSepM2_empty Φ).2))
+    refine and_intro (pure_intro ?_) (and_intro (pure_intro ?_) ?_)
+    · exact union_empty_left.symm
+    · exact disjoint_empty_left m'
+    · exact emp_sep.2.trans <| sep_mono_left (bigSepM2_empty Φ).2
   | hins i x m1 hi ih =>
-    match (disjoint_insert_left_iff hi).mp hdisj with
-    | ⟨hm2i, hdisj'⟩ =>
-      rw [← union_insert_left]
-      refine (bigSepM2_delete_left (get?_insert_eq rfl)).1.trans <|
-        exists_elim fun y => pure_elim_left fun hy => ?_
-      refine (sep_mono_right (BiEntails.of_eq
-        (Q := bigSepM2 Φ (m1 ∪ m2) (delete m' i)) <| congrArg
-        (fun n : M A => bigSepM2 Φ n (delete m' i)) ?_).1).trans ?_
-      · exact delete_insert_cancel <| get?_union_none.mpr ⟨hi, hm2i⟩
-      · refine (sep_mono_right (ih m2 (delete m' i) hdisj')).trans <|
-          sep_exists_left.1.trans <| exists_elim fun n1 =>
-            sep_exists_left.1.trans <| exists_elim fun n2 => ?_
-        refine sep_and_left.trans <| (and_mono_left sep_elim_right).trans <|
-          pure_elim_left fun hUnion => sep_and_left.trans <|
-            (and_mono_left sep_elim_right).trans <| pure_elim_left fun hDisj => ?_
-        match (get?_union_none (m₁ := n1) (m₂ := n2) (i := i)).mp (by
-          rw [← hUnion, get?_delete_eq rfl]) with
-        | ⟨hn1, hn2⟩ =>
-          refine exists_intro_trans (insert n1 i y) <| exists_intro_trans n2 ?_
-          refine and_intro (pure_intro ?_) (and_intro (pure_intro <|
-            (disjoint_insert_left_iff hn1).mpr ⟨hn2, hDisj⟩) ?_)
-          · rw [← union_insert_left, ← hUnion, insert_delete_cancel hy]
-          · exact sep_assoc.symm.1.trans <| sep_mono_left <| (bigSepM2_insert hi hn1).2
+    obtain ⟨hm2i, hdisj'⟩ := (disjoint_insert_left_iff hi).mp hdisj
+    rw [← union_insert_left]
+    refine (bigSepM2_delete_left (get?_insert_eq rfl)).1.trans ?_
+    refine exists_elim fun y => pure_elim_left fun hy => ?_
+    rw [delete_insert_cancel <| get?_union_none.mpr ⟨hi, hm2i⟩]
+    refine wand_elim_swap <| (ih m2 (delete m' i) hdisj').trans ?_
+    refine exists_elim fun n1 => exists_elim fun n2 => ?_
+    refine pure_elim_left fun hUnion => pure_elim_left fun hDisj => ?_
+    refine wand_intro_left ?_
+    obtain ⟨hn1, hn2⟩ := (get?_union_none (m₁ := n1) (m₂ := n2) (i := i)).mp <| by
+      rw [← hUnion, get?_delete_eq rfl]
+    refine exists_intro_trans (insert n1 i y) <| exists_intro_trans n2 ?_
+    refine and_intro (pure_intro ?_) (and_intro (pure_intro ?_) ?_)
+    · rw [← union_insert_left, ← hUnion, insert_delete_cancel hy]
+    · exact (disjoint_insert_left_iff hn1).mpr ⟨hn2, hDisj⟩
+    · exact sep_assoc.symm.1.trans <| sep_mono_left (bigSepM2_insert hi hn1).2
 
 @[rocq_alias big_sepM2_union_inv_r]
 theorem bigSepM2_union_inv_right [DecidableEq K] (Φ : K → A → B → PROP)
