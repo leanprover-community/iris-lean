@@ -196,7 +196,7 @@ public theorem tpInv_update (tp : List Expr) (n : Nat) (e₁ e₂ : Expr) :
   iframe
   iexists (Std.insert m n e₂)
   iframe; ipureintro; intro n
-  grind [LawfulPartialMap.get?_insert]
+  grind
 
 public theorem tpInv_new_threads (efs tp : List Expr) :
     ⊢@{IProp GF} tpInv tp ==∗ (tpInv (tp ++ efs) ∗ ([∗list] n ↦ e' ∈ efs, (tp.length + n) ↪thread e')) := by

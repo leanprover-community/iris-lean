@@ -406,7 +406,7 @@ theorem valid_token {e : CoPset} :
 theorem mkData_op k (a b : A) :
     mkData (H := H) k (a • b) = mkData (H := H) k a • mkData k b := by
   refine OFE.eq_dist_2 ?_
-  refine fun _ => ⟨(fun i => Dist.of_eq (Heap.singleton_op_singleton i).symm),
+  refine fun _ => ⟨Dist.of_eq Heap.singleton_op_singleton.symm,
     Dist.of_eq (pcore_op_right_L rfl).symm⟩
 
 @[rocq_alias dyn_reservation_map_data_mono]
