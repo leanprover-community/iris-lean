@@ -35,22 +35,6 @@ attribute [local grind cases eager] Option.Rel
 #rocq_ignore big_sepM2_aux "Not needed"
 #rocq_ignore big_sepM2_unseal "Not needed"
 
-private theorem get?_zipWith_prod_eq_some {m1 : M A} {m2 : M B} {k : K} {x1 : A} {x2 : B}
-    (h : get? (zipWith (fun (x : A) (y : B) => (x, y)) m1 m2) k = some (x1, x2)) :
-    get? m1 k = some x1 ∧ get? m2 k = some x2 := by
-  grind [Option.bind_eq_some_iff, Option.map_eq_some_iff]
-
-private theorem dom_eq_of_option_rel {X Y : Type uV} {R : X → Y → Prop}
-    {m1 : M X} {m2 : M Y} (h : ∀ k, Option.Rel R (get? m1 k) (get? m2 k)) :
-    dom m1 = dom m2 := funext fun k => propext (by grind [dom])
-
-private theorem zipWith_isSome_eq {A' B' : Type u} {R1 : A → A' → Prop}
-    {R2 : B → B' → Prop} {m1 : M A} {m1' : M A'} {m2 : M B} {m2' : M B'}
-    (h1 : ∀ k, Option.Rel R1 (get? m1 k) (get? m1' k))
-    (h2 : ∀ k, Option.Rel R2 (get? m2 k) (get? m2' k)) (k : K) :
-    (get? (zipWith (fun (x : A) (y : B) => (x, y)) m1 m2) k).isSome =
-      (get? (zipWith (fun (x : A') (y : B') => (x, y)) m1' m2') k).isSome := by grind
-
 @[rocq_alias big_sepM2_alt]
 theorem bigSepM2_alt {Φ : K → A → B → PROP} {m1 : M A} {m2 : M B} :
     ([∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2) ⊣⊢
@@ -100,8 +84,7 @@ theorem bigSepM2_empty_intro (P : PROP) [Affine P] (Φ : K → A → B → PROP)
 @[rocq_alias big_sepM2_empty_l]
 theorem bigSepM2_empty_left (m1 : M A) (Φ : K → A → B → PROP) :
     ([∗map] k ↦ x1;x2 ∈ m1;(∅ : M B), Φ k x1 x2) ⊢ ⌜m1 = ∅⌝ :=
-  bigSepM2_lookup_iff.trans <| pure_mono fun h =>
-    eq_empty_iff.mpr fun k => by grind
+  bigSepM2_lookup_iff.trans <| pure_mono fun h => eq_empty_iff.mpr fun k => by grind
 
 @[rocq_alias big_sepM2_empty_r]
 theorem bigSepM2_empty_right (m2 : M B) (Φ : K → A → B → PROP) :
@@ -168,7 +151,7 @@ theorem bigSepM2_proper_2 [HasEquiv A] [HasEquiv B]
   apply bigOpM_gen_proper_2 (fun hEq => BiEntails.of_eq hEq)
     ⟨fun _ => .rfl, fun hEq => hEq.symm, fun hEq1 hEq2 => hEq1.trans hEq2⟩
     (fun hΦ hΨ => sep_congr hΦ hΨ)
-    (zipWith_isSome_eq hm1 hm2)
+    (isSome_zipWith_prod_congr hm1 hm2)
   rintro k ⟨x1, x2⟩ ⟨x1', x2'⟩ hxy hxy'
   obtain ⟨hx1, hx2⟩ := get?_zipWith_prod_eq_some hxy
   obtain ⟨hx1', hx2'⟩ := get?_zipWith_prod_eq_some hxy'
@@ -655,7 +638,7 @@ theorem bigSepM2_dist_2 (A B : Type uV) [OFE A] [OFE B]
     ([∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2) ≡{n}≡ [∗map] k ↦ x1;x2 ∈ m1';m2', Ψ k x1 x2 := by
   apply and_ne.ne (by rw [dom_eq_of_option_rel hm1, dom_eq_of_option_rel hm2])
   apply bigOpM_gen_proper_2 (fun hEq => hEq ▸ .rfl) OFE.dist_equivalence
-    (fun hΦ hΨ => sep_ne.ne hΦ hΨ) (zipWith_isSome_eq hm1 hm2)
+    (fun hΦ hΨ => sep_ne.ne hΦ hΨ) (isSome_zipWith_prod_congr hm1 hm2)
   rintro k ⟨x1, x2⟩ ⟨x1', x2'⟩ hxy hxy'
   obtain ⟨hx1, hx2⟩ := get?_zipWith_prod_eq_some hxy
   obtain ⟨hx1', hx2'⟩ := get?_zipWith_prod_eq_some hxy'
