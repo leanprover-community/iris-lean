@@ -251,7 +251,7 @@ instance intoWand_persistently_false (q : Bool) [BI PROP] (R P Q : PROP) [Absorb
   into_wand := persistently_elim.trans h.1
 
 set_option synthInstance.checkSynthOrder false in
-/-- The `x` in `Φ x` is instantiated by the IPM synthesiser. -/
+/-- The `x` in `Φ x` is handled by the IPM synthesiser as a subgoal. -/
 @[rocq_alias into_wand_tforall]
 instance intoWand_tforall {TT : Tele} (p q : Bool) [BI PROP] (Φ : TT.Arg → PROP)
     (P Q : PROP) (x : TT.Arg) [h : IntoWand p q (Φ x) m P Q] :
