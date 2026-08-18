@@ -98,10 +98,9 @@ variable {GF : BundledGFunctors} [HeapLangGS hlc GF] [SpinLockG GF]
 
 @[rocq_alias heap_lang.spin_lock.newlock_spec_delay_init]
 theorem newlock_spec :
-  ⊢ □ ∀ (Φ : Val → IProp GF),
-    (∀ (v : Val) (γ : GName), (∀ R E, R ={E}=∗ isLock γ v R) -∗ Φ v) -∗
-    WP hl(&newlock #()) {{ Φ }} := by
-  iintro !> %Φ Hcont
+    {{ True }} hl(&newlock #())
+    {{ v γ, RET v; ∀ R E, R ={E}=∗ isLock (GF := GF) γ v R }} := by
+  iintro %Φ - Hcont
   wp_rec
   imod token_alloc with ⟨%γ, Hγ⟩
   wp_alloc l with Hpt
@@ -120,11 +119,9 @@ theorem newlock_spec :
 
 @[rocq_alias heap_lang.try_acquire_spec]
 theorem try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
-    ⊢ □ ∀ (Φ : Val → IProp GF),
-    isLock γ lk R -∗
-    (∀ (b : Bool), iprop(if b then locked γ ∗ R else iprop(True)) -∗ Φ hl_val(#b)) -∗
-    WP hl(&tryAcquire &lk) {{ Φ }} := by
-  iintro !> %Φ #Hlock Hcont
+    {{ isLock γ lk R }} hl(&tryAcquire &lk)
+    {{ (b : Bool), RET hl_val(#b); if b then locked γ ∗ R else True }} := by
+  iintro %Φ #Hlock Hcont
   wp_rec
   unfold isLock
   icases Hlock with ⟨%l, %Heq, #Hinv⟩
@@ -155,16 +152,13 @@ theorem try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
 
 @[rocq_alias heap_lang.spin_lock.acquire_spec]
 theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
-  ⊢ □ ∀ (Φ : Val → IProp GF),
-    isLock γ lk R -∗
-    (locked γ ∗ R -∗ Φ hl_val(#())) -∗
-    WP hl(&acquire &lk) {{ Φ }} := by
-  iintro !> %Φ #Hlock Hcont
+    {{ isLock γ lk R }} hl(&acquire &lk) {{ RET hl_val(#()); locked γ ∗ R }} := by
+  iintro %Φ #Hlock Hcont
   iloeb as IH
   wp_rec
   wp_bind &tryAcquire _
   iapply try_acquire_spec $$ Hlock
-  iintro %b Hpt
+  iintro !> %b Hpt
   cases b
   · wp_pure
     iapply IH
@@ -177,11 +171,8 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
 
 @[rocq_alias heap_lang.spin_lock.release_spec]
 theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
-  ⊢ □ ∀ (Φ : Val → IProp GF),
-    isLock γ lk R ∗ (locked γ ∗ R) -∗
-    (True -∗ Φ hl_val(#())) -∗
-    WP hl(&release &lk) {{ Φ }} := by
-  iintro !> %Φ ⟨#Hlock, ⟨Hl, HR⟩⟩ Hcont
+    {{ isLock γ lk R ∗ locked γ ∗ R }} hl(&release &lk) {{ RET hl_val(#()); True }} := by
+  iintro %Φ ⟨#Hlock, Hl, HR⟩ Hcont
   wp_rec
   unfold isLock
   icases Hlock with ⟨%l, %Heq, #Hinv⟩

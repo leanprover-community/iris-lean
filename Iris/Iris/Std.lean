@@ -28,5 +28,6 @@ public import Iris.Std.RocqPorting
 public import Iris.Std.Set
 public import Iris.Std.Tactic
 public import Iris.Std.TC
+public import Iris.Std.Telescopes
 public import Iris.Std.Try
 public import Iris.Std.Vector
