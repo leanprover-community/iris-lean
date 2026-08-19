@@ -6,6 +6,7 @@ module
 
 public import Iris.BI.BI
 public import Iris.BI.Cmra
+public meta import Iris.BI.SbiUnfold
 public import Iris.Algebra.Lib.DFracAgree
 public import Iris.Algebra.Lib.ExclAuth
 public import Iris.Algebra.View
@@ -23,32 +24,6 @@ This file provides introduction rules (BI entailments) for (some) CMRA operation
 
 namespace Iris
 
-/-- Fold a `BI` goal built from `⌜⌝`, `∧`, `∨`, `∃`, `∀`, `▷`, `≡`, `✓` and `≼` into a single
-`<si_pure>`, leaving the corresponding statement about `SiProp`s. The BI has to be named,
-as folding `⌜⌝` would otherwise loop on the `SiProp`s it produces. -/
-local macro "sbi_fold" p:term : tactic =>
-  `(tactic| simp only [Iris.internalCmraValid, Iris.internalCmraIncluded, Iris.internalEq,
-      ← (Iris.siPure_pure (PROP := $p)).to_eq, ← (Iris.siPure_and (PROP := $p)).to_eq,
-      ← (Iris.siPure_or (PROP := $p)).to_eq, ← (Iris.siPure_exist (PROP := $p)).to_eq,
-      ← (Iris.siPure_forall (PROP := $p)).to_eq, ← (Iris.siPure_later (PROP := $p)).to_eq])
-
-/-- Unfold `SiProp.holds` of the connectives into their meta-level meaning. -/
-local macro "sbi_holds" : tactic =>
-  `(tactic| simp only [Iris.SiProp.pure_holds, Iris.SiProp.and_holds, Iris.SiProp.or_holds,
-      Iris.SiProp.sep_holds, Iris.SiProp.exists_holds, Iris.SiProp.forall_holds,
-      Iris.SiProp.later_holds_zero, Iris.SiProp.later_holds_succ,
-      Iris.SiProp.internalEq_holds, Iris.SiProp.cmraValid_holds, Iris.siPure_holds])
-
-/-- Reduce a `⊣⊢` goal to the step-indexed statement `_ ↔ _` at an arbitrary index. -/
-local macro "sbi_iff" p:term : tactic =>
-  `(tactic| (sbi_fold $p
-             refine Iris.siPure_mono_bi (Iris.SiProp.biEntails_of_iff fun _ => ?_)
-             try sbi_holds))
-
-/-- Reduce a `⊢` goal to the step-indexed statement `_ → _` at an arbitrary index. -/
-local macro "sbi_mono" p:term : tactic =>
-  `(tactic| (sbi_fold $p; refine Iris.siPure_mono fun _ => ?_; try sbi_holds))
-
 section prod
 
 open BI Std BIBase.BiEntails
@@ -56,12 +31,12 @@ open BI Std BIBase.BiEntails
 @[rocq_alias prod_validI]
 theorem prod_validI [Sbi PROP] [CMRA A] [CMRA B] (x : A × B) :
     ✓ x ⊣⊢@{PROP} ✓ x.1 ∧ ✓ x.2 := by
-  sbi_iff PROP; exact .rfl
+  simp only [sbi_norm]; intro _; exact .rfl
 
 @[rocq_alias prod_includedI]
 theorem prod_includedI [Sbi PROP] [CMRA A] [CMRA B] (x y : A × B) :
     x ≼ y ⊣⊢@{PROP} x.1 ≼ y.1 ∧ x.2 ≼ y.2 := by
-  sbi_iff PROP; exact Prod.incN_def
+  simp only [sbi_norm]; intro _; exact Prod.incN_def
 
 end prod
 
@@ -72,7 +47,7 @@ open BI Std BIBase.BiEntails
 @[rocq_alias option_validI]
 theorem option_validI [Sbi PROP] [CMRA A] {mx : Option A} :
   ✓ mx ⊣⊢@{PROP} mx.elim iprop(True) internalCmraValid := by
-  cases mx <;> sbi_iff PROP <;> exact .rfl
+  cases mx <;> simp only [Option.elim, sbi_norm] <;> intro _ <;> exact .rfl
 
 @[rocq_alias option_includedI]
 theorem option_includedI [Sbi PROP] [CMRA A] {mx my : Option A} :
@@ -80,7 +55,7 @@ theorem option_includedI [Sbi PROP] [CMRA A] {mx my : Option A} :
     mx.elim iprop(True) fun x => my.elim iprop(False) fun y => iprop((x ≼ y) ∨ (x ≡ y)) := by
   rcases mx with _ | x <;> rcases my with _ | y <;>
     try exact internalCmraIncluded_pure fun _ => by simp [Option.incN_iff]
-  sbi_iff PROP; exact Option.some_incN_some_iff.trans Or.comm
+  simp only [Option.elim, sbi_norm]; intro _; exact Option.some_incN_some_iff.trans Or.comm
 
 @[rocq_alias option_included_totalI]
 theorem option_included_totalI [Sbi PROP] [CMRA A] [CMRA.IsTotal A] {mx my : Option A} :
@@ -110,26 +85,26 @@ theorem auth_op_frag_validI [Sbi PROP] (dp : DFrac) (m : H V) k dq v :
   ✓ (Auth dp m • Frag k dq v) ⊣⊢@{PROP}
     ∃ v' dq', ⌜✓ dp⌝ ∧ ⌜get? m k = .some v'⌝ ∧ ✓ (dq', v') ∧
       some (dq, v) ≼ some (dq', v') := by
-  sbi_iff PROP; exact auth_op_frag_validN_iff
+  simp only [sbi_norm]; intro _; exact auth_op_frag_validN_iff
 
 @[rocq_alias gmap_view_both_validI]
 theorem auth_op_frag_one_validI [Sbi PROP] (dp : DFrac) (m : H V) k v :
   ✓ (Auth dp m • Frag k (.own One.one) v) ⊣⊢@{PROP}
     ⌜✓ dp⌝ ∧ ✓ v ∧ get? m k ≡ .some v := by
-  sbi_iff PROP; exact auth_op_frag_one_validN_iff
+  simp only [sbi_norm]; intro _; exact auth_op_frag_one_validN_iff
 
 @[rocq_alias gmap_view_both_validI_total]
 theorem auth_op_frag_validI_total [Sbi PROP] [CMRA.IsTotal V] (dp : DFrac) (m : H V) k dq v :
   ✓ (Auth dp m • Frag k dq v) ⊢@{PROP}
     ∃ v', ⌜✓ dp⌝ ∧ ⌜✓ dq⌝ ∧ ⌜get? m k = .some v'⌝ ∧
       ✓ v' ∧ v ≼ v' := by
-  sbi_mono PROP; exact auth_op_frag_validN_total_iff
+  simp only [sbi_norm]; intro _; exact auth_op_frag_validN_total_iff
 
 @[rocq_alias gmap_view_frag_op_validI]
 theorem frag_op_frag_validI [Sbi PROP] k dq1 dq2 v1 v2 :
   ✓ (Frag (H := H) (V := V) k dq1 v1 • Frag k dq2 v2) ⊣⊢@{PROP}
     ⌜✓ (dq1 • dq2)⌝ ∧ ✓ (v1 • v2) := by
-  sbi_iff PROP; exact frag_op_validN_iff
+  simp only [sbi_norm]; intro _; exact frag_op_validN_iff
 
 end heap_view
 
@@ -141,7 +116,7 @@ variable [Sbi PROP] [OFE A]
 
 @[rocq_alias agree_equivI]
 theorem agree_equivI {a b : A} : toAgree a ≡ toAgree b ⊣⊢@{PROP} a ≡ b := by
-  sbi_iff PROP; exact ⟨Agree.toAgree_injN, (NonExpansive.ne ·)⟩
+  simp only [sbi_norm]; intro _; exact ⟨Agree.toAgree_injN, (NonExpansive.ne ·)⟩
 
 @[rocq_alias agree_op_invI]
 theorem agree_op_invI {x y : Agree A} : ✓ (x • y) ⊢@{PROP} x ≡ y :=
@@ -155,30 +130,30 @@ theorem toAgree_validI (a : A) :
 @[rocq_alias to_agree_op_validI]
 theorem toAgree_op_validI (a b : A) :
     ✓ (toAgree a • toAgree b) ⊣⊢@{PROP} a ≡ b := by
-  sbi_iff PROP; exact toAgree_op_validN_iff_dist
+  simp only [sbi_norm]; intro _; exact toAgree_op_validN_iff_dist
 
 @[rocq_alias to_agree_uninjI]
 theorem toAgree_uninjI (x : Agree A) :
     ✓ x ⊢@{PROP} ∃ a, toAgree a ≡ x := by
-  sbi_mono PROP; exact fun h => toAgree_uninjN h
+  simp only [sbi_norm]; intro _; exact fun h => toAgree_uninjN h
 
 @[rocq_alias agree_op_equiv_to_agreeI]
 theorem agree_op_equiv_toAgreeI (x y : Agree A) (a : A) :
     x • y ≡ toAgree a ⊢@{PROP} x ≡ y ∧ y ≡ toAgree a := by
-  sbi_mono PROP; intro h
+  simp only [sbi_norm]; intro _ h
   have hxy := op_invN (h.validN.mpr toAgree_validN)
   exact ⟨hxy, ((Dist.of_eq idemp).symm.trans hxy.symm.op_l).trans h⟩
 
 @[rocq_alias agree_includedI]
 theorem agree_includedI (x y : Agree A) :
     x ≼ y ⊣⊢@{PROP} y ≡ x • y := by
-  sbi_iff PROP
+  simp only [sbi_norm]; intro _
   exact includedN.trans ⟨(·.trans op_commN), (·.trans op_commN)⟩
 
 @[rocq_alias to_agree_includedI]
 theorem toAgree_includedI (a b : A) :
     toAgree a ≼ toAgree b ⊣⊢@{PROP} a ≡ b := by
-  sbi_iff PROP; exact toAgree_includedN
+  simp only [sbi_norm]; intro _; exact toAgree_includedN
 
 end agree_inclusion
 
@@ -190,34 +165,34 @@ variable [Sbi PROP] [UCMRA A]
 @[rocq_alias auth_auth_dfrac_validI]
 theorem auth_dfrac_validI (dq : DFrac) (a : A) :
     ✓ (●{dq} a : Auth A) ⊣⊢@{PROP} ⌜✓ dq⌝ ∧ ✓ a := by
-  sbi_iff PROP; exact auth_dfrac_validN
+  simp only [sbi_norm]; intro _; exact auth_dfrac_validN
 
 @[rocq_alias auth_auth_validI]
 theorem auth_validI (a : A) : ✓ (● a : Auth A) ⊣⊢@{PROP} ✓ a := by
-  sbi_iff PROP; exact auth_validN
+  simp only [sbi_norm]; intro _; exact auth_validN
 
 @[rocq_alias auth_auth_dfrac_op_validI]
 theorem auth_dfrac_op_validI (dq1 dq2 : DFrac) (a1 a2 : A) :
     ✓ ((●{dq1} a1) • (●{dq2} a2)) ⊣⊢@{PROP}
       ⌜✓ (dq1 • dq2)⌝ ∧ a1 ≡ a2 ∧ ✓ a1 := by
-  sbi_iff PROP; exact auth_dfrac_op_validN
+  simp only [sbi_norm]; intro _; exact auth_dfrac_op_validN
 
 @[rocq_alias auth_frag_validI]
 theorem frag_validI (a : A) :
     ✓ (◯ a : Auth A) ⊣⊢@{PROP} ✓ a := by
-  sbi_iff PROP; exact frag_validN
+  simp only [sbi_norm]; intro _; exact frag_validN
 
 @[rocq_alias auth_both_dfrac_validI]
 theorem both_dfrac_validI (dq : DFrac) (a b : A) :
     ✓ ((●{dq} a) • ◯ b) ⊣⊢@{PROP}
     ⌜✓ dq⌝ ∧ b ≼ a ∧ ✓ a := by
-  sbi_iff PROP; exact both_dfrac_validN
+  simp only [sbi_norm]; intro _; exact both_dfrac_validN
 
 @[rocq_alias auth_both_validI]
 theorem auth_both_validI (a b : A) :
     ✓ ((● a : Auth A) • ◯ b) ⊣⊢@{PROP}
       b ≼ a ∧ ✓ a := by
-  sbi_iff PROP; exact ⟨fun h => (both_dfrac_validN.mp h).2,
+  simp only [sbi_norm]; intro _; exact ⟨fun h => (both_dfrac_validN.mp h).2,
     fun h => both_dfrac_validN.mpr ⟨DFrac.valid_own_one, h⟩⟩
 
 end auth
@@ -230,7 +205,7 @@ open BI
 @[rocq_alias dfrac_agree_validI]
 theorem dfrac_agree_validI (dq : DFrac) (x : A) :
     internalCmraValid (DFracAgree.mk dq x) ⊣⊢@{PROP} ⌜✓ dq⌝ := by
-  sbi_iff PROP; exact ⟨fun h => h.1, fun h => ⟨h, by simp [DFracAgree.mk]⟩⟩
+  simp only [sbi_norm]; intro _; exact ⟨fun h => h.1, fun h => ⟨h, by simp [DFracAgree.mk]⟩⟩
 
 @[rocq_alias dfrac_agree_validI_2]
 theorem dfrac_agree_validI_2 (dq1 dq2 : DFrac) (x y : A) :
@@ -272,21 +247,21 @@ theorem f_homom_includedI [CMRA A] [CMRA B] (x y : A) (f : A → B) [NonExpansiv
 theorem id_freeI_r [CMRA A] (x y : A) [IdFree x] :
     ⊢@{PROP} ✓ x -∗ (x • y) ≡ x -∗ False := by
   have H : iprop((x • y) ≡ x ∗ ✓ x) ⊢@{PROP} False := by
-    refine siPure_and_sep.mpr.trans ?_; sbi_mono PROP; exact fun h => id_freeN_r h.2 h.1
+    refine siPure_and_sep.mpr.trans ?_; simp only [sbi_norm]; intro _; exact fun h => id_freeN_r h.2 h.1
   exact wand_intro_left (wand_intro_left ((sep_mono_right sep_emp.mp).trans H))
 
 @[rocq_alias id_freeI_l]
 theorem id_freeI_l [CMRA A] (x y : A) [IdFree x] :
     ⊢@{PROP} ✓ x -∗ (y • x) ≡ x -∗ False := by
   have H : iprop((y • x) ≡ x ∗ ✓ x) ⊢@{PROP} False := by
-    refine siPure_and_sep.mpr.trans ?_; sbi_mono PROP; exact fun h => id_freeN_l h.2 h.1
+    refine siPure_and_sep.mpr.trans ?_; simp only [sbi_norm]; intro _; exact fun h => id_freeN_l h.2 h.1
   exact wand_intro_left (wand_intro_left ((sep_mono_right sep_emp.mp).trans H))
 
 @[rocq_alias cmra_later_opI]
 theorem cmra_later_opI [CMRA A] [CMRA.IsTotal A] (x y1 y2 : A) :
     ▷ (✓ x ∧ x ≡ y1 • y2) ⊢@{PROP}
       ∃ z1 z2, x ≡ z1 • z2 ∧ ▷ (z1 ≡ y1) ∧ ▷ (z2 ≡ y2) := by
-  sbi_fold PROP; refine siPure_mono fun n => ?_; cases n <;> sbi_holds
+  simp only [sbi_norm]; intro n; cases n
   · exact fun _ => ⟨x, core x, (op_core_dist x).symm, trivial, trivial⟩
   · exact fun ⟨hv, he⟩ =>
       have ⟨z1, z2, hx, hz1, hz2⟩ := extend' hv he
@@ -301,7 +276,7 @@ variable [Sbi PROP]
 @[rocq_alias discrete_fun_validI]
 theorem discrete_fun_validI {ι : Type _} {β : ι → Type _} [∀ i, UCMRA (β i)]
     (g : ∀ i, β i) : ✓ g ⊣⊢@{PROP} ∀ i, ✓ (g i) := by
-  sbi_iff PROP; exact .rfl
+  simp only [sbi_norm]; intro _; exact .rfl
 
 end discrete_fun
 
@@ -316,12 +291,12 @@ theorem excl_equivI (x y : Excl A) :
       | excl a, excl b => iprop(a ≡ b)
       | invalid, invalid => iprop(True)
       | _, _ => iprop(False) := by
-  cases x <;> cases y <;> sbi_iff PROP <;> exact .rfl
+  cases x <;> cases y <;> simp only [sbi_norm] <;> intro _ <;> exact .rfl
 
 @[rocq_alias excl_validI]
 theorem excl_validI (x : Excl A) :
     ✓ x ⊣⊢@{PROP} ⌜x ≠ Excl.invalid⌝ := by
-  sbi_iff PROP
+  simp only [sbi_norm]; intro _
   cases x with
   | excl a => exact ⟨fun _ => nofun, fun _ => trivial⟩
   | invalid => exact ⟨fun h => h.elim, fun h => (h rfl).elim⟩
@@ -354,7 +329,7 @@ theorem csum_validI [CMRA A] [CMRA B] (x : Csum A B) :
       | inl a => iprop(✓ a)
       | inr b => iprop(✓ b)
       | invalid => iprop(False) := by
-  cases x <;> sbi_iff PROP <;> exact .rfl
+  cases x <;> simp only [sbi_norm] <;> intro _ <;> exact .rfl
 
 @[rocq_alias csum_includedI]
 theorem csum_includedI [CMRA A] [CMRA B] (x y : Csum A B) :
@@ -378,7 +353,7 @@ variable [Sbi PROP] [OFE A]
 @[rocq_alias list_equivI]
 theorem list_equivI (l1 l2 : List A) :
     l1 ≡ l2 ⊣⊢@{PROP} ∀ (i : Nat), (l1[i]? : Option A) ≡ (l2[i]? : Option A) := by
-  sbi_iff PROP; exact list_dist_lookup
+  simp only [sbi_norm]; intro _; exact list_dist_lookup
 
 end list
 
@@ -389,23 +364,23 @@ variable [Sbi PROP] {M : Type _ → Type _} {K : Type _} [LawfulPartialMap M K]
 @[rocq_alias gmap_equivI]
 theorem heap_equivI [OFE V] (m1 m2 : M V) :
     m1 ≡ m2 ⊣⊢@{PROP} ∀ i, get? m1 i ≡ get? m2 i := by
-  sbi_iff PROP; exact .rfl
+  simp only [sbi_norm]; intro _; exact .rfl
 
 @[rocq_alias gmap_validI]
 theorem heap_validI [CMRA V] (m : M V) :
     ✓ m ⊣⊢@{PROP} ∀ i, ✓ (get? m i) := by
-  sbi_iff PROP; exact .rfl
+  simp only [sbi_norm]; intro _; exact .rfl
 
 @[rocq_alias singleton_validI]
 theorem singleton_validI [CMRA V] (i : K) (x : V) :
     ✓ (PartialMap.singleton i x : M V) ⊣⊢@{PROP} ✓ x := by
-  sbi_iff PROP; exact Heap.singleton_validN_iff
+  simp only [sbi_norm]; intro _; exact Heap.singleton_validN_iff
 
 @[rocq_alias gmap_union_equiv_eqI]
 theorem heap_union_equiv_eqI [OFE V] (m m1 m2 : M V) :
     m ≡ m1 ∪ m2 ⊣⊢@{PROP}
       ∃ m1' m2', ⌜m = m1' ∪ m2'⌝ ∧ m1' ≡ m1 ∧ m2' ≡ m2 := by
-  sbi_iff PROP; exact _root_.PartialMap.union_dist_iff
+  simp only [sbi_norm]; intro _; exact _root_.PartialMap.union_dist_iff
 
 end heap
 
@@ -417,14 +392,14 @@ variable [Sbi PROP] [OFE A] [UCMRA B] {R : ViewRel A B} [IsViewRel R]
 theorem view_both_dfrac_validI_1 (relI : SiProp) (dq : DFrac) (a : A) (b : B)
     (H : ∀ n, R n a b → relI.holds n) :
     ✓ ((●V{dq} a : View R) • ◯V b) ⊢@{PROP} ⌜✓ dq⌝ ∧ <si_pure> relI := by
-  sbi_mono PROP
+  simp only [sbi_norm]; intro _
   exact fun hn => ⟨(auth_op_frag_validN_iff.mp hn).1, H _ (auth_op_frag_validN_iff.mp hn).2⟩
 
 @[rocq_alias view_both_dfrac_validI_2]
 theorem view_both_dfrac_validI_2 (relI : SiProp) (dq : DFrac) (a : A) (b : B)
     (H : ∀ n, relI.holds n → R n a b) :
     ⌜✓ dq⌝ ∧ <si_pure> relI ⊢@{PROP} ✓ ((●V{dq} a : View R) • ◯V b) := by
-  sbi_mono PROP; exact fun hn => auth_op_frag_validN_iff.mpr ⟨hn.1, H _ hn.2⟩
+  simp only [sbi_norm]; intro _; exact fun hn => auth_op_frag_validN_iff.mpr ⟨hn.1, H _ hn.2⟩
 
 @[rocq_alias view_both_dfrac_validI]
 theorem view_both_dfrac_validI (relI : SiProp) (dq : DFrac) (a : A) (b : B)
@@ -456,7 +431,7 @@ theorem view_both_validI (relI : SiProp) (a : A) (b : B)
 theorem view_auth_dfrac_validI (relI : SiProp) (dq : DFrac) (a : A)
     (H : ∀ n, relI.holds n ↔ R n a UCMRA.unit) :
     ✓ (●V{dq} a : View R) ⊣⊢@{PROP} ⌜✓ dq⌝ ∧ <si_pure> relI := by
-  sbi_iff PROP
+  simp only [sbi_norm]; intro _
   exact ⟨fun hn => ⟨(auth_validN_iff.mp hn).1, (H _).mpr (auth_validN_iff.mp hn).2⟩,
     fun hn => auth_validN_iff.mpr ⟨hn.1, (H _).mp hn.2⟩⟩
 

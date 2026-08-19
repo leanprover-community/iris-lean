@@ -11,6 +11,7 @@ public import Iris.BI.DerivedLaws
 public import Iris.BI.DerivedLawsLater
 public import Iris.BI.Extensions
 public import Iris.BI.SIProp
+public meta import Iris.BI.SbiUnfold
 
 @[expose] public section
 
@@ -137,7 +138,7 @@ instance instSbiEmpValidExistSiProp : SbiEmpValidExist SiProp where
   siEmpValid_sExists_1 _ :=
     sExists_elim fun p hp => exists_intro_trans p (and_intro (pure_intro hp) .rfl)
 
-@[simp] theorem siPure_holds {Pi : SiProp} {n} :
+@[simp, sbi_norm] theorem siPure_holds {Pi : SiProp} {n} :
     (iprop(<si_pure> Pi) : SiProp).holds n ↔ Pi.holds n := .rfl
 
 @[rocq_alias si_pure_persistent]
@@ -625,5 +626,97 @@ theorem plainly_if_mono p (P Q : PROP) : iprop(P ⊢ Q) → ■?p P ⊢ ■?p Q 
   | false => h
 
 end PlainlyFromSbi
+
+/-! ## Folding for `sbi_norm`
+
+Each rule turns a connective applied to `<si_pure>` arguments into a single
+`<si_pure>`. Simp visits children first, so a rule always sees them folded.
+See `Iris/BI/SbiUnfold.lean`. -/
+
+section SbiUnfoldFold
+variable [Sbi PROP]
+
+/-- The right-hand side names `SiProp.pure` rather than `⌜φ⌝`. The two are
+definitionally equal, but `⌜φ⌝` would match this rule's own output. -/
+@[sbi_norm, rocq_alias sbi_unfold_pure]
+theorem pure_fold {φ : Prop} : (iprop(⌜φ⌝) : PROP) = iprop(<si_pure> SiProp.pure φ) :=
+  siPure_pure.symm.to_eq
+
+variable {Pi Qi : SiProp}
+
+@[sbi_norm, rocq_alias sbi_unfold_and]
+theorem siPure_and_fold :
+    (iprop(<si_pure> Pi ∧ <si_pure> Qi) : PROP) = iprop(<si_pure> (Pi ∧ Qi)) :=
+  siPure_and.symm.to_eq
+
+@[sbi_norm, rocq_alias sbi_unfold_sep]
+theorem siPure_sep_fold :
+    (iprop(<si_pure> Pi ∗ <si_pure> Qi) : PROP) = iprop(<si_pure> (Pi ∧ Qi)) :=
+  siPure_and_sep.symm.to_eq
+
+@[sbi_norm, rocq_alias sbi_unfold_or]
+theorem siPure_or_fold :
+    (iprop(<si_pure> Pi ∨ <si_pure> Qi) : PROP) = iprop(<si_pure> (Pi ∨ Qi)) :=
+  siPure_or.symm.to_eq
+
+@[sbi_norm, rocq_alias sbi_unfold_impl]
+theorem siPure_imp_fold :
+    (iprop(<si_pure> Pi → <si_pure> Qi) : PROP) = iprop(<si_pure> (Pi → Qi)) :=
+  siPure_imp.symm.to_eq
+
+@[sbi_norm, rocq_alias sbi_unfold_wand]
+theorem siPure_wand_fold :
+    (iprop(<si_pure> Pi -∗ <si_pure> Qi) : PROP) = iprop(<si_pure> (Pi → Qi)) :=
+  siPure_imp_wand.symm.to_eq
+
+@[sbi_norm, rocq_alias sbi_unfold_iff]
+theorem siPure_iff_fold :
+    (iprop(<si_pure> Pi ↔ <si_pure> Qi) : PROP) = iprop(<si_pure> (Pi ↔ Qi)) :=
+  siPure_iff.symm.to_eq
+
+@[sbi_norm, rocq_alias sbi_unfold_iff_wand]
+theorem siPure_wandIff_fold :
+    (iprop(<si_pure> Pi ∗-∗ <si_pure> Qi) : PROP) = iprop(<si_pure> (Pi ↔ Qi)) :=
+  siPure_iff_wandIff.symm.to_eq
+
+@[sbi_norm, rocq_alias sbi_unfold_forall]
+theorem siPure_forall_fold {A : Sort _} {Φi : A → SiProp} :
+    (iprop(∀ x, <si_pure> Φi x) : PROP) = iprop(<si_pure> (∀ x, Φi x)) :=
+  siPure_forall.symm.to_eq
+
+@[sbi_norm, rocq_alias sbi_unfold_exist]
+theorem siPure_exist_fold {A : Type _} {Φi : A → SiProp} :
+    (iprop(∃ x, <si_pure> Φi x) : PROP) = iprop(<si_pure> (∃ x, Φi x)) :=
+  siPure_exist.symm.to_eq
+
+@[sbi_norm, rocq_alias sbi_unfold_later]
+theorem siPure_later_fold : (iprop(▷ <si_pure> Pi) : PROP) = iprop(<si_pure> (▷ Pi)) :=
+  siPure_later.symm.to_eq
+
+end SbiUnfoldFold
+
+/-! ## Roots for `sbi_norm`
+
+Once both sides are a single `<si_pure>`, these strip it and leave a statement
+about `SiProp.holds`. -/
+
+section SbiUnfoldRoot
+variable [Sbi PROP] {Pi Qi : SiProp}
+
+@[sbi_norm, rocq_alias sbi_unfold_entails]
+theorem siPure_entails_iff :
+    (iprop(<si_pure> Pi) ⊢@{PROP} iprop(<si_pure> Qi)) ↔ ∀ n, Pi.holds n → Qi.holds n :=
+  siPure_entails.trans SiProp.entails_iff
+
+@[sbi_norm, rocq_alias sbi_unfold_equiv]
+theorem siPure_biEntails_iff :
+    (iprop(<si_pure> Pi) ⊣⊢@{PROP} iprop(<si_pure> Qi)) ↔ ∀ n, Pi.holds n ↔ Qi.holds n :=
+  (Iff.intro siPure_inj siPure_mono_bi).trans SiProp.biEntails_iff
+
+@[sbi_norm, rocq_alias sbi_unfold_emp_valid]
+theorem siPure_empValid_iff : (⊢@{PROP} <si_pure> Pi) ↔ ∀ n, Pi.holds n :=
+  siPure_emp_valid.trans SiProp.emp_valid_iff
+
+end SbiUnfoldRoot
 
 end Iris
