@@ -9,10 +9,10 @@ public import Iris.Std.TC
 public import Iris.Algebra
 public import Iris.Algebra.Auth
 public import Iris.Algebra.Numbers
+public import Iris.Algebra.NonExp
 public import Iris.ProofMode
 public import Iris.BI.Algebra
 public import Iris.Instances.IProp
-public import Iris.ProofMode.Tactics.Contractive
 
 @[expose] public section
 

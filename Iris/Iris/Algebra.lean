@@ -24,6 +24,8 @@ public import Iris.Algebra.List
 public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.MaxPrefixList
 public import Iris.Algebra.Numbers
+public import Iris.Algebra.NonExp
+public import Iris.Algebra.NonExpAttr
 public import Iris.Algebra.Mra
 public import Iris.Algebra.IProp
 public import Iris.Algebra.OFE

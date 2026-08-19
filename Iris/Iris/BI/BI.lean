@@ -82,6 +82,9 @@ class BI (PROP : Type _) extends COFE PROP, BI.BIBase PROP where
   later_persistently {P : PROP} : ▷ <pers> P ⊣⊢ <pers> ▷ P
   later_false_em {P : PROP} : ▷ P ⊢ ▷ False ∨ (▷ False → P)
 
+attribute [instance] BI.and_ne BI.or_ne BI.imp_ne BI.sep_ne BI.wand_ne BI.persistently_ne
+attribute [non_exp] BI.sForall_ne BI.sExists_ne
+
 namespace BI
 
 instance [BIBase PROP] : LE PROP where
@@ -91,15 +94,6 @@ instance [BIBase PROP] : LE PROP where
 instance entails_preorder [BI PROP] : Std.IsPreorder PROP where
   le_refl _ := BI.entails_refl
   le_trans _ _ _ := BI.entails_trans
-
-attribute [instance] and_ne
-attribute [instance] or_ne
-attribute [instance] imp_ne
-attribute [non_exp] sForall_ne
-attribute [non_exp] sExists_ne
-attribute [instance] sep_ne
-attribute [instance] wand_ne
-attribute [instance] persistently_ne
 
 instance [BI PROP] : Std.Refl <| BIBase.Entails (PROP := PROP) where
   refl _ := BI.entails_refl

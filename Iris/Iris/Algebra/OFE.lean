@@ -7,7 +7,7 @@ module
 
 public import Iris.Std.Nat
 public import Iris.Std.Option
-public import Iris.Std.NonExp
+public import Iris.Algebra.NonExpAttr
 
 @[expose] public section
 
