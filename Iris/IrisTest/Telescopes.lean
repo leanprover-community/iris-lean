@@ -17,13 +17,53 @@ open Iris BI ProofMode Std
 variable {PROP : Type} [BI PROP] {TT : Tele.{0}}
   (Φ Ψ : TT.Arg → PROP) (φ : TT.Arg → Prop) (a : TT.Arg)
 
+/- Delaboration of `tforall`. -/
+/-- info: iprop(∀.. x, Φ x) : PROP -/
+#guard_msgs in #check (tforall Φ : PROP)
+
+/-
+  Delaboration of `tforall` with name clashing.
+  The function `getUnusedName` ensures correct binding.
+-/
+variable (f : TT.Arg → TT.Arg → PROP) (x : TT.Arg) in
+/-- info: iprop(∀.. x_1, (f x) x_1) : PROP -/
+#guard_msgs in #check (tforall (f x) : PROP)
+
+/-
+  Nested `texist` should collapse into one binder group.
+-/
+variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
+/-- info: iprop(∀.. x y z, f x y z) : PROP -/
+#guard_msgs in
+#check (tforall (fun x => tforall (fun y => tforall (fun z => f x y z))) : PROP)
+
+/- Delaboration of `texist`. -/
+/-- info: iprop(∃.. x, Φ x) : PROP -/
+#guard_msgs in #check (texist Φ : PROP)
+
+/-
+  Delaboration of `texist` with name clashing.
+  The function `getUnusedName` ensures correct binding.
+-/
+variable (f : TT.Arg → TT.Arg → PROP) (x : TT.Arg) in
+/-- info: iprop(∃.. x_1, (f x) x_1) : PROP -/
+#guard_msgs in #check (texist (f x) : PROP)
+
+/-
+  Nested `texist` should collapse into one binder group.
+-/
+variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
+/-- info: iprop(∃.. x y z, f x y z) : PROP -/
+#guard_msgs in
+#check (texist (fun x => texist (fun y => texist (fun z => f x y z))) : PROP)
+
 /- Tests `intoForall_tforall`. -/
-/-- info: solution: IntoForall (tforall Φ) Φ, new goals: [] -/
+/-- info: solution: IntoForall iprop(∀.. x, Φ x) Φ, new goals: [] -/
 #guard_msgs in
 #ipm_synth @IntoForall PROP _ (tforall Φ) (_ : Type) _
 
 /- Tests `intoExists_texist`. -/
-/-- info: solution: IntoExists (texist Φ) Φ, new goals: [] -/
+/-- info: solution: IntoExists iprop(∃.. x, Φ x) Φ, new goals: [] -/
 #guard_msgs in
 #ipm_synth @IntoExists PROP _ (texist Φ) (_ : Type) _
 
@@ -112,7 +152,7 @@ example [BI PROP] {TT : Tele} (Φ Ψ : TT.Arg → PROP) :
   □HR : R
   ∗HΦ : ∀.. x, Φ x
   ∗HΨ : ∃.. y, Ψ y
-  ⊢ tforall Φ ∗ texist Ψ
+  ⊢ (∀.. x, Φ x) ∗ ∃.. x, Ψ x
 -/
 #guard_msgs (trace, substring := true) in
 example [BI PROP] {TT : Tele} (R : PROP) (Φ Ψ : TT.Arg → PROP) :

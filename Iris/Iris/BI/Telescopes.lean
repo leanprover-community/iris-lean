@@ -15,7 +15,7 @@ public meta import Iris.Std.RocqPorting
 @[expose] public section
 
 namespace Iris.BI
-open Iris.Std Lean
+open Iris.Std Lean PrettyPrinter Delaborator
 
 /-- Telescopic universal quantification: quantify over every binder of the telescope `TT`. -/
 @[rocq_alias bi_tforall]
@@ -39,14 +39,51 @@ macro_rules
   | `(iprop(∀.. $xs, $Ψ)) => do expandExplicitBinders ``tforall xs (← ``(iprop($Ψ)))
   | `(iprop(∃.. $xs, $Ψ)) => do expandExplicitBinders ``texist xs (← ``(iprop($Ψ)))
 
-delab_rule tforall
-  | `($_ fun $x:ident => iprop(∀.. $y:ident $[$z:ident]*, $Ψ)) => do
-    ``(iprop(∀.. $x:ident $y:ident $[$z:ident]*, $Ψ))
-  | `($_ fun $x:ident => $Ψ) => do ``(iprop(∀.. $x:ident, $(← unpackIprop Ψ)))
-delab_rule texist
-  | `($_ fun $x:ident => iprop(∃.. $y:ident $[$z:ident]*, $Ψ)) => do
-    ``(iprop(∃.. $x:ident $y:ident $[$z:ident]*, $Ψ))
-  | `($_ fun $x:ident => $Ψ) => do ``(iprop(∃.. $x:ident, $(← unpackIprop Ψ)))
+/-- A delaborator for the telescopic universal quantifier. -/
+@[app_delab Iris.BI.tforall]
+meta def delabTforall : Delab := do
+  let e ← SubExpr.getExpr
+  if e.appArg!.isLambda then
+    -- Print nested applications (e.g. `tforall (fun x => tforall (fun y => Ψ))` as `∀.. x y, Ψ x y`)
+    SubExpr.withAppArg <| withBindingBodyUnusedName fun x => do
+      let x : TSyntax `ident := ⟨x⟩
+      match ← unpackIprop (← delab) with
+      | `(∀.. $y:ident $[$z:ident]*, $Ψ) =>
+        `(iprop(∀.. $x:ident $y:ident $[$z:ident]*, $Ψ))
+      | body => `(iprop(∀.. $x:ident, $body))
+  else
+    -- Print `tforall Ψ` as `∀.. x, Ψ x`
+    let Ψ := e.appArg!
+    let dom := (← Meta.inferType Ψ).bindingDomain!
+    -- Rename the binder if `Ψ` already refers a binder of the same name to avoid capture
+    let n ← getUnusedName `x Ψ
+    Meta.withLocalDeclD n dom fun _ => do
+      let f ← SubExpr.withAppArg delab
+      let x := mkIdent n
+      `(iprop(∀.. $x:ident, $f $x))
+
+/-- A delaborator for the telescopic existential quantifier. -/
+@[app_delab Iris.BI.texist]
+meta def delabTexist : Delab := do
+  let e ← SubExpr.getExpr
+  if e.appArg!.isLambda then
+    -- Print nested applications (e.g. `texist (fun x => texist (fun y => Ψ))` as `∃.. x y, Ψ x y`)
+    SubExpr.withAppArg <| withBindingBodyUnusedName fun x => do
+      let x : TSyntax `ident := ⟨x⟩
+      match ← unpackIprop (← delab) with
+      | `(∃.. $y:ident $[$z:ident]*, $Ψ) =>
+        `(iprop(∃.. $x:ident $y:ident $[$z:ident]*, $Ψ))
+      | body => `(iprop(∃.. $x:ident, $body))
+  else
+    -- Print `texist Ψ` as `∃.. x, Ψ x`
+    let Ψ := e.appArg!
+    let dom := (← Meta.inferType Ψ).bindingDomain!
+    -- Rename the binder if `Ψ` already refers a binder of the same name to avoid capture
+    let n ← getUnusedName `x Ψ
+    Meta.withLocalDeclD n dom fun _ => do
+      let f ← SubExpr.withAppArg delab
+      let x := mkIdent n
+      `(iprop(∃.. $x:ident, $f $x))
 
 section Telescopes
 variable [BI PROP] {TT : Tele}
