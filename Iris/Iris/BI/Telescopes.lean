@@ -41,7 +41,7 @@ macro_rules
 
 /-- A delaborator for the telescopic universal quantifier. -/
 @[app_delab Iris.BI.tforall]
-meta def delabTforall : Delab := do
+meta def delabBITforall : Delab := do
   let e ← SubExpr.getExpr
   if e.appArg!.isLambda then
     -- Print nested applications (e.g. `tforall (fun x => tforall (fun y => Ψ))` as `∀.. x y, Ψ x y`)
@@ -64,7 +64,7 @@ meta def delabTforall : Delab := do
 
 /-- A delaborator for the telescopic existential quantifier. -/
 @[app_delab Iris.BI.texist]
-meta def delabTexist : Delab := do
+meta def delabBITexist : Delab := do
   let e ← SubExpr.getExpr
   if e.appArg!.isLambda then
     -- Print nested applications (e.g. `texist (fun x => texist (fun y => Ψ))` as `∃.. x y, Ψ x y`)
