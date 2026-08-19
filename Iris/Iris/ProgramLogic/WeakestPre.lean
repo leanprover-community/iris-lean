@@ -84,35 +84,7 @@ def wp.pre (s : Stuckness) (wp : CoPset -> Expr -> (Val -> IProp GF) -> IProp GF
 
 @[rocq_alias wp_pre_contractive]
 instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
-  distLater_dist := by
-    intros n wp wp' Hwp E e₁ Φ
-    unfold pre
-    cases toVal e₁
-    case some _ =>
-      exact .rfl
-    case none =>
-      refine BI.forall_ne (fun σ₁ => ?_)
-      refine BI.forall_ne (fun ns => ?_)
-      refine BI.forall_ne (fun obs => ?_)
-      refine BI.forall_ne (fun obs' => ?_)
-      refine BI.forall_ne (fun nt => ?_)
-      refine BI.wand_ne.ne .rfl ?_
-      refine BIFUpdate.ne.ne ?_
-      refine BI.sep_ne.ne .rfl ?_
-      refine BI.forall_ne (fun e₂  => ?_)
-      refine BI.forall_ne (fun σ₂ => ?_)
-      refine BI.forall_ne (fun eₜ => ?_)
-      refine BI.wand_ne.ne .rfl ?_
-      refine BI.wand_ne.ne .rfl ?_
-      refine BIFUpdate.ne.ne ?_
-      refine OFE.Contractive.distLater_dist fun m m_n => ?_
-      refine BIFUpdate.ne.ne ?_
-      refine step_fupdN_ne.ne ?_
-      refine BIFUpdate.ne.ne ?_
-      refine BI.sep_ne.ne .rfl ?_
-      refine BI.sep_ne.ne ?_ ?_
-      · exact Hwp m m_n _ _ _
-      · exact BI.BigSepL.bigSepL_dist <| fun _ => Hwp m m_n _ _ _
+  distLater_dist := by contractive
 
 @[rocq_alias wp_def]
 instance wp.def : Wp (IProp GF) (Expr) (Val) Stuckness where
@@ -168,25 +140,7 @@ theorem wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
   distLater_dist {n Φ₁ Φ₂} HΦ := by
     simp only [wp_unfold.to_eq]
     simp only [wp.pre, h]
-    refine BI.forall_ne fun σ₁ => ?_
-    refine BI.forall_ne fun ns => ?_
-    refine BI.forall_ne fun obs => ?_
-    refine BI.forall_ne fun obs' => ?_
-    refine BI.forall_ne fun nt => ?_
-    refine BI.wand_ne.ne .rfl ?_
-    refine BIFUpdate.ne.ne ?_
-    refine BI.sep_ne.ne .rfl ?_
-    refine BI.forall_ne fun e₂  => ?_
-    refine BI.forall_ne fun σ₂ => ?_
-    refine BI.forall_ne fun eₜ => ?_
-    refine BI.wand_ne.ne .rfl ?_
-    refine BI.wand_ne.ne .rfl ?_
-    refine step_fupdN_contractive.distLater_dist fun m n_m => ?_
-    refine BIFUpdate.ne.ne ?_
-    refine BI.sep_ne.ne .rfl ?_
-    refine BI.sep_ne.ne ?_ .rfl
-    refine wp_ne.ne ?_
-    exact HΦ m n_m
+    contractive
 
 @[rocq_alias wp_value_fupd']
 theorem wp_value_fupd' {s : Stuckness} {E} {Φ : Val → IProp GF} {v : Val} :

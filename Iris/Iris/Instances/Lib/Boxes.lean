@@ -58,9 +58,8 @@ instance box_own_prop_persistent (γ : SliceName) (P : IProp GF) :
   unfold box_own_prop; infer_instance
 
 @[rocq_alias box_own_prop_contractive]
-instance box_own_prop_contractive (γ : SliceName) : Contractive (box_own_prop (GF := GF) γ) :=
-  ⟨fun {_ _ _} h => iOwn_ne.ne <|
-    dist_prod_ext Dist.rfl (toAgree.ne.ne (NextContractive.distLater_dist h))⟩
+instance box_own_prop_contractive (γ : SliceName) : Contractive (box_own_prop (GF := GF) γ) where
+  distLater_dist := by contractive
 
 @[rocq_alias box_own_prop_ne]
 instance box_own_prop_ne (γ : SliceName) : NonExpansive (box_own_prop (GF := GF) γ) := ne_of_contractive _
