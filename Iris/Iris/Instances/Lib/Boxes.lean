@@ -33,6 +33,9 @@ class BoxG where
 
 attribute [reducible, instance] BoxG.elemG
 
+#rocq_ignore «boxΣ» "Superseded by the `BoxG` typeclass on `BundledGFunctors`."
+#rocq_ignore «subG_boxΣ» "Superseded by Lean's direct `ElemG` typeclass synthesis."
+
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF] [BoxG GF]
 
 @[rocq_alias slice_name]
@@ -85,6 +88,8 @@ instance slice_inv_ne (γ : SliceName) : NonExpansive (slice_inv (GF := GF) γ) 
 instance slice_ne (N : Namespace) (γ : SliceName) : NonExpansive (slice (GF := GF) N γ) :=
   ⟨fun {_ _ _} h => sep_ne.ne ((box_own_prop_ne γ).ne h) ((inv_ne N).ne ((slice_inv_ne γ).ne h))⟩
 
+#rocq_ignore slice_proper "Subsumed by the NonExpansive instance `slice_ne`."
+
 @[rocq_alias slice_contractive]
 instance slice_contractive (N : Namespace) (γ : SliceName) : Contractive (slice (GF := GF) N γ) :=
   ⟨fun {_ _ _} h => sep_ne.ne ((box_own_prop_contractive γ).distLater_dist h)
@@ -104,6 +109,8 @@ instance box_contractive {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
 @[rocq_alias box_ne]
 instance box_ne {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   (N : Namespace) (f : M Bool) : NonExpansive (box (GF := GF) N f) := ne_of_contractive _
+
+#rocq_ignore box_proper "Subsumed by the NonExpansive instance `box_ne`."
 
 @[rocq_alias box_own_auth_agree]
 theorem box_own_auth_agree {γ : SliceName} {b1 b2 : Bool} :

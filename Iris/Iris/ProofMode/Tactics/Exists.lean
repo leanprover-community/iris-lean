@@ -5,9 +5,9 @@ Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
 module
 
-import Iris.BI
-import Iris.ProofMode.Classes
-public meta import Iris.ProofMode.Tactics.Basic
+public import Iris.BI
+public import Iris.ProofMode.Classes
+public import Iris.ProofMode.ProofModeM
 
 namespace Iris.ProofMode
 
@@ -31,7 +31,7 @@ open Lean Elab Tactic Meta Qq
 -/
 elab "iexists " xs:term,+ : tactic => do
   -- resolve existential quantifier with the given argument
-  ProofModeM.runTactic λ mvar { prop, e, hyps, goal, .. } => do
+  ProofModeM.runTactic `iexists λ mvar { prop, e, hyps, goal, .. } => do
 
     let mut new_goal_and_pf : ((g : Q($prop)) × Q($g ⊢ $goal)) := ⟨goal, q(.rfl)⟩
 
@@ -42,7 +42,7 @@ elab "iexists " xs:term,+ : tactic => do
       let α ← mkFreshExprMVarQ q(Sort v)
       let Φ ← mkFreshExprMVarQ q($α → $prop)
       let some _ ← ProofModeM.trySynthInstanceQ q(FromExists $(new_goal) $Φ)
-        | throwError "iexists: cannot turn {new_goal} into an existential quantifier"
+        | throwIPMError "cannot turn {new_goal} into an existential quantifier"
       let x ← elabTermEnsuringTypeQ (u := .succ .zero) x α
       let newMVarIds ← getMVarsNoDelayed x
       for mvar in newMVarIds do addMVarGoal mvar

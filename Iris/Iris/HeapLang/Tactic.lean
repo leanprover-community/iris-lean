@@ -4,14 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
-public import Iris.HeapLang.Syntax
-public import Iris.HeapLang.Semantics
-public import Iris.ProofMode.ProofModeM
-public import Lean
-public import Iris.ProgramLogic.EctxiLanguage
-public import Iris.ProgramLogic.EctxLanguage
 public import Iris.HeapLang.Instances
-public import Qq
 
 namespace Iris.HeapLang
 

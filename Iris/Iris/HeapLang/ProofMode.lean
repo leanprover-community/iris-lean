@@ -9,14 +9,13 @@ public import Iris.ProofMode
 public import Iris.HeapLang.Tactic
 public import Iris.HeapLang.Instances
 public import Iris.HeapLang.PrimitiveLaws
+public import Iris.HeapLang.DerivedLaws
 public import Iris.ProgramLogic.WeakestPre
 public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.EctxLanguage
 public import Iris.ProgramLogic.EctxiLanguage
 public import Iris.ProgramLogic.Lifting
-public import Lean
 public import Lean.Elab.Tactic.Simp
-public import Qq
 
 namespace Iris.ProofMode
 
@@ -176,25 +175,27 @@ public structure WpGoal where
   hprop : $prop =Q IProp $GF
   hbi : $bi =Q UPred.instBIUPred
 
-public meta def ProofModeM.runTacticWp {α} (k : MVarId → WpGoal → ProofModeM α)
+public meta def ProofModeM.runTacticWp {α} (tacName : Name) (k : MVarId → WpGoal → ProofModeM α)
   : TacticM α := do
-  ProofModeM.runTactic fun mvar {u, prop, bi, hyps, goal, ..} => do
+  ProofModeM.runTactic tacName fun mvar {u, prop, bi, hyps, goal, ..} => do
     let .defEq _ ← isLevelDefEqQ u 0
-      | throwError "The goal {goal} must be an `IProp` at universe level 0"
+      | throwIPMError "The goal {goal} must be an `IProp` at universe level 0"
     let ~q(IProp $GF) := prop
-      | throwError "The goal {goal} must be an `IProp`"
+      | throwIPMError "The goal {goal} must be an `IProp`"
     let ~q(UPred.instBIUPred) := bi
-      | throwError "Expected the BI implementation of `IProp` to be `UPred.instBIUPred`"
+      | throwIPMError "Expected the BI implementation of `IProp` to be `UPred.instBIUPred`"
 
     let ~q(Wp.wp (A := Stuckness) (Expr := Exp) (self := wp.def (ι := $ι)) $s $E $e $Φ) := goal
-      | throwError "The goal {goal} must be a WP"
+      | throwIPMError "The goal {goal} must be a WP"
     k mvar {hyps, ι, s, E, e, Φ, hu:=⟨⟩, hprop:=⟨⟩, hbi:=⟨⟩ }
 
+@[rocq_alias heap_lang.tac_wp_value]
 public theorem tac_wp_value [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {v : Val} {Φ : Val → IProp GF}
   (H : Δ ⊢ |={E}=> Φ v) :
   (Δ ⊢ WP (v : Exp) @ s ; E {{ Φ }}) :=
   H.trans (wp_value_fupd ⟨rfl⟩).2
 
+@[rocq_alias heap_lang.tac_wp_value_nofupd]
 public theorem tac_wp_value_nofupd [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {v : Val} {Φ : Val → IProp GF}
   (H : Δ ⊢ Φ v) :
   (Δ ⊢ WP (v : Exp) @ s ; E {{ Φ }}) :=
@@ -239,18 +240,18 @@ public meta def iWpValueHead {u}
   return some q(tac_wp_value (s:=$s) $pf)
 
 elab "wp_value_head" : tactic =>
-  ProofModeM.runTacticWp fun mvar {bi, hyps, ι, s, E, e, Φ, hbi, ..} => do
+  ProofModeM.runTacticWp `wp_value_head fun mvar {bi, hyps, ι, s, E, e, Φ, hbi, ..} => do
     have : $bi =Q UPred.instBIUPred := hbi
     let some pf ← iWpValueHead hyps ι s E e Φ
-      | throwTacticEx `wp_value_head mvar s!"{e} is not a value"
+      | throwIPMError s!"{e} is not a value"
     mvar.assign pf
 
 public meta def iWpExprSimp (e : Q(Exp)) :
     ProofModeM ((e' : Q(Exp)) × Q($e = $e')) := do
   let some ext ← getSimpExtension? `wp_expr_simp
-    | throwError "Cannot find `wp_expr_simp` attribute"
+    | throwIPMError "Cannot find `wp_expr_simp` attribute"
   let some procext ← Simp.getSimprocExtension? `wp_expr_simp
-    | throwError "Cannot find `wp_expr_simp` attribute"
+    | throwIPMError "Cannot find `wp_expr_simp` attribute"
 
   let theorems ← ext.getTheorems
   let procs ← procext.getSimprocs
@@ -258,13 +259,14 @@ public meta def iWpExprSimp (e : Q(Exp)) :
   let ⟨res, _⟩ ← Meta.simp e simpctx (simprocs:=#[procs])
   return ⟨res.expr, ← res.getProof' e⟩
 
+@[rocq_alias heap_lang.tac_wp_expr_eval]
 public theorem tac_wp_expr_simp [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {e e' : Exp} {Φ : Val → IProp GF}
   (h : Δ ⊢ WP e' @ s ; E {{ Φ }})
   (heq : e = e') :
   (Δ ⊢ WP e @ s ; E {{ Φ }}) := by simp [*]
 
 elab "wp_expr_simp" : tactic =>
-  ProofModeM.runTacticWp fun mvar {hyps, s, E, e, Φ, ..} => do
+  ProofModeM.runTacticWp `wp_expr_simp fun mvar {hyps, s, E, e, Φ, ..} => do
     let ⟨e', pfeq⟩ ← iWpExprSimp e
     let pf ← addBIGoal hyps q(Wp.wp $s $E $e' $Φ)
     mvar.assign q(tac_wp_expr_simp $pf $pfeq)
@@ -294,10 +296,11 @@ public meta def iWpFinish {u}
   return q(tac_wp_expr_simp $nextPf $pfeq)
 
 elab "wp_finish" : tactic =>
-  ProofModeM.runTacticWp fun mvar {hyps, ι, s, E, e, Φ, ..} => do
+  ProofModeM.runTacticWp `wp_finish fun mvar {hyps, ι, s, E, e, Φ, ..} => do
     let pf ← iWpFinish hyps ι s E e Φ
     mvar.assign pf
 
+@[rocq_alias heap_lang.tac_wp_bind]
 public theorem tac_wp_bind [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {K : List ECtxItem} {e' : Exp} {Φ : Val → IProp GF}
   (H : Δ ⊢ WP e' @ s ; E {{ v, WP (ProgramLogic.fill K (Exp.ofVal (Expr:=Exp) v)) @ s; E {{ Φ }} }}) :
     (Δ ⊢ WP (ProgramLogic.fill K e') @ s ; E {{ Φ }}) :=
@@ -305,7 +308,7 @@ public theorem tac_wp_bind [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E 
 
 -- level of hl_exp should be above the level of ; in the heaplang notation to make `wp_bind _ _; wp_rec` work
 elab "wp_bind" colGt ppSpace focus:hl_exp:10 : tactic =>
-  ProofModeM.runTacticWp fun mvar {GF, hyps, s, E, e, Φ, ..} => do
+  ProofModeM.runTacticWp `wp_bind fun mvar {GF, hyps, s, E, e, Φ, ..} => do
     let focus ← elabTermEnsuringTypeQ (←`(hl($focus))) q(HeapLang.Exp)
     trace[wp_bind] s!"Context to bind over: {←ppExpr focus}"
 
@@ -313,7 +316,7 @@ elab "wp_bind" colGt ppSpace focus:hl_exp:10 : tactic =>
       trace[wp_bind] s!"trying to unify {←ppExpr e} with {←ppExpr focus}"
       guard <| ← isDefEq e focus)
     -- TODO: add a throwProofModeEx for throwing errors consistently across all tactics
-      | throwTacticEx `wp_bind mvar s!"Cannot unify {←ppExpr focus} with any possible evaluation context"
+      | throwIPMError s!"Cannot unify {←ppExpr focus} with any possible evaluation context"
     trace[wp_bind] s!"Found context {←ppExpr K} with expression {←ppExpr e'} matching our focus"
 
     match K with
@@ -331,6 +334,7 @@ elab "wp_bind" colGt ppSpace focus:hl_exp:10 : tactic =>
       let pf ← addBIGoal hyps q(Wp.wp $s $E $e' $Φ')
       mvar.assign q(tac_wp_bind $pf)
 
+@[rocq_alias heap_lang.tac_wp_pure]
 public theorem tac_wp_pure [ι : IrisGS_gen hlc Exp GF] {Δ Δ'} {s : Stuckness} {E : CoPset} {K : List ECtxItem} {e₁ e₂ : Exp} {φ : Prop} {n : Nat} {Φ : Val → IProp GF} :
     ProgramLogic.Language.PureExec φ n e₁ e₂ →
     φ →
@@ -346,7 +350,7 @@ public theorem tac_wp_pure [ι : IrisGS_gen hlc Exp GF] {Δ Δ'} {s : Stuckness}
   iintro $ !> -; itrivial
 
 elab "wp_pure " colGt ppSpace focus:hl_exp:10 : tactic =>
-  ProofModeM.runTacticWp fun mvar {hyps, ι, s, E, e, Φ, ..} => do
+  ProofModeM.runTacticWp `wp_pure fun mvar {hyps, ι, s, E, e, Φ, ..} => do
     let focus ← elabTermEnsuringTypeQ (← `(hl($focus))) q(HeapLang.Exp)
     trace[wp_pure] m!"Focusing with {focus}"
 
@@ -357,7 +361,7 @@ elab "wp_pure " colGt ppSpace focus:hl_exp:10 : tactic =>
       let e₂ ← mkFreshExprMVarQ q(Exp)
       let some inst ← ProofModeM.trySynthInstanceQ q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂) | failure
       return (φ, n, e₂, inst)
-      | throwTacticEx `wp_pure mvar "Cannot find expression to evaluate"
+      | throwIPMError "Cannot find expression to evaluate"
     have inst : Q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂) := inst
 
     let ⟨_, hyps', pf⟩ ← iModAction hyps q(modality_laterN $n)
@@ -373,7 +377,27 @@ elab "wp_pure " colGt ppSpace focus:hl_exp:10 : tactic =>
     mvar.assign pf
 
 macro "wp_pure" : tactic => `(tactic| wp_pure _)
-macro "wp_pures" : tactic => `(tactic| repeat wp_pure)
+
+/-- A single `wp_pure` step that must leave exactly one goal, Rocq's `wp_pure _; []`. Fails
+if the step spawns a goal besides the continuation, such as an undischarged side condition
+of the reduction. -/
+elab "wp_pure_step" : tactic => focus do
+  evalTactic (← `(tactic| wp_pure))
+  -- we run under `focus` so we only see the unsolved goals of `wp_pure`
+  let goals ← getUnsolvedGoals
+  unless goals.length == 1 do
+    throwError "the pure reduction step must leave exactly one goal, it left {
+      goals.length}:{indentD <| .joinSep (goals.map fun g => m!"{g}") Format.line}"
+
+/-- Reduce all pure redexes at the head of the weakest precondition, then simplify the
+resulting expression and strip the weakest precondition if it has become a value.
+
+A pure step whose side condition cannot be discharged is not taken. -/
+macro "wp_pures" : tactic =>
+  -- Rocq: `first [progress repeat (wp_pure _; []) | wp_finish]`
+  `(tactic| first
+    | (wp_pure_step; repeat wp_pure_step)
+    | wp_finish)
 
 macro "wp_rec" : tactic => `(tactic | (wp_bind _ _; iapply $(mkIdent `wp_rec):ident; rfl; imodintro; wp_finish))
 
@@ -407,6 +431,19 @@ theorem lookup_split [BI PROP] {Δ' Δ'' P : PROP} [Affine P] {p : Bool}
     refine sep_left_comm.1.trans ?_
     exact sep_mono intuitionistically_elim (wand_intro (sep_elim_left.trans hsplit.2))
 
+/-- Recover the exact-result form used by the shared heap-tactic machinery from a Texan
+triple. -/
+private theorem wp_exact_of_triple [HeapLangGS hlc GF]
+    {s : Stuckness} {E : CoPset} {e : Exp} {r : Val} {P P' : IProp GF}
+    (hwp : {{ ▷ P }} e @ s; E {{ RET r; P' }}) :
+    ▷ P ⊢ WP e @ s; E {{ v', ⌜v' = r⌝ ∗ P' }} := by
+  iintro HP
+  iapply hwp $$ HP
+  iintro !> HP'
+  iframe HP'
+  ipureintro
+  rfl
+
 /-- Helper lemma for the heap `tac_wp_*` lemmas. -/
 theorem tac_wp_heap_op [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' P P' : IProp GF}
     {s : Stuckness} {E : CoPset} {K : List ECtxItem} {e : Exp} {r : Val} {Φ}
@@ -427,6 +464,7 @@ theorem tac_wp_heap_op [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' P P' : IProp GF}
   iapply hcont
   iframe
 
+@[rocq_alias heap_lang.tac_wp_alloc]
 public theorem tac_wp_alloc [ι : HeapLangGS hlc GF] {Δ Δ' : IProp GF}
     {s : Stuckness} {E : CoPset} {K : List ECtxItem} {v : Val} {Φ}
     (hlater : Δ ⊢ ▷ Δ')
@@ -435,17 +473,20 @@ public theorem tac_wp_alloc [ι : HeapLangGS hlc GF] {Δ Δ' : IProp GF}
     Δ ⊢ WP (ProgramLogic.fill K hl(ref(&v))) @ s ; E {{ Φ }} := by
   refine hlater.trans ?_
   refine .trans ?_ (wp_bind (ProgramLogic.fill K))
-  refine .trans ?_ (wand_entails (wp_alloc v _))
+  refine .trans ?_ (wand_entails (true_intro.trans
+    (wand_entails ((wp_alloc v).trans (forall_elim _)))))
   exact later_mono <| forall_intro fun l => wand_intro (hcont l)
 
+@[rocq_alias heap_lang.tac_wp_free]
 public theorem tac_wp_free [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
     {s : Stuckness} {E : CoPset} {K : List ECtxItem} {l : Loc} {v : Val} {Φ}
     (hlater : Δ ⊢ ▷ Δ')
     (hsplit : Δ' ⊣⊢ Δ'' ∗ (l ↦ some v))
     (hcont : Δ'' ⊢ WP (ProgramLogic.fill K (Exp.ofVal (Expr := Exp) hl_val(#()))) @ s ; E {{ Φ }}) :
     Δ ⊢ WP (ProgramLogic.fill K hl(free(#l))) @ s ; E {{ Φ }} :=
-  tac_wp_heap_op rfl wp_free hlater hsplit (sep_elim_left.trans hcont)
+  tac_wp_heap_op rfl (wp_exact_of_triple wp_free) hlater hsplit (sep_elim_left.trans hcont)
 
+@[rocq_alias heap_lang.tac_wp_load]
 public theorem tac_wp_load [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF} {p : Bool}
     {s : Stuckness} {E : CoPset} {K : List ECtxItem} {l : Loc} {q} {v : Val} {Φ}
     (hlater : Δ ⊢ ▷ Δ')
@@ -454,11 +495,13 @@ public theorem tac_wp_load [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF} {p 
     Δ ⊢ WP (ProgramLogic.fill K hl(!v(#l))) @ s ; E {{ Φ }} := by
   refine hlater.trans ?_
   refine .trans ?_ (wp_bind (ProgramLogic.fill K))
-  iapply wand_apply (wand_entails (wp_load _))
+  iapply wand_apply (wand_entails ((wp_load (s := s) (E := E) (l := l)
+    (q := q) (v := v)).trans (forall_elim _)))
   refine .trans ?_ later_sep.1
   refine later_mono ?_
   exact (lookup_split hsplit).trans (sep_mono .rfl (wand_mono .rfl hcont))
 
+@[rocq_alias heap_lang.tac_wp_store]
 public theorem tac_wp_store [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
     {s : Stuckness} {E : CoPset} {K : List ECtxItem} {l : Loc} {v v' : Val} {Φ}
     (hlater : Δ ⊢ ▷ Δ')
@@ -468,13 +511,15 @@ public theorem tac_wp_store [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
     Δ ⊢ WP (ProgramLogic.fill K hl(v(#l) ← &v')) @ s ; E {{ Φ }} := by
   refine hlater.trans ?_
   refine .trans ?_ (wp_bind (ProgramLogic.fill K))
-  iapply wand_apply (wand_entails (wp_store _))
+  iapply wand_apply (wand_entails ((wp_store (s := s) (E := E) (l := l)
+    (v := v') (v' := v)).trans (forall_elim _)))
   refine .trans ?_ later_sep.1
   refine later_mono ?_
   refine hsplit.1.trans ?_
   refine .trans sep_comm.mp ?_
   exact sep_mono .rfl (wand_intro hcont)
 
+@[rocq_alias heap_lang.tac_wp_xchg]
 public theorem tac_wp_xchg [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
     {s : Stuckness} {E : CoPset} {K : List ECtxItem} {l : Loc} {v v' : Val} {Φ}
     (hlater : Δ ⊢ ▷ Δ')
@@ -482,8 +527,9 @@ public theorem tac_wp_xchg [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
     (hcont : Δ'' ∗ (l ↦ some v') ⊢
       WP (ProgramLogic.fill K (Exp.ofVal (Expr := Exp) v)) @ s ; E {{ Φ }}) :
     Δ ⊢ WP (ProgramLogic.fill K hl(xchg(#l, &v'))) @ s ; E {{ Φ }} :=
-  tac_wp_heap_op rfl wp_xchg hlater hsplit hcont
+  tac_wp_heap_op rfl (wp_exact_of_triple wp_xchg) hlater hsplit hcont
 
+@[rocq_alias heap_lang.tac_wp_cmpxchg_fail]
 public theorem tac_wp_cmpXchg_fail [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF} {p : Bool}
     {s : Stuckness} {E : CoPset} {K : List ECtxItem} {l : Loc} {q} {v v1 v2 : Val} {Φ}
     (hlater : Δ ⊢ ▷ Δ')
@@ -496,14 +542,15 @@ public theorem tac_wp_cmpXchg_fail [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp
   refine .trans ?_ (wp_bind (ProgramLogic.fill K))
   refine (later_mono ((lookup_split hsplit).trans sep_comm.1)).trans ?_
   refine later_sep.1.trans ?_
-  refine (sep_mono .rfl (wp_cmpXchg_fail (s := s) (E := E)
-    (e1 := hl(v(&v1))) (e2 := hl(v(&v2))) rfl rfl hsafe (decide_eq_false hne))).trans ?_
+  refine (sep_mono .rfl (wp_exact_of_triple (wp_cmpXchg_fail (s := s) (E := E)
+    (e1 := hl(v(&v1))) (e2 := hl(v(&v2))) rfl rfl hsafe (decide_eq_false hne)))).trans ?_
   refine (wp_frame_step_l' rfl Std.LawfulSet.subset_refl).trans (wp_mono fun _ => ?_)
   iintro ⟨Hrestore, %hv, HP⟩
   subst hv
   iapply hcont
   iapply Hrestore $$ HP
 
+@[rocq_alias heap_lang.tac_wp_cmpxchg_suc]
 public theorem tac_wp_cmpXchg_suc [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
     {s : Stuckness} {E : CoPset} {K : List ECtxItem} {l : Loc} {v v1 v2 : Val} {Φ}
     (hlater : Δ ⊢ ▷ Δ')
@@ -512,8 +559,11 @@ public theorem tac_wp_cmpXchg_suc [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp 
     (hcont : Δ'' ∗ (l ↦ some v2) ⊢
       WP (ProgramLogic.fill K (Exp.ofVal (Expr := Exp) hl_val((&v, #true)))) @ s ; E {{ Φ }}) :
     Δ ⊢ WP (ProgramLogic.fill K hl(cmpXchg(v(#l), v(&v1), v(&v2)))) @ s ; E {{ Φ }} :=
-  tac_wp_heap_op rfl (wp_cmpXchg_true rfl rfl hsafe (decide_eq_true heq)) hlater hsplit hcont
+  tac_wp_heap_op rfl
+    (wp_exact_of_triple (wp_cmpXchg_true rfl rfl hsafe (decide_eq_true heq)))
+    hlater hsplit hcont
 
+@[rocq_alias heap_lang.tac_wp_cmpxchg]
 public theorem tac_wp_cmpXchg [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
     {s : Stuckness} {E : CoPset} {K : List ECtxItem} {l : Loc} {v v1 v2 : Val} {Φ}
     (hlater : Δ ⊢ ▷ Δ')
@@ -527,6 +577,7 @@ public theorem tac_wp_cmpXchg [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
   if heq : v = v1 then tac_wp_cmpXchg_suc hlater hsplit heq hsafe (hsuc heq)
   else tac_wp_cmpXchg_fail (p := false) hlater hsplit heq hsafe (hfail heq)
 
+@[rocq_alias heap_lang.tac_wp_faa]
 public theorem tac_wp_faa [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
     {s : Stuckness} {E : CoPset} {K : List ECtxItem} {l : Loc} {z1 z2 : Int} {Φ}
     (hlater : Δ ⊢ ▷ Δ')
@@ -534,9 +585,22 @@ public theorem tac_wp_faa [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
     (hcont : Δ'' ∗ (l ↦ some hl_val(#(z1 + z2))) ⊢
       WP (ProgramLogic.fill K (Exp.ofVal (Expr := Exp) hl_val(#z1))) @ s ; E {{ Φ }}) :
     Δ ⊢ WP (ProgramLogic.fill K hl(faa(#l, #z2))) @ s ; E {{ Φ }} :=
-  tac_wp_heap_op rfl wp_faa hlater hsplit hcont
+  tac_wp_heap_op rfl (wp_exact_of_triple wp_faa) hlater hsplit hcont
 
--- TODO: port `tac_wp_allocN` once `array` and `wp_allocN` are ported
+@[rocq_alias heap_lang.tac_wp_allocN]
+public theorem tac_wp_allocN [ι : HeapLangGS hlc GF] {Δ Δ' : IProp GF}
+    {s : Stuckness} {E : CoPset} {K : List ECtxItem} {v : Val} {n : Int} {Φ}
+    (hn : 0 < n)
+    (hlater : Δ ⊢ ▷ Δ')
+    (hcont : ∀ l : Loc, Δ' ∗ (l ↦∗ List.replicate n.toNat v) ⊢
+      WP (ProgramLogic.fill K hl(#l)) @ s ; E {{ Φ }}) :
+    Δ ⊢ WP (ProgramLogic.fill K hl(allocn(#n, &v))) @ s ; E {{ Φ }} := by
+  refine hlater.trans ?_
+  refine .trans ?_ (wp_bind (ProgramLogic.fill K))
+  refine .trans ?_ (wand_entails (true_intro.trans
+    (wand_entails ((wp_allocN v hn).trans (forall_elim _)))))
+  exact later_mono <| forall_intro fun l =>
+    wand_intro <| (sep_mono_right sep_elim_left).trans (hcont l)
 
 /-! ## Shared machinery for the heap tactics -/
 
@@ -578,7 +642,7 @@ structure PointsToLookup {u : Level} {GF : Q(BundledGFunctors.{0, 0, 0})}
 Throws if no matching hypothesis exists. -/
 meta def lookupPointsTo {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(HasLC)}
     {prop : Q(Type u)} {bi : Q(BI $prop)} {eΔ' : Q($prop)}
-    (tacName : Name) (mvar : MVarId) (hgs : Q(HeapLangGS $hlc $GF))
+    (hgs : Q(HeapLangGS $hlc $GF))
     (hyps' : Hyps bi eΔ') (l : Q(Loc)) (dq : Q(DFrac)) (p : Q(Bool))
     (hu : QuotedLevelDefEq u 0 := ⟨⟩)
     (hprop : $prop =Q IProp $GF := ⟨⟩) :
@@ -593,7 +657,7 @@ meta def lookupPointsTo {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(HasLC)
         unless ← isDefEq dq' dq do return none
         unless ← isDefEq p' p do return none
         return some ((v : Q(Val)), name, vid)
-    | throwTacticEx tacName mvar
+    | throwIPMError
         m!"cannot find a points-to hypothesis for {l} ↦\{{dq}} _"
   trace[wp_heap.lookup] "found {name} : □?{p} (pointsTo {l} ({dq}) (some {v}))"
   let pfSplit : Q($eΔ' ⊣⊢ $eΔ'' ∗ □?$p (pointsTo $l $dq (some $v))) := pf
@@ -614,12 +678,20 @@ HeapLang WP (from the `HeapLangGS` instance), and strip the WP's step modality
 off the hypotheses. -/
 meta def runTacticHeapWp {α} (tacName : Name)
     (k : MVarId → HeapWpGoal → ProofModeM α) : TacticM α := do
-  -- Rocq parity: every heap tactic first normalizes pure redexes
-  evalTactic (← `(tactic| wp_pures))
-  ProofModeM.runTacticWp fun mvar {hyps, GF, hlc, ι, s, E, e, Φ, hu, hprop, hbi, ..} => do
+  -- Rocq parity: every heap tactic first normalizes pure redexes. `wp_pures` only fails
+  -- when the goal is not a WP, which is this tactic's failure to report, not `wp_finish`'s
+  try evalTactic (← `(tactic| wp_pures))
+  catch _ => throwError "{tacName}: the goal is not a WP"
+  -- `wp_pures` fails on a goal that is not a WP, so if it leaves one, the pure steps have
+  -- reduced the expression to a value
+  let goalType ← instantiateMVars (← (← getMainGoal).getType)
+  if let some {goal, ..} := parseIrisGoal? goalType then
+    unless goal.consumeMData.isAppOf ``Wp.wp do
+      throwError "{tacName}: the expression has been reduced to a value, there is no redex left"
+  ProofModeM.runTacticWp tacName fun mvar {hyps, GF, hlc, ι, s, E, e, Φ, hu, hprop, hbi, ..} => do
     have ιQ : Q(IrisGS_gen $hlc Exp $GF) := ι
     let ~q(@HeapLang _ _ $hgs) := ιQ
-      | throwTacticEx tacName mvar "the goal is not a HeapLang WP"
+      | throwIPMError "the goal is not a HeapLang WP"
     trace[wp_heap] "{tacName}: e = {e}"
     -- currently specialized to later (no twp exists yet)
     let ⟨_, hyps', pfLater⟩ ← iModAction hyps q(modality_laterN 1)
@@ -632,13 +704,13 @@ elab "wp_load" : tactic =>
     let some {result := l, K, ..} ← findECtx e fun e' => do
         let ~q(Exp.load (Exp.ofVal (Val.lit (BaseLit.loc $l)))) := e' | failure
         return l
-      | throwTacticEx `wp_load mvar "cannot find a `load` redex"
+      | throwIPMError "cannot find a `load` redex"
     trace[wp_heap.redex] "load {l}; K = {K}"
 
     -- find `l ↦{dq} some v` in the spatial context and extract `dq`
     let dq ← mkFreshExprMVarQ q(DFrac)
     let p ← mkFreshExprMVarQ q(Bool)
-    let ⟨v, _, _, _, _, pfSplit⟩ ← lookupPointsTo `wp_load mvar hgs hyps' l dq p
+    let ⟨v, _, _, _, _, pfSplit⟩ ← lookupPointsTo hgs hyps' l dq p
 
     -- fill the loaded value back into `K` and finish the continuation
     -- (over `hyps'`: the points-to hypothesis is kept)
@@ -646,41 +718,46 @@ elab "wp_load" : tactic =>
 
     mvar.assign q(tac_wp_load (ι := $hgs) (Δ' := $eΔ') $pfLater $pfSplit $pfCont)
 
-elab "wp_store" : tactic =>
+elab "wp_store" : tactic => do
   runTacticHeapWp `wp_store fun mvar {bi, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
     let some {result := (l, v'), K, ..} ← findECtx e fun e' => do
         let ~q(Exp.store (Exp.ofVal (Val.lit (BaseLit.loc $l))) (Exp.ofVal $v')) := e' | failure
         return (l, v')
-      | throwTacticEx `wp_store mvar "cannot find a `store` redex"
+      | throwIPMError "cannot find a `store` redex"
     trace[wp_heap.redex] "store {l} ← {v'}; K = {K}"
 
     -- find and remove `l ↦ some v` (stores need full ownership)
     let ⟨_, name, vid, _, hyps'', pfSplit⟩ ←
-      lookupPointsTo `wp_store mvar hgs hyps' l q(DFrac.own 1) q(false)
+      lookupPointsTo hgs hyps' l q(DFrac.own 1) q(false)
 
     let ⟨_, hyps''', pf'''⟩ := hyps''.add bi name vid q(false) q(pointsTo $l (DFrac.own 1) (some $v'))
 
     let pfCont ← finishHeapOp hyps''' hgs s E K q(hl_val(#())) Φ
 
     mvar.assign q(tac_wp_store (ι := $hgs) (Δ' := $eΔ') $pfLater $pfSplit <| $(pf''').mp.trans $pfCont)
+  -- a store's result is often discarded by a `;`, so try stepping through the
+  -- sequencing redex using `wp_seq`
+  evalTactic (← `(tactic| try wp_seq))
 
-elab "wp_xchg" : tactic =>
+elab "wp_xchg" : tactic => do
   runTacticHeapWp `wp_xchg fun mvar {bi, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
     let some {result := (l, v'), K, ..} ← findECtx e fun e' => do
         let ~q(Exp.xchg (Exp.ofVal (Val.lit (BaseLit.loc $l))) (Exp.ofVal $v')) := e' | failure
         return (l, v')
-      | throwTacticEx `wp_xchg mvar "cannot find an `xchg` redex"
+      | throwIPMError "cannot find an `xchg` redex"
     trace[wp_heap.redex] "xchg {l} ← {v'}; K = {K}"
 
     -- find and remove `l ↦ some v` (xchg writes, so it needs full ownership)
     let ⟨v, name, vid, _, hyps'', pfSplit⟩ ←
-      lookupPointsTo `wp_xchg mvar hgs hyps' l q(DFrac.own 1) q(false)
+      lookupPointsTo hgs hyps' l q(DFrac.own 1) q(false)
 
     let ⟨_, hyps''', pf'''⟩ := hyps''.add bi name vid q(false) q(pointsTo $l (DFrac.own 1) (some $v'))
 
     let pfCont ← finishHeapOp hyps''' hgs s E K v Φ
 
     mvar.assign q(tac_wp_xchg (ι := $hgs) (Δ' := $eΔ') $pfLater $pfSplit <| $(pf''').mp.trans $pfCont)
+  -- like in `wp_store`, an `xchg` often discards its result, so try `wp_seq`
+  evalTactic (← `(tactic| try wp_seq))
 
 elab "wp_faa" : tactic =>
   runTacticHeapWp `wp_faa fun mvar {bi, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
@@ -689,16 +766,16 @@ elab "wp_faa" : tactic =>
         let ~q(Exp.faa (Exp.ofVal (Val.lit (BaseLit.loc $l)))
             (Exp.ofVal (Val.lit (BaseLit.int $z2)))) := e' | failure
         return (l, z2)
-      | throwTacticEx `wp_faa mvar "cannot find a `faa` redex"
+      | throwIPMError "cannot find a `faa` redex"
     trace[wp_heap.redex] "faa {l} += {z2}; K = {K}"
 
     -- find and remove `l ↦ some v` (faa writes, so it needs full ownership)
     let ⟨v, name, vid, eΔ'', hyps'', pfSplit⟩ ←
-      lookupPointsTo `wp_faa mvar hgs hyps' l q(DFrac.own 1) q(false)
+      lookupPointsTo hgs hyps' l q(DFrac.own 1) q(false)
 
     -- check that the points-to value is an integer (FAA requirement)
     let ~q(Val.lit (BaseLit.int $z1)) := v
-      | throwTacticEx `wp_faa mvar
+      | throwIPMError
           m!"the points-to hypothesis for location {l} does not store an integer"
     have pfSplit : Q($eΔ' ⊣⊢ $eΔ'' ∗
       pointsTo $l (DFrac.own 1) (some (Val.lit (BaseLit.int $z1)))) := pfSplit
@@ -716,12 +793,12 @@ elab "wp_cmpxchg_suc" : tactic =>
         let ~q(Exp.cmpXchg (Exp.ofVal (Val.lit (BaseLit.loc $l)))
             (Exp.ofVal $v1) (Exp.ofVal $v2)) := e' | failure
         return (l, v1, v2)
-      | throwTacticEx `wp_cmpxchg_suc mvar "cannot find a `cmpXchg` redex"
+      | throwIPMError "cannot find a `cmpXchg` redex"
     trace[wp_heap.redex] "cmpXchg {l}: {v1} → {v2}; K = {K}"
 
     -- find and remove `l ↦ some v` (a successful cmpXchg writes, so full ownership)
     let ⟨v, name, vid, _, hyps'', pfSplit⟩ ←
-      lookupPointsTo `wp_cmpxchg_suc mvar hgs hyps' l q(DFrac.own 1) q(false)
+      lookupPointsTo hgs hyps' l q(DFrac.own 1) q(false)
 
     -- check safety, don't throw hard error to match Rocq behavior
     let pfSafe ← iSolveSidecondition q(($v).compareSafe $v1 = true) (failOnUnsolved := false)
@@ -744,13 +821,13 @@ elab "wp_cmpxchg_fail" : tactic =>
         let ~q(Exp.cmpXchg (Exp.ofVal (Val.lit (BaseLit.loc $l)))
             (Exp.ofVal $v1) (Exp.ofVal $v2)) := e' | failure
         return (l, v1, v2)
-      | throwTacticEx `wp_cmpxchg_fail mvar "cannot find a `cmpXchg` redex"
+      | throwIPMError "cannot find a `cmpXchg` redex"
     trace[wp_heap.redex] "cmpXchg {l}: {v1} → {v2}; K = {K}"
 
     -- any fraction suffices for a failing compare (the points-to is only read)
     let dq ← mkFreshExprMVarQ q(DFrac)
     let p ← mkFreshExprMVarQ q(Bool)
-    let ⟨v, _, _, _, _, pfSplit⟩ ← lookupPointsTo `wp_cmpxchg_fail mvar hgs hyps' l dq p
+    let ⟨v, _, _, _, _, pfSplit⟩ ← lookupPointsTo hgs hyps' l dq p
 
     -- check safety, don't throw hard error to match Rocq behavior
     let pfSafe ← iSolveSidecondition q(($v).compareSafe $v1 = true) (failOnUnsolved := false)
@@ -772,12 +849,12 @@ elab "wp_cmpxchg" " with" colGt ppSpace h1:binderIdent colGt ppSpace h2:binderId
         let ~q(Exp.cmpXchg (Exp.ofVal (Val.lit (BaseLit.loc $l)))
             (Exp.ofVal $v1) (Exp.ofVal $v2)) := e' | failure
         return (l, v1, v2)
-      | throwTacticEx `wp_cmpxchg mvar "cannot find a `cmpXchg` redex"
+      | throwIPMError "cannot find a `cmpXchg` redex"
     trace[wp_heap.redex] "cmpXchg {l}: {v1} → {v2}; K = {K}"
 
     -- find and remove `l ↦ some v` (the success branch writes, so full ownership)
     let ⟨v, name, vid, eΔ'', hyps'', pfSplit⟩ ←
-      lookupPointsTo `wp_cmpxchg mvar hgs hyps' l q(DFrac.own 1) q(false)
+      lookupPointsTo hgs hyps' l q(DFrac.own 1) q(false)
 
     let ⟨_, hypsSuc, pfEq⟩ := hyps''.add bi name vid q(false)
       q(pointsTo $l (DFrac.own 1) (some $v2))
@@ -814,13 +891,13 @@ elab "wp_free" : tactic =>
     let some {result := l, K, ..} ← findECtx e fun e' => do
         let ~q(Exp.free (Exp.ofVal (Val.lit (BaseLit.loc $l)))) := e' | failure
         return l
-      | throwTacticEx `wp_free mvar "cannot find a `free` redex"
+      | throwIPMError "cannot find a `free` redex"
     trace[wp_heap.redex] "free {l}; K = {K}"
 
     -- find and remove `l ↦ some v` (freeing needs full ownership); the continuation
     -- runs over the pruned context `hyps''` since the points-to is consumed
     let ⟨_, _, _, _, hyps'', pfSplit⟩ ←
-      lookupPointsTo `wp_free mvar hgs hyps' l q(DFrac.own 1) q(false)
+      lookupPointsTo hgs hyps' l q(DFrac.own 1) q(false)
 
     let pfCont ← finishHeapOp hyps'' hgs s E K q(hl_val(#())) Φ
 
@@ -828,28 +905,38 @@ elab "wp_free" : tactic =>
 
 
 elab "wp_alloc" colGt ppSpace loc:binderIdent " with" colGt ppSpace hyp:binderIdent : tactic =>
-  runTacticHeapWp `wp_alloc fun mvar {bi, GF, hlc, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
-    let some {result := v, K, ..} ← findECtx e fun e' => do
-        let ~q(Exp.allocN (Exp.ofVal (Val.lit (BaseLit.int 1)))
+  runTacticHeapWp `wp_alloc fun mvar
+      {bi, GF, hlc, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
+    let some {result := (n, v), K, ..} ← findECtx e fun e' => do
+        let ~q(Exp.allocN (Exp.ofVal (Val.lit (BaseLit.int $n)))
             (Exp.ofVal $v)) := e' | failure
-        return v
-      | throwTacticEx `wp_alloc mvar "cannot find a `ref` alloc"
-    trace[wp_heap.redex] "ref {v}; K = {K}"
+        return (n, v)
+      | throwIPMError "cannot find an allocation redex"
+    let single ← isDefEq n q((1 : Int))
 
-    -- get location name from tactic call
+    trace[wp_heap.redex] "allocn {n} {v}; K = {K}"
+
     let (locName, _) ← getFreshName loc
-
-    let pfCont : Q(∀ l : Loc, $eΔ' ∗ pointsTo l (DFrac.own 1) (some $v) ⊢
-        Wp.wp (self := wp.def (ι := @HeapLang $hlc $GF $hgs)) $s $E
-          (ProgramLogic.fill $K (Exp.ofVal (Expr := Exp) (Val.lit (BaseLit.loc l)))) $Φ) ←
+    let finish (P : Q(Loc → IProp $GF)) : ProofModeM Q(∀ l : Loc, $eΔ' ∗ $P l ⊢
+          Wp.wp (self := wp.def (ι := @HeapLang $hlc $GF $hgs)) $s $E
+            (ProgramLogic.fill $K (Exp.ofVal (Expr := Exp) (Val.lit (BaseLit.loc l)))) $Φ) :=
       Qq.withLocalDeclDQ locName q(Loc) fun l => do
-        let ⟨_, _, hyps'', pfEq⟩ ← hyps'.addWithInfo bi hyp q(false)
-          q(pointsTo $l (DFrac.own 1) (some $v))
-
+        let Pl : Q(IProp $GF) := q($P $l)
+        let ⟨_, _, hyps'', pfEq⟩ ← hyps'.addWithInfo bi hyp q(false) Pl
         let pf ← finishHeapOp hyps'' hgs s E K q(Val.lit (BaseLit.loc $l)) Φ
         mkLambdaFVars #[l] q($(pfEq).mp.trans $pf)
 
-    mvar.assign q(tac_wp_alloc (ι := $hgs) (Δ' := $eΔ') $pfLater $pfCont)
+    if single then
+      let P : Q(Loc → IProp $GF) := q(fun l => pointsTo l (DFrac.own 1) (some $v))
+      let pfCont ← finish P
+      mvar.assign q(tac_wp_alloc (ι := $hgs) (Δ' := $eΔ') $pfLater $pfCont)
+    else
+      -- a non-positive allocation is stuck, so the bound is the caller's to discharge
+      let pfPos ← iSolveSidecondition q(0 < $n) (failOnUnsolved := false)
+      let P : Q(Loc → IProp $GF) :=
+        q(fun l => array l (DFrac.own 1) (List.replicate ($n).toNat $v))
+      let pfCont ← finish P
+      mvar.assign q(tac_wp_allocN (ι := $hgs) (Δ' := $eΔ') $pfPos $pfLater $pfCont)
 
 macro "wp_alloc" colGt ppSpace loc:binderIdent : tactic => `(tactic| wp_alloc $loc with _)
 

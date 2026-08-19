@@ -72,12 +72,12 @@ theorem modaction_sep [BI PROP1] [bi2: BI PROP2]
   (sep_mono h1 h2).trans M.sep
 
 @[rocq_alias tac_modal_intro]
-theorem modintro [BI PROP1] [BI PROP2] {e e'} {α} {Φ M} {sel : α}
+theorem modintro [BI PROP1] [BI PROP2] {e e'} {α Φ M} {sel : α}
     {P : PROP2} {Q : PROP1}
-    [FromModal Φ M sel P Q] (h1 : e ⊢ M.M e') (h2 : e' ⊢ Q) (hΦ : Φ) : e ⊢ P := calc
+    [inst : FromModal .out M Φ sel P Q] (h1 : e ⊢ M.M e') (h2 : e' ⊢ Q) (hΦ : Φ) : e ⊢ P := calc
   e ⊢ M.M e' := h1
   _ ⊢ M.M Q  := M.mono h2
-  _ ⊢ P      := from_modal hΦ
+  _ ⊢ P      := inst.from_modal hΦ
 
 public meta section
 open Lean Elab Tactic Meta
@@ -92,7 +92,7 @@ private def parseModalityActionQ {prop1 prop2 : Q(Type u)}
   | ModalityAction.transform _ _ C => return .transform C
   | ModalityAction.clear _ _ => return .clear
   | ModalityAction.id _ => return .id
-  | _ => throwError "imodintro: unknown modality action {act}"
+  | _ => throwIPMError "unknown modality action {act}"
 
 /--
 Applies modality actions to transform proof mode context.
@@ -125,12 +125,12 @@ where go {e}
     let p' := isTrue p
     let act := if p' then iact else sact
     match act with
-    | .isEmpty => throwError "imodintro: {if p' then "intuitionistic" else "spatial"} context is not empty"
+    | .isEmpty => throwIPMError "{if p' then "intuitionistic" else "spatial"} context is not empty"
     | .forall C => do
       have : $prop1 =Q $prop2 := ⟨⟩
       have : $bi1 =Q $bi2 := ⟨⟩
-      let .some hC ← trySynthInstanceQ q($C $ty)
-        | throwError "imodintro: hypothesis {name} : {ty} does not satisfy {C}"
+      let .some hC ← ProofModeM.trySynthInstanceQ q($C $ty)
+        | throwIPMError "hypothesis {name}: {ty} does not satisfy {C}"
       -- bridge through defeq since `M.action` cannot unify directly with the pattern (same in other cases)
       have heq : Q(@ModalityAction.forall $prop1 $C = .forall $C) :=
         q(Eq.refl (ModalityAction.forall $C))
@@ -138,8 +138,8 @@ where go {e}
       return ⟨_, .mkHyp bi1 name ivar p ty, q(modaction_forall $M $heq $hC)⟩
     | .transform C => do
       let ty' ← mkFreshExprMVarQ q($prop1)
-      let .some hC ← trySynthInstanceQ q($C $ty $ty')
-        | throwError "imodintro: cannot transform hypothesis {name} : {ty} with {C}"
+      let .some hC ← ProofModeM.trySynthInstanceQ q($C $ty $ty')
+        | throwIPMError "cannot transform hypothesis {name}: {ty} with {C}"
       have heq : Q(@ModalityAction.transform $prop1 $prop2 $C = .transform $C) :=
         q(Eq.refl (ModalityAction.transform $C))
       have heq : Q($(M).action $p = .transform $C) := heq
@@ -189,8 +189,8 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
     let Q ← mkFreshExprMVarQ q($prop')
     -- `M Q ⊢ goal`
     let .some _ ←
-      ProofModeM.trySynthInstanceQ q(@FromModal $prop' $prop $α $bi' $bi $Φ $M $sel $goal $Q)
-      | throwError "imodintro: {goal} is not a \
+      ProofModeM.trySynthInstanceQ q(@FromModal .out $prop' $prop $α $bi' $bi $M $Φ $sel $goal $Q)
+      | throwIPMError "{goal} is not a \
           modality{if sel.isMVar then m!"" else m!" matching {sel}"}"
     -- show the side condition
     let hΦ ← iSolveSidecondition q($Φ)
@@ -206,7 +206,7 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
   The tactic succeeds only when the selector term `sel` matches the modality.
 -/
 elab "imodintro " colGt sel:term : tactic => do
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `imodintro λ mvar { hyps, goal, .. } => do
     let pf ← iModIntroCore hyps goal sel
 
     mvar.assign pf

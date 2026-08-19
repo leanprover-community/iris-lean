@@ -7,7 +7,7 @@ module
 
 import Iris.BI
 import Iris.ProofMode.Classes
-public meta import Iris.ProofMode.Tactics.Basic
+public import Iris.ProofMode.ProofModeM
 
 namespace Iris.ProofMode
 
@@ -32,12 +32,12 @@ open Lean Elab.Tactic Meta Qq Std
   Given a goal of the form `P ∨ Q`, the new goal is `P`.
 -/
 elab "ileft" : tactic => do
-  ProofModeM.runTactic λ mvar { prop, e, hyps, goal, .. } => do
+  ProofModeM.runTactic `ileft λ mvar { prop, e, hyps, goal, .. } => do
   -- choose left side of disjunction
   let A1 ← mkFreshExprMVarQ prop
   let A2 ← mkFreshExprMVarQ prop
   let some _ ← ProofModeM.trySynthInstanceQ q(FromOr $goal $A1 $A2)
-    | throwError "ileft: {goal} is not a disjunction"
+    | throwIPMError "{goal} is not a disjunction"
 
   let m : Q($e ⊢ $A1) ← addBIGoal hyps A1
   mvar.assign q(from_or_left (Q := $goal) $m)
@@ -47,11 +47,11 @@ elab "ileft" : tactic => do
   Given a goal of the form `P ∨ Q`, the new goal is `Q`.
 -/
 elab "iright" : tactic => do
-  ProofModeM.runTactic λ mvar { prop, e, hyps, goal, .. } => do
+  ProofModeM.runTactic `iright λ mvar { prop, e, hyps, goal, .. } => do
   -- choose right side of disjunction
   let A1 ← mkFreshExprMVarQ prop
   let A2 ← mkFreshExprMVarQ prop
   let some _ ← ProofModeM.trySynthInstanceQ q(FromOr $goal $A1 $A2)
-    | throwError "iright: {goal} is not a disjunction"
+    | throwIPMError "{goal} is not a disjunction"
   let m : Q($e ⊢ $A2) ← addBIGoal hyps A2
   mvar.assign q(from_or_right (Q := $goal) $m)

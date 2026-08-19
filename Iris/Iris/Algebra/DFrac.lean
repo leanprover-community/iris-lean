@@ -11,7 +11,6 @@ public import Iris.Algebra.Frac
 public import Iris.Algebra.Updates
 public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.IsOp
-meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -167,7 +166,7 @@ instance : CMRA.CoreId (DFrac.discard) where
   core_id := by simp [CMRA.pcore, DFrac.pcore]
 
 @[rocq_alias dfrac_discard_update]
-theorem DFrac.update_discard {dq : DFrac} : dq ~~> .discard := by
+theorem update_discard {dq : DFrac} : dq ~~> .discard := by
   intros n q H
   apply (CMRA.valid_iff_validN' n).mp
   have H' := (CMRA.valid_iff_validN' n).mpr H
@@ -179,7 +178,7 @@ theorem DFrac.update_discard {dq : DFrac} : dq ~~> .discard := by
     grind
 
 @[rocq_alias dfrac_undiscard_update]
-theorem DFrac.update_acquire :
+theorem update_acquire :
     (.discard : DFrac) ~~>: fun k => ∃ q, k = .own q := by
   apply UpdateP.discrete.mpr
   rintro (_|q)

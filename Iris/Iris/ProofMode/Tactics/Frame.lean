@@ -8,7 +8,6 @@ module
 import Iris.BI
 import Iris.ProofMode.Classes
 public meta import Iris.ProofMode.Patterns.SelPattern
-public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
 
@@ -89,20 +88,20 @@ private def FrameResult.step {u prop bi origE origGoal} :
     if let .some _ ← ProofModeM.trySynthInstanceQ q(Frame $p $out' $goal $goal') then
       return ⟨true, e', hyps', goal', q(frame_hyp $pf $hrem)⟩
     if explicit then
-      throwError "iframe: cannot frame {out'}"
+      throwIPMError "cannot frame {out'}"
     else
       return st
   | st@{e, hyps, goal, pf, ..}, {explicit, kind := .pure fvar, ..} => do
     let ty ← fvar.getType
     if ! (← Meta.isProp ty) then
-      throwError "iframe: {← fvar.getUserName} is not a Prop"
+      throwIPMError "{← fvar.getUserName} is not a Prop"
     have φ : Q(Prop) := ty
     have t : Q($φ) := Expr.fvar fvar
     let goal' ← mkFreshExprMVarQ q($prop)
     if let .some _ ← ProofModeM.trySynthInstanceQ q(Frame true iprop(⌜$φ⌝) $goal $goal') then
       return ⟨true, e, hyps, goal', q(frame_pure $φ $pf $t)⟩
     if explicit then
-      throwError "iframe: cannot frame ⌜{φ}⌝"
+      throwIPMError "cannot frame ⌜{φ}⌝"
     else
       return st
 
@@ -147,7 +146,7 @@ def FrameResult.finishClose {u prop bi origE origGoal}
     return ⟨e, hyps, q(frame_finish_close_emp $pf)⟩
   | ~q(iprop(True)) =>
     return ⟨e, hyps, q(frame_finish_close_true $pf)⟩
-  | _ => throwError "iframe: cannot solve {origGoal} by framing"
+  | _ => throwIPMError "cannot solve {origGoal} by framing"
 
 /--
   `iframe pats` cancels the hypotheses specified by the selection pattern `pats`
@@ -157,7 +156,7 @@ def FrameResult.finishClose {u prop bi origE origGoal}
 elab "iframe " pats:(colGt ppSpace selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `iframe λ mvar { hyps, goal, .. } => do
     let pats ← SelPat.resolve hyps pats
 
     let res ← iFrame hyps goal pats

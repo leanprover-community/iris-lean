@@ -7,11 +7,6 @@ module
 
 public import Iris.ProofMode.ClassesMake
 public meta import Iris.ProofMode.Patterns.SelPattern
-public meta import Iris.ProofMode.Tactics.Basic
-public meta import Iris.ProofMode.Tactics.Assumption
-public meta import Iris.ProofMode.Tactics.Cases
-public meta import Iris.ProofMode.Patterns.CasesPattern
-public meta import Lean.Meta.Tactic.TryThis
 
 namespace Iris.ProofMode
 
@@ -76,7 +71,7 @@ private def RevertState.revertLeanPropHyp
   let { e, hyps, goal, reverted, pf } := st
   let P ← mkFreshExprMVarQ prop
   let some _ ← ProofModeM.trySynthInstanceQ q(MakeAffinely iprop(⌜$φ⌝) $P)
-  | throwError m!"irevert: MakeAffinely type class synthesis failed with {φ}"
+  | throwIPMError "MakeAffinely type class synthesis failed with {φ}"
   let hp : Q($φ) := mkFVar f
   let goal' : Q($prop) := q(iprop($P -∗ $goal))
   let pf' : Q(($e ⊢ $goal') → ($origE ⊢ $origGoal)) := q(fun h => $pf (pure_revert h $hp))
@@ -181,7 +176,7 @@ def getCompleteSelTargets (explicitTargets : List SelTarget)
   hypotheses dependent on it should also be generalised.
 -/
 def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
-    (tacticName : String) (hyps : Hyps bi e)
+    (hyps : Hyps bi e)
     (explicitTargets : List SelTarget)
     (inductionTarget : Option FVarId)
     (selPats : TSyntaxArray `selPat)
@@ -238,7 +233,7 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     Lean.Meta.Tactic.TryThis.addSuggestion oldTactic newTactic
 
     -- Log the error and attach the clickable suggestion
-    throwError m!"{tacticName}: The following hypotheses depend on variables in \
+    throwIPMError "The following hypotheses depend on variables in \
       the `generalizing` clause but are not themselves included:\
       \n{"\n".intercalate (leanLines ++ irisLines)}"
 
@@ -271,12 +266,12 @@ elab_rules : tactic
   | `(tactic| irevert $pats:selPat*) => do
     let parsedPats ← liftMacroM <| SelPat.parse pats
 
-    ProofModeM.runTactic fun mvar { hyps, goal, .. } => do
+    ProofModeM.runTactic `irevert fun mvar { hyps, goal, .. } => do
       -- Parse the selection patterns provided by the tactic user
       let targets ← SelPat.resolve hyps parsedPats
 
       -- Check for dependencies with the hypotheses in the selection targets
-      checkDependentHyps "irevert" hyps targets none pats
+      checkDependentHyps hyps targets none pats
         (fun pats => `(tactic| irevert $pats*))
         (fun pats => `(tactic| irevert! $pats*))
 
@@ -285,7 +280,7 @@ elab_rules : tactic
   | `(tactic| irevert! $pats:selPat*) => do
     let parsedPats ← liftMacroM <| SelPat.parse pats
 
-    ProofModeM.runTactic fun mvar { hyps, goal, .. } => do
+    ProofModeM.runTactic `irevert fun mvar { hyps, goal, .. } => do
       -- Parse the selection patterns provided by the tactic user
       let explicitTargets ← SelPat.resolve hyps parsedPats
       -- Find all dependent hypotheses
