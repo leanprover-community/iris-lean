@@ -257,6 +257,7 @@ instance : NonExpansive (le_upd (GF := GF)) where
     intro m IH P Q H
     refine ((equiv_iff.mpr le_upd_unfold).dist).trans ?_
     refine .trans ?_ ((equiv_iff.mpr le_upd_unfold).dist).symm
+    -- TODO: Why does nonexp not work here?
     refine forall_ne (fun i => ?_)
     refine wand_ne.ne .rfl ?_
     refine UPred.bupd_ne.ne ?_

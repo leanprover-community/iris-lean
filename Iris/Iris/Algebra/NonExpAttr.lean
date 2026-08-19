@@ -5,9 +5,9 @@ Authors: Oliver Soeser
 -/
 module
 
-public meta import Lean.Meta
+public import Iris.Init
 
-public meta section
+public section
 
 namespace Iris.Std
 open Lean Meta

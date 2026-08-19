@@ -22,6 +22,9 @@ variable [OFE α] [BI PROP] [BILaterContractive PROP]
 example : NonExpansive (fun x : α => x) where
   ne := by nonexp
 
+/- `nonexp` should also work when directly called on a NonExpansive goal -/
+example : NonExpansive (fun x : α => x) := by nonexp
+
 /- Constant functions are non-expansive. -/
 example (y : α) : NonExpansive (fun _ : α => y) where
   ne := by nonexp
@@ -33,6 +36,9 @@ example (f : PROP → PROP) [NonExpansive f] : Contractive (fun x => iprop(▷ (
 /- A non-expansive function remains contractive under additional ▷s. -/
 example (f : PROP → PROP) [NonExpansive f] : Contractive (fun x => iprop(▷ ▷ (f x))) where
   distLater_dist := by contractive
+
+/- `contractive` should also work when directly called on a `Contractive` goal -/
+example (f : PROP → PROP) [NonExpansive f] : Contractive (fun x => iprop(▷ ▷ (f x))) := by contractive
 
 /- A contractive function is also non-expansive. -/
 example (f : α → α) [Contractive f] : NonExpansive f where

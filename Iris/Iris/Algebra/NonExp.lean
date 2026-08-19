@@ -5,7 +5,7 @@ Authors: Oliver Soeser
 -/
 module
 
-public meta import Iris.Algebra.OFE
+public import Iris.Algebra.OFE
 
 namespace Iris
 
@@ -78,7 +78,8 @@ meta def tryStep (recurse : MVarId → TacticM Unit)
   match ← step goal with
   | some newGoals =>
     replaceMainGoal newGoals
-    discard <| newGoals.mapM recurse
+    withTraceNode `NonExp (λ _ => return m!"step succeeded") do
+      discard <| newGoals.mapM recurse
     return true
   | none => return false
 
@@ -91,6 +92,7 @@ meta def simpThenRecurse (k : MVarId → TacticM Unit) : TacticM Bool := do
 
 meta partial def contractiveMain (goal : MVarId) (guarded : Bool) : TacticM Unit := do
   if ← goal.isAssigned then return
+  trace[NonExp] "Goal: {← goal.getType}"
   makeMainGoal goal
 
   -- simplification step (includes application of Dist.rfl)
@@ -110,6 +112,7 @@ meta partial def contractiveMain (goal : MVarId) (guarded : Bool) : TacticM Unit
 
 meta partial def nonexpMain (goal : MVarId) : TacticM Unit := do
   if ← goal.isAssigned then return
+  trace[NonExp] "Goal: {← goal.getType}"
   makeMainGoal goal
 
   -- simplification step (includes application of Dist.rfl)
@@ -138,5 +141,7 @@ elab "contractive" : tactic => do
 elab "nonexp" : tactic => do
   contractiveSetup
   nonexpMain (← getMainGoal)
+
+meta initialize registerTraceClass `NonExp
 
 end Iris
