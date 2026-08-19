@@ -5,8 +5,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Iris.HeapLang.Notation
-public meta import Lean.Elab.Command
-public meta import Lean.Linter.Util
+public import Lean.Elab.Command
+public import Lean.Linter.Util
 
 public meta section
 namespace Iris.HeapLang.Linter

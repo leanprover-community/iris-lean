@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
-meta import Iris.Std.RocqPorting
 public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.EctxLanguage
 
@@ -16,6 +15,7 @@ open Language.Notation EctxLanguage.Notation FromMathlib
 
 variable {Expr Val State Obs EctxItem : Type _}
 
+@[rocq_alias ectxiLanguage, rocq_alias EctxiLanguageMixin]
 class EctxItemLanguage (Expr : Type _) (EctxItem State Obs Val : outParam (Type _))
     extends ToVal Expr Val, BaseStep Expr State Obs where
   fillItem : EctxItem → Expr → Expr
@@ -37,8 +37,9 @@ export EctxItemLanguage (fillItem)
 
 -- attribute [rocq_alias fill_item] EctxItemLanguage.fillItem
 attribute [rocq_alias fill_item_inj] EctxItemLanguage.fillItem_inj
-attribute [rocq_alias fill_item_val] EctxItemLanguage.fillItem
+attribute [rocq_alias fill_item_val] EctxItemLanguage.fillItem_val
 attribute [rocq_alias fill_item_no_val_inj] EctxItemLanguage.fillItem_no_val_inj
+attribute [rocq_alias ectxi_language.base_ctx_step_val] EctxItemLanguage.base_ctx_step_val
 
 attribute [simp] EctxItemLanguage.fillItem_inj
 attribute [grind →] EctxItemLanguage.fillItem_val
@@ -96,7 +97,7 @@ theorem baseStep_fill_eq_val_absurd {K : Ectx} {e e' : Expr} {σ σ' : State}
 -- be able to match on `toVal`, since as it stands `grind` patterns cannot include `=`,
 -- which means `toVal e = none` is not as well supported.
 
-@[rocq_alias EctxLanguageOfEctxi]
+@[rocq_alias EctxLanguageOfEctxi, rocq_alias ectxi_lang_ectx, rocq_alias ectxi_lang_ectx_mixin]
 instance instEctxLanguage : EctxLanguage Expr Λ.Ectx State Obs Val where
   fill_val K e := fill_val
   step_by_val {K K' e₁ e₁' σ₁ obs e₂ σ₂ eₜ} hfill hred hstep := by
@@ -122,6 +123,9 @@ instance instEctxLanguage : EctxLanguage Expr Λ.Ectx State Obs Val where
     · intro; right; rfl
     · simp_all; grind
 
+attribute [rocq_alias ectxi_lang] Iris.ProgramLogic.EctxLanguage.instLanguage
+
+@[rocq_alias ectxi_language.fill_not_val]
 theorem fill_not_val {K} {e : Expr} : toVal e = none → toVal (fill K e) = none := by
   grind only [=> EctxLanguage.fill_not_val]
 

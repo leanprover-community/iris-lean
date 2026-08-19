@@ -28,11 +28,12 @@ class TokenG (GF : BundledGFunctors) where [elemG : ElemG GF TokenF]
 
 attribute [reducible, instance] TokenG.elemG
 
+#rocq_ignore «tokenΣ» "Superseded by the `TokenG` typeclass on `BundledGFunctors`."
 #rocq_ignore «subG_tokenΣ» "Superseded by Lean's direct `ElemG` typeclass synthesis."
 
 variable {GF : BundledGFunctors} [TokenG GF]
 
-@[rocq_alias token]
+@[rocq_alias token.token]
 def token (γ : GName) : IProp GF := iOwn (F := TokenF) γ (excl ())
 
 #rocq_ignore token_aux "`token` is defined directly without `seal`/`unseal`."
@@ -48,14 +49,7 @@ instance token_timeless (γ : GName) : Timeless (token (GF := GF) γ) := by
 theorem token_alloc_strong (P : GName → Prop) (HP : PredInfinite P) :
     ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ token γ := by
   unfold token
-  iapply iOwn_alloc_strong _ P _ trivial
-  intro N
-  have choice := HP (List.range N)
-  exists choice.choose
-  refine ⟨?_, choice.choose_spec.left⟩
-  have hle := choice.choose_spec.right
-  rw [List.mem_range] at hle
-  exact Nat.not_lt.mp hle
+  exact iOwn_alloc_strong _ P HP.exists_ge trivial
 
 @[rocq_alias token_alloc]
 theorem token_alloc : ⊢@{IProp GF} |==> ∃ γ, token γ := by

@@ -1,34 +1,34 @@
 /- A description of the tactics can be found in `tactics.md`. -/
 module
 
-public meta import Iris.ProofMode.Tactics.Accu
-public meta import Iris.ProofMode.Tactics.Apply
-public meta import Iris.ProofMode.Tactics.Assumption
-public meta import Iris.ProofMode.Tactics.Basic
-public meta import Iris.ProofMode.Tactics.Cases
-public meta import Iris.ProofMode.Tactics.Clear
-public meta import Iris.ProofMode.Tactics.Combine
-public meta import Iris.ProofMode.Tactics.Contractive
-public meta import Iris.ProofMode.Tactics.Eval
-public meta import Iris.ProofMode.Tactics.Exact
-public meta import Iris.ProofMode.Tactics.ExFalso
-public meta import Iris.ProofMode.Tactics.Exists
-public meta import Iris.ProofMode.Tactics.Frame
-public meta import Iris.ProofMode.Tactics.Guarded
-public meta import Iris.ProofMode.Tactics.Have
-public meta import Iris.ProofMode.Tactics.HaveCore
-public meta import Iris.ProofMode.Tactics.Induction
-public meta import Iris.ProofMode.Tactics.Intro
-public meta import Iris.ProofMode.Tactics.Inv
-public meta import Iris.ProofMode.Tactics.LeftRight
-public meta import Iris.ProofMode.Tactics.Loeb
-public meta import Iris.ProofMode.Tactics.Mod
-public meta import Iris.ProofMode.Tactics.ModIntro
-public meta import Iris.ProofMode.Tactics.Pure
-public meta import Iris.ProofMode.Tactics.Rename
-public meta import Iris.ProofMode.Tactics.Revert
-public meta import Iris.ProofMode.Tactics.RevertIntro
-public meta import Iris.ProofMode.Tactics.Rewrite
-public meta import Iris.ProofMode.Tactics.Specialize
-public meta import Iris.ProofMode.Tactics.Split
-public meta import Iris.ProofMode.Tactics.Trivial
+public import Iris.ProofMode.Tactics.Accu
+public import Iris.ProofMode.Tactics.Apply
+public import Iris.ProofMode.Tactics.Assumption
+public import Iris.ProofMode.Tactics.Basic
+public import Iris.ProofMode.Tactics.Cases
+public import Iris.ProofMode.Tactics.Clear
+public import Iris.ProofMode.Tactics.Combine
+public import Iris.ProofMode.Tactics.Contractive
+public import Iris.ProofMode.Tactics.Eval
+public import Iris.ProofMode.Tactics.Exact
+public import Iris.ProofMode.Tactics.ExFalso
+public import Iris.ProofMode.Tactics.Exists
+public import Iris.ProofMode.Tactics.Frame
+public import Iris.ProofMode.Tactics.Guarded
+public import Iris.ProofMode.Tactics.Have
+public import Iris.ProofMode.Tactics.HaveCore
+public import Iris.ProofMode.Tactics.Induction
+public import Iris.ProofMode.Tactics.Intro
+public import Iris.ProofMode.Tactics.Inv
+public import Iris.ProofMode.Tactics.LeftRight
+public import Iris.ProofMode.Tactics.Loeb
+public import Iris.ProofMode.Tactics.Mod
+public import Iris.ProofMode.Tactics.ModIntro
+public import Iris.ProofMode.Tactics.Pure
+public import Iris.ProofMode.Tactics.Rename
+public import Iris.ProofMode.Tactics.Revert
+public import Iris.ProofMode.Tactics.RevertIntro
+public import Iris.ProofMode.Tactics.Rewrite
+public import Iris.ProofMode.Tactics.Specialize
+public import Iris.ProofMode.Tactics.Split
+public import Iris.ProofMode.Tactics.Trivial

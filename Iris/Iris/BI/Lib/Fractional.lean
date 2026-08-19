@@ -25,6 +25,12 @@ class AsFractional {PROP : Type u} [BI PROP] (P : PROP) (ioΦ : InOut)
   as_fractional : P ⊣⊢ Φ q
   as_fractional_fractional : Fractional Φ
 
+/-- `FrameFractionalQp` is used for fractional framing: it subtracts the fraction of the
+hypothesis from the fraction of the goal, computing `r := qP - qR`. See `frame_fractional`. -/
+@[rocq_alias FrameFractionalQp]
+class FrameFractionalQp (qR qP : Qp) (r : outParam Qp) : Prop where
+  frame_fractional_qp : qP = qR + r
+
 section Lemmas
 variable {PROP : Type _} [BI PROP] {P P1 P2 : PROP} {Φ : Qp → PROP} {q q1 q2 : Qp}
 
@@ -100,6 +106,38 @@ instance (priority := default - 10) combineSepAsFractionalHalf
     _ ⊢ Φ (q.half + q.half) := (hP.as_fractional_fractional.fractional q.half q.half).mpr
     _ ⊢ Φ q                 := Qp.half_add_half _ ▸ .rfl
 
+@[rocq_alias fractional_big_sepL]
+instance fractional_bigSepL {A : Type _} {l : List A} {Ψ : Nat → A → Qp → PROP}
+    [∀ k x, Fractional (Ψ k x)] : Fractional (fun q => iprop([∗list] k ↦ x ∈ l, Ψ k x q)) where
+  fractional p q :=
+    ⟨(BigSepL.bigSepL_mono_of_forall fun {_ _} => (Fractional.fractional p q).1).trans
+      BigSepL.bigSepL_sep_eqv.1,
+     BigSepL.bigSepL_sep_eqv.2.trans
+      (BigSepL.bigSepL_mono_of_forall fun {_ _} => (Fractional.fractional p q).2)⟩
+@[rocq_alias frame_fractional_qp_add_l]
+instance frameFractionalQpAddLeft (q q' : Qp) : FrameFractionalQp q (q + q') q' := ⟨rfl⟩
+
+@[rocq_alias frame_fractional_qp_add_r]
+instance frameFractionalQpAddRight (q q' : Qp) : FrameFractionalQp q' (q + q') q :=
+  ⟨Subtype.ext (Rat.add_comm ..)⟩
+
+@[rocq_alias frame_fractional_qp_half]
+instance frameFractionalQpHalf (q : Qp) : FrameFractionalQp q.half q q.half :=
+  ⟨(Qp.half_add_half q).symm⟩
+
+/-- Not an instance because of performance; concrete fractional assertions provide their own
+`Frame` instances by applying this lemma. `Φ` is explicit because it is rarely inferrable. -/
+@[rocq_alias frame_fractional]
+theorem frame_fractional (Φ : Qp → PROP) (qR qP r : Qp) {p : Bool} {R : PROP}
+    [hR : AsFractional R .in Φ .in qR] [hP : AsFractional P .in Φ .in qP]
+    [hq : FrameFractionalQp qR qP r] : Frame p R P (Φ r) where
+  frame := calc
+    _ ⊢ R ∗ Φ r    := sep_mono_left intuitionisticallyIf_elim
+    _ ⊢ Φ qR ∗ Φ r := sep_mono_left hR.as_fractional.mp
+    _ ⊢ Φ (qR + r) := (hR.as_fractional_fractional.fractional qR r).mpr
+    _ ⊢ Φ qP       := (BIBase.BiEntails.of_eq (congrArg Φ hq.frame_fractional_qp)).mpr
+    _ ⊢ P          := hP.as_fractional.mpr
+
 end Lemmas
 
 section Divide
@@ -134,3 +172,55 @@ theorem fractional_divide_equal {Φ : Qp → PROP} [Fractional Φ] (q : Qp) (n :
   grind
 
 end Divide
+
+/-! ## Internal fractional
+
+`internalFractional Φ` internalises `Fractional Φ` into the logic, so that it can be kept in an
+invariant and transported along an internal `∗-∗`. -/
+
+section InternalFractional
+variable {PROP : Type _} [BI PROP] {Φ Ψ : Qp → PROP}
+
+@[rocq_alias internal_fractional]
+def internalFractional (Φ : Qp → PROP) : PROP := iprop(□ ∀ p q, Φ (p + q) ∗-∗ Φ p ∗ Φ q)
+
+@[rocq_alias internal_fractional_ne]
+instance internalFractional_ne : NonExpansive (internalFractional (PROP := PROP)) where
+  ne _ _ _ h := intuitionistically_ne.ne <|
+    forall_ne fun p => forall_ne fun q => wandIff_ne.ne (h _) (sep_ne.ne (h p) (h q))
+
+#rocq_ignore internal_fractional_proper "OFE equivalence is Lean equality; use `congrArg`."
+
+@[rocq_alias internal_fractional_affine]
+instance internalFractional_affine : Affine (internalFractional Φ) := by
+  unfold internalFractional; infer_instance
+
+@[rocq_alias internal_fractional_persistent]
+instance internalFractional_persistent : Persistent (internalFractional Φ) := by
+  unfold internalFractional; infer_instance
+
+@[rocq_alias fractional_internal_fractional]
+theorem fractional_internalFractional (h : Fractional Φ) : ⊢ internalFractional Φ := by
+  unfold internalFractional
+  iintro !> %p %q
+  iapply equiv_wandIff (h.fractional p q)
+
+@[rocq_alias internal_fractional_iff]
+theorem internalFractional_iff :
+    □ (∀ q, Φ q ∗-∗ Ψ q) ⊢ internalFractional Φ -∗ internalFractional Ψ := by
+  unfold internalFractional
+  iintro #Hiff #Hdup !> %p %q
+  isplit
+  · iintro HΨ
+    icases Hdup $$ %p %q (Hiff $$ %(p + q) HΨ) with ⟨H1, H2⟩
+    isplitl [H1]
+    · iapply Hiff $$ H1
+    · iapply Hiff $$ H2
+  · iintro ⟨H1, H2⟩
+    iapply Hiff
+    iapply Hdup
+    isplitl [H1]
+    · iapply Hiff $$ H1
+    · iapply Hiff $$ H2
+
+end InternalFractional

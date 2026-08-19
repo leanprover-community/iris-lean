@@ -4,8 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
-meta import Iris.Std.RocqPorting
-
 public import Iris.ProgramLogic.Language
 
 namespace Iris.ProgramLogic
@@ -148,6 +146,7 @@ end BaseStep
 This typeclass is defined in terms of a base step relation `baseStep`,
 a type of evaluation contexts `Ectx` and a set of values `Val`, and
 extended with theorems that relate these concepts to one another. -/
+@[rocq_alias ectxLanguage, rocq_alias EctxLanguageMixin]
 class EctxLanguage (Expr  : Type _) (Ectx State Obs Val : outParam (Type _))
   extends BaseStep Expr State Obs, ToVal Expr Val, EvContext Expr Ectx where
   /-- Removing a context out of a value gives a value -/
@@ -175,7 +174,7 @@ class EctxLanguage (Expr  : Type _) (Ectx State Obs Val : outParam (Type _))
 attribute [rocq_alias val_base_stuck] EctxLanguage.val_stuck
 attribute [rocq_alias fill_val] EctxLanguage.fill_val
 attribute [rocq_alias step_by_val] EctxLanguage.step_by_val
-attribute [rocq_alias base_ctx_step_val] EctxLanguage.base_ctx_step_val
+attribute [rocq_alias ectx_language.base_ctx_step_val] EctxLanguage.base_ctx_step_val
 
 attribute [grind .] EctxLanguage.val_stuck
 attribute [grind →] EctxLanguage.base_ctx_step_val
@@ -193,7 +192,7 @@ theorem fill_not_val K (e : Expr) : (toVal e) = none → (toVal (fill K e)) = no
 def SubredexesAreValues (e : Expr) :=
   ∀ {K : Ectx} {e'}, e = fill K e' → toVal e' = none → K = empty
 
-@[rocq_alias LanguageOfEctx]
+@[rocq_alias LanguageOfEctx, rocq_alias ectx_lang, rocq_alias ectx_lang_mixin]
 instance instLanguage : Language Expr State Obs Val where
   val_stuck {e σ obs e' σ' eₜ} primStep := by
     rcases primStep with ⟨bstep⟩

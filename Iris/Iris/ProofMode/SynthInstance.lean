@@ -5,13 +5,12 @@ Authors: Michael Sammler
 -/
 module
 
-public import Qq
 public import Iris.BI
 public import Iris.ProofMode.SynthInstanceAttr
 
 public meta section
 
-/-
+/-!
 This file implements a custom typeclass synthesis algorithm that is used for
 the proof mode typeclasses.
 
@@ -187,11 +186,14 @@ def synthInstanceCore? (type : Expr) (maxResultSize? : Option Nat := none) :
   let maxResultSize := maxResultSize?.getD (synthInstance.maxSize.get opts)
   withTraceNode `Meta.synthInstance
     (λ _ => return m!"IPM: {← instantiateMVars type}") do
-  withConfig (fun config =>
-                { config with isDefEqStuckEx := true,
-                              transparency := TransparencyMode.instances,
-                              foApprox := true, ctxApprox := true, constApprox := false,
-                              univApprox := false }) do
+  withConfig (fun config => { config with
+    -- The following options match standard Lean TC synthesis, except that
+    -- we set `isDefEqStuckEx` to false since we want to treat stuck defeq
+    -- as a normal failure and continue instead of aborting everything
+    isDefEqStuckEx := false,
+    transparency := TransparencyMode.instances,
+    foApprox := true, ctxApprox := true, constApprox := false,
+    univApprox := false }) do
   withInTypeClassResolution do
     let type ← instantiateMVars type
     -- TODO: if it becomes necessary, run whnf under the ∀ quantifiers of type
@@ -214,19 +216,15 @@ protected def synthInstance? (type : Expr) (maxResultSize? : Option Nat := none)
 
 protected def trySynthInstance (type : Expr) (maxResultSize? : Option Nat := none)
 : MetaM (LOption (Expr × Std.HashSet MVarId)) := do
-  catchInternalId isDefEqStuckExceptionId
-    (toLOptionM <| ProofMode.synthInstance? type maxResultSize?)
-    (fun _ => pure LOption.undef)
+   toLOptionM <| ProofMode.synthInstance? type maxResultSize?
+
 
 protected def synthInstance (type : Expr) (maxResultSize? : Option Nat := none) :
-    MetaM (Expr × Std.HashSet MVarId) :=
-  catchInternalId isDefEqStuckExceptionId
-    (do
+    MetaM (Expr × Std.HashSet MVarId) := do
       let result? ← ProofMode.synthInstance? type maxResultSize?
       match result? with
       | some result => pure result
-      | none        => do _ ← throwFailedToSynthesize type; unreachable!)
-    (fun _ => do _ ← throwFailedToSynthesize type; unreachable!)
+      | none        => do _ ← throwFailedToSynthesize type; unreachable!
 
 /- It is recommended to use ProofModeM.trySynthInstanceQ and ProofModeM.synthInstanceQ that
 automatically handle the newly spawned goals. -/

@@ -5,7 +5,7 @@ Authors: Yunsong Yang
 -/
 module
 
-public meta import Iris.ProofMode.ProofModeM
+public import Iris.ProofMode.ProofModeM
 
 @[expose] public section
 

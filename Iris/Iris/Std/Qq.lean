@@ -6,6 +6,7 @@ Authors: Mario Carneiro
 module
 
 public import Qq
+public import Iris.Init
 
 @[expose] public section
 open Qq Lean

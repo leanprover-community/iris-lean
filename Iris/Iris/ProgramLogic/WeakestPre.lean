@@ -580,7 +580,7 @@ instance frameWp {p : Bool} [H : ∀ v, FrameInstantiateExistDisabled p R (Φ v)
     apply wp_mono
     exact fun v => (H v).frame_instantiatiate_exist_disabled.frame
 
-@[rocq_alias is_except_0_wp]
+@[rocq_alias weakestpre.is_except_0_wp]
 instance isExcept0Wp : IsExcept0 (WP e @ s ; E {{ Φ }}) where
   is_except0 :=
     calc iprop(◇ _)

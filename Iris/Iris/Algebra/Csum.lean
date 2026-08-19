@@ -8,7 +8,6 @@ module
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.Updates
 public import Iris.Algebra.LocalUpdates
-meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -51,7 +50,7 @@ theorem dist_eqv [OFE α] [OFE β] {n} : Equivalence (Csum.Dist (α := α) (β :
 instance [OFE α] [OFE β] : OFE (Csum α β) where
   Dist := Csum.Dist
   dist_eqv := dist_eqv
-  eq_dist {x y} := by
+  eq_dist' {x y} := by
     cases x <;> cases y <;> simp [Csum.Dist, eq_dist]
   dist_lt {n x y m} hn hlt := by
     cases x <;> cases y <;> first | exact OFE.Dist.lt hn hlt | exact hn.elim | trivial
