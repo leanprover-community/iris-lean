@@ -11,6 +11,8 @@ public import Iris.ProofMode
 
 open Iris BI OFE Iris.Std
 
+namespace MonoInstances
+
 class MonotonePred [BI PROP] [OFE A]
     (F : (A → PROP) → (A → PROP)) : Prop where
   monotone : ∀ (Φ Ψ : A → PROP),
