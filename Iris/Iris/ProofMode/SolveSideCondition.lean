@@ -56,23 +56,29 @@ class TCSideCondition (φ : Prop) : Prop where
   sidecondition : φ
 
 def runTacticOn (mvarId : MVarId) (tac : TSyntax `tactic) : MetaM (List MVarId) :=
-  TermElabM.run' (Lean.Elab.Tactic.run mvarId (evalTactic tac))
+  TermElabM.run' <| run mvarId (withoutRecover <| evalTactic tac)
 
 @[ipm_tactic_instance TCSideCondition _]
 def solveTCSideCondition : SynthTactic := fun e => do
   let_expr TCSideCondition φ := e | return .continue
   have φ : Q(Prop) := φ
-  if (← instantiateMVars φ).hasExprMVar then
+  -- The side condition may contain metavariables but not itself be one
+  if (← instantiateMVars φ).getAppFn.isMVar then
     return .continue
   let s ← saveState
-  let pf ← mkSideConditionGoal φ
-  let tac ← sideconditionTactic
-  let gs ← (observing? <| runTacticOn pf.mvarId! tac) <&> (·.getD [pf.mvarId!])
-  -- Successful TC synthesis if and only if the side condition is completely solved
-  if gs.isEmpty then
+  let res ← withNewMCtxDepth do
+    let pf ← mkSideConditionGoal φ
+    let tac ← sideconditionTactic
+    let gs ← (observing? <| runTacticOn pf.mvarId! tac) <&> (·.getD [pf.mvarId!])
+    if gs.isEmpty then
+      let pf ← instantiateMVars pf
+      if pf.hasSorry then return none else return some pf
+    else
+      return none
+  match res with
+  | some pf =>
+    have pf : Q($φ) := pf
     return .success q(⟨$pf⟩ : TCSideCondition $φ)
-  else
-    s.restore
-    return .continue
+  | none => s.restore; return .continue
 
 end
