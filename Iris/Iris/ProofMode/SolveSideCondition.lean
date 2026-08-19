@@ -21,6 +21,10 @@ def mkSideConditionGoal (target : Q(Prop)) : MetaM Q($target) := do
   | .app (.const ``PMError _) (.lit (.strVal msg)) => throwError "{msg}"
   | _ => mkFreshExprSyntheticOpaqueMVar q($target)
 
+def sideconditionTactic : MetaM (TSyntax `tactic) :=
+  `(tactic| (and_intros <;>
+     (first | trivial | infer_instance | (simp [*] <;> done))))
+
 /--
   Attempts to solve the side condition `target`.
 
@@ -32,7 +36,7 @@ def mkSideConditionGoal (target : Q(Prop)) : MetaM Q($target) := do
 -/
 def iSolveSidecondition (target : Q(Prop)) (failOnUnsolved := true) : ProofModeM Q($target) := do
   let pf ← mkSideConditionGoal target
-  let tac ← `(tactic| (and_intros <;> (first | trivial | infer_instance | (simp [*] <;> done))))
+  let tac ← sideconditionTactic
   let gs ← (observing? <| evalTacticAt tac pf.mvarId!) <&> (·.getD [pf.mvarId!])
   if !gs.isEmpty then
     if failOnUnsolved then
@@ -62,7 +66,7 @@ def solveTCSideCondition : SynthTactic := fun e => do
     return .continue
   let s ← saveState
   let pf ← mkSideConditionGoal φ
-  let tac ← `(tactic| (and_intros <;> (first | trivial | infer_instance | (simp [*] <;> done))))
+  let tac ← sideconditionTactic
   let gs ← (observing? <| runTacticOn pf.mvarId! tac) <&> (·.getD [pf.mvarId!])
   -- Successful TC synthesis if and only if the side condition is completely solved
   if gs.isEmpty then
