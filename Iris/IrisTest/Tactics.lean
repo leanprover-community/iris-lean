@@ -19,7 +19,7 @@ public import Iris.Instances.Lib.NaInvariants
 public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.WeakestPre
 public import Iris.Instances.Lib.Monotone
-public meta import Iris.ProofMode.Tactics.Monotone
+public meta import Iris.ProofMode.Lib.Monotone
 
 @[expose] public section
 

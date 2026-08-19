@@ -5,7 +5,7 @@ Authors: Oliver Soeser
 -/
 module
 
-public meta import Iris.ProofMode.Tactics.Monotone
+public meta import Iris.ProofMode.Lib.Monotone
 public meta import Iris.BI.Lib.Fixpoint
 
 namespace Iris

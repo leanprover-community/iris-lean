@@ -7,7 +7,7 @@ module
 
 public import Iris.HeapLang
 public import Iris.BI.Lib.Fixpoint
-public import Iris.ProofMode.Tactics.Inductive
+public import Iris.ProofMode.Lib.Inductive
 
 @[expose] public section
 namespace Iris.Examples.Inductive

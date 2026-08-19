@@ -5,7 +5,7 @@ Authors: Oliver Soeser
 -/
 module
 
-public meta import Iris.ProofMode.Tactics.Fixpoint
+public meta import Iris.ProofMode.Lib.Fixpoint
 
 namespace Iris
 
