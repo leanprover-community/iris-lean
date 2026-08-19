@@ -151,7 +151,7 @@ instance ne {s : Stuckness} {E} {e : Expr} :
     refine NonExpansive.ne (f := bi_least_fixpoint (Internal.pre' s)) ?_
     exact ⟨.rfl, .rfl, HΦ⟩
 
-#rocq_ignore twp_proper "Derivable from twp_ne with OFE.eq_dist"
+#rocq_ignore twp_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias twp_value_fupd']
 theorem value_fupd' {s : Stuckness} {E} {Φ : Val → IProp GF} {v : Val} :
@@ -349,16 +349,16 @@ theorem to_wp {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} :
 Since total weakest preconditions do not use up later credits, the premise receives `£ n`. -/
 @[rocq_alias twp_wp_fupdN_strong]
 theorem to_wp_fupdN_strong {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : IProp GF}
-    {Φ : Val → IProp GF} {n : Nat} (toVal_e : toVal e = none) (E₂E₁ : E₂ ⊆ E₁) :
+    {Φ : Val → IProp GF} {n : Nat} (toVal_e : toVal e = none) (HSub : E₂ ⊆ E₁) :
     (∀ (σ : State) ns obs nt, stateInterp σ ns obs nt ={E₁,∅}=∗ ⌜n ≤ ι.numLatersPerStep ns + 1⌝)
-    ∧ ((|={E₁,E₂}=> £ n -∗ |={∅}▷=>^[n] |={E₂,E₁}=> P)
+    ∧ ((|={E₁,E₂}=> £ n ={∅}▷=∗^[n] |={E₂,E₁}=> P)
     ∗ WP e @ s ; E₂ [{ v, P ={E₁}=∗ Φ v }]) ⊢
     WP e @ s ; E₁ {{ Φ }} := by
   match n with
   | 0 =>
     iintro ⟨-, Hp, Hwp⟩
     iapply to_wp
-    iapply strong_mono (Std.IsPreorder.le_refl _) E₂E₁ $$ Hwp
+    iapply strong_mono (Std.IsPreorder.le_refl _) HSub $$ Hwp
     iintro %v HΦ
     dsimp only [Nat.repeat]
     imod Hp
@@ -389,11 +389,11 @@ theorem to_wp_fupdN_strong {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : 
       imod Hwp with ⟨%⟨⟩, Hσ₂, Hwp, Hefs⟩
       imod Hp
       imodintro
-      simp only [List.nil_append]
+      dsimp only [List.nil_append]
       iframe Hσ₂
       isplitl [Hwp Hp]
       · iapply to_wp
-        iapply strong_mono (Std.IsPreorder.le_refl _) E₂E₁ $$ Hwp
+        iapply strong_mono (Std.IsPreorder.le_refl _) HSub $$ Hwp
         iintro %v HΦ
         iapply HΦ $$ Hp
       · iapply BI.BigSepL.bigSepL_impl $$ Hefs
