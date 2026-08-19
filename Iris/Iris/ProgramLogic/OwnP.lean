@@ -68,10 +68,10 @@ theorem ownP_adequacy [OwnPGpreS State GF] (s : Stuckness) (e : Expr) (σ : Stat
   refine wp_adequacy (GF := GF) s e σ φ @fun _ κs => ?_
   imod iOwn_alloc (F := ownPRF State)
     ((●E (⟨σ⟩ : stateO State)) • ◯E (⟨σ⟩ : stateO State)) valid with ⟨%γ, Hσ, Hσf⟩
-  letI : OwnPGS State GF := ⟨γ⟩
   imodintro
   iexists (fun σ (_ : List Obs) => iOwn (F := ownPRF State) γ (●E ⟨σ⟩)), (fun _ => iprop(True))
   iframe Hσ
+  letI : OwnPGS State GF := ⟨γ⟩
   iapply Hwp $$ [$Hσf]
 
 @[rocq_alias ownP_invariance]
@@ -86,13 +86,12 @@ theorem ownP_invariance [OwnPGpreS State GF] (s : Stuckness) (e : Expr) (σ₁ :
   intro _ κs
   imod iOwn_alloc (F := ownPRF State)
     ((●E (⟨σ₁⟩ : stateO State)) • ◯E (⟨σ₁⟩ : stateO State)) valid with ⟨%γ, Hσ, Hσf⟩
-  letI : OwnPGS State GF := ⟨γ⟩
-  imod Hwp $$ [$Hσf] with ⟨Hwp, Hφ⟩
-  imodintro
   iexists (fun σ (_ : List Obs) (_ : Nat) => iOwn (F := ownPRF State) γ (●E ⟨σ⟩)),
     (fun _ => iprop(True))
-  iframe Hσ Hwp
-  iintro Hσ
+  iframe Hσ
+  letI : OwnPGS State GF := ⟨γ⟩
+  imod Hwp $$ [$Hσf] with ⟨$, Hφ⟩
+  iintro !> Hσ
   iexists ∅
   imod Hφ with ⟨%σ', Hσf, %Hφ⟩
   icombine Hσ Hσf gives %Hvalid
@@ -104,17 +103,15 @@ variable [ι : OwnPGS State GF]
 variable {s : Stuckness} {E : CoPset} {e e₁ e₂ : Expr} {Φ : Val → IProp GF}
 variable {σ σ₁ σ₂ : State} {ns nt : Nat} {κs : List Obs}
 
-theorem stateInterp_eq : stateInterp σ₁ ns κs nt = iOwn (E := ι.inG) ι.name (●E ⟨σ₁⟩) := rfl
-
 @[rocq_alias ownP_eq]
 theorem ownP_eq : ⊢@{IProp GF} stateInterp σ₁ ns κs nt -∗ ownP σ₂ -∗ ⌜σ₁ = σ₂⌝ := by
-  simp only [stateInterp_eq, ownP]
+  simp only [stateInterp, ownP]
   iintro Hauth Hfrag
   icombine Hauth Hfrag gives %Hvalid
   ipureintro; exact DiscreteO.eqv_inj (agree Hvalid)
 
 @[rocq_alias ownP_state_twice]
-theorem ownP_state_twice : ownP σ₁ ∗ ownP σ₂ ⊢ (False : IProp GF) := by
+theorem ownP_state_twice : ownP σ₁ ∗ ownP σ₂ ⊢@{IProp GF} False := by
   unfold ownP
   iintro ⟨H₁, H₂⟩
   icombine H₁ H₂ gives %Hvalid
@@ -123,28 +120,31 @@ theorem ownP_state_twice : ownP σ₁ ∗ ownP σ₂ ⊢ (False : IProp GF) := b
 @[rocq_alias ownP_timeless]
 instance ownP_timeless : Timeless (ownP (GF := GF) σ) := by unfold ownP; infer_instance
 
+abbrev ReducibleOrNotVal [ToVal Expr Val] : Stuckness → Expr × State → Prop
+  | .NotStuck, ρ => PrimStep.Reducible ρ
+  | _, (e, _) => toVal e = none
+
 @[rocq_alias ownP_lift_step]
 theorem ownP_lift_step :
     (|={E,∅}=> ∃ σ₁, ⌜ReducibleOrNotVal s (e₁, σ₁)⌝ ∗ ▷ ownP σ₁ ∗
       ▷ ∀ obs e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ)⌝ -∗ ownP σ₂ ={∅,E}=∗
         WP e₂ @ s; E {{ Φ }} ∗ [∗list] ef ∈ eₜ, WP ef @ s; ⊤ {{ _v, True }})
     ⊢ WP e₁ @ s; E {{ Φ }} := by
-  unfold ownP
   iintro H
   cases hv : toVal e₁
   · iapply wp_lift_step hv
     iintro %σ₁ %ns %obs %obs' %nt Hσ
     imod H with ⟨%σ₁', %Hsafe, >Hσf, Hcont⟩
-    isimp only [stateInterp_eq] at Hσ
-    icombine Hσ Hσf gives %Hvalid
-    obtain rfl := DiscreteO.eqv_inj (agree Hvalid)
+    icases ownP_eq $$ Hσ Hσf with %Heq
+    subst Heq
     imodintro
     isplit
     · ipureintro; cases s <;> grind
     iintro !> %e₂ %σ₂ %eₜ %Hstep Hcred
+    unfold ownP
     imod iOwn_update_op (update (a' := ⟨σ₂⟩)) $$ [$Hσ $Hσf] with ⟨Hσ, Hσf⟩
     iframe Hσ
-    iapply Hcont $$ %obs %e₂ %σ₂ %eₜ %Hstep Hσf
+    iapply Hcont $$ [//] Hσf
   · iapply fupd_wp
     imod H with ⟨%σ₁, %Hsafe, -⟩
     cases s <;> grind
@@ -182,7 +182,7 @@ theorem ownP_lift_pure_step [Inhabited State] (Hsafe : ∀ σ₁, ReducibleOrNot
   imod Hclose
   imodintro
   iframe Hσ
-  iapply H $$ %_ %_ %_ %_ [//]
+  iapply H $$ [//]
 
 /-! ### Derived lifting lemmas -/
 
@@ -199,14 +199,12 @@ theorem ownP_lift_atomic_step (Hsafe : ReducibleOrNotVal s (e₁, σ₁)) :
   iexists σ₁
   iframe Hσ %Hsafe
   iintro !> %obs %e₂ %σ₂ %eₜ %Hstep Hσ₂
-  icases H $$ %obs %e₂ %σ₂ %eₜ %Hstep Hσ₂ with ⟨HΦ, $⟩
+  icases H $$ [//] Hσ₂ with ⟨HΦ, $⟩
   cases hv : toVal e₂ <;> simp only [Option.elim_none, Option.elim_some]
-  · iexfalso
-    iexact HΦ
+  · iexfalso; itrivial
   · imod Hclose
     imodintro
-    iapply wp_value ⟨coe_of_toVal_eq_some hv⟩
-    iexact HΦ
+    iapply wp_value ⟨coe_of_toVal_eq_some hv⟩ $$ HΦ
 
 @[rocq_alias ownP_lift_atomic_det_step]
 theorem ownP_lift_atomic_det_step {v₂ : Val} {eₜ : List Expr}
@@ -260,7 +258,7 @@ variable {Ectx : Type _} [EctxLanguage Expr Ectx State Obs Val]
 variable [OwnPGS State GF]
 variable {s : Stuckness} {E : CoPset} {e e₁ e₂ : Expr} {σ σ₁ σ₂ : State} {Φ : Val → IProp GF}
 
-theorem reducibleOrNotVal_of_baseStep_reducible (Hbred : BaseStep.Reducible (e, σ)) :
+private theorem reducibleOrNotVal_of_baseStep_reducible (Hbred : BaseStep.Reducible (e, σ)) :
     ReducibleOrNotVal s (e, σ) :=
   let h := primStep_reducible_of_baseStep_reducible Hbred
   match s with
@@ -282,7 +280,9 @@ theorem ownP_lift_base_step :
   · ipureintro; exact reducibleOrNotVal_of_baseStep_reducible Hbred
   iframe Hσ₁
   iintro !> %obs %e₂ %σ₂ %eₜ %Hstep Hσ₂
-  iapply Hwp $$ %_ %_ %_ %_ %(baseStep_of_primStep_of_baseStep_reducible Hbred Hstep) Hσ₂
+  iapply Hwp $$ [] Hσ₂
+  ipureintro; exact baseStep_of_primStep_of_baseStep_reducible Hbred Hstep
+
 
 @[rocq_alias ownP_lift_base_stuck]
 theorem ownP_lift_base_stuck (Hsav : SubredexesAreValues e) :
@@ -305,7 +305,7 @@ theorem ownP_lift_pure_base_step [Inhabited State] (Hbred : ∀ σ₁, BaseStep.
   iapply ownP_lift_pure_step (fun σ => reducibleOrNotVal_of_baseStep_reducible (Hbred σ))
     fun h => Hpure (baseStep_of_primStep_of_baseStep_reducible (Hbred _) h)
   iintro !> %obs %e₂ %eₜ %σ %Hstep
-  iapply H $$ %_ %_ %_ %_
+  iapply H $$ []
   ipureintro; exact baseStep_of_primStep_of_baseStep_reducible (Hbred σ) Hstep
 
 @[rocq_alias ownP_lift_atomic_base_step]
@@ -318,7 +318,8 @@ theorem ownP_lift_atomic_base_step (Hbred : BaseStep.Reducible (e₁, σ₁)) :
   iapply ownP_lift_atomic_step (reducibleOrNotVal_of_baseStep_reducible Hbred)
   iframe Hσ
   iintro !> %obs %e₂ %σ₂ %eₜ %Hstep Hσ₂
-  iapply H $$ %_ %_ %_ %_ %(baseStep_of_primStep_of_baseStep_reducible Hbred Hstep) Hσ₂
+  iapply H $$ [] Hσ₂
+  ipureintro; exact (baseStep_of_primStep_of_baseStep_reducible Hbred Hstep)
 
 @[rocq_alias ownP_lift_atomic_det_base_step]
 theorem ownP_lift_atomic_det_base_step {v₂ : Val} {eₜ : List Expr}
