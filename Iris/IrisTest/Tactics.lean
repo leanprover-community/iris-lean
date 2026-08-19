@@ -4400,7 +4400,7 @@ open OFE
 variable [BI PROP] [OFE α]
 
 /-- Tests `monotone` closing a goal already in the right form. -/
-example : MonotonePred (PROP := PROP) (A := α) (fun Φ x => iprop(Φ x ∗ Φ x)) where
+example : MonoInstances.MonotonePred (PROP := PROP) (A := α) (fun Φ x => iprop(Φ x ∗ Φ x)) where
   monotone := by monotone
 
 private def wrap0 (wp : α → PROP) (x : α) : PROP := iprop(wp x ∗ wp x)
@@ -4408,7 +4408,7 @@ private def wrap1 (wp : α → PROP) : α → PROP := wrap0 wp
 private def wrap2 (wp : α → PROP) : α → PROP := wrap1 wp
 
 /-- Tests `monotone` unfolding. -/
-example : MonotonePred (PROP := PROP) (A := α) wrap2 where
+example : MonoInstances.MonotonePred (PROP := PROP) (A := α) wrap2 where
   monotone := by monotone
 
 private def stepPre (wp : α × Option α → PROP) (x : α × Option α) : PROP :=
@@ -4417,7 +4417,7 @@ private def stepPre (wp : α × Option α → PROP) (x : α × Option α) : PROP
   | some _ => iprop(wp (x.1, none) ∗ wp (x.1, none))
 
 /-- Tests `monotone` on matches on projections. -/
-example : MonotonePred (PROP := PROP) (A := α × Option α) stepPre where
+example : MonoInstances.MonotonePred (PROP := PROP) (A := α × Option α) stepPre where
   monotone := by monotone
 
 /-- Tests `monotone` directly on a bare entailment goal of right shape. -/
@@ -4431,7 +4431,7 @@ private def choicePre (wp : α × (α ⊕ α) → PROP) (x : α × (α ⊕ α)) 
   | .inr a => iprop(wp (x.1, .inl a) ∨ wp (x.1, .inl a))
 
 /-- Tests `monotone` on a non-`Option` type match. -/
-example : MonotonePred (PROP := PROP) (A := α × (α ⊕ α)) choicePre where
+example : MonoInstances.MonotonePred (PROP := PROP) (A := α × (α ⊕ α)) choicePre where
   monotone := by monotone
 
 end monotone
