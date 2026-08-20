@@ -1134,6 +1134,54 @@ instance fromPure_absorbingly (a : Bool) [BI PROP] (P : PROP) (φ : Prop)
   from_pure := absorbingly_affinely_intro_of_persistent.trans <|
     absorbingly_mono <| affinely_affinelyIf.trans h.1
 
+@[rocq_alias from_pure_big_sepL]
+instance fromPure_bigSepL (a : Bool) [BI PROP] {A} (Φ : Nat → A → PROP) io
+    (φ : Nat → A → Prop) (l : List A)
+    [h : ∀ k x, FromPure a (Φ k x) io (φ k x)] [or : TCOr (TCEq a true) (BIAffine PROP)] :
+    FromPure a ([∗list] k ↦ x ∈ l, Φ k x) io (∀ k x, l[k]? = some x → φ k x) where
+  from_pure := match a, or, h with
+    | true, _, h =>
+      BigSepL.bigSepL_affinely_pure_elim.trans <| BigSepL.bigSepL_mono fun _ => (h ..).from_pure
+    | false, TCOr.r, h =>
+      BigSepL.bigSepL_pure.mpr.trans <| BigSepL.bigSepL_mono fun _ => (h ..).from_pure
+    | false, TCOr.l (t := heq), _ => nomatch heq
+
+@[rocq_alias from_pure_big_sepM]
+instance fromPure_bigSepM (a : Bool) [BI PROP] {K V : Type _} {M : Type _ → Type _}
+    [LawfulFiniteMap M K] (Φ : K → V → PROP) (φ : K → V → Prop) (m : M V) io
+    [h : ∀ k x, FromPure a (Φ k x) io (φ k x)] [or : TCOr (TCEq a true) (BIAffine PROP)] :
+    FromPure a ([∗map] k ↦ x ∈ m, Φ k x) io (PartialMap.all φ m) where
+  from_pure := match a, or, h with
+    | true, _, h =>
+      BigSepM.bigSepM_affinely_pure_elim.trans <| BigSepM.bigSepM_mono fun _ => (h ..).from_pure
+    | false, TCOr.r, h =>
+      BigSepM.bigSepM_pure.mpr.trans <| BigSepM.bigSepM_mono fun _ => (h ..).from_pure
+    | false, TCOr.l (t := heq), _ => nomatch heq
+
+@[rocq_alias from_pure_big_sepS]
+instance fromPure_bigSepS (a : Bool) [BI PROP] {S A : Type _} [LawfulFiniteSet S A]
+    (Φ : A → PROP) (φ : A → Prop) (X : S) io
+    [h : ∀ x, FromPure a (Φ x) io (φ x)] [or : TCOr (TCEq a true) (BIAffine PROP)] :
+    FromPure a ([∗set] y ∈ X, Φ y) io (∀ y, y ∈ X → φ y) where
+  from_pure := match a, or, h with
+    | true, _, h =>
+      BigSepS.bigSepS_affinely_pure_elim.trans <| BigSepS.bigSepS_mono fun _ => (h _).from_pure
+    | false, TCOr.r, h =>
+      BigSepS.bigSepS_pure.mpr.trans <| BigSepS.bigSepS_mono fun _ => (h _).from_pure
+    | false, TCOr.l (t := heq), _ => nomatch heq
+
+@[rocq_alias from_pure_big_sepMS]
+instance fromPure_bigSepMS (a : Bool) [BI PROP] {MS A : Type _}
+    [LawfulFiniteMultiSet MS A] (Φ : A → PROP) (φ : A → Prop) (X : MS) io
+    [h : ∀ x, FromPure a (Φ x) io (φ x)] [or : TCOr (TCEq a true) (BIAffine PROP)] :
+    FromPure a ([∗mset] y ∈ X, Φ y) io (∀ y, y ∈ X → φ y) where
+  from_pure := match a, or, h with
+    | true, _, h =>
+      BigSepMS.bigSepMS_affinely_pure_elim.trans <| BigSepMS.bigSepMS_mono fun _ => (h _).from_pure
+    | false, TCOr.r, h =>
+      BigSepMS.bigSepMS_pure.mpr.trans <| BigSepMS.bigSepMS_mono fun _ => (h _).from_pure
+    | false, TCOr.l (t := heq), _ => nomatch heq
+
 /-! ### FromModal -/
 
 @[rocq_alias from_modal_affinely]
