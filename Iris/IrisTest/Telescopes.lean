@@ -26,6 +26,13 @@ variable (P : TT.Arg → TT.Arg → PROP) (x : TT.Arg) in
 /-- info: tforall (P x) : PROP -/
 #guard_msgs in #check (tforall (P x) : PROP)
 
+/- No delaboration when `pp.notation` is set as `false`. -/
+/-- info: tforall fun x => tforall fun y => tforall fun z => P x y z : PROP -/
+#guard_msgs in
+set_option pp.notation false in
+variable (P : TT.Arg → TT.Arg → TT.Arg → PROP) in
+#check (tforall fun x => tforall fun y => tforall fun z => P x y z : PROP)
+
 /-
   Nested `texist` should collapse into one binder group.
 -/
