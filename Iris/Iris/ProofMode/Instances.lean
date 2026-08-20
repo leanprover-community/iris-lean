@@ -990,6 +990,31 @@ instance intoPure_pure_wand [BI PROP] (a : Bool) (φ1 φ2 : Prop) (P1 P2 : PROP)
           sep_mono_left <| affinely_intro <| pure_intro hφ1
       _ ⊢ ⌜φ2⌝                                    := wand_elim_right
 
+@[rocq_alias into_pure_big_sepL]
+instance intoPure_bigSepL [BI PROP] {A} (Φ : Nat → A → PROP)
+    (φ : Nat → A → Prop) (l : List A) [h : ∀ k x, IntoPure (Φ k x) (φ k x)] :
+    IntoPure ([∗list] k ↦ x ∈ l, Φ k x) (∀ k x, l[k]? = some x → φ k x) where
+  into_pure := (BigSepL.bigSepL_mono fun _ => (h ..).into_pure).trans BigSepL.bigSepL_pure_intro
+
+@[rocq_alias into_pure_big_sepM]
+instance intoPure_bigSepM [BI PROP] {K V : Type _} {M : Type _ → Type _}
+    [LawfulFiniteMap M K] (Φ : K → V → PROP) (φ : K → V → Prop) (m : M V)
+    [h : ∀ k x, IntoPure (Φ k x) (φ k x)] :
+    IntoPure ([∗map] k ↦ x ∈ m, Φ k x) (PartialMap.all φ m) where
+  into_pure := (BigSepM.bigSepM_mono fun _ => (h ..).into_pure).trans BigSepM.bigSepM_pure_intro
+
+@[rocq_alias into_pure_big_sepS]
+instance intoPure_bigSepS [BI PROP] {S A} [LawfulFiniteSet S A]
+    (Φ : A → PROP) (φ : A → Prop) (X : S) [h : ∀ x, IntoPure (Φ x) (φ x)] :
+    IntoPure ([∗set] y ∈ X, Φ y) (∀ y, y ∈ X → φ y) where
+  into_pure := (BigSepS.bigSepS_mono fun _ => (h _).into_pure).trans BigSepS.bigSepS_pure_intro
+
+@[rocq_alias into_pure_big_sepMS]
+instance intoPure_bigSepMS [BI PROP] {MS A} [LawfulFiniteMultiSet MS A]
+    (Φ : A → PROP) (φ : A → Prop) (X : MS) [h : ∀ x, IntoPure (Φ x) (φ x)] :
+    IntoPure ([∗mset] y ∈ X, Φ y) (∀ y, y ∈ X → φ y) where
+  into_pure := (BigSepMS.bigSepMS_mono fun _ => (h _).into_pure).trans BigSepMS.bigSepMS_pure_intro
+
 /-! ### FromPure -/
 
 @[rocq_alias from_pure_emp]
