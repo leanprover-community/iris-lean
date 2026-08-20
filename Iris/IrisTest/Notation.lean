@@ -17,7 +17,7 @@ open Iris BI
 /-! This file contains tests for the predefined separation logic notations. -/
 
 variable (p : Bool) (φ : Prop)
-variable [BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → PROP)
+variable [inst : BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → PROP)
 
 /-! ## Interface -/
 
@@ -50,6 +50,12 @@ variable [BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → 
 #guard_msgs in #check iprop(P → (Q ∧ R))
 
 /-- info: iprop(∀ x, Ψ x) : PROP -/
+#guard_msgs in #check iprop(BIBase.forall Ψ)
+/-- info: @«forall» PROP inst Nat Ψ : PROP -/
+#guard_msgs in
+set_option pp.explicit true in
+#check iprop(BIBase.forall Ψ)
+/-- info: iprop(∀ x, Ψ x) : PROP -/
 #guard_msgs in #check iprop(∀ x, Ψ x)
 /-- info: iprop(∀ x, Ψ x) : PROP -/
 #guard_msgs in #check iprop(∀ (x : Nat), Ψ x)
@@ -60,6 +66,12 @@ variable [BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → 
 /-- info: iprop(∀ x y, Φ x y) : PROP -/
 #guard_msgs in #check iprop(∀ (x y : Nat), Φ x y)
 
+/-- info: iprop(∃ x, Ψ x) : PROP -/
+#guard_msgs in #check iprop(BIBase.exists Ψ)
+/-- info: @«exists» PROP inst Nat Ψ : PROP -/
+#guard_msgs in
+set_option pp.explicit true in
+#check iprop(BIBase.exists Ψ)
 /-- info: iprop(∃ x, Ψ x) : PROP -/
 #guard_msgs in #check iprop(∃ x, Ψ x)
 /-- info: iprop(∃ x, Ψ x) : PROP -/

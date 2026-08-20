@@ -14,7 +14,7 @@ public import Iris.BI.Telescopes
 namespace IrisTest
 open Iris BI ProofMode Std
 
-variable {PROP : Type} [BI PROP] {TT : Tele.{0}}
+variable {PROP : Type} [inst : BI PROP] {TT : Tele.{0}}
   (Φ Ψ : TT.Arg → PROP) (φ : TT.Arg → Prop) (a : TT.Arg)
 
 /- Delaboration of `tforall`. -/
@@ -26,7 +26,7 @@ variable {PROP : Type} [BI PROP] {TT : Tele.{0}}
   The function `getUnusedName` ensures correct binding.
 -/
 variable (f : TT.Arg → TT.Arg → PROP) (x : TT.Arg) in
-/-- info: iprop(∀.. x_1, (f x) x_1) : PROP -/
+/-- info: iprop(∀.. x_1, f x x_1) : PROP -/
 #guard_msgs in #check (tforall (f x) : PROP)
 
 /-
@@ -46,7 +46,7 @@ variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
   The function `getUnusedName` ensures correct binding.
 -/
 variable (f : TT.Arg → TT.Arg → PROP) (x : TT.Arg) in
-/-- info: iprop(∃.. x_1, (f x) x_1) : PROP -/
+/-- info: iprop(∃.. x_1, f x x_1) : PROP -/
 #guard_msgs in #check (texist (f x) : PROP)
 
 /-

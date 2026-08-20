@@ -3160,7 +3160,7 @@ inst✝ : BI PROP
 P : PROP
 Q : α → PROP
 ⊢ ⏎
-  ⊢ «exists» fun {n} => Q n
+  ⊢ ∃ n, Q n
 -/
 #guard_msgs (trace, drop error) in
 example [BI PROP] {α} (P : PROP) (Q : α → PROP) :
