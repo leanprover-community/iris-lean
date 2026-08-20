@@ -49,12 +49,8 @@ variable [inst : BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → N
 /-- info: iprop(P → Q ∧ R) : PROP -/
 #guard_msgs in #check iprop(P → (Q ∧ R))
 
-/-- info: iprop(∀ x, Ψ x) : PROP -/
+/-- info: «forall» Ψ : PROP -/
 #guard_msgs in #check iprop(BIBase.forall Ψ)
-/-- info: @«forall» PROP inst Nat Ψ : PROP -/
-#guard_msgs in
-set_option pp.explicit true in
-#check iprop(BIBase.forall Ψ)
 /-- info: iprop(∀ x, Ψ x) : PROP -/
 #guard_msgs in #check iprop(∀ x, Ψ x)
 /-- info: iprop(∀ x, Ψ x) : PROP -/
@@ -66,12 +62,8 @@ set_option pp.explicit true in
 /-- info: iprop(∀ x y, Φ x y) : PROP -/
 #guard_msgs in #check iprop(∀ (x y : Nat), Φ x y)
 
-/-- info: iprop(∃ x, Ψ x) : PROP -/
+/-- info: «exists» Ψ : PROP -/
 #guard_msgs in #check iprop(BIBase.exists Ψ)
-/-- info: @«exists» PROP inst Nat Ψ : PROP -/
-#guard_msgs in
-set_option pp.explicit true in
-#check iprop(BIBase.exists Ψ)
 /-- info: iprop(∃ x, Ψ x) : PROP -/
 #guard_msgs in #check iprop(∃ x, Ψ x)
 /-- info: iprop(∃ x, Ψ x) : PROP -/
@@ -95,9 +87,9 @@ variable {TT : Tele} (P : TT.Arg → TT.Arg → TT.Arg → TT.Arg → Prop) (Q :
 
 /-- info: ∀.. x y, ∃.. a b, P x y a b : Prop -/
 #guard_msgs in #check ∀.. x, ∀.. y, ∃.. a, ∃.. b, P x y a b
-/-- info: ∀.. x, Q x : Prop -/
+/-- info: Tele.tforall Q : Prop -/
 #guard_msgs in #check (Std.Tele.tforall Q)
-/-- info: ∃.. x, Q x : Prop -/
+/-- info: Tele.texist Q : Prop -/
 #guard_msgs in #check (Std.Tele.texist Q)
 
 end StdTelescopes

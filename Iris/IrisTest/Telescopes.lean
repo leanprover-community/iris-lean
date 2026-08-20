@@ -18,16 +18,13 @@ variable {PROP : Type} [inst : BI PROP] {TT : Tele.{0}}
   (Φ Ψ : TT.Arg → PROP) (φ : TT.Arg → Prop) (a : TT.Arg)
 
 /- Delaboration of `tforall`. -/
-/-- info: iprop(∀.. x, Φ x) : PROP -/
+/-- info: tforall Φ : PROP -/
 #guard_msgs in #check (tforall Φ : PROP)
 
-/-
-  Delaboration of `tforall` with name clashing.
-  The function `getUnusedName` ensures correct binding.
--/
-variable (f : TT.Arg → TT.Arg → PROP) (x : TT.Arg) in
-/-- info: iprop(∀.. x_1, f x x_1) : PROP -/
-#guard_msgs in #check (tforall (f x) : PROP)
+/- Delaboration of `tforall` with partial application the predicate `P`. -/
+variable (P : TT.Arg → TT.Arg → PROP) (x : TT.Arg) in
+/-- info: tforall (P x) : PROP -/
+#guard_msgs in #check (tforall (P x) : PROP)
 
 /-
   Nested `texist` should collapse into one binder group.
@@ -38,16 +35,13 @@ variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
 #check (tforall (fun x => tforall (fun y => tforall (fun z => f x y z))) : PROP)
 
 /- Delaboration of `texist`. -/
-/-- info: iprop(∃.. x, Φ x) : PROP -/
+/-- info: texist Φ : PROP -/
 #guard_msgs in #check (texist Φ : PROP)
 
-/-
-  Delaboration of `texist` with name clashing.
-  The function `getUnusedName` ensures correct binding.
--/
-variable (f : TT.Arg → TT.Arg → PROP) (x : TT.Arg) in
-/-- info: iprop(∃.. x_1, f x x_1) : PROP -/
-#guard_msgs in #check (texist (f x) : PROP)
+/- Delaboration of `texist` with partial application the predicate `P`. -/
+variable (P : TT.Arg → TT.Arg → PROP) (x : TT.Arg) in
+/-- info: texist (P x) : PROP -/
+#guard_msgs in #check (texist (P x) : PROP)
 
 /-
   Nested `texist` should collapse into one binder group.
@@ -58,18 +52,18 @@ variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
 #check (texist (fun x => texist (fun y => texist (fun z => f x y z))) : PROP)
 
 /- Tests `intoForall_tforall`. -/
-/-- info: solution: IntoForall iprop(∀.. x, Φ x) Φ, new goals: [] -/
+/-- info: solution: IntoForall (tforall Φ) Φ, new goals: [] -/
 #guard_msgs in
 #ipm_synth @IntoForall PROP _ (tforall Φ) (_ : Type) _
 
 /- Tests `intoExists_texist`. -/
-/-- info: solution: IntoExists iprop(∃.. x, Φ x) Φ, new goals: [] -/
+/-- info: solution: IntoExists (texist Φ) Φ, new goals: [] -/
 #guard_msgs in
 #ipm_synth @IntoExists PROP _ (texist Φ) (_ : Type) _
 
 /- Tests `fromForall_tforall_pure`. -/
 /-- info:
-  solution: FromForall iprop(⌜∀.. x, φ x⌝) fun x => iprop(⌜φ x⌝),
+  solution: FromForall iprop(⌜Tele.tforall φ⌝) fun x => iprop(⌜φ x⌝),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
@@ -85,7 +79,7 @@ variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
 
 /- Tests `fromPure_tforall`. -/
 /-- info:
-  solution: FromPure false iprop(∀.. x, ⌜φ x⌝) InOut.out (∀.. x, φ x),
+  solution: FromPure false iprop(∀.. x, ⌜φ x⌝) InOut.out (Tele.tforall φ),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
@@ -93,7 +87,7 @@ variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
 
 /- Tests `fromPure_tforall`. -/
 /-- info:
-  solution: FromPure false iprop(∀.. x, ⌜φ x⌝) InOut.in (∀.. x, φ x),
+  solution: FromPure false iprop(∀.. x, ⌜φ x⌝) InOut.in (Tele.tforall φ),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
@@ -101,7 +95,7 @@ variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
 
 /- Tests `intoPure_tforall`. -/
 /-- info:
-  solution: IntoPure iprop(∀.. x, ⌜φ x⌝) (∀.. x, φ x),
+  solution: IntoPure iprop(∀.. x, ⌜φ x⌝) (Tele.tforall φ),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
@@ -109,7 +103,7 @@ variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
 
 /- Tests `intoPure_texist`. -/
 /-- info:
-  solution: IntoPure iprop(∃.. x, ⌜φ x⌝) (∃.. x, φ x),
+  solution: IntoPure iprop(∃.. x, ⌜φ x⌝) (Tele.texist φ),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
@@ -152,7 +146,7 @@ example [BI PROP] {TT : Tele} (Φ Ψ : TT.Arg → PROP) :
   □HR : R
   ∗HΦ : ∀.. x, Φ x
   ∗HΨ : ∃.. y, Ψ y
-  ⊢ (∀.. x, Φ x) ∗ ∃.. x, Ψ x
+  ⊢ tforall Φ ∗ texist Ψ
 -/
 #guard_msgs (trace, substring := true) in
 example [BI PROP] {TT : Tele} (R : PROP) (Φ Ψ : TT.Arg → PROP) :
