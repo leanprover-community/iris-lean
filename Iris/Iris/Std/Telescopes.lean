@@ -6,9 +6,8 @@ Authors: Markus de Medeiros
 module
 
 public import Iris.Init
-public meta import Iris.Std.DelabRule
-public meta import Iris.Std.RocqPorting
-
+public import Iris.Std.DelabRule
+public import Iris.Std.Notation
 
 /-!
 # Telescopes
@@ -81,7 +80,6 @@ def texist : {TT : Tele.{u}} → (TT.Arg → Prop) → Prop
   | .nil,    Ψ => Ψ .nil
   | .cons _, Ψ => ∃ x, texist fun xs => Ψ (.cons x xs)
 
-
 /-- Telescopic universal quantification. -/
 macro "∀.." xs:explicitBinders ", " P:term : term => do
   return ⟨← expandExplicitBinders ``tforall xs P⟩
@@ -90,52 +88,19 @@ macro "∀.." xs:explicitBinders ", " P:term : term => do
 macro "∃.." xs:explicitBinders ", " P:term : term => do
   return ⟨← expandExplicitBinders ``texist xs P⟩
 
-/-- A delaborator for the telescopic universal quantifier. -/
+/-- A delaborator for the telescopic universal quantifier for `Prop`. -/
 @[app_delab Iris.Std.Tele.tforall]
-meta def delabPropTforall : Delab := do
-  let e ← SubExpr.getExpr
-  if e.appArg!.isLambda then
-    -- Print nested applications (e.g. `tforall (fun x => tforall (fun y => Ψ))` as `∀.. x y, Ψ x y`)
-    SubExpr.withAppArg <| withBindingBodyUnusedName fun x => do
-      let x : TSyntax `ident := ⟨x⟩
-      match (← delab) with
-      | `(∀.. $y:ident $[$z:ident]*, $Ψ) =>
-        `(∀.. $x:ident $y:ident $[$z:ident]*, $Ψ)
-      | body => `(∀.. $x:ident, $body)
-  else
-    -- Print `tforall Ψ` as `∀.. x, Ψ x`
-    let Ψ := e.appArg!
-    let dom := (← Meta.inferType Ψ).bindingDomain!
-    -- Rename the binder if `Ψ` already refers a binder of the same name to avoid capture
-    let n ← getUnusedName `x Ψ
-    Meta.withLocalDeclD n dom fun _ => do
-      let f ← SubExpr.withAppArg delab
-      let x := mkIdent n
-      `(∀.. $x:ident, $f $x)
+meta def delabPropTforall : Delab :=
+  delabQuant 2 pure
+    (fun x rest body => `(∀.. $x:ident $[$rest:ident]*, $body))
+    (fun | `(∀.. $y:ident $[$z:ident]*, $Ψ) => some (y, z, Ψ) | _ => none)
 
-/-- A delaborator for the telescopic existential quantifier. -/
+/-- A delaborator for the telescopic existential quantifier for `Prop`. -/
 @[app_delab Iris.Std.Tele.texist]
 meta def delabPropTexist : Delab := do
-  let e ← SubExpr.getExpr
-  if e.appArg!.isLambda then
-    -- Print nested applications (e.g. `texist (fun x => texist (fun y => Ψ))` as `∃.. x y, Ψ x y`)
-    SubExpr.withAppArg <| withBindingBodyUnusedName fun x => do
-      let x : TSyntax `ident := ⟨x⟩
-      match (← delab) with
-      | `(∃.. $y:ident $[$z:ident]*, $Ψ) =>
-        `(∃.. $x:ident $y:ident $[$z:ident]*, $Ψ)
-      | body => `(∃.. $x:ident, $body)
-  else
-    -- Print `texist Ψ` as `∃.. x, Ψ x`
-    let Ψ := e.appArg!
-    let dom := (← Meta.inferType Ψ).bindingDomain!
-    -- Rename the binder if `Ψ` already refers a binder of the same name to avoid capture
-    let n ← getUnusedName `x Ψ
-    Meta.withLocalDeclD n dom fun _ => do
-      let f ← SubExpr.withAppArg delab
-      let x := mkIdent n
-      `(∃.. $x:ident, $f $x)
-
+  delabQuant 2 pure
+    (fun x rest body => `(∃.. $x:ident $[$rest:ident]*, $body))
+    (fun | `(∃.. $y:ident $[$z:ident]*, $Ψ) => some (y, z, Ψ) | _ => none)
 
 theorem tforall_forall {TT : Tele} (Ψ : TT.Arg → Prop) : tforall Ψ ↔ ∀ x, Ψ x := by
   induction TT with

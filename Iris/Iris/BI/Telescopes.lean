@@ -9,7 +9,7 @@ public import Iris.BI.DerivedLaws
 public import Iris.BI.DerivedLawsLater
 public import Iris.BI.Extensions
 public import Iris.Std.Telescopes
-public meta import Iris.Std.DelabRule
+public import Iris.Std.DelabRule
 
 @[expose] public section
 
@@ -41,14 +41,14 @@ macro_rules
 /-- A delaborator for the telescopic universal quantifier. -/
 @[app_delab Iris.BI.tforall]
 meta def delabBITforall : PrettyPrinter.Delaborator.Delab :=
-  delabBIQuant
+  delabQuant 4 unpackIprop
     (fun x xs body => `(iprop(∀.. $x:ident $[$xs:ident]*, $body)))
     (fun | `(∀.. $x:ident $[$xs:ident]*, $Ψ) => some (x, xs, Ψ) | _ => none)
 
 /-- A delaborator for the telescopic existential quantifier. -/
 @[app_delab Iris.BI.texist]
 meta def delabBITexist : PrettyPrinter.Delaborator.Delab :=
-  delabBIQuant
+  delabQuant 4 unpackIprop
     (fun x xs body => `(iprop(∃.. $x:ident $[$xs:ident]*, $body)))
     (fun | `(∃.. $x:ident $[$xs:ident]*, $Ψ) => some (x, xs, Ψ) | _ => none)
 

@@ -92,37 +92,4 @@ partial def unpackIprop [Monad m] [MonadRef m] [MonadQuotation m] (stx : Term) :
   -- Fallback case
   | `($t)                    => `($t:term)
 
-
-/--
-  A generic delaborator for `BIBase.forall`, `BIBase.exist`, `BI.tforall` and `BI.texist`.
--/
-def delabBIQuant
-    (termCreator : Ident → TSyntaxArray `ident → Term → DelabM Term)
-    (collapseFunction : Term → Option (Ident × TSyntaxArray `ident × Term)) : Delab := do
-  -- No delaboration when `pp.explicit` is set as `true`
-  guard <| !(← getPPOption getPPExplicit)
-  withOverApp 4 do
-    let e ← SubExpr.getExpr
-    if e.appArg!.isLambda then
-      SubExpr.withAppArg <| withBindingBodyUnusedName fun x => do
-        let body ← unpackIprop (← delab)
-        -- Nested quantifiers are collapsed (e.g. `∀ x, ∀ y, P x y` as `∀ x y, P x y`)
-        match collapseFunction body with
-        | some (y, zs, Ψ) => termCreator ⟨x⟩ (#[y] ++ zs) Ψ
-        | none            => termCreator ⟨x⟩ #[] body
-    else
-      let Ψ := e.appArg!
-      let dom := (← Meta.whnf (← Meta.inferType Ψ)).bindingDomain!
-      -- Rename when shadowing of the same name is involved
-      let n ← getUnusedName `x Ψ
-      Meta.withLocalDeclD n dom fun _ => do
-        let f ← SubExpr.withAppArg delab
-        let x := mkIdent n
-        -- flatten `(f a) x` into `f a x`
-        let body ←
-          match f with
-          | `($g $args*) => `($g $args* $x)
-          | _            => `($f $x)
-        termCreator x #[] body
-
 end Iris.BI

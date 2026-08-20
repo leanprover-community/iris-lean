@@ -88,8 +88,23 @@ set_option pp.explicit true in
 /-- info: iprop(P ∗ Q ∗ R) : PROP -/
 #guard_msgs in #check iprop(P ∗ (Q ∗ R))
 
-section Telescopes
+section StdTelescopes
 open Iris.Std
+
+variable {TT : Tele} (P : TT.Arg → TT.Arg → TT.Arg → TT.Arg → Prop) (Q : TT.Arg → Prop)
+
+/-- info: ∀.. x y, ∃.. a b, P x y a b : Prop -/
+#guard_msgs in #check ∀.. x, ∀.. y, ∃.. a, ∃.. b, P x y a b
+/-- info: ∀.. x, Q x : Prop -/
+#guard_msgs in #check (Std.Tele.tforall Q)
+/-- info: ∃.. x, Q x : Prop -/
+#guard_msgs in #check (Std.Tele.texist Q)
+
+end StdTelescopes
+
+section BITelescopes
+open Iris.Std
+
 variable [BI PROP] {TT : Tele} (Ψt : TT.Arg → PROP) (Φt : TT.Arg → TT.Arg → PROP)
 
 /-- info: iprop(∀.. x, Ψt x) : PROP -/
@@ -103,7 +118,7 @@ variable [BI PROP] {TT : Tele} (Ψt : TT.Arg → PROP) (Φt : TT.Arg → TT.Arg 
 /-- info: iprop((∀.. x, Ψt x) ∗ ∃.. y, Ψt y) : PROP -/
 #guard_msgs in #check iprop((∀.. x, Ψt x) ∗ ∃.. y, Ψt y)
 
-end Telescopes
+end BITelescopes
 
 /-- info: iprop(P -∗ Q) : PROP -/
 #guard_msgs in #check iprop(P -∗ Q)

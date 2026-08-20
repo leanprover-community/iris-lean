@@ -10,6 +10,7 @@ public import Iris.Std.Classes
 public import Iris.Std.DelabRule
 public import Iris.Std.Rewrite
 public import Iris.Std.BigOp
+public import Iris.Std.Notation
 
 @[expose] public section
 
@@ -113,14 +114,14 @@ delab_rule BIBase.imp
 /-- A delaborator for the universal quantifier. -/
 @[app_delab BIBase.forall]
 meta def delabBIForall : PrettyPrinter.Delaborator.Delab :=
-  delabBIQuant
+  delabQuant 4 unpackIprop
     (fun x xs body => `(iprop(∀ $x:ident $[$xs:ident]*, $body)))
     (fun | `(∀ $x:ident $[$xs:ident]*, $Ψ) => some (x, xs, Ψ) | _ => none)
 
 /-- A delaborator for the existential quantifier. -/
 @[app_delab BIBase.exists]
 meta def delabBIExist : PrettyPrinter.Delaborator.Delab :=
-  delabBIQuant
+  delabQuant 4 unpackIprop
     (fun x xs body => `(iprop(∃ $x:ident $[$xs:ident]*, $body)))
     (fun | `(∃ $x:ident $[$xs:ident]*, $Ψ) => some (x, xs, Ψ) | _ => none)
 
