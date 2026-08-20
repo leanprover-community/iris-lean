@@ -167,4 +167,29 @@ variable [∀ y, Persistent (Ξ y)] in
 #guard_msgs (whitespace := lax) in
 #ipm_synth IntoLaterN true false 2 iprop([∗list] k ↦ x ∈ l, ▷ (▷ Φ k x ∧ ▷ Φ k x)) _
 
+/- Tests `frame_bigSepL_cons` after backtracking from `frame_bigSepL_app`. -/
+example (Φ : Nat → A → PROP) (x : A) (l : List A) :
+    ([∗list] k ↦ y ∈ l, Φ (k + 1) y) ∗ Φ 0 x ⊢ [∗list] k ↦ y ∈ x :: l, Φ k y := by
+  iintro ⟨H1, H2⟩
+  iframe
+
+/- Tests `frame_bigSepL_app`. -/
+example (Φ : Nat → A → PROP) (l1 l2 : List A) :
+    ([∗list] k ↦ y ∈ l1, Φ k y) ∗ ([∗list] k ↦ y ∈ l2, Φ (k + l1.length) y) ⊢
+      [∗list] k ↦ y ∈ l1 ++ l2, Φ k y := by
+  iintro ⟨H1, H2⟩
+  iframe
+
+/- Tests `frame_bigSepMS_disj_union`. -/
+example (Φ : A → PROP) (X Y : MS) :
+    ([∗mset] z ∈ X, Φ z) ∗ ([∗mset] z ∈ Y, Φ z) ⊢ [∗mset] z ∈ X ⊎ Y, Φ z := by
+  iintro ⟨H1, H2⟩
+  iframe
+
+/- Tests that `frame_here` has a higher priority than `Frame` instances for big operators. -/
+example (Φ : Nat → A → PROP) (x : A) (l : List A) (P : PROP) :
+    ([∗list] k ↦ y ∈ x :: l, Φ k y) ∗ P ⊢ ([∗list] k ↦ y ∈ x :: l, Φ k y) ∗ P := by
+  iintro ⟨H1, H2⟩
+  iframe
+
 end ProofModeInstances
