@@ -604,6 +604,47 @@ instance (priority := default + 10) fromSep_persistently [BI PROP] (P Q1 Q2 : PR
     [h : FromSep P Q1 Q2] : FromSep iprop(<pers> P) iprop(<pers> Q1) iprop(<pers> Q2) where
   from_sep := persistently_sep_mpr.trans (persistently_mono h.1)
 
+@[ipm_backtrack, rocq_alias from_sep_big_sepL_cons]
+instance (priority := default + 10) fromSep_bigSepL_cons [BI PROP] {A}
+    (Φ : Nat → A → PROP) (l : List A) (x : A) (l' : List A) [hl : IsCons l x l'] :
+    FromSep ([∗list] k ↦ y ∈ l, Φ k y) (Φ 0 x) ([∗list] k ↦ y ∈ l', Φ (k + 1) y) where
+  from_sep := hl.is_cons ▸ BigSepL.bigSepL_cons.mpr
+
+@[ipm_backtrack, rocq_alias from_sep_big_sepL_app]
+instance (priority := default + 10) fromSep_bigSepL_app [BI PROP] {A}
+    (Φ : Nat → A → PROP) (l l1 l2 : List A) [hl : IsApp l l1 l2] :
+    FromSep ([∗list] k ↦ y ∈ l, Φ k y)
+      ([∗list] k ↦ y ∈ l1, Φ k y) ([∗list] k ↦ y ∈ l2, Φ (k + l1.length) y) where
+  from_sep := hl.is_app ▸ BigSepL.bigSepL_append.mpr
+
+@[ipm_backtrack, rocq_alias from_sep_big_sepL2_cons]
+instance (priority := default + 5) fromSep_bigSepL2_cons [BI PROP] {A B}
+    (Φ : Nat → A → B → PROP) (l₁ : List A) (x₁ : A) (l₁' : List A)
+    (l₂ : List B) (x₂ : B) (l₂' : List B)
+    [h₁ : IsCons l₁ x₁ l₁'] [h₂ : IsCons l₂ x₂ l₂'] :
+    FromSep ([∗list] k ↦ y₁;y₂ ∈ l₁;l₂, Φ k y₁ y₂)
+      (Φ 0 x₁ x₂) ([∗list] k ↦ y₁;y₂ ∈ l₁';l₂', Φ (k + 1) y₁ y₂) where
+  from_sep := by
+    rw [h₁.is_cons, h₂.is_cons]
+    exact BigSepL2.bigSepL2_cons.mpr
+
+@[ipm_backtrack, rocq_alias from_sep_big_sepL2_app]
+instance (priority := default + 5) fromSep_bigSepL2_app [BI PROP] {A B}
+    (Φ : Nat → A → B → PROP) (l₁ l₁' l₁'' : List A) (l₂ l₂' l₂'' : List B)
+    [h₁ : IsApp l₁ l₁' l₁''] [h₂ : IsApp l₂ l₂' l₂''] :
+    FromSep ([∗list] k ↦ y₁;y₂ ∈ l₁;l₂, Φ k y₁ y₂)
+      ([∗list] k ↦ y₁;y₂ ∈ l₁';l₂', Φ k y₁ y₂)
+      ([∗list] k ↦ y₁;y₂ ∈ l₁'';l₂'', Φ (k + l₁'.length) y₁ y₂) where
+  from_sep := by
+    rw [h₁.is_app, h₂.is_app]
+    exact wand_elim BigSepL2.bigSepL2_app_wand
+
+@[rocq_alias from_sep_big_sepMS_disj_union]
+instance (priority := default + 20) fromSep_bigSepMS_disjUnion [BI PROP] {MS A : Type _}
+    [LawfulFiniteMultiSet MS A] (Φ : A → PROP) (X₁ X₂ : MS) :
+    FromSep ([∗mset] y ∈ X₁ ⊎ X₂, Φ y) ([∗mset] y ∈ X₁, Φ y) ([∗mset] y ∈ X₂, Φ y) where
+  from_sep := BigSepMS.bigSepMS_disjUnion.2
+
 /-! ### AndIntoSep -/
 
 @[ipm_class, rocq_alias AndIntoSep]
