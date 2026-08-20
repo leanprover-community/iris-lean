@@ -481,6 +481,50 @@ instance (priority := default + 10) fromAnd_persistently_sep [BI PROP] (P Q1 Q2 
     [h : FromSep P Q1 Q2] : FromAnd iprop(<pers> P) iprop(<pers> Q1) iprop(<pers> Q2) where
   from_and := persistently_and.2.trans <| persistently_and_sep.trans <| persistently_mono h.1
 
+@[ipm_backtrack, rocq_alias from_and_big_sepL_cons_persistent]
+instance (priority := default + 38) fromAnd_bigSepL_cons_persistent [BI PROP] {A}
+    (Φ : Nat → A → PROP) (l : List A) (x : A) (l' : List A)
+    [hl : IsCons l x l'] [Persistent (Φ 0 x)] :
+    FromAnd ([∗list] k ↦ y ∈ l, Φ k y) (Φ 0 x) ([∗list] k ↦ y ∈ l', Φ (k + 1) y) where
+  from_and := hl.is_cons ▸ persistent_and_sep_mp.trans BigSepL.bigSepL_cons.mpr
+
+@[ipm_backtrack, rocq_alias from_and_big_sepL_app_persistent]
+instance (priority := default + 38) fromAnd_bigSepL_app_persistent [BI PROP] {A}
+    (Φ : Nat → A → PROP) (l l₁ l₂ : List A)
+    [hl : IsApp l l₁ l₂] [∀ k y, Persistent (Φ k y)] :
+    FromAnd ([∗list] k ↦ y ∈ l, Φ k y)
+      ([∗list] k ↦ y ∈ l₁, Φ k y) ([∗list] k ↦ y ∈ l₂, Φ (k + l₁.length) y) where
+  from_and := hl.is_app ▸ persistent_and_sep_mp.trans BigSepL.bigSepL_append.mpr
+
+@[ipm_backtrack, rocq_alias from_and_big_sepL2_cons_persistent]
+instance (priority := default + 36) fromAnd_bigSepL2_cons_persistent [BI PROP] {A B}
+    (Φ : Nat → A → B → PROP) (l₁ : List A) (x₁ : A) (l₁' : List A)
+    (l₂ : List B) (x₂ : B) (l₂' : List B)
+    [h₁ : IsCons l₁ x₁ l₁'] [h₂ : IsCons l₂ x₂ l₂'] [Persistent (Φ 0 x₁ x₂)] :
+    FromAnd ([∗list] k ↦ y₁;y₂ ∈ l₁;l₂, Φ k y₁ y₂)
+      (Φ 0 x₁ x₂) ([∗list] k ↦ y₁;y₂ ∈ l₁';l₂', Φ (k + 1) y₁ y₂) where
+  from_and := by
+    rw [h₁.is_cons, h₂.is_cons]
+    exact persistent_and_sep_mp.trans BigSepL2.bigSepL2_cons.2
+
+@[ipm_backtrack, rocq_alias from_and_big_sepL2_app_persistent]
+instance (priority := default + 36) fromAnd_bigSepL2_app_persistent [BI PROP] {A B}
+    (Φ : Nat → A → B → PROP) (l₁ l₁' l₁'' : List A) (l₂ l₂' l₂'' : List B)
+    [h₁ : IsApp l₁ l₁' l₁''] [h₂ : IsApp l₂ l₂' l₂'']
+    [∀ k y₁ y₂, Persistent (Φ k y₁ y₂)] :
+    FromAnd ([∗list] k ↦ y₁;y₂ ∈ l₁;l₂, Φ k y₁ y₂)
+      ([∗list] k ↦ y₁;y₂ ∈ l₁';l₂', Φ k y₁ y₂)
+      ([∗list] k ↦ y₁;y₂ ∈ l₁'';l₂'', Φ (k + l₁'.length) y₁ y₂) where
+  from_and := by
+    rw [h₁.is_app, h₂.is_app]
+    exact persistent_and_sep_mp.trans <| wand_elim BigSepL2.bigSepL2_app_wand
+
+@[rocq_alias from_and_big_sepMS_disj_union_persistent]
+instance (priority := default + 40) fromAnd_bigSepMS_disjUnion_persistent [BI PROP]
+    {MS A} [LawfulFiniteMultiSet MS A] (Φ : A → PROP) (X₁ X₂ : MS) [∀ y, Persistent (Φ y)] :
+    FromAnd ([∗mset] y ∈ X₁ ⊎ X₂, Φ y) ([∗mset] y ∈ X₁, Φ y) ([∗mset] y ∈ X₂, Φ y) where
+  from_and := persistent_and_sep_mp.trans BigSepMS.bigSepMS_disjUnion.mpr
+
 /-! ### IntoAnd -/
 
 @[rocq_alias into_and_and]

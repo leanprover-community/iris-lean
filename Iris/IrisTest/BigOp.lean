@@ -98,4 +98,49 @@ variable {MS : Type} [LawfulFiniteMultiSet MS A] (X1 X2 : MS)
 #guard_msgs (whitespace := lax) in
 #ipm_synth IntoSep ([∗list] k ↦ y ∈ x :: l1, Φ k y) _ _
 
+/-
+  Tests `fromAnd_bigSepL_cons_persistent` after `fromAnd_bigSepL_app_persistent`
+  fails to apply and leads to backtracking.
+-/
+/-- info:
+  solution: FromAnd ([∗list] k ↦ y ∈ x :: l, Φ k y) (Φ 0 x) ([∗list] k ↦ y ∈ l, Φ (k + 1) y),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable [∀ k y, Persistent (Φ k y)] in
+#ipm_synth FromAnd ([∗list] k ↦ y ∈ x :: l, Φ k y) _ _
+
+/- Tests `fromAnd_bigSepL_app_persistent`. -/
+/-- info:
+  solution: FromAnd ([∗list] k ↦ y ∈ l1 ++ l2, Φ k y) ([∗list] k ↦ y ∈ l1, Φ k y)
+    ([∗list] k ↦ y ∈ l2, Φ (k + l1.length) y),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable [∀ k y, Persistent (Φ k y)] in
+#ipm_synth FromAnd ([∗list] k ↦ y ∈ l1 ++ l2, Φ k y) _ _
+
+/-
+  Tests `fromAnd_bigSepL2_cons_persistent` after `fromAnd_bigSepL2_app_persistent`
+  fails to apply and leads to backtracking.
+-/
+/-- info:
+  solution: FromAnd ([∗list] k ↦ y₁;y₂ ∈ x :: l;y :: k1, Ψ k y₁ y₂) (Ψ 0 x y)
+    ([∗list] k ↦ y₁;y₂ ∈ l;k1, Ψ (k + 1) y₁ y₂),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable [∀ k x1 x2, Persistent (Ψ k x1 x2)] in
+#ipm_synth FromAnd ([∗list] k ↦ x1;x2 ∈ x :: l; y :: k1, Ψ k x1 x2) _ _
+
+
+/- Tests `fromAnd_bigSepMS_disjUnion_persistent`. -/
+/-- info:
+  solution: FromAnd ([∗mset] y ∈ X1 ⊎ X2, Ξ y) ([∗mset] y ∈ X1, Ξ y) ([∗mset] y ∈ X2, Ξ y),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable [∀ y, Persistent (Ξ y)] in
+#ipm_synth FromAnd ([∗mset] z ∈ X1 ⊎ X2, Ξ z) _ _
+
 end ProofModeInstances
