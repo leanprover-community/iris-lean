@@ -61,6 +61,7 @@ def pre (s : Stuckness) (twp : CoPset → Expr → (Val → IProp GF) → IProp 
 
 namespace Internal
 
+@[rocq_alias twp_pre']
 abbrev pre' (s : Stuckness) (X : Args Expr Val GF → IProp GF) : Args Expr Val GF → IProp GF
   | (E, e, Φ) => pre s (fun E e Φ => X (E, e, Φ)) E e Φ
 
@@ -149,6 +150,8 @@ instance ne {s : Stuckness} {E} {e : Expr} :
   ne {n Φ₁ Φ₂} HΦ := by
     refine NonExpansive.ne (f := bi_least_fixpoint (Internal.pre' s)) ?_
     exact ⟨.rfl, .rfl, HΦ⟩
+
+#rocq_ignore twp_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias twp_value_fupd']
 theorem value_fupd' {s : Stuckness} {E} {Φ : Val → IProp GF} {v : Val} :
@@ -342,6 +345,64 @@ theorem to_wp {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} :
       iintro !> %k %ef %Hef !>Hef
       iapply IH $$ Hef
 
+/-- Similar to `wp_step_fupdN_strong`, but with a total weakest precondition in the premise.
+Since total weakest preconditions do not use up later credits, the premise receives `£ n`. -/
+@[rocq_alias twp_wp_fupdN_strong]
+theorem to_wp_fupdN_strong {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : IProp GF}
+    {Φ : Val → IProp GF} {n : Nat} (toVal_e : toVal e = none) (HSub : E₂ ⊆ E₁) :
+    (∀ (σ : State) ns obs nt, stateInterp σ ns obs nt ={E₁,∅}=∗ ⌜n ≤ ι.numLatersPerStep ns + 1⌝)
+    ∧ ((|={E₁,E₂}=> £ n ={∅}▷=∗^[n] |={E₂,E₁}=> P)
+    ∗ WP e @ s ; E₂ [{ v, P ={E₁}=∗ Φ v }]) ⊢
+    WP e @ s ; E₁ {{ Φ }} := by
+  match n with
+  | 0 =>
+    iintro ⟨-, Hp, Hwp⟩
+    iapply to_wp
+    iapply strong_mono (Std.IsPreorder.le_refl _) HSub $$ Hwp
+    iintro %v HΦ
+    dsimp only [Nat.repeat]
+    imod Hp
+    imod lc_zero with Hlc
+    imod Hp $$ Hlc with Hp
+    iapply HΦ $$ Hp
+  | n+1 =>
+    simp only [(wp_unfold (e := e)).to_eq, (unfold (e := e)).to_eq, wp.pre, pre, toVal_e]
+    iintro H %σ₁ %ns %obs %obs' %nt Hσ₁
+    by_cases Hn : n ≤ ι.numLatersPerStep ns
+    · icases H with ⟨-, >Hp, Hwp⟩
+      imod Hwp $$ Hσ₁ with ⟨%Hred, Hwp⟩
+      imodintro
+      isplitr
+      · ipureintro
+        grind
+      iintro %e₂ %σ₂ %eₜ %Hstep Hcred
+      ispecialize Hwp $$ %obs %e₂ %σ₂ %eₜ %Hstep
+      dsimp only [Nat.repeat]
+      imod Hp $$ [Hcred] with Hp
+      · iapply lc_weaken (n + 1) (Nat.succ_le_succ Hn) $$ Hcred
+      iintro !> !>
+      imod Hp
+      imodintro
+      iapply step_fupdN_le Hn LawfulSet.subset_refl
+      iapply step_fupdN_wand $$ Hp
+      iintro Hp
+      imod Hwp with ⟨%⟨⟩, Hσ₂, Hwp, Hefs⟩
+      imod Hp
+      imodintro
+      dsimp only [List.nil_append]
+      iframe Hσ₂
+      isplitl [Hwp Hp]
+      · iapply to_wp
+        iapply strong_mono (Std.IsPreorder.le_refl _) HSub $$ Hwp
+        iintro %v HΦ
+        iapply HΦ $$ Hp
+      · iapply BI.BigSepL.bigSepL_impl $$ Hefs
+        iintro !> %k %ef %_ Hef
+        iapply to_wp $$ Hef
+    · icases H with ⟨Hbound, -⟩
+      imod Hbound $$ Hσ₁ with %h
+      grind only
+
 @[rocq_alias twp_mono]
 theorem mono {s : Stuckness} {E} {e : Expr} {Φ Ψ : Val → IProp GF}
     (H : ∀ v, Φ v ⊢ Ψ v) :
@@ -350,6 +411,8 @@ theorem mono {s : Stuckness} {E} {e : Expr} {Φ Ψ : Val → IProp GF}
   iapply strong_mono (Std.IsPreorder.le_refl _) LawfulSet.subset_refl $$ H
   iintro %v _
   iapply H $$ [$]
+
+#rocq_ignore twp_mono' "No `Proper` typeclass in Lean"
 
 @[rocq_alias twp_stuck_mono]
 theorem stuck_mono {s₁ s₂ : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} (H : s₁ ≤ s₂) :

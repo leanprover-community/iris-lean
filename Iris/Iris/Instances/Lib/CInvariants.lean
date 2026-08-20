@@ -10,6 +10,7 @@ public import Iris.Instances.IProp.Instance
 public import Iris.Instances.Lib.FUpd
 public import Iris.Instances.Lib.Invariants
 public import Iris.BI.Lib.Fractional
+public import Iris.Algebra.DFrac
 public import Iris.Algebra.Frac
 public import Iris.Algebra.Excl
 public import Iris.Std.Namespaces
@@ -25,7 +26,7 @@ open BI CMRA OFE Iris Std LawfulSet Excl COFE ProofMode
 /-! # Cancelable Invariants -/
 
 abbrev CInvF : OFunctorPre :=
-  ProdOF (constOF (Option (Excl Unit))) (constOF (Option Qp))
+  ProdOF (constOF (Option (Excl Unit))) (constOF (Option DFrac))
 
 @[rocq_alias cinvG]
 class CInvG (GF : BundledGFunctors) where
@@ -41,7 +42,7 @@ namespace CancelableInvariant
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF] [W : CInvG GF]
 
 @[rocq_alias cinv_own]
-def own (γ : GName) (p : Qp) : IProp GF := iOwn (E := W.inv) γ (none, some p)
+def own (γ : GName) (p : Qp) : IProp GF := iOwn (E := W.inv) γ (none, some (DFrac.own p))
 
 @[rocq_alias cinv_excl]
 def excl (γ : GName) : IProp GF := iOwn (E := W.inv) γ (some (Excl.excl ()), none)
@@ -93,7 +94,7 @@ theorem own_valid {γ : GName} {q1 q2 : Qp} :
 instance instFractionalOwn (γ : GName) :
     Fractional (fun p : Qp => own (GF := GF) γ p) where
   fractional p q := by
-    show iOwn (E := W.inv) γ ((none, some (p + q))) ⊣⊢ _
+    show iOwn (E := W.inv) γ ((none, some (DFrac.own (p + q)))) ⊣⊢ _
     refine .trans ?_ iOwn_op
     exact equiv_iff.mp rfl
 
@@ -107,9 +108,9 @@ instance instAsFractionalOwn (γ : GName) (q : Qp) :
 theorem own_excl_alloc (P : GName → Prop) (HP : PredInfinite P) :
     ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ excl γ ∗ own γ (1 : Qp) := by
   imod iOwn_alloc_strong (E := W.inv)
-    ((some (Excl.excl ()), none) • (none, some (1 : Qp)) :
+    ((some (Excl.excl ()), none) • (none, some (DFrac.own 1)) :
       CInvF (IProp GF) (IProp GF)) P ?_
-    ⟨trivial, Qp.valid_one⟩ with ⟨%γ, %HPγ, Hown⟩
+    ⟨trivial, DFrac.valid_own_one⟩ with ⟨%γ, %HPγ, Hown⟩
   · exact HP.exists_ge
   · imodintro
     iexists γ
@@ -289,6 +290,23 @@ theorem cancel (E : CoPset) {N : Namespace} {γ : GName} {P : IProp GF} (Hsub : 
   imod acc_one _ _ _ _ Hsub $$ Hinv Hγ with ⟨HP, -⟩
   imodintro
   iexact HP
+
+@[rocq_alias cinv_inv]
+theorem to_inv {N : Namespace} {γ : GName} {q : Qp} {P : IProp GF} :
+    ⊢ cinv N γ P -∗ own γ q ==∗ inv N P := by
+  unfold cinv own
+  iintro #Hinv Hown
+  imod iOwn_update (a' := (none, some DFrac.discard)) $$ Hown with #Hdisc
+  · exact .prod _ .id (.option _ _ DFrac.update_discard)
+  imodintro
+  iapply inv_alter $$ Hinv
+  iintro !> !> (⟨$, Hexcl⟩ | Hone)
+  · iintro HP
+    ileft
+    iframe HP Hexcl
+  · iexfalso
+    icombine Hdisc Hone gives %⟨_, H⟩
+    exact absurd (a := (1 : Qp).val < 1) H (by simp)
 
 @[rocq_alias into_inv_cinv]
 instance intoInv_cinv (N : Namespace) (γ : GName) (P : IProp GF) :

@@ -424,6 +424,7 @@ instance : BI (UPred M) where
     | 0, _, _ => .inl trivial
     | _+1, _, H => .inr @fun | 0, _, Hx'le, _, _ => P.mono H Hx'le.incN (Nat.zero_le _)
 
+#rocq_ignore pure_ne "Direct consequence of propext"
 #rocq_ignore pure_intro "Inlined in `uPredI` construction"
 #rocq_ignore pure_elim' "Inlined in `uPredI` construction"
 
@@ -481,6 +482,10 @@ instance : BI (UPred M) where
 #rocq_ignore uPred_bi_mixin "Inlined in `uPredI` construction"
 #rocq_ignore uPred_bi_later_mixin "Inlined in `uPredI` construction"
 #rocq_ignore uPred_bi_persistently_mixin "Inlined in `uPredI` construction"
+
+@[rocq_alias uPred_primitive.persistently_elim]
+theorem persistently_elim {P : UPred M} : <pers> P ⊢ P :=
+  fun _ _ H => P.mono H core_inc_self.incN .refl
 
 @[rocq_alias uPred_persistently_forall]
 instance : BIPersistentlyForall (UPred M) where
