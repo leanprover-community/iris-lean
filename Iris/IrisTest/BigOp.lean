@@ -78,4 +78,24 @@ variable {MS : Type} [LawfulFiniteMultiSet MS A] (X1 X2 : MS)
 #guard_msgs in
 #ipm_synth FromSep ([∗list] k ↦ y ∈ ?l, Φ k y) _ _
 
+/- Tests `intoSep_bigSepL_app`. -/
+/-- info:
+  solution: IntoSep ([∗list] k ↦ y ∈ l1 ++ l2, Φ k y) ([∗list] k ↦ y ∈ l1, Φ k y)
+    ([∗list] k ↦ y ∈ l2, Φ (k + l1.length) y),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IntoSep ([∗list] k ↦ y ∈ l1 ++ l2, Φ k y) _ _
+
+/-
+  Tests `intoSep_bigSepL_cons` after `intoSep_bigSepL_app` fails to apply
+  and causes backtracking.
+-/
+/-- info:
+  solution: IntoSep ([∗list] k ↦ y ∈ x :: l1, Φ k y) (Φ 0 x) ([∗list] k ↦ y ∈ l1, Φ (k + 1) y),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IntoSep ([∗list] k ↦ y ∈ x :: l1, Φ k y) _ _
+
 end ProofModeInstances

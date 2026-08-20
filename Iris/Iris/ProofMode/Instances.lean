@@ -732,6 +732,36 @@ instance intoSep_intuitionistically_affine [BI PROP] (P Q1 Q2 : PROP) [h : IntoS
     _ ⊢ □ Q1 ∧ □ Q2 := intuitionistically_and.mp
     _ ⊢ □ Q1 ∗ □ Q2 := and_sep_intuitionistically.mp
 
+@[ipm_backtrack, rocq_alias into_sep_big_sepL_cons]
+instance intoSep_bigSepL_cons [BI PROP] {A}
+    (Φ : Nat → A → PROP) (l : List A) (x : A) (l' : List A) [hl : IsCons l x l'] :
+    IntoSep ([∗list] k ↦ y ∈ l, Φ k y) (Φ 0 x) ([∗list] k ↦ y ∈ l', Φ (k + 1) y) where
+  into_sep := hl.is_cons ▸ BigSepL.bigSepL_cons.mp
+
+@[ipm_backtrack, rocq_alias into_sep_big_sepL_app]
+instance intoSep_bigSepL_app [BI PROP] {A}
+    (Φ : Nat → A → PROP) (l l₁ l₂ : List A) [hl : IsApp l l₁ l₂] :
+    IntoSep ([∗list] k ↦ y ∈ l, Φ k y)
+      ([∗list] k ↦ y ∈ l₁, Φ k y) ([∗list] k ↦ y ∈ l₂, Φ (k + l₁.length) y) where
+  into_sep := hl.is_app ▸ BigSepL.bigSepL_append.mp
+
+@[rocq_alias into_sep_big_sepL2_cons]
+instance intoSep_bigSepL2_cons [BI PROP] {A B}
+    (Φ : Nat → A → B → PROP) (l₁ : List A) (x₁ : A) (l₁' : List A)
+    (l₂ : List B) (x₂ : B) (l₂' : List B)
+    [h₁ : IsCons l₁ x₁ l₁'] [h₂ : IsCons l₂ x₂ l₂'] :
+    IntoSep ([∗list] k ↦ y₁;y₂ ∈ l₁;l₂, Φ k y₁ y₂)
+      (Φ 0 x₁ x₂) ([∗list] k ↦ y₁;y₂ ∈ l₁';l₂', Φ (k + 1) y₁ y₂) where
+  into_sep := by
+    rw [h₁.is_cons, h₂.is_cons]
+    exact BigSepL2.bigSepL2_cons.mp
+
+@[rocq_alias into_sep_big_sepMS_disj_union]
+instance intoSep_bigSepMS_disjUnion [BI PROP] {MS A}
+    [LawfulFiniteMultiSet MS A] (Φ : A → PROP) (X₁ X₂ : MS) :
+    IntoSep ([∗mset] y ∈ X₁ ⊎ X₂, Φ y) ([∗mset] y ∈ X₁, Φ y) ([∗mset] y ∈ X₂, Φ y) where
+  into_sep := BigSepMS.bigSepMS_disjUnion.mp
+
 /-! ### FromOr -/
 
 @[rocq_alias from_or_or]
