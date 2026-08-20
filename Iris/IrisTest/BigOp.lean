@@ -6,8 +6,7 @@ Authors: Alvin Tang
 module
 
 public import Iris.BI.BigOp
-public import Iris.ProofMode.Classes
-public import Iris.ProofMode.Instances
+public import Iris.ProofMode
 
 @[expose] public section
 
@@ -16,7 +15,7 @@ open Iris BI ProofMode Std
 
 section ProofModeInstances
 
-variable {PROP : Type} [BI PROP] {A B : Type}
+variable {PROP : Type} [BI PROP] {A B : Type} (p : Bool)
 variable (Φ : Nat → A → PROP) (Ψ : Nat → A → B → PROP) (Ξ : A → PROP)
 variable (x x' : A) (y : B) (l l1 l2 : List A) (k1 k2 : List B)
 variable {MS : Type} [LawfulFiniteMultiSet MS A] (X1 X2 : MS)
@@ -142,5 +141,30 @@ variable [∀ k x1 x2, Persistent (Ψ k x1 x2)] in
 #guard_msgs (whitespace := lax) in
 variable [∀ y, Persistent (Ξ y)] in
 #ipm_synth FromAnd ([∗mset] z ∈ X1 ⊎ X2, Ξ z) _ _
+
+/- Tests `intoLaterN_bigSepL`: the later modality is stripped. -/
+/-- info:
+  solution: IntoLaterN true false 1
+    ([∗list] k ↦ x ∈ l, iprop(▷ Φ k x)) ([∗list] k ↦ x ∈ l, Φ k x),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IntoLaterN (progress := true) (only_head := false) 1
+  iprop([∗list] k ↦ x ∈ l, ▷ Φ k x) _
+
+/- Tests `intoLaterN_bigSepL` with `only_head = true`: the later modality is not stripped. -/
+/-- info: None -/
+#guard_msgs in
+#ipm_synth IntoLaterN (progress := true) (only_head := true) 1
+  iprop([∗list] k ↦ x ∈ l, ▷ Φ k x) _
+
+/- Tests `intoLaterN_bigSepL` along with `intoLaterN_later` and `intoLaterN_and_left`. -/
+/-- info:
+  solution: IntoLaterN true false 2 ([∗list] k ↦ x ∈ l, iprop(▷ (▷ Φ k x ∧ ▷ Φ k x)))
+  ([∗list] k ↦ x ∈ l, iprop(Φ k x ∧ Φ k x)),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IntoLaterN true false 2 iprop([∗list] k ↦ x ∈ l, ▷ (▷ Φ k x ∧ ▷ Φ k x)) _
 
 end ProofModeInstances
