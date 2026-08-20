@@ -306,7 +306,7 @@ public theorem tac_wp_bind [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E 
     (Δ ⊢ WP (ProgramLogic.fill K e') @ s ; E {{ Φ }}) :=
   H.trans (wp_bind (ProgramLogic.fill K))
 
--- level of hl_exp should be above the level of ; in the heaplang notation to make `wp_bind _ _; wp_rec` work
+-- `hl_exp` must bind tighter than `;` in the heaplang notation so `wp_bind _ _; tac` parses
 elab "wp_bind" colGt ppSpace focus:hl_exp:10 : tactic =>
   ProofModeM.runTacticWp `wp_bind fun mvar {GF, hyps, s, E, e, Φ, ..} => do
     let focus ← elabTermEnsuringTypeQ (←`(hl($focus))) q(HeapLang.Exp)
@@ -349,32 +349,49 @@ public theorem tac_wp_pure [ι : IrisGS_gen hlc Exp GF] {Δ Δ'} {s : Stuckness}
   refine .trans (BI.laterN_mono _ H) ?_
   iintro $ !> -; itrivial
 
+public meta def iWpPure {u}
+  {GF : Q(BundledGFunctors.{0, 0, 0})}
+  {hlc : Q(HasLC)}
+  {prop : Q(Type u)}
+  {bi : Q(BI $prop)}
+  {ehyps : Q($prop)}
+  (hyps : Hyps bi ehyps)
+  (ι : Q(IrisGS_gen $hlc Exp $GF))
+  (s : Q(Stuckness))
+  (E : Q(CoPset))
+  (e : Q(Exp))
+  (Φ : Q(Val → $prop))
+  (findPureExec : (e₁ : Q(Exp)) →
+    ProofModeM ((φ : Q(Prop)) × (n : Q(Nat)) × (e₂ : Q(Exp)) × Q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂)))
+
+  (_hu : QuotedLevelDefEq u 0 := ⟨⟩)
+  (_hprop : $prop =Q IProp $GF := ⟨⟩)
+  (_hbi : $bi =Q UPred.instBIUPred := ⟨⟩)
+  (κ : Q(Wp $prop Exp Val Stuckness) := q(wp.def))
+  (_hwp : $κ =Q wp.def := ⟨⟩) :
+    ProofModeM (Q($ehyps ⊢ Wp.wp $s $E $e $Φ)) := do
+  let some {result := ⟨φ, n, e₂, inst⟩, K, e' := e₁, ..} ←
+    findECtx (α:=((_ : Q(Prop)) × (_ : Q(Nat)) × (_ : Q(Exp)) × Lean.Expr)) e findPureExec
+    | throwIPMError "Cannot find expression to evaluate"
+  have inst : Q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂) := inst
+
+  let ⟨_, hyps', pf⟩ ← iModAction hyps q(modality_laterN $n)
+  let ⟨inner, .up _⟩ ← HeapLang.fillQ K e₂
+  let nextPf ← iWpFinish hyps' ι s E inner Φ
+  let HΦ ← iSolveSidecondition φ (failOnUnsolved := false)
+  return q(tac_wp_pure $inst $HΦ $pf $nextPf)
+
 elab "wp_pure " colGt ppSpace focus:hl_exp:10 : tactic =>
   ProofModeM.runTacticWp `wp_pure fun mvar {hyps, ι, s, E, e, Φ, ..} => do
     let focus ← elabTermEnsuringTypeQ (← `(hl($focus))) q(HeapLang.Exp)
-    trace[wp_pure] m!"Focusing with {focus}"
-
-    let some {result := (φ, n, e₂, inst), K, e' := e₁, heq := _} ← findECtx e fun e₁ => do
+    mvar.assign <| ← iWpPure hyps ι s E e Φ fun e₁ => do
       guard <| ← isDefEq e₁ focus
       let φ ← mkFreshExprMVarQ q(Prop)
       let n ← mkFreshExprMVarQ q(Nat)
       let e₂ ← mkFreshExprMVarQ q(Exp)
-      let some inst ← ProofModeM.trySynthInstanceQ q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂) | failure
-      return (φ, n, e₂, inst)
-      | throwIPMError "Cannot find expression to evaluate"
-    have inst : Q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂) := inst
-
-    let ⟨_, hyps', pf⟩ ← iModAction hyps q(modality_laterN $n)
-
-    let ⟨inner, .up _⟩ ← HeapLang.fillQ K e₂
-
-    let nextPf ← iWpFinish hyps' ι s E inner Φ
-
-    let HΦ ← iSolveSidecondition q($φ) (failOnUnsolved := false)
-
-    let pf := q(tac_wp_pure $inst $HΦ $pf $nextPf)
-
-    mvar.assign pf
+      let some inst ← ProofModeM.trySynthInstanceQ q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂)
+        | failure
+      return ⟨φ, n, e₂, inst⟩
 
 macro "wp_pure" : tactic => `(tactic| wp_pure _)
 
@@ -399,7 +416,19 @@ macro "wp_pures" : tactic =>
     | (wp_pure_step; repeat wp_pure_step)
     | wp_finish)
 
-macro "wp_rec" : tactic => `(tactic | (wp_bind _ _; iapply $(mkIdent `wp_rec):ident; rfl; imodintro; wp_finish))
+/-- Beta-reduce the innermost application, unfolding a head hidden behind a definition. -/
+elab "wp_rec" : tactic =>
+  ProofModeM.runTacticWp `wp_rec fun mvar {hyps, ι, s, E, e, Φ, ..} => do
+    mvar.assign <| ← iWpPure hyps ι s E e Φ fun e₁ => do
+      let ~q(Exp.app (Exp.ofVal $f) (Exp.ofVal $a)) := e₁ | failure
+      -- reduce `f` to find a recursive function
+      let f' : Q(Val) ← whnf f
+      let ~q(Val.rec_ $fb $xb $body) := f' | failure
+      have : $f' =Q $f := ⟨⟩
+      -- substitute the folded head `f`, not the unfolded `Val.rec_`
+      let e₂ := q(Exp.subst $xb $a (Exp.subst $fb $f $body))
+      return ⟨_, _, e₂, q(instPureExecBeta)⟩
+
 
 macro "wp_if" : tactic => `(tactic | wp_pure (if _ then _ else _))
 macro "wp_if_true" : tactic => `(tactic | wp_pure (if #true then _ else _))
@@ -408,14 +437,15 @@ macro "wp_unop" : tactic => `(tactic | wp_pure (&(Exp.unop _ _)))
 macro "wp_binop" : tactic => `(tactic | wp_pure (&(Exp.binop _ _ _)))
 macro "wp_op" : tactic => `(tactic | first | wp_unop | wp_binop)
 macro "wp_lam" : tactic => `(tactic | wp_rec)
-macro "wp_let" : tactic => `(tactic | (wp_pure (rec _ &(.named _) := _); wp_lam))
-macro "wp_seq" : tactic => `(tactic | (wp_pure (rec _ _ := _); wp_lam))
+-- use `wp_pure (_ _)` in `wp_let`, `wp_seq` and `wp_match` because no unfolding is needed
+macro "wp_let" : tactic => `(tactic | (wp_pure (rec _ &(.named _) := _); wp_pure (_ _)))
+macro "wp_seq" : tactic => `(tactic | (wp_pure (rec _ _ := _); wp_pure (_ _)))
 macro "wp_proj" : tactic => `(tactic | first | wp_pure (fst(_)) | wp_pure (snd(_)))
 macro "wp_case" : tactic => `(tactic | wp_pure (&(Exp.case _ _ _)))
 macro "wp_inj" : tactic => `(tactic | first | wp_pure (injl(_)) | wp_pure (injr(_)))
 macro "wp_pair" : tactic => `(tactic | wp_pure ((_, _)))
 macro "wp_closure" : tactic => `(tactic | wp_pure (rec &_ &_ := _))
-macro "wp_match" : tactic => `(tactic | (wp_case; wp_closure; wp_lam))
+macro "wp_match" : tactic => `(tactic | (wp_case; wp_closure; wp_pure (_ _)))
 
 /-! ## The `wp_apply` tactics -/
 
