@@ -449,7 +449,7 @@ example (v : Val) : ⊢@{IProp GF} WP hl(&loopIt &v) {{ v, True }} := by
   trace_state
 
 -- a head that unfolds to something other than a closure is reported as such
-/-- error: wp_rec: head of application does not reduce to a rec-value: notARec -/
+/-- error: wp_rec: Cannot find expression to evaluate -/
 #guard_msgs in
 example (v : Val) : ⊢@{IProp GF} WP hl(&notARec &v) {{ v, True }} := by
   wp_rec

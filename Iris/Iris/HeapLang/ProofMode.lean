@@ -349,7 +349,6 @@ public theorem tac_wp_pure [ι : IrisGS_gen hlc Exp GF] {Δ Δ'} {s : Stuckness}
   refine .trans (BI.laterN_mono _ H) ?_
   iintro $ !> -; itrivial
 
-/-- Shared core of `wp_pure` and `wp_rec`; `unfoldHead` retries a stuck head at whnf. -/
 public meta def iWpPure {u}
   {GF : Q(BundledGFunctors.{0, 0, 0})}
   {hlc : Q(HasLC)}
@@ -362,8 +361,8 @@ public meta def iWpPure {u}
   (E : Q(CoPset))
   (e : Q(Exp))
   (Φ : Q(Val → $prop))
-  (focus : Q(Exp))
-  (unfoldHead : Bool := false)
+  (findPureExec : (e₁ : Q(Exp)) →
+    ProofModeM ((φ : Q(Prop)) × (n : Q(Nat)) × (e₂ : Q(Exp)) × Q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂)))
 
   (_hu : QuotedLevelDefEq u 0 := ⟨⟩)
   (_hprop : $prop =Q IProp $GF := ⟨⟩)
@@ -371,50 +370,28 @@ public meta def iWpPure {u}
   (κ : Q(Wp $prop Exp Val Stuckness) := q(wp.def))
   (_hwp : $κ =Q wp.def := ⟨⟩) :
     ProofModeM (Q($ehyps ⊢ Wp.wp $s $E $e $Φ)) := do
-  trace[wp_pure] m!"Focusing with {focus}"
-  -- `findECtx` swallows predicate errors, so the unfold branch stashes its message here
-  let errMsg ← IO.mkRef m!"Cannot find expression to evaluate"
-
-  let synthPureExec (e₁ : Q(Exp)) : ProofModeM (Q(Prop) × Q(Nat) × Q(Exp) × Lean.Expr) := do
-    let φ ← mkFreshExprMVarQ q(Prop)
-    let n ← mkFreshExprMVarQ q(Nat)
-    let e₂ ← mkFreshExprMVarQ q(Exp)
-    let some inst ← ProofModeM.trySynthInstanceQ q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂)
-      | failure
-    return (φ, n, e₂, inst)
-
-  let some {result := (φ, n, e₂, inst), K, e' := e₁, ..} ← findECtx e fun e₁ => do
-    guard <| ← isDefEq e₁ focus
-    synthPureExec e₁ <|> do
-      guard unfoldHead
-      let ~q(Exp.app (Exp.ofVal $f) (Exp.ofVal $a)) := e₁ | failure
-      let f' : Q(Val) ← whnf f
-      let ~q(Val.rec_ $fb $xb $body) := f' | do
-        errMsg.set m!"head of application does not reduce to a rec-value: {f}"
-        failure
-      -- the unfolded application is definitionally `e₁`, so its instance applies to `e₁`
-      let (φ, n, e₂, inst) ← synthPureExec q(Exp.app (Exp.ofVal $f') (Exp.ofVal $a))
-      -- substitute the folded head, as Rocq's `pure_beta` does with `v1`, not a rewrite
-      let e₂' := q(Exp.subst $xb $a (Exp.subst $fb $f $body))
-      guard <| ← isDefEq e₂ e₂'
-      return (φ, n, e₂', inst)
-    | throwIPMError (← errMsg.get)
+  let some {result := ⟨φ, n, e₂, inst⟩, K, e' := e₁, ..} ←
+    findECtx (α:=((_ : Q(Prop)) × (_ : Q(Nat)) × (_ : Q(Exp)) × Lean.Expr)) e findPureExec
+    | throwIPMError "Cannot find expression to evaluate"
   have inst : Q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂) := inst
 
   let ⟨_, hyps', pf⟩ ← iModAction hyps q(modality_laterN $n)
-
   let ⟨inner, .up _⟩ ← HeapLang.fillQ K e₂
-
   let nextPf ← iWpFinish hyps' ι s E inner Φ
-
   let HΦ ← iSolveSidecondition φ (failOnUnsolved := false)
-
   return q(tac_wp_pure $inst $HΦ $pf $nextPf)
 
 elab "wp_pure " colGt ppSpace focus:hl_exp:10 : tactic =>
   ProofModeM.runTacticWp `wp_pure fun mvar {hyps, ι, s, E, e, Φ, ..} => do
     let focus ← elabTermEnsuringTypeQ (← `(hl($focus))) q(HeapLang.Exp)
-    mvar.assign <| ← iWpPure hyps ι s E e Φ focus
+    mvar.assign <| ← iWpPure hyps ι s E e Φ fun e₁ => do
+      guard <| ← isDefEq e₁ focus
+      let φ ← mkFreshExprMVarQ q(Prop)
+      let n ← mkFreshExprMVarQ q(Nat)
+      let e₂ ← mkFreshExprMVarQ q(Exp)
+      let some inst ← ProofModeM.trySynthInstanceQ q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂)
+        | failure
+      return ⟨φ, n, e₂, inst⟩
 
 macro "wp_pure" : tactic => `(tactic| wp_pure _)
 
@@ -442,8 +419,16 @@ macro "wp_pures" : tactic =>
 /-- Beta-reduce the innermost application, unfolding a head hidden behind a definition. -/
 elab "wp_rec" : tactic =>
   ProofModeM.runTacticWp `wp_rec fun mvar {hyps, ι, s, E, e, Φ, ..} => do
-    let focus ← elabTermEnsuringTypeQ (← `(hl(_ _))) q(HeapLang.Exp)
-    mvar.assign <| ← iWpPure hyps ι s E e Φ focus (unfoldHead := true)
+    mvar.assign <| ← iWpPure hyps ι s E e Φ fun e₁ => do
+      let ~q(Exp.app (Exp.ofVal $f) (Exp.ofVal $a)) := e₁ | failure
+      -- reduce `f` to find a recursive function
+      let f' : Q(Val) ← whnf f
+      let ~q(Val.rec_ $fb $xb $body) := f' | failure
+      have : $f' =Q $f := ⟨⟩
+      -- substitute the folded head `f`, not the unfolded `Val.rec_`
+      let e₂ := q(Exp.subst $xb $a (Exp.subst $fb $f $body))
+      return ⟨_, _, e₂, q(instPureExecBeta)⟩
+
 
 macro "wp_if" : tactic => `(tactic | wp_pure (if _ then _ else _))
 macro "wp_if_true" : tactic => `(tactic | wp_pure (if #true then _ else _))
