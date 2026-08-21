@@ -51,7 +51,7 @@ instance asEmpValid_forall {α} [bi : BI PROP] (Φ : α → Prop) (P : α → PR
 @[rocq_alias as_emp_valid_tforall]
 instance asEmpValid_tforall {TT : Tele} [bi : BI PROP] (φ : TT.Arg → Prop)
     (P : TT.Arg → PROP) d io [hP : ∀ x, AsEmpValid d (φ x) io PROP bi (P x)] :
-    AsEmpValid d (Tele.tforall φ) io PROP bi (BI.tforall P) where
+    AsEmpValid d (∀.. x, φ x) io PROP bi iprop(∀.. x, P x) where
   as_emp_valid := by
     constructor
     · refine fun hd h => .trans ?_ (tforall_forall P).mpr
@@ -530,6 +530,50 @@ instance (priority := default + 10) fromAnd_persistently_sep [BI PROP] (P Q1 Q2 
     [h : FromSep P Q1 Q2] : FromAnd iprop(<pers> P) iprop(<pers> Q1) iprop(<pers> Q2) where
   from_and := persistently_and.2.trans <| persistently_and_sep.trans <| persistently_mono h.1
 
+@[ipm_backtrack, rocq_alias from_and_big_sepL_cons_persistent]
+instance (priority := default + 38) fromAnd_bigSepL_cons_persistent [BI PROP] {A}
+    (Φ : Nat → A → PROP) (l : List A) (x : A) (l' : List A)
+    [hl : IsCons l x l'] [Persistent (Φ 0 x)] :
+    FromAnd ([∗list] k ↦ y ∈ l, Φ k y) (Φ 0 x) ([∗list] k ↦ y ∈ l', Φ (k + 1) y) where
+  from_and := hl.is_cons ▸ persistent_and_sep_mp.trans BigSepL.bigSepL_cons.mpr
+
+@[ipm_backtrack, rocq_alias from_and_big_sepL_app_persistent]
+instance (priority := default + 38) fromAnd_bigSepL_app_persistent [BI PROP] {A}
+    (Φ : Nat → A → PROP) (l l₁ l₂ : List A)
+    [hl : IsApp l l₁ l₂] [∀ k y, Persistent (Φ k y)] :
+    FromAnd ([∗list] k ↦ y ∈ l, Φ k y)
+      ([∗list] k ↦ y ∈ l₁, Φ k y) ([∗list] k ↦ y ∈ l₂, Φ (k + l₁.length) y) where
+  from_and := hl.is_app ▸ persistent_and_sep_mp.trans BigSepL.bigSepL_append.mpr
+
+@[ipm_backtrack, rocq_alias from_and_big_sepL2_cons_persistent]
+instance (priority := default + 36) fromAnd_bigSepL2_cons_persistent [BI PROP] {A B}
+    (Φ : Nat → A → B → PROP) (l₁ : List A) (x₁ : A) (l₁' : List A)
+    (l₂ : List B) (x₂ : B) (l₂' : List B)
+    [h₁ : IsCons l₁ x₁ l₁'] [h₂ : IsCons l₂ x₂ l₂'] [Persistent (Φ 0 x₁ x₂)] :
+    FromAnd ([∗list] k ↦ y₁;y₂ ∈ l₁;l₂, Φ k y₁ y₂)
+      (Φ 0 x₁ x₂) ([∗list] k ↦ y₁;y₂ ∈ l₁';l₂', Φ (k + 1) y₁ y₂) where
+  from_and := by
+    rw [h₁.is_cons, h₂.is_cons]
+    exact persistent_and_sep_mp.trans BigSepL2.bigSepL2_cons.2
+
+@[ipm_backtrack, rocq_alias from_and_big_sepL2_app_persistent]
+instance (priority := default + 36) fromAnd_bigSepL2_app_persistent [BI PROP] {A B}
+    (Φ : Nat → A → B → PROP) (l₁ l₁' l₁'' : List A) (l₂ l₂' l₂'' : List B)
+    [h₁ : IsApp l₁ l₁' l₁''] [h₂ : IsApp l₂ l₂' l₂'']
+    [∀ k y₁ y₂, Persistent (Φ k y₁ y₂)] :
+    FromAnd ([∗list] k ↦ y₁;y₂ ∈ l₁;l₂, Φ k y₁ y₂)
+      ([∗list] k ↦ y₁;y₂ ∈ l₁';l₂', Φ k y₁ y₂)
+      ([∗list] k ↦ y₁;y₂ ∈ l₁'';l₂'', Φ (k + l₁'.length) y₁ y₂) where
+  from_and := by
+    rw [h₁.is_app, h₂.is_app]
+    exact persistent_and_sep_mp.trans <| wand_elim BigSepL2.bigSepL2_app_wand
+
+@[rocq_alias from_and_big_sepMS_disj_union_persistent]
+instance (priority := default + 40) fromAnd_bigSepMS_disjUnion_persistent [BI PROP]
+    {MS A} [LawfulFiniteMultiSet MS A] (Φ : A → PROP) (X₁ X₂ : MS) [∀ y, Persistent (Φ y)] :
+    FromAnd ([∗mset] y ∈ X₁ ⊎ X₂, Φ y) ([∗mset] y ∈ X₁, Φ y) ([∗mset] y ∈ X₂, Φ y) where
+  from_and := persistent_and_sep_mp.trans BigSepMS.bigSepMS_disjUnion.mpr
+
 /-! ### IntoAnd -/
 
 @[rocq_alias into_and_and]
@@ -653,6 +697,47 @@ instance (priority := default + 10) fromSep_persistently [BI PROP] (P Q1 Q2 : PR
     [h : FromSep P Q1 Q2] : FromSep iprop(<pers> P) iprop(<pers> Q1) iprop(<pers> Q2) where
   from_sep := persistently_sep_mpr.trans (persistently_mono h.1)
 
+@[ipm_backtrack, rocq_alias from_sep_big_sepL_cons]
+instance (priority := default + 10) fromSep_bigSepL_cons [BI PROP] {A}
+    (Φ : Nat → A → PROP) (l : List A) (x : A) (l' : List A) [hl : IsCons l x l'] :
+    FromSep ([∗list] k ↦ y ∈ l, Φ k y) (Φ 0 x) ([∗list] k ↦ y ∈ l', Φ (k + 1) y) where
+  from_sep := hl.is_cons ▸ BigSepL.bigSepL_cons.mpr
+
+@[ipm_backtrack, rocq_alias from_sep_big_sepL_app]
+instance (priority := default + 10) fromSep_bigSepL_app [BI PROP] {A}
+    (Φ : Nat → A → PROP) (l l1 l2 : List A) [hl : IsApp l l1 l2] :
+    FromSep ([∗list] k ↦ y ∈ l, Φ k y)
+      ([∗list] k ↦ y ∈ l1, Φ k y) ([∗list] k ↦ y ∈ l2, Φ (k + l1.length) y) where
+  from_sep := hl.is_app ▸ BigSepL.bigSepL_append.mpr
+
+@[ipm_backtrack, rocq_alias from_sep_big_sepL2_cons]
+instance (priority := default + 5) fromSep_bigSepL2_cons [BI PROP] {A B}
+    (Φ : Nat → A → B → PROP) (l₁ : List A) (x₁ : A) (l₁' : List A)
+    (l₂ : List B) (x₂ : B) (l₂' : List B)
+    [h₁ : IsCons l₁ x₁ l₁'] [h₂ : IsCons l₂ x₂ l₂'] :
+    FromSep ([∗list] k ↦ y₁;y₂ ∈ l₁;l₂, Φ k y₁ y₂)
+      (Φ 0 x₁ x₂) ([∗list] k ↦ y₁;y₂ ∈ l₁';l₂', Φ (k + 1) y₁ y₂) where
+  from_sep := by
+    rw [h₁.is_cons, h₂.is_cons]
+    exact BigSepL2.bigSepL2_cons.mpr
+
+@[ipm_backtrack, rocq_alias from_sep_big_sepL2_app]
+instance (priority := default + 5) fromSep_bigSepL2_app [BI PROP] {A B}
+    (Φ : Nat → A → B → PROP) (l₁ l₁' l₁'' : List A) (l₂ l₂' l₂'' : List B)
+    [h₁ : IsApp l₁ l₁' l₁''] [h₂ : IsApp l₂ l₂' l₂''] :
+    FromSep ([∗list] k ↦ y₁;y₂ ∈ l₁;l₂, Φ k y₁ y₂)
+      ([∗list] k ↦ y₁;y₂ ∈ l₁';l₂', Φ k y₁ y₂)
+      ([∗list] k ↦ y₁;y₂ ∈ l₁'';l₂'', Φ (k + l₁'.length) y₁ y₂) where
+  from_sep := by
+    rw [h₁.is_app, h₂.is_app]
+    exact wand_elim BigSepL2.bigSepL2_app_wand
+
+@[rocq_alias from_sep_big_sepMS_disj_union]
+instance (priority := default + 20) fromSep_bigSepMS_disjUnion [BI PROP] {MS A : Type _}
+    [LawfulFiniteMultiSet MS A] (Φ : A → PROP) (X₁ X₂ : MS) :
+    FromSep ([∗mset] y ∈ X₁ ⊎ X₂, Φ y) ([∗mset] y ∈ X₁, Φ y) ([∗mset] y ∈ X₂, Φ y) where
+  from_sep := BigSepMS.bigSepMS_disjUnion.2
+
 /-! ### AndIntoSep -/
 
 @[ipm_class, rocq_alias AndIntoSep]
@@ -739,6 +824,36 @@ instance intoSep_intuitionistically_affine [BI PROP] (P Q1 Q2 : PROP) [h : IntoS
     _ ⊢ □ (Q1 ∧ Q2) := intuitionistically_mono <| h.into_sep.trans sep_and
     _ ⊢ □ Q1 ∧ □ Q2 := intuitionistically_and.mp
     _ ⊢ □ Q1 ∗ □ Q2 := and_sep_intuitionistically.mp
+
+@[ipm_backtrack, rocq_alias into_sep_big_sepL_cons]
+instance intoSep_bigSepL_cons [BI PROP] {A}
+    (Φ : Nat → A → PROP) (l : List A) (x : A) (l' : List A) [hl : IsCons l x l'] :
+    IntoSep ([∗list] k ↦ y ∈ l, Φ k y) (Φ 0 x) ([∗list] k ↦ y ∈ l', Φ (k + 1) y) where
+  into_sep := hl.is_cons ▸ BigSepL.bigSepL_cons.mp
+
+@[ipm_backtrack, rocq_alias into_sep_big_sepL_app]
+instance intoSep_bigSepL_app [BI PROP] {A}
+    (Φ : Nat → A → PROP) (l l₁ l₂ : List A) [hl : IsApp l l₁ l₂] :
+    IntoSep ([∗list] k ↦ y ∈ l, Φ k y)
+      ([∗list] k ↦ y ∈ l₁, Φ k y) ([∗list] k ↦ y ∈ l₂, Φ (k + l₁.length) y) where
+  into_sep := hl.is_app ▸ BigSepL.bigSepL_append.mp
+
+@[rocq_alias into_sep_big_sepL2_cons]
+instance intoSep_bigSepL2_cons [BI PROP] {A B}
+    (Φ : Nat → A → B → PROP) (l₁ : List A) (x₁ : A) (l₁' : List A)
+    (l₂ : List B) (x₂ : B) (l₂' : List B)
+    [h₁ : IsCons l₁ x₁ l₁'] [h₂ : IsCons l₂ x₂ l₂'] :
+    IntoSep ([∗list] k ↦ y₁;y₂ ∈ l₁;l₂, Φ k y₁ y₂)
+      (Φ 0 x₁ x₂) ([∗list] k ↦ y₁;y₂ ∈ l₁';l₂', Φ (k + 1) y₁ y₂) where
+  into_sep := by
+    rw [h₁.is_cons, h₂.is_cons]
+    exact BigSepL2.bigSepL2_cons.mp
+
+@[rocq_alias into_sep_big_sepMS_disj_union]
+instance intoSep_bigSepMS_disjUnion [BI PROP] {MS A}
+    [LawfulFiniteMultiSet MS A] (Φ : A → PROP) (X₁ X₂ : MS) :
+    IntoSep ([∗mset] y ∈ X₁ ⊎ X₂, Φ y) ([∗mset] y ∈ X₁, Φ y) ([∗mset] y ∈ X₂, Φ y) where
+  into_sep := BigSepMS.bigSepMS_disjUnion.mp
 
 /-! ### FromOr -/
 
@@ -1053,7 +1168,7 @@ instance intoPure_pure_wand [BI PROP] (a : Bool) (φ1 φ2 : Prop) (P1 P2 : PROP)
 -/
 @[rocq_alias into_pure_tforall]
 instance intoPure_tforall {TT : Tele} [BI PROP] (Φ : TT.Arg → PROP) (φ : TT.Arg → Prop)
-    [h : ∀ x, IntoPure (Φ x) (φ x)] : IntoPure (BI.tforall Φ) (Tele.tforall φ) where
+    [h : ∀ x, IntoPure (Φ x) (φ x)] : IntoPure iprop(∀.. x, Φ x) (∀.. x, φ x) where
   into_pure := calc
     _ ⊢ ∀ x, Φ x         := (tforall_forall Φ).mp
     _ ⊢ ∀ x, ⌜φ x⌝       := forall_mono fun x => (h x).into_pure
@@ -1062,12 +1177,37 @@ instance intoPure_tforall {TT : Tele} [BI PROP] (Φ : TT.Arg → PROP) (φ : TT.
 
 @[rocq_alias into_pure_texist]
 instance intoPure_texist {TT : Tele} [BI PROP] (Φ : TT.Arg → PROP) (φ : TT.Arg → Prop)
-    [h : ∀ x, IntoPure (Φ x) (φ x)] : IntoPure (texist Φ) (Tele.texist φ) where
+    [h : ∀ x, IntoPure (Φ x) (φ x)] : IntoPure iprop(∃.. x, Φ x) (∃.. x, φ x) where
   into_pure := calc
     _ ⊢ ∃ x, Φ x        := (texist_exist Φ).mp
     _ ⊢ ∃ x, ⌜φ x⌝      := exists_mono fun x => (h x).into_pure
     _ ⊢ ⌜∃ x, φ x⌝      := pure_exists.mp
     _ ⊢ ⌜Tele.texist φ⌝ := pure_mono (Tele.texist_exist φ).mpr
+
+@[rocq_alias into_pure_big_sepL]
+instance intoPure_bigSepL [BI PROP] {A} (Φ : Nat → A → PROP)
+    (φ : Nat → A → Prop) (l : List A) [h : ∀ k x, IntoPure (Φ k x) (φ k x)] :
+    IntoPure ([∗list] k ↦ x ∈ l, Φ k x) (∀ k x, l[k]? = some x → φ k x) where
+  into_pure := (BigSepL.bigSepL_mono fun _ => (h ..).into_pure).trans BigSepL.bigSepL_pure_intro
+
+@[rocq_alias into_pure_big_sepM]
+instance intoPure_bigSepM [BI PROP] {K V : Type _} {M : Type _ → Type _}
+    [LawfulFiniteMap M K] (Φ : K → V → PROP) (φ : K → V → Prop) (m : M V)
+    [h : ∀ k x, IntoPure (Φ k x) (φ k x)] :
+    IntoPure ([∗map] k ↦ x ∈ m, Φ k x) (PartialMap.all φ m) where
+  into_pure := (BigSepM.bigSepM_mono fun _ => (h ..).into_pure).trans BigSepM.bigSepM_pure_intro
+
+@[rocq_alias into_pure_big_sepS]
+instance intoPure_bigSepS [BI PROP] {S A} [LawfulFiniteSet S A]
+    (Φ : A → PROP) (φ : A → Prop) (X : S) [h : ∀ x, IntoPure (Φ x) (φ x)] :
+    IntoPure ([∗set] y ∈ X, Φ y) (∀ y, y ∈ X → φ y) where
+  into_pure := (BigSepS.bigSepS_mono fun _ => (h _).into_pure).trans BigSepS.bigSepS_pure_intro
+
+@[rocq_alias into_pure_big_sepMS]
+instance intoPure_bigSepMS [BI PROP] {MS A} [LawfulFiniteMultiSet MS A]
+    (Φ : A → PROP) (φ : A → Prop) (X : MS) [h : ∀ x, IntoPure (Φ x) (φ x)] :
+    IntoPure ([∗mset] y ∈ X, Φ y) (∀ y, y ∈ X → φ y) where
+  into_pure := (BigSepMS.bigSepMS_mono fun _ => (h _).into_pure).trans BigSepMS.bigSepMS_pure_intro
 
 /-! ### FromPure -/
 
@@ -1191,7 +1331,7 @@ instance fromPure_absorbingly (a : Bool) [BI PROP] (P : PROP) (φ : Prop)
 @[rocq_alias from_pure_tforall]
 instance fromPure_tforall {TT : Tele} (a : Bool) [BI PROP] (Φ : TT.Arg → PROP)
     (φ : TT.Arg → Prop) [h : ∀ x, FromPure a (Φ x) io (φ x)] :
-    FromPure a (BI.tforall Φ) io (Tele.tforall φ) where
+    FromPure a iprop(∀.. x, Φ x) io (∀.. x, φ x) where
   from_pure := calc
     _ ⊢ <affine>?a ⌜∀ x, φ x⌝ := affinelyIf_mono <| pure_mono (Tele.tforall_forall φ).mp
     _ ⊢ <affine>?a ∀ x, ⌜φ x⌝ := affinelyIf_mono pure_forall.mp
@@ -1202,13 +1342,61 @@ instance fromPure_tforall {TT : Tele} (a : Bool) [BI PROP] (Φ : TT.Arg → PROP
 @[rocq_alias from_pure_texist]
 instance fromPure_texist {TT : Tele} (a : Bool) [BI PROP] (Φ : TT.Arg → PROP)
     (φ : TT.Arg → Prop) [h : ∀ x, FromPure a (Φ x) io (φ x)] :
-    FromPure a (texist Φ) io (Tele.texist φ) where
+    FromPure a iprop(∃.. x, Φ x) io (∃.. x, φ x) where
   from_pure := calc
     _ ⊢ <affine>?a ⌜∃ x, φ x⌝ := affinelyIf_mono <| pure_mono (Tele.texist_exist φ).mp
     _ ⊢ <affine>?a ∃ x, ⌜φ x⌝ := affinelyIf_mono pure_exists.mpr
     _ ⊢ ∃ x, <affine>?a ⌜φ x⌝ := affinelyIf_exists.mp
     _ ⊢ ∃ x, Φ x              := exists_mono fun x => (h x).from_pure
     _ ⊢ texist Φ              := (texist_exist Φ).mpr
+
+@[rocq_alias from_pure_big_sepL]
+instance fromPure_bigSepL (a : Bool) [BI PROP] {A} (Φ : Nat → A → PROP) io
+    (φ : Nat → A → Prop) (l : List A)
+    [h : ∀ k x, FromPure a (Φ k x) io (φ k x)] [or : TCOr (TCEq a true) (BIAffine PROP)] :
+    FromPure a ([∗list] k ↦ x ∈ l, Φ k x) io (∀ k x, l[k]? = some x → φ k x) where
+  from_pure := match a, or, h with
+    | true, _, h =>
+      BigSepL.bigSepL_affinely_pure_elim.trans <| BigSepL.bigSepL_mono fun _ => (h ..).from_pure
+    | false, TCOr.r, h =>
+      BigSepL.bigSepL_pure.mpr.trans <| BigSepL.bigSepL_mono fun _ => (h ..).from_pure
+    | false, TCOr.l (t := heq), _ => nomatch heq
+
+@[rocq_alias from_pure_big_sepM]
+instance fromPure_bigSepM (a : Bool) [BI PROP] {K V : Type _} {M : Type _ → Type _}
+    [LawfulFiniteMap M K] (Φ : K → V → PROP) (φ : K → V → Prop) (m : M V) io
+    [h : ∀ k x, FromPure a (Φ k x) io (φ k x)] [or : TCOr (TCEq a true) (BIAffine PROP)] :
+    FromPure a ([∗map] k ↦ x ∈ m, Φ k x) io (PartialMap.all φ m) where
+  from_pure := match a, or, h with
+    | true, _, h =>
+      BigSepM.bigSepM_affinely_pure_elim.trans <| BigSepM.bigSepM_mono fun _ => (h ..).from_pure
+    | false, TCOr.r, h =>
+      BigSepM.bigSepM_pure.mpr.trans <| BigSepM.bigSepM_mono fun _ => (h ..).from_pure
+    | false, TCOr.l (t := heq), _ => nomatch heq
+
+@[rocq_alias from_pure_big_sepS]
+instance fromPure_bigSepS (a : Bool) [BI PROP] {S A : Type _} [LawfulFiniteSet S A]
+    (Φ : A → PROP) (φ : A → Prop) (X : S) io
+    [h : ∀ x, FromPure a (Φ x) io (φ x)] [or : TCOr (TCEq a true) (BIAffine PROP)] :
+    FromPure a ([∗set] y ∈ X, Φ y) io (∀ y, y ∈ X → φ y) where
+  from_pure := match a, or, h with
+    | true, _, h =>
+      BigSepS.bigSepS_affinely_pure_elim.trans <| BigSepS.bigSepS_mono fun _ => (h _).from_pure
+    | false, TCOr.r, h =>
+      BigSepS.bigSepS_pure.mpr.trans <| BigSepS.bigSepS_mono fun _ => (h _).from_pure
+    | false, TCOr.l (t := heq), _ => nomatch heq
+
+@[rocq_alias from_pure_big_sepMS]
+instance fromPure_bigSepMS (a : Bool) [BI PROP] {MS A : Type _}
+    [LawfulFiniteMultiSet MS A] (Φ : A → PROP) (φ : A → Prop) (X : MS) io
+    [h : ∀ x, FromPure a (Φ x) io (φ x)] [or : TCOr (TCEq a true) (BIAffine PROP)] :
+    FromPure a ([∗mset] y ∈ X, Φ y) io (∀ y, y ∈ X → φ y) where
+  from_pure := match a, or, h with
+    | true, _, h =>
+      BigSepMS.bigSepMS_affinely_pure_elim.trans <| BigSepMS.bigSepMS_mono fun _ => (h _).from_pure
+    | false, TCOr.r, h =>
+      BigSepMS.bigSepMS_pure.mpr.trans <| BigSepMS.bigSepMS_mono fun _ => (h _).from_pure
+    | false, TCOr.l (t := heq), _ => nomatch heq
 
 /-! ### FromModal -/
 
@@ -1286,7 +1474,7 @@ instance elimModal_absorbingly_here [BI PROP] p io (P Q : PROP) [Absorbing Q] :
 @[rocq_alias elim_modal_tforall]
 instance elimModal_tforall {TT : Tele} [BI PROP] φ p p' io (P P' : PROP)
     (Φ Ψ : TT.Arg → PROP) [h : ∀ x, ElimModal φ p io p' P P' (Φ x) (Ψ x)] :
-    ElimModal φ p io p' P P' (BI.tforall Φ) (BI.tforall Ψ) where
+    ElimModal φ p io p' P P' iprop(∀.. x, Φ x) iprop(∀.. x, Ψ x) where
   elim_modal hφ := by
     refine .trans ?_ (tforall_forall Φ).mpr
     refine forall_intro fun x => ?_

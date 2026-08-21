@@ -1,17 +1,18 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König, Alex Keizer
+Authors: Lars König, Alex Keizer, Alvin Tang
 -/
 module
 
 import Lean.Parser.Term
+public meta import Iris.Std.DelabRule
 public import Iris.Init
 
 public meta section
 
 namespace Iris.BI
-open Lean Lean.Parser.Term
+open Lean Lean.Parser.Term PrettyPrinter Delaborator
 
 /- `iprop(P)` embeds a separation logic proposition `P` into `term`. -/
 syntax:max (name := iprop) "iprop(" term ")" : term
