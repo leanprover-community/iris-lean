@@ -131,14 +131,15 @@ example {l : Loc} {v : Val} {P : IProp GF} : ⊢@{IProp GF}
   isplitl [Hpt]
   wp_apply wp_load $$ Hpt
 
--- a specialisation goal predates the application, so it keeps its `▷` too
+-- also goals that are part of the specialization pattern have ▷ stripped
+-- (this differs from Rocq)
 /--
 error: unsolved goals
 hlc : HasLC
 GF : BundledGFunctors
 inst✝ : HeapLangGS hlc GF
 ⊢
-  ⊢ ▷ WP hl((#2 + #1)) {{ v, ⌜v = hl_val(#3)⌝ }}
+  ⊢ WP hl((#2 + #1)) {{ v, ⌜v = hl_val(#3)⌝ }}
 -/
 #guard_msgs (whitespace := lax) in
 example : ⊢@{IProp GF} WP hl(v(λ x, x + #1) #2) {{ v, ⌜v = hl_val(#3)⌝ }} := by
@@ -341,7 +342,7 @@ example {l : Loc} {Φ Ψ : Val → IProp GF} : ⊢@{IProp GF}
   wp_apply wp_wand $$ H [] with %v Hv
 
 -- no goal to introduce into
-/-- error: wp_apply: no goal left for the `with` patterns -/
+/-- error: no remaining Iris goal -/
 #guard_msgs (whitespace := lax) in
 example {Φ : Val → IProp GF} {v : Val} : ⊢@{IProp GF}
     WP hl(v(&v)) {{ Φ }} -∗ WP hl(v(&v)) {{ Φ }} := by

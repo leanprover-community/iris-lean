@@ -469,57 +469,81 @@ meta def iWpApplyCore {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(HasLC)}
     {prop : Q(Type u)} {bi : Q(BI $prop)} {ehyps : Q($prop)}
     (hyps : Hyps bi ehyps) (ι : Q(IrisGS_gen $hlc Exp $GF)) (s : Q(Stuckness)) (E : Q(CoPset))
     (e : Q(Exp)) (Φ : Q(Val → $prop)) (pmt : PMTerm)
-    (premisesOut : IO.Ref (Array MVarId × Array MVarId))
     (_hu : QuotedLevelDefEq u 0 := ⟨⟩) (_hprop : $prop =Q IProp $GF := ⟨⟩)
     (_hbi : $bi =Q UPred.instBIUPred := ⟨⟩)
     (κ : Q(Wp $prop Exp Val Stuckness) := q(wp.def)) (_hwp : $κ =Q wp.def := ⟨⟩) :
     ProofModeM Q($ehyps ⊢ Wp.wp $s $E $e $Φ) := do
-  let beforePose := (← get).goals.size
   let ⟨eΔ, hyps', p, A, posePf⟩ ← iHave hyps q(Wp.wp $s $E $e $Φ) pmt true
-  let afterPose := (← get).goals.size
   let some {result := pf, ..} ←
     findECtx (α := Q($eΔ ∗ □?$p $A ⊢ Wp.wp $s $E $e $Φ)) e fun K e' => do
       trace[wp_apply] m!"trying to apply {A} to {e'}"
       iWpBindCore _ ι s E e Φ K e' (iApply hyps' p A ·)
   | throwIPMError "cannot apply {A}"
-  premisesOut.set ((← get).goals.extract afterPose, (← get).goals.extract beforePose afterPose)
   return q($posePf $pf)
 
-/-- Strip a leading `▷` and simplify WP expressions, in the application's goals only -/
-meta def wpApplyPostPass (premises : Array MVarId) : TacticM (Array MVarId) := do
-  let post ← `(tactic| (try inext; try wp_expr_simp))
-  let mut out : Array MVarId := #[]
-  let mut produced : Array MVarId := #[]
-  for g in (← getGoals) do
-    if premises.contains g && !(← g.isAssigned) then
-      let new := (← Tactic.run g (evalTactic post)).toArray
-      out := out ++ new
-      produced := produced ++ new
+-- /-- Strip a leading `▷` and simplify WP expressions, in the application's goals only -/
+-- meta def wpApplyPostPass (premises : Array MVarId) : TacticM (Array MVarId) := do
+--   let post ← `(tactic| (try inext; try wp_expr_simp))
+--   let mut out : Array MVarId := #[]
+--   let mut produced : Array MVarId := #[]
+--   for g in (← getGoals) do
+--     if premises.contains g && !(← g.isAssigned) then
+--       let new := (← Tactic.run g (evalTactic post)).toArray
+--       out := out ++ new
+--       produced := produced ++ new
+--     else
+--       out := out.push g
+--   setGoals out.toList
+--   return produced
+
+-- /-- Apply and post-pass, return the application's goals. Dependee mvars (a lemma's `?Φ`)
+-- are registered before the snapshot, so they stay out of `premises` despite sorting last. -/
+-- meta def runWpApply (tacName : Name) (pmt : PMTerm) :
+--     TacticM (Array MVarId × Array MVarId) := do
+--   let premises ← IO.mkRef ((#[], #[]) : Array MVarId × Array MVarId)
+--   ProofModeM.runTacticWp tacName fun mvar {hyps, ι, s, E, e, Φ, ..} => do
+--     mvar.assign (← iWpApplyCore hyps ι s E e Φ pmt premises)
+--   let (application, specialisation) ← premises.get
+--   return (← wpApplyPostPass application, specialisation)
+
+-- /-- Needed for `wp_apply ... with`. Introduce into the last goal the application produced,
+-- or a `$$` goal if it produced none. -/
+-- meta def wpApplyIntro (tacName : Name) (produced specialisation : Array MVarId)
+--     (pats : Array (TSyntax `introPat)) : TacticM Unit := do
+--   if pats.isEmpty then return
+--   let fallback ← specialisation.filterM fun g => return !(← g.isAssigned)
+--   let some last := produced.back? <|> fallback.back?
+--     | throwError "{tacName}: no goal left for the `with` patterns"
+--   let new ← Tactic.run last (evalTactic (← `(tactic| iintro $pats*)))
+--   setGoals <| (← getGoals).flatMap fun g => if g == last then new else [g]
+
+elab "wp_apply_raw" colGt pmt:pmTerm : tactic => do
+  let pmt ← liftMacroM <| PMTerm.parse pmt
+  ProofModeM.runTacticWp `wp_apply fun mvar {hyps, ι, s, E, e, Φ, ..} => do
+     mvar.assign (← iWpApplyCore hyps ι s E e Φ pmt)
+
+-- TODO: Is there a more efficient way to implement this?
+-- TODO: move this somewhere else
+elab "focusLastIrisGoal" colGt tac:tactic : tactic => do
+  let goals ← getUnsolvedGoals
+  let mut goals_before := []
+  let mut iris_goal := []
+  let mut goals_after := []
+  for g in goals do
+    if isIrisGoal (← g.getType) then
+      goals_before := goals_before ++ iris_goal ++ goals_after
+      iris_goal := [g]
+      goals_after := []
     else
-      out := out.push g
-  setGoals out.toList
-  return produced
+      goals_after := goals_after ++ [g]
+  let [g] := iris_goal
+    | throwError "no remaining Iris goal"
+  setGoals [g]
+  evalTactic tac
+  let goals' ← getUnsolvedGoals
+  setGoals (goals_before ++ goals' ++ goals_after)
 
-/-- Apply and post-pass, return the application's goals. Dependee mvars (a lemma's `?Φ`)
-are registered before the snapshot, so they stay out of `premises` despite sorting last. -/
-meta def runWpApply (tacName : Name) (pmt : PMTerm) :
-    TacticM (Array MVarId × Array MVarId) := do
-  let premises ← IO.mkRef ((#[], #[]) : Array MVarId × Array MVarId)
-  ProofModeM.runTacticWp tacName fun mvar {hyps, ι, s, E, e, Φ, ..} => do
-    mvar.assign (← iWpApplyCore hyps ι s E e Φ pmt premises)
-  let (application, specialisation) ← premises.get
-  return (← wpApplyPostPass application, specialisation)
 
-/-- Needed for `wp_apply ... with`. Introduce into the last goal the application produced,
-or a `$$` goal if it produced none. -/
-meta def wpApplyIntro (tacName : Name) (produced specialisation : Array MVarId)
-    (pats : Array (TSyntax `introPat)) : TacticM Unit := do
-  if pats.isEmpty then return
-  let fallback ← specialisation.filterM fun g => return !(← g.isAssigned)
-  let some last := produced.back? <|> fallback.back?
-    | throwError "{tacName}: no goal left for the `with` patterns"
-  let new ← Tactic.run last (evalTactic (← `(tactic| iintro $pats*)))
-  setGoals <| (← getGoals).flatMap fun g => if g == last then new else [g]
 
 /--
 `wp_apply lem` poses the lemma `lem`, whose conclusion must be a `WP e' ...`, and applies
@@ -532,30 +556,33 @@ specialises the premises of `lem` with the given specialisation patterns, and
 syntax (name := wpApply) "wp_apply " colGt pmTerm
   (" with" (colGt ppSpace introPat)+)? : tactic
 
-elab_rules : tactic
+macro_rules
   | `(tactic| wp_apply $pmt:pmTerm $[with $pats*]?) => do
-    let (produced, spec) ← runWpApply `wp_apply (← liftMacroM <| PMTerm.parse pmt)
-    wpApplyIntro `wp_apply produced spec (pats.getD #[])
+    let t : TSyntax `tactic ←
+      if let some pats := pats then
+        `(tactic|focusLastIrisGoal (iintro $pats*))
+      else
+        `(tactic|skip)
+    `(tactic| focus ((wp_apply_raw $pmt <;> (try inext) <;> (try wp_expr_simp)); $t:tactic))
 
 /-- bound on `wp_smart_apply`'s pure steps. -/
 meta def smartApplyFuel : Nat := 10000
 
 /-- Retry the application after single pure steps, bounded. `with` runs after the loop:
 retrying a failed introduction would roll back an application that already succeeded. -/
-meta def runWpSmartApply (pmt : PMTerm) (pats : Array (TSyntax `introPat)) :
+meta def runWpSmartApply (pmt : TSyntax `pmTerm) (_pats : Array (TSyntax `introPat)) :
     TacticM Unit := do
   let mut firstErr : Option Exception := none
   for _ in [0:smartApplyFuel] do
     let s ← Tactic.saveState
     let attempt ←
       try
-        pure <| Sum.inl (← runWpApply `wp_smart_apply pmt)
+        pure <| Sum.inl (← evalTactic (← `(tactic| wp_apply_raw $pmt)))
       catch e =>
-        -- an interrupt or heartbeat exhaustion is not a failed application: do not retry it
-        if e.isInterrupt || e.isMaxHeartbeat then throw e else pure (Sum.inr e)
+        pure (Sum.inr e)
     match attempt with
-    | .inl (produced, spec) =>
-      wpApplyIntro `wp_smart_apply produced spec pats
+    | .inl _ =>
+      -- wpApplyIntro `wp_smart_apply produced spec pats
       return
     | .inr applyErr =>
       s.restore
@@ -579,7 +606,7 @@ syntax (name := wpSmartApply) "wp_smart_apply " colGt pmTerm
 
 elab_rules : tactic
   | `(tactic| wp_smart_apply $pmt:pmTerm $[with $pats*]?) => do
-    runWpSmartApply (← liftMacroM <| PMTerm.parse pmt) (pats.getD #[])
+    runWpSmartApply pmt (pats.getD #[])
 
 
 /-! ## Tactic lemmas for the heap tactics -/
