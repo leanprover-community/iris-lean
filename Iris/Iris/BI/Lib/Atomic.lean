@@ -157,49 +157,17 @@ syntax:max (name := aaccNotation)
     "@ " term ", " term ppSpace
     "<{ " (auAllBinders)? term ", " ppSpace &"COMM " term " }>") : term
 
-/-- Convert `explicitBinders` into the standard binders of a `fun` expression. -/
-def auFunBinders (binders? : Option (TSyntax ``Lean.explicitBinders)) :
-    MacroM (Option (Array (TSyntax ``Lean.Parser.Term.funBinder))) := do
-  let mkBinder (x : Syntax) (ty? : Option Term) :
-      TSyntax ``Lean.Parser.Term.funBinder :=
-    ⟨Lean.Elab.Term.mkExplicitBinder ⟨x⟩ (ty?.getD (Lean.mkHole x))⟩
-  let some binders := binders? | return .none
-  let binders := binders.raw[0]
-  if binders.getKind == ``Lean.unbracketedExplicitBinders then
-    let ty? : Option Term := if binders[1].isNone then none else some ⟨binders[1][1]⟩
-    return binders[0].getArgs.map fun binder => mkBinder binder[0] ty?
-  else if binders.getArgs.all (·.getKind == ``Lean.bracketedExplicitBinders) then
-    return binders.getArgs.flatMap fun binder =>
-      binder[1].getArgs.map fun x => mkBinder x[0] (some ⟨binder[3]⟩)
-  else
-    Macro.throwError "unexpected explicit binder"
-
-/-- The telescope `Tele.cons fun x₁ => … Tele.cons fun xₙ => Tele.nil` binding `binders`. -/
-def auTele (binders? : Option (TSyntax ``Lean.explicitBinders)) : MacroM Term := do
-  -- The universe of the empty telescope is not otherwise determined.
-  let some binders := binders? | return ← `((Tele.nil : Tele.{0}))
-  return ⟨← Lean.expandExplicitBinders ``Tele.cons binders (← `(Tele.nil))⟩
-
-/-- The telescopic function `Tele.app fun x₁ … xₙ => ULift.up body` over `TT`, binding `binders`. -/
-def auFun (TT : Term) (binders? : Option (Array (TSyntax ``Lean.Parser.Term.funBinder)))
-    (body : Term) : MacroM Term := do
-  let some binders := binders?
-    | return ← `(Tele.app (TT := $TT) (ULift.up $body))
-  `(Tele.app (TT := $TT) (fun $binders:funBinder* => ULift.up $body))
-
 /-- The telescopes and the telescopic functions `α`, `β` and `Φ` of an `AU`/`AACC` notation. -/
 def auArgs (xs : Option (TSyntax ``auExBinders)) (ys : Option (TSyntax ``auAllBinders))
     (α β Φ : Term) : MacroM (Term × Term × Term × Term × Term) := do
   let xstx? := xs.map fun xs => (⟨xs.raw[1]⟩ : TSyntax ``Lean.explicitBinders)
   let ystx? := ys.map fun ys => (⟨ys.raw[1]⟩ : TSyntax ``Lean.explicitBinders)
-  let xbs? ← auFunBinders xstx?
-  let ybs? ← auFunBinders ystx?
-  let TA ← auTele xstx?
-  let TB ← auTele ystx?
+  let TA ← Tele.expandLiteral xstx?
+  let TB ← Tele.expandLiteral ystx?
   return (TA, TB,
-    ← auFun TA xbs? (← `(iprop($α))),
-    ← auFun TA xbs? (← auFun TB ybs? (← `(iprop($β)))),
-    ← auFun TA xbs? (← auFun TB ybs? (← `(iprop($Φ)))))
+    ← Tele.expandFun TA xstx? (← `(iprop($α))),
+    ← Tele.expandFun TA xstx? (← Tele.expandFun TB ystx? (← `(iprop($β)))),
+    ← Tele.expandFun TA xstx? (← Tele.expandFun TB ystx? (← `(iprop($Φ)))))
 
 macro_rules
   | `(iprop(AU%$tk <{ $[$xs]? $α }> @ $Eo, $Ei <{ $[$ys]? $β, COMM $Φ }>)) => do
@@ -212,45 +180,9 @@ macro_rules
 
 /-! ### Delaboration -/
 
-/-- The number of binders of a literal telescope, if it is one. -/
-partial def auTeleLength (e : Expr) : Option Nat :=
-  if e.isConstOf ``Tele.nil then
-    some 0
-  else if e.isAppOfArity ``Tele.cons 2 then
-    match e.appArg! with
-    | .lam _ _ body _ => (auTeleLength body).map (· + 1)
-    | _ => none
-  else
-    none
-
-/-- Descend through the `n` binders of `fun x₁ … xₙ => ULift.up body`, running `k` on `body` with
-the binder identifiers. The binders are named after `names?` if given, so that the components of
-an `AU`/`AACC` notation can share their binder names. -/
-partial def withAuBinders {α : Type} (n : Nat) (names? : Option (Array Name))
-    (acc : Array Ident) (k : Array Ident → DelabM α) : DelabM α := do
-  if acc.size < n then
-    unless (← getExpr).isLambda do failure
-    match names? with
-    | some names =>
-      let x := names[acc.size]!
-      withBindingBody x <| withAuBinders n names? (acc.push (mkIdent x)) k
-    | none => withBindingBodyUnusedName fun x => withAuBinders n names? (acc.push ⟨x⟩) k
-  else
-    unless (← getExpr).isAppOfArity ``ULift.up 2 do failure
-    withNaryArg 1 (k acc)
-
-/-- Descend into the body of the telescopic function `Tele.app fun x₁ … xₙ => ULift.up body`. -/
-def withAuFun {α : Type} (n : Nat) (names? : Option (Array Name))
-    (k : Array Ident → DelabM α) : DelabM α := do
-  unless (← getExpr).isAppOfArity ``Tele.app 3 do failure
-  withNaryArg 2 (withAuBinders n names? #[] k)
-
 /-- The `explicitBinders` consisting of the plain binders `xs`. -/
-def auPlainBinders (xs : Array Ident) : DelabM (TSyntax ``Lean.explicitBinders) := do
-  let bs ← xs.mapM fun x => `(binderIdent| $x:ident)
-  let unbracketed := Syntax.node2 .none ``Lean.unbracketedExplicitBinders
-    (Syntax.node .none nullKind (bs.map (·.raw))) (Syntax.node .none nullKind #[])
-  return ⟨Syntax.node1 .none ``Lean.explicitBinders unbracketed⟩
+def auPlainBinders (xs : Array Ident) : DelabM (TSyntax ``Lean.explicitBinders) :=
+  `(explicitBinders| $[$xs:ident]*)
 
 /-- The `∃∃ x₁ … xₙ,` group, or `none` for the empty telescope. -/
 def auExGroup (xs : Array Ident) : DelabM (Option (TSyntax ``auExBinders)) := do
@@ -266,15 +198,15 @@ def auAllGroup (ys : Array Ident) : DelabM (Option (TSyntax ``auAllBinders)) := 
 def delabAtomicUpdate : Delab := do
   let e ← getExpr
   unless e.isAppOfArity ``atomic_update 10 do failure
-  let some nA := auTeleLength (e.getArg! 3) | failure
-  let some nB := auTeleLength (e.getArg! 4) | failure
+  let some nA := Tele.literalArity? (e.getArg! 3) | failure
+  let some nB := Tele.literalArity? (e.getArg! 4) | failure
   let Eo ← withNaryArg 5 delab
   let Ei ← withNaryArg 6 delab
-  let (xs, α) ← withNaryArg 7 <| withAuFun nA none fun xs => return (xs, ← delab)
-  let (ys, β) ← withNaryArg 8 <| withAuFun nA (some (xs.map (·.getId))) fun _ =>
-    withAuFun nB none fun ys => return (ys, ← delab)
-  let Φ ← withNaryArg 9 <| withAuFun nA (some (xs.map (·.getId))) fun _ =>
-    withAuFun nB (some (ys.map (·.getId))) fun _ => delab
+  let (xs, α) ← withNaryArg 7 <| Tele.withFun nA fun xs => return (xs, ← delab)
+  let (ys, β) ← withNaryArg 8 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
+    Tele.withFun nB fun ys => return (ys, ← delab)
+  let Φ ← withNaryArg 9 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
+    Tele.withFunUsing nB (ys.map (·.getId)) fun _ => delab
   `(iprop(AU <{ $[$(← auExGroup xs)]? $(← unpackIprop α) }> @ $Eo, $Ei
       <{ $[$(← auAllGroup ys)]? $(← unpackIprop β), COMM $(← unpackIprop Φ) }>))
 
@@ -282,16 +214,16 @@ def delabAtomicUpdate : Delab := do
 def delabAtomicAcc : Delab := do
   let e ← getExpr
   unless e.isAppOfArity ``atomic_acc 11 do failure
-  let some nA := auTeleLength (e.getArg! 3) | failure
-  let some nB := auTeleLength (e.getArg! 4) | failure
+  let some nA := Tele.literalArity? (e.getArg! 3) | failure
+  let some nB := Tele.literalArity? (e.getArg! 4) | failure
   let Eo ← withNaryArg 5 delab
   let Ei ← withNaryArg 6 delab
-  let (xs, α) ← withNaryArg 7 <| withAuFun nA none fun xs => return (xs, ← delab)
+  let (xs, α) ← withNaryArg 7 <| Tele.withFun nA fun xs => return (xs, ← delab)
   let P ← withNaryArg 8 delab
-  let (ys, β) ← withNaryArg 9 <| withAuFun nA (some (xs.map (·.getId))) fun _ =>
-    withAuFun nB none fun ys => return (ys, ← delab)
-  let Φ ← withNaryArg 10 <| withAuFun nA (some (xs.map (·.getId))) fun _ =>
-    withAuFun nB (some (ys.map (·.getId))) fun _ => delab
+  let (ys, β) ← withNaryArg 9 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
+    Tele.withFun nB fun ys => return (ys, ← delab)
+  let Φ ← withNaryArg 10 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
+    Tele.withFunUsing nB (ys.map (·.getId)) fun _ => delab
   `(iprop(AACC <{ $[$(← auExGroup xs)]? $(← unpackIprop α), ABORT $(← unpackIprop P) }>
       @ $Eo, $Ei <{ $[$(← auAllGroup ys)]? $(← unpackIprop β), COMM $(← unpackIprop Φ) }>))
 
