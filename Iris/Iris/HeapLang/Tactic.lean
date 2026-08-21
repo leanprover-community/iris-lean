@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Fernando Leal, Klaus Kraßnitzer. All rights reserved.
+Copyright (c) 2026 Fernando Leal. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Fernando Leal, Klaus Kraßnitzer
 -/
@@ -57,13 +57,6 @@ where
   | e =>
     extractEctxItem e
 
-public meta partial
-def extractAllEctxItems (e : Q(Exp)) (acc : List Q(ECtxItem) := []) : MetaM (List Q(ECtxItem) × Q(Exp)) := do
-  match ← extractEctxItem e with
-  | (.some Ki, e') => extractAllEctxItems e' (Ki :: acc)
-  | (.none, e) => return (acc, e)
-
-
 open ECtxItem in
 meta partial
 def fillItem (e : Q(Exp)) : Q(ECtxItem) → MetaM Q(Exp)
@@ -119,20 +112,7 @@ structure ECtxResultOf (e : Q(Exp)) (α : Type) where unsafeMk ::
   e' : Q(Exp)
   heq : ProgramLogic.fill $K $e' =Q $e := ⟨⟩
 
-public meta partial
-def findECtx {α : Type _} (ogE : Q(Exp)) (pred : Q(Exp) → ProofModeM α)
-  : ProofModeM (Option (ECtxResultOf ogE α)) := do
-  let (Kis, inner) ← extractAllEctxItems ogE
-  go inner Kis
-where
-  go (e : Q(Exp)) (Kis : List Q(ECtxItem)) : ProofModeM (Option (ECtxResultOf ogE α)) := do
-    if let some a ← observing? <| pred e then
-      return some {result := a, K := quoteList Kis, e' := e}
-    let Ki :: Kis' := Kis | return none
-    go (← fillItem e Ki) Kis'
-
-/-- Like `findECtx`, but outermost-first, and passes the evaluation context to `pred`. -/
-public meta partial def findECtxOutermost {α : Type _} (ogE : Q(Exp))
+public meta partial def findECtx {α : Type _} (ogE : Q(Exp))
     (pred : Q(List ECtxItem) → Q(Exp) → ProofModeM α) :
     ProofModeM (Option (ECtxResultOf ogE α)) :=
   go ogE []
