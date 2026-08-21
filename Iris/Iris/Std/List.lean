@@ -25,6 +25,13 @@ inductive Equiv {α : Type _} (R : α → α → Prop) : List α → List α →
 def zipIdxInt {α : Type _} (l : List α) (n : Int) : List (α × Int) :=
   l.mapIdx (fun i v => (v, (i : Int) + n))
 
+/-- `inserts i k l` overwrites `l` at the consecutive positions `i, i+1, …` with the
+elements of `k`. Indices past the end of `l` are no-ops (as for `List.set`), so `l`'s
+length is unchanged. This is the Lean counterpart of stdpp's `list_inserts`. -/
+def inserts {α : Type _} (i : Nat) : List α → List α → List α
+  | [],     l => l
+  | x :: k, l => (inserts (i + 1) k l).set i x
+
 theorem mem_le_foldr_max (x : Int) (L : List Int) (h : x ∈ L) :
     x ≤ L.foldr max 0 := by induction L <;> grind
 
