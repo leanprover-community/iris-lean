@@ -146,13 +146,8 @@ theorem append_spec l1 ls1 l2 ls2 Φ :
     icases isList_cons $$ Hl1 with ⟨%l, %tl, %heq, Hpt, Hl⟩
     subst heq; wp_pures
     wp_load
-    wp_pures
-    wp_bind &append _ _
-    iapply IH $$ Hl Hl2
-    iintro %_ Hl
-    wp_pures
-    iapply cons_spec $$ [$]
-    iintro %_ _
+    wp_smart_apply IH $$ Hl Hl2 with %_ Hl
+    wp_smart_apply cons_spec $$ [$] with %_ _
     iapply HΦ
     simp
     itrivial
@@ -176,26 +171,16 @@ theorem partition_spec x l ls Φ :
     iapply HΦ <;> simp [isList] <;> itrivial
   | cons hd ls =>
     simp only
-    icases Hl with ⟨%_, %tl, %hl, Hpt, Hl⟩; subst hl
-    wp_pures
+    icases Hl with ⟨%_, %tl, %rfl, Hpt, Hl⟩
     wp_load
-    wp_pures
-    wp_bind &partition _ _
-    iapply IH $$ Hl
-    iintro %l1 %l2 Hl1 Hl2
+    wp_smart_apply IH $$ Hl with %l1 %l2 Hl1 Hl2
     wp_pures
     by_cases hd ≤ x <;> simp [*]
-    · wp_pures
-      wp_bind &cons _ _
-      iapply cons_spec $$ Hl1
-      iintro %_ _
+    · wp_smart_apply cons_spec $$ Hl1 with %_ _
       wp_pures
       imodintro
       iapply HΦ $$ [$] [$]
-    · wp_pures
-      wp_bind &cons _ _
-      iapply cons_spec $$ Hl2
-      iintro %_ _
+    · wp_smart_apply cons_spec $$ Hl2 with %_ _
       wp_pures
       imodintro
       iapply HΦ $$ Hl1
@@ -226,25 +211,11 @@ theorem quicksort_spec l ls Φ :
   | cons head tail =>
     icases Hl with ⟨%l, %tl, %heq, Hpt, Hl⟩; subst heq
     wp_load
-    wp_pures
-    wp_bind &partition _ _
-    iapply partition_spec $$ [$]
-    iintro %l1 %l2 Hl1 Hl2
-    wp_pures
-    wp_bind &quicksort _
-    iapply IH $$ [$]
-    iintro %l1' %ls1' Hl1 %_ %_
-    wp_pures
-    wp_bind &quicksort _
-    iapply IH $$ [$]
-    iintro %l2' %ls2' Hl2 %_ %_
-    wp_pures
-    wp_bind &cons _ _
-    iapply cons_spec $$ Hl2
-    iintro %_ _
-    wp_pures
-    iapply append_spec $$ [$] [$]
-    iintro %_ _
+    wp_smart_apply partition_spec $$ [$] with %l1 %l2 Hl1 Hl2
+    wp_smart_apply IH $$ [$] with %l1' %ls1' Hl1 %_ %_
+    wp_smart_apply IH $$ [$] with %l2' %ls2' Hl2 %_ %_
+    wp_smart_apply cons_spec $$ Hl2 with %_ _
+    wp_smart_apply append_spec $$ [$] [$] with %_ _
     iapply HΦ $$ [$]
     · ipureintro
       have : ls2'.all (head < ·) := by grind
@@ -282,9 +253,7 @@ theorem wp_makeList (l : List Int) (Φ : Val → IProp GF) :
   | cons l ls ih =>
     rw [makeList]
     wp_pures
-    wp_bind &(makeList _)
-    iapply ih
-    iintro %v Hv
+    wp_apply ih with %v Hv
     wp_pures
     iapply cons_spec $$ Hv HΦ
 
@@ -312,9 +281,8 @@ theorem wp_checkSorted (v vacc : Val) (l : List Int) (Φ : Val → IProp GF) :
     wp_load
     rcases hinv with rfl | ⟨va, rfl, hva⟩
     · wp_pures
-      iapply IH $$ %_ %tl %_ %((List.pairwise_cons.mp hsorted).2)
-        %(Or.inr ⟨hd, rfl, fun lv h => (List.pairwise_cons.mp hsorted).1 lv h⟩) Htl
-      iintro %bv Hl %hb
+      wp_apply IH $$ %_ %tl %_ %((List.pairwise_cons.mp hsorted).2)
+        %(Or.inr ⟨hd, rfl, fun lv h => (List.pairwise_cons.mp hsorted).1 lv h⟩) Htl with %bv Hl %hb
       iapply HΦ $$ [Hpt Hl]
       · rw [isList]
         iexists loc, tlv
@@ -347,13 +315,9 @@ def sortAndCheck (l : List Int) : Exp := hl%
 theorem wp_sortAndCheck [HeapLangGS hlc GF] (l : List Int) :
     ⊢@{IProp GF} WP (sortAndCheck l) {{ fun bv => iprop% ⌜bv = hl_val(#true)⌝}} := by
   unfold sortAndCheck
-  wp_bind &(makeList _)
-  iapply wp_makeList
-  iintro %v Hv
+  wp_apply wp_makeList with %v Hv
   wp_pures
-  wp_bind &quicksort _
-  iapply quicksort_spec $$ Hv
-  iintro %v %l' Hv %Hsorted %Heqv
+  wp_apply quicksort_spec $$ Hv with %v %l' Hv %Hsorted %Heqv
   wp_pures
   iapply wp_checkSorted $$ Hv %Hsorted %(Or.inl rfl)
   iintro %bv Hv' %hbv

@@ -306,33 +306,56 @@ public theorem tac_wp_bind [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E 
     (Δ ⊢ WP (ProgramLogic.fill K e') @ s ; E {{ Φ }}) :=
   H.trans (wp_bind (ProgramLogic.fill K))
 
+public meta def iWpBindCore {u}
+  {GF : Q(BundledGFunctors.{0, 0, 0})}
+  {hlc : Q(HasLC)}
+  {prop : Q(Type u)}
+  {bi : Q(BI $prop)}
+  (ehyps : Q($prop))
+  (ι : Q(IrisGS_gen $hlc Exp $GF))
+  (s : Q(Stuckness))
+  (E : Q(CoPset))
+  (e : Q(Exp))
+  (Φ : Q(Val → $prop))
+  (K : Q(List ECtxItem))
+  (e' : Q(Exp))
+  (k : (A : Q($prop)) → ProofModeM Q($ehyps ⊢ $A))
+
+  (_hu : QuotedLevelDefEq u 0 := ⟨⟩)
+  (_hprop : $prop =Q IProp $GF := ⟨⟩)
+  (_hbi : $bi =Q UPred.instBIUPred := ⟨⟩)
+  (κ : Q(Wp $prop Exp Val Stuckness) := q(wp.def))
+  (_hwp : $κ =Q wp.def := ⟨⟩) :
+    ProofModeM (Q($ehyps ⊢ Wp.wp $s $E (ProgramLogic.fill $K $e') $Φ)) := do
+  match K with
+  | ~q([]) =>
+    -- don't do anything for empty evaluation context
+    k q(Wp.wp $s $E $e $Φ)
+  | _ =>
+    -- construct the new postcondition
+    let Φ' : Q(Val → IProp $GF) ←
+      Qq.withLocalDeclDQ `v q(Val) fun v => do
+        mkLambdaFVars #[v] <|
+          q(Wp.wp $s $E $(← HeapLang.fill K q(.ofVal $v)) $Φ)
+    have _ : $Φ' =Q (fun v : Val => Wp.wp (PROP := IProp $GF) $s $E (ProgramLogic.fill $K (v : Exp)) $Φ) := ⟨⟩
+
+    let pf ← k q(Wp.wp $s $E $e' $Φ')
+    return q(tac_wp_bind $pf)
+
+
 -- `hl_exp` must bind tighter than `;` in the heaplang notation so `wp_bind _ _; tac` parses
 elab "wp_bind" colGt ppSpace focus:hl_exp:10 : tactic =>
-  ProofModeM.runTacticWp `wp_bind fun mvar {GF, hyps, s, E, e, Φ, ..} => do
+  ProofModeM.runTacticWp `wp_bind fun mvar {ehyps, hyps, s, ι, E, e, Φ, ..} => do
     let focus ← elabTermEnsuringTypeQ (←`(hl($focus))) q(HeapLang.Exp)
     trace[wp_bind] s!"Context to bind over: {←ppExpr focus}"
 
-    let some {K, e', ..} ← findECtx e (fun e => do
+    let some {K, e', ..} ← findECtx e fun _ e => do
       trace[wp_bind] s!"trying to unify {←ppExpr e} with {←ppExpr focus}"
-      guard <| ← isDefEq e focus)
-    -- TODO: add a throwProofModeEx for throwing errors consistently across all tactics
-      | throwIPMError s!"Cannot unify {←ppExpr focus} with any possible evaluation context"
+      guard <| ← isDefEq e focus
+    | throwIPMError s!"Cannot unify {←ppExpr focus} with any possible evaluation context"
     trace[wp_bind] s!"Found context {←ppExpr K} with expression {←ppExpr e'} matching our focus"
 
-    match K with
-    | ~q([]) =>
-      -- don't do anything for empty evaluation context
-      addMVarGoal mvar
-    | _ =>
-      -- construct the new postcondition
-      let Φ' : Q(Val → IProp $GF) ←
-        Qq.withLocalDeclDQ `v q(Val) fun v => do
-          mkLambdaFVars #[v] <|
-            q(Wp.wp $s $E $(← HeapLang.fill K q(.ofVal $v)) $Φ)
-      have _ : $Φ' =Q (fun v : Val => Wp.wp (PROP := IProp $GF) $s $E (ProgramLogic.fill $K (v : Exp)) $Φ) := ⟨⟩
-
-      let pf ← addBIGoal hyps q(Wp.wp $s $E $e' $Φ')
-      mvar.assign q(tac_wp_bind $pf)
+    mvar.assign <| ← iWpBindCore ehyps ι s E e Φ K e' (addBIGoal hyps)
 
 @[rocq_alias heap_lang.tac_wp_pure]
 public theorem tac_wp_pure [ι : IrisGS_gen hlc Exp GF] {Δ Δ'} {s : Stuckness} {E : CoPset} {K : List ECtxItem} {e₁ e₂ : Exp} {φ : Prop} {n : Nat} {Φ : Val → IProp GF} :
@@ -361,6 +384,7 @@ public meta def iWpPure {u}
   (E : Q(CoPset))
   (e : Q(Exp))
   (Φ : Q(Val → $prop))
+  (failOnUnsolved : Bool)
   (findPureExec : (e₁ : Q(Exp)) →
     ProofModeM ((φ : Q(Prop)) × (n : Q(Nat)) × (e₂ : Q(Exp)) × Q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂)))
 
@@ -371,20 +395,20 @@ public meta def iWpPure {u}
   (_hwp : $κ =Q wp.def := ⟨⟩) :
     ProofModeM (Q($ehyps ⊢ Wp.wp $s $E $e $Φ)) := do
   let some {result := ⟨φ, n, e₂, inst⟩, K, e' := e₁, ..} ←
-    findECtx (α:=((_ : Q(Prop)) × (_ : Q(Nat)) × (_ : Q(Exp)) × Lean.Expr)) e findPureExec
-    | throwIPMError "Cannot find expression to evaluate"
+    findECtx (α:=((_ : Q(Prop)) × (_ : Q(Nat)) × (_ : Q(Exp)) × Lean.Expr)) e fun _ => findPureExec
+  | throwIPMError "Cannot find expression to evaluate"
   have inst : Q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂) := inst
 
   let ⟨_, hyps', pf⟩ ← iModAction hyps q(modality_laterN $n)
   let ⟨inner, .up _⟩ ← HeapLang.fillQ K e₂
   let nextPf ← iWpFinish hyps' ι s E inner Φ
-  let HΦ ← iSolveSidecondition φ (failOnUnsolved := false)
+  let HΦ ← iSolveSidecondition φ (failOnUnsolved := failOnUnsolved)
   return q(tac_wp_pure $inst $HΦ $pf $nextPf)
 
-elab "wp_pure " colGt ppSpace focus:hl_exp:10 : tactic =>
+elab "wp_pure" failOnUnsolved:("+!failOnUnsolved")? colGt ppSpace focus:hl_exp:10 : tactic =>
   ProofModeM.runTacticWp `wp_pure fun mvar {hyps, ι, s, E, e, Φ, ..} => do
     let focus ← elabTermEnsuringTypeQ (← `(hl($focus))) q(HeapLang.Exp)
-    mvar.assign <| ← iWpPure hyps ι s E e Φ fun e₁ => do
+    mvar.assign <| ← iWpPure hyps ι s E e Φ failOnUnsolved.isSome fun e₁ => do
       guard <| ← isDefEq e₁ focus
       let φ ← mkFreshExprMVarQ q(Prop)
       let n ← mkFreshExprMVarQ q(Nat)
@@ -394,17 +418,7 @@ elab "wp_pure " colGt ppSpace focus:hl_exp:10 : tactic =>
       return ⟨φ, n, e₂, inst⟩
 
 macro "wp_pure" : tactic => `(tactic| wp_pure _)
-
-/-- A single `wp_pure` step that must leave exactly one goal, Rocq's `wp_pure _; []`. Fails
-if the step spawns a goal besides the continuation, such as an undischarged side condition
-of the reduction. -/
-elab "wp_pure_step" : tactic => focus do
-  evalTactic (← `(tactic| wp_pure))
-  -- we run under `focus` so we only see the unsolved goals of `wp_pure`
-  let goals ← getUnsolvedGoals
-  unless goals.length == 1 do
-    throwError "the pure reduction step must leave exactly one goal, it left {
-      goals.length}:{indentD <| .joinSep (goals.map fun g => m!"{g}") Format.line}"
+macro "wp_pure" "+!failOnUnsolved" : tactic => `(tactic| wp_pure +!failOnUnsolved _)
 
 /-- Reduce all pure redexes at the head of the weakest precondition, then simplify the
 resulting expression and strip the weakest precondition if it has become a value.
@@ -413,13 +427,13 @@ A pure step whose side condition cannot be discharged is not taken. -/
 macro "wp_pures" : tactic =>
   -- Rocq: `first [progress repeat (wp_pure _; []) | wp_finish]`
   `(tactic| first
-    | (wp_pure_step; repeat wp_pure_step)
+    | (wp_pure +!failOnUnsolved; repeat wp_pure +!failOnUnsolved)
     | wp_finish)
 
 /-- Beta-reduce the innermost application, unfolding a head hidden behind a definition. -/
 elab "wp_rec" : tactic =>
   ProofModeM.runTacticWp `wp_rec fun mvar {hyps, ι, s, E, e, Φ, ..} => do
-    mvar.assign <| ← iWpPure hyps ι s E e Φ fun e₁ => do
+    mvar.assign <| ← iWpPure hyps ι s E e Φ (failOnUnsolved := false) fun e₁ => do
       let ~q(Exp.app (Exp.ofVal $f) (Exp.ofVal $a)) := e₁ | failure
       -- reduce `f` to find a recursive function
       let f' : Q(Val) ← whnf f
@@ -446,6 +460,154 @@ macro "wp_inj" : tactic => `(tactic | first | wp_pure (injl(_)) | wp_pure (injr(
 macro "wp_pair" : tactic => `(tactic | wp_pure ((_, _)))
 macro "wp_closure" : tactic => `(tactic | wp_pure (rec &_ &_ := _))
 macro "wp_match" : tactic => `(tactic | (wp_case; wp_closure; wp_pure (_ _)))
+
+/-! ## The `wp_apply` tactics -/
+
+/-- Pose `pmt`, then apply it at a decomposition `e = K[e']` pushing `K` into the
+postcondition via `iWpBindCore`. `premisesOut` gets the application's goals on success -/
+meta def iWpApplyCore {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(HasLC)}
+    {prop : Q(Type u)} {bi : Q(BI $prop)} {ehyps : Q($prop)}
+    (hyps : Hyps bi ehyps) (ι : Q(IrisGS_gen $hlc Exp $GF)) (s : Q(Stuckness)) (E : Q(CoPset))
+    (e : Q(Exp)) (Φ : Q(Val → $prop)) (pmt : PMTerm)
+    (_hu : QuotedLevelDefEq u 0 := ⟨⟩) (_hprop : $prop =Q IProp $GF := ⟨⟩)
+    (_hbi : $bi =Q UPred.instBIUPred := ⟨⟩)
+    (κ : Q(Wp $prop Exp Val Stuckness) := q(wp.def)) (_hwp : $κ =Q wp.def := ⟨⟩) :
+    ProofModeM Q($ehyps ⊢ Wp.wp $s $E $e $Φ) := do
+  let ⟨eΔ, hyps', p, A, posePf⟩ ← iHave hyps q(Wp.wp $s $E $e $Φ) pmt true
+  let some {result := pf, ..} ←
+    findECtx (α := Q($eΔ ∗ □?$p $A ⊢ Wp.wp $s $E $e $Φ)) e fun K e' => do
+      trace[wp_apply] m!"trying to apply {A} to {e'}"
+      iWpBindCore _ ι s E e Φ K e' (iApply hyps' p A ·)
+  | throwIPMError "cannot apply {A}"
+  return q($posePf $pf)
+
+-- /-- Strip a leading `▷` and simplify WP expressions, in the application's goals only -/
+-- meta def wpApplyPostPass (premises : Array MVarId) : TacticM (Array MVarId) := do
+--   let post ← `(tactic| (try inext; try wp_expr_simp))
+--   let mut out : Array MVarId := #[]
+--   let mut produced : Array MVarId := #[]
+--   for g in (← getGoals) do
+--     if premises.contains g && !(← g.isAssigned) then
+--       let new := (← Tactic.run g (evalTactic post)).toArray
+--       out := out ++ new
+--       produced := produced ++ new
+--     else
+--       out := out.push g
+--   setGoals out.toList
+--   return produced
+
+-- /-- Apply and post-pass, return the application's goals. Dependee mvars (a lemma's `?Φ`)
+-- are registered before the snapshot, so they stay out of `premises` despite sorting last. -/
+-- meta def runWpApply (tacName : Name) (pmt : PMTerm) :
+--     TacticM (Array MVarId × Array MVarId) := do
+--   let premises ← IO.mkRef ((#[], #[]) : Array MVarId × Array MVarId)
+--   ProofModeM.runTacticWp tacName fun mvar {hyps, ι, s, E, e, Φ, ..} => do
+--     mvar.assign (← iWpApplyCore hyps ι s E e Φ pmt premises)
+--   let (application, specialisation) ← premises.get
+--   return (← wpApplyPostPass application, specialisation)
+
+-- /-- Needed for `wp_apply ... with`. Introduce into the last goal the application produced,
+-- or a `$$` goal if it produced none. -/
+-- meta def wpApplyIntro (tacName : Name) (produced specialisation : Array MVarId)
+--     (pats : Array (TSyntax `introPat)) : TacticM Unit := do
+--   if pats.isEmpty then return
+--   let fallback ← specialisation.filterM fun g => return !(← g.isAssigned)
+--   let some last := produced.back? <|> fallback.back?
+--     | throwError "{tacName}: no goal left for the `with` patterns"
+--   let new ← Tactic.run last (evalTactic (← `(tactic| iintro $pats*)))
+--   setGoals <| (← getGoals).flatMap fun g => if g == last then new else [g]
+
+elab "wp_apply_raw" colGt pmt:pmTerm : tactic => do
+  let pmt ← liftMacroM <| PMTerm.parse pmt
+  ProofModeM.runTacticWp `wp_apply fun mvar {hyps, ι, s, E, e, Φ, ..} => do
+     mvar.assign (← iWpApplyCore hyps ι s E e Φ pmt)
+
+-- TODO: Is there a more efficient way to implement this?
+-- TODO: move this somewhere else
+elab "focusLastIrisGoal" colGt tac:tactic : tactic => do
+  let goals ← getUnsolvedGoals
+  let mut goals_before := []
+  let mut iris_goal := []
+  let mut goals_after := []
+  for g in goals do
+    if isIrisGoal (← g.getType) then
+      goals_before := goals_before ++ iris_goal ++ goals_after
+      iris_goal := [g]
+      goals_after := []
+    else
+      goals_after := goals_after ++ [g]
+  let [g] := iris_goal
+    | throwError "no remaining Iris goal"
+  setGoals [g]
+  evalTactic tac
+  let goals' ← getUnsolvedGoals
+  setGoals (goals_before ++ goals' ++ goals_after)
+
+
+
+/--
+`wp_apply lem` poses the lemma `lem`, whose conclusion must be a `WP e' ...`, and applies
+it to the goal `WP e ...` after binding an evaluation context `K` with `e = K[e']`.
+Premises of `lem` become new goals; a leading `▷` in a premise is stripped, and WP
+premises have their expression simplified. `wp_apply lem $$ pats` additionally
+specialises the premises of `lem` with the given specialisation patterns, and
+`wp_apply lem with %v Hv` introduces into the last goal the application produced.
+-/
+syntax (name := wpApply) "wp_apply " colGt pmTerm
+  (" with" (colGt ppSpace introPat)+)? : tactic
+
+macro_rules
+  | `(tactic| wp_apply $pmt:pmTerm $[with $pats*]?) => do
+    let t : TSyntax `tactic ←
+      if let some pats := pats then
+        `(tactic|focusLastIrisGoal (iintro $pats*))
+      else
+        `(tactic|skip)
+    `(tactic| focus ((wp_apply_raw $pmt <;> (try inext) <;> (try wp_expr_simp)); $t:tactic))
+
+/-- bound on `wp_smart_apply`'s pure steps. -/
+meta def smartApplyFuel : Nat := 10000
+
+/-- Retry the application after single pure steps, bounded. `with` runs after the loop:
+retrying a failed introduction would roll back an application that already succeeded. -/
+meta def runWpSmartApply (pmt : TSyntax `pmTerm) (_pats : Array (TSyntax `introPat)) :
+    TacticM Unit := do
+  let mut firstErr : Option Exception := none
+  for _ in [0:smartApplyFuel] do
+    let s ← Tactic.saveState
+    let attempt ←
+      try
+        pure <| Sum.inl (← evalTactic (← `(tactic| wp_apply_raw $pmt)))
+      catch e =>
+        pure (Sum.inr e)
+    match attempt with
+    | .inl _ =>
+      -- wpApplyIntro `wp_smart_apply produced spec pats
+      return
+    | .inr applyErr =>
+      s.restore
+      -- report iteration 0's error: later ones concern goals the user never saw
+      let deadEndErr := firstErr.getD applyErr
+      firstErr := some deadEndErr
+      try evalTactic (← `(tactic| wp_pure +!failOnUnsolved))
+      catch _ =>
+        s.restore
+        throw deadEndErr
+  throwError "wp_smart_apply: fuel exhausted after {smartApplyFuel} pure steps"
+
+/--
+`wp_smart_apply lem` is like `wp_apply lem`, but when the lemma does not apply,
+it takes single pure steps (`wp_pure`) and retries, until the lemma applies or
+no pure step is possible. `$$` and `with` behave as for `wp_apply`. The retry is
+bounded under `smartApplyFuel` so the tactic does not diverge.
+-/
+syntax (name := wpSmartApply) "wp_smart_apply " colGt pmTerm
+  (" with" (colGt ppSpace introPat)+)? : tactic
+
+elab_rules : tactic
+  | `(tactic| wp_smart_apply $pmt:pmTerm $[with $pats*]?) => do
+    runWpSmartApply pmt (pats.getD #[])
+
 
 /-! ## Tactic lemmas for the heap tactics -/
 
@@ -731,10 +893,10 @@ meta def runTacticHeapWp {α} (tacName : Name)
 
 elab "wp_load" : tactic =>
   runTacticHeapWp `wp_load fun mvar {s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
-    let some {result := l, K, ..} ← findECtx e fun e' => do
-        let ~q(Exp.load (Exp.ofVal (Val.lit (BaseLit.loc $l)))) := e' | failure
-        return l
-      | throwIPMError "cannot find a `load` redex"
+    let some {result := l, K, ..} ← findECtx e fun _ e' => do
+      let ~q(Exp.load (Exp.ofVal (Val.lit (BaseLit.loc $l)))) := e' | failure
+      return l
+    | throwIPMError "cannot find a `load` redex"
     trace[wp_heap.redex] "load {l}; K = {K}"
 
     -- find `l ↦{dq} some v` in the spatial context and extract `dq`
@@ -750,10 +912,10 @@ elab "wp_load" : tactic =>
 
 elab "wp_store" : tactic => do
   runTacticHeapWp `wp_store fun mvar {bi, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
-    let some {result := (l, v'), K, ..} ← findECtx e fun e' => do
-        let ~q(Exp.store (Exp.ofVal (Val.lit (BaseLit.loc $l))) (Exp.ofVal $v')) := e' | failure
-        return (l, v')
-      | throwIPMError "cannot find a `store` redex"
+    let some {result := (l, v'), K, ..} ← findECtx e fun _ e' => do
+      let ~q(Exp.store (Exp.ofVal (Val.lit (BaseLit.loc $l))) (Exp.ofVal $v')) := e' | failure
+      return (l, v')
+    | throwIPMError "cannot find a `store` redex"
     trace[wp_heap.redex] "store {l} ← {v'}; K = {K}"
 
     -- find and remove `l ↦ some v` (stores need full ownership)
@@ -771,10 +933,10 @@ elab "wp_store" : tactic => do
 
 elab "wp_xchg" : tactic => do
   runTacticHeapWp `wp_xchg fun mvar {bi, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
-    let some {result := (l, v'), K, ..} ← findECtx e fun e' => do
-        let ~q(Exp.xchg (Exp.ofVal (Val.lit (BaseLit.loc $l))) (Exp.ofVal $v')) := e' | failure
-        return (l, v')
-      | throwIPMError "cannot find an `xchg` redex"
+    let some {result := (l, v'), K, ..} ← findECtx e fun _ e' => do
+      let ~q(Exp.xchg (Exp.ofVal (Val.lit (BaseLit.loc $l))) (Exp.ofVal $v')) := e' | failure
+      return (l, v')
+    | throwIPMError "cannot find an `xchg` redex"
     trace[wp_heap.redex] "xchg {l} ← {v'}; K = {K}"
 
     -- find and remove `l ↦ some v` (xchg writes, so it needs full ownership)
@@ -791,12 +953,12 @@ elab "wp_xchg" : tactic => do
 
 elab "wp_faa" : tactic =>
   runTacticHeapWp `wp_faa fun mvar {bi, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
-    let some {result := (l, z2), K, ..} ← findECtx e fun e' => do
-        -- faa is only defined on integers
-        let ~q(Exp.faa (Exp.ofVal (Val.lit (BaseLit.loc $l)))
-            (Exp.ofVal (Val.lit (BaseLit.int $z2)))) := e' | failure
-        return (l, z2)
-      | throwIPMError "cannot find a `faa` redex"
+    let some {result := (l, z2), K, ..} ← findECtx e fun _ e' => do
+      -- faa is only defined on integers
+      let ~q(Exp.faa (Exp.ofVal (Val.lit (BaseLit.loc $l)))
+          (Exp.ofVal (Val.lit (BaseLit.int $z2)))) := e' | failure
+      return (l, z2)
+    | throwIPMError "cannot find a `faa` redex"
     trace[wp_heap.redex] "faa {l} += {z2}; K = {K}"
 
     -- find and remove `l ↦ some v` (faa writes, so it needs full ownership)
@@ -819,11 +981,11 @@ elab "wp_faa" : tactic =>
 
 elab "wp_cmpxchg_suc" : tactic =>
   runTacticHeapWp `wp_cmpxchg_suc fun mvar {bi, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
-    let some {result := (l, v1, v2), K, ..} ← findECtx e fun e' => do
-        let ~q(Exp.cmpXchg (Exp.ofVal (Val.lit (BaseLit.loc $l)))
-            (Exp.ofVal $v1) (Exp.ofVal $v2)) := e' | failure
-        return (l, v1, v2)
-      | throwIPMError "cannot find a `cmpXchg` redex"
+    let some {result := (l, v1, v2), K, ..} ← findECtx e fun _ e' => do
+      let ~q(Exp.cmpXchg (Exp.ofVal (Val.lit (BaseLit.loc $l)))
+          (Exp.ofVal $v1) (Exp.ofVal $v2)) := e' | failure
+      return (l, v1, v2)
+    | throwIPMError "cannot find a `cmpXchg` redex"
     trace[wp_heap.redex] "cmpXchg {l}: {v1} → {v2}; K = {K}"
 
     -- find and remove `l ↦ some v` (a successful cmpXchg writes, so full ownership)
@@ -847,11 +1009,11 @@ elab "wp_cmpxchg_suc" : tactic =>
 
 elab "wp_cmpxchg_fail" : tactic =>
   runTacticHeapWp `wp_cmpxchg_fail fun mvar {s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
-    let some {result := (l, v1, v2), K, ..} ← findECtx e fun e' => do
-        let ~q(Exp.cmpXchg (Exp.ofVal (Val.lit (BaseLit.loc $l)))
-            (Exp.ofVal $v1) (Exp.ofVal $v2)) := e' | failure
-        return (l, v1, v2)
-      | throwIPMError "cannot find a `cmpXchg` redex"
+    let some {result := (l, v1, v2), K, ..} ← findECtx e fun _ e' => do
+      let ~q(Exp.cmpXchg (Exp.ofVal (Val.lit (BaseLit.loc $l)))
+          (Exp.ofVal $v1) (Exp.ofVal $v2)) := e' | failure
+      return (l, v1, v2)
+    | throwIPMError "cannot find a `cmpXchg` redex"
     trace[wp_heap.redex] "cmpXchg {l}: {v1} → {v2}; K = {K}"
 
     -- any fraction suffices for a failing compare (the points-to is only read)
@@ -875,11 +1037,11 @@ elab "wp_cmpxchg_fail" : tactic =>
 -- `colGt` on the names keeps an omitted one from swallowing the next line's tactic
 elab "wp_cmpxchg" " with" colGt ppSpace h1:binderIdent colGt ppSpace h2:binderIdent : tactic =>
   runTacticHeapWp `wp_cmpxchg fun mvar {bi, GF, hlc, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
-    let some {result := (l, v1, v2), K, ..} ← findECtx e fun e' => do
-        let ~q(Exp.cmpXchg (Exp.ofVal (Val.lit (BaseLit.loc $l)))
-            (Exp.ofVal $v1) (Exp.ofVal $v2)) := e' | failure
-        return (l, v1, v2)
-      | throwIPMError "cannot find a `cmpXchg` redex"
+    let some {result := (l, v1, v2), K, ..} ← findECtx e fun _ e' => do
+      let ~q(Exp.cmpXchg (Exp.ofVal (Val.lit (BaseLit.loc $l)))
+          (Exp.ofVal $v1) (Exp.ofVal $v2)) := e' | failure
+      return (l, v1, v2)
+    | throwIPMError "cannot find a `cmpXchg` redex"
     trace[wp_heap.redex] "cmpXchg {l}: {v1} → {v2}; K = {K}"
 
     -- find and remove `l ↦ some v` (the success branch writes, so full ownership)
@@ -918,10 +1080,10 @@ elab "wp_cmpxchg" " with" colGt ppSpace h1:binderIdent colGt ppSpace h2:binderId
 
 elab "wp_free" : tactic =>
   runTacticHeapWp `wp_free fun mvar {s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
-    let some {result := l, K, ..} ← findECtx e fun e' => do
-        let ~q(Exp.free (Exp.ofVal (Val.lit (BaseLit.loc $l)))) := e' | failure
-        return l
-      | throwIPMError "cannot find a `free` redex"
+    let some {result := l, K, ..} ← findECtx e fun _ e' => do
+      let ~q(Exp.free (Exp.ofVal (Val.lit (BaseLit.loc $l)))) := e' | failure
+      return l
+    | throwIPMError "cannot find a `free` redex"
     trace[wp_heap.redex] "free {l}; K = {K}"
 
     -- find and remove `l ↦ some v` (freeing needs full ownership); the continuation
@@ -937,11 +1099,11 @@ elab "wp_free" : tactic =>
 elab "wp_alloc" colGt ppSpace loc:binderIdent " with" colGt ppSpace hyp:binderIdent : tactic =>
   runTacticHeapWp `wp_alloc fun mvar
       {bi, GF, hlc, s, E, e, Φ, hgs, eΔ', hyps', pfLater, ..} => do
-    let some {result := (n, v), K, ..} ← findECtx e fun e' => do
-        let ~q(Exp.allocN (Exp.ofVal (Val.lit (BaseLit.int $n)))
-            (Exp.ofVal $v)) := e' | failure
-        return (n, v)
-      | throwIPMError "cannot find an allocation redex"
+    let some {result := (n, v), K, ..} ← findECtx e fun _ e' => do
+      let ~q(Exp.allocN (Exp.ofVal (Val.lit (BaseLit.int $n)))
+          (Exp.ofVal $v)) := e' | failure
+      return (n, v)
+    | throwIPMError "cannot find an allocation redex"
     let single ← isDefEq n q((1 : Int))
 
     trace[wp_heap.redex] "allocn {n} {v}; K = {K}"
@@ -974,6 +1136,7 @@ macro "wp_alloc" colGt ppSpace loc:binderIdent : tactic => `(tactic| wp_alloc $l
 -- `set_option trace.wp_bind true` (and analogously for the others).
 initialize registerTraceClass `wp_bind
 initialize registerTraceClass `wp_pure
+initialize registerTraceClass `wp_apply
 initialize registerTraceClass `wp_heap
 initialize registerTraceClass `wp_heap.redex (inherited := true)
 initialize registerTraceClass `wp_heap.lookup (inherited := true)

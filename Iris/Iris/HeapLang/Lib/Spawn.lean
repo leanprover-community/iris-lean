@@ -95,8 +95,7 @@ theorem spawn_spec (Ψ : Val → IProp GF) (f : Val) :
     ileft; itrivial
   imodintro
   wp_pures
-  wp_bind fork(_)
-  iapply wp_fork $$ [- Hf] [Hf]
+  wp_apply wp_fork $$ [- Hf] [Hf]
   · inext
     wp_pures
     imodintro
@@ -105,9 +104,7 @@ theorem spawn_spec (Ψ : Val → IProp GF) (f : Val) :
     iexists γ
     iframe Hγ Hinv
   inext
-  wp_bind &f _
-  iapply wp_wand $$ Hf
-  iintro %v HΨ
+  wp_apply wp_wand $$ Hf with %v HΨ
   wp_pures
   iinv Hinv with Hpt
   unfold spawnInv
