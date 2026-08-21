@@ -216,6 +216,30 @@ theorem wp_fork {e : Exp} :
   imodintro
   iframe
 
+@[rocq_alias heap_lang.twp_fork]
+theorem twp_fork {e : Exp} :
+    WP e @ s; ⊤ [{ _v, True }] -∗
+    Φ (hl_val(#())) -∗
+    WP hl(fork(&e)) @ s; E [{ Φ }] := by
+  iintro Hwp HΦ
+  iapply twp.lift_atomic_base_step rfl
+  iintro %σ₁ %ns %obs %nt Hσ !>
+  isplit
+  · ipureintro
+    exact ⟨hl(#BaseLit.unit), σ₁, [e], by constructor⟩
+  iintro %κ %e₂ %σ₂ %eₜ %Hstep
+  rcases Hstep
+  imodintro
+  isplit; itrivial
+  iframe Hσ
+  isplitr [Hwp]
+  · iexists hl_val(#())
+    isplit
+    · ipureintro; rfl
+    · iframe HΦ
+  · iapply BI.BigSepL.bigSepL_singleton
+    iframe Hwp
+
 /-! ## Multi-cell allocation -/
 
 @[rocq_alias heap_lang.heap_array_to_seq_pointsto]
@@ -293,18 +317,25 @@ theorem wp_allocN_seq (v : Val) {n : Int} (hn : 0 < n) :
   iapply HΦ
   itrivial
 
+@[rocq_alias heap_lang.twp_alloc]
+theorem twp_alloc (v : Val) :
+    [{ True }] hl(ref(&v)) @ s; E [{ l, RET hl_val(#l); l ↦ some v ∗ metaToken l ⊤ }] := by
+  iintro %Φ - HΦ
+  iapply twp_allocN_seq (by omega)
+  · itrivial
+  iintro %l H
+  rw [Int.toNat_one, List.range_one, BI.BigSepL.bigSepL_singleton.to_eq,
+    show l + 0 = l from loc_add_zero l]
+  iapply HΦ $$ H
+
 @[rocq_alias heap_lang.wp_alloc]
 theorem wp_alloc (v : Val) :
     {{ True }} hl(ref(&v)) @ s; E {{ l, RET hl_val(#l); l ↦ some v }} := by
   iintro %Φ _ HΦ
   iapply twp.wp_step _ rfl $$ HΦ
-  iapply twp_allocN_seq (by omega)
+  iapply twp_alloc
   · itrivial
-  iintro %l H HΦ
-  ihave Hpt : iprop(l ↦ some v) $$ [H]
-  · rw [Int.toNat_one, List.range_one, BI.BigSepL.bigSepL_singleton.to_eq]
-    rw [show l + 0 = l from loc_add_zero l]
-    exact BI.sep_elim_left
+  iintro %l ⟨Hpt, -⟩ HΦ
   iapply HΦ $$ Hpt
 
 @[rocq_alias heap_lang.twp_load]
@@ -487,40 +518,44 @@ theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v
   iapply HΦ
   itrivial
 
+@[rocq_alias heap_lang.twp_free]
+theorem twp_free {l : Loc} {v : Val} :
+    [{ l ↦ some v }] hl(free(#l)) @ s; E [{ RET hl_val(#()); l ↦ none }] := by
+  iintro %Φ Hpt HΦ
+  iapply twp.lift_atomic_base_step_no_fork rfl
+  isimp [stateInterp]
+  iintro %σ₁ %ns %obs %nt ⟨Hσ, Hobs⟩ !>
+  ihave %Hpt : ⌜σ₁.get? l = .some (.some v)⌝ $$ [Hσ Hpt]
+  · icases genHeap_valid $$ [$Hσ $Hpt] with >%_
+    itrivial
+  isplit
+  · ipureintro
+    refine ⟨.val (.lit .unit), σ₁.initHeap l 1 none, [], .freeS l v σ₁ ?_⟩
+    grind
+  iintro %κ %e₂ %σ₂ %efs %Hstep
+  rcases Hstep
+  simp only [Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int,
+    List.foldl_nil]
+  rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
+  imod genHeap_update (v₂ := none) $$ [$Hσ $Hpt] with ⟨Hσ, Hpt⟩
+  imodintro
+  isplit; itrivial
+  isplit; itrivial
+  iframe Hσ Hobs
+  iexists hl_val(#())
+  isplit
+  · ipureintro; rfl
+  · iapply HΦ $$ Hpt
+
 @[rocq_alias heap_lang.wp_free]
 theorem wp_free {l : Loc} {v : Val} :
     {{ ▷ l ↦ some v }} hl(free(#l)) @ s; E {{ RET hl_val(#()); l ↦ none }} := by
   iintro %Φ >Hpt HΦ
-  iapply wp_lift_atomic_step rfl
-  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
-  ihave %Hpt : ⌜σ₁.get? l = .some (.some v)⌝ $$ [Hσ Hpt]
-  · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
-    itrivial
-  ihave %Hred : ⌜BaseStep.Reducible (hl(free(#l)), σ₁)⌝ $$ []
-  · ipureintro
-    exists [], hl_val(#()), σ₁.initHeap l 1 none, []
-    refine BaseStep.freeS l v _ ?_
-    grind
-  isplitr
-  · ipureintro
-    cases s <;> simp only [Stuckness.MaybeReducible]
-    exact primStep_reducible_of_baseStep_reducible Hred
-  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
-  rcases baseStep_of_primStep_of_baseStep_reducible Hred Heq with ⟨v'', H⟩
-  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
-  simp only [stateInterp, Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int,
-    List.foldl_nil, Algebra.BigOpL.bigOpL_nil]
-  rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
-  imod genHeap_update (v₂ := none) $$ [$Hσ $Hpt] with ⟨Hσ, Hpt⟩
-  imodintro
-  iframe Hσ Hproph
-  isplit <;> try itrivial
-  iexists hl_val(#())
-  isplit
-  · ipureintro; simp [toVal]; rfl
-  · iapply HΦ
-    itrivial
+  iapply twp.wp_step _ rfl $$ HΦ
+  iapply twp_free $$ Hpt
+  iintro Hpt HΦ
+  iapply HΦ
+  itrivial
 
 @[rocq_alias heap_lang.twp_xchg]
 theorem twp_xchg {l : Loc} {v w : Val} :
