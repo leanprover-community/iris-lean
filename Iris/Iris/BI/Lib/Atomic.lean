@@ -401,7 +401,7 @@ instance elim_acc_aacc {X} {E1 E2 Ei : CoPset} {α' β' : X → PROP} {γ' : X �
     ElimAcc True (FUpd.fupd E1 E2) (FUpd.fupd E2 E1) α' β' γ'
       (atomic_acc E1 Ei α Pas β Φ)
       (fun x' => atomic_acc E2 Ei α iprop(β' x' ∗ (γ' x' -∗? Pas)) β
-        (fun x y => iprop(β' x' ∗ (γ' x' -∗? Φ x y)))) where
+        (λ.. x y, iprop(β' x' ∗ (γ' x' -∗? Φ x y)))) where
   elim_acc := by
     intro _
     simp only [accessor, atomic_acc]
@@ -422,6 +422,7 @@ instance elim_acc_aacc {X} {E1 E2 Ei : CoPset} {α' β' : X → PROP} {γ' : X �
     · iintro %y Hβ
       imod Hclose''
       icases Hclose' with ⟨-, Hclose'⟩
+      isimp only [Tele.app_bind] at Hclose'
       imod Hclose' $$ Hβ with ⟨Hβ', HΦ⟩
       imod Hclose $$ Hβ' with Hγ'
       imodintro
@@ -440,7 +441,7 @@ theorem aacc_aacc {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     {α' : TA'.Arg → PROP} {P' : PROP} {β' Φ' : TA'.Arg → TB'.Arg → PROP} (HE : E1' ⊆ E1) :
     atomic_acc E1' E2 α P β Φ -∗
     iprop((∀.. x, α x -∗ atomic_acc E2 E3 α' iprop(α x ∗ (P ={E1}=∗ P')) β'
-      (fun x' y' => iprop((α x ∗ (P ={E1}=∗ Φ' x' y'))
+      (λ.. x' y', iprop((α x ∗ (P ={E1}=∗ Φ' x' y'))
         ∨ ∃.. y, β x y ∗ (Φ x y ={E1}=∗ Φ' x' y')))) -∗
       atomic_acc E1 E3 α' P' β' Φ') := by
   iintro Hupd Hstep
@@ -464,6 +465,7 @@ theorem aacc_aacc {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
   · iintro %y' Hβ'
     icases Hclose' with ⟨-, Hclose'⟩
     imod Hclose' $$ Hβ' with Hres
+    isimp only [Tele.app_bind] at Hres
     icases Hres with (⟨Hα, HΦ'⟩ | ⟨%y, Hβ, HΦ'⟩)
     · icases Hclose with ⟨Hclose, -⟩
       imod Hclose $$ Hα with HP
@@ -479,7 +481,7 @@ theorem aacc_aupd {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     atomic_update E1' E2 α β Φ -∗
     (∀.. x, α x -∗ atomic_acc E2 E3 α'
       iprop(α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ P')) β'
-      (fun x' y' => iprop((α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ Φ' x' y'))
+      (λ.. x' y', iprop((α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ Φ' x' y'))
         ∨ ∃.. y, β x y ∗ (Φ x y ={E1}=∗ Φ' x' y')))) -∗
       atomic_acc E1 E3 α' P' β' Φ' := by
   iintro Hupd Hstep
@@ -493,7 +495,7 @@ theorem aacc_aupd_commit {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     atomic_update E1' E2 α β Φ ⊢
     (∀.. x, α x -∗ atomic_acc E2 E3 α'
       iprop(α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ P')) β'
-      (fun x' y' => iprop(∃.. y, β x y ∗ (Φ x y ={E1}=∗ Φ' x' y')))) -∗
+      (λ.. x' y', iprop(∃.. y, β x y ∗ (Φ x y ={E1}=∗ Φ' x' y')))) -∗
       atomic_acc E1 E3 α' P' β' Φ' := by
   iintro Hupd Hstep
   iapply aacc_aupd HE $$ Hupd
@@ -502,6 +504,8 @@ theorem aacc_aupd_commit {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
   isplit
   · iintro $
   · iintro %_ %_ H
+    isimp only [Tele.app_bind]
+    isimp only [Tele.app_bind] at H
     iright; itrivial
 
 @[rocq_alias aacc_aupd_abort]
@@ -511,7 +515,7 @@ theorem aacc_aupd_abort {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     atomic_update E1' E2 α β Φ ⊢
     (∀.. x, α x -∗ atomic_acc E2 E3 α'
       iprop(α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ P')) β'
-      (fun x' y' => iprop(α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ Φ' x' y')))) -∗
+      (λ.. x' y', iprop(α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ Φ' x' y')))) -∗
       atomic_acc E1 E3 α' P' β' Φ' := by
   iintro Hupd Hstep
   iapply aacc_aupd HE $$ Hupd
@@ -520,6 +524,8 @@ theorem aacc_aupd_abort {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
   isplit
   · iintro $
   · iintro %_ %_ H
+    isimp only [Tele.app_bind]
+    isimp only [Tele.app_bind] at H
     ileft; itrivial
 
 end lemmas

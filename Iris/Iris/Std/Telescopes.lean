@@ -64,6 +64,21 @@ theorem app_bind {TT : Tele.{u}} {T : TT.Arg → Type v} (F : (xs : TT.Arg) → 
     (xs : TT.Arg) : app (bind F) xs = F xs := by
   induction TT with | nil => rfl | cons b ih => exact ih xs.1 _ xs.2
 
+/-- Wrap a function on a packed telescope argument in `Tele.app ∘ Tele.bind`. -/
+abbrev lam {TT : Tele.{u}} {T : TT.Arg → Type v} (F : (xs : TT.Arg) → T xs) :
+    (xs : TT.Arg) → T xs := app (bind F)
+
+/-- `λ.. x₁ … xₙ, body` binds packed telescope arguments, wrapping each lambda in `Tele.app ∘ Tele.bind`. -/
+macro:max "λ.." xs:explicitBinders ", " body:term : term => do
+  return ⟨← expandExplicitBinders ``lam xs body⟩
+
+/-- Delaborate nested `Tele.lam` expressions as `λ.. x …, ...`. -/
+@[app_delab Iris.Std.Tele.lam]
+meta def delabLam : Delab :=
+  delabQuant 3 pure
+    (fun x rest body => `(λ.. $x:ident $[$rest:ident]*, $body))
+    (fun | `(λ.. $y:ident $[$ys:ident]*, $body) => some (y, ys, body) | _ => none)
+
 /-- Collapse a non-dependent telescopic function into a single value, using `step` to introduce
 one binder at a time. -/
 def fold {B : Type v} (step : (A : Type u) → (A → B) → B) : {TT : Tele.{u}} → (TT -t> B) → B
