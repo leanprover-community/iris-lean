@@ -43,6 +43,24 @@ open DFrac OFE.Discrete IsOp
 @[rocq_alias dfrac_inhabited]
 instance : Inhabited DFrac := ⟨discard⟩
 
+/-- `DFrac` is countable: tag each constructor and encode its fraction (if any) via `Qp`. -/
+@[rocq_alias dfrac_countable]
+instance : Pos.Countable DFrac where
+  encode
+    | .own f        => Pos.Countable.encode ([Pos.xO Pos.xH, Pos.Countable.encode f] : List Pos)
+    | .discard      => Pos.Countable.encode ([Pos.xH] : List Pos)
+    | .ownDiscard f => Pos.Countable.encode ([Pos.xI Pos.xH, Pos.Countable.encode f] : List Pos)
+  decode c :=
+    match (Pos.Countable.decode c : Option (List Pos)) with
+    | some [Pos.xH]            => some discard
+    | some [Pos.xO Pos.xH, fp] => (Pos.Countable.decode fp : Option Qp).map own
+    | some [Pos.xI Pos.xH, fp] => (Pos.Countable.decode fp : Option Qp).map ownDiscard
+    | _ => none
+  decode_encode
+    | .own _        => by simp [Pos.Countable.decode_encode]
+    | .discard      => by simp [Pos.Countable.decode_encode]
+    | .ownDiscard _ => by simp [Pos.Countable.decode_encode]
+
 def valid : DFrac → Prop
   | .own f        => f.val ≤ 1
   | .discard      => True
