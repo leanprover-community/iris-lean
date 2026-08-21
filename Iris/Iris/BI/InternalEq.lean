@@ -22,11 +22,6 @@ open BI OFE Iris.Std
 def internalEq [Sbi PROP] {A : Type _} [OFE A] (a b : A) : PROP :=
   iprop(<si_pure> (SiProp.internalEq a b))
 
-/-- Fold rule for `sbi_norm`. -/
-@[sbi_norm, rocq_alias sbi_unfold_internal_eq]
-theorem internalEq_fold [Sbi PROP] {A : Type _} [OFE A] (a b : A) :
-    (internalEq a b : PROP) = iprop(<si_pure> SiProp.internalEq a b) := rfl
-
 syntax:40 term:40 " ≡ " term:41 : term
 macro_rules
   | `(iprop($a ≡%$tk $b)) => ``($(wrapIprop tk ``internalEq) $a $b)

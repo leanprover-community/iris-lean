@@ -34,11 +34,6 @@ macro_rules
 delab_rule internalCmraValid
   | `($_ $a) => ``(iprop(✓ $a))
 
-/-- Fold rule for `sbi_norm`. -/
-@[sbi_norm, rocq_alias sbi_unfold_internal_cmra_valid]
-theorem internalCmraValid_fold (a : A) :
-    (iprop(✓ a) : PROP) = iprop(<si_pure> SiProp.cmraValid a) := rfl
-
 @[rocq_alias internal_cmra_valid_ne]
 instance internalCmraValid_ne : NonExpansive (internalCmraValid (PROP := PROP) (A := A)) where
   ne _ _ _ h := siPure_ne.ne (instNonExpansiveCmraValid.ne h)
@@ -129,11 +124,6 @@ macro_rules
 delab_rule internalCmraIncluded
   | `($_ $a $b) => ``(iprop($a ≼ $b))
 
-/-- Fold rule for `sbi_norm`. -/
-@[sbi_norm, rocq_alias sbi_unfold_internal_included]
-theorem internalCmraIncluded_fold (a b : A) :
-    (iprop(a ≼ b) : PROP) = iprop(<si_pure> (∃ c, iprop(b ≡ (a • c)))) := rfl
-
 @[rocq_alias internal_included_nonexpansive]
 instance internalCmraIncluded_ne :
     NonExpansive₂ (internalCmraIncluded (PROP := PROP) (A := A)) where
@@ -155,16 +145,6 @@ theorem internalCmraIncluded_intro {P : PROP} {a b : A} (h : a ≼ b) :
 /-- The `SiProp` underlying the internal `≼` holds at `n` exactly when `a ≼{n} b`. -/
 private theorem included_holds {a b : A} {n : Nat} :
     ((∃ c, iprop(b ≡ (a • c))) : SiProp).holds n ↔ a ≼{n} b := SiProp.exists_holds
-
-/-- Leaf rule for `sbi_norm`: the `SiProp` behind `≼` holds at `n` exactly when
-`a ≼{n} b`. -/
-@[sbi_norm] theorem internalCmraIncluded_holds {a b : A} {n : Nat} :
-    ((∃ c, iprop(b ≡ (a • c))) : SiProp).holds n ↔ a ≼{n} b := included_holds
-
-/-- Leaf rule for `sbi_norm`, for the case where the generic `∃` rule got there
-first: what it leaves behind is the definition of `≼{n}`. -/
-@[sbi_norm] theorem exists_dist_op_iff_incN {a b : A} {n : Nat} :
-    (∃ c, b ≡{n}≡ a • c) ↔ a ≼{n} b := .rfl
 
 /-- Two internal inclusions agree when they agree at every step index. -/
 theorem internalCmraIncluded_iff [CMRA B] {a b : A} {a' b' : B}

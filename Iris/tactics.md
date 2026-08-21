@@ -83,6 +83,7 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 
 - `iinv` *H* (`$$` [*specPat*](#specialization-patterns))? `with` [*casesPat*](#cases-patterns) ([*casesPat*](#cases-patterns))? — opens an invariant hypothesis *H* and uses the first cases pattern to destruct the result. The second cases pattern is used for destructing the hypothesis for closing the invariant. The specialisation pattern is used for resource consumption needed for opening the invariant. If the specialisation pattern is not given as part of the tactic, it is, by default, the auto-framing of spatial hypotheses.
 - `iinv` *N* (`$$` [*specPat*](#specialization-patterns))? `with` [*casesPat*](#cases-patterns) ([*casesPat*](#cases-patterns))? — same as above, except that a namespace *N* is given. The last invariant hypothesis in the context of this namespace is chosen.
+- `sbi_unfold` — Turn a goal `⊢ P`, `P ⊢ Q`, or `P ⊣⊢ Q` between *plain* propositions (`⌜_⌝`, `<si_pure>`, `✓`, `≡`, `≼`, closed under `∧`, `∨`, `→`, `∗`, `-∗`, `↔`, `∗-∗`, `∀`, `∃`, and `▷`) into the corresponding statement about the step-indexed model, e.g. `∀ n, x ≼{n} y ↔ x.1 ≼{n} y.1 ∧ x.2 ≼{n} y.2`. Down closures `∀ m ≤ n, _` are introduced only where the translation needs them. A goal whose head is a `match` has to be case split before calling the tactic. This is not a proof-mode tactic; it works on a raw (bi-)entailment.
 
 ## Cases Patterns
 

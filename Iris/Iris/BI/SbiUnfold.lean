@@ -1,198 +1,336 @@
 /-
 Copyright (c) 2026. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Markus de Medeiros
+Authors:
 -/
 module
 
-public import Iris.BI.SIProp
-public import Iris.BI.SbiUnfoldAttr
+public import Iris.BI.Cmra
 
 @[expose] public section
 
 /-!
 # `sbi_unfold`
 
-A simp set for proving pure SBI facts based on the model.
+The tactic takes a (bi-)entailment of plain propositions and turns it into a
+(bi-)implication in the pure step-indexed model. For example, given the goal
 
-For example `✓ x ⊣⊢@{PROP} ✓ x.1 ∧ ✓ x.2` converts to `∀ n, ✓{n} x ↔ ✓{n} x.1 ∧ ✓{n} x.2`.
+  `x ≼ y ⊣⊢ x.1 ≼ y.1 ∧ x.2 ≼ y.2`
 
-The `sbi_norm` simp set targets implications `⊢` and bi-implications `⊣⊢`. It consists
-of three kinds of rules:
-- Pushing `.holds n` inwards, and under downward closures `downClose` wherever applicable.
-- Converting plain propositions into `<si_pure>`.
-- Converting a root `<si_pure>` modality into a statement about `.holds n`
+the tactic `sbi_unfold` turns it into
 
-New rules can be added to the simp set with `@[sbi_norm]`. You should add the following:
-- A rule of the form `myConn x y = <si_pure> _`
-- A rule changing `(myConn x y).holds` into `x.holds` and `y.holds`, under a `downClose` if possible.
+  `∀ n, x ≼{n} y ↔ x.1 ≼{n} y.1 ∧ x.2 ≼{n} y.2`
 
-## The two sets
+The tactic `sbi_unfold` works for goals of the shape `⊢ P`, `P ⊢ Q`, `P ⊣⊢ Q`.
+Here, `P` and `Q` should be in the "plain" subset of propositions, i.e. `⌜_⌝`,
+`<si_pure>`, `✓`, `≡`, `≼`, closed under `∧`, `∨`, `→`, `∀`, `∃`, and `▷`. The
+separating connectives `∗`/`-∗` are translated to `∧`/`→`.
 
-`sbi_norm` reaches the step-indexed normal form where down closures are `downClose` terms.
-To unfold these as well, use the `sbi_model` simp set.
-```
-simp only [sbi_norm]
-simp only [sbi_model]
-```
-Simplifying by `sbi_model` must happen after normalization, as it prevents it.
+The tactic attempts to minimize the number of "down closures" `∀ n' ≤ n, _` due
+to the use of nested implications. For example, given
+
+  `⊢ x.1 ≼ y.1 → x.2 ≼ y.2 → x ≼ y`
+
+the tactic `sbi_unfold` turns it into
+
+  `∀ n, x.1 ≼{n} y.1 → x.2 ≼{n} y.2 → x ≼{n} y`
+
+instead of (the logically equivalent, but more verbose)
+
+  `∀ n, ∀ n' ≤ n, x.1 ≼{n'} y.1 → ∀ n'' ≤ n', x.2 ≼{n''} y.2 → x ≼{n''} y`
+
+The tactic is implemented using the type class `SbiUnfold clo P Pi`, which takes
+a proposition `P` (which is intended to be plain) as input and produces its
+interpretation `Pi : Nat → Prop` in the step-indexed model as output, so that
+the down closure of `Pi` is equivalent to `P`.
+
+The input indicator `clo` indicates whether the output `Pi` should be down
+closed, i.e. `Pi` should satisfy `Pi n₁ → n₂ ≤ n₁ → Pi n₂`. In this case there
+is no need to explicitly down close `Pi`. We use the `clo` parameter to avoid
+needless down closures in the translation of implications (see the example
+above). In the instance `sbiUnfold_imp` for `P → Q` we call `SbiUnfold` on `Q`
+with `clo` being `.notClosed`. This optimization is sound because
+`∀ n' ≤ n, Pi n' → Qi n'` and `∀ n' ≤ n, Pi n' → downClose Qi n'` are equivalent
+if `Pi` is down closed.
+
+A goal whose head is a `match` is not translated: it has to be case split (with
+`cases`/`rcases`) before calling `sbi_unfold`.
 -/
 
 namespace Iris
-open BI OFE CMRA Std
+open BI OFE CMRA SiProp
 
-namespace SiProp
+/-- Whether the interpretation produced by `SbiUnfold` has to be downwards closed. -/
+@[rocq_alias sbi_unfold_closure_indicator.sbi_unfold_closure_indicator]
+inductive SbiUnfoldClosure where
+  /-- The interpretation is downwards closed, so no down closure is needed. -/
+  | downClosed
+  /-- The interpretation need not be downwards closed. -/
+  | notClosed
 
-/- ## Recursive Rules for pushing `.holds` downwards  -/
+/-- `SbiUnfold clo P Pi` states that the plain proposition `P` is the `<si_pure>`
+embedding of the down closure of `Pi`, and that `Pi` is downwards closed whenever
+`clo` demands it. -/
+@[rocq_alias SbiUnfold]
+class SbiUnfold [Sbi PROP] (clo : SbiUnfoldClosure) (P : PROP)
+    (Pi : outParam (Nat → Prop)) where
+  closed {n₁ n₂} : clo = .downClosed → Pi n₁ → n₂ ≤ n₁ → Pi n₂
+  as_siPure : P ⊣⊢ iprop(<si_pure> downClose Pi)
 
-@[sbi_norm] theorem imp_holds {P Q : SiProp} {n} :
-    (iprop(P → Q) : SiProp).holds n = (downClose fun m => P.holds m → Q.holds m).holds n := rfl
+/-- Implications and bi-implications need to be down closed when
+`clo = .downClosed`, see e.g. `sbiUnfold_imp`. We use the following definition
+and the smart constructor `SbiUnfold.of_downClose` to achieve that without having
+two instances. Occurrences of `maybeDownClose` are reduced away by the top-level
+`sbi_unfold` tactic. -/
+@[rocq_alias sbi_unfold_maybe_downclose]
+def SbiUnfoldClosure.maybeDownClose : SbiUnfoldClosure → (Nat → Prop) → Nat → Prop
+  | .downClosed, Pi, n => ∀ m ≤ n, Pi m
+  | .notClosed, Pi, n => Pi n
 
-@[sbi_norm] theorem wand_holds {P Q : SiProp} {n} :
-    (iprop(P -∗ Q) : SiProp).holds n = (downClose fun m => P.holds m → Q.holds m).holds n := rfl
+namespace SbiUnfold
+variable [Sbi PROP] {clo : SbiUnfoldClosure} {P : PROP} {Pi : Nat → Prop}
 
-/-- `↔` keeps its shape: a down closure of a meta-level `↔`, not a conjunction of
-two implications. Decomposing it would erase the difference between `P ↔ Q` and a
-conjunction the user wrote, which Rocq's `sbi_unfold_iff` keeps. -/
-@[sbi_norm] theorem iff_holds {P Q : SiProp} {n} :
-    (iprop(P ↔ Q) : SiProp).holds n
-      ↔ (downClose fun m => P.holds m ↔ Q.holds m).holds n where
-  mp h m hm := ⟨h.1 m hm, h.2 m hm⟩
-  mpr h := ⟨fun m hm => (h m hm).mp, fun m hm => (h m hm).mpr⟩
+/-- A down closure of a downwards closed predicate is redundant. -/
+private theorem downClose_of_closed (h : ∀ {n₁ n₂}, Pi n₁ → n₂ ≤ n₁ → Pi n₂) {n} :
+    (downClose Pi).holds n ↔ Pi n :=
+  ⟨(· n .refl), fun hh _ hm => h hh hm⟩
 
-/-- `∗-∗` is `↔` on `SiProp`. -/
-@[sbi_norm] theorem wandIff_holds {P Q : SiProp} {n} :
-    (iprop(P ∗-∗ Q) : SiProp).holds n
-      ↔ (downClose fun m => P.holds m ↔ Q.holds m).holds n := iff_holds
+/-- If `Pi` is downwards closed then `SiProp.downClose` is not needed. -/
+@[rocq_alias SbiUnfold_closed]
+theorem of_closed (hPi : ∀ {n₁ n₂}, Pi n₁ → n₂ ≤ n₁ → Pi n₂)
+    (h : P ⊣⊢ iprop(<si_pure> (⟨Pi, hPi⟩ : SiProp))) : SbiUnfold clo P Pi where
+  closed _ := hPi
+  as_siPure := h.trans <| siPure_mono_bi <| biEntails_of_iff fun _ => (downClose_of_closed hPi).symm
 
-/-- Named match statement for `▷`, for clarity. -/
-def laterP (φ : Nat → Prop) : Nat → Prop
-  | 0 => True
-  | m + 1 => φ m
+/-- Wrap the interpretation in a down closure when `clo` demands one. -/
+@[rocq_alias SbiUnfold_downclose]
+theorem of_downClose (h : P ⊣⊢ iprop(<si_pure> downClose Pi)) :
+    SbiUnfold clo P (clo.maybeDownClose Pi) := by
+  cases clo with
+  | notClosed => exact ⟨(nomatch ·), h⟩
+  | downClosed => exact of_closed (fun hh hm _ hk => hh _ (Nat.le_trans hk hm)) h
 
-@[simp] theorem laterP_zero {φ : Nat → Prop} : laterP φ 0 = True := rfl
+@[rocq_alias sbi_unfold_closed_weaken]
+theorem weaken [h : SbiUnfold .downClosed P Pi] : SbiUnfold clo P Pi where
+  closed _ := h.closed rfl
+  as_siPure := h.as_siPure
 
-@[simp] theorem laterP_succ {φ : Nat → Prop} {m} : laterP φ (m + 1) = φ m := rfl
+end SbiUnfold
 
-@[sbi_norm] theorem later_holds {P : SiProp} {n} :
-    (iprop(▷ P) : SiProp).holds n = laterP (fun m => P.holds m) n := rfl
+/-- This instance can be applied to any `P : SiProp` so it has a low priority to
+make sure it's only used if no other instance can be used. -/
+@[rocq_alias sbi_unfold_siprop]
+instance (priority := low) sbiUnfold_siProp (clo : SbiUnfoldClosure) (P : SiProp) :
+    SbiUnfold clo P P.holds :=
+  .of_closed P.closed .rfl
 
-@[sbi_norm] theorem pure_holds' {φ : Prop} {n} : (pure φ).holds n ↔ φ := .rfl
+section
+variable [Sbi PROP] {clo : SbiUnfoldClosure} {P Q : PROP} {Pi Qi : Nat → Prop}
 
-/-- Unfold the `downClosed` predicate. This takes an expression which has been fully converted
-into `downClose` expressions, and unlocks the phase of simplification for removing redundant
-quantifers. -/
-@[sbi_model] theorem downClose_holds {φ : Nat → Prop} {n} :
-    (downClose φ).holds n = ∀ m ≤ n, φ m := rfl
+/-! ## The top-level lemmas used by the tactic -/
 
-theorem entails_iff {P Q : SiProp} :
-    (P ⊢@{SiProp} Q) ↔ ∀ n, P.holds n → Q.holds n := .rfl
+namespace SbiUnfold
 
-theorem biEntails_iff {P Q : SiProp} :
-    (P ⊣⊢@{SiProp} Q) ↔ ∀ n, P.holds n ↔ Q.holds n :=
-  ⟨fun h n => ⟨h.mp n, h.mpr n⟩, fun h => ⟨fun n => (h n).mp, fun n => (h n).mpr⟩⟩
+@[rocq_alias sbi_unfold_entails]
+theorem entails_iff [hP : SbiUnfold .downClosed P Pi] [hQ : SbiUnfold .notClosed Q Qi] :
+    (P ⊢ Q) ↔ ∀ n, Pi n → Qi n :=
+  calc (P ⊢ Q)
+    _ ↔ (iprop(<si_pure> downClose Pi) ⊢ iprop(<si_pure> downClose Qi)) :=
+      ⟨fun h => hP.as_siPure.mpr.trans (h.trans hQ.as_siPure.mp),
+       fun h => hP.as_siPure.mp.trans (h.trans hQ.as_siPure.mpr)⟩
+    _ ↔ (downClose Pi ⊢@{SiProp} downClose Qi) := siPure_entails
+    _ ↔ ∀ n, Pi n → Qi n :=
+      ⟨fun h n hp => h n (fun _ hm => hP.closed rfl hp hm) n .refl,
+       fun h _ hp m hm => h m (hp m hm)⟩
 
-theorem emp_valid_iff {P : SiProp} : (⊢@{SiProp} P) ↔ ∀ n, P.holds n :=
-  ⟨fun h n => h n trivial, fun h n _ => h n⟩
+@[rocq_alias sbi_unfold_equiv]
+theorem biEntails_iff [hP : SbiUnfold .downClosed P Pi] [hQ : SbiUnfold .downClosed Q Qi] :
+    (P ⊣⊢ Q) ↔ ∀ n, Pi n ↔ Qi n :=
+  let hPQ := entails_iff (hP := hP) (hQ := .weaken (h := hQ))
+  let hQP := entails_iff (hP := hQ) (hQ := .weaken (h := hP))
+  ⟨fun h n => ⟨hPQ.mp h.mp n, hQP.mp h.mpr n⟩,
+   fun h => ⟨hPQ.mpr fun n => (h n).mp, hQP.mpr fun n => (h n).mpr⟩⟩
 
-end SiProp
+@[rocq_alias sbi_unfold_emp_valid]
+theorem empValid_iff [hQ : SbiUnfold .notClosed Q Qi] : (⊢ Q) ↔ ∀ n, Qi n :=
+  calc (⊢ Q)
+    _ ↔ (⊢ iprop(<si_pure> downClose Qi)) :=
+      ⟨(·.trans hQ.as_siPure.mp), (·.trans hQ.as_siPure.mpr)⟩
+    _ ↔ (⊢@{SiProp} downClose Qi) := siPure_emp_valid
+    _ ↔ ∀ n, Qi n := ⟨fun h n => h n trivial n .refl, fun h _ _ m _ => h m⟩
 
-attribute [sbi_norm]
-  SiProp.and_holds SiProp.sep_holds SiProp.or_holds SiProp.exists_holds
-  SiProp.forall_holds SiProp.internalEq_holds SiProp.cmraValid_holds
+end SbiUnfold
 
-/-! ## Downwards closed predicates  -/
+/-! ## The instances -/
 
-class DownClosed (φ : Nat → Prop) : Prop where
-  downClosed {n m} : m ≤ n → φ n → φ m
+@[rocq_alias sbi_unfold_pure]
+instance sbiUnfold_pure {φ : Prop} : SbiUnfold clo (iprop(⌜φ⌝) : PROP) (fun _ => φ) :=
+  .of_closed (fun h _ => h) <|
+    siPure_pure.symm.trans <| siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
-export DownClosed (downClosed)
+@[rocq_alias sbi_unfold_internal_eq]
+instance sbiUnfold_internalEq [OFE A] {a b : A} :
+    SbiUnfold clo (iprop(a ≡ b) : PROP) (fun n => a ≡{n}≡ b) :=
+  .of_closed Dist.le <| siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
-instance downClosed_holds (P : SiProp) : DownClosed (fun n => P.holds n) where
-  downClosed hle h := P.closed h hle
+@[rocq_alias sbi_unfold_internal_cmra_valid]
+instance sbiUnfold_cmraValid [CMRA A] {a : A} :
+    SbiUnfold clo (iprop(✓ a) : PROP) (fun n => ✓{n} a) :=
+  .of_closed (fun h hm => validN_of_le hm h) <|
+    siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
-instance downClosed_downClose (φ : Nat → Prop) :
-    DownClosed (fun n => (SiProp.downClose φ).holds n) where
-  downClosed hle h _ hle' := h _ (Nat.le_trans hle' hle)
+@[rocq_alias sbi_unfold_internal_included]
+instance sbiUnfold_included [CMRA A] {a b : A} :
+    SbiUnfold clo (iprop(a ≼ b) : PROP) (fun n => a ≼{n} b) :=
+  .of_closed (fun h hm => incN_of_incN_le hm h) <|
+    siPure_mono_bi <| biEntails_of_iff fun _ => exists_holds
 
-instance downClosed_validN [CMRA α] (a : α) : DownClosed (fun n => ✓{n} a) where
-  downClosed hle h := validN_of_le hle h
+@[rocq_alias sbi_unfold_si_pure]
+instance sbiUnfold_siPure {Psi : SiProp} [h : SbiUnfold clo Psi Pi] :
+    SbiUnfold clo (iprop(<si_pure> Psi) : PROP) Pi where
+  closed := h.closed
+  as_siPure := siPure_mono_bi h.as_siPure
 
-instance downClosed_dist [OFE α] (a b : α) : DownClosed (fun n => a ≡{n}≡ b) where
-  downClosed hle h := h.le hle
+@[rocq_alias sbi_unfold_and]
+instance sbiUnfold_and [hP : SbiUnfold clo P Pi] [hQ : SbiUnfold clo Q Qi] :
+    SbiUnfold clo iprop(P ∧ Q) (fun n => Pi n ∧ Qi n) where
+  closed hc hh hm := ⟨hP.closed hc hh.1 hm, hQ.closed hc hh.2 hm⟩
+  as_siPure :=
+    (and_congr hP.as_siPure hQ.as_siPure).trans <| siPure_and.symm.trans <|
+      siPure_mono_bi <| biEntails_of_iff fun _ =>
+        ⟨fun hh m hm => ⟨hh.1 m hm, hh.2 m hm⟩,
+         fun hh => ⟨fun m hm => (hh m hm).1, fun m hm => (hh m hm).2⟩⟩
 
-instance downClosed_incN [CMRA α] (a b : α) : DownClosed (fun n => a ≼{n} b) where
-  downClosed hle h := incN_of_incN_le hle h
+@[rocq_alias sbi_unfold_sep]
+instance sbiUnfold_sep [hP : SbiUnfold clo P Pi] [hQ : SbiUnfold clo Q Qi] :
+    SbiUnfold clo iprop(P ∗ Q) (fun n => Pi n ∧ Qi n) where
+  closed hc hh hm := ⟨hP.closed hc hh.1 hm, hQ.closed hc hh.2 hm⟩
+  as_siPure :=
+    (sep_congr hP.as_siPure hQ.as_siPure).trans <| siPure_and_sep.symm.trans <|
+      siPure_mono_bi <| biEntails_of_iff fun _ =>
+        ⟨fun hh m hm => ⟨hh.1 m hm, hh.2 m hm⟩,
+         fun hh => ⟨fun m hm => (hh m hm).1, fun m hm => (hh m hm).2⟩⟩
 
-instance downClosed_const (φ : Prop) : DownClosed (fun _ => φ) where
-  downClosed _ h := h
+/-- The instance for disjunction needs the sub-expressions to be already down
+closed because `∨` and `∀` do not commute. -/
+@[rocq_alias sbi_unfold_or]
+instance sbiUnfold_or [hP : SbiUnfold .downClosed P Pi] [hQ : SbiUnfold .downClosed Q Qi] :
+    SbiUnfold clo iprop(P ∨ Q) (fun n => Pi n ∨ Qi n) :=
+  .of_closed (fun hh hm => hh.imp (hP.closed rfl · hm) (hQ.closed rfl · hm)) <|
+    (or_congr hP.as_siPure hQ.as_siPure).trans <| siPure_or.symm.trans <|
+      siPure_mono_bi <| biEntails_of_iff fun n =>
+        ⟨fun hh => hh.imp (· n .refl) (· n .refl),
+         fun hh => hh.imp (fun hp _ hm => hP.closed rfl hp hm)
+           (fun hq _ hm => hQ.closed rfl hq hm)⟩
 
-instance downClosed_and (φ ψ : Nat → Prop) [DownClosed φ] [DownClosed ψ] :
-    DownClosed (fun n => φ n ∧ ψ n) where
-  downClosed hle h := ⟨downClosed hle h.1, downClosed hle h.2⟩
+@[rocq_alias sbi_unfold_impl]
+instance sbiUnfold_imp [hP : SbiUnfold .downClosed P Pi] [hQ : SbiUnfold .notClosed Q Qi] :
+    SbiUnfold clo iprop(P → Q) (clo.maybeDownClose fun n => Pi n → Qi n) :=
+  .of_downClose <|
+    (imp_congr hP.as_siPure hQ.as_siPure).trans <| siPure_imp.symm.trans <|
+      siPure_mono_bi <| biEntails_of_iff fun _ =>
+        ⟨fun hh m hm hp => hh m hm (fun _ hk => hP.closed rfl hp hk) m .refl,
+         fun hh _ hm hp k hk => hh k (Nat.le_trans hk hm) (hp k hk)⟩
 
-instance downClosed_or (φ ψ : Nat → Prop) [DownClosed φ] [DownClosed ψ] :
-    DownClosed (fun n => φ n ∨ ψ n) where
-  downClosed hle := Or.imp (downClosed hle) (downClosed hle)
+@[rocq_alias sbi_unfold_wand]
+instance sbiUnfold_wand [hP : SbiUnfold .downClosed P Pi] [hQ : SbiUnfold .notClosed Q Qi] :
+    SbiUnfold clo iprop(P -∗ Q) (clo.maybeDownClose fun n => Pi n → Qi n) :=
+  .of_downClose <|
+    (wand_congr hP.as_siPure hQ.as_siPure).trans <| siPure_imp_wand.symm.trans <|
+      siPure_mono_bi <| biEntails_of_iff fun _ =>
+        ⟨fun hh m hm hp => hh m hm (fun _ hk => hP.closed rfl hp hk) m .refl,
+         fun hh _ hm hp k hk => hh k (Nat.le_trans hk hm) (hp k hk)⟩
 
-instance downClosed_forall {α : Sort _} (φ : α → Nat → Prop) [∀ x, DownClosed (φ x)] :
-    DownClosed (fun n => ∀ x, φ x n) where
-  downClosed hle h x := downClosed hle (h x)
+@[rocq_alias sbi_unfold_iff]
+instance sbiUnfold_iff [hP : SbiUnfold .downClosed P Pi] [hQ : SbiUnfold .downClosed Q Qi] :
+    SbiUnfold clo iprop(P ↔ Q) (clo.maybeDownClose fun n => Pi n ↔ Qi n) :=
+  .of_downClose <|
+    (and_congr (imp_congr hP.as_siPure hQ.as_siPure) (imp_congr hQ.as_siPure hP.as_siPure)).trans <|
+      siPure_iff.symm.trans <| siPure_mono_bi <| biEntails_of_iff fun _ =>
+        ⟨fun hh m hm =>
+          ⟨fun hp => hh.1 m hm (fun _ hk => hP.closed rfl hp hk) m .refl,
+           fun hq => hh.2 m hm (fun _ hk => hQ.closed rfl hq hk) m .refl⟩,
+         fun hh =>
+          ⟨fun _ hm hp k hk => (hh k (Nat.le_trans hk hm)).mp (hp k hk),
+           fun _ hm hq k hk => (hh k (Nat.le_trans hk hm)).mpr (hq k hk)⟩⟩
 
-instance downClosed_exists {α : Sort _} (φ : α → Nat → Prop) [∀ x, DownClosed (φ x)] :
-    DownClosed (fun n => ∃ x, φ x n) where
-  downClosed hle := fun ⟨x, h⟩ => ⟨x, downClosed hle h⟩
+@[rocq_alias sbi_unfold_iff_wand]
+instance sbiUnfold_wandIff [hP : SbiUnfold .downClosed P Pi] [hQ : SbiUnfold .downClosed Q Qi] :
+    SbiUnfold clo iprop(P ∗-∗ Q) (clo.maybeDownClose fun n => Pi n ↔ Qi n) :=
+  .of_downClose <|
+    (wandIff_congr hP.as_siPure hQ.as_siPure).trans <|
+      siPure_iff_wandIff.symm.trans <| siPure_mono_bi <| biEntails_of_iff fun _ =>
+        ⟨fun hh m hm =>
+          ⟨fun hp => hh.1 m hm (fun _ hk => hP.closed rfl hp hk) m .refl,
+           fun hq => hh.2 m hm (fun _ hk => hQ.closed rfl hq hk) m .refl⟩,
+         fun hh =>
+          ⟨fun _ hm hp k hk => (hh k (Nat.le_trans hk hm)).mp (hp k hk),
+           fun _ hm hq k hk => (hh k (Nat.le_trans hk hm)).mpr (hq k hk)⟩⟩
 
-/-! ## Normalization: pull down closures outward -/
+@[rocq_alias sbi_unfold_forall]
+instance sbiUnfold_forall {A : Sort _} {Φ : A → PROP} {Φi : A → Nat → Prop}
+    [h : ∀ x, SbiUnfold clo (Φ x) (Φi x)] :
+    SbiUnfold clo iprop(∀ x, Φ x) (fun n => ∀ x, Φi x n) where
+  closed hc hh hm x := (h x).closed hc (hh x) hm
+  as_siPure :=
+    (forall_congr fun x => (h x).as_siPure).trans <| siPure_forall.symm.trans <|
+      siPure_mono_bi <| biEntails_of_iff fun _ =>
+        forall_holds.trans ⟨fun hh m hm x => hh x m hm, fun hh x m hm => hh m hm x⟩
 
-/-- `∀ n` eliminates down closures. -/
-@[sbi_norm] theorem downClose_absorb {φ : Nat → Prop} :
-    (∀ n, (SiProp.downClose φ).holds n) ↔ ∀ n, φ n :=
-  ⟨fun h n => h n n (Nat.le_refl n), fun h _ m _ => h m⟩
+/-- The instance for existentials needs the sub-expression to be already down
+closed because `∃` and `∀` do not commute. -/
+@[rocq_alias sbi_unfold_exist]
+instance sbiUnfold_exists {A : Type _} {Φ : A → PROP} {Φi : A → Nat → Prop}
+    [h : ∀ x, SbiUnfold .downClosed (Φ x) (Φi x)] :
+    SbiUnfold clo iprop(∃ x, Φ x) (fun n => ∃ x, Φi x n) :=
+  .of_closed (fun ⟨x, hx⟩ hm => ⟨x, (h x).closed rfl hx hm⟩) <|
+    (exists_congr fun x => (h x).as_siPure).trans <| siPure_exist.symm.trans <|
+      siPure_mono_bi <| biEntails_of_iff fun n =>
+        exists_holds.trans
+          ⟨fun ⟨x, hx⟩ => ⟨x, hx n .refl⟩,
+           fun ⟨x, hx⟩ => ⟨x, fun _ hm => (h x).closed rfl hx hm⟩⟩
 
-/-- When the antecedent of an implicaition is downwards closed, it eliminates `downClosed`
-from the conclusion. -/
-@[sbi_norm] theorem downClose_absorb_imp {H ψ : Nat → Prop} [DownClosed H] :
-    (∀ n, H n → (SiProp.downClose ψ).holds n) ↔ ∀ n, H n → ψ n where
-  mp h n hH := h n hH n (Nat.le_refl n)
-  mpr h _ hH m hm := h m (downClosed hm hH)
+@[rocq_alias sbi_unfold_later]
+instance sbiUnfold_later [hP : SbiUnfold clo P Pi] :
+    SbiUnfold clo iprop(▷ P) (fun n => match n with | 0 => True | m + 1 => Pi m) where
+  closed {n₁ n₂} hc hh hm :=
+    match n₁, n₂ with
+    | _, 0 => trivial
+    | 0, _ + 1 => absurd hm (by omega)
+    | _ + 1, _ + 1 => hP.closed hc hh (by omega)
+  as_siPure :=
+    (later_congr hP.as_siPure).trans <| siPure_later.symm.trans <|
+      siPure_mono_bi <| biEntails_of_iff fun n => by
+        match n with
+        | 0 =>
+          exact ⟨fun _ m hm => match m with | 0 => trivial | _ + 1 => by omega,
+                 fun _ => trivial⟩
+        | _ + 1 =>
+          refine ⟨fun hh m hm => ?_, fun hh k hk => hh (k + 1) (by omega)⟩
+          match m with
+          | 0 => trivial
+          | _ + 1 => exact hh _ (by omega)
 
-/-- A down closure in the conclusion of an implication merges with the enclosing
-one, when the antecedent is down closed. -/
-@[sbi_norm] theorem downClose_imp {H ψ : Nat → Prop} [DownClosed H] {n} :
-    (SiProp.downClose fun m => H m → (SiProp.downClose ψ).holds m).holds n
-      ↔ (SiProp.downClose fun m => H m → ψ m).holds n where
-  mp h m hm hH := h m hm hH m (Nat.le_refl m)
-  mpr h _ hm hH k hk := h k (Nat.le_trans hk hm) (downClosed hk hH)
+end
 
-/-- Two down closures under a conjunction merge. -/
-@[sbi_norm] theorem downClose_and {φ ψ : Nat → Prop} {n} :
-    ((SiProp.downClose φ).holds n ∧ (SiProp.downClose ψ).holds n)
-      ↔ (SiProp.downClose fun m => φ m ∧ ψ m).holds n :=
-  ⟨fun h m hm => ⟨h.1 m hm, h.2 m hm⟩,
-   fun h => ⟨fun m hm => (h m hm).1, fun m hm => (h m hm).2⟩⟩
+/-- Turn a (bi-)entailment of plain propositions into a (bi-)implication in the
+pure step-indexed model. -/
+syntax (name := sbiUnfoldTac) "sbi_unfold" : tactic
 
-/-- A down closure under a universal quantifier merges. -/
-@[sbi_norm] theorem downClose_forall {α : Type _} {φ : α → Nat → Prop} {n} :
-    (∀ x, (SiProp.downClose (φ x)).holds n)
-      ↔ (SiProp.downClose fun m => ∀ x, φ x m).holds n :=
-  ⟨fun h m hm x => h x m hm, fun h x m hm => h m hm x⟩
+macro_rules
+  | `(tactic| sbi_unfold) =>
+    -- Some instances leave a down closure, which the `dsimp` reduces away.
+    `(tactic|
+      (first
+        | refine SbiUnfold.empValid_iff.mpr ?_
+        | refine SbiUnfold.biEntails_iff.mpr ?_
+        | refine SbiUnfold.entails_iff.mpr ?_
+        | fail "sbi_unfold: not a BI entailment") <;>
+      try dsimp only [SbiUnfoldClosure.maybeDownClose])
 
-/-- A down closure under `▷` merges. -/
-@[sbi_norm] theorem downClose_later {φ : Nat → Prop} {n} :
-    SiProp.laterP (fun m => (SiProp.downClose φ).holds m) n
-      ↔ (SiProp.downClose fun k => SiProp.laterP φ k).holds n := by
-  refine ⟨fun h m _ => ?_, fun h => ?_⟩
-  · match m with
-    | 0 => trivial
-    | m + 1 =>
-      match n with
-      | 0 => omega
-      | _ + 1 => exact h m (by omega)
-  · match n with
-    | 0 => trivial
-    | _ + 1 => exact fun m _ => h (m + 1) (by omega)
-
-#rocq_ignore_file BI "sbi_unfold.v" "Implemented using the `sbi_norm` and `sbi_model` simp sets."
+#rocq_ignore sbi_unfold_tceq "Only needed for the Rocq `Hint Extern` that translates `match`."
+#rocq_concept bi "sbi_unfold" ported "Implemented as the sbi_unfold tactic."
+#rocq_concept bi "sbi_unfold" "match" missing
+  "No Lean analogue of the Hint Extern; case split by hand."
 
 end Iris
