@@ -51,7 +51,7 @@ instance asEmpValid_forall {α} [bi : BI PROP] (Φ : α → Prop) (P : α → PR
 @[rocq_alias as_emp_valid_tforall]
 instance asEmpValid_tforall {TT : Tele} [bi : BI PROP] (φ : TT.Arg → Prop)
     (P : TT.Arg → PROP) d io [hP : ∀ x, AsEmpValid d (φ x) io PROP bi (P x)] :
-    AsEmpValid d (Tele.tforall φ) io PROP bi (BI.tforall P) where
+    AsEmpValid d (∀.. x, φ x) io PROP bi iprop(∀.. x, P x) where
   as_emp_valid := by
     constructor
     · refine fun hd h => .trans ?_ (tforall_forall P).mpr
@@ -1168,7 +1168,7 @@ instance intoPure_pure_wand [BI PROP] (a : Bool) (φ1 φ2 : Prop) (P1 P2 : PROP)
 -/
 @[rocq_alias into_pure_tforall]
 instance intoPure_tforall {TT : Tele} [BI PROP] (Φ : TT.Arg → PROP) (φ : TT.Arg → Prop)
-    [h : ∀ x, IntoPure (Φ x) (φ x)] : IntoPure (BI.tforall Φ) (Tele.tforall φ) where
+    [h : ∀ x, IntoPure (Φ x) (φ x)] : IntoPure iprop(∀.. x, Φ x) (∀.. x, φ x) where
   into_pure := calc
     _ ⊢ ∀ x, Φ x         := (tforall_forall Φ).mp
     _ ⊢ ∀ x, ⌜φ x⌝       := forall_mono fun x => (h x).into_pure
@@ -1177,7 +1177,7 @@ instance intoPure_tforall {TT : Tele} [BI PROP] (Φ : TT.Arg → PROP) (φ : TT.
 
 @[rocq_alias into_pure_texist]
 instance intoPure_texist {TT : Tele} [BI PROP] (Φ : TT.Arg → PROP) (φ : TT.Arg → Prop)
-    [h : ∀ x, IntoPure (Φ x) (φ x)] : IntoPure (texist Φ) (Tele.texist φ) where
+    [h : ∀ x, IntoPure (Φ x) (φ x)] : IntoPure iprop(∃.. x, Φ x) (∃.. x, φ x) where
   into_pure := calc
     _ ⊢ ∃ x, Φ x        := (texist_exist Φ).mp
     _ ⊢ ∃ x, ⌜φ x⌝      := exists_mono fun x => (h x).into_pure
@@ -1331,7 +1331,7 @@ instance fromPure_absorbingly (a : Bool) [BI PROP] (P : PROP) (φ : Prop)
 @[rocq_alias from_pure_tforall]
 instance fromPure_tforall {TT : Tele} (a : Bool) [BI PROP] (Φ : TT.Arg → PROP)
     (φ : TT.Arg → Prop) [h : ∀ x, FromPure a (Φ x) io (φ x)] :
-    FromPure a (BI.tforall Φ) io (Tele.tforall φ) where
+    FromPure a iprop(∀.. x, Φ x) io (∀.. x, φ x) where
   from_pure := calc
     _ ⊢ <affine>?a ⌜∀ x, φ x⌝ := affinelyIf_mono <| pure_mono (Tele.tforall_forall φ).mp
     _ ⊢ <affine>?a ∀ x, ⌜φ x⌝ := affinelyIf_mono pure_forall.mp
@@ -1342,7 +1342,7 @@ instance fromPure_tforall {TT : Tele} (a : Bool) [BI PROP] (Φ : TT.Arg → PROP
 @[rocq_alias from_pure_texist]
 instance fromPure_texist {TT : Tele} (a : Bool) [BI PROP] (Φ : TT.Arg → PROP)
     (φ : TT.Arg → Prop) [h : ∀ x, FromPure a (Φ x) io (φ x)] :
-    FromPure a (texist Φ) io (Tele.texist φ) where
+    FromPure a iprop(∃.. x, Φ x) io (∃.. x, φ x) where
   from_pure := calc
     _ ⊢ <affine>?a ⌜∃ x, φ x⌝ := affinelyIf_mono <| pure_mono (Tele.texist_exist φ).mp
     _ ⊢ <affine>?a ∃ x, ⌜φ x⌝ := affinelyIf_mono pure_exists.mpr
@@ -1474,7 +1474,7 @@ instance elimModal_absorbingly_here [BI PROP] p io (P Q : PROP) [Absorbing Q] :
 @[rocq_alias elim_modal_tforall]
 instance elimModal_tforall {TT : Tele} [BI PROP] φ p p' io (P P' : PROP)
     (Φ Ψ : TT.Arg → PROP) [h : ∀ x, ElimModal φ p io p' P P' (Φ x) (Ψ x)] :
-    ElimModal φ p io p' P P' (BI.tforall Φ) (BI.tforall Ψ) where
+    ElimModal φ p io p' P P' iprop(∀.. x, Φ x) iprop(∀.. x, Ψ x) where
   elim_modal hφ := by
     refine .trans ?_ (tforall_forall Φ).mpr
     refine forall_intro fun x => ?_

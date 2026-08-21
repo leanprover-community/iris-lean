@@ -86,7 +86,7 @@ variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
 
 /- Tests `fromPure_tforall`. -/
 /-- info:
-  solution: FromPure false iprop(∀.. x, ⌜φ x⌝) InOut.out (Tele.tforall φ),
+  solution: FromPure false iprop(∀.. x, ⌜φ x⌝) InOut.out (∀.. x, φ x),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
@@ -94,7 +94,7 @@ variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
 
 /- Tests `fromPure_tforall`. -/
 /-- info:
-  solution: FromPure false iprop(∀.. x, ⌜φ x⌝) InOut.in (Tele.tforall φ),
+  solution: FromPure false iprop(∀.. x, ⌜φ x⌝) InOut.in (∀.. x, φ x),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
@@ -102,7 +102,7 @@ variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
 
 /- Tests `intoPure_tforall`. -/
 /-- info:
-  solution: IntoPure iprop(∀.. x, ⌜φ x⌝) (Tele.tforall φ),
+  solution: IntoPure iprop(∀.. x, ⌜φ x⌝) (∀.. x, φ x),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
@@ -110,7 +110,7 @@ variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
 
 /- Tests `intoPure_texist`. -/
 /-- info:
-  solution: IntoPure iprop(∃.. x, ⌜φ x⌝) (Tele.texist φ),
+  solution: IntoPure iprop(∃.. x, ⌜φ x⌝) (∃.. x, φ x),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
