@@ -326,8 +326,8 @@ theorem fupd_finally_keep {E : CoPset} (P : IProp GF) {Q : IProp GF} [TCOr (TCEq
 
 @[rocq_alias uPred_bi_fupd_sbi_no_lc]
 instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .hasNoLC GF] :
-    BIFUpdatePlainly (IProp GF) where
-  fupd_keep_si_pure E' Pi R := by
+    BIFUpdateSbi (IProp GF) where
+  fupd_keep_siPure E' Pi R := by
     iintro H
     iapply fupd_keep iprop(<si_pure> Pi)
     isplit
@@ -336,10 +336,10 @@ instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .h
       iapply BIFUpdate.mono (fupd_finally_intro E' iprop(<si_pure> Pi))
       iapply BIFUpdate.mono Plain.plain $$ H
     · icases H with ⟨-, $⟩
-  fupd_plainly_later _ P := by
+  fupd_siPure_later _ P := by
     simp only [fupd, uPred_fupd]
     iintro H ⟨Hwsat, HE⟩
-    ihave #HP : ▷ ◇ ■ P $$ [H Hwsat HE]
+    ihave #HP : ▷ ◇ <si_pure> P $$ [H Hwsat HE]
     · inext
       ihave H := H $$ [$]
       icases le_upd_unfold_no_le.mp $$ H with H
@@ -347,18 +347,24 @@ instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .h
     imodintro
     iframe
     inext; imod HP; imodintro
-    iapply plainly_elim $$ HP
-  fupd_plainly_sForall_2 E P := by
-    simp only [fupd, uPred_fupd]
-    iintro H ⟨Hwsat, HE⟩
-    ihave #HP : ◇ ■ sForall P $$ [H Hwsat HE]
-    · ihave H := H $$ [$]
-      icases le_upd_unfold_no_le.mp $$ H with H
-      imod H with ⟨_, _, $⟩
-    imod HP; imodintro
-    iframe
-    iclear H
-    iapply plainly_elim $$ HP
+    iexact HP
+  fupd_siPure_sForall_2 E Ψi := by
+    iintro H
+    iapply fupd_keep iprop(<si_pure> (sForall Ψi))
+    isplit
+    · iapply fupd_finally_mono (siPure_sForall_mpr (Ψi := Ψi))
+      iapply fupd_finally_forall
+      iintro %q
+      iapply fupd_finally_mono pure_imp_forall.mpr
+      iapply fupd_finally_forall
+      iintro %hq
+      iapply fupd_fupd_finally
+      imod H $$ %q %hq with #Hq
+      imodintro
+      iapply fupd_finally_intro
+      iintro !> //
+    · iintro Hall
+      iapply fupd_mask_intro_discard LawfulSet.subset_refl $$ Hall
 
 @[rocq_alias fupd_finally_mask_mono]
 theorem fupd_finally_mask_mono (E1 E2 : CoPset) (P : IProp GF) (H : E1 ⊆ E2) :
@@ -528,7 +534,7 @@ end Soundness
 
 section StepIndexed
 
-open Iris Std LawfulSet BIFUpdatePlainly
+open Iris Std LawfulSet BIFUpdateSbi
 
 variable {GF : BundledGFunctors}
 
