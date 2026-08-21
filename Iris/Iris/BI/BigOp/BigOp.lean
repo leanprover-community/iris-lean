@@ -504,6 +504,42 @@ def delabBigOpS : Delab := do
   else
     failure
 
+private def delabBigOpMSBody (fn : Expr) (xArg phiArg : Nat)
+    (mk : Ident → TSyntax `term → TSyntax `term → DelabM (TSyntax `term)) : Delab := do
+  let X ← withNaryArg xArg delab
+  match fn with
+  | .lam xn _ _ _ =>
+    let P ← withNaryArg phiArg <| withBindingBody xn delab
+    let x := mkIdent xn
+    mk x X P
+  | _ => failure
+
+/-- Delaborator for `bigSepMS` -/
+@[delab app.Iris.BI.bigSepMS]
+def delabBigSepMS : Delab := do
+  let e ← getExpr
+  unless e.isApp do failure
+  unless e.getAppFn.isConstOf ``bigSepMS do failure
+  let args := e.getAppArgs
+  unless args.size == 7 do failure
+  delabBigOpMSBody args[5]! 6 5
+    (fun x X P => `([∗mset] $x ∈ $X, $P))
+
+@[delab app.Iris.Algebra.bigOpMS]
+def delabBigOpMS : Delab := do
+  let e ← getExpr
+  unless e.isApp do failure
+  unless e.getAppFn.isConstOf ``Iris.Algebra.bigOpMS do failure
+  let args := e.getAppArgs
+  -- need at least `Φ` and `X`, plus an `op` somewhere before them
+  unless args.size ≥ 3 do failure
+  let phiArg := args.size - 2
+  let xArg := args.size - 1
+  -- the monoid operation is the (unique) earlier argument headed by a BI connective
+  unless args[:phiArg].any (·.getAppFn.isConstOf ``BIBase.sep) do failure
+  delabBigOpMSBody args[phiArg]! xArg phiArg
+    (fun x X P => `([∗mset] $x ∈ $X, $P))
+
 /-- Delaborator for `bigOpL` applied to `sep`/`and`/`or` — catches cases where
     `bigSepL`/`bigAndL`/`bigOrL` abbrevs are unfolded. -/
 @[delab app.Iris.Algebra.bigOpL]
