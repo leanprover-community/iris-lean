@@ -24,15 +24,14 @@ variable {PROP : Type _} [BI PROP] [BIFUpdate PROP] {TA TB : Tele}
 back to `P`. -/
 @[rocq_alias atomic_acc]
 def atomic_acc (Eo Ei : CoPset) (α : TA.Arg → PROP) (P : PROP)
-    (β Φ : TA.Arg → TB.Arg → PROP) : PROP :=
-  iprop(|={Eo,Ei}=> ∃.. x, α x ∗
-    ((α x ={Ei,Eo}=∗ P) ∧ (∀.. y, β x y ={Ei,Eo}=∗ Φ x y)))
+    (β Φ : TA.Arg → TB.Arg → PROP) : PROP := iprop%
+    |={Eo,Ei}=> ∃.. x, α x ∗ ((α x ={Ei,Eo}=∗ P) ∧ (∀.. y, β x y ={Ei,Eo}=∗ Φ x y))
 
 @[rocq_alias atomic_acc_wand]
 theorem atomic_acc_wand {Eo Ei : CoPset} {α : TA.Arg → PROP} {P1 P2 : PROP}
     {β Φ1 Φ2 : TA.Arg → TB.Arg → PROP} :
-    ⊢ iprop(((P1 -∗ P2) ∧ (∀.. x, ∀.. y, Φ1 x y -∗ Φ2 x y)) -∗
-      atomic_acc Eo Ei α P1 β Φ1 -∗ atomic_acc Eo Ei α P2 β Φ2) := by
+    ((P1 -∗ P2) ∧ (∀.. x, ∀.. y, Φ1 x y -∗ Φ2 x y)) -∗
+      atomic_acc Eo Ei α P1 β Φ1 -∗ atomic_acc Eo Ei α P2 β Φ2 := by
   iintro HP12 AS
   unfold atomic_acc
   imod AS with ⟨%x, Hα, Hclose⟩
@@ -48,14 +47,14 @@ theorem atomic_acc_wand {Eo Ei : CoPset} {α : TA.Arg → PROP} {P1 P2 : PROP}
   · iintro %y Hβ
     icases HP12 with ⟨-, HP12⟩
     icases Hclose with ⟨-, Hclose⟩
-    iapply HP12 $$ %x %y
-    iapply Hclose $$ %y Hβ
+    iapply HP12
+    iapply Hclose $$ Hβ
 
 @[rocq_alias atomic_acc_mask]
 theorem atomic_acc_mask {Eo Ed : CoPset} {α : TA.Arg → PROP} {P : PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} :
     atomic_acc Eo (Eo \ Ed) α P β Φ ⊣⊢ ∀ E, ⌜Eo ⊆ E⌝ → atomic_acc E (E \ Ed) α P β Φ := by
-  refine ⟨?_, ?_⟩
+  isplit
   · iintro Hstep %E %HE
     unfold atomic_acc
     iapply fupd_mask_frame_acc HE $$ Hstep
@@ -69,16 +68,15 @@ theorem atomic_acc_mask {Eo Ed : CoPset} {α : TA.Arg → PROP} {P : PROP}
       iapply Hclose' $$ (Hclose $$ Hα)
     · icases Hclose with ⟨-, Hclose⟩
       iintro %y Hβ
-      iapply Hclose' $$ (Hclose $$ %y Hβ)
+      iapply Hclose' $$ (Hclose $$ Hβ)
   · iintro Hstep
     iapply Hstep $$ %Eo
-    ipureintro
-    rfl
+    ipureintro; rfl
 
 @[rocq_alias atomic_acc_mask_weaken]
 theorem atomic_acc_mask_weaken {Eo1 Eo2 Ei : CoPset} {α : TA.Arg → PROP} {P : PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} (HE : Eo1 ⊆ Eo2) :
-    atomic_acc Eo1 Ei α P β Φ ⊢ atomic_acc Eo2 Ei α P β Φ := by
+    atomic_acc Eo1 Ei α P β Φ -∗ atomic_acc Eo2 Ei α P β Φ := by
   iintro Hstep
   unfold atomic_acc
   imod (fupd_mask_subseteq HE) with Hclose1
@@ -89,16 +87,12 @@ theorem atomic_acc_mask_weaken {Eo1 Eo2 Ei : CoPset} {α : TA.Arg → PROP} {P :
   isplit
   · iintro Hα
     icases Hclose2 with ⟨Hclose2, -⟩
-    imod Hclose2 $$ Hα with Hfin
-    imod Hclose1
-    imodintro
-    iexact Hfin
+    imod Hclose2 $$ Hα with $
+    itrivial
   · iintro %y Hβ
     icases Hclose2 with ⟨-, Hclose2⟩
-    imod Hclose2 $$ %y Hβ with Hfin
-    imod Hclose1
-    imodintro
-    iexact Hfin
+    imod Hclose2 $$ %y Hβ with $
+    itrivial
 
 /-! `atomic_update` as a fixed-point of the equation `AU = atomic_acc α AU β Q`. -/
 
@@ -133,12 +127,7 @@ def atomic_update (Eo Ei : CoPset) (α : TA.Arg → PROP)
 
 end definition
 
-/-! ## Notation
-
-Notation for atomic updates and atomic accessors. As in Rocq, we avoid `<<`/`>>` since those can
-also reasonably be infix operators. The binder groups `∃∃ x₁ … xₙ,` and `∀∀ y₁ … yₙ,` are
-optional; leaving one out is the same as quantifying over the empty telescope.
--/
+/-! ## Notation -/
 
 public meta section
 open Lean PrettyPrinter Delaborator SubExpr
@@ -168,58 +157,56 @@ syntax:max (name := aaccNotation)
     "@ " term ", " term ppSpace
     "<{ " (auAllBinders)? term ", " ppSpace &"COMM " term " }>") : term
 
-/-- Flatten `explicitBinders` into the binders it stands for, as pairs of an identifier (or hole)
-and its optional type ascription. -/
-def auBinderList (stx : Syntax) : MacroM (Array (Syntax × Option Term)) := do
-  let stx := stx[0]
-  if stx.getKind == ``Lean.unbracketedExplicitBinders then
-    let ty? : Option Term := if stx[1].isNone then none else some ⟨stx[1][1]⟩
-    return stx[0].getArgs.map fun b => (b[0], ty?)
-  else if stx.getArgs.all (·.getKind == ``Lean.bracketedExplicitBinders) then
-    return stx.getArgs.flatMap fun b => b[1].getArgs.map fun i => (i[0], some ⟨b[3]⟩)
+/-- Convert `explicitBinders` into the standard binders of a `fun` expression. -/
+def auFunBinders (binders? : Option (TSyntax ``Lean.explicitBinders)) :
+    MacroM (Option (Array (TSyntax ``Lean.Parser.Term.funBinder))) := do
+  let mkBinder (x : Syntax) (ty? : Option Term) :
+      TSyntax ``Lean.Parser.Term.funBinder :=
+    ⟨Lean.Elab.Term.mkExplicitBinder ⟨x⟩ (ty?.getD (Lean.mkHole x))⟩
+  let some binders := binders? | return .none
+  let binders := binders.raw[0]
+  if binders.getKind == ``Lean.unbracketedExplicitBinders then
+    let ty? : Option Term := if binders[1].isNone then none else some ⟨binders[1][1]⟩
+    return binders[0].getArgs.map fun binder => mkBinder binder[0] ty?
+  else if binders.getArgs.all (·.getKind == ``Lean.bracketedExplicitBinders) then
+    return binders.getArgs.flatMap fun binder =>
+      binder[1].getArgs.map fun x => mkBinder x[0] (some ⟨binder[3]⟩)
   else
     Macro.throwError "unexpected explicit binder"
 
-/-- `fun x => body`, with a type ascription on `x` if one was given. -/
-def auLam (x : Syntax) (ty? : Option Term) (body : Term) : MacroM Term := do
-  let i : Ident := ⟨x⟩
-  match x.isIdent, ty? with
-  | true,  none    => `(fun $i => $body)
-  | true,  some ty => `(fun $i : $ty => $body)
-  | false, none    => `(fun _ => $body)
-  | false, some ty => `(fun _ : $ty => $body)
-
-/-- The telescope `Tele.cons fun x₁ => … Tele.cons fun xₙ => Tele.nil` binding `bs`. -/
-def auTele (bs : Array (Syntax × Option Term)) : MacroM Term := do
+/-- The telescope `Tele.cons fun x₁ => … Tele.cons fun xₙ => Tele.nil` binding `binders`. -/
+def auTele (binders? : Option (TSyntax ``Lean.explicitBinders)) : MacroM Term := do
   -- The universe of the empty telescope is not otherwise determined.
-  if bs.isEmpty then return ← `((Tele.nil : Tele.{0}))
-  let mut t ← `(Tele.nil)
-  for (x, ty?) in bs.reverse do
-    t ← `(Tele.cons $(← auLam x ty? t))
-  return t
+  let some binders := binders? | return ← `((Tele.nil : Tele.{0}))
+  return ⟨← Lean.expandExplicitBinders ``Tele.cons binders (← `(Tele.nil))⟩
 
-/-- The telescopic function `Tele.app fun x₁ … xₙ => ULift.up body` binding `bs`. -/
-def auFun (bs : Array (Syntax × Option Term)) (body : Term) : MacroM Term := do
-  let mut t ← `(ULift.up $body)
-  for (x, ty?) in bs.reverse do
-    t ← auLam x ty? t
-  `(Tele.app $t)
+/-- The telescopic function `Tele.app fun x₁ … xₙ => ULift.up body` over `TT`, binding `binders`. -/
+def auFun (TT : Term) (binders? : Option (Array (TSyntax ``Lean.Parser.Term.funBinder)))
+    (body : Term) : MacroM Term := do
+  let some binders := binders?
+    | return ← `(Tele.app (TT := $TT) (ULift.up $body))
+  `(Tele.app (TT := $TT) (fun $binders:funBinder* => ULift.up $body))
 
 /-- The telescopes and the telescopic functions `α`, `β` and `Φ` of an `AU`/`AACC` notation. -/
 def auArgs (xs : Option (TSyntax ``auExBinders)) (ys : Option (TSyntax ``auAllBinders))
     (α β Φ : Term) : MacroM (Term × Term × Term × Term × Term) := do
-  let xbs ← match xs with | none => pure #[] | some xs => auBinderList xs.raw[1]
-  let ybs ← match ys with | none => pure #[] | some ys => auBinderList ys.raw[1]
-  return (← auTele xbs, ← auTele ybs,
-    ← auFun xbs (← `(iprop($α))),
-    ← auFun xbs (← auFun ybs (← `(iprop($β)))),
-    ← auFun xbs (← auFun ybs (← `(iprop($Φ)))))
+  let xstx? := xs.map fun xs => (⟨xs.raw[1]⟩ : TSyntax ``Lean.explicitBinders)
+  let ystx? := ys.map fun ys => (⟨ys.raw[1]⟩ : TSyntax ``Lean.explicitBinders)
+  let xbs? ← auFunBinders xstx?
+  let ybs? ← auFunBinders ystx?
+  let TA ← auTele xstx?
+  let TB ← auTele ystx?
+  return (TA, TB,
+    ← auFun TA xbs? (← `(iprop($α))),
+    ← auFun TA xbs? (← auFun TB ybs? (← `(iprop($β)))),
+    ← auFun TA xbs? (← auFun TB ybs? (← `(iprop($Φ)))))
 
 macro_rules
-  | `(AU%$tk <{ $[$xs]? $α }> @ $Eo, $Ei <{ $[$ys]? $β, COMM $Φ }>) => do
+  | `(iprop(AU%$tk <{ $[$xs]? $α }> @ $Eo, $Ei <{ $[$ys]? $β, COMM $Φ }>)) => do
     let (TA, TB, α, β, Φ) ← auArgs xs ys α β Φ
     ``($(wrapIprop tk ``atomic_update) (TA := $TA) (TB := $TB) $Eo $Ei $α $β $Φ)
-  | `(AACC%$tk <{ $[$xs]? $α, ABORT $P }> @ $Eo, $Ei <{ $[$ys]? $β, COMM $Φ }>) => do
+  | `(iprop(AACC%$tk <{ $[$xs]? $α, ABORT $P }> @ $Eo, $Ei
+        <{ $[$ys]? $β, COMM $Φ }>)) => do
     let (TA, TB, α, β, Φ) ← auArgs xs ys α β Φ
     ``($(wrapIprop tk ``atomic_acc) (TA := $TA) (TB := $TB) $Eo $Ei $α iprop($P) $β $Φ)
 
@@ -350,7 +337,6 @@ theorem atomic_update_mask_weaken {Eo1 Eo2 Ei : CoPset} {α : TA.Arg → PROP}
     atomic_update Eo1 Ei α β Φ ⊢ atomic_update Eo2 Ei α β Φ := by
   show atomic_update Eo1 Ei α β Φ ⊢ bi_greatest_fixpoint (atomic_update_pre Eo2 Ei α β Φ) ()
   iintro HAU
-  letI _ : NonExpansive (fun _ : Unit => atomic_update Eo1 Ei α β Φ) := ⟨fun _ _ _ _ => .rfl⟩
   iapply greatest_fixpoint_coiter (atomic_update_pre Eo2 Ei α β Φ)
     (fun _ => atomic_update Eo1 Ei α β Φ)
   · iintro !> %_ H
@@ -376,18 +362,16 @@ instance elim_mod_aupd {φ} {io : InOut} {Eo Ei E : CoPset} {α : TA.Arg → PRO
     · iapply atomic_acc_mask_weaken hsub
       iapply aupd_aacc $$ AU
     iunfold atomic_acc at AC
-    iapply (H iprop(∃.. x, α x ∗ ((α x ={Ei,E}=∗ atomic_update Eo Ei α β Φ) ∧
-        (∀.. y, β x y ={Ei,E}=∗ Φ x y)))).elim_modal hφ
+    iapply (H _).elim_modal hφ
     iframe
 
 @[rocq_alias aupd_intro]
 theorem aupd_intro {Eo Ei : CoPset} {P Q : PROP} {α : TA.Arg → PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} [Absorbing P] [Persistent P]
-    (HAU : iprop(P ∧ Q) ⊢ atomic_acc Eo Ei α Q β Φ) :
-    iprop(P ∧ Q) ⊢ atomic_update Eo Ei α β Φ := by
+    (HAU : P ∧ Q ⊢ atomic_acc Eo Ei α Q β Φ) :
+    P ∧ Q ⊢ atomic_update Eo Ei α β Φ := by
   show iprop(P ∧ Q) ⊢ bi_greatest_fixpoint (atomic_update_pre Eo Ei α β Φ) ()
   iintro ⟨#HP, HQ⟩
-  letI _ : NonExpansive (fun _ : Unit => Q) := ⟨fun _ _ _ _ => .rfl⟩
   iapply greatest_fixpoint_coiter (atomic_update_pre Eo Ei α β Φ) (fun _ => Q)
   · iintro !> %_ HQ
     unfold atomic_update_pre
@@ -398,7 +382,7 @@ theorem aupd_intro {Eo Ei : CoPset} {P Q : PROP} {α : TA.Arg → PROP}
 @[rocq_alias aacc_intro]
 theorem aacc_intro {Eo Ei : CoPset} {α : TA.Arg → PROP} {P : PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} (HEi : Ei ⊆ Eo) :
-    ⊢ iprop(∀.. x, α x -∗
+    ⊢ (∀.. x, α x -∗
       ((α x ={Eo}=∗ P) ∧ (∀.. y, β x y ={Eo}=∗ Φ x y)) -∗ atomic_acc Eo Ei α P β Φ) := by
   iintro %x Hα Hclose
   unfold atomic_acc
@@ -449,7 +433,6 @@ instance elim_acc_aacc {X} {E1 E2 Ei : CoPset} {α' β' : X → PROP} {γ' : X �
       imodintro
       iapply HΦ $$ Hγ'
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias elim_modal_acc]
 instance elim_modal_acc {p : Bool} {io : InOut} {q : Bool} {φ} {P P' : PROP} {Eo Ei : CoPset}
     {α : TA.Arg → PROP} {Pas : PROP} {β Φ : TA.Arg → TB.Arg → PROP}
@@ -500,11 +483,11 @@ theorem aacc_aupd {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP}
     {α' : TA'.Arg → PROP} {P' : PROP} {β' Φ' : TA'.Arg → TB'.Arg → PROP} (HE : E1' ⊆ E1) :
     atomic_update E1' E2 α β Φ ⊢
-    iprop((∀.. x, α x -∗ atomic_acc E2 E3 α'
+    (∀.. x, α x -∗ atomic_acc E2 E3 α'
       iprop(α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ P')) β'
       (fun x' y' => iprop((α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ Φ' x' y'))
         ∨ ∃.. y, β x y ∗ (Φ x y ={E1}=∗ Φ' x' y')))) -∗
-      atomic_acc E1 E3 α' P' β' Φ') := by
+      atomic_acc E1 E3 α' P' β' Φ' := by
   iintro Hupd Hstep
   iapply aacc_aacc HE $$ [Hupd] Hstep
   iapply aupd_aacc $$ Hupd
@@ -514,10 +497,10 @@ theorem aacc_aupd_commit {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP}
     {α' : TA'.Arg → PROP} {P' : PROP} {β' Φ' : TA'.Arg → TB'.Arg → PROP} (HE : E1' ⊆ E1) :
     atomic_update E1' E2 α β Φ ⊢
-    iprop((∀.. x, α x -∗ atomic_acc E2 E3 α'
+    (∀.. x, α x -∗ atomic_acc E2 E3 α'
       iprop(α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ P')) β'
       (fun x' y' => iprop(∃.. y, β x y ∗ (Φ x y ={E1}=∗ Φ' x' y')))) -∗
-      atomic_acc E1 E3 α' P' β' Φ') := by
+      atomic_acc E1 E3 α' P' β' Φ' := by
   iintro Hupd Hstep
   iapply aacc_aupd HE $$ Hupd
   iintro %x Hα
@@ -533,10 +516,10 @@ theorem aacc_aupd_abort {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP}
     {α' : TA'.Arg → PROP} {P' : PROP} {β' Φ' : TA'.Arg → TB'.Arg → PROP} (HE : E1' ⊆ E1) :
     atomic_update E1' E2 α β Φ ⊢
-    iprop((∀.. x, α x -∗ atomic_acc E2 E3 α'
+    (∀.. x, α x -∗ atomic_acc E2 E3 α'
       iprop(α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ P')) β'
       (fun x' y' => iprop(α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ Φ' x' y')))) -∗
-      atomic_acc E1 E3 α' P' β' Φ') := by
+      atomic_acc E1 E3 α' P' β' Φ' := by
   iintro Hupd Hstep
   iapply aacc_aupd HE $$ Hupd
   iintro %x Hα
