@@ -6,6 +6,7 @@ Authors: Michael Sammler
 module
 
 import Iris.ProofMode.Modalities
+public import Iris.ProofMode.SolveSideCondition
 public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
