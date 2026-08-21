@@ -153,7 +153,7 @@ example [BI PROP] {TT : Tele} (Φ Ψ : TT.Arg → PROP) :
   □HR : R
   ∗HΦ : ∀.. x, Φ x
   ∗HΨ : ∃.. y, Ψ y
-  ⊢ tforall Φ ∗ texist Ψ
+  ⊢ (∀.. x, Φ x) ∗ ∃.. x, Ψ x
 -/
 #guard_msgs (trace, substring := true) in
 example [BI PROP] {TT : Tele} (R : PROP) (Φ Ψ : TT.Arg → PROP) :

@@ -274,7 +274,7 @@ instance (priority := default - 1) frame_eq_embed
 @[ipm_backtrack, rocq_alias frame_texist]
 instance frame_texist {TT : Tele} [BI PROP] p (R : PROP) (Φ Ψ : TT.Arg → PROP)
     [h : ∀ x, Frame p R (Φ x) (Ψ x)] :
-    Frame p R (texist Φ) (texist Ψ) where
+    Frame p R (∃.. x, Φ x) (∃.. x, Ψ x) where
   frame := calc
     _ ⊢ □?p R ∗ ∃ x, Ψ x := sep_mono_right (texist_exist Ψ).mp
     _ ⊢ ∃ x, □?p R ∗ Ψ x := sep_exists_left.mp
@@ -284,7 +284,7 @@ instance frame_texist {TT : Tele} [BI PROP] p (R : PROP) (Φ Ψ : TT.Arg → PRO
 @[ipm_backtrack, rocq_alias frame_tforall]
 instance frame_tforall {TT : Tele} [BI PROP] p (R : PROP) (Φ Ψ : TT.Arg → PROP)
     [h : ∀ x, FrameInstantiateExistDisabled p R (Φ x) (Ψ x)] :
-    Frame p R (tforall Φ) (tforall Ψ) where
+    Frame p R (∀.. x, Φ x) (∀.. x, Ψ x) where
   frame := by
     refine .trans ?_ (tforall_forall Φ).mpr
     refine forall_intro fun x => ?_
