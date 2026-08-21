@@ -61,7 +61,8 @@ theorem newCoin.spec :
   wp_pures
   wp_bind newProph()
   iapply wp_new_proph
-  iintro %p %pvs Hp
+  · itrivial
+  iintro !> %pvs %p Hp
   wp_alloc l with Hl
   wp_pures
   iintro !>
@@ -96,7 +97,7 @@ theorem readCoin.spec (cp : Val) (b : Bool) :
     wp_bind &nondetBool _; iapply nondetBool.spec $$ [//]; iintro !> %b -
     wp_store
     wp_bind resolveProph(_, _); iapply wp_resolve_proph $$ proph
-    iintro %pvs' %pvs_eq proph
+    iintro !> %pvs' ⟨%pvs_eq, proph⟩
     subst pvs_eq
     wp_pures
     iintro !>

@@ -424,6 +424,7 @@ instance : BI (UPred M) where
     | 0, _, _ => .inl trivial
     | _+1, _, H => .inr @fun | 0, _, Hx'le, _, _ => P.mono H Hx'le.incN (Nat.zero_le _)
 
+#rocq_ignore pure_ne "Direct consequence of propext"
 #rocq_ignore pure_intro "Inlined in `uPredI` construction"
 #rocq_ignore pure_elim' "Inlined in `uPredI` construction"
 
@@ -481,6 +482,10 @@ instance : BI (UPred M) where
 #rocq_ignore uPred_bi_mixin "Inlined in `uPredI` construction"
 #rocq_ignore uPred_bi_later_mixin "Inlined in `uPredI` construction"
 #rocq_ignore uPred_bi_persistently_mixin "Inlined in `uPredI` construction"
+
+@[rocq_alias uPred_primitive.persistently_elim]
+theorem persistently_elim {P : UPred M} : <pers> P ⊢ P :=
+  fun _ _ H => P.mono H core_inc_self.incN .refl
 
 @[rocq_alias uPred_persistently_forall]
 instance : BIPersistentlyForall (UPred M) where
@@ -650,7 +655,7 @@ instance : BIUpdate (UPred M) where
 #rocq_ignore uPred_bupd_mixin "Inlined in BIUpdate instance construction"
 
 @[rocq_alias uPred_primitive.bupd_si_pure]
-theorem bupd_si_pure (Pi : SiProp) : (|==> <si_pure> Pi : UPred M) ⊢ <si_pure> Pi := by
+theorem bupd_siPure (Pi : SiProp) : (|==> <si_pure> Pi : UPred M) ⊢ <si_pure> Pi := by
   intro n x Hv
   have L : ✓{n} x.val • unit := unit_right_id.symm.dist.validN.1 x.property
   let ⟨_, _, Hv'⟩ := Hv n unit n.le_refl L
@@ -658,7 +663,7 @@ theorem bupd_si_pure (Pi : SiProp) : (|==> <si_pure> Pi : UPred M) ⊢ <si_pure>
 
 @[rocq_alias uPred_bi_bupd_sbi]
 instance : BIBUpdateSbi (UPred M) where
-  bupd_si_pure := bupd_si_pure
+  bupd_siPure := bupd_siPure
 
 @[rocq_alias uPred_primitive.ownM_valid, rocq_alias uPred.ownM_valid]
 theorem ownM_valid (m : M) : ownM m ⊢ internalCmraValid m := fun _ h hp => hp.validN h.property
@@ -715,21 +720,20 @@ theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
 
 @[rocq_alias uPred.ownM_forall, rocq_alias uPred_primitive.ownM_forall]
 theorem ownM_forall (f : A → M) :
-  (∀ a, ownM (f a)) ⊢ ∃ z, ownM z ∧ (∀ a, ∃ xf, UPred.eq z (f a • xf)) := by
+  (∀ a, ownM (f a)) ⊢ ∃ z, ownM z ∧ (∀ a, ∃ xf, z ≡ f a • xf) := by
   intro _ x Hf
-  refine ⟨iprop(ownM x ∧ ∀ a, ∃ xf, UPred.eq x.val (f a • xf)), ⟨x, rfl⟩, ?_⟩
+  refine ⟨iprop(ownM x ∧ ∀ a, ∃ xf, x.val ≡ f a • xf), ⟨x, rfl⟩, ?_⟩
   refine ⟨incN_refl x.val, ?_⟩
   rintro p ⟨a, rfl⟩
   rcases Hf (ownM (f a)) ⟨a, rfl⟩ with ⟨xf, Hxf⟩
-  exact ⟨(UPred.eq x.val (f a • xf)), ⟨xf, rfl⟩, Hxf⟩
+  exact ⟨iprop(x.val ≡ f a • xf), ⟨xf, rfl⟩, Hxf⟩
 
 @[rocq_alias uPred.later_ownM, rocq_alias uPred_primitive.later_ownM]
-theorem later_ownM (a : M) : ▷ ownM a ⊢ ∃ b, ownM b ∧ ▷ <si_pure> (SiProp.internalEq a b)
-  | 0, _, _ =>
-    ⟨iprop(ownM unit ∧ ▷ <si_pure> (SiProp.internalEq a unit)), ⟨unit, rfl⟩, incN_unit, trivial⟩
+theorem later_ownM (a : M) : ▷ ownM a ⊢ ∃ b, ownM b ∧ ▷ (a ≡ b)
+  | 0, _, _ => ⟨iprop(ownM unit ∧ ▷ (a ≡ unit)), ⟨unit, rfl⟩, incN_unit, trivial⟩
   | n+1, x, ⟨y, hx⟩ => by
     let ⟨a', y', hx', ha', hy'⟩ := extend (validN_succ x.property) hx
-    refine ⟨iprop(ownM a' ∧ ▷ <si_pure> (SiProp.internalEq a a')), ⟨a', rfl⟩, ?_, ?_⟩
+    refine ⟨iprop(ownM a' ∧ ▷ (a ≡ a')), ⟨a', rfl⟩, ?_, ?_⟩
     · exact (incN_iff_right hx'.dist).mpr (incN_op_left (n + 1) a' y')
     · exact OFE.Dist.symm ha'
 

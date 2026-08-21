@@ -25,6 +25,12 @@ class AsFractional {PROP : Type u} [BI PROP] (P : PROP) (ioΦ : InOut)
   as_fractional : P ⊣⊢ Φ q
   as_fractional_fractional : Fractional Φ
 
+/-- `FrameFractionalQp` is used for fractional framing: it subtracts the fraction of the
+hypothesis from the fraction of the goal, computing `r := qP - qR`. See `frame_fractional`. -/
+@[rocq_alias FrameFractionalQp]
+class FrameFractionalQp (qR qP : Qp) (r : outParam Qp) : Prop where
+  frame_fractional_qp : qP = qR + r
+
 section Lemmas
 variable {PROP : Type _} [BI PROP] {P P1 P2 : PROP} {Φ : Qp → PROP} {q q1 q2 : Qp}
 
@@ -99,6 +105,38 @@ instance (priority := default - 10) combineSepAsFractionalHalf
     _ ⊢ Φ q.half ∗ Φ q.half := sep_mono hP.as_fractional.mp hP.as_fractional.mp
     _ ⊢ Φ (q.half + q.half) := (hP.as_fractional_fractional.fractional q.half q.half).mpr
     _ ⊢ Φ q                 := Qp.half_add_half _ ▸ .rfl
+
+@[rocq_alias fractional_big_sepL]
+instance fractional_bigSepL {A : Type _} {l : List A} {Ψ : Nat → A → Qp → PROP}
+    [∀ k x, Fractional (Ψ k x)] : Fractional (fun q => iprop([∗list] k ↦ x ∈ l, Ψ k x q)) where
+  fractional p q :=
+    ⟨(BigSepL.bigSepL_mono_of_forall fun {_ _} => (Fractional.fractional p q).1).trans
+      BigSepL.bigSepL_sep_eqv.1,
+     BigSepL.bigSepL_sep_eqv.2.trans
+      (BigSepL.bigSepL_mono_of_forall fun {_ _} => (Fractional.fractional p q).2)⟩
+@[rocq_alias frame_fractional_qp_add_l]
+instance frameFractionalQpAddLeft (q q' : Qp) : FrameFractionalQp q (q + q') q' := ⟨rfl⟩
+
+@[rocq_alias frame_fractional_qp_add_r]
+instance frameFractionalQpAddRight (q q' : Qp) : FrameFractionalQp q' (q + q') q :=
+  ⟨Subtype.ext (Rat.add_comm ..)⟩
+
+@[rocq_alias frame_fractional_qp_half]
+instance frameFractionalQpHalf (q : Qp) : FrameFractionalQp q.half q q.half :=
+  ⟨(Qp.half_add_half q).symm⟩
+
+/-- Not an instance because of performance; concrete fractional assertions provide their own
+`Frame` instances by applying this lemma. `Φ` is explicit because it is rarely inferrable. -/
+@[rocq_alias frame_fractional]
+theorem frame_fractional (Φ : Qp → PROP) (qR qP r : Qp) {p : Bool} {R : PROP}
+    [hR : AsFractional R .in Φ .in qR] [hP : AsFractional P .in Φ .in qP]
+    [hq : FrameFractionalQp qR qP r] : Frame p R P (Φ r) where
+  frame := calc
+    _ ⊢ R ∗ Φ r    := sep_mono_left intuitionisticallyIf_elim
+    _ ⊢ Φ qR ∗ Φ r := sep_mono_left hR.as_fractional.mp
+    _ ⊢ Φ (qR + r) := (hR.as_fractional_fractional.fractional qR r).mpr
+    _ ⊢ Φ qP       := (BIBase.BiEntails.of_eq (congrArg Φ hq.frame_fractional_qp)).mpr
+    _ ⊢ P          := hP.as_fractional.mpr
 
 end Lemmas
 

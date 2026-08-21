@@ -85,9 +85,9 @@ open Lean Elab Tactic Meta Qq BI Std
   `.all` and `.allwand`.
 -/
 private def iIntroCoreForallIntro {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
-    {P : Q($prop)} (pat : TSyntax `rcasesPat)
+    {P : Q($prop)} (hyps : Hyps bi P) (pat : TSyntax `rcasesPat)
     (Q : Q($prop)) (k' : Option <| ProofModeM Q($P ⊢ $Q))
-    (k : MVarId → (B : Q($prop)) → ProofModeM Q($P ⊢ $B)) :
+    (k : MVarId → ∀ {P' : Q($prop)}, Hyps bi P' → (B : Q($prop)) → ProofModeM Q($P' ⊢ $B)) :
     ProofModeM Q($P ⊢ $Q) := do
   let v ← mkFreshLevelMVar
   let α ← mkFreshExprMVarQ q(Sort v)
@@ -97,12 +97,13 @@ private def iIntroCoreForallIntro {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     throwIPMError "{Q} cannot be turned into a universal quantifier or pure hypothesis"
   | none, some k' => k'
   | some _, _ =>
-    let pf : Q(∀ x, $P ⊢ $Φ x) ← iPureCases q(∀ x, $P ⊢ $Φ x) pat fun g => do
-      let B : Q($prop) ← mkFreshExprMVarQ q($prop)
-      -- TODO: Is this the right way to check this?
-      unless ← withTransparency .none <| isDefEq (← g.getType) q($P ⊢ $B) do
-        throwIPMError "unexpected goal after intro pattern"
-      k g (Expr.headBeta (← instantiateMVars B))
+    let pf : Q(∀ x, $hyps.tm ⊢ $Φ x) ← iPureCases q(∀ x, $hyps.tm ⊢ $Φ x) pat fun g => do
+      let some ⟨_, _, tm', B⟩ := parseEntails? (← instantiateMVars (← g.getType))
+        | throwIPMError "unexpected goal {← g.getType} after intro pattern"
+      let some ⟨_, hyps'⟩ := parseHyps? bi tm'
+        | throwIPMError "unable to parse the Iris context {tm'}"
+      return (← k g hyps' (Expr.headBeta B) : Expr)
+    have : $hyps.tm =Q $P := ⟨⟩
     return q(from_forall_intro (Q := $Q) $pf)
 
 /-- Return `true` if there is a premise to introduce using `.allwand` (`**`). -/
@@ -154,14 +155,14 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     | .simptrivial =>
       iIntroCore hyps Q ((ref, .simp) :: (ref, .trivial) :: pats) k
     | .all =>
-      iIntroCoreForallIntro (← `(rcasesPat| _)) Q
+      iIntroCoreForallIntro hyps (← `(rcasesPat| _)) Q
         -- No more universally quantified variable to be introduced
         (iIntroCore hyps Q pats k)
         -- Introduction of a universally quantified variable
-        (fun _ B => iIntroCore hyps B ((ref, .all) :: pats) k)
+        (fun _ _ hyps' B => iIntroCore hyps' B ((ref, .all) :: pats) k)
     | .allwand =>
       -- Introduction of a universally quantified variable
-      iIntroCoreForallIntro (← `(rcasesPat| _)) Q
+      iIntroCoreForallIntro hyps (← `(rcasesPat| _)) Q
         (some (do
           -- Introduction of a wand premise or a pure premise, if possible
           if ← iIntroCoreAllWandCheck (bi := bi) P Q then
@@ -169,7 +170,7 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
               (ref, .allwand) :: pats) k
           -- No more universally quantified variable or premise to be introduced
           else iIntroCore hyps Q pats k))
-        (fun _ B => iIntroCore hyps B ((ref, .allwand) :: pats) k)
+        (fun _ _ hyps' B => iIntroCore hyps' B ((ref, .allwand) :: pats) k)
     | .pureintro =>
       let ⟨pf, m⟩ ← iPureIntroCore bi P Q
       if pats.isEmpty then
@@ -190,8 +191,8 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
         let res ← s.resolveOne hyps >>= iFrame hyps Q
         res.finish (iIntroCore · · ((ref, .clear selPats) :: pats) k)
     | .intro ⟨_, .pure pat⟩ =>
-      iIntroCoreForallIntro pat Q none fun _ B =>
-        iIntroCore hyps B pats k
+      iIntroCoreForallIntro hyps pat Q none fun _ _ hyps' B =>
+        iIntroCore hyps' B pats k
     | .intro pat =>
       let A1 ← mkFreshExprMVarQ q($prop)
       let A2 ← mkFreshExprMVarQ q($prop)

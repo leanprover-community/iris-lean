@@ -92,8 +92,8 @@ instance isExcept0_bupd (P : PROP)
   is_except0 := except0_bupd.trans <| BIUpdate.mono h.1
 
 @[rocq_alias from_modal_bupd]
-instance fromModal_bupd (P : PROP) :
-    FromModal True modality_id iprop(|==> P) iprop(|==> P) P where
+instance fromModal_bupd io (P : PROP) :
+    FromModal io modality_id True iprop(|==> P) iprop(|==> P) P where
   from_modal := by simp [modality_id]; exact BIUpdate.intro
 
 @[rocq_alias elim_modal_bupd]
@@ -208,15 +208,15 @@ instance isExcept0_fupd E1 E2 (P : PROP) : IsExcept0 iprop(|={E1,E2}=> P) where
   is_except0 := except0
 
 @[rocq_alias from_modal_fupd]
-instance fromModal_fupd E (P : PROP) :
-    FromModal True modality_id iprop(|={E}=> P) iprop(|={E}=> P) P where
+instance fromModal_fupd E io (P : PROP) :
+    FromModal io modality_id True iprop(|={E}=> P) iprop(|={E}=> P) P where
   from_modal := by simp [modality_id]; exact fupd_intro
 
 @[rocq_alias from_modal_fupd_wrong_mask]
-instance (priority := low) fromModal_fupd_wrongMask E1 E2 (P : PROP) :
-    FromModal (PMError "Only non-mask-changing update modalities can be introduced directly.
+instance (priority := low) fromModal_fupd_wrongMask E1 E2 io (P : PROP) :
+    FromModal io modality_id (PMError "Only non-mask-changing update modalities can be introduced directly.
       Use `iapply (fupd_mask_intro ...)` to introduce a mask-changing fancy update.")
-      modality_id iprop(|={E1,E2}=> P) iprop(|={E1,E2}=> P) P where
+      iprop(|={E1,E2}=> P) iprop(|={E1,E2}=> P) P where
   from_modal h := by cases h
 
 @[rocq_alias elim_modal_bupd_fupd]
@@ -303,20 +303,20 @@ end BIFancyUpdate
 
 section SBIFancyUpdate
 
-variable {PROP} [Sbi PROP] [BIFUpdate PROP] [BIFUpdatePlainly PROP] [BIAffine PROP]
+variable {PROP} [Sbi PROP] [BIFUpdate PROP] [BIFUpdateSbi PROP] [BIAffine PROP]
 
--- TODO:
--- `fromForall_fupd` needs a derived plain/fupd/forall lemma.
--- `fromForall_stepFupd` additionally needs a step-fupd/forall theorem in `BI/Updates.lean`.
--- instance fromForall_fupd E1 E2 (P : PROP) {α : Type _} (Φ : α → PROP)
---     [hmask : TCOr (E1 = E2) (TCOr (E1 = ⊤) (E2 = ∅))]
---     [h : FromForall P Φ] [∀ a, Plain (Φ a)] :
---     FromForall iprop(|={E1,E2}=> P) (fun a => iprop(|={E1,E2}=> Φ a)) where
---   from_forall := sorry
+@[ipm_backtrack, rocq_alias from_forall_fupd]
+instance fromForall_fupd E1 E2 (P : PROP) {α : Type _} (Φ : α → PROP)
+    [inst : TCSideCondition (E2 ⊆ E1)]
+    [h : FromForall P Φ] [∀ a, Plain (Φ a)] :
+    FromForall iprop(|={E1,E2}=> P) (fun a => iprop(|={E1,E2}=> Φ a)) where
+  from_forall := (fupd_plain_forall inst.sidecondition).mpr.trans (mono h.from_forall)
 
--- instance fromForall_stepFupd E (P : PROP) (Φ : α → PROP)
---     [h : FromForall P Φ] [∀ a, Plain (Φ a)] :
---     FromForall iprop(|={E}▷=> P) (fun a => iprop(|={E}▷=> Φ a)) where
---   from_forall := sorry
+@[ipm_backtrack, rocq_alias from_forall_step_fupd]
+instance fromForall_stepFupd E1 E2 (P : PROP) (Φ : α → PROP)
+    [inst : TCSideCondition (E2 ⊆ E1)]
+    [h : FromForall P Φ] [∀ a, Plain (Φ a)] :
+    FromForall iprop(|={E1}[E2]▷=> P) (fun a => iprop(|={E1}[E2]▷=> Φ a)) where
+  from_forall := (step_fupd_plain_forall inst.sidecondition).mpr.trans (step_fupd_mono h.from_forall)
 
 end SBIFancyUpdate
