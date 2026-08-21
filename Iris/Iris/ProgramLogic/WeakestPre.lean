@@ -69,9 +69,10 @@ abbrev Stuckness.MaybeReducible : Stuckness → Expr × State → Prop
 | .NotStuck, (e₁, σ₁) => PrimStep.Reducible (e₁, σ₁)
 | _, _ => True
 
-@[rocq_alias wp_pre]
-def wp.pre (s : Stuckness) (wp : CoPset -> Expr -> (Val -> IProp GF) -> IProp GF) (E : CoPset)
-    (e₁ : Expr) (Φ : Val -> IProp GF) : IProp GF :=
+#rocq_ignore wp_pre "Weakest preconditions are defined directly using `guarded`"
+#rocq_ignore wp_pre_contractive "Weakest preconditions are defined directly using `guarded`"
+
+guarded wp' (s : Stuckness) (E : CoPset) (e₁ : Expr) (Φ : Val -> IProp GF) : IProp GF :=
   match toVal e₁ with
   | some v => iprop(|={E}=> Φ v)
   | none => iprop(∀ (σ₁ : State) (ns : Nat) (obs obs' : List Obs) (nt : Nat),
@@ -80,43 +81,11 @@ def wp.pre (s : Stuckness) (wp : CoPset -> Expr -> (Val -> IProp GF) -> IProp GF
     ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ)⌝ -∗
       £ (ι.numLatersPerStep ns + 1) ={∅}▷=∗^[ι.numLatersPerStep ns + 1] |={∅,E}=>
       stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
-      wp E e₂ Φ ∗ [∗list] e' ∈ eₜ, wp ⊤ e' ι.forkPost)
-
-@[rocq_alias wp_pre_contractive]
-instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
-  distLater_dist := by
-    intros n wp wp' Hwp E e₁ Φ
-    unfold pre
-    cases toVal e₁
-    case some _ =>
-      exact .rfl
-    case none =>
-      refine BI.forall_ne (fun σ₁ => ?_)
-      refine BI.forall_ne (fun ns => ?_)
-      refine BI.forall_ne (fun obs => ?_)
-      refine BI.forall_ne (fun obs' => ?_)
-      refine BI.forall_ne (fun nt => ?_)
-      refine BI.wand_ne.ne .rfl ?_
-      refine BIFUpdate.ne.ne ?_
-      refine BI.sep_ne.ne .rfl ?_
-      refine BI.forall_ne (fun e₂  => ?_)
-      refine BI.forall_ne (fun σ₂ => ?_)
-      refine BI.forall_ne (fun eₜ => ?_)
-      refine BI.wand_ne.ne .rfl ?_
-      refine BI.wand_ne.ne .rfl ?_
-      refine BIFUpdate.ne.ne ?_
-      refine OFE.Contractive.distLater_dist fun m m_n => ?_
-      refine BIFUpdate.ne.ne ?_
-      refine step_fupdN_ne.ne ?_
-      refine BIFUpdate.ne.ne ?_
-      refine BI.sep_ne.ne .rfl ?_
-      refine BI.sep_ne.ne ?_ ?_
-      · exact Hwp m m_n _ _ _
-      · exact BI.BigSepL.bigSepL_dist <| fun _ => Hwp m m_n _ _ _
+      wp' E e₂ Φ ∗ [∗list] e' ∈ eₜ, wp' ⊤ e' ι.forkPost)
 
 @[rocq_alias wp_def]
-instance wp.def : Wp (IProp GF) (Expr) (Val) Stuckness where
-  wp s := fixpoint (wp.pre s)
+instance wp.instWp : Wp (IProp GF) (Expr) (Val) Stuckness where
+  wp s := wp' s
 
 #rocq_ignore wp_aux "We do not use Iris' custom seal/unseal visibility control"
 #rocq_ignore wp' "We do not use Iris' custom seal/unseal visibility control"
@@ -126,9 +95,9 @@ section Wp
 
 @[rocq_alias wp_unfold]
 theorem wp_unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
-    WP e @ s ; E {{ Φ }} ⊣⊢ wp.pre s (Wp.wp (PROP := IProp GF) s) E e Φ :=
-  BI.equiv_iff.1 <| OFE.eq_dist_2 <|
-    fun _n => (fixpoint_unfold (f := (wp.pre s).toContractiveHom)).dist E e Φ
+    WP e @ s ; E {{ Φ }} ⊣⊢ wp'.pre s (Wp.wp (PROP := IProp GF) s) E e Φ :=
+  BI.equiv_iff.1 <| OFE.eq_dist.mpr <|
+    fun _n => (wp'.unfold s).dist E e Φ
 
 @[rocq_alias wp_ne]
 instance wp_ne {s : Stuckness} {E} {e : Expr} :
@@ -136,7 +105,7 @@ instance wp_ne {s : Stuckness} {E} {e : Expr} :
   ne {n Φ₁ Φ₂} HΦ := by
     induction n using Nat.strongRecOn generalizing e E Φ₁ Φ₂ with | ind n IH =>
     simp only [wp_unfold.to_eq]
-    dsimp only [wp.pre]
+    dsimp only [wp'.pre]
     cases toVal e
     case some v =>
       exact BIFUpdate.ne.ne <| HΦ v
@@ -167,31 +136,13 @@ theorem wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
     OFE.Contractive (Wp.wp (PROP := IProp GF) s E e) where
   distLater_dist {n Φ₁ Φ₂} HΦ := by
     simp only [wp_unfold.to_eq]
-    simp only [wp.pre, h]
-    refine BI.forall_ne fun σ₁ => ?_
-    refine BI.forall_ne fun ns => ?_
-    refine BI.forall_ne fun obs => ?_
-    refine BI.forall_ne fun obs' => ?_
-    refine BI.forall_ne fun nt => ?_
-    refine BI.wand_ne.ne .rfl ?_
-    refine BIFUpdate.ne.ne ?_
-    refine BI.sep_ne.ne .rfl ?_
-    refine BI.forall_ne fun e₂  => ?_
-    refine BI.forall_ne fun σ₂ => ?_
-    refine BI.forall_ne fun eₜ => ?_
-    refine BI.wand_ne.ne .rfl ?_
-    refine BI.wand_ne.ne .rfl ?_
-    refine step_fupdN_contractive.distLater_dist fun m n_m => ?_
-    refine BIFUpdate.ne.ne ?_
-    refine BI.sep_ne.ne .rfl ?_
-    refine BI.sep_ne.ne ?_ .rfl
-    refine wp_ne.ne ?_
-    exact HΦ m n_m
+    simp only [wp'.pre, h]
+    contractive
 
 @[rocq_alias wp_value_fupd']
 theorem wp_value_fupd' {s : Stuckness} {E} {Φ : Val → IProp GF} {v : Val} :
     WP (v : Expr) @ s ; E {{ Φ }} ⊣⊢ |={E}=> Φ v := by
-  simp [wp_unfold.to_eq, toVal_coe, wp.pre]
+  simp [wp_unfold.to_eq, toVal_coe, wp'.pre]
 
 @[rocq_alias wp_strong_mono]
 theorem wp_strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : Val → IProp GF}
@@ -200,7 +151,7 @@ theorem wp_strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : V
   iloeb as IH generalizing %e %Φ %Ψ %E₁ %E₂ %hE
   rw [wp_unfold.to_eq, wp_unfold.to_eq]
   iintro H HΦ
-  dsimp only [wp.pre]
+  dsimp only [wp'.pre]
   match toVal e with
   | none =>
     dsimp only
@@ -241,11 +192,11 @@ theorem fupd_wp {s : Stuckness}{E}{e : Expr} {Φ : Val → IProp GF} :
   iintro H
   match h: toVal e with
   | some v =>
-    simp only [wp.pre, h]
+    simp only [wp'.pre, h]
     imod H
     iassumption
   | none =>
-    simp only [wp.pre, h]
+    simp only [wp'.pre, h]
     iintro %σ₁ %ns %obs %obs' %nt
     imod H with H
     iassumption
@@ -272,12 +223,12 @@ theorem wp_atomic {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {Φ : Val → IPro
   iintro H
   match He : toVal e with
   | some v =>
-    simp only [wp.pre, He]
+    simp only [wp'.pre, He]
     iapply BIFUpdate.trans (E2 := E2)
     imod H
     iassumption
   | none =>
-    simp only [wp.pre, He]
+    simp only [wp'.pre, He]
     iintro %σ₁ %ns %obs %obs' %nt Hσ
     imod H
     imod H $$ Hσ with ⟨$, H⟩
@@ -290,7 +241,7 @@ theorem wp_atomic {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {Φ : Val → IPro
     match s with
     | .NotStuck =>
       simp only [wp_unfold.to_eq]
-      dsimp only [wp.pre]
+      dsimp only [wp'.pre]
       match h₂ : toVal e2 with
       | some v2 =>
         iintro %ι
@@ -321,7 +272,7 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P: IProp 
     WP e @ s ; E {{ Φ }} := by
   simp only [wp_unfold.to_eq]
   iintro Hupd Hwp
-  simp only [wp.pre, h]
+  simp only [wp'.pre, h]
   iintro %σ₁ %ns %obs %obs' %nt Hσ₁
   imod Hupd $$ Hσ₁ with ⟨%k, %m, Hσ₁, %h, Hpost⟩; subst h
   imod Hwp $$ Hσ₁ with ⟨$,Hwp⟩
@@ -362,7 +313,7 @@ theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IP
     iapply H $$ Hp
   | n+1 =>
     simp only [wp_unfold.to_eq]
-    simp only [wp.pre, toVal_e]
+    simp only [wp'.pre, toVal_e]
     iintro H %σ₁ %ns %obs %obs' %nt Hσ₁
     by_cases Hn : n ≤ ι.numLatersPerStep ns
     · icases H with ⟨-, ⟨Hp, Hwp⟩⟩
@@ -404,7 +355,7 @@ theorem wp_bind_iff (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness
     WP e @ s ; E {{v, WP (K (↑v : Val)) @ s ; E {{ Φ }} }} ⊣⊢ WP (K e) @ s ; E {{ Φ }} := by
   iloeb as IH generalizing %E %e %Φ
   rewrite (occs := [1]) [wp_unfold.to_eq]
-  simp only [wp.pre]
+  simp only [wp'.pre]
   match h : toVal e with
   | some v =>
     dsimp only
@@ -415,7 +366,7 @@ theorem wp_bind_iff (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness
   | none =>
     rw [wp_unfold.to_eq]
     dsimp only
-    simp only [wp.pre, κ.toVal_eq_none_fill h, Nat.repeat]
+    simp only [wp'.pre, κ.toVal_eq_none_fill h, Nat.repeat]
     isplit <;>
     (iintro H %σ₁ %step %obs %obs' %n Hσ; imod H $$ [$] with ⟨%_, H⟩; imodintro; isplit)
     · ipureintro; grind only [cases Stuckness, Language.Context.reducible_fill]
@@ -492,7 +443,7 @@ theorem wp_value {s : Stuckness} {E : CoPset} {e : Expr} {v : Val} {Φ : Val →
 @[simp]
 theorem wp_value_iff {s : Stuckness} {E : CoPset} {v : Val} {Φ : Val → IProp GF} :
     WP (v : Expr) @ s; E {{ Φ }} = iprop(|={E}=> Φ v) := by
-  simp [wp_unfold.to_eq, wp.pre]
+  simp [wp_unfold.to_eq, wp'.pre]
 
 @[rocq_alias wp_frame_l]
 theorem wp_frame_l {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF} {R : IProp GF} :

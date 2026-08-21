@@ -8,11 +8,13 @@ public import Iris.ProofMode.Tactics.Basic
 public import Iris.ProofMode.Tactics.Cases
 public import Iris.ProofMode.Tactics.Clear
 public import Iris.ProofMode.Tactics.Combine
+public import Iris.ProofMode.Tactics.Contractive
 public import Iris.ProofMode.Tactics.Eval
 public import Iris.ProofMode.Tactics.Exact
 public import Iris.ProofMode.Tactics.ExFalso
 public import Iris.ProofMode.Tactics.Exists
 public import Iris.ProofMode.Tactics.Frame
+public import Iris.ProofMode.Tactics.Guarded
 public import Iris.ProofMode.Tactics.Have
 public import Iris.ProofMode.Tactics.HaveCore
 public import Iris.ProofMode.Tactics.Induction

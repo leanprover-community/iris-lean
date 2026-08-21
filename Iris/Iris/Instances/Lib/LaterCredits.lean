@@ -12,6 +12,7 @@ public import Iris.Algebra.Numbers
 public import Iris.ProofMode
 public import Iris.BI.Algebra
 public import Iris.Instances.IProp
+public import Iris.ProofMode.Tactics.Contractive
 
 @[expose] public section
 
@@ -216,36 +217,18 @@ section Upd
 
 variable {GF : BundledGFunctors} {hlc : HasLC} [LcGS hlc GF]
 
-@[rocq_alias le_upd.le_upd_pre]
-def le_upd_pre (P le_upd : IProp GF) : IProp GF :=
+#rocq_ignore le_upd.le_upd_pre "`le_upd` is defined directly using `guarded`"
+
+@[rocq_alias le_upd.le_upd]
+guarded le_upd (P : IProp GF) : IProp GF :=
   iprop(∀ n, lc_supply n ==∗
     ▷^[n.succ] False ∨
     (lc_supply n ∗ P) ∨
     (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ le_upd))
 
-@[rocq_alias le_upd.le_upd_pre_contractive]
-instance {P : IProp GF} : Contractive (le_upd_pre P) where
-  distLater_dist {n x y} H := by
-    simp only [le_upd_pre]
-    refine forall_ne (fun i => ?_)
-    refine wand_ne.ne .rfl ?_
-    refine UPred.bupd_ne.ne ?_
-    refine or_ne.ne .rfl ?_
-    refine or_ne.ne .rfl ?_
-    refine exists_ne (fun m => ?_)
-    refine sep_ne.ne .rfl ?_
-    refine sep_ne.ne .rfl ?_
-    refine Contractive.distLater_dist ?_
-    cases n
-    · exact distLater_zero
-    · exact distLater_succ.mpr (distLater_succ.mp H)
-
 #rocq_ignore le_upd.le_upd_def "`le_upd` is defined directly without `seal`/`unseal`."
 #rocq_ignore le_upd.le_upd_aux "`le_upd` is defined directly without `seal`/`unseal`."
 #rocq_ignore le_upd.le_upd_unseal "`le_upd` is defined directly without `seal`/`unseal`."
-
-@[rocq_alias le_upd.le_upd]
-def le_upd (P : IProp GF) : IProp GF := fixpoint (le_upd_pre P)
 
 syntax:max "|==£> " term:40 : term
 
@@ -260,7 +243,7 @@ theorem le_upd_unfold {P : IProp GF} :
   (|==£> P) ⊣⊢
   ∀ n, lc_supply n ==∗
     ▷^[n.succ] False ∨ (lc_supply n ∗ P) ∨ (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ |==£> P) :=
-    (fixpoint_unfold ⟨le_upd_pre P, inferInstance⟩).to_bi.trans .rfl
+    (fixpoint_unfold ⟨le_upd.pre P, inferInstance⟩).to_bi.trans .rfl
 
 @[rocq_alias le_upd.le_upd_ne]
 instance : NonExpansive (le_upd (GF := GF)) where

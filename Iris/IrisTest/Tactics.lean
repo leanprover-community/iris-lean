@@ -18,6 +18,8 @@ public import Iris.Instances.Lib.CInvariants
 public import Iris.Instances.Lib.NaInvariants
 public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.WeakestPre
+public import Iris.Instances.Lib.Monotone
+public meta import Iris.ProofMode.Lib.Monotone
 
 @[expose] public section
 
@@ -2934,8 +2936,7 @@ example (P Q : PROP) :
   iintro #HPQ HQ !>
   inext
   irewrite [HPQ] at HQ
-  · exact ⟨fun _ _ _ h => affinely_ne.ne h⟩
-  · iexact HQ
+  iexact HQ
 
 /- Tests `irewrite` under affine and later backwards. -/
 example (P Q : PROP) :
@@ -2943,8 +2944,7 @@ example (P Q : PROP) :
   iintro #HPQ HQ !>
   inext
   irewrite [←HPQ] at HQ
-  · exact ⟨fun _ _ _ h => affinely_ne.ne h⟩
-  · iexact HQ
+  iexact HQ
 
 /- Tests `irewrite` with no matching target. -/
 /--
@@ -4351,3 +4351,87 @@ example [BI PROP] {P : PROP} {m n : Nat} {T : Nat → Prop}
   | succ n IH => itrivial
 
 end iinduction
+
+section contractive
+
+open OFE
+
+variable [OFE α] [BI PROP] [BILaterContractive PROP]
+
+/- Identity is non-expansive. -/
+example : NonExpansive (fun x : α => x) where
+  ne := by nonexp
+
+/- Constant functions are non-expansive. -/
+example (y : α) : NonExpansive (fun _ : α => y) where
+  ne := by nonexp
+
+/- A non-expansive function with every occurrence of `x` guarded by ▷. -/
+example (f : PROP → PROP) [NonExpansive f] : Contractive (fun x => iprop(▷ (f x))) where
+  distLater_dist := by contractive
+
+/- A non-expansive function remains contractive under additional ▷s. -/
+example (f : PROP → PROP) [NonExpansive f] : Contractive (fun x => iprop(▷ ▷ (f x))) where
+  distLater_dist := by contractive
+
+/- A contractive function is also non-expansive. -/
+example (f : α → α) [Contractive f] : NonExpansive f where
+  ne := by nonexp
+
+/- Fails because `x` occurs outside a ▷. -/
+/-- error: tactic 'contractive' failed -/
+#guard_msgs in
+example : Contractive (fun x : α => x) where
+  distLater_dist := by
+    contractive
+
+/- Fails because one occurrence of `x` is unguarded. -/
+/-- error: tactic 'contractive' failed -/
+#guard_msgs in
+example (f : α → α) [Contractive f] : Contractive (fun x => (f x, x)) where
+  distLater_dist := by
+    contractive
+
+end contractive
+
+section monotone
+open OFE
+
+variable [BI PROP] [OFE α]
+
+/-- Tests `monotone` closing a goal already in the right form. -/
+example : MonoInstances.MonotonePred (PROP := PROP) (A := α) (fun Φ x => iprop(Φ x ∗ Φ x)) where
+  monotone := by monotone
+
+private def wrap0 (wp : α → PROP) (x : α) : PROP := iprop(wp x ∗ wp x)
+private def wrap1 (wp : α → PROP) : α → PROP := wrap0 wp
+private def wrap2 (wp : α → PROP) : α → PROP := wrap1 wp
+
+/-- Tests `monotone` unfolding. -/
+example : MonoInstances.MonotonePred (PROP := PROP) (A := α) wrap2 where
+  monotone := by monotone
+
+private def stepPre (wp : α × Option α → PROP) (x : α × Option α) : PROP :=
+  match x.2 with
+  | none => iprop(wp (x.1, none) ∨ wp (x.1, none))
+  | some _ => iprop(wp (x.1, none) ∗ wp (x.1, none))
+
+/-- Tests `monotone` on matches on projections. -/
+example : MonoInstances.MonotonePred (PROP := PROP) (A := α × Option α) stepPre where
+  monotone := by monotone
+
+/-- Tests `monotone` directly on a bare entailment goal of right shape. -/
+example (Φ Ψ : α × Option α → PROP) :
+    ⊢ (□ ∀ x, Φ x -∗ Ψ x) -∗ ∀ x, stepPre Φ x -∗ stepPre Ψ x := by
+  monotone
+
+private def choicePre (wp : α × (α ⊕ α) → PROP) (x : α × (α ⊕ α)) : PROP :=
+  match x.2 with
+  | .inl a => iprop(wp (x.1, .inr a) ∨ wp (x.1, .inr a))
+  | .inr a => iprop(wp (x.1, .inl a) ∨ wp (x.1, .inl a))
+
+/-- Tests `monotone` on a non-`Option` type match. -/
+example : MonoInstances.MonotonePred (PROP := PROP) (A := α × (α ⊕ α)) choicePre where
+  monotone := by monotone
+
+end monotone

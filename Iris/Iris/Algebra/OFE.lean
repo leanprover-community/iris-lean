@@ -7,6 +7,8 @@ module
 
 public import Iris.Std.Nat
 public import Iris.Std.Option
+public meta import Iris.Std.RocqPorting
+public meta import Iris.Std.NonExp
 
 @[expose] public section
 
@@ -74,6 +76,8 @@ instance [OFE α] {n} : Trans (OFE.Dist n) (OFE.Dist n) (OFE.Dist n : α → α 
 class NonExpansive [OFE α] [OFE β] (f : α → β) where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → f x₁ ≡{n}≡ f x₂
 
+attribute [non_exp] NonExpansive.ne
+
 instance id_ne [OFE α] : NonExpansive (@id α) := ⟨fun _ _ _ h => h⟩
 
 instance const_ne [OFE α] [OFE β] {x : α} : NonExpansive (Function.const β x) := ⟨fun _ _ _ _ => .rfl⟩
@@ -88,6 +92,8 @@ theorem NonExpansive.comp [OFE α] [OFE β] [OFE γ] {g : β → γ} {f : α →
 /-- A function `f : α → β → γ` is non-expansive if it preserves `n`-equivalence in each argument. -/
 class NonExpansive₂ [OFE α] [OFE β] [OFE γ] (f : α → β → γ) where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → ∀ ⦃y₁ y₂⦄, y₁ ≡{n}≡ y₂ → f x₁ y₁ ≡{n}≡ f x₂ y₂
+
+attribute [non_exp] NonExpansive₂.ne
 
 #rocq_ignore ne_proper_2 "OFE is Leibniz; use equality"
 
@@ -1874,7 +1880,7 @@ theorem fixpoint_proper [COFE α] [Inhabited α] {f g : α → α} [Contractive 
 
 @[elab_as_elim, rocq_alias fixpoint_ind]
 theorem OFE.ContractiveHom.fixpoint_ind [COFE α] [Inhabited α] (f : α -c> α)
-    (P : α → Prop) (HProper : ∀ A B : α, A = B → P A → P B) (x : α) (Hbase : P x)
+    (P : α → Prop) (x : α) (Hbase : P x)
     (Hind : ∀ x, P x → P (f x)) (Hlim : LimitPreserving P) :
     P f.fixpoint := by
   let chain : Chain α := by
@@ -1884,6 +1890,10 @@ theorem OFE.ContractiveHom.fixpoint_ind [COFE α] [Inhabited α] (f : α -c> α)
     | succ _ IH =>
       cases i <;> simp at H
       exact Contractive.succ _ <| IH H
+  have HProper : ∀ A B : α, A = B → P A → P B := by
+    intros A B h ha
+    rw [← h]
+    assumption
   refine HProper _ _ (fixpoint_unique (f := f) (x := COFE.compl chain) ?_) ?_
   · refine eq_dist_2 fun n => ?_
     apply COFE.conv_compl.trans
@@ -1931,9 +1941,9 @@ theorem fixpointK_proper [COFE α] [Inhabited α] (k : Nat) (f g : α → α)
 
 @[elab_as_elim, rocq_alias fixpointK_ind]
 theorem fixpointK_ind [COFE α] [Inhabited α] (k : Nat) (f : α → α) [Contractive (Nat.repeat f k)]
-    (P : α → Prop) (HProper : ∀ A B : α, A = B → P A → P B) (x : α) (Hbase : P x)
+    (P : α → Prop) (x : α) (Hbase : P x)
     (Hind : ∀ x, P x → P (f x)) (Hlim : LimitPreserving P) : P (fixpointK k f) :=
-  OFE.ContractiveHom.fixpoint_ind (Nat.repeat f k).toContractiveHom P HProper x Hbase
+  OFE.ContractiveHom.fixpoint_ind (Nat.repeat f k).toContractiveHom P x Hbase
     (fun _ Hy => Nat.repeat_ind f Hind Hy k) Hlim
 
 end Fixpoint
