@@ -137,6 +137,9 @@ instance instSbiEmpValidExistSiProp : SbiEmpValidExist SiProp where
   siEmpValid_sExists_1 _ :=
     sExists_elim fun p hp => exists_intro_trans p (and_intro (pure_intro hp) .rfl)
 
+@[simp] theorem siPure_holds {Pi : SiProp} {n} :
+    (iprop(<si_pure> Pi) : SiProp).holds n ↔ Pi.holds n := .rfl
+
 @[rocq_alias si_pure_persistent]
 instance siPure_persistent [Sbi PROP] : Persistent (PROP := PROP) iprop(<si_pure> Pi) where
   persistent :=
