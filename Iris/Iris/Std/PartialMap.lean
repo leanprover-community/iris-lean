@@ -238,6 +238,8 @@ class LawfulPartialMap (M : Type _ → Type _) (K : outParam (Type _))
       get? (merge op m₁ m₂) k = Option.merge (op k) (get? m₁ k) (get? m₂ k)
   /-- Pointwise-equivalent maps are equal (extensionality). -/
   equiv_iff_eq {m₁ m₂ : M V} : PartialMap.equiv m₁ m₂ ↔ m₁ = m₂
+attribute [grind =] LawfulPartialMap.get?_empty
+
 export LawfulPartialMap (get?_empty get?_insert_eq get?_insert_ne get?_delete_eq
   get?_delete_ne get?_bindAlter get?_merge equiv_iff_eq)
 
@@ -278,6 +280,7 @@ open PartialMap
 
 variable {K V : Type _} {M : Type _ → Type _} [LawfulPartialMap M K]
 
+@[grind =]
 theorem get?_insert [DecidableEq K] {m : M V} {k k' : K} {v : V} :
     get? (insert m k v) k' = if k = k' then some v else get? m k' := by
   split <;> rename_i h
@@ -289,6 +292,7 @@ theorem dom_insert_iff [DecidableEq K] {m : M V} {k k' : K} {v : V} :
   simp only [PartialMap.dom, get?_insert]
   by_cases h : k = k' <;> simp [h]
 
+@[grind =]
 theorem get?_delete [DecidableEq K] {m : M V} {k k' : K} :
     get? (delete m k) k' = if k = k' then none else get? m k' := by
   split <;> rename_i h
@@ -399,6 +403,14 @@ theorem insert_delete {m : M V} {i : K} {x : V} :
   by_cases h : i = j
   · rw [get?_insert_eq h, get?_insert_eq h]
   · rw [get?_insert_ne h, get?_delete_ne h, get?_insert_ne h]
+
+theorem delete_insert {m : M V} {i : K} {x : V} :
+    delete (insert m i x) i = delete m i := by
+  apply equiv_iff_eq.mp
+  intro j
+  by_cases h : i = j
+  · rw [get?_delete_eq h, get?_delete_eq h]
+  · rw [get?_delete_ne h, get?_insert_ne h, get?_delete_ne h]
 
 theorem insert_insert_comm {m : M V} {i j : K} {x y : V} (h : i ≠ j) :
     insert (insert m i x) j y = insert (insert m j y) i x := by
@@ -758,6 +770,13 @@ theorem dom_map {f : V → V'} {m : M V} : dom (PartialMap.map f m) = dom m := b
   ext k
   simp [PartialMap.dom, get?_map]
 
+theorem dom_eq_of_option_rel {R : V → V' → Prop} {m₁ : M V} {m₂ : M V'}
+    (h : ∀ k, Option.Rel R (get? m₁ k) (get? m₂ k)) : dom m₁ = dom m₂ := by
+  funext k
+  have hk := h k
+  suffices hs : (get? m₁ k).isSome = (get? m₂ k).isSome by simp [dom, hs]
+  cases h₁ : get? m₁ k <;> cases h₂ : get? m₂ k <;> simp_all
+
 theorem disjoint_map {f g : V → V'} {m₁ m₂ : M V}
     (hdisj : m₁ ##ₘ m₂) : PartialMap.map f m₁ ##ₘ PartialMap.map g m₂ := by
   intro k ⟨hs1, hs2⟩
@@ -857,6 +876,24 @@ theorem isSome_zipWith {f : V → V' → V''} {m₁ : M V} {m₂ : M V'} {k : K}
       (get? m₁ k).isSome ∧ (get? m₂ k).isSome := by
   rw [get?_zipWith]
   cases h1 : get? m₁ k <;> cases h2 : get? m₂ k <;> simp
+
+theorem get?_zipWith_prod_eq_some {m₁ : M V} {m₂ : M V'} {k : K} {v : V} {v' : V'}
+    (h : get? (zipWith (V'' := V × V') (fun x y => (x, y)) m₁ m₂) k = some (v, v')) :
+    get? m₁ k = some v ∧ get? m₂ k = some v' := by
+  rw [get?_zipWith] at h
+  cases h₁ : get? m₁ k <;> cases h₂ : get? m₂ k <;> simp_all
+
+theorem isSome_zipWith_prod_congr {R₁ : V → W → Prop} {R₂ : V' → W' → Prop}
+    {m₁ : M V} {m₁' : M W} {m₂ : M V'} {m₂' : M W'}
+    (h₁ : ∀ k, Option.Rel R₁ (get? m₁ k) (get? m₁' k))
+    (h₂ : ∀ k, Option.Rel R₂ (get? m₂ k) (get? m₂' k)) (k : K) :
+    (get? (zipWith (V'' := V × V') (fun x y => (x, y)) m₁ m₂) k).isSome =
+      (get? (zipWith (V'' := W × W') (fun x y => (x, y)) m₁' m₂') k).isSome := by
+  simp only [get?_zipWith]
+  have hk₁ := h₁ k
+  have hk₂ := h₂ k
+  cases e₁ : get? m₁ k <;> cases e₁' : get? m₁' k <;>
+    cases e₂ : get? m₂ k <;> cases e₂' : get? m₂' k <;> simp_all
 
 theorem zip_empty_left {m : M V'} :
     zip (∅ : M V) m = ∅ := by

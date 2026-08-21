@@ -617,33 +617,25 @@ theorem singleton_core_eq {i : K} {x : V} {cx} (Hpcore : CMRA.pcore x = some cx)
     core (singleton i x : M V) = singleton i cx  :=
   equiv_iff_eq.mp (core_singleton_equiv Hpcore)
 
-theorem singleton_core_total [IsTotal V] {i : K} {x : V} :
-    equiv (core <| singleton i x : M V) ((singleton i (core x))) :=
-  core_singleton_equiv (pcore_eq_core x)
-
 @[rocq_alias singleton_core_total]
 theorem singleton_core_total_eq [IsTotal V] {i : K} {x : V} :
     core (singleton i x : M V) = singleton i (core x) :=
-  equiv_iff_eq.mp singleton_core_total
+  equiv_iff_eq.mp <| core_singleton_equiv (pcore_eq_core x)
 
 open Classical in
+@[rocq_alias singleton_op]
 theorem singleton_op_singleton {i : K} {x y : V} :
-    equiv ((singleton i x : M V) • (singleton i y)) (singleton i (x • y)) := by
-  refine fun k => ?_
+    (singleton i x : M V) • (singleton i y) = (singleton i (x • y)) := by
+  refine equiv_iff_eq.mp fun k => ?_
   simp only [CMRA.op, Heap.op, get?_merge, get?_singleton]
   split <;> simp [Option.merge]
-
-@[rocq_alias singleton_op]
-theorem singleton_op_singleton_eq {i : K} {x y : V} :
-    (singleton i x : M V) • (singleton i y) = (singleton i (x • y)) :=
-  equiv_iff_eq.mp singleton_op_singleton
 
 open Classical in
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias singleton_is_op]
 instance {d : IsOp.Direction} {i : K} {x x₁ x₂ : V} [h : IsOp d x x₁ x₂] :
     IsOp d (singleton i x : M V) (singleton i x₁ : M V) (singleton i x₂ : M V) where
-  is_op := by rw [h.is_op, ← equiv_iff_eq.mp singleton_op_singleton]
+  is_op := by rw [h.is_op, ← singleton_op_singleton]
 
 open Classical in
 @[rocq_alias gmap_core_id]
@@ -790,17 +782,13 @@ instance {m : M V} [Hid : ∀ x : V, IdFree x] [Hc : ∀ x : V, Cancelable x] : 
       simp [get?_merge, CMRA.op, Heap.op, optionOp]
       cases get? m i <;> cases get? m1 i <;> cases get? m2 i <;> simp_all
 
-theorem insert_op_equiv {m1 m2 : M V} :
-    equiv ((insert (m1 • m2) i (x • y))) (insert m1 i x • insert m2 i y) := by
-  refine fun j => ?_
+@[rocq_alias insert_op]
+theorem insert_op {m1 m2 : M (Option V)} :
+    (insert (m1 • m2) i (x • y)) = (insert m1 i x • insert m2 i y) := by
+  refine equiv_iff_eq.mp fun j => ?_
   by_cases He : i = j
   · simp [CMRA.op, get?_insert_eq He, get?_merge]
   · simp [CMRA.op, get?_insert_ne He, get?_merge]
-
-@[rocq_alias insert_op]
-theorem insert_op_eq {m1 m2 : M (Option V)} :
-    (insert (m1 • m2) i (x • y)) = (insert m1 i x • insert m2 i y) :=
-  equiv_iff_eq.mp insert_op_equiv
 
 @[rocq_alias gmap_op_union]
 theorem disjoint_op_equiv_union {m1 m2 : M V} (Hd : Set.Disjoint (dom m1) (dom m2)) :

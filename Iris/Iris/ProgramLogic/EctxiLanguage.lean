@@ -39,6 +39,7 @@ export EctxItemLanguage (fillItem)
 attribute [rocq_alias fill_item_inj] EctxItemLanguage.fillItem_inj
 attribute [rocq_alias fill_item_val] EctxItemLanguage.fillItem_val
 attribute [rocq_alias fill_item_no_val_inj] EctxItemLanguage.fillItem_no_val_inj
+attribute [rocq_alias ectxi_language.base_ctx_step_val] EctxItemLanguage.base_ctx_step_val
 
 attribute [simp] EctxItemLanguage.fillItem_inj
 attribute [grind →] EctxItemLanguage.fillItem_val
@@ -124,6 +125,7 @@ instance instEctxLanguage : EctxLanguage Expr Λ.Ectx State Obs Val where
 
 attribute [rocq_alias ectxi_lang] Iris.ProgramLogic.EctxLanguage.instLanguage
 
+@[rocq_alias ectxi_language.fill_not_val]
 theorem fill_not_val {K} {e : Expr} : toVal e = none → toVal (fill K e) = none := by
   grind only [=> EctxLanguage.fill_not_val]
 

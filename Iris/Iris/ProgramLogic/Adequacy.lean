@@ -319,8 +319,8 @@ theorem wp_adequacy_gen [InvGpreS GF] (s : Stuckness) (e : Expr) (σ : State) (�
   dsimp only
   imodintro
   iframe
-  isplitl [Hwp]
-  · iapply BigSepL2.bigSepL2_singleton; iframe
+  isplitl
+  · iapply BigSepL2.bigSepL2_nil; itrivial
   iintro %_ %_ %Heq %_ %HNS Hst Hwptp _
   iapply fupd_mask_intro_discard empty_subset
   icases BigSepL2.bigSepL2_cons_inv_right $$ Hwptp with ⟨%e', %_, %Heq', Hpost, H⟩

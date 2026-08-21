@@ -29,21 +29,12 @@ class Lock (GF : BundledGFunctors) [IrisGS_gen hlc Exp GF] where
   locked_timeless {N} γ : Timeless (locked N γ)
   locked_exclusive {N} γ : locked N γ ∗ locked N γ ⊢@{IProp GF} False
 
-  -- TODO: redo with texan triples
   newlock_spec_delay_init {N} :
-    ⊢ □ ∀ (Φ : Val → IProp GF),
-      (∀ (v : Val) (γ : name), (∀ R E, R ={E}=∗ isLock N γ v R) -∗ Φ v) -∗
-      WP hl(&newlock #()) {{ Φ }}
+    {{ True }} hl(&newlock #()) {{ v γ, RET v; ∀ R E, R ={E}=∗ isLock N γ v R }}
   acquire_spec {N} γ lk R :
-    ⊢ □ ∀ (Φ : Val → IProp GF),
-    isLock N γ lk R -∗
-    ((locked N γ ∗ R) -∗ Φ hl_val(#())) -∗
-    WP hl(&acquire &lk) {{ Φ }}
+    {{ isLock N γ lk R }} hl(&acquire &lk) {{ RET hl_val(#()); locked N γ ∗ R }}
   release_spec {N} γ lk R :
-    ⊢ □ ∀ (Φ : Val → IProp GF),
-    (isLock N γ lk R) ∗ locked N γ ∗ R -∗
-    (True -∗ Φ hl_val(#())) -∗
-    WP hl(&release &lk) {{ Φ }}
+    {{ isLock N γ lk R ∗ locked N γ ∗ R }} hl(&release &lk) {{ RET hl_val(#()); True }}
 
 instance instInhabitedLockName [IrisGS_gen hlc Exp GF] [lk : Lock GF] : Inhabited lk.name :=
   lk.lock_name_inhabited
@@ -86,12 +77,11 @@ instance is_lock_ne γ v : OFE.NonExpansive (lk.isLock N γ v) :=
 
 @[rocq_alias heap_lang.lock.newlock_spec]
 theorem newlock_spec R :
-    ⊢ □ ∀ (Φ : Val → IProp GF),
-    R -∗ (∀ (v : Val) (γ : lk.name), lk.isLock N γ v R -∗ Φ v) -∗
-    WP hl(&lk.newlock #()) {{ Φ }} := by
-  iintro %Φ !> HR HΦ
+    {{ R }} hl(&lk.newlock #()) {{ v γ, RET v; lk.isLock N γ v R }} := by
+  iintro %Φ HR HΦ
   iapply wp_fupd
-  iapply lk.newlock_spec_delay_init (N := N) $$ %(fun v => iprop(|={⊤}=> Φ v))
+  iapply lk.newlock_spec_delay_init (N := N) $$ %(fun v => iprop(|={⊤}=> Φ v)) [//]
+  inext
   iintro %v %γ Hinit
   imod Hinit $$ %R %⊤ HR
   iapply HΦ $$ Hinit

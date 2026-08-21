@@ -580,11 +580,11 @@ instance or_plain (P Q : PROP)[Plain P] [Plain Q]: Plain iprop(P ∨ Q) where
   plain := .trans (or_mono plain plain) plainly_or_mpr
 
 @[rocq_alias forall_plain]
-instance forall_plain {A : Type _} (Ψ : A → PROP) : [∀ x, Plain (Ψ x)] → Plain iprop(∀ x, Ψ x) where
+instance forall_plain {A : Sort _} (Ψ : A → PROP) : [∀ x, Plain (Ψ x)] → Plain iprop(∀ x, Ψ x) where
   plain := .trans (forall_mono (fun _ => plain)) plainly_forall_mpr
 
 @[rocq_alias exist_plain]
-instance exists_plain {A : Type _} (Ψ : A → PROP) : [∀ x, Plain (Ψ x)] → Plain iprop(∃ x, Ψ x) where
+instance exists_plain {A : Sort _} (Ψ : A → PROP) : [∀ x, Plain (Ψ x)] → Plain iprop(∃ x, Ψ x) where
   plain := .trans (exists_mono (fun _ => plain)) plainly_exists_mpr
 
 @[rocq_alias impl_plain]
@@ -636,11 +636,11 @@ instance from_option_plain {A : Type _} (P : PROP)  (Ψ : A → PROP) (x? : Opti
   match x? with | (x : A) => hΨ x | .none => hP
 
 @[rocq_alias si_pure_plain]
-instance si_pure_plain (P : SiProp) : Plain (PROP := PROP) (siPure P) where
+instance siPure_plain (P : SiProp) : Plain (PROP := PROP) (siPure P) where
   plain := plainly_siPure.2
 
 @[rocq_alias si_emp_valid_plain]
-instance si_emp_valid_plain (P : PROP) : Plain (siEmpValid P) where
+instance siEmpValid_plain (P : PROP) : Plain (siEmpValid P) where
   plain := .rfl
 
 @[rocq_alias big_sepL_nil_plain]

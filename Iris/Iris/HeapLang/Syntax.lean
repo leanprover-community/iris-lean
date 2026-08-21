@@ -47,6 +47,9 @@ attribute [rocq_alias heap_lang.Loc.eq_spec] Loc.ext_iff
 instance : HAdd Loc Int Loc where
   hAdd l i := ⟨l.n + i⟩
 
+instance : HAdd Loc Nat Loc where
+  hAdd l i := ⟨l.n + i⟩
+
 -- The order on locations is the `Int` order on the `Loc.n` field. It is a `Prop`-valued order,
 -- as in Rocq, and is what `BinOp.eval` compares locations with; the `Ord Loc` instance above is
 -- the separate, `Ordering`-valued comparison that the heap's `ExtTreeMap` is keyed by.
@@ -94,6 +97,17 @@ instance : Zero Loc where
 @[simp]
 theorem loc_add_n (l : Loc) n :
   (l + n).n = l.n + n := by simp [HAdd.hAdd]
+
+@[rocq_alias heap_lang.Loc.add_assoc]
+theorem loc_add_assoc (l : Loc) (i j : Int) : l + i + j = l + (i + j) := by
+  ext; simp [Int.add_assoc]
+
+@[simp, rocq_alias heap_lang.Loc.add_0]
+theorem loc_add_zero (l : Loc) : l + (0 : Int) = l := by ext; simp
+
+@[rocq_alias heap_lang.Loc.add_inj]
+theorem loc_add_inj {l : Loc} {i j : Int} (h : l + i = l + j) : i = j := by
+  have := congrArg Loc.n h; simp only [loc_add_n] at this; omega
 
 @[rocq_alias heap_lang.Loc.add_le_mono]
 theorem Loc.add_le_mono {l₁ l₂ : Loc} {i₁ i₂ : Int} (hl : l₁ ≤ l₂) (hi : i₁ ≤ i₂) :
