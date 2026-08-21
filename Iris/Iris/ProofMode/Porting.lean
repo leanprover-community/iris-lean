@@ -61,6 +61,10 @@ import Iris.Init
 #rocq_concept proofmode "Tactics" "iAssert" ported "ihave _ : _"
 #rocq_concept proofmode "Tactics" "iRewrite" ported "irewrite"
 #rocq_concept proofmode "Tactics" "iInv" ported "iinv"
+#rocq_concept proofmode "Tactics" "iAuIntro" ported "iauintro"
+#rocq_concept proofmode "Tactics" "iAaccIntro" ported "iaacc_intro"
+#rocq_concept proofmode "Tactics" "awp_apply" missing
+  "Needs `wp_apply`/`wp_apply_core`, which iris-lean does not have; specs are applied with `iapply`"
 #rocq_concept proofmode "Tactics" "iAccu" ported "iaccu"
 #rocq_concept proofmode "Tactics" "rules for trivial" ported "itrivial"
 
