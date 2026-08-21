@@ -338,23 +338,20 @@ theorem atomic_update_mask_weaken {Eo1 Eo2 Ei : CoPset} {α : TA.Arg → PROP}
   show atomic_update Eo1 Ei α β Φ ⊢ bi_greatest_fixpoint (atomic_update_pre Eo2 Ei α β Φ) ()
   iintro HAU
   iapply greatest_fixpoint_coiter (atomic_update_pre Eo2 Ei α β Φ)
-    (fun _ => atomic_update Eo1 Ei α β Φ)
-  · iintro !> %_ H
-    unfold atomic_update_pre
-    iapply atomic_acc_mask_weaken HE
-    iapply aupd_aacc $$ H
-  · iexact HAU
+    (fun _ => atomic_update Eo1 Ei α β Φ) $$ [] HAU
+  iintro !> %_ H
+  unfold atomic_update_pre
+  iapply atomic_acc_mask_weaken HE
+  iapply aupd_aacc $$ H
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias elim_mod_aupd]
 instance elim_mod_aupd {φ} {io : InOut} {Eo Ei E : CoPset} {α : TA.Arg → PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} {Q Q' : PROP}
     [H : ∀ R, ElimModal φ false io false iprop(|={E,Ei}=> R) R Q Q'] :
-    ElimModal (φ ∧ Eo ⊆ E) false io false
-      (atomic_update Eo Ei α β Φ)
+    ElimModal (φ ∧ Eo ⊆ E) false io false (atomic_update Eo Ei α β Φ)
       iprop(∃.. x, α x ∗ ((α x ={Ei,E}=∗ atomic_update Eo Ei α β Φ) ∧
-        (∀.. y, β x y ={Ei,E}=∗ Φ x y)))
-      Q Q' where
+        (∀.. y, β x y ={Ei,E}=∗ Φ x y))) Q Q' where
   elim_modal := by
     rintro ⟨hφ, hsub⟩
     iintro ⟨AU, Hcont⟩
@@ -372,18 +369,16 @@ theorem aupd_intro {Eo Ei : CoPset} {P Q : PROP} {α : TA.Arg → PROP}
     P ∧ Q ⊢ atomic_update Eo Ei α β Φ := by
   show iprop(P ∧ Q) ⊢ bi_greatest_fixpoint (atomic_update_pre Eo Ei α β Φ) ()
   iintro ⟨#HP, HQ⟩
-  iapply greatest_fixpoint_coiter (atomic_update_pre Eo Ei α β Φ) (fun _ => Q)
-  · iintro !> %_ HQ
-    unfold atomic_update_pre
-    iapply HAU
-    isplit <;> iassumption
-  · iexact HQ
+  iapply greatest_fixpoint_coiter (atomic_update_pre Eo Ei α β Φ) (fun _ => Q) $$ [] HQ
+  iintro !> %_ HQ
+  unfold atomic_update_pre
+  iapply HAU $$ [$]
 
 @[rocq_alias aacc_intro]
-theorem aacc_intro {Eo Ei : CoPset} {α : TA.Arg → PROP} {P : PROP}
+private theorem aacc_intro {Eo Ei : CoPset} {α : TA.Arg → PROP} {P : PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} (HEi : Ei ⊆ Eo) :
-    ⊢ (∀.. x, α x -∗
-      ((α x ={Eo}=∗ P) ∧ (∀.. y, β x y ={Eo}=∗ Φ x y)) -∗ atomic_acc Eo Ei α P β Φ) := by
+    ∀.. x, α x -∗
+      ((α x ={Eo}=∗ P) ∧ (∀.. y, β x y ={Eo}=∗ Φ x y)) -∗ atomic_acc Eo Ei α P β Φ := by
   iintro %x Hα Hclose
   unfold atomic_acc
   iapply fupd_mask_intro HEi
@@ -398,20 +393,19 @@ theorem aacc_intro {Eo Ei : CoPset} {α : TA.Arg → PROP} {P : PROP}
   · iintro %y Hβ
     imod Hclose'
     icases Hclose with ⟨-, Hclose⟩
-    iapply Hclose $$ %y Hβ
+    iapply Hclose $$ Hβ
 
 @[rocq_alias elim_acc_aacc]
 instance elim_acc_aacc {X} {E1 E2 Ei : CoPset} {α' β' : X → PROP} {γ' : X → Option PROP}
     {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP} {Pas : PROP} :
-    ElimAcc (X := X) True (FUpd.fupd E1 E2) (FUpd.fupd E2 E1) α' β' γ'
+    ElimAcc True (FUpd.fupd E1 E2) (FUpd.fupd E2 E1) α' β' γ'
       (atomic_acc E1 Ei α Pas β Φ)
       (fun x' => atomic_acc E2 Ei α iprop(β' x' ∗ (γ' x' -∗? Pas)) β
         (fun x y => iprop(β' x' ∗ (γ' x' -∗? Φ x y)))) where
   elim_acc := by
     intro _
     simp only [accessor, atomic_acc]
-    iintro Hinner Hacc
-    icases Hacc with >⟨%x', Hα', Hclose⟩
+    iintro Hinner >⟨%x', Hα', Hclose⟩
     imod Hinner $$ Hα' with ⟨%x, Hα, Hclose'⟩
     iapply fupd_mask_intro CoPset.subseteq_refl
     iintro Hclose''
@@ -428,7 +422,7 @@ instance elim_acc_aacc {X} {E1 E2 Ei : CoPset} {α' β' : X → PROP} {γ' : X �
     · iintro %y Hβ
       imod Hclose''
       icases Hclose' with ⟨-, Hclose'⟩
-      imod Hclose' $$ %y Hβ with ⟨Hβ', HΦ⟩
+      imod Hclose' $$ Hβ with ⟨Hβ', HΦ⟩
       imod Hclose $$ Hβ' with Hγ'
       imodintro
       iapply HΦ $$ Hγ'
@@ -444,7 +438,7 @@ instance elim_modal_acc {p : Bool} {io : InOut} {q : Bool} {φ} {P P' : PROP} {E
 theorem aacc_aacc {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     {α : TA.Arg → PROP} {P : PROP} {β Φ : TA.Arg → TB.Arg → PROP}
     {α' : TA'.Arg → PROP} {P' : PROP} {β' Φ' : TA'.Arg → TB'.Arg → PROP} (HE : E1' ⊆ E1) :
-    atomic_acc E1' E2 α P β Φ ⊢
+    atomic_acc E1' E2 α P β Φ -∗
     iprop((∀.. x, α x -∗ atomic_acc E2 E3 α' iprop(α x ∗ (P ={E1}=∗ P')) β'
       (fun x' y' => iprop((α x ∗ (P ={E1}=∗ Φ' x' y'))
         ∨ ∃.. y, β x y ∗ (Φ x y ={E1}=∗ Φ' x' y')))) -∗
@@ -456,7 +450,7 @@ theorem aacc_aacc {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
   · iapply atomic_acc_mask_weaken HE $$ Hupd
   iunfold atomic_acc at HH
   imod HH with ⟨%x, Hα, Hclose⟩
-  imod Hstep $$ %x Hα with ⟨%x', Hα', Hclose'⟩
+  imod Hstep $$ Hα with ⟨%x', Hα', Hclose'⟩
   imodintro
   iexists x'
   iframe Hα'
@@ -469,7 +463,7 @@ theorem aacc_aacc {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     iapply Hupd $$ HP
   · iintro %y' Hβ'
     icases Hclose' with ⟨-, Hclose'⟩
-    imod Hclose' $$ %y' Hβ' with Hres
+    imod Hclose' $$ Hβ' with Hres
     icases Hres with (⟨Hα, HΦ'⟩ | ⟨%y, Hβ, HΦ'⟩)
     · icases Hclose with ⟨Hclose, -⟩
       imod Hclose $$ Hα with HP
@@ -482,7 +476,7 @@ theorem aacc_aacc {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
 theorem aacc_aupd {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP}
     {α' : TA'.Arg → PROP} {P' : PROP} {β' Φ' : TA'.Arg → TB'.Arg → PROP} (HE : E1' ⊆ E1) :
-    atomic_update E1' E2 α β Φ ⊢
+    atomic_update E1' E2 α β Φ -∗
     (∀.. x, α x -∗ atomic_acc E2 E3 α'
       iprop(α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ P')) β'
       (fun x' y' => iprop((α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ Φ' x' y'))
@@ -504,12 +498,11 @@ theorem aacc_aupd_commit {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
   iintro Hupd Hstep
   iapply aacc_aupd HE $$ Hupd
   iintro %x Hα
-  iapply atomic_acc_wand $$ [] (Hstep $$ %x Hα)
+  iapply atomic_acc_wand $$ [] (Hstep $$ Hα)
   isplit
   · iintro $
   · iintro %_ %_ H
-    iright
-    iexact H
+    iright; itrivial
 
 @[rocq_alias aacc_aupd_abort]
 theorem aacc_aupd_abort {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
@@ -523,12 +516,11 @@ theorem aacc_aupd_abort {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
   iintro Hupd Hstep
   iapply aacc_aupd HE $$ Hupd
   iintro %x Hα
-  iapply atomic_acc_wand $$ [] (Hstep $$ %x Hα)
+  iapply atomic_acc_wand $$ [] (Hstep $$ Hα)
   isplit
   · iintro $
   · iintro %_ %_ H
-    ileft
-    iexact H
+    ileft; itrivial
 
 end lemmas
 
