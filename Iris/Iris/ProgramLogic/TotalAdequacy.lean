@@ -55,6 +55,7 @@ def pre (X : List Expr → IProp GF) (t₁ : List Expr) : IProp GF := iprop%
     stateInterp σ₁ ns κs nt ={⊤}=∗
       ∃ nt', ⌜κ = []⌝ ∗ stateInterp σ₂ (ns + 1) κs nt' ∗ X t₂
 
+@[rocq_alias twptp_pre_mono']
 instance pre_mono_inst : BIMonoPred (pre (ι := ι)) where
   mono_pred := by
     intro X Y _ _

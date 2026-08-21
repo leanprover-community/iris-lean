@@ -94,7 +94,7 @@ export Sbi (siPure_mono siEmpValid_mono siEmpValid_siPure siPure_siEmpValid siPu
 
 /-- Alias for `Sbi.siEmpValid_affinely_mpr` field. -/
 @[rocq_alias si_emp_valid_affinely_2]
-theorem si_emp_valid_affinely_2 [Sbi PROP] {P : PROP} :
+theorem siEmpValid_affinely_2 [Sbi PROP] {P : PROP} :
     <si_emp_valid> P ⊢@{SiProp} <si_emp_valid> (<affine> P) :=
   Sbi.siEmpValid_affinely_mpr
 
