@@ -271,6 +271,26 @@ instance (priority := default - 1) frame_eq_embed
   frame := (sep_mono_left <| intuitionisticallyIf_mono (embed_internal_eq a b).mpr).trans
     (frame_embed_core h1 h2)
 
+@[ipm_backtrack, rocq_alias frame_texist]
+instance frame_texist {TT : Tele} [BI PROP] p (R : PROP) (Φ Ψ : TT.Arg → PROP)
+    [h : ∀ x, Frame p R (Φ x) (Ψ x)] :
+    Frame p R iprop(∃.. x, Φ x) iprop(∃.. x, Ψ x) where
+  frame := calc
+    _ ⊢ □?p R ∗ ∃ x, Ψ x := sep_mono_right (texist_exist Ψ).mp
+    _ ⊢ ∃ x, □?p R ∗ Ψ x := sep_exists_left.mp
+    _ ⊢ ∃ x, Φ x         := exists_mono fun x => (h x).frame
+    _ ⊢ texist Φ         := (texist_exist Φ).mpr
+
+@[ipm_backtrack, rocq_alias frame_tforall]
+instance frame_tforall {TT : Tele} [BI PROP] p (R : PROP) (Φ Ψ : TT.Arg → PROP)
+    [h : ∀ x, FrameInstantiateExistDisabled p R (Φ x) (Ψ x)] :
+    Frame p R iprop(∀.. x, Φ x) iprop(∀.. x, Ψ x) where
+  frame := by
+    refine .trans ?_ (tforall_forall Φ).mpr
+    refine forall_intro fun x => ?_
+    exact (sep_mono_right <| (tforall_forall Ψ).mp.trans <| forall_elim x).trans
+      (h x).frame_instantiatiate_exist_disabled.frame
+
 @[ipm_backtrack, rocq_alias frame_big_sepL_cons]
 instance frame_bigSepL_cons [BI PROP] {A} p (Φ : Nat → A → PROP)
     (R Q : PROP) (l : List A) (x : A) (l' : List A)

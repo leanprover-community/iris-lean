@@ -48,6 +48,22 @@ instance asEmpValid_forall {α} [bi : BI PROP] (Φ : α → Prop) (P : α → PR
   as_emp_valid := ⟨λ hd h => forall_intro λ x => (hP x).1.1 hd (h x),
                    λ hd h x => (hP x).1.2 hd $ h.trans (forall_elim x)⟩
 
+@[rocq_alias as_emp_valid_tforall]
+instance asEmpValid_tforall {TT : Tele} [bi : BI PROP] (φ : TT.Arg → Prop)
+    (P : TT.Arg → PROP) d io [hP : ∀ x, AsEmpValid d (φ x) io PROP bi (P x)] :
+    AsEmpValid d (∀.. x, φ x) io PROP bi iprop(∀.. x, P x) where
+  as_emp_valid := by
+    constructor
+    · refine fun hd h => .trans ?_ (tforall_forall P).mpr
+      apply forall_intro
+      exact fun x => (hP x).as_emp_valid.left hd ((Tele.tforall_forall φ).mp h x)
+    · refine fun hd h => (Tele.tforall_forall φ).mpr ?_
+      refine fun x => (hP x).as_emp_valid.right hd ?_
+      calc
+        _ ⊢ tforall P := h
+        _ ⊢ ∀ x, P x  := (tforall_forall P).mp
+        _ ⊢ P x       := forall_elim x
+
 /-! ### FromImp -/
 
 @[rocq_alias from_impl_impl]
@@ -234,6 +250,15 @@ instance intoWand_persistently_false (q : Bool) [BI PROP] (R P Q : PROP) [Absorb
     [h : IntoWand false q R m P Q] : IntoWand false q iprop(<pers> R) m P Q where
   into_wand := persistently_elim.trans h.1
 
+set_option synthInstance.checkSynthOrder false in
+/-- The `x` in `Φ x` is handled by the IPM synthesiser as a subgoal. -/
+@[rocq_alias into_wand_tforall]
+instance intoWand_tforall {TT : Tele} (p q : Bool) [BI PROP] (Φ : TT.Arg → PROP)
+    (P Q : PROP) (x : TT.Arg) [h : IntoWand p q (Φ x) m P Q] :
+    IntoWand p q (BI.tforall Φ) m P Q where
+  into_wand :=
+    (intuitionisticallyIf_mono <| (tforall_forall Φ).mp.trans (forall_elim x)).trans h.into_wand
+
 /-! ### FromForall -/
 
 @[rocq_alias from_forall_forall]
@@ -279,6 +304,15 @@ instance fromForall_intuitionistically [BI PROP] [BIAffine PROP] [BIPersistently
 instance fromForall_persistently [BI PROP] [BIPersistentlyForall PROP] {A} P (Φ : A → PROP)
     [FromForall P Φ] : FromForall iprop(<pers> P) (λ a => iprop(<pers> (Φ a))) where
   from_forall := persistently_forall.2.trans $ (persistently_mono (from_forall (P := P)))
+
+@[rocq_alias from_forall_tforall]
+instance fromForall_tforall {TT : Tele} [BI PROP] (Φ : TT.Arg → PROP) :
+    FromForall (BI.tforall Φ) Φ := ⟨(tforall_forall Φ).mpr⟩
+
+@[rocq_alias from_tforall_pure]
+instance fromForall_tforall_pure {TT : Tele} [BI PROP] (φ : TT.Arg → Prop) :
+    FromForall (PROP := PROP) iprop(⌜Tele.tforall φ⌝) (iprop(⌜φ ·⌝)) where
+  from_forall := pure_forall.mpr.trans (pure_mono (Tele.tforall_forall φ).mpr)
 
 /-! ### IntoForall -/
 
@@ -344,6 +378,11 @@ instance (priority := default - 10) intoForall_imp [BI PROP] [BIAffine PROP] (P 
   into_forall := forall_intro fun h =>
     (and_intro .rfl (affine.trans h)).trans imp_elim_left
 
+@[rocq_alias into_forall_tforall]
+instance (priority := default - 10) intoForall_tforall {TT : Tele} [BI PROP]
+    (Φ : TT.Arg → PROP) : IntoForall (BI.tforall Φ) Φ where
+  into_forall := (tforall_forall Φ).mp
+
 /-! ### FromExists -/
 
 @[rocq_alias from_exist_exist]
@@ -376,6 +415,11 @@ instance fromExists_absorbingly [BI PROP] (P : PROP)
 instance fromExists_persistently [BI PROP] (P : PROP) (Φ : α → PROP) [h : FromExists P Φ] :
     FromExists iprop(<pers> P) (fun a => iprop(<pers> (Φ a))) where
   from_exists := persistently_exists.2.trans <| persistently_mono h.1
+
+@[rocq_alias from_exist_texist]
+instance fromExists_texist {TT : Tele} [BI PROP] (Φ : TT.Arg → PROP) :
+    FromExists (texist Φ) Φ where
+  from_exists := (texist_exist Φ).mpr
 
 /-! ### IntoExists -/
 
@@ -424,6 +468,11 @@ instance intoExists_absorbingly [BI PROP] (P : PROP) (Φ : α → PROP) [h : Int
 instance intoExists_persistently [BI PROP] {P : PROP} (Φ : α → PROP) [h : IntoExists P Φ] :
     IntoExists iprop(<pers> P) (fun a => iprop(<pers> (Φ a))) where
   into_exists := (persistently_mono h.1).trans persistently_exists.1
+
+@[rocq_alias into_exist_texist]
+instance (priority := default - 10) intoExists_texist {TT : Tele} [BI PROP]
+    (Φ : TT.Arg → PROP) : IntoExists (texist Φ) Φ where
+  into_exists := (texist_exist Φ).mp
 
 /-! ### FromAnd -/
 
@@ -1017,6 +1066,14 @@ instance fromAssumption_and_right [BI PROP] (p : Bool) (P1 P2 Q : PROP)
         _ ⊢ Q           := h.1
     | false, h => and_elim_r.trans h.1
 
+@[rocq_alias from_assumption_tforall]
+instance (priority := default + 10) fromAssumption_tforall {TT : Tele} (p : Bool) [BI PROP]
+    (Φ : TT.Arg → PROP) (x : TT.Arg) (Q : PROP) [h : FromAssumption p .in (Φ x) Q] :
+    FromAssumption p .in (BI.tforall Φ) Q where
+  from_assumption :=
+    (intuitionisticallyIf_mono <| (tforall_forall Φ).mp.trans (forall_elim x)).trans
+    h.from_assumption
+
 /-! ### IntoPure -/
 
 @[rocq_alias into_pure_pure]
@@ -1104,6 +1161,28 @@ instance intoPure_pure_wand [BI PROP] (a : Bool) (φ1 φ2 : Prop) (P1 P2 : PROP)
       _ ⊢ <affine> ⌜φ1⌝ ∗ (<affine> ⌜φ1⌝ -∗ ⌜φ2⌝) :=
           sep_mono_left <| affinely_intro <| pure_intro hφ1
       _ ⊢ ⌜φ2⌝                                    := wand_elim_right
+
+/--
+  The Rocq instance has `BiPureForall PROP` as a premise. This premise is not
+  necessary in Lean. See `intoPure_forall`.
+-/
+@[rocq_alias into_pure_tforall]
+instance intoPure_tforall {TT : Tele} [BI PROP] (Φ : TT.Arg → PROP) (φ : TT.Arg → Prop)
+    [h : ∀ x, IntoPure (Φ x) (φ x)] : IntoPure iprop(∀.. x, Φ x) (∀.. x, φ x) where
+  into_pure := calc
+    _ ⊢ ∀ x, Φ x         := (tforall_forall Φ).mp
+    _ ⊢ ∀ x, ⌜φ x⌝       := forall_mono fun x => (h x).into_pure
+    _ ⊢ ⌜∀ x, φ x⌝       := pure_forall.mpr
+    _ ⊢ ⌜Tele.tforall φ⌝ := pure_mono (Tele.tforall_forall φ).mpr
+
+@[rocq_alias into_pure_texist]
+instance intoPure_texist {TT : Tele} [BI PROP] (Φ : TT.Arg → PROP) (φ : TT.Arg → Prop)
+    [h : ∀ x, IntoPure (Φ x) (φ x)] : IntoPure iprop(∃.. x, Φ x) (∃.. x, φ x) where
+  into_pure := calc
+    _ ⊢ ∃ x, Φ x        := (texist_exist Φ).mp
+    _ ⊢ ∃ x, ⌜φ x⌝      := exists_mono fun x => (h x).into_pure
+    _ ⊢ ⌜∃ x, φ x⌝      := pure_exists.mp
+    _ ⊢ ⌜Tele.texist φ⌝ := pure_mono (Tele.texist_exist φ).mpr
 
 @[rocq_alias into_pure_big_sepL]
 instance intoPure_bigSepL [BI PROP] {A} (Φ : Nat → A → PROP)
@@ -1249,6 +1328,28 @@ instance fromPure_absorbingly (a : Bool) [BI PROP] (P : PROP) (φ : Prop)
   from_pure := absorbingly_affinely_intro_of_persistent.trans <|
     absorbingly_mono <| affinely_affinelyIf.trans h.1
 
+@[rocq_alias from_pure_tforall]
+instance fromPure_tforall {TT : Tele} (a : Bool) [BI PROP] (Φ : TT.Arg → PROP)
+    (φ : TT.Arg → Prop) [h : ∀ x, FromPure a (Φ x) io (φ x)] :
+    FromPure a iprop(∀.. x, Φ x) io (∀.. x, φ x) where
+  from_pure := calc
+    _ ⊢ <affine>?a ⌜∀ x, φ x⌝ := affinelyIf_mono <| pure_mono (Tele.tforall_forall φ).mp
+    _ ⊢ <affine>?a ∀ x, ⌜φ x⌝ := affinelyIf_mono pure_forall.mp
+    _ ⊢ ∀ x, <affine>?a ⌜φ x⌝ := affinelyIf_forall
+    _ ⊢ ∀ x, Φ x              := forall_mono fun x => (h x).from_pure
+    _ ⊢ tforall Φ             := (tforall_forall Φ).mpr
+
+@[rocq_alias from_pure_texist]
+instance fromPure_texist {TT : Tele} (a : Bool) [BI PROP] (Φ : TT.Arg → PROP)
+    (φ : TT.Arg → Prop) [h : ∀ x, FromPure a (Φ x) io (φ x)] :
+    FromPure a iprop(∃.. x, Φ x) io (∃.. x, φ x) where
+  from_pure := calc
+    _ ⊢ <affine>?a ⌜∃ x, φ x⌝ := affinelyIf_mono <| pure_mono (Tele.texist_exist φ).mp
+    _ ⊢ <affine>?a ∃ x, ⌜φ x⌝ := affinelyIf_mono pure_exists.mpr
+    _ ⊢ ∃ x, <affine>?a ⌜φ x⌝ := affinelyIf_exists.mp
+    _ ⊢ ∃ x, Φ x              := exists_mono fun x => (h x).from_pure
+    _ ⊢ texist Φ              := (texist_exist Φ).mpr
+
 @[rocq_alias from_pure_big_sepL]
 instance fromPure_bigSepL (a : Bool) [BI PROP] {A} (Φ : Nat → A → PROP) io
     (φ : Nat → A → Prop) (l : List A)
@@ -1370,6 +1471,18 @@ instance elimModal_absorbingly_here [BI PROP] p io (P Q : PROP) [Absorbing Q] :
     _ ⊢ P ∗ (P -∗ Q)            := absorbing_absorbingly.1
     _ ⊢ Q                       := wand_elim_right
 
+@[rocq_alias elim_modal_tforall]
+instance elimModal_tforall {TT : Tele} [BI PROP] φ p p' io (P P' : PROP)
+    (Φ Ψ : TT.Arg → PROP) [h : ∀ x, ElimModal φ p io p' P P' (Φ x) (Ψ x)] :
+    ElimModal φ p io p' P P' iprop(∀.. x, Φ x) iprop(∀.. x, Ψ x) where
+  elim_modal hφ := by
+    refine .trans ?_ (tforall_forall Φ).mpr
+    refine forall_intro fun x => ?_
+    exact (sep_mono_right <| wand_mono_right <|
+      (tforall_forall Ψ).mp.trans (forall_elim x)).trans ((h x).elim_modal hφ)
+
+/-! ### AddModal -/
+
 theorem addModal_wand_mp [BI PROP] {P P' Q R : PROP} [h : AddModal P P' Q] :
     P ∗ (P' -∗ R -∗ Q) ⊢ R -∗ Q := by
   have h1 : (P' -∗ R -∗ Q) ∗ R ⊢ P' -∗ Q := by
@@ -1385,8 +1498,6 @@ theorem addModal_wand_mp [BI PROP] {P P' Q R : PROP} [h : AddModal P P' Q] :
     _ ⊢ P ∗ (P' -∗ R -∗ Q) ∗ R := sep_assoc.mp
     _ ⊢ P ∗ (P' -∗ Q)          := sep_mono_right h1
     _ ⊢ Q                      := h.add_modal
-
-/-! ### AddModal -/
 
 @[rocq_alias add_modal_wand]
 instance addModal_wand [BI PROP] (P P' Q R : PROP) [h : AddModal P P' Q] :
@@ -1408,6 +1519,15 @@ instance addModal_forall {A : Type} [BI PROP] (P P' : PROP) (Φ : A → PROP)
     apply forall_intro
     intro a
     exact (sep_mono_right (wand_mono .rfl (forall_elim a))).trans (h a).add_modal
+
+@[rocq_alias add_modal_tforall]
+instance addModal_tforall {TT : Tele} [BI PROP] (P P' : PROP) (Φ : TT.Arg → PROP)
+    [h : ∀ x, AddModal P P' (Φ x)] : AddModal P P' (BI.tforall Φ) where
+  add_modal := by
+    refine .trans ?_ (tforall_forall Φ).mpr
+    refine forall_intro fun x => ?_
+    exact (sep_mono_right <| wand_mono_right <|
+      (tforall_forall Φ).mp.trans (forall_elim x)).trans (h x).add_modal
 
 /-! ### CombineSepAs -/
 
