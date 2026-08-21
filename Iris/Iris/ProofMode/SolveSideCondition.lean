@@ -66,13 +66,14 @@ def solveTCSideCondition : SynthTactic := fun e => do
   if (← instantiateMVars φ).getAppFn.isMVar then
     return .continue
   let s ← saveState
+  -- new context depth to prevent instantiation of mvars
   let res ← withNewMCtxDepth do
     let pf ← mkSideConditionGoal φ
     let tac ← sideconditionTactic
-    let gs ← (observing? <| runTacticOn pf.mvarId! tac) <&> (·.getD [pf.mvarId!])
+    let some gs ← observing? <| runTacticOn pf.mvarId! tac
+      | return none
     if gs.isEmpty then
-      let pf ← instantiateMVars pf
-      if pf.hasSorry then return none else return some pf
+      return some <| ← instantiateMVars pf
     else
       return none
   match res with

@@ -605,6 +605,25 @@ section TCSideCondition
 variable [Sbi PROP] [BIFUpdate PROP] [BIFUpdateSbi PROP] [BIAffine PROP]
 variable (E : CoPset) (Ψ : Nat → PROP) [∀ n, Plain (Ψ n)]
 
+/- Tests `TCSideCondition` with sidecondition that can be solved. -/
+/-- info: solution: TCSideCondition (E ⊆ ⊤), new goals: [] -/
+#guard_msgs (whitespace := lax) in
+set_option pp.mvars false in
+#ipm_synth TCSideCondition (E ⊆ ⊤)
+
+/- Tests `TCSideCondition` with mvar, which should not be instantiated. -/
+/-- info: None -/
+#guard_msgs (whitespace := lax) in
+set_option pp.mvars false in
+#ipm_synth TCSideCondition (_ ⊆ E)
+
+/- Tests `TCSideCondition` with mvar sidecondition that can be solved. -/
+/-- info: solution: TCSideCondition (?_ ⊆ ?_), new goals: [?_: CoPset] -/
+#guard_msgs (whitespace := lax) in
+set_option pp.mvars false in
+#ipm_synth TCSideCondition ((?E : CoPset) ⊆ ?E)
+
+
 /- Tests `fromForall_fupd` with the side condition `E ⊆ E` discharged. -/
 /-- info:
   solution: FromForall iprop(|={E}=> ∀ x, Ψ x) fun a => iprop(|={E}=> Ψ a),
@@ -634,14 +653,5 @@ variable (E : CoPset) (Ψ : Nat → PROP) [∀ n, Plain (Ψ n)]
 #guard_msgs (whitespace := lax) in
 set_option pp.mvars false in
 #ipm_synth @FromForall PROP _ iprop(|={E,_}=> ∀ x, Ψ x) (_ : Type) _
-
-/- Tests `fromForall_fupd` with mvar sidecondition that can be solved. -/
-/-- info:
-  solution: FromForall iprop(|={?_}=> ∀ x, Ψ x) fun a => iprop(|={?_}=> Ψ a),
-  new goals: [?_: CoPset]
--/
-#guard_msgs (whitespace := lax) in
-set_option pp.mvars false in
-#ipm_synth @FromForall PROP _ iprop(|={?E,?E}=> ∀ x, Ψ x) (_ : Type) _
 
 end TCSideCondition

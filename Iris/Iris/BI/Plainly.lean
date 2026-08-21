@@ -636,11 +636,11 @@ instance from_option_plain {A : Type _} (P : PROP)  (Ψ : A → PROP) (x? : Opti
   match x? with | (x : A) => hΨ x | .none => hP
 
 @[rocq_alias si_pure_plain]
-instance si_pure_plain (P : SiProp) : Plain (PROP := PROP) (siPure P) where
+instance siPure_plain (P : SiProp) : Plain (PROP := PROP) (siPure P) where
   plain := plainly_siPure.2
 
 @[rocq_alias si_emp_valid_plain]
-instance si_emp_valid_plain (P : PROP) : Plain (siEmpValid P) where
+instance siEmpValid_plain (P : PROP) : Plain (siEmpValid P) where
   plain := .rfl
 
 @[rocq_alias big_sepL_nil_plain]
