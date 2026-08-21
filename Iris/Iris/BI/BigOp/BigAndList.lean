@@ -143,6 +143,11 @@ theorem bigAndL_zip_seq {Φ : A × Nat → PROP} {n : Nat} {l : List A} :
     ([∧list] xy ∈ l.zipIdx n, Φ xy) = [∧list] i ↦ x ∈ l, Φ (x, n + i) :=
   bigOpL_zipIdx_eq Φ n l
 
+@[rocq_alias big_andL_zip_seqZ]
+theorem bigAndL_zip_seqZ {Φ : A × Int → PROP} {n : Int} {l : List A} :
+    ([∧list] xy ∈ List.zipIdxInt l n, Φ xy) = [∧list] i ↦ x ∈ l, Φ (x, n + i) :=
+  bigOpL_zipIdxInt_eq Φ n l
+
 @[rocq_alias big_andL_bind]
 theorem bigAndL_flatMap {B : Type _} (f : A → List B) {Φ : B → PROP} {l : List A} :
     ([∧list] y ∈ (l.flatMap f), Φ y) ⊣⊢ [∧list] x ∈ l, [∧list] y ∈ (f x), Φ y :=
