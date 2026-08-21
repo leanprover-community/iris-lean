@@ -183,4 +183,43 @@ example : (<<{ ∀∀ x, α x }>> e @ E <<{ ∃∃ y, β x y | RET w }>>) ⊢
   atomic_wp_mask_weaken CoPset.subseteq_top
 
 end atomicWpNotation
+
+/-! Tests for the atomic-update proof-mode tactics. `iauintro` turns an `AU` goal into the
+matching `AACC` goal, whose abort resource is the proof-mode context; `iaacc_intro` then reduces
+that accessor to its abort and commit obligations. -/
+
+section atomicTactics
+open Std.LawfulSet
+variable {PROP : Type} [BI PROP] [BIFUpdate PROP] {TA TB : Tele}
+
+/-- `iauintro` keeps the context and produces exactly the accessor that aborts back to it. Were
+the abort resource anything else, `iapply h` would not close the goal. -/
+example (Eo Ei : CoPset) (α : TA.Arg → PROP) (β Φ : TA.Arg → TB.Arg → PROP) (P : PROP)
+    (h : P ⊢ atomic_acc Eo Ei α P β Φ) : P ⊢ atomic_update Eo Ei α β Φ := by
+  iintro HP
+  iauintro
+  iapply h
+  iexact HP
+
+/-- `iaacc_intro` splits the accessor into its abort and commit obligations. Three goals remain,
+not four: as with Rocq's `last iSplit`, the split applies only to the last goal, so the subgoal
+left by the `[HP]` pattern for the `α x` premise stays unsplit. The telescope applications need
+`isimp only [Tele.app]` to reduce. -/
+example (Eo : CoPset) (P : PROP) : P ⊢ AU <{ P }> @ Eo, Eo <{ P, COMM P }> := by
+  iintro HP
+  iauintro
+  iaacc_intro subset_refl with %Tele.Arg.nil [HP]
+  · isimp only [Tele.app]
+    iexact HP
+  · iintro H
+    isimp only [Tele.app] at H
+    imodintro
+    iexact H
+  · iintro %_ H
+    isimp only [Tele.app] at H
+    imodintro
+    isimp only [Tele.app]
+    iexact H
+
+end atomicTactics
 end IrisTest

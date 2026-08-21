@@ -462,4 +462,71 @@ theorem aacc_aupd_abort {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
 
 end lemmas
 
+/-! ## Proof-mode support for atomic updates -/
+
+section proof_mode
+
+variable {PROP : Type _} [BI PROP] [BIFUpdate PROP] {TA TB : Tele}
+
+/-- Rocq's `tac_aupd_intro` collapses the spatial context into the abort resource with
+`env_to_prop`. Here the whole context `e` plays that role, which keeps the tactic free of context
+surgery. The intuitionistic hypotheses are part of the abort resource too, but they are
+persistent, so `iframe` discharges them. -/
+@[rocq_alias tac_aupd_intro]
+theorem tac_aupd_intro {e : PROP} {Eo Ei : CoPset} {α : TA.Arg → PROP}
+    {β Φ : TA.Arg → TB.Arg → PROP} (pf : e ⊢ atomic_acc Eo Ei α e β Φ) :
+    e ⊢ atomic_update Eo Ei α β Φ :=
+  (and_intro true_intro .rfl).trans (aupd_intro (and_elim_r.trans pf))
+
+end proof_mode
+
+/-! ## Tactics -/
+
+public meta section
+open Lean Elab Tactic Meta Qq
+
+/-- `iauintro` turns a goal `AU <{ ∃∃ x, α x }> @ Eo, Ei <{ ∀∀ y, β x y, COMM Φ x y }>` into the
+corresponding `atomic_acc` goal, whose abort resource is the current proof-mode context. -/
+elab "iauintro" : tactic => do
+  ProofModeM.runTactic `iauintro fun mvar { prop, e, hyps, goal, .. } => do
+    let some args := goal.appM? ``atomic_update
+      | throwIPMError "{goal} is not an atomic update"
+    unless args.size == 10 do
+      throwIPMError "{goal} is a partially applied atomic update"
+    let .const _ us := goal.getAppFn
+      | throwIPMError "{goal} is not an atomic update"
+    -- `atomic_acc` takes the abort resource directly after `α`
+    let eExpr : Expr := e
+    let accArgs : Array Expr := (args.extract 0 8).push eExpr ++ args.extract 8 10
+    let target : Q($prop) := mkAppN (.const ``atomic_acc us) accArgs
+    let m ← addBIGoal hyps target
+    mvar.assign (← mkAppM ``tac_aupd_intro #[m])
+
+/-- `iaacc_intro h with pats` proves an `atomic_acc` goal with `aacc_intro`, taking `h : Ei ⊆ Eo`
+for the mask side condition and `pats` for the `α x` premise, then splits the resulting
+abort/commit conjunction. Rocq's `iAaccIntro` discharges the side condition with `solve_ndisj`,
+which has no Lean counterpart, so it is passed explicitly.
+
+Like Rocq's `last iSplit`, the split applies to the last remaining goal, so a specialization
+pattern that leaves a subgoal for the `α x` premise keeps that subgoal unsplit. -/
+elab "iaacc_intro " h:term " with" pats:(colGt ppSpace specPat)+ : tactic => do
+  let some { goal, .. } := parseIrisGoal? (← instantiateMVars (← (← getMainGoal).getType))
+    | throwError "iaacc_intro: the goal is not an Iris goal"
+  let some args := goal.appM? ``atomic_acc
+    | throwError "iaacc_intro: {goal} is not an atomic accessor"
+  unless args.size == 11 do
+    throwError "iaacc_intro: {goal} is a partially applied atomic accessor"
+  let .const _ us := goal.getAppFn
+    | throwError "iaacc_intro: {goal} is not an atomic accessor"
+  -- `aacc_intro`'s implicit arguments are exactly those of `atomic_acc`, in the same order, so
+  -- reading them off the goal spares the premise a higher-order unification against `α x`.
+  let lem ← Term.exprToSyntax (mkAppN (.const ``aacc_intro us) args)
+  evalTactic (← `(tactic| iapply ($lem $h) $$ $pats*))
+  let (accGoal :: earlier) := (← getGoals).reverse
+    | throwError "iaacc_intro: `aacc_intro` left no goals to split"
+  setGoals [accGoal]
+  evalTactic (← `(tactic| isplit))
+  setGoals (earlier.reverse ++ (← getGoals))
+end
+
 end Iris
