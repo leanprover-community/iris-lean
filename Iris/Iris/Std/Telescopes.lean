@@ -88,14 +88,14 @@ macro "∀.." xs:explicitBinders ", " P:term : term => do
 macro "∃.." xs:explicitBinders ", " P:term : term => do
   return ⟨← expandExplicitBinders ``texist xs P⟩
 
-/-- A delaborator for the telescopic universal quantifier for `Prop`. -/
+/-- A delaborator for the telescopic universal quantifier. -/
 @[app_delab Iris.Std.Tele.tforall]
 meta def delabPropTforall : Delab :=
   delabQuant 2 pure
     (fun x rest body => `(∀.. $x:ident $[$rest:ident]*, $body))
     (fun | `(∀.. $y:ident $[$z:ident]*, $Ψ) => some (y, z, Ψ) | _ => none)
 
-/-- A delaborator for the telescopic existential quantifier for `Prop`. -/
+/-- A delaborator for the telescopic existential quantifier. -/
 @[app_delab Iris.Std.Tele.texist]
 meta def delabPropTexist : Delab := do
   delabQuant 2 pure
