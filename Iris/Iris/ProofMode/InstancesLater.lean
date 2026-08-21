@@ -547,6 +547,73 @@ instance (priority := default - 11) intoLaterN_sep_right [BI PROP]
     IntoLaterN progress (only_head := false) n iprop(P ∗ P2) iprop(P ∗ Q2) where
   into_laterN := (sep_mono (laterN_intro n) h.into_laterN).trans (laterN_sep n).mpr
 
+/-- IntoLaterN, big operators -/
+
+@[ipm_backtrack, rocq_alias into_laterN_big_sepL]
+instance intoLaterN_bigSepL [BI PROP] {A} progress n
+    (Φ Ψ : Nat → A → PROP) (l : List A)
+    [h : ∀ k x, IntoLaterN (progress := true) (only_head := false) n (Φ k x) (Ψ k x)] :
+    IntoLaterN progress (only_head := false) n
+      iprop([∗list] k ↦ x ∈ l, Φ k x) iprop([∗list] k ↦ x ∈ l, Ψ k x) where
+  into_laterN :=
+    (BigSepL.bigSepL_mono_of_forall fun {k x} => (h k x).into_laterN).trans
+    BigSepL.bigSepL_laterN_2
+
+@[ipm_backtrack, rocq_alias into_laterN_big_sepL2]
+instance intoLaterN_bigSepL2 [BI PROP] {A B} progress n
+    (Φ Ψ : Nat → A → B → PROP) (l1 : List A) (l2 : List B)
+    [h : ∀ k x1 x2,
+      IntoLaterN (progress := true) (only_head := false) n (Φ k x1 x2) (Ψ k x1 x2)] :
+    IntoLaterN progress (only_head := false) n
+      iprop([∗list] k ↦ y1;y2 ∈ l1;l2, Φ k y1 y2)
+      iprop([∗list] k ↦ y1;y2 ∈ l1;l2, Ψ k y1 y2) where
+  into_laterN :=
+    (BigSepL2.bigSepL2_mono_of_forall fun {k x1 x2} => (h k x1 x2).into_laterN).trans
+    BigSepL2.bigSepL2_laterN_2
+
+@[ipm_backtrack, rocq_alias into_laterN_big_sepM]
+instance intoLaterN_bigSepM [BI PROP] {K V M}
+    [LawfulFiniteMap M K] progress n (Φ Ψ : K → V → PROP) (m : M V)
+    [h : ∀ k x, IntoLaterN (progress := true) (only_head := false) n (Φ k x) (Ψ k x)] :
+    IntoLaterN progress (only_head := false) n
+      iprop([∗map] k ↦ x ∈ m, Φ k x) iprop([∗map] k ↦ x ∈ m, Ψ k x) where
+  into_laterN :=
+    (BigSepM.bigSepM_mono_of_forall fun {k x} => (h k x).into_laterN).trans
+    BigSepM.bigSepM_laterN_2
+
+@[ipm_backtrack, rocq_alias into_laterN_big_sepS]
+instance intoLaterN_bigSepS [BI PROP] {S A} [LawfulFiniteSet S A]
+    progress n (Φ Ψ : A → PROP) (X : S)
+    [h : ∀ x, IntoLaterN (progress := true) (only_head := false) n (Φ x) (Ψ x)] :
+    IntoLaterN progress (only_head := false) n
+      iprop([∗set] x ∈ X, Φ x) iprop([∗set] x ∈ X, Ψ x) where
+  into_laterN :=
+    (BigSepS.bigSepS_mono_of_forall fun x => (h x).into_laterN).trans
+    BigSepS.bigSepS_laterN_2
+
+@[ipm_backtrack, rocq_alias into_laterN_big_sepMS]
+instance intoLaterN_bigSepMS [BI PROP] {MS A} [LawfulFiniteMultiSet MS A]
+    progress n (Φ Ψ : A → PROP) (X : MS)
+    [h : ∀ x, IntoLaterN (progress := true) (only_head := false) n (Φ x) (Ψ x)] :
+    IntoLaterN progress (only_head := false) n
+      iprop([∗mset] x ∈ X, Φ x) iprop([∗mset] x ∈ X, Ψ x) where
+  into_laterN :=
+    (BigSepMS.bigSepMS_mono_of_forall fun x => (h x).into_laterN).trans
+    BigSepMS.bigSepMS_laterN_2
+
+@[ipm_backtrack, rocq_alias into_laterN_big_sepM2]
+instance intoLaterN_bigSepM2 [BI PROP] {K A B M} [LawfulFiniteMap M K]
+    progress n (Φ Ψ : K → A → B → PROP) (m1 : M A) (m2 : M B)
+    [h : ∀ k x1 x2, IntoLaterN (progress := true) (only_head := false) n (Φ k x1 x2) (Ψ k x1 x2)] :
+    IntoLaterN progress (only_head := false) n
+      iprop([∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2)
+      iprop([∗map] k ↦ x1;x2 ∈ m1;m2, Ψ k x1 x2) where
+  into_laterN := calc
+    _ ⊢ [∗map] k ↦ x1;x2 ∈ m1;m2, ▷^[n] Ψ k x1 x2 :=
+      BigSepM2.bigSepM2_mono_of_forall Φ (fun k x1 x2 => iprop(▷^[n] Ψ k x1 x2)) m1 m2
+        (fun {k x1 x2} => (h k x1 x2).into_laterN)
+    _ ⊢ ▷^[n] [∗map] k ↦ x1;x2 ∈ m1;m2, Ψ k x1 x2 := BigSepM2.bigSepM2_laterN_2 n
+
 /-! ### CombineSepAs -/
 
 @[rocq_alias maybe_combine_sep_as_later]
