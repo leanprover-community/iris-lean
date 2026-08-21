@@ -11,5 +11,4 @@ public import Iris.Init
 public import Iris.Instances
 public import Iris.Instances.Lib
 public import Iris.ProgramLogic
-public import Iris.ProofMode
 public import Iris.Std

@@ -1,5 +1,5 @@
 name = "iris"
-defaultTargets = ["Iris"]
+defaultTargets = ["Iris", "IrisProofMode"]
 testDriver = "IrisTest"
 
 [[require]]
@@ -13,7 +13,16 @@ scope = "leanprover-community"
 rev = "v4.32.0"
 
 [[lean_lib]]
+name = "IrisProofMode"
+roots = ["Iris.ProofMode"]
+globs = ["Iris.ProofMode", "Iris.ProofMode.+"]
+precompileModules = true
+
+[[lean_lib]]
 name = "Iris"
+globs = ["Iris", "Iris.Algebra.+", "Iris.BI.+", "Iris.Examples.+",
+         "Iris.HeapLang.+", "Iris.Init", "Iris.Instances.+",
+         "Iris.ProgramLogic.+", "Iris.Std.+"]
 
 [[lean_lib]]
 name = "IrisTest"
@@ -29,3 +38,7 @@ supportInterpreter = true
 name = "check-imports"
 srcDir = "../scripts"
 root = "CheckImports"
+
+[leanOptions]
+linter.all = false
+linter.extra = false
