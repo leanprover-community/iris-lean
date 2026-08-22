@@ -56,8 +56,7 @@ example {l : Loc} {v : Val} : ⊢@{IProp GF}
   itrivial
 
 -- application under an evaluation context
-/--
-error: unsolved goals
+/-- trace:
 hlc : HasLC
 GF : BundledGFunctors
 inst✝ : HeapLangGS hlc GF
@@ -66,11 +65,12 @@ n : Int
 ⊢
   ⊢ l ↦ some hl_val(#n) -∗ WP hl((#n + #1)) {{ w, ⌜w = hl_val(#(n + 1))⌝ }}
 -/
-#guard_msgs (whitespace := lax) in
+#guard_msgs (trace, drop all, whitespace := lax) in
 example {l : Loc} {n : Int} : ⊢@{IProp GF}
     l ↦ some hl_val(#n) -∗ WP hl(!v(#l) + #1) {{ w, ⌜w = hl_val(#(n + 1 : Int))⌝ }} := by
   iintro Hpt
   wp_apply wp_load $$ Hpt
+  trace_state
 
 -- wp_smart_apply takes pure steps until the lemma applies
 example {l : Loc} {v : Val} : ⊢@{IProp GF}
@@ -103,8 +103,7 @@ example {l : Loc} {Φ : Val → IProp GF} : ⊢@{IProp GF}
   wp_apply H
 
 -- the post-pass must not reach a sibling goal
-/--
-error: unsolved goals
+/-- trace:
 hlc : HasLC
 GF : BundledGFunctors
 inst✝ : HeapLangGS hlc GF
@@ -124,26 +123,27 @@ P : IProp GF
   ∗HP : ▷ P
   ⊢ ▷ P
 -/
-#guard_msgs (whitespace := lax) in
+#guard_msgs (trace, drop all, whitespace := lax) in
 example {l : Loc} {v : Val} {P : IProp GF} : ⊢@{IProp GF}
     ▷ P ∗ (l ↦ some v) -∗ WP hl(!v(#l)) {{ w, ⌜w = v⌝ }} ∗ (▷ P) := by
   iintro ⟨HP, Hpt⟩
   isplitl [Hpt]
   wp_apply wp_load $$ Hpt
+  trace_state
 
 -- also goals that are part of the specialization pattern have ▷ stripped
 -- (this differs from Rocq)
-/--
-error: unsolved goals
+/-- trace:
 hlc : HasLC
 GF : BundledGFunctors
 inst✝ : HeapLangGS hlc GF
 ⊢
   ⊢ WP hl((#2 + #1)) {{ v, ⌜v = hl_val(#3)⌝ }}
 -/
-#guard_msgs (whitespace := lax) in
+#guard_msgs (trace, drop all, whitespace := lax) in
 example : ⊢@{IProp GF} WP hl(v(λ x, x + #1) #2) {{ v, ⌜v = hl_val(#3)⌝ }} := by
   wp_apply beta_spec $$ []
+  trace_state
 
 -- `wp_smart_apply` taking more than one pure step before the lemma applies
 example {l : Loc} {v : Val} : ⊢@{IProp GF}
@@ -155,8 +155,7 @@ example {l : Loc} {v : Val} : ⊢@{IProp GF}
   itrivial
 
 -- the post-pass runs once, in the successful iteration: `▷ ▷` loses exactly one `▷`
-/--
-error: unsolved goals
+/-- trace:
 hlc : HasLC
 GF : BundledGFunctors
 inst✝ : HeapLangGS hlc GF
@@ -166,11 +165,12 @@ H : ▷ ▷ P ⊢ WP hl((v(λ x, (x + #1))) #2) {{ Φ }}
 ⊢
   ⊢ ▷ P
 -/
-#guard_msgs (whitespace := lax) in
+#guard_msgs (trace, drop all, whitespace := lax) in
 example {P : IProp GF} {Φ : Val → IProp GF}
     (H : ▷ ▷ P ⊢ WP hl(v(λ x, x + #1) #2) {{ Φ }}) : ⊢@{IProp GF}
     WP hl(if #true then ((λ x, x + #1) #2) else #0) {{ Φ }} := by
   wp_smart_apply H
+  trace_state
 
 -- out of pure steps: the error is about the original goal, not a mid-reduction one
 /--
@@ -185,8 +185,7 @@ example {l : Loc} {v : Val} : ⊢@{IProp GF}
 -- `wp_wand` is polymorphic in expression and postcondition, so every decomposition
 -- unifies and only the order decides: outermost leaves the expression the caller wrote,
 -- innermost would return a goal about `#l`.
-/--
-error: unsolved goals
+/-- trace:
 hlc : HasLC
 GF : BundledGFunctors
 inst✝ : HeapLangGS hlc GF
@@ -210,10 +209,11 @@ l : Loc
 Φ : Val → IProp GF
 ⊢ Val → IProp GF
 -/
-#guard_msgs (whitespace := lax) in
+#guard_msgs (trace, drop all, whitespace := lax) in
 example {l : Loc} {Φ : Val → IProp GF} : ⊢@{IProp GF}
     WP hl(!v(#l) + #1) {{ Φ }} := by
   wp_apply wp_wand
+  trace_state
 
 -- the same, instrumented: the leftover premise records which decomposition was picked
 example {l : Loc} {Φ : Val → IProp GF} : ⊢@{IProp GF}
@@ -239,8 +239,7 @@ example {l : Loc} {Φ Ψ : Val → IProp GF} : ⊢@{IProp GF}
   iapply HΦ $$ Hw
 
 -- it targets the last goal the application produced, leaving the others untouched
-/--
-error: unsolved goals
+/-- trace:
 hlc : HasLC
 GF : BundledGFunctors
 inst✝ : HeapLangGS hlc GF
@@ -261,16 +260,16 @@ w : Val
   ∗Hw : ⌜w = v⌝
   ⊢ Φ w
 -/
-#guard_msgs (whitespace := lax) in
+#guard_msgs (trace, drop all, whitespace := lax) in
 example {l : Loc} {v : Val} {Φ : Val → IProp GF} : ⊢@{IProp GF}
     (l ↦ some v -∗ (∀ w, ⌜w = v⌝ -∗ Φ w) -∗ WP hl(!v(#l)) {{ Φ }}) -∗
     WP hl(!v(#l)) {{ Φ }} := by
   iintro Hspec
   wp_apply Hspec with %w Hw
+  trace_state
 
 -- test `with` notation
-/--
-error: unsolved goals
+/-- trace:
 hlc : HasLC
 GF : BundledGFunctors
 inst✝ : HeapLangGS hlc GF
@@ -283,13 +282,14 @@ a b c : Val
   ∗Hc : ⌜c = hl_val(#3)⌝
   ⊢ Φ a
 -/
-#guard_msgs (whitespace := lax) in
+#guard_msgs (trace, drop all, whitespace := lax) in
 example {l : Loc} {Φ : Val → IProp GF} : ⊢@{IProp GF}
     ((∀ a b c, ⌜a = hl_val(#1)⌝ -∗ ⌜b = hl_val(#2)⌝ -∗ ⌜c = hl_val(#3)⌝ -∗ Φ a) -∗
       WP hl(!v(#l)) {{ Φ }}) -∗
     WP hl(!v(#l)) {{ Φ }} := by
   iintro Hspec
   wp_apply Hspec with %a %b %c Ha Hb Hc
+  trace_state
 
 -- `with` runs after the loop: a failed introduction must not trigger another retry
 /--
@@ -303,8 +303,7 @@ example {l : Loc} {v : Val} : ⊢@{IProp GF}
   wp_smart_apply wp_load $$ Hpt with %bogus
 
 -- `with` targets a `$$` goal when the application produced none
-/--
-error: unsolved goals
+/-- trace:
 hlc : HasLC
 GF : BundledGFunctors
 inst✝ : HeapLangGS hlc GF
@@ -316,15 +315,15 @@ e : Exp
   ∗HQ : Q
   ⊢ R
 -/
-#guard_msgs (whitespace := lax) in
+#guard_msgs (trace, drop all, whitespace := lax) in
 example {Q R : IProp GF} {e : Exp} {Φ : Val → IProp GF} : ⊢@{IProp GF}
     ((Q -∗ R) -∗ WP hl(&e) {{ Φ }}) -∗ (Q -∗ R) -∗ WP hl(&e) {{ Φ }} := by
   iintro H HQR
   wp_apply H $$ [HQR] with HQ
+  trace_state
 
 -- the continuation handed to a `$$` pattern
-/--
-error: unsolved goals
+/-- trace:
 hlc : HasLC
 GF : BundledGFunctors
 inst✝ : HeapLangGS hlc GF
@@ -335,11 +334,12 @@ v : Val
   ∗Hv : Ψ v
   ⊢ Φ v
 -/
-#guard_msgs (whitespace := lax) in
+#guard_msgs (trace, drop all, whitespace := lax) in
 example {l : Loc} {Φ Ψ : Val → IProp GF} : ⊢@{IProp GF}
     WP hl(!v(#l)) {{ Ψ }} -∗ WP hl(!v(#l)) {{ Φ }} := by
   iintro H
   wp_apply wp_wand $$ H [] with %v Hv
+  trace_state
 
 -- no goal to introduce into
 /-- error: no remaining Iris goal -/
