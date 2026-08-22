@@ -1327,21 +1327,27 @@ theorem monPred_at_big_sepS {S α : Type _} [LawfulFiniteSet S α]
 @[rocq_alias big_sepL_objective]
 instance big_sepL_objective {α : Type _} (Φ : Nat → α → MonPred I PROP) (l : List α)
     [∀ k x, Objective (Φ k x)] : Objective ([∗list] k ↦ x ∈ l, Φ k x) where
-  objective_at i j := (monPred_at_big_sepL i Φ l).mp.trans <|
-    (bigSepL_mono fun _ => Objective.objective_at i j).trans (monPred_at_big_sepL j Φ l).mpr
+  objective_at i j := calc
+    _ ⊢ [∗list] k ↦ x ∈ l, (Φ k x).monPred_at i := (monPred_at_big_sepL i Φ l).mp
+    _ ⊢ [∗list] k ↦ x ∈ l, (Φ k x).monPred_at j := bigSepL_mono fun _ => Objective.objective_at i j
+    _ ⊢ ([∗list] k ↦ x ∈ l, Φ k x).monPred_at j := (monPred_at_big_sepL j Φ l).mpr
 
 @[rocq_alias big_sepM_objective]
 instance big_sepM_objective {K V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
     (Φ : K → V → MonPred I PROP) (m : M V) [∀ k x, Objective (Φ k x)] :
     Objective ([∗map] k ↦ x ∈ m, Φ k x) where
-  objective_at i j := (monPred_at_big_sepM i Φ m).mp.trans <|
-    (bigSepM_mono fun _ => Objective.objective_at i j).trans (monPred_at_big_sepM j Φ m).mpr
+  objective_at i j := calc
+    _ ⊢ [∗map] k ↦ x ∈ m, (Φ k x).monPred_at i := (monPred_at_big_sepM i Φ m).mp
+    _ ⊢ [∗map] k ↦ x ∈ m, (Φ k x).monPred_at j := bigSepM_mono fun _ => Objective.objective_at i j
+    _ ⊢ ([∗map] k ↦ x ∈ m, Φ k x).monPred_at j := (monPred_at_big_sepM j Φ m).mpr
 
 @[rocq_alias big_sepS_objective]
 instance big_sepS_objective {S α : Type _} [LawfulFiniteSet S α] (Φ : α → MonPred I PROP) (X : S)
     [∀ x, Objective (Φ x)] : Objective ([∗set] x ∈ X, Φ x) where
-  objective_at i j := (monPred_at_big_sepS i Φ X).mp.trans <|
-    (bigSepS_mono fun _ => Objective.objective_at i j).trans (monPred_at_big_sepS j Φ X).mpr
+  objective_at i j := calc
+    _ ⊢ [∗set] x ∈ X, (Φ x).monPred_at i := (monPred_at_big_sepS i Φ X).mp
+    _ ⊢ [∗set] x ∈ X, (Φ x).monPred_at j := bigSepS_mono fun _ => Objective.objective_at i j
+    _ ⊢ ([∗set] x ∈ X, Φ x).monPred_at j := (monPred_at_big_sepS j Φ X).mpr
 
 /-! #### `objectively` over big separating conjunctions -/
 
@@ -1375,43 +1381,37 @@ theorem monPred_objectively_monoid_sep_homomorphism {bot : I.car} [BiIndexBottom
 @[rocq_alias monPred_objectively_big_sepL_entails]
 theorem monPred_objectively_big_sepL_entails {α : Type _} (Φ : Nat → α → MonPred I PROP)
     (l : List α) :
-    ([∗list] k ↦ x ∈ l, <obj> (Φ k x)) ⊢
-      <obj> (iprop([∗list] k ↦ x ∈ l, Φ k x)) :=
+    ([∗list] k ↦ x ∈ l, <obj> (Φ k x)) ⊢ <obj> ([∗list] k ↦ x ∈ l, Φ k x) :=
   bigOpL_hom (H := monPred_objectively_monoid_sep_entails_homomorphism) Φ l
 
 @[rocq_alias monPred_objectively_big_sepL]
 theorem monPred_objectively_big_sepL {bot : I.car} [BiIndexBottom I bot] {α : Type _}
     (Φ : Nat → α → MonPred I PROP) (l : List α) :
-    <obj> (iprop([∗list] k ↦ x ∈ l, Φ k x)) ⊣⊢
-      [∗list] k ↦ x ∈ l, <obj> (Φ k x) :=
+    <obj> ([∗list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∗list] k ↦ x ∈ l, <obj> (Φ k x) :=
   (bigOpL_hom (H := monPred_objectively_monoid_sep_homomorphism (bot := bot)) Φ l).to_bi
 
 @[rocq_alias monPred_objectively_big_sepM_entails]
 theorem monPred_objectively_big_sepM_entails {K V : Type _} {M : Type _ → Type _}
     [LawfulFiniteMap M K] (Φ : K → V → MonPred I PROP) (m : M V) :
-    ([∗map] k ↦ x ∈ m, <obj> (Φ k x)) ⊢
-      <obj> (iprop([∗map] k ↦ x ∈ m, Φ k x)) :=
+    ([∗map] k ↦ x ∈ m, <obj> (Φ k x)) ⊢ <obj> ([∗map] k ↦ x ∈ m, Φ k x) :=
   bigOpM_hom (ι := monPred_objectively_monoid_sep_entails_homomorphism) Φ m
 
 @[rocq_alias monPred_objectively_big_sepM]
 theorem monPred_objectively_big_sepM {bot : I.car} [BiIndexBottom I bot] {K V : Type _}
     {M : Type _ → Type _} [LawfulFiniteMap M K] (Φ : K → V → MonPred I PROP) (m : M V) :
-    <obj> (iprop([∗map] k ↦ x ∈ m, Φ k x)) ⊣⊢
-      [∗map] k ↦ x ∈ m, <obj> (Φ k x) :=
+    <obj> ([∗map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∗map] k ↦ x ∈ m, <obj> (Φ k x) :=
   (bigOpM_hom (ι := monPred_objectively_monoid_sep_homomorphism (bot := bot)) Φ m).to_bi
 
 @[rocq_alias monPred_objectively_big_sepS_entails]
 theorem monPred_objectively_big_sepS_entails {S α : Type _} [LawfulFiniteSet S α]
     (Φ : α → MonPred I PROP) (X : S) :
-    ([∗set] x ∈ X, <obj> (Φ x)) ⊢
-      <obj> (iprop([∗set] x ∈ X, Φ x)) :=
+    ([∗set] x ∈ X, <obj> (Φ x)) ⊢ <obj> ([∗set] x ∈ X, Φ x) :=
   Iris.Algebra.BigOpS.hom monPred_objectively_monoid_sep_entails_homomorphism Φ X
 
 @[rocq_alias monPred_objectively_big_sepS]
 theorem monPred_objectively_big_sepS {bot : I.car} [BiIndexBottom I bot] {S α : Type _}
     [LawfulFiniteSet S α] (Φ : α → MonPred I PROP) (X : S) :
-    <obj> (iprop([∗set] x ∈ X, Φ x)) ⊣⊢
-      [∗set] x ∈ X, <obj> (Φ x) :=
+    <obj> ([∗set] x ∈ X, Φ x) ⊣⊢ [∗set] x ∈ X, <obj> (Φ x) :=
   BIBase.BiEntails.of_eq
     (Iris.Algebra.BigOpS.hom (monPred_objectively_monoid_sep_homomorphism (bot := bot)) Φ X)
 
@@ -1424,7 +1424,7 @@ theorem monPred_at_big_sepMS {MS α} [LawfulFiniteMultiSet MS α]
 @[rocq_alias big_sepMS_objective]
 instance big_sepMS_objective {MS α} [LawfulFiniteMultiSet MS α]
     (Φ : α → MonPred I PROP) (X : MS) [∀ y, Objective (Φ y)] :
-    Objective iprop([∗mset] y ∈ X, Φ y) where
+    Objective ([∗mset] y ∈ X, Φ y) where
   objective_at i j := calc
     _ ⊢ [∗mset] y ∈ X, (Φ y).monPred_at i := (monPred_at_big_sepMS i Φ X).mp
     _ ⊢ [∗mset] x ∈ X, (Φ x).monPred_at j := bigSepMS_mono fun _ => Objective.objective_at i j
@@ -1433,15 +1433,13 @@ instance big_sepMS_objective {MS α} [LawfulFiniteMultiSet MS α]
 @[rocq_alias monPred_objectively_big_sepMS_entails]
 theorem monPred_objectively_big_sepMS_entails {MS α} [LawfulFiniteMultiSet MS α]
     (Φ : α → MonPred I PROP) (X : MS) :
-    ([∗mset] y ∈ X, <obj> (Φ y)) ⊢
-      <obj> (iprop([∗mset] y ∈ X, Φ y)) :=
+    ([∗mset] y ∈ X, <obj> (Φ y)) ⊢ <obj> ([∗mset] y ∈ X, Φ y) :=
   BigOpMS.hom monPred_objectively_monoid_sep_entails_homomorphism Φ X
 
 @[rocq_alias monPred_objectively_big_sepMS]
 theorem monPred_objectively_big_sepMS {bot : I.car} [BiIndexBottom I bot] {MS α}
     [LawfulFiniteMultiSet MS α] (Φ : α → MonPred I PROP) (X : MS) :
-    <obj> (iprop([∗mset] y ∈ X, Φ y)) ⊣⊢
-      [∗mset] y ∈ X, <obj> (Φ y) :=
+    <obj> ([∗mset] y ∈ X, Φ y) ⊣⊢ [∗mset] y ∈ X, <obj> (Φ y) :=
   BIBase.BiEntails.of_eq
     (Iris.Algebra.BigOpMS.hom (monPred_objectively_monoid_sep_homomorphism (bot := bot)) Φ X)
 
@@ -1463,7 +1461,7 @@ instance : SiPure (MonPred I PROP) where
 
 @[rocq_alias monPred_defs.monPred_si_emp_valid]
 instance : SiEmpValid (MonPred I PROP) where
-  siEmpValid P := SiEmpValid.siEmpValid (iprop(∀ i, P.monPred_at i) : PROP)
+  siEmpValid P := SiEmpValid.siEmpValid iprop(∀ i, P.monPred_at i)
 
 #rocq_ignore monPred_defs.monPred_si_emp_valid_def
   "Rocq unsealed definition body; use SiEmpValid.siEmpValid."
@@ -1474,12 +1472,12 @@ instance : SiEmpValid (MonPred I PROP) where
 @[rocq_alias monPred_si_pure_unfold]
 theorem monPred_siPure_unfold :
     (SiPure.siPure : SiProp → MonPred I PROP) =
-      fun Pi => (iprop(⎡(<si_pure> Pi : PROP)⎤) : MonPred I PROP) := rfl
+      fun Pi => iprop(⎡(<si_pure> Pi : PROP)⎤) := rfl
 
 @[rocq_alias monPred_si_emp_valid_unfold]
 theorem monPred_siEmpValid_unfold :
     (SiEmpValid.siEmpValid : MonPred I PROP → SiProp) =
-      fun P => SiEmpValid.siEmpValid (iprop(∀ i, P.monPred_at i) : PROP) := rfl
+      fun P => SiEmpValid.siEmpValid iprop(∀ i, P.monPred_at i) := rfl
 
 @[rocq_alias monPred_sbi]
 instance instSbiMonPred : Sbi (MonPred I PROP) where
@@ -1542,7 +1540,7 @@ instance instSbiMonPred : Sbi (MonPred I PROP) where
 @[rocq_alias monPred_internal_eq_unfold]
 theorem monPred_internal_eq_unfold {A : Type _} [OFE A] :
     (internalEq : A → A → MonPred I PROP) =
-      fun x y => (iprop(⎡(x ≡ y : PROP)⎤) : MonPred I PROP) := rfl
+      fun x y => iprop(⎡(x ≡ y : PROP)⎤) := rfl
 
 @[rocq_alias monPred_at_internal_eq]
 theorem monPred_at_internal_eq {A : Type _} [OFE A] (i : I.car) (a b : A) :
@@ -1551,13 +1549,12 @@ theorem monPred_at_internal_eq {A : Type _} [OFE A] (i : I.car) (a b : A) :
 
 @[rocq_alias monPred_at_plainly]
 theorem monPred_at_plainly (i : I.car) (P : MonPred I PROP) :
-    (iprop(■ P) : MonPred I PROP).monPred_at i ⊣⊢ iprop(∀ j, ■ (P.monPred_at j)) := by
+    iprop(■ P).monPred_at i ⊣⊢ ∀ j, ■ (P.monPred_at j) := by
   show (SiPure.siPure (SiEmpValid.siEmpValid P) : MonPred I PROP).monPred_at i ⊣⊢
-    iprop(∀ j, ■ (P.monPred_at j))
-  refine .trans (.rfl) ?_
-  show iprop(<si_pure> (SiEmpValid.siEmpValid (iprop(∀ j, P.monPred_at j) : PROP)) : PROP) ⊣⊢
-    iprop(∀ j, ■ (P.monPred_at j))
-  calc iprop(<si_pure> (SiEmpValid.siEmpValid (iprop(∀ j, P.monPred_at j) : PROP)) : PROP)
+    ∀ j, ■ (P.monPred_at j)
+  show iprop(<si_pure> (SiEmpValid.siEmpValid (iprop(∀ j, P.monPred_at j)))) ⊣⊢
+    ∀ j, ■ (P.monPred_at j)
+  calc iprop(<si_pure> (SiEmpValid.siEmpValid (iprop(∀ j, P.monPred_at j))))
     _ ⊣⊢ <si_pure> (∀ j, <si_emp_valid> P.monPred_at j) := siPure_mono_bi siEmpValid_forall
     _ ⊣⊢ ∀ j, <si_pure> <si_emp_valid> P.monPred_at j := siPure_forall
     _ ⊣⊢ ∀ j, ■ (P.monPred_at j) := .rfl
@@ -1593,27 +1590,32 @@ instance plainly_objective (P : MonPred I PROP) : Objective iprop(■ P) where
 instance plainly_if_objective (p : Bool) (P : MonPred I PROP) [Objective P] :
     Objective iprop(■?p P) := by
   cases p
-  · exact ‹Objective P›
+  · assumption
   · exact plainly_objective P
 
 @[rocq_alias monPred_at_plain]
 instance monPred_at_plain (P : MonPred I PROP) [Plain P] (i : I.car) :
     Plain (P.monPred_at i) where
-  plain := (entails_at.mp Plain.plain i).trans ((monPred_at_plainly i P).mp.trans (forall_elim i))
+  plain := calc
+    _ ⊢ iprop(■ P).monPred_at i := entails_at.mp Plain.plain i
+    _ ⊢ ∀ j, ■ P.monPred_at j   := (monPred_at_plainly i P).mp
+    _ ⊢ ■ P.monPred_at i        := forall_elim i
 
 @[rocq_alias monPred_objectively_plain]
 instance monPred_objectively_plain (P : MonPred I PROP) [Plain P] :
     Plain iprop(<obj> P) where
-  plain := entails_at.mpr fun i => by
-    refine (Plain.plain (P := iprop(∀ j, P.monPred_at j))).trans ?_
-    refine (forall_intro fun _ => .rfl).trans (monPred_at_plainly i iprop(<obj> P)).mpr
+  plain := entails_at.mpr fun i => calc
+    _ ⊢ ■ ∀ j, P.monPred_at j         := Plain.plain
+    _ ⊢ ∀ _, ■ ∀ j, P.monPred_at j    := forall_intro fun _ => .rfl
+    _ ⊢ iprop(■ <obj> P).monPred_at i := (monPred_at_plainly i iprop(<obj> P)).mpr
 
 @[rocq_alias monPred_subjectively_plain]
 instance monPred_subjectively_plain (P : MonPred I PROP) [Plain P] :
     Plain iprop(<subj> P) where
-  plain := entails_at.mpr fun i => by
-    refine (Plain.plain (P := iprop(∃ j, P.monPred_at j))).trans ?_
-    refine (forall_intro fun _ => .rfl).trans (monPred_at_plainly i iprop(<subj> P)).mpr
+  plain := entails_at.mpr fun i => calc
+    _ ⊢ ■ ∃ j, P.monPred_at j          := Plain.plain
+    _ ⊢ ∀ _, ■ ∃ j, P.monPred_at j     := forall_intro fun _ => .rfl
+    _ ⊢ iprop(■ <subj> P).monPred_at i := (monPred_at_plainly i iprop(<subj> P)).mpr
 
 /-! ### `SbiEmpValidExist` for `MonPred` -/
 
