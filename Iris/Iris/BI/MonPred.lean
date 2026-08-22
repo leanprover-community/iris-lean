@@ -1203,38 +1203,49 @@ theorem monPred_subjectively_idemp (P : MonPred I PROP) :
 
 @[rocq_alias monPred_subjectively_and]
 theorem monPred_subjectively_and (P Q : MonPred I PROP) :
-    <subj> (iprop(P ∧ Q)) ⊢ iprop(<subj> P ∧ <subj> Q) :=
+    <subj> (P ∧ Q) ⊢ <subj> P ∧ <subj> Q :=
   entails_at.mpr fun _ =>
     and_intro (exists_mono fun _ => and_elim_l) (exists_mono fun _ => and_elim_r)
 
 @[rocq_alias monPred_subjectively_or]
 theorem monPred_subjectively_or (P Q : MonPred I PROP) :
-    <subj> (iprop(P ∨ Q)) ⊣⊢ iprop(<subj> P ∨ <subj> Q) :=
+    <subj> (P ∨ Q) ⊣⊢ <subj> P ∨ <subj> Q :=
   ⟨entails_at.mpr fun _ => or_exists.mp, entails_at.mpr fun _ => or_exists.mpr⟩
 
 @[rocq_alias monPred_subjectively_forall]
 theorem monPred_subjectively_forall {α : Sort _} (Φ : α → MonPred I PROP) :
-    <subj> (iprop(∀ x, Φ x)) ⊢ iprop(∀ x, <subj> (Φ x)) :=
-  entails_at.mpr fun i =>
-    (forall_intro fun x => exists_elim fun k =>
-      ((monPred_at_forall k Φ).mp.trans (forall_elim x)).trans (exists_intro k)).trans
-    (monPred_at_forall i fun x => iprop(<subj> (Φ x))).mpr
+    <subj> (∀ x, Φ x) ⊢ ∀ x, <subj> (Φ x) := by
+  refine entails_at.mpr fun i => ?_
+  refine .trans ?_ (monPred_at_forall i fun x => iprop(<subj> (Φ x))).mpr
+  refine forall_intro fun x => exists_elim fun k => ?_
+  calc
+    _ ⊢ ∀ x, (Φ x).monPred_at k := (monPred_at_forall k Φ).mp
+    _ ⊢ (Φ x).monPred_at k      := forall_elim x
+    _ ⊢ ∃ a, (Φ x).monPred_at a := exists_intro k
 
 @[rocq_alias monPred_subjectively_exist]
 theorem monPred_subjectively_exist {α : Sort _} (Φ : α → MonPred I PROP) :
-    <subj> (iprop(∃ x, Φ x)) ⊣⊢ iprop(∃ x, <subj> (Φ x)) :=
-  ⟨entails_at.mpr fun i =>
-      exists_elim fun k => (monPred_at_exist k Φ).mp.trans <|
-        exists_elim fun x => (exists_intro k).trans <|
-          (exists_intro x).trans (monPred_at_exist i fun x => iprop(<subj> (Φ x))).mpr,
-   entails_at.mpr fun i =>
+    <subj> (∃ x, Φ x) ⊣⊢ ∃ x, <subj> (Φ x) := by
+  constructor
+  · refine entails_at.mpr fun i => exists_elim fun k => ?_
+    refine (monPred_at_exist k Φ).mp.trans <| exists_elim fun x => ?_
+    calc (Φ x).monPred_at k
+      _ ⊢ ∃ j, (Φ x).monPred_at j := exists_intro k
+      _ ⊢ ∃ x, iprop(<subj> (Φ x)).monPred_at i :=
+          exists_intro (Ψ := fun y => (iprop(<subj> (Φ y)) : MonPred I PROP).monPred_at i) x
+      _ ⊢ iprop(∃ x, <subj> (Φ x)).monPred_at i :=
+          (monPred_at_exist i fun x => iprop(<subj> (Φ x))).mpr
+  · refine entails_at.mpr fun i =>
       (monPred_at_exist i fun x => iprop(<subj> (Φ x))).mp.trans <|
-      exists_elim fun x => exists_elim fun k =>
-        ((exists_intro x).trans (monPred_at_exist k Φ).mpr).trans (exists_intro k)⟩
+      exists_elim fun x => exists_elim fun k => ?_
+    calc (Φ x).monPred_at k
+      _ ⊢ ∃ x, (Φ x).monPred_at k := exists_intro (Ψ := fun y => (Φ y).monPred_at k) x
+      _ ⊢ iprop(∃ x, Φ x).monPred_at k := (monPred_at_exist k Φ).mpr
+      _ ⊢ iprop(<subj> (∃ x, Φ x)).monPred_at i := exists_intro k
 
 @[rocq_alias monPred_subjectively_sep]
 theorem monPred_subjectively_sep (P Q : MonPred I PROP) :
-    <subj> (iprop(P ∗ Q)) ⊢ iprop(<subj> P ∗ <subj> Q) :=
+    <subj> (P ∗ Q) ⊢ <subj> P ∗ <subj> Q :=
   entails_at.mpr fun _ => exists_elim fun k => sep_mono (exists_intro k) (exists_intro k)
 
 @[rocq_alias monPred_subjectively_affine]
@@ -1315,20 +1326,20 @@ theorem monPred_at_big_sepS {S α : Type _} [LawfulFiniteSet S α]
 
 @[rocq_alias big_sepL_objective]
 instance big_sepL_objective {α : Type _} (Φ : Nat → α → MonPred I PROP) (l : List α)
-    [∀ k x, Objective (Φ k x)] : Objective iprop([∗list] k ↦ x ∈ l, Φ k x) where
+    [∀ k x, Objective (Φ k x)] : Objective ([∗list] k ↦ x ∈ l, Φ k x) where
   objective_at i j := (monPred_at_big_sepL i Φ l).mp.trans <|
     (bigSepL_mono fun _ => Objective.objective_at i j).trans (monPred_at_big_sepL j Φ l).mpr
 
 @[rocq_alias big_sepM_objective]
 instance big_sepM_objective {K V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
     (Φ : K → V → MonPred I PROP) (m : M V) [∀ k x, Objective (Φ k x)] :
-    Objective iprop([∗map] k ↦ x ∈ m, Φ k x) where
+    Objective ([∗map] k ↦ x ∈ m, Φ k x) where
   objective_at i j := (monPred_at_big_sepM i Φ m).mp.trans <|
     (bigSepM_mono fun _ => Objective.objective_at i j).trans (monPred_at_big_sepM j Φ m).mpr
 
 @[rocq_alias big_sepS_objective]
 instance big_sepS_objective {S α : Type _} [LawfulFiniteSet S α] (Φ : α → MonPred I PROP) (X : S)
-    [∀ x, Objective (Φ x)] : Objective iprop([∗set] x ∈ X, Φ x) where
+    [∀ x, Objective (Φ x)] : Objective ([∗set] x ∈ X, Φ x) where
   objective_at i j := (monPred_at_big_sepS i Φ X).mp.trans <|
     (bigSepS_mono fun _ => Objective.objective_at i j).trans (monPred_at_big_sepS j Φ X).mpr
 
