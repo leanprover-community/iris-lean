@@ -650,7 +650,7 @@ variable {I : BiIndex} {PROP : Type _} [BI PROP]
 
 @[rocq_alias monPred_at_emp]
 theorem monPred_at_emp (i : I.car) :
-    (emp : MonPred I PROP).monPred_at i ⊣⊢ emp :=
+    emp.monPred_at i ⊣⊢@{MonPred I PROP} emp :=
   .rfl
 
 @[rocq_alias monPred_at_pure]
@@ -872,14 +872,14 @@ theorem monPred_in_elim (P : MonPred I PROP) (i : I.car) :
 
 @[rocq_alias monPred_in_mono]
 theorem monPred_in_mono {i j : I.car} (h : I.rel.le j i) :
-    (monPred_in i : MonPred I PROP) ⊢ monPred_in j :=
+    monPred_in i ⊢@{MonPred I PROP} monPred_in j :=
   entails_at.mpr fun _ => pure_mono fun hik => Trans.trans h hik
 
 #rocq_ignore monPred_in_proper "Use monPred_in_mono."
 
 @[rocq_alias monPred_in_flip_mono]
 theorem monPred_in_flip_mono {i j : I.car} (h : I.rel.le i j) :
-    (monPred_in j : MonPred I PROP) ⊢ monPred_in i :=
+    monPred_in j ⊢@{MonPred I PROP} monPred_in i :=
   monPred_in_mono h
 
 @[rocq_alias monPred_in_persistent]
@@ -1081,17 +1081,17 @@ theorem monPred_objectively_ne :
 
 @[rocq_alias monPred_objectively_embed]
 theorem monPred_objectively_embed (P : PROP) :
-    (<obj> ⎡P⎤ : MonPred I PROP) ⊣⊢ ⎡P⎤ :=
+    <obj> ⎡P⎤ ⊣⊢@{MonPred I PROP} ⎡P⎤ :=
   ⟨monPred_objectively_elim _, objective_objectively _⟩
 
 @[rocq_alias monPred_objectively_emp]
 theorem monPred_objectively_emp :
-    (<obj> emp : MonPred I PROP) ⊣⊢ emp :=
+    <obj> emp ⊣⊢@{MonPred I PROP} emp :=
   ⟨monPred_objectively_elim _, objective_objectively _⟩
 
 @[rocq_alias monPred_objectively_pure]
 theorem monPred_objectively_pure (φ : Prop) :
-    (<obj> ⌜φ⌝ : MonPred I PROP) ⊣⊢ ⌜φ⌝ :=
+    <obj> ⌜φ⌝ ⊣⊢@{MonPred I PROP} ⌜φ⌝ :=
   ⟨monPred_objectively_elim _, objective_objectively _⟩
 
 @[rocq_alias monPred_objectively_and]
@@ -1650,7 +1650,7 @@ instance monPred_bi_fupd_sbi [BIFUpdate PROP] [BIFUpdateSbi PROP] :
     BIFUpdateSbi (MonPred I PROP) where
   fupd_keep_siPure E' Pi R := entails_at.mpr fun i => by
     refine (and_mono_right
-      (monPred_wand_force i (SiPure.siPure Pi : MonPred I PROP) (iprop(|={_}=> R)))).trans ?_
+      (monPred_wand_force i (SiPure.siPure Pi) (iprop(|={_}=> R)))).trans ?_
     exact BIFUpdateSbi.fupd_keep_siPure E' Pi (R.monPred_at i)
   fupd_siPure_later E P := entails_at.mpr fun i => BIFUpdateSbi.fupd_siPure_later E P
   fupd_siPure_sForall_2 E Φ := entails_at.mpr fun i => by
@@ -1658,7 +1658,7 @@ instance monPred_bi_fupd_sbi [BIFUpdate PROP] [BIFUpdateSbi PROP] :
     refine (monPred_at_forall i
       (fun q : SiProp => iprop(⌜Φ q⌝ → |={E}=> <si_pure> q))).mp.trans ?_
     exact forall_mono fun q =>
-      monPred_impl_force i (iprop(⌜Φ q⌝)) (iprop(|={E}=> <si_pure> q) : MonPred I PROP)
+      monPred_impl_force i (iprop(⌜Φ q⌝)) (iprop(|={E}=> <si_pure> q))
 
 end Sbi
 
