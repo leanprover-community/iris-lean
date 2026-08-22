@@ -6,12 +6,10 @@ Authors:
 module
 
 public import Iris.BI
-public import Iris.BI.MonPred
 public import Iris.ProofMode.Classes
 public import Iris.ProofMode.ClassesMake
 public import Iris.ProofMode.ModalityInstances
 public import Iris.ProofMode.Instances
-public import Iris.Std.TC
 
 @[expose] public section
 
@@ -92,6 +90,8 @@ instance fromModal_id_monPred_at {α} (φ : Prop) io (sel : α)
     [h : FromModal .in modality_id φ sel P Q] [hm : MakeMonPredAt i Q 𝓠] :
     FromModal io modality_id φ sel (P.monPred_at i) 𝓠 where
   from_modal hφ := hm.make_monPred_at.mpr.trans (entails_at.mp (h.from_modal hφ) i)
+
+/-! ### FromLater -/
 
 @[ipm_backtrack, rocq_alias from_later_monPred_at]
 instance fromLater_monPred_at {α} (φ : Prop) io (sel : α) (n : Nat)
