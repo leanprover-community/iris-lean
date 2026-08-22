@@ -479,11 +479,10 @@ theorem tac_aupd_intro {e eI eS : PROP} {Eo Ei : CoPset} {α : TA.Arg → PROP}
 
 omit [BIFUpdate PROP] in
 theorem tac_aacc_intro {pa pb : Bool} {e e' A R Q : PROP} (hlem : ⊢ □?pa A)
-    (hspec : (e' ∗ □?pb (R -∗ Q) ⊢ Q) → e ∗ □?pa A ⊢ Q) (hR : e' ⊢ R) : e ⊢ Q :=
-  have hA : emp ⊢ □?pa A := hlem
-  have hstep : e' ∗ □?pb (R -∗ Q) ⊢ Q :=
-    (sep_mono hR intuitionisticallyIf_elim).trans wand_elim_right
-  sep_emp.mpr.trans <| (sep_mono_right hA).trans <| hspec hstep
+    (hspec : (e' ∗ □?pb (R -∗ Q) ⊢ Q) → e ∗ □?pa A ⊢ Q) (hR : e' ⊢ R) : e ⊢ Q := calc
+  e ⊢ e ∗ emp    := sep_emp.mpr
+  _ ⊢ e ∗ □?pa A := sep_mono_right hlem
+  _ ⊢ Q          := hspec <| (sep_mono hR intuitionisticallyIf_elim).trans wand_elim_right
 
 theorem aacc_intro_wand (Eo Ei : CoPset) (α : TA.Arg → PROP) (P : PROP)
     (β Φ : TA.Arg → TB.Arg → PROP) (HEi : Ei ⊆ Eo) (x : TA.Arg) :
@@ -537,10 +536,10 @@ elab "iaaccintro" tele?:(" %" term:max)? spats:(colGt ppSpace specPat)+ : tactic
       throwIPMError "internal error: {Q} is not the atomic accessor being proved"
     -- `B` only definitionally has the shape required by `tac_aacc_intro`, so retype `pfSpec`
     have pfSpec :
-        Q(($e' ∗ □?$pb iprop(($abortGoal ∧ $commitGoal) -∗ $goal) ⊢ $goal) → $e ∗ □?false $A ⊢ $goal) := pfSpec
-    let mAb ← addBIGoal hyps' abortGoal `abort
-    let mCom ← addBIGoal hyps' commitGoal `commit
-    mvar.assign q(tac_aacc_intro $lem $pfSpec (and_intro $mAb $mCom))
+      Q(($e' ∗ □?$pb iprop(($abortGoal ∧ $commitGoal) -∗ $goal) ⊢ $goal) → $e ∗ □?false $A ⊢ $goal) := pfSpec
+    let pfAbort ← addBIGoal hyps' abortGoal `abort
+    let pfCommit ← addBIGoal hyps' commitGoal `commit
+    mvar.assign q(tac_aacc_intro $lem $pfSpec (and_intro $pfAbort $pfCommit))
 
 end
 
