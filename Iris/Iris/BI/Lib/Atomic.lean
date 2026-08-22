@@ -505,48 +505,45 @@ elab "iauintro" : tactic => do
 elab "iaaccintro" tele?:(" %" term:max)? spats:(colGt ppSpace specPat)+ : tactic => do
   let spats ← liftMacroM <| spats.toList.mapM (SpecPat.parse ·.raw)
   ProofModeM.runTactic `iaaccintro λ mvar { prop, e, hyps, goal, .. } => do
-  let some args := (← instantiateMVars goal).consumeMData.appM? ``atomic_acc
-    | throwIPMError "the goal {goal} is not an atomic accessor"
-  have Eo : Q(CoPset) := args[5]!
-  have Ei : Q(CoPset) := args[6]!
-
-  let mask : Q($Ei ⊆ $Eo) ← iSolveSidecondition q($Ei ⊆ $Eo)
-
-  -- instantiate `aacc_intro` with the arguments of the goal; the first eleven arguments of
-  -- `aacc_intro_wand` are exactly those of `atomic_acc`
-  let αTy ← whnf <| ← inferType args[7]!
-  let x ← match tele? with
-    | some t => Term.elabTermEnsuringType t αTy.bindingDomain!
-    | none   => mkFreshExprMVar αTy.bindingDomain! (userName := `x)
-  let lemPf ← mkAppOptM ``aacc_intro_wand <|
-    (args.map some).push (some mask) |>.push (some x)
-  let lemTy ← instantiateMVars <| ← inferType lemPf
-  let some ARaw :=
-      (match lemTy.consumeMData.appM? ``BIBase.EmpValid with
-        | some #[_, _, A] => some A
-        | _ =>
-          match lemTy.consumeMData.appM? ``Entails with
-          | some #[_, _, _, A] => some A
-          | _ => none)
-    | throwIPMError "internal error: unexpected statement of aacc_intro_wand"
-  have A : Q($prop) := ARaw
-  let pa : Q(Bool) := q(false)
-  have lem : Q(⊢ □?$pa $A) := lemPf
-  -- discharge the atomic precondition `α x` using the given specialisation patterns
-  let ⟨e', hyps', pb, B, pfSpec⟩ ← iSpecializeCore hyps pa A goal spats
-  -- what is left has to be the closing conjunction of the abort and the commit continuation
-  let ~q(iprop(($Pab ∧ $Pcom) -∗ $Q)) := B
-    | throwIPMError "the specialisation patterns must discharge the atomic precondition only, \
-        leaving {B} instead of the abort and commit continuations"
-  unless ← isDefEq Q goal do
-    throwIPMError "internal error: {Q} is not the atomic accessor being proved"
-  -- `B` only definitionally has the shape required by `tac_aacc_intro`, so retype `pfSpec`
-  have pfSpec :
-      Q(($e' ∗ □?$pb iprop(($Pab ∧ $Pcom) -∗ $goal) ⊢ $goal) → $e ∗ □?$pa $A ⊢ $goal) := pfSpec
-  let mAb ← addBIGoal hyps' Pab `abort
-  let mCom ← addBIGoal hyps' Pcom `commit
-  let pf : Q($e ⊢ $goal) := q(tac_aacc_intro $lem $pfSpec (and_intro $mAb $mCom))
-  mvar.assign pf
+    let some args := (← instantiateMVars goal).consumeMData.appM? ``atomic_acc
+      | throwIPMError "the goal {goal} is not an atomic accessor"
+    have Eo : Q(CoPset) := args[5]!
+    have Ei : Q(CoPset) := args[6]!
+    let mask : Q($Ei ⊆ $Eo) ← iSolveSidecondition q($Ei ⊆ $Eo)
+    -- instantiate `aacc_intro` with the arguments of the goal; the first eleven arguments of
+    -- `aacc_intro_wand` are exactly those of `atomic_acc`
+    let αTy ← whnf <| ← inferType args[7]!
+    let x ← match tele? with
+      | some t => Term.elabTermEnsuringType t αTy.bindingDomain!
+      | none   => mkFreshExprMVar αTy.bindingDomain! (userName := `x)
+    let lemPf ← mkAppOptM ``aacc_intro_wand <|
+      (args.map some).push (some mask) |>.push (some x)
+    let lemTy ← instantiateMVars <| ← inferType lemPf
+    let some ARaw :=
+        (match lemTy.consumeMData.appM? ``BIBase.EmpValid with
+          | some #[_, _, A] => some A
+          | _ =>
+            match lemTy.consumeMData.appM? ``Entails with
+            | some #[_, _, _, A] => some A
+            | _ => none)
+      | throwIPMError "internal error: unexpected statement of aacc_intro_wand"
+    have A : Q($prop) := ARaw
+    let pa : Q(Bool) := q(false)
+    have lem : Q(⊢ □?$pa $A) := lemPf
+    -- discharge the atomic precondition `α x` using the given specialisation patterns
+    let ⟨e', hyps', pb, B, pfSpec⟩ ← iSpecializeCore hyps pa A goal spats
+    -- what is left has to be the closing conjunction of the abort and the commit continuation
+    let ~q(iprop(($Pab ∧ $Pcom) -∗ $Q)) := B
+      | throwIPMError "the specialisation patterns must discharge the atomic precondition only, \
+          leaving {B} instead of the abort and commit continuations"
+    unless ← isDefEq Q goal do
+      throwIPMError "internal error: {Q} is not the atomic accessor being proved"
+    -- `B` only definitionally has the shape required by `tac_aacc_intro`, so retype `pfSpec`
+    have pfSpec :
+        Q(($e' ∗ □?$pb iprop(($Pab ∧ $Pcom) -∗ $goal) ⊢ $goal) → $e ∗ □?$pa $A ⊢ $goal) := pfSpec
+    let mAb ← addBIGoal hyps' Pab `abort
+    let mCom ← addBIGoal hyps' Pcom `commit
+    mvar.assign q(tac_aacc_intro $lem $pfSpec (and_intro $mAb $mCom))
 
 end
 
