@@ -464,19 +464,20 @@ end lemmas
 
 section ProofMode
 
-variable [BI PROP] {TA TB : Tele}
+variable [BI PROP] [BIFUpdate PROP] {TA TB : Tele}
 
 @[rocq_alias tac_aupd_intro]
-theorem tac_aupd_intro [BIFUpdate PROP] {e eI eS : PROP} {Eo Ei : CoPset} {α : TA.Arg → PROP}
+theorem tac_aupd_intro {e eI eS : PROP} {Eo Ei : CoPset} {α : TA.Arg → PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} (hsplit : e ⊣⊢ eI ∗ eS) (hI : eI ⊢ □ eI)
     (H : e ⊢ atomic_acc Eo Ei α eS β Φ) :
     e ⊢ atomic_update Eo Ei α β Φ := by
   have h : e ⊣⊢ <pers> eI ∧ eS := calc
-    _ ⊣⊢ eI ∗ eS        := hsplit.trans .rfl
+    _ ⊣⊢ eI ∗ eS        := hsplit
     _ ⊣⊢ □ eI ∗ eS      := sep_congr_left ⟨hI, intuitionistically_elim⟩
     _ ⊣⊢ <pers> eI ∧ eS := persistently_and_intuitionistically_sep_left.symm
   exact h.mp.trans <| aupd_intro (h.mpr.trans H)
 
+omit [BIFUpdate PROP] in
 theorem tac_aacc_intro {pa pb : Bool} {e e' A R Q : PROP} (hlem : ⊢ □?pa A)
     (hspec : (e' ∗ □?pb (R -∗ Q) ⊢ Q) → e ∗ □?pa A ⊢ Q) (hR : e' ⊢ R) : e ⊢ Q :=
   have hA : emp ⊢ □?pa A := hlem
@@ -487,57 +488,19 @@ theorem tac_aacc_intro {pa pb : Bool} {e e' A R Q : PROP} (hlem : ⊢ □?pa A)
 public meta section
 open Lean Meta Elab Qq Expr
 
-def isEmp (e : Expr) : Bool := e.consumeMData.isAppOfArity ``emp 2
-
-def splitIntuitionisticSpatial {prop : Q(Type u)} {bi : Q(BI $prop)} :
-    ∀ {e : Q($prop)}, Hyps bi e →
-      (eI : Q($prop)) × (eS : Q($prop)) × Q($e ⊣⊢ $eI ∗ $eS) × Q($eI ⊢ □ $eI)
-  | _, .emp _ =>
-    ⟨q(iprop(emp)), q(iprop(emp)), q(emp_sep_rev), q(intuitionistically_emp.mpr)⟩
-  | _, .hyp _ _ _ p ty _ =>
-    match matchBool p with
-    | .inl _ =>
-      ⟨q(iprop(□ $ty)), q(iprop(emp)), q(sep_emp_rev), q(intuitionistically_idem.mpr)⟩
-    | .inr _ =>
-      ⟨q(iprop(emp)), ty, q(emp_sep_rev), q(intuitionistically_emp.mpr)⟩
-  | _, .sep _ _ _ _ lhs rhs =>
-    let ⟨eIl, eSl, pfl, pIl⟩ := splitIntuitionisticSpatial lhs
-    let ⟨eIr, eSr, pfr, pIr⟩ := splitIntuitionisticSpatial rhs
-    -- The `emp` branches retype an equivalence that only definitionally has the stated type,
-    -- in the same way `Hyps.buildAccuProof` retypes its accumulator.
-    let ⟨eI, hI, pI⟩ : (eI : Q($prop)) × Q(iprop($eIl ∗ $eIr) ⊣⊢ $eI) × Q($eI ⊢ □ $eI) :=
-      if isEmp eIl then
-        let h : Q(iprop(emp) ∗ $eIr ⊣⊢ $eIr) := q(emp_sep)
-        ⟨eIr, h, pIr⟩
-      else if isEmp eIr then
-        let h : Q($eIl ∗ iprop(emp) ⊣⊢ $eIl) := q(sep_emp)
-        ⟨eIl, h, pIl⟩
-      else
-        ⟨q(iprop($eIl ∗ $eIr)), q(.rfl),
-          q((sep_mono $pIl $pIr).trans intuitionistically_sep_mpr)⟩
-    let ⟨eS, hS⟩ : (eS : Q($prop)) × Q(iprop($eSl ∗ $eSr) ⊣⊢ $eS) :=
-      if isEmp eSl then
-        let h : Q(iprop(emp) ∗ $eSr ⊣⊢ $eSr) := q(emp_sep)
-        ⟨eSr, h⟩
-      else if isEmp eSr then
-        let h : Q($eSl ∗ iprop(emp) ⊣⊢ $eSl) := q(sep_emp)
-        ⟨eSl, h⟩
-      else ⟨q(iprop($eSl ∗ $eSr)), q(.rfl)⟩
-    ⟨eI, eS, q((split_ss $pfl $pfr).trans (sep_congr $hI $hS)), pI⟩
-
 elab "iauintro" : tactic => do
   ProofModeM.runTactic `iauintro λ mvar { prop, bi, e, hyps, goal, .. } => do
     let some args := (← instantiateMVars goal).consumeMData.appM? ``atomic_update
       | throwIPMError "the goal {goal} is not an atomic update"
     -- split the context into its intuitionistic and its spatial part
-    let ⟨eI, eS, hsplit, pfInt⟩ := splitIntuitionisticSpatial hyps
+    let ⟨eI, eS, hsplit, pfInt⟩ := hyps.splitIntuitionisticSpatial
     -- `atomic_acc` takes the arguments of `atomic_update` with the abort condition inserted directly after `α`
     let AC : Q($prop) ← mkAppOptM ``atomic_acc <|
       (args.take 8 |>.push eS |>.append (args.extract 8 args.size)).map some
     let pf ← addBIGoal hyps AC
     mvar.assign <| ← mkAppM ``tac_aupd_intro #[hsplit, pfInt, pf]
 
-theorem aacc_intro_wand [BIFUpdate PROP] (Eo Ei : CoPset) (α : TA.Arg → PROP) (P : PROP)
+theorem aacc_intro_wand (Eo Ei : CoPset) (α : TA.Arg → PROP) (P : PROP)
     (β Φ : TA.Arg → TB.Arg → PROP) (HEi : Ei ⊆ Eo) :
     ⊢ (∀.. x, α x -∗
         ((α x ={Eo}=∗ P) ∧ (∀.. y, β x y ={Eo}=∗ Φ x y)) -∗ atomic_acc Eo Ei α P β Φ) :=
