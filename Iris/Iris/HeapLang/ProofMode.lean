@@ -405,8 +405,8 @@ public meta def iWpPure {u}
 
   let ⟨_, hyps', pf⟩ ← iModAction hyps q(modality_laterN $n)
   let ⟨inner, .up _⟩ ← HeapLang.fillQ K e₂
-  let nextPf ← k hyps' inner
   let HΦ ← iSolveSidecondition φ (failOnUnsolved := failOnUnsolved)
+  let nextPf ← k hyps' inner
   return q(tac_wp_pure $inst $HΦ $pf $nextPf)
 
 /-- Find any pure step for `e₁`, as `wp_pure _` does. -/
