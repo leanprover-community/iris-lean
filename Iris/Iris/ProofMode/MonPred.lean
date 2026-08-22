@@ -28,6 +28,10 @@ class IsBiIndexRel (i j : I.car) where
   is_bi_index_rel : I.rel.le i j
 export IsBiIndexRel (is_bi_index_rel)
 
+@[rocq_alias is_bi_index_rel_refl]
+instance (priority := high) isBiIndexRel_refl (i : I) : IsBiIndexRel i i where
+  is_bi_index_rel := Std.Refl.refl i
+
 @[rocq_alias modality_objectively, rocq_alias modality_objectively_mixin]
 def modality_objectively : Modality (MonPred I PROP) (MonPred I PROP) where
   M := MonPred.objectively
