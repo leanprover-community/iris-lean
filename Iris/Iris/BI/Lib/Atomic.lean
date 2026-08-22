@@ -478,10 +478,58 @@ theorem tac_aupd_intro {e eI eS : PROP} {Eo Ei : CoPset} {α : TA.Arg → PROP}
   exact h.mp.trans <| aupd_intro (h.mpr.trans H)
 
 public meta section
+open Lean Meta Qq Expr
 
-elab "iauintro " : tactic => do
+def isEmp (e : Expr) : Bool := e.consumeMData.isAppOfArity ``emp 2
+
+def splitIntuitionisticSpatial {prop : Q(Type u)} {bi : Q(BI $prop)} :
+    ∀ {e : Q($prop)}, Hyps bi e →
+      (eI : Q($prop)) × (eS : Q($prop)) × Q($e ⊣⊢ $eI ∗ $eS) × Q($eI ⊢ □ $eI)
+  | _, .emp _ =>
+    ⟨q(iprop(emp)), q(iprop(emp)), q(emp_sep_rev), q(intuitionistically_emp.mpr)⟩
+  | _, .hyp _ _ _ p ty _ =>
+    match matchBool p with
+    | .inl _ =>
+      ⟨q(iprop(□ $ty)), q(iprop(emp)), q(sep_emp_rev), q(intuitionistically_idem.mpr)⟩
+    | .inr _ =>
+      ⟨q(iprop(emp)), ty, q(emp_sep_rev), q(intuitionistically_emp.mpr)⟩
+  | _, .sep _ _ _ _ lhs rhs =>
+    let ⟨eIl, eSl, pfl, pIl⟩ := splitIntuitionisticSpatial lhs
+    let ⟨eIr, eSr, pfr, pIr⟩ := splitIntuitionisticSpatial rhs
+    -- The `emp` branches retype an equivalence that only definitionally has the stated type,
+    -- in the same way `Hyps.buildAccuProof` retypes its accumulator.
+    let ⟨eI, hI, pI⟩ : (eI : Q($prop)) × Q(iprop($eIl ∗ $eIr) ⊣⊢ $eI) × Q($eI ⊢ □ $eI) :=
+      if isEmp eIl then
+        let h : Q(iprop(emp) ∗ $eIr ⊣⊢ $eIr) := q(emp_sep)
+        ⟨eIr, h, pIr⟩
+      else if isEmp eIr then
+        let h : Q($eIl ∗ iprop(emp) ⊣⊢ $eIl) := q(sep_emp)
+        ⟨eIl, h, pIl⟩
+      else
+        ⟨q(iprop($eIl ∗ $eIr)), q(.rfl),
+          q((sep_mono $pIl $pIr).trans intuitionistically_sep_mpr)⟩
+    let ⟨eS, hS⟩ : (eS : Q($prop)) × Q(iprop($eSl ∗ $eSr) ⊣⊢ $eS) :=
+      if isEmp eSl then
+        let h : Q(iprop(emp) ∗ $eSr ⊣⊢ $eSr) := q(emp_sep)
+        ⟨eSr, h⟩
+      else if isEmp eSr then
+        let h : Q($eSl ∗ iprop(emp) ⊣⊢ $eSl) := q(sep_emp)
+        ⟨eSl, h⟩
+      else ⟨q(iprop($eSl ∗ $eSr)), q(.rfl)⟩
+    ⟨eI, eS, q((split_ss $pfl $pfr).trans (sep_congr $hI $hS)), pI⟩
+
+elab "iauintro" : tactic => do
   ProofModeM.runTactic `iauintro λ mvar { prop, bi, e, hyps, goal, .. } => do
-    sorry
+    let some args := (← instantiateMVars goal).consumeMData.appM? ``atomic_update
+      | throwIPMError "the goal {goal} is not an atomic update"
+    -- split the context into its intuitionistic and its spatial part
+    let ⟨eI, eS, hsplit, hI⟩ := splitIntuitionisticSpatial hyps
+    -- `atomic_acc` takes the arguments of `atomic_update` with the abort condition inserted directly after `α`
+    let ACRaw ← mkAppOptM ``atomic_acc <|
+      (args.take 8 |>.push eS |>.append (args.extract 8 args.size)).map some
+    have AC : Q($prop) := ACRaw
+    let m ← addBIGoal hyps AC
+    mvar.assign <| ← mkAppM ``tac_aupd_intro #[hsplit, hI, m]
 
 elab "iaaccintro " spats:(colGt specPat)+ : tactic => do
   ProofModeM.runTactic `iaaccintro λ mvar { prop, bi, e, hyps, goal, .. } => do
