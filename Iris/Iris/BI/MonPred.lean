@@ -1232,7 +1232,7 @@ theorem monPred_subjectively_exist {α : Sort _} (Φ : α → MonPred I PROP) :
     calc (Φ x).monPred_at k
       _ ⊢ ∃ j, (Φ x).monPred_at j := exists_intro k
       _ ⊢ ∃ x, iprop(<subj> (Φ x)).monPred_at i :=
-          exists_intro (Ψ := fun y => (iprop(<subj> (Φ y)) : MonPred I PROP).monPred_at i) x
+          exists_intro (Ψ := fun y => iprop(<subj> (Φ y) : MonPred I PROP).monPred_at i) x
       _ ⊢ iprop(∃ x, <subj> (Φ x)).monPred_at i :=
           (monPred_at_exist i fun x => iprop(<subj> (Φ x))).mpr
   · refine entails_at.mpr fun i =>
@@ -1501,7 +1501,7 @@ instance instSbiMonPred : Sbi (MonPred I PROP) where
     refine .trans ?_ (siPure_sForall_mpr (PROP := PROP))
     refine (monPred_at_forall i (fun q : SiProp => iprop(⌜Ψi q⌝ → <si_pure> q))).mp.trans ?_
     exact forall_mono fun q =>
-      monPred_impl_force i (iprop(⌜Ψi q⌝)) (SiPure.siPure q : MonPred I PROP)
+      monPred_impl_force i iprop(⌜Ψi q⌝) (SiPure.siPure q : MonPred I PROP)
   persistently_imp_siPure {P Q} := entails_at.mpr fun i => by
     refine (forall_elim i).trans ?_
     refine (pure_imp_elim (Std.Refl.refl i : I.rel.le i i)).trans ?_
@@ -1523,7 +1523,7 @@ instance instSbiMonPred : Sbi (MonPred I PROP) where
     have hforce : ∀ i, (iprop(P ∗-∗ Q) : MonPred I PROP).monPred_at i ⊢
         iprop(P.monPred_at i ∗-∗ Q.monPred_at i) := fun i =>
       and_mono (monPred_wand_force i P Q) (monPred_wand_force i Q P)
-    have hstep : SiEmpValid.siEmpValid (iprop(∀ i, (iprop(P ∗-∗ Q) : MonPred I PROP).monPred_at i))
+    have hstep : SiEmpValid.siEmpValid iprop(∀ i, (iprop(P ∗-∗ Q) : MonPred I PROP).monPred_at i)
         ⊢@{SiProp} ∀ i, P.monPred_at i ≡ Q.monPred_at i :=
       siEmpValid_forall.mp.trans <| forall_mono fun i =>
         (siEmpValid_mono (hforce i)).trans (BI.prop_ext_siEmpValid_mpr _ _)
@@ -1552,9 +1552,9 @@ theorem monPred_at_plainly (i : I.car) (P : MonPred I PROP) :
     iprop(■ P).monPred_at i ⊣⊢ ∀ j, ■ (P.monPred_at j) := by
   show (SiPure.siPure (SiEmpValid.siEmpValid P) : MonPred I PROP).monPred_at i ⊣⊢
     ∀ j, ■ (P.monPred_at j)
-  show iprop(<si_pure> (SiEmpValid.siEmpValid (iprop(∀ j, P.monPred_at j)))) ⊣⊢
+  show iprop(<si_pure> (SiEmpValid.siEmpValid iprop(∀ j, P.monPred_at j))) ⊣⊢
     ∀ j, ■ (P.monPred_at j)
-  calc iprop(<si_pure> (SiEmpValid.siEmpValid (iprop(∀ j, P.monPred_at j))))
+  calc iprop(<si_pure> (SiEmpValid.siEmpValid iprop(∀ j, P.monPred_at j)))
     _ ⊣⊢ <si_pure> (∀ j, <si_emp_valid> P.monPred_at j) := siPure_mono_bi siEmpValid_forall
     _ ⊣⊢ ∀ j, <si_pure> <si_emp_valid> P.monPred_at j := siPure_forall
     _ ⊣⊢ ∀ j, ■ (P.monPred_at j) := .rfl
@@ -1650,7 +1650,7 @@ instance monPred_bi_fupd_sbi [BIFUpdate PROP] [BIFUpdateSbi PROP] :
     BIFUpdateSbi (MonPred I PROP) where
   fupd_keep_siPure E' Pi R := entails_at.mpr fun i => by
     refine (and_mono_right
-      (monPred_wand_force i (SiPure.siPure Pi) (iprop(|={_}=> R)))).trans ?_
+      (monPred_wand_force i (SiPure.siPure Pi) iprop(|={_}=> R))).trans ?_
     exact BIFUpdateSbi.fupd_keep_siPure E' Pi (R.monPred_at i)
   fupd_siPure_later E P := entails_at.mpr fun i => BIFUpdateSbi.fupd_siPure_later E P
   fupd_siPure_sForall_2 E Φ := entails_at.mpr fun i => by
@@ -1658,7 +1658,7 @@ instance monPred_bi_fupd_sbi [BIFUpdate PROP] [BIFUpdateSbi PROP] :
     refine (monPred_at_forall i
       (fun q : SiProp => iprop(⌜Φ q⌝ → |={E}=> <si_pure> q))).mp.trans ?_
     exact forall_mono fun q =>
-      monPred_impl_force i (iprop(⌜Φ q⌝)) (iprop(|={E}=> <si_pure> q))
+      monPred_impl_force i iprop(⌜Φ q⌝) iprop(|={E}=> <si_pure> q)
 
 end Sbi
 
