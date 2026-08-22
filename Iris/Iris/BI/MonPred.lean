@@ -660,52 +660,52 @@ theorem monPred_at_pure (i : I.car) (φ : Prop) :
 
 @[rocq_alias monPred_at_and]
 theorem monPred_at_and (i : I.car) (P Q : MonPred I PROP) :
-    (iprop(P ∧ Q)).monPred_at i ⊣⊢ P.monPred_at i ∧ Q.monPred_at i :=
+    iprop(P ∧ Q).monPred_at i ⊣⊢ P.monPred_at i ∧ Q.monPred_at i :=
   .rfl
 
 @[rocq_alias monPred_at_or]
 theorem monPred_at_or (i : I.car) (P Q : MonPred I PROP) :
-    (iprop(P ∨ Q)).monPred_at i ⊣⊢ P.monPred_at i ∨ Q.monPred_at i :=
+    iprop(P ∨ Q).monPred_at i ⊣⊢ P.monPred_at i ∨ Q.monPred_at i :=
   .rfl
 
 @[rocq_alias monPred_at_impl]
 theorem monPred_at_impl (i : I.car) (P Q : MonPred I PROP) :
-    (iprop(P → Q)).monPred_at i ⊣⊢
+    iprop(P → Q).monPred_at i ⊣⊢
       ∀ j, ⌜I.rel.le i j⌝ → P.monPred_at j → Q.monPred_at j :=
   .rfl
 
 @[rocq_alias monPred_at_forall]
 theorem monPred_at_forall {α : Sort _} (i : I.car) (Φ : α → MonPred I PROP) :
-    (iprop(∀ x, Φ x)).monPred_at i ⊣⊢ ∀ x, (Φ x).monPred_at i :=
+    iprop(∀ x, Φ x).monPred_at i ⊣⊢ ∀ x, (Φ x).monPred_at i :=
   ⟨forall_intro fun x => sForall_at_elim i ⟨x, rfl⟩,
    sForall_at_intro i fun _ ⟨x, hx⟩ => hx ▸ forall_elim x⟩
 
 @[rocq_alias monPred_at_exist]
 theorem monPred_at_exist {α : Sort _} (i : I.car) (Φ : α → MonPred I PROP) :
-    (iprop(∃ x, Φ x)).monPred_at i ⊣⊢ ∃ x, (Φ x).monPred_at i :=
+    iprop(∃ x, Φ x).monPred_at i ⊣⊢ ∃ x, (Φ x).monPred_at i :=
   ⟨sExists_at_elim i fun _ ⟨x, hx⟩ =>
     hx ▸ exists_intro (Ψ := fun y => (Φ y).monPred_at i) x,
    exists_elim fun x => sExists_at_intro i ⟨x, rfl⟩⟩
 
 @[rocq_alias monPred_at_sep]
 theorem monPred_at_sep (i : I.car) (P Q : MonPred I PROP) :
-    (iprop(P ∗ Q)).monPred_at i ⊣⊢ P.monPred_at i ∗ Q.monPred_at i :=
+    iprop(P ∗ Q).monPred_at i ⊣⊢ P.monPred_at i ∗ Q.monPred_at i :=
   .rfl
 
 @[rocq_alias monPred_at_wand]
 theorem monPred_at_wand (i : I.car) (P Q : MonPred I PROP) :
-    (iprop(P -∗ Q)).monPred_at i ⊣⊢
+    iprop(P -∗ Q).monPred_at i ⊣⊢
       iprop(∀ j, ⌜I.rel.le i j⌝ → P.monPred_at j -∗ Q.monPred_at j) :=
   .rfl
 
 @[rocq_alias monPred_at_persistently]
 theorem monPred_at_persistently (i : I.car) (P : MonPred I PROP) :
-    (iprop(<pers> P)).monPred_at i ⊣⊢ <pers> (P.monPred_at i) :=
+    iprop(<pers> P).monPred_at i ⊣⊢ <pers> (P.monPred_at i) :=
   .rfl
 
 @[rocq_alias monPred_at_later]
 theorem monPred_at_later (i : I.car) (P : MonPred I PROP) :
-    (iprop(▷ P)).monPred_at i ⊣⊢ ▷ P.monPred_at i :=
+    iprop(▷ P).monPred_at i ⊣⊢ ▷ P.monPred_at i :=
   .rfl
 
 @[rocq_alias monPred_at_in]
@@ -750,39 +750,39 @@ theorem monPred_at_affinely_if (i : I.car) (p : Bool) (P : MonPred I PROP) :
 
 @[rocq_alias monPred_at_absorbingly_if]
 theorem monPred_at_absorbingly_if (i : I.car) (p : Bool) (P : MonPred I PROP) :
-    (iprop(<absorb>?p P)).monPred_at i ⊣⊢ <absorb>?p P.monPred_at i := by
+    iprop(<absorb>?p P).monPred_at i ⊣⊢ <absorb>?p P.monPred_at i := by
   cases p <;> exact .rfl
 
 @[rocq_alias monPred_at_intuitionistically_if]
 theorem monPred_at_intuitionistically_if (i : I.car) (p : Bool) (P : MonPred I PROP) :
-    (iprop(□?p P)).monPred_at i ⊣⊢ □?p P.monPred_at i := by
+    iprop(□?p P).monPred_at i ⊣⊢ □?p P.monPred_at i := by
   cases p <;> exact .rfl
 
 @[rocq_alias monPred_at_persistently_if]
 theorem monPred_at_persistently_if (i : I.car) (p : Bool) (P : MonPred I PROP) :
-    (iprop(<pers>?p P)).monPred_at i ⊣⊢ <pers>?p P.monPred_at i := by
+    iprop(<pers>?p P).monPred_at i ⊣⊢ <pers>?p P.monPred_at i := by
   cases p <;> exact .rfl
 
 @[rocq_alias monPred_at_except_0]
 theorem monPred_at_except_0 (i : I.car) (P : MonPred I PROP) :
-    (iprop(◇ P)).monPred_at i ⊣⊢ ◇ P.monPred_at i :=
+    iprop(◇ P).monPred_at i ⊣⊢ ◇ P.monPred_at i :=
   .rfl
 
 @[rocq_alias monPred_at_laterN]
 theorem monPred_at_laterN (n : Nat) (i : I.car) (P : MonPred I PROP) :
-    (iprop(▷^[n] P)).monPred_at i ⊣⊢ ▷^[n] P.monPred_at i := by
+    iprop(▷^[n] P).monPred_at i ⊣⊢ ▷^[n] P.monPred_at i := by
   induction n with
   | zero => exact .rfl
   | succ n ih => exact (monPred_at_later i _).trans (later_congr ih)
 
 @[rocq_alias monPred_at_bupd]
 theorem monPred_at_bupd [BIUpdate PROP] (i : I.car) (P : MonPred I PROP) :
-    (iprop(|==> P)).monPred_at i ⊣⊢ |==> P.monPred_at i :=
+    iprop(|==> P).monPred_at i ⊣⊢ |==> P.monPred_at i :=
   .rfl
 
 @[rocq_alias monPred_at_fupd]
 theorem monPred_at_fupd [BIFUpdate PROP] (i : I.car) (E1 E2 : CoPset) (P : MonPred I PROP) :
-    (iprop(|={E1,E2}=> P)).monPred_at i ⊣⊢ |={E1,E2}=> P.monPred_at i :=
+    iprop(|={E1,E2}=> P).monPred_at i ⊣⊢ |={E1,E2}=> P.monPred_at i :=
   .rfl
 
 @[rocq_alias monPred_at_emp_valid]
