@@ -110,4 +110,57 @@ example : (AU <{ ∃∃ x, α x }> @ Eo, Ei <{ ∀∀ y, β x y, COMM Ψ x y }>)
   aupd_aacc
 
 end atomicNotation
+
+section ProofModeTactics
+
+variable {PROP : Type u} [instBI : BI PROP] [instBIFUpd : BIFUpdate PROP] {TA TB : Tele}
+variable {Eo Ei : CoPset} {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP}
+
+/-- trace:
+PROP : Type u
+instBI : BI PROP
+instBIFUpd : BIFUpdate PROP
+TA : Tele
+TB : Tele
+Eo Ei : CoPset
+α : TA.Arg → PROP
+β Φ : TA.Arg → TB.Arg → PROP
+HEi : Ei ⊆ Eo
+x : TA.Arg
+⊢
+∗Hα : α x
+⊢ atomic_acc Eo Ei α (α x) β β
+-/
+#guard_msgs (trace, drop all, whitespace := lax) in
+example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_update Eo Ei α β β := by
+  iintro Hα
+  iauintro
+  trace_state
+
+/-- trace:
+PROP : Type u
+instBI : BI PROP
+instBIFUpd : BIFUpdate PROP
+TA : Tele
+TB : Tele
+Eo Ei : CoPset
+α : TA.Arg → PROP
+β Φ : TA.Arg → TB.Arg → PROP
+HEi : Ei ⊆ Eo
+x : TA.Arg
+Q : PROP
+⊢
+□HQ : Q
+∗Hα : α x
+⊢ atomic_acc Eo Ei α (α x) β β
+-/
+#guard_msgs (trace, drop all, whitespace := lax) in
+example (HEi : Ei ⊆ Eo) (x : TA.Arg) {Q : PROP} :
+    □ Q ∗ α x ⊢ atomic_update Eo Ei α β β := by
+  iintro ⟨#HQ, Hα⟩
+  iauintro
+  trace_state
+
+end ProofModeTactics
+
 end IrisTest
