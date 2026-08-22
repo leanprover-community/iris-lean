@@ -405,17 +405,23 @@ public meta def iWpPure {u}
   let HΦ ← iSolveSidecondition φ (failOnUnsolved := failOnUnsolved)
   return q(tac_wp_pure $inst $HΦ $pf $nextPf)
 
+/-- Find any pure step for `e₁`, as `wp_pure _` does. -/
+public meta def findAnyPureExec (e₁ : Q(Exp)) :
+    ProofModeM ((φ : Q(Prop)) × (n : Q(Nat)) × (e₂ : Q(Exp)) ×
+      Q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂)) := do
+  let φ  ← mkFreshExprMVarQ q(Prop)
+  let n  ← mkFreshExprMVarQ q(Nat)
+  let e₂ ← mkFreshExprMVarQ q(Exp)
+  let some inst ← ProofModeM.trySynthInstanceQ q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂)
+    | failure
+  return ⟨φ, n, e₂, inst⟩
+
 elab "wp_pure" failOnUnsolved:("+!failOnUnsolved")? colGt ppSpace focus:hl_exp:10 : tactic =>
   ProofModeM.runTacticWp `wp_pure fun mvar {hyps, ι, s, E, e, Φ, ..} => do
     let focus ← elabTermEnsuringTypeQ (← `(hl($focus))) q(HeapLang.Exp)
     mvar.assign <| ← iWpPure hyps ι s E e Φ failOnUnsolved.isSome fun e₁ => do
       guard <| ← isDefEq e₁ focus
-      let φ ← mkFreshExprMVarQ q(Prop)
-      let n ← mkFreshExprMVarQ q(Nat)
-      let e₂ ← mkFreshExprMVarQ q(Exp)
-      let some inst ← ProofModeM.trySynthInstanceQ q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂)
-        | failure
-      return ⟨φ, n, e₂, inst⟩
+      findAnyPureExec e₁
 
 macro "wp_pure" : tactic => `(tactic| wp_pure _)
 macro "wp_pure" "+!failOnUnsolved" : tactic => `(tactic| wp_pure +!failOnUnsolved _)
