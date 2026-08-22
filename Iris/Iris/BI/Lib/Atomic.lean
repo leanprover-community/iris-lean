@@ -501,8 +501,12 @@ elab "iauintro" : tactic => do
     let newGoal ← mkAppM ``atomic_acc #[Eo, Ei, α, eS, β, Φ]
     mvar.assign <| ← mkAppM ``tac_aupd_intro #[pfSplit, pfInt, ← addBIGoal hyps newGoal]
 
-elab "iaaccintro" tele?:(" %" term:max)? spats:(colGt ppSpace specPat)+ : tactic => do
+elab "iaaccintro" spats:(colGt ppSpace specPat)+ : tactic => do
   let spats ← liftMacroM <| spats.toList.mapM (SpecPat.parse ·.raw)
+  -- A leading specialisation pattern `%t` gives the telescope argument
+  let (t, spats) := match spats with
+    | ⟨_, .pure t⟩ :: rest => (some t, rest)
+    | _                    => (none, spats)
 
   ProofModeM.runTactic `iaaccintro λ mvar { prop, e, hyps, goal, .. } => do
     let_expr atomic_acc _ _ _ _ _ Eo Ei α P β Φ := goal
@@ -510,10 +514,10 @@ elab "iaaccintro" tele?:(" %" term:max)? spats:(colGt ppSpace specPat)+ : tactic
     have Eo : Q(CoPset) := Eo
     have Ei : Q(CoPset) := Ei
     let mask : Q($Ei ⊆ $Eo) ← iSolveSidecondition q($Ei ⊆ $Eo)
-    let αTy ← whnf <| ← inferType α
-    let x ← match tele? with
-      | some t => Term.elabTermEnsuringType t αTy.bindingDomain!
-      | none   => mkFreshExprMVar αTy.bindingDomain! (userName := `x)
+    let xTy := (← whnf <| ← inferType α).bindingDomain!
+    let x ← match t with
+      | some t => Term.elabTermEnsuringType t xTy
+      | none   => mkFreshExprMVar xTy (userName := `x)
     let lemPf ← mkAppM ``aacc_intro_wand #[Eo, Ei, α, P, β, Φ, mask, x]
     let_expr BIBase.EmpValid _ _ A := ← inferType lemPf
       | throwIPMError "internal error: unexpected statement of aacc_intro_wand"
