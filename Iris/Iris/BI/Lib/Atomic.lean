@@ -462,4 +462,21 @@ theorem aacc_aupd_abort {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
 
 end lemmas
 
+section ProofMode
+
+variable [BI PROP] [BIFUpdate PROP] {TA TB : Tele}
+
+@[rocq_alias tac_aupd_intro]
+theorem tac_aupd_intro {e eI eS : PROP} {Eo Ei : CoPset} {α : TA.Arg → PROP}
+    {β Φ : TA.Arg → TB.Arg → PROP} (hsplit : e ⊣⊢ eI ∗ eS) (hI : eI ⊢ □ eI)
+    (H : e ⊢ atomic_acc Eo Ei α eS β Φ) :
+    e ⊢ atomic_update Eo Ei α β Φ := by
+  have h : e ⊣⊢ <pers> eI ∧ eS := calc
+    _ ⊣⊢ eI ∗ eS        := hsplit.trans .rfl
+    _ ⊣⊢ □ eI ∗ eS      := sep_congr_left ⟨hI, intuitionistically_elim⟩
+    _ ⊣⊢ <pers> eI ∧ eS := persistently_and_intuitionistically_sep_left.symm
+  exact h.mp.trans <| aupd_intro (h.mpr.trans H)
+
+end ProofMode
+
 end Iris
