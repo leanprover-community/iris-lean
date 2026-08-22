@@ -485,6 +485,11 @@ theorem tac_aacc_intro {pa pb : Bool} {e e' A R Q : PROP} (hlem : ⊢ □?pa A)
     (sep_mono hR intuitionisticallyIf_elim).trans wand_elim_right
   sep_emp.mpr.trans <| (sep_mono_right hA).trans <| hspec hstep
 
+theorem aacc_intro_wand (Eo Ei : CoPset) (α : TA.Arg → PROP) (P : PROP)
+    (β Φ : TA.Arg → TB.Arg → PROP) (HEi : Ei ⊆ Eo) (x : TA.Arg) :
+    ⊢ (α x -∗ ((α x ={Eo}=∗ P) ∧ (∀.. y, β x y ={Eo}=∗ Φ x y)) -∗ atomic_acc Eo Ei α P β Φ) :=
+  (Tele.tforall_forall _).mp (aacc_intro HEi) x
+
 public meta section
 open Lean Meta Elab Qq Expr
 
@@ -497,15 +502,9 @@ elab "iauintro" : tactic => do
     let AC ← mkAppM ``atomic_acc #[Eo, Ei, α, eS, β, Φ]
     mvar.assign <| ← mkAppM ``tac_aupd_intro #[hsplit, pfInt, ← addBIGoal hyps AC]
 
-theorem aacc_intro_wand (Eo Ei : CoPset) (α : TA.Arg → PROP) (P : PROP)
-    (β Φ : TA.Arg → TB.Arg → PROP) (HEi : Ei ⊆ Eo) :
-    ⊢ (∀.. x, α x -∗
-        ((α x ={Eo}=∗ P) ∧ (∀.. y, β x y ={Eo}=∗ Φ x y)) -∗ atomic_acc Eo Ei α P β Φ) :=
-  sorry
-
-elab "iaaccintro" spats:(colGt ppSpace specPat)+ : tactic => do
+elab "iaaccintro" tele?:(" %" term:max)? spats:(colGt ppSpace specPat)+ : tactic => do
   let spats ← liftMacroM <| spats.toList.mapM (SpecPat.parse ·.raw)
-  ProofModeM.runTactic `iaaccintro λ mvar { prop, bi, e, hyps, goal, .. } => do
+  ProofModeM.runTactic `iaaccintro λ mvar { prop, e, hyps, goal, .. } => do
   let some args := (← instantiateMVars goal).consumeMData.appM? ``atomic_acc
     | throwIPMError "the goal {goal} is not an atomic accessor"
   have Eo : Q(CoPset) := args[5]!
@@ -515,7 +514,12 @@ elab "iaaccintro" spats:(colGt ppSpace specPat)+ : tactic => do
 
   -- instantiate `aacc_intro` with the arguments of the goal; the first eleven arguments of
   -- `aacc_intro_wand` are exactly those of `atomic_acc`
-  let lemPf ← mkAppOptM ``aacc_intro_wand <| (args.map some).push (some mask)
+  let αTy ← whnf <| ← inferType args[7]!
+  let x ← match tele? with
+    | some t => Term.elabTermEnsuringType t αTy.bindingDomain!
+    | none   => mkFreshExprMVar αTy.bindingDomain! (userName := `x)
+  let lemPf ← mkAppOptM ``aacc_intro_wand <|
+    (args.map some).push (some mask) |>.push (some x)
   let lemTy ← instantiateMVars <| ← inferType lemPf
   let some ARaw :=
       (match lemTy.consumeMData.appM? ``BIBase.EmpValid with
