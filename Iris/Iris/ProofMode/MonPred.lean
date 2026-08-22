@@ -20,6 +20,16 @@ open BI Std MonPred
 
 variable {I : BiIndex} {PROP : Type _} [BI PROP]
 
+@[ipm_class, rocq_alias MakeMonPredAt]
+class MakeMonPredAt (i : I.car) (P : MonPred I PROP) (𝓟 : PROP) where
+  make_monPred_at : P.monPred_at i ⊣⊢ 𝓟
+export MakeMonPredAt (make_monPred_at)
+
+@[ipm_class, rocq_alias IsBiIndexRel]
+class IsBiIndexRel (i j : I.car) where
+  is_bi_index_rel : I.rel.le i j
+export IsBiIndexRel (is_bi_index_rel)
+
 @[rocq_alias modality_objectively, rocq_alias modality_objectively_mixin]
 def modality_objectively : Modality (MonPred I PROP) (MonPred I PROP) where
   M := MonPred.objectively
