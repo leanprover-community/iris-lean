@@ -492,6 +492,11 @@ theorem aacc_intro_wand (Eo Ei : CoPset) (α : TA.Arg → PROP) (P : PROP)
 public meta section
 open Lean Meta Elab Qq Expr
 
+/--
+`iauintro` turns a goal that is an atomic update (`atomic_update`) into the
+corresponding atomic accessor (`atomic_acc`), whose abort condition is the
+separating conjunction of the spatial hypotheses.
+-/
 elab "iauintro" : tactic => do
   ProofModeM.runTactic `iauintro λ mvar { hyps, goal, .. } => do
     let_expr atomic_update _ _ _ _ _ Eo Ei α β Φ := goal
@@ -501,6 +506,17 @@ elab "iauintro" : tactic => do
     let newGoal ← mkAppM ``atomic_acc #[Eo, Ei, α, eS, β, Φ]
     mvar.assign <| ← mkAppM ``tac_aupd_intro #[pfSplit, pfInt, ← addBIGoal hyps newGoal]
 
+/--
+`iaaccintro spats` prove an atomic accessor by applying `aacc_intro`, where
+the specialisation patterns `spats` discharge the atomic precondition.
+There are three subgoals:
+- the mask side condition `Ei ⊆ Eo`,
+- the abort goal, and
+- the commit goal.
+
+The mask side condition is discharged automatically, if possible.
+The latter two subgoals keep the hypotheses left over by the specialisation patterns.
+-/
 elab "iaaccintro" spats:(colGt ppSpace specPat)+ : tactic => do
   let spats ← liftMacroM <| spats.toList.mapM (SpecPat.parse ·.raw)
   -- A leading specialisation pattern `%t` gives the telescope argument
