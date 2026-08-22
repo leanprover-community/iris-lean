@@ -83,6 +83,14 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 
 - `iinv` *H* (`$$` [*specPat*](#specialization-patterns))? `with` [*casesPat*](#cases-patterns) ([*casesPat*](#cases-patterns))? — opens an invariant hypothesis *H* and uses the first cases pattern to destruct the result. The second cases pattern is used for destructing the hypothesis for closing the invariant. The specialisation pattern is used for resource consumption needed for opening the invariant. If the specialisation pattern is not given as part of the tactic, it is, by default, the auto-framing of spatial hypotheses.
 - `iinv` *N* (`$$` [*specPat*](#specialization-patterns))? `with` [*casesPat*](#cases-patterns) ([*casesPat*](#cases-patterns))? — same as above, except that a namespace *N* is given. The last invariant hypothesis in the context of this namespace is chosen.
+- `iauintro` — turn a goal that is an atomic update into the corresponding atomic
+  accessor, whose abort condition is the separating conjunction of the spatial
+  hypotheses. The context is left unchanged.
+- `iaaccintro` [*specPat*](#specialization-patterns)+ — prove an atomic accessor
+  by applying `aacc_intro`. The specialisation patterns discharge the atomic
+  precondition. There are three subgoals: the mask side condition `Ei ⊆ Eo`, the abort goal
+  and the commit goal. The mask side condition is discharged automatically, if possible.
+  The latter two subgoals keep the hypotheses left over by the specialisation patterns. 
 
 ## Cases Patterns
 
