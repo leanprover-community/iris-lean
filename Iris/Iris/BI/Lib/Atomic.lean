@@ -8,7 +8,7 @@ module
 public import Iris.BI.Lib.Fixpoint
 public import Iris.BI.Updates
 public import Iris.BI.Telescopes
-public import Iris.ProofMode
+public meta import Iris.ProofMode
 public meta import Iris.Std.RocqPorting
 
 @[expose] public section
@@ -476,6 +476,18 @@ theorem tac_aupd_intro {e eI eS : PROP} {Eo Ei : CoPset} {α : TA.Arg → PROP}
     _ ⊣⊢ □ eI ∗ eS      := sep_congr_left ⟨hI, intuitionistically_elim⟩
     _ ⊣⊢ <pers> eI ∧ eS := persistently_and_intuitionistically_sep_left.symm
   exact h.mp.trans <| aupd_intro (h.mpr.trans H)
+
+public meta section
+
+elab "iauintro " : tactic => do
+  ProofModeM.runTactic `iauintro λ mvar { prop, bi, e, hyps, goal, .. } => do
+    sorry
+
+elab "iaaccintro " spats:(colGt specPat)+ : tactic => do
+  ProofModeM.runTactic `iaaccintro λ mvar { prop, bi, e, hyps, goal, .. } => do
+    sorry
+
+end
 
 end ProofMode
 
