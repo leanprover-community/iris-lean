@@ -464,10 +464,10 @@ end lemmas
 
 section ProofMode
 
-variable [BI PROP] [BIFUpdate PROP] {TA TB : Tele}
+variable [BI PROP] {TA TB : Tele}
 
 @[rocq_alias tac_aupd_intro]
-theorem tac_aupd_intro {e eI eS : PROP} {Eo Ei : CoPset} {α : TA.Arg → PROP}
+theorem tac_aupd_intro [BIFUpdate PROP] {e eI eS : PROP} {Eo Ei : CoPset} {α : TA.Arg → PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} (hsplit : e ⊣⊢ eI ∗ eS) (hI : eI ⊢ □ eI)
     (H : e ⊢ atomic_acc Eo Ei α eS β Φ) :
     e ⊢ atomic_update Eo Ei α β Φ := by
@@ -477,8 +477,15 @@ theorem tac_aupd_intro {e eI eS : PROP} {Eo Ei : CoPset} {α : TA.Arg → PROP}
     _ ⊣⊢ <pers> eI ∧ eS := persistently_and_intuitionistically_sep_left.symm
   exact h.mp.trans <| aupd_intro (h.mpr.trans H)
 
+theorem tac_aacc_intro {pa pb : Bool} {e e' A R Q : PROP} (hlem : ⊢ □?pa A)
+    (hspec : (e' ∗ □?pb (R -∗ Q) ⊢ Q) → e ∗ □?pa A ⊢ Q) (hR : e' ⊢ R) : e ⊢ Q :=
+  have hA : emp ⊢ □?pa A := hlem
+  have hstep : e' ∗ □?pb (R -∗ Q) ⊢ Q :=
+    (sep_mono hR intuitionisticallyIf_elim).trans wand_elim_right
+  sep_emp.mpr.trans <| (sep_mono_right hA).trans <| hspec hstep
+
 public meta section
-open Lean Meta Qq Expr
+open Lean Meta Elab Qq Expr
 
 def isEmp (e : Expr) : Bool := e.consumeMData.isAppOfArity ``emp 2
 
@@ -523,17 +530,59 @@ elab "iauintro" : tactic => do
     let some args := (← instantiateMVars goal).consumeMData.appM? ``atomic_update
       | throwIPMError "the goal {goal} is not an atomic update"
     -- split the context into its intuitionistic and its spatial part
-    let ⟨eI, eS, hsplit, hI⟩ := splitIntuitionisticSpatial hyps
+    let ⟨eI, eS, hsplit, pfInt⟩ := splitIntuitionisticSpatial hyps
     -- `atomic_acc` takes the arguments of `atomic_update` with the abort condition inserted directly after `α`
-    let ACRaw ← mkAppOptM ``atomic_acc <|
+    let AC : Q($prop) ← mkAppOptM ``atomic_acc <|
       (args.take 8 |>.push eS |>.append (args.extract 8 args.size)).map some
-    have AC : Q($prop) := ACRaw
-    let m ← addBIGoal hyps AC
-    mvar.assign <| ← mkAppM ``tac_aupd_intro #[hsplit, hI, m]
+    let pf ← addBIGoal hyps AC
+    mvar.assign <| ← mkAppM ``tac_aupd_intro #[hsplit, pfInt, pf]
 
-elab "iaaccintro " spats:(colGt specPat)+ : tactic => do
+theorem aacc_intro_wand [BIFUpdate PROP] (Eo Ei : CoPset) (α : TA.Arg → PROP) (P : PROP)
+    (β Φ : TA.Arg → TB.Arg → PROP) (HEi : Ei ⊆ Eo) :
+    ⊢ (∀.. x, α x -∗
+        ((α x ={Eo}=∗ P) ∧ (∀.. y, β x y ={Eo}=∗ Φ x y)) -∗ atomic_acc Eo Ei α P β Φ) :=
+  sorry
+
+elab "iaaccintro" spats:(colGt ppSpace specPat)+ : tactic => do
+  let spats ← liftMacroM <| spats.toList.mapM (SpecPat.parse ·.raw)
   ProofModeM.runTactic `iaaccintro λ mvar { prop, bi, e, hyps, goal, .. } => do
-    sorry
+  let some args := (← instantiateMVars goal).consumeMData.appM? ``atomic_acc
+    | throwIPMError "the goal {goal} is not an atomic accessor"
+  have Eo : Q(CoPset) := args[5]!
+  have Ei : Q(CoPset) := args[6]!
+
+  let mask : Q($Ei ⊆ $Eo) ← iSolveSidecondition q($Ei ⊆ $Eo)
+
+  -- instantiate `aacc_intro` with the arguments of the goal; the first eleven arguments of
+  -- `aacc_intro_wand` are exactly those of `atomic_acc`
+  let lemPf ← mkAppOptM ``aacc_intro_wand <| (args.map some).push (some mask)
+  let lemTy ← instantiateMVars <| ← inferType lemPf
+  let some ARaw :=
+      (match lemTy.consumeMData.appM? ``BIBase.EmpValid with
+        | some #[_, _, A] => some A
+        | _ =>
+          match lemTy.consumeMData.appM? ``Entails with
+          | some #[_, _, _, A] => some A
+          | _ => none)
+    | throwIPMError "internal error: unexpected statement of aacc_intro_wand"
+  have A : Q($prop) := ARaw
+  let pa : Q(Bool) := q(false)
+  have lem : Q(⊢ □?$pa $A) := lemPf
+  -- discharge the atomic precondition `α x` using the given specialisation patterns
+  let ⟨e', hyps', pb, B, pfSpec⟩ ← iSpecializeCore hyps pa A goal spats
+  -- what is left has to be the closing conjunction of the abort and the commit continuation
+  let ~q(iprop(($Pab ∧ $Pcom) -∗ $Q)) := B
+    | throwIPMError "the specialisation patterns must discharge the atomic precondition only, \
+        leaving {B} instead of the abort and commit continuations"
+  unless ← isDefEq Q goal do
+    throwIPMError "internal error: {Q} is not the atomic accessor being proved"
+  -- `B` only definitionally has the shape required by `tac_aacc_intro`, so retype `pfSpec`
+  have pfSpec :
+      Q(($e' ∗ □?$pb iprop(($Pab ∧ $Pcom) -∗ $goal) ⊢ $goal) → $e ∗ □?$pa $A ⊢ $goal) := pfSpec
+  let mAb ← addBIGoal hyps' Pab `abort
+  let mCom ← addBIGoal hyps' Pcom `commit
+  let pf : Q($e ⊢ $goal) := q(tac_aacc_intro $lem $pfSpec (and_intro $mAb $mCom))
+  mvar.assign pf
 
 end
 
