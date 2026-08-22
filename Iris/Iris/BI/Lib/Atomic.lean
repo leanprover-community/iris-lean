@@ -515,14 +515,7 @@ elab "iaaccintro" tele?:(" %" term:max)? spats:(colGt ppSpace specPat)+ : tactic
       | some t => Term.elabTermEnsuringType t αTy.bindingDomain!
       | none   => mkFreshExprMVar αTy.bindingDomain! (userName := `x)
     let lemPf ← mkAppM ``aacc_intro_wand #[Eo, Ei, α, P, β, Φ, mask, x]
-    let lemTy ← inferType lemPf
-    let some A :=
-        match lemTy.consumeMData.appM? ``BIBase.EmpValid with
-          | some #[_, _, A] => some A
-          | _ =>
-            match lemTy.consumeMData.appM? ``Entails with
-            | some #[_, _, _, A] => some A
-            | _ => none
+    let_expr BIBase.EmpValid _ _ A := ← inferType lemPf
       | throwIPMError "internal error: unexpected statement of aacc_intro_wand"
     have A : Q($prop) := A
     have lem : Q(⊢ □?false $A) := lemPf
