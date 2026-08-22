@@ -116,50 +116,44 @@ section ProofModeTactics
 variable {PROP : Type u} [instBI : BI PROP] [instBIFUpd : BIFUpdate PROP] {TA TB : Tele}
 variable {Eo Ei : CoPset} {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP}
 
-/-- trace:
-PROP : Type u
-instBI : BI PROP
-instBIFUpd : BIFUpdate PROP
-TA : Tele
-TB : Tele
-Eo Ei : CoPset
-α : TA.Arg → PROP
-β Φ : TA.Arg → TB.Arg → PROP
-HEi : Ei ⊆ Eo
-x : TA.Arg
-⊢
-∗Hα : α x
-⊢ atomic_acc Eo Ei α (α x) β β
--/
-#guard_msgs (trace, drop all, whitespace := lax) in
+example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_acc Eo Ei α (α x) β β := by
+  iintro Hα
+  iaaccintro Hα
+  · iintro Hα !> //
+  · iintro %y Hβ !> //
+
+example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_acc Eo Ei α (α x) β β := by
+  iintro Hα
+  iaaccintro %x Hα
+  · iintro Hα !> //
+  · iintro %y Hβ !> //
+
 example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_update Eo Ei α β β := by
   iintro Hα
   iauintro
-  trace_state
+  iaaccintro Hα
+  · iintro Hα !> //
+  · iintro %y Hβ !> //
 
-/-- trace:
-PROP : Type u
-instBI : BI PROP
-instBIFUpd : BIFUpdate PROP
-TA : Tele
-TB : Tele
-Eo Ei : CoPset
-α : TA.Arg → PROP
-β Φ : TA.Arg → TB.Arg → PROP
-HEi : Ei ⊆ Eo
-x : TA.Arg
-Q : PROP
-⊢
-□HQ : Q
-∗Hα : α x
-⊢ atomic_acc Eo Ei α (α x) β β
--/
-#guard_msgs (trace, drop all, whitespace := lax) in
 example (HEi : Ei ⊆ Eo) (x : TA.Arg) {Q : PROP} :
     □ Q ∗ α x ⊢ atomic_update Eo Ei α β β := by
   iintro ⟨#HQ, Hα⟩
   iauintro
-  trace_state
+  iaaccintro Hα
+  · iintro Hα !> //
+  · iintro %y Hβ !> //
+
+/-- error: iauintro: the goal Q is not an atomic update -/
+#guard_msgs in
+example (Q : PROP) : Q ⊢ Q := by
+  iintro HQ
+  iauintro
+
+/-- error: iaaccintro: the goal Q is not an atomic accessor -/
+#guard_msgs in
+example {Q : PROP} : Q ⊢ Q := by
+  iintro HQ
+  iaaccintro HQ
 
 end ProofModeTactics
 
