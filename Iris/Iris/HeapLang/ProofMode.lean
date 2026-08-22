@@ -481,46 +481,15 @@ meta def iWpApplyCore {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(HasLC)}
   | throwIPMError "cannot apply {A}"
   return q($posePf $pf)
 
--- /-- Strip a leading `▷` and simplify WP expressions, in the application's goals only -/
--- meta def wpApplyPostPass (premises : Array MVarId) : TacticM (Array MVarId) := do
---   let post ← `(tactic| (try inext; try wp_expr_simp))
---   let mut out : Array MVarId := #[]
---   let mut produced : Array MVarId := #[]
---   for g in (← getGoals) do
---     if premises.contains g && !(← g.isAssigned) then
---       let new := (← Tactic.run g (evalTactic post)).toArray
---       out := out ++ new
---       produced := produced ++ new
---     else
---       out := out.push g
---   setGoals out.toList
---   return produced
-
--- /-- Apply and post-pass, return the application's goals. Dependee mvars (a lemma's `?Φ`)
--- are registered before the snapshot, so they stay out of `premises` despite sorting last. -/
--- meta def runWpApply (tacName : Name) (pmt : PMTerm) :
---     TacticM (Array MVarId × Array MVarId) := do
---   let premises ← IO.mkRef ((#[], #[]) : Array MVarId × Array MVarId)
---   ProofModeM.runTacticWp tacName fun mvar {hyps, ι, s, E, e, Φ, ..} => do
---     mvar.assign (← iWpApplyCore hyps ι s E e Φ pmt premises)
---   let (application, specialisation) ← premises.get
---   return (← wpApplyPostPass application, specialisation)
-
--- /-- Needed for `wp_apply ... with`. Introduce into the last goal the application produced,
--- or a `$$` goal if it produced none. -/
--- meta def wpApplyIntro (tacName : Name) (produced specialisation : Array MVarId)
---     (pats : Array (TSyntax `introPat)) : TacticM Unit := do
---   if pats.isEmpty then return
---   let fallback ← specialisation.filterM fun g => return !(← g.isAssigned)
---   let some last := produced.back? <|> fallback.back?
---     | throwError "{tacName}: no goal left for the `with` patterns"
---   let new ← Tactic.run last (evalTactic (← `(tactic| iintro $pats*)))
---   setGoals <| (← getGoals).flatMap fun g => if g == last then new else [g]
-
-elab "wp_apply_raw" colGt pmt:pmTerm : tactic => do
+meta def wpApplyRaw (tacName : Name) (pmt : TSyntax `pmTerm) : TacticM Unit := do
   let pmt ← liftMacroM <| PMTerm.parse pmt
-  ProofModeM.runTacticWp `wp_apply fun mvar {hyps, ι, s, E, e, Φ, ..} => do
-     mvar.assign (← iWpApplyCore hyps ι s E e Φ pmt)
+  ProofModeM.runTacticWp tacName fun mvar {hyps, ι, s, E, e, Φ, ..} => do
+    mvar.assign (← iWpApplyCore hyps ι s E e Φ pmt)
+
+elab "wp_apply_raw"       colGt pmt:pmTerm : tactic => wpApplyRaw `wp_apply pmt
+elab "wp_smart_apply_raw" colGt pmt:pmTerm : tactic => wpApplyRaw `wp_smart_apply pmt
+/-- Strip a leading `▷` and simplify WP expressions in the goals an application produced. -/
+macro "wp_apply_post" : tactic => `(tactic| ((try inext) <;> (try wp_expr_simp)))
 
 -- TODO: Is there a more efficient way to implement this?
 -- TODO: move this somewhere else
@@ -560,10 +529,10 @@ macro_rules
   | `(tactic| wp_apply $pmt:pmTerm $[with $pats*]?) => do
     let t : TSyntax `tactic ←
       if let some pats := pats then
-        `(tactic|focusLastIrisGoal (iintro $pats*))
+        `(tactic| focusLastIrisGoal (iintro $pats*))
       else
-        `(tactic|skip)
-    `(tactic| focus ((wp_apply_raw $pmt <;> (try inext) <;> (try wp_expr_simp)); $t:tactic))
+        `(tactic| skip)
+    `(tactic| focus (((wp_apply_raw $pmt) <;> wp_apply_post); $t:tactic))
 
 /-- bound on `wp_smart_apply`'s pure steps. -/
 meta def smartApplyFuel : Nat := 10000
@@ -604,10 +573,39 @@ bounded under `smartApplyFuel` so the tactic does not diverge.
 syntax (name := wpSmartApply) "wp_smart_apply " colGt pmTerm
   (" with" (colGt ppSpace introPat)+)? : tactic
 
-elab_rules : tactic
-  | `(tactic| wp_smart_apply $pmt:pmTerm $[with $pats*]?) => do
-    runWpSmartApply pmt (pats.getD #[])
+/-- Run `tac`; if it fails, take one pure step whose side condition is fully discharged and
+retry. Bounded by `smartApplyFuel`. The error reported is the one from the *first* attempt:
+later ones are about goals the user never wrote. -/
+elab "wp_retry_pure" colGt tac:tactic : tactic => do
+  let mut firstErr : Option Exception := none
+  for _ in [0:smartApplyFuel] do
+    let s ← Tactic.saveState
+    let err? ←
+      try
+        evalTactic tac
+        pure none
+      catch e =>
+        -- an interrupt or heartbeat exhaustion is not a failed application: do not retry it
+        if e.isInterrupt || e.isMaxHeartbeat then throw e else pure (some e)
+    match err? with
+    | none => return
+    | some attemptErr =>
+      s.restore
+      let deadEndErr := firstErr.getD attemptErr
+      firstErr := some deadEndErr
+      try evalTactic (← `(tactic| wp_pure +!failOnUnsolved))
+      catch _ =>
+        s.restore
+        throw deadEndErr
+  throwError "wp_retry_pure: fuel exhausted after {smartApplyFuel} pure steps"
 
+macro_rules
+  | `(tactic| wp_smart_apply $pmt:pmTerm $[with $pats*]?) => do
+    let t : TSyntax `tactic ←
+      if let some pats := pats then
+        `(tactic| focusLastIrisGoal (iintro $pats*))
+      else `(tactic| skip)
+    `(tactic| focus ((wp_retry_pure ((wp_smart_apply_raw $pmt) <;> wp_apply_post)); $t:tactic))
 
 /-! ## Tactic lemmas for the heap tactics -/
 
