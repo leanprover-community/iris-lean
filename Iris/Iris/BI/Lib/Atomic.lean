@@ -489,16 +489,13 @@ public meta section
 open Lean Meta Elab Qq Expr
 
 elab "iauintro" : tactic => do
-  ProofModeM.runTactic `iauintro λ mvar { prop, bi, e, hyps, goal, .. } => do
-    let some args := (← instantiateMVars goal).consumeMData.appM? ``atomic_update
+  ProofModeM.runTactic `iauintro λ mvar { hyps, goal, .. } => do
+    let_expr atomic_update _ _ _ _ _ Eo Ei α β Φ := goal
       | throwIPMError "the goal {goal} is not an atomic update"
-    -- split the context into its intuitionistic and its spatial part
-    let ⟨eI, eS, hsplit, pfInt⟩ := hyps.splitIntuitionisticSpatial
-    -- `atomic_acc` takes the arguments of `atomic_update` with the abort condition inserted directly after `α`
-    let AC : Q($prop) ← mkAppOptM ``atomic_acc <|
-      (args.take 8 |>.push eS |>.append (args.extract 8 args.size)).map some
-    let pf ← addBIGoal hyps AC
-    mvar.assign <| ← mkAppM ``tac_aupd_intro #[hsplit, pfInt, pf]
+    -- Split the context into its intuitionistic and spatial parts
+    let ⟨_, eS, hsplit, pfInt⟩ := hyps.splitIntuitionisticSpatial
+    let AC ← mkAppM ``atomic_acc #[Eo, Ei, α, eS, β, Φ]
+    mvar.assign <| ← mkAppM ``tac_aupd_intro #[hsplit, pfInt, ← addBIGoal hyps AC]
 
 theorem aacc_intro_wand (Eo Ei : CoPset) (α : TA.Arg → PROP) (P : PROP)
     (β Φ : TA.Arg → TB.Arg → PROP) (HEi : Ei ⊆ Eo) :

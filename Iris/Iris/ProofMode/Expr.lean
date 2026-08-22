@@ -365,14 +365,13 @@ def Hyps.splitIntuitionisticSpatial {prop : Q(Type u)} {bi : Q(BI $prop)} :
         let h : Q($eIl ∗ iprop(emp) ⊣⊢ $eIl) := q(sep_emp)
         ⟨eIl, h, pIl⟩
       else
-        ⟨q(iprop($eIl ∗ $eIr)), q(.rfl),
-          q((sep_mono $pIl $pIr).trans intuitionistically_sep_mpr)⟩
+        ⟨q(iprop($eIl ∗ $eIr)), q(.rfl), q((sep_mono $pIl $pIr).trans intuitionistically_sep_mpr)⟩
     let ⟨eS, hS⟩ : (eS : Q($prop)) × Q(iprop($eSl ∗ $eSr) ⊣⊢ $eS) :=
       if eSl == q(iprop(emp)) then
-        let h : Q(iprop(emp) ∗ $eSr ⊣⊢ $eSr) := q(emp_sep)
+        let h : Q(emp ∗ $eSr ⊣⊢ $eSr) := q(emp_sep)
         ⟨eSr, h⟩
       else if eSr == q(iprop(emp)) then
-        let h : Q($eSl ∗ iprop(emp) ⊣⊢ $eSl) := q(sep_emp)
+        let h : Q($eSl ∗ emp ⊣⊢ $eSl) := q(sep_emp)
         ⟨eSl, h⟩
       else ⟨q(iprop($eSl ∗ $eSr)), q(.rfl)⟩
     ⟨eI, eS, q((split_ss $pfl $pfr).trans (sep_congr $hI $hS)), pI⟩
