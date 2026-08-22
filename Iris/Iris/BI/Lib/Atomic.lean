@@ -514,15 +514,16 @@ elab "iaaccintro" spats:(colGt ppSpace specPat)+ : tactic => do
     have Eo : Q(CoPset) := Eo
     have Ei : Q(CoPset) := Ei
     let mask : Q($Ei ⊆ $Eo) ← iSolveSidecondition q($Ei ⊆ $Eo)
+    -- Handle the argument for the telescopic quantifier
     let xTy := (← whnf <| ← inferType α).bindingDomain!
     let x ← match t with
       | some t => Term.elabTermEnsuringType t xTy
-      | none   => mkFreshExprMVar xTy (userName := `x)
-    let lemPf ← mkAppM ``aacc_intro_wand #[Eo, Ei, α, P, β, Φ, mask, x]
-    let_expr BIBase.EmpValid _ _ A := ← inferType lemPf
-      | throwIPMError "internal error: unexpected statement of aacc_intro_wand"
-    have A : Q($prop) := A
-    have lem : Q(⊢ □?false $A) := lemPf
+      | none => mkFreshExprMVar xTy
+    let pfAacc ← mkAppM ``aacc_intro_wand #[Eo, Ei, α, P, β, Φ, mask, x]
+    let A : Q($prop) ← mkFreshExprMVarQ prop
+    unless ← isDefEq (← inferType pfAacc) q(⊢ $A) do
+      throwIPMError "internal error: unexpected statement of aacc_intro_wand"
+    have pfAacc : Q(⊢ □?false $A) := pfAacc
     -- Discharge the atomic precondition `α x` using the given specialisation patterns
     let ⟨e', hyps', pb, B, pfSpec⟩ ← iSpecializeCore hyps q(false) A goal spats
     -- The closing conjunction of the abort and the commit continuation remains
@@ -535,7 +536,7 @@ elab "iaaccintro" spats:(colGt ppSpace specPat)+ : tactic => do
       $e ∗ □?false $A ⊢ $goal) := pfSpec
     let pfAbort ← addBIGoal hyps' abortGoal `abort
     let pfCommit ← addBIGoal hyps' commitGoal `commit
-    mvar.assign q(tac_aacc_intro $lem $pfSpec $pfAbort $pfCommit)
+    mvar.assign q(tac_aacc_intro $pfAacc $pfSpec $pfAbort $pfCommit)
 
 end
 
