@@ -339,12 +339,16 @@ def subjectively (P : MonPred I PROP) : MonPred I PROP where
 #rocq_ignore monPred_subjectively_unfold "Rocq unfold lemma; Lean definitions are transparent."
 
 @[inherit_doc objectively]  syntax:max "<obj> "  term:40 : term
+@[inherit_doc subjectively] syntax:max "<subj> " term:40 : term
 
 macro_rules
   | `(iprop(<obj>%$tk $P))  => ``($(wrapIprop tk ``objectively) iprop($P))
+  | `(iprop(<subj>%$tk $P)) => ``($(wrapIprop tk ``subjectively) iprop($P))
 
 delab_rule MonPred.objectively
   | `($_ $P) => do ``(iprop(<obj> $(← unpackIprop P)))
+delab_rule MonPred.subjectively
+  | `($_ $P) => do ``(iprop(<subj> $(← unpackIprop P)))
 
 end MonPred
 
@@ -721,7 +725,7 @@ theorem monPred_at_objectively (i : I.car) (P : MonPred I PROP) :
 
 @[rocq_alias monPred_at_subjectively]
 theorem monPred_at_subjectively (i : I.car) (P : MonPred I PROP) :
-    (MonPred.subjectively P).monPred_at i ⊣⊢ ∃ j, P.monPred_at j :=
+    iprop(<subj> P).monPred_at i ⊣⊢ ∃ j, P.monPred_at j :=
   .rfl
 
 @[rocq_alias monPred_at_affinely]
@@ -912,7 +916,7 @@ instance objectively_objective (P : MonPred I PROP) : Objective iprop(<obj> P) w
   objective_at _ _ := .rfl
 
 @[rocq_alias subjectively_objective]
-instance subjectively_objective (P : MonPred I PROP) : Objective (MonPred.subjectively P) where
+instance subjectively_objective (P : MonPred I PROP) : Objective iprop(<subj> P) where
   objective_at _ _ := .rfl
 
 @[rocq_alias and_objective]
@@ -1049,7 +1053,7 @@ theorem objective_objectively (P : MonPred I PROP) [Objective P] :
 
 @[rocq_alias objective_subjectively]
 theorem objective_subjectively (P : MonPred I PROP) [Objective P] :
-    MonPred.subjectively P ⊢ P :=
+    <subj> P ⊢ P :=
   entails_at.mpr fun i => exists_elim fun k => Objective.objective_at k i
 
 @[rocq_alias monPred_objectively_elim]
@@ -1175,12 +1179,12 @@ instance monPred_objectively_timeless (P : MonPred I PROP) [Timeless P] :
 /-! ### The `subjectively` modality -/
 
 @[rocq_alias monPred_subjectively_intro]
-theorem monPred_subjectively_intro (P : MonPred I PROP) : P ⊢ MonPred.subjectively P :=
+theorem monPred_subjectively_intro (P : MonPred I PROP) : P ⊢ <subj> P :=
   entails_at.mpr fun i => exists_intro i
 
 @[rocq_alias monPred_subjectively_mono]
 theorem monPred_subjectively_mono {P Q : MonPred I PROP} (h : P ⊢ Q) :
-    MonPred.subjectively P ⊢ MonPred.subjectively Q :=
+    <subj> P ⊢ <subj> Q :=
   entails_at.mpr fun _ => exists_mono fun k => entails_at.mp h k
 
 @[rocq_alias monPred_subjectively_ne]
@@ -1194,65 +1198,65 @@ theorem monPred_subjectively_ne :
 
 @[rocq_alias monPred_subjectively_idemp]
 theorem monPred_subjectively_idemp (P : MonPred I PROP) :
-    MonPred.subjectively (MonPred.subjectively P) ⊣⊢ MonPred.subjectively P :=
+    <subj> (<subj> P) ⊣⊢ <subj> P :=
   ⟨objective_subjectively _, monPred_subjectively_intro _⟩
 
 @[rocq_alias monPred_subjectively_and]
 theorem monPred_subjectively_and (P Q : MonPred I PROP) :
-    MonPred.subjectively (iprop(P ∧ Q)) ⊢ iprop(MonPred.subjectively P ∧ MonPred.subjectively Q) :=
+    <subj> (iprop(P ∧ Q)) ⊢ iprop(<subj> P ∧ <subj> Q) :=
   entails_at.mpr fun _ =>
     and_intro (exists_mono fun _ => and_elim_l) (exists_mono fun _ => and_elim_r)
 
 @[rocq_alias monPred_subjectively_or]
 theorem monPred_subjectively_or (P Q : MonPred I PROP) :
-    MonPred.subjectively (iprop(P ∨ Q)) ⊣⊢ iprop(MonPred.subjectively P ∨ MonPred.subjectively Q) :=
+    <subj> (iprop(P ∨ Q)) ⊣⊢ iprop(<subj> P ∨ <subj> Q) :=
   ⟨entails_at.mpr fun _ => or_exists.mp, entails_at.mpr fun _ => or_exists.mpr⟩
 
 @[rocq_alias monPred_subjectively_forall]
 theorem monPred_subjectively_forall {α : Sort _} (Φ : α → MonPred I PROP) :
-    MonPred.subjectively (iprop(∀ x, Φ x)) ⊢ iprop(∀ x, MonPred.subjectively (Φ x)) :=
+    <subj> (iprop(∀ x, Φ x)) ⊢ iprop(∀ x, <subj> (Φ x)) :=
   entails_at.mpr fun i =>
     (forall_intro fun x => exists_elim fun k =>
       ((monPred_at_forall k Φ).mp.trans (forall_elim x)).trans (exists_intro k)).trans
-    (monPred_at_forall i fun x => MonPred.subjectively (Φ x)).mpr
+    (monPred_at_forall i fun x => iprop(<subj> (Φ x))).mpr
 
 @[rocq_alias monPred_subjectively_exist]
 theorem monPred_subjectively_exist {α : Sort _} (Φ : α → MonPred I PROP) :
-    MonPred.subjectively (iprop(∃ x, Φ x)) ⊣⊢ iprop(∃ x, MonPred.subjectively (Φ x)) :=
+    <subj> (iprop(∃ x, Φ x)) ⊣⊢ iprop(∃ x, <subj> (Φ x)) :=
   ⟨entails_at.mpr fun i =>
       exists_elim fun k => (monPred_at_exist k Φ).mp.trans <|
         exists_elim fun x => (exists_intro k).trans <|
-          (exists_intro x).trans (monPred_at_exist i fun x => MonPred.subjectively (Φ x)).mpr,
+          (exists_intro x).trans (monPred_at_exist i fun x => iprop(<subj> (Φ x))).mpr,
    entails_at.mpr fun i =>
-      (monPred_at_exist i fun x => MonPred.subjectively (Φ x)).mp.trans <|
+      (monPred_at_exist i fun x => iprop(<subj> (Φ x))).mp.trans <|
       exists_elim fun x => exists_elim fun k =>
         ((exists_intro x).trans (monPred_at_exist k Φ).mpr).trans (exists_intro k)⟩
 
 @[rocq_alias monPred_subjectively_sep]
 theorem monPred_subjectively_sep (P Q : MonPred I PROP) :
-    MonPred.subjectively (iprop(P ∗ Q)) ⊢ iprop(MonPred.subjectively P ∗ MonPred.subjectively Q) :=
+    <subj> (iprop(P ∗ Q)) ⊢ iprop(<subj> P ∗ <subj> Q) :=
   entails_at.mpr fun _ => exists_elim fun k => sep_mono (exists_intro k) (exists_intro k)
 
 @[rocq_alias monPred_subjectively_affine]
 instance monPred_subjectively_affine (P : MonPred I PROP) [Affine P] :
-    Affine (MonPred.subjectively P) where
+    Affine iprop(<subj> P) where
   affine := entails_at.mpr fun _ => exists_elim fun _ => Affine.affine
 
 @[rocq_alias monPred_subjectively_absorbing]
 instance monPred_subjectively_absorbing (P : MonPred I PROP) [Absorbing P] :
-    Absorbing (MonPred.subjectively P) where
+    Absorbing iprop(<subj> P) where
   absorbing := entails_at.mpr fun _ =>
     absorbingly_exists.mp.trans (exists_mono fun _ => Absorbing.absorbing)
 
 @[rocq_alias monPred_subjectively_persistent]
 instance monPred_subjectively_persistent (P : MonPred I PROP) [Persistent P] :
-    Persistent (MonPred.subjectively P) where
+    Persistent iprop(<subj> P) where
   persistent := entails_at.mpr fun _ =>
     (exists_mono fun _ => Persistent.persistent).trans persistently_exists.mpr
 
 @[rocq_alias monPred_subjectively_timeless]
 instance monPred_subjectively_timeless (P : MonPred I PROP) [Timeless P] :
-    Timeless (MonPred.subjectively P) where
+    Timeless iprop(<subj> P) where
   timeless := entails_at.mpr fun _ => Timeless.timeless (P := iprop(∃ j, P.monPred_at j))
 
 /-! ### Big separating conjunctions -/
@@ -1595,10 +1599,10 @@ instance monPred_objectively_plain (P : MonPred I PROP) [Plain P] :
 
 @[rocq_alias monPred_subjectively_plain]
 instance monPred_subjectively_plain (P : MonPred I PROP) [Plain P] :
-    Plain (MonPred.subjectively P) where
+    Plain iprop(<subj> P) where
   plain := entails_at.mpr fun i => by
     refine (Plain.plain (P := iprop(∃ j, P.monPred_at j))).trans ?_
-    refine (forall_intro fun _ => .rfl).trans (monPred_at_plainly i (MonPred.subjectively P)).mpr
+    refine (forall_intro fun _ => .rfl).trans (monPred_at_plainly i iprop(<subj> P)).mpr
 
 /-! ### `SbiEmpValidExist` for `MonPred` -/
 
