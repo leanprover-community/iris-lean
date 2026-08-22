@@ -478,11 +478,11 @@ theorem tac_aupd_intro {e eI eS : PROP} {Eo Ei : CoPset} {α : TA.Arg → PROP}
   exact h.mp.trans <| aupd_intro (h.mpr.trans H)
 
 omit [BIFUpdate PROP] in
-theorem tac_aacc_intro {pa pb : Bool} {e e' A R Q : PROP} (hlem : ⊢ □?pa A)
-    (hspec : (e' ∗ □?pb (R -∗ Q) ⊢ Q) → e ∗ □?pa A ⊢ Q) (hR : e' ⊢ R) : e ⊢ Q := calc
+theorem tac_aacc_intro {pa pb : Bool} {e e' A R1 R2 Q : PROP} (hlem : ⊢ □?pa A)
+    (hspec : (e' ∗ □?pb ((R1 ∧ R2) -∗ Q) ⊢ Q) → e ∗ □?pa A ⊢ Q) (hR1 : e' ⊢ R1) (hR2 : e' ⊢ R2) : e ⊢ Q := calc
   e ⊢ e ∗ emp    := sep_emp.mpr
   _ ⊢ e ∗ □?pa A := sep_mono_right hlem
-  _ ⊢ Q          := hspec <| (sep_mono hR intuitionisticallyIf_elim).trans wand_elim_right
+  _ ⊢ Q          := hspec <| (sep_mono (and_intro hR1 hR2) intuitionisticallyIf_elim).trans wand_elim_right
 
 theorem aacc_intro_wand (Eo Ei : CoPset) (α : TA.Arg → PROP) (P : PROP)
     (β Φ : TA.Arg → TB.Arg → PROP) (HEi : Ei ⊆ Eo) (x : TA.Arg) :
@@ -497,9 +497,9 @@ elab "iauintro" : tactic => do
     let_expr atomic_update _ _ _ _ _ Eo Ei α β Φ := goal
       | throwIPMError "the goal {goal} is not an atomic update"
     -- Split the context into its intuitionistic and spatial parts
-    let ⟨_, eS, hsplit, pfInt⟩ := hyps.splitIntuitionisticSpatial
-    let AC ← mkAppM ``atomic_acc #[Eo, Ei, α, eS, β, Φ]
-    mvar.assign <| ← mkAppM ``tac_aupd_intro #[hsplit, pfInt, ← addBIGoal hyps AC]
+    let ⟨_, eS, pfSplit, pfInt⟩ := hyps.splitIntuitionisticSpatial
+    let newGoal ← mkAppM ``atomic_acc #[Eo, Ei, α, eS, β, Φ]
+    mvar.assign <| ← mkAppM ``tac_aupd_intro #[pfSplit, pfInt, ← addBIGoal hyps newGoal]
 
 elab "iaaccintro" tele?:(" %" term:max)? spats:(colGt ppSpace specPat)+ : tactic => do
   let spats ← liftMacroM <| spats.toList.mapM (SpecPat.parse ·.raw)
@@ -515,31 +515,30 @@ elab "iaaccintro" tele?:(" %" term:max)? spats:(colGt ppSpace specPat)+ : tactic
       | some t => Term.elabTermEnsuringType t αTy.bindingDomain!
       | none   => mkFreshExprMVar αTy.bindingDomain! (userName := `x)
     let lemPf ← mkAppM ``aacc_intro_wand #[Eo, Ei, α, P, β, Φ, mask, x]
-    let lemTy ← instantiateMVars <| ← inferType lemPf
-    let some ARaw :=
-        (match lemTy.consumeMData.appM? ``BIBase.EmpValid with
+    let lemTy ← inferType lemPf
+    let some A :=
+        match lemTy.consumeMData.appM? ``BIBase.EmpValid with
           | some #[_, _, A] => some A
           | _ =>
             match lemTy.consumeMData.appM? ``Entails with
             | some #[_, _, _, A] => some A
-            | _ => none)
+            | _ => none
       | throwIPMError "internal error: unexpected statement of aacc_intro_wand"
-    have A : Q($prop) := ARaw
+    have A : Q($prop) := A
     have lem : Q(⊢ □?false $A) := lemPf
-    -- discharge the atomic precondition `α x` using the given specialisation patterns
+    -- Discharge the atomic precondition `α x` using the given specialisation patterns
     let ⟨e', hyps', pb, B, pfSpec⟩ ← iSpecializeCore hyps q(false) A goal spats
-    -- what is left has to be the closing conjunction of the abort and the commit continuation
+    -- The closing conjunction of the abort and the commit continuation remains
     let ~q(iprop(($abortGoal ∧ $commitGoal) -∗ $Q)) := B
       | throwIPMError "the specialisation patterns must discharge the atomic precondition only, \
           leaving {B} instead of the abort and commit continuations"
     unless ← isDefEq Q goal do
       throwIPMError "internal error: {Q} is not the atomic accessor being proved"
-    -- `B` only definitionally has the shape required by `tac_aacc_intro`, so retype `pfSpec`
-    have pfSpec :
-      Q(($e' ∗ □?$pb iprop(($abortGoal ∧ $commitGoal) -∗ $goal) ⊢ $goal) → $e ∗ □?false $A ⊢ $goal) := pfSpec
+    have pfSpec : Q(($e' ∗ □?$pb iprop(($abortGoal ∧ $commitGoal) -∗ $goal) ⊢ $goal) →
+      $e ∗ □?false $A ⊢ $goal) := pfSpec
     let pfAbort ← addBIGoal hyps' abortGoal `abort
     let pfCommit ← addBIGoal hyps' commitGoal `commit
-    mvar.assign q(tac_aacc_intro $lem $pfSpec (and_intro $pfAbort $pfCommit))
+    mvar.assign q(tac_aacc_intro $lem $pfSpec $pfAbort $pfCommit)
 
 end
 
