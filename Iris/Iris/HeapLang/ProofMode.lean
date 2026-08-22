@@ -373,27 +373,31 @@ public theorem tac_wp_pure [ι : IrisGS_gen hlc Exp GF] {Δ Δ'} {s : Stuckness}
   iintro $ !> -; itrivial
 
 public meta def iWpPure {u}
-  {GF : Q(BundledGFunctors.{0, 0, 0})}
-  {hlc : Q(HasLC)}
-  {prop : Q(Type u)}
-  {bi : Q(BI $prop)}
-  {ehyps : Q($prop)}
-  (hyps : Hyps bi ehyps)
-  (ι : Q(IrisGS_gen $hlc Exp $GF))
-  (s : Q(Stuckness))
-  (E : Q(CoPset))
-  (e : Q(Exp))
-  (Φ : Q(Val → $prop))
-  (failOnUnsolved : Bool)
-  (findPureExec : (e₁ : Q(Exp)) →
-    ProofModeM ((φ : Q(Prop)) × (n : Q(Nat)) × (e₂ : Q(Exp)) × Q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂)))
-
-  (_hu : QuotedLevelDefEq u 0 := ⟨⟩)
-  (_hprop : $prop =Q IProp $GF := ⟨⟩)
-  (_hbi : $bi =Q UPred.instBIUPred := ⟨⟩)
-  (κ : Q(Wp $prop Exp Val Stuckness) := q(wp.def))
-  (_hwp : $κ =Q wp.def := ⟨⟩) :
-    ProofModeM (Q($ehyps ⊢ Wp.wp $s $E $e $Φ)) := do
+    {GF : Q(BundledGFunctors.{0, 0, 0})}
+    {hlc : Q(HasLC)}
+    {prop : Q(Type u)}
+    {bi : Q(BI $prop)}
+    {ehyps : Q($prop)}
+    (hyps : Hyps bi ehyps)
+    (ι : Q(IrisGS_gen $hlc Exp $GF))
+    (s : Q(Stuckness))
+    (E : Q(CoPset))
+    (e : Q(Exp))
+    (Φ : Q(Val → $prop))
+    (failOnUnsolved : Bool)
+    (findPureExec : (e₁ : Q(Exp)) →
+      ProofModeM ((φ : Q(Prop)) × (n : Q(Nat)) × (e₂ : Q(Exp)) ×
+        Q(ProgramLogic.Language.PureExec $φ $n $e₁ $e₂)))
+    (_hu : QuotedLevelDefEq u 0 := ⟨⟩)
+    (_hprop : $prop =Q IProp $GF := ⟨⟩)
+    (_hbi : $bi =Q UPred.instBIUPred := ⟨⟩)
+    (κ : Q(Wp $prop Exp Val Stuckness) := q(wp.def))
+    (_hwp : $κ =Q wp.def := ⟨⟩)
+    -- The continuation function: using `iWpFinish` by default
+    (k : {eΔ : Q($prop)} → Hyps bi eΔ → (e' : Q(Exp)) →
+          ProofModeM Q($eΔ ⊢ Wp.wp $s $E $e' $Φ) :=
+      fun hyps' e' => iWpFinish hyps' ι s E e' Φ) :
+      ProofModeM (Q($ehyps ⊢ Wp.wp $s $E $e $Φ)) := do
   let some {result := ⟨φ, n, e₂, inst⟩, K, e' := e₁, ..} ←
     findECtx (α:=((_ : Q(Prop)) × (_ : Q(Nat)) × (_ : Q(Exp)) × Lean.Expr)) e fun _ => findPureExec
   | throwIPMError "Cannot find expression to evaluate"
@@ -401,7 +405,7 @@ public meta def iWpPure {u}
 
   let ⟨_, hyps', pf⟩ ← iModAction hyps q(modality_laterN $n)
   let ⟨inner, .up _⟩ ← HeapLang.fillQ K e₂
-  let nextPf ← iWpFinish hyps' ι s E inner Φ
+  let nextPf ← k hyps' inner
   let HΦ ← iSolveSidecondition φ (failOnUnsolved := failOnUnsolved)
   return q(tac_wp_pure $inst $HΦ $pf $nextPf)
 
@@ -469,31 +473,60 @@ macro "wp_match" : tactic => `(tactic | (wp_case; wp_closure; wp_pure (_ _)))
 
 /-! ## The `wp_apply` tactics -/
 
+/--
+  Indicates whether `wp_apply` or `wp_smart_apply` is used.
+  For `wp_smart_apply`, also include the fuel amount, that is, the number of retries.
+-/
+inductive WpApplyKind where
+  | apply
+  | smartApply (fuel : Nat)
+
+/-- bound on `wp_smart_apply`'s pure steps. -/
+meta def smartApplyFuel : Nat := 10000
+
 /-- Pose `pmt`, then apply it at a decomposition `e = K[e']` pushing `K` into the
 postcondition via `iWpBindCore`. `premisesOut` gets the application's goals on success -/
-meta def iWpApplyCore {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(HasLC)}
+meta partial def iWpApplyCore {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(HasLC)}
     {prop : Q(Type u)} {bi : Q(BI $prop)} {ehyps : Q($prop)}
     (hyps : Hyps bi ehyps) (ι : Q(IrisGS_gen $hlc Exp $GF)) (s : Q(Stuckness)) (E : Q(CoPset))
-    (e : Q(Exp)) (Φ : Q(Val → $prop)) (pmt : PMTerm)
+    (e : Q(Exp)) (Φ : Q(Val → $prop)) (pmt : PMTerm) (wpApplyKind : WpApplyKind)
     (_hu : QuotedLevelDefEq u 0 := ⟨⟩) (_hprop : $prop =Q IProp $GF := ⟨⟩)
     (_hbi : $bi =Q UPred.instBIUPred := ⟨⟩)
     (κ : Q(Wp $prop Exp Val Stuckness) := q(wp.def)) (_hwp : $κ =Q wp.def := ⟨⟩) :
     ProofModeM Q($ehyps ⊢ Wp.wp $s $E $e $Φ) := do
+  let st ← ProofModeM.saveState
   let ⟨eΔ, hyps', p, A, posePf⟩ ← iHave hyps q(Wp.wp $s $E $e $Φ) pmt true
-  let some {result := pf, ..} ←
+  let applied ←
     findECtx (α := Q($eΔ ∗ □?$p $A ⊢ Wp.wp $s $E $e $Φ)) e fun K e' => do
       trace[wp_apply] m!"trying to apply {A} to {e'}"
       iWpBindCore _ ι s E e Φ K e' (iApply hyps' p A ·)
-  | throwIPMError "cannot apply {A}"
-  return q($posePf $pf)
+  if let some {result := pf, ..} := applied then
+    return q($posePf $pf)
+  let failed ← addMessageContext m!"cannot apply {A}"
+  match wpApplyKind with
+  | .apply => throwIPMError failed
+  | .smartApply 0 =>
+    throwIPMError m!"fuel exhausted after {smartApplyFuel} pure steps; {failed}"
+  | .smartApply (fuel + 1) =>
+    st.restore (restoreInfo := true)
+    try
+      iWpPure hyps ι s E e Φ (failOnUnsolved := true) findAnyPureExec
+        (k := fun hyps'' e'' => iWpApplyCore hyps'' ι s E e'' Φ pmt (.smartApply fuel))
+    catch err =>
+      if err.isInterrupt || err.isMaxHeartbeat then throw err
+      st.restore (restoreInfo := true)
+      throwIPMError failed
 
-meta def wpApplyRaw (tacName : Name) (pmt : TSyntax `pmTerm) : TacticM Unit := do
+meta def wpApplyRaw (tacName : Name) (wpApplyKind : WpApplyKind) (pmt : TSyntax `pmTerm) :
+    TacticM Unit := do
   let pmt ← liftMacroM <| PMTerm.parse pmt
   ProofModeM.runTacticWp tacName fun mvar {hyps, ι, s, E, e, Φ, ..} => do
-    mvar.assign (← iWpApplyCore hyps ι s E e Φ pmt)
+    mvar.assign (← iWpApplyCore hyps ι s E e Φ pmt wpApplyKind)
 
-elab "wp_apply_raw"       colGt pmt:pmTerm : tactic => wpApplyRaw `wp_apply pmt
-elab "wp_smart_apply_raw" colGt pmt:pmTerm : tactic => wpApplyRaw `wp_smart_apply pmt
+elab "wp_apply_raw" colGt pmt:pmTerm : tactic =>
+  wpApplyRaw `wp_apply .apply pmt
+elab "wp_smart_apply_raw" colGt pmt:pmTerm : tactic =>
+  wpApplyRaw `wp_smart_apply (.smartApply smartApplyFuel) pmt
 /-- Strip a leading `▷` and simplify WP expressions in the goals an application produced. -/
 macro "wp_apply_post" : tactic => `(tactic| ((try inext) <;> (try wp_expr_simp)))
 
@@ -540,9 +573,6 @@ macro_rules
         `(tactic| skip)
     `(tactic| focus (((wp_apply_raw $pmt) <;> wp_apply_post); $t:tactic))
 
-/-- bound on `wp_smart_apply`'s pure steps. -/
-meta def smartApplyFuel : Nat := 10000
-
 /-- Retry the application after single pure steps, bounded. `with` runs after the loop:
 retrying a failed introduction would roll back an application that already succeeded. -/
 meta def runWpSmartApply (pmt : TSyntax `pmTerm) (_pats : Array (TSyntax `introPat)) :
@@ -579,39 +609,14 @@ bounded under `smartApplyFuel` so the tactic does not diverge.
 syntax (name := wpSmartApply) "wp_smart_apply " colGt pmTerm
   (" with" (colGt ppSpace introPat)+)? : tactic
 
-/-- Run `tac`; if it fails, take one pure step whose side condition is fully discharged and
-retry. Bounded by `smartApplyFuel`. The error reported is the one from the *first* attempt:
-later ones are about goals the user never wrote. -/
-elab "wp_retry_pure" colGt tac:tactic : tactic => do
-  let mut firstErr : Option Exception := none
-  for _ in [0:smartApplyFuel] do
-    let s ← Tactic.saveState
-    let err? ←
-      try
-        evalTactic tac
-        pure none
-      catch e =>
-        -- an interrupt or heartbeat exhaustion is not a failed application: do not retry it
-        if e.isInterrupt || e.isMaxHeartbeat then throw e else pure (some e)
-    match err? with
-    | none => return
-    | some attemptErr =>
-      s.restore
-      let deadEndErr := firstErr.getD attemptErr
-      firstErr := some deadEndErr
-      try evalTactic (← `(tactic| wp_pure +!failOnUnsolved))
-      catch _ =>
-        s.restore
-        throw deadEndErr
-  throwError "wp_retry_pure: fuel exhausted after {smartApplyFuel} pure steps"
-
 macro_rules
   | `(tactic| wp_smart_apply $pmt:pmTerm $[with $pats*]?) => do
     let t : TSyntax `tactic ←
       if let some pats := pats then
         `(tactic| focusLastIrisGoal (iintro $pats*))
-      else `(tactic| skip)
-    `(tactic| focus ((wp_retry_pure ((wp_smart_apply_raw $pmt) <;> wp_apply_post)); $t:tactic))
+      else
+        `(tactic| skip)
+    `(tactic| focus (((wp_smart_apply_raw $pmt) <;> wp_apply_post); $t:tactic))
 
 /-! ## Tactic lemmas for the heap tactics -/
 
