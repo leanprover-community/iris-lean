@@ -116,18 +116,10 @@ section ProofModeTactics
 variable {PROP : Type u} [instBI : BI PROP] [instBIFUpd : BIFUpdate PROP] {TA TB : Tele}
 variable {Eo Ei : CoPset} {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP}
 
-example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_acc Eo Ei α (α x) β β := by
-  iintro Hα
-  iaaccintro Hα
-  · iintro Hα !> //
-  · iintro %y Hβ !> //
-
-example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_acc Eo Ei α (α x) β β := by
-  iintro Hα
-  iaaccintro %x Hα
-  · iintro Hα !> //
-  · iintro %y Hβ !> //
-
+/--
+  Tests `iauintro` for reducing `atomic_update Eo Ei α β β` to `atomic_acc Eo Ei α (α x) β β`.
+  Tests `iaaccintro` with `α x` for abort and `β x y` for commit.
+-/
 example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_update Eo Ei α β β := by
   iintro Hα
   iauintro
@@ -135,11 +127,22 @@ example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_update Eo Ei α β β :
   · iintro Hα !> //
   · iintro %y Hβ !> //
 
-example (HEi : Ei ⊆ Eo) (x : TA.Arg) {Q : PROP} :
-    □ Q ∗ α x ⊢ atomic_update Eo Ei α β β := by
-  iintro ⟨#HQ, Hα⟩
-  iauintro
-  iaaccintro Hα
+/--
+  Tests `iaaccintro` with `α x` for abort and `β x y` for commit.
+  The argument for the telescopic quantifier is supplied.
+-/
+example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_acc Eo Ei α (α x) β β := by
+  iintro Hα
+  iaaccintro %x Hα
+  · iintro Hα !> //
+  · iintro %y Hβ !> //
+
+/-- Tests `iaaccintro` with the pre-condition `α x` obtained from several hypotheses. -/
+example (HEi : Ei ⊆ Eo) (x : TA.Arg) {Q R : PROP} (hα : α x = iprop(Q ∗ R)) :
+    Q ∗ R ⊢ atomic_acc Eo Ei α (α x) β β := by
+  iintro ⟨HQ, HR⟩
+  iaaccintro [HQ HR]
+  · rw [hα]; iframe
   · iintro Hα !> //
   · iintro %y Hβ !> //
 
@@ -154,6 +157,15 @@ example (Q : PROP) : Q ⊢ Q := by
 example {Q : PROP} : Q ⊢ Q := by
   iintro HQ
   iaaccintro HQ
+
+/-- error: iaaccintro:
+  the specialisation patterns must discharge the atomic precondition only,
+  leaving atomic_acc Eo Ei α (α x) β β
+-/
+#guard_msgs (whitespace := lax) in
+example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_acc Eo Ei α (α x) β β := by
+  iintro Hα
+  iaaccintro %x Hα []
 
 end ProofModeTactics
 

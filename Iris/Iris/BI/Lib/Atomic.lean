@@ -529,7 +529,7 @@ elab "iaaccintro" spats:(colGt ppSpace specPat)+ : tactic => do
     -- The closing conjunction of the abort and the commit continuation remains
     let ~q(iprop(($abortGoal ∧ $commitGoal) -∗ $Q)) := B
       | throwIPMError "the specialisation patterns must discharge the atomic precondition only, \
-          leaving {B} instead of the abort and commit continuations"
+          leaving {B}"
     unless ← isDefEq Q goal do
       throwIPMError "internal error: {Q} is not the atomic accessor being proved"
     have pfSpec : Q(($e' ∗ □?$pb iprop(($abortGoal ∧ $commitGoal) -∗ $goal) ⊢ $goal) →
