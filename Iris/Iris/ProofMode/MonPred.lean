@@ -67,6 +67,37 @@ def modality_objectively : Modality (MonPred I PROP) (MonPred I PROP) where
   mono := monPred_objectively_mono
   sep := monPred_objectively_sep_2 _ _
 
+/-! ### FromAssumption -/
+
+-- @[ipm_backtrack, rocq_alias from_assumption_make_monPred_at_l]
+-- instance fromAssumption_make_monPred_at_l (p : Bool) (i j : I.car)
+--     (P : MonPred I PROP) (𝓟 : PROP)
+--     [hm : MakeMonPredAt .propToIndex i P 𝓟] [hr : IsBiIndexRel j i] :
+--     FromAssumption p .in (P.monPred_at j) 𝓟 where
+--   from_assumption := intuitionisticallyIf_elim.trans <|
+--     (P.monPred_mono hr.is_bi_index_rel).trans hm.make_monPred_at.mp
+
+@[ipm_backtrack, rocq_alias from_assumption_make_monPred_at_r]
+instance fromAssumption_make_monPred_at_r (p : Bool) d (i j : I.car)
+    (P : MonPred I PROP) (𝓟 : PROP)
+    [hm : MakeMonPredAt d i P 𝓟] [hr : IsBiIndexRel i j] :
+    FromAssumption p d.propIO 𝓟 (P.monPred_at j) where
+  from_assumption := calc
+    _ ⊢ 𝓟              := intuitionisticallyIf_elim
+    _ ⊢ P.monPred_at i := hm.make_monPred_at.mpr
+    _ ⊢ P.monPred_at j := P.monPred_mono hr.is_bi_index_rel
+
+@[rocq_alias from_assumption_make_monPred_objectively]
+instance fromAssumption_monPred_objectively (p : Bool) (P Q : MonPred I PROP)
+    [h : FromAssumption p .in P Q] : FromAssumption p .in iprop(<obj> P) Q where
+  from_assumption :=
+    (intuitionisticallyIf_mono <| monPred_objectively_elim P).trans h.from_assumption
+
+@[rocq_alias from_assumption_make_monPred_subjectively]
+instance fromAssumption_monPred_subjectively (p : Bool) ioP (P Q : MonPred I PROP)
+    [h : FromAssumption p ioP P Q] : FromAssumption p ioP P iprop(<subj> Q) where
+  from_assumption := h.from_assumption.trans <| monPred_subjectively_intro Q
+
 /-! ### FromModal -/
 
 @[rocq_alias from_modal_objectively]
