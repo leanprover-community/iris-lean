@@ -568,6 +568,20 @@ instance intoWand_monPred_at_known_unknown_ge (p q : Bool) (R P Q : MonPred I PR
 
 /-! ### ElimModal -/
 
+@[rocq_alias elim_modal_at]
+instance elimModal_at (φ : Prop) (p : Bool) io (p' : Bool) (𝓟 𝓟' : PROP)
+    (P P' : MonPred I PROP) (V : I.car)
+    [h : ElimModal φ p io p' iprop(⎡𝓟⎤ : MonPred I PROP) iprop(⎡𝓟'⎤) P P'] :
+    ElimModal φ p io p' 𝓟 𝓟' (P.monPred_at V) (P'.monPred_at V) where
+  elim_modal hφ := by
+    refine .trans ?_ (entails_at.mp (h.elim_modal hφ) V)
+    refine sep_mono (monPred_at_intuitionistically_if V p iprop(⎡𝓟⎤)).mpr ?_
+    refine .trans (forall_intro fun j =>
+      (forall_intro fun hVj => ?_).trans pure_imp_forall.mpr)
+      (monPred_at_wand V iprop(□?p' ⎡𝓟'⎤) P').mpr
+    exact wand_mono
+      ((monPred_at_intuitionistically_if j p' iprop(⎡𝓟'⎤)).mp) (P'.monPred_mono hVj)
+
 @[rocq_alias elim_modal_at_bupd_goal]
 instance elimModal_at_bupd_goal [BIUpdate PROP] (φ : Prop) (p : Bool) io (p' : Bool)
     (𝓟 𝓟' : PROP) (Q Q' : MonPred I PROP) (i : I.car)
