@@ -392,3 +392,55 @@ instance intoExists_monPred_at_ex (P : MonPred I PROP) (Φ : I.car → PROP) (i 
     [hm : ∀ j, MakeMonPredAt .indexToProp j P (Φ j)] :
     IntoExists (iprop(<subj> P).monPred_at i) Φ where
   into_exists := exists_mono fun j => (hm j).make_monPred_at.mp
+
+/-! ### FromForall / IntoForall -/
+
+@[rocq_alias from_forall_monPred_at_wand]
+instance fromForall_monPred_at_wand (P Q : MonPred I PROP) (Φ Ψ : I.car → PROP) (i : I.car)
+    [h1 : ∀ j, MakeMonPredAt .indexToProp j P (Φ j)]
+    [h2 : ∀ j, MakeMonPredAt .indexToProp j Q (Ψ j)] :
+    FromForall (iprop(P -∗ Q).monPred_at i)
+      (fun j => iprop(⌜I.rel.le i j⌝ → (Φ j -∗ Ψ j))) where
+  from_forall := forall_mono fun j => imp_mono_right <|
+    wand_mono (h1 j).make_monPred_at.mp (h2 j).make_monPred_at.mpr
+
+@[rocq_alias from_forall_monPred_at_impl]
+instance fromForall_monPred_at_imp (P Q : MonPred I PROP) (Φ Ψ : I.car → PROP) (i : I.car)
+    [h1 : ∀ j, MakeMonPredAt .indexToProp j P (Φ j)]
+    [h2 : ∀ j, MakeMonPredAt .indexToProp j Q (Ψ j)] :
+    FromForall (iprop(P → Q).monPred_at i)
+      (fun j => iprop(⌜I.rel.le i j⌝ → (Φ j → Ψ j))) where
+  from_forall := forall_mono fun j => imp_mono_right <|
+    imp_mono (h1 j).make_monPred_at.mp (h2 j).make_monPred_at.mpr
+
+@[rocq_alias from_forall_monPred_at]
+instance fromForall_monPred_at {α} (P : MonPred I PROP) (Φ : α → MonPred I PROP)
+    (Ψ : α → PROP) (i : I.car)
+    [h : FromForall P Φ] [hm : ∀ a, MakeMonPredAt .indexToProp i (Φ a) (Ψ a)] :
+    FromForall (P.monPred_at i) Ψ where
+  from_forall := calc
+    _ ⊢ ∀ a, (Φ a).monPred_at i      := forall_mono fun a => (hm a).make_monPred_at.mpr
+    _ ⊢ iprop(∀ x, Φ x).monPred_at i := (monPred_at_forall i Φ).mpr
+    _ ⊢ P.monPred_at i               := entails_at.mp h.from_forall i
+
+@[rocq_alias into_forall_monPred_at]
+instance intoForall_monPred_at {α} (P : MonPred I PROP) (Φ : α → MonPred I PROP)
+    (Ψ : α → PROP) (i : I.car)
+    [h : IntoForall P Φ] [hm : ∀ a, MakeMonPredAt .indexToProp i (Φ a) (Ψ a)] :
+    IntoForall (P.monPred_at i) Ψ where
+  into_forall := calc
+    _ ⊢ iprop(∀ x, Φ x).monPred_at i := entails_at.mp h.into_forall i
+    _ ⊢ ∀ x, (Φ x).monPred_at i      := (monPred_at_forall i Φ).mp
+    _ ⊢ ∀ a, Ψ a                     := forall_mono fun a => (hm a).make_monPred_at.mp
+
+@[rocq_alias from_forall_monPred_at_objectively]
+instance fromForall_monPred_at_objectively (P : MonPred I PROP) (Φ : I.car → PROP) (i : I.car)
+    [hm : ∀ j, MakeMonPredAt .indexToProp j P (Φ j)] :
+    FromForall (iprop(<obj> P).monPred_at i) Φ where
+  from_forall := forall_mono fun j => (hm j).make_monPred_at.mpr
+
+@[rocq_alias into_forall_monPred_at_objectively]
+instance intoForall_monPred_at_objectively (P : MonPred I PROP) (Φ : I.car → PROP) (i : I.car)
+    [hm : ∀ j, MakeMonPredAt .indexToProp j P (Φ j)] :
+    IntoForall (iprop(<obj> P).monPred_at i) Φ where
+  into_forall := forall_mono fun j => (hm j).make_monPred_at.mp
