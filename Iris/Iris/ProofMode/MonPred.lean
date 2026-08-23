@@ -16,6 +16,8 @@ public import Iris.ProofMode.Instances
 namespace Iris.ProofMode
 open BI Std MonPred
 
+section Classes
+
 variable {I : BiIndex} {PROP : Type _} [bi : BI PROP]
 
 inductive MakeMonPredAt.Kind where
@@ -68,6 +70,12 @@ def modality_objectively : Modality (MonPred I PROP) (MonPred I PROP) where
   emp := monPred_objectively_emp.mpr
   mono := monPred_objectively_mono
   sep := monPred_objectively_sep_2 _ _
+
+end Classes
+
+section BIInstances
+
+variable {I : BiIndex} {PROP : Type _} [bi : BI PROP]
 
 /-! ### AsEmpValid -/
 
@@ -148,13 +156,20 @@ instance asEmpValid_monPred_at_equiv (d : AsEmpValid.Direction) (φ : Prop) io
 
 /-! ### FromAssumption -/
 
--- @[ipm_backtrack, rocq_alias from_assumption_make_monPred_at_l]
--- instance fromAssumption_make_monPred_at_l (p : Bool) (i j : I.car)
---     (P : MonPred I PROP) (𝓟 : PROP)
---     [hm : MakeMonPredAt .propToIndex i P 𝓟] [hr : IsBiIndexRel j i] :
---     FromAssumption p .in (P.monPred_at j) 𝓟 where
---   from_assumption := intuitionisticallyIf_elim.trans <|
---     (P.monPred_mono hr.is_bi_index_rel).trans hm.make_monPred_at.mp
+/-
+  The index `i` is an output in the synthesis of `MakeMonPredAt`, which is
+  then used as an input argument for `IsBiIndexRel`.
+-/
+set_option synthInstance.checkSynthOrder false in
+@[ipm_backtrack, rocq_alias from_assumption_make_monPred_at_l]
+instance fromAssumption_make_monPred_at_l (p : Bool) (i j : I.car)
+    (P : MonPred I PROP) (𝓟 : PROP)
+    [hm : MakeMonPredAt .propToIndex i P 𝓟] [hr : IsBiIndexRel j i] :
+    FromAssumption p .in (P.monPred_at j) 𝓟 where
+  from_assumption := calc
+    _ ⊢ P.monPred_at j := intuitionisticallyIf_elim
+    _ ⊢ P.monPred_at i := P.monPred_mono hr.is_bi_index_rel
+    _ ⊢ 𝓟              := hm.make_monPred_at.mp
 
 @[ipm_backtrack, rocq_alias from_assumption_make_monPred_at_r]
 instance fromAssumption_make_monPred_at_r (p : Bool) d (i j : I.car)
@@ -435,7 +450,7 @@ instance fromForall_monPred_at_objectively (P : MonPred I PROP) (Φ : I.car → 
 
 /-! ### IntoForall -/
 
-@[rocq_alias into_forall_monPred_at]
+@[ipm_backtrack, rocq_alias into_forall_monPred_at]
 instance intoForall_monPred_at {α} (P : MonPred I PROP) (Φ : α → MonPred I PROP)
     (Ψ : α → PROP) (i : I.car)
     [h : IntoForall P Φ] [hm : ∀ a, MakeMonPredAt .indexToProp i (Φ a) (Ψ a)] :
@@ -444,6 +459,11 @@ instance intoForall_monPred_at {α} (P : MonPred I PROP) (Φ : α → MonPred I 
     _ ⊢ iprop(∀ x, Φ x).monPred_at i := entails_at.mp h.into_forall i
     _ ⊢ ∀ x, (Φ x).monPred_at i      := (monPred_at_forall i Φ).mp
     _ ⊢ ∀ a, Ψ a                     := forall_mono fun a => (hm a).make_monPred_at.mp
+
+@[rocq_alias into_forall_monPred_at_index]
+instance (priority := low) intoForall_monPred_at_index (P : MonPred I PROP) (i : I.car) :
+    IntoForall (P.monPred_at i) (fun j => iprop(⌜I.rel.le i j⌝ → P.monPred_at j)) where
+  into_forall := forall_intro fun _ => (forall_intro (P.monPred_mono ·)).trans pure_imp_forall.mpr
 
 @[rocq_alias into_forall_monPred_at_objectively]
 instance intoForall_monPred_at_objectively (P : MonPred I PROP) (Φ : I.car → PROP) (i : I.car)
@@ -470,7 +490,6 @@ instance intoExcept0_monPred_at_fwd (P Q : MonPred I PROP) (𝓠 : PROP) (i : I.
     _ ⊢ ◇ 𝓠                     := except0_mono hm.make_monPred_at.mp
 
 /-! ### IntoWand -/
-
 
 private theorem intoWand_monPred_at_core {p q : Bool} {R P Q : MonPred I PROP} {𝓟 𝓠 : PROP}
     {i j : I.car} (hij : I.rel.le i j) (h : □?p R ⊢ □?q P -∗ Q)
@@ -509,6 +528,20 @@ instance intoWand_monPred_at_known_unknown_le (p q : Bool) (R P Q : MonPred I PR
     IntoWand p q (R.monPred_at i) (.matching .argument) (P.monPred_at j) 𝓠 where
   into_wand := intoWand_monPred_at_core hr.is_bi_index_rel h.into_wand
     .rfl hm.make_monPred_at.mp
+
+/-
+  The index `i` occurs only in the `semiOutParamIPM` slot `P.monPred_at i`, which
+  in this case in an input given `.matching .argument`.
+-/
+set_option synthInstance.checkSynthOrder false in
+@[ipm_backtrack, rocq_alias into_wand_monPred_at_known_unknown_ge]
+instance intoWand_monPred_at_known_unknown_ge (p q : Bool) (R P Q : MonPred I PROP)
+    (𝓠 : PROP) (i j : I.car)
+    [hr : IsBiIndexRel i j] [h : IntoWand p q R .unknown P Q]
+    [hm : MakeMonPredAt .indexToProp j Q 𝓠] :
+    IntoWand p q (R.monPred_at j) (.matching .argument) (P.monPred_at i) 𝓠 where
+  into_wand := intoWand_monPred_at_core (Std.Refl.refl j) h.into_wand
+    (P.monPred_mono hr.is_bi_index_rel) hm.make_monPred_at.mp
 
 #rocq_ignore into_wand_wand'_monPred "Subsumed by the `WandMode` parameter of `IntoWand`"
 #rocq_ignore into_wand_impl'_monPred "Subsumed by the `WandMode` parameter of `IntoWand`"
@@ -584,3 +617,37 @@ instance addModal_at_fupd_goal [BIFUpdate PROP] (E1 E2 : CoPset) (𝓟 𝓟' : P
         sep_mono_right <| wand_mono_right (monPred_at_fupd i E1 E2 Q).mp
     _ ⊢ |={E1, E2}=> Q.monPred_at i         := h.add_modal
     _ ⊢ iprop(|={E1, E2}=> Q).monPred_at i  := (monPred_at_fupd i E1 E2 Q).mpr
+
+end BIInstances
+
+section SbiInstances
+
+variable {I : BiIndex} {PROP : Type _} [Sbi PROP]
+
+/-! #### IntoInternalEq -/
+
+@[rocq_alias into_internal_eq_monPred_at]
+instance intoInternalEq_monPred_at {A : Type _} [OFE A] (x y : A)
+    (P : MonPred I PROP) (i : I.car) [h : IntoInternalEq P x y] :
+    IntoInternalEq (P.monPred_at i) x y where
+  into_internal_eq := (entails_at.mp h.into_internal_eq i).trans (monPred_at_internal_eq i x y).mp
+
+/-! #### FromForall -/
+
+@[rocq_alias from_forall_monPred_at_plainly]
+instance fromForall_monPred_at_plainly (P : MonPred I PROP) (Φ : I.car → PROP) (i : I.car)
+    [hm : ∀ j, MakeMonPredAt .indexToProp j P (Φ j)] :
+    FromForall ((iprop(■ P) : MonPred I PROP).monPred_at i) (fun j => iprop(■ (Φ j))) where
+  from_forall := (forall_mono fun j => plainly_mono (hm j).make_monPred_at.mpr).trans
+    (monPred_at_plainly i P).mpr
+
+/-! #### IntoForall -/
+
+@[rocq_alias into_forall_monPred_at_plainly]
+instance intoForall_monPred_at_plainly (P : MonPred I PROP) (Φ : I.car → PROP) (i : I.car)
+    [hm : ∀ j, MakeMonPredAt .indexToProp j P (Φ j)] :
+    IntoForall ((iprop(■ P) : MonPred I PROP).monPred_at i) (fun j => iprop(■ (Φ j))) where
+  into_forall := (monPred_at_plainly i P).mp.trans
+    (forall_mono fun j => plainly_mono (hm j).make_monPred_at.mp)
+
+end SbiInstances
