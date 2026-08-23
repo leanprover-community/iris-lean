@@ -512,3 +512,75 @@ instance intoWand_monPred_at_known_unknown_le (p q : Bool) (R P Q : MonPred I PR
 
 #rocq_ignore into_wand_wand'_monPred "Subsumed by the `WandMode` parameter of `IntoWand`"
 #rocq_ignore into_wand_impl'_monPred "Subsumed by the `WandMode` parameter of `IntoWand`"
+
+/-! ### ElimModal -/
+
+@[rocq_alias elim_modal_at_bupd_goal]
+instance elimModal_at_bupd_goal [BIUpdate PROP] (φ : Prop) (p : Bool) io (p' : Bool)
+    (𝓟 𝓟' : PROP) (Q Q' : MonPred I PROP) (i : I.car)
+    [h : ElimModal φ p io p' 𝓟 𝓟' iprop(|==> Q.monPred_at i) iprop(|==> Q'.monPred_at i)] :
+    ElimModal φ p io p' 𝓟 𝓟'
+      (iprop(|==> Q).monPred_at i)
+      (iprop(|==> Q').monPred_at i) where
+  elim_modal hφ := calc
+    _ ⊢ □?p 𝓟 ∗ (□?p' 𝓟' ==∗ Q'.monPred_at i) :=
+        sep_mono_right <| wand_mono_right (monPred_at_bupd i Q').mp
+    _ ⊢ |==> Q.monPred_at i                    := h.elim_modal hφ
+    _ ⊢ iprop(|==> Q).monPred_at i             := (monPred_at_bupd i Q).mpr
+
+@[rocq_alias elim_modal_at_bupd_hyp]
+instance elimModal_at_bupd_hyp [BIUpdate PROP] (φ : Prop) (p : Bool) io (p' : Bool)
+    (P : MonPred I PROP) (𝓟 𝓟' 𝓠 𝓠' : PROP) (i : I.car)
+    [hm : MakeMonPredAt .indexToProp i P 𝓟]
+    [h : ElimModal φ p io p' iprop(|==> 𝓟) 𝓟' 𝓠 𝓠'] :
+    ElimModal φ p io p' (iprop(|==> P).monPred_at i) 𝓟' 𝓠 𝓠' where
+  elim_modal hφ :=
+    (sep_mono_left <| intuitionisticallyIf_mono
+      ((monPred_at_bupd i P).mp.trans <| BIUpdate.mono hm.make_monPred_at.mp)).trans <|
+    h.elim_modal hφ
+
+@[rocq_alias elim_modal_at_fupd_goal]
+instance elimModal_at_fupd_goal [BIFUpdate PROP] (φ : Prop) (p : Bool) io (p' : Bool)
+    (E1 E2 E3 : CoPset) (𝓟 𝓟' : PROP) (Q Q' : MonPred I PROP) (i : I.car)
+    [h : ElimModal φ p io p' 𝓟 𝓟'
+          iprop(|={E1,E3}=> Q.monPred_at i) iprop(|={E2,E3}=> Q'.monPred_at i)] :
+    ElimModal φ p io p' 𝓟 𝓟'
+      (iprop(|={E1,E3}=> Q).monPred_at i)
+      (iprop(|={E2,E3}=> Q').monPred_at i) where
+  elim_modal hφ :=
+    ((sep_mono_right <| wand_mono_right (monPred_at_fupd i E2 E3 Q').mp).trans <|
+      h.elim_modal hφ).trans
+    (monPred_at_fupd i E1 E3 Q).mpr
+
+@[rocq_alias elim_modal_at_fupd_hyp]
+instance elimModal_at_fupd_hyp [BIFUpdate PROP] (φ : Prop) (p : Bool) io (p' : Bool)
+    (E1 E2 : CoPset) (P : MonPred I PROP) (𝓟 𝓟' 𝓠 𝓠' : PROP) (i : I.car)
+    [hm : MakeMonPredAt .indexToProp i P 𝓟]
+    [h : ElimModal φ p io p' iprop(|={E1,E2}=> 𝓟) 𝓟' 𝓠 𝓠'] :
+    ElimModal φ p io p' (iprop(|={E1,E2}=> P).monPred_at i) 𝓟' 𝓠 𝓠' where
+  elim_modal hφ :=
+    (sep_mono_left <| intuitionisticallyIf_mono
+      ((monPred_at_fupd i E1 E2 P).mp.trans <| BIFUpdate.mono hm.make_monPred_at.mp)).trans <|
+    h.elim_modal hφ
+
+/-! ### AddModal -/
+
+@[rocq_alias add_modal_at_bupd_goal]
+instance addModal_at_bupd_goal [BIUpdate PROP] (𝓟 𝓟' : PROP) (Q : MonPred I PROP) (i : I.car)
+    [h : AddModal 𝓟 𝓟' iprop(|==> Q.monPred_at i)] :
+    AddModal 𝓟 𝓟' (iprop(|==> Q).monPred_at i) where
+  add_modal := calc
+    _ ⊢ 𝓟 ∗ (𝓟' ==∗ Q.monPred_at i) := sep_mono_right <| wand_mono_right (monPred_at_bupd i Q).mp
+    _ ⊢ |==> Q.monPred_at i         := h.add_modal
+    _ ⊢ iprop(|==> Q).monPred_at i  := (monPred_at_bupd i Q).mpr
+
+@[rocq_alias add_modal_at_fupd_goal]
+instance addModal_at_fupd_goal [BIFUpdate PROP] (E1 E2 : CoPset) (𝓟 𝓟' : PROP)
+    (Q : MonPred I PROP) (i : I.car)
+    [h : AddModal 𝓟 𝓟' iprop(|={E1,E2}=> Q.monPred_at i)] :
+    AddModal 𝓟 𝓟' (iprop(|={E1,E2}=> Q).monPred_at i) where
+  add_modal := calc
+    _ ⊢ 𝓟 ∗ (𝓟' ={E1,E2}=∗ Q.monPred_at i)  :=
+        sep_mono_right <| wand_mono_right (monPred_at_fupd i E1 E2 Q).mp
+    _ ⊢ |={E1, E2}=> Q.monPred_at i         := h.add_modal
+    _ ⊢ iprop(|={E1, E2}=> Q).monPred_at i  := (monPred_at_fupd i E1 E2 Q).mpr
