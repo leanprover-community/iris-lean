@@ -480,14 +480,34 @@ instance isExcept0_monPred_at (P : MonPred I PROP) (i : I.car) [h : IsExcept0 P]
 
 /-! ### IntoExcept0 -/
 
+
+set_option synthInstance.checkSynthOrder false in
+/--
+  `P.monPred_at i` is an input argument of `IntoExcept0`.
+  Unifying the conclusion assigns the metavariables before the assumption is involved.
+-/
 @[rocq_alias into_except_0_monPred_at_fwd]
 instance intoExcept0_monPred_at_fwd (P Q : MonPred I PROP) (𝓠 : PROP) (i : I.car)
-    [h : IntoExcept0 P Q] [hm : MakeMonPredAt .indexToProp i Q 𝓠] :
-    IntoExcept0 (P.monPred_at i) 𝓠 where
+    [h : IntoExcept0 .in P Q] [hm : MakeMonPredAt .indexToProp i Q 𝓠] :
+    IntoExcept0 .in (P.monPred_at i) 𝓠 where
   into_except0 := calc
     _ ⊢ iprop(◇ Q).monPred_at i := entails_at.mp h.into_except0 i
     _ ⊢ ◇ Q.monPred_at i        := (monPred_at_except_0 i Q).mp
     _ ⊢ ◇ 𝓠                     := except0_mono hm.make_monPred_at.mp
+
+set_option synthInstance.checkSynthOrder false in
+/--
+  `Q.monPred_at i` is an input argument of `IntoExcept0`.
+  Unifying the conclusion assigns the metavariables before the assumption is involved.
+-/
+@[rocq_alias into_except_0_monPred_at_bwd]
+instance intoExcept0_monPred_at_bwd (P Q : MonPred I PROP) (𝓟 : PROP) (i : I.car)
+    [h : IntoExcept0 .out P Q] [hm : MakeMonPredAt .indexToProp i P 𝓟] :
+    IntoExcept0 .out 𝓟 (Q.monPred_at i) where
+  into_except0 := calc
+    𝓟 ⊢ P.monPred_at i           := hm.make_monPred_at.mpr
+    _ ⊢ iprop(◇ Q).monPred_at i  := entails_at.mp h.into_except0 i
+    _ ⊢ ◇ Q.monPred_at i         := (monPred_at_except_0 i Q).mp
 
 /-! ### IntoWand -/
 
