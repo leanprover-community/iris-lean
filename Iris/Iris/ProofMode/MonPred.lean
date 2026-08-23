@@ -9,6 +9,7 @@ public import Iris.BI
 public import Iris.ProofMode.Classes
 public import Iris.ProofMode.ClassesMake
 public import Iris.ProofMode.ModalityInstances
+public import Iris.ProofMode.SynthInstance
 
 @[expose] public section
 
@@ -44,6 +45,25 @@ class MakeMonPredAt (d : MakeMonPredAt.Kind) (i : semiOutParamIPM d.indexIO I.ca
     (P : MonPred I PROP) (𝓟 : semiOutParamIPM d.propIO PROP) where
   make_monPred_at : P.monPred_at i ⊣⊢ 𝓟
 export MakeMonPredAt (make_monPred_at)
+
+meta section
+open Lean Meta
+
+/--
+  `MakeMonPredAt` is used by `AsEmpValid` to import lemmas into the proof mode,
+  with `makeMonPredAt_default` as the fallback option.
+  However, if any of `I`, `PROP` or `P` is a metavariable, `makeMonPredAt_default`
+  should not be used.
+-/
+@[ipm_tactic_instance MakeMonPredAt _ _ _ _]
+meta def makeMonPredAtModeGuard : SynthTactic := fun e => do
+  let_expr MakeMonPredAt I PROP _bi _d _i P _𝓟 := e | return .continue
+  let isMVarHead (x : Expr) : MetaM Bool := return (← instantiateMVars x).getAppFn.isMVar
+  if (← isMVarHead I) || (← isMVarHead PROP) || (← isMVarHead P) then
+    return .fail
+  return .continue
+
+end
 
 @[ipm_class, rocq_alias IsBiIndexRel]
 class IsBiIndexRel (i j : I.car) where
@@ -998,14 +1018,14 @@ instance frameMonPredAt_impl (i j : I.car) (P R Q1 Q2 : MonPred I PROP)
       _ ⊢ iprop(P → Q1).monPred_at j         := entails_at.mp hi j
 
 @[rocq_alias frame_monPred_at_forall]
-instance frameMonPredAt_forall {X : Type _} (p : Bool) (i : I.car) (𝓡 𝓠 : PROP)
+instance frameMonPredAt_forall {X} (p : Bool) (i : I.car) (𝓡 𝓠 : PROP)
     (Ψ : X → MonPred I PROP)
     [h : Frame p 𝓡 iprop(∀ x, (Ψ x).monPred_at i) 𝓠] :
     FrameMonPredAt p i 𝓡 iprop(∀ x, Ψ x) 𝓠 where
   frame_monPred_at := h.frame.trans (monPred_at_forall i Ψ).mpr
 
 @[rocq_alias frame_monPred_at_exist]
-instance frameMonPredAt_exists {X : Type _} (p : Bool) (i : I.car) (𝓡 𝓠 : PROP)
+instance frameMonPredAt_exists {X} (p : Bool) (i : I.car) (𝓡 𝓠 : PROP)
     (Ψ : X → MonPred I PROP)
     [h : Frame p 𝓡 iprop(∃ x, (Ψ x).monPred_at i) 𝓠] :
     FrameMonPredAt p i 𝓡 iprop(∃ x, Ψ x) 𝓠 where
@@ -1081,7 +1101,7 @@ variable {I : BiIndex} {PROP : Type _} [Sbi PROP]
 /-! ### IntoInternalEq -/
 
 @[rocq_alias into_internal_eq_monPred_at]
-instance intoInternalEq_monPred_at {A : Type _} [OFE A] (x y : A)
+instance intoInternalEq_monPred_at {A} [OFE A] (x y : A)
     (P : MonPred I PROP) (i : I.car) [h : IntoInternalEq P x y] :
     IntoInternalEq (P.monPred_at i) x y where
   into_internal_eq := (entails_at.mp h.into_internal_eq i).trans (monPred_at_internal_eq i x y).mp
@@ -1108,7 +1128,7 @@ instance intoForall_monPred_at_plainly (P : MonPred I PROP) (Φ : I.car → PROP
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias make_monPred_at_internal_eq]
-instance makeMonPredAt_internalEq {A : Type _} [OFE A] (d : MakeMonPredAt.Kind)
+instance makeMonPredAt_internalEq {A} [OFE A] (d : MakeMonPredAt.Kind)
     (i : I.car) (x y : A) :
     MakeMonPredAt (PROP := PROP) d i iprop(x ≡ y) iprop(x ≡ y) where
   make_monPred_at := monPred_at_internal_eq i x y
