@@ -356,3 +356,39 @@ instance intoLaterN_monPred_at progress (n : Nat) (P Q : MonPred I PROP) (𝓠 :
 instance intoEmbed_objective (P : MonPred I PROP) [Objective P] :
     IntoEmbed (PROP1 := PROP) (PROP2 := MonPred I PROP) P iprop(∀ i, P.monPred_at i) where
   into_embed := entails_at.mpr fun i => forall_intro fun j => Objective.objective_at i j
+
+/-! ### FromExists -/
+
+@[rocq_alias from_exist_monPred_at]
+instance fromExists_monPred_at {α} (P : MonPred I PROP) (Φ : α → MonPred I PROP)
+    (Ψ : α → PROP) (i : I.car)
+    [h : FromExists P Φ] [hm : ∀ a, MakeMonPredAt .indexToProp i (Φ a) (Ψ a)] :
+    FromExists (P.monPred_at i) Ψ where
+  from_exists := calc
+    _ ⊢ ∃ a, (Φ a).monPred_at i      := exists_mono fun a => (hm a).make_monPred_at.mpr
+    _ ⊢ iprop(∃ x, Φ x).monPred_at i := (monPred_at_exist i Φ).mpr
+    _ ⊢ P.monPred_at i               := entails_at.mp h.from_exists i
+
+@[rocq_alias from_exist_monPred_at_ex]
+instance fromExists_monPred_at_ex (P : MonPred I PROP) (Φ : I.car → PROP) (i : I.car)
+    [hm : ∀ j, MakeMonPredAt .indexToProp j P (Φ j)] :
+    FromExists (iprop(<subj> P).monPred_at i) Φ where
+  from_exists := exists_mono fun j => (hm j).make_monPred_at.mpr
+
+/-! ### IntoExists -/
+
+@[rocq_alias into_exist_monPred_at]
+instance intoExists_monPred_at {α} (P : MonPred I PROP) (Φ : α → MonPred I PROP)
+    (Ψ : α → PROP) (i : I.car)
+    [h : IntoExists P Φ] [hm : ∀ a, MakeMonPredAt .indexToProp i (Φ a) (Ψ a)] :
+    IntoExists (P.monPred_at i) Ψ where
+  into_exists := calc
+    _ ⊢ iprop(∃ x, Φ x).monPred_at i := entails_at.mp h.into_exists i
+    _ ⊢ ∃ x, (Φ x).monPred_at i      := (monPred_at_exist i Φ).mp
+    _ ⊢ ∃ a, Ψ a                     := exists_mono fun a => (hm a).make_monPred_at.mp
+
+@[rocq_alias into_exist_monPred_at_ex]
+instance intoExists_monPred_at_ex (P : MonPred I PROP) (Φ : I.car → PROP) (i : I.car)
+    [hm : ∀ j, MakeMonPredAt .indexToProp j P (Φ j)] :
+    IntoExists (iprop(<subj> P).monPred_at i) Φ where
+  into_exists := exists_mono fun j => (hm j).make_monPred_at.mp
