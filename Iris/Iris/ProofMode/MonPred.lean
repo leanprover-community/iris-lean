@@ -18,8 +18,29 @@ open BI Std MonPred
 
 variable {I : BiIndex} {PROP : Type _} [BI PROP]
 
+inductive MakeMonPredAt.Kind where
+  -- Known index `i`, and the proposition `𝓟` is computed by evaluating `P` at `i`
+  | indexToProp
+  -- Known proposition `𝓟`, and the index `i` is recovered from it
+  | propToIndex
+
+meta section
+
+@[reducible]
+def MakeMonPredAt.Kind.indexIO : MakeMonPredAt.Kind → InOut
+  | indexToProp => .in
+  | propToIndex => .out
+
+@[reducible]
+def MakeMonPredAt.Kind.propIO : MakeMonPredAt.Kind → InOut
+  | indexToProp => .out
+  | propToIndex => .in
+
+end
+
 @[ipm_class, rocq_alias MakeMonPredAt]
-class MakeMonPredAt (i : I.car) (P : MonPred I PROP) (𝓟 : outParam PROP) where
+class MakeMonPredAt (d : MakeMonPredAt.Kind) (i : semiOutParamIPM d.indexIO I.car)
+    (P : MonPred I PROP) (𝓟 : semiOutParamIPM d.propIO PROP) where
   make_monPred_at : P.monPred_at i ⊣⊢ 𝓟
 export MakeMonPredAt (make_monPred_at)
 
@@ -61,7 +82,7 @@ instance (priority := default + 20) fromModal_subjectively io (P : MonPred I PRO
 @[ipm_backtrack, rocq_alias from_modal_affinely_monPred_at]
 instance (priority := high) fromModal_affinely_monPred_at {α} (φ : Prop) io (sel : α)
     (P Q : MonPred I PROP) (𝓠 : PROP) (i : I.car)
-    [h : FromModal .in modality_affinely φ sel P Q] [hm : MakeMonPredAt i Q 𝓠] :
+    [h : FromModal .in modality_affinely φ sel P Q] [hm : MakeMonPredAt .indexToProp i Q 𝓠] :
     FromModal io modality_affinely φ sel (P.monPred_at i) 𝓠 where
   from_modal hφ := calc
     _ ⊢ <affine> (Q.monPred_at i)      := affinely_mono hm.make_monPred_at.mpr
@@ -71,7 +92,7 @@ instance (priority := high) fromModal_affinely_monPred_at {α} (φ : Prop) io (s
 @[ipm_backtrack, rocq_alias from_modal_persistently_monPred_at]
 instance (priority := high) fromModal_persistently_monPred_at {α} (φ : Prop) io (sel : α)
     (P Q : MonPred I PROP) (𝓠 : PROP) (i : I.car)
-    [h : FromModal .in modality_persistently φ sel P Q] [hm : MakeMonPredAt i Q 𝓠] :
+    [h : FromModal .in modality_persistently φ sel P Q] [hm : MakeMonPredAt .indexToProp i Q 𝓠] :
     FromModal io modality_persistently φ sel (P.monPred_at i) 𝓠 where
   from_modal hφ := calc
     _ ⊢ <pers> (Q.monPred_at i)      := persistently_mono hm.make_monPred_at.mpr
@@ -81,7 +102,8 @@ instance (priority := high) fromModal_persistently_monPred_at {α} (φ : Prop) i
 @[ipm_backtrack, rocq_alias from_modal_intuitionistically_monPred_at]
 instance (priority := high) fromModal_intuitionistically_monPred_at {α} (φ : Prop) io (sel : α)
     (P Q : MonPred I PROP) (𝓠 : PROP) (i : I.car)
-    [h : FromModal .in modality_intuitionistically φ sel P Q] [hm : MakeMonPredAt i Q 𝓠] :
+    [h : FromModal .in modality_intuitionistically φ sel P Q]
+    [hm : MakeMonPredAt .indexToProp i Q 𝓠] :
     FromModal io modality_intuitionistically φ sel (P.monPred_at i) 𝓠 where
   from_modal hφ := calc
     _ ⊢ □ (Q.monPred_at i)       := intuitionistically_mono hm.make_monPred_at.mpr
@@ -91,7 +113,8 @@ instance (priority := high) fromModal_intuitionistically_monPred_at {α} (φ : P
 @[ipm_backtrack, rocq_alias from_modal_id_monPred_at]
 instance fromModal_id_monPred_at {α} (φ : Prop) io (sel : α)
     (P Q : MonPred I PROP) (𝓠 : PROP) (i : I.car)
-    [h : FromModal .in modality_id φ sel P Q] [hm : MakeMonPredAt i Q 𝓠] :
+    [h : FromModal .in modality_id φ sel P Q]
+    [hm : MakeMonPredAt .indexToProp i Q 𝓠] :
     FromModal io modality_id φ sel (P.monPred_at i) 𝓠 where
   from_modal hφ := hm.make_monPred_at.mpr.trans (entails_at.mp (h.from_modal hφ) i)
 
@@ -100,7 +123,8 @@ instance fromModal_id_monPred_at {α} (φ : Prop) io (sel : α)
 @[ipm_backtrack, rocq_alias from_later_monPred_at]
 instance fromLater_monPred_at {α} (φ : Prop) io (sel : α) (n : Nat)
     (P Q : MonPred I PROP) (𝓠 : PROP) (i : I.car)
-    [h : FromModal .in (modality_laterN n) φ sel P Q] [hm : MakeMonPredAt i Q 𝓠] :
+    [h : FromModal .in (modality_laterN n) φ sel P Q]
+    [hm : MakeMonPredAt .indexToProp i Q 𝓠] :
     FromModal io (modality_laterN n) φ sel (P.monPred_at i) 𝓠 where
   from_modal hφ := calc
     _ ⊢ ▷^[n] (Q.monPred_at i)      := laterN_mono n hm.make_monPred_at.mpr
@@ -136,7 +160,7 @@ instance fromPure_monPred_in ioφ (i j : I.car) :
 @[ipm_backtrack, rocq_alias into_persistent_monPred_at]
 instance (priority := high) intoPersistently_monPred_at (p : Bool)
     (P Q : MonPred I PROP) (𝓠 : PROP) (i : I.car)
-    [h : IntoPersistently p P Q] [hm : MakeMonPredAt i Q 𝓠] :
+    [h : IntoPersistently p P Q] [hm : MakeMonPredAt .indexToProp i Q 𝓠] :
     IntoPersistently p (P.monPred_at i) 𝓠 where
   into_persistently := calc
     _ ⊢ iprop(<pers>?p P).monPred_at i  := (monPred_at_persistently_if i p P).mpr
@@ -148,7 +172,8 @@ instance (priority := high) intoPersistently_monPred_at (p : Bool)
 
 @[rocq_alias from_and_monPred_at]
 instance fromAnd_monPred_at (P Q1 Q2 : MonPred I PROP) (𝓠1 𝓠2 : PROP) (i : I.car)
-    [h : FromAnd P Q1 Q2] [h1 : MakeMonPredAt i Q1 𝓠1] [h2 : MakeMonPredAt i Q2 𝓠2] :
+    [h : FromAnd P Q1 Q2]
+    [h1 : MakeMonPredAt .indexToProp i Q1 𝓠1] [h2 : MakeMonPredAt .indexToProp i Q2 𝓠2] :
     FromAnd (P.monPred_at i) 𝓠1 𝓠2 where
   from_and := (and_mono h1.make_monPred_at.mpr h2.make_monPred_at.mpr).trans
     (entails_at.mp h.from_and i)
@@ -157,7 +182,8 @@ instance fromAnd_monPred_at (P Q1 Q2 : MonPred I PROP) (𝓠1 𝓠2 : PROP) (i :
 
 @[rocq_alias into_and_monPred_at]
 instance intoAnd_monPred_at (p : Bool) (P Q1 Q2 : MonPred I PROP) (𝓠1 𝓠2 : PROP) (i : I.car)
-    [h : IntoAnd p P Q1 Q2] [h1 : MakeMonPredAt i Q1 𝓠1] [h2 : MakeMonPredAt i Q2 𝓠2] :
+    [h : IntoAnd p P Q1 Q2]
+    [h1 : MakeMonPredAt .indexToProp i Q1 𝓠1] [h2 : MakeMonPredAt .indexToProp i Q2 𝓠2] :
     IntoAnd p (P.monPred_at i) 𝓠1 𝓠2 where
   into_and := calc
     _ ⊢ (iprop(□?p P) : MonPred I PROP).monPred_at i          := (monPred_at_intuitionistically_if
@@ -172,7 +198,8 @@ instance intoAnd_monPred_at (p : Bool) (P Q1 Q2 : MonPred I PROP) (𝓠1 𝓠2 :
 
 @[rocq_alias from_sep_monPred_at]
 instance fromSep_monPred_at (P Q1 Q2 : MonPred I PROP) (𝓠1 𝓠2 : PROP) (i : I.car)
-    [h : FromSep P Q1 Q2] [h1 : MakeMonPredAt i Q1 𝓠1] [h2 : MakeMonPredAt i Q2 𝓠2] :
+    [h : FromSep P Q1 Q2]
+    [h1 : MakeMonPredAt .indexToProp i Q1 𝓠1] [h2 : MakeMonPredAt .indexToProp i Q2 𝓠2] :
     FromSep (P.monPred_at i) 𝓠1 𝓠2 where
   from_sep := (sep_mono h1.make_monPred_at.mpr h2.make_monPred_at.mpr).trans
     (entails_at.mp h.from_sep i)
@@ -181,7 +208,8 @@ instance fromSep_monPred_at (P Q1 Q2 : MonPred I PROP) (𝓠1 𝓠2 : PROP) (i :
 
 @[rocq_alias into_sep_monPred_at]
 instance intoSep_monPred_at (P Q1 Q2 : MonPred I PROP) (𝓠1 𝓠2 : PROP) (i : I.car)
-    [h : IntoSep P Q1 Q2] [h1 : MakeMonPredAt i Q1 𝓠1] [h2 : MakeMonPredAt i Q2 𝓠2] :
+    [h : IntoSep P Q1 Q2]
+    [h1 : MakeMonPredAt .indexToProp i Q1 𝓠1] [h2 : MakeMonPredAt .indexToProp i Q2 𝓠2] :
     IntoSep (P.monPred_at i) 𝓠1 𝓠2 where
   into_sep := (entails_at.mp h.into_sep i).trans
     (sep_mono h1.make_monPred_at.mp h2.make_monPred_at.mp)
@@ -190,7 +218,8 @@ instance intoSep_monPred_at (P Q1 Q2 : MonPred I PROP) (𝓠1 𝓠2 : PROP) (i :
 
 @[rocq_alias from_or_monPred_at]
 instance fromOr_monPred_at (P Q1 Q2 : MonPred I PROP) (𝓠1 𝓠2 : PROP) (i : I.car)
-    [h : FromOr P Q1 Q2] [h1 : MakeMonPredAt i Q1 𝓠1] [h2 : MakeMonPredAt i Q2 𝓠2] :
+    [h : FromOr P Q1 Q2]
+    [h1 : MakeMonPredAt .indexToProp i Q1 𝓠1] [h2 : MakeMonPredAt .indexToProp i Q2 𝓠2] :
     FromOr (P.monPred_at i) 𝓠1 𝓠2 where
   from_or := (or_mono h1.make_monPred_at.mpr h2.make_monPred_at.mpr).trans
     (entails_at.mp h.from_or i)
@@ -199,7 +228,8 @@ instance fromOr_monPred_at (P Q1 Q2 : MonPred I PROP) (𝓠1 𝓠2 : PROP) (i : 
 
 @[rocq_alias into_or_monPred_at]
 instance intoOr_monPred_at (P Q1 Q2 : MonPred I PROP) (𝓠1 𝓠2 : PROP) (i : I.car)
-    [h : IntoOr P Q1 Q2] [h1 : MakeMonPredAt i Q1 𝓠1] [h2 : MakeMonPredAt i Q2 𝓠2] :
+    [h : IntoOr P Q1 Q2]
+    [h1 : MakeMonPredAt .indexToProp i Q1 𝓠1] [h2 : MakeMonPredAt .indexToProp i Q2 𝓠2] :
     IntoOr (P.monPred_at i) 𝓠1 𝓠2 where
   into_or := (entails_at.mp h.into_or i).trans
     (or_mono h1.make_monPred_at.mp h2.make_monPred_at.mp)
@@ -209,7 +239,7 @@ instance intoOr_monPred_at (P Q1 Q2 : MonPred I PROP) (𝓠1 𝓠2 : PROP) (i : 
 @[rocq_alias maybe_into_later_monPred_at]
 instance intoLaterN_monPred_at progress (n : Nat) (P Q : MonPred I PROP) (𝓠 : PROP) (i : I.car)
     [h : IntoLaterN (progress := true) (only_head := false) n P Q]
-    [hm : MakeMonPredAt i Q 𝓠] :
+    [hm : MakeMonPredAt .indexToProp i Q 𝓠] :
     IntoLaterN progress (only_head := false) n (P.monPred_at i) 𝓠 where
   into_laterN := (entails_at.mp h.into_laterN i).trans <|
     (monPred_at_laterN n i Q).mp.trans (laterN_mono n hm.make_monPred_at.mp)
