@@ -16,7 +16,7 @@ public import Iris.ProofMode.Instances
 namespace Iris.ProofMode
 open BI Std MonPred
 
-variable {I : BiIndex} {PROP : Type _} [BI PROP]
+variable {I : BiIndex} {PROP : Type _} [bi : BI PROP]
 
 inductive MakeMonPredAt.Kind where
   -- Known index `i`, and the proposition `𝓟` is computed by evaluating `P` at `i`
@@ -53,6 +53,8 @@ export IsBiIndexRel (is_bi_index_rel)
 instance (priority := high) isBiIndexRel_refl (i : I) : IsBiIndexRel i i where
   is_bi_index_rel := Std.Refl.refl i
 
+/-! ### Modality -/
+
 @[rocq_alias modality_objectively, rocq_alias modality_objectively_mixin]
 def modality_objectively : Modality (MonPred I PROP) (MonPred I PROP) where
   M := MonPred.objectively
@@ -66,6 +68,79 @@ def modality_objectively : Modality (MonPred I PROP) (MonPred I PROP) where
   emp := monPred_objectively_emp.mpr
   mono := monPred_objectively_mono
   sep := monPred_objectively_sep_2 _ _
+
+/-! ### AsEmpValid -/
+
+@[rocq_alias as_emp_valid_monPred_at]
+instance (priority := low) asEmpValid_monPred_at (d : AsEmpValid.Direction) (φ : Prop) io
+    (P : MonPred I PROP) (Φ : I.car → PROP)
+    [inst : AsEmpValid0 d φ io (MonPred I PROP) inferInstance P]
+    [hm : ∀ i, MakeMonPredAt .indexToProp i P (Φ i)] :
+    AsEmpValid d φ io PROP bi iprop(∀ i, Φ i) where
+  as_emp_valid := by
+    constructor
+    · refine fun hd hφ => forall_intro fun i => ?_
+      exact ((monPred_at_emp_valid P).mp
+        (inst.as_emp_valid_0.as_emp_valid.left hd hφ) i).trans (hm i).make_monPred_at.mp
+    · intro hd hP
+      refine inst.as_emp_valid_0.as_emp_valid.right hd ((monPred_at_emp_valid P).mpr fun i => ?_)
+      calc
+        _ ⊢ ∀ a, Φ a       := hP
+        _ ⊢ Φ i            := forall_elim i
+        _ ⊢ P.monPred_at i := (hm i).make_monPred_at.mpr
+
+@[rocq_alias as_emp_valid_monPred_at_wand]
+instance asEmpValid_monPred_at_wand (d : AsEmpValid.Direction) (φ : Prop) io
+    (P Q : MonPred I PROP) (Φ Ψ : I.car → PROP)
+    [inst : AsEmpValid0 d φ io (MonPred I PROP) inferInstance iprop(P -∗ Q)]
+    [h1 : ∀ i, MakeMonPredAt .indexToProp i P (Φ i)] [h2 : ∀ i, MakeMonPredAt .indexToProp i Q (Ψ i)] :
+    AsEmpValid d φ io PROP bi iprop(∀ i, Φ i -∗ Ψ i) where
+  as_emp_valid := by
+    constructor
+    · refine fun hd hφ => forall_intro fun i => entails_wand ?_
+      calc
+        _ ⊢ P.monPred_at i := (h1 i).make_monPred_at.mpr
+        _ ⊢ Q.monPred_at i := entails_at.mp (wand_entails (inst.as_emp_valid_0.as_emp_valid.left hd hφ)) i
+        _ ⊢ Ψ i            := (h2 i).make_monPred_at.mp
+    · intro hd hP
+      refine inst.as_emp_valid_0.as_emp_valid.right hd (entails_wand <| entails_at.mpr fun i => ?_)
+      calc
+        _ ⊢ Φ i            := (h1 i).make_monPred_at.mp
+        _ ⊢ Ψ i            := wand_entails <| hP.trans <| forall_elim i
+        _ ⊢ Q.monPred_at i := (h2 i).make_monPred_at.mpr
+
+@[rocq_alias as_emp_valid_monPred_at_equiv]
+instance asEmpValid_monPred_at_equiv (d : AsEmpValid.Direction) (φ : Prop) io
+    (P Q : MonPred I PROP) (Φ Ψ : I.car → PROP)
+    [inst : AsEmpValid0 d φ io (MonPred I PROP) inferInstance iprop(P ∗-∗ Q)]
+    [h1 : ∀ i, MakeMonPredAt .indexToProp i P (Φ i)] [h2 : ∀ i, MakeMonPredAt .indexToProp i Q (Ψ i)] :
+    AsEmpValid d φ io PROP bi iprop(∀ i, Φ i ∗-∗ Ψ i) where
+  as_emp_valid := by
+    constructor
+    · refine fun hd hφ => forall_intro fun i => equiv_wandIff ?_
+      constructor
+      · calc
+          _ ⊢ P.monPred_at i := (h1 i).make_monPred_at.mpr
+          _ ⊢ Q.monPred_at i :=
+              entails_at.mp (wandIff_equiv (inst.as_emp_valid_0.as_emp_valid.left hd hφ)).mp i
+          _ ⊢ Ψ i            := (h2 i).make_monPred_at.mp
+      · calc
+          _ ⊢ Q.monPred_at i := (h2 i).make_monPred_at.mpr
+          _ ⊢ P.monPred_at i :=
+              entails_at.mp (wandIff_equiv (inst.as_emp_valid_0.as_emp_valid.left hd hφ)).mpr i
+          _ ⊢ Φ i            := (h1 i).make_monPred_at.mp
+    · intro hd hP
+      refine inst.as_emp_valid_0.as_emp_valid.right hd (equiv_wandIff ⟨?_, ?_⟩)
+      · refine entails_at.mpr fun i => ?_
+        calc
+          _ ⊢ Φ i            := (h1 i).make_monPred_at.mp
+          _ ⊢ Ψ i            := (wandIff_equiv (hP.trans (forall_elim i))).mp
+          _ ⊢ Q.monPred_at i := (h2 i).make_monPred_at.mpr
+      · refine entails_at.mpr fun i => ?_
+        calc
+          _ ⊢ Ψ i            := (h2 i).make_monPred_at.mp
+          _ ⊢ Φ i            := (wandIff_equiv <| hP.trans (forall_elim i)).mpr
+          _ ⊢ P.monPred_at i := (h1 i).make_monPred_at.mpr
 
 /-! ### FromAssumption -/
 
