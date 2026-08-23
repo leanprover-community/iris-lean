@@ -650,7 +650,7 @@ variable {I : BiIndex} {PROP : Type _} [BI PROP]
 
 @[rocq_alias monPred_at_emp]
 theorem monPred_at_emp (i : I.car) :
-    emp.monPred_at i ⊣⊢@{MonPred I PROP} emp :=
+    emp.monPred_at i ⊣⊢@{PROP} emp :=
   .rfl
 
 @[rocq_alias monPred_at_pure]
