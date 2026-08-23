@@ -458,6 +458,8 @@ instance isExcept0_monPred_at (P : MonPred I PROP) (i : I.car) [h : IsExcept0 P]
     IsExcept0 (P.monPred_at i) where
   is_except0 := (monPred_at_except_0 i P).mpr.trans (entails_at.mp h.is_except0 i)
 
+/-! ### IntoExcept0 -/
+
 @[rocq_alias into_except_0_monPred_at_fwd]
 instance intoExcept0_monPred_at_fwd (P Q : MonPred I PROP) (𝓠 : PROP) (i : I.car)
     [h : IntoExcept0 P Q] [hm : MakeMonPredAt .indexToProp i Q 𝓠] :
@@ -466,3 +468,47 @@ instance intoExcept0_monPred_at_fwd (P Q : MonPred I PROP) (𝓠 : PROP) (i : I.
     _ ⊢ iprop(◇ Q).monPred_at i := entails_at.mp h.into_except0 i
     _ ⊢ ◇ Q.monPred_at i        := (monPred_at_except_0 i Q).mp
     _ ⊢ ◇ 𝓠                     := except0_mono hm.make_monPred_at.mp
+
+/-! ### IntoWand -/
+
+
+private theorem intoWand_monPred_at_core {p q : Bool} {R P Q : MonPred I PROP} {𝓟 𝓠 : PROP}
+    {i j : I.car} (hij : I.rel.le i j) (h : □?p R ⊢ □?q P -∗ Q)
+    (h1 : 𝓟 ⊢ P.monPred_at j) (h2 : Q.monPred_at j ⊢ 𝓠) :
+    □?p (R.monPred_at i) ⊢ □?q 𝓟 -∗ 𝓠 := calc
+  _ ⊢ □?p (R.monPred_at j) := intuitionisticallyIf_mono (R.monPred_mono hij)
+  _ ⊢ (iprop(□?p R) : MonPred I PROP).monPred_at j :=
+      (monPred_at_intuitionistically_if j p R).mpr
+  _ ⊢ (iprop(□?q P -∗ Q) : MonPred I PROP).monPred_at j := entails_at.mp h j
+  _ ⊢ (iprop(□?q P) : MonPred I PROP).monPred_at j -∗ Q.monPred_at j :=
+      monPred_wand_force j iprop(□?q P) Q
+  _ ⊢ □?q 𝓟 -∗ 𝓠 := wand_mono
+      ((intuitionisticallyIf_mono h1).trans (monPred_at_intuitionistically_if j q P).mpr) h2
+
+@[rocq_alias into_wand_monPred_at_unknown_unknown]
+instance intoWand_monPred_at_unknown_unknown (p q : Bool) (R P Q : MonPred I PROP)
+    (𝓟 𝓠 : PROP) (i : I.car)
+    [h : IntoWand p q R .unknown P Q]
+    [h1 : MakeMonPredAt .indexToProp i P 𝓟] [h2 : MakeMonPredAt .indexToProp i Q 𝓠] :
+    IntoWand p q (R.monPred_at i) .unknown 𝓟 𝓠 where
+  into_wand := intoWand_monPred_at_core (Std.Refl.refl i) h.into_wand
+    h1.make_monPred_at.mpr h2.make_monPred_at.mp
+
+@[ipm_backtrack, rocq_alias into_wand_monPred_at_unknown_known]
+instance intoWand_monPred_at_unknown_known (p q : Bool) (R P Q : MonPred I PROP)
+    (𝓟 : PROP) (i j : I.car)
+    [hr : IsBiIndexRel i j] [h : IntoWand p q R .unknown P Q] [hm : MakeMonPredAt .indexToProp j P 𝓟] :
+    IntoWand p q (R.monPred_at i) (.matching .result) 𝓟 (Q.monPred_at j) where
+  into_wand := intoWand_monPred_at_core hr.is_bi_index_rel h.into_wand
+    hm.make_monPred_at.mpr .rfl
+
+@[ipm_backtrack, rocq_alias into_wand_monPred_at_known_unknown_le]
+instance intoWand_monPred_at_known_unknown_le (p q : Bool) (R P Q : MonPred I PROP)
+    (𝓠 : PROP) (i j : I.car)
+    [hr : IsBiIndexRel i j] [h : IntoWand p q R .unknown P Q] [hm : MakeMonPredAt .indexToProp j Q 𝓠] :
+    IntoWand p q (R.monPred_at i) (.matching .argument) (P.monPred_at j) 𝓠 where
+  into_wand := intoWand_monPred_at_core hr.is_bi_index_rel h.into_wand
+    .rfl hm.make_monPred_at.mp
+
+#rocq_ignore into_wand_wand'_monPred "Subsumed by the `WandMode` parameter of `IntoWand`"
+#rocq_ignore into_wand_impl'_monPred "Subsumed by the `WandMode` parameter of `IntoWand`"
