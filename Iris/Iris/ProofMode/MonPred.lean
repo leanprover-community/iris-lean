@@ -9,7 +9,6 @@ public import Iris.BI
 public import Iris.ProofMode.Classes
 public import Iris.ProofMode.ClassesMake
 public import Iris.ProofMode.ModalityInstances
-public import Iris.ProofMode.Instances
 
 @[expose] public section
 
@@ -649,6 +648,99 @@ instance addModal_at_fupd_goal [BIFUpdate PROP] (E1 E2 : CoPset) (𝓟 𝓟' : P
         sep_mono_right <| wand_mono_right (monPred_at_fupd i E1 E2 Q).mp
     _ ⊢ |={E1, E2}=> Q.monPred_at i         := h.add_modal
     _ ⊢ iprop(|={E1, E2}=> Q).monPred_at i  := (monPred_at_fupd i E1 E2 Q).mpr
+
+/-! ### ElimAcc -/
+
+@[rocq_alias elim_acc_at_None]
+instance elimAcc_at_none [BIFUpdate PROP] {X : Type} (φ : Prop) (E1 E2 E3 E4 : CoPset)
+    (α β : X → PROP) (α' β' : X → MonPred I PROP)
+    (P : MonPred I PROP) (P'x : X → MonPred I PROP) (i : I.car)
+    [hα : ∀ x, MakeEmbed (α x) (α' x)] [hβ : ∀ x, MakeEmbed (β x) (β' x)]
+    [h : ElimAcc (X := X) φ (fupd E1 E2) (fupd E3 E4) α' β'
+          (fun _ => none) P P'x] :
+    ElimAcc (X := X) φ (fupd E1 E2) (fupd E3 E4) α β (fun _ => none)
+      (P.monPred_at i) (fun x => (P'x x).monPred_at i) where
+  elim_acc := by
+    refine fun hφ => entails_wand <| wand_intro <| (sep_mono ?_ ?_).trans
+      (entails_at.mp ((sep_mono_left <| wand_entails <| h.elim_acc hφ).trans wand_elim_left) i)
+    -- Continuation
+    · refine .trans ?_ (monPred_at_forall i _).mpr
+      refine forall_mono fun x => .trans ?_ (monPred_at_wand i (α' x) (P'x x)).mpr
+      refine forall_intro fun j => (forall_intro fun hij => ?_).trans pure_imp_forall.mpr
+      exact wand_mono (entails_at.mp (hα x).make_embed.mpr j) ((P'x x).monPred_mono hij)
+    -- Accessor
+    · simp only [accessor, Option.getD]
+      refine .trans ?_ (monPred_at_fupd i E1 E2 _).mpr
+      refine BIFUpdate.mono <| .trans ?_ (monPred_at_exist i _).mpr
+      refine exists_mono fun x => sep_mono (entails_at.mp (hα x).make_embed.mp i) ?_
+      exact forall_intro fun j =>
+        (forall_intro fun _ => wand_mono_left <| entails_at.mp (hβ x).make_embed.mpr j).trans
+        pure_imp_forall.mpr
+
+@[rocq_alias elim_acc_at_Some]
+instance elimAcc_at_some [BIFUpdate PROP] {X : Type} (φ : Prop) (E1 E2 E3 E4 : CoPset)
+    (α β γ : X → PROP) (α' β' γ' : X → MonPred I PROP)
+    (P : MonPred I PROP) (P'x : X → MonPred I PROP) (i : I.car)
+    [hα : ∀ x, MakeEmbed (α x) (α' x)] [hβ : ∀ x, MakeEmbed (β x) (β' x)]
+    [hγ : ∀ x, MakeEmbed (γ x) (γ' x)]
+    [h : ElimAcc (X := X) φ (fupd E1 E2) (fupd E3 E4) α' β'
+          (fun x => some (γ' x)) P P'x] :
+    ElimAcc (X := X) φ (fupd E1 E2) (fupd E3 E4) α β
+      (fun x => some (γ x)) (P.monPred_at i) (fun x => (P'x x).monPred_at i) where
+  elim_acc := by
+    refine fun hφ => entails_wand <| wand_intro <| (sep_mono ?_ ?_).trans
+      (entails_at.mp ((sep_mono_left <| wand_entails <| h.elim_acc hφ).trans wand_elim_left) i)
+    -- Continuation
+    · refine .trans ?_ (monPred_at_forall i _).mpr
+      refine forall_mono fun x => .trans ?_ (monPred_at_wand i (α' x) (P'x x)).mpr
+      refine forall_intro fun j => (forall_intro fun hij => ?_).trans pure_imp_forall.mpr
+      exact wand_mono (entails_at.mp (hα x).make_embed.mpr j) ((P'x x).monPred_mono hij)
+    -- Accessor
+    · simp only [accessor, Option.getD]
+      refine .trans ?_ (monPred_at_fupd i E1 E2 _).mpr
+      refine BIFUpdate.mono <| .trans ?_ (monPred_at_exist i _).mpr
+      refine exists_mono fun x => sep_mono (entails_at.mp (hα x).make_embed.mp i) ?_
+      refine forall_intro fun j => (forall_intro fun _ => ?_).trans pure_imp_forall.mpr
+      exact wand_mono (entails_at.mp (hβ x).make_embed.mpr j)
+        ((BIFUpdate.mono <| entails_at.mp (hγ x).make_embed.mp j).trans
+          (monPred_at_fupd j E3 E4 (γ' x)).mpr)
+
+/-! ### ElimInv -/
+
+@[rocq_alias elim_inv_embed_with_close]
+instance elimInv_embed_with_close {X : Type} (φ : Prop) (𝓟inv 𝓟in : PROP)
+    (𝓟out 𝓟close : X → PROP) (Pin : MonPred I PROP) (Pout Pclose : X → MonPred I PROP)
+    (Q Q' : MonPred I PROP)
+    [h : ∀ i, ElimInv φ X 𝓟inv 𝓟in 𝓟out true (some 𝓟close)
+          (Q.monPred_at i) (fun _ => Q'.monPred_at i)]
+    [hin : MakeEmbed 𝓟in Pin] [hout : ∀ x, MakeEmbed (𝓟out x) (Pout x)]
+    [hcl : ∀ x, MakeEmbed (𝓟close x) (Pclose x)] :
+    ElimInv φ X (iprop(⎡𝓟inv⎤) : MonPred I PROP) Pin Pout true (some Pclose)
+      Q (fun _ => Q') where
+  elim_inv := by
+    intro hφ
+    refine entails_at.mpr fun j => .trans ?_ ((h j).elim_inv hφ)
+    refine sep_mono_right (sep_mono (entails_at.mp hin.make_embed.mpr j) ?_)
+    refine .trans (monPred_at_forall j _).mp (forall_mono fun x => ?_)
+    refine .trans ((forall_elim j).trans <| pure_imp_elim <| Std.Refl.refl j) ?_
+    exact wand_mono_left <|
+      sep_mono (entails_at.mp (hout x).make_embed.mp j) (entails_at.mp (hcl x).make_embed.mp j)
+
+@[rocq_alias elim_inv_embed_without_close]
+instance elimInv_embed_without_close {X : Type} (φ : Prop) (𝓟inv 𝓟in : PROP)
+    (𝓟out : X → PROP) (Pin : MonPred I PROP) (Pout : X → MonPred I PROP)
+    (Q : MonPred I PROP) (Q' : X → MonPred I PROP)
+    [h : ∀ i, ElimInv φ X 𝓟inv 𝓟in 𝓟out false none
+          (Q.monPred_at i) (fun x => (Q' x).monPred_at i)]
+    [hin : MakeEmbed 𝓟in Pin] [hout : ∀ x, MakeEmbed (𝓟out x) (Pout x)] :
+    ElimInv φ X (iprop(⎡𝓟inv⎤) : MonPred I PROP) Pin Pout false none Q Q' where
+  elim_inv := by
+    intro hφ
+    refine entails_at.mpr fun j => .trans ?_ ((h j).elim_inv hφ)
+    refine sep_mono_right (sep_mono (entails_at.mp hin.make_embed.mpr j) ?_)
+    refine .trans (monPred_at_forall j _).mp (forall_mono fun x => ?_)
+    refine .trans ((forall_elim j).trans <| pure_imp_elim <| Std.Refl.refl j) ?_
+    exact wand_mono_left <| sep_mono_left <| entails_at.mp (hout x).make_embed.mp j
 
 end BIInstances
 
