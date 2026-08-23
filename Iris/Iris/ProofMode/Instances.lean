@@ -21,37 +21,32 @@ open Iris.BI Iris.Std
 
 /-! ### AsEmpValid -/
 
-@[rocq_alias as_emp_valid_emp_valid]
 instance (priority := default + 10) asEmpValidEmpValid
-    [bi : BI PROP] d (P : PROP) io : AsEmpValid0 d (⊢ P) io PROP bi P where
+    [bi : BI PROP] d (P : PROP) io ioP : AsEmpValid0 d (⊢ P) io PROP bi ioP P where
   as_emp_valid_0 := ⟨by simp⟩
 
-@[rocq_alias as_emp_valid_entails]
-instance asEmpValid_entails [bi : BI PROP] d io (P Q : PROP) :
-    AsEmpValid0 d (P ⊢ Q) io PROP bi iprop(P -∗ Q) where
+instance asEmpValid_entails [bi : BI PROP] d io ioP (P Q : PROP) :
+    AsEmpValid0 d (P ⊢ Q) io PROP bi ioP iprop(P -∗ Q) where
   as_emp_valid_0 := ⟨λ _ => entails_wand, λ _ => wand_entails⟩
 
-instance asEmpValid_bientails [bi : BI PROP] d io (P Q : PROP) :
-    AsEmpValid0 d (P ⊣⊢ Q) io PROP bi iprop(P ∗-∗ Q) where
+instance asEmpValid_bientails [bi : BI PROP] d io ioP (P Q : PROP) :
+    AsEmpValid0 d (P ⊣⊢ Q) io PROP bi ioP iprop(P ∗-∗ Q) where
   as_emp_valid_0 := ⟨λ _ => equiv_wandIff, λ _ => wandIff_equiv⟩
 
-@[rocq_alias as_emp_valid_equiv]
-instance asEmpValid_equiv [bi : BI PROP] d io (P Q : PROP) :
-    AsEmpValid0 d (P = Q) io PROP bi iprop(P ∗-∗ Q) where
-  as_emp_valid_0 := ⟨λ _ h => h ▸ wandIff_refl,
-    λ _ h => equiv_iff.2 (wandIff_equiv h)⟩
+instance asEmpValid_equiv [bi : BI PROP] d io ioP (P Q : PROP) :
+    AsEmpValid0 d (P = Q) io PROP bi ioP iprop(P ∗-∗ Q) where
+  as_emp_valid_0 := ⟨λ _ h => h ▸ wandIff_refl, λ _ h => equiv_iff.2 (wandIff_equiv h)⟩
 
-@[rocq_alias as_emp_valid_forall]
-instance asEmpValid_forall {α} [bi : BI PROP] (Φ : α → Prop) (P : α → PROP) d io
-    [hP : ∀ x, AsEmpValid d (Φ x) io PROP bi iprop(P x)] :
-    AsEmpValid d (∀ x, Φ x) io PROP bi iprop(∀ x, P x) where
+instance asEmpValid_forall {α} [bi : BI PROP] (Φ : α → Prop) (P : α → PROP) d io ioP
+    [hP : ∀ x, AsEmpValid d (Φ x) io PROP bi ioP iprop(P x)] :
+    AsEmpValid d (∀ x, Φ x) io PROP bi ioP iprop(∀ x, P x) where
   as_emp_valid := ⟨λ hd h => forall_intro λ x => (hP x).1.1 hd (h x),
                    λ hd h x => (hP x).1.2 hd $ h.trans (forall_elim x)⟩
 
 @[rocq_alias as_emp_valid_tforall]
 instance asEmpValid_tforall {TT : Tele} [bi : BI PROP] (φ : TT.Arg → Prop)
-    (P : TT.Arg → PROP) d io [hP : ∀ x, AsEmpValid d (φ x) io PROP bi (P x)] :
-    AsEmpValid d (∀.. x, φ x) io PROP bi iprop(∀.. x, P x) where
+    (P : TT.Arg → PROP) d io [hP : ∀ x, AsEmpValid d (φ x) io PROP bi ioP (P x)] :
+    AsEmpValid d (∀.. x, φ x) io PROP bi ioP iprop(∀.. x, P x) where
   as_emp_valid := by
     constructor
     · refine fun hd h => .trans ?_ (tforall_forall P).mpr

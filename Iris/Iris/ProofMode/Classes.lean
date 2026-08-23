@@ -37,25 +37,25 @@ end
 @[ipm_class, rocq_alias AsEmpValid]
 class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop) io
     (PROP : semiOutParamIPM io (Type _))
-    (bi : semiOutParamIPM d.toInOut (BI PROP))
-    (P : outParam PROP) where
+    (bi : semiOutParamIPM io (BI PROP))
+    ioP (P : semiOutParamIPM ioP PROP) where
   as_emp_valid : (d = .into → φ → ⊢ P) ∧ (d = .from → (⊢ P) → φ)
 
 @[rocq_alias as_emp_valid_1]
-theorem asEmpValid_1 {PROP} [bi : BI PROP] {φ : Prop} (P : PROP) {io}
-    (inst : AsEmpValid .into φ io PROP bi P) : φ → ⊢ P :=
+theorem asEmpValid_1 {PROP} [bi : BI PROP] {φ : Prop} (P : PROP) {io ioP}
+    (inst : AsEmpValid .into φ io PROP bi ioP P) : φ → ⊢ P :=
   inst.as_emp_valid.left rfl
 
 @[rocq_alias as_emp_valid_2]
-theorem asEmpValid_2 {PROP} [bi : BI PROP] {P: PROP} (φ : Prop) {io}
-    (inst : AsEmpValid .from φ io PROP bi P) : (⊢ P) → φ :=
+theorem asEmpValid_2 {PROP} [bi : BI PROP] {P: PROP} (φ : Prop) {io ioP}
+    (inst : AsEmpValid .from φ io PROP bi ioP P) : (⊢ P) → φ :=
   inst.as_emp_valid.right rfl
 
 @[ipm_class, rocq_alias AsEmpValid0]
 class AsEmpValid0 (d : AsEmpValid.Direction) (φ : Prop) (io : InOut := d.toInOut)
     (PROP : semiOutParamIPM io (Type _))
-    (bi : semiOutParamIPM d.toInOut (BI PROP)) (P : outParam PROP) where
-  as_emp_valid_0 : AsEmpValid d φ io PROP bi P
+    (bi : semiOutParamIPM io (BI PROP)) (ioP := .out) (P : semiOutParamIPM ioP PROP) where
+  as_emp_valid_0 : AsEmpValid d φ io PROP bi ioP P
 
 attribute [ipm_backtrack,instance] AsEmpValid0.as_emp_valid_0
 

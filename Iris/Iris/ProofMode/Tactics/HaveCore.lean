@@ -24,7 +24,7 @@ open BI
 
 @[rocq_alias tac_pose_proof]
 theorem have_asEmpValid [bi : BI PROP] {φ} {P Q : PROP}
-    [h1 : AsEmpValid .into φ .in PROP bi P] (h : φ) : Q ⊢ Q ∗ □ P :=
+    [h1 : AsEmpValid .into φ .in PROP bi .out P] (h : φ) : Q ⊢ Q ∗ □ P :=
   sep_emp.2.trans (sep_mono_right $ intuitionistically_emp.2.trans
     (intuitionistically_mono (asEmpValid_1 _ h1 h)))
 
@@ -94,7 +94,7 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
     have val : Q($ty) := val
 
     let hyp ← mkFreshExprMVarQ q($prop)
-    let some _ ← ProofModeM.trySynthInstanceQ q(AsEmpValid .into $ty .in $prop $bi $hyp)
+    let some _ ← ProofModeM.trySynthInstanceQ q(AsEmpValid .into $ty .in $prop $bi .out $hyp)
       | throwIPMError "{ty} is not an entailment"
 
     return ⟨_, hyps, q(true), hyp, q(have_asEmpValid $val)⟩
