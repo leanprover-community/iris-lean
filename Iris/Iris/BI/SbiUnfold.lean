@@ -23,8 +23,8 @@ the tactic `sbi_unfold` turns it into
 
 The tactic `sbi_unfold` works for goals of the shape `⊢ P`, `P ⊢ Q`, `P ⊣⊢ Q`.
 Here, `P` and `Q` should be in the "plain" subset of propositions, i.e. `⌜_⌝`,
-`<si_pure>`, `✓`, `≡`, `≼`, closed under `∧`, `∨`, `→`, `∀`, `∃`, and `▷`. The
-separating connectives `∗`/`-∗` are translated to `∧`/`→`.
+`<si_pure>`, `✓`, `≡`, `≼`, closed under `∧`, `∨`, `→`, `↔`, `∀`, `∃`, and `▷`.
+The separating connectives `∗`/`-∗`/`∗-∗` are translated to `∧`/`→`/`↔`.
 
 The tactic attempts to minimize the number of "down closures" `∀ n' ≤ n, _` due
 to the use of nested implications. For example, given
@@ -299,7 +299,7 @@ instance sbiUnfold_forall {A : Sort _} {Φ : A → PROP} {Φi : A → Nat → Pr
 /-- The instance for existentials needs the sub-expression to be already down
 closed because `∃` and `∀` do not commute. -/
 @[rocq_alias sbi_unfold_exist]
-instance sbiUnfold_exists {A : Type _} {Φ : A → PROP} {Φi : A → Nat → Prop}
+instance sbiUnfold_exists {A : Sort _} {Φ : A → PROP} {Φi : A → Nat → Prop}
     [h : ∀ x, SbiUnfold .downClosed (Φ x) (Φi x)] :
     SbiUnfold clo iprop(∃ x, Φ x) (fun n => ∃ x, Φi x n) := by
   refine .of_closed (fun ⟨x, hx⟩ hm => ⟨x, (h x).closed rfl hx hm⟩) ?_

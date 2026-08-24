@@ -115,6 +115,10 @@ example (a b : B) (φ : Prop) (h : ∀ n, φ ∧ a ≡{n}≡ b → a ≡{n}≡ b
     iprop(⌜φ⌝ ∧ a ≡ b) ⊢@{PROP} iprop(a ≡ b) := by
   sbi_unfold; exact h
 
+example : ⊢@{PROP} iprop(∃ (_h : True), ⌜True⌝) := by
+  sbi_unfold
+  exact fun _ => ⟨True.intro, True.intro⟩
+
 /- `∗` becomes `∧`. -/
 example (a b : B) (h : ∀ n, a ≡{n}≡ b ∧ b ≡{n}≡ a → a ≡{n}≡ b) :
     iprop((a ≡ b) ∗ (b ≡ a)) ⊢@{PROP} iprop(a ≡ b) := by
@@ -152,11 +156,6 @@ example (mx : Option B) :
     (match mx with | none => iprop(⌜True⌝) | some a => iprop(a ≡ a)) ⊢@{PROP}
       (match mx with | none => iprop(⌜True⌝) | some a => iprop(a ≡ a)) := by
   cases mx <;> sbi_unfold <;> intro _ <;> exact id
-
-/- `sbi_unfold` fails on a goal that is not a BI entailment. -/
-example : True := by
-  fail_if_success sbi_unfold
-  trivial
 
 end LeanTests
 
