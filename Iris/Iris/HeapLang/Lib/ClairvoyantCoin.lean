@@ -53,12 +53,8 @@ theorem newCoin.spec :
   iunfold coin
   iintro %Φ - K
   wp_lam
-  wp_bind newProph()
-  iapply wp_new_proph $$ [//]
-  iintro %pvs %p !> proph
-  wp_bind &nondetBool _
-  iapply nondetBool.spec $$ [//]
-  iintro !> %b -
+  wp_apply wp_new_proph $$ [//] with %pvs %p proph
+  wp_apply nondetBool.spec $$ [//] with %b -
   wp_alloc c with Hc
   wp_pair
   iintro !>
@@ -94,13 +90,9 @@ theorem tossCoin.spec (cp : Val) (bs : List Bool) :
   isimp at Hb
   wp_lam
   wp_pures
-  wp_bind &nondetBool _
-  iapply nondetBool.spec $$ [//]
-  iintro !> %r -
+  wp_apply nondetBool.spec $$ [//] with %r -
   wp_store
-  wp_bind resolveProph(_, _)
-  iapply wp_resolve_proph $$ Hp
-  iintro !> %pvs' ⟨%rfl, Hp⟩
+  wp_apply wp_resolve_proph $$ Hp with %pvs' ⟨%rfl, Hp⟩
   simp only [List.tail_cons, prophecyToListBool_cons] at htl
   wp_seq
   iintro !>

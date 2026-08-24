@@ -255,14 +255,14 @@ hlc : HasLC
 GF : BundledGFunctors
 ι : IrisGS_gen hlc Exp GF
 v1 v2 : Val
-⊢ ⏎
-  ⊢ |={⊤}=> True
+⊢ v1.compareSafe v2 = true
 
 hlc : HasLC
 GF : BundledGFunctors
 ι : IrisGS_gen hlc Exp GF
 v1 v2 : Val
-⊢ v1.compareSafe v2 = true
+⊢ ⏎
+  ⊢ |={⊤}=> True
 -/
 #guard_msgs (trace, drop error) in
 example (v1 v2 : Val) : ⊢@{IProp GF} WP hl(&v1 = &v2) {{ v, True }} := by
