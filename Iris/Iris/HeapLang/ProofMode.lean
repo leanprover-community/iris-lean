@@ -392,12 +392,9 @@ public meta def iWpPure {u}
     (_hprop : $prop =Q IProp $GF := ⟨⟩)
     (_hbi : $bi =Q UPred.instBIUPred := ⟨⟩)
     (κ : Q(Wp $prop Exp Val Stuckness) := q(wp.def))
-    (_hwp : $κ =Q wp.def := ⟨⟩)
-    -- The continuation function: using `iWpFinish` by default
-    (k : {eΔ : Q($prop)} → Hyps bi eΔ → (e' : Q(Exp)) →
-          ProofModeM Q($eΔ ⊢ Wp.wp $s $E $e' $Φ) :=
-      fun hyps' e' => iWpFinish hyps' ι s E e' Φ) :
-      ProofModeM (Q($ehyps ⊢ Wp.wp $s $E $e $Φ)) := do
+    (_hwp : $κ =Q wp.def := ⟨⟩) :
+      ProofModeM ((ehyps' : Q($prop)) × Hyps bi ehyps' × (e' : Q(Exp)) ×
+      (Q(($ehyps' ⊢ Wp.wp $s $E $e' $Φ) → $ehyps ⊢ Wp.wp $s $E $e $Φ))) := do
   let some {result := ⟨φ, n, e₂, inst⟩, K, e' := e₁, ..} ←
     findECtx (α:=((_ : Q(Prop)) × (_ : Q(Nat)) × (_ : Q(Exp)) × Lean.Expr)) e fun _ => findPureExec
   | throwIPMError "Cannot find expression to evaluate"
@@ -406,8 +403,7 @@ public meta def iWpPure {u}
   let ⟨_, hyps', pf⟩ ← iModAction hyps q(modality_laterN $n)
   let ⟨inner, .up _⟩ ← HeapLang.fillQ K e₂
   let HΦ ← iSolveSidecondition φ (failOnUnsolved := failOnUnsolved)
-  let nextPf ← k hyps' inner
-  return q(tac_wp_pure $inst $HΦ $pf $nextPf)
+  return ⟨_, hyps', inner, q(fun nextPf => tac_wp_pure $inst $HΦ $pf nextPf)⟩
 
 /-- Find any pure step for `e₁`, as `wp_pure _` does. -/
 public meta def findAnyPureExec (e₁ : Q(Exp)) :
@@ -423,9 +419,11 @@ public meta def findAnyPureExec (e₁ : Q(Exp)) :
 elab "wp_pure" failOnUnsolved:("+!failOnUnsolved")? colGt ppSpace focus:hl_exp:10 : tactic =>
   ProofModeM.runTacticWp `wp_pure fun mvar {hyps, ι, s, E, e, Φ, ..} => do
     let focus ← elabTermEnsuringTypeQ (← `(hl($focus))) q(HeapLang.Exp)
-    mvar.assign <| ← iWpPure hyps ι s E e Φ failOnUnsolved.isSome fun e₁ => do
+    let ⟨_, hyps', e', pf⟩ ← iWpPure hyps ι s E e Φ failOnUnsolved.isSome fun e₁ => do
       guard <| ← isDefEq e₁ focus
       findAnyPureExec e₁
+    let pf' ← iWpFinish hyps' ι s E e' Φ
+    mvar.assign <| q($pf $pf')
 
 macro "wp_pure" : tactic => `(tactic| wp_pure _)
 macro "wp_pure" "+!failOnUnsolved" : tactic => `(tactic| wp_pure +!failOnUnsolved _)
@@ -443,7 +441,7 @@ macro "wp_pures" : tactic =>
 /-- Beta-reduce the innermost application, unfolding a head hidden behind a definition. -/
 elab "wp_rec" : tactic =>
   ProofModeM.runTacticWp `wp_rec fun mvar {hyps, ι, s, E, e, Φ, ..} => do
-    mvar.assign <| ← iWpPure hyps ι s E e Φ (failOnUnsolved := false) fun e₁ => do
+    let ⟨_, hyps', e', pf⟩ ← iWpPure hyps ι s E e Φ (failOnUnsolved := false) fun e₁ => do
       let ~q(Exp.app (Exp.ofVal $f) (Exp.ofVal $a)) := e₁ | failure
       -- reduce `f` to find a recursive function
       let f' : Q(Val) ← whnf f
@@ -452,6 +450,8 @@ elab "wp_rec" : tactic =>
       -- substitute the folded head `f`, not the unfolded `Val.rec_`
       let e₂ := q(Exp.subst $xb $a (Exp.subst $fb $f $body))
       return ⟨_, _, e₂, q(instPureExecBeta)⟩
+    let pf' ← iWpFinish hyps' ι s E e' Φ
+    mvar.assign <| q($pf $pf')
 
 
 macro "wp_if" : tactic => `(tactic | wp_pure (if _ then _ else _))
@@ -473,16 +473,10 @@ macro "wp_match" : tactic => `(tactic | (wp_case; wp_closure; wp_pure (_ _)))
 
 /-! ## The `wp_apply` tactics -/
 
-/--
-  Indicates whether `wp_apply` or `wp_smart_apply` is used.
-  For `wp_smart_apply`, also include the fuel amount, that is, the number of retries.
--/
+/-- Indicates whether `wp_apply` or `wp_smart_apply` is used. -/
 inductive WpApplyKind where
   | apply
-  | smartApply (fuel : Nat)
-
-/-- bound on `wp_smart_apply`'s pure steps. -/
-meta def smartApplyFuel : Nat := 10000
+  | smartApply
 
 /-- Pose `pmt`, then apply it at a decomposition `e = K[e']` pushing `K` into the
 postcondition via `iWpBindCore`. `premisesOut` gets the application's goals on success -/
@@ -494,28 +488,29 @@ meta partial def iWpApplyCore {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(
     (_hbi : $bi =Q UPred.instBIUPred := ⟨⟩)
     (κ : Q(Wp $prop Exp Val Stuckness) := q(wp.def)) (_hwp : $κ =Q wp.def := ⟨⟩) :
     ProofModeM Q($ehyps ⊢ Wp.wp $s $E $e $Φ) := do
-  let st ← ProofModeM.saveState
-  let ⟨eΔ, hyps', p, A, posePf⟩ ← iHave hyps q(Wp.wp $s $E $e $Φ) pmt true
-  let applied ←
-    findECtx (α := Q($eΔ ∗ □?$p $A ⊢ Wp.wp $s $E $e $Φ)) e fun K e' => do
-      trace[wp_apply] m!"trying to apply {A} to {e'}"
-      iWpBindCore _ ι s E e Φ K e' (iApply hyps' p A ·)
-  if let some {result := pf, ..} := applied then
-    return q($posePf $pf)
-  let failed ← addMessageContext m!"cannot apply {A}"
-  match wpApplyKind with
-  | .apply => throwIPMError failed
-  | .smartApply 0 =>
-    throwIPMError m!"fuel exhausted after {smartApplyFuel} pure steps; {failed}"
-  | .smartApply (fuel + 1) =>
-    st.restore (restoreInfo := true)
-    try
-      iWpPure hyps ι s E e Φ (failOnUnsolved := true) findAnyPureExec
-        (k := fun hyps'' e'' => iWpApplyCore hyps'' ι s E e'' Φ pmt (.smartApply fuel))
-    catch err =>
-      if err.isInterrupt || err.isMaxHeartbeat then throw err
-      st.restore (restoreInfo := true)
-      throwIPMError failed
+  let ⟨ehyps', hyps', p, A, posePf⟩ ← iHave hyps q(Wp.wp $s $E $e $Φ) pmt true
+  let mut st : ((ehyps' : Q($prop)) × Hyps bi ehyps' × (e' : Q(Exp)) ×
+    (Q(($ehyps' ∗ □?$p $A ⊢ Wp.wp $s $E $e' $Φ) → $ehyps ⊢ Wp.wp $s $E $e $Φ))) := ⟨_, hyps', e, posePf⟩
+  repeat
+    let ⟨ehyps', hyps', e', posePf⟩ := st
+    let applied ←
+      findECtx (α := Q($ehyps' ∗ □?$p $A ⊢ Wp.wp $s $E $e' $Φ)) e' fun K e'' => do
+        trace[wp_apply] m!"trying to apply {A} to {e''}"
+        iWpBindCore _ ι s E e' Φ K e'' (iApply hyps' p A ·)
+    if let some {result := pf, ..} := applied then
+      return q($posePf $pf)
+    let failed ← addMessageContext m!"cannot apply {A}"
+    match wpApplyKind with
+    | .apply => throwIPMError failed
+    | .smartApply =>
+      try
+        let ⟨_, hyps'', e'', pf⟩ ← iWpPure hyps ι s E e' Φ (failOnUnsolved := true) findAnyPureExec
+        let ⟨e''', pfeq⟩ ← iWpExprSimp e''
+        -- TODO: fill sorry
+        st := ⟨_, hyps'', e''', q(sorry)⟩
+      catch err =>
+        if err.isInterrupt || err.isMaxHeartbeat then throw err
+        throwIPMError failed
 
 meta def wpApplyRaw (tacName : Name) (wpApplyKind : WpApplyKind) (pmt : TSyntax `pmTerm) :
     TacticM Unit := do
@@ -526,7 +521,7 @@ meta def wpApplyRaw (tacName : Name) (wpApplyKind : WpApplyKind) (pmt : TSyntax 
 elab "wp_apply_raw" colGt pmt:pmTerm : tactic =>
   wpApplyRaw `wp_apply .apply pmt
 elab "wp_smart_apply_raw" colGt pmt:pmTerm : tactic =>
-  wpApplyRaw `wp_smart_apply (.smartApply smartApplyFuel) pmt
+  wpApplyRaw `wp_smart_apply .smartApply pmt
 /-- Strip a leading `▷` and simplify WP expressions in the goals an application produced. -/
 macro "wp_apply_post" : tactic => `(tactic| ((try inext) <;> (try wp_expr_simp)))
 
@@ -551,8 +546,6 @@ elab "focusLastIrisGoal" colGt tac:tactic : tactic => do
   let goals' ← getUnsolvedGoals
   setGoals (goals_before ++ goals' ++ goals_after)
 
-
-
 /--
 `wp_apply lem` poses the lemma `lem`, whose conclusion must be a `WP e' ...`, and applies
 it to the goal `WP e ...` after binding an evaluation context `K` with `e = K[e']`.
@@ -572,33 +565,6 @@ macro_rules
       else
         `(tactic| skip)
     `(tactic| focus (((wp_apply_raw $pmt) <;> wp_apply_post); $t:tactic))
-
-/-- Retry the application after single pure steps, bounded. `with` runs after the loop:
-retrying a failed introduction would roll back an application that already succeeded. -/
-meta def runWpSmartApply (pmt : TSyntax `pmTerm) (_pats : Array (TSyntax `introPat)) :
-    TacticM Unit := do
-  let mut firstErr : Option Exception := none
-  for _ in [0:smartApplyFuel] do
-    let s ← Tactic.saveState
-    let attempt ←
-      try
-        pure <| Sum.inl (← evalTactic (← `(tactic| wp_apply_raw $pmt)))
-      catch e =>
-        pure (Sum.inr e)
-    match attempt with
-    | .inl _ =>
-      -- wpApplyIntro `wp_smart_apply produced spec pats
-      return
-    | .inr applyErr =>
-      s.restore
-      -- report iteration 0's error: later ones concern goals the user never saw
-      let deadEndErr := firstErr.getD applyErr
-      firstErr := some deadEndErr
-      try evalTactic (← `(tactic| wp_pure +!failOnUnsolved))
-      catch _ =>
-        s.restore
-        throw deadEndErr
-  throwError "wp_smart_apply: fuel exhausted after {smartApplyFuel} pure steps"
 
 /--
 `wp_smart_apply lem` is like `wp_apply lem`, but when the lemma does not apply,
