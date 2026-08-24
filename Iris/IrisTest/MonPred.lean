@@ -302,21 +302,12 @@ variable {I : BiIndex} {PROP : Type _} [bi : BI PROP]
 
 /- Tests `intoExcept0_monPred_at_fwd`. -/
 /-- info:
-  solution: IntoExcept0 InOut.in (iprop(◇ ⎡𝓟⎤).monPred_at i) 𝓟,
+  solution: IntoExcept0 (iprop(◇ ⎡𝓟⎤).monPred_at i) 𝓟,
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
 variable (𝓟 : PROP) (i : I.car) in
-#ipm_synth IntoExcept0 .in ((iprop(◇ ⎡𝓟⎤) : MonPred I PROP).monPred_at i) _
-
-/- Tests `intoExcept0_monPred_at_bwd`. -/
-/-- info:
-  solution: IntoExcept0 InOut.out iprop(◇ (𝓟 ∗ ⌜φ⌝)) (iprop(⎡𝓟⎤ ∗ ⌜φ⌝).monPred_at i),
-  new goals: []
--/
-#guard_msgs (whitespace := lax) in
-variable (𝓟 : PROP) (φ : Prop) (i : I.car) in
-#ipm_synth IntoExcept0 .out _ ((iprop(⎡𝓟⎤ ∗ ⌜φ⌝) : MonPred I PROP).monPred_at i)
+#ipm_synth IntoExcept0 ((iprop(◇ ⎡𝓟⎤) : MonPred I PROP).monPred_at i) _
 
 /- Tests `intoWand_monPred_at_unknown_unknown`. -/
 /-- info:
