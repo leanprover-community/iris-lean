@@ -232,8 +232,7 @@ class IsExcept0 {PROP} [BI PROP] (Q : PROP) where
 export IsExcept0 (is_except0)
 
 @[ipm_class, rocq_alias IntoExcept0]
-class IntoExcept0 {PROP} [BI PROP] (io : InOut)
-    (P : semiOutParamIPM io PROP) (Q : semiOutParamIPM io.negate PROP) where
+class IntoExcept0 {PROP} [BI PROP] (P : PROP) (Q : outParam PROP) where
   into_except0 : P ⊢ ◇ Q
 export IntoExcept0 (into_except0)
 

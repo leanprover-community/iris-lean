@@ -280,12 +280,11 @@ instance fromModal_later_embed [BiEmbedLater PROP1 PROP2] {α} φ io (sel : α) 
 
 /-! ### IntoExcept0 -/
 
-set_option synthInstance.checkSynthOrder false in
 /-- The metavariables `PROP1` and `bi1` are unified in the conclusion before the premise runs. -/
 @[rocq_alias into_except_0_embed]
-instance intoExcept0_embed [BiEmbedLater PROP1 PROP2] (P Q : PROP1) io
-    [inst : IntoExcept0 io P Q] :
-    IntoExcept0 (PROP := PROP2) io iprop(⎡P⎤) iprop(⎡Q⎤) where
+instance intoExcept0_embed [BiEmbedLater PROP1 PROP2] (P Q : PROP1)
+    [inst : IntoExcept0 P Q] :
+    IntoExcept0 (PROP := PROP2) iprop(⎡P⎤) iprop(⎡Q⎤) where
   into_except0 := (embed_mono inst.into_except0).trans (embed_except_0 Q).mp
 
 /-! ### IntoLater -/

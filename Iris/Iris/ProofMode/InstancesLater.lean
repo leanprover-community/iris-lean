@@ -338,49 +338,49 @@ instance fromModal_except0 [BI PROP] io (P : PROP) :
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_except_0_except_0]
-instance intoExcept0_except0 [BI PROP] (P : PROP) io :
-    IntoExcept0 io iprop(◇ P) P where
+instance intoExcept0_except0 [BI PROP] (P : PROP) :
+    IntoExcept0 iprop(◇ P) P where
   into_except0 := .rfl
 
 set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias into_except_0_later]
-instance intoExcept0_later [BI PROP] (P : PROP) io [Timeless P] :
-    IntoExcept0 io iprop(▷ P) P where
+instance intoExcept0_later [BI PROP] (P : PROP) [Timeless P] :
+    IntoExcept0 iprop(▷ P) P where
   into_except0 := Timeless.timeless
 
 set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias into_except_0_later_if]
-instance intoExcept0_laterIf [BI PROP] p (P : PROP) io [Timeless P] :
-    IntoExcept0 io iprop(▷?p P) P where
+instance intoExcept0_laterIf [BI PROP] p (P : PROP) [Timeless P] :
+    IntoExcept0 iprop(▷?p P) P where
   into_except0 := match p with
                   | true => Timeless.timeless (P := P)
                   | false => except0_intro
 
 @[rocq_alias into_except_0_affinely]
-instance intoExcept0_affinely [BI PROP] (P Q : PROP) io
-    [h : IntoExcept0 io P Q] : IntoExcept0 io iprop(<affine> P) iprop(<affine> Q) where
+instance intoExcept0_affinely [BI PROP] (P Q : PROP)
+    [h : IntoExcept0 P Q] : IntoExcept0 iprop(<affine> P) iprop(<affine> Q) where
   into_except0 := (affinely_mono h.1).trans except0_affinely
 
 @[rocq_alias into_except_0_intuitionistically]
-instance intoExcept0_intuitionistically [BI PROP] (P Q : PROP) io
-    [h : IntoExcept0 io P Q] : IntoExcept0 io iprop(□ P) iprop(□ Q) where
+instance intoExcept0_intuitionistically [BI PROP] (P Q : PROP)
+    [h : IntoExcept0 P Q] : IntoExcept0 iprop(□ P) iprop(□ Q) where
   into_except0 := (intuitionistically_mono h.1).trans except0_intuitionistically
 
 @[rocq_alias into_except_0_absorbingly]
-instance intoExcept0_absorbingly [BI PROP] (P Q : PROP) io
-    [h : IntoExcept0 io P Q] : IntoExcept0 io iprop(<absorb> P) iprop(<absorb> Q) where
+instance intoExcept0_absorbingly [BI PROP] (P Q : PROP)
+    [h : IntoExcept0 P Q] : IntoExcept0 iprop(<absorb> P) iprop(<absorb> Q) where
   into_except0 := (absorbingly_mono h.1).trans except0_absorbingly.2
 
 @[rocq_alias into_except_0_persistently]
-instance intoExcept0_persistently [BI PROP] (P Q : PROP) io
-    [h : IntoExcept0 io P Q] : IntoExcept0 io iprop(<pers> P) iprop(<pers> Q) where
+instance intoExcept0_persistently [BI PROP] (P Q : PROP)
+    [h : IntoExcept0 P Q] : IntoExcept0 iprop(<pers> P) iprop(<pers> Q) where
   into_except0 := (persistently_mono h.1).trans except0_persistently.2
 
 /-! ### ElimModal -/
 
 @[ipm_backtrack, rocq_alias elim_modal_timeless]
 instance (priority := default - 10) elimModal_timeless [BI PROP] p io
-    (P P' Q : PROP) [inst : IntoExcept0 .in P P'] [IsExcept0 Q] :
+    (P P' Q : PROP) [inst : IntoExcept0 P P'] [IsExcept0 Q] :
     ElimModal True p io p P P' Q Q where
   elim_modal _ := calc
     _ ⊢ ◇ □?p P' ∗ (□?p P' -∗ Q)    := sep_mono_left <|

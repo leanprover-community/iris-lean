@@ -159,8 +159,8 @@ instance fromModal_plainly [Sbi PROP] io (P : PROP) :
 /-! ### IntoExcept0 -/
 
 @[rocq_alias into_except_0_plainly]
-instance intoExcept0_plainly [Sbi PROP] (P Q : PROP) io
-    [h : IntoExcept0 io P Q] : IntoExcept0 io iprop(■ P) iprop(■ Q) where
+instance intoExcept0_plainly [Sbi PROP] (P Q : PROP)
+    [h : IntoExcept0 P Q] : IntoExcept0 iprop(■ P) iprop(■ Q) where
   into_except0 := (plainly_mono h.1).trans except0_plainly.2
 
 /-! ### IntoLaterN -/
