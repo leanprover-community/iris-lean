@@ -498,26 +498,27 @@ meta partial def iWpApplyCore {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(
     (_hbi : $bi =Q UPred.instBIUPred := ⟨⟩)
     (κ : Q(Wp $prop Exp Val Stuckness) := q(wp.def)) (_hwp : $κ =Q wp.def := ⟨⟩) :
     ProofModeM Q($ehyps ⊢ Wp.wp $s $E $e $Φ) := do
+  let ⟨_, hypsP, p, A, posePf⟩ ← iHave hyps q(Wp.wp $s $E $e $Φ) pmt true
+  let lemIVar ← mkFreshIVarId (isTrue p)
+  let ⟨_, hyps0, addPf⟩ := Hyps.add bi `Hwp lemIVar p A hypsP
   let mut st : @WpApplyState u GF hlc prop bi ehyps s E e Φ κ :=
-  { hypsC := hyps, eC := e,
-    prefixPf := q(fun (pf : $ehyps ⊢ @Wp.wp $prop Exp Val Stuckness $κ $s $E $e $Φ) => pf) }
+    { hypsC := hyps0, eC := e,
+      prefixPf := q(fun pf => $posePf ($(addPf).mp.trans pf)) }
   let mut firstFailed : Option MessageData := none
   repeat
     let ⟨hypsC, eC, prefixPf⟩ := st
-    let saved ← ProofModeM.saveState
-    let ⟨ehypsP, hypsP, p, A, posePf⟩ ← iHave hypsC q(Wp.wp $s $E $eC $Φ) pmt true
+    let ⟨ehypsR, hypsR, _, A', p', _, remPf⟩ := Hyps.remove (rp := true) hypsC lemIVar
     let applied ←
-      findECtx (α := Q($ehypsP ∗ □?$p $A ⊢ Wp.wp $s $E $eC $Φ)) eC fun K e' => do
-        trace[wp_apply] m!"trying to apply {A} to {e'}"
-        iWpBindCore _ ι s E eC Φ K e' (iApply hypsP p A ·)
+      findECtx (α := Q($ehypsR ∗ □?$p' $A' ⊢ Wp.wp $s $E $eC $Φ)) eC fun K e' => do
+        trace[wp_apply] m!"trying to apply {A'} to {e'}"
+        iWpBindCore _ ι s E eC Φ K e' (iApply hypsR p' A' ·)
     if let some {result := pf, ..} := applied then
-      return q($prefixPf ($posePf $pf))
-    let failed := firstFailed.getD (← addMessageContext m!"cannot apply {A}")
+      return q($prefixPf <| $(remPf).mp.trans $pf)
+    let failed := firstFailed.getD (← addMessageContext m!"cannot apply {A'}")
     firstFailed := some failed
     match wpApplyKind with
     | .apply => throwIPMError failed
     | .smartApply =>
-      saved.restore (restoreInfo := true)
       try
         let ⟨_, hypsN, eN, purePf⟩ ←
           iWpPure hypsC ι s E eC Φ (failOnUnsolved := true) findAnyPureExec
