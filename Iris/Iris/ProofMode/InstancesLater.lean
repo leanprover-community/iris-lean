@@ -343,13 +343,13 @@ instance intoExcept0_except0 [BI PROP] (P : PROP) io :
   into_except0 := .rfl
 
 set_option synthInstance.checkSynthOrder false in
-@[rocq_alias into_except_0_later]
+@[ipm_backtrack, rocq_alias into_except_0_later]
 instance intoExcept0_later [BI PROP] (P : PROP) io [Timeless P] :
     IntoExcept0 io iprop(▷ P) P where
   into_except0 := Timeless.timeless
 
 set_option synthInstance.checkSynthOrder false in
-@[rocq_alias into_except_0_later_if]
+@[ipm_backtrack, rocq_alias into_except_0_later_if]
 instance intoExcept0_laterIf [BI PROP] p (P : PROP) io [Timeless P] :
     IntoExcept0 io iprop(▷?p P) P where
   into_except0 := match p with
