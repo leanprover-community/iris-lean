@@ -220,8 +220,20 @@ theorem UnOp.eval_isClosed {op : UnOp} {v v' : Val} (h : op.eval v = some v') : 
 @[rocq_alias heap_lang.bin_op_eval_closed]
 theorem BinOp.eval_isClosed {op : BinOp} {v₁ v₂ v : Val} (h : op.eval v₁ v₂ = some v) :
     v.isClosed := by
+  have map_isClosed {result : Option BaseLit} (h : Val.lit <$> result = some v) : v.isClosed := by
+    cases result with
+    | none => cases h
+    | some lit => cases h; rfl
   unfold eval at h
-  split at h <;> (try split at h) <;> cases h <;> rfl
+  split at h
+  · split at h
+    · cases h; rfl
+    · cases h
+  · split at h
+    · exact map_isClosed h
+    · exact map_isClosed h
+    · exact map_isClosed h
+    · cases h
 
 /-- All values stored in the heap of `σ` are closed. -/
 def State.isClosed (σ : State) : Prop := ∀ l v, σ.get? l = some (some v) → v.isClosed

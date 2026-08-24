@@ -418,15 +418,14 @@ theorem irreducible_resolve {e : Exp} {v1 v2 : Val} {σ : State}
     simp only [fill_nil] at hsrc; subst hsrc
     cases Hbase with | resolveS _ _ _ _ _ _ _ _ hb _ => exact H _ _ _ _ (primStep_of_baseStep hb)
   | append_singleton K' Ki =>
-    have hnv := EctxLanguage.fill_not_val K' e₁' (EctxLanguage.val_stuck Hbase)
     cases Ki <;>
       simp only [fill_append, fill_cons, fill_nil, fillItem, ECtxItem.fill,
-        Exp.resolve.injEq, reduceCtorEq] at hsrc <;>
-      first
-      | exact H obs _ σ' eₜ (BaseStep.ContextStep.ofBaseStep' (K' ++ [_])
-          (by simp only [fill_append, fill_cons, fill_nil]; exact hsrc.1.symm) rfl Hbase)
-      | (rw [← hsrc.2.1] at hnv; simp [toVal] at hnv)
-      | (rw [← hsrc.2.2] at hnv; simp [toVal] at hnv)
+        Exp.resolve.injEq, reduceCtorEq] at hsrc
+    case resolveL =>
+      exact H obs _ σ' eₜ (BaseStep.ContextStep.ofBaseStep' (K' ++ [_])
+        (by simp only [fill_append, fill_cons, fill_nil]; exact hsrc.1.symm) rfl Hbase)
+    case resolveM => exact baseStep_fill_eq_val_absurd Hbase hsrc.2.1
+    case resolveR => exact baseStep_fill_eq_val_absurd Hbase hsrc.2.2
 
 /-- `resolve e &vp &vt` is atomic whenever its subexpression `e` is strongly
 atomic: any step of the whole expression is a `resolveS` base step, which runs

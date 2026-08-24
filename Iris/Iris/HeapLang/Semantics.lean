@@ -108,6 +108,7 @@ abbrev Observation := ProphId × (Val × Val)
 @[rocq_alias heap_lang.heap_lang.un_op_eval]
 def UnOp.eval : UnOp → Val → Option Val
   | .neg,   .lit (.bool b) => some (.lit (.bool (!b)))
+  | .neg,   .lit (.int n)  => some (.lit (.int (~~~n)))
   | .minus, .lit (.int n)  => some (.lit (.int (-n)))
   | _,      _              => none
 
@@ -150,28 +151,15 @@ def BinOp.evalLoc : BinOp → Loc → BaseLit → Option BaseLit
   | _,       _,  _        => none
 
 @[rocq_alias heap_lang.heap_lang.bin_op_eval]
-def BinOp.eval : BinOp → Val → Val → Option Val
-  | .plus,   .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 + n2)))
-  | .minus,  .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 - n2)))
-  | .mult,   .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 * n2)))
-  | .tdiv,   .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1.tdiv n2)))
-  | .tmod,   .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1.tmod n2)))
-  | .and,    .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 &&& n2)))
-  | .or,     .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 ||| n2)))
-  | .xor,    .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 ^^^ n2)))
-  | .and,    .lit (.bool b1), .lit (.bool b2) => some (.lit (.bool (b1 && b2)))
-  | .or,     .lit (.bool b1), .lit (.bool b2) => some (.lit (.bool (b1 || b2)))
-  | .xor,    .lit (.bool b1), .lit (.bool b2) => some (.lit (.bool (b1 ^^ b2)))
-  | .shiftl, .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 <<< n2)))
-  | .shiftr, .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 >>> n2)))
-  | .le,     .lit (.int n1),  .lit (.int n2)  => some (.lit (.bool (n1 ≤ n2)))
-  | .lt,     .lit (.int n1),  .lit (.int n2)  => some (.lit (.bool (n1 < n2)))
-  | .eq,     v1,              v2              =>
-      if v1.compareSafe v2 then some (.lit (.bool (v1 == v2))) else none
-  | .offset, .lit (.loc l),   .lit (.int n)   => some (.lit (.loc (l + n)))
-  | .le,     .lit (.loc l1),  .lit (.loc l2)  => some (.lit (.bool (l1 ≤ l2)))
-  | .lt,     .lit (.loc l1),  .lit (.loc l2)  => some (.lit (.bool (l1 < l2)))
-  | _,       _,               _               => none
+def BinOp.eval (op : BinOp) (v1 v2 : Val) : Option Val :=
+  if op = .eq then
+    if v1.compareSafe v2 then some (.lit (.bool (v1 == v2))) else none
+  else
+    match v1, v2 with
+    | .lit (.int n1), .lit (.int n2) => Val.lit <$> op.evalInt n1 n2
+    | .lit (.bool b1), .lit (.bool b2) => Val.lit <$> op.evalBool b1 b2
+    | .lit (.loc l1), .lit lit2 => Val.lit <$> op.evalLoc l1 lit2
+    | _, _ => none
 
 theorem BinOp.eval_lit_int (op : BinOp) (n1 n2 : Int) :
     BinOp.eval op (.lit (.int n1)) (.lit (.int n2)) = (Val.lit <$> op.evalInt n1 n2) := by
@@ -469,9 +457,6 @@ theorem alloc_fresh (v : Val) (n : Int) (σ : State) (hn : 0 < n) :
     simpa [State.get?, PartialMap.get?, getElem?_eq_none_iff, ← Std.ExtTreeMap.mem_keys]
       using Loc.fresh_fresh _ hi0
 
-/-- Creating a prophecy variable always has a step available. Rocq names the fresh identifier
-with stdpp's `fresh`; `ProphId` has no computable fresh element here, so the identifier is
-existentially quantified. -/
 @[rocq_alias heap_lang.heap_lang.new_proph_id_fresh]
 theorem new_proph_id_fresh (σ : State) :
     ∃ p : ProphId, BaseStep .newProph σ []
