@@ -338,6 +338,44 @@ def Hyps.split {prop : Q(Type u)} (bi : Q(BI $prop)) (toRight : Name → IVarId 
   | .right => ⟨_, _, .mkEmp bi, hyps, q(emp_sep_rev)⟩
   | .split lhs rhs pf => ⟨_, _, lhs, rhs, pf⟩
 
+/--
+  Split `Hyps` into two parts, one with all spatial hypotheses representing `eS`
+  and another with all intuitionistic hypotheses representing `eI`.
+  A proof of `eI ⊢ □ eI` asserts that `eI` is indeed intuitionistic.
+-/
+def Hyps.splitIntuitionisticSpatial {prop : Q(Type u)} {bi : Q(BI $prop)} :
+    ∀ {e : Q($prop)}, Hyps bi e →
+      (eI : Q($prop)) × (eS : Q($prop)) × Q($e ⊣⊢ $eI ∗ $eS) × Q($eI ⊢ □ $eI)
+  | _, .emp _ =>
+    ⟨q(iprop(emp)), q(iprop(emp)), q(emp_sep_rev), q(intuitionistically_emp.mpr)⟩
+  | _, .hyp _ _ _ p ty _ =>
+    match matchBool p with
+    | .inl _ =>
+      ⟨q(iprop(□ $ty)), q(iprop(emp)), q(sep_emp_rev), q(intuitionistically_idem.mpr)⟩
+    | .inr _ =>
+      ⟨q(iprop(emp)), ty, q(emp_sep_rev), q(intuitionistically_emp.mpr)⟩
+  | _, .sep _ _ _ _ lhs rhs =>
+    let ⟨eIl, eSl, pfl, pIl⟩ := splitIntuitionisticSpatial lhs
+    let ⟨eIr, eSr, pfr, pIr⟩ := splitIntuitionisticSpatial rhs
+    let ⟨eI, hI, pI⟩ : (eI : Q($prop)) × Q(iprop($eIl ∗ $eIr) ⊣⊢ $eI) × Q($eI ⊢ □ $eI) :=
+      if eIl == q(iprop(emp)) then
+        let h : Q(iprop(emp) ∗ $eIr ⊣⊢ $eIr) := q(emp_sep)
+        ⟨eIr, h, pIr⟩
+      else if eIr == q(iprop(emp)) then
+        let h : Q($eIl ∗ iprop(emp) ⊣⊢ $eIl) := q(sep_emp)
+        ⟨eIl, h, pIl⟩
+      else
+        ⟨q(iprop($eIl ∗ $eIr)), q(.rfl), q((sep_mono $pIl $pIr).trans intuitionistically_sep_mpr)⟩
+    let ⟨eS, hS⟩ : (eS : Q($prop)) × Q(iprop($eSl ∗ $eSr) ⊣⊢ $eS) :=
+      if eSl == q(iprop(emp)) then
+        let h : Q(emp ∗ $eSr ⊣⊢ $eSr) := q(emp_sep)
+        ⟨eSr, h⟩
+      else if eSr == q(iprop(emp)) then
+        let h : Q($eSl ∗ emp ⊣⊢ $eSl) := q(sep_emp)
+        ⟨eSl, h⟩
+      else ⟨q(iprop($eSl ∗ $eSr)), q(.rfl)⟩
+    ⟨eI, eS, q((split_ss $pfl $pfr).trans (sep_congr $hI $hS)), pI⟩
+
 end split
 
 section remove
