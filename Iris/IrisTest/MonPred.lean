@@ -318,6 +318,37 @@ variable (𝓟 : PROP) (i : I.car) in
 variable (𝓟 : PROP) (φ : Prop) (i : I.car) in
 #ipm_synth IntoExcept0 .out _ ((iprop(⎡𝓟⎤ ∗ ⌜φ⌝) : MonPred I PROP).monPred_at i)
 
+/- Tests `intoWand_monPred_at_unknown_unknown`. -/
+/-- info:
+  solution: IntoWand false false (iprop(⎡𝓟⎤ -∗ ⎡𝓠⎤).monPred_at i) WandMode.unknown 𝓟 𝓠,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (i j : I.car) [IsBiIndexRel i j] (𝓟 𝓠 : PROP) in
+#ipm_synth IntoWand false false ((iprop(⎡𝓟⎤ -∗ ⎡𝓠⎤) : MonPred I PROP).monPred_at i) .unknown _ _
+
+/- Tests `intoWand_monPred_at_known_unknown_le`. -/
+/-- info:
+  solution: IntoWand false false (iprop(⎡𝓟⎤ -∗ Q).monPred_at i)
+    (WandMode.matching WandMode.Side.argument) (⎡𝓟⎤.monPred_at j) (Q.monPred_at j),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (i j : I.car) [IsBiIndexRel i j] (𝓟 : PROP) (Q : MonPred I PROP) in
+#ipm_synth IntoWand false false ((iprop(⎡𝓟⎤ -∗ Q) : MonPred I PROP).monPred_at i)
+  (.matching .argument) ((iprop(⎡𝓟⎤) : MonPred I PROP).monPred_at j) _
+
+/- Tests `intoWand_monPred_at_known_unknown_ge`. -/
+/-- info:
+  solution: IntoWand false false (iprop(⎡𝓟⎤ -∗ Q).monPred_at j)
+    (WandMode.matching WandMode.Side.argument) (⎡𝓟⎤.monPred_at i) (Q.monPred_at j),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (i j : I.car) [IsBiIndexRel i j] (𝓟 : PROP) (Q : MonPred I PROP) in
+#ipm_synth IntoWand false false ((iprop(⎡𝓟⎤ -∗ Q) : MonPred I PROP).monPred_at j)
+  (.matching .argument) ((iprop(⎡𝓟⎤) : MonPred I PROP).monPred_at i) _
+
 end ProofModeInstances
 
 end IrisTest.MonPredAsEmpValid

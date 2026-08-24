@@ -563,7 +563,7 @@ instance intoWand_monPred_at_unknown_unknown (p q : Bool) (R P Q : MonPred I PRO
 @[ipm_backtrack, rocq_alias into_wand_monPred_at_unknown_known]
 instance intoWand_monPred_at_unknown_known (p q : Bool) (R P Q : MonPred I PROP)
     (𝓟 : PROP) (i j : I.car)
-    [instRel : IsBiIndexRel i j] [h : IntoWand p q R .unknown P Q]
+    [instRel : IsBiIndexRel i j] [h : IntoWand p q R (.matching .result) P Q]
     [instMP : MakeMonPredAt .indexToProp j P 𝓟] :
     IntoWand p q (R.monPred_at i) (.matching .result) 𝓟 (Q.monPred_at j) where
   into_wand := intoWand_monPred_at_core instRel.is_bi_index_rel h.into_wand
@@ -572,7 +572,7 @@ instance intoWand_monPred_at_unknown_known (p q : Bool) (R P Q : MonPred I PROP)
 @[ipm_backtrack, rocq_alias into_wand_monPred_at_known_unknown_le]
 instance intoWand_monPred_at_known_unknown_le (p q : Bool) (R P Q : MonPred I PROP)
     (𝓠 : PROP) (i j : I.car)
-    [instRel : IsBiIndexRel i j] [h : IntoWand p q R .unknown P Q]
+    [instRel : IsBiIndexRel i j] [h : IntoWand p q R (.matching .argument) P Q]
     [instMP : MakeMonPredAt .indexToProp j Q 𝓠] :
     IntoWand p q (R.monPred_at i) (.matching .argument) (P.monPred_at j) 𝓠 where
   into_wand := intoWand_monPred_at_core instRel.is_bi_index_rel h.into_wand
@@ -586,7 +586,7 @@ set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias into_wand_monPred_at_known_unknown_ge]
 instance intoWand_monPred_at_known_unknown_ge (p q : Bool) (R P Q : MonPred I PROP)
     (𝓠 : PROP) (i j : I.car)
-    [instRel : IsBiIndexRel i j] [h : IntoWand p q R .unknown P Q]
+    [instRel : IsBiIndexRel i j] [h : IntoWand p q R (.matching .argument) P Q]
     [instMP : MakeMonPredAt .indexToProp j Q 𝓠] :
     IntoWand p q (R.monPred_at j) (.matching .argument) (P.monPred_at i) 𝓠 where
   into_wand := intoWand_monPred_at_core (Std.Refl.refl j) h.into_wand
