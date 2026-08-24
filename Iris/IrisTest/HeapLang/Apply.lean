@@ -341,6 +341,41 @@ example {l : Loc} {Φ Ψ : Val → IProp GF} : ⊢@{IProp GF}
   wp_apply wp_wand $$ H [] with %v Hv
   trace_state
 
+
+-- `wp_apply ... with` when there are mvars after the last Iris goal
+/--
+trace: hlc : HasLC
+GF : BundledGFunctors
+inst✝ : HeapLangGS hlc GF
+l : Loc
+Φ : Val → IProp GF
+⊢ ⏎
+  ⊢ ⌜l = ?_⌝
+
+hlc : HasLC
+GF : BundledGFunctors
+inst✝ : HeapLangGS hlc GF
+l : Loc
+Φ : Val → IProp GF
+l' : Loc
+x✝ : l = l'
+⊢ ⏎
+  ⊢ WP hl(!#l') {{ Φ }}
+
+hlc : HasLC
+GF : BundledGFunctors
+inst✝ : HeapLangGS hlc GF
+l : Loc
+Φ : Val → IProp GF
+⊢ Loc
+-/
+#guard_msgs (trace, drop all, whitespace := lax) in
+example {l : Loc} {Φ : Val → IProp GF} : ⊢@{IProp GF}
+    (∀ l', ⌜l = l'⌝ -∗ (∀ l', ⌜l = l'⌝ -∗ WP hl(!v(#l')) {{ Φ }}) -∗ WP hl(!v(#l)) {{ Φ }}) -∗ WP hl(!v(#l)) {{ Φ }} := by
+  iintro H
+  wp_apply H with %l' %_
+  trace_state
+
 -- no goal to introduce into
 /-- error: no remaining Iris goal -/
 #guard_msgs (whitespace := lax) in

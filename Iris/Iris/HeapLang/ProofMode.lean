@@ -500,11 +500,11 @@ meta partial def iWpApplyCore {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(
     ProofModeM Q($ehyps ⊢ Wp.wp $s $E $e $Φ) := do
   let ⟨_, hypsP, p, A, posePf⟩ ← iHave hyps q(Wp.wp $s $E $e $Φ) pmt true
   let lemIVar ← mkFreshIVarId (isTrue p)
-  let ⟨_, hyps0, addPf⟩ := Hyps.add bi `Hwp lemIVar p A hypsP
+  let ⟨_, hyps0, addPf⟩ := Hyps.add bi .anonymous lemIVar p A hypsP
   let mut st : @WpApplyState u GF hlc prop bi ehyps s E e Φ κ :=
     { hypsC := hyps0, eC := e,
       prefixPf := q(fun pf => $posePf ($(addPf).mp.trans pf)) }
-  let mut firstFailed : Option MessageData := none
+  let failed ← addMessageContext m!"cannot apply {A}"
   repeat
     let ⟨hypsC, eC, prefixPf⟩ := st
     let ⟨ehypsR, hypsR, _, A', p', _, remPf⟩ := Hyps.remove (rp := true) hypsC lemIVar
@@ -514,8 +514,6 @@ meta partial def iWpApplyCore {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(
         iWpBindCore _ ι s E eC Φ K e' (iApply hypsR p' A' ·)
     if let some {result := pf, ..} := applied then
       return q($prefixPf <| $(remPf).mp.trans $pf)
-    let failed := firstFailed.getD (← addMessageContext m!"cannot apply {A'}")
-    firstFailed := some failed
     match wpApplyKind with
     | .apply => throwIPMError failed
     | .smartApply =>
@@ -525,6 +523,7 @@ meta partial def iWpApplyCore {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(
         let ⟨eN', pfeq⟩ ← iWpExprSimp eN
         st := ⟨hypsN, eN', q(fun pf => $prefixPf ($purePf (tac_wp_expr_simp pf $pfeq)))⟩
       catch err =>
+        trace[wp_apply] "Error: {err.toMessageData}"
         if err.isInterrupt || err.isMaxHeartbeat then throw err
         throwIPMError failed
 
@@ -541,34 +540,14 @@ elab "wp_smart_apply_raw" colGt pmt:pmTerm : tactic =>
 /-- Strip a leading `▷` and simplify WP expressions in the goals an application produced. -/
 macro "wp_apply_post" : tactic => `(tactic| ((try inext) <;> (try wp_expr_simp)))
 
--- TODO: Is there a more efficient way to implement this?
--- TODO: move this somewhere else
-elab "focusLastIrisGoal" colGt tac:tactic : tactic => do
-  let goals ← getUnsolvedGoals
-  let mut goals_before := []
-  let mut iris_goal := []
-  let mut goals_after := []
-  for g in goals do
-    if isIrisGoal (← g.getType) then
-      goals_before := goals_before ++ iris_goal ++ goals_after
-      iris_goal := [g]
-      goals_after := []
-    else
-      goals_after := goals_after ++ [g]
-  let [g] := iris_goal
-    | throwError "no remaining Iris goal"
-  setGoals [g]
-  evalTactic tac
-  let goals' ← getUnsolvedGoals
-  setGoals (goals_before ++ goals' ++ goals_after)
-
 /--
 `wp_apply lem` poses the lemma `lem`, whose conclusion must be a `WP e' ...`, and applies
 it to the goal `WP e ...` after binding an evaluation context `K` with `e = K[e']`.
 Premises of `lem` become new goals; a leading `▷` in a premise is stripped, and WP
 premises have their expression simplified. `wp_apply lem $$ pats` additionally
 specialises the premises of `lem` with the given specialisation patterns, and
-`wp_apply lem with %v Hv` introduces into the last goal the application produced.
+`wp_apply lem with introPats` introduces the intro patterns introPats in the last Iris goal
+after applying the lemma.
 -/
 syntax (name := wpApply) "wp_apply " colGt pmTerm
   (" with" (colGt ppSpace introPat)+)? : tactic
@@ -585,8 +564,7 @@ macro_rules
 /--
 `wp_smart_apply lem` is like `wp_apply lem`, but when the lemma does not apply,
 it takes single pure steps (`wp_pure`) and retries, until the lemma applies or
-no pure step is possible. `$$` and `with` behave as for `wp_apply`. The retry is
-bounded under `smartApplyFuel` so the tactic does not diverge.
+no pure step is possible. `$$` and `with` behave as for `wp_apply`.
 -/
 syntax (name := wpSmartApply) "wp_smart_apply " colGt pmTerm
   (" with" (colGt ppSpace introPat)+)? : tactic
