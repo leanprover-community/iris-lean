@@ -207,22 +207,22 @@ example {α : Type _} (Φ : α → PROP) :
 /- Tests `asEmpValid_monPred_at_wand`, which has higher priority than `asEmpValid_monPred_at`. -/
 /-- info:
   solution: AsEmpValid AsEmpValid.Direction.from (⎡𝓟⎤ ⊢ ⎡𝓠⎤)
-    InOut.in PROP bi InOut.out iprop(∀ i, 𝓟 -∗ 𝓠),
+    InOut.in PROP bi iprop(∀ i, 𝓟 -∗ 𝓠),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
 variable (𝓟 𝓠 : PROP) in
-#ipm_synth AsEmpValid .from ((⎡𝓟⎤ : MonPred I PROP) ⊢ ⎡𝓠⎤) .in PROP bi .out _
+#ipm_synth AsEmpValid .from ((⎡𝓟⎤ : MonPred I PROP) ⊢ ⎡𝓠⎤) .in PROP bi _
 
 /- Tests `asEmpValid_monPred_at_equiv`, which has higher priority than `asEmpValid_monPred_at`. -/
 /-- info:
   solution: AsEmpValid AsEmpValid.Direction.from (⎡𝓟⎤ ⊣⊢ ⎡𝓠⎤)
-    InOut.in PROP bi InOut.out iprop(∀ i, 𝓟 ∗-∗ 𝓠),
+    InOut.in PROP bi iprop(∀ i, 𝓟 ∗-∗ 𝓠),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
 variable (𝓟 𝓠 : PROP) in
-#ipm_synth AsEmpValid .from ((⎡𝓟⎤ : MonPred I PROP) ⊣⊢ ⎡𝓠⎤) .in PROP bi .out _
+#ipm_synth AsEmpValid .from ((⎡𝓟⎤ : MonPred I PROP) ⊣⊢ ⎡𝓠⎤) .in PROP bi _
 
 /-
   Tests `asEmpValid_monPred_at` after ``asEmpValid_monPred_at_wand` and
@@ -230,12 +230,12 @@ variable (𝓟 𝓠 : PROP) in
 -/
 /-- info:
   solution: AsEmpValid AsEmpValid.Direction.from (⊢ ⌜φ⌝ ∧ ⌜φ⌝)
-    InOut.in PROP bi InOut.out iprop(∀ i, ⌜φ⌝ ∧ ⌜φ⌝),
+    InOut.in PROP bi iprop(∀ i, ⌜φ⌝ ∧ ⌜φ⌝),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
 variable (φ : Prop) in
-#ipm_synth AsEmpValid .from (⊢@{MonPred I PROP} ⌜φ⌝ ∧ ⌜φ⌝) .in PROP bi .out _
+#ipm_synth AsEmpValid .from (⊢@{MonPred I PROP} ⌜φ⌝ ∧ ⌜φ⌝) .in PROP bi _
 
 end AsEmpValid
 

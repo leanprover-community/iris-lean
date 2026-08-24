@@ -23,8 +23,8 @@ variable [bi1 : BI PROP1] [bi2 : BI PROP2] [BiEmbed PROP1 PROP2]
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias as_emp_valid_embed]
 instance (priority := low) asEmpValid_embed d φ io (P : PROP1)
-    [inst : AsEmpValid0 d φ io PROP1 bi1 ioP P] :
-    AsEmpValid d φ io PROP2 bi2 ioP (embed P) where
+    [inst : AsEmpValid0 d φ io PROP1 bi1 .out P] :
+    AsEmpValid d φ io PROP2 bi2 (embed P) where
   as_emp_valid := by
     constructor
     · exact fun hd hφ => (embed_emp_valid P).mpr <| inst.as_emp_valid_0.as_emp_valid.left hd hφ

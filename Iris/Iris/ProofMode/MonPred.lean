@@ -104,11 +104,11 @@ variable {I : BiIndex} {PROP : Type _} [bi : BI PROP]
 /-! ### AsEmpValid -/
 
 @[ipm_backtrack, rocq_alias as_emp_valid_monPred_at]
-instance (priority := low) asEmpValid_monPred_at (d : AsEmpValid.Direction) (φ : Prop) io ioP
+instance (priority := low) asEmpValid_monPred_at (d : AsEmpValid.Direction) (φ : Prop) io
     (P : MonPred I PROP) (Φ : I.car → PROP)
     [inst : AsEmpValid0 d φ .in (MonPred I PROP) inferInstance .out P]
     [instMP : ∀ i, MakeMonPredAt .indexToProp i P (Φ i)] :
-    AsEmpValid d φ io PROP bi ioP iprop(∀ i, Φ i) where
+    AsEmpValid d φ io PROP bi iprop(∀ i, Φ i) where
   as_emp_valid := by
     constructor
     · refine fun hd hφ => forall_intro fun i => ?_
@@ -122,12 +122,12 @@ instance (priority := low) asEmpValid_monPred_at (d : AsEmpValid.Direction) (φ 
         _ ⊢ P.monPred_at i := (instMP i).make_monPred_at.mpr
 
 @[ipm_backtrack, rocq_alias as_emp_valid_monPred_at_wand]
-instance asEmpValid_monPred_at_wand (d : AsEmpValid.Direction) (φ : Prop) io ioP
+instance asEmpValid_monPred_at_wand (d : AsEmpValid.Direction) (φ : Prop) io
     (P Q : MonPred I PROP) (Φ Ψ : I.car → PROP)
     [inst : AsEmpValid0 d φ .in (MonPred I PROP) inferInstance .in iprop(P -∗ Q)]
     [h1 : ∀ i, MakeMonPredAt .indexToProp i P (Φ i)]
     [h2 : ∀ i, MakeMonPredAt .indexToProp i Q (Ψ i)] :
-    AsEmpValid d φ io PROP bi ioP iprop(∀ i, Φ i -∗ Ψ i) where
+    AsEmpValid d φ io PROP bi iprop(∀ i, Φ i -∗ Ψ i) where
   as_emp_valid := by
     constructor
     · refine fun hd hφ => forall_intro fun i => entails_wand ?_
@@ -144,12 +144,12 @@ instance asEmpValid_monPred_at_wand (d : AsEmpValid.Direction) (φ : Prop) io io
         _ ⊢ Q.monPred_at i := (h2 i).make_monPred_at.mpr
 
 @[ipm_backtrack, rocq_alias as_emp_valid_monPred_at_equiv]
-instance asEmpValid_monPred_at_equiv (d : AsEmpValid.Direction) (φ : Prop) io ioP
+instance asEmpValid_monPred_at_equiv (d : AsEmpValid.Direction) (φ : Prop) io
     (P Q : MonPred I PROP) (Φ Ψ : I.car → PROP)
     [inst : AsEmpValid0 d φ .in (MonPred I PROP) inferInstance .in iprop(P ∗-∗ Q)]
     [h1 : ∀ i, MakeMonPredAt .indexToProp i P (Φ i)]
     [h2 : ∀ i, MakeMonPredAt .indexToProp i Q (Ψ i)] :
-    AsEmpValid d φ io PROP bi ioP iprop(∀ i, Φ i ∗-∗ Ψ i) where
+    AsEmpValid d φ io PROP bi iprop(∀ i, Φ i ∗-∗ Ψ i) where
   as_emp_valid := by
     constructor
     · refine fun hd hφ => forall_intro fun i => equiv_wandIff ?_
