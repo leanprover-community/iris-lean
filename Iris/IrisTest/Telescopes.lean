@@ -17,6 +17,14 @@ open Iris BI ProofMode Std
 variable {PROP : Type} [inst : BI PROP] {TT : Tele.{0}}
   (Φ Ψ : TT.Arg → PROP) (φ : TT.Arg → Prop) (a : TT.Arg)
 
+/- Delaboration of the telescope-aware lambda. -/
+/-- info: λ.. x, Φ x : TT.Arg → PROP -/
+#guard_msgs in #check (λ.. x, Φ x)
+
+variable (TU : TT.Arg → Tele) (f : (x : TT.Arg) → (TU x).Arg → PROP) in
+/-- info: λ.. x y, f x y : (xs : TT.Arg) → (TU xs).Arg → PROP -/
+#guard_msgs in #check (λ.. x y, f x y)
+
 /- Delaboration of `tforall`. -/
 /-- info: tforall Φ : PROP -/
 #guard_msgs in #check (tforall Φ : PROP)
