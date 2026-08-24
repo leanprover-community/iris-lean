@@ -89,13 +89,8 @@ export FrameMonPredAt (frame_monPred_at)
 @[rocq_alias modality_objectively, rocq_alias modality_objectively_mixin]
 def modality_objectively : Modality (MonPred I PROP) (MonPred I PROP) where
   M := MonPred.objectively
-  action _ := .transform fun P Q => Objective P ∧ P = Q
-  spec := by
-    intro p P Q h
-    have hPQ : P = Q := h.right
-    subst hPQ
-    haveI := h.left
-    exact objective_objectively iprop(□?p P)
+  action _ := .forall Objective
+  spec := fun p P _ => objective_objectively iprop(□?p P)
   emp := monPred_objectively_emp.mpr
   mono := monPred_objectively_mono
   sep := monPred_objectively_sep_2 _ _

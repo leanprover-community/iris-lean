@@ -349,6 +349,133 @@ variable (i j : I.car) [IsBiIndexRel i j] (𝓟 : PROP) (Q : MonPred I PROP) in
 #ipm_synth IntoWand false false ((iprop(⎡𝓟⎤ -∗ Q) : MonPred I PROP).monPred_at j)
   (.matching .argument) ((iprop(⎡𝓟⎤) : MonPred I PROP).monPred_at i) _
 
+/- Tests that `fromModal_objectively` selects `modality_objectively`. -/
+/-- info:
+  solution: FromModal InOut.out modality_objectively True iprop(<obj> P) iprop(<obj> P) P,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (P : MonPred I PROP) in
+#ipm_synth FromModal .out _ _ iprop(<obj> P) iprop(<obj> P) _
+
+/- Introducing `<obj>` using `imodintro`. -/
+/-- trace:
+I : BiIndex
+PROP : Type u_1
+bi : BI PROP
+φ : Prop
+hφ : φ
+⊢
+⊢ ⌜φ⌝
+-/
+#guard_msgs (whitespace := lax) in
+example (φ : Prop) (hφ : φ) : ⊢@{MonPred I PROP} <obj> ⌜φ⌝ := by
+  iintro
+  imodintro (<obj> _)
+  trace_state
+  itrivial
+
+example (𝓟 : PROP) : ⊢@{MonPred I PROP} ⎡𝓟⎤ -∗ <obj> ⎡𝓟⎤ := by
+  istart (MonPred I PROP)
+  iintro H
+  imodintro (<obj> _)
+  iexact H
+
+/- Tests `ispecialize` using `intoForall_monPred_at` which has a higher priority than `intoForall_monPred_at_index`. -/
+/-- trace:
+I : BiIndex
+PROP : Type u_2
+bi : BI PROP
+α : Sort u_1
+Φ : α → PROP
+a : α
+i : I.car
+⊢
+∗H : Φ a
+⊢ Φ a
+-/
+#guard_msgs (whitespace := lax) in
+example {α} (Φ : α → PROP) (a : α) (i : I.car) :
+    (iprop(∀ x, ⎡Φ x⎤) : MonPred I PROP).monPred_at i ⊢ Φ a := by
+  iintro H
+  ispecialize H $$ %a
+  trace_state
+  iexact H
+
+/-
+  Tests `ispecialize` using `intoForall_monPred_at_index` after
+  `intoForall_monPred_at` fails to apply and results in backtracking.
+-/
+/-- trace:
+I : BiIndex
+PROP : Type u_1
+bi : BI PROP
+P : MonPred I PROP
+i j : I.car
+hij : i ≤ j
+⊢
+∗H : ⌜i ≤ j⌝ → P.monPred_at j
+⊢ P.monPred_at j
+-/
+#guard_msgs (whitespace := lax) in
+example (P : MonPred I PROP) (i j : I.car) (hij : I.rel.le i j) :
+    P.monPred_at i ⊢ P.monPred_at j := by
+  iintro H
+  ispecialize H $$ %j
+  trace_state
+  ispecialize H $$ %hij
+  iexact H
+
 end ProofModeInstances
+
+section FrameMonPredAt
+
+variable {I : BiIndex} {PROP : Type _} [bi : BI PROP]
+variable (i j : I.car) [instRel : IsBiIndexRel i j]
+
+/- Tests `frameMonPredAt_here`, which has a higher priority than `frameMonPredAt_sep`. -/
+/-- info:
+  solution: FrameMonPredAt false i (iprop(P ∗ Q).monPred_at i) iprop(P ∗ Q) iprop(emp),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (P Q : MonPred I PROP) in
+#ipm_synth FrameMonPredAt false i ((iprop(P ∗ Q) : MonPred I PROP).monPred_at i) iprop(P ∗ Q) _
+
+/- Tests `frameMonPredAt_here`, which weakens the index using `IsBiIndexRel i j`. -/
+/-- info:
+  solution: FrameMonPredAt false j (P.monPred_at i) P iprop(emp),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (P : MonPred I PROP) in
+#ipm_synth FrameMonPredAt false j (P.monPred_at i) P _
+
+/- Tests `frameMonPredAt_sep`. -/
+/-- info:
+  solution: FrameMonPredAt false i (P.monPred_at i) iprop(P ∗ Q) (Q.monPred_at i),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (P Q : MonPred I PROP) in
+#ipm_synth FrameMonPredAt false i (P.monPred_at i) iprop(P ∗ Q) _
+
+/- Tests `frameMonPredAt_wand`. -/
+/-- info:
+  solution: FrameMonPredAt false i (R.monPred_at i) iprop(P -∗ R ∗ S)
+    (iprop(P -∗ S).monPred_at i),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (P R S : MonPred I PROP) in
+#ipm_synth FrameMonPredAt false i (R.monPred_at i) iprop(P -∗ R ∗ S) _
+
+/- Tests `iframe` with `FrameMonPredAt` instances. -/
+example (P Q : MonPred I PROP) :
+    (iprop(P ∗ Q) : MonPred I PROP).monPred_at i ⊢ (iprop(Q ∗ P) : MonPred I PROP).monPred_at j := by
+  iintro ⟨H1, H2⟩
+  iframe
+
+end FrameMonPredAt
 
 end IrisTest.MonPredAsEmpValid
