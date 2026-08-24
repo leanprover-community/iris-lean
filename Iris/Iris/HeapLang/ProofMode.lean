@@ -511,7 +511,10 @@ meta partial def iWpApplyCore {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(
     st.restore (restoreInfo := true)
     try
       iWpPure hyps ι s E e Φ (failOnUnsolved := true) findAnyPureExec
-        (k := fun hyps'' e'' => iWpApplyCore hyps'' ι s E e'' Φ pmt (.smartApply fuel))
+        (k := fun hyps'' e'' => do
+          let ⟨e₃, pfeq⟩ ← iWpExprSimp e''
+          let pf ← iWpApplyCore hyps'' ι s E e₃ Φ pmt (.smartApply fuel)
+          return q(tac_wp_expr_simp $pf $pfeq))
     catch err =>
       if err.isInterrupt || err.isMaxHeartbeat then throw err
       st.restore (restoreInfo := true)
