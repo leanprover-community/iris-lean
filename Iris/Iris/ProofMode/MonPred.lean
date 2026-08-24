@@ -517,7 +517,7 @@ instance intoExcept0_monPred_at_fwd (P Q : MonPred I PROP) (𝓠 : PROP) (i : I.
     _ ⊢ ◇ Q.monPred_at i        := (monPred_at_except_0 i Q).mp
     _ ⊢ ◇ 𝓠                     := except0_mono instMP.make_monPred_at.mp
 
-#rocq_ignore intoExcept0_monPred_at_bwd "Backward direction for IntoExcept0 not supported"
+#rocq_ignore into_except_0_monPred_at_bwd "Backward direction for IntoExcept0 not supported"
 
 /-! ### IntoWand -/
 
