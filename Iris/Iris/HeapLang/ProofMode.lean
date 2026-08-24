@@ -488,8 +488,6 @@ structure WpApplyState {u} {GF : Q(BundledGFunctors.{0, 0, 0})}
   prefixPf : Q(($ehypsC ⊢ @Wp.wp $prop Exp Val Stuckness $κ $s $E $eC $Φ) →
     $ehyps ⊢ @Wp.wp $prop Exp Val Stuckness $κ $s $E $e $Φ)
 
-/-- Pose `pmt`, then apply it at a decomposition `e = K[e']` pushing `K` into the
-postcondition via `iWpBindCore`. `premisesOut` gets the application's goals on success -/
 meta partial def iWpApplyCore {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(HasLC)}
     {prop : Q(Type u)} {bi : Q(BI $prop)} {ehyps : Q($prop)}
     (hyps : Hyps bi ehyps) (ι : Q(IrisGS_gen $hlc Exp $GF)) (s : Q(Stuckness)) (E : Q(CoPset))

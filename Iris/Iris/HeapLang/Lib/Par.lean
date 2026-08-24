@@ -47,12 +47,10 @@ theorem par_spec (Ψ1 Ψ2 : Val → IProp GF) (f1 f2 : Val) (Φ : Val → IProp 
       WP hl(&par &f1 &f2) {{ Φ }} := by
   iintro Hf1 Hf2 HΦ
   unfold par
-  wp_pures
-  wp_apply spawn_spec parN $$ Hf1 with %l Hl
+  wp_smart_apply spawn_spec parN $$ Hf1 with %l Hl
   wp_pures
   wp_apply wp_wand $$ Hf2 with %v H2
-  wp_pures
-  wp_apply join_spec $$ Hl with %w H1
+  wp_smart_apply join_spec $$ Hl with %w H1
   ispecialize HΦ $$ [$H1 $H2]
   wp_pures
   iexact HΦ

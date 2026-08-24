@@ -29,8 +29,7 @@ theorem wp_assert (E : CoPset) (Φ : Val → IProp GF) (e : Exp) :
     WP hl(assert(&e)) @ E {{ Φ }} := by
   iintro HΦ
   unfold Exp.assert
-  wp_apply wp_wand $$ HΦ with %v ⟨%Heq, _⟩
-  subst Heq
+  wp_apply wp_wand $$ HΦ with %v ⟨%rfl, _⟩
   wp_if; itrivial
 
 end Spec
