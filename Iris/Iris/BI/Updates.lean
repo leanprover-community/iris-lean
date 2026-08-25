@@ -227,16 +227,18 @@ class BIFUpdate (PROP : Type _) [BI PROP] extends FUpd PROP where
 class BIUpdateFUpdate (PROP : Type _) [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] where
   fupd_of_bupd {P : PROP} {E : CoPset} : (|==> P) ⊢ |={E}=> P
 
-class BIFUpdatePlainly (PROP : Type _) [BI PROP] [BIFUpdate PROP] [Sbi PROP] where
-  fupd_keep_si_pure {E} E' Pi (R : PROP) :
+@[rocq_alias BiFUpdSbi]
+class BIFUpdateSbi (PROP : Type _) [BI PROP] [BIFUpdate PROP] [Sbi PROP] where
+  fupd_keep_siPure {E} E' Pi (R : PROP) :
     (|={E,E'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E}=∗ R) ⊢ |={E}=> R
-  fupd_plainly_later (E : CoPset) (P : PROP) : (▷ |={E}=> ■ P) ⊢ |={E}=> ▷ ◇ P
-  fupd_plainly_sForall_2 (E : CoPset) (Φ : PROP → Prop) :
-    (|={E}=> ■ sForall Φ) ⊢ |={E}=> sForall Φ
+  fupd_siPure_later (E : CoPset) (Pi : SiProp) :
+    (▷ |={E}=> <si_pure> Pi) ⊢@{PROP} |={E}=> ▷ ◇ <si_pure> Pi
+  fupd_siPure_sForall_2 (E : CoPset) (Ψi : SiProp → Prop) :
+    (∀ q, ⌜Ψi q⌝ → |={E}=> <si_pure> q) ⊢@{PROP} |={E}=> <si_pure> (sForall Ψi)
 
 @[rocq_alias BiBUpdSbi]
 class BIBUpdateSbi (PROP : Type _) [BI PROP] [BIUpdate PROP] [Sbi PROP] where
-  bupd_si_pure (Pi : SiProp) : iprop(|==> <si_pure> Pi ⊢@{PROP} <si_pure> Pi)
+  bupd_siPure (Pi : SiProp) : iprop(|==> <si_pure> Pi ⊢@{PROP} <si_pure> Pi)
 
 section BUpdLaws
 
@@ -335,7 +337,7 @@ open BIUpdate
 
 @[rocq_alias bupd_plainly]
 theorem bupd_plainly {P : PROP} : (|==> ■ P) ⊢ ■ P :=
-  BIBUpdateSbi.bupd_si_pure (SiEmpValid.siEmpValid P)
+  BIBUpdateSbi.bupd_siPure (SiEmpValid.siEmpValid P)
 
 @[rocq_alias bupd_plainly_elim]
 theorem bupd_plainly_elim {P : PROP} [Absorbing P] : (|==> ■ P) ⊢ P :=
@@ -713,25 +715,30 @@ end StepFUpdLaws
 
 section StepFUpdPlainlyLaws
 
-variable [Sbi PROP] [BIFUpdate PROP] [BIFUpdatePlainly PROP]
+variable [Sbi PROP] [BIFUpdate PROP] [BIFUpdateSbi PROP]
 
-open BIFUpdate BIFUpdatePlainly
+open BIFUpdate BIFUpdateSbi
 
 @[rocq_alias fupd_keep_si_pure]
-theorem fupd_keep_si_pure {E1 E2 : CoPset} E2' Pi {R : PROP} :
-  (|={E1,E2'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E1,E2}=∗ R) ⊢ |={E1,E2}=> R :=
-  (and_mono_right (wand_mono_right fupd_intro)).trans <|
-    (BIFUpdatePlainly.fupd_keep_si_pure E2' Pi iprop(|={E1,E2}=> R)).trans trans
+theorem fupd_keep_siPure {E1 E2 : CoPset} E2' Pi {R : PROP} :
+    (|={E1,E2'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E1,E2}=∗ R) ⊢ |={E1,E2}=> R := calc
+  _ ⊢ (|={E1, E2'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E1}=∗ |={E1, E2}=> R) :=
+      and_mono_right <| wand_mono_right fupd_intro
+  _ ⊢ |={E1}=> |={E1, E2}=> R :=
+      BIFUpdateSbi.fupd_keep_siPure E2' Pi iprop(|={E1,E2}=> R)
+  _ ⊢ |={E1, E2}=> R := trans
 
 @[rocq_alias fupd_keep_plainly]
 theorem fupd_keep_plainly [BIAffine PROP] {E1 E2 : CoPset} E2' (P : PROP) {R : PROP} :
   (|={E1,E2'}=> ■ P) ∧ (P ={E1,E2}=∗ R) ⊢ |={E1,E2}=> R :=
   (and_mono_right (wand_mono_left siPure_siEmpValid_elim)).trans <|
-    fupd_keep_si_pure E2' (SiEmpValid.siEmpValid P)
+    fupd_keep_siPure E2' (SiEmpValid.siEmpValid P)
 
 @[rocq_alias fupd_plainly_later]
-theorem fupd_plainly_later (E : CoPset) (P : PROP) : (▷ |={E}=> ■ P) ⊢ |={E}=> ▷ ◇ P :=
-  BIFUpdatePlainly.fupd_plainly_later E P
+theorem fupd_plainly_later [BIAffine PROP] (E : CoPset) (P : PROP) :
+    (▷ |={E}=> ■ P) ⊢ |={E}=> ▷ ◇ P :=
+  (BIFUpdateSbi.fupd_siPure_later E iprop(<si_emp_valid> P)).trans <|
+    mono <| later_mono <| except0_mono siPure_siEmpValid_elim
 
 @[rocq_alias fupd_keep_plain]
 theorem fupd_keep_plain [BIAffine PROP] {E1 E2 : CoPset} E2' (P R : PROP) [Plain P] :
@@ -749,7 +756,7 @@ theorem fupd_plain_mask [BIAffine PROP] {E E' : CoPset} {P : PROP} [Plain P] :
   (mono Plain.plain).trans (fupd_plainly_mask E E')
 
 @[rocq_alias fupd_plain_later]
-theorem fupd_plain_later {E : CoPset} {P : PROP} [Plain P] : (▷ |={E}=> P) ⊢ |={E}=> ▷ ◇ P :=
+theorem fupd_plain_later [BIAffine PROP] {E : CoPset} {P : PROP} [Plain P] : (▷ |={E}=> P) ⊢ |={E}=> ▷ ◇ P :=
   (later_mono (mono Plain.plain)).trans (fupd_plainly_later E P)
 
 @[rocq_alias fupd_keep_plain_sep]
@@ -776,5 +783,66 @@ theorem step_fupdN_plain [BIAffine PROP] {E1 E2 : CoPset} {n : Nat} {P : PROP} [
       _ ⊢ |={E1}=> ▷ ◇ ▷^[n] ◇ P          := step_fupd_plain
       _ ⊢ |={E1}=> ▷ ▷^[n] ◇ ◇ P          := mono <| later_mono <| except0_laterN n
       _ ⊢ |={E1}=> ▷^[n + 1] ◇ P            := mono <| laterN_mono (n + 1) except0_idem.mp
+
+omit [BIFUpdate PROP] [BIFUpdateSbi PROP] in
+theorem sForall_eq_forall {Φ : α → PROP} :
+    sForall (fun p => ∃ a, p = Φ a) ⊣⊢ ∀ a, Φ a :=
+  ⟨forall_intro fun a => sForall_elim ⟨a, rfl⟩,
+   sForall_intro fun _ ⟨a, hp⟩ => hp ▸ forall_elim a⟩
+
+/--
+  Proves that the Rocq class field `fupd_si_pure_forall_2` for `BIFUpdSbi`
+  follows from `BIFUpdateSbi.fupd_siPure_sForall_2`.
+-/
+theorem fupd_siPure_forall_2 {E : CoPset} {A : Sort _} {Φi : A → SiProp} :
+    (∀ x, |={E}=> <si_pure> Φi x) ⊢@{PROP} |={E}=> ∀ x, <si_pure> Φi x := calc
+  _ ⊢ ∀ q, ⌜∃ x, q = Φi x⌝ → |={E}=> <si_pure> q :=
+      forall_intro fun _ => imp_intro_swap <| pure_elim_left fun ⟨x, hx⟩ => hx ▸ forall_elim x
+  _ ⊢@{PROP} |={E}=> <si_pure> (sForall fun q => ∃ x, q = Φi x) :=
+      BIFUpdateSbi.fupd_siPure_sForall_2 E _
+  _ ⊢ |={E}=> ∀ x, <si_pure> Φi x :=
+      mono <| forall_intro fun x => siPure_mono (sForall_elim ⟨x, rfl⟩)
+
+@[rocq_alias fupd_plainly_forall_2]
+theorem fupd_plainly_forall_2 [BIAffine PROP] {E : CoPset} {Φ : α → PROP} :
+    (∀ a, |={E}=> ■ Φ a) ⊢ |={E}=> ∀ a, Φ a :=
+  fupd_siPure_forall_2.trans <| mono <| forall_mono fun _ => siPure_siEmpValid_elim
+
+@[rocq_alias fupd_plain_forall_2]
+theorem fupd_plain_forall_2 [BIAffine PROP] {E : CoPset} {Φ : α → PROP} [∀ a, Plain (Φ a)] :
+    (∀ a, |={E}=> Φ a) ⊢ |={E}=> ∀ a, Φ a :=
+  (forall_mono fun _ => mono Plain.plain).trans fupd_plainly_forall_2
+
+@[rocq_alias fupd_plain_forall]
+theorem fupd_plain_forall [BIAffine PROP] {E1 E2 : CoPset} {Φ : α → PROP}
+    [inst : ∀ a, Plain (Φ a)] (h : E2 ⊆ E1) :
+    (|={E1,E2}=> ∀ a, Φ a) ⊣⊢ ∀ a, |={E1,E2}=> Φ a := by
+  constructor
+  · exact fupd_forall
+  · calc
+      _ ⊢ ∀ a, |={E1}=> Φ a    := forall_mono fun _ => fupd_plain_mask
+      _ ⊢ |={E1}=> ∀ a, Φ a    := fupd_plain_forall_2
+      _ ⊢ |={E1,E2}=> ∀ a, Φ a := fupd_elim ?_
+    calc
+      _ ⊢ ■ (∀ a, Φ a)             := Plain.plain
+      _ ⊢ |={E1,E2}=> ■ (∀ a, Φ a) := fupd_mask_intro_discard h
+      _ ⊢ |={E1,E2}=> |={E2}=> _   := mono <| fupd_intro.trans <| fupd_plainly_mask E2 E2
+      _ ⊢ |={E1,E2}=> ∀ a, Φ a     := trans
+
+@[rocq_alias step_fupd_plain_forall]
+theorem step_fupd_plain_forall [BIAffine PROP] {Eo Ei : CoPset} {Φ : α → PROP}
+    [∀ a, Plain (Φ a)] (h : Ei ⊆ Eo) :
+    (|={Eo}[Ei]▷=> ∀ a, Φ a) ⊣⊢ ∀ a, |={Eo}[Ei]▷=> Φ a := by
+  constructor
+  · exact forall_intro fun a => step_fupd_mono (forall_elim a)
+  · calc
+      _ ⊢ ∀ a, |={Eo}=> ▷ ◇ Φ a := forall_mono fun _ => step_fupd_plain
+      _ ⊢ |={Eo}=> ∀ a, ▷ ◇ Φ a := (fupd_plain_forall LawfulSet.subset_refl).mpr
+      _ ⊢ |={Eo}[Ei]▷=> ∀ a, Φ a := fupd_elim ?_
+    calc
+      _ ⊢ ▷ ∀ a, ◇ Φ a              := later_forall.mpr
+      _ ⊢ ▷ ◇ ∀ a, Φ a              := later_mono except0_forall.mpr
+      _ ⊢ |={Eo}[Ei]▷=> ◇ ∀ a, Φ a  := step_fupd_intro h
+      _ ⊢ |={Eo}[Ei]▷=> ∀ a, Φ a     := mono <| later_mono fupd_except0
 
 end StepFUpdPlainlyLaws

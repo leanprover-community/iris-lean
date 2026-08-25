@@ -9,8 +9,7 @@ public import Iris.BI.DerivedLaws
 public import Iris.BI.DerivedLawsLater
 public import Iris.BI.Extensions
 public import Iris.Std.Telescopes
-public meta import Iris.Std.DelabRule
-public meta import Iris.Std.RocqPorting
+public import Iris.Std.DelabRule
 
 @[expose] public section
 
@@ -27,26 +26,23 @@ def tforall [BI PROP] {TT : Tele} (Ψ : TT.Arg → PROP) : PROP :=
 def texist [BI PROP] {TT : Tele} (Ψ : TT.Arg → PROP) : PROP :=
   Tele.fold (fun _ => BIBase.exists) (Tele.bind Ψ)
 
-/-- Telescopic universal quantification. -/
-macro "∀.." xs:explicitBinders ", " P:term : term => do
-  return ⟨← expandExplicitBinders ``tforall xs P⟩
-
-/-- Telescopic existential quantification. -/
-macro "∃.." xs:explicitBinders ", " P:term : term => do
-  return ⟨← expandExplicitBinders ``texist xs P⟩
-
 macro_rules
   | `(iprop(∀.. $xs, $Ψ)) => do expandExplicitBinders ``tforall xs (← ``(iprop($Ψ)))
   | `(iprop(∃.. $xs, $Ψ)) => do expandExplicitBinders ``texist xs (← ``(iprop($Ψ)))
 
-delab_rule tforall
-  | `($_ fun $x:ident => iprop(∀.. $y:ident $[$z:ident]*, $Ψ)) => do
-    ``(iprop(∀.. $x:ident $y:ident $[$z:ident]*, $Ψ))
-  | `($_ fun $x:ident => $Ψ) => do ``(iprop(∀.. $x:ident, $(← unpackIprop Ψ)))
-delab_rule texist
-  | `($_ fun $x:ident => iprop(∃.. $y:ident $[$z:ident]*, $Ψ)) => do
-    ``(iprop(∃.. $x:ident $y:ident $[$z:ident]*, $Ψ))
-  | `($_ fun $x:ident => $Ψ) => do ``(iprop(∃.. $x:ident, $(← unpackIprop Ψ)))
+/-- A delaborator for the telescopic universal quantifier. -/
+@[app_delab Iris.BI.tforall]
+meta def delabBITforall : PrettyPrinter.Delaborator.Delab :=
+  delabQuant 4 unpackIprop
+    (fun x xs body => `(iprop(∀.. $x:ident $[$xs:ident]*, $body)))
+    (fun | `(∀.. $x:ident $[$xs:ident]*, $Ψ) => some (x, xs, Ψ) | _ => none)
+
+/-- A delaborator for the telescopic existential quantifier. -/
+@[app_delab Iris.BI.texist]
+meta def delabBITexist : PrettyPrinter.Delaborator.Delab :=
+  delabQuant 4 unpackIprop
+    (fun x xs body => `(iprop(∃.. $x:ident $[$xs:ident]*, $body)))
+    (fun | `(∃.. $x:ident $[$xs:ident]*, $Ψ) => some (x, xs, Ψ) | _ => none)
 
 section Telescopes
 variable [BI PROP] {TT : Tele}
@@ -123,42 +119,42 @@ theorem texist_congr {Φ Ψ : TT.Arg → PROP} (h : ∀ x, Φ x ⊣⊢ Ψ x) :
 
 @[rocq_alias bi_tforall_absorbing]
 instance tforall_absorbing (Ψ : TT.Arg → PROP) [∀ x, Absorbing (Ψ x)] :
-    Absorbing (∀.. x, Ψ x) := by
+    Absorbing iprop(∀.. x, Ψ x) := by
   rw [(tforall_forall Ψ).to_eq]
   infer_instance
 
 @[rocq_alias bi_tforall_persistent]
 instance tforall_persistent [BIPersistentlyForall PROP] (Ψ : TT.Arg → PROP)
-    [∀ x, Persistent (Ψ x)] : Persistent (∀.. x, Ψ x) := by
+    [∀ x, Persistent (Ψ x)] : Persistent iprop(∀.. x, Ψ x) := by
   rw [(tforall_forall Ψ).to_eq]
   infer_instance
 
 @[rocq_alias bi_texist_affine]
-instance texist_affine (Ψ : TT.Arg → PROP) [∀ x, Affine (Ψ x)] : Affine (∃.. x, Ψ x) := by
+instance texist_affine (Ψ : TT.Arg → PROP) [∀ x, Affine (Ψ x)] : Affine iprop(∃.. x, Ψ x) := by
   rw [(texist_exist Ψ).to_eq]
   infer_instance
 
 @[rocq_alias bi_texist_absorbing]
 instance texist_absorbing (Ψ : TT.Arg → PROP) [∀ x, Absorbing (Ψ x)] :
-    Absorbing (∃.. x, Ψ x) := by
+    Absorbing iprop(∃.. x, Ψ x) := by
   rw [(texist_exist Ψ).to_eq]
   infer_instance
 
 @[rocq_alias bi_texist_persistent]
 instance texist_persistent (Ψ : TT.Arg → PROP) [∀ x, Persistent (Ψ x)] :
-    Persistent (∃.. x, Ψ x) := by
+    Persistent iprop(∃.. x, Ψ x) := by
   rw [(texist_exist Ψ).to_eq]
   infer_instance
 
 @[rocq_alias bi_tforall_timeless]
 instance tforall_timeless (Ψ : TT.Arg → PROP) [∀ x, Timeless (Ψ x)] :
-    Timeless (∀.. x, Ψ x) := by
+    Timeless iprop(∀.. x, Ψ x) := by
   rw [(tforall_forall Ψ).to_eq]
   infer_instance
 
 @[rocq_alias bi_texist_timeless]
 instance texist_timeless (Ψ : TT.Arg → PROP) [∀ x, Timeless (Ψ x)] :
-    Timeless (∃.. x, Ψ x) := by
+    Timeless iprop(∃.. x, Ψ x) := by
   rw [(texist_exist Ψ).to_eq]
   infer_instance
 

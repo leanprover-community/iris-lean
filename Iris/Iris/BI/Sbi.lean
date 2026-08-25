@@ -93,7 +93,7 @@ export Sbi (siPure_mono siEmpValid_mono siEmpValid_siPure siPure_siEmpValid siPu
 
 /-- Alias for `Sbi.siEmpValid_affinely_mpr` field. -/
 @[rocq_alias si_emp_valid_affinely_2]
-theorem si_emp_valid_affinely_2 [Sbi PROP] {P : PROP} :
+theorem siEmpValid_affinely_2 [Sbi PROP] {P : PROP} :
     <si_emp_valid> P ⊢@{SiProp} <si_emp_valid> (<affine> P) :=
   Sbi.siEmpValid_affinely_mpr
 
@@ -137,6 +137,9 @@ instance instSbiEmpValidExistSiProp : SbiEmpValidExist SiProp where
   siEmpValid_sExists_1 _ :=
     sExists_elim fun p hp => exists_intro_trans p (and_intro (pure_intro hp) .rfl)
 
+@[simp] theorem siPure_holds {Pi : SiProp} {n} :
+    (iprop(<si_pure> Pi) : SiProp).holds n ↔ Pi.holds n := .rfl
+
 @[rocq_alias si_pure_persistent]
 instance siPure_persistent [Sbi PROP] : Persistent (PROP := PROP) iprop(<si_pure> Pi) where
   persistent :=
@@ -167,7 +170,7 @@ theorem siPure_forall [Sbi PROP] {A : Sort _} {Φi : A → SiProp} :
   ⟨forall_intro (siPure_mono <| forall_elim ·), siPure_forall_mpr⟩
 
 @[rocq_alias si_pure_exist]
-theorem siPure_exist [Sbi PROP] {A : Type _} {Φi : A → SiProp} :
+theorem siPure_exist [Sbi PROP] {A : Sort _} {Φi : A → SiProp} :
     <si_pure> (∃ x, Φi x) ⊣⊢@{PROP} ∃ x, <si_pure> Φi x := by
   refine ⟨?_, exists_elim (siPure_mono <| exists_intro ·)⟩
   calc iprop(<si_pure> (∃ x, Φi x))

@@ -418,6 +418,22 @@ theorem encode_inj [c : Countable A] : c.encode.Injective :=
     rewrite [<- c.decode_encode x, Hxy, c.decode_encode]
     rfl
 
+@[simp]
+theorem encode_eq_iff [Countable A] {x y : A} : Countable.encode x = Countable.encode y ↔ x = y :=
+  ⟨fun H => encode_inj H, fun H => H ▸ rfl⟩
+
+open Classical in
+/-- Countability from an injection into `Pos`. Rocq's `inj_countable` asks for a computable
+partial inverse of the injection; the inverse here is obtained classically, so the `decode` of
+the resulting instance is noncomputable. -/
+@[reducible]
+noncomputable def Countable.ofInjective {A} (f : A → Pos) (Hf : f.Injective) : Countable A where
+  encode := f
+  decode p := if H : ∃ a, f a = p then some H.choose else none
+  decode_encode a := by
+    have H : ∃ b, f b = f a := ⟨a, rfl⟩
+    rw [dif_pos H]; exact congrArg some (Hf H.choose_spec)
+
 instance [Countable A] : Countable (List A) where
   encode xs := Pos.flatten (List.map Countable.encode xs)
   decode p := (Pos.unflatten p).bind (List.mapM Countable.decode ·)
@@ -449,6 +465,19 @@ instance : Pos.Countable String where
   encode s := (Pos.Countable.encode : List Char → Pos) s.toList
   decode p := ((Pos.Countable.decode p : Option (List Char))).map String.ofList
   decode_encode s := by simp [Pos.Countable.decode_encode, String.ofList_toList]
+
+instance : Pos.Countable Bool where
+  encode b := Pos.Countable.encode (if b then 1 else 0 : Nat)
+  decode p := ((Pos.Countable.decode p : Option Nat)).map (· != 0)
+  decode_encode b := by cases b <;> simp [Pos.Countable.decode_encode]
+
+/-- `Int` is countable by interleaving the non-negative and the negative integers. -/
+instance : Pos.Countable Int where
+  encode i := Pos.Countable.encode (if 0 ≤ i then 2 * i.toNat else 2 * (-i).toNat - 1)
+  decode p := ((Pos.Countable.decode p : Option Nat)).map
+    fun n => if n % 2 = 0 then (n / 2 : Int) else -((n + 1) / 2 : Int)
+  decode_encode i := by
+    by_cases h : 0 ≤ i <;> simp [Pos.Countable.decode_encode, h] <;> omega
 
 instance : Ord Pos where
   compare x y := Pos.compare x y

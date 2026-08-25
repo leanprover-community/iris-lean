@@ -17,7 +17,7 @@ open Iris BI
 /-! This file contains tests for the predefined separation logic notations. -/
 
 variable (p : Bool) (φ : Prop)
-variable [BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → PROP)
+variable [inst : BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → PROP)
 
 /-! ## Interface -/
 
@@ -49,6 +49,8 @@ variable [BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → 
 /-- info: iprop(P → Q ∧ R) : PROP -/
 #guard_msgs in #check iprop(P → (Q ∧ R))
 
+/-- info: «forall» Ψ : PROP -/
+#guard_msgs in #check iprop(BIBase.forall Ψ)
 /-- info: iprop(∀ x, Ψ x) : PROP -/
 #guard_msgs in #check iprop(∀ x, Ψ x)
 /-- info: iprop(∀ x, Ψ x) : PROP -/
@@ -60,6 +62,8 @@ variable [BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → 
 /-- info: iprop(∀ x y, Φ x y) : PROP -/
 #guard_msgs in #check iprop(∀ (x y : Nat), Φ x y)
 
+/-- info: «exists» Ψ : PROP -/
+#guard_msgs in #check iprop(BIBase.exists Ψ)
 /-- info: iprop(∃ x, Ψ x) : PROP -/
 #guard_msgs in #check iprop(∃ x, Ψ x)
 /-- info: iprop(∃ x, Ψ x) : PROP -/
@@ -76,8 +80,23 @@ variable [BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → 
 /-- info: iprop(P ∗ Q ∗ R) : PROP -/
 #guard_msgs in #check iprop(P ∗ (Q ∗ R))
 
-section Telescopes
+section StdTelescopes
 open Iris.Std
+
+variable {TT : Tele} (P : TT.Arg → TT.Arg → TT.Arg → TT.Arg → Prop) (Q : TT.Arg → Prop)
+
+/-- info: ∀.. x y, ∃.. a b, P x y a b : Prop -/
+#guard_msgs in #check ∀.. x, ∀.. y, ∃.. a, ∃.. b, P x y a b
+/-- info: Tele.tforall Q : Prop -/
+#guard_msgs in #check (Std.Tele.tforall Q)
+/-- info: Tele.texist Q : Prop -/
+#guard_msgs in #check (Std.Tele.texist Q)
+
+end StdTelescopes
+
+section BITelescopes
+open Iris.Std
+
 variable [BI PROP] {TT : Tele} (Ψt : TT.Arg → PROP) (Φt : TT.Arg → TT.Arg → PROP)
 
 /-- info: iprop(∀.. x, Ψt x) : PROP -/
@@ -91,7 +110,7 @@ variable [BI PROP] {TT : Tele} (Ψt : TT.Arg → PROP) (Φt : TT.Arg → TT.Arg 
 /-- info: iprop((∀.. x, Ψt x) ∗ ∃.. y, Ψt y) : PROP -/
 #guard_msgs in #check iprop((∀.. x, Ψt x) ∗ ∃.. y, Ψt y)
 
-end Telescopes
+end BITelescopes
 
 /-- info: iprop(P -∗ Q) : PROP -/
 #guard_msgs in #check iprop(P -∗ Q)

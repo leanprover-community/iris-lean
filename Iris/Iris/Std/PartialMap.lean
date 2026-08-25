@@ -770,6 +770,13 @@ theorem dom_map {f : V → V'} {m : M V} : dom (PartialMap.map f m) = dom m := b
   ext k
   simp [PartialMap.dom, get?_map]
 
+theorem dom_eq_of_option_rel {R : V → V' → Prop} {m₁ : M V} {m₂ : M V'}
+    (h : ∀ k, Option.Rel R (get? m₁ k) (get? m₂ k)) : dom m₁ = dom m₂ := by
+  funext k
+  have hk := h k
+  suffices hs : (get? m₁ k).isSome = (get? m₂ k).isSome by simp [dom, hs]
+  cases h₁ : get? m₁ k <;> cases h₂ : get? m₂ k <;> simp_all
+
 theorem disjoint_map {f g : V → V'} {m₁ m₂ : M V}
     (hdisj : m₁ ##ₘ m₂) : PartialMap.map f m₁ ##ₘ PartialMap.map g m₂ := by
   intro k ⟨hs1, hs2⟩
@@ -869,6 +876,24 @@ theorem isSome_zipWith {f : V → V' → V''} {m₁ : M V} {m₂ : M V'} {k : K}
       (get? m₁ k).isSome ∧ (get? m₂ k).isSome := by
   rw [get?_zipWith]
   cases h1 : get? m₁ k <;> cases h2 : get? m₂ k <;> simp
+
+theorem get?_zipWith_prod_eq_some {m₁ : M V} {m₂ : M V'} {k : K} {v : V} {v' : V'}
+    (h : get? (zipWith (V'' := V × V') (fun x y => (x, y)) m₁ m₂) k = some (v, v')) :
+    get? m₁ k = some v ∧ get? m₂ k = some v' := by
+  rw [get?_zipWith] at h
+  cases h₁ : get? m₁ k <;> cases h₂ : get? m₂ k <;> simp_all
+
+theorem isSome_zipWith_prod_congr {R₁ : V → W → Prop} {R₂ : V' → W' → Prop}
+    {m₁ : M V} {m₁' : M W} {m₂ : M V'} {m₂' : M W'}
+    (h₁ : ∀ k, Option.Rel R₁ (get? m₁ k) (get? m₁' k))
+    (h₂ : ∀ k, Option.Rel R₂ (get? m₂ k) (get? m₂' k)) (k : K) :
+    (get? (zipWith (V'' := V × V') (fun x y => (x, y)) m₁ m₂) k).isSome =
+      (get? (zipWith (V'' := W × W') (fun x y => (x, y)) m₁' m₂') k).isSome := by
+  simp only [get?_zipWith]
+  have hk₁ := h₁ k
+  have hk₂ := h₂ k
+  cases e₁ : get? m₁ k <;> cases e₁' : get? m₁' k <;>
+    cases e₂ : get? m₂ k <;> cases e₂' : get? m₂' k <;> simp_all
 
 theorem zip_empty_left {m : M V'} :
     zip (∅ : M V) m = ∅ := by

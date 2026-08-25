@@ -3160,11 +3160,12 @@ inst✝ : BI PROP
 P : PROP
 Q : α → PROP
 ⊢ ⏎
-  ⊢ «exists» fun {n} => Q n
+  ⊢ @«exists» PROP (@toBIBase PROP inst✝) α fun {n} => Q n
 -/
 #guard_msgs (trace, drop error) in
+set_option pp.explicit true in
 example [BI PROP] {α} (P : PROP) (Q : α → PROP) :
-    ⊢ P -∗ BI.exists fun {n} => iprop(Q n  ∗ P) := by
+    ⊢ P -∗ BI.exists fun {n} => iprop(Q n ∗ P) := by
   iintro HP
   iframe HP
   trace_state

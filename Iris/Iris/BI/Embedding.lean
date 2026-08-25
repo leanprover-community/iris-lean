@@ -94,9 +94,9 @@ class BiEmbedFUpd (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] [BiEmbed PROP1 PR
 @[rocq_alias BiEmbedSbi]
 class BiEmbedSbi (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
     [Sbi PROP1] [Sbi PROP2] where
-  embed_si_emp_valid : ∀ (P : PROP1),
+  embed_siEmpValid : ∀ (P : PROP1),
     SiEmpValid.siEmpValid (embed P : PROP2) ⊣⊢ SiEmpValid.siEmpValid P
-  embed_si_pure_1 : ∀ (Pi : SiProp),
+  embed_siPure_1 : ∀ (Pi : SiProp),
     (embed (SiPure.siPure Pi : PROP1) : PROP2) ⊢ (SiPure.siPure Pi : PROP2)
 
 /-! ## Projections -/
@@ -435,24 +435,24 @@ section
 variable {P1 P2 : Type _} [Sbi P1] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
 
 @[rocq_alias embed_si_pure]
-theorem embed_si_pure (Pi : SiProp) :
+theorem embed_siPure (Pi : SiProp) :
     (embed (SiPure.siPure Pi : P1) : P2) ⊣⊢ SiPure.siPure Pi :=
-  ⟨BiEmbedSbi.embed_si_pure_1 Pi,
-   (siPure_mono ((BiEmbedSbi.embed_si_emp_valid _).trans siEmpValid_siPure).mpr).trans
+  ⟨BiEmbedSbi.embed_siPure_1 Pi,
+   (siPure_mono ((BiEmbedSbi.embed_siEmpValid _).trans siEmpValid_siPure).mpr).trans
      siPure_siEmpValid_elim⟩
 
 @[rocq_alias embed_internal_eq]
 theorem embed_internal_eq {A : Type _} [OFE A] (x y : A) :
     (embed (iprop(x ≡ y) : P1) : P2) ⊣⊢ x ≡ y :=
-  embed_si_pure (SiProp.internalEq x y)
+  embed_siPure (SiProp.internalEq x y)
 
 @[rocq_alias embed_plainly]
 theorem embed_plainly (P : P1) : (⎡■ P⎤ : P2) ⊣⊢ ■ ⎡P⎤ := by
   show (embed (SiPure.siPure (SiEmpValid.siEmpValid P)) : P2)
       ⊣⊢ SiPure.siPure (SiEmpValid.siEmpValid (embed P))
-  exact (embed_si_pure _).trans
-    ⟨siPure_mono (BiEmbedSbi.embed_si_emp_valid P).mpr,
-     siPure_mono (BiEmbedSbi.embed_si_emp_valid P).mp⟩
+  exact (embed_siPure _).trans
+    ⟨siPure_mono (BiEmbedSbi.embed_siEmpValid P).mpr,
+     siPure_mono (BiEmbedSbi.embed_siEmpValid P).mp⟩
 
 @[rocq_alias embed_plainly_if]
 theorem embed_plainly_if (p : Bool) (P : P1) :
@@ -475,8 +475,8 @@ theorem embed_internal_inj {P3 : Type _} [Sbi P3] (P Q : P1) :
     _ ⊢ <si_emp_valid> (P -∗ Q) ∧ <si_emp_valid> (Q -∗ P)         := and_mono ?_ ?_
     _ ⊢ <si_emp_valid> ((P -∗ Q) ∧ (Q -∗ P))                      := siEmpValid_and.mpr
     _ ⊢ SiProp.internalEq P Q                                     := (prop_ext_siEmpValid_equiv P Q).mpr
-  exact (siEmpValid_mono (embed_wand_2 P Q)).trans (BiEmbedSbi.embed_si_emp_valid iprop(P -∗ Q)).mp
-  exact (siEmpValid_mono (embed_wand_2 Q P)).trans (BiEmbedSbi.embed_si_emp_valid iprop(Q -∗ P)).mp
+  exact (siEmpValid_mono (embed_wand_2 P Q)).trans (BiEmbedSbi.embed_siEmpValid iprop(P -∗ Q)).mp
+  exact (siEmpValid_mono (embed_wand_2 Q P)).trans (BiEmbedSbi.embed_siEmpValid iprop(Q -∗ P)).mp
 
 end
 
@@ -578,13 +578,13 @@ variable {QA QB QC : Type _} [Sbi QA] [Sbi QB] [Sbi QC]
 @[rocq_alias embed_embed_sbi]
 theorem embed_embed_sbi : @BiEmbedSbi QA QC _ _ (embedBiEmbed QB) _ _ :=
   letI : BiEmbed QA QC := embedBiEmbed QB
-  { embed_si_emp_valid := fun P =>
-      (BiEmbedSbi.embed_si_emp_valid (PROP1 := QB) (PROP2 := QC) (embed (A := QA) (B := QB) P)).trans
-        (BiEmbedSbi.embed_si_emp_valid (PROP1 := QA) (PROP2 := QB) P)
-    embed_si_pure_1 := fun Pi =>
+  { embed_siEmpValid := fun P =>
+      (BiEmbedSbi.embed_siEmpValid (PROP1 := QB) (PROP2 := QC) (embed (A := QA) (B := QB) P)).trans
+        (BiEmbedSbi.embed_siEmpValid (PROP1 := QA) (PROP2 := QB) P)
+    embed_siPure_1 := fun Pi =>
       (embed_mono (PROP1 := QB) (PROP2 := QC)
-          (BiEmbedSbi.embed_si_pure_1 (PROP1 := QA) (PROP2 := QB) Pi)).trans
-        (BiEmbedSbi.embed_si_pure_1 (PROP1 := QB) (PROP2 := QC) Pi) }
+          (BiEmbedSbi.embed_siPure_1 (PROP1 := QA) (PROP2 := QB) Pi)).trans
+        (BiEmbedSbi.embed_siPure_1 (PROP1 := QB) (PROP2 := QC) Pi) }
 
 end
 

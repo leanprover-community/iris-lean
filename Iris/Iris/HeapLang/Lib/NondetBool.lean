@@ -27,15 +27,12 @@ theorem nondetBool.spec :
   wp_alloc l with Hl
   wp_pures
   imod inv_alloc `rnd ⊤ iprop(∃ (b : Bool), l ↦ hl_val(#b)) $$ [$Hl] with #Hinv
-  wp_bind fork(_)
-  iapply wp_fork $$ [K] []
-  · inext
-    wp_pures
+  wp_apply wp_fork $$ [K] []
+  · wp_pures
     iinv Hinv with >⟨%b, Hl⟩
     wp_load
     iintro !> {$Hl}
     iapply K $$ [//]
-  · inext
-    iinv Hinv with >⟨%b, Hl⟩
+  · iinv Hinv with >⟨%b, Hl⟩
     wp_store
     iframe

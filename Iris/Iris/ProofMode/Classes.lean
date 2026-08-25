@@ -11,7 +11,7 @@ public import Iris.ProofMode.Modalities
 @[expose] public section
 
 namespace Iris.ProofMode
-open Iris.BI
+open Iris.BI Std
 
 /--
 [PMError] is used as precondition on "failing" instances of typeclasses that
@@ -274,6 +274,35 @@ export AddModal (add_modal)
 @[rocq_alias add_modal_id]
 theorem addModal_id {PROP} [BI PROP] (P Q : PROP) : AddModal P P Q where
   add_modal := wand_elim_right
+
+@[ipm_class, rocq_alias IsCons]
+class IsCons {α} (l : List α) (x : outParam α) (xs : outParam <| List α) where
+  is_cons : l = x :: xs
+export IsCons (is_cons)
+
+@[ipm_class, rocq_alias IsApp]
+class IsApp {α} (l : List α) (l1 l2 : outParam (List α)) where
+  is_app : l = l1 ++ l2
+export IsApp (is_app)
+
+@[rocq_alias is_cons_cons]
+instance isCons_cons {α} (x : α) (xs : List α) : IsCons (x :: xs) x xs where
+  is_cons := rfl
+
+@[rocq_alias is_app_app]
+instance isApp_app {α} (l1 l2 : List α) : IsApp (l1 ++ l2) l1 l2 where
+  is_app := rfl
+
+@[ipm_class, rocq_alias IsDisjUnion]
+class IsDisjUnion {MS A : Type _} [FiniteMultiSet MS A]
+    (X : MS) (X₁ X₂ : outParam MS) : Prop where
+  is_disj_union : X = X₁ ⊎ X₂
+export IsDisjUnion (is_disj_union)
+
+@[rocq_alias is_disj_union_disj_union]
+instance isDisjUnion_disjUnion {MS A : Type _} [FiniteMultiSet MS A] (X₁ X₂ : MS) :
+    IsDisjUnion (A := A) (X₁ ⊎ X₂) X₁ X₂ where
+  is_disj_union := rfl
 
 @[ipm_class, rocq_alias Frame]
 class Frame {PROP} [BI PROP] (p : Bool) (R P : PROP) (Q : outParam PROP) where

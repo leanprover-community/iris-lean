@@ -29,31 +29,6 @@ macro_rules | `(tactic| itrivial) => `(tactic| mytac)
 syntax "itrivial" : tactic
 
 /--
-  Attempts to solve the side condition `target`.
-
-  When `failOnUnsolved` is set as `true`, this function throws an error when
-  the side condition cannot be solved automatically.
-
-  Otherwise, when `failOnUnsolved` is set as `false`, the unsolved subgoals
-  are added to the proof state for the user.
--/
-def iSolveSidecondition (target : Q(Prop)) (failOnUnsolved := true) : ProofModeM Q($target) := do
-  let mvar ← mkFreshExprSyntheticOpaqueMVar q($target)
-  match ← instantiateMVars target with
-  | .app (.const ``PMError _) (.lit (.strVal msg)) =>
-      throwError "{msg}"
-  | _ =>
-      let gs ← (observing? <|
-        evalTacticAt (← `(tactic | (and_intros <;> (first | trivial | infer_instance | (simp [*] <;> done))))) mvar.mvarId!) <&>
-        (·.getD [mvar.mvarId!])
-      if !gs.isEmpty then
-        if failOnUnsolved then
-          throwError "iSolveSidecondition: failed to solve side condition {target}"
-        else
-          for g in gs do addMVarGoal g
-      return mvar
-
-/--
   `istart` starts the Iris Proof Mode.
 -/
 elab "istart" : tactic => do
@@ -82,3 +57,23 @@ elab "istop" : tactic => do
     -- check if already in proof mode
     let some irisGoal := parseIrisGoal? goal | throwError "istop: not in proof mode"
     mvar.setType irisGoal.strip
+
+-- TODO: Is there a more efficient way to implement this?
+elab "focusLastIrisGoal" colGt tac:tactic : tactic => do
+  let goals ← getUnsolvedGoals
+  let mut goals_before := []
+  let mut iris_goal := []
+  let mut goals_after := []
+  for g in goals do
+    if isIrisGoal (← g.getType) then
+      goals_before := goals_before ++ iris_goal ++ goals_after
+      iris_goal := [g]
+      goals_after := []
+    else
+      goals_after := goals_after ++ [g]
+  let [g] := iris_goal
+    | throwError "no remaining Iris goal"
+  setGoals [g]
+  evalTactic tac
+  let goals' ← getUnsolvedGoals
+  setGoals (goals_before ++ goals' ++ goals_after)
