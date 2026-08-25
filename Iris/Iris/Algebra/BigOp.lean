@@ -793,7 +793,8 @@ theorem bigOpS_fn_insert_eq [DecidableEq A] {B : Type _} (Φ : A → B → M) (f
   rw [bigOpS_insert h]
   congr 1
   · simp
-  · exact bigOpS_eq fun hy => by simp [show _ ≠ x from fun heq => h (heq ▸ hy)]
+  · exact bigOpS_eq (by grind)
+
 
 @[rocq_alias big_opS_fn_insert']
 theorem bigOpS_fn_insert_eq' [DecidableEq A] (Φ : A → M) {s : S} {x : A} (P : M) (h : x ∉ s) :

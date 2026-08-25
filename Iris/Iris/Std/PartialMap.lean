@@ -1037,12 +1037,8 @@ theorem noDupKeys_map_key {K' : Type _} {f : K → K'} (hf : Function.Injective 
 
 theorem noDupKeys_mapIdx {f : Nat → K} {l : List V} (hf : Function.Injective f) :
     NoDupKeys (l.mapIdx fun i v => (f i, v)) := by
-  have hkeys : ((l.mapIdx fun i v => (f i, v)).map (·.1)) = (List.range' 0 l.length).map f := by
-    rw [List.mapIdx_eq_zipIdx_map, List.map_map,
-      show ((fun kv => kv.1) ∘ fun p : V × Nat => (f p.2, p.1)) = f ∘ (·.2) from rfl,
-      ← List.map_map, List.zipIdx_map_snd]
-  rw [NoDupKeys, hkeys]
-  exact List.nodup_map_of_injective hf List.nodup_range'
+  simpa [NoDupKeys, List.mapIdx_eq_zipIdx_map, Function.comp_def, -List.zipIdx_map_snd] using
+    List.nodup_map_of_injective (l := l.zipIdx.map (·.2)) hf (by simp [List.nodup_range'])
 
 theorem get?_ofSet_of_mem [DecidableEq K] [LawfulFiniteSet S K] {a : V} {s : S} {k : K}
     (h : k ∈ s) : get? (FiniteMap.ofSet (M := M) a s) k = some a :=
