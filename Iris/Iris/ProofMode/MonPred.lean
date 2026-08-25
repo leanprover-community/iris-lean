@@ -51,25 +51,6 @@ class MakeMonPredAt (d : MakeMonPredAt.Kind) (i : semiOutParamIPM d.indexIO I.ca
   make_monPred_at : P.monPred_at i ⊣⊢ 𝓟
 export MakeMonPredAt (make_monPred_at)
 
-meta section
-open Lean Meta
-
-/--
-  `MakeMonPredAt` is used by `AsEmpValid` to import lemmas into the proof mode,
-  with `makeMonPredAt_default` as the fallback option.
-  However, if any of `I`, `PROP` or `P` is a metavariable, `makeMonPredAt_default`
-  should not be used.
--/
-@[ipm_tactic_instance MakeMonPredAt _ _ _ _]
-meta def makeMonPredAtModeGuard : SynthTactic := fun e => do
-  let_expr MakeMonPredAt I PROP _bi _d _i P _𝓟 := e | return .continue
-  let isMVarHead (x : Expr) : MetaM Bool := return (← instantiateMVars x).getAppFn.isMVar
-  if (← isMVarHead I) || (← isMVarHead PROP) || (← isMVarHead P) then
-    return .fail
-  return .continue
-
-end
-
 @[ipm_class, rocq_alias IsBiIndexRel]
 class IsBiIndexRel (i j : I.car) where
   is_bi_index_rel : I.rel.le i j
@@ -127,7 +108,7 @@ instance (priority := low) asEmpValid_monPred_at (d : AsEmpValid.Direction) (φ 
         _ ⊢ P.monPred_at i := (instMP i).make_monPred_at.mpr
 
 @[ipm_backtrack, rocq_alias as_emp_valid_monPred_at_wand]
-instance asEmpValid_monPred_at_wand (d : AsEmpValid.Direction) (φ : Prop) io
+instance (priority := default - 50) asEmpValid_monPred_at_wand (d : AsEmpValid.Direction) (φ : Prop) io
     (P Q : MonPred I PROP) (Φ Ψ : I.car → PROP)
     [inst : AsEmpValid0 d φ .in (MonPred I PROP) inferInstance .in iprop(P -∗ Q)]
     [h1 : ∀ i, MakeMonPredAt .indexToProp i P (Φ i)]
@@ -149,7 +130,7 @@ instance asEmpValid_monPred_at_wand (d : AsEmpValid.Direction) (φ : Prop) io
         _ ⊢ Q.monPred_at i := (h2 i).make_monPred_at.mpr
 
 @[ipm_backtrack, rocq_alias as_emp_valid_monPred_at_equiv]
-instance asEmpValid_monPred_at_equiv (d : AsEmpValid.Direction) (φ : Prop) io
+instance (priority := default - 50) asEmpValid_monPred_at_equiv (d : AsEmpValid.Direction) (φ : Prop) io
     (P Q : MonPred I PROP) (Φ Ψ : I.car → PROP)
     [inst : AsEmpValid0 d φ .in (MonPred I PROP) inferInstance .in iprop(P ∗-∗ Q)]
     [h1 : ∀ i, MakeMonPredAt .indexToProp i P (Φ i)]
