@@ -194,6 +194,13 @@ theorem Forall₂.set {R : α → β → Prop} {a : α} {b : β} (hab : R a b) {
   | 0 => by cases h with | nil => exact .nil | cons _ t => exact .cons hab t
   | i + 1 => by cases h with | nil => exact .nil | cons hd t => exact .cons hd (t.set hab i)
 
+theorem Forall₂.inserts {R : α → β → Prop} {k₁ : List α} {k₂ : List β} (hk : Forall₂ R k₁ k₂)
+    {l₁ : List α} {l₂ : List β} (hl : Forall₂ R l₁ l₂) :
+    ∀ i : Nat, Forall₂ R (List.inserts i k₁ l₁) (List.inserts i k₂ l₂) := by
+  induction hk with
+  | nil => exact fun _ => hl
+  | cons hab _ ih => exact fun i => (ih (i + 1)).set hab i
+
 theorem Forall₂.eraseIdx {R : α → β → Prop} {l : List α} {k : List β}
     (h : Forall₂ R l k) : (i : Nat) → Forall₂ R (l.eraseIdx i) (k.eraseIdx i)
   | 0 => by cases h with | nil => exact .nil | cons _ t => exact t

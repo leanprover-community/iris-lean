@@ -89,17 +89,9 @@ theorem modify_ne {n} {f g : α → α} (Hf : ∀ a b, a ≡{n}≡ b → f a ≡
 instance set_ne (i : Nat) : NonExpansive₂ (fun (a : α) (l : List α) => l.set i a) where
   ne _ _ _ ha _ _ hl := hl.set ha i
 
-theorem inserts_dist {n} {k k' : List α} (hk : k ≡{n}≡ k') :
-    ∀ (i : Nat) {l l' : List α}, l ≡{n}≡ l' →
-      List.inserts i k l ≡{n}≡ List.inserts i k' l' := by
-  rw [list_dist_forall₂] at hk
-  induction hk with
-  | nil => intro i l l' hl; exact hl
-  | cons hab _ ih => intro i l l' hl; exact (ih (i + 1) hl).set hab i
-
 @[rocq_alias list_inserts_ne]
 instance inserts_ne (i : Nat) : NonExpansive₂ (fun (k l : List α) => List.inserts i k l) where
-  ne _ _ _ hk _ _ hl := inserts_dist hk i hl
+  ne _ _ _ hk _ _ hl := hk.inserts hl i
 
 @[rocq_alias list_delete_ne]
 instance eraseIdx_ne (i : Nat) : NonExpansive (fun l : List α => l.eraseIdx i) where

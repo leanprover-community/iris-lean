@@ -46,19 +46,23 @@ instance : Inhabited DFrac := ⟨discard⟩
 @[rocq_alias dfrac_countable]
 instance : Pos.Countable DFrac where
   encode
-    | .own f        => Pos.Countable.encode ([Pos.xO Pos.xH, Pos.Countable.encode f] : List Pos)
-    | .discard      => Pos.Countable.encode ([Pos.xH] : List Pos)
-    | .ownDiscard f => Pos.Countable.encode ([Pos.xI Pos.xH, Pos.Countable.encode f] : List Pos)
-  decode c :=
-    match (Pos.Countable.decode c : Option (List Pos)) with
-    | some [Pos.xH]            => some discard
-    | some [Pos.xO Pos.xH, fp] => (Pos.Countable.decode fp : Option Qp).map own
-    | some [Pos.xI Pos.xH, fp] => (Pos.Countable.decode fp : Option Qp).map ownDiscard
+    | .own f => Pos.Countable.encode [Pos.Countable.encode (0 : Nat), Pos.Countable.encode f]
+    | .discard => Pos.Countable.encode [Pos.Countable.encode (1 : Nat)]
+    | .ownDiscard f =>
+      Pos.Countable.encode [Pos.Countable.encode (2 : Nat), Pos.Countable.encode f]
+  decode p :=
+    match (Pos.Countable.decode p : Option (List Pos)) with
+    | some [t] =>
+      match (Pos.Countable.decode t : Option Nat) with
+      | some 1 => some discard
+      | _ => none
+    | some [t, fp] =>
+      match (Pos.Countable.decode t : Option Nat) with
+      | some 0 => ((Pos.Countable.decode fp : Option Qp)).map own
+      | some 2 => ((Pos.Countable.decode fp : Option Qp)).map ownDiscard
+      | _ => none
     | _ => none
-  decode_encode
-    | .own _        => by simp [Pos.Countable.decode_encode]
-    | .discard      => by simp [Pos.Countable.decode_encode]
-    | .ownDiscard _ => by simp [Pos.Countable.decode_encode]
+  decode_encode dq := by cases dq <;> simp [Pos.Countable.decode_encode]
 
 def valid : DFrac → Prop
   | .own f        => f.val ≤ 1
