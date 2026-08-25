@@ -116,9 +116,9 @@ theorem nil_spec :
   itrivial
 
 theorem cons_spec x l ls :
-    {{ isList (GF:=GF) l ls }} 
+    {{ isList (GF:=GF) l ls }}
       hl(&cons #x &l)
-    {{v, RET v; isList v (x :: ls)}} := by 
+    {{v, RET v; isList v (x :: ls)}} := by
   iintro %Φ Hl HΦ
   wp_rec; wp_pures
   wp_alloc l
@@ -130,10 +130,8 @@ theorem cons_spec x l ls :
   itrivial
 
 theorem append_spec l1 ls1 l2 ls2 :
-    {{
-    isList (GF:=GF) l1 ls1 ∗
-    isList l2 ls2 }}
-      hl(&append &l1 &l2) 
+    {{ isList (GF:=GF) l1 ls1 ∗ isList l2 ls2 }}
+      hl(&append &l1 &l2)
     {{v, RET v; isList v (ls1 ++ ls2) }} := by
   iintro %Φ ⟨Hl1, Hl2⟩ HΦ
   iloeb as IH generalizing %l1 %ls1 %Φ
@@ -159,7 +157,7 @@ theorem partition_spec x l ls :
       hl(&partition #x &l)
     {{ l1 l2, RET hl_val((&l1, &l2));
       isList l1 (ls.filter (· ≤ x)) ∗
-      isList l2 (ls.filter (x < ·)) }} := by 
+      isList l2 (ls.filter (x < ·)) }} := by
   iintro %Φ
   iloeb as IH generalizing %l %ls %Φ
   iintro Hl HΦ; wp_rec; rw [isList.eq_def]
@@ -187,7 +185,7 @@ theorem partition_spec x l ls :
       iframe
 
 theorem quicksort_spec l ls :
-    {{isList (GF:=GF) l ls}}
+    {{ isList (GF:=GF) l ls }}
       hl(&quicksort &l)
     {{ l' ls', RET l'; isList l' ls' ∗
       ⌜Pairwise LE.le ls'⌝ ∗
@@ -255,9 +253,8 @@ theorem wp_checkSorted (v vacc : Val) (l : List Int) :
       wp_apply IH $$ %_ %tl %_ %((List.pairwise_cons.mp hsorted).2)
         %(Or.inr ⟨hd, rfl, fun lv h => (List.pairwise_cons.mp hsorted).1 lv h⟩) Htl with %bv ⟨Hl, %hb⟩
       iapply HΦ $$ [Hpt Hl]
-      isplitr []
+      isplit
       · rw [isList]
-        iexists loc, tlv
         iframe
         itrivial
       itrivial
@@ -268,9 +265,8 @@ theorem wp_checkSorted (v vacc : Val) (l : List Int) :
         %(.inr ⟨hd, rfl, (List.pairwise_cons.mp hsorted).1⟩) Htl
       iintro %bv !> ⟨Hl, %hb⟩
       iapply HΦ $$ [Hpt Hl]
-      isplitr []
+      isplit
       · rw [isList]
-        iexists loc, tlv
         iframe
         itrivial
       itrivial
