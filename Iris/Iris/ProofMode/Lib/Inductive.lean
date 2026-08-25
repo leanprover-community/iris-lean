@@ -29,6 +29,14 @@ meta partial def iinductivePeelWands (t : Term) : Array Term × Term :=
     (#[dom] ++ doms, cod')
   | _ => (#[], t)
 
+meta partial def iinductiveCountNameArgs (name : Name) (t : Term) : Nat :=
+  match t with
+  | `($dom -∗ $cod) =>
+    let count := iinductiveCountNameArgs name cod
+    count + if let ⟨.node _ ``Parser.Term.app l⟩ := dom then if l[0]!.getId == name then 1 else 0 else 0
+  | _ =>
+    if let ⟨.node _ ``Parser.Term.app l⟩ := t then if l[0]!.getId == name then 1 else 0 else 0
+
 meta partial def iinductivePeelInterleaved (t : Term) : Array Term × Array Term × Term :=
   let (arrowDoms, rest) := iinductivePeelArrows t
   let (wandDoms, rest') := iinductivePeelWands rest
@@ -98,6 +106,57 @@ meta def elabIInductiveDef (mods : TSyntax ``Lean.Parser.Command.declModifiers) 
   let declDef ← `(command|
     $mods:declModifiers fix $name:ident $defBinders* : $iProp := $defBody $[$monoBy]? $[$neBy]?)
   elabCommand declDef
+
+  let mut selector : Array (TSyntax `tactic) := #[]
+
+  for _ in ctors[1:] do selector := selector.push (← `(tactic| ileft))
+
+  for ctor in ctors do
+    let `(iinductiveConstructor| | $cMods:declModifiers $cName:ident
+        $cBinders:fixpointBinder* : $cTy:term) := ctor | continue
+
+    let mut names : Array Ident := #[]
+    let mut types : Array Term := #[]
+    for b in cBinders do
+      match b with
+      | `(fixpointBinder| ($ids* : $t)) =>
+        for id in ids do
+          names := names.push id
+          types := types.push t
+      | _ => continue
+
+    let mut tacs : Array (TSyntax `tactic) := #[]
+
+    tacs := tacs.push (← `(tactic| repeat iintro _))
+
+    let occs := iinductiveCountNameArgs name.getId cTy
+    let uLem := mkIdentFrom name (name.getId ++ `unfold)
+    tacs := tacs.push (← `(tactic| rw (occs := [$(Syntax.mkNumLit (toString occs))]) [$uLem:ident]))
+
+    let preDef := mkIdentFrom name (name.getId ++ `pre)
+    tacs := tacs.push (← `(tactic| unfold $preDef))
+
+    tacs := tacs ++ selector
+
+    for name in names do
+      tacs := tacs.push (← `(tactic| iexists $name))
+
+    tacs := tacs.push (← `(tactic| simp))
+
+    tacs := tacs.push (← `(tactic| iframe))
+
+    let tac ← `(tacticSeq| $tacs*)
+
+    let ctorBinds ← (names.zip types).mapM fun (i, t) => `(bracketedBinder| ($i : $t))
+    let ctorName := mkIdentFrom name (name.getId ++ cName.getId)
+    let ctorDef ← `(command|
+      $cMods:declModifiers theorem $ctorName:ident $ctorBinds* : $cTy := by $tac)
+    elabCommand ctorDef
+
+    if selector.toList.getLast! == (← `(tactic| iright)) then
+      selector := selector.pop.pop.push (← `(tactic| iright))
+    else
+      selector := selector.pop.push (← `(tactic| iright))
 
 /-- Inductive predicate definition via the least fixpoint. -/
 elab mods:declModifiers "iinductive " name:ident binders:fixpointBinder*
