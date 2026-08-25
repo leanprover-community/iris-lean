@@ -15,30 +15,6 @@ open Iris.ProgramLogic.EctxLanguage Iris.ProgramLogic.EctxItemLanguage
 open FromMathlib
 open Language.Notation EctxLanguage.Notation
 
-/-! ## Local tactic macros
-
-`erase_simp` unfolds the erasure functions at a location; used pervasively when
-inverting or normalising `eraseExpr`/`eraseVal` terms.
-
-`erase_peel` iteratively destructs any hypothesis of the form
-`eraseExpr e = ...` or `eraseVal v = ...`, mirroring the Rocq
-`repeat match goal with ... end` pattern in `erased_base_step_base_step`. -/
-
-set_option hygiene false in
-local macro "erase_simp" loc:(Lean.Parser.Tactic.location)? : tactic =>
-  `(tactic| simp
-      [eraseExpr, eraseVal, eraseBaseLit, erasedNewProph, eraseResolve,
-       eraseECtx, eraseECtxItem, ECtxItem.fill] $[$loc]?)
-
--- `peel_ki`: standard boilerplate for per-`Ki` case in `erased_primStep_primStep`.
--- Unfolds `ECtxItem.fill` in `heq_e` and case-splits on the original expression
--- `e1`, discharging shapes whose erasure cannot equal the current frame.
-set_option hygiene false in
-local macro "peel_ki" : tactic =>
-  `(tactic|
-    (simp only [ECtxItem.fill] at heq_e
-     cases e1 <;> erase_simp at heq_e))
-
 /-! ## Erasure functions -/
 
 @[rocq_alias erase_base_lit]
@@ -147,6 +123,16 @@ def eraseState (σ : State) : State :=
 def eraseCfg (ρ : List Exp × State) : List Exp × State :=
   (eraseTp ρ.1, eraseState ρ.2)
 
+/-! ## Local tactic macros
+
+`erase_simp` unfolds the erasure functions at a location; used pervasively when
+inverting or normalising `eraseExpr`/`eraseVal` terms. -/
+
+local macro "erase_simp" loc:(Lean.Parser.Tactic.location)? : tactic =>
+  `(tactic| simp
+      [eraseExpr, eraseVal, eraseBaseLit, erasedNewProph, eraseResolve,
+       eraseECtx, eraseECtxItem, ECtxItem.fill] $[$loc]?)
+
 /-! ## Simple structural lemmas -/
 
 @[simp] theorem eraseExpr_val (v : Val) : eraseExpr (.val v) = .val (eraseVal v) := rfl
@@ -187,28 +173,10 @@ theorem eraseExpr_substStr (x : String) (v : Val) (e : Exp) :
     by_cases h : .named x != f && .named x != x'
     · simp [h, ih]
     · simp [h]
-  | app _ _ ih1 ih2 => simp [Exp.substStr, eraseExpr, ih1, ih2]
-  | unop _ _ ih => simp [Exp.substStr, eraseExpr, ih]
-  | binop _ _ _ ih1 ih2 => simp [Exp.substStr, eraseExpr, ih1, ih2]
-  | «if» _ _ _ ih0 ih1 ih2 => simp [Exp.substStr, eraseExpr, ih0, ih1, ih2]
-  | pair _ _ ih1 ih2 => simp [Exp.substStr, eraseExpr, ih1, ih2]
-  | fst _ ih => simp [Exp.substStr, eraseExpr, ih]
-  | snd _ ih => simp [Exp.substStr, eraseExpr, ih]
-  | injL _ ih => simp [Exp.substStr, eraseExpr, ih]
-  | injR _ ih => simp [Exp.substStr, eraseExpr, ih]
-  | case _ _ _ ih0 ih1 ih2 => simp [Exp.substStr, eraseExpr, ih0, ih1, ih2]
-  | allocN _ _ ih1 ih2 => simp [Exp.substStr, eraseExpr, ih1, ih2]
-  | free _ ih => simp [Exp.substStr, eraseExpr, ih]
-  | load _ ih => simp [Exp.substStr, eraseExpr, ih]
-  | store _ _ ih1 ih2 => simp [Exp.substStr, eraseExpr, ih1, ih2]
-  | cmpXchg _ _ _ ih0 ih1 ih2 => simp [Exp.substStr, eraseExpr, ih0, ih1, ih2]
-  | xchg _ _ ih1 ih2 => simp [Exp.substStr, eraseExpr, ih1, ih2]
-  | faa _ _ ih1 ih2 => simp [Exp.substStr, eraseExpr, ih1, ih2]
-  | fork _ ih => simp [Exp.substStr, eraseExpr, ih]
-  | newProph => rfl
   | resolve _ _ _ ih0 ih1 ih2 =>
     simp [Exp.substStr, eraseExpr, eraseResolve, ih0, ih1, ih2]
-  | _ => trivial
+  | newProph => rfl
+  | _ => simp_all [Exp.substStr, eraseExpr]
 
 @[rocq_alias erase_expr_subst']
 theorem eraseExpr_subst (x : Binder) (v : Val) (e : Exp) :
@@ -327,39 +295,18 @@ private theorem BinOp.eq_eval_erase {v1 v2 v' : Val} :
     simp only [if_true, reduceCtorEq, false_iff]
     rintro ⟨_, hw, _⟩; exact absurd hw (by simp)
 
-/-- If erased literal is `.int n`, then original was `.int n`. -/
-private theorem eraseBaseLit_eq_int {l : BaseLit} {n : Int}
-    (h : eraseBaseLit l = .int n) : l = .int n := by
-  cases l <;> simp [eraseBaseLit] at h <;> simp_all
-
-private theorem eraseBaseLit_eq_bool {l : BaseLit} {b : Bool}
-    (h : eraseBaseLit l = .bool b) : l = .bool b := by
-  cases l <;> simp [eraseBaseLit] at h <;> simp_all
-
-private theorem eraseBaseLit_eq_loc {l : BaseLit} {loc : Loc}
-    (h : eraseBaseLit l = .loc loc) : l = .loc loc := by
-  cases l <;> simp [eraseBaseLit] at h <;> simp_all
-
-private theorem eraseVal_eq_lit_int {v : Val} {n : Int}
-    (h : eraseVal v = .lit (.int n)) : v = .lit (.int n) := by
+/-- An erased literal came from some literal, whose erasure it is. -/
+private theorem eraseVal_eq_lit {v : Val} {l : BaseLit}
+    (h : eraseVal v = .lit l) : ∃ l', v = .lit l' ∧ eraseBaseLit l' = l := by
   cases v <;> simp [eraseVal] at h
-  rename_i l; rw [eraseBaseLit_eq_int h]
+  cases h; exact ⟨_, rfl, rfl⟩
 
-private theorem eraseVal_eq_lit_bool {v : Val} {b : Bool}
-    (h : eraseVal v = .lit (.bool b)) : v = .lit (.bool b) := by
-  cases v <;> simp [eraseVal] at h
-  rename_i l; rw [eraseBaseLit_eq_bool h]
-
-private theorem eraseVal_eq_lit_loc {v : Val} {loc : Loc}
-    (h : eraseVal v = .lit (.loc loc)) : v = .lit (.loc loc) := by
-  cases v <;> simp [eraseVal] at h
-  rename_i l; rw [eraseBaseLit_eq_loc h]
-
-/-- `eraseVal` acts as the identity on `int`, `bool`, `loc`, `unit` literals. -/
-private theorem eraseVal_lit_of_ne_proph {l : BaseLit}
-    (h : ¬ ∃ p, l = .prophecy p) : eraseVal (.lit l) = .lit l := by
-  cases l <;> simp [eraseVal, eraseBaseLit]
-  case prophecy p => exact absurd ⟨p, rfl⟩ h
+/-- Erasure rewrites only prophecy literals, and only to `poison`, so any other
+erased literal came from that very literal. -/
+private theorem eraseVal_eq_lit_of_ne_poison {v : Val} {l : BaseLit}
+    (hne : l ≠ .poison) (h : eraseVal v = .lit l) : v = .lit l := by
+  obtain ⟨l', rfl, hb⟩ := eraseVal_eq_lit h
+  cases l' <;> simp_all [eraseBaseLit]
 
 /-- Two erased values reducing under a `plus`/`minus`/etc. `BinOp` must have
 been literal-int values. -/
@@ -504,11 +451,6 @@ private theorem eraseExpr_eq_val {e : Exp} {v : Val}
   cases e <;> simp [eraseExpr, erasedNewProph, eraseResolve] at h
   cases h; exact ⟨_, rfl, rfl⟩
 
-private theorem eraseVal_eq_lit {v : Val} {l : BaseLit}
-    (h : eraseVal v = .lit l) : ∃ l', v = .lit l' ∧ eraseBaseLit l' = l := by
-  cases v <;> simp [eraseVal] at h
-  cases h; exact ⟨_, rfl, rfl⟩
-
 private theorem eraseVal_eq_pair {v : Val} {v1 v2 : Val}
     (h : eraseVal v = .pair v1 v2) :
     ∃ w1 w2, v = .pair w1 w2 ∧ eraseVal w1 = v1 ∧ eraseVal w2 = v2 := by
@@ -533,8 +475,6 @@ private theorem eraseVal_eq_rec {v : Val} {f x : Binder} {e : Exp}
   cases v <;> simp [eraseVal] at h
   obtain ⟨rfl, rfl, rfl⟩ := h; exact ⟨_, rfl, rfl⟩
 
--- (eraseBaseLit_eq_bool, eraseBaseLit_eq_int, eraseBaseLit_eq_loc are defined above.)
-
 /-- Peel an erased-heap lookup: if the erased heap has `some (some v)`
 at `l`, then the original heap has some `(some ov')` at `l` with
 `eraseVal ov' = v`. -/
@@ -554,13 +494,8 @@ private theorem eraseState_get?_some_some {σ : State} {l : Loc} {v : Val}
 
 /-! ### Per-case helpers matching Rocq `erased_base_step_base_step_*` -/
 
-@[rocq_alias erased_base_step_base_step_rec]
-private theorem erased_baseStep_baseStep_rec (f x : Binder) (e : Exp) (v : Val)
-    (σ : State) :
-    BaseStepsToErasureOf (.app (.val (.rec_ f x e)) (.val v)) σ
-      (((eraseExpr e).subst f (Val.rec_ f x (eraseExpr e))).subst x (eraseVal v))
-      (eraseState σ) [] :=
-  ⟨_, _, _, _, .betaS f x e v _ σ rfl, by simp [eraseExpr_subst, eraseVal], rfl, rfl⟩
+#rocq_ignore erased_base_step_base_step_rec
+  "The beta/`rec` case is proved inline in the `betaS` arm of `erased_baseStep_baseStep`; no standalone lemma is needed."
 
 @[rocq_alias erased_base_step_base_step_NewProph]
 private theorem erased_baseStep_baseStep_NewProph (σ : State) :
@@ -651,14 +586,57 @@ private theorem erased_baseStep_baseStep_FAA (l : Loc) (n m : Int) (σ : State)
       (.val (.lit (.int n)))
       ((eraseState σ).initHeap l 1 (some (.lit (.int (n + m))))) [] := by
   obtain ⟨ov', horig, hev⟩ := eraseState_get?_some_some hget
-  -- Original heap value erases to `.lit (.int n)`.
-  obtain ⟨l', hlit, hbe⟩ := eraseVal_eq_lit hev
-  subst hlit
-  have hn : l' = .int n := eraseBaseLit_eq_int hbe
-  subst hn
+  -- Original heap value erases to `.lit (.int n)`, hence was that literal.
+  obtain rfl := eraseVal_eq_lit_of_ne_poison (by simp) hev
   refine ⟨_, _, _, _, .faaS l n m σ horig, ?_, ?_, rfl⟩
   · simp [eraseVal, eraseBaseLit]
   · rw [eraseState_initHeap]; rfl
+
+/-- `peel1 h` inverts one erasure equation `eraseExpr e = <erased shape>`,
+recursing through conjunctions, and substitutes the result away. -/
+local syntax "peel1 " ident : tactic
+local macro_rules
+  | `(tactic| peel1 $h) =>
+    `(tactic|
+      first
+        | (obtain ⟨hx, hy⟩ := $h; peel1 hx; peel1 hy)
+        | (obtain ⟨_, he, hv⟩ := eraseExpr_eq_val $h
+           subst he
+           first
+             | (have hl := eraseVal_eq_lit_of_ne_poison (by simp) hv; subst hl)
+             | (obtain ⟨_, _, hp, hq, hr⟩ := eraseVal_eq_pair hv; subst hp hq hr)
+             | (obtain ⟨_, hp, hq⟩ := eraseVal_eq_injL hv; subst hp hq)
+             | (obtain ⟨_, hp, hq⟩ := eraseVal_eq_injR hv; subst hp hq)
+             | (obtain ⟨_, hp, hq⟩ := eraseVal_eq_rec hv; subst hp hq)
+             | subst hv
+             | skip)
+        | subst $h
+        | skip)
+
+/-- `erase_peel e at h`: split on `e`, normalise the erasure, then peel `h`. -/
+local macro "erase_peel " e:Lean.Parser.Tactic.elimTarget " at " h:ident : tactic =>
+  `(tactic| (cases $e <;> erase_simp at $h:ident; peel1 $h))
+
+/-- `erase_solve e at h`: peel the erasure equation, then close the goal — with
+the `BaseStep` constructor matching the recovered original expression, or with
+the per-case helper lemma for the steps that also reason about the heap. -/
+local macro "erase_solve " e:Lean.Parser.Tactic.elimTarget " at " h:ident : tactic =>
+  `(tactic|
+    (erase_peel $e at $h
+     try first
+       | (obtain ⟨w, hw, hwe⟩ := UnOp.eval_erase.mp ‹_›
+          exact ⟨_, _, _, _, .unOpS _ _ w _ hw, by simp [hwe], rfl, rfl⟩)
+       | (obtain ⟨w, hw, hwe⟩ := BinOp.eval_erase.mp ‹_›
+          exact ⟨_, _, _, _, .binOpS _ _ _ w _ hw, by simp [hwe], rfl, rfl⟩)
+       | exact erased_baseStep_baseStep_Free _ _ _ ‹_›
+       | exact erased_baseStep_baseStep_Load _ _ _ ‹_›
+       | exact erased_baseStep_baseStep_Store _ _ _ _ ‹_›
+       | exact erased_baseStep_baseStep_Xchg _ _ _ _ ‹_›
+       | exact erased_baseStep_baseStep_FAA _ _ _ _ ‹_›
+       | exact erased_baseStep_baseStep_AllocN _ _ _ _ ‹_› ‹_›
+       | exact erased_baseStep_baseStep_CmpXchg _ _ _ _ _ _ ‹_› ‹_› ‹_›
+       | exact ⟨_, _, _, _, by constructor, by first | rfl | simp [eraseVal], rfl, rfl⟩))
+
 
 /-- If the erased program makes a base step, so does the original program.
 
@@ -673,154 +651,21 @@ theorem erased_baseStep_baseStep {e1 : Exp} {σ1 : State}
   generalize heqσ : eraseState σ1 = σ1e at h
   subst heqσ
   cases h with
-  | recS f x e σ =>
-    cases e1 <;> erase_simp at heq1
-    obtain ⟨rfl, rfl, rfl⟩ := heq1
-    rename_i f' x' e'
-    refine ⟨_, _, _, _, .recS f' x' e' σ1, ?_, rfl, rfl⟩
-    simp [eraseVal]
-  | pairS v1 v2 σ =>
-    cases e1 <;> erase_simp at heq1
-    obtain ⟨hv1, hv2⟩ := heq1
-    obtain ⟨w1, rfl, rfl⟩ := eraseExpr_eq_val hv1
-    obtain ⟨w2, rfl, rfl⟩ := eraseExpr_eq_val hv2
-    exact ⟨_, _, _, _, .pairS w1 w2 σ1, rfl, rfl, rfl⟩
-  | injLS v σ =>
-    cases e1 <;> erase_simp at heq1
-    obtain ⟨w, rfl, rfl⟩ := eraseExpr_eq_val heq1
-    exact ⟨_, _, _, _, .injLS w σ1, rfl, rfl, rfl⟩
-  | injRS v σ =>
-    cases e1 <;> erase_simp at heq1
-    obtain ⟨w, rfl, rfl⟩ := eraseExpr_eq_val heq1
-    exact ⟨_, _, _, _, .injRS w σ1, rfl, rfl, rfl⟩
   | betaS f x e0 v2 e' σ heq =>
     cases e1 <;> erase_simp at heq1
     case app ef ea =>
-      obtain ⟨hf, ha⟩ := heq1
-      obtain ⟨wf, rfl, hef⟩ := eraseExpr_eq_val hf
-      obtain ⟨body, rfl, hbody⟩ := eraseVal_eq_rec hef
-      obtain ⟨w2, rfl, rfl⟩ := eraseExpr_eq_val ha
-      exact ⟨_, _, _, _, .betaS _ _ _ w2 _ σ1 rfl, by
-        simp [heq, ← hbody, eraseExpr_subst, eraseVal], rfl, rfl⟩
+      peel1 heq1
+      exact ⟨_, _, _, _, .betaS _ _ _ _ _ σ1 rfl, by
+        simp [heq, eraseExpr_subst, eraseVal], rfl, rfl⟩
     case newProph =>
       obtain ⟨hf, ha⟩ := heq1
       obtain ⟨_, _, _, _, hs, he2, hσ, hef⟩ := erased_baseStep_baseStep_NewProph σ1
       cases hf; cases ha; subst heq
       exact ⟨_, _, _, _, hs, he2, hσ, hef⟩
-  | unOpS op v v' σ hv =>
-    cases e1 <;> erase_simp at heq1
-    obtain ⟨rfl, hv1⟩ := heq1
-    obtain ⟨w, rfl, rfl⟩ := eraseExpr_eq_val hv1
-    obtain ⟨w', hw, hwe⟩ := UnOp.eval_erase.mp hv
-    exact ⟨_, _, _, _, .unOpS _ w w' σ1 hw, by simp [hwe], rfl, rfl⟩
-  | binOpS op v1 v2 v' σ hv =>
-    cases e1 <;> erase_simp at heq1
-    obtain ⟨rfl, hv1, hv2⟩ := heq1
-    obtain ⟨w1, rfl, rfl⟩ := eraseExpr_eq_val hv1
-    obtain ⟨w2, rfl, rfl⟩ := eraseExpr_eq_val hv2
-    obtain ⟨w', hw, hwe⟩ := BinOp.eval_erase.mp hv
-    exact ⟨_, _, _, _, .binOpS _ w1 w2 w' σ1 hw, by simp [hwe], rfl, rfl⟩
-  | ifTrueS e1' e2' σ =>
-    cases e1 <;> erase_simp at heq1
-    obtain ⟨hc, rfl, rfl⟩ := heq1
-    obtain ⟨w, rfl, hw⟩ := eraseExpr_eq_val hc
-    obtain ⟨l, rfl, hl⟩ := eraseVal_eq_lit hw
-    have : l = .bool true := eraseBaseLit_eq_bool hl
-    subst this
-    exact ⟨_, _, _, _, .ifTrueS _ _ σ1, rfl, rfl, rfl⟩
-  | ifFalseS e1' e2' σ =>
-    cases e1 <;> erase_simp at heq1
-    obtain ⟨hc, rfl, rfl⟩ := heq1
-    obtain ⟨w, rfl, hw⟩ := eraseExpr_eq_val hc
-    obtain ⟨l, rfl, hl⟩ := eraseVal_eq_lit hw
-    have : l = .bool false := eraseBaseLit_eq_bool hl
-    subst this
-    exact ⟨_, _, _, _, .ifFalseS _ _ σ1, rfl, rfl, rfl⟩
-  | fstS v1 v2 σ =>
-    cases e1 <;> erase_simp at heq1
-    obtain ⟨w, rfl, hw⟩ := eraseExpr_eq_val heq1
-    obtain ⟨u1, u2, rfl, rfl, rfl⟩ := eraseVal_eq_pair hw
-    exact ⟨_, _, _, _, .fstS u1 u2 σ1, rfl, rfl, rfl⟩
-  | sndS v1 v2 σ =>
-    cases e1 <;> erase_simp at heq1
-    obtain ⟨w, rfl, hw⟩ := eraseExpr_eq_val heq1
-    obtain ⟨u1, u2, rfl, rfl, rfl⟩ := eraseVal_eq_pair hw
-    exact ⟨_, _, _, _, .sndS u1 u2 σ1, rfl, rfl, rfl⟩
-  | caseLS v e1' e2' σ =>
-    cases e1 <;> erase_simp at heq1
-    obtain ⟨hc, rfl, rfl⟩ := heq1
-    obtain ⟨w, rfl, hw⟩ := eraseExpr_eq_val hc
-    obtain ⟨inner, rfl, rfl⟩ := eraseVal_eq_injL hw
-    exact ⟨_, _, _, _, .caseLS inner _ _ σ1, rfl, rfl, rfl⟩
-  | caseRS v e1' e2' σ =>
-    cases e1 <;> erase_simp at heq1
-    obtain ⟨hc, rfl, rfl⟩ := heq1
-    obtain ⟨w, rfl, hw⟩ := eraseExpr_eq_val hc
-    obtain ⟨inner, rfl, rfl⟩ := eraseVal_eq_injR hw
-    exact ⟨_, _, _, _, .caseRS inner _ _ σ1, rfl, rfl, rfl⟩
-  | allocNS n v σ l hpos hnone =>
-    cases e1 <;> erase_simp at heq1
-    obtain ⟨hn, hv⟩ := heq1
-    obtain ⟨wn, rfl, hwn⟩ := eraseExpr_eq_val hn
-    obtain ⟨lit, rfl, hlit⟩ := eraseVal_eq_lit hwn
-    have := eraseBaseLit_eq_int hlit; subst this
-    obtain ⟨wv, rfl, rfl⟩ := eraseExpr_eq_val hv
-    exact erased_baseStep_baseStep_AllocN n wv σ1 l hpos hnone
-  | freeS l v σ hget =>
-    cases e1 <;> erase_simp at heq1
-    obtain ⟨wl, rfl, hwl⟩ := eraseExpr_eq_val heq1
-    obtain ⟨lit, rfl, hlit⟩ := eraseVal_eq_lit hwl
-    have := eraseBaseLit_eq_loc hlit; subst this
-    exact erased_baseStep_baseStep_Free l v σ1 hget
-  | loadS l v σ hget =>
-    cases e1 <;> erase_simp at heq1
-    obtain ⟨wl, rfl, hwl⟩ := eraseExpr_eq_val heq1
-    obtain ⟨lit, rfl, hlit⟩ := eraseVal_eq_lit hwl
-    have := eraseBaseLit_eq_loc hlit; subst this
-    exact erased_baseStep_baseStep_Load l σ1 v hget
-  | storeS l v w σ hget =>
-    cases e1 <;> erase_simp at heq1
-    obtain ⟨hel, hew⟩ := heq1
-    obtain ⟨wl, rfl, hwl⟩ := eraseExpr_eq_val hel
-    obtain ⟨lit, rfl, hlit⟩ := eraseVal_eq_lit hwl
-    have := eraseBaseLit_eq_loc hlit; subst this
-    obtain ⟨ww, rfl, rfl⟩ := eraseExpr_eq_val hew
-    exact erased_baseStep_baseStep_Store l v ww σ1 hget
-  | xchgS l v1 v2 σ hget =>
-    cases e1 <;> erase_simp at heq1
-    obtain ⟨hel, hew⟩ := heq1
-    obtain ⟨wl, rfl, hwl⟩ := eraseExpr_eq_val hel
-    obtain ⟨lit, rfl, hlit⟩ := eraseVal_eq_lit hwl
-    have := eraseBaseLit_eq_loc hlit; subst this
-    obtain ⟨ww, rfl, rfl⟩ := eraseExpr_eq_val hew
-    exact erased_baseStep_baseStep_Xchg l v1 ww σ1 hget
-  | cmpXchgS l v1 v2 vl σ b hget hcs hb =>
-    cases e1 <;> erase_simp at heq1
-    obtain ⟨hel, hev1, hev2⟩ := heq1
-    obtain ⟨wl, rfl, hwl⟩ := eraseExpr_eq_val hel
-    obtain ⟨lit, rfl, hlit⟩ := eraseVal_eq_lit hwl
-    have := eraseBaseLit_eq_loc hlit; subst this
-    obtain ⟨w1, rfl, rfl⟩ := eraseExpr_eq_val hev1
-    obtain ⟨w2, rfl, rfl⟩ := eraseExpr_eq_val hev2
-    exact erased_baseStep_baseStep_CmpXchg l w1 w2 σ1 vl b hget hcs hb
-  | faaS l i1 i2 σ hget =>
-    cases e1 <;> erase_simp at heq1
-    obtain ⟨hel, hei⟩ := heq1
-    obtain ⟨wl, rfl, hwl⟩ := eraseExpr_eq_val hel
-    obtain ⟨litl, rfl, hlitl⟩ := eraseVal_eq_lit hwl
-    have := eraseBaseLit_eq_loc hlitl; subst this
-    obtain ⟨wi, rfl, hwi⟩ := eraseExpr_eq_val hei
-    obtain ⟨liti, rfl, hliti⟩ := eraseVal_eq_lit hwi
-    have := eraseBaseLit_eq_int hliti; subst this
-    exact erased_baseStep_baseStep_FAA l i1 i2 σ1 hget
-  | forkS e σ =>
-    cases e1 <;> erase_simp at heq1
-    subst heq1
-    exact ⟨_, _, _, _, .forkS _ σ1, rfl, rfl, rfl⟩
-  | newProphS σ p hp =>
-    cases e1 <;> erase_simp at heq1
-  | resolveS p v e σ w σ' κs ts hstep hused =>
-    cases e1 <;> erase_simp at heq1
+  | _ =>
+    -- Every other base step erases structurally: peel, then re-apply the
+    -- corresponding original step.
+    erase_solve e1 at heq1
 
 /-! ## The `prim_step_matched_by_erased_steps` relation
 
@@ -857,77 +702,144 @@ private theorem fill_not_val_ne_val {K : List ECtxItem} {e' : Exp} (w : Val)
   rw [fill_not_val (K := K) hnv] at this
   simp [ToVal.toVal] at this
 
-/-- If the erased `Resolve` (which is `Resolve e0 (val v1) (val v2)`) sits atop
-a context whose "hole" `e'` is a non-value, then either the context is empty
-or its innermost frame is a `ResolveLCtx`. -/
+/-- A single evaluation-context frame can be stripped from a `NotStuck` obligation. -/
+private theorem notStuck_of_frame {Ki : ECtxItem} {e : Exp} {σ : State}
+    (h : PrimStep.NotStuck (Ki.fill e, σ)) : PrimStep.NotStuck (e, σ) :=
+  Language.Context.notStuck_fill_inv (K := fill [Ki])
+    (by simpa [fill_cons, fill_nil, fillItem] using h)
+
+/-- Peel the outermost frame off an evaluation context: either the context is
+empty, or it is `K' ++ [Ki]` and the expression is `Ki` filled with `fill K' e'`. -/
+theorem fill_eq_snoc {e e' : Exp} {K : List ECtxItem} (heq : e = fill K e') :
+    (K = [] ∧ e' = e) ∨ ∃ K' Ki, K = K' ++ [Ki] ∧ e = Ki.fill (fill K' e') := by
+  cases K using FromMathlib.List.reverseRec with
+  | nil => exact .inl ⟨rfl, heq.symm⟩
+  | append_singleton Ks Ki _ =>
+    rw [fill_append, fill_cons, fill_nil,
+        show fillItem Ki = Ki.fill from rfl] at heq
+    exact .inr ⟨Ks, Ki, rfl, heq⟩
+
+/-- Inversion for a `Fst` head atop an evaluation context: either the context is
+empty, or its outermost frame is `.fst`. -/
+theorem fill_eq_fst {X e' : Exp} {K : List ECtxItem} (heq : Exp.fst X = fill K e') :
+    (K = [] ∧ e' = .fst X) ∨ ∃ K', K = K' ++ [.fst] ∧ X = fill K' e' := by
+  rcases fill_eq_snoc heq with h | ⟨Ks, Ki, rfl, hf⟩
+  · exact .inl h
+  · cases Ki with
+    | fst => simp only [ECtxItem.fill, Exp.fst.injEq] at hf; exact .inr ⟨Ks, rfl, hf⟩
+    | _ => simp only [ECtxItem.fill] at hf; cases hf
+
+/-- Inversion for a `Pair` head atop an evaluation context: either the context is
+empty, or its outermost frame is `.pairL` (hole left, right side already a value)
+or `.pairR` (hole right). -/
+theorem fill_eq_pair {X Y e' : Exp} {K : List ECtxItem} (heq : Exp.pair X Y = fill K e') :
+    (K = [] ∧ e' = .pair X Y)
+    ∨ (∃ K' v, K = K' ++ [.pairL v] ∧ Y = .ofVal v ∧ X = fill K' e')
+    ∨ (∃ K', K = K' ++ [.pairR X] ∧ Y = fill K' e') := by
+  rcases fill_eq_snoc heq with h | ⟨Ks, Ki, rfl, hf⟩
+  · exact .inl h
+  · cases Ki with
+    | pairL v =>
+      simp only [ECtxItem.fill, Exp.pair.injEq] at hf
+      exact .inr (.inl ⟨Ks, v, rfl, hf.2, hf.1⟩)
+    | pairR e0 =>
+      simp only [ECtxItem.fill, Exp.pair.injEq] at hf
+      obtain ⟨rfl, h2⟩ := hf
+      exact .inr (.inr ⟨Ks, rfl, h2⟩)
+    | _ => simp only [ECtxItem.fill] at hf; cases hf
+
+/-- Inversion for the erased `Resolve` shape `Resolve e0 (val v1) (val v2)` atop a
+context whose hole `e'` is a non-value: either the context is empty, or its
+outermost frame is a `.resolveL`. -/
+theorem fill_eq_resolve {e0 : Exp} {v1 v2 : Val} {K : List ECtxItem} {e' : Exp}
+    (hnv : toVal e' = none)
+    (heq : Exp.resolve e0 (.val v1) (.val v2) = fill K e') :
+    (K = [] ∧ e' = .resolve e0 (.val v1) (.val v2))
+    ∨ ∃ K' Ki, K = K' ++ [ECtxItem.resolveL Ki v1 v2] ∧ e0 = Ki.fill (fill K' e') := by
+  rcases fill_eq_snoc heq with h | ⟨Ks, Ki, rfl, hf⟩
+  · exact .inl h
+  · have hne : ∀ (w : Val), fill Ks e' ≠ (.val w : Exp) :=
+      fun w => fill_not_val_ne_val w hnv
+    cases Ki with
+    | resolveL ctx' u1 u2 =>
+      simp only [ECtxItem.fill, Exp.resolve.injEq] at hf
+      obtain ⟨h0, ⟨_⟩, ⟨_⟩⟩ := hf
+      exact .inr ⟨Ks, ctx', rfl, h0⟩
+    | resolveM =>
+      simp only [ECtxItem.fill, Exp.resolve.injEq] at hf
+      exact absurd hf.2.1.symm (hne _)
+    | resolveR =>
+      simp only [ECtxItem.fill, Exp.resolve.injEq] at hf
+      exact absurd hf.2.2.symm (hne _)
+    | _ => simp only [ECtxItem.fill] at hf; cases hf
+
+/-- The upstream form of `fill_eq_resolve`, which drops the residual equation. -/
 @[rocq_alias fill_to_resolve]
 theorem fill_to_resolve {e0 : Exp} {v1 v2 : Val} {K : List ECtxItem} {e' : Exp}
     (hnv : toVal e' = none)
     (heq : Exp.resolve e0 (.val v1) (.val v2) = fill K e') :
-    K = [] ∨ ∃ K' Ki, K = K' ++ [ECtxItem.resolveL Ki v1 v2] := by
-  cases K using FromMathlib.List.reverseRec with
-  | nil => exact .inl rfl
-  | append_singleton Ks Ki _ =>
-    right
-    rw [fill_append, fill_cons, fill_nil,
-        show fillItem Ki = Ki.fill from rfl] at heq
-    have hne : ∀ (w : Val), fill Ks e' ≠ (.val w : Exp) :=
-      fun w => fill_not_val_ne_val w hnv
-    cases Ki with
-    | resolveL ctx' u1 u2 =>
-      simp only [ECtxItem.fill, Exp.resolve.injEq] at heq
-      obtain ⟨_, ⟨_⟩, ⟨_⟩⟩ := heq
-      exact ⟨Ks, ctx', rfl⟩
-    | resolveM =>
-      simp only [ECtxItem.fill, Exp.resolve.injEq] at heq
-      exact absurd heq.2.1.symm (hne _)
-    | resolveR =>
-      simp only [ECtxItem.fill, Exp.resolve.injEq] at heq
-      exact absurd heq.2.2.symm (hne _)
-    | _ => simp only [ECtxItem.fill] at heq; cases heq
+    K = [] ∨ ∃ K' Ki, K = K' ++ [ECtxItem.resolveL Ki v1 v2] :=
+  (fill_eq_resolve hnv heq).imp And.left fun ⟨K', Ki, hK, _⟩ => ⟨K', Ki, hK⟩
 
-/-- `PurePrimStep` from a `PureExec` instance. -/
-private theorem purePrimStep_of_pureExec {e1 e2 : Exp}
-    (h : PureExec True 1 e1 e2) : PurePrimStep e1 e2 := by
-  have := h.pureExec trivial
-  cases this with
-  | tail y hxy hyz => cases hxy; exact hyz
+
+
+/-- `fill_frame k` closes an `erase_eq_fill_item` goal by naming the original
+frame `k`; the payloads and the two erasure obligations follow. -/
+local macro "fill_frame " k:term : tactic =>
+  `(tactic| exact ⟨$k, _, rfl, by simp_all [eraseECtxItem], by simp_all⟩)
+
+open Lean Elab Tactic Meta in
+/-- `fill_frame!` is `fill_frame` with the frame read off the goal: `eraseECtxItem`
+preserves a frame's constructor, so the original frame is the erased one's
+constructor applied to fresh holes. -/
+local elab "fill_frame!" : tactic => do
+  let ctors := (← getConstInfoInduct ``ECtxItem).ctors
+  let tgt ← instantiateMVars (← getMainTarget)
+  let some ki := tgt.find? fun e =>
+      match e.getAppFn with
+      | .const c _ => ctors.contains c
+      | _ => false
+    | throwError "fill_frame!: no evaluation-context frame in the goal"
+  let .const c _ := ki.getAppFn | throwError "fill_frame!: unexpected frame"
+  let n := (← getConstInfoCtor c).numFields
+  let holes : Array (TSyntax `term) ← (Array.range n).mapM fun _ => `(term| _)
+  let stx ← `(term| $(mkIdent c):ident $holes*)
+  evalTactic (← `(tactic| fill_frame $stx))
+
+/-- Inversion for an erased evaluation-context frame: if `eraseExpr e1` is the
+frame `Ki` filled with a non-value hole `X`, then `e1` itself decomposes into an
+original frame erasing to `Ki`, unless `Ki = .fst` and `e1` is a `Resolve` (whose
+erasure `.fst (.fst ((_, _), _))` also presents a `.fst` head). -/
+theorem erase_eq_fill_item {e1 X : Exp} {Ki : ECtxItem} (hnv : toVal X = none)
+    (heq : eraseExpr e1 = Ki.fill X) :
+    (∃ Ki_orig einner, e1 = Ki_orig.fill einner
+        ∧ eraseECtxItem Ki_orig = [Ki] ∧ eraseExpr einner = X)
+    ∨ (Ki = .fst ∧ ∃ r0 r1 r2, e1 = .resolve r0 r1 r2) := by
+  cases Ki <;> cases e1 <;>
+    simp_all [eraseExpr, erasedNewProph, eraseResolve, ECtxItem.fill] <;>
+    peel1 heq <;>
+    first
+      | fill_frame!
+      | simp [ToVal.toVal] at hnv
+
+/-- A single pure step, taken from a `PureExec` instance under the evaluation
+context `K`. -/
+private theorem pureStepIn (K : List ECtxItem) {e1 e2 : Exp}
+    (h : PureExec True 1 e1 e2) : fill K e1 -ᵖ->* fill K e2 := by
+  cases h.pureExec trivial with
+  | tail _ hrfl hstep => cases hrfl; exact ReflTransGen_pureStep_fill _ (.single hstep)
 
 /-- `Fst (Fst ((v0, v1), v2))` reduces to `v0` by four pure steps. -/
 @[rocq_alias projs_pure_steps]
 theorem projs_pure_steps (v0 v1 v2 : Val) :
     Relation.ReflTransGen PurePrimStep
-      (eraseResolve (.val v0) (.val v1) (.val v2)) (.val v0) := by
-  unfold eraseResolve
-  -- Step 1: `(v0, v1)` (as expr) reduces to `((v0, v1) : Val)`.
-  have s1 : PurePrimStep
-      (Exp.pair (.val v0) (.val v1))
-      (Exp.val (.pair v0 v1)) :=
-    purePrimStep_of_pureExec instPureExecPair
-  -- Step 2: `((v0, v1)_val, v2)` (as expr) reduces to `((v0, v1)_val, v2)_val`.
-  have s2 : PurePrimStep
-      (Exp.pair (.val (.pair v0 v1)) (.val v2))
-      (Exp.val (.pair (.pair v0 v1) v2)) :=
-    purePrimStep_of_pureExec instPureExecPair
-  -- Step 3: `Fst ((...)_val)` reduces to `(v0, v1)_val`.
-  have s3 : PurePrimStep
-      (Exp.fst (.val (.pair (.pair v0 v1) v2)))
-      (Exp.val (.pair v0 v1)) :=
-    purePrimStep_of_pureExec instPureExecFst
-  -- Step 4: `Fst ((v0, v1)_val)` reduces to `v0`.
-  have s4 : PurePrimStep (Exp.fst (.val (.pair v0 v1))) (Exp.val v0) :=
-    purePrimStep_of_pureExec instPureExecFst
-  have h1 := ReflTransGen_pureStep_fill
-      (K := fill (Expr := Exp) [ECtxItem.pairL v2, .fst, .fst])
-      (Relation.ReflTransGen.single s1)
-  have h2 := ReflTransGen_pureStep_fill
-      (K := fill (Expr := Exp) [ECtxItem.fst, .fst])
-      (Relation.ReflTransGen.single s2)
-  have h3 := ReflTransGen_pureStep_fill
-      (K := fill (Expr := Exp) [ECtxItem.fst])
-      (Relation.ReflTransGen.single s3)
-  simp only [fill_cons, fill_nil, fillItem, ECtxItem.fill] at h1 h2 h3
-  exact h1.trans (h2.trans (h3.trans (Relation.ReflTransGen.single s4)))
+      (eraseResolve (.val v0) (.val v1) (.val v2)) (.val v0) :=
+  calc eraseResolve (.val v0) (.val v1) (.val v2)
+    _ -ᵖ->* hl(fst(fst((v((&v0, &v1)), v(&v2))))) :=
+        pureStepIn [.pairL v2, .fst, .fst] instPureExecPair
+    _ -ᵖ->* hl(fst(fst(v(((&v0, &v1), &v2))))) := pureStepIn [.fst, .fst] instPureExecPair
+    _ -ᵖ->* hl(fst(v((&v0, &v1)))) := pureStepIn [.fst] instPureExecFst
+    _ -ᵖ->* hl(v(&v0)) := pureStepIn [] instPureExecFst
 
 /-- `Resolve` applied to three values has no base step. -/
 @[rocq_alias Resolve_3_vals_base_stuck]
@@ -951,33 +863,14 @@ theorem Resolve_3_vals_unsafe (v0 v1 v2 : Val) (σ : State) :
     generalize heq_e : (Exp.resolve (.val v0) (.val v1) (.val v2)) = ee at hstep
     rcases hstep with @⟨e1, e2, K, bstep⟩
     have hnv : toVal e1 = none := EctxItemLanguage.val_stuck bstep
-    cases K using FromMathlib.List.reverseRec with
-    | nil =>
-      simp only [fill_nil] at heq_e
-      subst heq_e
-      exact Resolve_3_vals_base_stuck _ _ _ _ _ _ _ _ bstep
-    | append_singleton Ks Ki _ =>
-      rw [fill_append, fill_cons, fill_nil,
-          show fillItem Ki = Ki.fill from rfl] at heq_e
-      have hne : ∀ (w : Val), fill Ks e1 ≠ (.val w : Exp) :=
-        fun w => fill_not_val_ne_val w hnv
-      cases Ki with
-      | resolveL ctx u1 u2 =>
-        simp only [ECtxItem.fill, Exp.resolve.injEq] at heq_e
-        have hh := heq_e.1
-        have hval_inner : (toVal (ctx.fill (fill Ks e1))).isSome := by
-          rw [← hh]; simp [ToVal.toVal]
-        have hval_inner2 : (toVal (fill Ks e1)).isSome :=
-          EctxItemLanguage.fillItem_val (Ki := ctx) _ hval_inner
-        have hnv_inner : toVal (fill Ks e1) = none := fill_not_val (K := Ks) hnv
-        rw [hnv_inner] at hval_inner2; simp at hval_inner2
-      | resolveM =>
-        simp only [ECtxItem.fill, Exp.resolve.injEq] at heq_e
-        exact hne _ heq_e.2.1.symm
-      | resolveR =>
-        simp only [ECtxItem.fill, Exp.resolve.injEq] at heq_e
-        exact hne _ heq_e.2.2.symm
-      | _ => simp only [ECtxItem.fill] at heq_e; cases heq_e
+    rcases fill_eq_resolve hnv heq_e with ⟨rfl, rfl⟩ | ⟨Ks, ctx, rfl, hh⟩
+    · exact Resolve_3_vals_base_stuck _ _ _ _ _ _ _ _ bstep
+    · -- A `.resolveL` frame would force the non-value hole to be a value.
+      have hval_inner : (toVal (ctx.fill (fill Ks e1))).isSome := by
+        rw [← hh]; simp [ToVal.toVal]
+      have hval_inner2 : (toVal (fill Ks e1)).isSome :=
+        EctxItemLanguage.fillItem_val (Ki := ctx) _ hval_inner
+      rw [fill_not_val (K := Ks) hnv] at hval_inner2; simp at hval_inner2
 
 /-- Helper for the `Resolve r0 r1 r2` sub-case of `erased_primStep_primStep`
 under a `Ki = .fst` frame.  This handles the "carve-out" for `Resolve`
@@ -998,393 +891,281 @@ private theorem resolve_fst_primStepMatched {r0 r1 r2 : Exp}
       PrimStepMatchedByErasedSteps e0 σ1 (fill K' e2') σ2 efs) :
     PrimStepMatchedByErasedSteps (.resolve r0 r1 r2) σ1
       (fill (Ks ++ [ECtxItem.fst]) e2') σ2 efs := by
-  -- Case on the innermost erased frame of `Ks`.
-  cases Ks using FromMathlib.List.reverseRec with
-  | nil =>
-    -- Ks = []: e1' = .pair (.pair X0 X1) X2, no base step matches
-    -- (`.pairS` needs both arguments to be values).
-    simp only [fill_nil] at heq_e
-    rw [← heq_e] at bstep
+  -- Peel the outermost frame off `Ks`: it must be the `.fst` of the erasure.
+  rcases fill_eq_fst heq_e with ⟨rfl, rfl⟩ | ⟨Ks', hKs, heq_fst⟩
+  · -- `Ks = []`: the hole is the whole `.fst _`, which admits no base step.
     cases bstep
-  | append_singleton Ks' Ki' _ =>
-    rw [fill_append, fill_cons, fill_nil,
-        show fillItem Ki' = Ki'.fill from rfl] at heq_e
-    -- Head of Ki'.fill must be `.fst`, hence Ki' = .fst.
-    cases Ki' <;>
-      first
-        | (simp only [ECtxItem.fill] at heq_e; cases heq_e; done)
-        | skip
-    -- Only `.fst` remains.
-    simp only [ECtxItem.fill, Exp.fst.injEq] at heq_e
-    -- Peel Ks' — its innermost frame must give a `.pair` head.
-    cases Ks' using FromMathlib.List.reverseRec with
-      | nil =>
-        simp only [fill_nil] at heq_e
-        rw [← heq_e] at bstep
-        cases bstep
-      | append_singleton Ks'' Ki'' _ =>
-        rw [fill_append, fill_cons, fill_nil,
-            show fillItem Ki'' = Ki''.fill from rfl] at heq_e
-        -- Only `.pairL v` or `.pairR e` produce a `.pair` head.
-        cases Ki'' with
-        | pairL v_r2 =>
-          simp only [ECtxItem.fill, Exp.pair.injEq] at heq_e
-          obtain ⟨hinner, hv2⟩ := heq_e
-          have hv2r : toVal (eraseExpr r2) = some v_r2 := by
-            rw [hv2]; rfl
-          obtain ⟨w_r2, hw_r2_some, hew_r2⟩ := toVal_erase_some hv2r
-          have hr2eq : r2 = .val w_r2 := by
-            cases r2 <;> simp [ToVal.toVal] at hw_r2_some
-            exact congrArg _ hw_r2_some
-          subst hr2eq
-          cases Ks'' using FromMathlib.List.reverseRec with
-          | nil =>
-            simp only [fill_nil] at hinner
-            have hnv_e1' : toVal e1' = none :=
-              EctxItemLanguage.val_stuck bstep
-            have hstep_val :
-                ∀ {X Y : Exp} {σ0 κ0 e2f σ2f efsf},
-                  BaseStep (Exp.pair X Y) σ0 κ0 e2f σ2f efsf →
-                  ∃ vx vy, X = .val vx ∧ Y = .val vy := by
-              intro X Y _ _ _ _ _ hb; cases hb
-              rename_i _σx vx vy
-              exact ⟨vx, vy, rfl, rfl⟩
-            have := hstep_val (hinner ▸ bstep)
-            obtain ⟨v0, v1, h0, h1⟩ := this
-            have hv0 : toVal (eraseExpr r0) = some v0 := by rw [h0]; rfl
-            have hv1 : toVal (eraseExpr r1) = some v1 := by rw [h1]; rfl
-            obtain ⟨w_r0, hw_r0_some, _⟩ := toVal_erase_some hv0
-            obtain ⟨w_r1, hw_r1_some, _⟩ := toVal_erase_some hv1
-            have hr0eq : r0 = .val w_r0 := by
-              cases r0 <;> simp [ToVal.toVal] at hw_r0_some
-              exact congrArg _ hw_r0_some
-            have hr1eq : r1 = .val w_r1 := by
-              cases r1 <;> simp [ToVal.toVal] at hw_r1_some
-              exact congrArg _ hw_r1_some
-            subst hr0eq; subst hr1eq
-            exact absurd hns (Resolve_3_vals_unsafe _ _ _ _)
-          | append_singleton Ks''' Ki''' _ =>
+  · -- Outermost frame is `.fst`; replace `heq_e` by the residual equation.
+    subst hKs
+    replace heq_e := heq_fst
+    -- Peel the next frame off `Ks'`: only `.pairL`/`.pairR` give a `.pair` head.
+    rcases fill_eq_pair heq_e with ⟨rfl, rfl⟩ | ⟨Ks'', v_r2, hKs, hv2, hinner⟩ |
+        ⟨Ks'', hKs, hi⟩
+    · -- `Ks' = []`: the hole is the whole pair, which admits no base step.
+      cases bstep
+    · -- `.pairL v_r2`: the right component is already a value.
+      subst hKs
+      have hv2r : toVal (eraseExpr r2) = some v_r2 := by
+        rw [hv2]; rfl
+      obtain ⟨w_r2, hw_r2_some, hew_r2⟩ := toVal_erase_some hv2r
+      have hr2eq : r2 = .val w_r2 := (coe_of_toVal_eq_some hw_r2_some).symm
+      subst hr2eq
+      -- Peel the next frame off `Ks''`: again only `.pairL`/`.pairR` fit.
+      rcases fill_eq_pair hinner with ⟨rfl, rfl⟩ | ⟨Ks''', v_r1, hKs3, hv1, hi⟩ |
+          ⟨Ks''', hKs3, hi⟩
+      · -- `Ks'' = []`: both components must then be values, contradicting `hns`.
+        have hstep_val :
+            ∀ {X Y : Exp} {σ0 κ0 e2f σ2f efsf},
+              BaseStep (Exp.pair X Y) σ0 κ0 e2f σ2f efsf →
+              ∃ vx vy, X = .val vx ∧ Y = .val vy := by
+          intro X Y _ _ _ _ _ hb; cases hb
+          rename_i _σx vx vy
+          exact ⟨vx, vy, rfl, rfl⟩
+        have := hstep_val bstep
+        obtain ⟨v0, v1, h0, h1⟩ := this
+        have hv0 : toVal (eraseExpr r0) = some v0 := by rw [h0]; rfl
+        have hv1 : toVal (eraseExpr r1) = some v1 := by rw [h1]; rfl
+        obtain ⟨w_r0, hw_r0_some, _⟩ := toVal_erase_some hv0
+        obtain ⟨w_r1, hw_r1_some, _⟩ := toVal_erase_some hv1
+        have hr0eq : r0 = .val w_r0 := (coe_of_toVal_eq_some hw_r0_some).symm
+        have hr1eq : r1 = .val w_r1 := (coe_of_toVal_eq_some hw_r1_some).symm
+        subst hr0eq; subst hr1eq
+        exact absurd hns (Resolve_3_vals_unsafe _ _ _ _)
+      · -- `.pairL v_r1`: the right component is already a value.
+        subst hKs3
+        have hv1r : toVal (eraseExpr r1) = some v_r1 := by
+          rw [hv1]; rfl
+        obtain ⟨w_r1, hw_r1_some, hew_r1⟩ := toVal_erase_some hv1r
+        have hr1eq : r1 = .val w_r1 := (coe_of_toVal_eq_some hw_r1_some).symm
+        subst hr1eq
+        -- Derive NotStuck for r0 by decomposing hns.
+        have hns_r0 : PrimStep.NotStuck (r0, σ1) := by
+          rcases hns with hval | ⟨obs_h, e'_h, σ'_h, eₜ_h, hstep_h⟩
+          · simp [ToVal.toVal] at hval
+          generalize heq_gen :
+              (Exp.resolve r0 (.val w_r1) (.val w_r2)) = ee_h at hstep_h
+          rcases hstep_h with @⟨he1_h, he2_h, K_h, bs_h⟩
+          have hnv_h : toVal he1_h = none :=
+            EctxItemLanguage.val_stuck bs_h
+          rcases fill_eq_resolve hnv_h heq_gen with ⟨rfl, rfl⟩ |
+              ⟨K_rest, ctx, rfl, hr0_eq⟩
+          · -- Hole is the whole `Resolve`: its base step is a `resolveS`.
+            cases bs_h with
+            | resolveS _ _ _ _ _ _ _ _ bs_inner _ =>
+              right
+              exact ⟨_, _, _, _, BaseStep.ContextStep.ofBaseStep [] bs_inner⟩
+          · -- Outermost frame is a `.resolveL`; push it into the step context.
+            right
+            refine ⟨_, _, _, _,
+              BaseStep.ContextStep.ofBaseStep' (K_rest ++ [ctx])
+                (by rw [fill_append, fill_cons, fill_nil,
+                        show fillItem ctx = ctx.fill from rfl,
+                        ← hr0_eq]) rfl bs_h⟩
+        have hlk : Ks'''.length ≤
+            (Ks''' ++ [ECtxItem.pairL v_r1] ++
+             [ECtxItem.pairL v_r2] ++ [ECtxItem.fst]).length := by
+          simp
+        have hmatch := IHapp hlk hi hns_r0
+        obtain ⟨e_r0_next, σ_r0, κ_r0, efs_r0, e_matched,
+                hstep_r0, hpure_r0, hex_r0, hσ_r0, hef_r0⟩ := hmatch
+        subst hew_r1
+        subst hew_r2
+        obtain @⟨inner_e1, inner_e2, K_r0, hbstep_r0⟩ := hstep_r0
+        cases K_r0 using FromMathlib.List.reverseRec with
+        | nil =>
+          simp only [fill_nil] at hbstep_r0 hex_r0 hns
+          have hns_info :
+              ∃ (p : ProphId) (v_hns : Val) (σ_hns : State)
+                (κs_hns : List Observation) (ts_hns : List Exp),
+                w_r1 = .lit (.prophecy p) ∧
+                σ1.usedProphId.contains p ∧
+                BaseStep inner_e1 σ1 κs_hns (.val v_hns) σ_hns ts_hns := by
+            rcases hns with hval | ⟨_, _, _, _, hstep_h⟩
+            · simp [ToVal.toVal] at hval
+            generalize heq_h :
+                (Exp.resolve inner_e1 (.val w_r1) (.val w_r2)) = ee_h
+                at hstep_h
+            rcases hstep_h with @⟨he1_h, he2_h, K_h, bs_h⟩
+            have hnv_h : toVal he1_h = none :=
+              EctxItemLanguage.val_stuck bs_h
+            rcases fill_eq_resolve hnv_h heq_h with ⟨rfl, rfl⟩ |
+                ⟨K_rest, ctx, rfl, hr0_eq⟩
+            · -- Hole is the whole `Resolve`: its base step is a `resolveS`.
+              match bs_h with
+              | BaseStep.resolveS p v _ _ _ _ κs_r ts_r bs_inner hused =>
+                exact ⟨p, v, _, κs_r, ts_r, rfl, hused, bs_inner⟩
+            · -- A `.resolveL` frame would force the hole to be a value.
+              exfalso
+              have hbs_ctx :
+                  BaseStep (ctx.fill (fill K_rest he1_h)) σ1
+                    κ_r0 inner_e2 σ_r0 efs_r0 := hr0_eq ▸ hbstep_r0
+              have hval_isSome : (toVal (fill K_rest he1_h)).isSome :=
+                EctxItemLanguage.base_ctx_step_val hbs_ctx
+              rcases Option.isSome_iff_exists.mp hval_isSome with ⟨w, hw⟩
+              rw [fill_not_val (K := K_rest) hnv_h] at hw; cases hw
+          obtain ⟨p, v_hns, σ_hns, κs_hns, ts_hns, hwr1_eq, hused,
+                  bs_inner_hns⟩ := hns_info
+          subst hwr1_eq
+          have hval_target : ∃ v : Val, inner_e2 = .val v := by
+            cases hbstep_r0 with
+            | recS => exact ⟨_, rfl⟩
+            | pairS => exact ⟨_, rfl⟩
+            | injLS => exact ⟨_, rfl⟩
+            | injRS => exact ⟨_, rfl⟩
+            | betaS _ _ _ _ _ _ h =>
+              cases bs_inner_hns with
+              | betaS _ _ _ _ _ _ h' => exact ⟨v_hns, h.trans h'.symm⟩
+            | unOpS => exact ⟨_, rfl⟩
+            | binOpS => exact ⟨_, rfl⟩
+            | ifTrueS => cases bs_inner_hns with
+              | ifTrueS => exact ⟨v_hns, rfl⟩
+            | ifFalseS => cases bs_inner_hns with
+              | ifFalseS => exact ⟨v_hns, rfl⟩
+            | fstS => exact ⟨_, rfl⟩
+            | sndS => exact ⟨_, rfl⟩
+            | caseLS => cases bs_inner_hns
+            | caseRS => cases bs_inner_hns
+            | allocNS => exact ⟨_, rfl⟩
+            | freeS => exact ⟨_, rfl⟩
+            | loadS => exact ⟨_, rfl⟩
+            | storeS => exact ⟨_, rfl⟩
+            | xchgS => exact ⟨_, rfl⟩
+            | cmpXchgS => exact ⟨_, rfl⟩
+            | faaS => exact ⟨_, rfl⟩
+            | forkS => exact ⟨_, rfl⟩
+            | newProphS => exact ⟨_, rfl⟩
+            | resolveS => exact ⟨_, rfl⟩
+          obtain ⟨v_target, hv_target⟩ := hval_target
+          subst hv_target
+          refine ⟨.val v_target, σ_r0, κ_r0 ++ [(p, (v_target, w_r2))],
+                  efs_r0, .val (eraseVal v_target), ?_, ?_, ?_,
+                  hσ_r0, hef_r0⟩
+          · exact BaseStep.ContextStep.ofBaseStep []
+              (BaseStep.resolveS p v_target inner_e1 σ1 w_r2 σ_r0
+                κ_r0 efs_r0 hbstep_r0 hused)
+          · have hlift :=
+              ReflTransGen_pureStep_fill
+                (K := fill (Expr := Exp)
+                       [ECtxItem.pairL (eraseVal (.lit (.prophecy p))),
+                        ECtxItem.pairL (eraseVal w_r2),
+                        ECtxItem.fst, ECtxItem.fst])
+                hpure_r0
+            have hLHS_eq :
+                fill [ECtxItem.pairL (eraseVal (.lit (.prophecy p))),
+                      ECtxItem.pairL (eraseVal w_r2),
+                      ECtxItem.fst, ECtxItem.fst]
+                     (fill Ks''' e2') =
+                fill (Ks''' ++
+                      [ECtxItem.pairL (eraseVal (.lit (.prophecy p)))]
+                           ++ [ECtxItem.pairL (eraseVal w_r2)]
+                           ++ [ECtxItem.fst] ++ [ECtxItem.fst]) e2' := by
+              simp [fill_append, fill_cons, fill_nil, fillItem,
+                    ECtxItem.fill]
+            have he_matched :
+                e_matched = .val (eraseVal v_target) := by
+              rw [← hex_r0]; rfl
+            rw [hLHS_eq, he_matched] at hlift
+            have hproj :=
+              projs_pure_steps (eraseVal v_target)
+                (eraseVal (.lit (.prophecy p)))
+                (eraseVal w_r2)
+            simp only [fill_cons, fill_nil, fillItem, ECtxItem.fill]
+              at hlift
+            exact hlift.trans hproj
+          · rfl
+        | append_singleton K_r0_rest Ki_r0_top _ =>
+          have hfill_eq :
+              fill (K_r0_rest ++ [ECtxItem.resolveL Ki_r0_top w_r1 w_r2])
+                inner_e1 =
+              Exp.resolve
+                (fill (K_r0_rest ++ [Ki_r0_top]) inner_e1)
+                (.val w_r1) (.val w_r2) := by
             rw [fill_append, fill_cons, fill_nil,
-                show fillItem Ki''' = Ki'''.fill from rfl] at hinner
-            cases Ki''' with
-            | pairL v_r1 =>
-              simp only [ECtxItem.fill, Exp.pair.injEq] at hinner
-              obtain ⟨hi, hv1⟩ := hinner
-              have hv1r : toVal (eraseExpr r1) = some v_r1 := by
-                rw [hv1]; rfl
-              obtain ⟨w_r1, hw_r1_some, hew_r1⟩ := toVal_erase_some hv1r
-              have hr1eq : r1 = .val w_r1 := by
-                cases r1 <;> simp [ToVal.toVal] at hw_r1_some
-                exact congrArg _ hw_r1_some
-              subst hr1eq
-              -- Derive NotStuck for r0 by decomposing hns.
-              have hns_r0 : PrimStep.NotStuck (r0, σ1) := by
-                rcases hns with hval | ⟨obs_h, e'_h, σ'_h, eₜ_h, hstep_h⟩
-                · simp [ToVal.toVal] at hval
-                generalize heq_gen :
-                    (Exp.resolve r0 (.val w_r1) (.val w_r2)) = ee_h at hstep_h
-                rcases hstep_h with @⟨he1_h, he2_h, K_h, bs_h⟩
-                have hnv_h : toVal he1_h = none :=
-                  EctxItemLanguage.val_stuck bs_h
-                cases K_h using FromMathlib.List.reverseRec with
-                | nil =>
-                  simp only [fill_nil] at heq_gen
-                  rw [← heq_gen] at bs_h
-                  cases bs_h with
-                  | resolveS _ _ _ _ _ _ _ _ bs_inner _ =>
-                    right
-                    exact ⟨_, _, _, _, BaseStep.ContextStep.ofBaseStep [] bs_inner⟩
-                | append_singleton K_rest Ki_top _ =>
-                  rw [fill_append, fill_cons, fill_nil,
-                      show fillItem Ki_top = Ki_top.fill from rfl] at heq_gen
-                  have hne_h : ∀ (w : Val), fill K_rest he1_h ≠ (.val w : Exp) :=
-                    fun w => fill_not_val_ne_val w hnv_h
-                  cases Ki_top with
-                  | resolveL ctx u1 u2 =>
-                    simp only [ECtxItem.fill, Exp.resolve.injEq] at heq_gen
-                    obtain ⟨hr0_eq, _, _⟩ := heq_gen
-                    right
-                    refine ⟨_, _, _, _,
-                      BaseStep.ContextStep.ofBaseStep' (K_rest ++ [ctx])
-                        (by rw [fill_append, fill_cons, fill_nil,
-                                show fillItem ctx = ctx.fill from rfl,
-                                ← hr0_eq]) rfl bs_h⟩
-                  | resolveM =>
-                    simp only [ECtxItem.fill, Exp.resolve.injEq] at heq_gen
-                    exact absurd heq_gen.2.1.symm (hne_h _)
-                  | resolveR =>
-                    simp only [ECtxItem.fill, Exp.resolve.injEq] at heq_gen
-                    exact absurd heq_gen.2.2.symm (hne_h _)
-                  | _ =>
-                    simp only [ECtxItem.fill] at heq_gen; cases heq_gen
-              have hlk : Ks'''.length ≤
-                  (Ks''' ++ [ECtxItem.pairL v_r1] ++
-                   [ECtxItem.pairL v_r2] ++ [ECtxItem.fst]).length := by
-                simp
-              have hmatch := IHapp hlk hi hns_r0
-              obtain ⟨e_r0_next, σ_r0, κ_r0, efs_r0, e_matched,
-                      hstep_r0, hpure_r0, hex_r0, hσ_r0, hef_r0⟩ := hmatch
-              subst hew_r1
-              subst hew_r2
-              obtain @⟨inner_e1, inner_e2, K_r0, hbstep_r0⟩ := hstep_r0
-              cases K_r0 using FromMathlib.List.reverseRec with
-              | nil =>
-                simp only [fill_nil] at hbstep_r0 hex_r0 hns
-                have hns_info :
-                    ∃ (p : ProphId) (v_hns : Val) (σ_hns : State)
-                      (κs_hns : List Observation) (ts_hns : List Exp),
-                      w_r1 = .lit (.prophecy p) ∧
-                      σ1.usedProphId.contains p ∧
-                      BaseStep inner_e1 σ1 κs_hns (.val v_hns) σ_hns ts_hns := by
-                  rcases hns with hval | ⟨_, _, _, _, hstep_h⟩
-                  · simp [ToVal.toVal] at hval
-                  generalize heq_h :
-                      (Exp.resolve inner_e1 (.val w_r1) (.val w_r2)) = ee_h
-                      at hstep_h
-                  rcases hstep_h with @⟨he1_h, he2_h, K_h, bs_h⟩
-                  have hnv_h : toVal he1_h = none :=
-                    EctxItemLanguage.val_stuck bs_h
-                  cases K_h using FromMathlib.List.reverseRec with
-                  | nil =>
-                    simp only [fill_nil] at heq_h
-                    rw [← heq_h] at bs_h
-                    match bs_h with
-                    | BaseStep.resolveS p v _ _ _ _ κs_r ts_r bs_inner hused =>
-                      exact ⟨p, v, _, κs_r, ts_r, rfl, hused, bs_inner⟩
-                  | append_singleton K_rest Ki_top _ =>
-                    rw [fill_append, fill_cons, fill_nil,
-                        show fillItem Ki_top = Ki_top.fill from rfl] at heq_h
-                    have hne_h :
-                        ∀ (w : Val), fill K_rest he1_h ≠ (.val w : Exp) :=
-                      fun w => fill_not_val_ne_val w hnv_h
-                    cases Ki_top with
-                    | resolveL ctx u1 u2 =>
-                      simp only [ECtxItem.fill, Exp.resolve.injEq] at heq_h
-                      obtain ⟨hr0_eq, _, _⟩ := heq_h
-                      exfalso
-                      have hbs_ctx :
-                          BaseStep (ctx.fill (fill K_rest he1_h)) σ1
-                            κ_r0 inner_e2 σ_r0 efs_r0 := hr0_eq ▸ hbstep_r0
-                      have hval_isSome :
-                          (toVal (fill K_rest he1_h)).isSome :=
-                        EctxItemLanguage.base_ctx_step_val hbs_ctx
-                      rcases Option.isSome_iff_exists.mp hval_isSome with ⟨w, hw⟩
-                      have hnv_fill : toVal (fill K_rest he1_h) = none :=
-                        fill_not_val (K := K_rest) hnv_h
-                      rw [hnv_fill] at hw; cases hw
-                    | resolveM =>
-                      simp only [ECtxItem.fill, Exp.resolve.injEq] at heq_h
-                      exact absurd heq_h.2.1.symm (hne_h _)
-                    | resolveR =>
-                      simp only [ECtxItem.fill, Exp.resolve.injEq] at heq_h
-                      exact absurd heq_h.2.2.symm (hne_h _)
-                    | _ =>
-                      simp only [ECtxItem.fill] at heq_h; cases heq_h
-                obtain ⟨p, v_hns, σ_hns, κs_hns, ts_hns, hwr1_eq, hused,
-                        bs_inner_hns⟩ := hns_info
-                subst hwr1_eq
-                have hval_target : ∃ v : Val, inner_e2 = .val v := by
-                  cases hbstep_r0 with
-                  | recS => exact ⟨_, rfl⟩
-                  | pairS => exact ⟨_, rfl⟩
-                  | injLS => exact ⟨_, rfl⟩
-                  | injRS => exact ⟨_, rfl⟩
-                  | betaS _ _ _ _ _ _ h =>
-                    cases bs_inner_hns with
-                    | betaS _ _ _ _ _ _ h' => exact ⟨v_hns, h.trans h'.symm⟩
-                  | unOpS => exact ⟨_, rfl⟩
-                  | binOpS => exact ⟨_, rfl⟩
-                  | ifTrueS => cases bs_inner_hns with
-                    | ifTrueS => exact ⟨v_hns, rfl⟩
-                  | ifFalseS => cases bs_inner_hns with
-                    | ifFalseS => exact ⟨v_hns, rfl⟩
-                  | fstS => exact ⟨_, rfl⟩
-                  | sndS => exact ⟨_, rfl⟩
-                  | caseLS => cases bs_inner_hns
-                  | caseRS => cases bs_inner_hns
-                  | allocNS => exact ⟨_, rfl⟩
-                  | freeS => exact ⟨_, rfl⟩
-                  | loadS => exact ⟨_, rfl⟩
-                  | storeS => exact ⟨_, rfl⟩
-                  | xchgS => exact ⟨_, rfl⟩
-                  | cmpXchgS => exact ⟨_, rfl⟩
-                  | faaS => exact ⟨_, rfl⟩
-                  | forkS => exact ⟨_, rfl⟩
-                  | newProphS => exact ⟨_, rfl⟩
-                  | resolveS => exact ⟨_, rfl⟩
-                obtain ⟨v_target, hv_target⟩ := hval_target
-                subst hv_target
-                refine ⟨.val v_target, σ_r0, κ_r0 ++ [(p, (v_target, w_r2))],
-                        efs_r0, .val (eraseVal v_target), ?_, ?_, ?_,
-                        hσ_r0, hef_r0⟩
-                · exact BaseStep.ContextStep.ofBaseStep []
-                    (BaseStep.resolveS p v_target inner_e1 σ1 w_r2 σ_r0
-                      κ_r0 efs_r0 hbstep_r0 hused)
-                · have hlift :=
-                    ReflTransGen_pureStep_fill
-                      (K := fill (Expr := Exp)
-                             [ECtxItem.pairL (eraseVal (.lit (.prophecy p))),
-                              ECtxItem.pairL (eraseVal w_r2),
-                              ECtxItem.fst, ECtxItem.fst])
-                      hpure_r0
-                  have hLHS_eq :
-                      fill [ECtxItem.pairL (eraseVal (.lit (.prophecy p))),
-                            ECtxItem.pairL (eraseVal w_r2),
-                            ECtxItem.fst, ECtxItem.fst]
-                           (fill Ks''' e2') =
-                      fill (Ks''' ++
-                            [ECtxItem.pairL (eraseVal (.lit (.prophecy p)))]
-                                 ++ [ECtxItem.pairL (eraseVal w_r2)]
-                                 ++ [ECtxItem.fst] ++ [ECtxItem.fst]) e2' := by
-                    simp [fill_append, fill_cons, fill_nil, fillItem,
-                          ECtxItem.fill]
-                  have he_matched :
-                      e_matched = .val (eraseVal v_target) := by
-                    rw [← hex_r0]; rfl
-                  rw [hLHS_eq, he_matched] at hlift
-                  have hproj :=
-                    projs_pure_steps (eraseVal v_target)
-                      (eraseVal (.lit (.prophecy p)))
-                      (eraseVal w_r2)
-                  simp only [fill_cons, fill_nil, fillItem, ECtxItem.fill]
-                    at hlift
-                  exact hlift.trans hproj
-                · rfl
-              | append_singleton K_r0_rest Ki_r0_top _ =>
-                have hfill_eq :
-                    fill (K_r0_rest ++ [ECtxItem.resolveL Ki_r0_top w_r1 w_r2])
-                      inner_e1 =
-                    Exp.resolve
-                      (fill (K_r0_rest ++ [Ki_r0_top]) inner_e1)
-                      (.val w_r1) (.val w_r2) := by
-                  rw [fill_append, fill_cons, fill_nil,
-                      show fillItem (ECtxItem.resolveL Ki_r0_top w_r1 w_r2)
-                        = (ECtxItem.resolveL Ki_r0_top w_r1 w_r2).fill from rfl,
-                      fill_append, fill_cons, fill_nil,
-                      show fillItem Ki_r0_top = Ki_r0_top.fill from rfl]
-                  rfl
-                have hfill_eq2 :
-                    fill (K_r0_rest ++ [ECtxItem.resolveL Ki_r0_top w_r1 w_r2])
-                      inner_e2 =
-                    Exp.resolve
-                      (fill (K_r0_rest ++ [Ki_r0_top]) inner_e2)
-                      (.val w_r1) (.val w_r2) := by
-                  rw [fill_append, fill_cons, fill_nil,
-                      show fillItem (ECtxItem.resolveL Ki_r0_top w_r1 w_r2)
-                        = (ECtxItem.resolveL Ki_r0_top w_r1 w_r2).fill from rfl,
-                      fill_append, fill_cons, fill_nil,
-                      show fillItem Ki_r0_top = Ki_r0_top.fill from rfl]
-                  rfl
-                refine ⟨Exp.resolve
-                          (fill (K_r0_rest ++ [Ki_r0_top]) inner_e2)
-                          (.val w_r1) (.val w_r2),
-                        σ_r0, κ_r0, efs_r0,
-                        eraseExpr (Exp.resolve
-                          (fill (K_r0_rest ++ [Ki_r0_top]) inner_e2)
-                          (.val w_r1) (.val w_r2)),
-                        ?_, ?_, rfl, hσ_r0, hef_r0⟩
-                · have hs :=
-                    BaseStep.ContextStep.ofBaseStep
-                      (K := K_r0_rest ++ [ECtxItem.resolveL Ki_r0_top w_r1 w_r2])
-                      hbstep_r0
-                  rw [hfill_eq, hfill_eq2] at hs
-                  exact hs
-                · have hlift :=
-                    ReflTransGen_pureStep_fill
-                      (K := fill (Expr := Exp)
-                             [ECtxItem.pairL (eraseVal w_r1),
-                              ECtxItem.pairL (eraseVal w_r2),
-                              ECtxItem.fst, ECtxItem.fst])
-                      hpure_r0
-                  have hLHS_pure :
-                      fill [ECtxItem.pairL (eraseVal w_r1),
-                            ECtxItem.pairL (eraseVal w_r2),
-                            ECtxItem.fst, ECtxItem.fst]
-                           (fill Ks''' e2') =
-                      fill (Ks''' ++ [ECtxItem.pairL (eraseVal w_r1)]
-                                 ++ [ECtxItem.pairL (eraseVal w_r2)]
-                                 ++ [ECtxItem.fst] ++ [ECtxItem.fst]) e2' := by
-                    simp [fill_append, fill_cons, fill_nil, fillItem,
-                          ECtxItem.fill]
-                  have hRHS_pure :
-                      fill [ECtxItem.pairL (eraseVal w_r1),
-                            ECtxItem.pairL (eraseVal w_r2),
-                            ECtxItem.fst, ECtxItem.fst] e_matched =
-                      eraseExpr (Exp.resolve
-                                  (fill (K_r0_rest ++ [Ki_r0_top]) inner_e2)
-                                  (.val w_r1) (.val w_r2)) := by
-                    rw [← hex_r0]
-                    simp [eraseExpr, eraseResolve, fill_cons, fill_nil,
-                          fillItem, ECtxItem.fill]
-                  rw [hLHS_pure, hRHS_pure] at hlift
-                  exact hlift
-            | pairR e_r0 =>
-              simp only [ECtxItem.fill, Exp.pair.injEq] at hinner
-              obtain ⟨he_r0, hi⟩ := hinner
-              subst he_r0
-              have hns_r1 : PrimStep.NotStuck (r1, σ1) := by
-                have heq : (Exp.resolve r0 r1 (.val w_r2)) =
-                           fill [ECtxItem.resolveM r0 w_r2] r1 := by
-                  simp [fill_cons, fill_nil, fillItem, ECtxItem.fill]
-                rw [heq] at hns
-                exact Language.Context.notStuck_fill_inv
-                  (K := fill [ECtxItem.resolveM r0 w_r2]) hns
-              have hlk : Ks'''.length ≤
-                  (Ks''' ++ [ECtxItem.pairR (eraseExpr r0)] ++
-                   [ECtxItem.pairL v_r2] ++ [ECtxItem.fst]).length := by
-                simp
-              have hmatch := IHapp hlk hi hns_r1
-              have hlift := hmatch.fill_ctx [ECtxItem.resolveM r0 w_r2]
-              have hLHS :
-                  fill [ECtxItem.resolveM r0 w_r2] r1 =
-                  (Exp.resolve r0 r1 (.val w_r2)) := by
-                simp [fill_cons, fill_nil, fillItem, ECtxItem.fill]
-              have hRHS :
-                  fill (eraseECtx [ECtxItem.resolveM r0 w_r2])
-                       (fill Ks''' e2') =
-                  fill (Ks''' ++
-                    [ECtxItem.pairR (eraseExpr r0)] ++
-                    [ECtxItem.pairL (eraseVal w_r2)] ++
-                    [ECtxItem.fst] ++ [ECtxItem.fst]) e2' := by
-                simp [eraseECtx, List.flatMap_cons, List.flatMap_nil,
-                      eraseECtxItem, fill_append, fill_cons, fill_nil,
-                      fillItem, ECtxItem.fill]
-              rw [hLHS, hRHS] at hlift
-              subst hew_r2
-              exact hlift
-            | _ => simp only [ECtxItem.fill] at hinner; cases hinner
-        | pairR e_outer =>
-          simp only [ECtxItem.fill, Exp.pair.injEq] at heq_e
-          obtain ⟨he_outer, hi⟩ := heq_e
-          subst he_outer
-          have hns_r2 : PrimStep.NotStuck (r2, σ1) := by
-            have heq : (Exp.resolve r0 r1 r2) =
-                       fill [ECtxItem.resolveR r0 r1] r2 := by
-              simp [fill_cons, fill_nil, fillItem, ECtxItem.fill]
-            rw [heq] at hns
-            exact Language.Context.notStuck_fill_inv
-              (K := fill [ECtxItem.resolveR r0 r1]) hns
-          have hlk : Ks''.length ≤ (Ks'' ++ [ECtxItem.pairR
-                        (.pair (eraseExpr r0) (eraseExpr r1))] ++
-                        [ECtxItem.fst]).length := by
-            simp
-          have hmatch := IHapp hlk hi hns_r2
-          have hlift := hmatch.fill_ctx [ECtxItem.resolveR r0 r1]
-          have hLHS :
-              fill [ECtxItem.resolveR r0 r1] r2 =
-              (Exp.resolve r0 r1 r2) := by
-            simp [fill_cons, fill_nil, fillItem, ECtxItem.fill]
-          have hRHS :
-              fill (eraseECtx [ECtxItem.resolveR r0 r1]) (fill Ks'' e2') =
-              fill (Ks'' ++
-                [ECtxItem.pairR (.pair (eraseExpr r0) (eraseExpr r1))] ++
-                [ECtxItem.fst] ++ [ECtxItem.fst]) e2' := by
-            simp [eraseECtx, List.flatMap_cons, List.flatMap_nil,
-                  eraseECtxItem, fill_append, fill_cons, fill_nil,
-                  fillItem, ECtxItem.fill]
-          rw [hLHS, hRHS] at hlift
-          exact hlift
-        | _ => simp only [ECtxItem.fill] at heq_e; cases heq_e
+                show fillItem (ECtxItem.resolveL Ki_r0_top w_r1 w_r2)
+                  = (ECtxItem.resolveL Ki_r0_top w_r1 w_r2).fill from rfl,
+                fill_append, fill_cons, fill_nil,
+                show fillItem Ki_r0_top = Ki_r0_top.fill from rfl]
+            rfl
+          have hfill_eq2 :
+              fill (K_r0_rest ++ [ECtxItem.resolveL Ki_r0_top w_r1 w_r2])
+                inner_e2 =
+              Exp.resolve
+                (fill (K_r0_rest ++ [Ki_r0_top]) inner_e2)
+                (.val w_r1) (.val w_r2) := by
+            rw [fill_append, fill_cons, fill_nil,
+                show fillItem (ECtxItem.resolveL Ki_r0_top w_r1 w_r2)
+                  = (ECtxItem.resolveL Ki_r0_top w_r1 w_r2).fill from rfl,
+                fill_append, fill_cons, fill_nil,
+                show fillItem Ki_r0_top = Ki_r0_top.fill from rfl]
+            rfl
+          refine ⟨Exp.resolve
+                    (fill (K_r0_rest ++ [Ki_r0_top]) inner_e2)
+                    (.val w_r1) (.val w_r2),
+                  σ_r0, κ_r0, efs_r0,
+                  eraseExpr (Exp.resolve
+                    (fill (K_r0_rest ++ [Ki_r0_top]) inner_e2)
+                    (.val w_r1) (.val w_r2)),
+                  ?_, ?_, rfl, hσ_r0, hef_r0⟩
+          · have hs :=
+              BaseStep.ContextStep.ofBaseStep
+                (K := K_r0_rest ++ [ECtxItem.resolveL Ki_r0_top w_r1 w_r2])
+                hbstep_r0
+            rw [hfill_eq, hfill_eq2] at hs
+            exact hs
+          · have hlift :=
+              ReflTransGen_pureStep_fill
+                (K := fill (Expr := Exp)
+                       [ECtxItem.pairL (eraseVal w_r1),
+                        ECtxItem.pairL (eraseVal w_r2),
+                        ECtxItem.fst, ECtxItem.fst])
+                hpure_r0
+            have hLHS_pure :
+                fill [ECtxItem.pairL (eraseVal w_r1),
+                      ECtxItem.pairL (eraseVal w_r2),
+                      ECtxItem.fst, ECtxItem.fst]
+                     (fill Ks''' e2') =
+                fill (Ks''' ++ [ECtxItem.pairL (eraseVal w_r1)]
+                           ++ [ECtxItem.pairL (eraseVal w_r2)]
+                           ++ [ECtxItem.fst] ++ [ECtxItem.fst]) e2' := by
+              simp [fill_append, fill_cons, fill_nil, fillItem,
+                    ECtxItem.fill]
+            have hRHS_pure :
+                fill [ECtxItem.pairL (eraseVal w_r1),
+                      ECtxItem.pairL (eraseVal w_r2),
+                      ECtxItem.fst, ECtxItem.fst] e_matched =
+                eraseExpr (Exp.resolve
+                            (fill (K_r0_rest ++ [Ki_r0_top]) inner_e2)
+                            (.val w_r1) (.val w_r2)) := by
+              rw [← hex_r0]
+              simp [eraseExpr, eraseResolve, fill_cons, fill_nil,
+                    fillItem, ECtxItem.fill]
+            rw [hLHS_pure, hRHS_pure] at hlift
+            exact hlift
+      · -- `.pairR`: the hole is in the left component `eraseExpr r0`.
+        subst hKs3
+        have hns_r1 : PrimStep.NotStuck (r1, σ1) :=
+          notStuck_of_frame (Ki := .resolveM r0 w_r2) (by simpa [ECtxItem.fill] using hns)
+        have hlk : Ks'''.length ≤
+            (Ks''' ++ [ECtxItem.pairR (eraseExpr r0)] ++
+             [ECtxItem.pairL v_r2] ++ [ECtxItem.fst]).length := by
+          simp
+        have hmatch := IHapp hlk hi hns_r1
+        subst hew_r2
+        simpa [eraseECtx, eraseECtxItem, List.flatMap_cons, List.flatMap_nil,
+               fill_append, fill_cons, fill_nil, fillItem, ECtxItem.fill]
+          using hmatch.fill_ctx [ECtxItem.resolveM r0 w_r2]
+    · -- `.pairR`: the hole is in the right component `eraseExpr r2`.
+      subst hKs
+      have hns_r2 : PrimStep.NotStuck (r2, σ1) :=
+        notStuck_of_frame (Ki := .resolveR r0 r1) (by simpa [ECtxItem.fill] using hns)
+      have hlk : Ks''.length ≤ (Ks'' ++ [ECtxItem.pairR
+                    (.pair (eraseExpr r0) (eraseExpr r1))] ++
+                    [ECtxItem.fst]).length := by
+        simp
+      have hmatch := IHapp hlk hi hns_r2
+      simpa [eraseECtx, eraseECtxItem, List.flatMap_cons, List.flatMap_nil,
+             fill_append, fill_cons, fill_nil, fillItem, ECtxItem.fill]
+        using hmatch.fill_ctx [ECtxItem.resolveR r0 r1]
 
 /-- Every primitive step of the erased program is matched by a primitive step
 in the original program, possibly followed by some deterministic pure steps
@@ -1446,10 +1227,7 @@ theorem erased_primStep_primStep {e1 : Exp} {σ1 : State}
             PrimStepMatchedByErasedSteps e1 σ1
               (fill (Ks ++ [Ki]) e2') σ2 efs := by
         intro Ki_orig einner heo hi hek
-        have hns0 : PrimStep.NotStuck (einner, σ1) := by
-          rw [heo] at hns
-          exact Language.Context.notStuck_fill_inv
-            (K := fill [Ki_orig]) (by simp [fill_cons, fill_nil, fillItem]; exact hns)
+        have hns0 : PrimStep.NotStuck (einner, σ1) := notStuck_of_frame (heo ▸ hns)
         have hmatch : PrimStepMatchedByErasedSteps einner σ1 (fill Ks e2') σ2 efs :=
           IHapp (Nat.le_refl _) hi hns0
         have hlift := hmatch.fill_ctx [Ki_orig]
@@ -1458,194 +1236,14 @@ theorem erased_primStep_primStep {e1 : Exp} {σ1 : State}
         simp only [fill_cons, fill_nil, fillItem, eraseECtx, List.flatMap_cons,
                    List.flatMap_nil, List.append_nil, hek] at hlift ⊢
         exact hlift
-      -- Discharge the .newProph collision that arises only for `Ki = .appL v2`
-      -- or `Ki = .appR e1`, where the erased newProph shape is `.app v v`.
-      -- We invoke this helper after the initial `cases e1 <;> simp ...`.
-      have newProphAppL_bad : ∀ (v2 : Val), hl(v(λ _, #BaseLit.poison)) = fill Ks e1' ∧
-          hl(#()) = hl(v(&v2)) → False := by
-        intro _ ⟨h1, _⟩
-        rw [← h1] at hnv_inner
-        simp [ToVal.toVal] at hnv_inner
-      have newProphAppR_bad : ∀ (e0 : Exp), e0 = hl(v(λ _, #BaseLit.poison)) ∧
-          hl(#()) = fill Ks e1' → False := by
-        intro _ ⟨_, h⟩
-        rw [← h] at hnv_inner
-        simp [ToVal.toVal] at hnv_inner
-      cases Ki with
-      | appL v2 =>
-        peel_ki
-        rotate_left
-        · exact absurd heq_e (newProphAppL_bad _)
-        rename_i einner ea
-        obtain ⟨hi, ha⟩ := heq_e
-        obtain ⟨v2', rfl, rfl⟩ := eraseExpr_eq_val ha
-        exact finish (.appL v2') einner (by simp [ECtxItem.fill]) hi (by simp [eraseECtxItem])
-      | appR e0 =>
-        peel_ki
-        rotate_left
-        · exfalso
-          have := heq_e.2
-          rw [← this] at hnv_inner
-          simp [ToVal.toVal] at hnv_inner
-        rename_i eouter einner
-        obtain ⟨rfl, hi⟩ := heq_e
-        exact finish (.appR eouter) einner (by simp [ECtxItem.fill]) hi (by simp [eraseECtxItem])
-      | unOp op1 =>
-        peel_ki
-        rename_i op' einner
-        obtain ⟨rfl, hi⟩ := heq_e
-        exact finish (.unOp op') einner (by simp [ECtxItem.fill]) hi (by simp [eraseECtxItem])
-      | binOpL op1 v2 =>
-        peel_ki
-        rename_i op' einner ea
-        obtain ⟨rfl, hi, ha⟩ := heq_e
-        obtain ⟨v2', rfl, rfl⟩ := eraseExpr_eq_val ha
-        exact finish (.binOpL op' v2') einner (by simp [ECtxItem.fill]) hi
-          (by simp [eraseECtxItem])
-      | binOpR op1 e0 =>
-        peel_ki
-        rename_i op' eouter einner
-        obtain ⟨rfl, rfl, hi⟩ := heq_e
-        exact finish (.binOpR op' eouter) einner (by simp [ECtxItem.fill]) hi
-          (by simp [eraseECtxItem])
-      | «if» e1' e2' =>
-        peel_ki
-        rename_i einner ei1 ei2
-        obtain ⟨hi, rfl, rfl⟩ := heq_e
-        exact finish (.if ei1 ei2) einner (by simp [ECtxItem.fill]) hi
-          (by simp [eraseECtxItem])
-      | pairL v2 =>
-        peel_ki
-        rename_i einner ea
-        obtain ⟨hi, ha⟩ := heq_e
-        obtain ⟨v2', rfl, rfl⟩ := eraseExpr_eq_val ha
-        exact finish (.pairL v2') einner (by simp [ECtxItem.fill]) hi
-          (by simp [eraseECtxItem])
-      | pairR e0 =>
-        peel_ki
-        rename_i eouter einner
-        obtain ⟨rfl, hi⟩ := heq_e
-        exact finish (.pairR eouter) einner (by simp [ECtxItem.fill]) hi
-          (by simp [eraseECtxItem])
-      | fst =>
-        -- e1 could be `.fst einner` (normal case) or `.resolve r0 r1 r2`
-        -- (special case, since resolve erases to `.fst (.fst ...)`).
-        peel_ki
-        · -- .fst einner case: straightforward IH application.
-          rename_i einner
-          exact finish .fst einner (by simp [ECtxItem.fill]) heq_e
-            (by simp [eraseECtxItem])
-        · -- .resolve r0 r1 r2 case: delegate to the specialized helper.
-          rename_i r0 r1 r2
-          exact resolve_fst_primStepMatched bstep hns heq_e IHapp
-      | snd =>
-        peel_ki
-        rename_i einner
-        exact finish .snd einner (by simp [ECtxItem.fill]) heq_e (by simp [eraseECtxItem])
-      | injL =>
-        peel_ki
-        rename_i einner
-        exact finish .injL einner (by simp [ECtxItem.fill]) heq_e (by simp [eraseECtxItem])
-      | injR =>
-        peel_ki
-        rename_i einner
-        exact finish .injR einner (by simp [ECtxItem.fill]) heq_e (by simp [eraseECtxItem])
-      | case ec1 ec2 =>
-        peel_ki
-        rename_i einner ei1 ei2
-        obtain ⟨hi, rfl, rfl⟩ := heq_e
-        exact finish (.case ei1 ei2) einner (by simp [ECtxItem.fill]) hi
-          (by simp [eraseECtxItem])
-      | allocNL v2 =>
-        peel_ki
-        rename_i einner ea
-        obtain ⟨hi, ha⟩ := heq_e
-        obtain ⟨v2', rfl, rfl⟩ := eraseExpr_eq_val ha
-        exact finish (.allocNL v2') einner (by simp [ECtxItem.fill]) hi
-          (by simp [eraseECtxItem])
-      | allocNR e0 =>
-        peel_ki
-        rename_i eouter einner
-        obtain ⟨rfl, hi⟩ := heq_e
-        exact finish (.allocNR eouter) einner (by simp [ECtxItem.fill]) hi
-          (by simp [eraseECtxItem])
-      | free =>
-        peel_ki
-        rename_i einner
-        exact finish .free einner (by simp [ECtxItem.fill]) heq_e (by simp [eraseECtxItem])
-      | load =>
-        peel_ki
-        rename_i einner
-        exact finish .load einner (by simp [ECtxItem.fill]) heq_e (by simp [eraseECtxItem])
-      | storeL v2 =>
-        peel_ki
-        rename_i einner ea
-        obtain ⟨hi, ha⟩ := heq_e
-        obtain ⟨v2', rfl, rfl⟩ := eraseExpr_eq_val ha
-        exact finish (.storeL v2') einner (by simp [ECtxItem.fill]) hi
-          (by simp [eraseECtxItem])
-      | storeR e0 =>
-        peel_ki
-        rename_i eouter einner
-        obtain ⟨rfl, hi⟩ := heq_e
-        exact finish (.storeR eouter) einner (by simp [ECtxItem.fill]) hi
-          (by simp [eraseECtxItem])
-      | xchgL v2 =>
-        peel_ki
-        rename_i einner ea
-        obtain ⟨hi, ha⟩ := heq_e
-        obtain ⟨v2', rfl, rfl⟩ := eraseExpr_eq_val ha
-        exact finish (.xchgL v2') einner (by simp [ECtxItem.fill]) hi
-          (by simp [eraseECtxItem])
-      | xchgR e0 =>
-        peel_ki
-        rename_i eouter einner
-        obtain ⟨rfl, hi⟩ := heq_e
-        exact finish (.xchgR eouter) einner (by simp [ECtxItem.fill]) hi
-          (by simp [eraseECtxItem])
-      | cmpXchgL v1 v2 =>
-        peel_ki
-        rename_i einner ea1 ea2
-        obtain ⟨hi, ha1, ha2⟩ := heq_e
-        obtain ⟨v1', rfl, rfl⟩ := eraseExpr_eq_val ha1
-        obtain ⟨v2', rfl, rfl⟩ := eraseExpr_eq_val ha2
-        exact finish (.cmpXchgL v1' v2') einner (by simp [ECtxItem.fill]) hi
-          (by simp [eraseECtxItem])
-      | cmpXchgM e0 v2 =>
-        peel_ki
-        rename_i eouter einner ea
-        obtain ⟨rfl, hi, ha⟩ := heq_e
-        obtain ⟨v2', rfl, rfl⟩ := eraseExpr_eq_val ha
-        exact finish (.cmpXchgM eouter v2') einner (by simp [ECtxItem.fill]) hi
-          (by simp [eraseECtxItem])
-      | cmpXchgR eA eB =>
-        peel_ki
-        rename_i eouter0 eouter1 einner
-        obtain ⟨rfl, rfl, hi⟩ := heq_e
-        exact finish (.cmpXchgR eouter0 eouter1) einner (by simp [ECtxItem.fill]) hi
-          (by simp [eraseECtxItem])
-      | faaL v2 =>
-        peel_ki
-        rename_i einner ea
-        obtain ⟨hi, ha⟩ := heq_e
-        obtain ⟨v2', rfl, rfl⟩ := eraseExpr_eq_val ha
-        exact finish (.faaL v2') einner (by simp [ECtxItem.fill]) hi
-          (by simp [eraseECtxItem])
-      | faaR e0 =>
-        peel_ki
-        rename_i eouter einner
-        obtain ⟨rfl, hi⟩ := heq_e
-        exact finish (.faaR eouter) einner (by simp [ECtxItem.fill]) hi
-          (by simp [eraseECtxItem])
-      | resolveL Kres v1 v2 =>
-        simp only [ECtxItem.fill] at heq_e
-        exfalso; cases e1 <;> erase_simp at heq_e
-      | resolveM e0 v2 =>
-        simp only [ECtxItem.fill] at heq_e
-        exfalso; cases e1 <;> erase_simp at heq_e
-      | resolveR e0 e1outer =>
-        simp only [ECtxItem.fill] at heq_e
-        exfalso; cases e1 <;> erase_simp at heq_e
+      -- Recover the original frame and subexpression behind the erased frame.
+      rcases erase_eq_fill_item hnv_inner heq_e with
+        ⟨Ki_orig, einner, heo, hek, hi⟩ | ⟨rfl, r0, r1, r2, rfl⟩
+      · exact finish Ki_orig einner heo hi hek
+      · -- `Ki = .fst` with `e1` a `Resolve`: the erasure `.fst (.fst ((_,_),_))`
+        -- collides with a genuine `.fst` frame; delegate to the carve-out.
+        simp only [eraseExpr, eraseResolve, ECtxItem.fill, Exp.fst.injEq] at heq_e
+        exact resolve_fst_primStepMatched bstep hns heq_e IHapp
 
 /-! ## A base step in the original produces a prim step in the erased program -/
 
@@ -1823,13 +1421,6 @@ private theorem erasure_cut {e : Exp} {σ : State} {φ : Val → State → Prop}
       Relation.ReflTransGen Language.ErasedStep ([e], σ) (t2'', σ2') ∧
       ρ2.2 = eraseState σ2' ∧
       Language.PureSteps ρ2.1 (eraseTp t2'') := by
-  suffices H : ∀ (ρ2 : List Exp × State),
-      Relation.ReflTransGen Language.ErasedStep ([eraseExpr e], eraseState σ) ρ2 →
-      ∃ (t2'' : List Exp) (σ2' : State),
-        Relation.ReflTransGen Language.ErasedStep ([e], σ) (t2'', σ2') ∧
-        ρ2.2 = eraseState σ2' ∧ Language.PureSteps ρ2.1 (eraseTp t2'') by
-    exact H _ h
-  intro ρ2 h
   induction h with
   | refl =>
     exact ⟨[e], σ, Relation.ReflTransGen.refl, rfl, pureSteps_refl _⟩
