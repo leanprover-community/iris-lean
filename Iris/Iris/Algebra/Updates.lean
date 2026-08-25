@@ -174,18 +174,11 @@ theorem Update.discrete_total [CMRA.Discrete α] [CMRA.IsTotal α] :
   mpr h := Update.total.mpr fun n z v => (h z ((CMRA.valid_iff_validN' n).mpr v)).validN
 
 -- (** * Transport *)
--- Section cmra_transport.
---   Context {SI : sidx} {A B : cmra} (H : A = B).
---   Notation T := (cmra_transport H).
---   Lemma cmra_transport_updateP (P : A → Prop) (Q : B → Prop) x :
---     x ~~>: P → (∀ y, P y → Q (T y)) → T x ~~>: Q.
---   Proof. Admitted.
-
---   Lemma cmra_transport_updateP' (P : A → Prop) x :
---     x ~~>: P → T x ~~>: λ y, ∃ y', y = cmra_transport H y' ∧ P y'.
---   Proof. Admitted.
-
--- End cmra_transport.
+-- `cmra_transport` itself is ignored (see `CMRA.lean`): equality `A = B` between CMRAs is
+-- transported by `transpAp`, so these update lemmas are subsumed by rewriting along the
+-- equality and using the plain `updateP` API.
+#rocq_ignore cmra_transport_updateP "Use `transpAp`; transport of updates along `A = B` is handled by rewriting"
+#rocq_ignore cmra_transport_updateP' "Use `transpAp`; transport of updates along `A = B` is handled by rewriting"
 
 /-! ## Isomorphism -/
 @[rocq_alias iso_cmra_updateP]
