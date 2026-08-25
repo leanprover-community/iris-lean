@@ -281,11 +281,11 @@ theorem eraseVal_inj_iff {v1 v2 : Val} (h : v1.compareSafe v2 = true) :
     exact eraseBaseLit_inj_of_unboxed h heq
   · -- injL / injL
     rename_i v1 v2
-    cases v1 <;> cases v2 <;> simp_all [Val.isUnboxed, eraseVal]
+    cases v1 <;> cases v2 <;> simp_all [eraseVal]
     exact eraseBaseLit_inj_of_unboxed h heq
   · -- injR / injR
     rename_i v1 v2
-    cases v1 <;> cases v2 <;> simp_all [Val.isUnboxed, eraseVal]
+    cases v1 <;> cases v2 <;> simp_all [eraseVal]
     exact eraseBaseLit_inj_of_unboxed h heq
 
 /-! ## Erasure and operator evaluation -/
@@ -547,7 +547,7 @@ private theorem eraseState_get?_some_some {σ : State} {l : Loc} {v : Val}
   | some ov =>
     rw [horig] at hget
     cases ov with
-    | none => simp [eraseVal] at hget
+    | none => simp at hget
     | some ov' =>
       simp at hget
       exact ⟨ov', rfl, hget⟩
@@ -601,7 +601,7 @@ private theorem erased_baseStep_baseStep_Load (l : Loc) (σ : State) (v : Val)
     BaseStepsToErasureOf (.load (.val (.lit (.loc l)))) σ (.val v)
       (eraseState σ) [] := by
   obtain ⟨ov', horig, hev⟩ := eraseState_get?_some_some hget
-  exact ⟨_, _, _, _, .loadS l ov' σ horig, by simp [eraseExpr, hev], rfl, rfl⟩
+  exact ⟨_, _, _, _, .loadS l ov' σ horig, by simp [hev], rfl, rfl⟩
 
 @[rocq_alias erased_base_step_base_step_Xchg]
 private theorem erased_baseStep_baseStep_Xchg (l : Loc) (v w : Val) (σ : State)
@@ -610,7 +610,7 @@ private theorem erased_baseStep_baseStep_Xchg (l : Loc) (v w : Val) (σ : State)
       ((eraseState σ).initHeap l 1 (some (eraseVal w))) [] := by
   obtain ⟨ov', horig, hev⟩ := eraseState_get?_some_some hget
   refine ⟨_, _, _, _, .xchgS l ov' w σ horig, ?_, ?_, rfl⟩
-  · simp [eraseExpr, hev]
+  · simp [hev]
   · rw [eraseState_initHeap]; rfl
 
 @[rocq_alias erased_base_step_base_step_Store]
@@ -657,7 +657,7 @@ private theorem erased_baseStep_baseStep_FAA (l : Loc) (n m : Int) (σ : State)
   have hn : l' = .int n := eraseBaseLit_eq_int hbe
   subst hn
   refine ⟨_, _, _, _, .faaS l n m σ horig, ?_, ?_, rfl⟩
-  · simp [eraseExpr, eraseVal, eraseBaseLit]
+  · simp [eraseVal, eraseBaseLit]
   · rw [eraseState_initHeap]; rfl
 
 /-- If the erased program makes a base step, so does the original program.
@@ -678,7 +678,7 @@ theorem erased_baseStep_baseStep {e1 : Exp} {σ1 : State}
     obtain ⟨rfl, rfl, rfl⟩ := heq1
     rename_i f' x' e'
     refine ⟨_, _, _, _, .recS f' x' e' σ1, ?_, rfl, rfl⟩
-    simp [eraseExpr, eraseVal]
+    simp [eraseVal]
   | pairS v1 v2 σ =>
     cases e1 <;> erase_simp at heq1
     obtain ⟨hv1, hv2⟩ := heq1
@@ -701,7 +701,7 @@ theorem erased_baseStep_baseStep {e1 : Exp} {σ1 : State}
       obtain ⟨body, rfl, hbody⟩ := eraseVal_eq_rec hef
       obtain ⟨w2, rfl, rfl⟩ := eraseExpr_eq_val ha
       exact ⟨_, _, _, _, .betaS _ _ _ w2 _ σ1 rfl, by
-        simp [heq, ← hbody, eraseExpr_subst, eraseVal, eraseExpr], rfl, rfl⟩
+        simp [heq, ← hbody, eraseExpr_subst, eraseVal], rfl, rfl⟩
     case newProph =>
       obtain ⟨hf, ha⟩ := heq1
       obtain ⟨_, _, _, _, hs, he2, hσ, hef⟩ := erased_baseStep_baseStep_NewProph σ1
@@ -712,14 +712,14 @@ theorem erased_baseStep_baseStep {e1 : Exp} {σ1 : State}
     obtain ⟨rfl, hv1⟩ := heq1
     obtain ⟨w, rfl, rfl⟩ := eraseExpr_eq_val hv1
     obtain ⟨w', hw, hwe⟩ := UnOp.eval_erase.mp hv
-    exact ⟨_, _, _, _, .unOpS _ w w' σ1 hw, by simp [eraseExpr, hwe], rfl, rfl⟩
+    exact ⟨_, _, _, _, .unOpS _ w w' σ1 hw, by simp [hwe], rfl, rfl⟩
   | binOpS op v1 v2 v' σ hv =>
     cases e1 <;> erase_simp at heq1
     obtain ⟨rfl, hv1, hv2⟩ := heq1
     obtain ⟨w1, rfl, rfl⟩ := eraseExpr_eq_val hv1
     obtain ⟨w2, rfl, rfl⟩ := eraseExpr_eq_val hv2
     obtain ⟨w', hw, hwe⟩ := BinOp.eval_erase.mp hv
-    exact ⟨_, _, _, _, .binOpS _ w1 w2 w' σ1 hw, by simp [eraseExpr, hwe], rfl, rfl⟩
+    exact ⟨_, _, _, _, .binOpS _ w1 w2 w' σ1 hw, by simp [hwe], rfl, rfl⟩
   | ifTrueS e1' e2' σ =>
     cases e1 <;> erase_simp at heq1
     obtain ⟨hc, rfl, rfl⟩ := heq1
