@@ -38,6 +38,11 @@ def MakeMonPredAt.Kind.propIO : MakeMonPredAt.Kind → InOut
   | indexToProp => .out
   | propToIndex => .in
 
+@[reducible]
+def InOut.toMakeKind : InOut → MakeMonPredAt.Kind
+  | .in  => .propToIndex
+  | .out => .indexToProp
+
 end
 
 @[ipm_class, rocq_alias MakeMonPredAt]
@@ -195,10 +200,10 @@ instance fromAssumption_make_monPred_at_l (p : Bool) (i j : I.car)
     _ ⊢ 𝓟              := instMP.make_monPred_at.mp
 
 @[ipm_backtrack, rocq_alias from_assumption_make_monPred_at_r]
-instance fromAssumption_make_monPred_at_r (p : Bool) d (i j : I.car)
+instance fromAssumption_make_monPred_at_r (p : Bool) io (i j : I.car)
     (P : MonPred I PROP) (𝓟 : PROP)
-    [instMP : MakeMonPredAt d i P 𝓟] [instRel : IsBiIndexRel i j] :
-    FromAssumption p d.propIO 𝓟 (P.monPred_at j) where
+    [instMP : MakeMonPredAt io.toMakeKind i P 𝓟] [instRel : IsBiIndexRel i j] :
+    FromAssumption p io 𝓟 (P.monPred_at j) where
   from_assumption := calc
     _ ⊢ 𝓟              := intuitionisticallyIf_elim
     _ ⊢ P.monPred_at i := instMP.make_monPred_at.mpr

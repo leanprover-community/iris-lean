@@ -412,6 +412,24 @@ example (P : MonPred I PROP) (i j : I.car) (hij : I.rel.le i j) :
   ispecialize H $$ %hij
   iexact H
 
+/- Tests `fromAssumption_make_monPred_at_l`. -/
+/-- info:
+  solution: ∀ (𝓟 : PROP) (j : I.car),
+    FromAssumption true InOut.in (⎡𝓟⎤.monPred_at j) 𝓟,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth ∀ 𝓟 (j : I.car), FromAssumption true .in ((iprop(⎡𝓟⎤) : MonPred I PROP).monPred_at j) 𝓟
+
+/- Tests `fromAssumption_make_monPred_at_r`. -/
+/-- info:
+  solution: ∀ (𝓟 : semiOutParamCore InOut.in PROP) (j : I.car),
+    FromAssumption true InOut.in 𝓟 (⎡𝓟⎤.monPred_at j),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth ∀ 𝓟 (j : I.car), FromAssumption true .in 𝓟 ((iprop(⎡𝓟⎤) : MonPred I PROP).monPred_at j)
+
 end ProofModeInstances
 
 section FrameMonPredAt
