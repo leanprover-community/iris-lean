@@ -156,9 +156,7 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   iintro %Φ #Hlock Hcont
   iloeb as IH
   wp_rec
-  wp_bind &tryAcquire _
-  iapply try_acquire_spec $$ Hlock
-  iintro !> %b Hpt
+  wp_apply try_acquire_spec $$ Hlock with %b Hpt
   cases b
   · wp_pure
     iapply IH

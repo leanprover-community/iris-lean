@@ -19,6 +19,7 @@ namespace Iris.HeapLang
 
 open ProgramLogic ProgramLogic.Language FromMathlib EctxItemLanguage EctxLanguage
 
+@[rocq_alias heap_lang.heap_lang.heap_lang_mixin]
 instance instEctxItemLanguageExp : EctxItemLanguage Exp ECtxItem State Observation Val where
   baseStep := fun ⟨e, σ⟩ obs ⟨e', σ', eps⟩ => BaseStep e σ obs e' σ' eps
   fillItem := ECtxItem.fill
@@ -63,6 +64,32 @@ theorem fill_isSome_empty {K : List ECtxItem} {e : Exp}
     rw [fill_cons] at h
     have h2 := EctxLanguage.fill_val (K := K') (e := fillItem Ki e) h
     simp [fillItem_expToVal_none] at h2
+
+@[rocq_alias heap_lang.to_val_fill_some]
+theorem toVal_fill_some {K : List ECtxItem} {e : Exp} {v : Val}
+    (h : toVal (fill K e) = some v) : K = [] ∧ e = Exp.ofVal v := by
+  obtain rfl := fill_isSome_empty (K := K) (e := e) (by simp [h])
+  exact ⟨rfl, (coe_of_toVal_eq_some (by simpa using h)).symm⟩
+
+-- The `EctxItemLanguage` instance above bundles what Rocq states as separate HeapLang lemmas and
+-- then packages into `heap_lang_mixin`; the generic projections of the class carry the
+-- `ectxi_language.v` aliases of the same names.
+#rocq_ignore heap_lang.heap_lang.fill_item_inj
+  "The `fillItem_inj` field of `instEctxItemLanguageExp`."
+#rocq_ignore heap_lang.heap_lang.fill_item_val
+  "The `fillItem_val` field of `instEctxItemLanguageExp`."
+#rocq_ignore heap_lang.heap_lang.fill_item_no_val_inj
+  "The `fillItem_no_val_inj` field of `instEctxItemLanguageExp`."
+#rocq_ignore heap_lang.heap_lang.val_base_stuck
+  "The `val_stuck` field of `instEctxItemLanguageExp`."
+#rocq_ignore heap_lang.heap_lang.base_ctx_step_val
+  "The `base_ctx_step_val` field of `instEctxItemLanguageExp`."
+#rocq_ignore heap_lang.heap_ectxi_lang
+  "`instEctxItemLanguageExp` is at once the mixin and the canonical structure it builds."
+#rocq_ignore heap_lang.heap_ectx_lang
+  "The generic `EctxItemLanguage.instEctxLanguage` (`EctxLanguageOfEctxi`) at `Exp`."
+#rocq_ignore heap_lang.heap_lang
+  "The generic `EctxLanguage.instLanguage` (`LanguageOfEctx`) at `Exp`."
 
 local macro "solve_subredex_values" : tactic =>
   `(tactic|
@@ -263,6 +290,9 @@ theorem primStep_val_baseStep {e : Exp} {σ : State} {obs : List Observation}
   subst hg
   exact Hbase
 
+attribute [rocq_alias heap_lang.prim_step_to_val_is_base_step] primStep_val_baseStep
+
+@[rocq_alias heap_lang.base_step_to_val]
 theorem base_step_to_val_always_to_val
     {e₁ : Exp} {σ₁ₐ : State} {κsₐ : List Observation} {v₂ₐ : Val} {σ₂ₐ : State}
     {efsₐ : List Exp} {σ₁ᵦ : State} {κsᵦ : List Observation}
@@ -371,6 +401,31 @@ theorem prim_step_more_proph_ids {e : Exp} {σ : State} {κs : List Observation}
     σ.usedProphId ⊆ σ'.usedProphId := by
   obtain ⟨hbase⟩ := h
   exact base_step_more_proph_ids hbase
+
+/-- A `resolve` whose subexpression cannot step cannot step either: the only base step of a
+`resolve` runs its subexpression to a value, and a step inside an evaluation context is a step of
+the subexpression. -/
+@[rocq_alias heap_lang.irreducible_resolve]
+theorem irreducible_resolve {e : Exp} {v1 v2 : Val} {σ : State}
+    (H : PrimStep.Irreducible (e, σ)) :
+    PrimStep.Irreducible (Exp.resolve e (.val v1) (.val v2), σ) := by
+  intro obs e' σ' eₜ hstep
+  generalize hsrc : Exp.resolve e (.val v1) (.val v2) = src at hstep
+  obtain ⟨Hbase⟩ := hstep
+  rename_i e₁' e₂' K
+  cases K using List.reverseRec with
+  | nil =>
+    simp only [fill_nil] at hsrc; subst hsrc
+    cases Hbase with | resolveS _ _ _ _ _ _ _ _ hb _ => exact H _ _ _ _ (primStep_of_baseStep hb)
+  | append_singleton K' Ki =>
+    cases Ki <;>
+      simp only [fill_append, fill_cons, fill_nil, fillItem, ECtxItem.fill,
+        Exp.resolve.injEq, reduceCtorEq] at hsrc
+    case resolveL =>
+      exact H obs _ σ' eₜ (BaseStep.ContextStep.ofBaseStep' (K' ++ [_])
+        (by simp only [fill_append, fill_cons, fill_nil]; exact hsrc.1.symm) rfl Hbase)
+    case resolveM => exact baseStep_fill_eq_val_absurd Hbase hsrc.2.1
+    case resolveR => exact baseStep_fill_eq_val_absurd Hbase hsrc.2.2
 
 /-- `resolve e &vp &vt` is atomic whenever its subexpression `e` is strongly
 atomic: any step of the whole expression is a `resolveS` base step, which runs

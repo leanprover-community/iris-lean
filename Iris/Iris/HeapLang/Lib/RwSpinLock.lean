@@ -277,9 +277,7 @@ theorem acquireReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
   iintro %φ #Hislock Hφ
   iloeb as IH
   wp_rec
-  wp_bind &tryAcquireReader _
-  iapply tryAcquireReader_spec $$ Hislock
-  iintro !> %b Hb
+  wp_apply tryAcquireReader_spec $$ Hislock with %b Hb
   cases b
   · wp_if_false
     iapply IH
@@ -371,9 +369,7 @@ theorem acquireWriter_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
   iintro %φ #Hislock Hφ
   iloeb as IH
   wp_rec
-  wp_bind &tryAcquireWriter _
-  iapply tryAcquireWriter_spec $$ Hislock
-  iintro !> %b Hb
+  wp_apply tryAcquireWriter_spec $$ Hislock with %b Hb
   cases b
   · wp_if_false; iapply IH; itrivial
   · wp_if_true; iapply Hφ;
