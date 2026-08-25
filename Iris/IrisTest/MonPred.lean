@@ -199,11 +199,6 @@ example {α : Type _} (Φ : α → PROP) :
   iintro %i
   isplit <;> iintro _ //
 
--- Expected: `AsEmpValid .from _ .in PROP bi .out iprop(∀ i, 𝓟 -∗ 𝓠)`,
--- i.e. `asEmpValid_monPred_at_wand` (not `asEmpValid_monPred_at`).
-
-
-
 /- Tests `asEmpValid_monPred_at_wand`, which has higher priority than `asEmpValid_monPred_at`. -/
 /-- info:
   solution: AsEmpValid AsEmpValid.Direction.from (⎡𝓟⎤ ⊢ ⎡𝓠⎤)
