@@ -280,7 +280,6 @@ instance fromModal_later_embed [BiEmbedLater PROP1 PROP2] {α} φ io (sel : α) 
 
 /-! ### IntoExcept0 -/
 
-/-- The metavariables `PROP1` and `bi1` are unified in the conclusion before the premise runs. -/
 @[rocq_alias into_except_0_embed]
 instance intoExcept0_embed [BiEmbedLater PROP1 PROP2] (P Q : PROP1)
     [inst : IntoExcept0 P Q] :
