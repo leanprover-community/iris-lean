@@ -334,21 +334,16 @@ instance fromModal_except0 [BI PROP] io (P : PROP) :
 
 /-! ### IntoExcept0 -/
 
-/- The three non-recursive instances require  -/
-
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_except_0_except_0]
 instance intoExcept0_except0 [BI PROP] (P : PROP) :
     IntoExcept0 iprop(◇ P) P where
   into_except0 := .rfl
 
-set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias into_except_0_later]
 instance intoExcept0_later [BI PROP] (P : PROP) [Timeless P] :
     IntoExcept0 iprop(▷ P) P where
   into_except0 := Timeless.timeless
 
-set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias into_except_0_later_if]
 instance intoExcept0_laterIf [BI PROP] p (P : PROP) [Timeless P] :
     IntoExcept0 iprop(▷?p P) P where

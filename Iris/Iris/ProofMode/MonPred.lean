@@ -503,7 +503,6 @@ instance isExcept0_monPred_at (P : MonPred I PROP) (i : I.car) [h : IsExcept0 P]
 
 /-! ### IntoExcept0 -/
 
-set_option synthInstance.checkSynthOrder false in
 /--
   `P.monPred_at i` is an input argument of `IntoExcept0`.
   Unifying the conclusion assigns the metavariables before the assumption is involved.
