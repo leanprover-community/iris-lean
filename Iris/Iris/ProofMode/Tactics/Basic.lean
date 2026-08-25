@@ -57,3 +57,23 @@ elab "istop" : tactic => do
     -- check if already in proof mode
     let some irisGoal := parseIrisGoal? goal | throwError "istop: not in proof mode"
     mvar.setType irisGoal.strip
+
+-- TODO: Is there a more efficient way to implement this?
+elab "focusLastIrisGoal" colGt tac:tactic : tactic => do
+  let goals ← getUnsolvedGoals
+  let mut goals_before := []
+  let mut iris_goal := []
+  let mut goals_after := []
+  for g in goals do
+    if isIrisGoal (← g.getType) then
+      goals_before := goals_before ++ iris_goal ++ goals_after
+      iris_goal := [g]
+      goals_after := []
+    else
+      goals_after := goals_after ++ [g]
+  let [g] := iris_goal
+    | throwError "no remaining Iris goal"
+  setGoals [g]
+  evalTactic tac
+  let goals' ← getUnsolvedGoals
+  setGoals (goals_before ++ goals' ++ goals_after)

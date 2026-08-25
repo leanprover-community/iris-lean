@@ -9,16 +9,18 @@ namespace Iris
 
 open Lean
 
+@[rocq_alias stuckness]
 inductive Stuckness where
 | NotStuck
 | MaybeStuck
 
 namespace Stuckness
 
-@[simp]
+@[simp, rocq_alias stuckness_le]
 instance instLE: LE Stuckness where
   le x y := ¬ (x = .MaybeStuck ∧ y = .NotStuck)
 
+@[rocq_alias stuckness_le_po]
 instance : Std.IsPreorder Stuckness where
   le_refl  := by grind only [Stuckness, LE.le, instLE]
   le_trans := by grind only [Stuckness, LE.le, instLE]
@@ -31,9 +33,11 @@ instance : Std.IsPreorder Stuckness where
 
 end Stuckness
 
+@[rocq_alias Wp]
 class Wp (PROP Expr : Type _) (Val : outParam (Type _)) (A : Type _) where
   wp : A → CoPset → Expr → (Val → PROP) → PROP
 
+@[rocq_alias Twp]
 class TotalWp (PROP Expr) (Val : outParam (Type _)) (A : Type _) where
   totalWp : A → CoPset → Expr → (Val → PROP) → PROP
 
