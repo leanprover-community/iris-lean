@@ -359,38 +359,6 @@ def BaseStepsToErasureOf (e1 : Exp) (σ1 : State) (e2 : Exp) (σ2 : State)
     BaseStep e1 σ1 κ' e2' σ2' efs' ∧
       eraseExpr e2' = e2 ∧ eraseState σ2' = σ2 ∧ eraseTp efs' = efs
 
-/-! ### Inversion helpers for `eraseExpr = ...` and `eraseVal = ...`
-
-These lemmas let us peel a layer of erasure off in a single step, matching
-the Rocq
-```
-repeat match goal with
-| H : _ = erase_expr ?e |- _ => destruct e; simplify_eq/=
-| H : _ = erase_val ?v |- _ => destruct v; simplify_eq/=
-end
-```
-pattern. Each returns an "original" constructor witness. -/
-
-private theorem eraseVal_eq_pair {v : Val} {v1 v2 : Val}
-    (h : eraseVal v = hl_val((&v1, &v2))) :
-    ∃ w1 w2, v = hl_val((&w1, &w2)) ∧ eraseVal w1 = v1 ∧ eraseVal w2 = v2 := by
-  cases v <;> simp [eraseVal] at h; obtain ⟨rfl, rfl⟩ := h; exact ⟨_, _, rfl, rfl, rfl⟩
-
-private theorem eraseVal_eq_injL {v : Val} {v1 : Val}
-    (h : eraseVal v = hl_val(injl(&v1))) :
-    ∃ w1, v = hl_val(injl(&w1)) ∧ eraseVal w1 = v1 := by
-  cases v <;> simp [eraseVal] at h; cases h; exact ⟨_, rfl, rfl⟩
-
-private theorem eraseVal_eq_injR {v : Val} {v1 : Val}
-    (h : eraseVal v = hl_val(injr(&v1))) :
-    ∃ w1, v = hl_val(injr(&w1)) ∧ eraseVal w1 = v1 := by
-  cases v <;> simp [eraseVal] at h; cases h; exact ⟨_, rfl, rfl⟩
-
-private theorem eraseVal_eq_rec {v : Val} {f x : Binder} {e : Exp}
-    (h : eraseVal v = hl_val(rec &f &x := &e)) :
-    ∃ e', v = hl_val(rec &f &x := &e') ∧ eraseExpr e' = e := by
-  cases v <;> simp [eraseVal] at h; obtain ⟨rfl, rfl, rfl⟩ := h; exact ⟨_, rfl, rfl⟩
-
 /-- Peel an erased-heap lookup: if the erased heap has `some (some v)`
 at `l`, then the original heap has some `(some ov')` at `l` with
 `eraseVal ov' = v`. -/
@@ -484,22 +452,31 @@ private theorem erased_baseStep_baseStep_FAA (l : Loc) (n m : Int) (σ : State)
     by simp [eraseState_initHeap, eraseVal, eraseBaseLit], rfl⟩
 
 /-- `peel1 h` inverts one erasure equation `eraseExpr e = <erased shape>`,
-recursing through conjunctions, and substitutes the result away. -/
+recursing through conjunctions, and substitutes the result away. This is the
+Rocq
+```
+repeat match goal with
+| H : _ = erase_expr ?e |- _ => destruct e; simplify_eq/=
+| H : _ = erase_val ?v |- _ => destruct v; simplify_eq/=
+end
+```
+idiom: the `cases` step is what `destruct` does, and it is guarded by `subst`
+so that it only fires when the other side of the equation is a constructor
+application. The literal case is separate because erasure is lossy exactly
+there (`prophecy ↦ poison`), so inverting it needs the target to be
+non-`poison`. -/
 local syntax "peel1 " ident : tactic
 local macro_rules
   | `(tactic| peel1 $h) =>
     `(tactic|
       first
         | (obtain ⟨hx, hy⟩ := $h; peel1 hx; peel1 hy)
-        | (obtain ⟨_, he, hv⟩ := eraseExpr_eq_val $h
+        | (obtain ⟨w, he, hv⟩ := eraseExpr_eq_val $h
            subst he
            first
+             | subst hv
              | (have hl := eraseVal_eq_lit_of_ne_poison (by simp) hv; subst hl)
-             | (obtain ⟨_, _, hp, hq, hr⟩ := eraseVal_eq_pair hv; subst hp hq hr)
-             | (obtain ⟨_, hp, hq⟩ := eraseVal_eq_injL hv; subst hp hq)
-             | (obtain ⟨_, hp, hq⟩ := eraseVal_eq_injR hv; subst hp hq)
-             | (obtain ⟨_, hp, hq⟩ := eraseVal_eq_rec hv; subst hp hq)
-             | subst hv)
+             | (cases w <;> erase_simp at hv <;> peel1 hv))
         | skip)
 
 /-- `erase_solve e at h`: split on `e` and peel the erasure equation `h`, then
