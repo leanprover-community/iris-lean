@@ -324,7 +324,7 @@ private theorem BinOp.eq_eval_erase {v1 v2 v' : Val} :
       have := Option.some.inj hw
       subst this; simp [eraseVal, eraseBaseLit] at hwe; simp [← hwe]
   · rw [if_neg h, if_neg h]
-    simp only [reduceCtorEq, false_iff]
+    simp only [if_true, reduceCtorEq, false_iff]
     rintro ⟨_, hw, _⟩; exact absurd hw (by simp)
 
 /-- If erased literal is `.int n`, then original was `.int n`. -/
@@ -380,7 +380,7 @@ private theorem BinOp.eval_erase_mp {op : BinOp} {v1 v2 v' : Val}
   | .lit l1, .lit l2 =>
     cases op <;> (try exact absurd rfl hne) <;>
       cases l1 <;> cases l2 <;>
-      simp [eraseVal, eraseBaseLit, BinOp.eval] at h <;>
+      simp [eraseVal, eraseBaseLit, BinOp.eval, BinOp.evalInt, BinOp.evalBool, BinOp.evalLoc] at h <;>
       (first
         | (subst h; exact ⟨_, rfl, by simp [eraseVal, eraseBaseLit]⟩)
         | (obtain ⟨_, _⟩ := h; exact ⟨_, rfl, by simp [eraseVal, eraseBaseLit]⟩))
@@ -399,8 +399,8 @@ private theorem BinOp.eval_erase_mpr {op : BinOp} {v1 v2 v' : Val}
   | .lit l1, .lit l2 =>
     cases op <;> (try exact absurd rfl hne) <;>
       cases l1 <;> cases l2 <;>
-      simp [BinOp.eval] at hw <;>
-      (subst hw; subst hwe; simp [eraseVal, eraseBaseLit, BinOp.eval])
+      simp [BinOp.eval, BinOp.evalInt, BinOp.evalBool, BinOp.evalLoc] at hw <;>
+      (subst hw; subst hwe; simp [eraseVal, eraseBaseLit, BinOp.eval, BinOp.evalInt, BinOp.evalBool, BinOp.evalLoc])
   | .lit _, .rec_ .. | .lit _, .pair .. | .lit _, .injL _ | .lit _, .injR _
   | .rec_ .., _ | .pair .., _ | .injL _, _ | .injR _, _ =>
     cases op <;> (try exact absurd rfl hne) <;>
@@ -1771,8 +1771,8 @@ theorem pureStep_tp_safe {t1 t2 : List Exp} {e1 : Exp} {σ : State}
     (Hmem : e1 ∈ t1) : PrimStep.NotStuck (e1, eraseState σ) := by
   -- Split `t1` at the position of `e1`, then walk through `Hpr`.
   obtain ⟨ps, ss, rfl⟩ := _root_.List.append_of_mem Hmem
-  obtain ⟨l2, l2', hl2, hpr1, hpr2, hlen⟩ := Iris.Std.List.exists_of_forall₂_append Hpr
-  obtain ⟨e2, l2'', rfl, hpstep, _⟩ := Iris.Std.List.exists_of_forall₂_cons hpr2
+  obtain ⟨l2, l2', hl2, hpr1, hpr2, hlen⟩ := List.exists_of_forall₂_append Hpr
+  obtain ⟨e2, l2'', rfl, hpstep, _⟩ := List.exists_of_forall₂_cons hpr2
   -- Recover the original element `e2'` of `t2` at the split.
   obtain ⟨t2a, e2', t2b, rfl, _, rfl, _⟩ := List.map_eq_append_cons (f := eraseExpr) hl2
   -- The original element is not stuck.
@@ -1860,7 +1860,7 @@ private theorem erasure_cut {e : Exp} {σ : State} {φ : Val → State → Prop}
       · unfold eraseTp
         simp only [List.map_append, List.map_set]
         rw [← htp]
-        refine Iris.Std.List.Forall₂.append ?_ (pureSteps_refl _)
+        refine List.Forall₂.append ?_ (pureSteps_refl _)
         have hpure_at : Relation.ReflTransGen PurePrimStep e' (eraseExpr e2') := by
           rw [herase]; exact hpure'
         exact pureSteps_set hpr hpure_at
@@ -1876,7 +1876,7 @@ theorem erasure {e : Exp} {σ : State} {φ : Val → State → Prop}
     intro t2 σ2 v2 hreach
     obtain ⟨t2'', σ2', hos, hσ, hpr⟩ := erasure_cut (ρ2 := (_, _)) Had hreach
     obtain ⟨e_head, t2''_rest, htp_eq, hp_head, _⟩ :=
-      Iris.Std.List.exists_of_forall₂_cons hpr
+      List.exists_of_forall₂_cons hpr
     -- eraseTp t2'' = e_head :: t2''_rest.
     obtain ⟨la, eo, lb, rfl, hla, herase_eo, hmap_rest⟩ :=
       List.map_eq_append_cons (f := eraseExpr) (l := t2'') (xs := [])

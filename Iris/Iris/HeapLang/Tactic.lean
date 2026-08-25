@@ -126,25 +126,18 @@ where
 
 /-! ## `reshapeExpr`: Rocq analogue of `iris_heap_lang.tactics.reshape_expr`
 
-Rocq's `reshape_expr e tac` walks a concrete expression `e`, enumerating
-decompositions `e = fill K e'` from innermost (`K = []`) outward, invoking
-`tac K e'` on each and returning the first successful result. It is the
-standard tool for locating a redex inside a compound expression when
-writing WP-lifting or erasure-style meta-theoretic tactics.
+Rocq's `reshape_expr e tac` decomposes `e` into an evaluation context `K` and a
+subexpression `e'` with `e = fill K e'`, calling `tac K e'` on each possible
+decomposition until one succeeds. It starts from `K = []` with `e'` the whole
+expression and works inward. It is the standard tool for locating a redex
+inside a compound expression when writing WP-lifting or erasure-style
+meta-theoretic tactics.
 
-Unlike `findECtx` — which returns the FIRST residual `e'` matching an
-`e' → α` predicate, packaged in `ECtxResultOf` — `reshapeExpr` invokes the
-callback with both `K` and `e'`, so callbacks can inspect the context
-itself (e.g. to guard on non-empty `K` or on the last frame's shape). -/
+`findECtx` already performs exactly this walk, in the same order and with the
+same callback arguments. `reshapeExpr` is the wrapper that drops the
+`ECtxResultOf` packaging for callers that want only the callback's own result. -/
 
-public meta partial def reshapeExpr {α : Type _} (ogE : Q(Exp))
-    (tac : (K : Q(List ECtxItem)) → (e' : Q(Exp)) → ProofModeM α)
-    : ProofModeM (Option α) := do
-  let (Kis, inner) ← extractAllEctxItems ogE
-  go inner Kis
-where
-  go (e : Q(Exp)) (Kis : List Q(ECtxItem)) : ProofModeM (Option α) := do
-    if let some a ← observing? <| tac (quoteList Kis) e then
-      return some a
-    let Ki :: Kis' := Kis | return none
-    go (← fillItem e Ki) Kis'
+public meta def reshapeExpr {α : Type _} (ogE : Q(Exp))
+    (tac : (K : Q(List ECtxItem)) → (e' : Q(Exp)) → ProofModeM α) :
+    ProofModeM (Option α) :=
+  return (← findECtx ogE tac).map (·.result)
