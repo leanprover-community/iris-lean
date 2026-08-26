@@ -576,7 +576,7 @@ theorem bigSepM_map_seq {M' : Type _ → Type _} [LawfulFiniteMap M' Nat]
 theorem bigSepM_map_seqZ {M' : Type _ → Type _} [LawfulFiniteMap M' Int]
     {Φ : Int → V → PROP} {start : Int} {l : List V} :
     ([∗map] k ↦ v ∈ FiniteMap.map_seqZ (M := M') start l, Φ k v) ⊣⊢
-    ([∗list] i ↦ v ∈ l, Φ (start + i) v) :=
+      ([∗list] i ↦ v ∈ l, Φ (start + i) v) :=
   BiEntails.of_eq <| bigOpM_map_seqZ_eq Φ start l
 
 /-! ## Map–Set Interaction -/
@@ -644,8 +644,7 @@ theorem bigSepM_comm_set {B S : Type _} [FiniteSet S B] (Φ : K → V → B → 
 @[rocq_alias big_sepM_sepMS]
 theorem bigSepM_comm_mset {B MS : Type _} [FiniteMultiSet MS B] (Φ : K → V → B → PROP)
     (m : M V) (X : MS) :
-    ([∗map] k ↦ x ∈ m, [∗mset] y ∈ X, Φ k x y) ⊣⊢
-      ([∗mset] y ∈ X, [∗map] k ↦ x ∈ m, Φ k x y) :=
+    ([∗map] k ↦ x ∈ m, [∗mset] y ∈ X, Φ k x y) ⊣⊢ ([∗mset] y ∈ X, [∗map] k ↦ x ∈ m, Φ k x y) :=
   BiEntails.of_eq <| bigOpM_comm_mset Φ m X
 
 end BigSepM

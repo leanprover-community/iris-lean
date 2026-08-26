@@ -1025,11 +1025,11 @@ theorem nodup_toList {m : M V} : (toList m).Nodup :=
   NoDupKeys_noDup toList_noDupKeys
 
 theorem noDupKeys_map_pair [LawfulFiniteSet S K] {g : K → V} {s : S} :
-    NoDupKeys ((FiniteSet.toList s).map fun k => (k, g k) : List (K × V)) := by
+    NoDupKeys ((FiniteSet.toList s).map fun k => (k, g k)) := by
   simpa [NoDupKeys, List.map_map, Function.comp_def] using FiniteSet.toList_nodup (m := s)
 
 theorem noDupKeys_map_const [LawfulFiniteSet S K] {a : V} {s : S} :
-    NoDupKeys ((FiniteSet.toList s).map (·, a) : List (K × V)) := noDupKeys_map_pair
+    NoDupKeys ((FiniteSet.toList s).map (·, a)) := noDupKeys_map_pair
 
 theorem noDupKeys_map_key {K' : Type _} {f : K → K'} (hf : Function.Injective f)
     {l : List (K × V)} (h : NoDupKeys l) : NoDupKeys (l.map fun kv => (f kv.1, kv.2)) := by
@@ -1037,12 +1037,8 @@ theorem noDupKeys_map_key {K' : Type _} {f : K → K'} (hf : Function.Injective 
 
 theorem noDupKeys_mapIdx {f : Nat → K} {l : List V} (hf : Function.Injective f) :
     NoDupKeys (l.mapIdx fun i v => (f i, v)) := by
-  have hkeys : ((l.mapIdx fun i v => (f i, v)).map (·.1)) = (List.range' 0 l.length).map f := by
-    rw [List.mapIdx_eq_zipIdx_map, List.map_map,
-      show ((fun kv => kv.1) ∘ fun p : V × Nat => (f p.2, p.1)) = f ∘ (·.2) from rfl,
-      ← List.map_map, List.zipIdx_map_snd]
-  rw [NoDupKeys, hkeys]
-  exact List.nodup_map_of_injective hf List.nodup_range'
+  simpa [NoDupKeys, List.mapIdx_eq_zipIdx_map, Function.comp_def, -List.zipIdx_map_snd] using
+    List.nodup_map_of_injective (l := l.zipIdx.map (·.2)) hf (by simp [List.nodup_range'])
 
 theorem get?_ofSet_of_mem [DecidableEq K] [LawfulFiniteSet S K] {a : V} {s : S} {k : K}
     (h : k ∈ s) : get? (FiniteMap.ofSet (M := M) a s) k = some a :=

@@ -124,10 +124,8 @@ theorem wp_array_clone (s : Stuckness) (E : CoPset) (l : Loc) (dq : DFrac) (vl :
   wp_lam
   wp_alloc dst with Hdst
   wp_pures
-  wp_bind &arrayCopyTo _ _ _
-  iapply wp_array_copy_to s E dst l (List.replicate n.toNat hl_val(#())) vl dq n
-    (by simp only [List.length_replicate]; omega) hvl $$ [$Hdst $Hvl]
-  iintro !> ⟨Hdst, Hl⟩
+  wp_apply wp_array_copy_to s E dst l (List.replicate n.toNat hl_val(#())) vl dq n
+    (by simp only [List.length_replicate]; omega) hvl $$ [$Hdst $Hvl] with ⟨Hdst, Hl⟩
   wp_pures
   iapply HΦ $$ [$]
 
@@ -164,9 +162,7 @@ theorem wp_array_init_loop (s : Stuckness) (E : CoPset) (l : Loc) (i k : Nat) (n
     ieval (simp only [List.range'_succ]) at Hf
     icases array_cons.1 $$ Hl with ⟨Hl, HSl⟩
     icases BigSepL.bigSepL_cons.1 $$ Hf with ⟨Hf, HSf⟩
-    wp_bind &f _
-    iapply wp_wand $$ Hf
-    iintro %v Hv
+    wp_apply wp_wand $$ Hf with %v Hv
     wp_store
     wp_pures
     rw [show (i : Int) + 1 = ((i + 1 : Nat) : Int) by omega]
@@ -195,11 +191,10 @@ theorem wp_array_init (s : Stuckness) (E : CoPset) (n : Int) (f : Val) (hn : 0 <
   wp_lam
   wp_alloc src with Hl
   wp_pures
-  wp_bind &arrayInitLoop _ _ _ _
-  iapply wp_array_init_loop Q s E src 0 n.toNat n f (by simp; omega) $$ [Hl Hf]
+  wp_apply wp_array_init_loop Q s E src 0 n.toNat n f (by simp; omega) $$ [Hl Hf]
   · rw [loc_add_nat_zero, List.range_eq_range']
     iframe
-  · iintro !> %vs ⟨%hlen, Hl, Hvs⟩
+  · iintro %vs ⟨%hlen, Hl, Hvs⟩
     wp_pures
     imodintro
     iapply HΦ $$ %src %vs

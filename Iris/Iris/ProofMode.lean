@@ -15,6 +15,7 @@ public import Iris.ProofMode.InstancesPlainly
 public import Iris.ProofMode.InstancesUpdates
 public import Iris.ProofMode.Modalities
 public import Iris.ProofMode.ModalityInstances
+public import Iris.ProofMode.MonPred
 public import Iris.ProofMode.NatCancel
 public import Iris.ProofMode.Patterns
 public import Iris.ProofMode.Porting

@@ -63,6 +63,8 @@ import Iris.Init
 #rocq_concept proofmode "Tactics" "iInv" ported "iinv"
 #rocq_concept proofmode "Tactics" "iAccu" ported "iaccu"
 #rocq_concept proofmode "Tactics" "rules for trivial" ported "itrivial"
+#rocq_concept proofmode "Tactics" "iAuIntro" ported "iauintro"
+#rocq_concept proofmode "Tactics" "iAaccIntro" ported "iaaccintro"
 
 #rocq_concept proofmode "Intro Patterns" ported ""
 #rocq_concept proofmode "Intro Patterns" "IIdent (pattern: H)" ported "pattern: H"
