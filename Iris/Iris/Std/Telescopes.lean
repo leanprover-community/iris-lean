@@ -99,7 +99,7 @@ meta def expandFun (TT : Term) (binders? : Option (TSyntax ``Lean.explicitBinder
   `(Tele.app (TT := $TT) (fun $binders:funBinder* => ULift.up $body))
 
 /-- The number of fields in a literal telescope, or `none` if the expression is not one. -/
-partial def literalArity? (e : Expr) : Option Nat :=
+meta partial def literalArity? (e : Expr) : Option Nat :=
   if e.isConstOf ``Tele.nil then
     some 0
   else if e.isAppOfArity ``Tele.cons 2 then
@@ -156,12 +156,12 @@ meta def delabLam : Delab :=
     (fun x rest body => `(λ.. $x:ident $[$rest:ident]*, $body))
     (fun | `(λ.. $y:ident $[$ys:ident]*, $body) => some (y, ys, body) | _ => none)
 
-syntax:max "[" &"tele" (ppSpace explicitBinders)? "]" : term
-syntax:max "[" &"tele_arg" (ppSpace term),* "]" : term
+syntax:max "⟦" &"tele" (ppSpace explicitBinders)? "⟧" : term
+syntax:max "⟦" &"tele_arg" (ppSpace term),* "⟧" : term
 
 macro_rules
-  | `([tele $[$bs]?]) => return ← expandLiteral bs
-  | `([tele_arg $xs,*]) => do
+  | `(⟦tele $[$bs]?⟧) => return ← expandLiteral bs
+  | `(⟦tele_arg $xs,*⟧) => do
     let xs := xs.getElems
     if xs.isEmpty then
       `((Tele.Arg.nil : Tele.Arg (Tele.nil.{0})))

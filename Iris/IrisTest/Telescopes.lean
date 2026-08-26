@@ -18,6 +18,25 @@ variable {PROP : Type} [inst : BI PROP] {TT : Tele.{0}}
   (Φ Ψ : TT.Arg → PROP) (φ : TT.Arg → Prop) (a : TT.Arg)
 
 /- Delaboration of the telescope-aware lambda. -/
+/-- info: ⟦tele⟧ : Tele -/
+#guard_msgs in #check ⟦tele⟧
+
+set_option linter.unusedVariables false in
+/-- info: ⟦tele  (n : Nat) (b : Bool) (s : String)⟧ : Tele -/
+#guard_msgs in #check ⟦tele (n : Nat) (b : Bool) (s : String)⟧
+
+set_option linter.unusedVariables false in
+/-- info: ⟦tele  (n : Nat) (f : Fin n)⟧ : Tele -/
+#guard_msgs in #check ⟦tele (n : Nat) (f : Fin n)⟧
+
+/-- info: ⟦tele_arg⟧ : ⟦tele⟧.Arg -/
+#guard_msgs in #check ⟦tele_arg⟧
+
+/-- info: ⟦tele_arg 3, true⟧ : ⟦tele  (x : Nat) (x : Bool)⟧.Arg -/
+#guard_msgs in
+#check (⟦tele_arg 3, true⟧ : Tele.Arg ⟦tele (_ : Nat) (_ : Bool)⟧)
+
+/- Delaboration of the telescope-aware lambda. -/
 /-- info: λ.. x, Φ x : TT.Arg → PROP -/
 #guard_msgs in #check (λ.. x, Φ x)
 

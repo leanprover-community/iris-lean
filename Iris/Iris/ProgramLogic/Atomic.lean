@@ -206,12 +206,12 @@ theorem atomic_seq_wp_atomic [Atomic .WeaklyAtomic e] :
 
 /-- Sequential triples with a persistent precondition and no initial quantifier are atomic. -/
 @[rocq_alias persistent_seq_wp_atomic]
-theorem persistent_seq_wp_atomic {α : ([tele]) → IProp GF}
-    {β : ([tele]) → TB.Arg → IProp GF}
-    {POST : ([tele]) → TB.Arg → TP.Arg → Option (IProp GF)}
-    {f : ([tele]) → TB.Arg → TP.Arg → Val} [Persistent (α [tele_arg])] :
-    (∀ Φ, α [tele_arg] -∗
-      (∀.. y, β [tele_arg] y -∗ ∀.. z, POST [tele_arg] y z -∗? Φ (f [tele_arg] y z)) -∗ WP e {{ Φ }}) ⊢
+theorem persistent_seq_wp_atomic {α : ⟦tele⟧ → IProp GF}
+    {β : ⟦tele⟧ → TB.Arg → IProp GF}
+    {POST : ⟦tele⟧ → TB.Arg → TP.Arg → Option (IProp GF)}
+    {f : ⟦tele⟧ → TB.Arg → TP.Arg → Val} [Persistent (α ⟦tele_arg⟧)] :
+    (∀ Φ, α ⟦tele_arg⟧ -∗
+      (∀.. y, β ⟦tele_arg⟧ y -∗ ∀.. z, POST ⟦tele_arg⟧ y z -∗? Φ (f ⟦tele_arg⟧ y z)) -∗ WP e {{ Φ }}) ⊢
     atomic_wp e E α β POST f := by
   iunfold atomic_wp
   iintro Hwp %Φ HΦ
