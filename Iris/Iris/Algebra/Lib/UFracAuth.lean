@@ -20,9 +20,11 @@ fragment's resource to its payload.
 -/
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
+
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
 open OFE CMRA UCMRA Auth Option UFrac
 
 /-! ## Definitions -/
@@ -73,7 +75,7 @@ instance frag_discrete {q : Qp} {a : A} [DiscreteE a] : DiscreteE (◯U{q} a) :=
 /-! ## Validity -/
 
 @[rocq_alias ufrac_auth_validN]
-theorem validN {n : Nat} {a : A} {p : Qp} (ha : ✓{n} a) : ✓{n} (●U{p} a) • ◯U{p} a := by
+theorem validN {n : SI} {a : A} {p : Qp} (ha : ✓{n} a) : ✓{n} (●U{p} a) • ◯U{p} a := by
   simpa only [both_validN] using ⟨incN_refl _, ⟨trivial, ha⟩⟩
 
 @[rocq_alias ufrac_auth_valid]
@@ -83,7 +85,7 @@ theorem valid {p : Qp} {a : A} (ha : ✓ a) : ✓ (●U{p} a) • ◯U{p} a :=
 /-! ## Agreement -/
 
 @[rocq_alias ufrac_auth_agreeN]
-theorem agreeN {n : Nat} {p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{p} b) : a ≡{n}≡ b := by
+theorem agreeN {n : SI} {p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{p} b) : a ≡{n}≡ b := by
   obtain ⟨mc, hmc⟩ := (both_validN.mp h).1
   match mc with
   | none => exact hmc.2
@@ -100,7 +102,7 @@ theorem agree {p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{p} b) : a = b :=
 /-! ## Inclusion -/
 
 @[rocq_alias ufrac_auth_includedN]
-theorem includedN {n : Nat} {p q : Qp} {a b : A}
+theorem includedN {n : SI} {p q : Qp} {a b : A}
     (h : ✓{n} (●U{p} a) • ◯U{q} b) : some b ≼{n} some a := by
   rw [both_validN] at h
   obtain ⟨⟨mc, hmc⟩, _⟩ := h
@@ -118,7 +120,7 @@ theorem included [CMRA.Discrete A] {q p : Qp} {a b : A} (h : ✓ (●U{p} a) •
   | some (_, cr) => exact ⟨some cr, congrArg (some ·.snd) (some_eqv_some.mp hmc)⟩
 
 @[rocq_alias ufrac_auth_includedN_total]
-theorem includedN_total [IsTotal A] {n : Nat} {q p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{q} b) :
+theorem includedN_total [IsTotal A] {n : SI} {q p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{q} b) :
     b ≼{n} a := some_incN_some_iff_is_total.mp <| includedN h
 
 @[rocq_alias ufrac_auth_included_total]
@@ -129,7 +131,7 @@ theorem included_total [CMRA.Discrete A] [IsTotal A] {q p : Qp} {a b : A}
 /-! ## Auth-only validity -/
 
 @[rocq_alias ufrac_auth_auth_validN]
-theorem auth_validN {n : Nat} {q : Qp} {a : A} : (✓{n} ●U{q} a) ↔ ✓{n} a := by
+theorem auth_validN {n : SI} {q : Qp} {a : A} : (✓{n} ●U{q} a) ↔ ✓{n} a := by
   rw [Auth.auth_validN]
   exact ⟨(·.2), (⟨trivial, ·⟩)⟩
 
@@ -141,7 +143,7 @@ theorem auth_valid {q : Qp} {a : A} : (✓ ●U{q} a) ↔ ✓ a := by
 /-! ## Fragment-only validity -/
 
 @[rocq_alias ufrac_auth_frag_validN]
-theorem frag_validN {n : Nat} {q : Qp} {a : A} : (✓{n} ◯U{q} a) ↔ ✓{n} a := by
+theorem frag_validN {n : SI} {q : Qp} {a : A} : (✓{n} ◯U{q} a) ↔ ✓{n} a := by
   rw [Auth.frag_validN]
   exact ⟨(·.2), (⟨trivial, ·⟩)⟩
 
@@ -156,7 +158,7 @@ theorem frag_valid {q : Qp} {a : A} : (✓ ◯U{q} a) ↔ ✓ a := by
 theorem frag_op {q1 q2 : Qp} {a1 a2 : A} : (◯U{q1 + q2} (a1 • a2)) = (◯U{q1} a1) • ◯U{q2} a2 := rfl
 
 @[rocq_alias ufrac_auth_frag_op_validN]
-theorem frag_op_validN {n : Nat} {q1 q2 : Qp} {a b : A} :
+theorem frag_op_validN {n : SI} {q1 q2 : Qp} {a b : A} :
     (✓{n} (◯U{q1} a) • ◯U{q2} b) ↔ ✓{n} (a • b) := frag_validN
 
 @[rocq_alias ufrac_auth_frag_op_valid]

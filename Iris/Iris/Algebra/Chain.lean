@@ -10,9 +10,11 @@ public import Iris.Algebra.StepIndexFinite
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
+
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
 
 open OFE COFE
 
@@ -32,7 +34,7 @@ theorem equiv_equivalence : Equivalence (Equiv (α := α)) where
 def quotientSetoid : Setoid (Chain α) := ⟨Equiv, equiv_equivalence⟩
 
 @[rocq_alias chain_dist]
-def dist (n : Nat) (x y : Chain α) : Prop :=
+def dist (n : SI) (x y : Chain α) : Prop :=
   ∀ m, m ≤ n → x m ≡{m}≡ y m
 
 theorem dist_equivalence : Equivalence (dist (α := α) n) where
@@ -40,12 +42,12 @@ theorem dist_equivalence : Equivalence (dist (α := α) n) where
   symm h _ hm := (h _ hm).symm
   trans h₁ h₂ _ hm := (h₁ _ hm).trans (h₂ _ hm)
 
-theorem dist_lt {n m : Nat} {x y : Chain α} (h : dist n x y) (hlt : m < n) :
+theorem dist_lt {n m : SI} {x y : Chain α} (h : dist n x y) (hlt : m < n) :
     dist m x y :=
-  fun k hk => h k (Nat.le_trans hk (Nat.le_of_lt hlt))
+  fun k hk => h k (SIdx.le_trans hk (SIdx.lt_le_incl hlt))
 
 theorem equiv_iff_dist (x y : Chain α) : Equiv x y ↔ ∀ n, dist n x y :=
-  ⟨fun h _ _ _ => h _, fun h n => h n n (Nat.le_refl n)⟩
+  ⟨fun h _ _ _ => h _, fun h n => h n n SIdx.le_refl⟩
 
 end Completion.Raw
 
@@ -118,16 +120,16 @@ instance [Inhabited α] : Inhabited (Completion α) := ⟨unit default⟩
 
 theorem exists_limit (c : Chain (Completion α)) :
   ∃ x : Completion α, ∀ n, x ≡{n}≡ c n := by
-  have hrep (n : Nat) : ∃ d : Chain α, mk d = c n :=
+  have hrep (n : SI) : ∃ d : Chain α, mk d = c n :=
     ind (fun d => ⟨d, rfl⟩) (c n)
-  let d (n : Nat) : Chain α := Classical.choose (hrep n)
-  have hd (n : Nat) : mk (d n) = c n := Classical.choose_spec (hrep n)
+  let d (n : SI) : Chain α := Classical.choose (hrep n)
+  have hd (n : SI) : mk (d n) = c n := Classical.choose_spec (hrep n)
   let diagonal : Chain α := {
     chain := fun n => d n n
     cauchy := by
       intro n i hni
       refine (d i).cauchy hni |>.trans ?_
-      refine dist_mk.mp ?_ n (Nat.le_refl n)
+      refine dist_mk.mp ?_ n SIdx.le_refl
       rw [hd i, hd n]
       exact c.cauchy hni
   }
@@ -135,7 +137,7 @@ theorem exists_limit (c : Chain (Completion α)) :
   rw [← hd n]
   refine dist_mk.mpr fun m hmn => ?_
   change d m m ≡{m}≡ d n m
-  refine (dist_mk.mp ?_ m (Nat.le_refl m)).symm
+  refine (dist_mk.mp ?_ m SIdx.le_refl).symm
   rw [hd n, hd m]
   exact c.cauchy hmn
 
@@ -144,7 +146,7 @@ noncomputable def diagonal (c : Chain (Completion α)) : Completion α :=
   Classical.choose (exists_limit c)
 
 @[rocq_alias chain_cofe]
-noncomputable instance instIsCOFE : IsCOFE (Completion α) where
+noncomputable instance instIsCOFE [SIdxFinite SI] : IsCOFE (Completion α) where
   compl := diagonal
   conv_compl {n c} := Classical.choose_spec (exists_limit c) n
   lbcompl := (·.elim)
@@ -158,7 +160,7 @@ def complete [IsCOFE α] : Completion α -n> α where
     induction x, y using ind₂ with
     | mk c d =>
       exact (COFE.conv_compl (c := c)).trans
-        ((dist_mk.mp h n (Nat.le_refl n)).trans (COFE.conv_compl (c := d)).symm)
+        ((dist_mk.mp h n SIdx.le_refl).trans (COFE.conv_compl (c := d)).symm)
 
 @[simp]
 theorem complete_mk [IsCOFE α] (c : Chain α) : complete (mk c) = COFE.compl c :=

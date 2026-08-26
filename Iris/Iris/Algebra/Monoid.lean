@@ -9,9 +9,11 @@ public import Iris.Algebra.OFE
 public import Iris.Algebra.StepIndexFinite
 
 public section
-local stepindex Nat
 
 namespace Iris.Algebra
+
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
 
 /-! # Monoids for Big Operators
 
@@ -25,15 +27,16 @@ open OFE
 /-- A commutative monoid on an OFE, used for big operators.
 The operation must be non-expansive, associative, commutative, and have a left identity. -/
 @[rocq_alias Monoid]
-class MonoidOps {M : Type u} [OFE M] (op : M → M → M) (unit : outParam M) where
+class MonoidOps {SI : outParam (Type _)} [instSI : SIdx SI] {M : Type u} [OFE (SI := SI) M]
+    (op : M → M → M) (unit : outParam M) where
   /-- The operation is non-expansive in both arguments -/
   op_ne : NonExpansive₂ op
   /-- Associativity -/
-  op_assoc : ∀ {a b c : M}, op (op a b) c = op a (op b c)
+  op_assoc {SI} : ∀ {a b c : M}, op (op a b) c = op a (op b c)
   /-- Commutativity -/
-  op_comm : ∀ {a b : M}, op a b = op b a
+  op_comm {SI} : ∀ {a b : M}, op a b = op b a
   /-- Left identity -/
-  op_left_id : ∀ {a : M}, op unit a = a
+  op_left_id {SI} : ∀ {a : M}, op unit a = a
 
 #rocq_ignore MonoidOps "Not needed"
 #rocq_ignore monoid_ops "Not needed"

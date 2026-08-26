@@ -17,7 +17,9 @@ This version follows Iris Rocq in fixing the underlying type of fractions to be 
 -/
 
 @[expose] public section
-local stepindex Nat
+
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace Rat
 
@@ -62,18 +64,20 @@ instance instHDivQpQpQp : HDiv Qp Qp Qp where
 def Qp.divide_even (q : Qp) (n : Nat) (hn : 0 < n) : Qp :=
   ⟨q.val / n, Rat.div_pos q.2 (by exact_mod_cast hn)⟩
 
+set_option synthInstance.checkSynthOrder false in
 instance instCOFEQp : COFE Qp := COFE.ofDiscrete _
 
+set_option synthInstance.checkSynthOrder false in
 instance instCMRAQp : CMRA Qp where
   pcore _ := none
   op x y := x + y
   ValidN _ x := x.val ≤ 1
   Valid x := x.val ≤ 1
-  op_ne.ne n x1 x2 H := by rw [(H : x1 = x2)]
+  op_ne.ne n x1 x2 H := by rw [(H : x1 = x2)]; exact .rfl
   pcore_ne _ H := by rcases H
   validN_ne H := by rw [(H : _ = _)]; exact id
   valid_iff_validN := .symm (forall_const _)
-  validN_succ := id
+  validN_le := fun h _ => h
   validN_op_left {n x y} h := by
     show x.val ≤ 1
     have h' : x.val + y.val ≤ 1 := h

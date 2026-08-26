@@ -14,7 +14,7 @@ namespace Iris
 
 /-- Ordered family of equivalences -/
 @[rocq_alias ofe]
-class OFE {SI : Type _} [SIdx SI] (α : Type _) where
+class OFE {SI : outParam (Type _)} [SIdx SI] (α : Type _) where
   Dist : SI → α → α → Prop
   dist_eqv : Equivalence (Dist n)
   eq_dist' : x = y ↔ ∀ n, Dist n x y
@@ -371,6 +371,7 @@ theorem InvImage.equivalence {α : Sort u} {β : Sort v}
   symm := H.symm
   trans := H.trans
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias unit_ofe_mixin]
 instance unitOFE : OFE Unit where
   Dist _ _ _ := True
@@ -782,7 +783,8 @@ instance instOFESigma (P : α → Type _) [∀ x, OFE (P x)] : OFE (Sigma P) whe
 #rocq_ignore sigT_equiv "Local Equiv instance; folded into Lean's OFE (Sigma P) instance."
 
 @[rocq_alias sigT_discrete]
-instance instDiscreteESigma {P : α → Type _} [∀ x, OFE (P x)] {x : Sigma P} [inst : DiscreteE x.snd] :
+instance instDiscreteESigma {P : α → Type _} [∀ x, OFE (P x)] {x : Sigma P}
+    [inst : DiscreteE (SI := stepindex%) x.snd] :
     DiscreteE x where
   discrete {y} := by
     rcases x, y with ⟨⟨x, xH⟩, ⟨y, yH⟩⟩; rintro ⟨heq, H⟩
@@ -1083,10 +1085,12 @@ instance [COFE α] : COFE (ULift α) where
   conv_lbcompl hn c _ hm:= IsCOFE.conv_lbcompl hn (c.map uliftDownHom) hm
   lbcompl_ne hn _ _ _ hc := IsCOFE.lbcompl_ne hn _ _ (fun p hp => hc p hp)
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias unit_ofe_discrete]
 instance : Discrete Unit where
   discrete_0 _ := Subsingleton.elim _ _
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias unit_cofe]
 instance : COFE Unit where
   compl _ := ()

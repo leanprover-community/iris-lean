@@ -10,9 +10,11 @@ public import Iris.Algebra.CMRA
 public import Iris.Algebra.Updates
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
+
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
 open OFE
 
 section GenMap
@@ -150,7 +152,7 @@ theorem pcore_bound (x : GenMap β) (cx : Nat → Option β)
   rw [hcx]
   simp [CMRA.core, CMRA.pcore, optionCore, hN k hk]
 
-theorem extend_bound {n : Nat} {x : GenMap β}
+theorem extend_bound {n : SI} {x : GenMap β}
     {y1 y2 : Nat → Option β} (Hv : ✓{n} x.car) (He : x.car ≡{n}≡ y1 • y2) :
     let F k := CMRA.extend (Hv k) (He k)
     (∃ N, ∀ k, N ≤ k → (fun k => (F k).1) k = none) ∧
@@ -189,7 +191,7 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
   validN_ne {n x y H} := Dist.validN H |>.mp
   valid_iff_validN {x} :=
     ⟨fun Hv n => Hv.validN, fun H => valid_iff_validN.mpr (H ·)⟩
-  validN_succ {x n} := validN_succ
+  validN_le {x n n'} := validN_le
   validN_op_left {n x y} := validN_op_left
   assoc {x y z} := OFE.eq_dist_2 fun _ a => by
     cases _ : x.car a <;> cases _ : y.car a <;> cases _ : z.car a <;>
@@ -227,7 +229,7 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
       cases hx : x.car k <;> cases hy : y.car k <;> simp_all
       have hcxy : CMRA.core (x.car • y.car) k = none := by
         simp [CMRA.core, CMRA.pcore, optionCore, hx, hy, CMRA.op, optionOp]
-      have hHeqk := (OFE.eq_dist_1 (SI:=Nat) Hcy) 0 k
+      have hHeqk := (OFE.eq_dist_1 (SI:=SI) Hcy) 0 k
       simp only [CMRA.core, CMRA.pcore, optionCore, CMRA.op, optionOp,
         hx, hy, Option.bind] at hHeqk
       cases hcy : cy k <;> simp_all
@@ -244,11 +246,11 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
 
 instance instUCMRA_GenMap : UCMRA (GenMap β) where
   unit := GenMap.empty
-  unit_valid _ := trivial
-  unit_left_id {x} := OFE.eq_dist_2 fun _ k => by
+  unit_valid := fun _ => trivial
+  unit_left_id {x} := OFE.eq_dist_2 (SI := stepindex%) fun _ k => by
     simp only [CMRA.op, optionOp, empty]
     cases x.car k <;> simp
-  pcore_unit := OFE.eq_dist_2 fun _ => by
+  pcore_unit := OFE.eq_dist_2 (SI := stepindex%) fun _ => by
     refine OFE.some_dist_some.mpr fun k => ?_
     simp [empty, CMRA.core, CMRA.pcore, optionCore]
 
@@ -284,7 +286,7 @@ theorem GenMap.singleton_map_pcore (x : Nat) (y : β) (γ : Nat) :
     simp [singleton_map_in]
   · simp_all [singleton_map_none h]
 
-theorem GenMap.validN_singleton_map_in (x : Nat) (y : β) (n : Nat) :
+theorem GenMap.validN_singleton_map_in (x : Nat) (y : β) (n : SI) :
     ✓{n} (singleton x y).car x → ✓{n} y := by
   rw [singleton_map_in]
   simp [ValidN, optionValidN]

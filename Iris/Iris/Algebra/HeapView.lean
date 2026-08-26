@@ -32,7 +32,9 @@ It provides authoritative and fragmental ownership over heap elements with fract
 -/
 
 @[expose] public section
-local stepindex Nat
+
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 open Iris
 
@@ -42,7 +44,7 @@ open Std PartialMap Heap OFE CMRA
 variable (K V : Type _) (H : Type _ → Type _) [LawfulPartialMap H K] [CMRA V]
 
 /-- The view relation for heaps: relates a model heap to a fragment heap at step index `n`. -/
-def HeapR (n : Nat) (m : H V) (f : H (DFrac × V)) : Prop :=
+def HeapR (n : SI) (m : H V) (f : H (DFrac × V)) : Prop :=
   ∀ k fv, get? f k = some fv →
     ∃ (v : V) (dq : DFrac), get? m k = some v ∧ ✓{n} (dq, v) ∧ (some fv ≼{n} some (dq, v))
 
@@ -146,7 +148,7 @@ instance : NonExpansive (Frag k dq : _ → HeapView K V H) where
     · rw [Std.PartialMap.singleton, get?_insert_ne h, get?_empty, get?_singleton_ne h]
       rfl
 
-variable {dp dq : DFrac} {n : Nat} {m1 m2 : H V} {k : K} {v1 v2 : V}
+variable {dp dq : DFrac} {n : SI} {m1 m2 : H V} {k : K} {v1 v2 : V}
 
 theorem auth_dfrac_op_eqv : Auth (dp • dq) m1 = Auth dp m1 • Auth dq m1 :=
   View.auth_op_auth_eqv
@@ -304,7 +306,7 @@ theorem frag_op_validN_iff :
 theorem frag_op_valid_iff :
     ✓ (Frag (H := H) k dp v1 • Frag k dq v2) ↔
     ✓ (dp • dq) ∧ ✓ (v1 • v2) := by
-  suffices (∀ (n : Nat), ✓{n} dp • dq ∧ ✓{n} v1 • v2) ↔ ✓ dp • dq ∧ ✓ v1 • v2 by
+  suffices (∀ (n : SI), ✓{n} dp • dq ∧ ✓{n} v1 • v2) ↔ ✓ dp • dq ∧ ✓ v1 • v2 by
     refine (forall_congr' (fun _ => ?_)).trans this
     refine (HeapR.exists_iff_validN ..).trans ?_
     refine (validN_dist_iff (eqv_of_Equiv singleton_op_singleton).dist).trans ?_
@@ -355,7 +357,7 @@ theorem update_one_delete :
 
 theorem update_auth_op_frag
     (Hup :
-      ∀ (n : Nat) (mv : V) (f : Option (DFrac × V)), (Std.PartialMap.get? m1 k = some mv) →
+      ∀ (n : SI) (mv : V) (f : Option (DFrac × V)), (Std.PartialMap.get? m1 k = some mv) →
       ✓{n} ((dq, v) •? f) → (mv ≡{n}≡ ((v : V) •? (Prod.snd <$> f))) →
       ✓{n} ((dq', v') •? f) ∧ (mv' ≡{n}≡ v' •? (Prod.snd <$> f))) :
     Auth (.own one) m1 • Frag k dq v ~~>
@@ -499,7 +501,7 @@ section heapViewFunctor
 open Iris.Std PartialMap
 
 theorem heapR_map_eq [COFE A] [COFE B] [COFE A'] [COFE B'] [RFunctor T] (f : A' -n> A) (g : B -n> B')
-    (n : Nat) (m : H (T A B)) (mv : H (DFrac × T A B)) :
+    (n : SI) (m : H (T A B)) (mv : H (DFrac × T A B)) :
     HeapR K (T A B) H n m mv →
     HeapR K (T A' B') H n
       ((mapO H (RFunctor.map f g).toHom).f m)

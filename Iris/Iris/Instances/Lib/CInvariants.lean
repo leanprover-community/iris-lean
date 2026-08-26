@@ -110,7 +110,7 @@ theorem own_excl_alloc (P : GName → Prop) (HP : PredInfinite P) :
   imod iOwn_alloc_strong (E := W.inv)
     ((some (Excl.excl ()), none) • (none, some (1 : Qp)) :
       CInvF (IProp GF) (IProp GF)) P ?_
-    ⟨trivial, Qp.valid_one⟩ with ⟨%γ, %HPγ, Hown⟩
+    (by exact ⟨trivial, Qp.valid_one⟩) with ⟨%γ, %HPγ, Hown⟩
   · intro N
     obtain ⟨γ, HPγ, Hγ⟩ := HP (List.range (N + 1))
     exact ⟨γ, by grind, HPγ⟩

@@ -10,9 +10,11 @@ public import Iris.Algebra.Updates
 public import Iris.Algebra.LocalUpdates
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
+
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
 
 @[rocq_alias csum]
 inductive Csum (α β : Type _) where
@@ -31,7 +33,7 @@ namespace Csum
 
 #rocq_ignore csum_equiv "OFE is Leibniz; use equality"
 
-@[simp, rocq_alias csum_dist] def Dist [OFE α] [OFE β] (n : Nat) : Csum α β → Csum α β → Prop
+@[simp, rocq_alias csum_dist] def Dist [OFE α] [OFE β] (n : SI) : Csum α β → Csum α β → Prop
   | inl a, inl a' => a ≡{n}≡ a'
   | inr b, inr b' => b ≡{n}≡ b'
   | invalid, invalid => True
@@ -140,14 +142,14 @@ def chainR [OFE α] [OFE β] (c : Chain (Csum α β)) (b : β) : Chain β where
     cases c.chain i <;> cases c.chain n <;> simp [OFE.Dist]
 
 @[rocq_alias csum_cofe]
-instance [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where
+instance [SIdxFinite SI] [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where
   compl c :=
     match c 0 with
     | inl a => inl (IsCOFE.compl (chainL c a))
     | inr b => inr (IsCOFE.compl (chainR c b))
     | invalid => invalid
   conv_compl {n c} := by
-    have h0n := c.cauchy (Nat.zero_le n)
+    have h0n := c.cauchy (i := n) SIdx.le_0_l
     revert h0n
     rcases e0 : c.chain 0 with a|b|_ <;> rcases en : c.chain n with a'|b'|_ <;> try (· exact id)
     · intro _
@@ -171,7 +173,7 @@ instance [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where
   | inr b => ✓ b
   | invalid => False
 
-@[simp] abbrev validN [CMRA α] [CMRA β] (n : Nat) : Csum α β → Prop
+@[simp] abbrev validN [CMRA α] [CMRA β] (n : SI) : Csum α β → Prop
   | inl a => ✓{n} a
   | inr b => ✓{n} b
   | invalid => False
@@ -225,8 +227,8 @@ instance [CMRA α] [CMRA β] : CMRA (Csum α β) where
   validN_ne {n x y} h hv := by
     cases x <;> cases y <;> first | exact CMRA.validN_ne h hv | exact h.elim | trivial
   valid_iff_validN {x} := by cases x <;> simp [CMRA.valid_iff_validN]
-  validN_succ {x _} h := by
-    cases x with | inl | inr => exact CMRA.validN_succ h | invalid => exact h
+  validN_le {x _ _} h le := by
+    cases x with | inl | inr => exact CMRA.validN_le h le | invalid => exact h
   assoc {x y z} := by
     cases x <;> cases y <;> cases z <;> first | trivial | exact congrArg _ CMRA.assoc
   comm {x y} := by cases x <;> cases y <;> first | trivial | exact congrArg _ CMRA.comm

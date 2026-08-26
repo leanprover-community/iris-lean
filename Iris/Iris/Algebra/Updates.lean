@@ -11,15 +11,18 @@ public import Iris.Algebra.CMRA
 
 namespace Iris
 
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
+
 @[rocq_alias cmra_updateP]
 def UpdateP [CMRA α] (x : α) (P : α → Prop) := ∀ n mz,
   ✓{n} (x •? mz) → ∃ y, P y ∧ ✓{n} (y •? mz)
-infixr:50 " ~~>: " => UpdateP
+infixr:50 " ~~>: " => UpdateP (SI := stepindex%)
 
 @[rocq_alias cmra_update]
 def Update [CMRA α] (x y : α) := ∀ n mz,
   ✓{n} (x •? mz) → ✓{n} (y •? mz)
-infixr:50 " ~~> " => Update
+infixr:50 " ~~> " => Update (SI := stepindex%)
 
 #rocq_ignore cmra_update_rewrite_relation "Not needed"
 
@@ -120,7 +123,7 @@ theorem Update.valid0 {x y : α} : (✓{0} x → x ~~> y) → x ~~> y :=
 
 @[rocq_alias cmra_total_updateP]
 theorem UpdateP.total [CMRA.IsTotal α] :
-    x ~~>: P ↔ ∀ (n : Nat) (z : α), ✓{n} (x • z) → ∃ y, P y ∧ ✓{n} (y • z) where
+    x ~~>: P ↔ ∀ (n : SI) (z : α), ✓{n} (x • z) → ∃ y, P y ∧ ✓{n} (y • z) where
   mp uxp := fun n z v => uxp n (some z) v
   mpr h := fun n mz v =>
     match mz with
@@ -131,7 +134,7 @@ theorem UpdateP.total [CMRA.IsTotal α] :
 
 @[rocq_alias cmra_total_update]
 theorem Update.total [CMRA.IsTotal α] :
-    x ~~> y ↔ ∀ (n : Nat) (z : α), ✓{n} (x • z) → ✓{n} (y • z) where
+    x ~~> y ↔ ∀ (n : SI) (z : α), ✓{n} (x • z) → ✓{n} (y • z) where
   mp uxy := fun n z v => uxy n (some z) v
   mpr h := fun n mz v =>
     match mz with

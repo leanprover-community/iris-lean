@@ -17,7 +17,9 @@ The authoritative camera has 2 types of elements:
 -/
 
 @[expose] public section
-local stepindex Nat
+
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 open Iris
 
@@ -27,7 +29,7 @@ open OFE CMRA UCMRA View
 ## Definition of the view relation for the authoritative camera.
 -/
 @[rocq_alias auth_view_rel_raw]
-def AuthViewRel [UCMRA A] : ViewRel A A := fun n a b => b ≼{n} a ∧ ✓{n} a
+def AuthViewRel [UCMRA A] : ViewRel SI A A := fun n a b => b ≼{n} a ∧ ✓{n} a
 
 namespace AuthViewRel
 
@@ -49,11 +51,11 @@ instance instViewRel_authViewRel : IsViewRel (AuthViewRel (A := A)) where
 #rocq_ignore auth_view_rel_raw_unit "Use the IsViewRel typeclass"
 
 @[rocq_alias auth_view_rel_unit]
-theorem authViewRel_unit_iff {n : Nat} {a : A} : AuthViewRel n a unit ↔ ✓{n} a :=
+theorem authViewRel_unit_iff {n : SI} {a : A} : AuthViewRel n a unit ↔ ✓{n} a :=
   ⟨(·.2), (⟨incN_unit, ·⟩)⟩
 
 @[rocq_alias auth_view_rel_exists]
-theorem authViewRel_exists_iff {n : Nat} {b : A} : (∃ a, AuthViewRel n a b) ↔ ✓{n} b :=
+theorem authViewRel_exists_iff {n : SI} {b : A} : (∃ a, AuthViewRel n a b) ↔ ✓{n} b :=
   ⟨fun ⟨_, h⟩ => IsViewRel.rel_validN _ _ _ h, (⟨b, incN_refl b, ·⟩)⟩
 
 @[rocq_alias auth_view_rel_discrete]
@@ -107,7 +109,7 @@ nonrec instance frag_ne : NonExpansive (frag : A → Auth A) :=
 #rocq_ignore auth_frag_proper "Derivable from frag_ne with NonExpansive.eqv"
 
 @[rocq_alias auth_auth_dist_inj]
-nonrec theorem auth_dist_inj {n : Nat} {dq1 dq2 : DFrac} {a1 a2 : A}
+nonrec theorem auth_dist_inj {n : SI} {dq1 dq2 : DFrac} {a1 a2 : A}
     (h : (●{dq1} a1) ≡{n}≡ ●{dq2} a2) : dq1 = dq2 ∧ a1 ≡{n}≡ a2 :=
   ⟨auth_inj_frac h, dist_of_auth_dist h⟩
 
@@ -117,7 +119,7 @@ theorem auth_inj {dq1 dq2 : DFrac} {a1 a2 : A} (h : (●{dq1} a1) = ●{dq2} a2)
   ⟨auth_inj_frac (n := 0) h.dist, OFE.eq_dist_2 fun _ => dist_of_auth_dist h.dist⟩
 
 @[rocq_alias auth_frag_dist_inj]
-theorem frag_dist_inj {n : Nat} {b1 b2 : A} (h : (◯ b1 : Auth A) ≡{n}≡ ◯ b2) : b1 ≡{n}≡ b2 :=
+theorem frag_dist_inj {n : SI} {b1 b2 : A} (h : (◯ b1 : Auth A) ≡{n}≡ ◯ b2) : b1 ≡{n}≡ b2 :=
   dist_of_frag_dist h
 
 @[rocq_alias auth_frag_inj]
@@ -216,7 +218,7 @@ end BigOp
 /-! ## Validity -/
 
 @[rocq_alias auth_auth_dfrac_op_invN]
-theorem auth_dfrac_op_invN {n : Nat} {dq1 dq2 : DFrac} {a b : A}
+theorem auth_dfrac_op_invN {n : SI} {dq1 dq2 : DFrac} {a b : A}
     (h : ✓{n} ((●{dq1} a) • ●{dq2} b)) : a ≡{n}≡ b :=
   dist_of_validN_auth h
 
@@ -229,36 +231,36 @@ theorem auth_dfrac_op_inv {dq1 dq2 : DFrac} {a b : A}
 
 
 @[rocq_alias auth_auth_dfrac_validN]
-theorem auth_dfrac_validN {n : Nat} {dq : DFrac} {a : A} :
+theorem auth_dfrac_validN {n : SI} {dq : DFrac} {a : A} :
     (✓{n} (●{dq} a)) ↔ (✓ dq ∧ ✓{n} a) := by
   rw [auth_validN_iff]
   exact ⟨fun ⟨hdq, _, hv⟩ => ⟨hdq, hv⟩, fun ⟨hdq, hv⟩ => ⟨hdq, incN_unit, hv⟩⟩
 
 @[rocq_alias auth_auth_validN]
-theorem auth_validN {n : Nat} {a : A} :
+theorem auth_validN {n : SI} {a : A} :
     (✓{n} (● a : Auth A)) ↔ (✓{n} a) := by
   rw [auth_dfrac_validN]
   exact and_iff_right_iff_imp.mpr fun _ => DFrac.valid_own_one
 
 @[rocq_alias auth_auth_dfrac_op_validN]
-theorem auth_dfrac_op_validN {n : Nat} {dq1 dq2 : DFrac} {a1 a2 : A} :
+theorem auth_dfrac_op_validN {n : SI} {dq1 dq2 : DFrac} {a1 a2 : A} :
     (✓{n} ((●{dq1} a1) • ●{dq2} a2)) ↔ (✓ (dq1 • dq2) ∧ a1 ≡{n}≡ a2 ∧ ✓{n} a1) := by
   rw [View.auth_op_auth_validN_iff]
   exact ⟨fun ⟨hdq, ha, ⟨_, hv⟩⟩ => ⟨hdq, ha, hv⟩, fun ⟨hdq, ha, hv⟩ => ⟨hdq, ha, incN_unit, hv⟩⟩
 
 @[rocq_alias auth_auth_op_validN]
-theorem auth_op_validN {n : Nat} {a1 a2 : A} : (✓{n} ((● a1 : Auth A) • ● a2)) ↔ False :=
+theorem auth_op_validN {n : SI} {a1 a2 : A} : (✓{n} ((● a1 : Auth A) • ● a2)) ↔ False :=
   auth_one_op_auth_one_validN_iff
 
 @[rocq_alias auth_frag_validN]
-theorem frag_validN {n : Nat} {b : A} : (✓{n} (◯ b : Auth A)) ↔ (✓{n} b) := by
+theorem frag_validN {n : SI} {b : A} : (✓{n} (◯ b : Auth A)) ↔ (✓{n} b) := by
   rw [frag_validN_iff, AuthViewRel.authViewRel_exists_iff]
 
 #rocq_ignore auth_frag_validN_1 "Use frag_validN.mp"
 #rocq_ignore auth_frag_validN_2 "Use frag_validN.mpr"
 
 @[rocq_alias auth_frag_op_validN]
-theorem frag_op_validN {n : Nat} {b1 b2 : A} :
+theorem frag_op_validN {n : SI} {b1 b2 : A} :
     (✓{n} ((◯ b1 : Auth A) • ◯ b2)) ↔ (✓{n} (b1 • b2)) := by
   rw [← frag_op]; exact frag_validN
 
@@ -266,12 +268,12 @@ theorem frag_op_validN {n : Nat} {b1 b2 : A} :
 #rocq_ignore auth_frag_op_validN_2 "Use frag_op_validN"
 
 @[rocq_alias auth_both_dfrac_validN]
-theorem both_dfrac_validN {n : Nat} {dq : DFrac} {a b : A} :
+theorem both_dfrac_validN {n : SI} {dq : DFrac} {a b : A} :
     (✓{n} ((●{dq} a) • ◯ b)) ↔ (✓ dq ∧ b ≼{n} a ∧ ✓{n} a) :=
   auth_op_frag_validN_iff
 
 @[rocq_alias auth_both_validN]
-theorem both_validN {n : Nat} {a b : A} :
+theorem both_validN {n : SI} {a b : A} :
     (✓{n} ((● a : Auth A) • ◯ b)) ↔ (b ≼{n} a ∧ ✓{n} a) :=
   auth_one_op_frag_validN_iff
 
@@ -363,7 +365,7 @@ theorem auth_both_valid_discrete [CMRA.Discrete A] {a b : A} :
 /-! ## Inclusion -/
 
 @[rocq_alias auth_auth_dfrac_includedN]
-theorem auth_dfrac_includedN {n : Nat} {dq1 dq2 : DFrac} {a1 a2 b : A} :
+theorem auth_dfrac_includedN {n : SI} {dq1 dq2 : DFrac} {a1 a2 b : A} :
     ((●{dq1} a1) ≼{n} ((●{dq2} a2) • ◯ b)) ↔ ((dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2) :=
   auth_incN_auth_op_frag_iff
 
@@ -373,7 +375,7 @@ theorem auth_dfrac_included {dq1 dq2 : DFrac} {a1 a2 b : A} :
   auth_inc_auth_op_frag_iff
 
 @[rocq_alias auth_auth_includedN]
-theorem auth_includedN {n : Nat} {a1 a2 b : A} :
+theorem auth_includedN {n : SI} {a1 a2 b : A} :
     ((● a1 : Auth A) ≼{n} ((● a2) • ◯ b)) ↔ (a1 ≡{n}≡ a2) :=
   auth_one_incN_auth_one_op_frag_iff
 
@@ -383,7 +385,7 @@ theorem auth_included {a1 a2 b : A} :
   auth_one_inc_auth_one_op_frag_iff
 
 @[rocq_alias auth_frag_includedN]
-theorem frag_includedN {n : Nat} {dq : DFrac} {a b1 b2 : A} :
+theorem frag_includedN {n : SI} {dq : DFrac} {a b1 b2 : A} :
     ((◯ b1) ≼{n} ((●{dq} a) • ◯ b2)) ↔ (b1 ≼{n} b2) :=
   frag_incN_auth_op_frag_iff
 
@@ -394,7 +396,7 @@ theorem frag_included {dq : DFrac} {a b1 b2 : A} : ((◯ b1) ≼ ((●{dq} a) �
 /-- The weaker `auth_both_included` lemmas below are a consequence of the
     `auth_included` and `frag_included` lemmas above. -/
 @[rocq_alias auth_both_dfrac_includedN]
-theorem auth_both_dfrac_includedN {n : Nat} {dq1 dq2 : DFrac} {a1 a2 b1 b2 : A} :
+theorem auth_both_dfrac_includedN {n : SI} {dq1 dq2 : DFrac} {a1 a2 b1 b2 : A} :
     (((●{dq1} a1) • ◯ b1) ≼{n} ((●{dq2} a2) • ◯ b2)) ↔
       ((dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 ∧ b1 ≼{n} b2) :=
   auth_op_frag_incN_auth_op_frag_iff
@@ -406,7 +408,7 @@ theorem auth_both_dfrac_included {dq1 dq2 : DFrac} {a1 a2 b1 b2 : A} :
   auth_op_frag_inc_auth_op_frag_iff
 
 @[rocq_alias auth_both_includedN]
-theorem auth_both_includedN {n : Nat} {a1 a2 b1 b2 : A} :
+theorem auth_both_includedN {n : SI} {a1 a2 b1 b2 : A} :
     (((● a1 : Auth A) • ◯ b1) ≼{n} ((● a2) • ◯ b2)) ↔ (a1 ≡{n}≡ a2 ∧ b1 ≼{n} b2) :=
   auth_one_op_frag_incN_auth_one_op_frag_iff
 
@@ -477,7 +479,7 @@ theorem auth_local_update {a b0 b1 a' b0' b1' : A} (hup : (b0, b1) ~l~> (b0', b1
 /-! ## Functor -/
 
 /-- The AuthViewRel is preserved under CMRA homomorphisms. -/
-theorem authViewRel_map [UCMRA A'] [UCMRA B'] (g : A' -C> B') (n : Nat) (a : A')
+theorem authViewRel_map [UCMRA A'] [UCMRA B'] (g : A' -C> B') (n : SI) (a : A')
     (b : A') : AuthViewRel n a b → AuthViewRel n (g a) (g b) :=
   fun ⟨hinc, hv⟩ => ⟨CMRA.Hom.monoN g n hinc, CMRA.Hom.validN g hv⟩
 

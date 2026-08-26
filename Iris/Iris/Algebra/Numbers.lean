@@ -23,7 +23,9 @@ These are newtyped to avoid clashing with the normal mathematical operations.
 -/
 
 @[expose] public section
-local stepindex Nat
+
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 open Std
 
@@ -60,11 +62,11 @@ scoped instance instCMRA : CMRA α where
   op := add
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ h := by rw [discrete h]
+  op_ne.ne _ _ _ h := by rw [discrete h]; exact .rfl
   pcore_ne _ := dist_some ∘ Dist.of_eq
   validN_ne _ _ := .intro
-  valid_iff_validN := .symm <| forall_const Nat
-  validN_succ := (·)
+  valid_iff_validN := .symm <| forall_const SI
+  validN_le := fun h _ => h
   validN_op_left := id
   assoc {_ _ _} := by rw [assoc (op := add)]
   comm {_ _} := by rw [comm (op := add)]
@@ -161,13 +163,13 @@ scoped instance instCMRA : CMRA α where
   op := add
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ h := by rw [discrete h]
+  op_ne.ne _ _ _ h := by rw [discrete h]; exact .rfl
   pcore_ne {_ y _ _} h := by
     rintro ⟨rfl⟩
     exact ⟨y, congrArg _ <| discrete h.symm, .rfl⟩
   validN_ne _ _ := .intro
-  valid_iff_validN := .symm <| forall_const Nat
-  validN_succ := (·)
+  valid_iff_validN := .symm <| forall_const SI
+  validN_le := fun h _ => h
   validN_op_left := id
   assoc {_ _ _} := by rw [assoc (op := add)]
   comm {_ _} := by rw [comm (op := add)]
@@ -269,11 +271,11 @@ scoped instance instCMRA : CMRA α where
   op := add
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ h := by rw [discrete h]
+  op_ne.ne _ _ _ h := by rw [discrete h]; exact .rfl
   pcore_ne _ := by rintro ⟨rfl⟩
   validN_ne _ _ := .intro
-  valid_iff_validN := .symm <| forall_const Nat
-  validN_succ := (·)
+  valid_iff_validN := .symm <| forall_const SI
+  validN_le := fun h _ => h
   validN_op_left := id
   assoc {_ _ _} := by rw [assoc (op := add)]
   comm {_ _} := by rw [comm (op := add)]
@@ -369,6 +371,7 @@ scoped instance : LawfulLeftIdentity (α := MaxNat) (· + ·) (0 : MaxNat) where
 scoped instance : Std.IdempotentOp (α := MaxNat) (· + ·) where idempotent x := by grind
 scoped instance : COFE MaxNat := COFE.ofDiscrete _
 scoped instance : OFE.Discrete MaxNat := ⟨fun h => h⟩
+set_option synthInstance.checkSynthOrder false in
 scoped instance : UCMRA MaxNat := OrdCommMonoidLike.instUCMRA
 scoped instance : CMRA.Discrete MaxNat := OrdCommMonoidLike.instDiscrete
 scoped instance : CMRA.CoreId (a : MaxNat) := OrdCommMonoidLike.instCoreId _
@@ -423,8 +426,10 @@ scoped instance : Commutative (α := MaxInt) (· + ·) where comm := by grind
 scoped instance : IdempotentOp (α := MaxInt) (· + ·) where idempotent x := by grind
 scoped instance : COFE MaxInt := COFE.ofDiscrete _
 scoped instance : OFE.Discrete MaxInt := ⟨fun h => h⟩
+set_option synthInstance.checkSynthOrder false in
 scoped instance : CMRA MaxInt := OrdCommMonoidLike.instCMRA
 scoped instance : CMRA.Discrete MaxInt := OrdCommMonoidLike.instDiscrete
+set_option synthInstance.checkSynthOrder false in
 scoped instance : CMRA.IsTotal MaxInt := OrdCommMonoidLike.instIsTotal
 scoped instance : CMRA.CoreId (a : MaxInt) := OrdCommMonoidLike.instCoreId _
 
@@ -481,8 +486,10 @@ scoped instance : Commutative (α := MinNat) (· + ·) where comm := by grind
 scoped instance : IdempotentOp (α := MinNat) (· + ·) where idempotent _ := by grind
 scoped instance : COFE MinNat := COFE.ofDiscrete _
 scoped instance : OFE.Discrete MinNat := ⟨fun h => h⟩
+set_option synthInstance.checkSynthOrder false in
 scoped instance : CMRA MinNat := OrdCommMonoidLike.instCMRA
 scoped instance : CMRA.Discrete MinNat := OrdCommMonoidLike.instDiscrete
+set_option synthInstance.checkSynthOrder false in
 scoped instance : CMRA.IsTotal MinNat := OrdCommMonoidLike.instIsTotal
 scoped instance : CMRA.CoreId (a : MinNat) := OrdCommMonoidLike.instCoreId _
 

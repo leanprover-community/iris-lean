@@ -13,9 +13,10 @@ meta import Iris.Std.RocqPorting
 /-! # Monotone lists -/
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
+
+local stepindex Nat
 
 open OFE CMRA
 
@@ -104,7 +105,8 @@ instance : IsUnit (◯ML ([] : List α)) := by
 theorem auth_dfrac_op (dq1 dq2 : DFrac) (l : List α) :
     ●ML{dq1 • dq2} l = ●ML{dq1} l • ●ML{dq2} l := by
   unfold auth MonoList
-  rw [Algebra.MonoidOps.op_op_op_comm (M := Auth (MaxPrefixList α)) (op := (· • ·)),
+  rw [Algebra.MonoidOps.op_op_op_comm (SI := stepindex%) (M := Auth (MaxPrefixList α))
+      (op := CMRA.op) (unit := UCMRA.unit),
     ← Auth.frag_op, op_self, Auth.auth_dfrac_op]
 
 @[rocq_alias mono_list_lb_op_l]
@@ -157,7 +159,8 @@ theorem auth_dfrac_op_validN {n} (dq1 dq2 : DFrac) (l1 l2 : List α) :
     ✓{n} (●ML{dq1} l1 • ●ML{dq2} l2) ↔ ✓ (dq1 • dq2) ∧ l1 ≡{n}≡ l2 := by
   refine ⟨fun h => ?_, fun ⟨hdq, hl⟩ => ?_⟩
   · unfold auth MonoList at h
-    rw [Algebra.MonoidOps.op_op_op_comm (M := Auth (MaxPrefixList α)) (op := (· • ·))] at h
+    rw [Algebra.MonoidOps.op_op_op_comm (SI := stepindex%) (M := Auth (MaxPrefixList α))
+      (op := CMRA.op) (unit := UCMRA.unit)] at h
     have ⟨hdq, ha, _⟩ := Auth.auth_dfrac_op_validN.mp (validN_op_left h)
     exact ⟨hdq, toMaxPrefixList_dist_inj ha⟩
   · refine (Dist.validN (auth_ne.ne hl.symm).op_r).mpr ?_

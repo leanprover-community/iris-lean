@@ -16,9 +16,11 @@ convenience definitions and lemmas.
 -/
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
+
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
 
 open OFE CMRA DFrac
 
@@ -106,7 +108,7 @@ theorem update₂ {d₁ d₂ : DFrac} {a₁ a₂ a' : A} (hd : d₁ • d₂ = .
   calc
     _ = (own (1 : Qp), toAgree a₁ • toAgree a₂) := hd ▸ rfl
     _ ~~> mk d₁ a' • mk d₂ a' :=
-      @Update.exclusive _ _ _ _ one_exclusive_left
+      @Update.exclusive _ _ _ _ _ _ one_exclusive_left
         (op_valid.mpr ⟨hd ▸ valid_own_one, rfl⟩)
 
 @[rocq_alias dfrac_agree_persist]

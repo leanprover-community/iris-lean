@@ -11,7 +11,9 @@ public import Iris.Std.Set
 public import Iris.Std.PartialMap
 
 @[expose] public section
-local stepindex Nat
+
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 open Iris Std
 
@@ -63,7 +65,7 @@ theorem chain_get [LawfulPartialMap M K] [OFE V] (k : K) (c : Chain (M V)) :
 
 end PartialMap
 
-instance Heap.instCOFE [LawfulPartialMap M K] [COFE V] : COFE (M V) where
+instance Heap.instCOFE [SIdxFinite SI] [LawfulPartialMap M K] [COFE V] : COFE (M V) where
   compl c := bindAlter (fun _ => COFE.compl <| c.map ⟨_, PartialMap.get?_ne ·⟩) (c 0)
   conv_compl {_ c} k := by
     rw [get?_bindAlter]
@@ -98,7 +100,7 @@ instance instDiscreteEEmpty [LawfulPartialMap M K] [OFE V] : DiscreteE (∅ : M 
     refine (DiscreteE.discrete (.trans ?_ (h k))).dist
     simp [LawfulPartialMap.get?_empty]
 
-theorem singleton_dist [LawfulPartialMap M K] [DecidableEq K] [OFE V] {n : Nat} {x y : V}
+theorem singleton_dist [LawfulPartialMap M K] [DecidableEq K] [OFE V] {n : SI} {x y : V}
     (h : x ≡{n}≡ y) (k : K) : PartialMap.singleton (M := M) k x ≡{n}≡ PartialMap.singleton k y := by
   intro k'
   simp only [LawfulPartialMap.get?_singleton]
@@ -121,7 +123,7 @@ variable [LawfulPartialMap M K] [CMRA V]
 @[simp] def unit : M V := ∅
 @[simp] def pcore (s : M V) : Option (M V) := some <| bindAlter (fun _ => CMRA.pcore) s
 @[simp] def valid (s : M V) : Prop := ∀ k, ✓ get? s k
-@[simp] def validN (n : Nat) (s : M V) : Prop := ∀ k, ✓{n} get? s k
+@[simp] def validN (n : SI) (s : M V) : Prop := ∀ k, ✓{n} get? s k
 
 theorem lookup_incN {n} {m1 m2 : M V} :
     (∃ (z : M V), m2 ≡{n}≡ op m1 z) ↔
@@ -155,6 +157,7 @@ theorem lookup_inc {m1 m2 : M V} :
       exact fun h => (OFE.not_none_eqv_some h).elim
 
 open OFE in
+set_option synthInstance.checkSynthOrder false in
 instance instStoreCMRA : CMRA (M V) where
   pcore := pcore
   op := op
@@ -177,7 +180,7 @@ instance instStoreCMRA : CMRA (M V) where
   valid_iff_validN :=
     ⟨fun H n k => valid_iff_validN.mp (H k) n,
      fun H k => valid_iff_validN.mpr (H · k)⟩
-  validN_succ H k := validN_succ (H k)
+  validN_le H le k := validN_le (H k) le
   validN_op_left {n x1 x2} H k := by
     refine validN_op_left (y := get? x2 k) ?_
     specialize H k; revert H
@@ -262,11 +265,12 @@ instance instStoreCMRA : CMRA (M V) where
 instance instStoreUCMRA : UCMRA (M V) where
   unit := unit
   unit_valid := by simp [CMRA.Valid, get?_empty]
-  unit_left_id := OFE.eq_dist_2 fun _ k => by simp [CMRA.op, get?_merge, get?_empty]
-  pcore_unit := OFE.eq_dist_2 fun _ => by
+  unit_left_id := OFE.eq_dist_2 (SI := stepindex%) fun _ k => by simp [CMRA.op, get?_merge, get?_empty]
+  pcore_unit := OFE.eq_dist_2 (SI := stepindex%) fun _ => by
     refine OFE.some_dist_some.mpr fun k => ?_
     simp [get?_bindAlter, get?_empty]
 
+set_option synthInstance.checkSynthOrder false in
 instance instIsTotalHeap : IsTotal (M V) where
   total _ := Option.isSome_iff_exists.mp rfl
 

@@ -12,7 +12,9 @@ public import Iris.Algebra.Updates
 public import Iris.Std.GenMultiSets
 
 @[expose] public section
-local stepindex Nat
+
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 /-! ## The multiset union CMRA -/
 
@@ -38,16 +40,17 @@ variable {MS : Type _} [LawfulMultiSet MS A]
 
 open MultiSet
 
+set_option synthInstance.checkSynthOrder false in
 instance : CMRA (LeibnizMultiSet MS) where
   pcore _ := some (ofSet ∅)
   op | ofSet X, ofSet Y => ofSet (X ⊎ Y)
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ H := by rw [(H : _ = _)]
+  op_ne.ne _ _ _ H := by rw [(H : _ = _)]; exact .rfl
   pcore_ne {_ _ _ cx} _ H := ⟨cx, H, .rfl⟩
   validN_ne _ _ := trivial
   valid_iff_validN := by simp
-  validN_succ _ := trivial
+  validN_le _ _ := trivial
   validN_op_left _ := trivial
   assoc := by grind
   comm := by grind
@@ -59,6 +62,7 @@ instance : CMRA (LeibnizMultiSet MS) where
     grind
   extend {_ _ _ _} _ h := ⟨_, _, h, .rfl, .rfl⟩
 
+set_option synthInstance.checkSynthOrder false in
 instance : UCMRA (LeibnizMultiSet MS) where
   unit := .ofSet ∅
   unit_valid := trivial
@@ -70,6 +74,7 @@ instance : CMRA.Discrete (LeibnizMultiSet MS) where
   discrete_0 h := h
   discrete_valid := id
 
+set_option synthInstance.checkSynthOrder false in
 instance : CMRA.IsTotal (LeibnizMultiSet MS) where
   total _ := ⟨.ofSet ∅, rfl⟩
 

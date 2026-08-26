@@ -10,9 +10,11 @@ public import Iris.Algebra.BigOp
 public import Iris.Std.List
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
+
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
 
 open OFE COFE Iris.Algebra
 
@@ -221,7 +223,7 @@ def listComplGo : List α → Chain (List α) → List α
   | [], _ => []
   | x :: c0, c => compl (c.map (headGetDHom x)) :: listComplGo c0 (c.map tailHom)
 
-theorem listComplGo_conv_compl {n : Nat} (c : Chain (List α)) :
+theorem listComplGo_conv_compl {n : SI} (c : Chain (List α)) :
     ∀ (c0 : List α), c0 ≡{0}≡ c n → listComplGo c0 c ≡{n}≡ c n
   | [], H => by rw [nil_dist_eq.mp H.symm]; exact .rfl
   | x :: c0, H => by
@@ -237,9 +239,9 @@ theorem listComplGo_conv_compl {n : Nat} (c : Chain (List α)) :
       · simp [Chain.map_apply, tailHom_apply, hcn]
 
 @[rocq_alias list_cofe]
-instance : IsCOFE (List α) where
+instance [SIdxFinite SI] : IsCOFE (List α) where
   compl c := listComplGo (c 0) c
-  conv_compl {n c} := listComplGo_conv_compl c (c 0) (c.cauchy (Nat.zero_le n)).symm
+  conv_compl {n c} := listComplGo_conv_compl c (c 0) (c.cauchy SIdx.le_0_l).symm
   lbcompl := (·.elim)
   conv_lbcompl := (·.elim)
   lbcompl_ne := (·.elim)
@@ -326,7 +328,7 @@ end higher_order
 
 @[rocq_alias big_opL_ne_2]
 theorem bigOpL_dist_2 {M α : Type _} [OFE M] [OFE α] {op : M → M → M} {unit : M} [MonoidOps op unit]
-    {n : Nat} {l1 l2 : List α} (hl : l1 ≡{n}≡ l2) : ∀ {f g : Nat → α → M},
+    {n : SI} {l1 l2 : List α} (hl : l1 ≡{n}≡ l2) : ∀ {f g : Nat → α → M},
     (∀ {k : Nat} {y1 y2}, l1[k]? = some y1 → l2[k]? = some y2 → y1 ≡{n}≡ y2 → f k y1 ≡{n}≡ g k y2) →
     bigOpL op f l1 ≡{n}≡ bigOpL op g l2 := by
   induction hl with

@@ -8,9 +8,11 @@ module
 public import Iris.Algebra.CMRA
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
+
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
 
 section excl
 
@@ -28,7 +30,7 @@ open OFE
 
 #rocq_ignore excl_equiv "OFE is Leibniz; use equality"
 
-@[simp, rocq_alias excl_dist] protected def Dist [OFE α] (n : Nat) : Excl α → Excl α → Prop
+@[simp, rocq_alias excl_dist] protected def Dist [OFE α] (n : SI) : Excl α → Excl α → Prop
   | excl a, excl b => a ≡{n}≡ b
   | invalid, invalid => True
   | _, _ => False
@@ -114,10 +116,10 @@ def exclChain [OFE α] (c : Chain (Excl α)) (a : α) : Chain α := by
   cases c.chain i <;> cases c.chain n <;> simp [Dist]
 
 @[rocq_alias excl_cofe]
-instance [OFE α] [IsCOFE α] : IsCOFE (Excl α) where
+instance [SIdxFinite SI] [OFE α] [IsCOFE α] : IsCOFE (Excl α) where
   compl c := (c 0).map fun x => IsCOFE.compl (exclChain c x)
   conv_compl {n} c := by
-    have := c.cauchy (Nat.zero_le n); revert this
+    have := c.cauchy (i := n) SIdx.le_0_l; revert this
     obtain _|x' := c.chain 0 <;> rcases e : c.chain n with _|y' <;> simp [Dist]
     refine fun _ => .trans IsCOFE.conv_compl ?_
     simp [exclChain, e]
@@ -149,7 +151,7 @@ instance [OFE α] : CMRA (Excl α) where
     constructor
     · intro h n; cases x <;> trivial
     · intro h; cases x <;> simp_all
-  validN_succ {x n} h := by cases x <;> trivial
+  validN_le {x n n'} h _ := by cases x <;> trivial
   assoc := by simp
   comm := by simp
   pcore_op_left := by simp
@@ -188,7 +190,7 @@ theorem excl_included [OFE α] {a b : α} :
     fun h => ⟨none, congrArg (fun x => some (excl x)) h.symm⟩⟩
   rcases z with _|z
   · exact (excl_inj hz).symm
-  · exact (hz.dist (SI := Nat) (n := 0)).elim
+  · exact (hz.dist (n := (0 : SI))).elim
 
 @[rocq_alias Excl_includedN]
 theorem excl_includedN [OFE α] {a b : α} {n} :

@@ -18,9 +18,11 @@ coincides with `R`.
 -/
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
+
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
 
 open CMRA Iris.Std OFE
 
@@ -112,17 +114,18 @@ theorem append_idem (x : Mra R) : append x x = x := by
 #rocq_ignore mra_op "Replaced by the `op` field of the CMRA instance."
 #rocq_ignore mra_pcore "Replaced by the `pcore` field of the CMRA instance."
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias mra_cmra_mixin]
 instance (R : α → α → Prop) : CMRA (Mra R) where
   pcore := some
   op := append
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ h := by rw [h]
+  op_ne.ne _ _ _ h := by rw [h]; exact .rfl
   pcore_ne hxy h := ⟨_, (congrArg some hxy.symm).trans h, .rfl⟩
   validN_ne _ := id
   valid_iff_validN := by simp
-  validN_succ := id
+  validN_le := fun h _ => h
   validN_op_left _ := trivial
   assoc {x y z} := by
     induction x, y, z using ind₃ with
@@ -139,6 +142,7 @@ instance (R : α → α → Prop) : CMRA (Mra R) where
 
 #rocq_ignore mraR "Use Mra."
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias mra_cmra_total]
 instance : CMRA.IsTotal (Mra R) where
   total x := ⟨x, rfl⟩
@@ -156,6 +160,7 @@ instance : CMRA.Discrete (Mra R) where
 #rocq_ignore mraUR "Use Mra."
 
 -- FIXME: upstream name `auth_ucmra_mixin` should be `mra_ucmra_mixin`
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias auth_ucmra_mixin]
 instance (R : α → α → Prop) : UCMRA (Mra R) where
   unit := mk []

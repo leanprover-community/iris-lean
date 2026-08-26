@@ -9,7 +9,6 @@ public import Iris.Algebra.Auth
 public import Iris.Algebra.Excl
 
 public section
-local stepindex Nat
 
 /-!
 # Exclusive Authoritative CMRA
@@ -20,6 +19,9 @@ and the authority `●E a`.
 -/
 
 namespace Iris
+
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
 
 open OFE CMRA Auth Excl Option
 
