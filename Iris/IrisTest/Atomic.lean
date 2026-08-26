@@ -111,9 +111,7 @@ example : (AU <{ ∃∃ x, α x }> @ Eo, Ei <{ ∀∀ y, β x y, COMM Ψ x y }>)
 
 end atomicNotation
 
-/-! Tests for the logically atomic Hoare triple notation. Unlike Iris Rocq, a single notation
-covers all 16 combinations of (non-)empty binder groups and a present/absent private
-postcondition. -/
+/-! Tests for the logically atomic Hoare triple notation. -/
 
 section atomicWpNotation
 variable {hlc : HasLC} {Expr State Obs Val : Type _} [Language Expr State Obs Val]
@@ -183,43 +181,62 @@ example : (<<{ ∀∀ x, α x }>> e @ E <<{ ∃∃ y, β x y | RET w }>>) ⊢
   atomic_wp_mask_weaken CoPset.subseteq_top
 
 end atomicWpNotation
+section ProofModeTactics
 
-/-! Tests for the atomic-update proof-mode tactics. `iauintro` turns an `AU` goal into the
-matching `AACC` goal, whose abort resource is the proof-mode context; `iaacc_intro` then reduces
-that accessor to its abort and commit obligations. -/
+variable {PROP : Type u} [instBI : BI PROP] [instBIFUpd : BIFUpdate PROP] {TA TB : Tele}
+variable {Eo Ei : CoPset} {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP}
 
-section atomicTactics
-open Std.LawfulSet
-variable {PROP : Type} [BI PROP] [BIFUpdate PROP] {TA TB : Tele}
-
-/-- `iauintro` keeps the context and produces exactly the accessor that aborts back to it. Were
-the abort resource anything else, `iapply h` would not close the goal. -/
-example (Eo Ei : CoPset) (α : TA.Arg → PROP) (β Φ : TA.Arg → TB.Arg → PROP) (P : PROP)
-    (h : P ⊢ atomic_acc Eo Ei α P β Φ) : P ⊢ atomic_update Eo Ei α β Φ := by
-  iintro HP
+/--
+  Tests `iauintro` for reducing `atomic_update Eo Ei α β β` to `atomic_acc Eo Ei α (α x) β β`.
+  Tests `iaaccintro` with `α x` for abort and `β x y` for commit.
+-/
+example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_update Eo Ei α β β := by
+  iintro Hα
   iauintro
-  iapply h
-  iexact HP
+  iaaccintro Hα
+  · iintro Hα !> //
+  · iintro %y Hβ !> //
 
-/-- `iaacc_intro` splits the accessor into its abort and commit obligations. Three goals remain,
-not four: as with Rocq's `last iSplit`, the split applies only to the last goal, so the subgoal
-left by the `[HP]` pattern for the `α x` premise stays unsplit. The telescope applications need
-`isimp only [Tele.app]` to reduce. -/
-example (Eo : CoPset) (P : PROP) : P ⊢ AU <{ P }> @ Eo, Eo <{ P, COMM P }> := by
-  iintro HP
+/--
+  Tests `iaaccintro` with `α x` for abort and `β x y` for commit.
+  The argument for the telescopic quantifier is supplied.
+-/
+example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_acc Eo Ei α (α x) β β := by
+  iintro Hα
+  iaaccintro %x Hα
+  · iintro Hα !> //
+  · iintro %y Hβ !> //
+
+/-- Tests `iaaccintro` with the pre-condition `α x` obtained from several hypotheses. -/
+example (HEi : Ei ⊆ Eo) (x : TA.Arg) {Q R : PROP} (hα : α x = iprop(Q ∗ R)) :
+    Q ∗ R ⊢ atomic_acc Eo Ei α (α x) β β := by
+  iintro ⟨HQ, HR⟩
+  iaaccintro [HQ HR]
+  · rw [hα]; iframe
+  · iintro Hα !> //
+  · iintro %y Hβ !> //
+
+/-- error: iauintro: the goal Q is not an atomic update -/
+#guard_msgs in
+example (Q : PROP) : Q ⊢ Q := by
+  iintro HQ
   iauintro
-  iaacc_intro subset_refl with %Tele.Arg.nil [HP]
-  · isimp only [Tele.app]
-    iexact HP
-  · iintro H
-    isimp only [Tele.app] at H
-    imodintro
-    iexact H
-  · iintro %_ H
-    isimp only [Tele.app] at H
-    imodintro
-    isimp only [Tele.app]
-    iexact H
 
-end atomicTactics
+/-- error: iaaccintro: the goal Q is not an atomic accessor -/
+#guard_msgs in
+example {Q : PROP} : Q ⊢ Q := by
+  iintro HQ
+  iaaccintro HQ
+
+/-- error: iaaccintro:
+  the specialisation patterns must discharge the atomic precondition only,
+  leaving atomic_acc Eo Ei α (α x) β β
+-/
+#guard_msgs (whitespace := lax) in
+example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_acc Eo Ei α (α x) β β := by
+  iintro Hα
+  iaaccintro %x Hα []
+
+end ProofModeTactics
+
 end IrisTest

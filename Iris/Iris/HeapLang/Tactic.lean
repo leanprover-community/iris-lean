@@ -1,6 +1,7 @@
 /-
 Copyright (c) 2026 Fernando Leal. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Fernando Leal, Klaus Kraßnitzer
 -/
 module
 
@@ -62,7 +63,6 @@ def extractAllEctxItems (e : Q(Exp)) (acc : List Q(ECtxItem) := []) : MetaM (Lis
   | (.some Ki, e') => extractAllEctxItems e' (Ki :: acc)
   | (.none, e) => return (acc, e)
 
-
 open ECtxItem in
 meta partial
 def fillItem (e : Q(Exp)) : Q(ECtxItem) → MetaM Q(Exp)
@@ -118,14 +118,33 @@ structure ECtxResultOf (e : Q(Exp)) (α : Type) where unsafeMk ::
   e' : Q(Exp)
   heq : ProgramLogic.fill $K $e' =Q $e := ⟨⟩
 
-public meta partial
-def findECtx {α : Type _} (ogE : Q(Exp)) (pred : Q(Exp) → ProofModeM α)
-  : ProofModeM (Option (ECtxResultOf ogE α)) := do
-  let (Kis, inner) ← extractAllEctxItems ogE
-  go inner Kis
+/-- Given an expression `ogE`, finds the *outermost* evaluation context `K` and
+    corresponding expression `e'` such that `K[e'] = e` and `pred K e'` does 
+    not fail. This corresponds to `reshape_expr` in Rocq. -/
+public meta partial def findECtx {α : Type _} (ogE : Q(Exp))
+    (pred : Q(List ECtxItem) → Q(Exp) → ProofModeM α) :
+    ProofModeM (Option (ECtxResultOf ogE α)) :=
+  go ogE []
 where
-  go (e : Q(Exp)) (Kis : List Q(ECtxItem)) : ProofModeM (Option (ECtxResultOf ogE α)) := do
-    if let some a ← observing? <| pred e then
-      return some {result := a, K := quoteList Kis, e' := e}
-    let Ki :: Kis' := Kis | return none
-    go (← fillItem e Ki) Kis'
+  go (e : Q(Exp)) (acc : List Q(ECtxItem)) : ProofModeM (Option (ECtxResultOf ogE α)) := do
+    let K := quoteList acc
+    if let some a ← observing? <| pred K e then
+      return some {result := a, K, e' := e}
+    let (some Ki, e') ← extractEctxItem e | return none
+    go e' (Ki :: acc)
+
+/-- Given an expression `ogE`, finds the *innermost* evaluation context `K` and
+    corresponding expression `e'` such that `K[e'] = e` and `pred K e'` does 
+    not fail -/
+public meta partial def findECtxRev {α : Type _} (ogE : Q(Exp))
+    (pred : Q(List ECtxItem) → Q(Exp) → ProofModeM α) :
+    ProofModeM (Option (ECtxResultOf ogE α)) := do
+  let (Kis, inner) ← extractAllEctxItems ogE
+  let K : Q(List ECtxItem) := quoteList Kis
+  go inner K
+where
+  go (e' : Q(Exp)) (K : Q(List ECtxItem)) : ProofModeM (Option (ECtxResultOf ogE α)) := do
+    if let some a ← observing? <| pred K e' then
+      return some {result := a, K, e'}
+    let_expr List.cons Ki K := K | return none
+    go (← fillItem e' Ki) K

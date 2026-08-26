@@ -559,22 +559,25 @@ theorem bigSepM_impl_strong [DecidableEq K] {M₂ : Type _ → Type _} {V₂ : T
       refine sep_mono_right <| sep_mono_right (BiEntails.of_eq <| bigOpM_eq_of_perm Φ fun k => ?_).2
       by_cases hki : i = k <;> simp_all [get?_filter, get?_insert, get?_delete]
 
--- TODO: `big_sepM_kmap` requires map operations which are not yet available in `PartialMap`.
+@[rocq_alias big_sepM_kmap]
+theorem bigSepM_kmap {K' : Type _} {M' : Type _ → Type _} [LawfulFiniteMap M' K'] [DecidableEq K']
+    {f : K → K'} {Φ : K' → V → PROP} {m : M V} (hf : Function.Injective f) :
+    ([∗map] k ↦ x ∈ (FiniteMap.kmap f m : M' V), Φ k x) ⊣⊢ ([∗map] k ↦ x ∈ m, Φ (f k) x) :=
+  BiEntails.of_eq <| bigOpM_kmap_eq hf Φ m
 
-theorem bigSepM_map_seq {M' : Type _ → Type _} [LawfulFiniteMap M' Nat] {V : Type _}
+@[rocq_alias big_sepM_map_seq]
+theorem bigSepM_map_seq {M' : Type _ → Type _} [LawfulFiniteMap M' Nat]
     {Φ : Nat → V → PROP} {start : Nat} {l : List V} :
     ([∗map] k ↦ v ∈ FiniteMap.map_seq (M := M') start l, Φ k v) ⊣⊢
-    ([∗list] i ↦ v ∈ l, Φ (start + i) v) := by
-  induction l generalizing start with
-  | nil => simp [LawfulFiniteMap.map_seq_nil]
-  | cons v l ih =>
-      have Hget : get? (FiniteMap.map_seq (M := M') (start + 1) l) start = none := by
-        rw [LawfulFiniteMap.get?_map_seq, if_neg (by omega)]
-      rw [LawfulFiniteMap.map_seq_cons]
-      refine (bigSepM_insert Hget).trans (sep_congr .rfl ?_)
-      refine .trans (ih (start := start + 1)) ?_
-      refine .of_eq ?_
-      grind
+    ([∗list] i ↦ v ∈ l, Φ (start + i) v) :=
+  BiEntails.of_eq <| bigOpM_map_seq_eq Φ start l
+
+@[rocq_alias big_sepM_map_seqZ]
+theorem bigSepM_map_seqZ {M' : Type _ → Type _} [LawfulFiniteMap M' Int]
+    {Φ : Int → V → PROP} {start : Int} {l : List V} :
+    ([∗map] k ↦ v ∈ FiniteMap.map_seqZ (M := M') start l, Φ k v) ⊣⊢
+      ([∗list] i ↦ v ∈ l, Φ (start + i) v) :=
+  BiEntails.of_eq <| bigOpM_map_seqZ_eq Φ start l
 
 /-! ## Map–Set Interaction -/
 
@@ -583,10 +586,8 @@ variable {S : Type _} [LawfulFiniteSet S K]
 
 @[rocq_alias big_sepM_dom]
 theorem bigSepM_dom {Φ : K → PROP} {m : M V} :
-    ([∗map] k ↦ _v ∈ m, Φ k) ⊣⊢ ([∗set] k ∈ (FiniteMap.dom_set m : S), Φ k) := by
-  exact BiEntails.of_eq <|
-    (bigOpL_map_eq Prod.fst _ _).symm.trans
-    (bigOpL_eq_of_perm _ <| LawfulFiniteMap.toList_dom_set_perm m).symm
+    ([∗map] k ↦ _v ∈ m, Φ k) ⊣⊢ ([∗set] k ∈ (FiniteMap.dom_set m : S), Φ k) :=
+  BiEntails.of_eq <| bigOpM_dom_set_eq Φ m
 
 @[rocq_alias big_sepM_impl_dom_subseteq]
 theorem bigSepM_impl_dom_subseteq [DecidableEq K] {M₂ : Type _ → Type _} {V₂ : Type _}
@@ -608,9 +609,43 @@ theorem bigSepM_impl_dom_subseteq [DecidableEq K] {M₂ : Type _ → Type _} {V�
   exact hx ▸ ((forall_elim x).trans <| (forall_elim y).trans <|
        (pure_imp_elim rfl).trans <| pure_imp_elim hm₂)
 
--- TODO: `big_sepM_gset_to_gmap` requires `gset_to_gmap`.
+@[rocq_alias big_sepM_set_to_map]
+theorem bigSepM_ofSetWith [DecidableEq K] (Φ : K → V → PROP) (g : K → V) (X : S) :
+    ([∗map] k ↦ x ∈ (FiniteMap.ofSetWith g X : M V), Φ k x) ⊣⊢ ([∗set] k ∈ X, Φ k (g k)) :=
+  BiEntails.of_eq <| bigOpM_ofSetWith_eq Φ g X
+
+@[rocq_alias big_sepM_gset_to_gmap]
+theorem bigSepM_ofSet [DecidableEq K] (Φ : K → V → PROP) (X : S) (c : V) :
+    ([∗map] k ↦ x ∈ (FiniteMap.ofSet c X : M V), Φ k x) ⊣⊢ ([∗set] k ∈ X, Φ k c) :=
+  BiEntails.of_eq <| bigOpM_ofSet_eq Φ X c
 
 end MapSet
+
+/-! ## Commuting big operators -/
+
+@[rocq_alias big_sepM_sepL]
+theorem bigSepM_comm_list {B : Type _} (Φ : K → V → Nat → B → PROP) (m : M V) (l : List B) :
+    ([∗map] k₁ ↦ x₁ ∈ m, [∗list] k₂ ↦ x₂ ∈ l, Φ k₁ x₁ k₂ x₂) ⊣⊢
+      ([∗list] k₂ ↦ x₂ ∈ l, [∗map] k₁ ↦ x₁ ∈ m, Φ k₁ x₁ k₂ x₂) :=
+  BiEntails.of_eq <| bigOpM_comm_list Φ m l
+
+@[rocq_alias big_sepM_sepM]
+theorem bigSepM_comm_map {K₂ B : Type _} {M₂ : Type _ → Type _} [LawfulFiniteMap M₂ K₂]
+    (Φ : K → V → K₂ → B → PROP) (m₁ : M V) (m₂ : M₂ B) :
+    ([∗map] k₁ ↦ x₁ ∈ m₁, [∗map] k₂ ↦ x₂ ∈ m₂, Φ k₁ x₁ k₂ x₂) ⊣⊢
+      ([∗map] k₂ ↦ x₂ ∈ m₂, [∗map] k₁ ↦ x₁ ∈ m₁, Φ k₁ x₁ k₂ x₂) :=
+  BiEntails.of_eq <| bigOpM_comm_map Φ m₁ m₂
+
+@[rocq_alias big_sepM_sepS]
+theorem bigSepM_comm_set {B S : Type _} [FiniteSet S B] (Φ : K → V → B → PROP) (m : M V) (X : S) :
+    ([∗map] k ↦ x ∈ m, [∗set] y ∈ X, Φ k x y) ⊣⊢ ([∗set] y ∈ X, [∗map] k ↦ x ∈ m, Φ k x y) :=
+  BiEntails.of_eq <| bigOpM_comm_set Φ m X
+
+@[rocq_alias big_sepM_sepMS]
+theorem bigSepM_comm_mset {B MS : Type _} [FiniteMultiSet MS B] (Φ : K → V → B → PROP)
+    (m : M V) (X : MS) :
+    ([∗map] k ↦ x ∈ m, [∗mset] y ∈ X, Φ k x y) ⊣⊢ ([∗mset] y ∈ X, [∗map] k ↦ x ∈ m, Φ k x y) :=
+  BiEntails.of_eq <| bigOpM_comm_mset Φ m X
 
 end BigSepM
 

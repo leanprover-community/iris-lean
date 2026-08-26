@@ -218,6 +218,11 @@ theorem bigOrL_zip_seq {Φ : A × Nat → PROP} {n : Nat} {l : List A} :
     ([∨list] xy ∈ l.zipIdx n, Φ xy) = [∨list] i ↦ x ∈ l, Φ (x, n + i) :=
   bigOpL_zipIdx_eq Φ n l
 
+@[rocq_alias big_orL_zip_seqZ]
+theorem bigOrL_zip_seqZ {Φ : A × Int → PROP} {n : Int} {l : List A} :
+    ([∨list] xy ∈ List.zipIdxInt l n, Φ xy) = [∨list] i ↦ x ∈ l, Φ (x, n + i) :=
+  bigOpL_zipIdxInt_eq Φ n l
+
 end BigOrL
 
 end Iris.BI

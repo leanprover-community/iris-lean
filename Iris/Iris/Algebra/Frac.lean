@@ -8,6 +8,7 @@ module
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.OFE
 public import Iris.Algebra.IsOp
+public import Iris.Std.Positives
 
 /-!
 # The Frac CMRA
@@ -119,6 +120,21 @@ instance instCMRAQp : CMRA Qp where
 theorem Qp.lt_iff_exists_add {a b : Qp} : a < b ↔ ∃ c : Qp, a + c = b := by
   refine ⟨fun h => ⟨⟨b.val - a.val, by have := Qp.lt_iff.mp h; grind⟩, Subtype.ext (by grind)⟩, ?_⟩
   rintro ⟨c, rfl⟩; have := c.2; grind
+
+/-- Recover a `Qp` from a rational, keeping it only when the rational is positive. -/
+def Qp.ofRat? (r : Rat) : Option Qp := if h : 0 < r then some ⟨r, h⟩ else none
+
+@[simp] theorem Qp.ofRat?_val (q : Qp) : Qp.ofRat? q.val = some q := dif_pos q.2
+
+instance : Pos.Countable Qp where
+  encode q := Pos.Countable.encode ([q.val.num.toNat, q.val.den] : List Nat)
+  decode c :=
+    match (Pos.Countable.decode c : Option (List Nat)) with
+    | some [n, d] => Qp.ofRat? (mkRat (n : Int) d)
+    | _ => none
+  decode_encode q := by
+    have hnn : (0 : Int) ≤ q.val.num := Rat.num_nonneg.mpr (Rat.le_of_lt q.2)
+    simp only [Pos.Countable.decode_encode, Int.toNat_of_nonneg hnn, Rat.mkRat_self, Qp.ofRat?_val]
 
 #rocq_ignore frac_op_instance "Use CMRA instance"
 #rocq_ignore frac_pcore_instance "Use CMRA instance"

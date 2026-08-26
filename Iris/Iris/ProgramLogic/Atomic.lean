@@ -11,41 +11,7 @@ public import Iris.ProgramLogic.WeakestPre
 
 @[expose] public section
 
-/-!
-# Logically atomic Hoare triples
-
-This file declares notation for logically atomic Hoare triples, and some generic lemmas about
-them. To enable the definition of a shared theory applying to triples with any number of binders,
-the triples themselves are defined via telescopes, but as a user you need not be concerned with
-that. You can just use the following notation:
-```
-<<{ ∀∀ x, atomic_precondition }>>
-  code @ E
-<<{ ∃∃ y, atomic_postcondition | z, RET return_value ; private_postcondition }>>
-```
-Here, `x` (which can be any number of binders, including 0) is bound in all of the atomic pre- and
-postcondition and the private (non-atomic) postcondition and the return value, `y` (which can be
-any number of binders, including 0) is bound in both postconditions and the return value, and `z`
-(which can be any number of binders, including 0) is bound in the return value and the private
-postcondition.
-
-Note that atomic triples are *not* implicitly persistent, unlike Texan triples. If you need a
-private (non-atomic) precondition, you can use a magic wand:
-```
-private_precondition -∗
-<<{ ∀∀ x, atomic_precondition }>>
-  code @ E
-<<{ ∃∃ y, atomic_postcondition | z, RET return_value ; private_postcondition }>>
-```
-If you don't need a private postcondition, you can leave it away, e.g.:
-```
-<<{ ∀∀ x, atomic_precondition }>>
-  code @ E
-<<{ ∃∃ y, atomic_postcondition | RET return_value }>>
-```
-Unlike in Iris Rocq, where combinatorial explosion forces one notation per variant, every binder
-group and the private postcondition are optional parts of a single notation here.
--/
+/-!  # Logically atomic Hoare triples -/
 
 namespace Iris
 open ProgramLogic Language Language.Notation Std Std.LawfulSet BI ProofMode
@@ -147,7 +113,12 @@ def delabAtomicWp : Delab := do
     Tele.withFun nB fun ys => return (ys, ← delab)
   let (zs, POST) ← withNaryArg 15 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
     Tele.withFunUsing nB (ys.map (·.getId)) fun _ =>
-      Tele.withFun nP fun zs => return (zs, ← delabOptionBody)
+      Tele.withFun nP fun zs => do
+        let e ← getExpr
+        match_expr e with
+        | Option.some _ _ => return (zs, some (← unpackIprop (← withNaryArg 1 delab)))
+        | Option.none _ => return (zs, none)
+        | _ => failure
   let v ← withNaryArg 16 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
     Tele.withFunUsing nB (ys.map (·.getId)) fun _ =>
       Tele.withFunUsing nP (zs.map (·.getId)) fun _ => delab
@@ -169,7 +140,7 @@ variable {α : TA.Arg → IProp GF} {β : TA.Arg → TB.Arg → IProp GF}
 variable {POST : TA.Arg → TB.Arg → TP.Arg → Option (IProp GF)}
 variable {f : TA.Arg → TB.Arg → TP.Arg → Val}
 
-/-- Atomic triples imply sequential triples. -/
+
 @[rocq_alias atomic_wp_seq]
 theorem atomic_wp_seq :
     atomic_wp e E α β POST f ⊢
@@ -178,34 +149,53 @@ theorem atomic_wp_seq :
   iintro Hwp %Φ %x Hα HΦ
   iapply wp_frame_wand $$ HΦ
   iapply Hwp
-  iunfold atomic_update
-  iapply greatest_fixpoint_coiter _ (fun _ => α x) $$ [] Hα
-  iintro !> %_ Hα
-  iunfold atomic_update_pre, atomic_acc
-  iapply fupd_mask_intro empty_subset
-  iintro Hclose
-  iexists x
-  iframe Hα
-  isplit
-  · iintro Hα
-    imod Hclose
-    itrivial
-  · iintro %y Hβ
-    imod Hclose
+  iauintro
+  iaaccintro Hα
+  · iintro $
+  · iintro %y Hβ !>
     isimp only [Tele.app_bind]
-    iintro !> %z Hpost HΦ
+    iintro %z Hpost HΦ
     iapply HΦ $$ Hβ Hpost
+
+@[rocq_alias atomic_wp_inv]
+theorem atomic_wp_inv {N : Namespace} {I : IProp GF} (HN : (↑N : CoPset) ⊆ E) :
+    atomic_wp e (E \ ↑N) (λ.. x, iprop(▷ I ∗ α x)) (λ.. x y, iprop(▷ I ∗ β x y)) POST f ⊢
+    inv N I -∗ atomic_wp e E α β POST f := by
+  iunfold atomic_wp
+  iintro Hwp #Hinv %Φ AU
+  iapply Hwp
+  iauintro
+  iinv N with HI
+  · exact ⟨fun x hx => mem_diff.mpr ⟨CoPset.mem_full, fun h => (mem_diff.mp h).right hx⟩, trivial⟩
+  iapply aacc_aupd $$ AU
+  · intro x hx
+    simp only [mem_diff] at hx ⊢
+    exact ⟨⟨CoPset.mem_full, fun h => hx.right h.left⟩, fun h => hx.right (HN x h)⟩
+  iintro %x Hα
+  iaaccintro %x [HI Hα] <;> isimp only [Tele.app_bind]
+  · iframe
+  · iintro ⟨HI, $⟩
+    iintro !> AU !>
+    simp []
+    iframe
+  · iintro %y H
+    icases H with ⟨HI, Hβ⟩
+    imodintro
+    iright
+    iexists y
+    iintro {$Hβ} HΦ !>
+    simp []
+    iframe HI HΦ
+
 
 /-- This version matches the Texan triple, i.e., with a later in front of the
 `(∀.. y, β x y -∗ Φ (f x y))`. -/
 @[rocq_alias atomic_wp_seq_step]
 theorem atomic_wp_seq_step [toVal_e : TCEq (toVal e) none] :
-    atomic_wp e E α β POST f ⊢
+    atomic_wp e E α β POST f -∗
     ∀ Φ, ∀.. x, α x -∗ ▷ (∀.. y, β x y -∗ ∀.. z, POST x y z -∗? Φ (f x y z)) -∗ WP e {{ Φ }} := by
   iintro Hwp %Φ %x Hα HΦ
-  iapply wp_step_fupd (P := iprop(∀.. y, β x y -∗ ∀.. z, POST x y z -∗? Φ (f x y z)))
-    toVal_e.to_eq subset_refl $$ [HΦ]
-  · iapply step_fupd_intro subset_refl $$ HΦ
+  iapply wp_step_fupd toVal_e.to_eq subset_refl $$ [$HΦ //]
   iapply atomic_wp_seq $$ Hwp Hα
   iintro %y Hβ %z Hpost HΦ
   iapply HΦ $$ Hβ Hpost
@@ -236,8 +226,7 @@ theorem persistent_seq_wp_atomic {α : Tele.Arg .nil → IProp GF}
   iunfold atomic_wp
   iintro Hwp %Φ HΦ
   iapply fupd_wp
-  imod HΦ with ⟨%⟨⟩, Hα, Hclose, -⟩
-  iintuitionistic Hα
+  imod HΦ with ⟨%⟨⟩, #Hα, Hclose, -⟩
   imod Hclose $$ Hα with HΦ
   iapply wp_fupd
   iapply Hwp $$ Hα
@@ -254,54 +243,6 @@ theorem atomic_wp_mask_weaken {E₁ E₂ : CoPset} (HE : E₁ ⊆ E₂) :
   iintro Hwp %Φ AU
   iapply Hwp
   iapply atomic_update_mask_weaken (diff_subset_diff_right HE) $$ AU
-
-/-- We can open invariants around atomic triples.
-(Just for demonstration purposes; we always use `iinv` in proofs.) -/
-@[rocq_alias atomic_wp_inv]
-theorem atomic_wp_inv {N : Namespace} {I : IProp GF} (HN : (↑N : CoPset) ⊆ E) :
-    atomic_wp e (E \ ↑N) (λ.. x, iprop(▷ I ∗ α x)) (λ.. x y, iprop(▷ I ∗ β x y)) POST f ⊢
-    inv N I -∗ atomic_wp e E α β POST f := by
-  iunfold atomic_wp
-  iintro Hwp #Hinv %Φ AU
-  iapply Hwp
-  iunfold atomic_update
-  iapply greatest_fixpoint_coiter _
-    (fun _ => atomic_update (⊤ \ E) ∅ α β
-      (λ.. x y, iprop(∀.. z, POST x y z -∗? Φ (f x y z)))) $$ [] AU
-  iintro !> %_ AU
-  iunfold atomic_update_pre
-  iinv N with HI
-  · exact ⟨fun x hx => mem_diff.mpr ⟨CoPset.mem_full, fun h => (mem_diff.mp h).right hx⟩, trivial⟩
-  have HE : (⊤ \ E : CoPset) ⊆ (⊤ \ (E \ ↑N)) \ ↑N := by
-    intro x hx
-    simp only [mem_diff] at hx ⊢
-    exact ⟨⟨CoPset.mem_full, fun h => hx.right h.left⟩, fun h => hx.right (HN x h)⟩
-  iapply aacc_aupd HE $$ AU
-  iintro %x Hα
-  iapply aacc_intro subset_refl $$ %x [HI Hα]
-  · isimp only [Tele.app_bind]
-    iframe
-  isplit
-  · iintro H
-    isimp only [Tele.app_bind] at H
-    icases H with ⟨HI, Hα⟩
-    imodintro
-    iframe Hα
-    iintro AU !>
-    -- `iinv` δ-reduced the `-∗?` of `POST` in the goal, so reduce it in `AU` too.
-    iunfold BIBase.wandM at AU
-    iframe HI AU
-  · iintro %y H
-    isimp only [Tele.app_bind] at H
-    icases H with ⟨HI, Hβ⟩
-    imodintro
-    isimp only [Tele.app_bind]
-    iright
-    iexists y
-    iframe Hβ
-    iintro HΦ !>
-    iunfold BIBase.wandM at HΦ
-    iframe HI HΦ
 
 end lemmas
 

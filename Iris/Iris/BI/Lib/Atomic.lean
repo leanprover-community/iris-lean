@@ -1,14 +1,14 @@
 /-
 Copyright (c) 2026. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Markus de Medeiros
+Authors: Markus de Medeiros, Alvin Tang
 -/
 module
 
 public import Iris.BI.Lib.Fixpoint
 public import Iris.BI.Updates
 public import Iris.BI.Telescopes
-public import Iris.ProofMode
+public meta import Iris.ProofMode
 public meta import Iris.Std.RocqPorting
 
 @[expose] public section
@@ -462,71 +462,100 @@ theorem aacc_aupd_abort {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
 
 end lemmas
 
-/-! ## Proof-mode support for atomic updates -/
+section ProofMode
 
-section proof_mode
+variable [BI PROP] [BIFUpdate PROP] {TA TB : Tele}
 
-variable {PROP : Type _} [BI PROP] [BIFUpdate PROP] {TA TB : Tele}
-
-/-- Rocq's `tac_aupd_intro` collapses the spatial context into the abort resource with
-`env_to_prop`. Here the whole context `e` plays that role, which keeps the tactic free of context
-surgery. The intuitionistic hypotheses are part of the abort resource too, but they are
-persistent, so `iframe` discharges them. -/
 @[rocq_alias tac_aupd_intro]
-theorem tac_aupd_intro {e : PROP} {Eo Ei : CoPset} {α : TA.Arg → PROP}
-    {β Φ : TA.Arg → TB.Arg → PROP} (pf : e ⊢ atomic_acc Eo Ei α e β Φ) :
-    e ⊢ atomic_update Eo Ei α β Φ :=
-  (and_intro true_intro .rfl).trans (aupd_intro (and_elim_r.trans pf))
+theorem tac_aupd_intro {e eI eS : PROP} {Eo Ei : CoPset} {α : TA.Arg → PROP}
+    {β Φ : TA.Arg → TB.Arg → PROP} (hsplit : e ⊣⊢ eI ∗ eS) (hI : eI ⊢ □ eI)
+    (H : e ⊢ atomic_acc Eo Ei α eS β Φ) :
+    e ⊢ atomic_update Eo Ei α β Φ := by
+  have h : e ⊣⊢ <pers> eI ∧ eS := calc
+    _ ⊣⊢ eI ∗ eS        := hsplit
+    _ ⊣⊢ □ eI ∗ eS      := sep_congr_left ⟨hI, intuitionistically_elim⟩
+    _ ⊣⊢ <pers> eI ∧ eS := persistently_and_intuitionistically_sep_left.symm
+  exact h.mp.trans <| aupd_intro (h.mpr.trans H)
 
-end proof_mode
+omit [BIFUpdate PROP] in
+theorem tac_aacc_intro {pa pb : Bool} {e e' A R1 R2 Q : PROP} (hlem : ⊢ □?pa A)
+    (hspec : (e' ∗ □?pb ((R1 ∧ R2) -∗ Q) ⊢ Q) → e ∗ □?pa A ⊢ Q) (hR1 : e' ⊢ R1) (hR2 : e' ⊢ R2) : e ⊢ Q := calc
+  e ⊢ e ∗ emp    := sep_emp.mpr
+  _ ⊢ e ∗ □?pa A := sep_mono_right hlem
+  _ ⊢ Q          := hspec <| (sep_mono (and_intro hR1 hR2) intuitionisticallyIf_elim).trans wand_elim_right
 
-/-! ## Tactics -/
+theorem aacc_intro_wand (Eo Ei : CoPset) (α : TA.Arg → PROP) (P : PROP)
+    (β Φ : TA.Arg → TB.Arg → PROP) (HEi : Ei ⊆ Eo) (x : TA.Arg) :
+    ⊢ (α x -∗ ((α x ={Eo}=∗ P) ∧ (∀.. y, β x y ={Eo}=∗ Φ x y)) -∗ atomic_acc Eo Ei α P β Φ) :=
+  (Tele.tforall_forall _).mp (aacc_intro HEi) x
 
 public meta section
-open Lean Elab Tactic Meta Qq
+open Lean Meta Elab Qq Expr
 
-/-- `iauintro` turns a goal `AU <{ ∃∃ x, α x }> @ Eo, Ei <{ ∀∀ y, β x y, COMM Φ x y }>` into the
-corresponding `atomic_acc` goal, whose abort resource is the current proof-mode context. -/
+/--
+`iauintro` turns a goal that is an atomic update (`atomic_update`) into the
+corresponding atomic accessor (`atomic_acc`), whose abort condition is the
+separating conjunction of the spatial hypotheses.
+-/
 elab "iauintro" : tactic => do
-  ProofModeM.runTactic `iauintro fun mvar { prop, e, hyps, goal, .. } => do
-    let some args := goal.appM? ``atomic_update
-      | throwIPMError "{goal} is not an atomic update"
-    unless args.size == 10 do
-      throwIPMError "{goal} is a partially applied atomic update"
-    let .const _ us := goal.getAppFn
-      | throwIPMError "{goal} is not an atomic update"
-    -- `atomic_acc` takes the abort resource directly after `α`
-    let eExpr : Expr := e
-    let accArgs : Array Expr := (args.extract 0 8).push eExpr ++ args.extract 8 10
-    let target : Q($prop) := mkAppN (.const ``atomic_acc us) accArgs
-    let m ← addBIGoal hyps target
-    mvar.assign (← mkAppM ``tac_aupd_intro #[m])
+  ProofModeM.runTactic `iauintro λ mvar { hyps, goal, .. } => do
+    let_expr atomic_update _ _ _ _ _ Eo Ei α β Φ := goal
+      | throwIPMError "the goal {goal} is not an atomic update"
+    -- Split the context into its intuitionistic and spatial parts
+    let ⟨_, eS, pfSplit, pfInt⟩ := hyps.splitIntuitionisticSpatial
+    let newGoal ← mkAppM ``atomic_acc #[Eo, Ei, α, eS, β, Φ]
+    mvar.assign <| ← mkAppM ``tac_aupd_intro #[pfSplit, pfInt, ← addBIGoal hyps newGoal]
 
-/-- `iaacc_intro h with pats` proves an `atomic_acc` goal with `aacc_intro`, taking `h : Ei ⊆ Eo`
-for the mask side condition and `pats` for the `α x` premise, then splits the resulting
-abort/commit conjunction. Rocq's `iAaccIntro` discharges the side condition with `solve_ndisj`,
-which has no Lean counterpart, so it is passed explicitly.
+/--
+`iaaccintro spats` prove an atomic accessor by applying `aacc_intro`, where
+the specialisation patterns `spats` discharge the atomic precondition.
+There are three subgoals:
+- the mask side condition `Ei ⊆ Eo`,
+- the abort goal, and
+- the commit goal.
 
-Like Rocq's `last iSplit`, the split applies to the last remaining goal, so a specialization
-pattern that leaves a subgoal for the `α x` premise keeps that subgoal unsplit. -/
-elab "iaacc_intro " h:term " with" pats:(colGt ppSpace specPat)+ : tactic => do
-  let some { goal, .. } := parseIrisGoal? (← instantiateMVars (← (← getMainGoal).getType))
-    | throwError "iaacc_intro: the goal is not an Iris goal"
-  let some args := goal.appM? ``atomic_acc
-    | throwError "iaacc_intro: {goal} is not an atomic accessor"
-  unless args.size == 11 do
-    throwError "iaacc_intro: {goal} is a partially applied atomic accessor"
-  let .const _ us := goal.getAppFn
-    | throwError "iaacc_intro: {goal} is not an atomic accessor"
-  -- `aacc_intro`'s implicit arguments are exactly those of `atomic_acc`, in the same order, so
-  -- reading them off the goal spares the premise a higher-order unification against `α x`.
-  let lem ← Term.exprToSyntax (mkAppN (.const ``aacc_intro us) args)
-  evalTactic (← `(tactic| iapply ($lem $h) $$ $pats*))
-  let (accGoal :: earlier) := (← getGoals).reverse
-    | throwError "iaacc_intro: `aacc_intro` left no goals to split"
-  setGoals [accGoal]
-  evalTactic (← `(tactic| isplit))
-  setGoals (earlier.reverse ++ (← getGoals))
+The mask side condition is discharged automatically, if possible.
+The latter two subgoals keep the hypotheses left over by the specialisation patterns.
+-/
+elab "iaaccintro" spats:(colGt ppSpace specPat)+ : tactic => do
+  let spats ← liftMacroM <| spats.toList.mapM (SpecPat.parse ·.raw)
+  -- A leading specialisation pattern `%t` gives the telescope argument
+  let (t, spats) := match spats with
+    | ⟨_, .pure t⟩ :: rest => (some t, rest)
+    | _                    => (none, spats)
+
+  ProofModeM.runTactic `iaaccintro λ mvar { prop, e, hyps, goal, .. } => do
+    let_expr atomic_acc _ _ _ _ _ Eo Ei α P β Φ := goal
+      | throwIPMError "the goal {goal} is not an atomic accessor"
+    have Eo : Q(CoPset) := Eo
+    have Ei : Q(CoPset) := Ei
+    let mask : Q($Ei ⊆ $Eo) ← iSolveSidecondition q($Ei ⊆ $Eo)
+    -- Handle the argument for the telescopic quantifier
+    let xTy := (← whnf <| ← inferType α).bindingDomain!
+    let x ← match t with
+      | some t => Term.elabTermEnsuringType t xTy
+      | none => mkFreshExprMVar xTy
+    let pfAacc ← mkAppM ``aacc_intro_wand #[Eo, Ei, α, P, β, Φ, mask, x]
+    let A : Q($prop) ← mkFreshExprMVarQ prop
+    unless ← isDefEq (← inferType pfAacc) q(⊢ $A) do
+      throwIPMError "internal error: unexpected statement of aacc_intro_wand"
+    have pfAacc : Q(⊢ □?false $A) := pfAacc
+    -- Discharge the atomic precondition `α x` using the given specialisation patterns
+    let ⟨e', hyps', pb, B, pfSpec⟩ ← iSpecializeCore hyps q(false) A goal spats
+    -- The closing conjunction of the abort and the commit continuation remains
+    let ~q(iprop(($abortGoal ∧ $commitGoal) -∗ $Q)) := B
+      | throwIPMError "the specialisation patterns must discharge the atomic precondition only, \
+          leaving {B}"
+    unless ← isDefEq Q goal do
+      throwIPMError "internal error: {Q} is not the atomic accessor being proved"
+    have pfSpec : Q(($e' ∗ □?$pb iprop(($abortGoal ∧ $commitGoal) -∗ $goal) ⊢ $goal) →
+      $e ∗ □?false $A ⊢ $goal) := pfSpec
+    let pfAbort ← addBIGoal hyps' abortGoal `abort
+    let pfCommit ← addBIGoal hyps' commitGoal `commit
+    mvar.assign q(tac_aacc_intro $pfAacc $pfSpec $pfAbort $pfCommit)
+
 end
+
+end ProofMode
 
 end Iris

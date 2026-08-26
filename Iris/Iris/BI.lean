@@ -16,6 +16,7 @@ public import Iris.BI.MonPred
 public import Iris.BI.Notation
 public import Iris.BI.Plainly
 public import Iris.BI.Sbi
+public import Iris.BI.SbiUnfold
 public import Iris.BI.SIProp
 public import Iris.BI.Telescopes
 public import Iris.BI.Updates
