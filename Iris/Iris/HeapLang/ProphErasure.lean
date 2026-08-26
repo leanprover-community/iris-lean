@@ -69,73 +69,61 @@ end
 
 @[rocq_alias heap_lang.erase_ectx_item]
 def eraseECtxItem : ECtxItem → List ECtxItem
-  | .appL v2         => [.appL (eraseVal v2)]
-  | .appR e1         => [.appR (eraseExpr e1)]
-  | .unOp op         => [.unOp op]
-  | .binOpL op v2    => [.binOpL op (eraseVal v2)]
-  | .binOpR op e1    => [.binOpR op (eraseExpr e1)]
-  | .if e1 e2        => [.if (eraseExpr e1) (eraseExpr e2)]
-  | .pairL v2        => [.pairL (eraseVal v2)]
-  | .pairR e1        => [.pairR (eraseExpr e1)]
-  | .fst             => [.fst]
-  | .snd             => [.snd]
-  | .injL            => [.injL]
-  | .injR            => [.injR]
-  | .case e1 e2      => [.case (eraseExpr e1) (eraseExpr e2)]
-  | .allocNL v2      => [.allocNL (eraseVal v2)]
-  | .allocNR e1      => [.allocNR (eraseExpr e1)]
-  | .free            => [.free]
-  | .load            => [.load]
-  | .storeL v2       => [.storeL (eraseVal v2)]
-  | .storeR e1       => [.storeR (eraseExpr e1)]
-  | .xchgL v2        => [.xchgL (eraseVal v2)]
-  | .xchgR e1        => [.xchgR (eraseExpr e1)]
-  | .cmpXchgL v1 v2  => [.cmpXchgL (eraseVal v1) (eraseVal v2)]
-  | .cmpXchgM e0 v2  => [.cmpXchgM (eraseExpr e0) (eraseVal v2)]
-  | .cmpXchgR e0 e1  => [.cmpXchgR (eraseExpr e0) (eraseExpr e1)]
-  | .faaL v2         => [.faaL (eraseVal v2)]
-  | .faaR e1         => [.faaR (eraseExpr e1)]
-  | .resolveL K v1 v2 =>
-      eraseECtxItem K ++
-        [.pairL (eraseVal v1), .pairL (eraseVal v2), .fst, .fst]
-  | .resolveM e0 v2 =>
-      [.pairR (eraseExpr e0), .pairL (eraseVal v2), .fst, .fst]
-  | .resolveR e0 e1 =>
-      [.pairR (.pair (eraseExpr e0) (eraseExpr e1)), .fst, .fst]
+  | .appL v2          => [.appL (eraseVal v2)]
+  | .appR e1          => [.appR (eraseExpr e1)]
+  | .unOp op          => [.unOp op]
+  | .binOpL op v2     => [.binOpL op (eraseVal v2)]
+  | .binOpR op e1     => [.binOpR op (eraseExpr e1)]
+  | .if e1 e2         => [.if (eraseExpr e1) (eraseExpr e2)]
+  | .pairL v2         => [.pairL (eraseVal v2)]
+  | .pairR e1         => [.pairR (eraseExpr e1)]
+  | .fst              => [.fst]
+  | .snd              => [.snd]
+  | .injL             => [.injL]
+  | .injR             => [.injR]
+  | .case e1 e2       => [.case (eraseExpr e1) (eraseExpr e2)]
+  | .allocNL v2       => [.allocNL (eraseVal v2)]
+  | .allocNR e1       => [.allocNR (eraseExpr e1)]
+  | .free             => [.free]
+  | .load             => [.load]
+  | .storeL v2        => [.storeL (eraseVal v2)]
+  | .storeR e1        => [.storeR (eraseExpr e1)]
+  | .xchgL v2         => [.xchgL (eraseVal v2)]
+  | .xchgR e1         => [.xchgR (eraseExpr e1)]
+  | .cmpXchgL v1 v2   => [.cmpXchgL (eraseVal v1) (eraseVal v2)]
+  | .cmpXchgM e0 v2   => [.cmpXchgM (eraseExpr e0) (eraseVal v2)]
+  | .cmpXchgR e0 e1   => [.cmpXchgR (eraseExpr e0) (eraseExpr e1)]
+  | .faaL v2          => [.faaL (eraseVal v2)]
+  | .faaR e1          => [.faaR (eraseExpr e1)]
+  | .resolveL K v1 v2 => eraseECtxItem K ++ [.pairL (eraseVal v1), .pairL (eraseVal v2), .fst, .fst]
+  | .resolveM e0 v2   => [.pairR (eraseExpr e0), .pairL (eraseVal v2), .fst, .fst]
+  | .resolveR e0 e1   => [.pairR (.pair (eraseExpr e0) (eraseExpr e1)), .fst, .fst]
 
 @[rocq_alias heap_lang.erase_ectx]
-def eraseECtx (K : List ECtxItem) : List ECtxItem :=
-  K.flatMap eraseECtxItem
+def eraseECtx (K : List ECtxItem) : List ECtxItem := K.flatMap eraseECtxItem
 
 @[rocq_alias heap_lang.erase_tp]
 def eraseTp (tp : List Exp) : List Exp := tp.map eraseExpr
 
-/-- Erase the values contained in a heap. -/
 @[rocq_alias heap_lang.erase_heap]
 def eraseHeap (h : HeapF (Option Val)) : HeapF (Option Val) :=
   Iris.Std.PartialMap.map (fun (ov : Option Val) => eraseVal <$> ov) h
 
 @[rocq_alias heap_lang.erase_state]
-def eraseState (σ : State) : State :=
-  { heap := eraseHeap σ.heap, usedProphId := ∅ }
+def eraseState (σ : State) : State := { heap := eraseHeap σ.heap, usedProphId := ∅ }
 
 @[rocq_alias heap_lang.erase_cfg]
-def eraseCfg (ρ : List Exp × State) : List Exp × State :=
-  (eraseTp ρ.1, eraseState ρ.2)
+def eraseCfg (ρ : List Exp × State) : List Exp × State := (eraseTp ρ.1, eraseState ρ.2)
 
-/-! ## Local tactic macros
 
-`erase_simp` unfolds the erasure functions at a location; used pervasively when
-inverting or normalising `eraseExpr`/`eraseVal` terms. -/
-
+/-- `erase_simp` unfolds the erasure functions at a location -/
 local macro "erase_simp" loc:(Lean.Parser.Tactic.location)? : tactic =>
   `(tactic| simp
       [eraseExpr, eraseVal, eraseBaseLit, erasedNewProph, eraseResolve,
        eraseECtx, eraseECtxItem, ECtxItem.fill] $[$loc]?)
 
-/-! ## Simple structural lemmas -/
-
 @[simp] theorem eraseExpr_val (v : Val) : eraseExpr (.val v) = .val (eraseVal v) := rfl
+
 @[simp] theorem eraseExpr_ofVal (v : Val) : eraseExpr (.ofVal v) = .ofVal (eraseVal v) := rfl
 
 @[rocq_alias heap_lang.erase_ectx_app]
