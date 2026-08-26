@@ -140,11 +140,11 @@ public meta partial def findECtxRev {α : Type _} (ogE : Q(Exp))
     (pred : Q(List ECtxItem) → Q(Exp) → ProofModeM α) :
     ProofModeM (Option (ECtxResultOf ogE α)) := do
   let (Kis, inner) ← extractAllEctxItems ogE
-  go inner Kis
+  let K : Q(List ECtxItem) := quoteList Kis
+  go inner K
 where
-  go (e' : Q(Exp)) (Kis : List Q(ECtxItem)) : ProofModeM (Option (ECtxResultOf ogE α)) := do
-    let K := quoteList Kis
+  go (e' : Q(Exp)) (K : Q(List ECtxItem)) : ProofModeM (Option (ECtxResultOf ogE α)) := do
     if let some a ← observing? <| pred K e' then
       return some {result := a, K, e'}
-    let Ki :: Kis' := Kis | return none
-    go (← fillItem e' Ki) Kis'
+    let mkApp2 (.const ``List.cons _) Ki K := K | return none
+    go (← fillItem e' Ki) K
