@@ -156,8 +156,8 @@ meta def delabLam : Delab :=
     (fun x rest body => `(λ.. $x:ident $[$rest:ident]*, $body))
     (fun | `(λ.. $y:ident $[$ys:ident]*, $body) => some (y, ys, body) | _ => none)
 
-syntax:max "⟦" &"tele" (ppSpace explicitBinders)? "⟧" : term
-syntax:max "⟦" &"tele_arg" (ppSpace term),* "⟧" : term
+syntax:max "⟦" &"tele" (explicitBinders)? "⟧" : term
+syntax:max "⟦" &"tele_arg" term,* "⟧" : term
 
 macro_rules
   | `(⟦tele $[$bs]?⟧) => return ← expandLiteral bs
