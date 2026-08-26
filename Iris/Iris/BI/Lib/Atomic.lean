@@ -307,7 +307,7 @@ theorem aupd_intro {Eo Ei : CoPset} {P Q : PROP} {α : TA.Arg → PROP}
   iapply HAU $$ [$]
 
 @[rocq_alias aacc_intro]
-theorem aacc_intro {Eo Ei : CoPset} {α : TA.Arg → PROP} {P : PROP}
+private theorem aacc_intro {Eo Ei : CoPset} {α : TA.Arg → PROP} {P : PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} (HEi : Ei ⊆ Eo) :
     ∀.. x, α x -∗
       ((α x ={Eo}=∗ P) ∧ (∀.. y, β x y ={Eo}=∗ Φ x y)) -∗ atomic_acc Eo Ei α P β Φ := by

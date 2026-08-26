@@ -111,9 +111,7 @@ example : (AU <{ ∃∃ x, α x }> @ Eo, Ei <{ ∀∀ y, β x y, COMM Ψ x y }>)
 
 end atomicNotation
 
-/-! Tests for the logically atomic Hoare triple notation. Unlike Iris Rocq, a single notation
-covers all 16 combinations of (non-)empty binder groups and a present/absent private
-postcondition. -/
+/-! Tests for the logically atomic Hoare triple notation. -/
 
 section atomicWpNotation
 variable {hlc : HasLC} {Expr State Obs Val : Type _} [Language Expr State Obs Val]
