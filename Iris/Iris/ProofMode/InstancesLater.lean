@@ -333,16 +333,20 @@ instance fromModal_except0 [BI PROP] io (P : PROP) :
   from_modal _ := except0_intro
 
 /-! ### IntoExcept0 -/
+
 @[rocq_alias into_except_0_except_0]
-instance intoExcept0_except0 [BI PROP] (P : PROP) : IntoExcept0 iprop(◇ P) P where
+instance intoExcept0_except0 [BI PROP] (P : PROP) :
+    IntoExcept0 iprop(◇ P) P where
   into_except0 := .rfl
 
-@[rocq_alias into_except_0_later]
-instance intoExcept0_later [BI PROP] (P : PROP) [Timeless P] : IntoExcept0 iprop(▷ P) P where
+@[ipm_backtrack, rocq_alias into_except_0_later]
+instance intoExcept0_later [BI PROP] (P : PROP) [Timeless P] :
+    IntoExcept0 iprop(▷ P) P where
   into_except0 := Timeless.timeless
 
-@[rocq_alias into_except_0_later_if]
-instance intoExcept0_laterIf [BI PROP] p (P : PROP) [Timeless P] : IntoExcept0 iprop(▷?p P) P where
+@[ipm_backtrack, rocq_alias into_except_0_later_if]
+instance intoExcept0_laterIf [BI PROP] p (P : PROP) [Timeless P] :
+    IntoExcept0 iprop(▷?p P) P where
   into_except0 := match p with
                   | true => Timeless.timeless (P := P)
                   | false => except0_intro
@@ -371,11 +375,11 @@ instance intoExcept0_persistently [BI PROP] (P Q : PROP)
 
 @[ipm_backtrack, rocq_alias elim_modal_timeless]
 instance (priority := default - 10) elimModal_timeless [BI PROP] p io
-    (P P' Q : PROP) [IntoExcept0 P P'] [IsExcept0 Q] :
+    (P P' Q : PROP) [inst : IntoExcept0 P P'] [IsExcept0 Q] :
     ElimModal True p io p P P' Q Q where
   elim_modal _ := calc
-    _ ⊢ ◇ □?p P' ∗ (□?p P' -∗ Q)    :=
-        sep_mono_left <| (intuitionisticallyIf_mono into_except0).trans except0_intuitionisticallyIf
+    _ ⊢ ◇ □?p P' ∗ (□?p P' -∗ Q)    := sep_mono_left <|
+        (intuitionisticallyIf_mono inst.into_except0).trans except0_intuitionisticallyIf
     _ ⊢ ◇ □?p P' ∗ ◇ (□?p P' -∗ Q) := sep_mono_right except0_intro
     _ ⊢ ◇ (□?p P' ∗ (□?p P' -∗ Q))  := except0_sep.mpr
     _ ⊢ ◇ Q                         := except0_mono wand_elim_right
