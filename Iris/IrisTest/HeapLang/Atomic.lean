@@ -27,11 +27,9 @@ example (Q : IProp GF) (l : Loc) (v : Val) :
   · isimp only [Tele.app]
     iexact Hl
   · isimp only [Tele.app]
-    iintro Hl !>
-    iframe
+    iintro $ !> //
   · isimp only [Tele.app_bind, Tele.app, tforall_nil, BIBase.wandM]
-    iintro Hl !>
-    iexact HQ
+    iintro - !> //
 
 /-- `awp_apply … without HQ` keeps `HQ` out of the abort resource — abort only owes the points-to
 — and hands it back as a wand in the continuation. -/
@@ -43,11 +41,9 @@ example (Q : IProp GF) (l : Loc) (v : Val) :
   · isimp only [Tele.app]
     iexact Hl
   · isimp only [Tele.app]
-    iintro Hl !>
-    iexact Hl
+    iintro $ !> //
   · isimp only [Tele.app_bind, Tele.app, tforall_nil, BIBase.wandM]
-    iintro Hl !>
-    iintro $
+    iintro - !> $
 
 end IrisTest.HeapLang.Atomic
 end

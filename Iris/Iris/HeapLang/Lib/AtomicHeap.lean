@@ -66,17 +66,17 @@ class AtomicHeap (GF : BundledGFunctors) [IrisGS_gen hlc Exp GF] where
 
   pointsTo : atomicHeapG GF → Loc → DFrac → Val → IProp GF
 
-  pointsTo_timeless (H) (l : Loc) (dq : DFrac) (v : Val) : Timeless (pointsTo H l dq v)
-  pointsTo_fractional (H) (l : Loc) (v : Val) : Fractional fun q => pointsTo H l (.own q) v
-  pointsTo_persistent (H) (l : Loc) (v : Val) : Persistent (pointsTo H l .discard v)
-  pointsTo_as_fractional (H) (l : Loc) (q : Qp) (v : Val) :
+  pointsTo_timeless (H l dq v) : Timeless (pointsTo H l dq v)
+  pointsTo_fractional (H l v) : Fractional fun q => pointsTo H l (.own q) v
+  pointsTo_persistent (H l v) : Persistent (pointsTo H l .discard v)
+  pointsTo_as_fractional (H l q v) :
     AsFractional (pointsTo H l (.own q) v) ioΦ (fun q => pointsTo H l (.own q) v) ioq q
-  pointsTo_combine_sep_gives (H) (l : Loc) (dq₁ dq₂ : DFrac) (v₁ v₂ : Val) :
+  pointsTo_combine_sep_gives (H l dq₁ dq₂ v₁ v₂) :
     CombineSepGives (pointsTo H l dq₁ v₁) (pointsTo H l dq₂ v₂)
       iprop(⌜✓ (dq₁ • dq₂) ∧ v₁ = v₂⌝)
-  pointsTo_combine_as (H) (l : Loc) (dq₁ dq₂ : DFrac) (v₁ v₂ : Val) :
+  pointsTo_combine_as (H l dq₁ dq₂ v₁ v₂) :
     CombineSepAs (pointsTo H l dq₁ v₁) (pointsTo H l dq₂ v₂) (pointsTo H l (dq₁ • dq₂) v₁)
-  pointsTo_persist (H) (l : Loc) (dq : DFrac) (v : Val) :
+  pointsTo_persist (H l dq v) :
     ⊢ iprop(pointsTo H l dq v ==∗ pointsTo H l .discard v)
 
   alloc_spec (H) (v : Val) :
@@ -108,29 +108,20 @@ section Interface
 variable [IrisGS_gen hlc Exp GF] [A : AtomicHeap GF] (H : A.atomicHeapG GF)
 
 instance : Persistent (A.heapInv H) := A.heapInv_persistent H
+instance : Timeless (A.pointsTo H l dq v) := A.pointsTo_timeless H l dq v
+instance : Fractional fun q => A.pointsTo H l (.own q) v := A.pointsTo_fractional H l v
+instance : Persistent (A.pointsTo H l .discard v) := A.pointsTo_persistent H l v
 
-instance (l : Loc) (dq : DFrac) (v : Val) : Timeless (A.pointsTo H l dq v) :=
-  A.pointsTo_timeless H l dq v
-
-instance (l : Loc) (v : Val) : Fractional fun q => A.pointsTo H l (.own q) v :=
-  A.pointsTo_fractional H l v
-
-instance (l : Loc) (v : Val) : Persistent (A.pointsTo H l .discard v) :=
-  A.pointsTo_persistent H l v
-
-instance (l : Loc) (q : Qp) (v : Val) :
-    AsFractional (A.pointsTo H l (.own q) v) ioΦ (fun q => A.pointsTo H l (.own q) v) ioq q :=
+instance : AsFractional (A.pointsTo H l (.own q) v) ioΦ (fun q => A.pointsTo H l (.own q) v) ioq q :=
   A.pointsTo_as_fractional H l q v
 
-instance (l : Loc) (dq₁ dq₂ : DFrac) (v₁ v₂ : Val) :
-    CombineSepGives (A.pointsTo H l dq₁ v₁) (A.pointsTo H l dq₂ v₂)
-      iprop(⌜✓ (dq₁ • dq₂) ∧ v₁ = v₂⌝) :=
+instance : CombineSepGives (A.pointsTo H l dq₁ v₁) (A.pointsTo H l dq₂ v₂)
+    iprop(⌜✓ (dq₁ • dq₂) ∧ v₁ = v₂⌝) :=
   A.pointsTo_combine_sep_gives H l dq₁ dq₂ v₁ v₂
 
 /-- Lower priority than `combineSepAsFractional`, which kicks in for `DFrac.own`. -/
-instance (priority := default - 15) (l : Loc) (dq₁ dq₂ : DFrac) (v₁ v₂ : Val) :
-    CombineSepAs (A.pointsTo H l dq₁ v₁) (A.pointsTo H l dq₂ v₂)
-      (A.pointsTo H l (dq₁ • dq₂) v₁) :=
+instance (priority := default - 15) :
+    CombineSepAs (A.pointsTo H l dq₁ v₁) (A.pointsTo H l dq₂ v₂) (A.pointsTo H l (dq₁ • dq₂) v₁) :=
   A.pointsTo_combine_as H l dq₁ dq₂ v₁ v₂
 
 end Interface
@@ -147,14 +138,14 @@ section Derived
 variable [IrisGS_gen hlc Exp GF] [A : AtomicHeap GF] (H : A.atomicHeapG GF)
 
 @[rocq_alias heap_lang.atomic_heap.pointsto_agree]
-theorem pointsTo_agree (l : Loc) (dq₁ dq₂ : DFrac) (v₁ v₂ : Val) :
+theorem pointsTo_agree (l : Loc) (dq₁ dq₂ v₁ v₂) :
     A.pointsTo H l dq₁ v₁ ⊢ A.pointsTo H l dq₂ v₂ -∗ ⌜v₁ = v₂⌝ := by
   iintro Hl1 Hl2
   icombine Hl1 Hl2 gives %⟨_, rfl⟩
   itrivial
 
 @[rocq_alias heap_lang.atomic_heap.pointsto_combine]
-theorem pointsTo_combine (l : Loc) (dq₁ dq₂ : DFrac) (v₁ v₂ : Val) :
+theorem pointsTo_combine (l : Loc) (dq₁ dq₂ v₁ v₂) :
     A.pointsTo H l dq₁ v₁ ⊢
     A.pointsTo H l dq₂ v₂ -∗ A.pointsTo H l (dq₁ • dq₂) v₁ ∗ ⌜v₁ = v₂⌝ := by
   iintro Hl1 Hl2
@@ -213,9 +204,8 @@ theorem faa_spec (l : Loc) (i₂ : Int) :
       iintro $ !> AU !> //
     · isimp only [Tele.app_bind, Tele.app, texist_nil, tforall_nil, BIBase.wandM]
       iintro Hβ !>
-      by_cases hm : m = i₁
-      · subst hm
-        isimp only [↓reduceIte] at Hβ
+      obtain rfl | hm := Decidable.em (m = i₁)
+      · isimp only [↓reduceIte] at Hβ
         isimp only [↓reduceIte, decide_true]
         iright
         iframe Hβ
@@ -269,8 +259,7 @@ theorem primitiveFree_spec (l : Loc) (v : Val) :
   iintro _ %Φ !> Hl HΦ
   wp_lam
   wp_free
-  iapply HΦ
-  itrivial
+  iapply HΦ $$ [//]
 
 @[rocq_alias heap_lang.primitive_load_spec]
 theorem primitiveLoad_spec (l : Loc) :
@@ -280,11 +269,9 @@ theorem primitiveLoad_spec (l : Loc) :
   iintro _ %Φ AU
   wp_lam
   imod AU with ⟨%⟨v, q, _⟩, Hl, ⟨-, Hclose⟩⟩
-  isimp only [Tele.app] at Hl Hclose
+  isimp only [Tele.bind, Tele.app, tforall_nil, BIBase.wandM] at Hl Hclose
   wp_load
-  imod Hclose $$ %Tele.Arg.nil [$Hl]
-  isimp only [Tele.bind, Tele.app, tforall_nil, BIBase.wandM] at Hclose
-  iexact Hclose
+  imod Hclose $$ [$Hl] with $
 
 @[rocq_alias heap_lang.primitive_store_spec]
 theorem primitiveStore_spec (l : Loc) (w : Val) :
@@ -295,11 +282,9 @@ theorem primitiveStore_spec (l : Loc) (w : Val) :
   wp_lam
   wp_let
   imod AU with ⟨%⟨v, _⟩, Hl, ⟨-, Hclose⟩⟩
-  isimp only [Tele.app] at Hl Hclose
+  isimp only [Tele.bind, Tele.app, tforall_nil, BIBase.wandM] at Hl Hclose
   wp_store
-  imod Hclose $$ %Tele.Arg.nil [$Hl]
-  isimp only [Tele.bind, Tele.app, tforall_nil, BIBase.wandM] at Hclose
-  iexact Hclose
+  imod Hclose $$ [$Hl] with $
 
 @[rocq_alias heap_lang.primitive_cmpxchg_spec]
 theorem primitiveCmpXchg_spec (l : Loc) (w₁ w₂ : Val) (hw₁ : w₁.isUnboxed) :
@@ -312,23 +297,16 @@ theorem primitiveCmpXchg_spec (l : Loc) (w₁ w₂ : Val) (hw₁ : w₁.isUnboxe
   wp_lam
   wp_pures
   imod AU with ⟨%⟨v, _⟩, Hl, ⟨-, Hclose⟩⟩
-  isimp only [Tele.app] at Hl Hclose
-  by_cases hv : v = w₁
-  · subst hv
-    wp_cmpxchg_suc
+  isimp only [Tele.bind, Tele.app, tforall_nil, BIBase.wandM] at Hl Hclose
+  obtain rfl | hv := Decidable.em (v = w₁)
+  · wp_cmpxchg_suc
     · simp [Val.compareSafe, hw₁]
-    isimp only [Tele.bind, Tele.app, ↓reduceIte, decide_true] at Hclose
-    imod Hclose $$ %Tele.Arg.nil [$Hl]
-    isimp only [tforall_nil, BIBase.wandM] at Hclose
-    imodintro
-    iexact Hclose
+    isimp only [↓reduceIte, decide_true] at Hclose
+    imod Hclose $$ [$Hl] with $
   · wp_cmpxchg_fail
     · simp [Val.compareSafe, hw₁]
-    isimp only [Tele.bind, Tele.app, hv, ↓reduceIte, decide_false] at Hclose
-    imod Hclose $$ %Tele.Arg.nil [$Hl]
-    isimp only [tforall_nil, BIBase.wandM] at Hclose
-    imodintro
-    iexact Hclose
+    isimp only [hv, ↓reduceIte, decide_false] at Hclose
+    imod Hclose $$ [$Hl] with $
 
 end Primitive
 

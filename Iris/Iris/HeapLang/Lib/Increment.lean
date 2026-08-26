@@ -46,13 +46,11 @@ theorem incrPhy_spec (l : Loc) :
   wp_pures
   wp_bind cmpXchg(_, _, _)
   imod AU with ⟨%⟨w, ⟨⟩⟩, Hl, Hclose⟩
-  isimp only [Tele.app] at Hl Hclose
-  by_cases hw : v = w
-  · subst hw
-    wp_cmpxchg_suc
+  isimp only [Tele.bind, Tele.app, tforall_nil, BIBase.wandM] at Hl Hclose
+  obtain rfl | hw := Decidable.em (v = w)
+  · wp_cmpxchg_suc
     icases Hclose with ⟨-, Hclose⟩
-    imod Hclose $$ %Tele.Arg.nil [$Hl]
-    isimp only [Tele.bind, Tele.app, tforall_nil, BIBase.wandM] at Hclose
+    imod Hclose $$ [$Hl]
     imodintro
     wp_pures
     iexact Hclose
@@ -62,7 +60,7 @@ theorem incrPhy_spec (l : Loc) :
     imod Hclose $$ Hl with AU
     imodintro
     wp_pures
-    isimp only [Tele.app] at IH
+    isimp only [Tele.bind, Tele.app, tforall_nil, BIBase.wandM] at IH
     iapply IH $$ AU
 
 end IncrementPhysical
@@ -127,9 +125,8 @@ theorem incr_spec_direct (l : Loc) :
     iexact Hclose
   isimp only [Tele.bind, Tele.app, tforall_nil, BIBase.wandM]
   iintro Hl
-  by_cases hw : w = v
-  · subst hw
-    icases Hclose with ⟨-, Hclose⟩
+  obtain rfl | hw := Decidable.em (w = v)
+  · icases Hclose with ⟨-, Hclose⟩
     isimp only [↓reduceIte] at Hl
     imod Hclose $$ %Tele.Arg.nil [$Hl]
     imodintro
@@ -183,9 +180,8 @@ theorem incr_spec (l : Loc) :
       iintro $ !> AU !> //
     · isimp only [Tele.app_bind, Tele.app, texist_nil, tforall_nil, BIBase.wandM]
       iintro Hβ !>
-      by_cases hx : x' = x
-      · subst hx
-        isimp only [↓reduceIte] at Hβ
+      obtain rfl | hx := Decidable.em (x' = x)
+      · isimp only [↓reduceIte] at Hβ
         isimp only [↓reduceIte, decide_true]
         iright
         iframe Hβ
@@ -231,12 +227,9 @@ theorem weakIncr_spec (l : Loc) (v : Int) :
   · isimp only [Tele.app]
     iexact Hl
   · isimp only [Tele.app]
-    iintro ⟨$, Hl2⟩ !> AU !>
-    iframe AU Hl2
+    iintro ⟨$, $⟩ !> AU !> //
   · isimp only [Tele.app_bind, Tele.app, texist_nil, tforall_nil, BIBase.wandM]
-    iintro Hβ !>
-    iframe Hβ
-    iintro HΦ !>
+    iintro $ !> HΦ !>
     wp_pures
     iexact HΦ
 
@@ -279,23 +272,11 @@ theorem incrClient_safe (x : Int) :
     · isimp only [Tele.app]
       iexact Hl
     · isimp only [Tele.app]
-      iintro Hl !>
-      isplitl [Hl]
-      · inext
-        iexists x'
-        iframe Hl
-      iempintro
+      iintro $ !> //
     · isimp only [Tele.app_bind, Tele.app, tforall_nil, BIBase.wandM]
-      iintro Hl !>
-      isplitl [Hl]
-      · inext
-        iexists x' + 1
-        iframe Hl
-      itrivial
+      iintro $
   iapply Par.wp_par (fun _ => iprop(True)) (fun _ => iprop(True)) $$ Aupd Aupd
-  · iintro %v₁ %v₂ _
-    inext
-    itrivial
+  · iintro ** !> //
 
 end IncrementClient
 
