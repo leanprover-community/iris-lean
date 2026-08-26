@@ -502,8 +502,7 @@ theorem bigSepL_comm_set {B S : Type _} [FiniteSet S B] (Φ : Nat → A → B �
 @[rocq_alias big_sepL_sepMS]
 theorem bigSepL_comm_mset {B MS : Type _} [FiniteMultiSet MS B] (Φ : Nat → A → B → PROP)
     (l : List A) (X : MS) :
-    ([∗list] k ↦ x ∈ l, [∗mset] y ∈ X, Φ k x y) ⊣⊢
-      ([∗mset] y ∈ X, [∗list] k ↦ x ∈ l, Φ k x y) :=
+    ([∗list] k ↦ x ∈ l, [∗mset] y ∈ X, Φ k x y) ⊣⊢ ([∗mset] y ∈ X, [∗list] k ↦ x ∈ l, Φ k x y) :=
   BiEntails.of_eq <| bigOpL_comm_mset Φ l X
 
 end BigSepL

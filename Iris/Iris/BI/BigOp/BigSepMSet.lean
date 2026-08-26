@@ -290,22 +290,19 @@ theorem bigSepMS_comm_list {B : Type _} (Φ : A → Nat → B → PROP) (X : MS)
 @[rocq_alias big_sepMS_sepM]
 theorem bigSepMS_comm_map {B K : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
     (Φ : A → K → B → PROP) (X : MS) (m : M B) :
-    ([∗mset] x ∈ X, [∗map] k ↦ y ∈ m, Φ x k y) ⊣⊢
-      ([∗map] k ↦ y ∈ m, [∗mset] x ∈ X, Φ x k y) :=
+    ([∗mset] x ∈ X, [∗map] k ↦ y ∈ m, Φ x k y) ⊣⊢ ([∗map] k ↦ y ∈ m, [∗mset] x ∈ X, Φ x k y) :=
   BiEntails.of_eq <| bigOpMS_comm_map Φ X m
 
 @[rocq_alias big_sepMS_sepS]
 theorem bigSepMS_comm_set {B T : Type _} [LawfulFiniteSet T B]
     (Φ : A → B → PROP) (X : MS) (Y : T) :
-    ([∗mset] x ∈ X, [∗set] y ∈ Y, Φ x y) ⊣⊢
-      ([∗set] y ∈ Y, [∗mset] x ∈ X, Φ x y) :=
+    ([∗mset] x ∈ X, [∗set] y ∈ Y, Φ x y) ⊣⊢ ([∗set] y ∈ Y, [∗mset] x ∈ X, Φ x y) :=
   BiEntails.of_eq <| bigOpMS_comm_set Φ X Y
 
 @[rocq_alias big_sepMS_sepMS]
 theorem bigSepMS_comm_mset {B T : Type _} [LawfulFiniteMultiSet T B]
     (Φ : A → B → PROP) (X : MS) (Y : T) :
-    ([∗mset] x ∈ X, [∗mset] y ∈ Y, Φ x y) ⊣⊢
-      ([∗mset] y ∈ Y, [∗mset] x ∈ X, Φ x y) :=
+    ([∗mset] x ∈ X, [∗mset] y ∈ Y, Φ x y) ⊣⊢ ([∗mset] y ∈ Y, [∗mset] x ∈ X, Φ x y) :=
   BiEntails.of_eq <| bigOpMS_comm_mset Φ X Y
 
 @[rocq_alias big_sepMS_dup]

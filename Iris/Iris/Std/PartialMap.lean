@@ -1025,11 +1025,11 @@ theorem nodup_toList {m : M V} : (toList m).Nodup :=
   NoDupKeys_noDup toList_noDupKeys
 
 theorem noDupKeys_map_pair [LawfulFiniteSet S K] {g : K → V} {s : S} :
-    NoDupKeys ((FiniteSet.toList s).map fun k => (k, g k) : List (K × V)) := by
+    NoDupKeys ((FiniteSet.toList s).map fun k => (k, g k)) := by
   simpa [NoDupKeys, List.map_map, Function.comp_def] using FiniteSet.toList_nodup (m := s)
 
 theorem noDupKeys_map_const [LawfulFiniteSet S K] {a : V} {s : S} :
-    NoDupKeys ((FiniteSet.toList s).map (·, a) : List (K × V)) := noDupKeys_map_pair
+    NoDupKeys ((FiniteSet.toList s).map (·, a)) := noDupKeys_map_pair
 
 theorem noDupKeys_map_key {K' : Type _} {f : K → K'} (hf : Function.Injective f)
     {l : List (K × V)} (h : NoDupKeys l) : NoDupKeys (l.map fun kv => (f kv.1, kv.2)) := by
