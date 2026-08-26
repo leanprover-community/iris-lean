@@ -120,7 +120,7 @@ structure ECtxResultOf (e : Q(Exp)) (α : Type) where unsafeMk ::
 
 /-- Given an expression `ogE`, finds the *outermost* evaluation context `K` and
     corresponding expression `e'` such that `K[e'] = e` and `pred K e'` does 
-    not fail -/
+    not fail. This corresponds to `reshape_expr` in Rocq. -/
 public meta partial def findECtx {α : Type _} (ogE : Q(Exp))
     (pred : Q(List ECtxItem) → Q(Exp) → ProofModeM α) :
     ProofModeM (Option (ECtxResultOf ogE α)) :=
