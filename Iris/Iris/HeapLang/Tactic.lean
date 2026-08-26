@@ -146,5 +146,5 @@ where
   go (e' : Q(Exp)) (K : Q(List ECtxItem)) : ProofModeM (Option (ECtxResultOf ogE α)) := do
     if let some a ← observing? <| pred K e' then
       return some {result := a, K, e'}
-    let mkApp2 (.const ``List.cons _) Ki K := K | return none
+    let_expr List.cons Ki K := K | return none
     go (← fillItem e' Ki) K
