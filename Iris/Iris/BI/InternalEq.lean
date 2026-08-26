@@ -141,8 +141,50 @@ theorem sig_equivI {A : Type _} [OFE A] (P : A → Prop) (x y : Subtype P) :
     x.val ≡ y.val ⊣⊢@{PROP} x ≡ y :=
   ⟨sig_equivI_mp, of_internalEquiv_ne Subtype.val⟩
 
--- TODO: sum_equivI (requires Sum OFE)
--- TODO: sigT_equivI (requires SigmaT OFE)
+@[rocq_alias sum_equivI]
+theorem sum_equivI {A B : Type _} [OFE A] [OFE B] (x y : A ⊕ B) :
+    x ≡ y ⊣⊢@{PROP}
+      match x, y with
+      | .inl a, .inl a' => iprop(a ≡ a')
+      | .inr b, .inr b' => iprop(b ≡ b')
+      | _, _ => iprop(⌜False⌝) := by
+  constructor
+  · let Ψ : A ⊕ B → PROP := fun y' =>
+      match x, y' with
+      | .inl a, .inl a' => iprop(a ≡ a')
+      | .inr b, .inr b' => iprop(b ≡ b')
+      | _, _ => iprop(⌜False⌝)
+    have : NonExpansive Ψ := by
+      refine ⟨fun {n x' y'} h => ?_⟩
+      cases x <;> cases x' <;> cases y' <;> first
+        | exact (ne_r _).ne h
+        | exact Dist.rfl
+        | exact h.elim
+    refine rewrite' Ψ .rfl ?_
+    cases x <;> exact refl
+  · cases x <;> cases y <;> first
+      | exact of_internalEquiv_ne _
+      | exact false_elim
+
+@[rocq_alias sigT_equivI]
+theorem sigT_equivI {A : Type _} {P : A → Type _} [∀ a, OFE (P a)] (x y : Sigma P) :
+    x ≡ y ⊣⊢@{PROP} ∃ heq : x.fst = y.fst, (heq ▸ x.snd) ≡ y.snd := by
+  constructor
+  · let Ψ : Sigma P → PROP := fun y' => iprop(∃ heq : x.fst = y'.fst, (heq ▸ x.snd) ≡ y'.snd)
+    have : NonExpansive Ψ := by
+      refine ⟨fun {_ y₁ y₂} h => ?_⟩
+      obtain ⟨_, _⟩ := y₁
+      obtain ⟨_, _⟩ := y₂
+      obtain rfl := Sigma.dist_fst h
+      exact exists_ne fun _ => (ne_r _).ne (Sigma.dist_snd h)
+    refine rewrite' Ψ .rfl ?_
+    refine .trans ?_ (exists_intro rfl)
+    exact refl
+  · obtain ⟨a, _⟩ := x
+    obtain ⟨_, _⟩ := y
+    refine exists_elim fun heq => ?_
+    cases heq
+    exact of_internalEquiv_ne (Sigma.mk a)
 
 @[rocq_alias prod_equivI]
 theorem prod_equivI {A B : Type _} [OFE A] [OFE B] (x y : A × B) :

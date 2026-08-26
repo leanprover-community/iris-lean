@@ -1429,21 +1429,6 @@ theorem monPred_objectively_big_sepS {bot : I.car} [BiIndexBottom I bot] {S α :
   BIBase.BiEntails.of_eq
     (Iris.Algebra.BigOpS.hom (monPred_objectively_monoid_sep_homomorphism (bot := bot)) Φ X)
 
-@[rocq_alias monPred_at_big_sepMS]
-theorem monPred_at_big_sepMS {MS α} [LawfulFiniteMultiSet MS α]
-    (i : I.car) (Φ : α → MonPred I PROP) (X : MS) :
-    ([∗mset] y ∈ X, Φ y).monPred_at i ⊣⊢ [∗mset] y ∈ X, (Φ y).monPred_at i :=
-  (BigOpMS.hom (monPred_at_monoid_sep_homomorphism i) Φ X).to_bi
-
-@[rocq_alias big_sepMS_objective]
-instance big_sepMS_objective {MS α} [LawfulFiniteMultiSet MS α]
-    (Φ : α → MonPred I PROP) (X : MS) [∀ y, Objective (Φ y)] :
-    Objective ([∗mset] y ∈ X, Φ y) where
-  objective_at i j := calc
-    _ ⊢ [∗mset] y ∈ X, (Φ y).monPred_at i := (monPred_at_big_sepMS i Φ X).mp
-    _ ⊢ [∗mset] x ∈ X, (Φ x).monPred_at j := bigSepMS_mono fun _ => Objective.objective_at i j
-    _ ⊢ ([∗mset] y ∈ X, Φ y).monPred_at j := (monPred_at_big_sepMS j Φ X).mpr
-
 @[rocq_alias monPred_objectively_big_sepMS_entails]
 theorem monPred_objectively_big_sepMS_entails {MS α} [LawfulFiniteMultiSet MS α]
     (Φ : α → MonPred I PROP) (X : MS) :
