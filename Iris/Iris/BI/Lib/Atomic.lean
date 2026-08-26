@@ -280,7 +280,7 @@ set_option synthInstance.checkSynthOrder false in
 @[rocq_alias elim_mod_aupd]
 instance elim_mod_aupd {φ} {io : InOut} {Eo Ei E : CoPset} {α : TA.Arg → PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} {Q Q' : PROP}
-    [H : ∀ R, ElimModal φ false io false iprop(|={E,Ei}=> R) R Q Q'] :
+    [H : ∀ R, ElimModal φ false .in false iprop(|={E,Ei}=> R) R Q Q'] :
     ElimModal (φ ∧ Eo ⊆ E) false io false (atomic_update Eo Ei α β Φ)
       iprop(∃.. x, α x ∗ ((α x ={Ei,E}=∗ atomic_update Eo Ei α β Φ) ∧
         (∀.. y, β x y ={Ei,E}=∗ Φ x y))) Q Q' where
