@@ -21,9 +21,20 @@ variable {PROP : Type} [inst : BI PROP] {TT : Tele.{0}}
 /-- info: ⟦tele⟧ : Tele -/
 #guard_msgs in #check ⟦tele⟧
 
-set_option linter.unusedVariables false in
 /-- info: ⟦tele  (n : Nat) (b : Bool) (s : String)⟧ : Tele -/
-#guard_msgs in #check ⟦tele (n : Nat) (b : Bool) (s : String)⟧
+#guard_msgs in
+set_option linter.unusedVariables false in
+#check ⟦tele (n : Nat) (b : Bool) (s : String)⟧
+
+/-- info: Tele.nil : Tele -/
+#guard_msgs in
+set_option pp.notation false in
+#check ⟦tele⟧
+
+/-- info: Tele.nil.{0} : Tele.{0} -/
+#guard_msgs in
+set_option pp.universes true in
+#check ⟦tele⟧
 
 set_option linter.unusedVariables false in
 /-- info: ⟦tele  (n : Nat) (f : Fin n)⟧ : Tele -/
