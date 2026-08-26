@@ -284,12 +284,26 @@ theorem bigAndM_fn_insert [DecidableEq K] {B : Type _} {g : K → V → B → PR
 @[rocq_alias big_andM_fn_insert']
 theorem bigAndM_fn_insert_cond [DecidableEq K] {f : K → PROP} {m : M V} {i : K} {x : V} {P : PROP}
     (hi : get? m i = none) :
-    ([∧map] k ↦ _v ∈ insert m i x, if k = i then P else f k) =
-    iprop(P ∧ [∧map] k ↦ _v ∈ m, f k) :=
+    ([∧map] k ↦ _v ∈ insert m i x, if k = i then P else f k) = iprop(P ∧ [∧map] k ↦ _v ∈ m, f k) :=
   bigOpM_fn_insert_eq' f x P hi
 
--- TODO: `big_andM_kmap` and `big_andM_map_seq` require `FiniteMapKmapLaws` and
--- `FiniteMapSeqLaws` which are not yet available in the current `PartialMap` interface.
+@[rocq_alias big_andM_kmap]
+theorem bigAndM_kmap {K' : Type _} {M' : Type _ → Type _} [LawfulFiniteMap M' K'] [DecidableEq K']
+    {f : K → K'} {Φ : K' → V → PROP} {m : M V} (hf : Function.Injective f) :
+    ([∧map] k ↦ x ∈ (FiniteMap.kmap f m : M' V), Φ k x) = ([∧map] k ↦ x ∈ m, Φ (f k) x) :=
+  bigOpM_kmap_eq hf Φ m
+
+@[rocq_alias big_andM_map_seq]
+theorem bigAndM_map_seq {M' : Type _ → Type _} [LawfulFiniteMap M' Nat]
+    {Φ : Nat → V → PROP} {start : Nat} {l : List V} :
+    ([∧map] k ↦ v ∈ FiniteMap.map_seq (M := M') start l, Φ k v) = ([∧list] i ↦ v ∈ l, Φ (start + i) v) :=
+  bigOpM_map_seq_eq Φ start l
+
+@[rocq_alias big_andM_map_seqZ]
+theorem bigAndM_map_seqZ {M' : Type _ → Type _} [LawfulFiniteMap M' Int]
+    {Φ : Int → V → PROP} {start : Int} {l : List V} :
+    ([∧map] k ↦ v ∈ FiniteMap.map_seqZ (M := M') start l, Φ k v) = ([∧list] i ↦ v ∈ l, Φ (start + i) v) :=
+  bigOpM_map_seqZ_eq Φ start l
 
 end BigAndM
 

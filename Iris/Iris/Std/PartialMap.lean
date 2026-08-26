@@ -265,9 +265,21 @@ def mapFold {A : Type _} (f : K → V → A → A) (a : A) (m : M V) : A :=
 def map_seq [FiniteMap M Nat] (start : Nat) (l : List V) : M V :=
   PartialMap.ofList (l.mapIdx (fun i v => (start + i, v)))
 
+/-- Convert a list to a map with sequential integer keys starting from `start`. -/
+def map_seqZ [FiniteMap M Int] (start : Int) (l : List V) : M V :=
+  PartialMap.ofList (l.mapIdx (fun i v => (start + i, v)))
+
+/-- Rename the keys of a finite map along `f`. -/
+def kmap {M' : Type _ → Type _} {K' : Type _} [PartialMap M' K'] (f : K → K') (m : M V) : M' V :=
+  PartialMap.ofList ((toList m).map fun kv => (f kv.1, kv.2))
+
 /-- The map sending every element of the finite set `s` to `a`. -/
 def ofSet [FiniteSet S K] (a : V) (s : S) : M V :=
   PartialMap.ofList ((FiniteSet.toList s).map (·, a))
+
+/-- The map sending every element `k` of the finite set `s` to `g k`. -/
+def ofSetWith [FiniteSet S K] (g : K → V) (s : S) : M V :=
+  PartialMap.ofList ((FiniteSet.toList s).map fun k => (k, g k))
 
 def dom_set [LawfulSet S K] (m : M V) : S :=
   LawfulSet.ofList (mapFold (fun k _ acc => k :: acc) [] m)
@@ -1012,9 +1024,21 @@ theorem NoDupKeys_noDup {L : List (K × V)} : NoDupKeys L → L.Nodup := by
 theorem nodup_toList {m : M V} : (toList m).Nodup :=
   NoDupKeys_noDup toList_noDupKeys
 
-theorem noDupKeys_map_const [LawfulFiniteSet S K] {a : V} {s : S} :
-    NoDupKeys ((FiniteSet.toList s).map (·, a) : List (K × V)) := by
+theorem noDupKeys_map_pair [LawfulFiniteSet S K] {g : K → V} {s : S} :
+    NoDupKeys ((FiniteSet.toList s).map fun k => (k, g k)) := by
   simpa [NoDupKeys, List.map_map, Function.comp_def] using FiniteSet.toList_nodup (m := s)
+
+theorem noDupKeys_map_const [LawfulFiniteSet S K] {a : V} {s : S} :
+    NoDupKeys ((FiniteSet.toList s).map (·, a)) := noDupKeys_map_pair
+
+theorem noDupKeys_map_key {K' : Type _} {f : K → K'} (hf : Function.Injective f)
+    {l : List (K × V)} (h : NoDupKeys l) : NoDupKeys (l.map fun kv => (f kv.1, kv.2)) := by
+  simpa [NoDupKeys, List.map_map, Function.comp_def] using List.nodup_map_of_injective hf h
+
+theorem noDupKeys_mapIdx {f : Nat → K} {l : List V} (hf : Function.Injective f) :
+    NoDupKeys (l.mapIdx fun i v => (f i, v)) := by
+  simpa [NoDupKeys, List.mapIdx_eq_zipIdx_map, Function.comp_def, -List.zipIdx_map_snd] using
+    List.nodup_map_of_injective (l := l.zipIdx.map (·.2)) hf (by simp [List.nodup_range'])
 
 theorem get?_ofSet_of_mem [DecidableEq K] [LawfulFiniteSet S K] {a : V} {s : S} {k : K}
     (h : k ∈ s) : get? (FiniteMap.ofSet (M := M) a s) k = some a :=
@@ -1089,6 +1113,15 @@ theorem toList_ofList [DecidableEq K] {l : List (K × V)} (Hdup : NoDupKeys l) :
   · exact NoDupKeys_noDup Hdup
   · exact (mem_of_mem_ofList <| toList_get.mp ·)
   · exact (toList_get.mpr <| get?_ofList_some · Hdup)
+
+theorem toList_kmap {K' : Type _} {M' : Type _ → Type _} [LawfulFiniteMap M' K'] [DecidableEq K']
+    {f : K → K'} (hf : Function.Injective f) {m : M V} :
+    (toList (FiniteMap.kmap f m : M' V)).Perm ((toList m).map fun kv => (f kv.1, kv.2)) :=
+  toList_ofList (noDupKeys_map_key hf toList_noDupKeys)
+
+theorem toList_ofSetWith [DecidableEq K] [LawfulFiniteSet S K] {g : K → V} {s : S} :
+    (toList (FiniteMap.ofSetWith g s : M V)).Perm ((FiniteSet.toList s).map fun k => (k, g k)) :=
+  toList_ofList noDupKeys_map_pair
 
 theorem toList_perm_of_get?_eq {m₁ m₂ : M V} (h : ∀ k, get? m₁ k = get? m₂ k) :
     (toList m₁).Perm (toList m₂) := by
@@ -1304,6 +1337,10 @@ theorem toList_dom_set_perm [LawfulFiniteSet S K] (m : M V) :
 
 variable {M' : Type _ → Type _} [LawfulFiniteMap M' Nat]
 
+theorem toList_map_seq {V : Type _} {start : Nat} {l : List V} :
+    (toList (map_seq (M := M') start l)).Perm (l.mapIdx fun i v => (start + i, v)) :=
+  toList_ofList (noDupKeys_mapIdx fun _ _ h => by omega)
+
 @[simp] theorem map_seq_nil {V : Type _} {start : Nat} :
     map_seq (M := M') start ([] : List V) = ∅ := by
   rw [map_seq, List.mapIdx_nil]; rfl
@@ -1332,6 +1369,13 @@ theorem get?_map_seq {V : Type _} {start k : Nat} {l : List V} :
         simp [get?_insert_eq rfl]
       · rw [get?_insert_ne (by omega : start ≠ k), ih]
         grind
+
+/-! ### `map_seqZ` -/
+
+theorem toList_map_seqZ {M' : Type _ → Type _} [LawfulFiniteMap M' Int] {V : Type _}
+    {start : Int} {l : List V} :
+    (toList (map_seqZ (M := M') start l)).Perm (l.mapIdx fun i v => (start + i, v)) :=
+  toList_ofList (noDupKeys_mapIdx fun _ _ h => by omega)
 
 end LawfulFiniteMap
 

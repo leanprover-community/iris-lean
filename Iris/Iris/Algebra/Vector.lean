@@ -73,8 +73,7 @@ theorem length_compl_vecToListHom (c : Chain (Vector α n)) :
     (compl (c.map vecToListHom)).length = n :=
   (length_dist (n := 0) conv_compl).trans Vector.length_toList
 
--- FIXME: Rocq calls this instance `list_cofe`, clashing with the instance of the same name in
--- `iris/algebra/list.v`; the alias for that name is on the list instance.
+@[rocq_alias vector.list_cofe]
 instance : IsCOFE (Vector α n) where
   compl c := .ofList (compl (c.map vecToListHom)) (length_compl_vecToListHom c)
   conv_compl {k c} := vec_dist_toList.mpr <| by
