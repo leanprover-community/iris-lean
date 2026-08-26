@@ -108,12 +108,7 @@ instance (priority := default - 10) combineSepAsFractionalHalf
     _ ⊢ Φ (q.half + q.half) := (hP.as_fractional_fractional.fractional q.half q.half).mpr
     _ ⊢ Φ q                 := Qp.half_add_half _ ▸ .rfl
 
-/-! ## Fractional and logical connectives
-
-There are deliberately no `AsFractional` instances for `∗` and the big operators: `icases` already
-splits `P ∗ Q` and `[∗list] k ↦ x ∈ y :: l, Φ k x`, so such instances would make the split
-ambiguous. The `Fractional` instances are still provided, for connectives that are defined in terms
-of `∗` or a big operator. -/
+/-! ## Fractional and logical connectives -/
 
 @[rocq_alias persistent_fractional]
 instance persistent_fractional [Persistent P] [TCOr (Affine P) (Absorbing P)] :
