@@ -360,10 +360,21 @@ instance elim_acc_aacc {X} {E1 E2 Ei : CoPset} {α' β' : X → PROP} {γ' : X �
       imodintro
       iapply HΦ $$ Hγ'
 
+/-- `atomic_acc` is a fancy update, but the proof mode does not unfold the definition, so the
+`IsExcept0` instance for fancy updates has to be re-exposed. Rocq gets this for free from
+transparency; the analogous re-exposure for `inv` is `is_except_0_inv`. -/
+instance isExcept0_atomic_acc {Eo Ei : CoPset} {α : TA.Arg → PROP} {P : PROP}
+    {β Φ : TA.Arg → TB.Arg → PROP} : IsExcept0 (atomic_acc Eo Ei α P β Φ) :=
+  inferInstanceAs (IsExcept0 iprop(|={Eo,Ei}=> _))
+
+/-- Rocq registers this as an instance. In Lean it can only be used by hand: the proof-mode
+synthesis discipline requires the last parameter of an `ElimModal` goal to be a metavariable, and
+the premise fixes it to `|={Eo,Ei}=> R`. Modalities are eliminated in an `atomic_acc` goal through
+`isExcept0_atomic_acc` instead. -/
 @[rocq_alias elim_modal_acc]
-instance elim_modal_acc {p : Bool} {io : InOut} {q : Bool} {φ} {P P' : PROP} {Eo Ei : CoPset}
+theorem elim_modal_acc {p : Bool} {io : InOut} {q : Bool} {φ} {P P' : PROP} {Eo Ei : CoPset}
     {α : TA.Arg → PROP} {Pas : PROP} {β Φ : TA.Arg → TB.Arg → PROP}
-    [H : ∀ R, ElimModal φ p io q P P' iprop(|={Eo,Ei}=> R) iprop(|={Eo,Ei}=> R)] :
+    (H : ∀ R, ElimModal φ p io q P P' iprop(|={Eo,Ei}=> R) iprop(|={Eo,Ei}=> R)) :
     ElimModal φ p io q P P' (atomic_acc Eo Ei α Pas β Φ) (atomic_acc Eo Ei α Pas β Φ) :=
   H _
 

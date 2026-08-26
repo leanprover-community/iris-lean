@@ -97,8 +97,11 @@ local macro "solve_subredex_values" : tactic =>
      intro Ki e_inner heq
      cases Ki <;> cases heq <;> try rfl <;> try done))
 
+-- `subst_vars` is needed for the steps that hand the result expression back as an equation
+-- rather than as an index of the `BaseStep` constructor, e.g. the beta step in `instAtomicBeta`.
 local macro "solve_atomic" hstep:ident : tactic =>
   `(tactic| (cases baseStep_of_primStep $hstep (by solve_subredex_values)
+             subst_vars
              split
              · exact val_irreducible rfl _
              · rfl))
@@ -233,6 +236,47 @@ instance (priority := default + 10) instPureExecEqOp {v1 v2 : Val} :
     · constructor <;> simp [BinOp.eval, *]
     · cases hs <;> simp_all [BinOp.eval]
     · solve_subredex_values
+
+@[rocq_alias heap_lang.rec_atomic]
+instance instAtomicRec {s} {f x : Binder} {e : Exp} : Atomic s hl(rec &f &x := &e) where
+  atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
+
+@[rocq_alias heap_lang.pair_atomic]
+instance instAtomicPair {s} {v1 v2 : Val} : Atomic s hl((&v1, &v2)) where
+  atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
+
+@[rocq_alias heap_lang.injl_atomic]
+instance instAtomicInjL {s} {v : Val} : Atomic s hl(injl(&v)) where
+  atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
+
+@[rocq_alias heap_lang.injr_atomic]
+instance instAtomicInjR {s} {v : Val} : Atomic s hl(injr(&v)) where
+  atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
+
+/-- A more general version of `Skip`. -/
+@[rocq_alias heap_lang.beta_atomic]
+instance instAtomicBeta {s} {f x : Binder} {v1 v2 : Val} :
+    Atomic s hl(v(rec &f &x := v(&v1)) &v2) where
+  atomic {σ obs e' σ' eₜ} Hstep := by cases f <;> cases x <;> solve_atomic Hstep
+
+@[rocq_alias heap_lang.unop_atomic]
+instance instAtomicUnOp {s} {op : UnOp} {v : Val} : Atomic s (Exp.unop op (.ofVal v)) where
+  atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
+
+@[rocq_alias heap_lang.binop_atomic]
+instance instAtomicBinOp {s} {op : BinOp} {v1 v2 : Val} :
+    Atomic s (Exp.binop op (.ofVal v1) (.ofVal v2)) where
+  atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
+
+@[rocq_alias heap_lang.if_true_atomic]
+instance instAtomicIfTrue {s} {v1 : Val} {e2 : Exp} :
+    Atomic s hl(if #true then &v1 else &e2) where
+  atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
+
+@[rocq_alias heap_lang.if_false_atomic]
+instance instAtomicIfFalse {s} {e1 : Exp} {v2 : Val} :
+    Atomic s hl(if #false then &e1 else &v2) where
+  atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
 
 @[rocq_alias heap_lang.load_atomic]
 instance instAtomicLoad {s} {v : Val} : Atomic s hl(!&v) where
