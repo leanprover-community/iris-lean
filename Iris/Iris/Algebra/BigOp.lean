@@ -141,6 +141,15 @@ theorem bigOpL_op_eq (Φ Ψ : Nat → A → M) (l : List A) :
   | .nil => op_left_id.symm
   | .cons _ _ => (congrArg (op _) (bigOpL_op_eq _ _ _)).trans op_op_op_comm
 
+@[rocq_alias big_opL_consZ_l]
+theorem bigOpL_consZ_left (Φ : Int → A → M) (x : A) (l : List A) :
+    ([^ op list] k ↦ y ∈ x :: l, Φ k y) = op (Φ 0 x) ([^ op list] k ↦ y ∈ l, Φ (1 + k) y) :=
+  congrArg (op _) (bigOpL_eq_of_forall_eq (@fun i _ => by congr 1; omega))
+
+@[rocq_alias big_opL_consZ_r]
+theorem bigOpL_consZ_right (Φ : Int → A → M) (x : A) (l : List A) :
+    ([^ op list] k ↦ y ∈ x :: l, Φ k y) = op (Φ 0 x) ([^ op list] k ↦ y ∈ l, Φ (k + 1) y) := rfl
+
 @[rocq_alias big_opL_fmap]
 theorem bigOpL_map_eq {B : Type _} (h : A → B) (Φ : Nat → B → M) (l : List A) :
     ([^ op list] k ↦ x ∈ l.map h, Φ k x) = ([^ op list] k ↦ x ∈ l, Φ k (h x)) :=
@@ -220,12 +229,14 @@ theorem bigOpL_proper_2 [OFE A] {Φ Ψ : Nat → A → M} {l₁ l₂ : List A} (
     ([^ op list] k ↦ x ∈ l₁, Φ k x) = ([^ op list] k ↦ x ∈ l₂, Ψ k x) :=
   bigOpL_gen_proper_2 (· = ·) rfl (· ▸ · ▸ rfl) hlen hf
 
+@[rocq_alias big_opL_zip_seq]
 theorem bigOpL_zipIdx_eq (Φ : A × Nat → M) (n : Nat) (l : List A) :
     ([^ op list] x ∈ l.zipIdx n, Φ x) = ([^ op list] k ↦ x ∈ l, Φ (x, n + k)) :=
   match l with
   | .nil => rfl
   | .cons _ _ => congrArg (op _) <| (bigOpL_zipIdx_eq _ (n + 1) _).trans (by grind)
 
+@[rocq_alias big_opL_zip_seqZ]
 theorem bigOpL_zipIdxInt_eq (Φ : A × Int → M) (n : Int) (l : List A) :
     ([^ op list] x ∈ List.zipIdxInt l n, Φ x) = ([^ op list] k ↦ x ∈ l, Φ (x, n + (k : Int))) := by
   change bigOpL op (fun _ => Φ) (l.mapIdx (fun i v => (v, (i : Int) + n)))
@@ -261,6 +272,47 @@ theorem bigOpL_zip_op_eq {B : Type v} {l₁ : List A} {l₂ : List B} {Φ : Nat 
     op ([^ op list] k ↦ x ∈ l₁, Φ k x) ([^ op list] k ↦ x ∈ l₂, Ψ k x) :=
   bigOpL_zipWith_op_eq rfl rfl hlen
 
+/-- Reindexing a list into key-value pairs along `f`. -/
+theorem bigOpL_mapIdx_pair_eq {B : Type _} (Φ : B → A → M) (f : Nat → B) (l : List A) :
+    ([^ op list] kx ∈ l.mapIdx fun i x => (f i, x), Φ kx.1 kx.2) =
+    ([^ op list] i ↦ x ∈ l, Φ (f i) x) := by
+  induction l generalizing f with
+  | nil => rfl
+  | cons x xs ih => rw [List.mapIdx_cons, bigOpL_cons, bigOpL_cons, ih]
+
+/-! ### Commuting big operators -/
+
+@[rocq_alias big_opL_opL]
+theorem bigOpL_comm {B : Type _} (Φ : Nat → A → Nat → B → M) (l₁ : List A) (l₂ : List B) :
+    ([^ op list] k₁ ↦ x₁ ∈ l₁, [^ op list] k₂ ↦ x₂ ∈ l₂, Φ k₁ x₁ k₂ x₂) =
+    ([^ op list] k₂ ↦ x₂ ∈ l₂, [^ op list] k₁ ↦ x₁ ∈ l₁, Φ k₁ x₁ k₂ x₂) :=
+  match l₁ with
+  | [] => bigOpL_const_unit_eq.symm
+  | _ :: l₁ =>
+    (congrArg (op _) (bigOpL_comm (fun k₁ => Φ (k₁ + 1)) l₁ l₂)).trans (bigOpL_op_eq _ _ l₂).symm
+
+@[rocq_alias big_opL_opM]
+theorem bigOpL_comm_map {B K : Type _} {M' : Type _ → Type _} [LawfulFiniteMap M' K]
+    (Φ : Nat → A → K → B → M) (l : List A) (m : M' B) :
+    ([^ op list] k₁ ↦ x₁ ∈ l, [^ op map] k₂ ↦ x₂ ∈ m, Φ k₁ x₁ k₂ x₂) =
+    ([^ op map] k₂ ↦ x₂ ∈ m, [^ op list] k₁ ↦ x₁ ∈ l, Φ k₁ x₁ k₂ x₂) :=
+  bigOpL_comm (fun k₁ x₁ _ kx => Φ k₁ x₁ kx.1 kx.2) l (toList m)
+
+@[rocq_alias big_opL_opS]
+theorem bigOpL_comm_set {B S : Type _} [FiniteSet S B] (Φ : Nat → A → B → M) (l : List A) (s : S) :
+    ([^ op list] k ↦ x ∈ l, [^ op set] y ∈ s, Φ k x y) =
+    ([^ op set] y ∈ s, [^ op list] k ↦ x ∈ l, Φ k x y) :=
+  bigOpL_comm (fun k x _ y => Φ k x y) l (toList s)
+
+@[rocq_alias big_opL_opMS]
+theorem bigOpL_comm_mset {B MS : Type _} [FiniteMultiSet MS B]
+    (Φ : Nat → A → B → M) (l : List A) (X : MS) :
+    ([^ op list] k ↦ x ∈ l, [^ op mset] y ∈ X, Φ k x y) =
+    ([^ op mset] y ∈ X, [^ op list] k ↦ x ∈ l, Φ k x y) :=
+  bigOpL_comm (fun k x _ y => Φ k x y) l (toList X)
+
+#rocq_ignore big_opL_commute_L "Leibniz (=) variant; use bigOpL_hom"
+#rocq_ignore big_opL_commute1_L "Leibniz (=) variant; use bigOpL_hom_weak"
 #rocq_ignore big_opL_ne' "Use bigOpL_dist"
 #rocq_ignore big_opL_proper' "Use bigOpL_eq"
 #rocq_ignore big_opL_permutation' "Use bigOpL_eq_of_perm"
@@ -516,7 +568,44 @@ theorem bigOpM_closed {P : M → Prop} {Φ : K → V → M} {m : M' V}
     P ([^ op map] k ↦ x ∈ m, Φ k x) :=
   bigOpL_closed hunit hop fun h => hf <| toList_get.mp <| List.mem_iff_getElem?.mpr ⟨_, h⟩
 
--- TODO: kmap and map_seq are skipped for now
+@[rocq_alias big_opM_kmap]
+theorem bigOpM_kmap_eq {K' : Type _} {M'' : Type _ → Type _} [LawfulFiniteMap M'' K']
+    [DecidableEq K'] {f : K → K'} (hf : Function.Injective f) (Φ : K' → V → M) (m : M' V) :
+    ([^ op map] k ↦ x ∈ (FiniteMap.kmap f m : M'' V), Φ k x) =
+    ([^ op map] k ↦ x ∈ m, Φ (f k) x) :=
+  (bigOpL_eq_of_perm _ (LawfulFiniteMap.toList_kmap hf)).trans (bigOpL_map_eq _ _ _)
+
+@[rocq_alias big_opM_map_seq]
+theorem bigOpM_map_seq_eq {M'' : Type _ → Type _} [LawfulFiniteMap M'' Nat]
+    (Φ : Nat → V → M) (start : Nat) (l : List V) :
+    ([^ op map] k ↦ x ∈ (FiniteMap.map_seq start l : M'' V), Φ k x) =
+    ([^ op list] i ↦ x ∈ l, Φ (start + i) x) :=
+  (bigOpL_eq_of_perm _ LawfulFiniteMap.toList_map_seq).trans (bigOpL_mapIdx_pair_eq _ _ _)
+
+@[rocq_alias big_opM_map_seqZ]
+theorem bigOpM_map_seqZ_eq {M'' : Type _ → Type _} [LawfulFiniteMap M'' Int]
+    (Φ : Int → V → M) (start : Int) (l : List V) :
+    ([^ op map] k ↦ x ∈ (FiniteMap.map_seqZ start l : M'' V), Φ k x) =
+    ([^ op list] i ↦ x ∈ l, Φ (start + i) x) :=
+  (bigOpL_eq_of_perm _ LawfulFiniteMap.toList_map_seqZ).trans (bigOpL_mapIdx_pair_eq _ _ _)
+
+@[rocq_alias big_opM_dom]
+theorem bigOpM_dom_set_eq {S : Type _} [LawfulFiniteSet S K] (Φ : K → M) (m : M' V) :
+    ([^ op map] k ↦ _x ∈ m, Φ k) = ([^ op set] k ∈ (FiniteMap.dom_set m : S), Φ k) :=
+  ((bigOpL_eq_of_perm Φ (LawfulFiniteMap.toList_dom_set_perm m)).trans
+    (bigOpL_map_eq Prod.fst (fun _ k => Φ k) (LawfulFiniteMap.toList m))).symm
+
+@[rocq_alias big_opM_set_to_map]
+theorem bigOpM_ofSetWith_eq {S : Type _} [DecidableEq K] [LawfulFiniteSet S K]
+    (Φ : K → V → M) (g : K → V) (s : S) :
+    ([^ op map] k ↦ x ∈ (FiniteMap.ofSetWith g s : M' V), Φ k x) = ([^ op set] k ∈ s, Φ k (g k)) :=
+  (bigOpL_eq_of_perm _ LawfulFiniteMap.toList_ofSetWith).trans (bigOpL_map_eq _ _ _)
+
+@[rocq_alias big_opM_gset_to_gmap]
+theorem bigOpM_ofSet_eq {S : Type _} [DecidableEq K] [LawfulFiniteSet S K]
+    (Φ : K → V → M) (s : S) (c : V) :
+    ([^ op map] k ↦ x ∈ (FiniteMap.ofSet c s : M' V), Φ k x) = ([^ op set] k ∈ s, Φ k c) :=
+  bigOpM_ofSetWith_eq Φ (fun _ => c) s
 
 @[rocq_alias big_opM_sep_zip_with]
 theorem bigOpM_sep_zipWith_eq {A : Type _} {B : Type _} {C : Type _}
@@ -543,6 +632,35 @@ theorem bigOpM_sep_zip_eq {A : Type _} {B : Type _}
     op ([^ op map] k ↦ x ∈ m1, h1 k x) ([^ op map] k ↦ x ∈ m2, h2 k x) :=
   bigOpM_sep_zipWith_eq _ _ rfl rfl hdom
 
+/-! ### Commuting big operators -/
+
+@[rocq_alias big_opM_opL]
+theorem bigOpM_comm_list {B : Type _} (Φ : K → V → Nat → B → M) (m : M' V) (l : List B) :
+    ([^ op map] k₁ ↦ x₁ ∈ m, [^ op list] k₂ ↦ x₂ ∈ l, Φ k₁ x₁ k₂ x₂) =
+    ([^ op list] k₂ ↦ x₂ ∈ l, [^ op map] k₁ ↦ x₁ ∈ m, Φ k₁ x₁ k₂ x₂) :=
+  bigOpL_comm (fun _ (kx : K × V) k₂ x₂ => Φ kx.1 kx.2 k₂ x₂) (toList m) l
+
+@[rocq_alias big_opM_opM]
+theorem bigOpM_comm_map {K₂ B : Type _} {M'' : Type _ → Type _} [LawfulFiniteMap M'' K₂]
+    (Φ : K → V → K₂ → B → M) (m₁ : M' V) (m₂ : M'' B) :
+    ([^ op map] k₁ ↦ x₁ ∈ m₁, [^ op map] k₂ ↦ x₂ ∈ m₂, Φ k₁ x₁ k₂ x₂) =
+    ([^ op map] k₂ ↦ x₂ ∈ m₂, [^ op map] k₁ ↦ x₁ ∈ m₁, Φ k₁ x₁ k₂ x₂) :=
+  bigOpL_comm (fun _ (kx₁ : K × V) _ (kx₂ : K₂ × B) => Φ kx₁.1 kx₁.2 kx₂.1 kx₂.2)
+    (toList m₁) (toList m₂)
+
+@[rocq_alias big_opM_opS]
+theorem bigOpM_comm_set {B S : Type _} [FiniteSet S B] (Φ : K → V → B → M) (m : M' V) (s : S) :
+    ([^ op map] k ↦ x ∈ m, [^ op set] y ∈ s, Φ k x y) =
+    ([^ op set] y ∈ s, [^ op map] k ↦ x ∈ m, Φ k x y) :=
+  bigOpL_comm (fun _ (kx : K × V) _ y => Φ kx.1 kx.2 y) (toList m) (toList s)
+
+@[rocq_alias big_opM_opMS]
+theorem bigOpM_comm_mset {B MS : Type _} [FiniteMultiSet MS B]
+    (Φ : K → V → B → M) (m : M' V) (X : MS) :
+    ([^ op map] k ↦ x ∈ m, [^ op mset] y ∈ X, Φ k x y) =
+    ([^ op mset] y ∈ X, [^ op map] k ↦ x ∈ m, Φ k x y) :=
+  bigOpL_comm (fun _ (kx : K × V) _ y => Φ kx.1 kx.2 y) (toList m) (toList X)
+
 variable {M₁} [OFE M₁]
 variable {M₂} [OFE M₂]
 variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
@@ -563,6 +681,8 @@ theorem bigOpM_weak_hom [DecidableEq K] [ι : WeakMonoidHomomorphism op₁ op₂
       show (LawfulFiniteMap.toList m) = [] from List.nil_eq.mpr Hk |>.symm]
   rfl
 
+#rocq_ignore big_opM_commute_L "Leibniz (=) variant; use bigOpM_hom"
+#rocq_ignore big_opM_commute1_L "Leibniz (=) variant; use bigOpM_weak_hom"
 #rocq_ignore big_opM_ne' "Use bigOpM_dist"
 #rocq_ignore big_opM_proper' "Use bigOpM_eq"
 
@@ -663,8 +783,72 @@ theorem bigOpS_gen_proper (R : M → M → Prop) {Φ Ψ : A → M} {s : S}
   rw [←FiniteSet.mem_toList]
   exact List.mem_of_getElem? hy
 
+@[rocq_alias big_opS_fn_insert]
+theorem bigOpS_fn_insert_eq [DecidableEq A] {B : Type _} (Φ : A → B → M) (f : A → B)
+    {s : S} {x : A} (b : B) (h : x ∉ s) :
+    ([^ op set] y ∈ ({x} ∪ s), Φ y (if y = x then b else f y)) =
+    op (Φ x b) ([^ op set] y ∈ s, Φ y (f y)) := by
+  rw [bigOpS_insert h]
+  congr 1
+  · simp
+  · exact bigOpS_eq (by grind)
+
+@[rocq_alias big_opS_fn_insert']
+theorem bigOpS_fn_insert_eq' [DecidableEq A] (Φ : A → M) {s : S} {x : A} (P : M) (h : x ∉ s) :
+    ([^ op set] y ∈ ({x} ∪ s), if y = x then P else Φ y) = op P ([^ op set] y ∈ s, Φ y) :=
+  bigOpS_fn_insert_eq (fun _ P => P) Φ P h
+
+@[rocq_alias big_opS_delete]
+theorem bigOpS_delete {Φ : A → M} {s : S} {x : A} (h : x ∈ s) :
+    ([^ op set] y ∈ s, Φ y) = op (Φ x) ([^ op set] y ∈ s \ {x}, Φ y) := by
+  conv => lhs; rw [← insert_delete h]
+  exact bigOpS_insert not_mem_delete
+
+@[rocq_alias big_opS_filter']
+theorem bigOpS_filter_eq (φ : A → Bool) (Φ : A → M) (s : S) :
+    ([^ op set] y ∈ filter φ s, Φ y) = ([^ op set] y ∈ s, if φ y then Φ y else unit) :=
+  (bigOpL_eq_of_perm Φ (toList_filter_perm φ s)).trans (bigOpL_filter_eq φ Φ (toList s))
+
+@[rocq_alias big_opS_list_to_set]
+theorem bigOpS_ofList_eq (Φ : A → M) {l : List A} (h : l.Nodup) :
+    ([^ op set] x ∈ (ofList l : S), Φ x) = ([^ op list] x ∈ l, Φ x) :=
+  bigOpL_eq_of_perm Φ (toList_ofList h).symm
+
+@[rocq_alias big_opS_set_map]
+theorem bigOpS_map_eq {B S' : Type _} [LawfulFiniteSet S' B] {f : A → B}
+    (hf : Function.Injective f) (Φ : B → M) (s : S) :
+    ([^ op set] y ∈ (map f s : S'), Φ y) = ([^ op set] x ∈ s, Φ (f x)) :=
+  (bigOpL_eq_of_perm Φ (toList_map_perm s hf)).trans (bigOpL_map_eq f (fun _ => Φ) (toList s))
+
+/-! ### Commuting big operators -/
+
+@[rocq_alias big_opS_opL]
+theorem bigOpS_comm_list {B : Type _} (Φ : A → Nat → B → M) (s : S) (l : List B) :
+    ([^ op set] x ∈ s, [^ op list] k ↦ y ∈ l, Φ x k y) =
+    ([^ op list] k ↦ y ∈ l, [^ op set] x ∈ s, Φ x k y) :=
+  bigOpL_comm (fun _ x k y => Φ x k y) (toList s) l
+
+@[rocq_alias big_opS_opM]
+theorem bigOpS_comm_map {B K : Type _} {M' : Type _ → Type _} [LawfulFiniteMap M' K]
+    (Φ : A → K → B → M) (s : S) (m : M' B) :
+    ([^ op set] x ∈ s, [^ op map] k ↦ y ∈ m, Φ x k y) =
+    ([^ op map] k ↦ y ∈ m, [^ op set] x ∈ s, Φ x k y) :=
+  bigOpL_comm (fun _ x _ (ky : K × B) => Φ x ky.1 ky.2) (toList s) (toList m)
+
+@[rocq_alias big_opS_opS]
+theorem bigOpS_comm_set {B S' : Type _} [FiniteSet S' B] (Φ : A → B → M) (s : S) (s' : S') :
+    ([^ op set] x ∈ s, [^ op set] y ∈ s', Φ x y) = ([^ op set] y ∈ s', [^ op set] x ∈ s, Φ x y) :=
+  bigOpL_comm (fun _ x _ y => Φ x y) (toList s) (toList s')
+
+@[rocq_alias big_opS_opMS]
+theorem bigOpS_comm_mset {B MS : Type _} [FiniteMultiSet MS B] (Φ : A → B → M) (s : S) (X : MS) :
+    ([^ op set] x ∈ s, [^ op mset] y ∈ X, Φ x y) = ([^ op mset] y ∈ X, [^ op set] x ∈ s, Φ x y) :=
+  bigOpL_comm (fun _ x _ y => Φ x y) (toList s) (toList X)
+
 #rocq_ignore big_opS_ext "Merged into bigOpS_eq"
 
+#rocq_ignore big_opS_commute_L "Leibniz (=) variant; use BigOpS.hom"
+#rocq_ignore big_opS_commute1_L "Leibniz (=) variant; use BigOpS.hom_weak"
 #rocq_ignore big_opS_ne' "Use bigOpS_dist"
 #rocq_ignore big_opS_proper' "Use bigOpS_eq"
 
@@ -821,14 +1005,35 @@ theorem hom_weak {B : Type w} {MS' : Type _} [LawfulFiniteMultiSet MS' B] {R : M
 
 end Homomorphism
 
+/-! ### Commuting big operators -/
+
+@[rocq_alias big_opMS_opL]
+theorem bigOpMS_comm_list {B : Type _} (Φ : A → Nat → B → M) (X : MS) (l : List B) :
+    ([^ op mset] x ∈ X, [^ op list] k ↦ y ∈ l, Φ x k y) =
+    ([^ op list] k ↦ y ∈ l, [^ op mset] x ∈ X, Φ x k y) :=
+  bigOpL_comm (fun _ x k y => Φ x k y) (toList X) l
+
+@[rocq_alias big_opMS_opM]
+theorem bigOpMS_comm_map {B K : Type _} {M' : Type _ → Type _} [LawfulFiniteMap M' K]
+    (Φ : A → K → B → M) (X : MS) (m : M' B) :
+    ([^ op mset] x ∈ X, [^ op map] k ↦ y ∈ m, Φ x k y) =
+    ([^ op map] k ↦ y ∈ m, [^ op mset] x ∈ X, Φ x k y) :=
+  bigOpL_comm (fun _ x _ (ky : K × B) => Φ x ky.1 ky.2) (toList X) (toList m)
+
+@[rocq_alias big_opMS_opS]
+theorem bigOpMS_comm_set {B S : Type _} [FiniteSet S B] (Φ : A → B → M) (X : MS) (s : S) :
+    ([^ op mset] x ∈ X, [^ op set] y ∈ s, Φ x y) = ([^ op set] y ∈ s, [^ op mset] x ∈ X, Φ x y) :=
+  bigOpL_comm (fun _ x _ y => Φ x y) (toList X) (toList s)
+
+@[rocq_alias big_opMS_opMS]
+theorem bigOpMS_comm_mset {B MS' : Type _} [FiniteMultiSet MS' B] (Φ : A → B → M) (X : MS) (Y : MS') :
+    ([^ op mset] x ∈ X, [^ op mset] y ∈ Y, Φ x y) = ([^ op mset] y ∈ Y, [^ op mset] x ∈ X, Φ x y) :=
+  bigOpL_comm (fun _ x _ y => Φ x y) (toList X) (toList Y)
+
 #rocq_ignore big_opMS_ne' "Use bigOpMS_dist"
 #rocq_ignore big_opMS_proper' "Use bigOpMS_eq"
-#rocq_ignore big_opMS_opL "Proven at BI level (bigSepMS_comm_list); matches big_opS"
-#rocq_ignore big_opMS_opM "Proven at BI level (bigSepMS_comm_map); matches big_opS"
-#rocq_ignore big_opMS_opS "Proven at BI level (bigSepMS_comm_set); matches big_opS"
-#rocq_ignore big_opMS_opMS "Proven at BI level (bigSepMS_comm_mset); matches big_opS"
-#rocq_ignore big_opMS_commute_L "Leibniz (=) variant; use bigOpMS.hom"
-#rocq_ignore big_opMS_commute1_L "Leibniz (=) variant; use bigOpMS.hom_weak"
+#rocq_ignore big_opMS_commute_L "Leibniz (=) variant; use BigOpMS.hom"
+#rocq_ignore big_opMS_commute1_L "Leibniz (=) variant; use BigOpMS.hom_weak"
 
 end BigOpMS
 end

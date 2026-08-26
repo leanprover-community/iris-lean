@@ -434,6 +434,11 @@ theorem bigSepL_zip_seq {Φ : A × Nat → PROP} {n : Nat} {l : List A} :
     ([∗list] xy ∈ l.zipIdx n, Φ xy) ⊣⊢ [∗list] i ↦ x ∈ l, Φ (x, n + i) :=
   BiEntails.of_eq <| bigOpL_zipIdx_eq Φ n l
 
+@[rocq_alias big_sepL_zip_seqZ]
+theorem bigSepL_zip_seqZ {Φ : A × Int → PROP} {n : Int} {l : List A} :
+    ([∗list] xy ∈ List.zipIdxInt l n, Φ xy) ⊣⊢ [∗list] i ↦ x ∈ l, Φ (x, n + i) :=
+  BiEntails.of_eq <| bigOpL_zipIdxInt_eq Φ n l
+
 @[rocq_alias big_sepL_sep_zip]
 theorem bigSepL_sep_zip {B : Type _} {Φ : Nat → A → PROP} {Ψ : Nat → B → PROP}
     {l₁ : List A} {l₂ : List B} (hlen : l₁.length = l₂.length) :
@@ -477,17 +482,28 @@ theorem bigSepL_zip_with {B C : Type _} (f : A → B → C) {Φ : Nat → C → 
 
 @[rocq_alias big_sepL_sepL]
 theorem bigSepL_comm {B : Type _} (Φ : Nat → A → Nat → B → PROP) (l₁ : List A) (l₂ : List B) :
-    ([∗list] k1↦x1 ∈ l₁, [∗list] k2↦x2 ∈ l₂, Φ k1 x1 k2 x2) ⊣⊢
-      ([∗list] k2↦x2 ∈ l₂, [∗list] k1↦x1 ∈ l₁, Φ k1 x1 k2 x2) :=
-  match l₁ with
-  | [] => ⟨(BiEntails.of_eq bigOpL_const_unit_eq).2,
-          (BiEntails.of_eq bigOpL_const_unit_eq).1⟩
-  | _ :: _ =>
-    let ih := bigSepL_comm (fun i a j b => Φ (i + 1) a j b) _ l₂
-    ⟨(sep_mono_right ih.1).trans (BiEntails.of_eq (bigOpL_op_eq _ _ _)).2,
-     (BiEntails.of_eq (bigOpL_op_eq _ _ _)).1.trans (sep_mono_right ih.2)⟩
+    ([∗list] k₁ ↦ x₁ ∈ l₁, [∗list] k₂ ↦ x₂ ∈ l₂, Φ k₁ x₁ k₂ x₂) ⊣⊢
+      ([∗list] k₂ ↦ x₂ ∈ l₂, [∗list] k₁ ↦ x₁ ∈ l₁, Φ k₁ x₁ k₂ x₂) :=
+  BiEntails.of_eq <| bigOpL_comm Φ l₁ l₂
 
--- TODO: missing and blocked: big_sepL_sepM, big_sepL_sepMS, big_sepL_sepS
+@[rocq_alias big_sepL_sepM]
+theorem bigSepL_comm_map {B K : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
+    (Φ : Nat → A → K → B → PROP) (l : List A) (m : M B) :
+    ([∗list] k₁ ↦ x₁ ∈ l, [∗map] k₂ ↦ x₂ ∈ m, Φ k₁ x₁ k₂ x₂) ⊣⊢
+      ([∗map] k₂ ↦ x₂ ∈ m, [∗list] k₁ ↦ x₁ ∈ l, Φ k₁ x₁ k₂ x₂) :=
+  BiEntails.of_eq <| bigOpL_comm_map Φ l m
+
+@[rocq_alias big_sepL_sepS]
+theorem bigSepL_comm_set {B S : Type _} [FiniteSet S B] (Φ : Nat → A → B → PROP)
+    (l : List A) (X : S) :
+    ([∗list] k ↦ x ∈ l, [∗set] y ∈ X, Φ k x y) ⊣⊢ ([∗set] y ∈ X, [∗list] k ↦ x ∈ l, Φ k x y) :=
+  BiEntails.of_eq <| bigOpL_comm_set Φ l X
+
+@[rocq_alias big_sepL_sepMS]
+theorem bigSepL_comm_mset {B MS : Type _} [FiniteMultiSet MS B] (Φ : Nat → A → B → PROP)
+    (l : List A) (X : MS) :
+    ([∗list] k ↦ x ∈ l, [∗mset] y ∈ X, Φ k x y) ⊣⊢ ([∗mset] y ∈ X, [∗list] k ↦ x ∈ l, Φ k x y) :=
+  BiEntails.of_eq <| bigOpL_comm_mset Φ l X
 
 end BigSepL
 

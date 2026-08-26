@@ -157,21 +157,25 @@ theorem bigSepM2_proper_2 [HasEquiv A] [HasEquiv B]
   obtain ⟨hx1', hx2'⟩ := get?_zipWith_prod_eq_some hxy'
   exact h hx1 hx1' (by grind) hx2 hx2' (by grind)
 
+@[rocq_alias big_sepM2_ne']
 theorem bigSepM2_dist_of_forall (n : Nat) (Φ Ψ : K → A → B → PROP) (m1 : M A) (m2 : M B)
     (h : ∀ {k x1 x2}, Φ k x1 x2 ≡{n}≡ Ψ k x1 x2) :
     ([∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2) ≡{n}≡ [∗map] k ↦ x1;x2 ∈ m1;m2, Ψ k x1 x2 :=
   bigSepM2_dist Φ Ψ m1 m2 n fun _ _ => h
 
+@[rocq_alias big_sepM2_mono']
 theorem bigSepM2_mono_of_forall (Φ Ψ : K → A → B → PROP) (m1 : M A) (m2 : M B)
     (h : ∀ {k x1 x2}, Φ k x1 x2 ⊢ Ψ k x1 x2) :
     ([∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2) ⊢ [∗map] k ↦ x1;x2 ∈ m1;m2, Ψ k x1 x2 :=
   bigSepM2_mono fun _ _ => h
 
+@[rocq_alias big_sepM2_flip_mono']
 theorem bigSepM2_flip_mono (Φ Ψ : K → A → B → PROP) (m1 : M A) (m2 : M B)
     (h : ∀ {k x1 x2}, Ψ k x1 x2 ⊢ Φ k x1 x2) :
     ([∗map] k ↦ x1;x2 ∈ m1;m2, Ψ k x1 x2) ⊢ [∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2 :=
   bigSepM2_mono fun _ _ => h
 
+@[rocq_alias big_sepM2_proper']
 theorem bigSepM2_eqv_of_forall (Φ Ψ : K → A → B → PROP) (m1 : M A) (m2 : M B)
     (h : ∀ {k x1 x2}, Φ k x1 x2 ⊣⊢ Ψ k x1 x2) :
     ([∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2) ⊣⊢ [∗map] k ↦ x1;x2 ∈ m1;m2, Ψ k x1 x2 :=
