@@ -43,6 +43,8 @@ def Arg : Tele.{u} → Type u
 @[match_pattern] abbrev Arg.cons {b : X → Tele.{u}} (x : X) (xs : (b x).Arg) :
     (Tele.cons b).Arg := ⟨x, xs⟩
 
+instance : CoeSort Tele.{u} (Type u) := ⟨Tele.Arg⟩
+
 def Fun : (TT : Tele.{u}) → (TT.Arg → Type v) → Type (max u v)
   | .nil, T => ULift (T .nil)
   | .cons b, T => (x : _) → (b x).Fun fun xs => T (.cons x xs)
@@ -153,6 +155,18 @@ meta def delabLam : Delab :=
   delabQuant 3 pure
     (fun x rest body => `(λ.. $x:ident $[$rest:ident]*, $body))
     (fun | `(λ.. $y:ident $[$ys:ident]*, $body) => some (y, ys, body) | _ => none)
+
+syntax:max "[" &"tele" (ppSpace explicitBinders)? "]" : term
+syntax:max "[" &"tele_arg" (ppSpace term),* "]" : term
+
+macro_rules
+  | `([tele $[$bs]?]) => return ← expandLiteral bs
+  | `([tele_arg $xs,*]) => do
+    let xs := xs.getElems
+    if xs.isEmpty then
+      `((Tele.Arg.nil : Tele.Arg (Tele.nil.{0})))
+    else
+      xs.foldrM (fun x acc => `(Tele.Arg.cons $x $(⟨acc⟩))) (← `(Tele.Arg.nil))
 
 /-- Collapse a non-dependent telescopic function into a single value, using `step` to introduce
 one binder at a time. -/
