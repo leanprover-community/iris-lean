@@ -378,8 +378,6 @@ theorem inv_combine_dup_l (N : Namespace) (P Q : IProp GF) :
   imod HI1 $$ %E Hsub with ⟨HP, HI1⟩
   ihave ⟨HP1, HP2⟩ : ▷ P ∗ ▷ P $$ [HP]
   · iapply later_sep; inext; iapply HPP $$ HP
-  sorry
-  /-
   imod HI1 $$ HP2 with _
   imod HI2 $$ %E Hsub with ⟨HQ, HI2⟩
   imodintro
@@ -388,7 +386,6 @@ theorem inv_combine_dup_l (N : Namespace) (P Q : IProp GF) :
   iintro ⟨_, HQ⟩
   imod HI2 $$ HQ with _
   imodintro; iassumption
-  -/
 
 end Combination
 

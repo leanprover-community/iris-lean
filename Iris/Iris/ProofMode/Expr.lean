@@ -165,7 +165,7 @@ def Hyps.add {prop : Q(Type u)} (bi : Q(BI $prop))
   match h with
   -- Adding a hypothesis to `emp` creates a `.hyp` node instead of a `.sep` node
   | .emp _ => ⟨_, .mkHyp bi name ivar p ty, q(emp_sep)⟩
-  | _ => ⟨_, .mkSep (.mkHyp bi name ivar p ty) h, q(sep_comm)⟩
+  | _ => ⟨_, .mkSep h (.mkHyp bi name ivar p ty), q(.rfl)⟩
 
 partial def parseHyps? {prop : Q(Type u)} (bi : Q(BI $prop)) (expr : Expr) :
     Option ((s : Q($prop)) × Hyps bi s) := do
@@ -215,13 +215,13 @@ partial def Hyps.spatialIVarIds {u prop bi} :
     ∀ {s}, @Hyps u prop bi s → List IVarId
   | _, .emp _ => []
   | _, .hyp _ _ ivar p _ _ => if isTrue p then [] else [ivar]
-  | _, .sep _ _ _ _ lhs rhs => rhs.spatialIVarIds ++ lhs.spatialIVarIds
+  | _, .sep _ _ _ _ lhs rhs => lhs.spatialIVarIds ++ rhs.spatialIVarIds
 
 partial def Hyps.intuitionisticIVarIds {u prop bi} :
     ∀ {s}, @Hyps u prop bi s → List IVarId
   | _, .emp _ => []
   | _, .hyp _ _ ivar p _ _ => if isTrue p then [ivar] else []
-  | _, .sep _ _ _ _ lhs rhs => rhs.intuitionisticIVarIds ++ lhs.intuitionisticIVarIds
+  | _, .sep _ _ _ _ lhs rhs => lhs.intuitionisticIVarIds ++ rhs.intuitionisticIVarIds
 
 /--
   Given any hypotheses `hyps` representing `e`, filter in all spatial hypotheses
@@ -248,9 +248,9 @@ def Hyps.buildAccuProof {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
           ⟨ty, q((sep_mono_right $pf).trans sep_emp.mp)⟩
         else ⟨q(iprop($ty ∗ $spatialProps)), q(sep_mono_right $pf)⟩
     | .sep _ _ _ _ lhs rhs =>
-      let ⟨spatialPropsR, pfR⟩ := buildAccuProofAux lhs spatialProps pf
-      let ⟨spatialPropsLR, pfLR⟩ := buildAccuProofAux rhs spatialPropsR pfR
-      ⟨q($spatialPropsLR), q(sorry)⟩
+      let ⟨spatialPropsR, pfR⟩ := buildAccuProofAux rhs spatialProps pf
+      let ⟨spatialPropsLR, pfLR⟩ := buildAccuProofAux lhs spatialPropsR pfR
+      ⟨q($spatialPropsLR), q(sep_assoc.mp.trans $pfLR)⟩
 
 variable (oldIVar : IVarId) (new : Name) {prop : Q(Type u)} {bi : Q(BI $prop)} in
 def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)

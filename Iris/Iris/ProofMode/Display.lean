@@ -61,8 +61,8 @@ where
     match hyps with
     | .emp _ => pure acc
     | .sep _ _ _ _ lhs rhs =>
-      let acc ← withNaryArg 2 <| delabHypotheses lhs acc
-      withNaryArg 3 <| delabHypotheses rhs acc
+      let acc ← withNaryArg 3 <| delabHypotheses rhs acc
+      withNaryArg 2 <| delabHypotheses lhs acc
     | .hyp _ name ivar p ty _ =>
       let (map, acc) := acc
       -- For printing the name of the hypothesis, `✝` if anonymous
