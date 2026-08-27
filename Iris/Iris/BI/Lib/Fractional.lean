@@ -18,6 +18,8 @@ open Iris.Std BI OFE ProofMode
 class Fractional [BI PROP] (Φ : Qp → PROP) where
   fractional p q : Φ (p + q) ⊣⊢ Φ p ∗ Φ q
 
+#rocq_ignore Fractional_proper "OFE equivalence is Lean equality; use `congrArg`."
+
 @[ipm_class, rocq_alias AsFractional]
 class AsFractional {PROP : Type u} [BI PROP] (P : PROP) (ioΦ : InOut)
     (Φ : semiOutParamIPM ioΦ (Qp → PROP)) (ioq : InOut)
@@ -106,6 +108,34 @@ instance (priority := default - 10) combineSepAsFractionalHalf
     _ ⊢ Φ (q.half + q.half) := (hP.as_fractional_fractional.fractional q.half q.half).mpr
     _ ⊢ Φ q                 := Qp.half_add_half _ ▸ .rfl
 
+/-! ## Fractional and logical connectives -/
+
+@[rocq_alias persistent_fractional]
+instance (priority := default - 10) persistent_fractional
+    [Persistent P] [TCOr (Affine P) (Absorbing P)] :
+    Fractional (fun _ => P) where
+  fractional _ _ := persistent_sep_dup
+
+@[rocq_alias fractional_sep]
+instance fractional_sep {Ψ : Qp → PROP} [hΦ : Fractional Φ] [hΨ : Fractional Ψ] :
+    Fractional (fun q => iprop(Φ q ∗ Ψ q)) where
+  fractional p q := (sep_congr (hΦ.fractional p q) (hΨ.fractional p q)).trans sep_sep_sep_comm
+
+@[rocq_alias fractional_embed]
+instance fractional_embed {PROP' : Type _} [BI PROP'] [BiEmbed PROP PROP'] [hΦ : Fractional Φ] :
+    Fractional (fun q => (iprop(⎡Φ q⎤) : PROP')) where
+  fractional p q := calc
+    (iprop(⎡Φ (p + q)⎤) : PROP')
+    _ ⊣⊢ ⎡Φ p ∗ Φ q⎤   := .ofMono embed_mono (hΦ.fractional p q)
+    _ ⊣⊢ ⎡Φ p⎤ ∗ ⎡Φ q⎤ := embed_sep ..
+
+@[rocq_alias as_fractional_embed]
+instance as_fractional_embed {PROP' : Type _} [BI PROP'] [BiEmbed PROP PROP']
+    [h : AsFractional P ioΦ Φ ioq q] :
+    AsFractional (iprop(⎡P⎤) : PROP') ioΦ (fun q => iprop(⎡Φ q⎤)) ioq q where
+  as_fractional := .ofMono embed_mono h.as_fractional
+  as_fractional_fractional := fractional_embed (hΦ := h.as_fractional_fractional)
+
 @[rocq_alias fractional_big_sepL]
 instance fractional_bigSepL {A : Type _} {l : List A} {Ψ : Nat → A → Qp → PROP}
     [∀ k x, Fractional (Ψ k x)] : Fractional (fun q => iprop([∗list] k ↦ x ∈ l, Ψ k x q)) where
@@ -114,6 +144,36 @@ instance fractional_bigSepL {A : Type _} {l : List A} {Ψ : Nat → A → Qp →
       BigSepL.bigSepL_sep_eqv.1,
      BigSepL.bigSepL_sep_eqv.2.trans
       (BigSepL.bigSepL_mono_of_forall fun {_ _} => (Fractional.fractional p q).2)⟩
+
+@[rocq_alias fractional_big_sepL2]
+instance fractional_bigSepL2 {A B : Type _} {l1 : List A} {l2 : List B}
+    {Ψ : Nat → A → B → Qp → PROP} [∀ k x1 x2, Fractional (Ψ k x1 x2)] :
+    Fractional (fun q => iprop([∗list] k ↦ x1;x2 ∈ l1;l2, Ψ k x1 x2 q)) where
+  fractional p q :=
+    (BigSepL2.bigSepL2_eqv_of_forall_eqv fun {_ _ _} => Fractional.fractional p q).trans
+      BigSepL2.bigSepL2_sep_eqv
+
+@[rocq_alias fractional_big_sepM]
+instance fractional_bigSepM {K V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K] {m : M V}
+    {Ψ : K → V → Qp → PROP} [∀ k x, Fractional (Ψ k x)] :
+    Fractional (fun q => iprop([∗map] k ↦ x ∈ m, Ψ k x q)) where
+  fractional p q := .of_eq <|
+    (BigSepM.bigSepM_eq_of_forall_eq fun {_ _} => (Fractional.fractional p q).to_eq).trans
+      BigSepM.bigSepM_sep_eq
+
+@[rocq_alias fractional_big_sepS]
+instance fractional_bigSepS {S A : Type _} [LawfulFiniteSet S A] {X : S} {Ψ : A → Qp → PROP}
+    [∀ x, Fractional (Ψ x)] : Fractional (fun q => iprop([∗set] x ∈ X, Ψ x q)) where
+  fractional p q :=
+    (BigSepS.bigSepS_eqv fun _ => Fractional.fractional p q).trans BigSepS.bigSepS_sep
+
+@[rocq_alias fractional_big_sepMS]
+instance fractional_bigSepMS {MS A : Type _} [LawfulFiniteMultiSet MS A] {X : MS}
+    {Ψ : A → Qp → PROP} [∀ x, Fractional (Ψ x)] :
+    Fractional (fun q => iprop([∗mset] x ∈ X, Ψ x q)) where
+  fractional p q :=
+    (BigSepMS.bigSepMS_eqv fun _ => Fractional.fractional p q).trans BigSepMS.bigSepMS_sep
+
 @[rocq_alias frame_fractional_qp_add_l]
 instance frameFractionalQpAddLeft (q q' : Qp) : FrameFractionalQp q (q + q') q' := ⟨rfl⟩
 
