@@ -50,7 +50,7 @@ theorem wp_lift_step_fupd (h : toVal e₁ = none) :
   ihave Hcred := lc_weaken 1 (Nat.le_add_left 1 (ι.numLatersPerStep ns)) $$ Hcred
   refine .trans ?_ <| step_fupd_mono <|
     (laterN_intro _).trans <| step_fupdN_intro Std.LawfulSet.empty_subset
-  iintro ⟨Hwp, Hcred⟩
+  iintro ⟨Hcred, Hwp⟩
   imod Hwp $$ %_ %_ %_ %Hstep Hcred with Hwp
   iapply step_fupd_intro Std.LawfulSet.empty_subset
   iassumption
