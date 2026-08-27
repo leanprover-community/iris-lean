@@ -157,7 +157,7 @@ elab "iframe " pats:(colGt ppSpace selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 
   ProofModeM.runTactic `iframe λ mvar { hyps, goal, .. } => do
-    let pats ← SelPat.resolve hyps pats
+    let pats ← SelPat.resolve hyps pats (reverseWildcardOrder := true)
 
     let res ← iFrame hyps goal pats
     mvar.assign (← res.finish (addBIGoal · ·))
