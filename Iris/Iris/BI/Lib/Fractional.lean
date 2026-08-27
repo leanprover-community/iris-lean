@@ -111,7 +111,8 @@ instance (priority := default - 10) combineSepAsFractionalHalf
 /-! ## Fractional and logical connectives -/
 
 @[rocq_alias persistent_fractional]
-instance persistent_fractional [Persistent P] [TCOr (Affine P) (Absorbing P)] :
+instance (priority := default - 10) persistent_fractional
+    [Persistent P] [TCOr (Affine P) (Absorbing P)] :
     Fractional (fun _ => P) where
   fractional _ _ := persistent_sep_dup
 

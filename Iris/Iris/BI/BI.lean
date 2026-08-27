@@ -187,16 +187,6 @@ variable {PROP : Type _} [BIBase PROP] [COFE PROP]
   (entails_refl : ∀ {P : PROP}, P ⊢ P)
   (entails_trans : ∀ {P Q R : PROP}, (P ⊢ Q) → (Q ⊢ R) → P ⊢ R)
   (equiv_iff : ∀ {P Q : PROP}, (P = Q) ↔ P ⊣⊢ Q)
-  (and_ne : NonExpansive₂ (and (PROP := PROP)))
-  (or_ne : NonExpansive₂ (or (PROP := PROP)))
-  (imp_ne : NonExpansive₂ (imp (PROP := PROP)))
-  (sForall_ne : ∀ {n} {P₁ P₂ : PROP → Prop},
-    liftRel (· ≡{n}≡ ·) P₁ P₂ → sForall P₁ ≡{n}≡ sForall P₂)
-  (sExists_ne : ∀ {n} {P₁ P₂ : PROP → Prop},
-    liftRel (· ≡{n}≡ ·) P₁ P₂ → sExists P₁ ≡{n}≡ sExists P₂)
-  (sep_ne : NonExpansive₂ (sep (PROP := PROP)))
-  (wand_ne : NonExpansive₂ (wand (PROP := PROP)))
-  (later_ne : NonExpansive (later (PROP := PROP)))
   (pure_intro : ∀ {φ : Prop} {P : PROP}, φ → P ⊢ ⌜φ⌝)
   (pure_elim' : ∀ {φ : Prop} {P : PROP}, (φ → True ⊢ P) → ⌜φ⌝ ⊢ P)
   (and_elim_l : ∀ {P Q : PROP}, P ∧ Q ⊢ P)
@@ -234,14 +224,18 @@ def ofPersistentlyDiscrete : BI PROP where
   entails_refl := entails_refl
   entails_trans := entails_trans
   equiv_iff := equiv_iff
-  and_ne := and_ne
-  or_ne := or_ne
-  imp_ne := imp_ne
-  sForall_ne := sForall_ne
-  sExists_ne := sExists_ne
-  sep_ne := sep_ne
-  wand_ne := wand_ne
-  later_ne := later_ne
+  and_ne := ⟨fun {_ _ _} h₁ {_ _} h₂ => .of_eq (by rw [discrete h₁, discrete h₂])⟩
+  or_ne := ⟨fun {_ _ _} h₁ {_ _} h₂ => .of_eq (by rw [discrete h₁, discrete h₂])⟩
+  imp_ne := ⟨fun {_ _ _} h₁ {_ _} h₂ => .of_eq (by rw [discrete h₁, discrete h₂])⟩
+  sForall_ne h := .of_eq <| congrArg _ <| liftRel_eq.mp
+    ⟨fun a ha => (h.1 a ha).imp fun _ hb => ⟨hb.1, discrete hb.2⟩,
+     fun b hb => (h.2 b hb).imp fun _ ha => ⟨ha.1, discrete ha.2⟩⟩
+  sExists_ne h := .of_eq <| congrArg _ <| liftRel_eq.mp
+    ⟨fun a ha => (h.1 a ha).imp fun _ hb => ⟨hb.1, discrete hb.2⟩,
+     fun b hb => (h.2 b hb).imp fun _ ha => ⟨ha.1, discrete ha.2⟩⟩
+  sep_ne := ⟨fun {_ _ _} h₁ {_ _} h₂ => .of_eq (by rw [discrete h₁, discrete h₂])⟩
+  wand_ne := ⟨fun {_ _ _} h₁ {_ _} h₂ => .of_eq (by rw [discrete h₁, discrete h₂])⟩
+  later_ne := ⟨fun {_ _ _} h => .of_eq (congrArg _ (discrete h))⟩
   pure_intro := pure_intro
   pure_elim' := pure_elim'
   and_elim_l := and_elim_l

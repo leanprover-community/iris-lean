@@ -347,12 +347,10 @@ theorem BigSepM.bigSepM_bupd [LawfulFiniteMap M' K] (Φ : K → V → PROP) {l :
 @[rocq_alias big_sepM2_bupd]
 theorem BigSepM2.bigSepM2_bupd [LawfulFiniteMap M' K] (Φ : K → V → W → PROP)
     {m1 : M' V} {m2 : M' W} :
-    ([∗map] k↦x;y ∈ m1;m2, |==> Φ k x y) ⊢ |==> [∗map] k↦x;y ∈ m1;m2, Φ k x y := by
-  refine BigSepM2.bigSepM2_alt.mp.trans ?_
-  refine persistent_and_affinely_sep_left.mp.trans ?_
-  refine .trans ?_ (mono BigSepM2.bigSepM2_alt.mpr)
-  refine .trans ?_ (mono persistent_and_affinely_sep_left.mpr)
-  exact .trans (sep_mono_right (BigSepM.bigSepM_bupd _)) bupd_frame_left
+    ([∗map] k↦x;y ∈ m1;m2, |==> Φ k x y) ⊢ |==> [∗map] k↦x;y ∈ m1;m2, Φ k x y :=
+  BigSepM2.bigSepM2_alt.mp.trans <| pure_elim_left fun hdom =>
+    (BigSepM.bigSepM_bupd _).trans <| mono <|
+      (and_intro (pure_intro hdom) .rfl).trans BigSepM2.bigSepM2_alt.mpr
 
 @[rocq_alias big_sepS_bupd]
 theorem BigSepS.bigSepS_bupd [LawfulFiniteSet S A] (Φ : A → PROP) (X : S) :
@@ -629,12 +627,10 @@ theorem BigSepL2.bigSepL2_fupd {A B : Type _} E (Φ : Nat → A → B → PROP) 
 @[rocq_alias big_sepM2_fupd]
 theorem BigSepM2.bigSepM2_fupd [LawfulFiniteMap M' K] E (Φ : K → V → W → PROP)
     (m1 : M' V) (m2 : M' W) :
-    ([∗map] k↦x;y ∈ m1;m2, |={E}=> Φ k x y) ⊢ |={E}=> [∗map] k↦x;y ∈ m1;m2, Φ k x y := by
-  refine BigSepM2.bigSepM2_alt.mp.trans ?_
-  refine persistent_and_affinely_sep_left.mp.trans ?_
-  refine .trans ?_ (mono BigSepM2.bigSepM2_alt.mpr)
-  refine .trans ?_ (mono persistent_and_affinely_sep_left.mpr)
-  exact .trans (sep_mono_right (BigSepM.bigSepM_fupd E _ _)) fupd_frame_left
+    ([∗map] k↦x;y ∈ m1;m2, |={E}=> Φ k x y) ⊢ |={E}=> [∗map] k↦x;y ∈ m1;m2, Φ k x y :=
+  BigSepM2.bigSepM2_alt.mp.trans <| pure_elim_left fun hdom =>
+    (BigSepM.bigSepM_fupd E _ _).trans <| mono <|
+      (and_intro (pure_intro hdom) .rfl).trans BigSepM2.bigSepM2_alt.mpr
 
 @[rocq_alias big_sepS_fupd]
 theorem BigSepS.bigSepS_fupd [LawfulFiniteSet S A] E (Φ : A → PROP) (X : S) :
@@ -646,8 +642,8 @@ theorem BigSepMS.bigSepMS_fupd [LawfulFiniteMultiSet MS A] E (Φ : A → PROP) (
     ([∗mset] x ∈ X, |={E}=> Φ x) ⊢ |={E}=> [∗mset] x ∈ X, Φ x :=
   Algebra.BigOpMS.hom (R := flip Entails) (fupd_sep_homomorphism E) Φ X
 
-#rocq_ignore fupd_mono' "Use BIFUpdate.mono."
-#rocq_ignore fupd_flip_mono' "Use BIFUpdate.mono."
+#rocq_ignore fupd_mono' "Use fupd_mono."
+#rocq_ignore fupd_flip_mono' "Use fupd_mono."
 #rocq_ignore fupd_proper "Derivable from BIFUpdate.ne with NonExpansive.eqv"
 
 end FUpdLaws
