@@ -84,9 +84,8 @@ theorem own_valid {γ : GName} {q1 q2 : Qp} :
     ⊢@{IProp GF} own γ q1 -∗ own γ q2 -∗ ⌜(q1 + q2).val ≤ 1⌝ := by
   unfold own
   iintro H1 H2
-  ihave H := iOwn_op $$ [H1 H2]; iframe
-  ihave H := iOwn_cmraValid $$ H
-  icases internalCmraValid_discrete $$ H with %H
+  icombine H1 H2 as H
+  ihave %H := iOwn_cmraValid $$ H
   ipureintro
   exact H.2
 

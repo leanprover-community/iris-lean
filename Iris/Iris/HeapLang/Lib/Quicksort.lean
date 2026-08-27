@@ -201,10 +201,10 @@ theorem quicksort_spec l ls :
     icases Hl with ⟨%l, %tl, %rfl, Hpt, Hl⟩
     wp_load
     wp_smart_apply partition_spec $$ [$] with %l1 %l2 ⟨Hl1, Hl2⟩
-    wp_smart_apply IH $$ [$] with %l1' %ls1' ⟨Hl1, %_, %_⟩
-    wp_smart_apply IH $$ [$] with %l2' %ls2' ⟨Hl2, %_, %_⟩
-    wp_smart_apply cons_spec $$ Hl2 with %_ _
-    wp_smart_apply append_spec $$ [$] with %_ _
+    wp_smart_apply IH $$ [$Hl1] with %l1' %ls1' ⟨Hl1, %_, %_⟩
+    wp_smart_apply IH $$ [$Hl2] with %l2' %ls2' ⟨Hl2, %_, %_⟩
+    wp_smart_apply cons_spec $$ Hl2 with %_ Hcons
+    wp_smart_apply append_spec $$ [$Hl1 $Hcons] with %_ _
     iapply HΦ; iframe; isplit <;> ipureintro
     · have : ls2'.all (head < ·) := by grind
       grind [pairwise_cons]

@@ -170,7 +170,9 @@ private def finishSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     return ⟨el, hypsl, q($(pf').mp.trans <| sep_mono_right $pf'')⟩
   -- Auto-framing: `[$]`, `[#$]` and `[>$]`
   | none =>
-    let res ← iFrame hyps goal <| ← SelPat.resolve hyps [.spatial, .intuitionistic]
+    let res ←
+      (SelPat.resolve hyps [.spatial, .intuitionistic] .bottomToTop) >>=
+      (iFrame hyps goal ·)
     let ⟨e', hyps', pf⟩ ← res.finishClose
     return ⟨e', hyps', pf⟩
 
