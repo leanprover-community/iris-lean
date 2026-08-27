@@ -71,7 +71,7 @@ structure SelTarget where
   Resolve selection patterns to concrete proofmode hypotheses (`.ipm`) and pure
   local hypotheses (`.pure`).
 -/
-def SelPat.resolveOne (hyps : Hyps bi e) (reverseWildcardOrder : Bool) :
+def SelPat.resolveOne (hyps : Hyps bi e) (wildcardOrder : HypsOrder) :
     SelPat → ProofModeM (List SelTarget)
   | .ident name => do
       let ivar ← hyps.findWithInfo name
@@ -81,11 +81,11 @@ def SelPat.resolveOne (hyps : Hyps bi e) (reverseWildcardOrder : Bool) :
       addLocalVarInfo name (← getLCtx) ldecl.toExpr ldecl.type
       return [⟨.pure ldecl.fvarId, true⟩]
   | .intuitionistic =>
-      let ivars := hyps.intuitionisticIVarIds
-      return (if reverseWildcardOrder then ivars.reverse else ivars).map (⟨.ipm ·, false⟩)
+      let ivars := hyps.intuitionisticIVarIds wildcardOrder
+      return ivars.map (⟨.ipm ·, false⟩)
   | .spatial =>
-      let ivars := hyps.spatialIVarIds
-      return (if reverseWildcardOrder then ivars.reverse else ivars).map (⟨.ipm ·, false⟩)
+      let ivars := hyps.spatialIVarIds wildcardOrder
+      return ivars.map (⟨.ipm ·, false⟩)
   | .pure => do
       -- `%` selects user-facing Lean pure assumptions, so we keep only `Prop` hypotheses.
       let mut hyps := #[]
@@ -95,7 +95,10 @@ def SelPat.resolveOne (hyps : Hyps bi e) (reverseWildcardOrder : Bool) :
         if ! (← isProp ldecl.type) then
           continue
         hyps := hyps.push (⟨.pure ldecl.fvarId, false⟩)
-      return (if reverseWildcardOrder then hyps.reverse else hyps).toList
+      hyps := match wildcardOrder with
+      | .topToBottom => hyps
+      | .bottomToTop => hyps.reverse
+      return hyps.toList
 
 /--
   Resolve a list of selection targets.
@@ -104,10 +107,9 @@ def SelPat.resolveOne (hyps : Hyps bi e) (reverseWildcardOrder : Bool) :
   from the expansion of `∗`, but if the user specifies `HP` explicitly
   twice, it should be kept. This is for example important for `icombine`.
 -/
-def SelPat.resolve (hyps : Hyps bi e) (pats : List SelPat)
-    (reverseWildcardOrder : Bool := false) :
+def SelPat.resolve (hyps : Hyps bi e) (pats : List SelPat) (wildcardOrder : HypsOrder) :
     ProofModeM (List SelTarget) := do
-  return (← pats.flatMapM (SelPat.resolveOne hyps reverseWildcardOrder)).eraseDupsBy
+  return (← pats.flatMapM (SelPat.resolveOne hyps wildcardOrder)).eraseDupsBy
     (λ snd fst => snd.kind == fst.kind && fst.explicit && !snd.explicit)
 
 end

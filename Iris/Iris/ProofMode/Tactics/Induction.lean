@@ -172,7 +172,7 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (parsedAlts : Option Alts) (altRecName : Option Name) (genSelTargets : List SelTarget) :
     ProofModeM Q($e ⊢ $goal) := do
   let targets := genSelTargets ++
-    (hyps.spatialIVarIds.map ({ kind := .ipm ·, explicit := false })).filter
+    ((hyps.spatialIVarIds .topToBottom).map ({ kind := .ipm ·, explicit := false })).filter
       (not <| (genSelTargets.map (·.kind)).contains ·.kind)
 
   -- Find the recursor name and constructor names of the inductive datatype
@@ -385,7 +385,7 @@ elab_rules : tactic
       let genSelTargets ← do
         -- Parse the selection patterns for generalising hypotheses
         let parsedGenSelPats ← liftMacroM <| SelPat.parse genSelPats
-        let genSelTargets ← SelPat.resolve hyps parsedGenSelPats
+        let genSelTargets ← SelPat.resolve hyps parsedGenSelPats .topToBottom
         -- Check for dependencies with the hypotheses in the selection targets
         checkDependentHyps hyps genSelTargets fvar genSelPats
           (fun pats => `(tactic| iinduction $x $[using $r]? generalizing $pats* $[$alts]?))
@@ -414,7 +414,7 @@ elab_rules : tactic
         | some genSelPats =>
           -- Parse the selection patterns provided by the tactic user
           let parsedGenSelPats ← liftMacroM <| SelPat.parse genSelPats
-          let genSelTargets ← SelPat.resolve hyps parsedGenSelPats
+          let genSelTargets ← SelPat.resolve hyps parsedGenSelPats .topToBottom
           -- Include dependent hypotheses as well
           mkGenSelTargets genSelTargets
 

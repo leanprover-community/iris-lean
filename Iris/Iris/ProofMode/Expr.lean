@@ -211,17 +211,28 @@ partial def Hyps.getDecl? {u prop bi} (ivar : IVarId) {s}:
 def Hyps.getUserName? {u prop bi} (ivar : IVarId) (h : @Hyps u prop bi s) : Option Name :=
   h.getDecl? ivar |>.map (·.1)
 
+/-- Indicates whether hypotheses should be in the same order as in the context or in reverse. -/
+inductive HypsOrder where
+  | topToBottom
+  | bottomToTop
+
 partial def Hyps.spatialIVarIds {u prop bi} :
-    ∀ {s}, @Hyps u prop bi s → List IVarId
-  | _, .emp _ => []
-  | _, .hyp _ _ ivar p _ _ => if isTrue p then [] else [ivar]
-  | _, .sep _ _ _ _ lhs rhs => lhs.spatialIVarIds ++ rhs.spatialIVarIds
+    ∀ {s}, @Hyps u prop bi s → HypsOrder → List IVarId
+  | _, .emp _, _ => []
+  | _, .hyp _ _ ivar p _ _, _ => if isTrue p then [] else [ivar]
+  | _, .sep _ _ _ _ lhs rhs, HypsOrder.topToBottom =>
+    lhs.spatialIVarIds .topToBottom ++ rhs.spatialIVarIds .topToBottom
+  | _, .sep _ _ _ _ lhs rhs, HypsOrder.bottomToTop =>
+    rhs.spatialIVarIds .bottomToTop ++ lhs.spatialIVarIds .bottomToTop
 
 partial def Hyps.intuitionisticIVarIds {u prop bi} :
-    ∀ {s}, @Hyps u prop bi s → List IVarId
-  | _, .emp _ => []
-  | _, .hyp _ _ ivar p _ _ => if isTrue p then [ivar] else []
-  | _, .sep _ _ _ _ lhs rhs => lhs.intuitionisticIVarIds ++ rhs.intuitionisticIVarIds
+    ∀ {s}, @Hyps u prop bi s  → HypsOrder → List IVarId
+  | _, .emp _, _ => []
+  | _, .hyp _ _ ivar p _ _, _ => if isTrue p then [ivar] else []
+  | _, .sep _ _ _ _ lhs rhs, .topToBottom =>
+    lhs.intuitionisticIVarIds .topToBottom ++ rhs.intuitionisticIVarIds .topToBottom
+  | _, .sep _ _ _ _ lhs rhs, .bottomToTop =>
+    rhs.intuitionisticIVarIds .bottomToTop ++ lhs.intuitionisticIVarIds .bottomToTop
 
 /--
   Given any hypotheses `hyps` representing `e`, filter in all spatial hypotheses

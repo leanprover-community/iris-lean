@@ -171,7 +171,7 @@ private def finishSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   -- Auto-framing: `[$]`, `[#$]` and `[>$]`
   | none =>
     let res ←
-      (SelPat.resolve hyps [.spatial, .intuitionistic] (reverseWildcardOrder := true)) >>=
+      (SelPat.resolve hyps [.spatial, .intuitionistic] .bottomToTop) >>=
       (iFrame hyps goal ·)
     let ⟨e', hyps', pf⟩ ← res.finishClose
     return ⟨e', hyps', pf⟩
