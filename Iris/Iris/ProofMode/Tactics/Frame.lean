@@ -157,6 +157,7 @@ elab "iframe " pats:(colGt ppSpace selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 
   ProofModeM.runTactic `iframe λ mvar { hyps, goal, .. } => do
+    -- .bottomToTop since we want to frame the most recently introduced hypotheses first, matching Iris-Rocq
     let pats ← SelPat.resolve hyps pats .bottomToTop
 
     let res ← iFrame hyps goal pats
