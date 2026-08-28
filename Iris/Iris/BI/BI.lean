@@ -179,3 +179,123 @@ attribute [rocq_alias bi_cofe] BI.toCOFE
 #rocq_ignore bi_ofeO "No coercion required in Lean, use BI.toCOFE.toOFE instead"
 #rocq_ignore bi.pure_ne "No Proper type class in Lean"
 #rocq_ignore bi_rewrite_relation "Rocq-specific setoid-rewriting infrastructure"
+#rocq_ignore bi_later_mixin_id "BiLaterMixin with trivial later has trivial proofs regarding later"
+
+section PersistentlyDiscrete
+
+variable {PROP : Type _} [BIBase PROP] [COFE PROP]
+  (entails_refl : ∀ {P : PROP}, P ⊢ P)
+  (entails_trans : ∀ {P Q R : PROP}, (P ⊢ Q) → (Q ⊢ R) → P ⊢ R)
+  (equiv_iff : ∀ {P Q : PROP}, (P = Q) ↔ P ⊣⊢ Q)
+  (pure_intro : ∀ {φ : Prop} {P : PROP}, φ → P ⊢ ⌜φ⌝)
+  (pure_elim' : ∀ {φ : Prop} {P : PROP}, (φ → True ⊢ P) → ⌜φ⌝ ⊢ P)
+  (and_elim_l : ∀ {P Q : PROP}, P ∧ Q ⊢ P)
+  (and_elim_r : ∀ {P Q : PROP}, P ∧ Q ⊢ Q)
+  (and_intro : ∀ {P Q R : PROP}, (P ⊢ Q) → (P ⊢ R) → P ⊢ Q ∧ R)
+  (or_intro_l : ∀ {P Q : PROP}, P ⊢ P ∨ Q)
+  (or_intro_r : ∀ {P Q : PROP}, Q ⊢ P ∨ Q)
+  (or_elim : ∀ {P Q R : PROP}, (P ⊢ R) → (Q ⊢ R) → P ∨ Q ⊢ R)
+  (imp_intro : ∀ {P Q R : PROP}, (P ∧ Q ⊢ R) → P ⊢ Q → R)
+  (imp_elim : ∀ {P Q R : PROP}, (P ⊢ Q → R) → P ∧ Q ⊢ R)
+  (sForall_intro : ∀ {P : PROP} {Ψ : PROP → Prop}, (∀ p, Ψ p → P ⊢ p) → P ⊢ sForall Ψ)
+  (sForall_elim : ∀ {Ψ : PROP → Prop} {p : PROP}, Ψ p → sForall Ψ ⊢ p)
+  (sExists_intro : ∀ {Ψ : PROP → Prop} {p : PROP}, Ψ p → p ⊢ sExists Ψ)
+  (sExists_elim : ∀ {Φ : PROP → Prop} {Q : PROP}, (∀ p, Φ p → p ⊢ Q) → sExists Φ ⊢ Q)
+  (sep_mono : ∀ {P P' Q Q' : PROP}, (P ⊢ Q) → (P' ⊢ Q') → P ∗ P' ⊢ Q ∗ Q')
+  (emp_sep : ∀ {P : PROP}, emp ∗ P ⊣⊢ P)
+  (sep_symm : ∀ {P Q : PROP}, P ∗ Q ⊢ Q ∗ P)
+  (sep_assoc_l : ∀ {P Q R : PROP}, (P ∗ Q) ∗ R ⊢ P ∗ (Q ∗ R))
+  (wand_intro : ∀ {P Q R : PROP}, (P ∗ Q ⊢ R) → P ⊢ Q -∗ R)
+  (wand_elim : ∀ {P Q R : PROP}, (P ⊢ Q -∗ R) → P ∗ Q ⊢ R)
+  (later_mono : ∀ {P Q : PROP}, (P ⊢ Q) → ▷ P ⊢ ▷ Q)
+  (later_intro : ∀ {P : PROP}, P ⊢ ▷ P)
+  (later_sForall_2 : ∀ {Φ : PROP → Prop}, (∀ p, ⌜Φ p⌝ → ▷ p) ⊢ ▷ sForall Φ)
+  (later_sExists_false : ∀ {Φ : PROP → Prop},
+    (▷ sExists Φ) ⊢ ▷ False ∨ ∃ p, ⌜Φ p⌝ ∧ ▷ p)
+  (later_sep : ∀ {P Q : PROP}, ▷ (P ∗ Q) ⊣⊢ ▷ P ∗ ▷ Q)
+  (later_persistently : ∀ {P : PROP}, ▷ <pers> P ⊣⊢ <pers> ▷ P)
+  (later_false_em : ∀ {P : PROP}, ▷ P ⊢ ▷ False ∨ (▷ False → P))
+  (discrete : ∀ {n} {P Q : PROP}, P ≡{n}≡ Q → P = Q)
+  (existential : ∀ {Ψ : PROP → Prop}, (emp ⊢ sExists Ψ) → ∃ p, Ψ p ∧ (emp ⊢ p))
+  (persistently_eq : ∀ P : PROP, iprop(<pers> P) = iprop(⌜emp ⊢ P⌝))
+
+@[reducible, rocq_alias bi_persistently_mixin_discrete]
+def ofPersistentlyDiscrete : BI PROP where
+  entails_refl := entails_refl
+  entails_trans := entails_trans
+  equiv_iff := equiv_iff
+  and_ne := ⟨fun {_ _ _} h₁ {_ _} h₂ => .of_eq (by rw [discrete h₁, discrete h₂])⟩
+  or_ne := ⟨fun {_ _ _} h₁ {_ _} h₂ => .of_eq (by rw [discrete h₁, discrete h₂])⟩
+  imp_ne := ⟨fun {_ _ _} h₁ {_ _} h₂ => .of_eq (by rw [discrete h₁, discrete h₂])⟩
+  sForall_ne h := .of_eq <| congrArg _ <| liftRel_eq.mp
+    ⟨fun a ha => (h.1 a ha).imp fun _ hb => ⟨hb.1, discrete hb.2⟩,
+     fun b hb => (h.2 b hb).imp fun _ ha => ⟨ha.1, discrete ha.2⟩⟩
+  sExists_ne h := .of_eq <| congrArg _ <| liftRel_eq.mp
+    ⟨fun a ha => (h.1 a ha).imp fun _ hb => ⟨hb.1, discrete hb.2⟩,
+     fun b hb => (h.2 b hb).imp fun _ ha => ⟨ha.1, discrete ha.2⟩⟩
+  sep_ne := ⟨fun {_ _ _} h₁ {_ _} h₂ => .of_eq (by rw [discrete h₁, discrete h₂])⟩
+  wand_ne := ⟨fun {_ _ _} h₁ {_ _} h₂ => .of_eq (by rw [discrete h₁, discrete h₂])⟩
+  later_ne := ⟨fun {_ _ _} h => .of_eq (congrArg _ (discrete h))⟩
+  pure_intro := pure_intro
+  pure_elim' := pure_elim'
+  and_elim_l := and_elim_l
+  and_elim_r := and_elim_r
+  and_intro := and_intro
+  or_intro_l := or_intro_l
+  or_intro_r := or_intro_r
+  or_elim := or_elim
+  imp_intro := imp_intro
+  imp_elim := imp_elim
+  sForall_intro := sForall_intro
+  sForall_elim := sForall_elim
+  sExists_intro := sExists_intro
+  sExists_elim := sExists_elim
+  sep_mono := sep_mono
+  emp_sep := emp_sep
+  sep_symm := sep_symm
+  sep_assoc_l := sep_assoc_l
+  wand_intro := wand_intro
+  wand_elim := wand_elim
+  later_mono := later_mono
+  later_intro := later_intro
+  later_sForall_2 := later_sForall_2
+  later_sExists_false := later_sExists_false
+  later_sep := later_sep
+  later_persistently := later_persistently
+  later_false_em := later_false_em
+  persistently_ne := ⟨fun {_ _ _} h => .of_eq (congrArg _ (discrete h))⟩
+  persistently_mono h := by
+    rw [persistently_eq, persistently_eq]
+    exact pure_elim' fun hp => pure_intro (entails_trans hp h)
+  persistently_idem_2 := by
+    intro P
+    rw [persistently_eq, persistently_eq]
+    exact pure_elim' fun hp => pure_intro (pure_intro hp)
+  persistently_emp_2 := by
+    rw [persistently_eq]
+    exact pure_intro entails_refl
+  persistently_and_2 := by
+    intro P Q
+    rw [persistently_eq, persistently_eq, persistently_eq]
+    refine imp_elim (pure_elim' fun hp => imp_intro ?_)
+    exact entails_trans and_elim_r (pure_elim' fun hq => pure_intro (and_intro hp hq))
+  persistently_sExists_1 := by
+    intro Ψ
+    rw [persistently_eq]
+    refine pure_elim' fun h => ?_
+    obtain ⟨p, hΨp, hp⟩ := existential h
+    refine entails_trans ?_ (sExists_intro ⟨p, rfl⟩)
+    refine and_intro (pure_intro hΨp) ?_
+    rw [persistently_eq]
+    exact pure_intro hp
+  persistently_absorb_l := by
+    intro P Q
+    rw [persistently_eq]
+    exact wand_elim (pure_elim' fun hp => wand_intro (pure_intro hp))
+  persistently_and_l := by
+    intro P Q
+    rw [persistently_eq]
+    refine imp_elim (pure_elim' fun hp => imp_intro ?_)
+    exact entails_trans and_elim_r (entails_trans emp_sep.mpr (sep_mono hp entails_refl))
+
+end PersistentlyDiscrete

@@ -5,12 +5,12 @@ Authors: Markus de Medeiros
 -/
 module
 
-public import Iris.BI.Lib.Atomic
+public import Iris.ProgramLogic.Atomic
 
 @[expose] public section
 
 namespace IrisTest
-open Iris Iris.Std BI ProofMode
+open Iris ProgramLogic BI ProofMode Std
 
 /-! Tests for the `AU`/`AACC` notation inside `iprop(…)`: every combination of (non-)empty
 telescopes parses, elaborates to the corresponding `atomic_update`/`atomic_acc` application, and
@@ -111,6 +111,76 @@ example : (AU <{ ∃∃ x, α x }> @ Eo, Ei <{ ∀∀ y, β x y, COMM Ψ x y }>)
 
 end atomicNotation
 
+/-! Tests for the logically atomic Hoare triple notation. -/
+
+section atomicWpNotation
+variable {hlc : HasLC} {Expr State Obs Val : Type _} [Language Expr State Obs Val]
+variable {GF : BundledGFunctors} [IrisGS_gen hlc Expr GF]
+variable (e : Expr) (E : CoPset) (w : Val) (P : IProp GF)
+  (α : Nat → IProp GF) (β : Nat → Bool → IProp GF) (γ : Nat → Bool → Unit → IProp GF)
+  (g : Nat → Bool → Unit → Val)
+
+/-! All binder groups and the private postcondition present. -/
+
+/--
+info: iprop(<<{ ∀∀ x, α x }>> e @ E <<{ ∃∃ y, β x y | z, RET g x y z ; γ x y z }>>) : IProp GF
+-/
+#guard_msgs (whitespace := lax) in
+#check iprop(<<{ ∀∀ x, α x }>> e @ E <<{ ∃∃ y, β x y | z, RET g x y z ; γ x y z }>>)
+
+/-! No `RET` binders. -/
+
+/-- info: iprop(<<{ ∀∀ x, α x }>> e @ E <<{ ∃∃ y, β x y | RET w ; P }>>) : IProp GF -/
+#guard_msgs in
+#check iprop(<<{ ∀∀ x, α x }>> e @ E <<{ ∃∃ y, β x y | RET w ; P }>>)
+
+/-! No private postcondition. -/
+
+/-- info: iprop(<<{ ∀∀ x, α x }>> e @ E <<{ ∃∃ y, β x y | RET w }>>) : IProp GF -/
+#guard_msgs in
+#check iprop(<<{ ∀∀ x, α x }>> e @ E <<{ ∃∃ y, β x y | RET w }>>)
+
+/-! Empty `∀∀` telescope. -/
+
+/-- info: iprop(<<{ P }>> e @ E <<{ ∃∃ y, β 0 y | RET w }>>) : IProp GF -/
+#guard_msgs in
+#check iprop(<<{ P }>> e @ E <<{ ∃∃ y, β 0 y | RET w }>>)
+
+/-! Empty `∃∃` telescope. -/
+
+/-- info: iprop(<<{ ∀∀ x, α x }>> e @ E <<{ β 0 true | RET w }>>) : IProp GF -/
+#guard_msgs in
+#check iprop(<<{ ∀∀ x, α x }>> e @ E <<{ β 0 true | RET w }>>)
+
+/-! All telescopes empty, no private postcondition. -/
+
+/-- info: iprop(<<{ P }>> e @ E <<{ P | RET w }>>) : IProp GF -/
+#guard_msgs in
+#check iprop(<<{ P }>> e @ E <<{ P | RET w }>>)
+
+/-! The implementation mask may be a compound term, in parentheses. -/
+
+/-- info: iprop(<<{ P }>> e @ (⊤ \ E) <<{ P | RET w ; P }>>) : IProp GF -/
+#guard_msgs in
+#check iprop(<<{ P }>> e @ (⊤ \ E) <<{ P | RET w ; P }>>)
+
+/-! Several binders per group, with type ascriptions. Binder types are inferred from the bodies,
+so they are not printed. -/
+
+/--
+info: iprop(<<{ ∀∀ x₁ x₂, α x₁ ∗ α x₂ }>> e @ E
+    <<{ ∃∃ y₁ y₂, β x₁ y₁ ∗ β x₂ y₂ | RET w }>>) : IProp GF
+-/
+#guard_msgs (whitespace := lax) in
+#check iprop(<<{ ∀∀ (x₁ : Nat) (x₂ : Nat), α x₁ ∗ α x₂ }>> e @ E
+  <<{ ∃∃ (y₁ : Bool) (y₂ : Bool), β x₁ y₁ ∗ β x₂ y₂ | RET w }>>)
+
+/-! The notation elaborates to exactly the term the theory is stated with. -/
+example : (<<{ ∀∀ x, α x }>> e @ E <<{ ∃∃ y, β x y | RET w }>>) ⊢
+    <<{ ∀∀ x, α x }>> e @ ⊤ <<{ ∃∃ y, β x y | RET w }>> :=
+  atomic_wp_mask_weaken CoPset.subseteq_top
+
+end atomicWpNotation
 section ProofModeTactics
 
 variable {PROP : Type u} [instBI : BI PROP] [instBIFUpd : BIFUpdate PROP] {TA TB : Tele}

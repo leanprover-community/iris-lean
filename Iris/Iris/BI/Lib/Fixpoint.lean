@@ -41,6 +41,9 @@ instance [BI PROP] [OFE A] {F : (A → PROP) → (A → PROP)} :
     refine wand_ne.ne (.of_eq rfl) ?_
     exact NonExpansive.ne Hx
 
+#rocq_ignore least_fixpoint_ne "No `Proper` typeclass in Lean"
+#rocq_ignore least_fixpoint_proper "OFE is Leibniz; use equality"
+
 @[rocq_alias greatest_fixpoint_ne']
 instance [BI PROP] [OFE A] {F : (A → PROP) → (A → PROP)} :
     NonExpansive (bi_greatest_fixpoint F) where
@@ -48,6 +51,9 @@ instance [BI PROP] [OFE A] {F : (A → PROP) → (A → PROP)} :
     refine exists_ne fun _ => ?_
     refine sep_ne.ne (.of_eq rfl) ?_
     exact NonExpansive.ne Hx
+
+#rocq_ignore greatest_fixpoint_ne "No `Proper` typeclass in Lean; use `greatest_fixpoint_ne_outer`"
+#rocq_ignore greatest_fixpoint_proper "OFE is Leibniz; use equality"
 
 section LeastFixpoint
 
@@ -164,6 +170,7 @@ section Strong
 
 variable [IF : BIMonoPred F] (Φ : A → PROP) [IN : NonExpansive Φ]
 
+@[rocq_alias Private_wf_pred_mono]
 local instance wf_pred_mono :
     BIMonoPred (fun (Ψ : A → PROP) (a : A) => iprop(Φ a ∧ F Ψ a)) where
   mono_pred := by
@@ -305,6 +312,7 @@ section Coind
 
 variable [IF : BIMonoPred F] (Φ : A → PROP) [IN : NonExpansive Φ]
 
+@[rocq_alias Private_paco_mono]
 local instance paco_mono : BIMonoPred (fun (Ψ : A → PROP) (a : A) => iprop(Φ a ∨ F Ψ a)) where
   mono_pred {Ψ Ψ' HΨ HΨ'} := by
     iintro #Hmon %x ⟨H|H⟩

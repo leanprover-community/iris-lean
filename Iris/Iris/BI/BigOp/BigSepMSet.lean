@@ -151,6 +151,11 @@ theorem bigSepMS_sep {Φ Ψ : A → PROP} {X : MS} :
     ([∗mset] y ∈ X, Φ y ∗ Ψ y) ⊣⊢ ([∗mset] y ∈ X, Φ y) ∗ ([∗mset] y ∈ X, Ψ y) :=
   BiEntails.of_eq bigOpMS_op_eq
 
+@[rocq_alias big_sepMS_sep_2]
+theorem bigSepMS_sep_symm {Φ Ψ : A → PROP} {X : MS} :
+    ([∗mset] y ∈ X, Φ y) ∗ ([∗mset] y ∈ X, Ψ y) ⊣⊢ [∗mset] y ∈ X, Φ y ∗ Ψ y :=
+  bigSepMS_sep.symm
+
 @[rocq_alias big_sepMS_and]
 theorem bigSepMS_and {Φ Ψ : A → PROP} {X : MS} :
     ([∗mset] y ∈ X, Φ y ∧ Ψ y) ⊢ ([∗mset] y ∈ X, Φ y) ∧ ([∗mset] y ∈ X, Ψ y) :=
@@ -278,44 +283,27 @@ theorem bigSepMS_subseteq {Φ : A → PROP} {X Y : MS}
 
 @[rocq_alias big_sepMS_sepL]
 theorem bigSepMS_comm_list {B : Type _} (Φ : A → Nat → B → PROP) (X : MS) (l : List B) :
-    ([∗mset] x ∈ X, [∗list] k↦y ∈ l, Φ x k y) ⊣⊢
-      ([∗list] k↦y ∈ l, [∗mset] x ∈ X, Φ x k y) := by
-  refine bigSepMS_elements.trans ?_
-  refine (bigSepL_comm _ (FiniteMultiSet.toList X) l).trans ?_
-  exact BiEntails.of_eq <| bigOpL_eq fun _ => (BiEntails.to_eq bigSepMS_elements.symm)
+    ([∗mset] x ∈ X, [∗list] k ↦ y ∈ l, Φ x k y) ⊣⊢
+      ([∗list] k ↦ y ∈ l, [∗mset] x ∈ X, Φ x k y) :=
+  BiEntails.of_eq <| bigOpMS_comm_list Φ X l
 
 @[rocq_alias big_sepMS_sepM]
-theorem bigSepMS_comm_map {B : Type _} {M : Type _ → Type _} {K : Type _}
-    [LawfulFiniteMap M K]
+theorem bigSepMS_comm_map {B K : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
     (Φ : A → K → B → PROP) (X : MS) (m : M B) :
-    ([∗mset] x ∈ X, [∗map] k↦y ∈ m, Φ x k y) ⊣⊢
-      ([∗map] k↦y ∈ m, [∗mset] x ∈ X, Φ x k y) := by
-  refine bigSepMS_elements.trans ?_
-  refine (bigSepL_comm _ (FiniteMultiSet.toList X) (LawfulFiniteMap.toList m)).trans ?_
-  refine (BiEntails.of_eq <| bigOpL_eq fun _ => (BiEntails.to_eq bigSepMS_elements.symm)).trans <|
-    BiEntails.of_eq <| bigOpL_eq fun _ => rfl
+    ([∗mset] x ∈ X, [∗map] k ↦ y ∈ m, Φ x k y) ⊣⊢ ([∗map] k ↦ y ∈ m, [∗mset] x ∈ X, Φ x k y) :=
+  BiEntails.of_eq <| bigOpMS_comm_map Φ X m
 
 @[rocq_alias big_sepMS_sepS]
-theorem bigSepMS_comm_set {B : Type _} {T : Type _} [LawfulFiniteSet T B]
+theorem bigSepMS_comm_set {B T : Type _} [LawfulFiniteSet T B]
     (Φ : A → B → PROP) (X : MS) (Y : T) :
-    ([∗mset] x ∈ X, [∗set] y ∈ Y, Φ x y) ⊣⊢
-      ([∗set] y ∈ Y, [∗mset] x ∈ X, Φ x y) := by
-  refine bigSepMS_elements.trans ?_
-  refine (BiEntails.of_eq <| bigOpL_eq fun _ => (BiEntails.to_eq BigSepS.bigSepS_elements)).trans ?_
-  refine (bigSepL_comm _ (FiniteMultiSet.toList X) (FiniteSet.toList Y)).trans ?_
-  exact (BiEntails.of_eq <| bigOpL_eq fun _ => (BiEntails.to_eq bigSepMS_elements.symm)).trans <|
-    BigSepS.bigSepS_elements.symm
+    ([∗mset] x ∈ X, [∗set] y ∈ Y, Φ x y) ⊣⊢ ([∗set] y ∈ Y, [∗mset] x ∈ X, Φ x y) :=
+  BiEntails.of_eq <| bigOpMS_comm_set Φ X Y
 
 @[rocq_alias big_sepMS_sepMS]
-theorem bigSepMS_comm_mset {B : Type _} {T : Type _} [LawfulFiniteMultiSet T B]
+theorem bigSepMS_comm_mset {B T : Type _} [LawfulFiniteMultiSet T B]
     (Φ : A → B → PROP) (X : MS) (Y : T) :
-    ([∗mset] x ∈ X, [∗mset] y ∈ Y, Φ x y) ⊣⊢
-      ([∗mset] y ∈ Y, [∗mset] x ∈ X, Φ x y) := by
-  refine bigSepMS_elements.trans ?_
-  refine (BiEntails.of_eq <| bigOpL_eq fun _ => (BiEntails.to_eq bigSepMS_elements)).trans ?_
-  refine (bigSepL_comm _ (FiniteMultiSet.toList X) (FiniteMultiSet.toList Y)).trans ?_
-  exact (BiEntails.of_eq <| bigOpL_eq fun _ => (BiEntails.to_eq bigSepMS_elements.symm)).trans <|
-    bigSepMS_elements.symm
+    ([∗mset] x ∈ X, [∗mset] y ∈ Y, Φ x y) ⊣⊢ ([∗mset] y ∈ Y, [∗mset] x ∈ X, Φ x y) :=
+  BiEntails.of_eq <| bigOpMS_comm_mset Φ X Y
 
 @[rocq_alias big_sepMS_dup]
 theorem bigSepMS_dup {P : PROP} [Affine P] {X : MS} :

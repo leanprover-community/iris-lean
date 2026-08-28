@@ -100,7 +100,7 @@ elab "ieval " "(" tacs:tacticSeq ")" " at " spats:(colGt ppSpace selPat)+ : tact
   let selPats ← liftMacroM <| SelPat.parse spats
 
   ProofModeM.runTactic `ieval λ mvar { hyps, goal, .. } => do
-    let selTargets ← SelPat.resolve hyps selPats
+    let selTargets ← SelPat.resolve hyps selPats .topToBottom
     let pf ← iEvalCore hyps goal tacs selTargets
     mvar.assign pf
 

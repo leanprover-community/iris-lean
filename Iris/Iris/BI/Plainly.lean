@@ -552,11 +552,28 @@ theorem bigSepM_plainly [BIAffine PROP] [LawfulFiniteMap M K]
     ■ ([∗map] k↦x ∈ m, Φ k x) ⊣⊢ [∗map] k↦x ∈ m, ■ (Φ k x) :=
   (Algebra.BigOpM.bigOpM_hom ..)
 
+@[rocq_alias big_sepM2_plainly]
+theorem bigSepM2_plainly [BIAffine PROP] [LawfulFiniteMap M K] {A B}
+    (Φ : K → A → B → PROP) (m₁ : M A) (m₂ : M B) :
+    ■ ([∗map] k↦x₁;x₂ ∈ m₁;m₂, Φ k x₁ x₂) ⊣⊢ [∗map] k↦x₁;x₂ ∈ m₁;m₂, ■ (Φ k x₁ x₂) :=
+  calc iprop(■ ([∗map] k↦x₁;x₂ ∈ m₁;m₂, Φ k x₁ x₂))
+    _ ⊣⊢ _ := .ofMono plainly_mono BigSepM2.bigSepM2_alt
+    _ ⊣⊢ _ := plainly_and
+    _ ⊣⊢ _ := .ofMono and_mono_left plainly_pure
+    _ ⊣⊢ _ := .ofMono and_mono_right (bigSepM_plainly ..)
+    _ ⊣⊢ [∗map] k↦x₁;x₂ ∈ m₁;m₂, ■ (Φ k x₁ x₂) := .symm BigSepM2.bigSepM2_alt
+
 open Algebra in
 @[rocq_alias big_sepS_plainly]
 theorem bigSepS_plainly [BIAffine PROP] [LawfulFiniteSet S A] (Φ : A → PROP) (s : S) :
     ■ ([^ sep set] y ∈ s, Φ y) ⊣⊢ [^ sep set] y ∈ s, iprop(■ (Φ y)) :=
   (BigOpS.hom (hom := inferInstance) ..)
+
+open Algebra in
+@[rocq_alias big_sepMS_plainly]
+theorem bigSepMS_plainly [BIAffine PROP] [LawfulFiniteMultiSet MS A] (Φ : A → PROP) (X : MS) :
+    ■ ([^ sep mset] y ∈ X, Φ y) ⊣⊢ [^ sep mset] y ∈ X, iprop(■ (Φ y)) :=
+  (BigOpMS.hom (hom := inferInstance) ..)
 
 end BigOp
 
@@ -724,6 +741,22 @@ instance bigSepM_plain {K} [DecidableEq K] {M A} [ι : LawfulFiniteMap M K] (Φ 
           .ofMono plainly_mono <|
             (Algebra.BigOpM.bigOpM_insert_eq _ _ get?_m_k).to_bi |>.symm
 
+@[rocq_alias big_sepM2_empty_plain]
+instance bigSepM2_empty_plain {K M A B} [LawfulFiniteMap M K] (Φ : K → A → B → PROP) :
+    Plain ([∗map] k↦x₁;x₂ ∈ (∅ : M A);(∅ : M B), Φ k x₁ x₂) where
+  plain :=
+    let h := BigSepM2.bigSepM2_empty Φ
+    h.mp.trans <| plainly_emp_2.trans <| plainly_mono h.mpr
+
+@[rocq_alias big_sepM2_plain]
+instance bigSepM2_plain {K} [DecidableEq K] {M A B} [LawfulFiniteMap M K]
+    (Φ : K → A → B → PROP) (m₁ : M A) (m₂ : M B) [∀ k x₁ x₂, Plain (Φ k x₁ x₂)] :
+    Plain ([∗map] k↦x₁;x₂ ∈ m₁;m₂, Φ k x₁ x₂) where
+  plain :=
+    BigSepM2.bigSepM2_alt.1.trans <|
+      (and_mono plain plain).trans <|
+        plainly_and.2.trans <| plainly_mono BigSepM2.bigSepM2_alt.2
+
 open Algebra in
 @[rocq_alias big_sepS_empty_plain]
 instance  bigSepS_empty_plain {S} [Pos.Countable S] {A} [LawfulFiniteSet S A] (Φ : A → PROP) :
@@ -746,6 +779,28 @@ instance  bigSepS_plain {S} [Pos.Countable S] {A} [LawfulFiniteSet S A] (Φ : A 
         _  ⊢ ■ (Φ x ∗ [^ sep set] x ∈ s, Φ x) := plainly_sep_2
         _ ⊣⊢ ■ [^ sep set] y ∈ insert x s, Φ y :=
           .ofMono plainly_mono <| (BigOpS.bigOpS_insert x_s).symm.to_bi
+
+open Algebra in
+@[rocq_alias big_sepMS_empty_plain]
+instance bigSepMS_empty_plain {MS A} [LawfulFiniteMultiSet MS A] (Φ : A → PROP) :
+    Plain ([^ sep mset] x ∈ (∅ : MS), Φ x) where
+  plain := by simpa only [BigOpMS.bigOpMS_empty] using plainly_emp_2
+
+open Algebra in
+@[rocq_alias big_sepMS_plain]
+instance bigSepMS_plain {MS A} [LawfulFiniteMultiSet MS A] (Φ : A → PROP) (X : MS)
+    [h : ∀ x, Plain (Φ x)] :
+    Plain ([^ sep mset] x ∈ X, Φ x) where
+  plain := by
+    induction X using Std.multiset_ind
+    case empty => simp only [BigOpMS.bigOpMS_empty, plain]
+    case disjUnion_singleton x X IH =>
+      calc iprop([^ sep mset] y ∈ ({x} ⊎ X), Φ y)
+        _ ⊣⊢ Φ x ∗ [^ sep mset] y ∈ X, Φ y := BigOpMS.bigOpMS_insert.to_bi
+        _  ⊢ ■ Φ x ∗ ■ [^ sep mset] y ∈ X, Φ y := sep_mono (h x |>.plain) IH
+        _  ⊢ ■ (Φ x ∗ [^ sep mset] y ∈ X, Φ y) := plainly_sep_2
+        _ ⊣⊢ ■ [^ sep mset] y ∈ ({x} ⊎ X), Φ y :=
+          .ofMono plainly_mono BigOpMS.bigOpMS_insert.symm.to_bi
 
 @[rocq_alias plainly_timeless]
 instance plainly_timeless (P : PROP) [Timeless P] : Timeless iprop(■ P) :=

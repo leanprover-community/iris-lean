@@ -145,7 +145,6 @@ theorem wp_lift_atomic_base_step_no_fork_fupd (h : toVal e₁ = none) :
   subst h
   simp only [List.length_nil, Nat.add_zero, Algebra.BigOpL.bigOpL_nil]
   iframe
-  itrivial
 
 @[rocq_alias wp_lift_atomic_base_step_no_fork]
 theorem wp_lift_atomic_base_step_no_fork (h : toVal e₁ = none) :

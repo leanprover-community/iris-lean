@@ -30,6 +30,14 @@ theorem bigOpL_none {f : Nat → A → Option M} {l : List A} :
       exact hx ▸ h0
     | k + 1 => exact hl k x hx
 
+@[rocq_alias big_opM_None]
+theorem bigOpM_none {M' : Type _ → Type _} [LawfulFiniteMap M' K] {f : K → V → Option M} {m : M' V} :
+    ([^ CMRA.op map] k ↦ x ∈ m, f k x) = none ↔ ∀ k x, get? m k = some x → f k x = none := by
+  simp only [bigOpM, bigOpL_none]
+  refine ⟨fun h k x hx => ?_,
+    fun h k kx hk => h kx.1 kx.2 (toList_get.mp (List.mem_of_getElem? hk))⟩
+  obtain ⟨i, hi⟩ := List.mem_iff_getElem?.mp (toList_get.mpr hx)
+  exact h i (k, x) hi
 
 @[rocq_alias big_opS_None]
 theorem bigOpS_none [LawfulFiniteSet S A] {f : A → Option M} {s : S} :
