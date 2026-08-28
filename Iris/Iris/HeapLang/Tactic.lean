@@ -133,23 +133,6 @@ where
     let (some Ki, e') ← extractEctxItem e | return none
     go e' (Ki :: acc)
 
-/-! ## `reshapeExpr`: Rocq analogue of `iris_heap_lang.tactics.reshape_expr`
-
-Rocq's `reshape_expr e tac` decomposes `e` into an evaluation context `K` and a
-subexpression `e'` with `e = fill K e'`, calling `tac K e'` on each possible
-decomposition until one succeeds. It starts from `K = []` with `e'` the whole
-expression and works inward. It is the standard tool for locating a redex
-inside a compound expression when writing WP-lifting or erasure-style
-meta-theoretic tactics.
-
-`findECtx` already performs exactly this walk, in the same order and with the
-same callback arguments. `reshapeExpr` is the wrapper that drops the
-`ECtxResultOf` packaging for callers that want only the callback's own result. -/
-
-public meta def reshapeExpr {α : Type _} (ogE : Q(Exp))
-    (tac : (K : Q(List ECtxItem)) → (e' : Q(Exp)) → ProofModeM α) :
-    ProofModeM (Option α) :=
-  return (← findECtx ogE tac).map (·.result)
 /-- Given an expression `ogE`, finds the *innermost* evaluation context `K` and
     corresponding expression `e'` such that `K[e'] = e` and `pred K e'` does 
     not fail -/
