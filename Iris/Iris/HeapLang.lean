@@ -9,6 +9,7 @@ public import Iris.HeapLang.Notation
 public import Iris.HeapLang.Porting
 public import Iris.HeapLang.PrimitiveLaws
 public import Iris.HeapLang.ProofMode
+public import Iris.HeapLang.ProphErasure
 public import Iris.HeapLang.Semantics
 public import Iris.HeapLang.Syntax
 public import Iris.HeapLang.Tactic
