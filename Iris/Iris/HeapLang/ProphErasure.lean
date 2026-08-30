@@ -33,7 +33,7 @@ def eraseBaseLit : BaseLit → BaseLit
 def eraseResolve (e0 e1 e2 : Exp) : Exp :=
   hl(fst(fst(((&e0, &e1), &e2))))
 
-/-- The erased form of `NewProph` — a stuck-free expression that reduces to `#LitPoison`. -/
+/-- The erased form of `NewProph` — a stuck-free expression that reduces to `#.poison`. -/
 @[rocq_alias heap_lang.erased_new_proph]
 def erasedNewProph : Exp :=
   hl(v(λ _, #.poison) #())
@@ -143,7 +143,8 @@ theorem toVal_erase_none {e : Exp} (h : toVal e = none) : toVal (eraseExpr e) = 
 
 private theorem eraseExpr_eq_val {e : Exp} {v : Val}
     (h : eraseExpr e = hl(v(&v))) : ∃ w, e = hl(v(&w)) ∧ eraseVal w = v := by
-  cases e <;> simp [eraseExpr, erasedNewProph, eraseResolve] at h; cases h; exact ⟨_, rfl, rfl⟩
+  cases e <;> erase_simp at h <;> cases h
+  exact ⟨_, rfl, rfl⟩
 
 @[rocq_alias heap_lang.erase_to_val]
 theorem toVal_erase_some {e : Exp} {v : Val} (h : toVal (eraseExpr e) = some v) :
@@ -188,7 +189,7 @@ theorem eraseECtxItem_fill (Ki : ECtxItem) (e : Exp) :
 @[rocq_alias heap_lang.erase_ectx_expr]
 theorem eraseECtx_fill (K : List ECtxItem) (e : Exp) :
     eraseExpr (fill K e) = fill (eraseECtx K) (eraseExpr e) := by
-  induction K using FromMathlib.List.reverseRec with
+  induction K using List.reverseRec with
   | nil => simp [eraseECtx]
   | append_singleton Ks Ki ih =>
     rw [fill_snoc, eraseECtxItem_fill, eraseECtx_append, fill_append, ih]
@@ -248,13 +249,14 @@ private theorem BinOp.eq_eval_erase {v1 v2 v' : Val} :
   by_cases h : v1.compareSafe v2 = true
   · have hbeq : (eraseVal v1 == eraseVal v2) = (v1 == v2) :=
       decide_eq_decide.mpr (eraseVal_inj_iff h)
-    simp [h, hbeq, eraseVal, eraseBaseLit, eq_comm]
+    simp [h, hbeq, eraseVal, eraseBaseLit]
   · simp [h]
 
 /-- An erased literal came from some literal, whose erasure it is. -/
 private theorem eraseVal_eq_lit {v : Val} {l : BaseLit}
     (h : eraseVal v = hl_val(#l)) : ∃ l', v = hl_val(#l') ∧ eraseBaseLit l' = l := by
-  cases v <;> simp [eraseVal] at h; cases h; exact ⟨_, rfl, rfl⟩
+  cases v <;> erase_simp at h <;> cases h
+  exact ⟨_, rfl, rfl⟩
 
 /-- Erasure rewrites only prophecy literals, and only to `poison`, so any other
 erased literal came from that very literal. -/
@@ -263,19 +265,6 @@ private theorem eraseVal_eq_lit_of_ne_poison {v : Val} {l : BaseLit}
   obtain ⟨l', rfl, hb⟩ := eraseVal_eq_lit h
   cases l' <;> simp_all [eraseBaseLit]
 
-/-- `BinOp.eval_erase` for the ops that ignore comparison safety. -/
-private theorem BinOp.eval_erase_of_ne_eq {op : BinOp} {v1 v2 v' : Val} (hne : op ≠ .eq) :
-    op.eval (eraseVal v1) (eraseVal v2) = some v' ↔
-      ∃ w, op.eval v1 v2 = some w ∧ eraseVal w = v' := by
-  match v1, v2 with
-  | .lit l1, .lit l2 =>
-    cases op <;> (try exact absurd rfl hne) <;>
-      cases l1 <;> cases l2 <;>
-      simp [eraseVal, eraseBaseLit, BinOp.eval, BinOp.evalInt, BinOp.evalBool, BinOp.evalLoc]
-  | .lit _, .rec_ .. | .lit _, .pair .. | .lit _, .injL _ | .lit _, .injR _
-  | .rec_ .., _ | .pair .., _ | .injL _, _ | .injR _, _ =>
-    cases op <;> (try exact absurd rfl hne) <;> simp [eraseVal, BinOp.eval]
-
 /-- Auxiliary lemma capturing that comparable literals stay comparable under erasure. -/
 @[rocq_alias heap_lang.bin_op_eval_erase]
 theorem BinOp.eval_erase {op : BinOp} {v1 v2 v' : Val} :
@@ -283,7 +272,14 @@ theorem BinOp.eval_erase {op : BinOp} {v1 v2 v' : Val} :
       ∃ w, op.eval v1 v2 = some w ∧ eraseVal w = v' := by
   by_cases hne : op = .eq
   · subst hne; exact BinOp.eq_eval_erase
-  · exact BinOp.eval_erase_of_ne_eq hne
+  · cases op <;> (try exact absurd rfl hne) <;>
+    match v1, v2 with
+    | .lit l1, .lit l2 =>
+      cases l1 <;> cases l2 <;>
+        simp [eraseVal, eraseBaseLit, BinOp.eval, BinOp.evalInt, BinOp.evalBool, BinOp.evalLoc]
+    | .lit _, .rec_ .. | .lit _, .pair .. | .lit _, .injL _ | .lit _, .injR _
+    | .rec_ .., _ | .pair .., _ | .injL _, _ | .injR _, _ =>
+      simp [eraseVal, BinOp.eval]
 
 /-! ## Erasure of the heap -/
 
@@ -406,7 +402,7 @@ private theorem erased_baseStep_baseStep_FAA (l : Loc) (n m : Int) (σ : State)
       ((eraseState σ).initHeap l 1 (some hl_val(#(n + m)))) [] := by
   obtain ⟨ov', horig, hev⟩ := eraseState_get?_some_some hget
   obtain rfl := eraseVal_eq_lit_of_ne_poison (by simp) hev
-  exact ⟨_, _, _, _, .faaS l n m σ horig, by simp [eraseVal, eraseBaseLit],
+  exact ⟨_, _, _, _, .faaS l n m σ horig, by rfl,
     by simp [eraseVal, eraseBaseLit], rfl⟩
 
 /-- `peel1 h` inverts one erasure equation `eraseExpr e = <erased shape>`,
@@ -424,29 +420,6 @@ local macro_rules
              | (have hl := eraseVal_eq_lit_of_ne_poison (by simp) hv; subst hl)
              | (cases w <;> erase_simp at hv <;> peel1 hv))
         | skip)
-
-/-- `erase_solve e at h`: split on `e` and peel the erasure equation `h`, then
-close the goal — with the `BaseStep` constructor matching the recovered original
-expression, or with the per-case helper lemma for the steps that also reason
-about the heap. -/
-local macro "erase_solve " e:Lean.Parser.Tactic.elimTarget " at " h:ident : tactic =>
-  `(tactic|
-    (cases $e <;> erase_simp at $h:ident
-     peel1 $h
-     all_goals first
-       | (obtain ⟨w, hw, hwe⟩ := UnOp.eval_erase.mp ‹_›
-          exact ⟨_, _, _, _, .unOpS _ _ w _ hw, by simp [hwe], rfl, rfl⟩)
-       | (obtain ⟨w, hw, hwe⟩ := BinOp.eval_erase.mp ‹_›
-          exact ⟨_, _, _, _, .binOpS _ _ _ w _ hw, by simp [hwe], rfl, rfl⟩)
-       | exact erased_baseStep_baseStep_Free _ _ _ ‹_›
-       | exact erased_baseStep_baseStep_Load _ _ _ ‹_›
-       | exact erased_baseStep_baseStep_Store _ _ _ _ ‹_›
-       | exact erased_baseStep_baseStep_Xchg _ _ _ _ ‹_›
-       | exact erased_baseStep_baseStep_FAA _ _ _ _ ‹_›
-       | exact erased_baseStep_baseStep_AllocN _ _ _ _ ‹_› ‹_›
-       | exact erased_baseStep_baseStep_CmpXchg _ _ _ _ _ _ ‹_› ‹_› ‹_›
-       | exact ⟨_, _, _, _, by constructor, by first | rfl | simp [eraseVal], rfl, rfl⟩))
-
 
 /-- If the erased program makes a base step, so does the original program. -/
 @[rocq_alias heap_lang.erased_base_step_base_step]
@@ -466,7 +439,22 @@ theorem erased_baseStep_baseStep {e1 : Exp} {σ1 : State} {κ : List Observation
       obtain ⟨_, _, _, _, hs, he2, hσ, hef⟩ := erased_baseStep_baseStep_NewProph σ1
       cases hf; cases ha; subst heq
       exact ⟨_, _, _, _, hs, he2, hσ, hef⟩
-  | _ => erase_solve e1 at heq1
+  | _ =>
+    cases e1 <;> erase_simp at heq1
+    peel1 heq1
+    all_goals first
+      | (obtain ⟨w, hw, hwe⟩ := UnOp.eval_erase.mp ‹_›
+         exact ⟨_, _, _, _, .unOpS _ _ w _ hw, by simp [hwe], rfl, rfl⟩)
+      | (obtain ⟨w, hw, hwe⟩ := BinOp.eval_erase.mp ‹_›
+         exact ⟨_, _, _, _, .binOpS _ _ _ w _ hw, by simp [hwe], rfl, rfl⟩)
+      | exact erased_baseStep_baseStep_Free _ _ _ ‹_›
+      | exact erased_baseStep_baseStep_Load _ _ _ ‹_›
+      | exact erased_baseStep_baseStep_Store _ _ _ _ ‹_›
+      | exact erased_baseStep_baseStep_Xchg _ _ _ _ ‹_›
+      | exact erased_baseStep_baseStep_FAA _ _ _ _ ‹_›
+      | exact erased_baseStep_baseStep_AllocN _ _ _ _ ‹_› ‹_›
+      | exact erased_baseStep_baseStep_CmpXchg _ _ _ _ _ _ ‹_› ‹_› ‹_›
+      | exact ⟨_, _, _, _, by constructor, by first | rfl | erase_simp, rfl, rfl⟩
 
 /-- A primitive step in the original program can be matched (up to a number of deterministic pure
 steps in the erased program) by a step in the erased program. -/
@@ -567,23 +555,19 @@ theorem fill_to_resolve {e0 : Exp} {v1 v2 : Val} {K : List ECtxItem} {e' : Exp}
   (fill_eq_resolve hnv heq).imp And.left fun ⟨K', Ki, hK, _⟩ => ⟨K', Ki, hK⟩
 
 open Lean Elab Tactic Meta in
-/-- `fill_frame!` closes an `erase_eq_fill_item` goal by naming the original
-frame, read off the goal: `eraseECtxItem` preserves a frame's constructor, so
-the original frame is the erased one's constructor applied to fresh holes. -/
-local elab "fill_frame!" : tactic => do
+local elab "fill_frame" : tactic => do
   let ctors := (← getConstInfoInduct ``ECtxItem).ctors
   let tgt ← instantiateMVars (← getMainTarget)
   let some ki := tgt.find? fun e =>
       match e.getAppFn with
       | .const c _ => ctors.contains c
       | _ => false
-    | throwError "fill_frame!: no evaluation-context frame in the goal"
-  let .const c _ := ki.getAppFn | throwError "fill_frame!: unexpected frame"
-  let n := (← getConstInfoCtor c).numFields
-  let holes : Array (TSyntax `term) ← (Array.range n).mapM fun _ => `(term| _)
+    | throwError "fill_frame: no evaluation-context frame in the goal"
+  let .const c _ := ki.getAppFn | throwError "fill_frame: unexpected frame"
+  let hole ← `(term| _)
+  let holes := Array.replicate ki.getAppArgs.size hole
   let stx ← `(term| $(mkIdent c):ident $holes*)
-  evalTactic (← `(tactic|
-    exact ⟨$stx, _, rfl, by simp_all [eraseECtxItem], by simp_all⟩))
+  evalTactic (← `(tactic| exact ⟨$stx, _, rfl, by erase_simp, by simp_all⟩))
 
 /-- Inversion for an erased evaluation-context frame: if `eraseExpr e1` is the
 frame `Ki` filled with a non-value hole `X`, then `e1` itself decomposes into an
@@ -598,7 +582,7 @@ theorem erase_eq_fill_item {e1 X : Exp} {Ki : ECtxItem} (hnv : toVal X = none)
     simp_all [eraseExpr, erasedNewProph, eraseResolve, ECtxItem.fill] <;>
     peel1 heq <;>
     first
-      | fill_frame!
+      | fill_frame
       | simp [ToVal.toVal] at hnv
 
 #rocq_ignore heap_lang.is_Resolve "The second disjunct of `erase_eq_fill_item`. "
@@ -661,7 +645,7 @@ private theorem notStuck_resolve_inv {e0 : Exp} {v1 v2 : Val} {σ : State}
     .inr ⟨by cases ctx <;> simp [ECtxItem.fill, ToVal.toVal], fun _ _ _ _ hb => ?_⟩⟩
   · rw [fill_snoc]
   · have hval : (toVal (fill K' f1)).isSome := EctxItemLanguage.base_ctx_step_val hb
-    simp [fill_not_val (K := K') hnv] at hval
+    simp [fill_not_val hnv] at hval
 
 /-- `Resolve` applied to three values has no base step. -/
 @[rocq_alias heap_lang.Resolve_3_vals_base_stuck]
@@ -777,20 +761,19 @@ theorem erased_primStep_primStep {e1 : Exp} {σ1 : State} {κ : List Observation
       exact ⟨e2orig, σ2orig, κ', efsorig, e2', primStep_of_baseStep bs, .refl, he2, hσ, hef⟩
     | append_singleton Ks Ki revIH =>
       rw [fill_snoc] at heq_e
-      have hnv_inner : toVal (fill Ks e1') = none :=
-        fill_not_val (K := Ks) (EctxItemLanguage.val_stuck bstep)
+      have hnv_inner : toVal (fill Ks e1') = none := fill_not_val (EctxItemLanguage.val_stuck bstep)
       rw [List.length_append, List.length_cons, List.length_nil] at hlen
       have IHapp : ∀ {K' : List ECtxItem} {e0 : Exp}, K'.length ≤ Ks.length →
           eraseExpr e0 = fill K' e1' → PrimStep.NotStuck (e0, σ1) →
           PrimStepMatchedByErasedSteps e0 σ1 (fill K' e2') σ2 efs := by
         intro K' e0 hlk he0 hns0
-        exact IHlen K'.length (Nat.lt_of_le_of_lt hlk (by omega)) hns0 he0 (K := K') rfl
+        exact IHlen K'.length (Nat.lt_of_le_of_lt hlk (by omega)) hns0 he0 rfl
       clear hlen IHlen revIH
       rcases erase_eq_fill_item hnv_inner heq_e with
         ⟨Ki_orig, einner, rfl, hek, hi⟩ | ⟨rfl, r0, r1, r2, rfl⟩
       · rw [← hek]
         exact (IHapp (Nat.le_refl _) hi (notStuck_of_frame hns)).fill_item Ki_orig
-      · simp only [eraseExpr, eraseResolve, ECtxItem.fill, Exp.fst.injEq] at heq_e
+      · erase_simp at heq_e
         exact resolve_fst_primStepMatched bstep hns heq_e IHapp
 
 #rocq_ignore heap_lang.non_resolve_prim_step_matched_by_erased_steps_ectx_item
@@ -817,7 +800,7 @@ theorem baseStep_erased_primStep {e1 : Exp} {σ1 : State} {κ : List Observation
     · rwa [decide_eq_decide.mpr (eraseVal_inj_iff hcs)]
   | resolveS p v e σ w σ' κs ts hstep hused ih =>
     obtain ⟨e2', σ2', efs', hstep'⟩ := ih
-    exact ⟨_, σ2', efs', fill_primStep (Ectx := List ECtxItem)
+    exact ⟨_, σ2', efs', fill_primStep
       [(.pairL hl_val(#.poison) : ECtxItem), .pairL (eraseVal w), .fst, .fst] hstep'⟩
   | _ =>
     exact ⟨_, _, _, primStep_of_baseStep (by
@@ -831,8 +814,7 @@ theorem baseStep_erased_primStep {e1 : Exp} {σ1 : State} {κ : List Observation
 
 #rocq_ignore heap_lang.base_step_erased_prim_step_un_op "Proved in place in the catch-all arm of `baseStep_erased_primStep`"
 #rocq_ignore heap_lang.base_step_erased_prim_step_bin_op "Proved in place in the catch-all arm of `baseStep_erased_primStep`"
-#rocq_ignore heap_lang.base_step_erased_prim_step_free
-  "Proved in place in the catch-all arm of `baseStep_erased_primStep`"
+#rocq_ignore heap_lang.base_step_erased_prim_step_free "Proved in place in the catch-all arm of `baseStep_erased_primStep`"
 #rocq_ignore heap_lang.base_step_erased_prim_step_load "Proved in place in the catch-all arm of `baseStep_erased_primStep`"
 #rocq_ignore heap_lang.base_step_erased_prim_step_xchg "Proved in place in the catch-all arm of `baseStep_erased_primStep`"
 #rocq_ignore heap_lang.base_step_erased_prim_step_store "Proved in place in the catch-all arm of `baseStep_erased_primStep`"
@@ -954,7 +936,7 @@ theorem erasure {e : Exp} {σ : State} {φ : Val → State → Prop} (Had : adeq
       map_eq_append_cons (xs := []) (by show List.map eraseExpr t2'' = _; simpa [eraseTp] using htp_eq)
     obtain rfl : la = [] := by simpa using hla
     subst herase_eo
-    have hv := Language.ReflTransGen_purePrimStep_val (v := v2) (e := eraseExpr eo) hp_head
+    have hv := Language.ReflTransGen_purePrimStep_val hp_head
     obtain ⟨v', hv', hve⟩ := toVal_erase_some hv
     obtain rfl := (coe_of_toVal_eq_some hv').symm
     exact ⟨v', σ2', hve, hσ.symm, Had.adequate_result _ _ _ hos⟩
