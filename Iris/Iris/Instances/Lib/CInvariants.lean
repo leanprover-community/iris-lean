@@ -63,9 +63,7 @@ instance instTimelessExcl (γ : GName) : Timeless (excl (GF := GF) γ) :=
 @[rocq_alias cinv_contractive]
 instance instContractiveCinv (N : Namespace) (γ : GName) :
     Contractive (cinv (GF := GF) N γ) where
-  distLater_dist {n x y} H := by
-    unfold cinv
-    refine Contractive.distLater_dist fun m hm => or_ne.ne (sep_ne.ne (H _ hm) .rfl) .rfl
+  distLater_dist := by contractive
 
 @[rocq_alias cinv_ne]
 instance instNonExpansiveCinv (N : Namespace) (γ : GName) :
