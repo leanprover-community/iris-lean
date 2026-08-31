@@ -89,6 +89,10 @@ theorem trans (hab : ReflTransGen r a b) (hbc : ReflTransGen r b c) : ReflTransG
   | tail _ hcd ih => exact ih.tail hcd
 
 /-- NB. Copied from Mathlib -/
+instance {α} {r : α → α → Prop} :
+    Trans (ReflTransGen r) (ReflTransGen r) (ReflTransGen r) := ⟨trans⟩
+
+/-- NB. Copied from Mathlib -/
 theorem single (hab : r a b) : ReflTransGen r a b :=
   refl.tail hab
 
