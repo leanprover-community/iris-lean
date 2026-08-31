@@ -91,7 +91,7 @@ elab "isplitr " colGt "[" names:(colGt ident)* "]": tactic => do
   `isplitl` splits a separating conjunction (`∗`) into two goals,
   with all spatial hypotheses assigned to the left goal.
 
-  To assign some hypotheses `H₁ … Hₙ` to the right goal, use `isplitr [H₁ … Hₙ]`
+  To assign only a subset of the hypotheses to the left goal, use `isplitl [H₁ … Hₙ]`.
   instead.
 -/
 macro "isplitl" : tactic => `(tactic| isplitr [])
@@ -100,7 +100,7 @@ macro "isplitl" : tactic => `(tactic| isplitr [])
   `isplitr` splits a separating conjunction (`∗`) into two goals,
   with all spatial hypotheses assigned to the right goal.
 
-  To assign some hypotheses `H₁ … Hₙ` to the left goal, use `isplitl [H₁ … Hₙ]`
+  To assign only a subset of the hypotheses to the right goal, use `isplitr [H₁ … Hₙ]`.
   instead.
 -/
 macro "isplitr" : tactic => `(tactic| isplitl [])
