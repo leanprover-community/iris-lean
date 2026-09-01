@@ -117,7 +117,7 @@ theorem set_bij_own_elem_agree {a a' : A} {b b' : B} :
 @[rocq_alias gset_bij_own_elem_get]
 theorem set_bij_own_elem_get (a : A) (b : B) (h : (a, b) ∈ L) :
     (γ ↪●BIJ{dq} L) ⊢@{IProp GF} γ ↪◯BIJ⟨a, b⟩ :=
-  iOwn_mono (elem_inc_auth h)
+  iOwn_mono (CMRA.inc_of_incExt (elem_incExt_auth h))
 
 @[rocq_alias gset_bij_elem_of]
 theorem set_bij_elem_of (a : A) (b : B) :

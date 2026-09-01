@@ -104,6 +104,7 @@ variable {ι : Type _} [DecidableEq ι] {β : ι → Type _} [∀ i, UCMRA (β i
 instance instDiscreteFunCmraDiscrete [∀ i, CMRA.Discrete (β i)] :
     CMRA.Discrete ((i : ι) → β i) where
   discrete_valid h i := CMRA.Discrete.discrete_valid (h i)
+  discrete_inc h i := CMRA.Discrete.discrete_inc (h i)
 
 @[rocq_alias discrete_fun_singleton_ne]
 instance instDiscreteFunSingletonNonExpansive (x : ι) :

@@ -134,7 +134,7 @@ abbrev UPredOF (F : COFE.OFunctorPre) [URFunctor F] : COFE.OFunctorPre :=
 def uPred_map [UCMRA α] [UCMRA β] (f : β -C> α) : UPred α -n> UPred β := by
   refine ⟨fun P => ⟨fun n x => P n ⟨(f x.val), f.validN x.property⟩, ?_⟩, ⟨?_⟩⟩
   · intro n1 n2 x1 x2 HP Hm Hn
-    exact P.mono HP (f.monoN _ Hm) Hn
+    exact P.mono HP (f.monoN Hm) Hn
   · intro n x1 x2 Hx1x2 n' y Hn' Hv
     exact Hx1x2 _ _ Hn' (f.validN Hv)
 

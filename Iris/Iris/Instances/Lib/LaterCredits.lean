@@ -40,6 +40,7 @@ scoped instance : LeftCancelAdd Credit := ⟨Nat.add_left_cancel⟩
 scoped instance : COFE Credit := COFE.ofDiscrete _
 scoped instance : Discrete Credit := ⟨fun h => h⟩
 scoped instance : UCMRA Credit := CommMonoidLike.instUCMRA
+scoped instance : CMRA.Affine Credit := RABase.affine_withExtensionOrder
 scoped instance : CMRA.Discrete Credit := CommMonoidLike.instDiscrete
 scoped instance {a : Credit} : CMRA.Cancelable a := inferInstance
 
@@ -137,7 +138,8 @@ theorem lc_supply_bound {n m} : ⊢@{IProp GF} lc_supply m -∗ £ n -∗ ⌜n �
 theorem lc_decrease_supply {n m} : ⊢@{IProp GF} lc_supply (n + m) -∗ £ n -∗ |==> lc_supply m := by
   iintro H1 H2
   imod iOwn_update_op (E := LC.lc_elem)
-    (auth_update (leftCancelAdd_local_update ((Nat.add_assoc n m 0).trans (Nat.add_comm n m))))
+    (auth_update_of_localUpdate (fun h => h)
+      (leftCancelAdd_local_update ((Nat.add_assoc n m 0).trans (Nat.add_comm n m))))
     $$ [H1 H2] with H
   · unfold lc lc_supply
     isplitl [H1] <;> iassumption
@@ -150,7 +152,8 @@ theorem lc_increase_supply n m : lc_supply m ⊢@{IProp GF} |==> (lc_supply (n +
   unfold lc lc_supply
   iintro H
   imod iOwn_update $$ H with Hown
-  · exact auth_update_alloc (leftCancelAdd_local_update (y := 0) (x' := (n + m)) (y' := n) (by grind))
+  · exact auth_update_alloc_of_localUpdate (fun h => h)
+      (leftCancelAdd_local_update (y := 0) (x' := (n + m)) (y' := n) (by grind))
   icases iOwn_op $$ Hown with ⟨Hm, _⟩
   iframe
 

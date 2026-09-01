@@ -38,10 +38,10 @@ instance fromAnd_ownM_coreId {a b1 b2 : M} [h : IsOp .split a b1 b2]
   from_and := by
     rw [h.is_op]
     refine .trans ?_ (ownM_op ..).mpr
-    cases (inferInstance : TCOr (CoreId b1) (CoreId b2)) <;> exact persistent_and_sep.mp
+    cases (inferInstance : TCOr (CoreId b1) (CoreId b2)) <;> exact persistent_and_sep_mp
 
 @[rocq_alias into_and_ownM]
-instance intoAnd_ownM (p : Bool) {a b1 b2 : M} [h : IsOp .split a b1 b2] :
+instance intoAnd_ownM [CMRA.Affine M] (p : Bool) {a b1 b2 : M} [h : IsOp .split a b1 b2] :
     IntoAnd p (ownM a) (ownM b1) (ownM b2) where
   into_and := intuitionisticallyIf_mono <| by rw [h.is_op]; exact (ownM_op ..).mp.trans sep_and
 

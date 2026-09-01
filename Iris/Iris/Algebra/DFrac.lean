@@ -69,8 +69,7 @@ def op : DFrac → DFrac → DFrac
 #rocq_ignore dfrac_valid_instance "Use CMRA instance"
 #rocq_ignore dfrac_ra_mixin "Not needed"
 
-@[rocq_alias dfracR]
-instance instCMRADFrac : CMRA DFrac where
+instance instRABaseDFrac : RABase DFrac where
   pcore := pcore
   op := op
   Valid := valid
@@ -85,12 +84,17 @@ instance instCMRADFrac : CMRA DFrac where
   comm := by rintro ⟨⟩ ⟨⟩ <;> grind [op]
   pcore_op_left := by rintro ⟨⟩ ⟨⟩ <;> simp [op, pcore]
   pcore_idem := by rintro ⟨⟩ ⟨⟩ <;> simp [pcore]
+  extend _ Hxyz := ⟨_, _, discrete Hxyz, .rfl, .rfl⟩
+
+instance : RABase.ExtensionLaws DFrac where
   pcore_op_mono := by
-    rintro ⟨⟩ ⟨⟩ <;> simp [pcore] <;>
+    rintro ⟨⟩ ⟨⟩ <;> simp [CMRA.pcore, pcore] <;>
     · intro z
       exists discard
-      rcases z with z|_|z <;> simp [op]
-  extend _ Hxyz := ⟨_, _, discrete Hxyz, .rfl, .rfl⟩
+      rcases z with z|_|z <;> simp [CMRA.op, op]
+
+@[rocq_alias dfracR]
+instance instCMRADFrac : CMRA DFrac := CMRA.withExtensionOrder
 
 @[rocq_alias dfrac_full_exclusive]
 instance own_whole_exclusive : CMRA.Exclusive (α := DFrac) (own 1) where
@@ -158,6 +162,7 @@ theorem valid_own_op_discard {q : Qp} : ✓ own q • discard ↔ q.val < 1 := b
 @[rocq_alias dfrac_cmra_discrete]
 instance : CMRA.Discrete DFrac where
   discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
+  discrete_inc := RABase.incExt_of_incExt0
 
 theorem is_discrete {q : DFrac} : OFE.DiscreteE q := ⟨fun h => h⟩
 

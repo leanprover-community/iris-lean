@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Markus de Medeiros
+Authors: Markus de Medeiros, Janine Lohse
 -/
 module
 
@@ -200,8 +200,24 @@ private theorem pcore_map_inr_eq [CMRA β] {b : β} {cx : Csum α β}
     ∃ cb, CMRA.pcore b = some cb ∧ cx = inr cb := by
   cases _ : CMRA.pcore b <;> simp_all
 
-@[rocq_alias csum_cmra_mixin]
-instance [CMRA α] [CMRA β] : CMRA (Csum α β) where
+/-- The step-indexed order on `Csum α β`: the orders of `α` and `β` on the two summands, with
+`invalid` as the top element. -/
+abbrev IncludedN [CMRA α] [CMRA β] (n : Nat) : Csum α β → Csum α β → Prop
+  | _, invalid => True
+  | inl a, inl a' => a ≼{n} a'
+  | inr b, inr b' => b ≼{n} b'
+  | _, _ => False
+
+/-- The order on `Csum α β`; see `Csum.IncludedN`. -/
+abbrev Included [CMRA α] [CMRA β] : Csum α β → Csum α β → Prop
+  | _, invalid => True
+  | inl a, inl a' => a ≼ a'
+  | inr b, inr b' => b ≼ b'
+  | _, _ => False
+
+/-- The resource algebra on `Csum α β`. -/
+@[reducible, rocq_alias csum_cmra_mixin]
+def raBase [CMRA α] [CMRA β] : RABase (Csum α β) where
   pcore := Csum.pcore
   op := Csum.op
   Valid := Csum.valid
@@ -211,10 +227,10 @@ instance [CMRA α] [CMRA β] : CMRA (Csum α β) where
   pcore_ne {n x y cx} hxy hpx := by
     cases x <;> cases y <;> try exact hxy.elim
     · obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq hpx
-      obtain ⟨cy, hcy, ecy⟩ := CMRA.pcore_ne hxy hpa
+      obtain ⟨cy, hcy, ecy⟩ := CMRA.pcore_ne (cx := ca) hxy hpa
       exact ⟨inl cy, by simp [Csum.pcore, hcy], ecy⟩
     · obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx
-      obtain ⟨cy, hcy, ecy⟩ := CMRA.pcore_ne hxy hpb
+      obtain ⟨cy, hcy, ecy⟩ := CMRA.pcore_ne (cx := cb) hxy hpb
       exact ⟨inr cy, by simp [Csum.pcore, hcy], ecy⟩
     · simp only [Csum.pcore, Option.some.injEq] at hpx
       exact ⟨invalid, rfl, hpx ▸ .rfl⟩
@@ -238,21 +254,6 @@ instance [CMRA α] [CMRA β] : CMRA (Csum α β) where
       obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx
       exact Option.map_forall₂ inr (CMRA.pcore_idem hpb)
     | invalid => simp only [Csum.pcore, Option.some.injEq] at hpx; exact hpx ▸ rfl
-  pcore_op_mono {x cx} hpx y := by cases x with
-    | inl a =>
-      obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq hpx; cases y with
-      | inl a' =>
-        obtain ⟨cy, hcy⟩ := CMRA.pcore_op_mono hpa a'
-        exact ⟨inl cy, Option.map_forall₂ inl hcy⟩
-      | _ => exact ⟨invalid, rfl⟩
-    | inr b =>
-      obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx; cases y with
-      | inr b' =>
-        obtain ⟨cy, hcy⟩ := CMRA.pcore_op_mono hpb b'
-        exact ⟨inr cy, Option.map_forall₂ inr hcy⟩
-      | _ => exact ⟨invalid, rfl⟩
-    | invalid =>
-      simp only [Csum.pcore, Option.some.injEq] at hpx; exact hpx ▸ ⟨invalid, rfl⟩
   validN_op_left {n x y} h := by
     cases x <;> cases y <;> first | exact CMRA.validN_op_left h | exact h.elim
   extend {n x y₁ y₂} hv he := by
@@ -263,6 +264,128 @@ instance [CMRA α] [CMRA β] : CMRA (Csum α β) where
          exact ⟨inl z₁, inl z₂, congrArg _ hz, hz₁, hz₂⟩)
       | (obtain ⟨z₁, z₂, hz, hz₁, hz₂⟩ := CMRA.extend hv he
          exact ⟨inr z₁, inr z₂, congrArg _ hz, hz₁, hz₂⟩)
+
+/-- The order on `Csum α β`. -/
+@[reducible] def orderN [CMRA α] [CMRA β] : OrderN (Csum α β) where
+  IncludedN := IncludedN
+  Included := Included
+  incN_ne {n x x' y y'} ex ey h := by
+    cases x <;> cases x' <;> cases y <;> cases y' <;>
+      first | trivial | exact ex.elim | exact ey.elim | exact h.elim | exact CMRA.incN_ne ex ey h
+  incN_succ {n x y} h := by
+    cases x <;> cases y <;> first | trivial | exact h.elim | exact CMRA.incN_succ h
+  incN_trans {n x y z} h₁ h₂ := by
+    cases x <;> cases y <;> cases z <;>
+      first | trivial | exact h₁.elim | exact h₂.elim | exact CMRA.incN_trans h₁ h₂
+  inc_trans {x y z} h₁ h₂ := by
+    cases x <;> cases y <;> cases z <;>
+      first | trivial | exact h₁.elim | exact h₂.elim | exact CMRA.inc_trans h₁ h₂
+  incN_of_inc {x y} n h := by
+    cases x <;> cases y <;> first | trivial | exact h.elim | exact CMRA.incN_of_inc n h
+
+section
+variable [CMRA α] [CMRA β]
+attribute [local instance] raBase orderN
+
+theorem increasing_inl_iff {a : α} : Increasing (inl (β := β) a) ↔ Increasing a where
+  mp h := ⟨fun a' => h.increasing (inl a')⟩
+  mpr h := ⟨fun | inl a' => h.increasing a' | inr _ | invalid => trivial⟩
+
+theorem increasing_inr_iff {b : β} : Increasing (inr (α := α) b) ↔ Increasing b where
+  mp h := ⟨fun b' => h.increasing (inr b')⟩
+  mpr h := ⟨fun | inr b' => h.increasing b' | inl _ | invalid => trivial⟩
+
+instance : Increasing (invalid : Csum α β) := ⟨fun _ => trivial⟩
+
+theorem incNR_inl {n} {a a' : α} (h : inl (β := β) a ≼*{n} inl a') : a ≼*{n} a' := h.imp id id
+theorem incNR_inr {n} {b b' : β} (h : inr (α := α) b ≼*{n} inr b') : b ≼*{n} b' := h.imp id id
+
+instance instCMRA : CMRA (Csum α β) where
+  toRABase := raBase
+  toOrderN := orderN
+  op_monoN_left {n x y} z h := by
+    cases x <;> cases y <;> cases z <;>
+      first | trivial | exact h.elim | exact CMRA.op_monoN_left _ h
+  op_mono_left {x y} z h := by
+    cases x <;> cases y <;> cases z <;>
+      first | trivial | exact h.elim | exact CMRA.op_mono_left _ h
+  validN_of_incN {n x y} h v := by
+    cases x <;> cases y <;> first | trivial | exact h.elim | exact v.elim | exact CMRA.validN_of_incN h v
+  pcore_monoN {n x y cx} h e := by
+    match x, y, h with
+    | inl a, inl a', h =>
+      obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq e
+      obtain ⟨ca', hpa', hi⟩ := CMRA.pcore_monoN h hpa
+      exact ⟨inl ca', Option.map_forall₂ inl hpa', hi⟩
+    | inr b, inr b', h =>
+      obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq e
+      obtain ⟨cb', hpb', hi⟩ := CMRA.pcore_monoN h hpb
+      exact ⟨inr cb', Option.map_forall₂ inr hpb', hi⟩
+    | inl _, invalid, _ | inr _, invalid, _ | invalid, invalid, _ => exact ⟨invalid, rfl, trivial⟩
+    | inl _, inr _, h | inr _, inl _, h | invalid, inl _, h | invalid, inr _, h => exact h.elim
+  pcore_mono {x y cx} h e := by
+    match x, y, h with
+    | inl a, inl a', h =>
+      obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq e
+      obtain ⟨ca', hpa', hi⟩ := CMRA.pcore_mono h hpa
+      exact ⟨inl ca', Option.map_forall₂ inl hpa', hi⟩
+    | inr b, inr b', h =>
+      obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq e
+      obtain ⟨cb', hpb', hi⟩ := CMRA.pcore_mono h hpb
+      exact ⟨inr cb', Option.map_forall₂ inr hpb', hi⟩
+    | inl _, invalid, _ | inr _, invalid, _ | invalid, invalid, _ => exact ⟨invalid, rfl, trivial⟩
+    | inl _, inr _, h | inr _, inl _, h | invalid, inl _, h | invalid, inr _, h => exact h.elim
+  pcore_order_op {x cx} e y := by
+    match x, y with
+    | inl a, inl a' =>
+      obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq e
+      obtain ⟨caa, hpaa, hi⟩ := CMRA.pcore_order_op hpa a'
+      exact ⟨inl caa, Option.map_forall₂ inl hpaa, hi⟩
+    | inr b, inr b' =>
+      obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq e
+      obtain ⟨cbb, hpbb, hi⟩ := CMRA.pcore_order_op hpb b'
+      exact ⟨inr cbb, Option.map_forall₂ inr hpbb, hi⟩
+    | inl _, inr _ | inl _, invalid | inr _, inl _ | inr _, invalid
+    | invalid, inl _ | invalid, inr _ | invalid, invalid => exact ⟨invalid, rfl, trivial⟩
+  pcore_increasing {x cx} e := by
+    match x with
+    | inl a =>
+      obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq e
+      exact increasing_inl_iff.mpr (CMRA.pcore_increasing hpa)
+    | inr b =>
+      obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq e
+      exact increasing_inr_iff.mpr (CMRA.pcore_increasing hpb)
+    | invalid => cases e; exact inferInstance
+  increasing_closed {n x y} h h' := by
+    match x, y, h' with
+    | _, invalid, _ => exact inferInstance
+    | inl _, inl _, h' =>
+      exact increasing_inl_iff.mpr ((increasing_inl_iff.mp h).of_incNR (incNR_inl h'))
+    | inr _, inr _, h' =>
+      exact increasing_inr_iff.mpr ((increasing_inr_iff.mp h).of_incNR (incNR_inr h'))
+    | inl _, inr _, h' | inr _, inl _, h' | invalid, inl _, h' | invalid, inr _, h' =>
+      exact h'.elim (·.elim) (·.elim)
+  incN_extend {n x y} v h := by
+    match x, y, h with
+    | inl _, inl _, h =>
+      obtain ⟨z, hz, ez⟩ := CMRA.incN_extend v h
+      exact ⟨inl z, hz, ez⟩
+    | inr _, inr _, h =>
+      obtain ⟨z, hz, ez⟩ := CMRA.incN_extend v h
+      exact ⟨inr z, hz, ez⟩
+    | inl _, invalid, _ | inr _, invalid, _ | invalid, invalid, _ => exact v.elim
+    | inl _, inr _, h | inr _, inl _, h | invalid, inl _, h | invalid, inr _, h => exact h.elim
+
+end
+
+instance [CMRA α] [CMRA β] [IncRefl α] [IncRefl β] : IncRefl (Csum α β) where
+  inc_refl | inl a => CMRA.inc_refl a | inr b => CMRA.inc_refl b | invalid => trivial
+
+instance [CMRA α] [CMRA β] [Affine α] [Affine β] : Affine (Csum α β) where
+  increasing
+    | inl a => increasing_inl_iff.mpr (Affine.increasing a)
+    | inr b => increasing_inr_iff.mpr (Affine.increasing b)
+    | invalid => inferInstance
 
 #rocq_ignore csumR "Use Csum type with typeclass inference"
 #rocq_ignore csum_op_instance "Use CMRA instance"
@@ -285,6 +408,9 @@ instance [CMRA α] [CMRA β] [CMRA.Discrete α] [CMRA.Discrete β] : CMRA.Discre
     | inl a => CMRA.discrete_valid (x := a) hv
     | inr b => CMRA.discrete_valid (x := b) hv
     | invalid => hv
+  discrete_inc {x y} h := by
+    cases x <;> cases y <;>
+      first | trivial | exact h.elim | exact CMRA.discrete_inc (α := α) h | exact CMRA.discrete_inc (α := β) h
 
 /-! ## CoreId -/
 
@@ -334,11 +460,100 @@ instance [CMRA α] [CMRA β] {b : β} [IdFree b] : IdFree (inr (α := α) b) whe
 
 /-! ## Included -/
 
-@[rocq_alias csum_included]
 theorem included [CMRA α] [CMRA β] {x y : Csum α β} :
     x ≼ y ↔ y = invalid ∨
       (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼ a') ∨
       (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼ b') := by
+  constructor
+  · intro h
+    cases x <;> cases y <;>
+      first
+      | exact Or.inl rfl
+      | exact Or.inr (Or.inl ⟨_, _, rfl, rfl, h⟩)
+      | exact Or.inr (Or.inr ⟨_, _, rfl, rfl, h⟩)
+      | exact h.elim
+  · rintro (rfl | ⟨a, a', rfl, rfl, h⟩ | ⟨b, b', rfl, rfl, h⟩)
+    · cases x <;> trivial
+    · exact h
+    · exact h
+
+theorem inl_included [CMRA α] [CMRA β] {a a' : α} : (inl (β := β) a) ≼ inl a' ↔ a ≼ a' := .rfl
+
+theorem inr_included [CMRA α] [CMRA β] {b b' : β} : (inr (α := α) b) ≼ inr b' ↔ b ≼ b' := .rfl
+
+theorem invalid_included [CMRA α] [CMRA β] (x : Csum α β) : x ≼ invalid := by cases x <;> trivial
+
+theorem includedN [CMRA α] [CMRA β] {n} {x y : Csum α β} :
+    x ≼{n} y ↔ y = invalid ∨
+      (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼{n} a') ∨
+      (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼{n} b') := by
+  constructor
+  · intro h
+    cases x <;> cases y <;>
+      first
+      | exact Or.inl rfl
+      | exact Or.inr (Or.inl ⟨_, _, rfl, rfl, h⟩)
+      | exact Or.inr (Or.inr ⟨_, _, rfl, rfl, h⟩)
+      | exact h.elim
+  · rintro (rfl | ⟨a, a', rfl, rfl, h⟩ | ⟨b, b', rfl, rfl, h⟩)
+    · cases x <;> trivial
+    · exact h
+    · exact h
+
+theorem some_included [CMRA α] [CMRA β] {x y : Csum α β} :
+    some x ≼ some y ↔ y = invalid ∨
+      (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼ some a') ∨
+      (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ some b') := by
+  rw [Option.some_inc_some_iff]
+  constructor
+  · rintro (rfl | h)
+    · cases x <;>
+        first
+        | exact .inl rfl
+        | exact .inr (Or.inl ⟨_, _, rfl, rfl, Or.inl rfl⟩)
+        | exact .inr (Or.inr ⟨_, _, rfl, rfl, Or.inl rfl⟩)
+    · rcases included.mp h with rfl | ⟨a, a', rfl, rfl, ha⟩ | ⟨b, b', rfl, rfl, hb⟩
+      · exact .inl rfl
+      · exact .inr (Or.inl ⟨a, a', rfl, rfl, Or.inr ha⟩)
+      · exact .inr (Or.inr ⟨b, b', rfl, rfl, Or.inr hb⟩)
+  · rintro (rfl | ⟨a, a', rfl, rfl, (rfl | h)⟩ | ⟨b, b', rfl, rfl, (rfl | h)⟩)
+    · exact .inr (invalid_included x)
+    · exact .inl rfl
+    · exact .inr h
+    · exact .inl rfl
+    · exact .inr h
+
+theorem some_includedN [CMRA α] [CMRA β] {n} {x y : Csum α β} :
+    some x ≼{n} some y ↔ y = invalid ∨
+      (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼{n} some a') ∨
+      (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼{n} some b') := by
+  rw [Option.some_incN_some_iff]
+  constructor
+  · rintro (heq | h)
+    · cases x <;> cases y <;>
+        first
+        | exact .inl rfl
+        | exact heq.elim
+        | exact .inr (Or.inl ⟨_, _, rfl, rfl, Or.inl heq⟩)
+        | exact .inr (Or.inr ⟨_, _, rfl, rfl, Or.inl heq⟩)
+    · rcases includedN.mp h with rfl | ⟨a, a', rfl, rfl, ha⟩ | ⟨b, b', rfl, rfl, hb⟩
+      · exact .inl rfl
+      · exact .inr (Or.inl ⟨a, a', rfl, rfl, Or.inr ha⟩)
+      · exact .inr (Or.inr ⟨b, b', rfl, rfl, Or.inr hb⟩)
+  · rintro (rfl | ⟨a, a', rfl, rfl, (heq | h)⟩ | ⟨b, b', rfl, rfl, (heq | h)⟩)
+    · exact .inr (invalid_included x)
+    · exact .inl heq
+    · exact .inr h
+    · exact .inl heq
+    · exact .inr h
+
+/-! ### The extension inclusion -/
+
+@[rocq_alias csum_included]
+theorem included_ext [CMRA α] [CMRA β] {x y : Csum α β} :
+    x ≼ₑ y ↔ y = invalid ∨
+      (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼ₑ a') ∨
+      (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼ₑ b') := by
   constructor
   · rintro ⟨z, hz⟩; cases x <;> cases z <;> cases y <;>
       first
@@ -352,30 +567,30 @@ theorem included [CMRA α] [CMRA β] {x y : Csum α β} :
     · exact ⟨inr c, congrArg inr hc⟩
 
 @[rocq_alias Cinl_included]
-theorem inl_included [CMRA α] [CMRA β] {a a' : α} :
-    (inl (β := β) a) ≼ inl a' ↔ a ≼ a' := by
+theorem inl_included_ext [CMRA α] [CMRA β] {a a' : α} :
+    (inl (β := β) a) ≼ₑ inl a' ↔ a ≼ₑ a' := by
   constructor
   · rintro ⟨z, hz⟩; cases z <;>
       first | exact ⟨_, Csum.inl.inj hz⟩ | exact absurd hz (by simp [CMRA.op, Csum.op])
   · rintro ⟨c, hc⟩; exact ⟨inl c, congrArg inl hc⟩
 
 @[rocq_alias Cinr_included]
-theorem inr_included [CMRA α] [CMRA β] {b b' : β} :
-    (inr (α := α) b) ≼ inr b' ↔ b ≼ b' := by
+theorem inr_included_ext [CMRA α] [CMRA β] {b b' : β} :
+    (inr (α := α) b) ≼ₑ inr b' ↔ b ≼ₑ b' := by
   constructor
   · rintro ⟨z, hz⟩; cases z <;>
       first | exact ⟨_, Csum.inr.inj hz⟩ | exact absurd hz (by simp [CMRA.op, Csum.op])
   · rintro ⟨c, hc⟩; exact ⟨inr c, congrArg inr hc⟩
 
 @[rocq_alias CsumInvalid_included]
-theorem invalid_included [CMRA α] [CMRA β] (x : Csum α β) : x ≼ invalid :=
+theorem invalid_included_ext [CMRA α] [CMRA β] (x : Csum α β) : x ≼ₑ invalid :=
   ⟨invalid, by cases x <;> rfl⟩
 
 @[rocq_alias csum_includedN]
-theorem includedN [CMRA α] [CMRA β] {n} {x y : Csum α β} :
-    x ≼{n} y ↔ y = invalid ∨
-      (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼{n} a') ∨
-      (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼{n} b') := by
+theorem includedN_ext [CMRA α] [CMRA β] {n} {x y : Csum α β} :
+    x ≼ₑ{n} y ↔ y = invalid ∨
+      (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼ₑ{n} a') ∨
+      (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼ₑ{n} b') := by
   constructor
   · rintro ⟨z, hz⟩; cases x <;> cases z <;> cases y <;>
       first
@@ -389,44 +604,44 @@ theorem includedN [CMRA α] [CMRA β] {n} {x y : Csum α β} :
     · exact ⟨inr c, hc⟩
 
 @[rocq_alias Some_csum_included]
-theorem some_included [CMRA α] [CMRA β] {x y : Csum α β} :
-    some x ≼ some y ↔ y = invalid ∨
-      (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼ some a') ∨
-      (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ some b') := by
+theorem some_included_ext [CMRA α] [CMRA β] {x y : Csum α β} :
+    some x ≼ₑ some y ↔ y = invalid ∨
+      (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼ₑ some a') ∨
+      (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ₑ some b') := by
   constructor
-  · intro h; rcases Option.some_inc_some_iff.mp h with heq | hinc
+  · intro h; rcases Option.some_incExt_some_iff.mp h with heq | hinc
     · subst heq
       cases x <;>
         first
         | exact .inl rfl
-        | exact .inr (Or.inl ⟨_, _, rfl, rfl, Option.some_inc_some_iff.mpr (.inl rfl)⟩)
-        | exact .inr (Or.inr ⟨_, _, rfl, rfl, Option.some_inc_some_iff.mpr (.inl rfl)⟩)
-    · rcases included.mp hinc with rfl | ⟨a, a', rfl, rfl, ha⟩ | ⟨b, b', rfl, rfl, hb⟩
+        | exact .inr (Or.inl ⟨_, _, rfl, rfl, Option.some_incExt_some_iff.mpr (.inl rfl)⟩)
+        | exact .inr (Or.inr ⟨_, _, rfl, rfl, Option.some_incExt_some_iff.mpr (.inl rfl)⟩)
+    · rcases included_ext.mp hinc with rfl | ⟨a, a', rfl, rfl, ha⟩ | ⟨b, b', rfl, rfl, hb⟩
       · exact .inl rfl
-      · exact .inr (Or.inl ⟨a, a', rfl, rfl, Option.some_inc_some_iff.mpr (.inr ha)⟩)
-      · exact .inr (Or.inr ⟨b, b', rfl, rfl, Option.some_inc_some_iff.mpr (.inr hb)⟩)
+      · exact .inr (Or.inl ⟨a, a', rfl, rfl, Option.some_incExt_some_iff.mpr (.inr ha)⟩)
+      · exact .inr (Or.inr ⟨b, b', rfl, rfl, Option.some_incExt_some_iff.mpr (.inr hb)⟩)
   · rintro (rfl | ⟨a, a', rfl, rfl, mz, hmz⟩ | ⟨b, b', rfl, rfl, mz, hmz⟩)
     · exact ⟨some invalid, by cases x <;> rfl⟩
     · exact ⟨mz.map inl, by cases mz <;> exact congrArg (Option.map inl) hmz⟩
     · exact ⟨mz.map inr, by cases mz <;> exact congrArg (Option.map inr) hmz⟩
 
 @[rocq_alias Some_csum_includedN]
-theorem some_includedN [CMRA α] [CMRA β] {n} {x y : Csum α β} :
-    some x ≼{n} some y ↔ y = invalid ∨
-      (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼{n} some a') ∨
-      (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼{n} some b') := by
+theorem some_includedN_ext [CMRA α] [CMRA β] {n} {x y : Csum α β} :
+    some x ≼ₑ{n} some y ↔ y = invalid ∨
+      (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼ₑ{n} some a') ∨
+      (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ₑ{n} some b') := by
   constructor
-  · intro h; rcases Option.some_incN_some_iff.mp h with heq | hinc
+  · intro h; rcases Option.some_incExtN_some_iff.mp h with heq | hinc
     · cases x <;> cases y <;>
         first
         | exact .inl rfl
         | exact heq.elim | exact (heq 0).elim
-        | exact .inr (Or.inl ⟨_, _, rfl, rfl, Option.some_incN_some_iff.mpr (.inl heq)⟩)
-        | exact .inr (Or.inr ⟨_, _, rfl, rfl, Option.some_incN_some_iff.mpr (.inl heq)⟩)
-    · rcases includedN.mp hinc with rfl | ⟨a, a', rfl, rfl, ha⟩ | ⟨b, b', rfl, rfl, hb⟩
+        | exact .inr (Or.inl ⟨_, _, rfl, rfl, Option.some_incExtN_some_iff.mpr (.inl heq)⟩)
+        | exact .inr (Or.inr ⟨_, _, rfl, rfl, Option.some_incExtN_some_iff.mpr (.inl heq)⟩)
+    · rcases includedN_ext.mp hinc with rfl | ⟨a, a', rfl, rfl, ha⟩ | ⟨b, b', rfl, rfl, hb⟩
       · exact .inl rfl
-      · exact .inr (Or.inl ⟨a, a', rfl, rfl, Option.some_incN_some_iff.mpr (.inr ha)⟩)
-      · exact .inr (Or.inr ⟨b, b', rfl, rfl, Option.some_incN_some_iff.mpr (.inr hb)⟩)
+      · exact .inr (Or.inl ⟨a, a', rfl, rfl, Option.some_incExtN_some_iff.mpr (.inr ha)⟩)
+      · exact .inr (Or.inr ⟨b, b', rfl, rfl, Option.some_incExtN_some_iff.mpr (.inr hb)⟩)
   · rintro (rfl | ⟨a, a', rfl, rfl, mz, hmz⟩ | ⟨b, b', rfl, rfl, mz, hmz⟩)
     · exact ⟨some invalid, by cases x <;> exact Dist.rfl⟩
     · exact ⟨mz.map inl, by cases mz <;> exact hmz⟩
@@ -578,6 +793,15 @@ def cMap [CMRA α] [CMRA α'] [CMRA β] [CMRA β']
     | invalid => trivial
   op x y := by cases x <;> cases y <;>
     first | exact congrArg _ (fa.op _ _) | exact congrArg _ (fb.op _ _) | trivial
+  monoN {n x y} h := by
+    cases x <;> cases y <;> first | trivial | exact h.elim | exact fa.monoN h | exact fb.monoN h
+  mono {x y} h := by
+    cases x <;> cases y <;> first | trivial | exact h.elim | exact fa.mono h | exact fb.mono h
+  increasing {x} h := by
+    cases x with
+    | inl a => exact increasing_inl_iff.mpr (fa.increasing (increasing_inl_iff.mp h))
+    | inr b => exact increasing_inr_iff.mpr (fb.increasing (increasing_inr_iff.mp h))
+    | invalid => exact (inferInstance : Increasing (invalid : Csum α' β'))
 
 instance {Fa Fb} [RFunctor Fa] [RFunctor Fb] : RFunctor (OF Fa Fb) where
   map f g := cMap (RFunctor.map f g) (RFunctor.map f g)
@@ -586,6 +810,10 @@ instance {Fa Fb} [RFunctor Fa] [RFunctor Fb] : RFunctor (OF Fa Fb) where
   map_id x := by cases x <;> simp [cMap, map] <;> exact RFunctor.map_id _
   map_comp f g f' g' x := by
     cases x <;> simp [cMap, map] <;> exact RFunctor.map_comp f g f' g' _
+
+instance {Fa Fb} [RFunctor Fa] [RFunctor Fb] [RFunctorAffine Fa] [RFunctorAffine Fb] :
+    RFunctorAffine (OF Fa Fb) where
+  affine := inferInstance
 
 @[rocq_alias csumRF_contractive]
 instance {Fa Fb} [RFunctorContractive Fa] [RFunctorContractive Fb] :

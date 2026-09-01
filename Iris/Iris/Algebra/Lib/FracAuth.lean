@@ -29,7 +29,7 @@ public abbrev FracAuth [CMRA A] := Auth (Option (Qp × A))
 
 namespace FracAuth
 
-variable [CMRA A]
+variable [CMRA A] [CMRA.Affine A]
 
 @[rocq_alias frac_auth_auth]
 public abbrev auth (dq : DFrac) (a : A) : FracAuth (A := A) := Auth.auth dq (some (1, a))
@@ -84,7 +84,7 @@ instance frag_discrete {q : Qp} {a : A} [ha : DiscreteE a] : DiscreteE (◯F{q} 
 @[rocq_alias frac_auth_dfrac_validN]
 theorem dfrac_validN {dq : DFrac} {n : Nat} {a : A} (hdq : ✓ dq) (ha : ✓{n} a) :
     ✓{n} (●F{dq} a) • ◯F a := by
-  simpa only [both_dfrac_validN] using ⟨hdq, ⟨none, .rfl⟩, Qp.valid_one, ha⟩
+  simpa only [both_dfrac_validN] using ⟨hdq, incN_refl _, Qp.valid_one, ha⟩
 
 @[rocq_alias frac_auth_validN]
 theorem validN {n : Nat} {a : A} (ha : ✓{n} a) : ✓{n} (●F a : FracAuth) • ◯F a :=
@@ -92,7 +92,7 @@ theorem validN {n : Nat} {a : A} (ha : ✓{n} a) : ✓{n} (●F a : FracAuth) �
 
 @[rocq_alias frac_auth_dfrac_valid]
 theorem dfrac_valid {dq : DFrac} {a : A} (hdq : ✓ dq) (ha : ✓ a) : ✓ (●F{dq} a) • ◯F a :=
-  auth_both_dfrac_valid_2 hdq ⟨valid_iff_validN.mpr fun _ => Qp.valid_one, ha⟩ ⟨none, rfl⟩
+  auth_both_dfrac_valid_2 hdq ⟨valid_iff_validN.mpr fun _ => Qp.valid_one, ha⟩ (CMRA.inc_refl _)
 
 @[rocq_alias frac_auth_valid]
 theorem valid {a : A} (ha : ✓ a) : ✓ (●F a : FracAuth) • ◯F a :=
@@ -103,7 +103,9 @@ theorem valid {a : A} (ha : ✓ a) : ✓ (●F a : FracAuth) • ◯F a :=
 @[rocq_alias frac_auth_agreeN]
 theorem agreeN {dq : DFrac} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F b) : a ≡{n}≡ b := by
   rw [both_dfrac_validN] at h
-  exact (dist_of_inc_exclusive h.2.1 h.2.2).2.symm
+  rcases h.2.1 with e | i
+  · exact e.2.symm
+  · exact absurd h.2.2.1 (RABase.not_valid_of_exclN_incExt (x := (1 : Qp)) i.1)
 
 @[rocq_alias frac_auth_agree]
 theorem agree {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F b) : a = b :=
@@ -117,29 +119,27 @@ theorem agree {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F b) : a = b :
 theorem includedN {n : Nat} {dq : DFrac} {q : Qp} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F{q} b) :
     some b ≼{n} some a := by
   rw [both_dfrac_validN] at h
-  obtain ⟨_, ⟨mc, hmc⟩, hv⟩ := h
-  match mc with
-  | none => exact ⟨none, hmc.2⟩
-  | some (_, cr) => exact ⟨some cr, hmc.2⟩
+  rcases h.2.1 with e | i
+  · exact Option.some_incN_some_iff.mpr (.inl e.2)
+  · exact Option.some_incN_some_iff.mpr (.inr i.2)
 
 @[rocq_alias frac_auth_included]
 theorem included [CMRA.Discrete A] {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F{q} b) :
       some b ≼ some a := by
   rw [both_dfrac_valid_discrete] at h
-  obtain ⟨_, ⟨mc, hmc⟩, hv⟩ := h
-  match mc with
-  | none => exact ⟨none, congrArg (fun p => some p.snd) (some_eqv_some.mp hmc)⟩
-  | some (_, cr) => exact ⟨some cr, congrArg (fun p => some p.snd) (some_eqv_some.mp hmc)⟩
+  rcases h.2.1 with e | i
+  · exact Option.some_inc_some_iff.mpr (.inl (congrArg Prod.snd e))
+  · exact Option.some_inc_some_iff.mpr (.inr i.2)
 
 @[rocq_alias frac_auth_includedN_total]
-theorem includedN_total [IsTotal A] {dq : DFrac} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F{q} b) :
+theorem includedN_total [IncRefl A] {dq : DFrac} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F{q} b) :
     b ≼{n} a :=
-  some_incN_some_iff_is_total.mp (includedN h)
+  (Option.some_incN_some_iff.mp (includedN h)).elim (·.to_incN) id
 
 @[rocq_alias frac_auth_included_total]
-theorem included_total [CMRA.Discrete A] [IsTotal A] {dq : DFrac} {a b : A}
+theorem included_total [CMRA.Discrete A] [IncRefl A] {dq : DFrac} {a b : A}
     (h : ✓ (●F{dq} a) • ◯F{q} b) : b ≼ a :=
-  inc_of_some_inc_some (included h)
+  (Option.some_inc_some_iff.mp (included h)).elim (· ▸ CMRA.inc_refl b) id
 
 /-! ## Auth-only validity -/
 
@@ -245,15 +245,28 @@ instance isOp_frac_auth_core_id {q q1 q2 : Qp} {a : A}
 
 /-! ## Updates -/
 
+omit [CMRA.Affine A] in
+/-- The order of the fragment algebra `Option (Qp × A)` embeds into the extension
+inclusion, given that the order of `A` does. -/
+private theorem incExtN_of_incN (hsub : ∀ {n : Nat} {x y : A}, x ≼{n} y → x ≼ₑ{n} y)
+    {n : Nat} {x y : Option (Qp × A)} (h : x ≼{n} y) : x ≼ₑ{n} y :=
+  Option.incExtN_of_incN (Prod.incExtN_of_incN (fun h => h) hsub) h
+
 @[rocq_alias frac_auth_update]
-theorem update {q : Qp} {a b a' b' : A} (h : (a, b) ~l~> (a', b')) :
+theorem update {q : Qp} {a b a' b' : A}
+    (hsub : ∀ {n : Nat} {x y : A}, x ≼{n} y → x ≼ₑ{n} y) (h : (a, b) ~l~> (a', b')) :
     ((●F a : FracAuth) • ◯F{q} b) ~~> (●F a') • ◯F{q} b' :=
-  auth_update (.option (.prod_2 _ q h))
+  auth_update_of_localUpdate
+    (incExtN_of_incN hsub)
+    (.option (.prod_2 _ q h))
 
 @[rocq_alias frac_auth_update_1]
-theorem update_full {a b a' : A} (ha' : ✓ a') :
+theorem update_full {a b a' : A}
+    (hsub : ∀ {n : Nat} {x y : A}, x ≼{n} y → x ≼ₑ{n} y) (ha' : ✓ a') :
     ((●F a : FracAuth) • ◯F b) ~~> (●F a') • ◯F a' :=
-   auth_update (.option (.exclusive ⟨Qp.valid_one, ha'⟩))
+  auth_update_of_localUpdate
+    (incExtN_of_incN hsub)
+    (.option (.exclusive ⟨Qp.valid_one, ha'⟩))
 
 @[rocq_alias frac_auth_update_auth_persist]
 theorem update_auth_persist {dq : DFrac} {a : A} : (●F{dq} a) ~~> ●F{.discard} a :=

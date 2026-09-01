@@ -252,7 +252,7 @@ theorem tryAcquireReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
       (a' := ((● LeibnizMultiSet.ofSet (g ⊎ {q.half})) •
         ◯ LeibnizMultiSet.ofSet {q.half} : Auth (LeibnizMultiSet ReaderFracs))) $$ Hauth with
       ⟨Hauth, Hview⟩
-    · refine Auth.auth_update_alloc ?_
+    · refine Auth.auth_update_alloc_of_localUpdate (fun h => h) ?_
       have h := localUpdate_alloc (X := g) (Y := (∅ : ReaderFracs)) (X' := {q.half})
       rwa [disjUnion_empty_left] at h
     imod Hclose $$ [Hl Hauth HΦ] with -
@@ -307,7 +307,7 @@ theorem releaseReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) (q : Q
   ihave %Hmem := own_auth_singleton_2 $$ [$Hauth $Hlocked]
   icombine Hauth Hlocked as Hown
   imod iOwn_update (F := RwSpinLockF) (a' := ● .ofSet (g \ {q})) $$ Hown with Hown
-  · refine Auth.auth_update_dealloc ?_
+  · refine Auth.auth_update_dealloc_of_localUpdate (fun h => h) ?_
     have h := localUpdate_dealloc (X := g) (X' := {q}) subset_refl
     rwa [difference_self] at h
   imod Hclose $$ [-Hφ] with -

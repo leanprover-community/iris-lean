@@ -92,16 +92,15 @@ theorem state_interp_step [HeapLangGS hlc GF] (σ : State) (ns : Nat)
     stateInterp (GF := GF) σ ns κs nt ⊢ |==> stateInterp σ (ns + 1) κs nt := bupd_intro
 
 def HeapLangS : BundledGFunctors
-  | 0 => ⟨InvMapF, by infer_instance⟩
-  | 1 => ⟨constOF CoPsetDisjL, by infer_instance⟩
-  | 2 => ⟨constOF (DisjointLeibnizSet PosSet), by infer_instance⟩
-  | 3 => ⟨Auth.AuthURF (constOF Credit), by infer_instance⟩
-  | 4 => ⟨constOF (HeapView Loc (Agree (DiscreteO (Option Val))) HeapF), by infer_instance⟩
-  | 5 => ⟨constOF (HeapView Loc (Agree (DiscreteO GName)) HeapF), by infer_instance⟩
-  | 6 => ⟨constOF MetaUR, by infer_instance⟩
-  | 7 => ⟨constOF (HeapView ProphId (Agree (DiscreteO (List (Val × Val)))) ProphMapF),
-          by infer_instance⟩
-  | _ => ⟨constOF Unit, by infer_instance⟩
+  | 0 => ⟨InvMapF⟩
+  | 1 => ⟨constOF CoPsetDisjL⟩
+  | 2 => ⟨constOF (DisjointLeibnizSet PosSet)⟩
+  | 3 => ⟨Auth.AuthURF (constOF Credit)⟩
+  | 4 => ⟨constOF (HeapView Loc (Agree (DiscreteO (Option Val))) HeapF)⟩
+  | 5 => ⟨constOF (HeapView Loc (Agree (DiscreteO GName)) HeapF)⟩
+  | 6 => ⟨constOF MetaUR⟩
+  | 7 => ⟨constOF (HeapView ProphId (Agree (DiscreteO (List (Val × Val)))) ProphMapF)⟩
+  | _ => ⟨constOF Unit⟩
 
 instance instHeapLangGS_HeapLangS : HeapLangGpreS HasLC.hasLC HeapLangS where
   toWsatGpreS := by

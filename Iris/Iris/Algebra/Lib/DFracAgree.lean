@@ -64,7 +64,7 @@ theorem mk_op {d₁ d₂ : DFrac} {a : A} : mk (d₁ • d₂) a = mk d₁ a •
 
 @[rocq_alias dfrac_agree_op_valid]
 theorem op_valid {d₁ d₂ : DFrac} {a₁ a₂ : A} : ✓ (mk d₁ a₁ • mk d₂ a₂) ↔ ✓ (d₁ • d₂) ∧ a₁ = a₂ := by
-  simp only [Valid, Prod.Valid, Prod.op, CMRA.op, mk]
+  simp only [Prod.op, CMRA.op, mk]
   exact and_congr_right fun _ => toAgree_op_valid_iff_eq
 
 #rocq_ignore dfrac_agree_op_valid_L "Use op_valid"
@@ -79,28 +79,15 @@ theorem op_validN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
 
 @[rocq_alias dfrac_agree_included]
 theorem included {d₁ d₂ : DFrac} {a₁ a₂ : A} :
-    mk d₁ a₁ ≼ mk d₂ a₂ ↔ (d₁ ≼ d₂) ∧ a₁ = a₂ := by
-  simp only [mk, Included]
-  constructor
-  · rintro ⟨⟨zd, za⟩, H⟩
-    exact ⟨⟨zd, congrArg Prod.fst H⟩,
-      Agree.toAgree_included.mp ⟨za, congrArg Prod.snd H⟩⟩
-  · rintro ⟨⟨zd, hd⟩, ha⟩
-    refine ⟨(zd, toAgree a₁), equiv_prod_ext hd ?_⟩
-    exact (congrArg toAgree ha.symm).trans Agree.idemp.symm
+    mk d₁ a₁ ≼ mk d₂ a₂ ↔ (d₁ ≼ d₂) ∧ a₁ = a₂ :=
+  and_congr_right' Agree.toAgree_included
 
 #rocq_ignore dfrac_agree_included_L "Use included"
 
 @[rocq_alias dfrac_agree_includedN]
 theorem includedN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
-    mk d₁ a₁ ≼{n} mk d₂ a₂ ↔ (d₁ ≼ d₂) ∧ a₁ ≡{n}≡ a₂ := by
-  simp only [mk, IncludedN]
-  constructor
-  · rintro ⟨⟨zd, za⟩, hd, ha⟩
-    exact ⟨(inc_iff_incN (α := DFrac) n).mpr ⟨zd, hd⟩, Agree.toAgree_includedN.mp ⟨za, ha⟩⟩
-  · rintro ⟨hdinc, ha⟩
-    obtain ⟨zd, hd⟩ := (inc_iff_incN (α := DFrac) n).mp hdinc
-    exact ⟨(zd, toAgree a₁), hd, (toAgree.ne.ne ha.symm).trans Agree.idemp.symm.dist⟩
+    mk d₁ a₁ ≼{n} mk d₂ a₂ ↔ (d₁ ≼ d₂) ∧ a₁ ≡{n}≡ a₂ :=
+  and_congr (inc_iff_incN (α := DFrac) n).symm Agree.toAgree_includedN
 
 @[rocq_alias dfrac_agree_update_2]
 theorem update₂ {d₁ d₂ : DFrac} {a₁ a₂ a' : A} (hd : d₁ • d₂ = .own 1) :

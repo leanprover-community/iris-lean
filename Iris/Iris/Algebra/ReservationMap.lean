@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 Сухарик. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Сухарик (@suhr), Markus de Medeiros, Janine Lohse
+-/
 module
 
 import Iris.Std.Positives
@@ -217,8 +222,7 @@ theorem op_token' (x y : ReservationMap A H) : (x.op y).token = x.token • y.to
 #rocq_ignore reservation_map_ucmra_mixin "Not needed"
 #rocq_ignore reservation_mapR "Derivable using UCMRA"
 
-@[rocq_alias reservation_mapUR]
-instance : UCMRA (ReservationMap A H) where
+instance : RABase (ReservationMap A H) where
   pcore := some ∘ core
   Valid := Valid
   ValidN := ValidN
@@ -280,23 +284,98 @@ instance : UCMRA (ReservationMap A H) where
     refine fun n => ⟨?_, ?_⟩
     · simp only [←Option.some_inj.mp h, core_data]; exact (core_idem x.data).dist
     · simp [←Option.some_inj.mp h, core_token, core_idem_L]
-  pcore_op_mono {x cx} h y := by
-    obtain ⟨z, hz⟩ := core_op_mono x.data y.data
-    obtain ⟨w, hw⟩ := core_op_mono x.token y.token
-    refine ⟨mk z w, OFE.eq_dist_2 ?_⟩
-    refine fun n => ⟨?_, ?_⟩
-    · simp only [op_data', core_data, (Option.some_inj.mp h.symm)]; exact hz.dist
-    · simp only [core_token, op_token', (Option.some_inj.mp h.symm)]; exact hw.dist
   extend {n x y₁ y₂} v exy := by
     obtain ⟨z₁, z₂, xzz, zy₁, zy₂⟩ := CMRA.extend (validN_data_of_validN v) exy.left
     refine ⟨mk z₁ y₁.token, mk z₂ y₂.token, OFE.eq_dist_2 ?_, ⟨zy₁, rfl⟩, ⟨zy₂, rfl⟩⟩
     exact fun m => ⟨xzz.dist, exy.right⟩
+
+/-- The order on `ReservationMap A H`, inherited componentwise. -/
+@[reducible] def ReservationMap.orderN : OrderN (ReservationMap A H) where
+  IncludedN n x y := x.data ≼{n} y.data ∧ x.token ≼{n} y.token
+  Included x y := x.data ≼ y.data ∧ x.token ≼ y.token
+  incN_ne ex ey h := ⟨CMRA.incN_ne ex.1 ey.1 h.1, CMRA.incN_ne ex.2 ey.2 h.2⟩
+  incN_succ h := ⟨CMRA.incN_succ h.1, CMRA.incN_succ h.2⟩
+  incN_trans h1 h2 := ⟨CMRA.incN_trans h1.1 h2.1, CMRA.incN_trans h1.2 h2.2⟩
+  inc_trans h1 h2 := ⟨CMRA.inc_trans h1.1 h2.1, CMRA.inc_trans h1.2 h2.2⟩
+  incN_of_inc n h := ⟨CMRA.incN_of_inc n h.1, CMRA.incN_of_inc n h.2⟩
+
+section
+attribute [local instance] ReservationMap.orderN
+
+theorem ReservationMap.increasing_data {v : ReservationMap A H}
+    (h : CMRA.Increasing v) : CMRA.Increasing v.data where
+  increasing w := (h.increasing (mk w ∅)).1
+
+theorem ReservationMap.increasing_token {v : ReservationMap A H}
+    (h : CMRA.Increasing v) : CMRA.Increasing v.token where
+  increasing w := (h.increasing (mk ∅ w)).2
+
+theorem ReservationMap.increasing_mk {v : ReservationMap A H}
+    (hd : CMRA.Increasing v.data) (ht : CMRA.Increasing v.token) : CMRA.Increasing v where
+  increasing w := ⟨hd.increasing w.data, ht.increasing w.token⟩
+
+open ReservationMap in
+instance instCMRAReservationMap : CMRA (ReservationMap A H) where
+  toOrderN := ReservationMap.orderN
+  op_monoN_left z h := ⟨CMRA.op_monoN_left z.data h.1, CMRA.op_monoN_left z.token h.2⟩
+  op_mono_left z h := ⟨CMRA.op_mono_left z.data h.1, CMRA.op_mono_left z.token h.2⟩
+  validN_of_incN {n x y} h v := by
+    refine validN_iff.mpr ⟨?_, ?_, fun i => ?_⟩
+    · exact CMRA.validN_of_incN h.1 (validN_data_of_validN v)
+    · exact CMRA.validN_of_incN h.2 (validN_token_of_validN v)
+    · rcases validN_disj v i with hd | ht
+      · refine .inl ?_
+        have hi := h.1 i
+        rw [hd] at hi
+        match hx : get? x.data i with
+        | none => rfl
+        | some _ => exact absurd (hx ▸ hi) Option.not_some_incN_none
+      · refine .inr fun hc => ht ?_
+        obtain ⟨w, hw⟩ := h.2
+        rw [(hw : y.token = x.token • w)]
+        exact (mem_iff_of_validN_union
+          ((hw : y.token = x.token • w) ▸ validN_token_of_validN v) i).mpr (.inl hc)
+  pcore_monoN {_ x y _} h e := by
+    cases Option.some_inj.mp e
+    exact ⟨_, rfl, CMRA.core_incN_core h.1, CMRA.core_incN_core h.2⟩
+  pcore_mono {x y _} h e := by
+    cases Option.some_inj.mp e
+    exact ⟨_, rfl, CMRA.core_mono h.1, CMRA.core_mono h.2⟩
+  pcore_order_op {x _} e y := by
+    cases Option.some_inj.mp e
+    exact ⟨_, rfl, CMRA.core_op_mono x.data y.data, CMRA.core_op_mono x.token y.token⟩
+  pcore_increasing {x _} e := by
+    cases Option.some_inj.mp e
+    refine increasing_mk ?_ ?_
+    · rw [core_data]; exact inferInstance
+    · rw [core_token]; exact inferInstance
+  increasing_closed {n x y} h h' :=
+    increasing_mk
+      (CMRA.increasing_closed (increasing_data h) (Or.imp (·.1) (·.1) h'))
+      (CMRA.increasing_closed (increasing_token h) (Or.imp (·.2) (·.2) h'))
+  incN_extend {n x y} v h := by
+    obtain ⟨zd, hzd, ed⟩ := CMRA.incN_extend (validN_data_of_validN v) h.1
+    obtain ⟨zt, hzt, et⟩ := CMRA.incN_extend (validN_token_of_validN v) h.2
+    exact ⟨mk zd zt, ⟨hzd, hzt⟩, ed, et⟩
+
+end
+
+/-- A reservation map over an affine algebra is affine. -/
+instance [CMRA.Affine A] : CMRA.Affine (ReservationMap A H) where
+  increasing v :=
+    ReservationMap.increasing_mk (CMRA.Affine.increasing v.data)
+      (CMRA.Affine.increasing v.token)
+
+@[rocq_alias reservation_mapUR]
+instance : UCMRA (ReservationMap A H) where
+  toCMRA := instCMRAReservationMap
   unit := mk ∅ ∅
   unit_valid := ⟨Heap.valid_empty, fun _ => .inr CoPset.mem_empty⟩
   unit_left_id {x} := OFE.eq_dist_2 <| by
     refine fun n => ⟨?_, (pcore_op_left' rfl).dist⟩
     exact (Algebra.MonoidOps.op_left_id : (∅ : H A) • x.data = x.data).dist
   pcore_unit := OFE.eq_dist_2 <| by exact fun n => ⟨Heap.core_empty.dist, .rfl⟩
+  inc_refl x := ⟨CMRA.inc_refl x.data, CMRA.inc_refl x.token⟩
 
 @[simp]
 theorem op_data (x y : ReservationMap A H): (x • y).data = x.data • y.data := rfl
@@ -305,8 +384,8 @@ theorem op_data (x y : ReservationMap A H): (x • y).data = x.data • y.data :
 theorem op_token (x y : ReservationMap A H): (x • y).token = x.token • y.token := rfl
 
 @[rocq_alias reservation_map_included]
-theorem included_iff {x y : ReservationMap A H} :
-    x ≼ y ↔ x.data ≼ y.data ∧ x.token ≼ y.token := by
+theorem incExt_iff {x y : ReservationMap A H} :
+    x ≼ₑ y ↔ x.data ≼ₑ y.data ∧ x.token ≼ₑ y.token := by
   constructor
   · exact fun ⟨z, H⟩ => ⟨⟨z.data, H ▸ rfl⟩, ⟨z.token, H ▸ rfl⟩⟩
   · obtain ⟨yd, yt⟩ := y
@@ -320,6 +399,7 @@ instance [CMRA.Discrete A] : CMRA.Discrete (ReservationMap A H) where
     · exact discrete_valid (validN_data_of_validN v)
     · exact validN_token_of_validN v
     · exact validN_disj v
+  discrete_inc h := ⟨fun k => CMRA.discrete_inc (h.1 k), CMRA.discrete_inc h.2⟩
 
 #rocq_ignore reservation_map_empty_instance "Part of UCMRA instance"
 
@@ -437,7 +517,8 @@ theorem valid_data_op_token (a : H A) (b : CoPset) (vd : ✓ mkData a)
     | inr h => simpa only [eo] using .inr h
 
 @[rocq_alias reservation_map_data_mono]
-theorem singleton_mono {k} {a b : A} (Hab : a ≼ b) : singleton (H := H) k a ≼ singleton k b :=
+theorem singleton_mono_ext {k} {a b : A} (Hab : a ≼ₑ b) :
+    singleton (H := H) k a ≼ₑ singleton k b :=
   let ⟨z, hz⟩ := Hab
   ⟨singleton k z, (congrArg (singleton k) hz).trans (singleton_op k a z)⟩
 
@@ -499,7 +580,8 @@ theorem valid_singleton_op_of_valid_op? {a : A} {x : H A} (vx : ✓{n} x) (h : �
   · simp only [LawfulPartialMap.get?_singleton, ki, ↓reduceIte]; exact Heap.validN_get? vx
 
 @[rocq_alias reservation_map_alloc]
-theorem alloc {e k} {a : A} (hke : k ∈ e) (va : ✓ a) : mkToken (H := H) e ~~> singleton k a := by
+theorem alloc {e k} {a : A} (hke : k ∈ e) (va : ✓ a) :
+    mkToken (H := H) e ~~> singleton k a := by
   intro n mz vo
   match mz with
   | none => exact Valid.validN <| (valid_singleton k a).mpr va
