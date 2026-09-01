@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Mario Carneiro. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Mario Carneiro, Сухарик (@suhr), Markus de Medeiros, Puming Liu, Janine Lohse
 -/

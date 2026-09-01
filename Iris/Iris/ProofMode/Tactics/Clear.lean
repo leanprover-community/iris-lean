@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2022 Lars König. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang
 -/
@@ -55,7 +55,7 @@ def iClearCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (k : ∀ {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
       (_ : Hyps bi e) (goal : Q($prop)) (_ : Array FVarId), ProofModeM Q($e ⊢ $goal)) :
     ProofModeM Q($e ⊢ $goal) := do
-  let (ivars, fvars) := (← SelPat.resolve hyps pats).partitionMap fun
+  let (ivars, fvars) := (← SelPat.resolve hyps pats .topToBottom).partitionMap fun
   | {kind := .ipm ivar, ..} => .inl ivar
   | {kind := .pure id,  ..} => .inr id
 

@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
@@ -88,6 +88,10 @@ theorem modify_ne {n} {f g : α → α} (Hf : ∀ a b, a ≡{n}≡ b → f a ≡
 @[rocq_alias list_insert_ne]
 instance set_ne (i : Nat) : NonExpansive₂ (fun (a : α) (l : List α) => l.set i a) where
   ne _ _ _ ha _ _ hl := hl.set ha i
+
+@[rocq_alias list_inserts_ne]
+instance inserts_ne (i : Nat) : NonExpansive₂ (fun (k l : List α) => List.inserts i k l) where
+  ne _ _ _ hk _ _ hl := hk.inserts hl i
 
 @[rocq_alias list_delete_ne]
 instance eraseIdx_ne (i : Nat) : NonExpansive (fun l : List α => l.eraseIdx i) where

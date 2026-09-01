@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2022 Lars König. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler, Alvin Tang
 -/
@@ -188,7 +188,7 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
           fun hyps' goal' fvars => withoutFVars (u := 0) fvars
             <| iIntroCore hyps' goal' ((ref, .clear selPats) :: pats) k
       | ⟨true, s⟩ :: selPats =>
-        let res ← s.resolveOne hyps >>= iFrame hyps Q
+        let res ← s.resolveOne hyps .bottomToTop >>= iFrame hyps Q
         res.finish (iIntroCore · · ((ref, .clear selPats) :: pats) k)
     | .intro ⟨_, .pure pat⟩ =>
       iIntroCoreForallIntro hyps pat Q none fun _ _ hyps' B =>

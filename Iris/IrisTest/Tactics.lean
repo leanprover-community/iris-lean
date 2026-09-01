@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2022 Lars König. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Oliver Soeser, Michael Sammler, Yunsong Yang, Alvin Tang
 -/
@@ -1460,8 +1460,8 @@ example [BI PROP] (P Q R : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -
 
 /-- Tests `ispecialize` with even more complex autoframe. -/
 example [BI PROP] (P : Nat → PROP) (Q R : PROP) :
-    P 1 ⊢ □ P 1 -∗ P 2 -∗ R -∗ (∀ n, ((□ P n ∗ R ∗ P n) -∗ P 2 -∗ Q)) -∗ Q := by
-  iintro HP1 #HP1' HP2 HR HPQ
+    P 2 ⊢ □ P 1 -∗ P 1 -∗ R -∗ (∀ n, ((□ P n ∗ R ∗ P n) -∗ P 2 -∗ Q)) -∗ Q := by
+  iintro HP2 #HP1' HP1 HR HPQ
   ispecialize HPQ $$ [$] [$]
   iexact HPQ
 

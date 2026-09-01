@@ -1,9 +1,14 @@
+/-
+Copyright (c) The Iris-Lean Contributors
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 module
 
 public import Iris.ProgramLogic.AbstractEctxLangCompleteness
 public import Iris.ProgramLogic.AbstractLangCompleteness
 public import Iris.ProgramLogic.AbstractWeakestPre
 public import Iris.ProgramLogic.Adequacy
+public import Iris.ProgramLogic.Atomic
 public import Iris.ProgramLogic.EctxiLanguage
 public import Iris.ProgramLogic.EctxLanguage
 public import Iris.ProgramLogic.EctxLifting
