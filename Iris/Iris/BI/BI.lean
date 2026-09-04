@@ -179,7 +179,7 @@ attribute [rocq_alias bi_cofe] BI.toCOFE
 #rocq_ignore bi_ofeO "No coercion required in Lean, use BI.toCOFE.toOFE instead"
 #rocq_ignore bi.pure_ne "No Proper type class in Lean"
 #rocq_ignore bi_rewrite_relation "Rocq-specific setoid-rewriting infrastructure"
-#rocq_ignore bi_later_mixin_id "BiLaterMixin with trivial later has trivial proofs regarding later"
+#rocq_ignore bi_later_mixin_True "BiLaterMixin with trivial later has trivial proofs regarding later"
 
 section PersistentlyDiscrete
 
