@@ -69,7 +69,6 @@ class BI (PROP : Type _) extends COFE PROP, BI.BIBase PROP where
   persistently_idem_2 {P : PROP} : <pers> P ⊢ <pers> <pers> P
   persistently_emp_2 : (emp : PROP) ⊢ <pers> emp
   persistently_and_2 {P Q : PROP} : (<pers> P) ∧ (<pers> Q) ⊢ <pers> (P ∧ Q)
-  -- persistently_sExists_1 {Ψ : PROP → Prop} : <pers> (sExists Ψ) ⊢ ∃ p, ⌜Ψ p⌝ ∧ <pers> p
   persistently_absorb_l {P Q : PROP} : <pers> P ∗ Q ⊢ <pers> P
   persistently_and_l {P Q : PROP} : <pers> P ∧ Q ⊢ P ∗ Q
 
@@ -162,7 +161,6 @@ attribute [rw_mono_rule, rocq_alias bi.persistently_mono] BI.persistently_mono
 attribute [rocq_alias bi.persistently_idemp_2] BI.persistently_idem_2
 attribute [rocq_alias bi.persistently_and_2] BI.persistently_and_2
 attribute [rocq_alias bi.persistently_emp_2] BI.persistently_emp_2
--- attribute [rocq_alias bi.persistently_exist_1] BI.persistently_sExists_1
 attribute [rocq_alias interface.bi.persistently_absorbing] BI.persistently_absorb_l
 attribute [rocq_alias bi.persistently_and_sep_elim] BI.persistently_and_l
 
@@ -278,15 +276,6 @@ def ofPersistentlyDiscrete : BI PROP where
     rw [persistently_eq, persistently_eq, persistently_eq]
     refine imp_elim (pure_elim' fun hp => imp_intro ?_)
     exact entails_trans and_elim_r (pure_elim' fun hq => pure_intro (and_intro hp hq))
-  -- persistently_sExists_1 := by
-  --   intro Ψ
-  --   rw [persistently_eq]
-  --   refine pure_elim' fun h => ?_
-  --   obtain ⟨p, hΨp, hp⟩ := existential h
-  --   refine entails_trans ?_ (sExists_intro ⟨p, rfl⟩)
-  --   refine and_intro (pure_intro hΨp) ?_
-  --   rw [persistently_eq]
-  --   exact pure_intro hp
   persistently_absorb_l := by
     intro P Q
     rw [persistently_eq]
