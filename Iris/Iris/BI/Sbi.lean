@@ -497,6 +497,25 @@ instance siEmpValid_timeless [Sbi PROP] (P : PROP) [Timeless P] :
       _ ⊢ <si_emp_valid> (◇ P) := siEmpValid_mono Timeless.timeless
       _ ⊢ ◇ <si_emp_valid> P := siEmpValid_except0.mp
 
+@[rocq_alias only_0_persistently]
+theorem only0_persistently [Sbi PROP] {P : PROP} : <only0> <pers> P ⊣⊢ <pers> <only0> P := by
+  constructor
+  · calc iprop(<only0> <pers> P)
+      _ ⊢ (<si_pure> (▷ False) → <pers> P) := imp_mono_left siPure_later_false.mp
+      _ ⊢ <pers> (<si_pure> (▷ False) → P) := persistently_imp_siPure
+      _ ⊢ <pers> <only0> P := persistently_mono <| imp_mono_left siPure_later_false.mpr
+  · exact only0_persistently_mpr
+
+@[rocq_alias only_0_intuitionistically]
+theorem only0_intuitionistically [Sbi PROP] [BILoeb PROP] [Timeless (PROP := PROP) emp]
+    {P : PROP} : <only0> □ P ⊣⊢ □ <only0> P :=
+  only0_affinely.trans (affinely_congr only0_persistently)
+
+@[rocq_alias only_0_persistent]
+instance only0_persistent [Sbi PROP] (P : PROP) [Persistent P] :
+    Persistent iprop(<only0> P) where
+  persistent := (only0_mono persistently_intro).trans only0_persistently.mp
+
 @[rocq_alias si_emp_valid_emp_valid]
 theorem siEmpValid_emp_valid [Sbi PROP] {P : PROP} :
     (emp ⊢ <si_emp_valid> P) ↔ (emp ⊢ P) := by

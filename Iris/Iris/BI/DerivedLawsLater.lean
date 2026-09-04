@@ -25,6 +25,7 @@ variable {PROP : Type _} [BI PROP]
 
 theorem later_congr {P Q : PROP} (h : P ⊣⊢ Q) : ▷ P ⊣⊢ ▷ Q :=
   ⟨later_mono h.1, later_mono h.2⟩
+
 #rocq_ignore bi.later_mono' "Use later_mono."
 #rocq_ignore bi.later_flip_mono' "Use later_mono."
 #rocq_ignore bi.later_proper "Derivable from later_ne with NonExpansive.eqv"
@@ -724,6 +725,11 @@ theorem timeless_alt [BILoeb PROP] {Q : PROP} :
     _ ⊢ (P ∧ ▷ False) ∨ (P ∧ Q) := and_or_left.mp
     _ ⊢ (▷ False ∧ P) ∨ (Q ∧ P) := or_mono and_symm and_symm
     _ ⊢ Q := or_elim hPr and_elim_l
+
+theorem timeless_iff_only0 [BILoeb PROP] {P : PROP} : Timeless P ↔ (<only0> P ⊢ P) :=
+  ⟨fun h => timeless_alt.mp h _ imp_elim_right,
+   fun h => ⟨later_false_em.trans (or_mono_right h)⟩⟩
+
 #rocq_ignore bi.Timeless_proper "Derivable from the BI structure; Timeless is preserved under ⊣⊢."
 
 @[rocq_alias bi.pure_timeless]
@@ -878,12 +884,38 @@ theorem only0_ne : OFE.NonExpansive (BIBase.only0 (PROP := PROP)) where
 @[rw_mono_rule, rocq_alias bi.only_0_mono]
 theorem only0_mono {P Q : PROP} (h : P ⊢ Q) : <only0> P ⊢ <only0> Q := imp_mono_right h
 
+#rocq_ignore bi.only_0_mono' "No Proper type class in Lean"
+#rocq_ignore bi.only_0_flip_mono' "No Proper type class in Lean"
+#rocq_ignore bi.only_0_proper "No Proper type class in Lean"
+
 @[rw_mono_rule]
 theorem only0_congr {P Q : PROP} (h : P ⊣⊢ Q) : <only0> P ⊣⊢ <only0> Q :=
-  ⟨only0_mono h.1, only0_mono h.2⟩
+  ⟨only0_mono h.mp, only0_mono h.mpr⟩
 
 @[rocq_alias bi.only_0_intro]
 theorem only0_intro {P : PROP} : P ⊢ <only0> P := imp_intro and_elim_l
+
+@[rocq_alias bi.only_0_idemp]
+theorem only0_idem {P : PROP} : <only0> <only0> P ⊣⊢ <only0> P :=
+  impl_curry.trans (imp_congr_left and_self)
+
+@[rocq_alias bi.except_0_and_only_0]
+theorem except0_and_only0 {P Q : PROP} : <only0> P ∧ ◇ Q ⊢ P ∨ Q :=
+  and_or_left.mp.trans <|
+    or_elim (imp_elim_left.trans or_intro_l) (and_elim_r.trans or_intro_r)
+
+@[rocq_alias bi.except_0_and_only_0_self]
+theorem except0_and_only0_self {P : PROP} : <only0> P ∧ ◇ P ⊣⊢ P := by
+  constructor
+  · exact except0_and_only0.trans or_self.mp
+  · exact and_intro only0_intro except0_intro
+
+@[rocq_alias bi.later_except_0_only_0]
+theorem later_except0_only0 {P : PROP} : ▷ P ⊢ ◇ <only0> P := later_false_em
+
+@[rocq_alias bi.only_0_timeless]
+instance only0_timeless {P : PROP} : Timeless iprop(<only0> P) where
+  timeless := later_except0_only0.trans (except0_mono only0_idem.mp)
 
 @[rocq_alias bi.only_0_and]
 theorem only0_and {P Q : PROP} : <only0> (P ∧ Q) ⊣⊢ <only0> P ∧ <only0> Q := by
@@ -913,3 +945,114 @@ theorem only0_wandIff {P Q : PROP} : <only0> (P ∗-∗ Q) ⊣⊢ (<only0> P ∗
   constructor
   · exact only0_and.mp.trans (and_mono only0_wand only0_wand)
   · exact (and_mono only0_wand_mpr only0_wand_mpr).trans only0_and.mpr
+
+@[rocq_alias bi.timeless_only_0]
+theorem timeless_only0 [BILoeb PROP] {P : PROP} [instTimeless : Timeless P] : <only0> P ⊣⊢ P := by
+  constructor
+  · exact timeless_iff_only0.mp instTimeless
+  · exact only0_intro
+
+@[rocq_alias bi.only_0_elim_timeless]
+theorem only0_elim_timeless [BILoeb PROP] {P : PROP} [Timeless P] : <only0> P ⊢ P :=
+  timeless_only0.mp
+
+@[rocq_alias bi.only_0_forall]
+theorem only0_forall {Φ : α → PROP} : <only0> (∀ a, Φ a) ⊣⊢ ∀ a, <only0> Φ a := by
+  constructor
+  · exact forall_intro fun x => only0_mono (forall_elim x)
+  · exact imp_intro <| forall_intro fun x => (and_mono_left (forall_elim x)).trans imp_elim_left
+
+@[rocq_alias bi.only_0_exist]
+theorem only0_exists [BILoeb PROP] {α : Type _} {Φ : α → PROP} :
+    <only0> (∃ a, Φ a) ⊣⊢ ∃ a, <only0> Φ a := by
+  constructor
+  · exact (only0_mono <| exists_mono fun _ => only0_intro).trans (timeless_iff_only0.mp inferInstance)
+  · exact exists_elim fun a => only0_mono (exists_intro a)
+
+@[rocq_alias bi.only_0_or]
+theorem only0_or [BILoeb PROP] {P Q : PROP} : <only0> (P ∨ Q) ⊣⊢ <only0> P ∨ <only0> Q := by
+  constructor
+  · exact (only0_mono <| or_mono only0_intro only0_intro).trans (timeless_iff_only0.mp inferInstance)
+  · exact or_elim (only0_mono or_intro_l) (only0_mono or_intro_r)
+
+@[rocq_alias bi.only_0_pure]
+theorem only0_pure [BILoeb PROP] {φ : Prop} : <only0> ⌜φ⌝ ⊣⊢@{PROP} ⌜φ⌝ := timeless_only0
+
+@[rocq_alias bi.only_0_impl_r]
+theorem only0_imp_r {P Q : PROP} : <only0> (P → Q) ⊣⊢ (P → <only0> Q) :=
+  impl_curry.trans <| (imp_congr_left and_comm).trans impl_curry.symm
+
+@[rocq_alias bi.only_0_impl]
+theorem only0_imp {P Q : PROP} : <only0> (P → Q) ⊣⊢ (<only0> P → <only0> Q) := by
+  constructor
+  · exact imp_intro <| only0_and.mpr.trans (only0_mono imp_elim_left)
+  · exact (imp_mono_left only0_intro).trans only0_imp_r.mpr
+
+@[rocq_alias bi.only_0_iff]
+theorem only0_iff {P Q : PROP} : <only0> (P ↔ Q) ⊣⊢ (<only0> P ↔ <only0> Q) :=
+  only0_and.trans (and_congr only0_imp only0_imp)
+
+@[rocq_alias bi.only_0_emp]
+theorem only0_emp [BILoeb PROP] [Timeless (PROP := PROP) emp] :
+    <only0> emp ⊣⊢ (emp : PROP) := timeless_only0
+
+@[rocq_alias bi.only_0_sep]
+theorem only0_sep [BILoeb PROP] {P Q : PROP} : <only0> (P ∗ Q) ⊣⊢ <only0> P ∗ <only0> Q := by
+  refine ⟨?_, imp_intro ?_⟩
+  · exact (only0_mono <| sep_mono only0_intro only0_intro).trans
+      (timeless_iff_only0.mp inferInstance)
+  · calc iprop((<only0> P ∗ <only0> Q) ∧ ▷ False)
+      _ ⊢ ▷ False ∧ (<only0> P ∗ <only0> Q) := and_comm.mp
+      _ ⊢ (▷ False ∧ <only0> P) ∗ (▷ False ∧ <only0> Q) := persistent_and_sep_distrib
+      _ ⊢ P ∗ Q := sep_mono imp_elim_right imp_elim_right
+
+@[rocq_alias bi.only_0_wand_r]
+theorem only0_wand_r {P Q : PROP} : <only0> (P -∗ Q) ⊣⊢ (P -∗ <only0> Q) := by
+  refine ⟨wand_intro <| imp_intro ?_, imp_intro <| wand_intro ?_⟩
+  · calc iprop((<only0> (P -∗ Q) ∗ P) ∧ ▷ False)
+      _ ⊢ ▷ False ∧ (<only0> (P -∗ Q) ∗ P)              := and_comm.mp
+      _ ⊢ (▷ False ∧ <only0> (P -∗ Q)) ∗ (▷ False ∧ P) := persistent_and_sep_distrib
+      _ ⊢ (P -∗ Q) ∗ P                                   := sep_mono imp_elim_right and_elim_r
+      _ ⊢ Q                                              := wand_elim_left
+  · exact
+      (and_intro ((sep_mono_left and_elim_r).trans sep_elim_left)
+      ((sep_mono_left and_elim_l).trans wand_elim_left)).trans imp_elim_right
+
+@[rocq_alias bi.only_0_persistently_2]
+theorem only0_persistently_mpr {P : PROP} : <pers> <only0> P ⊢ <only0> <pers> P := by
+  refine imp_intro ?_
+  calc iprop(<pers> <only0> P ∧ ▷ False)
+    _ ⊢ <pers> <only0> P ∧ <pers> ▷ False := and_mono_right persistently_intro
+    _ ⊢ <pers> (<only0> P ∧ ▷ False)      := persistently_and.mpr
+    _ ⊢ <pers> P                           := persistently_mono imp_elim_left
+
+@[rocq_alias bi.only_0_absorbingly]
+theorem only0_absorbingly [BILoeb PROP] {P : PROP} :
+    <only0> <absorb> P ⊣⊢ <absorb> <only0> P :=
+  only0_sep.trans (sep_congr_left only0_pure)
+
+@[rocq_alias bi.only_0_affinely]
+theorem only0_affinely [BILoeb PROP] [Timeless (PROP := PROP) emp] {P : PROP} :
+    <only0> <affine> P ⊣⊢ <affine> <only0> P :=
+  only0_and.trans (and_congr_left only0_emp)
+
+@[rocq_alias bi.only_0_intuitionistically_2]
+theorem only0_intuitionistically_mpr [BILoeb PROP] [Timeless (PROP := PROP) emp] {P : PROP} :
+    □ <only0> P ⊢ <only0> □ P :=
+  (affinely_mono only0_persistently_mpr).trans only0_affinely.mpr
+
+@[rocq_alias bi.only_0_later]
+theorem only0_later {P : PROP} : <only0> ▷ P ⊣⊢ (True : PROP) := by
+  constructor
+  · exact true_intro
+  · exact imp_intro <| and_elim_r.trans (later_mono false_elim)
+
+@[rocq_alias bi.only_0_except_0]
+theorem only0_except0 [BILoeb PROP] {P : PROP} : <only0> ◇ P ⊣⊢ (True : PROP) := calc
+  _ ⊣⊢ <only0> ▷ False ∨ <only0> P := only0_or
+  _ ⊣⊢ True ∨ <only0> P             := or_congr_left only0_later
+  _ ⊣⊢ True                         := true_or
+
+@[rocq_alias bi.only_0_absorbing]
+instance only0_absorbing (P : PROP) [Absorbing P] : Absorbing iprop(<only0> P) :=
+  inferInstanceAs (Absorbing iprop(▷ False → P))
