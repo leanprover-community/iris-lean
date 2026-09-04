@@ -44,17 +44,15 @@ class BIPersistentlyExist (PROP : Type _) [BI PROP] where
 
 section PersistentlyExistDiscrete
 
-variable {PROP : Type _} [BI PROP]
-  (existential : ∀ {Ψ : PROP → Prop}, (emp ⊢ sExists Ψ) → ∃ p, Ψ p ∧ (emp ⊢ p))
-  (persistently_eq : ∀ P : PROP, iprop(<pers> P) = iprop(⌜emp ⊢ P⌝))
-
 /-
 A discrete BI whose persistently modality is
 `<pers> P := ⌜emp ⊢ P⌝` validates `BIPersistentlyExist` as soon as it satisfies the
 "existential property" `(emp ⊢ ∃ x, Φ x) → ∃ x, emp ⊢ Φ x`.
 -/
-@[reducible]
-def BIPersistentlyExist.ofDiscrete : BIPersistentlyExist PROP where
+theorem BIPersistentlyExist.ofDiscrete {PROP : Type _} [BI PROP]
+    (existential : ∀ {Ψ : PROP → Prop}, (emp ⊢ sExists Ψ) → ∃ p, Ψ p ∧ (emp ⊢ p))
+    (persistently_eq : ∀ P : PROP, iprop(<pers> P) = iprop(⌜emp ⊢ P⌝)) :
+    BIPersistentlyExist PROP where
   persistently_sExists_1 Ψ := by
     rw [persistently_eq]
     refine pure_elim' fun h => ?_
