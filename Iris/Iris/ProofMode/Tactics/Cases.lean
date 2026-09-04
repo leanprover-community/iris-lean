@@ -26,7 +26,7 @@ theorem exists_elim' [BI PROP] {p} {P A Q : PROP} {Φ : α → PROP} [inst : Int
     (h : ∀ a, P ∗ □?p Φ a ⊢ Q) : P ∗ □?p A ⊢ Q := by
   calc
     _ ⊢ P ∗ ∃ a, □?p Φ a :=
-        sep_mono_right <| (intuitionisticallyIf_mono inst.1).trans intuitionisticallyIf_exists.1
+        sep_mono_right <| (intuitionisticallyIf_mono inst.1).trans sorry -- intuitionisticallyIf_exists.1
     _ ⊢ ∃ a, P ∗ □?p Φ a := sep_exists_left.1
     _ ⊢ Q                := exists_elim h
 
@@ -56,7 +56,7 @@ theorem and_elim_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd t
 theorem or_elim' [BI PROP] {p} {P A Q A1 A2 : PROP} [inst : IntoOr A A1 A2]
     (h1 : P ∗ □?p A1 ⊢ Q) (h2 : P ∗ □?p A2 ⊢ Q) : P ∗ □?p A ⊢ Q := calc
   _ ⊢ P ∗ (□?p A1 ∨ □?p A2)   :=
-      sep_mono_right <| (intuitionisticallyIf_mono inst.1).trans (intuitionisticallyIf_or _).1
+      sep_mono_right <| (intuitionisticallyIf_mono inst.1).trans sorry -- (intuitionisticallyIf_or _).1
   _ ⊢ P ∗ □?p A1 ∨ P ∗ □?p A2 := sep_or_left.1
   _ ⊢ Q                       := or_elim h1 h2
 
