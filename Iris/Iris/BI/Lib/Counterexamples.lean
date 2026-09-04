@@ -344,12 +344,11 @@ theorem saved_NA (i : gname) :
       ElimModal True p .out false (fupd E P) P (fupd E Q) (fupd E Q) :=
     elim_fupd_fupd fupd fupd_mono fupd_fupd fupd_frame_left p E
   iintro #Hi !> #HA
-  ihave ⟨%P', HNP, Hi'⟩ := HA
+  ihave ⟨%P', #⟨HNP, Hi'⟩⟩ := HA
   imod saved_cast fupd name inv fupd_intro fupd_mono fupd_fupd fupd_frame_left
     inv_fupd gname start finished start_finish finished_not_start finished_dup
     (P := A fupd name inv gname start finished i) (Q := P') i $$ [] with HP
   · iframe #
-    sorry
   · iapply HNP; iassumption
 
 include fupd_intro fupd_mono fupd_fupd fupd_frame_left inv_fupd
