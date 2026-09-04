@@ -715,10 +715,6 @@ instance bi_except0_sep_entails_homomorphism :
 
 /-! # Only-0 and Timeless -/
 
-@[rocq_alias bi.only_0_ne]
-theorem only0_ne : OFE.NonExpansive (BIBase.only0 (PROP := PROP)) where
-  ne _ _ _ h := imp_ne.ne .rfl h
-
 @[rw_mono_rule, rocq_alias bi.only_0_mono]
 theorem only0_mono {P Q : PROP} (h : P ⊢ Q) : <only0> P ⊢ <only0> Q := imp_mono_right h
 
