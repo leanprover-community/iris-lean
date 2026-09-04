@@ -177,7 +177,6 @@ attribute [rocq_alias bi_cofe] BI.toCOFE
 #rocq_ignore bi_ofeO "No coercion required in Lean, use BI.toCOFE.toOFE instead"
 #rocq_ignore bi.pure_ne "No Proper type class in Lean"
 #rocq_ignore bi_rewrite_relation "Rocq-specific setoid-rewriting infrastructure"
-#rocq_ignore bi_later_mixin_id "BiLaterMixin with trivial later has trivial proofs regarding later"
 
 section PersistentlyDiscrete
 
@@ -285,5 +284,38 @@ def ofPersistentlyDiscrete : BI PROP where
     rw [persistently_eq]
     refine imp_elim (pure_elim' fun hp => imp_intro ?_)
     exact entails_trans and_elim_r (entails_trans emp_sep.mpr (sep_mono hp entails_refl))
+
+variable (later_eq : ∀ P : PROP, iprop(▷ P) = iprop(True)) in
+@[reducible, rocq_alias bi_later_mixin_True]
+def ofPersistentlyDiscreteLaterTrue : BI PROP :=
+  ofPersistentlyDiscrete entails_refl entails_trans equiv_iff pure_intro pure_elim'
+    and_elim_l and_elim_r and_intro or_intro_l or_intro_r or_elim imp_intro imp_elim
+    sForall_intro sForall_elim sExists_intro sExists_elim sep_mono emp_sep sep_symm
+    sep_assoc_l wand_intro wand_elim
+    (later_mono := by
+      intro _ _ _
+      simp only [later_eq]; exact entails_refl)
+    (later_intro := by
+      intro _
+      simp only [later_eq]; exact pure_intro trivial)
+    (later_sForall_2 := by
+      intro _
+      simp only [later_eq]; exact pure_intro trivial)
+    (later_sExists_false := by
+      intro _
+      simp only [later_eq]; exact or_intro_l)
+    (later_sep := by
+      intro _ _
+      simp only [later_eq]
+      exact ⟨entails_trans emp_sep.mpr (sep_mono (pure_intro trivial) entails_refl),
+             pure_intro trivial⟩)
+    (later_persistently := by
+      intro _
+      simp only [later_eq, persistently_eq]
+      exact ⟨pure_intro (pure_intro trivial), pure_intro trivial⟩)
+    (later_false_em := by
+      intro _
+      simp only [later_eq]; exact or_intro_l)
+    discrete persistently_eq
 
 end PersistentlyDiscrete
