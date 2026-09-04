@@ -1042,13 +1042,13 @@ theorem only0_intuitionistically_mpr [BILoeb PROP] [Timeless (PROP := PROP) emp]
   (affinely_mono only0_persistently_mpr).trans only0_affinely.mpr
 
 @[rocq_alias bi.only_0_later]
-theorem only0_later {P : PROP} : <only0> ▷ P ⊣⊢ (True : PROP) := by
+theorem only0_later {P : PROP} : <only0> ▷ P ⊣⊢ True := by
   constructor
   · exact true_intro
   · exact imp_intro <| and_elim_r.trans (later_mono false_elim)
 
 @[rocq_alias bi.only_0_except_0]
-theorem only0_except0 [BILoeb PROP] {P : PROP} : <only0> ◇ P ⊣⊢ (True : PROP) := calc
+theorem only0_except0 [BILoeb PROP] {P : PROP} : <only0> ◇ P ⊣⊢ True := calc
   _ ⊣⊢ <only0> ▷ False ∨ <only0> P := only0_or
   _ ⊣⊢ True ∨ <only0> P             := or_congr_left only0_later
   _ ⊣⊢ True                         := true_or
