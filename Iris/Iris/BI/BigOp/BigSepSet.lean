@@ -344,6 +344,35 @@ theorem bigSepS_filter_acc (φ : A → Bool) {Φ : A → PROP} {X Y : S}
     union_comm]
   exact (bigSepS_union hdisj).1.trans <| sep_mono_right <| wand_intro_left (bigSepS_union hdisj).2
 
+/-- A version of `big_sepS_filter_acc` that also allows changing the predicate `Φ`. -/
+@[rocq_alias big_sepS_filter_acc_impl]
+theorem bigSepS_filter_acc_impl (φ : A → Bool) {Φ : A → PROP} {X : S} :
+    ([∗set] y ∈ X, Φ y) ⊢
+      ([∗set] y ∈ FiniteSet.filter φ X, Φ y) ∗
+      (∀ Ψ : A → PROP, (□ (∀ y, ⌜y ∈ X⌝ → ⌜¬ φ y⌝ → Φ y -∗ Ψ y)) -∗
+        ([∗set] y ∈ FiniteSet.filter φ X, Ψ y) -∗ [∗set] y ∈ X, Ψ y) := by
+  have hdisj : FiniteSet.filter φ X ## (X \ FiniteSet.filter φ X) :=
+    fun a ha => (mem_diff.mp ha.right).right ha.left
+  have hX : X = FiniteSet.filter φ X ∪ (X \ FiniteSet.filter φ X) :=
+    (diff_subset_decomp <| fun z hz => ((FiniteSet.mem_filter φ X z).mp hz).left).trans union_comm
+  have hsplit : ∀ Θ : A → PROP, ([∗set] y ∈ X, Θ y) ⊣⊢
+      ([∗set] y ∈ FiniteSet.filter φ X, Θ y) ∗
+      ([∗set] y ∈ X \ FiniteSet.filter φ X, Θ y) := by
+    intro Θ
+    have h := bigSepS_union (Φ := Θ) hdisj
+    rwa [← hX] at h
+  refine (hsplit Φ).mp.trans <| sep_mono_right <|
+    forall_intro fun Ψ => wand_intro <| wand_intro ?_
+  refine .trans ?_ (hsplit Ψ).mpr
+  refine sep_comm.mp.trans <| sep_mono_right ?_
+  refine (sep_mono_right ?_).trans <| (sep_mono_left bigSepS_impl).trans wand_elim_left
+  refine intuitionistically_mono <| forall_mono fun y =>
+    imp_intro_swap <| pure_elim_left fun hy => ?_
+  have hy' := mem_diff.mp hy
+  refine ((and_intro (pure_intro hy'.left) .rfl).trans imp_elim_right).trans ?_
+  refine (and_intro (pure_intro ?_) .rfl).trans imp_elim_right
+  exact fun hφ => hy'.right ((FiniteSet.mem_filter φ X y).mpr ⟨hy'.left, hφ⟩)
+
 @[rocq_alias big_sepS_union_2]
 theorem bigSepS_union_elim {Φ : A → PROP} {X Y : S} [∀ x, TCOr (Affine (Φ x)) (Absorbing (Φ x))] :
     ⊢ ([∗set] y ∈ X, Φ y) -∗ ([∗set] y ∈ Y, Φ y) -∗ ([∗set] y ∈ X ∪ Y, Φ y) := by
