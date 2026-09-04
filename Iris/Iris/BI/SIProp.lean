@@ -222,7 +222,6 @@ instance instBI : BI SiProp where
   persistently_idem_2 _ h := h
   persistently_emp_2 _ h := h
   persistently_and_2 _ h := h
-  persistently_sExists_1 := fun _ ⟨P, hΨ, hPn⟩ => ⟨_, ⟨P, rfl⟩, hΨ, hPn⟩
   persistently_absorb_l _ h := h.1
   persistently_and_l _ h := h
   later_mono h n hlP := match n with | .zero => trivial | .succ _ => h _ hlP
