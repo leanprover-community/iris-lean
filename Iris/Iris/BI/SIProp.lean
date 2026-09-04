@@ -355,6 +355,14 @@ instance instBILaterContractive : BILaterContractive SiProp where
 instance instPersistent (P : SiProp) : Persistent P where
   persistent _ := id
 
+@[rocq_alias siProp_persistently_forall]
+instance instPersistentlyForall : BIPersistentlyForall SiProp where
+  persistently_sForall_2 _ n h P hΨ := h _ ⟨P, rfl⟩ n .refl hΨ
+
+@[rocq_alias siProp_persistently_exist]
+instance instPersistentlyExist : BIPersistentlyExist SiProp where
+  persistently_sExists_1 _ _ := fun ⟨P, hΨ, hP⟩ => ⟨_, ⟨P, rfl⟩, hΨ, hP⟩
+
 #rocq_ignore siProp_primitive.siProp_unseal "Not needed in Lean."
 
 /-! ## Internal equality -/
