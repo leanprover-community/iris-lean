@@ -453,12 +453,6 @@ instance : BI (MonPred I PROP) where
   persistently_idem_2 := entails_at.mpr fun i => persistently_idem_2
   persistently_emp_2 := entails_at.mpr fun i => persistently_emp_2
   persistently_and_2 := entails_at.mpr fun i => persistently_and_2
-  persistently_sExists_1 := fun {Ψ} => entails_at.mpr fun i => by
-    refine persistently_sExists_1.trans ?_
-    refine exists_elim fun p => pure_elim_left fun ⟨q, hΨ, hq⟩ => ?_
-    subst hq
-    exact (and_intro (pure_intro hΨ) BIBase.Entails.rfl).trans
-      (MonPred.sExists_at_intro (q := iprop(⌜Ψ q⌝ ∧ <pers> q)) i ⟨q, rfl⟩)
   persistently_absorb_l := entails_at.mpr fun i => persistently_absorb_l
   persistently_and_l := entails_at.mpr fun i => persistently_and_l
   later_mono h := entails_at.mpr fun i => later_mono (entails_at.mp h i)
@@ -563,6 +557,15 @@ instance [BIPersistentlyForall PROP] : BIPersistentlyForall (MonPred I PROP) whe
             (pure_intro hΨq)) i).trans
     (BIPersistentlyForall.persistently_sForall_2
       (fun p => ∃ q : MonPred I PROP, Ψ q ∧ q.monPred_at i = p))
+
+@[rocq_alias monPred_bi_persistently_exist]
+instance [BIPersistentlyExist PROP] : BIPersistentlyExist (MonPred I PROP) where
+  persistently_sExists_1 Ψ := entails_at.mpr fun i => by
+    refine (BIPersistentlyExist.persistently_sExists_1 _).trans ?_
+    refine exists_elim fun p => pure_elim_left fun ⟨q, hΨ, hq⟩ => ?_
+    subst hq
+    exact (and_intro (pure_intro hΨ) BIBase.Entails.rfl).trans
+      (MonPred.sExists_at_intro (q := iprop(⌜Ψ q⌝ ∧ <pers> q)) i ⟨q, rfl⟩)
 
 @[rocq_alias monPred_bi_later_contractive]
 instance [BILaterContractive PROP] : BILaterContractive (MonPred I PROP) where
@@ -1263,7 +1266,7 @@ instance monPred_subjectively_absorbing (P : MonPred I PROP) [Absorbing P] :
 instance monPred_subjectively_persistent (P : MonPred I PROP) [Persistent P] :
     Persistent iprop(<subj> P) where
   persistent := entails_at.mpr fun _ =>
-    (exists_mono fun _ => Persistent.persistent).trans persistently_exists.mpr
+    (exists_mono fun _ => Persistent.persistent).trans persistently_exists_mpr
 
 @[rocq_alias monPred_subjectively_timeless]
 instance monPred_subjectively_timeless (P : MonPred I PROP) [Timeless P] :
