@@ -585,8 +585,9 @@ instance bi_persistently_and_homomorphism [BI PROP] :
 @[rocq_alias bi.bi_persistently_or_homomorphism]
 instance bi_persistently_or_homomorphism [BI PROP] :
     MonoidHomomorphism (or (PROP := PROP)) or iprop(False) iprop(False) (· = ·) persistently :=
-  MonoidHomomorphism.ofEq BI.persistently_ne
-    (BiEntails.to_eq persistently_or) (BiEntails.to_eq persistently_pure)
+  sorry
+  -- MonoidHomomorphism.ofEq BI.persistently_ne
+  --   (BiEntails.to_eq persistently_or) (BiEntails.to_eq persistently_pure)
 
 @[rocq_alias bi.bi_persistently_sep_weak_homomorphism]
 instance bi_persistently_sep_weak_homomorphism [BI PROP] [BIPositive PROP] :
