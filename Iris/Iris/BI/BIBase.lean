@@ -375,6 +375,18 @@ macro_rules
 delab_rule except0
   | `($_ $P) => do ``(iprop(◇ $(← unpackIprop P)))
 
+/-- Only-0 modality: `<only0> P` is equivalent to `▷ False → P`, i.e. `P` holds at step-index 0. -/
+@[rocq_alias bi_only_0]
+def only0 [BIBase PROP] (P : PROP) := iprop(▷ False → P)
+
+syntax:max "<only0> " term:40 : term
+
+macro_rules
+  | `(iprop(<only0>%$tk $P)) => ``($(wrapIprop tk ``only0) iprop($P))
+
+delab_rule only0
+  | `($_ $P) => do ``(iprop(<only0> $(← unpackIprop P)))
+
 /-- Plainly modality (`■`). -/
 class Plainly (PROP : Type _) where
   plainly : PROP → PROP
