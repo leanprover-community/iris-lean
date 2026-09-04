@@ -22,13 +22,23 @@ theorem false_elim' [BI PROP] {P Q : PROP} : P ∗ □?p False ⊢ Q :=
   wand_elim_swap <| intuitionisticallyIf_elim.trans false_elim
 
 @[rocq_alias tac_exist_destruct]
-theorem exists_elim' [BI PROP] {p} {P A Q : PROP} {Φ : α → PROP} [inst : IntoExists A Φ]
-    (h : ∀ a, P ∗ □?p Φ a ⊢ Q) : P ∗ □?p A ⊢ Q := by
+theorem exists_elim' [BI PROP] [BIPersistentlyExist PROP] {p} {P A Q : PROP} {Φ : α → PROP}
+    [inst : IntoExists A Φ] (h : ∀ a, P ∗ □?p Φ a ⊢ Q) : P ∗ □?p A ⊢ Q := by
   calc
     _ ⊢ P ∗ ∃ a, □?p Φ a :=
-        sep_mono_right <| (intuitionisticallyIf_mono inst.1).trans sorry -- intuitionisticallyIf_exists.1
-    _ ⊢ ∃ a, P ∗ □?p Φ a := sep_exists_left.1
+        sep_mono_right <| (intuitionisticallyIf_mono inst.1).trans intuitionisticallyIf_exists.mp
+    _ ⊢ ∃ a, P ∗ □?p Φ a := sep_exists_left.mp
     _ ⊢ Q                := exists_elim h
+
+/-- Variant of `exists_elim'` for BIs without `BIPersistentlyExist`: the body of the existential
+lands in the spatial context. Corresponds to the `q = false` branch of Rocq's
+`tac_exist_destruct`. -/
+theorem exists_elim_spatial' [BI PROP] {p} {P A Q : PROP} {Φ : α → PROP}
+    [inst : IntoExists A Φ] (h : ∀ a, P ∗ Φ a ⊢ Q) : P ∗ □?p A ⊢ Q := by
+  calc
+    _ ⊢ P ∗ ∃ a, Φ a := sep_mono_right <| intuitionisticallyIf_elim.trans inst.into_exists
+    _ ⊢ ∃ a, P ∗ Φ a := sep_exists_left.mp
+    _ ⊢ Q            := exists_elim h
 
 @[rocq_alias tac_and_destruct_choice]
 theorem sep_and_elim_left [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
@@ -53,12 +63,23 @@ theorem and_elim_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd t
   _ ⊢ Q                 := wand_elim h
 
 @[rocq_alias tac_or_destruct]
-theorem or_elim' [BI PROP] {p} {P A Q A1 A2 : PROP} [inst : IntoOr A A1 A2]
+theorem or_elim' [BI PROP] [BIPersistentlyExist PROP] {p} {P A Q A1 A2 : PROP}
+    [inst : IntoOr A A1 A2]
     (h1 : P ∗ □?p A1 ⊢ Q) (h2 : P ∗ □?p A2 ⊢ Q) : P ∗ □?p A ⊢ Q := calc
   _ ⊢ P ∗ (□?p A1 ∨ □?p A2)   :=
-      sep_mono_right <| (intuitionisticallyIf_mono inst.1).trans sorry -- (intuitionisticallyIf_or _).1
+      sep_mono_right <| (intuitionisticallyIf_mono inst.1).trans (intuitionisticallyIf_or _).mp
   _ ⊢ P ∗ □?p A1 ∨ P ∗ □?p A2 := sep_or_left.1
   _ ⊢ Q                       := or_elim h1 h2
+
+/--
+Variant of `or_elim'` for BIs without `BIPersistentlyExist`: both disjuncts land in the
+spatial context.
+-/
+theorem or_elim_spatial' [BI PROP] {p} {P A Q A1 A2 : PROP} [inst : IntoOr A A1 A2]
+    (h1 : P ∗ A1 ⊢ Q) (h2 : P ∗ A2 ⊢ Q) : P ∗ □?p A ⊢ Q := calc
+  _ ⊢ P ∗ (A1 ∨ A2)   := sep_mono_right <| intuitionisticallyIf_elim.trans inst.into_or
+  _ ⊢ P ∗ A1 ∨ P ∗ A2 := sep_or_left.mp
+  _ ⊢ Q               := or_elim h1 h2
 
 @[rocq_alias tac_intuitionistic]
 theorem intuitionistic_elim_spatial [BI PROP] {A A' P Q : PROP}
@@ -95,28 +116,30 @@ private def iCasesEmptyConj {prop : Q(Type u)} (bi : Q(BI $prop))
 -/
 private def iCasesExists {prop : Q(Type u)} {bi : Q(BI $prop)} (pat : TSyntax `rcasesPat)
     (p : Q(Bool)) {P : Q($prop)} (hyps : Hyps bi P) (A goal : Q($prop))
-    (k : ∀ {P' : Q($prop)}, Hyps bi P' → (B goal' : Q($prop)) →
-      ProofModeM Q($P' ∗ □?$p $B ⊢ $goal')) :
+    (k : ∀ {P' : Q($prop)}, Hyps bi P' → (p' : Q(Bool)) → (B goal' : Q($prop)) →
+      ProofModeM Q($P' ∗ □?$p' $B ⊢ $goal')) :
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) := do
   let v ← mkFreshLevelMVar
   let α : Q(Sort v) ← mkFreshExprMVarQ q(Sort v)
   let Φ : Q($α → $prop) ← mkFreshExprMVarQ q($α → $prop)
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoExists $A $Φ)
-  | throwIPMError "{A} is not an existential quantifier"
-  let pf : Q(∀ x, $hyps.tm ∗ □?$p $Φ x ⊢ $goal) ←
-    iPureCases q(∀ x, $hyps.tm ∗ □?$p $Φ x ⊢ $goal) pat fun g => do
+    | throwIPMError "{A} is not an existential quantifier"
+  let mkPf (p' : Q(Bool)) : ProofModeM Q(∀ x, $hyps.tm ∗ □?$p' $Φ x ⊢ $goal) :=
+    iPureCases q(∀ x, $hyps.tm ∗ □?$p' $Φ x ⊢ $goal) pat fun g => do
       let newTm : Q($prop) ← mkFreshExprMVarQ q($prop)
       let B : Q($prop) ← mkFreshExprMVarQ q($prop)
       let goal' : Q($prop) ← mkFreshExprMVarQ q($prop)
       unless ← withTransparency .none <|
-          isDefEq (← g.getType) q($newTm ∗ □?$p $B ⊢ $goal') do
+          isDefEq (← g.getType) q($newTm ∗ □?$p' $B ⊢ $goal') do
         throwIPMError "unexpected goal {← g.getType} after intro pattern"
       let tm' ← instantiateMVars newTm
       let some ⟨_, hyps'⟩ := parseHyps? bi tm'
         | throwIPMError "unable to parse the Iris context {tm'}"
-      return (← k hyps' (Expr.headBeta (← instantiateMVars B)) (← instantiateMVars goal'))
+      return (← k hyps' p' (Expr.headBeta (← instantiateMVars B)) (← instantiateMVars goal'))
   have : $hyps.tm =Q $P := ⟨⟩
-  return q(exists_elim' $pf)
+  match ← ProofModeM.trySynthInstanceQ q(BIPersistentlyExist $prop) with
+  | .some _ => return q(exists_elim' $(← mkPf p))
+  | .none   => return q(exists_elim_spatial' $(← mkPf q(false)))
 
 /-- Destruct a conjunction hypothesis `A` and continue with only its left or right component. -/
 private def iCasesAndLR {prop : Q(Type u)} (bi : Q(BI $prop))
@@ -170,13 +193,18 @@ private def iCasesSep {prop : Q(Type u)} {bi : Q(BI $prop)}
 /-- Destruct a disjunction hypothesis `A` into two cases and continue separately on each branch. -/
 private def iCasesOr {prop : Q(Type u)} {bi : Q(BI $prop)}
     (p : Q(Bool)) (P A goal : Q($prop))
-    (k1 k2 : (B : Q($prop)) → ProofModeM Q($P ∗ □?$p $B ⊢ $goal)) :
+    (k1 k2 : (p' : Q(Bool)) → (B : Q($prop)) → ProofModeM Q($P ∗ □?$p' $B ⊢ $goal)) :
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) := do
   let A1 ← mkFreshExprMVarQ q($prop)
   let A2 ← mkFreshExprMVarQ q($prop)
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoOr $A $A1 $A2)
     | throwIPMError "{A} is not a disjunction"
-  return q(or_elim' $(← k1 A1) $(← k2 A2))
+  match ← ProofModeM.trySynthInstanceQ q(BIPersistentlyExist $prop) with
+  | .some _ =>
+    return q(or_elim' (A1 := $A1) (A2 := $A2) $(← k1 p A1) $(← k2 p A2))
+  | .none =>
+    return q(or_elim_spatial' (A1 := $A1) (A2 := $A2)
+      $(← k1 q(false) A1) $(← k2 q(false) A2))
 
 /--
 Destruct a persistent hypothesis `A` by turning it into an explicit `□ B` and continuing with
@@ -269,8 +297,8 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
     for pure assertions that are not explicit existentials.
   -/
   | .conjunction (⟨_, .pure arg⟩ :: args) =>
-    iCasesExists arg p hyps A goal fun hyps' B goal' =>
-      iCasesCore hyps' goal' ⟨pat.ref, (.conjunction args)⟩ p B k
+    iCasesExists arg p hyps A goal fun hyps' p' B goal' =>
+      iCasesCore hyps' goal' ⟨pat.ref, (.conjunction args)⟩ p' B k
 
   -- A conjunction of multiple elements (`⟨…, …⟩`)
   | .conjunction (arg :: args) =>
@@ -285,8 +313,9 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
 
   -- A disjunction of multiple elements (`(… | …)`)
   | .disjunction (arg :: args) =>
-    iCasesOr p P A goal (iCasesCore hyps goal arg p · k)
-      (iCasesCore hyps goal ⟨pat.ref, (.disjunction args)⟩ p · k)
+    iCasesOr p P A goal
+      (fun p' B => iCasesCore hyps goal arg p' B k)
+      (fun p' B => iCasesCore hyps goal ⟨pat.ref, (.disjunction args)⟩ p' B k)
 
   -- Moving a hypothesis to the pure context (`%`)
   | .pure arg =>

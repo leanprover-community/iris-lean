@@ -235,10 +235,6 @@ instance : BI (HeapProp Val) where
     simp only [BI.Entails, BI.persistently, BI.and]
     intro _ _ _ h
     exact h
-  persistently_sExists_1 := by
-    simp only [BI.Entails, BI.persistently, BI.exists]
-    intro _ _ ⟨p, hp, h⟩
-    exact ⟨_, ⟨_, rfl⟩, hp, h⟩
   persistently_absorb_l := by
     simp only [BI.Entails, BI.persistently, BI.sep]
     intro _ _ _ ⟨_, _, _, _, h_P, _⟩
