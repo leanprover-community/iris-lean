@@ -13,7 +13,7 @@ public import Iris.ProgramLogic.WeakestPre
 /-!  # Logically atomic Hoare triples -/
 
 namespace Iris
-open ProgramLogic Language Language.Notation Std Std.LawfulSet BI ProofMode
+open ProgramLogic Language Language.Notation _root_.Iris.Std Std.LawfulSet BI ProofMode
 
 section definition
 
@@ -222,7 +222,7 @@ theorem persistent_seq_wp_atomic {α : Tele.Arg .nil → IProp GF}
   iintro !> %y Hβ %z Hpost
   imod HΦ with ⟨%⟨⟩, -, -, Hclose⟩
   imod Hclose $$ Hβ with HΦ
-  isimp only [Tele.app_bind] at HΦ
+  isimp only [Tele.lam, Tele.app, Tele.bind, Tele.app_bind] at HΦ
   iapply HΦ $$ Hpost
 
 @[rocq_alias atomic_wp_mask_weaken]

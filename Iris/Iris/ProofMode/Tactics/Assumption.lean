@@ -10,7 +10,7 @@ public import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
 public section
-open BI Std
+open BI _root_.Iris.Std
 
 @[rocq_alias tac_assumption]
 theorem assumption [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption p .in A Q]

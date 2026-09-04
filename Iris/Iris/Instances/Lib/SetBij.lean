@@ -20,7 +20,7 @@ meta import Iris.Std.RocqPorting
 
 namespace Iris
 
-open Std CMRA BI ProofMode BigSepS LawfulSet SetBij
+open _root_.Iris.Std CMRA BI ProofMode BigSepS LawfulSet SetBij
 
 @[rocq_alias gset_bijG]
 class SetBijG (GF : BundledGFunctors) (A B : Type _) (S : outParam (Type _))

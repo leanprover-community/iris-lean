@@ -22,12 +22,13 @@ the List type itself. However, there is an embedding of Lists in to this data st
 
 namespace Iris
 
-open OFE CMRA Std
+open OFE CMRA _root_.Iris.Std
 
 abbrev MaxPrefixListMap : Type _ → Type _ :=
   (Std.ExtTreeMap Nat · compare)
 
-@[rocq_alias max_prefix_list, rocq_alias max_prefix_listR, rocq_alias max_prefix_listUR]
+@[rocq_alias max_prefix_list, rocq_alias max_prefix_listR, rocq_alias max_prefix_listUR,
+  implicit_reducible]
 def MaxPrefixList : Type _ → Type _ :=
   (MaxPrefixListMap <| Agree ·)
 

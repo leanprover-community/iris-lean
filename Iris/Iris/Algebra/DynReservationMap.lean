@@ -18,7 +18,7 @@ namespace Iris
 
 @[expose] public section
 
-open Std PartialMap
+open _root_.Iris.Std PartialMap
 
 universe u v
 

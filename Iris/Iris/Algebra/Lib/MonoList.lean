@@ -20,7 +20,7 @@ open OFE CMRA
 
 variable {α : Type _} [OFE α]
 
-@[rocq_alias mono_listR, rocq_alias mono_listUR]
+@[rocq_alias mono_listR, rocq_alias mono_listUR, implicit_reducible]
 def MonoList (α : Type _) [OFE α] := Auth (MaxPrefixList α)
 
 instance : OFE (MonoList α) :=

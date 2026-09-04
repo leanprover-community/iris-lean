@@ -16,7 +16,7 @@ meta import Iris.Std.RocqPorting
 
 namespace Iris
 
-open Std CMRA OFE LawfulSet LeibnizSet View
+open _root_.Iris.Std CMRA OFE LawfulSet LeibnizSet View
 
 variable {S A B : Type _} [LawfulSet S (A × B)]
 variable {a a₁ a₂ : A} {b b₁ b₂ : B} {L L' L₁ L₂ : S} {dq dq₁ dq₂ : DFrac}

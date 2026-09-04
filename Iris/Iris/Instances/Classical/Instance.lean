@@ -12,7 +12,7 @@ public import Iris.Std.Equivalence
 @[expose] public section
 
 namespace Iris.Instances.Classical
-open Iris.BI Iris.Instances.Data Std
+open Iris.BI Iris.Instances.Data _root_.Iris.Std
 
 /- Instance of `BIBase` and `BI` for classical (non-affine) separation logic. -/
 

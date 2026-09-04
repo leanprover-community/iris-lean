@@ -28,7 +28,7 @@ def A' : Nat → Σ α : Type u, COFE α
   | n+1 => let ⟨A, _⟩ := A' n; ⟨F A A, inferInstance⟩
 
 variable (F) in
-def A (n : Nat) : Type u := (A' F n).1
+@[implicit_reducible] def A (n : Nat) : Type u := (A' F n).1
 
 instance instA' (n) : COFE (A' F n).1 := (A' F n).2
 instance instA (n) : COFE (A F n) := (A' F n).2

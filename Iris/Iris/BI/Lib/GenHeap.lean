@@ -15,7 +15,7 @@ public import Iris.Std.Namespaces
 
 namespace Iris
 
-open Std Iris.Algebra CMRA BI ProofMode
+open _root_.Iris.Std Iris.Algebra CMRA BI ProofMode
 
 /-! This file provides a generic mechanism for a language-level points-to
 connective `l ↦{dq} v` reflecting the physical heap.  This library is designed

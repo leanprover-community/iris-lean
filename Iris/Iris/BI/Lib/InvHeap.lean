@@ -15,7 +15,7 @@ public import Iris.Instances.Lib.Invariants
 
 namespace Iris
 
-open Std Std.PartialMap Std.LawfulPartialMap Iris.Algebra CMRA BI ProofMode
+open _root_.Iris.Std Std.PartialMap Std.LawfulPartialMap Iris.Algebra CMRA BI ProofMode
 open Agree Auth BigSepM Excl Heap
 
 @[rocq_alias inv_heapN]

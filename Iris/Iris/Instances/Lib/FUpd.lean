@@ -229,7 +229,7 @@ delab_rule fupd_finally
 
 section fupd_finally
 
-open ProofMode Std
+open ProofMode _root_.Iris.Std
 
 variable {GF : BundledGFunctors} {hlc : HasLC} [InvGS_gen hlc GF]
 
@@ -534,7 +534,7 @@ end Soundness
 
 section StepIndexed
 
-open Iris Std LawfulSet BIFUpdateSbi
+open Iris _root_.Iris.Std LawfulSet BIFUpdateSbi
 
 variable {GF : BundledGFunctors}
 

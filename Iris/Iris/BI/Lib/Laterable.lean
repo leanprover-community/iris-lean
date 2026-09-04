@@ -15,7 +15,7 @@ public import Iris.Std.TC
 namespace Iris
 
 section Laterable
-open BI OFE Std ProofMode
+open BI OFE _root_.Iris.Std ProofMode
 
 /-- Require that the proposition `P` is laterable. -/
 @[rocq_alias Laterable]

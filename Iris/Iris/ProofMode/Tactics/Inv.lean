@@ -44,7 +44,7 @@ theorem tac_inv_elim [BI PROP]
     _ ⊢ goal := h0
 
 public meta section
-open Lean Elab Tactic Meta Qq BI Std
+open Lean Elab Tactic Meta Qq BI _root_.Iris.Std _root_.Lean.Std
 
 /--
   An annotation of `wandM` with `@[reducible]` is useful when `whnf` is called,

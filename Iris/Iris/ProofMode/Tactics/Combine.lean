@@ -11,7 +11,7 @@ public import Iris.ProofMode.ClassesMake
 namespace Iris.ProofMode
 
 public section
-open BI Std
+open BI _root_.Iris.Std
 
 /-- Auxiliary lemma for combining two hypotheses using `CombineSepAs` -/
 theorem combine_as_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1 out2 out : PROP}
@@ -112,7 +112,7 @@ theorem combine_as_gives [BI PROP] {p : Bool} {newE e outAs outGives goal : PROP
 #rocq_ignore combine_seps_gives_of_envs "icombine is implemented by iteration with CombineState"
 
 public meta section
-open Lean Elab Tactic Meta Qq BI Std
+open Lean Elab Tactic Meta Qq BI _root_.Iris.Std _root_.Lean.Std
 
 /--
   The `icombine` tactic with the `as` syntax transforms the hypotheses

@@ -1329,7 +1329,7 @@ end DiscreteFunURF
 
 section option
 
-open CMRA Option
+open CMRA _root_.Iris.Option _root_.Iris.OFE.Option
 
 variable [CMRA α]
 
@@ -2064,7 +2064,7 @@ end ProdUnit
 
 section OptionProd
 
-open CMRA Option
+open CMRA _root_.Iris.Option _root_.Iris.OFE.Option
 
 variable {α β : Type _} [CMRA α] [CMRA β]
 

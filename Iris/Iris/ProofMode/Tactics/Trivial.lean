@@ -12,7 +12,7 @@ public import Iris.ProofMode.Tactics.Basic
 namespace Iris.ProofMode
 
 public meta section
-open BI Lean Elab Tactic Meta Qq Std
+open BI Lean Elab Tactic Meta Qq _root_.Iris.Std _root_.Lean.Std
 
 /--
 Try to solve the provided goal using `itrivial`.

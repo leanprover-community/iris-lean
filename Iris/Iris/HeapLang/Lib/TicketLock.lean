@@ -17,7 +17,7 @@ public import Iris.Std.Namespaces
 
 namespace Iris.HeapLang
 
-open BI Std CMRA Excl DisjointLeibnizSet LawfulSet
+open BI _root_.Iris.Std CMRA Excl DisjointLeibnizSet LawfulSet
 
 @[expose] public section
 

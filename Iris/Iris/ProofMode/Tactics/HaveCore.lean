@@ -36,7 +36,7 @@ theorem have_asEmpValid [bi : BI PROP] {φ} {P Q : PROP}
 #rocq_ignore into_emp_valid_tforall "Type class IntoEmpValid not needed in Lean"
 
 public meta section
-open Lean Elab Tactic Meta Qq Std
+open Lean Elab Tactic Meta Qq _root_.Iris.Std _root_.Lean.Std
 
 /--
 Assert a hypothesis from either a hypothesis name or a Lean proof term `tm`.

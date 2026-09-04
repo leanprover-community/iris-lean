@@ -11,7 +11,7 @@ public meta import Iris.ProofMode.Patterns.SelPattern
 namespace Iris.ProofMode
 
 public section
-open BI Std
+open BI _root_.Iris.Std
 
 @[rocq_alias tac_clear]
 theorem clear_spatial [BI PROP] {P P' A Q : PROP} [TCOr (Affine A) (Absorbing Q)]

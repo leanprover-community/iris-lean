@@ -16,7 +16,7 @@ public import Iris.Std.CoPset
 
 namespace Iris
 
-open ProgramLogic Language.Notation Std Iris.BI
+open ProgramLogic Language.Notation _root_.Iris.Std Iris.BI
 
 @[expose] public section
 
