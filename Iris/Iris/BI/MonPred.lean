@@ -1273,6 +1273,75 @@ instance monPred_subjectively_timeless (P : MonPred I PROP) [Timeless P] :
     Timeless iprop(<subj> P) where
   timeless := entails_at.mpr fun _ => Timeless.timeless (P := iprop(∃ j, P.monPred_at j))
 
+@[rocq_alias monPred_subjectively_persistently]
+theorem monPred_subjectively_persistently [BIPersistentlyExist PROP] (P : MonPred I PROP) :
+    <subj> (<pers> P) ⊣⊢ <pers> (<subj> P) := by
+  constructor
+  · exact entails_at.mpr fun _ => persistently_exists_mpr (Ψ := fun j => P.monPred_at j)
+  · exact entails_at.mpr fun _ => (persistently_exists (Ψ := fun j => P.monPred_at j)).mp
+
+@[rocq_alias monPred_subjectively_absorbingly]
+theorem monPred_subjectively_absorbingly (P : MonPred I PROP) :
+    <subj> (<absorb> P) ⊣⊢ <absorb> (<subj> P) := by
+  constructor
+  · exact entails_at.mpr fun _ => (absorbingly_exists (Φ := fun j => P.monPred_at j)).mpr
+  · exact entails_at.mpr fun _ => (absorbingly_exists (Φ := fun j => P.monPred_at j)).mp
+
+@[rocq_alias monPred_subjectively_affinely]
+theorem monPred_subjectively_affinely (P : MonPred I PROP) :
+    <subj> (<affine> P) ⊣⊢ <affine> (<subj> P) := by
+  constructor
+  · exact entails_at.mpr fun _ => (affinely_exists (Φ := fun j => P.monPred_at j)).mpr
+  · exact entails_at.mpr fun _ => (affinely_exists (Φ := fun j => P.monPred_at j)).mp
+
+@[rocq_alias monPred_subjectively_intuitionistically]
+theorem monPred_subjectively_intuitionistically [BIPersistentlyExist PROP] (P : MonPred I PROP) :
+    <subj> (□ P) ⊣⊢ □ (<subj> P) :=
+  (monPred_subjectively_affinely iprop(<pers> P)).trans <|
+    affinely_congr (monPred_subjectively_persistently P)
+
+@[rocq_alias monPred_subjectively_persistently_if]
+theorem monPred_subjectively_persistently_if [BIPersistentlyExist PROP]
+    (p : Bool) (P : MonPred I PROP) :
+    <subj> (<pers>?p P) ⊣⊢ <pers>?p (<subj> P) := by
+  cases p
+  · exact .rfl
+  · exact monPred_subjectively_persistently P
+
+@[rocq_alias monPred_subjectively_absorbingly_if]
+theorem monPred_subjectively_absorbingly_if (p : Bool) (P : MonPred I PROP) :
+    <subj> (<absorb>?p P) ⊣⊢ <absorb>?p (<subj> P) := by
+  cases p
+  · exact .rfl
+  · exact monPred_subjectively_absorbingly P
+
+@[rocq_alias monPred_subjectively_affinely_if]
+theorem monPred_subjectively_affinely_if (p : Bool) (P : MonPred I PROP) :
+    <subj> (<affine>?p P) ⊣⊢ <affine>?p (<subj> P) := by
+  cases p
+  · exact .rfl
+  · exact monPred_subjectively_affinely P
+
+@[rocq_alias monPred_subjectively_intuitionistically_if]
+theorem monPred_subjectively_intuitionistically_if [BIPersistentlyExist PROP]
+    (p : Bool) (P : MonPred I PROP) :
+    <subj> (□?p P) ⊣⊢ □?p (<subj> P) := by
+  cases p
+  · exact .rfl
+  · exact monPred_subjectively_intuitionistically P
+
+@[rocq_alias monPred_subjectively_wand]
+theorem monPred_subjectively_wand (P Q : MonPred I PROP) :
+    ⊢ <subj> P -∗ <obj> (P -∗ <subj> Q) -∗ <subj> Q := by
+  refine entails_wand <| wand_intro <| entails_at.mpr fun i => ?_
+  refine sep_exists_right.mp.trans <| exists_elim fun j => ?_
+  calc
+    _ ⊢ P.monPred_at j ∗ iprop(P -∗ <subj> Q).monPred_at j :=
+        sep_mono_right (forall_elim j)
+    _ ⊢ P.monPred_at j ∗ (P.monPred_at j -∗ iprop(<subj> Q).monPred_at j) :=
+        sep_mono_right (monPred_wand_force j P iprop(<subj> Q))
+    _ ⊢ iprop(<subj> Q).monPred_at i := wand_elim_right
+
 /-! ### Big separating conjunctions -/
 
 section BigOp
