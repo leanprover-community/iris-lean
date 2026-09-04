@@ -273,6 +273,12 @@ theorem siPure_except0 [Sbi PROP] {Pi : SiProp} :
     ⟨or_mono_left <| siPure_later.mp.trans <| later_mono siPure_pure.mp,
      or_mono_left <| (later_mono siPure_pure.mpr).trans siPure_later.mpr⟩
 
+@[rocq_alias si_pure_only_0]
+theorem siPure_only0 [Sbi PROP] {Pi : SiProp} :
+    <si_pure> (<only0> Pi) ⊣⊢@{PROP} <only0> <si_pure> Pi :=
+  show iprop(<si_pure> (▷ False → Pi)) ⊣⊢@{PROP} iprop(▷ False → <si_pure> Pi) from
+    siPure_imp.trans (imp_congr_left siPure_later_false)
+
 @[rocq_alias absorbingly_si_pure]
 theorem absorbingly_siPure [Sbi PROP] {Pi : SiProp} :
     <absorb> <si_pure> Pi ⊣⊢@{PROP} <si_pure> Pi :=
@@ -465,6 +471,22 @@ theorem siEmpValid_except0 [Sbi PROP] {P : PROP} :
       _ ⊢ <si_emp_valid> (▷ False) ∨ <si_emp_valid> P := or_mono_left siEmpValid_later.mpr
       _ ⊢ <si_emp_valid> (▷ False ∨ P) := siEmpValid_or_mpr
 
+@[rocq_alias si_emp_valid_only_0]
+theorem siEmpValid_only0 [Sbi PROP] {P : PROP} :
+    <si_emp_valid> (<only0> P) ⊣⊢@{SiProp} <only0> <si_emp_valid> P := by
+  constructor
+  · refine imp_intro ?_
+    calc iprop(<si_emp_valid> (<only0> P) ∧ ▷ False)
+      _ ⊢ <si_emp_valid> (<only0> P) ∧ ▷ <si_emp_valid> (⌜False⌝ : PROP) :=
+          and_mono_right (later_mono siEmpValid_pure.mpr)
+      _ ⊢ <si_emp_valid> (<only0> P) ∧ <si_emp_valid> (▷ False : PROP) :=
+          and_mono_right siEmpValid_later.mpr
+      _ ⊢ <si_emp_valid> ((▷ False → P) ∧ ▷ False) := siEmpValid_and.mpr
+      _ ⊢ <si_emp_valid> P := siEmpValid_mono imp_elim_left
+  · calc iprop(▷ False → <si_emp_valid> P)
+      _ ⊢ <si_emp_valid> (<si_pure> (▷ (False : SiProp)) → P) := siEmpValid_imp_siPure
+      _ ⊢ <si_emp_valid> (<only0> P) :=
+          siEmpValid_mono <| imp_mono_left siPure_later_false.mpr
 
 @[rocq_alias si_emp_valid_timeless]
 instance siEmpValid_timeless [Sbi PROP] (P : PROP) [Timeless P] :

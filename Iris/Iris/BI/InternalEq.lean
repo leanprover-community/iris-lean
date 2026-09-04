@@ -430,6 +430,22 @@ theorem internalEq_soundness {A : Type _} [OFE A] (x y : A) :
     (⊢@{PROP} x ≡ y) → x = y :=
   (SiProp.internalEq_soundness <| siPure_emp_valid.mp ·)
 
+@[rocq_alias only_0_internal_eq]
+theorem only0_internalEq (P Q : PROP) :
+    <only0> (P ≡ Q) ⊣⊢@{PROP} iprop(<only0> P) ≡ iprop(<only0> Q) := by
+  show iprop(<only0> <si_pure> (SiProp.internalEq P Q))
+    ⊣⊢@{PROP} <si_pure> (SiProp.internalEq iprop(<only0> P) iprop(<only0> Q))
+  calc iprop(<only0> <si_pure> (SiProp.internalEq P Q))
+    _ ⊣⊢@{PROP} <si_pure> <only0> (SiProp.internalEq P Q) := siPure_only0.symm
+    _ ⊣⊢ <si_pure> <only0> <si_emp_valid> (P ∗-∗ Q) :=
+        .ofMono siPure_mono (.ofMono only0_mono (prop_ext_siEmpValid_equiv P Q))
+    _ ⊣⊢ <si_pure> <si_emp_valid> (<only0> (P ∗-∗ Q)) :=
+        .ofMono siPure_mono siEmpValid_only0.symm
+    _ ⊣⊢ <si_pure> <si_emp_valid> (<only0> P ∗-∗ <only0> Q) :=
+        .ofMono siPure_mono (.ofMono siEmpValid_mono only0_wandIff)
+    _ ⊣⊢ <si_pure> (SiProp.internalEq iprop(<only0> P) iprop(<only0> Q)) :=
+        .ofMono siPure_mono (prop_ext_siEmpValid_equiv _ _).symm
+
 /-! ## Derive NonExpansive/Contractive from internal statements -/
 
 @[rocq_alias internal_eq_entails]

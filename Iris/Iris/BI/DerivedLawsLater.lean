@@ -868,3 +868,48 @@ theorem timeless_laterN {P : PROP} [Timeless P] (n : Nat) :
           or_mono_right <| or_mono_left <| later_mono <| laterN_intro n
       _ ⊢ (▷ ▷^[n] False ∨ ▷ ▷^[n] False) ∨ P := or_assoc.mpr
       _ ⊢ ▷^[n + 1] False ∨ P                    := or_mono_left or_self.mp
+
+/-! # Only-0 -/
+
+@[rocq_alias bi.only_0_ne]
+theorem only0_ne : OFE.NonExpansive (BIBase.only0 (PROP := PROP)) where
+  ne _ _ _ h := imp_ne.ne .rfl h
+
+@[rw_mono_rule, rocq_alias bi.only_0_mono]
+theorem only0_mono {P Q : PROP} (h : P ⊢ Q) : <only0> P ⊢ <only0> Q := imp_mono_right h
+
+@[rw_mono_rule]
+theorem only0_congr {P Q : PROP} (h : P ⊣⊢ Q) : <only0> P ⊣⊢ <only0> Q :=
+  ⟨only0_mono h.1, only0_mono h.2⟩
+
+@[rocq_alias bi.only_0_intro]
+theorem only0_intro {P : PROP} : P ⊢ <only0> P := imp_intro and_elim_l
+
+@[rocq_alias bi.only_0_and]
+theorem only0_and {P Q : PROP} : <only0> (P ∧ Q) ⊣⊢ <only0> P ∧ <only0> Q := by
+  refine ⟨and_intro (only0_mono and_elim_l) (only0_mono and_elim_r), imp_intro (and_intro ?_ ?_)⟩
+  · exact (and_mono_left and_elim_l).trans imp_elim_left
+  · exact (and_mono_left and_elim_r).trans imp_elim_left
+
+@[rocq_alias bi.only_0_wand]
+theorem only0_wand {P Q : PROP} : <only0> (P -∗ Q) ⊢ <only0> P -∗ <only0> Q := by
+  refine wand_intro <| imp_intro ?_
+  calc
+    _ ⊢ ▷ False ∧ (▷ False → P -∗ Q) ∗ (▷ False → P) := and_comm.mp
+    _ ⊢ (▷ False ∧ (▷ False → P -∗ Q)) ∗ ▷ False ∧ (▷ False → P) := persistent_and_sep_distrib
+    _ ⊢ (P -∗ Q) ∗ P := sep_mono imp_elim_right imp_elim_right
+    _ ⊢ Q := wand_elim_left
+
+theorem only0_wand_mpr {P Q : PROP} : (<only0> P -∗ <only0> Q) ⊢ <only0> (P -∗ Q) := by
+  refine imp_intro <| wand_intro
+    ((and_intro ?_ ((sep_mono_left and_elim_r).trans sep_elim_left)).trans imp_elim_left)
+  calc
+    _ ⊢ (<only0> P -∗ <only0> Q) ∗ P         := sep_mono_left and_elim_l
+    _ ⊢ (<only0> P -∗ <only0> Q) ∗ <only0> P := sep_mono_right only0_intro
+    _ ⊢ <only0> Q                            := wand_elim_left
+
+@[rocq_alias bi.only_0_wand_iff]
+theorem only0_wandIff {P Q : PROP} : <only0> (P ∗-∗ Q) ⊣⊢ (<only0> P ∗-∗ <only0> Q) := by
+  constructor
+  · exact only0_and.mp.trans (and_mono only0_wand only0_wand)
+  · exact (and_mono only0_wand_mpr only0_wand_mpr).trans only0_and.mpr
