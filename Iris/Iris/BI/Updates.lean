@@ -737,7 +737,7 @@ theorem step_fupdN_intro {Ei Eo : CoPset} {P : PROP} (Ei_Eo : Ei ⊆ Eo) :
   | n+1 => by
     simp only [Nat.repeat]
     calc
-      _ ⊢ ▷ ▷^[n] P                         := (later_laterN n).mp
+      _ ⊢ ▷ ▷^[n] P                         := (laterN_succ_left n).mp
       _ ⊢ |={Eo}[Ei]▷=> ▷^[n] P             := step_fupd_intro Ei_Eo
       _ ⊢ |={Eo}[Ei]▷=> |={Eo}[Ei]▷=>^[n] P := step_fupd_mono <| step_fupdN_intro Ei_Eo
 
@@ -848,14 +848,14 @@ theorem fupd_plainly_laterN [BIAffine PROP] (E : CoPset) (n : Nat) (P : PROP) :
   induction n generalizing P with
   | zero => exact mono <| plainly_elim.trans except0_intro
   | succ n ih => calc
-    _ ⊢ ▷^[n] ▷ |={E}=> ■ P   := (laterN_later n).mp
+    _ ⊢ ▷^[n] ▷ |={E}=> ■ P   := (laterN_succ_right n).mp
     _ ⊢ ▷^[n] ▷ |={E}=> ■ ■ P := laterN_mono n <| later_mono <| mono plainly_idem.mpr
     _ ⊢ ▷^[n] |={E}=> ▷ ◇ ■ P := laterN_mono n <| fupd_plainly_later E iprop(■ P)
     _ ⊢ ▷^[n] |={E}=> ▷ ■ ◇ P := laterN_mono n <| mono <| later_mono except0_plainly.mp
     _ ⊢ ▷^[n] |={E}=> ■ ▷ ◇ P := laterN_mono n <| mono later_plainly_mp
     _ ⊢ |={E}=> ▷^[n] ◇ ▷ ◇ P := ih iprop(▷ ◇ P)
     _ ⊢ |={E}=> ▷^[n] ▷ ◇ P   := mono <| laterN_mono n except0_later
-    _ ⊢ |={E}=> ▷^[n + 1] ◇ P := mono (laterN_later n).mpr
+    _ ⊢ |={E}=> ▷^[n + 1] ◇ P := mono (laterN_succ_right n).mpr
 
 @[rocq_alias fupd_plain_laterN]
 theorem fupd_plain_laterN [BIAffine PROP] {E : CoPset} {n : Nat} {P : PROP} [Plain P] :
