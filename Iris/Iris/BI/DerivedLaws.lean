@@ -2423,11 +2423,10 @@ theorem persistent_and_affinely_sep_right [BI PROP] {P Q : PROP} [Persistent Q] 
   _ ⊣⊢ P ∗ <affine> Q := sep_comm
 
 @[rocq_alias bi.persistent_and_sep_1]
-theorem persistent_and_sep_mp[BI PROP] {P Q : PROP} :
+theorem persistent_and_sep_mp [BI PROP] {P Q : PROP} :
     [TCOr (Persistent P) (Persistent Q)] → P ∧ Q ⊢ P ∗ Q
   | TCOr.l => persistent_and_affinely_sep_left_mp.trans (sep_mono_left affinely_elim)
   | TCOr.r => persistent_and_affinely_sep_right_mp.trans (sep_mono_right affinely_elim)
-
 
 @[rocq_alias bi.persistent_and_sep]
 theorem persistent_and_sep [BI PROP] [BIAffine PROP] {P Q : PROP} :
@@ -2436,7 +2435,6 @@ theorem persistent_and_sep [BI PROP] [BIAffine PROP] {P Q : PROP} :
               persistently_and_iff_sep.trans (sep_congr_left persistently_iff)
   | TCOr.r => (and_congr_right persistently_iff.symm).trans <|
               and_persistently_iff_sep.trans (sep_congr_right persistently_iff)
-
 
 @[rocq_alias bi.impl_wand_2]
 theorem imp_wand_2 [BI PROP] {P Q : PROP} [Persistent P] :
@@ -2454,6 +2452,14 @@ theorem persistent_sep_dup_mp [BI PROP] {P : PROP} [inst : Persistent P] : P ⊢
 theorem persistent_sep_dup [BI PROP] {P : PROP} [Persistent P]
     [TCOr (Affine P) (Absorbing P)] : P ⊣⊢ P ∗ P :=
   ⟨persistent_sep_dup_mp, sep_elim_left⟩
+
+theorem persistent_and_sep_distrib [BI PROP] {P Q R : PROP} [Persistent P] [Absorbing P] :
+    P ∧ (Q ∗ R) ⊢ (P ∧ Q) ∗ (P ∧ R) := calc
+  _ ⊢ <affine> P ∗ (Q ∗ R)                := persistent_and_affinely_sep_left.mp
+  _ ⊢ (<affine> P ∗ <affine> P) ∗ (Q ∗ R) := sep_mono_left persistent_sep_dup.mp
+  _ ⊢ (<affine> P ∗ Q) ∗ (<affine> P ∗ R) := sep_sep_sep_comm.mp
+  _ ⊢ (P ∧ Q) ∗ (P ∧ R) :=
+      sep_mono persistent_and_affinely_sep_left.mpr persistent_and_affinely_sep_left.mpr
 
 @[rocq_alias bi.persistent_entails_l]
 theorem persistent_entails_right [BI PROP] {P Q : PROP} [Persistent Q] (H : P ⊢ Q) : P ⊢ Q ∗ P :=
