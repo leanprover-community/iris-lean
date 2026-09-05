@@ -17,6 +17,49 @@ open Iris BI ProofMode Std
 variable {PROP : Type} [inst : BI PROP] {TT : Tele.{0}}
   (Φ Ψ : TT.Arg → PROP) (φ : TT.Arg → Prop) (a : TT.Arg)
 
+/- Delaboration of the empty telescope. -/
+/-- info: ⟦tele⟧ : Tele -/
+#guard_msgs in #check ⟦tele⟧
+
+/- Delaboration of a telescope with multiple explicitly typed dependent binders. -/
+/-- info: ⟦tele (n : Nat) (b : Bool) (s : String)⟧ : Tele -/
+#guard_msgs in
+set_option linter.unusedVariables false in
+#check ⟦tele (n : Nat) (b : Bool) (s : String)⟧
+
+/- Same test but without type annotations. -/
+/-- info: ⟦tele n b s⟧ : Tele -/
+#guard_msgs in
+set_option pp.piBinderTypes false in
+set_option linter.unusedVariables false in
+#check ⟦tele (n : Nat) (b : Bool) (s : String)⟧
+
+/- No delaboration when `pp.notation` is set as `false`. -/
+/-- info: Tele.nil : Tele -/
+#guard_msgs in
+set_option pp.notation false in
+#check ⟦tele⟧
+
+/- No delaboration when `pp.notation` when the universe has to be printed. -/
+/-- info: Tele.nil.{0} : Tele.{0} -/
+#guard_msgs in
+set_option pp.universes true in
+#check ⟦tele⟧
+
+/- Delaboration of a telescope with dependent binders. -/
+set_option linter.unusedVariables false in
+/-- info: ⟦tele (n : Nat) (f : Fin n)⟧ : Tele -/
+#guard_msgs in #check ⟦tele (n : Nat) (f : Fin n)⟧
+
+/- Delaboration of `Tele.Arg.nil` -/
+/-- info: ⟦tele_arg⟧ : ⟦tele⟧.Arg -/
+#guard_msgs in #check ⟦tele_arg⟧
+
+/- Delaboration of `Tele.Arg.cons` -/
+/-- info: ⟦tele_arg 3, true⟧ : ⟦tele (x : Nat) (x : Bool)⟧.Arg -/
+#guard_msgs in
+#check (⟦tele_arg 3, true⟧ : Tele.Arg ⟦tele (_ : Nat) (_ : Bool)⟧)
+
 /- Delaboration of the telescope-aware lambda. -/
 /-- info: λ.. x, Φ x : TT.Arg → PROP -/
 #guard_msgs in #check (λ.. x, Φ x)
