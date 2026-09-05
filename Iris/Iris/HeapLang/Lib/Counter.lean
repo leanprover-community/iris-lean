@@ -156,12 +156,13 @@ theorem incr_mono_spec (l : Loc) (n : Nat) :
     imod iOwn_update_op
       (a' := (((● MaxNat.ofNat (c + 1)) • (◯ MaxNat.ofNat (c + 1))) : Auth MaxNat)) $$
       [$Hγ $Hγf] with ⟨Hγ, Hγf⟩
-    · exact auth_update (MaxNat.local_update (by grind))
+    · exact auth_update_of_localUpdate (fun h => h) (MaxNat.local_update (by grind))
     imodintro
     iframe Hγ
     iapply iOwn_mono $$ Hγf
-    refine frag_inc_of_inc (MaxNat.inc_iff.mpr ?_)
-    grind [auth_both_valid_discrete.mp Hv, MaxNat.inc_iff]
+    have hnc := CMRA.inc_of_incExt (auth_both_valid_discrete.mp Hv).1
+    refine CMRA.inc_of_incExt (frag_incExt_of_incExt (MaxNat.inc_iff.mpr ?_))
+    grind [MaxNat.inc_iff]
   iintro !> Hγf
   iapply Hφ
   iexists γ
@@ -178,11 +179,12 @@ theorem read_mono_spec (l : Loc) (j : Nat) :
     icombine Hγ Hγf gives %Hv
     imod iOwn_update_op
       (a' := (((● MaxNat.ofNat c) • (◯ MaxNat.ofNat c)) : Auth MaxNat)) $$ [$Hγ $Hγf] with ⟨Hγ, Hγf⟩
-    · exact auth_update (MaxNat.local_update (by simp))
+    · exact auth_update_of_localUpdate (fun h => h) (MaxNat.local_update (by simp))
     imodintro
     iframe Hγ Hγf
     ipureintro
-    grind [auth_both_valid_discrete.mp Hv, MaxNat.inc_iff]
+    have hjc := CMRA.inc_of_incExt (auth_both_valid_discrete.mp Hv).1
+    grind [MaxNat.inc_iff]
   iintro !> %c ⟨%hle, Hγf⟩
   iapply Hφ
   iframe %hle
@@ -248,7 +250,7 @@ theorem incr_contrib_spec (γ : GName) (l : Loc) (q : Qp) (n : Nat) :
   iapply incr_spec (ccounter γ q n) (ccounter γ q (n+1)) l $$ [$Hctx $Hγf] Hφ
   iintro %c ⟨Hγ, Hγf⟩
   imod iOwn_update_op (a' := CMRA.op (●F (c + 1)) (◯F{q} (n + 1))) $$ [$Hγ $Hγf] with ⟨Hγ, Hγf⟩
-  · exact FracAuth.update (CommMonoidLike.leftCancelAdd_local_update (by grind))
+  · exact FracAuth.update (fun h => h) (CommMonoidLike.leftCancelAdd_local_update (by grind))
   imodintro
   iframe
 

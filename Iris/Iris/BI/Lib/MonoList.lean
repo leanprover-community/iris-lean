@@ -205,7 +205,7 @@ theorem lb_own_get (γ : GName) (dq : DFrac) (l : List α) :
   unfold auth_own lb_own
   iintro H
   iapply iOwn_mono $$ H
-  exact included ..
+  exact CMRA.inc_of_incExt (included ..)
 
 @[rocq_alias mono_list_lb_own_le]
 theorem lb_own_le (γ : GName) {l : List α} (l' : List α) (h : l' <+: l) :
@@ -213,7 +213,7 @@ theorem lb_own_le (γ : GName) {l : List α} (l' : List α) (h : l' <+: l) :
   unfold lb_own
   iintro H
   iapply iOwn_mono $$ H
-  exact lb_mono (h.map _)
+  exact CMRA.inc_of_incExt (lb_mono (h.map _))
 
 @[rocq_alias mono_list_lb_own_nil]
 theorem lb_own_nil (γ : GName) : ⊢@{IProp GF} |==> (γ ↪◯ML ([] : List α)) := by

@@ -112,7 +112,7 @@ theorem append_idem (x : Mra R) : append x x = x := by
 #rocq_ignore mra_pcore "Replaced by the `pcore` field of the CMRA instance."
 
 @[rocq_alias mra_cmra_mixin]
-instance (R : α → α → Prop) : CMRA (Mra R) where
+instance (R : α → α → Prop) : RABase (Mra R) where
   pcore := some
   op := append
   ValidN _ _ := True
@@ -132,9 +132,13 @@ instance (R : α → α → Prop) : CMRA (Mra R) where
   pcore_op_left h :=
     (congrArg (append · _) (Option.some.inj h).symm).trans (append_idem _)
   pcore_idem _ := rfl
+  extend _ h := ⟨_, _, h, .rfl, .rfl⟩
+
+instance (R : α → α → Prop) : RABase.ExtensionLaws (Mra R) where
   pcore_op_mono h y :=
     ⟨y, congrArg (fun z ↦ some (append z y)) (Option.some.inj h)⟩
-  extend _ h := ⟨_, _, h, .rfl, .rfl⟩
+
+instance (R : α → α → Prop) : CMRA (Mra R) := CMRA.withExtensionOrder
 
 #rocq_ignore mraR "Use Mra."
 
@@ -150,19 +154,22 @@ instance (x : Mra R) : CMRA.CoreId x where
 instance : CMRA.Discrete (Mra R) where
   discrete_0 := id
   discrete_valid := id
+  discrete_inc | ⟨z, hz⟩ => ⟨z, hz⟩
 
 #rocq_ignore mra_unit "Replaced by the `unit` field of UCMRA instance."
 #rocq_ignore mraUR "Use Mra."
 
 -- FIXME: upstream name `auth_ucmra_mixin` should be `mra_ucmra_mixin`
 @[rocq_alias auth_ucmra_mixin]
-instance (R : α → α → Prop) : UCMRA (Mra R) where
+instance (R : α → α → Prop) : Unital (Mra R) where
   unit := mk []
   unit_valid := trivial
   unit_left_id {x} := by
     induction x using ind with
     | mk xs => rfl
   pcore_unit := rfl
+
+instance (R : α → α → Prop) : UCMRA (Mra R) := UCMRA.withExtensionOrder
 
 theorem eq_of_below_iff {x y : Mra R} (h : ∀ a, below a x ↔ below a y) : x = y := by
   induction x, y using ind₂ with
@@ -177,7 +184,7 @@ theorem idem (x : Mra R) : x • x = x := append_idem x
 
 @[rocq_alias mra_included]
 theorem inc_iff (x y : Mra R) : x ≼ y ↔ y = x • y :=
-  ⟨fun h ↦ (CMRA.op_core_right_of_inc h).symm, fun h ↦ ⟨y, h⟩⟩
+  ⟨fun h ↦ (RABase.op_core_right_of_incExt h).symm, fun h ↦ ⟨y, h⟩⟩
 
 @[rocq_alias to_mra_R_op]
 theorem toMra_op_of_rel [hR : Trans R R R] (a b : α) (h : R a b) :

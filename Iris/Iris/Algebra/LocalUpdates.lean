@@ -79,9 +79,10 @@ theorem LocalUpdate.replace (x y : α) [CMRA.IdFree x] (h : ✓ y) : (x, x) ~l~>
   | some _ => cases CMRA.id_freeN_r vx e.symm
 
 @[rocq_alias core_id_local_update]
-theorem LocalUpdate.core_id (x y z : α) [CMRA.CoreId y] (inc : y ≼ x) : (x, z) ~l~> (x, z • y) := by
+theorem LocalUpdate.core_id (x y z : α) [CMRA.CoreId y] (inc : y ≼ₑ x) :
+    (x, z) ~l~> (x, z • y) := by
   refine fun n mz vx e => ⟨vx, ?_⟩
-  refine (CMRA.op_core_right_of_inc inc).symm.dist.trans ?_
+  refine (RABase.op_core_right_of_incExt inc).symm.dist.trans ?_
   match mz with
   | none => calc
     y • x ≡{n}≡ y • z := e.op_r
@@ -102,28 +103,28 @@ theorem LocalUpdate.discrete [CMRA.Discrete α] (x y x' y' : α) :
 
 @[rocq_alias local_update_valid0]
 theorem LocalUpdate.valid0 {x y x' y' : α}
-    (h : ✓{0} x → ✓{0} y → some y ≼{0} some x → (x, y) ~l~> (x', y')) :
+    (h : ✓{0} x → ✓{0} y → some y ≼ₑ{0} some x → (x, y) ~l~> (x', y')) :
     (x, y) ~l~> (x', y') := by
   intro n mz vx e
   have v0y : ✓{0} y := CMRA.valid0_of_validN <| CMRA.validN_opM ((OFE.Dist.validN e).mp vx)
-  have : some y ≼{0} some x := CMRA.inc0_of_incN (Option.some_inc_some_of_dist_opM e)
+  have : some y ≼ₑ{0} some x := RABase.incExt0_of_incExtN (Option.some_incExt_some_of_dist_opM e)
   exact h (CMRA.valid0_of_validN vx) v0y this n mz vx e
 
 @[rocq_alias local_update_valid]
 theorem LocalUpdate.valid [CMRA.Discrete α] {x y x' y' : α}
-    (h : ✓ x → ✓ y → some y ≼ some x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
+    (h : ✓ x → ✓ y → some y ≼ₑ some x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
   .valid0 fun vx0 vy0 mz =>
-    h (CMRA.discrete_valid vx0) (CMRA.discrete_valid vy0) ((CMRA.inc_iff_incN 0).mpr mz)
+    h (CMRA.discrete_valid vx0) (CMRA.discrete_valid vy0) (RABase.incExt_of_incExt0 mz)
 
 @[rocq_alias local_update_total_valid0]
 theorem LocalUpdate.total_valid0 [CMRA.IsTotal α] {x y x' y' : α}
-    (h : ✓{0} x → ✓{0} y → y ≼{0} x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
-  .valid0 fun vx0 vy0 mz => h vx0 vy0 (Option.some_incN_some_iff_is_total.mp mz)
+    (h : ✓{0} x → ✓{0} y → y ≼ₑ{0} x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
+  .valid0 fun vx0 vy0 mz => h vx0 vy0 (Option.some_incExtN_some_iff_is_total.mp mz)
 
 @[rocq_alias local_update_total_valid]
 theorem LocalUpdate.total_valid [CMRA.IsTotal α] [CMRA.Discrete α] {x y x' y' : α}
-    (h : ✓ x → ✓ y → y ≼ x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
-  .valid fun vx vy inc => h vx vy (Option.inc_of_some_inc_some inc)
+    (h : ✓ x → ✓ y → y ≼ₑ x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
+  .valid fun vx vy inc => h vx vy (Option.incExt_of_some_incExt_some inc)
 
 end CMRA
 

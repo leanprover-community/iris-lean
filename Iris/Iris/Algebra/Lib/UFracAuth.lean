@@ -31,7 +31,7 @@ abbrev UFracAuth [CMRA A] := Auth (Option (UFrac × A))
 
 namespace UFracAuth
 
-variable [CMRA A]
+variable [CMRA A] [CMRA.Affine A]
 
 @[rocq_alias ufrac_auth_auth]
 nonrec abbrev auth (q : Qp) (a : A) : UFracAuth (A := A) :=
@@ -77,17 +77,16 @@ theorem validN {n : Nat} {a : A} {p : Qp} (ha : ✓{n} a) : ✓{n} (●U{p} a) �
 
 @[rocq_alias ufrac_auth_valid]
 theorem valid {p : Qp} {a : A} (ha : ✓ a) : ✓ (●U{p} a) • ◯U{p} a :=
-  auth_both_valid_2 ⟨trivial, ha⟩ ⟨none, rfl⟩
+  auth_both_valid_2 ⟨trivial, ha⟩ (CMRA.inc_refl _)
 
 /-! ## Agreement -/
 
 @[rocq_alias ufrac_auth_agreeN]
 theorem agreeN {n : Nat} {p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{p} b) : a ≡{n}≡ b := by
-  obtain ⟨mc, hmc⟩ := (both_validN.mp h).1
-  match mc with
-  | none => exact hmc.2
-  | some (r, _) =>
-    have hp : p = p + r.frac := ext_iff.mp hmc.1
+  rcases (both_validN.mp h).1 with e | i
+  · exact e.2.symm
+  · obtain ⟨r, hr⟩ := i.1
+    have hp : p = p + r.frac := ext_iff.mp hr
     grind
 
 @[rocq_alias ufrac_auth_agree]
@@ -102,28 +101,26 @@ theorem agree {p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{p} b) : a = b :=
 theorem includedN {n : Nat} {p q : Qp} {a b : A}
     (h : ✓{n} (●U{p} a) • ◯U{q} b) : some b ≼{n} some a := by
   rw [both_validN] at h
-  obtain ⟨⟨mc, hmc⟩, _⟩ := h
-  match mc with
-  | none => exact ⟨none, hmc.2⟩
-  | some (_, cr) => exact ⟨some cr, hmc.2⟩
+  rcases h.1 with e | i
+  · exact Option.some_incN_some_iff.mpr (.inl e.2)
+  · exact Option.some_incN_some_iff.mpr (.inr i.2)
 
 @[rocq_alias ufrac_auth_included]
 theorem included [CMRA.Discrete A] {q p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{q} b) :
     some b ≼ some a := by
   rw [auth_both_valid_discrete] at h
-  obtain ⟨⟨mc, hmc⟩, _⟩ := h
-  match mc with
-  | none => exact ⟨none, congrArg (some ·.snd) (some_eqv_some.mp hmc)⟩
-  | some (_, cr) => exact ⟨some cr, congrArg (some ·.snd) (some_eqv_some.mp hmc)⟩
+  rcases h.1 with e | i
+  · exact Option.some_inc_some_iff.mpr (.inl (congrArg Prod.snd e))
+  · exact Option.some_inc_some_iff.mpr (.inr i.2)
 
 @[rocq_alias ufrac_auth_includedN_total]
-theorem includedN_total [IsTotal A] {n : Nat} {q p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{q} b) :
-    b ≼{n} a := some_incN_some_iff_is_total.mp <| includedN h
+theorem includedN_total [IncRefl A] {n : Nat} {q p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{q} b) :
+    b ≼{n} a := (Option.some_incN_some_iff.mp (includedN h)).elim (·.to_incN) id
 
 @[rocq_alias ufrac_auth_included_total]
-theorem included_total [CMRA.Discrete A] [IsTotal A] {q p : Qp} {a b : A}
+theorem included_total [CMRA.Discrete A] [IncRefl A] {q p : Qp} {a b : A}
     (h : ✓ (●U{p} a) • ◯U{q} b) : b ≼ a :=
-  inc_of_some_inc_some <| included h
+  (Option.some_inc_some_iff.mp (included h)).elim (· ▸ CMRA.inc_refl b) id
 
 /-! ## Auth-only validity -/
 
@@ -182,23 +179,39 @@ instance isOp_ufrac_auth_core_id {q q1 q2 : Qp} {a : A} [h1 : CoreId a] [h2 : Is
 
 /-! ## Updates -/
 
+omit [CMRA.Affine A] in
+/-- The order of the fragment algebra `Option (UFrac × A)` embeds into the extension
+inclusion, given that the order of `A` does. -/
+private theorem incExtN_of_incN (hsub : ∀ {n : Nat} {x y : A}, x ≼{n} y → x ≼ₑ{n} y)
+    {n : Nat} {x y : Option (UFrac × A)} (h : x ≼{n} y) : x ≼ₑ{n} y :=
+  Option.incExtN_of_incN (Prod.incExtN_of_incN (fun h => h) hsub) h
+
 @[rocq_alias ufrac_auth_update]
-theorem update {p q : Qp} {a b a' b' : A} (h : (a, b) ~l~> (a', b')) :
+theorem update {p q : Qp} {a b a' b' : A}
+    (hsub : ∀ {n : Nat} {x y : A}, x ≼{n} y → x ≼ₑ{n} y) (h : (a, b) ~l~> (a', b')) :
     ((●U{p} a) • ◯U{q} b) ~~> (●U{p} a') • ◯U{q} b' :=
-  auth_update <| .option (.prod_2 _ _ h)
+  auth_update_of_localUpdate
+    (incExtN_of_incN hsub)
+    (.option (.prod_2 _ _ h))
 
 @[rocq_alias ufrac_auth_update_surplus]
-theorem update_surplus {p q : Qp} {a b : A} (h : ✓ (a • b)) :
+theorem update_surplus {p q : Qp} {a b : A}
+    (hsub : ∀ {n : Nat} {x y : A}, x ≼{n} y → x ≼ₑ{n} y) (h : ✓ (a • b)) :
     (●U{p} a) ~~> (●U{p + q} (a • b)) • ◯U{q} b := by
-  refine auth_update_alloc (local_update_unital.mpr fun n mpa _ heq => ?_)
+  refine auth_update_alloc_of_localUpdate
+    (incExtN_of_incN hsub)
+    (local_update_unital.mpr fun n mpa _ heq => ?_)
   refine ⟨⟨trivial, h.validN⟩, ?_⟩
   refine .trans ?_ (heq.trans (unit_left_id_dist mpa)).op_r
   exact ⟨comm.dist, op_commN⟩
 
 @[rocq_alias ufrac_auth_update_surplus_cancel]
-theorem update_surplus_cancel {p q : Qp} {a b : A} [CMRA.Cancelable b] :
+theorem update_surplus_cancel {p q : Qp} {a b : A} [CMRA.Cancelable b]
+    (hsub : ∀ {n : Nat} {x y : A}, x ≼{n} y → x ≼ₑ{n} y) :
     ((●U{p + q} (a • b)) • ◯U{q} b) ~~> ●U{p} a := by
-  refine auth_update_dealloc (local_update_unital.mpr fun n mpa hv heq => ?_)
+  refine auth_update_dealloc_of_localUpdate
+    (incExtN_of_incN hsub)
+    (local_update_unital.mpr fun n mpa hv heq => ?_)
   match mpa with
   | none =>
     grind [show p + q = q from ext_iff.mp heq.1]

@@ -36,8 +36,8 @@ theorem prod_validI [Sbi PROP] [CMRA A] [CMRA B] (x : A × B) :
 
 @[rocq_alias prod_includedI]
 theorem prod_includedI [Sbi PROP] [CMRA A] [CMRA B] (x y : A × B) :
-    x ≼ y ⊣⊢@{PROP} x.1 ≼ y.1 ∧ x.2 ≼ y.2 := by
-  sbi_unfold; intro _; exact Prod.incN_def
+    x ≼ₑ y ⊣⊢@{PROP} x.1 ≼ₑ y.1 ∧ x.2 ≼ₑ y.2 := by
+  sbi_unfold; intro _; exact Prod.incExtN_def
 
 end prod
 
@@ -52,25 +52,33 @@ theorem option_validI [Sbi PROP] [CMRA A] {mx : Option A} :
 
 @[rocq_alias option_includedI]
 theorem option_includedI [Sbi PROP] [CMRA A] {mx my : Option A} :
-  mx ≼ my ⊣⊢@{PROP}
-    mx.elim iprop(True) fun x => my.elim iprop(False) fun y => iprop((x ≼ y) ∨ (x ≡ y)) := by
+  mx ≼ₑ my ⊣⊢@{PROP}
+    mx.elim iprop(True) fun x => my.elim iprop(False) fun y => iprop((x ≼ₑ y) ∨ (x ≡ y)) := by
   rcases mx with _ | x <;> rcases my with _ | y <;>
-    try exact internalCmraIncluded_pure fun _ => by simp [Option.incN_iff]
-  simp only [Option.elim]; sbi_unfold; intro _; exact Option.some_incN_some_iff.trans Or.comm
+    try exact internalCmraIncExt_pure fun _ => by simp [Option.incExtN_iff]
+  simp only [Option.elim]; sbi_unfold; intro _; exact Option.some_incExtN_some_iff.trans Or.comm
 
 @[rocq_alias option_included_totalI]
 theorem option_included_totalI [Sbi PROP] [CMRA A] [CMRA.IsTotal A] {mx my : Option A} :
-  mx ≼ my ⊣⊢@{PROP}
-    mx.elim iprop(True) fun x => my.elim iprop(False) fun y => iprop(x ≼ y) := by
+  mx ≼ₑ my ⊣⊢@{PROP}
+    mx.elim iprop(True) fun x => my.elim iprop(False) fun y => iprop(x ≼ₑ y) := by
   rcases mx with _ | x <;> rcases my with _ | y <;>
     first
-    | exact internalCmraIncluded_iff fun _ => by simp [Option.incN_iff_is_total]
-    | exact internalCmraIncluded_pure fun _ => by simp [Option.incN_iff_is_total]
+    | exact internalCmraIncExt_iff fun _ => by simp [Option.incExtN_iff_is_total]
+    | exact internalCmraIncExt_pure fun _ => by simp [Option.incExtN_iff_is_total]
 
 @[rocq_alias Some_included_totalI]
 theorem Some_included_totalI [Sbi PROP] [CMRA A] [CMRA.IsTotal A] {x y : A} :
-    some x ≼ some y ⊣⊢@{PROP} x ≼ y :=
+    some x ≼ₑ some y ⊣⊢@{PROP} x ≼ₑ y :=
   option_included_totalI
+
+theorem some_includedI [Sbi PROP] [CMRA A] [IncRefl A] {x y : A} :
+    some x ≼ some y ⊣⊢@{PROP} x ≼ y :=
+  internalCmraIncluded_iff fun _ => Option.some_incN_some_iff_incRefl
+
+theorem some_includedI_none [Sbi PROP] [CMRA A] {x : A} : some x ≼ none ⊢@{PROP} False :=
+  (internalCmraIncluded_pure fun _ => iff_false_intro Option.not_some_incN_none).mp.trans
+    (pure_elim' False.elim)
 
 end option
 
@@ -79,7 +87,7 @@ section heap_view
 open HeapView BI Std PartialMap LawfulPartialMap BIBase.BiEntails
 
 variable {F K V : Type _} {H : Type _ → Type _}
-variable [LawfulPartialMap H K] [CMRA V]
+variable [LawfulPartialMap H K] [CMRA V] [CMRA.Affine V]
 
 @[rocq_alias gmap_view_both_dfrac_validI]
 theorem auth_op_frag_validI [Sbi PROP] (dp : DFrac) (m : H V) k dq v :
@@ -95,7 +103,7 @@ theorem auth_op_frag_one_validI [Sbi PROP] (dp : DFrac) (m : H V) k v :
   sbi_unfold; intro _; exact auth_op_frag_one_validN_iff
 
 @[rocq_alias gmap_view_both_validI_total]
-theorem auth_op_frag_validI_total [Sbi PROP] [CMRA.IsTotal V] (dp : DFrac) (m : H V) k dq v :
+theorem auth_op_frag_validI_total [Sbi PROP] [IncRefl V] (dp : DFrac) (m : H V) k dq v :
   ✓ (Auth dp m • Frag k dq v) ⊢@{PROP}
     ∃ v', ⌜✓ dp⌝ ∧ ⌜✓ dq⌝ ∧ ⌜get? m k = .some v'⌝ ∧
       ✓ v' ∧ v ≼ v' := by
@@ -147,7 +155,7 @@ theorem agree_op_equiv_toAgreeI (x y : Agree A) (a : A) :
 
 @[rocq_alias agree_includedI]
 theorem agree_includedI (x y : Agree A) :
-    x ≼ y ⊣⊢@{PROP} y ≡ x • y := by
+    x ≼ₑ y ⊣⊢@{PROP} y ≡ x • y := by
   sbi_unfold; intro _
   exact includedN.trans ⟨(·.trans op_commN), (·.trans op_commN)⟩
 
@@ -161,7 +169,7 @@ end agree_inclusion
 section auth
 open Iris BI Auth
 
-variable [Sbi PROP] [UCMRA A]
+variable [Sbi PROP] [UCMRA A] [CMRA.Affine A]
 
 @[rocq_alias auth_auth_dfrac_validI]
 theorem auth_dfrac_validI (dq : DFrac) (a : A) :
@@ -240,7 +248,7 @@ theorem cmra_morphism_validI [CMRA A] [CMRA B] (f : A -C> B) (x : A) :
 @[rocq_alias f_homom_includedI]
 theorem f_homom_includedI [CMRA A] [CMRA B] (x y : A) (f : A → B) [NonExpansive f]
     (Hf : ∀ c n, f x • f c ≡{n}≡ f (x • c)) :
-    x ≼ y ⊢@{PROP} f x ≼ f y :=
+    x ≼ₑ y ⊢@{PROP} f x ≼ₑ f y :=
   siPure_mono <| BI.exists_elim fun c => BI.exists_intro_trans (f c) <|
     internalEq_entails.mpr fun n heq => (NonExpansive.ne heq).trans (Hf c n).symm
 
@@ -304,8 +312,8 @@ theorem excl_validI (x : Excl A) :
 
 @[rocq_alias excl_includedI]
 theorem excl_includedI (x y : Excl A) :
-    x ≼ y ⊣⊢@{PROP} ⌜y = Excl.invalid⌝ :=
-  internalCmraIncluded_pure incN_iff
+    x ≼ₑ y ⊣⊢@{PROP} ⌜y = Excl.invalid⌝ :=
+  internalCmraIncExt_pure incN_iff
 
 end excl
 
@@ -334,16 +342,16 @@ theorem csum_validI [CMRA A] [CMRA B] (x : Csum A B) :
 
 @[rocq_alias csum_includedI]
 theorem csum_includedI [CMRA A] [CMRA B] (x y : Csum A B) :
-    x ≼ y ⊣⊢@{PROP}
+    x ≼ₑ y ⊣⊢@{PROP}
       match x, y with
-      | inl a, inl b => iprop(a ≼ b)
-      | inr a, inr b => iprop(a ≼ b)
+      | inl a, inl b => iprop(a ≼ₑ b)
+      | inr a, inr b => iprop(a ≼ₑ b)
       | _, invalid => iprop(True)
       | _, _ => iprop(False) := by
   cases x <;> cases y <;>
     first
-    | exact internalCmraIncluded_iff fun _ => by simp [Csum.includedN]
-    | exact internalCmraIncluded_pure fun _ => by simp [Csum.includedN]
+    | exact internalCmraIncExt_iff fun _ => by simp [Csum.includedN_ext]
+    | exact internalCmraIncExt_pure fun _ => by simp [Csum.includedN_ext]
 
 end csum
 

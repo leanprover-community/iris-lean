@@ -72,8 +72,10 @@ theorem valid {a : A} : ✓ (●E a) • ◯E a :=
   Auth.auth_both_valid_2 trivial .rfl
 
 @[rocq_alias excl_auth_agreeN]
-theorem agreeN {a b : A} (h : ✓{n} (●E a) • ◯E b) : a ≡{n}≡ b :=
-  dist_of_inc_exclusive (Auth.both_validN.mp h).1 trivial |>.symm
+theorem agreeN {a b : A} (h : ✓{n} (●E a) • ◯E b) : a ≡{n}≡ b := by
+  rcases (Auth.both_validN.mp h).1 with e | i
+  · exact (Excl.excl_dist_inj (OFE.some_dist_some.mpr e)).symm
+  · exact nomatch (Excl.incN_iff _).mp i
 
 @[rocq_alias excl_auth_agree]
 theorem agree {a b : A} (h : ✓ (●E a) • ◯E b) : a = b :=
@@ -101,7 +103,8 @@ theorem frag_op_valid {a b : A} : (✓ (◯E a) • ◯E b) ↔ False := by
 
 @[rocq_alias excl_auth_update]
 theorem update {a b a' : A} : ((●E a) • ◯E b) ~~> ((●E a') • ◯E a') :=
-  Auth.auth_update (.option (.exclusive trivial))
+  Auth.auth_update_of_localUpdate (Option.incExtN_of_incN fun h => h)
+    (.option (.exclusive trivial))
 
 /-! ## Functors -/
 

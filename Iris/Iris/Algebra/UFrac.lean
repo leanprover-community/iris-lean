@@ -42,8 +42,7 @@ instance : OFE.Discrete UFrac := ⟨fun h => h⟩
 
 #rocq_ignore ufrac_ra_mixin "Use CMRA instance"
 
-@[rocq_alias ufracR]
-instance : CMRA UFrac where
+instance : RABase UFrac where
   pcore _ := none
   op x y := ⟨x.frac + y.frac⟩
   Valid _ := True
@@ -58,8 +57,13 @@ instance : CMRA UFrac where
   comm := ext_iff.mpr <| Subtype.ext (Rat.add_comm ..)
   pcore_op_left H := by rcases H
   pcore_idem H := by rcases H
-  pcore_op_mono H := by rcases H
   extend {_ x y z} := by rintro _ rfl; exists y; exists z
+
+instance : RABase.ExtensionLaws UFrac where
+  pcore_op_mono H := by rcases H
+
+@[rocq_alias ufracR]
+instance : CMRA UFrac := CMRA.withExtensionOrder
 
 @[simp, grind =] theorem frac_op (x y : UFrac) : (x • y).frac = x.frac + y.frac := rfl
 @[simp, grind =] theorem valid_iff {x : UFrac} : ✓ x ↔ True := Iff.rfl
@@ -83,6 +87,7 @@ theorem le_of_inc {x y : UFrac} (H : x ≼ y) : x.frac ≤ y.frac := by
 instance : CMRA.Discrete UFrac where
   discrete_0 := fun h => h
   discrete_valid := id
+  discrete_inc | ⟨z, hz⟩ => ⟨z, hz⟩
 
 @[rocq_alias ufrac_cancelable]
 instance {q : UFrac} : CMRA.Cancelable q where

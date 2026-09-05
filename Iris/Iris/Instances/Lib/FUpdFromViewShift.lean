@@ -24,7 +24,10 @@ open Iris OFE BI
 
 section fupd
 
-variable {M : Type u} [UCMRA M] (vs : CoPset → CoPset → UPred M → UPred M → UPred M)
+-- Framing spatial hypotheses into `∧`-shaped view-shift premises needs `BIAffine (UPred M)`,
+-- which holds exactly for affine `M`; every classical CMRA qualifies.
+variable {M : Type u} [UCMRA M] [CMRA.Affine M]
+variable (vs : CoPset → CoPset → UPred M → UPred M → UPred M)
 
 @[rocq_alias fupd]
 abbrev fupd_vs (E1 E2 : CoPset) (P : UPred M) : UPred M :=

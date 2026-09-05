@@ -1,7 +1,7 @@
 /-
 Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Markus de Medeiros, Puming Liu
+Authors: Markus de Medeiros, Puming Liu, Janine Lohse
 -/
 module
 
@@ -38,11 +38,13 @@ open Iris
 section heapView
 open Std PartialMap Heap OFE CMRA
 
-variable (K V : Type _) (H : Type _ → Type _) [LawfulPartialMap H K] [CMRA V]
+variable (K V : Type _) (H : Type _ → Type _) [LawfulPartialMap H K] [CMRA V] [CMRA.Affine V]
 
 #rocq_ignore gmap_view_fragUR "Inlined as the fragment type `H (DFrac × V)`"
 
-/-- The view relation for heaps: relates a model heap to a fragment heap at step index `n`. -/
+/-- The view relation for heaps: relates a model heap to a fragment heap at step index `n`.
+Each fragment cell is bounded by the corresponding model cell in the primitive *order*; for
+classical value algebras this coincides with the extension inclusion of the Rocq original. -/
 @[rocq_alias gmap_view_rel_raw]
 def HeapR (n : Nat) (m : H V) (f : H (DFrac × V)) : Prop :=
   ∀ k fv, get? f k = some fv →
@@ -53,36 +55,35 @@ def HeapR (n : Nat) (m : H V) (f : H (DFrac × V)) : Prop :=
 #rocq_ignore gmap_view_rel_raw_unit "The `rel_unit` field of the `IsViewRel (HeapR ..)` instance"
 
 @[rocq_alias gmap_view_rel]
-instance : IsViewRel (HeapR K V H) where
-  mono {n1 m1 f1 n2 m2 f2 Hrel Hm Hf Hn k} vk Hk := by
-    obtain Hf' : ∃ z, get? f1 k ≡{n2}≡ some vk • z := by
-      have ⟨z, Hz⟩ := lookup_incN (n := n2) (m1 := f2) (m2 := f1) |>.1 Hf k
-      exact ⟨z, Hk ▸ Hz⟩
+instance : IsViewRel (HeapR K V H) := .ofMonoOrd
+  (mono_ord := by
+    intro n1 m1 f1 n2 m2 f2 Hrel Hm Hf Hn k vk Hk
+    obtain Hf' : (some vk : Option ((DFrac) × V)) ≼{n2} get? f1 k := Hk ▸ Hf k
     match h : get? f1 k with
-    | none => rcases h ▸ Hf' with ⟨_|_, HK⟩ <;> simp [CMRA.op, optionOp] at HK
+    | none => exact absurd (h ▸ Hf') Option.not_some_incN_none
     | some ⟨dq', v'⟩ =>
       obtain ⟨v, dq, Hm1, ⟨Hvval, Hdqval⟩, Hvincl⟩ := Hrel k ⟨dq', v'⟩ h
-      obtain ⟨v', Hm2, Hv⟩ : ∃ y : V, get? m2 k = some y ∧ v ≡{n2}≡ y := by
+      obtain ⟨v'', Hm2, Hv⟩ : ∃ y : V, get? m2 k = some y ∧ v ≡{n2}≡ y := by
         have Hmm := Hm1 ▸ Hm k <;> revert Hmm
         cases get? m2 k <;> simp
-      exists v', dq
+      exists v'', dq
       refine ⟨Hm2, ⟨Hvval, validN_ne Hv (validN_of_le Hn Hdqval)⟩, ?_⟩
-      suffices some vk ≼{n2} some (dq, v) by exact incN_of_incN_of_dist this ⟨rfl, Hv⟩
-      refine incN_trans Hf' ?_
-      refine incN_trans ?_ (incN_of_incN_le Hn Hvincl)
-      rw [h]
-  rel_validN n m f Hrel k := by
+      suffices some vk ≼{n2} some (dq, v) by
+        exact CMRA.incN_of_incN_of_dist this (OFE.some_dist_some.mpr ⟨rfl, Hv⟩)
+      exact ((h ▸ Hf').trans (CMRA.incN_of_incN_le Hn Hvincl)))
+  (rel_validN := fun n m f Hrel k => by
     match Hf : get? f k with
     | none => simp [ValidN, optionValidN]
     | some _ =>
       obtain ⟨_, _, _, Hvv, Hvi⟩ := Hf ▸ Hrel k _ Hf
-      exact (Hf ▸ validN_of_incN Hvi Hvv)
-  rel_unit n := by
+      exact (Hf ▸ validN_of_incN Hvi Hvv))
+  (rel_unit := fun n => by
     refine ⟨empty, fun _ _ => ?_⟩
-    simp [UCMRA.unit, Heap.unit, get?_empty]
+    simp [UCMRA.unit, Heap.unit, get?_empty])
 
 namespace HeapR
 
+omit [CMRA.Affine V] in
 @[rocq_alias gmap_view_rel_unit]
 theorem unit : HeapR K V H n m UCMRA.unit := by
   simp [HeapR, UCMRA.unit, Heap.unit, get?_empty]
@@ -100,6 +101,7 @@ theorem exists_iff_validN {n f} : (∃ m, HeapR K V H n m f) ↔ ✓{n} f := by
   simp only [get?_bindAlter, h, Option.bind_some, true_and, FF]
   exact ⟨dq, (h ▸ Hv k : ✓{n} some (dq, v)), incN_refl _⟩
 
+omit [CMRA.Affine V] in
 @[rocq_alias gmap_view_rel_lookup]
 theorem singleton_get_iff n m k dq v :
     HeapR K V H n m (PartialMap.singleton k (dq, v)) ↔
@@ -120,7 +122,7 @@ theorem singleton_get_iff n m k dq v :
 instance [CMRA.Discrete V] : IsViewRelDiscrete (HeapR K V H) where
   discrete n _ _ H k v He := by
     have ⟨v, Hv1, ⟨x, Hx1, Hx2⟩⟩ := H k v He
-    refine ⟨v, Hv1, ⟨x, ?_, inc_0_iff_incN n |>.mp Hx2⟩⟩
+    refine ⟨v, Hv1, ⟨x, ?_, CMRA.incN_of_inc _ (CMRA.discrete_inc Hx2)⟩⟩
     exact ⟨Hx1.1, valid_iff_validN.mp (Discrete.discrete_valid Hx1.2) _⟩
 
 end HeapR
@@ -139,7 +141,7 @@ namespace HeapView
 
 open Heap OFE View One DFrac CMRA PartialMap Std LawfulPartialMap
 
-variable {K V : Type _} {H : Type _ → Type _} [LawfulPartialMap H K] [CMRA V]
+variable {K V : Type _} {H : Type _ → Type _} [LawfulPartialMap H K] [CMRA V] [CMRA.Affine V]
 
 /-- Authoritative (fractional) ownership over an entire heap. -/
 @[rocq_alias gmap_view_auth]
@@ -187,8 +189,7 @@ instance [h : IsOp d dq dq1 dq2] :
 This is the workhorse for proofs that rewrite the authoritative map along identities like
 `PartialMap.map_insert`, `map_delete`, or `map_union`. -/
 theorem auth_inc_of_map_eq (dq : DFrac) (h : m1 = m2) :
-    Auth dq m1 ≼ Auth dq m2 :=
-  by rw [h]
+    Auth dq m1 ≼ Auth dq m2 := h ▸ CMRA.inc_refl _
 
 @[rocq_alias gmap_view_auth_dfrac_op_invN]
 theorem dist_of_validN_auth_op : ✓{n} Auth dp m1 • Auth dq m2 → m1 ≡{n}≡ m2 :=
@@ -252,7 +253,8 @@ theorem frag_add_op_eqv {q1 q2 : Qp} :
 @[rocq_alias gmap_view_both_dfrac_validN]
 nonrec theorem auth_op_frag_validN_iff :
     ✓{n} Auth dp m1 • Frag k dq v ↔
-    ∃ v' dq', ✓ dp ∧ (Std.PartialMap.get? m1 k = some v') ∧ ✓{n} (dq', v') ∧ some (dq, v) ≼{n} some (dq', v') :=
+    ∃ v' dq', ✓ dp ∧ (Std.PartialMap.get? m1 k = some v') ∧ ✓{n} (dq', v') ∧
+      some (dq, v) ≼{n} some (dq', v') :=
   auth_op_frag_validN_iff.trans <|
     (and_congr_right fun _ => (HeapR.singleton_get_iff ..).trans <|
     exists_congr fun _ => exists_and_left).trans (by grind)
@@ -261,8 +263,10 @@ nonrec theorem auth_op_frag_validN_iff :
 theorem auth_op_frag_one_validN_iff :
     ✓{n} (Auth dp m1 • Frag k (.own one) v1) ↔ ✓ dp ∧ ✓{n} v1 ∧ Std.PartialMap.get? m1 k ≡{n}≡ some v1 := by
   refine auth_op_frag_validN_iff.trans ⟨fun ⟨Hp, v', dq', Hl, Hv, Hi⟩ => ?_, fun ⟨Hp, Hv, Hl⟩ => ?_⟩
-  · have Heq : v1 ≡{n}≡ Hp := Option.dist_of_inc_exclusive Hi Hv |>.2
-    exact ⟨dq', validN_ne Heq.symm Hv.2, Hl ▸ Heq.symm⟩
+  · haveI : Exclusive (DFrac.own one) := DFrac.own_whole_exclusive
+    rcases Hi with e | i
+    · exact ⟨dq', validN_ne e.2.symm Hv.2, Hl ▸ e.2.symm⟩
+    · exact absurd Hv.1 (RABase.not_valid_of_exclN_incExt (x := DFrac.own one) i.1)
   · match h : Std.PartialMap.get? m1 k with
     | none => simp [h] at Hl
     | some v' =>
@@ -272,46 +276,46 @@ theorem auth_op_frag_one_validN_iff :
       · exact Option.some_incN_some_iff.mpr <| .inl <| dist_prod_ext rfl (h.symm ▸ Hl).symm
 
 @[rocq_alias gmap_view_both_dfrac_validN_total]
-theorem auth_op_frag_validN_total_iff [IsTotal V] (H : ✓{n} Auth dp m1 • Frag k dq v1) :
+theorem auth_op_frag_validN_total_iff [IncRefl V] (H : ✓{n} Auth dp m1 • Frag k dq v1) :
     ∃ v', ✓ dp ∧ ✓ dq ∧ Std.PartialMap.get? m1 k = some v' ∧ ✓{n} v' ∧ v1 ≼{n} v' := by
-  obtain ⟨v', dq', Hdp, Hl, Hv, ⟨x, Hx⟩⟩ := auth_op_frag_validN_iff.mp H
+  obtain ⟨v', dq', Hdp, Hl, Hv, Hi⟩ := auth_op_frag_validN_iff.mp H
   exists v'
   refine ⟨Hdp, ?_, Hl, Hv.2, ?_⟩
-  · refine Option.valid_of_inc_valid (valid_iff_validN' n |>.mpr Hv.1) ?_
-    refine inc_iff_incN n |>.mpr ?_
-    match x with
-    | none => exact incN_of_incN_of_dist (incN_refl _) Hx.1.symm
-    | some x => exact ⟨x.1, Hx.1⟩
-  · match x with
-    | none => exact incN_of_incN_of_dist (incN_refl _) Hx.2.symm
-    | some x => exact ⟨x.2, Hx.2⟩
+  · rcases Hi with e | i
+    · exact validN_ne e.1.symm Hv.1
+    · exact validN_of_incN i.1 Hv.1
+  · rcases Hi with e | i
+    · exact e.2.to_incN
+    · exact i.2
 
 @[rocq_alias gmap_view_both_dfrac_valid_discrete]
 theorem auth_op_frag_discrete_valid_iff [CMRA.Discrete V] :
     ✓ Auth dp m1 • Frag k dq v1 ↔
-      ∃ v' dq', ✓ dp ∧ Std.PartialMap.get? m1 k = some v' ∧ ✓ (dq', v') ∧ some (dq, v1) ≼ some (dq', v') := by
+      ∃ v' dq', ✓ dp ∧ Std.PartialMap.get? m1 k = some v' ∧ ✓ (dq', v') ∧
+        some (dq, v1) ≼ some (dq', v') := by
   refine valid_iff_validN.trans ?_
   refine forall_congr' (fun _ => auth_op_frag_validN_iff) |>.trans ?_
   refine ⟨fun Hvalid' => ?_, ?_⟩
   · obtain ⟨v', dq', Hdp, Hl, Hv, Hi⟩ := Hvalid' 0
-    refine ⟨v', dq', Hdp, Hl, ?_, inc_iff_incN 0 |>.mpr Hi⟩
+    refine ⟨v', dq', Hdp, Hl, ?_, (CMRA.inc_iff_incN 0).mpr Hi⟩
     exact ⟨discrete_valid Hv.1, discrete_valid Hv.2⟩
-  · exact fun ⟨v', dq', Hdp, Hl, Hv, Hi⟩ n => ⟨v', dq', Hdp, Hl, Hv.validN, inc_iff_incN n |>.mp Hi⟩
+  · exact fun ⟨v', dq', Hdp, Hl, Hv, Hi⟩ n =>
+      ⟨v', dq', Hdp, Hl, Hv.validN, (CMRA.inc_iff_incN n).mp Hi⟩
 
 @[rocq_alias gmap_view_both_dfrac_valid_discrete_total]
-theorem auth_op_frag_valid_total_discrete_iff [IsTotal V] [CMRA.Discrete V]
+theorem auth_op_frag_valid_total_discrete_iff [IncRefl V] [CMRA.Discrete V]
     (H : ✓ Auth dp m1 • Frag k dq v1) :
     ∃ v', ✓ dp ∧ ✓ dq ∧ Std.PartialMap.get? m1 k = some v' ∧ ✓ v' ∧ v1 ≼ v' := by
   obtain ⟨v', dq', Hdp, Hl, Hv, Hi⟩ := auth_op_frag_discrete_valid_iff |>.mp H
   refine ⟨v', Hdp, ?_, Hl, Hv.2, ?_⟩
-  · rcases Hi with ⟨(_|x), Hx⟩
-    · obtain rfl : dq' = dq := congrArg Prod.fst (some_eqv_some.mp Hx)
+  · rcases Hi with e | i
+    · obtain rfl : dq' = dq := (congrArg Prod.fst e).symm
       exact Hv.1
-    · exact Option.valid_of_inc_valid Hv.1 ⟨some x.fst, congrArg (fun p => some p.fst) (some_eqv_some.mp Hx)⟩
-  · rcases Hi with ⟨(_|x), Hx⟩
-    · obtain rfl : v1 = v' := (congrArg Prod.snd (some_eqv_some.mp Hx)).symm
+    · exact valid_of_inc i.1 Hv.1
+  · rcases Hi with e | i
+    · obtain rfl : v1 = v' := congrArg Prod.snd e
       exact CMRA.inc_refl v1
-    · exact ⟨x.snd, congrArg Prod.snd (some_eqv_some.mp Hx)⟩
+    · exact i.2
 
 @[rocq_alias gmap_view_both_valid]
 theorem auth_op_frag_one_valid_iff :
@@ -410,12 +414,16 @@ theorem update_one_delete :
       obtain ⟨v, H, q, H'⟩ := Hrel a b rfl
       exact ⟨v, q, H.symm ▸ get?_delete_ne h, H'⟩
 
+/-- The primitive gmap-view update: at the touched key, transport the order bound of the
+fragment composite past the update, for every fragment frame `f` and any authoritative
+fraction; the new fraction may be chosen. `update_of_local_update` and `update_replace`
+are derived from it. -/
 @[rocq_alias gmap_view_update]
 theorem update_auth_op_frag
-    (Hup :
-      ∀ (n : Nat) (mv : V) (f : Option (DFrac × V)), (Std.PartialMap.get? m1 k = some mv) →
-      ✓{n} ((dq, v) •? f) → (mv ≡{n}≡ ((v : V) •? (Prod.snd <$> f))) →
-      ✓{n} ((dq', v') •? f) ∧ (mv' ≡{n}≡ v' •? (Prod.snd <$> f))) :
+    (Hup : ∀ (n : Nat) (dq₁ : DFrac) (mv : V) (f : Option ((DFrac) × V)),
+      Std.PartialMap.get? m1 k = some mv → ✓{n} (dq₁, mv) →
+      some ((dq, v) •? f) ≼{n} some (dq₁, mv) →
+      ∃ dq₂, ✓{n} (dq₂, mv') ∧ some ((dq', v') •? f) ≼{n} some (dq₂, mv')) :
     Auth (.own one) m1 • Frag k dq v ~~>
     Auth (.own one) (Std.PartialMap.insert m1 k mv') • Frag k dq' v' := by
   refine auth_one_op_frag_update fun n bf Hrel j ⟨df, va⟩ => ?_
@@ -427,83 +435,58 @@ theorem update_auth_op_frag
     case G =>
       simp [CMRA.op, get?_merge, op?]
       cases _ : Std.PartialMap.get? bf k <;> simp [Option.merge, get?_singleton_eq rfl]
-    obtain ⟨mv, mdf, Hlookup, Hval, Hincl'⟩ := Hrel
-    obtain ⟨f', Hincl⟩ := Option.some_incN_some_iff_opM.mp Hincl'
-    clear Hincl'
-    let f := Std.PartialMap.get? bf k • f'
-    have Hincl' : (mdf, mv) ≡{n}≡ (dq, v) •? f := Hincl.trans Option.opM_opM_assoc.dist
-    clear Hincl
-    specialize Hup n mv f Hlookup (Hincl'.validN.mp Hval) ?G
-    case G =>
-      apply Hincl'.2.trans
-      match f with
-      | none => simp [CMRA.op?]
-      | some ⟨_, _⟩ => simp [CMRA.op?, CMRA.op]
-    obtain ⟨Hval', Hincl'⟩ := Hup
-    exists (dq' •? Option.map Prod.fst f)
-    constructor
-    · refine validN_ne (x := (dq' •? Option.map Prod.fst f, v' •? Prod.snd <$> f))
-        ⟨.rfl, Hincl'.symm⟩ ?_
-      cases h : f <;> simp only [op?, Option.map_none, Option.map_eq_map]
-      · exact validN_opM Hval'
-      · simp only [h] at Hval'
-        exact Hval'
-    · rw [← Hbf]
-      suffices HF : some ((dq', v') •? Std.PartialMap.get? bf j) ≼{n} some (dq' •? Option.map Prod.fst f, mv') by
-        subst h
-        rename_i HH
-        simp [f] at HH
-        apply incN_trans ?_ HF
-        simp [Option.merge, CMRA.op?]
-        split <;> simp_all
-        · rename_i H1 H2
-          simp [← H1, get?_singleton_eq rfl]
-          exact incN_refl _
-        · rename_i H1 H2
-          exfalso
-          simp [get?_singleton_eq rfl] at H1
-        · rename_i H1 H2
-          simp [get?_singleton_eq rfl] at H1
-          simp [← H1]
-          exact incN_refl _
-      refine Option.some_incN_some_iff_opM.mpr ?_
-      exists f'
-      refine (dist_prod_ext rfl Hincl').trans ?_
-      refine .trans ?_ Option.opM_opM_assoc.symm.dist
-      obtain H : Std.PartialMap.get? bf j • f' = f := by rw [← h]
-      rw [H]
-      cases _ : f <;> rfl
+    obtain ⟨mv0, mdf, Hlookup, Hval, Hincl⟩ := Hrel
+    obtain ⟨dq₂, Hval₂, Hincl₂⟩ := Hup n mdf mv0 (Std.PartialMap.get? bf k) Hlookup Hval Hincl
+    refine ⟨dq₂, Hval₂, ?_⟩
+    refine CMRA.incN_of_dist_of_incN ?_ Hincl₂
+    rw [← Hbf, h]
+    simp only [Option.merge, CMRA.op?, get?_singleton_eq rfl]
+    cases Std.PartialMap.get? bf j <;> rfl
   · simp [get?_insert_ne h]
     intro Hbf
     have Hrel' := Hrel j (df, va)
-    simp only [CMRA.op, Heap.op, get?_merge, get?_singleton_ne h,  exists_and_left] at Hrel'
+    simp only [CMRA.op, Heap.op, get?_merge, get?_singleton_ne h, exists_and_left] at Hrel'
     refine Hrel' ?_
     rw [← Hbf]
     simp [get?_singleton_ne h]
 
 @[rocq_alias gmap_view_update_local]
-theorem update_of_local_update (Hl : Std.PartialMap.get? m1 k = some mv) (Hup : (mv, v) ~l~> (mv', v')) :
+theorem update_of_local_update (hsub : ∀ {n : Nat} {x y : V}, x ≼{n} y → x ≼ₑ{n} y)
+    (Hl : Std.PartialMap.get? m1 k = some mv) (Hup : (mv, v) ~l~> (mv', v')) :
     Auth (.own one) m1 • Frag k dq v ~~>
     Auth (.own one) (Std.PartialMap.insert m1 k mv') • Frag k dq v' := by
-  refine update_auth_op_frag (fun n mv0 f Hmv0 ⟨Hv1, Hv2⟩ Hincl => ?_)
-  simp [Hl] at Hmv0
-  subst Hmv0
-  have Hup' := Hup n (Prod.snd <$> f) ?G1 Hincl
-  case G1 =>
-    refine validN_ne Hincl.symm ?_
-    cases _ : f <;> simp_all [op?, CMRA.op]
-  cases f <;> exact ⟨⟨Hv1, validN_ne Hup'.2 Hup'.1⟩, Hup'.2⟩
+  refine update_auth_op_frag fun n dq₁ mv0 f Hmv0 Hval Hincl => ?_
+  obtain rfl : mv0 = mv := Option.some_inj.mp (Hmv0.symm.trans Hl)
+  refine ⟨dq₁, ?_⟩
+  match f with
+  | none =>
+    rcases Hincl with e | i
+    · obtain ⟨Hv', He'⟩ := Hup n none Hval.2 e.2.symm
+      exact ⟨⟨Hval.1, Hv'⟩, Option.some_incN_some_iff.mpr (.inl ⟨e.1, He'.symm⟩)⟩
+    · obtain ⟨c, hc⟩ := hsub i.2
+      obtain ⟨Hv', He'⟩ := Hup n (some c) Hval.2 hc
+      refine ⟨⟨Hval.1, Hv'⟩, Option.some_incN_some_iff.mpr (.inr ⟨i.1, ?_⟩)⟩
+      exact CMRA.incN_of_incExtN ⟨c, He'⟩
+  | some p =>
+    rcases Hincl with e | i
+    · obtain ⟨Hv', He'⟩ := Hup n (some p.2) Hval.2 e.2.symm
+      exact ⟨⟨Hval.1, Hv'⟩, Option.some_incN_some_iff.mpr (.inl ⟨e.1, He'.symm⟩)⟩
+    · obtain ⟨c, hc⟩ := hsub i.2
+      have hc' := hc.trans (assoc.symm.dist (α := V))
+      obtain ⟨Hv', He'⟩ := Hup n (some (p.2 • c)) Hval.2 hc'
+      refine ⟨⟨Hval.1, Hv'⟩, Option.some_incN_some_iff.mpr (.inr ⟨i.1, ?_⟩)⟩
+      exact CMRA.incN_of_incExtN ⟨c, He'.trans assoc.dist⟩
 
 @[rocq_alias gmap_view_replace]
 theorem update_replace (Hval' : ✓ v2) :
     Auth (.own one) m1 • Frag k (.own one) v1 ~~>
     Auth (.own one) (Std.PartialMap.insert m1 k v2) • Frag k (.own one) v2 := by
-  refine update_auth_op_frag fun n mv f Hlookup Hval Hincl => ?_
-  cases _ : f <;> simp only [Option.map_eq_map, Option.map_none]
-  · simp_all only [op?, Dist.rfl, and_true]
-    exact ⟨Hval.1, Valid.validN Hval'⟩
-  · simp_all [CMRA.op?, CMRA.op, Prod.op]
-    exact (own_whole_exclusive.exclusive0_l _ (valid0_of_validN Hval.1)).elim
+  refine update_auth_op_frag fun n dq₁ mv f Hlookup Hval Hincl => ?_
+  match f with
+  | none => exact ⟨.own one, ⟨valid_own_one, Hval'.validN⟩, incN_refl _⟩
+  | some p =>
+    have := Option.validN_of_incN_validN (Hv := Hval) (Hinc := Hincl)
+    exact (own_whole_exclusive.exclusive0_l _ (valid0_of_validN this.1)).elim
 
 @[rocq_alias gmap_view_auth_persist]
 theorem auth_dfrac_discard : Auth dq m1 ~~> Auth .discard m1 := auth_discard
@@ -524,22 +507,39 @@ theorem update_of_dfrac_update P (Hdq : dq ~~>: P) :
       simp only [CMRA.op, Heap.op, get?_merge, get?_singleton_eq rfl, op?]
       cases _ : Std.PartialMap.get? bf k <;> simp
     obtain ⟨v', dq', Hlookup, Hval, Hincl⟩ := Hrel'
-    obtain ⟨f', Hincl⟩ := Option.some_incN_some_iff_opM.mp Hincl
-    replace Hincl := Hincl.trans Option.opM_opM_assoc.dist
-    replace Hdq := Hdq n (Option.map Prod.fst (Std.PartialMap.get? bf k • f')) ?G
-    case G => cases h : Std.PartialMap.get? bf k • f' <;> exact validN_ne (h ▸ Hincl).1 Hval.1
-    obtain ⟨dq'', HPdq'', Hvdq''⟩ := Hdq
+    -- Extract a fraction frame `w`, the updated fraction `dq''`, and the new authoritative
+    -- pair — in each of the four frame/order cases (`bf k` absent or present × dist or
+    -- order-inclusion).
+    obtain ⟨dq'', HPdq'', dq₀, Hv₀, Hi₀⟩ :
+        ∃ dq'', P dq'' ∧ ∃ dq₀, ✓{n} (dq₀, v') ∧
+          some ((dq'', v1) •? Std.PartialMap.get? bf k) ≼{n} some (dq₀, v') := by
+      rcases hbf : Std.PartialMap.get? bf k with _ | p <;> rw [hbf] at Hincl
+      · rcases Hincl with e | i
+        · obtain ⟨dq'', HP, Hv''⟩ := Hdq n none (validN_ne e.1.symm Hval.1)
+          exact ⟨dq'', HP, dq'', ⟨Hv'', Hval.2⟩,
+            Option.some_incN_some_iff.mpr (.inl ⟨.rfl, e.2⟩)⟩
+        · obtain ⟨w, hw⟩ := i.1
+          obtain ⟨dq'', HP, Hv''⟩ := Hdq n (some w) (validN_ne hw Hval.1)
+          exact ⟨dq'', HP, dq'' • w, ⟨Hv'', Hval.2⟩,
+            Option.some_incN_some_iff.mpr (.inr ⟨⟨w, .rfl⟩, i.2⟩)⟩
+      · rcases Hincl with e | i
+        · obtain ⟨dq'', HP, Hv''⟩ := Hdq n (some p.1) (validN_ne e.1.symm Hval.1)
+          exact ⟨dq'', HP, dq'' • p.1, ⟨Hv'', Hval.2⟩,
+            Option.some_incN_some_iff.mpr (.inl ⟨.rfl, e.2⟩)⟩
+        · obtain ⟨w, hw⟩ := i.1
+          obtain ⟨dq'', HP, Hv''⟩ := Hdq n (some (p.1 • w))
+            (validN_ne (hw.trans assoc.symm.dist) Hval.1)
+          refine ⟨dq'', HP, (dq'' • p.1) • w, ⟨validN_ne assoc.dist Hv'', Hval.2⟩,
+            Option.some_incN_some_iff.mpr (.inr ⟨⟨w, .rfl⟩, i.2⟩)⟩
     exists Std.PartialMap.singleton k (dq'', v1)
     refine ⟨⟨dq'', rfl, HPdq''⟩, fun j ⟨df, va⟩ Heq => ?_⟩
     by_cases h : k = j
-    · simp [CMRA.op, get?_merge, get?_singleton_eq h] at Heq
-      refine ⟨v', dq'' •? (Option.map Prod.fst <| (Std.PartialMap.get? bf k) • f'), ?_⟩
-      refine ⟨h ▸ Hlookup, ⟨Hvdq'', Hval.2⟩, f', ?_⟩
-      cases _ : f' <;> cases _ : Std.PartialMap.get? bf k <;>
-        simp [Dist, Option.Forall₂, CMRA.op?] <;>
-        simp_all [CMRA.op, op?, Prod.op] <;>
-        try exact Hincl.2
-      exact ⟨Heq.1.symm ▸ assoc_L, Heq.2.symm ▸ Hincl.2.trans op_assocN⟩
+    · subst h
+      simp only [CMRA.op, Heap.op, get?_merge, get?_singleton_eq rfl] at Heq
+      refine ⟨v', dq₀, Hlookup, Hv₀, ?_⟩
+      refine CMRA.incN_of_dist_of_incN (Dist.of_eq ?_) Hi₀
+      rw [← Heq]
+      cases Std.PartialMap.get? bf k <;> rfl
     · apply Hrel
       simp [CMRA.op, get?_merge, get?_singleton_ne h] at Heq ⊢
       exact Heq
@@ -582,24 +582,16 @@ theorem heapR_map_eq [COFE A] [COFE B] [COFE A'] [COFE B'] [RFunctor T] (f : A' 
   constructor
   · constructor <;> simp_all
     exact (Hom.validN _ hv2)
-  · rw [Option.incN_iff] at ho ⊢
-    rcases ho with _ | he <;> simp_all
-    rcases he with ⟨he1, he2⟩ | he
-    · left
-      constructor <;> simp_all
-      exact (NonExpansive.ne he2)
-    · right
-      rw [Prod.mk_incN_mk] at *
-      rcases he with ⟨_ , he⟩
-      constructor
-      · simp_all
-      · exact (Hom.monoN _ _ he)
+  · rcases ho with he | he
+    · exact Option.some_incN_some_iff.mpr <| .inl (dist_prod_ext he.1 (NonExpansive.ne he.2))
+    · exact Option.some_incN_some_iff.mpr <| .inr ⟨he.1, (RFunctor.map f g).monoN he.2⟩
 
 @[rocq_alias gmap_viewURF]
 abbrev HeapViewURF T [RFunctor T] : COFE.OFunctorPre :=
   fun A B _ _ => HeapView K (T A B) H
 
-instance {T} [RFunctor T] : URFunctor (HeapViewURF (H := H) T) where
+instance {T} [RFunctor T] [RFunctorAffine T] :
+    URFunctor (HeapViewURF (H := H) T) where
   map {A A'} {B B'} _ _ _ _ f g :=
     View.mapC
       (PartialMap.mapO H (RFunctor.map f g).toHom)
@@ -632,8 +624,13 @@ instance {T} [RFunctor T] : URFunctor (HeapViewURF (H := H) T) where
       refine funext fun p => ?_
       exact Prod.ext rfl (RFunctor.map_comp _ _ _ _ p.2)
 
+instance {T} [RFunctor T] [RFunctorAffine T] :
+    RFunctorAffine (HeapViewURF (H := H) T) where
+  affine := inferInstance
+
 @[rocq_alias gmap_viewURF_contractive]
-instance {T} [RFunctorContractive T] : URFunctorContractive (HeapViewURF (H := H) T) where
+instance {T} [RFunctorContractive T] [RFunctorAffine T] :
+    URFunctorContractive (HeapViewURF (H := H) T) where
   map_contractive.1 H _ := by
     apply View.map_ne <;> intros <;> apply PartialMap.map_ne
     · exact (RFunctorContractive.map_contractive.1 H)
@@ -651,6 +648,7 @@ open Std PartialMap Heap OFE CMRA HeapView
 open One DFrac LawfulPartialMap Algebra
 
 variable {K V : Type _} {H : Type _ → Type _} [DecidableEq K] [LawfulFiniteMap H K] [CMRA V]
+  [CMRA.Affine V]
 
 omit [DecidableEq K] in
 private theorem bigOpM_frag_empty (dq : DFrac) :
@@ -729,6 +727,7 @@ theorem update_big_alloc (m1 m2 : H V) dq
       rw [bigOpM_frag_empty]
       refine Update.included ?_
       rw [union_empty_left, CMRA.unit_right_id]
+      exact CMRA.inc_refl _
     | hins k v m2 Hm2 IH =>
       have Hall' : all (fun k v => ✓ v) m2 := by exact all_of_all_insert _ Hm2 Hall
       have Hdisj' : m2 ##ₘ m1 := by

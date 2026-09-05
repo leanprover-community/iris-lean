@@ -1,7 +1,7 @@
 /-
 Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Markus de Medeiros
+Authors: Markus de Medeiros, Janine Lohse
 -/
 module
 
@@ -182,7 +182,8 @@ def pcore_genmap (x : GenMap β) : Option (GenMap β) :=
     refine ⟨N, fun k hk => ?_⟩
     simp [CMRA.core, CMRA.pcore, optionCore, hN k hk]⟩
 
-instance instCMRA_GenMap : CMRA (GenMap β) where
+/-- The resource algebra on `GenMap β`, inherited pointwise from `Nat → Option β`. -/
+@[reducible] def GenMap.raBase : RABase (GenMap β) where
   pcore := pcore_genmap β
   op x y := ⟨x.car • y.car, op_bound β x y⟩
   ValidN n x := ✓{n} x.car
@@ -223,27 +224,6 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
     have H : cx.car k = CMRA.core (x.car k) := congrFun hcx k
     simp only [H]
     exact (core_idem (x.car k)).dist
-  pcore_op_mono {x cx} H y := by
-    have hcx : cx.car = fun k => CMRA.core (x.car k) := by
-      simp [pcore_genmap] at H; exact (congrArg GenMap.car H).symm
-    have hpc_fun : CMRA.pcore x.car = some cx.car := by rw [hcx]; rfl
-    obtain ⟨cy, Hcy⟩ := pcore_op_mono hpc_fun y.car
-    refine ⟨⟨cy, ?_⟩, OFE.eq_dist_2 ?_⟩
-    · obtain ⟨N, hN⟩ := op_bound β x y
-      refine ⟨N, fun k hk => ?_⟩
-      have hxyk := hN k hk
-      simp [CMRA.op, optionOp] at hxyk
-      cases hx : x.car k <;> cases hy : y.car k <;> simp_all
-      have hcxy : CMRA.core (x.car • y.car) k = none := by
-        simp [CMRA.core, CMRA.pcore, optionCore, hx, hy, CMRA.op, optionOp]
-      have hHeqk := (OFE.eq_dist_1 Hcy) 0 k
-      simp only [CMRA.core, CMRA.pcore, optionCore, CMRA.op, optionOp,
-        hx, hy, Option.bind] at hHeqk
-      cases hcy : cy k <;> simp_all
-    · intro n k
-      have hHeqk := (OFE.eq_dist_1 Hcy) n k
-      simp [CMRA.core, CMRA.pcore, optionCore, CMRA.op, optionOp] at hHeqk ⊢
-      exact hHeqk
   extend {n x y1 y2} := by
     intro Hv H
     have eb := extend_bound β Hv H
@@ -251,7 +231,66 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
     exact ⟨⟨fun k => (F k).1, eb.1⟩, ⟨fun k => (F k).2.1, eb.2⟩,
       OFE.eq_dist_2 fun _ k => ((F k).2.2.1).dist, fun k => (F k).2.2.2.1, fun k => (F k).2.2.2.2⟩
 
+/-- The order on `GenMap β`, inherited pointwise from `Nat → Option β`. -/
+@[reducible] def GenMap.orderN : OrderN (GenMap β) where
+  IncludedN n x y := x.car ≼{n} y.car
+  Included x y := x.car ≼ y.car
+  incN_ne ex ey h := incN_ne ex ey h
+  incN_succ := incN_succ
+  incN_trans := incN_trans
+  inc_trans := inc_trans
+  incN_of_inc n h := incN_of_inc n h
+
+section
+attribute [local instance] GenMap.raBase GenMap.orderN
+
+@[simp] theorem GenMap.op_car (x y : GenMap β) : (x • y).car = x.car • y.car := rfl
+
+theorem GenMap.increasing_apply {x : GenMap β} (h : Increasing x) (k : Nat) :
+    Increasing (x.car k) where
+  increasing b := by
+    have := h.increasing (empty.alter k b) k
+    simpa [alter, Iris.alter, DiscreteFun.op_apply] using this
+
+theorem GenMap.increasing_car {x : GenMap β} (h : Increasing x) : Increasing x.car :=
+  DiscreteFun.increasing_iff.mpr (increasing_apply β h)
+
+theorem GenMap.increasing_of_car {x : GenMap β} (h : Increasing x.car) : Increasing x where
+  increasing z := h.increasing z.car
+
+instance instCMRA_GenMap : CMRA (GenMap β) where
+  toRABase := GenMap.raBase β
+  toOrderN := GenMap.orderN β
+  op_monoN_left z h := op_monoN_left z.car h
+  op_mono_left z h := op_mono_left z.car h
+  validN_of_incN {_ x y} h v := validN_of_incN (x := x.car) (y := y.car) h v
+  pcore_monoN {_ x y _} h e := by
+    obtain rfl := Option.some.inj e
+    exact ⟨_, rfl, core_incN_core (x := x.car) (y := y.car) h⟩
+  pcore_mono {x y _} h e := by
+    obtain rfl := Option.some.inj e
+    exact ⟨_, rfl, core_mono (x := x.car) (y := y.car) h⟩
+  pcore_order_op {x _} e y := by
+    obtain rfl := Option.some.inj e
+    exact ⟨_, rfl, core_op_mono x.car y.car⟩
+  pcore_increasing {x _} e := by
+    obtain rfl := Option.some.inj e
+    exact increasing_of_car β (inferInstance : Increasing (core x.car))
+  increasing_closed h h' := increasing_of_car β (increasing_closed (increasing_car β h) h')
+  incN_extend {n x y} v h :=
+    let ⟨z, hz, ez⟩ := incN_extend v h
+    ⟨⟨z, by
+      obtain ⟨N, hN⟩ := x.bound
+      refine ⟨N, fun k hk => ?_⟩
+      have := ez k
+      rw [hN k hk] at this
+      revert this
+      cases z k <;> simp [Dist, Option.Forall₂]⟩, hz, ez⟩
+
+end
+
 instance instUCMRA_GenMap : UCMRA (GenMap β) where
+  toCMRA := instCMRA_GenMap β
   unit := GenMap.empty
   unit_valid _ := trivial
   unit_left_id {x} := OFE.eq_dist_2 fun _ k => by
@@ -260,8 +299,12 @@ instance instUCMRA_GenMap : UCMRA (GenMap β) where
   pcore_unit := OFE.eq_dist_2 fun _ => by
     refine OFE.some_dist_some.mpr fun k => ?_
     simp [empty, CMRA.core, CMRA.pcore, optionCore]
+  inc_refl x := inc_refl x.car
 
 instance : IsTotal (GenMap β) := unit_total
+
+instance [Affine β] : Affine (GenMap β) where
+  increasing x := GenMap.increasing_of_car β (Affine.increasing x.car)
 
 theorem GenMap.alter_valid {g : GenMap β} (Hb : ✓{n} b) (Hg : ✓{n} g) :
     ✓{n} g.alter a b := by
@@ -385,7 +428,7 @@ instance instURFunctor_GenMapOF (F : COFE.OFunctorPre) [RFunctor F] :
       intro _ γ
       have Hcore := @(URFunctor.map (F := OptionOF F) f g).pcore (x.car γ)
       simp only [CMRA.pcore, optionCore, Option.bind, Option.map, URFunctor.map,
-                 OFunctor.map, optionMap, CMRA.core] at Hcore ⊢
+                 OFunctor.map, CMRA.core] at Hcore ⊢
       cases h : x.car γ with
       | none => simp
       | some v =>
@@ -396,12 +439,20 @@ instance instURFunctor_GenMapOF (F : COFE.OFunctorPre) [RFunctor F] :
       intro _ γ
       have Hop := @(URFunctor.map (F := OptionOF F) f g).op (z.car γ) (x.car γ)
       simp only [Option.map, CMRA.op, optionOp, URFunctor.map] at Hop ⊢
-      cases h : z.car γ <;> cases h' : x.car γ <;>
-        simp_all [OFunctor.map, optionMap]
+      cases h : z.car γ <;> cases h' : x.car γ <;> simp_all [OFunctor.map]
+      exact ((RFunctor.map f g).op _ _).dist
+    monoN h t := (URFunctor.map (F := OptionOF F) f g).monoN (h t)
+    mono h t := (URFunctor.map (F := OptionOF F) f g).mono (h t)
+    increasing h :=
+      GenMap.increasing_of_car _ <| DiscreteFun.increasing_iff.mpr fun t =>
+        (URFunctor.map (F := OptionOF F) f g).increasing (GenMap.increasing_apply _ h t)
   }
   map_ne.ne := OFunctor.map_ne.ne
   map_id x := OFunctor.map_id x
   map_comp f g f' g' x := OFunctor.map_comp f g f' g' x
+
+instance (F : COFE.OFunctorPre) [RFunctor F] [RFunctorAffine F] : RFunctorAffine (GenMapOF F) where
+  affine := inferInstance
 
 instance instURFunctorContractive_GenMapOF (F : COFE.OFunctorPre) [RFunctorContractive F] :
     URFunctorContractive (GenMapOF F) where

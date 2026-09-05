@@ -68,7 +68,7 @@ namespace DisjointLeibnizSet
 
 variable {S : Type _} [LawfulSet S A] [DecidableDisj S]
 
-instance : CMRA (DisjointLeibnizSet S) where
+instance : RABase (DisjointLeibnizSet S) where
   pcore _ := some (.valid ∅)
   op
     | valid x, valid y => if x ## y then valid (x ∪ y) else error
@@ -107,21 +107,25 @@ instance : CMRA (DisjointLeibnizSet S) where
     rintro ⟨⟩
     simp [disjoint_empty_left]
   pcore_idem {x cx} := by grind only []
-  pcore_op_mono {_ x} := by
-    rcases x with (x|_) <;> rintro ⟨⟩ y
-    exists (.valid ∅)
-    simp [disjoint_empty_left]
   extend {_ _ y₁ y₂} _ h := ⟨y₁, y₂, ⟨h, .rfl, .rfl⟩⟩
+
+instance : RABase.ExtensionLaws (DisjointLeibnizSet S) where
+  pcore_op_mono h _ := ⟨.valid ∅, by cases h; simp [CMRA.pcore, CMRA.op, disjoint_empty_left]⟩
+
+instance : CMRA (DisjointLeibnizSet S) := CMRA.withExtensionOrder
 
 instance instDiscreteDisjointLeibnizSet : CMRA.Discrete (DisjointLeibnizSet S) where
   discrete_0 := fun h => h
   discrete_valid := id
+  discrete_inc | ⟨z, hz⟩ => ⟨z, hz⟩
 
-instance instUCMRADisjointLeibnizSet : UCMRA (DisjointLeibnizSet S) where
+instance instUnitalDisjointLeibnizSet : Unital (DisjointLeibnizSet S) where
   unit := .valid ∅
-  unit_valid := by simp [Valid]
+  unit_valid := trivial
   unit_left_id {x} := by rcases x <;> simp [disjoint_empty_left, op]
   pcore_unit := by simp [pcore]
+
+instance instUCMRADisjointLeibnizSet : UCMRA (DisjointLeibnizSet S) := UCMRA.withExtensionOrder
 
 theorem valid_set {s : S} : ✓ valid s := ⟨⟩
 theorem validN_set {s : S}: ✓{n} valid s := ⟨⟩
@@ -168,12 +172,12 @@ theorem disj_op_union {X Y : S} (Hdisj : X ## Y) :
 
 @[rocq_alias coPset_disj_valid_op, rocq_alias gset_disj_valid_op]
 theorem valid_op_iff_disj {X Y : S} : ✓ ((valid X) • (valid Y)) ↔ X ## Y := by
-  by_cases H : X ## Y <;> simp [H, op, Valid]
+  by_cases H : X ## Y <;> simp [H, op, CMRA.Valid]
 
 @[rocq_alias coPset_disj_valid_inv_l, rocq_alias gset_disj_valid_inv_l]
 theorem valid_inv_l {X : S} {Y : DisjointLeibnizSet S} :
     ✓ (valid X) • Y → ∃ Y', Y = valid Y' ∧ X ## Y' := by
-  simp only [op, Valid]
+  simp only [op, CMRA.Valid]
   rcases Y with (Y|_) <;> try (· simp)
   by_cases H : X ## Y <;> simp [H]
 
@@ -316,7 +320,7 @@ namespace LeibnizSet
 
 variable {S : Type _} [LawfulSet S A]
 
-instance : CMRA (LeibnizSet S) where
+instance : RABase (LeibnizSet S) where
   pcore := some
   op | .valid x, valid y => valid (x ∪ y)
   ValidN _ _ := True
@@ -331,18 +335,25 @@ instance : CMRA (LeibnizSet S) where
   comm := by simp [union_comm]
   pcore_op_left {_ _} := by rintro ⟨rfl⟩; simp [union_idem]
   pcore_idem := by simp
-  pcore_op_mono {_ _} := by rintro ⟨rfl⟩ y; exists y
   extend {_ _ _ _} _ h := ⟨_, _, h, .rfl, .rfl⟩
 
-instance : UCMRA (LeibnizSet S) where
+instance : RABase.ExtensionLaws (LeibnizSet S) where
+  pcore_op_mono {_ _} := by rintro ⟨rfl⟩ y; exists y
+
+instance : CMRA (LeibnizSet S) := CMRA.withExtensionOrder
+
+instance : Unital (LeibnizSet S) where
   unit := valid ∅
-  unit_valid := by simp [Valid]
+  unit_valid := trivial
   unit_left_id := by simp [op, union_empty_left]
   pcore_unit := by simp [pcore, pcore]
+
+instance : UCMRA (LeibnizSet S) := UCMRA.withExtensionOrder
 
 instance instDiscreteLeibnizSet : CMRA.Discrete (LeibnizSet S) where
   discrete_0 := fun h => h
   discrete_valid := id
+  discrete_inc | ⟨z, hz⟩ => ⟨z, hz⟩
 
 @[rocq_alias gset_core_id]
 instance instCoreIdLeibnizSet (X : LeibnizSet S) : CMRA.CoreId X := ⟨rfl⟩
@@ -357,7 +368,7 @@ theorem core_equiv (X : LeibnizSet S) : core X = X := by
 
 @[rocq_alias coPset_included, rocq_alias gset_included]
 theorem included_iff_subset (X Y : S) : valid X ≼ valid Y ↔ X ⊆ Y := by
-  simp only [Included, op]
+  simp only [Included, RABase.IncExt, op]
   refine ⟨fun ⟨_, H⟩ => ?_, fun Hsub => ?_⟩
   · obtain ⟨rfl⟩ := H
     exact fun _ Hp => mem_union.mpr (.inl Hp)

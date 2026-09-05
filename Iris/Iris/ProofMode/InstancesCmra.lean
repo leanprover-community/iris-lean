@@ -27,24 +27,32 @@ instance fromPure_internalCmraValid io α [CMRA α] (a : α) :
   FromPure (PROP := PROP) false iprop(✓ a) io (✓ a) where
   from_pure := BI.pure_elim' internalCmraValid_intro
 
-@[rocq_alias into_pure_internal_included]
 instance intoPure_internalCmraIncluded α [CMRA α] [CMRA.Discrete α] (a b : α) :
   IntoPure (PROP := PROP) iprop(a ≼ b) (a ≼ b) where
   into_pure := internalCmraIncluded_discrete.1
 
-@[rocq_alias from_pure_internal_included]
 instance fromPure_internalCmraIncluded io α [CMRA α] (a b : α) :
   FromPure (PROP := PROP) false iprop(a ≼ b) io (a ≼ b) where
   from_pure := BI.pure_elim' internalCmraIncluded_intro
 
+@[rocq_alias into_pure_internal_included]
+instance intoPure_internalCmraIncExt α [CMRA α] [CMRA.Discrete α] (a b : α) :
+  IntoPure (PROP := PROP) iprop(a ≼ₑ b) (a ≼ₑ b) where
+  into_pure := internalCmraIncExt_discrete.1
+
+@[rocq_alias from_pure_internal_included]
+instance fromPure_internalCmraIncExt io α [CMRA α] (a b : α) :
+  FromPure (PROP := PROP) false iprop(a ≼ₑ b) io (a ≼ₑ b) where
+  from_pure := BI.pure_elim' internalCmraIncExt_intro
+
 @[rocq_alias into_exist_internal_included]
-instance intoExists_internalCmraIncluded α [CMRA α] (a b : α) :
-  IntoExists (PROP := PROP) iprop(a ≼ b) (λ c => iprop(b ≡ (a • c))) where
-  into_exists := siPure_exist.1
+instance intoExists_internalCmraIncExt α [CMRA α] (a b : α) :
+  IntoExists (PROP := PROP) iprop(a ≼ₑ b) (λ c => iprop(b ≡ (a • c))) where
+  into_exists := siPure_exist.mp
 
 @[rocq_alias from_exist_internal_included]
-instance fromExists_internalCmraIncluded α [CMRA α] (a b : α) :
-  FromExists (PROP := PROP) iprop(a ≼ b) (λ c => iprop(b ≡ (a • c))) where
-  from_exists := siPure_exist.2
+instance fromExists_internalCmraIncExt α [CMRA α] (a b : α) :
+  FromExists (PROP := PROP) iprop(a ≼ₑ b) (λ c => iprop(b ≡ (a • c))) where
+  from_exists := siPure_exist.mpr
 
 end cmra

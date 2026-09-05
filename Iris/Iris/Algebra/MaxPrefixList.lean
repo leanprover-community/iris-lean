@@ -47,9 +47,13 @@ instance instOFE : OFE (MaxPrefixList α) :=
 instance instCMRA : CMRA (MaxPrefixList α) :=
   Heap.instStoreCMRA (M:= MaxPrefixListMap) (V := Agree α)
 
-/-- UCMRA instance on [MaxPrefixList], inherited from the UCMRA on the underlying map. -/
+/-- UCMRA instance on `MaxPrefixList`, inherited from the UCMRA on the underlying map. -/
 instance instUCMRA : UCMRA (MaxPrefixList α) :=
   Heap.instStoreUCMRA  (M:= MaxPrefixListMap) (V := Agree α)
+
+/-- Affineness of `MaxPrefixList`, inherited from the underlying map. -/
+instance instAffine : CMRA.Affine (MaxPrefixList α) :=
+  inferInstanceAs (CMRA.Affine (MaxPrefixListMap (Agree α)))
 
 instance instCoreId (x : MaxPrefixList α) : CoreId x :=
   Heap.instCoreId (M:= MaxPrefixListMap) (V := Agree α)
@@ -57,6 +61,7 @@ instance instCoreId (x : MaxPrefixList α) : CoreId x :=
 instance instDiscrete [OFE.Discrete α] : CMRA.Discrete (MaxPrefixList α) where
   discrete_0 := OFE.discrete_0 (α := MaxPrefixListMap (Agree α))
   discrete_valid := CMRA.discrete_valid (α := MaxPrefixListMap (Agree α))
+  discrete_inc := CMRA.discrete_inc (α := MaxPrefixListMap (Agree α))
 
 end Instances
 
@@ -145,9 +150,9 @@ theorem toMaxPrefixList_op_right {l1 l2 : List α} (h : l1 <+: l2) :
   comm'.trans (toMaxPrefixList_op_left h)
 
 @[rocq_alias max_prefix_list_included_includedN]
-theorem inc_iff_forall_incN {ml1 ml2 : MaxPrefixList α} :
-    ml1 ≼ ml2 ↔ ∀ n, ml1 ≼{n} ml2 := by
-  refine ⟨fun h n => incN_of_inc n h, fun h => ⟨ml2, eq_dist_2 fun n => ?_⟩⟩
+theorem incExt_iff_forall_incExtN {ml1 ml2 : MaxPrefixList α} :
+    ml1 ≼ₑ ml2 ↔ ∀ n, ml1 ≼ₑ{n} ml2 := by
+  refine ⟨fun h n => RABase.incExtN_of_incExt n h, fun h => ⟨ml2, eq_dist_2 fun n => ?_⟩⟩
   obtain ⟨l, hl⟩ := h n
   calc ml2 ≡{n}≡ ml1 • l := hl
     _ ≡{n}≡ (ml1 • ml1) • l := (congrArg (· • l) (op_self ml1)).symm.dist
@@ -155,12 +160,12 @@ theorem inc_iff_forall_incN {ml1 ml2 : MaxPrefixList α} :
     _ ≡{n}≡ ml1 • ml2 := hl.symm.op_r
 
 @[rocq_alias to_max_prefix_list_includedN_aux]
-theorem toMaxPrefixList_incN_aux {n} {l1 l2 : List α}
-    (h : toMaxPrefixList l1 ≼{n} toMaxPrefixList l2) : l2 ≡{n}≡ l1 ++ l2.drop l1.length := by
+theorem toMaxPrefixList_incExtN_aux {n} {l1 l2 : List α}
+    (h : toMaxPrefixList l1 ≼ₑ{n} toMaxPrefixList l2) : l2 ≡{n}≡ l1 ++ l2.drop l1.length := by
   refine list_dist_lookup.mpr fun i => ?_
   have hi := Heap.lookup_incN (M := MaxPrefixListMap).mp h i
   rw [get?_toMaxPrefixList, get?_toMaxPrefixList] at hi
-  rcases Option.incN_iff_is_total.mp hi with hnone | ⟨a1, a2, ha1, ha2, ha⟩
+  rcases Option.incExtN_iff_is_total.mp hi with hnone | ⟨a1, a2, ha1, ha2, ha⟩
   · refine .of_eq (by grind)
   · obtain ⟨x1, hx1, rfl⟩ := Option.map_eq_some_iff.mp ha1
     obtain ⟨x2, hx2, rfl⟩ := Option.map_eq_some_iff.mp ha2
@@ -168,20 +173,20 @@ theorem toMaxPrefixList_incN_aux {n} {l1 l2 : List α}
     exact some_dist_some.mpr (Agree.toAgree_includedN.mp ha).symm
 
 @[rocq_alias to_max_prefix_list_includedN]
-theorem toMaxPrefixList_incN_iff {n} {l1 l2 : List α} :
-    toMaxPrefixList l1 ≼{n} toMaxPrefixList l2 ↔ ∃ l, l2 ≡{n}≡ l1 ++ l := by
-  refine ⟨fun h => ⟨_, toMaxPrefixList_incN_aux h⟩, fun ⟨l, hl⟩ => ?_⟩
-  refine incN_of_incN_of_dist ?_ (toMaxPrefixList_ne.ne hl).symm
-  grind [incN_of_inc, inc_op_left]
+theorem toMaxPrefixList_incExtN_iff {n} {l1 l2 : List α} :
+    toMaxPrefixList l1 ≼ₑ{n} toMaxPrefixList l2 ↔ ∃ l, l2 ≡{n}≡ l1 ++ l := by
+  refine ⟨fun h => ⟨_, toMaxPrefixList_incExtN_aux h⟩, fun ⟨l, hl⟩ => ?_⟩
+  refine RABase.incExtN_of_incExtN_of_dist ?_ (toMaxPrefixList_ne.ne hl).symm
+  grind [RABase.incExtN_of_incExt, RABase.incExt_op_left]
 
 @[rocq_alias to_max_prefix_list_included]
-theorem toMaxPrefixList_inc_iff {l1 l2 : List α} :
-    toMaxPrefixList l1 ≼ toMaxPrefixList l2 ↔ l1 <+: l2 := by
+theorem toMaxPrefixList_incExt_iff {l1 l2 : List α} :
+    toMaxPrefixList l1 ≼ₑ toMaxPrefixList l2 ↔ l1 <+: l2 := by
   refine ⟨fun h => ⟨_, eq_dist_2 fun n =>
-    (toMaxPrefixList_incN_aux (incN_of_inc n h)).symm⟩, ?_⟩
-  grind [inc_op_left]
+    (toMaxPrefixList_incExtN_aux (RABase.incExtN_of_incExt n h)).symm⟩, ?_⟩
+  grind [RABase.incExt_op_left]
 
-#rocq_ignore to_max_prefix_list_included_L "Use toMaxPrefixList_inc_iff"
+#rocq_ignore to_max_prefix_list_included_L "Use toMaxPrefixList_incExt_iff"
 
 @[rocq_alias to_max_prefix_list_op_validN_aux]
 theorem toMaxPrefixList_op_validN_aux {n} {l1 l2 : List α} (hlen : l1.length ≤ l2.length)

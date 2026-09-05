@@ -125,7 +125,7 @@ theorem lb_own_get (γ : GName) (dq : DFrac) (n : MaxNat) :
   unfold auth_own lb_own
   iintro H
   iapply iOwn_mono $$ H
-  exact included _ _
+  exact CMRA.inc_of_incExt (included _ _)
 
 @[rocq_alias mono_nat_lb_own_le]
 theorem lb_own_le (γ : GName) (n n' : MaxNat) (h : n' ≤ n) :
@@ -133,7 +133,7 @@ theorem lb_own_le (γ : GName) (n n' : MaxNat) (h : n' ≤ n) :
   unfold lb_own
   iintro H
   iapply iOwn_mono $$ H
-  exact lb_mono _ _ h
+  exact CMRA.inc_of_incExt (lb_mono _ _ h)
 
 @[rocq_alias mono_nat_lb_own_0]
 theorem lb_own_0 {GF : BundledGFunctors} [MonoNatG GF] (γ : GName) :

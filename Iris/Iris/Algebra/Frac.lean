@@ -70,7 +70,7 @@ def Qp.divide_even (q : Qp) (n : Nat) (hn : 0 < n) : Qp :=
 
 instance instCOFEQp : COFE Qp := COFE.ofDiscrete _
 
-instance instCMRAQp : CMRA Qp where
+instance instRABaseQp : RABase Qp where
   pcore _ := none
   op x y := x + y
   ValidN _ x := x.val ≤ 1
@@ -88,9 +88,13 @@ instance instCMRAQp : CMRA Qp where
   comm := Subtype.ext (Rat.add_comm ..)
   pcore_op_left H := by rcases H
   pcore_idem H := by rcases H
-  pcore_op_mono H := by rcases H
   extend {_ x y z} := by
     rintro H He; exact ⟨y, z, He, .rfl, .rfl⟩
+
+instance : RABase.ExtensionLaws Qp where
+  pcore_op_mono H := by rcases H
+
+instance instCMRAQp : CMRA Qp := CMRA.withExtensionOrder
 
 -- TODO: A different solution to having these bridge lemmas might be to internalize
 -- positivity into the CMRA's validity predicate, removing the sybtype, and having Qp
@@ -155,6 +159,7 @@ theorem Frac.le_of_inc {p q : Qp} (H : p ≼ q) : p ≤ q := by
 instance instDiscreteQp : CMRA.Discrete Qp where
   discrete_0 := fun h => h
   discrete_valid := id
+  discrete_inc | ⟨z, hz⟩ => ⟨z, hz⟩
 
 @[rocq_alias frac_full_exclusive]
 instance instExclusiveQp1 : CMRA.Exclusive (α := Qp) 1 where

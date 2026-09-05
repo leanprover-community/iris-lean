@@ -37,7 +37,7 @@ variable {MS : Type _} [LawfulMultiSet MS A]
 
 open MultiSet
 
-instance : CMRA (LeibnizMultiSet MS) where
+instance : RABase (LeibnizMultiSet MS) where
   pcore _ := some (ofSet ∅)
   op | ofSet X, ofSet Y => ofSet (X ⊎ Y)
   ValidN _ _ := True
@@ -52,22 +52,27 @@ instance : CMRA (LeibnizMultiSet MS) where
   comm := by grind
   pcore_op_left {_ X} := by cases X; rintro ⟨rfl⟩; exact congrArg ofSet disjUnion_empty_left
   pcore_idem := id
-  pcore_op_mono {_ X} := by
-    rintro ⟨rfl⟩ _
-    exists .ofSet ∅
-    grind
   extend {_ _ _ _} _ h := ⟨_, _, h, .rfl, .rfl⟩
 
-instance : UCMRA (LeibnizMultiSet MS) where
+instance : RABase.ExtensionLaws (LeibnizMultiSet MS) where
+  pcore_op_mono h _ :=
+    ⟨.ofSet ∅, by cases h; exact congrArg (some ∘ ofSet) disjUnion_empty_left.symm⟩
+
+instance : CMRA (LeibnizMultiSet MS) := CMRA.withExtensionOrder
+
+instance : Unital (LeibnizMultiSet MS) where
   unit := .ofSet ∅
   unit_valid := trivial
   unit_left_id {X} := by cases X; exact congrArg ofSet disjUnion_empty_left
   pcore_unit := rfl
 
+instance : UCMRA (LeibnizMultiSet MS) := UCMRA.withExtensionOrder
+
 @[rocq_alias gmultiset_cmra_discrete]
 instance : CMRA.Discrete (LeibnizMultiSet MS) where
   discrete_0 h := h
   discrete_valid := id
+  discrete_inc | ⟨z, hz⟩ => ⟨z, hz⟩
 
 instance : CMRA.IsTotal (LeibnizMultiSet MS) where
   total _ := ⟨.ofSet ∅, rfl⟩
@@ -112,8 +117,9 @@ theorem localUpdate_alloc {X Y X' : MS} :
 theorem localUpdate_dealloc {X Y X' : MS} (h : X' ⊆ Y) :
     (ofSet X, ofSet Y) ~l~> (ofSet (X \ X'), ofSet (Y \ X')) := by
   refine LocalUpdate.total_valid fun _ _ inc => localUpdate (LawfulMultiSet.ext fun a => ?_)
+  have hYX := included_iff_subset.mp inc
   simp only [multiplicity_disjUnion, multiplicity_difference]
-  grind [subset_iff, included_iff_subset]
+  grind [subset_iff]
 
 end LeibnizMultiSet
 

@@ -206,7 +206,8 @@ theorem invariant_lookup (I : InvMap (IProp GF)) (i : Pos) (P : IProp GF) :
   ihave ⟨%v', %dp', %Hdp, %Hlookup, H1, H2⟩ :=
     (auth_op_frag_validI_total
       (own 1) (map toAgree (map invariant_unfold I))) $$ H
-  simp only [get?_map, Option.map_map, Option.map_eq_some_iff, Function.comp_apply] at Hlookup
+  simp only [LawfulPartialMap.get?_map, Option.map_map, Option.map_eq_some_iff,
+    Function.comp_apply] at Hlookup
   have ⟨Q', Hget, Hagree⟩ := Hlookup
   iexists Q'
   isplit
@@ -286,7 +287,7 @@ theorem ownI_alloc [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
   -- FIXME: removing E causes a PM error
   imod iOwn_update (E := W.inv) (update_one_alloc (v1 := toAgree (invariant_unfold P)) _
       DFrac.valid_discard (fun _ => ⟨⟩)) $$ Hown with Hown
-  · simpa [get?_map]
+  · simpa [LawfulPartialMap.get?_map]
   icases iOwn_op $$ Hown with ⟨Hown, Hpt⟩
   imodintro
   iexists j
@@ -325,7 +326,7 @@ theorem ownI_alloc_open [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
   obtain ⟨j, HEQ, ⟨Hget, Hφ⟩⟩ := Hpure
   imod iOwn_update (E := W.inv) (update_one_alloc (v1 := toAgree (invariant_unfold P)) _
       DFrac.valid_discard (fun _ => ⟨⟩)) $$ Hown with Hown
-  · simpa [get?_map]
+  · simpa [LawfulPartialMap.get?_map]
   icases iOwn_op $$ Hown with ⟨Hown, Hpt⟩
   imodintro
   iexists j
