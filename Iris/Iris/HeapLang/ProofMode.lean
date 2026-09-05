@@ -11,6 +11,7 @@ public import Iris.HeapLang.Instances
 public import Iris.HeapLang.PrimitiveLaws
 public import Iris.HeapLang.DerivedLaws
 public import Iris.ProgramLogic.WeakestPre
+public import Iris.ProgramLogic.Atomic
 public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.EctxLanguage
 public import Iris.ProgramLogic.EctxiLanguage
@@ -575,6 +576,28 @@ macro_rules
       else
         `(tactic| skip)
     `(tactic| focus (((wp_smart_apply_raw $pmt) <;> wp_apply_post); $t:tactic))
+
+/--
+`awp_apply lem` is `wp_apply lem` for a logically atomic triple: `lem` proves an `atomic_wp`,
+which is unfolded before it is applied, and the atomic update left over as a premise is turned
+into an atomic accessor by `iauintro`, whose abort resource is the remaining spatial context.
+
+`awp_apply lem without H₁ … Hₙ` first frames `H₁ … Hₙ` out of the goal, so that they are not
+part of that abort resource; they come back in the continuation of the atomic operation.
+-/
+syntax (name := awpApply) "awp_apply " colGt pmTerm
+  (" without" (colGt ppSpace frameIdent)+)? : tactic
+
+macro_rules
+  | `(tactic| awp_apply $pmt:pmTerm) =>
+    `(tactic| focus (ihave Hawp := $pmt
+                     iunfold atomic_wp at Hawp
+                     ((wp_apply_raw Hawp) <;> wp_apply_post)
+                     focusLastIrisGoal iauintro))
+  | `(tactic| awp_apply $pmt:pmTerm without $hs:frameIdent*) =>
+    `(tactic| focus (iapply wp_frame_wand $$ [$hs*]
+                     · iaccu
+                     awp_apply $pmt))
 
 /-! ## Tactic lemmas for the heap tactics -/
 

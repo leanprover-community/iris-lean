@@ -88,6 +88,16 @@ def awpRetGroup (zs : Array Ident) : DelabM (Option (TSyntax ``awpRetBinders)) :
   if zs.isEmpty then return none
   return some (← `(awpRetBinders| $(← auPlainBinders zs), ))
 
+/-- Delaborate the body of the private postcondition, which is an `Option`. -/
+def delabOptionBody : DelabM (Option Term) := do
+  let e ← getExpr
+  if e.isAppOfArity ``Option.some 2 then
+    return some (← unpackIprop (← withNaryArg 1 delab))
+  else if e.isAppOfArity ``Option.none 1 then
+    return none
+  else
+    failure
+
 @[app_delab Iris.atomic_wp]
 def delabAtomicWp : Delab := do
   let e ← getExpr
