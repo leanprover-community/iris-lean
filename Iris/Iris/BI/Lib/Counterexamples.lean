@@ -21,7 +21,7 @@ open Iris.Std BI ProofMode
 -/
 namespace AffineEM
 
-variable {PROP : Type _} [BI PROP]
+variable {PROP : Type _} [BI PROP] [BIPersistentlyExist PROP]
 variable (em : ∀ P : PROP, ⊢ P ∨ ¬P)
 variable (P Q : PROP)
 include em
@@ -55,7 +55,8 @@ end AffineEM
 namespace LoebEM
 
 @[rocq_alias löb_em.later_anything]
-theorem later_anything [BI PROP] (em : ∀ P : PROP, ⊢ P ∨ ¬P) [BILoeb PROP] :
+theorem later_anything [BI PROP] [BIPersistentlyExist PROP]
+    (em : ∀ P : PROP, ⊢ P ∨ ¬P) [BILoeb PROP] :
     ⊢@{PROP} ▷ P := by
   icases (em iprop(▷ False)) with #(HP | HnotP)
   · inext
@@ -67,7 +68,8 @@ theorem later_anything [BI PROP] (em : ∀ P : PROP, ⊢ P ∨ ¬P) [BILoeb PROP
     iassumption
 
 @[rocq_alias löb_em.later_inconsistent]
-theorem later_inconsistent [Sbi PROP] (em : ∀ P : PROP, ⊢ P ∨ ¬P) : ⊢@{PROP} False := by
+theorem later_inconsistent [Sbi PROP] [BIPersistentlyExist PROP]
+    (em : ∀ P : PROP, ⊢ P ∨ ¬P) : ⊢@{PROP} False := by
   apply later_soundness (PROP := PROP) (P := iprop(False))
   apply later_anything
   assumption
@@ -77,7 +79,8 @@ end LoebEM
 /- We need the `▷` in a "Saved Proposition" construction with name-dependent allocation. -/
 namespace SavedProp
 
-variable [BI PROP] [instAffine : BIAffine PROP] {P Q : PROP}
+variable [BI PROP] [instPersExist : BIPersistentlyExist PROP]
+  [instAffine : BIAffine PROP] {P Q : PROP}
 variable (bupd : PROP → PROP)
 variable (ident : Type _) (saved : ident → PROP → PROP)
 variable [instPers : ∀ (i : ident) (P : PROP), Persistent (saved i P)]
@@ -91,12 +94,12 @@ variable (sprop_agree : ∀ (i : ident) (P Q : PROP), saved i P ∧ saved i Q �
 variable (consistency : ¬(⊢ bupd iprop(False)))
 
 include bupd_mono in
-omit instAffine in
+omit instAffine instPersExist in
 @[rw_mono_rule, rocq_alias savedprop.bupd_mono']
 theorem bupd_mono' (h : P ⊢ Q) : bupd P ⊢ bupd Q := bupd_mono h
 
 include bupd_frame_right bupd_trans bupd_mono in
-omit instAffine in
+omit instAffine instPersExist in
 @[rocq_alias savedprop.elim_modal_bupd]
 theorem elim_modal_bupd (p : Bool) : ElimModal True p io false (bupd P) P (bupd Q) (bupd Q) where
   elim_modal _ := calc
@@ -109,7 +112,7 @@ theorem elim_modal_bupd (p : Bool) : ElimModal True p io false (bupd P) P (bupd 
 def A (i : ident) : PROP := iprop(∃ P, □ (¬P ∗ saved i P))
 
 include sprop_alloc_dep in
-omit instAffine instPers in
+omit instAffine instPers instPersExist in
 @[rocq_alias savedprop.A_alloc]
 theorem A_alloc : ⊢ bupd (∃ i, saved i (A ident saved i)) := sprop_alloc_dep
 
@@ -341,7 +344,7 @@ theorem saved_NA (i : gname) :
       ElimModal True p .out false (fupd E P) P (fupd E Q) (fupd E Q) :=
     elim_fupd_fupd fupd fupd_mono fupd_fupd fupd_frame_left p E
   iintro #Hi !> #HA
-  ihave ⟨%P', HNP, Hi'⟩ := HA
+  ihave ⟨%P', #⟨HNP, Hi'⟩⟩ := HA
   imod saved_cast fupd name inv fupd_intro fupd_mono fupd_fupd fupd_frame_left
     inv_fupd gname start finished start_finish finished_not_start finished_dup
     (P := A fupd name inv gname start finished i) (Q := P') i $$ [] with HP
@@ -544,7 +547,9 @@ end Linear
 -/
 namespace LaterCreditsPlain
 
-variable [instSbi : Sbi PROP] [instBFupd : BIFUpdate PROP]
+variable [instSbi : Sbi PROP]
+  [instPersExist : BIPersistentlyExist PROP]
+  [instBFupd : BIFUpdate PROP]
 variable {lc : PROP}
 
 variable (lc_fupd_elim_later : ∀ E P, lc ∗ ▷ P ⊢ |={E}=> P)
@@ -554,6 +559,7 @@ variable (fupd_keep_si_pure' : ∀ {E : CoPset} (E' : CoPset) (Pi : SiProp) (R :
   (|={E,E'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E}=∗ R) ⊢ |={E}=> R)
 
 include lc_fupd_elim_later fupd_keep_si_pure' in
+omit instPersExist in
 @[rocq_alias later_credits_plain.lc_fupd_elim_later_keep]
 theorem lc_fupd_elim_later_keep {E : CoPset} {P : PROP} [inst1 : Plain P] [inst2 : Absorbing P] :
     ⊢ lc -∗ ▷ P ={E}=∗ lc ∗ P := by

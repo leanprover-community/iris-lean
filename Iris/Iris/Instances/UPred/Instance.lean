@@ -389,9 +389,6 @@ instance : BI (UPred M) where
     exact (core_idem x.val).dist
   persistently_emp_2 := uPred_entails_preorder.le_refl emp
   persistently_and_2 {P Q} := uPred_entails_preorder.le_refl iprop(<pers> P ∧ <pers> Q)
-  persistently_sExists_1 _ _ := fun ⟨p, HΨ, H⟩ => by
-    refine ⟨iprop(<pers> p), ⟨p, ?_⟩, H⟩
-    ext; exact and_iff_right HΨ
   persistently_absorb_l {P Q} _ x := fun ⟨x1, x2, H1, H2, H3⟩ =>
     P.mono H2 (core_incN_core ⟨x2, H1⟩) .refl
   persistently_and_l _ x H := ⟨core x, x, (core_op _).symm.dist, H⟩
@@ -490,6 +487,12 @@ theorem persistently_elim {P : UPred M} : <pers> P ⊢ P :=
 @[rocq_alias uPred_persistently_forall]
 instance : BIPersistentlyForall (UPred M) where
   persistently_sForall_2 _ _ x h p hp := h _ ⟨p, rfl⟩ x (inc_refl _) .refl hp
+
+@[rocq_alias uPred_persistently_exist]
+instance : BIPersistentlyExist (UPred M) where
+  persistently_sExists_1 _ _ _ := fun ⟨p, HΨ, H⟩ => by
+    refine ⟨iprop(<pers> p), ⟨p, ?_⟩, H⟩
+    ext; exact and_iff_right HΨ
 
 #rocq_ignore uPred_primitive.persistently_forall_2 "Inlined in `BIPersistentlyForall` construction"
 

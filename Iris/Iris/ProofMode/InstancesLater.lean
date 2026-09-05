@@ -157,7 +157,8 @@ instance intoAnd_laterN [BI PROP] (n : Nat) (p : Bool) (P Q1 Q2 : PROP)
     _ ⊢ ▷^[n]Q1 ∧ ▷^[n]Q2 := (laterN_and n).mp
 
 @[rocq_alias into_and_except_0]
-instance intoAnd_except0 [BI PROP] (p : Bool) (P Q1 Q2 : PROP)
+instance intoAnd_except0 [BI PROP] [BIPersistentlyExist PROP]
+    (p : Bool) (P Q1 Q2 : PROP)
     [h : IntoAnd p P Q1 Q2] : IntoAnd p iprop(◇ P) iprop(◇ Q1) iprop(◇ Q2) where
   into_and := intuitionisticallyIf_intro_intuitionisticallyIf <| calc
     _ ⊢ ◇ □?p P      := except0_intuitionisticallyIf
@@ -357,7 +358,7 @@ instance intoExcept0_affinely [BI PROP] (P Q : PROP)
   into_except0 := (affinely_mono h.1).trans except0_affinely
 
 @[rocq_alias into_except_0_intuitionistically]
-instance intoExcept0_intuitionistically [BI PROP] (P Q : PROP)
+instance intoExcept0_intuitionistically [BI PROP] [BIPersistentlyExist PROP] (P Q : PROP)
     [h : IntoExcept0 P Q] : IntoExcept0 iprop(□ P) iprop(□ Q) where
   into_except0 := (intuitionistically_mono h.1).trans except0_intuitionistically
 
@@ -367,23 +368,39 @@ instance intoExcept0_absorbingly [BI PROP] (P Q : PROP)
   into_except0 := (absorbingly_mono h.1).trans except0_absorbingly.2
 
 @[rocq_alias into_except_0_persistently]
-instance intoExcept0_persistently [BI PROP] (P Q : PROP)
+instance intoExcept0_persistently [BI PROP] [BIPersistentlyExist PROP] (P Q : PROP)
     [h : IntoExcept0 P Q] : IntoExcept0 iprop(<pers> P) iprop(<pers> Q) where
   into_except0 := (persistently_mono h.1).trans except0_persistently.2
 
 /-! ### ElimModal -/
 
 @[ipm_backtrack, rocq_alias elim_modal_timeless]
-instance (priority := default - 10) elimModal_timeless [BI PROP] p io
+instance (priority := default - 10) elimModal_timeless [BI PROP] [BIPersistentlyExist PROP] p io
     (P P' Q : PROP) [inst : IntoExcept0 P P'] [IsExcept0 Q] :
     ElimModal True p io p P P' Q Q where
   elim_modal _ := calc
-    _ ⊢ ◇ □?p P' ∗ (□?p P' -∗ Q)    := sep_mono_left <|
+    _ ⊢ ◇ □?p P' ∗ (□?p P' -∗ Q)   := sep_mono_left <|
         (intuitionisticallyIf_mono inst.into_except0).trans except0_intuitionisticallyIf
     _ ⊢ ◇ □?p P' ∗ ◇ (□?p P' -∗ Q) := sep_mono_right except0_intro
-    _ ⊢ ◇ (□?p P' ∗ (□?p P' -∗ Q))  := except0_sep.mpr
-    _ ⊢ ◇ Q                         := except0_mono wand_elim_right
-    _ ⊢ Q                            := is_except0
+    _ ⊢ ◇ (□?p P' ∗ (□?p P' -∗ Q)) := except0_sep.mpr
+    _ ⊢ ◇ Q                        := except0_mono wand_elim_right
+    _ ⊢ Q                          := is_except0
+
+/--
+Fallback of `elimModal_timeless` for BIs without `BIPersistentlyExist`: the residual
+hypothesis is moved to the spatial context.
+-/
+@[ipm_backtrack]
+instance (priority := default - 11) elimModal_timeless_spatial [BI PROP] p io
+    (P P' Q : PROP) [inst : IntoExcept0 P P'] [IsExcept0 Q] :
+    ElimModal True p io false P P' Q Q where
+  elim_modal _ := calc
+    _ ⊢ ◇ P' ∗ (P' -∗ Q)   := sep_mono_left <|
+        intuitionisticallyIf_elim.trans inst.into_except0
+    _ ⊢ ◇ P' ∗ ◇ (P' -∗ Q) := sep_mono_right except0_intro
+    _ ⊢ ◇ (P' ∗ (P' -∗ Q)) := except0_sep.mpr
+    _ ⊢ ◇ Q                := except0_mono wand_elim_right
+    _ ⊢ Q                  := is_except0
 
 /-! ### AddModal -/
 
@@ -665,6 +682,6 @@ instance combineSepGives_except0 [BI PROP] (Q1 Q2 P : PROP)
   combine_sep_gives := by calc
     ◇ Q1 ∗ ◇ Q2 ⊢ ◇ (Q1 ∗ Q2) := except0_sep.mpr
     _             ⊢ ◇ <pers> P  := except0_mono h.combine_sep_gives
-    _             ⊢ <pers> ◇ P  := except0_persistently.mp
+    _             ⊢ <pers> ◇ P  := except0_persistently_mp
 
 end Iris.ProofMode

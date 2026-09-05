@@ -222,7 +222,6 @@ instance instBI : BI SiProp where
   persistently_idem_2 _ h := h
   persistently_emp_2 _ h := h
   persistently_and_2 _ h := h
-  persistently_sExists_1 := fun _ ⟨P, hΨ, hPn⟩ => ⟨_, ⟨P, rfl⟩, hΨ, hPn⟩
   persistently_absorb_l _ h := h.1
   persistently_and_l _ h := h
   later_mono h n hlP := match n with | .zero => trivial | .succ _ => h _ hlP
@@ -355,6 +354,14 @@ instance instBILaterContractive : BILaterContractive SiProp where
 @[rocq_alias siProp_persistent]
 instance instPersistent (P : SiProp) : Persistent P where
   persistent _ := id
+
+@[rocq_alias siProp_persistently_forall]
+instance instPersistentlyForall : BIPersistentlyForall SiProp where
+  persistently_sForall_2 _ n h P hΨ := h _ ⟨P, rfl⟩ n .refl hΨ
+
+@[rocq_alias siProp_persistently_exist]
+instance instPersistentlyExist : BIPersistentlyExist SiProp where
+  persistently_sExists_1 _ _ := fun ⟨P, hΨ, hP⟩ => ⟨_, ⟨P, rfl⟩, hΨ, hP⟩
 
 #rocq_ignore siProp_primitive.siProp_unseal "Not needed in Lean."
 

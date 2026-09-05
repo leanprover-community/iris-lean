@@ -615,8 +615,15 @@ theorem except0_laterN (n : Nat) {P : PROP} : ◇ ▷^[n] P ⊢ ▷^[n] ◇ P :=
 theorem except0_into_later {P : PROP} : ◇ P ⊢ ▷ P :=
   (except0_mono later_intro).trans except0_later
 
+@[rocq_alias bi.except_0_persistently_1]
+theorem except0_persistently_mp {P : PROP} : ◇ <pers> P ⊢ <pers> ◇ P :=
+  (or_mono_left <|
+    (later_congr persistently_pure.symm).mp.trans later_persistently.mp).trans
+      persistently_or_mpr
+
 @[rocq_alias bi.except_0_persistently]
-theorem except0_persistently {P : PROP} : ◇ <pers> P ⊣⊢ <pers> ◇ P := by
+theorem except0_persistently [BIPersistentlyExist PROP] {P : PROP} :
+    ◇ <pers> P ⊣⊢ <pers> ◇ P := by
   apply BiEntails.trans _ persistently_or.symm
   apply or_congr_left
   apply BiEntails.trans _ later_persistently
@@ -627,11 +634,13 @@ theorem except0_affinely {P : PROP} : <affine> ◇ P ⊢ ◇ <affine> P :=
   (and_mono_left except0_intro).trans except0_and.2
 
 @[rocq_alias bi.except_0_intuitionistically_2]
-theorem except0_intuitionistically {P : PROP} : □ ◇ P ⊢ ◇ □ P :=
+theorem except0_intuitionistically [BIPersistentlyExist PROP] {P : PROP} :
+    □ ◇ P ⊢ ◇ □ P :=
   (affinely_mono except0_persistently.2).trans except0_affinely
 
 @[rocq_alias bi.except_0_intuitionistically_if_2]
-theorem except0_intuitionisticallyIf {p : Bool} {P : PROP} : □?p ◇ P ⊢ ◇ □?p P :=
+theorem except0_intuitionisticallyIf [BIPersistentlyExist PROP] {p : Bool} {P : PROP} :
+    □?p ◇ P ⊢ ◇ □?p P :=
   match p with
   | false => .rfl
   | true => except0_intuitionistically
@@ -912,7 +921,7 @@ instance forall_timeless [BI PROP] {α : Type _} (Ψ : α → PROP) [∀ x, Time
     exact except0_forall.mpr
 
 @[rocq_alias bi.persistently_timeless]
-instance persistently_timeless [BI PROP] {P : PROP} [Timeless P] :
+instance persistently_timeless [BI PROP] [BIPersistentlyExist PROP] {P : PROP} [Timeless P] :
     Timeless (PROP := PROP) iprop(<pers> P) where
   timeless :=
     calc iprop(▷ <pers> P)
@@ -934,8 +943,9 @@ instance absorbingly_timeless [BI PROP] {P : PROP} [Timeless P] :
       _ ⊢ ◇ <absorb> P := except0_absorbingly.mpr
 
 @[rocq_alias bi.intuitionistically_timeless]
-instance intuitionistically_timeless [BI PROP] [Timeless (PROP := PROP) emp] {P : PROP} [Timeless P] :
-    Timeless (PROP := PROP) iprop(□ P) := affinely_timeless
+instance intuitionistically_timeless [BI PROP] [BIPersistentlyExist PROP]
+    [Timeless (PROP := PROP) emp] {P : PROP} [Timeless P] : Timeless (PROP := PROP) iprop(□ P) :=
+  affinely_timeless
 
 @[rocq_alias bi.from_option_timeless]
 instance from_option_timeless [BI PROP] {α : Type _} {Ψ : α → PROP} {P : PROP}

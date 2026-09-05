@@ -402,7 +402,7 @@ instance fromExists_affinely [BI PROP] (P : PROP) (Φ : α → PROP) [h : FromEx
 instance fromExists_intuitionistically [BI PROP] (P : PROP)
     (Φ : α → PROP) [h : FromExists P Φ] :
     FromExists iprop(□ P) (fun a => iprop(□ (Φ a))) where
-  from_exists := intuitionistically_exists.2.trans <| intuitionistically_mono h.1
+  from_exists := intuitionistically_exists_mpr.trans <| intuitionistically_mono h.1
 
 @[rocq_alias from_exist_absorbingly]
 instance fromExists_absorbingly [BI PROP] (P : PROP)
@@ -413,7 +413,7 @@ instance fromExists_absorbingly [BI PROP] (P : PROP)
 @[rocq_alias from_exist_persistently]
 instance fromExists_persistently [BI PROP] (P : PROP) (Φ : α → PROP) [h : FromExists P Φ] :
     FromExists iprop(<pers> P) (fun a => iprop(<pers> (Φ a))) where
-  from_exists := persistently_exists.2.trans <| persistently_mono h.1
+  from_exists := persistently_exists_mpr.trans <| persistently_mono h.1
 
 @[rocq_alias from_exist_texist]
 instance fromExists_texist {TT : Tele} [BI PROP] (Φ : TT.Arg → PROP) :
@@ -436,7 +436,7 @@ instance intoExists_affinely [BI PROP] (P : PROP) (Φ : α → PROP) [h : IntoEx
   into_exists := (affinely_mono h.1).trans affinely_exists.1
 
 @[rocq_alias into_exist_intuitionistically]
-instance intoExists_intuitionistically [BI PROP]
+instance intoExists_intuitionistically [BI PROP] [BIPersistentlyExist PROP]
     (P : PROP) (Φ : α → PROP) [h : IntoExists P Φ] :
     IntoExists iprop(□ P) (fun a => iprop(□ (Φ a))) where
   into_exists := (intuitionistically_mono h.1).trans intuitionistically_exists.1
@@ -464,7 +464,8 @@ instance intoExists_absorbingly [BI PROP] (P : PROP) (Φ : α → PROP) [h : Int
   into_exists := (absorbingly_mono h.1).trans absorbingly_exists.1
 
 @[rocq_alias into_exist_persistently]
-instance intoExists_persistently [BI PROP] {P : PROP} (Φ : α → PROP) [h : IntoExists P Φ] :
+instance intoExists_persistently [BI PROP] [BIPersistentlyExist PROP]
+    {P : PROP} (Φ : α → PROP) [h : IntoExists P Φ] :
     IntoExists iprop(<pers> P) (fun a => iprop(<pers> (Φ a))) where
   into_exists := (persistently_mono h.1).trans persistently_exists.1
 
@@ -872,7 +873,7 @@ instance fromOr_affinely [BI PROP] (P Q1 Q2 : PROP) [h : FromOr P Q1 Q2] :
 @[rocq_alias from_or_intuitionistically]
 instance fromOr_intuitionistically [BI PROP] (P Q1 Q2 : PROP) [h : FromOr P Q1 Q2] :
     FromOr iprop(□ P) iprop(□ Q1) iprop(□ Q2) where
-  from_or := intuitionistically_or.2.trans (intuitionistically_mono h.1)
+  from_or := intuitionistically_or_mpr.trans (intuitionistically_mono h.1)
 
 @[rocq_alias from_or_absorbingly]
 instance fromOr_absorbingly [BI PROP] (P Q1 Q2 : PROP) [h : FromOr P Q1 Q2] :
@@ -882,7 +883,7 @@ instance fromOr_absorbingly [BI PROP] (P Q1 Q2 : PROP) [h : FromOr P Q1 Q2] :
 @[rocq_alias from_or_persistently]
 instance fromOr_persistently [BI PROP] (P Q1 Q2 : PROP) [h : FromOr P Q1 Q2] :
     FromOr iprop(<pers> P) iprop(<pers> Q1) iprop(<pers> Q2) where
-  from_or := persistently_or.2.trans (persistently_mono h.1)
+  from_or := persistently_or_mpr.trans (persistently_mono h.1)
 
 /-! ### IntoOr -/
 
@@ -900,7 +901,8 @@ instance intoOr_affinely [BI PROP] (P Q1 Q2 : PROP) [h : IntoOr P Q1 Q2] :
   into_or := (affinely_mono h.1).trans affinely_or.1
 
 @[rocq_alias into_or_intuitionistically]
-instance intoOr_intuitionistically [BI PROP] (P Q1 Q2 : PROP) [h : IntoOr P Q1 Q2] :
+instance intoOr_intuitionistically [BI PROP] [BIPersistentlyExist PROP]
+    (P Q1 Q2 : PROP) [h : IntoOr P Q1 Q2] :
     IntoOr iprop(□ P) iprop(□ Q1) iprop(□ Q2) where
   into_or := (intuitionistically_mono h.1).trans intuitionistically_or.1
 
@@ -910,7 +912,8 @@ instance intoOr_absorbingly [BI PROP] (P Q1 Q2 : PROP) [h : IntoOr P Q1 Q2] :
   into_or := (absorbingly_mono h.1).trans absorbingly_or.1
 
 @[rocq_alias into_or_persistently]
-instance intoOr_persistently [BI PROP] (P Q1 Q2 : PROP) [h : IntoOr P Q1 Q2] :
+instance intoOr_persistently [BI PROP] [BIPersistentlyExist PROP]
+    (P Q1 Q2 : PROP) [h : IntoOr P Q1 Q2] :
     IntoOr iprop(<pers> P) iprop(<pers> Q1) iprop(<pers> Q2) where
   into_or := (persistently_mono h.1).trans persistently_or.1
 
