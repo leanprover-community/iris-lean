@@ -43,7 +43,7 @@ theorem revert_IH [BI PROP] {P Q R : PROP} {φ}
   _ ⊢ Q ∗ □ R     := sep_mono_left intuitionistically_elim
 
 public meta section
-open BI Std Lean Elab Tactic Meta Qq Parser.Tactic
+open BI _root_.Iris.Std Lean Elab Tactic Meta Qq Parser.Tactic
 
 syntax (name := iinduction) "iinduction " colGt term
   (" using " ident)? (generalizingSelPats)? (inductionAlts)? : tactic

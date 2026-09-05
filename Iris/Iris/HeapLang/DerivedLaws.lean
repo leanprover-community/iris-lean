@@ -12,7 +12,7 @@ public import Iris.HeapLang.PrimitiveLaws
 @[expose] public section
 namespace Iris.HeapLang
 
-open Iris BI ProofMode ProgramLogic Std
+open Iris BI ProofMode ProgramLogic _root_.Iris.Std
 
 variable {GF : BundledGFunctors} {hlc : HasLC} [HeapLangGS hlc GF]
 variable {s : Stuckness} {E : CoPset} {Φ : Val → IProp GF}

@@ -17,7 +17,7 @@ public import Iris.Std.CoPset
 
 namespace Iris
 
-open BI CMRA OFE Iris Std LawfulSet DisjointLeibnizSet COFE ProofMode
+open BI CMRA OFE Iris _root_.Iris.Std LawfulSet DisjointLeibnizSet COFE ProofMode
 
 abbrev NaInvF : OFunctorPre :=
   ProdOF (constOF CoPsetDisjL) (constOF (DisjointLeibnizSet PosSet))

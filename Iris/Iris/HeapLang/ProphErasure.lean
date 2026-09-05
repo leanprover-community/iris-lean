@@ -16,7 +16,7 @@ public import Iris.Std.PartialMap
 @[expose] public section
 namespace Iris.HeapLang
 
-open Std Iris.ProgramLogic Iris.ProgramLogic.Language Iris.ProgramLogic.PrimStep
+open _root_.Iris.Std Iris.ProgramLogic Iris.ProgramLogic.Language Iris.ProgramLogic.PrimStep
 open Iris.ProgramLogic.EctxLanguage Iris.ProgramLogic.EctxItemLanguage
 open FromMathlib
 open Language.Notation EctxLanguage.Notation

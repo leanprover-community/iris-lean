@@ -106,7 +106,7 @@ theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B B'}
   "Functionality provided by Expr.lean infrastructure"
 
 public meta section
-open Lean Elab Tactic Meta Qq Std
+open Lean Elab Tactic Meta Qq _root_.Iris.Std _root_.Lean.Std
 
 structure SpecializeState {prop : Q(Type u)} {bi : Q(BI $prop)} (orig goal : Q($prop)) where
   {e : Q($prop)} (hyps : Hyps bi e) (p : Q(Bool)) (out : Q($prop))

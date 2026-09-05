@@ -12,7 +12,7 @@ public import Iris.Instances.IProp.Instance
 
 namespace Iris
 
-open BI CMRA Excl OFE UPred IProp Std ProofMode
+open BI CMRA Excl OFE _root_.Iris.UPred IProp _root_.Iris.Std ProofMode
 
 /-! ## Token
 

@@ -25,7 +25,7 @@ theorem from_or_right [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
   (or_intro_right_trans h1).trans inst.1
 
 public meta section
-open Lean Elab.Tactic Meta Qq Std
+open Lean Elab.Tactic Meta Qq _root_.Iris.Std _root_.Lean.Std
 
 /--
   `ileft` choose the left side of the disjunction in the goal.

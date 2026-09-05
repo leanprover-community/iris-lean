@@ -10,7 +10,7 @@ public import Iris.ProgramLogic.Adequacy
 
 namespace Iris.ProgramLogic
 
-open Iris OFE COFE BI Iris.BI Iris.Algebra Std FromMathlib LawfulSet
+open Iris OFE COFE BI Iris.BI Iris.Algebra _root_.Iris.Std FromMathlib LawfulSet
 open Language Language.Notation
 
 @[expose] public section

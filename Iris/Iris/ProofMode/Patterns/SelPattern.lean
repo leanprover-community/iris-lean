@@ -10,7 +10,7 @@ public import Iris.ProofMode.ProofModeM
 @[expose] public section
 
 namespace Iris.ProofMode
-open Lean Meta Std
+open Lean Meta _root_.Iris.Std _root_.Lean.Std
 
 declare_syntax_cat selPat
 

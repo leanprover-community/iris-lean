@@ -21,7 +21,7 @@ public import Iris.Std.FromMathlib
 
 namespace Iris.ProgramLogic
 
-open Iris Iris.BI Iris.Algebra Std FromMathlib
+open Iris Iris.BI Iris.Algebra _root_.Iris.Std FromMathlib
 open Iris.ProgramLogic.PrimStep
 open Language Language.Notation
 

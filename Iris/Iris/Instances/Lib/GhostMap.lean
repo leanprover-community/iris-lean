@@ -14,7 +14,7 @@ public import Iris.ProofMode
 
 namespace Iris
 
-open Std HeapView PartialMap Iris.Algebra CMRA BI ProofMode
+open _root_.Iris.Std HeapView PartialMap Iris.Algebra CMRA BI ProofMode
 
 @[rocq_alias ghost_mapG]
 class GhostMapG (GF : BundledGFunctors)

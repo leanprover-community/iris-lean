@@ -17,7 +17,7 @@ namespace Iris
 
 @[expose] public section
 
-open Iris Std PartialMap
+open Iris _root_.Iris.Std PartialMap
 
 /-!
 The camera [ReservationMap A H] over a camera [A] extends [LawfulPartialMap H Pos]

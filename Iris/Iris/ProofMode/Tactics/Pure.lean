@@ -10,7 +10,7 @@ public import Iris.ProofMode.Tactics.Basic
 namespace Iris.ProofMode
 
 public section
-open BI Std
+open BI _root_.Iris.Std
 
 @[rocq_alias tac_pure]
 theorem pure_elim_spatial [BI PROP] {P P' A Q : PROP} {φ : Prop}

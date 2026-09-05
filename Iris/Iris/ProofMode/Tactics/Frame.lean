@@ -74,7 +74,7 @@ theorem frame_finish_close_emp [BI PROP] {e origE origGoal : PROP}
 #rocq_ignore tac_unlock_emp "The definition locked is not used in Lean"
 
 public meta section
-open Lean Elab Tactic Meta Qq Std
+open Lean Elab Tactic Meta Qq _root_.Iris.Std _root_.Lean.Std
 
 structure FrameResult {u} {prop : Q(Type u)} (bi : Q(BI $prop)) (origE origGoal : Q($prop)) where
   (progress : Bool) (e : Q($prop)) (hyps : Hyps bi e) (goal : Q($prop))

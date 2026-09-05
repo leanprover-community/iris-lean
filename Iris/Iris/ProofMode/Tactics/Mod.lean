@@ -24,7 +24,7 @@ theorem mod [BI PROP] {e} {Φ} {p p'} {A A' Q Q' : PROP}
   _ ⊢ Q                       := he.elim_modal hΦ
 
 public meta section
-open Lean Elab Tactic Meta Qq Std
+open Lean Elab Tactic Meta Qq _root_.Iris.Std _root_.Lean.Std
 
 /--
 Eliminate a modality from `A` by transforming the goal from `P ∗ □?p A ⊢ Q` to `P ∗ □?p' A' ⊢ Q'`,

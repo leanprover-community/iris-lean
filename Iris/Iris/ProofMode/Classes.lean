@@ -11,7 +11,7 @@ public import Iris.ProofMode.Modalities
 @[expose] public section
 
 namespace Iris.ProofMode
-open Iris.BI Std
+open Iris.BI _root_.Iris.Std
 
 /--
 [PMError] is used as precondition on "failing" instances of typeclasses that

@@ -13,7 +13,7 @@ public import Iris.ProofMode.SynthInstance
 @[expose] public section
 
 namespace Iris.ProofMode
-open BI Std MonPred
+open BI _root_.Iris.Std MonPred
 
 section Classes
 

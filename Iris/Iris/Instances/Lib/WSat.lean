@@ -22,7 +22,8 @@ This file defines the world satisfaction (wsat) predicate for Iris.
 
 namespace Iris
 
-open Iris Std OFE COFE BI HeapView PartialMap DisjointLeibnizSet DFrac LawfulPartialMap BigSepM
+open Iris _root_.Iris.Std OFE COFE BI HeapView PartialMap DisjointLeibnizSet DFrac
+  LawfulPartialMap BigSepM
   HeapView FiniteMap LawfulFiniteMap
 
 section WsatGS

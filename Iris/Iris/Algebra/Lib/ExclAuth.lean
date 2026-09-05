@@ -20,7 +20,7 @@ and the authority `●E a`.
 
 namespace Iris
 
-open OFE CMRA Auth Excl Option
+open OFE CMRA Auth Excl _root_.Iris.Option _root_.Iris.OFE.Option
 
 namespace ExclAuth
 

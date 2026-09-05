@@ -11,7 +11,7 @@ public import Iris.ProofMode
 
 namespace Iris
 
-open ProgramLogic Language Language.Notation Std OFE BI
+open ProgramLogic Language Language.Notation _root_.Iris.Std OFE BI
 
 @[expose] public section
 

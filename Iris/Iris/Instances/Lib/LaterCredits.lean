@@ -20,7 +20,7 @@ public import Iris.Instances.IProp
 namespace Iris
 
 open _root_.Std (Associative Commutative LeftIdentity LawfulLeftIdentity)
-open Iris OFE COFE BI Auth CommMonoidLike Std
+open Iris OFE COFE BI Auth CommMonoidLike _root_.Iris.Std
 
 section LcGS
 

@@ -27,7 +27,7 @@ namespace Iris
 
 section prod
 
-open BI Std BIBase.BiEntails
+open BI _root_.Iris.Std BIBase.BiEntails
 
 @[rocq_alias prod_validI]
 theorem prod_validI [Sbi PROP] [CMRA A] [CMRA B] (x : A × B) :
@@ -43,7 +43,7 @@ end prod
 
 section option
 
-open BI Std BIBase.BiEntails
+open BI _root_.Iris.Std BIBase.BiEntails
 
 @[rocq_alias option_validI]
 theorem option_validI [Sbi PROP] [CMRA A] {mx : Option A} :
@@ -76,7 +76,7 @@ end option
 
 section heap_view
 
-open HeapView BI Std PartialMap LawfulPartialMap BIBase.BiEntails
+open HeapView BI _root_.Iris.Std PartialMap LawfulPartialMap BIBase.BiEntails
 
 variable {F K V : Type _} {H : Type _ → Type _}
 variable [LawfulPartialMap H K] [CMRA V]
@@ -359,7 +359,7 @@ theorem list_equivI (l1 l2 : List A) :
 end list
 
 section heap
-open BI CMRA Std PartialMap
+open BI CMRA _root_.Iris.Std PartialMap
 variable [Sbi PROP] {M : Type _ → Type _} {K : Type _} [LawfulPartialMap M K]
 
 @[rocq_alias gmap_equivI]

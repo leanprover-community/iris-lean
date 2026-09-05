@@ -22,7 +22,7 @@ public import Std.Data.ExtTreeMap
 @[expose] public section
 namespace Iris.HeapLang
 
-open Iris ProgramLogic Language.Notation Std FromMathlib
+open Iris ProgramLogic Language.Notation _root_.Iris.Std FromMathlib
 
 section HeapLangGS
 
