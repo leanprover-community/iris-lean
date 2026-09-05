@@ -162,7 +162,6 @@ attribute [rw_mono_rule, rocq_alias bi.persistently_mono] BI.persistently_mono
 attribute [rocq_alias bi.persistently_idemp_2] BI.persistently_idem_2
 attribute [rocq_alias bi.persistently_and_2] BI.persistently_and_2
 attribute [rocq_alias bi.persistently_emp_2] BI.persistently_emp_2
-attribute [rocq_alias bi.persistently_exist_1] BI.persistently_sExists_1
 attribute [rocq_alias interface.bi.persistently_absorbing] BI.persistently_absorb_l
 attribute [rocq_alias bi.persistently_and_sep_elim] BI.persistently_and_l
 
@@ -179,7 +178,7 @@ attribute [rocq_alias bi_cofe] BI.toCOFE
 #rocq_ignore bi_ofeO "No coercion required in Lean, use BI.toCOFE.toOFE instead"
 #rocq_ignore bi.pure_ne "No Proper type class in Lean"
 #rocq_ignore bi_rewrite_relation "Rocq-specific setoid-rewriting infrastructure"
-#rocq_ignore bi_later_mixin_id "BiLaterMixin with trivial later has trivial proofs regarding later"
+#rocq_ignore bi_later_mixin_True "BiLaterMixin with trivial later has trivial proofs regarding later"
 
 section PersistentlyDiscrete
 

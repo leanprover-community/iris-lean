@@ -11,6 +11,7 @@ import Iris.Init
 #rocq_ignore_file proofmode "coq_tactics.v" "Tracked via the Tactics concept"
 #rocq_ignore_file proofmode "environments.v" "Implemented as Hyps in Expr.lean"
 #rocq_ignore_file proofmode "ident_name.v" "Rocq-specific ident name handling"
+#rocq_ignore_file proofmode "reduction.v" "Rocq-specific functionalities for context management"
 #rocq_ignore_file proofmode "string_ident.v" "Rocq-specific string-based ident handling"
 #rocq_ignore_file proofmode "tokens.v" "Rocq-specific tokenizer"
 
