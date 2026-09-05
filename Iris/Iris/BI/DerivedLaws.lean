@@ -2298,6 +2298,7 @@ theorem intuitionisticallyIf_or (p : Bool) [BI PROP] {P Q : PROP} : □?p (P ∨
   | false => .rfl
   | true => intuitionistically_or
 
+@[rocq_alias bi.intuitionistically_if_exist]
 theorem intuitionisticallyIf_exists {p : Bool} [BI PROP] {Ψ : α → PROP} :
     (□?p ∃ a, Ψ a) ⊣⊢ ∃ a, □?p Ψ a :=
   match p with
@@ -2326,23 +2327,15 @@ theorem intuitionisticallyIf_sep_conj {p1 p2 : Bool} [BI PROP] {P Q : PROP} :
   | true,  false => sep_mono_left intuitionisticallyIf_elim
   | true,  true  => intuitionisticallyIf_sep_mpr
 
+@[rocq_alias bi.intuitionistically_if_idemp]
 theorem intuitionisticallyIf_idem {p : Bool} [BI PROP] {P : PROP} : □?p □?p P ⊣⊢ □?p P :=
   match p with
   | false => .rfl
   | true => intuitionistically_idem
 
 @[rocq_alias bi.intuitionistically_if_unfold]
-theorem intuitionistically_if_unfold [BI PROP] {p : Bool} {P : PROP} : □?p P ⊣⊢ if p then □ P else P :=
+theorem intuitionisticallyIf_unfold [BI PROP] {p : Bool} {P : PROP} : □?p P ⊣⊢ if p then □ P else P :=
   match p with | true => .rfl | false => .rfl
-
-@[rocq_alias bi.intuitionistically_if_exist]
-theorem intuitionistically_if_exists [BI PROP] {p : Bool} {Ψ : α → PROP} :
-    (□?p (∃ a, Ψ a)) ⊣⊢ ∃ a, □?p (Ψ a) :=
-  match p with | true => intuitionistically_exists | false => .rfl
-
-@[rocq_alias bi.intuitionistically_if_idemp]
-theorem intuitionistically_if_idem [BI PROP] {p : Bool} {P : PROP} : (□?p □?p P) ⊣⊢ □?p P :=
-  match p with | true => intuitionistically_idem | false => .rfl
 
 theorem intuitionisticallyIf_def_iff {p : Bool} [BI PROP] {P : PROP} :
     iprop(□?p P) = iprop(<affine>?p <pers>?p P) := by cases p <;> rfl
