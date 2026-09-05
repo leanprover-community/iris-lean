@@ -925,6 +925,12 @@ theorem except0_plainly {P : PROP} : ◇ ■ P ⊣⊢ ■ ◇ P :=
     _ ⊣⊢@{PROP} <si_pure> (◇ <si_emp_valid> P)   := siPure_except0.symm
     _ ⊣⊢        <si_pure> (<si_emp_valid> (◇ P)) := .ofMono siPure_mono siEmpValid_except0.symm
 
+@[rocq_alias only_0_plainly]
+theorem only0_plainly {P : PROP} : <only0> ■ P ⊣⊢ ■ <only0> P :=
+  calc iprop(<only0> <si_pure> <si_emp_valid> P)
+    _ ⊣⊢@{PROP} <si_pure> (<only0> <si_emp_valid> P)   := siPure_only0.symm
+    _ ⊣⊢        <si_pure> (<si_emp_valid> (<only0> P)) := .ofMono siPure_mono siEmpValid_only0.symm
+
 @[rocq_alias later_plain]
 instance later_plain (P : PROP) [Plain P] : Plain iprop(▷ P) where
   plain := later_mono Plain.plain |>.trans later_plainly.1

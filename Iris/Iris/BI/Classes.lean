@@ -34,7 +34,7 @@ class Intuitionistic [BI PROP] (P : PROP) where
   intuitionistic : P ⊢ □ P
 export Intuitionistic (intuitionistic)
 
-/-- Require that the proposition `P` does not depend on the step index -/
+/-- Require that the proposition `P` does not depend on the step index. -/
 @[rocq_alias Timeless]
 class Timeless [BI PROP] (P : PROP) where
   timeless : ▷ P ⊢ ◇ P

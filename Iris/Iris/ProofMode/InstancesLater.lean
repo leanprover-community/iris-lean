@@ -460,7 +460,7 @@ instance (priority := default - 200) intoLaterN_later [BI PROP] stuck only_head 
     [h3 : MakeLaterN m' Q lQ] : IntoLaterN progress only_head n iprop(▷ P) lQ where
   into_laterN := calc
     _ ⊢ ▷▷^[n']Q      := later_mono h2.into_laterN
-    _ ⊢ ▷^[n' + 1]Q    := (later_laterN _).mpr
+    _ ⊢ ▷^[n' + 1]Q    := (laterN_succ_left _).mpr
     _ ⊢ ▷^[n] ▷^[m']Q := by rw [h1.1]; exact (laterN_add _ _).mp
     _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
 
@@ -483,7 +483,7 @@ instance (priority := default - 300) intoLaterN_laterN_bool [BI PROP] progress s
   into_laterN := calc
     _ ⊢ ▷ P            := by cases p; exact later_intro; exact BIBase.Entails.rfl
     _ ⊢ ▷ ▷^[n']Q     := later_mono h2.into_laterN
-    _ ⊢ ▷^[n' + 1]Q    := (later_laterN _).mpr
+    _ ⊢ ▷^[n' + 1]Q    := (laterN_succ_left _).mpr
     _ ⊢ ▷^[n] ▷^[m']Q := h1.nat_cancel.symm ▸ (laterN_add _ _).mp
     _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
 
