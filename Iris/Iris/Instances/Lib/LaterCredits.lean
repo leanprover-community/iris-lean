@@ -220,7 +220,7 @@ variable {GF : BundledGFunctors} {hlc : HasLC} [LcGS hlc GF]
 #rocq_ignore le_upd.le_upd_pre "`le_upd` is defined directly using `guarded`"
 
 @[rocq_alias le_upd.le_upd]
-guarded le_upd (P : IProp GF) : IProp GF :=
+iguarded le_upd (P : IProp GF) : IProp GF :=
   iprop(∀ n, lc_supply n ==∗
     ▷^[n.succ] False ∨
     (lc_supply n ∗ P) ∨

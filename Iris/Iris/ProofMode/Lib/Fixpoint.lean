@@ -169,13 +169,13 @@ meta def elabFixpointDef (fixpoint : Name) (unfolding : Name) (mods : TSyntax ``
   elabCommand declUnfold
 
 /-- Recursive definition via the least fixpoint. -/
-elab mods:declModifiers "fix " name:ident binders:fixpointBinder*
+elab mods:declModifiers "ifix " name:ident binders:fixpointBinder*
     " : " ty:term " := " body:term
     monoPf:(fixpointMonotoneClause)? nePf:(fixpointNonexpClause)? : command =>
   elabFixpointDef ``bi_least_fixpoint ``least_fixpoint_unfold mods name binders ty body monoPf nePf
 
 /-- Recursive definition via the greatest fixpoint. -/
-elab mods:declModifiers "cofix " name:ident binders:fixpointBinder*
+elab mods:declModifiers "icofix " name:ident binders:fixpointBinder*
     " : " ty:term " := " body:term
     monoPf:(fixpointMonotoneClause)? nePf:(fixpointNonexpClause)? : command =>
   elabFixpointDef ``bi_greatest_fixpoint ``greatest_fixpoint_unfold mods name binders ty body monoPf nePf

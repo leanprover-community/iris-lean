@@ -104,7 +104,7 @@ meta def elabIInductiveDef (mods : TSyntax ``Lean.Parser.Command.declModifiers) 
   let defBinders := binders ++ argBinders
 
   let declDef ← `(command|
-    $mods:declModifiers fix $name:ident $defBinders* : $iProp := $defBody $[$monoBy]? $[$neBy]?)
+    $mods:declModifiers ifix $name:ident $defBinders* : $iProp := $defBody $[$monoBy]? $[$neBy]?)
   elabCommand declDef
 
   let mut selector : Array (TSyntax `tactic) := #[]

@@ -42,7 +42,7 @@ meta def guardedMkExplicitBinder (i : Ident) (t : Term)
   `(bracketedBinder| ($i : $t))
 
 /-- Recursive definition via the guarded fixpoint. -/
-elab mods:declModifiers "guarded " name:ident binders:guardedExplicitBinder*
+elab mods:declModifiers "iguarded " name:ident binders:guardedExplicitBinder*
     " : " ty:term " := " body:term contractiveBy:(guardedContractiveClause)? : command => do
   let mut names : Array Ident := #[]
   let mut types : Array Term := #[]

@@ -72,7 +72,7 @@ abbrev Stuckness.MaybeReducible : Stuckness → Expr × State → Prop
 #rocq_ignore wp_pre "Weakest preconditions are defined directly using `guarded`"
 #rocq_ignore wp_pre_contractive "Weakest preconditions are defined directly using `guarded`"
 
-guarded wp' (s : Stuckness) (E : CoPset) (e₁ : Expr) (Φ : Val -> IProp GF) : IProp GF :=
+iguarded wp' (s : Stuckness) (E : CoPset) (e₁ : Expr) (Φ : Val -> IProp GF) : IProp GF :=
   match toVal e₁ with
   | some v => iprop(|={E}=> Φ v)
   | none => iprop(∀ (σ₁ : State) (ns : Nat) (obs obs' : List Obs) (nt : Nat),
