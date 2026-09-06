@@ -323,7 +323,7 @@ theorem to_wp {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E [{ Φ }] -∗ WP e @ s ; E {{ Φ }} := by
   iintro H
   iloeb as IH generalizing %E %e %Φ
-  simp only [(wp_unfold (e := e)).to_eq, (unfold (e := e)).to_eq, wp.pre, pre]
+  simp only [(wp_unfold (e := e)).to_eq, (unfold (e := e)).to_eq, wp'.pre, pre]
   cases hval : toVal e
   case some v => itrivial
   case none =>
@@ -366,7 +366,7 @@ theorem to_wp_fupdN_strong {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : 
     imod Hp $$ Hlc with Hp
     iapply HΦ $$ Hp
   | n+1 =>
-    simp only [(wp_unfold (e := e)).to_eq, (unfold (e := e)).to_eq, wp.pre, pre, toVal_e]
+    simp only [(wp_unfold (e := e)).to_eq, (unfold (e := e)).to_eq, wp'.pre, pre, toVal_e]
     iintro H %σ₁ %ns %obs %obs' %nt Hσ₁
     by_cases Hn : n ≤ ι.numLatersPerStep ns
     · icases H with ⟨-, >Hp, Hwp⟩
