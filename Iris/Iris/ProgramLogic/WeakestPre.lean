@@ -85,7 +85,7 @@ iguarded wp' (s : Stuckness) (E : CoPset) (e₁ : Expr) (Φ : Val -> IProp GF) :
       wp' E e₂ Φ ∗ [∗list] e' ∈ eₜ, wp' ⊤ e' ι.forkPost)
 
 @[rocq_alias wp_def]
-instance wp.instWp : Wp (IProp GF) (Expr) (Val) Stuckness where
+instance wp.def : Wp (IProp GF) (Expr) (Val) Stuckness where
   wp s := wp' s
 
 #rocq_ignore wp_aux "We do not use Iris' custom seal/unseal visibility control"
