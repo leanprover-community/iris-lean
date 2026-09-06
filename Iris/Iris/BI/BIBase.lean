@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2022 Lars König. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
@@ -10,6 +10,7 @@ public import Iris.Std.Classes
 public import Iris.Std.DelabRule
 public import Iris.Std.Rewrite
 public import Iris.Std.BigOp
+public import Iris.Std.Notation
 
 @[expose] public section
 
@@ -109,14 +110,21 @@ delab_rule BIBase.or
   | `($_ $P $Q) => do ``(iprop($(← unpackIprop P) ∨ $(← unpackIprop Q)))
 delab_rule BIBase.imp
   | `($_ $P $Q) => do ``(iprop($(← unpackIprop P) → $(← unpackIprop Q)))
-delab_rule BIBase.forall
-  | `($_ fun $x:ident => iprop(∀ $y:ident $[$z:ident]*, $Ψ)) => do
-    ``(iprop(∀ $x:ident $y:ident $[$z:ident]*, $Ψ))
-  | `($_ fun $x:ident => $Ψ) => do ``(iprop(∀ $x:ident, $(← unpackIprop Ψ)))
-delab_rule BIBase.exists
-  | `($_ fun $x:ident => iprop(∃ $y:ident $[$z:ident]*, $Ψ)) => do
-    ``(iprop(∃ $x:ident $y:ident $[$z:ident]*, $Ψ))
-  | `($_ fun $x:ident => $Ψ) => do ``(iprop(∃ $x:ident, $(← unpackIprop Ψ)))
+
+/-- A delaborator for the universal quantifier. -/
+@[app_delab BIBase.forall]
+meta def delabBIForall : PrettyPrinter.Delaborator.Delab :=
+  delabQuant 4 unpackIprop
+    (fun x xs body => `(iprop(∀ $x:ident $[$xs:ident]*, $body)))
+    (fun | `(∀ $x:ident $[$xs:ident]*, $Ψ) => some (x, xs, Ψ) | _ => none)
+
+/-- A delaborator for the existential quantifier. -/
+@[app_delab BIBase.exists]
+meta def delabBIExist : PrettyPrinter.Delaborator.Delab :=
+  delabQuant 4 unpackIprop
+    (fun x xs body => `(iprop(∃ $x:ident $[$xs:ident]*, $body)))
+    (fun | `(∃ $x:ident $[$xs:ident]*, $Ψ) => some (x, xs, Ψ) | _ => none)
+
 delab_rule BIBase.sep
   | `($_ $P $Q) => do ``(iprop($(← unpackIprop P) ∗ $(← unpackIprop Q)))
 delab_rule BIBase.wand
@@ -366,6 +374,18 @@ macro_rules
 
 delab_rule except0
   | `($_ $P) => do ``(iprop(◇ $(← unpackIprop P)))
+
+/-- Only-0 modality: `<only0> P` is equivalent to `▷ False → P`, i.e. `P` holds at step-index 0. -/
+@[rocq_alias bi_only_0]
+def only0 [BIBase PROP] (P : PROP) := iprop(▷ False → P)
+
+syntax:max "<only0> " term:40 : term
+
+macro_rules
+  | `(iprop(<only0>%$tk $P)) => ``($(wrapIprop tk ``only0) iprop($P))
+
+delab_rule only0
+  | `($_ $P) => do ``(iprop(<only0> $(← unpackIprop P)))
 
 /-- Plainly modality (`■`). -/
 class Plainly (PROP : Type _) where

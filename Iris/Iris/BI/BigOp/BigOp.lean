@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Zongyuan Liu. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu
 -/
@@ -504,6 +504,42 @@ def delabBigOpS : Delab := do
   else
     failure
 
+private def delabBigOpMSBody (fn : Expr) (xArg phiArg : Nat)
+    (mk : Ident → TSyntax `term → TSyntax `term → DelabM (TSyntax `term)) : Delab := do
+  let X ← withNaryArg xArg delab
+  match fn with
+  | .lam xn _ _ _ =>
+    let P ← withNaryArg phiArg <| withBindingBody xn delab
+    let x := mkIdent xn
+    mk x X P
+  | _ => failure
+
+/-- Delaborator for `bigSepMS` -/
+@[delab app.Iris.BI.bigSepMS]
+def delabBigSepMS : Delab := do
+  let e ← getExpr
+  unless e.isApp do failure
+  unless e.getAppFn.isConstOf ``bigSepMS do failure
+  let args := e.getAppArgs
+  unless args.size == 7 do failure
+  delabBigOpMSBody args[5]! 6 5
+    (fun x X P => `([∗mset] $x ∈ $X, $P))
+
+@[delab app.Iris.Algebra.bigOpMS]
+def delabBigOpMS : Delab := do
+  let e ← getExpr
+  unless e.isApp do failure
+  unless e.getAppFn.isConstOf ``Iris.Algebra.bigOpMS do failure
+  let args := e.getAppArgs
+  -- need at least `Φ` and `X`, plus an `op` somewhere before them
+  unless args.size ≥ 3 do failure
+  let phiArg := args.size - 2
+  let xArg := args.size - 1
+  -- the monoid operation is the (unique) earlier argument headed by a BI connective
+  unless args[:phiArg].any (·.getAppFn.isConstOf ``BIBase.sep) do failure
+  delabBigOpMSBody args[phiArg]! xArg phiArg
+    (fun x X P => `([∗mset] $x ∈ $X, $P))
+
 /-- Delaborator for `bigOpL` applied to `sep`/`and`/`or` — catches cases where
     `bigSepL`/`bigAndL`/`bigOrL` abbrevs are unfolded. -/
 @[delab app.Iris.Algebra.bigOpL]
@@ -546,8 +582,19 @@ instance bi_persistently_and_homomorphism [BI PROP] :
   MonoidHomomorphism.ofEq BI.persistently_ne
     (BiEntails.to_eq persistently_and) (BiEntails.to_eq persistently_true)
 
+@[rocq_alias bi.bi_persistently_or_homomorphism_2]
+instance bi_persistently_or_homomorphism_mpr [BI PROP] :
+    MonoidHomomorphism (or (PROP := PROP)) or iprop(False) iprop(False) (flip Entails)
+      persistently where
+  rel_refl := .rfl
+  rel_trans := flip .trans
+  op_proper := or_mono
+  map_ne := BI.persistently_ne
+  map_op := persistently_or_mpr
+  map_unit := false_elim
+
 @[rocq_alias bi.bi_persistently_or_homomorphism]
-instance bi_persistently_or_homomorphism [BI PROP] :
+instance bi_persistently_or_homomorphism [BI PROP] [BIPersistentlyExist PROP] :
     MonoidHomomorphism (or (PROP := PROP)) or iprop(False) iprop(False) (· = ·) persistently :=
   MonoidHomomorphism.ofEq BI.persistently_ne
     (BiEntails.to_eq persistently_or) (BiEntails.to_eq persistently_pure)

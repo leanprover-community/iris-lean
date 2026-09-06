@@ -1,3 +1,7 @@
+/-
+Copyright (c) The Iris-Lean Contributors
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 module
 
 public import Iris.Std.BigOp
@@ -18,6 +22,7 @@ public import Iris.Std.List
 public import Iris.Std.Namespaces
 public import Iris.Std.Nat
 public import Iris.Std.NonExp
+public import Iris.Std.Notation
 public import Iris.Std.Option
 public import Iris.Std.PartialMap
 public import Iris.Std.Positives

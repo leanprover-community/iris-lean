@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Michael Sammler. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
@@ -157,7 +157,8 @@ elab "iframe " pats:(colGt ppSpace selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 
   ProofModeM.runTactic `iframe λ mvar { hyps, goal, .. } => do
-    let pats ← SelPat.resolve hyps pats
+    -- .bottomToTop since we want to frame the most recently introduced hypotheses first, matching Iris-Rocq
+    let pats ← SelPat.resolve hyps pats .bottomToTop
 
     let res ← iFrame hyps goal pats
     mvar.assign (← res.finish (addBIGoal · ·))

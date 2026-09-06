@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Zongyuan Liu, Sergei Stepanenko. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu, Sergei Stepanenko
 -/
@@ -450,6 +450,12 @@ theorem diff_all {s : S} : s \ s = ∅ := by
 theorem diff_subset_left {s₁ s₂ : S} : s₁ \ s₂ ⊆ s₁ := by
   intro y G; rw [mem_diff] at G
   exact G.left
+
+/-- Difference is antitone in its second argument. -/
+theorem diff_subset_diff_right {s t₁ t₂ : S} (H : t₁ ⊆ t₂) : s \ t₂ ⊆ s \ t₁ := by
+  intro x hx
+  rw [mem_diff] at hx ⊢
+  exact ⟨hx.left, fun h => hx.right (H x h)⟩
 
 theorem diff_self_diff_of_subset {s u : S} : s ⊆ u → u \ (u \ s) = s := by
   intro su

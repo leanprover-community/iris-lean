@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Markus de Medeiros. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros, Mario Carneiro, Viet Anh Nguyen
 -/
@@ -389,9 +389,6 @@ instance : BI (UPred M) where
     exact (core_idem x.val).dist
   persistently_emp_2 := uPred_entails_preorder.le_refl emp
   persistently_and_2 {P Q} := uPred_entails_preorder.le_refl iprop(<pers> P ∧ <pers> Q)
-  persistently_sExists_1 _ _ := fun ⟨p, HΨ, H⟩ => by
-    refine ⟨iprop(<pers> p), ⟨p, ?_⟩, H⟩
-    ext; exact and_iff_right HΨ
   persistently_absorb_l {P Q} _ x := fun ⟨x1, x2, H1, H2, H3⟩ =>
     P.mono H2 (core_incN_core ⟨x2, H1⟩) .refl
   persistently_and_l _ x H := ⟨core x, x, (core_op _).symm.dist, H⟩
@@ -490,6 +487,12 @@ theorem persistently_elim {P : UPred M} : <pers> P ⊢ P :=
 @[rocq_alias uPred_persistently_forall]
 instance : BIPersistentlyForall (UPred M) where
   persistently_sForall_2 _ _ x h p hp := h _ ⟨p, rfl⟩ x (inc_refl _) .refl hp
+
+@[rocq_alias uPred_persistently_exist]
+instance : BIPersistentlyExist (UPred M) where
+  persistently_sExists_1 _ _ _ := fun ⟨p, HΨ, H⟩ => by
+    refine ⟨iprop(<pers> p), ⟨p, ?_⟩, H⟩
+    ext; exact and_iff_right HΨ
 
 #rocq_ignore uPred_primitive.persistently_forall_2 "Inlined in `BIPersistentlyForall` construction"
 
@@ -655,7 +658,7 @@ instance : BIUpdate (UPred M) where
 #rocq_ignore uPred_bupd_mixin "Inlined in BIUpdate instance construction"
 
 @[rocq_alias uPred_primitive.bupd_si_pure]
-theorem bupd_si_pure (Pi : SiProp) : (|==> <si_pure> Pi : UPred M) ⊢ <si_pure> Pi := by
+theorem bupd_siPure (Pi : SiProp) : (|==> <si_pure> Pi : UPred M) ⊢ <si_pure> Pi := by
   intro n x Hv
   have L : ✓{n} x.val • unit := unit_right_id.symm.dist.validN.1 x.property
   let ⟨_, _, Hv'⟩ := Hv n unit n.le_refl L
@@ -663,7 +666,7 @@ theorem bupd_si_pure (Pi : SiProp) : (|==> <si_pure> Pi : UPred M) ⊢ <si_pure>
 
 @[rocq_alias uPred_bi_bupd_sbi]
 instance : BIBUpdateSbi (UPred M) where
-  bupd_si_pure := bupd_si_pure
+  bupd_siPure := bupd_siPure
 
 @[rocq_alias uPred_primitive.ownM_valid, rocq_alias uPred.ownM_valid]
 theorem ownM_valid (m : M) : ownM m ⊢ internalCmraValid m := fun _ h hp => hp.validN h.property

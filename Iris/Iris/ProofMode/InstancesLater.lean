@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Michael Sammler. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler, Alvin Tang
 -/
@@ -157,7 +157,8 @@ instance intoAnd_laterN [BI PROP] (n : Nat) (p : Bool) (P Q1 Q2 : PROP)
     _ ⊢ ▷^[n]Q1 ∧ ▷^[n]Q2 := (laterN_and n).mp
 
 @[rocq_alias into_and_except_0]
-instance intoAnd_except0 [BI PROP] (p : Bool) (P Q1 Q2 : PROP)
+instance intoAnd_except0 [BI PROP] [BIPersistentlyExist PROP]
+    (p : Bool) (P Q1 Q2 : PROP)
     [h : IntoAnd p P Q1 Q2] : IntoAnd p iprop(◇ P) iprop(◇ Q1) iprop(◇ Q2) where
   into_and := intuitionisticallyIf_intro_intuitionisticallyIf <| calc
     _ ⊢ ◇ □?p P      := except0_intuitionisticallyIf
@@ -333,16 +334,20 @@ instance fromModal_except0 [BI PROP] io (P : PROP) :
   from_modal _ := except0_intro
 
 /-! ### IntoExcept0 -/
+
 @[rocq_alias into_except_0_except_0]
-instance intoExcept0_except0 [BI PROP] (P : PROP) : IntoExcept0 iprop(◇ P) P where
+instance intoExcept0_except0 [BI PROP] (P : PROP) :
+    IntoExcept0 iprop(◇ P) P where
   into_except0 := .rfl
 
-@[rocq_alias into_except_0_later]
-instance intoExcept0_later [BI PROP] (P : PROP) [Timeless P] : IntoExcept0 iprop(▷ P) P where
+@[ipm_backtrack, rocq_alias into_except_0_later]
+instance intoExcept0_later [BI PROP] (P : PROP) [Timeless P] :
+    IntoExcept0 iprop(▷ P) P where
   into_except0 := Timeless.timeless
 
-@[rocq_alias into_except_0_later_if]
-instance intoExcept0_laterIf [BI PROP] p (P : PROP) [Timeless P] : IntoExcept0 iprop(▷?p P) P where
+@[ipm_backtrack, rocq_alias into_except_0_later_if]
+instance intoExcept0_laterIf [BI PROP] p (P : PROP) [Timeless P] :
+    IntoExcept0 iprop(▷?p P) P where
   into_except0 := match p with
                   | true => Timeless.timeless (P := P)
                   | false => except0_intro
@@ -353,7 +358,7 @@ instance intoExcept0_affinely [BI PROP] (P Q : PROP)
   into_except0 := (affinely_mono h.1).trans except0_affinely
 
 @[rocq_alias into_except_0_intuitionistically]
-instance intoExcept0_intuitionistically [BI PROP] (P Q : PROP)
+instance intoExcept0_intuitionistically [BI PROP] [BIPersistentlyExist PROP] (P Q : PROP)
     [h : IntoExcept0 P Q] : IntoExcept0 iprop(□ P) iprop(□ Q) where
   into_except0 := (intuitionistically_mono h.1).trans except0_intuitionistically
 
@@ -363,23 +368,39 @@ instance intoExcept0_absorbingly [BI PROP] (P Q : PROP)
   into_except0 := (absorbingly_mono h.1).trans except0_absorbingly.2
 
 @[rocq_alias into_except_0_persistently]
-instance intoExcept0_persistently [BI PROP] (P Q : PROP)
+instance intoExcept0_persistently [BI PROP] [BIPersistentlyExist PROP] (P Q : PROP)
     [h : IntoExcept0 P Q] : IntoExcept0 iprop(<pers> P) iprop(<pers> Q) where
   into_except0 := (persistently_mono h.1).trans except0_persistently.2
 
 /-! ### ElimModal -/
 
 @[ipm_backtrack, rocq_alias elim_modal_timeless]
-instance (priority := default - 10) elimModal_timeless [BI PROP] p io
-    (P P' Q : PROP) [IntoExcept0 P P'] [IsExcept0 Q] :
+instance (priority := default - 10) elimModal_timeless [BI PROP] [BIPersistentlyExist PROP] p io
+    (P P' Q : PROP) [inst : IntoExcept0 P P'] [IsExcept0 Q] :
     ElimModal True p io p P P' Q Q where
   elim_modal _ := calc
-    _ ⊢ ◇ □?p P' ∗ (□?p P' -∗ Q)    :=
-        sep_mono_left <| (intuitionisticallyIf_mono into_except0).trans except0_intuitionisticallyIf
+    _ ⊢ ◇ □?p P' ∗ (□?p P' -∗ Q)   := sep_mono_left <|
+        (intuitionisticallyIf_mono inst.into_except0).trans except0_intuitionisticallyIf
     _ ⊢ ◇ □?p P' ∗ ◇ (□?p P' -∗ Q) := sep_mono_right except0_intro
-    _ ⊢ ◇ (□?p P' ∗ (□?p P' -∗ Q))  := except0_sep.mpr
-    _ ⊢ ◇ Q                         := except0_mono wand_elim_right
-    _ ⊢ Q                            := is_except0
+    _ ⊢ ◇ (□?p P' ∗ (□?p P' -∗ Q)) := except0_sep.mpr
+    _ ⊢ ◇ Q                        := except0_mono wand_elim_right
+    _ ⊢ Q                          := is_except0
+
+/--
+Fallback of `elimModal_timeless` for BIs without `BIPersistentlyExist`: the residual
+hypothesis is moved to the spatial context.
+-/
+@[ipm_backtrack]
+instance (priority := default - 11) elimModal_timeless_spatial [BI PROP] p io
+    (P P' Q : PROP) [inst : IntoExcept0 P P'] [IsExcept0 Q] :
+    ElimModal True p io false P P' Q Q where
+  elim_modal _ := calc
+    _ ⊢ ◇ P' ∗ (P' -∗ Q)   := sep_mono_left <|
+        intuitionisticallyIf_elim.trans inst.into_except0
+    _ ⊢ ◇ P' ∗ ◇ (P' -∗ Q) := sep_mono_right except0_intro
+    _ ⊢ ◇ (P' ∗ (P' -∗ Q)) := except0_sep.mpr
+    _ ⊢ ◇ Q                := except0_mono wand_elim_right
+    _ ⊢ Q                  := is_except0
 
 /-! ### AddModal -/
 
@@ -439,7 +460,7 @@ instance (priority := default - 200) intoLaterN_later [BI PROP] stuck only_head 
     [h3 : MakeLaterN m' Q lQ] : IntoLaterN progress only_head n iprop(▷ P) lQ where
   into_laterN := calc
     _ ⊢ ▷▷^[n']Q      := later_mono h2.into_laterN
-    _ ⊢ ▷^[n' + 1]Q    := (later_laterN _).mpr
+    _ ⊢ ▷^[n' + 1]Q    := (laterN_succ_left _).mpr
     _ ⊢ ▷^[n] ▷^[m']Q := by rw [h1.1]; exact (laterN_add _ _).mp
     _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
 
@@ -462,7 +483,7 @@ instance (priority := default - 300) intoLaterN_laterN_bool [BI PROP] progress s
   into_laterN := calc
     _ ⊢ ▷ P            := by cases p; exact later_intro; exact BIBase.Entails.rfl
     _ ⊢ ▷ ▷^[n']Q     := later_mono h2.into_laterN
-    _ ⊢ ▷^[n' + 1]Q    := (later_laterN _).mpr
+    _ ⊢ ▷^[n' + 1]Q    := (laterN_succ_left _).mpr
     _ ⊢ ▷^[n] ▷^[m']Q := h1.nat_cancel.symm ▸ (laterN_add _ _).mp
     _ ⊢ ▷^[n]lQ        := laterN_mono _ h3.make_laterN.mp
 
@@ -547,6 +568,73 @@ instance (priority := default - 11) intoLaterN_sep_right [BI PROP]
     IntoLaterN progress (only_head := false) n iprop(P ∗ P2) iprop(P ∗ Q2) where
   into_laterN := (sep_mono (laterN_intro n) h.into_laterN).trans (laterN_sep n).mpr
 
+/-- IntoLaterN, big operators -/
+
+@[ipm_backtrack, rocq_alias into_laterN_big_sepL]
+instance intoLaterN_bigSepL [BI PROP] {A} progress n
+    (Φ Ψ : Nat → A → PROP) (l : List A)
+    [h : ∀ k x, IntoLaterN (progress := true) (only_head := false) n (Φ k x) (Ψ k x)] :
+    IntoLaterN progress (only_head := false) n
+      iprop([∗list] k ↦ x ∈ l, Φ k x) iprop([∗list] k ↦ x ∈ l, Ψ k x) where
+  into_laterN :=
+    (BigSepL.bigSepL_mono_of_forall fun {k x} => (h k x).into_laterN).trans
+    BigSepL.bigSepL_laterN_2
+
+@[ipm_backtrack, rocq_alias into_laterN_big_sepL2]
+instance intoLaterN_bigSepL2 [BI PROP] {A B} progress n
+    (Φ Ψ : Nat → A → B → PROP) (l1 : List A) (l2 : List B)
+    [h : ∀ k x1 x2,
+      IntoLaterN (progress := true) (only_head := false) n (Φ k x1 x2) (Ψ k x1 x2)] :
+    IntoLaterN progress (only_head := false) n
+      iprop([∗list] k ↦ y1;y2 ∈ l1;l2, Φ k y1 y2)
+      iprop([∗list] k ↦ y1;y2 ∈ l1;l2, Ψ k y1 y2) where
+  into_laterN :=
+    (BigSepL2.bigSepL2_mono_of_forall fun {k x1 x2} => (h k x1 x2).into_laterN).trans
+    BigSepL2.bigSepL2_laterN_2
+
+@[ipm_backtrack, rocq_alias into_laterN_big_sepM]
+instance intoLaterN_bigSepM [BI PROP] {K V M}
+    [LawfulFiniteMap M K] progress n (Φ Ψ : K → V → PROP) (m : M V)
+    [h : ∀ k x, IntoLaterN (progress := true) (only_head := false) n (Φ k x) (Ψ k x)] :
+    IntoLaterN progress (only_head := false) n
+      iprop([∗map] k ↦ x ∈ m, Φ k x) iprop([∗map] k ↦ x ∈ m, Ψ k x) where
+  into_laterN :=
+    (BigSepM.bigSepM_mono_of_forall fun {k x} => (h k x).into_laterN).trans
+    BigSepM.bigSepM_laterN_2
+
+@[ipm_backtrack, rocq_alias into_laterN_big_sepS]
+instance intoLaterN_bigSepS [BI PROP] {S A} [LawfulFiniteSet S A]
+    progress n (Φ Ψ : A → PROP) (X : S)
+    [h : ∀ x, IntoLaterN (progress := true) (only_head := false) n (Φ x) (Ψ x)] :
+    IntoLaterN progress (only_head := false) n
+      iprop([∗set] x ∈ X, Φ x) iprop([∗set] x ∈ X, Ψ x) where
+  into_laterN :=
+    (BigSepS.bigSepS_mono_of_forall fun x => (h x).into_laterN).trans
+    BigSepS.bigSepS_laterN_2
+
+@[ipm_backtrack, rocq_alias into_laterN_big_sepMS]
+instance intoLaterN_bigSepMS [BI PROP] {MS A} [LawfulFiniteMultiSet MS A]
+    progress n (Φ Ψ : A → PROP) (X : MS)
+    [h : ∀ x, IntoLaterN (progress := true) (only_head := false) n (Φ x) (Ψ x)] :
+    IntoLaterN progress (only_head := false) n
+      iprop([∗mset] x ∈ X, Φ x) iprop([∗mset] x ∈ X, Ψ x) where
+  into_laterN :=
+    (BigSepMS.bigSepMS_mono_of_forall fun x => (h x).into_laterN).trans
+    BigSepMS.bigSepMS_laterN_2
+
+@[ipm_backtrack, rocq_alias into_laterN_big_sepM2]
+instance intoLaterN_bigSepM2 [BI PROP] {K A B M} [LawfulFiniteMap M K]
+    progress n (Φ Ψ : K → A → B → PROP) (m1 : M A) (m2 : M B)
+    [h : ∀ k x1 x2, IntoLaterN (progress := true) (only_head := false) n (Φ k x1 x2) (Ψ k x1 x2)] :
+    IntoLaterN progress (only_head := false) n
+      iprop([∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2)
+      iprop([∗map] k ↦ x1;x2 ∈ m1;m2, Ψ k x1 x2) where
+  into_laterN := calc
+    _ ⊢ [∗map] k ↦ x1;x2 ∈ m1;m2, ▷^[n] Ψ k x1 x2 :=
+      BigSepM2.bigSepM2_mono_of_forall Φ (fun k x1 x2 => iprop(▷^[n] Ψ k x1 x2)) m1 m2
+        (fun {k x1 x2} => (h k x1 x2).into_laterN)
+    _ ⊢ ▷^[n] [∗map] k ↦ x1;x2 ∈ m1;m2, Ψ k x1 x2 := BigSepM2.bigSepM2_laterN_2 n
+
 /-! ### CombineSepAs -/
 
 @[rocq_alias maybe_combine_sep_as_later]
@@ -594,6 +682,6 @@ instance combineSepGives_except0 [BI PROP] (Q1 Q2 P : PROP)
   combine_sep_gives := by calc
     ◇ Q1 ∗ ◇ Q2 ⊢ ◇ (Q1 ∗ Q2) := except0_sep.mpr
     _             ⊢ ◇ <pers> P  := except0_mono h.combine_sep_gives
-    _             ⊢ <pers> ◇ P  := except0_persistently.mp
+    _             ⊢ <pers> ◇ P  := except0_persistently_mp
 
 end Iris.ProofMode

@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Alvin Tang. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler, Alvin Tang
 -/
@@ -100,7 +100,7 @@ elab "ieval " "(" tacs:tacticSeq ")" " at " spats:(colGt ppSpace selPat)+ : tact
   let selPats ← liftMacroM <| SelPat.parse spats
 
   ProofModeM.runTactic `ieval λ mvar { hyps, goal, .. } => do
-    let selTargets ← SelPat.resolve hyps selPats
+    let selTargets ← SelPat.resolve hyps selPats .topToBottom
     let pf ← iEvalCore hyps goal tacs selTargets
     mvar.assign pf
 

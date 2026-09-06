@@ -1,11 +1,12 @@
 /-
-Copyright (c) 2026 Michael Sammler. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
 module
 
 import Iris.ProofMode.Modalities
+public import Iris.ProofMode.SolveSideCondition
 public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode

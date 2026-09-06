@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Sergei Stepanenko, Zongyuan Liu
 -/
@@ -326,8 +326,8 @@ theorem fupd_finally_keep {E : CoPset} (P : IProp GF) {Q : IProp GF} [TCOr (TCEq
 
 @[rocq_alias uPred_bi_fupd_sbi_no_lc]
 instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .hasNoLC GF] :
-    BIFUpdatePlainly (IProp GF) where
-  fupd_keep_si_pure E' Pi R := by
+    BIFUpdateSbi (IProp GF) where
+  fupd_keep_siPure E' Pi R := by
     iintro H
     iapply fupd_keep iprop(<si_pure> Pi)
     isplit
@@ -336,10 +336,10 @@ instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .h
       iapply BIFUpdate.mono (fupd_finally_intro E' iprop(<si_pure> Pi))
       iapply BIFUpdate.mono Plain.plain $$ H
     · icases H with ⟨-, $⟩
-  fupd_plainly_later _ P := by
+  fupd_siPure_later _ P := by
     simp only [fupd, uPred_fupd]
     iintro H ⟨Hwsat, HE⟩
-    ihave #HP : ▷ ◇ ■ P $$ [H Hwsat HE]
+    ihave #HP : ▷ ◇ <si_pure> P $$ [H Hwsat HE]
     · inext
       ihave H := H $$ [$]
       icases le_upd_unfold_no_le.mp $$ H with H
@@ -347,18 +347,24 @@ instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .h
     imodintro
     iframe
     inext; imod HP; imodintro
-    iapply plainly_elim $$ HP
-  fupd_plainly_sForall_2 E P := by
-    simp only [fupd, uPred_fupd]
-    iintro H ⟨Hwsat, HE⟩
-    ihave #HP : ◇ ■ sForall P $$ [H Hwsat HE]
-    · ihave H := H $$ [$]
-      icases le_upd_unfold_no_le.mp $$ H with H
-      imod H with ⟨_, _, $⟩
-    imod HP; imodintro
-    iframe
-    iclear H
-    iapply plainly_elim $$ HP
+    iexact HP
+  fupd_siPure_sForall_2 E Ψi := by
+    iintro H
+    iapply fupd_keep iprop(<si_pure> (sForall Ψi))
+    isplit
+    · iapply fupd_finally_mono (siPure_sForall_mpr (Ψi := Ψi))
+      iapply fupd_finally_forall
+      iintro %q
+      iapply fupd_finally_mono pure_imp_forall.mpr
+      iapply fupd_finally_forall
+      iintro %hq
+      iapply fupd_fupd_finally
+      imod H $$ %q %hq with #Hq
+      imodintro
+      iapply fupd_finally_intro
+      iintro !> //
+    · iintro Hall
+      iapply fupd_mask_intro_discard LawfulSet.subset_refl $$ Hall
 
 @[rocq_alias fupd_finally_mask_mono]
 theorem fupd_finally_mask_mono (E1 E2 : CoPset) (P : IProp GF) (H : E1 ⊆ E2) :
@@ -412,7 +418,7 @@ theorem step_fupdN_fupd_finally (E1 E2 : CoPset) (n : Nat) (P : IProp GF) :
   | succ n IH =>
     simp only [Nat.repeat]
     imod HP
-    iapply fupd_finally_mono (later_laterN n).mpr
+    iapply fupd_finally_mono (laterN_succ_left n).mpr
     iapply fupd_finally_mono (later_mono (laterN_mono n except0_idem.mp))
     iapply fupd_finally_mono (later_mono (except0_laterN (P := iprop(◇ P)) n))
     iapply fupd_finally_later
@@ -528,7 +534,7 @@ end Soundness
 
 section StepIndexed
 
-open Iris Std LawfulSet BIFUpdatePlainly
+open Iris Std LawfulSet BIFUpdateSbi
 
 variable {GF : BundledGFunctors}
 
@@ -540,7 +546,7 @@ theorem step_fupdN_soundness [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain P] 
   apply fupd_finally_soundness hlc (n := m) (E := ⊤)
   iintro %Hinv Hc
   imod HP $$ Hc with HP
-  rw [(laterN_later n).to_eq]
+  rw [(laterN_succ_right n).to_eq]
   iapply fupd_finally_mono (laterN_mono _ except0_into_later)
   iapply step_fupdN_fupd_finally
   iapply step_fupdN_wand $$ HP
@@ -555,7 +561,7 @@ theorem step_fupdN_soundness_close [InvGpreS GF] (n m : Nat) {P : IProp GF} [Pla
   apply fupd_finally_soundness hlc (n := m) (E := ⊤)
   iintro %Hinv Hc
   ihave HP := HP $$ Hc
-  rw [(laterN_later n).to_eq]
+  rw [(laterN_succ_right n).to_eq]
   iapply fupd_finally_mono (laterN_mono _ except0_into_later)
   iapply step_fupdN_fupd_finally
   iapply step_fupdN_wand $$ HP

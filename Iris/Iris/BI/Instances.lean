@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2022 Lars König. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
@@ -28,11 +28,11 @@ instance and_intuitionistic [BI PROP] (P Q : PROP) [Intuitionistic P] [Intuition
 
 instance or_intuitionistic [BI PROP] (P Q : PROP) [Intuitionistic P] [Intuitionistic Q] :
     Intuitionistic iprop(P ∨ Q) where
-  intuitionistic := (or_mono intuitionistic intuitionistic).trans intuitionistically_or.2
+  intuitionistic := (or_mono intuitionistic intuitionistic).trans intuitionistically_or_mpr
 
 instance exists_intuitionistic [BI PROP] (Φ : α → PROP) [∀ x, Intuitionistic (Φ x)] :
     Intuitionistic iprop(∃ x, Φ x) where
-  intuitionistic := (exists_mono fun _ => intuitionistic).trans intuitionistically_exists.2
+  intuitionistic := (exists_mono fun _ => intuitionistic).trans intuitionistically_exists_mpr
 
 instance sep_intuitionistic [BI PROP] (P Q : PROP) [Intuitionistic P] [Intuitionistic Q] :
     Intuitionistic iprop(P ∗ Q) where

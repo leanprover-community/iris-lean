@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu
 -/
@@ -11,6 +11,7 @@ import Iris.Init
 #rocq_ignore_file proofmode "coq_tactics.v" "Tracked via the Tactics concept"
 #rocq_ignore_file proofmode "environments.v" "Implemented as Hyps in Expr.lean"
 #rocq_ignore_file proofmode "ident_name.v" "Rocq-specific ident name handling"
+#rocq_ignore_file proofmode "reduction.v" "Rocq-specific functionalities for context management"
 #rocq_ignore_file proofmode "string_ident.v" "Rocq-specific string-based ident handling"
 #rocq_ignore_file proofmode "tokens.v" "Rocq-specific tokenizer"
 
@@ -63,6 +64,8 @@ import Iris.Init
 #rocq_concept proofmode "Tactics" "iInv" ported "iinv"
 #rocq_concept proofmode "Tactics" "iAccu" ported "iaccu"
 #rocq_concept proofmode "Tactics" "rules for trivial" ported "itrivial"
+#rocq_concept proofmode "Tactics" "iAuIntro" ported "iauintro"
+#rocq_concept proofmode "Tactics" "iAaccIntro" ported "iaaccintro"
 
 #rocq_concept proofmode "Intro Patterns" ported ""
 #rocq_concept proofmode "Intro Patterns" "IIdent (pattern: H)" ported "pattern: H"

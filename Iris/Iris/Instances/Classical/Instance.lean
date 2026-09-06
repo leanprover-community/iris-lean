@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2022 Lars König. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König
 -/
@@ -235,10 +235,6 @@ instance : BI (HeapProp Val) where
     simp only [BI.Entails, BI.persistently, BI.and]
     intro _ _ _ h
     exact h
-  persistently_sExists_1 := by
-    simp only [BI.Entails, BI.persistently, BI.exists]
-    intro _ _ ⟨p, hp, h⟩
-    exact ⟨_, ⟨_, rfl⟩, hp, h⟩
   persistently_absorb_l := by
     simp only [BI.Entails, BI.persistently, BI.sep]
     intro _ _ _ ⟨_, _, _, _, h_P, _⟩

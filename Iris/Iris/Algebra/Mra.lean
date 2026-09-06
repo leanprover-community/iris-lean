@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Zongyuan Liu. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu
 -/
@@ -154,8 +154,7 @@ instance : CMRA.Discrete (Mra R) where
 #rocq_ignore mra_unit "Replaced by the `unit` field of UCMRA instance."
 #rocq_ignore mraUR "Use Mra."
 
--- FIXME: upstream name `auth_ucmra_mixin` should be `mra_ucmra_mixin`
-@[rocq_alias auth_ucmra_mixin]
+@[rocq_alias mra_ucmra_mixin]
 instance (R : α → α → Prop) : UCMRA (Mra R) where
   unit := mk []
   unit_valid := trivial

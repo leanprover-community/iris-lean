@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2022 Lars König. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König
 -/
@@ -39,6 +39,9 @@ class inductive TCEq {α : Sort _} (a : α) : α → Prop
   | refl : TCEq a a
 
 instance {α : Sort _} {a : α} : TCEq a a := TCEq.refl
+
+theorem TCEq.to_eq {α : Sort _} {a b : α} : TCEq a b → a = b
+  | .refl => rfl
 
 /-- Type class version of `Ite`, i.e. a type class for which an instance exists if the boolean
 condition is `true` and an instance of `T` is present or the condition is `false` and an instance

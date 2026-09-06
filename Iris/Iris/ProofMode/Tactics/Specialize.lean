@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2022 Lars König. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler, Alvin Tang
 -/
@@ -170,7 +170,9 @@ private def finishSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     return ⟨el, hypsl, q($(pf').mp.trans <| sep_mono_right $pf'')⟩
   -- Auto-framing: `[$]`, `[#$]` and `[>$]`
   | none =>
-    let res ← iFrame hyps goal <| ← SelPat.resolve hyps [.spatial, .intuitionistic]
+    let res ←
+      (SelPat.resolve hyps [.spatial, .intuitionistic] .bottomToTop) >>=
+      (iFrame hyps goal ·)
     let ⟨e', hyps', pf⟩ ← res.finishClose
     return ⟨e', hyps', pf⟩
 

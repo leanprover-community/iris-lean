@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Markus de Medeiros, Remy Seassau. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros, Remy Seassau, Yunsong Yang
 -/
@@ -229,16 +229,18 @@ attribute [instance] BIFUpdate.ne
 class BIUpdateFUpdate (PROP : Type _) [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] where
   fupd_of_bupd {P : PROP} {E : CoPset} : (|==> P) ⊢ |={E}=> P
 
-class BIFUpdatePlainly (PROP : Type _) [BI PROP] [BIFUpdate PROP] [Sbi PROP] where
-  fupd_keep_si_pure {E} E' Pi (R : PROP) :
+@[rocq_alias BiFUpdSbi]
+class BIFUpdateSbi (PROP : Type _) [BI PROP] [BIFUpdate PROP] [Sbi PROP] where
+  fupd_keep_siPure {E} E' Pi (R : PROP) :
     (|={E,E'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E}=∗ R) ⊢ |={E}=> R
-  fupd_plainly_later (E : CoPset) (P : PROP) : (▷ |={E}=> ■ P) ⊢ |={E}=> ▷ ◇ P
-  fupd_plainly_sForall_2 (E : CoPset) (Φ : PROP → Prop) :
-    (|={E}=> ■ sForall Φ) ⊢ |={E}=> sForall Φ
+  fupd_siPure_later (E : CoPset) (Pi : SiProp) :
+    (▷ |={E}=> <si_pure> Pi) ⊢@{PROP} |={E}=> ▷ ◇ <si_pure> Pi
+  fupd_siPure_sForall_2 (E : CoPset) (Ψi : SiProp → Prop) :
+    (∀ q, ⌜Ψi q⌝ → |={E}=> <si_pure> q) ⊢@{PROP} |={E}=> <si_pure> (sForall Ψi)
 
 @[rocq_alias BiBUpdSbi]
 class BIBUpdateSbi (PROP : Type _) [BI PROP] [BIUpdate PROP] [Sbi PROP] where
-  bupd_si_pure (Pi : SiProp) : iprop(|==> <si_pure> Pi ⊢@{PROP} <si_pure> Pi)
+  bupd_siPure (Pi : SiProp) : iprop(|==> <si_pure> Pi ⊢@{PROP} <si_pure> Pi)
 
 section BUpdLaws
 
@@ -323,10 +325,44 @@ instance bupd_sep_homomorphism :
   map_op := bupd_sep
   map_unit := BIUpdate.intro
 
+@[rocq_alias bupd_or_homomorphism]
+instance bupd_or_homomorphism :
+  Algebra.MonoidHomomorphism (M₁ := PROP) (M₂ := PROP) or or iprop(False) iprop(False)
+    (flip Entails) bupd where
+  rel_refl := .rfl
+  rel_trans := flip .trans
+  op_proper := or_mono
+  map_ne := BIUpdate.bupd_ne
+  map_op := bupd_or
+  map_unit := BIUpdate.intro
+
+@[rocq_alias big_sepL_bupd]
+theorem BigSepL.bigSepL_bupd (Φ : Nat → A → PROP) (l : List A) :
+    ([∗list] k↦x ∈ l, |==> Φ k x) ⊢ |==> [∗list] k↦x ∈ l, Φ k x :=
+  Algebra.BigOpL.bigOpL_hom (R := flip Entails) Φ l
+
 @[rocq_alias big_sepM_bupd]
 theorem BigSepM.bigSepM_bupd [LawfulFiniteMap M' K] (Φ : K → V → PROP) {l : M' V} :
     ([∗map] k↦x ∈ l, |==> Φ k x) ⊢ |==> [∗map] k↦x ∈ l, Φ k x :=
     Algebra.BigOpM.bigOpM_hom (R := flip Entails) Φ l
+
+@[rocq_alias big_sepM2_bupd]
+theorem BigSepM2.bigSepM2_bupd [LawfulFiniteMap M' K] (Φ : K → V → W → PROP)
+    {m1 : M' V} {m2 : M' W} :
+    ([∗map] k↦x;y ∈ m1;m2, |==> Φ k x y) ⊢ |==> [∗map] k↦x;y ∈ m1;m2, Φ k x y :=
+  BigSepM2.bigSepM2_alt.mp.trans <| pure_elim_left fun hdom =>
+    (BigSepM.bigSepM_bupd _).trans <| mono <|
+      (and_intro (pure_intro hdom) .rfl).trans BigSepM2.bigSepM2_alt.mpr
+
+@[rocq_alias big_sepS_bupd]
+theorem BigSepS.bigSepS_bupd [LawfulFiniteSet S A] (Φ : A → PROP) (X : S) :
+    ([∗set] x ∈ X, |==> Φ x) ⊢ |==> [∗set] x ∈ X, Φ x :=
+  Algebra.BigOpS.hom (R := flip Entails) bupd_sep_homomorphism Φ X
+
+@[rocq_alias big_sepMS_bupd]
+theorem BigSepMS.bigSepMS_bupd [LawfulFiniteMultiSet MS A] (Φ : A → PROP) (X : MS) :
+    ([∗mset] x ∈ X, |==> Φ x) ⊢ |==> [∗mset] x ∈ X, Φ x :=
+  Algebra.BigOpMS.hom (R := flip Entails) bupd_sep_homomorphism Φ X
 
 end BUpdLaws
 
@@ -337,7 +373,7 @@ open BIUpdate
 
 @[rocq_alias bupd_plainly]
 theorem bupd_plainly {P : PROP} : (|==> ■ P) ⊢ ■ P :=
-  BIBUpdateSbi.bupd_si_pure (SiEmpValid.siEmpValid P)
+  BIBUpdateSbi.bupd_siPure (SiEmpValid.siEmpValid P)
 
 @[rocq_alias bupd_plainly_elim]
 theorem bupd_plainly_elim {P : PROP} [Absorbing P] : (|==> ■ P) ⊢ P :=
@@ -369,6 +405,17 @@ variable [BI PROP] [BIFUpdate PROP]
 
 open BIFUpdate LawfulSet
 
+@[rocq_alias updates.fupd_ne]
+instance fupd_ne {E1 E2 : CoPset} : OFE.NonExpansive (iprop(|={E1,E2}=> · : PROP)) := ne
+
+@[rocq_alias updates.fupd_mono]
+theorem fupd_mono {E1 E2 : CoPset} {P Q : PROP} (h : P ⊢ Q) : (|={E1,E2}=> P) ⊢ |={E1,E2}=> Q :=
+  mono h
+
+@[rocq_alias updates.fupd_trans]
+theorem fupd_trans {E1 E2 E3 : CoPset} {P : PROP} : (|={E1,E2}=> |={E2,E3}=> P) ⊢ |={E1,E3}=> P :=
+  trans
+
 @[rocq_alias fupd_mask_intro_subseteq]
 theorem fupd_mask_intro_subseteq {E1 E2 : CoPset} {P : PROP} (h : E2 ⊆ E1) :
     P ⊢ |={E1,E2}=> |={E2,E1}=> P := calc
@@ -386,6 +433,7 @@ theorem fupd_mask_frame_right_strong {E1 E2 Ef : CoPset} {P : PROP} :
     E1 ## Ef → (|={E1,E2}=> ⌜E2 ## Ef⌝ → P) ⊢ |={E1 ∪ Ef,E2 ∪ Ef}=> P :=
   mask_frame_right_strong
 
+@[rocq_alias updates.fupd_intro]
 theorem fupd_intro {E : CoPset} {P : PROP} : P ⊢ |={E}=> P :=
   (fupd_mask_intro_subseteq λ _ => id).trans trans
 
@@ -409,6 +457,7 @@ theorem fupd_elim {E1 E2 E3 : CoPset} {P Q : PROP} (h : Q ⊢ |={E2,E3}=> P) :
     (|={E1,E2}=> Q) ⊢ |={E1,E3}=> P :=
   (mono h).trans trans
 
+@[rocq_alias updates.fupd_frame_r]
 theorem fupd_frame_right {E1 E2 : CoPset} {P Q : PROP} : (|={E1,E2}=> P) ∗ Q ⊢ |={E1,E2}=> P ∗ Q :=
   frame_right
 
@@ -477,6 +526,7 @@ theorem fupd_except0 {E1 E2 : CoPset} {P : PROP} : (|={E1,E2}=> ◇ P) ⊢ |={E1
 instance {E1 E2 : CoPset} {P : PROP} [Absorbing P] : Absorbing iprop(|={E1,E2}=> P) :=
   ⟨fupd_frame_left.trans <| mono sep_elim_right⟩
 
+@[rocq_alias updates.fupd_mask_frame_r]
 theorem fupd_mask_frame_right {E1 E2 Ef : CoPset} {P : PROP} :
     E1 ## Ef → (|={E1,E2}=> P) ⊢ |={E1 ∪ Ef,E2 ∪ Ef}=> P :=
   λ h => (mono <| imp_intro_swap and_elim_r).trans <| mask_frame_right_strong h
@@ -546,6 +596,17 @@ instance fupd_sep_homomorphism E :
   map_op := fupd_sep
   map_unit := fupd_intro
 
+@[rocq_alias fupd_or_homomorphism]
+instance fupd_or_homomorphism E :
+  Algebra.MonoidHomomorphism (M₁ := PROP) (M₂ := PROP) or or iprop(False) iprop(False)
+    (flip Entails) (fupd E E) where
+  rel_refl := .rfl
+  rel_trans := flip .trans
+  op_proper := or_mono
+  map_ne := BIFUpdate.ne
+  map_op := fupd_or
+  map_unit := fupd_intro
+
 @[rocq_alias big_sepM_fupd]
 theorem BigSepM.bigSepM_fupd [LawfulFiniteMap M' K] E (Φ : K → V → PROP) (l : M' V) :
     ([∗map] k↦x ∈ l, |={E}=> Φ k x) ⊢ |={E}=> [∗map] k↦x ∈ l, Φ k x :=
@@ -565,8 +626,26 @@ theorem BigSepL2.bigSepL2_fupd {A B : Type _} E (Φ : Nat → A → B → PROP) 
   refine .trans ?_ (mono persistent_and_affinely_sep_left.mpr)
   exact .trans (sep_mono_right (BigSepL2.bigSepL_fupd E _ _ )) fupd_frame_left
 
-#rocq_ignore fupd_mono' "Use BIFUpdate.mono."
-#rocq_ignore fupd_flip_mono' "Use BIFUpdate.mono."
+@[rocq_alias big_sepM2_fupd]
+theorem BigSepM2.bigSepM2_fupd [LawfulFiniteMap M' K] E (Φ : K → V → W → PROP)
+    (m1 : M' V) (m2 : M' W) :
+    ([∗map] k↦x;y ∈ m1;m2, |={E}=> Φ k x y) ⊢ |={E}=> [∗map] k↦x;y ∈ m1;m2, Φ k x y :=
+  BigSepM2.bigSepM2_alt.mp.trans <| pure_elim_left fun hdom =>
+    (BigSepM.bigSepM_fupd E _ _).trans <| mono <|
+      (and_intro (pure_intro hdom) .rfl).trans BigSepM2.bigSepM2_alt.mpr
+
+@[rocq_alias big_sepS_fupd]
+theorem BigSepS.bigSepS_fupd [LawfulFiniteSet S A] E (Φ : A → PROP) (X : S) :
+    ([∗set] x ∈ X, |={E}=> Φ x) ⊢ |={E}=> [∗set] x ∈ X, Φ x :=
+  Algebra.BigOpS.hom (R := flip Entails) (fupd_sep_homomorphism E) Φ X
+
+@[rocq_alias big_sepMS_fupd]
+theorem BigSepMS.bigSepMS_fupd [LawfulFiniteMultiSet MS A] E (Φ : A → PROP) (X : MS) :
+    ([∗mset] x ∈ X, |={E}=> Φ x) ⊢ |={E}=> [∗mset] x ∈ X, Φ x :=
+  Algebra.BigOpMS.hom (R := flip Entails) (fupd_sep_homomorphism E) Φ X
+
+#rocq_ignore fupd_mono' "Use fupd_mono."
+#rocq_ignore fupd_flip_mono' "Use fupd_mono."
 #rocq_ignore fupd_proper "Derivable from BIFUpdate.ne with NonExpansive.eqv"
 
 end FUpdLaws
@@ -638,6 +717,12 @@ theorem step_fupd_mask_mono {Eo₁ Eo₂ Ei₁ Ei₂ : CoPset} {P : PROP}
   refine frame_right.trans ?_
   exact mono emp_sep.1
 
+@[rocq_alias step_fupd_mask_frame_r]
+theorem step_fupd_mask_frame_right {Eo Ei Ef : CoPset} {P : PROP}
+    (hEo : Eo ## Ef) (hEi : Ei ## Ef) :
+    (|={Eo}[Ei]▷=> P) ⊢ |={Eo ∪ Ef}[Ei ∪ Ef]▷=> P :=
+  (mono <| later_mono <| fupd_mask_frame_right hEi).trans (fupd_mask_frame_right hEo)
+
 @[rocq_alias step_fupd_intro]
 theorem step_fupd_intro {Ei Eo : CoPset} {P : PROP} (Ei_Eo : Ei ⊆ Eo) :
     ▷ P ⊢ |={Eo}[Ei]▷=> P := by
@@ -654,7 +739,7 @@ theorem step_fupdN_intro {Ei Eo : CoPset} {P : PROP} (Ei_Eo : Ei ⊆ Eo) :
   | n+1 => by
     simp only [Nat.repeat]
     calc
-      _ ⊢ ▷ ▷^[n] P                         := (later_laterN n).mp
+      _ ⊢ ▷ ▷^[n] P                         := (laterN_succ_left n).mp
       _ ⊢ |={Eo}[Ei]▷=> ▷^[n] P             := step_fupd_intro Ei_Eo
       _ ⊢ |={Eo}[Ei]▷=> |={Eo}[Ei]▷=>^[n] P := step_fupd_mono <| step_fupdN_intro Ei_Eo
 
@@ -715,25 +800,30 @@ end StepFUpdLaws
 
 section StepFUpdPlainlyLaws
 
-variable [Sbi PROP] [BIFUpdate PROP] [BIFUpdatePlainly PROP]
+variable [Sbi PROP] [BIFUpdate PROP] [BIFUpdateSbi PROP]
 
-open BIFUpdate BIFUpdatePlainly
+open BIFUpdate BIFUpdateSbi
 
 @[rocq_alias fupd_keep_si_pure]
-theorem fupd_keep_si_pure {E1 E2 : CoPset} E2' Pi {R : PROP} :
-  (|={E1,E2'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E1,E2}=∗ R) ⊢ |={E1,E2}=> R :=
-  (and_mono_right (wand_mono_right fupd_intro)).trans <|
-    (BIFUpdatePlainly.fupd_keep_si_pure E2' Pi iprop(|={E1,E2}=> R)).trans trans
+theorem fupd_keep_siPure {E1 E2 : CoPset} E2' Pi {R : PROP} :
+    (|={E1,E2'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E1,E2}=∗ R) ⊢ |={E1,E2}=> R := calc
+  _ ⊢ (|={E1, E2'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E1}=∗ |={E1, E2}=> R) :=
+      and_mono_right <| wand_mono_right fupd_intro
+  _ ⊢ |={E1}=> |={E1, E2}=> R :=
+      BIFUpdateSbi.fupd_keep_siPure E2' Pi iprop(|={E1,E2}=> R)
+  _ ⊢ |={E1, E2}=> R := trans
 
 @[rocq_alias fupd_keep_plainly]
 theorem fupd_keep_plainly [BIAffine PROP] {E1 E2 : CoPset} E2' (P : PROP) {R : PROP} :
   (|={E1,E2'}=> ■ P) ∧ (P ={E1,E2}=∗ R) ⊢ |={E1,E2}=> R :=
   (and_mono_right (wand_mono_left siPure_siEmpValid_elim)).trans <|
-    fupd_keep_si_pure E2' (SiEmpValid.siEmpValid P)
+    fupd_keep_siPure E2' (SiEmpValid.siEmpValid P)
 
 @[rocq_alias fupd_plainly_later]
-theorem fupd_plainly_later (E : CoPset) (P : PROP) : (▷ |={E}=> ■ P) ⊢ |={E}=> ▷ ◇ P :=
-  BIFUpdatePlainly.fupd_plainly_later E P
+theorem fupd_plainly_later [BIAffine PROP] (E : CoPset) (P : PROP) :
+    (▷ |={E}=> ■ P) ⊢ |={E}=> ▷ ◇ P :=
+  (BIFUpdateSbi.fupd_siPure_later E iprop(<si_emp_valid> P)).trans <|
+    mono <| later_mono <| except0_mono siPure_siEmpValid_elim
 
 @[rocq_alias fupd_keep_plain]
 theorem fupd_keep_plain [BIAffine PROP] {E1 E2 : CoPset} E2' (P R : PROP) [Plain P] :
@@ -751,8 +841,28 @@ theorem fupd_plain_mask [BIAffine PROP] {E E' : CoPset} {P : PROP} [Plain P] :
   (mono Plain.plain).trans (fupd_plainly_mask E E')
 
 @[rocq_alias fupd_plain_later]
-theorem fupd_plain_later {E : CoPset} {P : PROP} [Plain P] : (▷ |={E}=> P) ⊢ |={E}=> ▷ ◇ P :=
+theorem fupd_plain_later [BIAffine PROP] {E : CoPset} {P : PROP} [Plain P] : (▷ |={E}=> P) ⊢ |={E}=> ▷ ◇ P :=
   (later_mono (mono Plain.plain)).trans (fupd_plainly_later E P)
+
+@[rocq_alias fupd_plainly_laterN]
+theorem fupd_plainly_laterN [BIAffine PROP] (E : CoPset) (n : Nat) (P : PROP) :
+    (▷^[n] |={E}=> ■ P) ⊢ |={E}=> ▷^[n] ◇ P := by
+  induction n generalizing P with
+  | zero => exact mono <| plainly_elim.trans except0_intro
+  | succ n ih => calc
+    _ ⊢ ▷^[n] ▷ |={E}=> ■ P   := (laterN_succ_right n).mp
+    _ ⊢ ▷^[n] ▷ |={E}=> ■ ■ P := laterN_mono n <| later_mono <| mono plainly_idem.mpr
+    _ ⊢ ▷^[n] |={E}=> ▷ ◇ ■ P := laterN_mono n <| fupd_plainly_later E iprop(■ P)
+    _ ⊢ ▷^[n] |={E}=> ▷ ■ ◇ P := laterN_mono n <| mono <| later_mono except0_plainly.mp
+    _ ⊢ ▷^[n] |={E}=> ■ ▷ ◇ P := laterN_mono n <| mono later_plainly_mp
+    _ ⊢ |={E}=> ▷^[n] ◇ ▷ ◇ P := ih iprop(▷ ◇ P)
+    _ ⊢ |={E}=> ▷^[n] ▷ ◇ P   := mono <| laterN_mono n except0_later
+    _ ⊢ |={E}=> ▷^[n + 1] ◇ P := mono (laterN_succ_right n).mpr
+
+@[rocq_alias fupd_plain_laterN]
+theorem fupd_plain_laterN [BIAffine PROP] {E : CoPset} {n : Nat} {P : PROP} [Plain P] :
+    (▷^[n] |={E}=> P) ⊢ |={E}=> ▷^[n] ◇ P :=
+  (laterN_mono n <| mono Plain.plain).trans (fupd_plainly_laterN E n P)
 
 @[rocq_alias fupd_keep_plain_sep]
 theorem fupd_keep_plain_sep [BIAffine PROP] {E E' : CoPset} {P R : PROP} [Plain P] :
@@ -778,5 +888,71 @@ theorem step_fupdN_plain [BIAffine PROP] {E1 E2 : CoPset} {n : Nat} {P : PROP} [
       _ ⊢ |={E1}=> ▷ ◇ ▷^[n] ◇ P          := step_fupd_plain
       _ ⊢ |={E1}=> ▷ ▷^[n] ◇ ◇ P          := mono <| later_mono <| except0_laterN n
       _ ⊢ |={E1}=> ▷^[n + 1] ◇ P            := mono <| laterN_mono (n + 1) except0_idem.mp
+
+omit [BIFUpdate PROP] [BIFUpdateSbi PROP] in
+theorem sForall_eq_forall {Φ : α → PROP} :
+    sForall (fun p => ∃ a, p = Φ a) ⊣⊢ ∀ a, Φ a :=
+  ⟨forall_intro fun a => sForall_elim ⟨a, rfl⟩,
+   sForall_intro fun _ ⟨a, hp⟩ => hp ▸ forall_elim a⟩
+
+/--
+  Proves that the Rocq class field `fupd_si_pure_forall_2` for `BIFUpdSbi`
+  follows from `BIFUpdateSbi.fupd_siPure_sForall_2`.
+-/
+theorem fupd_siPure_forall_2 {E : CoPset} {A : Sort _} {Φi : A → SiProp} :
+    (∀ x, |={E}=> <si_pure> Φi x) ⊢@{PROP} |={E}=> ∀ x, <si_pure> Φi x := calc
+  _ ⊢ ∀ q, ⌜∃ x, q = Φi x⌝ → |={E}=> <si_pure> q :=
+      forall_intro fun _ => imp_intro_swap <| pure_elim_left fun ⟨x, hx⟩ => hx ▸ forall_elim x
+  _ ⊢@{PROP} |={E}=> <si_pure> (sForall fun q => ∃ x, q = Φi x) :=
+      BIFUpdateSbi.fupd_siPure_sForall_2 E _
+  _ ⊢ |={E}=> ∀ x, <si_pure> Φi x :=
+      mono <| forall_intro fun x => siPure_mono (sForall_elim ⟨x, rfl⟩)
+
+@[rocq_alias fupd_plainly_forall_2]
+theorem fupd_plainly_forall_2 [BIAffine PROP] {E : CoPset} {Φ : α → PROP} :
+    (∀ a, |={E}=> ■ Φ a) ⊢ |={E}=> ∀ a, Φ a :=
+  fupd_siPure_forall_2.trans <| mono <| forall_mono fun _ => siPure_siEmpValid_elim
+
+@[rocq_alias fupd_plain_forall_2]
+theorem fupd_plain_forall_2 [BIAffine PROP] {E : CoPset} {Φ : α → PROP} [∀ a, Plain (Φ a)] :
+    (∀ a, |={E}=> Φ a) ⊢ |={E}=> ∀ a, Φ a :=
+  (forall_mono fun _ => mono Plain.plain).trans fupd_plainly_forall_2
+
+@[rocq_alias fupd_plain_forall]
+theorem fupd_plain_forall [BIAffine PROP] {E1 E2 : CoPset} {Φ : α → PROP}
+    [inst : ∀ a, Plain (Φ a)] (h : E2 ⊆ E1) :
+    (|={E1,E2}=> ∀ a, Φ a) ⊣⊢ ∀ a, |={E1,E2}=> Φ a := by
+  constructor
+  · exact fupd_forall
+  · calc
+      _ ⊢ ∀ a, |={E1}=> Φ a    := forall_mono fun _ => fupd_plain_mask
+      _ ⊢ |={E1}=> ∀ a, Φ a    := fupd_plain_forall_2
+      _ ⊢ |={E1,E2}=> ∀ a, Φ a := fupd_elim ?_
+    calc
+      _ ⊢ ■ (∀ a, Φ a)             := Plain.plain
+      _ ⊢ |={E1,E2}=> ■ (∀ a, Φ a) := fupd_mask_intro_discard h
+      _ ⊢ |={E1,E2}=> |={E2}=> _   := mono <| fupd_intro.trans <| fupd_plainly_mask E2 E2
+      _ ⊢ |={E1,E2}=> ∀ a, Φ a     := trans
+
+@[rocq_alias fupd_plain_forall']
+theorem fupd_plain_forall' [BIAffine PROP] {E : CoPset} {Φ : α → PROP} [∀ a, Plain (Φ a)] :
+    (|={E}=> ∀ a, Φ a) ⊣⊢ ∀ a, |={E}=> Φ a :=
+  fupd_plain_forall LawfulSet.subset_refl
+
+@[rocq_alias step_fupd_plain_forall]
+theorem step_fupd_plain_forall [BIAffine PROP] {Eo Ei : CoPset} {Φ : α → PROP}
+    [∀ a, Plain (Φ a)] (h : Ei ⊆ Eo) :
+    (|={Eo}[Ei]▷=> ∀ a, Φ a) ⊣⊢ ∀ a, |={Eo}[Ei]▷=> Φ a := by
+  constructor
+  · exact forall_intro fun a => step_fupd_mono (forall_elim a)
+  · calc
+      _ ⊢ ∀ a, |={Eo}=> ▷ ◇ Φ a := forall_mono fun _ => step_fupd_plain
+      _ ⊢ |={Eo}=> ∀ a, ▷ ◇ Φ a := (fupd_plain_forall LawfulSet.subset_refl).mpr
+      _ ⊢ |={Eo}[Ei]▷=> ∀ a, Φ a := fupd_elim ?_
+    calc
+      _ ⊢ ▷ ∀ a, ◇ Φ a              := later_forall.mpr
+      _ ⊢ ▷ ◇ ∀ a, Φ a              := later_mono except0_forall.mpr
+      _ ⊢ |={Eo}[Ei]▷=> ◇ ∀ a, Φ a  := step_fupd_intro h
+      _ ⊢ |={Eo}[Ei]▷=> ∀ a, Φ a     := mono <| later_mono fupd_except0
 
 end StepFUpdPlainlyLaws

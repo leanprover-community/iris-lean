@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Shreyas Srinivas. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Shreyas Srinivas, Markus de Medeiros, Fernando Leal
 -/
@@ -197,7 +197,7 @@ scoped instance instUCMRA [LawfulLeftIdentity (α := α) (· + ·) zero] : UCMRA
   unit_valid := trivial
   unit_left_id := left_id _
   pcore_unit := rfl
-#rocq_ignore max_Z_unit_instance "Rocq has no `max_Z_UCMRA`."
+
 #rocq_ignore max_natUR "Use the (ℕ, max) Universal Core instance."
 #rocq_ignore max_nat_ucmra_mixin "Use the (ℕ, max) Universal Core instance."
 #rocq_ignore max_nat_unit_instance "Use the (ℕ, max) Universal Core instance."

@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Haokun Li. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Haokun Li, Sergei Stepanenko, Zongyuan Liu
 -/
@@ -192,7 +192,7 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness) (es : List Expr) (�
     φ := by
   apply pure_soundness (PROP := IProp GF)
   apply laterN_soundness (n := steps_sum numLaters 0 n + 1)
-  rw [(laterN_later _).to_eq]
+  rw [(laterN_succ_right _).to_eq]
   refine Entails.trans ?_ (laterN_mono _ except0_into_later)
   apply fupd_finally_soundness hlc (steps_sum numLaters 0 n) ⊤
   iintro %Hinv Hf
@@ -319,8 +319,8 @@ theorem wp_adequacy_gen [InvGpreS GF] (s : Stuckness) (e : Expr) (σ : State) (�
   dsimp only
   imodintro
   iframe
-  isplitl [Hwp]
-  · iapply BigSepL2.bigSepL2_singleton; iframe
+  isplitl
+  · iapply BigSepL2.bigSepL2_nil; itrivial
   iintro %_ %_ %Heq %_ %HNS Hst Hwptp _
   iapply fupd_mask_intro_discard empty_subset
   icases BigSepL2.bigSepL2_cons_inv_right $$ Hwptp with ⟨%e', %_, %Heq', Hpost, H⟩

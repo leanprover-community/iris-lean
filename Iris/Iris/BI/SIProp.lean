@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
@@ -222,7 +222,6 @@ instance instBI : BI SiProp where
   persistently_idem_2 _ h := h
   persistently_emp_2 _ h := h
   persistently_and_2 _ h := h
-  persistently_sExists_1 := fun _ ⟨P, hΨ, hPn⟩ => ⟨_, ⟨P, rfl⟩, hΨ, hPn⟩
   persistently_absorb_l _ h := h.1
   persistently_and_l _ h := h
   later_mono h n hlP := match n with | .zero => trivial | .succ _ => h _ hlP
@@ -245,6 +244,40 @@ instance instBI : BI SiProp where
       match n' with
       | .zero => P.closed hP (Nat.zero_le _)
       | .succ _ => absurd hF id
+
+/-! ## Step-indexed characterisation of the connectives
+
+`BI`'s quantifiers range over *sets* of `SiProp`s, so `∃`/`∀` do not reduce to their
+meta-level counterparts by `rfl`; the remaining connectives do. -/
+
+theorem biEntails_of_iff {P Q : SiProp} (h : ∀ n, P.holds n ↔ Q.holds n) : P ⊣⊢ Q :=
+  ⟨fun n => (h n).mp, fun n => (h n).mpr⟩
+
+@[simp] theorem pure_holds {φ : Prop} {n} : (iprop(⌜φ⌝) : SiProp).holds n ↔ φ := .rfl
+
+@[simp] theorem and_holds {P Q : SiProp} {n} :
+    (iprop(P ∧ Q) : SiProp).holds n ↔ P.holds n ∧ Q.holds n := .rfl
+
+@[simp] theorem sep_holds {P Q : SiProp} {n} :
+    (iprop(P ∗ Q) : SiProp).holds n ↔ P.holds n ∧ Q.holds n := .rfl
+
+@[simp] theorem or_holds {P Q : SiProp} {n} :
+    (iprop(P ∨ Q) : SiProp).holds n ↔ P.holds n ∨ Q.holds n := .rfl
+
+@[simp] theorem later_holds_zero {P : SiProp} : (iprop(▷ P) : SiProp).holds 0 ↔ True := .rfl
+
+@[simp] theorem later_holds_succ {P : SiProp} {n} :
+    (iprop(▷ P) : SiProp).holds (n + 1) ↔ P.holds n := .rfl
+
+@[simp] theorem exists_holds {α : Sort _} {Φ : α → SiProp} {n} :
+    (iprop(∃ x, Φ x) : SiProp).holds n ↔ ∃ x, (Φ x).holds n :=
+  ⟨fun ⟨_, ⟨x, rfl⟩, h⟩ => ⟨x, h⟩, fun ⟨x, h⟩ => ⟨Φ x, ⟨x, rfl⟩, h⟩⟩
+
+@[simp] theorem forall_holds {α : Sort _} {Φ : α → SiProp} {n} :
+    (iprop(∀ x, Φ x) : SiProp).holds n ↔ ∀ x, (Φ x).holds n := by
+  refine ⟨fun h x => h (Φ x) ⟨x, rfl⟩, fun h P hP => ?_⟩
+  obtain ⟨x, rfl⟩ := hP
+  exact h x
 
 @[rocq_alias siProp_primitive.pure_ne]
 theorem pure_dist_of_iff {Φ Ψ : Prop} (H : Φ ↔ Ψ) : pure Φ ≡{n}≡ pure Ψ := fun _ => iff_comm.mp H.symm
@@ -322,6 +355,14 @@ instance instBILaterContractive : BILaterContractive SiProp where
 instance instPersistent (P : SiProp) : Persistent P where
   persistent _ := id
 
+@[rocq_alias siProp_persistently_forall]
+instance instPersistentlyForall : BIPersistentlyForall SiProp where
+  persistently_sForall_2 _ n h P hΨ := h _ ⟨P, rfl⟩ n .refl hΨ
+
+@[rocq_alias siProp_persistently_exist]
+instance instPersistentlyExist : BIPersistentlyExist SiProp where
+  persistently_sExists_1 _ _ := fun ⟨P, hΨ, hP⟩ => ⟨_, ⟨P, rfl⟩, hΨ, hP⟩
+
 #rocq_ignore siProp_primitive.siProp_unseal "Not needed in Lean."
 
 /-! ## Internal equality -/
@@ -330,6 +371,9 @@ instance instPersistent (P : SiProp) : Persistent P where
 def internalEq [OFE A] (a₁ a₂ : A) : SiProp where
   holds n := a₁ ≡{n}≡ a₂
   closed h hle := Dist.le h hle
+
+@[simp] theorem internalEq_holds [OFE A] {a b : A} {n} :
+    (internalEq a b).holds n ↔ a ≡{n}≡ b := .rfl
 
 #rocq_ignore siProp_internal_eq_def "Not needed in Lean."
 #rocq_ignore siProp_internal_eq_aux "Not needed in Lean."
@@ -395,6 +439,9 @@ theorem later_equiv_internalEq_mpr [OFE A] (x y : A) :
 def cmraValid [CMRA A] (a : A) : SiProp where
   holds n := ✓{n} a
   closed h hle := CMRA.validN_of_le hle h
+
+@[simp] theorem cmraValid_holds [CMRA A] {a : A} {n} :
+    (cmraValid a).holds n ↔ ✓{n} a := .rfl
 
 #rocq_ignore siProp_cmra_valid_def "Not needed in Lean."
 #rocq_ignore siProp_cmra_valid_aux "Not needed in Lean."

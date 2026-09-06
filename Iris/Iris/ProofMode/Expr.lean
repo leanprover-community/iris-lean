@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2022 Lars König. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang
 -/
@@ -211,17 +211,34 @@ partial def Hyps.getDecl? {u prop bi} (ivar : IVarId) {s}:
 def Hyps.getUserName? {u prop bi} (ivar : IVarId) (h : @Hyps u prop bi s) : Option Name :=
   h.getDecl? ivar |>.map (·.1)
 
-partial def Hyps.spatialIVarIds {u prop bi} :
-    ∀ {s}, @Hyps u prop bi s → List IVarId
-  | _, .emp _ => []
-  | _, .hyp _ _ ivar p _ _ => if isTrue p then [] else [ivar]
-  | _, .sep _ _ _ _ lhs rhs => lhs.spatialIVarIds ++ rhs.spatialIVarIds
+/-- Indicates whether hypotheses should be in the same order as in the context or in reverse. -/
+inductive HypsOrder where
+  | topToBottom
+  | bottomToTop
 
-partial def Hyps.intuitionisticIVarIds {u prop bi} :
-    ∀ {s}, @Hyps u prop bi s → List IVarId
-  | _, .emp _ => []
-  | _, .hyp _ _ ivar p _ _ => if isTrue p then [ivar] else []
-  | _, .sep _ _ _ _ lhs rhs => lhs.intuitionisticIVarIds ++ rhs.intuitionisticIVarIds
+partial def Hyps.spatialIVarIds {u prop bi} {s} (hyps : @Hyps u prop bi s) (ord : HypsOrder) :
+    List IVarId :=
+  spatialIVarIdsAux hyps ord []
+where
+  spatialIVarIdsAux : ∀ {s}, @Hyps u prop bi s → HypsOrder → List IVarId → List IVarId
+  | _, .emp _, _, acc => acc
+  | _, .hyp _ _ ivar p _ _, _, acc => if isTrue p then acc else ivar :: acc
+  | _, .sep _ _ _ _ lhs rhs, .topToBottom, acc =>
+    spatialIVarIdsAux lhs .topToBottom (spatialIVarIdsAux rhs .topToBottom acc)
+  | _, .sep _ _ _ _ lhs rhs, .bottomToTop, acc =>
+    spatialIVarIdsAux rhs .bottomToTop (spatialIVarIdsAux lhs .bottomToTop acc)
+
+partial def Hyps.intuitionisticIVarIds {u prop bi} {s} (hyps : @Hyps u prop bi s)
+    (ord : HypsOrder) : List IVarId :=
+  intuitionisticIVarIdsAux hyps ord []
+where
+  intuitionisticIVarIdsAux : ∀ {s}, @Hyps u prop bi s → HypsOrder → List IVarId → List IVarId
+  | _, .emp _, _, acc => acc
+  | _, .hyp _ _ ivar p _ _, _, acc => if isTrue p then ivar :: acc else acc
+  | _, .sep _ _ _ _ lhs rhs, .topToBottom, acc =>
+    intuitionisticIVarIdsAux lhs .topToBottom (intuitionisticIVarIdsAux rhs .topToBottom acc)
+  | _, .sep _ _ _ _ lhs rhs, .bottomToTop, acc =>
+    intuitionisticIVarIdsAux rhs .bottomToTop (intuitionisticIVarIdsAux lhs .bottomToTop acc)
 
 /--
   Given any hypotheses `hyps` representing `e`, filter in all spatial hypotheses
@@ -337,6 +354,44 @@ def Hyps.split {prop : Q(Type u)} (bi : Q(BI $prop)) (toRight : Name → IVarId 
   | .left => ⟨_, _, hyps, .mkEmp bi, q(sep_emp_rev)⟩
   | .right => ⟨_, _, .mkEmp bi, hyps, q(emp_sep_rev)⟩
   | .split lhs rhs pf => ⟨_, _, lhs, rhs, pf⟩
+
+/--
+  Split `Hyps` into two parts, one with all spatial hypotheses representing `eS`
+  and another with all intuitionistic hypotheses representing `eI`.
+  A proof of `eI ⊢ □ eI` asserts that `eI` is indeed intuitionistic.
+-/
+def Hyps.splitIntuitionisticSpatial {prop : Q(Type u)} {bi : Q(BI $prop)} :
+    ∀ {e : Q($prop)}, Hyps bi e →
+      (eI : Q($prop)) × (eS : Q($prop)) × Q($e ⊣⊢ $eI ∗ $eS) × Q($eI ⊢ □ $eI)
+  | _, .emp _ =>
+    ⟨q(iprop(emp)), q(iprop(emp)), q(emp_sep_rev), q(intuitionistically_emp.mpr)⟩
+  | _, .hyp _ _ _ p ty _ =>
+    match matchBool p with
+    | .inl _ =>
+      ⟨q(iprop(□ $ty)), q(iprop(emp)), q(sep_emp_rev), q(intuitionistically_idem.mpr)⟩
+    | .inr _ =>
+      ⟨q(iprop(emp)), ty, q(emp_sep_rev), q(intuitionistically_emp.mpr)⟩
+  | _, .sep _ _ _ _ lhs rhs =>
+    let ⟨eIl, eSl, pfl, pIl⟩ := splitIntuitionisticSpatial lhs
+    let ⟨eIr, eSr, pfr, pIr⟩ := splitIntuitionisticSpatial rhs
+    let ⟨eI, hI, pI⟩ : (eI : Q($prop)) × Q(iprop($eIl ∗ $eIr) ⊣⊢ $eI) × Q($eI ⊢ □ $eI) :=
+      if eIl == q(iprop(emp)) then
+        let h : Q(iprop(emp) ∗ $eIr ⊣⊢ $eIr) := q(emp_sep)
+        ⟨eIr, h, pIr⟩
+      else if eIr == q(iprop(emp)) then
+        let h : Q($eIl ∗ iprop(emp) ⊣⊢ $eIl) := q(sep_emp)
+        ⟨eIl, h, pIl⟩
+      else
+        ⟨q(iprop($eIl ∗ $eIr)), q(.rfl), q((sep_mono $pIl $pIr).trans intuitionistically_sep_mpr)⟩
+    let ⟨eS, hS⟩ : (eS : Q($prop)) × Q(iprop($eSl ∗ $eSr) ⊣⊢ $eS) :=
+      if eSl == q(iprop(emp)) then
+        let h : Q(emp ∗ $eSr ⊣⊢ $eSr) := q(emp_sep)
+        ⟨eSr, h⟩
+      else if eSr == q(iprop(emp)) then
+        let h : Q($eSl ∗ emp ⊣⊢ $eSl) := q(sep_emp)
+        ⟨eSl, h⟩
+      else ⟨q(iprop($eSl ∗ $eSr)), q(.rfl)⟩
+    ⟨eI, eS, q((split_ss $pfl $pfr).trans (sep_congr $hI $hS)), pI⟩
 
 end split
 

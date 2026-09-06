@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Michael Sammler. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
@@ -7,6 +7,7 @@ module
 
 import Iris.BI
 public import Iris.ProofMode.Classes
+public import Iris.ProofMode.SolveSideCondition
 public import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
