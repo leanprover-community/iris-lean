@@ -59,7 +59,17 @@ Most of the unicode characters used in Iris can be written with the Lean extensi
 "sep": "∗",
 "wand": "-∗",
 "pure": "⌜⌝",
-"bientails": "⊣⊢"
+"bientails": "⊣⊢",
+"emb": "⎡⎤",
+"auth": "●", 
+"frag": "◯",
+"incl": "≼", 
+"valid": "✓",
+"later": "▷",
+"except0": "◇",
+"plainly": "■",
+"intuit": "□",
+"credit": "£",
 ```
 
 ## References
