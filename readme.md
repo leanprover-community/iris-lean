@@ -18,7 +18,7 @@ Currently, Iris-Lean has support for
 Users of Iris-Lean should be aware of the documentation:
 - [tactics.md](docs/tactics.md): Instructions for using Iris tactics.
 - [tracking site](https://leanprover-community.github.io/iris-lean/): Iris-Lean correspondence for definitions in Iris-Rocq.
-- [compatibility.md](docs/tactics.md): Important differences between Iris-Rocq and Iris-Lean.
+- [compatibility.md](docs/compatibilty.md): Important differences between Iris-Rocq and Iris-Lean.
 - [proofmode.md](docs/proofmode.md): Details of *MoSeL*; support for separation logics other than Iris.
 
 # Using Iris-Lean as a Dependency
