@@ -11,13 +11,15 @@ Rocq formalization of Iris: https://gitlab.mpi-sws.org/iris/iris/
 
 Currently, Iris-Lean has support for 
 - *MoSeL*, the proof interface of Iris
-- `UPred`, the Iris base logic
 - `IProp`, the standard model of Iris
+- `HeapLang`, the Iris example language and logic
 - A selection of the Iris resources, including invariants, later credits, and many more.
 
-MoSeL (in contrast to the older IPM) supports different separation logics as well. For more details on the proofmode, see [proofmode.md](Iris/proofmode.md).
-
-More details about the status of our port can be found on our [tracking site](https://leanprover-community.github.io/iris-lean/). 
+Users of Iris-Lean should be aware of the documentation:
+- [tactics.md](docs/tactics.md): Instructions for using Iris tactics.
+- [tracking site](https://leanprover-community.github.io/iris-lean/): Iris-Lean correspondence for definitions in Iris-Rocq.
+- [compatibility.md](docs/tactics.md): Important differences between Iris-Rocq and Iris-Lean.
+- [proofmode.md](docs/proofmode.md): Details of *MoSeL*; support for separation logics other than Iris.
 
 # Using Iris-Lean as a Dependency
 
@@ -39,10 +41,11 @@ git.subDir = "IrisMath"
 rev = "master"
 ```
 
-
 # Development
 
-This project started as part of Lars König's master's thesis at Karlsruhe Institute of Technology (KIT). It is currently being maintained by a team of developers, coordinating on the [iris-lean channel](https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean) on the Lean Zulip. 
+Development for Iris-Lean coordinates in:
+- The [iris-lean channel](https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean) on the Lean Zulip. 
+- The [Iris Mattermost channel](https://mattermost.mpi-sws.org/iris/channels/iris-lean)
 
 We always welcome new contributors! For questions, contribution guidance, and development information, feel free to introduce yourself on the Zulip. 
 
