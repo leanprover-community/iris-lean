@@ -37,8 +37,8 @@ This file defines the following linters:
 - the `show` linter checks for `show`s that change the goal and should be replaced by `change`
 - the `nameCheck` linter checks for declarations whose names are in non-standard style, such as
   by containing a double underscore. The `defsWithUnderscore` environment linter checks for
-  definitions whose name contains an underscore: that is also very likely to be a violation of
-  Iris-Lean's naming convention.
+  definitions whose name contains an underscore: following Mathlib's style guide, this is also
+  very likely to be a violation of Iris-Lean's naming convention.
 -/
 
 namespace Iris
@@ -171,12 +171,12 @@ end Style
 ### The `dollarSyntax` linter
 
 The `dollarSyntax` linter flags uses of `<|` that are achieved by typing `$`.
-These are disallowed by the mathlib (and Iris-Lean) style guide,
+Following Mathlib, these are disallowed by Iris-Lean's style guide,
 as using `<|` pairs better with `|>`.
 -/
 
 /-- The `dollarSyntax` linter flags uses of `<|` that are achieved by typing `$`.
-These are disallowed by the mathlib (and Iris-Lean) style guide,
+Following Mathlib, these are disallowed by Iris-Lean's style guide,
 as using `<|` pairs better with `|>`. -/
 public register_option linter.iris.style.dollarSyntax : Bool := {
   defValue := false
@@ -213,14 +213,14 @@ end Style.dollarSyntax
 ### The `lambdaSyntax` linter
 
 The `lambdaSyntax` linter is a syntax linter that flags uses of the symbol `λ` to define anonymous
-functions, as opposed to the `fun` keyword. These are syntactically equivalent; mathlib
-(and Iris-Lean) style prefers the latter as it is considered more readable.
+functions, as opposed to the `fun` keyword. These are syntactically equivalent.
+Following Mathlib, Iris-Lean prefers the latter as it is considered more readable.
 -/
 
 /--
 The `lambdaSyntax` linter flags uses of the symbol `λ` to define anonymous functions.
-This is syntactically equivalent to the `fun` keyword; mathlib (and Iris-Lean) style prefers
-using the latter.
+This is syntactically equivalent to the `fun` keyword.
+Following Mathlib, Iris-Lean prefers using the latter.
 -/
 public register_option linter.iris.style.lambdaSyntax : Bool := {
   defValue := false
@@ -250,7 +250,7 @@ def lambdaSyntaxLinter : Linter where run := withSetOptionIn fun stx ↦ do
       if let .atom _ "λ" := s[0] then
         Linter.logLint linter.iris.style.lambdaSyntax s[0] m!"\
         Please use 'fun' and not 'λ' to define anonymous functions.\n\
-        The 'λ' syntax is deprecated in mathlib4 (and Iris-Lean)."
+        Following the Mathlib style guide, the 'λ' syntax is deprecated in Iris-Lean."
 
 initialize addLinter lambdaSyntaxLinter
 
@@ -265,7 +265,7 @@ The "longFile" linter emits a warning on files which are longer than a certain n
 
 /--
 The "longFile" linter emits a warning on files which are longer than a certain number of lines
-(`linter.iris.style.longFileDefValue` by default on mathlib (and Iris-Lean), no limit for downstream projects).
+(`linter.iris.style.longFileDefValue` by default, no limit for downstream projects).
 If this option is set to `N` lines, the linter warns once a file has more than `N` lines.
 A value of `0` silences the linter entirely.
 -/
@@ -435,8 +435,8 @@ def doubleUnderscore : Linter where run := withSetOptionIn fun stx => do
         -- Check whether the declaration name contains "__".
         if 1 < (declName.toString.splitOn "__").length then
           Linter.logLint linter.iris.style.nameCheck id
-            m!"The declaration '{id}' contains '__', which does not follow the mathlib \
-              (and Iris-Lean) naming conventions. Consider using single underscores instead."
+            m!"The declaration '{id}' contains '__', which does not follow the Iris-Lean \
+              naming conventions. Consider using single underscores instead."
 
 initialize addLinter doubleUnderscore
 
@@ -471,7 +471,8 @@ public def isBadNameWithUnderscore (name : Name) : Bool := Id.run do
 open Batteries.Tactic.Lint in
 /-- Linter that checks for definitions whose name contains an underscore:
 such names violate the naming convention. -/
-@[env_linter] public def defsWithUnderscore : Batteries.Tactic.Lint.Linter where
+-- @[env_linter]
+public def defsWithUnderscore : Batteries.Tactic.Lint.Linter where
   noErrorsFound := "no definitions with an underscore in their name found."
   errorsFound := "FOUND definitions with an underscore in their name."
   test declName := do
@@ -481,7 +482,8 @@ such names violate the naming convention. -/
     if ((← getEnv).find? declName).get!.type.isConstOf `Lean.Meta.Simp.Simproc then return none
     if isBadNameWithUnderscore declName then
       return m!"The definition `{declName}` contains an underscore. \
-        This almost surely violates mathlib's (and Iris-Lean's) naming convention; \
+        Following the Mathlib style guide,
+        this almost surely violates the naming convention; \
         use lowerCamelCase or UpperCamelCase instead."
     else return none
 
