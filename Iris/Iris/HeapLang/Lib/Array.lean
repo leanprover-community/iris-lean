@@ -28,7 +28,7 @@ def arrayCopyTo : Val := hl_val%
 
 @[rocq_alias heap_lang.array_clone]
 def arrayClone : Val := hl_val%
-  λ src n,
+  fun src n,
     let dst := allocn(n, #());
     &arrayCopyTo dst src n;
     dst
@@ -43,7 +43,7 @@ def arrayInitLoop : Val := hl_val%
 
 @[rocq_alias heap_lang.array_init]
 def arrayInit : Val := hl_val%
-  λ n f,
+  fun n f,
     let src := allocn(n, #());
     &arrayInitLoop src #(0 : Int) n f;
     src

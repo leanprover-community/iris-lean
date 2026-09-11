@@ -810,7 +810,7 @@ instance plainly_timeless (P : PROP) [Timeless P] : Timeless iprop(■ P) :=
 theorem plainly_internalEq {A} [OFE A] {a b : A} :
     iprop(■ (a ≡ b) ⊣⊢@{PROP} a ≡ b) := by
   refine ⟨plainly_elim, ?_⟩
-  have : OFE.NonExpansive (β := PROP) (λ x ↦ iprop(■ (a ≡ x))) :=  {
+  have : OFE.NonExpansive (β := PROP) (fun x ↦ iprop(■ (a ≡ x))) :=  {
     ne n x x' xx' := instPlainly_ne.ne ((internalEq.ne_r a).ne xx')
   }
   refine .trans ?_ (imp_elim <| internalEq.rewrite (a := a) (fun x ↦ iprop(■ a ≡ x)))

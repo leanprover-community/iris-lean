@@ -36,7 +36,7 @@ def atomic_wp (e : Expr) (E : CoPset) (α : TA.Arg → IProp GF)
     (β : TA.Arg → TB.Arg → IProp GF) (POST : TA.Arg → TB.Arg → TP.Arg → Option (IProp GF))
     (f : TA.Arg → TB.Arg → TP.Arg → Val) : IProp GF :=
   iprop(∀ Φ, atomic_update (⊤ \ E) ∅ α β
-    (λ.. x y, iprop(∀.. z, POST x y z -∗? Φ (f x y z))) -∗ WP e {{ Φ }})
+    (fun.. x y, iprop(∀.. z, POST x y z -∗? Φ (f x y z))) -∗ WP e {{ Φ }})
 
 end definition
 
@@ -148,7 +148,7 @@ theorem atomic_wp_seq :
 
 @[rocq_alias atomic_wp_inv]
 theorem atomic_wp_inv {N : Namespace} {I : IProp GF} (HN : (↑N : CoPset) ⊆ E) :
-    atomic_wp e (E \ ↑N) (λ.. x, iprop(▷ I ∗ α x)) (λ.. x y, iprop(▷ I ∗ β x y)) POST f ⊢
+    atomic_wp e (E \ ↑N) (fun.. x, iprop(▷ I ∗ α x)) (fun.. x y, iprop(▷ I ∗ β x y)) POST f ⊢
     inv N I -∗ atomic_wp e E α β POST f := by
   iunfold atomic_wp
   iintro Hwp #Hinv %Φ AU

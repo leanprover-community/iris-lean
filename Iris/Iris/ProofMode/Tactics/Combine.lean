@@ -244,7 +244,7 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
     " as " colGt patAs:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse patAs
 
-  ProofModeM.runTactic `icombine λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `icombine fun mvar { hyps, goal, .. } => do
     let hs ← iCombineParseSelPats hyps patSels
     let st ← iCombineCore hs hyps goal
 
@@ -264,7 +264,7 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
     " gives " colGt patGives:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse patGives
 
-  ProofModeM.runTactic `icombine λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `icombine fun mvar { hyps, goal, .. } => do
     let hs ← iCombineParseSelPats hyps patSels
     let {outGives, pfGives, ..} ← iCombineCore hs hyps goal
 
@@ -293,7 +293,7 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
   let pat1 ← liftMacroM <| iCasesPat.parse patAs
   let pat2 ← liftMacroM <| iCasesPat.parse patGives
 
-  ProofModeM.runTactic `icombine λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `icombine fun mvar { hyps, goal, .. } => do
     let hs ← iCombineParseSelPats hyps patSels
     let st@{outGives, pfGives, ..} ← iCombineCore hs hyps goal
 

@@ -575,7 +575,7 @@ theorem fupd_soundness_no_lc_unfold [InvGpreS GF] m E :
   imod wsat_alloc with ⟨%W, Hw, HE⟩
   icases (lc_alloc_no_lc m) with ⟨%Hc, _, Hlc⟩
   let Hi := @InvGS_gen.mk .hasNoLC GF (inferInstance) W Hc
-  iexists Hi, (λ E => iprop(wsat ∗ ownE E))
+  iexists Hi, (fun E => iprop(wsat ∗ ownE E))
   rw [diff_subset_decomp (s₁ := E) (s₂ := ⊤) (fun _ _ => CoPset.mem_full)]
   icases (ownE_op (disjoint_symm disjoint_diff_right)) $$ HE with ⟨_, HE⟩
   -- FIXME: iframe failed without simplication here
@@ -644,7 +644,7 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
     Lean.Elab.Term.synthesizeSyntheticMVarsNoPostponing
     instantiateMVars n
 
-  ProofModeM.runTactic `inext λ mvar { u, prop, bi, e, hyps, goal, .. } => do
+  ProofModeM.runTactic `inext fun mvar { u, prop, bi, e, hyps, goal, .. } => do
     -- Search for the later credit hypothesis from the context
     let ivar ← hyps.findWithInfo h
     let some ⟨name, _, p, ty⟩ := hyps.getDecl? ivar

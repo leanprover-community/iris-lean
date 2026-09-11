@@ -115,7 +115,7 @@ def iPureIntroCore {u} {prop : Q(Type u)} (_bi : Q(BI $prop))
   Lean context.
 -/
 elab "ipure " colGt hyp:ident : tactic => do
-  ProofModeM.runTactic `ipure λ mvar { bi, e, hyps, goal, .. } => do
+  ProofModeM.runTactic `ipure fun mvar { bi, e, hyps, goal, .. } => do
 
   let ivar ← hyps.findWithInfo hyp
   let ⟨_, hyps', _, out', p, _, pf⟩ := hyps.remove true ivar
@@ -129,7 +129,7 @@ elab "ipure " colGt hyp:ident : tactic => do
   regular Lean context and destructs it using the `rcases` destruction pattern.
 -/
 elab "ipure " colGt hyp:ident " with " pat:rcasesPat : tactic => do
-  ProofModeM.runTactic `ipure λ mvar { bi, e, hyps, goal, .. } => do
+  ProofModeM.runTactic `ipure fun mvar { bi, e, hyps, goal, .. } => do
 
   let ivar ← hyps.findWithInfo hyp
   let ⟨_, hyps', _, out', p, _, pf⟩ := hyps.remove true ivar
@@ -142,7 +142,7 @@ elab "ipure " colGt hyp:ident " with " pat:rcasesPat : tactic => do
   `iempintro` solves an `emp` goal, provided that the spatial context is affine.
 -/
 elab "iempintro" : tactic => do
-  ProofModeM.runTactic `iempintro λ mvar { prop, e, goal, .. } => do
+  ProofModeM.runTactic `iempintro fun mvar { prop, e, goal, .. } => do
 
   let .true ← isDefEq goal q(emp : $prop) | throwIPMError "goal is not `emp`"
   let .some _ ← trySynthInstanceQ q(Affine $e)
@@ -153,7 +153,7 @@ elab "iempintro" : tactic => do
   `ipureintro` turns a goal of the form `⌜φ⌝` into the Lean goal `φ`.
 -/
 elab "ipureintro" : tactic => do
-  ProofModeM.runTactic `ipureintro λ mvar { bi, e, goal, .. } => do
+  ProofModeM.runTactic `ipureintro fun mvar { bi, e, goal, .. } => do
     let ⟨pf, m⟩ ← iPureIntroCore bi e goal
     addMVarGoal m
     mvar.assign pf

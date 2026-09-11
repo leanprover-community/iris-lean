@@ -22,10 +22,10 @@ namespace SpinLock
 
 @[rocq_alias heap_lang.spin_lock.newlock]
 def newlock : Val := hl_val(
-  λ _, ref(#false))
+  fun _, ref(#false))
 @[rocq_alias heap_lang.try_acquire]
 def tryAcquire : Val := hl_val(
-  λ l, snd(cmpXchg(l, #false, #true)))
+  fun l, snd(cmpXchg(l, #false, #true)))
 @[rocq_alias heap_lang.spin_lock.acquire]
 def acquire : Val := hl_val(
   rec acquire l :=
@@ -34,7 +34,7 @@ def acquire : Val := hl_val(
       else acquire l)
 @[rocq_alias heap_lang.spin_lock.release]
 def release : Val := hl_val(
-  λ l, l ← #false)
+  fun l, l ← #false)
 
 @[rocq_alias heap_lang.spin_lockG]
 abbrev SpinLockG (GF : BundledGFunctors) := TokenG GF

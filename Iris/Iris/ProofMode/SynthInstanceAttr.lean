@@ -349,7 +349,7 @@ unsafe initialize registerBuiltinAttribute {
       let prio := if stx[1][1].isMissing then some default_prio else stx[1][1].isNatLit?
       let .some prio := prio | throwError "unknown priority: {stx[1][1]}"
 
-      let pats ← stx[2].getSepArgs.mapM λ stx => do
+      let pats ← stx[2].getSepArgs.mapM fun stx => do
         let stx ← `(iprop($(TSyntax.mk stx)))
         Term.elabTerm stx none
 

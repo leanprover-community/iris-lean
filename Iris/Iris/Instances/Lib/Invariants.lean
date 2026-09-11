@@ -97,7 +97,7 @@ set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_acc_inv]
 instance intoAcc_inv (N : Namespace) (P : IProp GF) E :
     IntoAcc (X := Unit) (inv N P) (↑N ⊆ E) iprop(True) (fupd E (E \ ↑N)) (fupd (E \ ↑N) E)
-      (λ _ => iprop(▷ P)) (λ _ => iprop(▷ P)) (λ _ => none) where
+      (fun _ => iprop(▷ P)) (fun _ => iprop(▷ P)) (fun _ => none) where
   into_acc := by
     dsimp only [inv, accessor, Option.getD]
     iintro %x #Hinv -

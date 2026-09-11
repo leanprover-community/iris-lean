@@ -19,9 +19,9 @@ open BI Iris ProgramLogic
 namespace LandinKnot
 
 def landinsKnot : Val := hl_val%
-  λ f,
-    let r := ref(λ x, x);
-    r ← (λ x, f (!r) x);
+  fun f,
+    let r := ref(fun x, x);
+    r ← (fun x, f (!r) x);
     !r
 
 def landinN : Namespace := ndot nroot "landin"

@@ -36,7 +36,7 @@ def eraseResolve (e0 e1 e2 : Exp) : Exp :=
 /-- The erased form of `NewProph` — a stuck-free expression that reduces to `#.poison`. -/
 @[rocq_alias heap_lang.erased_new_proph]
 def erasedNewProph : Exp :=
-  hl(v(λ _, #.poison) #())
+  hl(v(fun _, #.poison) #())
 
 mutual
   @[rocq_alias heap_lang.erase_expr]

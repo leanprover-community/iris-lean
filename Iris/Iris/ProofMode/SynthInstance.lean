@@ -53,8 +53,8 @@ namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
 def MessageData.withMCtx (mctx : MetavarContext) (d : MessageData) : MessageData :=
-  .lazy λ ctx => return MessageData.withContext {env := ctx.env, mctx := mctx, lctx := ctx.lctx,
-                                                 opts := ctx.opts} d
+  .lazy fun ctx => return MessageData.withContext {env := ctx.env, mctx := mctx, lctx := ctx.lctx,
+                                                   opts := ctx.opts} d
 
 /-- Needed to print the correct emoji with `withTraceNode` -/
 private local instance : ExceptToTraceResult ε (Option α × Bool) where
@@ -69,7 +69,7 @@ partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
     let mvarType  ← inferType mvar
     let mvarType  ← instantiateMVars mvarType
     let some mvarInputs ← checkIPMSynthParams mvarType |
-      return ← withTraceNode `Meta.synthInstance (λ _ => return m!"switch to normal synthInstance")
+      return ← withTraceNode `Meta.synthInstance (fun _ => return m!"switch to normal synthInstance")
         do
           let .some e ← trySynthInstance mvarType | return none
           mvar.mvarId!.assign e
@@ -79,7 +79,7 @@ partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
 
     let mctx0 ← getMCtx
     withTraceNode `Meta.synthInstance
-      (λ _ => return m!"IPM: new goal {MessageData.withMCtx mctx0 m!"{mvarType}"} => {mvarType}") do
+      (fun _ => return m!"IPM: new goal {MessageData.withMCtx mctx0 m!"{mvarType}"} => {mvarType}") do
 
     -- first tactics and then instances. We cannot interleave them
     -- since we don't know the priorities of the instances.
@@ -91,7 +91,7 @@ partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
     let mctx ← getMCtx
     for tac in tactics.reverse do
       let res ← withTraceNode `Meta.synthInstance
-        (λ _ => withMCtx mctx do return MessageData.withMCtx mctx m!"apply tactic {tac.name} to \
+        (fun _ => withMCtx mctx do return MessageData.withMCtx mctx m!"apply tactic {tac.name} to \
         {← instantiateMVars (← inferType mvar)}") do
         setMCtx mctx
         forallTelescopeReducing mvarType fun xs mvarTypeBody => do
@@ -127,12 +127,12 @@ partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
         -- we need to whnf the body to avoid index mismatches
         -- see https://github.com/leanprover-community/iris-lean/issues/456
         let instTypeArgs := (← whnf instType.getForallBody).getAppArgs
-        if mvarInputs.any (λ i => !instTypeArgs[i]!.isBVar) then
+        if mvarInputs.any (fun i => !instTypeArgs[i]!.isBVar) then
           trace[Meta.synthInstance] "skipping {inst.val} since it matches on an input mvar"
           continue
 
       let (res, match?) ← withTraceNode `Meta.synthInstance
-        (λ _ => withMCtx mctx do return MessageData.withMCtx mctx m!"apply {inst.val} to \
+        (fun _ => withMCtx mctx do return MessageData.withMCtx mctx m!"apply {inst.val} to \
         {← instantiateMVars (← inferType mvar)}") do
         setMCtx mctx
         let some (mctx', subgoals) ←
@@ -185,7 +185,7 @@ def synthInstanceCore? (type : Expr) (maxResultSize? : Option Nat := none) :
   let opts ← getOptions
   let maxResultSize := maxResultSize?.getD (synthInstance.maxSize.get opts)
   withTraceNode `Meta.synthInstance
-    (λ _ => return m!"IPM: {← instantiateMVars type}") do
+    (fun _ => return m!"IPM: {← instantiateMVars type}") do
   withConfig (fun config => { config with
     -- The following options match standard Lean TC synthesis, except that
     -- we set `isDefEqStuckEx` to false since we want to treat stuck defeq
@@ -212,7 +212,7 @@ protected def synthInstance? (type : Expr) (maxResultSize? : Option Nat := none)
     (decl := type.getAppFn.constName?.getD .anonymous) do
   -- we can be sure that e only depends on the mvars that actually appear in e
   (← synthInstanceCore? type maxResultSize?).mapM
-    λ e => do let e ← instantiateMVars e; return (e, ← e.getMVarDependencies)
+    fun e => do let e ← instantiateMVars e; return (e, ← e.getMVarDependencies)
 
 protected def trySynthInstance (type : Expr) (maxResultSize? : Option Nat := none)
 : MetaM (LOption (Expr × Std.HashSet MVarId)) := do
@@ -249,7 +249,7 @@ def ipm_synth_elab : Command.CommandElab
         | .none => logInfo "None"
         | .some (e, mvars) => do
             logInfo m!"solution: {← inferType e}, new goals: \
-            {← mvars.toList.mapM (λ m => do return m!"{Expr.mvar m}: {← m.getType}")}"
+            {← mvars.toList.mapM (fun m => do return m!"{Expr.mvar m}: {← m.getType}")}"
   | _ => throwUnsupportedSyntax
 
 initialize

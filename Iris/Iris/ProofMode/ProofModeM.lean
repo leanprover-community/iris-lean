@@ -110,7 +110,7 @@ def withoutFVars {α : Q(Sort u)} (fvarIds : Array FVarId) (k : ProofModeM Q($α
     -- see Lean.MVarId.tryClearMany'
     -- sort to ensure that the fvars can be given in an arbitrary order
     let fvarIds := (← getLCtx).sortFVarsByContextOrder fvarIds
-    let m ← fvarIds.foldrM (init := m) (λ h m => m.clear h)
+    let m ← fvarIds.foldrM (init := m) (fun h m => m.clear h)
     m.withContext k
   m.assign expr
   return expr
@@ -229,7 +229,7 @@ def ProofModeM.runTactic (tacName : Name) (x : MVarId → IrisGoal → ProofMode
   Term.synthesizeSyntheticMVarsNoPostponing (ignoreStuckTC := true)
 
   -- put the goals that depend on other goals last
-  let dependees ← goals.foldlM (λ m g => do
+  let dependees ← goals.foldlM (fun m g => do
     return m ∪ (← g.getMVarDependencies)) ∅
   let (dep, nonDep) := goals.partition dependees.contains
 

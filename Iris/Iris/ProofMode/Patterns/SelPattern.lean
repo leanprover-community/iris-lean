@@ -110,7 +110,7 @@ def SelPat.resolveOne (hyps : Hyps bi e) (wildcardOrder : HypsOrder) :
 def SelPat.resolve (hyps : Hyps bi e) (pats : List SelPat) (wildcardOrder : HypsOrder) :
     ProofModeM (List SelTarget) := do
   return (← pats.flatMapM (SelPat.resolveOne hyps wildcardOrder)).eraseDupsBy
-    (λ snd fst => snd.kind == fst.kind && fst.explicit && !snd.explicit)
+    (fun snd fst => snd.kind == fst.kind && fst.explicit && !snd.explicit)
 
 end
 

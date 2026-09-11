@@ -33,14 +33,14 @@ root = "CheckImports"
 
 [leanOptions]
 linter.missingDocs = false
-linter.extra.unreachableTactic = true
 linter.redundantVisibility = true
+linter.extra.unreachableTactic = true
 linter.extra.unnecessarySeqFocus = true
 weak.linter.iris.style.setOption = false
 weak.linter.iris.style.missingEnd = true
 weak.linter.iris.style.cdot = true
 weak.linter.iris.style.dollarSyntax = true
-weak.linter.iris.style.lambdaSyntax = false
+weak.linter.iris.style.lambdaSyntax = true
 weak.linter.iris.style.longLine = false
 weak.linter.iris.style.nameCheck = false
 weak.linter.iris.style.openClassical = true

@@ -31,7 +31,7 @@ open Lean Elab Tactic Meta Qq
 -/
 elab "iexists " xs:term,+ : tactic => do
   -- resolve existential quantifier with the given argument
-  ProofModeM.runTactic `iexists λ mvar { prop, e, hyps, goal, .. } => do
+  ProofModeM.runTactic `iexists fun mvar { prop, e, hyps, goal, .. } => do
 
     let mut new_goal_and_pf : ((g : Q($prop)) × Q($g ⊢ $goal)) := ⟨goal, q(.rfl)⟩
 

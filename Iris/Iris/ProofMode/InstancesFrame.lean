@@ -145,7 +145,7 @@ instance frame_persistently [BI PROP] (R P Q Q' : PROP)
 instance frame_forall {α} [BI PROP] p R (Φ Ψ : α → PROP)
     [h : ∀ a, FrameInstantiateExistDisabled p R (Φ a) (Ψ a)] :
     Frame p R iprop(∀ x, Φ x) iprop(∀ x, Ψ x) where
-  frame := forall_intro λ a =>
+  frame := forall_intro fun a =>
     (sep_mono_right (forall_elim a)).trans (h a).frame_instantiatiate_exist_disabled.frame
 
 @[ipm_backtrack, rocq_alias frame_impl_persistent]
@@ -430,7 +430,7 @@ theorem frameInstantiateExistsDisabled_of [BI PROP] {p} {R P Q : PROP} (h : Fram
     FrameInstantiateExistDisabled p R P Q := ⟨h⟩
 
 @[ipm_tactic_instance FrameInstantiateExistDisabled _ _ _ _]
-def frameNoInstantiateExist : SynthTactic := λ e => do
+def frameNoInstantiateExist : SynthTactic := fun e => do
   let_expr FrameInstantiateExistDisabled prop bi p R P G := e | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
@@ -462,7 +462,7 @@ def maybeFrame {prop : Q(Type u)} {bi : Q(BI $prop)} (p : Q(Bool))
     return some (q(maybeFrame_default $R $P))
 
 @[ipm_tactic_instance Frame _ _ iprop(_ ∗ _) _]
-def frameSep : SynthTactic := λ e => do
+def frameSep : SynthTactic := fun e => do
   let_expr Frame prop bi p R P _ := e | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
@@ -496,7 +496,7 @@ def frameSep : SynthTactic := λ e => do
     return .success q(frame_sep_right $p $R $P1 $P2 $Q2 $Q')
 
 @[ipm_tactic_instance Frame _ _ iprop(_ ∧ _) _]
-def frameAnd : SynthTactic := λ e => do
+def frameAnd : SynthTactic := fun e => do
   let_expr Frame prop bi p R P _ := e | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
@@ -524,7 +524,7 @@ def isBITrue (e : Expr) : Bool :=
   true
 
 @[ipm_tactic_instance Frame _ _ iprop(_ ∨ _) _]
-def frameOr : SynthTactic := λ e => do
+def frameOr : SynthTactic := fun e => do
   let_expr Frame prop bi p R P _ := e | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
@@ -557,7 +557,7 @@ def frameOr : SynthTactic := λ e => do
   return .continue
 
 @[ipm_tactic_instance Frame _ _ iprop(∃ _, _) _]
-def frameExist : SynthTactic := λ e => do
+def frameExist : SynthTactic := fun e => do
   let_expr Frame prop bi p R P _ := e | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
@@ -585,7 +585,7 @@ def frameExist : SynthTactic := λ e => do
       framing did not instantiate the existential quantifer or since the instiation of existentials
       was disabled. The `withConfig` is necessary to disable stuck defEq exceptions.
     -/
-    if ← withTransparency .none <| withConfig (λ _ => {}) (isDefEq (← instantiateMVars a) c) then
+    if ← withTransparency .none <| withConfig (fun _ => {}) (isDefEq (← instantiateMVars a) c) then
       return some (none, ← mkLambdaFVars #[c] (← instantiateMVars G),
                           ← mkLambdaFVars #[c] (← instantiateMVars inst))
     else

@@ -18,7 +18,7 @@ open Lean Elab Tactic Meta Qq
   goal by unifying the metavariable with the combined proposition.
 -/
 elab "iaccu" : tactic => do
-  ProofModeM.runTactic `iaccu λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `iaccu fun mvar { hyps, goal, .. } => do
     unless goal.isMVar do
       throwIPMError "{goal} is not a metavariable"
 

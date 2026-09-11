@@ -35,7 +35,7 @@ export EvContextOps (empty comp)
 /-- An evaluation context `Ectx` of expressions `Expr` is an "expression
 with a hole". This hole can be filled in using the `fill` operation.
 
-For example, for a lambda calculus `t ::= v | λ x . t | t t` with
+For example, for a lambda calculus `t ::= v | fun x . t | t t` with
 values `v`, the evaluation contexts could be defined inductively as
 `K ::= □ | v K | K t`.  -/
 class EvContext (Expr : Type e) (Ectx : outParam <| Type c)
@@ -61,12 +61,12 @@ attribute [local simp] EvContext.fill_inj Function.Injective.eq_iff
 The generic reduction relation is then derived from taking the closure
 of these base steps over any context.
 
-For example, for a lambda calculus `t ::= v | λ x . t | t t` with
+For example, for a lambda calculus `t ::= v | fun x . t | t t` with
 values `v` and evaluation contexts `K ::= □ | v K | K t`, the base step
-relation could be defined as `(λ x . t) v -->ᵇ t[v/x]`, where `t[v/x]`
+relation could be defined as `(fun x . t) v -->ᵇ t[v/x]`, where `t[v/x]`
 stands for "`t` but with all references to `x` replaced with `x`". In
 particular, this is the only reduction defined for `-->ᵇ`, so a term
-like `v₂ ((λ x . t) v)` does not reduce under `-->ᵇ`! -/
+like `v₂ ((fun x . t) v)` does not reduce under `-->ᵇ`! -/
 class BaseStep (Expr : Type _) (State : outParam (Type _)) (Obs : outParam (Type _)) where
   /-- The base reduction relation of the language. See `BaseStep`. -/
   baseStep : Expr × State → List Obs → Expr × State × List Expr → Prop

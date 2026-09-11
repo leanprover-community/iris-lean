@@ -21,11 +21,11 @@ namespace Arith
 
 @[rocq_alias heap_lang.minimum]
 def minimum : Val := hl_val%
-  λ m n, if m < n then m else n
+  fun m n, if m < n then m else n
 
 @[rocq_alias heap_lang.maximum]
 def maximum : Val := hl_val%
-  λ m n, if m < n then n else m
+  fun m n, if m < n then n else m
 
 section Spec
 

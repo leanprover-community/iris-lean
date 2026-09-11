@@ -579,14 +579,14 @@ theorem except0_sep {P Q : PROP} : ◇ (P ∗ Q) ⊣⊢ ◇ P ∗ ◇ Q := by
 @[rocq_alias bi.except_0_forall]
 theorem except0_forall {Φ : α → PROP} : ◇ (∀ a, Φ a) ⊣⊢ ∀ a, ◇ Φ a := by
   refine ⟨forall_intro (except0_mono <| forall_elim ·), ?_⟩
-  refine (and_intro ((forall_mono λ _ =>
+  refine (and_intro ((forall_mono fun _ =>
            (or_elim (later_mono false_elim) later_intro)).trans later_forall.2) .rfl).trans ?_
   refine and_mono_left later_false_em |>.trans ?_
   refine and_or_right.1.trans ?_
   refine or_elim ?_ ?_
   · exact and_elim_l.trans or_intro_l
   · refine or_intro_right_trans ?_
-    refine forall_intro λ a => ?_
+    refine forall_intro fun a => ?_
     refine imp_elim_swap <| forall_elim a |>.trans ?_
     refine or_elim (imp_intro <| imp_elim_right.trans <| forall_elim a) (imp_intro and_elim_l)
 
@@ -597,7 +597,7 @@ theorem except0_exists_mpr {Φ : α → PROP} : (∃ a, ◇ Φ a) ⊢ ◇ ∃ a,
 @[rocq_alias bi.except_0_exist]
 theorem except0_exists [Inhabited α] {Φ : α → PROP} :
     ◇ (∃ a, Φ a) ⊣⊢ ∃ a, ◇ Φ a :=
-  ⟨or_elim ((exists_intro (Ψ:=λ _ =>_) default).trans <| exists_mono fun _ => or_intro_l)
+  ⟨or_elim ((exists_intro (Ψ:=fun _ =>_) default).trans <| exists_mono fun _ => or_intro_l)
            (exists_mono fun _ => except0_intro),
    except0_exists_mpr⟩
 

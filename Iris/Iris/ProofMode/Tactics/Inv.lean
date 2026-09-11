@@ -139,7 +139,7 @@ elab_rules : tactic
     let casesPat ← liftMacroM <| iCasesPat.parse casesPat
     let closePat ← liftMacroM <| closePat.mapM iCasesPat.parse
 
-    ProofModeM.runTactic `iinv λ mvar { hyps, goal, .. } => do
+    ProofModeM.runTactic `iinv fun mvar { hyps, goal, .. } => do
       -- Find the invariant hypothesis
       let ivar ← do match ← try? <| hyps.findWithInfo ⟨t⟩ with
       -- Hypothesis supplied by the user: return the `IVarId` value of the invariant directly

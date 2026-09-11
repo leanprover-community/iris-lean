@@ -16,7 +16,7 @@ public section
 variable [HeapLangGS hlc GF]
 
 @[rocq_alias heap_lang.nondet_bool]
-def nondetBool := hl_val% λ _,
+def nondetBool := hl_val% fun _,
     let l := ref(#true);
     fork(
       l ← #false

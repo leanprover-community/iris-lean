@@ -13,12 +13,12 @@ namespace Iris.HeapLang
 -- type Coin := Ref (Option Bool) × ProphId
 @[rocq_alias heap_lang.lazy_coin.new_coin]
 def newCoin := hl_val%
-  λ _, (ref(none()), newProph())
+  fun _, (ref(none()), newProph())
 
 -- readCoin(cp : Coin) : Bool
 @[rocq_alias heap_lang.lazy_coin.read_coin]
 def readCoin := hl_val%
-  λ cp,
+  fun cp,
     let c := fst(cp);
     let p := snd(cp);
     match !c with

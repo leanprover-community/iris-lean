@@ -413,7 +413,7 @@ theorem wp_resolve_proph {p : ProphId} {w : Val} {pvs : List (Val × Val)} :
       {{ pvs', RET hl_val(#()); ⌜pvs = (hl_val(#()), w) :: pvs'⌝ ∗ proph p pvs' }} := by
   iintro %Φ proph K
   let Ki := ECtxItem.resolveL (ECtxItem.appL hl_val(#())) hl_val(#p) hl_val(&w)
-  have shape : hl(resolveProph(#p, &w)) = fill [Ki] hl(λ _, #()) := by
+  have shape : hl(resolveProph(#p, &w)) = fill [Ki] hl(fun _, #()) := by
     simp [fillItem, Ki, ECtxItem.fill]
   rw [shape]
   iapply wp_bind
@@ -421,7 +421,7 @@ theorem wp_resolve_proph {p : ProphId} {w : Val} {pvs : List (Val × Val)} :
   simp only [Nat.repeat, EctxItemLanguage.fill_cons, fillItem, ECtxItem.fill,
     EctxItemLanguage.fill_nil, wp_value_iff, Ki]
   iintro !> !> !> _ !>
-  have hatom : Language.Atomic Language.Atomicity.StronglyAtomic hl((v(λ _, #())) #()) := by
+  have hatom : Language.Atomic Language.Atomicity.StronglyAtomic hl((v(fun _, #())) #()) := by
     constructor
     intro σ _ _ _ _ h
     dsimp only []

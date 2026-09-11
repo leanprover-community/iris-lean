@@ -256,7 +256,7 @@ theorem mem_full {p : Pos} : p ∈ full := by
   simp only [Membership.mem, full, CoPsetRaw.ElemOf]
 
 @[simp]
-theorem subseteq_top {X : CoPset} : X ⊆ ⊤ := λ _ _ => mem_full
+theorem subseteq_top {X : CoPset} : X ⊆ ⊤ := fun _ _ => mem_full
 
 theorem top_ne_empty : (⊤ : CoPset) ≠ ∅ := by
   intro h
@@ -376,7 +376,7 @@ theorem not_in_union {p} {X1 X2 : CoPset} : ¬ p ∈ X1 ∪ X2 <-> ¬ p ∈ X1 �
   · exact ⟨(Hu <| in_union.mpr <| .inl ·), (Hu <| in_union.mpr <| .inr ·)⟩
   · exact in_union.mp Hu |>.elim H1 H2
 
-@[refl] theorem subseteq_refl {X : CoPset} : X ⊆ X := λ _ => id
+@[refl] theorem subseteq_refl {X : CoPset} : X ⊆ X := fun _ => id
 
 theorem subseteq_trans {X Y Z : CoPset} (Hxy : X ⊆ Y) (Hyz : Y ⊆ Z) : X ⊆ Z :=
   fun p => (Hyz p) ∘ (Hxy p)
@@ -402,7 +402,7 @@ def CoPsetRaw.pickRaw : CoPsetRaw → Option Pos
   | CoPsetRaw.node false l r =>
     match pickRaw l with
     | some i => some (i~0)
-    | none => Option.map (λ i => i~1) (pickRaw r)
+    | none => Option.map (fun i => i~1) (pickRaw r)
 
 def pick (X : CoPset) : Pos :=
   (CoPsetRaw.pickRaw X.tree).getD Pos.P1

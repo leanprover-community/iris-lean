@@ -26,7 +26,7 @@ theorem wand_revert [BI PROP] {Δ Δ' P Q : PROP}
 @[rocq_alias tac_forall_revert]
 theorem forall_revert {α} [BI PROP] {Δ : PROP} {Ψ : α → PROP}
     (h : Δ ⊢ BI.forall Ψ) : ∀ x, Δ ⊢ Ψ x :=
-  λ x => h.trans (forall_elim x)
+  fun x => h.trans (forall_elim x)
 
 @[rocq_alias tac_pure_revert]
 theorem pure_revert [BI PROP] {Δ P Q : PROP} {φ : Prop}

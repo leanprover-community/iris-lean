@@ -315,7 +315,7 @@ set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_acc_cinv]
 instance intoAcc_cinv (E : CoPset) (N : Namespace) (γ : GName) (P : IProp GF) (p : Qp) :
     IntoAcc (X := Unit) (cinv N γ P) (↑N ⊆ E) (own γ p) (fupd E (E \ ↑N)) (fupd (E \ ↑N) E)
-      (fun _ => iprop(▷ P ∗ own γ p)) (fun _ => iprop(▷ P)) (λ _ => none) where
+      (fun _ => iprop(▷ P ∗ own γ p)) (fun _ => iprop(▷ P)) (fun _ => none) where
   into_acc := by
     dsimp only [accessor, Option.getD]
     iintro %x #Hinv Hown

@@ -207,7 +207,7 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
   The tactic succeeds only when the selector term `sel` matches the modality.
 -/
 elab "imodintro " colGt sel:term : tactic => do
-  ProofModeM.runTactic `imodintro λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `imodintro fun mvar { hyps, goal, .. } => do
     let pf ← iModIntroCore hyps goal sel
 
     mvar.assign pf

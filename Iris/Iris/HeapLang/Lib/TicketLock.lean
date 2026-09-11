@@ -33,7 +33,7 @@ def waitLoop : Val := hl_val%
 
 @[rocq_alias heap_lang.ticket_lock.newlock]
 def newlock : Val := hl_val%
-  λ _, (ref(#0), ref(#0))
+  fun _, (ref(#0), ref(#0))
 
 @[rocq_alias heap_lang.ticket_lock.acquire]
 def acquire : Val := hl_val%
@@ -45,7 +45,7 @@ def acquire : Val := hl_val%
 
 @[rocq_alias heap_lang.ticket_lock.release]
 def release : Val := hl_val%
-  λ lk, fst(lk) ← !fst(lk) + #1
+  fun lk, fst(lk) ← !fst(lk) + #1
 
 /-- Tickets are natural numbers, and the lock tracks a finite set of them. -/
 abbrev Tickets := Std.ExtTreeSet Nat compare
