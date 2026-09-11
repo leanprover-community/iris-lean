@@ -1391,7 +1391,7 @@ instance cmraOption : CMRA (Option α) where
   comm {x y} := by
     rcases x, y with ⟨_|_, _|_⟩ <;> first | rfl | exact congrArg some comm
   pcore_op_left {x cx} := by
-    rcases x, cx with ⟨_|_, _|_⟩ <;> simp_all <;> intro h <;> exact pcore_op_left h
+    rcases x, cx with ⟨_|_, _|_⟩ <;> simp_all; intro h; exact pcore_op_left h
   pcore_idem := by
     rintro (_|x) <;> simp
     rcases H : pcore x with _|y <;> simp

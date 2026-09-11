@@ -267,7 +267,7 @@ theorem in_singleton {p q : Pos} : p ∈ ({q} : CoPset) ↔ p = q := by
   refine ⟨fun h => ?_, fun h => ?_⟩
   · simp only [Singleton.singleton, Membership.mem] at h
     induction q generalizing p with
-    | xH => cases p <;> simp at h <;> rfl
+    | xH => cases p <;> simp at h; rfl
     | xO q' IH =>
       cases p with
       | xH => simp [elem_of_node] at h

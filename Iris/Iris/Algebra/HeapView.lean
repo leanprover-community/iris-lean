@@ -63,7 +63,7 @@ instance : IsViewRel (HeapR K V H) where
     | some ⟨dq', v'⟩ =>
       obtain ⟨v, dq, Hm1, ⟨Hvval, Hdqval⟩, Hvincl⟩ := Hrel k ⟨dq', v'⟩ h
       obtain ⟨v', Hm2, Hv⟩ : ∃ y : V, get? m2 k = some y ∧ v ≡{n2}≡ y := by
-        have Hmm := Hm1 ▸ Hm k <;> revert Hmm
+        have Hmm := Hm1 ▸ Hm k; revert Hmm
         cases get? m2 k <;> simp
       exists v', dq
       refine ⟨Hm2, ⟨Hvval, validN_ne Hv (validN_of_le Hn Hdqval)⟩, ?_⟩

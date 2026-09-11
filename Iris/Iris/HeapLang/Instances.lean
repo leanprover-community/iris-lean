@@ -115,7 +115,7 @@ instance instPureExecIfTrue: PureExec True 1 hl(if #true then &e1 else &e2) e1 w
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
-    · cases hs <;> simp
+    · cases hs; simp
     · solve_subredex_values
 
 @[rocq_alias heap_lang.pure_if_false]
@@ -123,7 +123,7 @@ instance instPureExecIfFalse : PureExec True 1 hl(if #false then &e1 else &e2) e
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
-    · cases hs <;> simp
+    · cases hs; simp
     · solve_subredex_values
 
 @[rocq_alias heap_lang.pure_case_inl]
@@ -132,7 +132,7 @@ instance instPureExecCaseInjl {v e1 e2} :
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
-    · cases hs <;> simp
+    · cases hs; simp
     · solve_subredex_values
 
 @[rocq_alias heap_lang.pure_case_inr]
@@ -141,7 +141,7 @@ instance instPureExecCaseInjr {v e1 e2} :
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
-    · cases hs <;> simp
+    · cases hs; simp
     · solve_subredex_values
 
 @[rocq_alias heap_lang.pure_injlc]
@@ -149,7 +149,7 @@ instance instPureExecInjl {v : Val} : PureExec True 1 hl(injl(&v)) hl(v(injl(&v)
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
-    · cases hs <;> simp
+    · cases hs; simp
     · solve_subredex_values
 
 @[rocq_alias heap_lang.pure_injrc]
@@ -157,7 +157,7 @@ instance instPureExecInjr {v : Val} : PureExec True 1 hl(injr(&v)) hl(v(injr(&v)
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
-    · cases hs <;> simp
+    · cases hs; simp
     · solve_subredex_values
 
 @[rocq_alias heap_lang.pure_beta]
@@ -165,8 +165,8 @@ instance instPureExecBeta {f x : Binder} {e : Exp} {v : Val} :
     PureExec True 1 hl(v(rec &f &x := &e) &v) ((e.subst f (.rec_ f x e)).subst x v) where
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
-    · constructor <;> simp
-    · cases hs <;> simp [*]
+    · constructor; simp
+    · cases hs; simp [*]
     · solve_subredex_values
 
 @[rocq_alias heap_lang.pure_recc]
@@ -175,7 +175,7 @@ instance instPureExecRec {f x e} :
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
-    · cases hs <;> simp [*]
+    · cases hs; simp [*]
     · solve_subredex_values
 
 @[rocq_alias heap_lang.pure_fst]
@@ -183,7 +183,7 @@ instance instPureExecFst {v1 v2 : Val} : PureExec True 1 hl(fst(v((&v1, &v2)))) 
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
-    · cases hs <;> simp [*]
+    · cases hs; simp [*]
     · solve_subredex_values
 
 @[rocq_alias heap_lang.pure_snd]
@@ -191,7 +191,7 @@ instance instPureExecSnd {v1 v2 : Val} : PureExec True 1 hl(snd(v((&v1, &v2)))) 
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
-    · cases hs <;> simp [*]
+    · cases hs; simp [*]
     · solve_subredex_values
 
 @[rocq_alias heap_lang.pure_pairc]
@@ -199,7 +199,7 @@ instance instPureExecPair {v1 v2 : Val} : PureExec True 1 hl((&v1, &v2)) hl(v((&
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
-    · cases hs <;> simp [*]
+    · cases hs; simp [*]
     · solve_subredex_values
 
 set_option synthInstance.checkSynthOrder false in
@@ -208,8 +208,8 @@ instance instPureExecUnOp {op : UnOp} {v v' : Val} :
     PureExec (op.eval v = some v') 1 (Exp.unop op (.ofVal v)) (.ofVal v') where
   pureExec h := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
-    · constructor <;> simp [*]
-    · cases hs <;> simp_all [UnOp.eval]
+    · constructor; simp [*]
+    · cases hs; simp_all [UnOp.eval]
     · solve_subredex_values
 
 set_option synthInstance.checkSynthOrder false in
@@ -219,8 +219,8 @@ instance instPureExecBinOp {op : BinOp} {v1 v2 v' : Val} :
       (Exp.binop op (.ofVal v1) (.ofVal v2)) (.ofVal v') where
   pureExec h := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
-    · constructor <;> simp [*]
-    · cases hs <;> simp_all [BinOp.eval]
+    · constructor; simp [*]
+    · cases hs; simp_all [BinOp.eval]
     · solve_subredex_values
 
 -- higher priority than the generic binop instance
@@ -230,8 +230,8 @@ instance (priority := default + 10) instPureExecEqOp {v1 v2 : Val} :
       (Exp.binop .eq (.ofVal v1) (.ofVal v2)) (.ofVal (.lit (.bool (v1 == v2)))) where
   pureExec h := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
-    · constructor <;> simp [BinOp.eval, *]
-    · cases hs <;> simp_all [BinOp.eval]
+    · constructor; simp [BinOp.eval, *]
+    · cases hs; simp_all [BinOp.eval]
     · solve_subredex_values
 
 @[rocq_alias heap_lang.load_atomic]
@@ -300,7 +300,7 @@ theorem base_step_to_val_always_to_val
     (h₁ : BaseStep e₁ σ₁ₐ κsₐ (Exp.val v₂ₐ) σ₂ₐ efsₐ)
     (h₂ : BaseStep e₁ σ₁ᵦ κsᵦ e₂ᵦ σ₂ᵦ efsᵦ) :
     (toVal e₂ᵦ).isSome := by
-  cases h₁ <;> cases h₂ <;> simp_all <;> grind
+  cases h₁ <;> cases h₂ <;> simp_all; grind
 
 theorem prim_step_to_val_always_to_val
     {e₁ : Exp} {σ₁ₐ : State} {κsₐ : List Observation} {v₂ₐ : Val} {σ₂ₐ : State}

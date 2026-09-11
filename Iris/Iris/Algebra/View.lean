@@ -917,7 +917,7 @@ def mapC [OFE A] [UCMRA B] [OFE A'] [UCMRA B']
     refine ⟨?_, ?_⟩
     · rcases x.auth with _|⟨fr, a⟩ <;> simp [Prod.pcore]
       rcases (CMRA.pcore fr) <;> simp
-      rcases h : (CMRA.pcore a) <;> cases h <;> simp [CMRA.pcore]
+      rcases h : (CMRA.pcore a) <;> cases h; simp [CMRA.pcore]
     · have _ := CMRA.Hom.pcore g x.frag
       rcases _ : (CMRA.pcore x.frag) <;>
       rcases _ : (CMRA.pcore (g.f x.frag)) <;> simp_all

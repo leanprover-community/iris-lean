@@ -35,6 +35,7 @@ root = "CheckImports"
 linter.missingDocs = false
 linter.extra.unreachableTactic = true
 linter.redundantVisibility = true
+linter.extra.unnecessarySeqFocus = true
 weak.linter.iris.style.setOption = false
 weak.linter.iris.style.missingEnd = false
 weak.linter.iris.style.cdot = true

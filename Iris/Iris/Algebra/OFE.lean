@@ -2114,7 +2114,7 @@ instance isCOFE_later [OFE A] [IsCOFE A] : IsCOFE (Later A) where
 @[rocq_alias laterO_map]
 def laterMap [OFE A] [OFE B] (f : A -n> B)  : Later A -n> Later B := by
   refine ⟨fun x => Later.next (f x.car), ⟨?_⟩⟩
-  rintro _ ⟨⟩ ⟨⟩ H <;> simp_all only [Dist, DistLater]
+  rintro _ ⟨⟩ ⟨⟩ H; simp_all only [Dist, DistLater]
   intros m Hlt; exact f.ne.ne (H m Hlt)
 #rocq_ignore later_map "Underlying map of laterMap"
 

@@ -164,8 +164,8 @@ def BinOp.eval (op : BinOp) (v1 v2 : Val) : Option Val :=
 
 theorem BinOp.eval_lit_int (op : BinOp) (n1 n2 : Int) :
     BinOp.eval op (.lit (.int n1)) (.lit (.int n2)) = (Val.lit <$> op.evalInt n1 n2) := by
-  cases op <;> simp [BinOp.eval, BinOp.evalInt, Val.compareSafe, BaseLit.isUnboxed, Val.isUnboxed]
-    <;> by_cases h : n1 = n2 <;> simp [h]
+  cases op <;> simp [BinOp.eval, BinOp.evalInt, Val.compareSafe, BaseLit.isUnboxed, Val.isUnboxed];
+    by_cases h : n1 = n2 <;> simp [h]
 
 theorem BinOp.eval_lit_bool (op : BinOp) (b1 b2 : Bool) :
     BinOp.eval op (.lit (.bool b1)) (.lit (.bool b2)) = (Val.lit <$> op.evalBool b1 b2) := by

@@ -383,11 +383,11 @@ theorem dup_suffix_eq {p q s1 s2} :
   induction p generalizing q with
   | xI p IH =>
     intros Heq
-    cases q <;> simp_all [HAppend.hAppend, app, dup] <;> rename Pos => q
+    cases q <;> simp_all [HAppend.hAppend, app, dup]; rename Pos => q
     rewrite [IH] <;> rfl
   | xO p IH =>
     intros Heq
-    cases q <;> simp_all [HAppend.hAppend, app, dup] <;> rename Pos => q
+    cases q <;> simp_all [HAppend.hAppend, app, dup]; rename Pos => q
     rewrite [IH] <;> rfl
   | xH => cases q <;> simp [HAppend.hAppend, app, dup]
 

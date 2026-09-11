@@ -143,7 +143,7 @@ theorem toVal_erase_none {e : Exp} (h : toVal e = none) : toVal (eraseExpr e) = 
 
 private theorem eraseExpr_eq_val {e : Exp} {v : Val}
     (h : eraseExpr e = hl(v(&v))) : ∃ w, e = hl(v(&w)) ∧ eraseVal w = v := by
-  cases e <;> erase_simp at h <;> cases h
+  cases e <;> erase_simp at h; cases h
   exact ⟨_, rfl, rfl⟩
 
 @[rocq_alias heap_lang.erase_to_val]
@@ -252,7 +252,7 @@ private theorem BinOp.eq_eval_erase {v1 v2 v' : Val} :
 /-- An erased literal came from some literal, whose erasure it is. -/
 private theorem eraseVal_eq_lit {v : Val} {l : BaseLit}
     (h : eraseVal v = hl_val(#l)) : ∃ l', v = hl_val(#l') ∧ eraseBaseLit l' = l := by
-  cases v <;> erase_simp at h <;> cases h
+  cases v <;> erase_simp at h; cases h
   exact ⟨_, rfl, rfl⟩
 
 /-- Erasure rewrites only prophecy literals, and only to `poison`, so any other
@@ -807,7 +807,7 @@ theorem baseStep_erased_primStep {e1 : Exp} {σ1 : State} {κ : List Observation
           | rfl
           | exact UnOp.eval_erase.mpr ⟨_, ‹_›, rfl⟩
           | exact BinOp.eval_erase.mpr ⟨_, ‹_›, rfl⟩
-          | (simp [*] <;> rfl))⟩
+          | (simp [*]; rfl))⟩
 
 #rocq_ignore heap_lang.base_step_erased_prim_step_un_op "Proved in place in the catch-all arm of `baseStep_erased_primStep`"
 #rocq_ignore heap_lang.base_step_erased_prim_step_bin_op "Proved in place in the catch-all arm of `baseStep_erased_primStep`"
