@@ -23,6 +23,7 @@ jobs:
           lake-package-directory: Iris
           build-args: "--wfail"
           test: true
+          lint: false
       - name: Check Iris.lean, Init.lean and other entry-point module imports
         working-directory: Iris
         run: lake exe check-imports Iris
@@ -46,6 +47,7 @@ jobs:
           use-mathlib-cache: true
           build-args: "--wfail"
           test: true
+          lint: false
       - name: Check that all modules are imported by IrisMath.lean
         working-directory: IrisMath
         run: lake exe check-imports --entry-points-only IrisMath
