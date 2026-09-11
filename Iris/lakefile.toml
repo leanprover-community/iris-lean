@@ -5,12 +5,12 @@ testDriver = "IrisTest"
 [[require]]
 name = "Qq"
 scope = "leanprover-community"
-rev = "v4.32.0"
+rev = "v4.33.0"
 
 [[require]]
 name = "batteries"
 scope = "leanprover-community"
-rev = "v4.32.0"
+rev = "v4.33.0"
 
 [[lean_lib]]
 name = "Iris"
