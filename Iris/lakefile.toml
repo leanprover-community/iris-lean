@@ -1,7 +1,7 @@
 name = "iris"
 defaultTargets = ["Iris"]
 testDriver = "IrisTest"
-lintDriver = "batteries/runLinter"
+builtinLint = true
 
 [[require]]
 name = "Qq"
