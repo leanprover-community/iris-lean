@@ -174,7 +174,7 @@ instance instPureExecRec {f x e} :
     PureExec True 1 hl(rec &f &x := &e) hl(v(rec &f &x := &e)) where
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
-    · constructor <;> simp
+    · constructor
     · cases hs <;> simp [*]
     · solve_subredex_values
 
@@ -182,7 +182,7 @@ instance instPureExecRec {f x e} :
 instance instPureExecFst {v1 v2 : Val} : PureExec True 1 hl(fst(v((&v1, &v2)))) v1 where
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
-    · constructor <;> simp
+    · constructor
     · cases hs <;> simp [*]
     · solve_subredex_values
 
@@ -190,7 +190,7 @@ instance instPureExecFst {v1 v2 : Val} : PureExec True 1 hl(fst(v((&v1, &v2)))) 
 instance instPureExecSnd {v1 v2 : Val} : PureExec True 1 hl(snd(v((&v1, &v2)))) v2 where
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
-    · constructor <;> simp
+    · constructor
     · cases hs <;> simp [*]
     · solve_subredex_values
 
@@ -198,7 +198,7 @@ instance instPureExecSnd {v1 v2 : Val} : PureExec True 1 hl(snd(v((&v1, &v2)))) 
 instance instPureExecPair {v1 v2 : Val} : PureExec True 1 hl((&v1, &v2)) hl(v((&v1, &v2)))  where
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
-    · constructor <;> simp
+    · constructor
     · cases hs <;> simp [*]
     · solve_subredex_values
 

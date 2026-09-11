@@ -192,7 +192,6 @@ theorem Exp.subst_subst {b : Binder} {v v' : Val} {e : Exp} :
 theorem Exp.substStr_substStr_ne {x y : String} {v v' : Val} {e : Exp} (h : x ≠ y) :
     (e.substStr y v').substStr x v = (e.substStr x v).substStr y v' := by
   induction e using substStr.induct (x := x) <;> (try · grind [substStr])
-  all_goals split <;> simp_all
 
 @[rocq_alias heap_lang.subst_subst_ne']
 theorem Exp.subst_subst_ne {b₁ b₂ : Binder} {v v' : Val} {e : Exp} (h : b₁ ≠ b₂) :

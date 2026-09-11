@@ -54,8 +54,7 @@ theorem intuitionistic_laterable [BI PROP] (P : PROP)
 
 @[rocq_alias persistent_laterable]
 instance persistent_laterable [BI PROP] [BIAffine PROP] (P : PROP) [Persistent P] :
-    Laterable P := by
-  apply intuitionistic_laterable <;> infer_instance
+    Laterable P := intuitionistic_laterable _
 
 @[rocq_alias sep_laterable]
 instance sep_laterable [BI PROP] (P Q : PROP) [instP : Laterable P] [instQ : Laterable Q] :

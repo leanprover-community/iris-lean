@@ -41,10 +41,10 @@ theorem dist_eqv [OFE α] [OFE β] {n} : Equivalence (Csum.Dist (α := α) (β :
     | inl => exact Dist.rfl
     | inr => exact Dist.rfl
     | invalid => trivial
-  symm {x y} h := by cases x <;> cases y <;> first | trivial | exact h.symm | exact h
+  symm {x y} h := by cases x <;> cases y <;> first | trivial | exact h.symm
   trans {x y z} h₁ h₂ := by
     cases x <;> cases y <;> cases z <;>
-      first | trivial | exact h₁.trans h₂ | exact h₂.elim | exact h₁.elim
+      first | trivial | exact h₁.trans h₂
 
 @[rocq_alias csumO]
 instance [OFE α] [OFE β] : OFE (Csum α β) where

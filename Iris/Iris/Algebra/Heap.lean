@@ -361,8 +361,7 @@ theorem lookup_inc {m1 m2 : M V} :
     refine OFE.eq_dist_2 fun n i => ((Hf i).trans ?_).dist
     specialize Hf i; revert Hf
     simp [CMRA.op, optionOp, get?_merge, get?_bindAlter]
-    cases get? m2 i <;> cases get? m1 i <;> cases f i <;> simp <;>
-      exact fun h => (OFE.not_none_eqv_some h).elim
+    cases get? m2 i <;> cases get? m1 i <;> cases f i <;> simp
 
 open OFE in
 @[rocq_alias gmap_cmra_mixin, rocq_alias gmapR]
@@ -830,8 +829,7 @@ theorem inc_dom_inc {m1 m2 : M V} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (do
   unfold dom
   rcases lookup_inc.mp Hinc i with ⟨z, Hz⟩
   revert Hz
-  cases get? m1 i <;> cases get? m2 i <;> cases z <;> simp [CMRA.op, optionOp] <;>
-    exact fun h => (OFE.not_none_eqv_some h).elim
+  cases get? m1 i <;> cases get? m2 i <;> cases z <;> simp [CMRA.op, optionOp]
 
 @[rocq_alias gmap_fmap_mono]
 theorem map_mono [CMRA V'] (f : V → V') (hf : ∀ x y : V, x ≼ y → f x ≼ f y) {m1 m2 : M V}

@@ -205,7 +205,7 @@ theorem app_1_left_id (p : Pos) : app P1 p = p := by
 
 @[simp]
 theorem app_1_right_id (p : Pos) : app p P1 = p := by
-  induction p <;> simp [app] <;> assumption
+  induction p <;> simp [app]
 
 instance app_1_l : @Std.LawfulLeftIdentity Pos Pos (· ++ ·) P1 where
   left_id p := app_1_left_id p

@@ -186,7 +186,7 @@ protected def Tower.embed (k) : A F k -n> Tower F := by
           down F i (eqToHom e₁ (upN F a n)) = downN F b (eqToHom e₂ n) := by
         cases Nat.add_left_cancel (k := 0) e₁; cases Nat.add_left_cancel e₂
         rfl
-      apply this <;> simp [Nat.add_sub_cancel_left]
+      apply this
   · rw [dif_neg (mt Nat.le_succ_of_le h₁)]
     suffices ∀ k a b (e₁ : k = i+1+a) (e₂ : k = i+b) (n : A F k),
         down F i (downN F a (eqToHom e₁ n)) = downN F b (eqToHom e₂ n) from this _ _ _ _ _ _

@@ -236,10 +236,7 @@ theorem eraseVal_inj_iff {v1 v2 : Val} (h : v1.compareSafe v2 = true) :
 theorem UnOp.eval_erase {op : UnOp} {v v' : Val} :
     op.eval (eraseVal v) = some v' ↔
       ∃ w, op.eval v = some w ∧ eraseVal w = v' := by
-  cases op <;> cases v <;>
-    first
-      | (rename_i l; cases l <;> simp [UnOp.eval, eraseVal, eraseBaseLit])
-      | simp [UnOp.eval, eraseVal, eraseBaseLit]
+  cases op <;> cases v <;> (rename_i l; cases l <;> simp [UnOp.eval, eraseVal, eraseBaseLit])
 
 /-- Helper: `.eq` is the only `BinOp` that depends on comparison safety. -/
 private theorem BinOp.eq_eval_erase {v1 v2 v' : Val} :
@@ -454,7 +451,7 @@ theorem erased_baseStep_baseStep {e1 : Exp} {σ1 : State} {κ : List Observation
       | exact erased_baseStep_baseStep_FAA _ _ _ _ ‹_›
       | exact erased_baseStep_baseStep_AllocN _ _ _ _ ‹_› ‹_›
       | exact erased_baseStep_baseStep_CmpXchg _ _ _ _ _ _ ‹_› ‹_› ‹_›
-      | exact ⟨_, _, _, _, by constructor, by first | rfl | erase_simp, rfl, rfl⟩
+      | exact ⟨_, _, _, _, by constructor, rfl, rfl, rfl⟩
 
 /-- A primitive step in the original program can be matched (up to a number of deterministic pure
 steps in the erased program) by a step in the erased program. -/
