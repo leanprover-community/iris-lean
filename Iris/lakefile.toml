@@ -41,7 +41,7 @@ linter.redundantVisibility = true
 linter.extra.unnecessarySeqFocus = true
 linter.extra.unusedDecidableInType = false
 # Implemented in Iris.Std.Linter.DocPrime
-weak.linter.docPrime = false
+weak.linter.iris.docPrime = false
 # Implemented in Iris.Std.Linter.Style
 weak.linter.iris.style.setOption = false
 weak.linter.iris.style.missingEnd = true

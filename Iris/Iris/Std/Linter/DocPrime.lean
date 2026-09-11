@@ -33,16 +33,16 @@ name ends with a `'`.
 The file `scripts/nolints_prime_decls.txt` contains a list of temporary exceptions to this linter.
 This list should not be appended to, and become emptied over time.
 -/
-public register_option linter.docPrime : Bool := {
+public register_option linter.iris.docPrime : Bool := {
   defValue := false
   descr := "enable the docPrime linter"
 }
 
 namespace DocPrime
 
-@[inherit_doc Iris.Std.Linter.linter.docPrime]
+@[inherit_doc Iris.Std.Linter.linter.iris.docPrime]
 def docPrimeLinter : Linter where run := withSetOptionIn fun stx ↦ do
-  unless getLinterValue linter.docPrime (← getLinterOptions) do
+  unless getLinterValue linter.iris.docPrime (← getLinterOptions) do
     return
   if (← get).messages.hasErrors then
     return
@@ -74,9 +74,9 @@ def docPrimeLinter : Linter where run := withSetOptionIn fun stx ↦ do
       if (← IO.FS.lines "scripts/nolints_prime_decls.txt").contains declName.toString then
         return
       else
-        Linter.logLint linter.docPrime declId msg
+        Linter.logLint linter.iris.docPrime declId msg
     else
-      Linter.logLint linter.docPrime declId msg
+      Linter.logLint linter.iris.docPrime declId msg
 
 initialize addLinter docPrimeLinter
 

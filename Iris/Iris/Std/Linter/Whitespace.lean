@@ -20,7 +20,7 @@ meta section
 
 open Lean Elab Command Linter
 
-namespace Mathlib.Linter
+namespace Iris.Std.Linter
 
 /--
 The `whitespace` linter emits a warning if
@@ -307,7 +307,7 @@ public def mkWindow (orig : String) (start ctx : Nat) : String :=
   let tail := middle.drop ctx |>.takeWhile (!·.isWhitespace)
   s!"{headCtx}{middle.take ctx}{tail}"
 
-@[inherit_doc Mathlib.Linter.linter.iris.style.whitespace]
+@[inherit_doc Iris.Std.Linter.linter.iris.style.whitespace]
 def whitespaceLinter : Linter where run := withSetOptionIn fun stx ↦ do
   unless Linter.getLinterValue linter.iris.style.whitespace (← getLinterOptions) do
     return
@@ -374,4 +374,4 @@ initialize addLinter whitespaceLinter
 
 end Style.Whitespace
 
-end Mathlib.Linter
+end Iris.Std.Linter
