@@ -63,8 +63,7 @@ end FunPartialMap
 /-! ## (Noncomputable) Allocation in an infinite function type -/
 noncomputable section ClassicalAllocHeap
 
-open Classical
-
+open Classical in
 instance instClassicalAllocHeap : Heap (K → Option ·) K where
   notFull f := infinite <| cosupport f
   fresh := choose ∘ coinfinite_exists_next
