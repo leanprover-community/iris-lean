@@ -23,35 +23,43 @@ variable [BI PROP] (P : Nat → PROP) (Q : Nat → Nat → PROP) (l l1 l2 : List
 
 -- bigSepL without index
 /-- info: [∗list] x ∈ l, P x : PROP -/
-#guard_msgs in #check [∗list] x ∈ l, P x
+#guard_msgs in
+#check [∗list] x ∈ l, P x
 
 -- bigSepL with index
 /-- info: [∗list] k ↦ x ∈ l, Q k x : PROP -/
-#guard_msgs in #check [∗list] k ↦ x ∈ l, Q k x
+#guard_msgs in
+#check [∗list] k ↦ x ∈ l, Q k x
 
 -- bigAndL without index
 /-- info: [∧list] x ∈ l, P x : PROP -/
-#guard_msgs in #check [∧list] x ∈ l, P x
+#guard_msgs in
+#check [∧list] x ∈ l, P x
 
 -- bigAndL with index
 /-- info: [∧list] k ↦ x ∈ l, Q k x : PROP -/
-#guard_msgs in #check [∧list] k ↦ x ∈ l, Q k x
+#guard_msgs in
+#check [∧list] k ↦ x ∈ l, Q k x
 
 -- bigOrL without index
 /-- info: [∨list] x ∈ l, P x : PROP -/
-#guard_msgs in #check [∨list] x ∈ l, P x
+#guard_msgs in
+#check [∨list] x ∈ l, P x
 
 -- bigOrL with index
 /-- info: [∨list] k ↦ x ∈ l, Q k x : PROP -/
-#guard_msgs in #check [∨list] k ↦ x ∈ l, Q k x
+#guard_msgs in
+#check [∨list] k ↦ x ∈ l, Q k x
 
 -- bigSepL2 without index
 /-- info: [∗list] x;y ∈ l1;l2, Q x y : PROP -/
-#guard_msgs in #check [∗list] x;y ∈ l1;l2, Q x y
+#guard_msgs in
+#check [∗list] x;y ∈ l1;l2, Q x y
 
 -- bigSepL2 with index
 /-- info: [∗list] k ↦ x;y ∈ l1;l2, Q' k x y : PROP -/
-#guard_msgs in #check [∗list] k ↦ x;y ∈ l1;l2, Q' k x y
+#guard_msgs in
+#check [∗list] k ↦ x;y ∈ l1;l2, Q' k x y
 
 end Tests
 
@@ -63,27 +71,33 @@ variable [BI PROP] {K : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
 
 -- bigSepM without key
 /-- info: [∗map] x ∈ m, P x : PROP -/
-#guard_msgs in #check [∗map] x ∈ m, P x
+#guard_msgs in
+#check [∗map] x ∈ m, P x
 
 -- bigSepM with key
 /-- info: [∗map] k ↦ x ∈ m, Q k x : PROP -/
-#guard_msgs in #check [∗map] k ↦ x ∈ m, Q k x
+#guard_msgs in
+#check [∗map] k ↦ x ∈ m, Q k x
 
 -- bigAndM without key
 /-- info: [∧map] x ∈ m, P x : PROP -/
-#guard_msgs in #check [∧map] x ∈ m, P x
+#guard_msgs in
+#check [∧map] x ∈ m, P x
 
 -- bigAndM with key
 /-- info: [∧map] k ↦ x ∈ m, Q k x : PROP -/
-#guard_msgs in #check [∧map] k ↦ x ∈ m, Q k x
+#guard_msgs in
+#check [∧map] k ↦ x ∈ m, Q k x
 
 -- bigSepM2 without key
 /-- info: [∗map] x1;x2 ∈ m1;m2, Q2 x1 x2 : PROP -/
-#guard_msgs in #check [∗map] x1;x2 ∈ m1;m2, Q2 x1 x2
+#guard_msgs in
+#check [∗map] x1;x2 ∈ m1;m2, Q2 x1 x2
 
 -- bigSepM2 with key
 /-- info: [∗map] k ↦ x1;x2 ∈ m1;m2, Q2' k x1 x2 : PROP -/
-#guard_msgs in #check [∗map] k ↦ x1;x2 ∈ m1;m2, Q2' k x1 x2
+#guard_msgs in
+#check [∗map] k ↦ x1;x2 ∈ m1;m2, Q2' k x1 x2
 
 end MapTests
 
@@ -94,7 +108,8 @@ variable [BI PROP] {S : Type _} {A : Type _} [FiniteSet S A]
 
 -- bigSepS
 /-- info: [∗set] x ∈ s, P x : PROP -/
-#guard_msgs in #check [∗set] x ∈ s, P x
+#guard_msgs in
+#check [∗set] x ∈ s, P x
 
 end SetTests
 
@@ -278,3 +293,5 @@ example (Φ : Nat → A → PROP) (x : A) (l : List A) (P : PROP) :
   iframe
 
 end ProofModeInstances
+
+end IrisTest
