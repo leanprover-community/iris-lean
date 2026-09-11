@@ -23,7 +23,7 @@ namespace Counter
 
 @[rocq_alias heap_lang.newcounter]
 def newcounter : Val := hl_val%
-  fun _, ref(#0)
+  λ _, ref(#0)
 
 @[rocq_alias heap_lang.counter.incr]
 def incr : Val := hl_val%
@@ -35,7 +35,7 @@ def incr : Val := hl_val%
 
 @[rocq_alias heap_lang.read]
 def read : Val := hl_val%
-  fun l, !l
+  λ l, !l
 
 /-! ## Generic counter specifications
 

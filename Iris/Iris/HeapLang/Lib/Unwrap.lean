@@ -24,7 +24,7 @@ namespace Unwrap
 `none` case is unreachable (it aborts via `assert`). -/
 @[rocq_alias heap_lang.unwrap]
 def unwrap : Val := hl_val%
-  fun o,
+  λ o,
     match o with
     | none() => assert(#false)
     | some(v) => v

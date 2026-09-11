@@ -333,7 +333,7 @@ instance elim_acc_aacc {X} {E1 E2 Ei : CoPset} {α' β' : X → PROP} {γ' : X �
     ElimAcc True (FUpd.fupd E1 E2) (FUpd.fupd E2 E1) α' β' γ'
       (atomic_acc E1 Ei α Pas β Φ)
       (fun x' => atomic_acc E2 Ei α iprop(β' x' ∗ (γ' x' -∗? Pas)) β
-        (fun.. x y, iprop(β' x' ∗ (γ' x' -∗? Φ x y)))) where
+        (λ.. x y, iprop(β' x' ∗ (γ' x' -∗? Φ x y)))) where
   elim_acc := by
     intro _
     simp only [accessor, atomic_acc]
@@ -373,7 +373,7 @@ theorem aacc_aacc {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     {α' : TA'.Arg → PROP} {P' : PROP} {β' Φ' : TA'.Arg → TB'.Arg → PROP} (HE : E1' ⊆ E1) :
     atomic_acc E1' E2 α P β Φ -∗
     iprop((∀.. x, α x -∗ atomic_acc E2 E3 α' iprop(α x ∗ (P ={E1}=∗ P')) β'
-      (fun.. x' y', iprop((α x ∗ (P ={E1}=∗ Φ' x' y'))
+      (λ.. x' y', iprop((α x ∗ (P ={E1}=∗ Φ' x' y'))
         ∨ ∃.. y, β x y ∗ (Φ x y ={E1}=∗ Φ' x' y')))) -∗
       atomic_acc E1 E3 α' P' β' Φ') := by
   iintro Hupd Hstep
@@ -413,7 +413,7 @@ theorem aacc_aupd {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     atomic_update E1' E2 α β Φ -∗
     (∀.. x, α x -∗ atomic_acc E2 E3 α'
       iprop(α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ P')) β'
-      (fun.. x' y', iprop((α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ Φ' x' y'))
+      (λ.. x' y', iprop((α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ Φ' x' y'))
         ∨ ∃.. y, β x y ∗ (Φ x y ={E1}=∗ Φ' x' y')))) -∗
       atomic_acc E1 E3 α' P' β' Φ' := by
   iintro Hupd Hstep
@@ -427,7 +427,7 @@ theorem aacc_aupd_commit {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     atomic_update E1' E2 α β Φ ⊢
     (∀.. x, α x -∗ atomic_acc E2 E3 α'
       iprop(α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ P')) β'
-      (fun.. x' y', iprop(∃.. y, β x y ∗ (Φ x y ={E1}=∗ Φ' x' y')))) -∗
+      (λ.. x' y', iprop(∃.. y, β x y ∗ (Φ x y ={E1}=∗ Φ' x' y')))) -∗
       atomic_acc E1 E3 α' P' β' Φ' := by
   iintro Hupd Hstep
   iapply aacc_aupd HE $$ Hupd
@@ -447,7 +447,7 @@ theorem aacc_aupd_abort {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     atomic_update E1' E2 α β Φ ⊢
     (∀.. x, α x -∗ atomic_acc E2 E3 α'
       iprop(α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ P')) β'
-      (fun.. x' y', iprop(α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ Φ' x' y')))) -∗
+      (λ.. x' y', iprop(α x ∗ (atomic_update E1' E2 α β Φ ={E1}=∗ Φ' x' y')))) -∗
       atomic_acc E1 E3 α' P' β' Φ' := by
   iintro Hupd Hstep
   iapply aacc_aupd HE $$ Hupd

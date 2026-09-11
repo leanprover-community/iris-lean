@@ -14,14 +14,14 @@ namespace Iris.HeapLang
 
 @[rocq_alias heap_lang.clairvoyant_coin.new_coin]
 def newCoin := hl_val%
-  fun _, (ref(&nondetBool #()), newProph())
+  λ _, (ref(&nondetBool #()), newProph())
 
 @[rocq_alias heap_lang.clairvoyant_coin.read_coin]
-def readCoin := hl_val% fun cp, !fst(cp)
+def readCoin := hl_val% λ cp, !fst(cp)
 
 @[rocq_alias heap_lang.toss_coin]
 def tossCoin := hl_val%
-  fun cp,
+  λ cp,
     let c := fst(cp);
     let p := snd(cp);
     let r := &nondetBool #();

@@ -16,9 +16,9 @@ open BI Iris ProgramLogic List
 
 namespace Quicksort
 
-def nil : Val := hl_val% fun _, none()
+def nil : Val := hl_val% λ _, none()
 
-def cons : Val := hl_val% fun hd tl, some(ref((hd, tl)))
+def cons : Val := hl_val% λ hd tl, some(ref((hd, tl)))
 
 def append : Val := hl_val%
   rec append l1 l2 :=

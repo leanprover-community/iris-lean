@@ -34,10 +34,10 @@ root = "CheckImports"
 [leanOptions]
 # Built-in linters
 linter.missingDocs = false
-linter.redundantVisibility = true
 linter.omit = false
 linter.loopingSimpArgs = false
 linter.extra.unreachableTactic = true
+linter.redundantVisibility = true
 linter.extra.unnecessarySeqFocus = true
 linter.extra.unusedDecidableInType = false
 # Implemented in Iris.Std.Linter.DocPrime

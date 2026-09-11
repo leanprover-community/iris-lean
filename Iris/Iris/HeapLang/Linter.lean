@@ -81,7 +81,7 @@ partial def analyze (scope : List String) (stx : Syntax) :
   | `(hl_exp| v($_)) => pure ()
   | `(hl_val| & $_) => pure ()
   | `(hl_val| # $_) => pure ()
-  | `(hl_exp| fun $bs*, $e) => underBinders (bs.map (·.raw)) e
+  | `(hl_exp| λ $bs*, $e) => underBinders (bs.map (·.raw)) e
   | `(hl_exp| rec $f $xs* := $e) => underBinders (#[f.raw] ++ xs.map (·.raw)) e
   | `(hl_exp| let $b := $e1; $e2) =>
     analyze scope e1
@@ -90,7 +90,7 @@ partial def analyze (scope : List String) (stx : Syntax) :
     analyze scope e
     underBinders (matchArmBinder a1.raw).toArray e1.raw
     underBinders (matchArmBinder a2.raw).toArray e2.raw
-  | `(hl_val| fun $bs*, $e) => underBinders (bs.map (·.raw)) e
+  | `(hl_val| λ $bs*, $e) => underBinders (bs.map (·.raw)) e
   | `(hl_val| rec $f $xs* := $e) => underBinders (#[f.raw] ++ xs.map (·.raw)) e
   | _ => for arg in stx.getArgs do analyze scope arg
 

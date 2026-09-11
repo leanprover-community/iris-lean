@@ -24,11 +24,11 @@ namespace RwSpinLock
 
 @[rocq_alias heap_lang.rw_spin_lock.newlock]
 def newlock : Val := hl_val%
-  fun _, ref(#0)
+  λ _, ref(#0)
 
 @[rocq_alias heap_lang.try_acquire_reader]
 def tryAcquireReader : Val := hl_val%
-  fun l,
+  λ l,
     let n := !l;
     if #0 ≤ n
       then cas(l, n, n + #1)
@@ -43,11 +43,11 @@ def acquireReader : Val := hl_val%
 
 @[rocq_alias heap_lang.release_reader]
 def releaseReader : Val := hl_val%
-  fun l, faa(l, #(-1 : Int)); #()
+  λ l, faa(l, #(-1 : Int)); #()
 
 @[rocq_alias heap_lang.try_acquire_writer]
 def tryAcquireWriter : Val := hl_val%
-  fun l, cas(l, #0, #(-1 : Int))
+  λ l, cas(l, #0, #(-1 : Int))
 
 @[rocq_alias heap_lang.acquire_writer]
 def acquireWriter : Val := hl_val%
@@ -58,7 +58,7 @@ def acquireWriter : Val := hl_val%
 
 @[rocq_alias heap_lang.release_writer]
 def releaseWriter : Val := hl_val%
-  fun l, l ← #0
+  λ l, l ← #0
 
 abbrev ReaderFracs := ListPerm Qp
 

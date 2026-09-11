@@ -142,17 +142,17 @@ meta def withFunUsing {X : Type} (n : Nat) (names : Array Name)
 abbrev lam {TT : Tele.{u}} {T : TT.Arg → Type v} (F : (xs : TT.Arg) → T xs) :
     (xs : TT.Arg) → T xs := app (bind F)
 
-/-- `fun.. x₁ … xₙ, body` binds packed telescope arguments, wrapping each lambda in
+/-- `λ.. x₁ … xₙ, body` binds packed telescope arguments, wrapping each lambda in
 `Tele.app ∘ Tele.bind`. -/
-macro:max "fun.." xs:explicitBinders ", " body:term : term => do
+macro:max "λ.." xs:explicitBinders ", " body:term : term => do
   return ⟨← expandExplicitBinders ``lam xs body⟩
 
-/-- Delaborate nested `Tele.lam` expressions as `fun.. x …, ...`. -/
+/-- Delaborate nested `Tele.lam` expressions as `λ.. x …, ...`. -/
 @[app_delab Iris.Std.Tele.lam]
 meta def delabLam : Delab :=
   delabQuant 3 pure
-    (fun x rest body => `(fun.. $x:ident $[$rest:ident]*, $body))
-    (fun | `(fun.. $y:ident $[$ys:ident]*, $body) => some (y, ys, body) | _ => none)
+    (fun x rest body => `(λ.. $x:ident $[$rest:ident]*, $body))
+    (fun | `(λ.. $y:ident $[$ys:ident]*, $body) => some (y, ys, body) | _ => none)
 
 /-- Collapse a non-dependent telescopic function into a single value, using `step` to introduce
 one binder at a time. -/

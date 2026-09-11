@@ -108,9 +108,9 @@ syntax:10 "let " hl_binder " := " hl_exp:10 "; " hl_exp:1 : hl_exp
 /-- sequencing -/
 syntax:5 hl_exp:6 "; " hl_exp:5 : hl_exp
 /-- lambda -/
-syntax:10 "fun " hl_binder+ ", " hl_exp:1 : hl_exp
+syntax:10 "λ " hl_binder+ ", " hl_exp:1 : hl_exp
 /-- lambda -/
-syntax:10 "fun " hl_binder+ ", " hl_exp:1 : hl_val
+syntax:10 "λ " hl_binder+ ", " hl_exp:1 : hl_val
 /-- recursive function -/
 syntax:10 "rec " hl_binder ppSpace hl_binder+ " := " hl_exp:1 : hl_exp
 /-- recursive function -/
@@ -197,8 +197,8 @@ macro_rules
   | `(hl_val(# $n:num)) => `(Val.lit (BaseLit.int $n))
   | `(hl_val(# $e)) => `(Val.lit $e)
   | `(hl_val(rec $f $x := $e)) => do `(Val.rec_ hl_binder($f) hl_binder($x) hl($e))
-  | `(hl_val(rec $f $x $xs* := $e)) => do `(hl_val(rec $f $x := fun $xs*, $e))
-  | `(hl_val(fun $xs*, $e)) => do `(hl_val(rec _ $xs* := $e))
+  | `(hl_val(rec $f $x $xs* := $e)) => do `(hl_val(rec $f $x := λ $xs*, $e))
+  | `(hl_val(λ $xs*, $e)) => do `(hl_val(rec _ $xs* := $e))
   | `(hl_val(($e1, $e2))) => `(Val.pair hl_val($e1) hl_val($e2))
   | `(hl_val(($e1, $e2, $e3,*))) => `(hl_val(($e1, ($e2, $e3,*))))
   | `(hl_val(injl($e1))) => `(Val.injL hl_val($e1))
@@ -236,16 +236,16 @@ macro_rules
   | `(hl(if $e1 then $e2 else $e3)) => `(Exp.if hl($e1) hl($e2) hl($e3))
   | `(hl($e1 $e2)) => `(Exp.app hl($e1) hl($e2))
   | `(hl(rec $f $x := $e)) => do `(Exp.rec_ hl_binder($f) hl_binder($x) hl($e))
-  | `(hl(rec $f $x $xs* := $e)) => `(hl(rec $f $x := fun $xs*, $e))
-  | `(hl(fun $xs*, $e)) => `(hl(rec _ $xs* := $e))
+  | `(hl(rec $f $x $xs* := $e)) => `(hl(rec $f $x := λ $xs*, $e))
+  | `(hl(λ $xs*, $e)) => `(hl(rec _ $xs* := $e))
   | `(hl($e1; $e2)) => `(hl(let _ := $e1; $e2))
-  | `(hl(let $i := $e1; $e2)) => `(hl((fun $i, $e2) $e1))
+  | `(hl(let $i := $e1; $e2)) => `(hl((λ $i, $e2) $e1))
   | `(hl(($e1, $e2))) => `(Exp.pair hl($e1) hl($e2))
   | `(hl(($e1, $e2, $e3,*))) => `(hl(($e1, ($e2, $e3,*))))
   | `(hl(fst($e1))) => `(Exp.fst hl($e1))
   | `(hl(snd($e1))) => `(Exp.snd hl($e1))
   | `(hl(match $e1 with | injl($i2) => $e2 | injr($i3) => $e3)) =>
-    `(Exp.case hl($e1) hl(fun $i2, $e2) hl(fun $i3, $e3))
+    `(Exp.case hl($e1) hl(λ $i2, $e2) hl(λ $i3, $e3))
   | `(hl(match $e1 with | injr($i2) => $e2 | injl($i3) => $e3)) =>
     `(hl(match $e1 with | injl($i3) => $e3 | injr($i2) => $e2))
   -- TODO: Why does the following not work?
@@ -294,9 +294,9 @@ def unexpLit : Unexpander
 
 partial def unexpLamVal : Term → UnexpandM Term
   | `(hl_val(rec _ $x := $e)) => do
-    unexpLamVal <| ← `(hl_val(fun $x, $e))
-  | `(hl_val(fun $x, (fun $ys*, $e))) => do
-    unexpLamVal <| ← `(hl_val(fun $x $ys*, $e))
+    unexpLamVal <| ← `(hl_val(λ $x, $e))
+  | `(hl_val(λ $x, (λ $ys*, $e))) => do
+    unexpLamVal <| ← `(hl_val(λ $x $ys*, $e))
   | x => return x
 
 @[app_unexpander Val.rec_]
@@ -377,9 +377,9 @@ def unexpIf : Unexpander
 
 partial def unexpLam : Term → UnexpandM Term
   | `(hl((rec _ $x := $e))) => do
-    unexpLam <| ← `(hl((fun $x, $e)))
-  | `(hl((fun $x, (fun $ys*, $e)))) => do
-    unexpLam <| ← `(hl((fun $x $ys*, $e)))
+    unexpLam <| ← `(hl((λ $x, $e)))
+  | `(hl((λ $x, (λ $ys*, $e)))) => do
+    unexpLam <| ← `(hl((λ $x $ys*, $e)))
   | x => return x
 
 @[app_unexpander Exp.rec_]
@@ -389,7 +389,7 @@ def unexpRec : Unexpander
   | _ => throw ()
 
 partial def unexpLet : Term → UnexpandM Term
-  | `(hl((fun $f, $e2) $e1)) => do
+  | `(hl((λ $f, $e2) $e1)) => do
     unexpLet <| ← `(hl(let $f := $e1; $e2))
   | `(hl(let _ := $e1; $e2)) => do `(hl($e1; $e2))
   | x => return x
@@ -433,7 +433,7 @@ def unexpInjr : Unexpander
 
 @[app_unexpander Exp.case]
 def unexpCase : Unexpander
-  | `($_ $e1 hl((fun $i2, $e2)) hl((fun $i3, $e3))) =>
+  | `($_ $e1 hl((λ $i2, $e2)) hl((λ $i3, $e3))) =>
     do `( hl(match $(← unpackHLExp e1) with | injl($i2) => $e2 | injr($i3) => $e3) )
   | _ => throw ()
 

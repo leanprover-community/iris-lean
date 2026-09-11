@@ -21,7 +21,7 @@ namespace Spawn
 
 @[rocq_alias heap_lang.spawn]
 def spawn : Val := hl_val%
-  fun f,
+  λ f,
     let c := ref(none());
     fork(c ← some(f #()));
     c
