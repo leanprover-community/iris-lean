@@ -47,7 +47,7 @@ theorem subst_rec_eq {x f fx e v} :
 theorem subst_rec_neq {x f fx e v} :
   .named x ≠ f →
   .named x ≠ fx →
-  Exp.subst (.named x) v (.rec_ f fx e) = (.rec_ f fx $ e.subst (.named x) v) :=
+  Exp.subst (.named x) v (.rec_ f fx e) = (.rec_ f fx <| e.subst (.named x) v) :=
   by simp [Exp.subst, Exp.substStr]; grind
 
 @[wp_expr_simp]

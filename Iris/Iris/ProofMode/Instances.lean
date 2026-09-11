@@ -45,7 +45,7 @@ instance asEmpValid_forall {α} [bi : BI PROP] (Φ : α → Prop) (P : α → PR
     [hP : ∀ x, AsEmpValid d (Φ x) io PROP bi iprop(P x)] :
     AsEmpValid d (∀ x, Φ x) io PROP bi iprop(∀ x, P x) where
   as_emp_valid := ⟨λ hd h => forall_intro λ x => (hP x).1.1 hd (h x),
-                   λ hd h x => (hP x).1.2 hd $ h.trans (forall_elim x)⟩
+                   λ hd h x => (hP x).1.2 hd <| h.trans <| forall_elim x⟩
 
 @[rocq_alias as_emp_valid_tforall]
 instance asEmpValid_tforall {TT : Tele} [bi : BI PROP] (φ : TT.Arg → Prop)
@@ -302,7 +302,7 @@ instance fromForall_intuitionistically [BI PROP] [BIAffine PROP] [BIPersistently
 @[rocq_alias from_forall_persistently]
 instance fromForall_persistently [BI PROP] [BIPersistentlyForall PROP] {A} P (Φ : A → PROP)
     [FromForall P Φ] : FromForall iprop(<pers> P) (λ a => iprop(<pers> (Φ a))) where
-  from_forall := persistently_forall.2.trans $ (persistently_mono (from_forall (P := P)))
+  from_forall := persistently_forall.2.trans (persistently_mono (from_forall (P := P)))
 
 @[rocq_alias from_forall_tforall]
 instance fromForall_tforall {TT : Tele} [BI PROP] (Φ : TT.Arg → PROP) :
@@ -1439,12 +1439,12 @@ instance elimModal_wand [BI PROP] φ p p' io (P P' Q Q' R : PROP)
     calc
       _ ⊢ □?p P ∗ (□?p' P' -∗ R -∗ Q') ∗ R := sep_assoc.1
       _ ⊢ □?p P ∗ (□?p' P' -∗ Q') :=
-          sep_mono_right $ wand_elim $ wand_intro_left $ wand_intro_left $ sep_assoc.2.trans ?_
+          sep_mono_right <| wand_elim <| wand_intro_left <| wand_intro_left <| sep_assoc.2.trans ?_
       _ ⊢ Q := h.1 hφ
     calc
       _ ⊢ (R ∗ □?p' P') ∗ (□?p' P' -∗ R -∗ Q') := sep_mono_left sep_comm.1
       _ ⊢ R ∗ □?p' P' ∗ (□?p' P' -∗ R -∗ Q')   := sep_assoc.1
-      _ ⊢ Q'                                   := wand_elim_swap $ wand_elim_swap .rfl
+      _ ⊢ Q'                                   := wand_elim_swap <| wand_elim_swap .rfl
 
 @[rocq_alias elim_modal_wandM]
 instance elimModal_wandM [BI PROP] φ p p' io (P P' Q Q' : PROP) (mR : Option PROP)

@@ -553,7 +553,7 @@ theorem updateP {P} {Q : ReservationMap A H → Prop} k a (ap : a ~~>: P)
     · refine (data_op (PartialMap.singleton k y) d) ▸ ?_
       refine valid_singleton_op_of_valid_op? ?_ vy
       refine validN_data.mp ?_
-      exact validN_op_left $ ze ▸ validN_op_right vaz
+      exact validN_op_left <| ze ▸ validN_op_right vaz
     · have ddt := disj_of_validN_data_op_token (ze ▸ validN_op_right vaz)
       have dde := disj_of_validN_data_op_token
         (show ✓{n} singleton (H := H) k a • mkToken t from

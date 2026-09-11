@@ -1883,7 +1883,7 @@ instance cmraProd : CMRA (α × β) where
   ValidN := ValidN
   Valid := Valid
   op_ne {x} :=
-    { ne n y z h := dist_prod_ext (Dist.op_r $ dist_fst h) (Dist.op_r $ dist_snd h) }
+    { ne n y z h := dist_prod_ext (Dist.op_r <| dist_fst h) (Dist.op_r <| dist_snd h) }
   pcore_ne {n x y cx} h ph := by
     have ⟨cx₁, hcx₁, this⟩ := Option.bind_eq_some_iff.mp ph
     have ⟨cx₂, hcx₂, hcx⟩ := Option.bind_eq_some_iff.mp this

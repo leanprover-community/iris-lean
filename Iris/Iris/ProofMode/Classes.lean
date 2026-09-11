@@ -184,8 +184,8 @@ class IntoOr {PROP} [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
 export IntoOr (into_or)
 
 @[ipm_class, rocq_alias IntoInternalEq]
-class IntoInternalEq {PROP} [BI PROP] [Sbi PROP] {A : outParam $ Type _}
-    [ofe : outParam $ OFE A] (P : PROP) (x y : outParam A) where
+class IntoInternalEq {PROP} [BI PROP] [Sbi PROP] {A : outParam <| Type _}
+    [ofe : outParam <| OFE A] (P : PROP) (x y : outParam A) where
   into_internal_eq : P ⊢@{PROP} x ≡ y
 export IntoInternalEq (into_internal_eq)
 
@@ -219,7 +219,7 @@ export IntoPure (into_pure)
 #rocq_ignore into_pureT_hint "IntoPureT is not necessary in Lean"
 
 @[ipm_class, rocq_alias FromPure, rocq_alias FromPureT]
-class FromPure {PROP} [BI PROP] (a : outParam $ Bool) (P : PROP) (ioφ : InOut)
+class FromPure {PROP} [BI PROP] (a : outParam Bool) (P : PROP) (ioφ : InOut)
     (φ : semiOutParamIPM ioφ Prop) where
   from_pure : <affine>?a ⌜φ⌝ ⊢ P
 export FromPure (from_pure)

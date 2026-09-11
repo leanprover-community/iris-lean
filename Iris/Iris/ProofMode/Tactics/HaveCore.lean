@@ -25,7 +25,7 @@ open BI
 @[rocq_alias tac_pose_proof]
 theorem have_asEmpValid [bi : BI PROP] {φ} {P Q : PROP}
     [h1 : AsEmpValid .into φ .in PROP bi P] (h : φ) : Q ⊢ Q ∗ □ P :=
-  sep_emp.2.trans (sep_mono_right $ intuitionistically_emp.2.trans
+  sep_emp.2.trans (sep_mono_right <| intuitionistically_emp.2.trans
     (intuitionistically_mono (asEmpValid_1 _ h1 h)))
 
 #rocq_ignore tac_pose_proof_hyp "not needed as Expr.lean already provides the infrastructure"

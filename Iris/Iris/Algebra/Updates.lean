@@ -136,7 +136,7 @@ theorem Update.total [CMRA.IsTotal α] :
   mpr h := fun n mz v =>
     match mz with
     | none =>
-      CMRA.validN_op_opM_left $ h n (CMRA.core x) (CMRA.validN_ne (CMRA.op_core_dist x).symm v)
+      CMRA.validN_op_opM_left <| h n (CMRA.core x) (CMRA.validN_ne (CMRA.op_core_dist x).symm v)
     | some z => h n z v
 
 @[rocq_alias cmra_discrete_updateP]
@@ -152,8 +152,8 @@ theorem UpdateP.discrete [CMRA.Discrete α] :
 @[rocq_alias cmra_discrete_update]
 theorem Update.discrete [CMRA.Discrete α] {x y : α} :
     x ~~> y ↔ ∀ (mz : Option α), ✓ (x •? mz) → ✓ (y •? mz) where
-  mp uxp := fun mz v => CMRA.discrete_valid $ uxp 0 mz (CMRA.Valid.validN v)
-  mpr h := fun n mz v => CMRA.Valid.validN $ h mz ((CMRA.valid_iff_validN' n).mpr v)
+  mp uxp := fun mz v => CMRA.discrete_valid <| uxp 0 mz (CMRA.Valid.validN v)
+  mpr h := fun n mz v => CMRA.Valid.validN <| h mz ((CMRA.valid_iff_validN' n).mpr v)
 
 @[rocq_alias cmra_discrete_total_updateP]
 theorem UpdateP.discrete_total [CMRA.Discrete α] [CMRA.IsTotal α] :
@@ -170,7 +170,7 @@ theorem UpdateP.discrete_total [CMRA.Discrete α] [CMRA.IsTotal α] :
 theorem Update.discrete_total [CMRA.Discrete α] [CMRA.IsTotal α] :
     x ~~> y ↔ ∀ (z : α), ✓ (x • z) → ✓ (y • z) where
   mp uxp := fun z vz =>
-    CMRA.discrete_valid $ Update.total.mp uxp 0 z (CMRA.Valid.validN vz)
+    CMRA.discrete_valid <| Update.total.mp uxp 0 z (CMRA.Valid.validN vz)
   mpr h := Update.total.mpr fun n z v => (h z ((CMRA.valid_iff_validN' n).mpr v)).validN
 
 -- (** * Transport *)

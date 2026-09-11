@@ -375,7 +375,7 @@ theorem laterN_emp [BIAffine PROP] (n : Nat) : ▷^[n] emp ⊣⊢@{PROP} emp := 
 theorem laterN_forall (n : Nat) {Φ : α → PROP} : ▷^[n] (∀ a, Φ a) ⊣⊢ (∀ a, ▷^[n] Φ a) := by
   induction n with
   | zero => exact .rfl
-  | succ n ih => exact (later_congr ih).trans $ later_forall
+  | succ n ih => exact (later_congr ih).trans later_forall
 
 @[rocq_alias bi.laterN_exist_2]
 theorem laterN_exists_mpr (n : Nat) {Φ : α → PROP} : (∃ a, ▷^[n] Φ a) ⊢ ▷^[n] (∃ a, Φ a) :=
@@ -386,19 +386,19 @@ theorem laterN_exists [Inhabited α] (n : Nat) {Φ : α → PROP} :
     ▷^[n] (∃ a, Φ a) ⊣⊢ (∃ a, ▷^[n] Φ a) := by
   induction n with
   | zero => exact .rfl
-  | succ n ih => exact (later_congr ih).trans $ later_exists.symm
+  | succ n ih => exact (later_congr ih).trans later_exists.symm
 
 @[rocq_alias bi.laterN_and]
 theorem laterN_and (n : Nat) {P Q : PROP} : ▷^[n] (P ∧ Q) ⊣⊢ ▷^[n] P ∧ ▷^[n] Q := by
   induction n with
   | zero => exact .rfl
-  | succ n ih => exact (later_congr ih).trans $ later_and
+  | succ n ih => exact (later_congr ih).trans later_and
 
 @[rocq_alias bi.laterN_or]
 theorem laterN_or (n : Nat) {P Q : PROP} : ▷^[n] (P ∨ Q) ⊣⊢ ▷^[n] P ∨ ▷^[n] Q := by
   induction n with
   | zero => exact .rfl
-  | succ n ih => exact (later_congr ih).trans $ later_or
+  | succ n ih => exact (later_congr ih).trans later_or
 
 @[rocq_alias bi.laterN_impl]
 theorem laterN_imp (n : Nat) {P Q : PROP} : ▷^[n] (P → Q) ⊢ ▷^[n] P → ▷^[n] Q :=
@@ -408,7 +408,7 @@ theorem laterN_imp (n : Nat) {P Q : PROP} : ▷^[n] (P → Q) ⊢ ▷^[n] P → 
 theorem laterN_sep (n : Nat) {P Q : PROP} : ▷^[n] (P ∗ Q) ⊣⊢ ▷^[n] P ∗ ▷^[n] Q := by
   induction n with
   | zero => exact .rfl
-  | succ n ih => exact (later_congr ih).trans $ later_sep
+  | succ n ih => exact (later_congr ih).trans later_sep
 
 @[rocq_alias bi.laterN_wand]
 theorem laterN_wand (n : Nat) {P Q : PROP} : ▷^[n] (P -∗ Q) ⊢ ▷^[n] P -∗ ▷^[n] Q :=
