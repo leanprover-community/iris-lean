@@ -603,7 +603,7 @@ theorem sep_forall_right [BI PROP] {Φ : α → PROP} {Q : PROP} : (∀ a, Φ a)
 theorem wand_rfl [BI PROP] {P : PROP} : ⊢ P -∗ P := wand_intro emp_sep.1
 
 @[rocq_alias bi.wand_curry]
-theorem wand_curry [BI PROP] {P Q R: PROP} : (P -∗ Q -∗ R) ⊣⊢ ((P ∗ Q) -∗ R) := by
+theorem wand_curry [BI PROP] {P Q R : PROP} : (P -∗ Q -∗ R) ⊣⊢ ((P ∗ Q) -∗ R) := by
   refine ⟨?_, ?_⟩
   · refine wand_intro_left ?_
     calc
@@ -764,7 +764,7 @@ theorem wand_entails [BI PROP] {P Q : PROP} (h : ⊢ P -∗ Q) : P ⊢ Q :=
   emp_sep.2.trans (wand_elim h)
 
 @[rocq_alias bi.wand_entails']
-theorem wand_entails_emp [BI PROP] {P Q : PROP} (h: (emp ⊢ (P -∗ Q))) : P ⊢ Q :=
+theorem wand_entails_emp [BI PROP] {P Q : PROP} (h : (emp ⊢ (P -∗ Q))) : P ⊢ Q :=
  wand_entails h
 
 @[rocq_alias bi.entails_wand]
@@ -772,7 +772,7 @@ theorem entails_wand [BI PROP] {P Q : PROP} (h : P ⊢ Q) : ⊢ P -∗ Q :=
   wand_intro (emp_sep.1.trans h)
 
 @[rocq_alias bi.entails_wand']
-theorem entails_wand_emp [BI PROP] {P Q : PROP} (h: P ⊢ Q) : emp ⊢ (P -∗ Q) :=
+theorem entails_wand_emp [BI PROP] {P Q : PROP} (h : P ⊢ Q) : emp ⊢ (P -∗ Q) :=
  entails_wand h
 
 @[rocq_alias bi.equiv_wand_iff]

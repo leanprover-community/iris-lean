@@ -111,7 +111,7 @@ theorem mk_pure_prim_step {e1 e2 : Exp} (hstep : ∀ σ, BaseStep e1 σ [] e2 σ
   · exact hpure (baseStep_of_primStep Hstep hsub)
 
 @[rocq_alias heap_lang.pure_if_true]
-instance instPureExecIfTrue: PureExec True 1 hl(if #true then &e1 else &e2) e1 where
+instance instPureExecIfTrue : PureExec True 1 hl(if #true then &e1 else &e2) e1 where
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor

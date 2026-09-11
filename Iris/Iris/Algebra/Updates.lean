@@ -78,7 +78,7 @@ instance [CMRA α] : Trans Update UpdateP UpdateP (α := α) where
 
 @[rocq_alias cmra_updateP_op]
 theorem UpdateP.op {P Q R : α → Prop} {x y}
-    (uxp : x ~~>: P) (uyq : y ~~>: Q) (pqr : ∀z w, P z → Q w → R (z • w)) : x • y ~~>: R := by
+    (uxp : x ~~>: P) (uyq : y ~~>: Q) (pqr : ∀ z w, P z → Q w → R (z • w)) : x • y ~~>: R := by
   intro n mz v
   have e₁ : (x • y) •? mz ≡{n}≡ y •? some (x •? mz) :=
     (CMRA.opM_left_dist mz CMRA.op_commN).trans (CMRA.op_opM_assoc_dist _ _ mz)

@@ -63,7 +63,7 @@ theorem fupd_vs_mono {E1 E2 : CoPset} {P Q : UPred M} (HPQ : P ⊢ Q)
 @[rocq_alias fancy_updates_from_vs.fupd_trans]
 theorem fupd_vs_trans {E1 E2 E3 : CoPset} {P : UPred M} [∀ {E1 E2 P Q}, Persistent (vs E1 E2 P Q)]
     (vs_trans : ∀ E1 E2 E3 P Q R, iprop(vs E1 E2 P Q ∧ vs E2 E3 Q R) ⊢ vs E1 E3 P R)
-    (vs_exists : ∀ {A: Type u} E1 E2 (Φ : A → UPred M) Q, (∀ x, vs E1 E2 (Φ x) Q) ⊢ vs E1 E2 iprop(∃ x, Φ x) Q)
+    (vs_exists : ∀ {A : Type u} E1 E2 (Φ : A → UPred M) Q, (∀ x, vs E1 E2 (Φ x) Q) ⊢ vs E1 E2 iprop(∃ x, Φ x) Q)
     (vs_persistent_intro_r : ∀ E1 E2 P Q R, [Persistent R] → iprop(R -∗ vs E1 E2 P Q) ⊢ vs E1 E2 iprop(P ∗ R) Q)
     (vs_impl : ∀ E P Q, iprop(□ (P → Q)) ⊢ vs E E P Q) :
     fupd_vs vs E1 E2 (fupd_vs vs E2 E3 P) ⊢ fupd_vs vs E1 E3 P := by

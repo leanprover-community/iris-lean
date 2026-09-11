@@ -283,7 +283,7 @@ theorem validN_of_le {n n'} {x : α} (le : n' ≤ n) : ✓{n} x → ✓{n'} x :=
   le.recOn id fun  _ ih vs => ih (validN_succ vs)
 
 @[rocq_alias cmra_validN_lt]
-theorem validN_of_lt {n n'} {x : α} (lt : n' < n): ✓{n} x → ✓{n'} x :=
+theorem validN_of_lt {n n'} {x : α} (lt : n' < n) : ✓{n} x → ✓{n'} x :=
   validN_of_le (Nat.le_of_lt lt)
 
 theorem valid0_of_validN {n} {x : α} : ✓{n} x → ✓{0} x := validN_of_le (Nat.zero_le n)
@@ -716,12 +716,12 @@ section cancelableElements
 variable {α : Type _} [CMRA α]
 
 @[rocq_alias cancelable]
-theorem cancelable {x y z : α} [Cancelable x] (v : ✓(x • y)) (e : x • y = x • z) : y = z :=
+theorem cancelable {x y z : α} [Cancelable x] (v : ✓ (x • y)) (e : x • y = x • z) : y = z :=
   OFE.eq_dist_2 fun _ => cancelableN v.validN e.dist
 
 @[rocq_alias discrete_cancelable]
 theorem discrete_cancelable {x : α} [Discrete α]
-    (H : ∀ {y z : α}, ✓(x • y) → x • y = x • z → y = z) : Cancelable x where
+    (H : ∀ {y z : α}, ✓ (x • y) → x • y = x • z → y = z) : Cancelable x where
   cancelableN {n} {_ _} v e := (H ((valid_iff_validN' n).mpr v) (Discrete.discrete e)).dist
 
 @[rocq_alias cancelable_op]
@@ -773,7 +773,7 @@ theorem id_freeN_l {n n'} {x : α} [IdFree x] {y} (v : ✓{n} x) : ¬(y • x �
   id_freeN_r v ∘ comm'.dist.trans
 
 @[rocq_alias id_free_r]
-theorem id_free_r {x : α} [IdFree x] {y} (v : ✓x) : ¬(x • y = x) :=
+theorem id_free_r {x : α} [IdFree x] {y} (v : ✓ x) : ¬(x • y = x) :=
   fun h => id_free0_r y (valid_iff_validN.mp v 0) h.dist
 
 @[rocq_alias id_free_l]
@@ -1680,7 +1680,7 @@ theorem eqv_of_inc_exclusive [Exclusive (a : α)] {b : α} (H : some a ≼ some 
     · exact not_valid_of_excl_inc H Hv |>.elim
 
 @[rocq_alias Some_includedN_exclusive]
-theorem dist_of_inc_exclusive [Exclusive (a : α)] {b : α} (H : some a ≼{n} some b) (Hv : ✓{n} b)  :
+theorem dist_of_inc_exclusive [Exclusive (a : α)] {b : α} (H : some a ≼{n} some b) (Hv : ✓{n} b) :
     a ≡{n}≡ b := by
   rcases incN_iff.mp H with (Hcontra|H)
   · simp at Hcontra

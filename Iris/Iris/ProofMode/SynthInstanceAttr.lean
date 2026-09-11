@@ -145,7 +145,7 @@ def semiOutParamCore (_io : InOut) (α : Sort u) : Sort u := α
   This should be used instead of `semiOutParam` for any type class with
   the annotation `[ipm_class]`.
 -/
-macro "semiOutParamIPM" io:term:max α:term:max : term =>
+macro "semiOutParamIPM " io:term:max ppSpace α:term:max : term =>
   `(semiOutParam (semiOutParamCore $io $α))
 
 private def parseInOutParam (d : Expr) : Option Expr := do

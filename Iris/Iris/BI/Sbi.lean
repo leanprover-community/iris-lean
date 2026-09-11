@@ -652,7 +652,7 @@ theorem plainly_sExists [SbiEmpValidExist PROP] {Φ : PROP → Prop} :
     exists_mono fun p => siPure_and.mp.trans (and_mono_left siPure_pure.mp)
 
 @[rocq_alias plainly_if_ne]
-instance instPlainlyIf_ne p: OFE.NonExpansive (BIBase.Plainly.plainlyIf (PROP := PROP) p) where
+instance instPlainlyIf_ne p : OFE.NonExpansive (BIBase.Plainly.plainlyIf (PROP := PROP) p) where
   ne _ _ _ := fun h =>
     match p with
     | true => instPlainly_ne.ne h

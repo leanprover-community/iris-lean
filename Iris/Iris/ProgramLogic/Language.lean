@@ -140,7 +140,7 @@ end Notation
 open Notation
 
 theorem Step.of_primStep {e σ} {obs : List Obs} {e'} {σ' : State} {eₜ}
-    (H : (e, σ) -<obs>-> (e', σ', eₜ)) {t₁ t₂: List Expr} :
+    (H : (e, σ) -<obs>-> (e', σ', eₜ)) {t₁ t₂ : List Expr} :
     Step (t₁ ++ e :: t₂, σ) obs (t₁ ++ e' :: t₂ ++ eₜ, σ') :=
   atomic H ..
 
@@ -261,7 +261,7 @@ theorem stronglyAtomic_atomic {a} :
   | .StronglyAtomic => id
   | .WeaklyAtomic => fun ⟨h⟩ => ⟨by grind only [not_reducible_iff_irreducible, val_irreducible]⟩
 
-theorem prim_val_stuck (h : (↑ v, σ) -<obs>-> (e', σ', eₜ)) : False := by
+theorem prim_val_stuck (h : (↑v, σ) -<obs>-> (e', σ', eₜ)) : False := by
   simpa using val_stuck h
 
 instance val_atomic {a : Atomicity} {v : Val} : Atomic a (Λ.ofVal v) :=

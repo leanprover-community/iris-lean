@@ -69,7 +69,7 @@ class FUpd (PROP : Type _) where
 export FUpd (fupd)
 
 attribute [inherit_doc FUpd] FUpd.fupd
-syntax "|={" term ", " term "}=> " term : term
+syntax "|={" term "," term "}=> " term : term
 syntax:25 term:26 " ={" term "," term "}=∗ " term:25 : term
 syntax "|={" term "}=> " term : term
 syntax:25 term:26 " ={" term "}=∗ " term:25 : term
@@ -289,7 +289,7 @@ theorem bupd_idem {P : PROP} : (|==> |==> P) ⊣⊢ |==> P :=
   ⟨BIUpdate.trans, BIUpdate.intro⟩
 
 @[rocq_alias bupd_or]
-theorem bupd_or {P Q: PROP} : (|==> P) ∨ (|==> Q) ⊢ |==> (P ∨ Q) :=
+theorem bupd_or {P Q : PROP} : (|==> P) ∨ (|==> Q) ⊢ |==> (P ∨ Q) :=
   or_elim (mono or_intro_l) (mono or_intro_r)
 
 @[rocq_alias bupd_and]
@@ -545,9 +545,9 @@ theorem fupd_mask_frame {E E' E1 E2 : CoPset} {P : PROP} :
   Tailored to eliminate updates of the form [|={E1,E1∖E2}=> Q] and provides a way to transform the
   closing view shift instead of letting you prove the same side-conditions twice. -/
 @[rocq_alias fupd_mask_frame_acc]
-theorem fupd_mask_frame_acc {E E' E1 E2 : CoPset} {P Q : PROP}:
+theorem fupd_mask_frame_acc {E E' E1 E2 : CoPset} {P Q : PROP} :
     E1 ⊆ E → (|={E1,E1 \ E2}=> Q) ⊢
-    (Q -∗ |={E \ E2,E'}=> (∀ R, (|={E1 \ E2,E1}=> R) -∗ |={E \ E2,E}=> R) -∗  P) -∗
+    (Q -∗ |={E \ E2,E'}=> (∀ R, (|={E1 \ E2,E1}=> R) -∗ |={E \ E2,E}=> R) -∗ P) -∗
     (|={E,E'}=> P) := fun hE => by
   have hmask : E \ E2 ⊆ (E1 \ E2) ∪ (E \ E1) := by
     intro x hx; rw [mem_diff] at hx

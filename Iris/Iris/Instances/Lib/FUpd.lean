@@ -146,7 +146,7 @@ end Instances
 section LaterCreditLemmas
 
 @[rocq_alias fupd_unfold_no_lc]
-theorem fupd_unfold_no_lc [Hi:InvGS_gen .hasNoLC GF] E1 E2 (P : IProp GF) :
+theorem fupd_unfold_no_lc [Hi : InvGS_gen .hasNoLC GF] E1 E2 (P : IProp GF) :
   (|={E1,E2}=> P) ⊣⊢ (wsat ∗ ownE E1 ==∗ ◇ (wsat ∗ ownE E2 ∗ P)) := by
   simp only [fupd, uPred_fupd]
   rw [(le_upd_unfold_no_le (GF := GF)).to_eq]
@@ -184,7 +184,7 @@ theorem lc_fupd_add_laterN (n : Nat) {E : CoPset} {P : IProp GF} :
     iapply IH $$ [$] [$]
 
 @[rocq_alias lc_fupd_add_step_fupdN]
-theorem lc_fupd_add_step_fupdN (E1 E2 E3: CoPset) (P : IProp GF) (n : Nat) :
+theorem lc_fupd_add_step_fupdN (E1 E2 E3 : CoPset) (P : IProp GF) (n : Nat) :
     £ n -∗ (|={E1}[E2]▷=>^[n] |={E1,E3}=> P) -∗ |={E1,E3}=> P := by
   iintro Hf Hupd
   iinduction n with

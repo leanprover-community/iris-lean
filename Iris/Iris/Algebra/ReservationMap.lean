@@ -196,7 +196,7 @@ theorem valid_data_of_valid {x : ReservationMap A H} (h : x.Valid) :
 theorem valid_token_of_valid {x : ReservationMap A H} (h : x.Valid) :
     ✓ x.token := (valid_iff.mp h).right.left
 
-theorem valid_disj {x : ReservationMap A H} (h : x.Valid) (i : Pos):
+theorem valid_disj {x : ReservationMap A H} (h : x.Valid) (i : Pos) :
     get? x.data i = none ∨ i ∉ x.token := (valid_iff.mp h).right.right i
 
 @[rocq_alias reservation_map_pcore_instance]
@@ -303,10 +303,10 @@ instance : UCMRA (ReservationMap A H) where
   pcore_unit := OFE.eq_dist_2 <| by exact fun n => ⟨Heap.core_empty.dist, .rfl⟩
 
 @[simp]
-theorem op_data (x y : ReservationMap A H): (x • y).data = x.data • y.data := rfl
+theorem op_data (x y : ReservationMap A H) : (x • y).data = x.data • y.data := rfl
 
 @[simp]
-theorem op_token (x y : ReservationMap A H): (x • y).token = x.token • y.token := rfl
+theorem op_token (x y : ReservationMap A H) : (x • y).token = x.token • y.token := rfl
 
 @[rocq_alias reservation_map_included]
 theorem included_iff {x y : ReservationMap A H} :
@@ -428,7 +428,7 @@ theorem validN_data_op_token {n : Nat} (a : H A) (b : CoPset) (vd : ✓{n} mkDat
     | inr h => simpa [eo] using .inr h
 
 theorem valid_data_op_token (a : H A) (b : CoPset) (vd : ✓ mkData a)
-    (disj : ∀i, get? a i = none ∨ i ∉ b) : ✓ mkData a • mkToken b := by
+    (disj : ∀ i, get? a i = none ∨ i ∉ b) : ✓ mkData a • mkToken b := by
   have abdp : (mkData a • mkToken b).data = a :=
     show a • ∅ = a from Algebra.MonoidOps.op_right_id
   have eo : ∅ • valid b = .valid b := pcore_op_left_L rfl
@@ -566,7 +566,7 @@ theorem updateP {P} {Q : ReservationMap A H → Prop} k a (ap : a ~~>: P)
       grind
 
 @[rocq_alias reservation_map_update]
-theorem reservation_map_update {k} {a b : A} (uab : a ~~> b):
+theorem reservation_map_update {k} {a b : A} (uab : a ~~> b) :
     singleton (H := H) k a ~~> singleton k b :=
   Update.of_updateP <| updateP k a (.of_update uab) fun _ => congrArg (singleton k)
 

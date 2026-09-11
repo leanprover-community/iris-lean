@@ -122,7 +122,7 @@ theorem box_own_auth_agree {γ : SliceName} {b1 b2 : Bool} :
   ipureintro; exact DiscreteO.eqv_inj (Iris.ExclAuth.agree H)
 
 @[rocq_alias box_own_auth_update]
-theorem box_own_auth_update {γ : SliceName} {b1 b2: Bool} (b3 : Bool) :
+theorem box_own_auth_update {γ : SliceName} {b1 b2 : Bool} (b3 : Bool) :
     box_own_auth (GF := GF) γ (●E (⟨b1⟩ : BoolO)) ∗ box_own_auth γ (◯E ⟨b2⟩) ==∗
     box_own_auth γ (●E ⟨b3⟩) ∗ box_own_auth γ (◯E ⟨b3⟩) := by
   simp only [box_own_auth, ← iOwn_op.to_eq]
@@ -334,7 +334,7 @@ theorem box_fill {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
 @[rocq_alias box_empty]
 theorem box_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     (E : CoPset) {f : M Bool} {P : IProp GF} {N : Namespace}
-    (HE : ↑N ⊆ E) (Hall: all (fun _ b => b = true) f) :
+    (HE : ↑N ⊆ E) (Hall : all (fun _ b => b = true) f) :
     box N f P ⊢ |={E}=> ▷ P ∗ box N (Std.PartialMap.map (fun _ => false) f) P := by
   unfold box
   iintro ⟨%Φ, #Heq, Hbig⟩

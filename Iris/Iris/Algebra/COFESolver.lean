@@ -156,7 +156,7 @@ theorem eqToHom_up {k k'} {x : A F k} (e : k = k') :
   cases e; rfl
 
 @[rocq_alias solver.g_coerce]
-theorem down_eqToHom {k k'} {x : A F (k+1)} (e : k = k') :
+theorem down_eqToHom {k k'} {x : A F (k + 1)} (e : k = k') :
     down F k' (eqToHom (congrArg Nat.succ e) x) = eqToHom e (down F k x) := by
   cases e; rfl
 

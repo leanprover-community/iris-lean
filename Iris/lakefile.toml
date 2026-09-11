@@ -55,4 +55,4 @@ weak.linter.iris.style.show = true
 # Implemented in Iris.Std.Linter.DupNamespace
 weak.linter.iris.dupNamespace = true
 # Implemented in Iris.Std.Linter.Whitespace
-weak.linter.iris.style.whitespace = false
+weak.linter.iris.style.whitespace = true

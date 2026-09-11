@@ -106,7 +106,7 @@ def metaToken (l : L) (E : CoPset) : IProp GF := iprop%
 
 /-- Persistent assertion that the meta-data `x : A` has been associated with
 namespace `N` to the location `l`.  The type `A` must be `Pos.Countable`. -/
-@[rocq_alias «meta»]
+@[rocq_alias«meta»]
 def metaInfo [Pos.Countable A] (l : L) (N : Namespace) (x : A) : IProp GF := iprop%
   ∃ γm, (metaName ↪◯MAP[l]{.discard} γm) ∗
     iOwn (E := genHeapPreS.metaData (L := L) (V := V)) γm

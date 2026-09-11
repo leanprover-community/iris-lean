@@ -236,7 +236,7 @@ theorem wp_strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : V
     iapply HΦ $$ h
 
 @[rocq_alias fupd_wp]
-theorem fupd_wp {s : Stuckness}{E}{e : Expr} {Φ : Val → IProp GF} :
+theorem fupd_wp {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} :
     (|={E}=> WP e @ s ; E {{ Φ }}) ⊢ WP e @ s ; E {{ Φ }} := by
   simp only [wp_unfold.to_eq]
   iintro H
@@ -311,7 +311,7 @@ theorem wp_atomic {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {Φ : Val → IPro
       iframe
 
 @[rocq_alias wp_credit_access]
-theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P: IProp GF} (h : toVal e = none)
+theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P : IProp GF} (h : toVal e = none)
     (Htri : ∀ m k, ι.numLatersPerStep m + ι.numLatersPerStep k ≤ ι.numLatersPerStep (m + k)) :
     (∀ (σ₁ : State) ns obs nt,
       stateInterp σ₁ ns obs nt ={E}=∗
@@ -347,7 +347,7 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P: IProp 
 
 @[rocq_alias wp_step_fupdN_strong]
 theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IProp GF} {Φ} {n}
-    (toVal_e : toVal e = none)  (E2_E1 : E2 ⊆ E1) :
+    (toVal_e : toVal e = none) (E2_E1 : E2 ⊆ E1) :
     (∀ (σ : State) ns obs nt, stateInterp σ ns obs nt ={E1, ∅}=∗ ⌜n ≤ ι.numLatersPerStep ns + 1⌝)
     ∧ ((|={E1,E2}=> |={∅}▷=>^[n] |={E2,E1}=> P)
     ∗ WP e @ s ; E2 {{ v, P ={E1}=∗ Φ v}}) ⊢
@@ -563,7 +563,7 @@ theorem wp_frame_step_r {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {Φ : Va
   (BI.sep_comm.1.trans <| wp_frame_step_l h1 h2 |>.trans <| wp_mono (fun _ => BI.sep_comm.1))
 
 @[rocq_alias wp_frame_step_l']
-theorem wp_frame_step_l' {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{Φ : Val → IProp GF} {R : IProp GF}
+theorem wp_frame_step_l' {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {Φ : Val → IProp GF} {R : IProp GF}
     (toVal_e : toVal e = none) (E₂E₁ : E₂ ⊆ E₁) :
     (▷ R) ∗ WP e @ s; E₂ {{ Φ }} ⊢ WP e @ s; E₁ {{ v, R ∗ Φ v }} := by
   iintro ⟨Hu, Hwp⟩
@@ -601,7 +601,7 @@ theorem wp_wand_r {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF
   BI.wand_elim wp_wand
 
 @[rocq_alias wp_frame_wand]
-theorem wp_frame_wand {s : Stuckness} {E : CoPset} {e : Expr} {Φ :Val → IProp GF} {R : IProp GF} :
+theorem wp_frame_wand {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF} {R : IProp GF} :
     R ⊢ WP e @ s; E {{ v, R -∗ Φ v }} -∗ WP e @ s; E {{ Φ }} := by
   iintro R Hwp
   iapply wp_wand $$ Hwp

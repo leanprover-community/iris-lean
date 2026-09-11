@@ -270,7 +270,7 @@ instance fromForall_pure [BI PROP] (Φ : α → Prop) :
   ⟨pure_forall.2⟩
 
 @[rocq_alias from_forall_pure_not]
-instance fromForall_pure_not [BI PROP] (Φ :Prop) :
+instance fromForall_pure_not [BI PROP] (Φ : Prop) :
     FromForall (PROP := PROP) iprop(⌜¬ Φ⌝) (fun _ : Φ => iprop(False)) :=
   ⟨pure_forall.2⟩
 
@@ -787,12 +787,12 @@ instance intoSep_pure (φ ψ : Prop) [BI PROP] :
   into_sep := pure_and.2.trans persistent_and_sep_mp
 
 @[ipm_backtrack, rocq_alias into_sep_affinely]
-instance (priority:=high) intoSep_affinely [BI PROP] [BIPositive PROP] (P Q1 Q2 : PROP)
+instance (priority := high) intoSep_affinely [BI PROP] [BIPositive PROP] (P Q1 Q2 : PROP)
     [h : IntoSep P Q1 Q2] : IntoSep iprop(<affine> P) iprop(<affine> Q1) iprop(<affine> Q2) where
   into_sep := (affinely_mono h.1).trans affinely_sep.1
 
 @[ipm_backtrack, rocq_alias into_sep_intuitionistically]
-instance (priority:=high) intoSep_intuitionistically [BI PROP] [BIPositive PROP]
+instance (priority := high) intoSep_intuitionistically [BI PROP] [BIPositive PROP]
     (P Q1 Q2 : PROP) [h : IntoSep P Q1 Q2] : IntoSep iprop(□ P) iprop(□ Q1) iprop(□ Q2) where
   into_sep := (intuitionistically_mono h.1).trans intuitionistically_sep.1
 

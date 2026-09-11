@@ -240,7 +240,7 @@ theorem reverse_xI p : reverse (p~1) = (P1~1) ++ reverse p :=
 
 /-- Duplicate the bits of a positive, i.e. 1~0~1 -> 1~0~0~1~1 and
       1~1~0~0 -> 1~1~1~0~0~0~0 -/
-def dup  : Pos -> Pos
+def dup : Pos -> Pos
 | xH => P1
 | p~0 => (dup p)~0~0
 | p~1 => (dup p)~1~1

@@ -55,7 +55,7 @@ intro/elim form: for any predicate `Ψ : PROP1 → Prop`, `forall_2` builds
 from pointwise `⎡P⎤ ⊢ R`. -/
 @[rocq_alias BiEmbed]
 class BiEmbed (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] extends Embed PROP1 PROP2 where
-  [ne            : OFE.NonExpansive embed]
+  [ne : OFE.NonExpansive embed]
   mono           : ∀ {P Q : PROP1}, (P ⊢ Q) → ((⎡P⎤ : PROP2) ⊢ ⎡Q⎤)
   emp_valid_inj  : ∀ (P : PROP1), (⊢ (⎡P⎤ : PROP2)) → (⊢ P)
   emp_2          : (emp : PROP2) ⊢ ⎡(emp : PROP1)⎤

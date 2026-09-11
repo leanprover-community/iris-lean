@@ -262,8 +262,7 @@ public meta def iWpExprSimp (e : Q(Exp)) :
 @[rocq_alias heap_lang.tac_wp_expr_eval]
 public theorem tac_wp_expr_simp [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {e e' : Exp} {Φ : Val → IProp GF}
   (h : Δ ⊢ WP e' @ s ; E {{ Φ }})
-  (heq : e = e') :
-  (Δ ⊢ WP e @ s ; E {{ Φ }}) := by simp [*]
+  (heq : e = e') : Δ ⊢ WP e @ s ; E {{ Φ }} := by simp [*]
 
 elab "wp_expr_simp" : tactic =>
   ProofModeM.runTacticWp `wp_expr_simp fun mvar {hyps, s, E, e, Φ, ..} => do
@@ -302,7 +301,7 @@ elab "wp_finish" : tactic =>
 
 @[rocq_alias heap_lang.tac_wp_bind]
 public theorem tac_wp_bind [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {K : List ECtxItem} {e' : Exp} {Φ : Val → IProp GF}
-  (H : Δ ⊢ WP e' @ s ; E {{ v, WP (ProgramLogic.fill K (Exp.ofVal (Expr:=Exp) v)) @ s; E {{ Φ }} }}) :
+  (H : Δ ⊢ WP e' @ s ; E {{ v, WP (ProgramLogic.fill K (Exp.ofVal (Expr := Exp) v)) @ s ; E {{ Φ }} }}) :
     (Δ ⊢ WP (ProgramLogic.fill K e') @ s ; E {{ Φ }}) :=
   H.trans (wp_bind (ProgramLogic.fill K))
 
@@ -594,7 +593,7 @@ theorem lookup_split [BI PROP] {Δ' Δ'' P : PROP} [Affine P] {p : Bool}
 triple. -/
 theorem wp_exact_of_triple [HeapLangGS hlc GF]
     {s : Stuckness} {E : CoPset} {e : Exp} {r : Val} {P P' : IProp GF}
-    (hwp : {{ ▷ P }} e @ s; E {{ RET r; P' }}) :
+    (hwp : {{ ▷ P }} e @ s ; E {{ RET r; P' }}) :
     ▷ P ⊢ WP e @ s; E {{ v', ⌜v' = r⌝ ∗ P' }} := by
   iintro HP
   iapply hwp $$ HP

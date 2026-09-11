@@ -353,7 +353,7 @@ theorem maybeFrame_default_persistent [BI PROP] (R P : PROP) :
 
 @[rocq_alias maybe_frame_default]
 theorem maybeFrame_default [BI PROP] (R P : PROP)
-  [h : TCOr (Affine R) (Absorbing P)]:
+  [h : TCOr (Affine R) (Absorbing P)] :
   Frame false R P P where
   frame := by simp only [intuitionisticallyIf_false']; exact sep_elim_right
 

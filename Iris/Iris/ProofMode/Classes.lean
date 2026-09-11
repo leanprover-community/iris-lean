@@ -47,7 +47,7 @@ theorem asEmpValid_1 {PROP} [bi : BI PROP] {φ : Prop} (P : PROP) {io}
   inst.as_emp_valid.left rfl
 
 @[rocq_alias as_emp_valid_2]
-theorem asEmpValid_2 {PROP} [bi : BI PROP] {P: PROP} (φ : Prop) {io}
+theorem asEmpValid_2 {PROP} [bi : BI PROP] {P : PROP} (φ : Prop) {io}
     (inst : AsEmpValid .from φ io PROP bi P) : (⊢ P) → φ :=
   inst.as_emp_valid.right rfl
 
@@ -365,7 +365,7 @@ class IntoInv [BI PROP] (P : PROP) (N : Namespace)
 
 @[rocq_alias accessor]
 def accessor [BI PROP] {X : Type} (M1 M2 : PROP → PROP) (α β : X → PROP)
-    (mγ : X → Option  PROP) : PROP :=
+    (mγ : X → Option PROP) : PROP :=
   M1 iprop(∃ x, α x ∗ (β x -∗ M2 (mγ x |>.getD emp)))
 
 @[ipm_class, rocq_alias ElimAcc]

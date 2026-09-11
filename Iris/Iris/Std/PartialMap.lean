@@ -160,7 +160,7 @@ instance : SDiff (M V) := ⟨difference⟩
 /-- Two PartialMaps are pointwise equivalent. -/
 @[simp] def equiv (m1 m2 : M V) : Prop := ∀ k, get? m1 k = get? m2 k
 
-@[simp,refl]
+@[simp, refl]
 theorem equiv.refl : ∀ a : M V, equiv a a := by simp only [equiv, implies_true]
 
 instance instEquivRefl : Std.Refl (@equiv K V M _) where
@@ -1224,7 +1224,7 @@ theorem toList_insert_delete {m : M V} {k : K} {v : V} :
   · simp [LawfulPartialMap.get?_insert_eq h]
   · simp [LawfulPartialMap.get?_insert_ne h, LawfulPartialMap.get?_delete_ne h]
 
-theorem toList_map {f : V → V'} {m : M V}  :
+theorem toList_map {f : V → V'} {m : M V} :
     (toList (PartialMap.map f m)).Perm
       ((toList m).map (fun kv => (kv.1, f kv.2))) := by
   refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩

@@ -47,10 +47,10 @@ section lemmas
 
 variable [IrisGS_gen hlc Exp GF] [lk : Lock GF] (N : lk.lockG GF)
 
-instance instPersistentLockIsLock  γ v R : Persistent (lk.isLock N γ v R) :=
+instance instPersistentLockIsLock γ v R : Persistent (lk.isLock N γ v R) :=
   lk.isLock_persistent γ v R
 
-instance instTimelessLockLocked  γ : Timeless (lk.locked N γ) :=
+instance instTimelessLockLocked γ : Timeless (lk.locked N γ) :=
   lk.locked_timeless γ
 
 @[rocq_alias heap_lang.is_lock_contractive]

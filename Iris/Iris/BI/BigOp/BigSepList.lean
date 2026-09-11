@@ -195,7 +195,7 @@ theorem bigSepL_wand {Φ Ψ : Nat → A → PROP} {l : List A} :
   wand_intro <| bigSepL_sep_eqv.symm.1.trans <| bigSepL_mono fun _ => wand_elim_right
 
 @[rocq_alias big_sepL_pure_1]
-theorem bigSepL_pure_intro {φ : Nat → A → Prop} {l : List A}:
+theorem bigSepL_pure_intro {φ : Nat → A → Prop} {l : List A} :
     ([∗list] k ↦ x ∈ l, ⌜φ k x⌝) ⊢ (⌜∀ k x, l[k]? = some x → φ k x⌝ : PROP) :=
   match l with
   | [] => pure_intro fun _ _ h => nomatch h

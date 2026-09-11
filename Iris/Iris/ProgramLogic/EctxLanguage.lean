@@ -127,10 +127,10 @@ def Irreducible : Expr × State → Prop
   | (e,σ) => ∀ obs e' σ' eₜ, ¬ (e,σ) -<obs>->ᵇ (e',σ',eₜ)
 
 @[rocq_alias base_stuck]
-def Stuck [ToVal Expr Val]: Expr × State → Prop
+def Stuck [ToVal Expr Val] : Expr × State → Prop
   | (e,σ) => toVal e = none ∧ Irreducible (e,σ)
 
-variable {e : Expr}{σ : State}
+variable {e : Expr} {σ : State}
 
 @[rocq_alias not_base_reducible, grind =]
 theorem not_reducible_iff_irreducible : (¬ Reducible (e, σ)) ↔ Irreducible (e, σ) := by
@@ -148,7 +148,7 @@ This typeclass is defined in terms of a base step relation `baseStep`,
 a type of evaluation contexts `Ectx` and a set of values `Val`, and
 extended with theorems that relate these concepts to one another. -/
 @[rocq_alias ectxLanguage, rocq_alias EctxLanguageMixin]
-class EctxLanguage (Expr  : Type _) (Ectx State Obs Val : outParam (Type _))
+class EctxLanguage (Expr : Type _) (Ectx State Obs Val : outParam (Type _))
   extends BaseStep Expr State Obs, ToVal Expr Val, EvContext Expr Ectx where
   /-- Removing a context out of a value gives a value -/
   fill_val K e : (toVal (fill K e)).isSome → (toVal e).isSome

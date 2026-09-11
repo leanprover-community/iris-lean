@@ -21,7 +21,7 @@ inductive Stuckness where
 namespace Stuckness
 
 @[simp, rocq_alias stuckness_le]
-instance instLE: LE Stuckness where
+instance instLE : LE Stuckness where
   le x y := ¬ (x = .MaybeStuck ∧ y = .NotStuck)
 
 @[rocq_alias stuckness_le_po]
@@ -57,27 +57,27 @@ declare_syntax_cat wpPostcond
 -- example {a : PUnit.{i}} : PUnit.{i} := a
 --                      ^^
 -- see: https://github.com/leanprover-community/iris-lean/pull/393
-syntax " {" noWs "{ " wpPostcondInner " }" noWs "} " : wpPostcond
-syntax " [" noWs "{ " wpPostcondInner " }" noWs "] " : wpPostcond
+syntax "{" noWs "{ " wpPostcondInner " }" noWs "}" : wpPostcond
+syntax "[" noWs "{ " wpPostcondInner " }" noWs "]" : wpPostcond
 
-syntax (name := wp) "WP " wpExpr wpPostcond : term
+syntax (name := wp) "WP " wpExpr ppSpace wpPostcond : term
 
 syntax texanPostcondInner := ((ppSpace (binderIdent <|> bracketedBinder))+ ", ")? " RET " term:min "; " term:min
 
 declare_syntax_cat texanPostcond
-syntax " {" noWs "{ " texanPostcondInner " }" noWs "} " : texanPostcond
+syntax "{" noWs "{ " texanPostcondInner " }" noWs "}" : texanPostcond
 declare_syntax_cat texanPrecond
-syntax " {" noWs "{ " term:min " }" noWs "} " : texanPrecond
+syntax "{" noWs "{ " term:min " }" noWs "}" : texanPrecond
 
-syntax (name := texanTriple) texanPrecond wpExpr texanPostcond : term
+syntax (name := texanTriple) texanPrecond ppSpace wpExpr ppSpace texanPostcond : term
 
 
 declare_syntax_cat totalTexanPostcond
-syntax " [" noWs "{ " texanPostcondInner " }" noWs "] " : totalTexanPostcond
+syntax "[" noWs "{ " texanPostcondInner " }" noWs "]" : totalTexanPostcond
 declare_syntax_cat totalTexanPrecond
-syntax " [" noWs "{ " term:min " }" noWs "] " : totalTexanPrecond
+syntax "[" noWs "{ " term:min " }" noWs "]" : totalTexanPrecond
 
-syntax (name := totalTexanTriple) totalTexanPrecond wpExpr totalTexanPostcond : term
+syntax (name := totalTexanTriple) totalTexanPrecond ppSpace wpExpr ppSpace totalTexanPostcond : term
 
 open Lean in
 meta def parseWpExpr : Lean.TSyntax ``wpExpr → Lean.MacroM (TSyntax `term × TSyntax `term × TSyntax `term) := fun

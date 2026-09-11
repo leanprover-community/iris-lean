@@ -51,7 +51,7 @@ class LcGpreS (GF : BundledGFunctors) where
 attribute [reducible, instance] LcGpreS.lc_elem
 
 @[rocq_alias lcGS]
-class LcGS (hlc : outParam HasLC) (GF : BundledGFunctors)  extends LcGpreS GF where
+class LcGS (hlc : outParam HasLC) (GF : BundledGFunctors) extends LcGpreS GF where
   lc_name : GName
 
 #rocq_ignore «lcΣ» "Superseded by the `LcGpreS` typeclass on `BundledGFunctors`."
@@ -535,7 +535,7 @@ instance le_upd_finally_ne : NonExpansive (le_upd_finally (GF := GF)) where
     exact instPlainly_ne.ne H
 
 @[rocq_alias le_upd.le_upd_finally_mono]
-theorem le_upd_finally_mono (P Q: IProp GF) : (P ⊢ Q) → (|==£|> P) ⊢ (|==£|> Q) := by
+theorem le_upd_finally_mono (P Q : IProp GF) : (P ⊢ Q) → (|==£|> P) ⊢ (|==£|> Q) := by
   intro Hent
   unfold le_upd_finally
   iintro HP %m Hlc

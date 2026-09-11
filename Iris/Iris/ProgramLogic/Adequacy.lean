@@ -157,7 +157,7 @@ theorem wptp_preservation (s : Stuckness) (n : Nat) (es1 es2 : List Expr)
     iframe HSI' Hwptp'
 
 @[rocq_alias wptp_postconditions]
-theorem wptp_postconditions (Φs : List (Val → IProp GF)) (s : Stuckness) (es : List Expr):
+theorem wptp_postconditions (Φs : List (Val → IProp GF)) (s : Stuckness) (es : List Expr) :
     wptp s es Φs ={⊤}=∗ [∗list] e;Φ ∈ es;Φs, (toVal e).elim iprop(True) Φ := by
   iintro Ht
   iapply BigSepL2.bigSepL2_fupd

@@ -171,7 +171,7 @@ theorem wp_lift_atomic_step (h : toVal e₁ = none) :
 
 @[rocq_alias wp_lift_pure_det_step_no_fork]
 theorem wp_lift_pure_det_step_no_fork [Inhabited State] (E₂ : CoPset)
-    (Hsafe : ∀ σ₁, match s with | .NotStuck => PrimStep.Reducible (e₁,σ₁) | _ => toVal e₁ = none)
+    (Hsafe : ∀ σ₁, match s with | .NotStuck => PrimStep.Reducible (e₁, σ₁) | _ => toVal e₁ = none)
     (Hpuredet : ∀ {σ₁ obs e₂' σ₂ eₜ'}, (e₁, σ₁) -<obs>-> (e₂', σ₂, eₜ') →
       obs = [] ∧ σ₂ = σ₁ ∧ e₂' = e₂ ∧ eₜ' = []) :
     (|={E}[E₂]▷=> £ 1 -∗ WP e₂ @ s; E {{ Φ }}) ⊢ WP e₁ @ s; E {{ Φ }} := by

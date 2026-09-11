@@ -202,7 +202,7 @@ partial def Hyps.findM? [Monad m] {prop : Q(Type u)} {bi : Q(BI $prop)}
     | some res => return some res
     | none => lhs.findM? p
 
-partial def Hyps.getDecl? {u prop bi} (ivar : IVarId) {s}:
+partial def Hyps.getDecl? {u prop bi} (ivar : IVarId) {s} :
     @Hyps u prop bi s → Option (Name × IVarId × Q(Bool) × Q($prop))
   | .emp _ => none
   | .hyp _ name ivar' p ty _ => if ivar == ivar' then (name, ivar, p, ty) else none
