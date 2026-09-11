@@ -304,3 +304,7 @@ instance (priority := low) makeEmbed_default [BI PROP1] [BI PROP2]
     [BiEmbed PROP1 PROP2] (P : PROP1) :
     MakeEmbed (PROP2:=PROP2) P iprop(⎡P⎤) where
   make_embed := .rfl
+
+end ProofMode
+
+end Iris

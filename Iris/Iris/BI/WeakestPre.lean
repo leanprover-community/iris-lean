@@ -189,3 +189,5 @@ meta def unexpanderTotalWp : PrettyPrinter.Unexpander
   | _ => throw ()
 
 -- TODO: Consider adding unexpanders for texan triples
+
+end Iris

@@ -254,3 +254,5 @@ instance isOp_dfrac_own {q q1 q2 : Qp} [h : IsOp d q q1 q2] :
   is_op := by rw [h.is_op]; rfl
 
 end DFrac
+
+end Iris

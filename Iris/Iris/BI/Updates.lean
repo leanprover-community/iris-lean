@@ -954,3 +954,5 @@ theorem step_fupd_plain_forall [BIAffine PROP] {Eo Ei : CoPset} {Φ : α → PRO
       _ ⊢ |={Eo}[Ei]▷=> ∀ a, Φ a     := mono <| later_mono fupd_except0
 
 end StepFUpdPlainlyLaws
+
+end Iris

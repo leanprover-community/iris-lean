@@ -163,3 +163,11 @@ elab "ipureintro" : tactic => do
 macro_rules
   | `(tactic| itrivial) =>
     `(tactic| (first | ipureintro | exfalso) <;> (first | simp [*] | assumption) <;> done)
+
+end
+
+end
+
+end ProofMode
+
+end Iris

@@ -55,3 +55,11 @@ elab "iright" : tactic => do
     | throwIPMError "{goal} is not a disjunction"
   let m : Q($e ⊢ $A2) ← addBIGoal hyps A2
   mvar.assign q(from_or_right (Q := $goal) $m)
+
+end
+
+end
+
+end ProofMode
+
+end Iris

@@ -49,3 +49,11 @@ elab "irename" " : " colGt ty:term " => " colGt nameTo:ident : tactic => do
 
   mvar.setType (IrisGoal.toExpr { prop, bi, hyps := hyps', goal, .. })
   addMVarGoal mvar
+
+end
+
+end
+
+end ProofMode
+
+end Iris

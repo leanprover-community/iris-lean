@@ -235,3 +235,7 @@ def ProofModeM.runTactic (tacName : Name) (x : MVarId → IrisGoal → ProofMode
 
   replaceMainGoal (nonDep ++ dep).toList
   return res
+
+end ProofMode
+
+end Iris

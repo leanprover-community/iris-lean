@@ -31,3 +31,9 @@ elab "iaccu" : tactic => do
     mvar.assign pf
 
 #rocq_ignore tac_accu "Using infrastructure provided by Expr.lean to build the proof"
+
+end
+
+end ProofMode
+
+end Iris

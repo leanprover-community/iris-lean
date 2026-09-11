@@ -202,3 +202,5 @@ instance (priority := default - 500) isOpFrac_quarters_left d : IsOp d instQpOne
 
 instance (priority := default - 500) isOpFrac_quarters_right d : IsOp d instQpOne.one Qp.threeQuarters Qp.quarter where
   is_op := by refine Qp.ext_iff.mpr ?_; grind [instQpOne]
+
+end Iris

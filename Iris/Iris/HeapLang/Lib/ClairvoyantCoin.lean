@@ -103,3 +103,7 @@ theorem tossCoin.spec (cp : Val) (bs : List Bool) :
   iframe
 
 end Proofs
+
+end HeapLang
+
+end Iris

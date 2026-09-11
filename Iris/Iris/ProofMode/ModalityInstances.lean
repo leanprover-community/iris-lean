@@ -87,3 +87,7 @@ def modality_embed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] : Modality PROP1 
   sep := (BiEmbed.sep _ _).mpr
 
 end Modalities
+
+end ProofMode
+
+end Iris

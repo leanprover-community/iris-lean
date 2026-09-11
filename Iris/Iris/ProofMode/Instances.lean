@@ -1685,3 +1685,7 @@ instance (priority := default - 2) intoIH_listForall₂ [BI PROP]
       refine sep_mono ?_ ?_
       · exact intuitionistically_intro_intuitionistically ((h _ _).into_ih x)
       · exact ih
+
+end ProofMode
+
+end Iris

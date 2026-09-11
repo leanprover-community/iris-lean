@@ -26,3 +26,9 @@ elab "iexact " colGt hyp:ident : tactic => do
     | throwIPMError "context is not affine or goal is not absorbing"
 
   mvar.assign q(assumption (Q := $goal) $pf)
+
+end
+
+end ProofMode
+
+end Iris

@@ -544,3 +544,7 @@ theorem Exp.assert_subst {x v} e :
   simp only [substStr, ofVal]
 
 end Derived
+
+end HeapLang
+
+end Iris

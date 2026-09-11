@@ -304,3 +304,11 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
         q($st.p) q(iprop($st.outAs ∗ □ $outGives))
       mvar.assign q(combine_as_gives $st.pfAs $pfGives $pf)
     | none, _ => throwNoInstanceForGives
+
+end
+
+end
+
+end ProofMode
+
+end Iris

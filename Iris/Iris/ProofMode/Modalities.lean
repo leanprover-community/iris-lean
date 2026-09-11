@@ -78,3 +78,7 @@ attribute [rw_mono_rule] Modality.mono
   "Not necessary due to different env representation"
 #rocq_ignore modality_intuitionistic_id_big_and "Not necessary due to different env representation"
 #rocq_ignore modality_spatial_forall_big_sep "Not necessary due to different env representation"
+
+end ProofMode
+
+end Iris

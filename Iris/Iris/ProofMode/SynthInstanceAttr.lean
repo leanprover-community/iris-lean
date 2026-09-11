@@ -363,3 +363,7 @@ end IPMTactic
 
 initialize
   registerTraceClass `Meta.synthInstance.ipmParamKinds (inherited := true)
+
+end ProofMode
+
+end Iris

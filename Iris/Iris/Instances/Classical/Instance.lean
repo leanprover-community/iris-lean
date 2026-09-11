@@ -259,3 +259,9 @@ instance : BI (HeapProp Val) where
   later_sep := ⟨fun _ => id, fun _ => id⟩
   later_persistently := ⟨fun _ => id, fun _ => id⟩
   later_false_em _ h := .inr fun _ => h
+
+end Classical
+
+end Instances
+
+end Iris

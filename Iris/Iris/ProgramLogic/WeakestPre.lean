@@ -728,3 +728,7 @@ instance elimAcc_wp_nonatomic {X} E (α β : X → IProp GF) (γ : X → Option 
       | some P => iapply HΦ $$ Hclose
 
 end ProofModeClasses
+
+end
+
+end Iris

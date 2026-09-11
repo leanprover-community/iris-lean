@@ -1257,3 +1257,5 @@ end BigSepL2
 #rocq_ignore big_sepL2_proper' "bigSepL2 is preserved under ⊣⊢."
 
 end BI
+
+end Iris

@@ -23,7 +23,7 @@ infixr:50 " ~~> " => Update
 
 #rocq_ignore cmra_update_rewrite_relation "Not needed"
 
-section updates
+section Updates
 
 variable [CMRA α] [CMRA β] (f : α → β) (g : β → α)
 
@@ -263,3 +263,7 @@ theorem UpdateP.option' (P : α → Prop) (x : α) (uxp : x ~~>: P) : some x ~~>
 @[rocq_alias option_update]
 theorem Update.option (x y : α) (uxy : x ~~> y) : some x ~~> some y :=
   .of_updateP <| .option (.of_update uxy) fun _ => congrArg some
+
+end Updates
+
+end Iris

@@ -111,4 +111,7 @@ theorem own_updateP [UCMRA M] {own : M → PROP} {x : M} {Φ : M → Prop}
   iframe %HΦ Hy
 
 end BupdPlainDef
+
 end BUpdPlain
+
+end Iris

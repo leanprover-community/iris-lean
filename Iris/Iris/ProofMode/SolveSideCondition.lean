@@ -83,3 +83,7 @@ def solveTCSideCondition : SynthTactic := fun e => do
   | none => s.restore; return .continue
 
 end
+
+end ProofMode
+
+end Iris

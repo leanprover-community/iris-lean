@@ -104,3 +104,11 @@ macro "isplitl" : tactic => `(tactic| isplitr [])
   instead.
 -/
 macro "isplitr" : tactic => `(tactic| isplitl [])
+
+end
+
+end
+
+end ProofMode
+
+end Iris

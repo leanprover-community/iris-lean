@@ -420,4 +420,9 @@ def instRwLock [HeapLangGS hlc GF] : RwLock GF where
   releaseWriter_spec γ lk Φ := releaseWriter_spec γ lk Φ
 
 end RwSpinLock
+
 end
+
+end HeapLang
+
+end Iris

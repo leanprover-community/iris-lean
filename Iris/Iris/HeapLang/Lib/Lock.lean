@@ -93,3 +93,7 @@ theorem newlock_spec R :
 end lemmas
 
 end
+
+end HeapLang
+
+end Iris

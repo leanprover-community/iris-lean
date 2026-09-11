@@ -689,3 +689,7 @@ def Hyps.buildIntuitionisticProof {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     let pfL ← buildIntuitionisticProof lhs
     let pfR ← buildIntuitionisticProof rhs
     some q((sep_mono $pfL $pfR).trans intuitionistically_sep_mpr)
+
+end ProofMode
+
+end Iris

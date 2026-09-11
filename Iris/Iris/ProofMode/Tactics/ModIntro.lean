@@ -223,3 +223,11 @@ macro "imodintro" : tactic => `(tactic | imodintro _)
   required by the modality. The tactic is equivalent to `imodintro (▷^[_] _)`.
 -/
 macro "inext" : tactic => `(tactic | imodintro (▷^[_] _))
+
+end
+
+end
+
+end ProofMode
+
+end Iris

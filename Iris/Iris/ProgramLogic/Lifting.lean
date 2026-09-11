@@ -225,3 +225,7 @@ theorem wp_pure_step_later [Inhabited State] [Hexec : PureExec φ n e₁ e₂] (
     rw [(laterN_succ_left n).to_eq]
     refine (later_mono IH).trans ?_
     exact step_fupd_intro Std.LawfulSet.subset_refl
+
+end ProgramLogic
+
+end Iris

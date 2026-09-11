@@ -269,3 +269,5 @@ instance fromModal_make_laterable [BI PROP] [Timeless (emp : PROP)] io (P : PROP
     iassumption
 
 end Laterable
+
+end Iris

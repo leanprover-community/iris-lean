@@ -255,3 +255,7 @@ def ipm_synth_elab : Command.CommandElab
 initialize
   registerTraceClass `Meta.synthInstance.mvarInputs (inherited := true)
   registerTraceClass `Meta.synthInstance.tactics (inherited := true)
+
+end ProofMode
+
+end Iris

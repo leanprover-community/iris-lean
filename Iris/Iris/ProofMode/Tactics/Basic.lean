@@ -77,3 +77,7 @@ elab "focusLastIrisGoal" colGt tac:tactic : tactic => do
   evalTactic tac
   let goals' ← getUnsolvedGoals
   setGoals (goals_before ++ goals' ++ goals_after)
+
+end ProofMode
+
+end Iris

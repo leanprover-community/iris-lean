@@ -45,3 +45,11 @@ elab "ihave " colGt pat:icasesPat " : " P:term " $$ " spat:specPat : tactic => d
     goal [spat] (try_dup_context := pat.should_try_dup_context)
   let pf2 ← iCasesCore hyps' goal pat p A
   mvar.assign q(ihave_assert ($pf $pf2))
+
+end
+
+end
+
+end ProofMode
+
+end Iris

@@ -2442,4 +2442,7 @@ instance ofDiscrete_discrete [OFE α] [OFE.Discrete α] (pcore : α → Option �
 end OfDiscrete
 
 end CMRA
+
 end CmraMixin
+
+end Iris

@@ -25,3 +25,11 @@ elab "iexfalso" : tactic => do
   ProofModeM.runTactic `iexfalso λ mvar { hyps, goal, .. } => do
     let m ← addBIGoal hyps q(iprop(False))
     mvar.assign q(exfalso (Q := $goal) $m)
+
+end
+
+end
+
+end ProofMode
+
+end Iris

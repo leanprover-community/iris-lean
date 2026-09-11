@@ -52,3 +52,5 @@ theorem Iterate.head_induction_on {b : α} {motive : ∀ (n : Nat) (a : α), Ite
 
 abbrev StronglyNormalizing {α : Type _} (step : α → α → Prop) (x : α) : Prop :=
   Acc (flip step) x
+
+end Relation

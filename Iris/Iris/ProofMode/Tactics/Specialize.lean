@@ -360,3 +360,11 @@ elab "ispecialize " colGt pmt:pmTerm : tactic => do
   let ⟨_, hyps''', pfEq⟩ := Hyps.add bi name ivar pb B hyps''
   let pf'' ← addBIGoal hyps''' goal
   mvar.assign q(($pf).1.trans <| $(pf') <| $(pfEq).mp.trans $pf'')
+
+end
+
+end
+
+end ProofMode
+
+end Iris

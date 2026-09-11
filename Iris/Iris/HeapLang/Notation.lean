@@ -499,3 +499,7 @@ def unexpResolve : Unexpander
   | `($_ $e1 $e2 $e3) => do
     unexpResolveProph <| ← `(hl(resolve($(← unpackHLExp e1), $(← unpackHLExp e2), $(← unpackHLExp e3))))
   | _ => throw ()
+
+end HeapLang
+
+end Iris

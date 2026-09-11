@@ -344,7 +344,7 @@ instance frame_bigSepMS_disjUnion [BI PROP] {MS A}
     Frame p R iprop([∗mset] y ∈ X, Φ y) Q where
   frame := hd.is_disj_union ▸ hf.frame.trans BigSepMS.bigSepMS_disjUnion.mpr
 
-section tactic_theorems
+section TacticTheorems
 
 @[rocq_alias maybe_frame_default_persistent]
 theorem maybeFrame_default_persistent [BI PROP] (R P : PROP) :
@@ -415,9 +415,9 @@ theorem frame_exist_no_instantiate [BI PROP] {α} (p : Bool) (R : PROP) (Φ Ψ :
   frame := sep_exists_left.mp.trans <|
     exists_elim <| fun a => (inst a).frame.trans <| exists_intro a
 
-end tactic_theorems
+end TacticTheorems
 
-meta section tactics
+meta section Tactics
 open Lean Elab Meta Std
 
 def frameInstantiateExistsEnabled : MetaM Bool := do
@@ -608,3 +608,9 @@ def frameExist : SynthTactic := λ e => do
 #rocq_ignore GatherEvarsEq
   "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
 #rocq_ignore TCCbnTele "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
+
+end Tactics
+
+end ProofMode
+
+end Iris

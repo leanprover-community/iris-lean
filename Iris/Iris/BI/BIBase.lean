@@ -416,3 +416,9 @@ macro_rules
 
 delab_rule Plainly.plainlyIf
   | `($_ $p $P) => do ``(iprop(■? $p $(← Iris.BI.unpackIprop P)))
+
+end BIBase
+
+end BI
+
+end Iris

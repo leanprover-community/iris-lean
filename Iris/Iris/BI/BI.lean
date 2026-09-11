@@ -319,3 +319,7 @@ def ofPersistentlyDiscreteLaterTrue : BI PROP :=
     discrete persistently_eq
 
 end PersistentlyDiscrete
+
+end BI
+
+end Iris

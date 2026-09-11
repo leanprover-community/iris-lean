@@ -302,3 +302,11 @@ theorem sortAndCheckAdequate (l : List Int) (σ : State) :
   iapply sortAndCheck_spec <;> itrivial
 
 end Closed
+
+end Quicksort
+
+end
+
+end HeapLang
+
+end Iris

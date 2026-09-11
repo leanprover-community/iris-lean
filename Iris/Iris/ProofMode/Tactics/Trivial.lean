@@ -29,3 +29,9 @@ def iTrivial {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps : Hyps bi e)
     return none
   -- itrivial succeed, but did not fully solve the goal. This should not happen.
   throwIPMError "itrivial should not make partial progress"
+
+end
+
+end ProofMode
+
+end Iris

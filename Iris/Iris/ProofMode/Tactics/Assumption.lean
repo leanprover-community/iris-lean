@@ -45,3 +45,11 @@ elab "iassumption" : tactic => do
   mvar.assign q(assumption (Q := $goal) $pf)
 
 macro_rules | `(tactic| itrivial) => `(tactic| (try iassumption) <;> done)
+
+end
+
+end
+
+end ProofMode
+
+end Iris

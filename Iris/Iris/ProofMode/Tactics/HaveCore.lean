@@ -109,3 +109,11 @@ def iHave {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
   let ⟨_, hyps'', pb, B, pf'⟩ ←
     iSpecializeCore hyps' p A goal pmt.spats (try_dup_context := try_dup_context)
   return ⟨_, hyps'', pb, B, q(fun x => $(pf).trans ($pf' x))⟩
+
+end
+
+end
+
+end ProofMode
+
+end Iris

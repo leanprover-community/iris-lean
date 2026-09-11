@@ -420,3 +420,11 @@ elab_rules : tactic
 
       let pf ← iInductionCore hyps goal fvar parsedAlts recName genSelTargets
       mvar.assign pf
+
+end
+
+end
+
+end ProofMode
+
+end Iris

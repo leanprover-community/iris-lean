@@ -77,3 +77,11 @@ elab "iapply " colGt pmt:pmTerm : tactic => do
   let ⟨_, hyps', p, out, pf⟩ ← iHave hyps goal pmt true
   let pf' ← iApply hyps' p out goal
   mvar.assign q($pf $pf')
+
+end
+
+end
+
+end ProofMode
+
+end Iris

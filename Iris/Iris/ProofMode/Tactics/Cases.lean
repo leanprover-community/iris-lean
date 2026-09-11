@@ -382,3 +382,11 @@ macro "iintuitionistic " colGt hyp:ident : tactic => `(tactic | icases $hyp:iden
   Equivalent to `icases H with ∗H`.
 -/
 macro "ispatial " colGt hyp:ident : tactic => `(tactic | icases $hyp:ident with ∗$hyp:ident)
+
+end
+
+end
+
+end ProofMode
+
+end Iris

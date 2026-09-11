@@ -1107,3 +1107,7 @@ initialize registerTraceClass `wp_apply
 initialize registerTraceClass `wp_heap
 initialize registerTraceClass `wp_heap.redex (inherited := true)
 initialize registerTraceClass `wp_heap.lookup (inherited := true)
+
+end ProofMode
+
+end Iris

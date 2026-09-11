@@ -82,3 +82,11 @@ elab "iclear " pats:(colGt ppSpace selPat)+ : tactic => do
   ProofModeM.runTactic `iclear λ mvar { hyps, goal, .. } => do
     let pf ← iClearCore hyps goal pats (addBIGoalWithoutFVars · ·)
     mvar.assign pf
+
+end
+
+end
+
+end ProofMode
+
+end Iris

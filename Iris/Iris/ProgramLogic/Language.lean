@@ -518,3 +518,9 @@ theorem erasedStep_pureSteps {t₁ t₂ t₃ : List Expr} {σ₁ σ₂ : State} 
     exact List.Forall₂.append ps_ps₃ <| .cons lastSteps ss_ss₃
 
 end Language
+
+end
+
+end ProgramLogic
+
+end Iris

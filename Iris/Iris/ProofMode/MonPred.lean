@@ -1101,3 +1101,7 @@ instance makeMonPredAt_internalEq {A} [OFE A] (d : MakeMonPredAt.Kind)
   make_monPred_at := monPred_at_internal_eq i x y
 
 end SbiInstances
+
+end ProofMode
+
+end Iris

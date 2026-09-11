@@ -52,3 +52,11 @@ elab "iexists " xs:term,+ : tactic => do
 
     let m : Q($e ⊢ $(new_goal_and_pf.1)) ← addBIGoal hyps new_goal_and_pf.1
     mvar.assign q($(m).trans $(new_goal_and_pf.2))
+
+end
+
+end
+
+end ProofMode
+
+end Iris

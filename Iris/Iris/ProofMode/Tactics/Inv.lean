@@ -154,3 +154,11 @@ elab_rules : tactic
 
       let pf ← iInvCore hyps goal ivar specPat casesPat closePat
       mvar.assign pf
+
+end
+
+end
+
+end ProofMode
+
+end Iris

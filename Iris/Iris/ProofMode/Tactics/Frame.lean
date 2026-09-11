@@ -169,3 +169,11 @@ elab "iframe " pats:(colGt ppSpace selPat)+ : tactic => do
   `iframe ∗`.
 -/
 macro "iframe" : tactic => `(tactic | iframe ∗)
+
+end
+
+end
+
+end ProofMode
+
+end Iris

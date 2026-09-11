@@ -201,3 +201,11 @@ elab "irewrite " cfg:optConfig " [" rules:(IRewrite.irwRule),* "] " loc:(locatio
         let ⟨_, hyps', pf⟩ ← iRewriteHyp hyps rule ivar config.occs
         let pf' ← addBIGoal hyps' goal
         mvar.assign q(Entails.trans $pf $pf')
+
+end
+
+end
+
+end ProofMode
+
+end Iris

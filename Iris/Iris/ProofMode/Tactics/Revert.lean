@@ -290,3 +290,11 @@ elab_rules : tactic
 
       let expr ← iRevertCore targets hyps goal
       mvar.assign expr
+
+end
+
+end
+
+end ProofMode
+
+end Iris

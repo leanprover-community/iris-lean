@@ -228,3 +228,7 @@ instance WP_inv_open_abstract :
   inv_open_maybe e E₁ E₂ Φ _ := wp_inv_open_maybe e E₁ E₂ Φ
 
 end IrisWP
+
+end
+
+end Iris

@@ -241,3 +241,11 @@ elab "iintro " pats:(colGt ppSpace introPat)* : tactic => do
     let pf ← iIntroCore hyps goal pats.toList
 
     mvar.assign pf
+
+end
+
+end
+
+end ProofMode
+
+end Iris

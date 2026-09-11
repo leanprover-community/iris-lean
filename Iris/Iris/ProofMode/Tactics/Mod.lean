@@ -60,3 +60,11 @@ def iModCore {prop : Q(Type u)} (_bi : Q(BI $prop))
   -- show `P ∗ □?p' A' ⊢ Q'`
   let pf ← k p'' A'' Q''
   return q(mod $pf $hΦ)
+
+end
+
+end
+
+end ProofMode
+
+end Iris

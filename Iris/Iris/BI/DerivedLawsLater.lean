@@ -1030,3 +1030,7 @@ theorem only0_except0 [BILoeb PROP] {P : PROP} : <only0> ◇ P ⊣⊢ True := ca
   _ ⊣⊢ <only0> ▷ False ∨ <only0> P := only0_or
   _ ⊣⊢ True ∨ <only0> P             := or_congr_left only0_later
   _ ⊣⊢ True                         := true_or
+
+end BI
+
+end Iris

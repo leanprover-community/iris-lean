@@ -141,3 +141,11 @@ macro "iunfold " hs:ident,+ : tactic => `(tactic| ieval (unfold $hs*))
 -/
 macro "iunfold " hs:ident,+ " at " spats:(colGt ppSpace selPat)* : tactic =>
   `(tactic| ieval (unfold $hs*) at $spats*)
+
+end
+
+end
+
+end ProofMode
+
+end Iris

@@ -40,3 +40,9 @@ theorem nondetBool.spec :
   · iinv Hinv with >⟨%b, Hl⟩
     wp_store
     iframe
+
+end
+
+end HeapLang
+
+end Iris

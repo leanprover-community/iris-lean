@@ -338,3 +338,9 @@ theorem Fix.unfold_fold (X : F (Fix F) (Fix F)) : Fix.unfold (Fix.fold X) = X :=
   Fix.iso.inv_hom
 
 attribute [irreducible] Fix Fix.fold Fix.unfold Fix.iso
+
+end OFunctor
+
+end COFE
+
+end Iris
