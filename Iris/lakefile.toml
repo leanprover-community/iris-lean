@@ -32,10 +32,17 @@ srcDir = "../scripts"
 root = "CheckImports"
 
 [leanOptions]
+# Built-in linters
 linter.missingDocs = false
 linter.redundantVisibility = true
+linter.omit = false
+linter.loopingSimpArgs = false
 linter.extra.unreachableTactic = true
 linter.extra.unnecessarySeqFocus = true
+linter.extra.unusedDecidableInType = false
+# Implemented in Iris.Std.Linter.DocPrime
+weak.linter.docPrime = false
+# Implemented in Iris.Std.Linter.Style
 weak.linter.iris.style.setOption = false
 weak.linter.iris.style.missingEnd = true
 weak.linter.iris.style.cdot = true
@@ -45,4 +52,7 @@ weak.linter.iris.style.longLine = false
 weak.linter.iris.style.nameCheck = true
 weak.linter.iris.style.openClassical = true
 weak.linter.iris.style.show = true
+# Implemented in Iris.Std.Linter.DupNamespace
 weak.linter.iris.dupNamespace = true
+# Implemented in Iris.Std.Linter.Whitespace
+weak.linter.iris.style.whitespace = false

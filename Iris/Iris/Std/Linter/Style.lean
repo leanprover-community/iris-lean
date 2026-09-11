@@ -8,7 +8,7 @@ module
 
 public import Batteries.Tactic.Lint.Basic
 public meta import Lean.Linter.Basic
-public meta import Iris.Std.Linters.DeclarationNames
+public meta import Iris.Std.Linter.DeclarationNames
 
 /-!
 ## Style linters
