@@ -1908,7 +1908,7 @@ def fixpointK [COFE α] [Inhabited α] (k : Nat) (f : α → α)
 theorem fixpointK_unfold [COFE α] [Inhabited α] (k : Nat) (f : α → α)
     [Contractive (Nat.repeat f k)] : fixpointK k f = f (fixpointK k f) := by
   refine (fixpoint_unique (f := (Nat.repeat f k).toContractiveHom) ?_).symm
-  show f (fixpointK k f) = Nat.repeat f k (f (fixpointK k f))
+  change f (fixpointK k f) = Nat.repeat f k (f (fixpointK k f))
   refine ((Nat.repeat_apply_comm f k (fixpointK k f)).trans (congrArg f ?_)).symm
   exact (fixpoint_unfold (Nat.repeat f k).toContractiveHom).symm
 

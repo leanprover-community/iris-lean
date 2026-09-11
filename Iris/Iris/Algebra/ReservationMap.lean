@@ -476,7 +476,7 @@ theorem validN_token_op_iff_disj {e₁ e₂} :
   mp h := valid_op_iff_disj.mp (validN_token_of_validN h)
   mpr h := by
     refine validN_iff.mpr ⟨?_, ?_, fun i => ?_⟩
-    · show ✓{n} ∅ • (∅ : H A)
+    · change ✓{n} ∅ • (∅ : H A)
       rw [(Algebra.MonoidOps.op_left_id (a := (∅ : H A)) : (∅ : H A) • ∅ = ∅)]
       exact Heap.valid_empty.validN
     · simpa [CMRA.op, mkToken, op, h] using validN_set
@@ -514,7 +514,7 @@ theorem alloc {e k} {a : A} (hke : k ∈ e) (va : ✓ a) : mkToken (H := H) e ~~
       disj_of_validN_data_op_token
         ((comm' (x := mkToken e) (y := mkData d)) ▸
           validN_op_left ((assoc' (x := mkToken e) (y := mkData d) (z := mkToken t)) ▸ vedt))
-    show ✓{n} singleton k a • z
+    change ✓{n} singleton k a • z
     rw [ze, assoc']
     refine (data_op (PartialMap.singleton k a) d) ▸ ?_
     refine validN_data_op_token (PartialMap.singleton k a • d) t ?_ ?_

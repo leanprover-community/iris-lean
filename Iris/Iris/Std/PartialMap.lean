@@ -1347,7 +1347,7 @@ theorem toList_map_seq {V : Type _} {start : Nat} {l : List V} :
 
 theorem map_seq_cons {V : Type _} {start : Nat} {v : V} {l : List V} :
     map_seq (M := M') start (v :: l) = insert (map_seq (start + 1) l) start v := by
-  show ofList ((v :: l).mapIdx fun i x => (start + i, x)) = _
+  change ofList ((v :: l).mapIdx fun i x => (start + i, x)) = _
   rw [List.mapIdx_cons]
   simp only [Nat.add_zero]
   rw [ofList_cons]

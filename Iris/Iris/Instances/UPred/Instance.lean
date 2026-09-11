@@ -916,7 +916,7 @@ theorem ownM_updateP [UCMRA M] {x : M} {R : UPred M} (Φ : M → Prop) (Hup : x 
   rw [plainly_eq_uPred_plainly]
   intro n z ⟨x1, z2, Hx, ⟨z1, Hz1⟩, HR⟩
   have Hvalid : ✓{n} (x •? some (z1 • z2)) := by
-    show ✓{n} (x • (z1 • z2))
+    change ✓{n} (x • (z1 • z2))
     refine validN_ne ?_ z.property
     calc z.val ≡{n}≡ x1 • z2 := Hx
          _     ≡{n}≡ (x • z1) • z2 := Hz1.op_l

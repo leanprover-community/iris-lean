@@ -229,7 +229,7 @@ theorem listComplGo_conv_compl {n : Nat} (c : Chain (List α)) :
   | x :: c0, H => by
     obtain ⟨x', xs', _, hxs, hcn⟩ := cons_dist_eq H.symm
     rw [hcn]
-    show compl (c.map (headGetDHom x)) :: listComplGo c0 (c.map tailHom) ≡{n}≡ x' :: xs'
+    change compl (c.map (headGetDHom x)) :: listComplGo c0 (c.map tailHom) ≡{n}≡ x' :: xs'
     refine .cons ?_ ?_
     · refine conv_compl.trans (Dist.of_eq ?_)
       simp [Chain.map_apply, headGetDHom_apply, hcn]

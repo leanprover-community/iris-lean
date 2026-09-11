@@ -324,7 +324,7 @@ theorem initHeap_heap_eq {σ : State} {l : Loc} {n : Int} {v : Option Val} :
     Std.PartialMap.equiv (M := HeapF) (σ.initHeap l n v).heap
       (Std.PartialMap.union (allocCells l n.toNat v) σ.heap) := by
   intro k
-  show PartialMap.get? (M := HeapF) ((List.range n.toNat).foldl
+  change PartialMap.get? (M := HeapF) ((List.range n.toNat).foldl
       (fun h (i : Nat) => Std.insert (M := HeapF) h (l + (i : Int)) v) σ.heap) k = _
   rw [get?_foldl_insert, Std.PartialMap.union, Std.LawfulPartialMap.get?_merge, get?_allocCells]
   by_cases hex : ∃ i, i < n.toNat ∧ k = l + (i : Int)

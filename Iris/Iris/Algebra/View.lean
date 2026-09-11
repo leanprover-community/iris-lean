@@ -326,7 +326,7 @@ instance : UCMRA (View R) where
   unit_valid := IsViewRel.rel_unit
   unit_left_id := by
     rintro ⟨xa, xf⟩
-    show (⟨UCMRA.unit • xa, UCMRA.unit • xf⟩ : View R) = ⟨xa, xf⟩
+    change (⟨UCMRA.unit • xa, UCMRA.unit • xf⟩ : View R) = ⟨xa, xf⟩
     rw [CMRA.ucmra_unit_left_id, CMRA.ucmra_unit_left_id]
   pcore_unit := congrArg some (congrArg (View.mk _) (CMRA.core_eqv_self UCMRA.unit))
 

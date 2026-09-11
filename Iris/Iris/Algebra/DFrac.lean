@@ -156,7 +156,7 @@ instance {f : Qp} : CMRA.IdFree (own f) where
     exact absurd Hxyz' (by have := y.2; grind)
 
 @[rocq_alias dfrac_valid_own_1]
-theorem valid_own_one : ✓ own (1 : Qp) := by show (1 : Qp).val ≤ 1; grind
+theorem valid_own_one : ✓ own (1 : Qp) := by change (1 : Qp).val ≤ 1; grind
 
 @[rocq_alias dfrac_valid_own_r]
 theorem valid_op_own {dq : DFrac} {q : Qp} : ✓ dq • own q → q.val < 1 := by

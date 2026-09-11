@@ -267,7 +267,7 @@ theorem aupd_aacc {Eo Ei : CoPset} {α : TA.Arg → PROP} {β Φ : TA.Arg → TB
 theorem atomic_update_mask_weaken {Eo1 Eo2 Ei : CoPset} {α : TA.Arg → PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} (HE : Eo1 ⊆ Eo2) :
     atomic_update Eo1 Ei α β Φ ⊢ atomic_update Eo2 Ei α β Φ := by
-  show atomic_update Eo1 Ei α β Φ ⊢ bi_greatest_fixpoint (atomic_update_pre Eo2 Ei α β Φ) ()
+  change atomic_update Eo1 Ei α β Φ ⊢ bi_greatest_fixpoint (atomic_update_pre Eo2 Ei α β Φ) ()
   iintro HAU
   iapply greatest_fixpoint_coiter (atomic_update_pre Eo2 Ei α β Φ)
     (fun _ => atomic_update Eo1 Ei α β Φ) $$ [] HAU
@@ -299,7 +299,7 @@ theorem aupd_intro {Eo Ei : CoPset} {P Q : PROP} {α : TA.Arg → PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} [Absorbing P] [Persistent P]
     (HAU : P ∧ Q ⊢ atomic_acc Eo Ei α Q β Φ) :
     P ∧ Q ⊢ atomic_update Eo Ei α β Φ := by
-  show iprop(P ∧ Q) ⊢ bi_greatest_fixpoint (atomic_update_pre Eo Ei α β Φ) ()
+  change iprop(P ∧ Q) ⊢ bi_greatest_fixpoint (atomic_update_pre Eo Ei α β Φ) ()
   iintro ⟨#HP, HQ⟩
   iapply greatest_fixpoint_coiter (atomic_update_pre Eo Ei α β Φ) (fun _ => Q) $$ [] HQ
   iintro !> %_ HQ

@@ -930,7 +930,7 @@ theorem erasure {e : Exp} {σ : State} {φ : Val → State → Prop} (Had : adeq
     obtain ⟨t2'', σ2', hos, hσ, hpr⟩ := erasure_cut (ρ2 := (_, _)) Had hreach
     obtain ⟨e_head, t2''_rest, htp_eq, hp_head, _⟩ := List.exists_of_forall₂_cons hpr
     obtain ⟨la, eo, lb, rfl, hla, herase_eo, hmap_rest⟩ :=
-      map_eq_append_cons (xs := []) (by show List.map eraseExpr t2'' = _; simpa [eraseTp] using htp_eq)
+      map_eq_append_cons (xs := []) (by change List.map eraseExpr t2'' = _; simpa [eraseTp] using htp_eq)
     obtain rfl : la = [] := by simpa using hla
     subst herase_eo
     have hv := Language.ReflTransGen_purePrimStep_val hp_head

@@ -215,13 +215,13 @@ theorem auth_op_valid {a b : A} (h : ✓ (●F a : FracAuth) • ●F b) : False
 @[rocq_alias frac_auth_frag_op_validN]
 theorem frag_op_validN {q1 q2 : Qp} {a b : A} :
     (✓{n} (◯F{q1} a) • ◯F{q2} b) ↔ (q1 + q2).val ≤ 1 ∧ ✓{n} (a • b) := by
-  show ✓{n} (◯F{q1 + q2} (a • b)) ↔ _
+  change ✓{n} (◯F{q1 + q2} (a • b)) ↔ _
   exact frag_validN
 
 @[rocq_alias frac_auth_frag_op_valid]
 theorem frag_op_valid {q1 q2 : Qp} {a b : A} :
     (✓ (◯F{q1} a) • ◯F{q2} b) ↔ (q1 + q2).val ≤ 1 ∧ ✓ (a • b) := by
-  show ✓ (◯F{q1 + q2} (a • b)) ↔ _
+  change ✓ (◯F{q1 + q2} (a • b)) ↔ _
   exact frag_valid
 
 /-! ## IsOp type class instances -/

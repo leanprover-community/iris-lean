@@ -93,7 +93,7 @@ theorem own_valid {γ : GName} {q1 q2 : Qp} :
 instance instFractionalOwn (γ : GName) :
     Fractional (fun p : Qp => own (GF := GF) γ p) where
   fractional p q := by
-    show iOwn (E := W.inv) γ ((none, some (DFrac.own (p + q)))) ⊣⊢ _
+    change iOwn (E := W.inv) γ ((none, some (DFrac.own (p + q)))) ⊣⊢ _
     refine .trans ?_ iOwn_op
     exact equiv_iff.mp rfl
 

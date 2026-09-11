@@ -614,7 +614,7 @@ instance (y : α) : CoreId (core y) := CoreId.of_pcore_eq_some (pcore_eq_core _)
 @[rocq_alias cmra_core_ne]
 theorem core_ne : NonExpansive (core : α → α) where
   ne n x₁ x₂ H := by
-    show some (core x₁) ≡{n}≡ some (core x₂)
+    change some (core x₁) ≡{n}≡ some (core x₂)
     rw [← pcore_eq_core, ← pcore_eq_core]
     exact NonExpansive.ne H
 

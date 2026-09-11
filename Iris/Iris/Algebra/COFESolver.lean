@@ -192,7 +192,7 @@ protected def Tower.embed (k) : A F k -n> Tower F := by
         down F i (downN F a (eqToHom e₁ n)) = downN F b (eqToHom e₂ n) from this _ _ _ _ _ _
     rintro k a b eq rfl n
     rw [Nat.add_assoc, Nat.add_left_cancel_iff, Nat.add_comm] at eq; subst eq
-    show _ = downN F a (down F (i+a) n)
+    change _ = downN F a (down F (i+a) n)
     induction a with
     | zero => rfl
     | succ a ih =>
@@ -213,7 +213,7 @@ theorem Tower.embed_up (x : A F k) :
       eqToHom e₁ (upN F a (up F k x)) = eqToHom e₂ (upN F b x) from this .. ▸ .rfl
     rintro a b eq rfl
     rw [Nat.add_right_comm, Nat.add_assoc, Nat.add_left_cancel_iff] at eq; subst b
-    show _ = up F (k + a) (upN F a x); clear h₁
+    change _ = up F (k + a) (upN F a x); clear h₁
     induction a with
     | zero => rfl
     | succ a ih =>

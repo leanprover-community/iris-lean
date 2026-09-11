@@ -44,5 +44,5 @@ weak.linter.iris.style.lambdaSyntax = false
 weak.linter.iris.style.longLine = false
 weak.linter.iris.style.nameCheck = false
 weak.linter.iris.style.openClassical = true
-weak.linter.iris.style.show = false
+weak.linter.iris.style.show = true
 weak.linter.iris.dupNamespace = true

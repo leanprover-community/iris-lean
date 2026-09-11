@@ -508,7 +508,7 @@ theorem get?_opM (m : M V) (mm : Option (M V)) (i : K) :
     get? (m •? mm) i = get? m i • mm.bind (get? · i) := by
   cases mm with
   | none =>
-    show get? m i = get? m i • none
+    change get? m i = get? m i • none
     cases get? m i <;> rfl
   | some m' => exact get?_op m m'
 
@@ -1028,7 +1028,7 @@ theorem alloc_unit_singleton_updateP {P : V → Prop} {Q : M V → Prop} {u : V}
     rcases hgf : get? gf i with _ | z
     · exact hu.validN
     · rw [hgf] at hvi
-      show ✓{n} (u • z)
+      change ✓{n} (u • z)
       rw [hid z]
       exact hvi
   obtain ⟨y, hy, hvy⟩ := hx n (get? gf i) hi
