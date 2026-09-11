@@ -592,7 +592,7 @@ theorem lookup_split [BI PROP] {Δ' Δ'' P : PROP} [Affine P] {p : Bool}
 
 /-- Recover the exact-result form used by the shared heap-tactic machinery from a Texan
 triple. -/
-private theorem wp_exact_of_triple [HeapLangGS hlc GF]
+theorem wp_exact_of_triple [HeapLangGS hlc GF]
     {s : Stuckness} {E : CoPset} {e : Exp} {r : Val} {P P' : IProp GF}
     (hwp : {{ ▷ P }} e @ s; E {{ RET r; P' }}) :
     ▷ P ⊢ WP e @ s; E {{ v', ⌜v' = r⌝ ∗ P' }} := by

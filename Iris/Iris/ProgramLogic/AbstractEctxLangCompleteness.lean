@@ -35,7 +35,7 @@ variable {GF : BundledGFunctors} {HLC : HasLC} [IrisGS_gen HLC Expr GF]
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]
 variable [TI : TpinvGS GF Expr H]
 
-public abbrev ectxLangCompletenessStmt (wp : AbstractWP Expr Val GF)
+abbrev ectxLangCompletenessStmt (wp : AbstractWP Expr Val GF)
     (heap_inv : List Expr → State → IProp GF) (n : Nat) (C : List Expr) (e₁ : Expr) (σ : State)
     (K : Ectx) (E : CoPset) : IProp GF := iprop%
   ⌜BaseStep.Reducible (e₁, σ)⌝ -∗
@@ -64,7 +64,7 @@ public abbrev ectxLangCompletenessStmt (wp : AbstractWP Expr Val GF)
         ([∗list] _j ↦ etp ∈ efs, wp ⊤ etp (fun (_ : Val) => iprop(True)))) -∗
     wp ⊤ e₁ Ψ))
 
-public class AbstractEctxLangCompletenessGen
+class AbstractEctxLangCompletenessGen
     (wp : AbstractWP Expr Val GF) [BindAbstractWP wp] where
   heap_inv : List Expr → State → IProp GF
   heap_inv_timeless (C : List Expr) (σ : State) : Timeless (heap_inv C σ)

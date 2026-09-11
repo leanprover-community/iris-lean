@@ -31,7 +31,7 @@ the named hypothesis.
 `IrisHyp` should be only inserted at the outermost level of Iris hypotheses.
 See https://github.com/leanprover-community/iris-lean/issues/469
 -/
-@[expose, reducible] public def IrisHyp {α : Sort u} (x : α) : α := x
+@[expose, reducible] def IrisHyp {α : Sort u} (x : α) : α := x
 
 structure IVarId where
   name : Name

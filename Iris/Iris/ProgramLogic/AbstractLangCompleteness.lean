@@ -32,7 +32,7 @@ variable {GF : BundledGFunctors} {HLC : HasLC} [IrisGS_gen HLC Expr GF]
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]
 variable [TI : TpinvGS GF Expr H]
 
-public abbrev abstractECTXLangComplete (wp : AbstractWP Expr Val GF) (I : List Expr → State → IProp GF)
+abbrev abstractECTXLangComplete (wp : AbstractWP Expr Val GF) (I : List Expr → State → IProp GF)
   (n : Nat) (C : List Expr) (e₁ : Expr) (σ : State) (E : CoPset) :
     IProp GF := iprop%
    ⌜PrimStep.Reducible (e₁, σ)⌝ -∗ (n ↪thread e₁) -∗ I C σ ∗ tpInv C ∗ ⌜cfgSafe (C, σ)⌝ ={E}=∗
@@ -56,7 +56,7 @@ public abbrev abstractECTXLangComplete (wp : AbstractWP Expr Val GF) (I : List E
        wp ⊤ e₁ Ψ))
 
 /-- A weakest precondition for a Language is complete -/
-public class AbstractLangCompletenessGen
+class AbstractLangCompletenessGen
     (wp : AbstractWP Expr Val GF) [LawfulAbstractWP wp] where
   heap_inv : List Expr → State → IProp GF
   heap_inv_timeless (C : List Expr) (σ : State) : Timeless (heap_inv C σ)
@@ -78,13 +78,13 @@ variable [ACG : AbstractLangCompletenessGen wp]
 variable [CInvG GF]
 
 /-- Namespace under which the completeness invariant lives. -/
-public def completenessN : Namespace := nroot .@ (1 : Pos)
+def completenessN : Namespace := nroot .@ (1 : Pos)
 
-public abbrev cfgInv (Cini : List Expr × State) (f : Forking) : IProp GF := iprop%
+abbrev cfgInv (Cini : List Expr × State) (f : Forking) : IProp GF := iprop%
   ∃ cfg : List Expr × State,
     ACG.heap_inv cfg.1 cfg.2 ∗ tpInv cfg.1 ∗ ⌜cfgSafeForking cfg f⌝ ∗ ⌜Cini -·->ₜₚ* cfg⌝
 
-public def isCcfg (Cini : List Expr × State) (f : Forking) (γ : GName) : IProp GF :=
+def isCcfg (Cini : List Expr × State) (f : Forking) (γ : GName) : IProp GF :=
   CancelableInvariant.cinv completenessN γ (cfgInv (wp := wp) Cini f)
 
 instance isCcfg_persistent (Cini : List Expr × State) (f : Forking) (γ : GName) :
