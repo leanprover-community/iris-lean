@@ -157,7 +157,7 @@ theorem own_inv_alloc (N : Namespace) (E : CoPset) (P : IProp GF) :
   ⊢ ▷ P ={E}=∗ own_inv N P := by
   simp only [own_inv, fupd, uPred_fupd]
   iintro HP ⟨Hw, HE⟩
-  imod ownI_alloc (.∈ (↑N : CoPset)) P $$ [HP Hw] with ⟨%i, %Hin, Hw, HI⟩
+  imod ownI_alloc (· ∈ (↑N : CoPset)) P $$ [HP Hw] with ⟨%i, %Hin, Hw, HI⟩
   · intro E; apply fresh_name
   · isplitl [Hw] <;> iassumption
   · imodintro; iframe

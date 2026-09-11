@@ -169,7 +169,7 @@ example (e e' : Expr) (P P' : IProp GF) Φ
   iright
   iintro %s Hs
   ihave ⟨%s', %Hstep, Hupd⟩ := Hstep s $$ [HP Hs]
-  . iframe
+  · iframe
   iexists e', s'
   isplitr
   · itrivial

@@ -196,7 +196,7 @@ def app (p1 p2 : Pos) : Pos :=
 @[reducible]
 instance : HAppend Pos Pos Pos where hAppend := Pos.app
 
-instance app_assoc : @Std.Associative Pos (.++.) where
+instance app_assoc : @Std.Associative Pos (· ++ ·) where
   assoc _ _ p := by induction p <;> simp_all [HAppend.hAppend, app]
 
 @[simp]
@@ -207,7 +207,7 @@ theorem app_1_left_id (p : Pos) : app P1 p = p := by
 theorem app_1_right_id (p : Pos) : app p P1 = p := by
   induction p <;> simp [app] <;> assumption
 
-instance app_1_l : @Std.LawfulLeftIdentity Pos Pos (.++.) P1 where
+instance app_1_l : @Std.LawfulLeftIdentity Pos Pos (· ++ ·) P1 where
   left_id p := app_1_left_id p
 
 def reverseGo (p1 p2 : Pos) : Pos :=
