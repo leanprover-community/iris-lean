@@ -20,25 +20,25 @@ Authors: <comma-separated list of authors>
 
 ### General
 
-Mathlib's convention mostly apply:
+Mathlib's conventions mostly apply:
 
-| Kind                                  | Convention                            | Example                                |
-|---------------------------------------|---------------------------------------|----------------------------------------|
-| Types, structures, classes            | `UpperCamelCase`                      | `BIAffine`, `CombineSepGives`          |
-| Definitions, abbreviations | `lowerCamelCase`                      | `laterIf`    |
-| Theorems, lemmas                      | `snake_case` describing the statement | `persistently_sep_mpr`, `wand_entails` |
-| Universe variables                    | `u`, `v`, ...                         |                                        |
+| Kind                       | Convention       | Example                                |
+|----------------------------|------------------|----------------------------------------|
+| Types, structures, classes | `UpperCamelCase` | `BIAffine`, `CombineSepGives`          |
+| Definitions, abbreviations | `lowerCamelCase` | `laterIf`                              |
+| Theorems, lemmas           | `snake_case`     | `persistently_sep_mpr`, `wand_entails` |
+| Universe variables         | `u`, `v`, ...    |                                        |
 
 * Type class instances are the exception: `lowerCamelCase` with a suffix separated by underscores (e.g. `elimInv_acc_with_close`).
 * **No double underscores**: names such as `foo__bar` are rejected by the linter.
 * **No repeated namespace components**: fully qualified names such as `Iris.BI.BI.foo` and `Iris.Foo.Bar.Foo.baz` are flagged by the linter.
 
-###  Hypothesis Naming
+### Hypothesis Naming
 
 A proof-mode goal carries two contexts at once: the ambient Lean local context, and the Iris hypothesis context managed by IPM.
 
 * **Pure Lean hypotheses are lower-case**: `h`, `h1`, `h2`, `hφ`, `hP`, `hpq`, `hAcc`.
-* **Iris (proof-mode) hypotheses are capitalised**: `H`, `H1`, `H2`, `HP`, `Hinv`, `Hclose`, `Hα`.
+* **Iris hypotheses are capitalised**: `H`, `H1`, `H2`, `HP`, `Hinv`, `Hclose`, `Hα`.
 
 ## Correspondence with Iris-Rocq
 
@@ -78,7 +78,7 @@ When a Rocq declaration is intentionally not ported, record it with a reason:
   "BIPureForall is provable for all BIs using classical logic, see pure_forall_2"
 ```
 
-Typical reasons of why Rocq declarations are ignored:
+Typical reasons why Rocq declarations are ignored:
 
 * the Rocq mixin records (`BiMixin`, `BiPersistentlyMixin`, `BiLaterMixin`) are collapsed into Lean's type classes;
 * the statement is derivable in Lean from a more general result;
@@ -92,7 +92,7 @@ Files in Iris-Rocq that are deliberately not ported (e.g. Rocq-specific machiner
 
 The project is organised so that **every directory `Foo/` is accompanied by a module `Foo.lean` acting as its entry point**: [`Iris/BI/`](./Iris/BI/) by [`Iris/BI.lean`](./Iris/BI.lean), [`Iris/BI/BigOp/`](./Iris/BI/BigOp) by [`Iris/BI/BigOp.lean`](./Iris/BI/BigOp.lean), and so on.
 
-These requirement is enforced by the CI.
+These requirements are enforced by the CI.
 
 ### Entry Points
 
@@ -120,4 +120,4 @@ lake exe check-imports --init-only Iris          # check Iris.Init only
 lake exe check-imports --minimal-init Iris       # list the modules where adding the import suffices
 ```
 
-Exit code `0` means all checks passed, `1` that a check failed, and `2` that the script could not run (for example, a directory with no entry-point file). When the `Init` check fails it also prints the minimal set of modules to add `import Iris.Init` to, so start from that list rather than adding the import everywhere.
+Exit code `0` means all checks passed, `1` that a check failed, and `2` that the script could not run (for example, a directory with no entry-point file). When the `Iris.Init` check fails, it also prints the minimal set of modules to add `import Iris.Init` to, so start from that list rather than adding the import everywhere.
