@@ -143,3 +143,9 @@ theorem subredexes_are_values {e : Expr} (hsub : ∀ Ki e', e = fillItem Ki e' �
     grind only [→ fill_val]
 
 end EctxItemLanguage
+
+end
+
+end ProgramLogic
+
+end Iris

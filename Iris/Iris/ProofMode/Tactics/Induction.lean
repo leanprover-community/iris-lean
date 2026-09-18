@@ -378,7 +378,7 @@ elab_rules : tactic
     -- Parse the recursor name provided by the user
     let recName := r.map (·.getId)
 
-    ProofModeM.runTactic `iinduction λ mvar { hyps, goal, .. } => do
+    ProofModeM.runTactic `iinduction fun mvar { hyps, goal, .. } => do
       -- Parse the list of alternative names supplied by the user
       let parsedAlts ← alts.mapM parseInductionAlts
 
@@ -399,7 +399,7 @@ elab_rules : tactic
     -- Parse the recursor name provided by the user
     let recName := r.map (·.getId)
 
-    ProofModeM.runTactic `iinduction λ mvar { hyps, goal, .. } => do
+    ProofModeM.runTactic `iinduction fun mvar { hyps, goal, .. } => do
       -- Parse the list of alternative names supplied by the user
       let parsedAlts ← alts.mapM parseInductionAlts
 
@@ -420,3 +420,11 @@ elab_rules : tactic
 
       let pf ← iInductionCore hyps goal fvar parsedAlts recName genSelTargets
       mvar.assign pf
+
+end
+
+end
+
+end ProofMode
+
+end Iris

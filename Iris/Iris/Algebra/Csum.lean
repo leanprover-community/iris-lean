@@ -41,10 +41,10 @@ theorem dist_eqv [OFE α] [OFE β] {n} : Equivalence (Csum.Dist (α := α) (β :
     | inl => exact Dist.rfl
     | inr => exact Dist.rfl
     | invalid => trivial
-  symm {x y} h := by cases x <;> cases y <;> first | trivial | exact h.symm | exact h
+  symm {x y} h := by cases x <;> cases y <;> first | trivial | exact h.symm
   trans {x y z} h₁ h₂ := by
     cases x <;> cases y <;> cases z <;>
-      first | trivial | exact h₁.trans h₂ | exact h₂.elim | exact h₁.elim
+      first | trivial | exact h₁.trans h₂
 
 @[rocq_alias csumO]
 instance [OFE α] [OFE β] : OFE (Csum α β) where
@@ -150,11 +150,11 @@ instance [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where
     revert h0n
     rcases e0 : c.chain 0 with a|b|_ <;> rcases en : c.chain n with a'|b'|_ <;> try (· exact id)
     · intro _
-      show IsCOFE.compl (chainL c a) ≡{n}≡ a'
+      change IsCOFE.compl (chainL c a) ≡{n}≡ a'
       refine OFE.Dist.trans COFE.conv_compl ?_
       simp [chainL, en]
     · intro _
-      show IsCOFE.compl (chainR c b) ≡{n}≡ b'
+      change IsCOFE.compl (chainR c b) ≡{n}≡ b'
       refine OFE.Dist.trans COFE.conv_compl ?_
       simp [chainR, en]
 
@@ -562,16 +562,16 @@ def cMap [CMRA α] [CMRA α'] [CMRA β] [CMRA β']
   pcore x := by
     cases x with
     | inl a =>
-      show ((CMRA.pcore a).map inl).map (map fa fb) = (CMRA.pcore (fa a)).map inl
+      change ((CMRA.pcore a).map inl).map (map fa fb) = (CMRA.pcore (fa a)).map inl
       rw [Option.map_map]
-      show (CMRA.pcore a).map (inl ∘ ⇑fa) = _
+      change (CMRA.pcore a).map (inl ∘ ⇑fa) = _
       rw [show (CMRA.pcore a).map (inl ∘ ⇑fa) = ((CMRA.pcore a).map fa).map inl from
         (Option.map_map ..).symm]
       exact Option.map_forall₂ inl (fa.pcore a)
     | inr b =>
-      show ((CMRA.pcore b).map inr).map (map fa fb) = (CMRA.pcore (fb b)).map inr
+      change ((CMRA.pcore b).map inr).map (map fa fb) = (CMRA.pcore (fb b)).map inr
       rw [Option.map_map]
-      show (CMRA.pcore b).map (inr ∘ ⇑fb) = _
+      change (CMRA.pcore b).map (inr ∘ ⇑fb) = _
       rw [show (CMRA.pcore b).map (inr ∘ ⇑fb) = ((CMRA.pcore b).map fb).map inr from
         (Option.map_map ..).symm]
       exact Option.map_forall₂ inr (fb.pcore b)

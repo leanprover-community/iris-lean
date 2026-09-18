@@ -93,3 +93,7 @@ where
 
 @[delab app.Iris.ProofMode.HypMarker]
 def delabHypMarker : Delab := do unpackIprop (← withAppArg delab)
+
+end ProofMode
+
+end Iris

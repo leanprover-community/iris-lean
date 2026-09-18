@@ -44,7 +44,7 @@ theorem OFE.transpAp_op_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x y
 theorem OFE.transpAp_pcore_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x : F₁ T T} :
     (CMRA.pcore x).map (transpAp h_fun).mp = CMRA.pcore ((transpAp h_fun).mp x) := by
   cases h_fun; cases eq_of_heq h_inst
-  show (CMRA.pcore x).map _ = CMRA.pcore x
+  change (CMRA.pcore x).map _ = CMRA.pcore x
   cases CMRA.pcore x <;> rfl
 
 theorem OFE.transpAp_validN_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x : F₁ T T} (H : ✓{n} x) :
@@ -331,7 +331,7 @@ theorem unfoldi_bundle_coreId {a : F.ap (IProp GF)} [CMRA.CoreId a] :
 @[rocq_alias iRes_singleton_core_id]
 instance {a : F.ap (IProp GF)} [CMRA.CoreId a] : CMRA.CoreId (iSingleton F γ a) where
   core_id := OFE.eq_dist_2 fun n τ' γ' => by
-    show CMRA.core ((iSingleton F γ a τ').car γ') ≡{n}≡ (iSingleton F γ a τ').car γ'
+    change CMRA.core ((iSingleton F γ a τ').car γ') ≡{n}≡ (iSingleton F γ a τ').car γ'
     simp only [iSingleton]
     split
     next h =>
@@ -612,7 +612,7 @@ theorem validN_iSingleton_op {mf : IResUR GF} {y} :
     simp [iSingleton]
     apply op_singleton_comm _ (unfoldi.f (E.bundle y)) H_free |>.dist.validN.mpr
     exact GenMap.alter_valid _ (IProp.unfoldi_bundle_validN Hvalid) (Hvalid_mf E.τ)
-  · show ✓{n} (iSingleton F γ y τ • mf τ)
+  · change ✓{n} (iSingleton F γ y τ • mf τ)
     simp only [iSingleton, dif_neg h]
     exact Dist.validN (CMRA.unit_left_id_dist (n := n) (x := mf τ)) |>.mpr (Hvalid_mf τ)
 

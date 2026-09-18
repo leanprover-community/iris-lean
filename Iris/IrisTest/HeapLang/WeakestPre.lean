@@ -876,3 +876,7 @@ example : ⊢@{IProp GF} WP hl(if #true then #1 else #2) {{ v, ⌜v = hl_val(#1)
 end wp_match
 
 end pure_tactics
+
+end HeapLang
+
+end Iris

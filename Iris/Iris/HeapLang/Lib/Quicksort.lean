@@ -165,7 +165,7 @@ theorem partition_spec x l ls :
   | nil =>
     icases Hl with %rfl
     wp_pures; imodintro
-    iapply HΦ <;> simp [isList] <;> itrivial
+    iapply HΦ; simp [isList]; itrivial
   | cons hd ls =>
     icases Hl with ⟨%_, %tl, %rfl, Hpt, Hl⟩
     wp_load
@@ -196,7 +196,7 @@ theorem quicksort_spec l ls :
   | nil =>
     icases Hl with %rfl
     wp_pures; imodintro
-    iapply HΦ $$ %_ %([]) <;> simp [isList] <;> itrivial
+    iapply HΦ $$ %_ %([]); simp [isList]; itrivial
   | cons head tail =>
     icases Hl with ⟨%l, %tl, %rfl, Hpt, Hl⟩
     wp_load
@@ -302,3 +302,11 @@ theorem sortAndCheckAdequate (l : List Int) (σ : State) :
   iapply sortAndCheck_spec <;> itrivial
 
 end Closed
+
+end Quicksort
+
+end
+
+end HeapLang
+
+end Iris

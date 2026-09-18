@@ -29,7 +29,7 @@ section definitions
 variable [LawfulFiniteMap H K] [GhostMapG GF K V H]
 
 @[rocq_alias ghost_map_auth]
-public def ghost_map_auth (γ : GName) (dq : DFrac) (m : H V) : IProp GF :=
+def ghost_map_auth (γ : GName) (dq : DFrac) (m : H V) : IProp GF :=
   iOwn (E := GhostMapG.elem) γ (Auth dq (Std.PartialMap.map (fun x ↦ toAgree ⟨x⟩) m))
 
 #rocq_ignore ghost_map_auth_def "Not needed"
@@ -37,7 +37,7 @@ public def ghost_map_auth (γ : GName) (dq : DFrac) (m : H V) : IProp GF :=
 #rocq_ignore ghost_map_auth_unseal "Not needed"
 
 @[rocq_alias ghost_map_elem]
-public def ghost_map_elem (γ : GName) (dq : DFrac) (k : K) (v : V) : IProp GF :=
+def ghost_map_elem (γ : GName) (dq : DFrac) (k : K) (v : V) : IProp GF :=
   iOwn (E := GhostMapG.elem) γ (Frag k dq (toAgree ⟨v⟩))
 
 #rocq_ignore ghost_map_elem_def "Not needed"

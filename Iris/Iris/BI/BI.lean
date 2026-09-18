@@ -97,8 +97,8 @@ instance [BI PROP] : Std.Refl <| BIBase.Entails (PROP := PROP) where
 theorem BIBase.Entails.trans [BI PROP] {P Q R : PROP} (h1 : P ⊢ Q) (h2 : Q ⊢ R) : P ⊢ R :=
   BI.entails_trans h1 h2
 
-@[simp,refl] theorem BIBase.Entails.rfl [BI PROP] {P : PROP} : P ⊢ P := BI.entails_refl
-@[simp,refl] theorem BIBase.Entails.refl [BI PROP] (P : PROP) : P ⊢ P := BI.entails_refl
+@[simp, refl] theorem BIBase.Entails.rfl [BI PROP] {P : PROP} : P ⊢ P := BI.entails_refl
+@[simp, refl] theorem BIBase.Entails.refl [BI PROP] (P : PROP) : P ⊢ P := BI.entails_refl
 
 theorem BIBase.Entails.of_eq [BI PROP] {P Q : PROP} (h : P = Q) : P ⊢ Q := h ▸ .rfl
 
@@ -116,7 +116,7 @@ theorem BIBase.BiEntails.trans [BI PROP] {P Q R : PROP} (h1 : P ⊣⊢ Q) (h2 : 
   ⟨h1.1.trans h2.1, h2.2.trans h1.2⟩
 
 theorem BIBase.BiEntails.ofMono [BI PROP1] [BI PROP2] {mod : PROP1 → PROP2}
-    (mono : ∀{P Q}, iprop(P ⊢ Q) → iprop(mod P ⊢ mod Q)) :
+    (mono : ∀ {P Q}, iprop(P ⊢ Q) → iprop(mod P ⊢ mod Q)) :
     ∀ {P Q : PROP1}, P ⊣⊢ Q → mod P ⊣⊢ mod Q :=
   fun h => ⟨mono h.1, mono h.2⟩
 
@@ -319,3 +319,7 @@ def ofPersistentlyDiscreteLaterTrue : BI PROP :=
     discrete persistently_eq
 
 end PersistentlyDiscrete
+
+end BI
+
+end Iris

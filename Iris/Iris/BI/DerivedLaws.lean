@@ -329,9 +329,9 @@ theorem exists_unit [BI PROP] {Ψ : Unit → PROP} : (∃ x, Ψ x) ⊣⊢ Ψ () 
 @[rocq_alias bi.exist_exist]
 theorem exists_exists [BI PROP] {Ψ : α → β → PROP} : (∃ x y, Ψ x y) ⊣⊢ (∃ y x, Ψ x y) :=
   ⟨exists_elim fun x => exists_elim fun y =>
-     (exists_intro (Ψ:=λ x => Ψ x y) x).trans (exists_intro (Ψ:=λ y => (∃ x, Ψ x y)) y),
+     (exists_intro (Ψ:=fun x => Ψ x y) x).trans (exists_intro (Ψ:=fun y => (∃ x, Ψ x y)) y),
    exists_elim fun y => exists_elim fun x =>
-     (exists_intro (Ψ:=λ y => Ψ x y) y).trans (exists_intro (Ψ:=λ x => (∃ y, Ψ x y)) x)⟩
+     (exists_intro (Ψ:=fun y => Ψ x y) y).trans (exists_intro (Ψ:=fun x => (∃ y, Ψ x y)) x)⟩
 
 @[rocq_alias bi.forall_forall]
 theorem forall_forall [BI PROP] {Ψ : α → β → PROP} : (∀ x y, Ψ x y) ⊣⊢ (∀ y x, Ψ x y) :=
@@ -341,7 +341,7 @@ theorem forall_forall [BI PROP] {Ψ : α → β → PROP} : (∀ x y, Ψ x y) �
 @[rocq_alias bi.exist_forall]
 theorem exists_forall [BI PROP] {Ψ : α → β → PROP} : (∃ x, ∀ y, Ψ x y) ⊢ (∀ y, ∃ x, Ψ x y) :=
   forall_intro fun y => exists_elim fun x =>
-    (forall_elim y).trans (exists_intro (Ψ := λ x => Ψ x y) x)
+    (forall_elim y).trans (exists_intro (Ψ := fun x => Ψ x y) x)
 
 @[rocq_alias bi.impl_curry]
 theorem impl_curry [BI PROP] {P Q R : PROP} : (P → Q → R) ⊣⊢ (P ∧ Q → R) :=
@@ -399,8 +399,8 @@ theorem and_forall_ite [BI PROP] {P Q : PROP} :
 @[rocq_alias bi.or_alt]
 theorem or_exists_ite [BI PROP] {P Q : PROP} :
     P ∨ Q ⊣⊢ «exists» (fun b : Bool => if b then P else Q) :=
-  ⟨or_elim (exists_intro (Ψ:=λ b => if b then P else Q) true)
-           (exists_intro (Ψ:=λ b => if b then P else Q) false),
+  ⟨or_elim (exists_intro (Ψ:=fun b => if b then P else Q) true)
+           (exists_intro (Ψ:=fun b => if b then P else Q) false),
    exists_elim (Bool.rec or_intro_r or_intro_l ·)⟩
 
 @[rocq_alias bi.bi_and_monoid]
@@ -603,7 +603,7 @@ theorem sep_forall_right [BI PROP] {Φ : α → PROP} {Q : PROP} : (∀ a, Φ a)
 theorem wand_rfl [BI PROP] {P : PROP} : ⊢ P -∗ P := wand_intro emp_sep.1
 
 @[rocq_alias bi.wand_curry]
-theorem wand_curry [BI PROP] {P Q R: PROP} : (P -∗ Q -∗ R) ⊣⊢ ((P ∗ Q) -∗ R) := by
+theorem wand_curry [BI PROP] {P Q R : PROP} : (P -∗ Q -∗ R) ⊣⊢ ((P ∗ Q) -∗ R) := by
   refine ⟨?_, ?_⟩
   · refine wand_intro_left ?_
     calc
@@ -764,7 +764,7 @@ theorem wand_entails [BI PROP] {P Q : PROP} (h : ⊢ P -∗ Q) : P ⊢ Q :=
   emp_sep.2.trans (wand_elim h)
 
 @[rocq_alias bi.wand_entails']
-theorem wand_entails_emp [BI PROP] {P Q : PROP} (h: (emp ⊢ (P -∗ Q))) : P ⊢ Q :=
+theorem wand_entails_emp [BI PROP] {P Q : PROP} (h : (emp ⊢ (P -∗ Q))) : P ⊢ Q :=
  wand_entails h
 
 @[rocq_alias bi.entails_wand]
@@ -772,7 +772,7 @@ theorem entails_wand [BI PROP] {P Q : PROP} (h : P ⊢ Q) : ⊢ P -∗ Q :=
   wand_intro (emp_sep.1.trans h)
 
 @[rocq_alias bi.entails_wand']
-theorem entails_wand_emp [BI PROP] {P Q : PROP} (h: P ⊢ Q) : emp ⊢ (P -∗ Q) :=
+theorem entails_wand_emp [BI PROP] {P Q : PROP} (h : P ⊢ Q) : emp ⊢ (P -∗ Q) :=
  entails_wand h
 
 @[rocq_alias bi.equiv_wand_iff]
@@ -2586,10 +2586,10 @@ instance from_option_persistent [BI PROP] {P : PROP} {Ψ : α → PROP} {mx : Op
 
 @[rocq_alias bi.limit_preserving_entails]
 theorem LimitPreserving.entails [BI PROP] [COFE A] (Φ Ψ : A → PROP) [Φne : OFE.NonExpansive Φ]
-    [Ψne : OFE.NonExpansive Ψ] : LimitPreserving (λ x ↦ Φ x ⊢ Ψ x) := by
-  refine .ext (P := λ x ↦ True ⊣⊢ (Φ x → Ψ x)) (@fun x => ?_) ?_
+    [Ψne : OFE.NonExpansive Ψ] : LimitPreserving (fun x ↦ Φ x ⊢ Ψ x) := by
+  refine .ext (P := fun x ↦ True ⊣⊢ (Φ x → Ψ x)) (@fun x => ?_) ?_
   · exact ⟨(true_and.2.trans <| imp_elim ·.1), (⟨imp_intro <| true_and.1.trans ·, true_intro⟩)⟩
-  · let f : A -n> PROP := ⟨λ x ↦ iprop(True), inferInstance⟩
+  · let f : A -n> PROP := ⟨fun x ↦ iprop(True), inferInstance⟩
     let g : A -n> PROP := {
        f x := iprop(Φ x → Ψ x),
        ne.ne _ {_ _} x := imp_ne.ne (Φne.ne x) (Ψne.ne x)
@@ -2649,3 +2649,7 @@ theorem bi_emp_valid_mono [BI PROP] {P Q : PROP} (h : P ⊢ Q) : (⊢ P) → ⊢
 @[rocq_alias bi.bi_emp_valid_flip_mono]
 theorem bi_emp_valid_flip_mono [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : (⊢ P) ↔ ⊢ Q :=
   ⟨(·.trans h.1), (·.trans h.2)⟩
+
+end BI
+
+end Iris

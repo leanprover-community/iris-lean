@@ -47,7 +47,7 @@ theorem subst_rec_eq {x f fx e v} :
 theorem subst_rec_neq {x f fx e v} :
   .named x ≠ f →
   .named x ≠ fx →
-  Exp.subst (.named x) v (.rec_ f fx e) = (.rec_ f fx $ e.subst (.named x) v) :=
+  Exp.subst (.named x) v (.rec_ f fx e) = (.rec_ f fx <| e.subst (.named x) v) :=
   by simp [Exp.subst, Exp.substStr]; grind
 
 @[wp_expr_simp]
@@ -262,8 +262,7 @@ public meta def iWpExprSimp (e : Q(Exp)) :
 @[rocq_alias heap_lang.tac_wp_expr_eval]
 public theorem tac_wp_expr_simp [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {e e' : Exp} {Φ : Val → IProp GF}
   (h : Δ ⊢ WP e' @ s ; E {{ Φ }})
-  (heq : e = e') :
-  (Δ ⊢ WP e @ s ; E {{ Φ }}) := by simp [*]
+  (heq : e = e') : Δ ⊢ WP e @ s ; E {{ Φ }} := by simp [*]
 
 elab "wp_expr_simp" : tactic =>
   ProofModeM.runTacticWp `wp_expr_simp fun mvar {hyps, s, E, e, Φ, ..} => do
@@ -302,7 +301,7 @@ elab "wp_finish" : tactic =>
 
 @[rocq_alias heap_lang.tac_wp_bind]
 public theorem tac_wp_bind [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {K : List ECtxItem} {e' : Exp} {Φ : Val → IProp GF}
-  (H : Δ ⊢ WP e' @ s ; E {{ v, WP (ProgramLogic.fill K (Exp.ofVal (Expr:=Exp) v)) @ s; E {{ Φ }} }}) :
+  (H : Δ ⊢ WP e' @ s ; E {{ v, WP (ProgramLogic.fill K (Exp.ofVal (Expr := Exp) v)) @ s ; E {{ Φ }} }}) :
     (Δ ⊢ WP (ProgramLogic.fill K e') @ s ; E {{ Φ }}) :=
   H.trans (wp_bind (ProgramLogic.fill K))
 
@@ -592,9 +591,9 @@ theorem lookup_split [BI PROP] {Δ' Δ'' P : PROP} [Affine P] {p : Bool}
 
 /-- Recover the exact-result form used by the shared heap-tactic machinery from a Texan
 triple. -/
-private theorem wp_exact_of_triple [HeapLangGS hlc GF]
+theorem wp_exact_of_triple [HeapLangGS hlc GF]
     {s : Stuckness} {E : CoPset} {e : Exp} {r : Val} {P P' : IProp GF}
-    (hwp : {{ ▷ P }} e @ s; E {{ RET r; P' }}) :
+    (hwp : {{ ▷ P }} e @ s ; E {{ RET r; P' }}) :
     ▷ P ⊢ WP e @ s; E {{ v', ⌜v' = r⌝ ∗ P' }} := by
   iintro HP
   iapply hwp $$ HP
@@ -775,7 +774,7 @@ meta def finishHeapOp {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(HasLC)}
     (κ : Q(Wp $prop Exp Val Stuckness) := q(wp.def)) (_hwp : $κ =Q wp.def := ⟨⟩) :
     ProofModeM Q($ehyps ⊢ Wp.wp (self := $κ) $s $E (ProgramLogic.fill $K (Exp.ofVal $r)) $Φ) := do
   let ⟨inner, .up _⟩ ← HeapLang.fillQ K q(Exp.ofVal $r)
-  iWpFinish hyps q(@HeapLang $hlc $GF $hgs) s E inner Φ (κ := κ)
+  iWpFinish hyps q(@heapLangInst $hlc $GF $hgs) s E inner Φ (κ := κ)
 
 /-- The points-to hypothesis located by `lookupPointsTo` for location `l`
 in the (later-stripped) context `eΔ'`, together with the pruned context `eΔ''`/`hyps''` and
@@ -849,7 +848,7 @@ meta def runTacticHeapWp {α} (tacName : Name)
       throwError "{tacName}: the expression has been reduced to a value, there is no redex left"
   ProofModeM.runTacticWp tacName fun mvar {hyps, GF, hlc, ι, s, E, e, Φ, hu, hprop, hbi, ..} => do
     have ιQ : Q(IrisGS_gen $hlc Exp $GF) := ι
-    let ~q(@HeapLang _ _ $hgs) := ιQ
+    let ~q(@heapLangInst _ _ $hgs) := ιQ
       | throwIPMError "the goal is not a HeapLang WP"
     trace[wp_heap] "{tacName}: e = {e}"
     -- currently specialized to later (no twp exists yet)
@@ -1023,7 +1022,7 @@ elab "wp_cmpxchg" " with" colGt ppSpace h1:binderIdent colGt ppSpace h2:binderId
 
     let (sucName, _) ← getFreshName h1
     let pfSuc : Q($v = $v1 → ($eΔ'' ∗ pointsTo $l (DFrac.own 1) (some $v2) ⊢
-      Wp.wp (self := wp.def (ι := @HeapLang $hlc $GF $hgs)) $s $E
+      Wp.wp (self := wp.def (ι := @heapLangInst $hlc $GF $hgs)) $s $E
         (ProgramLogic.fill $K (Exp.ofVal (Expr := Exp)
           (Val.pair $v (Val.lit (BaseLit.bool true))))) $Φ)) ←
         Qq.withLocalDeclDQ sucName q($v = $v1) fun _h => do
@@ -1033,7 +1032,7 @@ elab "wp_cmpxchg" " with" colGt ppSpace h1:binderIdent colGt ppSpace h2:binderId
 
     let (failName, _) ← getFreshName h2
     let pfFail : Q($v ≠ $v1 → $eΔ' ⊢
-      Wp.wp (self := wp.def (ι := @HeapLang $hlc $GF $hgs)) $s $E
+      Wp.wp (self := wp.def (ι := @heapLangInst $hlc $GF $hgs)) $s $E
         (ProgramLogic.fill $K (Exp.ofVal (Expr := Exp)
           (Val.pair $v (Val.lit (BaseLit.bool false))))) $Φ) ←
         Qq.withLocalDeclDQ failName q($v ≠ $v1) fun _h => do
@@ -1077,7 +1076,7 @@ elab "wp_alloc" colGt ppSpace loc:binderIdent " with" colGt ppSpace hyp:binderId
 
     let (locName, _) ← getFreshName loc
     let finish (P : Q(Loc → IProp $GF)) : ProofModeM Q(∀ l : Loc, $eΔ' ∗ $P l ⊢
-          Wp.wp (self := wp.def (ι := @HeapLang $hlc $GF $hgs)) $s $E
+          Wp.wp (self := wp.def (ι := @heapLangInst $hlc $GF $hgs)) $s $E
             (ProgramLogic.fill $K (Exp.ofVal (Expr := Exp) (Val.lit (BaseLit.loc l)))) $Φ) :=
       Qq.withLocalDeclDQ locName q(Loc) fun l => do
         let Pl : Q(IProp $GF) := q($P $l)
@@ -1107,3 +1106,7 @@ initialize registerTraceClass `wp_apply
 initialize registerTraceClass `wp_heap
 initialize registerTraceClass `wp_heap.redex (inherited := true)
 initialize registerTraceClass `wp_heap.lookup (inherited := true)
+
+end ProofMode
+
+end Iris

@@ -143,7 +143,7 @@ theorem toVal_erase_none {e : Exp} (h : toVal e = none) : toVal (eraseExpr e) = 
 
 private theorem eraseExpr_eq_val {e : Exp} {v : Val}
     (h : eraseExpr e = hl(v(&v))) : ∃ w, e = hl(v(&w)) ∧ eraseVal w = v := by
-  cases e <;> erase_simp at h <;> cases h
+  cases e <;> erase_simp at h; cases h
   exact ⟨_, rfl, rfl⟩
 
 @[rocq_alias heap_lang.erase_to_val]
@@ -236,10 +236,7 @@ theorem eraseVal_inj_iff {v1 v2 : Val} (h : v1.compareSafe v2 = true) :
 theorem UnOp.eval_erase {op : UnOp} {v v' : Val} :
     op.eval (eraseVal v) = some v' ↔
       ∃ w, op.eval v = some w ∧ eraseVal w = v' := by
-  cases op <;> cases v <;>
-    first
-      | (rename_i l; cases l <;> simp [UnOp.eval, eraseVal, eraseBaseLit])
-      | simp [UnOp.eval, eraseVal, eraseBaseLit]
+  cases op <;> cases v <;> (rename_i l; cases l <;> simp [UnOp.eval, eraseVal, eraseBaseLit])
 
 /-- Helper: `.eq` is the only `BinOp` that depends on comparison safety. -/
 private theorem BinOp.eq_eval_erase {v1 v2 v' : Val} :
@@ -255,7 +252,7 @@ private theorem BinOp.eq_eval_erase {v1 v2 v' : Val} :
 /-- An erased literal came from some literal, whose erasure it is. -/
 private theorem eraseVal_eq_lit {v : Val} {l : BaseLit}
     (h : eraseVal v = hl_val(#l)) : ∃ l', v = hl_val(#l') ∧ eraseBaseLit l' = l := by
-  cases v <;> erase_simp at h <;> cases h
+  cases v <;> erase_simp at h; cases h
   exact ⟨_, rfl, rfl⟩
 
 /-- Erasure rewrites only prophecy literals, and only to `poison`, so any other
@@ -454,7 +451,7 @@ theorem erased_baseStep_baseStep {e1 : Exp} {σ1 : State} {κ : List Observation
       | exact erased_baseStep_baseStep_FAA _ _ _ _ ‹_›
       | exact erased_baseStep_baseStep_AllocN _ _ _ _ ‹_› ‹_›
       | exact erased_baseStep_baseStep_CmpXchg _ _ _ _ _ _ ‹_› ‹_› ‹_›
-      | exact ⟨_, _, _, _, by constructor, by first | rfl | erase_simp, rfl, rfl⟩
+      | exact ⟨_, _, _, _, by constructor, rfl, rfl, rfl⟩
 
 /-- A primitive step in the original program can be matched (up to a number of deterministic pure
 steps in the erased program) by a step in the erased program. -/
@@ -810,7 +807,7 @@ theorem baseStep_erased_primStep {e1 : Exp} {σ1 : State} {κ : List Observation
           | rfl
           | exact UnOp.eval_erase.mpr ⟨_, ‹_›, rfl⟩
           | exact BinOp.eval_erase.mpr ⟨_, ‹_›, rfl⟩
-          | (simp [*] <;> rfl))⟩
+          | (simp [*]; rfl))⟩
 
 #rocq_ignore heap_lang.base_step_erased_prim_step_un_op "Proved in place in the catch-all arm of `baseStep_erased_primStep`"
 #rocq_ignore heap_lang.base_step_erased_prim_step_bin_op "Proved in place in the catch-all arm of `baseStep_erased_primStep`"
@@ -933,7 +930,7 @@ theorem erasure {e : Exp} {σ : State} {φ : Val → State → Prop} (Had : adeq
     obtain ⟨t2'', σ2', hos, hσ, hpr⟩ := erasure_cut (ρ2 := (_, _)) Had hreach
     obtain ⟨e_head, t2''_rest, htp_eq, hp_head, _⟩ := List.exists_of_forall₂_cons hpr
     obtain ⟨la, eo, lb, rfl, hla, herase_eo, hmap_rest⟩ :=
-      map_eq_append_cons (xs := []) (by show List.map eraseExpr t2'' = _; simpa [eraseTp] using htp_eq)
+      map_eq_append_cons (xs := []) (by change List.map eraseExpr t2'' = _; simpa [eraseTp] using htp_eq)
     obtain rfl : la = [] := by simpa using hla
     subst herase_eo
     have hv := Language.ReflTransGen_purePrimStep_val hp_head

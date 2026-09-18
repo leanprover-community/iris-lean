@@ -53,21 +53,21 @@ theorem modaction_id [BI PROP] {p P} (M : Modality PROP PROP) (h : M.action p = 
   rw [h] at hs
   apply hs
 
-theorem modaction_sep_emp_left [BI PROP1] [bi2: BI PROP2]
+theorem modaction_sep_emp_left [BI PROP1] [bi2 : BI PROP2]
     {elhs erhs erhs'} {M : Modality PROP1 PROP2}
     (h1 : elhs ⊢ M.M emp) (h2 : erhs ⊢ M.M erhs') : elhs ∗ erhs ⊢ M.M iprop(erhs') := calc
   _ ⊢ M.M emp ∗ M.M erhs'    := sep_mono h1 h2
   _ ⊢ M.M iprop(emp ∗ erhs') := M.sep
   _ ⊢ M.M erhs'              := M.mono emp_sep.1
 
-theorem modaction_sep_emp_right [BI PROP1] [bi2: BI PROP2]
+theorem modaction_sep_emp_right [BI PROP1] [bi2 : BI PROP2]
     {elhs elhs' erhs} {M : Modality PROP1 PROP2}
     (h1 : elhs ⊢ M.M elhs') (h2 : erhs ⊢ M.M emp) : elhs ∗ erhs ⊢ M.M iprop(elhs') := calc
   _ ⊢ M.M elhs' ∗ M.M emp    := sep_mono h1 h2
   _ ⊢ M.M iprop(elhs' ∗ emp) := M.sep
   _ ⊢ M.M elhs'              := M.mono sep_emp.1
 
-theorem modaction_sep [BI PROP1] [bi2: BI PROP2]
+theorem modaction_sep [BI PROP1] [bi2 : BI PROP2]
     {elhs erhs elhs' erhs'} {M : Modality PROP1 PROP2}
     (h1 : elhs ⊢ M.M elhs') (h2 : erhs ⊢ M.M erhs') : elhs ∗ erhs ⊢ M.M iprop(elhs' ∗ erhs') :=
   (sep_mono h1 h2).trans M.sep
@@ -207,7 +207,7 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
   The tactic succeeds only when the selector term `sel` matches the modality.
 -/
 elab "imodintro " colGt sel:term : tactic => do
-  ProofModeM.runTactic `imodintro λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `imodintro fun mvar { hyps, goal, .. } => do
     let pf ← iModIntroCore hyps goal sel
 
     mvar.assign pf
@@ -223,3 +223,11 @@ macro "imodintro" : tactic => `(tactic | imodintro _)
   required by the modality. The tactic is equivalent to `imodintro (▷^[_] _)`.
 -/
 macro "inext" : tactic => `(tactic | imodintro (▷^[_] _))
+
+end
+
+end
+
+end ProofMode
+
+end Iris

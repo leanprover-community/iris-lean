@@ -169,7 +169,7 @@ def iRewriteHyp {prop : Q(Type u)} {bi : Q(BI $prop)}
     (ivar : IVarId)
     (occs : Occurrences := Occurrences.all) :
     ProofModeM ((e' : _) × Hyps bi e' × Q($e ⊢ $e')) := do
-  let some r ← hyps.replace ivar λ _ _ ty => do
+  let some r ← hyps.replace ivar fun _ _ ty => do
     let ⟨ty', pf⟩ ← iRewriteCore hyps rule ty (occs := occs)
     return ⟨ty', q(rewrite_tac_hyp $pf)⟩
     | throwIPMError "cannot find hyp" -- should never happen
@@ -190,7 +190,7 @@ elab "irewrite " cfg:optConfig " [" rules:(IRewrite.irwRule),* "] " loc:(locatio
   let rules ← liftMacroM <| IRewrite.Rule.parse rules.getElems
 
   for rule in rules do
-    ProofModeM.runTactic `irewrite λ mvar { hyps, goal, .. } => do
+    ProofModeM.runTactic `irewrite fun mvar { hyps, goal, .. } => do
       let location ← IRewrite.Location.parse loc
       match location with
       | .goal =>
@@ -201,3 +201,11 @@ elab "irewrite " cfg:optConfig " [" rules:(IRewrite.irwRule),* "] " loc:(locatio
         let ⟨_, hyps', pf⟩ ← iRewriteHyp hyps rule ivar config.occs
         let pf' ← addBIGoal hyps' goal
         mvar.assign q(Entails.trans $pf $pf')
+
+end
+
+end
+
+end ProofMode
+
+end Iris

@@ -53,12 +53,11 @@ end AbstractWP
 
 noncomputable section EctxLanguage
 
-open Classical
-
 variable {Expr State Obs Val Ectx : Type _} [EctxLanguage Expr Ectx State Obs Val]
 variable {GF : BundledGFunctors} {HLC : HasLC} [IrisGS_gen HLC Expr GF]
 variable {wp : AbstractWP Expr Val GF} [IWP : BindAbstractWP wp]
 
+open Classical in
 theorem inv_open_maybe_ectxlang {e : Expr} {E₁ E₂ : CoPset} {Φ : Val → IProp GF}
     (Hsub : E₂ ⊆ E₁) (Hred : ∃ σ, PrimStep.Reducible (e, σ)) :
     (|={E₁, E₂}=>
@@ -229,3 +228,7 @@ instance WP_inv_open_abstract :
   inv_open_maybe e E₁ E₂ Φ _ := wp_inv_open_maybe e E₁ E₂ Φ
 
 end IrisWP
+
+end
+
+end Iris

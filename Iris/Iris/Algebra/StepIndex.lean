@@ -390,3 +390,5 @@ theorem rec_lim {P : I → Sort v} (s : P 0) (f : ∀ n, P n → P (succᵢ n))
   rec_zero, rec_succ and rec_lim"
 
 end SIdx
+
+end Iris

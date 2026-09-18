@@ -703,3 +703,5 @@ instance {F} [COFE.OFunctorContractive F] : RFunctorContractive (AgreeRF F) wher
   map_contractive.1 H _ := Agree.map_ne (COFE.OFunctorContractive.map_contractive.1 H)
 
 end agree_rfunctor
+
+end Iris

@@ -72,8 +72,16 @@ def iApply {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 -/
 elab "iapply " colGt pmt:pmTerm : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
-  ProofModeM.runTactic `iapply λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `iapply fun mvar { hyps, goal, .. } => do
   -- elaborate the proof mode term `pmt` to the hypothesis `out`
   let ⟨_, hyps', p, out, pf⟩ ← iHave hyps goal pmt true
   let pf' ← iApply hyps' p out goal
   mvar.assign q($pf $pf')
+
+end
+
+end
+
+end ProofMode
+
+end Iris

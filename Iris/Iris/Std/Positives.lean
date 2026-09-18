@@ -196,7 +196,7 @@ def app (p1 p2 : Pos) : Pos :=
 @[reducible]
 instance : HAppend Pos Pos Pos where hAppend := Pos.app
 
-instance app_assoc : @Std.Associative Pos (.++.) where
+instance app_assoc : @Std.Associative Pos (· ++ ·) where
   assoc _ _ p := by induction p <;> simp_all [HAppend.hAppend, app]
 
 @[simp]
@@ -205,9 +205,9 @@ theorem app_1_left_id (p : Pos) : app P1 p = p := by
 
 @[simp]
 theorem app_1_right_id (p : Pos) : app p P1 = p := by
-  induction p <;> simp [app] <;> assumption
+  induction p <;> simp [app]
 
-instance app_1_l : @Std.LawfulLeftIdentity Pos Pos (.++.) P1 where
+instance app_1_l : @Std.LawfulLeftIdentity Pos Pos (· ++ ·) P1 where
   left_id p := app_1_left_id p
 
 def reverseGo (p1 p2 : Pos) : Pos :=
@@ -240,7 +240,7 @@ theorem reverse_xI p : reverse (p~1) = (P1~1) ++ reverse p :=
 
 /-- Duplicate the bits of a positive, i.e. 1~0~1 -> 1~0~0~1~1 and
       1~1~0~0 -> 1~1~1~0~0~0~0 -/
-def dup  : Pos -> Pos
+def dup : Pos -> Pos
 | xH => P1
 | p~0 => (dup p)~0~0
 | p~1 => (dup p)~1~1
@@ -383,11 +383,11 @@ theorem dup_suffix_eq {p q s1 s2} :
   induction p generalizing q with
   | xI p IH =>
     intros Heq
-    cases q <;> simp_all [HAppend.hAppend, app, dup] <;> rename Pos => q
+    cases q <;> simp_all [HAppend.hAppend, app, dup]; rename Pos => q
     rewrite [IH] <;> rfl
   | xO p IH =>
     intros Heq
-    cases q <;> simp_all [HAppend.hAppend, app, dup] <;> rename Pos => q
+    cases q <;> simp_all [HAppend.hAppend, app, dup]; rename Pos => q
     rewrite [IH] <;> rfl
   | xH => cases q <;> simp [HAppend.hAppend, app, dup]
 

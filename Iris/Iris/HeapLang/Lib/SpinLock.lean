@@ -203,4 +203,9 @@ def instLock [HeapLangGS hlc GF] : Lock GF where
   release_spec γ lk R := release_spec γ lk R
 
 end SpinLock
+
 end
+
+end HeapLang
+
+end Iris

@@ -377,3 +377,7 @@ instance addModal_embed_fupd_goal (E1 E2 : CoPset) (P P' : PROP2) (Q : PROP1)
     _ ⊢ ⎡|={E1, E2}=> Q⎤        := (embed_fupd E1 E2 Q).mpr
 
 end BiEmbedFUpd
+
+end ProofMode
+
+end Iris

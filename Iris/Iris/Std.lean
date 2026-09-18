@@ -19,6 +19,7 @@ public import Iris.Std.GenSetsInstances
 public import Iris.Std.HeapInstances
 public import Iris.Std.Infinite
 public import Iris.Std.List
+public import Iris.Std.Linter
 public import Iris.Std.Namespaces
 public import Iris.Std.Nat
 public import Iris.Std.Notation

@@ -47,7 +47,7 @@ private def ClearState.clearProofModeHyp {u prop bi origE goal} :
   | { e, hyps, pf }, ivar => do
       let ⟨e', hyps', _, out', p, _, hrem⟩ := hyps.remove true ivar
       let step ← iClearCoreOne bi e e' p out' goal hrem
-      let pf' : Q(($e' ⊢ $goal) → ($origE ⊢ $goal)) := q(λ h => $pf ($step h))
+      let pf' : Q(($e' ⊢ $goal) → ($origE ⊢ $goal)) := q(fun h => $pf ($step h))
       return {  e := e', hyps := hyps', pf := pf' }
 
 def iClearCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
@@ -79,6 +79,14 @@ def iClearCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 elab "iclear " pats:(colGt ppSpace selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 
-  ProofModeM.runTactic `iclear λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `iclear fun mvar { hyps, goal, .. } => do
     let pf ← iClearCore hyps goal pats (addBIGoalWithoutFVars · ·)
     mvar.assign pf
+
+end
+
+end
+
+end ProofMode
+
+end Iris

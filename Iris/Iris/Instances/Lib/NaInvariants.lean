@@ -231,7 +231,7 @@ set_option synthInstance.checkSynthOrder false in
 instance intoAcc_na (p : NaInvPoolName) (E F : CoPset) (N : Namespace) (P : IProp GF) :
     IntoAcc (X := Unit) (inv p N P) (↑N ⊆ E ∧ ↑N ⊆ F) (own p F) (fupd E E) (fupd E E)
     (fun _ => iprop(▷ P ∗ own p (F \ ↑N))) (fun _ => iprop(▷ P ∗ own p (F \ ↑N)))
-              (λ _ => some (own p F)) where
+              (fun _ => some (own p F)) where
   into_acc := by
     dsimp only [accessor, Option.getD]
     intro ⟨hE, hF⟩

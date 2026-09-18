@@ -480,7 +480,7 @@ def Exp.substStr (x : String) (v : Val) (e : Exp) : Exp :=
   match e with
   | .val _ => e
   | .var x' => if x == x' then .val v else e
-  | .rec_ f x' e => .rec_ f x' $ if .named x != f && .named x != x' then e.substStr x v else e
+  | .rec_ f x' e => .rec_ f x' <| if .named x != f && .named x != x' then e.substStr x v else e
   | .app e₁ e₂ => .app (e₁.substStr x v) (e₂.substStr x v)
   | .unop op e' => .unop op (e'.substStr x v)
   | .binop op e₁ e₂ => .binop op (e₁.substStr x v) (e₂.substStr x v)
@@ -527,7 +527,7 @@ def Val.compareSafe (v1 v2 : Val) : Bool :=
 #rocq_ignore heap_lang.heap_lang.val_is_unboxed_dec "`Val.isUnboxed` is `Bool`-valued; decidability is definitional."
 
 section Derived
-def Exp.stuck : Exp := Exp.app (.ofVal $ .lit $ .int 0) (.ofVal $ .lit $ .int 0)
+def Exp.stuck : Exp := Exp.app (.ofVal <| .lit <| .int 0) (.ofVal <| .lit <| .int 0)
 
 @[simp]
 theorem Exp.stuck_subst {x v} : Exp.substStr x v Exp.stuck = Exp.stuck := by
@@ -535,7 +535,7 @@ theorem Exp.stuck_subst {x v} : Exp.substStr x v Exp.stuck = Exp.stuck := by
   simp only [substStr, ofVal]
 
 @[rocq_alias heap_lang.assert]
-def Exp.assert (e : Exp) := Exp.if e (.ofVal $ .lit .unit) Exp.stuck
+def Exp.assert (e : Exp) := Exp.if e (.ofVal <| .lit .unit) Exp.stuck
 
 @[simp]
 theorem Exp.assert_subst {x v} e :
@@ -544,3 +544,7 @@ theorem Exp.assert_subst {x v} e :
   simp only [substStr, ofVal]
 
 end Derived
+
+end HeapLang
+
+end Iris

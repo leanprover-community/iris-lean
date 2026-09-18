@@ -237,7 +237,15 @@ elab "iintro " pats:(colGt ppSpace introPat)* : tactic => do
   -- parse syntax
   let pats ← liftMacroM <| pats.mapM <| IntroPat.parse
 
-  ProofModeM.runTactic `iintro λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `iintro fun mvar { hyps, goal, .. } => do
     let pf ← iIntroCore hyps goal pats.toList
 
     mvar.assign pf
+
+end
+
+end
+
+end ProofMode
+
+end Iris

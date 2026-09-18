@@ -98,3 +98,7 @@ class MakeEmbed {PROP1 PROP2} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
     (P : PROP1) (Q : outParam PROP2) where
   make_embed : (⎡P⎤ : PROP2) ⊣⊢ Q
 export MakeEmbed (make_embed)
+
+end ProofMode
+
+end Iris

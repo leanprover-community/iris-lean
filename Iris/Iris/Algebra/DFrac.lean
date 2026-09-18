@@ -140,7 +140,7 @@ instance one_exclusive_right [CMRA V] {v : V} : CMRA.Exclusive (v, own (One.one 
 instance {f : Qp} : CMRA.Cancelable (own f) where
   cancelableN {_} := by
     rintro (a|_|a) (b|_|b) <;> simp [CMRA.ValidN, CMRA.op, op] <;> intro H Hxyz
-    any_goals have Hxyz' := discrete Hxyz <;> simp at Hxyz'
+    any_goals have Hxyz' := discrete Hxyz; simp at Hxyz'
     · exact congrArg own (Subtype.ext (by grind))
     · exact absurd Hxyz' (by have := b.2; grind)
     · exact absurd Hxyz' (by have := a.2; grind)
@@ -152,12 +152,11 @@ instance {f : Qp} : CMRA.IdFree (own f) where
     rintro (y|_|y) <;>
       simp [CMRA.ValidN, CMRA.op, op] <;>
       intro H Hxyz <;>
-      any_goals have Hxyz' := discrete Hxyz <;>
-      simp at Hxyz'
+      any_goals have Hxyz' := discrete Hxyz; simp at Hxyz'
     exact absurd Hxyz' (by have := y.2; grind)
 
 @[rocq_alias dfrac_valid_own_1]
-theorem valid_own_one : ✓ own (1 : Qp) := by show (1 : Qp).val ≤ 1; grind
+theorem valid_own_one : ✓ own (1 : Qp) := by change (1 : Qp).val ≤ 1; grind
 
 @[rocq_alias dfrac_valid_own_r]
 theorem valid_op_own {dq : DFrac} {q : Qp} : ✓ dq • own q → q.val < 1 := by
@@ -255,3 +254,5 @@ instance isOp_dfrac_own {q q1 q2 : Qp} [h : IsOp d q q1 q2] :
   is_op := by rw [h.is_op]; rfl
 
 end DFrac
+
+end Iris
