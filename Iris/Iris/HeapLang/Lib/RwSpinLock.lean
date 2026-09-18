@@ -16,7 +16,7 @@ public import Iris.Std.Namespaces
 
 namespace Iris.HeapLang
 
-open BI Iris Std ProgramLogic CMRA OFE LeibnizMultiSet FiniteMultiSet
+open BI Iris Iris.Std ProgramLogic CMRA OFE LeibnizMultiSet FiniteMultiSet
 
 @[expose] public section
 

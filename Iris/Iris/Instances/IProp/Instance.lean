@@ -15,7 +15,7 @@ public import Iris.ProofMode
 @[expose] public section
 namespace Iris
 
-open COFE Std CMRA
+open COFE Iris.Std CMRA
 
 /-- Apply an OFunctor at a fixed type -/
 abbrev COFE.OFunctorPre.ap (F : OFunctorPre) (T : Type _) [COFE T] :=
@@ -154,7 +154,7 @@ end ElemG
 
 section Fold
 
-open Iris COFE UPred
+open Iris COFE Iris.UPred
 
 variable {FF : BundledGFunctors}
 
@@ -244,7 +244,7 @@ end Fold
 
 section iSingleton
 
-open IProp OFE UPred GenMap
+open IProp OFE Iris.UPred GenMap
 
 @[rocq_alias iRes_singleton]
 def iSingleton {GF} F [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (v : F.ap (IProp GF)) : IResUR GF :=
@@ -538,7 +538,7 @@ def iOwn {GF F} [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (v : F.ap 
 
 section iOwn
 
-open IProp OFE UPred BI GenMap ProofMode
+open IProp OFE Iris.UPred BI GenMap ProofMode
 
 variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
 
@@ -875,7 +875,7 @@ end iOwn
 
 section big_op_instances
 
-open IProp OFE UPred BI GenMap ProofMode Algebra Std
+open IProp OFE Iris.UPred BI GenMap ProofMode Algebra Iris.Std
 open scoped Iris.Std.PartialMap
 
 variable {GF F} [URFunctorContractive F] [E : ElemG GF F]

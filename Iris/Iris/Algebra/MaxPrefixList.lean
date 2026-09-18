@@ -22,7 +22,7 @@ the List type itself. However, there is an embedding of Lists in to this data st
 
 namespace Iris
 
-open OFE CMRA Std
+open OFE CMRA Iris.Std
 
 abbrev MaxPrefixListMap : Type _ → Type _ :=
   (Std.ExtTreeMap Nat · compare)

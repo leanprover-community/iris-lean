@@ -13,7 +13,7 @@ public import Iris.ProgramLogic.WeakestPre
 /-!  # Logically atomic Hoare triples -/
 
 namespace Iris
-open ProgramLogic Language Language.Notation Std Std.LawfulSet BI ProofMode
+open ProgramLogic Language Language.Notation Iris.Std Std.LawfulSet BI ProofMode
 
 section definition
 

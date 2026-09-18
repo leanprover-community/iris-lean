@@ -41,7 +41,7 @@ class SIdxFinite (I : Type u) [SIdx I] where
 
 namespace SIdx
 
-open Iris Std
+open Iris Iris.Std
 
 variable {I : Type u} [inst : SIdx I] {m n p : I}
 

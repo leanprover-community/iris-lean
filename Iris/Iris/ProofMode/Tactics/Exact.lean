@@ -10,7 +10,7 @@ public import Iris.ProofMode.Tactics.Assumption
 namespace Iris.ProofMode
 
 public meta section
-open Lean Elab Tactic Meta Qq BI Std
+open Lean Elab Tactic Meta Qq BI Iris.Std
 
 /--
   `iexact H` solves the goal by matching it with the hypothesis `H`.

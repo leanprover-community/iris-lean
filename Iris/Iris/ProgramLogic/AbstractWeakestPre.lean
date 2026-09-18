@@ -18,7 +18,7 @@ public import Iris.ProgramLogic.WeakestPre
 
 namespace Iris
 
-open ProgramLogic Language Language.Notation Std
+open ProgramLogic Language Language.Notation Iris.Std
 
 @[expose] public section
 
