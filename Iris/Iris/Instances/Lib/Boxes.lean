@@ -17,7 +17,7 @@ public import Iris.Std.Namespaces
 
 namespace Iris
 
-open BI CMRA Agree OFE UPred IProp Std ProofMode COFE Auth ExclAuth Excl PartialMap BigSepM
+open BI CMRA Agree OFE Iris.UPred IProp Iris.Std ProofMode COFE Auth ExclAuth Excl PartialMap BigSepM
 
 abbrev BoolO := DiscreteO Bool
 

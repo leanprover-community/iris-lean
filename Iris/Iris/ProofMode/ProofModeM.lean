@@ -12,7 +12,7 @@ public import Iris.ProofMode.Classes
 public meta section
 
 namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
+open Lean Elab Tactic Meta Qq BI Iris.Std
 
 structure ProofModeM.Context where
   tacName : Name := .anonymous

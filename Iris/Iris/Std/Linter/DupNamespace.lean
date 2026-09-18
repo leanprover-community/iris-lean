@@ -39,7 +39,7 @@ public register_option linter.iris.dupNamespace : Bool := {
 
 namespace DupNamespaceLinter
 
-open Lean Parser Elab Command Meta Iris Std Linter
+open Lean Parser Elab Command Meta Iris Iris.Std Linter
 
 @[inherit_doc linter.iris.dupNamespace]
 def dupNamespace : Linter where run := withSetOptionIn fun stx ↦ do

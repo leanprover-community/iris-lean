@@ -13,7 +13,7 @@ public import Iris.Std.FromMathlib
 
 namespace Iris.ProgramLogic
 
-open Iris OFE COFE BI Iris.BI Iris.Algebra Std FromMathlib LawfulSet
+open Iris OFE COFE BI Iris.BI Iris.Algebra Iris.Std FromMathlib LawfulSet
 open Iris.ProgramLogic.PrimStep
 open Language.Notation
 
