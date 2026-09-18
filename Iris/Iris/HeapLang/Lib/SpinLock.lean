@@ -164,7 +164,7 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   · wp_pure
     imodintro
     iapply Hcont
-    simp only [if_pos]
+    simp only [ite_eq_left]
     iframe
 
 @[rocq_alias heap_lang.spin_lock.release_spec]

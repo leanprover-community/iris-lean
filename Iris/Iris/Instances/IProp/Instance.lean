@@ -490,7 +490,7 @@ instance iSingleton_discreteE {v : F.ap (IProp GF)} [inst : OFE.DiscreteE v] :
         exact (Option.none_is_discrete.discrete Hk).dist
     next h =>
       intro k; have Hk := (H τ) k
-      simp [iSingleton, dif_neg h, GenMap.empty_map_lookup] at Hk ⊢
+      simp [iSingleton, dite_eq_right h, GenMap.empty_map_lookup] at Hk ⊢
       exact (Option.none_is_discrete.discrete Hk).dist
 
 theorem iSingleton_eq_discreteFunSingleton {v : F.ap (IProp GF)} :
@@ -615,7 +615,7 @@ theorem validN_iSingleton_op {mf : IResUR GF} {y} :
     apply op_singleton_comm _ (unfoldi.f (E.bundle y)) H_free |>.dist.validN.mpr
     exact GenMap.alter_valid _ (IProp.unfoldi_bundle_validN Hvalid) (Hvalid_mf E.τ)
   · change ✓{n} (iSingleton F γ y τ • mf τ)
-    simp only [iSingleton, dif_neg h]
+    simp only [iSingleton, dite_eq_right h]
     exact Dist.validN (CMRA.unit_left_id_dist (n := n) (x := mf τ)) |>.mpr (Hvalid_mf τ)
 
 theorem iSingleton_op_validN_free {mf : IResUR GF} {y : F.ap (IProp GF)} :
@@ -1038,13 +1038,13 @@ theorem iOwn_and {a1 a2 : F.ap (IProp GF)} :
   ihave Hall : (∀ b : Bool, iOwn γ (bif b then a1 else a2)) $$ [H]
   · iintro %b
     cases b
-    · simp only [cond_false]; icases H with ⟨-, $⟩
-    · simp only [cond_true]; icases H with ⟨$, -⟩
+    · simp only [Bool.cond_false]; icases H with ⟨-, $⟩
+    · simp only [Bool.cond_true]; icases H with ⟨$, -⟩
   · icases iOwn_forall γ (fun b : Bool => bif b then a1 else a2) $$ Hall with ⟨%c, Hown, #Hincl⟩
     iexists c; iframe Hown
     isplit
-    · ihave #H1 := Hincl $$ %true; isimp only [cond_true] at H1; iexact H1
-    · ihave #H2 := Hincl $$ %false; isimp only [cond_false] at H2; iexact H2
+    · ihave #H1 := Hincl $$ %true; isimp only [Bool.cond_true] at H1; iexact H1
+    · ihave #H2 := Hincl $$ %false; isimp only [Bool.cond_false] at H2; iexact H2
 
 @[rocq_alias own_and_total]
 theorem iOwn_and_total [CMRA.IsTotal (F.ap (IProp GF))] {a1 a2 : F.ap (IProp GF)} :

@@ -1307,18 +1307,18 @@ theorem pure_wand [BI PROP] {φ1 φ2 : Prop} : (⌜φ1⌝ -∗ (⌜φ2⌝ : PROP
 theorem decide_true [BI PROP] (φ : Prop) [Decidable φ] (P : PROP) :
     (if φ then P else iprop(True)) ⊣⊢ (⌜φ⌝ → P) := by
   by_cases h : φ
-  · rw [if_pos h]
+  · rw [ite_eq_left h]
     exact ((imp_congr_left (pure_true h)).trans true_imp).symm
-  · rw [if_neg h]
+  · rw [ite_eq_right h]
     exact ((imp_congr_left (pure_false h)).trans false_imp).symm
 
 @[rocq_alias bi.decide_emp]
 theorem decide_emp [BI PROP] [BIAffine PROP] (φ : Prop) [Decidable φ] (P : PROP) :
     (if φ then P else iprop(emp)) ⊣⊢ (⌜φ⌝ → P) := by
   by_cases h : φ
-  · rw [if_pos h]
+  · rw [ite_eq_left h]
     exact ((imp_congr_left <| pure_true h).trans true_imp).symm
-  · rw [if_neg h]
+  · rw [ite_eq_right h]
     calc
       _ ⊣⊢ True        := true_emp.symm
       _ ⊣⊢ (False → P) := false_imp.symm

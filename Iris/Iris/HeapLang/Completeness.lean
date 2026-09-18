@@ -328,7 +328,7 @@ theorem wp_baseCompletenessGoal (e₁ : Exp) (σ : State) (E : CoPset)
         · itrivial
         · icases (BigSepM.bigSepM_lookup_acc hgc).1 $$ Hmap with ⟨⟨_, Hmeta1⟩, _⟩
           have hcell_new : get? (allocCells l' n.toNat (some v)) (l' + i) = some (some v) := by
-            rw [get?_allocCells, if_pos ⟨i.toNat, by omega, by rw [Int.toNat_of_nonneg hi0]⟩]
+            rw [get?_allocCells, ite_eq_left ⟨i.toNat, by omega, by rw [Int.toNat_of_nonneg hi0]⟩]
           icases (BigSepM.bigSepM_lookup_acc hcell_new).1 $$ Hnewmeta with ⟨Hmeta2, _⟩
           icases metaToken_ne CoPset.top_ne_empty $$ Hmeta1 Hmeta2 with %hne
           exact absurd rfl hne

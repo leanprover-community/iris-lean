@@ -457,10 +457,10 @@ theorem bigSepM_lookup_acc_impl [DecidableEq K] {Φ : K → V → PROP} {m : M V
   case R2 =>
     refine (BiEntails.of_eq bigSepM_sep_eq.symm).1.trans ?_
     refine bigSepM_mono fun {k v} hget' => ?_
-    simp [if_neg (hki_of hget'), wand_elim_right]
+    simp [ite_eq_right (hki_of hget'), wand_elim_right]
   refine intuitionistically_elim.trans <| (forall_elim k).trans <| (forall_elim v).trans <| ?_
   refine (pure_imp_elim <| (get?_delete_ne <| Ne.symm (hki_of hget')).symm.trans hget').trans <| ?_
-  simpa only [if_neg (hki_of hget')] using pure_imp_elim (hki_of hget')
+  simpa only [ite_eq_right (hki_of hget')] using pure_imp_elim (hki_of hget')
 
 @[rocq_alias big_sepM_sep_zip_with]
 theorem bigSepM_sep_zipWith {A B C : Type _}
