@@ -43,6 +43,8 @@ def Arg : Tele.{u} → Type u
 @[match_pattern] abbrev Arg.cons {b : X → Tele.{u}} (x : X) (xs : (b x).Arg) :
     (Tele.cons b).Arg := ⟨x, xs⟩
 
+instance : CoeSort Tele.{u} (Type u) := ⟨Tele.Arg⟩
+
 def Fun : (TT : Tele.{u}) → (TT.Arg → Type v) → Type (max u v)
   | .nil, T => ULift (T .nil)
   | .cons b, T => (x : _) → (b x).Fun fun xs => T (.cons x xs)
@@ -97,7 +99,7 @@ meta def expandFun (TT : Term) (binders? : Option (TSyntax ``Lean.explicitBinder
   `(Tele.app (TT := $TT) (fun $binders:funBinder* => ULift.up $body))
 
 /-- The number of fields in a literal telescope, or `none` if the expression is not one. -/
-partial def literalArity? (e : Expr) : Option Nat :=
+meta partial def literalArity? (e : Expr) : Option Nat :=
   if e.isConstOf ``Tele.nil then
     some 0
   else if e.isAppOfArity ``Tele.cons 2 then
@@ -153,6 +155,65 @@ meta def delabLam : Delab :=
   delabQuant 3 pure
     (fun x rest body => `(λ.. $x:ident $[$rest:ident]*, $body))
     (fun | `(λ.. $y:ident $[$ys:ident]*, $body) => some (y, ys, body) | _ => none)
+
+syntax:max "⟦" &"tele" (explicitBinders)? "⟧" : term
+syntax:max "⟦" &"tele_arg" term,* "⟧" : term
+
+macro_rules
+  | `(⟦tele $[$bs]?⟧) => return ← expandLiteral bs
+  | `(⟦tele_arg $xs,*⟧) => do
+    let xs := xs.getElems
+    if xs.isEmpty then
+      `((Tele.Arg.nil : Tele.Arg (Tele.nil.{0})))
+    else
+      xs.foldrM (fun x acc => `(Tele.Arg.cons $x $(⟨acc⟩))) (← `(Tele.Arg.nil))
+
+/-- The number of fields in a literal telescope argument, or `none` if the expression is not one. -/
+meta partial def Arg.literalLength? (e : Expr) : Option Nat :=
+  if e.isConstOf ``Tele.Arg.nil then
+    some 0
+  else if e.isAppOfArity ``Tele.Arg.cons 4 then
+    (Arg.literalLength? e.appArg!).map (· + 1)
+  else none
+
+/-- Walk a literal telescope, delaborating each field type under the preceding binders. -/
+private meta partial def delabTeleFields (acc : Array (Ident × Term)) :
+    DelabM (Array (Ident × Term)) := do
+  if (← getExpr).isConstOf ``Tele.nil then return acc
+  withNaryArg 1 do
+    let type ← withBindingDomain delab
+    withBindingBodyUnusedName fun x => delabTeleFields (acc.push (⟨x⟩, type))
+
+@[app_delab Iris.Std.Tele.cons]
+meta def delabTeleLiteral : Delab := whenPPOption getPPNotation do
+  guard (literalArity? (← getExpr)).isSome
+  let fields ← delabTeleFields #[]
+  if ← getPPOption getPPPiBinderTypes then
+    let xs := fields.map (·.1)
+    let types := fields.map (·.2)
+    `(⟦tele $[($xs:ident : $types)]*⟧)
+  else
+    let xs := fields.map (·.1)
+    `(⟦tele $[$xs:ident]*⟧)
+
+@[app_delab Iris.Std.Tele.nil]
+meta def delabTeleNilLiteral : Delab :=
+  whenPPOption getPPNotation <| whenNotPPOption getPPUniverses `(⟦tele⟧)
+
+private meta partial def delabTeleArgFields (acc : Array Term) : DelabM (Array Term) := do
+  if (← getExpr).isConstOf ``Tele.Arg.nil then return acc
+  let x ← withNaryArg 2 delab
+  withNaryArg 3 (delabTeleArgFields (acc.push x))
+
+@[app_delab Iris.Std.Tele.Arg.cons]
+meta def delabTeleArgLiteral : Delab := whenPPOption getPPNotation do
+  guard (Arg.literalLength? (← getExpr)).isSome
+  let xs ← delabTeleArgFields #[]
+  `(⟦tele_arg $xs,*⟧)
+
+@[app_delab Iris.Std.Tele.Arg.nil]
+meta def delabTeleArgNilLiteral : Delab :=
+  whenPPOption getPPNotation <| whenNotPPOption getPPUniverses `(⟦tele_arg⟧)
 
 /-- Collapse a non-dependent telescopic function into a single value, using `step` to introduce
 one binder at a time. -/
