@@ -666,8 +666,8 @@ instance mapCod_lookup_discrete [OFEFun (β : α → _)]
     (f : (x : α) → β x) (x : α) [hf : DiscreteE f] : DiscreteE (f x) where
   discrete {y} h := by
     let g : (x' : α) → β x' := fun x' => if e : x = x' then e ▸ y else f x'
-    have hgx : g x = y := dif_pos rfl
-    have hne : ∀ x', x ≠ x' → g x' = f x' := fun x' e => dif_neg e
+    have hgx : g x = y := dite_eq_left rfl
+    have hne : ∀ x', x ≠ x' → g x' = f x' := fun x' e => dite_eq_right e
     refine (congrFun (hf.discrete fun x' => ?_) x).trans hgx
     by_cases e : x = x'
     · grind

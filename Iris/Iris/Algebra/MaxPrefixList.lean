@@ -164,7 +164,7 @@ theorem toMaxPrefixList_incN_aux {n} {l1 l2 : List α}
   · refine .of_eq (by grind)
   · obtain ⟨x1, hx1, rfl⟩ := Option.map_eq_some_iff.mp ha1
     obtain ⟨x2, hx2, rfl⟩ := Option.map_eq_some_iff.mp ha2
-    rw [List.getElem?_append, hx2, if_pos (List.getElem?_eq_some_iff.mp hx1).1, hx1]
+    rw [List.getElem?_append, hx2, ite_eq_left (List.getElem?_eq_some_iff.mp hx1).1, hx1]
     exact some_dist_some.mpr (Agree.toAgree_includedN.mp ha).symm
 
 @[rocq_alias to_max_prefix_list_includedN]
@@ -199,7 +199,7 @@ theorem toMaxPrefixList_op_validN_aux {n} {l1 l2 : List α} (hlen : l1.length �
     | none => grind
     | some x2 =>
       rw [h1, h2] at hi
-      rw [if_pos (List.getElem?_eq_some_iff.mp h1).1]
+      rw [ite_eq_left (List.getElem?_eq_some_iff.mp h1).1]
       refine some_dist_some.mpr (Agree.toAgree_op_validN_iff_dist.mp ?_).symm
       simpa [op, optionOp, Option.some_validN] using hi
 

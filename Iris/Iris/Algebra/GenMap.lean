@@ -283,7 +283,7 @@ theorem GenMap.singleton_map_op (x : Nat) (y1 y2 : β) :
   · subst h; simp [singleton, empty, alter, Iris.alter]
   · simp only [singleton, empty, alter, Iris.alter]
     have : x ≠ γ := Ne.symm h
-    simp [if_neg this]
+    simp [ite_eq_right this]
 
 theorem GenMap.singleton_map_pcore (x : Nat) (y : β) (γ : Nat) :
     ((singleton x y : GenMap β).car γ).bind pcore =
@@ -310,7 +310,7 @@ theorem GenMap.op_singleton_comm {mf : GenMap β} {x : Nat} (y : β)
     simp [H_free]
   · simp only [CMRA.op, optionOp, alter, Iris.alter, singleton, empty]
     have : x ≠ k := Ne.symm heq
-    simp [if_neg this]
+    simp [ite_eq_right this]
 
 theorem GenMap.singleton_op_alter_none {g : GenMap β} {x : Nat} {y : β} (h : g.car x = some y) :
     GenMap.singleton x y • g.alter x none = g := by
@@ -328,7 +328,7 @@ theorem GenMap.validN_op_comm {m mf : GenMap β} (x : Nat) (y : β) (H : IsFree 
     simp [H]
   · simp only [CMRA.op, alter, Iris.alter]
     have : x ≠ k := Ne.symm heq
-    simp [if_neg this]
+    simp [ite_eq_right this]
 
 end CMRA
 

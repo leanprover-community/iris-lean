@@ -163,7 +163,7 @@ theorem slice_insert_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   imod inv_alloc N E (slice_inv γ Q) $$ [Hauth] with #Hinv
   · inext
     unfold slice_inv box_own_auth; iexists false
-    simp only [Bool.false_eq_true, if_false]; iframe
+    simp only [Bool.false_eq_true, ite_false]; iframe
   imodintro
   iexists γ
   unfold slice; iframe %hfresh Hinv
@@ -225,7 +225,7 @@ theorem slice_fill {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   icases Hfrag with >Hfrag
   imod box_own_auth_update true $$ [$Hauth $Hfrag] with ⟨Hauth, Hfrag⟩
   imod Hclose $$ [Hauth HQ] with ⟨-⟩
-  · inext; iexists true; simp only [if_true]; iframe
+  · inext; iexists true; simp only [ite_true]; iframe
   imodintro
   icases bigSepM_laterN $$ Hbig with Hbig
   inext
@@ -253,9 +253,9 @@ theorem slice_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   ihave %hb := box_own_auth_agree $$ [$Hauth $Hfrag]; subst hb
   imod box_own_auth_update false $$ [$Hauth $Hfrag] with ⟨Hauth, Hfrag⟩
   imod Hclose $$ [Hauth]
-  · inext; iexists false; simp only [Bool.false_eq_true, if_false]; iframe
+  · inext; iexists false; simp only [Bool.false_eq_true, ite_false]; iframe
   imodintro
-  simp only [if_true]; iframe Hb
+  simp only [ite_true]; iframe Hb
   iexists Φ
   icases bigSepM_laterN $$ Hbig with Hbig
   inext
@@ -352,9 +352,9 @@ theorem box_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     ihave %hb := box_own_auth_agree $$ [$Hauth $Hγ']; subst hb
     imod box_own_auth_update false $$ [$Hauth $Hγ'] with ⟨Hauth, Hfrag⟩
     imod Hclose $$ [Hauth]
-    · inext; iexists false; simp only [Bool.false_eq_true, if_false]; iframe
+    · inext; iexists false; simp only [Bool.false_eq_true, ite_false]; iframe
     imodintro
-    simp only [if_true]; iframe Hb HγΦ Hfrag Hinv
+    simp only [ite_true]; iframe Hb HγΦ Hfrag Hinv
   · imodintro
     isplitl [HΦ]
     · icases bigSepM_later $$ HΦ with HΦ

@@ -243,9 +243,9 @@ theorem get?_heapArray {l : Loc} {vs : List (Option Val)} {ow : Option Val} {k :
         obtain ⟨j, hkj, hj⟩ := ih.mp hget
         exact ⟨j + 1, hkj.trans (hadd j), by simpa using hj⟩
     · rintro ⟨_ | j, hkj, hj⟩
-      · rw [if_pos (by simpa using hkj.symm)]
+      · rw [ite_eq_left (by simpa using hkj.symm)]
         simpa using hj
-      · rw [if_neg]
+      · rw [ite_eq_right]
         · exact ih.mpr ⟨j, hkj.trans (hadd j).symm, by simpa using hj⟩
         · intro hlk
           have := congrArg Loc.n (hlk.trans hkj)
@@ -285,22 +285,22 @@ theorem get?_foldl_insert (l : Loc) (v : Option Val) (m : HeapF (Option Val)) (n
     rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil,
       Std.LawfulPartialMap.get?_insert, ih]
     by_cases hk : (l + (n : Int)) = k
-    · rw [if_pos hk, if_pos ⟨n, Nat.lt_succ_self n, hk.symm⟩]
-    · rw [if_neg hk]
+    · rw [ite_eq_left hk, ite_eq_left ⟨n, Nat.lt_succ_self n, hk.symm⟩]
+    · rw [ite_eq_right hk]
       by_cases hex : ∃ i, i < n ∧ k = l + (i : Int)
       · obtain ⟨i, hi, hki⟩ := hex
-        rw [if_pos ⟨i, hi, hki⟩, if_pos ⟨i, Nat.lt_succ_of_lt hi, hki⟩]
+        rw [ite_eq_left ⟨i, hi, hki⟩, ite_eq_left ⟨i, Nat.lt_succ_of_lt hi, hki⟩]
       · grind
 
 theorem get?_allocCells {l : Loc} {n : Nat} {v : Option Val} {k : Loc} :
     PartialMap.get? (M := HeapF) (allocCells l n v) k
       = if (∃ i, i < n ∧ k = l + (i : Int)) then some v else none := by
   by_cases h : ∃ i, i < n ∧ k = l + (i : Int)
-  · rw [if_pos h]
+  · rw [ite_eq_left h]
     obtain ⟨i, hi, hki⟩ := h
     apply get?_heapArray.mpr
     exact ⟨i, hki, List.getElem?_replicate_of_lt hi⟩
-  · rw [if_neg h]
+  · rw [ite_eq_right h]
     rcases hget : PartialMap.get? (M := HeapF) (allocCells l n v) k with _ | ow
     · rfl
     · obtain ⟨i, hki, hvi⟩ := get?_heapArray.mp hget
@@ -328,8 +328,8 @@ theorem initHeap_heap_eq {σ : State} {l : Loc} {n : Int} {v : Option Val} :
       (fun h (i : Nat) => Std.insert (M := HeapF) h (l + (i : Int)) v) σ.heap) k = _
   rw [get?_foldl_insert, Std.PartialMap.union, Std.LawfulPartialMap.get?_merge, get?_allocCells]
   by_cases hex : ∃ i, i < n.toNat ∧ k = l + (i : Int)
-  · simp only [if_pos hex]; cases PartialMap.get? (M := HeapF) σ.heap k <;> rfl
-  · simp only [if_neg hex]; cases PartialMap.get? (M := HeapF) σ.heap k <;> rfl
+  · simp only [ite_eq_left hex]; cases PartialMap.get? (M := HeapF) σ.heap k <;> rfl
+  · simp only [ite_eq_right hex]; cases PartialMap.get? (M := HeapF) σ.heap k <;> rfl
 
 theorem allocCells_disjoint {l : Loc} {n : Int} {v : Val} {m : HeapF (Option Val)}
     (hf : ∀ i : Int, 0 ≤ i → i < n → PartialMap.get? (M := HeapF) m (l + i) = none) :

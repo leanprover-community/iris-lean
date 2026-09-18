@@ -432,7 +432,7 @@ noncomputable def Countable.ofInjective {A} (f : A → Pos) (Hf : f.Injective) :
   decode p := if H : ∃ a, f a = p then some H.choose else none
   decode_encode a := by
     have H : ∃ b, f b = f a := ⟨a, rfl⟩
-    rw [dif_pos H]; exact congrArg some (Hf H.choose_spec)
+    rw [dite_eq_left H]; exact congrArg some (Hf H.choose_spec)
 
 instance [Countable A] : Countable (List A) where
   encode xs := Pos.flatten (List.map Countable.encode xs)
