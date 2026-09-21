@@ -17,7 +17,7 @@ public import Iris.Std.Namespaces
 
 namespace Iris.HeapLang
 
-open BI Std CMRA Excl DisjointLeibnizSet LawfulSet
+open BI Iris.Std CMRA Excl DisjointLeibnizSet LawfulSet
 
 @[expose] public section
 
@@ -306,4 +306,9 @@ def instLock [HeapLangGS hlc GF] : Lock GF where
   release_spec γ lk R := release_spec γ lk R
 
 end TicketLock
+
 end
+
+end HeapLang
+
+end Iris

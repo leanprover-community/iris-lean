@@ -15,7 +15,7 @@ public import Iris.ProofMode
 @[expose] public section
 namespace Iris
 
-open COFE Std CMRA
+open COFE Iris.Std CMRA
 
 /-- Apply an OFunctor at a fixed type -/
 abbrev COFE.OFunctorPre.ap (F : OFunctorPre) (T : Type _) [COFE T] :=
@@ -44,7 +44,7 @@ theorem OFE.transpAp_op_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x y
 theorem OFE.transpAp_pcore_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x : F₁ T T} :
     (CMRA.pcore x).map (transpAp h_fun).mp = CMRA.pcore ((transpAp h_fun).mp x) := by
   cases h_fun; cases eq_of_heq h_inst
-  show (CMRA.pcore x).map _ = CMRA.pcore x
+  change (CMRA.pcore x).map _ = CMRA.pcore x
   cases CMRA.pcore x <;> rfl
 
 theorem OFE.transpAp_validN_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x : F₁ T T} (H : ✓{n} x) :
@@ -154,7 +154,7 @@ end ElemG
 
 section Fold
 
-open Iris COFE UPred
+open Iris COFE Iris.UPred
 
 variable {FF : BundledGFunctors}
 
@@ -173,14 +173,16 @@ theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) = x :=
   refine OFE.eq_dist_2 fun n => ?_
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm.dist ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
-  apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold]
+  apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold] <;>
+    exact OFE.Iso.hom_inv_dist OFunctor.Fix.iso
 
 @[rocq_alias inG_fold_unfold]
 theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) = x := by
   refine OFE.eq_dist_2 fun n => ?_
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm.dist ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
-  apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold]
+  apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold] <;>
+    exact OFE.Iso.inv_hom_dist OFunctor.Fix.iso
 
 @[rocq_alias iProp_unfold_equivI]
 theorem IProp.unfold_equivI (P Q : IProp FF) :
@@ -242,7 +244,7 @@ end Fold
 
 section iSingleton
 
-open IProp OFE UPred GenMap
+open IProp OFE Iris.UPred GenMap
 
 @[rocq_alias iRes_singleton]
 def iSingleton {GF} F [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (v : F.ap (IProp GF)) : IResUR GF :=
@@ -331,7 +333,7 @@ theorem unfoldi_bundle_coreId {a : F.ap (IProp GF)} [CMRA.CoreId a] :
 @[rocq_alias iRes_singleton_core_id]
 instance {a : F.ap (IProp GF)} [CMRA.CoreId a] : CMRA.CoreId (iSingleton F γ a) where
   core_id := OFE.eq_dist_2 fun n τ' γ' => by
-    show CMRA.core ((iSingleton F γ a τ').car γ') ≡{n}≡ (iSingleton F γ a τ').car γ'
+    change CMRA.core ((iSingleton F γ a τ').car γ') ≡{n}≡ (iSingleton F γ a τ').car γ'
     simp only [iSingleton]
     split
     next h =>
@@ -488,7 +490,7 @@ instance iSingleton_discreteE {v : F.ap (IProp GF)} [inst : OFE.DiscreteE v] :
         exact (Option.none_is_discrete.discrete Hk).dist
     next h =>
       intro k; have Hk := (H τ) k
-      simp [iSingleton, dif_neg h, GenMap.empty_map_lookup] at Hk ⊢
+      simp [iSingleton, dite_eq_right h, GenMap.empty_map_lookup] at Hk ⊢
       exact (Option.none_is_discrete.discrete Hk).dist
 
 theorem iSingleton_eq_discreteFunSingleton {v : F.ap (IProp GF)} :
@@ -536,7 +538,7 @@ def iOwn {GF F} [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (v : F.ap 
 
 section iOwn
 
-open IProp OFE UPred BI GenMap ProofMode
+open IProp OFE Iris.UPred BI GenMap ProofMode
 
 variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
 
@@ -612,8 +614,8 @@ theorem validN_iSingleton_op {mf : IResUR GF} {y} :
     simp [iSingleton]
     apply op_singleton_comm _ (unfoldi.f (E.bundle y)) H_free |>.dist.validN.mpr
     exact GenMap.alter_valid _ (IProp.unfoldi_bundle_validN Hvalid) (Hvalid_mf E.τ)
-  · show ✓{n} (iSingleton F γ y τ • mf τ)
-    simp only [iSingleton, dif_neg h]
+  · change ✓{n} (iSingleton F γ y τ • mf τ)
+    simp only [iSingleton, dite_eq_right h]
     exact Dist.validN (CMRA.unit_left_id_dist (n := n) (x := mf τ)) |>.mpr (Hvalid_mf τ)
 
 theorem iSingleton_op_validN_free {mf : IResUR GF} {y : F.ap (IProp GF)} :
@@ -873,7 +875,7 @@ end iOwn
 
 section big_op_instances
 
-open IProp OFE UPred BI GenMap ProofMode Algebra Std
+open IProp OFE Iris.UPred BI GenMap ProofMode Algebra Iris.Std
 open scoped Iris.Std.PartialMap
 
 variable {GF F} [URFunctorContractive F] [E : ElemG GF F]
@@ -1036,13 +1038,13 @@ theorem iOwn_and {a1 a2 : F.ap (IProp GF)} :
   ihave Hall : (∀ b : Bool, iOwn γ (bif b then a1 else a2)) $$ [H]
   · iintro %b
     cases b
-    · simp only [cond_false]; icases H with ⟨-, $⟩
-    · simp only [cond_true]; icases H with ⟨$, -⟩
+    · simp only [Bool.cond_false]; icases H with ⟨-, $⟩
+    · simp only [Bool.cond_true]; icases H with ⟨$, -⟩
   · icases iOwn_forall γ (fun b : Bool => bif b then a1 else a2) $$ Hall with ⟨%c, Hown, #Hincl⟩
     iexists c; iframe Hown
     isplit
-    · ihave #H1 := Hincl $$ %true; isimp only [cond_true] at H1; iexact H1
-    · ihave #H2 := Hincl $$ %false; isimp only [cond_false] at H2; iexact H2
+    · ihave #H1 := Hincl $$ %true; isimp only [Bool.cond_true] at H1; iexact H1
+    · ihave #H2 := Hincl $$ %false; isimp only [Bool.cond_false] at H2; iexact H2
 
 @[rocq_alias own_and_total]
 theorem iOwn_and_total [CMRA.IsTotal (F.ap (IProp GF))] {a1 a2 : F.ap (IProp GF)} :

@@ -375,7 +375,7 @@ theorem laterN_emp [BIAffine PROP] (n : Nat) : ▷^[n] emp ⊣⊢@{PROP} emp := 
 theorem laterN_forall (n : Nat) {Φ : α → PROP} : ▷^[n] (∀ a, Φ a) ⊣⊢ (∀ a, ▷^[n] Φ a) := by
   induction n with
   | zero => exact .rfl
-  | succ n ih => exact (later_congr ih).trans $ later_forall
+  | succ n ih => exact (later_congr ih).trans later_forall
 
 @[rocq_alias bi.laterN_exist_2]
 theorem laterN_exists_mpr (n : Nat) {Φ : α → PROP} : (∃ a, ▷^[n] Φ a) ⊢ ▷^[n] (∃ a, Φ a) :=
@@ -386,19 +386,19 @@ theorem laterN_exists [Inhabited α] (n : Nat) {Φ : α → PROP} :
     ▷^[n] (∃ a, Φ a) ⊣⊢ (∃ a, ▷^[n] Φ a) := by
   induction n with
   | zero => exact .rfl
-  | succ n ih => exact (later_congr ih).trans $ later_exists.symm
+  | succ n ih => exact (later_congr ih).trans later_exists.symm
 
 @[rocq_alias bi.laterN_and]
 theorem laterN_and (n : Nat) {P Q : PROP} : ▷^[n] (P ∧ Q) ⊣⊢ ▷^[n] P ∧ ▷^[n] Q := by
   induction n with
   | zero => exact .rfl
-  | succ n ih => exact (later_congr ih).trans $ later_and
+  | succ n ih => exact (later_congr ih).trans later_and
 
 @[rocq_alias bi.laterN_or]
 theorem laterN_or (n : Nat) {P Q : PROP} : ▷^[n] (P ∨ Q) ⊣⊢ ▷^[n] P ∨ ▷^[n] Q := by
   induction n with
   | zero => exact .rfl
-  | succ n ih => exact (later_congr ih).trans $ later_or
+  | succ n ih => exact (later_congr ih).trans later_or
 
 @[rocq_alias bi.laterN_impl]
 theorem laterN_imp (n : Nat) {P Q : PROP} : ▷^[n] (P → Q) ⊢ ▷^[n] P → ▷^[n] Q :=
@@ -408,7 +408,7 @@ theorem laterN_imp (n : Nat) {P Q : PROP} : ▷^[n] (P → Q) ⊢ ▷^[n] P → 
 theorem laterN_sep (n : Nat) {P Q : PROP} : ▷^[n] (P ∗ Q) ⊣⊢ ▷^[n] P ∗ ▷^[n] Q := by
   induction n with
   | zero => exact .rfl
-  | succ n ih => exact (later_congr ih).trans $ later_sep
+  | succ n ih => exact (later_congr ih).trans later_sep
 
 @[rocq_alias bi.laterN_wand]
 theorem laterN_wand (n : Nat) {P Q : PROP} : ▷^[n] (P -∗ Q) ⊢ ▷^[n] P -∗ ▷^[n] Q :=
@@ -579,14 +579,14 @@ theorem except0_sep {P Q : PROP} : ◇ (P ∗ Q) ⊣⊢ ◇ P ∗ ◇ Q := by
 @[rocq_alias bi.except_0_forall]
 theorem except0_forall {Φ : α → PROP} : ◇ (∀ a, Φ a) ⊣⊢ ∀ a, ◇ Φ a := by
   refine ⟨forall_intro (except0_mono <| forall_elim ·), ?_⟩
-  refine (and_intro ((forall_mono λ _ =>
+  refine (and_intro ((forall_mono fun _ =>
            (or_elim (later_mono false_elim) later_intro)).trans later_forall.2) .rfl).trans ?_
   refine and_mono_left later_false_em |>.trans ?_
   refine and_or_right.1.trans ?_
   refine or_elim ?_ ?_
   · exact and_elim_l.trans or_intro_l
   · refine or_intro_right_trans ?_
-    refine forall_intro λ a => ?_
+    refine forall_intro fun a => ?_
     refine imp_elim_swap <| forall_elim a |>.trans ?_
     refine or_elim (imp_intro <| imp_elim_right.trans <| forall_elim a) (imp_intro and_elim_l)
 
@@ -597,7 +597,7 @@ theorem except0_exists_mpr {Φ : α → PROP} : (∃ a, ◇ Φ a) ⊢ ◇ ∃ a,
 @[rocq_alias bi.except_0_exist]
 theorem except0_exists [Inhabited α] {Φ : α → PROP} :
     ◇ (∃ a, Φ a) ⊣⊢ ∃ a, ◇ Φ a :=
-  ⟨or_elim ((exists_intro (Ψ:=λ _ =>_) default).trans <| exists_mono fun _ => or_intro_l)
+  ⟨or_elim ((exists_intro (Ψ:=fun _ =>_) default).trans <| exists_mono fun _ => or_intro_l)
            (exists_mono fun _ => except0_intro),
    except0_exists_mpr⟩
 
@@ -1030,3 +1030,7 @@ theorem only0_except0 [BILoeb PROP] {P : PROP} : <only0> ◇ P ⊣⊢ True := ca
   _ ⊣⊢ <only0> ▷ False ∨ <only0> P := only0_or
   _ ⊣⊢ True ∨ <only0> P             := or_congr_left only0_later
   _ ⊣⊢ True                         := true_or
+
+end BI
+
+end Iris

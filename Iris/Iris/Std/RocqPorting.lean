@@ -79,7 +79,7 @@ local `lock_inv`, so their aliases are:
 open Lean Elab Command
 
 /-- Creates a `@[deprecated]` alias in the `Rocq` namespace with the given Rocq name. -/
-syntax (name := rocq_alias) "rocq_alias" ident : attr
+syntax (name := rocq_alias) "rocq_alias " ident : attr
 
 initialize registerBuiltinAttribute {
   name := `rocq_alias
@@ -140,7 +140,7 @@ carry a package prefix.
 ```
 -/
 @[expose]
-elab "#rocq_ignore" id:ident reason:str : command => do
+elab "#rocq_ignore " id:ident ppSpace reason:str : command => do
   modifyEnv (rocqIgnoreExt.addEntry · (id.getId, reason.getString))
 
 /-- Environment extension tracking all `#rocq_ignore_file` entries as `(folder, file, reason)` triples. -/
@@ -163,7 +163,7 @@ the unprefixed `iris` package. The file is relative to the named directory;
 ```
 -/
 @[expose]
-elab "#rocq_ignore_file" folder:ident file:str reason:str : command => do
+elab "#rocq_ignore_file " folder:ident ppSpace file:str ppSpace reason:str : command => do
   modifyEnv (rocqIgnoreFileExt.addEntry · (folder.getId.toString, file.getString, reason.getString))
 
 /-- A concept entry: `(dir, feature, subfeature?, status, reason)`. -/

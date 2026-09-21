@@ -43,3 +43,7 @@ theorem bigOp_cons {f : PROP → PROP → PROP} {unit : PROP} [LawfulBigOp f uni
   match Ps with
   | [] => symm f right_id
   | _ :: _ => refl f
+
+end Std
+
+end Iris

@@ -599,3 +599,5 @@ theorem contradiction [BILoeb PROP] : False := by
     iapply IH $$ Hlc Hfalse
 
 end LaterCreditsPlain
+
+end Iris

@@ -17,7 +17,7 @@ public import Iris.Std.Namespaces
 
 namespace Iris
 
-open BI CMRA Agree OFE UPred IProp Std ProofMode COFE Auth ExclAuth Excl PartialMap BigSepM
+open BI CMRA Agree OFE Iris.UPred IProp Iris.Std ProofMode COFE Auth ExclAuth Excl PartialMap BigSepM
 
 abbrev BoolO := DiscreteO Bool
 
@@ -122,7 +122,7 @@ theorem box_own_auth_agree {γ : SliceName} {b1 b2 : Bool} :
   ipureintro; exact DiscreteO.eqv_inj (Iris.ExclAuth.agree H)
 
 @[rocq_alias box_own_auth_update]
-theorem box_own_auth_update {γ : SliceName} {b1 b2: Bool} (b3 : Bool) :
+theorem box_own_auth_update {γ : SliceName} {b1 b2 : Bool} (b3 : Bool) :
     box_own_auth (GF := GF) γ (●E (⟨b1⟩ : BoolO)) ∗ box_own_auth γ (◯E ⟨b2⟩) ==∗
     box_own_auth γ (●E ⟨b3⟩) ∗ box_own_auth γ (◯E ⟨b3⟩) := by
   simp only [box_own_auth, ← iOwn_op.to_eq]
@@ -163,7 +163,7 @@ theorem slice_insert_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   imod inv_alloc N E (slice_inv γ Q) $$ [Hauth] with #Hinv
   · inext
     unfold slice_inv box_own_auth; iexists false
-    simp only [Bool.false_eq_true, if_false]; iframe
+    simp only [Bool.false_eq_true, ite_false]; iframe
   imodintro
   iexists γ
   unfold slice; iframe %hfresh Hinv
@@ -225,7 +225,7 @@ theorem slice_fill {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   icases Hfrag with >Hfrag
   imod box_own_auth_update true $$ [$Hauth $Hfrag] with ⟨Hauth, Hfrag⟩
   imod Hclose $$ [Hauth HQ] with ⟨-⟩
-  · inext; iexists true; simp only [if_true]; iframe
+  · inext; iexists true; simp only [ite_true]; iframe
   imodintro
   icases bigSepM_laterN $$ Hbig with Hbig
   inext
@@ -253,9 +253,9 @@ theorem slice_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   ihave %hb := box_own_auth_agree $$ [$Hauth $Hfrag]; subst hb
   imod box_own_auth_update false $$ [$Hauth $Hfrag] with ⟨Hauth, Hfrag⟩
   imod Hclose $$ [Hauth]
-  · inext; iexists false; simp only [Bool.false_eq_true, if_false]; iframe
+  · inext; iexists false; simp only [Bool.false_eq_true, ite_false]; iframe
   imodintro
-  simp only [if_true]; iframe Hb
+  simp only [ite_true]; iframe Hb
   iexists Φ
   icases bigSepM_laterN $$ Hbig with Hbig
   inext
@@ -334,7 +334,7 @@ theorem box_fill {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
 @[rocq_alias box_empty]
 theorem box_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     (E : CoPset) {f : M Bool} {P : IProp GF} {N : Namespace}
-    (HE : ↑N ⊆ E) (Hall: all (fun _ b => b = true) f) :
+    (HE : ↑N ⊆ E) (Hall : all (fun _ b => b = true) f) :
     box N f P ⊢ |={E}=> ▷ P ∗ box N (Std.PartialMap.map (fun _ => false) f) P := by
   unfold box
   iintro ⟨%Φ, #Heq, Hbig⟩
@@ -352,9 +352,9 @@ theorem box_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     ihave %hb := box_own_auth_agree $$ [$Hauth $Hγ']; subst hb
     imod box_own_auth_update false $$ [$Hauth $Hγ'] with ⟨Hauth, Hfrag⟩
     imod Hclose $$ [Hauth]
-    · inext; iexists false; simp only [Bool.false_eq_true, if_false]; iframe
+    · inext; iexists false; simp only [Bool.false_eq_true, ite_false]; iframe
     imodintro
-    simp only [if_true]; iframe Hb HγΦ Hfrag Hinv
+    simp only [ite_true]; iframe Hb HγΦ Hfrag Hinv
   · imodintro
     isplitl [HΦ]
     · icases bigSepM_later $$ HΦ with HΦ

@@ -79,3 +79,5 @@ variable (t : List Expr) [Language Expr State Obs Val] in
 #check (PureSteps t t)
 
 end Notation
+
+end IrisTest

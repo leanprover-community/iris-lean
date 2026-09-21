@@ -28,7 +28,7 @@ def A' : Nat → Σ α : Type u, COFE α
   | n+1 => let ⟨A, _⟩ := A' n; ⟨F A A, inferInstance⟩
 
 variable (F) in
-def A (n : Nat) : Type u := (A' F n).1
+@[implicit_reducible] def A (n : Nat) : Type u := (A' F n).1
 
 instance instA' (n) : COFE (A' F n).1 := (A' F n).2
 instance instA (n) : COFE (A F n) := (A' F n).2
@@ -156,7 +156,7 @@ theorem eqToHom_up {k k'} {x : A F k} (e : k = k') :
   cases e; rfl
 
 @[rocq_alias solver.g_coerce]
-theorem down_eqToHom {k k'} {x : A F (k+1)} (e : k = k') :
+theorem down_eqToHom {k k'} {x : A F (k + 1)} (e : k = k') :
     down F k' (eqToHom (congrArg Nat.succ e) x) = eqToHom e (down F k x) := by
   cases e; rfl
 
@@ -186,13 +186,13 @@ protected def Tower.embed (k) : A F k -n> Tower F := by
           down F i (eqToHom e₁ (upN F a n)) = downN F b (eqToHom e₂ n) := by
         cases Nat.add_left_cancel (k := 0) e₁; cases Nat.add_left_cancel e₂
         rfl
-      apply this <;> simp [Nat.add_sub_cancel_left]
-  · rw [dif_neg (mt Nat.le_succ_of_le h₁)]
+      apply this
+  · rw [dite_eq_right (mt Nat.le_succ_of_le h₁)]
     suffices ∀ k a b (e₁ : k = i+1+a) (e₂ : k = i+b) (n : A F k),
         down F i (downN F a (eqToHom e₁ n)) = downN F b (eqToHom e₂ n) from this _ _ _ _ _ _
     rintro k a b eq rfl n
     rw [Nat.add_assoc, Nat.add_left_cancel_iff, Nat.add_comm] at eq; subst eq
-    show _ = downN F a (down F (i+a) n)
+    change _ = downN F a (down F (i+a) n)
     induction a with
     | zero => rfl
     | succ a ih =>
@@ -213,7 +213,7 @@ theorem Tower.embed_up (x : A F k) :
       eqToHom e₁ (upN F a (up F k x)) = eqToHom e₂ (upN F b x) from this .. ▸ .rfl
     rintro a b eq rfl
     rw [Nat.add_right_comm, Nat.add_assoc, Nat.add_left_cancel_iff] at eq; subst b
-    show _ = up F (k + a) (upN F a x); clear h₁
+    change _ = up F (k + a) (upN F a x); clear h₁
     induction a with
     | zero => rfl
     | succ a ih =>
@@ -338,3 +338,9 @@ theorem Fix.unfold_fold (X : F (Fix F) (Fix F)) : Fix.unfold (Fix.fold X) = X :=
   Fix.iso.inv_hom
 
 attribute [irreducible] Fix Fix.fold Fix.unfold Fix.iso
+
+end OFunctor
+
+end COFE
+
+end Iris

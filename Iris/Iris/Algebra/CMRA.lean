@@ -283,7 +283,7 @@ theorem validN_of_le {n n'} {x : α} (le : n' ≤ n) : ✓{n} x → ✓{n'} x :=
   le.recOn id fun  _ ih vs => ih (validN_succ vs)
 
 @[rocq_alias cmra_validN_lt]
-theorem validN_of_lt {n n'} {x : α} (lt : n' < n): ✓{n} x → ✓{n'} x :=
+theorem validN_of_lt {n n'} {x : α} (lt : n' < n) : ✓{n} x → ✓{n'} x :=
   validN_of_le (Nat.le_of_lt lt)
 
 theorem valid0_of_validN {n} {x : α} : ✓{n} x → ✓{0} x := validN_of_le (Nat.zero_le n)
@@ -614,7 +614,7 @@ instance (y : α) : CoreId (core y) := CoreId.of_pcore_eq_some (pcore_eq_core _)
 @[rocq_alias cmra_core_ne]
 theorem core_ne : NonExpansive (core : α → α) where
   ne n x₁ x₂ H := by
-    show some (core x₁) ≡{n}≡ some (core x₂)
+    change some (core x₁) ≡{n}≡ some (core x₂)
     rw [← pcore_eq_core, ← pcore_eq_core]
     exact NonExpansive.ne H
 
@@ -716,12 +716,12 @@ section cancelableElements
 variable {α : Type _} [CMRA α]
 
 @[rocq_alias cancelable]
-theorem cancelable {x y z : α} [Cancelable x] (v : ✓(x • y)) (e : x • y = x • z) : y = z :=
+theorem cancelable {x y z : α} [Cancelable x] (v : ✓ (x • y)) (e : x • y = x • z) : y = z :=
   OFE.eq_dist_2 fun _ => cancelableN v.validN e.dist
 
 @[rocq_alias discrete_cancelable]
 theorem discrete_cancelable {x : α} [Discrete α]
-    (H : ∀ {y z : α}, ✓(x • y) → x • y = x • z → y = z) : Cancelable x where
+    (H : ∀ {y z : α}, ✓ (x • y) → x • y = x • z → y = z) : Cancelable x where
   cancelableN {n} {_ _} v e := (H ((valid_iff_validN' n).mpr v) (Discrete.discrete e)).dist
 
 @[rocq_alias cancelable_op]
@@ -773,7 +773,7 @@ theorem id_freeN_l {n n'} {x : α} [IdFree x] {y} (v : ✓{n} x) : ¬(y • x �
   id_freeN_r v ∘ comm'.dist.trans
 
 @[rocq_alias id_free_r]
-theorem id_free_r {x : α} [IdFree x] {y} (v : ✓x) : ¬(x • y = x) :=
+theorem id_free_r {x : α} [IdFree x] {y} (v : ✓ x) : ¬(x • y = x) :=
   fun h => id_free0_r y (valid_iff_validN.mp v 0) h.dist
 
 @[rocq_alias id_free_l]
@@ -1329,7 +1329,7 @@ end DiscreteFunURF
 
 section option
 
-open CMRA Option
+open CMRA Iris.Option Iris.OFE.Option
 
 variable [CMRA α]
 
@@ -1391,7 +1391,7 @@ instance cmraOption : CMRA (Option α) where
   comm {x y} := by
     rcases x, y with ⟨_|_, _|_⟩ <;> first | rfl | exact congrArg some comm
   pcore_op_left {x cx} := by
-    rcases x, cx with ⟨_|_, _|_⟩ <;> simp_all <;> intro h <;> exact pcore_op_left h
+    rcases x, cx with ⟨_|_, _|_⟩ <;> simp_all; intro h; exact pcore_op_left h
   pcore_idem := by
     rintro (_|x) <;> simp
     rcases H : pcore x with _|y <;> simp
@@ -1680,7 +1680,7 @@ theorem eqv_of_inc_exclusive [Exclusive (a : α)] {b : α} (H : some a ≼ some 
     · exact not_valid_of_excl_inc H Hv |>.elim
 
 @[rocq_alias Some_includedN_exclusive]
-theorem dist_of_inc_exclusive [Exclusive (a : α)] {b : α} (H : some a ≼{n} some b) (Hv : ✓{n} b)  :
+theorem dist_of_inc_exclusive [Exclusive (a : α)] {b : α} (H : some a ≼{n} some b) (Hv : ✓{n} b) :
     a ≡{n}≡ b := by
   rcases incN_iff.mp H with (Hcontra|H)
   · simp at Hcontra
@@ -1883,7 +1883,7 @@ instance cmraProd : CMRA (α × β) where
   ValidN := ValidN
   Valid := Valid
   op_ne {x} :=
-    { ne n y z h := dist_prod_ext (Dist.op_r $ dist_fst h) (Dist.op_r $ dist_snd h) }
+    { ne n y z h := dist_prod_ext (Dist.op_r <| dist_fst h) (Dist.op_r <| dist_snd h) }
   pcore_ne {n x y cx} h ph := by
     have ⟨cx₁, hcx₁, this⟩ := Option.bind_eq_some_iff.mp ph
     have ⟨cx₂, hcx₂, hcx⟩ := Option.bind_eq_some_iff.mp this
@@ -2064,7 +2064,7 @@ end ProdUnit
 
 section OptionProd
 
-open CMRA Option
+open CMRA Iris.Option Iris.OFE.Option
 
 variable {α β : Type _} [CMRA α] [CMRA β]
 
@@ -2442,4 +2442,7 @@ instance ofDiscrete_discrete [OFE α] [OFE.Discrete α] (pcore : α → Option �
 end OfDiscrete
 
 end CMRA
+
 end CmraMixin
+
+end Iris

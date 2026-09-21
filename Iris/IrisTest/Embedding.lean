@@ -311,3 +311,5 @@ example {A : Type _} [OFE A] (x y : A) (P Q : PROP1) (φ ψ : Prop) (hψ : ψ) :
   itrivial
 
 end
+
+end IrisTest

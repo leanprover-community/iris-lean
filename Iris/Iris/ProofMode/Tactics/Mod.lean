@@ -24,7 +24,7 @@ theorem mod [BI PROP] {e} {Φ} {p p'} {A A' Q Q' : PROP}
   _ ⊢ Q                       := he.elim_modal hΦ
 
 public meta section
-open Lean Elab Tactic Meta Qq Std
+open Lean Elab Tactic Meta Qq Iris.Std
 
 /--
 Eliminate a modality from `A` by transforming the goal from `P ∗ □?p A ⊢ Q` to `P ∗ □?p' A' ⊢ Q'`,
@@ -60,3 +60,11 @@ def iModCore {prop : Q(Type u)} (_bi : Q(BI $prop))
   -- show `P ∗ □?p' A' ⊢ Q'`
   let pf ← k p'' A'' Q''
   return q(mod $pf $hΦ)
+
+end
+
+end
+
+end ProofMode
+
+end Iris

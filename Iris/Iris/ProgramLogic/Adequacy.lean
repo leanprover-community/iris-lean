@@ -13,7 +13,7 @@ public import Iris.Std.FromMathlib
 
 namespace Iris.ProgramLogic
 
-open Iris OFE COFE BI Iris.BI Iris.Algebra Std FromMathlib LawfulSet
+open Iris OFE COFE BI Iris.BI Iris.Algebra Iris.Std FromMathlib LawfulSet
 open Iris.ProgramLogic.PrimStep
 open Language.Notation
 
@@ -157,7 +157,7 @@ theorem wptp_preservation (s : Stuckness) (n : Nat) (es1 es2 : List Expr)
     iframe HSI' Hwptp'
 
 @[rocq_alias wptp_postconditions]
-theorem wptp_postconditions (Φs : List (Val → IProp GF)) (s : Stuckness) (es : List Expr):
+theorem wptp_postconditions (Φs : List (Val → IProp GF)) (s : Stuckness) (es : List Expr) :
     wptp s es Φs ={⊤}=∗ [∗list] e;Φ ∈ es;Φs, (toVal e).elim iprop(True) Φ := by
   iintro Ht
   iapply BigSepL2.bigSepL2_fupd
@@ -315,7 +315,7 @@ theorem wp_adequacy_gen [InvGpreS GF] (s : Stuckness) (e : Expr) (σ : State) (�
   apply wp_strong_adequacy_gen (GF := GF) (hlc := hlc) s (Hsteps := hsteps) (numLaters := fun _ => 0)
   iintro %Hinv
   imod Hwp κs with ⟨%Hst, %Hfork, ⟨Hst, Hwp⟩⟩
-  iexists (λ σ _ κs _ => Hst σ κs), [(λ v => iprop(⌜φ v⌝))], Hfork, (fun _ _ _ _ => fupd_intro)
+  iexists (fun σ _ κs _ => Hst σ κs), [(fun v => iprop(⌜φ v⌝))], Hfork, (fun _ _ _ _ => fupd_intro)
   dsimp only
   imodintro
   iframe
@@ -354,7 +354,7 @@ theorem wp_invariance_gen [InvGpreS GF] (s : Stuckness) (e1 : Expr) (σ1 σ2 : S
   apply wp_strong_adequacy_gen (GF := GF) (hlc := hlc) s (Hsteps := hsteps) (numLaters := fun _ => 0)
   iintro %Hinv
   imod Hwp κs with ⟨%Hst, %Hfork, ⟨Hst, Hwp, Hcont⟩⟩
-  iexists ((λ σ _ => Hst σ)), [(λ _ => iprop(True))], Hfork, (fun _ _ _ _ => fupd_intro)
+  iexists ((fun σ _ => Hst σ)), [(fun _ => iprop(True))], Hfork, (fun _ _ _ _ => fupd_intro)
   dsimp only
   imodintro
   iframe Hst

@@ -303,7 +303,7 @@ theorem bigSepM2_insert_acc {Φ : K → A → B → PROP} {m1 : M A} {m2 : M B}
 
 @[rocq_alias big_sepM2_insert_2]
 theorem bigSepM2_insert_elim {Φ : K → A → B → PROP} {m1 : M A} {m2 : M B}
-    {i : K} {x1 : A} {x2 : B} [hor: TCOr (∀ x y, Affine (Φ i x y)) (Absorbing (Φ i x1 x2))] :
+    {i : K} {x1 : A} {x2 : B} [hor : TCOr (∀ x y, Affine (Φ i x y)) (Absorbing (Φ i x1 x2))] :
     Φ i x1 x2 -∗ ([∗map] k ↦ y1;y2 ∈ m1;m2, Φ k y1 y2) -∗
       [∗map] k ↦ y1;y2 ∈ insert m1 i x1;insert m2 i x2, Φ k y1 y2 := by
   refine entails_wand <| wand_intro ?_
@@ -334,7 +334,7 @@ theorem bigSepM2_lookup_acc {Φ : K → A → B → PROP} {m1 : M A} {m2 : M B}
 @[rocq_alias big_sepM2_lookup]
 theorem bigSepM2_lookup {Φ : K → A → B → PROP} {m1 : M A} {m2 : M B}
     {i : K} {x1 : A} {x2 : B}
-    [hor: TCOr (∀ k y1 y2, Affine (Φ k y1 y2)) (Absorbing (Φ i x1 x2))]
+    [hor : TCOr (∀ k y1 y2, Affine (Φ k y1 y2)) (Absorbing (Φ i x1 x2))]
     (h1 : get? m1 i = some x1) (h2 : get? m2 i = some x2) :
     ([∗map] k ↦ y1;y2 ∈ m1;m2, Φ k y1 y2) ⊢ Φ i x1 x2 :=
   match hor with
@@ -346,7 +346,7 @@ theorem bigSepM2_lookup {Φ : K → A → B → PROP} {m1 : M A} {m2 : M B}
 @[rocq_alias big_sepM2_lookup_l]
 theorem bigSepM2_lookup_left {Φ : K → A → B → PROP} {m1 : M A} {m2 : M B}
     {i : K} {x1 : A}
-    [hor: TCOr (∀ k y1 y2, Affine (Φ k y1 y2)) (∀ x2, Absorbing (Φ i x1 x2))]
+    [hor : TCOr (∀ k y1 y2, Affine (Φ k y1 y2)) (∀ x2, Absorbing (Φ i x1 x2))]
     (h1 : get? m1 i = some x1) :
     ([∗map] k ↦ y1;y2 ∈ m1;m2, Φ k y1 y2) ⊢ ∃ x2, ⌜get? m2 i = some x2⌝ ∧ Φ i x1 x2 :=
   match hor with
@@ -356,7 +356,7 @@ theorem bigSepM2_lookup_left {Φ : K → A → B → PROP} {m1 : M A} {m2 : M B}
 @[rocq_alias big_sepM2_lookup_r]
 theorem bigSepM2_lookup_right (Φ : K → A → B → PROP) (m1 : M A) (m2 : M B)
     (i : K) (x2 : B)
-    [hor: TCOr (∀ k y1 y2, Affine (Φ k y1 y2)) (∀ x1, Absorbing (Φ i x1 x2))]
+    [hor : TCOr (∀ k y1 y2, Affine (Φ k y1 y2)) (∀ x1, Absorbing (Φ i x1 x2))]
     (h2 : get? m2 i = some x2) :
     ([∗map] k ↦ y1;y2 ∈ m1;m2, Φ k y1 y2) ⊢ ∃ x1, ⌜get? m1 i = some x1⌝ ∧ Φ i x1 x2 :=
   match hor with

@@ -362,4 +362,7 @@ theorem greatest_fixpoint_coind [_HF : NonExpansive F] :
   · iapply Ha $$ Hy
 
 end Coind
+
 end GreatestFixpoint
+
+end Iris

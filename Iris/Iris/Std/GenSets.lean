@@ -52,7 +52,7 @@ class LawfulSet (S : Type _) (A : outParam (Type _)) extends Set S A where
   /-- Membership in difference: x ∈ X \ Y ↔ x ∈ X ∧ x ∉ Y -/
   mem_diff : ∀ {X Y : S} {x : A},
     x ∈ (X \ Y) ↔ (x ∈ X ∧ x ∉ Y)
-  export LawfulSet (mem_empty mem_singleton mem_union mem_inter mem_diff)
+export LawfulSet (mem_empty mem_singleton mem_union mem_inter mem_diff)
 
 attribute [ext] LawfulSet.ext
 
@@ -122,7 +122,7 @@ instance : Std.Antisymm (fun x y : S => x ⊆ y) where
   antisymm _ _ := eq_subset
 
 /-- Proper subset is equivalent to subset plus inequality. -/
-theorem ssubset_subset  {X Y : S} : (X ⊂ Y) ↔ (X ⊆ Y ∧ X ≠ Y) := by
+theorem ssubset_subset {X Y : S} : (X ⊂ Y) ↔ (X ⊆ Y ∧ X ≠ Y) := by
   simp [SSubset, Subset]; grind only
 
 /-! ### List conversion -/

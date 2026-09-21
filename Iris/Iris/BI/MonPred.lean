@@ -1620,9 +1620,9 @@ theorem monPred_at_internal_eq {A : Type _} [OFE A] (i : I.car) (a b : A) :
 @[rocq_alias monPred_at_plainly]
 theorem monPred_at_plainly (i : I.car) (P : MonPred I PROP) :
     iprop(■ P).monPred_at i ⊣⊢ ∀ j, ■ (P.monPred_at j) := by
-  show (SiPure.siPure (SiEmpValid.siEmpValid P) : MonPred I PROP).monPred_at i ⊣⊢
+  change (SiPure.siPure (SiEmpValid.siEmpValid P) : MonPred I PROP).monPred_at i ⊣⊢
     ∀ j, ■ (P.monPred_at j)
-  show iprop(<si_pure> (SiEmpValid.siEmpValid iprop(∀ j, P.monPred_at j))) ⊣⊢
+  change iprop(<si_pure> (SiEmpValid.siEmpValid iprop(∀ j, P.monPred_at j))) ⊣⊢
     ∀ j, ■ (P.monPred_at j)
   calc iprop(<si_pure> (SiEmpValid.siEmpValid iprop(∀ j, P.monPred_at j)))
     _ ⊣⊢ <si_pure> (∀ j, <si_emp_valid> P.monPred_at j) := siPure_mono_bi siEmpValid_forall

@@ -13,6 +13,106 @@ public import Iris.ProofMode
 namespace IrisTest
 open Iris BI ProofMode Std
 
+section Tests
+open OFE BIBase
+
+variable [BI PROP] (P : Nat → PROP) (Q : Nat → Nat → PROP) (l l1 l2 : List Nat)
+  (Q' : Nat → Nat → Nat → PROP)
+
+/-! ## Delaborator round-trip tests -/
+
+-- bigSepL without index
+/-- info: [∗list] x ∈ l, P x : PROP -/
+#guard_msgs in
+#check [∗list] x ∈ l, P x
+
+-- bigSepL with index
+/-- info: [∗list] k ↦ x ∈ l, Q k x : PROP -/
+#guard_msgs in
+#check [∗list] k ↦ x ∈ l, Q k x
+
+-- bigAndL without index
+/-- info: [∧list] x ∈ l, P x : PROP -/
+#guard_msgs in
+#check [∧list] x ∈ l, P x
+
+-- bigAndL with index
+/-- info: [∧list] k ↦ x ∈ l, Q k x : PROP -/
+#guard_msgs in
+#check [∧list] k ↦ x ∈ l, Q k x
+
+-- bigOrL without index
+/-- info: [∨list] x ∈ l, P x : PROP -/
+#guard_msgs in
+#check [∨list] x ∈ l, P x
+
+-- bigOrL with index
+/-- info: [∨list] k ↦ x ∈ l, Q k x : PROP -/
+#guard_msgs in
+#check [∨list] k ↦ x ∈ l, Q k x
+
+-- bigSepL2 without index
+/-- info: [∗list] x;y ∈ l1;l2, Q x y : PROP -/
+#guard_msgs in
+#check [∗list] x;y ∈ l1;l2, Q x y
+
+-- bigSepL2 with index
+/-- info: [∗list] k ↦ x;y ∈ l1;l2, Q' k x y : PROP -/
+#guard_msgs in
+#check [∗list] k ↦ x;y ∈ l1;l2, Q' k x y
+
+end Tests
+
+section MapTests
+open Iris.Std OFE BIBase
+variable [BI PROP] {K : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
+  (P : Nat → PROP) (Q : K → Nat → PROP) (m : M Nat)
+  (Q2 : Nat → Nat → PROP) (Q2' : K → Nat → Nat → PROP) (m1 m2 : M Nat)
+
+-- bigSepM without key
+/-- info: [∗map] x ∈ m, P x : PROP -/
+#guard_msgs in
+#check [∗map] x ∈ m, P x
+
+-- bigSepM with key
+/-- info: [∗map] k ↦ x ∈ m, Q k x : PROP -/
+#guard_msgs in
+#check [∗map] k ↦ x ∈ m, Q k x
+
+-- bigAndM without key
+/-- info: [∧map] x ∈ m, P x : PROP -/
+#guard_msgs in
+#check [∧map] x ∈ m, P x
+
+-- bigAndM with key
+/-- info: [∧map] k ↦ x ∈ m, Q k x : PROP -/
+#guard_msgs in
+#check [∧map] k ↦ x ∈ m, Q k x
+
+-- bigSepM2 without key
+/-- info: [∗map] x1;x2 ∈ m1;m2, Q2 x1 x2 : PROP -/
+#guard_msgs in
+#check [∗map] x1;x2 ∈ m1;m2, Q2 x1 x2
+
+-- bigSepM2 with key
+/-- info: [∗map] k ↦ x1;x2 ∈ m1;m2, Q2' k x1 x2 : PROP -/
+#guard_msgs in
+#check [∗map] k ↦ x1;x2 ∈ m1;m2, Q2' k x1 x2
+
+end MapTests
+
+section SetTests
+open Iris.Std OFE BIBase
+variable [BI PROP] {S : Type _} {A : Type _} [FiniteSet S A]
+  (P : A → PROP) (s : S)
+
+-- bigSepS
+/-- info: [∗set] x ∈ s, P x : PROP -/
+#guard_msgs in
+#check [∗set] x ∈ s, P x
+
+end SetTests
+
 section ProofModeInstances
 
 variable {PROP : Type} [BI PROP] {A B : Type} (p : Bool)
@@ -193,3 +293,5 @@ example (Φ : Nat → A → PROP) (x : A) (l : List A) (P : PROP) :
   iframe
 
 end ProofModeInstances
+
+end IrisTest

@@ -11,7 +11,7 @@ public import Iris.ProofMode.Tactics.HaveCore
 namespace Iris.ProofMode
 
 public section
-open BI Std
+open BI Iris.Std
 
 theorem rewrite_tac [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p}
     (Ψ : A → PROP) [ne : OFE.NonExpansive Ψ] [heq : IntoInternalEq Q a b]
@@ -44,7 +44,7 @@ theorem rewrite_tac_hyp [BI PROP] {P Q Q' : PROP}
   h1.trans (persistently_mono and_elim_l)
 
 public meta section
-open Lean Elab Tactic Meta Qq BI Std Parser.Tactic
+open Lean Elab Tactic Meta Qq BI Iris.Std Parser.Tactic
 
 namespace IRewrite
 
@@ -169,7 +169,7 @@ def iRewriteHyp {prop : Q(Type u)} {bi : Q(BI $prop)}
     (ivar : IVarId)
     (occs : Occurrences := Occurrences.all) :
     ProofModeM ((e' : _) × Hyps bi e' × Q($e ⊢ $e')) := do
-  let some r ← hyps.replace ivar λ _ _ ty => do
+  let some r ← hyps.replace ivar fun _ _ ty => do
     let ⟨ty', pf⟩ ← iRewriteCore hyps rule ty (occs := occs)
     return ⟨ty', q(rewrite_tac_hyp $pf)⟩
     | throwIPMError "cannot find hyp" -- should never happen
@@ -190,7 +190,7 @@ elab "irewrite " cfg:optConfig " [" rules:(IRewrite.irwRule),* "] " loc:(locatio
   let rules ← liftMacroM <| IRewrite.Rule.parse rules.getElems
 
   for rule in rules do
-    ProofModeM.runTactic `irewrite λ mvar { hyps, goal, .. } => do
+    ProofModeM.runTactic `irewrite fun mvar { hyps, goal, .. } => do
       let location ← IRewrite.Location.parse loc
       match location with
       | .goal =>
@@ -201,3 +201,11 @@ elab "irewrite " cfg:optConfig " [" rules:(IRewrite.irwRule),* "] " loc:(locatio
         let ⟨_, hyps', pf⟩ ← iRewriteHyp hyps rule ivar config.occs
         let pf' ← addBIGoal hyps' goal
         mvar.assign q(Entails.trans $pf $pf')
+
+end
+
+end
+
+end ProofMode
+
+end Iris

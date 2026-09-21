@@ -69,7 +69,7 @@ class FUpd (PROP : Type _) where
 export FUpd (fupd)
 
 attribute [inherit_doc FUpd] FUpd.fupd
-syntax "|={" term ", " term "}=> " term : term
+syntax "|={" term "," term "}=> " term : term
 syntax:25 term:26 " ={" term "," term "}=∗ " term:25 : term
 syntax "|={" term "}=> " term : term
 syntax:25 term:26 " ={" term "}=∗ " term:25 : term
@@ -289,7 +289,7 @@ theorem bupd_idem {P : PROP} : (|==> |==> P) ⊣⊢ |==> P :=
   ⟨BIUpdate.trans, BIUpdate.intro⟩
 
 @[rocq_alias bupd_or]
-theorem bupd_or {P Q: PROP} : (|==> P) ∨ (|==> Q) ⊢ |==> (P ∨ Q) :=
+theorem bupd_or {P Q : PROP} : (|==> P) ∨ (|==> Q) ⊢ |==> (P ∨ Q) :=
   or_elim (mono or_intro_l) (mono or_intro_r)
 
 @[rocq_alias bupd_and]
@@ -433,7 +433,7 @@ theorem fupd_mask_frame_right_strong {E1 E2 Ef : CoPset} {P : PROP} :
 
 @[rocq_alias updates.fupd_intro]
 theorem fupd_intro {E : CoPset} {P : PROP} : P ⊢ |={E}=> P :=
-  (fupd_mask_intro_subseteq λ _ => id).trans trans
+  (fupd_mask_intro_subseteq fun _ => id).trans trans
 
 @[rocq_alias fupd_mask_intro]
 theorem fupd_mask_intro {E1 E2 : CoPset} {P : PROP} (h : E2 ⊆ E1) :
@@ -507,7 +507,7 @@ theorem fupd_exist {E1 E2 : CoPset} {Φ : A → PROP} : (∃ a : A, |={E1,E2}=> 
 
 @[rocq_alias fupd_forall]
 theorem fupd_forall {E1 E2 : CoPset} {Φ : A → PROP} :
-    (|={E1,E2}=> «forall» λ a : A => Φ a) ⊢ «forall» λ a : A => iprop(|={E1,E2}=> Φ a) :=
+    (|={E1,E2}=> «forall» fun a : A => Φ a) ⊢ «forall» fun a : A => iprop(|={E1,E2}=> Φ a) :=
   forall_intro (mono <| forall_elim ·)
 
 @[rocq_alias except_0_fupd]
@@ -527,28 +527,28 @@ instance {E1 E2 : CoPset} {P : PROP} [Absorbing P] : Absorbing iprop(|={E1,E2}=>
 @[rocq_alias updates.fupd_mask_frame_r]
 theorem fupd_mask_frame_right {E1 E2 Ef : CoPset} {P : PROP} :
     E1 ## Ef → (|={E1,E2}=> P) ⊢ |={E1 ∪ Ef,E2 ∪ Ef}=> P :=
-  λ h => (mono <| imp_intro_swap and_elim_r).trans <| mask_frame_right_strong h
+  fun h => (mono <| imp_intro_swap and_elim_r).trans <| mask_frame_right_strong h
 
 @[rocq_alias fupd_mask_mono]
 theorem fupd_mask_mono {E1 E2 : CoPset} {P : PROP} :
     E1 ⊆ E2 → (|={E1}=> P) ⊢ |={E2}=> P :=
-  λ h => by simpa [subset_union_diff h] using
+  fun h => by simpa [subset_union_diff h] using
     (fupd_mask_frame_right (E2 := E1) (Ef := E2 \ E1) disjoint_diff_right)
 
 @[rocq_alias fupd_mask_frame]
 theorem fupd_mask_frame {E E' E1 E2 : CoPset} {P : PROP} :
     E1 ⊆ E → (|={E1,E2}=> |={E2 ∪ (E \ E1),E'}=> P) ⊢ |={E,E'}=> P :=
-  λ h => by simpa [subset_union_diff h] using
+  fun h => by simpa [subset_union_diff h] using
     ((fupd_mask_frame_right (P := iprop(|={E2 ∪ (E \ E1),E'}=> P)) disjoint_diff_right).trans trans)
 
 /-- A variant of [fupd_mask_frame] that works well for accessors:
   Tailored to eliminate updates of the form [|={E1,E1∖E2}=> Q] and provides a way to transform the
   closing view shift instead of letting you prove the same side-conditions twice. -/
 @[rocq_alias fupd_mask_frame_acc]
-theorem fupd_mask_frame_acc {E E' E1 E2 : CoPset} {P Q : PROP}:
+theorem fupd_mask_frame_acc {E E' E1 E2 : CoPset} {P Q : PROP} :
     E1 ⊆ E → (|={E1,E1 \ E2}=> Q) ⊢
-    (Q -∗ |={E \ E2,E'}=> (∀ R, (|={E1 \ E2,E1}=> R) -∗ |={E \ E2,E}=> R) -∗  P) -∗
-    (|={E,E'}=> P) := λ hE => by
+    (Q -∗ |={E \ E2,E'}=> (∀ R, (|={E1 \ E2,E1}=> R) -∗ |={E \ E2,E}=> R) -∗ P) -∗
+    (|={E,E'}=> P) := fun hE => by
   have hmask : E \ E2 ⊆ (E1 \ E2) ∪ (E \ E1) := by
     intro x hx; rw [mem_diff] at hx
     by_cases hx1 : x ∈ E1
@@ -561,7 +561,7 @@ theorem fupd_mask_frame_acc {E E' E1 E2 : CoPset} {P Q : PROP}:
   refine fupd_frame_left.trans <| (BIFUpdate.mono frame_right).trans <| fupd_elim ?_
   refine BIFUpdate.mono <| sep_symm.trans ?_
   refine (sep_mono_left ?_).trans wand_elim_right
-  refine forall_intro λ R => wand_intro <| frame_right.trans <| fupd_elim ?_
+  refine forall_intro fun R => wand_intro <| frame_right.trans <| fupd_elim ?_
   exact emp_sep.1.trans <| (fupd_mask_frame_right hdisj).trans <| by simp [subset_union_diff hE]
 
 @[rocq_alias fupd_mask_subseteq_emptyset_difference]
@@ -954,3 +954,5 @@ theorem step_fupd_plain_forall [BIAffine PROP] {Eo Ei : CoPset} {Φ : α → PRO
       _ ⊢ |={Eo}[Ei]▷=> ∀ a, Φ a     := mono <| later_mono fupd_except0
 
 end StepFUpdPlainlyLaws
+
+end Iris

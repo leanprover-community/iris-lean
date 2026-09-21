@@ -15,7 +15,7 @@ public import Iris.ProofMode.Tactics.Frame
 namespace Iris.ProofMode
 
 public section
-open BI Std
+open BI Iris.Std
 
 @[rocq_alias tac_false_destruct]
 theorem false_elim' [BI PROP] {P Q : PROP} : P ∗ □?p False ⊢ Q :=
@@ -100,7 +100,7 @@ theorem spatial_elim [BI PROP] {p} {A A' Q : PROP} [FromAffinely A' A p]
 theorem of_emp_sep [BI PROP] {A Q : PROP} (h : A ⊢ Q) : emp ∗ A ⊢ Q := emp_sep.1.trans h
 
 public meta section
-open Lean Elab Tactic Meta Qq Std
+open Lean Elab Tactic Meta Qq Iris.Std
 
 private def iCasesEmptyConj {prop : Q(Type u)} (bi : Q(BI $prop))
     {P} (_hyps : Hyps bi P) (p : Q(Bool)) (A goal : Q($prop)) :
@@ -303,10 +303,10 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
   -- A conjunction of multiple elements (`⟨…, …⟩`)
   | .conjunction (arg :: args) =>
     if arg.case matches .clear then
-      if let some pf ← iCasesAndLR bi p P A goal true λ B =>
+      if let some pf ← iCasesAndLR bi p P A goal true fun B =>
         iCasesCore hyps goal ⟨pat.ref, (.conjunction args)⟩ p B k then return pf
     if args matches [⟨_, .clear⟩] then
-      if let some pf ← iCasesAndLR bi p P A goal false λ B =>
+      if let some pf ← iCasesAndLR bi p P A goal false fun B =>
         iCasesCore hyps goal arg p B k then return pf
     iCasesSep hyps p A goal k (iCasesCore · · arg p · ·)
       (iCasesCore · · ⟨pat.ref, (.conjunction args)⟩ p · ·)
@@ -331,7 +331,7 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
 
   -- Eliminating a modality at the top of the hypothesis and destruct the hypothesis (`>`)
   | .mod arg =>
-    iModCore bi P goal p A λ p' A goal' =>
+    iModCore bi P goal p A fun p' A goal' =>
       iCasesCore hyps goal' arg p' A k
 
 /--
@@ -341,7 +341,7 @@ elab "icases" keep:("+keep ")? colGt pmt:pmTerm " with " colGt pat:icasesPat : t
   -- parse syntax
   let pmt ← liftMacroM <| PMTerm.parse pmt
   let pat ← liftMacroM <| iCasesPat.parse pat
-  ProofModeM.runTactic `icases λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `icases fun mvar { hyps, goal, .. } => do
 
   /-
     We keep the persistent hypothesis if it is required by the user (`+keep` is set by `ihave`)
@@ -382,3 +382,11 @@ macro "iintuitionistic " colGt hyp:ident : tactic => `(tactic | icases $hyp:iden
   Equivalent to `icases H with ∗H`.
 -/
 macro "ispatial " colGt hyp:ident : tactic => `(tactic | icases $hyp:ident with ∗$hyp:ident)
+
+end
+
+end
+
+end ProofMode
+
+end Iris

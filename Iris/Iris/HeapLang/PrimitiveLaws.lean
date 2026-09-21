@@ -22,7 +22,7 @@ public import Std.Data.ExtTreeMap
 @[expose] public section
 namespace Iris.HeapLang
 
-open Iris ProgramLogic Language.Notation Std FromMathlib
+open Iris ProgramLogic Language.Notation Iris.Std FromMathlib
 
 section HeapLangGS
 
@@ -83,7 +83,7 @@ theorem prophMapInterp_nil_append [HeapLangGS hlc GF] (κs : List Observation)
   .rfl
 
 @[rocq_alias heap_lang.heapGS_irisGS]
-instance HeapLang [HeapLangGS hlc GF] : IrisGS_gen hlc Exp GF where
+instance heapLangInst [HeapLangGS hlc GF] : IrisGS_gen hlc Exp GF where
   invGS := HeapLangGS.invGS
   numLatersPerStep n := 0
   forkPost v := iprop(True)

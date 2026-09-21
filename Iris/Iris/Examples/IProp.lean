@@ -162,14 +162,14 @@ example (e e' : Expr) Φ (Hstep : ∀ {s : State}, @step _ _ Value _ (e, s) = (e
    Then, it suffies to have access to P, and show that access to P' is enough to verify e'. -/
 example (e e' : Expr) (P P' : IProp GF) Φ
       (Hstep : ∀ s, iprop(P ∗ @state_interp State GF _ s ⊢ ∃ s',
-          ⌜ step Value (e, s) = (e', s')⌝ ∗ |==> (P' ∗ @state_interp State GF _ s'))) :
+          ⌜step Value (e, s) = (e', s')⌝ ∗ |==> (P' ∗ @state_interp State GF _ s'))) :
     P ∗ (P' -∗ wp e' Φ) ⊢ wp e Φ := by
   iintro ⟨HP, Hspec⟩
   iapply wp_unfold
   iright
   iintro %s Hs
   ihave ⟨%s', %Hstep, Hupd⟩ := Hstep s $$ [HP Hs]
-  . iframe
+  · iframe
   iexists e', s'
   isplitr
   · itrivial
