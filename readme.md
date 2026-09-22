@@ -75,3 +75,4 @@ Most of the unicode characters used in Iris can be written with the Lean extensi
 ## References
 
 - [koenig22](https://pp.ipd.kit.edu/uploads/publikationen/koenig22masterarbeit.pdf), Master Thesis, *An Improved Interface for Interactive Proofs in Separation Logic*, 2022-10, Lars König, KIT.
+- [demedeiros26](https://arxiv.org/abs/2609.24252), Draft paper. *Iris in Lean*, Markus de Medeiros, Sergei Stepanenko, Zongyuan Liu, Oliver Soeser, Fernando Leal, Alvin Tang, Max Vistrup, Ralf Jung, Mario Carneiro, Joseph Tassarotti, Michael Sammler, and Lars Birkedal.
