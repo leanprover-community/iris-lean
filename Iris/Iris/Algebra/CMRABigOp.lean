@@ -9,9 +9,11 @@ public import Iris.Algebra.BigOp
 public import Iris.Algebra.CMRA
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris.Algebra
+
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
 
 open OFE Iris.Std
 

@@ -9,9 +9,11 @@ public import Iris.Algebra.List
 public import Iris.Std.Vector
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
+
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
 
 open OFE COFE
 

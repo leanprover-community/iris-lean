@@ -11,11 +11,13 @@ public import Iris.Algebra.Updates
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
-local stepindex Nat
 
 /-! # RA for monotone partial bijections -/
 
 namespace Iris
+
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
 
 open Iris.Std CMRA OFE LawfulSet LeibnizSet View
 

@@ -115,8 +115,30 @@ theorem uPred_holds_ne {P Q : UPred M} {n₁ n₂} {x : M}
     (HPQ : P ≡{n₂}≡ Q) (Hn : n₂ ≤ n₁) (Hx : ✓{n₂} x) (Hx' : ✓{n₁} x) (HQ : Q n₁ ⟨x, Hx'⟩) : P n₂ ⟨x, Hx⟩ :=
   (HPQ _ _ SIdx.le_refl Hx).mpr (Q.mono HQ .rfl Hn)
 
+/-- The completion of a bounded chain of `UPred`s: holds at `k` if every approximant `c m` with
+`m < n` holds at every index `m ≤ k`. Unlike Rocq's transfinite `uPred_bcompl'`, this is used only
+at limit indices (via `IsCOFE.lbcompl`), but it is well-defined for arbitrary `n`. -/
+@[rocq_alias uPred_bcompl']
+def UPred.bcompl (n : SI) (c : BChain (UPred M) n) : UPred M where
+  holds k x := ∀ m (hm : m < n) (Hle : m ≤ k), (c.bchain m hm) m (x.le Hle)
+  mono {n1 n2 x1 x2 HP Hx12 Hn12 m hm Hmn2} := by
+    refine mono _ (HP m hm (SIdx.le_trans Hmn2 Hn12)) ?_ SIdx.le_refl
+    exact Hx12.le Hmn2
+
+@[rocq_alias uPred_bcompl'_ne]
+theorem UPred.bcompl_ne {n : SI} (c d : BChain (UPred M) n) {k : SI}
+    (Hne : ∀ p (hp : p < n), c.bchain p hp ≡{k}≡ d.bchain p hp) : bcompl n c ≡{k}≡ bcompl n d := by
+  intro i x Hik Hv
+  refine ⟨fun H j hj Hji => ?_, fun H j hj Hji => ?_⟩
+  · exact (Hne j hj _ _ (SIdx.le_trans Hji Hik) _).mp (H j hj Hji)
+  · exact (Hne j hj _ _ (SIdx.le_trans Hji Hik) _).mpr (H j hj Hji)
+
+@[rocq_alias bcompl_unfold]
+theorem UPred.bcompl_holds {n : SI} (c : BChain (UPred M) n) (k : SI) (x : ValidAt M k) :
+    bcompl n c k x ↔ ∀ m (hm : m < n) (Hle : m ≤ k), (c.bchain m hm) m (x.le Hle) := .rfl
+
 @[rocq_alias uPred_cofe]
-instance [SIdxFinite SI] : IsCOFE (UPred M) where
+instance : IsCOFE (UPred M) where
   compl c := {
     holds n x := ∀ n', (Hle : n' ≤ n) → (c n') n' (x.le Hle)
     mono {n1 n2 x1 x2 HP Hx12 Hn12 n3 Hn23} := by
@@ -127,9 +149,13 @@ instance [SIdxFinite SI] : IsCOFE (UPred M) where
     refine .trans ?_ (c.cauchy Hin _ _ SIdx.le_refl Hv).symm
     refine ⟨fun H => H _ SIdx.le_refl, fun H n' Hn' => ?_⟩
     exact (c.cauchy Hn' _ _ SIdx.le_refl _).mp (mono _ H .rfl Hn')
-  lbcompl := (·.elim)
-  conv_lbcompl := (·.elim)
-  lbcompl_ne := (·.elim)
+  lbcompl {n} _ c := UPred.bcompl n c
+  conv_lbcompl {n} _ c m hm i x Him Hv := by
+    have hi : i < n := SIdx.le_lt_trans Him hm
+    refine .trans ?_ (c.bcauchy hi hm Him _ _ SIdx.le_refl Hv).symm
+    refine ⟨fun H => H i hi SIdx.le_refl, fun H j hj Hji => ?_⟩
+    exact (c.bcauchy hj hi Hji _ _ SIdx.le_refl _).mp (mono _ H .rfl Hji)
+  lbcompl_ne {n} _ c1 c2 _ hc := UPred.bcompl_ne c1 c2 hc
 
 #rocq_ignore uPred_compl "Inlined in the `IsCOFE` construction"
 

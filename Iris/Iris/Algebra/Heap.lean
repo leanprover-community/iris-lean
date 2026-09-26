@@ -225,19 +225,43 @@ def chain [LawfulPartialMap M K] [OFE V] (k : K) (c : Chain (M V)) : Chain (Opti
 theorem chain_get [LawfulPartialMap M K] [OFE V] (k : K) (c : Chain (M V)) :
     (chain k c) i = get? (c i) k := by simp [chain]
 
+/-- Project a bounded chain of stores through its kth coordinate to a bounded chain of values. -/
+@[rocq_alias gmap_bchain]
+def bchain [LawfulPartialMap M K] [OFE V] (k : K) {n : SI} (c : BChain (M V) n) :
+    BChain (Option V) n where
+  bchain p hp := get? (c.bchain p hp) k
+  bcauchy hm hp H := c.bcauchy hm hp H k
+
 end PartialMap
 
 @[rocq_alias gmap_compl, rocq_alias gmap_cofe]
-instance Heap.instCOFE [SIdxFinite SI] [LawfulPartialMap M K] [COFE V] : COFE (M V) where
+instance Heap.instCOFE [LawfulPartialMap M K] [COFE V] : COFE (M V) where
   compl c := bindAlter (fun _ => COFE.compl <| c.map ⟨_, PartialMap.get?_ne ·⟩) (c 0)
   conv_compl {_ c} k := by
     rw [get?_bindAlter]
     rcases H : get? (c.chain 0) k
     · simp [← PartialMap.chain_get, Chain.chain_none_const (c := PartialMap.chain k c) (n := 0) (H▸rfl)]
     · exact IsCOFE.conv_compl
-  lbcompl := (·.elim)
-  conv_lbcompl := (·.elim)
-  lbcompl_ne := (·.elim)
+  lbcompl hn c :=
+    bindAlter (fun k _ => IsCOFE.lbcompl hn (PartialMap.bchain k c)) (c.bchain 0 hn.limit_lt_0)
+  conv_lbcompl hn c m hm k := by
+    rw [get?_bindAlter]
+    have h0 := c.bcauchy hn.limit_lt_0 hm SIdx.le_0_l k
+    revert h0
+    rcases H : get? (c.bchain 0 hn.limit_lt_0) k with _ | v <;>
+      rcases H' : get? (c.bchain m hm) k with _ | v' <;> simp [OFE.Dist, Option.Forall₂]
+    intro _
+    refine (IsCOFE.conv_lbcompl (α := Option V) hn (PartialMap.bchain k c) hm).trans ?_
+    simp [PartialMap.bchain, H']
+  lbcompl_ne hn c1 c2 m hc k := by
+    rw [get?_bindAlter, get?_bindAlter]
+    have h0 := hc 0 hn.limit_lt_0 k
+    revert h0
+    rcases get? (c1.bchain 0 hn.limit_lt_0) k with _ | v <;>
+      rcases get? (c2.bchain 0 hn.limit_lt_0) k with _ | v' <;> simp [OFE.Dist, Option.Forall₂]
+    intro _
+    exact IsCOFE.lbcompl_ne (α := Option V) hn (PartialMap.bchain k c1) (PartialMap.bchain k c2)
+      fun p hp => hc p hp k
 
 #rocq_ignore gmap_compl "Included in COFE instance"
 

@@ -141,8 +141,22 @@ def chainR [OFE α] [OFE β] (c : Chain (Csum α β)) (b : β) : Chain β where
     have hc := c.cauchy h; revert hc
     cases c.chain i <;> cases c.chain n <;> simp [OFE.Dist]
 
+@[rocq_alias csum_bchain_l]
+def bchainL [OFE α] [OFE β] {n : SI} (c : BChain (Csum α β) n) (a : α) : BChain α n where
+  bchain m hm := (c.bchain m hm).getInlD a
+  bcauchy {m p} hm hp h := by
+    have hc := c.bcauchy hm hp h; revert hc
+    cases c.bchain p hp <;> cases c.bchain m hm <;> simp [OFE.Dist]
+
+@[rocq_alias csum_bchain_r]
+def bchainR [OFE α] [OFE β] {n : SI} (c : BChain (Csum α β) n) (b : β) : BChain β n where
+  bchain m hm := (c.bchain m hm).getInrD b
+  bcauchy {m p} hm hp h := by
+    have hc := c.bcauchy hm hp h; revert hc
+    cases c.bchain p hp <;> cases c.bchain m hm <;> simp [OFE.Dist]
+
 @[rocq_alias csum_cofe]
-instance [SIdxFinite SI] [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where
+instance [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where
   compl c :=
     match c 0 with
     | inl a => inl (IsCOFE.compl (chainL c a))
@@ -160,9 +174,43 @@ instance [SIdxFinite SI] [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csu
       change IsCOFE.compl (chainR c b) ≡{n}≡ b'
       refine OFE.Dist.trans COFE.conv_compl ?_
       simp [chainR, en]
-  lbcompl := (·.elim)
-  conv_lbcompl := (·.elim)
-  lbcompl_ne := (·.elim)
+  lbcompl hn c :=
+    match c.bchain 0 hn.limit_lt_0 with
+    | inl a => inl (IsCOFE.lbcompl hn (bchainL c a))
+    | inr b => inr (IsCOFE.lbcompl hn (bchainR c b))
+    | invalid => invalid
+  conv_lbcompl {n} hn c m hm := by
+    have h0n := c.bcauchy hn.limit_lt_0 hm SIdx.le_0_l
+    revert h0n
+    rcases e0 : c.bchain 0 hn.limit_lt_0 with a|b|_ <;> rcases en : c.bchain m hm with a'|b'|_ <;>
+      try (· exact id)
+    · intro _
+      change IsCOFE.lbcompl hn (bchainL c a) ≡{m}≡ a'
+      refine OFE.Dist.trans (IsCOFE.conv_lbcompl hn _ hm) ?_
+      simp [bchainL, en]
+    · intro _
+      change IsCOFE.lbcompl hn (bchainR c b) ≡{m}≡ b'
+      refine OFE.Dist.trans (IsCOFE.conv_lbcompl hn _ hm) ?_
+      simp [bchainR, en]
+  lbcompl_ne {n} hn c1 c2 m hc := by
+    have h0 := hc 0 hn.limit_lt_0; revert h0
+    rcases e1 : c1.bchain 0 hn.limit_lt_0 with a1|b1|_ <;>
+      rcases e2 : c2.bchain 0 hn.limit_lt_0 with a2|b2|_ <;> try (· exact id)
+    all_goals
+      intro _
+      dsimp only
+      first
+        | exact .rfl
+        | show Csum.Dist m _ _
+          simp only [Csum.Dist]
+          refine IsCOFE.lbcompl_ne hn _ _ fun p hp => ?_
+          have h1 := c1.bcauchy hn.limit_lt_0 hp SIdx.le_0_l
+          have h2 := c2.bcauchy hn.limit_lt_0 hp SIdx.le_0_l
+          have hp' := hc p hp
+          revert h1 h2 hp'
+          rw [e1, e2]
+          rcases e3 : c1.bchain p hp with _|_|_ <;> rcases e4 : c2.bchain p hp with _|_|_ <;>
+            simp [OFE.Dist, bchainL, bchainR, e3, e4]
 
 #rocq_ignore csum_compl "Included in IsCOFE instance"
 

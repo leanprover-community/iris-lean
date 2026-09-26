@@ -115,17 +115,39 @@ def exclChain [OFE α] (c : Chain (Excl α)) (a : α) : Chain α := by
   dsimp; have := c.cauchy H; revert this
   cases c.chain i <;> cases c.chain n <;> simp [Dist]
 
+def exclBChain [OFE α] {n : SI} (c : BChain (Excl α) n) (a : α) : BChain α n where
+  bchain m hm := (c.bchain m hm).getD a
+  bcauchy {m p} hm hp H := by
+    dsimp; have := c.bcauchy hm hp H; revert this
+    cases c.bchain p hp <;> cases c.bchain m hm <;> simp [Dist]
+
 @[rocq_alias excl_cofe]
-instance [SIdxFinite SI] [OFE α] [IsCOFE α] : IsCOFE (Excl α) where
+instance [OFE α] [IsCOFE α] : IsCOFE (Excl α) where
   compl c := (c 0).map fun x => IsCOFE.compl (exclChain c x)
   conv_compl {n} c := by
     have := c.cauchy (i := n) SIdx.le_0_l; revert this
     obtain _|x' := c.chain 0 <;> rcases e : c.chain n with _|y' <;> simp [Dist]
     refine fun _ => .trans IsCOFE.conv_compl ?_
     simp [exclChain, e]
-  lbcompl := (·.elim)
-  conv_lbcompl := (·.elim)
-  lbcompl_ne := (·.elim)
+  lbcompl hn c := (c.bchain 0 hn.limit_lt_0).map fun x => IsCOFE.lbcompl hn (exclBChain c x)
+  conv_lbcompl {n} hn c m hm := by
+    have := c.bcauchy hn.limit_lt_0 hm SIdx.le_0_l; revert this
+    obtain _|x' := c.bchain 0 hn.limit_lt_0 <;> rcases e : c.bchain m hm with _|y' <;> simp [Dist]
+    refine fun _ => .trans (IsCOFE.conv_lbcompl hn _ hm) ?_
+    simp [exclBChain, e]
+  lbcompl_ne {n} hn c1 c2 m hc := by
+    have h0 := hc 0 hn.limit_lt_0; revert h0
+    rcases e1 : c1.bchain 0 hn.limit_lt_0 with _|a1 <;>
+      rcases e2 : c2.bchain 0 hn.limit_lt_0 with _|a2 <;> simp [Dist]
+    intro _
+    refine IsCOFE.lbcompl_ne hn _ _ fun p hp => ?_
+    have h1 := c1.bcauchy hn.limit_lt_0 hp SIdx.le_0_l
+    have h2 := c2.bcauchy hn.limit_lt_0 hp SIdx.le_0_l
+    have hp' := hc p hp
+    revert h1 h2 hp'
+    rw [e1, e2]
+    rcases e3 : c1.bchain p hp with _|b1 <;> rcases e4 : c2.bchain p hp with _|b2 <;>
+      simp [Dist, exclBChain, e3, e4]
 
 /-! ## CMRA -/
 @[simp] def Valid : Excl α → Prop
