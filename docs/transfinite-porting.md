@@ -38,7 +38,7 @@ fork's Aczel-tree set model (`algebra/ordinals/set_*.v`, ~2.8k lines) and its or
 | 3 | Step-index property classes (`TransfiniteIndex`, `LargeIndex`, ...), big later `⧍`, satisfiability, ordinal instances, counterexamples | ✅ |
 | 4 | Transfinite COFE solver and `IProp`/`iOwn`/`wsat` over arbitrary `SI` | ✅ |
 | 5 | Logical steps, credit-free fupd + invariants, `wp`/`swp`, lifting, adequacy (✅); HeapLang `swp` rules (⬜) | 🟡 |
-| 6 | Refinement WP, time credits, SEQ; examples (termination, refinements, key ideas) | ⬜ |
+| 6 | Refinement WP, termination preservation, result refinement, lifting, auth sources (✅); `natA`/`ordA` time credits, SEQ, `heap_lang` rules, termination/refinement examples (⬜) | 🟡 |
 
 ## File-by-file status
 
