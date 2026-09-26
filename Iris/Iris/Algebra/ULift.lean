@@ -139,4 +139,34 @@ instance OFunctor.constOFU_URFunctorContractive [UCMRA B] :
     URFunctorContractive (constOFU.{w} B) where
   map_contractive.1 _ := .rfl
 
+/-- The camera homomorphism lifting `f : α -C> β` to `ULift`. -/
+def CMRA.Hom.ulift [CMRA α] [CMRA β] (f : α -C> β) : ULift.{w} α -C> ULift.{w} β where
+  f x := ⟨f x.down⟩
+  ne := ⟨fun _ _ _ h => f.ne.ne h⟩
+  validN h := f.validN h
+  pcore x := by
+    change Option.map _ (Option.map ULift.up (pcore x.down)) =
+      Option.map ULift.up (pcore (f x.down))
+    rw [← f.pcore]
+    cases pcore x.down <;> rfl
+  op x y := congrArg ULift.up (f.op x.down y.down)
+
+open COFE in
+/-- A camera functor lifted to the universe `w` (used to embed ghost state from `Type` into the
+resources of `IProp` over step-index types in higher universes). -/
+abbrev ULiftOF.{w} (F : OFunctorPre) : OFunctorPre := fun α β _ _ => ULift.{w} (F α β)
+
+open COFE in
+instance ULiftOF.instRFunctor [RFunctor F] : RFunctor (ULiftOF.{w} F) where
+  cmra := inferInstance
+  map f g := (RFunctor.map (F := F) f g).ulift
+  map_ne.ne _ _ _ h _ _ h' x := (RFunctor.map_ne (F := F)).ne h h' x.down
+  map_id x := congrArg ULift.up (RFunctor.map_id (F := F) x.down)
+  map_comp f g f' g' x := congrArg ULift.up (RFunctor.map_comp (F := F) f g f' g' x.down)
+
+open COFE in
+instance ULiftOF.instRFunctorContractive [RFunctorContractive F] :
+    RFunctorContractive (ULiftOF.{w} F) where
+  map_contractive.1 h x := (RFunctorContractive.map_contractive (F := F)).1 h x.down
+
 end Iris

@@ -26,7 +26,7 @@ source states, which requires `SIdxLarge.{w + 1} SI`, e.g. `SI = Ordinal.{w + 1}
 
 @[expose] public noncomputable section
 
-universe w v
+universe w v u
 
 namespace Iris.Transfinite
 
@@ -69,17 +69,17 @@ end OrdCam
 
 end Camera
 
-variable {SI : Type (w + 1)} [instSI : Iris.SIdx SI]
+variable {SI : Type v} [instSI : Iris.SIdx SI]
 local stepindex SI
 
 /-- The ghost state of time credits (Rocq: `tcG`, i.e. `auth_sourceG Σ ordA`). -/
-class TcGS (GF : BundledGFunctors.{w + 1}) where
-  elem : ElemG GF (constOFU.{w + 1} (Auth (OrdCam.{w} SI)))
+class TcGS (GF : BundledGFunctors.{u}) where
+  elem : ElemG GF (constOFU.{max u v} (Auth (OrdCam.{w} SI)))
   name : GName
 
 attribute [reducible, instance] TcGS.elem
 
-variable {GF : BundledGFunctors.{w + 1}} [G : TcGS GF]
+variable {GF : BundledGFunctors.{u}} [G : TcGS.{w} GF]
 
 /-- The authoritative time-credit budget (Rocq: `●$ α`). -/
 def tcAuth (α : Ordinal.{w}) : IProp GF :=
@@ -113,7 +113,7 @@ instance tc_timeless (α : Ordinal.{w}) : Timeless (tc (GF := GF) α) := by
 
 instance zero_persistent : Persistent (tc (GF := GF) 0) := by
   unfold tc
-  haveI : CMRA.CoreId (α := (constOFU.{w + 1} (Auth (OrdCam.{w} SI))).ap (IProp GF))
+  haveI : CMRA.CoreId (α := (constOFU.{max u v} (Auth (OrdCam.{w} SI))).ap (IProp GF))
       (ULift.up (◯ (⟨0⟩ : OrdCam.{w} SI))) := ULift.instCoreId
   infer_instance
 
@@ -184,9 +184,9 @@ theorem tc_alloc_zero :
     (tc (GF := GF) 0 -∗ tcwp (ι := ι) s E e Φ) ⊢ tcwp (ι := ι) s E e Φ := by
   iintro H
   iapply fupd_rwp
-  imod (iOwn_unit (E := G.elem) (γ := G.name) (ε := (UCMRA.unit : ULift.{w + 1} (Auth (OrdCam.{w} SI)))))
+  imod (iOwn_unit (E := G.elem) (γ := G.name) (ε := (UCMRA.unit : (constOFU.{max u v} (Auth (OrdCam.{w} SI))).ap (IProp GF))))
     with Hz
-  have hunit : (UCMRA.unit : ULift.{w + 1} (Auth (OrdCam.{w} SI))) =
+  have hunit : (UCMRA.unit : (constOFU.{max u v} (Auth (OrdCam.{w} SI))).ap (IProp GF)) =
       ULift.up (◯ (⟨0⟩ : OrdCam.{w} SI)) := rfl
   rw [hunit]
   imodintro

@@ -98,8 +98,8 @@ theorem state_interp_step [HeapLangGS hlc GF] (σ : State) (ns : Nat)
 
 def HeapLangS : BundledGFunctors
   | 0 => ⟨InvMapF, by infer_instance⟩
-  | 1 => ⟨constOFU CoPsetDisjL, by infer_instance⟩
-  | 2 => ⟨constOFU (DisjointLeibnizSet PosSet), by infer_instance⟩
+  | 1 => ⟨constOF CoPsetDisjL, by infer_instance⟩
+  | 2 => ⟨constOF (DisjointLeibnizSet PosSet), by infer_instance⟩
   | 3 => ⟨Auth.AuthURF (constOF Credit), by infer_instance⟩
   | 4 => ⟨constOF (HeapView Loc (Agree (DiscreteO (Option Val))) HeapF), by infer_instance⟩
   | 5 => ⟨constOF (HeapView Loc (Agree (DiscreteO GName)) HeapF), by infer_instance⟩
@@ -109,25 +109,19 @@ def HeapLangS : BundledGFunctors
   | _ => ⟨constOF Unit, by infer_instance⟩
 
 instance instHeapLangGS_HeapLangS : HeapLangGpreS HasLC.hasLC HeapLangS where
-  toWsatGpreS := by
-    constructor
-    · exists 0
-    · exists 1
-    · exists 2
-  toLcGpreS := by
-    constructor
-    · exists 3
+  toWsatGpreS := ⟨.ofEq 0 rfl, .ofEq 1 rfl, .ofEq 2 rfl⟩
+  toLcGpreS := ⟨.ofEq 3 rfl⟩
   heap_pre := by
     constructor
     · constructor
-      exists 4
+      exact .ofEq 4 rfl
     · constructor
-      exists 5
-    · exists 6
+      exact .ofEq 5 rfl
+    · exact .ofEq 6 rfl
   proph_pre := by
     constructor
     · constructor
-      exists 7
+      exact .ofEq 7 rfl
 
 end HeapLangGS
 

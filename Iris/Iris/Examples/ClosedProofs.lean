@@ -37,23 +37,23 @@ update steps required to allocate invariants.
 -/
 section proof
 
-noncomputable def GF : BundledGFunctors := fun n =>
+noncomputable def GF : BundledGFunctors.{0, 0} := fun n =>
   match n with
   | 0  => ⟨InvMapF, by infer_instance⟩
-  | 1  => ⟨constOFU CoPsetDisjL, by infer_instance⟩
-  | 2  => ⟨constOFU (DisjointLeibnizSet PosSet), by infer_instance⟩
+  | 1  => ⟨constOF CoPsetDisjL, by infer_instance⟩
+  | 2  => ⟨constOF (DisjointLeibnizSet PosSet), by infer_instance⟩
   | 3  => ⟨AuthURF (constOF Credit), by infer_instance⟩
   | _  => ⟨constOF Unit, by infer_instance⟩
 
-instance : WsatGpreS GF where
-  inv := { τ := 0, transp := by unfold GF; rfl }
-  enabled := { τ := 1, transp := by unfold GF; rfl }
-  disabled := { τ := 2, transp := by unfold GF; rfl }
+noncomputable instance : WsatGpreS GF where
+  inv := ElemG.ofEq 0 (by unfold GF; rfl)
+  enabled := ElemG.ofEq 1 (by unfold GF; rfl)
+  disabled := ElemG.ofEq 2 (by unfold GF; rfl)
 
-instance : LcGpreS GF where
-  lc_elem := { τ := 3, transp := by unfold GF; rfl }
+noncomputable instance : LcGpreS GF where
+  lc_elem := ElemG.ofEq 3 (by unfold GF; rfl)
 
-instance : InvGpreS GF where
+noncomputable instance : InvGpreS GF where
   toWsatGpreS := inferInstance
   toLcGpreS := inferInstance
 

@@ -27,7 +27,7 @@ open Iris OFE COFE BI Auth
 section InvG
 
 @[rocq_alias invGpreS]
-class InvGpreS (GF : BundledGFunctors) where
+class InvGpreS (GF : BundledGFunctors.{0, 0}) where
   toWsatGpreS : WsatGpreS GF
   toLcGpreS : LcGpreS GF
 
@@ -35,7 +35,7 @@ attribute [reducible, instance] InvGpreS.toWsatGpreS
 attribute [reducible, instance] InvGpreS.toLcGpreS
 
 @[rocq_alias invGS_gen]
-class InvGS_gen (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGpreS GF where
+class InvGS_gen (hlc : outParam HasLC) (GF : BundledGFunctors.{0, 0}) extends InvGpreS GF where
   toWsatGS : WsatGS GF
   toLcGS : LcGS hlc GF
 
