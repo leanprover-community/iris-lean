@@ -154,7 +154,7 @@ public structure TWpGoal where
 /-- Split a goal `W e Φ` into `W`, `e` and `Φ`. -/
 public meta def parseTWp? {u : Level} (prop : Q(Type u)) (goal : Q($prop)) :
     MetaM (Option (Q(Exp → (Val → $prop) → $prop) × Q(Exp) × Q(Val → $prop))) := do
-  let goal ← instantiateMVars goal
+  let goal := (← instantiateMVars goal).headBeta
   let args := goal.getAppArgs
   if args.size < 2 then return none
   let e := args[args.size - 2]!

@@ -251,6 +251,67 @@ theorem inv_acc_open_timeless {p : NaInvPoolName} {E F : CoPset} {N : Namespace}
   iintro !> HP
   iexact HP
 
+/-- Accessing a non-atomic invariant: the contents, the remaining tokens and the closing view
+shift are available after a later (Rocq: `na_inv_acc_open`). -/
+theorem inv_acc_open {p : NaInvPoolName} {E F : CoPset} {N : Namespace} {P : IProp GF}
+    (HNE : ↑N ⊆ E) (HNF : ↑N ⊆ F) :
+    ⊢ inv p N P -∗ own p F ={E}=∗
+      ▷ (P ∗ own p (F \ ↑N) ∗ (▷ P ∗ own p (F \ ↑N) ={E}=∗ own p F)) := by
+  unfold inv
+  iintro #⟨%i, %Hin, Hinv⟩ Htoks
+  have HNminusi : ↑N = {i} ∪ ((↑N : CoPset) \ {i}) := by
+    refine (subset_union_diff ?_).symm
+    intro x hx; rw [mem_singleton] at hx; exact hx ▸ Hin
+  icases (own_union disjoint_diff_right).mp $$ [Htoks] with ⟨HtokN, HtokRest⟩
+  · rw [subset_union_diff HNF]
+    iassumption
+  icases (own_union disjoint_diff_right).mp $$ [HtokN] with ⟨Htoki, HtokNdi⟩
+  · rw [← HNminusi]; iassumption
+  imod inv_acc HNE $$ Hinv with ⟨Hcontent, Hclose⟩
+  icases later_or.mp $$ Hcontent with (Hl | Htoki2)
+  · imod Hclose $$ [Htoki] with _
+    · inext; iright; iassumption
+    imodintro
+    inext
+    icases Hl with ⟨HP, Hdis⟩
+    isplitl [HP]; iassumption
+    isplitl [HtokRest]; iassumption
+    iintro ⟨HPret, HtokFret⟩
+    imod inv_acc HNE $$ Hinv with ⟨Hcontent2, Hclose2⟩
+    icases later_or.mp $$ Hcontent2 with (Hl2 | Hitok)
+    · ihave Hfalse : ▷ (False : IProp GF) $$ [Hl2 Hdis]
+      · inext
+        icases Hl2 with ⟨_, Hdis2⟩
+        ihave Hk := iOwn_op (E := W.inv) $$ [Hdis Hdis2]
+        · isplitl [Hdis] <;> iassumption
+        ihave Hk := iOwn_cmraValid $$ Hk
+        icases internalCmraValid_discrete $$ Hk with %Hbad
+        have Hk := DisjointLeibnizSet.valid_op_iff_disj.mp Hbad.2
+        exact Hk i ⟨mem_singleton.mpr rfl, mem_singleton.mpr rfl⟩ |>.elim
+      icases Hfalse with >Hfalse
+      icases Hfalse with ⟨⟩
+    · icases Hitok with >Htoki_back
+      imod Hclose2 $$ [HPret Hdis] with _
+      · inext; ileft; isplitl [HPret] <;> iassumption
+      imodintro
+      ihave HtokN_new : own p ((↑N : CoPset)) $$ [Htoki_back HtokNdi]
+      · conv => rhs; rw [HNminusi]
+        iapply (own_union disjoint_diff_right).mpr
+        isplitl [Htoki_back]
+        · iexact Htoki_back
+        · iexact HtokNdi
+      conv => rhs; rw [← subset_union_diff HNF]
+      iapply (own_union disjoint_diff_right).mpr
+      isplitl [HtokN_new]
+      · iexact HtokN_new
+      · iexact HtokFret
+  · icases Htoki2 with >Htoki2
+    iexfalso
+    ihave Hbad : ⌜({i} : CoPset) ## {i}⌝ $$ [Htoki Htoki2]
+    · iapply own_disjoint $$ Htoki Htoki2
+    icases Hbad with %Hbad
+    exact Hbad i ⟨mem_singleton.mpr rfl, mem_singleton.mpr rfl⟩ |>.elim
+
 instance intoInv_na (N : Namespace) (P : IProp GF) :
     IntoInv (inv p N P) N := {}
 
