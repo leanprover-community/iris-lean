@@ -1116,4 +1116,345 @@ theorem ψ_zero (z) :
   show (stage F 0).ψ z = _
   rw [transport_ψ (stage_zero (F := F)) z]
 
+/-! ## The laws of the approximations -/
+
+/-- The laws hold for all approximations below `γ`. -/
+abbrev Good (γ : SI) : Prop := FamGood (famBelow (F := F) γ)
+
+namespace Good
+
+variable {δ : SI} (hg : Good (F := F) δ)
+include hg
+
+theorem p_e (β η : SI) (hβ : β < δ) (hη : η < δ) (hlt : β < η) (x) :
+    p F β η hlt (e F β η hlt x) = x := by
+  have h := FamGood.p_e hg β η hβ hη hlt x
+  rw [famBelow_p δ β η hβ hη hlt, famBelow_e δ β η hβ hη hlt] at h
+  exact h
+
+theorem e_p (β η : SI) (hβ : β < δ) (hη : η < δ) (hlt : β < η) (x) :
+    e F β η hlt (p F β η hlt x) ≡{β}≡ x := by
+  have h := FamGood.e_p hg β η hβ hη hlt x
+  rw [famBelow_p δ β η hβ hη hlt, famBelow_e δ β η hβ hη hlt] at h
+  exact h
+
+theorem e_funct (β η ζ : SI) (hβ : β < δ) (hη : η < δ) (hζ : ζ < δ) (h1 : β < η) (h2 : η < ζ)
+    (h3 : β < ζ) (x) : e F η ζ h2 (e F β η h1 x) = e F β ζ h3 x := by
+  have h := FamGood.e_funct hg β η ζ hβ hη hζ h1 h2 h3 x
+  rw [famBelow_e δ β η hβ hη h1, famBelow_e δ η ζ hη hζ h2, famBelow_e δ β ζ hβ hζ h3] at h
+  exact h
+
+theorem p_funct (β η ζ : SI) (hβ : β < δ) (hη : η < δ) (hζ : ζ < δ) (h1 : β < η) (h2 : η < ζ)
+    (h3 : β < ζ) (x) : p F β η h1 (p F η ζ h2 x) = p F β ζ h3 x := by
+  have h := FamGood.p_funct hg β η ζ hβ hη hζ h1 h2 h3 x
+  rw [famBelow_p δ β η hβ hη h1, famBelow_p δ η ζ hη hζ h2, famBelow_p δ β ζ hβ hζ h3] at h
+  exact h
+
+theorem ψ_ϕ (β : SI) (hβ : β < δ) (x) : ψ F β (ϕ F β x) = x := FamGood.ψ_ϕ hg β hβ x
+
+theorem ϕ_ψ (β : SI) (hβ : β < δ) (x) : ϕ F β (ψ F β x) ≡{β}≡ x := FamGood.ϕ_ψ hg β hβ x
+
+theorem Fep_p (γ0 γ1 : SI) (h0 : γ0 < δ) (h1 : γ1 < δ) (hs0 : σ γ0 < δ) (hs1 : σ γ1 < δ)
+    (hlt : γ0 < γ1) (hlts : σ γ0 < σ γ1) (x) :
+    fold F γ0 (truncMap (σ γ1) (σ γ0) (map (F := F) (e F γ0 γ1 hlt) (p F γ0 γ1 hlt))
+      (unfold F γ1 x)) = p F (σ γ0) (σ γ1) hlts x := by
+  have h := FamGood.Fep_p hg γ0 γ1 h0 h1 hs0 hs1 hlt hlts x
+  rw [famBelow_fld δ γ0 h0 hs0, famBelow_unf δ γ1 h1 hs1, famBelow_e δ γ0 γ1 h0 h1 hlt,
+    famBelow_p δ γ0 γ1 h0 h1 hlt, famBelow_p δ (σ γ0) (σ γ1) hs0 hs1 hlts] at h
+  exact h
+
+theorem Fep_p_limit (γ0 γ1 : SI) (hlim : SIdx.Limit γ1) (h0 : γ0 < δ) (hs0 : σ γ0 < δ)
+    (h1 : γ1 < δ) (hlt : γ0 < γ1) (hslt : σ γ0 < γ1) (x) :
+    fold F γ0 (truncMap (σ γ1) (σ γ0) (map (F := F) (e F γ0 γ1 hlt) (p F γ0 γ1 hlt)) x) =
+      p F (σ γ0) γ1 hslt (ψ F γ1 x) := by
+  have h := FamGood.Fep_p_limit hg γ0 γ1 hlim h0 hs0 h1 hlt hslt x
+  rw [famBelow_fld δ γ0 h0 hs0, famBelow_e δ γ0 γ1 h0 h1 hlt, famBelow_p δ γ0 γ1 h0 h1 hlt,
+    famBelow_p δ (σ γ0) γ1 hs0 h1 hslt] at h
+  exact h
+
+end Good
+
+theorem truncated_of_eq {A B : Obj (SI := SI)} (h : A = B) {α : SI} [Truncated B.car α] :
+    Truncated A.car α := by
+  subst h; assumption
+
+/-! ### Laws at successor indices -/
+
+section SuccLaws
+
+variable (m : SI) (hg : Good (F := F) (σ m))
+include hg
+
+theorem p_e_succ_self (x) :
+    p F m (σ m) (SIdx.lt_succ_self m) (e F m (σ m) (SIdx.lt_succ_self m) x) = x := by
+  rw [p_succ_self, e_succ_self, unfold_fold, hg.ψ_ϕ m (SIdx.lt_succ_self m)]
+
+theorem p_e_succ (β : SI) (h : β < σ m) (x) : p F β (σ m) h (e F β (σ m) h x) = x := by
+  rcases SIdx.le_lteq.mp (SIdx.lt_succ_r.mp h) with hβ | hβ
+  · rw [e_succ_lt m β hβ h, p_succ_lt m β hβ h, p_e_succ_self m hg,
+      hg.p_e β m h (SIdx.lt_succ_self m) hβ]
+  · subst hβ; exact p_e_succ_self β hg x
+
+theorem e_p_succ_self (y) :
+    e F m (σ m) (SIdx.lt_succ_self m) (p F m (σ m) (SIdx.lt_succ_self m) y) ≡{m}≡ y := by
+  rw [p_succ_self, e_succ_self]
+  refine ((fold F m).ne.1 (hg.ϕ_ψ m (SIdx.lt_succ_self m) _)).trans (Dist.of_eq (fold_unfold m y))
+
+theorem e_p_succ (β : SI) (h : β < σ m) (y) : e F β (σ m) h (p F β (σ m) h y) ≡{β}≡ y := by
+  rcases SIdx.le_lteq.mp (SIdx.lt_succ_r.mp h) with hβ | hβ
+  · rw [e_succ_lt m β hβ h, p_succ_lt m β hβ h]
+    refine ((e F m (σ m) _).ne.1 (hg.e_p β m h (SIdx.lt_succ_self m) hβ _)).trans ?_
+    exact (e_p_succ_self m hg y).le (SIdx.lt_le_incl hβ)
+  · subst hβ; exact e_p_succ_self β hg y
+
+theorem e_funct_succ (β η : SI) (h1 : β < η) (h2 : η < σ m) (h3 : β < σ m) (x) :
+    e F η (σ m) h2 (e F β η h1 x) = e F β (σ m) h3 x := by
+  rcases SIdx.le_lteq.mp (SIdx.lt_succ_r.mp h2) with hη | hη
+  · rw [e_succ_lt m η hη h2, e_succ_lt m β (SIdx.lt_trans h1 hη) h3,
+      hg.e_funct β η m h3 h2 (SIdx.lt_succ_self m) h1 hη (SIdx.lt_trans h1 hη)]
+  · subst hη; rw [e_succ_lt η β h1 h3]
+
+theorem p_funct_succ (β η : SI) (h1 : β < η) (h2 : η < σ m) (h3 : β < σ m) (y) :
+    p F β η h1 (p F η (σ m) h2 y) = p F β (σ m) h3 y := by
+  rcases SIdx.le_lteq.mp (SIdx.lt_succ_r.mp h2) with hη | hη
+  · rw [p_succ_lt m η hη h2, p_succ_lt m β (SIdx.lt_trans h1 hη) h3,
+      hg.p_funct β η m h3 h2 (SIdx.lt_succ_self m) h1 hη (SIdx.lt_trans h1 hη)]
+  · subst hη; rw [p_succ_lt η β h1 h3]
+
+theorem ψ_ϕ_succ (x) : ψ F (σ m) (ϕ F (σ m) x) = x := by
+  rw [ψ_succ, ϕ_succ, truncMap_truncMap (SIdx.lt_le_incl (SIdx.lt_succ_self (σ m)))]
+  refine Eq.trans ?_ (fold_unfold m x)
+  congr 1
+  refine (truncMap_congr (fun y => ?_) _).trans (truncMap_id _ _)
+  rw [Hom.comp_apply, ← OFunctor.map_comp]
+  refine (map_congr (fun z => ?_) (fun z => ?_) y).trans (OFunctor.map_id y)
+  · show ψ F m (unfold F m (fold F m (ϕ F m z))) = z
+    rw [unfold_fold, hg.ψ_ϕ m (SIdx.lt_succ_self m)]
+  · show ψ F m (unfold F m (fold F m (ϕ F m z))) = z
+    rw [unfold_fold, hg.ψ_ϕ m (SIdx.lt_succ_self m)]
+
+theorem ϕ_ψ_succ (z) : ϕ F (σ m) (ψ F (σ m) z) ≡{σ m}≡ z := by
+  rw [ϕ_succ, ψ_succ, unfold_fold]
+  refine (truncMap_comp_dist (σ (σ m)) (σ (σ m)) (σ m) _ _ z).symm.trans ?_
+  refine (((truncMap_ne (σ (σ m)) (σ (σ m))).ne (n := σ m) (fun y => ?_)) z).trans
+    (Dist.of_eq (truncMap_id _ z))
+  show map (F := F) _ _ (map (F := F) _ _ y) ≡{σ m}≡ y
+  rw [← OFunctor.map_comp]
+  have H : ∀ w, ((fold F m).comp (ϕ F m)).comp ((ψ F m).comp (unfold F m)) w ≡{m}≡ w := fun w => by
+    show fold F m (ϕ F m (ψ F m (unfold F m w))) ≡{m}≡ w
+    exact ((fold F m).ne.1 (hg.ϕ_ψ m (SIdx.lt_succ_self m) _)).trans (Dist.of_eq (fold_unfold m w))
+  refine ((OFunctorContractive.map_contractive (F := F)).distLater_dist
+    (x := (((fold F m).comp (ϕ F m)).comp ((ψ F m).comp (unfold F m)),
+      ((fold F m).comp (ϕ F m)).comp ((ψ F m).comp (unfold F m))))
+    (y := (Hom.id, Hom.id)) (fun k hk => ⟨fun w => (H w).le (SIdx.lt_succ_r.mp hk),
+      fun w => (H w).le (SIdx.lt_succ_r.mp hk)⟩) y).trans (Dist.of_eq (OFunctor.map_id y))
+
+omit hg in
+theorem truncated_succ : Truncated (X F (σ m)).car (σ m) := truncated_of_eq (X_succ m)
+
+end SuccLaws
+
+/-- Rocq: `Fep_sp'` (the law `approx_Fep_p` at a successor index). -/
+theorem Fep_p_succ (γ0 γ1 : SI) (hlt : γ0 < γ1) (hlts : σ γ0 < σ γ1) (hg : Good (F := F) (σ γ1))
+    (x) :
+    fold F γ0 (truncMap (σ γ1) (σ γ0) (map (F := F) (e F γ0 γ1 hlt) (p F γ0 γ1 hlt))
+      (unfold F γ1 x)) = p F (σ γ0) (σ γ1) hlts x := by
+  rcases SIdx.le_lteq.mp (SIdx.le_succ_l.mpr hlt) with hs | hs
+  · rw [p_succ_lt γ1 (σ γ0) hs hlts, p_succ_self]
+    generalize unfold F γ1 x = z
+    rcases SIdx.case γ1 with h0 | ⟨β', rfl⟩ | hlim1
+    · subst h0; exact absurd hs (SIdx.not_lt_zero _)
+    · have hβ' : γ0 < β' := SIdx.succ_lt_mono.mpr hs
+      have l1 : β' < σ (σ β') := SIdx.lt_trans (SIdx.lt_succ_self β') (SIdx.lt_succ_self _)
+      have l2 : σ β' < σ (σ β') := SIdx.lt_succ_self _
+      rw [ψ_succ β' z, ← hg.Fep_p γ0 β' (SIdx.lt_trans hβ' l1) l1 (SIdx.lt_trans hs l2) l2 hβ' hs,
+        unfold_fold, truncMap_truncMap (SIdx.lt_le_incl hs)]
+      congr 1
+      refine truncMap_congr (fun y => ?_) z
+      rw [Hom.comp_apply, ← OFunctor.map_comp]
+      refine map_congr (fun w => ?_) (fun w => ?_) y
+      · show e F γ0 (σ β') hlt w = fold F β' (ϕ F β' (e F γ0 β' hβ' w))
+        rw [← e_succ_self β' (SIdx.lt_succ_self β'), hg.e_funct γ0 β' (σ β') (SIdx.lt_trans hβ' l1) l1 l2 hβ'
+          (SIdx.lt_succ_self β') hlt]
+      · show p F γ0 (σ β') hlt w = p F γ0 β' hβ' (ψ F β' (unfold F β' w))
+        rw [← p_succ_self β' (SIdx.lt_succ_self β'), hg.p_funct γ0 β' (σ β') (SIdx.lt_trans hβ' l1) l1 l2 hβ'
+          (SIdx.lt_succ_self β') hlt]
+    · exact hg.Fep_p_limit γ0 γ1 hlim1 (SIdx.lt_trans hlt (SIdx.lt_succ_self γ1))
+        (SIdx.lt_trans hs (SIdx.lt_succ_self γ1)) (SIdx.lt_succ_self γ1) hlt hs z
+  · subst hs
+    rw [p_succ_self (σ γ0), ψ_succ γ0]
+    congr 1
+    refine truncMap_congr (fun y => ?_) _
+    exact map_congr (fun w => e_succ_self γ0 hlt w) (fun w => p_succ_self γ0 hlt w) y
+
+/-! ### Laws at limit indices -/
+
+section LimitLaws
+
+variable {δ : SI} (hlim : SIdx.Limit δ) (hg : Good (F := F) δ)
+include hlim hg
+
+theorem p_e_limit (β : SI) (h : β < δ) (x) : p F β δ h (e F β δ h x) = x := by
+  rw [e_limit hlim hg, p_limit hlim hg, castObj_castObj_symm]
+  exact pS_eS hlim hg β h x
+
+theorem e_p_limit (β : SI) (h : β < δ) (y) : e F β δ h (p F β δ h y) ≡{β}≡ y := by
+  rw [p_limit hlim hg, e_limit hlim hg]
+  exact ((castObj _).ne.1 (eS_pS hlim hg β h _)).trans (Dist.of_eq (castObj_symm_castObj _ _))
+
+theorem e_funct_limit (β η : SI) (h1 : β < η) (h2 : η < δ) (h3 : β < δ) (x) :
+    e F η δ h2 (e F β η h1 x) = e F β δ h3 x := by
+  rw [e_limit hlim hg, e_limit hlim hg]
+  congr 1
+  have H := eS_functorial hlim hg β η h3 h2 h1 x
+  rw [famBelow_e δ β η h3 h2 h1] at H
+  exact H
+
+theorem p_funct_limit (β η : SI) (h1 : β < η) (h2 : η < δ) (h3 : β < δ) (y) :
+    p F β η h1 (p F η δ h2 y) = p F β δ h3 y := by
+  rw [p_limit hlim hg, p_limit hlim hg]
+  have H := pS_functorial hlim hg β η h3 h2 h1 (castObj (X_limit hlim hg) y)
+  rw [famBelow_p δ β η h3 h2 h1] at H
+  exact H
+
+theorem ψ_ϕ_limit (x) : ψ F δ (ϕ F δ x) = x := by
+  rw [ψ_limit hlim hg, ϕ_limit hlim hg, castObj_castObj_symm, ψS_ϕS, castObj_symm_castObj]
+
+theorem ϕ_ψ_limit (z) : ϕ F δ (ψ F δ z) ≡{δ}≡ z := by
+  rw [ϕ_limit hlim hg, ψ_limit hlim hg, castObj_castObj_symm]
+  exact ((castObj _).ne.1 (ϕS_ψS hlim hg _)).trans (Dist.of_eq (castObj_symm_castObj _ _))
+
+theorem Fep_p_limit_limit (γ0 : SI) (h0 : γ0 < δ) (hs0 : σ γ0 < δ) (z) :
+    fold F γ0 (truncMap (σ δ) (σ γ0) (map (F := F) (e F γ0 δ h0) (p F γ0 δ h0)) z) =
+      p F (σ γ0) δ hs0 (ψ F δ z) := by
+  have he : e F γ0 δ h0 = (castObj (X_limit hlim hg).symm).comp (eS hlim hg γ0 h0) :=
+    Hom.ext (funext (e_limit hlim hg γ0 h0))
+  have hp : p F γ0 δ h0 = (pS hlim hg γ0 h0).comp (castObj (X_limit hlim hg)) :=
+    Hom.ext (funext (p_limit hlim hg γ0 h0))
+  rw [ψ_limit hlim hg, p_limit hlim hg, castObj_castObj_symm, he, hp,
+    ← truncMap_map_cast (X_limit hlim hg).symm (σ γ0) (σ δ)
+      (congrArg (TG F (σ δ)) (X_limit hlim hg)) (eS hlim hg γ0 h0) (pS hlim hg γ0 h0) z]
+  have H := fld_truncMap_eS hlim hg γ0 h0 hs0 (castObj (congrArg (TG F (σ δ)) (X_limit hlim hg)) z)
+  rw [famBelow_fld δ γ0 h0 hs0] at H
+  exact H
+
+theorem truncated_limit : Truncated (X F δ).car δ := truncated_of_eq (X_limit hlim hg)
+
+end LimitLaws
+
+/-! ### Laws at `0` -/
+
+theorem ψ_ϕ_zero (x) : ψ F 0 (ϕ F 0 x) = x := by
+  rw [ψ_zero, ϕ_zero, castObj_castObj_symm]
+  refine Eq.trans ?_ (castObj_symm_castObj (X_zero (F := F)) x)
+  congr 1
+  show truncMap (σ 0) 0 _ (truncMap 0 (σ 0) _ _) = _
+  rw [truncMap_truncMap (SIdx.lt_le_incl (SIdx.lt_succ_self 0))]
+  refine (truncMap_congr (fun y => ?_) _).trans (truncMap_id _ _)
+  rw [Hom.comp_apply, ← OFunctor.map_comp]
+  exact (map_congr (fun _ => rfl) (fun _ => rfl) y).trans (OFunctor.map_id y)
+
+theorem ϕ_ψ_zero (z) : ϕ F 0 (ψ F 0 z) ≡{0}≡ z := by
+  rw [ϕ_zero, ψ_zero, castObj_castObj_symm]
+  refine ((castObj _).ne.1 ?_).trans
+    (Dist.of_eq (castObj_symm_castObj (congrArg (TG F (σ 0)) (X_zero (F := F))) z))
+  show truncMap 0 (σ 0) _ (truncMap (σ 0) 0 _ _) ≡{0}≡ _
+  refine (truncMap_comp_dist (σ 0) (σ 0) 0 _ _ _).symm.trans ?_
+  refine (((truncMap_ne (σ 0) (σ 0)).ne (n := 0) (fun y => ?_)) _).trans
+    (Dist.of_eq (truncMap_id _ _))
+  show map (F := F) _ _ (map (F := F) _ _ y) ≡{0}≡ y
+  rw [← OFunctor.map_comp]
+  exact ((OFunctorContractive.map_contractive (F := F)).zero (x := (_, _)) (y := (Hom.id, Hom.id))
+    _ y).trans (Dist.of_eq (OFunctor.map_id y))
+
+theorem truncated_zero : Truncated (X F 0).car 0 := truncated_of_eq X_zero
+
+/-! ### All laws hold -/
+
+theorem truncated_at (δ : SI) (hg : Good (F := F) δ) : Truncated (X F δ).car δ := by
+  rcases SIdx.case δ with h0 | ⟨m, rfl⟩ | hlim
+  · subst h0; exact truncated_zero
+  · exact truncated_succ m
+  · exact truncated_limit hlim hg
+
+theorem p_e_at (δ : SI) (hg : Good (F := F) δ) (β : SI) (h : β < δ) (x) :
+    p F β δ h (e F β δ h x) = x := by
+  rcases SIdx.case δ with h0 | ⟨m, rfl⟩ | hlim
+  · subst h0; exact absurd h (SIdx.not_lt_zero β)
+  · exact p_e_succ m hg β h x
+  · exact p_e_limit hlim hg β h x
+
+theorem e_p_at (δ : SI) (hg : Good (F := F) δ) (β : SI) (h : β < δ) (y) :
+    e F β δ h (p F β δ h y) ≡{β}≡ y := by
+  rcases SIdx.case δ with h0 | ⟨m, rfl⟩ | hlim
+  · subst h0; exact absurd h (SIdx.not_lt_zero β)
+  · exact e_p_succ m hg β h y
+  · exact e_p_limit hlim hg β h y
+
+theorem e_funct_at (δ : SI) (hg : Good (F := F) δ) (β η : SI) (h1 : β < η) (h2 : η < δ)
+    (h3 : β < δ) (x) : e F η δ h2 (e F β η h1 x) = e F β δ h3 x := by
+  rcases SIdx.case δ with h0 | ⟨m, rfl⟩ | hlim
+  · subst h0; exact absurd h2 (SIdx.not_lt_zero η)
+  · exact e_funct_succ m hg β η h1 h2 h3 x
+  · exact e_funct_limit hlim hg β η h1 h2 h3 x
+
+theorem p_funct_at (δ : SI) (hg : Good (F := F) δ) (β η : SI) (h1 : β < η) (h2 : η < δ)
+    (h3 : β < δ) (y) : p F β η h1 (p F η δ h2 y) = p F β δ h3 y := by
+  rcases SIdx.case δ with h0 | ⟨m, rfl⟩ | hlim
+  · subst h0; exact absurd h2 (SIdx.not_lt_zero η)
+  · exact p_funct_succ m hg β η h1 h2 h3 y
+  · exact p_funct_limit hlim hg β η h1 h2 h3 y
+
+theorem ψ_ϕ_at (δ : SI) (hg : Good (F := F) δ) (x) : ψ F δ (ϕ F δ x) = x := by
+  rcases SIdx.case δ with h0 | ⟨m, rfl⟩ | hlim
+  · subst h0; exact ψ_ϕ_zero x
+  · exact ψ_ϕ_succ m hg x
+  · exact ψ_ϕ_limit hlim hg x
+
+theorem ϕ_ψ_at (δ : SI) (hg : Good (F := F) δ) (z) : ϕ F δ (ψ F δ z) ≡{δ}≡ z := by
+  rcases SIdx.case δ with h0 | ⟨m, rfl⟩ | hlim
+  · subst h0; exact ϕ_ψ_zero z
+  · exact ϕ_ψ_succ m hg z
+  · exact ϕ_ψ_limit hlim hg z
+
+/-- All approximations satisfy the laws (Rocq: `full_approximation`, `IR_spec`). -/
+theorem good (γ : SI) : Good (F := F) γ := by
+  induction γ using instSI.lt_wf.induction with
+  | _ γ IH =>
+    exact {
+      xs := fun β _ _ => X_succ β
+      unf_eq := fun β hβ hs => famBelow_unf γ β hβ hs
+      fld_eq := fun β hβ hs => famBelow_fld γ β hβ hs
+      truncated := fun β hβ => truncated_at β (IH β hβ)
+      p_e := fun β δ hβ hδ hlt x => by
+        rw [famBelow_p γ β δ hβ hδ hlt, famBelow_e γ β δ hβ hδ hlt]
+        exact p_e_at δ (IH δ hδ) β hlt x
+      e_p := fun β δ hβ hδ hlt x => by
+        rw [famBelow_p γ β δ hβ hδ hlt, famBelow_e γ β δ hβ hδ hlt]
+        exact e_p_at δ (IH δ hδ) β hlt x
+      e_funct := fun β η δ hβ hη hδ h1 h2 h3 x => by
+        rw [famBelow_e γ β η hβ hη h1, famBelow_e γ η δ hη hδ h2, famBelow_e γ β δ hβ hδ h3]
+        exact e_funct_at δ (IH δ hδ) β η h1 h2 h3 x
+      p_funct := fun β η δ hβ hη hδ h1 h2 h3 x => by
+        rw [famBelow_p γ β η hβ hη h1, famBelow_p γ η δ hη hδ h2, famBelow_p γ β δ hβ hδ h3]
+        exact p_funct_at δ (IH δ hδ) β η h1 h2 h3 x
+      ψ_ϕ := fun β hβ x => ψ_ϕ_at β (IH β hβ) x
+      ϕ_ψ := fun β hβ x => ϕ_ψ_at β (IH β hβ) x
+      Fep_p := fun γ0 γ1 h0 h1 hs0 hs1 hlt hlts x => by
+        rw [famBelow_fld γ γ0 h0 hs0, famBelow_unf γ γ1 h1 hs1, famBelow_e γ γ0 γ1 h0 h1 hlt,
+          famBelow_p γ γ0 γ1 h0 h1 hlt, famBelow_p γ (σ γ0) (σ γ1) hs0 hs1 hlts]
+        exact Fep_p_succ γ0 γ1 hlt hlts (IH (σ γ1) hs1) x
+      p_ψ_unfold := fun β hβ hs hlt x => by
+        rw [famBelow_p γ β (σ β) hβ hs hlt, famBelow_unf γ β hβ hs]; exact p_succ_self β hlt x
+      e_fold_ϕ := fun β hβ hs hlt x => by
+        rw [famBelow_e γ β (σ β) hβ hs hlt, famBelow_fld γ β hβ hs]; exact e_succ_self β hlt x
+      ϕ_succ := fun β hβ hs x => by
+        rw [famBelow_unf γ β hβ hs, famBelow_fld γ β hβ hs]; exact ϕ_succ β x
+      ψ_succ := fun β hβ hs x => by
+        rw [famBelow_unf γ β hβ hs, famBelow_fld γ β hβ hs]; exact ψ_succ β x
+      Fep_p_limit := fun γ0 γ1 hlim h0 hs0 h1 hlt hslt x => by
+        rw [famBelow_fld γ γ0 h0 hs0, famBelow_e γ γ0 γ1 h0 h1 hlt, famBelow_p γ γ0 γ1 h0 h1 hlt,
+          famBelow_p γ (σ γ0) γ1 hs0 h1 hslt]
+        exact Fep_p_limit_limit hlim (IH γ1 h1) γ0 hlt hslt x }
+
 end Iris.COFE.OFunctor.Transfinite
