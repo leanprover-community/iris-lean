@@ -30,7 +30,7 @@ local stepindex SI
 
 namespace Iris.Transfinite
 
-open Iris ProgramLogic Language Language.Notation Iris.Std Iris.BI OFE Relation
+open Iris ProgramLogic Language Language.Notation Iris.Std Iris.BI OFE Relation FromMathlib FromMathlib.Relation
 
 /-- An infinite execution along `R` starting at `x` (Rocq: `ex_loop`). -/
 def ExLoop {X : Type _} (R : X → X → Prop) (x : X) : Prop :=
@@ -481,5 +481,164 @@ theorem rwp_sn_preservation {A : Type u} [src : Source GF A] [SIdxLarge.{u} SI]
       rwp (src := src) (ι := ι) s ⊤ e Φ)) :
     StronglyNormalizing ErasedStep ([e], σ) :=
   sn_of_not_exLoop _ _ fun hloop => rwp_adequacy hsn hloop hsat
+
+
+/-! ## Refinement of results
+
+These lemmas follow a single execution: the source takes (reflexive-transitive) steps along with the
+target, and the refinement weakest precondition is preserved. -/
+
+section Results
+
+variable {A : Type u} [src : Source GF A] [SIdxLarge.{u} SI]
+
+/-- One target step, ignoring forked threads (Rocq: `rwp_prim_step`). -/
+theorem rwp_prim_step {F : IProp GF} {s : Stuckness} {κ : List Obs} {a : A} {n : Nat}
+    {e e' : Expr} {σ σ' : State} {Φ : Val → IProp GF} {efs : List Expr}
+    (hstep : (e, σ) -<κ>-> (e', σ', efs))
+    (hsat : satisfiableAt ⊤ iprop(src.interp a ∗ ι.refStateInterp σ n ∗
+      rwp (src := src) (ι := ι) s ⊤ e Φ ∗ F)) :
+    ∃ a' m, ReflTransGen src.rel a a' ∧ satisfiableAt ⊤ iprop(src.interp a' ∗
+      ι.refStateInterp σ' m ∗ rwp (src := src) (ι := ι) s ⊤ e' Φ ∗
+      ([∗list] ef ∈ efs, rwp (src := src) (ι := ι) s ⊤ ef ι.refForkPost) ∗ F) := by
+  have key : iprop(src.interp a ∗ ι.refStateInterp σ n ∗ rwp (src := src) (ι := ι) s ⊤ e Φ ∗ F) ⊢
+      iprop(|={⊤,∅}=> ▷ |={∅,⊤}=> ∃ p : A × Nat, ⌜ReflTransGen src.rel a p.1⌝ ∗
+        src.interp p.1 ∗ ι.refStateInterp σ' p.2 ∗ rwp (src := src) (ι := ι) s ⊤ e' Φ ∗
+        ([∗list] ef ∈ efs, rwp (src := src) (ι := ι) s ⊤ ef ι.refForkPost) ∗ F) := by
+    iintro ⟨Ha, Hσ, Hwp, HF⟩
+    ihave Hwp := rwp_unfold.mp $$ Hwp
+    unfold rwpPre
+    rw [Language.val_stuck hstep]
+    dsimp only
+    unfold rwpStep
+    imod Hwp $$ %σ %n %a [$Ha $Hσ] with ⟨%b, Hwp⟩
+    imodintro
+    cases b <;> simp only [Bool.false_eq_true, ↓reduceIte, laterIf_false, laterIf_true]
+    · inext
+      imod Hwp with ⟨-, Hwp⟩
+      imod Hwp $$ %e' %σ' %efs %κ %hstep with ⟨Hsrc, Hσ, Hwp, Hfork⟩
+      imodintro
+      iexists (a, efs.length + n)
+      iframe
+      ipureintro
+      exact .refl
+    · inext
+      imod Hwp with ⟨-, Hwp⟩
+      imod Hwp $$ %e' %σ' %efs %κ %hstep with ⟨⟨%a', %Ha', Hsrc⟩, Hσ, Hwp, Hfork⟩
+      imodintro
+      iexists (a', efs.length + n)
+      iframe
+      ipureintro
+      exact transGen_to_reflTransGen Ha'
+  obtain ⟨⟨a', m⟩, h⟩ := satisfiableAt_exists
+    (satisfiableAt_fupd (satisfiableAt_later (satisfiableAt_fupd (satisfiableAt_mono hsat key))))
+  obtain ⟨h₁, h₂⟩ := satisfiableAt_sep h
+  exact ⟨a', m, satisfiableAt_pure h₁, h₂⟩
+
+/-- The weakest preconditions of a thread pool: the main thread with postcondition `Φ`, the
+forked threads with `refForkPost` (Rocq: `thread_wps`). -/
+def threadWps (s : Stuckness) (Φ : Val → IProp GF) : List Expr → IProp GF
+  | [] => iprop(emp)
+  | e :: es => iprop(rwp (src := src) (ι := ι) s ⊤ e Φ ∗
+      [∗list] ef ∈ es, rwp (src := src) (ι := ι) s ⊤ ef ι.refForkPost)
+
+/-- Rocq: `rwp_erased_step`. -/
+theorem rwp_erased_step {s : Stuckness} {Φ : Val → IProp GF} {a : A} {n : Nat}
+    {ts ts' : List Expr} {σ σ' : State} (hstep : ErasedStep (ts, σ) (ts', σ'))
+    (hsat : satisfiableAt ⊤ iprop(src.interp a ∗ ι.refStateInterp σ n ∗
+      threadWps (src := src) (ι := ι) s Φ ts)) :
+    ∃ a' m, ReflTransGen src.rel a a' ∧ satisfiableAt ⊤ iprop(src.interp a' ∗
+      ι.refStateInterp σ' m ∗ threadWps (src := src) (ι := ι) s Φ ts') := by
+  obtain ⟨κ, hstep⟩ := hstep
+  generalize hρ : (ts, σ) = ρ at hstep
+  generalize hρ' : (ts', σ') = ρ' at hstep
+  cases hstep with
+  | @atomic e σ₀ obs e' σ₀' efs Hprim l₁ l₂ =>
+  simp only [Prod.mk.injEq] at hρ hρ'
+  obtain ⟨rfl, rfl⟩ := hρ
+  obtain ⟨rfl, rfl⟩ := hρ'
+  cases l₁ with
+  | nil =>
+    simp only [List.nil_append, List.cons_append, threadWps] at hsat ⊢
+    obtain ⟨a', m, hrtc, h⟩ := rwp_prim_step Hprim hsat
+    refine ⟨a', m, hrtc, satisfiableAt_mono h ?_⟩
+    iintro ⟨Ha, Hσ, Hwp, Hefs, Hl₂⟩
+    iframe Ha Hσ Hwp
+    iapply BigSepL.bigSepL_append.mpr
+    iframe
+  | cons x l₁' =>
+    simp only [List.cons_append, threadWps] at hsat ⊢
+    have hsat' : satisfiableAt ⊤ iprop(src.interp a ∗ ι.refStateInterp σ n ∗
+        rwp (src := src) (ι := ι) s ⊤ e ι.refForkPost ∗
+        (rwp (src := src) (ι := ι) s ⊤ x Φ ∗
+          ([∗list] ef ∈ l₁', rwp (src := src) (ι := ι) s ⊤ ef ι.refForkPost) ∗
+          ([∗list] ef ∈ l₂, rwp (src := src) (ι := ι) s ⊤ ef ι.refForkPost))) := by
+      refine satisfiableAt_mono hsat ?_
+      iintro ⟨Ha, Hσ, Hx, Ht⟩
+      icases BigSepL.bigSepL_append.mp $$ Ht with ⟨Hl₁, Ht⟩
+      icases BigSepL.bigSepL_cons.mp $$ Ht with ⟨He, Hl₂⟩
+      iframe
+    obtain ⟨a', m, hrtc, h⟩ := rwp_prim_step Hprim hsat'
+    refine ⟨a', m, hrtc, satisfiableAt_mono h ?_⟩
+    iintro ⟨Ha, Hσ, He', Hefs, Hx, Hl₁, Hl₂⟩
+    iframe Ha Hσ Hx
+    simp only [List.append_assoc, List.cons_append]
+    iapply BigSepL.bigSepL_append.mpr
+    iframe Hl₁
+    iapply BigSepL.bigSepL_cons.mpr
+    iframe He'
+    iapply BigSepL.bigSepL_append.mpr
+    iframe
+
+/-- Rocq: `rwp_erased_steps`. -/
+theorem rwp_erased_steps {s : Stuckness} {Φ : Val → IProp GF} {a : A} {n : Nat}
+    {ts ts' : List Expr} {σ σ' : State}
+    (hsteps : ReflTransGen ErasedStep (ts, σ) (ts', σ'))
+    (hsat : satisfiableAt ⊤ iprop(src.interp a ∗ ι.refStateInterp σ n ∗
+      threadWps (src := src) (ι := ι) s Φ ts)) :
+    ∃ a' m, ReflTransGen src.rel a a' ∧ satisfiableAt ⊤ iprop(src.interp a' ∗
+      ι.refStateInterp σ' m ∗ threadWps (src := src) (ι := ι) s Φ ts') := by
+  generalize hc' : (ts', σ') = c' at hsteps
+  induction hsteps generalizing ts' σ' with
+  | refl =>
+    cases hc'
+    exact ⟨a, n, .refl, hsat⟩
+  | @tail c₁ c₂ _ hstep ih =>
+    subst hc'
+    obtain ⟨ts₁, σ₁⟩ := c₁
+    obtain ⟨a₁, m₁, hrtc₁, h₁⟩ := ih rfl
+    obtain ⟨a₂, m₂, hrtc₂, h₂⟩ := rwp_erased_step hstep h₁
+    exact ⟨a₂, m₂, ReflTransGen.trans hrtc₁ hrtc₂, h₂⟩
+
+/-- The result of a terminating execution satisfies the postcondition, after source steps
+(Rocq: `rwp_result`). -/
+theorem rwp_result {Φ : Val → IProp GF} {ts : List Expr} {a : A} {n : Nat} {e : Expr} {v : Val}
+    {σ σ' : State} {s : Stuckness}
+    (hsteps : ReflTransGen ErasedStep ([e], σ) ((v : Expr) :: ts, σ'))
+    (hsat : satisfiableAt ⊤ iprop(src.interp a ∗ ι.refStateInterp σ n ∗
+      rwp (src := src) (ι := ι) s ⊤ e Φ)) :
+    ∃ a' m, ReflTransGen src.rel a a' ∧
+      satisfiableAt ⊤ iprop(src.interp a' ∗ ι.refStateInterp σ' m ∗ Φ v) := by
+  have hsat₀ : satisfiableAt ⊤ iprop(src.interp a ∗ ι.refStateInterp σ n ∗
+      threadWps (src := src) (ι := ι) s Φ [e]) := by
+    refine satisfiableAt_mono hsat ?_
+    simp only [threadWps]
+    iintro ⟨Ha, Hσ, Hwp⟩
+    iframe
+    iapply BigSepL.bigSepL_nil.mpr
+    itrivial
+  obtain ⟨a', m, hrtc, h⟩ := rwp_erased_steps hsteps hsat₀
+  refine ⟨a', m, hrtc, satisfiableAt_fupd (satisfiableAt_mono h ?_)⟩
+  simp only [threadWps]
+  iintro ⟨Ha, Hσ, Hwp, -⟩
+  ihave Hwp := rwp_unfold.mp $$ Hwp
+  unfold rwpPre
+  rw [toVal_coe]
+  dsimp only
+  imod Hwp $$ %σ' %m %a' [$Ha $Hσ] with ⟨Ha, Hσ, HΦ⟩
+  imodintro
+  iframe
+
+end Results
 
 end Iris.Transfinite
