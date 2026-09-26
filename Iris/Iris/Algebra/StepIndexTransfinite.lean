@@ -48,6 +48,14 @@ class SIdxLarge.{v} (I : Type u) [SIdx I] : Prop where
   commute_exists {X : Type v} (P : X → I → Prop) :
     (∀ x a b, a < b → P x b → P x a) → (∀ a, ∃ x, P x a) → ∃ x, ∀ a, P x a
 
+/-- The existential property for a universe implies it for smaller universes. -/
+theorem SIdxLarge.down.{v, w} {I : Type u} [SIdx I] [h : SIdxLarge.{max v w} I] :
+    SIdxLarge.{v} I where
+  commute_exists {X} P hmono hex := by
+    obtain ⟨⟨x⟩, hx⟩ := h.commute_exists (X := ULift.{w} X) (fun x a => P x.down a)
+      (fun x a b hab => hmono x.down a b hab) (fun a => let ⟨x, hx⟩ := hex a; ⟨⟨x⟩, hx⟩)
+    exact ⟨x, hx⟩
+
 namespace SIdx
 
 variable {I : Type u} [SIdx I]

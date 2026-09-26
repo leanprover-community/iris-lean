@@ -348,22 +348,20 @@ theorem ownI_alloc_open [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
       · iexact Hmap
   · unfold ownI; rw [HEQ]; isplit <;> iassumption
 
-@[rocq_alias wsat_alloc]
-theorem wsat_alloc [instWp : WsatGpreS GF] :
-    ⊢ |==> ∃ (W : WsatGS GF), wsat (W := W) ∗ ownE ⊤ := by
+/-- World satisfaction built from the pre-instance and explicit ghost names. -/
+abbrev WsatGS.ofNames [instWp : WsatGpreS GF] (γ γe γd : GName) : WsatGS GF :=
+  { toWsatGpreS := instWp, invariant_name := γ, enabled_name := γe, disabled_name := γd }
+
+/-- Allocation of world satisfaction, exposing the ghost names. -/
+theorem wsat_alloc_names [instWp : WsatGpreS GF] :
+    ⊢ |==> ∃ γ γe γd : GName,
+      wsat (W := WsatGS.ofNames (GF := GF) γ γe γd) ∗
+        ownE (W := WsatGS.ofNames (GF := GF) γ γe γd) ⊤ := by
   imod (iOwn_alloc (E := instWp.inv) (Auth (.own 1) ∅) auth_one_valid) with ⟨%γ, H⟩
   imod (iOwn_alloc (E := instWp.enabled) (valid ⊤) ⟨⟩) with ⟨%γe, He⟩
   imod (iOwn_alloc (E := instWp.disabled) (valid ∅) ⟨⟩) with ⟨%γd, Hd⟩
   imodintro
-  let W : WsatGS GF := {
-    inv := instWp.inv,
-    enabled := instWp.enabled,
-    disabled := instWp.disabled,
-    invariant_name := γ,
-    enabled_name := γe,
-    disabled_name := γd
-  }
-  iexists W
+  iexists γ, γe, γd
   isplitr [He]
   · unfold wsat
     iexists ∅
@@ -377,6 +375,14 @@ theorem wsat_alloc [instWp : WsatGpreS GF] :
       itrivial
   · unfold ownE
     iexact He
+
+@[rocq_alias wsat_alloc]
+theorem wsat_alloc [instWp : WsatGpreS GF] :
+    ⊢ |==> ∃ (W : WsatGS GF), wsat (W := W) ∗ ownE ⊤ := by
+  imod wsat_alloc_names (GF := GF) with ⟨%γ, %γe, %γd, H⟩
+  imodintro
+  iexists WsatGS.ofNames γ γe γd
+  iexact H
 
 end allocation
 
