@@ -17,3 +17,4 @@ public import Iris.HeapLang.ProphErasure
 public import Iris.HeapLang.Semantics
 public import Iris.HeapLang.Syntax
 public import Iris.HeapLang.Tactic
+public import Iris.HeapLang.TotalAdequacy
