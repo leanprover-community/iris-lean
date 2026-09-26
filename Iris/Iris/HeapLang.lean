@@ -18,3 +18,4 @@ public import Iris.HeapLang.Semantics
 public import Iris.HeapLang.Syntax
 public import Iris.HeapLang.Tactic
 public import Iris.HeapLang.Transfinite
+public import Iris.HeapLang.TransfiniteDerived
