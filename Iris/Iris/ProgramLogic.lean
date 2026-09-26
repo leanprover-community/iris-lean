@@ -30,5 +30,6 @@ public import Iris.ProgramLogic.Refinement.RefAuthSource
 public import Iris.ProgramLogic.Refinement.NatSource
 public import Iris.ProgramLogic.Refinement.RefWeakestPre
 public import Iris.ProgramLogic.Refinement.RefAdequacy
+public import Iris.ProgramLogic.Refinement.SeqWeakestPre
 public import Iris.ProgramLogic.Refinement.RefLifting
 public import Iris.ProgramLogic.Refinement.RefEctxLifting

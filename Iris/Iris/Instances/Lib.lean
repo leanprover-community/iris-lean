@@ -10,6 +10,7 @@ public import Iris.Instances.Lib.FUpd
 public import Iris.Instances.Lib.FUpdFromViewShift
 public import Iris.Instances.Lib.FUpdTransfinite
 public import Iris.Instances.Lib.InvariantsTransfinite
+public import Iris.Instances.Lib.NaInvariantsTransfinite
 public import Iris.Instances.Lib.GhostMap
 public import Iris.Instances.Lib.GhostVar
 public import Iris.Instances.Lib.Invariants
