@@ -15,7 +15,8 @@ public import Iris.Std.HeapInstances
 public import Iris.Instances.IProp
 
 @[expose] public noncomputable section
-local stepindex Nat
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 /-! ## World satisfaction
 This file defines the world satisfaction (wsat) predicate for Iris.
