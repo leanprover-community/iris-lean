@@ -67,7 +67,41 @@ theorem laterN_bigLater (n : Nat) {P : PROP} : ▷^[n] P ⊢ ⧍ P :=
 instance bigLater_ne : OFE.NonExpansive (bigLater (PROP := PROP)) where
   ne _ _ _ h := exists_ne fun n => (laterN_ne n).ne h
 
+theorem bigLaterN_zero {P : PROP} : bigLaterN 0 P = P := rfl
+
+theorem bigLaterN_succ {n : Nat} {P : PROP} : bigLaterN (n + 1) P = iprop(⧍ bigLaterN n P) := rfl
+
+theorem bigLaterN_mono (n : Nat) {P Q : PROP} (h : P ⊢ Q) : bigLaterN n P ⊢ bigLaterN n Q := by
+  induction n with
+  | zero => exact h
+  | succ n ih => exact bigLater_mono ih
+
+/-- The big later distributes over separating conjunction (the binary case of Rocq's
+`list_big_later`). -/
+theorem bigLater_sep {P Q : PROP} : ⧍ P ∗ ⧍ Q ⊢ ⧍ (P ∗ Q) :=
+  sep_exists_right.mp.trans <| exists_elim fun n1 => sep_exists_left.mp.trans <| exists_elim fun n2 =>
+    (sep_mono (laterN_le (Nat.le_add_right n1 n2)) (laterN_le (Nat.le_add_left n2 n1))).trans <|
+      (laterN_sep_2 _).trans (laterN_bigLater _)
+
 end BigLater
+
+section BigLaterPlain
+
+variable [Sbi PROP]
+
+/-- Rocq: `plain_big_later`. -/
+@[rocq_alias plain_big_later]
+instance bigLater_plain (P : PROP) [Plain P] : Plain iprop(⧍ P) :=
+  inferInstanceAs (Plain iprop(∃ n : Nat, ▷^[n] P))
+
+/-- Rocq: `plain_big_laterN`. -/
+@[rocq_alias plain_big_laterN]
+instance bigLaterN_plain (n : Nat) (P : PROP) [Plain P] : Plain (bigLaterN n P) := by
+  induction n with
+  | zero => exact inferInstanceAs (Plain P)
+  | succ n ih => exact inferInstanceAs (Plain iprop(⧍ bigLaterN n P))
+
+end BigLaterPlain
 
 /-! ## Satisfiability -/
 

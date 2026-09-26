@@ -6,6 +6,7 @@ Authors: Iris-Lean Contributors
 module
 
 public import Iris.BI.Updates
+public import Iris.BI.Transfinite
 public import Iris.ProofMode
 
 /-! # Logical steps (Transfinite Iris)
@@ -472,5 +473,59 @@ theorem lstep_squash : gstep ∅ E1 E2 iprop(▷ P) ⊢ gstep ∅ E1 E2 P :=
 @[rocq_alias lstep_intro]
 theorem lstep_intro : (|={E1,E2}=> P) ⊢ gstep ∅ E1 E2 P :=
   lstepN_intro'.trans (lstepN_lstep 0)
+
+/-! ## Plain propositions under logical steps -/
+
+/-- Rocq: `big_later_elim`. -/
+@[rocq_alias big_later_elim]
+instance elimModal_bigLater p io (P Q : PROP) :
+    ElimModal True p io false iprop(⧍ P) P iprop(⧍ Q) Q where
+  elim_modal _ := (sep_mono_left intuitionisticallyIf_elim).trans <|
+    sep_exists_right.mp.trans <| exists_mono fun n =>
+      (sep_mono_right (laterN_intro n)).trans <| (laterN_sep_2 n).trans (laterN_mono n wand_elim_right)
+
+
+end Iris.BI
+
+namespace Iris.BI
+open Iris.Std Iris.ProofMode BIFUpdate LawfulSet
+
+section Plainly
+
+variable [Sbi PROP] [BIFUpdate PROP] [BIFUpdateSbi PROP] [BIAffine PROP] {E E1 E2 : CoPset} {P : PROP}
+
+/-- Rocq: `eventuallyN_plain`. -/
+@[rocq_alias eventuallyN_plain]
+theorem eventuallyN_plain [Plain P] (n : Nat) : eventuallyN n E P ⊢ |={E}=> ▷^[n + 1] P := by
+  induction n with
+  | zero => exact fupd_mono later_intro
+  | succ n ih => calc
+      eventuallyN (n + 1) E P ⊢ |={E}=> ▷ |={E}=> ▷^[n + 1] P :=
+        fupd_mono (later_mono ((fupd_mono ih).trans fupd_trans))
+      _ ⊢ |={E}=> |={E}=> ▷ ◇ ▷^[n + 1] P := fupd_mono fupd_plain_later
+      _ ⊢ |={E}=> ▷^[n + 2] P := fupd_trans.trans (fupd_mono (later_mono except0_later))
+
+/-- Rocq: `eventually_plain`. -/
+@[rocq_alias eventually_plain]
+theorem eventually_plain [Plain P] : eventually E P ⊢ |={E}=> ⧍ P :=
+  (fupd_mono (exists_elim fun n =>
+    (eventuallyN_plain n).trans (fupd_mono (laterN_bigLater (n + 1))))).trans fupd_trans
+
+/-- Rocq: `lstep_fupd_plain` (generalized to arbitrary masks). -/
+@[rocq_alias lstep_fupd_plain]
+theorem lstep_fupd_plain [Plain P] : gstep ∅ E1 E2 P ⊢ |={E1}=> ⧍ P := by
+  refine .trans ?_ (fupd_plain_mask (E' := ∅))
+  refine .trans (fupd_mono ?_) fupd_trans
+  exact (eventually_mono fupd_plain_mask).trans (eventually_fupd_right.trans eventually_plain)
+
+/-- Rocq: `lstep_fupdN_plain` (generalized to arbitrary masks). -/
+@[rocq_alias lstep_fupdN_plain]
+theorem lstep_fupdN_plain [Plain P] (n : Nat) :
+    Nat.repeat (gstep ∅ E1 E1) n P ⊢ |={E1}=> bigLaterN n P := by
+  induction n with
+  | zero => exact fupd_intro
+  | succ n ih => exact (gstep_mono ih).trans (gstep_fupd_right.trans lstep_fupd_plain)
+
+end Plainly
 
 end Iris.BI

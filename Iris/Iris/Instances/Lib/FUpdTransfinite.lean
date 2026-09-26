@@ -9,6 +9,7 @@ public import Iris.Instances.Lib.WSat
 public import Iris.Instances.UPred.Transfinite
 public import Iris.BI.Transfinite
 public import Iris.ProofMode
+public import Iris.BI.Lib.LogicalStep
 
 /-! # Fancy updates over arbitrary step-indices (Transfinite Iris)
 
@@ -113,6 +114,59 @@ scoped instance : BIUpdateFUpdate (IProp GF) where
     imodintro
     iassumption
 
+/-- Rocq: `uPred_bi_fupd_plainly`. -/
+scoped instance uPred_bi_fupd_sbi : BIFUpdateSbi (IProp GF) where
+  fupd_keep_siPure E' Pi R := by
+    simp only [FUpd.fupd, uPred_fupd]
+    iintro H ⟨Hw, HE⟩
+    ihave #HP : ◇ <si_pure> Pi $$ [H Hw HE]
+    · icases H with ⟨H, -⟩
+      iapply bupd_elim
+      imod H $$ [$Hw $HE] with H
+      imod H with ⟨-, -, HP⟩
+      imodintro
+      imodintro
+      iexact HP
+    imod HP
+    icases H with ⟨-, H⟩
+    iapply H $$ HP [$Hw $HE]
+  fupd_siPure_later E Pi := by
+    simp only [FUpd.fupd, uPred_fupd]
+    iintro H ⟨Hw, HE⟩
+    ihave #HP : ▷ ◇ <si_pure> Pi $$ [H Hw HE]
+    · inext
+      iapply bupd_elim
+      imod H $$ [$Hw $HE] with H
+      imod H with ⟨-, -, HP⟩
+      imodintro
+      imodintro
+      iexact HP
+    imodintro
+    imodintro
+    iframe
+    iexact HP
+  fupd_siPure_sForall_2 E Ψi := by
+    simp only [FUpd.fupd, uPred_fupd]
+    iintro H ⟨Hw, HE⟩
+    ihave #HP : ◇ <si_pure> (sForall Ψi) $$ [H Hw HE]
+    · iapply except0_mono (siPure_sForall_mpr (Ψi := Ψi))
+      iapply except0_forall.2
+      iintro %q
+      iapply except0_mono pure_imp_forall.mpr
+      iapply except0_forall.2
+      iintro %hq
+      iapply bupd_elim
+      imod H $$ %q %hq [$Hw $HE] with H
+      imod H with ⟨-, -, HP⟩
+      imodintro
+      imodintro
+      iexact HP
+    imod HP
+    imodintro
+    imodintro
+    iframe
+    iexact HP
+
 theorem fupd_eq (E1 E2 : CoPset) (P : IProp GF) :
     iprop(|={E1,E2}=> P) = iprop(wsat ∗ ownE E1 ==∗ ◇ (wsat ∗ ownE E2 ∗ P)) := rfl
 
@@ -172,5 +226,38 @@ theorem satisfiableAt_exists [SIdxLarge.{v} SI] {E : CoPset} {X : Type v} {P : X
 theorem satisfiableAt_pure {E : CoPset} {φ : Prop} (h : satisfiableAt (GF := GF) E iprop(⌜φ⌝)) :
     φ :=
   UPred.pure_soundness (satisfiableAt_elim h)
+
+end Iris.Transfinite
+
+namespace Iris.Transfinite
+
+open Iris OFE COFE BI Std.LawfulSet
+
+variable {GF : BundledGFunctors}
+
+/-- Rocq: `fupd_plain_soundness`. -/
+@[rocq_alias fupd_plain_soundness]
+theorem fupd_plain_soundness [WsatGpreS GF] (E1 E2 : CoPset) {P : IProp GF} [Plain P]
+    (h : ∀ (_ : WsatGS GF), ⊢ |={E1,E2}=> P) : ⊢ P := by
+  refine true_emp.mpr.trans (UPred.later_soundness (true_emp.mp.trans ?_))
+  iapply bupd_elim
+  imod wsat_alloc (GF := GF) with ⟨%W, Hw, HE⟩
+  have hW : ⊢ iprop(wsat (W := W) ∗ ownE (W := W) E1 ==∗
+      ◇ (wsat (W := W) ∗ ownE (W := W) E2 ∗ P)) := h W
+  rw [← subset_union_diff (s₁ := E1) (s₂ := ⊤) (fun _ _ => CoPset.mem_full)]
+  icases ownE_op (W := W) disjoint_diff_right $$ HE with ⟨HE, -⟩
+  imod hW $$ [$Hw $HE] with H
+  imodintro
+  imod H with ⟨-, -, HP⟩
+  iintro -
+  inext
+  iexact HP
+
+/-- Soundness of iterated logical steps for pure propositions (Rocq: `lstep_fupd_soundness`). -/
+@[rocq_alias lstep_fupd_soundness]
+theorem lstep_fupd_soundness [SIdxTransfinite SI] [WsatGpreS GF] (φ : Prop) (n : Nat)
+    (h : ∀ (_ : WsatGS GF), ⊢ Nat.repeat (gstep ∅ ⊤ ⊤) n iprop(⌜φ⌝ : IProp GF)) : φ :=
+  UPred.pure_soundness (M := IResUR GF) <| UPred.big_laterN_soundness n _ <|
+    true_emp.mp.trans <| fupd_plain_soundness ⊤ ⊤ fun W => (h W).trans (lstep_fupdN_plain n)
 
 end Iris.Transfinite
