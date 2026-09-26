@@ -108,6 +108,7 @@ noncomputable abbrev TG (α : SI) (X : Obj (SI := SI)) : Obj (SI := SI) :=
 
 theorem TG_car (α : SI) (X : Obj (SI := SI)) : (TG F α X).car = TruncO α (F X.car X.car) := rfl
 
+omit [∀ α [COFE α], IsCOFE (F α α)] inh in
 theorem map_congr {A B C D : Type u} [COFE A] [COFE B] [COFE C] [COFE D]
     {f f' : C -n> A} {g g' : B -n> D} (h1 : ∀ x, f x = f' x) (h2 : ∀ x, g x = g' x) (y : F A B) :
     map (F := F) f g y = map (F := F) f' g' y := by
@@ -174,7 +175,7 @@ structure FamGood {γ : SI} (f : Fam F γ) : Prop where
 
 /-- The family below `γ` obtained from the stages below `γ`. Maps between the earlier stages are
 obtained by casting along the agreement of the copies with the stages, with a junk default. -/
-noncomputable def famOf {γ : SI} (IH : ∀ β, β < γ → Stage F β) : Fam F γ where
+@[reducible] noncomputable def famOf {γ : SI} (IH : ∀ β, β < γ → Stage F β) : Fam F γ where
   X β h := (IH β h).X
   e β δ hβ hδ hlt :=
     if hc : (IH δ hδ).prev β hlt = (IH β hβ).X then
@@ -195,7 +196,7 @@ noncomputable def famOf {γ : SI} (IH : ∀ β, β < γ → Stage F β) : Fam F 
 
 variable (F) in
 /-- The stage at `0`: `X 0 = [F 1 1]_{0}` (Rocq: `approx_base`). -/
-noncomputable def zeroStage : Stage F (0 : SI) :=
+@[reducible] noncomputable def zeroStage : Stage F (0 : SI) :=
   let U := unitObj (SI := SI)
   let X := TG F 0 U
   let ϕ0' : U.car -n> X.car := constHom (truncate 0 inh.default)
@@ -214,7 +215,7 @@ theorem lt_of_lt_succ_ne {β m : SI} (h : β < σ m) (hne : β ≠ m) : β < m :
 
 variable (F) in
 /-- The stage at `m + 1`: `X (m + 1) = [F (X m) (X m)]_{m + 1}` (Rocq: `succ_extension`). -/
-noncomputable def succStage (m : SI) (f : Fam F (σ m)) : Stage F (σ m) :=
+@[reducible] noncomputable def succStage (m : SI) (f : Fam F (σ m)) : Stage F (σ m) :=
   let hm : m < σ m := SIdx.lt_succ_self m
   let Y := f.X m hm
   { X := TG F (σ m) Y
@@ -665,7 +666,7 @@ noncomputable abbrev ψS :
 variable (F) in
 /-- The stage at the limit index `γ`: `X γ = [F L L]_{γ}` for the inverse limit `L`
 (Rocq: `limit_extension`). -/
-noncomputable def limitStage : Stage F γ where
+@[reducible] noncomputable def limitStage : Stage F γ where
   X := TG F γ (LimObj hlim hf)
   prev := f.X
   e := eS hlim hf
@@ -726,6 +727,7 @@ theorem ϕL_ψL (y) (k : SI) (hk : k < γ) : ϕL hlim hf (ψL' hlim hf y) ≡{k}
   · exact eL_pL hlim hf k hk w
   · exact eL_pL hlim hf k hk w
 
+omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
 /-- Rocq: `Fep_p_limit` (for the inverse limit). -/
 theorem fld_truncMap_eL (γ0 : SI) (h0 : γ0 < γ) (hs0 : σ γ0 < γ) (y) :
     f.fld γ0 h0 hs0 (truncMap γ (σ γ0) (map (F := F) (eL' hlim hf γ0 h0) (pL' hlim hf γ0 h0)) y) =
@@ -805,7 +807,7 @@ variable [∀ α [COFE α], BcomplUniqueLim (F α α)]
 variable (F) in
 /-- A junk stage, used at limit indices whose earlier stages do not satisfy the laws (which never
 happens). -/
-noncomputable def junkStage (γ : SI) (IH : ∀ β, β < γ → Stage F β) : Stage F γ where
+@[reducible] noncomputable def junkStage (γ : SI) (IH : ∀ β, β < γ → Stage F β) : Stage F γ where
   X := unitObj
   prev β h := (IH β h).X
   e _ _ := constHom default
@@ -873,10 +875,10 @@ theorem prev_eq (γ β : SI) (h : β < γ) : (stage F γ).prev β h = X F β := 
   rw [stage_eq (F := F) γ]
   rcases SIdx.case γ with h0 | ⟨m, rfl⟩ | hlim
   · subst h0; exact absurd h (SIdx.not_lt_zero β)
-  · rw [step_succ]; rfl
+  · rw [step_succ]
   · by_cases hf : FamGood (famOf (fun β (_ : β < γ) => stage F β))
-    · rw [step_limit hlim _ hf]; rfl
-    · rw [step_limit_junk hlim _ hf]; rfl
+    · rw [step_limit hlim _ hf]
+    · rw [step_limit_junk hlim _ hf]
 
 theorem stage_succ (m : SI) :
     stage F (σ m) = succStage F m (famOf (fun β (_ : β < σ m) => stage F β)) := by
@@ -885,7 +887,7 @@ theorem stage_succ (m : SI) :
 /-- `X (m + 1) = [F (X m) (X m)]_{m + 1}` (Rocq: `approx_eq`). -/
 theorem X_succ (m : SI) : X F (σ m) = TG F (σ m) (X F m) := by
   show (stage F (σ m)).X = _
-  rw [stage_succ]; rfl
+  rw [stage_succ]
 
 variable (F) in
 /-- The embeddings between approximations. -/
@@ -938,5 +940,180 @@ theorem famBelow_unf (γ β : SI) hβ hs :
 theorem famBelow_fld (γ β : SI) hβ hs :
     (famBelow (F := F) γ).fld β hβ hs = fold F β :=
   dite_eq_left (X_succ β)
+
+/-! ## Characterization of the approximations -/
+
+section Transport
+
+variable {γ : SI} {T S : Stage F γ} (hTS : T = S)
+include hTS
+
+theorem transport_e (β : SI) (h : β < γ) (hT : T.prev β h = X F β) (hS : S.prev β h = X F β)
+    (x : (X F β).car) :
+    T.e β h (castObj hT.symm x) = castObj (congrArg Stage.X hTS).symm (S.e β h (castObj hS.symm x)) := by
+  subst hTS; rfl
+
+theorem transport_p (β : SI) (h : β < γ) (hT : T.prev β h = X F β) (hS : S.prev β h = X F β)
+    (y : T.X.car) :
+    castObj hT (T.p β h y) = castObj hS (S.p β h (castObj (congrArg Stage.X hTS) y)) := by
+  subst hTS; rfl
+
+omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+theorem transport_ϕ (y : T.X.car) :
+    T.ϕ y = castObj (congrArg (fun S : Stage F γ => TG F (σ γ) S.X) hTS).symm
+      (S.ϕ (castObj (congrArg Stage.X hTS) y)) := by
+  subst hTS; rfl
+
+omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+theorem transport_ψ (z : (TG F (σ γ) T.X).car) :
+    T.ψ z = castObj (congrArg Stage.X hTS).symm
+      (S.ψ (castObj (congrArg (fun S : Stage F γ => TG F (σ γ) S.X) hTS) z)) := by
+  subst hTS; rfl
+
+end Transport
+
+/-! ### Successor indices -/
+
+omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+/-- Transport along an equality of COFEs commutes with the functor. -/
+theorem cast_truncMap_map {A B C : Obj (SI := SI)} (hAB : A = B) (α α' : SI)
+    (h' : TG F α A = TG F α B) (g : A.car -n> C.car) (h : C.car -n> A.car)
+    (w : TruncO α' (F C.car C.car)) :
+    castObj h' (truncMap α' α (map (F := F) g h) w) =
+      truncMap α' α (map (F := F) (g.comp (castObj hAB.symm)) ((castObj hAB).comp h)) w := by
+  subst hAB; rfl
+
+omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+/-- Transport along an equality of COFEs commutes with the functor. -/
+theorem truncMap_map_cast {A B C : Obj (SI := SI)} (hAB : A = B) (α α' : SI)
+    (h' : TG F α' B = TG F α' A) (g : C.car -n> A.car) (h : A.car -n> C.car)
+    (w : TruncO α' (F B.car B.car)) :
+    truncMap α' α (map (F := F) g h) (castObj h' w) =
+      truncMap α' α (map (F := F) ((castObj hAB).comp g) (h.comp (castObj hAB.symm))) w := by
+  subst hAB; rfl
+
+section Succ
+
+variable (m : SI)
+
+omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+theorem succStage_e_self (f : Fam F (σ m)) (h : m < σ m) (x : (f.X m h).car) :
+    (succStage F m f).e m h x = f.ϕ m h x := by
+  unfold succStage; dsimp only; rw [dite_eq_left rfl]; rfl
+
+omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+theorem succStage_e_lt (f : Fam F (σ m)) (β : SI) (h : β < σ m) (hβ : β < m) (x) :
+    (succStage F m f).e β h x = f.ϕ m (SIdx.lt_succ_self m) (f.e β m h _ hβ x) := by
+  unfold succStage; dsimp only
+  rw [dite_eq_right (fun (hβm : β = m) => SIdx.lt_irrefl m (hβm ▸ hβ))]; rfl
+
+omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+theorem succStage_p_self (f : Fam F (σ m)) (h : m < σ m) (y) :
+    (succStage F m f).p m h y = f.ψ m h y := by
+  unfold succStage; dsimp only; rw [dite_eq_left rfl]; rfl
+
+omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+theorem succStage_p_lt (f : Fam F (σ m)) (β : SI) (h : β < σ m) (hβ : β < m) (y) :
+    (succStage F m f).p β h y = f.p β m h _ hβ (f.ψ m (SIdx.lt_succ_self m) y) := by
+  unfold succStage; dsimp only
+  rw [dite_eq_right (fun (hβm : β = m) => SIdx.lt_irrefl m (hβm ▸ hβ))]; rfl
+
+theorem e_succ_self (h : m < σ m) (x) : e F m (σ m) h x = fold F m (ϕ F m x) := by
+  show (stage F (σ m)).e m h (castObj (prev_eq (σ m) m h).symm x) = _
+  rw [transport_e (stage_succ m) m h (prev_eq (σ m) m h) rfl x, succStage_e_self]
+  rfl
+
+theorem e_succ_lt (β : SI) (hβ : β < m) (h : β < σ m) (x) :
+    e F β (σ m) h x = e F m (σ m) (SIdx.lt_succ_self m) (e F β m hβ x) := by
+  show (stage F (σ m)).e β h (castObj (prev_eq (σ m) β h).symm x) = _
+  rw [transport_e (stage_succ m) β h (prev_eq (σ m) β h) rfl x, e_succ_self,
+    succStage_e_lt m _ β h hβ, famBelow_e]
+  rfl
+
+theorem p_succ_self (h : m < σ m) (y) : p F m (σ m) h y = ψ F m (unfold F m y) := by
+  show castObj (prev_eq (σ m) m h) ((stage F (σ m)).p m h y) = _
+  rw [transport_p (stage_succ m) m h (prev_eq (σ m) m h) rfl y, succStage_p_self]
+  rfl
+
+theorem p_succ_lt (β : SI) (hβ : β < m) (h : β < σ m) (y) :
+    p F β (σ m) h y = p F β m hβ (p F m (σ m) (SIdx.lt_succ_self m) y) := by
+  show castObj (prev_eq (σ m) β h) ((stage F (σ m)).p β h y) = _
+  rw [transport_p (stage_succ m) β h (prev_eq (σ m) β h) rfl y, p_succ_self,
+    succStage_p_lt m _ β h hβ, famBelow_p]
+  rfl
+
+theorem ϕ_succ (y) :
+    ϕ F (σ m) y = truncMap (σ m) (σ (σ m))
+      (map (F := F) ((ψ F m).comp (unfold F m)) ((fold F m).comp (ϕ F m))) (unfold F m y) := by
+  show (stage F (σ m)).ϕ y = _
+  rw [transport_ϕ (stage_succ m) y]
+  exact cast_truncMap_map (congrArg Stage.X (stage_succ m)).symm (σ (σ m)) (σ m) _ _ _ _
+
+theorem ψ_succ (z) :
+    ψ F (σ m) z = fold F m (truncMap (σ (σ m)) (σ m)
+      (map (F := F) ((fold F m).comp (ϕ F m)) ((ψ F m).comp (unfold F m))) z) := by
+  show (stage F (σ m)).ψ z = _
+  rw [transport_ψ (stage_succ m) z]
+  congr 1
+  exact truncMap_map_cast (congrArg Stage.X (stage_succ m)).symm (σ m) (σ (σ m)) _ _ _ _
+
+end Succ
+
+/-! ### Limit indices -/
+
+section Limit
+
+variable {γ : SI} (hlim : SIdx.Limit γ) (hg : FamGood (famBelow (F := F) γ))
+
+theorem stage_limit : stage F γ = limitStage F hlim hg := by
+  rw [stage_eq (F := F) γ, step_limit hlim _ hg]
+
+/-- The approximation at a limit index is `[F L L]_{γ}` for the inverse limit `L`. -/
+theorem X_limit : X F γ = TG F γ (LimObj hlim hg) := congrArg Stage.X (stage_limit hlim hg)
+
+theorem e_limit (β : SI) (h : β < γ) (x) :
+    e F β γ h x = castObj (X_limit hlim hg).symm (eS hlim hg β h x) := by
+  show (stage F γ).e β h (castObj (prev_eq γ β h).symm x) = _
+  rw [transport_e (stage_limit hlim hg) β h (prev_eq γ β h) rfl x]
+  rfl
+
+theorem p_limit (β : SI) (h : β < γ) (y) :
+    p F β γ h y = pS hlim hg β h (castObj (X_limit hlim hg) y) := by
+  show castObj (prev_eq γ β h) ((stage F γ).p β h y) = _
+  rw [transport_p (stage_limit hlim hg) β h (prev_eq γ β h) rfl y]
+  rfl
+
+theorem ϕ_limit (y) :
+    ϕ F γ y = castObj (congrArg (TG F (σ γ)) (X_limit hlim hg)).symm
+      (ϕS hlim hg (castObj (X_limit hlim hg) y)) := by
+  show (stage F γ).ϕ y = _
+  rw [transport_ϕ (stage_limit hlim hg) y]
+
+theorem ψ_limit (z) :
+    ψ F γ z = castObj (X_limit hlim hg).symm
+      (ψS hlim hg (castObj (congrArg (TG F (σ γ)) (X_limit hlim hg)) z)) := by
+  show (stage F γ).ψ z = _
+  rw [transport_ψ (stage_limit hlim hg) z]
+
+end Limit
+
+/-! ### The zero index -/
+
+theorem stage_zero : stage F 0 = zeroStage F := by
+  rw [stage_eq (F := F) 0, step_zero]
+
+theorem X_zero : X F 0 = TG F 0 unitObj := congrArg Stage.X (stage_zero (F := F))
+
+theorem ϕ_zero (y) :
+    ϕ F 0 y = castObj (congrArg (TG F (σ 0)) (X_zero (F := F))).symm
+      ((zeroStage F).ϕ (castObj (X_zero (F := F)) y)) := by
+  show (stage F 0).ϕ y = _
+  rw [transport_ϕ (stage_zero (F := F)) y]
+
+theorem ψ_zero (z) :
+    ψ F 0 z = castObj (X_zero (F := F)).symm
+      ((zeroStage F).ψ (castObj (congrArg (TG F (σ 0)) (X_zero (F := F))) z)) := by
+  show (stage F 0).ψ z = _
+  rw [transport_ψ (stage_zero (F := F)) z]
 
 end Iris.COFE.OFunctor.Transfinite
