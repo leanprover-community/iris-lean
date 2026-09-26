@@ -31,7 +31,7 @@ is listed declaration by declaration in [Part II](#part-ii-transfinite-specific-
 | Rocq file | Lines | Lean | Status | Notes |
 |---|---:|---|---|---|
 | `base.v` | 6 | `Std/` | ➖ | stdpp re-exports |
-| `stepindex.v` | 832 | `Algebra/StepIndex.lean`, `Algebra/StepIndexFinite.lean`, `Algebra/StepIndexTransfinite.lean` | 🟡 | `pairI` (ω²) missing; see [Part II](#algebrastepindexv) |
+| `stepindex.v` | 832 | `Algebra/StepIndex.lean`, `Algebra/StepIndexFinite.lean`, `Algebra/StepIndexTransfinite.lean`, `Algebra/StepIndexPair.lean` | ✅ | `index_cumulative_rec` (solver only) missing; see [Part II](#algebrastepindexv) |
 | `ofe.v` | 2443 | `Algebra/OFE.lean` | 🟡 | generic; `BcomplUnique`, `Truncatable`, `ProtoTruncatable` (needed by the solver) missing |
 | `cmra.v` | 1695 | `Algebra/CMRA.lean` | 🟡 | generic; ordinal CMRA (`ordA`, natural sum) missing (time credits) |
 | `cofe_solver.v` | 3090 | `Algebra/COFESolver.lean` | ⬜ | Lean has the finite (ω) America–Rutten solver only |
@@ -180,7 +180,8 @@ implementation (➖, replaced by the Lean IPM).
 | `can_commute_finite_exists` | `SIdx.commute_finite_exists` | ✅ |
 | `can_commute_finite_bounded_exists` | `SIdx.commute_finite_bounded_exists` | ✅ |
 | `large_index_finite_existential`, `finite_bounded_from_finite` | — | ➖ (the targets are theorems) |
-| `pair_zero`, `pair_succ`, `pair_lt`, `pair_lt_wf`, `pair_index_mixin`, `pairI` (ω²), `TransfiniteIndex pairI` | — | ⬜ |
+| `pair_zero`, `pair_succ`, `pair_lt`, `pair_lt_wf`, `pair_index_mixin`, `pairI` (ω²) | `SIdxPair`, `SIdxPair.instSIdx`, `SIdxPair.lt_wf` (`Algebra/StepIndexPair.lean`) | ✅ |
+| `pair_rc_right`, `TransfiniteIndex pairI` | `SIdxPair.le_right_iff`, `SIdxPair.instSIdxTransfinite` | ✅ |
 | `classical_dn`, `classical_forall_exists*`, `classical_impl`, `find_least` | Lean core / Mathlib | ➖ |
 
 ### `algebra/ordinals/ord_stepindex.v`

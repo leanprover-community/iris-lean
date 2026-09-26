@@ -51,3 +51,17 @@ example {M : Type _} [UCMRA M] (P Q : UPred M) : P ∗ Q ⊢ Q ∗ P := by
   · iexact HP
 
 end IrisTest.Transfinite
+
+namespace IrisTest.TransfiniteOmega2
+open Iris BI
+
+/-- `ω²` as a type of step-indices. -/
+abbrev Omega2 := SIdxPair Nat Nat
+
+local stepindex Omega2
+
+/- The big later is sound for `UPred` over `ω²`. -/
+example {M : Type _} [UCMRA M] (φ : Prop) (h : iprop((True : UPred M) ⊢ ⧍ ⌜φ⌝)) : φ :=
+  UPred.transfinite_soundness φ h
+
+end IrisTest.TransfiniteOmega2
