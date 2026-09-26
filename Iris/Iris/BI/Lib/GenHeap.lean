@@ -11,7 +11,8 @@ public import Iris.Instances.IProp
 public import Iris.Std.HeapInstances
 public import Iris.Std.Namespaces
 
-@[expose] public section
+@[expose] public noncomputable section
+local stepindex Nat
 
 namespace Iris
 

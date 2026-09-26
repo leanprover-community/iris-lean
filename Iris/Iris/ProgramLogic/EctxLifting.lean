@@ -11,6 +11,7 @@ public import Iris.ProgramLogic.EctxiLanguage
 #rocq_ignore ectx_lifting.reducible_not_val_inhabitant "Rocq-specific `auto` resolve hint; not needed."
 
 namespace Iris.ProgramLogic
+local stepindex Nat
 
 open Language.Notation EctxLanguage EctxLanguage.Notation
 

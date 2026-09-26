@@ -15,7 +15,7 @@ namespace Iris.ProgramLogic
 
 open BI ExclAuth Language Language.Notation Std.LawfulSet Iris.ProgramLogic.PrimStep
 
-@[expose] public section
+@[expose] public noncomputable section
 local stepindex Nat
 
 abbrev ownPRF (State : Type) : COFE.OFunctorPre := constOF (ExclAuthR (A := stateO State))

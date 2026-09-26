@@ -14,7 +14,7 @@ public import Iris.Instances.Lib.FUpd
 public import Iris.Std.CoPset
 import Iris.Instances.Lib.WSat
 
-@[expose] public section
+@[expose] public noncomputable section
 local stepindex Nat
 
 /-! ## Invariants -/

@@ -11,7 +11,7 @@ public import Iris.Instances.IProp
 public import Iris.Algebra
 public import Iris.Std.HeapInstances
 
-@[expose] public section
+@[expose] public noncomputable section
 local stepindex Nat
 
 namespace Iris.Examples

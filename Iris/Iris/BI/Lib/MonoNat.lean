@@ -12,7 +12,7 @@ public import Iris.BI.Lib.Fractional
 public import Iris.ProofMode
 public import Iris.Instances.IProp
 
-@[expose] public section
+@[expose] public noncomputable section
 local stepindex Nat
 
 namespace Iris

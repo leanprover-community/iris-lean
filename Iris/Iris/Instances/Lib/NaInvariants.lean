@@ -13,7 +13,7 @@ public import Iris.Algebra.LeibnizSet
 public import Iris.Std.Namespaces
 public import Iris.Std.CoPset
 
-@[expose] public section
+@[expose] public noncomputable section
 local stepindex Nat
 
 namespace Iris

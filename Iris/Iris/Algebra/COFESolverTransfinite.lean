@@ -43,9 +43,9 @@ As in Rocq, bounded limits in the images of `F` must be unique (`BcomplUniqueLim
 namespace Iris.COFE.OFunctor.Transfinite
 open OFE
 
-universe u
+universe u v
 
-variable {SI : Type u} [instSI : SIdx SI]
+variable {SI : Type v} [instSI : SIdx SI]
 local stepindex SI
 
 local notation "σ" => SIdx.succ
@@ -56,30 +56,30 @@ attribute [local instance low] Classical.propDecidable
 
 /-- An inhabited COFE, bundled. -/
 structure Obj where
-  car : Type u
+  car : Type (max u v)
   [cofe : COFE (SI := SI) car]
   [inh : Inhabited car]
 
 attribute [local instance] Obj.cofe Obj.inh
 
 /-- Casting along an equality of bundled COFEs. -/
-def castObj {A B : Obj (SI := SI)} (h : A = B) : A.car -n> B.car := h ▸ Hom.id
+def castObj {A B : Obj.{u} (SI := SI)} (h : A = B) : A.car -n> B.car := h ▸ Hom.id
 
-theorem castObj_rfl {A : Obj (SI := SI)} (x : A.car) : castObj (rfl : A = A) x = x := rfl
+theorem castObj_rfl {A : Obj.{u} (SI := SI)} (x : A.car) : castObj (rfl : A = A) x = x := rfl
 
-theorem castObj_castObj {A B C : Obj (SI := SI)} (h1 : A = B) (h2 : B = C) (x : A.car) :
+theorem castObj_castObj {A B C : Obj.{u} (SI := SI)} (h1 : A = B) (h2 : B = C) (x : A.car) :
     castObj h2 (castObj h1 x) = castObj (h1.trans h2) x := by
   subst h1 h2; rfl
 
-theorem castObj_symm_castObj {A B : Obj (SI := SI)} (h : A = B) (x : A.car) :
+theorem castObj_symm_castObj {A B : Obj.{u} (SI := SI)} (h : A = B) (x : A.car) :
     castObj h.symm (castObj h x) = x := by
   subst h; rfl
 
-theorem castObj_castObj_symm {A B : Obj (SI := SI)} (h : A = B) (x : B.car) :
+theorem castObj_castObj_symm {A B : Obj.{u} (SI := SI)} (h : A = B) (x : B.car) :
     castObj h (castObj h.symm x) = x := by
   subst h; rfl
 
-theorem castObj_heq {A B : Obj (SI := SI)} (h : A = B) (x : A.car) : HEq (castObj h x) x := by
+theorem castObj_heq {A B : Obj.{u} (SI := SI)} (h : A = B) (x : A.car) : HEq (castObj h x) x := by
   subst h; rfl
 
 /-- A constant non-expansive map. -/
@@ -90,26 +90,26 @@ theorem constHom_apply {A B : Type _} [OFE A] [OFE B] (y : B) (x : A) :
 
 /-! ## The functor -/
 
-variable {F : ∀ α β [COFE α] [COFE β], Type u} [OFunctorContractive F]
+variable {F : ∀ α β [COFE α] [COFE β], Type (max u v)} [OFunctorContractive F]
 variable [∀ α [COFE α], IsCOFE (F α α)]
 variable [inh : Inhabited (F (ULift Unit) (ULift Unit))]
 
 /-- The unit COFE, bundled. -/
-def unitObj : Obj (SI := SI) := ⟨ULift Unit⟩
+def unitObj : Obj.{u} (SI := SI) := ⟨ULift Unit⟩
 
 /-- The functor is inhabited on every inhabited COFE. -/
-@[local instance] def Finh {A : Type u} [COFE A] [Inhabited A] : Inhabited (F A A) :=
+@[local instance] def Finh {A : Type (max u v)} [COFE A] [Inhabited A] : Inhabited (F A A) :=
   ⟨map (F := F) (constHom ⟨()⟩ : A -n> ULift Unit) (constHom default) inh.default⟩
 
 variable (F) in
 /-- The truncation `[F X X]_{α}` of the functor applied to `X` (Rocq: `[G X]_{α}`). -/
-noncomputable abbrev TG (α : SI) (X : Obj (SI := SI)) : Obj (SI := SI) :=
+noncomputable abbrev TG (α : SI) (X : Obj.{u} (SI := SI)) : Obj.{u} (SI := SI) :=
   ⟨TruncO α (F X.car X.car)⟩
 
-theorem TG_car (α : SI) (X : Obj (SI := SI)) : (TG F α X).car = TruncO α (F X.car X.car) := rfl
+theorem TG_car (α : SI) (X : Obj.{u} (SI := SI)) : (TG F α X).car = TruncO α (F X.car X.car) := rfl
 
 omit [∀ α [COFE α], IsCOFE (F α α)] inh in
-theorem map_congr {A B C D : Type u} [COFE A] [COFE B] [COFE C] [COFE D]
+theorem map_congr {A B C D : Type (max u v)} [COFE A] [COFE B] [COFE C] [COFE D]
     {f f' : C -n> A} {g g' : B -n> D} (h1 : ∀ x, f x = f' x) (h2 : ∀ x, g x = g' x) (y : F A B) :
     map (F := F) f g y = map (F := F) f' g' y := by
   rw [Hom.ext (funext h1), Hom.ext (funext h2)]
@@ -121,8 +121,8 @@ variable (F) in
 approximations, the embedding-projection pairs from the earlier approximations, and the bounded
 isomorphism between `X γ` and `[F (X γ) (X γ)]_{γ + 1}`. -/
 structure Stage (γ : SI) where
-  X : Obj (SI := SI)
-  prev : ∀ β, β < γ → Obj (SI := SI)
+  X : Obj.{u} (SI := SI)
+  prev : ∀ β, β < γ → Obj.{u} (SI := SI)
   e : ∀ β (h : β < γ), (prev β h).car -n> X.car
   p : ∀ β (h : β < γ), X.car -n> (prev β h).car
   ϕ : X.car -n> (TG F (σ γ) X).car
@@ -133,7 +133,7 @@ variable (F) in
 the predicate `· < γ`, without its laws). `unf` and `fld` are the identifications of
 `X (β + 1)` with `[F (X β) (X β)]_{β + 1}`. -/
 structure Fam (γ : SI) where
-  X : ∀ β, β < γ → Obj (SI := SI)
+  X : ∀ β, β < γ → Obj.{u} (SI := SI)
   e : ∀ β δ (hβ : β < γ) (hδ : δ < γ), β < δ → (X β hβ).car -n> (X δ hδ).car
   p : ∀ β δ (hβ : β < γ) (hδ : δ < γ), β < δ → (X δ hδ).car -n> (X β hβ).car
   ϕ : ∀ β (hβ : β < γ), (X β hβ).car -n> (TG F (σ β) (X β hβ)).car
@@ -197,7 +197,7 @@ obtained by casting along the agreement of the copies with the stages, with a ju
 variable (F) in
 /-- The stage at `0`: `X 0 = [F 1 1]_{0}` (Rocq: `approx_base`). -/
 @[reducible] noncomputable def zeroStage : Stage F (0 : SI) :=
-  let U := unitObj (SI := SI)
+  let U := unitObj.{u} (SI := SI)
   let X := TG F 0 U
   let ϕ0' : U.car -n> X.car := constHom (truncate 0 inh.default)
   let ψ0' : X.car -n> U.car := constHom ⟨()⟩
@@ -275,7 +275,7 @@ variable {γ : SI} (hlim : SIdx.Limit γ) (f : Fam F γ)
 variable (F) in
 /-- The components of the inverse limit: `[F (X β) (X β)]_{β + 1}`, i.e. `X (β + 1)`
 (Rocq: `FX`). -/
-noncomputable abbrev FX (β : SI) (hβ : β < γ) : Obj (SI := SI) := TG F (σ β) (f.X β hβ)
+noncomputable abbrev FX (β : SI) (hβ : β < γ) : Obj.{u} (SI := SI) := TG F (σ β) (f.X β hβ)
 
 /-- The maps between the components of the inverse limit (Rocq: `Fep`). -/
 noncomputable def Fep (β δ : SI) (hβ : β < γ) (hδ : δ < γ) (hlt : β < δ) :
@@ -559,7 +559,7 @@ limits of bounded chains of length `n < γ`; those are obtained by embedding the
       exact (eL hlim hf n h).ne.1 (IsCOFE.lbcompl_ne hn _ _ fun p hp => (pL f n h).ne.1 (hc p hp))
 
 /-- The inverse limit, bundled. -/
-noncomputable def LimObj : Obj (SI := SI) :=
+noncomputable def LimObj : Obj.{u} (SI := SI) :=
   letI := LimCar.instCOFE hlim hf
   letI : Inhabited (LimCar f) := ⟨eL hlim hf 0 hlim.limit_lt_0 default⟩
   ⟨LimCar f⟩
@@ -868,7 +868,7 @@ theorem stage_eq (γ : SI) : stage F γ = step F γ (fun β _ => stage F β) :=
 
 variable (F) in
 /-- The approximation at `γ`. -/
-noncomputable abbrev X (γ : SI) : Obj (SI := SI) := (stage F γ).X
+noncomputable abbrev X (γ : SI) : Obj.{u} (SI := SI) := (stage F γ).X
 
 /-- The copies of earlier approximations in a stage agree with the earlier stages. -/
 theorem prev_eq (γ β : SI) (h : β < γ) : (stage F γ).prev β h = X F β := by
@@ -976,7 +976,7 @@ end Transport
 
 omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
 /-- Transport along an equality of COFEs commutes with the functor. -/
-theorem cast_truncMap_map {A B C : Obj (SI := SI)} (hAB : A = B) (α α' : SI)
+theorem cast_truncMap_map {A B C : Obj.{u} (SI := SI)} (hAB : A = B) (α α' : SI)
     (h' : TG F α A = TG F α B) (g : A.car -n> C.car) (h : C.car -n> A.car)
     (w : TruncO α' (F C.car C.car)) :
     castObj h' (truncMap α' α (map (F := F) g h) w) =
@@ -985,7 +985,7 @@ theorem cast_truncMap_map {A B C : Obj (SI := SI)} (hAB : A = B) (α α' : SI)
 
 omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
 /-- Transport along an equality of COFEs commutes with the functor. -/
-theorem truncMap_map_cast {A B C : Obj (SI := SI)} (hAB : A = B) (α α' : SI)
+theorem truncMap_map_cast {A B C : Obj.{u} (SI := SI)} (hAB : A = B) (α α' : SI)
     (h' : TG F α' B = TG F α' A) (g : C.car -n> A.car) (h : A.car -n> C.car)
     (w : TruncO α' (F B.car B.car)) :
     truncMap α' α (map (F := F) g h) (castObj h' w) =
@@ -1174,7 +1174,7 @@ theorem Fep_p_limit (γ0 γ1 : SI) (hlim : SIdx.Limit γ1) (h0 : γ0 < δ) (hs0 
 
 end Good
 
-theorem truncated_of_eq {A B : Obj (SI := SI)} (h : A = B) {α : SI} [Truncated B.car α] :
+theorem truncated_of_eq {A B : Obj.{u} (SI := SI)} (h : A = B) {α : SI} [Truncated B.car α] :
     Truncated A.car α := by
   subst h; assumption
 
@@ -1494,7 +1494,7 @@ end Global
 
 variable (F) in
 /-- The components of the solution: `[F (X γ) (X γ)]_{γ + 1}` (Rocq: `FX_lim`). -/
-noncomputable abbrev FXl (γ : SI) : Obj (SI := SI) := TG F (σ γ) (X F γ)
+noncomputable abbrev FXl (γ : SI) : Obj.{u} (SI := SI) := TG F (σ γ) (X F γ)
 
 variable (F) in
 /-- Rocq: `Fep_lim`. -/
@@ -1742,7 +1742,7 @@ theorem ψlim_ϕlim (x : SolCar F) : ψlim (F := F) (ϕlim (F := F) x) = x := by
 variable (F) in
 /-- The solution of the recursive domain equation `F X X ≅ X` for a contractive functor `F` over an
 arbitrary type of step-indices (Rocq: `solver.solution_F`). -/
-def Fix : Type u := SolCar F
+def Fix : Type (max u v) := SolCar F
 
 noncomputable instance : COFE (Fix F) := inferInstanceAs (COFE (SolCar F))
 noncomputable instance : Inhabited (Fix F) := inferInstanceAs (Inhabited (SolCar F))

@@ -9,6 +9,7 @@ public import Iris.ProofMode
 public import Iris.ProgramLogic.WeakestPre
 
 public section
+local stepindex Nat
 
 namespace Iris.ProgramLogic
 

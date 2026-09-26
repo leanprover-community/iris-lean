@@ -16,7 +16,8 @@ namespace Iris.HeapLang
 
 open BI Iris ProgramLogic
 
-@[expose] public section
+@[expose] public noncomputable section
+local stepindex Nat
 
 namespace SpinLock
 

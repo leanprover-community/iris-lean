@@ -17,7 +17,7 @@ open Iris OFE COFE BI Iris.BI Iris.Algebra Iris.Std FromMathlib LawfulSet
 open Iris.ProgramLogic.PrimStep
 open Language.Notation
 
-@[expose] public section
+@[expose] public noncomputable section
 
 variable {hlc : HasLC} {Expr State Obs Val : Type _}
 variable [Language Expr State Obs Val]

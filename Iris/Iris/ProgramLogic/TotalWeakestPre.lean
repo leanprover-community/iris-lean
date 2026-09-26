@@ -13,7 +13,7 @@ namespace Iris
 
 open ProgramLogic Language Language.Notation Iris.Std OFE BI
 
-@[expose] public section
+@[expose] public noncomputable section
 local stepindex Nat
 
 /-!

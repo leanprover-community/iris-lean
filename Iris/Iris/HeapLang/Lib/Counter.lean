@@ -17,7 +17,7 @@ namespace Iris.HeapLang
 
 open BI Iris ProgramLogic CMRA OFE Auth
 
-@[expose] public section
+@[expose] public noncomputable section
 local stepindex Nat
 
 namespace Counter

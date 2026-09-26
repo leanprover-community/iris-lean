@@ -164,7 +164,7 @@ public structure WpGoal where
   {bi : Q(@BI Nat Iris.natSIdx $prop)}
   {ehyps : Q($prop)}
   hyps : Hyps bi ehyps
-  {GF : Q(BundledGFunctors.{0, 0, 0})}
+  {GF : Q(BundledGFunctors.{0, 0})}
   {hlc : Q(HasLC)}
   ι : Q(IrisGS_gen $hlc Exp $GF)
   s : Q(Stuckness)
@@ -209,7 +209,7 @@ public theorem tac_wp_value_nofupd [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckn
   H.trans <| fupd_intro.trans (wp_value_fupd ⟨rfl⟩).2
 
 public meta def iWpValueHead {u}
-  {GF : Q(BundledGFunctors.{0, 0, 0})}
+  {GF : Q(BundledGFunctors.{0, 0})}
   {hlc : Q(HasLC)}
   {prop : Q(Type u)}
   {bi : Q(@BI Nat Iris.natSIdx $prop)}
@@ -278,7 +278,7 @@ elab "wp_expr_simp" : tactic =>
     mvar.assign q(tac_wp_expr_simp $pf $pfeq)
 
 public meta def iWpFinish {u}
-  {GF : Q(BundledGFunctors.{0, 0, 0})}
+  {GF : Q(BundledGFunctors.{0, 0})}
   {hlc : Q(HasLC)}
   {prop : Q(Type u)}
   {bi : Q(@BI Nat Iris.natSIdx $prop)}
@@ -313,7 +313,7 @@ public theorem tac_wp_bind [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E 
   H.trans (wp_bind (ProgramLogic.fill K))
 
 public meta def iWpBindCore {u}
-  {GF : Q(BundledGFunctors.{0, 0, 0})}
+  {GF : Q(BundledGFunctors.{0, 0})}
   {hlc : Q(HasLC)}
   {prop : Q(Type u)}
   {bi : Q(@BI Nat Iris.natSIdx $prop)}
@@ -379,7 +379,7 @@ public theorem tac_wp_pure [ι : IrisGS_gen hlc Exp GF] {Δ Δ'} {s : Stuckness}
   iintro $ !> -; itrivial
 
 public meta def iWpPure {u}
-    {GF : Q(BundledGFunctors.{0, 0, 0})}
+    {GF : Q(BundledGFunctors.{0, 0})}
     {hlc : Q(HasLC)}
     {prop : Q(Type u)}
     {bi : Q(@BI Nat Iris.natSIdx $prop)}
@@ -484,7 +484,7 @@ inductive WpApplyKind where
   | apply
   | smartApply
 
-structure WpApplyState {u} {GF : Q(BundledGFunctors.{0, 0, 0})}
+structure WpApplyState {u} {GF : Q(BundledGFunctors.{0, 0})}
     {hlc : Q(HasLC)} {prop : Q(Type u)} {bi : Q(@BI Nat Iris.natSIdx $prop)} {ehyps : Q($prop)}
     {s : Q(Stuckness)} {E : Q(CoPset)} {e : Q(Exp)} {Φ : Q(Val → $prop)}
     (κ : Q(Wp $prop Exp Val Stuckness)) where
@@ -494,7 +494,7 @@ structure WpApplyState {u} {GF : Q(BundledGFunctors.{0, 0, 0})}
   prefixPf : Q(($ehypsC ⊢ @Wp.wp $prop Exp Val Stuckness $κ $s $E $eC $Φ) →
     $ehyps ⊢ @Wp.wp $prop Exp Val Stuckness $κ $s $E $e $Φ)
 
-meta partial def iWpApplyCore {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(HasLC)}
+meta partial def iWpApplyCore {u} {GF : Q(BundledGFunctors.{0, 0})} {hlc : Q(HasLC)}
     {prop : Q(Type u)} {bi : Q(@BI Nat Iris.natSIdx $prop)} {ehyps : Q($prop)}
     (hyps : Hyps bi ehyps) (ι : Q(IrisGS_gen $hlc Exp $GF)) (s : Q(Stuckness)) (E : Q(CoPset))
     (e : Q(Exp)) (Φ : Q(Val → $prop)) (pmt : PMTerm) (wpApplyKind : WpApplyKind)
@@ -773,7 +773,7 @@ public theorem tac_wp_allocN [ι : HeapLangGS hlc GF] {Δ Δ' : IProp GF}
 context `K` and run `iWpFinish` over the continuation context `hyps`. Returns the continuation
 proof typed against `fill K (Exp.ofVal r)`, so the caller's `assign` matches the tac lemma's
 `hcont`. -/
-meta def finishHeapOp {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(HasLC)}
+meta def finishHeapOp {u} {GF : Q(BundledGFunctors.{0, 0})} {hlc : Q(HasLC)}
     {prop : Q(Type u)} {bi : Q(@BI Nat Iris.natSIdx $prop)} {ehyps : Q($prop)}
     (hyps : Hyps bi ehyps) (hgs : Q(HeapLangGS $hlc $GF))
     (s : Q(Stuckness)) (E : Q(CoPset)) (K : Q(List ECtxItem)) (r : Q(Val)) (Φ : Q(Val → $prop))
@@ -787,7 +787,7 @@ meta def finishHeapOp {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(HasLC)}
 in the (later-stripped) context `eΔ'`, together with the pruned context `eΔ''`/`hyps''` and
 the splitting proof `pfSplit`, whose type is already recast to the `pointsTo` shape that the
 `tac_wp_*` lemmas expect. -/
-structure PointsToLookup {u : Level} {GF : Q(BundledGFunctors.{0, 0, 0})}
+structure PointsToLookup {u : Level} {GF : Q(BundledGFunctors.{0, 0})}
     {hlc : Q(HasLC)} (hgs : Q(HeapLangGS $hlc $GF)) {prop : Q(Type u)} (bi : Q(@BI Nat Iris.natSIdx $prop))
     (eΔ' : Q($prop)) (l : Q(Loc)) (dq : Q(DFrac)) (p : Q(Bool)) (hu : QuotedLevelDefEq u 0)
     (hprop : $prop =Q IProp $GF) where
@@ -805,7 +805,7 @@ structure PointsToLookup {u : Level} {GF : Q(BundledGFunctors.{0, 0, 0})}
 
 /-- Locate a hypothesis `l ↦{dq} some v` and remove it from the spatial context.
 Throws if no matching hypothesis exists. -/
-meta def lookupPointsTo {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(HasLC)}
+meta def lookupPointsTo {u} {GF : Q(BundledGFunctors.{0, 0})} {hlc : Q(HasLC)}
     {prop : Q(Type u)} {bi : Q(@BI Nat Iris.natSIdx $prop)} {eΔ' : Q($prop)}
     (hgs : Q(HeapLangGS $hlc $GF))
     (hyps' : Hyps bi eΔ') (l : Q(Loc)) (dq : Q(DFrac)) (p : Q(Bool))

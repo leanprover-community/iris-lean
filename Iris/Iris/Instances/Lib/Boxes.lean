@@ -13,7 +13,7 @@ public import Iris.Instances.Lib.Invariants
 public import Iris.Std.PartialMap
 public import Iris.Std.Namespaces
 
-@[expose] public section
+@[expose] public noncomputable section
 local stepindex Nat
 
 namespace Iris

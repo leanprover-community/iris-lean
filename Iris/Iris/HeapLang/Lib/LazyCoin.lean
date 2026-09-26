@@ -8,6 +8,7 @@ public import Iris.HeapLang
 public import Iris.BI
 public import Iris.HeapLang.Lib.NondetBool
 
+noncomputable section
 namespace Iris.HeapLang
 
 -- type Coin := Ref (Option Bool) × ProphId

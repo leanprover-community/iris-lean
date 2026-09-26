@@ -14,7 +14,7 @@ public import Iris.Std.GenSetsInstances
 public import Iris.Std.HeapInstances
 public import Iris.Instances.IProp
 
-@[expose] public section
+@[expose] public noncomputable section
 local stepindex Nat
 
 /-! ## World satisfaction

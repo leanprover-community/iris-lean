@@ -18,7 +18,7 @@ namespace Iris
 
 open ProgramLogic Language.Notation Iris.Std Iris.BI
 
-@[expose] public section
+@[expose] public noncomputable section
 local stepindex Nat
 
 /-!

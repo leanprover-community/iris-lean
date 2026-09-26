@@ -17,7 +17,7 @@ public import Iris.Instances.Lib.LaterCredits
 public import Iris.BI.Plainly
 public import Iris.Std
 
-@[expose] public section
+@[expose] public noncomputable section
 local stepindex Nat
 
 namespace Iris
@@ -655,7 +655,7 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
     --- see https://github.com/leanprover-community/iris-lean/pull/633
     let some #[_, _, _, c] := Expr.appM? ty ``lc
       | throwError m!"inext: {h} is not a spatial later credit hypothesis"
-    let some #[GF] := Expr.appM? prop ``IProp
+    let some #[_, _, GF] := Expr.appM? prop ``IProp
       | throwError "inext: the goal must be an `IProp`"
     let ⟨e', hyps', _, _, _, _, pfEq⟩ := hyps.remove false ivar
     let .some instInvGS ← trySynthInstance (mkApp (.const ``InvGS []) GF)

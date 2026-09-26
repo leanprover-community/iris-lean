@@ -8,7 +8,7 @@ public import Iris.BI.Lib.Atomic
 public import Iris.Instances.Lib.Invariants
 public import Iris.ProgramLogic.WeakestPre
 
-@[expose] public section
+@[expose] public noncomputable section
 local stepindex Nat
 
 /-!  # Logically atomic Hoare triples -/

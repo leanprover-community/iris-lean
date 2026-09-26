@@ -11,7 +11,7 @@ public import Iris.Algebra.Excl
 public import Iris.BI.Lib.GenHeap
 public import Iris.Instances.Lib.Invariants
 
-@[expose] public section
+@[expose] public noncomputable section
 local stepindex Nat
 
 namespace Iris

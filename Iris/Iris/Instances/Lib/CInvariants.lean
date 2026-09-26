@@ -17,7 +17,7 @@ public import Iris.Std.Namespaces
 public import Iris.Std.CoPset
 public import Iris.Std.List
 
-@[expose] public section
+@[expose] public noncomputable section
 local stepindex Nat
 
 namespace Iris

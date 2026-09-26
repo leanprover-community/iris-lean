@@ -19,7 +19,7 @@ namespace Iris.HeapLang
 
 open BI Iris.Std CMRA Excl DisjointLeibnizSet LawfulSet
 
-@[expose] public section
+@[expose] public noncomputable section
 local stepindex Nat
 
 namespace TicketLock

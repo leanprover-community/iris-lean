@@ -12,7 +12,7 @@ public import Iris.Algebra
 public import Iris.Instances.UPred
 public import Iris.ProofMode
 
-@[expose] public section
+@[expose] public noncomputable section
 local stepindex Nat
 namespace Iris
 
@@ -175,7 +175,7 @@ theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) = x :=
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm.dist ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
   apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold] <;>
-    exact OFE.Iso.hom_inv_dist OFunctor.Fix.iso
+    exact OFE.Iso.hom_inv_dist OFunctor.Transfinite.Fix.iso
 
 @[rocq_alias inG_fold_unfold]
 theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) = x := by
@@ -183,7 +183,7 @@ theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) = x :
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm.dist ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x).dist
   apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold] <;>
-    exact OFE.Iso.inv_hom_dist OFunctor.Fix.iso
+    exact OFE.Iso.inv_hom_dist OFunctor.Transfinite.Fix.iso
 
 @[rocq_alias iProp_unfold_equivI]
 theorem IProp.unfold_equivI (P Q : IProp FF) :

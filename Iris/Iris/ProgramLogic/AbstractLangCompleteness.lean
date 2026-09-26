@@ -23,7 +23,7 @@ open Iris Iris.BI Iris.Algebra Iris.Std FromMathlib
 open Iris.ProgramLogic.PrimStep
 open Language Language.Notation
 
-@[expose] public section
+@[expose] public noncomputable section
 
 section AbstractCompleteness
 

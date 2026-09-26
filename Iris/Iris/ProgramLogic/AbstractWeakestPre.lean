@@ -21,6 +21,7 @@ namespace Iris
 open ProgramLogic Language Language.Notation Iris.Std
 
 @[expose] public section
+local stepindex Nat
 
 abbrev AbstractWP (Expr Val : Type _) (GF : BundledGFunctors) :=
   CoPset → Expr → (Val → IProp GF) → IProp GF
