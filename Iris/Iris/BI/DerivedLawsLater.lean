@@ -15,7 +15,8 @@ public import Iris.Std.Rewrite
 public import Iris.Std.TC
 
 @[expose] public section
-local stepindex Nat
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris.BI
 open Iris.Std BI
@@ -62,7 +63,7 @@ theorem later_exists_mp {Φ : α → PROP} :
   exists_elim (later_mono <| exists_intro ·)
 
 @[rocq_alias bi.later_exist_false]
-theorem later_exists_false {Φ : α → PROP} :
+theorem later_exists_false [SIdxFinite SI] {Φ : α → PROP} :
     (▷ ∃ a, Φ a) ⊢ ▷ False ∨ ∃ a, ▷ Φ a := by
   apply later_sExists_false.trans
   apply or_elim
@@ -74,11 +75,11 @@ theorem later_exists_false {Φ : α → PROP} :
     exact imp_intro_swap <| and_elim_l.trans (exists_intro (Ψ := fun a => iprop(▷ Φ a)) a)
 
 @[rocq_alias bi.later_exist_except_0]
-theorem later_exists_except0 {Φ : α → PROP} :
+theorem later_exists_except0 [SIdxFinite SI] {Φ : α → PROP} :
     (▷ ∃ a, Φ a) ⊢ ◇ (∃ a, ▷ Φ a) := later_exists_false
 
 @[rocq_alias bi.later_exist]
-theorem later_exists [Inhabited α] {Φ : α → PROP} :
+theorem later_exists [SIdxFinite SI] [Inhabited α] {Φ : α → PROP} :
     (∃ a, ▷ Φ a) ⊣⊢ ▷ (∃ a, Φ a) := by
   refine ⟨later_exists_mp, later_exists_false.trans ?_⟩
   exact or_elim ((later_mono false_elim).trans (exists_intro (Ψ := fun a => iprop(▷ Φ a)) default)) .rfl
@@ -96,19 +97,11 @@ theorem later_and {P Q : PROP} : ▷ (P ∧ Q) ⊣⊢ ▷ P ∧ ▷ Q := by
     exact (·.casesOn .rfl .rfl)
 
 @[rocq_alias bi.later_or]
-theorem later_or {P Q : PROP} : ▷ (P ∨ Q) ⊣⊢ ▷ P ∨ ▷ Q := by
-  constructor
-  · refine (later_mono or_exists_ite.mp).trans ?_
-    refine .trans ?_ or_exists_ite.mpr
-    refine later_exists.mpr.trans (exists_mono ?_)
-    exact (·.casesOn .rfl .rfl)
-  · refine .trans ?_ (later_mono or_exists_ite.mpr)
-    refine .trans ?_ later_exists.mp
-    refine  or_exists_ite.mp.trans (exists_mono ?_)
-    exact (·.casesOn .rfl .rfl)
+theorem later_or {P Q : PROP} : ▷ (P ∨ Q) ⊣⊢ ▷ P ∨ ▷ Q :=
+  ⟨later_or_1, or_elim (later_mono or_intro_l) (later_mono or_intro_r)⟩
 
 @[rocq_alias bi.later_sep]
-theorem later_sep_alias {P Q : PROP} : ▷ (P ∗ Q) ⊣⊢ ▷ P ∗ ▷ Q := later_sep
+theorem later_sep_alias [SIdxFinite SI] {P Q : PROP} : ▷ (P ∗ Q) ⊣⊢ ▷ P ∗ ▷ Q := later_sep
 
 @[rocq_alias bi.later_persistently]
 theorem later_persistently_alias {P : PROP} : ▷ <pers> P ⊣⊢ <pers> ▷ P := later_persistently
@@ -119,7 +112,7 @@ theorem later_imp {P Q : PROP} : ▷ (P → Q) ⊢ ▷ P → ▷ Q :=
 
 @[rocq_alias bi.later_wand]
 theorem later_wand {P Q : PROP} : ▷ (P -∗ Q) ⊢ ▷ P -∗ ▷ Q :=
-  wand_intro_left <| later_sep.mpr.trans <| later_mono wand_elim_right
+  wand_intro_left <| later_sep_2.trans <| later_mono wand_elim_right
 
 @[rocq_alias bi.later_iff]
 theorem later_iff {P Q : PROP} : ▷ (P ↔ Q) ⊢ (▷ P ↔ ▷ Q) :=
@@ -142,8 +135,11 @@ theorem later_intuitionisticallyIf_2 {P : PROP} : □?p ▷ P ⊢ ▷ □?p P :=
   p.casesOn .rfl later_intuitionistically_2
 
 @[rocq_alias bi.later_absorbingly]
-theorem later_absorbingly {P : PROP} : ▷ <absorb> P ⊣⊢ <absorb> ▷ P :=
-  ⟨later_sep.mp.trans <| sep_mono_left true_intro, (sep_mono_left later_intro).trans later_sep.mpr⟩
+theorem later_absorbingly [SIdxFinite SI] {P : PROP} : ▷ <absorb> P ⊣⊢ <absorb> ▷ P :=
+  ⟨later_sep_1.trans <| sep_mono_left true_intro, (sep_mono_left later_intro).trans later_sep_2⟩
+
+theorem later_absorbingly_2 {P : PROP} : <absorb> ▷ P ⊢ ▷ <absorb> P :=
+  (sep_mono_left later_intro).trans later_sep_2
 
 @[rocq_alias bi.later_affinely]
 theorem later_affinely [BIAffine PROP] {P : PROP} : <affine> ▷ P ⊣⊢ ▷ <affine> P := by
@@ -169,7 +165,7 @@ instance later_persistent {P : PROP} [Persistent P] : Persistent iprop(▷ P) wh
 
 @[rocq_alias bi.later_absorbing]
 instance later_absorbing {P : PROP} [Absorbing P] : Absorbing iprop(▷ P) where
-  absorbing := later_absorbingly.mpr.trans <| later_mono absorbing
+  absorbing := later_absorbingly_2.trans <| later_mono absorbing
 
 #rocq_ignore bi.laterN_iter "laterN in Lean is defined using Nat.repeat directly"
 
@@ -193,12 +189,12 @@ instance bi_later_monoid_or_homomorphism :
   WeakMonoidHomomorphism.ofEq BI.later_ne later_or.to_eq
 
 @[rocq_alias bi.bi_later_monoid_sep_weak_homomorphism]
-instance bi_later_monoid_sep_weak_homomorphism :
+instance bi_later_monoid_sep_weak_homomorphism [SIdxFinite SI] :
     Iris.Algebra.WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·) later :=
   WeakMonoidHomomorphism.ofEq BI.later_ne later_sep.to_eq
 
 @[rocq_alias bi.bi_later_monoid_sep_homomorphism]
-instance bi_later_monoid_sep_homomorphism [BIAffine PROP] :
+instance bi_later_monoid_sep_homomorphism [SIdxFinite SI] [BIAffine PROP] :
     Iris.Algebra.MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·) later :=
   MonoidHomomorphism.ofEq BI.later_ne
     later_sep.to_eq later_emp.to_eq
@@ -210,7 +206,7 @@ instance bi_later_monoid_sep_entails_weak_homomorphism :
   rel_trans := flip .trans
   op_proper := sep_mono
   map_ne := BI.later_ne
-  map_op := later_sep.mpr
+  map_op := later_sep_2
 
 @[rocq_alias bi.bi_later_monoid_sep_entails_homomorphism]
 instance bi_later_monoid_sep_entails_homomorphism :
@@ -219,7 +215,7 @@ instance bi_later_monoid_sep_entails_homomorphism :
   rel_trans := flip .trans
   op_proper := sep_mono
   map_ne := BI.later_ne
-  map_op := later_sep.mpr
+  map_op := later_sep_2
   map_unit := later_intro
 
 @[rocq_alias bi.löb]
@@ -383,7 +379,7 @@ theorem laterN_exists_mpr (n : Nat) {Φ : α → PROP} : (∃ a, ▷^[n] Φ a) �
   exists_elim fun a => laterN_mono n (exists_intro a)
 
 @[rocq_alias bi.laterN_exist]
-theorem laterN_exists [Inhabited α] (n : Nat) {Φ : α → PROP} :
+theorem laterN_exists [SIdxFinite SI] [Inhabited α] (n : Nat) {Φ : α → PROP} :
     ▷^[n] (∃ a, Φ a) ⊣⊢ (∃ a, ▷^[n] Φ a) := by
   induction n with
   | zero => exact .rfl
@@ -405,15 +401,21 @@ theorem laterN_or (n : Nat) {P Q : PROP} : ▷^[n] (P ∨ Q) ⊣⊢ ▷^[n] P �
 theorem laterN_imp (n : Nat) {P Q : PROP} : ▷^[n] (P → Q) ⊢ ▷^[n] P → ▷^[n] Q :=
   imp_intro_swap <| (laterN_and n).2.trans <| laterN_mono n imp_elim_right
 
+theorem laterN_sep_2 (n : Nat) {P Q : PROP} : ▷^[n] P ∗ ▷^[n] Q ⊢ ▷^[n] (P ∗ Q) := by
+  induction n with
+  | zero => exact .rfl
+  | succ n ih => exact later_sep_2.trans (later_mono ih)
+
 @[rocq_alias bi.laterN_sep]
-theorem laterN_sep (n : Nat) {P Q : PROP} : ▷^[n] (P ∗ Q) ⊣⊢ ▷^[n] P ∗ ▷^[n] Q := by
+theorem laterN_sep [SIdxFinite SI] (n : Nat) {P Q : PROP} :
+    ▷^[n] (P ∗ Q) ⊣⊢ ▷^[n] P ∗ ▷^[n] Q := by
   induction n with
   | zero => exact .rfl
   | succ n ih => exact (later_congr ih).trans later_sep
 
 @[rocq_alias bi.laterN_wand]
 theorem laterN_wand (n : Nat) {P Q : PROP} : ▷^[n] (P -∗ Q) ⊢ ▷^[n] P -∗ ▷^[n] Q :=
-  wand_intro_left <| (laterN_sep n).2.trans <| laterN_mono n wand_elim_right
+  wand_intro_left <| (laterN_sep_2 n).trans <| laterN_mono n wand_elim_right
 
 @[rocq_alias bi.laterN_iff]
 theorem laterN_iff (n : Nat) {P Q : PROP} : ▷^[n] (P ↔ Q) ⊢ (▷^[n] P ↔ ▷^[n] Q) :=
@@ -441,8 +443,12 @@ theorem laterN_intuitionisticallyIf (n : Nat) {p : Bool} {P : PROP} :
   | false => .rfl
   | true => laterN_intuitionistically n
 
+theorem laterN_absorbingly_2 (n : Nat) {P : PROP} : <absorb> ▷^[n] P ⊢ ▷^[n] <absorb> P :=
+  (sep_mono_left (laterN_intro n)).trans (laterN_sep_2 n)
+
 @[rocq_alias bi.laterN_absorbingly]
-theorem laterN_absorbingly (n : Nat) {P : PROP} : ▷^[n] <absorb> P ⊣⊢ <absorb> ▷^[n] P :=
+theorem laterN_absorbingly [SIdxFinite SI] (n : Nat) {P : PROP} :
+    ▷^[n] <absorb> P ⊣⊢ <absorb> ▷^[n] P :=
   (laterN_sep n).trans (sep_congr (laterN_true n) .rfl)
 
 @[rocq_alias bi.laterN_persistent]
@@ -479,13 +485,13 @@ instance bi_laterN_or_homomorphism (n : Nat) :
   WeakMonoidHomomorphism.ofEq (laterN_ne n) (equiv_iff.mpr (laterN_or n))
 
 @[rocq_alias bi.bi_laterN_sep_weak_homomorphism]
-instance bi_laterN_sep_weak_homomorphism (n : Nat) :
+instance bi_laterN_sep_weak_homomorphism [SIdxFinite SI] (n : Nat) :
     Algebra.WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·)
       (iprop(▷^[n] · )) :=
   WeakMonoidHomomorphism.ofEq (laterN_ne n) (equiv_iff.mpr (laterN_sep n))
 
 @[rocq_alias bi.bi_laterN_sep_homomorphism]
-instance bi_laterN_sep_homomorphism [BIAffine PROP] (n : Nat) :
+instance bi_laterN_sep_homomorphism [SIdxFinite SI] [BIAffine PROP] (n : Nat) :
     Algebra.MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·)
       (iprop(▷^[n] · )) :=
   MonoidHomomorphism.ofEq (laterN_ne n)
@@ -499,7 +505,7 @@ instance bi_laterN_sep_entails_weak_homomorphism (n : Nat) :
   rel_trans := flip .trans
   op_proper := sep_mono
   map_ne := laterN_ne n
-  map_op := (laterN_sep n).mpr
+  map_op := laterN_sep_2 n
 
 @[rocq_alias bi.bi_laterN_sep_entails_homomorphism]
 instance bi_laterN_sep_entails_homomorphism (n : Nat) :
@@ -509,7 +515,7 @@ instance bi_laterN_sep_entails_homomorphism (n : Nat) :
   rel_trans := flip .trans
   op_proper := sep_mono
   map_ne := laterN_ne n
-  map_op := (laterN_sep n).mpr
+  map_op := laterN_sep_2 n
   map_unit := laterN_intro n
 
 /-! # Except0 -/
@@ -561,9 +567,11 @@ theorem except0_sep {P Q : PROP} : ◇ (P ∗ Q) ⊣⊢ ◇ P ∗ ◇ Q := by
   constructor
   · apply or_elim
     · apply Entails.trans _ (sep_mono or_intro_l or_intro_l)
-      apply Entails.trans _ (later_sep.1)
-      apply later_mono
-      apply false_elim
+      -- `▷ False` is persistent, hence duplicable (cf. Transfinite Iris `except_0_sep`)
+      have h : (▷ False : PROP) ⊣⊢ <pers> ▷ False :=
+        ⟨(later_mono persistently_pure.2).trans later_persistently.1,
+         later_persistently.2.trans (later_mono persistently_pure.1)⟩
+      exact h.1.trans <| persistently_sep_persistently.2.trans (sep_mono h.2 h.2)
     · exact sep_mono or_intro_r or_intro_r
   · apply Entails.trans sep_or_right.1 _
     apply or_elim
@@ -852,17 +860,14 @@ theorem only0_elim_timeless [BILoeb PROP] {P : PROP} [Timeless P] : <only0> P �
 
 @[rocq_alias bi.pure_timeless]
 instance pure_timeless (φ : Prop) : Timeless (PROP := PROP) (BIBase.pure φ) where
-  timeless :=
-    calc iprop(▷ ⌜φ⌝)
-      _ ⊢@{PROP} ▷ ∃ (_a : φ), True :=
-        later_mono (pure_elim' (true_intro.trans <| exists_intro (Ψ := fun _ => iprop(⌜True⌝)) ·))
-      _ ⊢ ▷ False ∨ ∃ (_a : φ), ▷ True :=
-        later_exists_false
-      _ ⊢ ◇ ⌜φ⌝ :=
-        or_mono_right (exists_elim ((later_true.1.trans true_intro).trans <| pure_intro ·))
+  -- By cases on `φ`, which works for arbitrary step-indices.
+  timeless := by
+    by_cases hφ : φ
+    · exact (true_intro.trans (pure_intro hφ)).trans or_intro_r
+    · exact (later_mono (pure_elim' fun h => absurd h hφ)).trans or_intro_l
 
 @[rocq_alias bi.exist_timeless]
-instance exists_timeless [BI PROP] {α : Type _} (Ψ : α → PROP) [∀ x, Timeless (Ψ x)] :
+instance exists_timeless [BI PROP] [SIdxFinite SI] {α : Type _} (Ψ : α → PROP) [∀ x, Timeless (Ψ x)] :
     Timeless (PROP := PROP) (BIBase.exists Ψ) where
   timeless := by
     refine later_exists_false.trans ?_
@@ -897,11 +902,11 @@ instance impl_timeless [BI PROP] [BILoeb PROP] {P Q : PROP} [Timeless Q] :
   timeless_alt.mpr <| only0_imp.mp.trans (imp_mono only0_intro only0_elim_timeless)
 
 @[rocq_alias bi.sep_timeless]
-instance sep_timeless [BI PROP] {P Q : PROP} [Timeless P] [Timeless Q] :
+instance sep_timeless [BI PROP] [SIdxFinite SI] {P Q : PROP} [Timeless P] [Timeless Q] :
     Timeless (PROP := PROP) (BIBase.sep P Q) where
   timeless :=
     calc iprop(▷ (P ∗ Q))
-      _ ⊢ ▷ P ∗ ▷ Q := later_sep.mp
+      _ ⊢ ▷ P ∗ ▷ Q := later_sep_1
       _ ⊢ ◇ P ∗ ◇ Q := sep_mono Timeless.timeless Timeless.timeless
       _ ⊢ ◇ (P ∗ Q) := except0_sep.mpr
 
@@ -935,7 +940,7 @@ instance affinely_timeless [BI PROP] [Timeless (PROP := PROP) emp] {P : PROP} [T
     Timeless (PROP := PROP) iprop(<affine> P) := and_timeless
 
 @[rocq_alias bi.absorbingly_timeless]
-instance absorbingly_timeless [BI PROP] {P : PROP} [Timeless P] :
+instance absorbingly_timeless [BI PROP] [SIdxFinite SI] {P : PROP} [Timeless P] :
     Timeless (PROP := PROP) iprop(<absorb> P) where
   timeless :=
     calc iprop(▷ <absorb> P)
@@ -976,7 +981,7 @@ instance only0_timeless {P : PROP} : Timeless iprop(<only0> P) where
   timeless := later_except0_only0.trans (except0_mono only0_idem.mp)
 
 @[rocq_alias bi.only_0_exist]
-theorem only0_exists [BILoeb PROP] {α : Type _} {Φ : α → PROP} :
+theorem only0_exists [BILoeb PROP] [SIdxFinite SI] {α : Type _} {Φ : α → PROP} :
     <only0> (∃ a, Φ a) ⊣⊢ ∃ a, <only0> Φ a := by
   constructor
   · exact (only0_mono <| exists_mono fun _ => only0_intro).trans (timeless_alt.mp inferInstance)
@@ -996,7 +1001,7 @@ theorem only0_emp [BILoeb PROP] [Timeless (PROP := PROP) emp] :
     <only0> emp ⊣⊢ (emp : PROP) := timeless_only0
 
 @[rocq_alias bi.only_0_sep]
-theorem only0_sep [BILoeb PROP] {P Q : PROP} : <only0> (P ∗ Q) ⊣⊢ <only0> P ∗ <only0> Q := by
+theorem only0_sep [BILoeb PROP] [SIdxFinite SI] {P Q : PROP} : <only0> (P ∗ Q) ⊣⊢ <only0> P ∗ <only0> Q := by
   refine ⟨?_, imp_intro ?_⟩
   · exact (only0_mono <| sep_mono only0_intro only0_intro).trans
       (timeless_alt.mp inferInstance)
@@ -1006,7 +1011,7 @@ theorem only0_sep [BILoeb PROP] {P Q : PROP} : <only0> (P ∗ Q) ⊣⊢ <only0> 
       _ ⊢ P ∗ Q := sep_mono imp_elim_right imp_elim_right
 
 @[rocq_alias bi.only_0_absorbingly]
-theorem only0_absorbingly [BILoeb PROP] {P : PROP} :
+theorem only0_absorbingly [BILoeb PROP] [SIdxFinite SI] {P : PROP} :
     <only0> <absorb> P ⊣⊢ <absorb> <only0> P :=
   only0_sep.trans (sep_congr_left only0_pure)
 

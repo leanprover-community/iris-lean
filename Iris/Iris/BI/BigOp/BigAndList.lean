@@ -9,6 +9,8 @@ public import Iris.BI.BigOp.BigOp
 import Iris.BI.DerivedLawsLater
 
 public section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris.BI
 
@@ -178,7 +180,7 @@ theorem bigAndL_submseteq {Φ : A → PROP} {l₁ l₂ l : List A} (h : (l₁ ++
   bigAndL_append.1.trans and_elim_l
 
 @[rocq_alias big_andL_ne]
-theorem bigAndL_dist {Φ Ψ : Nat → A → PROP} {l : List A} {n : Nat}
+theorem bigAndL_dist {Φ Ψ : Nat → A → PROP} {l : List A} {n : SI}
     (h : ∀ {k x}, l[k]? = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([∧list] k ↦ x ∈ l, Φ k x) ≡{n}≡ [∧list] k ↦ x ∈ l, Ψ k x :=
   bigOpL_dist h

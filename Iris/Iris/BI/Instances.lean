@@ -12,6 +12,8 @@ public import Iris.BI.BI
 public import Iris.Std.Classes
 
 @[expose] public section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris.BI
 open Iris.Std

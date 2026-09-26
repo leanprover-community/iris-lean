@@ -3170,14 +3170,19 @@ example [BI PROP] {α} (a : α) {β} (b : β) (P : PROP)
   iframe HS HP HR HQ
 
 /- Tests `iframe` with multiple existential quantifiers framed at once. -/
-/-- trace:
-PROP : Type u_1
-inst✝ : BI PROP
+/--
+trace: PROP : Type u_1
+inst✝ : @BI Nat (@dfltSIdx Nat instDefaultSI_IrisTest_Tactics) PROP
 α : Sort u_2
 P : PROP
 Q : α → PROP
-⊢ ⏎
-  ⊢ @«exists» PROP (@toBIBase PROP inst✝) α fun {n} => Q n
+⊢ 
+  ⊢
+  @«exists» PROP
+    (@toBIBase Nat
+      (@dfltSIdx Nat (@instDefaultSI_Iris_ProofMode_Classes Nat (@dfltSIdx Nat instDefaultSI_IrisTest_Tactics))) PROP
+      inst✝)
+    α fun {n} => Q n
 -/
 #guard_msgs (trace, drop error) in
 set_option pp.explicit true in

@@ -21,11 +21,9 @@ closure.
 namespace IrisTest
 open Iris BI OFE CMRA
 
-/-- The interpretation `sbi_unfold` gives to `▷`. Only used to state the expected
-goals below: writing the `match` under a `∃` binder makes the binder part of it. -/
-private def laterP (φ : Nat → Prop) : Nat → Prop
-  | 0 => True
-  | m + 1 => φ m
+/-- The interpretation `sbi_unfold` gives to `▷` (`φ` holds at all smaller indices). Only used to
+state the expected goals below. -/
+private abbrev laterP (φ : Nat → Prop) (n : Nat) : Prop := ∀ m, m < n → φ m
 
 section RocqTests
 variable [Sbi PROP] {A : Type _} [OFE A] (x y z : A)
@@ -147,8 +145,8 @@ example (a b c d : B) (h : ∀ n, (∀ m ≤ n, a ≡{m}≡ b → c ≡{m}≡ d)
   sbi_unfold; exact h
 
 /- A goal in the model itself: the low-priority `SiProp` instance applies. -/
-example (Pi Qi : SiProp) (h : ∀ n, Pi.holds n ∧ Qi.holds n → Pi.holds n) :
-    iprop(Pi ∧ Qi) ⊢@{SiProp} Pi := by
+example (Pi Qi : SiProp Nat) (h : ∀ n, Pi.holds n ∧ Qi.holds n → Pi.holds n) :
+    iprop(Pi ∧ Qi) ⊢@{SiProp Nat} Pi := by
   sbi_unfold; exact h
 
 /- A `match` has to be case split before unfolding. -/

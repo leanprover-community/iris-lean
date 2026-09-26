@@ -9,6 +9,8 @@ public import Iris.BI.BigOp.BigOp
 import Iris.BI.DerivedLawsLater
 
 public section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris.BI
 
@@ -73,7 +75,7 @@ theorem bigAndM_eq_of_forall_eq {Φ Ψ : K → V → PROP} {m : M V}
   bigOpM_eq_of_forall_eq m h
 
 @[rocq_alias big_andM_ne]
-theorem bigAndM_dist {Φ Ψ : K → V → PROP} {m : M V} {n : Nat}
+theorem bigAndM_dist {Φ Ψ : K → V → PROP} {m : M V} {n : SI}
     (h : ∀ {k x}, get? m k = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([∧map] k ↦ x ∈ m, Φ k x) ≡{n}≡ [∧map] k ↦ x ∈ m, Ψ k x :=
   bigOpM_dist h

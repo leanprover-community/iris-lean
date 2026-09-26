@@ -12,8 +12,14 @@ namespace Iris.ProofMode
 public section
 open BI
 
+section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
+
 @[rocq_alias tac_ex_falso]
 theorem exfalso [BI PROP] {P Q : PROP} (h : P ⊢ False) : P ⊢ Q := h.trans false_elim
+
+end
 
 public meta section
 open Lean Elab.Tactic Meta Qq

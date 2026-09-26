@@ -13,6 +13,8 @@ public import Iris.ProofMode.Tactics
 public import Iris.ProofMode.Display
 
 @[expose] public section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris.ProofMode
 

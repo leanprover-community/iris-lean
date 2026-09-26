@@ -14,6 +14,10 @@ namespace Iris.ProofMode
 public section
 open BI
 
+section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
+
 @[rocq_alias tac_or_l]
 theorem from_or_left [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
     (h1 : P ⊢ A1) : P ⊢ Q :=
@@ -23,6 +27,8 @@ theorem from_or_left [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
 theorem from_or_right [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
     (h1 : P ⊢ A2) : P ⊢ Q :=
   (or_intro_right_trans h1).trans inst.1
+
+end
 
 public meta section
 open Lean Elab.Tactic Meta Qq Iris.Std

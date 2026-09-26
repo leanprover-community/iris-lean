@@ -6,11 +6,14 @@ Authors: Lars König, Mario Carneiro
 module
 
 public import Iris.ProofMode.Expr
+/- Meta code: quotations mention the step-index type `$si` explicitly, so this file does not
+declare an ambient step-index type (stepindex-free). -/
 
 public meta section
 
 namespace Iris.ProofMode
 open Iris.BI Qq
+variable {vsi : Lean.Level} {si : Q(Type vsi)} {isi : Q(Iris.SIdx $si)}
 open Lean Lean.Expr Lean.Meta Lean.PrettyPrinter.Delaborator Lean.PrettyPrinter.Delaborator.SubExpr
 
 /-!
@@ -47,15 +50,17 @@ def delabIrisHyp : Delab := withAppArg delab
 def delabIrisGoal : Delab := do
   let some { hyps, goal, .. } := parseIrisGoal? (← instantiateMVars (← getExpr)) | failure
   -- Delaboration for the hypotheses
-  let ⟨_, hypStxs⟩ ← withNaryArg 2 <| delabHypotheses hyps ({}, #[])
+  -- `Entails'` takes the step-index type and its `SIdx` instance before `PROP` and its `BI` instance
+  let ⟨_, hypStxs⟩ ← withNaryArg 4 <| delabHypotheses hyps ({}, #[])
   -- Delaboration for the proof goal
-  let goalStx ← withNaryArg 3 delabIProp
+  let goalStx ← withNaryArg 5 delabIProp
   -- Conceal internal machinery (`Entails'`, `IrisHyp`) from user's view
   let stx ← annotateCurPos ⟨← `(irisGoalStx| $hypStxs.reverse* ⊢ $goalStx:term)⟩
   addTermInfo (← getPos) stx q(Entails $(clean hyps) $goal)
   return stx
 where
-  delabHypotheses {u prop bi s} (hyps : @Hyps u prop bi s)
+  delabHypotheses {vsi si isi u prop bi s}
+      (hyps : Hyps (vsi := vsi) (u := u) (prop := prop) (si := si) (isi := isi) bi s)
       (acc : NameMap Nat × Array (TSyntax ``irisHyp)) :
       DelabM (NameMap Nat × Array (TSyntax ``irisHyp)) := do
     match hyps with
@@ -85,7 +90,8 @@ where
       else
         `(irisHyp| ∗$nameStx : $tyStx)
       pure (map.insert name idx, acc.push stx)
-  clean {u prop bi s} (hyps : @Hyps u prop bi s) : Q($prop) :=
+  clean {vsi si isi u prop bi s}
+      (hyps : Hyps (vsi := vsi) (u := u) (prop := prop) (si := si) (isi := isi) bi s) : Q($prop) :=
     match hyps with
     | .emp _ => q(emp)
     | .sep _ _ _ _ lhs rhs => q(iprop($(clean lhs) ∗ $(clean rhs)))

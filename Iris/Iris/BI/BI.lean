@@ -10,11 +10,13 @@ public import Iris.Algebra.StepIndexFinite
 public import Iris.BI.BIBase
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
 open Iris.Std OFE
 open Lean
+
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
 
 def liftRel (R : α → β → Prop) (A : α → Prop) (B : β → Prop) : Prop :=
   (∀ a, A a → ∃ b, B b ∧ R a b) ∧ (∀ b, B b → ∃ a, A a ∧ R a b)
@@ -25,7 +27,8 @@ theorem liftRel_eq : liftRel (@Eq α) A B ↔ A = B := by
 /-- Require that a separation logic with carrier type `PROP` fulfills all necessary axioms. -/
 @[rocq_alias bi, rocq_alias BiMixin,
   rocq_alias BiPersistentlyMixin, rocq_alias BiLaterMixin]
-class BI (PROP : Type _) extends COFE PROP, BI.BIBase PROP where
+class BI {SI : outParam (Type _)} [instSI : outParam (SIdx SI)] (PROP : Type _)
+    extends COFE (SI := SI) PROP, BI.BIBase PROP where
   entails_refl {P : PROP} : P ⊢ P
   entails_trans {P Q R : PROP} : (P ⊢ Q) → (Q ⊢ R) → P ⊢ R
   equiv_iff {P Q : PROP} : (P = Q) ↔ P ⊣⊢ Q := by rw [(OFE.eq_dist _)]; simp
@@ -78,8 +81,18 @@ class BI (PROP : Type _) extends COFE PROP, BI.BIBase PROP where
   later_intro {P : PROP} : P ⊢ ▷ P
 
   later_sForall_2 {Φ : PROP → Prop} : (∀ p, ⌜Φ p⌝ → ▷ p) ⊢ ▷ sForall Φ
-  later_sExists_false {Φ : PROP → Prop} : (▷ sExists Φ) ⊢ ▷ False ∨ ∃ p, ⌜Φ p⌝ ∧ ▷ p
-  later_sep {P Q : PROP} : ▷ (P ∗ Q) ⊣⊢ ▷ P ∗ ▷ Q
+  /-- Commuting `▷` with existential quantification only holds for finite step-indices
+  (Transfinite Iris, `sbi_mixin_later_exist_false`). -/
+  later_sExists_false [SIdxFinite SI] {Φ : PROP → Prop} :
+    (▷ sExists Φ) ⊢ ▷ False ∨ ∃ p, ⌜Φ p⌝ ∧ ▷ p
+  /-- Splitting `▷` over `∗` only holds for finite step-indices
+  (Transfinite Iris, `sbi_mixin_later_sep_1`). -/
+  later_sep_1 [SIdxFinite SI] {P Q : PROP} : ▷ (P ∗ Q) ⊢ ▷ P ∗ ▷ Q
+  later_sep_2 {P Q : PROP} : ▷ P ∗ ▷ Q ⊢ ▷ (P ∗ Q)
+  /-- `▷` distributes over `∨`. This is the binary case of Transfinite Iris's
+  `sbi_mixin_later_finite_exist_false`, which holds for every type of step-indices in classical
+  logic. For finite step-indices it is derivable from `later_sExists_false`. -/
+  later_or_1 {P Q : PROP} : ▷ (P ∨ Q) ⊢ ▷ P ∨ ▷ Q
   later_persistently {P : PROP} : ▷ <pers> P ⊣⊢ <pers> ▷ P
   later_false_em {P : PROP} : ▷ P ⊢ ▷ False ∨ (▷ False → P)
 
@@ -169,12 +182,17 @@ attribute [rocq_alias bi.persistently_and_sep_elim] BI.persistently_and_l
 attribute [rocq_alias bi.later_mono] BI.later_mono
 attribute [rocq_alias bi.later_intro] BI.later_intro
 
-attribute [rocq_alias bi.later_sep_1, rocq_alias bi.later_sep_2] BI.later_sep
+attribute [rocq_alias bi.later_sep_1] BI.later_sep_1
+attribute [rocq_alias bi.later_sep_2] BI.later_sep_2
 attribute [rocq_alias bi.later_persistently_1,
            rocq_alias bi.later_persistently_2] BI.later_persistently
 attribute [rocq_alias bi.later_false_em] BI.later_false_em
 
 attribute [rocq_alias bi_cofe] BI.toCOFE
+
+/-- `▷` commutes with `∗` for finite step-indices. -/
+theorem later_sep [BI PROP] [SIdxFinite SI] {P Q : PROP} : ▷ (P ∗ Q) ⊣⊢ ▷ P ∗ ▷ Q :=
+  ⟨later_sep_1, later_sep_2⟩
 
 #rocq_ignore bi_ofeO "No coercion required in Lean, use BI.toCOFE.toOFE instead"
 #rocq_ignore bi.pure_ne "No Proper type class in Lean"
@@ -212,6 +230,7 @@ variable {PROP : Type _} [BIBase PROP] [COFE PROP]
   (later_sExists_false : ∀ {Φ : PROP → Prop},
     (▷ sExists Φ) ⊢ ▷ False ∨ ∃ p, ⌜Φ p⌝ ∧ ▷ p)
   (later_sep : ∀ {P Q : PROP}, ▷ (P ∗ Q) ⊣⊢ ▷ P ∗ ▷ Q)
+  (later_or_1 : ∀ {P Q : PROP}, ▷ (P ∨ Q) ⊢ ▷ P ∨ ▷ Q)
   (later_persistently : ∀ {P : PROP}, ▷ <pers> P ⊣⊢ <pers> ▷ P)
   (later_false_em : ∀ {P : PROP}, ▷ P ⊢ ▷ False ∨ (▷ False → P))
   (discrete : ∀ {n} {P Q : PROP}, P ≡{n}≡ Q → P = Q)
@@ -258,7 +277,9 @@ def ofPersistentlyDiscrete : BI PROP where
   later_intro := later_intro
   later_sForall_2 := later_sForall_2
   later_sExists_false := later_sExists_false
-  later_sep := later_sep
+  later_sep_1 := later_sep.1
+  later_sep_2 := later_sep.2
+  later_or_1 := later_or_1
   later_persistently := later_persistently
   later_false_em := later_false_em
   persistently_ne := ⟨fun {_ _ _} h => .of_eq (congrArg _ (discrete h))⟩
@@ -311,6 +332,9 @@ def ofPersistentlyDiscreteLaterTrue : BI PROP :=
       simp only [later_eq]
       exact ⟨entails_trans emp_sep.mpr (sep_mono (pure_intro trivial) entails_refl),
              pure_intro trivial⟩)
+    (later_or_1 := by
+      intro _ _
+      simp only [later_eq]; exact or_intro_l)
     (later_persistently := by
       intro _
       simp only [later_eq, persistently_eq]

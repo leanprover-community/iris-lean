@@ -12,6 +12,10 @@ namespace Iris.ProofMode
 public section
 open BI Iris.Std
 
+section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
+
 @[rocq_alias tac_assumption]
 theorem assumption [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption p .in A Q]
     [TCOr (Affine P') (Absorbing Q)] (h : P ⊣⊢ P' ∗ □?p A) : P ⊢ Q := calc
@@ -20,6 +24,8 @@ theorem assumption [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption
   _ ⊢ Q          := sep_elim_right
 
 #rocq_ignore tac_assumption_rocq "iAssumptionCoq is not ported to Lean"
+
+end
 
 public meta section
 open Lean Elab Tactic Meta Qq

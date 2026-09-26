@@ -14,12 +14,18 @@ namespace Iris.ProofMode
 public section
 open BI
 
+section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
+
 @[rocq_alias tac_exist]
 theorem from_exists_intro [BI PROP] {Φ : α → PROP} {P Q : PROP} [inst : FromExists P Φ]
     (a : α) (h : P ⊢ Q) : Φ a ⊢ Q := calc
   _ ⊢ ∃ a, Φ a := exists_intro a
   _ ⊢ P := inst.from_exists
   _ ⊢ Q := h
+
+end
 
 public meta section
 open Lean Elab Tactic Meta Qq

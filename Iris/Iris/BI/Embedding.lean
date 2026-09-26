@@ -20,7 +20,8 @@ public import Iris.Algebra.OFE
 public import Iris.Algebra.Monoid
 
 @[expose] public section
-local stepindex Nat
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris.BI
 open Iris Iris.Std OFE Iris.Algebra Iris.Algebra.BigOpL Iris.Algebra.BigOpM
@@ -97,7 +98,7 @@ class BiEmbedSbi (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] [BiEmbed PROP1 PRO
     [Sbi PROP1] [Sbi PROP2] where
   embed_siEmpValid : ∀ (P : PROP1),
     SiEmpValid.siEmpValid (embed P : PROP2) ⊣⊢ SiEmpValid.siEmpValid P
-  embed_siPure_1 : ∀ (Pi : SiProp),
+  embed_siPure_1 : ∀ (Pi : (SiProp stepindex%)),
     (embed (SiPure.siPure Pi : PROP1) : PROP2) ⊢ (SiPure.siPure Pi : PROP2)
 
 /-! ## Projections -/
@@ -436,7 +437,7 @@ section
 variable {P1 P2 : Type _} [Sbi P1] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
 
 @[rocq_alias embed_si_pure]
-theorem embed_siPure (Pi : SiProp) :
+theorem embed_siPure (Pi : (SiProp stepindex%)) :
     (embed (SiPure.siPure Pi : P1) : P2) ⊣⊢ SiPure.siPure Pi :=
   ⟨BiEmbedSbi.embed_siPure_1 Pi,
    (siPure_mono ((BiEmbedSbi.embed_siEmpValid _).trans siEmpValid_siPure).mpr).trans
@@ -533,7 +534,7 @@ def embedBiEmbed : BiEmbed PA PC :=
 /-- `BiEmbedEmp` transfers along composition. -/
 @[rocq_alias embed_embed_emp]
 theorem embed_embed_emp [BiEmbedEmp PA PB] [BiEmbedEmp PB PC] :
-    @BiEmbedEmp PA PC _ _ (embedBiEmbed PB) :=
+    @BiEmbedEmp _ _ PA PC _ _ (embedBiEmbed PB) :=
   letI : BiEmbed PA PC := embedBiEmbed PB
   { embed_emp_1 := (embed_mono (PROP1 := PB) (PROP2 := PC)
       (BiEmbedEmp.embed_emp_1 (PROP1 := PA) (PROP2 := PB))).trans
@@ -542,7 +543,7 @@ theorem embed_embed_emp [BiEmbedEmp PA PB] [BiEmbedEmp PB PC] :
 /-- `BiEmbedLater` transfers along composition. -/
 @[rocq_alias embed_embed_later]
 theorem embed_embed_later [BiEmbedLater PA PB] [BiEmbedLater PB PC] :
-    @BiEmbedLater PA PC _ _ (embedBiEmbed PB) :=
+    @BiEmbedLater _ _ PA PC _ _ (embedBiEmbed PB) :=
   letI : BiEmbed PA PC := embedBiEmbed PB
   { embed_later := fun P => (embed_congr (PROP1 := PB) (PROP2 := PC)
       (BiEmbedLater.embed_later (PROP1 := PA) (PROP2 := PB) P)).trans
@@ -552,7 +553,7 @@ theorem embed_embed_later [BiEmbedLater PA PB] [BiEmbedLater PB PC] :
 @[rocq_alias embed_embed_bupd]
 theorem embed_embed_bupd [BIUpdate PA] [BIUpdate PB] [BIUpdate PC]
     [BiEmbedBUpd PA PB] [BiEmbedBUpd PB PC] :
-    @BiEmbedBUpd PA PC _ _ (embedBiEmbed PB) _ _ :=
+    @BiEmbedBUpd _ _ PA PC _ _ (embedBiEmbed PB) _ _ :=
   letI : BiEmbed PA PC := embedBiEmbed PB
   { embed_bupd := fun P => (embed_congr (PROP1 := PB) (PROP2 := PC)
       (BiEmbedBUpd.embed_bupd (PROP1 := PA) (PROP2 := PB) P)).trans
@@ -562,7 +563,7 @@ theorem embed_embed_bupd [BIUpdate PA] [BIUpdate PB] [BIUpdate PC]
 @[rocq_alias embed_embed_fupd]
 theorem embed_embed_fupd [BIFUpdate PA] [BIFUpdate PB] [BIFUpdate PC]
     [BiEmbedFUpd PA PB] [BiEmbedFUpd PB PC] :
-    @BiEmbedFUpd PA PC _ _ (embedBiEmbed PB) _ _ :=
+    @BiEmbedFUpd _ _ PA PC _ _ (embedBiEmbed PB) _ _ :=
   letI : BiEmbed PA PC := embedBiEmbed PB
   { embed_fupd := fun E1 E2 P => (embed_congr (PROP1 := PB) (PROP2 := PC)
       (BiEmbedFUpd.embed_fupd (PROP1 := PA) (PROP2 := PB) E1 E2 P)).trans
@@ -577,7 +578,7 @@ variable {QA QB QC : Type _} [Sbi QA] [Sbi QB] [Sbi QC]
   [BiEmbed QA QB] [BiEmbed QB QC] [BiEmbedSbi QA QB] [BiEmbedSbi QB QC]
 
 @[rocq_alias embed_embed_sbi]
-theorem embed_embed_sbi : @BiEmbedSbi QA QC _ _ (embedBiEmbed QB) _ _ :=
+theorem embed_embed_sbi : @BiEmbedSbi _ _ QA QC _ _ (embedBiEmbed QB) _ _ :=
   letI : BiEmbed QA QC := embedBiEmbed QB
   { embed_siEmpValid := fun P =>
       (BiEmbedSbi.embed_siEmpValid (PROP1 := QB) (PROP2 := QC) (embed (A := QA) (B := QB) P)).trans

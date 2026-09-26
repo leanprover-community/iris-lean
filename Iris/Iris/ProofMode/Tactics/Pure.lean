@@ -12,6 +12,10 @@ namespace Iris.ProofMode
 public section
 open BI Iris.Std
 
+section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
+
 @[rocq_alias tac_pure]
 theorem pure_elim_spatial [BI PROP] {P P' A Q : PROP} {φ : Prop}
     [hA : IntoPure A φ] [or : TCOr (Affine A) (Absorbing Q)]
@@ -49,8 +53,11 @@ theorem pure_intro_spatial [BI PROP] {Q : PROP} {φ : Prop}
 
 #rocq_ignore tac_emp_intro "Not necessary as there is no AffineEnv type class in Lean"
 
+end
+
 public meta section
 open Lean Elab Tactic Meta Qq
+variable {vsi : Lean.Level} {si : Q(Type vsi)} {isi : Q(Iris.SIdx $si)}
 
 /--
   Apply a destruction pattern for pure hypotheses.
@@ -63,7 +70,7 @@ def iPureCases (ty : Q(Prop)) (pat : TSyntax `rcasesPat)
   for g in gs do g.withContext do g.assign (← k g)
   instantiateMVars m
 
-def iPureCore {prop : Q(Type u)} {bi : Q(BI $prop)}
+def iPureCore {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)}
     (P : Q($prop)) {P' : Q($prop)} (hyps' : Hyps bi P') (p : Q(Bool))
     (A Q : Q($prop)) (purePat : TSyntax `rcasesPat)
     (pf : Q($P ⊣⊢ $P' ∗ □?$p $A))
@@ -86,7 +93,7 @@ def iPureCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     | throwIPMError "{A} is not affine and the goal not absorbing"
     return q(pure_elim_spatial (A := $A) $pf $f)
 
-def iPureIntroCore {u} {prop : Q(Type u)} (_bi : Q(BI $prop))
+def iPureIntroCore {u} {prop : Q(Type u)} (_bi : Q(@BI $si $isi $prop))
     (e goal : Q($prop)) :
     ProofModeM <| Q($e ⊢ $goal) × MVarId := do
   let b : Q(Bool) ← mkFreshExprMVarQ q(Bool)

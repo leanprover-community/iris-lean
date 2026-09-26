@@ -17,7 +17,8 @@ public import Iris.BI.InternalEq
 public import Iris.Std.Positives
 
 @[expose] public section
-local stepindex Nat
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris
 open BI
@@ -337,7 +338,7 @@ instance plainly_absorbing (P : PROP) : Absorbing iprop(■ P) where
   absorbing := absorbingly_elim_plainly.1
 
 @[rocq_alias plainly_si_pure]
-theorem plainly_siPure {Pi : SiProp} :
+theorem plainly_siPure {Pi : (SiProp stepindex%)} :
     iprop(■ (<si_pure> Pi : PROP) ⊣⊢ <si_pure> Pi) :=
   ⟨siPure_mono siEmpValid_siPure.mp, siPure_mono siEmpValid_siPure.mpr⟩
 
@@ -445,7 +446,7 @@ instance wand_persistent [Plain P] [Persistent Q] [Absorbing Q] :
     _ ⊢ <pers> (P -∗ Q)   := persistently_mono (wand_mono_left plain)
 
 @[rocq_alias limit_preserving_Plain]
-theorem limitPreserving_plain {A} [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
+theorem limitPreserving_plain [SIdxFinite SI] {A} [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
   LimitPreserving (fun x => Plain (Φ x)) := by
     letI _ : OFE.NonExpansive fun x => iprop(■ Φ x) := .comp inferInstance Φne
     refine ⟨fun c h => ⟨?_⟩, fun hn _ _ => absurd hn (SIdx.limit_finite _)⟩
@@ -654,7 +655,7 @@ instance from_option_plain {A : Type _} (P : PROP) (Ψ : A → PROP) (x? : Optio
   match x? with | (x : A) => hΨ x | .none => hP
 
 @[rocq_alias si_pure_plain]
-instance siPure_plain (P : SiProp) : Plain (PROP := PROP) (siPure P) where
+instance siPure_plain (P : (SiProp stepindex%)) : Plain (PROP := PROP) (siPure P) where
   plain := plainly_siPure.2
 
 @[rocq_alias si_emp_valid_plain]

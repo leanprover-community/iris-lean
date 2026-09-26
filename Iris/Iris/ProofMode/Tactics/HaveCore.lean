@@ -22,6 +22,10 @@ namespace Iris.ProofMode
 public section
 open BI
 
+section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
+
 @[rocq_alias tac_pose_proof]
 theorem have_asEmpValid [bi : BI PROP] {φ} {P Q : PROP}
     [h1 : AsEmpValid .into φ .in PROP bi P] (h : φ) : Q ⊢ Q ∗ □ P :=
@@ -35,8 +39,11 @@ theorem have_asEmpValid [bi : BI PROP] {φ} {P Q : PROP}
 #rocq_ignore into_emp_valid_proj "Type class IntoEmpValid not needed in Lean"
 #rocq_ignore into_emp_valid_tforall "Type class IntoEmpValid not needed in Lean"
 
+end
+
 public meta section
 open Lean Elab Tactic Meta Qq Iris.Std
+variable {vsi : Lean.Level} {si : Q(Type vsi)} {isi : Q(Iris.SIdx $si)}
 
 /--
 Assert a hypothesis from either a hypothesis name or a Lean proof term `tm`.
@@ -56,7 +63,7 @@ A tuple containing:
 - `out`: Asserted proposition
 - `pf`: Proof of `hyps ⊢ hyps' ∗ □?p out`
 -/
-private def iHaveCore {e} (hyps : @Hyps u prop bi e)
+private def iHaveCore {e} (hyps : Hyps (u := u) (prop := prop) (si := si) (isi := isi) bi e)
     (tm : Term) (keep : Bool) :
     ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) ×
       (out : Q($prop)) × Q($e ⊢ $e' ∗ □?$p $out)) := do
@@ -99,7 +106,7 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
 
     return ⟨_, hyps, q(true), hyp, q(have_asEmpValid $val)⟩
 
-def iHave {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
+def iHave {e} (hyps : Hyps (u := u) (prop := prop) (si := si) (isi := isi) bi e) (goal : Q($prop))
     (pmt : PMTerm) (keep : Bool) (try_dup_context : Bool := false) :
     ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) × (out : Q($prop)) ×
       Q(($e' ∗ □?$p $out ⊢ $goal) → $e ⊢ $goal)) := do

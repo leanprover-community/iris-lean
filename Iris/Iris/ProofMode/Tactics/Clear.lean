@@ -13,6 +13,10 @@ namespace Iris.ProofMode
 public section
 open BI Iris.Std
 
+section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
+
 @[rocq_alias tac_clear]
 theorem clear_spatial [BI PROP] {P P' A Q : PROP} [TCOr (Affine A) (Absorbing Q)]
     (h_rem : P ⊣⊢ P' ∗ A) (h : P' ⊢ Q) : P ⊢ Q := calc
@@ -24,10 +28,13 @@ theorem clear_intuitionistic [BI PROP] {P P' A Q : PROP}
     (h_rem : P ⊣⊢ P' ∗ □ A) (h : P' ⊢ Q) : P ⊢ Q :=
   clear_spatial h_rem h
 
+end
+
 public meta section
 open Lean Elab Tactic Meta Qq
+variable {vsi : Lean.Level} {si : Q(Type vsi)} {isi : Q(Iris.SIdx $si)}
 
-def iClearCoreOne {prop : Q(Type u)} (_bi : Q(BI $prop)) (e e' : Q($prop))
+def iClearCoreOne {prop : Q(Type u)} (_bi : Q(@BI $si $isi $prop)) (e e' : Q($prop))
     (p : Q(Bool)) (out goal : Q($prop)) (pf : Q($e ⊣⊢ $e' ∗ □?$p $out)) :
     ProofModeM Q(($e' ⊢ $goal) → $e ⊢ $goal) := do
     match matchBool p with
@@ -37,22 +44,22 @@ def iClearCoreOne {prop : Q(Type u)} (_bi : Q(BI $prop)) (e e' : Q($prop))
         | throwIPMError "{out} is not affine and the goal not absorbing"
       return q(clear_spatial (A:=$out) $pf)
 
-private structure ClearState {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (origE goal : Q($prop)) where
+private structure ClearState {u} {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)} (origE goal : Q($prop)) where
   (e : Q($prop)) (hyps : Hyps bi e)
   pf : Q(($e ⊢ $goal) → ($origE ⊢ $goal))
 
 private def ClearState.clearProofModeHyp {u prop bi origE goal} :
-    @ClearState u prop bi origE goal → IVarId →
-    ProofModeM (@ClearState u prop bi origE goal)
+    ClearState (u := u) (prop := prop) (si := si) (isi := isi) (bi := bi) origE goal → IVarId →
+    ProofModeM (ClearState (u := u) (prop := prop) (si := si) (isi := isi) (bi := bi) origE goal)
   | { e, hyps, pf }, ivar => do
       let ⟨e', hyps', _, out', p, _, hrem⟩ := hyps.remove true ivar
       let step ← iClearCoreOne bi e e' p out' goal hrem
       let pf' : Q(($e' ⊢ $goal) → ($origE ⊢ $goal)) := q(fun h => $pf ($step h))
       return {  e := e', hyps := hyps', pf := pf' }
 
-def iClearCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+def iClearCore {u} {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (pats : List SelPat)
-    (k : ∀ {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
+    (k : ∀ {u} {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)} {e : Q($prop)}
       (_ : Hyps bi e) (goal : Q($prop)) (_ : Array FVarId), ProofModeM Q($e ⊢ $goal)) :
     ProofModeM Q($e ⊢ $goal) := do
   let (ivars, fvars) := (← SelPat.resolve hyps pats .topToBottom).partitionMap fun

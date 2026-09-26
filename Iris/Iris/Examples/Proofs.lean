@@ -9,6 +9,8 @@ public import Iris.BI
 public import Iris.ProofMode
 
 @[expose] public section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris.Examples
 open Iris.BI

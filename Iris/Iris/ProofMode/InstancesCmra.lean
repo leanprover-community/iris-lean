@@ -9,6 +9,8 @@ public import Iris.Algebra.CMRA
 public import Iris.ProofMode.Classes
 
 @[expose] public section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris.ProofMode
 open Iris

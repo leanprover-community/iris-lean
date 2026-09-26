@@ -8,7 +8,8 @@ module
 public import Iris.BI.Lib.Fixpoint
 
 @[expose] public section
-local stepindex Nat
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 /-!  # Logical Relation Closures -/
 
@@ -326,7 +327,7 @@ instance bi_tc_affine [∀ x y, Affine (R x y)] (x y : A) :
 @[rocq_alias bi_tc_absorbing]
 instance bi_tc_absorbing [∀ x y, Absorbing (R x y)] (x y : A) :
     Absorbing (biTc R x y) :=
-    @least_fixpoint_absorbing PROP A _ _ (biTcPre R y) inferInstance
+    @least_fixpoint_absorbing PROP A _ _ _ _ (biTcPre R y) inferInstance
       (fun _ _ _ => by unfold biTcPre; infer_instance) x
 
 @[rocq_alias bi_tc_persistent]
@@ -476,18 +477,18 @@ variable [Timeless (emp : PROP)] [OFE A] [OFE.Discrete A]
 variable [NonExpansive₂ R]
 
 @[rocq_alias bi_nsteps_timeless]
-instance bi_nsteps_timeless (n : Nat) [∀ x y, Timeless (R x y)] (x y : A) :
+instance bi_nsteps_timeless [SIdxFinite SI] (n : Nat) [∀ x y, Timeless (R x y)] (x y : A) :
     Timeless (biNsteps R n x y) := by
   induction n generalizing x y <;>
     unfold biNsteps <;> infer_instance
 
 @[rocq_alias bi_rtc_timeless]
-instance bi_rtc_timeless [∀ x y, Timeless (R x y)] (x y : A) :
+instance bi_rtc_timeless [SIdxFinite SI] [∀ x y, Timeless (R x y)] (x y : A) :
     Timeless (biRtc R x y) :=
       (equiv_iff.mpr (bi_rtc_nsteps R x y)) ▸ inferInstance
 
 @[rocq_alias bi_tc_timeless]
-instance bi_tc_timeless [∀ x y, Timeless (R x y)] (x y : A) :
+instance bi_tc_timeless [SIdxFinite SI] [∀ x y, Timeless (R x y)] (x y : A) :
     Timeless (biTc R x y) :=
       (equiv_iff.mpr (bi_tc_nsteps R x y)) ▸ inferInstance
 

@@ -15,6 +15,10 @@ namespace Iris.ProofMode
 public section
 open BI
 
+section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
+
 @[rocq_alias tac_modal_elim]
 theorem mod [BI PROP] {e} {Φ} {p p'} {A A' Q Q' : PROP}
     [he : ElimModal Φ p .out p' A A' Q Q']
@@ -23,8 +27,11 @@ theorem mod [BI PROP] {e} {Φ} {p p'} {A A' Q Q' : PROP}
   _ ⊢ □?p A ∗ (□?p' A' -∗ Q') := sep_mono_right <| wand_intro h1
   _ ⊢ Q                       := he.elim_modal hΦ
 
+end
+
 public meta section
 open Lean Elab Tactic Meta Qq Iris.Std
+variable {vsi : Lean.Level} {si : Q(Type vsi)} {isi : Q(Iris.SIdx $si)}
 
 /--
 Eliminate a modality from `A` by transforming the goal from `P ∗ □?p A ⊢ Q` to `P ∗ □?p' A' ⊢ Q'`,
@@ -38,7 +45,7 @@ Parameters:
 
 Returns a proof of `P ∗ □?p A ⊢ Q`
 -/
-def iModCore {prop : Q(Type u)} (_bi : Q(BI $prop))
+def iModCore {prop : Q(Type u)} (_bi : Q(@BI $si $isi $prop))
     (P Q : Q($prop)) (p : Q(Bool)) (A : Q($prop))
     (k : (p' : Q(Bool)) → (A' Q' : Q($prop)) → ProofModeM Q($P ∗ □?$p' $A' ⊢ $Q')) :
     ProofModeM (Q($P ∗ □?$p $A ⊢ $Q)) := do

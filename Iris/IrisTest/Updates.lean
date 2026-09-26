@@ -6,6 +6,8 @@ Authors: Fernando Leal
 module
 
 public import Iris.BI.Updates
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 open Iris
 

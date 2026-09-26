@@ -15,7 +15,8 @@ public import Iris.BI.Plainly
 public import Iris.Std.CoPset
 
 @[expose] public section
-local stepindex Nat
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris
 open Iris.Std BI
@@ -202,7 +203,8 @@ delab_rule BIBase.wand
     `(iprop($(← unpackIprop Q) ={$E₁}▷=∗^[$n] $P))
 
 @[rocq_alias BiBUpd]
-class BIUpdate (PROP : Type _) [BI PROP] extends BUpd PROP where
+class BIUpdate {SI : outParam (Type _)} [instSI : outParam (SIdx SI)] (PROP : Type _)
+    [outParam (BI (SI := SI) PROP)] extends BUpd PROP where
   [bupd_ne : OFE.NonExpansive (BUpd.bupd (PROP := PROP))]
   intro {P : PROP} : P ⊢ |==> P
   mono {P Q : PROP} : (P ⊢ Q) → |==> P ⊢ |==> Q
@@ -212,7 +214,8 @@ class BIUpdate (PROP : Type _) [BI PROP] extends BUpd PROP where
 #rocq_ignore BiBUpdMixin "Included in BIUpdate typeclass."
 
 @[rocq_alias BiFUpd]
-class BIFUpdate (PROP : Type _) [BI PROP] extends FUpd PROP where
+class BIFUpdate {SI : outParam (Type _)} [instSI : outParam (SIdx SI)] (PROP : Type _)
+    [outParam (BI (SI := SI) PROP)] extends FUpd PROP where
   [ne {E1 E2 : CoPset} : OFE.NonExpansive (iprop(|={E1,E2}=> · : PROP))]
   subset {E1 E2 : CoPset} : E2 ⊆ E1 → ⊢ |={E1,E2}=> |={E2,E1}=> (emp : PROP)
   except0 {E1 E2 : CoPset} {P : PROP} : (◇ |={E1,E2}=> P) ⊢ |={E1,E2}=> P
@@ -232,14 +235,14 @@ class BIUpdateFUpdate (PROP : Type _) [BI PROP] [BIUpdate PROP] [BIFUpdate PROP]
 class BIFUpdateSbi (PROP : Type _) [BI PROP] [BIFUpdate PROP] [Sbi PROP] where
   fupd_keep_siPure {E} E' Pi (R : PROP) :
     (|={E,E'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E}=∗ R) ⊢ |={E}=> R
-  fupd_siPure_later (E : CoPset) (Pi : SiProp) :
+  fupd_siPure_later (E : CoPset) (Pi : (SiProp stepindex%)) :
     (▷ |={E}=> <si_pure> Pi) ⊢@{PROP} |={E}=> ▷ ◇ <si_pure> Pi
-  fupd_siPure_sForall_2 (E : CoPset) (Ψi : SiProp → Prop) :
+  fupd_siPure_sForall_2 (E : CoPset) (Ψi : (SiProp stepindex%) → Prop) :
     (∀ q, ⌜Ψi q⌝ → |={E}=> <si_pure> q) ⊢@{PROP} |={E}=> <si_pure> (sForall Ψi)
 
 @[rocq_alias BiBUpdSbi]
 class BIBUpdateSbi (PROP : Type _) [BI PROP] [BIUpdate PROP] [Sbi PROP] where
-  bupd_siPure (Pi : SiProp) : iprop(|==> <si_pure> Pi ⊢@{PROP} <si_pure> Pi)
+  bupd_siPure (Pi : (SiProp stepindex%)) : iprop(|==> <si_pure> Pi ⊢@{PROP} <si_pure> Pi)
 
 section BUpdLaws
 
@@ -684,7 +687,7 @@ theorem step_fupdN_wand {Eo Ei : CoPset} {n : Nat} {P Q : PROP} :
     calc iprop((P -∗ Q) ∗ |={Eo,Ei}=> ▷ |={Ei,Eo}=> _)
       _ ⊢ |={Eo,Ei}=> (P -∗ Q) ∗ ▷ |={Ei,Eo}=> _  := (fupd_frame_left ..)
       _ ⊢ |={Eo,Ei}=> (▷ (P -∗ Q)) ∗ ▷ |={Ei,Eo}=> _  := mono (sep_mono (later_intro) .rfl)
-      _ ⊢ |={Eo,Ei}=> ▷ ((P -∗ Q) ∗ |={Ei,Eo}=> _) := mono (later_sep.2)
+      _ ⊢ |={Eo,Ei}=> ▷ ((P -∗ Q) ∗ |={Ei,Eo}=> _) := mono (later_sep_2)
       _ ⊢ |={Eo,Ei}=> ▷ |={Ei,Eo}=> ((P -∗ Q) ∗ _) := mono (later_mono (fupd_frame_left ..))
       _ ⊢ |={Eo,Ei}=> ▷ |={Ei,Eo}=> _ := step_fupd_mono IH
 
@@ -707,7 +710,7 @@ theorem step_fupd_mask_mono {Eo₁ Eo₂ Ei₁ Ei₂ : CoPset} {P : PROP}
   refine frame_right.trans ?_
   refine mono ?_
   refine (sep_mono_left later_intro).trans ?_
-  refine later_sep.2.trans ?_
+  refine later_sep_2.trans ?_
   refine later_mono ?_
   refine frame_right.trans ?_
   refine .trans (mono ?_) (trans (E2 := Ei₁))
@@ -776,7 +779,7 @@ theorem step_fupd_frame_left {Eo Ei : CoPset} {R Q : PROP} :
   refine fupd_frame_left.trans <| mono ?_
   calc
     _ ⊢ ▷ R ∗ ▷ |={Ei,Eo}=> Q := sep_mono_left later_intro
-    _ ⊢ ▷ (R ∗ |={Ei,Eo}=> Q)  := later_sep.mpr
+    _ ⊢ ▷ (R ∗ |={Ei,Eo}=> Q)  := later_sep_2
     _ ⊢ ▷ |={Ei,Eo}=> R ∗ Q    := later_mono fupd_frame_left
 
 @[rocq_alias step_fupdN_add]
@@ -898,7 +901,7 @@ theorem sForall_eq_forall {Φ : α → PROP} :
   Proves that the Rocq class field `fupd_si_pure_forall_2` for `BIFUpdSbi`
   follows from `BIFUpdateSbi.fupd_siPure_sForall_2`.
 -/
-theorem fupd_siPure_forall_2 {E : CoPset} {A : Sort _} {Φi : A → SiProp} :
+theorem fupd_siPure_forall_2 {E : CoPset} {A : Sort _} {Φi : A → (SiProp stepindex%)} :
     (∀ x, |={E}=> <si_pure> Φi x) ⊢@{PROP} |={E}=> ∀ x, <si_pure> Φi x := calc
   _ ⊢ ∀ q, ⌜∃ x, q = Φi x⌝ → |={E}=> <si_pure> q :=
       forall_intro fun _ => imp_intro_swap <| pure_elim_left fun ⟨x, hx⟩ => hx ▸ forall_elim x

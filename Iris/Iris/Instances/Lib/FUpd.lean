@@ -645,7 +645,7 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
     Lean.Elab.Term.synthesizeSyntheticMVarsNoPostponing
     instantiateMVars n
 
-  ProofModeM.runTactic `inext fun mvar { u, prop, bi, e, hyps, goal, .. } => do
+  ProofModeM.runTactic `inext fun mvar { u, prop, vsi, si, isi, bi, e, hyps, goal, .. } => do
     -- Search for the later credit hypothesis from the context
     let ivar ← hyps.findWithInfo h
     let some ⟨name, _, p, ty⟩ := hyps.getDecl? ivar
@@ -681,8 +681,8 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
     unless ← isDefEq newN q(0) do
       throwError "inext: insufficient credits"
 
-    have modality : Q(@Modality $prop $prop $bi $bi) :=
-      mkAppN (.const ``modality_laterN [u]) #[prop, n, bi]
+    have modality : Q(@Modality $si $isi $prop $prop $bi $bi) :=
+      mkAppN (.const ``modality_laterN [vsi, u]) #[si, isi, prop, n, bi]
 
     let newC : Q(Nat) ← instantiateMVars newC
     match newC.nat? with

@@ -8,11 +8,14 @@ module
 public meta import Iris.ProofMode.Expr
 public import Iris.ProofMode.SynthInstance
 public import Iris.ProofMode.Classes
+/- Meta code: quotations mention the step-index type `$si` explicitly, so this file does not
+declare an ambient step-index type (stepindex-free). -/
 
 public meta section
 
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Iris.Std
+variable {vsi : Lean.Level} {si : Q(Type vsi)} {isi : Q(Iris.SIdx $si)}
 
 structure ProofModeM.Context where
   tacName : Name := .anonymous
@@ -80,7 +83,7 @@ instance : Inhabited (ProofModeM α) where
   default := throw default
 
 /-- Create a new BI goal without registering it in the proof mode state. -/
-def mkBIGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
+def mkBIGoal {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)}
     {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous) :
     ProofModeM Q($e ⊢ $goal) := do
   let m : Q($e ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
@@ -89,7 +92,7 @@ def mkBIGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
   pure m
 
 /-- Create a new BI goal with the given hypotheses and goal, and add it to the proof mode state. -/
-def addBIGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
+def addBIGoal {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)}
     {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous) :
     ProofModeM Q($e ⊢ $goal) := do
   let m ← mkBIGoal hyps goal name
@@ -121,7 +124,7 @@ def withoutFVars {α : Q(Sort u)} (fvarIds : Array FVarId) (k : ProofModeM Q($α
   user of this function to check that the variables to clear can actually be
   cleared (e.g. using `Hyps.checkRemovableFVar`).
 -/
-def addBIGoalWithoutFVars {prop : Q(Type u)} {bi : Q(BI $prop)}
+def addBIGoalWithoutFVars {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)}
     {e} (hyps : Hyps bi e) (goal : Q($prop)) (toClear : Array FVarId)
     (name : Name := .anonymous) : ProofModeM Q($e ⊢ $goal) := do
   withoutFVars (u:=0) toClear (addBIGoal hyps goal name)
@@ -147,7 +150,7 @@ def addMVarGoal (m : MVarId) (name : Name := .anonymous) : ProofModeM Unit := do
   2. a Boolean value indicating whether the `firstTactic` solves all goals,
      `false` if `firstTactic` is `none`.
 -/
-def addBIGoalRunTactics {prop : Q(Type u)} {bi : Q(BI $prop)}
+def addBIGoalRunTactics {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)}
     {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous)
     (firstTactic : Option <| TSyntax `tactic)
     (tacticSeq : TSyntax `Lean.Parser.Tactic.tacticSeq) :
@@ -197,14 +200,31 @@ def startProofMode (mvar : MVarId) (customProp : Option Expr := none)
       throwError "{tacName}: {customProp} is not a valid BI instance type"
 
   let P ← mkFreshExprMVarQ q($prop)
-  let bi ← mkFreshExprMVarQ q(BI $prop)
+  let vsi ← mkFreshLevelMVar
+  let si ← mkFreshExprMVarQ q(Type vsi)
+  let isi ← mkFreshExprMVarQ q(Iris.SIdx $si)
+  let bi ← mkFreshExprMVarQ q(@BI $si $isi $prop)
+  -- The step-index type cannot be assigned from within typeclass search (it is not determined by
+  -- the arguments of `AsEmpValid`). We find the type of propositions of an entailment in the goal
+  -- and synthesize its `BI` instance, whose step-index type and `SIdx` instance are `outParam`s.
+  if let some e := goal.find? (fun e =>
+      e.isAppOfArity ``BIBase.Entails 4 || e.isAppOfArity ``BIBase.BiEntails 4 ||
+        e.isAppOfArity ``BIBase.EmpValid 3) then
+    let prop' := e.getAppArgs[0]!
+    if let .sort (.succ u') ← whnf (← inferType prop') then
+      let v' ← mkFreshLevelMVar
+      let si' ← mkFreshExprMVar (mkSort (.succ v'))
+      let isi' ← mkFreshExprMVar (mkApp (mkConst ``Iris.SIdx [v']) si')
+      if let .some _ ← trySynthInstance (mkApp3 (mkConst ``BI [v', u']) si' isi' prop') then
+        discard <| isDefEq si (← instantiateMVars si')
+        discard <| isDefEq isi (← instantiateMVars isi')
   let io : Q(InOut) := if customProp.isSome then q(.in) else q(.out)
   let synthResult ← ProofMode.trySynthInstanceQ q(AsEmpValid .from $goal $io $prop $bi $P)
 
   match synthResult, customProp with
   | .some (inst, mvars), _ =>
     if !mvars.isEmpty then throwError "{tacName} does not support creating mvars"
-    let irisGoal := { u, prop, bi, hyps := .mkEmp bi, goal := P, .. }
+    let irisGoal := { u, prop, vsi, si, isi, bi, hyps := .mkEmp bi, goal := P, .. }
     let subgoal : Quoted q(⊢ $P) ←
       mkFreshExprSyntheticOpaqueMVar (IrisGoal.toExpr irisGoal) (← mvar.getTag)
     mvar.assign q(asEmpValid_2 $goal $inst $subgoal)

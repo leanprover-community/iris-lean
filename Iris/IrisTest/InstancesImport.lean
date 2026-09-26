@@ -6,10 +6,13 @@ Authors: Michael Sammler
 module
 
 import IrisTest.Instances
+public import Iris.Algebra.StepIndex
 
 /- This file tests that IPM tactic instances declared in other files are imported and applied correctly. -/
 
 @[expose] public section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace IrisTest
 open Lean Iris Qq BI ProofMode

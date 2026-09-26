@@ -125,7 +125,8 @@ variable {PROP3 : Type u} [BI PROP3] [BiEmbed PROP2 PROP3] (P : PROP1) in
   that `PROP1` is supplied.
 -/
 /--
-error: parameter #1 PROP1 of FromModal InOut.out ?m.7 ?m.8 iprop(□ P) iprop(□ P) ?m.13 is an out parameter that is not an mvar
+error: parameter #3 PROP1 of FromModal InOut.out ?m.19 ?m.20 iprop(□ P) iprop(□ P)
+  ?m.25 is an out parameter that is not an mvar
 -/
 #guard_msgs (whitespace := lax) in
 variable (P : PROP1) in

@@ -11,6 +11,7 @@ public import Iris.ProofMode.Tactics.RevertIntro
 namespace Iris.ProofMode
 
 open Lean Meta Elab.Tactic Qq
+variable {vsi : Lean.Level} {si : Q(Type vsi)} {isi : Q(Iris.SIdx $si)}
 
 public section
 
@@ -20,10 +21,10 @@ public meta section
 
 syntax (name := iloeb) "iloeb" " as " binderIdent (generalizingSelPats)? : tactic
 
-private def iLoebCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+private def iLoebCore {u} {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (targets : List SelTarget)
     (IH : TSyntax `Lean.binderIdent) : ProofModeM Q($e ⊢ $goal) :=
-  iRevertIntro hyps goal targets fun {prop _ _} hyps goal k => do
+  iRevertIntro hyps goal targets fun {_ _ _ prop _ _} hyps goal k => do
     let some _ ← ProofModeM.trySynthInstanceQ q(BI.BILoeb $prop)
       | throwIPMError "no `{←ppExpr q(BI.BILoeb $prop)}` instance found"
     let pf := q(BI.loeb_wand_intuitionistically (P := $goal))

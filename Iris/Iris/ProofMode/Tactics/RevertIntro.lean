@@ -10,23 +10,24 @@ public import Iris.ProofMode.Tactics.Revert
 namespace Iris.ProofMode
 
 open Lean Meta Elab.Tactic Qq
+variable {vsi : Lean.Level} {si : Q(Type vsi)} {isi : Q(Iris.SIdx $si)}
 
 public meta section
 
 abbrev ProofModeContinuationIntro :=
-  ∀ {u : Level} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
+  ∀ {vsi : Lean.Level} {si : Q(Type vsi)} {isi : Q(Iris.SIdx $si)} {u : Level} {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)} {e : Q($prop)}
     (_hyps : Hyps bi e) (goal: Q($prop)),
     ProofModeM Q($e ⊢ $goal)
 
 abbrev ProofModeContinuationRevert :=
-  ∀ {u : Level} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
+  ∀ {vsi : Lean.Level} {si : Q(Type vsi)} {isi : Q(Iris.SIdx $si)} {u : Level} {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)} {e : Q($prop)}
     (_hyps : Hyps bi e) (goal : Q($prop)), ProofModeContinuationIntro →
     ProofModeM Q($e ⊢ $goal)
 
 def iRevertIntro
-  {prop: Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)} (hyps : Hyps bi e) (goal: Q($prop))
+  {prop: Q(Type u)} {bi : Q(@BI $si $isi $prop)} {e : Q($prop)} (hyps : Hyps bi e) (goal: Q($prop))
   (hs : List SelTarget)
-  (k : ∀ {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
+  (k : ∀ {vsi : Lean.Level} {si : Q(Type vsi)} {isi : Q(Iris.SIdx $si)} {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)} {e : Q($prop)}
     (_hyps : Hyps bi e) (goal: Q($prop)), ProofModeContinuationRevert →
     ProofModeM Q($e ⊢ $goal))
    : ProofModeM Q($e ⊢ $goal) := do

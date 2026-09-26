@@ -10,7 +10,8 @@ public import Iris.BI.Plainly
 public import Iris.BI.InternalEq
 
 @[expose] public section
-local stepindex Nat
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 /-!
 # Generic CMRA validity in a BI logic
@@ -144,8 +145,8 @@ theorem internalCmraIncluded_intro {P : PROP} {a b : A} (h : a ≼ b) :
     _ ⊢ a ≼ b := siPure_mono (BI.exists_intro_trans c (internalEq.of_equiv hc))
 
 /-- The `SiProp` underlying the internal `≼` holds at `n` exactly when `a ≼{n} b`. -/
-private theorem included_holds {a b : A} {n : Nat} :
-    ((∃ c, iprop(b ≡ (a • c))) : SiProp).holds n ↔ a ≼{n} b := SiProp.exists_holds
+private theorem included_holds {a b : A} {n : SI} :
+    ((∃ c, iprop(b ≡ (a • c))) : (SiProp stepindex%)).holds n ↔ a ≼{n} b := SiProp.exists_holds
 
 /-- Two internal inclusions agree when they agree at every step index. -/
 theorem internalCmraIncluded_iff [CMRA B] {a b : A} {a' b' : B}
@@ -217,7 +218,7 @@ theorem internalCmraIncluded_map {B : Type _} [CMRA B] (g : A → B) [NonExpansi
     rw [← hg]; exact internalEq.of_internalEquiv_ne g
 
 @[rocq_alias internal_included_timeless]
-instance internalCmraIncluded_timeless {a b : A} [CMRA.Discrete A] :
+instance internalCmraIncluded_timeless [SIdxFinite SI] {a b : A} [CMRA.Discrete A] :
     Timeless (PROP := PROP) iprop(a ≼ b) := by
   haveI : ∀ x : A, DiscreteE x := fun x => ⟨OFE.Discrete.discrete⟩
   unfold internalCmraIncluded

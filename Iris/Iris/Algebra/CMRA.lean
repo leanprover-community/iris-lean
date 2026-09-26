@@ -18,7 +18,7 @@ variable {SI : Type _} [instSI : SIdx SI]
 local stepindex SI
 
 @[rocq_alias cmra]
-class CMRA {SI : outParam (Type _)} [instSI : SIdx SI] (α : Type _) extends OFE (SI := SI) α where
+class CMRA {SI : outParam (Type _)} [instSI : outParam (SIdx SI)] (α : Type _) extends OFE (SI := SI) α where
   pcore {SI} : α → Option α
   op {SI} : α → α → α
   ValidN : SI → α → Prop
@@ -137,7 +137,7 @@ export IdFree (id_free0_r)
 #rocq_ignore IdFree_proper "Derived from nonexpansivity"
 
 @[rocq_alias CmraTotal]
-class IsTotal {SI : outParam (Type _)} [instSI : SIdx SI] (α : Type _) [inst : CMRA α] where
+class IsTotal {SI : outParam (Type _)} [instSI : outParam (SIdx SI)] (α : Type _) [inst : CMRA α] where
   total (x : α) : ∃ cx, pcore x = some cx
 export IsTotal (total)
 
@@ -156,7 +156,7 @@ export Discrete (discrete_valid)
 end CMRA
 
 @[rocq_alias ucmra]
-class UCMRA {SI : outParam (Type _)} [instSI : SIdx SI] (α : Type _) extends CMRA (SI := SI) α where
+class UCMRA {SI : outParam (Type _)} [instSI : outParam (SIdx SI)] (α : Type _) extends CMRA (SI := SI) α where
   unit {SI} : α
   unit_valid : ✓ unit
   unit_left_id : unit • x = x
@@ -252,7 +252,7 @@ instance : NonExpansive (pcore (α := α)) where
     | .none, .some b =>
       let ⟨w, hw, ew⟩ := pcore_ne e.symm ey
       cases hw.symm ▸ ex
-    | .none, .none => rw [ex, ey]; exact .rfl
+    | .none, .none => rw [ex, ey]; try exact .rfl
 
 #rocq_ignore CoreId_proper "OFE is Leibniz; use equality"
 

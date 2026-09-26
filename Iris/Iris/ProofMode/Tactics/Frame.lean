@@ -14,6 +14,10 @@ namespace Iris.ProofMode
 public section
 open BI
 
+section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
+
 theorem frame_init [BI PROP] {e goal : PROP} :
     e ⊢ e ∗ (goal -∗ goal) :=
   sep_emp.2.trans (sep_mono_right (wand_intro emp_sep.1))
@@ -73,15 +77,18 @@ theorem frame_finish_close_emp [BI PROP] {e origE origGoal : PROP}
 #rocq_ignore tac_unlock_True "The definition locked is not used in Lean"
 #rocq_ignore tac_unlock_emp "The definition locked is not used in Lean"
 
+end
+
 public meta section
 open Lean Elab Tactic Meta Qq Iris.Std
+variable {vsi : Lean.Level} {si : Q(Type vsi)} {isi : Q(Iris.SIdx $si)}
 
-structure FrameResult {u} {prop : Q(Type u)} (bi : Q(BI $prop)) (origE origGoal : Q($prop)) where
+structure FrameResult {u} {prop : Q(Type u)} (bi : Q(@BI $si $isi $prop)) (origE origGoal : Q($prop)) where
   (progress : Bool) (e : Q($prop)) (hyps : Hyps bi e) (goal : Q($prop))
   pf : Q($origE ⊢ $e ∗ ($goal -∗ $origGoal))
 
 private def FrameResult.step {u prop bi origE origGoal} :
-    @FrameResult u prop bi origE origGoal → SelTarget → ProofModeM (FrameResult bi origE origGoal)
+    FrameResult (u := u) (prop := prop) (si := si) (isi := isi) bi origE origGoal → SelTarget → ProofModeM (FrameResult bi origE origGoal)
   | st@{hyps, goal, pf, ..}, {explicit, kind := .ipm ivar, ..} => do
     let ⟨e', hyps', _, out', p, _, hrem⟩ := hyps.remove false ivar
     let goal' ← mkFreshExprMVarQ q($prop)
@@ -105,7 +112,7 @@ private def FrameResult.step {u prop bi origE origGoal} :
     else
       return st
 
-def iFrame {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
+def iFrame {u} {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)} {e : Q($prop)}
     (hyps : Hyps bi e) (goal : Q($prop)) (sels : List SelTarget) :
     ProofModeM (FrameResult bi e goal) := do
   let mut st : FrameResult bi e goal := { progress := false, e, hyps, goal, pf := q(frame_init) }
@@ -117,7 +124,7 @@ def iFrame {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
   handles the subgoal remaining after framing. This function k might not be called if the framing
   made the goal trivial.
 -/
-def FrameResult.finish {u prop bi origE origGoal} (res : @FrameResult u prop bi origE origGoal)
+def FrameResult.finish {u prop bi origE origGoal} (res : FrameResult (u := u) (prop := prop) (si := si) (isi := isi) bi origE origGoal)
     (k : ∀ {e}, Hyps bi e → (goal : Q($prop)) → ProofModeM Q($e ⊢ $goal)) :
     ProofModeM Q($origE ⊢ $origGoal) := do
   let {progress, e, hyps, goal, pf} := res
@@ -137,7 +144,7 @@ def FrameResult.finish {u prop bi origE origGoal} (res : @FrameResult u prop bi 
 /-- FrameResult.finishClose checks that the original goal was fully solved by framing and gives it
   back with the remaining hypotheses. -/
 def FrameResult.finishClose {u prop bi origE origGoal}
-    (res : @FrameResult u prop bi origE origGoal) :
+    (res : FrameResult (u := u) (prop := prop) (si := si) (isi := isi) bi origE origGoal) :
     ProofModeM ((e : Q($prop)) × (_ : Hyps bi e) × Q($origE ⊢ $e ∗ $origGoal)) := do
   let {e, hyps, goal, pf, ..} := res
   -- try closing the goal for emp or True without calling k

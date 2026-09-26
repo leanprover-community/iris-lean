@@ -10,7 +10,8 @@ public import Iris.Algebra.Updates
 public import Iris.ProofMode
 
 @[expose] public section
-local stepindex Nat
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris
 open Iris.Std BI

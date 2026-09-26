@@ -10,6 +10,8 @@ public import Iris.BI.Telescopes
 public import Iris.BI.Updates
 
 @[expose] public section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace IrisTest
 open Iris BI

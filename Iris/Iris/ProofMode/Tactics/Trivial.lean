@@ -13,11 +13,12 @@ namespace Iris.ProofMode
 
 public meta section
 open BI Lean Elab Tactic Meta Qq Iris.Std
+variable {vsi : Lean.Level} {si : Q(Type vsi)} {isi : Q(Iris.SIdx $si)}
 
 /--
 Try to solve the provided goal using `itrivial`.
 -/
-def iTrivial {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps : Hyps bi e)
+def iTrivial {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)} {e} (hyps : Hyps bi e)
   (goal : Q($prop)) : ProofModeM (Option Q($e ⊢ $goal)) := do
   let m ← mkBIGoal hyps goal
   try

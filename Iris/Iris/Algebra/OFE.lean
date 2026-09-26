@@ -15,7 +15,7 @@ namespace Iris
 
 /-- Ordered family of equivalences -/
 @[rocq_alias ofe]
-class OFE {SI : outParam (Type _)} [SIdx SI] (α : Type _) where
+class OFE {SI : outParam (Type _)} [outParam (SIdx SI)] (α : Type _) where
   Dist : SI → α → α → Prop
   dist_eqv : Equivalence (Dist n)
   eq_dist' : x = y ↔ ∀ n, Dist n x y

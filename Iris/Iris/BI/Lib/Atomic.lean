@@ -12,7 +12,8 @@ public meta import Iris.ProofMode
 public meta import Iris.Std.RocqPorting
 
 @[expose] public section
-local stepindex Nat
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris
 open Iris.Std Iris.ProofMode BI OFE
@@ -198,15 +199,15 @@ def auAllGroup (ys : Array Ident) : DelabM (Option (TSyntax ``auAllBinders)) := 
 @[app_delab Iris.atomic_update]
 def delabAtomicUpdate : Delab := do
   let e ← getExpr
-  unless e.isAppOfArity ``atomic_update 10 do failure
-  let some nA := Tele.literalArity? (e.getArg! 3) | failure
-  let some nB := Tele.literalArity? (e.getArg! 4) | failure
-  let Eo ← withNaryArg 5 delab
-  let Ei ← withNaryArg 6 delab
-  let (xs, α) ← withNaryArg 7 <| Tele.withFun nA fun xs => return (xs, ← delab)
-  let (ys, β) ← withNaryArg 8 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
+  unless e.isAppOfArity ``atomic_update 12 do failure
+  let some nA := Tele.literalArity? (e.getArg! 5) | failure
+  let some nB := Tele.literalArity? (e.getArg! 6) | failure
+  let Eo ← withNaryArg 7 delab
+  let Ei ← withNaryArg 8 delab
+  let (xs, α) ← withNaryArg 9 <| Tele.withFun nA fun xs => return (xs, ← delab)
+  let (ys, β) ← withNaryArg 10 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
     Tele.withFun nB fun ys => return (ys, ← delab)
-  let Φ ← withNaryArg 9 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
+  let Φ ← withNaryArg 11 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
     Tele.withFunUsing nB (ys.map (·.getId)) fun _ => delab
   `(iprop(AU <{ $[$(← auExGroup xs)]? $(← unpackIprop α) }> @ $Eo, $Ei
       <{ $[$(← auAllGroup ys)]? $(← unpackIprop β), COMM $(← unpackIprop Φ) }>))
@@ -214,16 +215,16 @@ def delabAtomicUpdate : Delab := do
 @[app_delab Iris.atomic_acc]
 def delabAtomicAcc : Delab := do
   let e ← getExpr
-  unless e.isAppOfArity ``atomic_acc 11 do failure
-  let some nA := Tele.literalArity? (e.getArg! 3) | failure
-  let some nB := Tele.literalArity? (e.getArg! 4) | failure
-  let Eo ← withNaryArg 5 delab
-  let Ei ← withNaryArg 6 delab
-  let (xs, α) ← withNaryArg 7 <| Tele.withFun nA fun xs => return (xs, ← delab)
-  let P ← withNaryArg 8 delab
-  let (ys, β) ← withNaryArg 9 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
+  unless e.isAppOfArity ``atomic_acc 13 do failure
+  let some nA := Tele.literalArity? (e.getArg! 5) | failure
+  let some nB := Tele.literalArity? (e.getArg! 6) | failure
+  let Eo ← withNaryArg 7 delab
+  let Ei ← withNaryArg 8 delab
+  let (xs, α) ← withNaryArg 9 <| Tele.withFun nA fun xs => return (xs, ← delab)
+  let P ← withNaryArg 10 delab
+  let (ys, β) ← withNaryArg 11 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
     Tele.withFun nB fun ys => return (ys, ← delab)
-  let Φ ← withNaryArg 10 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
+  let Φ ← withNaryArg 12 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
     Tele.withFunUsing nB (ys.map (·.getId)) fun _ => delab
   `(iprop(AACC <{ $[$(← auExGroup xs)]? $(← unpackIprop α), ABORT $(← unpackIprop P) }>
       @ $Eo, $Ei <{ $[$(← auAllGroup ys)]? $(← unpackIprop β), COMM $(← unpackIprop Φ) }>))
@@ -493,19 +494,45 @@ theorem aacc_intro_wand (Eo Ei : CoPset) (α : TA.Arg → PROP) (P : PROP)
 public meta section
 open Lean Meta Elab Qq Expr
 
+/-- Like `mkAppM`, but first instantiates the step-index type and its `SIdx` instance:
+`mkAppM` synthesizes instance arguments in order and would get stuck on `SIdx ?SI`. -/
+def mkAppMSI (si isi : Expr) (n : Name) (xs : Array Expr) : MetaM Expr := do
+  let c ← mkConstWithFreshMVarLevels n
+  let (mvars, bis, _) ← forallMetaTelescope (← inferType c)
+  -- locate the `[SIdx SI]` binder
+  let mut k? : Option Nat := none
+  for j in [0:mvars.size] do
+    if k?.isNone && bis[j]!.isInstImplicit && (← inferType mvars[j]!).isAppOf ``SIdx then
+      k? := some j
+  let some k := k? | throwError "mkAppMSI: {n} is not generic in the step-index type"
+  let .app _ siArg := (← instantiateMVars (← inferType mvars[k]!)) | unreachable!
+  unless ← isDefEq siArg si <&&> isDefEq mvars[k]! isi do
+    throwError "mkAppMSI: cannot instantiate the step-index type of {n}"
+  let mut i := 0
+  for j in [0:mvars.size] do
+    if bis[j]!.isExplicit then
+      unless ← isDefEq mvars[j]! xs[i]! do
+        throwError "mkAppMSI: argument {xs[i]!} of {n} has the wrong type"
+      i := i + 1
+  for j in [0:mvars.size] do
+    if bis[j]!.isInstImplicit then
+      let m := mvars[j]!.mvarId!
+      unless ← m.isAssigned do m.assign (← synthInstance (← m.getType))
+  instantiateMVars (mkAppN c mvars)
+
 /--
 `iauintro` turns a goal that is an atomic update (`atomic_update`) into the
 corresponding atomic accessor (`atomic_acc`), whose abort condition is the
 separating conjunction of the spatial hypotheses.
 -/
 elab "iauintro" : tactic => do
-  ProofModeM.runTactic `iauintro fun mvar { hyps, goal, .. } => do
-    let_expr atomic_update _ _ _ _ _ Eo Ei α β Φ := goal
+  ProofModeM.runTactic `iauintro fun mvar { si, isi, hyps, goal, .. } => do
+    let_expr atomic_update _ _ _ _ _ _ _ Eo Ei α β Φ := goal
       | throwIPMError "the goal {goal} is not an atomic update"
     -- Split the context into its intuitionistic and spatial parts
     let ⟨_, eS, pfSplit, pfInt⟩ := hyps.splitIntuitionisticSpatial
-    let newGoal ← mkAppM ``atomic_acc #[Eo, Ei, α, eS, β, Φ]
-    mvar.assign <| ← mkAppM ``tac_aupd_intro #[pfSplit, pfInt, ← addBIGoal hyps newGoal]
+    let newGoal ← mkAppMSI si isi ``atomic_acc #[Eo, Ei, α, eS, β, Φ]
+    mvar.assign <| ← mkAppMSI si isi ``tac_aupd_intro #[pfSplit, pfInt, ← addBIGoal hyps newGoal]
 
 /--
 `iaaccintro spats` prove an atomic accessor by applying `aacc_intro`, where
@@ -525,8 +552,8 @@ elab "iaaccintro" spats:(colGt ppSpace specPat)+ : tactic => do
     | ⟨_, .pure t⟩ :: rest => (some t, rest)
     | _                    => (none, spats)
 
-  ProofModeM.runTactic `iaaccintro fun mvar { prop, e, hyps, goal, .. } => do
-    let_expr atomic_acc _ _ _ _ _ Eo Ei α P β Φ := goal
+  ProofModeM.runTactic `iaaccintro fun mvar { si, isi, prop, e, hyps, goal, .. } => do
+    let_expr atomic_acc _ _ _ _ _ _ _ Eo Ei α P β Φ := goal
       | throwIPMError "the goal {goal} is not an atomic accessor"
     have Eo : Q(CoPset) := Eo
     have Ei : Q(CoPset) := Ei
@@ -536,7 +563,7 @@ elab "iaaccintro" spats:(colGt ppSpace specPat)+ : tactic => do
     let x ← match t with
       | some t => Term.elabTermEnsuringType t xTy
       | none => mkFreshExprMVar xTy
-    let pfAacc ← mkAppM ``aacc_intro_wand #[Eo, Ei, α, P, β, Φ, mask, x]
+    let pfAacc ← mkAppMSI si isi ``aacc_intro_wand #[Eo, Ei, α, P, β, Φ, mask, x]
     let A : Q($prop) ← mkFreshExprMVarQ prop
     unless ← isDefEq (← inferType pfAacc) q(⊢ $A) do
       throwIPMError "internal error: unexpected statement of aacc_intro_wand"

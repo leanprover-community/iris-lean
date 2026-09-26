@@ -11,6 +11,8 @@ public import Iris.ProofMode.ModalityInstances
 public import Iris.Std.TC
 
 @[expose] public section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris.ProofMode
 open Iris.BI Iris.Std

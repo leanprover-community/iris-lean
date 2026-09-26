@@ -6,11 +6,16 @@ Authors: Michael Sammler, Alvin Tang
 module
 
 public meta import Iris.ProofMode.Patterns.SelPattern
+public import Iris.BI
 
 namespace Iris.ProofMode
 
 public section
 open BI
+
+section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 theorem hyps_replace_ieval [BI PROP] {P Q R : PROP}
     (h : P ⊢ Q) : R ⊢ <pers> (P -∗ Q) :=
@@ -19,11 +24,14 @@ theorem hyps_replace_ieval [BI PROP] {P Q R : PROP}
 #rocq_ignore tac_eval_in "ieval is implemented by iteration using EvalState"
 #rocq_ignore tac_eval "ieval is implemented by iteration using EvalState"
 
+end
+
 public meta section
 open Lean Elab Tactic Meta Qq BI Lean.Parser.Tactic
+variable {vsi : Lean.Level} {si : Q(Type vsi)} {isi : Q(Iris.SIdx $si)}
 
 /-- For iteratively applying the tactic sequences to selection targets in the context -/
-private structure EvalState {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (e : Q($prop)) where
+private structure EvalState {u} {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)} (e : Q($prop)) where
   {newE : Q($prop)}
   (newHyps : Hyps bi newE)
   (pf : Q($e ⊢ $newE))
@@ -38,7 +46,7 @@ private structure EvalState {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (e : Q($pr
   The function returns the new expression and a proof that the expression
   is strengthened/weakened.
 -/
-private def iEvalOne {u} {prop : Q(Type u)} (bi : Q(BI $prop))
+private def iEvalOne {u} {prop : Q(Type u)} (bi : Q(@BI $si $isi $prop))
     (tac : TSyntax `Lean.Parser.Tactic.tacticSeq) (isGoal : Bool) (ty : Q($prop)) :
     ProofModeM <| Q($prop) × Expr := do
   let m : Q($prop) ← mkFreshExprMVar q($prop)
@@ -56,7 +64,7 @@ private def iEvalOne {u} {prop : Q(Type u)} (bi : Q(BI $prop))
   Apply the tactic sequence `tac` to either the proof goal (when `selTargets`
   is `none`) or the hypotheses in the context specified by the selection targets.
 -/
-private def iEvalCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+private def iEvalCore {u} {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (tac : TSyntax `Lean.Parser.Tactic.tacticSeq)
     (selTargets : Option <| List SelTarget) : ProofModeM Q($e ⊢ $goal) := do
   match selTargets with

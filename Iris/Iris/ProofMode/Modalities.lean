@@ -8,6 +8,8 @@ module
 public import Iris.BI
 
 @[expose] public section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris.ProofMode
 open Iris.BI

@@ -35,7 +35,12 @@ class DefaultSI (SI : outParam (Type u)) where
   sidx : SIdx SI
 
 /-- Default instance for the step index type.
-If no step indices are found, look for a `DefaultSI` instance, and use that. -/
+If no step indices are found, look for a `DefaultSI` instance, and use that.
+
+Note: `dfltSIdx` must not have further instance-implicit arguments (such as an `[SIdx SI]`
+argument); otherwise a missing `DefaultSI` instance makes the default-instance mechanism retry
+indefinitely instead of failing. The instances created by `stepindex` are `@[expose, reducible]`,
+so `d.sidx` unfolds to the ambient `SIdx` instance in every module. -/
 @[default_instance, reducible]
 def dfltSIdx {SI : Type u} [d : DefaultSI SI] : SIdx SI := d.sidx
 
@@ -113,7 +118,8 @@ private meta def stepindexCore (k : TSyntax ``Parser.Term.attrKind) (inst? : Opt
   let nm ← mkModuleUniqueName "instDefaultSI"
   elabCommand <| ← `(command|
     set_option synthInstance.checkSynthOrder false in
-    public $k:attrKind instance (priority := 10000) $(mkIdent nm) : DefaultSI $T := $val)
+    @[expose, reducible] public $k:attrKind instance (priority := 10000) $(mkIdent nm) :
+      DefaultSI $T := $val)
   -- Record `T` in the registry, so that `stepindex%` and `infer_stepindex` can resolve the type.
   unless T.raw.isIdent do
     throwError "`stepindex` requires an identifier for the eager registry, but got{indentD T}\n\n\
@@ -488,6 +494,23 @@ theorem rec_lim {P : I → Sort v} (s : P 0) (f : ∀ n, P n → P (succᵢ n))
       obtain ⟨m, EQ⟩ := h
       exact absurd (EQ ▸ Hn) (limit_S m)
     | inr Hlim => rfl
+
+/-- Bounded disjunctions of downward-closed predicates split (classically). This is Transfinite
+Iris's `can_split_bounded_or`, which holds for every type of step-indices since Lean is classical
+(cf. `Classical_FiniteBoundedExistential`). -/
+theorem forall_lt_or {P Q : I → Prop} {n : I}
+    (hP : ∀ {a b}, a ≤ b → P b → P a) (hQ : ∀ {a b}, a ≤ b → Q b → Q a)
+    (h : ∀ m, m < n → P m ∨ Q m) : (∀ m, m < n → P m) ∨ (∀ m, m < n → Q m) := by
+  refine Classical.or_iff_not_imp_left.mpr fun hnP m hm => ?_
+  obtain ⟨a, ha⟩ := Classical.not_forall.mp hnP
+  obtain ⟨ha, hPa⟩ := Classical.not_imp.mp ha
+  rcases le_total (n := a) (m := m) with hle | hle
+  · rcases h m hm with hPm | hQm
+    · exact absurd (hP hle hPm) hPa
+    · exact hQm
+  · rcases h a ha with hPa' | hQa
+    · exact absurd hPa' hPa
+    · exact hQ hle hQa
 
 #rocq_ignore SIdx.rec_lim_ext
   "Proof irrelevance already handled automatically by Lean for the theorems \

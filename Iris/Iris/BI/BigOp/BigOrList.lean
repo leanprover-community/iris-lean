@@ -9,6 +9,8 @@ public import Iris.BI.BigOp.BigOp
 import Iris.BI.DerivedLawsLater
 
 public section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 namespace Iris.BI
 
 open Iris.Algebra BigOpL BIBase
@@ -60,7 +62,7 @@ theorem bigOrL_eq_of_forall_eq {Φ Ψ : Nat → A → PROP} {l : List A} (h : �
   bigOpL_eq_of_forall_eq h
 
 @[rocq_alias big_orL_ne]
-theorem bigOrL_dist {Φ Ψ : Nat → A → PROP} {l : List A} {n : Nat}
+theorem bigOrL_dist {Φ Ψ : Nat → A → PROP} {l : List A} {n : SI}
     (h : ∀ {k x}, l[k]? = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([∨list] k ↦ x ∈ l, Φ k x) ≡{n}≡ [∨list] k ↦ x ∈ l, Ψ k x :=
   bigOpL_dist h

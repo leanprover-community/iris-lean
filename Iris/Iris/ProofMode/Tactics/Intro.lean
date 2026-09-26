@@ -16,6 +16,10 @@ namespace Iris.ProofMode
 public section
 open BI Iris.Std
 
+section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
+
 @[rocq_alias tac_impl_intro_drop]
 theorem imp_intro_drop [BI PROP] {P Q A1 A2 : PROP}
     [inst : FromImp Q A1 A2] (h : P ⊢ A2) : P ⊢ Q :=
@@ -74,8 +78,11 @@ theorem wand_intro_spatial [BI PROP] {P Q A1 A2 : PROP}
 #rocq_ignore tac_wand_intro_drop
   "Functionality shared with the case destruction pattern for clearing"
 
+end
+
 public meta section
 open Lean Elab Tactic Meta Qq BI Iris.Std
+variable {vsi : Lean.Level} {si : Q(Type vsi)} {isi : Q(Iris.SIdx $si)}
 
 /--
   Used by `iIntroCore` for the pure and quantifier cases.
@@ -84,7 +91,7 @@ open Lean Elab Tactic Meta Qq BI Iris.Std
   using `FromForall` fails. The fallback option is applicable only for
   `.all` and `.allwand`.
 -/
-private def iIntroCoreForallIntro {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
+private def iIntroCoreForallIntro {u} {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)}
     {P : Q($prop)} (hyps : Hyps bi P) (pat : TSyntax `rcasesPat)
     (Q : Q($prop)) (k' : Option <| ProofModeM Q($P ⊢ $Q))
     (k : MVarId → ∀ {P' : Q($prop)}, Hyps bi P' → (B : Q($prop)) → ProofModeM Q($P' ⊢ $B)) :
@@ -107,7 +114,7 @@ private def iIntroCoreForallIntro {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     return q(from_forall_intro (Q := $Q) $pf)
 
 /-- Return `true` if there is a premise to introduce using `.allwand` (`**`). -/
-private def iIntroCoreAllWandCheck {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
+private def iIntroCoreAllWandCheck {u} {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)}
     (P Q : Q($prop)) : ProofModeM Bool := do
   let A1 ← mkFreshExprMVarQ q($prop)
   let A2 ← mkFreshExprMVarQ q($prop)
@@ -129,9 +136,11 @@ The type of the current goal is given by `Q`.
 This function returns the proof of `P ⊢ Q` to be assigned. The new context is included in the
 `goals` directly by the tactic.
 -/
-partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
+partial def iIntroCore {vsi : Lean.Level} {si : Q(Type vsi)} {isi : Q(Iris.SIdx $si)} {u} {prop : Q(Type u)}
+    {bi : Q(@BI $si $isi $prop)}
     {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List (Syntax × IntroPat))
-    (k : ∀ {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)},
+    (k : ∀ {vsi : Lean.Level} {si : Q(Type vsi)} {isi : Q(Iris.SIdx $si)} {u} {prop : Q(Type u)}
+      {bi : Q(@BI $si $isi $prop)} {e : Q($prop)},
       Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
     ProofModeM (Q($P ⊢ $Q)) := do
   match pats with
@@ -177,7 +186,7 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
         addMVarGoal m
       else
         let ⟨newM, g⟩ ← startProofMode m
-        let pf' ← newM.withContext <| iIntroCore g.hyps g.goal pats k
+        let pf' ← newM.withContext <| iIntroCore (si := g.si) (isi := g.isi) g.hyps g.goal pats k
         newM.assign pf'
       return pf
     | .clear selPats =>

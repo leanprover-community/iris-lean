@@ -22,6 +22,7 @@ namespace Iris.ProofMode
 open Lean hiding Expr
 open Meta Elab Tactic Qq
 open Iris.HeapLang Iris.BI
+local stepindex Nat
 
 public section wp_expr_simp
 
@@ -160,7 +161,7 @@ end wp_expr_simp
 public structure WpGoal where
   {u : Level}
   {prop : Q(Type u)}
-  {bi : Q(BI $prop)}
+  {bi : Q(@BI Nat Iris.natSIdx $prop)}
   {ehyps : Q($prop)}
   hyps : Hyps bi ehyps
   {GF : Q(BundledGFunctors.{0, 0, 0})}
@@ -177,9 +178,15 @@ public structure WpGoal where
 
 public meta def ProofModeM.runTacticWp {α} (tacName : Name) (k : MVarId → WpGoal → ProofModeM α)
   : TacticM α := do
-  ProofModeM.runTactic tacName fun mvar {u, prop, bi, hyps, goal, ..} => do
+  ProofModeM.runTactic tacName fun mvar {u, prop, si, bi, hyps, goal, ..} => do
     let .defEq _ ← isLevelDefEqQ u 0
       | throwIPMError "The goal {goal} must be an `IProp` at universe level 0"
+    unless ← isDefEq si q(Nat) do
+      throwIPMError "The goal {goal} must use `Nat` step-indices"
+    -- re-read the hypotheses at the concrete step-index type `Nat`
+    have bi : Q(@BI Nat Iris.natSIdx $prop) := bi
+    let some ⟨_, hyps⟩ := parseHyps? bi hyps.tm
+      | throwIPMError "could not parse the proof mode context"
     let ~q(IProp $GF) := prop
       | throwIPMError "The goal {goal} must be an `IProp`"
     let ~q(UPred.instBIUPred) := bi
@@ -205,7 +212,7 @@ public meta def iWpValueHead {u}
   {GF : Q(BundledGFunctors.{0, 0, 0})}
   {hlc : Q(HasLC)}
   {prop : Q(Type u)}
-  {bi : Q(BI $prop)}
+  {bi : Q(@BI Nat Iris.natSIdx $prop)}
   {ehyps : Q($prop)}
   (hyps : Hyps bi ehyps)
   (ι : Q(IrisGS_gen $hlc Exp $GF))
@@ -274,7 +281,7 @@ public meta def iWpFinish {u}
   {GF : Q(BundledGFunctors.{0, 0, 0})}
   {hlc : Q(HasLC)}
   {prop : Q(Type u)}
-  {bi : Q(BI $prop)}
+  {bi : Q(@BI Nat Iris.natSIdx $prop)}
   {ehyps : Q($prop)}
   (hyps : Hyps bi ehyps)
   (ι : Q(IrisGS_gen $hlc Exp $GF))
@@ -309,7 +316,7 @@ public meta def iWpBindCore {u}
   {GF : Q(BundledGFunctors.{0, 0, 0})}
   {hlc : Q(HasLC)}
   {prop : Q(Type u)}
-  {bi : Q(BI $prop)}
+  {bi : Q(@BI Nat Iris.natSIdx $prop)}
   (ehyps : Q($prop))
   (ι : Q(IrisGS_gen $hlc Exp $GF))
   (s : Q(Stuckness))
@@ -375,7 +382,7 @@ public meta def iWpPure {u}
     {GF : Q(BundledGFunctors.{0, 0, 0})}
     {hlc : Q(HasLC)}
     {prop : Q(Type u)}
-    {bi : Q(BI $prop)}
+    {bi : Q(@BI Nat Iris.natSIdx $prop)}
     {ehyps : Q($prop)}
     (hyps : Hyps bi ehyps)
     (ι : Q(IrisGS_gen $hlc Exp $GF))
@@ -478,7 +485,7 @@ inductive WpApplyKind where
   | smartApply
 
 structure WpApplyState {u} {GF : Q(BundledGFunctors.{0, 0, 0})}
-    {hlc : Q(HasLC)} {prop : Q(Type u)} {bi : Q(BI $prop)} {ehyps : Q($prop)}
+    {hlc : Q(HasLC)} {prop : Q(Type u)} {bi : Q(@BI Nat Iris.natSIdx $prop)} {ehyps : Q($prop)}
     {s : Q(Stuckness)} {E : Q(CoPset)} {e : Q(Exp)} {Φ : Q(Val → $prop)}
     (κ : Q(Wp $prop Exp Val Stuckness)) where
   {ehypsC : Q($prop)}
@@ -488,7 +495,7 @@ structure WpApplyState {u} {GF : Q(BundledGFunctors.{0, 0, 0})}
     $ehyps ⊢ @Wp.wp $prop Exp Val Stuckness $κ $s $E $e $Φ)
 
 meta partial def iWpApplyCore {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(HasLC)}
-    {prop : Q(Type u)} {bi : Q(BI $prop)} {ehyps : Q($prop)}
+    {prop : Q(Type u)} {bi : Q(@BI Nat Iris.natSIdx $prop)} {ehyps : Q($prop)}
     (hyps : Hyps bi ehyps) (ι : Q(IrisGS_gen $hlc Exp $GF)) (s : Q(Stuckness)) (E : Q(CoPset))
     (e : Q(Exp)) (Φ : Q(Val → $prop)) (pmt : PMTerm) (wpApplyKind : WpApplyKind)
     (_hu : QuotedLevelDefEq u 0 := ⟨⟩) (_hprop : $prop =Q IProp $GF := ⟨⟩)
@@ -614,7 +621,7 @@ theorem tac_wp_heap_op [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' P P' : IProp GF}
   refine hlater.trans ?_
   refine .trans ?_ (wp_bind (ProgramLogic.fill K))
   refine (later_mono hsplit.1).trans ?_
-  refine later_sep.1.trans ?_
+  refine later_sep_1.trans ?_
   refine (sep_mono .rfl hwp).trans ?_
   refine (wp_frame_step_l' hval Std.LawfulSet.subset_refl).trans (wp_mono fun v' => ?_)
   iintro ⟨HΔ, %hv, HP⟩
@@ -655,7 +662,7 @@ public theorem tac_wp_load [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF} {p 
   refine .trans ?_ (wp_bind (ProgramLogic.fill K))
   iapply wand_apply (wand_entails ((wp_load (s := s) (E := E) (l := l)
     (q := q) (v := v)).trans (forall_elim _)))
-  refine .trans ?_ later_sep.1
+  refine .trans ?_ later_sep_1
   refine later_mono ?_
   exact (lookup_split hsplit).trans (sep_mono .rfl (wand_mono .rfl hcont))
 
@@ -671,7 +678,7 @@ public theorem tac_wp_store [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
   refine .trans ?_ (wp_bind (ProgramLogic.fill K))
   iapply wand_apply (wand_entails ((wp_store (s := s) (E := E) (l := l)
     (v := v') (v' := v)).trans (forall_elim _)))
-  refine .trans ?_ later_sep.1
+  refine .trans ?_ later_sep_1
   refine later_mono ?_
   refine hsplit.1.trans ?_
   refine .trans sep_comm.mp ?_
@@ -699,7 +706,7 @@ public theorem tac_wp_cmpXchg_fail [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp
   refine hlater.trans ?_
   refine .trans ?_ (wp_bind (ProgramLogic.fill K))
   refine (later_mono ((lookup_split hsplit).trans sep_comm.1)).trans ?_
-  refine later_sep.1.trans ?_
+  refine later_sep_1.trans ?_
   refine (sep_mono .rfl (wp_exact_of_triple (wp_cmpXchg_fail (s := s) (E := E)
     (e1 := hl(v(&v1))) (e2 := hl(v(&v2))) rfl rfl hsafe (decide_eq_false hne)))).trans ?_
   refine (wp_frame_step_l' rfl Std.LawfulSet.subset_refl).trans (wp_mono fun _ => ?_)
@@ -767,7 +774,7 @@ context `K` and run `iWpFinish` over the continuation context `hyps`. Returns th
 proof typed against `fill K (Exp.ofVal r)`, so the caller's `assign` matches the tac lemma's
 `hcont`. -/
 meta def finishHeapOp {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(HasLC)}
-    {prop : Q(Type u)} {bi : Q(BI $prop)} {ehyps : Q($prop)}
+    {prop : Q(Type u)} {bi : Q(@BI Nat Iris.natSIdx $prop)} {ehyps : Q($prop)}
     (hyps : Hyps bi ehyps) (hgs : Q(HeapLangGS $hlc $GF))
     (s : Q(Stuckness)) (E : Q(CoPset)) (K : Q(List ECtxItem)) (r : Q(Val)) (Φ : Q(Val → $prop))
     (_hu : QuotedLevelDefEq u 0 := ⟨⟩) (_hprop : $prop =Q IProp $GF := ⟨⟩)
@@ -781,7 +788,7 @@ in the (later-stripped) context `eΔ'`, together with the pruned context `eΔ''`
 the splitting proof `pfSplit`, whose type is already recast to the `pointsTo` shape that the
 `tac_wp_*` lemmas expect. -/
 structure PointsToLookup {u : Level} {GF : Q(BundledGFunctors.{0, 0, 0})}
-    {hlc : Q(HasLC)} (hgs : Q(HeapLangGS $hlc $GF)) {prop : Q(Type u)} (bi : Q(BI $prop))
+    {hlc : Q(HasLC)} (hgs : Q(HeapLangGS $hlc $GF)) {prop : Q(Type u)} (bi : Q(@BI Nat Iris.natSIdx $prop))
     (eΔ' : Q($prop)) (l : Q(Loc)) (dq : Q(DFrac)) (p : Q(Bool)) (hu : QuotedLevelDefEq u 0)
     (hprop : $prop =Q IProp $GF) where
   /-- The value stored at `l`. -/
@@ -792,14 +799,14 @@ structure PointsToLookup {u : Level} {GF : Q(BundledGFunctors.{0, 0, 0})}
   vid : IVarId
   /-- The context with the points-to hypothesis removed. -/
   eΔ'' : Q($prop)
-  hyps'' : @Hyps u prop bi eΔ''
+  hyps'' : Hyps (u := u) (prop := prop) (si := q(Nat)) (isi := q(Iris.natSIdx)) bi eΔ''
   /-- The split certificate, recast to the shape the `tac_wp_*` lemmas expect. -/
   pfSplit : Q($eΔ' ⊣⊢ $eΔ'' ∗ □?$p (pointsTo $l $dq (some $v)))
 
 /-- Locate a hypothesis `l ↦{dq} some v` and remove it from the spatial context.
 Throws if no matching hypothesis exists. -/
 meta def lookupPointsTo {u} {GF : Q(BundledGFunctors.{0, 0, 0})} {hlc : Q(HasLC)}
-    {prop : Q(Type u)} {bi : Q(BI $prop)} {eΔ' : Q($prop)}
+    {prop : Q(Type u)} {bi : Q(@BI Nat Iris.natSIdx $prop)} {eΔ' : Q($prop)}
     (hgs : Q(HeapLangGS $hlc $GF))
     (hyps' : Hyps bi eΔ') (l : Q(Loc)) (dq : Q(DFrac)) (p : Q(Bool))
     (hu : QuotedLevelDefEq u 0 := ⟨⟩)
@@ -828,7 +835,7 @@ the strip. -/
 structure HeapWpGoal extends WpGoal where
   hgs : Q(HeapLangGS $hlc $GF)
   {eΔ' : Q($prop)}
-  hyps' : @Hyps u prop bi eΔ'
+  hyps' : Hyps (u := u) (prop := prop) (si := q(Nat)) (isi := q(Iris.natSIdx)) bi eΔ'
   pfLater : Q($ehyps ⊢ (modality_laterN 1).M $eΔ')
 
 /-- Shared prologue for the heap tactics: run the tactic on a WP goal, check that it is a

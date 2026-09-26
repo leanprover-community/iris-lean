@@ -11,6 +11,8 @@ public import Iris.ProofMode
 
 namespace IrisTest
 open Lean Elab Meta Iris
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 meta section
 

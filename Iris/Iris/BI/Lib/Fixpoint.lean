@@ -9,7 +9,8 @@ public import Iris.BI
 public import Iris.ProofMode
 
 @[expose] public section
-local stepindex Nat
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris
 open Iris.Std BI OFE
@@ -154,7 +155,7 @@ instance least_fixpoint_persistent_absorbing [BIMonoPred F]
     iintro !> %y #HF !>
     iapply (least_fixpoint_unfold ..).to_bi
     iapply mono_pred (Φ := fun x => iprop(<pers> bi_least_fixpoint F x)) $$ [] HF
-    letI _ := @least_fixpoint_absorbing _ _ _ _ _ _ Habsorb
+    letI _ := @least_fixpoint_absorbing _ _ _ _ _ _ _ _ Habsorb
     iintro !> %x #H
     iexact H
 

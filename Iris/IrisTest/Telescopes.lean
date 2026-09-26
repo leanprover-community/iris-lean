@@ -76,12 +76,12 @@ variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
 /- Tests `intoForall_tforall`. -/
 /-- info: solution: IntoForall iprop(∀.. x, Φ x) fun x => Φ x, new goals: [] -/
 #guard_msgs in
-#ipm_synth @IntoForall PROP _ iprop(∀.. x, Φ x) (_ : Type) _
+#ipm_synth @IntoForall _ _ PROP _ iprop(∀.. x, Φ x) (_ : Type) _
 
 /- Tests `intoExists_texist`. -/
 /-- info: solution: IntoExists iprop(∃.. x, Φ x) fun x => Φ x, new goals: [] -/
 #guard_msgs in
-#ipm_synth @IntoExists PROP _ iprop(∃.. x, Φ x) (_ : Type) _
+#ipm_synth @IntoExists _ _ PROP _ iprop(∃.. x, Φ x) (_ : Type) _
 
 /- Tests `fromForall_tforall_pure`. -/
 /-- info:
@@ -89,7 +89,7 @@ variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth @FromForall PROP _ iprop(⌜∀.. x, φ x⌝) (_ : Type) _
+#ipm_synth @FromForall _ _ PROP _ iprop(⌜∀.. x, φ x⌝) (_ : Type) _
 
 /- Tests `fromForall_pure`. -/
 /-- info:
@@ -97,7 +97,7 @@ variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth @FromForall PROP _ iprop(⌜∀ x, φ x⌝) (_ : Type) _
+#ipm_synth @FromForall _ _ PROP _ iprop(⌜∀ x, φ x⌝) (_ : Type) _
 
 /- Tests `fromPure_tforall`. -/
 /-- info:
@@ -105,7 +105,7 @@ variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth @FromPure PROP _ _ iprop(∀.. x, ⌜φ x⌝) .out _
+#ipm_synth @FromPure _ _ PROP _ _ iprop(∀.. x, ⌜φ x⌝) .out _
 
 /- Tests `fromPure_tforall`. -/
 /-- info:
@@ -113,7 +113,7 @@ variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth @FromPure PROP _ _ iprop(∀.. x, ⌜φ x⌝) .in (∀.. x, φ x)
+#ipm_synth @FromPure _ _ PROP _ _ iprop(∀.. x, ⌜φ x⌝) .in (∀.. x, φ x)
 
 /- Tests `intoPure_tforall`. -/
 /-- info:
@@ -121,7 +121,7 @@ variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth @IntoPure PROP _ iprop(∀.. x, ⌜φ x⌝) _
+#ipm_synth @IntoPure _ _ PROP _ iprop(∀.. x, ⌜φ x⌝) _
 
 /- Tests `intoPure_texist`. -/
 /-- info:
@@ -129,7 +129,7 @@ variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth @IntoPure PROP _ iprop(∃.. x, ⌜φ x⌝) _
+#ipm_synth @IntoPure _ _ PROP _ iprop(∃.. x, ⌜φ x⌝) _
 
 /-
   Tests `intoWand_tforall` with both the premise and the conclusion of the wand
@@ -142,7 +142,7 @@ variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
 -/
 #guard_msgs (whitespace := lax) in
 set_option pp.mvars false in
-#ipm_synth @IntoWand PROP _ false false iprop(∀.. x, Φ x -∗ Ψ x) .unknown _ _
+#ipm_synth @IntoWand _ _ PROP _ false false iprop(∀.. x, Φ x -∗ Ψ x) .unknown _ _
 
 /-
   Tests `intoWand_tforall` with known wand conclusion.
@@ -154,7 +154,7 @@ set_option pp.mvars false in
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth @IntoWand PROP _ false false iprop(∀.. x, Φ x -∗ Ψ x)
+#ipm_synth @IntoWand _ _ PROP _ false false iprop(∀.. x, Φ x -∗ Ψ x)
   (.matching .result) _ (Ψ a)
 
 example [BI PROP] {TT : Tele} (Φ Ψ : TT.Arg → PROP) :

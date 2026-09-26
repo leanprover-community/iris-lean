@@ -9,6 +9,8 @@ public import Iris.ProgramLogic.WeakestPre
 public import Iris.HeapLang
 
 @[expose] public section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace IrisTest
 open Iris

@@ -12,6 +12,10 @@ namespace Iris.ProofMode
 public section
 open BI
 
+section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
+
 @[rocq_alias tac_inv_elim]
 theorem tac_inv_elim [BI PROP]
     {e e' e'' goal : PROP} {φ : Prop} {X : Type} {p close : Bool}
@@ -43,8 +47,11 @@ theorem tac_inv_elim [BI PROP]
     _ ⊢ _ := sep_mono_right <| sep_mono_right <| forall_intro (wand_intro <| pf ·)
     _ ⊢ goal := h0
 
+end
+
 public meta section
 open Lean Elab Tactic Meta Qq BI Iris.Std
+variable {vsi : Lean.Level} {si : Q(Type vsi)} {isi : Q(Iris.SIdx $si)}
 
 /--
   An annotation of `wandM` with `@[reducible]` is useful when `whnf` is called,
@@ -58,7 +65,7 @@ private def reduceWandM (e : Expr) : ProofModeM Expr := do
   let simpContext ← Simp.mkContext {} #[simpThms] (← getSimpCongrTheorems)
   Lean.Meta.dsimp e simpContext <&> Prod.fst
 
-private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
+private def iInvCore {u} {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (ivar : IVarId) (specPat : Option SpecPat)
     (casesPat : iCasesPat) (closePat : Option iCasesPat) :
     ProofModeM Q($e ⊢ $goal) := do

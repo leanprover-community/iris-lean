@@ -11,8 +11,11 @@ public import Iris.ProofMode.Tactics.HaveCore
 namespace Iris.ProofMode
 
 public section
-local stepindex Nat
 open BI Iris.Std
+
+section
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 theorem rewrite_tac [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p}
     (Ψ : A → PROP) [ne : OFE.NonExpansive Ψ] [heq : IntoInternalEq Q a b]
@@ -44,8 +47,11 @@ theorem rewrite_tac_hyp [BI PROP] {P Q Q' : PROP}
     (h1 : P ⊢ <pers> (Q ∗-∗ Q')) : P ⊢ <pers> (Q -∗ Q') :=
   h1.trans (persistently_mono and_elim_l)
 
+end
+
 public meta section
 open Lean Elab Tactic Meta Qq BI Iris.Std Parser.Tactic
+variable {vsi : Lean.Level} {si : Q(Type vsi)} {isi : Q(Iris.SIdx $si)}
 
 namespace IRewrite
 
@@ -103,7 +109,7 @@ end rule
 
 end IRewrite
 
-private def iRewriteCore {prop : Q(Type u)} {bi : Q(BI $prop)}
+private def iRewriteCore {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)}
     {e} (hyps : Hyps bi e) (rule : IRewrite.Rule)
     (target : Q($prop))
     (occs : Occurrences := Occurrences.all) :
@@ -115,17 +121,17 @@ private def iRewriteCore {prop : Q(Type u)} {bi : Q(BI $prop)}
   have : $g =Q iprop($e' ∗ □?$p $eq) := ⟨⟩
   let pf' : Q($e ⊢ $e' ∗ □?$p $eq) := q($pf .rfl)
 
-  let .some sbi ← trySynthInstanceQ q(Sbi $prop)
+  let .some sbi ← trySynthInstanceQ q(@Sbi $si $isi $prop)
     | throwIPMError "could not synthesize Sbi instance"
 
   -- we assume that the SBI instance has bi as its BI instance
   have : $bi =Q ($sbi).toBI := ⟨⟩
 
-  let v               ← mkFreshLevelMVar
-  let A   : Q(Type v) ← mkFreshExprMVarQ q(Type v)
+  let w               ← mkFreshLevelMVar
+  let A   : Q(Type w) ← mkFreshExprMVarQ q(Type w)
   let a   : Q($A)     ← mkFreshExprMVarQ q($A)
   let b   : Q($A)     ← mkFreshExprMVarQ q($A)
-  let _ofe : Q(OFE $A) ← mkFreshExprMVarQ q(OFE $A)
+  let _ofe : Q(@OFE $si $isi $A) ← mkFreshExprMVarQ q(@OFE $si $isi $A)
 
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoInternalEq (PROP := $prop) $eq $a $b)
     | throwIPMError "{eq} is not an internal equality"
@@ -157,7 +163,7 @@ private def iRewriteCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     have : $target =Q $Ψ $b := ⟨⟩
     return ⟨_, q(rewrite_tac_symm $Ψ $pf')⟩
 
-def iRewriteGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
+def iRewriteGoal {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)}
     {e} (hyps : Hyps bi e) (rule : IRewrite.Rule) (goal : Q($prop))
     (occs : Occurrences := Occurrences.all) :
     ProofModeM Q($e ⊢ $goal) := do
@@ -165,7 +171,7 @@ def iRewriteGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
   let pf' ← addBIGoal hyps q($goal')
   return q(rewrite_tac_goal $pf $pf')
 
-def iRewriteHyp {prop : Q(Type u)} {bi : Q(BI $prop)}
+def iRewriteHyp {prop : Q(Type u)} {bi : Q(@BI $si $isi $prop)}
     {e} (hyps : Hyps bi e) (rule : IRewrite.Rule)
     (ivar : IVarId)
     (occs : Occurrences := Occurrences.all) :
