@@ -21,3 +21,4 @@ public import Iris.ProgramLogic.TotalEctxLifting
 public import Iris.ProgramLogic.TotalLifting
 public import Iris.ProgramLogic.TotalWeakestPre
 public import Iris.ProgramLogic.WeakestPre
+public import Iris.ProgramLogic.WeakestPreTransfinite
