@@ -9,7 +9,9 @@ public import Iris.Instances.Lib.GhostMap
 public import Iris.Std.GenSets
 
 @[expose] public noncomputable section
-local stepindex Nat
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
+variable {GF : Iris.BundledGFunctors (SI := SI)}
 
 namespace Iris
 
@@ -34,7 +36,8 @@ class prophMapPreS (P V : Type _) (GF : BundledGFunctors) (H : outParam <| Type 
 attribute [reducible, instance] prophMapPreS.inG
 
 @[rocq_alias proph_mapGS]
-class prophMapGS (P V : outParam <| Type _) (GF : outParam <| BundledGFunctors)
+class prophMapGS {SI : outParam (Type _)} [outParam (Iris.SIdx SI)] (P V : outParam <| Type _)
+    (GF : outParam <| BundledGFunctors (SI := SI))
     (H : outParam <| Type _ → Type _) [LawfulFiniteMap H P]
     extends prophMapPreS P V GF H where
   prophMapName : GName

@@ -3,6 +3,7 @@ Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
+public import Iris.Instances.UPred.Transfinite
 public import Iris.Algebra
 public import Iris.Algebra.ReservationMap
 public import Iris.BI.Lib.Fractional
@@ -12,7 +13,9 @@ public import Iris.Std.HeapInstances
 public import Iris.Std.Namespaces
 
 @[expose] public noncomputable section
-local stepindex Nat
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
+variable {GF : Iris.BundledGFunctors (SI := SI)}
 
 namespace Iris
 
@@ -59,7 +62,8 @@ attribute [reducible, instance] genHeapPreS.metaData
 attribute [instance] GhostMapG.elem
 
 @[rocq_alias gen_heapGS]
-class genHeapGS (L V : outParam <| Type _) (GF : outParam <| BundledGFunctors)
+class genHeapGS {SI : outParam (Type _)} [outParam (Iris.SIdx SI)] (L V : outParam <| Type _)
+    (GF : outParam <| BundledGFunctors (SI := SI))
     (H : outParam <| Type _ → Type _) [Std.LawfulFiniteMap H L]
     extends genHeapPreS L V GF H where
   heapName : GName
@@ -228,17 +232,15 @@ instance (priority := high) instFramePointsTo (p : Bool) (l : L) (v : V) (q₁ q
 instance instTimelessMetaToken (l : L) (E : CoPset) :
     BI.Timeless (PROP := IProp GF) (metaToken l E) := by
   unfold metaToken
-  refine @BI.exists_timeless _ _ _ _ _ _ _ ?_
-  intro γm
-  infer_instance
+  refine @UPred.exists_timeless' _ _ _ _ _ _ (fun γm => ?_)
+  exact @UPred.sep_timeless' _ _ _ _ _ _ inferInstance inferInstance
 
 @[rocq_alias meta_timeless]
 instance instTimelessMeta {A : Type _} [Pos.Countable A] (l : L) (N : Namespace) (x : A) :
     BI.Timeless (PROP := IProp GF) (metaInfo l N x) := by
   unfold metaInfo
-  refine @BI.exists_timeless _ _ _ _ _ _ _ ?_
-  intro γm
-  infer_instance
+  refine @UPred.exists_timeless' _ _ _ _ _ _ (fun γm => ?_)
+  exact @UPred.sep_timeless' _ _ _ _ _ _ inferInstance inferInstance
 
 @[rocq_alias meta_persistent]
 instance instPersistentMeta {A : Type _} [Pos.Countable A] (l : L) (N : Namespace) (x : A) :

@@ -11,7 +11,9 @@ public import Iris.BI.Lib.Fractional
 public import Iris.ProofMode
 
 @[expose] public noncomputable section
-local stepindex Nat
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
+variable {GF : Iris.BundledGFunctors (SI := SI)}
 
 namespace Iris
 
@@ -422,7 +424,6 @@ theorem ghost_map_insert_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ
       exact auth_inc_of_map_eq _ map_union
     · iapply iOwn_mono $$ H2
       rw [BigOpM.bigOpM_map_eq]
-      exact CMRA.inc_refl _
 
 @[rocq_alias ghost_map_insert_persist_big]
 theorem ghost_map_insert_persist_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ m) :
