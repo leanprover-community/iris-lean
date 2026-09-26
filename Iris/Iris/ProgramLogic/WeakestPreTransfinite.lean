@@ -469,4 +469,34 @@ theorem swp_atomic {k : Nat} {E₁ E₂ : CoPset} {e : Expr} {s : Stuckness} {Φ
   imodintro
   iframe
 
+
+/-! ## Proof mode instances -/
+
+section ProofMode
+
+open ProofMode
+
+instance isExcept0_wp {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF} :
+    IsExcept0 (wp (ι := ι) s E e Φ) where
+  is_except0 := (except0_mono fupd_intro).trans <| BIFUpdate.except0.trans fupd_wp
+
+instance isExcept0_swp {k : Nat} {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF} :
+    IsExcept0 (swp (ι := ι) k s E e Φ) where
+  is_except0 := (except0_mono fupd_intro).trans <| BIFUpdate.except0.trans fupd_swp
+
+instance elimModal_fupd_wp p io {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF}
+    (P : IProp GF) :
+    ElimModal True p io false iprop(|={E}=> P) P (wp (ι := ι) s E e Φ) (wp (ι := ι) s E e Φ) where
+  elim_modal _ := (sep_mono_left intuitionisticallyIf_elim).trans <|
+    fupd_frame_right.trans <| (fupd_mono wand_elim_right).trans fupd_wp
+
+instance elimModal_fupd_swp p io {k : Nat} {s : Stuckness} {E : CoPset} {e : Expr}
+    {Φ : Val → IProp GF} (P : IProp GF) :
+    ElimModal True p io false iprop(|={E}=> P) P (swp (ι := ι) k s E e Φ)
+      (swp (ι := ι) k s E e Φ) where
+  elim_modal _ := (sep_mono_left intuitionisticallyIf_elim).trans <|
+    fupd_frame_right.trans <| (fupd_mono wand_elim_right).trans fupd_swp
+
+end ProofMode
+
 end Iris.Transfinite
