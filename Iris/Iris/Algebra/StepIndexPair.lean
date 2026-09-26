@@ -52,9 +52,13 @@ theorem lt_wf : WellFounded ((· < ·) : SIdxPair I J → SIdxPair I J → Prop)
       · cases h
         exact ihb b' h'
 
-/-- Rocq: `pair_index_mixin`, `pairI`. -/
-@[rocq_alias pair_index_mixin]
-instance instSIdx : SIdx (SIdxPair I J) where
+/-- Rocq: `pair_index_mixin`, `pairI`.
+
+This is not a global instance: it would make type class search for `SIdx ?SI` (with the step-index
+type still unknown) enumerate `SIdxPair Nat (SIdxPair Nat …)` forever. Register it for a concrete
+abbreviation with `local instance` and then `local stepindex`. -/
+@[rocq_alias pair_index_mixin, reducible]
+def instSIdx : SIdx (SIdxPair I J) where
   zero := ⟨0, 0⟩
   succ p := ⟨p.fst, SIdx.succ p.snd⟩
   lt_trans {p q r} hpq hqr := by
@@ -92,6 +96,8 @@ instance instSIdx : SIdx (SIdxPair I J) where
       rcases hq with h | ⟨h, h'⟩
       · exact .inl h
       · exact .inr ⟨h, hlim _ h'⟩
+
+attribute [local instance] instSIdx
 
 theorem succ_def (p : SIdxPair I J) : SIdx.succ p = ⟨p.fst, SIdx.succ p.snd⟩ := rfl
 

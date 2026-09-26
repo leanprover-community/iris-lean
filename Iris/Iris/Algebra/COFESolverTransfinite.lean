@@ -60,22 +60,22 @@ structure Obj where
   [cofe : COFE (SI := SI) car]
   [inh : Inhabited car]
 
-attribute [instance] Obj.cofe Obj.inh
+attribute [local instance] Obj.cofe Obj.inh
 
 /-- Casting along an equality of bundled COFEs. -/
 def castObj {A B : Obj (SI := SI)} (h : A = B) : A.car -n> B.car := h ▸ Hom.id
 
-@[simp] theorem castObj_rfl {A : Obj (SI := SI)} (x : A.car) : castObj (rfl : A = A) x = x := rfl
+theorem castObj_rfl {A : Obj (SI := SI)} (x : A.car) : castObj (rfl : A = A) x = x := rfl
 
 theorem castObj_castObj {A B C : Obj (SI := SI)} (h1 : A = B) (h2 : B = C) (x : A.car) :
     castObj h2 (castObj h1 x) = castObj (h1.trans h2) x := by
   subst h1 h2; rfl
 
-@[simp] theorem castObj_symm_castObj {A B : Obj (SI := SI)} (h : A = B) (x : A.car) :
+theorem castObj_symm_castObj {A B : Obj (SI := SI)} (h : A = B) (x : A.car) :
     castObj h.symm (castObj h x) = x := by
   subst h; rfl
 
-@[simp] theorem castObj_castObj_symm {A B : Obj (SI := SI)} (h : A = B) (x : B.car) :
+theorem castObj_castObj_symm {A B : Obj (SI := SI)} (h : A = B) (x : B.car) :
     castObj h (castObj h.symm x) = x := by
   subst h; rfl
 
@@ -85,7 +85,7 @@ theorem castObj_heq {A B : Obj (SI := SI)} (h : A = B) (x : A.car) : HEq (castOb
 /-- A constant non-expansive map. -/
 def constHom {A B : Type _} [OFE A] [OFE B] (y : B) : A -n> B := ⟨fun _ => y, ⟨fun _ _ _ _ => .rfl⟩⟩
 
-@[simp] theorem constHom_apply {A B : Type _} [OFE A] [OFE B] (y : B) (x : A) :
+theorem constHom_apply {A B : Type _} [OFE A] [OFE B] (y : B) (x : A) :
     constHom y x = y := rfl
 
 /-! ## The functor -/
@@ -98,7 +98,7 @@ variable [inh : Inhabited (F (ULift Unit) (ULift Unit))]
 def unitObj : Obj (SI := SI) := ⟨ULift Unit⟩
 
 /-- The functor is inhabited on every inhabited COFE. -/
-instance Finh {A : Type u} [COFE A] [Inhabited A] : Inhabited (F A A) :=
+@[local instance] def Finh {A : Type u} [COFE A] [Inhabited A] : Inhabited (F A A) :=
   ⟨map (F := F) (constHom ⟨()⟩ : A -n> ULift Unit) (constHom default) inh.default⟩
 
 variable (F) in
@@ -391,7 +391,7 @@ theorem eLval_coh (n : SI) (hn : n < γ) (x : (f.X n hn).car) (β δ : SI) (hβ 
 noncomputable def eL (n : SI) (hn : n < γ) : (f.X n hn).car -n> LimCar f where
   f x := ⟨eLval hlim f n hn x, fun β δ hβ hδ hlt => eLval_coh hlim hf n hn x β δ hβ hδ hlt⟩
   ne := ⟨fun k x y h β hβ => by
-    show eLval hlim f n hn x β hβ ≡{k}≡ eLval hlim f n hn y β hβ
+    change eLval hlim f n hn x β hβ ≡{k}≡ eLval hlim f n hn y β hβ
     unfold eLval
     split
     · exact (f.unf _ _ _).ne.1 ((f.p _ _ _ _ _).ne.1 h)
@@ -542,7 +542,7 @@ limits of bounded chains of length `n < γ`; those are obtained by embedding the
       · exact Dist.of_eq ((LimCar.truncated hlim f).eq_of_dist (c.bcauchy h hm h')).symm
     · rw [limLb_eq hlim hf hn c h]
       intro β hβ
-      show (c.bchain (σ β) _).val β hβ ≡{m}≡ (c.bchain m hm).val β hβ
+      change (c.bchain (σ β) _).val β hβ ≡{m}≡ (c.bchain m hm).val β hβ
       rcases SIdx.le_total (n := σ β) (m := m) with h' | h'
       · exact Dist.of_eq (Truncated.eq_of_dist (A := (FX F f β hβ).car) (α := σ β)
           (c.bcauchy _ hm h' β hβ)).symm
@@ -607,12 +607,12 @@ noncomputable def ϕLchain (x : LimCar f) : BChain (TG F γ (LimObj hlim hf)).ca
         intro y
         rw [Hom.comp_apply, ← OFunctor.map_comp]
         refine OFunctor.map_ne.ne (fun z => ?_) (fun z => ?_) y
-        · show pL f p hp z ≡{m}≡ f.e m p hm hp h (pL f m hm z)
+        · change pL f p hp z ≡{m}≡ f.e m p hm hp h (pL f m hm z)
           have e1 : f.e m p hm hp h (pL f m hm z) =
               f.e m p hm hp h (f.p m p hm hp h (pL f p hp z)) :=
             congrArg _ (pL_functorial hf m p hm hp h (hlim.succ_lt m hm) (hlim.succ_lt p hp) z)
           exact ((Dist.of_eq e1).trans (hf.e_p m p hm hp h _)).symm
-        · show eL hlim hf p hp z ≡{m}≡ eL hlim hf m hm (f.p m p hm hp h z)
+        · change eL hlim hf p hp z ≡{m}≡ eL hlim hf m hm (f.p m p hm hp h z)
           rw [eL_functorial hlim hf m p hm hp h]
           exact (eL hlim hf p hp).ne.1 (hf.e_p m p hm hp h z).symm
       exact ((truncMap_ne (σ p) γ).ne H1 (x.val p hp)).trans
@@ -708,7 +708,7 @@ theorem ψL_ϕL (x : LimCar f) : ψL hlim hf (ϕL hlim hf x) = x := by
   refine Truncated.eq_of_dist (A := (FX F f β hβ).car) (α := σ β) ?_
   refine ((truncMap γ (σ β) _).ne.1 (IsCOFE.conv_lbcompl hlim (ϕLchain hlim hf x) hs)).trans
     (Dist.of_eq ?_)
-  show truncMap γ (σ β) _ (truncMap (σ (σ β)) γ _ (x.val (σ β) hs)) = _
+  change truncMap γ (σ β) _ (truncMap (σ (σ β)) γ _ (x.val (σ β) hs)) = _
   rw [truncMap_truncMap (SIdx.lt_le_incl hs)]
   rw [← x.coh β (σ β) hβ hs (SIdx.lt_succ_self β), Fep]
   refine truncMap_congr (fun y => ?_) _
@@ -719,7 +719,7 @@ theorem ψL_ϕL (x : LimCar f) : ψL hlim hf (ϕL hlim hf x) = x := by
 /-- Rocq: `ϕβ_ψβ_id`. -/
 theorem ϕL_ψL (y) (k : SI) (hk : k < γ) : ϕL hlim hf (ψL' hlim hf y) ≡{k}≡ y := by
   refine (IsCOFE.conv_lbcompl hlim (ϕLchain hlim hf (ψL hlim hf y)) hk).trans ?_
-  show truncMap (σ k) γ _ (truncMap γ (σ k) _ y) ≡{k}≡ y
+  change truncMap (σ k) γ _ (truncMap γ (σ k) _ y) ≡{k}≡ y
   refine ((truncMap_comp_dist γ γ (σ k) _ _ y).symm.le (SIdx.lt_le_incl (SIdx.lt_succ_self k))).trans ?_
   refine (((truncMap_ne γ γ).ne (n := k) (fun z => ?_)) y).trans (Dist.of_eq (truncMap_id γ y))
   rw [Hom.comp_apply, ← OFunctor.map_comp]
@@ -738,15 +738,15 @@ theorem fld_truncMap_eL (γ0 : SI) (h0 : γ0 < γ) (hs0 : σ γ0 < γ) (y) :
   refine truncMap_congr (fun y => ?_) _
   rw [Hom.comp_apply, ← OFunctor.map_comp]
   refine map_congr (fun z => ?_) (fun z => ?_) y
-  · show eL hlim hf γ0 h0 z = eL hlim hf (σ γ0) hs0 (f.fld γ0 h0 hs0 (f.ϕ γ0 h0 z))
+  · change eL hlim hf γ0 h0 z = eL hlim hf (σ γ0) hs0 (f.fld γ0 h0 hs0 (f.ϕ γ0 h0 z))
     rw [← hf.e_fold_ϕ γ0 h0 hs0 (SIdx.lt_succ_self γ0), ← eL_functorial]
-  · show pL f γ0 h0 z = f.ψ γ0 h0 (f.unf γ0 h0 hs0 (pL f (σ γ0) hs0 z))
+  · change pL f γ0 h0 z = f.ψ γ0 h0 (f.unf γ0 h0 hs0 (pL f (σ γ0) hs0 z))
     exact (pL_functorial hf γ0 (σ γ0) h0 hs0 (SIdx.lt_succ_self γ0) hs0 (hlim.succ_lt _ hs0) z).trans
       (hf.p_ψ_unfold γ0 h0 hs0 (SIdx.lt_succ_self γ0) _)
 
 /-- Rocq: `ψβ'_ϕβ'_id`. -/
 theorem ψS_ϕS (x : (TG F γ (LimObj hlim hf)).car) : ψS hlim hf (ϕS hlim hf x) = x := by
-  show truncMap (σ γ) γ _ (truncMap γ (σ γ) _ x) = x
+  change truncMap (σ γ) γ _ (truncMap γ (σ γ) _ x) = x
   rw [truncMap_truncMap (SIdx.lt_le_incl (SIdx.lt_succ_self γ))]
   refine (truncMap_congr (fun y => ?_) x).trans (truncMap_id γ x)
   rw [Hom.comp_apply, ← OFunctor.map_comp]
@@ -757,11 +757,11 @@ theorem ψS_ϕS (x : (TG F γ (LimObj hlim hf)).car) : ψS hlim hf (ϕS hlim hf 
 
 /-- Rocq: `ϕβ'_ψβ'_id`. -/
 theorem ϕS_ψS (x) : ϕS hlim hf (ψS hlim hf x) ≡{γ}≡ x := by
-  show truncMap γ (σ γ) _ (truncMap (σ γ) γ _ x) ≡{γ}≡ x
+  change truncMap γ (σ γ) _ (truncMap (σ γ) γ _ x) ≡{γ}≡ x
   refine (truncMap_comp_dist (σ γ) (σ γ) γ _ _ x).symm.trans ?_
   refine (((truncMap_ne (σ γ) (σ γ)).ne (n := γ) (fun y => ?_)) x).trans
     (Dist.of_eq (truncMap_id (σ γ) x))
-  show map (F := F) _ _ (map (F := F) _ _ y) ≡{γ}≡ y
+  change map (F := F) _ _ (map (F := F) _ _ y) ≡{γ}≡ y
   rw [← OFunctor.map_comp]
   refine ((OFunctorContractive.map_contractive (F := F)).distLater_dist
     (x := (((ϕL hlim hf).comp (ψL' hlim hf)), ((ϕL hlim hf).comp (ψL' hlim hf))))
@@ -793,7 +793,7 @@ theorem fld_truncMap_eS (γ0 : SI) (h0 : γ0 < γ) (hs0 : σ γ0 < γ) (x) :
       pS hlim hf (σ γ0) hs0 (ψS hlim hf x) := by
   refine Eq.trans ?_ (fld_truncMap_eL hlim hf γ0 h0 hs0 _)
   congr 1
-  show _ = truncMap γ (σ γ0) _ (truncMap (σ γ) γ _ x)
+  change _ = truncMap γ (σ γ0) _ (truncMap (σ γ) γ _ x)
   rw [truncMap_truncMap (SIdx.lt_le_incl (hlim.succ_lt γ0 h0))]
   refine truncMap_congr (fun y => ?_) x
   rw [Hom.comp_apply, ← OFunctor.map_comp]
@@ -886,7 +886,7 @@ theorem stage_succ (m : SI) :
 
 /-- `X (m + 1) = [F (X m) (X m)]_{m + 1}` (Rocq: `approx_eq`). -/
 theorem X_succ (m : SI) : X F (σ m) = TG F (σ m) (X F m) := by
-  show (stage F (σ m)).X = _
+  change (stage F (σ m)).X = _
   rw [stage_succ]
 
 variable (F) in
@@ -916,10 +916,10 @@ variable (F) in
 noncomputable def fold (m : SI) : (TG F (σ m) (X F m)).car -n> (X F (σ m)).car :=
   castObj (X_succ m).symm
 
-@[simp] theorem unfold_fold (m : SI) (x) : unfold F m (fold F m x) = x :=
+theorem unfold_fold (m : SI) (x) : unfold F m (fold F m x) = x :=
   castObj_castObj_symm _ _
 
-@[simp] theorem fold_unfold (m : SI) (x) : fold F m (unfold F m x) = x :=
+theorem fold_unfold (m : SI) (x) : fold F m (unfold F m x) = x :=
   castObj_symm_castObj _ _
 
 /-- The family of all approximations below `γ`. -/
@@ -1019,25 +1019,25 @@ theorem succStage_p_lt (f : Fam F (σ m)) (β : SI) (h : β < σ m) (hβ : β < 
   rw [dite_eq_right (fun (hβm : β = m) => SIdx.lt_irrefl m (hβm ▸ hβ))]; rfl
 
 theorem e_succ_self (h : m < σ m) (x) : e F m (σ m) h x = fold F m (ϕ F m x) := by
-  show (stage F (σ m)).e m h (castObj (prev_eq (σ m) m h).symm x) = _
+  change (stage F (σ m)).e m h (castObj (prev_eq (σ m) m h).symm x) = _
   rw [transport_e (stage_succ m) m h (prev_eq (σ m) m h) rfl x, succStage_e_self]
   rfl
 
 theorem e_succ_lt (β : SI) (hβ : β < m) (h : β < σ m) (x) :
     e F β (σ m) h x = e F m (σ m) (SIdx.lt_succ_self m) (e F β m hβ x) := by
-  show (stage F (σ m)).e β h (castObj (prev_eq (σ m) β h).symm x) = _
+  change (stage F (σ m)).e β h (castObj (prev_eq (σ m) β h).symm x) = _
   rw [transport_e (stage_succ m) β h (prev_eq (σ m) β h) rfl x, e_succ_self,
     succStage_e_lt m _ β h hβ, famBelow_e]
   rfl
 
 theorem p_succ_self (h : m < σ m) (y) : p F m (σ m) h y = ψ F m (unfold F m y) := by
-  show castObj (prev_eq (σ m) m h) ((stage F (σ m)).p m h y) = _
+  change castObj (prev_eq (σ m) m h) ((stage F (σ m)).p m h y) = _
   rw [transport_p (stage_succ m) m h (prev_eq (σ m) m h) rfl y, succStage_p_self]
   rfl
 
 theorem p_succ_lt (β : SI) (hβ : β < m) (h : β < σ m) (y) :
     p F β (σ m) h y = p F β m hβ (p F m (σ m) (SIdx.lt_succ_self m) y) := by
-  show castObj (prev_eq (σ m) β h) ((stage F (σ m)).p β h y) = _
+  change castObj (prev_eq (σ m) β h) ((stage F (σ m)).p β h y) = _
   rw [transport_p (stage_succ m) β h (prev_eq (σ m) β h) rfl y, p_succ_self,
     succStage_p_lt m _ β h hβ, famBelow_p]
   rfl
@@ -1045,14 +1045,14 @@ theorem p_succ_lt (β : SI) (hβ : β < m) (h : β < σ m) (y) :
 theorem ϕ_succ (y) :
     ϕ F (σ m) y = truncMap (σ m) (σ (σ m))
       (map (F := F) ((ψ F m).comp (unfold F m)) ((fold F m).comp (ϕ F m))) (unfold F m y) := by
-  show (stage F (σ m)).ϕ y = _
+  change (stage F (σ m)).ϕ y = _
   rw [transport_ϕ (stage_succ m) y]
   exact cast_truncMap_map (congrArg Stage.X (stage_succ m)).symm (σ (σ m)) (σ m) _ _ _ _
 
 theorem ψ_succ (z) :
     ψ F (σ m) z = fold F m (truncMap (σ (σ m)) (σ m)
       (map (F := F) ((fold F m).comp (ϕ F m)) ((ψ F m).comp (unfold F m))) z) := by
-  show (stage F (σ m)).ψ z = _
+  change (stage F (σ m)).ψ z = _
   rw [transport_ψ (stage_succ m) z]
   congr 1
   exact truncMap_map_cast (congrArg Stage.X (stage_succ m)).symm (σ m) (σ (σ m)) _ _ _ _
@@ -1073,26 +1073,26 @@ theorem X_limit : X F γ = TG F γ (LimObj hlim hg) := congrArg Stage.X (stage_l
 
 theorem e_limit (β : SI) (h : β < γ) (x) :
     e F β γ h x = castObj (X_limit hlim hg).symm (eS hlim hg β h x) := by
-  show (stage F γ).e β h (castObj (prev_eq γ β h).symm x) = _
+  change (stage F γ).e β h (castObj (prev_eq γ β h).symm x) = _
   rw [transport_e (stage_limit hlim hg) β h (prev_eq γ β h) rfl x]
   rfl
 
 theorem p_limit (β : SI) (h : β < γ) (y) :
     p F β γ h y = pS hlim hg β h (castObj (X_limit hlim hg) y) := by
-  show castObj (prev_eq γ β h) ((stage F γ).p β h y) = _
+  change castObj (prev_eq γ β h) ((stage F γ).p β h y) = _
   rw [transport_p (stage_limit hlim hg) β h (prev_eq γ β h) rfl y]
   rfl
 
 theorem ϕ_limit (y) :
     ϕ F γ y = castObj (congrArg (TG F (σ γ)) (X_limit hlim hg)).symm
       (ϕS hlim hg (castObj (X_limit hlim hg) y)) := by
-  show (stage F γ).ϕ y = _
+  change (stage F γ).ϕ y = _
   rw [transport_ϕ (stage_limit hlim hg) y]
 
 theorem ψ_limit (z) :
     ψ F γ z = castObj (X_limit hlim hg).symm
       (ψS hlim hg (castObj (congrArg (TG F (σ γ)) (X_limit hlim hg)) z)) := by
-  show (stage F γ).ψ z = _
+  change (stage F γ).ψ z = _
   rw [transport_ψ (stage_limit hlim hg) z]
 
 end Limit
@@ -1107,13 +1107,13 @@ theorem X_zero : X F 0 = TG F 0 unitObj := congrArg Stage.X (stage_zero (F := F)
 theorem ϕ_zero (y) :
     ϕ F 0 y = castObj (congrArg (TG F (σ 0)) (X_zero (F := F))).symm
       ((zeroStage F).ϕ (castObj (X_zero (F := F)) y)) := by
-  show (stage F 0).ϕ y = _
+  change (stage F 0).ϕ y = _
   rw [transport_ϕ (stage_zero (F := F)) y]
 
 theorem ψ_zero (z) :
     ψ F 0 z = castObj (X_zero (F := F)).symm
       ((zeroStage F).ψ (castObj (congrArg (TG F (σ 0)) (X_zero (F := F))) z)) := by
-  show (stage F 0).ψ z = _
+  change (stage F 0).ψ z = _
   rw [transport_ψ (stage_zero (F := F)) z]
 
 /-! ## The laws of the approximations -/
@@ -1228,9 +1228,9 @@ theorem ψ_ϕ_succ (x) : ψ F (σ m) (ϕ F (σ m) x) = x := by
   refine (truncMap_congr (fun y => ?_) _).trans (truncMap_id _ _)
   rw [Hom.comp_apply, ← OFunctor.map_comp]
   refine (map_congr (fun z => ?_) (fun z => ?_) y).trans (OFunctor.map_id y)
-  · show ψ F m (unfold F m (fold F m (ϕ F m z))) = z
+  · change ψ F m (unfold F m (fold F m (ϕ F m z))) = z
     rw [unfold_fold, hg.ψ_ϕ m (SIdx.lt_succ_self m)]
-  · show ψ F m (unfold F m (fold F m (ϕ F m z))) = z
+  · change ψ F m (unfold F m (fold F m (ϕ F m z))) = z
     rw [unfold_fold, hg.ψ_ϕ m (SIdx.lt_succ_self m)]
 
 theorem ϕ_ψ_succ (z) : ϕ F (σ m) (ψ F (σ m) z) ≡{σ m}≡ z := by
@@ -1238,10 +1238,10 @@ theorem ϕ_ψ_succ (z) : ϕ F (σ m) (ψ F (σ m) z) ≡{σ m}≡ z := by
   refine (truncMap_comp_dist (σ (σ m)) (σ (σ m)) (σ m) _ _ z).symm.trans ?_
   refine (((truncMap_ne (σ (σ m)) (σ (σ m))).ne (n := σ m) (fun y => ?_)) z).trans
     (Dist.of_eq (truncMap_id _ z))
-  show map (F := F) _ _ (map (F := F) _ _ y) ≡{σ m}≡ y
+  change map (F := F) _ _ (map (F := F) _ _ y) ≡{σ m}≡ y
   rw [← OFunctor.map_comp]
   have H : ∀ w, ((fold F m).comp (ϕ F m)).comp ((ψ F m).comp (unfold F m)) w ≡{m}≡ w := fun w => by
-    show fold F m (ϕ F m (ψ F m (unfold F m w))) ≡{m}≡ w
+    change fold F m (ϕ F m (ψ F m (unfold F m w))) ≡{m}≡ w
     exact ((fold F m).ne.1 (hg.ϕ_ψ m (SIdx.lt_succ_self m) _)).trans (Dist.of_eq (fold_unfold m w))
   refine ((OFunctorContractive.map_contractive (F := F)).distLater_dist
     (x := (((fold F m).comp (ϕ F m)).comp ((ψ F m).comp (unfold F m)),
@@ -1273,10 +1273,10 @@ theorem Fep_p_succ (γ0 γ1 : SI) (hlt : γ0 < γ1) (hlts : σ γ0 < σ γ1) (hg
       refine truncMap_congr (fun y => ?_) z
       rw [Hom.comp_apply, ← OFunctor.map_comp]
       refine map_congr (fun w => ?_) (fun w => ?_) y
-      · show e F γ0 (σ β') hlt w = fold F β' (ϕ F β' (e F γ0 β' hβ' w))
+      · change e F γ0 (σ β') hlt w = fold F β' (ϕ F β' (e F γ0 β' hβ' w))
         rw [← e_succ_self β' (SIdx.lt_succ_self β'), hg.e_funct γ0 β' (σ β') (SIdx.lt_trans hβ' l1) l1 l2 hβ'
           (SIdx.lt_succ_self β') hlt]
-      · show p F γ0 (σ β') hlt w = p F γ0 β' hβ' (ψ F β' (unfold F β' w))
+      · change p F γ0 (σ β') hlt w = p F γ0 β' hβ' (ψ F β' (unfold F β' w))
         rw [← p_succ_self β' (SIdx.lt_succ_self β'), hg.p_funct γ0 β' (σ β') (SIdx.lt_trans hβ' l1) l1 l2 hβ'
           (SIdx.lt_succ_self β') hlt]
     · exact hg.Fep_p_limit γ0 γ1 hlim1 (SIdx.lt_trans hlt (SIdx.lt_succ_self γ1))
@@ -1348,7 +1348,7 @@ theorem ψ_ϕ_zero (x) : ψ F 0 (ϕ F 0 x) = x := by
   rw [ψ_zero, ϕ_zero, castObj_castObj_symm]
   refine Eq.trans ?_ (castObj_symm_castObj (X_zero (F := F)) x)
   congr 1
-  show truncMap (σ 0) 0 _ (truncMap 0 (σ 0) _ _) = _
+  change truncMap (σ 0) 0 _ (truncMap 0 (σ 0) _ _) = _
   rw [truncMap_truncMap (SIdx.lt_le_incl (SIdx.lt_succ_self 0))]
   refine (truncMap_congr (fun y => ?_) _).trans (truncMap_id _ _)
   rw [Hom.comp_apply, ← OFunctor.map_comp]
@@ -1358,11 +1358,11 @@ theorem ϕ_ψ_zero (z) : ϕ F 0 (ψ F 0 z) ≡{0}≡ z := by
   rw [ϕ_zero, ψ_zero, castObj_castObj_symm]
   refine ((castObj _).ne.1 ?_).trans
     (Dist.of_eq (castObj_symm_castObj (congrArg (TG F (σ 0)) (X_zero (F := F))) z))
-  show truncMap 0 (σ 0) _ (truncMap (σ 0) 0 _ _) ≡{0}≡ _
+  change truncMap 0 (σ 0) _ (truncMap (σ 0) 0 _ _) ≡{0}≡ _
   refine (truncMap_comp_dist (σ 0) (σ 0) 0 _ _ _).symm.trans ?_
   refine (((truncMap_ne (σ 0) (σ 0)).ne (n := 0) (fun y => ?_)) _).trans
     (Dist.of_eq (truncMap_id _ _))
-  show map (F := F) _ _ (map (F := F) _ _ y) ≡{0}≡ y
+  change map (F := F) _ _ (map (F := F) _ _ y) ≡{0}≡ y
   rw [← OFunctor.map_comp]
   exact ((OFunctorContractive.map_contractive (F := F)).zero (x := (_, _)) (y := (Hom.id, Hom.id))
     _ y).trans (Dist.of_eq (OFunctor.map_id y))
@@ -1456,5 +1456,313 @@ theorem good (γ : SI) : Good (F := F) γ := by
         rw [famBelow_fld γ γ0 h0 hs0, famBelow_e γ γ0 γ1 h0 h1 hlt, famBelow_p γ γ0 γ1 h0 h1 hlt,
           famBelow_p γ (σ γ0) γ1 hs0 h1 hslt]
         exact Fep_p_limit_limit hlim (IH γ1 h1) γ0 hlt hslt x }
+
+/-! ## The laws for arbitrary indices -/
+
+section Global
+
+theorem gp_e (β γ : SI) (h : β < γ) (x) : p F β γ h (e F β γ h x) = x := p_e_at γ (good γ) β h x
+
+theorem ge_p (β γ : SI) (h : β < γ) (y) : e F β γ h (p F β γ h y) ≡{β}≡ y := e_p_at γ (good γ) β h y
+
+theorem ge_funct (β η γ : SI) (h1 : β < η) (h2 : η < γ) (h3 : β < γ) (x) :
+    e F η γ h2 (e F β η h1 x) = e F β γ h3 x := e_funct_at γ (good γ) β η h1 h2 h3 x
+
+theorem gp_funct (β η γ : SI) (h1 : β < η) (h2 : η < γ) (h3 : β < γ) (y) :
+    p F β η h1 (p F η γ h2 y) = p F β γ h3 y := p_funct_at γ (good γ) β η h1 h2 h3 y
+
+theorem gFep_p (γ0 γ1 : SI) (hlt : γ0 < γ1) (hlts : σ γ0 < σ γ1) (x) :
+    fold F γ0 (truncMap (σ γ1) (σ γ0) (map (F := F) (e F γ0 γ1 hlt) (p F γ0 γ1 hlt))
+      (unfold F γ1 x)) = p F (σ γ0) (σ γ1) hlts x := Fep_p_succ γ0 γ1 hlt hlts (good (σ γ1)) x
+
+theorem gFep_unfold (γ0 γ1 : SI) (hlt : γ0 < γ1) (hlts : σ γ0 < σ γ1) (x) :
+    truncMap (σ γ1) (σ γ0) (map (F := F) (e F γ0 γ1 hlt) (p F γ0 γ1 hlt)) (unfold F γ1 x) =
+      unfold F γ0 (p F (σ γ0) (σ γ1) hlts x) := by
+  rw [← gFep_p γ0 γ1 hlt hlts x, unfold_fold]
+
+theorem gfold_Fep (γ0 γ1 : SI) (hlt : γ0 < γ1) (hlts : σ γ0 < σ γ1) (y) :
+    fold F γ0 (truncMap (σ γ1) (σ γ0) (map (F := F) (e F γ0 γ1 hlt) (p F γ0 γ1 hlt)) y) =
+      p F (σ γ0) (σ γ1) hlts (fold F γ1 y) := by
+  rw [← gFep_p γ0 γ1 hlt hlts, unfold_fold]
+
+theorem gψ_p_fold (γ : SI) (x) : ψ F γ x = p F γ (σ γ) (SIdx.lt_succ_self γ) (fold F γ x) := by
+  rw [p_succ_self, unfold_fold]
+
+end Global
+
+/-! ## The final inverse limit -/
+
+variable (F) in
+/-- The components of the solution: `[F (X γ) (X γ)]_{γ + 1}` (Rocq: `FX_lim`). -/
+noncomputable abbrev FXl (γ : SI) : Obj (SI := SI) := TG F (σ γ) (X F γ)
+
+variable (F) in
+/-- Rocq: `Fep_lim`. -/
+noncomputable def Fepl (γ0 γ1 : SI) (hlt : γ0 < γ1) : (FXl F γ1).car -n> (FXl F γ0).car :=
+  truncMap (σ γ1) (σ γ0) (map (F := F) (e F γ0 γ1 hlt) (p F γ0 γ1 hlt))
+
+variable (F) in
+/-- The solution: the inverse limit of all approximations (Rocq: `Xlim`). -/
+@[ext]
+structure SolCar where
+  val : ∀ γ : SI, (FXl F γ).car
+  coh : ∀ γ0 γ1 (hlt : γ0 < γ1), Fepl F γ0 γ1 hlt (val γ1) = val γ0
+
+noncomputable instance SolCar.instOFE : OFE (SolCar F) where
+  Dist n x y := ∀ γ, x.val γ ≡{n}≡ y.val γ
+  dist_eqv := {
+    refl _ _ := .rfl
+    symm h γ := (h γ).symm
+    trans h h' γ := (h γ).trans (h' γ)
+  }
+  eq_dist' := by
+    intro x y
+    constructor
+    · rintro rfl _ _; exact .rfl
+    · intro h
+      exact SolCar.ext (funext fun γ => OFE.eq_dist.mpr fun n => h n γ)
+  dist_lt h hlt γ := (h γ).lt hlt
+
+/-- The projection to a component. -/
+def projSol (γ : SI) : SolCar F -n> (FXl F γ).car := ⟨fun x => x.val γ, ⟨fun _ _ _ h => h γ⟩⟩
+
+/-- The value of the embedding of `X γ` into the solution (Rocq: `e_lim`). -/
+noncomputable def elimVal (γ : SI) (x : (X F γ).car) (γ' : SI) : (FXl F γ').car :=
+  match SIdx.lt_trichotomyT (σ γ') γ with
+  | .inl h => unfold F γ' (p F (σ γ') γ h x)
+  | .inr (.inl h) => unfold F γ' (castObj (A := X F γ) (B := X F (σ γ')) (by subst h; rfl) x)
+  | .inr (.inr h) => unfold F γ' (e F γ (σ γ') h x)
+
+theorem elimVal_lt {γ : SI} (x) {γ' : SI} (h : σ γ' < γ) :
+    elimVal γ x γ' = unfold F γ' (p F (σ γ') γ h x) := by
+  unfold elimVal; split
+  · rfl
+  · rename_i h' _; exact absurd (h' ▸ h) (SIdx.lt_irrefl _)
+  · rename_i h' _; exact absurd (SIdx.lt_trans h h') (SIdx.lt_irrefl _)
+
+theorem elimVal_eq {γ' : SI} (x : (X F (σ γ')).car) : elimVal (σ γ') x γ' = unfold F γ' x := by
+  unfold elimVal; split
+  · rename_i h _; exact absurd h (SIdx.lt_irrefl _)
+  · rfl
+  · rename_i h _; exact absurd h (SIdx.lt_irrefl _)
+
+theorem elimVal_gt {γ : SI} (x) {γ' : SI} (h : γ < σ γ') :
+    elimVal γ x γ' = unfold F γ' (e F γ (σ γ') h x) := by
+  unfold elimVal; split
+  · rename_i h' _; exact absurd (SIdx.lt_trans h h') (SIdx.lt_irrefl _)
+  · rename_i h' _; exact absurd (h' ▸ h) (SIdx.lt_irrefl _)
+  · rfl
+
+theorem elimVal_coh (γ : SI) (x : (X F γ).car) (β δ : SI) (hlt : β < δ) :
+    Fepl F β δ hlt (elimVal γ x δ) = elimVal γ x β := by
+  have hlts : σ β < σ δ := SIdx.succ_lt_mono.mp hlt
+  rcases SIdx.lt_trichotomyT (σ δ) γ with h1 | h1 | h1
+  · rw [elimVal_lt x h1, elimVal_lt x (SIdx.lt_trans hlts h1), Fepl, gFep_unfold β δ hlt hlts,
+      gp_funct]
+  · subst h1
+    rw [elimVal_eq x, elimVal_lt x hlts, Fepl, gFep_unfold β δ hlt hlts]
+  · rcases SIdx.lt_trichotomyT (σ β) γ with h0 | h0 | h0
+    · rw [elimVal_gt x h1, elimVal_lt x h0, Fepl, gFep_unfold β δ hlt hlts,
+        ← gp_funct (σ β) γ (σ δ) h0 h1 hlts, gp_e]
+    · subst h0
+      rw [elimVal_gt x h1, elimVal_eq x, Fepl, gFep_unfold β δ hlt hlts, gp_e]
+    · rw [elimVal_gt x h1, elimVal_gt x h0, Fepl, gFep_unfold β δ hlt hlts,
+        ← ge_funct γ (σ β) (σ δ) h0 hlts h1, gp_e]
+
+/-- The embedding of `X γ` into the solution (Rocq: `e_lim`). -/
+noncomputable def elim (γ : SI) : (X F γ).car -n> SolCar F where
+  f x := ⟨elimVal γ x, fun β δ hlt => elimVal_coh γ x β δ hlt⟩
+  ne := ⟨fun k x y h γ' => by
+    change elimVal γ x γ' ≡{k}≡ elimVal γ y γ'
+    unfold elimVal
+    split
+    · exact (unfold F γ').ne.1 ((p F _ _ _).ne.1 h)
+    · exact (unfold F γ').ne.1 ((castObj _).ne.1 h)
+    · exact (unfold F γ').ne.1 ((e F _ _ _).ne.1 h)⟩
+
+theorem elim_val (γ : SI) (x) (γ' : SI) : (elim γ x).val γ' = elimVal (F := F) γ x γ' := rfl
+
+/-- The projection of the solution to `X γ` (Rocq: `p_lim`). -/
+noncomputable def plim (γ : SI) : SolCar F -n> (X F γ).car := (ψ F γ).comp (projSol γ)
+
+theorem plim_apply (γ : SI) (x : SolCar F) : plim γ x = ψ F γ (x.val γ) := rfl
+
+/-- Rocq: `e_lim_p_lim_id`. -/
+theorem elim_plim (γ : SI) (x : SolCar F) : elim γ (plim γ x) ≡{γ}≡ x := by
+  intro δ
+  rw [elim_val, plim_apply]
+  rcases SIdx.lt_trichotomyT (σ δ) γ with h | h | h
+  · have h' : σ δ < σ γ := SIdx.lt_trans h (SIdx.lt_succ_self γ)
+    rw [elimVal_lt _ h, gψ_p_fold γ, gp_funct (σ δ) γ (σ γ) h (SIdx.lt_succ_self γ) h',
+      ← gFep_unfold δ γ (SIdx.succ_lt_mono.mpr h') h', unfold_fold]
+    exact Dist.of_eq (x.coh δ γ _)
+  · subst h
+    rw [elimVal_eq, gψ_p_fold (σ δ), ← gFep_p δ (σ δ) (SIdx.lt_succ_self δ) (SIdx.lt_succ_self _),
+      unfold_fold, unfold_fold]
+    exact Dist.of_eq (x.coh δ (σ δ) _)
+  · rw [elimVal_gt _ h]
+    rcases SIdx.le_lteq.mp (SIdx.lt_succ_r.mp h) with h' | h'
+    · have hlts : σ γ < σ δ := SIdx.succ_lt_mono.mp h'
+      rw [gψ_p_fold γ, ← ge_funct γ (σ γ) (σ δ) (SIdx.lt_succ_self γ) hlts h]
+      refine ((unfold F δ).ne.1 ((e F (σ γ) (σ δ) hlts).ne.1 (ge_p γ (σ γ) _ _))).trans ?_
+      rw [← x.coh γ δ h', Fepl, gfold_Fep γ δ h' hlts]
+      refine ((unfold F δ).ne.1 ((ge_p (σ γ) (σ δ) hlts _).le
+        (SIdx.lt_le_incl (SIdx.lt_succ_self γ)))).trans ?_
+      rw [unfold_fold]
+      exact .rfl
+    · subst h'
+      rw [e_succ_self, unfold_fold]
+      exact ϕ_ψ_at γ (good γ) _
+
+/-- Rocq: `p_lim_e_lim_id`. -/
+theorem plim_elim (γ : SI) (x) : plim γ (elim (F := F) γ x) = x := by
+  rw [plim_apply, elim_val, elimVal_gt x (SIdx.lt_succ_self γ), ← p_succ_self γ (SIdx.lt_succ_self γ), gp_e]
+
+/-- Rocq: `e_lim_funct`. -/
+theorem elim_funct (γ0 γ1 : SI) (hlt : γ0 < γ1) (x) :
+    elim (F := F) γ0 x = elim γ1 (e F γ0 γ1 hlt x) := by
+  refine SolCar.ext (funext fun β => ?_)
+  rw [elim_val, elim_val]
+  rcases SIdx.lt_trichotomyT (σ β) γ0 with h | h | h
+  · rw [elimVal_lt x h, elimVal_lt _ (SIdx.lt_trans h hlt), ← gp_funct (σ β) γ0 γ1 h hlt, gp_e]
+  · subst h
+    rw [elimVal_eq, elimVal_lt _ hlt, gp_e]
+  · rcases SIdx.lt_trichotomyT (σ β) γ1 with h' | h' | h'
+    · rw [elimVal_gt x h, elimVal_lt _ h', ← ge_funct γ0 (σ β) γ1 h h' hlt, gp_e]
+    · subst h'
+      rw [elimVal_gt x h, elimVal_eq]
+    · rw [elimVal_gt x h, elimVal_gt _ h', ge_funct γ0 γ1 (σ β) hlt h' h]
+
+/-- Rocq: `p_lim_funct`. -/
+theorem plim_funct (γ0 γ1 : SI) (hlt : γ0 < γ1) (x : SolCar F) :
+    plim γ0 x = p F γ0 γ1 hlt (plim γ1 x) := by
+  have hlts : σ γ0 < σ γ1 := SIdx.succ_lt_mono.mp hlt
+  rw [plim_apply, plim_apply, gψ_p_fold γ0, ← x.coh γ0 γ1 hlt, Fepl, gfold_Fep γ0 γ1 hlt hlts,
+    gp_funct γ0 (σ γ0) (σ γ1) (SIdx.lt_succ_self γ0) hlts
+      (SIdx.lt_trans (SIdx.lt_succ_self γ0) hlts),
+    ← gp_funct γ0 γ1 (σ γ1) hlt (SIdx.lt_succ_self γ1) (SIdx.lt_trans (SIdx.lt_succ_self γ0) hlts),
+    ← gψ_p_fold γ1]
+
+
+theorem chain_ext {A : Type _} [OFE A] {c d : Chain A} (h : ∀ n, c n = d n) : c = d := by
+  cases c; cases d; congr; exact funext h
+
+/-- The solution is a COFE. Limits of bounded chains of length `n` are obtained by embedding the
+limit in `X n`. -/
+noncomputable instance SolCar.instCOFE : IsCOFE (SolCar F) where
+  compl c := {
+    val := fun γ => COFE.compl (c.map (projSol γ))
+    coh := fun γ0 γ1 hlt => by
+      rw [← COFE.compl_map]
+      congr 1
+      exact chain_ext fun n => (c n).coh γ0 γ1 hlt }
+  conv_compl γ := COFE.conv_compl
+  lbcompl {n} hn c := elim n (IsCOFE.lbcompl hn (c.map (plim n)))
+  conv_lbcompl {n} hn c m hm :=
+    ((elim n).ne.1 (IsCOFE.conv_lbcompl hn _ hm)).trans ((elim_plim n _).lt hm)
+  lbcompl_ne {n} hn c1 c2 m hc :=
+    (elim n).ne.1 (IsCOFE.lbcompl_ne hn _ _ fun p hp => (plim n).ne.1 (hc p hp))
+
+noncomputable instance SolCar.instInhabited : Inhabited (SolCar F) := ⟨elim (F := F) 0 default⟩
+
+/-- Rocq: `ψ_lim`. -/
+noncomputable def ψlim : F (SolCar F) (SolCar F) -n> SolCar F where
+  f x := {
+    val := fun γ => truncate (σ γ) (map (F := F) (elim γ) (plim γ) x)
+    coh := fun γ0 γ1 hlt => by
+      rw [Fepl, truncMap_apply]
+      refine Truncated.eq_of_dist (A := (FXl F γ0).car) (α := σ γ0) ?_
+      refine ((truncate (σ γ0)).ne.1 ((map (F := F) _ _).ne.1 ((expand_truncate (σ γ1) _).le
+        (SIdx.lt_le_incl (SIdx.succ_lt_mono.mp hlt))))).trans (Dist.of_eq ?_)
+      rw [← OFunctor.map_comp]
+      congr 1
+      exact map_congr (fun z => (elim_funct γ0 γ1 hlt z).symm)
+        (fun z => (plim_funct γ0 γ1 hlt z).symm) x }
+  ne := ⟨fun _ _ _ h γ => (truncate (σ γ)).ne.1 ((map (F := F) _ _).ne.1 h)⟩
+
+theorem ψlim_val (x) (γ : SI) :
+    (ψlim (F := F) x).val γ = truncate (σ γ) (map (F := F) (elim γ) (plim γ) x) := rfl
+
+/-- The chain whose limit is `ϕlim x`. -/
+noncomputable def ϕlimChain (x : SolCar F) : Chain (F (SolCar F) (SolCar F)) where
+  chain γ := map (F := F) (plim γ) (elim γ) (expand (σ γ) (x.val γ))
+  cauchy {n i} h := by
+    rcases SIdx.le_lteq.mp h with hlt | hlt
+    · change map (F := F) (plim i) (elim i) (expand (σ i) (x.val i)) ≡{n}≡
+        map (F := F) (plim n) (elim n) (expand (σ n) (x.val n))
+      rw [← x.coh n i hlt, Fepl, truncMap_apply]
+      refine .trans ?_ ((map (F := F) _ _).ne.1 ((expand_truncate (σ n) _).le
+        (SIdx.lt_le_incl (SIdx.lt_succ_self n)))).symm
+      rw [← OFunctor.map_comp]
+      refine OFunctor.map_ne.ne (fun z => ?_) (fun z => ?_) _
+      · change plim i z ≡{n}≡ e F n i hlt (plim n z)
+        rw [plim_funct n i hlt z]
+        exact (ge_p n i hlt _).symm
+      · change elim i z ≡{n}≡ elim n (p F n i hlt z)
+        rw [elim_funct n i hlt]
+        exact (elim i).ne.1 (ge_p n i hlt z).symm
+    · subst hlt; exact .rfl
+
+/-- Rocq: `ϕ_lim`. -/
+noncomputable def ϕlim : SolCar F -n> F (SolCar F) (SolCar F) where
+  f x := COFE.compl (ϕlimChain x)
+  ne := ⟨fun k x y h => (COFE.conv_compl (c := ϕlimChain x) (n := k)).trans (Dist.trans
+    ((map (F := F) _ _).ne.1 ((expand (σ k)).ne.1 (h k)))
+    (COFE.conv_compl (c := ϕlimChain y) (n := k)).symm)⟩
+
+/-- Rocq: `ϕ_lim_ψ_lim_id`. -/
+theorem ϕlim_ψlim (x : F (SolCar F) (SolCar F)) : ϕlim (F := F) (ψlim (F := F) x) = x := by
+  refine OFE.eq_dist.mpr fun α => COFE.conv_compl.trans ?_
+  change map (F := F) (plim α) (elim α) (expand (σ α) (truncate (σ α) _)) ≡{α}≡ x
+  refine ((map (F := F) _ _).ne.1 ((expand_truncate (σ α) _).le
+    (SIdx.lt_le_incl (SIdx.lt_succ_self α)))).trans ?_
+  rw [← OFunctor.map_comp]
+  exact (OFunctor.map_ne.ne (fun z => elim_plim α z) (fun z => elim_plim α z) x).trans
+    (Dist.of_eq (OFunctor.map_id x))
+
+/-- Rocq: `ψ_lim_ϕ_lim_id`. -/
+theorem ψlim_ϕlim (x : SolCar F) : ψlim (F := F) (ϕlim (F := F) x) = x := by
+  refine SolCar.ext (funext fun γ => ?_)
+  rw [ψlim_val]
+  refine Truncated.eq_of_dist (A := (FXl F γ).car) (α := σ γ) ?_
+  refine ((truncate (σ γ)).ne.1 ((map (F := F) _ _).ne.1
+    (COFE.conv_compl (c := ϕlimChain x) (n := σ γ)))).trans (Dist.of_eq ?_)
+  change truncate (σ γ) (map (F := F) (elim γ) (plim γ)
+    (map (F := F) (plim (σ γ)) (elim (σ γ)) (expand (σ (σ γ)) (x.val (σ γ))))) = x.val γ
+  rw [← OFunctor.map_comp, ← x.coh γ (σ γ) (SIdx.lt_succ_self γ), Fepl, truncMap_apply]
+  congr 1
+  refine map_congr (fun z => ?_) (fun z => ?_) _
+  · change plim (σ γ) (elim γ z) = e F γ (σ γ) _ z
+    rw [elim_funct γ (σ γ) (SIdx.lt_succ_self γ), plim_elim]
+  · change plim γ (elim (σ γ) z) = p F γ (σ γ) _ z
+    rw [plim_funct γ (σ γ) (SIdx.lt_succ_self γ), plim_elim]
+
+/-! ## The solution -/
+
+variable (F) in
+/-- The solution of the recursive domain equation `F X X ≅ X` for a contractive functor `F` over an
+arbitrary type of step-indices (Rocq: `solver.solution_F`). -/
+def Fix : Type u := SolCar F
+
+noncomputable instance : COFE (Fix F) := inferInstanceAs (COFE (SolCar F))
+noncomputable instance : Inhabited (Fix F) := inferInstanceAs (Inhabited (SolCar F))
+
+/-- The isomorphism `F (Fix F) (Fix F) ≅ Fix F`. -/
+noncomputable def Fix.iso : OFE.Iso (F (Fix F) (Fix F)) (Fix F) where
+  hom := ψlim (F := F)
+  inv := ϕlim (F := F)
+  hom_inv := ψlim_ϕlim (F := F) _
+  inv_hom := ϕlim_ψlim (F := F) _
+
+/-- Rocq: `solution_fold`. -/
+noncomputable def Fix.fold : F (Fix F) (Fix F) -n> Fix F := Fix.iso.hom
+
+/-- Rocq: `solution_unfold`. -/
+noncomputable def Fix.unfold : Fix F -n> F (Fix F) (Fix F) := Fix.iso.inv
+
+theorem Fix.fold_unfold (x : Fix F) : Fix.fold (Fix.unfold x) = x := Fix.iso.hom_inv
+
+theorem Fix.unfold_fold (x : F (Fix F) (Fix F)) : Fix.unfold (Fix.fold x) = x := Fix.iso.inv_hom
+
 
 end Iris.COFE.OFunctor.Transfinite

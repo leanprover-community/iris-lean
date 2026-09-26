@@ -80,7 +80,7 @@ def mk (x : A) : TruncO α A := Quotient.mk _ x
 /-- The representative of an element of the truncation (chosen classically). -/
 noncomputable def out (q : TruncO α A) : A := Classical.choose (Quotient.exists_rep q)
 
-@[simp] theorem mk_out (q : TruncO α A) : mk q.out = q :=
+theorem mk_out (q : TruncO α A) : mk q.out = q :=
   Classical.choose_spec (Quotient.exists_rep q)
 
 theorem mk_eq_mk {x y : A} : (mk x : TruncO α A) = mk y ↔ x ≡{α}≡ y :=
@@ -141,7 +141,7 @@ noncomputable def expand (α : SI) : TruncO α A -n> A where
     · exact h n SIdx.le_refl hle
     · exact Dist.of_eq (congrArg TruncO.out (TruncO.ext_out (h α hle SIdx.le_refl)))⟩
 
-@[simp] theorem truncate_expand (α : SI) (q : TruncO α A) : truncate α (expand α q) = q :=
+theorem truncate_expand (α : SI) (q : TruncO α A) : truncate α (expand α q) = q :=
   TruncO.mk_out q
 
 @[rocq_alias ofe_trunc_expand_truncate_id]
@@ -178,7 +178,7 @@ theorem truncMap_truncMap {α γ τ : SI} (h : τ ≤ γ) (f : A -n> B) (g : B -
     truncMap γ τ g (truncMap α γ f q) = truncMap α τ (g.comp f) q :=
   Truncated.eq_of_dist ((truncMap_comp_dist α τ γ f g q).symm.le h)
 
-@[simp] theorem truncMap_id (α : SI) (q : TruncO α A) : truncMap α α Hom.id q = q :=
+theorem truncMap_id (α : SI) (q : TruncO α A) : truncMap α α Hom.id q = q :=
   truncate_expand α q
 
 theorem truncMap_congr {α β : SI} {f g : A -n> B} (h : ∀ x, f x = g x) (q : TruncO α A) :

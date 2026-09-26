@@ -58,6 +58,7 @@ open Iris BI
 /-- `ω²` as a type of step-indices. -/
 abbrev Omega2 := SIdxPair Nat Nat
 
+local instance : SIdx Omega2 := SIdxPair.instSIdx
 local stepindex Omega2
 
 /- The big later is sound for `UPred` over `ω²`. -/
