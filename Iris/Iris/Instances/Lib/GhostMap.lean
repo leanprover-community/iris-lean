@@ -422,6 +422,7 @@ theorem ghost_map_insert_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ
       exact auth_inc_of_map_eq _ map_union
     · iapply iOwn_mono $$ H2
       rw [BigOpM.bigOpM_map_eq]
+      exact CMRA.inc_refl _
 
 @[rocq_alias ghost_map_insert_persist_big]
 theorem ghost_map_insert_persist_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ m) :

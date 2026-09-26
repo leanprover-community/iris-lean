@@ -13,7 +13,9 @@ public import Iris.Instances.UPred
 public import Iris.ProofMode
 
 @[expose] public noncomputable section
-local stepindex Nat
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
+variable {F₁ F₂ F : Iris.COFE.OFunctorPre (SI := SI)} {GF : Iris.BundledGFunctors (SI := SI)}
 namespace Iris
 
 open COFE Iris.Std CMRA
@@ -201,20 +203,20 @@ theorem IProp.unfoldi_discreteE {v : FF.api τ (IProp FF)} (hv : OFE.DiscreteE v
 theorem IProp.foldi_op (x y : FF.api τ (IPre FF)) : foldi (x • y) = foldi x • foldi y :=
   (RFunctor.map (IProp.unfold FF) (IProp.fold FF) |>.op _ _)
 
-theorem IProp.foldi_validN {n : Nat} (x : FF.api τ (IPre FF)) (H : ✓{n} x) : ✓{n} (foldi x) :=
+theorem IProp.foldi_validN {n : SI} (x : FF.api τ (IPre FF)) (H : ✓{n} x) : ✓{n} (foldi x) :=
   RFunctor.map (IProp.unfold FF) (IProp.fold FF) |>.validN H
 
-theorem IProp.unfoldi_validN {n : Nat} (x : FF.api τ (IProp FF)) (H : ✓{n} x) : ✓{n} (unfoldi x) :=
+theorem IProp.unfoldi_validN {n : SI} (x : FF.api τ (IProp FF)) (H : ✓{n} x) : ✓{n} (unfoldi x) :=
   RFunctor.map (IProp.fold FF) (IProp.unfold FF) |>.validN H
 
-theorem IProp.validN_foldi {n : Nat} (x : FF.api τ (IPre FF)) (H : ✓{n} (foldi x)) : ✓{n} x :=
+theorem IProp.validN_foldi {n : SI} (x : FF.api τ (IPre FF)) (H : ✓{n} (foldi x)) : ✓{n} x :=
   CMRA.validN_ne (IProp.unfoldi_foldi x).dist (IProp.unfoldi_validN _ H)
 
-theorem IProp.validN_unfoldi_mp {n : Nat} (x : FF.api τ (IProp FF)) (H : ✓{n} (unfoldi x)) : ✓{n} x :=
+theorem IProp.validN_unfoldi_mp {n : SI} (x : FF.api τ (IProp FF)) (H : ✓{n} (unfoldi x)) : ✓{n} x :=
   CMRA.validN_ne (IProp.foldi_unfoldi x).dist (IProp.foldi_validN _ H)
 
 @[rocq_alias inG_unfold_validN]
-theorem IProp.validN_unfoldi {n : Nat} (x : FF.api τ (IProp FF)) : ✓{n} (unfoldi x) ↔ ✓{n} x :=
+theorem IProp.validN_unfoldi {n : SI} (x : FF.api τ (IProp FF)) : ✓{n} (unfoldi x) ↔ ✓{n} x :=
   ⟨IProp.validN_unfoldi_mp x,IProp.unfoldi_validN x⟩
 
 /-- unfoldi preserves unit structure -/
@@ -253,7 +255,7 @@ def iSingleton {GF} F [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (v :
     if H : τ' = E.τ then GenMap.singleton γ (H ▸ (unfoldi (E.bundle v)))
     else GenMap.empty
 
-variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
+variable [RFunctorContractive F] [E : ElemG GF F]
 
 theorem iResUR_op_eval (c1 c2 : IResUR GF) : (c1 • c2) τ' γ' = (c1 τ' γ') • (c2 τ' γ') := by
   simp [CMRA.op, optionOp]
@@ -433,7 +435,7 @@ theorem validN_mf_at_ne_of_iSingleton_op {mf : IResUR GF} {y : F.ap (IProp GF)}
   simp [CMRA.op, iSingleton, h, GenMap.empty] at h_frame_valid ⊢
   exact h_frame_valid
 
-theorem extract_frame_validN {τ : GType} {n : Nat}
+theorem extract_frame_validN {τ : GType} {n : SI}
     {mz' : IResUR GF}
     (h_valid : ✓{n} (mz' τ).car)
     {γ : GName} {v : GF.api τ (IPre GF)} (h_at : (mz' τ).car γ = some v) :
@@ -541,7 +543,7 @@ section iOwn
 
 open IProp OFE Iris.UPred BI GenMap ProofMode
 
-variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
+variable [RFunctorContractive F] [E : ElemG GF F]
 
 @[rocq_alias own_ne]
 instance iOwn_ne : NonExpansive (iOwn τ : F.ap (IProp GF) → IProp GF) where
@@ -584,13 +586,14 @@ instance {a : F.ap (IProp GF)} [CMRA.CoreId a] : BI.Persistent (iOwn γ a) where
     refine (UPred.persistently_ownM_core _).trans ?_
     refine persistently_mono ?_
     rw [CMRA.core_eqv_self]
+    exact .rfl
 
 @[rocq_alias own_timeless]
 instance iOwn_timeless {a : F.ap (IProp GF)} [OFE.DiscreteE a] : BI.Timeless (iOwn γ a) :=
   _root_.UPred.ownM_timeless (iSingleton F γ a)
 
 @[rocq_alias later_own]
-theorem later_iOwn {a : F.ap (IProp GF)} : ▷ iOwn γ a ⊢ ◇ ∃ b, iOwn γ b ∧ ▷ (a ≡ b) := by
+theorem later_iOwn [SIdxFinite SI] {a : F.ap (IProp GF)} : ▷ iOwn γ a ⊢ ◇ ∃ b, iOwn γ b ∧ ▷ (a ≡ b) := by
   unfold iOwn
   iintro Hlater
   icases UPred.later_ownM _ $$ Hlater with ⟨%r, Hown, Heq⟩
@@ -653,7 +656,7 @@ theorem alloc_update_unit {f : GName → F.ap (IProp GF)} :
   apply UpdateP.total.mpr
   intros n mf Hvalid
   replace Hvalid : ✓{n} mf := CMRA.validN_ne UCMRA.unit_left_id.dist Hvalid
-  obtain ⟨γ, Hfresh⟩ := @IResUR.valid_exists_fresh GF F _ E n mf Hvalid
+  obtain ⟨γ, Hfresh⟩ := IResUR.valid_exists_fresh (GF := GF) (F := F) (n := n) Hvalid
   refine ⟨iSingleton F γ (f γ), ⟨γ, rfl⟩, ?_⟩
   apply validN_iSingleton_op Hvalid (Hf_valid _).validN Hfresh
 
@@ -870,7 +873,7 @@ instance fromAndOwn_persistent {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp .split
     calc
       _ ⊢ iOwn γ b1 ∗ iOwn γ b2 := persistent_and_sep_mp
       _ ⊢ iOwn γ (b1 • b2)      := iOwn_op.mpr
-      _ ⊢ iOwn γ a              := by rw [h.is_op]
+      _ ⊢ iOwn γ a              := by rw [h.is_op]; exact .rfl
 
 end iOwn
 
@@ -879,7 +882,7 @@ section big_op_instances
 open IProp OFE Iris.UPred BI GenMap ProofMode Algebra Iris.Std
 open scoped Iris.Std.PartialMap
 
-variable {GF F} [URFunctorContractive F] [E : ElemG GF F]
+variable [URFunctorContractive F] [E : ElemG GF F]
 
 @[rocq_alias own_cmra_sep_homomorphism]
 instance iOwn_cmra_sep_homomorphism (γ : GName) :
@@ -963,7 +966,7 @@ def iResProject {GF} F [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (x 
     Option (F.ap (IProp GF)) :=
   ((x E.τ).car γ).map fun v => E.unbundle (foldi v)
 
-variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
+variable [RFunctorContractive F] [E : ElemG GF F]
 
 @[rocq_alias iRes_project_op]
 theorem iResProject_op (x y : IResUR GF) :
