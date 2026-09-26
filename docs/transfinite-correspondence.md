@@ -128,11 +128,11 @@ implementation (➖, replaced by the Lean IPM).
 | `ectx_lifting.v` | 178 | `ProgramLogic/EctxLiftingTransfinite.lean` | ✅ | `head` → `base` naming as upstream Iris-Lean |
 | `adequacy.v` | 284 | `ProgramLogic/AdequacyTransfinite.lean` | ✅ | `wp_strong_adequacy`, `wp_adequacy`, `wp_invariance` for `[SIdxTransfinite SI]`; big-later lemmas (`list_big_later`, `big_later_eventually`) |
 | `hoare.v` | 162 | — | ➖ | Hoare-triple notation on top of WP |
-| `refinement/ref_source.v` | 382 | — | ⬜ | source-program resource (auth of source state), `SI`-generic |
-| `refinement/ref_weakestpre.v` | 691 | — | ⬜ | refinement WP (`RSWP`/`RWP`) |
+| `refinement/ref_source.v` | 382 | `ProgramLogic/Refinement/RefSource.lean` | 🟡 | `Source`, `srcUpdate`, `weakSrcUpdate`, lexicographic sources; auth sources (`auth_source`, `natA`, `ordA`) ⬜ |
+| `refinement/ref_weakestpre.v` | 691 | `ProgramLogic/Refinement/RefWeakestPre.lean` | 🟡 | `rwp` (least fixpoint), `rswp`, strong mono, fupd, `rwp_no_step`/`rwp_take_step`/`rwp_weaken`, `rswp_do_step`, bind, atomic, `ElimModal`/`IsExcept0`; `*_bind_inv`, `Frame`/`ElimAcc` instances ⬜ |
 | `refinement/ref_lifting.v` | 244 | — | ⬜ | |
 | `refinement/ref_ectx_lifting.v` | 201 | — | ⬜ | |
-| `refinement/ref_adequacy.v` | 354 | — | ⬜ | termination-preserving refinement, needs `LargeIndex` |
+| `refinement/ref_adequacy.v` | 354 | `ProgramLogic/Refinement/RefAdequacy.lean` | 🟡 | termination preservation (`rwp_adequacy`, `rwp_sn_preservation`) for `[SIdxLarge SI]`, with `rwpTp`, `guarded`; result lemmas (`rwp_prim_step`, `rwp_result`) ⬜ |
 | `refinement/tc_weakestpre.v` | 103 | — | ⬜ | time credits `$α` with ordinals |
 | `refinement/seq_weakestpre.v` | 32 | — | ⬜ | sequential WP |
 
