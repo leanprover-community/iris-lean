@@ -85,6 +85,47 @@ theorem rwp_lift_step_fupd (h : toVal e₁ = none) :
   unfold rwpPre
   rw [h]
 
+/-- Rocq: `rwp_lift_atomic_step_fupd`. -/
+theorem rwp_lift_atomic_step_fupd (h : toVal e₁ = none) :
+    (∀ σ₁ n (a : A), src.interp a ∗ ι.refStateInterp σ₁ n ={E}=∗
+      ∃ b : Bool, ▷?b |={E}=> (⌜s.MaybeReducible (e₁, σ₁)⌝ ∗
+        ∀ e₂ σ₂ efs (κ : List Obs), ⌜(e₁, σ₁) -<κ>-> (e₂, σ₂, efs)⌝ ={E}=∗
+          (if b then ∃ a' : A, ⌜TransGen src.rel a a'⌝ ∗ src.interp a' else src.interp a) ∗
+          ι.refStateInterp σ₂ (efs.length + n) ∗ (∃ v, ⌜toVal e₂ = some v⌝ ∧ Φ v) ∗
+          [∗list] ef ∈ efs, rwp (src := src) (ι := ι) s ⊤ ef ι.refForkPost)) ⊢
+    rwp (src := src) (ι := ι) s E e₁ Φ := by
+  iintro H
+  iapply rwp_lift_step_fupd h
+  unfold rwpStep
+  iintro %σ₁ %n %a Hσ
+  imod H $$ %σ₁ %n %a Hσ with ⟨%b, H⟩
+  iapply fupd_mask_intro LawfulSet.empty_subset
+  iintro Hclose
+  iexists b
+  iapply laterN_wand_frame₁ ?h $$ Hclose H
+  case h =>
+    iintro ⟨Hclose, H⟩
+    imod Hclose
+    imod H with ⟨%Hred, H⟩
+    iapply fupd_mask_intro LawfulSet.empty_subset
+    iintro Hclose
+    isplitr
+    · ipureintro
+      exact Hred
+    iintro %e₂ %σ₂ %efs %κ %Hstep
+    imod Hclose
+    imod H $$ %e₂ %σ₂ %efs %κ %Hstep with ⟨Hsrc, Hσ, ⟨%v, %hv, HΦ⟩, Hefs⟩
+    obtain rfl := (ToVal.toVal_eq_iff_coe e₂ v).mpr hv
+    imodintro
+    dsimp only
+    isplitl [Hsrc]
+    · iexact Hsrc
+    isplitl [Hσ]
+    · iexact Hσ
+    isplitr [Hefs]
+    · iapply rwp_value' $$ HΦ
+    · iexact Hefs
+
 /-- Rocq: `rwp_lift_pure_step_no_fork`. -/
 theorem rwp_lift_pure_step_no_fork [Inhabited State]
     (Hsafe : ∀ σ₁, match s with | .NotStuck => Reducible (e₁, σ₁) | _ => toVal e₁ = none)
