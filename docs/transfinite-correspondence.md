@@ -151,8 +151,8 @@ implementation (➖, replaced by the Lean IPM).
 |---|---:|---|---|---|
 | `counterexamples.v` | 227 | `Examples/TransfiniteCounterexamples.lean` | ✅ | see [Part II](#examplescounterexamplesv) |
 | `transfinite.v` | 150 | — | ⬜ | invariants + `swp` with transfinite indices (needs `IProp` over ordinals, `swp`) |
-| `keyideas/simulations.v` | 252 | — | ⬜ | simulation relations via `▷`/`⧍` in `SiProp` over ordinals — portable now |
-| `keyideas/generalized_simulations.v` | 147 | — | ⬜ | idem |
+| `keyideas/simulations.v` | 252 | `Examples/TransfiniteSimulations.lean` | ✅ | in `UPred M` instead of `iProp Σ`; see [Part II](#examplekeyideas) |
+| `keyideas/generalized_simulations.v` | 147 | `Examples/TransfiniteSimulations.lean` | ✅ | idem |
 | `termination/{adequacy,derived,thunk,eventloop,logrel}.v` | 1534 | — | ⬜ | termination logic (needs `tc_weakestpre`) |
 | `refinements/{refinement,derived,examples,memoization}.v` | 3496 | — | ⬜ | refinement logic (needs `ref_weakestpre`) |
 | `safety/*` | 1025 | `HeapLang/Lib/*` | ➖ | upstream HeapLang library examples (`lock`, `spin_lock`, `ticket_lock`, `par`, `spawn`, `counter`, coins, `nondet_bool`, `assert`) exist in Iris-Lean; `barrier/` does not |
@@ -283,6 +283,30 @@ All in `Examples/TransfiniteCounterexamples.lean`. The section hypotheses on `ω
 | `F`, `G`, `c`, `zero_omega`, `bounded_limit_preserving_entails_counterexample` | `not_limitPreserving_entails` | ✅ |
 | `f`, `c0`, `zero_omega'`, `test` | `andBigLaterFalse`, `ne_not_preserve_lbcompl` | ✅ |
 
+### `examples/keyideas/*.v` <a name="examplekeyideas"></a>
+
+All in `Examples/TransfiniteSimulations.lean`. The Rocq development works in `iProp Σ`; the Lean
+port works in `UPred M` for an arbitrary unital camera `M` and arbitrary step-indices (the
+constructions only need satisfiability and guarded/least fixpoints). Rocq's coinductive `ex_loop`
+is replaced by the existence of an infinite execution (`ExLoop`), and `nsteps` by
+`Relation.Iterate`.
+
+| Rocq | Lean | Status |
+|---|---|---|
+| `rpr`, `tpr` | `Rpr`, `Tpr` | ✅ |
+| `sim_pre`, `sim_pre_contr`, `sim`, `sim_unfold'`, `sim_unfold` | `simPre`, `simPre_contractive`, `sim`, `sim_unfold` | ✅ |
+| `sim_plain` | `sim_plain` (via `sim_plain_aux`, by Löb induction) | ✅ |
+| `sim_valid_satisfiable`, `satisfiable_pure` | same names | ✅ |
+| `sim_execute_tgt_step`, `sim_execute_tgt` | same names (`[SIdxLarge SI]`) | ✅ |
+| `sim_is_rpr` (Lemma 2.1), `sim_is_tpr` (Lemma 2.2) | same names | ✅ |
+| `ex_loop_sn`, `sn_finite_nondet_bounded`, `finite_nondet_ex_loop_diverge`, `ex_loop_extract_finite_execution` | `exLoop_iff_not_sn`, `sn_finite_nondet_bounded`, `finite_nondet_exLoop_diverge`, `exLoop_extract_finite_execution` | ✅ |
+| `sim_finite_ref`, `satisfiable_laterN` | `SimFiniteRef`, `satisfiable_laterN` | ✅ |
+| `sim_to_sim_finite_ref`, `sim_finite_ref_tpr` | `sim_to_simFiniteRef` (for every `SI`; the Rocq section assumes `FiniteIndex` but does not use it), `simFiniteRef_tpr` | ✅ |
+| `gtpr`, `gsim_pre`, `gsim_pre_mono`, `gsim`, `sim_unfold` (generalized) | `Gtpr`, `gsimPre`, `gsimPre_mono`, `gsim`, `gsim_unfold` | ✅ |
+| `gsim_execute_tgt_step`, `sim_execute_tgt` (generalized) | `gsim_execute_tgt_step`, `gsim_execute_tgt` | ✅ |
+| `sim_execute_tgt_step` (termination, generalized) | `gsim_execute_loop_step` | ✅ |
+| `sim_divergence`, `sim_is_tpr` (generalized) | `gsim_divergence`, `gsim_is_gtpr` | ✅ |
+
 ### `base_logic/lib/fancy_updates.v`, `lib/own.v` (transfinite parts)
 
 | Rocq | Lean | Status |
@@ -295,4 +319,4 @@ All in `Examples/TransfiniteCounterexamples.lean`. The section hypotheses on `ω
 `algebra/cofe_solver.v`, `algebra/wf_IR.v`, `ofe.v` (`BcomplUnique`, `Truncatable`), `algebra/ordinals/arithmetic.v`,
 `cmra.v` (`ordA`), `bi/weakestpre.v` (`Swp`, `Rswp`), all of `program_logic/` apart from the
 language definitions, the `swp`/`rwp` parts of `heap_lang/`, and the examples other than the
-counterexamples. See [`transfinite-porting.md`](transfinite-porting.md#roadmap) for the plan.
+counterexamples and the key ideas. See [`transfinite-porting.md`](transfinite-porting.md#roadmap) for the plan.

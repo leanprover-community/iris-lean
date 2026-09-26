@@ -211,7 +211,8 @@ def startProofMode (mvar : MVarId) (customProp : Option Expr := none)
       e.isAppOfArity ``BIBase.Entails 4 || e.isAppOfArity ``BIBase.BiEntails 4 ||
         e.isAppOfArity ``BIBase.EmpValid 3) then
     let prop' := e.getAppArgs[0]!
-    if let .sort (.succ u') ← whnf (← inferType prop') then
+    -- `getDecLevel?` also handles sorts such as `Sort (max (u + 1) (v + 1))`.
+    if let some u' ← getDecLevel? prop' then
       let v' ← mkFreshLevelMVar
       let si' ← mkFreshExprMVar (mkSort (.succ v'))
       let isi' ← mkFreshExprMVar (mkApp (mkConst ``Iris.SIdx [v']) si')

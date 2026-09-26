@@ -6,6 +6,7 @@ module
 
 public import Iris.BI.Lib.LogicalStep
 public import Iris.BI.Transfinite
+public import Iris.Instances.UPred.Transfinite
 
 @[expose] public section
 
@@ -40,5 +41,13 @@ example (P : PROP) : ▷ P ⊢ ⧍ P := by
   iintro HP
   iapply later_bigLater
   iexact HP
+
+/- The proof mode starts on `UPred` over an arbitrary type of step-indices (the sort of `UPred M`
+is `Type (max u v)`, which `istart` has to decompose). -/
+example {M : Type _} [UCMRA M] (P Q : UPred M) : P ∗ Q ⊢ Q ∗ P := by
+  iintro ⟨HP, HQ⟩
+  isplitl [HQ]
+  · iexact HQ
+  · iexact HP
 
 end IrisTest.Transfinite
