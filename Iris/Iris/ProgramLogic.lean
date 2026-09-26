@@ -28,3 +28,5 @@ public import Iris.ProgramLogic.EctxLiftingTransfinite
 public import Iris.ProgramLogic.Refinement.RefSource
 public import Iris.ProgramLogic.Refinement.RefWeakestPre
 public import Iris.ProgramLogic.Refinement.RefAdequacy
+public import Iris.ProgramLogic.Refinement.RefLifting
+public import Iris.ProgramLogic.Refinement.RefEctxLifting
