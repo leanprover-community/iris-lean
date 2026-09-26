@@ -25,3 +25,5 @@ public import Iris.ProgramLogic.WeakestPreTransfinite
 public import Iris.ProgramLogic.AdequacyTransfinite
 public import Iris.ProgramLogic.LiftingTransfinite
 public import Iris.ProgramLogic.EctxLiftingTransfinite
+public import Iris.ProgramLogic.Refinement.RefSource
+public import Iris.ProgramLogic.Refinement.RefWeakestPre
