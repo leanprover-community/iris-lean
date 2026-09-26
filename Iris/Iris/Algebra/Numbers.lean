@@ -23,7 +23,9 @@ These are newtyped to avoid clashing with the normal mathematical operations.
 -/
 
 @[expose] public section
-local stepindex Nat
+
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 open Std
 
@@ -333,6 +335,7 @@ scoped instance : LawfulLeftIdentity (α := MaxNat) (· + ·) (0 : MaxNat) where
 scoped instance : Std.IdempotentOp (α := MaxNat) (· + ·) where idempotent x := by grind
 scoped instance : COFE MaxNat := COFE.ofDiscrete _
 scoped instance : OFE.Discrete MaxNat := ⟨fun h => h⟩
+set_option synthInstance.checkSynthOrder false in
 scoped instance : UCMRA MaxNat := OrdCommMonoidLike.instUCMRA
 scoped instance : CMRA.Discrete MaxNat := OrdCommMonoidLike.instDiscrete
 scoped instance : CMRA.CoreId (a : MaxNat) := OrdCommMonoidLike.instCoreId _
@@ -387,8 +390,10 @@ scoped instance : Commutative (α := MaxInt) (· + ·) where comm := by grind
 scoped instance : IdempotentOp (α := MaxInt) (· + ·) where idempotent x := by grind
 scoped instance : COFE MaxInt := COFE.ofDiscrete _
 scoped instance : OFE.Discrete MaxInt := ⟨fun h => h⟩
+set_option synthInstance.checkSynthOrder false in
 scoped instance : CMRA MaxInt := OrdCommMonoidLike.instCMRA
 scoped instance : CMRA.Discrete MaxInt := OrdCommMonoidLike.instDiscrete
+set_option synthInstance.checkSynthOrder false in
 scoped instance : CMRA.IsTotal MaxInt := OrdCommMonoidLike.instIsTotal
 scoped instance : CMRA.CoreId (a : MaxInt) := OrdCommMonoidLike.instCoreId _
 
@@ -445,8 +450,10 @@ scoped instance : Commutative (α := MinNat) (· + ·) where comm := by grind
 scoped instance : IdempotentOp (α := MinNat) (· + ·) where idempotent _ := by grind
 scoped instance : COFE MinNat := COFE.ofDiscrete _
 scoped instance : OFE.Discrete MinNat := ⟨fun h => h⟩
+set_option synthInstance.checkSynthOrder false in
 scoped instance : CMRA MinNat := OrdCommMonoidLike.instCMRA
 scoped instance : CMRA.Discrete MinNat := OrdCommMonoidLike.instDiscrete
+set_option synthInstance.checkSynthOrder false in
 scoped instance : CMRA.IsTotal MinNat := OrdCommMonoidLike.instIsTotal
 scoped instance : CMRA.CoreId (a : MinNat) := OrdCommMonoidLike.instCoreId _
 

@@ -10,9 +10,11 @@ public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.Numbers
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
+
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
 
 @[rocq_alias mono_nat]
 abbrev MonoNat := Auth MaxNat

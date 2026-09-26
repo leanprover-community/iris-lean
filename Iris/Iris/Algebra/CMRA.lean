@@ -10,17 +10,19 @@ public import Iris.Algebra.Monoid
 public import Iris.Algebra.StepIndexFinite
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
 open OFE
 
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
+
 @[rocq_alias cmra]
-class CMRA (α : Type _) extends OFE α where
-  pcore : α → Option α
-  op : α → α → α
-  ValidN : Nat → α → Prop
-  Valid : α → Prop
+class CMRA {SI : outParam (Type _)} [instSI : SIdx SI] (α : Type _) extends OFE (SI := SI) α where
+  pcore {SI} : α → Option α
+  op {SI} : α → α → α
+  ValidN : SI → α → Prop
+  Valid {SI} : α → Prop
 
   op_ne : NonExpansive (op x)
   pcore_ne : x ≡{n}≡ y → pcore x = some cx →
@@ -28,7 +30,7 @@ class CMRA (α : Type _) extends OFE α where
   validN_ne : x ≡{n}≡ y → ValidN n x → ValidN n y
 
   valid_iff_validN : Valid x ↔ ∀ n, ValidN n x
-  validN_succ : ValidN n.succ x → ValidN n x
+  validN_le {n n' : SI} : ValidN n x → n' ≤ n → ValidN n' x
   validN_op_left : ValidN n (op x y) → ValidN n x
 
   assoc : op x (op y z) = op (op x y) z
@@ -61,30 +63,56 @@ namespace CMRA
 variable [CMRA α]
 
 /-- The CMRA composition operation. -/
-infix:60 " • " => op
+infix:60 (priority := high) " • " => op (SI := stepindex%)
 
 /-- The inclusion order on a CMRA. -/
 @[rocq_alias included]
 def Included (x y : α) : Prop := ∃ z, y = x • z
-@[inherit_doc]
-infix:50 " ≼ " => Included
+@[inherit_doc Included]
+infix:50 " ≼ " => Included (SI := stepindex%)
 
 /-- The step-indexed inclusion order on a CMRA. -/
 @[rocq_alias includedN]
-def IncludedN (n : Nat) (x y : α) : Prop := ∃ z, y ≡{n}≡ x • z
-@[inherit_doc] notation:50 x " ≼{" n "} " y:51 => IncludedN n x y
+def IncludedN (n : SI) (x y : α) : Prop := ∃ z, y ≡{n}≡ x • z
+@[inherit_doc] notation:50 x " ≼{" n "} " y:51 => IncludedN n x y (SI := stepindex%)
 
 /-- The CMRA composition operation with an optional right argument. -/
 @[rocq_alias opM]
 def op? [CMRA α] (x : α) : Option α → α
   | some y => x • y
   | none => x
-@[inherit_doc] infix:60 " •? " => op?
+@[inherit_doc op?] infix:60 " •? " => op? (SI := stepindex%)
 
 /-- The validity of a CMRA element. -/
-prefix:50 "✓ " => Valid
+prefix:50 "✓ " => Valid (SI := stepindex%)
 /-- The step-indexed validity of a CMRA element. -/
-notation:50 "✓{" n "} " x:51 => ValidN n x
+notation:50 "✓{" n "} " x:51 => ValidN n x (SI := stepindex%)
+
+/-! The notations above pass `(SI := stepindex%)`, which prevents Lean from generating
+delaborators for them automatically. We restore pretty printing by hand. -/
+section Unexpanders
+open Lean PrettyPrinter
+
+@[app_unexpander op] meta def unexpandOp : Unexpander
+  | `($_ $x $y) => `($x • $y)
+  | _ => throw ()
+@[app_unexpander Included] meta def unexpandIncluded : Unexpander
+  | `($_ $x $y) => `($x ≼ $y)
+  | _ => throw ()
+@[app_unexpander IncludedN] meta def unexpandIncludedN : Unexpander
+  | `($_ $n $x $y) => `($x ≼{$n} $y)
+  | _ => throw ()
+@[app_unexpander op?] meta def unexpandOpM : Unexpander
+  | `($_ $x $y) => `($x •? $y)
+  | _ => throw ()
+@[app_unexpander Valid] meta def unexpandValid : Unexpander
+  | `($_ $x) => `(✓ $x)
+  | _ => throw ()
+@[app_unexpander ValidN] meta def unexpandValidN : Unexpander
+  | `($_ $n $x) => `(✓{$n} $x)
+  | _ => throw ()
+
+end Unexpanders
 
 @[rocq_alias CoreId]
 class CoreId (x : α) where
@@ -109,7 +137,7 @@ export IdFree (id_free0_r)
 #rocq_ignore IdFree_proper "Derived from nonexpansivity"
 
 @[rocq_alias CmraTotal]
-class IsTotal (α : Type _) [CMRA α] where
+class IsTotal {SI : outParam (Type _)} [instSI : SIdx SI] (α : Type _) [inst : CMRA α] where
   total (x : α) : ∃ cx, pcore x = some cx
 export IsTotal (total)
 
@@ -128,8 +156,8 @@ export Discrete (discrete_valid)
 end CMRA
 
 @[rocq_alias ucmra]
-class UCMRA (α : Type _) extends CMRA α where
-  unit : α
+class UCMRA {SI : outParam (Type _)} [instSI : SIdx SI] (α : Type _) extends CMRA (SI := SI) α where
+  unit {SI} : α
   unit_valid : ✓ unit
   unit_left_id : unit • x = x
   pcore_unit : pcore unit = some unit
@@ -224,7 +252,7 @@ instance : NonExpansive (pcore (α := α)) where
     | .none, .some b =>
       let ⟨w, hw, ew⟩ := pcore_ne e.symm ey
       cases hw.symm ▸ ex
-    | .none, .none => rw [ex, ey]
+    | .none, .none => rw [ex, ey]; exact .rfl
 
 #rocq_ignore CoreId_proper "OFE is Leibniz; use equality"
 
@@ -282,13 +310,18 @@ theorem _root_.Iris.OFE.Dist.validN : (x : α) ≡{n}≡ y → (✓{n} x ↔ ✓
 
 @[rocq_alias cmra_validN_le]
 theorem validN_of_le {n n'} {x : α} (le : n' ≤ n) : ✓{n} x → ✓{n'} x :=
-  le.recOn id fun  _ ih vs => ih (validN_succ vs)
+  (CMRA.validN_le · le)
 
 @[rocq_alias cmra_validN_lt]
 theorem validN_of_lt {n n'} {x : α} (lt : n' < n) : ✓{n} x → ✓{n'} x :=
-  validN_of_le (Nat.le_of_lt lt)
+  validN_of_le (SIdx.lt_le_incl lt)
 
-theorem valid0_of_validN {n} {x : α} : ✓{n} x → ✓{0} x := validN_of_le (Nat.zero_le n)
+/-- The successor form of `validN_of_le`; a field of `CMRA` before the step index was
+generalized, since it does not imply `validN_le` at limit indices. -/
+theorem validN_succ {n} {x : α} : ✓{succᵢ n} x → ✓{n} x :=
+  validN_of_le SIdx.le_succ_diag_r
+
+theorem valid0_of_validN {n} {x : α} : ✓{n} x → ✓{0} x := validN_of_le SIdx.le_0_l
 
 @[rocq_alias cmra_validN_op_r]
 theorem validN_op_right {n} {x y : α} : ✓{n} (x • y) → ✓{n} y :=
@@ -310,7 +343,7 @@ theorem valid_opM {x : α} {my : Option α} : ✓ (x •? my) → ✓ x :=
   match my with
   | none => id  | some _ => valid_op_left
 
-theorem validN_op_opM_left {mz : Option α} : ✓{n} (x • y : α) •? mz → ✓{n} x •? mz :=
+theorem validN_op_opM_left {mz : Option α} : ✓{n} (op x y : α) •? mz → ✓{n} x •? mz :=
   match mz with
   | .none => validN_op_left
   | .some z => fun h =>
@@ -320,7 +353,7 @@ theorem validN_op_opM_left {mz : Option α} : ✓{n} (x • y : α) •? mz → 
       _           ≡{n}≡ (x • z) • y := op_assocN
     validN_op_left ((Dist.validN this).mp h)
 
-theorem validN_op_opM_right {mz : Option α} (h : ✓{n} (x • y : α) •? mz) : ✓{n} y •? mz :=
+theorem validN_op_opM_right {mz : Option α} (h : ✓{n} (op x y : α) •? mz) : ✓{n} y •? mz :=
   validN_op_opM_left (validN_ne (opM_left_dist mz op_commN) h)
 
 /-! ## Core -/
@@ -369,7 +402,7 @@ theorem pcore_valid {x : α} {cx} (e : pcore x = some cx) : ✓ x → ✓ cx :=
 
 @[rocq_alias exclusiveN_l]
 theorem not_valid_exclN_op_left {n} {x : α} [Exclusive x] {y} : ¬✓{n} (x • y) :=
-  n.recOn (Exclusive.exclusive0_l _) fun _ ih => ih ∘ validN_succ
+  fun h => Exclusive.exclusive0_l _ (validN_of_le SIdx.le_0_l h)
 
 @[rocq_alias exclusiveN_r]
 theorem not_valid_exclN_op_right {n} {x : α} [Exclusive x] {y} : ¬✓{n} (y • x) :=
@@ -402,13 +435,13 @@ theorem not_valid_of_excl_inc {x : α} [Exclusive x] {y} : x ≼ y → ¬✓ y
 theorem incN_of_incN_of_dist : (a : α) ≼{n} b → b ≡{n}≡ c → a ≼{n} c
   | ⟨t, et⟩, e => ⟨t, e.symm.trans et⟩
 
-instance {n : Nat} : Trans (IncludedN (α := α) n) (Dist n) (IncludedN n) where
+instance {n : SI} : Trans (IncludedN (α := α) n) (Dist n) (IncludedN n) where
   trans := incN_of_incN_of_dist
 
 theorem incN_of_dist_of_incN (e : (a : α) ≡{n}≡ b) : b ≼{n} c → a ≼{n} c
   | ⟨t, et⟩ => ⟨t, et.trans e.symm.op_l⟩
 
-instance {n : Nat} : Trans (Dist (α := α) n) (IncludedN n) (IncludedN n) where
+instance {n : SI} : Trans (Dist (α := α) n) (IncludedN n) (IncludedN n) where
   trans := incN_of_dist_of_incN
 
 @[rocq_alias cmra_included_includedN]
@@ -477,13 +510,13 @@ theorem Included.validN {n} {x y : α} : x ≼ y → ✓{n} y → ✓{n} x := va
 @[rocq_alias cmra_includedN_le]
 theorem incN_of_incN_le {n n'} {x y : α} (l1 : n' ≤ n) : x ≼{n} y → x ≼{n'} y
   | ⟨z, hz⟩ => ⟨z, Dist.le hz l1⟩
-theorem inc0_of_incN {n} {x y : α} : x ≼{n} y → x ≼{0} y := incN_of_incN_le (Nat.zero_le n)
+theorem inc0_of_incN {n} {x y : α} : x ≼{n} y → x ≼{0} y := incN_of_incN_le SIdx.le_0_l
 theorem IncludedN.le {n n'} {x y : α} : n' ≤ n → x ≼{n} y → x ≼{n'} y := incN_of_incN_le
 
 @[rocq_alias cmra.cmra_includedN_S]
-theorem incN_of_incN_succ {n} {x y : α} : x ≼{n.succ} y → x ≼{n} y :=
-  incN_of_incN_le (Nat.le_succ n)
-theorem IncludedN.succ {n} {x y : α} : x ≼{n.succ} y → x ≼{n} y := incN_of_incN_succ
+theorem incN_of_incN_succ {n} {x y : α} : x ≼{succᵢ n} y → x ≼{n} y :=
+  incN_of_incN_le SIdx.le_succ_diag_r
+theorem IncludedN.succ {n} {x y : α} : x ≼{succᵢ n} y → x ≼{n} y := incN_of_incN_succ
 
 @[rocq_alias cmra_includedN_l]
 theorem incN_op_left (n) (x y : α) : x ≼{n} x • y := ⟨y, Dist.rfl⟩
@@ -696,11 +729,11 @@ variable {α : Type _} [CMRA α]
 
 @[rocq_alias cmra_discrete_valid_iff]
 theorem valid_iff_validN' [Discrete α] (n) {x : α} : ✓ x ↔ ✓{n} x :=
-  ⟨Valid.validN, fun v => discrete_valid <| validN_of_le (Nat.zero_le n) v⟩
+  ⟨Valid.validN, fun v => discrete_valid <| validN_of_le SIdx.le_0_l v⟩
 
 @[rocq_alias cmra_discrete_valid_iff_0]
 theorem valid_0_iff_validN [Discrete α] (n) {x : α} : ✓{0} x ↔ ✓{n} x :=
-  ⟨Valid.validN ∘ discrete_valid, validN_of_le (Nat.zero_le n)⟩
+  ⟨Valid.validN ∘ discrete_valid, validN_of_le SIdx.le_0_l⟩
 
 @[rocq_alias cmra_discrete_included_iff]
 theorem inc_iff_incN [OFE.Discrete α] (n) {x y : α} : x ≼ y ↔ x ≼{n} y :=
@@ -709,7 +742,7 @@ theorem inc_iff_incN [OFE.Discrete α] (n) {x y : α} : x ≼ y ↔ x ≼{n} y :
 @[rocq_alias cmra_discrete_included_iff_0]
 theorem inc_0_iff_incN [OFE.Discrete α] (n) {x y : α} : x ≼{0} y ↔ x ≼{n} y :=
   ⟨fun ⟨z, hz⟩ => ⟨z, (discrete hz).dist⟩,
-   fun a => incN_of_incN_le (Nat.zero_le n) a⟩
+   fun a => incN_of_incN_le SIdx.le_0_l a⟩
 
 end discreteCMRA
 
@@ -843,11 +876,12 @@ theorem _root_.Iris.OFE.Dist.to_incN {n} {x y : α} (H : x ≡{n}≡ y) : x ≼{
   ⟨unit, (unit_right_id.dist.trans H).symm⟩
 
 @[rocq_alias cmra_monoid]
-instance ucmraMonoidOps {α : Type _} [UCMRA α] : Algebra.MonoidOps (CMRA.op (α := α)) UCMRA.unit where
+instance ucmraMonoidOps {α : Type _} [UCMRA (SI := stepindex%) α] :
+    Algebra.MonoidOps (SI := stepindex%) (CMRA.op (α := α)) UCMRA.unit where
   op_ne := ⟨fun _ _ _ hx _ _ hy => hx.op hy⟩
-  op_assoc := CMRA.assoc.symm
-  op_comm := CMRA.comm
-  op_left_id := UCMRA.unit_left_id
+  assoc := CMRA.assoc.symm
+  comm := CMRA.comm
+  left_id := UCMRA.unit_left_id
 
 end ucmra
 
@@ -1233,7 +1267,7 @@ instance cmraDiscreteFunO {α : Type _} (β : α → Type _)
   pcore_ne {n f g _} H := by rintro ⟨⟩; exact ⟨_, rfl, fun x => (H _).core⟩
   validN_ne {n x y} H H1 y := (H y).validN.mp (H1 y)
   valid_iff_validN {g} := by simpa [valid_iff_validN] using forall_comm
-  validN_succ H _ := validN_succ (H _)
+  validN_le H le x := validN_le (H x) le
   validN_op_left H _ := validN_op_left (H _)
   assoc := funext fun _ => assoc
   comm := funext fun _ => comm
@@ -1264,22 +1298,22 @@ namespace DiscreteFun
 variable {α : Type _} {β : α → Type _}
 
 @[rocq_alias discrete_fun_lookup_op]
-theorem op_apply [∀ x, CMRA (β x)] [∀ x, IsTotal (β x)] (f g : ∀ x, β x) (x : α) :
+theorem op_apply [∀ x, CMRA (SI := stepindex%) (β x)] [∀ x, IsTotal (SI := stepindex%) (β x)] (f g : ∀ x, β x) (x : α) :
     (f • g) x = f x • g x := rfl
 
 @[rocq_alias discrete_fun_lookup_core]
-theorem core_apply [∀ x, CMRA (β x)] [∀ x, IsTotal (β x)] (f : ∀ x, β x) (x : α) :
+theorem core_apply [∀ x, CMRA (SI := stepindex%) (β x)] [∀ x, IsTotal (SI := stepindex%) (β x)] (f : ∀ x, β x) (x : α) :
     core f x = core (f x) := rfl
 
 @[rocq_alias discrete_fun_lookup_empty]
-theorem unit_apply [∀ x, UCMRA (β x)] (x : α) : (unit : ∀ x, β x) x = unit := rfl
+theorem unit_apply [∀ x, UCMRA (SI := stepindex%) (β x)] (x : α) : (unit : ∀ x, β x) x = unit := rfl
 
 @[rocq_alias discrete_fun_unit_discrete]
-instance [∀ x, UCMRA (β x)] [∀ x, OFE.DiscreteE (unit : β x)] :
+instance [∀ x, UCMRA (SI := stepindex%) (β x)] [∀ x, OFE.DiscreteE (unit : β x)] :
     OFE.DiscreteE (unit : ∀ x, β x) where
   discrete h := funext fun x => OFE.DiscreteE.discrete (h x)
 
-variable [∀ x, CMRA (β x)] [∀ x, IsTotal (β x)]
+variable [∀ x, CMRA (SI := stepindex%) (β x)] [∀ x, IsTotal (SI := stepindex%) (β x)]
 
 @[rocq_alias discrete_fun_included_spec_1]
 theorem inc_apply {f g : ∀ x, β x} : f ≼ g → ∀ x, f x ≼ g x
@@ -1296,7 +1330,7 @@ end DiscreteFun
 
 @[rocq_alias discrete_fun_map_cmra_morphism]
 def mapCodHomC {α : Type _} {β₁ β₂ : α → Type _}
-    [∀ x, UCMRA (β₁ x)] [∀ x, UCMRA (β₂ x)]
+    [∀ x, UCMRA (SI := stepindex%) (β₁ x)] [∀ x, UCMRA (SI := stepindex%) (β₂ x)]
     (F : ∀ x, β₁ x -C> β₂ x) : (∀ x, β₁ x) -C> (∀ x, β₂ x) where
   toHom := mapCodHom fun x => (F x).toHom
   validN h x := (F x).validN (h x)
@@ -1346,7 +1380,7 @@ def optionOp (x y : Option α) : Option α :=
   | _, none => x
 
 @[simp]
-def optionValidN (n : Nat) : Option α → Prop
+def optionValidN (n : SI) : Option α → Prop
   | some x => ✓{n} x
   | none => True
 
@@ -1383,8 +1417,9 @@ instance cmraOption : CMRA (Option α) where
     exact Dist.validN H |>.mp
   valid_iff_validN {x} := by
     rcases x with ⟨_|_⟩ <;> simp [valid_iff_validN]
-  validN_succ {x n} := by
-    rcases x with ⟨_|_⟩ <;> simp_all [validN_succ]
+  validN_le {x n n'} := by
+    rcases x with ⟨_|_⟩ <;> simp_all
+    exact fun h le => validN_le h le
   validN_op_left {n x y} := by
     rcases x, y with ⟨_|_, _|_⟩ <;> simp_all
     apply validN_op_left
@@ -1720,8 +1755,8 @@ instance {a : α} [IdFree a] [Cancelable a] : Cancelable (some a) := by
   refine ⟨@fun n b c Hv He => ?_⟩
   rcases b, c with ⟨_|b, _|c⟩
   · trivial
-  · exact id_free0_r c (valid0_of_validN Hv) (He.symm.le <| n.zero_le)
-  · refine id_free0_r b ?_ (He.le <| n.zero_le)
+  · exact id_free0_r c (valid0_of_validN Hv) (He.symm.le SIdx.le_0_l)
+  · refine id_free0_r b ?_ (He.le SIdx.le_0_l)
     exact valid0_of_validN (He.validN.mp Hv)
   · exact cancelableN (α := α) Hv He
 
@@ -1781,6 +1816,7 @@ section unit
 #rocq_ignore unit_cancelable "Subsumed by empty_cancelable"
 #rocq_ignore unit_core_id "Subsumed by unit_CoreId"
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias unitR, rocq_alias unit_cmra_mixin]
 instance cmraUnit : CMRA Unit where
   pcore _ := some ()
@@ -1791,7 +1827,7 @@ instance cmraUnit : CMRA Unit where
   pcore_ne _ _ := ⟨(), rfl, .rfl⟩
   validN_ne _ := id
   valid_iff_validN := ⟨fun _ _ => ⟨⟩, fun _ => ⟨⟩⟩
-  validN_succ := id
+  validN_le := fun h _ => h
   validN_op_left := id
   assoc := rfl
   comm := rfl
@@ -1803,6 +1839,7 @@ instance cmraUnit : CMRA Unit where
 #rocq_ignore unit_unit_instance "Use UCMRA instance"
 #rocq_ignore unit_ucmra_mixin "Use UCMRA instance"
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias unitUR]
 instance ucmraUnit : UCMRA Unit where
   unit := ()
@@ -1824,6 +1861,7 @@ section empty
 #rocq_ignore Empty_set_validN_instance "Use CMRA instance"
 #rocq_ignore Empty_set_cmra_mixin "Use CMRA instance"
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias Empty_setR]
 instance cmraEmpty : CMRA Empty where
   pcore x := some x
@@ -1834,7 +1872,7 @@ instance cmraEmpty : CMRA Empty where
   pcore_ne {_ x} := x.elim
   validN_ne _ := id
   valid_iff_validN {x} := x.elim
-  validN_succ := id
+  validN_le h _ := h
   validN_op_left := id
   assoc {x} := x.elim
   comm {x} := x.elim
@@ -1900,7 +1938,7 @@ instance cmraProd : CMRA (α × β) where
     refine ⟨fun ⟨va, vb⟩ n => ⟨va.validN, vb.validN⟩, fun h => ⟨?_, ?_⟩⟩
     · exact CMRA.valid_iff_validN.mpr fun n => (h n).left
     · exact CMRA.valid_iff_validN.mpr fun n => (h n).right
-  validN_succ {x n} := fun ⟨va, vb⟩ => ⟨CMRA.validN_succ va, CMRA.validN_succ vb⟩
+  validN_le {x n n'} := fun ⟨va, vb⟩ le => ⟨CMRA.validN_le va le, CMRA.validN_le vb le⟩
   validN_op_left {n x y} := fun ⟨va, vb⟩ => ⟨CMRA.validN_op_left va, CMRA.validN_op_left vb⟩
   assoc {x y z} := equiv_prod_ext CMRA.assoc CMRA.assoc
   comm {x y} := equiv_prod_ext CMRA.comm CMRA.comm
@@ -2267,7 +2305,7 @@ two elements is valid, then so are both of the elements. The "domain" is the ima
 `α`, or equivalently the part of `α` where `f` returns `some`. -/
 @[reducible, rocq_alias inj_cmra_mixin_restrict_validity]
 def ofInjRestrictValidity [CMRA α] [OFE β]
-    (pcore : β → Option β) (op : β → β → β) (Valid : β → Prop) (ValidN : Nat → β → Prop)
+    (pcore : β → Option β) (op : β → β → β) (Valid : β → Prop) (ValidN : SI → β → Prop)
     (f : α → Option β) (g : β → α)
     -- `g` is non-expansive and injective w.r.t. OFE equality
     (g_dist : ∀ n (y₁ y₂ : β), y₁ ≡{n}≡ y₂ ↔ g y₁ ≡{n}≡ g y₂)
@@ -2306,7 +2344,7 @@ def ofInjRestrictValidity [CMRA α] [OFE β]
       dist_some <| (g_pcore_dist ..).mpr <| hc.dist.trans <| some_dist_some.mpr hcd.symm
     validN_ne h hv := validN_ne _ _ _ h hv
     valid_iff_validN := valid_validN _
-    validN_succ hv := validN_le _ _ _ hv (Nat.le_succ _)
+    validN_le hv hle := validN_le _ _ _ hv hle
     validN_op_left hv := validN_op_left _ _ _ hv
     assoc := g_eq.mpr <| by
       simp only [g_op]
@@ -2334,7 +2372,7 @@ def ofInjRestrictValidity [CMRA α] [OFE β]
 /-- Constructing a CMRA through an isomorphism that may restrict validity. -/
 @[reducible, rocq_alias iso_cmra_mixin_restrict_validity]
 def ofIsoRestrictValidity [CMRA α] [OFE β]
-    (pcore : β → Option β) (op : β → β → β) (Valid : β → Prop) (ValidN : Nat → β → Prop)
+    (pcore : β → Option β) (op : β → β → β) (Valid : β → Prop) (ValidN : SI → β → Prop)
     (f : α → β) (g : β → α)
     -- `g` is non-expansive and injective w.r.t. OFE equality
     (g_dist : ∀ n (y₁ y₂ : β), y₁ ≡{n}≡ y₂ ↔ g y₁ ≡{n}≡ g y₂)
@@ -2365,7 +2403,7 @@ def ofIsoRestrictValidity [CMRA α] [OFE β]
 /-- Constructing a CMRA through an isomorphism. -/
 @[reducible, rocq_alias iso_cmra_mixin]
 def ofIso [CMRA α] [OFE β]
-    (pcore : β → Option β) (op : β → β → β) (Valid : β → Prop) (ValidN : Nat → β → Prop)
+    (pcore : β → Option β) (op : β → β → β) (Valid : β → Prop) (ValidN : SI → β → Prop)
     (f : α → β) (g : β → α)
     -- `g` is non-expansive and injective w.r.t. OFE equality
     (g_dist : ∀ n (y₁ y₂ : β), y₁ ≡{n}≡ y₂ ↔ g y₁ ≡{n}≡ g y₂)
@@ -2405,8 +2443,8 @@ def ofDiscrete [OFE α] [OFE.Discrete α]
   op_ne.ne _ _ _ h := (congrArg (op _) (OFE.discrete h)).dist
   pcore_ne h hcx := ⟨_, (OFE.discrete h) ▸ hcx, .rfl⟩
   validN_ne h hv := (OFE.discrete h) ▸ hv
-  valid_iff_validN := (forall_const Nat).symm
-  validN_succ := id
+  valid_iff_validN := (forall_const SI).symm
+  validN_le h _ := h
   validN_op_left := valid_op_left _ _
   assoc := assoc ..
   comm := comm ..
@@ -2437,7 +2475,7 @@ section OfDiscrete
 instance ofDiscrete_discrete [OFE α] [OFE.Discrete α] (pcore : α → Option α)
   (op : α → α → α) (Valid : α → Prop)
   h₁ h₂ h₃ h₄ h₅ h₆ :
-    @CMRA.Discrete α (ofDiscrete pcore op Valid h₁ h₂ h₃ h₄ h₅ h₆) :=
+    @CMRA.Discrete SI _ α (ofDiscrete pcore op Valid h₁ h₂ h₃ h₄ h₅ h₆) :=
   letI := ofDiscrete pcore op Valid h₁ h₂ h₃ h₄ h₅ h₆
   { discrete_valid := id }
 

@@ -8,15 +8,21 @@ module
 public import Iris.Algebra.CMRA
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
+
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
 
 @[rocq_alias local_update]
 def LocalUpdate [CMRA α] (x y : α × α) : Prop :=
   ∀n mz, ✓{n} x.1 → x.1 ≡{n}≡ x.2 •? mz → ✓{n} y.1 ∧ y.1 ≡{n}≡ y.2 •? mz
 
-infixr:50 " ~l~> " => LocalUpdate
+infixr:50 " ~l~> " => LocalUpdate (SI := stepindex%)
+
+@[app_unexpander LocalUpdate] meta def unexpandLocalUpdate : Lean.PrettyPrinter.Unexpander
+  | `($_ $x $y) => `($x ~l~> $y)
+  | _ => throw ()
 
 section LocalUpdate
 
@@ -175,7 +181,7 @@ end UCMRA
 theorem LocalUpdate.unit {x y x' y' : Unit} : (x, y) ~l~> (x', y') := .id ((), ())
 
 @[rocq_alias discrete_fun_local_update]
-theorem LocalUpdate.discrete_fun {β : α → Type _} [∀ x, UCMRA (β x)]
+theorem LocalUpdate.discrete_fun {β : α → Type _} [∀ x, UCMRA (SI := stepindex%) (β x)]
     {f g f' g' : ∀ x, β x} (h : ∀ x : α, (f x, g x) ~l~> (f' x, g' x)) :
     (f, g) ~l~> (f', g') := by
   refine fun n mz vx e => ⟨fun x => ?_, fun x => ?_⟩

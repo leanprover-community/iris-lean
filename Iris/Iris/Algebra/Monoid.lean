@@ -9,9 +9,11 @@ public import Iris.Algebra.OFE
 public import Iris.Algebra.StepIndexFinite
 
 public section
-local stepindex Nat
 
 namespace Iris.Algebra
+
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
 
 /-! # Monoids for Big Operators
 
@@ -29,11 +31,11 @@ class MonoidOps {M : Type u} [OFE M] (op : M → M → M) (unit : outParam M) wh
   /-- The operation is non-expansive in both arguments -/
   op_ne : NonExpansive₂ op
   /-- Associativity -/
-  op_assoc : ∀ {a b c : M}, op (op a b) c = op a (op b c)
+  protected assoc : ∀ {a b c : M}, op (op a b) c = op a (op b c)
   /-- Commutativity -/
-  op_comm : ∀ {a b : M}, op a b = op b a
+  protected comm : ∀ {a b : M}, op a b = op b a
   /-- Left identity -/
-  op_left_id : ∀ {a : M}, op unit a = a
+  protected left_id : ∀ {a : M}, op unit a = a
 
 #rocq_ignore MonoidOps "Not needed"
 #rocq_ignore monoid_ops "Not needed"
@@ -45,6 +47,21 @@ attribute [instance] op_ne
 variable {M : Type u} [OFE M] {unit : M} {op : M → M → M}
 
 #rocq_ignore monoid_proper "OFE is Leibniz; use equality"
+
+/- The laws below do not mention the step-index type, so it cannot be inferred from their
+statements. The wrappers fix it to the ambient step index via the binder `[OFE M]`. -/
+
+@[rocq_alias monoid_assoc]
+theorem op_assoc [MonoidOps op unit] {a b c : M} : op (op a b) c = op a (op b c) :=
+  MonoidOps.assoc (SI := SI)
+
+@[rocq_alias monoid_comm]
+theorem op_comm [MonoidOps op unit] {a b : M} : op a b = op b a :=
+  MonoidOps.comm (SI := SI)
+
+@[rocq_alias monoid_left_id]
+theorem op_left_id [MonoidOps op unit] {a : M} : op unit a = a :=
+  MonoidOps.left_id (SI := SI)
 
 /-- Right identity follows from commutativity and left identity. -/
 @[rocq_alias monoid_right_id]

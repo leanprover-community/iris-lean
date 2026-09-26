@@ -279,7 +279,7 @@ theorem uPred_entails_lim {cP cQ : Chain (UPred M)} (H : ∀ n, cP n ⊢ cQ n) :
   exact uPred_holds_ne IsCOFE.conv_compl.symm n.le_refl _ Hv.property HP
 
 @[rocq_alias uPredI]
-instance : BI (UPred M) where
+instance instBIUPred : BI (UPred M) where
   entails_refl := uPred_entails_preorder.le_refl _
   entails_trans := uPred_entails_preorder.le_trans _ _ _
   equiv_iff {_ _} := by

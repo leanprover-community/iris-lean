@@ -15,7 +15,9 @@ public import Iris.Std.Infinite
 public import Iris.Std.CoPset
 
 @[expose] public section
-local stepindex Nat
+
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 /-! ## Leibniz Set algebras
 This file defines generic set algebras.
@@ -70,6 +72,7 @@ namespace DisjointLeibnizSet
 
 variable {S : Type _} [LawfulSet S A] [DecidableDisj S]
 
+set_option synthInstance.checkSynthOrder false in
 instance : CMRA (DisjointLeibnizSet S) where
   pcore _ := some (.valid ∅)
   op
@@ -77,11 +80,11 @@ instance : CMRA (DisjointLeibnizSet S) where
     | _, _ => error
   ValidN _ | valid _ => True | _ => False
   Valid | valid _ => True | _ => False
-  op_ne.ne _ _ _ H := by rw [(H : _ = _)]
+  op_ne.ne _ _ _ H := by rw [(H : _ = _)]; exact .rfl
   pcore_ne {_ _ _ cx} _ H := ⟨cx, H, .rfl⟩
   validN_ne H G := (H : _ = _) ▸ G
   valid_iff_validN := ⟨(fun _ => ·), (· 0)⟩
-  validN_succ := id
+  validN_le := fun h _ => h
   validN_op_left {_ x y} := by rcases x <;> rcases y <;> simp
   assoc {x y z} := by
     rcases x with (x|_) <;> rcases y with (y|_) <;> rcases z with (z|_) <;> (try · simp)
@@ -119,6 +122,7 @@ instance instDiscreteDisjointLeibnizSet : CMRA.Discrete (DisjointLeibnizSet S) w
   discrete_0 := fun h => h
   discrete_valid := id
 
+set_option synthInstance.checkSynthOrder false in
 instance instUCMRADisjointLeibnizSet : UCMRA (DisjointLeibnizSet S) where
   unit := .valid ∅
   unit_valid := by simp [Valid]
@@ -318,16 +322,17 @@ namespace LeibnizSet
 
 variable {S : Type _} [LawfulSet S A]
 
+set_option synthInstance.checkSynthOrder false in
 instance : CMRA (LeibnizSet S) where
   pcore := some
   op | .valid x, valid y => valid (x ∪ y)
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ H := by rw [(H : _ = _)]
+  op_ne.ne _ _ _ H := by rw [(H : _ = _)]; exact .rfl
   pcore_ne {_ _ _} _ H1 H2 :=  ⟨_, rfl, .trans (.of_eq <| Option.some.injEq _ _ ▸ H2.symm) H1⟩
   validN_ne _ _ := by simp
   valid_iff_validN := by simp
-  validN_succ _ := by simp
+  validN_le _ _ := by simp
   validN_op_left _ := by simp
   assoc := by simp [union_assoc]
   comm := by simp [union_comm]
@@ -336,6 +341,7 @@ instance : CMRA (LeibnizSet S) where
   pcore_op_mono {_ _} := by rintro ⟨rfl⟩ y; exists y
   extend {_ _ _ _} _ h := ⟨_, _, h, .rfl, .rfl⟩
 
+set_option synthInstance.checkSynthOrder false in
 instance : UCMRA (LeibnizSet S) where
   unit := valid ∅
   unit_valid := by simp [Valid]

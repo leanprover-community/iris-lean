@@ -15,7 +15,7 @@ namespace Iris
 
 /-- Ordered family of equivalences -/
 @[rocq_alias ofe]
-class OFE {SI : Type _} [SIdx SI] (α : Type _) where
+class OFE {SI : outParam (Type _)} [SIdx SI] (α : Type _) where
   Dist : SI → α → α → Prop
   dist_eqv : Equivalence (Dist n)
   eq_dist' : x = y ↔ ∀ n, Dist n x y
@@ -35,6 +35,11 @@ class abbrev IOFE (SI : Type _) [SIdx SI] (α : Type _) := OFE (SI := SI) α
 open OFE
 
 scoped notation:40 x " ≡{" n "}≡ " y:41 => OFE.Dist n x y (SI := stepindex%)
+
+/-- Restores pretty printing for `≡{n}≡`, which is lost because of `(SI := stepindex%)`. -/
+@[app_unexpander OFE.Dist] meta def unexpandDist : Lean.PrettyPrinter.Unexpander
+  | `($_ $n $x $y) => `($x ≡{$n}≡ $y)
+  | _ => throw ()
 
 -- `OFE.eq_dist` is `OFE.eq_dist'` with fixed implicit annotations
 @[rocq_alias equiv_dist]
@@ -349,6 +354,10 @@ non-expansive. -/
 @[inherit_doc Hom]
 infixr:25 " -n> " => Hom (SI := stepindex%)
 
+@[app_unexpander Hom] meta def unexpandHom : Lean.PrettyPrinter.Unexpander
+  | `($_ $α $β) => `($α -n> $β)
+  | _ => throw ()
+
 instance [OFE α] [OFE β] : CoeFun (α -n> β) (fun _ => α → β) := ⟨Hom.f⟩
 instance [OFE α] [OFE β] (f : α -n> β) : NonExpansive f := f.ne
 
@@ -394,6 +403,10 @@ def Hom.ofSubtype [OFE α] [OFE β] (f : { f : α → β // NonExpansive f }) : 
 
 infixr:25 " -c> " => ContractiveHom (SI := stepindex%)
 
+@[app_unexpander ContractiveHom] meta def unexpandContractiveHom : Lean.PrettyPrinter.Unexpander
+  | `($_ $α $β) => `($α -c> $β)
+  | _ => throw ()
+
 instance [OFE α] [OFE β] : CoeFun (α -c> β) (fun _ => α → β) := ⟨fun x => x.toHom.f⟩
 instance [OFE α] [OFE β] (f : α -c> β) : Contractive f := f.contractive
 
@@ -410,6 +423,7 @@ theorem InvImage.equivalence {α : Sort u} {β : Sort v}
   symm := H.symm
   trans := H.trans
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias unit_ofe_mixin]
 instance unitOFE : OFE Unit where
   Dist _ _ _ := True
@@ -421,6 +435,7 @@ instance unitOFE : OFE Unit where
 
 instance : DiscreteE (() : Unit) := ⟨fun _ => Subsingleton.elim _ _⟩
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias Empty_set_ofe_mixin]
 instance : OFE Empty where
   Dist _ _ _ := True
@@ -929,7 +944,8 @@ instance instOFESigma (P : α → Type _) [∀ x, OFE (P x)] : OFE (Sigma P) whe
 #rocq_ignore sigT_equiv "Local Equiv instance; folded into Lean's OFE (Sigma P) instance."
 
 @[rocq_alias sigT_discrete]
-instance instDiscreteESigma {P : α → Type _} [∀ x, OFE (P x)] {x : Sigma P} [inst : DiscreteE x.snd] :
+instance instDiscreteESigma {P : α → Type _} [∀ x, OFE (P x)] {x : Sigma P}
+    [inst : DiscreteE (SI := stepindex%) x.snd] :
     DiscreteE x where
   discrete {y} := by
     rcases x, y with ⟨⟨x, xH⟩, ⟨y, yH⟩⟩; rintro ⟨heq, H⟩
@@ -1247,10 +1263,12 @@ instance [COFE α] : COFE (ULift α) where
   conv_lbcompl hn c _ hm:= IsCOFE.conv_lbcompl hn (c.map uliftDownHom) hm
   lbcompl_ne hn _ _ _ hc := IsCOFE.lbcompl_ne hn _ _ (fun p hp => hc p hp)
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias unit_ofe_discrete]
 instance : Discrete Unit where
   discrete_0 _ := Subsingleton.elim _ _
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias unit_cofe]
 instance : COFE Unit where
   compl _ := ()
@@ -1259,10 +1277,12 @@ instance : COFE Unit where
   conv_lbcompl _ _ _ _ := ⟨⟩
   lbcompl_ne _ _ _ _ _ := ⟨⟩
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias Empty_set_ofe_discrete]
 instance : Discrete Empty where
   discrete_0 {x} _ := x.elim
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias Empty_set_cofe]
 instance : COFE Empty where
   compl c := (c 0).elim

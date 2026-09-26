@@ -16,6 +16,8 @@ public import Iris.Algebra.Agree
 namespace Iris.Examples
 open Iris.BI COFE
 
+local stepindex Nat
+
 section no_resources
 
 variable [UCMRA M]

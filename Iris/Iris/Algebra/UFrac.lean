@@ -17,9 +17,11 @@ A variant of the Frac CMRA with unbounded validity (>1).
 -/
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
+
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
 
 @[rocq_alias ufrac]
 structure UFrac where
@@ -43,17 +45,18 @@ instance : OFE.Discrete UFrac := ⟨fun h => h⟩
 
 #rocq_ignore ufrac_ra_mixin "Use CMRA instance"
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias ufracR]
 instance : CMRA UFrac where
   pcore _ := none
   op x y := ⟨x.frac + y.frac⟩
   Valid _ := True
   ValidN _ _ := True
-  op_ne.ne _ _ _ H := by rw [H]
+  op_ne.ne _ _ _ H := by rw [H]; exact .rfl
   pcore_ne _ H := by rcases H
   validN_ne _ := id
   valid_iff_validN := ⟨fun _ _ => trivial, fun _ => trivial⟩
-  validN_succ := id
+  validN_le := fun h _ => h
   validN_op_left _ := trivial
   assoc := ext_iff.mpr <| Subtype.ext (Rat.add_assoc ..).symm
   comm := ext_iff.mpr <| Subtype.ext (Rat.add_comm ..)

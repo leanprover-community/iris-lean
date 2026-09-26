@@ -19,7 +19,9 @@ fraction) and `◯F{q} a` (fragment with fraction). Splitting works differently 
 -/
 
 @[expose] public section
-local stepindex Nat
+
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 open Iris OFE CMRA UCMRA Auth Option
 
@@ -83,12 +85,12 @@ instance frag_discrete {q : Qp} {a : A} [ha : DiscreteE a] : DiscreteE (◯F{q} 
 /-! ## Validity -/
 
 @[rocq_alias frac_auth_dfrac_validN]
-theorem dfrac_validN {dq : DFrac} {n : Nat} {a : A} (hdq : ✓ dq) (ha : ✓{n} a) :
+theorem dfrac_validN {dq : DFrac} {n : SI} {a : A} (hdq : ✓ dq) (ha : ✓{n} a) :
     ✓{n} (●F{dq} a) • ◯F a := by
   simpa only [both_dfrac_validN] using ⟨hdq, ⟨none, .rfl⟩, Qp.valid_one, ha⟩
 
 @[rocq_alias frac_auth_validN]
-theorem validN {n : Nat} {a : A} (ha : ✓{n} a) : ✓{n} (●F a : FracAuth) • ◯F a :=
+theorem validN {n : SI} {a : A} (ha : ✓{n} a) : ✓{n} (●F a : FracAuth) • ◯F a :=
   dfrac_validN DFrac.valid_own_one ha
 
 @[rocq_alias frac_auth_dfrac_valid]
@@ -115,7 +117,7 @@ theorem agree {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F b) : a = b :
 /-! ## Inclusion -/
 
 @[rocq_alias frac_auth_includedN]
-theorem includedN {n : Nat} {dq : DFrac} {q : Qp} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F{q} b) :
+theorem includedN {n : SI} {dq : DFrac} {q : Qp} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F{q} b) :
     some b ≼{n} some a := by
   rw [both_dfrac_validN] at h
   obtain ⟨_, ⟨mc, hmc⟩, hv⟩ := h

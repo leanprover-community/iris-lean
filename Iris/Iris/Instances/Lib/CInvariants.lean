@@ -110,7 +110,7 @@ theorem own_excl_alloc (P : GName → Prop) (HP : PredInfinite P) :
   imod iOwn_alloc_strong (E := W.inv)
     ((some (Excl.excl ()), none) • (none, some (DFrac.own 1)) :
       CInvF (IProp GF) (IProp GF)) P ?_
-    ⟨trivial, DFrac.valid_own_one⟩ with ⟨%γ, %HPγ, Hown⟩
+    (by exact ⟨trivial, DFrac.valid_own_one⟩) with ⟨%γ, %HPγ, Hown⟩
   · exact HP.exists_ge
   · imodintro
     iexists γ

@@ -8,9 +8,11 @@ module
 public import Iris.Algebra.Updates
 
 @[expose] public section
-local stepindex Nat
 
 namespace Iris
+
+variable {SI : Type _} [instSI : SIdx SI]
+local stepindex SI
 open OFE CMRA
 
 /-!
@@ -28,7 +30,7 @@ def discreteFunInsert {ι : Type _} [DecidableEq ι] {β : ι → Type _}
 
 @[rocq_alias discrete_fun_singleton]
 def discreteFunSingleton {ι : Type _} [DecidableEq ι] {β : ι → Type _}
-    [∀ i, UCMRA (β i)] (x : ι) (y : β x) : (a : ι) → β a :=
+    [∀ i, UCMRA (SI := stepindex%) (β i)] (x : ι) (y : β x) : (a : ι) → β a :=
   discreteFunInsert x y fun _ => unit
 
 section insert
@@ -81,7 +83,7 @@ theorem discreteE_apply {f : (a : ι) → β a} (hf : DiscreteE f) (x : ι) :
       by_cases hxx' : x = x'
       · subst hxx'
         simpa using h
-      · rw [discreteFunInsert_of_ne (h := hxx') ..]
+      · rw [discreteFunInsert_of_ne (h := hxx') ..]; exact .rfl
     exact (congrFun (hf.discrete hfun) x).trans (discreteFunInsert_self ..)
 
 @[rocq_alias discrete_fun_insert_discrete]
@@ -99,10 +101,10 @@ end OFE
 
 section CMRA
 
-variable {ι : Type _} [DecidableEq ι] {β : ι → Type _} [∀ i, UCMRA (β i)]
+variable {ι : Type _} [DecidableEq ι] {β : ι → Type _} [∀ i, UCMRA (SI := stepindex%) (β i)]
 
 @[rocq_alias discrete_funR_cmra_discrete]
-instance instDiscreteFunCmraDiscrete [∀ i, CMRA.Discrete (β i)] :
+instance instDiscreteFunCmraDiscrete [∀ i, CMRA.Discrete (SI := stepindex%) (β i)] :
     CMRA.Discrete ((i : ι) → β i) where
   discrete_valid h i := CMRA.Discrete.discrete_valid (h i)
 
@@ -130,7 +132,7 @@ instance instDiscreteFunSingletonDiscrete {x : ι} (y : β x)
   instDiscreteFunInsertDiscrete (fun _ => unit) x y
 
 @[rocq_alias discrete_fun_singleton_validN]
-theorem discreteFunSingleton_validN_iff (n : Nat) {x : ι} (y : β x) :
+theorem discreteFunSingleton_validN_iff (n : SI) {x : ι} (y : β x) :
     ✓{n} discreteFunSingleton x y ↔ ✓{n} y := by
   constructor
   · exact fun h => discreteFunSingleton_self y ▸ h x
@@ -267,7 +269,7 @@ end CMRA
 
 section CMRA
 
-variable {ι : Type _} {β : ι → Type _} [∀ i, UCMRA (β i)]
+variable {ι : Type _} {β : ι → Type _} [∀ i, UCMRA (SI := stepindex%) (β i)]
 
 @[rocq_alias discrete_fun_updateP]
 theorem discreteFun_updateP {f : (a : ι) → β a} {P : (a : ι) → β a → Prop}

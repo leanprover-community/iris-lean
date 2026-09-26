@@ -276,7 +276,7 @@ open BI CMRA
 variable [Sbi PROP]
 
 @[rocq_alias discrete_fun_validI]
-theorem discrete_fun_validI {ι : Type _} {β : ι → Type _} [∀ i, UCMRA (β i)]
+theorem discrete_fun_validI {ι : Type _} {β : ι → Type _} [∀ i, UCMRA (SI := stepindex%) (β i)]
     (g : ∀ i, β i) : ✓ g ⊣⊢@{PROP} ∀ i, ✓ (g i) := by
   sbi_unfold; intro _; exact .rfl
 
@@ -388,7 +388,7 @@ end heap
 
 section view
 open BI CMRA View ViewRel IsViewRel
-variable [Sbi PROP] [OFE A] [UCMRA B] {R : ViewRel A B} [IsViewRel R]
+variable [Sbi PROP] [OFE A] [UCMRA B] {R : ViewRel stepindex% A B} [IsViewRel R]
 
 @[rocq_alias view_both_dfrac_validI_1]
 theorem view_both_dfrac_validI_1 (relI : SiProp) (dq : DFrac) (a : A) (b : B)
