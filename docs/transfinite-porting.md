@@ -34,107 +34,16 @@ fork's Aczel-tree set model (`algebra/ordinals/set_*.v`, ~2.8k lines) and its or
 | 0 | Merge master into #576 | ✅ |
 | 1 | Generalize `Algebra/` over `SI` (from #683, without the pending issues listed below) | ✅ |
 | 1b | Bounded completions (`lbcompl`) for `Excl`, `Csum`, `List`, `Heap`, `UPred` | ✅ |
-| 2 | Generalize `BI/`, `ProofMode/`, `Instances/UPred` over `SI`; gate finite-only later laws | ⬜ |
-| 3 | Step-index property classes (`TransfiniteIndex`, `LargeIndex`, ...), big later `⧍`, satisfiability, ordinal instances | ⬜ |
+| 2 | Generalize `BI/`, `ProofMode/`, `Instances/UPred` over `SI`; gate finite-only later laws | ✅ |
+| 3 | Step-index property classes (`TransfiniteIndex`, `LargeIndex`, ...), big later `⧍`, satisfiability, ordinal instances, counterexamples | ✅ |
 | 4 | Transfinite COFE solver and `IProp` over arbitrary `SI` | ⬜ |
-| 5 | Logical steps, strong WP (`swp`), transfinite adequacy, HeapLang lifting | ⬜ |
+| 5 | Logical steps (✅), strong WP (`swp`), transfinite adequacy, HeapLang lifting | 🟡 |
 | 6 | Refinement WP, time credits, SEQ; examples (termination, refinements, key ideas) | ⬜ |
 
 ## File-by-file status
 
-### `algebra/`
-
-| Rocq file | Lean | Status | Notes |
-|---|---|---|---|
-| `stepindex.v` (`indexT`, `index_rec`, limits) | `Algebra/StepIndex.lean` | ✅ | upstream `SIdx` interface; `SIdx.rec'` is `index_rec` |
-| `stepindex.v` (`natI`, `FiniteIndex`) | `Algebra/StepIndexFinite.lean` | ✅ | `natSIdx`, `SIdxFinite` |
-| `stepindex.v` (`pairI` = ω²) | | ⬜ | lexicographic pairs |
-| `stepindex.v` (`TransfiniteIndex`, `LargeIndex`, `FiniteExistential`, `FiniteBoundedExistential`, `Classical`) | | ⬜ | phase 3 |
-| `ordinals/set_*.v`, `ordinals/ord_stepindex.v` | `IrisMath/StepIndex.lean` | 🟡 | `SIdx Ordinal` via Mathlib; `TransfiniteIndex`/`LargeIndex` instances pending |
-| `ordinals/arithmetic.v` | | ⬜ | natural sum/difference via Mathlib `NatOrdinal` |
-| `ofe.v`: OFEs, `dist_later`, contractive maps | `Algebra/OFE.lean` | ✅ | from #576 |
-| `ofe.v`: `bchain`, `bcompl`, `Cofe` | `Algebra/OFE.lean` | ✅ | upstream interface: `lbcompl` only at limits; `bcompl` for any `n` derived (`Iris.bcompl`) |
-| `ofe.v`: transfinite fixpoint (`bfpc`, `fixpoint_chain`) | `Algebra/OFE.lean` | ✅ | `BFChain`, `fixpointBFChain` (from #550/#576) |
-| `ofe.v`: `LimitPreserving` + `BoundedLimitPreserving` | `Algebra/OFE.lean` | ✅ | merged into one class as upstream |
-| `ofe.v`: later OFE with transfinite `bcompl` | `Algebra/OFE.lean` | ✅ | |
-| `ofe.v`: `BcomplUnique*`, truncation (`Truncatable`, `ProtoTruncatable`) | | ⬜ | needed by the solver (phase 4) |
-| `cmra.v` | `Algebra/CMRA.lean` | ✅ | `validN_le` |
-| `cmra.v`: ordinal CMRA `OrdR`/`OrdUR` (natural sum) | | ⬜ | phase 6 (time credits) |
-| `excl.v`, `csum.v`, `list.v`, `gmap.v` COFEs | `Excl`, `Csum`, `List`, `Heap` | ✅ | upstream `lbcompl`s |
-| `agree.v`, `auth.v`, `frac.v`, `functions.v`, `local_updates.v`, `updates.v`, `big_op.v`, `vector.v`, `gmap` CMRA, ... | resp. files | ✅ | generic in `SI` |
-| `wf_IR.v` (well-founded induction-recursion) | | ⬜ | solver |
-| `cofe_solver.v` (transfinite solver, 3k lines) | `Algebra/COFESolver.lean` | ⬜ | currently the finite (ω) solver |
-| `mlist.v`, `dfrac.v`, `auth_map.v`, `auth_frac.v` | | ➖ | not transfinite-specific; `DFrac`/`MonoList`/`HeapView` exist |
-
-### `base_logic/`
-
-| Rocq file | Lean | Status | Notes |
-|---|---|---|---|
-| `upred.v`: `uPred` over `SI` | `Algebra/UPred.lean` | ✅ | |
-| `upred.v`: `uPred_bcompl'` | `Algebra/UPred.lean` | ✅ | `UPred.bcompl` |
-| `upred.v`: connectives, later = `∀ n' < n` | `Instances/UPred/Instance.lean` | ⬜ | phase 2 |
-| `upred.v`: `later_exist_false`, `later_sep_1`, `later_ownM` (finite only) | | ⬜ | phase 2 |
-| `upred.v`: `later_finite_exist_false` (`FiniteBoundedExistential`) | | ⬜ | phase 2 |
-| `upred.v`: `big_later_soundness`, `⧍` | | ⬜ | phase 3 |
-| `upred.v`: timelessness in the model (`later_or_timeless`, `later_exist_timeless`, ...) | | ⬜ | phase 2 |
-| `upred.v`: `later_or_is_classical`, `later_or_commute_classically` | | ⬜ | phase 3 |
-| `satisfiable.v` | | ⬜ | phase 3 |
-| `derived.v` (`transfinite_soundness`, timeless instances) | | ⬜ | |
-| `lib/logical_step.v` | | ⬜ | phase 5 |
-| `lib/fancy_updates.v` (`satisfiable_at`) | | ⬜ | phase 5 |
-| `lib/own.v` (`initial_satisfiable`) | | ⬜ | |
-| `lib/{invariants,wsat,na_invariants,cancelable_invariants,gen_heap,proph_map,saved_prop,viewshifts}.v` | `Instances/Lib/*` | 🟡 | exist for `SI = Nat`; need generalization after phase 4 |
-
-### `bi/`
-
-| Rocq file | Lean | Status | Notes |
-|---|---|---|---|
-| `interface.v`: `SbiMixin` with finite-gated laws | `BI/BI.lean` | ⬜ | phase 2 |
-| `derived_laws_sbi.v` (finite-gated `later_exist`, `later_or`, ...) | `BI/DerivedLawsLater.lean` | ⬜ | phase 2 |
-| `big_op.v` (finite-gated `big_sep*_later`) | `BI/BigOp/*` | ⬜ | phase 2 |
-| `satisfiable.v` | | ⬜ | phase 3 |
-| `weakestpre.v` (`Swp`, `Rswp`) | | ⬜ | phase 5 |
-| other `bi/*.v` | `BI/*` | 🟡 | exist, `SI = Nat` |
-
-### `proofmode/`
-
-| Rocq file | Lean | Status | Notes |
-|---|---|---|---|
-| `class_instances_sbi.v` (finite-gated later instances) | `ProofMode/InstancesLater.lean` | ⬜ | phase 2 |
-| rest | `ProofMode/*` | 🟡 | exist, `SI = Nat` |
-
-### `program_logic/`
-
-| Rocq file | Lean | Status |
-|---|---|---|
-| `weakestpre.v` (logical-step WP, `swp`) | | ⬜ |
-| `lifting.v`, `ectx_lifting.v` | | ⬜ |
-| `adequacy.v` (`TransfiniteIndex`) | | ⬜ |
-| `refinement/ref_source.v` | | ⬜ |
-| `refinement/ref_weakestpre.v` | | ⬜ |
-| `refinement/ref_lifting.v`, `ref_ectx_lifting.v` | | ⬜ |
-| `refinement/ref_adequacy.v` | | ⬜ |
-| `refinement/tc_weakestpre.v` | | ⬜ |
-| `refinement/seq_weakestpre.v` | | ⬜ |
-
-### `heap_lang/`
-
-| Rocq file | Lean | Status |
-|---|---|---|
-| `lifting.v` (`swp`/`rwp` rules) | | ⬜ |
-| `proofmode.v` (`wp_swp`, `swp_step`) | | ⬜ |
-| `adequacy.v` | | ⬜ |
-
-### `examples/`
-
-| Rocq file | Status |
-|---|---|
-| `transfinite.v` | ⬜ |
-| `counterexamples.v` | ⬜ |
-| `keyideas/simulations.v`, `keyideas/generalized_simulations.v` | ⬜ |
-| `termination/{adequacy,derived,thunk,eventloop,logrel}.v` | ⬜ |
-| `refinements/{refinement,derived,examples,memoization}.v` | ⬜ |
-| `safety/*` | ➖ (upstream HeapLang library examples; most exist in `HeapLang/Lib`) |
+See [`transfinite-correspondence.md`](transfinite-correspondence.md), which maps every Rocq file
+(and every transfinite-specific declaration) to its Lean counterpart.
 
 ## Mechanism notes
 
