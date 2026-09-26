@@ -173,6 +173,18 @@ theorem truncMap_comp_dist (α β γ : SI) (f : A -n> B) (g : B -n> C) (q : Trun
     truncMap α β (g.comp f) q ≡{γ}≡ truncMap γ β g (truncMap α γ f q) :=
   (truncate β).ne.1 (g.ne.1 (expand_truncate γ _).symm)
 
+/-- Composing truncation maps through a truncation index at least the target index. -/
+theorem truncMap_truncMap {α γ τ : SI} (h : τ ≤ γ) (f : A -n> B) (g : B -n> C) (q : TruncO α A) :
+    truncMap γ τ g (truncMap α γ f q) = truncMap α τ (g.comp f) q :=
+  Truncated.eq_of_dist ((truncMap_comp_dist α τ γ f g q).symm.le h)
+
+@[simp] theorem truncMap_id (α : SI) (q : TruncO α A) : truncMap α α Hom.id q = q :=
+  truncate_expand α q
+
+theorem truncMap_congr {α β : SI} {f g : A -n> B} (h : ∀ x, f x = g x) (q : TruncO α A) :
+    truncMap α β f q = truncMap α β g q := by
+  rw [Hom.ext (funext h)]
+
 /-- `truncMap` preserves bounded inverses (Rocq: `trunc_map_inv`). -/
 @[rocq_alias trunc_map_inv]
 theorem truncMap_inv {α β : SI} (hle : α ≤ β) (f : A -n> B) (g : B -n> A)

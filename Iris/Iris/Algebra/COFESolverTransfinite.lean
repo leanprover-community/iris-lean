@@ -108,6 +108,11 @@ noncomputable abbrev TG (α : SI) (X : Obj (SI := SI)) : Obj (SI := SI) :=
 
 theorem TG_car (α : SI) (X : Obj (SI := SI)) : (TG F α X).car = TruncO α (F X.car X.car) := rfl
 
+theorem map_congr {A B C D : Type u} [COFE A] [COFE B] [COFE C] [COFE D]
+    {f f' : C -n> A} {g g' : B -n> D} (h1 : ∀ x, f x = f' x) (h2 : ∀ x, g x = g' x) (y : F A B) :
+    map (F := F) f g y = map (F := F) f' g' y := by
+  rw [Hom.ext (funext h1), Hom.ext (funext h2)]
+
 /-! ## Stages and families of approximations -/
 
 variable (F) in
@@ -614,6 +619,9 @@ noncomputable def ϕLchain (x : LimCar f) : BChain (TG F γ (LimObj hlim hf)).ca
           (SIdx.lt_le_incl (SIdx.lt_succ_self m)))
     · exact .rfl
 
+/-- `ψL` as a map into the bundled inverse limit. -/
+noncomputable def ψL' : (TG F γ (LimObj hlim hf)).car -n> (LimObj hlim hf).car := ψL hlim hf
+
 variable [∀ α [COFE α], BcomplUniqueLim (F α α)]
 
 /-- Rocq: `ϕβ`. -/
@@ -636,19 +644,159 @@ noncomputable def ϕL : (LimObj hlim hf).car -n> (TG F γ (LimObj hlim hf)).car 
       exact BcomplUniqueLim.lbcompl_unique hlim _ _ fun β hβ =>
         (truncMap _ _ _).ne.1 ((h β hβ).le (SIdx.lt_le_incl (SIdx.lt_trans hβ hk)))⟩
 
+/-- The embeddings into the new limit approximation `[F L L]_{γ}` (Rocq: `eβ'`). -/
+noncomputable abbrev eS (β : SI) (hβ : β < γ) : (f.X β hβ).car -n> (TG F γ (LimObj hlim hf)).car :=
+  (ϕL hlim hf).comp (eL' hlim hf β hβ)
+
+/-- The projections out of the new limit approximation (Rocq: `pβ'`). -/
+noncomputable abbrev pS (β : SI) (hβ : β < γ) : (TG F γ (LimObj hlim hf)).car -n> (f.X β hβ).car :=
+  (pL' hlim hf β hβ).comp (ψL' hlim hf)
+
+/-- Rocq: `ϕβ'`. -/
+noncomputable abbrev ϕS :
+    (TG F γ (LimObj hlim hf)).car -n> (TG F (σ γ) (TG F γ (LimObj hlim hf))).car :=
+  truncMap γ (σ γ) (map (F := F) (ψL' hlim hf) (ϕL hlim hf))
+
+/-- Rocq: `ψβ'`. -/
+noncomputable abbrev ψS :
+    (TG F (σ γ) (TG F γ (LimObj hlim hf))).car -n> (TG F γ (LimObj hlim hf)).car :=
+  truncMap (σ γ) γ (map (F := F) (ϕL hlim hf) (ψL' hlim hf))
+
 variable (F) in
 /-- The stage at the limit index `γ`: `X γ = [F L L]_{γ}` for the inverse limit `L`
 (Rocq: `limit_extension`). -/
-noncomputable def limitStage : Stage F γ :=
-  let L := LimObj hlim hf
-  { X := TG F γ L
-    prev := f.X
-    e := fun β h => (ϕL hlim hf).comp (eL' hlim hf β h)
-    p := fun β h => (pL' hlim hf β h).comp (ψL hlim hf)
-    ϕ := truncMap γ (σ γ) (map (F := F) (ψL hlim hf) (ϕL hlim hf))
-    ψ := truncMap (σ γ) γ (map (F := F) (ϕL hlim hf) (ψL hlim hf)) }
+noncomputable def limitStage : Stage F γ where
+  X := TG F γ (LimObj hlim hf)
+  prev := f.X
+  e := eS hlim hf
+  p := pS hlim hf
+  ϕ := ϕS hlim hf
+  ψ := ψS hlim hf
 
 end LimitStage
+
+section LimitStageLaws
+
+variable {γ : SI} (hlim : SIdx.Limit γ) {f : Fam F γ} (hf : FamGood f)
+variable [∀ α [COFE α], BcomplUniqueLim (F α α)]
+
+/-! ### Laws of the limit stage -/
+
+omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+/-- Rocq: `pβ_eβ_up`. -/
+theorem pL_eL_up (β β' : SI) (hβ : β < γ) (hβ' : β' < γ) (hlt : β < β') (x) :
+    pL f β' hβ' (eL hlim hf β hβ x) = f.e β β' hβ hβ' hlt x := by
+  rw [eL_functorial hlim hf β β' hβ hβ' hlt, pL_eL]
+
+omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+/-- Rocq: `pβ_eβ_down`. -/
+theorem pL_eL_down (β' β : SI) (hβ' : β' < γ) (hβ : β < γ) (hlt : β' < β) (x) :
+    pL f β' hβ' (eL hlim hf β hβ x) = f.p β' β hβ' hβ hlt x := by
+  rw [pL_functorial hf β' β hβ' hβ hlt (hlim.succ_lt β' hβ') (hlim.succ_lt β hβ), pL_eL]
+
+omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+theorem ψL_val (y) (β : SI) (hβ : β < γ) :
+    (ψL hlim hf y).val β hβ = truncMap γ (σ β) (map (F := F) (eL' hlim hf β hβ) (pL' hlim hf β hβ)) y :=
+  rfl
+
+/-- Rocq: `ψβ_ϕβ_id`. -/
+theorem ψL_ϕL (x : LimCar f) : ψL hlim hf (ϕL hlim hf x) = x := by
+  refine LimCar.ext (funext fun β => funext fun hβ => ?_)
+  have hs := hlim.succ_lt β hβ
+  rw [ψL_val]
+  refine Truncated.eq_of_dist (A := (FX F f β hβ).car) (α := σ β) ?_
+  refine ((truncMap γ (σ β) _).ne.1 (IsCOFE.conv_lbcompl hlim (ϕLchain hlim hf x) hs)).trans
+    (Dist.of_eq ?_)
+  show truncMap γ (σ β) _ (truncMap (σ (σ β)) γ _ (x.val (σ β) hs)) = _
+  rw [truncMap_truncMap (SIdx.lt_le_incl hs)]
+  rw [← x.coh β (σ β) hβ hs (SIdx.lt_succ_self β), Fep]
+  refine truncMap_congr (fun y => ?_) _
+  rw [Hom.comp_apply, ← OFunctor.map_comp]
+  exact map_congr (fun z => pL_eL_up hlim hf β (σ β) hβ hs (SIdx.lt_succ_self β) z)
+    (fun z => pL_eL_down hlim hf β (σ β) hβ hs (SIdx.lt_succ_self β) z) y
+
+/-- Rocq: `ϕβ_ψβ_id`. -/
+theorem ϕL_ψL (y) (k : SI) (hk : k < γ) : ϕL hlim hf (ψL' hlim hf y) ≡{k}≡ y := by
+  refine (IsCOFE.conv_lbcompl hlim (ϕLchain hlim hf (ψL hlim hf y)) hk).trans ?_
+  show truncMap (σ k) γ _ (truncMap γ (σ k) _ y) ≡{k}≡ y
+  refine ((truncMap_comp_dist γ γ (σ k) _ _ y).symm.le (SIdx.lt_le_incl (SIdx.lt_succ_self k))).trans ?_
+  refine (((truncMap_ne γ γ).ne (n := k) (fun z => ?_)) y).trans (Dist.of_eq (truncMap_id γ y))
+  rw [Hom.comp_apply, ← OFunctor.map_comp]
+  refine ((OFunctor.map_ne.ne (fun w => ?_) (fun w => ?_) z).trans (Dist.of_eq (OFunctor.map_id z)))
+  · exact eL_pL hlim hf k hk w
+  · exact eL_pL hlim hf k hk w
+
+/-- Rocq: `Fep_p_limit` (for the inverse limit). -/
+theorem fld_truncMap_eL (γ0 : SI) (h0 : γ0 < γ) (hs0 : σ γ0 < γ) (y) :
+    f.fld γ0 h0 hs0 (truncMap γ (σ γ0) (map (F := F) (eL' hlim hf γ0 h0) (pL' hlim hf γ0 h0)) y) =
+      pL f (σ γ0) hs0 (ψL hlim hf y) := by
+  rw [pL_apply, ψL_val, hf.ψ_succ γ0 h0 hs0, truncMap_truncMap
+    (SIdx.lt_le_incl (SIdx.lt_succ_self (σ γ0)))]
+  congr 1
+  refine truncMap_congr (fun y => ?_) _
+  rw [Hom.comp_apply, ← OFunctor.map_comp]
+  refine map_congr (fun z => ?_) (fun z => ?_) y
+  · show eL hlim hf γ0 h0 z = eL hlim hf (σ γ0) hs0 (f.fld γ0 h0 hs0 (f.ϕ γ0 h0 z))
+    rw [← hf.e_fold_ϕ γ0 h0 hs0 (SIdx.lt_succ_self γ0), ← eL_functorial]
+  · show pL f γ0 h0 z = f.ψ γ0 h0 (f.unf γ0 h0 hs0 (pL f (σ γ0) hs0 z))
+    exact (pL_functorial hf γ0 (σ γ0) h0 hs0 (SIdx.lt_succ_self γ0) hs0 (hlim.succ_lt _ hs0) z).trans
+      (hf.p_ψ_unfold γ0 h0 hs0 (SIdx.lt_succ_self γ0) _)
+
+/-- Rocq: `ψβ'_ϕβ'_id`. -/
+theorem ψS_ϕS (x : (TG F γ (LimObj hlim hf)).car) : ψS hlim hf (ϕS hlim hf x) = x := by
+  show truncMap (σ γ) γ _ (truncMap γ (σ γ) _ x) = x
+  rw [truncMap_truncMap (SIdx.lt_le_incl (SIdx.lt_succ_self γ))]
+  refine (truncMap_congr (fun y => ?_) x).trans (truncMap_id γ x)
+  rw [Hom.comp_apply, ← OFunctor.map_comp]
+  exact (map_congr (f' := Hom.id) (g' := Hom.id)
+    (fun (z : (LimObj hlim hf).car) => (ψL_ϕL hlim hf z : ψL' hlim hf (ϕL hlim hf z) = z))
+    (fun (z : (LimObj hlim hf).car) => (ψL_ϕL hlim hf z : ψL' hlim hf (ϕL hlim hf z) = z)) y).trans
+    (OFunctor.map_id y)
+
+/-- Rocq: `ϕβ'_ψβ'_id`. -/
+theorem ϕS_ψS (x) : ϕS hlim hf (ψS hlim hf x) ≡{γ}≡ x := by
+  show truncMap γ (σ γ) _ (truncMap (σ γ) γ _ x) ≡{γ}≡ x
+  refine (truncMap_comp_dist (σ γ) (σ γ) γ _ _ x).symm.trans ?_
+  refine (((truncMap_ne (σ γ) (σ γ)).ne (n := γ) (fun y => ?_)) x).trans
+    (Dist.of_eq (truncMap_id (σ γ) x))
+  show map (F := F) _ _ (map (F := F) _ _ y) ≡{γ}≡ y
+  rw [← OFunctor.map_comp]
+  refine ((OFunctorContractive.map_contractive (F := F)).distLater_dist
+    (x := (((ϕL hlim hf).comp (ψL' hlim hf)), ((ϕL hlim hf).comp (ψL' hlim hf))))
+    (y := (Hom.id, Hom.id)) (fun k hk => ⟨fun z => ϕL_ψL hlim hf z k hk,
+      fun z => ϕL_ψL hlim hf z k hk⟩) y).trans (Dist.of_eq (OFunctor.map_id y))
+
+/-- Rocq: `pβ'_eβ'_id`. -/
+theorem pS_eS (β : SI) (hβ : β < γ) (x) : pS hlim hf β hβ (eS hlim hf β hβ x) = x :=
+  (congrArg (pL f β hβ) (ψL_ϕL hlim hf (eL hlim hf β hβ x))).trans (pL_eL hlim hf β hβ x)
+
+/-- Rocq: `eβ'_pβ'_id`. -/
+theorem eS_pS (β : SI) (hβ : β < γ) (y) : eS hlim hf β hβ (pS hlim hf β hβ y) ≡{β}≡ y :=
+  ((ϕL hlim hf).ne.1 (eL_pL hlim hf β hβ _)).trans (ϕL_ψL hlim hf y β hβ)
+
+/-- Rocq: `eβ'_functorial`. -/
+theorem eS_functorial (β β' : SI) (hβ : β < γ) (hβ' : β' < γ) (hlt : β < β') (x) :
+    eS hlim hf β' hβ' (f.e β β' hβ hβ' hlt x) = eS hlim hf β hβ x :=
+  congrArg (ϕL hlim hf) (eL_functorial hlim hf β β' hβ hβ' hlt x).symm
+
+omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+/-- Rocq: `pβ'_functorial`. -/
+theorem pS_functorial (β β' : SI) (hβ : β < γ) (hβ' : β' < γ) (hlt : β < β') (y) :
+    f.p β β' hβ hβ' hlt (pS hlim hf β' hβ' y) = pS hlim hf β hβ y :=
+  (pL_functorial hf β β' hβ hβ' hlt (hlim.succ_lt β hβ) (hlim.succ_lt β' hβ') _).symm
+
+/-- Rocq: `Fep_p_limit0`. -/
+theorem fld_truncMap_eS (γ0 : SI) (h0 : γ0 < γ) (hs0 : σ γ0 < γ) (x) :
+    f.fld γ0 h0 hs0 (truncMap (σ γ) (σ γ0) (map (F := F) (eS hlim hf γ0 h0) (pS hlim hf γ0 h0)) x) =
+      pS hlim hf (σ γ0) hs0 (ψS hlim hf x) := by
+  refine Eq.trans ?_ (fld_truncMap_eL hlim hf γ0 h0 hs0 _)
+  congr 1
+  show _ = truncMap γ (σ γ0) _ (truncMap (σ γ) γ _ x)
+  rw [truncMap_truncMap (SIdx.lt_le_incl (hlim.succ_lt γ0 h0))]
+  refine truncMap_congr (fun y => ?_) x
+  rw [Hom.comp_apply, ← OFunctor.map_comp]
+
+end LimitStageLaws
 
 /-! ## The recursion -/
 
