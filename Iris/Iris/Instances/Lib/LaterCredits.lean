@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Sergei Stepanenko, Zongyuan Liu
 -/
@@ -21,7 +21,7 @@ local stepindex Nat
 namespace Iris
 
 open _root_.Std (Associative Commutative LeftIdentity LawfulLeftIdentity)
-open Iris OFE COFE BI Auth CommMonoidLike Std
+open Iris OFE COFE BI Auth CommMonoidLike Iris.Std
 
 section LcGS
 
@@ -52,7 +52,7 @@ class LcGpreS (GF : BundledGFunctors) where
 attribute [reducible, instance] LcGpreS.lc_elem
 
 @[rocq_alias lcGS]
-class LcGS (hlc : outParam HasLC) (GF : BundledGFunctors)  extends LcGpreS GF where
+class LcGS (hlc : outParam HasLC) (GF : BundledGFunctors) extends LcGpreS GF where
   lc_name : GName
 
 #rocq_ignore «lcΣ» "Superseded by the `LcGpreS` typeclass on `BundledGFunctors`."
@@ -290,7 +290,7 @@ theorem le_upd_unfold_no_le [LcGS .hasNoLC GF] {P : IProp GF} : (|==£> P) ⊣�
     · iapply (lc_supply_no_lc 0).mpr; itrivial
     imod H $$ %0 Hs with (HFalse | ⟨_, HP⟩ | ⟨%m, %Hlt, _⟩)
     · imodintro
-      icases (laterN_later 0).mp $$ HFalse with HFalse
+      icases (laterN_succ_right 0).mp $$ HFalse with HFalse
       icases laterN_0.mp $$ HFalse with HFalse
       simp only [BIBase.except0]
       ileft
@@ -304,7 +304,7 @@ theorem le_upd_unfold_no_le [LcGS .hasNoLC GF] {P : IProp GF} : (|==£> P) ⊣�
     simp only [BIBase.except0]
     icases H with (HFalse | HP)
     · imodintro; ileft
-      iapply (laterN_later 0).mpr
+      iapply (laterN_succ_right 0).mpr
       inext; iexact HFalse
     · imodintro; iright; ileft
       iframe HP
@@ -419,7 +419,7 @@ theorem except_0_le_upd {P : IProp GF} : ◇ (|==£> P) ⊢ |==£> P := by
   iintro %n _
   imodintro
   ileft
-  iapply (laterN_later n).mpr
+  iapply (laterN_succ_right n).mpr
   inext
   iexact HFalse
 
@@ -465,7 +465,8 @@ instance {P : IProp GF} : IsExcept0 (le_upd P) where
   is_except0 := except_0_le_upd
 
 @[rocq_alias le_upd.from_modal_le_upd]
-instance {P : IProp GF} : FromModal True modality_id (le_upd P) (le_upd P) P where
+instance {P : IProp GF} io :
+    FromModal io modality_id True (le_upd P) (le_upd P) P where
   from_modal := by
     simp only [modality_id, id_eq, forall_const]
     iapply le_upd_intro
@@ -535,7 +536,7 @@ instance le_upd_finally_ne : NonExpansive (le_upd_finally (GF := GF)) where
     exact instPlainly_ne.ne H
 
 @[rocq_alias le_upd.le_upd_finally_mono]
-theorem le_upd_finally_mono (P Q: IProp GF) : (P ⊢ Q) → (|==£|> P) ⊢ (|==£|> Q) := by
+theorem le_upd_finally_mono (P Q : IProp GF) : (P ⊢ Q) → (|==£|> P) ⊢ (|==£|> Q) := by
   intro Hent
   unfold le_upd_finally
   iintro HP %m Hlc
@@ -561,7 +562,7 @@ theorem le_upd_le_upd_finally (P : IProp GF) : (|==£> |==£|> P) ⊢ |==£|> P 
   icases le_upd_unfold $$ HP with HP
   imod HP $$ Hlc with ⟨HFalse | ⟨Hlc, H⟩ | ⟨%m', %Hm, Hlc , H⟩⟩
   · simp only [BIBase.except0]
-    iapply (laterN_later _).mp.trans (laterN_mono _ or_intro_l) $$ HFalse
+    iapply (laterN_succ_right _).mp.trans (laterN_mono _ or_intro_l) $$ HFalse
   · iapply H; iframe
   conv =>
     rhs
@@ -585,7 +586,7 @@ theorem le_upd_finally_add_lc (P : IProp GF) : (£ 1 -∗ |==£|> P) ⊢ |==£|>
   iapply laterN_mono _ except0_intro
   iapply laterN_mono _ later_plainly.mp
   iapply laterN_mono _ (later_mono except0_plainly.mp)
-  iapply (laterN_later m).mp
+  iapply (laterN_succ_right m).mp
   cases hlc with
   | hasLC =>
     rw [show m + 1 = 1 + m from Nat.add_comm m 1]
@@ -624,14 +625,14 @@ theorem le_upd_keep (P Q : IProp GF) [TCOr (TCEq hlc .hasNoLC) (Timeless P)] :
       iapply timeless_laterN
       ispecialize H $$ Hc
       icases (laterN_mono n except0_into_later) $$ H with H
-      icases (laterN_later _).mpr $$ H with $
+      icases (laterN_succ_right _).mpr $$ H with $
     | l =>
       cases ‹TCEq hlc .hasNoLC›
       icases (lc_supply_no_lc n).mp $$ Hc with %Hn
       subst n
       ispecialize H $$ Hc
       icases laterN_0.mp $$ H with H
-      rw [← Nat.add_one, (laterN_later (n := 0)).to_eq, (laterN_0).to_eq]
+      rw [← Nat.add_one, (laterN_succ_right (n := 0)).to_eq, (laterN_0).to_eq]
       unfold BIBase.except0
       iapply H
   icases H with ⟨-, H⟩
@@ -649,8 +650,8 @@ theorem le_upd_finally_later (P : IProp GF) : ▷ (|==£|> P) ⊢ |==£|> ▷ �
   iintro H %m Hlc
   iapply laterN_mono _ (except0_intro.trans <| except0_mono <| later_plainly.1)
   iapply laterN_mono _ (later_mono except0_plainly.1)
-  iapply (laterN_later m).mp
-  iapply (later_laterN m).mpr
+  iapply (laterN_succ_right m).mp
+  iapply (laterN_succ_left m).mpr
   inext
   iapply H $$ Hlc
 
@@ -664,7 +665,7 @@ theorem le_upd_finally_soundness (hlc : HasLC) [LcGpreS GF] n (P : IProp GF) :
   | hasLC =>
     apply laterN_soundness (n := n.succ)
     iintro _
-    iapply (laterN_later _).mpr
+    iapply (laterN_succ_right _).mpr
     iapply (laterN_mono _ except0_into_later)
     iapply (laterN_mono _ (except0_mono plainly_elim))
     imod lc_alloc n with ⟨%LC, Hlc, Hl⟩
@@ -673,7 +674,7 @@ theorem le_upd_finally_soundness (hlc : HasLC) [LcGpreS GF] n (P : IProp GF) :
   | hasNoLC =>
     apply laterN_soundness (n := 1)
     iintro _
-    iapply (laterN_later 0).mpr
+    iapply (laterN_succ_right 0).mpr
     iapply laterN_0.mpr
     iapply later_mono plainly_elim
     iapply except0_into_later

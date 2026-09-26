@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
@@ -90,6 +90,10 @@ theorem modify_ne {n} {f g : α → α} (Hf : ∀ a b, a ≡{n}≡ b → f a ≡
 @[rocq_alias list_insert_ne]
 instance set_ne (i : Nat) : NonExpansive₂ (fun (a : α) (l : List α) => l.set i a) where
   ne _ _ _ ha _ _ hl := hl.set ha i
+
+@[rocq_alias list_inserts_ne]
+instance inserts_ne (i : Nat) : NonExpansive₂ (fun (k l : List α) => List.inserts i k l) where
+  ne _ _ _ hk _ _ hl := hk.inserts hl i
 
 @[rocq_alias list_delete_ne]
 instance eraseIdx_ne (i : Nat) : NonExpansive (fun l : List α => l.eraseIdx i) where
@@ -227,7 +231,7 @@ theorem listComplGo_conv_compl {n : Nat} (c : Chain (List α)) :
   | x :: c0, H => by
     obtain ⟨x', xs', _, hxs, hcn⟩ := cons_dist_eq H.symm
     rw [hcn]
-    show compl (c.map (headGetDHom x)) :: listComplGo c0 (c.map tailHom) ≡{n}≡ x' :: xs'
+    change compl (c.map (headGetDHom x)) :: listComplGo c0 (c.map tailHom) ≡{n}≡ x' :: xs'
     refine .cons ?_ ?_
     · refine conv_compl.trans (Dist.of_eq ?_)
       simp [Chain.map_apply, headGetDHom_apply, hcn]
@@ -236,7 +240,7 @@ theorem listComplGo_conv_compl {n : Nat} (c : Chain (List α)) :
         exact hxs.symm
       · simp [Chain.map_apply, tailHom_apply, hcn]
 
-@[rocq_alias list_cofe]
+@[rocq_alias list.list_cofe]
 instance : IsCOFE (List α) where
   compl c := listComplGo (c 0) c
   conv_compl {n c} := listComplGo_conv_compl c (c 0) (c.cauchy (Nat.zero_le n)).symm

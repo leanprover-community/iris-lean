@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
@@ -37,4 +37,9 @@ theorem wp_diverge (s : Stuckness) (E : CoPset) (Φ : Val → IProp GF) (v : Val
 end Spec
 
 end Diverge
+
 end
+
+end HeapLang
+
+end Iris

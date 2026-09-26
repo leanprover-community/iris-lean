@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Michael Sammler. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
@@ -74,7 +74,7 @@ theorem frame_finish_close_emp [BI PROP] {e origE origGoal : PROP}
 #rocq_ignore tac_unlock_emp "The definition locked is not used in Lean"
 
 public meta section
-open Lean Elab Tactic Meta Qq Std
+open Lean Elab Tactic Meta Qq Iris.Std
 
 structure FrameResult {u} {prop : Q(Type u)} (bi : Q(BI $prop)) (origE origGoal : Q($prop)) where
   (progress : Bool) (e : Q($prop)) (hyps : Hyps bi e) (goal : Q($prop))
@@ -156,8 +156,9 @@ def FrameResult.finishClose {u prop bi origE origGoal}
 elab "iframe " pats:(colGt ppSpace selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 
-  ProofModeM.runTactic `iframe λ mvar { hyps, goal, .. } => do
-    let pats ← SelPat.resolve hyps pats
+  ProofModeM.runTactic `iframe fun mvar { hyps, goal, .. } => do
+    -- .bottomToTop since we want to frame the most recently introduced hypotheses first, matching Iris-Rocq
+    let pats ← SelPat.resolve hyps pats .bottomToTop
 
     let res ← iFrame hyps goal pats
     mvar.assign (← res.finish (addBIGoal · ·))
@@ -168,3 +169,11 @@ elab "iframe " pats:(colGt ppSpace selPat)+ : tactic => do
   `iframe ∗`.
 -/
 macro "iframe" : tactic => `(tactic | iframe ∗)
+
+end
+
+end
+
+end ProofMode
+
+end Iris

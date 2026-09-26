@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2022 Lars König. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Markus de Medeiros, Michael Sammler, Alvin Tang
 -/
@@ -330,9 +330,9 @@ theorem exists_unit [BI PROP] {Ψ : Unit → PROP} : (∃ x, Ψ x) ⊣⊢ Ψ () 
 @[rocq_alias bi.exist_exist]
 theorem exists_exists [BI PROP] {Ψ : α → β → PROP} : (∃ x y, Ψ x y) ⊣⊢ (∃ y x, Ψ x y) :=
   ⟨exists_elim fun x => exists_elim fun y =>
-     (exists_intro (Ψ:=λ x => Ψ x y) x).trans (exists_intro (Ψ:=λ y => (∃ x, Ψ x y)) y),
+     (exists_intro (Ψ:=fun x => Ψ x y) x).trans (exists_intro (Ψ:=fun y => (∃ x, Ψ x y)) y),
    exists_elim fun y => exists_elim fun x =>
-     (exists_intro (Ψ:=λ y => Ψ x y) y).trans (exists_intro (Ψ:=λ x => (∃ y, Ψ x y)) x)⟩
+     (exists_intro (Ψ:=fun y => Ψ x y) y).trans (exists_intro (Ψ:=fun x => (∃ y, Ψ x y)) x)⟩
 
 @[rocq_alias bi.forall_forall]
 theorem forall_forall [BI PROP] {Ψ : α → β → PROP} : (∀ x y, Ψ x y) ⊣⊢ (∀ y x, Ψ x y) :=
@@ -342,7 +342,7 @@ theorem forall_forall [BI PROP] {Ψ : α → β → PROP} : (∀ x y, Ψ x y) �
 @[rocq_alias bi.exist_forall]
 theorem exists_forall [BI PROP] {Ψ : α → β → PROP} : (∃ x, ∀ y, Ψ x y) ⊢ (∀ y, ∃ x, Ψ x y) :=
   forall_intro fun y => exists_elim fun x =>
-    (forall_elim y).trans (exists_intro (Ψ := λ x => Ψ x y) x)
+    (forall_elim y).trans (exists_intro (Ψ := fun x => Ψ x y) x)
 
 @[rocq_alias bi.impl_curry]
 theorem impl_curry [BI PROP] {P Q R : PROP} : (P → Q → R) ⊣⊢ (P ∧ Q → R) :=
@@ -400,8 +400,8 @@ theorem and_forall_ite [BI PROP] {P Q : PROP} :
 @[rocq_alias bi.or_alt]
 theorem or_exists_ite [BI PROP] {P Q : PROP} :
     P ∨ Q ⊣⊢ «exists» (fun b : Bool => if b then P else Q) :=
-  ⟨or_elim (exists_intro (Ψ:=λ b => if b then P else Q) true)
-           (exists_intro (Ψ:=λ b => if b then P else Q) false),
+  ⟨or_elim (exists_intro (Ψ:=fun b => if b then P else Q) true)
+           (exists_intro (Ψ:=fun b => if b then P else Q) false),
    exists_elim (Bool.rec or_intro_r or_intro_l ·)⟩
 
 @[rocq_alias bi.bi_and_monoid]
@@ -604,7 +604,7 @@ theorem sep_forall_right [BI PROP] {Φ : α → PROP} {Q : PROP} : (∀ a, Φ a)
 theorem wand_rfl [BI PROP] {P : PROP} : ⊢ P -∗ P := wand_intro emp_sep.1
 
 @[rocq_alias bi.wand_curry]
-theorem wand_curry [BI PROP] {P Q R: PROP} : (P -∗ Q -∗ R) ⊣⊢ ((P ∗ Q) -∗ R) := by
+theorem wand_curry [BI PROP] {P Q R : PROP} : (P -∗ Q -∗ R) ⊣⊢ ((P ∗ Q) -∗ R) := by
   refine ⟨?_, ?_⟩
   · refine wand_intro_left ?_
     calc
@@ -765,7 +765,7 @@ theorem wand_entails [BI PROP] {P Q : PROP} (h : ⊢ P -∗ Q) : P ⊢ Q :=
   emp_sep.2.trans (wand_elim h)
 
 @[rocq_alias bi.wand_entails']
-theorem wand_entails_emp [BI PROP] {P Q : PROP} (h: (emp ⊢ (P -∗ Q))) : P ⊢ Q :=
+theorem wand_entails_emp [BI PROP] {P Q : PROP} (h : (emp ⊢ (P -∗ Q))) : P ⊢ Q :=
  wand_entails h
 
 @[rocq_alias bi.entails_wand]
@@ -773,7 +773,7 @@ theorem entails_wand [BI PROP] {P Q : PROP} (h : P ⊢ Q) : ⊢ P -∗ Q :=
   wand_intro (emp_sep.1.trans h)
 
 @[rocq_alias bi.entails_wand']
-theorem entails_wand_emp [BI PROP] {P Q : PROP} (h: P ⊢ Q) : emp ⊢ (P -∗ Q) :=
+theorem entails_wand_emp [BI PROP] {P Q : PROP} (h : P ⊢ Q) : emp ⊢ (P -∗ Q) :=
  entails_wand h
 
 @[rocq_alias bi.equiv_wand_iff]
@@ -1308,18 +1308,18 @@ theorem pure_wand [BI PROP] {φ1 φ2 : Prop} : (⌜φ1⌝ -∗ (⌜φ2⌝ : PROP
 theorem decide_true [BI PROP] (φ : Prop) [Decidable φ] (P : PROP) :
     (if φ then P else iprop(True)) ⊣⊢ (⌜φ⌝ → P) := by
   by_cases h : φ
-  · rw [if_pos h]
+  · rw [ite_eq_left h]
     exact ((imp_congr_left (pure_true h)).trans true_imp).symm
-  · rw [if_neg h]
+  · rw [ite_eq_right h]
     exact ((imp_congr_left (pure_false h)).trans false_imp).symm
 
 @[rocq_alias bi.decide_emp]
 theorem decide_emp [BI PROP] [BIAffine PROP] (φ : Prop) [Decidable φ] (P : PROP) :
     (if φ then P else iprop(emp)) ⊣⊢ (⌜φ⌝ → P) := by
   by_cases h : φ
-  · rw [if_pos h]
+  · rw [ite_eq_left h]
     exact ((imp_congr_left <| pure_true h).trans true_imp).symm
-  · rw [if_neg h]
+  · rw [ite_eq_right h]
     calc
       _ ⊣⊢ True        := true_emp.symm
       _ ⊣⊢ (False → P) := false_imp.symm
@@ -1346,7 +1346,7 @@ theorem persistently_absorb_right [BI PROP] {P Q : PROP} : P ∗ <pers> Q ⊢ <p
 theorem absorbingly_persistently [BI PROP] {P : PROP} : <absorb> <pers> P ⊣⊢ <pers> P :=
   ⟨persistently_absorb_right, absorbingly_intro⟩
 
-@[rocq_alias bi.persistently_absorbing]
+@[rocq_alias derived_laws.bi.persistently_absorbing]
 instance persistently_absorbing [BI PROP] (P : PROP) : Absorbing iprop(<pers> P) where
   absorbing := absorbingly_persistently.1
 
@@ -1360,9 +1360,16 @@ theorem persistently_forall [BI PROP] [h : BIPersistentlyForall PROP] {Ψ : α �
   refine ⟨persistently_forall_mp, (forall_intro fun _ => imp_intro <| pure_elim_right ?_).trans (h.1 _)⟩
   rintro ⟨_, rfl⟩; apply forall_elim
 
+
+@[rocq_alias bi.persistently_exist_2]
+theorem persistently_exists_mpr [BI PROP]
+    {Ψ : α → PROP} : (∃ a, <pers> (Ψ a)) ⊢ <pers> (∃ a, Ψ a) :=
+  exists_elim fun a => persistently_mono (exists_intro a)
+
 @[rocq_alias bi.persistently_exist]
-theorem persistently_exists [BI PROP] {Ψ : α → PROP} : <pers> (∃ a, Ψ a) ⊣⊢ ∃ a, <pers> (Ψ a) := by
-  refine ⟨persistently_sExists_1.trans ?_, exists_elim fun a => persistently_mono (exists_intro a)⟩
+theorem persistently_exists [BI PROP] [inst : BIPersistentlyExist PROP]
+    {Ψ : α → PROP} : <pers> (∃ a, Ψ a) ⊣⊢ ∃ a, <pers> (Ψ a) := by
+  refine ⟨(inst.persistently_sExists_1 _).trans ?_, persistently_exists_mpr⟩
   refine exists_elim fun _ => pure_elim_left fun ⟨_, eq⟩ => eq ▸ sExists_intro ⟨_, rfl⟩
 
 @[rocq_alias bi.persistently_and]
@@ -1373,8 +1380,13 @@ theorem persistently_ite {p : Bool} [BI PROP] {P Q : PROP} :
     iprop(<pers> if p then P else Q) = iprop(if p then <pers> P else <pers> Q) := by
   cases p <;> simp
 
+@[rocq_alias bi.persistently_or_2]
+theorem persistently_or_mpr [BI PROP] {P Q : PROP} : <pers> P ∨ <pers> Q ⊢ <pers> (P ∨ Q) :=
+  or_elim (persistently_mono or_intro_l) (persistently_mono or_intro_r)
+
 @[rocq_alias bi.persistently_or]
-theorem persistently_or [BI PROP] {P Q : PROP} : <pers> (P ∨ Q) ⊣⊢ <pers> P ∨ <pers> Q := calc
+theorem persistently_or [BI PROP] [BIPersistentlyExist PROP] {P Q : PROP} :
+    <pers> (P ∨ Q) ⊣⊢ <pers> P ∨ <pers> Q := calc
   _ ⊣⊢ <pers> ∃ b, if b = true then P else Q := persistently_congr or_exists_ite
   _ ⊣⊢ ∃ a, <pers> if a = true then P else Q := persistently_exists
   _ ⊣⊢ <pers> P ∨ <pers> Q :=
@@ -1610,7 +1622,7 @@ instance and_persistent [BI PROP] (P Q : PROP) [Persistent P] [Persistent Q] :
 @[rocq_alias bi.or_persistent]
 instance or_persistent [BI PROP] (P Q : PROP) [Persistent P] [Persistent Q] :
     Persistent iprop(P ∨ Q) where
-  persistent := (or_mono persistent persistent).trans persistently_or.2
+  persistent := (or_mono persistent persistent).trans persistently_or_mpr
 
 theorem sForall_persistent [BI PROP] [h : BIPersistentlyForall PROP] (Ψ : PROP → Prop)
     (H : ∀ p, Ψ p → Persistent p) : Persistent iprop(sForall Ψ) where
@@ -1699,12 +1711,22 @@ theorem intuitionistically_and [BI PROP] {P Q : PROP} : □ (P ∧ Q) ⊣⊢ □
 theorem intuitionistically_forall [BI PROP] {Φ : α → PROP} : □ (∀ x, Φ x) ⊢ ∀ x, □ Φ x :=
   (affinely_mono persistently_forall_mp).trans affinely_forall
 
+@[rocq_alias bi.intuitionistically_or_2]
+theorem intuitionistically_or_mpr [BI PROP] {P Q : PROP} : □ P ∨ □ Q ⊢ □ (P ∨ Q) :=
+  affinely_or.2.trans (affinely_mono persistently_or_mpr)
+
 @[rocq_alias bi.intuitionistically_or]
-theorem intuitionistically_or [BI PROP] {P Q : PROP} : □ (P ∨ Q) ⊣⊢ □ P ∨ □ Q :=
+theorem intuitionistically_or [BI PROP] [BIPersistentlyExist PROP]
+    {P Q : PROP} : □ (P ∨ Q) ⊣⊢ □ P ∨ □ Q :=
   (affinely_congr persistently_or).trans affinely_or
 
+@[rocq_alias bi.intuitionistically_exist_2]
+theorem intuitionistically_exists_mpr [BI PROP] {Φ : α → PROP} : (∃ x, □ Φ x) ⊢ □ (∃ x, Φ x) :=
+  affinely_exists.2.trans (affinely_mono persistently_exists_mpr)
+
 @[rocq_alias bi.intuitionistically_exist]
-theorem intuitionistically_exists [BI PROP] {Φ : α → PROP} : □ (∃ x, Φ x) ⊣⊢ ∃ x, □ Φ x :=
+theorem intuitionistically_exists [BI PROP] [BIPersistentlyExist PROP]
+    {Φ : α → PROP} : □ (∃ x, Φ x) ⊣⊢ ∃ x, □ Φ x :=
   (affinely_congr persistently_exists).trans affinely_exists
 
 @[rocq_alias bi.intuitionistically_sep_2]
@@ -2158,9 +2180,16 @@ theorem persistentlyIf_and {p : Bool} [BI PROP] {P Q : PROP} :
   | false => .rfl
   | true => persistently_and
 
+@[rocq_alias bi.persistently_if_or_2]
+theorem persistentlyIf_or_mpr {p : Bool} [BI PROP] {P Q : PROP} :
+    <pers>?p P ∨ <pers>?p Q ⊢ <pers>?p (P ∨ Q) :=
+  match p with
+  | false => .rfl
+  | true => persistently_or_mpr
+
 @[rocq_alias bi.persistently_if_or]
-theorem persistentlyIf_or {p : Bool} [BI PROP] {P Q : PROP} :
-    <pers>?p (P ∨ Q) ⊣⊢ <pers>?p P ∨ <pers>?p Q :=
+theorem persistentlyIf_or {p : Bool} [BI PROP] [BIPersistentlyExist PROP]
+    {P Q : PROP} : <pers>?p (P ∨ Q) ⊣⊢ <pers>?p P ∨ <pers>?p Q :=
   match p with
   | false => .rfl
   | true => persistently_or
@@ -2171,9 +2200,16 @@ theorem persistentlyIf_forall {p : Bool} [BI PROP] {Φ : α → PROP} :
   | false => .rfl
   | true => persistently_forall_mp
 
+@[rocq_alias bi.persistently_if_exist_2]
+theorem persistentlyIf_exists_mpr {p : Bool} [BI PROP] {Φ : α → PROP} :
+    (∃ a, <pers>?p (Φ a)) ⊢ <pers>?p (∃ a, Φ a) :=
+  match p with
+  | false => .rfl
+  | true => persistently_exists_mpr
+
 @[rocq_alias bi.persistently_if_exist]
-theorem persistentlyIf_exists {p : Bool} [BI PROP] {Φ : α → PROP} :
-    <pers>?p (∃ a, Φ a) ⊣⊢ ∃ a, <pers>?p (Φ a) :=
+theorem persistentlyIf_exists {p : Bool} [BI PROP] [BIPersistentlyExist PROP]
+    {Φ : α → PROP} : <pers>?p (∃ a, Φ a) ⊣⊢ ∃ a, <pers>?p (Φ a) :=
   match p with
   | false => .rfl
   | true => persistently_exists
@@ -2293,14 +2329,29 @@ theorem intuitionisticallyIf_and {p : Bool} [BI PROP] {P Q : PROP} : □?p (P �
   | false => .rfl
   | true => intuitionistically_and
 
+@[rocq_alias bi.intuitionistically_if_or_2]
+theorem intuitionisticallyIf_or_mpr (p : Bool) [BI PROP] {P Q : PROP} : □?p P ∨ □?p Q ⊢ □?p (P ∨ Q) :=
+  match p with
+  | false => .rfl
+  | true => intuitionistically_or_mpr
+
 @[rocq_alias bi.intuitionistically_if_or]
-theorem intuitionisticallyIf_or (p : Bool) [BI PROP] {P Q : PROP} : □?p (P ∨ Q) ⊣⊢ □?p P ∨ □?p Q :=
+theorem intuitionisticallyIf_or (p : Bool) [BI PROP] [BIPersistentlyExist PROP]
+    {P Q : PROP} : □?p (P ∨ Q) ⊣⊢ □?p P ∨ □?p Q :=
   match p with
   | false => .rfl
   | true => intuitionistically_or
 
-theorem intuitionisticallyIf_exists {p : Bool} [BI PROP] {Ψ : α → PROP} :
-    (□?p ∃ a, Ψ a) ⊣⊢ ∃ a, □?p Ψ a :=
+@[rocq_alias bi.intuitionistically_if_exist_2]
+theorem intuitionisticallyIf_exists_mpr {p : Bool} [BI PROP] {Ψ : α → PROP} :
+    (∃ a, □?p Ψ a) ⊢ □?p ∃ a, Ψ a :=
+  match p with
+  | false => .rfl
+  | true => intuitionistically_exists_mpr
+
+@[rocq_alias bi.intuitionistically_if_exist]
+theorem intuitionisticallyIf_exists {p : Bool} [BI PROP] [BIPersistentlyExist PROP]
+    {Ψ : α → PROP} : (□?p ∃ a, Ψ a) ⊣⊢ ∃ a, □?p Ψ a :=
   match p with
   | false => .rfl
   | true => intuitionistically_exists
@@ -2327,23 +2378,15 @@ theorem intuitionisticallyIf_sep_conj {p1 p2 : Bool} [BI PROP] {P Q : PROP} :
   | true,  false => sep_mono_left intuitionisticallyIf_elim
   | true,  true  => intuitionisticallyIf_sep_mpr
 
+@[rocq_alias bi.intuitionistically_if_idemp]
 theorem intuitionisticallyIf_idem {p : Bool} [BI PROP] {P : PROP} : □?p □?p P ⊣⊢ □?p P :=
   match p with
   | false => .rfl
   | true => intuitionistically_idem
 
 @[rocq_alias bi.intuitionistically_if_unfold]
-theorem intuitionistically_if_unfold [BI PROP] {p : Bool} {P : PROP} : □?p P ⊣⊢ if p then □ P else P :=
+theorem intuitionisticallyIf_unfold [BI PROP] {p : Bool} {P : PROP} : □?p P ⊣⊢ if p then □ P else P :=
   match p with | true => .rfl | false => .rfl
-
-@[rocq_alias bi.intuitionistically_if_exist]
-theorem intuitionistically_if_exists [BI PROP] {p : Bool} {Ψ : α → PROP} :
-    (□?p (∃ a, Ψ a)) ⊣⊢ ∃ a, □?p (Ψ a) :=
-  match p with | true => intuitionistically_exists | false => .rfl
-
-@[rocq_alias bi.intuitionistically_if_idemp]
-theorem intuitionistically_if_idem [BI PROP] {p : Bool} {P : PROP} : (□?p □?p P) ⊣⊢ □?p P :=
-  match p with | true => intuitionistically_idem | false => .rfl
 
 theorem intuitionisticallyIf_def_iff {p : Bool} [BI PROP] {P : PROP} :
     iprop(□?p P) = iprop(<affine>?p <pers>?p P) := by cases p <;> rfl
@@ -2431,11 +2474,10 @@ theorem persistent_and_affinely_sep_right [BI PROP] {P Q : PROP} [Persistent Q] 
   _ ⊣⊢ P ∗ <affine> Q := sep_comm
 
 @[rocq_alias bi.persistent_and_sep_1]
-theorem persistent_and_sep_mp[BI PROP] {P Q : PROP} :
+theorem persistent_and_sep_mp [BI PROP] {P Q : PROP} :
     [TCOr (Persistent P) (Persistent Q)] → P ∧ Q ⊢ P ∗ Q
   | TCOr.l => persistent_and_affinely_sep_left_mp.trans (sep_mono_left affinely_elim)
   | TCOr.r => persistent_and_affinely_sep_right_mp.trans (sep_mono_right affinely_elim)
-
 
 @[rocq_alias bi.persistent_and_sep]
 theorem persistent_and_sep [BI PROP] [BIAffine PROP] {P Q : PROP} :
@@ -2444,7 +2486,6 @@ theorem persistent_and_sep [BI PROP] [BIAffine PROP] {P Q : PROP} :
               persistently_and_iff_sep.trans (sep_congr_left persistently_iff)
   | TCOr.r => (and_congr_right persistently_iff.symm).trans <|
               and_persistently_iff_sep.trans (sep_congr_right persistently_iff)
-
 
 @[rocq_alias bi.impl_wand_2]
 theorem imp_wand_2 [BI PROP] {P Q : PROP} [Persistent P] :
@@ -2462,6 +2503,14 @@ theorem persistent_sep_dup_mp [BI PROP] {P : PROP} [inst : Persistent P] : P ⊢
 theorem persistent_sep_dup [BI PROP] {P : PROP} [Persistent P]
     [TCOr (Affine P) (Absorbing P)] : P ⊣⊢ P ∗ P :=
   ⟨persistent_sep_dup_mp, sep_elim_left⟩
+
+theorem persistent_and_sep_distrib [BI PROP] {P Q R : PROP} [Persistent P] [Absorbing P] :
+    P ∧ (Q ∗ R) ⊢ (P ∧ Q) ∗ (P ∧ R) := calc
+  _ ⊢ <affine> P ∗ (Q ∗ R)                := persistent_and_affinely_sep_left.mp
+  _ ⊢ (<affine> P ∗ <affine> P) ∗ (Q ∗ R) := sep_mono_left persistent_sep_dup.mp
+  _ ⊢ (<affine> P ∗ Q) ∗ (<affine> P ∗ R) := sep_sep_sep_comm.mp
+  _ ⊢ (P ∧ Q) ∗ (P ∧ R) :=
+      sep_mono persistent_and_affinely_sep_left.mpr persistent_and_affinely_sep_left.mpr
 
 @[rocq_alias bi.persistent_entails_l]
 theorem persistent_entails_right [BI PROP] {P Q : PROP} [Persistent Q] (H : P ⊢ Q) : P ⊢ Q ∗ P :=
@@ -2541,7 +2590,7 @@ instance LimitPreserving.entails [BI PROP] [COFE A] (Φ Ψ : A → PROP) [Φne :
     [Ψne : OFE.NonExpansive Ψ] : LimitPreserving (λ x ↦ Φ x ⊢ Ψ x) := by
   refine .ext (P := λ x ↦ True ⊣⊢ (Φ x → Ψ x)) (@fun x => ?_) ?_
   · exact ⟨(true_and.2.trans <| imp_elim ·.1), (⟨imp_intro <| true_and.1.trans ·, true_intro⟩)⟩
-  · let f : A -n> PROP := ⟨λ x ↦ iprop(True), inferInstance⟩
+  · let f : A -n> PROP := ⟨fun x ↦ iprop(True), inferInstance⟩
     let g : A -n> PROP := {
        f x := iprop(Φ x → Ψ x),
        ne.ne _ {_ _} x := imp_ne.ne (Φne.ne x) (Ψne.ne x)
@@ -2601,3 +2650,7 @@ theorem bi_emp_valid_mono [BI PROP] {P Q : PROP} (h : P ⊢ Q) : (⊢ P) → ⊢
 @[rocq_alias bi.bi_emp_valid_flip_mono]
 theorem bi_emp_valid_flip_mono [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : (⊢ P) ↔ ⊢ Q :=
   ⟨(·.trans h.1), (·.trans h.2)⟩
+
+end BI
+
+end Iris

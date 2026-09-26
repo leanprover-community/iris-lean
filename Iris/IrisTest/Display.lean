@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Alvin Tang. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alvin Tang
 -/
@@ -78,8 +78,8 @@ example [BI PROP] (P Q R : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -
   iintro HP1 HP2 HR HPQ
   trace_delab
   ispecialize HPQ $$ [$HP1 HP2] [-]
-  . iexact HP2
-  . iexact HR
+  · iexact HP2
+  · iexact HR
   iexact HPQ
 
 /- Tests delaboration of an IPM goal with modalities involved. -/
@@ -240,3 +240,5 @@ info: fun {PROP} [BI PROP] P => iprop(▷^[1] P) : {PROP : Type u_1} → [BI PRO
 #check fun {PROP} [BI PROP] (P : PROP) => iprop(▷^[1] P)
 
 end LaterIf
+
+end IrisTest

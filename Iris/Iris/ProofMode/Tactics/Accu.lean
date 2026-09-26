@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Alvin Tang. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler, Alvin Tang
 -/
@@ -18,7 +18,7 @@ open Lean Elab Tactic Meta Qq
   goal by unifying the metavariable with the combined proposition.
 -/
 elab "iaccu" : tactic => do
-  ProofModeM.runTactic `iaccu λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `iaccu fun mvar { hyps, goal, .. } => do
     unless goal.isMVar do
       throwIPMError "{goal} is not a metavariable"
 
@@ -31,3 +31,9 @@ elab "iaccu" : tactic => do
     mvar.assign pf
 
 #rocq_ignore tac_accu "Using infrastructure provided by Expr.lean to build the proof"
+
+end
+
+end ProofMode
+
+end Iris

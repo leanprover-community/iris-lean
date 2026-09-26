@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2022 Lars König. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
@@ -34,7 +34,7 @@ open Lean Elab Tactic Meta Qq
   both keeping the entire context.
 -/
 elab "isplit " : tactic => do
-  ProofModeM.runTactic `isplit λ mvar { prop, hyps, goal, .. } => do
+  ProofModeM.runTactic `isplit fun mvar { prop, hyps, goal, .. } => do
 
   let A1 ← mkFreshExprMVarQ prop
   let A2 ← mkFreshExprMVarQ prop
@@ -53,7 +53,7 @@ private def isplitCore (side : splitSide) (names : Array (TSyntax `ident)) : Tac
     | .splitRight => true
 
   -- extract environment
-  ProofModeM.runTactic `isplit λ mvar { prop, bi, hyps, goal, .. } => do
+  ProofModeM.runTactic `isplit fun mvar { prop, bi, hyps, goal, .. } => do
 
   let mut ivars : IVarIdSet := {}
   for name in names do
@@ -89,18 +89,26 @@ elab "isplitr " colGt "[" names:(colGt ident)* "]": tactic => do
 
 /--
   `isplitl` splits a separating conjunction (`∗`) into two goals,
-  with all spatial hypotheses assigned to the right goal.
+  with all spatial hypotheses assigned to the left goal.
 
-  To assign some hypotheses `H₁ … Hₙ` to the left goal, use `isplitl [H₁ … Hₙ]`
+  To assign only a subset of the hypotheses to the left goal, use `isplitl [H₁ … Hₙ]`.
   instead.
 -/
 macro "isplitl" : tactic => `(tactic| isplitr [])
 
 /--
   `isplitr` splits a separating conjunction (`∗`) into two goals,
-  with all spatial hypotheses assigned to the left goal.
+  with all spatial hypotheses assigned to the right goal.
 
-  To assign some hypotheses `H₁ … Hₙ` to the right goal, use `isplitr [H₁ … Hₙ]`
+  To assign only a subset of the hypotheses to the right goal, use `isplitr [H₁ … Hₙ]`.
   instead.
 -/
 macro "isplitr" : tactic => `(tactic| isplitl [])
+
+end
+
+end
+
+end ProofMode
+
+end Iris

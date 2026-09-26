@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Alvin Tang. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler, Alvin Tang
 -/
@@ -44,7 +44,7 @@ theorem tac_inv_elim [BI PROP]
     _ ⊢ goal := h0
 
 public meta section
-open Lean Elab Tactic Meta Qq BI Std
+open Lean Elab Tactic Meta Qq BI Iris.Std
 
 /--
   An annotation of `wandM` with `@[reducible]` is useful when `whnf` is called,
@@ -139,7 +139,7 @@ elab_rules : tactic
     let casesPat ← liftMacroM <| iCasesPat.parse casesPat
     let closePat ← liftMacroM <| closePat.mapM iCasesPat.parse
 
-    ProofModeM.runTactic `iinv λ mvar { hyps, goal, .. } => do
+    ProofModeM.runTactic `iinv fun mvar { hyps, goal, .. } => do
       -- Find the invariant hypothesis
       let ivar ← do match ← try? <| hyps.findWithInfo ⟨t⟩ with
       -- Hypothesis supplied by the user: return the `IVarId` value of the invariant directly
@@ -154,3 +154,11 @@ elab_rules : tactic
 
       let pf ← iInvCore hyps goal ivar specPat casesPat closePat
       mvar.assign pf
+
+end
+
+end
+
+end ProofMode
+
+end Iris

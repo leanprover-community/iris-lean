@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Haokun Li. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Haokun Li
 -/
@@ -121,12 +121,12 @@ noncomputable instance : FiniteMultiSet (ListPerm α) α where
 
 noncomputable instance : LawfulFiniteMultiSet (ListPerm α) α where
   mem_toList {a s} := by
-    show a ∈ out s ↔ 0 < MultiSet.multiplicity a s
+    change a ∈ out s ↔ 0 < MultiSet.multiplicity a s
     rw [multiplicity_out, List.count_pos_iff]
   toList_empty := List.perm_nil.mp (out_ofList_perm [])
   toList_singleton {a} := List.perm_singleton.mp (out_ofList_perm [a])
   toList_disjUnion {X Y} := by
-    show List.Perm (out (X ⊎ Y)) (out X ++ out Y)
+    change List.Perm (out (X ⊎ Y)) (out X ++ out Y)
     induction X, Y using ListPerm.ind₂ with | mk l₁ l₂ =>
     exact (out_ofList_perm (l₁ ++ l₂)).trans
       ((out_ofList_perm l₁).symm.append (out_ofList_perm l₂).symm)

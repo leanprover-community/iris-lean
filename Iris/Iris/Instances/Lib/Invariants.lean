@@ -1,6 +1,7 @@
 /-
-Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Sergei Stepanenko
 -/
 module
 
@@ -97,7 +98,7 @@ set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_acc_inv]
 instance intoAcc_inv (N : Namespace) (P : IProp GF) E :
     IntoAcc (X := Unit) (inv N P) (↑N ⊆ E) iprop(True) (fupd E (E \ ↑N)) (fupd (E \ ↑N) E)
-      (λ _ => iprop(▷ P)) (λ _ => iprop(▷ P)) (λ _ => none) where
+      (fun _ => iprop(▷ P)) (fun _ => iprop(▷ P)) (fun _ => none) where
   into_acc := by
     dsimp only [inv, accessor, Option.getD]
     iintro %x #Hinv -
@@ -115,7 +116,7 @@ end Instances
 
 section BasicLemmas
 
-open Iris Std LawfulSet
+open Iris Iris.Std LawfulSet
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
@@ -157,7 +158,7 @@ theorem own_inv_alloc (N : Namespace) (E : CoPset) (P : IProp GF) :
   ⊢ ▷ P ={E}=∗ own_inv N P := by
   simp only [own_inv, fupd, uPred_fupd]
   iintro HP ⟨Hw, HE⟩
-  imod ownI_alloc (.∈ (↑N : CoPset)) P $$ [HP Hw] with ⟨%i, %Hin, Hw, HI⟩
+  imod ownI_alloc (· ∈ (↑N : CoPset)) P $$ [HP Hw] with ⟨%i, %Hin, Hw, HI⟩
   · intro E; apply fresh_name
   · isplitl [Hw] <;> iassumption
   · imodintro; iframe
@@ -247,7 +248,7 @@ end Allocation
 
 section Access
 
-open Iris Std LawfulSet
+open Iris Iris.Std LawfulSet
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
@@ -334,7 +335,7 @@ end Modification
 
 section Combination
 
-open Iris Std LawfulSet
+open Iris Iris.Std LawfulSet
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 

@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Michael Sammler. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Markus de Medeiros
+Authors: Michael Sammler, Markus de Medeiros
 -/
 module
 
@@ -143,6 +143,22 @@ theorem internalCmraIncluded_intro {P : PROP} {a b : A} (h : a ≼ b) :
     _ ⊢ <si_pure> True := siPure_pure.mpr
     _ ⊢ a ≼ b := siPure_mono (BI.exists_intro_trans c (internalEq.of_equiv hc))
 
+/-- The `SiProp` underlying the internal `≼` holds at `n` exactly when `a ≼{n} b`. -/
+private theorem included_holds {a b : A} {n : Nat} :
+    ((∃ c, iprop(b ≡ (a • c))) : SiProp).holds n ↔ a ≼{n} b := SiProp.exists_holds
+
+/-- Two internal inclusions agree when they agree at every step index. -/
+theorem internalCmraIncluded_iff [CMRA B] {a b : A} {a' b' : B}
+    (h : ∀ n, a ≼{n} b ↔ a' ≼{n} b') : a ≼ b ⊣⊢@{PROP} a' ≼ b' :=
+  siPure_mono_bi ⟨fun n hn => included_holds.mpr ((h n).mp (included_holds.mp hn)),
+    fun n hn => included_holds.mpr ((h n).mpr (included_holds.mp hn))⟩
+
+/-- An internal inclusion that is step-index independent is a pure proposition. -/
+theorem internalCmraIncluded_pure {a b : A} {φ : Prop} (h : ∀ n, a ≼{n} b ↔ φ) :
+    a ≼ b ⊣⊢@{PROP} ⌜φ⌝ :=
+  ⟨.trans (siPure_mono fun n hn => (h n).mp (included_holds.mp hn)) siPure_pure.mp,
+   .trans siPure_pure.mpr (siPure_mono fun n hφ => included_holds.mpr ((h n).mpr hφ))⟩
+
 @[rocq_alias si_pure_internal_included]
 theorem siPure_internalCmraIncluded {a b : A} :
     <si_pure> a ≼ b ⊣⊢@{PROP} a ≼ b :=
@@ -192,6 +208,13 @@ theorem internalCmraIncluded_trans {a b c : A} :
   refine and_intro ?_ (internalEq.of_equiv assoc'.symm)
   refine Entails.trans ?_ (internalEq.trans (b := (b • b')))
   exact and_intro and_elim_r (and_elim_left_trans (BI.internalEq_entails.mpr (fun n heq => op_left_dist _ heq)))
+
+/-- The internal `≼` is monotone under any nonexpansive map commuting with `•`. -/
+theorem internalCmraIncluded_map {B : Type _} [CMRA B] (g : A → B) [NonExpansive g]
+    (hg : ∀ x y : A, g (x • y) = g x • g y) {a b : A} :
+    a ≼ b ⊢@{PROP} g a ≼ g b :=
+  siPure_mono <| BI.exists_elim fun c => BI.exists_intro_trans (g c) <| by
+    rw [← hg]; exact internalEq.of_internalEquiv_ne g
 
 @[rocq_alias internal_included_timeless]
 instance internalCmraIncluded_timeless {a b : A} [CMRA.Discrete A] :

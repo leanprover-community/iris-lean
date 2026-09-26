@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Zongyuan Liu, Sergei Stepanenko. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu, Sergei Stepanenko
 -/
@@ -52,7 +52,7 @@ class LawfulSet (S : Type _) (A : outParam (Type _)) extends Set S A where
   /-- Membership in difference: x ∈ X \ Y ↔ x ∈ X ∧ x ∉ Y -/
   mem_diff : ∀ {X Y : S} {x : A},
     x ∈ (X \ Y) ↔ (x ∈ X ∧ x ∉ Y)
-  export LawfulSet (mem_empty mem_singleton mem_union mem_inter mem_diff)
+export LawfulSet (mem_empty mem_singleton mem_union mem_inter mem_diff)
 
 attribute [ext] LawfulSet.ext
 
@@ -122,7 +122,7 @@ instance : Std.Antisymm (fun x y : S => x ⊆ y) where
   antisymm _ _ := eq_subset
 
 /-- Proper subset is equivalent to subset plus inequality. -/
-theorem ssubset_subset  {X Y : S} : (X ⊂ Y) ↔ (X ⊆ Y ∧ X ≠ Y) := by
+theorem ssubset_subset {X Y : S} : (X ⊂ Y) ↔ (X ⊆ Y ∧ X ≠ Y) := by
   simp [SSubset, Subset]; grind only
 
 /-! ### List conversion -/
@@ -450,6 +450,12 @@ theorem diff_all {s : S} : s \ s = ∅ := by
 theorem diff_subset_left {s₁ s₂ : S} : s₁ \ s₂ ⊆ s₁ := by
   intro y G; rw [mem_diff] at G
   exact G.left
+
+/-- Difference is antitone in its second argument. -/
+theorem diff_subset_diff_right {s t₁ t₂ : S} (H : t₁ ⊆ t₂) : s \ t₂ ⊆ s \ t₁ := by
+  intro x hx
+  rw [mem_diff] at hx ⊢
+  exact ⟨hx.left, fun h => hx.right (H x h)⟩
 
 theorem diff_self_diff_of_subset {s u : S} : s ⊆ u → u \ (u \ s) = s := by
   intro su
@@ -840,6 +846,31 @@ theorem diff_not_finite_finite_ne_empty {X Y : S} (hX : setInfinite X) (hY : set
   exact (H empty_finite)
 
 end GenLemmas
+
+/-! ### Sequences of naturals -/
+
+section NatSeq
+
+variable {S : Type _} [LawfulSet S Nat] {start len : Nat}
+
+/-- The set `{start, start + 1, …, start + len - 1}`. -/
+def setSeq (start len : Nat) : S := ofList (List.range' start len)
+
+theorem mem_setSeq {x : Nat} :
+    x ∈ (setSeq start len : S) ↔ start ≤ x ∧ x < start + len := by
+  rw [setSeq, ← mem_ofList, List.mem_range'_1]
+
+@[simp]
+theorem setSeq_zero : (setSeq start 0 : S) = ∅ := ofList_nil
+
+theorem setSeq_succ : (setSeq start (len + 1) : S) = {start + len} ∪ setSeq start len := by
+  ext x; rw [mem_union, mem_singleton, mem_setSeq, mem_setSeq]; omega
+
+theorem disjoint_singleton_setSeq {x : Nat} (h : start + len ≤ x) :
+    ({x} : S) ## setSeq start len :=
+  disjoint_singleton_left.mpr fun hx => absurd (mem_setSeq.mp hx) (by omega)
+
+end NatSeq
 
 end LawfulSet
 

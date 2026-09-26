@@ -1,3 +1,7 @@
+/-
+Copyright (c) The Iris-Lean Contributors
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 module
 
 import Iris.Std.Positives
@@ -14,7 +18,7 @@ namespace Iris
 @[expose] public section
 local stepindex Nat
 
-open Iris Std PartialMap
+open Iris Iris.Std PartialMap
 
 /-!
 The camera [ReservationMap A H] over a camera [A] extends [LawfulPartialMap H Pos]
@@ -193,7 +197,7 @@ theorem valid_data_of_valid {x : ReservationMap A H} (h : x.Valid) :
 theorem valid_token_of_valid {x : ReservationMap A H} (h : x.Valid) :
     ✓ x.token := (valid_iff.mp h).right.left
 
-theorem valid_disj {x : ReservationMap A H} (h : x.Valid) (i : Pos):
+theorem valid_disj {x : ReservationMap A H} (h : x.Valid) (i : Pos) :
     get? x.data i = none ∨ i ∉ x.token := (valid_iff.mp h).right.right i
 
 @[rocq_alias reservation_map_pcore_instance]
@@ -300,10 +304,10 @@ instance : UCMRA (ReservationMap A H) where
   pcore_unit := OFE.eq_dist_2 <| by exact fun n => ⟨Heap.core_empty.dist, .rfl⟩
 
 @[simp]
-theorem op_data (x y : ReservationMap A H): (x • y).data = x.data • y.data := rfl
+theorem op_data (x y : ReservationMap A H) : (x • y).data = x.data • y.data := rfl
 
 @[simp]
-theorem op_token (x y : ReservationMap A H): (x • y).token = x.token • y.token := rfl
+theorem op_token (x y : ReservationMap A H) : (x • y).token = x.token • y.token := rfl
 
 @[rocq_alias reservation_map_included]
 theorem included_iff {x y : ReservationMap A H} :
@@ -386,9 +390,7 @@ theorem data_op (a b : H A) : mkData (a • b) = mkData a • mkData b := by
 @[rocq_alias reservation_map_data_op]
 theorem singleton_op k (a b : A) :
     singleton (H := H) k (a • b) = singleton (H := H) k a • singleton k b := by
-  have he : (({[k := a]} : H A) • {[k := b]}) = {[k := a • b]} :=
-    OFE.eq_dist_2 fun n i => Dist.of_eq (Heap.singleton_op_singleton i)
-  exact (congrArg mkData he.symm).trans (data_op _ _)
+  exact (congrArg mkData Heap.singleton_op_singleton.symm).trans (data_op _ _)
 
 theorem token_op (a b : CoPset) (h : a ## b) :
     mkToken (H := H) (A := A) (a ∪ b) = mkToken (H := H) (A := A) a • mkToken b := by
@@ -427,7 +429,7 @@ theorem validN_data_op_token {n : Nat} (a : H A) (b : CoPset) (vd : ✓{n} mkDat
     | inr h => simpa [eo] using .inr h
 
 theorem valid_data_op_token (a : H A) (b : CoPset) (vd : ✓ mkData a)
-    (disj : ∀i, get? a i = none ∨ i ∉ b) : ✓ mkData a • mkToken b := by
+    (disj : ∀ i, get? a i = none ∨ i ∉ b) : ✓ mkData a • mkToken b := by
   have abdp : (mkData a • mkToken b).data = a :=
     show a • ∅ = a from Algebra.MonoidOps.op_right_id
   have eo : ∅ • valid b = .valid b := pcore_op_left_L rfl
@@ -475,7 +477,7 @@ theorem validN_token_op_iff_disj {e₁ e₂} :
   mp h := valid_op_iff_disj.mp (validN_token_of_validN h)
   mpr h := by
     refine validN_iff.mpr ⟨?_, ?_, fun i => ?_⟩
-    · show ✓{n} ∅ • (∅ : H A)
+    · change ✓{n} ∅ • (∅ : H A)
       rw [(Algebra.MonoidOps.op_left_id (a := (∅ : H A)) : (∅ : H A) • ∅ = ∅)]
       exact Heap.valid_empty.validN
     · simpa [CMRA.op, mkToken, op, h] using validN_set
@@ -513,7 +515,7 @@ theorem alloc {e k} {a : A} (hke : k ∈ e) (va : ✓ a) : mkToken (H := H) e ~~
       disj_of_validN_data_op_token
         ((comm' (x := mkToken e) (y := mkData d)) ▸
           validN_op_left ((assoc' (x := mkToken e) (y := mkData d) (z := mkToken t)) ▸ vedt))
-    show ✓{n} singleton k a • z
+    change ✓{n} singleton k a • z
     rw [ze, assoc']
     refine (data_op (PartialMap.singleton k a) d) ▸ ?_
     refine validN_data_op_token (PartialMap.singleton k a • d) t ?_ ?_
@@ -552,7 +554,7 @@ theorem updateP {P} {Q : ReservationMap A H → Prop} k a (ap : a ~~>: P)
     · refine (data_op (PartialMap.singleton k y) d) ▸ ?_
       refine valid_singleton_op_of_valid_op? ?_ vy
       refine validN_data.mp ?_
-      exact validN_op_left $ ze ▸ validN_op_right vaz
+      exact validN_op_left <| ze ▸ validN_op_right vaz
     · have ddt := disj_of_validN_data_op_token (ze ▸ validN_op_right vaz)
       have dde := disj_of_validN_data_op_token
         (show ✓{n} singleton (H := H) k a • mkToken t from
@@ -565,10 +567,14 @@ theorem updateP {P} {Q : ReservationMap A H → Prop} k a (ap : a ~~>: P)
       grind
 
 @[rocq_alias reservation_map_update]
-theorem reservation_map_update {k} {a b : A} (uab : a ~~> b):
+theorem reservation_map_update {k} {a b : A} (uab : a ~~> b) :
     singleton (H := H) k a ~~> singleton k b :=
   Update.of_updateP <| updateP k a (.of_update uab) fun _ => congrArg (singleton k)
 
 end ReservationMap
 
 end CMRA
+
+end
+
+end Iris

@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Сухарик. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Сухарик (@suhr), Mario Carneiro
 -/
@@ -18,7 +18,7 @@ def LocalUpdate [CMRA α] (x y : α × α) : Prop :=
 
 infixr:50 " ~l~> " => LocalUpdate
 
-section localUpdate
+section LocalUpdate
 
 section CMRA
 
@@ -260,3 +260,7 @@ theorem LocalUpdate.delete_option_cancelable
   | none | some none => exact ⟨trivial, .rfl⟩
   | some (some _) =>
     exact ⟨trivial, CMRA.cancelableN (Option.validN_op_unit vx) ((CMRA.unit_right_id_dist mx).trans e)⟩
+
+end LocalUpdate
+
+end Iris

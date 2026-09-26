@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu, Klaus Kraßnitzer
 -/
@@ -96,19 +96,14 @@ theorem spawn_spec (Ψ : Val → IProp GF) (f : Val) :
     ileft; itrivial
   imodintro
   wp_pures
-  wp_bind fork(_)
-  iapply wp_fork $$ [- Hf] [Hf]
-  · inext
-    wp_pures
+  wp_apply wp_fork $$ [- Hf] [Hf]
+  · wp_pures
     imodintro
     iapply HΦ $$ %l
     unfold joinHandle
     iexists γ
     iframe Hγ Hinv
-  inext
-  wp_bind &f _
-  iapply wp_wand $$ Hf
-  iintro %v HΨ
+  wp_apply wp_wand $$ Hf with %v HΨ
   wp_pures
   iinv Hinv with Hpt
   unfold spawnInv
@@ -149,4 +144,9 @@ theorem join_spec (Ψ : Val → IProp GF) (l : Loc) :
 end Specs
 
 end Spawn
+
 end
+
+end HeapLang
+
+end Iris

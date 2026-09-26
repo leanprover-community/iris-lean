@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alex Bai, Klaus Kraßnitzer
 -/
@@ -61,4 +61,9 @@ theorem wp_landinsKnot (P : Val → IProp GF) (Q : Val → Val → IProp GF) (F 
 end Spec
 
 end LandinKnot
+
 end
+
+end HeapLang
+
+end Iris

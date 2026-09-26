@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Markus de Medeiros. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros, Fernando Leal
 -/
@@ -378,7 +378,7 @@ theorem plainly_if_exists p [SbiEmpValidExist PROP] {A : Type _} {Ψ : A → PRO
   build_plainly_if p from plainly_exists
 
 @[rocq_alias plainly_if_idemp]
-theorem plainly_if_idem p  : ■?p ■?p P ⊣⊢ ■?p P :=
+theorem plainly_if_idem p : ■?p ■?p P ⊣⊢ ■?p P :=
   build_plainly_if p from plainly_idem
 
 @[rocq_alias plainly_if_absorbing]
@@ -409,13 +409,13 @@ theorem plain_plainly_2 [Plain P] : P ⊢ ■ P := Plain.plain
 theorem plain_plainly [Plain P] [Absorbing P] : ■ P ⊣⊢ P := ⟨plainly_elim, Plain.plain⟩
 
 @[rocq_alias plainly_intro]
-theorem plainly_intro [ι:Plain P] : iprop(P ⊢ Q) → P ⊢ ■ Q := fun h =>
+theorem plainly_intro [ι : Plain P] : iprop(P ⊢ Q) → P ⊢ ■ Q := fun h =>
   calc iprop(P)
     _ ⊢ ■ P := Plain.plain
     _ ⊢ ■ Q := plainly_mono h
 
 @[rocq_alias plain_persistent]
-instance plain_persistent [Plain P]: Persistent P where
+instance plain_persistent [Plain P] : Persistent P where
   persistent := Plain.plain.trans plainly_elim_persistently
 
 @[rocq_alias impl_persistent]
@@ -455,7 +455,7 @@ theorem limitPreserving_plain {A} [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpa
 section BigOp
 
 @[rocq_alias plainly_sep_weak_homomorphism]
-instance plainly_sep_weak_homomorphism [BIPositive PROP][BIAffine PROP] :
+instance plainly_sep_weak_homomorphism [BIPositive PROP] [BIAffine PROP] :
     Algebra.WeakMonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp) BiEntails
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
@@ -553,11 +553,28 @@ theorem bigSepM_plainly [BIAffine PROP] [LawfulFiniteMap M K]
     ■ ([∗map] k↦x ∈ m, Φ k x) ⊣⊢ [∗map] k↦x ∈ m, ■ (Φ k x) :=
   (Algebra.BigOpM.bigOpM_hom ..)
 
+@[rocq_alias big_sepM2_plainly]
+theorem bigSepM2_plainly [BIAffine PROP] [LawfulFiniteMap M K] {A B}
+    (Φ : K → A → B → PROP) (m₁ : M A) (m₂ : M B) :
+    ■ ([∗map] k↦x₁;x₂ ∈ m₁;m₂, Φ k x₁ x₂) ⊣⊢ [∗map] k↦x₁;x₂ ∈ m₁;m₂, ■ (Φ k x₁ x₂) :=
+  calc iprop(■ ([∗map] k↦x₁;x₂ ∈ m₁;m₂, Φ k x₁ x₂))
+    _ ⊣⊢ _ := .ofMono plainly_mono BigSepM2.bigSepM2_alt
+    _ ⊣⊢ _ := plainly_and
+    _ ⊣⊢ _ := .ofMono and_mono_left plainly_pure
+    _ ⊣⊢ _ := .ofMono and_mono_right (bigSepM_plainly ..)
+    _ ⊣⊢ [∗map] k↦x₁;x₂ ∈ m₁;m₂, ■ (Φ k x₁ x₂) := .symm BigSepM2.bigSepM2_alt
+
 open Algebra in
 @[rocq_alias big_sepS_plainly]
 theorem bigSepS_plainly [BIAffine PROP] [LawfulFiniteSet S A] (Φ : A → PROP) (s : S) :
     ■ ([^ sep set] y ∈ s, Φ y) ⊣⊢ [^ sep set] y ∈ s, iprop(■ (Φ y)) :=
   (BigOpS.hom (hom := inferInstance) ..)
+
+open Algebra in
+@[rocq_alias big_sepMS_plainly]
+theorem bigSepMS_plainly [BIAffine PROP] [LawfulFiniteMultiSet MS A] (Φ : A → PROP) (X : MS) :
+    ■ ([^ sep mset] y ∈ X, Φ y) ⊣⊢ [^ sep mset] y ∈ X, iprop(■ (Φ y)) :=
+  (BigOpMS.hom (hom := inferInstance) ..)
 
 end BigOp
 
@@ -573,19 +590,19 @@ instance emp_plain : Plain (PROP := PROP) iprop(emp) where
   plain := plainly_emp_intro
 
 @[rocq_alias and_plain]
-instance and_plain (P Q : PROP)[Plain P] [Plain Q]: Plain iprop(P ∧ Q) where
+instance and_plain (P Q : PROP) [Plain P] [Plain Q] : Plain iprop(P ∧ Q) where
   plain := .trans (and_mono plain plain) plainly_and.mpr
 
 @[rocq_alias or_plain]
-instance or_plain (P Q : PROP)[Plain P] [Plain Q]: Plain iprop(P ∨ Q) where
+instance or_plain (P Q : PROP) [Plain P] [Plain Q] : Plain iprop(P ∨ Q) where
   plain := .trans (or_mono plain plain) plainly_or_mpr
 
 @[rocq_alias forall_plain]
-instance forall_plain {A : Type _} (Ψ : A → PROP) : [∀ x, Plain (Ψ x)] → Plain iprop(∀ x, Ψ x) where
+instance forall_plain {A : Sort _} (Ψ : A → PROP) : [∀ x, Plain (Ψ x)] → Plain iprop(∀ x, Ψ x) where
   plain := .trans (forall_mono (fun _ => plain)) plainly_forall_mpr
 
 @[rocq_alias exist_plain]
-instance exists_plain {A : Type _} (Ψ : A → PROP) : [∀ x, Plain (Ψ x)] → Plain iprop(∃ x, Ψ x) where
+instance exists_plain {A : Sort _} (Ψ : A → PROP) : [∀ x, Plain (Ψ x)] → Plain iprop(∃ x, Ψ x) where
   plain := .trans (exists_mono (fun _ => plain)) plainly_exists_mpr
 
 @[rocq_alias impl_plain]
@@ -606,11 +623,11 @@ instance wand_plain (P Q : PROP) [Absorbing Q] [Plain P] [Plain Q] : Plain iprop
     _ ⊢ ■ (P -∗ Q)   := plainly_mono (wand_mono_left plain)
 
 @[rocq_alias sep_plain]
-instance sep_plain (P Q : PROP) [Plain P] [Plain Q]: Plain iprop(P ∗ Q) where
+instance sep_plain (P Q : PROP) [Plain P] [Plain Q] : Plain iprop(P ∗ Q) where
   plain := .trans (sep_mono plain plain) plainly_sep_2
 
 @[rocq_alias plainly_plain]
-instance plainly_plain(P : PROP) : Plain iprop(■ P) := ⟨plainly_idem_mpr⟩
+instance plainly_plain (P : PROP) : Plain iprop(■ P) := ⟨plainly_idem_mpr⟩
 
 @[rocq_alias persistently_plain]
 instance persistently_plain (P : PROP) [ι : Plain P] : Plain iprop(<pers> P) where
@@ -632,16 +649,16 @@ instance absorbingly_plain (P : PROP) [Plain P] : Plain iprop(<absorb> P) :=
   inferInstanceAs (Plain iprop(True ∗ P))
 
 @[rocq_alias from_option_plain]
-instance from_option_plain {A : Type _} (P : PROP)  (Ψ : A → PROP) (x? : Option A)
+instance from_option_plain {A : Type _} (P : PROP) (Ψ : A → PROP) (x? : Option A)
     [hΨ : ∀ x, Plain (Ψ x)] [hP : Plain P] : Plain (Option.elim x? P Ψ) :=
   match x? with | (x : A) => hΨ x | .none => hP
 
 @[rocq_alias si_pure_plain]
-instance si_pure_plain (P : SiProp) : Plain (PROP := PROP) (siPure P) where
+instance siPure_plain (P : SiProp) : Plain (PROP := PROP) (siPure P) where
   plain := plainly_siPure.2
 
 @[rocq_alias si_emp_valid_plain]
-instance si_emp_valid_plain (P : PROP) : Plain (siEmpValid P) where
+instance siEmpValid_plain (P : PROP) : Plain (siEmpValid P) where
   plain := .rfl
 
 @[rocq_alias big_sepL_nil_plain]
@@ -725,15 +742,31 @@ instance bigSepM_plain {K} [DecidableEq K] {M A} [ι : LawfulFiniteMap M K] (Φ 
           .ofMono plainly_mono <|
             (Algebra.BigOpM.bigOpM_insert_eq _ _ get?_m_k).to_bi |>.symm
 
+@[rocq_alias big_sepM2_empty_plain]
+instance bigSepM2_empty_plain {K M A B} [LawfulFiniteMap M K] (Φ : K → A → B → PROP) :
+    Plain ([∗map] k↦x₁;x₂ ∈ (∅ : M A);(∅ : M B), Φ k x₁ x₂) where
+  plain :=
+    let h := BigSepM2.bigSepM2_empty Φ
+    h.mp.trans <| plainly_emp_2.trans <| plainly_mono h.mpr
+
+@[rocq_alias big_sepM2_plain]
+instance bigSepM2_plain {K} [DecidableEq K] {M A B} [LawfulFiniteMap M K]
+    (Φ : K → A → B → PROP) (m₁ : M A) (m₂ : M B) [∀ k x₁ x₂, Plain (Φ k x₁ x₂)] :
+    Plain ([∗map] k↦x₁;x₂ ∈ m₁;m₂, Φ k x₁ x₂) where
+  plain :=
+    BigSepM2.bigSepM2_alt.1.trans <|
+      (and_mono plain plain).trans <|
+        plainly_and.2.trans <| plainly_mono BigSepM2.bigSepM2_alt.2
+
 open Algebra in
 @[rocq_alias big_sepS_empty_plain]
-instance  bigSepS_empty_plain {S} [Pos.Countable S] {A} [LawfulFiniteSet S A] (Φ : A → PROP) :
+instance bigSepS_empty_plain {S} [Pos.Countable S] {A} [LawfulFiniteSet S A] (Φ : A → PROP) :
     Plain ([^ sep set] x ∈ (∅ : S), Φ x) where
   plain := by simpa only [Algebra.BigOpS.bigOpS_empty] using plainly_emp_2
 
 open Algebra in
 @[rocq_alias big_sepS_plain]
-instance  bigSepS_plain {S} [Pos.Countable S] {A} [LawfulFiniteSet S A] (Φ : A → PROP) (s : S)
+instance bigSepS_plain {S} [Pos.Countable S] {A} [LawfulFiniteSet S A] (Φ : A → PROP) (s : S)
   [h : ∀ x, Plain (Φ x)] :
     Plain ([^ sep set] x ∈ s, Φ x) where
   plain := by
@@ -748,6 +781,28 @@ instance  bigSepS_plain {S} [Pos.Countable S] {A} [LawfulFiniteSet S A] (Φ : A 
         _ ⊣⊢ ■ [^ sep set] y ∈ insert x s, Φ y :=
           .ofMono plainly_mono <| (BigOpS.bigOpS_insert x_s).symm.to_bi
 
+open Algebra in
+@[rocq_alias big_sepMS_empty_plain]
+instance bigSepMS_empty_plain {MS A} [LawfulFiniteMultiSet MS A] (Φ : A → PROP) :
+    Plain ([^ sep mset] x ∈ (∅ : MS), Φ x) where
+  plain := by simpa only [BigOpMS.bigOpMS_empty] using plainly_emp_2
+
+open Algebra in
+@[rocq_alias big_sepMS_plain]
+instance bigSepMS_plain {MS A} [LawfulFiniteMultiSet MS A] (Φ : A → PROP) (X : MS)
+    [h : ∀ x, Plain (Φ x)] :
+    Plain ([^ sep mset] x ∈ X, Φ x) where
+  plain := by
+    induction X using Std.multiset_ind
+    case empty => simp only [BigOpMS.bigOpMS_empty, plain]
+    case disjUnion_singleton x X IH =>
+      calc iprop([^ sep mset] y ∈ ({x} ⊎ X), Φ y)
+        _ ⊣⊢ Φ x ∗ [^ sep mset] y ∈ X, Φ y := BigOpMS.bigOpMS_insert.to_bi
+        _  ⊢ ■ Φ x ∗ ■ [^ sep mset] y ∈ X, Φ y := sep_mono (h x |>.plain) IH
+        _  ⊢ ■ (Φ x ∗ [^ sep mset] y ∈ X, Φ y) := plainly_sep_2
+        _ ⊣⊢ ■ [^ sep mset] y ∈ ({x} ⊎ X), Φ y :=
+          .ofMono plainly_mono BigOpMS.bigOpMS_insert.symm.to_bi
+
 @[rocq_alias plainly_timeless]
 instance plainly_timeless (P : PROP) [Timeless P] : Timeless iprop(■ P) :=
   inferInstanceAs (Timeless iprop(<si_pure> <si_emp_valid> P))
@@ -756,7 +811,7 @@ instance plainly_timeless (P : PROP) [Timeless P] : Timeless iprop(■ P) :=
 theorem plainly_internalEq {A} [OFE A] {a b : A} :
     iprop(■ (a ≡ b) ⊣⊢@{PROP} a ≡ b) := by
   refine ⟨plainly_elim, ?_⟩
-  have : OFE.NonExpansive (β := PROP) (λ x ↦ iprop(■ (a ≡ x))) :=  {
+  have : OFE.NonExpansive (β := PROP) (fun x ↦ iprop(■ (a ≡ x))) :=  {
     ne n x x' xx' := instPlainly_ne.ne ((internalEq.ne_r a).ne xx')
   }
   refine .trans ?_ (imp_elim <| internalEq.rewrite (a := a) (fun x ↦ iprop(■ a ≡ x)))
@@ -796,7 +851,7 @@ theorem plainly_alt (P : PROP) : ■ P ⊣⊢ iprop(<affine> P) ≡ emp := by
       _ ⊢ ■ <affine> P                     := true_imp.1
 
 @[rocq_alias plainly_alt_absorbing]
-theorem plainly_alt_absorbing (P : PROP)[Absorbing P] : ■ P ⊣⊢ P ≡ iprop(True) := by
+theorem plainly_alt_absorbing (P : PROP) [Absorbing P] : ■ P ⊣⊢ P ≡ iprop(True) := by
   refine ⟨?_, ?_⟩
   · refine .trans ?_ (prop_ext P iprop(True) |>.2)
     refine plainly_mono ?_
@@ -870,6 +925,12 @@ theorem except0_plainly {P : PROP} : ◇ ■ P ⊣⊢ ■ ◇ P :=
   calc iprop(◇ <si_pure> <si_emp_valid> P)
     _ ⊣⊢@{PROP} <si_pure> (◇ <si_emp_valid> P)   := siPure_except0.symm
     _ ⊣⊢        <si_pure> (<si_emp_valid> (◇ P)) := .ofMono siPure_mono siEmpValid_except0.symm
+
+@[rocq_alias only_0_plainly]
+theorem only0_plainly {P : PROP} : <only0> ■ P ⊣⊢ ■ <only0> P :=
+  calc iprop(<only0> <si_pure> <si_emp_valid> P)
+    _ ⊣⊢@{PROP} <si_pure> (<only0> <si_emp_valid> P)   := siPure_only0.symm
+    _ ⊣⊢        <si_pure> (<si_emp_valid> (<only0> P)) := .ofMono siPure_mono siEmpValid_only0.symm
 
 @[rocq_alias later_plain]
 instance later_plain (P : PROP) [Plain P] : Plain iprop(▷ P) where

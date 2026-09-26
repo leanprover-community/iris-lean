@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Alvin Tang. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alvin Tang
 -/
@@ -49,3 +49,7 @@ example (l : Loc) (v : Val) :
   iassumption
 
 end Fractional
+
+end HeapLang
+
+end Iris

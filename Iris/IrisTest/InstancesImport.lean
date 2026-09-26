@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Michael Sammler. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
@@ -28,3 +28,5 @@ info: solution: TacticTest iprop(∀ a, (emp ∗ P) ∗ P) iprop(∀ a, P ∗ P)
 #guard_msgs in
 set_option pp.mvars false in
 #ipm_synth (TacticTest iprop(∀ (_ : Nat), (emp ∗ P) ∗ P) _)
+
+end IrisTest

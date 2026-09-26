@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Markus de Medeiros. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros, Mario Carneiro
 -/
@@ -43,6 +43,27 @@ open DFrac OFE.Discrete IsOp
 
 @[rocq_alias dfrac_inhabited]
 instance : Inhabited DFrac := ⟨discard⟩
+
+@[rocq_alias dfrac_countable]
+instance : Pos.Countable DFrac where
+  encode
+    | .own f => Pos.Countable.encode [Pos.Countable.encode (0 : Nat), Pos.Countable.encode f]
+    | .discard => Pos.Countable.encode [Pos.Countable.encode (1 : Nat)]
+    | .ownDiscard f =>
+      Pos.Countable.encode [Pos.Countable.encode (2 : Nat), Pos.Countable.encode f]
+  decode p :=
+    match (Pos.Countable.decode p : Option (List Pos)) with
+    | some [t] =>
+      match (Pos.Countable.decode t : Option Nat) with
+      | some 1 => some discard
+      | _ => none
+    | some [t, fp] =>
+      match (Pos.Countable.decode t : Option Nat) with
+      | some 0 => ((Pos.Countable.decode fp : Option Qp)).map own
+      | some 2 => ((Pos.Countable.decode fp : Option Qp)).map ownDiscard
+      | _ => none
+    | _ => none
+  decode_encode dq := by cases dq <;> simp [Pos.Countable.decode_encode]
 
 def valid : DFrac → Prop
   | .own f        => f.val ≤ 1
@@ -120,7 +141,7 @@ instance one_exclusive_right [CMRA V] {v : V} : CMRA.Exclusive (v, own (One.one 
 instance {f : Qp} : CMRA.Cancelable (own f) where
   cancelableN {_} := by
     rintro (a|_|a) (b|_|b) <;> simp [CMRA.ValidN, CMRA.op, op] <;> intro H Hxyz
-    any_goals have Hxyz' := discrete Hxyz <;> simp at Hxyz'
+    any_goals have Hxyz' := discrete Hxyz; simp at Hxyz'
     · exact congrArg own (Subtype.ext (by grind))
     · exact absurd Hxyz' (by have := b.2; grind)
     · exact absurd Hxyz' (by have := a.2; grind)
@@ -132,12 +153,11 @@ instance {f : Qp} : CMRA.IdFree (own f) where
     rintro (y|_|y) <;>
       simp [CMRA.ValidN, CMRA.op, op] <;>
       intro H Hxyz <;>
-      any_goals have Hxyz' := discrete Hxyz <;>
-      simp at Hxyz'
+      any_goals have Hxyz' := discrete Hxyz; simp at Hxyz'
     exact absurd Hxyz' (by have := y.2; grind)
 
 @[rocq_alias dfrac_valid_own_1]
-theorem valid_own_one : ✓ own (1 : Qp) := by show (1 : Qp).val ≤ 1; grind
+theorem valid_own_one : ✓ own (1 : Qp) := by change (1 : Qp).val ≤ 1; grind
 
 @[rocq_alias dfrac_valid_own_r]
 theorem valid_op_own {dq : DFrac} {q : Qp} : ✓ dq • own q → q.val < 1 := by
@@ -167,7 +187,7 @@ instance : CMRA.CoreId (DFrac.discard) where
   core_id := by simp [CMRA.pcore, DFrac.pcore]
 
 @[rocq_alias dfrac_discard_update]
-theorem DFrac.update_discard {dq : DFrac} : dq ~~> .discard := by
+theorem update_discard {dq : DFrac} : dq ~~> .discard := by
   intros n q H
   apply (CMRA.valid_iff_validN' n).mp
   have H' := (CMRA.valid_iff_validN' n).mpr H
@@ -179,7 +199,7 @@ theorem DFrac.update_discard {dq : DFrac} : dq ~~> .discard := by
     grind
 
 @[rocq_alias dfrac_undiscard_update]
-theorem DFrac.update_acquire :
+theorem update_acquire :
     (.discard : DFrac) ~~>: fun k => ∃ q, k = .own q := by
   apply UpdateP.discrete.mpr
   rintro (_|q)
@@ -235,3 +255,5 @@ instance isOp_dfrac_own {q q1 q2 : Qp} [h : IsOp d q q1 q2] :
   is_op := by rw [h.is_op]; rfl
 
 end DFrac
+
+end Iris

@@ -1,5 +1,10 @@
+/-
+Copyright (c) The Iris-Lean Contributors
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 module
 
+public import Iris.BI.Lib.Atomic
 public import Iris.BI.Lib.BUpdPlain
 public import Iris.BI.Lib.Core
 public import Iris.BI.Lib.Counterexamples
@@ -7,6 +12,7 @@ public import Iris.BI.Lib.Fixpoint
 public import Iris.BI.Lib.FixpointBanach
 public import Iris.BI.Lib.Fractional
 public import Iris.BI.Lib.GenHeap
+public import Iris.BI.Lib.InvHeap
 public import Iris.BI.Lib.Laterable
 public import Iris.BI.Lib.MonoList
 public import Iris.BI.Lib.MonoNat

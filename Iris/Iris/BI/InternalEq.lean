@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
@@ -142,8 +142,50 @@ theorem sig_equivI {A : Type _} [OFE A] (P : A → Prop) (x y : Subtype P) :
     x.val ≡ y.val ⊣⊢@{PROP} x ≡ y :=
   ⟨sig_equivI_mp, of_internalEquiv_ne Subtype.val⟩
 
--- TODO: sum_equivI (requires Sum OFE)
--- TODO: sigT_equivI (requires SigmaT OFE)
+@[rocq_alias sum_equivI]
+theorem sum_equivI {A B : Type _} [OFE A] [OFE B] (x y : A ⊕ B) :
+    x ≡ y ⊣⊢@{PROP}
+      match x, y with
+      | .inl a, .inl a' => iprop(a ≡ a')
+      | .inr b, .inr b' => iprop(b ≡ b')
+      | _, _ => iprop(⌜False⌝) := by
+  constructor
+  · let Ψ : A ⊕ B → PROP := fun y' =>
+      match x, y' with
+      | .inl a, .inl a' => iprop(a ≡ a')
+      | .inr b, .inr b' => iprop(b ≡ b')
+      | _, _ => iprop(⌜False⌝)
+    have : NonExpansive Ψ := by
+      refine ⟨fun {n x' y'} h => ?_⟩
+      cases x <;> cases x' <;> cases y' <;> first
+        | exact (ne_r _).ne h
+        | exact Dist.rfl
+        | exact h.elim
+    refine rewrite' Ψ .rfl ?_
+    cases x <;> exact refl
+  · cases x <;> cases y <;> first
+      | exact of_internalEquiv_ne _
+      | exact false_elim
+
+@[rocq_alias sigT_equivI]
+theorem sigT_equivI {A : Type _} {P : A → Type _} [∀ a, OFE (P a)] (x y : Sigma P) :
+    x ≡ y ⊣⊢@{PROP} ∃ heq : x.fst = y.fst, (heq ▸ x.snd) ≡ y.snd := by
+  constructor
+  · let Ψ : Sigma P → PROP := fun y' => iprop(∃ heq : x.fst = y'.fst, (heq ▸ x.snd) ≡ y'.snd)
+    have : NonExpansive Ψ := by
+      refine ⟨fun {_ y₁ y₂} h => ?_⟩
+      obtain ⟨_, _⟩ := y₁
+      obtain ⟨_, _⟩ := y₂
+      obtain rfl := Sigma.dist_fst h
+      exact exists_ne fun _ => (ne_r _).ne (Sigma.dist_snd h)
+    refine rewrite' Ψ .rfl ?_
+    refine .trans ?_ (exists_intro rfl)
+    exact refl
+  · obtain ⟨a, _⟩ := x
+    obtain ⟨_, _⟩ := y
+    refine exists_elim fun heq => ?_
+    cases heq
+    exact of_internalEquiv_ne (Sigma.mk a)
 
 @[rocq_alias prod_equivI]
 theorem prod_equivI {A B : Type _} [OFE A] [OFE B] (x y : A × B) :
@@ -182,7 +224,7 @@ theorem option_none_some_equivI {A : Type _} [OFE A] (a : A) :
     (none : Option A) ≡ some a ⊣⊢@{PROP} False :=
   ⟨symm.trans (option_some_none_equivI a).1, false_elim⟩
 
-@[rocq_alias excl_equivI]
+@[rocq_alias internal_eq.excl_equivI]
 theorem excl_equivI_excl {O : Type _} [OFE O] (a b : O) :
     Excl.excl a ≡ Excl.excl b ⊣⊢@{PROP} a ≡ b := by
   refine ⟨?_, of_internalEquiv_ne Excl.excl⟩
@@ -207,7 +249,7 @@ theorem excl_equivI_invalid_excl {O : Type _} [OFE O] (a : O) :
     (Excl.invalid : Excl O) ≡ Excl.excl a ⊣⊢@{PROP} False :=
   ⟨symm.trans (excl_equivI_excl_invalid a).1, false_elim⟩
 
-@[rocq_alias csum_equivI]
+@[rocq_alias internal_eq.csum_equivI]
 theorem csum_equivI {A B : Type _} [OFE A] [OFE B] (sx sy : Csum A B) :
     sx ≡ sy ⊣⊢@{PROP}
       match sx, sy with
@@ -374,7 +416,7 @@ theorem prop_ext_siEmpValid_equiv (P Q : PROP) :
 @[rocq_alias later_equivI_prop_2]
 theorem later_equivI_prop_mpr (P Q : PROP) :
     ▷ P ≡ Q ⊢ (iprop(▷ P) ≡ iprop(▷ Q) : PROP) := by
-  show iprop(▷ <si_pure> (SiProp.internalEq P Q) ⊢ <si_pure> (SiProp.internalEq iprop(▷ P) iprop(▷ Q)))
+  change iprop(▷ <si_pure> (SiProp.internalEq P Q) ⊢ <si_pure> (SiProp.internalEq iprop(▷ P) iprop(▷ Q)))
   calc iprop(▷ <si_pure> (SiProp.internalEq P Q))
     _ ⊢ <si_pure> ▷ (SiProp.internalEq P Q) := siPure_later.mpr
     _ ⊢ <si_pure> ▷ (<si_emp_valid> (P ∗-∗ Q)) :=
@@ -388,6 +430,22 @@ theorem later_equivI_prop_mpr (P Q : PROP) :
 theorem internalEq_soundness {A : Type _} [OFE A] (x y : A) :
     (⊢@{PROP} x ≡ y) → x = y :=
   (SiProp.internalEq_soundness <| siPure_emp_valid.mp ·)
+
+@[rocq_alias only_0_internal_eq]
+theorem only0_internalEq (P Q : PROP) :
+    <only0> (P ≡ Q) ⊣⊢@{PROP} iprop(<only0> P) ≡ iprop(<only0> Q) := by
+  change iprop(<only0> <si_pure> (SiProp.internalEq P Q))
+    ⊣⊢@{PROP} <si_pure> (SiProp.internalEq iprop(<only0> P) iprop(<only0> Q))
+  calc iprop(<only0> <si_pure> (SiProp.internalEq P Q))
+    _ ⊣⊢@{PROP} <si_pure> <only0> (SiProp.internalEq P Q) := siPure_only0.symm
+    _ ⊣⊢ <si_pure> <only0> <si_emp_valid> (P ∗-∗ Q) :=
+        .ofMono siPure_mono (.ofMono only0_mono (prop_ext_siEmpValid_equiv P Q))
+    _ ⊣⊢ <si_pure> <si_emp_valid> (<only0> (P ∗-∗ Q)) :=
+        .ofMono siPure_mono siEmpValid_only0.symm
+    _ ⊣⊢ <si_pure> <si_emp_valid> (<only0> P ∗-∗ <only0> Q) :=
+        .ofMono siPure_mono (.ofMono siEmpValid_mono only0_wandIff)
+    _ ⊣⊢ <si_pure> (SiProp.internalEq iprop(<only0> P) iprop(<only0> Q)) :=
+        .ofMono siPure_mono (prop_ext_siEmpValid_equiv _ _).symm
 
 /-! ## Derive NonExpansive/Contractive from internal statements -/
 

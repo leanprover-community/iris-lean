@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
@@ -23,12 +23,12 @@ local stepindex Nat
 
 namespace Iris
 
-open OFE CMRA Std
+open OFE CMRA Iris.Std
 
 abbrev MaxPrefixListMap : Type _ → Type _ :=
   (Std.ExtTreeMap Nat · compare)
 
-@[rocq_alias max_prefix_list, rocq_alias max_prefix_listR, rocq_alias max_prefix_listUR]
+@[rocq_alias max_prefix_list, rocq_alias max_prefix_listR, rocq_alias max_prefix_listUR, implicit_reducible]
 def MaxPrefixList : Type _ → Type _ :=
   (MaxPrefixListMap <| Agree ·)
 
@@ -109,7 +109,7 @@ theorem toMaxPrefixList_dist_inj {n} {l1 l2 : List α}
 @[rocq_alias to_max_prefix_list_inj]
 theorem toMaxPrefixList_inj {l1 l2 : List α}
     (h : toMaxPrefixList l1 = toMaxPrefixList l2) : l1 = l2 :=
-  eq_dist.mpr fun _ => toMaxPrefixList_dist_inj (Dist.of_eq h)
+  eq_dist_2 fun _ => toMaxPrefixList_dist_inj (Dist.of_eq h)
 
 /-! ## CMRA Properties -/
 
@@ -148,7 +148,7 @@ theorem toMaxPrefixList_op_right {l1 l2 : List α} (h : l1 <+: l2) :
 @[rocq_alias max_prefix_list_included_includedN]
 theorem inc_iff_forall_incN {ml1 ml2 : MaxPrefixList α} :
     ml1 ≼ ml2 ↔ ∀ n, ml1 ≼{n} ml2 := by
-  refine ⟨fun h n => incN_of_inc n h, fun h => ⟨ml2, eq_dist.mpr fun n => ?_⟩⟩
+  refine ⟨fun h n => incN_of_inc n h, fun h => ⟨ml2, eq_dist_2 fun n => ?_⟩⟩
   obtain ⟨l, hl⟩ := h n
   calc ml2 ≡{n}≡ ml1 • l := hl
     _ ≡{n}≡ (ml1 • ml1) • l := (congrArg (· • l) (op_self ml1)).symm.dist
@@ -165,7 +165,7 @@ theorem toMaxPrefixList_incN_aux {n} {l1 l2 : List α}
   · refine .of_eq (by grind)
   · obtain ⟨x1, hx1, rfl⟩ := Option.map_eq_some_iff.mp ha1
     obtain ⟨x2, hx2, rfl⟩ := Option.map_eq_some_iff.mp ha2
-    rw [List.getElem?_append, hx2, if_pos (List.getElem?_eq_some_iff.mp hx1).1, hx1]
+    rw [List.getElem?_append, hx2, ite_eq_left (List.getElem?_eq_some_iff.mp hx1).1, hx1]
     exact some_dist_some.mpr (Agree.toAgree_includedN.mp ha).symm
 
 @[rocq_alias to_max_prefix_list_includedN]
@@ -178,7 +178,7 @@ theorem toMaxPrefixList_incN_iff {n} {l1 l2 : List α} :
 @[rocq_alias to_max_prefix_list_included]
 theorem toMaxPrefixList_inc_iff {l1 l2 : List α} :
     toMaxPrefixList l1 ≼ toMaxPrefixList l2 ↔ l1 <+: l2 := by
-  refine ⟨fun h => ⟨_, eq_dist.mpr fun n =>
+  refine ⟨fun h => ⟨_, eq_dist_2 fun n =>
     (toMaxPrefixList_incN_aux (incN_of_inc n h)).symm⟩, ?_⟩
   grind [inc_op_left]
 
@@ -200,7 +200,7 @@ theorem toMaxPrefixList_op_validN_aux {n} {l1 l2 : List α} (hlen : l1.length �
     | none => grind
     | some x2 =>
       rw [h1, h2] at hi
-      rw [if_pos (List.getElem?_eq_some_iff.mp h1).1]
+      rw [ite_eq_left (List.getElem?_eq_some_iff.mp h1).1]
       refine some_dist_some.mpr (Agree.toAgree_op_validN_iff_dist.mp ?_).symm
       simpa [op, optionOp, Option.some_validN] using hi
 
@@ -223,8 +223,8 @@ theorem toMaxPrefixList_op_valid {l1 l2 : List α} :
     ✓ (toMaxPrefixList l1 • toMaxPrefixList l2) ↔ l1 <+: l2 ∨ l2 <+: l1 := by
   refine ⟨fun h => ?_, ?_⟩
   · by_cases hlen : l1.length ≤ l2.length
-    · exact .inl ⟨_, eq_dist.mpr fun n => (toMaxPrefixList_op_validN_aux hlen h.validN).symm⟩
-    · exact .inr ⟨_, eq_dist.mpr fun n =>
+    · exact .inl ⟨_, eq_dist_2 fun n => (toMaxPrefixList_op_validN_aux hlen h.validN).symm⟩
+    · exact .inr ⟨_, eq_dist_2 fun n =>
         (toMaxPrefixList_op_validN_aux (by omega) (comm'.dist.validN.mp h.validN)).symm⟩
   · rintro (⟨l, rfl⟩ | ⟨l, rfl⟩) <;> grind [List.prefix_append]
 

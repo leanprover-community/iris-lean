@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Alexander Bai. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Bai
 -/
@@ -85,13 +85,11 @@ instance : UCMRA (Auth A) := View.instUCMRA
 @[rocq_alias auth_auth]
 abbrev auth (dq : DFrac) (a : A) : Auth A := View.Auth dq a
 
-abbrev authFull (a : A) : Auth A := Auth (DFrac.own 1) a
-
 @[rocq_alias auth_frag]
 abbrev frag (b : A) : Auth A := Frag b
 
 notation "●{" dq "} " a => auth dq a
-notation "● " a => authFull a
+notation "● " a => auth (DFrac.own 1) a
 notation "◯ " b => frag b
 
 @[rocq_alias auth_auth_ne]

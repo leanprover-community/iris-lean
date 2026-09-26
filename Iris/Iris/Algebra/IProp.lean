@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Markus de Medeiros. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
@@ -86,12 +86,12 @@ def IProp.fold : IPre GF -n> IProp GF :=
   OFE.Iso.inv <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
 
 @[rocq_alias iProp_solution.iProp_fold_unfold]
-theorem IProp.fold_unfold (P : IProp GF) : IProp.fold GF (IProp.unfold GF P) = P := by
-  simp only [IProp.fold, IProp.unfold, OFE.Iso.inv_hom]
+theorem IProp.fold_unfold (P : IProp GF) : IProp.fold GF (IProp.unfold GF P) = P :=
+  OFunctor.Fix.iso (F := UPredOF (IResF GF)) |>.inv_hom
 
 @[rocq_alias iProp_solution.iProp_unfold_fold]
-theorem IProp.unfold_fold (P : IPre GF) : IProp.unfold GF (IProp.fold GF P) = P := by
-  simp only [IProp.unfold, IProp.fold, OFE.Iso.hom_inv]
+theorem IProp.unfold_fold (P : IPre GF) : IProp.unfold GF (IProp.fold GF P) = P :=
+  OFunctor.Fix.iso (F := UPredOF (IResF GF)) |>.hom_inv
 
 end IProp
 

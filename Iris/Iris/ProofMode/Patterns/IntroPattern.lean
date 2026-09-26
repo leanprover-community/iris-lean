@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Michael Sammler. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler, Alvin Tang
 -/
@@ -100,3 +100,7 @@ partial def IntroPat.parse (term : Syntax) : MacroM (Syntax × IntroPat) := do
 #rocq_ignore intro_pat.parse_clear "Not necessary in Lean, functionality provided by IntroPat.parse"
 #rocq_ignore intro_pat.parse_go "Not necessary in Lean, functionality provided by IntroPat.parse"
 #rocq_ignore intro_pat.stack_item "Not necessary in Lean, functionality provided by IntroPat.parse"
+
+end ProofMode
+
+end Iris

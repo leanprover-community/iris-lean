@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Fernando Leal. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Fernando Leal
 -/
@@ -48,3 +48,9 @@ def iRevertIntro
       iIntroCore hyps goal names k'
 
 initialize registerTraceClass `irevertintro
+
+end
+
+end ProofMode
+
+end Iris

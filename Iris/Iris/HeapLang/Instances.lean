@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Sergei Stepanenko, Markus de Medeiros
 -/
@@ -19,6 +19,7 @@ namespace Iris.HeapLang
 
 open ProgramLogic ProgramLogic.Language FromMathlib EctxItemLanguage EctxLanguage
 
+@[rocq_alias heap_lang.heap_lang.heap_lang_mixin]
 instance instEctxItemLanguageExp : EctxItemLanguage Exp ECtxItem State Observation Val where
   baseStep := fun ⟨e, σ⟩ obs ⟨e', σ', eps⟩ => BaseStep e σ obs e' σ' eps
   fillItem := ECtxItem.fill
@@ -64,6 +65,32 @@ theorem fill_isSome_empty {K : List ECtxItem} {e : Exp}
     have h2 := EctxLanguage.fill_val (K := K') (e := fillItem Ki e) h
     simp [fillItem_expToVal_none] at h2
 
+@[rocq_alias heap_lang.to_val_fill_some]
+theorem toVal_fill_some {K : List ECtxItem} {e : Exp} {v : Val}
+    (h : toVal (fill K e) = some v) : K = [] ∧ e = Exp.ofVal v := by
+  obtain rfl := fill_isSome_empty (K := K) (e := e) (by simp [h])
+  exact ⟨rfl, (coe_of_toVal_eq_some (by simpa using h)).symm⟩
+
+-- The `EctxItemLanguage` instance above bundles what Rocq states as separate HeapLang lemmas and
+-- then packages into `heap_lang_mixin`; the generic projections of the class carry the
+-- `ectxi_language.v` aliases of the same names.
+#rocq_ignore heap_lang.heap_lang.fill_item_inj
+  "The `fillItem_inj` field of `instEctxItemLanguageExp`."
+#rocq_ignore heap_lang.heap_lang.fill_item_val
+  "The `fillItem_val` field of `instEctxItemLanguageExp`."
+#rocq_ignore heap_lang.heap_lang.fill_item_no_val_inj
+  "The `fillItem_no_val_inj` field of `instEctxItemLanguageExp`."
+#rocq_ignore heap_lang.heap_lang.val_base_stuck
+  "The `val_stuck` field of `instEctxItemLanguageExp`."
+#rocq_ignore heap_lang.heap_lang.base_ctx_step_val
+  "The `base_ctx_step_val` field of `instEctxItemLanguageExp`."
+#rocq_ignore heap_lang.heap_ectxi_lang
+  "`instEctxItemLanguageExp` is at once the mixin and the canonical structure it builds."
+#rocq_ignore heap_lang.heap_ectx_lang
+  "The generic `EctxItemLanguage.instEctxLanguage` (`EctxLanguageOfEctxi`) at `Exp`."
+#rocq_ignore heap_lang.heap_lang
+  "The generic `EctxLanguage.instLanguage` (`LanguageOfEctx`) at `Exp`."
+
 local macro "solve_subredex_values" : tactic =>
   `(tactic|
     (apply subredexes_are_values
@@ -84,11 +111,11 @@ theorem mk_pure_prim_step {e1 e2 : Exp} (hstep : ∀ σ, BaseStep e1 σ [] e2 σ
   · exact hpure (baseStep_of_primStep Hstep hsub)
 
 @[rocq_alias heap_lang.pure_if_true]
-instance instPureExecIfTrue: PureExec True 1 hl(if #true then &e1 else &e2) e1 where
+instance instPureExecIfTrue : PureExec True 1 hl(if #true then &e1 else &e2) e1 where
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
-    · cases hs <;> simp
+    · cases hs; simp
     · solve_subredex_values
 
 @[rocq_alias heap_lang.pure_if_false]
@@ -96,7 +123,7 @@ instance instPureExecIfFalse : PureExec True 1 hl(if #false then &e1 else &e2) e
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
-    · cases hs <;> simp
+    · cases hs; simp
     · solve_subredex_values
 
 @[rocq_alias heap_lang.pure_case_inl]
@@ -105,7 +132,7 @@ instance instPureExecCaseInjl {v e1 e2} :
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
-    · cases hs <;> simp
+    · cases hs; simp
     · solve_subredex_values
 
 @[rocq_alias heap_lang.pure_case_inr]
@@ -114,7 +141,7 @@ instance instPureExecCaseInjr {v e1 e2} :
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
-    · cases hs <;> simp
+    · cases hs; simp
     · solve_subredex_values
 
 @[rocq_alias heap_lang.pure_injlc]
@@ -122,7 +149,7 @@ instance instPureExecInjl {v : Val} : PureExec True 1 hl(injl(&v)) hl(v(injl(&v)
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
-    · cases hs <;> simp
+    · cases hs; simp
     · solve_subredex_values
 
 @[rocq_alias heap_lang.pure_injrc]
@@ -130,7 +157,7 @@ instance instPureExecInjr {v : Val} : PureExec True 1 hl(injr(&v)) hl(v(injr(&v)
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
-    · cases hs <;> simp
+    · cases hs; simp
     · solve_subredex_values
 
 @[rocq_alias heap_lang.pure_beta]
@@ -138,8 +165,8 @@ instance instPureExecBeta {f x : Binder} {e : Exp} {v : Val} :
     PureExec True 1 hl(v(rec &f &x := &e) &v) ((e.subst f (.rec_ f x e)).subst x v) where
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
-    · constructor <;> simp
-    · cases hs <;> simp [*]
+    · constructor; simp
+    · cases hs; simp [*]
     · solve_subredex_values
 
 @[rocq_alias heap_lang.pure_recc]
@@ -147,32 +174,32 @@ instance instPureExecRec {f x e} :
     PureExec True 1 hl(rec &f &x := &e) hl(v(rec &f &x := &e)) where
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
-    · constructor <;> simp
-    · cases hs <;> simp [*]
+    · constructor
+    · cases hs; simp [*]
     · solve_subredex_values
 
 @[rocq_alias heap_lang.pure_fst]
 instance instPureExecFst {v1 v2 : Val} : PureExec True 1 hl(fst(v((&v1, &v2)))) v1 where
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
-    · constructor <;> simp
-    · cases hs <;> simp [*]
+    · constructor
+    · cases hs; simp [*]
     · solve_subredex_values
 
 @[rocq_alias heap_lang.pure_snd]
 instance instPureExecSnd {v1 v2 : Val} : PureExec True 1 hl(snd(v((&v1, &v2)))) v2 where
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
-    · constructor <;> simp
-    · cases hs <;> simp [*]
+    · constructor
+    · cases hs; simp [*]
     · solve_subredex_values
 
 @[rocq_alias heap_lang.pure_pairc]
 instance instPureExecPair {v1 v2 : Val} : PureExec True 1 hl((&v1, &v2)) hl(v((&v1, &v2)))  where
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
-    · constructor <;> simp
-    · cases hs <;> simp [*]
+    · constructor
+    · cases hs; simp [*]
     · solve_subredex_values
 
 set_option synthInstance.checkSynthOrder false in
@@ -181,8 +208,8 @@ instance instPureExecUnOp {op : UnOp} {v v' : Val} :
     PureExec (op.eval v = some v') 1 (Exp.unop op (.ofVal v)) (.ofVal v') where
   pureExec h := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
-    · constructor <;> simp [*]
-    · cases hs <;> simp_all [UnOp.eval]
+    · constructor; simp [*]
+    · cases hs; simp_all [UnOp.eval]
     · solve_subredex_values
 
 set_option synthInstance.checkSynthOrder false in
@@ -192,8 +219,8 @@ instance instPureExecBinOp {op : BinOp} {v1 v2 v' : Val} :
       (Exp.binop op (.ofVal v1) (.ofVal v2)) (.ofVal v') where
   pureExec h := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
-    · constructor <;> simp [*]
-    · cases hs <;> simp_all [BinOp.eval]
+    · constructor; simp [*]
+    · cases hs; simp_all [BinOp.eval]
     · solve_subredex_values
 
 -- higher priority than the generic binop instance
@@ -203,8 +230,8 @@ instance (priority := default + 10) instPureExecEqOp {v1 v2 : Val} :
       (Exp.binop .eq (.ofVal v1) (.ofVal v2)) (.ofVal (.lit (.bool (v1 == v2)))) where
   pureExec h := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
-    · constructor <;> simp [BinOp.eval, *]
-    · cases hs <;> simp_all [BinOp.eval]
+    · constructor; simp [BinOp.eval, *]
+    · cases hs; simp_all [BinOp.eval]
     · solve_subredex_values
 
 @[rocq_alias heap_lang.load_atomic]
@@ -235,7 +262,7 @@ instance instAtomicFree {s} {v : Val} : Atomic s hl(free(&v)) where
 instance instAtomicXchg {s} {v1 v2 : Val} : Atomic s hl(xchg(&v1, &v2)) where
   atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
 
-@[rocq_alias heap_lang.faa_atomic]
+@[rocq_alias heap_lang.class_instances.faa_atomic]
 instance instAtomicFaa {s} {v1 v2 : Val} : Atomic s hl(faa(&v1, &v2)) where
   atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
 
@@ -263,6 +290,9 @@ theorem primStep_val_baseStep {e : Exp} {σ : State} {obs : List Observation}
   subst hg
   exact Hbase
 
+attribute [rocq_alias heap_lang.prim_step_to_val_is_base_step] primStep_val_baseStep
+
+@[rocq_alias heap_lang.base_step_to_val]
 theorem base_step_to_val_always_to_val
     {e₁ : Exp} {σ₁ₐ : State} {κsₐ : List Observation} {v₂ₐ : Val} {σ₂ₐ : State}
     {efsₐ : List Exp} {σ₁ᵦ : State} {κsᵦ : List Observation}
@@ -270,7 +300,7 @@ theorem base_step_to_val_always_to_val
     (h₁ : BaseStep e₁ σ₁ₐ κsₐ (Exp.val v₂ₐ) σ₂ₐ efsₐ)
     (h₂ : BaseStep e₁ σ₁ᵦ κsᵦ e₂ᵦ σ₂ᵦ efsᵦ) :
     (toVal e₂ᵦ).isSome := by
-  cases h₁ <;> cases h₂ <;> simp_all <;> grind
+  cases h₁ <;> cases h₂ <;> simp_all; grind
 
 theorem prim_step_to_val_always_to_val
     {e₁ : Exp} {σ₁ₐ : State} {κsₐ : List Observation} {v₂ₐ : Val} {σ₂ₐ : State}
@@ -371,6 +401,31 @@ theorem prim_step_more_proph_ids {e : Exp} {σ : State} {κs : List Observation}
     σ.usedProphId ⊆ σ'.usedProphId := by
   obtain ⟨hbase⟩ := h
   exact base_step_more_proph_ids hbase
+
+/-- A `resolve` whose subexpression cannot step cannot step either: the only base step of a
+`resolve` runs its subexpression to a value, and a step inside an evaluation context is a step of
+the subexpression. -/
+@[rocq_alias heap_lang.irreducible_resolve]
+theorem irreducible_resolve {e : Exp} {v1 v2 : Val} {σ : State}
+    (H : PrimStep.Irreducible (e, σ)) :
+    PrimStep.Irreducible (Exp.resolve e (.val v1) (.val v2), σ) := by
+  intro obs e' σ' eₜ hstep
+  generalize hsrc : Exp.resolve e (.val v1) (.val v2) = src at hstep
+  obtain ⟨Hbase⟩ := hstep
+  rename_i e₁' e₂' K
+  cases K using List.reverseRec with
+  | nil =>
+    simp only [fill_nil] at hsrc; subst hsrc
+    cases Hbase with | resolveS _ _ _ _ _ _ _ _ hb _ => exact H _ _ _ _ (primStep_of_baseStep hb)
+  | append_singleton K' Ki =>
+    cases Ki <;>
+      simp only [fill_append, fill_cons, fill_nil, fillItem, ECtxItem.fill,
+        Exp.resolve.injEq, reduceCtorEq] at hsrc
+    case resolveL =>
+      exact H obs _ σ' eₜ (BaseStep.ContextStep.ofBaseStep' (K' ++ [_])
+        (by simp only [fill_append, fill_cons, fill_nil]; exact hsrc.1.symm) rfl Hbase)
+    case resolveM => exact baseStep_fill_eq_val_absurd Hbase hsrc.2.1
+    case resolveR => exact baseStep_fill_eq_val_absurd Hbase hsrc.2.2
 
 /-- `resolve e &vp &vt` is atomic whenever its subexpression `e` is strongly
 atomic: any step of the whole expression is a `resolveS` base step, which runs

@@ -1,3 +1,7 @@
+/-
+Copyright (c) The Iris-Lean Contributors
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 module
 
 public import Iris.HeapLang
@@ -7,12 +11,12 @@ public import Iris.HeapLang.Lib.NondetBool
 namespace Iris.HeapLang
 
 -- type Coin := Ref (Option Bool) × ProphId
-@[rocq_alias heap_lang.new_coin]
+@[rocq_alias heap_lang.lazy_coin.new_coin]
 def newCoin := hl_val%
   λ _, (ref(none()), newProph())
 
 -- readCoin(cp : Coin) : Bool
-@[rocq_alias heap_lang.read_coin]
+@[rocq_alias heap_lang.lazy_coin.read_coin]
 def readCoin := hl_val%
   λ cp,
     let c := fst(cp);
@@ -47,21 +51,21 @@ theorem prophecyToBool_of_bool (vs : List (Val × Val)) (v : Val) (b : Bool) :
 
 /-- `cp` is a pair of `c` and `p`, where if p is a prophecy with resolutions `vs`
     such that if `c` is non-null, it points to the first resolution value of  `vs` -/
-@[rocq_alias heap_lang.coin]
+@[rocq_alias heap_lang.lazy_coin.coin]
 def coin (cp : Val) (b : Bool) : IProp GF := iprop%
   ∃ (c : Loc) (p : ProphId) (vs : List (Val × Val)),
   ⌜ cp = hl_val((#c, #p)) ⌝ ∗ proph p vs ∗
   (c ↦ hl_val(some(#b)) ∨ (c ↦ hl_val(none()) ∗ ⌜ b = prophecyToBool vs ⌝))
 
-@[rocq_alias heap_lang.new_coin_spec]
+@[rocq_alias heap_lang.lazy_coin.new_coin_spec]
 theorem newCoin.spec :
     {{ True }} hl(&newCoin #()) {{ c b, RET c; coin (GF := GF) c b }} := by
   iintro %Φ - K
   unfold newCoin
   wp_pures
-  wp_bind newProph()
-  iapply wp_new_proph
-  iintro %p %pvs Hp
+  wp_apply wp_new_proph
+  · itrivial
+  iintro %pvs %p Hp
   wp_alloc l with Hl
   wp_pures
   iintro !>
@@ -75,7 +79,7 @@ theorem newCoin.spec :
   ipureintro
   rfl
 
-@[rocq_alias heap_lang.read_coin_spec]
+@[rocq_alias heap_lang.lazy_coin.read_coin_spec]
 theorem readCoin.spec (cp : Val) (b : Bool) :
     {{ coin (GF := GF) cp b }} hl(&readCoin &cp) {{ RET hl_val(#b); coin cp b }} := by
   conv => enter [1,1]; unfold coin
@@ -93,13 +97,18 @@ theorem readCoin.spec (cp : Val) (b : Bool) :
     iframe; ipureintro; rfl
   · wp_load
     wp_pures
-    wp_bind &nondetBool _; iapply nondetBool.spec $$ [//]; iintro !> %b -
+    wp_apply nondetBool.spec $$ [//] with %b -
     wp_store
-    wp_bind resolveProph(_, _); iapply wp_resolve_proph $$ proph
-    iintro %pvs' %pvs_eq proph
+    wp_apply wp_resolve_proph $$ proph with %pvs' ⟨%pvs_eq, proph⟩
     subst pvs_eq
     wp_pures
     iintro !>
     simp only [prophecyToBool_of_bool]
     iapply K
     iframe; itrivial
+
+end Proofs
+
+end HeapLang
+
+end Iris

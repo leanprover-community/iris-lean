@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Alvin Tang. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler, Alvin Tang
 -/
@@ -87,7 +87,7 @@ private def iEvalCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   `ieval (tac)` applies the tactic sequence `tac` to the proof goal.
 -/
 elab "ieval " "(" tac:tacticSeq ")" : tactic => do
-  ProofModeM.runTactic `ieval λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `ieval fun mvar { hyps, goal, .. } => do
     let pf ← iEvalCore hyps goal tac none
     mvar.assign pf
 
@@ -99,8 +99,8 @@ elab "ieval " "(" tac:tacticSeq ")" : tactic => do
 elab "ieval " "(" tacs:tacticSeq ")" " at " spats:(colGt ppSpace selPat)+ : tactic => do
   let selPats ← liftMacroM <| SelPat.parse spats
 
-  ProofModeM.runTactic `ieval λ mvar { hyps, goal, .. } => do
-    let selTargets ← SelPat.resolve hyps selPats
+  ProofModeM.runTactic `ieval fun mvar { hyps, goal, .. } => do
+    let selTargets ← SelPat.resolve hyps selPats .topToBottom
     let pf ← iEvalCore hyps goal tacs selTargets
     mvar.assign pf
 
@@ -141,3 +141,11 @@ macro "iunfold " hs:ident,+ : tactic => `(tactic| ieval (unfold $hs*))
 -/
 macro "iunfold " hs:ident,+ " at " spats:(colGt ppSpace selPat)* : tactic =>
   `(tactic| ieval (unfold $hs*) at $spats*)
+
+end
+
+end
+
+end ProofMode
+
+end Iris

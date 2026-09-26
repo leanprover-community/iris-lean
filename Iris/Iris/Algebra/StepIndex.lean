@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Alvin Tang. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler, Alvin Tang, Markus de Medeiros
 -/
@@ -145,7 +145,7 @@ class SIdxFinite (I : Type u) [SIdx I] where
 
 namespace SIdx
 
-open Iris Std
+open Iris Iris.Std
 
 variable {I : Type u} [inst : SIdx I] {m n p : I}
 
@@ -494,3 +494,5 @@ theorem rec_lim {P : I → Sort v} (s : P 0) (f : ∀ n, P n → P (succᵢ n))
   rec_zero, rec_succ and rec_lim"
 
 end SIdx
+
+end Iris

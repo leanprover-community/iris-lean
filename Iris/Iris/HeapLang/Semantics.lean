@@ -1,6 +1,7 @@
 /-
-Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Sergei Stepanenko
 -/
 module
 
@@ -16,7 +17,7 @@ import Iris.Std.List
 @[expose] public section
 namespace Iris.HeapLang
 
-open Std
+open Iris.Std
 
 @[rocq_alias heap_lang.heap_lang.ectx_item]
 inductive ECtxItem where
@@ -93,36 +94,89 @@ instance : Inhabited State := ⟨.empty, .empty⟩
 
 attribute [rocq_alias heap_lang.heap_lang.state_inhabited] instInhabitedState
 
+-- Rocq threads state updates through the two `state_upd_*` functions; in Lean that role is
+-- played by record-update syntax, as in `State.initHeap` below.
+#rocq_ignore heap_lang.heap_lang.state_upd_heap
+  "Lean updates the `State` record directly: `{ σ with heap := f σ.heap }`."
+#rocq_ignore heap_lang.heap_lang.state_upd_used_proph_id
+  "Lean updates the `State` record directly: `{ σ with usedProphId := f σ.usedProphId }`."
+#rocq_ignore heap_lang.heap_lang.stateO
+  "Canonical Leibniz OFE on `state`; Lean uses the generic `stateO State`, i.e. `DiscreteO State`."
+
 @[rocq_alias heap_lang.heap_lang.observation]
 abbrev Observation := ProphId × (Val × Val)
 
 @[rocq_alias heap_lang.heap_lang.un_op_eval]
 def UnOp.eval : UnOp → Val → Option Val
   | .neg,   .lit (.bool b) => some (.lit (.bool (!b)))
+  | .neg,   .lit (.int n)  => some (.lit (.int (~~~n)))
   | .minus, .lit (.int n)  => some (.lit (.int (-n)))
   | _,      _              => none
 
+/-- Binary operations on two integer literals. `BinOp.eval` agrees with this on integers
+(`BinOp.eval_lit_int`); `.eq` is listed here because Rocq's `bin_op_eval_int` does, even though
+`BinOp.eval` routes equality through `Val.compareSafe`. -/
+@[rocq_alias heap_lang.heap_lang.bin_op_eval_int]
+def BinOp.evalInt : BinOp → Int → Int → Option BaseLit
+  | .plus,   n1, n2 => some (.int (n1 + n2))
+  | .minus,  n1, n2 => some (.int (n1 - n2))
+  | .mult,   n1, n2 => some (.int (n1 * n2))
+  | .tdiv,   n1, n2 => some (.int (n1.tdiv n2))
+  | .tmod,   n1, n2 => some (.int (n1.tmod n2))
+  | .and,    n1, n2 => some (.int (n1 &&& n2))
+  | .or,     n1, n2 => some (.int (n1 ||| n2))
+  | .xor,    n1, n2 => some (.int (n1 ^^^ n2))
+  | .shiftl, n1, n2 => some (.int (n1 <<< n2))
+  | .shiftr, n1, n2 => some (.int (n1 >>> n2))
+  | .le,     n1, n2 => some (.bool (n1 ≤ n2))
+  | .lt,     n1, n2 => some (.bool (n1 < n2))
+  | .eq,     n1, n2 => some (.bool (n1 = n2))
+  | .offset, _,  _  => none -- Pointer arithmetic
+
+/-- Binary operations on two boolean literals; see `BinOp.eval_lit_bool`. -/
+@[rocq_alias heap_lang.heap_lang.bin_op_eval_bool]
+def BinOp.evalBool : BinOp → Bool → Bool → Option BaseLit
+  | .and, b1, b2 => some (.bool (b1 && b2))
+  | .or,  b1, b2 => some (.bool (b1 || b2))
+  | .xor, b1, b2 => some (.bool (b1 ^^ b2))
+  | .eq,  b1, b2 => some (.bool (b1 == b2))
+  | _,    _,  _  => none
+
+/-- Binary operations whose left argument is a location: pointer arithmetic and the comparison
+of two locations. See `BinOp.eval_lit_loc`. -/
+@[rocq_alias heap_lang.heap_lang.bin_op_eval_loc]
+def BinOp.evalLoc : BinOp → Loc → BaseLit → Option BaseLit
+  | .offset, l1, .int off => some (.loc (l1 + off))
+  | .le,     l1, .loc l2  => some (.bool (l1 ≤ l2))
+  | .lt,     l1, .loc l2  => some (.bool (l1 < l2))
+  | _,       _,  _        => none
+
 @[rocq_alias heap_lang.heap_lang.bin_op_eval]
-def BinOp.eval : BinOp → Val → Val → Option Val
-  | .plus,   .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 + n2)))
-  | .minus,  .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 - n2)))
-  | .mult,   .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 * n2)))
-  | .tdiv,   .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1.tdiv n2)))
-  | .tmod,   .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1.tmod n2)))
-  | .and,    .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 &&& n2)))
-  | .or,     .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 ||| n2)))
-  | .xor,    .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 ^^^ n2)))
-  | .and,    .lit (.bool b1), .lit (.bool b2) => some (.lit (.bool (b1 && b2)))
-  | .or,     .lit (.bool b1), .lit (.bool b2) => some (.lit (.bool (b1 || b2)))
-  | .xor,    .lit (.bool b1), .lit (.bool b2) => some (.lit (.bool (b1 ^^ b2)))
-  | .shiftl, .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 <<< n2)))
-  | .shiftr, .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 >>> n2)))
-  | .le,     .lit (.int n1),  .lit (.int n2)  => some (.lit (.bool (n1 ≤ n2)))
-  | .lt,     .lit (.int n1),  .lit (.int n2)  => some (.lit (.bool (n1 < n2)))
-  | .eq,     v1,              v2              =>
-      if v1.compareSafe v2 then some (.lit (.bool (v1 == v2))) else none
-  | .offset, .lit (.loc l),   .lit (.int n)   => some (.lit (.loc (l + n)))
-  | _,       _,               _               => none
+def BinOp.eval (op : BinOp) (v1 v2 : Val) : Option Val :=
+  if op = .eq then
+    if v1.compareSafe v2 then some (.lit (.bool (v1 == v2))) else none
+  else
+    match v1, v2 with
+    | .lit (.int n1), .lit (.int n2) => Val.lit <$> op.evalInt n1 n2
+    | .lit (.bool b1), .lit (.bool b2) => Val.lit <$> op.evalBool b1 b2
+    | .lit (.loc l1), .lit lit2 => Val.lit <$> op.evalLoc l1 lit2
+    | _, _ => none
+
+theorem BinOp.eval_lit_int (op : BinOp) (n1 n2 : Int) :
+    BinOp.eval op (.lit (.int n1)) (.lit (.int n2)) = (Val.lit <$> op.evalInt n1 n2) := by
+  cases op <;> simp [BinOp.eval, BinOp.evalInt, Val.compareSafe, BaseLit.isUnboxed, Val.isUnboxed];
+    by_cases h : n1 = n2 <;> simp [h]
+
+theorem BinOp.eval_lit_bool (op : BinOp) (b1 b2 : Bool) :
+    BinOp.eval op (.lit (.bool b1)) (.lit (.bool b2)) = (Val.lit <$> op.evalBool b1 b2) := by
+  cases b1 <;> cases b2 <;> cases op <;> rfl
+
+/-- Unlike the integer and boolean cases, this one needs `op ≠ .eq`: Rocq's `bin_op_eval`
+dispatches `EqOp` before it ever reaches `bin_op_eval_loc`, and `BinOp.eval` likewise routes
+equality of two locations through `Val.compareSafe`. -/
+theorem BinOp.eval_lit_loc (op : BinOp) (l : Loc) (lit : BaseLit) (hop : op ≠ .eq) :
+    BinOp.eval op (.lit (.loc l)) (.lit lit) = (Val.lit <$> op.evalLoc l lit) := by
+  cases op <;> cases lit <;> simp_all [BinOp.eval, BinOp.evalLoc]
 
 abbrev HeapF := fun V => Std.ExtTreeMap Loc V compare
 
@@ -136,8 +190,89 @@ abbrev State.get? (σ : State) (l : Loc) : Option (Option Val) :=
 
 /-! ### Multi-cell allocation -/
 
-def allocCells (l : Loc) (n : Nat) (v : Option Val) : HeapF (Option Val) :=
-  (List.range n).foldl (fun h (i : Nat) => Std.insert (M := HeapF) h (l + (i : Int)) v) ∅
+@[rocq_alias heap_lang.heap_lang.heap_array]
+def heapArray (l : Loc) (vs : List (Option Val)) : HeapF (Option Val) :=
+  match vs with
+  | .nil => ∅
+  | v :: vs' => Std.insert (M := HeapF) (heapArray (l + (1 : Int)) vs') l v
+
+abbrev allocCells (l : Loc) (n : Nat) (v : Option Val) : HeapF (Option Val) :=
+  heapArray l (List.replicate n v)
+
+@[simp]
+theorem heapArray_nil {l : Loc} : heapArray l [] = (∅ : HeapF (Option Val)) := rfl
+
+@[rocq_alias heap_lang.heap_lang.heap_array_singleton]
+theorem heapArray_singleton {l : Loc} : heapArray l [v] = PartialMap.singleton l v := rfl
+
+theorem heapArray_snoc {l : Loc} {vs : List (Option Val)} {v : Option Val} :
+    heapArray l (vs ++ [v]) =
+      Std.insert (M := HeapF) (heapArray l vs) (l + (vs.length : Int)) v := by
+  induction vs generalizing l with
+  | nil => simp [heapArray]
+  | cons w vs ih =>
+    simp only [List.cons_append, heapArray, List.length_cons]
+    rw [ih, Std.LawfulPartialMap.insert_insert_comm]
+    · congr 1
+      rw [loc_add_assoc]
+      congr 1
+      omega
+    · intro h
+      have := congrArg Loc.n h
+      simp only [loc_add_n] at this
+      omega
+
+@[rocq_alias heap_lang.heap_lang.heap_array_lookup]
+theorem get?_heapArray {l : Loc} {vs : List (Option Val)} {ow : Option Val} {k : Loc} :
+    PartialMap.get? (M := HeapF) (heapArray l vs) k = some ow ↔
+      ∃ j : Nat, k = l + (j : Int) ∧ vs[j]? = some ow := by
+  induction vs generalizing l with
+  | nil => simp [heapArray, Std.LawfulPartialMap.get?_empty]
+  | cons v vs ih =>
+    rw [heapArray, Std.LawfulPartialMap.get?_insert]
+    have hadd (j : Nat) :
+        l + (1 : Int) + (j : Int) = l + ((j + 1 : Nat) : Int) := by
+      rw [loc_add_assoc, Int.add_comm (1 : Int)]
+      congr 1
+    constructor
+    · split
+      · rename_i hlk
+        intro how
+        exact ⟨0, by simpa using hlk.symm, by simpa using how⟩
+      · intro hget
+        obtain ⟨j, hkj, hj⟩ := ih.mp hget
+        exact ⟨j + 1, hkj.trans (hadd j), by simpa using hj⟩
+    · rintro ⟨_ | j, hkj, hj⟩
+      · rw [ite_eq_left (by simpa using hkj.symm)]
+        simpa using hj
+      · rw [ite_eq_right]
+        · exact ih.mpr ⟨j, hkj.trans (hadd j).symm, by simpa using hj⟩
+        · intro hlk
+          have := congrArg Loc.n (hlk.trans hkj)
+          simp only [loc_add_n] at this
+          omega
+
+@[rocq_alias heap_lang.heap_lang.heap_array_map_disjoint]
+theorem heapArray_disjoint {l : Loc} {vs : List (Option Val)} {m : HeapF (Option Val)}
+    (hf : ∀ i : Int, 0 ≤ i → i < (vs.length : Int) →
+      PartialMap.get? (M := HeapF) m (l + i) = none) :
+    PartialMap.disjoint (M := HeapF) (heapArray l vs) m := by
+  intro k ⟨h1, h2⟩
+  rcases hget : PartialMap.get? (M := HeapF) (heapArray l vs) k with _ | ow
+  · simp [hget] at h1
+  · obtain ⟨i, hki, hvi⟩ := get?_heapArray.mp hget
+    have hi := (List.getElem?_eq_some_iff.mp hvi).1
+    rw [hki, hf (i : Int) (Int.natCast_nonneg i) (by omega)] at h2
+    simp at h2
+
+theorem get?_heapArray_self {l : Loc} {vs : List (Option Val)} :
+    PartialMap.get? (M := HeapF) (heapArray l vs) (l + (vs.length : Int)) = none := by
+  rcases hget : PartialMap.get? (M := HeapF) (heapArray l vs)
+    (l + (vs.length : Int)) with _ | ow
+  · rfl
+  · obtain ⟨i, hik, hvi⟩ := get?_heapArray.mp hget
+    have hi := (List.getElem?_eq_some_iff.mp hvi).1
+    exact False.elim (Nat.ne_of_lt hi (Int.ofNat_inj.mp (loc_add_inj hik).symm))
 
 theorem get?_foldl_insert (l : Loc) (v : Option Val) (m : HeapF (Option Val)) (n : Nat) (k : Loc) :
     PartialMap.get? (M := HeapF) ((List.range n).foldl
@@ -150,39 +285,60 @@ theorem get?_foldl_insert (l : Loc) (v : Option Val) (m : HeapF (Option Val)) (n
     rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil,
       Std.LawfulPartialMap.get?_insert, ih]
     by_cases hk : (l + (n : Int)) = k
-    · rw [if_pos hk, if_pos ⟨n, Nat.lt_succ_self n, hk.symm⟩]
-    · rw [if_neg hk]
+    · rw [ite_eq_left hk, ite_eq_left ⟨n, Nat.lt_succ_self n, hk.symm⟩]
+    · rw [ite_eq_right hk]
       by_cases hex : ∃ i, i < n ∧ k = l + (i : Int)
       · obtain ⟨i, hi, hki⟩ := hex
-        rw [if_pos ⟨i, hi, hki⟩, if_pos ⟨i, Nat.lt_succ_of_lt hi, hki⟩]
+        rw [ite_eq_left ⟨i, hi, hki⟩, ite_eq_left ⟨i, Nat.lt_succ_of_lt hi, hki⟩]
       · grind
 
 theorem get?_allocCells {l : Loc} {n : Nat} {v : Option Val} {k : Loc} :
     PartialMap.get? (M := HeapF) (allocCells l n v) k
       = if (∃ i, i < n ∧ k = l + (i : Int)) then some v else none := by
-  simp [allocCells, get?_foldl_insert, Std.LawfulPartialMap.get?_empty]
+  by_cases h : ∃ i, i < n ∧ k = l + (i : Int)
+  · rw [ite_eq_left h]
+    obtain ⟨i, hi, hki⟩ := h
+    apply get?_heapArray.mpr
+    exact ⟨i, hki, List.getElem?_replicate_of_lt hi⟩
+  · rw [ite_eq_right h]
+    rcases hget : PartialMap.get? (M := HeapF) (allocCells l n v) k with _ | ow
+    · rfl
+    · obtain ⟨i, hki, hvi⟩ := get?_heapArray.mp hget
+      have hi := (List.getElem?_eq_some_iff.mp hvi).1
+      exact False.elim (h ⟨i, by simpa using hi, hki⟩)
+
+@[simp]
+theorem allocCells_zero {l : Loc} {v : Option Val} : allocCells l 0 v = ∅ := rfl
+
+/-- `allocCells` peels off its *last* cell. -/
+theorem allocCells_succ {l : Loc} {n : Nat} {v : Option Val} :
+    allocCells l (n + 1) v = Std.insert (M := HeapF) (allocCells l n v) (l + (n : Int)) v := by
+  rw [allocCells, List.replicate_succ', heapArray_snoc, List.length_replicate]
+
+theorem get?_allocCells_self {l : Loc} {n : Nat} {v : Option Val} :
+    PartialMap.get? (M := HeapF) (allocCells l n v) (l + (n : Int)) = none := by
+  simpa [allocCells] using
+    (get?_heapArray_self (l := l) (vs := List.replicate n v))
 
 theorem initHeap_heap_eq {σ : State} {l : Loc} {n : Int} {v : Option Val} :
     Std.PartialMap.equiv (M := HeapF) (σ.initHeap l n v).heap
       (Std.PartialMap.union (allocCells l n.toNat v) σ.heap) := by
   intro k
-  show PartialMap.get? (M := HeapF) ((List.range n.toNat).foldl
+  change PartialMap.get? (M := HeapF) ((List.range n.toNat).foldl
       (fun h (i : Nat) => Std.insert (M := HeapF) h (l + (i : Int)) v) σ.heap) k = _
   rw [get?_foldl_insert, Std.PartialMap.union, Std.LawfulPartialMap.get?_merge, get?_allocCells]
   by_cases hex : ∃ i, i < n.toNat ∧ k = l + (i : Int)
-  · simp only [if_pos hex]; cases PartialMap.get? (M := HeapF) σ.heap k <;> rfl
-  · simp only [if_neg hex]; cases PartialMap.get? (M := HeapF) σ.heap k <;> rfl
+  · simp only [ite_eq_left hex]; cases PartialMap.get? (M := HeapF) σ.heap k <;> rfl
+  · simp only [ite_eq_right hex]; cases PartialMap.get? (M := HeapF) σ.heap k <;> rfl
 
 theorem allocCells_disjoint {l : Loc} {n : Int} {v : Val} {m : HeapF (Option Val)}
     (hf : ∀ i : Int, 0 ≤ i → i < n → PartialMap.get? (M := HeapF) m (l + i) = none) :
-    Std.PartialMap.disjoint (M := HeapF) (allocCells l n.toNat (some v)) m := by
-  intro k ⟨h1, h2⟩
-  rw [get?_allocCells] at h1
-  split at h1 <;> rename_i hcond
-  · obtain ⟨i, hi, hki⟩ := hcond
-    rw [hki, hf (i : Int) (Int.natCast_nonneg i) (by omega)] at h2
-    simp at h2
-  · simp at h1
+    Std.PartialMap.disjoint (M := HeapF) (allocCells l n.toNat v) m := by
+  apply heapArray_disjoint
+  intro i hi hin
+  apply hf i hi
+  simp only [List.length_replicate] at hin
+  omega
 
 theorem exists_fresh_block (m : HeapF (Option Val)) (n : Int) :
     ∃ l : Loc, ∀ i : Int, 0 ≤ i → i < n → PartialMap.get? (M := HeapF) m (l + i) = none := by
@@ -194,13 +350,16 @@ theorem exists_fresh_block (m : HeapF (Option Val)) (n : Int) :
   simp only [loc_add_n] at hle
   grind
 
+/-- Initializing a single cell is a plain insert. Rocq adds `h` on the right in
+`state_init_heap` to make this hold; here it falls out of the `foldl`. -/
+@[rocq_alias heap_lang.heap_lang.state_init_heap_singleton]
+theorem State.initHeap_singleton {σ : State} {l : Loc} {v : Option Val} :
+    σ.initHeap l 1 v = { σ with heap := Std.insert (M := HeapF) σ.heap l v } := by
+  simp [State.initHeap]
+
 /-- Writing back a cell's current contents leaves the state unchanged. -/
 theorem State.initHeap_self {σ : State} {l : Loc} {v : Option Val}
     (h : PartialMap.get? (M := HeapF) σ.heap l = some v) : σ.initHeap l 1 v = σ := by
-  have hl : l + (0 : Int) = l := by
-    cases l
-    simp only [HAdd.hAdd, Loc.mk.injEq]
-    grind
   have hins : Std.insert (M := HeapF) σ.heap l v = σ.heap := by
     refine Std.LawfulPartialMap.equiv_iff_eq.mp fun k => ?_
     rw [Std.LawfulPartialMap.get?_insert]
@@ -208,7 +367,7 @@ theorem State.initHeap_self {σ : State} {l : Loc} {v : Option Val}
     · next heq => exact heq ▸ h.symm
     · rfl
   simp only [State.initHeap, Int.toNat_one, List.range_one, List.foldl_cons, List.foldl_nil,
-    Int.cast_ofNat_Int, hl, hins]
+    Int.cast_ofNat_Int, loc_add_zero, hins]
 
 @[rocq_alias heap_lang.heap_lang.base_step]
 inductive BaseStep : Exp → State → List Observation → Exp → State → List Exp → Prop where
@@ -287,5 +446,23 @@ inductive BaseStep : Exp → State → List Observation → Exp → State → Li
       σ.usedProphId.contains p →
       BaseStep (.resolve e (.ofVal (.lit (.prophecy p))) (.ofVal w)) σ
                (κs ++ [(p, (v, w))]) (.ofVal v) σ' ts
+
+/-- Allocation always has a step available: `Loc.fresh` picks a block that the heap does not
+use. -/
+@[rocq_alias heap_lang.heap_lang.alloc_fresh]
+theorem alloc_fresh (v : Val) (n : Int) (σ : State) (hn : 0 < n) :
+    BaseStep (.allocN (.ofVal (.lit (.int n))) (.ofVal v)) σ []
+      (.ofVal (.lit (.loc (Loc.fresh σ.heap.keys))))
+      (σ.initHeap (Loc.fresh σ.heap.keys) n v) [] :=
+  .allocNS n v σ _ hn fun i hi0 _ => by
+    simpa [State.get?, PartialMap.get?, getElem?_eq_none_iff, ← Std.ExtTreeMap.mem_keys]
+      using Loc.fresh_fresh _ hi0
+
+@[rocq_alias heap_lang.heap_lang.new_proph_id_fresh]
+theorem new_proph_id_fresh (σ : State) :
+    ∃ p : ProphId, BaseStep .newProph σ []
+      (.ofVal (.lit (.prophecy p))) { σ with usedProphId := σ.usedProphId.insert p } [] :=
+  let ⟨p, hp⟩ := _root_.Iris.Std.List.fresh σ.usedProphId.toList
+  ⟨p, .newProphS σ p (hp <| Std.ExtTreeSet.mem_toList.mpr <| Std.ExtTreeSet.mem_iff_contains.mpr ·)⟩
 
 end Iris.HeapLang

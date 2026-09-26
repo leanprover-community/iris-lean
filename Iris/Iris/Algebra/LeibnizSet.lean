@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Sergei Stepanenko, Zongyuan Liu
 -/
@@ -126,7 +126,7 @@ instance instUCMRADisjointLeibnizSet : UCMRA (DisjointLeibnizSet S) where
   pcore_unit := by simp [pcore]
 
 theorem valid_set {s : S} : ✓ valid s := ⟨⟩
-theorem validN_set {s : S}: ✓{n} valid s := ⟨⟩
+theorem validN_set {s : S} : ✓{n} valid s := ⟨⟩
 
 theorem not_valid_invalid : ¬ ✓ (error : DisjointLeibnizSet S) := False.elim
 theorem not_validN_invalid : ¬ ✓{n} (error : DisjointLeibnizSet S) := False.elim

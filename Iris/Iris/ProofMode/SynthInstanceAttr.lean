@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Michael Sammler. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler, Alvin Tang
 -/
@@ -80,19 +80,26 @@ instance : ToString ParamKind where
     | .uncheckedIn => "uncheckedIn"
 
 section IPMClasses
+
 structure ClassEntry where
   name      : Name
   /--
   Parameter kinds of class.
   For example, for class
   ```
-  class FromModal {PROP1 : outParam (Type _)} {PROP2}
-    {α : outParam <| Type _} [outParam (BI PROP1)] [BI PROP2]
-    (φ : outParam $ Prop) (M : outParam $ Modality PROP1 PROP2)
-    (sel : outParam (uncheckedInParam α)) (P : PROP2) (Q : outParam $ PROP1) where
-  from_modal : φ → M.M Q ⊢ P
+  class FromModal (io : InOut)
+      {PROP1 : semiOutParamIPM io (Type _)}
+      {PROP2} {α : outParam <| uncheckedInParam <| Type _}
+      [semiOutParamIPM io (BI PROP1)] [BI PROP2]
+      (M : semiOutParamIPM io (Modality PROP1 PROP2))
+      (φ : outParam Prop)
+      (sel : outParam <| uncheckedInParam α) (P : PROP2) (Q : outParam PROP1) where
+    from_modal : φ → M.M Q ⊢ P
   ```
-  `params := #[out, in, out, out, in, out, out, uncheckedIn, in, out]`
+  we have :
+  ```
+  params := #[in, semiOut, in, uncheckedIn, semiOut, in, semiOut, out, uncheckedIn, in, out]`
+  ```
   -/
   params : Array ParamKind
 
@@ -138,7 +145,7 @@ def semiOutParamCore (_io : InOut) (α : Sort u) : Sort u := α
   This should be used instead of `semiOutParam` for any type class with
   the annotation `[ipm_class]`.
 -/
-macro "semiOutParamIPM" io:term:max α:term:max : term =>
+macro "semiOutParamIPM " io:term:max ppSpace α:term:max : term =>
   `(semiOutParam (semiOutParamCore $io $α))
 
 private def parseInOutParam (d : Expr) : Option Expr := do
@@ -342,7 +349,7 @@ unsafe initialize registerBuiltinAttribute {
       let prio := if stx[1][1].isMissing then some default_prio else stx[1][1].isNatLit?
       let .some prio := prio | throwError "unknown priority: {stx[1][1]}"
 
-      let pats ← stx[2].getSepArgs.mapM λ stx => do
+      let pats ← stx[2].getSepArgs.mapM fun stx => do
         let stx ← `(iprop($(TSyntax.mk stx)))
         Term.elabTerm stx none
 
@@ -356,3 +363,7 @@ end IPMTactic
 
 initialize
   registerTraceClass `Meta.synthInstance.ipmParamKinds (inherited := true)
+
+end ProofMode
+
+end Iris

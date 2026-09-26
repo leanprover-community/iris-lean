@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Zongyuan Liu. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu
 -/
@@ -19,7 +19,7 @@ namespace Iris
 @[expose] public section
 local stepindex Nat
 
-open Std PartialMap
+open Iris.Std PartialMap
 
 universe u v
 
@@ -407,7 +407,7 @@ theorem valid_token {e : CoPset} :
 theorem mkData_op k (a b : A) :
     mkData (H := H) k (a • b) = mkData (H := H) k a • mkData k b := by
   refine OFE.eq_dist_2 ?_
-  refine fun _ => ⟨(fun i => Dist.of_eq (Heap.singleton_op_singleton i).symm),
+  refine fun _ => ⟨Dist.of_eq Heap.singleton_op_singleton.symm,
     Dist.of_eq (pcore_op_right_L rfl).symm⟩
 
 @[rocq_alias dyn_reservation_map_data_mono]
@@ -483,7 +483,7 @@ theorem valid_mkData_op_data_of_valid_op? {a : A} {x : H A} (vx : ✓{n} x)
     (h : ✓{n} a •? get? x k) : ✓{n} mkData k a • mk x ∅ := by
   have htok : (mkData k a • mk x ∅).token = .valid (∅ : CoPset) := pcore_op_left_L rfl
   refine validN_iff.mpr ⟨?_, ?_, ?_, ?_⟩
-  · show ✓{n} ({[k := a]} : H A) • x
+  · change ✓{n} ({[k := a]} : H A) • x
     intro i
     rw [Heap.get?_op]
     by_cases ki : k = i
@@ -675,3 +675,7 @@ end
 end DynReservationMap
 
 end CMRA
+
+end
+
+end Iris

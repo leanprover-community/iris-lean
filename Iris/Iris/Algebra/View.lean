@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Markus de Medeiros. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros, Puming Liu
 -/
@@ -327,7 +327,7 @@ instance : UCMRA (View R) where
   unit_valid := IsViewRel.rel_unit
   unit_left_id := by
     rintro ⟨xa, xf⟩
-    show (⟨UCMRA.unit • xa, UCMRA.unit • xf⟩ : View R) = ⟨xa, xf⟩
+    change (⟨UCMRA.unit • xa, UCMRA.unit • xf⟩ : View R) = ⟨xa, xf⟩
     rw [CMRA.ucmra_unit_left_id, CMRA.ucmra_unit_left_id]
   pcore_unit := congrArg some (congrArg (View.mk _) (CMRA.core_eqv_self UCMRA.unit))
 
@@ -918,7 +918,7 @@ def mapC [OFE A] [UCMRA B] [OFE A'] [UCMRA B']
     refine ⟨?_, ?_⟩
     · rcases x.auth with _|⟨fr, a⟩ <;> simp [Prod.pcore]
       rcases (CMRA.pcore fr) <;> simp
-      rcases h : (CMRA.pcore a) <;> cases h <;> simp [CMRA.pcore]
+      rcases h : (CMRA.pcore a) <;> cases h; simp [CMRA.pcore]
     · have _ := CMRA.Hom.pcore g x.frag
       rcases _ : (CMRA.pcore x.frag) <;>
       rcases _ : (CMRA.pcore (g.f x.frag)) <;> simp_all

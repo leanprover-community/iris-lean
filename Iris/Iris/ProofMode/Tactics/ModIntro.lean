@@ -1,17 +1,18 @@
 /-
-Copyright (c) 2026 Michael Sammler. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
 module
 
 import Iris.ProofMode.Modalities
+public import Iris.ProofMode.SolveSideCondition
 public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
 
 public section
-open Qq BI Std
+open Qq BI Iris.Std
 
 /-- Reified version of ModalityAction -/
 inductive ModalityActionQ (PROP1 : Q(Type u)) (PROP2 : Q(Type u)) : Type where
@@ -52,32 +53,32 @@ theorem modaction_id [BI PROP] {p P} (M : Modality PROP PROP) (h : M.action p = 
   rw [h] at hs
   apply hs
 
-theorem modaction_sep_emp_left [BI PROP1] [bi2: BI PROP2]
+theorem modaction_sep_emp_left [BI PROP1] [bi2 : BI PROP2]
     {elhs erhs erhs'} {M : Modality PROP1 PROP2}
     (h1 : elhs ⊢ M.M emp) (h2 : erhs ⊢ M.M erhs') : elhs ∗ erhs ⊢ M.M iprop(erhs') := calc
   _ ⊢ M.M emp ∗ M.M erhs'    := sep_mono h1 h2
   _ ⊢ M.M iprop(emp ∗ erhs') := M.sep
   _ ⊢ M.M erhs'              := M.mono emp_sep.1
 
-theorem modaction_sep_emp_right [BI PROP1] [bi2: BI PROP2]
+theorem modaction_sep_emp_right [BI PROP1] [bi2 : BI PROP2]
     {elhs elhs' erhs} {M : Modality PROP1 PROP2}
     (h1 : elhs ⊢ M.M elhs') (h2 : erhs ⊢ M.M emp) : elhs ∗ erhs ⊢ M.M iprop(elhs') := calc
   _ ⊢ M.M elhs' ∗ M.M emp    := sep_mono h1 h2
   _ ⊢ M.M iprop(elhs' ∗ emp) := M.sep
   _ ⊢ M.M elhs'              := M.mono sep_emp.1
 
-theorem modaction_sep [BI PROP1] [bi2: BI PROP2]
+theorem modaction_sep [BI PROP1] [bi2 : BI PROP2]
     {elhs erhs elhs' erhs'} {M : Modality PROP1 PROP2}
     (h1 : elhs ⊢ M.M elhs') (h2 : erhs ⊢ M.M erhs') : elhs ∗ erhs ⊢ M.M iprop(elhs' ∗ erhs') :=
   (sep_mono h1 h2).trans M.sep
 
 @[rocq_alias tac_modal_intro]
-theorem modintro [BI PROP1] [BI PROP2] {e e'} {α} {Φ M} {sel : α}
+theorem modintro [BI PROP1] [BI PROP2] {e e'} {α Φ M} {sel : α}
     {P : PROP2} {Q : PROP1}
-    [FromModal Φ M sel P Q] (h1 : e ⊢ M.M e') (h2 : e' ⊢ Q) (hΦ : Φ) : e ⊢ P := calc
+    [inst : FromModal .out M Φ sel P Q] (h1 : e ⊢ M.M e') (h2 : e' ⊢ Q) (hΦ : Φ) : e ⊢ P := calc
   e ⊢ M.M e' := h1
   _ ⊢ M.M Q  := M.mono h2
-  _ ⊢ P      := from_modal hΦ
+  _ ⊢ P      := inst.from_modal hΦ
 
 public meta section
 open Lean Elab Tactic Meta
@@ -189,7 +190,7 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
     let Q ← mkFreshExprMVarQ q($prop')
     -- `M Q ⊢ goal`
     let .some _ ←
-      ProofModeM.trySynthInstanceQ q(@FromModal $prop' $prop $α $bi' $bi $Φ $M $sel $goal $Q)
+      ProofModeM.trySynthInstanceQ q(@FromModal .out $prop' $prop $α $bi' $bi $M $Φ $sel $goal $Q)
       | throwIPMError "{goal} is not a \
           modality{if sel.isMVar then m!"" else m!" matching {sel}"}"
     -- show the side condition
@@ -206,7 +207,7 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
   The tactic succeeds only when the selector term `sel` matches the modality.
 -/
 elab "imodintro " colGt sel:term : tactic => do
-  ProofModeM.runTactic `imodintro λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `imodintro fun mvar { hyps, goal, .. } => do
     let pf ← iModIntroCore hyps goal sel
 
     mvar.assign pf
@@ -222,3 +223,11 @@ macro "imodintro" : tactic => `(tactic | imodintro _)
   required by the modality. The tactic is equivalent to `imodintro (▷^[_] _)`.
 -/
 macro "inext" : tactic => `(tactic | imodintro (▷^[_] _))
+
+end
+
+end
+
+end ProofMode
+
+end Iris

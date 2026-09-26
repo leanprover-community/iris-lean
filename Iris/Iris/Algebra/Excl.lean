@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Oliver Soeser. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oliver Soeser, Mario Carneiro
 -/
@@ -293,3 +293,9 @@ instance {F} [COFE.OFunctorContractive F] : RFunctorContractive (ExclOF F) where
     · apply COFE.OFunctorContractive.map_contractive.1
       exact HKL
     · trivial
+
+end Excl
+
+end excl
+
+end Iris

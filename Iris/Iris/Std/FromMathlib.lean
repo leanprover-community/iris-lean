@@ -1,6 +1,7 @@
 /-
-Copyright (c) 2026 Zongyuan Liu, Markus de Medeiros. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Zongyuan Liu, Markus de Medeiros
 -/
 module
 
@@ -86,6 +87,10 @@ theorem trans (hab : ReflTransGen r a b) (hbc : ReflTransGen r b c) : ReflTransG
   induction hbc with
   | refl => exact hab
   | tail _ hcd ih => exact ih.tail hcd
+
+/-- NB. Copied from Mathlib -/
+instance {α} {r : α → α → Prop} :
+    Trans (ReflTransGen r) (ReflTransGen r) (ReflTransGen r) := ⟨trans⟩
 
 /-- NB. Copied from Mathlib -/
 theorem single (hab : r a b) : ReflTransGen r a b :=

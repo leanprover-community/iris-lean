@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Zongyuan Liu. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu
 -/
@@ -142,6 +142,11 @@ theorem bigAndL_mem {Φ : A → PROP} {l : List A} {x : A} (h : x ∈ l) :
 theorem bigAndL_zip_seq {Φ : A × Nat → PROP} {n : Nat} {l : List A} :
     ([∧list] xy ∈ l.zipIdx n, Φ xy) = [∧list] i ↦ x ∈ l, Φ (x, n + i) :=
   bigOpL_zipIdx_eq Φ n l
+
+@[rocq_alias big_andL_zip_seqZ]
+theorem bigAndL_zip_seqZ {Φ : A × Int → PROP} {n : Int} {l : List A} :
+    ([∧list] xy ∈ List.zipIdxInt l n, Φ xy) = [∧list] i ↦ x ∈ l, Φ (x, n + i) :=
+  bigOpL_zipIdxInt_eq Φ n l
 
 @[rocq_alias big_andL_bind]
 theorem bigAndL_flatMap {B : Type _} (f : A → List B) {Φ : B → PROP} {l : List A} :

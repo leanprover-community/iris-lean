@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Oliver Soeser. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oliver Soeser, Zongyuan Liu, Yunsong Yang, Michael Sammler, Alvin Tang
 -/
@@ -208,3 +208,7 @@ where
     return ← spats.toList.mapM (SpecPat.parse ·.raw)
 
 end
+
+end ProofMode
+
+end Iris

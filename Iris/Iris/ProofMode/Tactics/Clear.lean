@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2022 Lars König. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang
 -/
@@ -11,7 +11,7 @@ public meta import Iris.ProofMode.Patterns.SelPattern
 namespace Iris.ProofMode
 
 public section
-open BI Std
+open BI Iris.Std
 
 @[rocq_alias tac_clear]
 theorem clear_spatial [BI PROP] {P P' A Q : PROP} [TCOr (Affine A) (Absorbing Q)]
@@ -47,7 +47,7 @@ private def ClearState.clearProofModeHyp {u prop bi origE goal} :
   | { e, hyps, pf }, ivar => do
       let ⟨e', hyps', _, out', p, _, hrem⟩ := hyps.remove true ivar
       let step ← iClearCoreOne bi e e' p out' goal hrem
-      let pf' : Q(($e' ⊢ $goal) → ($origE ⊢ $goal)) := q(λ h => $pf ($step h))
+      let pf' : Q(($e' ⊢ $goal) → ($origE ⊢ $goal)) := q(fun h => $pf ($step h))
       return {  e := e', hyps := hyps', pf := pf' }
 
 def iClearCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
@@ -55,7 +55,7 @@ def iClearCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (k : ∀ {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
       (_ : Hyps bi e) (goal : Q($prop)) (_ : Array FVarId), ProofModeM Q($e ⊢ $goal)) :
     ProofModeM Q($e ⊢ $goal) := do
-  let (ivars, fvars) := (← SelPat.resolve hyps pats).partitionMap fun
+  let (ivars, fvars) := (← SelPat.resolve hyps pats .topToBottom).partitionMap fun
   | {kind := .ipm ivar, ..} => .inl ivar
   | {kind := .pure id,  ..} => .inr id
 
@@ -79,6 +79,14 @@ def iClearCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 elab "iclear " pats:(colGt ppSpace selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 
-  ProofModeM.runTactic `iclear λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `iclear fun mvar { hyps, goal, .. } => do
     let pf ← iClearCore hyps goal pats (addBIGoalWithoutFVars · ·)
     mvar.assign pf
+
+end
+
+end
+
+end ProofMode
+
+end Iris

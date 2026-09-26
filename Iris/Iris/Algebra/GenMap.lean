@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
@@ -126,6 +126,16 @@ theorem GenMap.empty_discreteE [OFE β] : DiscreteE (GenMap.empty (β := β)) wh
   obtain ⟨ca, ba⟩ := a
   obtain ⟨cb, bb⟩ := b
   simp at h; subst h; rfl
+
+theorem GenMap.alter_of_lookup {g : GenMap β} {x : Nat} {y : Option β} (h : g.car x = y) :
+    g.alter x y = g :=
+  GenMap.ext <| funext fun k => by
+    simp only [alter, Iris.alter]
+    grind
+
+theorem GenMap.alter_alter (g : GenMap β) (x : Nat) (y y' : Option β) :
+    (g.alter x y).alter x y' = g.alter x y' :=
+  GenMap.ext <| funext fun _ => by simp only [alter, Iris.alter]; split <;> rfl
 
 /-! ## CMRA -/
 
@@ -274,7 +284,7 @@ theorem GenMap.singleton_map_op (x : Nat) (y1 y2 : β) :
   · subst h; simp [singleton, empty, alter, Iris.alter]
   · simp only [singleton, empty, alter, Iris.alter]
     have : x ≠ γ := Ne.symm h
-    simp [if_neg this]
+    simp [ite_eq_right this]
 
 theorem GenMap.singleton_map_pcore (x : Nat) (y : β) (γ : Nat) :
     ((singleton x y : GenMap β).car γ).bind pcore =
@@ -301,7 +311,12 @@ theorem GenMap.op_singleton_comm {mf : GenMap β} {x : Nat} (y : β)
     simp [H_free]
   · simp only [CMRA.op, optionOp, alter, Iris.alter, singleton, empty]
     have : x ≠ k := Ne.symm heq
-    simp [if_neg this]
+    simp [ite_eq_right this]
+
+theorem GenMap.singleton_op_alter_none {g : GenMap β} {x : Nat} {y : β} (h : g.car x = some y) :
+    GenMap.singleton x y • g.alter x none = g := by
+  rw [op_singleton_comm _ y (by simp [IsFree, alter, Iris.alter]), alter_alter,
+    alter_of_lookup h]
 
 theorem GenMap.validN_op_comm {m mf : GenMap β} (x : Nat) (y : β) (H : IsFree mf.car x) :
     ✓{n} m.alter x (some y) • mf ↔ ✓{n} (m • mf).alter x (some y) := by
@@ -314,7 +329,7 @@ theorem GenMap.validN_op_comm {m mf : GenMap β} (x : Nat) (y : β) (H : IsFree 
     simp [H]
   · simp only [CMRA.op, alter, Iris.alter]
     have : x ≠ k := Ne.symm heq
-    simp [if_neg this]
+    simp [ite_eq_right this]
 
 end CMRA
 
@@ -376,8 +391,7 @@ instance instURFunctor_GenMapOF (F : COFE.OFunctorPre) [RFunctor F] :
       | none => simp
       | some v =>
         revert Hcore
-        cases h' : pcore v <;> cases h'' : pcore ((OFunctor.map f g).f v) <;>
-          simp_all <;> exact (·.dist)
+        cases h' : pcore v <;> cases h'' : pcore ((OFunctor.map f g).f v) <;> simp_all
     op z x := OFE.eq_dist_2 <| by
       intro _ γ
       have Hop := @(URFunctor.map (F := OptionOF F) f g).op (z.car γ) (x.car γ)

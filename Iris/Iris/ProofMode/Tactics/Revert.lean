@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Oliver Soeser. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oliver Soeser, Yunsong Yang
 -/
@@ -11,7 +11,7 @@ public meta import Iris.ProofMode.Patterns.SelPattern
 namespace Iris.ProofMode
 
 public section
-open BI Std
+open BI Iris.Std
 
 /- Syntax for `iinduction` and `iloeb` -/
 declare_syntax_cat generalizingSelPats
@@ -26,7 +26,7 @@ theorem wand_revert [BI PROP] {Δ Δ' P Q : PROP}
 @[rocq_alias tac_forall_revert]
 theorem forall_revert {α} [BI PROP] {Δ : PROP} {Ψ : α → PROP}
     (h : Δ ⊢ BI.forall Ψ) : ∀ x, Δ ⊢ Ψ x :=
-  λ x => h.trans (forall_elim x)
+  fun x => h.trans (forall_elim x)
 
 @[rocq_alias tac_pure_revert]
 theorem pure_revert [BI PROP] {Δ P Q : PROP} {φ : Prop}
@@ -139,8 +139,8 @@ def getDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
   let allPureFVars := explicitPureFVars ++ missingPureHyps.map (·.fst)
 
   let irisHypsToBeChecked :=
-    hyps.intuitionisticIVarIds ++
-    if includeSpatialHyps then hyps.spatialIVarIds else []
+    hyps.intuitionisticIVarIds .topToBottom ++
+    if includeSpatialHyps then hyps.spatialIVarIds .topToBottom else []
   -- Check forward dependency of Iris hypotheses
   let missingIrisHyps : List (Name × IVarId × FVarId) :=
     irisHypsToBeChecked.filterMap fun ivar =>
@@ -268,7 +268,7 @@ elab_rules : tactic
 
     ProofModeM.runTactic `irevert fun mvar { hyps, goal, .. } => do
       -- Parse the selection patterns provided by the tactic user
-      let targets ← SelPat.resolve hyps parsedPats
+      let targets ← SelPat.resolve hyps parsedPats .topToBottom
 
       -- Check for dependencies with the hypotheses in the selection targets
       checkDependentHyps hyps targets none pats
@@ -282,7 +282,7 @@ elab_rules : tactic
 
     ProofModeM.runTactic `irevert fun mvar { hyps, goal, .. } => do
       -- Parse the selection patterns provided by the tactic user
-      let explicitTargets ← SelPat.resolve hyps parsedPats
+      let explicitTargets ← SelPat.resolve hyps parsedPats .topToBottom
       -- Find all dependent hypotheses
       let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ← getDependentHyps hyps explicitTargets none true
       -- Obtain the selection targets, including dependent ones
@@ -290,3 +290,11 @@ elab_rules : tactic
 
       let expr ← iRevertCore targets hyps goal
       mvar.assign expr
+
+end
+
+end
+
+end ProofMode
+
+end Iris

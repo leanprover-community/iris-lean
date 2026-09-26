@@ -1,7 +1,11 @@
+/-
+Copyright (c) The Iris-Lean Contributors
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 module
 
-public import Mathlib.Data.Real.Basic
-public import Mathlib.Data.ENNReal.Basic
+public import Mathlib.Basic.Real.Basic
+public import Mathlib.Basic.ENNReal.Basic
 public import Iris
 
 /-! ## Commutative Monoid CMRAs

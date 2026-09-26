@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Klaus Kraßnitzer. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Klaus Kraßnitzer
 -/
@@ -303,6 +303,40 @@ example {v : Val} :
 example {v : Val} :
     ⊢ WP hl(ref(&v)) @ s ; E {{ w, ∃ l : Loc, ⌜w = hl_val(#l)⌝ ∗ l ↦ some v }} := by
   wp_alloc l
+  imodintro
+  iexists l
+  iframe
+  itrivial
+
+-- For a general `allocn`, `wp_alloc` returns ownership of the freshly allocated array.
+example {v : Val} :
+    ⊢ WP hl(allocn(#3, &v)) @ s ; E
+      {{ w, ∃ l : Loc, ⌜w = hl_val(#l)⌝ ∗
+          (l ↦∗ List.replicate (3 : Int).toNat v : IProp GF) }} := by
+  wp_alloc l with Hl
+  imodintro
+  iexists l
+  iframe
+  itrivial
+
+-- A symbolic positive length is accepted, and unrelated spatial resources are preserved.
+example {n : Int} (hn : 0 < n) {l' : Loc} {v w : Val} :
+    l' ↦ some w ⊢ WP hl(allocn(#n, &v)) @ s ; E
+      {{ r, ∃ l : Loc, ⌜r = hl_val(#l)⌝ ∗ l ↦∗ List.replicate n.toNat v ∗ l' ↦ some w }} := by
+  iintro Hl'
+  wp_alloc l with Hl
+  imodintro
+  iexists l
+  iframe
+  itrivial
+
+-- Anonymous-hypothesis variant, with the allocation nested in an evaluation context.
+example {v w : Val} :
+    ⊢ WP hl((allocn(#2, &v), &w)) @ s ; E
+      {{ r, ∃ l : Loc, ⌜r = hl_val((#l, &w))⌝ ∗
+          (l ↦∗ List.replicate (2 : Int).toNat v : IProp GF) }} := by
+  wp_alloc l
+  wp_pair
   imodintro
   iexists l
   iframe

@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Сухарик. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Сухарик (@suhr)
 -/
@@ -15,7 +15,7 @@ local stepindex Nat
 
 namespace Iris
 
-open Std HeapView PartialMap Iris.Algebra CMRA BI ProofMode
+open Iris.Std HeapView PartialMap Iris.Algebra CMRA BI ProofMode
 
 @[rocq_alias ghost_mapG]
 class GhostMapG (GF : BundledGFunctors)
@@ -30,7 +30,7 @@ section definitions
 variable [LawfulFiniteMap H K] [GhostMapG GF K V H]
 
 @[rocq_alias ghost_map_auth]
-public def ghost_map_auth (γ : GName) (dq : DFrac) (m : H V) : IProp GF :=
+def ghost_map_auth (γ : GName) (dq : DFrac) (m : H V) : IProp GF :=
   iOwn (E := GhostMapG.elem) γ (Auth dq (Std.PartialMap.map (fun x ↦ toAgree ⟨x⟩) m))
 
 #rocq_ignore ghost_map_auth_def "Not needed"
@@ -38,7 +38,7 @@ public def ghost_map_auth (γ : GName) (dq : DFrac) (m : H V) : IProp GF :=
 #rocq_ignore ghost_map_auth_unseal "Not needed"
 
 @[rocq_alias ghost_map_elem]
-public def ghost_map_elem (γ : GName) (dq : DFrac) (k : K) (v : V) : IProp GF :=
+def ghost_map_elem (γ : GName) (dq : DFrac) (k : K) (v : V) : IProp GF :=
   iOwn (E := GhostMapG.elem) γ (Frag k dq (toAgree ⟨v⟩))
 
 #rocq_ignore ghost_map_elem_def "Not needed"

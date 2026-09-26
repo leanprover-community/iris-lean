@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros, Zongyuan Liu
 -/
@@ -64,9 +64,10 @@ For the heap_lang package (`iris_heap_lang/` upstream) write:
 @[rocq_alias heap_lang.pointsto]
 ```
 
-File-local declarations normally follow the same convention. If a local name
-occurs in multiple tracked Rocq files, include the source filename to make the
-aliases distinct. For example, both
+Declarations normally follow the same convention. If a name occurs in multiple
+tracked Rocq files, include the source filename for every occurrence to make the
+aliases distinct. This applies to exported as well as file-local declarations.
+For example, both
 `iris_heap_lang/lib/spin_lock.v` and `iris_heap_lang/lib/ticket_lock.v` contain a
 local `lock_inv`, so their aliases are:
 ```
@@ -78,7 +79,7 @@ local `lock_inv`, so their aliases are:
 open Lean Elab Command
 
 /-- Creates a `@[deprecated]` alias in the `Rocq` namespace with the given Rocq name. -/
-syntax (name := rocq_alias) "rocq_alias" ident : attr
+syntax (name := rocq_alias) "rocq_alias " ident : attr
 
 initialize registerBuiltinAttribute {
   name := `rocq_alias
@@ -139,7 +140,7 @@ carry a package prefix.
 ```
 -/
 @[expose]
-elab "#rocq_ignore" id:ident reason:str : command => do
+elab "#rocq_ignore " id:ident ppSpace reason:str : command => do
   modifyEnv (rocqIgnoreExt.addEntry · (id.getId, reason.getString))
 
 /-- Environment extension tracking all `#rocq_ignore_file` entries as `(folder, file, reason)` triples. -/
@@ -162,7 +163,7 @@ the unprefixed `iris` package. The file is relative to the named directory;
 ```
 -/
 @[expose]
-elab "#rocq_ignore_file" folder:ident file:str reason:str : command => do
+elab "#rocq_ignore_file " folder:ident ppSpace file:str ppSpace reason:str : command => do
   modifyEnv (rocqIgnoreFileExt.addEntry · (folder.getId.toString, file.getString, reason.getString))
 
 /-- A concept entry: `(dir, feature, subfeature?, status, reason)`. -/

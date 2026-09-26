@@ -1,6 +1,7 @@
 /-
-Copyright (c) 2026 Fernando Leal. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Fernando Leal
 -/
 module
 
@@ -34,7 +35,7 @@ export EvContextOps (empty comp)
 /-- An evaluation context `Ectx` of expressions `Expr` is an "expression
 with a hole". This hole can be filled in using the `fill` operation.
 
-For example, for a lambda calculus `t ::= v | λ x . t | t t` with
+For example, for a lambda calculus `t ::= v | fun x . t | t t` with
 values `v`, the evaluation contexts could be defined inductively as
 `K ::= □ | v K | K t`.  -/
 class EvContext (Expr : Type e) (Ectx : outParam <| Type c)
@@ -60,12 +61,12 @@ attribute [local simp] EvContext.fill_inj Function.Injective.eq_iff
 The generic reduction relation is then derived from taking the closure
 of these base steps over any context.
 
-For example, for a lambda calculus `t ::= v | λ x . t | t t` with
+For example, for a lambda calculus `t ::= v | fun x . t | t t` with
 values `v` and evaluation contexts `K ::= □ | v K | K t`, the base step
-relation could be defined as `(λ x . t) v -->ᵇ t[v/x]`, where `t[v/x]`
+relation could be defined as `(fun x . t) v -->ᵇ t[v/x]`, where `t[v/x]`
 stands for "`t` but with all references to `x` replaced with `x`". In
 particular, this is the only reduction defined for `-->ᵇ`, so a term
-like `v₂ ((λ x . t) v)` does not reduce under `-->ᵇ`! -/
+like `v₂ ((fun x . t) v)` does not reduce under `-->ᵇ`! -/
 class BaseStep (Expr : Type _) (State : outParam (Type _)) (Obs : outParam (Type _)) where
   /-- The base reduction relation of the language. See `BaseStep`. -/
   baseStep : Expr × State → List Obs → Expr × State × List Expr → Prop
@@ -126,10 +127,10 @@ def Irreducible : Expr × State → Prop
   | (e,σ) => ∀ obs e' σ' eₜ, ¬ (e,σ) -<obs>->ᵇ (e',σ',eₜ)
 
 @[rocq_alias base_stuck]
-def Stuck [ToVal Expr Val]: Expr × State → Prop
+def Stuck [ToVal Expr Val] : Expr × State → Prop
   | (e,σ) => toVal e = none ∧ Irreducible (e,σ)
 
-variable {e : Expr}{σ : State}
+variable {e : Expr} {σ : State}
 
 @[rocq_alias not_base_reducible, grind =]
 theorem not_reducible_iff_irreducible : (¬ Reducible (e, σ)) ↔ Irreducible (e, σ) := by
@@ -146,7 +147,8 @@ end BaseStep
 This typeclass is defined in terms of a base step relation `baseStep`,
 a type of evaluation contexts `Ectx` and a set of values `Val`, and
 extended with theorems that relate these concepts to one another. -/
-class EctxLanguage (Expr  : Type _) (Ectx State Obs Val : outParam (Type _))
+@[rocq_alias ectxLanguage, rocq_alias EctxLanguageMixin]
+class EctxLanguage (Expr : Type _) (Ectx State Obs Val : outParam (Type _))
   extends BaseStep Expr State Obs, ToVal Expr Val, EvContext Expr Ectx where
   /-- Removing a context out of a value gives a value -/
   fill_val K e : (toVal (fill K e)).isSome → (toVal e).isSome
@@ -173,7 +175,7 @@ class EctxLanguage (Expr  : Type _) (Ectx State Obs Val : outParam (Type _))
 attribute [rocq_alias val_base_stuck] EctxLanguage.val_stuck
 attribute [rocq_alias fill_val] EctxLanguage.fill_val
 attribute [rocq_alias step_by_val] EctxLanguage.step_by_val
-attribute [rocq_alias base_ctx_step_val] EctxLanguage.base_ctx_step_val
+attribute [rocq_alias ectx_language.base_ctx_step_val] EctxLanguage.base_ctx_step_val
 
 attribute [grind .] EctxLanguage.val_stuck
 attribute [grind →] EctxLanguage.base_ctx_step_val
@@ -191,7 +193,7 @@ theorem fill_not_val K (e : Expr) : (toVal e) = none → (toVal (fill K e)) = no
 def SubredexesAreValues (e : Expr) :=
   ∀ {K : Ectx} {e'}, e = fill K e' → toVal e' = none → K = empty
 
-@[rocq_alias LanguageOfEctx]
+@[rocq_alias LanguageOfEctx, rocq_alias ectx_lang, rocq_alias ectx_lang_mixin]
 instance instLanguage : Language Expr State Obs Val where
   val_stuck {e σ obs e' σ' eₜ} primStep := by
     rcases primStep with ⟨bstep⟩
@@ -376,3 +378,9 @@ theorem pureExec_fill φ n : PureExec φ n e₁ e₂ → PureExec φ n (fill K e
   Language.pureExec_fill _
 
 end EctxLanguage
+
+end
+
+end ProgramLogic
+
+end Iris

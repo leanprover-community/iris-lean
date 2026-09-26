@@ -1,14 +1,16 @@
 /-
-Copyright (c) 2025 Michael Sammler. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
 module
 
 public import Iris.BI
+public import Iris.Algebra.Frac
 public import Iris.ProofMode.SynthInstance
 public import Iris.ProofMode.Instances
 public import Iris.ProofMode.InstancesMake
+public import Iris.ProofMode.InstancesUpdates
 public import Iris.ProofMode.NatCancel
 
 @[expose] public section
@@ -56,15 +58,18 @@ variable [BI PROP] (P1 P2 Q : PROP) [FromAssumption p .in P1 Q] [FromAssumption 
 left conjuncts, because `fromAssumption_and_r` is declared after `fromAssumption_and_l`.
 This is the same behavior as regular typeclass search. -/
 /-- info: solution: FromAssumption p InOut.in iprop(P1 ∧ P2) Q, new goals: [] -/
-#guard_msgs in #ipm_synth (FromAssumption p .in iprop(P1 ∧ P2) Q)
+#guard_msgs in
+#ipm_synth (FromAssumption p .in iprop(P1 ∧ P2) Q)
 
 /- Test backtracking picking the left conjunct. -/
 /-- info: solution: FromAssumption p InOut.in iprop(P1 ∧ P2) P1, new goals: [] -/
-#guard_msgs in #ipm_synth (FromAssumption p .in iprop(P1 ∧ P2) P1)
+#guard_msgs in
+#ipm_synth (FromAssumption p .in iprop(P1 ∧ P2) P1)
 
 /- Test backtracking picking the right conjunct. -/
 /-- info: solution: FromAssumption p InOut.in iprop(P1 ∧ P2) P2, new goals: [] -/
-#guard_msgs in #ipm_synth (FromAssumption p .in iprop(P1 ∧ P2) P2)
+#guard_msgs in
+#ipm_synth (FromAssumption p .in iprop(P1 ∧ P2) P2)
 
 end backtracking
 
@@ -76,17 +81,20 @@ variable [BI PROP] (P1 P2 : Nat → PROP)
 /- Test creation of mvars -/
 set_option pp.mvars false in
 /-- info: solution: IntoWand false false iprop(∀ x, P1 x -∗ P2 x) WandMode.unknown (P1 ?_) (P2 ?_), new goals: [?_: Nat] -/
-#guard_msgs in #ipm_synth (IntoWand false false iprop(∀ a, P1 a -∗ P2 a) .unknown _ _)
+#guard_msgs in
+#ipm_synth (IntoWand false false iprop(∀ a, P1 a -∗ P2 a) .unknown _ _)
 
 /- Test instantiation of forall quantifier -/
 /-- info: solution: IntoWand false false iprop(∀ x, P1 x -∗ P2 x) (WandMode.matching WandMode.Side.argument) (P1 1)
   (P2 1), new goals: [] -/
-#guard_msgs in #ipm_synth (IntoWand false false iprop(∀ a, P1 a -∗ P2 a) (.matching .argument) (P1 1) _)
+#guard_msgs in
+#ipm_synth (IntoWand false false iprop(∀ a, P1 a -∗ P2 a) (.matching .argument) (P1 1) _)
 
 /- Test instantiation of mvar created outside ipm_synth -/
 /-- info: solution: IntoWand false false iprop(P1 1 -∗ P2 1) (WandMode.matching WandMode.Side.argument) (P1 1)
   (P2 1), new goals: [] -/
-#guard_msgs in #ipm_synth (IntoWand false false iprop(P1 _ -∗ P2 1) (.matching .argument) (P1 1) _)
+#guard_msgs in
+#ipm_synth (IntoWand false false iprop(P1 _ -∗ P2 1) (.matching .argument) (P1 1) _)
 
 end mvars
 
@@ -135,14 +143,14 @@ class TacticTest [BI PROP] (P : PROP) (Q : outParam PROP) where
   tactic_test : P ⊢ Q
 
 @[ipm_tactic_instance:high TacticTest _ _]
-def tac_continue : SynthTactic := λ e => do
+def tac_continue : SynthTactic := fun e => do
   logInfo m!"tac_continue called with {e}"
   return .continue
 
 theorem tactic_test_emp [BI PROP] (P : PROP) : TacticTest iprop(emp ∗ P) P := ⟨sep_elim_right⟩
 
 @[ipm_tactic_instance TacticTest iprop(emp ∗ _) _]
-def tac_emp : SynthTactic := λ e => do
+def tac_emp : SynthTactic := fun e => do
   let_expr TacticTest prop bi P _ := e | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
@@ -154,10 +162,10 @@ def tac_emp : SynthTactic := λ e => do
 
 theorem tactic_test_sep [BI PROP] (P P' Q : PROP) :
   TacticTest P P' →
-  TacticTest iprop(P ∗ Q) iprop(P' ∗ Q) := λ h => ⟨sep_mono h.1 .rfl⟩
+  TacticTest iprop(P ∗ Q) iprop(P' ∗ Q) := fun h => ⟨sep_mono h.1 .rfl⟩
 
 @[ipm_tactic_instance TacticTest iprop(_ ∗ _) _]
-def tac_sep : SynthTactic := λ e => do
+def tac_sep : SynthTactic := fun e => do
   let_expr TacticTest prop bi S _ := e | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
@@ -172,11 +180,11 @@ def tac_sep : SynthTactic := λ e => do
 instance tactic_test_all {α} [BI PROP] (P P' : α → PROP)
   [h : ∀ a, TacticTest (P a) (P' a)] :
   TacticTest iprop(∀ a, P a) iprop(∀ a, P' a) :=
-  ⟨forall_mono (λ a => (h a).1)⟩
+  ⟨forall_mono (fun a => (h a).1)⟩
 
 -- Tests failing and multiple patterns
 @[ipm_tactic_instance:low TacticTest iprop(False) _, TacticTest iprop(True) _]
-def tac_fail : SynthTactic := λ _ => return .fail
+def tac_fail : SynthTactic := fun _ => return .fail
 
 variable {PROP} [BI PROP] (P : PROP)
 
@@ -395,3 +403,263 @@ variable (m n p q : Nat)
 #ipm_synth (NatCancel (1 + m + 2) 3 _ _ _)
 
 end NatCancel
+
+section IsOp
+open Iris CMRA ProofMode
+
+variable (q q1 q2 : Qp)
+
+/- Splitting a sum: `isOpFrac_split` is used instead of `isOpFrac_half`. -/
+/-- info:
+  solution: IsOp IsOp.Direction.split (q1 + q2) q1 q2,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IsOp .split (q1 + q2 : Qp) _ _
+
+/- Splitting a CMRA operation: `isOpFrac_split` is used instead of `isOpFrac_half`. -/
+/-- info:
+  solution: IsOp IsOp.Direction.split (q1 • q2) q1 q2,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IsOp .split (q1 • q2) _ _
+
+/- Splitting a `Qp` value, where `isOpFrac_split` is not applicable: use `isOpFrac_half`. -/
+/-- info:
+  solution: IsOp IsOp.Direction.split q q.half q.half,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IsOp .split q _ _
+
+/- Merging two `Qp` values: `isOpFrac_half` is not applicable, use `isOpFrac_merge`. -/
+/-- info:
+  solution: IsOp IsOp.Direction.merge (q1 + q2) q1 q2,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IsOp .merge _ q1 q2
+
+/- Merging two `Qp` values: `isOpFrac_half` is applicable and preferred for eliminating `.half`. -/
+/-- info:
+  solution: IsOp IsOp.Direction.merge q q.half q.half,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IsOp .merge _ q.half q.half
+
+/-
+  Splitting a pair:
+  `isOp_pair`, `isOp_pair_core_id_l`, `isOp_pair_core_id_r` and `isOp_some` are used.
+  Backtracking is involved after `isOp_pair_core_id_r` fails to split the second
+  half of the pair.
+-/
+/-- info:
+  solution: IsOp IsOp.Direction.split (some (q, q1 + q2)) (some (q.half, q1)) (some (q.half, q2)),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IsOp .split (some (q, q1 + q2)) _ _
+
+/-
+  Merging `Qp.quarter` and `Qp.threeQuarters`:
+  `isOpFrac_quarters_left` and `isOpFrac_quarters_right` take precedence over `isOpFrac_merge`.
+-/
+/-- info:
+  solution: IsOp IsOp.Direction.merge (One.one, One.one)
+    (Qp.quarter, Qp.threeQuarters) (Qp.threeQuarters, Qp.quarter),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IsOp .merge _ (Qp.quarter, Qp.threeQuarters) (Qp.threeQuarters, Qp.quarter)
+
+/-
+  Split `Qp.one`: `isOpFrac_half` takes precedence over
+  `isOpFrac_quarters_left`/`isOpFrac_quarters_right`.
+-/
+/-- info:
+  solution: IsOp IsOp.Direction.split One.one One.one.half One.one.half,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth IsOp .split instQpOne.one _ _
+
+end IsOp
+
+section ProofModeInstances
+
+variable [BI PROP] (P Q : PROP) (φ : Prop)
+
+/-
+  The instance `intoForall_wand` has lower priority than `intoForall_wand_pure`
+  so that the synthesis returns `fun (x : φ) => Q` instead of `fun (x : ⊢ ⌜φ⌝) => Q`.
+-/
+/-- info:
+  solution: IntoForall iprop(⌜φ⌝ -∗ Q) fun (x : φ) => Q,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+set_option pp.funBinderTypes true in
+#ipm_synth (@IntoForall PROP _ iprop(⌜φ⌝ -∗ Q) (_ : Prop) _)
+
+/-
+  The instance `intoForall_imp` has lower priority than `intoForall_imp_pure`
+  so that the synthesis returns `fun (x : φ) => Q` instead of `fun (x : ⊢ ⌜φ⌝) => Q`.
+-/
+/--
+  info: solution: IntoForall iprop(⌜φ⌝ → Q) fun (x : φ) => Q, new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+set_option pp.funBinderTypes true in
+variable [BIAffine PROP] in
+#ipm_synth (@IntoForall PROP _ iprop(⌜φ⌝ → Q) (_ : Prop) _)
+
+/-
+  Tests `IntoPure` synthesis using `intoPure_forall`.
+  There is no `BiPureForall` in Lean, and synthesis works in an arbitrary BI.
+-/
+/-- info:
+  solution: IntoPure iprop(∀ x, ⌜x = 5⌝) (∀ (x : Nat), x = 5),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (Φ : Nat → PROP) (φ1 φ2 : Prop) in
+#ipm_synth (IntoPure iprop(∀ n : Nat, ⌜n = 5⌝ : PROP) _)
+
+/-
+  Tests `IntoPure` synthesis using `intoPure_pure_wand`.
+  There is no `BiPureForall` in Lean, and synthesis works in an arbitrary BI.
+-/
+/-- info:
+  solution: IntoPure iprop(⌜φ1⌝ -∗ ⌜φ2⌝) (φ1 → φ2),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (Φ : Nat → PROP) (φ1 φ2 : Prop) in
+#ipm_synth (IntoPure (PROP := PROP) iprop(⌜φ1⌝ -∗ ⌜φ2⌝) _)
+
+/-
+  The instance `intoWand_forall_prop_true` has higher priority than `intoWand_forall`
+  so that `⌜φ⌝` is returned.
+-/
+/-- info:
+  solution: IntoWand p true iprop(∀ x, P) WandMode.unknown iprop(⌜φ⌝) P, new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (Φ : Nat → PROP) (Ψ : ∀ _ : φ, PROP) (p : Bool) in
+#ipm_synth (IntoWand p true iprop(∀ _ : φ, P) .unknown _ _)
+
+/- Using `intoWand_forall_prop_false` in a non-affine BI, giving `<affine> ⌜φ⌝`. -/
+/-- info:
+  solution: IntoWand p false iprop(∀ x, P) WandMode.unknown iprop(<affine> ⌜φ⌝) P,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (Φ : Nat → PROP) (Ψ : ∀ _ : φ, PROP) (p : Bool) in
+#ipm_synth (IntoWand p false iprop(∀ _ : φ, P) .unknown _ _)
+
+/- Using `intoWand_forall_prop_false` in an affine BI, giving `⌜φ⌝`. -/
+/-- info:
+  solution: IntoWand p false iprop(∀ x, P) WandMode.unknown iprop(⌜φ⌝) P,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable [BIAffine PROP] (Φ : Nat → PROP) (Ψ : ∀ _ : φ, PROP) (p : Bool) in
+#ipm_synth (IntoWand p false iprop(∀ _ : φ, P) .unknown _ _)
+
+/-
+  The instance `intoWand_forall_prop_true` fails to apply when `q` is fixed to `false`.
+  Instead, `intoWand_forall_prop_false` applies.
+-/
+/-- info:
+  solution: IntoWand p false iprop(∀ x, P)
+    (WandMode.matching WandMode.Side.argument) iprop(<affine> ⌜φ⌝) P,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (Φ : Nat → PROP) (Ψ : ∀ _ : φ, PROP) (p : Bool) in
+#ipm_synth (IntoWand p false iprop(∀ _ : φ, P) (.matching .argument) iprop(<affine> ⌜φ⌝) _)
+
+/-
+  The instance `intoWand_forall_prop_false` does not apply for `∀ n : Nat, Φ n -∗ Φ n`
+  as the binder `n` does not have type `Prop`.
+  The instance `intoWand_forall` is used instead, resulting in an uninstantiated metavariable.
+-/
+/-- info:
+  solution: IntoWand false false iprop(∀ x, Φ x -∗ Φ x) WandMode.unknown (Φ ?_) (Φ ?_),
+  new goals: [?_: Nat]
+-/
+#guard_msgs (whitespace := lax) in
+set_option pp.mvars false in
+variable (Φ : Nat → PROP) (Ψ : ∀ _ : φ, PROP) (p : Bool) in
+#ipm_synth (IntoWand false false iprop(∀ n : Nat, Φ n -∗ Φ n) .unknown _ _)
+
+/- The instance `intoWand_forall_prop_true` applies when the argument slot is an input. -/
+/-- info:
+  solution: IntoWand p true iprop(∀ x, P) (WandMode.matching WandMode.Side.argument) iprop(⌜φ⌝) P,
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+variable (p : Bool) in
+#ipm_synth (IntoWand p true iprop(∀ _ : φ, P) (.matching .argument) iprop(⌜φ⌝) _)
+
+end ProofModeInstances
+
+section TCSideCondition
+
+variable [Sbi PROP] [BIFUpdate PROP] [BIFUpdateSbi PROP] [BIAffine PROP]
+variable (E : CoPset) (Ψ : Nat → PROP) [∀ n, Plain (Ψ n)]
+
+/- Tests `TCSideCondition` with sidecondition that can be solved. -/
+/-- info: solution: TCSideCondition (E ⊆ ⊤), new goals: [] -/
+#guard_msgs (whitespace := lax) in
+set_option pp.mvars false in
+#ipm_synth TCSideCondition (E ⊆ ⊤)
+
+/- Tests `TCSideCondition` with mvar, which should not be instantiated. -/
+/-- info: None -/
+#guard_msgs (whitespace := lax) in
+set_option pp.mvars false in
+#ipm_synth TCSideCondition (_ ⊆ E)
+
+/- Tests `TCSideCondition` with mvar sidecondition that can be solved. -/
+/-- info: solution: TCSideCondition (?_ ⊆ ?_), new goals: [?_: CoPset] -/
+#guard_msgs (whitespace := lax) in
+set_option pp.mvars false in
+#ipm_synth TCSideCondition ((?E : CoPset) ⊆ ?E)
+
+
+/- Tests `fromForall_fupd` with the side condition `E ⊆ E` discharged. -/
+/-- info:
+  solution: FromForall iprop(|={E}=> ∀ x, Ψ x) fun a => iprop(|={E}=> Ψ a),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth @FromForall PROP _ iprop(|={E,E}=> ∀ x, Ψ x) (_ : Type) _
+
+/- Tests `fromForall_fupd` with the side condition `E ⊆ ⊤` discharged. -/
+/-- info:
+  solution: FromForall iprop(|={⊤,E}=> ∀ x, Ψ x) fun a => iprop(|={⊤,E}=> Ψ a),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth @FromForall PROP _ iprop(|={⊤,E}=> ∀ x, Ψ x) (_ : Type) _
+
+/- Tests `fromForall_fupd` with the side condition `∅ ⊆ E` discharged. -/
+/-- info:
+  solution: FromForall iprop(|={E,∅}=> ∀ x, Ψ x) fun a => iprop(|={E,∅}=> Ψ a),
+  new goals: []
+-/
+#guard_msgs (whitespace := lax) in
+#ipm_synth @FromForall PROP _ iprop(|={E,∅}=> ∀ x, Ψ x) (_ : Type) _
+
+/- Tests `fromForall_fupd` with mvar, which should not be instantiated. -/
+/-- info: None -/
+#guard_msgs (whitespace := lax) in
+set_option pp.mvars false in
+#ipm_synth @FromForall PROP _ iprop(|={E,_}=> ∀ x, Ψ x) (_ : Type) _
+
+end TCSideCondition
+
+end IrisTest

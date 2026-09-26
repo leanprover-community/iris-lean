@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Zongyuan Liu. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu, Markus de Medeiros
 -/
@@ -23,7 +23,7 @@ fragment's resource to its payload.
 local stepindex Nat
 
 namespace Iris
-open OFE CMRA UCMRA Auth Option UFrac
+open OFE CMRA UCMRA Auth Iris.Option Iris.OFE.Option UFrac
 
 /-! ## Definitions -/
 

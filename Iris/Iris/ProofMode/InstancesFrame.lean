@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Michael Sammler. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler, Alvin Tang
 -/
@@ -25,6 +25,7 @@ register_option iris.frame.instantiateExists : Bool := {
 end
 
 @[expose] public section
+local stepindex Nat
 
 namespace Iris.ProofMode
 open Qq Iris.BI Iris.Std
@@ -145,7 +146,7 @@ instance frame_persistently [BI PROP] (R P Q Q' : PROP)
 instance frame_forall {α} [BI PROP] p R (Φ Ψ : α → PROP)
     [h : ∀ a, FrameInstantiateExistDisabled p R (Φ a) (Ψ a)] :
     Frame p R iprop(∀ x, Φ x) iprop(∀ x, Ψ x) where
-  frame := forall_intro λ a =>
+  frame := forall_intro fun a =>
     (sep_mono_right (forall_elim a)).trans (h a).frame_instantiatiate_exist_disabled.frame
 
 @[ipm_backtrack, rocq_alias frame_impl_persistent]
@@ -237,7 +238,114 @@ instance frame_except_0 [BI PROP] p (R P Q Q' : PROP)
     _ ⊢ ◇ (□?p R ∗ Q)  := except0_sep.mpr
     _ ⊢ ◇ P            := except0_mono h1.frame
 
-section tactic_theorems
+theorem frame_embed_core [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+    {p : Bool} {R P Q : PROP1} {Q' : PROP2}
+    (h1 : Frame p R P Q) (h2 : MakeEmbed Q Q') :
+    □?p ⎡R⎤ ∗ Q' ⊢ ⎡P⎤ := calc
+  _ ⊢ □?p ⎡R⎤ ∗ ⎡Q⎤ := sep_mono_right h2.make_embed.mpr
+  _ ⊢ ⎡□?p R⎤ ∗ ⎡Q⎤ := sep_mono_left <| embed_intuitionistically_if_2 R p
+  _ ⊢ ⎡□?p R ∗ Q⎤   := (embed_sep _ _).mpr
+  _ ⊢ ⎡P⎤           := embed_mono h1.frame
+
+@[ipm_backtrack, rocq_alias frame_embed]
+instance frame_embed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+    (p : Bool) (R P Q : PROP1) (Q' : PROP2)
+    [h1 : Frame p R P Q] [h2 : MakeEmbed Q Q'] :
+    Frame p iprop(⎡R⎤) iprop(⎡P⎤) Q' where
+  frame := frame_embed_core h1 h2
+
+@[ipm_backtrack, rocq_alias frame_pure_embed]
+instance (priority := default - 1) frame_pure_embed
+    [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+    (p : Bool) (φ : Prop) (P Q : PROP1) (Q' : PROP2)
+    [h1 : Frame p iprop(⌜φ⌝) P Q] [h2 : MakeEmbed Q Q'] :
+    Frame p iprop(⌜φ⌝) iprop(⎡P⎤) Q' where
+  frame := (sep_mono_left <| intuitionisticallyIf_mono (embed_pure φ).mpr).trans
+    (frame_embed_core h1 h2)
+
+@[ipm_backtrack, rocq_alias frame_eq_embed]
+instance (priority := default - 1) frame_eq_embed
+    [Sbi P1] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
+    (p : Bool) {A : Type _} [OFE A] (a b : A) (P Q : P1) (Q' : P2)
+    [h1 : Frame p iprop(a ≡ b) P Q] [h2 : MakeEmbed Q Q'] :
+    Frame p iprop(a ≡ b) iprop(⎡P⎤) Q' where
+  frame := (sep_mono_left <| intuitionisticallyIf_mono (embed_internal_eq a b).mpr).trans
+    (frame_embed_core h1 h2)
+
+@[ipm_backtrack, rocq_alias frame_texist]
+instance frame_texist {TT : Tele} [BI PROP] p (R : PROP) (Φ Ψ : TT.Arg → PROP)
+    [h : ∀ x, Frame p R (Φ x) (Ψ x)] :
+    Frame p R iprop(∃.. x, Φ x) iprop(∃.. x, Ψ x) where
+  frame := calc
+    _ ⊢ □?p R ∗ ∃ x, Ψ x := sep_mono_right (texist_exist Ψ).mp
+    _ ⊢ ∃ x, □?p R ∗ Ψ x := sep_exists_left.mp
+    _ ⊢ ∃ x, Φ x         := exists_mono fun x => (h x).frame
+    _ ⊢ texist Φ         := (texist_exist Φ).mpr
+
+@[ipm_backtrack, rocq_alias frame_tforall]
+instance frame_tforall {TT : Tele} [BI PROP] p (R : PROP) (Φ Ψ : TT.Arg → PROP)
+    [h : ∀ x, FrameInstantiateExistDisabled p R (Φ x) (Ψ x)] :
+    Frame p R iprop(∀.. x, Φ x) iprop(∀.. x, Ψ x) where
+  frame := by
+    refine .trans ?_ (tforall_forall Φ).mpr
+    refine forall_intro fun x => ?_
+    exact (sep_mono_right <| (tforall_forall Ψ).mp.trans <| forall_elim x).trans
+      (h x).frame_instantiatiate_exist_disabled.frame
+
+@[ipm_backtrack, rocq_alias frame_big_sepL_cons]
+instance frame_bigSepL_cons [BI PROP] {A} p (Φ : Nat → A → PROP)
+    (R Q : PROP) (l : List A) (x : A) (l' : List A)
+    [hc : IsCons l x l']
+    [hf : Frame p R iprop(Φ 0 x ∗ [∗list] k ↦ y ∈ l', Φ (k + 1) y) Q] :
+    Frame p R iprop([∗list] k ↦ y ∈ l, Φ k y) Q where
+  frame := hc.is_cons ▸ hf.frame.trans BigSepL.bigSepL_cons.mpr
+
+@[ipm_backtrack, rocq_alias frame_big_sepL_app]
+instance frame_bigSepL_app [BI PROP] {A} p (Φ : Nat → A → PROP)
+    (R Q : PROP) (l l1 l2 : List A)
+    [ha : IsApp l l1 l2]
+    [hf : Frame p R iprop(([∗list] k ↦ y ∈ l1, Φ k y) ∗
+                           [∗list] k ↦ y ∈ l2, Φ (k + l1.length) y) Q] :
+    Frame p R iprop([∗list] k ↦ y ∈ l, Φ k y) Q where
+  frame := ha.is_app ▸ hf.frame.trans BigSepL.bigSepL_append.mpr
+
+@[ipm_backtrack, rocq_alias frame_big_sepL2_cons]
+instance frame_bigSepL2_cons [BI PROP] {A B} p (Φ : Nat → A → B → PROP)
+    (R Q : PROP) (l1 : List A) (x1 : A) (l1' : List A)
+    (l2 : List B) (x2 : B) (l2' : List B)
+    [hc1 : IsCons l1 x1 l1'] [hc2 : IsCons l2 x2 l2']
+    [hf : Frame p R iprop(Φ 0 x1 x2 ∗
+                          [∗list] k ↦ y1;y2 ∈ l1';l2', Φ (k + 1) y1 y2) Q] :
+    Frame p R iprop([∗list] k ↦ y1;y2 ∈ l1;l2, Φ k y1 y2) Q where
+  frame := hc1.is_cons ▸ hc2.is_cons ▸ hf.frame.trans BigSepL2.bigSepL2_cons.mpr
+
+@[ipm_backtrack, rocq_alias frame_big_sepL2_app]
+instance frame_bigSepL2_app [BI PROP] {A B} p (Φ : Nat → A → B → PROP)
+    (R Q : PROP) (l1 l1' l1'' : List A) (l2 l2' l2'' : List B)
+    [ha1 : IsApp l1 l1' l1''] [ha2 : IsApp l2 l2' l2'']
+    [hf : Frame p R iprop(([∗list] k ↦ y1;y2 ∈ l1';l2', Φ k y1 y2) ∗
+                           [∗list] k ↦ y1;y2 ∈ l1'';l2'',
+                             Φ (k + l1'.length) y1 y2) Q] :
+    Frame p R iprop([∗list] k ↦ y1;y2 ∈ l1;l2, Φ k y1 y2) Q where
+  frame := by
+    rw [ha1.is_app, ha2.is_app]
+    calc
+      _ ⊢ ([∗list] k ↦ y1;y2 ∈ l1';l2', Φ k y1 y2) ∗
+          [∗list] k ↦ y1;y2 ∈ l1'';l2'', Φ (k + l1'.length) y1 y2 := hf.frame
+      _ ⊢ (([∗list] k ↦ y1;y2 ∈ l1'';l2'', Φ (k + l1'.length) y1 y2) ∗
+          [∗list] k ↦ y1;y2 ∈ l1';l2', Φ k y1 y2) := sep_symm
+      _ ⊢ [∗list] k ↦ x1;x2 ∈ l1' ++ l1'';l2' ++ l2'', Φ k x1 x2 :=
+          wand_elim_swap BigSepL2.bigSepL2_app_wand
+
+@[ipm_backtrack, rocq_alias frame_big_sepMS_disj_union]
+instance frame_bigSepMS_disjUnion [BI PROP] {MS A}
+    [LawfulFiniteMultiSet MS A] p (Φ : A → PROP) (R Q : PROP) (X X1 X2 : MS)
+    [hd : IsDisjUnion X X1 X2]
+    [hf : Frame p R iprop(([∗mset] y ∈ X1, Φ y) ∗ [∗mset] y ∈ X2, Φ y) Q] :
+    Frame p R iprop([∗mset] y ∈ X, Φ y) Q where
+  frame := hd.is_disj_union ▸ hf.frame.trans BigSepMS.bigSepMS_disjUnion.mpr
+
+section TacticTheorems
 
 @[rocq_alias maybe_frame_default_persistent]
 theorem maybeFrame_default_persistent [BI PROP] (R P : PROP) :
@@ -246,7 +354,7 @@ theorem maybeFrame_default_persistent [BI PROP] (R P : PROP) :
 
 @[rocq_alias maybe_frame_default]
 theorem maybeFrame_default [BI PROP] (R P : PROP)
-  [h : TCOr (Affine R) (Absorbing P)]:
+  [h : TCOr (Affine R) (Absorbing P)] :
   Frame false R P P where
   frame := by simp only [intuitionisticallyIf_false']; exact sep_elim_right
 
@@ -308,10 +416,10 @@ theorem frame_exist_no_instantiate [BI PROP] {α} (p : Bool) (R : PROP) (Φ Ψ :
   frame := sep_exists_left.mp.trans <|
     exists_elim <| fun a => (inst a).frame.trans <| exists_intro a
 
-end tactic_theorems
+end TacticTheorems
 
-meta section tactics
-open Lean Elab Meta Std
+meta section Tactics
+open Lean Elab Meta Iris.Std
 
 def frameInstantiateExistsEnabled : MetaM Bool := do
   return iris.frame.instantiateExists.get (← getOptions)
@@ -323,7 +431,7 @@ theorem frameInstantiateExistsDisabled_of [BI PROP] {p} {R P Q : PROP} (h : Fram
     FrameInstantiateExistDisabled p R P Q := ⟨h⟩
 
 @[ipm_tactic_instance FrameInstantiateExistDisabled _ _ _ _]
-def frameNoInstantiateExist : SynthTactic := λ e => do
+def frameNoInstantiateExist : SynthTactic := fun e => do
   let_expr FrameInstantiateExistDisabled prop bi p R P G := e | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
@@ -355,7 +463,7 @@ def maybeFrame {prop : Q(Type u)} {bi : Q(BI $prop)} (p : Q(Bool))
     return some (q(maybeFrame_default $R $P))
 
 @[ipm_tactic_instance Frame _ _ iprop(_ ∗ _) _]
-def frameSep : SynthTactic := λ e => do
+def frameSep : SynthTactic := fun e => do
   let_expr Frame prop bi p R P _ := e | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
@@ -389,7 +497,7 @@ def frameSep : SynthTactic := λ e => do
     return .success q(frame_sep_right $p $R $P1 $P2 $Q2 $Q')
 
 @[ipm_tactic_instance Frame _ _ iprop(_ ∧ _) _]
-def frameAnd : SynthTactic := λ e => do
+def frameAnd : SynthTactic := fun e => do
   let_expr Frame prop bi p R P _ := e | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
@@ -417,7 +525,7 @@ def isBITrue (e : Expr) : Bool :=
   true
 
 @[ipm_tactic_instance Frame _ _ iprop(_ ∨ _) _]
-def frameOr : SynthTactic := λ e => do
+def frameOr : SynthTactic := fun e => do
   let_expr Frame prop bi p R P _ := e | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
@@ -450,7 +558,7 @@ def frameOr : SynthTactic := λ e => do
   return .continue
 
 @[ipm_tactic_instance Frame _ _ iprop(∃ _, _) _]
-def frameExist : SynthTactic := λ e => do
+def frameExist : SynthTactic := fun e => do
   let_expr Frame prop bi p R P _ := e | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
@@ -478,7 +586,7 @@ def frameExist : SynthTactic := λ e => do
       framing did not instantiate the existential quantifer or since the instiation of existentials
       was disabled. The `withConfig` is necessary to disable stuck defEq exceptions.
     -/
-    if ← withTransparency .none <| withConfig (λ _ => {}) (isDefEq (← instantiateMVars a) c) then
+    if ← withTransparency .none <| withConfig (fun _ => {}) (isDefEq (← instantiateMVars a) c) then
       return some (none, ← mkLambdaFVars #[c] (← instantiateMVars G),
                           ← mkLambdaFVars #[c] (← instantiateMVars inst))
     else
@@ -501,3 +609,9 @@ def frameExist : SynthTactic := λ e => do
 #rocq_ignore GatherEvarsEq
   "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
 #rocq_ignore TCCbnTele "Rocq-specific telescope infrastructure not needed in the Lean metaprogram"
+
+end Tactics
+
+end ProofMode
+
+end Iris

@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
@@ -21,7 +21,7 @@ and the authority `●E a`.
 
 namespace Iris
 
-open OFE CMRA Auth Excl Option
+open OFE CMRA Auth Excl Iris.Option Iris.OFE.Option
 
 namespace ExclAuth
 

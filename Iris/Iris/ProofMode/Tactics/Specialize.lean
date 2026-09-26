@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2022 Lars König. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler, Alvin Tang
 -/
@@ -106,7 +106,7 @@ theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B B'}
   "Functionality provided by Expr.lean infrastructure"
 
 public meta section
-open Lean Elab Tactic Meta Qq Std
+open Lean Elab Tactic Meta Qq Iris.Std
 
 structure SpecializeState {prop : Q(Type u)} {bi : Q(BI $prop)} (orig goal : Q($prop)) where
   {e : Q($prop)} (hyps : Hyps bi e) (p : Q(Bool)) (out : Q($prop))
@@ -157,10 +157,10 @@ private def finishSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     frameIVars := frameIVars.reverse
 
     let ⟨el, _, hypsl, hypsr, pf'⟩ := Hyps.split bi
-      (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
+      (fun _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
       -- let ⟨el, _, hypsl, hypsr, pf', frameIVars⟩ ← splitFrameHyps hyps hs f negate
     let res ← iFrame hypsr goal <| frameIVars.map (⟨.ipm ·, true⟩)
-    let pf'' ← res.finish λ hyps goal => do
+    let pf'' ← res.finish fun hyps goal => do
       if trivial then
         let some r ← iTrivial hyps goal
           | throwIPMError "itrivial could not solve\
@@ -170,7 +170,9 @@ private def finishSubgoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     return ⟨el, hypsl, q($(pf').mp.trans <| sep_mono_right $pf'')⟩
   -- Auto-framing: `[$]`, `[#$]` and `[>$]`
   | none =>
-    let res ← iFrame hyps goal <| ← SelPat.resolve hyps [.spatial, .intuitionistic]
+    let res ←
+      (SelPat.resolve hyps [.spatial, .intuitionistic] .bottomToTop) >>=
+      (iFrame hyps goal ·)
     let ⟨e', hyps', pf⟩ ← res.finishClose
     return ⟨e', hyps', pf⟩
 
@@ -345,16 +347,24 @@ partial def iCasesPat.should_try_dup_context (pat : iCasesPat) : Bool :=
 -/
 elab "ispecialize " colGt pmt:pmTerm : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
-  ProofModeM.runTactic `ispecialize λ mvar { bi, hyps, goal, .. } => do
+  ProofModeM.runTactic `ispecialize fun mvar { bi, hyps, goal, .. } => do
   -- Hypothesis must be in the context, otherwise use `ihave`
   let name := ⟨pmt.term⟩
   let some ivar ← try? <| hyps.findWithInfo name
     | throwIPMError "{name} should be a hypothesis, use ihave instead"
   let some ⟨name, _, hyps', _, out, p, _, pf⟩ := Id.run <|
-    hyps.removeG true λ name ivar' _ _ => if ivar == ivar' then some name else none
+    hyps.removeG true fun name ivar' _ _ => if ivar == ivar' then some name else none
     | throwIPMError "cannot find argument {name}"
 
   let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p out goal pmt.spats
   let ⟨_, hyps''', pfEq⟩ := Hyps.add bi name ivar pb B hyps''
   let pf'' ← addBIGoal hyps''' goal
   mvar.assign q(($pf).1.trans <| $(pf') <| $(pfEq).mp.trans $pf'')
+
+end
+
+end
+
+end ProofMode
+
+end Iris

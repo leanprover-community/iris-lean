@@ -1,6 +1,7 @@
 /-
-Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Sergei Stepanenko
 -/
 module
 
@@ -156,7 +157,7 @@ theorem own_alloc_strong (P : Nat → Prop) n
 @[rocq_alias mono_nat_own_alloc]
 theorem own_alloc {GF : BundledGFunctors} [MonoNatG GF] (n : MaxNat) :
   ⊢@{IProp GF} |==> (∃ γ, (γ ↪●MN n) ∗ (γ ↪◯MN n)) := by
-  imod (own_alloc_strong (λ _ => True) n) with ⟨%γ, ⟨-, H⟩⟩
+  imod (own_alloc_strong (fun _ => True) n) with ⟨%γ, ⟨-, H⟩⟩
   · intro n; exists n
   · iexists γ
     imodintro

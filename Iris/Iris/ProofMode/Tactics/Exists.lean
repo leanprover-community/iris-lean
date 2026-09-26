@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2022 Lars König. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
@@ -31,7 +31,7 @@ open Lean Elab Tactic Meta Qq
 -/
 elab "iexists " xs:term,+ : tactic => do
   -- resolve existential quantifier with the given argument
-  ProofModeM.runTactic `iexists λ mvar { prop, e, hyps, goal, .. } => do
+  ProofModeM.runTactic `iexists fun mvar { prop, e, hyps, goal, .. } => do
 
     let mut new_goal_and_pf : ((g : Q($prop)) × Q($g ⊢ $goal)) := ⟨goal, q(.rfl)⟩
 
@@ -52,3 +52,11 @@ elab "iexists " xs:term,+ : tactic => do
 
     let m : Q($e ⊢ $(new_goal_and_pf.1)) ← addBIGoal hyps new_goal_and_pf.1
     mvar.assign q($(m).trans $(new_goal_and_pf.2))
+
+end
+
+end
+
+end ProofMode
+
+end Iris

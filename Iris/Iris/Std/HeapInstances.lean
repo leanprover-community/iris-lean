@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Alok Singh. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alok Singh, Markus de Medeiros
 -/
@@ -16,7 +16,7 @@ This file provides a library of `PartialMap`, `Heap`, and `UnboundedHeap`
 instances for types from the Lean standard library.
 
 ## Instances
-- Plain functions: `PartialMap`, `IsoFunMap`
+- Plain functions: `PartialMap`
 - Functions into `Option`: `Heap`
 - Classical functions into `Option`: `UnboundedHeap`
 - Association lists: `UnboundedHeap`
@@ -63,8 +63,7 @@ end FunPartialMap
 /-! ## (Noncomputable) Allocation in an infinite function type -/
 noncomputable section ClassicalAllocHeap
 
-open Classical
-
+open Classical in
 instance instClassicalAllocHeap : Heap (K → Option ·) K where
   notFull f := infinite <| cosupport f
   fresh := choose ∘ coinfinite_exists_next
@@ -250,7 +249,7 @@ instance : PartialMap (ExtTreeMap K · compare) K where
 @[simp]
 theorem getElem?_mergeWith' {t₁ t₂ : ExtTreeMap K V compare} :
     (t₁.mergeWith f t₂)[k]? = merge (f k) t₁[k]? t₂[k]? := by
-  show
+  change
     Const.get? (Const.mergeWith f t₁.inner t₂.inner) k =
     merge (f k) (Const.get? t₁.inner k) (Const.get? t₂.inner k)
   obtain ⟨q₁⟩ := t₁.inner

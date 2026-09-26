@@ -1,15 +1,16 @@
 /-
-Copyright (c) 2026 Fernando Leal. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Fernando Leal
 -/
 module
 
 public import Iris.ProofMode
 public import Iris.Std.Relation
+public import Iris.Std.TC
 public import Iris.BI.WeakestPre
 
-#rocq_ignore LanguageMixin "This feature was implemented differently using typeclasses"
-#rocq_ignore language      "This feature was implemented differently using typeclasses"
+#rocq_ignore cfg "Configurations are represented inline as `List Expr × State`."
 
 namespace Iris.ProgramLogic
 
@@ -18,6 +19,18 @@ namespace Iris.ProgramLogic
 open FromMathlib
 
 variable {Expr Val State Obs : Type _}
+
+/-- The discrete OFE on expressions. -/
+@[rocq_alias exprO]
+abbrev exprO (Expr : Type _) := DiscreteO Expr
+
+/-- The discrete OFE on values. -/
+@[rocq_alias valO]
+abbrev valO (Val : Type _) := DiscreteO Val
+
+/-- The discrete OFE on states. -/
+@[rocq_alias stateO]
+abbrev stateO (State : Type _) := DiscreteO State
 
 class ToVal (Expr : Type _) (Val : outParam (Type _)) where
   toVal : Expr → Option Val
@@ -94,6 +107,7 @@ end PrimStep
 
 open PrimStep
 
+@[rocq_alias language, rocq_alias LanguageMixin]
 class Language (Expr : Type _) (State : outParam (Type _)) (Obs : outParam (Type _))
     (Val : outParam (Type _)) extends PrimStep Expr State (List Obs), ToVal Expr Val where
   /-- Values in a language should not reduce -/
@@ -126,7 +140,7 @@ end Notation
 open Notation
 
 theorem Step.of_primStep {e σ} {obs : List Obs} {e'} {σ' : State} {eₜ}
-    (H : (e, σ) -<obs>-> (e', σ', eₜ)) {t₁ t₂: List Expr} :
+    (H : (e, σ) -<obs>-> (e', σ', eₜ)) {t₁ t₂ : List Expr} :
     Step (t₁ ++ e :: t₂, σ) obs (t₁ ++ e' :: t₂ ++ eₜ, σ') :=
   atomic H ..
 
@@ -170,7 +184,7 @@ end Notation
 open Notation
 
 open Relation in
--- @[rocq_alias erased_step_nsteps]
+@[rocq_alias erased_steps_nsteps]
 theorem erasedStep_nSteps (ρ₁ ρ₂ : List Expr × State) :
     ρ₁ -·->ₜₚ* ρ₂ ↔ ∃ n obs, ρ₁ -<obs>->ₜₚ^[n] ρ₂ := by
   refine ⟨fun hyp => ?_, fun hyp => ?_⟩
@@ -247,7 +261,7 @@ theorem stronglyAtomic_atomic {a} :
   | .StronglyAtomic => id
   | .WeaklyAtomic => fun ⟨h⟩ => ⟨by grind only [not_reducible_iff_irreducible, val_irreducible]⟩
 
-theorem prim_val_stuck (h : (↑ v, σ) -<obs>-> (e', σ', eₜ)) : False := by
+theorem prim_val_stuck (h : (↑v, σ) -<obs>-> (e', σ', eₜ)) : False := by
   simpa using val_stuck h
 
 instance val_atomic {a : Atomicity} {v : Val} : Atomic a (Λ.ofVal v) :=
@@ -266,10 +280,11 @@ class Context (K : Expr → Expr) where
     (K e, σ) -<obs>-> (K_e', σ', eₜ) →
     ∃ e', K_e' = K e' ∧ (e, σ) -<obs>-> (e', σ', eₜ)
 
-attribute [rocq_alias fill_not_val] Context.toVal_eq_none_fill
+attribute [rocq_alias ectx_language.fill_not_val] Context.toVal_eq_none_fill
 -- attribute [rocq_alias fill_step] Context.primStep_fill
 -- attribute [rocq_alias fill_step_inv] Context.primStep_fill_inv
 
+@[rocq_alias language_ctx_id]
 instance instContext_id : Context (id (α := Expr)) where
   toVal_eq_none_fill e := by grind only [id]
   primStep_fill      := by grind only [id]
@@ -406,7 +421,7 @@ scoped notation (name := PureSteps) conf:40 " -ᵖ->ₜₚ* " conf':41 => Langua
 end Notation
 
 @[ipm_class, rocq_alias PureExec]
-class PureExec (φ : outParam <| Prop) (n : outParam <| Nat) (e₁ : Expr) (e₂ : outParam <| Expr) : Prop where
+class PureExec (φ : outParam Prop) (n : outParam Nat) (e₁ : Expr) (e₂ : outParam Expr) : Prop where
   pureExec : φ → e₁ -ᵖ->^[n] e₂
 
 variable (K : Expr → Expr) [Context K]
@@ -446,15 +461,23 @@ theorem ReflTransGen_purePrimStep_val [Inhabited State] {v : Val} {e : Expr}
 
 end PureSteps
 
+@[rocq_alias IntoVal]
 class IntoVal (e : Expr) (v : Val) where
   into_val : (v : Expr) = e
 
+@[rocq_alias AsVal]
 class AsVal (e : Expr) where
   as_val : ∃ v : Val, (v : Expr) = e
 
 @[rocq_alias as_val_is_Some]
 theorem as_val_isSome e : (∃ v : Val, (v : Expr) = e) → (toVal e).isSome := by
   grind only [!ToVal.toVal_eq_iff_coe, = Option.isSome_some]
+
+@[rocq_alias as_vals_of_val]
+instance as_vals_of_val (vs : List Val) : Std.TCForall AsVal (vs.map (fun v : Val => (v : Expr))) := by
+  refine Std.forall_TCForall.mpr fun e h => ?_
+  obtain ⟨v, _, rfl⟩ := List.mem_map.mp h
+  exact ⟨v, rfl⟩
 
 /--
   Let `t₂` be a thread pool such that `t₁` under state
@@ -472,6 +495,7 @@ theorem as_val_isSome e : (∃ v : Val, (v : Expr) = e) → (toVal e).isSome := 
   and `t₃` and `t₂` corresponds t taking a step in the
   `i`-th thread starting from `t₁`.
 -/
+@[rocq_alias erased_step_pure_step_tp]
 theorem erasedStep_pureSteps {t₁ t₂ t₃ : List Expr} {σ₁ σ₂ : State} (h1 : (t₁, σ₁) -·->ₜₚ (t₂, σ₂))
     (h2 : t₁ -ᵖ->ₜₚ* t₃) :
     (σ₁ = σ₂ ∧ t₂ -ᵖ->ₜₚ* t₃) ∨
@@ -494,3 +518,9 @@ theorem erasedStep_pureSteps {t₁ t₂ t₃ : List Expr} {σ₁ σ₂ : State} 
     exact List.Forall₂.append ps_ps₃ <| .cons lastSteps ss_ss₃
 
 end Language
+
+end
+
+end ProgramLogic
+
+end Iris

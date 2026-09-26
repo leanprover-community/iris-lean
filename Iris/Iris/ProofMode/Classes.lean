@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2022 Lars König. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Michael Sammler, Yunsong Yang, Alvin Tang
 -/
@@ -12,7 +12,7 @@ public import Iris.ProofMode.Modalities
 local stepindex Nat
 
 namespace Iris.ProofMode
-open Iris.BI
+open Iris.BI Iris.Std
 
 /--
 [PMError] is used as precondition on "failing" instances of typeclasses that
@@ -38,8 +38,8 @@ end
 @[ipm_class, rocq_alias AsEmpValid]
 class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop) io
     (PROP : semiOutParamIPM io (Type _))
-    (bi : semiOutParamIPM d.toInOut (BI PROP))
-    (P : outParam $ PROP) where
+    (bi : semiOutParamIPM io (BI PROP))
+    (P : outParam PROP) where
   as_emp_valid : (d = .into → φ → ⊢ P) ∧ (d = .from → (⊢ P) → φ)
 
 @[rocq_alias as_emp_valid_1]
@@ -48,17 +48,22 @@ theorem asEmpValid_1 {PROP} [bi : BI PROP] {φ : Prop} (P : PROP) {io}
   inst.as_emp_valid.left rfl
 
 @[rocq_alias as_emp_valid_2]
-theorem asEmpValid_2 {PROP} [bi : BI PROP] {P: PROP} (φ : Prop) {io}
+theorem asEmpValid_2 {PROP} [bi : BI PROP] {P : PROP} (φ : Prop) {io}
     (inst : AsEmpValid .from φ io PROP bi P) : (⊢ P) → φ :=
   inst.as_emp_valid.right rfl
 
 @[ipm_class, rocq_alias AsEmpValid0]
-class AsEmpValid0 (d : AsEmpValid.Direction) (φ : Prop) (io : InOut := d.toInOut)
+class AsEmpValid0 (d : AsEmpValid.Direction) (φ : Prop) (io : InOut)
     (PROP : semiOutParamIPM io (Type _))
-    (bi : semiOutParamIPM d.toInOut (BI PROP)) (P : outParam PROP) where
+    (bi : semiOutParamIPM io (BI PROP))
+    ioP (P : semiOutParamIPM ioP PROP) where
   as_emp_valid_0 : AsEmpValid d φ io PROP bi P
 
-attribute [ipm_backtrack,instance] AsEmpValid0.as_emp_valid_0
+@[ipm_backtrack]
+instance asEmpValid_of_asEmpValid0 (d : AsEmpValid.Direction) (φ : Prop) io
+    (PROP : Type _) (bi : BI PROP) (P : PROP)
+    [inst : AsEmpValid0 d φ io PROP bi .out P] :
+    AsEmpValid d φ io PROP bi P := inst.as_emp_valid_0
 
 /- Depending on the use case, type classes with the prefix `From` or `Into` are used. Type classes
 with the prefix `From` are used to generate one or more propositions *from* which the original
@@ -67,13 +72,13 @@ proposition can be derived. Type classes with the prefix `Into` are used to gene
 used to indicate that certain propositions should be intuitionistic. -/
 
 @[ipm_class, rocq_alias FromImpl]
-class FromImp {PROP} [BI PROP] (P : PROP) (Q1 Q2 : outParam $ PROP) where
+class FromImp {PROP} [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   from_imp : (Q1 → Q2) ⊢ P
 export FromImp (from_imp)
 
 @[ipm_class, rocq_alias FromWand]
 class FromWand {PROP} [BI PROP] (P : PROP) (io : InOut)
-    (Q1 : semiOutParamIPM io PROP) (Q2 : outParam $ PROP) where
+    (Q1 : semiOutParamIPM io PROP) (Q2 : outParam PROP) where
   from_wand : (Q1 -∗ Q2) ⊢ P
 export FromWand (from_wand)
 
@@ -150,53 +155,53 @@ class IntoExists {PROP} [BI PROP] (P : PROP)
 export IntoExists (into_exists)
 
 @[ipm_class, rocq_alias FromAnd]
-class FromAnd {PROP} [BI PROP] (P : PROP) (Q1 Q2 : outParam $ PROP) where
+class FromAnd {PROP} [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   from_and : Q1 ∧ Q2 ⊢ P
 export FromAnd (from_and)
 
 @[ipm_class, rocq_alias IntoAnd]
-class IntoAnd {PROP} [BI PROP] (p : Bool) (P : PROP) (Q1 Q2 : outParam $ PROP) where
+class IntoAnd {PROP} [BI PROP] (p : Bool) (P : PROP) (Q1 Q2 : outParam PROP) where
   into_and : □?p P ⊢ □?p (Q1 ∧ Q2)
 export IntoAnd (into_and)
 
 @[ipm_class, rocq_alias FromSep]
-class FromSep {PROP} [BI PROP] (P : PROP) (Q1 Q2 : outParam $ PROP) where
+class FromSep {PROP} [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   from_sep : Q1 ∗ Q2 ⊢ P
 export FromSep (from_sep)
 
 @[ipm_class, rocq_alias IntoSep]
-class IntoSep {PROP} [BI PROP] (P : PROP) (Q1 Q2 : outParam $ PROP) where
+class IntoSep {PROP} [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   into_sep : P ⊢ Q1 ∗ Q2
 export IntoSep (into_sep)
 
 @[ipm_class, rocq_alias FromOr]
-class FromOr {PROP} [BI PROP] (P : PROP) (Q1 Q2 : outParam $ PROP) where
+class FromOr {PROP} [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   from_or : Q1 ∨ Q2 ⊢ P
 export FromOr (from_or)
 
 @[ipm_class, rocq_alias IntoOr]
-class IntoOr {PROP} [BI PROP] (P : PROP) (Q1 Q2 : outParam $ PROP) where
+class IntoOr {PROP} [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   into_or : P ⊢ Q1 ∨ Q2
 export IntoOr (into_or)
 
 @[ipm_class, rocq_alias IntoInternalEq]
-class IntoInternalEq {PROP} [BI PROP] [Sbi PROP] {A : outParam $ Type _}
-    [ofe : outParam $ OFE A] (P : PROP) (x y : outParam A) where
+class IntoInternalEq {PROP} [BI PROP] [Sbi PROP] {A : outParam <| Type _}
+    [ofe : outParam <| OFE A] (P : PROP) (x y : outParam A) where
   into_internal_eq : P ⊢@{PROP} x ≡ y
 export IntoInternalEq (into_internal_eq)
 
 @[ipm_class, rocq_alias IntoPersistent]
-class IntoPersistently {PROP} [BI PROP] (p : Bool) (P : PROP) (Q : outParam $ PROP) where
+class IntoPersistently {PROP} [BI PROP] (p : Bool) (P : PROP) (Q : outParam PROP) where
   into_persistently : <pers>?p P ⊢ <pers> Q
 export IntoPersistently (into_persistently)
 
 @[ipm_class, rocq_alias FromAffinely]
-class FromAffinely {PROP} [BI PROP] (P : outParam $ PROP) (Q : PROP) (p : Bool := true) where
+class FromAffinely {PROP} [BI PROP] (P : outParam PROP) (Q : PROP) (p : Bool := true) where
   from_affinely : <affine>?p Q ⊢ P
 export FromAffinely (from_affinely)
 
 @[ipm_class, rocq_alias IntoAbsorbingly]
-class IntoAbsorbingly {PROP} [BI PROP] (P : outParam $ PROP) (Q : PROP) where
+class IntoAbsorbingly {PROP} [BI PROP] (P : outParam PROP) (Q : PROP) where
   into_absorbingly : P ⊢ <absorb> Q
 export IntoAbsorbingly (into_absorbingly)
 
@@ -215,7 +220,7 @@ export IntoPure (into_pure)
 #rocq_ignore into_pureT_hint "IntoPureT is not necessary in Lean"
 
 @[ipm_class, rocq_alias FromPure, rocq_alias FromPureT]
-class FromPure {PROP} [BI PROP] (a : outParam $ Bool) (P : PROP) (ioφ : InOut)
+class FromPure {PROP} [BI PROP] (a : outParam Bool) (P : PROP) (ioφ : InOut)
     (φ : semiOutParamIPM ioφ Prop) where
   from_pure : <affine>?a ⌜φ⌝ ⊢ P
 export FromPure (from_pure)
@@ -228,32 +233,38 @@ class IsExcept0 {PROP} [BI PROP] (Q : PROP) where
 export IsExcept0 (is_except0)
 
 @[ipm_class, rocq_alias IntoExcept0]
-class IntoExcept0 {PROP} [BI PROP] (P : PROP) (Q : outParam $ PROP) where
+class IntoExcept0 {PROP} [BI PROP] (P : PROP) (Q : outParam PROP) where
   into_except0 : P ⊢ ◇ Q
 export IntoExcept0 (into_except0)
 
 /--
-`FromModal` turns a goal `P : PROP2` into a modality `M : PROP1 → PROP2` applied to `Q : PROP1`
-under condition `φ`.
+`FromModal` turns a goal `P : PROP2` into a modality `M : PROP1 → PROP2` applied
+to `Q : PROP1` under condition `φ`. The modality `M` is usually an output, except
+for specific recursive instances for embedding.
 
-`sel` is an input that can be provided by the user to match on the desired modality to introduce.
-It needs to be an `outParam` to make Lean happy since `PROP1` is an `outParam`.
-For the IPM TC synthesis, it needs to be an `uncheckedInParam` since it should match all modalities
-if the user provides an mvar.
+The selector `sel` is an input that can be provided by the user to match on the
+desired modality to introduce. This is unique in a sense that the metavariable
+is supplied as an input (e.g. when the user writes `imodintro _`).
+This is why `uncheckedInParam` is used so that all modalities can be matched by
+IPM type class synthesis.
+It also needs to be an `outParam` as `PROP1` can be an output parameter.
 -/
 @[ipm_class, rocq_alias FromModal]
-class FromModal {PROP1 : outParam $ Type _} {PROP2} {α : outParam <| Type _}
-    [outParam $ BI PROP1] [BI PROP2] (φ : outParam $ Prop)
-    (M : outParam $ Modality PROP1 PROP2) (sel : outParam <| uncheckedInParam α) (P : PROP2)
-    (Q : outParam $ PROP1) where
+class FromModal (io : InOut)
+    {PROP1 : semiOutParamIPM io (Type _)}
+    {PROP2} {α : outParam <| uncheckedInParam <| Type _}
+    [semiOutParamIPM io (BI PROP1)] [BI PROP2]
+    (M : semiOutParamIPM io (Modality PROP1 PROP2))
+    (φ : outParam Prop)
+    (sel : outParam <| uncheckedInParam α) (P : PROP2) (Q : outParam PROP1) where
   from_modal : φ → M.M Q ⊢ P
 export FromModal (from_modal)
 
 /-- `ElimModal` turns `□?p P` into `□?p' P'` and `Q` into `Q'` under condition `φ`. -/
 @[ipm_class, rocq_alias ElimModal]
-class ElimModal {PROP} [BI PROP] (φ : outParam $ Prop) (p : Bool) (io : InOut)
+class ElimModal {PROP} [BI PROP] (φ : outParam Prop) (p : Bool) (io : InOut)
     (p' : semiOutParamIPM io Bool) (P : PROP)
-    (P' : semiOutParamIPM io PROP) (Q : PROP) (Q' : outParam $ PROP) where
+    (P' : semiOutParamIPM io PROP) (Q : PROP) (Q' : outParam PROP) where
   elim_modal : φ → □?p P ∗ (□?p' P' -∗ Q') ⊢ Q
 export ElimModal (elim_modal)
 
@@ -262,7 +273,7 @@ export ElimModal (elim_modal)
 goal corresponding to the premise/asserted proposition.
 -/
 @[ipm_class, rocq_alias AddModal]
-class AddModal {PROP} [BI PROP] (P : outParam $ PROP) (P' Q : PROP) where
+class AddModal {PROP} [BI PROP] (P : outParam PROP) (P' Q : PROP) where
   add_modal : P ∗ (P' -∗ Q) ⊢ Q
 export AddModal (add_modal)
 
@@ -270,14 +281,43 @@ export AddModal (add_modal)
 theorem addModal_id {PROP} [BI PROP] (P Q : PROP) : AddModal P P Q where
   add_modal := wand_elim_right
 
+@[ipm_class, rocq_alias IsCons]
+class IsCons {α} (l : List α) (x : outParam α) (xs : outParam <| List α) where
+  is_cons : l = x :: xs
+export IsCons (is_cons)
+
+@[ipm_class, rocq_alias IsApp]
+class IsApp {α} (l : List α) (l1 l2 : outParam (List α)) where
+  is_app : l = l1 ++ l2
+export IsApp (is_app)
+
+@[rocq_alias is_cons_cons]
+instance isCons_cons {α} (x : α) (xs : List α) : IsCons (x :: xs) x xs where
+  is_cons := rfl
+
+@[rocq_alias is_app_app]
+instance isApp_app {α} (l1 l2 : List α) : IsApp (l1 ++ l2) l1 l2 where
+  is_app := rfl
+
+@[ipm_class, rocq_alias IsDisjUnion]
+class IsDisjUnion {MS A : Type _} [FiniteMultiSet MS A]
+    (X : MS) (X₁ X₂ : outParam MS) : Prop where
+  is_disj_union : X = X₁ ⊎ X₂
+export IsDisjUnion (is_disj_union)
+
+@[rocq_alias is_disj_union_disj_union]
+instance isDisjUnion_disjUnion {MS A : Type _} [FiniteMultiSet MS A] (X₁ X₂ : MS) :
+    IsDisjUnion (A := A) (X₁ ⊎ X₂) X₁ X₂ where
+  is_disj_union := rfl
+
 @[ipm_class, rocq_alias Frame]
-class Frame {PROP} [BI PROP] (p : Bool) (R P : PROP) (Q : outParam $ PROP) where
+class Frame {PROP} [BI PROP] (p : Bool) (R P : PROP) (Q : outParam PROP) where
   frame : □?p R ∗ Q ⊢ P
 export Frame (frame)
 
 @[ipm_class, rocq_alias FrameInstantiateExistDisabled]
 class FrameInstantiateExistDisabled {PROP} [BI PROP] (p : Bool)
-    (R P : PROP) (Q : outParam $ PROP) where
+    (R P : PROP) (Q : outParam PROP) where
   frame_instantiatiate_exist_disabled : Frame p R P Q
 export FrameInstantiateExistDisabled (frame_instantiatiate_exist_disabled)
 
@@ -326,7 +366,7 @@ class IntoInv [BI PROP] (P : PROP) (N : Namespace)
 
 @[rocq_alias accessor]
 def accessor [BI PROP] {X : Type} (M1 M2 : PROP → PROP) (α β : X → PROP)
-    (mγ : X → Option  PROP) : PROP :=
+    (mγ : X → Option PROP) : PROP :=
   M1 iprop(∃ x, α x ∗ (β x -∗ M2 (mγ x |>.getD emp)))
 
 @[ipm_class, rocq_alias ElimAcc]
@@ -336,7 +376,7 @@ class ElimAcc [BI PROP] {X : Type} (φ : outParam Prop) (M1 M2 : PROP → PROP)
 
 @[ipm_class, rocq_alias IntoAcc]
 class IntoAcc [BI PROP] {X : outParam Type} (Pacc : PROP)
-    (φ : outParam Prop) (Pin : outParam <| PROP)
+    (φ : outParam Prop) (Pin : outParam PROP)
     (M1 M2 : outParam <| PROP → PROP) (α β : outParam <| X → PROP)
     (mγ : outParam <| X → Option PROP) where
   into_acc : φ → Pacc -∗ Pin -∗ accessor M1 M2 α β mγ
@@ -348,7 +388,7 @@ class ElimInv [BI PROP] (φ : outParam Prop) (X : outParam Type)
     (Pinv : PROP) (Pin : outParam PROP) (Pout : outParam <| X → PROP)
     (close : Bool) (mPclose : outParam <| Option <| X → PROP)
     (Q : PROP) (Q' : outParam <| X → PROP) where
-  elim_inv : φ → Pinv ∗ Pin ∗ (∀ x, Pout x ∗ mPclose.getD (λ _ => emp) x -∗ Q' x) ⊢ Q
+  elim_inv : φ → Pinv ∗ Pin ∗ (∀ x, Pout x ∗ mPclose.getD (fun _ => emp) x -∗ Q' x) ⊢ Q
 export ElimInv (elim_inv)
 
 /-

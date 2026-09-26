@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
@@ -21,7 +21,7 @@ open OFE CMRA
 
 variable {α : Type _} [OFE α]
 
-@[rocq_alias mono_listR, rocq_alias mono_listUR]
+@[rocq_alias mono_listR, rocq_alias mono_listUR, implicit_reducible]
 def MonoList (α : Type _) [OFE α] := Auth (MaxPrefixList α)
 
 instance : OFE (MonoList α) :=
@@ -81,7 +81,7 @@ theorem lb_inj {l1 l2 : List α} (h : ◯ML l1 = ◯ML l2) : l1 = l2 :=
 
 /-! ## Operation -/
 
-@[rocq_alias mono_list_lb_core_id]
+@[rocq_alias mono_list.mono_list_lb_core_id]
 instance {l : List α} : CoreId (◯ML l) := by
   unfold lb MonoList
   infer_instance

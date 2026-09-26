@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Michael Sammler. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
@@ -39,12 +39,16 @@ instance fromPure_internalCmraIncluded io α [CMRA α] (a b : α) :
 
 @[rocq_alias into_exist_internal_included]
 instance intoExists_internalCmraIncluded α [CMRA α] (a b : α) :
-  IntoExists (PROP := PROP) iprop(a ≼ b) (λ c => iprop(b ≡ (a • c))) where
+  IntoExists (PROP := PROP) iprop(a ≼ b) (fun c => iprop(b ≡ (a • c))) where
   into_exists := siPure_exist.1
 
 @[rocq_alias from_exist_internal_included]
 instance fromExists_internalCmraIncluded α [CMRA α] (a b : α) :
-  FromExists (PROP := PROP) iprop(a ≼ b) (λ c => iprop(b ≡ (a • c))) where
+  FromExists (PROP := PROP) iprop(a ≼ b) (fun c => iprop(b ≡ (a • c))) where
   from_exists := siPure_exist.2
 
 end cmra
+
+end ProofMode
+
+end Iris

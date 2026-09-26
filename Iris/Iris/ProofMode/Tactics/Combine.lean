@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Alvin Tang. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alvin Tang, Michael Sammler
 -/
@@ -11,7 +11,7 @@ public import Iris.ProofMode.ClassesMake
 namespace Iris.ProofMode
 
 public section
-open BI Std
+open BI Iris.Std
 
 /-- Auxiliary lemma for combining two hypotheses using `CombineSepAs` -/
 theorem combine_as_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1 out2 out : PROP}
@@ -112,7 +112,7 @@ theorem combine_as_gives [BI PROP] {p : Bool} {newE e outAs outGives goal : PROP
 #rocq_ignore combine_seps_gives_of_envs "icombine is implemented by iteration with CombineState"
 
 public meta section
-open Lean Elab Tactic Meta Qq BI Std
+open Lean Elab Tactic Meta Qq BI Iris.Std
 
 /--
   The `icombine` tactic with the `as` syntax transforms the hypotheses
@@ -223,7 +223,7 @@ private def iCombineParseSelPats {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     (hyps : Hyps bi e) (patSels : TSyntaxArray `selPat) :
     ProofModeM (List IVarId) := do
   let selPats ← liftMacroM <| SelPat.parse patSels
-  let targets ← SelPat.resolve hyps selPats
+  let targets ← SelPat.resolve hyps selPats .topToBottom
   targets.mapM fun t =>
     match t.kind with
     | .ipm iVarId => pure iVarId
@@ -244,7 +244,7 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
     " as " colGt patAs:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse patAs
 
-  ProofModeM.runTactic `icombine λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `icombine fun mvar { hyps, goal, .. } => do
     let hs ← iCombineParseSelPats hyps patSels
     let st ← iCombineCore hs hyps goal
 
@@ -264,7 +264,7 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
     " gives " colGt patGives:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse patGives
 
-  ProofModeM.runTactic `icombine λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `icombine fun mvar { hyps, goal, .. } => do
     let hs ← iCombineParseSelPats hyps patSels
     let {outGives, pfGives, ..} ← iCombineCore hs hyps goal
 
@@ -293,7 +293,7 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
   let pat1 ← liftMacroM <| iCasesPat.parse patAs
   let pat2 ← liftMacroM <| iCasesPat.parse patGives
 
-  ProofModeM.runTactic `icombine λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `icombine fun mvar { hyps, goal, .. } => do
     let hs ← iCombineParseSelPats hyps patSels
     let st@{outGives, pfGives, ..} ← iCombineCore hs hyps goal
 
@@ -304,3 +304,11 @@ elab "icombine " patSels:(colGt ppSpace selPat)*
         q($st.p) q(iprop($st.outAs ∗ □ $outGives))
       mvar.assign q(combine_as_gives $st.pfAs $pfGives $pf)
     | none, _ => throwNoInstanceForGives
+
+end
+
+end
+
+end ProofMode
+
+end Iris

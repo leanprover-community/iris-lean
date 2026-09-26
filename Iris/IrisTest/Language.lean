@@ -1,6 +1,7 @@
 /-
-Copyright (c) 2026 Fernando Leal. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Fernando Leal
 -/
 module
 
@@ -78,3 +79,5 @@ variable (t : List Expr) [Language Expr State Obs Val] in
 #check (PureSteps t t)
 
 end Notation
+
+end IrisTest

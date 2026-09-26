@@ -56,7 +56,7 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 - `imodintro` *sel* — Like `imodintro`, but only succeed if the modality matches the selector term *sel*, e.g. `imodintro (<pers> _)` or `imodintro (□ _)`.
 - `inext` — Introduce one or more later modalities; equivalent to `imodintro (▷^[_] _)`.
 - `inext` *n* `credit:` *H* — given a later credit hypothesis *H*, reduce the later credits by *n* and strip *n* later modalities from all hypotheses while the goal remains unchanged. This tactic requires the goal to be a fancy update modality and `InvGS GF` to hold.
-- `inext credit:` *H* — equivalent to `inext 1 credit:` *H*.
+- `inext credit:` *H* — equivalent to `inext 1 credit:` *H*. This requires importing `Iris.Instances.Lib.FUpd`.
 - `imod` [*pmTerm*](#proof-mode-terms) `with` [*casesPat*](#cases-patterns) — Eliminate the modality at the top of [*pmTerm*](#proof-mode-terms) into the goal and destruct the result with [*casesPat*](#cases-patterns). Equivalent to `icases ... with >pat`.
 - `imod` [*pmTerm*](#proof-mode-terms) — Like above; if [*pmTerm*](#proof-mode-terms) is a hypothesis, its name is kept.
 
@@ -83,6 +83,8 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 
 - `iinv` *H* (`$$` [*specPat*](#specialization-patterns))? `with` [*casesPat*](#cases-patterns) ([*casesPat*](#cases-patterns))? — opens an invariant hypothesis *H* and uses the first cases pattern to destruct the result. The second cases pattern is used for destructing the hypothesis for closing the invariant. The specialisation pattern is used for resource consumption needed for opening the invariant. If the specialisation pattern is not given as part of the tactic, it is, by default, the auto-framing of spatial hypotheses.
 - `iinv` *N* (`$$` [*specPat*](#specialization-patterns))? `with` [*casesPat*](#cases-patterns) ([*casesPat*](#cases-patterns))? — same as above, except that a namespace *N* is given. The last invariant hypothesis in the context of this namespace is chosen.
+- `iauintro` — turn a goal that is an atomic update into the corresponding atomic accessor, whose abort condition is the separating conjunction of the spatial hypotheses. The context is left unchanged. This requires importing `Iris.BI.Lib.Atomic`.
+- `iaaccintro` [*specPat*](#specialization-patterns)+ — prove an atomic accessor by applying `aacc_intro`. The specialisation patterns discharge the atomic precondition. There are three subgoals: the mask side condition `Ei ⊆ Eo`, the abort goal and the commit goal. The mask side condition is discharged automatically, if possible. The latter two subgoals keep the hypotheses left over by the specialisation patterns. This requires importing `Iris.BI.Lib.Atomic`.
 
 ## Cases Patterns
 

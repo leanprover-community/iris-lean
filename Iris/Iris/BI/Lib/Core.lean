@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Alvin Tang. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alvin Tang
 -/
@@ -110,3 +110,5 @@ theorem coreP_entails' [BIPersistentlyForall PROP] {P Q : PROP} [Affine P] :
 #rocq_ignore coreP_flip_mono "No `Proper` type class in Lean, `rw'` works both ways"
 
 end Core
+
+end Iris

@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Alvin Tang. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alvin Tang
 -/
@@ -16,7 +16,7 @@ local stepindex Nat
 namespace Iris
 
 section Laterable
-open BI OFE Std ProofMode
+open BI OFE Iris.Std ProofMode
 
 /-- Require that the proposition `P` is laterable. -/
 @[rocq_alias Laterable]
@@ -55,8 +55,7 @@ theorem intuitionistic_laterable [BI PROP] (P : PROP)
 
 @[rocq_alias persistent_laterable]
 instance persistent_laterable [BI PROP] [BIAffine PROP] (P : PROP) [Persistent P] :
-    Laterable P := by
-  apply intuitionistic_laterable <;> infer_instance
+    Laterable P := intuitionistic_laterable _
 
 @[rocq_alias sep_laterable]
 instance sep_laterable [BI PROP] (P Q : PROP) [instP : Laterable P] [instQ : Laterable Q] :
@@ -262,11 +261,14 @@ def modality_make_laterable [BI PROP] [Timeless (emp : PROP)] : Modality PROP PR
   sep := make_laterable_sep
 
 @[rocq_alias from_modal_make_laterable]
-instance fromModal_make_laterable [BI PROP] [Timeless (emp : PROP)] (P : PROP) :
-    FromModal True modality_make_laterable (make_laterable P) (make_laterable P) P where
+instance fromModal_make_laterable [BI PROP] [Timeless (emp : PROP)] io (P : PROP) :
+    FromModal io modality_make_laterable True
+      (make_laterable P) (make_laterable P) P where
   from_modal := by
     iintro %_ HP
     dsimp [modality_make_laterable, make_laterable]
     iassumption
 
 end Laterable
+
+end Iris
