@@ -36,8 +36,8 @@ fork's Aczel-tree set model (`algebra/ordinals/set_*.v`, ~2.8k lines) and its or
 | 1b | Bounded completions (`lbcompl`) for `Excl`, `Csum`, `List`, `Heap`, `UPred` | ✅ |
 | 2 | Generalize `BI/`, `ProofMode/`, `Instances/UPred` over `SI`; gate finite-only later laws | ✅ |
 | 3 | Step-index property classes (`TransfiniteIndex`, `LargeIndex`, ...), big later `⧍`, satisfiability, ordinal instances, counterexamples | ✅ |
-| 4 | Transfinite COFE solver (✅) and `IProp` over arbitrary `SI` (⬜) | 🟡 |
-| 5 | Logical steps (✅), strong WP (`swp`), transfinite adequacy, HeapLang lifting | 🟡 |
+| 4 | Transfinite COFE solver and `IProp`/`iOwn`/`wsat` over arbitrary `SI` | ✅ |
+| 5 | Logical steps, credit-free fupd + invariants, `wp`/`swp`, lifting, adequacy (✅); HeapLang `swp` rules (⬜) | 🟡 |
 | 6 | Refinement WP, time credits, SEQ; examples (termination, refinements, key ideas) | ⬜ |
 
 ## File-by-file status

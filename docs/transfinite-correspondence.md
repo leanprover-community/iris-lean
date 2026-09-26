@@ -77,11 +77,11 @@ is listed declaration by declaration in [Part II](#part-ii-transfinite-specific-
 | `bi.v` | 236 | `Instances/UPred/Instance.lean` | ✅ | `uPredI`/`uPredSI` instances |
 | `derived.v` | 225 | `Instances/UPred/Instance.lean`, `Instances/UPred/Transfinite.lean` | ✅ | see [Part II](#base_logicderivedv) |
 | `satisfiable.v` | 100 | `Instances/UPred/Transfinite.lean` | ✅ | see [Part II](#base_logicsatisfiablev-and-bisatisfiablev) |
-| `lib/iprop.v` | 162 | `Algebra/IProp.lean`, `Instances/IProp/` | 🟡 | `IProp` needs the (finite) solver, so `SI = Nat` |
-| `lib/own.v` | 363 | `Instances/IProp/Instance.lean` | 🟡 | `SI = Nat`; `initial_satisfiable` ⬜ |
-| `lib/wsat.v` | 254 | `Instances/Lib/WSat.lean` | 🟡 | `SI = Nat` |
-| `lib/fancy_updates.v` | 227 | `Instances/Lib/FUpd.lean` | 🟡 | `SI = Nat`; `satisfiable_at` ⬜ |
-| `lib/invariants.v` | 211 | `Instances/Lib/Invariants.lean` | 🟡 | `SI = Nat` |
+| `lib/iprop.v` | 162 | `Algebra/IProp.lean`, `Instances/IProp/` | ✅ | `IProp` is built with the transfinite solver (`Algebra/COFESolverTransfinite.lean`) for any `SI` |
+| `lib/own.v` | 363 | `Instances/IProp/Instance.lean` | 🟡 | generic in `SI` (`later_iOwn` needs `SIdxFinite`); `initial_satisfiable` ⬜ |
+| `lib/wsat.v` | 254 | `Instances/Lib/WSat.lean` | ✅ | generic in `SI` |
+| `lib/fancy_updates.v` | 227 | `Instances/Lib/FUpdTransfinite.lean` | ✅ | credit-free fupd for any `SI` (scoped `BIFUpdate`, `BIFUpdateSbi`), `fupd_plain_soundness`, `lstep_fupd_soundness`, `satisfiable_at_*`; the upstream credit-based `FUpd.lean` stays at `SI = Nat` |
+| `lib/invariants.v` | 211 | `Instances/Lib/InvariantsTransfinite.lean` | ✅ | for the transfinite fupd; `inv_alter`/`inv_combine` replaced by timeless variants as in the fork |
 | `lib/na_invariants.v` | 195 | `Instances/Lib/NaInvariants.lean` | 🟡 | `SI = Nat` |
 | `lib/cancelable_invariants.v` | 132 | `Instances/Lib/CInvariants.lean` | 🟡 | `SI = Nat` |
 | `lib/saved_prop.v` | 136 | `Instances/Lib/SavedProp.lean` | 🟡 | `SI = Nat` |
@@ -123,10 +123,10 @@ implementation (➖, replaced by the Lean IPM).
 | Rocq file | Lines | Lean | Status | Notes |
 |---|---:|---|---|---|
 | `language.v`, `ectx_language.v`, `ectxi_language.v` | 655 | `ProgramLogic/Language.lean`, `EctxLanguage.lean`, `EctxiLanguage.lean` | ✅ | language-level, no `SI` |
-| `weakestpre.v` | 724 | `ProgramLogic/WeakestPre.lean` | ⬜ | fork's WP is built from *logical steps* and a strong WP `swp`; Lean has upstream's WP at `SI = Nat` |
-| `lifting.v` | 281 | `ProgramLogic/Lifting.lean` | ⬜ | `swp` lifting lemmas |
-| `ectx_lifting.v` | 178 | `ProgramLogic/EctxLifting.lean` | ⬜ | idem |
-| `adequacy.v` | 284 | `ProgramLogic/Adequacy.lean` | ⬜ | uses `TransfiniteIndex`, big-later soundness, satisfiability |
+| `weakestpre.v` | 724 | `ProgramLogic/WeakestPreTransfinite.lean`, `BI/Lib/LogicalStep.lean` | ✅ | `wp` (fixpoint of `wpPre` with logical steps), `swp`; `eventually_plain`, `lstep_fupd(N)_plain` in `LogicalStep.lean` |
+| `lifting.v` | 281 | `ProgramLogic/LiftingTransfinite.lean` | ✅ | `wp`/`swp` lifting lemmas |
+| `ectx_lifting.v` | 178 | `ProgramLogic/EctxLiftingTransfinite.lean` | ✅ | `head` → `base` naming as upstream Iris-Lean |
+| `adequacy.v` | 284 | `ProgramLogic/AdequacyTransfinite.lean` | ✅ | `wp_strong_adequacy`, `wp_adequacy`, `wp_invariance` for `[SIdxTransfinite SI]`; big-later lemmas (`list_big_later`, `big_later_eventually`) |
 | `hoare.v` | 162 | — | ➖ | Hoare-triple notation on top of WP |
 | `refinement/ref_source.v` | 382 | — | ⬜ | source-program resource (auth of source state), `SI`-generic |
 | `refinement/ref_weakestpre.v` | 691 | — | ⬜ | refinement WP (`RSWP`/`RWP`) |
@@ -150,7 +150,7 @@ implementation (➖, replaced by the Lean IPM).
 | Rocq file | Lines | Lean | Status | Notes |
 |---|---:|---|---|---|
 | `counterexamples.v` | 227 | `Examples/TransfiniteCounterexamples.lean` | ✅ | see [Part II](#examplescounterexamplesv) |
-| `transfinite.v` | 150 | — | ⬜ | invariants + `swp` with transfinite indices (needs `IProp` over ordinals, `swp`) |
+| `transfinite.v` | 150 | `Examples/TransfiniteInvariants.lean` | 🟡 | language-independent parts (`invariants_swp`, existential and nested invariants); the `heap_lang` instances need transfinite `heap_lang` rules |
 | `keyideas/simulations.v` | 252 | `Examples/TransfiniteSimulations.lean` | ✅ | in `UPred M` instead of `iProp Σ`; see [Part II](#examplekeyideas) |
 | `keyideas/generalized_simulations.v` | 147 | `Examples/TransfiniteSimulations.lean` | ✅ | idem |
 | `termination/{adequacy,derived,thunk,eventloop,logrel}.v` | 1534 | — | ⬜ | termination logic (needs `tc_weakestpre`) |
