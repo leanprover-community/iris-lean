@@ -130,7 +130,7 @@ implementation (➖, replaced by the Lean IPM).
 | `hoare.v` | 162 | — | ➖ | Hoare-triple notation on top of WP |
 | `refinement/ref_source.v` | 382 | `ProgramLogic/Refinement/RefSource.lean` | 🟡 | `Source`, `srcUpdate`, `weakSrcUpdate`, lexicographic sources; auth sources (`auth_source`, `natA`, `ordA`) ⬜ |
 | `refinement/ref_weakestpre.v` | 691 | `ProgramLogic/Refinement/RefWeakestPre.lean` | 🟡 | `rwp` (least fixpoint), `rswp`, strong mono, fupd, `rwp_no_step`/`rwp_take_step`/`rwp_weaken`, `rswp_do_step`, bind, atomic, `ElimModal`/`IsExcept0`; `*_bind_inv`, `Frame`/`ElimAcc` instances ⬜ |
-| `refinement/ref_lifting.v` | 244 | `ProgramLogic/Refinement/RefLifting.lean` | ✅ | incl. `step_fupdN_mask_comm(')`; `rwp_lift_atomic_step_fupd` omitted (use `rswp_lift_atomic_step`) |
+| `refinement/ref_lifting.v` | 244 | `ProgramLogic/Refinement/RefLifting.lean` | 🟡 | incl. `step_fupdN_mask_comm(')`; `rwp_lift_atomic_step_fupd` omitted (use `rswp_lift_atomic_step`) |
 | `refinement/ref_ectx_lifting.v` | 201 | `ProgramLogic/Refinement/RefEctxLifting.lean` | 🟡 | main base-step lemmas (`head` → `base`) |
 | `refinement/ref_adequacy.v` | 354 | `ProgramLogic/Refinement/RefAdequacy.lean` | ✅ | termination preservation (`rwp_adequacy`, `rwp_sn_preservation`) and result refinement (`rwp_prim_step`, `rwp_erased_steps`, `rwp_result`) for `[SIdxLarge SI]` |
 | `refinement/tc_weakestpre.v` | 103 | — | ⬜ | time credits `$α` with ordinals |
