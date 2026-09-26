@@ -221,6 +221,24 @@ theorem satisfiableAt_exists [SIdxLarge.{v} SI] {E : CoPset} {X : Type v} {P : X
   iexists x
   iframe
 
+/-- Rocq: `satisfiable_at_or`. -/
+@[rocq_alias satisfiable_at_or]
+theorem satisfiableAt_or {E : CoPset} {P Q : IProp GF} (h : satisfiableAt E iprop(P ∨ Q)) :
+    satisfiableAt E P ∨ satisfiableAt E Q := by
+  refine Satisfiable.or.{0} (PROP := IProp GF) (UPred.satisfiable_mono h ?_)
+  iintro ⟨W, O, H⟩
+  icases H with (H | H)
+  · ileft
+    iframe
+  · iright
+    iframe
+
+/-- Rocq: `satisfiable_at_sep`. -/
+@[rocq_alias satisfiable_at_sep]
+theorem satisfiableAt_sep {E : CoPset} {P Q : IProp GF} (h : satisfiableAt E iprop(P ∗ Q)) :
+    satisfiableAt E P ∧ satisfiableAt E Q :=
+  ⟨satisfiableAt_mono h sep_elim_left, satisfiableAt_mono h sep_elim_right⟩
+
 /-- Rocq: `satisfiable_at_pure`. -/
 @[rocq_alias satisfiable_at_pure]
 theorem satisfiableAt_pure {E : CoPset} {φ : Prop} (h : satisfiableAt (GF := GF) E iprop(⌜φ⌝)) :
