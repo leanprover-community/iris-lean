@@ -14,6 +14,7 @@ public import Iris.BI.Lib.Fractional
 public import Iris.BI.Lib.GenHeap
 public import Iris.BI.Lib.InvHeap
 public import Iris.BI.Lib.Laterable
+public import Iris.BI.Lib.LogicalStep
 public import Iris.BI.Lib.MonoList
 public import Iris.BI.Lib.MonoNat
 public import Iris.BI.Lib.MonoZ

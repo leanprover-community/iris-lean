@@ -153,7 +153,7 @@ theorem satisfiable_mono {P Q : UPred M} (hP : satisfiable P) (H : P ⊢ Q) : sa
   fun n => let ⟨x, hx, HP⟩ := hP n; ⟨x, hx, H n _ HP⟩
 
 theorem satisfiable_elim {P : UPred M} [Plain P] (hP : satisfiable P) : iprop(True ⊢ P) :=
-  fun n x _ =>
+  fun n _ _ =>
     let ⟨_, _, HP⟩ := hP n
     have hpl : iprop(P ⊢ ■ P) := Plain.plain
     UPred.mono _ (hpl n _ HP) incN_unit SIdx.le_refl
@@ -165,7 +165,7 @@ theorem satisfiable_later {P : UPred M} (hP : satisfiable iprop(▷ P)) : satisf
 
 theorem satisfiable_bupd {P : UPred M} (hP : satisfiable iprop(|==> P)) : satisfiable P :=
   fun n =>
-    let ⟨x, hx, HP⟩ := hP n
+    let ⟨_, hx, HP⟩ := hP n
     let ⟨x', H, HP'⟩ := HP n unit SIdx.le_refl (validN_ne unit_right_id.symm.dist hx)
     ⟨x', validN_op_left H, HP'⟩
 
