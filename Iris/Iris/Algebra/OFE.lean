@@ -1894,6 +1894,20 @@ instance oFunctorConstOF [COFE B] : OFunctor (constOF B) where
 instance OFunctor.constOF_contractive [COFE B] : OFunctorContractive (constOF B) where
   map_contractive.1 := by simp [OFunctor.map]
 
+/-- The constant functor on `B`, lifted to the universe `w` (`constOF` is restricted to `Type`).
+This is used for ghost state of `IProp` over step-index types in higher universes. -/
+abbrev constOFU.{w, w'} (B : Type w') : OFunctorPre := fun _ _ _ _ => ULift.{w} B
+
+instance oFunctorConstOFU [COFE B] : OFunctor (constOFU.{w} B) where
+  ofe := inferInstance
+  map _ _ := ⟨id, id_ne⟩
+  map_ne := by intros; constructor; simp
+  map_id := by simp
+  map_comp := by simp
+
+instance OFunctor.constOFU_contractive [COFE B] : OFunctorContractive (constOFU.{w} B) where
+  map_contractive.1 := by simp [OFunctor.map]
+
 end constOF
 
 section IdOF

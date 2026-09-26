@@ -20,7 +20,9 @@ The instances for natural numbers and ordinals (time credits) are not ported yet
 
 @[expose] public noncomputable section
 
-variable {SI : Type _} [instSI : Iris.SIdx SI]
+universe u v
+
+variable {SI : Type v} [instSI : Iris.SIdx SI]
 local stepindex SI
 
 namespace Iris.Transfinite
@@ -30,8 +32,8 @@ open Iris Iris.Std Iris.BI OFE CMRA Relation
 /-- An authoritative source with its ghost state (Rocq: `auth_source` and `auth_sourceG`): a
 transition relation on a discrete unital camera that is compatible with framing and cancellative,
 and the ghost name of the authoritative element. -/
-class AuthSourceG (GF : BundledGFunctors) (M : Type) [UCMRA M] where
-  elem : ElemG GF (constOF (Auth M))
+class AuthSourceG (GF : BundledGFunctors.{u}) (M : Type v) [UCMRA M] where
+  elem : ElemG GF (constOFU.{max u v} (Auth M))
   name : GName
   trans : M → M → Prop
   step_frame {a a' f : M} : trans a a' → ✓ (a • f) → ✓ (a' • f) ∧ trans (a • f) (a' • f)
@@ -41,14 +43,14 @@ attribute [reducible, instance] AuthSourceG.elem
 
 section AuthSource
 
-variable {GF : BundledGFunctors} {M : Type} [UCMRA M] [CMRA.Discrete M]
+variable {GF : BundledGFunctors} {M : Type v} [UCMRA M] [CMRA.Discrete M]
 variable [G : AuthSourceG GF M]
 
 /-- The authoritative source state (Rocq: `srcA`). -/
-def srcA (a : M) : IProp GF := iOwn (E := G.elem) G.name (● a)
+def srcA (a : M) : IProp GF := iOwn (E := G.elem) G.name (ULift.up (● a))
 
 /-- A fragment of the source state (Rocq: `srcF`). -/
-def srcF (b : M) : IProp GF := iOwn (E := G.elem) G.name (◯ b)
+def srcF (b : M) : IProp GF := iOwn (E := G.elem) G.name (ULift.up (◯ b))
 
 /-- Rocq: `source_auth_source`. -/
 instance authSource_source : Source GF M where
@@ -75,13 +77,13 @@ theorem auth_src_update (E : CoPset) {s s' : M} (hstep : G.trans s s') :
   dsimp only
   unfold srcA srcF
   iintro HF %Es HA
-  ihave H := (iOwn_op (E := G.elem) (γ := G.name) (a1 := ● Es) (a2 := ◯ s)).mpr $$ [HA HF]
+  ihave H := (iOwn_op (E := G.elem) (γ := G.name) (a1 := ULift.up (● Es)) (a2 := ULift.up (◯ s))).mpr $$ [HA HF]
   · iframe
   ihave ⟨Hv, H⟩ := iOwn_valid_l $$ H
   icases internalCmraValid_discrete.mp $$ Hv with %Hv
   obtain ⟨hinc, hv⟩ := Auth.auth_both_valid_discrete.mp Hv
   obtain ⟨Es', hlu, hstep'⟩ := source_step_update hv hinc hstep
-  imod iOwn_update (Auth.auth_update hlu) $$ H with H
+  imod iOwn_update (ULift.update (Auth.auth_update hlu)) $$ H with H
   icases (iOwn_op (E := G.elem)).mp $$ H with ⟨HA, HF⟩
   iapply fupd_intro
   iexists Es'
@@ -93,7 +95,7 @@ omit [CMRA.Discrete M] W in
 /-- Rocq: `srcF_split`. -/
 theorem srcF_split {s t : M} : srcF (GF := GF) (s • t) ⊣⊢ srcF s ∗ srcF t := by
   unfold srcF
-  rw [Auth.frag_op]
+  rw [Auth.frag_op, ULift.up_op]
   exact iOwn_op
 
 end AuthSource

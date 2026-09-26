@@ -15,7 +15,8 @@ public import Iris.Std.HeapInstances
 public import Iris.Instances.IProp
 
 @[expose] public noncomputable section
-variable {SI : Type _} [instSI : Iris.SIdx SI]
+universe u v
+variable {SI : Type v} [instSI : Iris.SIdx SI]
 local stepindex SI
 
 /-! ## World satisfaction
@@ -37,10 +38,10 @@ abbrev InvMapF := HeapViewURF (H := InvMap) (AgreeRF (LaterOF IdOF))
 
 /-- Wsat inclusion typeclass (`GF` contains the necessary functors for wsat) -/
 @[rocq_alias wsatGS.wsatGpreS]
-class WsatGpreS (GF : BundledGFunctors) where
+class WsatGpreS (GF : BundledGFunctors.{u}) where
   inv : ElemG GF InvMapF
-  enabled : ElemG GF (constOF CoPsetDisjL)
-  disabled : ElemG GF (constOF (DisjointLeibnizSet PosSet))
+  enabled : ElemG GF (constOFU.{max u v} CoPsetDisjL)
+  disabled : ElemG GF (constOFU.{max u v} (DisjointLeibnizSet PosSet))
 
 attribute [reducible, instance] WsatGpreS.inv
 attribute [reducible, instance] WsatGpreS.enabled
@@ -48,7 +49,7 @@ attribute [reducible, instance] WsatGpreS.disabled
 
 /-- Wsat allocated class (Names in a global IProp resource for the Wsat resources). -/
 @[rocq_alias wsatGS.wsatGS]
-class WsatGS (GF : BundledGFunctors) extends WsatGpreS GF where
+class WsatGS (GF : BundledGFunctors.{u}) extends WsatGpreS GF where
   invariant_name : GName
   enabled_name : GName
   disabled_name : GName
@@ -71,11 +72,11 @@ def ownI (i : Pos) (P : IProp GF) : IProp GF :=
 
 @[rocq_alias ownE]
 def ownE (S : CoPset) : IProp GF :=
-  iOwn (E := W.enabled) W.enabled_name (valid S)
+  iOwn (E := W.enabled) W.enabled_name (ULift.up (valid S))
 
 @[rocq_alias ownD]
 def ownD (S : PosSet) : IProp GF :=
-  iOwn (E := W.disabled) W.disabled_name (valid S)
+  iOwn (E := W.disabled) W.disabled_name (ULift.up (valid S))
 
 abbrev liftInv (I : InvMap (IProp GF)) := map toAgree (map invariant_unfold I)
 
@@ -115,7 +116,7 @@ theorem ownE_empty : ⊢ |==> ownE (W := W) ∅ := iOwn_unit (ε := UCMRA.unit)
 @[rocq_alias ownE_op]
 theorem ownE_op {E1 E2} (Hdisj : E1 ## E2) : ownE (E1 ∪ E2) ⊣⊢@{IProp GF} ownE E1 ∗ ownE E2 := by
   refine .trans (.of_eq ?_) iOwn_op
-  rw [disj_op_union Hdisj]
+  rw [← ULift.up_op, disj_op_union Hdisj]
   rfl
 
 @[rocq_alias ownE_disjoint]
@@ -125,7 +126,7 @@ theorem ownE_disjoint {E1 E2} : ownE E1 ∗ ownE E2 ⊢@{IProp GF} ⌜E1 ## E2�
   · unfold ownE
     isplitl [H1] <;> iassumption
   ihave H := iOwn_cmraValid $$ H
-  icases internalCmraValid_discrete (A := CoPsetDisjL) $$ H with %H
+  icases internalCmraValid_discrete (A := ULift CoPsetDisjL) $$ H with %H
   ipureintro
   exact valid_op_iff_disj.mp H
 
@@ -159,7 +160,7 @@ theorem ownD_empty : ⊢@{IProp GF} |==> ownD ∅ := iOwn_unit (ε := UCMRA.unit
 @[rocq_alias ownD_op]
 theorem ownD_op {E1 E2} (Hdisj : E1 ## E2) : ownD (E1 ∪ E2) ⊣⊢@{IProp GF} ownD E1 ∗ ownD E2 := by
   refine .trans (.of_eq ?_) iOwn_op
-  rw [disj_op_union Hdisj]
+  rw [← ULift.up_op, disj_op_union Hdisj]
   rfl
 
 @[rocq_alias ownD_disjoint]
@@ -170,7 +171,7 @@ theorem ownD_disjoint (E1 E2 : PosSet) :
   icases iOwn_op $$ [H1 H2] with H
   · isplitl [H1] <;> iassumption
   ihave H := iOwn_cmraValid $$ H
-  icases internalCmraValid_discrete (A := DisjointLeibnizSet PosSet) $$ H with %H
+  icases internalCmraValid_discrete (A := ULift (DisjointLeibnizSet PosSet)) $$ H with %H
   ipureintro
   exact valid_op_iff_disj.mp H
 
@@ -283,7 +284,9 @@ theorem ownI_alloc [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
     obtain ⟨⟨HnotY, HnotDom⟩, Hφ⟩ := H
     have _ : get? I j = none := by simp [mem_dom_set] at HnotDom; assumption
     exists j
-  imod iOwn_updateP (alloc_empty_updateP_strong' HP) $$ HD with ⟨%X, %Hpure, HD⟩
+  imod iOwn_updateP (ULift.updateP (alloc_empty_updateP_strong' HP)) $$ HD with ⟨%X, %Hpure, HD⟩
+  obtain ⟨X⟩ := X
+  dsimp only at Hpure
   obtain ⟨j, HEQ, ⟨Hget, Hφ⟩⟩ := Hpure
   -- FIXME: removing E causes a PM error
   imod iOwn_update (E := W.inv) (update_one_alloc (v1 := toAgree (invariant_unfold P)) _
@@ -323,7 +326,9 @@ theorem ownI_alloc_open [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
     obtain ⟨⟨HnotY, HnotDom⟩, Hφ⟩ := H
     have _ : get? I j = none := by simp [mem_dom_set] at HnotDom; assumption
     exists j
-  imod iOwn_updateP (alloc_empty_updateP_strong' HP) $$ HD with ⟨%X, %Hpure, HD⟩
+  imod iOwn_updateP (ULift.updateP (alloc_empty_updateP_strong' HP)) $$ HD with ⟨%X, %Hpure, HD⟩
+  obtain ⟨X⟩ := X
+  dsimp only at Hpure
   obtain ⟨j, HEQ, ⟨Hget, Hφ⟩⟩ := Hpure
   imod iOwn_update (E := W.inv) (update_one_alloc (v1 := toAgree (invariant_unfold P)) _
       DFrac.valid_discard (fun _ => ⟨⟩)) $$ Hown with Hown
@@ -352,8 +357,8 @@ theorem ownI_alloc_open [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
 theorem wsat_alloc [instWp : WsatGpreS GF] :
     ⊢ |==> ∃ (W : WsatGS GF), wsat (W := W) ∗ ownE ⊤ := by
   imod (iOwn_alloc (E := instWp.inv) (Auth (.own 1) ∅) auth_one_valid) with ⟨%γ, H⟩
-  imod (iOwn_alloc (E := instWp.enabled) (valid ⊤) ⟨⟩) with ⟨%γe, He⟩
-  imod (iOwn_alloc (E := instWp.disabled) (valid ∅) ⟨⟩) with ⟨%γd, Hd⟩
+  imod (iOwn_alloc (E := instWp.enabled) (ULift.up (valid ⊤)) ⟨⟩) with ⟨%γe, He⟩
+  imod (iOwn_alloc (E := instWp.disabled) (ULift.up (valid ∅)) ⟨⟩) with ⟨%γd, Hd⟩
   imodintro
   let W : WsatGS GF := {
     inv := instWp.inv,

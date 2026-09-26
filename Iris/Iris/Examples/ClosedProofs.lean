@@ -40,8 +40,8 @@ section proof
 noncomputable def GF : BundledGFunctors := fun n =>
   match n with
   | 0  => ⟨InvMapF, by infer_instance⟩
-  | 1  => ⟨constOF CoPsetDisjL, by infer_instance⟩
-  | 2  => ⟨constOF (DisjointLeibnizSet PosSet), by infer_instance⟩
+  | 1  => ⟨constOFU CoPsetDisjL, by infer_instance⟩
+  | 2  => ⟨constOFU (DisjointLeibnizSet PosSet), by infer_instance⟩
   | 3  => ⟨AuthURF (constOF Credit), by infer_instance⟩
   | _  => ⟨constOF Unit, by infer_instance⟩
 
