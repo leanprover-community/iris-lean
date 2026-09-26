@@ -128,7 +128,7 @@ implementation (➖, replaced by the Lean IPM).
 | `ectx_lifting.v` | 178 | `ProgramLogic/EctxLiftingTransfinite.lean` | ✅ | `head` → `base` naming as upstream Iris-Lean |
 | `adequacy.v` | 284 | `ProgramLogic/AdequacyTransfinite.lean` | ✅ | `wp_strong_adequacy`, `wp_adequacy`, `wp_invariance` for `[SIdxTransfinite SI]`; big-later lemmas (`list_big_later`, `big_later_eventually`) |
 | `hoare.v` | 162 | — | ➖ | Hoare-triple notation on top of WP |
-| `refinement/ref_source.v` | 382 | `ProgramLogic/Refinement/RefSource.lean` | 🟡 | `Source`, `srcUpdate`, `weakSrcUpdate`, lexicographic sources; auth sources (`auth_source`, `natA`, `ordA`) ⬜ |
+| `refinement/ref_source.v` | 382 | `ProgramLogic/Refinement/RefSource.lean` | 🟡 | `Source`, `srcUpdate`, `weakSrcUpdate`, lexicographic sources; auth sources (`AuthSourceG`, `srcA`/`srcF`, `source_step_update`, `auth_src_update`, `srcF_split`) in `RefAuthSource.lean`; the `natA`/`ordA` instances ⬜ |
 | `refinement/ref_weakestpre.v` | 691 | `ProgramLogic/Refinement/RefWeakestPre.lean` | 🟡 | `rwp` (least fixpoint), `rswp`, strong mono, fupd, `rwp_no_step`/`rwp_take_step`/`rwp_weaken`, `rswp_do_step`, bind, atomic, `ElimModal`/`IsExcept0`; `*_bind_inv`, `Frame`/`ElimAcc` instances ⬜ |
 | `refinement/ref_lifting.v` | 244 | `ProgramLogic/Refinement/RefLifting.lean` | 🟡 | incl. `step_fupdN_mask_comm(')`; `rwp_lift_atomic_step_fupd` omitted (use `rswp_lift_atomic_step`) |
 | `refinement/ref_ectx_lifting.v` | 201 | `ProgramLogic/Refinement/RefEctxLifting.lean` | 🟡 | main base-step lemmas (`head` → `base`) |
