@@ -32,10 +32,10 @@ is listed declaration by declaration in [Part II](#part-ii-transfinite-specific-
 |---|---:|---|---|---|
 | `base.v` | 6 | `Std/` | ➖ | stdpp re-exports |
 | `stepindex.v` | 832 | `Algebra/StepIndex.lean`, `Algebra/StepIndexFinite.lean`, `Algebra/StepIndexTransfinite.lean`, `Algebra/StepIndexPair.lean` | ✅ | `index_cumulative_rec` (solver only) missing; see [Part II](#algebrastepindexv) |
-| `ofe.v` | 2443 | `Algebra/OFE.lean` | 🟡 | generic; `BcomplUnique`, `Truncatable`, `ProtoTruncatable` (needed by the solver) missing |
+| `ofe.v` | 2443 | `Algebra/OFE.lean`, `Algebra/Truncation.lean` | ✅ | generic; truncations `[A]_{α}` are quotients (`TruncO`), so `Truncatable`/`ProtoTruncatable` are not needed; `BcomplUniqueLim` ported, `BcomplUnique`/`BcomplStronglyUnique` ➖ (unused) |
 | `cmra.v` | 1695 | `Algebra/CMRA.lean` | 🟡 | generic; ordinal CMRA (`ordA`, natural sum) missing (time credits) |
-| `cofe_solver.v` | 3090 | `Algebra/COFESolver.lean` | ⬜ | Lean has the finite (ω) America–Rutten solver only |
-| `wf_IR.v` | 231 | — | ⬜ | well-founded induction-recursion, used only by the transfinite solver |
+| `cofe_solver.v` | 3090 | `Algebra/COFESolverTransfinite.lean` | ✅ | `Transfinite.Fix F` with `Fix.iso : F (Fix F) (Fix F) ≅ Fix F`; see [Part II](#algebracofe_solverv) |
+| `wf_IR.v` | 231 | — | ➖ | replaced by a single well-founded recursion whose stages carry copies of the earlier approximations (see the solver) |
 | `agree.v` | 329 | `Algebra/Agree.lean` | ✅ | |
 | `auth.v` | 507 | `Algebra/Auth.lean`, `Algebra/View.lean` | ✅ | upstream defines `auth` through `view` |
 | `auth_frac.v` | 63 | `Algebra/Auth.lean` (fractional `●{dq}`) | ➖ | upstream `auth` has fractional authorities |
@@ -195,6 +195,31 @@ implementation (➖, replaced by the Lean IPM).
 | `set_model_large_index : LargeIndex ordI` | `ordinalSIdxLarge : SIdxLarge.{u} Ordinal.{u}` | ✅ |
 | `or_to_sum`, `classic_*` | — | ➖ |
 
+### `algebra/cofe_solver.v` <a name="algebracofe_solverv"></a>
+
+All in `Algebra/COFESolverTransfinite.lean` (namespace `Iris.COFE.OFunctor.Transfinite`), with the
+truncations in `Algebra/Truncation.lean`. The solver needs `F` to be contractive, the images
+`F α α` to be COFEs with unique limits of bounded chains (`BcomplUniqueLim`), and `F 1 1` to be
+inhabited. The construction uses only `propext`, `Classical.choice` and `Quot.sound`.
+
+| Rocq | Lean | Status |
+|---|---|---|
+| `COFE`, `cofe`, `projCOFE` | `Obj` (bundled inhabited COFE) | ✅ |
+| `ofe_eq`, `transport_id`, `unfold_transport`, `fold_transport`, `transport_id_*` | `castObj`, `castObj_castObj`, `castObj_symm_castObj`, `cast_truncMap_map`, `truncMap_map_cast` | ✅ |
+| `bounded_ne_bcompl` | inlined (conv of `lbcompl` + non-expansiveness) | ✅ |
+| `solution`, `solution_fold_unfold`, `solution_unfold_fold` | `Fix`, `Fix.iso`, `Fix.fold_unfold`, `Fix.unfold_fold` | ✅ |
+| `Truncatable`, `[A]_{α}`, `⌊·⌋_{α}`, `⌈·⌉_{α}`, `trunc_map`, `trunc_map_inv`, `trunc_map_compose`, `Truncatable_cofe` | `TruncO`, `truncate`, `expand`, `truncMap`, `truncMap_inv`, `truncMap_comp_dist`, `TruncO.instCOFE` | ✅ |
+| `OfeTruncated`, `ofe_truncated_equiv/dist`, `ofe_mor_truncated` | `OFE.Truncated`, `Truncated.dist_iff`, `Truncated.hom` | ✅ |
+| `BcomplUniqueLim`, `Truncatable_unique_lim` | `BcomplUniqueLim`, `TruncO.instBcomplUniqueLim` | ✅ |
+| `is_bounded_approx`, `bounded_approx` | `Fam`, `FamGood` (families below an index) and `Stage` (one step) | ✅ |
+| `approx_agree`, `extension`, `extension_agree`, `approx_agree_*`, `merge_*`, `IR_spec`, `full_approximation` | `stage` (one `WellFounded.fix`), `prev_eq`, `famOf`, `good` | ✅ (different proof architecture) |
+| `approx_base`, `bounded_inverse_ϕ0_ψ0` | `zeroStage`, `ψ_ϕ_zero`, `ϕ_ψ_zero` | ✅ |
+| `succ_extension` (`sX'`, `sϕ'`, `sψ'`, `se'`, `sp'`, `Fep_sp'`, ...) | `succStage`, `X_succ`, `ϕ_succ`, `ψ_succ`, `e_succ_*`, `p_succ_*`, `Fep_p_succ`, `p_e_succ`, ... | ✅ |
+| `inv_lim`, `proj_lim`, `inv_lim_*` | `LimCar` (with a COFE structure, which Rocq does not need) | ✅ |
+| `limit_extension` (`FX`, `Fep`, `Xβ`, `eβ`, `pβ`, `ψβ`, `ϕβ`, `Xβ'`, `ϕβ'`, `ψβ'`, `eβ'`, `pβ'`) | `limitStage` (`FX`, `Fep`, `LimCar`, `eL`, `pL`, `ψL`, `ϕL`, `eS`, `pS`, `ϕS`, `ψS`) | ✅ |
+| `eβ_pβ_id`, `pβ_eβ_id`, `eβ_functorial`, `pβ_functorial`, `ψβ_ϕβ_id`, `ϕβ_ψβ_id`, `Fep_p_limit`, `pβ'_eβ'_id`, ... | `eL_pL`, `pL_eL`, `eL_functorial`, `pL_functorial`, `ψL_ϕL`, `ϕL_ψL`, `fld_truncMap_eL`, `pS_eS`, `eS_pS`, `ψS_ϕS`, `ϕS_ψS`, `fld_truncMap_eS`, ... | ✅ |
+| `final_limit` (`FX_lim`, `Fep_lim`, `Xlim`, `e_lim`, `p_lim`, `ψ_lim`, `ϕ_lim`, `pre_solution_F`) | `FXl`, `Fepl`, `SolCar`, `elim`, `plim`, `ψlim`, `ϕlim`, `Fix.iso` | ✅ |
+
 ### `base_logic/upred.v`
 
 | Rocq | Lean | Status |
@@ -317,7 +342,7 @@ is replaced by the existence of an infinite execution (`ExLoop`), and `nsteps` b
 
 ### Not yet started
 
-`algebra/cofe_solver.v`, `algebra/wf_IR.v`, `ofe.v` (`BcomplUnique`, `Truncatable`), `algebra/ordinals/arithmetic.v`,
+`algebra/ordinals/arithmetic.v` (Mathlib has no natural ordinal addition in this version),
 `cmra.v` (`ordA`), `bi/weakestpre.v` (`Swp`, `Rswp`), all of `program_logic/` apart from the
 language definitions, the `swp`/`rwp` parts of `heap_lang/`, and the examples other than the
 counterexamples and the key ideas. See [`transfinite-porting.md`](transfinite-porting.md#roadmap) for the plan.
