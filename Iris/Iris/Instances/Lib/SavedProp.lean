@@ -188,8 +188,8 @@ variable {GF : BundledGFunctors} [SavedPropG GF]
 
 @[rocq_alias saved_prop_own_contractive]
 instance saved_prop_own_contractive (γ : GName) (dq : DFrac) :
-    Contractive (saved_prop_own (GF := GF) γ dq) :=
-  ⟨fun {_ _ _} h => saved_anything_ne γ dq |>.ne (NextContractive.distLater_dist h)⟩
+    Contractive (saved_prop_own (GF := GF) γ dq) where
+  distLater_dist := by contractive
 
 @[rocq_alias saved_prop_discarded_persistent]
 instance saved_prop_discarded_persistent (γ : GName) (P : IProp GF) :
@@ -290,9 +290,10 @@ variable {GF : BundledGFunctors} {A : Type _} [SavedPredG GF A]
 
 @[rocq_alias saved_pred_own_contractive]
 instance saved_pred_own_contractive (γ : GName) (dq : DFrac) :
-    Contractive (saved_pred_own (GF := GF) (A := A) γ dq) :=
-  ⟨fun {_ _ _} h => saved_anything_ne γ dq |>.ne
-    (fun a => NextContractive.distLater_dist (fun m hm => h m hm a))⟩
+    Contractive (saved_pred_own (GF := GF) (A := A) γ dq) where
+  distLater_dist := -- TODO: Why does by contractive not work here?
+  fun {_ _ _} h => saved_anything_ne γ dq |>.ne
+    (fun a => NextContractive.distLater_dist (fun m hm => h m hm a))
 
 @[rocq_alias saved_pred_discarded_persistent]
 instance saved_pred_discarded_persistent (γ : GName) (Φ : A → IProp GF) :
