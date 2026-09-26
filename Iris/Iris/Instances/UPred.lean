@@ -6,3 +6,4 @@ module
 
 public import Iris.Instances.UPred.Instance
 public import Iris.Instances.UPred.ProofMode
+public import Iris.Instances.UPred.Transfinite

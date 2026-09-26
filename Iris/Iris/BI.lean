@@ -23,5 +23,6 @@ public import Iris.BI.Sbi
 public import Iris.BI.SbiUnfold
 public import Iris.BI.SIProp
 public import Iris.BI.Telescopes
+public import Iris.BI.Transfinite
 public import Iris.BI.Updates
 public import Iris.BI.WeakestPre
