@@ -400,6 +400,24 @@ theorem wp_bind_inv (K : Expr → Expr) [Language.Context K] {s : Stuckness} {E 
     wp (ι := ι) s E (K e) Φ ⊢ wp (ι := ι) s E e (fun v => wp s E (K (v : Expr)) Φ) :=
   (wp_bind_iff (ι := ι) K).2
 
+/-- Rocq: `swp_bind`. -/
+theorem swp_bind (K : Expr → Expr) [κ : Language.Context K] {k : Nat} {s : Stuckness}
+    {E : CoPset} {e : Expr} {Φ : Val → IProp GF} (he : toVal e = none) :
+    swp (ι := ι) k s E e (fun v => wp s E (K (v : Expr)) Φ) ⊢ swp k s E (K e) Φ := by
+  unfold swp
+  iintro H %σ₁ %κ' %κs %n Hσ
+  imod H $$ Hσ with ⟨%Hred, H⟩
+  isplit
+  · ipureintro; grind only [cases Stuckness, Language.Context.reducible_fill]
+  · iintro %e₂ %σ₂ %efs %HKstep
+    obtain ⟨e₂', rfl, Hstep⟩ := κ.primStep_fill_inv he HKstep
+    imod H $$ %e₂' %σ₂ %efs %Hstep with H
+    imodintro
+    inext
+    imod H with ⟨$, H, $⟩
+    imodintro
+    iapply wp_bind K $$ H
+
 /-! ## Atomic expressions -/
 
 /-- Rocq: `wp_atomic`. -/

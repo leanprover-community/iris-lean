@@ -19,3 +19,5 @@ public import Iris.HeapLang.Syntax
 public import Iris.HeapLang.Tactic
 public import Iris.HeapLang.Transfinite
 public import Iris.HeapLang.TransfiniteDerived
+public import Iris.HeapLang.TransfiniteProofMode
+public import Iris.HeapLang.TransfiniteProph

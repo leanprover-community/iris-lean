@@ -570,6 +570,52 @@ theorem wp_resolve {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × Val)}
     iapply Iris.Transfinite.wp_value' s E
     iapply HΦ $$ %pvs'' %hpvs Hp
 
+/-- Rocq: `swp_resolve`. -/
+theorem swp_resolve {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × Val)}
+    [hatom : Language.Atomic Language.Atomicity.StronglyAtomic e] :
+    ⊢ proph p pvs -∗
+      swp k s E e (fun r => iprop(∀ pvs', ⌜pvs = (r, w) :: pvs'⌝ -∗ proph p pvs' -∗ Φ r)) -∗
+      swp k s E hl(resolve(&e, v(#p), v(&w))) Φ := by
+  iintro Hp HWPe
+  unfold swp
+  simp only [stateInterp_eq]
+  iintro %σ₁ %κ %κs %n ⟨Hσ, Hκ⟩
+  icases ProphMap.agree (κ ++ κs) σ₁.usedProphId p pvs $$ [$Hκ $Hp] with %Hagree
+  have hredR : Stuckness.MaybeReducible s (e, σ₁) →
+      Stuckness.MaybeReducible s (hl(resolve(&e, v(#p), v(&w))), σ₁) := fun Hred_e => by
+    cases s <;> simp only [Stuckness.MaybeReducible] at Hred_e ⊢
+    exact prim_step_reducible_resolve (Std.ExtTreeSet.mem_iff_contains.mp Hagree.1) Hred_e
+  cases κ using List.reverseRec with
+  | nil =>
+    imod HWPe $$ %σ₁ %([] : List Observation) %κs %n [$Hσ $Hκ] with ⟨%Hred_e, -⟩
+    isplitr
+    · ipureintro; exact hredR Hred_e
+    iintro %e₂ %σ₂ %efs %Hstep
+    exfalso
+    obtain ⟨_, _, hκ_eq, _, _⟩ := step_resolve_decompose Hstep
+    exact List.cons_ne_nil _ _ (List.append_eq_nil_iff.mp hκ_eq.symm).2
+  | append_singleton init lastObs _ =>
+    have hassoc : (init ++ [lastObs]) ++ κs = init ++ (lastObs :: κs) := by simp
+    rw [hassoc]
+    imod HWPe $$ %σ₁ %init %(lastObs :: κs) %n [$Hσ $Hκ] with ⟨%Hred_e, HWPe⟩
+    isplitr
+    · ipureintro; exact hredR Hred_e
+    iintro %e₂ %σ₂ %efs %Hstep
+    obtain ⟨κ_inner, v_inner, hκ_eq, rfl, Hbase_e⟩ := step_resolve_decompose Hstep
+    obtain ⟨rfl, rfl⟩ :=
+      (by simpa using congrArg List.reverse hκ_eq : lastObs = _ ∧ init = κ_inner)
+    imod HWPe $$ %_ %σ₂ %efs %(EctxLanguage.primStep_of_baseStep Hbase_e) with HWPe
+    imodintro
+    inext
+    imod HWPe with ⟨⟨Hσ, Hκ⟩, HWPval, Hefs⟩
+    imod Iris.Transfinite.wp_value_inv' s E _ v_inner $$ HWPval with HΦ
+    imod ProphMap.resolve_proph p (v_inner, w) κs σ₂.usedProphId pvs $$ [$Hκ $Hp]
+      with ⟨%pvs'', %hpvs, Hκ, Hp⟩
+    imodintro
+    iframe Hσ Hκ Hefs
+    iapply Iris.Transfinite.wp_value' s E
+    iapply HΦ $$ %pvs'' %hpvs Hp
+
 end swp
 
 /-! ## `rswp` and `rwp` -/
