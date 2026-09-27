@@ -154,7 +154,7 @@ implementation (➖, replaced by the Lean IPM).
 | `keyideas/simulations.v` | 252 | `Examples/TransfiniteSimulations.lean` | ✅ | in `UPred M` instead of `iProp Σ`; see [Part II](#examplekeyideas) |
 | `keyideas/generalized_simulations.v` | 147 | `Examples/TransfiniteSimulations.lean` | ✅ | idem |
 | `termination/{adequacy,derived,thunk,eventloop}.v` | 566 | `IrisMath/IrisMath/Termination/*.lean` | ✅ | `heap_lang_ref_adequacy` (generic `SI` with `SIdxLarge.{w+1}`); `thunk_sequential_spec` states the persistent `□ (tc 1 -∗ ...)` |
-| `termination/logrel.v` | 968 | — | ⬜ | logical relation for termination |
+| `termination/logrel.v` | 968 | `IrisMath/IrisMath/Termination/Logrel.lean` | ✅ | simple and polymorphic logical relations, all compatibility lemmas, `simple_logrel_adequacy`, `logrel_adequacy`; token camera `Auth Unit`; typing contexts are `VarMapF` string maps with `PartialMap.union`; the closed instances for a concrete `Σ` (`*_closed`, `*_ord`) are omitted (generic theorems) |
 | `refinements/{refinement,derived,examples,memoization}.v` | 3496 | — | ⬜ | refinement logic (needs `ref_weakestpre`) |
 | `safety/*` | 1025 | `HeapLang/Lib/*` | ➖ | upstream HeapLang library examples (`lock`, `spin_lock`, `ticket_lock`, `par`, `spawn`, `counter`, coins, `nondet_bool`, `assert`) exist in Iris-Lean; `barrier/` does not |
 

@@ -939,4 +939,596 @@ theorem chan_put (Γ Δ : Ctx GF) (e₁ e₂ : Exp) (A : ltype GF) (hdis : Γ ##
 
 end Simple
 
+/-! ## The polymorphic logical relation -/
+
+section Polymorphic
+
+open PartialMap BigSepM
+
+variable [Hseq : SeqG GF] [Etok : ElemG GF (constOFU.{max u v} (Auth Unit))]
+
+/-- Instantiations of type variables. -/
+abbrev TyEnv (GF : BundledGFunctors) := VarMapF (ltype GF)
+
+/-- Polymorphic semantic types (Rocq: `lptype`). -/
+abbrev lptype (GF : BundledGFunctors) := TyEnv GF → ltype GF
+
+/-- Polymorphic typing contexts. -/
+abbrev PCtx (GF : BundledGFunctors) := VarMapF (lptype GF)
+
+/-- Rocq: `subst_ty`. -/
+def substTy (T : lptype GF) (X : String) (U : lptype GF) : lptype GF :=
+  fun δ => T (insert δ X (U δ))
+
+/-- Rocq: `well_formed`. -/
+def wellFormed (Ω : StringSet) (δ : TyEnv GF) : IProp GF :=
+  iprop(⌜∀ X, X ∈ Ω ↔ (get? δ X).isSome⌝)
+
+instance wellFormed_persistent (Ω : StringSet) (δ : TyEnv GF) :
+    Persistent (wellFormed Ω δ) := by
+  unfold wellFormed; infer_instance
+
+/-- Rocq: `well_formed_type`. -/
+def wellFormedType (Ω : StringSet) (T : lptype GF) : Prop :=
+  ∀ δ δ' : TyEnv GF, (∀ X, X ∈ Ω → get? δ X = get? δ' X) → T δ = T δ'
+
+/-- Rocq: `well_formed_ctx`. -/
+def wellFormedCtx (Ω : StringSet) (Pc : PCtx GF) : Prop :=
+  ∀ x T, get? Pc x = some T → wellFormedType Ω T
+
+/-- Rocq: `env_lptyped`. -/
+def envLptyped (Pc : PCtx GF) (δ : TyEnv GF) (θ : Subst) : IProp GF :=
+  iprop([∗map] x ↦ T ∈ Pc, ∃ v, ⌜get? θ x = some v⌝ ∗ T δ v)
+
+/-- The polymorphic semantic typing judgment (Rocq: `lptyped`, notation `Ω; Pc ⊨ e : T`). -/
+def lptyped (Ω : StringSet) (Pc : PCtx GF) (e : Exp) (T : lptype GF) : Prop :=
+  ⊢ ∃ α : Ordinal.{w}, tc (GF := GF) α -∗ ∀ δ, wellFormed Ω δ -∗ ∀ θ : Subst,
+    envLptyped Pc δ θ -∗ seqT.{w} (e.substMap θ) (T δ)
+
+/-- Rocq: `lpunit`. -/
+def lpunit : lptype GF := fun _ => lunit
+/-- Rocq: `lpbool`. -/
+def lpbool : lptype GF := fun _ => lbool
+/-- Rocq: `lpnat`. -/
+def lpnat : lptype GF := fun _ => lnat
+/-- Rocq: `lpget`. -/
+def lpget (T : lptype GF) : lptype GF := fun δ => lget.{w} (T δ)
+/-- Rocq: `lpput`. -/
+def lpput (T : lptype GF) : lptype GF := fun δ => lput.{w} (T δ)
+/-- Rocq: `lptensor`. -/
+def lptensor (T U : lptype GF) : lptype GF := fun δ => ltensor (T δ) (U δ)
+/-- Rocq: `lparr`. -/
+def lparr (T U : lptype GF) : lptype GF := fun δ => larr.{w} (T δ) (U δ)
+/-- Rocq: `lpforall`. -/
+def lpforall (X : String) (T : lptype GF) : lptype GF := fun δ f =>
+  iprop(∀ U : lptype GF, seqT.{w} hl(v(&f) #()) (substTy T X U δ))
+/-- Rocq: `lpexists`. -/
+def lpexists (X : String) (T : lptype GF) : lptype GF := fun δ v =>
+  iprop(∃ U : lptype GF, substTy T X U δ v)
+/-- Rocq: `lpvar`. -/
+def lpvar (X : String) : lptype GF := fun δ v => iprop(∃ A, ⌜get? δ X = some A⌝ ∗ A v)
+
+/-- Rocq: `tlam`. -/
+def tlam (e : Exp) : Exp := Exp.rec_ .anon .anon e
+/-- Rocq: `tapp`. -/
+def tapp (e : Exp) : Exp := hl(&e #())
+/-- Rocq: `pack`. -/
+def pack (e : Exp) : Exp := e
+/-- Rocq: `unpack`. -/
+def unpack (e : Exp) (x : String) (e' : Exp) : Exp := Exp.app (Exp.rec_ .anon (.named x) e') e
+
+/-- Rocq: `well_formed_empty`. -/
+theorem well_formed_empty : ⊢ wellFormed (GF := GF) ∅ ∅ := by
+  unfold wellFormed
+  ipureintro
+  intro X
+  simp [LawfulPartialMap.get?_empty]
+
+/-- Rocq: `well_formed_insert`. -/
+theorem well_formed_insert (Ω : StringSet) (δ : TyEnv GF) (X : String) (A : ltype GF) :
+    wellFormed Ω δ ⊢ wellFormed (Ω.insert X) (insert δ X A) := by
+  unfold wellFormed
+  iintro %h
+  ipureintro
+  intro Y
+  rw [Std.ExtTreeSet.mem_insert, Std.LawfulEqCmp.compare_eq_iff_eq, h Y]
+  by_cases hXY : X = Y
+  · subst hXY; simp [LawfulPartialMap.get?_insert_eq]
+  · simp [LawfulPartialMap.get?_insert_ne hXY, hXY]
+
+/-- Rocq: `env_lptyped_split`. -/
+theorem env_lptyped_split {Pc Ξ : PCtx GF} {δ : TyEnv GF} {θ : Subst} (h : Pc ##ₘ Ξ) :
+    envLptyped (PartialMap.union Pc Ξ) δ θ ⊢ envLptyped Pc δ θ ∗ envLptyped Ξ δ θ := by
+  unfold envLptyped
+  exact (bigSepM_union (PROP := IProp GF) h).1
+
+/-- Rocq: `env_lptyped_empty`. -/
+theorem env_lptyped_empty (δ : TyEnv GF) (θ : Subst) : ⊢ envLptyped (GF := GF) ∅ δ θ := by
+  unfold envLptyped
+  exact bigSepM_empty.2
+
+/-- Rocq: `env_lptyped_insert`. -/
+theorem env_lptyped_insert (Pc : PCtx GF) (δ : TyEnv GF) (θ : Subst) (T : lptype GF) (v : Val)
+    (x : String) :
+    envLptyped Pc δ θ ∗ T δ v ⊢ envLptyped (insert Pc x T) δ (insert θ x v) := by
+  unfold envLptyped
+  have hmono : ∀ Pc' : PCtx GF, (∀ y B, get? Pc' y = some B → y ≠ x) →
+      ([∗map] y ↦ B ∈ Pc', ∃ w, ⌜get? θ y = some w⌝ ∗ B δ w) ⊢
+        [∗map] y ↦ B ∈ Pc', ∃ w, ⌜get? (insert θ x v) y = some w⌝ ∗ B δ w := fun Pc' hne =>
+    bigSepM_mono fun {y B} hy => by
+      iintro ⟨%w, %hw, HB⟩
+      iexists w
+      iframe
+      ipureintro
+      rw [LawfulPartialMap.get?_insert_ne (hne y B hy).symm]
+      exact hw
+  cases hx : get? Pc x with
+  | none =>
+    refine .trans ?_ (bigSepM_insert hx).2
+    iintro ⟨HPc, HT⟩
+    isplitl [HT]
+    · iexists v
+      iframe
+      ipureintro
+      exact LawfulPartialMap.get?_insert_eq rfl
+    · iapply hmono Pc (fun y B hy hyx => by subst hyx; simp_all) $$ HPc
+  | some B =>
+    rw [← LawfulPartialMap.insert_delete (m := Pc)]
+    refine .trans ?_ (bigSepM_insert (LawfulPartialMap.get?_delete_eq rfl)).2
+    iintro ⟨HPc, HT⟩
+    icases (bigSepM_delete hx).1 $$ HPc with ⟨-, HPc⟩
+    isplitl [HT]
+    · iexists v
+      iframe
+      ipureintro
+      exact LawfulPartialMap.get?_insert_eq rfl
+    · iapply hmono (delete Pc x) (fun y B hy hyx => by
+        subst hyx; simp [LawfulPartialMap.get?_delete_eq] at hy) $$ HPc
+
+/-- Rocq: `env_lptyped_weaken`. -/
+theorem env_lptyped_weaken (x : String) (T : lptype GF) (Pc : PCtx GF) (θ : Subst) (δ : TyEnv GF)
+    (hx : get? Pc x = none) : envLptyped (insert Pc x T) δ θ ⊢ envLptyped Pc δ θ := by
+  unfold envLptyped
+  exact (bigSepM_insert hx).1.trans sep_elim_right
+
+/-- Rocq: `env_lptyped_update_type_map`. -/
+theorem env_lptyped_update_type_map (Ω : StringSet) (Pc : PCtx GF) (T : lptype GF) (δ : TyEnv GF)
+    (X : String) (θ : Subst) (hwf : wellFormedCtx Ω Pc) (hX : X ∉ Ω) :
+    envLptyped Pc δ θ ⊢ envLptyped Pc (insert δ X (T δ)) θ := by
+  unfold envLptyped
+  refine bigSepM_mono fun {y B} hy => ?_
+  have hB := hwf y B hy δ (insert δ X (T δ)) fun Z hZ => by
+    have : X ≠ Z := fun h => hX (h ▸ hZ)
+    rw [LawfulPartialMap.get?_insert_ne this]
+  rw [hB]
+
+
+/-- Rocq: `poly_variable`. -/
+theorem poly_variable (Ω : StringSet) (x : String) (T : lptype GF) :
+    lptyped.{w} Ω (PartialMap.singleton x T) (.var x) T := by
+  unfold lptyped envLptyped
+  iexists (0 : Ordinal.{w})
+  iintro - %δ - %θ HΓ
+  ihave ⟨%v, %hv, HT⟩ := bigSepM_lookup (LawfulPartialMap.get?_singleton_eq rfl) $$ HΓ
+  simp only [Exp.substMap]
+  rw [hv]
+  iapply seq_value
+  iexact HT
+
+/-- Rocq: `poly_weaken`. -/
+theorem poly_weaken (x : String) (Ω : StringSet) (Pc : PCtx GF) (e : Exp) (T U : lptype GF)
+    (hx : get? Pc x = none) (He : lptyped.{w} Ω Pc e U) : lptyped.{w} Ω (insert Pc x T) e U := by
+  unfold lptyped at *
+  ihave ⟨%α, He⟩ := He
+  iexists α
+  iintro Hα %δ Hδ %θ Hθ
+  iapply He $$ Hα %δ Hδ %θ
+  iapply env_lptyped_weaken x T Pc θ δ hx $$ Hθ
+
+/-- Rocq: `poly_unit_intro`. -/
+theorem poly_unit_intro (Ω : StringSet) : lptyped.{w} (GF := GF) Ω ∅ hl(#()) lpunit := by
+  unfold lptyped lpunit
+  iexists (0 : Ordinal.{w})
+  iintro - %δ - %θ -
+  simp only [substMap_ofVal]
+  iapply closed_unit_intro
+
+/-- Rocq: `poly_unit_elim`. -/
+theorem poly_unit_elim (Ω : StringSet) (Pc Ξ : PCtx GF) (e e' : Exp) (T : lptype GF)
+    (hdis : Pc ##ₘ Ξ) (He : lptyped.{w} Ω Pc e lpunit) (He' : lptyped.{w} Ω Ξ e' T) :
+    lptyped.{w} Ω (PartialMap.union Pc Ξ) hl(&e; &e') T := by
+  unfold lptyped lpunit at *
+  ihave ⟨%α₁, He⟩ := He
+  ihave ⟨%α₂, He'⟩ := He'
+  iexists α₁ ♯ α₂
+  iintro Hc %δ #Hδ %θ HΓ
+  icases (tc_split α₁ α₂).mp $$ Hc with ⟨Hα₁, Hα₂⟩
+  icases env_lptyped_split hdis $$ HΓ with ⟨HΓ, HΔ⟩
+  ihave H₁ := He $$ Hα₁ %δ Hδ %θ HΓ
+  ihave H₂ := He' $$ Hα₂ %δ Hδ %θ HΔ
+  simp only [Exp.substMap, Binder.deleteMap]
+  iapply closed_unit_elim
+  iframe
+
+/-- Rocq: `poly_bool_intro`. -/
+theorem poly_bool_intro (Ω : StringSet) (b : Bool) :
+    lptyped.{w} (GF := GF) Ω ∅ hl(#b) lpbool := by
+  unfold lptyped lpbool
+  iexists (0 : Ordinal.{w})
+  iintro - %δ - %θ -
+  simp only [substMap_ofVal]
+  iapply closed_bool_intro
+
+/-- Rocq: `poly_bool_elim`. -/
+theorem poly_bool_elim (Ω : StringSet) (Pc Ξ : PCtx GF) (e e₁ e₂ : Exp) (T : lptype GF)
+    (hdis : Pc ##ₘ Ξ) (He : lptyped.{w} Ω Pc e lpbool) (H₁ : lptyped.{w} Ω Ξ e₁ T)
+    (H₂ : lptyped.{w} Ω Ξ e₂ T) :
+    lptyped.{w} Ω (PartialMap.union Pc Ξ) hl(if &e then &e₁ else &e₂) T := by
+  unfold lptyped lpbool at *
+  ihave ⟨%α, He⟩ := He
+  ihave ⟨%α₁, H₁⟩ := H₁
+  ihave ⟨%α₂, H₂⟩ := H₂
+  iexists α ♯ α₁ ♯ α₂
+  iintro Hc %δ #Hδ %θ HΓ
+  icases (tc_split _ α₂).mp $$ Hc with ⟨Hc, Hα₂⟩
+  icases (tc_split α α₁).mp $$ Hc with ⟨Hα, Hα₁⟩
+  icases env_lptyped_split hdis $$ HΓ with ⟨HΓ, HΔ⟩
+  ihave He := He $$ Hα %δ Hδ %θ HΓ
+  simp only [Exp.substMap]
+  iapply closed_bool_elim (P := envLptyped Ξ δ θ)
+  iframe He HΔ
+  isplitl [H₁ Hα₁]
+  · iapply H₁ $$ Hα₁ %δ Hδ %θ
+  · iapply H₂ $$ Hα₂ %δ Hδ %θ
+
+/-- Rocq: `poly_nat_intro`. -/
+theorem poly_nat_intro (Ω : StringSet) (n : Nat) :
+    lptyped.{w} (GF := GF) Ω ∅ hl(#(n : Int)) lpnat := by
+  unfold lptyped lpnat
+  iexists (0 : Ordinal.{w})
+  iintro - %δ - %θ -
+  simp only [substMap_ofVal]
+  iapply closed_nat_intro
+
+/-- Rocq: `poly_nat_plus`. -/
+theorem poly_nat_plus (Ω : StringSet) (e₁ e₂ : Exp) (Pc Ξ : PCtx GF) (hdis : Pc ##ₘ Ξ)
+    (H₁ : lptyped.{w} Ω Pc e₁ lpnat) (H₂ : lptyped.{w} Ω Ξ e₂ lpnat) :
+    lptyped.{w} Ω (PartialMap.union Pc Ξ) hl(&e₁ + &e₂) lpnat := by
+  unfold lptyped lpnat at *
+  ihave ⟨%α₁, H₁⟩ := H₁
+  ihave ⟨%α₂, H₂⟩ := H₂
+  iexists α₁ ♯ α₂
+  iintro Hc %δ #Hδ %θ HΓ
+  icases (tc_split α₁ α₂).mp $$ Hc with ⟨Hα₁, Hα₂⟩
+  icases env_lptyped_split hdis $$ HΓ with ⟨HΓ, HΔ⟩
+  ihave H₁ := H₁ $$ Hα₁ %δ Hδ %θ HΓ
+  ihave H₂ := H₂ $$ Hα₂ %δ Hδ %θ HΔ
+  simp only [Exp.substMap]
+  iapply closed_nat_add
+  iframe
+
+/-- Rocq: `poly_nat_elim`. -/
+theorem poly_nat_elim (Ω : StringSet) (e e₀ eS : Exp) (x : String) (T : lptype GF)
+    (Pc Ξ : PCtx GF) (hdis : Pc ##ₘ Ξ) (He : lptyped.{w} Ω Pc e lpnat)
+    (H₀ : lptyped.{w} Ω Ξ e₀ T) (HS : lptyped.{w} Ω (PartialMap.singleton x T) eS T) :
+    lptyped.{w} Ω (PartialMap.union Pc Ξ)
+      hl(v(&iter) &e₀ &e v(&(Val.rec_ .anon (.named x) eS))) T := by
+  rw [show PartialMap.singleton x T = PartialMap.insert (∅ : PCtx GF) x T from rfl] at HS
+  unfold lptyped lpnat at *
+  ihave ⟨%αe, He⟩ := He
+  ihave ⟨%α₀, H₀⟩ := H₀
+  ihave ⟨%αS, #HS⟩ := HS
+  iexists αe ♯ α₀ ♯ omul αS
+  iintro Hc %δ #Hδ %θ HΓ
+  icases (tc_split _ (omul αS)).mp $$ Hc with ⟨Hc, HαS⟩
+  icases (tc_split αe α₀).mp $$ Hc with ⟨Hαe, Hα₀⟩
+  icases env_lptyped_split hdis $$ HΓ with ⟨HΓ, HΔ⟩
+  ihave He := He $$ Hαe %δ Hδ %θ HΓ
+  ihave H₀ := H₀ $$ Hα₀ %δ Hδ %θ HΔ
+  simp only [Exp.substMap, substMap_ofVal]
+  iapply closed_nat_iter
+  iframe He H₀ HαS
+  iintro !> Hα %v Hv
+  unfold seqT tseq seq
+  iintro Hna
+  twp_pures
+  ihave H := HS $$ Hα %δ Hδ %(PartialMap.insert (∅ : Subst) x v) [Hv]
+  · iapply env_lptyped_insert
+    iframe
+    iapply env_lptyped_empty
+  rw [Exp.substMap_insert, LawfulPartialMap.delete_empty, Exp.substMap_empty]
+  simp only [Exp.subst]
+  iapply H $$ Hna
+
+/-- Rocq: `poly_fun_intro`. -/
+theorem poly_fun_intro (Ω : StringSet) (Pc : PCtx GF) (x : String) (e : Exp) (T U : lptype GF)
+    (He : lptyped.{w} Ω (PartialMap.insert Pc x T) e U) :
+    lptyped.{w} Ω Pc (Exp.rec_ .anon (.named x) e) (lparr.{w} T U) := by
+  unfold lptyped lparr at *
+  ihave ⟨%α, He⟩ := He
+  iexists α
+  iintro Hα %δ #Hδ %θ HΓ
+  simp only [Exp.substMap, Binder.deleteMap]
+  iapply closed_fun_intro
+  iintro %v Hv
+  ihave H := He $$ Hα %δ Hδ %(PartialMap.insert θ x v) [HΓ Hv]
+  · iapply env_lptyped_insert
+    iframe
+  rw [Exp.substMap_insert]
+  simp only [Exp.subst]
+  iexact H
+
+/-- Rocq: `poly_fun_elim`. -/
+theorem poly_fun_elim (Ω : StringSet) (Pc Ξ : PCtx GF) (e₁ e₂ : Exp) (T U : lptype GF)
+    (hdis : Pc ##ₘ Ξ) (H₁ : lptyped.{w} Ω Pc e₁ (lparr.{w} T U)) (H₂ : lptyped.{w} Ω Ξ e₂ T) :
+    lptyped.{w} Ω (PartialMap.union Pc Ξ) hl(&e₁ &e₂) U := by
+  unfold lptyped lparr at *
+  ihave ⟨%α₁, H₁⟩ := H₁
+  ihave ⟨%α₂, H₂⟩ := H₂
+  iexists α₁ ♯ α₂
+  iintro Hc %δ #Hδ %θ HΓ
+  icases (tc_split α₁ α₂).mp $$ Hc with ⟨Hα₁, Hα₂⟩
+  icases env_lptyped_split hdis $$ HΓ with ⟨HΓ, HΔ⟩
+  ihave H₁ := H₁ $$ Hα₁ %δ Hδ %θ HΓ
+  ihave H₂ := H₂ $$ Hα₂ %δ Hδ %θ HΔ
+  simp only [Exp.substMap]
+  iapply closed_fun_elim
+  iframe
+
+/-- Rocq: `poly_tensor_intro`. -/
+theorem poly_tensor_intro (Ω : StringSet) (Pc Ξ : PCtx GF) (e₁ e₂ : Exp) (T U : lptype GF)
+    (hdis : Pc ##ₘ Ξ) (H₁ : lptyped.{w} Ω Pc e₁ T) (H₂ : lptyped.{w} Ω Ξ e₂ U) :
+    lptyped.{w} Ω (PartialMap.union Pc Ξ) hl((&e₁, &e₂)) (lptensor T U) := by
+  unfold lptyped lptensor at *
+  ihave ⟨%α₁, H₁⟩ := H₁
+  ihave ⟨%α₂, H₂⟩ := H₂
+  iexists α₁ ♯ α₂
+  iintro Hc %δ #Hδ %θ HΓ
+  icases (tc_split α₁ α₂).mp $$ Hc with ⟨Hα₁, Hα₂⟩
+  icases env_lptyped_split hdis $$ HΓ with ⟨HΓ, HΔ⟩
+  ihave H₁ := H₁ $$ Hα₁ %δ Hδ %θ HΓ
+  ihave H₂ := H₂ $$ Hα₂ %δ Hδ %θ HΔ
+  simp only [Exp.substMap]
+  iapply closed_tensor_intro
+  iframe
+
+/-- Rocq: `poly_tensor_elim`. -/
+theorem poly_tensor_elim (Ω : StringSet) (Pc Ξ : PCtx GF) (x y : String) (e₁ e₂ : Exp)
+    (T₁ T₂ U : lptype GF) (hxy : x ≠ y) (hdis : Pc ##ₘ Ξ)
+    (H₁ : lptyped.{w} Ω Pc e₁ (lptensor T₁ T₂))
+    (H₂ : lptyped.{w} Ω (PartialMap.insert (PartialMap.insert Ξ y T₂) x T₁) e₂ U) :
+    lptyped.{w} Ω (PartialMap.union Pc Ξ) (letPair x y e₁ e₂) U := by
+  unfold lptyped lptensor at *
+  ihave ⟨%α₁, H₁⟩ := H₁
+  ihave ⟨%α₂, H₂⟩ := H₂
+  iexists α₁ ♯ α₂
+  iintro Hc %δ #Hδ %θ HΓ
+  icases (tc_split α₁ α₂).mp $$ Hc with ⟨Hα₁, Hα₂⟩
+  icases env_lptyped_split hdis $$ HΓ with ⟨HΓ, HΔ⟩
+  ihave H₁ := H₁ $$ Hα₁ %δ Hδ %θ HΓ
+  rw [substMap_letPair]
+  iapply closed_tensor_elim x y _ _ (T₁ δ) (T₂ δ) (U δ) hxy
+  iframe H₁
+  iintro %v₁ %v₂ Hv₁ Hv₂
+  ihave H := H₂ $$ Hα₂ %δ Hδ
+    %(PartialMap.insert (PartialMap.insert θ y v₂) x v₁) [HΔ Hv₁ Hv₂]
+  · iapply env_lptyped_insert
+    iframe Hv₁
+    iapply env_lptyped_insert
+    iframe
+  rw [show PartialMap.insert (PartialMap.insert θ y v₂) x v₁ =
+    (Binder.named x).insertMap v₁ ((Binder.named y).insertMap v₂ θ) from rfl,
+    Exp.substMap_insertMap_2]
+  simp only [Binder.deleteMap]
+  iexact H
+
+/-- Rocq: `poly_chan_alloc`. -/
+theorem poly_chan_alloc (Ω : StringSet) (T : lptype GF) :
+    lptyped.{w} (GF := GF) Ω ∅ hl(v(&chan) #()) (lptensor (lpget.{w} T) (lpput.{w} T)) := by
+  unfold lptyped lptensor lpget lpput
+  iexists (1 : Ordinal.{w}) ♯ 1
+  iintro Hc %δ - %θ -
+  simp only [Exp.substMap, substMap_ofVal]
+  iapply closed_chan
+  iapply (tc_split 1 1).mp $$ Hc
+
+/-- Rocq: `poly_chan_get`. -/
+theorem poly_chan_get (Ω : StringSet) (Pc Ξ : PCtx GF) (e₁ e₂ : Exp) (T : lptype GF)
+    (hdis : Pc ##ₘ Ξ) (H₁ : lptyped.{w} Ω Pc e₁ (lpget.{w} T))
+    (H₂ : lptyped.{w} Ω Ξ e₂ (lparr.{w} T lpunit)) :
+    lptyped.{w} Ω (PartialMap.union Pc Ξ) hl(v(&get) (&e₁, &e₂)) lpunit := by
+  unfold lptyped lpget lparr lpunit at *
+  ihave ⟨%α₁, H₁⟩ := H₁
+  ihave ⟨%α₂, H₂⟩ := H₂
+  iexists α₁ ♯ α₂
+  iintro Hc %δ #Hδ %θ HΓ
+  icases (tc_split α₁ α₂).mp $$ Hc with ⟨Hα₁, Hα₂⟩
+  icases env_lptyped_split hdis $$ HΓ with ⟨HΓ, HΔ⟩
+  ihave H₁ := H₁ $$ Hα₁ %δ Hδ %θ HΓ
+  ihave H₂ := H₂ $$ Hα₂ %δ Hδ %θ HΔ
+  simp only [Exp.substMap, substMap_ofVal]
+  iapply closed_get
+  iframe
+
+/-- Rocq: `poly_chan_put`. -/
+theorem poly_chan_put (Ω : StringSet) (Pc Ξ : PCtx GF) (e₁ e₂ : Exp) (T : lptype GF)
+    (hdis : Pc ##ₘ Ξ) (H₁ : lptyped.{w} Ω Pc e₁ (lpput.{w} T)) (H₂ : lptyped.{w} Ω Ξ e₂ T) :
+    lptyped.{w} Ω (PartialMap.union Pc Ξ) hl(v(&put) (&e₁, &e₂)) lpunit := by
+  unfold lptyped lpput lpunit at *
+  ihave ⟨%α₁, H₁⟩ := H₁
+  ihave ⟨%α₂, H₂⟩ := H₂
+  iexists α₁ ♯ α₂
+  iintro Hc %δ #Hδ %θ HΓ
+  icases (tc_split α₁ α₂).mp $$ Hc with ⟨Hα₁, Hα₂⟩
+  icases env_lptyped_split hdis $$ HΓ with ⟨HΓ, HΔ⟩
+  ihave H₁ := H₁ $$ Hα₁ %δ Hδ %θ HΓ
+  ihave H₂ := H₂ $$ Hα₂ %δ Hδ %θ HΔ
+  simp only [Exp.substMap, substMap_ofVal]
+  iapply closed_put
+  iframe
+
+/-- Rocq: `poly_forall_intro`. -/
+theorem poly_forall_intro (Ω : StringSet) (X : String) (Pc : PCtx GF) (e : Exp) (T : lptype GF)
+    (hwf : wellFormedCtx Ω Pc) (hX : X ∉ Ω) (He : lptyped.{w} (Ω.insert X) Pc e T) :
+    lptyped.{w} Ω Pc (tlam e) (lpforall.{w} X T) := by
+  unfold lptyped lpforall at *
+  ihave ⟨%α, He⟩ := He
+  iexists α
+  iintro Hα %δ Hδ %θ Hθ
+  simp only [tlam, Exp.substMap, Binder.deleteMap]
+  unfold seqT tseq seq
+  iintro Hna
+  twp_pures
+  iframe Hna
+  iintro %U Hna
+  twp_pures
+  unfold substTy
+  ihave H := He $$ Hα %(insert δ X (U δ)) [Hδ] %θ [Hθ]
+  · iapply well_formed_insert $$ Hδ
+  · iapply env_lptyped_update_type_map Ω Pc U δ X θ hwf hX $$ Hθ
+  iapply H $$ Hna
+
+/-- Rocq: `poly_forall_elim`. -/
+theorem poly_forall_elim (Ω : StringSet) (X : String) (Pc : PCtx GF) (e : Exp) (T U : lptype GF)
+    (He : lptyped.{w} Ω Pc e (lpforall.{w} X T)) :
+    lptyped.{w} Ω Pc (tapp e) (substTy T X U) := by
+  unfold lptyped lpforall at *
+  ihave ⟨%α, He⟩ := He
+  iexists α
+  iintro Hα %δ Hδ %θ Hθ
+  simp only [tapp, Exp.substMap, substMap_ofVal]
+  ihave H := He $$ Hα %δ Hδ %θ Hθ
+  unfold seqT tseq seq
+  iintro Hna
+  twp_bind (&(e.substMap θ))
+  ihave H := H $$ Hna
+  twp_apply rwp_wand $$ H
+  iintro %v ⟨Hna, Hf⟩
+  ihave Hf := Hf $$ %U
+  iapply Hf $$ Hna
+
+/-- Rocq: `poly_exists_intro`. -/
+theorem poly_exists_intro (Ω : StringSet) (X : String) (Pc : PCtx GF) (e : Exp) (T U : lptype GF)
+    (He : lptyped.{w} Ω Pc e (substTy T X U)) :
+    lptyped.{w} Ω Pc (pack e) (lpexists X T) := by
+  unfold lptyped lpexists pack at *
+  ihave ⟨%α, He⟩ := He
+  iexists α
+  iintro Hα %δ Hδ %θ Hθ
+  ihave H := He $$ Hα %δ Hδ %θ Hθ
+  unfold seqT tseq seq
+  iintro Hna
+  ihave H := H $$ Hna
+  iapply rwp_wand $$ H
+  iintro %v ⟨Hna, HT⟩
+  iframe Hna
+  iexists U
+  iexact HT
+
+/-- Rocq: `poly_exists_elim`. -/
+theorem poly_exists_elim (Ω : StringSet) (X : String) (Pc Ξ : PCtx GF) (x : String)
+    (e e₂ : Exp) (T U : lptype GF) (hX : X ∉ Ω) (hwf : wellFormedCtx Ω Ξ)
+    (hwfU : wellFormedType Ω U) (hdis : Pc ##ₘ Ξ) (He : lptyped.{w} Ω Pc e (lpexists X T))
+    (H₂ : lptyped.{w} (Ω.insert X) (PartialMap.insert Ξ x T) e₂ U) :
+    lptyped.{w} Ω (PartialMap.union Pc Ξ) (unpack e x e₂) U := by
+  unfold lptyped lpexists at *
+  ihave ⟨%αe, He⟩ := He
+  ihave ⟨%α₂, H₂⟩ := H₂
+  iexists αe ♯ α₂
+  iintro Hc %δ #Hδ %θ HΓ
+  icases (tc_split αe α₂).mp $$ Hc with ⟨Hαe, Hα₂⟩
+  icases env_lptyped_split hdis $$ HΓ with ⟨HΓ, HΞ⟩
+  ihave He := He $$ Hαe %δ Hδ %θ HΓ
+  simp only [unpack, Exp.substMap, Binder.deleteMap]
+  unfold seqT tseq seq
+  iintro Hna
+  twp_bind (&(e.substMap θ))
+  ihave H := He $$ Hna
+  twp_apply rwp_wand $$ H
+  iintro %v ⟨Hna, %T', Hv⟩
+  twp_pures
+  ihave H := H₂ $$ Hα₂ %(insert δ X (T' δ)) [Hδ] %(PartialMap.insert θ x v) [HΞ Hv]
+  · iapply well_formed_insert $$ Hδ
+  · iapply env_lptyped_insert
+    unfold substTy
+    iframe Hv
+    iapply env_lptyped_update_type_map Ω Ξ T' δ X θ hwf hX $$ HΞ
+  have hU : U (insert δ X (T' δ)) = U δ := (hwfU δ _ fun Z hZ => by
+    have : X ≠ Z := fun h => hX (h ▸ hZ)
+    rw [LawfulPartialMap.get?_insert_ne this]).symm
+  rw [hU, Exp.substMap_insert]
+  simp only [Exp.subst]
+  iapply H $$ Hna
+
+/-- The identity function (Rocq: `example_id_func`). -/
+theorem example_id_func :
+    lptyped.{w} (GF := GF) ∅ ∅ (tlam (Exp.rec_ .anon (.named "y") (.var "y")))
+      (lpforall.{w} "X" (lparr.{w} (lpvar "X") (lpvar "X"))) := by
+  refine poly_forall_intro _ _ _ _ _ (fun _ _ h => by simp [LawfulPartialMap.get?_empty] at h)
+    (by simp) ?_
+  refine poly_fun_intro _ _ _ _ _ _ ?_
+  rw [show PartialMap.insert (∅ : PCtx GF) "y" (lpvar "X") =
+    PartialMap.singleton "y" (lpvar "X") from rfl]
+  exact poly_variable _ _ _
+
+end Polymorphic
+
+/-! ## Adequacy -/
+
+section Adequacy
+
+omit Hheap Htc
+
+open Relation
+
+/-- Semantically well-typed closed programs terminate (Rocq: `simple_logrel_adequacy`). -/
+theorem simple_logrel_adequacy [hL : SIdxLarge.{w + 1} SI] [HeapLangTPreS GF] [NaInvG GF]
+    [ElemG GF (constOFU.{max u v} (Auth (OrdCam.{w} SI)))]
+    [Etok : ElemG GF (constOFU.{max u v} (Auth Unit))] (e : Exp) (σ : State) (A : ltype GF)
+    (Htyped : ∀ [Hh : HeapLangTGS GF] [Hs : SeqG GF] [Ht : TcGS.{w} GF],
+      ltyped.{w} (Hheap := Hh) (Htc := Ht) (Hseq := Hs) ∅ e A) :
+    StronglyNormalizing ErasedStep ([e], σ) := by
+  refine heap_lang_ref_adequacy (GF := GF) e σ fun {Hh Hs Ht} => ?_
+  have H := @Htyped Hh Hs Ht
+  unfold ltyped at H
+  ihave ⟨%α, H⟩ := H
+  iexists α
+  iintro Hα
+  ihave H := H $$ Hα %(∅ : Subst) [] 
+  · iapply env_ltyped_empty
+  rw [Exp.substMap_empty]
+  unfold seqT tseq seq
+  iintro Hna
+  ihave H := H $$ Hna
+  iapply rwp_wand $$ H
+  iintro %v ⟨Hna, -⟩
+  iframe
+
+/-- Semantically well-typed closed programs of the polymorphic type system terminate (Rocq:
+`logrel_adequacy`). -/
+theorem logrel_adequacy [hL : SIdxLarge.{w + 1} SI] [HeapLangTPreS GF] [NaInvG GF]
+    [ElemG GF (constOFU.{max u v} (Auth (OrdCam.{w} SI)))]
+    [Etok : ElemG GF (constOFU.{max u v} (Auth Unit))] (e : Exp) (σ : State) (A : lptype GF)
+    (Htyped : ∀ [Hh : HeapLangTGS GF] [Hs : SeqG GF] [Ht : TcGS.{w} GF],
+      lptyped.{w} (Hheap := Hh) (Htc := Ht) (Hseq := Hs) ∅ ∅ e A) :
+    StronglyNormalizing ErasedStep ([e], σ) := by
+  refine heap_lang_ref_adequacy (GF := GF) e σ fun {Hh Hs Ht} => ?_
+  have H := @Htyped Hh Hs Ht
+  unfold lptyped at H
+  ihave ⟨%α, H⟩ := H
+  iexists α
+  iintro Hα
+  ihave H := H $$ Hα %(∅ : TyEnv GF) [] %(∅ : Subst) []
+  · iapply well_formed_empty
+  · iapply env_lptyped_empty
+  rw [Exp.substMap_empty]
+  unfold seqT tseq seq
+  iintro Hna
+  ihave H := H $$ Hna
+  iapply rwp_wand $$ H
+  iintro %v ⟨Hna, -⟩
+  iframe
+
+end Adequacy
+
 end Iris.Transfinite.Termination.Logrel
