@@ -13,7 +13,8 @@ public import Iris.BI.InternalEq
 public import Iris.ProofMode
 
 @[expose] public noncomputable section
-local stepindex Nat
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris
 

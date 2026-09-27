@@ -245,7 +245,69 @@ theorem satisfiableAt_pure {E : CoPset} {φ : Prop} (h : satisfiableAt (GF := GF
     φ :=
   UPred.pure_soundness (satisfiableAt_elim h)
 
+/-- Rocq: `satisfiable_at_finite_exists`. -/
+@[rocq_alias satisfiable_at_finite_exists]
+theorem satisfiableAt_finite_exists {E : CoPset} {X : Type _} {P : X → IProp GF} {Q : X → Prop}
+    (l : List X) (hfin : ∀ x, Q x → x ∈ l) (hent : ∀ x, P x ⊢ ⌜Q x⌝)
+    (h : satisfiableAt E iprop(∃ x, P x)) : ∃ x, satisfiableAt E (P x) := by
+  refine UPred.satisfiable_finite_exists l hfin (fun x => ?_) (UPred.satisfiable_mono h ?_)
+  · exact sep_elim_right.trans (sep_elim_right.trans (hent x))
+  · iintro ⟨W, O, %x, P⟩
+    iexists x
+    iframe
+
+/-- Rocq: `satisfiable_at_bupd`. -/
+@[rocq_alias satisfiable_at_bupd]
+theorem satisfiableAt_bupd {E : CoPset} {P : IProp GF} (h : satisfiableAt E iprop(|==> P)) :
+    satisfiableAt E P := by
+  refine UPred.satisfiable_bupd (UPred.satisfiable_mono h ?_)
+  iintro ⟨W, O, H⟩
+  imod H
+  imodintro
+  iframe
+
+/-- Rocq: `satisfiable_at_forall`. -/
+@[rocq_alias satisfiable_at_forall]
+theorem satisfiableAt_forall {E : CoPset} {X : Type _} (x : X) {P : X → IProp GF}
+    (h : satisfiableAt E iprop(∀ x, P x)) : satisfiableAt E (P x) :=
+  satisfiableAt_mono h (forall_elim x)
+
+/-- Rocq: `satisfiable_at_impl`. -/
+@[rocq_alias satisfiable_at_impl]
+theorem satisfiableAt_impl {E : CoPset} {P Q : IProp GF} (h : satisfiableAt E iprop(P → Q))
+    (hP : iprop(True ⊢ P)) : satisfiableAt E Q :=
+  satisfiableAt_mono h ((and_intro .rfl (true_intro.trans hP)).trans imp_elim_left)
+
+/-- Rocq: `satisfiable_at_wand`. -/
+@[rocq_alias satisfiable_at_wand]
+theorem satisfiableAt_wand {E : CoPset} {P Q : IProp GF} (h : satisfiableAt E iprop(P -∗ Q))
+    (hP : iprop(True ⊢ P)) : satisfiableAt E Q := by
+  refine satisfiableAt_mono h ?_
+  iintro H
+  iapply H
+  iapply hP
+  itrivial
+
+/-- Rocq: `satisfiable_at_pers`. -/
+@[rocq_alias satisfiable_at_pers]
+theorem satisfiableAt_pers {E : CoPset} {P : IProp GF} (h : satisfiableAt E iprop(<pers> P)) :
+    satisfiableAt E P :=
+  satisfiableAt_mono h persistently_elim
+
+/-- Rocq: `satisfiable_at_intuitionistically`. -/
+@[rocq_alias satisfiable_at_intuitionistically]
+theorem satisfiableAt_intuitionistically {E : CoPset} {P : IProp GF}
+    (h : satisfiableAt E iprop(□ P)) : satisfiableAt E P :=
+  satisfiableAt_mono h intuitionistically_elim
+
+/-- Rocq: `satisfiable_at_equiv`. -/
+@[rocq_alias satisfiable_at_equiv]
+theorem satisfiableAt_equiv {E : CoPset} {P Q : IProp GF} (h : P ⊣⊢ Q) :
+    satisfiableAt E P ↔ satisfiableAt E Q :=
+  ⟨fun hP => satisfiableAt_mono hP h.1, fun hQ => satisfiableAt_mono hQ h.2⟩
+
 end Iris.Transfinite
+
 
 namespace Iris.Transfinite
 
@@ -277,5 +339,19 @@ theorem lstep_fupd_soundness [SIdxTransfinite SI] [WsatGpreS GF] (φ : Prop) (n 
     (h : ∀ (_ : WsatGS GF), ⊢ Nat.repeat (gstep ∅ ⊤ ⊤) n iprop(⌜φ⌝ : IProp GF)) : φ :=
   UPred.pure_soundness (M := IResUR GF) <| UPred.big_laterN_soundness n _ <|
     true_emp.mp.trans <| fupd_plain_soundness ⊤ ⊤ fun W => (h W).trans (lstep_fupdN_plain n)
+
+/-- World satisfaction can be allocated (Rocq: `satisfiable_at_intro`). -/
+@[rocq_alias satisfiable_at_intro]
+theorem satisfiableAt_intro [SIdxLarge.{0} SI] [WsatGpreS GF] :
+    ∃ W : WsatGS GF, satisfiableAt (W := W) ⊤ iprop(True) := by
+  have h0 : UPred.satisfiable iprop(∃ γ γe γd : GName,
+      wsat (W := WsatGS.ofNames (GF := GF) γ γe γd) ∗
+        ownE (W := WsatGS.ofNames (GF := GF) γ γe γd) ⊤) :=
+    UPred.satisfiable_bupd (UPred.satisfiable_intro (true_emp.mp.trans wsat_alloc_names))
+  obtain ⟨γ, h0⟩ := UPred.satisfiable_exists h0
+  obtain ⟨γe, h0⟩ := UPred.satisfiable_exists h0
+  obtain ⟨γd, h0⟩ := UPred.satisfiable_exists h0
+  exact ⟨WsatGS.ofNames γ γe γd, UPred.satisfiable_mono h0 (sep_mono_right sep_emp.mpr |>.trans
+    (sep_mono_right (sep_mono_right true_intro)))⟩
 
 end Iris.Transfinite
