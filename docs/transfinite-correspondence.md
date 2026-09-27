@@ -155,7 +155,10 @@ implementation (➖, replaced by the Lean IPM).
 | `keyideas/generalized_simulations.v` | 147 | `Examples/TransfiniteSimulations.lean` | ✅ | idem |
 | `termination/{adequacy,derived,thunk,eventloop}.v` | 566 | `IrisMath/IrisMath/Termination/*.lean` | ✅ | `heap_lang_ref_adequacy` (generic `SI` with `SIdxLarge.{w+1}`); `thunk_sequential_spec` states the persistent `□ (tc 1 -∗ ...)` |
 | `termination/logrel.v` | 968 | `IrisMath/IrisMath/Termination/Logrel.lean` | ✅ | simple and polymorphic logical relations, all compatibility lemmas, `simple_logrel_adequacy`, `logrel_adequacy`; token camera `Auth Unit`; typing contexts are `VarMapF` string maps with `PartialMap.union`; the closed instances for a concrete `Σ` (`*_closed`, `*_ord`) are omitted (generic theorems) |
-| `refinements/{refinement,derived,examples,memoization}.v` | 3496 | — | ⬜ | refinement logic (needs `ref_weakestpre`) |
+| `refinements/refinement.v` | 893 | `Examples/Refinements/Refinement.lean`, `Tactics.lean` | ✅ | source ghost state as three generic ghost maps (thread pool, source heap with a `SrcVal` wrapper, execution trace with persistent `traceIdx`) instead of `auth (tpool × gen_heap)` + `fmlist`; stuttering component is a plain `Nat` (`natSource`); `step_inv_alloc` takes the new thread expressions as `f : X → Exp`; `heap_lang_ref_adequacy` for `[SIdxLarge.{0} SI]`; source tactics `src_pure`, `src_pures`, `src_rec`, `src_pure_cred`, `src_bind`, `src_load`, `src_store` |
+| `refinements/derived.v` | 375 | `Examples/Refinements/Derived.lean` | ✅ | all rules |
+| `refinements/examples.v` | 256 | `Examples/Refinements/Examples.lean` | ✅ | `first_spec`, `fg_ref`, fib refinements |
+| `refinements/memoization.v` | 1972 | — | ⬜ | memoization |
 | `safety/*` | 1025 | `HeapLang/Lib/*` | ➖ | upstream HeapLang library examples (`lock`, `spin_lock`, `ticket_lock`, `par`, `spawn`, `counter`, coins, `nondet_bool`, `assert`) exist in Iris-Lean; `barrier/` does not |
 
 ---
