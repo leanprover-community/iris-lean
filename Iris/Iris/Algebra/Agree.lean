@@ -387,16 +387,19 @@ theorem dist_mk {n} {x y : Raw α} : mk x ≡{n}≡ mk y ↔ Raw.dist n x y := .
 @[simp] theorem validN_mk {n} {x : Raw α} : validN n (mk x) ↔ x.validN n := .rfl
 @[simp] theorem valid_mk {x : Raw α} : valid (mk x) ↔ x.valid := .rfl
 
+omit [OFE α] in
 @[rocq_alias agree_comm]
 theorem op_comm [OFE (SI := SI) α] {x y : Agree α} : op x y = op y x :=
   OFE.eq_dist_2 (SI := SI) (ind₂ (fun _ _ => Raw.op_comm) x y)
 
 theorem op_commN {x y : Agree α} : op x y ≡{n}≡ op y x := op_comm.dist
 
+omit [OFE α] in
 @[rocq_alias agree_assoc]
 theorem op_assoc [OFE (SI := SI) α] {x y z : Agree α} : op x (op y z) = op (op x y) z :=
   OFE.eq_dist_2 (SI := SI) (ind₃ (fun _ _ _ => Raw.op_assoc) x y z)
 
+omit [OFE α] in
 theorem op_idemp [OFE (SI := SI) α] {x : Agree α} : op x x = x :=
   OFE.eq_dist_2 (SI := SI) (x.ind fun _ => Raw.idemp)
 
@@ -423,6 +426,7 @@ theorem op_ne₂ : OFE.NonExpansive₂ (op (α := α)) := by
 theorem op_invN {x y : Agree α} : validN n (op x y) → x ≡{n}≡ y :=
   ind₂ (fun _ _ => Raw.op_invN) x y
 
+omit [OFE α] in
 @[rocq_alias agree_op_inv]
 theorem op_inv [OFE (SI := SI) α] {x y : Agree α} : valid (op x y) → x = y :=
   ind₂ (fun _ _ h => OFE.eq_dist_2 (SI := SI) (Raw.op_inv h)) x y
@@ -536,6 +540,7 @@ instance instNonExpansive_toAgree : OFE.NonExpansive (@toAgree α) where
 theorem Agree.toAgree_injN {a b : α} : toAgree a ≡{n}≡ toAgree b → a ≡{n}≡ b :=
   Raw.toAgree_injN
 
+omit [OFE α] in
 @[rocq_alias to_agree_inj]
 theorem Agree.toAgree_inj [OFE (SI := SI) α] {a b : α} : toAgree a = toAgree b → a = b :=
   fun heq => OFE.eq_dist_2 (SI := SI) fun _ => toAgree_injN heq.dist

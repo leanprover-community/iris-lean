@@ -215,7 +215,7 @@ theorem step_set {tp : List Exp} {j : Nat} {e e' : Exp} {σ σ' : State} {κ : L
   have h1 : tp.take j ++ tp[j] :: tp.drop (j + 1) = tp := by
     simp
   have h2 : tp.set j e' ++ efs = tp.take j ++ e' :: tp.drop (j + 1) ++ efs := by
-    rw [List.set_eq_take_append_cons_drop, if_pos hlt]
+    rw [List.set_eq_take_append_cons_drop, ite_eq_left hlt]
   have key := Step.atomic hstep (tp.take j) (tp.drop (j + 1))
   rw [h1] at key
   rw [h2]
@@ -724,7 +724,7 @@ normalizing if `s` is. The name of the `NatSourceG` instance is ignored (only it
 embedding is used). -/
 theorem heap_lang_ref_adequacy {GF : BundledGFunctors} [SIdxLarge.{0} SI] [Hpre : RHeapPreS GF]
     [Hna : NaInvG GF] [Enat : NatSourceG GF] (φ : Val → Val → Prop) (s t : Exp) (σ σs : State)
-    (Hobj : ∀ [Hr : RHeapG GF] [Hs : SeqG GF] [Hn : NatSourceG GF],
+    (Hobj : ∀ [RHeapG GF] [SeqG GF] [NatSourceG GF],
       src s ⊢ seq (src := refSrc (GF := GF)) (ι := heapRefIrisGS) ⊤ t
         fun v => iprop(∃ v' : Val, src v' ∗ ⌜φ v v'⌝)) :
     (∀ (ts : List Exp) (σ' : State) (v : Val),

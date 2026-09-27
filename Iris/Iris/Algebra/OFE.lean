@@ -1374,11 +1374,11 @@ instance instIsCOFESum [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (α �
           have hp' := hc p hp
           cases e1 : c1.bchain p hp <;> cases e2 : c2.bchain p hp <;>
             rw [e1, e2] at hp' <;> first | exact hp' | exact hp'.elim | exact h0
-      | refine dist_inr (IsCOFE.lbcompl_ne hn _ _ (fun p hp => ?_)) <;>
-        · simp only [BChain.map_apply]
-          have hp' := hc p hp
-          cases e1 : c1.bchain p hp <;> cases e2 : c2.bchain p hp <;>
-            rw [e1, e2] at hp' <;> first | exact hp' | exact hp'.elim | exact h0
+      | (refine dist_inr (IsCOFE.lbcompl_ne hn _ _ (fun p hp => ?_))
+         simp only [BChain.map_apply]
+         have hp' := hc p hp
+         cases e1 : c1.bchain p hp <;> cases e2 : c2.bchain p hp <;>
+           rw [e1, e2] at hp' <;> first | exact hp' | exact hp'.elim | exact h0)
 
 #rocq_ignore inl_chain "Local helper for `sum_compl`; folded into Lean's IsCOFE instance."
 #rocq_ignore inr_chain "Local helper for `sum_compl`; folded into Lean's IsCOFE instance."

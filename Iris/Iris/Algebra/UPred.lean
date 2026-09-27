@@ -162,7 +162,7 @@ instance : IsCOFE (UPred M) where
 required by the transfinite COFE solver. -/
 @[rocq_alias bcompl_unique]
 instance : BcomplUniqueLim (UPred M) where
-  lbcompl_unique {n} _ c d h k x hk _ :=
+  lbcompl_unique {_} _ _ _ h _ _ _ _ :=
     ⟨fun H m hm hmk => (h m hm m _ SIdx.le_refl _).mp (H m hm hmk),
      fun H m hm hmk => (h m hm m _ SIdx.le_refl _).mpr (H m hm hmk)⟩
 

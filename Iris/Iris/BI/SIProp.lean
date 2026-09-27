@@ -369,7 +369,7 @@ instance instBIAffine : BIAffine (SiProp SI) where
 
 @[rocq_alias siProp_later_contractive, rocq_alias siProp_primitive.later_contractive]
 instance instBILaterContractive : BILaterContractive (SiProp SI) where
-  distLater_dist h m hle :=
+  distLater_dist h _ hle :=
     ⟨fun hP k hk => (h k (SIdx.lt_le_trans hk hle) SIdx.le_refl).mp (hP k hk),
      fun hP k hk => (h k (SIdx.lt_le_trans hk hle) SIdx.le_refl).mpr (hP k hk)⟩
 

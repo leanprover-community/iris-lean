@@ -690,7 +690,7 @@ theorem auth_one_op_frag_updateP {Pab : A → B → Prop}
     obtain ⟨a', b', Hab', Hrel''⟩ := Hup _ _ Hrel
     refine ⟨((●V a') • ◯V b'), ?_, ?_⟩
     · exists a'; exists b'
-    · show CMRA.ValidN _ _ ∧ _
+    · change CMRA.ValidN _ _ ∧ _
       refine ⟨by trivial, a', .rfl, ?_⟩
       apply IsViewRel.mono Hrel'' .rfl _ SIdx.le_refl
       apply Iris.OFE.Dist.to_incN

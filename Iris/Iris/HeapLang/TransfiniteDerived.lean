@@ -31,6 +31,7 @@ variable {A : Type _} [src : Source GF A]
 def array (l : Loc) (dq : DFrac) (vs : List Val) : IProp GF :=
   iprop([∗list] i ↦ v ∈ vs, (l + i) ↦{dq} (some v))
 
+omit H in
 theorem bigSepL_timeless {vs : List Val} (Φ : Nat → Val → IProp GF)
     (h : ∀ i v, Timeless (Φ i v)) : Timeless ([∗list] i ↦ v ∈ vs, Φ i v) := by
   induction vs generalizing Φ with
@@ -446,7 +447,7 @@ theorem swp_faa_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} {i1 i2
     ⊢ ▷ array l (DFrac.own 1) ws.toList -∗
       (array l (DFrac.own 1) (ws.toList.set off.val hl_val(#(i1 + i2))) -∗ Φ hl_val(#i1)) -∗
       swp k s E hl(faa(#(l + off.val), #i2)) Φ :=
-  swp_faa_offset (by simp; first | exact h | simpa using h)
+  swp_faa_offset (by simp; exact h)
 
 theorem wp_load_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} :
     ⊢ ▷ array l dq ws.toList -∗ (array l dq ws.toList -∗ Φ ws[off]) -∗
@@ -484,7 +485,7 @@ theorem wp_faa_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} {i1 i2 
     ⊢ ▷ array l (DFrac.own 1) ws.toList -∗
       (array l (DFrac.own 1) (ws.toList.set off.val hl_val(#(i1 + i2))) -∗ Φ hl_val(#i1)) -∗
       Iris.Transfinite.wp s E hl(faa(#(l + off.val), #i2)) Φ :=
-  wp_faa_offset (by simp; first | exact h | simpa using h)
+  wp_faa_offset (by simp; exact h)
 
 theorem rswp_load_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} :
     ⊢ ▷ array l dq ws.toList -∗ (array l dq ws.toList -∗ Φ ws[off]) -∗
@@ -522,7 +523,7 @@ theorem rswp_faa_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} {i1 i
     ⊢ ▷ array l (DFrac.own 1) ws.toList -∗
       (array l (DFrac.own 1) (ws.toList.set off.val hl_val(#(i1 + i2))) -∗ Φ hl_val(#i1)) -∗
       rswp (src := src) (ι := heapRefIrisGS) k s E hl(faa(#(l + off.val), #i2)) Φ :=
-  rswp_faa_offset (by simp; first | exact h | simpa using h)
+  rswp_faa_offset (by simp; exact h)
 
 theorem rwp_load_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} :
     ⊢ ▷ array l dq ws.toList -∗ (array l dq ws.toList -∗ Φ ws[off]) -∗
@@ -560,6 +561,6 @@ theorem rwp_faa_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} {i1 i2
     ⊢ ▷ array l (DFrac.own 1) ws.toList -∗
       (array l (DFrac.own 1) (ws.toList.set off.val hl_val(#(i1 + i2))) -∗ Φ hl_val(#i1)) -∗
       rwp (src := src) (ι := heapRefIrisGS) s E hl(faa(#(l + off.val), #i2)) Φ :=
-  rwp_faa_offset (by simp; first | exact h | simpa using h)
+  rwp_faa_offset (by simp; exact h)
 
 end Iris.HeapLang.Transfinite

@@ -2592,8 +2592,8 @@ Entailment is only preserved by limits of chains, not by bounded limits (see Tra
 
 @[rocq_alias bi.limit_preserving_entails]
 instance LimitPreserving.entails [BI PROP] [SIdxFinite SI] [COFE A] (Φ Ψ : A → PROP) [Φne : OFE.NonExpansive Φ]
-    [Ψne : OFE.NonExpansive Ψ] : LimitPreserving (λ x ↦ Φ x ⊢ Ψ x) := by
-  refine .ext (P := λ x ↦ True ⊣⊢ (Φ x → Ψ x)) (@fun x => ?_) ?_
+    [Ψne : OFE.NonExpansive Ψ] : LimitPreserving (fun x ↦ Φ x ⊢ Ψ x) := by
+  refine .ext (P := fun x ↦ True ⊣⊢ (Φ x → Ψ x)) (@fun x => ?_) ?_
   · exact ⟨(true_and.2.trans <| imp_elim ·.1), (⟨imp_intro <| true_and.1.trans ·, true_intro⟩)⟩
   · let f : A -n> PROP := ⟨fun x ↦ iprop(True), inferInstance⟩
     let g : A -n> PROP := {

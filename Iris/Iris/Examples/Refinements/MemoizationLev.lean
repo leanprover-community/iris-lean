@@ -1365,7 +1365,7 @@ theorem eqPair_spec : ⊢ eqfun (src := refSrc (GF := GF)) pairLoc eqPair valEq 
     simp only [decide_true, Bool.and_self, ↓reduceIte]
     ipureintro; trivial
   · simp only [Bool.and_eq_true, decide_eq_true_eq]
-    rw [ite_cond_eq_false _ _ (eq_false (by intro h'; apply h; simpa using h'))]
+    rw [ite_eq_right_of_eq_false _ _ (eq_false (by intro h'; apply h; simpa using h'))]
     iintro %heq
     exact (h (by simpa using heq)).elim
 

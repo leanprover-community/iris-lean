@@ -115,6 +115,7 @@ instance ElemG.bundle.ne {E : ElemG GF F} : OFE.NonExpansive E.bundle := E.bundl
 
 instance ElemG.unbundle.ne {E : ElemG GF F} : OFE.NonExpansive E.unbundle := E.unbundleF_ne
 
+omit I in
 theorem ElemG.bundle_discreteE {GF : BundledGFunctors} [RFunctorContractive F] (E : ElemG GF F)
     {v : F.ap (IProp GF)} [DiscreteE v] : DiscreteE (E.bundle v) where
   discrete hz := (congrArg E.bundle

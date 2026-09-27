@@ -269,13 +269,13 @@ theorem rwp_strong_mono' (hs : s₁ ≤ s₂) (hE : E₁ ⊆ E₂) :
   unfold rwpPre
   cases hv : toVal e₁ with
   | some v =>
-    simp only [hv]
+    simp only
     iintro %σ %n %a Hσ
     ihave IH := IH $$ %σ %n %a Hσ
     imod fupd_mask_mono hE' $$ IH with H
     iapply Hpost $$ %σ %n %a %v H
   | none =>
-    simp only [hv]
+    simp only
     unfold rwpStep
     iintro %σ₁ %n %a Hσ
     imod fupd_mask_subseteq hE' with Hclose
@@ -649,14 +649,14 @@ theorem rwp_bind (K : Expr → Expr) [ctx : Language.Context K] :
     unfold rwpPre
     cases he : toVal e with
     | some v =>
-      simp only [he]
+      simp only
       rw [← ToVal.coe_of_toVal_eq_some he]
       iapply fupd_rwp'
       iintro %σ %n %a Hσ
       imod IH $$ %σ %n %a Hσ with ⟨$, $, HΨ⟩
       iapply Hcont $$ HΨ
     | none =>
-      simp only [he]
+      simp only
       iapply rwp_unfold.mpr
       unfold rwpPre
       rw [ctx.toVal_eq_none_fill he]

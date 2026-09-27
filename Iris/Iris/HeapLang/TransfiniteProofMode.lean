@@ -165,7 +165,7 @@ public meta def parseTWp? {u : Level} (prop : Q(Type u)) (goal : Q($prop)) :
 
 public meta def ProofModeM.runTacticTWp {α} (tacName : Name)
     (k : MVarId → TWpGoal → ProofModeM α) : TacticM α :=
-  ProofModeM.runTactic tacName fun mvar {prop, bi, hyps, goal, ..} => do
+  ProofModeM.runTactic tacName fun mvar {prop, hyps, goal, ..} => do
     let some (W, e, Φ) ← parseTWp? prop goal
       | throwIPMError "The goal {goal} must be a transfinite weakest precondition"
     k mvar { hyps, W, e, Φ }

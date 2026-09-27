@@ -201,7 +201,7 @@ instance persistently_ne : OFE.NonExpansive UPred.persistently (α := UPred M) w
 
 @[rocq_alias uPred_primitive.later_contractive]
 instance later_contractive : OFE.Contractive UPred.later (α := UPred M) where
-  distLater_dist {n x y} Hl n' z Hn' _ :=
+  distLater_dist {_ _ _} Hl _ _ Hn' _ :=
     ⟨fun H m hm => (Hl m (SIdx.lt_le_trans hm Hn') m _ SIdx.le_refl _).mp (H m hm),
      fun H m hm => (Hl m (SIdx.lt_le_trans hm Hn') m _ SIdx.le_refl _).mpr (H m hm)⟩
 
@@ -582,7 +582,7 @@ theorem uPredSiEmpValid_uPredSiPure {Pi : (SiProp stepindex%)} : <si_emp_valid> 
 
 @[rocq_alias si_pure_si_emp_valid, rocq_alias uPred_primitive.si_pure_si_emp_valid]
 theorem uPredSiPure_uPredSiEmpValid {P : UPred M} : <si_pure> <si_emp_valid> P ⊢ <pers> P :=
-  fun n _ hp => P.mono hp incN_unit SIdx.le_refl
+  fun _ _ hp => P.mono hp incN_unit SIdx.le_refl
 
 @[rocq_alias persistently_impl_si_pure, rocq_alias uPred_primitive.persistently_impl_si_pure]
 theorem persistently_imp_uPredSiPure {Pi : (SiProp stepindex%)} {Q : UPred M} :

@@ -201,7 +201,7 @@ instance [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where
       dsimp only
       first
         | exact .rfl
-        | show Csum.Dist m _ _
+        | change Csum.Dist m _ _
           simp only [Csum.Dist]
           refine IsCOFE.lbcompl_ne hn _ _ fun p hp => ?_
           have h1 := c1.bcauchy hn.limit_lt_0 hp SIdx.le_0_l

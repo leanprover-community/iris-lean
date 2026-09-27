@@ -308,7 +308,7 @@ meta def findSrcCtx {α : Type} (e : Q(Exp))
 /-- A pure step of `e₁` (a single step, possibly a beta step of a function hidden behind a
 definition). -/
 meta def findSrcPureStep (useRec : Bool) (e₁ : Q(Exp)) :
-    ProofModeM ((φ : Q(Prop)) × (n : Q(Nat)) × (e₂ : Q(Exp)) × Lean.Expr) := do
+    ProofModeM ((_ : Q(Prop)) × (_ : Q(Nat)) × (_ : Q(Exp)) × Lean.Expr) := do
   if !useRec then
     let r@⟨_, n, _, _⟩ ← findAnyPureExec e₁
     have n : Q(Nat) := n
@@ -334,7 +334,7 @@ meta def srcPureCore (useRec : Bool) : TacticM Unit :=
       | throwIPMError "the goal must be of the form `j ⤇ e -∗ G`"
     have e : Q(Exp) := aargs[aargs.size - 1]!
     let kind ← srcGoalKind G
-    let some {result := ⟨φ, n, e₂, hexec⟩, K, e' := e₁, mkFill} ←
+    let some {result := ⟨φ, _, e₂, hexec⟩, K, e' := e₁, mkFill} ←
       findSrcCtx (α := ((_ : Q(Prop)) × (_ : Q(Nat)) × (_ : Q(Exp)) × Lean.Expr)) e
         fun _ e₁ => findSrcPureStep useRec e₁
       | throwIPMError "cannot find a pure step in the source expression {e}"
@@ -457,7 +457,7 @@ elab "src_pure_cred_core " kStx:term : tactic =>
     let .upd ← srcGoalKind G
       | throwIPMError "the goal must be a source update"
     let k ← elabTermEnsuringTypeQ kStx q(Nat)
-    let some {result := ⟨φ, n, e₂, hexec⟩, K, e' := e₁, mkFill} ←
+    let some {result := ⟨φ, _, e₂, hexec⟩, K, e' := e₁, mkFill} ←
       findSrcCtx (α := ((_ : Q(Prop)) × (_ : Q(Nat)) × (_ : Q(Exp)) × Lean.Expr)) e
         fun _ e₁ => findSrcPureStep false e₁
       | throwIPMError "cannot find a pure step in the source expression {e}"

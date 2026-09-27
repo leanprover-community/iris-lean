@@ -54,6 +54,7 @@ theorem eventually_lstep : eventually ∅ P ⊢ gstep ∅ E E P :=
 theorem bigLater_lstep : ⧍ P ⊢ gstep ∅ E E P :=
   bigLater_eventually.trans eventually_lstep
 
+omit [BIFUpdate PROP] in
 theorem bigLater_pure_and {φ ψ : Prop} : ⧍ ⌜φ⌝ ∗ ⧍ ⌜ψ⌝ ⊢ (⧍ ⌜φ ∧ ψ⌝ : PROP) :=
   bigLater_sep.trans (bigLater_mono pure_sep.mp)
 

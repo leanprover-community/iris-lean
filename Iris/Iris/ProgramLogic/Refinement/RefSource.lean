@@ -268,7 +268,7 @@ section Lexicographic
 variable {GF : BundledGFunctors} [W : WsatGS GF] {A B : Type _}
 
 /-- The lexicographic product of two sources (Rocq: `lex_source`). -/
-def lexSource (src₁ : Source GF A) (src₂ : Source GF B) : Source GF (A × B) where
+@[instance_reducible] def lexSource (src₁ : Source GF A) (src₂ : Source GF B) : Source GF (A × B) where
   rel := Lex src₁.rel src₂.rel
   interp p := iprop(src₁.interp p.1 ∗ src₂.interp p.2)
 

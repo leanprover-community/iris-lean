@@ -27,6 +27,8 @@ universe u v
 variable {SI : Type v} [instSI : Iris.SIdx SI]
 local stepindex SI
 
+set_option linter.unusedSectionVars false
+
 namespace Iris.Transfinite
 
 open BI CMRA OFE Iris Iris.Std LawfulSet DisjointLeibnizSet COFE ProofMode

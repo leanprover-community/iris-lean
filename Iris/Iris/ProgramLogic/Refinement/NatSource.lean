@@ -39,7 +39,9 @@ namespace NatC
 instance : Add (NatC SI) := ⟨fun a b => ⟨a.n + b.n⟩⟩
 instance : Zero (NatC SI) := ⟨⟨0⟩⟩
 
+omit instSI in
 @[simp] theorem add_n (a b : NatC SI) : (a + b).n = a.n + b.n := rfl
+omit instSI in
 @[simp] theorem zero_n : (0 : NatC SI).n = 0 := rfl
 
 instance : Associative (α := NatC SI) (· + ·) := ⟨fun _ _ _ => NatC.ext (Nat.add_assoc _ _ _)⟩

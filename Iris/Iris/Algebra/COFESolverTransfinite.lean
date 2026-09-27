@@ -98,7 +98,7 @@ variable [inh : Inhabited (F (ULift Unit) (ULift Unit))]
 def unitObj : Obj.{u} (SI := SI) := ⟨ULift Unit⟩
 
 /-- The functor is inhabited on every inhabited COFE. -/
-@[local instance] def Finh {A : Type (max u v)} [COFE A] [Inhabited A] : Inhabited (F A A) :=
+@[instance_reducible, local instance] def Finh {A : Type (max u v)} [COFE A] [Inhabited A] : Inhabited (F A A) :=
   ⟨map (F := F) (constHom ⟨()⟩ : A -n> ULift Unit) (constHom default) inh.default⟩
 
 variable (F) in

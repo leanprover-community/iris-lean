@@ -73,7 +73,7 @@ theorem initial_combine {G₁ G₂ : GName → Prop} {P Q : IProp GF} (h₁ : in
     (UPred.ownM_op m₁ m₂).1.trans (sep_mono hP hQ)⟩
   · have v₁ : ✓{n} ((m₁ τ).car γ) := (hv₁.validN (n := n)) τ γ
     have v₂ : ✓{n} ((m₂ τ).car γ) := (hv₂.validN (n := n)) τ γ
-    show ✓{n} ((m₁ • m₂) τ).car γ
+    change ✓{n} ((m₁ • m₂) τ).car γ
     rw [iResUR_op_eval]
     cases e₁ : (m₁ τ).car γ with
     | none => simpa [e₁, CMRA.op, optionOp] using v₂

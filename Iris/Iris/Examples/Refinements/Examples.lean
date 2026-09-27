@@ -19,6 +19,8 @@ the Fibonacci function, in both directions.
 variable {SI : Type _} [instSI : Iris.SIdx SI]
 local stepindex SI
 
+set_option linter.unusedSectionVars false
+
 namespace Iris.Transfinite.Refinement.Examples
 
 open Iris Iris.Std Iris.BI Iris.HeapLang Iris.HeapLang.Transfinite ProgramLogic Language
