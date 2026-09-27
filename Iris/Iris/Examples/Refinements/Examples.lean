@@ -106,13 +106,13 @@ theorem fibl_wp (n : Nat) :
   | zero =>
     twp_rec
     twp_pures
-    rw [show (hl_val(#((0 : Nat) : Int)) == hl_val(#(0 : Int))) = true by simp]
+    rw [decide_eq_true (show ((0 : Nat) : Int) = 0 by omega)]
     twp_pures
     ipureintro; rfl
   | succ n ih =>
     twp_rec
     twp_pures
-    rw [show (hl_val(#((n + 1 : Nat) : Int)) == hl_val(#(0 : Int))) = false by simp; omega]
+    rw [decide_eq_false (show ¬ ((n + 1 : Nat) : Int) = 0 by omega)]
     twp_pures
     rw [show ((n + 1 : Nat) : Int) - 1 = ((n : Nat) : Int) by omega]
     ihave H := ih
@@ -198,7 +198,7 @@ theorem fibl_upd (n : Nat) :
     iintro %K Hsrc
     src_rec Hsrc
     src_pures Hsrc
-    rw [show (hl_val(#((0 : Nat) : Int)) == hl_val(#(0 : Int))) = true by simp]
+    rw [decide_eq_true (show ((0 : Nat) : Int) = 0 by omega)]
     src_pures Hsrc
     iapply weakSrcUpd_return
     rw [show fibSpec 0 = 0 from rfl, show fibSpec (0 + 1) = 1 from rfl]
@@ -208,7 +208,7 @@ theorem fibl_upd (n : Nat) :
     iintro %K Hsrc
     src_rec Hsrc
     src_pures Hsrc
-    rw [show (hl_val(#((n + 1 : Nat) : Int)) == hl_val(#(0 : Int))) = false by simp; omega]
+    rw [decide_eq_false (show ¬ ((n + 1 : Nat) : Int) = 0 by omega)]
     src_pures Hsrc
     rw [show ((n + 1 : Nat) : Int) - 1 = ((n : Nat) : Int) by omega]
     src_bind (v(&fibl) #((n : Nat) : Int)) in Hsrc

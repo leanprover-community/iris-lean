@@ -22,3 +22,4 @@ public import Iris.Examples.Refinements.Derived
 public import Iris.Examples.Refinements.Memoization
 public import Iris.Examples.Refinements.MemoizationNat
 public import Iris.Examples.Refinements.MemoizationTf
+public import Iris.Examples.Refinements.MemoizationFib

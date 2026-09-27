@@ -202,6 +202,31 @@ theorem tac_src_store_rwp {Δ : IProp GF} {s : Stuckness} {E : CoPset} {e : Exp}
   · iapply step_store E j K l v v'
     iframe
 
+/-! ## Simplification of comparisons of literals -/
+
+@[wp_expr_simp]
+theorem val_lit_beq (a b : BaseLit) : (Val.lit a == Val.lit b) = decide (a = b) := by
+  by_cases h : a = b
+  · subst h; simp
+  · simp [h]
+
+attribute [wp_expr_simp] beq_self_eq_true BaseLit.int.injEq BaseLit.bool.injEq _root_.decide_true
+  _root_.decide_false
+
+simproc [wp_expr_simp] Int.reduceEq_copy ((_ : Int) = _) := Int.reduceEq
+
+/-! ## Pure executions -/
+
+/-- Reflexive-transitive pure executions. -/
+abbrev RExec (e₁ e₂ : Exp) : Prop := FromMathlib.Relation.ReflTransGen PurePrimStep e₁ e₂
+
+theorem rexec_step {e₁ e₂ e' e₃ : Exp} (K : List ECtxItem) {φ : Prop} (h : PureExec φ 1 e₁ e₂)
+    (hφ : φ) (heq : fill K e₂ = e') (rest : RExec e' e₃) : RExec (fill K e₁) e₃ := by
+  have h' := EctxLanguage.pureExec_fill (K := K) φ 1 h
+  obtain ⟨b, hb, hrest⟩ := Relation.Iterate.succ_head_inv (h'.pureExec hφ)
+  cases hrest
+  exact .head hb (heq ▸ rest)
+
 end Iris.Transfinite.Refinement
 
 namespace Iris.ProofMode
@@ -453,6 +478,66 @@ elab "src_pure_cred_core " kStx:term : tactic =>
 
 elab "src_load_core" : tactic => srcHeapCore `src_load true
 elab "src_store_core" : tactic => srcHeapCore `src_store false
+
+/-- One pure step in a goal `RExec e e'`. -/
+elab "rexec_pure" : tactic => do
+  let mvar ← getMainGoal
+  mvar.withContext do
+  let goal ← whnfR (← instantiateMVars (← mvar.getType))
+  let args := goal.getAppArgs
+  unless goal.isAppOf ``FromMathlib.Relation.ReflTransGen && args.size ≥ 2 do
+    throwError "rexec_pure: the goal must be of the form `RExec e e'`"
+  have e : Q(Exp) := args[args.size - 2]!
+  have e₃ : Q(Exp) := args[args.size - 1]!
+  let (pf, newGoal) ← ((do
+    let some {result := ⟨φ, _, e₂, hexec⟩, K, e' := e₁, mkFill} ←
+      findSrcCtx (α := ((_ : Q(Prop)) × (_ : Q(Nat)) × (_ : Q(Exp)) × Lean.Expr)) e
+        fun _ e₁ => findSrcPureStep false e₁
+      | throwError "rexec_pure: cannot find a pure step in {e}"
+    let hφ ← iSolveSidecondition φ
+    let e₂f ← mkFill e₂
+    let ⟨e₂s, pfeq⟩ ← iWpExprSimp e₂f
+    let newGoal ← mkFreshExprSyntheticOpaqueMVar (← mkAppM ``Iris.Transfinite.Refinement.RExec #[e₂s, e₃])
+    let pf ← mkAppM ``Iris.Transfinite.Refinement.rexec_step #[K, hexec, hφ, pfeq, newGoal]
+    let _ := e₁
+    return (pf, newGoal)) : ProofModeM _).run {} |>.run' {}
+  let t ← inferType pf
+  unless ← isDefEq t (← mvar.getType) do
+    throwError "rexec_pure: proof of{indentExpr t}\ndoes not match goal"
+  mvar.assign pf
+  replaceMainGoal [newGoal.mvarId!]
+
+/-- One beta step of a function hidden behind a definition in a goal `RExec e e'`. -/
+elab "rexec_rec" : tactic => do
+  let mvar ← getMainGoal
+  mvar.withContext do
+  let goal ← whnfR (← instantiateMVars (← mvar.getType))
+  let args := goal.getAppArgs
+  unless goal.isAppOf ``FromMathlib.Relation.ReflTransGen && args.size ≥ 2 do
+    throwError "rexec_rec: the goal must be of the form `RExec e e'`"
+  have e : Q(Exp) := args[args.size - 2]!
+  have e₃ : Q(Exp) := args[args.size - 1]!
+  let (pf, newGoal) ← ((do
+    let some {result := ⟨φ, _, e₂, hexec⟩, K, mkFill, ..} ←
+      findSrcCtx (α := ((_ : Q(Prop)) × (_ : Q(Nat)) × (_ : Q(Exp)) × Lean.Expr)) e
+        fun _ e₁ => findSrcPureStep true e₁
+      | throwError "rexec_rec: cannot find a beta step in {e}"
+    let hφ ← iSolveSidecondition φ
+    let e₂f ← mkFill e₂
+    let ⟨e₂s, pfeq⟩ ← iWpExprSimp e₂f
+    let newGoal ← mkFreshExprSyntheticOpaqueMVar (← mkAppM ``Iris.Transfinite.Refinement.RExec #[e₂s, e₃])
+    let pf ← mkAppM ``Iris.Transfinite.Refinement.rexec_step #[K, hexec, hφ, pfeq, newGoal]
+    return (pf, newGoal)) : ProofModeM _).run {} |>.run' {}
+  let t ← inferType pf
+  unless ← isDefEq t (← mvar.getType) do
+    throwError "rexec_rec: proof of{indentExpr t}\ndoes not match goal"
+  mvar.assign pf
+  replaceMainGoal [newGoal.mvarId!]
+
+/-- Take pure steps in a goal `RExec e e'` as long as possible, and close it by reflexivity if
+possible. -/
+macro "rexec_pures" : tactic =>
+  `(tactic| ((repeat rexec_pure); try exact FromMathlib.Relation.ReflTransGen.refl))
 
 /-- `src_pure H` takes a pure step of the source thread `H : j ⤇ e`. -/
 macro "src_pure " h:ident : tactic =>
