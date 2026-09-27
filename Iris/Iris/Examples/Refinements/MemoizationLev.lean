@@ -31,6 +31,15 @@ set_option linter.unusedSectionVars false
 
 /-! ## Code -/
 
+/-- String equality (Rocq: `eqstr`; unused in the proofs). -/
+def eqstr : Val := hl_val%
+  rec eqstr s1 s2 :=
+    let c1 := !s1;
+    let c2 := !s2;
+    if c1 = c2 then
+      if c1 = #(0 : Int) then #true else eqstr (s1 +ₗ #(1 : Int)) (s2 +ₗ #(1 : Int))
+    else #false
+
 /-- Rocq: `strlen_template`. -/
 def strlenTemplate : Val := hl_val%
   λ strlen l,
@@ -86,6 +95,32 @@ def Lev (strlen lev : Val) (s12 : Exp) : Exp := hl(
     let r2 := v(&lev) ((s1 +ₗ #(1 : Int), s2));
     let r3 := v(&lev) ((s1 +ₗ #(1 : Int), s2 +ₗ #(1 : Int)));
     #(1 : Int) + v(&min3) r1 r2 r3)
+
+/-- `lev_template` with a fixed `strlen` (Rocq: `lev_template'`). -/
+def levTemplate' (slen : Val) : Val := hl_val%
+  λ lev s12,
+    let s1 := fst(s12);
+    let s2 := snd(s12);
+    let c1 := !s1;
+    if c1 = #(0 : Int) then &slen s2 else
+    let c2 := !s2;
+    if c2 = #(0 : Int) then &slen s1 else
+    if c1 = c2 then lev ((s1 +ₗ #(1 : Int), s2 +ₗ #(1 : Int)))
+    else
+      let r1 := lev ((s1, s2 +ₗ #(1 : Int)));
+      let r2 := lev ((s1 +ₗ #(1 : Int), s2));
+      let r3 := lev ((s1 +ₗ #(1 : Int), s2 +ₗ #(1 : Int)));
+      #(1 : Int) + &min3 r1 r2 r3
+
+/-- Equality of pairs (Rocq: `eq_pair`). -/
+def eqPair : Val := hl_val% λ n1 n2, (fst(n1) = fst(n2)) &&& (snd(n1) = snd(n2))
+
+/-- Rocq: `lev_mem`. -/
+def levMem : Val := hl_val%
+  λ x, (let strlen := &memRec &eqHeaplang &strlenTemplate; &memRec &eqPair (&levTemplate strlen)) x
+
+/-- Rocq: `lev_src`. -/
+def levSrc : Val := hl_val% λ x, &lev x
 
 /-- Rocq: `strlen_Strlen`. -/
 theorem strlen_Strlen (v : Val) : Exec hl(v(&strlen) v(&v)) (Strlen strlen (v : Exp)) := by
@@ -1239,5 +1274,185 @@ theorem lev_sound : ⊢ tfImplements (GF := GF) pairImmStringRel natRel lev lev 
   iintro %w ⟨Hna, Hpost⟩
   iframe Hna
   iapply tf_post $$ Hpost
+
+/-- Rocq: `lev_template'_sound`. -/
+theorem lev_template'_sound (g slen : Val) :
+    ▷ tfImplements (GF := GF) immStringRel natRel slen strlen ∗
+      ▷ tfImplements pairImmStringRel natRel g lev ⊢
+      rseq ⊤ hl(v(&(levTemplate' slen)) v(&g)) fun h => tfImplements pairImmStringRel natRel h lev := by
+  unfold rseq seq
+  iintro ⟨#Hslen, #IH⟩ Hna
+  unfold levTemplate'
+  twp_pures
+  iframe Hna
+  unfold tfImplements
+  iintro !> %v %v' %c %K #HPre Hsrc
+  unfold rseq seq
+  iintro Hna
+  have Hcore := lev_fundamental_core (GF := GF) g slen c K v v'
+  unfold rseq seq Lev at Hcore
+  twp_pures
+  ihave H := Hcore $$ [Hsrc] Hna
+  · iframe Hsrc HPre
+    isplitl []
+    · unfold tfImplements rseq seq
+      iexact Hslen
+    unfold tfImplements rseq seq
+    iexact IH
+  iapply rwpR_wand $$ H
+  iintro %w ⟨Hna, Hpost⟩
+  iframe Hna
+  iapply tf_post $$ Hpost
+
+/-! ## Memoized versions -/
+
+/-- Pairs of locations (the comparable values of `eq_pair`). -/
+def pairLoc (v : Val) : IProp GF := iprop(⌜∃ l₁ l₂ : Loc, v = hl_val((#l₁, #l₂))⌝)
+
+instance pairLoc_timeless (v : Val) : Timeless (pairLoc (GF := GF) v) := by
+  unfold pairLoc; infer_instance
+
+theorem pair_comparable (v v' : Val) : pairImmStringRel (GF := GF) v v' ⊢ |={⊤}=> pairLoc v := by
+  iintro HP
+  icases pairImm_elim _ _ $$ HP with ⟨%x₁, %x₂, %y₁, %y₂, %s₁, %s₂, %⟨rfl, rfl⟩, #H₁, #H₂⟩
+  imod stringRel_inv_acc _ _ _ $$ H₁ with S₁
+  imod stringRel_inv_acc _ _ _ $$ H₂ with S₂
+  icases stringRelIs_elim _ _ _ $$ S₁ with ⟨%l₁, %m₁, %⟨rfl, -⟩, -, -⟩
+  icases stringRelIs_elim _ _ _ $$ S₂ with ⟨%l₂, %m₂, %⟨rfl, -⟩, -, -⟩
+  imodintro
+  unfold pairLoc
+  ipureintro
+  exact ⟨l₁, l₂, rfl⟩
+
+theorem pair_eq_proper (v₁ v₁' v₂ : Val) :
+    valEq (GF := GF) v₁ v₁' ∗ pairImmStringRel v₁' v₂ ⊢ pairImmStringRel v₁ v₂ := by
+  unfold valEq
+  iintro ⟨%rfl, H⟩
+  iexact H
+
+theorem imm_comparable (v v' : Val) : immStringRel (GF := GF) v v' ⊢ |={⊤}=> unboxed v := by
+  iintro HP
+  icases immStringRel_elim _ _ $$ HP with ⟨%s, #H⟩
+  imod stringRel_inv_acc _ _ _ $$ H with S
+  icases stringRelIs_elim _ _ _ $$ S with ⟨%l, %m, %⟨rfl, -⟩, -, -⟩
+  imodintro
+  unfold unboxed
+  ipureintro
+  rfl
+
+theorem imm_eq_proper (v₁ v₁' v₂ : Val) :
+    valEq (GF := GF) v₁ v₁' ∗ immStringRel v₁' v₂ ⊢ immStringRel v₁ v₂ := by
+  unfold valEq
+  iintro ⟨%rfl, H⟩
+  iexact H
+
+/-- Rocq: the `eqfun` obligation of `eq_pair`. -/
+theorem eqPair_spec : ⊢ eqfun (src := refSrc (GF := GF)) pairLoc eqPair valEq := by
+  unfold eqfun texan pairLoc valEq
+  iintro %n₁ %n₂ !> %Φ ⟨%⟨l₁, l₂, rfl⟩, %⟨l₁', l₂', rfl⟩⟩ Hpost
+  unfold eqPair
+  twp_pures
+  iapply Hpost
+  iexists _
+  isplitr
+  · ipureintro; rfl
+  isplitr
+  · ipureintro; exact ⟨_, _, rfl⟩
+  isplitr
+  · ipureintro; exact ⟨_, _, rfl⟩
+  by_cases h : l₁ = l₁' ∧ l₂ = l₂'
+  · obtain ⟨rfl, rfl⟩ := h
+    simp only [decide_true, Bool.and_self, ↓reduceIte]
+    ipureintro; trivial
+  · simp only [Bool.and_eq_true, decide_eq_true_eq]
+    rw [ite_cond_eq_false _ _ (eq_false (by intro h'; apply h; simpa using h'))]
+    iintro %heq
+    exact (h (by simpa using heq)).elim
+
+section Memoized
+
+variable [Esync : ElemG GF (constOF (ExclAuth.ExclAuthR (A := DiscreteO (List (Val × Val)))))]
+
+/-- Rocq: `lev_memoized`. -/
+theorem lev_memoized :
+    stutter 1 ⊢ rseq ⊤ hl(v(&memoize) v(&eqPair) v(&lev))
+      fun h => tfImplements (GF := GF) pairImmStringRel natRel h lev := by
+  iintro Hc
+  iapply tf_memoize_spec pairImmStringRel natRel pairLoc valEq pair_comparable pair_eq_proper
+  isplitl []
+  · iapply eqPair_spec
+  isplitl []
+  · iapply lev_sound
+  iexact Hc
+
+/-- Rocq: `lev_deep_memoized`. -/
+theorem lev_deep_memoized :
+    stutter 1 ∗ stutter 1 ⊢
+      rseq ⊤ hl(let strlen := v(&memRec) v(&eqHeaplang) v(&strlenTemplate);
+          v(&memRec) v(&eqPair) (v(&levTemplate) strlen))
+        fun h => tfImplements (GF := GF) pairImmStringRel natRel h lev := by
+  iintro ⟨Hc₁, Hc₂⟩
+  ihave H₁ := tf_mem_rec_spec immStringRel natRel unboxed valEq imm_comparable imm_eq_proper
+    eqHeaplang strlenTemplate strlen $$ [Hc₁]
+  · isplitl []
+    · iapply eqHeaplang_spec
+    isplitl []
+    · iintro !> %g Hg
+      iapply strlen_template_sound g $$ Hg
+    iexact Hc₁
+  unfold rseq seq
+  iintro Hna
+  twp_bind (v(&memRec) v(&eqHeaplang) v(&strlenTemplate))
+  ihave H₁ := H₁ $$ Hna
+  twp_apply rwpR_wand $$ H₁
+  iintro %h ⟨Hna, #Himpl⟩
+  twp_pures
+  unfold levTemplate
+  twp_pures
+  ihave H₂ := tf_mem_rec_spec pairImmStringRel natRel pairLoc valEq pair_comparable pair_eq_proper
+    eqPair (levTemplate' h) lev $$ [Hc₂]
+  · isplitl []
+    · iapply eqPair_spec
+    isplitl []
+    · iintro !> %g Hg
+      iapply lev_template'_sound g h
+      iframe Hg
+      inext
+      iexact Himpl
+    iexact Hc₂
+  unfold rseq seq levTemplate'
+  iapply H₂ $$ Hna
+
+/-- Rocq: `lev_deep_memoized_refinement`. -/
+theorem lev_deep_memoized_refinement (K : List ECtxItem) (x y : Val) :
+    src (fill K hl(v(&levSrc) v(&y))) ∗ pairImmStringRel (GF := GF) x y ⊢
+      rseq ⊤ hl(v(&levMem) v(&x))
+        fun w => iprop(∃ w' : Val, src (fill K (w' : Exp)) ∗ natRel w w') := by
+  unfold rseq seq
+  iintro ⟨Hsrc, #HPre⟩ Hna
+  iapply rwp_take_step_src rfl
+  unfold levSrc
+  src_pure_cred 2 Hsrc as Hc
+  iapply weakSrcUpd_return
+  unfold levMem
+  twp_pure
+  icases (nat_srcF_succ 1).mp $$ Hc with ⟨Hc₁, Hc₂⟩
+  twp_bind (let strlen := v(&memRec) v(&eqHeaplang) v(&strlenTemplate);
+      v(&memRec) v(&eqPair) (v(&levTemplate) strlen))
+  ihave H := lev_deep_memoized (GF := GF) $$ [Hc₁ Hc₂]
+  · iframe
+  unfold rseq seq
+  ihave H := H $$ Hna
+  twp_apply rwpR_wand $$ H
+  iintro %w ⟨Hna, #Himpl⟩
+  unfold tfImplements rseq seq
+  ihave H := Himpl $$ %x %y %0 %K HPre Hsrc Hna
+  iapply rwpR_wand $$ H
+  iintro %u ⟨Hna, %w', Hnat, -, Hsrc, -⟩
+  iframe Hna
+  iexists w'
+  iframe
+
+end Memoized
 
 end Iris.Transfinite.Refinement.Memoization

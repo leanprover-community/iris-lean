@@ -309,7 +309,7 @@ theorem closed_nat_iter_n (n : Nat) (s : Exp) (f : Val) (α : Ordinal.{w}) (A : 
     iintro %v ⟨Hna, Hv⟩
     unfold iter
     twp_pures
-    rw [show (hl_val(#((0 : Nat) : Int)) == hl_val(#(0 : Int))) = true by simp]
+    rw [decide_eq_true (show ((0 : Nat) : Int) = 0 by omega)]
     twp_pures
     iframe
   | succ n ih =>
@@ -321,7 +321,7 @@ theorem closed_nat_iter_n (n : Nat) (s : Exp) (f : Val) (α : Ordinal.{w}) (A : 
     iintro %v ⟨Hna, Hv⟩
     unfold iter
     twp_pures
-    rw [show (hl_val(#((n + 1 : Nat) : Int)) == hl_val(#(0 : Int))) = false by simp; omega]
+    rw [decide_eq_false (show ¬ ((n + 1 : Nat) : Int) = 0 by omega)]
     twp_pures
     rw [show ((n + 1 : Nat) : Int) - 1 = (n : Int) by omega]
     iapply ih $$ %(hl(v(&f) v(&v))) [Hα Hv] Hc Hna
