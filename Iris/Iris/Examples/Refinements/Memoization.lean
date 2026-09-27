@@ -327,6 +327,13 @@ def memRec : Val := hl_val%
       | none() => (let y := F memRec a; &set h a y; y)
       | some(y) => y
 
+/-- The closure produced by `mem_rec`. -/
+abbrev memRecClosure (eq F m : Val) : Val := hl_val%
+  rec memRec a :=
+    match v(&get) v(&m) v(&eq) a with
+    | none() => (let y := v(&F) memRec a; v(&set) v(&m) a y; y)
+    | some(y) => y
+
 /-- The body of the memoized function, after the function `e` computing the results is known. -/
 def memoBody (e : Exp) (m eq n : Val) : Exp := hl(
   match v(&get) v(&m) v(&eq) v(&n) with
@@ -508,6 +515,106 @@ theorem memoization_core (eq f : Val) (e : Exp) (n n' m : Val) (K : List ECtxIte
     iframe Hna
     iexists k
     iframe HPost Hsrc Hk
+
+include Pre_Comparable Pre_Eq_Proper in
+/-- Rocq: `memoize_spec`. -/
+theorem memoize_spec (eq f g : Val) :
+    eqfun (src := refSrc (GF := GF)) Comparable eq Eq ∗ implements R Pre Post g f ∗
+      □ (∀ e v, R e v -∗ evalS e v) ⊢
+      rseq ⊤ hl(v(&memoize) v(&eq) v(&g)) fun h => implements R Pre Post h f := by
+  unfold rseq seq
+  iintro ⟨#Heq, #H, #HR⟩ Hna
+  unfold memoize
+  twp_pures
+  ihave Hm := map_spec (src := refSrc (GF := GF)) Comparable
+  unfold texan
+  twp_apply Hm
+  · itrivial
+  iintro %m Hm
+  ihave HI : ▷ memInv R Pre Post Comparable m f $$ [Hm]
+  · inext
+    unfold memInv
+    iexists []
+    iframe
+    iapply BigSepL.bigSepL_nil.mpr
+    itrivial
+  iapply fupd_rwp (src := refSrc (GF := GF))
+  imod NonAtomicInvariant.inv_alloc (p := S.name) (N := refN) $$ HI with #IM
+  imodintro
+  twp_pures
+  iframe Hna
+  unfold implements
+  iintro !> %n %n' %K #HPre Hsrc
+  unfold rseq seq
+  iintro Hna
+  twp_pure
+  ihave Hcore := memoization_core R Pre Post Comparable Eq Pre_Comparable Pre_Eq_Proper eq f
+    (g : Exp) n n' m K $$ [Hsrc]
+  · isplitl []
+    · iapply seq_value (src := refSrc (GF := GF))
+      unfold implements rseq seq
+      iexact H
+    iframe Hsrc
+    isplitr
+    · iexact IM
+    isplitr
+    · iexact HR
+    isplitr
+    · iexact HPre
+    iexact Heq
+  unfold rseq seq memoBody
+  iapply Hcore $$ Hna
+
+include Pre_Comparable Pre_Eq_Proper in
+/-- Rocq: `mem_rec_spec`. -/
+theorem mem_rec_spec (eq F f : Val) :
+    eqfun (src := refSrc (GF := GF)) Comparable eq Eq ∗
+      (□ ∀ g, ▷ implements R Pre Post g f -∗
+        rseq ⊤ hl(v(&F) v(&g)) fun h => implements R Pre Post h f) ∗
+      □ (∀ e v, R e v -∗ evalS e v) ⊢
+      rseq ⊤ hl(v(&memRec) v(&eq) v(&F)) fun h => implements R Pre Post h f := by
+  unfold rseq seq
+  iintro ⟨#Heq, #H, #HR⟩ Hna
+  unfold memRec
+  twp_pures
+  ihave Hm := map_spec (src := refSrc (GF := GF)) Comparable
+  unfold texan
+  twp_apply Hm
+  · itrivial
+  iintro %m Hm
+  ihave HI : ▷ memInv R Pre Post Comparable m f $$ [Hm]
+  · inext
+    unfold memInv
+    iexists []
+    iframe
+    iapply BigSepL.bigSepL_nil.mpr
+    itrivial
+  iapply fupd_rwp (src := refSrc (GF := GF))
+  imod NonAtomicInvariant.inv_alloc (p := S.name) (N := refN) $$ HI with #IM
+  imodintro
+  twp_pures
+  iframe Hna
+  iloeb as IH
+  unfold implements
+  iintro !> %n %n' %K #HPre Hsrc
+  unfold rseq seq
+  iintro Hna
+  twp_pure
+  ihave Hcore := memoization_core R Pre Post Comparable Eq Pre_Comparable Pre_Eq_Proper eq f
+    hl(v(&F) v(&(memRecClosure eq F m))) n n' m K $$ [Hsrc]
+  · isplitl []
+    · unfold implements rseq seq
+      iapply H $$ %(memRecClosure eq F m) IH
+    iframe Hsrc
+    isplitr
+    · iexact IM
+    isplitr
+    · iexact HR
+    isplitr
+    · iexact HPre
+    iexact Heq
+  unfold rseq seq memoBody
+  iapply Hcore $$ Hna
 
 end TimelessMemoization
 
