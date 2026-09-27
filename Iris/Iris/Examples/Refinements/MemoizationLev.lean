@@ -1,0 +1,683 @@
+/-
+Copyright (c) The Iris-Lean Contributors
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Iris-Lean Contributors
+-/
+module
+
+public import Iris.Examples.Refinements.MemoizationTf
+public import Iris.Examples.Refinements.MemoizationFib
+public import Iris.Instances.Lib.InvariantsTransfinite
+
+/-! # Memoized Levenshtein distance
+
+This file ports the section `levenshtein` of `theories/examples/refinements/memoization.v` of
+Transfinite Iris: the memoized Levenshtein distance on C-style null-terminated strings refines the
+exponential implementation. Strings are immutable and shared through invariants
+(`imm_stringRel`).
+-/
+
+@[expose] public noncomputable section
+
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
+
+namespace Iris.Transfinite.Refinement.Memoization
+
+open Iris Iris.Std Iris.BI Iris.HeapLang Iris.HeapLang.Transfinite ProgramLogic Language
+open Language.Notation Iris.Transfinite.Refinement.Examples
+
+set_option linter.unusedSectionVars false
+
+/-! ## Code -/
+
+/-- Rocq: `strlen_template`. -/
+def strlenTemplate : Val := hl_val%
+  λ strlen l,
+    let c := !l;
+    if c = #(0 : Int) then #(0 : Int)
+    else let r := strlen (l +ₗ #(1 : Int)); #(1 : Int) + r
+
+/-- Rocq: `strlen`. -/
+def strlen : Val := hl_val% rec strlen l := &strlenTemplate strlen l
+
+/-- The body of `strlen` (Rocq: `Strlen`). -/
+def Strlen (strlen : Val) (l : Exp) : Exp := hl(
+  let c := !(&l);
+  if c = #(0 : Int) then #(0 : Int)
+  else let r := v(&strlen) (&l +ₗ #(1 : Int)); #(1 : Int) + r)
+
+/-- Rocq: `min2`. -/
+def min2 : Val := hl_val% λ n1 n2, if n1 ≤ n2 then n1 else n2
+
+/-- Rocq: `min3`. -/
+def min3 : Val := hl_val% λ n1 n2 n3, &min2 (&min2 n1 n2) n3
+
+/-- Rocq: `lev_template`. -/
+def levTemplate : Val := hl_val%
+  λ strlen lev s12,
+    let s1 := fst(s12);
+    let s2 := snd(s12);
+    let c1 := !s1;
+    if c1 = #(0 : Int) then strlen s2 else
+    let c2 := !s2;
+    if c2 = #(0 : Int) then strlen s1 else
+    if c1 = c2 then lev ((s1 +ₗ #(1 : Int), s2 +ₗ #(1 : Int)))
+    else
+      let r1 := lev ((s1, s2 +ₗ #(1 : Int)));
+      let r2 := lev ((s1 +ₗ #(1 : Int), s2));
+      let r3 := lev ((s1 +ₗ #(1 : Int), s2 +ₗ #(1 : Int)));
+      #(1 : Int) + &min3 r1 r2 r3
+
+/-- Rocq: `lev`. -/
+def lev : Val := hl_val% rec lev s12 := &levTemplate &strlen lev s12
+
+/-- The body of `lev` (Rocq: `Lev`). -/
+def Lev (strlen lev : Val) (s12 : Exp) : Exp := hl(
+  let s1 := fst(&s12);
+  let s2 := snd(&s12);
+  let c1 := !s1;
+  if c1 = #(0 : Int) then v(&strlen) s2 else
+  let c2 := !s2;
+  if c2 = #(0 : Int) then v(&strlen) s1 else
+  if c1 = c2 then v(&lev) ((s1 +ₗ #(1 : Int), s2 +ₗ #(1 : Int)))
+  else
+    let r1 := v(&lev) ((s1, s2 +ₗ #(1 : Int)));
+    let r2 := v(&lev) ((s1 +ₗ #(1 : Int), s2));
+    let r3 := v(&lev) ((s1 +ₗ #(1 : Int), s2 +ₗ #(1 : Int)));
+    #(1 : Int) + v(&min3) r1 r2 r3)
+
+/-- Rocq: `strlen_Strlen`. -/
+theorem strlen_Strlen (v : Val) : Exec hl(v(&strlen) v(&v)) (Strlen strlen (v : Exp)) := by
+  refine rexec_exec ?_ (by simp [Strlen])
+  rexec_rec
+  rexec_rec
+  rexec_pures
+
+/-- Rocq: `lev_Lev`. -/
+theorem lev_Lev (v : Val) : Exec hl(v(&lev) v(&v)) (Lev strlen lev (v : Exp)) := by
+  refine rexec_exec ?_ (by simp [Lev])
+  rexec_rec
+  rexec_rec
+  rexec_pures
+
+/-! ## Strings -/
+
+variable {GF : BundledGFunctors} [G : RHeapG GF] [N : NatSourceG GF] [S : SeqG GF]
+
+/-- C-style null terminated strings in the target (Rocq: `string_is`). -/
+def stringIs : Loc → List Nat → IProp GF
+  | l, [] => iprop(∃ q : Qp, l ↦{.own q} some hl_val(#(0 : Int)))
+  | l, n :: s => iprop(⌜n ≠ 0⌝ ∗ (∃ q : Qp, l ↦{.own q} some hl_val(#(n : Int))) ∗
+      stringIs (l + (1 : Int)) s)
+
+/-- C-style null terminated strings in the source (Rocq: `src_string_is`). -/
+def srcStringIs : Loc → List Nat → IProp GF
+  | l, [] => iprop(∃ q : Qp, heapSPointsTo l (.own q) hl_val(#(0 : Int)))
+  | l, n :: s => iprop(⌜n ≠ 0⌝ ∗ (∃ q : Qp, heapSPointsTo l (.own q) hl_val(#(n : Int))) ∗
+      srcStringIs (l + (1 : Int)) s)
+
+theorem stringIs_cons (l : Loc) (n : Nat) (s : List Nat) :
+    stringIs (GF := GF) l (n :: s) = iprop(⌜n ≠ 0⌝ ∗
+      (∃ q : Qp, l ↦{.own q} some hl_val(#(n : Int))) ∗ stringIs (l + (1 : Int)) s) := by
+  rw [stringIs]
+
+theorem srcStringIs_cons (l : Loc) (n : Nat) (s : List Nat) :
+    srcStringIs (GF := GF) l (n :: s) = iprop(⌜n ≠ 0⌝ ∗
+      (∃ q : Qp, heapSPointsTo l (.own q) hl_val(#(n : Int))) ∗ srcStringIs (l + (1 : Int)) s) := by
+  rw [srcStringIs]
+
+theorem stringIs_nil (l : Loc) :
+    stringIs (GF := GF) l [] = iprop(∃ q : Qp, l ↦{.own q} some hl_val(#(0 : Int))) := by
+  rw [stringIs]
+
+theorem srcStringIs_nil (l : Loc) :
+    srcStringIs (GF := GF) l [] = iprop(∃ q : Qp, heapSPointsTo l (.own q) hl_val(#(0 : Int))) := by
+  rw [srcStringIs]
+
+theorem pointsTo_halves (l : Loc) (q : Qp) (v : Val) :
+    l ↦{.own q} some v ⊢@{IProp GF} l ↦{.own q.half} some v ∗ l ↦{.own q.half} some v := by
+  conv => lhs; rw [← Qp.half_add_half q]
+  exact (Fractional.fractional (Φ := fun q : Qp => iprop(l ↦{.own q} some v)) _ _).1
+
+theorem heapSPointsTo_halves (l : Loc) (q : Qp) (v : Val) :
+    heapSPointsTo (GF := GF) l (.own q) v ⊢ heapSPointsTo l (.own q.half) v ∗
+      heapSPointsTo l (.own q.half) v := by
+  unfold heapSPointsTo
+  conv => lhs; rw [← Qp.half_add_half q]
+  exact (Fractional.fractional (Φ := fun q : Qp =>
+    ghost_map_elem G.heapSName (.own q) l (SrcVal.mk (some v))) _ _).1
+
+/-- Rocq: `string_is_dup`. -/
+theorem stringIs_dup (l : Loc) (s : List Nat) :
+    stringIs (GF := GF) l s ⊢ stringIs l s ∗ stringIs l s := by
+  induction s generalizing l with
+  | nil =>
+    unfold stringIs
+    iintro ⟨%q, H⟩
+    ihave ⟨H₁, H₂⟩ := pointsTo_halves l q _ $$ H
+    isplitl [H₁]
+    · iexists q.half; iexact H₁
+    · iexists q.half; iexact H₂
+  | cons n s ih =>
+    unfold stringIs
+    iintro ⟨%hn, ⟨%q, H⟩, Htl⟩
+    ihave ⟨H₁, H₂⟩ := pointsTo_halves l q _ $$ H
+    ihave ⟨T₁, T₂⟩ := ih (l + (1 : Int)) $$ Htl
+    isplitl [H₁ T₁]
+    · isplitr
+      · ipureintro; exact hn
+      isplitl [H₁]
+      · iexists q.half; iexact H₁
+      iexact T₁
+    · isplitr
+      · ipureintro; exact hn
+      isplitl [H₂]
+      · iexists q.half; iexact H₂
+      iexact T₂
+
+/-- Rocq: `src_string_is_dup`. -/
+theorem srcStringIs_dup (l : Loc) (s : List Nat) :
+    srcStringIs (GF := GF) l s ⊢ srcStringIs l s ∗ srcStringIs l s := by
+  induction s generalizing l with
+  | nil =>
+    unfold srcStringIs
+    iintro ⟨%q, H⟩
+    ihave ⟨H₁, H₂⟩ := heapSPointsTo_halves l q _ $$ H
+    isplitl [H₁]
+    · iexists q.half; iexact H₁
+    · iexists q.half; iexact H₂
+  | cons n s ih =>
+    unfold srcStringIs
+    iintro ⟨%hn, ⟨%q, H⟩, Htl⟩
+    ihave ⟨H₁, H₂⟩ := heapSPointsTo_halves l q _ $$ H
+    ihave ⟨T₁, T₂⟩ := ih (l + (1 : Int)) $$ Htl
+    isplitl [H₁ T₁]
+    · isplitr
+      · ipureintro; exact hn
+      isplitl [H₁]
+      · iexists q.half; iexact H₁
+      iexact T₁
+    · isplitr
+      · ipureintro; exact hn
+      isplitl [H₂]
+      · iexists q.half; iexact H₂
+      iexact T₂
+
+instance stringIs_timeless (l : Loc) (s : List Nat) : Timeless (stringIs (GF := GF) l s) := by
+  induction s generalizing l with
+  | nil =>
+    unfold stringIs
+    exact @UPred.exists_timeless' _ _ _ _ _ _ fun _ => inferInstance
+  | cons n s ih =>
+    unfold stringIs
+    exact @UPred.sep_timeless' _ _ _ _ _ _ inferInstance
+      (@UPred.sep_timeless' _ _ _ _ _ _
+        (@UPred.exists_timeless' _ _ _ _ _ _ fun _ => inferInstance) (ih _))
+
+instance srcStringIs_timeless (l : Loc) (s : List Nat) :
+    Timeless (srcStringIs (GF := GF) l s) := by
+  induction s generalizing l with
+  | nil =>
+    unfold srcStringIs
+    exact @UPred.exists_timeless' _ _ _ _ _ _ fun _ => inferInstance
+  | cons n s ih =>
+    unfold srcStringIs
+    exact @UPred.sep_timeless' _ _ _ _ _ _ inferInstance
+      (@UPred.sep_timeless' _ _ _ _ _ _
+        (@UPred.exists_timeless' _ _ _ _ _ _ fun _ => inferInstance) (ih _))
+
+/-- Rocq: `stringRel_is`. -/
+def stringRelIs (v₁ v₂ : Val) (s : List Nat) : IProp GF :=
+  iprop(∃ l₁ l₂ : Loc, ⌜v₁ = hl_val(#l₁) ∧ v₂ = hl_val(#l₂)⌝ ∗ stringIs l₁ s ∗ srcStringIs l₂ s)
+
+instance stringRelIs_timeless (v₁ v₂ : Val) (s : List Nat) :
+    Timeless (stringRelIs (GF := GF) v₁ v₂ s) := by
+  unfold stringRelIs
+  refine @UPred.exists_timeless' _ _ _ _ _ _ (fun l₁ => ?_)
+  refine @UPred.exists_timeless' _ _ _ _ _ _ (fun l₂ => ?_)
+  exact @UPred.sep_timeless' _ _ _ _ _ _ inferInstance
+    (@UPred.sep_timeless' _ _ _ _ _ _ inferInstance inferInstance)
+
+/-- Rocq: `strN`. -/
+def strN : Namespace := nroot.@"str"
+
+/-- Immutable related strings (Rocq: `imm_stringRel`). -/
+def immStringRel (v₁ v₂ : Val) : IProp GF := iprop(∃ s, inv strN (stringRelIs v₁ v₂ s))
+
+instance immStringRel_persistent (v₁ v₂ : Val) : Persistent (immStringRel (GF := GF) v₁ v₂) := by
+  unfold immStringRel; infer_instance
+
+/-- Rocq: `pairRel`. -/
+def pairRel (Pa Pb : Val → Val → IProp GF) (v₁ v₂ : Val) : IProp GF :=
+  iprop(∃ v₁a v₁b v₂a v₂b : Val, ⌜v₁ = hl_val((&v₁a, &v₁b))⌝ ∗ ⌜v₂ = hl_val((&v₂a, &v₂b))⌝ ∗
+    Pa v₁a v₂a ∗ Pb v₁b v₂b)
+
+/-- Rocq: `pair_imm_stringRel`. -/
+abbrev pairImmStringRel : Val → Val → IProp GF := pairRel immStringRel immStringRel
+
+instance pairImmStringRel_persistent (v₁ v₂ : Val) :
+    Persistent (pairImmStringRel (GF := GF) v₁ v₂) := by
+  unfold pairImmStringRel pairRel; infer_instance
+
+theorem strN_top : (↑strN : CoPset) ⊆ ⊤ := fun _ _ => CoPset.mem_full
+
+/-- Rocq: `stringRel_inv_acc`. -/
+theorem stringRel_inv_acc (v₁ v₂ : Val) (s : List Nat) :
+    inv strN (stringRelIs (GF := GF) v₁ v₂ s) ⊢ |={⊤}=> stringRelIs v₁ v₂ s := by
+  iintro #Hinv
+  imod inv_acc_timeless strN_top $$ Hinv with ⟨H, Hclo⟩
+  unfold stringRelIs
+  icases H with ⟨%l₁, %l₂, %heq, H₁, H₂⟩
+  ihave ⟨H₁, H₁'⟩ := stringIs_dup l₁ s $$ H₁
+  ihave ⟨H₂, H₂'⟩ := srcStringIs_dup l₂ s $$ H₂
+  imod Hclo $$ [H₁' H₂'] with -
+  · iexists l₁, l₂
+    iframe
+    ipureintro; exact heq
+  imodintro
+  iexists l₁, l₂
+  iframe
+  ipureintro; exact heq
+
+/-- Rocq: `rwp_strlen`. -/
+theorem rwp_strlen (l : Loc) (s : List Nat) :
+    stringIs (GF := GF) l s ⊢
+      rwpR hl(v(&strlen) #l) fun v => iprop(⌜v = hl_val(#(s.length : Int))⌝) := by
+  induction s generalizing l with
+  | nil =>
+    unfold stringIs
+    iintro ⟨%q, H⟩
+    twp_rec
+    twp_rec
+    twp_pures
+    twp_apply rwp_load (src := refSrc (GF := GF)) $$ H
+    iintro H
+    twp_pures
+    ipureintro; rfl
+  | cons n s ih =>
+    unfold stringIs
+    iintro ⟨%hn, ⟨%q, H⟩, Htl⟩
+    twp_rec
+    twp_rec
+    twp_pures
+    twp_apply rwp_load (src := refSrc (GF := GF)) $$ H
+    iintro H
+    twp_pures
+    rw [decide_eq_false (show ¬ ((n : Nat) : Int) = 0 by omega)]
+    twp_pures
+    ihave IH := ih (l + (1 : Int)) $$ Htl
+    twp_apply rwpR_wand $$ IH
+    iintro %v %rfl
+    twp_pures
+    ipureintro
+    simp only [List.length_cons]
+    congr 2
+    omega
+
+/-- Rocq: `eval_strlen`. -/
+theorem eval_strlen (l : Loc) (s : List Nat) :
+    srcStringIs (GF := GF) l s ⊢ evalS hl(v(&strlen) #l) hl_val(#(s.length : Int)) := by
+  unfold evalS
+  induction s generalizing l with
+  | nil =>
+    unfold srcStringIs
+    iintro ⟨%q, Hl⟩ %K H
+    src_rec H
+    src_rec H
+    src_pures H
+    src_load H Hl
+    src_pures H
+    iapply weakSrcUpd_return
+    iexact H
+  | cons n s ih =>
+    unfold srcStringIs
+    iintro ⟨%hn, ⟨%q, Hl⟩, Htl⟩ %K H
+    src_rec H
+    src_rec H
+    src_pures H
+    src_load H Hl
+    src_pures H
+    rw [decide_eq_false (show ¬ ((n : Nat) : Int) = 0 by omega)]
+    src_pures H
+    src_bind (v(&strlen) #(l + (1 : Int))) in H
+    iapply srcUpdate_weakSrcUpdate (src := refSrc (GF := GF))
+    iapply weakSrcUpdate_bind_r (src := refSrc (GF := GF))
+    isplitl [H Htl]
+    · iapply ih (l + (1 : Int)) $$ Htl %_ H
+    iintro H
+    src_pures H
+    iapply weakSrcUpd_return
+    simp only [List.length_cons]
+    rw [show ((s.length + 1 : Nat) : Int) = 1 + (s.length : Int) by omega]
+    iexact H
+
+/-- Rocq: `stringRel_is_tl`. -/
+theorem stringRel_is_tl (l₁ l₂ : Loc) (n : Nat) (s : List Nat) :
+    stringRelIs (GF := GF) hl_val(#l₁) hl_val(#l₂) (n :: s) ⊢
+      stringRelIs hl_val(#(l₁ + (1 : Int))) hl_val(#(l₂ + (1 : Int))) s ∗
+      (stringRelIs hl_val(#(l₁ + (1 : Int))) hl_val(#(l₂ + (1 : Int))) s -∗
+        stringRelIs hl_val(#l₁) hl_val(#l₂) (n :: s)) := by
+  unfold stringRelIs
+  iintro ⟨%l₁', %l₂', %⟨h₁, h₂⟩, H₁, H₂⟩
+  cases h₁
+  cases h₂
+  rw [stringIs_cons, srcStringIs_cons]
+  icases H₁ with ⟨%hn, Hp₁, T₁⟩
+  icases H₂ with ⟨-, Hp₂, T₂⟩
+  isplitl [T₁ T₂]
+  · iexists l₁ + (1 : Int), l₂ + (1 : Int)
+    iframe
+    ipureintro; exact ⟨rfl, rfl⟩
+  iintro ⟨%l₁'', %l₂'', %⟨h₁, h₂⟩, T₁, T₂⟩
+  simp only [Val.lit.injEq, BaseLit.loc.injEq] at h₁ h₂
+  subst h₁ h₂
+  iexists l₁, l₂
+  rw [stringIs_cons, srcStringIs_cons]
+  isplitr
+  · ipureintro; exact ⟨rfl, rfl⟩
+  isplitl [Hp₁ T₁]
+  · iframe
+    ipureintro; exact hn
+  · iframe
+    ipureintro; exact hn
+
+/-- Rocq: `inv_stringRel_is_tl`. -/
+theorem inv_stringRel_is_tl (N : Namespace) (l₁ l₂ : Loc) (n : Nat) (s : List Nat) :
+    inv N (stringRelIs (GF := GF) hl_val(#l₁) hl_val(#l₂) (n :: s)) ⊢
+      inv N (stringRelIs hl_val(#(l₁ + (1 : Int))) hl_val(#(l₂ + (1 : Int))) s) := by
+  iintro #Hinv
+  iapply inv_alter_timeless $$ Hinv
+  iintro !> H
+  ihave ⟨H₁, H₂⟩ := stringRel_is_tl l₁ l₂ n s $$ H
+  iframe H₁
+  inext
+  iexact H₂
+
+/-- Rocq: `min2_spec`. -/
+theorem min2_spec (n₁ n₂ : Nat) :
+    ⊢ texan (src := refSrc (GF := GF)) iprop(True) hl(v(&min2) #(n₁ : Int) #(n₂ : Int))
+      fun r => iprop(⌜r = hl_val(#((min n₁ n₂ : Nat) : Int))⌝) := by
+  unfold texan
+  iintro !> %Φ - HΦ
+  unfold min2
+  twp_pures
+  by_cases h : n₁ ≤ n₂
+  · rw [decide_eq_true (show ((n₁ : Nat) : Int) ≤ n₂ by omega)]
+    twp_pures
+    iapply HΦ
+    ipureintro
+    rw [Nat.min_eq_left h]
+  · rw [decide_eq_false (show ¬ ((n₁ : Nat) : Int) ≤ n₂ by omega)]
+    twp_pures
+    iapply HΦ
+    ipureintro
+    rw [Nat.min_eq_right (by omega)]
+
+/-- Rocq: `min3_spec`. -/
+theorem min3_spec (n₁ n₂ n₃ : Nat) :
+    ⊢ texan (src := refSrc (GF := GF)) iprop(True)
+      hl(v(&min3) #(n₁ : Int) #(n₂ : Int) #(n₃ : Int))
+      fun r => iprop(⌜r = hl_val(#((min (min n₁ n₂) n₃ : Nat) : Int))⌝) := by
+  unfold texan
+  iintro !> %Φ - HΦ
+  unfold min3
+  twp_pures
+  ihave H₁ := min2_spec (GF := GF) n₁ n₂
+  unfold texan
+  twp_apply H₁
+  · itrivial
+  iintro %r %rfl
+  ihave H₂ := min2_spec (GF := GF) (min n₁ n₂) n₃
+  unfold texan
+  twp_apply H₂
+  · itrivial
+  iintro %r %rfl
+  iapply HΦ
+  ipureintro; rfl
+
+/-- Rocq: `eval_min2`. -/
+theorem eval_min2 (n₁ n₂ : Nat) :
+    ⊢ evalS (GF := GF) hl(v(&min2) #(n₁ : Int) #(n₂ : Int)) hl_val(#((min n₁ n₂ : Nat) : Int)) := by
+  unfold evalS
+  iintro %K H
+  src_rec H
+  src_pures H
+  by_cases h : n₁ ≤ n₂
+  · rw [decide_eq_true (show ((n₁ : Nat) : Int) ≤ n₂ by omega)]
+    src_pures H
+    iapply weakSrcUpd_return
+    rw [Nat.min_eq_left h]
+    iexact H
+  · rw [decide_eq_false (show ¬ ((n₁ : Nat) : Int) ≤ n₂ by omega)]
+    src_pures H
+    iapply weakSrcUpd_return
+    rw [Nat.min_eq_right (by omega)]
+    iexact H
+
+/-- Rocq: `eval_min3`. -/
+theorem eval_min3 (n₁ n₂ n₃ : Nat) :
+    ⊢ evalS (GF := GF) hl(v(&min3) #(n₁ : Int) #(n₂ : Int) #(n₃ : Int))
+      hl_val(#((min (min n₁ n₂) n₃ : Nat) : Int)) := by
+  unfold evalS
+  iintro %K H
+  src_rec H
+  src_pures H
+  src_bind (v(&min2) #((n₁ : Nat) : Int) #((n₂ : Nat) : Int)) in H
+  iapply srcUpdate_weakSrcUpdate (src := refSrc (GF := GF))
+  iapply weakSrcUpdate_bind_r (src := refSrc (GF := GF))
+  isplitl [H]
+  · ihave He := eval_min2 (GF := GF) n₁ n₂
+    unfold evalS
+    iapply He $$ %_ H
+  iintro H
+  src_bind (v(&min2) #((min n₁ n₂ : Nat) : Int) #((n₃ : Nat) : Int)) in H
+  ihave He := eval_min2 (GF := GF) (min n₁ n₂) n₃
+  unfold evalS
+  iapply srcUpdate_weakSrcUpdate (src := refSrc (GF := GF))
+  ihave He' := He $$ %_ H
+  simp only [List.nil_append]
+  iexact He'
+
+/-- Rocq: `string_is_functional`. -/
+theorem string_is_functional (l : Loc) (s s' : List Nat) :
+    ⊢ stringIs (GF := GF) l s -∗ stringIs l s' -∗ ⌜s = s'⌝ := by
+  induction s generalizing l s' with
+  | nil =>
+    cases s' with
+    | nil => iintro - -; ipureintro; rfl
+    | cons n' s' =>
+      unfold stringIs
+      iintro ⟨%q, H⟩ ⟨%hn, ⟨%q', H'⟩, -⟩
+      icases pointsTo_agree $$ [H H'] with %h
+      · iframe
+      simp at h
+      omega
+  | cons n s ih =>
+    cases s' with
+    | nil =>
+      unfold stringIs
+      iintro ⟨%hn, ⟨%q, H⟩, -⟩ ⟨%q', H'⟩
+      icases pointsTo_agree $$ [H H'] with %h
+      · iframe
+      simp at h
+      omega
+    | cons n' s' =>
+      unfold stringIs
+      iintro ⟨%hn, ⟨%q, H⟩, T⟩ ⟨%hn', ⟨%q', H'⟩, T'⟩
+      icases pointsTo_agree $$ [H H'] with %h
+      · iframe
+      icases ih (l + (1 : Int)) s' $$ T T' with %h'
+      ipureintro
+      simp only [Option.some.injEq, Val.lit.injEq, BaseLit.int.injEq] at h
+      subst h'
+      congr 1
+      omega
+
+/-- Rocq: `stringRel_is_functional`. -/
+theorem stringRel_is_functional (va vb vb' : Val) (s s' : List Nat) :
+    ⊢ stringRelIs (GF := GF) va vb s -∗ stringRelIs va vb' s' -∗ ⌜s = s'⌝ := by
+  unfold stringRelIs
+  iintro ⟨%l₁, %l₂, %⟨rfl, rfl⟩, H₁, -⟩ ⟨%l₁', %l₂', %⟨h, -⟩, H₁', -⟩
+  simp only [Val.lit.injEq, BaseLit.loc.injEq] at h
+  subst h
+  iapply string_is_functional $$ H₁ H₁'
+
+/-! ## Fundamental properties -/
+
+theorem stringRelIs_elim (v₁ v₂ : Val) (s : List Nat) :
+    stringRelIs (GF := GF) v₁ v₂ s ⊢ ∃ l₁ l₂ : Loc, ⌜v₁ = hl_val(#l₁) ∧ v₂ = hl_val(#l₂)⌝ ∗
+      stringIs l₁ s ∗ srcStringIs l₂ s := by
+  unfold stringRelIs; exact .rfl
+
+theorem immStringRel_intro (v₁ v₂ : Val) :
+    (∃ s, inv strN (stringRelIs v₁ v₂ s)) ⊢ immStringRel (GF := GF) v₁ v₂ := by
+  unfold immStringRel; exact .rfl
+
+theorem immStringRel_elim (v₁ v₂ : Val) :
+    immStringRel (GF := GF) v₁ v₂ ⊢ ∃ s, inv strN (stringRelIs v₁ v₂ s) := by
+  unfold immStringRel; exact .rfl
+
+/-- Rocq: `strlen_fundamental_core`. -/
+theorem strlen_fundamental_core (slen : Val) (c : Nat) (K : List ECtxItem) (va vb : Val) :
+    ▷ tfImplements (GF := GF) immStringRel natRel slen strlen ∗ immStringRel va vb ∗
+      src (fill K hl(v(&strlen) v(&vb))) ⊢
+      rseq ⊤ (Strlen slen (va : Exp)) fun v => iprop(∃ m : Nat, ⌜v = hl_val(#(m : Int))⌝ ∗
+        stutter c ∗ src (fill K hl(#(m : Int))) ∗
+        □ (∀ vb', immStringRel va vb' -∗ evalS hl(v(&strlen) v(&vb')) hl_val(#(m : Int)))) := by
+  unfold rseq seq
+  iintro ⟨#IH, #HPre, Hsrc⟩ Hna
+  icases immStringRel_elim va vb $$ HPre with ⟨%s, #Hinv⟩
+  iapply rwp_take_step (src := refSrc (GF := GF))
+    (P := iprop((∃ _ : Unit, src (fill K (Strlen strlen (vb : Exp))) ∗ emp) ∗ stutter c)) rfl
+    $$ [Hna] [Hsrc]
+  · iintro ⟨⟨%_, Hsrc, -⟩, Hc⟩
+    iapply rswp_do_step (src := refSrc (GF := GF))
+    inext
+    iapply fupd_rswp (src := refSrc (GF := GF))
+    imod stringRel_inv_acc va vb s $$ Hinv with Hstr
+    imodintro
+    icases stringRelIs_elim va vb s $$ Hstr with ⟨%l₁, %l₂, %⟨rfl, rfl⟩, H₁, H₂⟩
+    cases s with
+    | nil =>
+      rw [stringIs_nil, srcStringIs_nil]
+      icases H₁ with ⟨%q₁, H₁⟩
+      icases H₂ with ⟨%q₂, H₂⟩
+      unfold Strlen
+      twp_apply rswp_load (src := refSrc (GF := GF)) $$ H₁
+      iintro H₁
+      src_load Hsrc H₂
+      src_pures Hsrc
+      twp_pures
+      iframe Hna
+      iexists 0
+      isplitr
+      · ipureintro; rfl
+      isplitl [Hc]
+      · iexact Hc
+      isplitl [Hsrc]
+      · iexact Hsrc
+      iintro !> %vb' #HPre'
+      icases immStringRel_elim _ _ $$ HPre' with ⟨%s', #Hinv'⟩
+      unfold evalS
+      iintro %K' H
+      iapply fupd_srcUpdate (src := refSrc (GF := GF))
+      imod stringRel_inv_acc _ _ _ $$ Hinv with Hstr
+      imod stringRel_inv_acc _ _ _ $$ Hinv' with Hstr'
+      icases stringRel_is_functional _ _ _ _ _ $$ Hstr' Hstr with %rfl
+      imodintro
+      icases stringRelIs_elim _ _ _ $$ Hstr' with ⟨%l₁', %l₂', %⟨-, rfl⟩, -, H₂'⟩
+      rw [srcStringIs_nil]
+      icases H₂' with ⟨%q, H₂'⟩
+      src_rec H
+      src_rec H
+      src_pures H
+      src_load H H₂'
+      src_pures H
+      iapply weakSrcUpd_return
+      iexact H
+    | cons n s =>
+      rw [stringIs_cons, srcStringIs_cons]
+      icases H₁ with ⟨%hn, ⟨%q₁, H₁⟩, -⟩
+      icases H₂ with ⟨-, ⟨%q₂, H₂⟩, -⟩
+      unfold Strlen
+      twp_apply rswp_load (src := refSrc (GF := GF)) $$ H₁
+      iintro H₁
+      src_load Hsrc H₂
+      src_pures Hsrc
+      twp_pures
+      rw [decide_eq_false (show ¬ ((n : Nat) : Int) = 0 by omega)]
+      twp_pures
+      src_pures Hsrc
+      src_bind (v(&strlen) #(l₂ + (1 : Int))) in Hsrc
+      twp_bind (v(&slen) #(l₁ + (1 : Int)))
+      unfold tfImplements rseq seq
+      ihave H := IH $$ %(hl_val(#(l₁ + (1 : Int)))) %(hl_val(#(l₂ + (1 : Int)))) %0 %_ [] Hsrc Hna
+      · iapply immStringRel_intro
+        iexists s
+        iapply inv_stringRel_is_tl $$ Hinv
+      twp_apply rwpR_wand $$ H
+      iintro %v ⟨Hna, %v', Hrel, -, Hsrc, #Hev⟩
+      unfold natRel
+      icases Hrel with ⟨%m, %⟨rfl, rfl⟩⟩
+      src_pures Hsrc
+      twp_pures
+      rw [show (1 + (m : Int)) = ((m + 1 : Nat) : Int) by omega]
+      iframe Hna
+      iexists m + 1
+      isplitr
+      · ipureintro; rfl
+      isplitl [Hc]
+      · iexact Hc
+      isplitl [Hsrc]
+      · iexact Hsrc
+      iintro !> %vb' #HPre'
+      icases immStringRel_elim _ _ $$ HPre' with ⟨%s', #Hinv'⟩
+      unfold evalS
+      iintro %K' H
+      iapply fupd_srcUpdate (src := refSrc (GF := GF))
+      imod stringRel_inv_acc _ _ _ $$ Hinv with Hstr
+      imod stringRel_inv_acc _ _ _ $$ Hinv' with Hstr'
+      icases stringRel_is_functional _ _ _ _ _ $$ Hstr' Hstr with %rfl
+      imodintro
+      icases stringRelIs_elim _ _ _ $$ Hstr' with ⟨%l₁', %l₂', %⟨-, rfl⟩, -, H₂'⟩
+      ihave ⟨%w, #He, Hrel⟩ := Hev $$ %(hl_val(#(l₂' + (1 : Int)))) []
+      · iapply immStringRel_intro
+        iexists s
+        iapply inv_stringRel_is_tl $$ Hinv'
+      icases Hrel with ⟨%m', %⟨hm, rfl⟩⟩
+      rw [srcStringIs_cons]
+      icases H₂' with ⟨-, ⟨%q, H₂'⟩, -⟩
+      src_rec H
+      src_rec H
+      src_pures H
+      src_load H H₂'
+      src_pures H
+      rw [decide_eq_false (show ¬ ((n : Nat) : Int) = 0 by omega)]
+      src_pures H
+      src_bind (v(&strlen) #(l₂' + (1 : Int))) in H
+      iapply srcUpdate_weakSrcUpdate (src := refSrc (GF := GF))
+      iapply weakSrcUpdate_bind_r (src := refSrc (GF := GF))
+      isplitl [H]
+      · iapply He $$ %_ H
+      iintro H
+      src_pures H
+      iapply weakSrcUpd_return
+      have : m' = m := by simp only [Val.lit.injEq, BaseLit.int.injEq] at hm; omega
+      subst this
+      rw [show (1 + (m' : Int)) = ((m' + 1 : Nat) : Int) by omega]
+      iexact H
+  · ihave H := step_inv_alloc c ⊤ 0 (fill K hl(v(&strlen) v(&vb)))
+      (fun _ : Unit => fill K (Strlen strlen (vb : Exp))) (fun _ => iprop(emp))
+      (fun _ => Derived.fill_ne (by simp [Strlen])) $$ []
+    · iintro Hsrc
+      ihave H := exec_src_update 0 ⊤ (exec_frame K (strlen_Strlen vb)) $$ Hsrc
+      iapply srcUpdate_mono (src := refSrc (GF := GF))
+      isplitl [H]
+      · iexact H
+      iintro Hsrc
+      iexists ()
+      iframe
+    iapply H $$ Hsrc
+
+end Iris.Transfinite.Refinement.Memoization
