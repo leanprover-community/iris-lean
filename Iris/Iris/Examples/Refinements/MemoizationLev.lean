@@ -1144,4 +1144,100 @@ theorem lev_fundamental_core (g slen : Val) (c : Nat) (K : List ECtxItem) (va vb
       iframe
     iapply H $$ Hsrc
 
+/-! ## Soundness -/
+
+/-- The postcondition of the fundamental lemmas implies the one of `tfImplements`. -/
+theorem tf_post (P : Val → Val → IProp GF) [∀ a b, Persistent (P a b)] (f va : Val) (c : Nat)
+    (K : List ECtxItem) (w : Val) :
+    (∃ m : Nat, ⌜w = hl_val(#(m : Int))⌝ ∗ stutter c ∗ src (fill K hl(#(m : Int))) ∗
+      □ (∀ vb', P va vb' -∗ evalS hl(v(&f) v(&vb')) hl_val(#(m : Int)))) ⊢
+      ∃ v' : Val, natRel w v' ∗ stutter c ∗ src (fill K (v' : Exp)) ∗
+        □ (∀ x', P va x' -∗ ∃ v', □ evalS hl(v(&f) v(&x')) v' ∗ natRel w v') := by
+  iintro ⟨%m, %rfl, Hc, Hsrc, #Hex⟩
+  iexists hl_val(#(m : Int))
+  isplitr [Hc Hsrc]
+  · unfold natRel
+    iexists m
+    ipureintro; exact ⟨rfl, rfl⟩
+  iframe Hc Hsrc
+  iintro !> %x' #Hx
+  iexists hl_val(#(m : Int))
+  isplitr
+  · iintro !>
+    iapply Hex $$ Hx
+  unfold natRel
+  iexists m
+  ipureintro; exact ⟨rfl, rfl⟩
+
+/-- Rocq: `strlen_sound`. -/
+theorem strlen_sound : ⊢ tfImplements (GF := GF) immStringRel natRel strlen strlen := by
+  iloeb as IH
+  unfold tfImplements
+  iintro !> %v %v' %c %K #HPre Hsrc
+  unfold rseq seq
+  iintro Hna
+  have Hcore := strlen_fundamental_core (GF := GF) strlen c K v v'
+  unfold rseq seq Strlen at Hcore
+  twp_rec
+  twp_rec
+  twp_pure
+  twp_pure
+  ihave H := Hcore $$ [Hsrc] Hna
+  · iframe Hsrc HPre
+    unfold tfImplements rseq seq
+    iexact IH
+  iapply rwpR_wand $$ H
+  iintro %w ⟨Hna, Hpost⟩
+  iframe Hna
+  iapply tf_post $$ Hpost
+
+/-- Rocq: `strlen_template_sound`. -/
+theorem strlen_template_sound (g : Val) :
+    ▷ tfImplements (GF := GF) immStringRel natRel g strlen ⊢
+      rseq ⊤ hl(v(&strlenTemplate) v(&g)) fun h => tfImplements immStringRel natRel h strlen := by
+  unfold rseq seq
+  iintro #IH Hna
+  unfold strlenTemplate
+  twp_pures
+  iframe Hna
+  unfold tfImplements
+  iintro !> %v %v' %c %K #HPre Hsrc
+  unfold rseq seq
+  iintro Hna
+  have Hcore := strlen_fundamental_core (GF := GF) g c K v v'
+  unfold rseq seq Strlen at Hcore
+  twp_pure
+  ihave H := Hcore $$ [Hsrc] Hna
+  · iframe Hsrc HPre
+    unfold tfImplements rseq seq
+    iexact IH
+  iapply rwpR_wand $$ H
+  iintro %w ⟨Hna, Hpost⟩
+  iframe Hna
+  iapply tf_post $$ Hpost
+
+/-- Rocq: `lev_sound`. -/
+theorem lev_sound : ⊢ tfImplements (GF := GF) pairImmStringRel natRel lev lev := by
+  iloeb as IH
+  unfold tfImplements
+  iintro !> %v %v' %c %K #HPre Hsrc
+  unfold rseq seq
+  iintro Hna
+  have Hcore := lev_fundamental_core (GF := GF) lev strlen c K v v'
+  unfold rseq seq Lev at Hcore
+  twp_rec
+  twp_rec
+  twp_pures
+  ihave H := Hcore $$ [Hsrc] Hna
+  · iframe Hsrc HPre
+    isplitl []
+    · inext
+      iapply strlen_sound
+    unfold tfImplements rseq seq
+    iexact IH
+  iapply rwpR_wand $$ H
+  iintro %w ⟨Hna, Hpost⟩
+  iframe Hna
+  iapply tf_post $$ Hpost
+
 end Iris.Transfinite.Refinement.Memoization
