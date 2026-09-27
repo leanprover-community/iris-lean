@@ -18,3 +18,4 @@ public import Iris.Examples.TransfiniteHeapLang
 public import Iris.Examples.Refinements.Refinement
 public import Iris.Examples.Refinements.Tactics
 public import Iris.Examples.Refinements.Examples
+public import Iris.Examples.Refinements.Derived
