@@ -21,3 +21,4 @@ public import Iris.Examples.Refinements.Examples
 public import Iris.Examples.Refinements.Derived
 public import Iris.Examples.Refinements.Memoization
 public import Iris.Examples.Refinements.MemoizationNat
+public import Iris.Examples.Refinements.MemoizationTf
