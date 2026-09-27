@@ -128,32 +128,33 @@ implementation (➖, replaced by the Lean IPM).
 | `ectx_lifting.v` | 178 | `ProgramLogic/EctxLiftingTransfinite.lean` | ✅ | `head` → `base` naming as upstream Iris-Lean |
 | `adequacy.v` | 284 | `ProgramLogic/AdequacyTransfinite.lean` | ✅ | `wp_strong_adequacy`, `wp_adequacy`, `wp_invariance` for `[SIdxTransfinite SI]`; big-later lemmas (`list_big_later`, `big_later_eventually`) |
 | `hoare.v` | 162 | — | ➖ | Hoare-triple notation on top of WP |
-| `refinement/ref_source.v` | 382 | `ProgramLogic/Refinement/RefSource.lean` | 🟡 | `Source`, `srcUpdate`, `weakSrcUpdate`, lexicographic sources; auth sources (`AuthSourceG`, `srcA`/`srcF`, `source_step_update`, `auth_src_update`, `srcF_split`) in `RefAuthSource.lean`; the `natA`/`ordA` instances ⬜ |
+| `refinement/ref_source.v` | 382 | `ProgramLogic/Refinement/RefSource.lean`, `RefAuthSource.lean`, `NatSource.lean`, `IrisMath/TimeCredits.lean` | ✅ | `Source`, `srcUpdate`, `weakSrcUpdate`, lexicographic sources; auth sources (`AuthSourceG`, `srcA`/`srcF`, `source_step_update`, `auth_src_update`, `srcF_split`); `natA` in `NatSource.lean`; `ordA` (natural sum camera `OrdCam`) in IrisMath |
 | `refinement/ref_weakestpre.v` | 691 | `ProgramLogic/Refinement/RefWeakestPre.lean` | 🟡 | `rwp` (least fixpoint), `rswp`, strong mono, fupd, `rwp_no_step`/`rwp_take_step`/`rwp_weaken`, `rswp_do_step`, bind, atomic, `ElimModal`/`IsExcept0`; `*_bind_inv`, `Frame`/`ElimAcc` instances ⬜ |
 | `refinement/ref_lifting.v` | 244 | `ProgramLogic/Refinement/RefLifting.lean` | ✅ | incl. `step_fupdN_mask_comm`, `step_fupdN_mask_comm'` |
 | `refinement/ref_ectx_lifting.v` | 201 | `ProgramLogic/Refinement/RefEctxLifting.lean` | 🟡 | main base-step lemmas (`head` → `base`) |
 | `refinement/ref_adequacy.v` | 354 | `ProgramLogic/Refinement/RefAdequacy.lean` | ✅ | termination preservation (`rwp_adequacy`, `rwp_sn_preservation`) and result refinement (`rwp_prim_step`, `rwp_erased_steps`, `rwp_result`) for `[SIdxLarge SI]` |
-| `refinement/tc_weakestpre.v` | 103 | — | ⬜ | time credits `$α` with ordinals |
-| `refinement/seq_weakestpre.v` | 32 | — | ⬜ | sequential WP |
+| `refinement/tc_weakestpre.v` | 103 | `IrisMath/IrisMath/TimeCredits.lean` | ✅ | `tc α`, `tcwp`, `tcwp_burn_credit`, `tc_weaken`, `tc_alloc_zero`, `tcwp_adequacy` (`SIdxLarge.{w+1}`) |
+| `refinement/seq_weakestpre.v` | 32 | `ProgramLogic/Refinement/SeqWeakestPre.lean` | ✅ | `SeqG`, `seq`, `seInv`, `seq_value` |
 
 ### `heap_lang/`
 
 | Rocq file | Lines | Lean | Status | Notes |
 |---|---:|---|---|---|
 | `lang.v`, `locations.v`, `notation.v`, `metatheory.v`, `tactics.v` | 1253 | `HeapLang/Syntax.lean`, `Semantics.lean`, `Notation.lean`, `Metatheory.lean`, `Tactic.lean` | ✅ | language-level |
-| `lifting.v` | 1349 | `HeapLang/PrimitiveLaws.lean`, `DerivedLaws.lean` | 🟡 | ordinary WP rules exist at `SI = Nat`; `swp`/`rwp` rules ⬜ |
-| `proofmode.v` | 1007 | `HeapLang/ProofMode.lean` | 🟡 | `wp_*` tactics exist; `swp_*`/`rwp_*` ⬜ |
-| `adequacy.v` | 38 | `ProgramLogic/Adequacy.lean` | ⬜ | transfinite adequacy |
+| `lifting.v` | 1349 | `HeapLang/Transfinite.lean`, `TransfiniteDerived.lean`, `TransfiniteProph.lean` | ✅ | `swp`/`wp`/`rswp`/`rwp` rules for fork, load, alloc(N), store, cmpXchg, faa, xchg, free, newProph, resolve (`wp_resolve`, `swp_resolve`), arrays and offsets, prophecy derived laws |
+| `proofmode.v` | 1007 | `HeapLang/TransfiniteProofMode.lean` | ✅ | generic `twp_*` tactics (`twp_bind`, `twp_pure(s)`, `twp_rec`, `twp_let`, ..., `twp_apply`, `twp_smart_apply`) for `wp`/`swp`/`rwp`/`rswp`/`tcwp` via the class `HLWp W W'`; heap operations use `twp_apply` with the lifting lemmas |
+| `adequacy.v` | 38 | `HeapLang/Transfinite.lean` | ✅ | `heap_adequacy` |
 
 ### `examples/`
 
 | Rocq file | Lines | Lean | Status | Notes |
 |---|---:|---|---|---|
 | `counterexamples.v` | 227 | `Examples/TransfiniteCounterexamples.lean` | ✅ | see [Part II](#examplescounterexamplesv) |
-| `transfinite.v` | 150 | `Examples/TransfiniteInvariants.lean` | 🟡 | language-independent parts (`invariants_swp`, existential and nested invariants); the `heap_lang` instances need transfinite `heap_lang` rules |
+| `transfinite.v` | 150 | `Examples/TransfiniteInvariants.lean`, `Examples/TransfiniteHeapLang.lean` | ✅ | language-independent parts and the `heap_lang` examples (`invariants_transfinite`, `invariants_transfinite_nested`); the evar-based variants are tactic demos (➖) |
 | `keyideas/simulations.v` | 252 | `Examples/TransfiniteSimulations.lean` | ✅ | in `UPred M` instead of `iProp Σ`; see [Part II](#examplekeyideas) |
 | `keyideas/generalized_simulations.v` | 147 | `Examples/TransfiniteSimulations.lean` | ✅ | idem |
-| `termination/{adequacy,derived,thunk,eventloop,logrel}.v` | 1534 | — | ⬜ | termination logic (needs `tc_weakestpre`) |
+| `termination/{adequacy,derived,thunk,eventloop}.v` | 566 | `IrisMath/IrisMath/Termination/*.lean` | ✅ | `heap_lang_ref_adequacy` (generic `SI` with `SIdxLarge.{w+1}`); `thunk_sequential_spec` states the persistent `□ (tc 1 -∗ ...)` |
+| `termination/logrel.v` | 968 | — | ⬜ | logical relation for termination |
 | `refinements/{refinement,derived,examples,memoization}.v` | 3496 | — | ⬜ | refinement logic (needs `ref_weakestpre`) |
 | `safety/*` | 1025 | `HeapLang/Lib/*` | ➖ | upstream HeapLang library examples (`lock`, `spin_lock`, `ticket_lock`, `par`, `spawn`, `counter`, coins, `nondet_bool`, `assert`) exist in Iris-Lean; `barrier/` does not |
 
