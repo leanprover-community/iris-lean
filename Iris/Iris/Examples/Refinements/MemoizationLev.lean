@@ -680,4 +680,468 @@ theorem strlen_fundamental_core (slen : Val) (c : Nat) (K : List ECtxItem) (va v
       iframe
     iapply H $$ Hsrc
 
+theorem natRel_elim (v₁ v₂ : Val) :
+    natRel (GF := GF) v₁ v₂ ⊢ ∃ n : Nat, ⌜v₁ = hl_val(#(n : Int)) ∧ v₂ = hl_val(#(n : Int))⌝ := by
+  unfold natRel; exact .rfl
+
+theorem pairImm_intro (x₁ x₂ y₁ y₂ : Val) (s₁ s₂ : List Nat) :
+    inv strN (stringRelIs (GF := GF) x₁ y₁ s₁) ∗ inv strN (stringRelIs x₂ y₂ s₂) ⊢
+      pairImmStringRel hl_val((&x₁, &x₂)) hl_val((&y₁, &y₂)) := by
+  iintro ⟨#H₁, #H₂⟩
+  unfold pairImmStringRel pairRel
+  iexists x₁, x₂, y₁, y₂
+  isplitr
+  · ipureintro; rfl
+  isplitr
+  · ipureintro; rfl
+  isplit
+  · iapply immStringRel_intro
+    iexists s₁
+    iexact H₁
+  · iapply immStringRel_intro
+    iexists s₂
+    iexact H₂
+
+theorem pairImm_elim (va vb : Val) :
+    pairImmStringRel (GF := GF) va vb ⊢ ∃ x₁ x₂ y₁ y₂ : Val, ∃ s₁ s₂ : List Nat,
+      ⌜va = hl_val((&x₁, &x₂)) ∧ vb = hl_val((&y₁, &y₂))⌝ ∗
+      inv strN (stringRelIs x₁ y₁ s₁) ∗ inv strN (stringRelIs x₂ y₂ s₂) := by
+  unfold pairImmStringRel pairRel
+  iintro ⟨%x₁, %x₂, %y₁, %y₂, %h₁, %h₂, H₁, H₂⟩
+  icases immStringRel_elim _ _ $$ H₁ with ⟨%s₁, #H₁⟩
+  icases immStringRel_elim _ _ $$ H₂ with ⟨%s₂, #H₂⟩
+  iexists x₁, x₂, y₁, y₂, s₁, s₂
+  isplitr
+  · ipureintro; exact ⟨h₁, h₂⟩
+  isplit
+  · iexact H₁
+  · iexact H₂
+
+/-- Reopen the invariants of the strings for a new source pair. -/
+theorem pair_src_acc (x₁ y₁ x₂ y₂ : Loc) (s₁ s₂ : List Nat) (vb' : Val) :
+    inv strN (stringRelIs (GF := GF) hl_val(#x₁) hl_val(#y₁) s₁) ∗
+      inv strN (stringRelIs hl_val(#x₂) hl_val(#y₂) s₂) ∗
+      pairImmStringRel hl_val((#x₁, #x₂)) vb' ⊢
+      |={⊤}=> ∃ y₁' y₂' : Loc, ⌜vb' = hl_val((#y₁', #y₂'))⌝ ∗
+        srcStringIs y₁' s₁ ∗ srcStringIs y₂' s₂ ∗
+        inv strN (stringRelIs hl_val(#x₁) hl_val(#y₁') s₁) ∗
+        inv strN (stringRelIs hl_val(#x₂) hl_val(#y₂') s₂) := by
+  iintro ⟨#H₁, #H₂, HP⟩
+  icases pairImm_elim _ _ $$ HP with ⟨%x₁', %x₂', %y₁', %y₂', %s₁', %s₂', %⟨hva, rfl⟩, #H₁', #H₂'⟩
+  cases hva
+  imod stringRel_inv_acc _ _ _ $$ H₁ with S₁
+  imod stringRel_inv_acc _ _ _ $$ H₁' with S₁'
+  icases stringRel_is_functional _ _ _ _ _ $$ S₁' S₁ with %rfl
+  imod stringRel_inv_acc _ _ _ $$ H₂ with S₂
+  imod stringRel_inv_acc _ _ _ $$ H₂' with S₂'
+  icases stringRel_is_functional _ _ _ _ _ $$ S₂' S₂ with %rfl
+  icases stringRelIs_elim _ _ _ $$ S₁' with ⟨%l₁, %b₁, %⟨-, rfl⟩, -, T₁⟩
+  icases stringRelIs_elim _ _ _ $$ S₂' with ⟨%l₂, %b₂, %⟨-, rfl⟩, -, T₂⟩
+  imodintro
+  iexists b₁, b₂
+  isplitr
+  · ipureintro; rfl
+  iframe T₁ T₂
+  isplit
+  · iexact H₁'
+  · iexact H₂'
+
+theorem evalS_intro (e : Exp) (v : Val) :
+    (∀ K : List ECtxItem, src (fill K e) -∗ srcUpd ⊤ (src (fill K (v : Exp)))) ⊢ evalS (GF := GF) e v := by
+  unfold evalS; exact .rfl
+
+theorem evalS_elim (e : Exp) (v : Val) :
+    evalS (GF := GF) e v ⊢ ∀ K : List ECtxItem, src (fill K e) -∗ srcUpd ⊤ (src (fill K (v : Exp))) := by
+  unfold evalS; exact .rfl
+
+theorem eval_natRel (e : Exp) (m : Nat) :
+    (∃ v', □ evalS (GF := GF) e v' ∗ natRel hl_val(#(m : Int)) v') ⊢ evalS e hl_val(#(m : Int)) := by
+  iintro ⟨%v', #He, Hr⟩
+  icases natRel_elim _ _ $$ Hr with ⟨%k, %⟨hk, rfl⟩⟩
+  have : k = m := by simp only [Val.lit.injEq, BaseLit.int.injEq] at hk; omega
+  subst this
+  iexact He
+
+/-- Rocq: `lev_fundamental_core`. -/
+theorem lev_fundamental_core (g slen : Val) (c : Nat) (K : List ECtxItem) (va vb : Val) :
+    ▷ tfImplements (GF := GF) immStringRel natRel slen strlen ∗
+      ▷ tfImplements pairImmStringRel natRel g lev ∗ pairImmStringRel va vb ∗
+      src (fill K hl(v(&lev) v(&vb))) ⊢
+      rseq ⊤ (Lev slen g (va : Exp)) fun v => iprop(∃ m : Nat, ⌜v = hl_val(#(m : Int))⌝ ∗
+        stutter c ∗ src (fill K hl(#(m : Int))) ∗
+        □ (∀ vb', pairImmStringRel va vb' -∗ evalS hl(v(&lev) v(&vb')) hl_val(#(m : Int)))) := by
+  unfold rseq seq
+  iintro ⟨#Hstrlen, #IH, #HPre, Hsrc⟩ Hna
+  icases pairImm_elim _ _ $$ HPre with ⟨%x₁, %x₂, %y₁, %y₂, %s₁, %s₂, %⟨rfl, rfl⟩, #Hinv1, #Hinv2⟩
+  iapply rwp_take_step (src := refSrc (GF := GF))
+    (P := iprop((∃ _ : Unit, src (fill K (Lev strlen lev hl_val((&y₁, &y₂)))) ∗ emp) ∗ stutter c))
+    rfl $$ [Hna] [Hsrc]
+  · iintro ⟨⟨%_, Hsrc, -⟩, Hc⟩
+    iapply rswp_do_step (src := refSrc (GF := GF))
+    inext
+    iapply fupd_rswp (src := refSrc (GF := GF))
+    imod stringRel_inv_acc _ _ _ $$ Hinv1 with S₁
+    imod stringRel_inv_acc _ _ _ $$ Hinv2 with S₂
+    imodintro
+    icases stringRelIs_elim _ _ _ $$ S₁ with ⟨%a₁, %b₁, %⟨rfl, rfl⟩, A₁, B₁⟩
+    icases stringRelIs_elim _ _ _ $$ S₂ with ⟨%a₂, %b₂, %⟨rfl, rfl⟩, A₂, B₂⟩
+    unfold Lev
+    twp_pures
+    src_pures Hsrc
+    cases s₁ with
+    | nil =>
+      rw [stringIs_nil, srcStringIs_nil]
+      icases A₁ with ⟨%q₁, A₁⟩
+      icases B₁ with ⟨%q₁', B₁⟩
+      src_load Hsrc B₁
+      src_pures Hsrc
+      twp_apply rwp_load (src := refSrc (GF := GF)) $$ A₁
+      iintro A₁
+      twp_pures
+      unfold tfImplements rseq seq
+      ihave H := Hstrlen $$ %(hl_val(#a₂)) %(hl_val(#b₂)) %0 %_ [] Hsrc Hna
+      · iapply immStringRel_intro
+        iexists s₂
+        iexact Hinv2
+      iapply rwpR_wand $$ H
+      iintro %v ⟨Hna, %v', Hrel, -, Hsrc, #Hev⟩
+      icases natRel_elim _ _ $$ Hrel with ⟨%m, %⟨rfl, rfl⟩⟩
+      iframe Hna
+      iexists m
+      isplitr
+      · ipureintro; rfl
+      isplitl [Hc]
+      · iexact Hc
+      isplitl [Hsrc]
+      · iexact Hsrc
+      iintro !> %vb' #HPre'
+      iapply evalS_intro
+      iintro %K' H
+      iapply fupd_srcUpdate (src := refSrc (GF := GF))
+      imod pair_src_acc a₁ b₁ a₂ b₂ [] s₂ vb' $$ [Hinv1 Hinv2 HPre'] with ⟨%b₁', %b₂', %rfl, B₁', -, #Hinv1', #Hinv2'⟩
+      · isplit
+        · iexact Hinv1
+        isplit
+        · iexact Hinv2
+        · iexact HPre'
+      imodintro
+      rw [srcStringIs_nil]
+      icases B₁' with ⟨%q, B₁'⟩
+      src_rec H
+      src_rec H
+      src_pures H
+      src_load H B₁'
+      src_pures H
+      ihave He0 := Hev $$ %(hl_val(#b₂')) []
+      · iapply immStringRel_intro
+        iexists s₂
+        iexact Hinv2'
+      ihave He := eval_natRel _ m $$ He0
+      ihave He := evalS_elim _ _ $$ He
+      iapply srcUpdate_weakSrcUpdate (src := refSrc (GF := GF))
+      iapply He $$ %_ H
+    | cons n₁ s₁ =>
+      rw [stringIs_cons, srcStringIs_cons]
+      icases A₁ with ⟨%hn₁, ⟨%q₁, A₁⟩, -⟩
+      icases B₁ with ⟨-, ⟨%q₁', B₁⟩, -⟩
+      src_load Hsrc B₁
+      src_pures Hsrc
+      twp_apply rwp_load (src := refSrc (GF := GF)) $$ A₁
+      iintro A₁
+      twp_pures
+      rw [decide_eq_false (show ¬ ((n₁ : Nat) : Int) = 0 by omega)]
+      twp_pures
+      src_pures Hsrc
+      cases s₂ with
+      | nil =>
+        rw [stringIs_nil, srcStringIs_nil]
+        icases A₂ with ⟨%q₂, A₂⟩
+        icases B₂ with ⟨%q₂', B₂⟩
+        src_load Hsrc B₂
+        src_pures Hsrc
+        twp_apply rwp_load (src := refSrc (GF := GF)) $$ A₂
+        iintro A₂
+        twp_pures
+        unfold tfImplements rseq seq
+        ihave H := Hstrlen $$ %(hl_val(#a₁)) %(hl_val(#b₁)) %0 %_ [] Hsrc Hna
+        · iapply immStringRel_intro
+          iexists n₁ :: s₁
+          iexact Hinv1
+        iapply rwpR_wand $$ H
+        iintro %v ⟨Hna, %v', Hrel, -, Hsrc, #Hev⟩
+        icases natRel_elim _ _ $$ Hrel with ⟨%m, %⟨rfl, rfl⟩⟩
+        iframe Hna
+        iexists m
+        isplitr
+        · ipureintro; rfl
+        isplitl [Hc]
+        · iexact Hc
+        isplitl [Hsrc]
+        · iexact Hsrc
+        iintro !> %vb' #HPre'
+        iapply evalS_intro
+        iintro %K' H
+        iapply fupd_srcUpdate (src := refSrc (GF := GF))
+        imod pair_src_acc a₁ b₁ a₂ b₂ (n₁ :: s₁) [] vb' $$ [Hinv1 Hinv2 HPre'] with
+          ⟨%b₁', %b₂', %rfl, B₁', B₂', #Hinv1', #Hinv2'⟩
+        · isplit
+          · iexact Hinv1
+          isplit
+          · iexact Hinv2
+          · iexact HPre'
+        imodintro
+        rw [srcStringIs_cons, srcStringIs_nil]
+        icases B₁' with ⟨-, ⟨%q, B₁'⟩, -⟩
+        icases B₂' with ⟨%q', B₂'⟩
+        src_rec H
+        src_rec H
+        src_pures H
+        src_load H B₁'
+        src_pures H
+        rw [decide_eq_false (show ¬ ((n₁ : Nat) : Int) = 0 by omega)]
+        src_pures H
+        src_load H B₂'
+        src_pures H
+        ihave He0 := Hev $$ %(hl_val(#b₁')) []
+        · iapply immStringRel_intro
+          iexists n₁ :: s₁
+          iexact Hinv1'
+        ihave He := eval_natRel _ m $$ He0
+        ihave He := evalS_elim _ _ $$ He
+        iapply srcUpdate_weakSrcUpdate (src := refSrc (GF := GF))
+        iapply He $$ %_ H
+      | cons n₂ s₂ =>
+        rw [stringIs_cons, srcStringIs_cons]
+        icases A₂ with ⟨%hn₂, ⟨%q₂, A₂⟩, -⟩
+        icases B₂ with ⟨-, ⟨%q₂', B₂⟩, -⟩
+        src_load Hsrc B₂
+        src_pures Hsrc
+        twp_apply rwp_load (src := refSrc (GF := GF)) $$ A₂
+        iintro A₂
+        twp_pures
+        rw [decide_eq_false (show ¬ ((n₂ : Nat) : Int) = 0 by omega)]
+        twp_pures
+        src_pures Hsrc
+        by_cases h : n₁ = n₂
+        · subst h
+          rw [decide_eq_true (show ((n₁ : Nat) : Int) = n₁ from rfl)]
+          twp_pures
+          src_pures Hsrc
+          unfold tfImplements rseq seq
+          ihave H := IH $$ %(hl_val((#(a₁ + (1 : Int)), #(a₂ + (1 : Int))))) %(hl_val((#(b₁ + (1 : Int)), #(b₂ + (1 : Int))))) %0 %_ [] Hsrc Hna
+          · iapply pairImm_intro (s₁ := s₁) (s₂ := s₂)
+            isplit
+            · iapply inv_stringRel_is_tl $$ Hinv1
+            · iapply inv_stringRel_is_tl $$ Hinv2
+          iapply rwpR_wand $$ H
+          iintro %v ⟨Hna, %v', Hrel, -, Hsrc, #Hev⟩
+          icases natRel_elim _ _ $$ Hrel with ⟨%m, %⟨rfl, rfl⟩⟩
+          iframe Hna
+          iexists m
+          isplitr
+          · ipureintro; rfl
+          isplitl [Hc]
+          · iexact Hc
+          isplitl [Hsrc]
+          · iexact Hsrc
+          iintro !> %vb' #HPre'
+          iapply evalS_intro
+          iintro %K' H
+          iapply fupd_srcUpdate (src := refSrc (GF := GF))
+          imod pair_src_acc a₁ b₁ a₂ b₂ (n₁ :: s₁) (n₁ :: s₂) vb' $$ [Hinv1 Hinv2 HPre'] with
+            ⟨%b₁', %b₂', %rfl, B₁', B₂', #Hinv1', #Hinv2'⟩
+          · isplit
+            · iexact Hinv1
+            isplit
+            · iexact Hinv2
+            · iexact HPre'
+          imodintro
+          rw [srcStringIs_cons, srcStringIs_cons]
+          icases B₁' with ⟨-, ⟨%q, B₁'⟩, -⟩
+          icases B₂' with ⟨-, ⟨%q', B₂'⟩, -⟩
+          src_rec H
+          src_rec H
+          src_pures H
+          src_load H B₁'
+          src_pures H
+          rw [decide_eq_false (show ¬ ((n₁ : Nat) : Int) = 0 by omega)]
+          src_pures H
+          src_load H B₂'
+          src_pures H
+          rw [decide_eq_false (show ¬ ((n₁ : Nat) : Int) = 0 by omega)]
+          src_pures H
+          ihave He0 := Hev $$ %(hl_val((#(b₁' + (1 : Int)), #(b₂' + (1 : Int))))) []
+          · iapply pairImm_intro (s₁ := s₁) (s₂ := s₂)
+            isplit
+            · iapply inv_stringRel_is_tl $$ Hinv1'
+            · iapply inv_stringRel_is_tl $$ Hinv2'
+          ihave He := eval_natRel _ m $$ He0
+          ihave He := evalS_elim _ _ $$ He
+          iapply srcUpdate_weakSrcUpdate (src := refSrc (GF := GF))
+          iapply He $$ %_ H
+        · rw [decide_eq_false (show ¬ ((n₁ : Nat) : Int) = n₂ by omega)]
+          twp_pures
+          src_pures Hsrc
+          unfold tfImplements rseq seq
+          src_bind (v(&lev) v(&(hl_val((#b₁, #(b₂ + (1 : Int))))))) in Hsrc
+          twp_bind (v(&g) v(&(hl_val((#a₁, #(a₂ + (1 : Int)))))))
+          ihave H := IH $$ %(hl_val((#a₁, #(a₂ + (1 : Int))))) %(hl_val((#b₁, #(b₂ + (1 : Int))))) %0 %_ [] Hsrc Hna
+          · iapply pairImm_intro (s₁ := n₁ :: s₁) (s₂ := s₂)
+            isplit
+            · iexact Hinv1
+            · iapply inv_stringRel_is_tl $$ Hinv2
+          twp_apply rwpR_wand $$ H
+          iintro %v ⟨Hna, %v', Hrel, -, Hsrc, #Hev1⟩
+          icases natRel_elim _ _ $$ Hrel with ⟨%m₁, %⟨rfl, rfl⟩⟩
+          twp_pures
+          src_pures Hsrc
+
+          src_bind (v(&lev) v(&(hl_val((#(b₁ + (1 : Int)), #b₂))))) in Hsrc
+          twp_bind (v(&g) v(&(hl_val((#(a₁ + (1 : Int)), #a₂)))))
+          ihave H := IH $$ %(hl_val((#(a₁ + (1 : Int)), #a₂))) %(hl_val((#(b₁ + (1 : Int)), #b₂))) %0 %_ [] Hsrc Hna
+          · iapply pairImm_intro (s₁ := s₁) (s₂ := n₂ :: s₂)
+            isplit
+            · iapply inv_stringRel_is_tl $$ Hinv1
+            · iexact Hinv2
+          twp_apply rwpR_wand $$ H
+          iintro %v ⟨Hna, %v', Hrel, -, Hsrc, #Hev2⟩
+          icases natRel_elim _ _ $$ Hrel with ⟨%m₂, %⟨rfl, rfl⟩⟩
+          twp_pures
+          src_pures Hsrc
+
+          src_bind (v(&lev) v(&(hl_val((#(b₁ + (1 : Int)), #(b₂ + (1 : Int))))))) in Hsrc
+          twp_bind (v(&g) v(&(hl_val((#(a₁ + (1 : Int)), #(a₂ + (1 : Int)))))))
+          ihave H := IH $$ %(hl_val((#(a₁ + (1 : Int)), #(a₂ + (1 : Int))))) %(hl_val((#(b₁ + (1 : Int)), #(b₂ + (1 : Int))))) %0 %_ [] Hsrc Hna
+          · iapply pairImm_intro (s₁ := s₁) (s₂ := s₂)
+            isplit
+            · iapply inv_stringRel_is_tl $$ Hinv1
+            · iapply inv_stringRel_is_tl $$ Hinv2
+          twp_apply rwpR_wand $$ H
+          iintro %v ⟨Hna, %v', Hrel, -, Hsrc, #Hev3⟩
+          icases natRel_elim _ _ $$ Hrel with ⟨%m₃, %⟨rfl, rfl⟩⟩
+          twp_pures
+          src_pures Hsrc
+          src_bind (v(&min3) #((m₁ : Nat) : Int) #((m₂ : Nat) : Int) #((m₃ : Nat) : Int)) in Hsrc
+          ihave Hm := eval_min3 (GF := GF) m₁ m₂ m₃
+          ihave Hm := evalS_elim _ _ $$ Hm
+          ihave Hs := Hm $$ %_ Hsrc
+          iapply rwp_weaken_src rfl
+          iapply srcUpdate_mono (src := refSrc (GF := GF))
+          isplitl [Hs]
+          · iexact Hs
+          iintro Hsrc
+          src_pures Hsrc
+          twp_bind (v(&min3) #((m₁ : Nat) : Int) #((m₂ : Nat) : Int) #((m₃ : Nat) : Int))
+          ihave M := min3_spec (GF := GF) m₁ m₂ m₃
+          unfold texan
+          twp_apply M
+          · itrivial
+          iintro %r %rfl
+          twp_pures
+          rw [show (1 + ((min (min m₁ m₂) m₃ : Nat) : Int)) = ((min (min m₁ m₂) m₃ + 1 : Nat) : Int) by omega]
+          iframe Hna
+          iexists min (min m₁ m₂) m₃ + 1
+          isplitr
+          · ipureintro; rfl
+          isplitl [Hc]
+          · iexact Hc
+          isplitl [Hsrc]
+          · iexact Hsrc
+          iintro !> %vb' #HPre'
+          iapply evalS_intro
+          iintro %K' H
+          iapply fupd_srcUpdate (src := refSrc (GF := GF))
+          imod pair_src_acc a₁ b₁ a₂ b₂ (n₁ :: s₁) (n₂ :: s₂) vb' $$ [Hinv1 Hinv2 HPre'] with
+            ⟨%b₁', %b₂', %rfl, B₁', B₂', #Hinv1', #Hinv2'⟩
+          · isplit
+            · iexact Hinv1
+            isplit
+            · iexact Hinv2
+            · iexact HPre'
+          imodintro
+          rw [srcStringIs_cons, srcStringIs_cons]
+          icases B₁' with ⟨-, ⟨%q, B₁'⟩, -⟩
+          icases B₂' with ⟨-, ⟨%q', B₂'⟩, -⟩
+          src_rec H
+          src_rec H
+          src_pures H
+          src_load H B₁'
+          src_pures H
+          rw [decide_eq_false (show ¬ ((n₁ : Nat) : Int) = 0 by omega)]
+          src_pures H
+          src_load H B₂'
+          src_pures H
+          rw [decide_eq_false (show ¬ ((n₂ : Nat) : Int) = 0 by omega)]
+          src_pures H
+          rw [decide_eq_false (show ¬ ((n₁ : Nat) : Int) = n₂ by omega)]
+          src_pures H
+          src_bind (v(&lev) v(&(hl_val((#b₁', #(b₂' + (1 : Int))))))) in H
+          ihave He0 := Hev1 $$ %(hl_val((#b₁', #(b₂' + (1 : Int))))) []
+          · iapply pairImm_intro (s₁ := n₁ :: s₁) (s₂ := s₂)
+            isplit
+            · iexact Hinv1'
+            · iapply inv_stringRel_is_tl $$ Hinv2'
+          ihave He := eval_natRel _ m₁ $$ He0
+          ihave He := evalS_elim _ _ $$ He
+          iapply srcUpdate_weakSrcUpdate (src := refSrc (GF := GF))
+          iapply weakSrcUpdate_bind_r (src := refSrc (GF := GF))
+          isplitl [H He]
+          · iapply He $$ %_ H
+          iintro H
+          src_pures H
+
+          src_bind (v(&lev) v(&(hl_val((#(b₁' + (1 : Int)), #b₂'))))) in H
+          ihave He0 := Hev2 $$ %(hl_val((#(b₁' + (1 : Int)), #b₂'))) []
+          · iapply pairImm_intro (s₁ := s₁) (s₂ := n₂ :: s₂)
+            isplit
+            · iapply inv_stringRel_is_tl $$ Hinv1'
+            · iexact Hinv2'
+          ihave He := eval_natRel _ m₂ $$ He0
+          ihave He := evalS_elim _ _ $$ He
+          iapply srcUpdate_weakSrcUpdate (src := refSrc (GF := GF))
+          iapply weakSrcUpdate_bind_r (src := refSrc (GF := GF))
+          isplitl [H He]
+          · iapply He $$ %_ H
+          iintro H
+          src_pures H
+
+          src_bind (v(&lev) v(&(hl_val((#(b₁' + (1 : Int)), #(b₂' + (1 : Int))))))) in H
+          ihave He0 := Hev3 $$ %(hl_val((#(b₁' + (1 : Int)), #(b₂' + (1 : Int))))) []
+          · iapply pairImm_intro (s₁ := s₁) (s₂ := s₂)
+            isplit
+            · iapply inv_stringRel_is_tl $$ Hinv1'
+            · iapply inv_stringRel_is_tl $$ Hinv2'
+          ihave He := eval_natRel _ m₃ $$ He0
+          ihave He := evalS_elim _ _ $$ He
+          iapply srcUpdate_weakSrcUpdate (src := refSrc (GF := GF))
+          iapply weakSrcUpdate_bind_r (src := refSrc (GF := GF))
+          isplitl [H He]
+          · iapply He $$ %_ H
+          iintro H
+          src_pures H
+          src_bind (v(&min3) #((m₁ : Nat) : Int) #((m₂ : Nat) : Int) #((m₃ : Nat) : Int)) in H
+          ihave Hm := eval_min3 (GF := GF) m₁ m₂ m₃
+          ihave Hm := evalS_elim _ _ $$ Hm
+          iapply srcUpdate_weakSrcUpdate (src := refSrc (GF := GF))
+          iapply weakSrcUpdate_bind_r (src := refSrc (GF := GF))
+          isplitl [H Hm]
+          · iapply Hm $$ %_ H
+          iintro H
+          src_pures H
+          iapply weakSrcUpd_return
+          rw [show (1 + ((min (min m₁ m₂) m₃ : Nat) : Int)) = ((min (min m₁ m₂) m₃ + 1 : Nat) : Int) by omega]
+          iexact H
+  · ihave H := step_inv_alloc c ⊤ 0 (fill K hl(v(&lev) v(&(hl_val((&y₁, &y₂))))))
+      (fun _ : Unit => fill K (Lev strlen lev hl_val((&y₁, &y₂)))) (fun _ => iprop(emp))
+      (fun _ => Derived.fill_ne (by simp [Lev])) $$ []
+    · iintro Hsrc
+      ihave H := exec_src_update 0 ⊤ (exec_frame K (lev_Lev hl_val((&y₁, &y₂)))) $$ Hsrc
+      iapply srcUpdate_mono (src := refSrc (GF := GF))
+      isplitl [H]
+      · iexact H
+      iintro Hsrc
+      iexists ()
+      iframe
+    iapply H $$ Hsrc
+
 end Iris.Transfinite.Refinement.Memoization
