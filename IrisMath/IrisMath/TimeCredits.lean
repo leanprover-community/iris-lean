@@ -160,6 +160,12 @@ variable {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF}
 abbrev tcwp (s : Stuckness) (E : CoPset) (e : Expr) (Φ : Val → IProp GF) : IProp GF :=
   rwp (src := tcSource) (ι := ι) s E e Φ
 
+instance hlwp_tcwp [ι : RefIrisGS HeapLang.Exp GF] {s : Stuckness} {E : CoPset} :
+    HLWp (tcwp (G := G) (ι := ι) s E) (tcwp (G := G) (ι := ι) s E) := hlwp_rwp
+
+instance hlwpValue_tcwp [ι : RefIrisGS HeapLang.Exp GF] {s : Stuckness} {E : CoPset} :
+    HLWpValue (tcwp (G := G) (ι := ι) s E) := hlwpValue_rwp
+
 /-- Rocq: `tcwp_burn_credit`. -/
 theorem tcwp_burn_credit (he : toVal e = none) :
     ⊢ tc (GF := GF) 1 -∗ ▷ rswp (src := tcSource) (ι := ι) 0 s E e Φ -∗ tcwp (ι := ι) s E e Φ := by

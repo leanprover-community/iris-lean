@@ -60,6 +60,42 @@ theorem stateInterp_eq (σ : State) (κs : List Observation) (n : Nat) :
 theorem refStateInterp_eq (σ : State) (n : Nat) :
     (heapRefIrisGS (GF := GF)).refStateInterp σ n = genHeapInterp σ.heap := rfl
 
+/-! The fancy updates written in a context with `[HeapLangTGS GF]` use the world satisfaction
+`HeapLangTGS.toWsatGS`, which type class resolution does not identify with the world satisfaction
+`heapIrisGS.toWsatGS` of the weakest preconditions. The following instances eliminate these
+updates in the heap_lang weakest preconditions. -/
+
+section ProofMode
+
+open ProofMode
+
+instance elimModal_fupd_wp_heap p io {s : Stuckness} {E : CoPset} {e : Exp} {Φ : Val → IProp GF}
+    (P : IProp GF) :
+    ElimModal True p io false iprop(|={E}=> P) P (Iris.Transfinite.wp (ι := heapIrisGS) s E e Φ)
+      (Iris.Transfinite.wp (ι := heapIrisGS) s E e Φ) :=
+  elimModal_fupd_wp (ι := heapIrisGS) p io P
+
+instance elimModal_fupd_swp_heap p io {k : Nat} {s : Stuckness} {E : CoPset} {e : Exp}
+    {Φ : Val → IProp GF} (P : IProp GF) :
+    ElimModal True p io false iprop(|={E}=> P) P (swp (ι := heapIrisGS) k s E e Φ)
+      (swp (ι := heapIrisGS) k s E e Φ) :=
+  elimModal_fupd_swp (ι := heapIrisGS) p io P
+
+instance elimModal_fupd_rwp_heap {A : Type _} [src : Source GF A] p io {s : Stuckness}
+    {E : CoPset} {e : Exp} {Φ : Val → IProp GF} (P : IProp GF) :
+    ElimModal True p io false iprop(|={E}=> P) P (rwp (src := src) (ι := heapRefIrisGS) s E e Φ)
+      (rwp (src := src) (ι := heapRefIrisGS) s E e Φ) :=
+  elimModal_fupd_rwp (ι := heapRefIrisGS) p io P
+
+instance elimModal_fupd_rswp_heap {A : Type _} [src : Source GF A] p io {k : Nat}
+    {s : Stuckness} {E : CoPset} {e : Exp} {Φ : Val → IProp GF} (P : IProp GF) :
+    ElimModal True p io false iprop(|={E}=> P) P
+      (rswp (src := src) (ι := heapRefIrisGS) k s E e Φ)
+      (rswp (src := src) (ι := heapRefIrisGS) k s E e Φ) :=
+  elimModal_fupd_rswp (ι := heapRefIrisGS) p io P
+
+end ProofMode
+
 variable {s : Stuckness} {E : CoPset} {Φ : Val → IProp GF} {k : Nat}
 
 theorem loc_add_zero' (l : Loc) : l + (0 : Int) = l := by

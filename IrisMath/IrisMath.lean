@@ -13,3 +13,4 @@ public import IrisMath.TimeCredits
 public import IrisMath.Termination.Derived
 public import IrisMath.Termination.Thunk
 public import IrisMath.Termination.Adequacy
+public import IrisMath.Termination.Eventloop
