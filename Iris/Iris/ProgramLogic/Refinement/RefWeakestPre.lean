@@ -820,6 +820,243 @@ theorem rswp_atomic [hat : Language.Atomic (Val := Val) .StronglyAtomic e] :
 
 end rswp_more
 
+section rwp_derived
+
+variable {k : Nat} {s s₁ s₂ : Stuckness} {E E₁ E₂ : CoPset} {e : Expr} {Φ Ψ : Val → IProp GF}
+
+/-- Rocq: `rwp_ind`. -/
+theorem rwp_ind (s : Stuckness) (Ψ : CoPset → Expr → (Val → IProp GF) → IProp GF)
+    (HΨ : ∀ {n} E e {Φ₁ Φ₂ : Val → IProp GF}, (∀ v, Φ₁ v ≡{n}≡ Φ₂ v) → Ψ E e Φ₁ ≡{n}≡ Ψ E e Φ₂) :
+    ⊢ □ (∀ e E Φ, rwpPre (src := src) (ι := ι) s Ψ E e Φ -∗ Ψ E e Φ) -∗
+      ∀ e E Φ, rwp (src := src) (ι := ι) s E e Φ -∗ Ψ E e Φ := by
+  iintro #H
+  iapply rwp_strong_ind s Ψ HΨ
+  iintro !> %e %E %Φ Hrwp
+  iapply H
+  iapply rwpPre_mono $$ [] Hrwp
+  iintro !> %E' %e' %Φ' ⟨H', -⟩
+  iexact H'
+
+/-- Rocq: `rwp_fupd'`. -/
+theorem rwp_fupd' :
+    rwp (src := src) (ι := ι) s E e (fun v => iprop(∀ σ n a,
+      src.interp a ∗ ι.refStateInterp σ n ={E}=∗ src.interp a ∗ ι.refStateInterp σ n ∗ Φ v)) ⊢
+      rwp (src := src) s E e Φ := by
+  iintro H
+  iapply rwp_strong_mono' (Std.IsPreorder.le_refl s) LawfulSet.subset_refl $$ H
+  iintro %σ %n %a %v ⟨Ha, Hσ, H⟩
+  iapply H $$ %σ %n %a [$Ha $Hσ]
+
+theorem maybeReducible_fill_inv (K : Expr → Expr) [Language.Context K] {σ : State}
+    (he : toVal e = none) (h : s.MaybeReducible (K e, σ)) : s.MaybeReducible (e, σ) := by
+  cases s
+  · exact Language.Context.reducible_fill_inv K he h
+  · trivial
+
+/-- The induction hypothesis of `rwp_strong_ind` implies the weakest precondition. -/
+theorem rwpPre_and_rwp {P : CoPset → Expr → (Val → IProp GF) → IProp GF} :
+    rwpPre (src := src) s (fun E e Φ => iprop(P E e Φ ∧ rwp (src := src) (ι := ι) s E e Φ)) E e Φ ⊢
+      rwp (src := src) s E e Φ := by
+  iintro H
+  iapply rwp_unfold.mpr
+  iapply rwpPre_mono $$ [] H
+  iintro !> %E' %e' %Φ' ⟨-, H'⟩
+  iexact H'
+
+/-- Rocq: `rwp_bind_inv`. -/
+theorem rwp_bind_inv (K : Expr → Expr) [ctx : Language.Context K] :
+    rwp (src := src) (ι := ι) s E (K e) Φ ⊢
+      rwp (src := src) s E e (fun (v : Val) => rwp (src := src) s E (K (v : Expr)) Φ) := by
+  let Pred := fun (E : CoPset) (e' : Expr) (Ψ : Val → IProp GF) => iprop(
+    ∀ e₀, ⌜e' = K e₀⌝ -∗ rwp (src := src) (ι := ι) s E e₀ (fun (v : Val) => rwp (src := src) s E (K (v : Expr)) Ψ))
+  have hPred : ∀ {n} E e {Φ₁ Φ₂ : Val → IProp GF}, (∀ v, Φ₁ v ≡{n}≡ Φ₂ v) →
+      Pred E e Φ₁ ≡{n}≡ Pred E e Φ₂ := by
+    intro _ _ _ _ _ hΦ
+    exact forall_ne fun _ => wand_ne.ne .rfl (rwp_ne.ne fun _ => rwp_ne.ne hΦ)
+  iintro H
+  ihave H := rwp_strong_ind s Pred hPred $$ [] H
+  · iintro !> %e' %E' %Ψ' IH %e₀ %rfl
+    iapply rwp_unfold.mpr
+    cases he : toVal e₀ with
+    | some v =>
+      obtain rfl := ToVal.coe_of_toVal_eq_some he
+      ihave Hwp := rwpPre_and_rwp $$ IH
+      unfold rwpPre
+      rw [toVal_coe]
+      dsimp only
+      iintro %σ %n %a ⟨Ha, Hσ⟩
+      imodintro
+      iframe Ha Hσ Hwp
+    | none =>
+      unfold rwpPre
+      simp only [he, ctx.toVal_eq_none_fill he]
+      unfold rwpStep
+      iintro %σ₁ %n %a Hσ
+      imod IH $$ %σ₁ %n %a Hσ with ⟨%b, IH⟩
+      imodintro
+      iexists b
+      iapply laterN_mono _ ?_ $$ IH
+      iintro IH
+      imod IH with ⟨%Hred, IH⟩
+      imodintro
+      isplitr
+      · ipureintro
+        exact maybeReducible_fill_inv K he Hred
+      iintro %e₂ %σ₂ %efs %κ %Hstep
+      imod IH $$ %(K e₂) %σ₂ %efs %κ %(ctx.primStep_fill Hstep) with ⟨Hsrc, Hσ, ⟨IH, -⟩, Hefs⟩
+      imodintro
+      iframe Hsrc Hσ
+      isplitl [IH]
+      · iapply IH $$ %e₂
+        ipureintro; rfl
+      · iapply BigSepL.bigSepL_mono_of_forall and_elim_r $$ Hefs
+  iapply H $$ %e
+  ipureintro; rfl
+
+/-- Rocq: `rwp_stuck_weaken`. -/
+theorem rwp_stuck_weaken :
+    rwp (src := src) (ι := ι) s E e Φ ⊢ rwp (src := src) .MaybeStuck E e Φ :=
+  rwp_stuck_mono Stuckness.le_MaybeStuck
+
+/-- Rocq: `rwp_value`. -/
+theorem rwp_value {v : Val} (h : toVal e = some v) :
+    Φ v ⊢ rwp (src := src) (ι := ι) s E e Φ := by
+  rw [← ToVal.coe_of_toVal_eq_some h]
+  exact rwp_value' v
+
+/-- Rocq: `rwp_value_fupd`. -/
+theorem rwp_value_fupd {v : Val} (h : toVal e = some v) :
+    (|={E}=> Φ v) ⊢ rwp (src := src) (ι := ι) s E e Φ := by
+  rw [← ToVal.coe_of_toVal_eq_some h]
+  exact rwp_value_fupd' v
+
+/-- Rocq: `rwp_wand_l`. -/
+theorem rwp_wand_l :
+    (∀ v, Φ v -∗ Ψ v) ∗ rwp (src := src) (ι := ι) s E e Φ ⊢ rwp (src := src) s E e Ψ := by
+  iintro ⟨H, Hwp⟩
+  iapply rwp_wand $$ Hwp H
+
+/-- Rocq: `rwp_wand_r`. -/
+theorem rwp_wand_r :
+    rwp (src := src) (ι := ι) s E e Φ ∗ (∀ v, Φ v -∗ Ψ v) ⊢ rwp (src := src) s E e Ψ := by
+  iintro ⟨Hwp, H⟩
+  iapply rwp_wand $$ Hwp H
+
+/-- Rocq: `rwp_frame_wand_l`. -/
+theorem rwp_frame_wand_l {Q : IProp GF} :
+    Q ∗ rwp (src := src) (ι := ι) s E e (fun v => iprop(Q -∗ Φ v)) ⊢ rwp (src := src) s E e Φ := by
+  iintro ⟨HQ, Hwp⟩
+  iapply rwp_wand $$ Hwp
+  iintro %v HΦ
+  iapply HΦ $$ HQ
+
+/-- Rocq: `rswp_unfold`. -/
+theorem rswp_unfold :
+    rswp (src := src) (ι := ι) k s E e Φ ⊣⊢ rswpStep (src := src) k E s e fun e₂ efs =>
+      iprop(rwp (src := src) s E e₂ Φ ∗ [∗list] ef ∈ efs, rwp (src := src) s ⊤ ef ι.refForkPost) :=
+  .rfl
+
+/-- Rocq: `rswp_ne`. -/
+instance rswp_ne : NonExpansive (rswp (src := src) (ι := ι) k s E e) where
+  ne {n Φ₁ Φ₂} hΦ := by
+    unfold rswp rswpStep
+    refine forall_ne fun _ => forall_ne fun _ => forall_ne fun _ => ?_
+    refine wand_ne.ne .rfl <| BIFUpdate.ne.ne <| step_fupdN_ne.ne <| sep_ne.ne .rfl ?_
+    refine forall_ne fun _ => forall_ne fun _ => forall_ne fun _ => forall_ne fun _ => ?_
+    refine wand_ne.ne .rfl <| BIFUpdate.ne.ne <| sep_ne.ne .rfl <| sep_ne.ne .rfl ?_
+    exact sep_ne.ne (rwp_ne.ne hΦ) .rfl
+
+/-- Rocq: `rswp_bind_inv`. -/
+theorem rswp_bind_inv (K : Expr → Expr) [ctx : Language.Context K] (he : toVal e = none) :
+    rswp (src := src) (ι := ι) k s E (K e) Φ ⊢
+      rswp (src := src) k s E e (fun (v : Val) => rwp (src := src) s E (K (v : Expr)) Φ) := by
+  unfold rswp rswpStep
+  iintro H %σ₁ %n %a Hσ
+  imod H $$ %σ₁ %n %a Hσ with H
+  imodintro
+  iapply step_fupdN_wand $$ H
+  iintro ⟨%Hred, H⟩
+  isplitr
+  · ipureintro
+    exact maybeReducible_fill_inv K he Hred
+  iintro %e₂ %σ₂ %efs %κ %Hstep
+  imod H $$ %(K e₂) %σ₂ %efs %κ %(ctx.primStep_fill Hstep) with ⟨Hsrc, Hσ, H, Hefs⟩
+  imodintro
+  dsimp only
+  isplitl [Hsrc]
+  · iexact Hsrc
+  isplitl [Hσ]
+  · iexact Hσ
+  isplitr [Hefs]
+  · iapply rwp_bind_inv K $$ H
+  · iexact Hefs
+
+/-- Rocq: `rswp_stuck_mono`. -/
+theorem rswp_stuck_mono (hs : s₁ ≤ s₂) :
+    rswp (src := src) (ι := ι) k s₁ E e Φ ⊢ rswp (src := src) k s₂ E e Φ := by
+  iintro H
+  iapply rswp_strong_mono hs LawfulSet.subset_refl $$ H
+  iintro %v H
+  imodintro
+  iexact H
+
+/-- Rocq: `rswp_stuck_weaken`. -/
+theorem rswp_stuck_weaken :
+    rswp (src := src) (ι := ι) k s E e Φ ⊢ rswp (src := src) k .MaybeStuck E e Φ :=
+  rswp_stuck_mono Stuckness.le_MaybeStuck
+
+/-- Rocq: `rswp_mask_mono`. -/
+theorem rswp_mask_mono (hE : E₁ ⊆ E₂) :
+    rswp (src := src) (ι := ι) k s E₁ e Φ ⊢ rswp (src := src) k s E₂ e Φ := by
+  iintro H
+  iapply rswp_strong_mono (Std.IsPreorder.le_refl s) hE $$ H
+  iintro %v H
+  imodintro
+  iexact H
+
+/-- Rocq: `rswp_frame_l`. -/
+theorem rswp_frame_l {R : IProp GF} :
+    R ∗ rswp (src := src) (ι := ι) k s E e Φ ⊢
+      rswp (src := src) k s E e fun v => iprop(R ∗ Φ v) := by
+  iintro ⟨HR, H⟩
+  iapply rswp_strong_mono (Std.IsPreorder.le_refl s) LawfulSet.subset_refl $$ H
+  iintro %v HΦ
+  imodintro
+  iframe
+
+/-- Rocq: `rswp_frame_r`. -/
+theorem rswp_frame_r {R : IProp GF} :
+    rswp (src := src) (ι := ι) k s E e Φ ∗ R ⊢
+      rswp (src := src) k s E e fun v => iprop(Φ v ∗ R) := by
+  iintro ⟨H, HR⟩
+  iapply rswp_strong_mono (Std.IsPreorder.le_refl s) LawfulSet.subset_refl $$ H
+  iintro %v HΦ
+  imodintro
+  iframe
+
+/-- Rocq: `rswp_wand_l`. -/
+theorem rswp_wand_l :
+    (∀ v, Φ v -∗ Ψ v) ∗ rswp (src := src) (ι := ι) k s E e Φ ⊢ rswp (src := src) k s E e Ψ := by
+  iintro ⟨H, Hwp⟩
+  iapply rswp_wand $$ Hwp H
+
+/-- Rocq: `rswp_wand_r`. -/
+theorem rswp_wand_r :
+    rswp (src := src) (ι := ι) k s E e Φ ∗ (∀ v, Φ v -∗ Ψ v) ⊢ rswp (src := src) k s E e Ψ := by
+  iintro ⟨Hwp, H⟩
+  iapply rswp_wand $$ Hwp H
+
+/-- Rocq: `rswp_frame_wand_l`. -/
+theorem rswp_frame_wand_l {Q : IProp GF} :
+    Q ∗ rswp (src := src) (ι := ι) k s E e (fun v => iprop(Q -∗ Φ v)) ⊢
+      rswp (src := src) k s E e Φ := by
+  iintro ⟨HQ, Hwp⟩
+  iapply rswp_wand $$ Hwp
+  iintro %v HΦ
+  iapply HΦ $$ HQ
+
+end rwp_derived
+
 /-! ## Proof mode instances -/
 
 section ProofMode
@@ -845,6 +1082,145 @@ instance isExcept0_rwp : IsExcept0 (rwp (src := src) (ι := ι) s E e Φ) where
 
 instance isExcept0_rswp : IsExcept0 (rswp (src := src) (ι := ι) k s E e Φ) where
   is_except0 := (except0_mono fupd_intro).trans <| BIFUpdate.except0.trans fupd_rswp
+
+/-- Rocq: `frame_rwp`. -/
+instance frame_rwp p (R : IProp GF) (Ψ : Val → IProp GF) [h : ∀ v, Frame p R (Φ v) (Ψ v)] :
+    Frame p R (rwp (src := src) (ι := ι) s E e Φ) (rwp (src := src) s E e Ψ) where
+  frame := rwp_frame_l.trans <| rwp_mono fun v => (h v).frame
+
+
+/-- Rocq: `frame_rswp`. -/
+instance frame_rswp p (R : IProp GF) (Ψ : Val → IProp GF) [h : ∀ v, Frame p R (Φ v) (Ψ v)] :
+    Frame p R (rswp (src := src) (ι := ι) k s E e Φ) (rswp (src := src) k s E e Ψ) where
+  frame := rswp_frame_l.trans <| rswp_mono fun v => (h v).frame
+
+/-- Rocq: `elim_modal_bupd_rwp`. -/
+instance elimModal_bupd_rwp p io (P : IProp GF) :
+    ElimModal True p io false iprop(|==> P) P (rwp (src := src) (ι := ι) s E e Φ)
+      (rwp (src := src) s E e Φ) where
+  elim_modal _ := (sep_mono_left (intuitionisticallyIf_elim.trans
+    (BIUpdateFUpdate.fupd_of_bupd (E := E)))).trans <|
+    fupd_frame_right.trans <| (fupd_mono wand_elim_right).trans fupd_rwp
+
+/-- Rocq: `elim_modal_bupd_rswp`. -/
+instance elimModal_bupd_rswp p io (P : IProp GF) :
+    ElimModal True p io false iprop(|==> P) P (rswp (src := src) (ι := ι) k s E e Φ)
+      (rswp (src := src) k s E e Φ) where
+  elim_modal _ := (sep_mono_left (intuitionisticallyIf_elim.trans
+    (BIUpdateFUpdate.fupd_of_bupd (E := E)))).trans <|
+    fupd_frame_right.trans <| (fupd_mono wand_elim_right).trans fupd_rswp
+
+/-- Rocq: `elim_modal_fupd_rwp_atomic`. -/
+instance (priority := low) elimModal_fupd_rwp_atomic p io {E₁ E₂ : CoPset} (P : IProp GF) :
+    ElimModal (Language.Atomic (Val := Val) .StronglyAtomic e) p io false iprop(|={E₁,E₂}=> P) P
+      (rwp (src := src) (ι := ι) s E₁ e Φ)
+      (rwp (src := src) s E₂ e fun v => iprop(|={E₂,E₁}=> Φ v)) where
+  elim_modal hat := (sep_mono_left intuitionisticallyIf_elim).trans <|
+    fupd_frame_right.trans <| (fupd_mono wand_elim_right).trans (rwp_atomic (hat := hat))
+
+/-- Rocq: `elim_modal_fupd_rswp_atomic`. -/
+instance (priority := low) elimModal_fupd_rswp_atomic p io {E₁ E₂ : CoPset} (P : IProp GF) :
+    ElimModal (Language.Atomic (Val := Val) .StronglyAtomic e) p io false iprop(|={E₁,E₂}=> P) P
+      (rswp (src := src) (ι := ι) k s E₁ e Φ)
+      (rswp (src := src) k s E₂ e fun v => iprop(|={E₂,E₁}=> Φ v)) where
+  elim_modal hat := (sep_mono_left intuitionisticallyIf_elim).trans <|
+    fupd_frame_right.trans <| (fupd_mono wand_elim_right).trans (rswp_atomic (hat := hat))
+
+/-- Rocq: `add_modal_fupd_rwp`. -/
+instance addModal_fupd_rwp (P : IProp GF) :
+    AddModal iprop(|={E}=> P) P (rwp (src := src) (ι := ι) s E e Φ) where
+  add_modal := fupd_frame_right.trans <| (fupd_mono wand_elim_right).trans fupd_rwp
+
+/-- Rocq: `add_modal_fupd_rswp`. -/
+instance addModal_fupd_rswp (P : IProp GF) :
+    AddModal iprop(|={E}=> P) P (rswp (src := src) (ι := ι) k s E e Φ) where
+  add_modal := fupd_frame_right.trans <| (fupd_mono wand_elim_right).trans fupd_rswp
+
+/-- Rocq: `elim_acc_wp` (for `rwp`). -/
+instance (priority := low) elimAcc_rwp_atomic {X} (E₁ E₂ : CoPset) (α β : X → IProp GF)
+    (γ : X → Option (IProp GF)) :
+    ElimAcc (Language.Atomic (Val := Val) .StronglyAtomic e) (fupd E₁ E₂) (fupd E₂ E₁) α β γ
+      (rwp (src := src) (ι := ι) s E₁ e Φ)
+      (fun x => rwp (src := src) s E₂ e fun v => iprop(|={E₂}=> β x ∗ (γ x -∗? Φ v))) where
+  elim_acc hat := by
+    dsimp only [accessor, BIBase.wandM, Option.getD]
+    iintro Hinner Hacc
+    iapply rwp_atomic (hat := hat)
+    imod Hacc with ⟨%x, Hα, Hclose⟩
+    imodintro
+    iapply rwp_wand $$ [Hinner Hα]
+    · iapply Hinner $$ Hα
+    · iintro %v H
+      imod H with ⟨Hβ, HΦ⟩
+      imod Hclose $$ Hβ with Hγ
+      imodintro
+      cases (γ x) with
+      | none => iexact HΦ
+      | some P => iapply HΦ $$ Hγ
+
+/-- Rocq: `elim_acc_rswp`. -/
+instance (priority := low) elimAcc_rswp_atomic {X} (E₁ E₂ : CoPset) (α β : X → IProp GF)
+    (γ : X → Option (IProp GF)) :
+    ElimAcc (Language.Atomic (Val := Val) .StronglyAtomic e) (fupd E₁ E₂) (fupd E₂ E₁) α β γ
+      (rswp (src := src) (ι := ι) k s E₁ e Φ)
+      (fun x => rswp (src := src) k s E₂ e fun v => iprop(|={E₂}=> β x ∗ (γ x -∗? Φ v))) where
+  elim_acc hat := by
+    dsimp only [accessor, BIBase.wandM, Option.getD]
+    iintro Hinner Hacc
+    iapply rswp_atomic (hat := hat)
+    imod Hacc with ⟨%x, Hα, Hclose⟩
+    imodintro
+    iapply rswp_wand $$ [Hinner Hα]
+    · iapply Hinner $$ Hα
+    · iintro %v H
+      imod H with ⟨Hβ, HΦ⟩
+      imod Hclose $$ Hβ with Hγ
+      imodintro
+      cases (γ x) with
+      | none => iexact HΦ
+      | some P => iapply HΦ $$ Hγ
+
+/-- Rocq: `elim_acc_wp_nonatomic` (for `rwp`). -/
+instance elimAcc_rwp_nonatomic {X} (α β : X → IProp GF) (γ : X → Option (IProp GF)) :
+    ElimAcc True (fupd E E) (fupd E E) α β γ (rwp (src := src) (ι := ι) s E e Φ)
+      (fun x => rwp (src := src) s E e fun v => iprop(|={E}=> β x ∗ (γ x -∗? Φ v))) where
+  elim_acc _ := by
+    dsimp only [accessor, BIBase.wandM, Option.getD]
+    iintro Hinner Hacc
+    iapply fupd_rwp
+    imod Hacc with ⟨%x, Hα, Hclose⟩
+    imodintro
+    iapply rwp_fupd
+    iapply rwp_wand $$ [Hinner Hα]
+    · iapply Hinner $$ Hα
+    · iintro %v H
+      imod H with ⟨Hβ, HΦ⟩
+      imod Hclose $$ Hβ with Hγ
+      imodintro
+      cases (γ x) with
+      | none => iexact HΦ
+      | some P => iapply HΦ $$ Hγ
+
+/-- Rocq: `elim_acc_swp_nonatomic` (for `rswp`). -/
+instance elimAcc_rswp_nonatomic {X} (α β : X → IProp GF) (γ : X → Option (IProp GF)) :
+    ElimAcc True (fupd E E) (fupd E E) α β γ (rswp (src := src) (ι := ι) k s E e Φ)
+      (fun x => rswp (src := src) k s E e fun v => iprop(|={E}=> β x ∗ (γ x -∗? Φ v))) where
+  elim_acc _ := by
+    dsimp only [accessor, BIBase.wandM, Option.getD]
+    iintro Hinner Hacc
+    iapply fupd_rswp
+    imod Hacc with ⟨%x, Hα, Hclose⟩
+    imodintro
+    iapply rswp_fupd
+    iapply rswp_wand $$ [Hinner Hα]
+    · iapply Hinner $$ Hα
+    · iintro %v H
+      imod H with ⟨Hβ, HΦ⟩
+      imod Hclose $$ Hβ with Hγ
+      imodintro
+      cases (γ x) with
+      | none => iexact HΦ
+      | some P => iapply HΦ $$ Hγ
 
 end ProofMode
 
