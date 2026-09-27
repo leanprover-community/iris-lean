@@ -353,9 +353,14 @@ open FromMathlib.Relation
 
 variable [N : NatSourceG GF]
 
+/-- The natural numbers as a source, with the ghost state of `natA` (the state is a plain `Nat`,
+so that it lives in `Type`). -/
+instance natSource : Source GF Nat where
+  rel a b := b < a
+  interp n := srcA (GF := GF) (⟨n⟩ : NatC SI)
+
 /-- heap_lang with a stuttering budget as a source (Rocq: `source Σ (heap_srcT * nat)`). -/
-abbrev refSrc : Source GF (Cfg × NatC SI) :=
-  lexSource heapLangSource (authSource_source (GF := GF) (M := NatC SI))
+abbrev refSrc : Source GF (Cfg × Nat) := lexSource heapLangSource natSource
 
 /-- Stuttering credits (Rocq: `$ n` for `natA`). -/
 abbrev stutter (n : Nat) : IProp GF := srcF (GF := GF) (⟨n⟩ : NatC SI)
@@ -375,10 +380,10 @@ theorem step_pure_cred (k : Nat) (E : CoPset) (j : Nat) (e₁ e₂ : Exp) (hp : 
   isplitl [Hj]
   · iapply cfg_step_pure E j e₁ e₂ hp $$ Hj
   iintro %b Hb
-  delta authSource_source
+  delta natSource
   dsimp only
   unfold stutter srcA srcF
-  have hlu : (b, (UCMRA.unit : NatC SI)) ~l~> (⟨b.n + k⟩, ⟨k⟩) :=
+  have hlu : ((⟨b⟩ : NatC SI), (UCMRA.unit : NatC SI)) ~l~> (⟨b + k⟩, ⟨k⟩) :=
     (local_update_unital_discrete _ _ _ _).mpr fun z _ hz =>
       ⟨trivial, NatC.ext (by
         have := congrArg NatC.n hz
@@ -387,7 +392,7 @@ theorem step_pure_cred (k : Nat) (E : CoPset) (j : Nat) (e₁ e₂ : Exp) (hp : 
   imod iOwn_update (ULift.update (Auth.auth_update_alloc hlu)) $$ Hb with Hb
   icases (iOwn_op (E := N.elem)).mp $$ Hb with ⟨Ha, Hf⟩
   imodintro
-  iexists ⟨b.n + k⟩
+  iexists b + k
   iframe
 
 /-- Rocq: `step_pure`. -/
@@ -503,7 +508,152 @@ theorem step_stutter (E : CoPset) (c : Nat) :
     stutter (GF := GF) (c + 1) ⊢ srcUpd E (stutter c) := by
   iintro H
   iapply srcUpdate_embed_r
-  iapply auth_src_update E (s := (⟨c + 1⟩ : NatC SI)) (s' := ⟨c⟩) (Nat.lt_succ_self c) $$ H
+  unfold srcUpdate
+  delta natSource
+  dsimp only
+  unfold stutter srcA srcF
+  iintro %n Hn
+  ihave H := (iOwn_op (E := N.elem) (γ := N.name) (a1 := ULift.up (● (⟨n⟩ : NatC SI)))
+    (a2 := ULift.up (◯ (⟨c + 1⟩ : NatC SI)))).mpr $$ [Hn H]
+  · iframe
+  ihave ⟨Hv, H⟩ := iOwn_valid_l $$ H
+  icases internalCmraValid_discrete.mp $$ Hv with %Hv
+  obtain ⟨⟨f, hf⟩, -⟩ := Auth.auth_both_valid_discrete.mp Hv
+  have hn : n = c + 1 + f.n := congrArg NatC.n hf
+  have hlu : ((⟨n⟩ : NatC SI), (⟨c + 1⟩ : NatC SI)) ~l~> (⟨c + f.n⟩, ⟨c⟩) := by
+    refine (local_update_unital_discrete _ _ _ _).mpr fun z _ hz => ⟨trivial, ?_⟩
+    have hz' : n = c + 1 + z.n := congrArg NatC.n hz
+    exact NatC.ext (by simp only [NatC.op_n]; omega)
+  imod iOwn_update (ULift.update (Auth.auth_update hlu)) $$ H with H
+  icases (iOwn_op (E := N.elem)).mp $$ H with ⟨HA, HF⟩
+  imodintro
+  iexists c + f.n
+  iframe
+  ipureintro
+  exact .single (by omega)
+
+/-- Adding stuttering credits to the target of a trace that changes the configuration (Rocq:
+`step_add_stutter`). -/
+theorem add_stutter {c₁ c₂ : Cfg} {n m : Nat} (k : Nat)
+    (h : TransGen (refSrc (GF := GF)).rel (c₁, n) (c₂, m)) (hne : c₁ ≠ c₂) :
+    TransGen (refSrc (GF := GF)).rel (c₁, n) (c₂, m + k) := by
+  generalize ha : (c₁, n) = a at h
+  generalize hb : (c₂, m) = b at h
+  induction h generalizing c₂ m with
+  | single hab =>
+    subst ha hb
+    cases hab with
+    | left _ _ hstep => exact .single (.left _ _ hstep)
+    | right _ _ => exact absurd rfl hne
+  | @tail x b' hax hxb ih =>
+    subst hb
+    rcases hxb with ⟨_, _, hstep⟩ | @⟨_, nx, _, hlt⟩
+    · exact .tail hax (.left _ _ hstep)
+    · have := ih hne rfl
+      refine .tail this (.right _ ?_)
+      change m + k < nx + k
+      change m < nx at hlt
+      omega
+
+/-- Allocating stuttering credits after a source update that changes the thread `j` (Rocq:
+`step_inv_alloc`, where the new expressions of the thread are given by `f`). -/
+theorem step_inv_alloc (k : Nat) (E : CoPset) (j : Nat) (e₁ : Exp) {X : Type _} (f : X → Exp)
+    (Q : X → IProp GF) (hne : ∀ x, f x ≠ e₁) :
+    (tpoolPointsTo j e₁ -∗ srcUpd E iprop(∃ x, tpoolPointsTo j (f x) ∗ Q x)) ⊢
+      tpoolPointsTo j e₁ -∗ srcUpd E iprop((∃ x, tpoolPointsTo j (f x) ∗ Q x) ∗ stutter k) := by
+  unfold srcUpd srcUpdate refSrc
+  delta lexSource heapLangSource natSource
+  dsimp only
+  unfold cfgInterp tpoolPointsTo stutter srcA srcF
+  iintro Hupd Hj %⟨⟨tp, σ⟩, n⟩ ⟨⟨Htp, Hh, Htr⟩, Hn⟩
+  icases ghost_map_lookup $$ Htp Hj with %h₁
+  ihave H := Hupd $$ Hj
+  imod H $$ %((tp, σ), n) [Htp Hh Htr Hn] with ⟨%⟨⟨tp', σ'⟩, m⟩, %hsteps, ⟨⟨Htp, Hh, Htr⟩, Hm⟩, %x, Hj, HQ⟩
+  · iframe
+  icases ghost_map_lookup $$ Htp Hj with %h₂
+  have hlu : ((⟨m⟩ : NatC SI), (UCMRA.unit : NatC SI)) ~l~> (⟨m + k⟩, ⟨k⟩) :=
+    (local_update_unital_discrete _ _ _ _).mpr fun z _ hz =>
+      ⟨trivial, NatC.ext (by
+        have := congrArg NatC.n hz
+        have hu : (UCMRA.unit : NatC SI).n = 0 := rfl
+        simp only [NatC.op_n] at this ⊢; omega)⟩
+  imod iOwn_update (ULift.update (Auth.auth_update_alloc hlu)) $$ Hm with Hm
+  icases (iOwn_op (E := N.elem)).mp $$ Hm with ⟨Hm, Hk⟩
+  imodintro
+  iexists ((tp', σ'), m + k)
+  isplitr
+  · ipureintro
+    refine add_stutter (GF := GF) k hsteps fun heq => hne x ?_
+    have : tp = tp' := congrArg Prod.fst heq
+    subst this
+    rw [toMap_get?] at h₁ h₂
+    exact Option.some.inj (h₂.symm.trans h₁)
+  iframe
+
+/-- Recording the current source configuration (Rocq: `src_log`). -/
+theorem src_log (E : CoPset) (j : Nat) (e : Exp) :
+    tpoolPointsTo (GF := GF) j e ⊢ weakSrcUpd E iprop(tpoolPointsTo j e ∗
+      ∃ (tp : List Exp) (σ : State) (i : Nat), ⌜tp[j]? = some e⌝ ∗ traceIdx i (tp, σ)) := by
+  unfold weakSrcUpd weakSrcUpdate refSrc
+  delta lexSource heapLangSource natSource
+  dsimp only
+  unfold cfgInterp tpoolPointsTo
+  iintro Hj %⟨⟨tp, σ⟩, n⟩ ⟨⟨Htp, Hh, %l, %hrtc, Htr, #Hidx⟩, Hn⟩
+  icases ghost_map_lookup $$ Htp Hj with %h
+  rw [toMap_get?] at h
+  imodintro
+  iexists ((tp, σ), n)
+  isplitr
+  · ipureintro; exact .refl
+  iframe
+  isplitr
+  · isplitr
+    · ipureintro; exact hrtc
+    iexact Hidx
+  iexists tp, σ, l.length
+  isplitr
+  · ipureintro; exact h
+  iexact Hidx
+
+/-- The configurations recorded by `traceIdx` are reachable in the source (Rocq:
+`src_get_trace'`). -/
+theorem src_get_trace' (j : Nat) (e : Exp) (i : Nat) (c : Cfg) (a : Cfg × Nat) :
+    ⊢ tpoolPointsTo (GF := GF) j e -∗ traceIdx i c -∗ (refSrc (GF := GF)).interp a -∗
+      tpoolPointsTo j e ∗ (refSrc (GF := GF)).interp a ∗
+        ∃ (tp : List Exp) (σ : State), ⌜tp[j]? = some e ∧
+          FromMathlib.Relation.ReflTransGen ErasedStep c (tp, σ)⌝ := by
+  obtain ⟨⟨tp, σ⟩, n⟩ := a
+  unfold refSrc
+  delta lexSource heapLangSource natSource
+  dsimp only
+  unfold cfgInterp tpoolPointsTo traceIdx
+  iintro Hj #Hi ⟨⟨Htp, Hh, %l, %hrtc, Htr, #Hidx⟩, Hn⟩
+  icases ghost_map_lookup $$ Htp Hj with %h
+  icases ghost_map_lookup $$ Htr Hi with %hi
+  rw [toMap_get?] at h hi
+  iframe
+  isplitr
+  · isplitr
+    · ipureintro; exact hrtc
+    iexact Hidx
+  iexists tp, σ
+  ipureintro
+  exact ⟨h, RtcList.lookup_rtc hi hrtc⟩
+
+/-- Rocq: `src_get_trace`. -/
+theorem src_get_trace (E : CoPset) (j : Nat) (e : Exp) (i : Nat) (c : Cfg) :
+    tpoolPointsTo (GF := GF) j e ∗ traceIdx i c ⊢ weakSrcUpd E iprop(tpoolPointsTo j e ∗
+      ∃ (tp : List Exp) (σ : State), ⌜tp[j]? = some e ∧
+        FromMathlib.Relation.ReflTransGen ErasedStep c (tp, σ)⌝) := by
+  unfold weakSrcUpd weakSrcUpdate
+  iintro ⟨Hj, #Hi⟩ %a Ha
+  ihave H := src_get_trace' j e i c a $$ Hj Hi Ha
+  icases H with ⟨Hj, Ha, Hex⟩
+  imodintro
+  iexists a
+  isplitr
+  · ipureintro; exact .refl
+  iframe
 
 end Stuttering
 
