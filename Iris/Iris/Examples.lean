@@ -15,12 +15,4 @@ public import Iris.Examples.TransfiniteCounterexamples
 public import Iris.Examples.TransfiniteSimulations
 public import Iris.Examples.TransfiniteInvariants
 public import Iris.Examples.TransfiniteHeapLang
-public import Iris.Examples.Refinements.Refinement
-public import Iris.Examples.Refinements.Tactics
-public import Iris.Examples.Refinements.Examples
-public import Iris.Examples.Refinements.Derived
-public import Iris.Examples.Refinements.Memoization
-public import Iris.Examples.Refinements.MemoizationNat
-public import Iris.Examples.Refinements.MemoizationTf
-public import Iris.Examples.Refinements.MemoizationFib
-public import Iris.Examples.Refinements.MemoizationLev
+public import Iris.Examples.Refinements
