@@ -31,9 +31,9 @@ is listed declaration by declaration in [Part II](#part-ii-transfinite-specific-
 | Rocq file | Lines | Lean | Status | Notes |
 |---|---:|---|---|---|
 | `base.v` | 6 | `Std/` | ➖ | stdpp re-exports |
-| `stepindex.v` | 832 | `Algebra/StepIndex.lean`, `Algebra/StepIndexFinite.lean`, `Algebra/StepIndexTransfinite.lean`, `Algebra/StepIndexPair.lean` | ✅ | `index_cumulative_rec` (solver only) missing; see [Part II](#algebrastepindexv) |
+| `stepindex.v` | 832 | `Algebra/StepIndex.lean`, `Algebra/StepIndexFinite.lean`, `Algebra/StepIndexTransfinite.lean`, `Algebra/StepIndexPair.lean` | ✅ | `index_cumulative_rec` is not needed (the solver uses one well-founded recursion); see [Part II](#algebrastepindexv) |
 | `ofe.v` | 2443 | `Algebra/OFE.lean`, `Algebra/Truncation.lean` | ✅ | generic; truncations `[A]_{α}` are quotients (`TruncO`), so `Truncatable`/`ProtoTruncatable` are not needed; `BcomplUniqueLim` ported, `BcomplUnique`/`BcomplStronglyUnique` ➖ (unused) |
-| `cmra.v` | 1695 | `Algebra/CMRA.lean` | 🟡 | generic; ordinal CMRA (`ordA`, natural sum) missing (time credits) |
+| `cmra.v` | 1695 | `Algebra/CMRA.lean`, `IrisMath/TimeCredits.lean` | ✅ | generic; the ordinal camera of time credits (`ordA`, natural sum) is `OrdCam` in `IrisMath/TimeCredits.lean` |
 | `cofe_solver.v` | 3090 | `Algebra/COFESolverTransfinite.lean` | ✅ | `Transfinite.Fix F` with `Fix.iso : F (Fix F) (Fix F) ≅ Fix F`; see [Part II](#algebracofe_solverv) |
 | `wf_IR.v` | 231 | — | ➖ | replaced by a single well-founded recursion whose stages carry copies of the earlier approximations (see the solver) |
 | `agree.v` | 329 | `Algebra/Agree.lean` | ✅ | |
@@ -53,7 +53,7 @@ is listed declaration by declaration in [Part II](#part-ii-transfinite-specific-
 | `gset.v` | 235 | `Algebra/LeibnizSet.lean` | ✅ | |
 | `list.v` | 513 | `Algebra/List.lean` | ✅ | transfinite `lbcompl` |
 | `local_updates.v` | 210 | `Algebra/LocalUpdates.lean` | ✅ | |
-| `mlist.v` | 346 | `Algebra/Lib/MonoList.lean` | 🟡 | upstream `mono_list`; stays at `SI = Nat` (grind lemmas, see porting notes) |
+| `mlist.v` | 346 | `Algebra/Lib/MonoList.lean` | 🟡 | upstream `mono_list`; stays at `SI = Nat` (its `grind` lemmas cannot instantiate `SI`, see porting notes). Not needed: the refinement trace uses ghost maps instead of `fmlist` |
 | `monoid.v` | 55 | `Algebra/Monoid.lean` | ✅ | |
 | `namespace_map.v` | 299 | `Algebra/ReservationMap.lean` | ✅ | renamed upstream |
 | `proofmode_classes.v` | 54 | `Algebra/IsOp.lean`, `ProofMode/Classes.lean` | ✅ | |
@@ -66,7 +66,7 @@ is listed declaration by declaration in [Part II](#part-ii-transfinite-specific-
 | `ordinals/set_ordinals.v` | 508 | Mathlib | ➖ | idem |
 | `ordinals/set_functions.v` | 1021 | Mathlib | ➖ | idem |
 | `ordinals/ord_stepindex.v` | 322 | `IrisMath/StepIndex.lean`, `IrisMath/Transfinite.lean` | ✅ | see [Part II](#algebraordinalsord_stepindexv) |
-| `ordinals/arithmetic.v` | 837 | Mathlib (`NatOrdinal`) | ⬜ | natural (Hessenberg) sum/difference; needed for the ordinal CMRA of time credits |
+| `ordinals/arithmetic.v` | 837 | Mathlib `Ordinal`, `IrisMath/NaturalSum.lean`, `natmul` in `IrisMath/Termination/Logrel.lean` | ✅ | the ordinal foundations are Mathlib's; natural (Hessenberg) sum `nadd` with its laws; `natmul`. Natural subtraction and natural multiplication are only used inside `arithmetic.v` and are omitted (➖) |
 
 ### `base_logic/`
 
@@ -78,16 +78,16 @@ is listed declaration by declaration in [Part II](#part-ii-transfinite-specific-
 | `derived.v` | 225 | `Instances/UPred/Instance.lean`, `Instances/UPred/Transfinite.lean` | ✅ | see [Part II](#base_logicderivedv) |
 | `satisfiable.v` | 100 | `Instances/UPred/Transfinite.lean` | ✅ | see [Part II](#base_logicsatisfiablev-and-bisatisfiablev) |
 | `lib/iprop.v` | 162 | `Algebra/IProp.lean`, `Instances/IProp/` | ✅ | `IProp` is built with the transfinite solver (`Algebra/COFESolverTransfinite.lean`) for any `SI` |
-| `lib/own.v` | 363 | `Instances/IProp/Instance.lean` | 🟡 | generic in `SI` (`later_iOwn` needs `SIdxFinite`); `initial_satisfiable` ⬜ |
+| `lib/own.v` | 363 | `Instances/IProp/Instance.lean`, `Instances/Lib/Initial.lean` | ✅ | generic in `SI` (`later_iOwn` needs `SIdxFinite`); `initial`, `initial_alloc/combine/mono/weaken/satisfiable` in `Initial.lean` (name sets are predicates `GName → Prop`) |
 | `lib/wsat.v` | 254 | `Instances/Lib/WSat.lean` | ✅ | generic in `SI` |
 | `lib/fancy_updates.v` | 227 | `Instances/Lib/FUpdTransfinite.lean` | ✅ | credit-free fupd for any `SI` (scoped `BIFUpdate`, `BIFUpdateSbi`), `fupd_plain_soundness`, `lstep_fupd_soundness`, `satisfiable_at_*`; the upstream credit-based `FUpd.lean` stays at `SI = Nat` |
 | `lib/invariants.v` | 211 | `Instances/Lib/InvariantsTransfinite.lean` | ✅ | for the transfinite fupd; `inv_alter`/`inv_combine` replaced by timeless variants as in the fork |
-| `lib/na_invariants.v` | 195 | `Instances/Lib/NaInvariants.lean` | 🟡 | `SI = Nat` |
-| `lib/cancelable_invariants.v` | 132 | `Instances/Lib/CInvariants.lean` | 🟡 | `SI = Nat` |
-| `lib/saved_prop.v` | 136 | `Instances/Lib/SavedProp.lean` | 🟡 | `SI = Nat` |
-| `lib/gen_heap.v` | 439 | `BI/Lib/GenHeap.lean` | 🟡 | `SI = Nat` |
-| `lib/proph_map.v` | 193 | `BI/Lib/ProphMap.lean` | 🟡 | `SI = Nat` |
-| `lib/viewshifts.v` | 88 | `Instances/Lib/FUpdFromViewShift.lean` | 🟡 | `SI = Nat` |
+| `lib/na_invariants.v` | 195 | `Instances/Lib/NaInvariantsTransfinite.lean` | ✅ | generic in `SI` for the credit-free fupd (ghost state via `constOFU`); the upstream `NaInvariants.lean` stays at `SI = Nat` |
+| `lib/cancelable_invariants.v` | 132 | `Instances/Lib/CInvariantsTransfinite.lean` | ✅ | the fork's definition `∃ P', □ ▷ (P ↔ P') ∗ inv N (P' ∨ own γ 1)` with a `Qp` token, generic in `SI` for the credit-free fupd; all lemmas at full strength (`FiniteBoundedExistential` is not needed: `later_or` holds for any `SI`); `cinv_open(_strong)` are `acc(_strong)`; extras `alloc_open`, `alloc_strong_open`, `inv_open_fupd` |
+| `lib/saved_prop.v` | 136 | `Instances/Lib/SavedProp.lean` | ✅ | generic in `SI` |
+| `lib/gen_heap.v` | 439 | `BI/Lib/GenHeap.lean` | ✅ | generic in `SI` |
+| `lib/proph_map.v` | 193 | `BI/Lib/ProphMap.lean` | ✅ | generic in `SI` |
+| `lib/viewshifts.v` | 88 | `Instances/Lib/ViewShiftsTransfinite.lean` | ✅ | `vs` for the credit-free fupd, all lemmas; the binary notation `P ={E1,E2}=> Q` is omitted (clashes with the prefix fupd notation). (`FUpdFromViewShift.lean` is an unrelated upstream construction.) |
 | `lib/logical_step.v` | 402 | `BI/Lib/LogicalStep.lean` | ✅ | generic in `SI`, see [Part II](#base_logicliblogical_stepv) |
 
 ### `bi/`
@@ -107,7 +107,7 @@ is listed declaration by declaration in [Part II](#part-ii-transfinite-specific-
 | `lib/fixpoint.v` | 124 | `BI/Lib/Fixpoint.lean` | ✅ | |
 | `lib/fractional.v` | 180 | `BI/Lib/Fractional.lean` | ✅ | |
 | `satisfiable.v` | 99 | `BI/Transfinite.lean` | ✅ | see [Part II](#base_logicsatisfiablev-and-bisatisfiablev) |
-| `weakestpre.v` | 574 | `BI/WeakestPre.lean` | 🟡 | ordinary WP classes exist; `Swp`/`Rswp` (strong/refinement WP) classes ⬜ |
+| `weakestpre.v` | 574 | `BI/WeakestPre.lean` | ✅ | ordinary WP classes exist; the notation classes `Swp`/`Rswp` are not needed (➖): `swp`/`rswp` are plain definitions in `ProgramLogic/WeakestPreTransfinite.lean` and `ProgramLogic/Refinement/RefWeakestPre.lean` |
 
 ### `proofmode/`
 
@@ -129,9 +129,9 @@ implementation (➖, replaced by the Lean IPM).
 | `adequacy.v` | 284 | `ProgramLogic/AdequacyTransfinite.lean` | ✅ | `wp_strong_adequacy`, `wp_adequacy`, `wp_invariance` for `[SIdxTransfinite SI]`; big-later lemmas (`list_big_later`, `big_later_eventually`) |
 | `hoare.v` | 162 | — | ➖ | Hoare-triple notation on top of WP |
 | `refinement/ref_source.v` | 382 | `ProgramLogic/Refinement/RefSource.lean`, `RefAuthSource.lean`, `NatSource.lean`, `IrisMath/TimeCredits.lean` | ✅ | `Source`, `srcUpdate`, `weakSrcUpdate`, lexicographic sources; auth sources (`AuthSourceG`, `srcA`/`srcF`, `source_step_update`, `auth_src_update`, `srcF_split`); `natA` in `NatSource.lean`; `ordA` (natural sum camera `OrdCam`) in IrisMath |
-| `refinement/ref_weakestpre.v` | 691 | `ProgramLogic/Refinement/RefWeakestPre.lean` | 🟡 | `rwp` (least fixpoint), `rswp`, strong mono, fupd, `rwp_no_step`/`rwp_take_step`/`rwp_weaken`, `rswp_do_step`, bind, atomic, `ElimModal`/`IsExcept0`; `*_bind_inv`, `Frame`/`ElimAcc` instances ⬜ |
+| `refinement/ref_weakestpre.v` | 691 | `ProgramLogic/Refinement/RefWeakestPre.lean` | ✅ | all lemmas and proof mode instances (`Frame`, `ElimModal` for bupd/fupd/atomic fupd, `AddModal`, `IsExcept0`, `ElimAcc` atomic and non-atomic); `rwp_proper`/`rswp_proper`/`rwp_mono'` follow from `rwp_ne`/`rswp_ne`/`rwp_mono` (➖); `rwp_value_inv(')` is commented out in Rocq |
 | `refinement/ref_lifting.v` | 244 | `ProgramLogic/Refinement/RefLifting.lean` | ✅ | incl. `step_fupdN_mask_comm`, `step_fupdN_mask_comm'` |
-| `refinement/ref_ectx_lifting.v` | 201 | `ProgramLogic/Refinement/RefEctxLifting.lean` | 🟡 | main base-step lemmas (`head` → `base`) |
+| `refinement/ref_ectx_lifting.v` | 201 | `ProgramLogic/Refinement/RefEctxLifting.lean` | ✅ | all lemmas (`head` → `base`) |
 | `refinement/ref_adequacy.v` | 354 | `ProgramLogic/Refinement/RefAdequacy.lean` | ✅ | termination preservation (`rwp_adequacy`, `rwp_sn_preservation`) and result refinement (`rwp_prim_step`, `rwp_erased_steps`, `rwp_result`) for `[SIdxLarge SI]` |
 | `refinement/tc_weakestpre.v` | 103 | `IrisMath/IrisMath/TimeCredits.lean` | ✅ | `tc α`, `tcwp`, `tcwp_burn_credit`, `tc_weaken`, `tc_alloc_zero`, `tcwp_adequacy` (`SIdxLarge.{w+1}`) |
 | `refinement/seq_weakestpre.v` | 32 | `ProgramLogic/Refinement/SeqWeakestPre.lean` | ✅ | `SeqG`, `seq`, `seInv`, `seq_value` |
@@ -174,7 +174,7 @@ implementation (➖, replaced by the Lean IPM).
 | `index_is_limit`, `limit_idx` | `SIdx.Limit` | ✅ |
 | `index_min` and lemmas | — | ➖ (unused outside the solver; use `min`) |
 | `ord_match`, `index_rec`, `index_rec_unfold`, `index_rec_zero/succ/lim`, `index_rec_lim_ext` | `SIdx.case`, `SIdx.rec'`, `SIdx.rec_unfold`, `SIdx.rec_zero/succ/lim` | ✅ |
-| `index_cumulative_rec*` | — | ⬜ (solver) |
+| `index_cumulative_rec*` | — | ➖ (the solver in `COFESolverTransfinite.lean` uses a single well-founded recursion) |
 | `FiniteIndex`, `natI`, `nat_index_mixin` | `SIdxFinite`, `natSIdx` (`Algebra/StepIndexFinite.lean`) | ✅ |
 | `TransfiniteIndex` (`upper_limit`, `upper_limit_bound`) | `SIdxTransfinite` (`upperLimit`, `iter_succ_lt_upperLimit`) | ✅ |
 | `LargeIndex` (`commute_exists`) | `SIdxLarge` | ✅ |
@@ -230,7 +230,7 @@ inhabited. The construction uses only `propext`, `Classical.choice` and `Quot.so
 |---|---|---|
 | `uPred` over `SI`, `uPred_ne`, `uPred_mono` | `UPred` (`Algebra/UPred.lean`) | ✅ |
 | `uPred_bcompl'`, `uPred_bcompl'_ne`, `bcompl_unfold` | `UPred.bcompl`, `UPred.bcompl_ne`, `UPred.bcompl_holds` | ✅ |
-| `bcompl_unique : BcomplUnique uPredO` | — | ⬜ (needs `BcomplUnique`, solver) |
+| `bcompl_unique : BcomplUnique uPredO` | `BcomplUniqueLim (UPred M)` (`Algebra/UPred.lean`) | ✅ |
 | `uPred_later` (`∀ β ≺ α`) | `UPred.later` (`Instances/UPred/Instance.lean`) | ✅ |
 | `later_exist_false` (`FiniteIndex`) | `later_sExists_false` field, `[SIdxFinite SI]` | ✅ |
 | `later_finite_exist_false` (`FiniteBoundedExistential`) | `later_or_1` (the finite case needed by the BI), `Instances/UPred/Instance.lean` | ✅ |
@@ -341,12 +341,11 @@ is replaced by the existence of an infinite execution (`ExLoop`), and `nsteps` b
 
 | Rocq | Lean | Status |
 |---|---|---|
-| `satisfiable_at`, `satisfiable_at_intro/mono/fupd/later/exists/...` | — | ⬜ (needs `IProp` over arbitrary `SI`) |
-| `initial_satisfiable`, `own_satisfiable` | — | ⬜ |
+| `satisfiable_at`, `satisfiable_at_intro/mono/fupd/elim/later/exists/finite_exists/bupd/forall/impl/wand/pers/intuitionistically/or/sep/equiv/pure` | `satisfiableAt*` (`Instances/Lib/FUpdTransfinite.lean`) | ✅ |
+| `initial_satisfiable`, `initial_wsat` | `initial_satisfiable`, `initial_wsat` (`Instances/Lib/Initial.lean`) | ✅ |
 
-### Not yet started
+### Remaining
 
-`algebra/ordinals/arithmetic.v` (Mathlib has no natural ordinal addition in this version),
-`cmra.v` (`ordA`), `bi/weakestpre.v` (`Swp`, `Rswp`), all of `program_logic/` apart from the
-language definitions, the `swp`/`rwp` parts of `heap_lang/`, and the examples other than the
-counterexamples and the key ideas. See [`transfinite-porting.md`](transfinite-porting.md#roadmap) for the plan.
+Everything in the fork is ported or deliberately omitted (➖, see the notes above). Upstream Iris-Lean
+files that stay at `SI = Nat` (the credit-based `FUpd`/`LaterCredits`/`Invariants`/`NaInvariants`,
+`MonoList`) have transfinite counterparts or are not used by the transfinite development.

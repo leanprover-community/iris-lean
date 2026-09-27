@@ -12,6 +12,7 @@ public import Iris.Instances.Lib.FUpdTransfinite
 public import Iris.Instances.Lib.Initial
 public import Iris.Instances.Lib.InvariantsTransfinite
 public import Iris.Instances.Lib.NaInvariantsTransfinite
+public import Iris.Instances.Lib.CInvariantsTransfinite
 public import Iris.Instances.Lib.GhostMap
 public import Iris.Instances.Lib.GhostVar
 public import Iris.Instances.Lib.Invariants
