@@ -419,7 +419,7 @@ meta def srcHeapCore (tacName : Name) (load : Bool) : TacticM Unit :=
 
 /-- A pure step of the source thread in the goal `j ⤇ e -∗ srcUpd E P`, allocating `k`
 stuttering credits. -/
-elab "src_pure_cred_core " k:term : tactic =>
+elab "src_pure_cred_core " kStx:term : tactic =>
   ProofModeM.runTactic `src_pure_cred fun mvar {prop, hyps, goal, ..} => do
     let goal ← instantiateMVars goal
     let some gargs := appArgsOf? ``BIBase.wand goal
@@ -431,7 +431,7 @@ elab "src_pure_cred_core " k:term : tactic =>
     have e : Q(Exp) := aargs[aargs.size - 1]!
     let .upd ← srcGoalKind G
       | throwIPMError "the goal must be a source update"
-    let k ← elabTermEnsuringTypeQ k q(Nat)
+    let k ← elabTermEnsuringTypeQ kStx q(Nat)
     let some {result := ⟨φ, n, e₂, hexec⟩, K, e' := e₁, mkFill} ←
       findSrcCtx (α := ((_ : Q(Prop)) × (_ : Q(Nat)) × (_ : Q(Exp)) × Lean.Expr)) e
         fun _ e₁ => findSrcPureStep false e₁
@@ -441,7 +441,9 @@ elab "src_pure_cred_core " k:term : tactic =>
     let ⟨e₂s, pfeq⟩ ← iWpExprSimp e₂f
     let A' := mkApp A.appFn! e₂s
     let G' ← srcUpdToWeak G
-    let stut ← mkAppOptM ``stutter #[none, none, none, none, none, some k]
+    let stut ← Term.elabTermEnsuringType (← `(Iris.Transfinite.Refinement.stutter $kStx)) prop
+    Term.synthesizeSyntheticMVarsNoPostponing
+    let stut ← instantiateMVars stut
     let wand := goal.appFn!.appFn!
     have newGoal : Q($prop) := mkApp2 wand A' (mkApp2 wand stut G')
     let pf ← addBIGoal hyps newGoal
