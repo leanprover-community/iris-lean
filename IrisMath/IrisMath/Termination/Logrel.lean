@@ -21,6 +21,8 @@ The token camera is `Auth Unit` (as in the original submission of the Rocq devel
 
 @[expose] public noncomputable section
 
+set_option linter.unusedSectionVars false
+
 universe w v u
 
 namespace Iris.Transfinite.Termination.Logrel
@@ -591,5 +593,350 @@ theorem closed_chan (A : ltype GF) :
 end Channels
 
 end Closed
+
+/-! ## The simple logical relation -/
+
+section Simple
+
+open PartialMap BigSepM
+
+variable [Hseq : SeqG GF] [Etok : ElemG GF (constOFU.{max u v} (Auth Unit))]
+
+/-- Typing contexts. -/
+abbrev Ctx (GF : BundledGFunctors) := VarMapF (ltype GF)
+/-- Substitutions. -/
+abbrev Subst := VarMapF Val
+
+/-- Rocq: `env_ltyped`. -/
+def envLtyped (Γ : Ctx GF) (θ : Subst) : IProp GF :=
+  iprop([∗map] x ↦ A ∈ Γ, ∃ v, ⌜get? θ x = some v⌝ ∗ A v)
+
+/-- The semantic typing judgment (Rocq: `ltyped`, notation `Γ ⊨ e : A`). -/
+def ltyped (Γ : Ctx GF) (e : Exp) (A : ltype GF) : Prop :=
+  ⊢ ∃ α : Ordinal.{w}, tc (GF := GF) α -∗ ∀ θ : Subst, envLtyped Γ θ -∗
+    seqT.{w} (e.substMap θ) A
+
+@[simp] theorem substMap_ofVal (θ : Subst) (v : Val) :
+    (ToVal.ofVal v : Exp).substMap θ = ToVal.ofVal v := rfl
+
+/-- Rocq: `env_ltyped_split`. -/
+theorem env_ltyped_split {Γ Δ : Ctx GF} {θ : Subst} (h : Γ ##ₘ Δ) :
+    envLtyped (PartialMap.union Γ Δ) θ ⊢ envLtyped Γ θ ∗ envLtyped Δ θ := by
+  unfold envLtyped
+  exact (bigSepM_union (PROP := IProp GF) h).1
+
+/-- Rocq: `env_ltyped_empty`. -/
+theorem env_ltyped_empty (θ : Subst) : ⊢ envLtyped (GF := GF) ∅ θ := by
+  unfold envLtyped
+  exact bigSepM_empty.2
+
+/-- Rocq: `env_ltyped_insert`. -/
+theorem env_ltyped_insert (Γ : Ctx GF) (θ : Subst) (A : ltype GF) (v : Val) (x : String) :
+    envLtyped Γ θ ∗ A v ⊢ envLtyped (insert Γ x A) (insert θ x v) := by
+  unfold envLtyped
+  have hmono : ∀ Γ' : Ctx GF, (∀ y B, get? Γ' y = some B → y ≠ x) →
+      ([∗map] y ↦ B ∈ Γ', ∃ w, ⌜get? θ y = some w⌝ ∗ B w) ⊢
+        [∗map] y ↦ B ∈ Γ', ∃ w, ⌜get? (insert θ x v) y = some w⌝ ∗ B w := fun Γ' hne =>
+    bigSepM_mono fun {y B} hy => by
+      iintro ⟨%w, %hw, HB⟩
+      iexists w
+      iframe
+      ipureintro
+      rw [LawfulPartialMap.get?_insert_ne (hne y B hy).symm]
+      exact hw
+  cases hx : get? Γ x with
+  | none =>
+    refine .trans ?_ (bigSepM_insert hx).2
+    iintro ⟨HΓ, HA⟩
+    isplitl [HA]
+    · iexists v
+      iframe
+      ipureintro
+      exact LawfulPartialMap.get?_insert_eq rfl
+    · iapply hmono Γ (fun y B hy hyx => by subst hyx; simp_all) $$ HΓ
+  | some B =>
+    rw [← LawfulPartialMap.insert_delete (m := Γ)]
+    refine .trans ?_ (bigSepM_insert (LawfulPartialMap.get?_delete_eq rfl)).2
+    iintro ⟨HΓ, HA⟩
+    icases (bigSepM_delete hx).1 $$ HΓ with ⟨-, HΓ⟩
+    isplitl [HA]
+    · iexists v
+      iframe
+      ipureintro
+      exact LawfulPartialMap.get?_insert_eq rfl
+    · iapply hmono (delete Γ x) (fun y B hy hyx => by
+        subst hyx; simp [LawfulPartialMap.get?_delete_eq] at hy) $$ HΓ
+
+/-- Rocq: `env_ltyped_weaken`. -/
+theorem env_ltyped_weaken (x : String) (A : ltype GF) (Γ : Ctx GF) (θ : Subst)
+    (hx : get? Γ x = none) : envLtyped (insert Γ x A) θ ⊢ envLtyped Γ θ := by
+  unfold envLtyped
+  refine (bigSepM_insert hx).1.trans sep_elim_right
+
+/-- Rocq: `variable`. -/
+theorem variable_rule (x : String) (A : ltype GF) :
+    ltyped.{w} (singleton x A) (.var x) A := by
+  unfold ltyped envLtyped
+  iexists (0 : Ordinal.{w})
+  iintro - %θ HΓ
+  ihave ⟨%v, %hv, HA⟩ := bigSepM_lookup (LawfulPartialMap.get?_singleton_eq rfl) $$ HΓ
+  simp only [Exp.substMap]
+  rw [hv]
+  iapply seq_value
+  iexact HA
+
+/-- Rocq: `weaken`. -/
+theorem weaken_rule (x : String) (Γ : Ctx GF) (e : Exp) (A B : ltype GF) (hx : get? Γ x = none)
+    (He : ltyped.{w} Γ e B) : ltyped.{w} (insert Γ x A) e B := by
+  unfold ltyped at *
+  ihave ⟨%α, He⟩ := He
+  iexists α
+  iintro Hα %θ Hθ
+  iapply He $$ Hα %θ
+  iapply env_ltyped_weaken x A Γ θ hx $$ Hθ
+
+/-- Rocq: `unit_intro`. -/
+theorem unit_intro : ltyped.{w} (GF := GF) ∅ hl(#()) lunit := by
+  unfold ltyped
+  iexists (0 : Ordinal.{w})
+  iintro - %θ -
+  simp only [substMap_ofVal]
+  iapply closed_unit_intro
+
+/-- Rocq: `unit_elim`. -/
+theorem unit_elim (Γ Δ : Ctx GF) (e e' : Exp) (A : ltype GF) (hdis : Γ ##ₘ Δ)
+    (He : ltyped.{w} Γ e lunit) (He' : ltyped.{w} Δ e' A) :
+    ltyped.{w} (PartialMap.union Γ Δ) hl(&e; &e') A := by
+  unfold ltyped at *
+  ihave ⟨%α₁, He⟩ := He
+  ihave ⟨%α₂, He'⟩ := He'
+  iexists α₁ ♯ α₂
+  iintro Hc %θ HΓ
+  icases (tc_split α₁ α₂).mp $$ Hc with ⟨Hα₁, Hα₂⟩
+  icases env_ltyped_split hdis $$ HΓ with ⟨HΓ, HΔ⟩
+  ihave H₁ := He $$ Hα₁ %θ HΓ
+  ihave H₂ := He' $$ Hα₂ %θ HΔ
+  simp only [Exp.substMap, Binder.deleteMap]
+  iapply closed_unit_elim
+  iframe
+
+/-- Rocq: `bool_intro`. -/
+theorem bool_intro (b : Bool) : ltyped.{w} (GF := GF) ∅ hl(#b) lbool := by
+  unfold ltyped
+  iexists (0 : Ordinal.{w})
+  iintro - %θ -
+  simp only [substMap_ofVal]
+  iapply closed_bool_intro
+
+/-- Rocq: `bool_elim`. -/
+theorem bool_elim (Γ Δ : Ctx GF) (e e₁ e₂ : Exp) (A : ltype GF) (hdis : Γ ##ₘ Δ)
+    (He : ltyped.{w} Γ e lbool) (H₁ : ltyped.{w} Δ e₁ A) (H₂ : ltyped.{w} Δ e₂ A) :
+    ltyped.{w} (PartialMap.union Γ Δ) hl(if &e then &e₁ else &e₂) A := by
+  unfold ltyped at *
+  ihave ⟨%α, He⟩ := He
+  ihave ⟨%α₁, H₁⟩ := H₁
+  ihave ⟨%α₂, H₂⟩ := H₂
+  iexists α ♯ α₁ ♯ α₂
+  iintro Hc %θ HΓ
+  icases (tc_split _ α₂).mp $$ Hc with ⟨Hc, Hα₂⟩
+  icases (tc_split α α₁).mp $$ Hc with ⟨Hα, Hα₁⟩
+  icases env_ltyped_split hdis $$ HΓ with ⟨HΓ, HΔ⟩
+  ihave He := He $$ Hα %θ HΓ
+  simp only [Exp.substMap]
+  iapply closed_bool_elim (P := envLtyped Δ θ)
+  iframe He HΔ
+  isplitl [H₁ Hα₁]
+  · iapply H₁ $$ Hα₁ %θ
+  · iapply H₂ $$ Hα₂ %θ
+
+/-- Rocq: `nat_intro`. -/
+theorem nat_intro (n : Nat) : ltyped.{w} (GF := GF) ∅ hl(#(n : Int)) lnat := by
+  unfold ltyped
+  iexists (0 : Ordinal.{w})
+  iintro - %θ -
+  simp only [substMap_ofVal]
+  iapply closed_nat_intro
+
+/-- Rocq: `nat_plus`. -/
+theorem nat_plus (e₁ e₂ : Exp) (Γ Δ : Ctx GF) (hdis : Γ ##ₘ Δ)
+    (H₁ : ltyped.{w} Γ e₁ lnat) (H₂ : ltyped.{w} Δ e₂ lnat) :
+    ltyped.{w} (PartialMap.union Γ Δ) hl(&e₁ + &e₂) lnat := by
+  unfold ltyped at *
+  ihave ⟨%α₁, H₁⟩ := H₁
+  ihave ⟨%α₂, H₂⟩ := H₂
+  iexists α₁ ♯ α₂
+  iintro Hc %θ HΓ
+  icases (tc_split α₁ α₂).mp $$ Hc with ⟨Hα₁, Hα₂⟩
+  icases env_ltyped_split hdis $$ HΓ with ⟨HΓ, HΔ⟩
+  ihave H₁ := H₁ $$ Hα₁ %θ HΓ
+  ihave H₂ := H₂ $$ Hα₂ %θ HΔ
+  simp only [Exp.substMap]
+  iapply closed_nat_add
+  iframe
+
+/-- Rocq: `nat_elim`. -/
+theorem nat_elim (e e₀ eS : Exp) (x : String) (A : ltype GF) (Γ Δ : Ctx GF) (hdis : Γ ##ₘ Δ)
+    (He : ltyped.{w} Γ e lnat) (H₀ : ltyped.{w} Δ e₀ A)
+    (HS : ltyped.{w} (PartialMap.singleton x A) eS A) :
+    ltyped.{w} (PartialMap.union Γ Δ)
+      hl(v(&iter) &e₀ &e v(&(Val.rec_ .anon (.named x) eS))) A := by
+  rw [show PartialMap.singleton x A = PartialMap.insert (∅ : Ctx GF) x A from rfl] at HS
+  unfold ltyped at *
+  ihave ⟨%αe, He⟩ := He
+  ihave ⟨%α₀, H₀⟩ := H₀
+  ihave ⟨%αS, #HS⟩ := HS
+  iexists αe ♯ α₀ ♯ omul αS
+  iintro Hc %θ HΓ
+  icases (tc_split _ (omul αS)).mp $$ Hc with ⟨Hc, HαS⟩
+  icases (tc_split αe α₀).mp $$ Hc with ⟨Hαe, Hα₀⟩
+  icases env_ltyped_split hdis $$ HΓ with ⟨HΓ, HΔ⟩
+  ihave He := He $$ Hαe %θ HΓ
+  ihave H₀ := H₀ $$ Hα₀ %θ HΔ
+  simp only [Exp.substMap, substMap_ofVal]
+  iapply closed_nat_iter
+  iframe He H₀ HαS
+  iintro !> Hα %v Hv
+  unfold seqT tseq seq
+  iintro Hna
+  twp_pures
+  ihave H := HS $$ Hα %(PartialMap.insert (∅ : Subst) x v) [Hv]
+  · iapply env_ltyped_insert
+    iframe
+    iapply env_ltyped_empty
+  rw [Exp.substMap_insert, LawfulPartialMap.delete_empty, Exp.substMap_empty]
+  simp only [Exp.subst]
+  iapply H $$ Hna
+
+/-- Rocq: `fun_intro`. -/
+theorem fun_intro (Γ : Ctx GF) (x : String) (e : Exp) (A B : ltype GF)
+    (He : ltyped.{w} (PartialMap.insert Γ x A) e B) :
+    ltyped.{w} Γ (Exp.rec_ .anon (.named x) e) (larr.{w} A B) := by
+  unfold ltyped at *
+  ihave ⟨%α, He⟩ := He
+  iexists α
+  iintro Hα %θ HΓ
+  simp only [Exp.substMap, Binder.deleteMap]
+  iapply closed_fun_intro
+  iintro %v Hv
+  ihave H := He $$ Hα %(PartialMap.insert θ x v) [HΓ Hv]
+  · iapply env_ltyped_insert
+    iframe
+  rw [Exp.substMap_insert]
+  simp only [Exp.subst]
+  iexact H
+
+/-- Rocq: `fun_elim`. -/
+theorem fun_elim (Γ Δ : Ctx GF) (e₁ e₂ : Exp) (A B : ltype GF) (hdis : Γ ##ₘ Δ)
+    (H₁ : ltyped.{w} Γ e₁ (larr.{w} A B)) (H₂ : ltyped.{w} Δ e₂ A) :
+    ltyped.{w} (PartialMap.union Γ Δ) hl(&e₁ &e₂) B := by
+  unfold ltyped at *
+  ihave ⟨%α₁, H₁⟩ := H₁
+  ihave ⟨%α₂, H₂⟩ := H₂
+  iexists α₁ ♯ α₂
+  iintro Hc %θ HΓ
+  icases (tc_split α₁ α₂).mp $$ Hc with ⟨Hα₁, Hα₂⟩
+  icases env_ltyped_split hdis $$ HΓ with ⟨HΓ, HΔ⟩
+  ihave H₁ := H₁ $$ Hα₁ %θ HΓ
+  ihave H₂ := H₂ $$ Hα₂ %θ HΔ
+  simp only [Exp.substMap]
+  iapply closed_fun_elim
+  iframe
+
+/-- Rocq: `tensor_intro`. -/
+theorem tensor_intro (Γ Δ : Ctx GF) (e₁ e₂ : Exp) (A B : ltype GF) (hdis : Γ ##ₘ Δ)
+    (H₁ : ltyped.{w} Γ e₁ A) (H₂ : ltyped.{w} Δ e₂ B) :
+    ltyped.{w} (PartialMap.union Γ Δ) hl((&e₁, &e₂)) (ltensor A B) := by
+  unfold ltyped at *
+  ihave ⟨%α₁, H₁⟩ := H₁
+  ihave ⟨%α₂, H₂⟩ := H₂
+  iexists α₁ ♯ α₂
+  iintro Hc %θ HΓ
+  icases (tc_split α₁ α₂).mp $$ Hc with ⟨Hα₁, Hα₂⟩
+  icases env_ltyped_split hdis $$ HΓ with ⟨HΓ, HΔ⟩
+  ihave H₁ := H₁ $$ Hα₁ %θ HΓ
+  ihave H₂ := H₂ $$ Hα₂ %θ HΔ
+  simp only [Exp.substMap]
+  iapply closed_tensor_intro
+  iframe
+
+theorem substMap_letPair (θ : Subst) (x y : String) (e₁ e₂ : Exp) :
+    (letPair x y e₁ e₂).substMap θ =
+      letPair x y (e₁.substMap θ) (e₂.substMap (delete (delete θ x) y)) := by
+  simp [letPair, Exp.substMap, Binder.deleteMap]
+
+/-- Rocq: `tensor_elim`. -/
+theorem tensor_elim (Γ Δ : Ctx GF) (x y : String) (e₁ e₂ : Exp) (A B C : ltype GF) (hxy : x ≠ y)
+    (hdis : Γ ##ₘ Δ) (H₁ : ltyped.{w} Γ e₁ (ltensor A B))
+    (H₂ : ltyped.{w} (PartialMap.insert (PartialMap.insert Δ y B) x A) e₂ C) :
+    ltyped.{w} (PartialMap.union Γ Δ) (letPair x y e₁ e₂) C := by
+  unfold ltyped at *
+  ihave ⟨%α₁, H₁⟩ := H₁
+  ihave ⟨%α₂, H₂⟩ := H₂
+  iexists α₁ ♯ α₂
+  iintro Hc %θ HΓ
+  icases (tc_split α₁ α₂).mp $$ Hc with ⟨Hα₁, Hα₂⟩
+  icases env_ltyped_split hdis $$ HΓ with ⟨HΓ, HΔ⟩
+  ihave H₁ := H₁ $$ Hα₁ %θ HΓ
+  rw [substMap_letPair]
+  iapply closed_tensor_elim x y _ _ A B C hxy
+  iframe H₁
+  iintro %v₁ %v₂ Hv₁ Hv₂
+  ihave H := H₂ $$ Hα₂
+    %(PartialMap.insert (PartialMap.insert θ y v₂) x v₁) [HΔ Hv₁ Hv₂]
+  · iapply env_ltyped_insert
+    iframe Hv₁
+    iapply env_ltyped_insert
+    iframe
+  rw [show PartialMap.insert (PartialMap.insert θ y v₂) x v₁ =
+    (Binder.named x).insertMap v₁ ((Binder.named y).insertMap v₂ θ) from rfl,
+    Exp.substMap_insertMap_2]
+  simp only [Binder.deleteMap]
+  iexact H
+
+/-- Rocq: `chan_alloc`. -/
+theorem chan_alloc (A : ltype GF) :
+    ltyped.{w} (GF := GF) ∅ hl(v(&chan) #()) (ltensor (lget.{w} A) (lput.{w} A)) := by
+  unfold ltyped
+  iexists (1 : Ordinal.{w}) ♯ 1
+  iintro Hc %θ -
+  simp only [Exp.substMap, substMap_ofVal]
+  iapply closed_chan
+  iapply (tc_split 1 1).mp $$ Hc
+
+/-- Rocq: `chan_get`. -/
+theorem chan_get (Γ Δ : Ctx GF) (e₁ e₂ : Exp) (A : ltype GF) (hdis : Γ ##ₘ Δ)
+    (H₁ : ltyped.{w} Γ e₁ (lget.{w} A)) (H₂ : ltyped.{w} Δ e₂ (larr.{w} A lunit)) :
+    ltyped.{w} (PartialMap.union Γ Δ) hl(v(&get) (&e₁, &e₂)) lunit := by
+  unfold ltyped at *
+  ihave ⟨%α₁, H₁⟩ := H₁
+  ihave ⟨%α₂, H₂⟩ := H₂
+  iexists α₁ ♯ α₂
+  iintro Hc %θ HΓ
+  icases (tc_split α₁ α₂).mp $$ Hc with ⟨Hα₁, Hα₂⟩
+  icases env_ltyped_split hdis $$ HΓ with ⟨HΓ, HΔ⟩
+  ihave H₁ := H₁ $$ Hα₁ %θ HΓ
+  ihave H₂ := H₂ $$ Hα₂ %θ HΔ
+  simp only [Exp.substMap, substMap_ofVal]
+  iapply closed_get
+  iframe
+
+/-- Rocq: `chan_put`. -/
+theorem chan_put (Γ Δ : Ctx GF) (e₁ e₂ : Exp) (A : ltype GF) (hdis : Γ ##ₘ Δ)
+    (H₁ : ltyped.{w} Γ e₁ (lput.{w} A)) (H₂ : ltyped.{w} Δ e₂ A) :
+    ltyped.{w} (PartialMap.union Γ Δ) hl(v(&put) (&e₁, &e₂)) lunit := by
+  unfold ltyped at *
+  ihave ⟨%α₁, H₁⟩ := H₁
+  ihave ⟨%α₂, H₂⟩ := H₂
+  iexists α₁ ♯ α₂
+  iintro Hc %θ HΓ
+  icases (tc_split α₁ α₂).mp $$ Hc with ⟨Hα₁, Hα₂⟩
+  icases env_ltyped_split hdis $$ HΓ with ⟨HΓ, HΔ⟩
+  ihave H₁ := H₁ $$ Hα₁ %θ HΓ
+  ihave H₂ := H₂ $$ Hα₂ %θ HΔ
+  simp only [Exp.substMap, substMap_ofVal]
+  iapply closed_put
+  iframe
+
+end Simple
 
 end Iris.Transfinite.Termination.Logrel
