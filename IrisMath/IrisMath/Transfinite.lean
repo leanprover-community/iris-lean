@@ -50,7 +50,7 @@ successors of these ordinals is a (small) ordinal at which no `x` satisfies the 
 instance ordinalSIdxLarge : SIdxLarge.{u} Ordinal.{u} where
   commute_exists {X} P hdown hsome := by
     by_contra hne
-    push_neg at hne
+    push Not at hne
     choose a ha using hne
     obtain ⟨x, hx⟩ := hsome (⨆ x, a x + 1)
     exact ha x (hdown x (a x) _ (Ordinal.lt_iSup_add_one a x) hx)

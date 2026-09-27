@@ -66,9 +66,11 @@ def stackContents (hd : Val) : List Val → (Val → IProp GF) → IProp GF
   | x :: xs, φ => iprop(∃ (l : Loc) (hd' : Val), ⌜hd = hl_val(some(#l))⌝ ∗
       l ↦ some hl_val((&x, &hd')) ∗ φ x ∗ stackContents hd' xs φ)
 
+omit Htc in
 theorem stackContents_nil (hd : Val) (φ : Val → IProp GF) :
     stackContents hd [] φ = iprop(⌜hd = hl_val(none())⌝) := rfl
 
+omit Htc in
 theorem stackContents_cons (hd x : Val) (xs : List Val) (φ : Val → IProp GF) :
     stackContents hd (x :: xs) φ = iprop(∃ (l : Loc) (hd' : Val), ⌜hd = hl_val(some(#l))⌝ ∗
       l ↦ some hl_val((&x, &hd')) ∗ φ x ∗ stackContents hd' xs φ) := rfl
@@ -287,7 +289,8 @@ def openExample (external print q : Val) : Exp := hl(
   v(&forLoop) (λ _, v(&enqueue) v(&q) (λ _, v(&print) #(42 : Int))) n)
 
 theorem nat_cast_two_mul_succ (n : Nat) :
-    ((2 * (n + 1) : Nat) : Ordinal.{w}) = Order.succ (Order.succ ((2 * n : Nat) : Ordinal.{w})) := by
+    ((2 * (n + 1) : Nat) : Ordinal.{w}) =
+      Order.succ (Order.succ ((2 * n : Nat) : Ordinal.{w})) := by
   rw [Order.succ_eq_add_one, Order.succ_eq_add_one, show 2 * (n + 1) = 2 * n + 1 + 1 by omega]
   push_cast
   rfl

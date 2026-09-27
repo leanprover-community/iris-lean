@@ -292,7 +292,7 @@ def natmul : Nat → Ordinal.{w} → Ordinal.{w}
 def omul (α : Ordinal.{w}) : Ordinal.{w} := ⨆ n : Nat, natmul n α
 
 theorem natmul_le_omul (n : Nat) (α : Ordinal.{w}) : natmul n α ≤ omul α :=
-  le_ciSup (Ordinal.bddAbove_range _) n
+  le_ciSup Ordinal.bddAbove_of_small n
 
 /-- Rocq: `closed_nat_iter_n`. -/
 theorem closed_nat_iter_n (n : Nat) (s : Exp) (f : Val) (α : Ordinal.{w}) (A : ltype GF) :

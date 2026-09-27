@@ -15,19 +15,19 @@ open scoped CommMonoidLike
 
 /-- info: CommMonoidLike.instUCMRA -/
 #guard_msgs in
-#synth UCMRA ℝ
+#synth UCMRA (SI := Nat) ℝ
 
 /-- info: CommMonoidLike.instDiscrete -/
 #guard_msgs in
-#synth CMRA.Discrete ℝ
+#synth CMRA.Discrete (SI := Nat) ℝ
 
 /-- info: fun x ↦ CommMonoidLike.instCancelable -/
 #guard_msgs in
-#synth ∀ x : ℝ, CMRA.Cancelable x
+#synth ∀ x : ℝ, CMRA.Cancelable (SI := Nat) x
 
 /-- info: CommMonoidLike.instCoreIdZero -/
 #guard_msgs in
-#synth CMRA.CoreId (0 : ℝ)
+#synth CMRA.CoreId (SI := Nat) (0 : ℝ)
 
 end Real
 
@@ -38,14 +38,14 @@ open scoped CommMonoidLike
 
 /-- info: CommMonoidLike.instUCMRA -/
 #guard_msgs in
-#synth UCMRA ℝ≥0∞
+#synth UCMRA (SI := Nat) ℝ≥0∞
 
 /-- info: CommMonoidLike.instDiscrete -/
 #guard_msgs in
-#synth CMRA.Discrete ℝ≥0∞
+#synth CMRA.Discrete (SI := Nat) ℝ≥0∞
 
 /-- info: CommMonoidLike.instCoreIdZero -/
 #guard_msgs in
-#synth CMRA.CoreId (0 : ℝ≥0∞)
+#synth CMRA.CoreId (SI := Nat) (0 : ℝ≥0∞)
 
 end ENNReal

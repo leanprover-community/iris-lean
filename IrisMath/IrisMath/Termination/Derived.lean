@@ -85,7 +85,7 @@ theorem pure_term (e e' : Exp) (P : IProp GF) (Q : Val → IProp GF) (hstep : e 
     termTriple.{w} P e' Q ⊢ stepTriple.{w} P e Q := by
   unfold termTriple stepTriple tseq seq seqRswp
   iintro #H !> HP Hna
-  haveI : PureExec True 1 e e' := ⟨fun _ => .once hstep⟩
+  have : PureExec True 1 e e' := ⟨fun _ => .once hstep⟩
   iapply rswp_pure_step_later trivial
   iapply H $$ HP Hna
 
@@ -148,6 +148,7 @@ theorem spend_cred_term (P : IProp GF) (e : Exp) (Q : Val → IProp GF) {α β :
     iframe
   · iapply tc_update ⊤ hlt $$ Hc
 
+omit Hheap Hseq in
 /-- Rocq: `split_cred_term`. -/
 theorem split_cred_term (α β : Ordinal.{w}) : tc (GF := GF) (α ♯ β) ⊣⊢ tc α ∗ tc β :=
   tc_split α β

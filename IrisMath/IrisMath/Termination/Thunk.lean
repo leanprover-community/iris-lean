@@ -166,13 +166,13 @@ def prepaidTl (γ : GName) (r : Loc) (Φ : Val → IProp GF) : IProp GF :=
 instance prepaidTl_timeless (γ : GName) (r : Loc) (Φ : Val → IProp GF) [∀ v, Timeless (Φ v)] :
     Timeless (prepaidTl.{w} γ r Φ) := by
   unfold prepaidTl
-  haveI h₁ : Timeless iprop(tc (GF := GF) (1 : Ordinal.{w}) ∗
+  have h₁ : Timeless iprop(tc (GF := GF) (1 : Ordinal.{w}) ∗
       iOwn (E := Htok) γ (ULift.up (● ()))) :=
     @UPred.sep_timeless' _ _ _ _ _ _ inferInstance inferInstance
-  haveI h₂ : Timeless iprop(r ↦ some hl_val(none()) ∗ tc (GF := GF) (1 : Ordinal.{w}) ∗
+  have h₂ : Timeless iprop(r ↦ some hl_val(none()) ∗ tc (GF := GF) (1 : Ordinal.{w}) ∗
       iOwn (E := Htok) γ (ULift.up (● ()))) :=
     @UPred.sep_timeless' _ _ _ _ _ _ inferInstance h₁
-  haveI h₃ : Timeless iprop(∃ v, r ↦ some hl_val(some(&v)) ∗ Φ v) :=
+  have h₃ : Timeless iprop(∃ v, r ↦ some hl_val(some(&v)) ∗ Φ v) :=
     @UPred.exists_timeless' _ _ _ _ _ _ (fun _ =>
       @UPred.sep_timeless' _ _ _ _ _ _ inferInstance inferInstance)
   infer_instance

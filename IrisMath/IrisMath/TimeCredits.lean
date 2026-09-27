@@ -113,7 +113,7 @@ instance tc_timeless (α : Ordinal.{w}) : Timeless (tc (GF := GF) α) := by
 
 instance zero_persistent : Persistent (tc (GF := GF) 0) := by
   unfold tc
-  haveI : CMRA.CoreId (α := (constOFU.{max u v} (Auth (OrdCam.{w} SI))).ap (IProp GF))
+  have : CMRA.CoreId (α := (constOFU.{max u v} (Auth (OrdCam.{w} SI))).ap (IProp GF))
       (ULift.up (◯ (⟨0⟩ : OrdCam.{w} SI))) := ULift.instCoreId
   infer_instance
 
@@ -153,18 +153,14 @@ end Update
 
 /-! ## The time-credit weakest precondition -/
 
+section TCWP
+
 variable {Expr State Obs Val : Type _} [Λ : Language Expr State Obs Val] [ι : RefIrisGS Expr GF]
 variable {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF}
 
 /-- The time-credit weakest precondition (Rocq: `tcwp`, notation `WP e @ s; E [{ Φ }]`). -/
 abbrev tcwp (s : Stuckness) (E : CoPset) (e : Expr) (Φ : Val → IProp GF) : IProp GF :=
   rwp (src := tcSource) (ι := ι) s E e Φ
-
-instance hlwp_tcwp [ι : RefIrisGS HeapLang.Exp GF] {s : Stuckness} {E : CoPset} :
-    HLWp (tcwp (G := G) (ι := ι) s E) (tcwp (G := G) (ι := ι) s E) := hlwp_rwp
-
-instance hlwpValue_tcwp [ι : RefIrisGS HeapLang.Exp GF] {s : Stuckness} {E : CoPset} :
-    HLWpValue (tcwp (G := G) (ι := ι) s E) := hlwpValue_rwp
 
 /-- Rocq: `tcwp_burn_credit`. -/
 theorem tcwp_burn_credit (he : toVal e = none) :
@@ -190,7 +186,8 @@ theorem tc_alloc_zero :
     (tc (GF := GF) 0 -∗ tcwp (ι := ι) s E e Φ) ⊢ tcwp (ι := ι) s E e Φ := by
   iintro H
   iapply fupd_rwp
-  imod (iOwn_unit (E := G.elem) (γ := G.name) (ε := (UCMRA.unit : (constOFU.{max u v} (Auth (OrdCam.{w} SI))).ap (IProp GF))))
+  imod (iOwn_unit (E := G.elem) (γ := G.name)
+      (ε := (UCMRA.unit : (constOFU.{max u v} (Auth (OrdCam.{w} SI))).ap (IProp GF))))
     with Hz
   have hunit : (UCMRA.unit : (constOFU.{max u v} (Auth (OrdCam.{w} SI))).ap (IProp GF)) =
       ULift.up (◯ (⟨0⟩ : OrdCam.{w} SI)) := rfl
@@ -211,5 +208,15 @@ theorem tcwp_adequacy [SIdxLarge.{w + 1} SI] {α : Ordinal.{w}} {σ : State} {n 
       tcwp (ι := ι) .NotStuck ⊤ e Φ))
     (hloop : ExLoop ErasedStep ([e], σ)) : False :=
   rwp_adequacy (src := tcSource) (tcSource_sn α) hloop hsat
+
+end TCWP
+
+/-! ## Proof mode for HeapLang -/
+
+instance hlwp_tcwp [ι : RefIrisGS HeapLang.Exp GF] {s : Stuckness} {E : CoPset} :
+    HLWp (tcwp (G := G) (ι := ι) s E) (tcwp (G := G) (ι := ι) s E) := hlwp_rwp
+
+instance hlwpValue_tcwp [ι : RefIrisGS HeapLang.Exp GF] {s : Stuckness} {E : CoPset} :
+    HLWpValue (tcwp (G := G) (ι := ι) s E) := hlwpValue_rwp
 
 end Iris.Transfinite

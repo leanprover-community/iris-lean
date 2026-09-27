@@ -44,14 +44,15 @@ theorem satisfiableAt_alloc [W : WsatGS GF] {X : Type} [SIdxLarge.{0} SI] {P : I
   iframe
 
 /-- Rocq: `heap_lang_ref_adequacy`. -/
-theorem heap_lang_ref_adequacy [hL : SIdxLarge.{w + 1} SI] [Hpre : HeapLangTPreS GF] [Hna : NaInvG GF]
+theorem heap_lang_ref_adequacy [hL : SIdxLarge.{w + 1} SI] [Hpre : HeapLangTPreS GF]
+    [Hna : NaInvG GF]
     [Etc : ElemG GF (constOFU.{max u v} (Auth (OrdCam.{w} SI)))] (e : Exp) (σ : State)
     (Hwp : ∀ [Hh : HeapLangTGS GF] [Hs : SeqG GF] [Ht : TcGS.{w} GF],
       ⊢ ∃ α : Ordinal.{w}, tc (G := Ht) α -∗
         tseq.{w} (Hheap := Hh) (Htc := Ht) (Hseq := Hs) ⊤ e fun _ => iprop(True)) :
     StronglyNormalizing ErasedStep ([e], σ) := by
   -- (local instances are tried newest first, without backtracking on universe levels)
-  haveI : SIdxLarge.{0} SI := SIdxLarge.down.{0, w + 1}
+  have : SIdxLarge.{0} SI := SIdxLarge.down.{0, w + 1}
   -- allocate world satisfaction
   have h0 : UPred.satisfiable iprop(∃ γ γe γd : GName,
       wsat (W := WsatGS.ofNames (GF := GF) γ γe γd) ∗
@@ -74,18 +75,19 @@ theorem heap_lang_ref_adequacy [hL : SIdxLarge.{w + 1} SI] [Hpre : HeapLangTPreS
       iexists γm
       iexact Hh))
   let G : genHeapGS Loc (Option Val) GF HeapF := ⟨γh, γm⟩
-  letI Hheap : HeapLangTGS GF := { toWsatGS := W, heap := G, proph := ⟨0⟩ }
+  let Hheap : HeapLangTGS GF := { toWsatGS := W, heap := G, proph := ⟨0⟩ }
   -- allocate the pool of non-atomic invariants
   obtain ⟨p, h3⟩ := satisfiableAt_alloc h2 (NonAtomicInvariant.alloc (GF := GF))
-  letI Hseq : SeqG GF := { toNaInvG := Hna, name := p }
+  let Hseq : SeqG GF := { toNaInvG := Hna, name := p }
   -- allocate the time credits
   obtain ⟨γc, h4⟩ := satisfiableAt_alloc h3 (iOwn_alloc (E := Etc)
     (ULift.up ((● (⟨0⟩ : OrdCam.{w} SI)) • ◯ (⟨0⟩ : OrdCam.{w} SI)))
     (Auth.auth_both_valid_discrete.mpr ⟨CMRA.inc_refl _, trivial⟩))
-  letI Htc : TcGS.{w} GF := { elem := Etc, name := γc }
+  let Htc : TcGS.{w} GF := { elem := Etc, name := γc }
   -- choose the budget
   have h5 := satisfiableAt_add h4 (@Hwp Hheap Hseq Htc)
-  obtain ⟨α, h5⟩ := have := hL; satisfiableAt_exists (X := Ordinal.{w}) (P := fun α : Ordinal.{w} => iprop(
+  obtain ⟨α, h5⟩ := have := hL
+    satisfiableAt_exists (X := Ordinal.{w}) (P := fun α : Ordinal.{w} => iprop(
       (((genHeapInterp σ.heap ∗ NonAtomicInvariant.own p ⊤) ∗
         iOwn (E := Etc) γc (ULift.up ((● (⟨0⟩ : OrdCam.{w} SI)) • ◯ (⟨0⟩ : OrdCam.{w} SI)))) ∗
       (tc (GF := GF) α -∗ tseq.{w} ⊤ e fun _ => iprop(True)))))
