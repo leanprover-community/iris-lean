@@ -1,0 +1,510 @@
+/-
+Copyright (c) The Iris-Lean Contributors
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Iris-Lean Contributors
+-/
+module
+
+public import Iris.HeapLang.TransfiniteProofMode
+public import Iris.Instances.Lib.GhostMap
+public import Iris.ProgramLogic.Refinement.NatSource
+public import Iris.ProgramLogic.Refinement.SeqWeakestPre
+public import Iris.Instances.Lib.NaInvariantsTransfinite
+
+/-! # Refinements between heap_lang programs
+
+This file ports `theories/examples/refinements/refinement.v` of Transfinite Iris: the refinement
+logic for proving that a heap_lang program `t` (the target) refines a heap_lang program `s` (the
+source): every result of `t` is related to a result of `s`, and `t` terminates if `s` does
+(`heap_lang_ref_adequacy`).
+
+The source is heap_lang itself, with a stuttering budget (the lexicographic product with the
+natural numbers `natA`). Its ghost state consists of three ghost maps (instead of the
+`auth (gmap nat (excl expr) × gen_heap)` camera and the monotone list of the Rocq development):
+the thread pool `j ⤇ e`, the source heap `l ↦s v` and the execution trace of the source (whose
+persistent elements `traceIdx i c` record that `c` is a configuration of the source execution).
+-/
+
+@[expose] public noncomputable section
+
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+local stepindex SI
+
+namespace Iris.Transfinite.Refinement
+
+open Iris Iris.Std Iris.BI Iris.HeapLang Iris.HeapLang.Transfinite ProgramLogic Language
+open Language.Notation Relation
+
+/-! ## Lists of steps -/
+
+/-- Rocq: `rtc_list`. -/
+inductive RtcList {A : Type _} (R : A → A → Prop) : List A → Prop
+  | nil : RtcList R []
+  | once (x : A) : RtcList R [x]
+  | cons (x y : A) (l : List A) : R x y → RtcList R (y :: l) → RtcList R (x :: y :: l)
+
+/-- Rocq: `rtc_list_r`. -/
+theorem RtcList.snoc {A : Type _} {R : A → A → Prop} {x y : A} {l : List A} (hR : R x y)
+    (h : RtcList R (l ++ [x])) : RtcList R (l ++ [x] ++ [y]) := by
+  induction l with
+  | nil =>
+    exact .cons x y [] hR (.once y)
+  | cons a l ih =>
+    cases l with
+    | nil =>
+      cases h with
+      | cons _ _ _ hab h' => exact .cons a x [y] hab (ih h')
+    | cons b l =>
+      cases h with
+      | cons _ _ _ hab h' => exact .cons a b _ hab (ih h')
+
+/-- Rocq: `rtc_list_lookup_last_rtc`. -/
+theorem RtcList.lookup_rtc {A : Type _} {R : A → A → Prop} {x y : A} {l : List A} {i : Nat}
+    (hi : (l ++ [y])[i]? = some x) (h : RtcList R (l ++ [y])) : FromMathlib.Relation.ReflTransGen R x y := by
+  induction l generalizing i x with
+  | nil =>
+    cases i with
+    | zero => cases hi; exact .refl
+    | succ i => simp at hi
+  | cons a l ih =>
+    cases i with
+    | zero =>
+      cases hi
+      cases l with
+      | nil =>
+        cases h with
+        | cons _ _ _ hab _ => exact .single hab
+      | cons b l =>
+        cases h with
+        | cons _ _ _ hab h' =>
+          exact .head hab (ih (x := b) (i := 0) (by simp) h')
+    | succ i =>
+      cases l with
+      | nil =>
+        cases h with
+        | cons _ _ _ _ h' => exact ih hi h'
+      | cons b l =>
+        cases h with
+        | cons _ _ _ _ h' => exact ih hi h'
+
+/-! ## Ghost state of the source -/
+
+/-- Maps with natural-number keys. -/
+abbrev NatMap := fun V => Std.ExtTreeMap Nat V compare
+
+/-- Configurations of heap_lang. -/
+abbrev Cfg := List Exp × State
+
+/-- Values of the source heap (a wrapper, to distinguish the ghost map of the source heap from the
+one of the target heap). -/
+structure SrcVal where
+  val : Option Val
+
+/-- The ghost state of the refinement logic (Rocq: `rheapG`). -/
+class RHeapG (GF : BundledGFunctors) extends HeapLangTGS GF where
+  tpool : GhostMapG GF Nat Exp NatMap
+  tpoolName : GName
+  heapS : GhostMapG GF Loc SrcVal HeapF
+  heapSName : GName
+  trace : GhostMapG GF Nat Cfg NatMap
+  traceName : GName
+
+attribute [reducible, instance] RHeapG.tpool RHeapG.heapS RHeapG.trace
+
+/-- A list as a map from indices (Rocq: `to_tpool`). -/
+def toMapGo {V : Type _} : Nat → List V → NatMap V
+  | _, [] => ∅
+  | i, x :: xs => PartialMap.insert (toMapGo (i + 1) xs) i x
+
+/-- Rocq: `to_tpool`. -/
+def toMap {V : Type _} (l : List V) : NatMap V := toMapGo 0 l
+
+theorem toMapGo_get? {V : Type _} (l : List V) (i j : Nat) :
+    PartialMap.get? (toMapGo i l) (i + j) = l[j]? := by
+  induction l generalizing i j with
+  | nil => exact LawfulPartialMap.get?_empty _
+  | cons x xs ih =>
+    cases j with
+    | zero => exact LawfulPartialMap.get?_insert_eq rfl
+    | succ j =>
+      rw [toMapGo, LawfulPartialMap.get?_insert_ne (by omega), show i + (j + 1) = i + 1 + j by omega,
+        ih]
+      rfl
+
+theorem toMapGo_get?_lt {V : Type _} (l : List V) (i j : Nat) (h : j < i) :
+    PartialMap.get? (toMapGo i l) j = none := by
+  induction l generalizing i with
+  | nil => exact LawfulPartialMap.get?_empty _
+  | cons x xs ih =>
+    rw [toMapGo, LawfulPartialMap.get?_insert_ne (by omega), ih _ (by omega)]
+
+/-- Rocq: `tpool_lookup`. -/
+theorem toMap_get? {V : Type _} (l : List V) (j : Nat) : PartialMap.get? (toMap l) j = l[j]? := by
+  have := toMapGo_get? l 0 j
+  simpa [toMap] using this
+
+theorem toMap_ext {V : Type _} {m : NatMap V} {l : List V}
+    (h : ∀ j, PartialMap.get? m j = l[j]?) : m = toMap l :=
+  LawfulPartialMap.equiv_iff_eq.mp fun j => by rw [h, toMap_get?]
+
+/-- Rocq: `to_tpool_insert`. -/
+theorem toMap_set {V : Type _} (l : List V) (j : Nat) (x : V) (hj : j < l.length) :
+    toMap (l.set j x) = PartialMap.insert (toMap l) j x :=
+  (toMap_ext fun i => by
+    by_cases hij : j = i
+    · subst hij; rw [LawfulPartialMap.get?_insert_eq rfl]; simp [hj]
+    · rw [LawfulPartialMap.get?_insert_ne hij, toMap_get?, List.getElem?_set_ne hij]).symm
+
+/-- Rocq: `to_tpool_snoc`. -/
+theorem toMap_snoc {V : Type _} (l : List V) (x : V) :
+    toMap (l ++ [x]) = PartialMap.insert (toMap l) l.length x :=
+  (toMap_ext fun i => by
+    by_cases hij : l.length = i
+    · subst hij; rw [LawfulPartialMap.get?_insert_eq rfl]; simp
+    · rw [LawfulPartialMap.get?_insert_ne hij, toMap_get?]
+      rcases Nat.lt_or_gt_of_ne hij with h | h
+      · rw [List.getElem?_eq_none (by omega : l.length ≤ i),
+          List.getElem?_eq_none (by simp; omega : (l ++ [x]).length ≤ i)]
+      · rw [List.getElem?_append_left h]).symm
+
+theorem toMap_get?_length {V : Type _} (l : List V) :
+    PartialMap.get? (toMap l) l.length = none := by
+  rw [toMap_get?]; simp
+
+variable {GF : BundledGFunctors} [G : RHeapG GF]
+
+/-- The source heap as a map of `SrcVal`s. -/
+def srcHeap (h : HeapF (Option Val)) : HeapF SrcVal := Std.PartialMap.map SrcVal.mk h
+
+/-- Source points-to (Rocq: `l ↦s{q} v`). -/
+def heapSPointsTo (l : Loc) (q : DFrac) (v : Val) : IProp GF :=
+  ghost_map_elem G.heapSName q l (SrcVal.mk (some v))
+
+/-- Source threads (Rocq: `j ⤇ e`). -/
+def tpoolPointsTo (j : Nat) (e : Exp) : IProp GF := ghost_map_elem G.tpoolName (.own 1) j e
+
+/-- A configuration of the source execution (Rocq: `fmlist_idx`). -/
+def traceIdx (i : Nat) (c : Cfg) : IProp GF := ghost_map_elem G.traceName .discard i c
+
+instance heapSPointsTo_timeless (l : Loc) (q : DFrac) (v : Val) :
+    Timeless (heapSPointsTo (GF := GF) l q v) := by
+  unfold heapSPointsTo; infer_instance
+
+instance traceIdx_persistent (i : Nat) (c : Cfg) : Persistent (traceIdx (GF := GF) i c) := by
+  unfold traceIdx; infer_instance
+
+/-- The interpretation of the source configuration (Rocq: `source_interp` of
+`heap_lang_source`). -/
+def cfgInterp (c : Cfg) : IProp GF :=
+  iprop(ghost_map_auth G.tpoolName (.own 1) (toMap c.1) ∗
+    ghost_map_auth G.heapSName (.own 1) (srcHeap c.2.heap) ∗
+    ∃ l : List Cfg, ⌜RtcList ErasedStep (l ++ [c])⌝ ∗
+      ghost_map_auth G.traceName (.own 1) (toMap (l ++ [c])) ∗ traceIdx l.length c)
+
+/-- heap_lang as a source (Rocq: `heap_lang_source`). -/
+instance heapLangSource : Source GF Cfg where
+  rel := ErasedStep
+  interp := cfgInterp
+
+/-- Rocq: `step_insert`. -/
+theorem step_set {tp : List Exp} {j : Nat} {e e' : Exp} {σ σ' : State} {κ : List Observation}
+    {efs : List Exp} (hj : tp[j]? = some e) (hstep : (e, σ) -<κ>-> (e', σ', efs)) :
+    ErasedStep (tp, σ) (tp.set j e' ++ efs, σ') := by
+  obtain ⟨hlt, rfl⟩ := List.getElem?_eq_some_iff.mp hj
+  refine ⟨κ, ?_⟩
+  have h1 : tp.take j ++ tp[j] :: tp.drop (j + 1) = tp := by
+    simp
+  have h2 : tp.set j e' ++ efs = tp.take j ++ e' :: tp.drop (j + 1) ++ efs := by
+    rw [List.set_eq_take_append_cons_drop, if_pos hlt]
+  have key := Step.atomic hstep (tp.take j) (tp.drop (j + 1))
+  rw [h1] at key
+  rw [h2]
+  exact key
+
+/-! ## Source steps -/
+
+section Steps
+
+open FromMathlib.Relation
+
+theorem srcHeap_get? {h : HeapF (Option Val)} {l : Loc} {w : SrcVal}
+    (hl : PartialMap.get? (srcHeap h) l = some w) : PartialMap.get? h l = some w.val := by
+  unfold srcHeap at hl
+  rw [Std.LawfulPartialMap.get?_map] at hl
+  cases hh : PartialMap.get? h l with
+  | none => simp [hh] at hl
+  | some x => simp [hh] at hl; subst hl; rfl
+
+theorem srcHeap_insert (h : HeapF (Option Val)) (l : Loc) (v : Option Val) :
+    PartialMap.insert (srcHeap h) l (SrcVal.mk v) = srcHeap (PartialMap.insert h l v) := by
+  unfold srcHeap
+  exact Std.LawfulPartialMap.map_insert.symm
+
+theorem srcHeap_get?_none {h : HeapF (Option Val)} {l : Loc}
+    (hl : PartialMap.get? h l = none) : PartialMap.get? (srcHeap h) l = none := by
+  unfold srcHeap
+  rw [Std.LawfulPartialMap.get?_map, hl]
+  rfl
+
+/-- A step of the thread `j` of the source (the core of the operational rules). -/
+theorem cfg_step (E : CoPset) (j : Nat) (e e' : Exp) (R Q : IProp GF)
+    (H : ∀ σ : State, ghost_map_auth G.heapSName (.own 1) (srcHeap σ.heap) ∗ R ⊢
+      |==> ∃ σ' : State, ⌜(e, σ) -<[]>-> (e', σ', [])⌝ ∗
+        ghost_map_auth G.heapSName (.own 1) (srcHeap σ'.heap) ∗ Q) :
+    tpoolPointsTo j e ∗ R ⊢ srcUpdate (src := heapLangSource) E iprop(tpoolPointsTo j e' ∗ Q) := by
+  unfold srcUpdate tpoolPointsTo
+  delta heapLangSource
+  dsimp only
+  unfold cfgInterp
+  iintro ⟨Hj, HR⟩ %⟨tp, σ⟩ ⟨Htp, Hh, %l, %hrtc, Htr, -⟩
+  icases ghost_map_lookup $$ Htp Hj with %hlook
+  rw [toMap_get?] at hlook
+  have hlen : j < tp.length := (List.getElem?_eq_some_iff.mp hlook).1
+  imod H σ $$ [Hh HR] with ⟨%σ', %hstep, Hh, HQ⟩
+  · iframe
+  imod ghost_map_update e' $$ Htp Hj with ⟨Htp, Hj⟩
+  have hstep' := step_set hlook hstep
+  rw [List.append_nil] at hstep'
+  imod ghost_map_insert_persist (l ++ [(tp, σ)]).length (tp.set j e', σ') (toMap_get?_length _)
+    $$ Htr with ⟨Htr, #Hidx⟩
+  imodintro
+  iexists (tp.set j e', σ')
+  isplitr
+  · ipureintro
+    exact .single hstep'
+  rw [← toMap_set tp j e' hlen, ← toMap_snoc]
+  unfold traceIdx
+  iframe
+  isplitr
+  · ipureintro
+    exact RtcList.snoc hstep' hrtc
+  iexact Hidx
+
+/-- A step of the thread `j` of the source whose result depends on the state. -/
+theorem cfg_step_dep (E : CoPset) (j : Nat) (e : Exp) (R : IProp GF) (Q : Exp → IProp GF)
+    (H : ∀ σ : State, ghost_map_auth G.heapSName (.own 1) (srcHeap σ.heap) ∗ R ⊢
+      |==> ∃ (e' : Exp) (σ' : State), ⌜(e, σ) -<[]>-> (e', σ', [])⌝ ∗
+        ghost_map_auth G.heapSName (.own 1) (srcHeap σ'.heap) ∗ Q e') :
+    tpoolPointsTo j e ∗ R ⊢
+      srcUpdate (src := heapLangSource) E iprop(∃ e', tpoolPointsTo j e' ∗ Q e') := by
+  unfold srcUpdate tpoolPointsTo
+  delta heapLangSource
+  dsimp only
+  unfold cfgInterp
+  iintro ⟨Hj, HR⟩ %⟨tp, σ⟩ ⟨Htp, Hh, %l, %hrtc, Htr, -⟩
+  icases ghost_map_lookup $$ Htp Hj with %hlook
+  rw [toMap_get?] at hlook
+  have hlen : j < tp.length := (List.getElem?_eq_some_iff.mp hlook).1
+  imod H σ $$ [Hh HR] with ⟨%e', %σ', %hstep, Hh, HQ⟩
+  · iframe
+  imod ghost_map_update e' $$ Htp Hj with ⟨Htp, Hj⟩
+  have hstep' := step_set hlook hstep
+  rw [List.append_nil] at hstep'
+  imod ghost_map_insert_persist (l ++ [(tp, σ)]).length (tp.set j e', σ') (toMap_get?_length _)
+    $$ Htr with ⟨Htr, #Hidx⟩
+  imodintro
+  iexists (tp.set j e', σ')
+  isplitr
+  · ipureintro
+    exact .single hstep'
+  rw [← toMap_set tp j e' hlen, ← toMap_snoc]
+  unfold traceIdx
+  isplitl [Htp Hh Htr]
+  · iframe
+    isplitr
+    · ipureintro
+      exact RtcList.snoc hstep' hrtc
+    iexact Hidx
+  iexists e'
+  iframe
+
+/-- A pure step is a primitive step without effects (Rocq: `pure_step_prim_step`). -/
+theorem purePrimStep_primStep {e₁ e₂ : Exp} (h : e₁ -ᵖ-> e₂) (σ : State) :
+    (e₁, σ) -<[]>-> (e₂, σ, []) := by
+  obtain ⟨e', σ', efs, hstep⟩ := h.safe σ
+  obtain ⟨-, rfl, rfl, rfl⟩ := h.deterministic hstep
+  exact hstep
+
+/-- Rocq: `step_pure` for heap_lang as a source. -/
+theorem cfg_step_pure (E : CoPset) (j : Nat) (e₁ e₂ : Exp) (hp : e₁ -ᵖ-> e₂) :
+    tpoolPointsTo (GF := GF) j e₁ ⊢ srcUpdate (src := heapLangSource) E (tpoolPointsTo j e₂) := by
+  have H := cfg_step (GF := GF) E j e₁ e₂ emp emp fun σ => by
+    iintro ⟨Hh, -⟩
+    imodintro
+    iexists σ
+    iframe
+    ipureintro
+    exact purePrimStep_primStep hp σ
+  iintro Hj
+  iapply srcUpdate_mono (src := heapLangSource)
+  isplitl [Hj]
+  · iapply H
+    iframe
+  · iintro ⟨H, -⟩
+    iexact H
+
+end Steps
+
+/-! ## The stuttering source -/
+
+section Stuttering
+
+open FromMathlib.Relation
+
+variable [N : NatSourceG GF]
+
+/-- heap_lang with a stuttering budget as a source (Rocq: `source Σ (heap_srcT * nat)`). -/
+abbrev refSrc : Source GF (Cfg × NatC SI) :=
+  lexSource heapLangSource (authSource_source (GF := GF) (M := NatC SI))
+
+/-- Stuttering credits (Rocq: `$ n` for `natA`). -/
+abbrev stutter (n : Nat) : IProp GF := srcF (GF := GF) (⟨n⟩ : NatC SI)
+
+/-- A source update of the refinement source (Rocq: `src_update`). -/
+abbrev srcUpd (E : CoPset) (P : IProp GF) : IProp GF := srcUpdate (src := refSrc (GF := GF)) E P
+
+/-- A weak source update of the refinement source (Rocq: `weak_src_update`). -/
+abbrev weakSrcUpd (E : CoPset) (P : IProp GF) : IProp GF :=
+  weakSrcUpdate (src := refSrc (GF := GF)) E P
+
+/-- Rocq: `step_pure_cred`. A pure source step can allocate stuttering credits. -/
+theorem step_pure_cred (k : Nat) (E : CoPset) (j : Nat) (e₁ e₂ : Exp) (hp : e₁ -ᵖ-> e₂) :
+    tpoolPointsTo (GF := GF) j e₁ ⊢ srcUpd E iprop(tpoolPointsTo j e₂ ∗ stutter k) := by
+  iintro Hj
+  iapply srcUpdate_embed_l_strong
+  isplitl [Hj]
+  · iapply cfg_step_pure E j e₁ e₂ hp $$ Hj
+  iintro %b Hb
+  delta authSource_source
+  dsimp only
+  unfold stutter srcA srcF
+  have hlu : (b, (UCMRA.unit : NatC SI)) ~l~> (⟨b.n + k⟩, ⟨k⟩) :=
+    (local_update_unital_discrete _ _ _ _).mpr fun z _ hz =>
+      ⟨trivial, NatC.ext (by
+        have := congrArg NatC.n hz
+        have hu : (UCMRA.unit : NatC SI).n = 0 := rfl
+        simp only [NatC.op_n] at this ⊢; omega)⟩
+  imod iOwn_update (ULift.update (Auth.auth_update_alloc hlu)) $$ Hb with Hb
+  icases (iOwn_op (E := N.elem)).mp $$ Hb with ⟨Ha, Hf⟩
+  imodintro
+  iexists ⟨b.n + k⟩
+  iframe
+
+/-- Rocq: `step_pure`. -/
+theorem step_pure (E : CoPset) (j : Nat) (e₁ e₂ : Exp) (hp : e₁ -ᵖ-> e₂) :
+    tpoolPointsTo (GF := GF) j e₁ ⊢ srcUpd E (tpoolPointsTo j e₂) := by
+  iintro Hj
+  iapply srcUpdate_embed_l
+  iapply cfg_step_pure E j e₁ e₂ hp $$ Hj
+
+/-- Rocq: `steps_pure`. -/
+theorem steps_pure (n : Nat) (E : CoPset) (j : Nat) (e₁ e₂ : Exp)
+    (h : Iterate PurePrimStep (n + 1) e₁ e₂) :
+    tpoolPointsTo (GF := GF) j e₁ ⊢ srcUpd E (tpoolPointsTo j e₂) := by
+  induction n generalizing e₁ with
+  | zero =>
+    obtain ⟨b, hst, hrest⟩ := Relation.Iterate.succ_head_inv h
+    cases hrest
+    exact step_pure E j _ _ hst
+  | succ n ih =>
+    obtain ⟨b, hst, hrest⟩ := Relation.Iterate.succ_head_inv h
+    iintro Hj
+    iapply srcUpdate_bind (src := refSrc (GF := GF))
+    isplitl [Hj]
+    · iapply step_pure E j _ _ hst $$ Hj
+    · iintro Hj
+      iapply ih _ hrest $$ Hj
+
+/-- Rocq: `steps_pure_exec`. -/
+theorem steps_pure_exec (E : CoPset) (j : Nat) (e₁ e₂ : Exp) {φ : Prop} {n : Nat}
+    [hp : PureExec φ (n + 1) e₁ e₂] (hφ : φ) :
+    tpoolPointsTo (GF := GF) j e₁ ⊢ srcUpd E (tpoolPointsTo j e₂) :=
+  steps_pure n E j e₁ e₂ (hp.pureExec hφ)
+
+/-- Rocq: `step_load`. -/
+theorem step_load (E : CoPset) (j : Nat) (K : List ECtxItem) (l : Loc) (q : DFrac) (v : Val) :
+    tpoolPointsTo (GF := GF) j (fill K hl(!v(#l))) ∗ heapSPointsTo l q v ⊢
+      srcUpd E iprop(tpoolPointsTo j (fill K (v : Exp)) ∗ heapSPointsTo l q v) := by
+  iintro H
+  iapply srcUpdate_embed_l
+  iapply cfg_step E j _ _ _ _ (fun σ => ?_) $$ H
+  unfold heapSPointsTo
+  iintro ⟨Hh, Hl⟩
+  icases ghost_map_lookup $$ Hh Hl with %hl
+  have hl' := srcHeap_get? hl
+  imodintro
+  iexists σ
+  iframe
+  ipureintro
+  exact EctxLanguage.fill_primStep K (EctxLanguage.primStep_of_baseStep (HeapLang.BaseStep.loadS l v σ hl'))
+
+/-- Rocq: `step_store`. -/
+theorem step_store (E : CoPset) (j : Nat) (K : List ECtxItem) (l : Loc) (v v' : Val) :
+    tpoolPointsTo (GF := GF) j (fill K hl(v(#l) ← &v)) ∗ heapSPointsTo l (.own 1) v' ⊢
+      srcUpd E iprop(tpoolPointsTo j (fill K hl(#())) ∗ heapSPointsTo l (.own 1) v) := by
+  iintro H
+  iapply srcUpdate_embed_l
+  iapply cfg_step E j _ _ _ _ (fun σ => ?_) $$ H
+  unfold heapSPointsTo
+  iintro ⟨Hh, Hl⟩
+  icases ghost_map_lookup $$ Hh Hl with %hl
+  have hl' := srcHeap_get? hl
+  imod ghost_map_update (SrcVal.mk (some v)) $$ Hh Hl with ⟨Hh, Hl⟩
+  imodintro
+  iexists σ.initHeap l 1 (some v)
+  rw [srcHeap_insert, State.initHeap_singleton]
+  iframe
+  ipureintro
+  have : (fill K hl(v(#l) ← &v), σ) -<[]>-> (fill K hl(#()), σ.initHeap l 1 (some v), []) :=
+    EctxLanguage.fill_primStep K (EctxLanguage.primStep_of_baseStep
+      (HeapLang.BaseStep.storeS l v' v σ hl'))
+  rwa [State.initHeap_singleton] at this
+
+/-- Rocq: `step_alloc`. -/
+theorem step_alloc (E : CoPset) (j : Nat) (K : List ECtxItem) (v : Val) :
+    tpoolPointsTo (GF := GF) j (fill K hl(ref(&v))) ⊢
+      srcUpd E iprop(∃ l : Loc, tpoolPointsTo j (fill K hl(#l)) ∗ heapSPointsTo l (.own 1) v) := by
+  have H := cfg_step_dep (GF := GF) E j (fill K hl(ref(&v))) emp
+    (fun e' => iprop(∃ l : Loc, ⌜e' = fill K hl(#l)⌝ ∗ heapSPointsTo l (.own 1) v)) fun σ => by
+    iintro ⟨Hh, -⟩
+    have hfresh : PartialMap.get? (M := HeapF) σ.heap (Loc.fresh σ.heap.keys) = none := by
+      have := Loc.fresh_fresh σ.heap.keys (i := 0) (Int.le_refl 0)
+      simp only [loc_add_zero] at this
+      simpa [PartialMap.get?, getElem?_eq_none_iff, ← Std.ExtTreeMap.mem_keys] using this
+    imod ghost_map_insert (Loc.fresh σ.heap.keys) (SrcVal.mk (some v)) (srcHeap_get?_none hfresh)
+      $$ Hh with ⟨Hh, Hl⟩
+    imodintro
+    iexists fill K hl(#(Loc.fresh σ.heap.keys)), σ.initHeap (Loc.fresh σ.heap.keys) 1 (some v)
+    rw [srcHeap_insert, State.initHeap_singleton]
+    iframe Hh
+    isplitr
+    · ipureintro
+      have : (fill K hl(ref(&v)), σ) -<[]>->
+          (fill K hl(#(Loc.fresh σ.heap.keys)), σ.initHeap (Loc.fresh σ.heap.keys) 1 (some v), []) :=
+        EctxLanguage.fill_primStep K (EctxLanguage.primStep_of_baseStep (alloc_fresh v 1 σ (by decide)))
+      rwa [State.initHeap_singleton] at this
+    iexists Loc.fresh σ.heap.keys
+    isplitr
+    · ipureintro; rfl
+    unfold heapSPointsTo
+    iexact Hl
+  iintro Hj
+  iapply srcUpdate_embed_l
+  iapply srcUpdate_mono (src := heapLangSource)
+  isplitl [Hj]
+  · iapply H
+    iframe
+  · iintro ⟨%e', Hj, %l, %rfl, Hl⟩
+    iexists l
+    iframe
+
+/-- Rocq: `step_stutter`. -/
+theorem step_stutter (E : CoPset) (c : Nat) :
+    stutter (GF := GF) (c + 1) ⊢ srcUpd E (stutter c) := by
+  iintro H
+  iapply srcUpdate_embed_r
+  iapply auth_src_update E (s := (⟨c + 1⟩ : NatC SI)) (s' := ⟨c⟩) (Nat.lt_succ_self c) $$ H
+
+end Stuttering
+
+end Iris.Transfinite.Refinement
