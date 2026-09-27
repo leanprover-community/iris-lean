@@ -15,3 +15,4 @@ public import Iris.Examples.TransfiniteCounterexamples
 public import Iris.Examples.TransfiniteSimulations
 public import Iris.Examples.TransfiniteInvariants
 public import Iris.Examples.TransfiniteHeapLang
+public import Iris.Examples.Refinements.Refinement

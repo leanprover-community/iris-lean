@@ -657,4 +657,168 @@ theorem src_get_trace (E : CoPset) (j : Nat) (e : Exp) (i : Nat) (c : Cfg) :
 
 end Stuttering
 
+/-! ## Adequacy -/
+
+section Adequacy
+
+open FromMathlib.Relation
+
+/-- The source thread `0` (Rocq: `src e`). -/
+abbrev src {GF : BundledGFunctors} [RHeapG GF] (e : Exp) : IProp GF := tpoolPointsTo 0 e
+
+/-- The pre-instances of the ghost state of the refinement logic (Rocq: `rheapPreG`). -/
+class RHeapPreS (GF : BundledGFunctors) extends HeapLangTPreS GF where
+  tpool : GhostMapG GF Nat Exp NatMap
+  heapS : GhostMapG GF Loc SrcVal HeapF
+  trace : GhostMapG GF Nat Cfg NatMap
+
+attribute [reducible, instance] RHeapPreS.tpool RHeapPreS.heapS RHeapPreS.trace
+
+theorem lex_rtc_fst {X Y : Type _} {R : X → X → Prop} {S : Y → Y → Prop} {a b : X × Y}
+    (h : ReflTransGen (Lex R S) a b) : ReflTransGen R a.1 b.1 := by
+  induction h with
+  | refl => exact .refl
+  | tail _ hbc ih =>
+    cases hbc with
+    | left _ _ hstep => exact .tail ih hstep
+    | right _ _ => exact ih
+
+/-- Allocating ghost state with a name chosen by the existential property. -/
+theorem satisfiableAt_alloc' {GF : BundledGFunctors} [W : WsatGS GF] {X : Type}
+    [SIdxLarge.{0} SI] {P : IProp GF} {Q : X → IProp GF} (h : satisfiableAt ⊤ P)
+    (hQ : ⊢ |==> ∃ x, Q x) : ∃ x, satisfiableAt ⊤ iprop(P ∗ Q x) := by
+  refine satisfiableAt_exists (satisfiableAt_fupd (E1 := ⊤) (satisfiableAt_mono h ?_))
+  iintro HP
+  imod hQ with ⟨%x, HQ⟩
+  imodintro
+  iexists x
+  iframe
+
+theorem ghost_map_alloc_single {GF : BundledGFunctors} {K V : Type _} {H : Type _ → Type _}
+    [Std.LawfulFiniteMap H K] [DecidableEq K] [GhostMapG GF K V H] (k : K) (v : V) :
+    ⊢@{IProp GF} |==> ∃ γ, ghost_map_auth γ (.own 1) (PartialMap.insert (∅ : H V) k v) ∗
+      ghost_map_elem γ (.own 1) k v := by
+  imod ghost_map_alloc_empty (K := K) (V := V) (H := H) with ⟨%γ, Hγ⟩
+  imod ghost_map_insert k v (LawfulPartialMap.get?_empty _) $$ Hγ with ⟨Hγ, Hk⟩
+  imodintro
+  iexists γ
+  iframe
+
+theorem ghost_map_alloc_single_persist {GF : BundledGFunctors} {K V : Type _}
+    {H : Type _ → Type _} [Std.LawfulFiniteMap H K] [DecidableEq K] [GhostMapG GF K V H]
+    (k : K) (v : V) :
+    ⊢@{IProp GF} |==> ∃ γ, ghost_map_auth γ (.own 1) (PartialMap.insert (∅ : H V) k v) ∗
+      ghost_map_elem γ .discard k v := by
+  imod ghost_map_alloc_empty (K := K) (V := V) (H := H) with ⟨%γ, Hγ⟩
+  imod ghost_map_insert_persist k v (LawfulPartialMap.get?_empty _) $$ Hγ with ⟨Hγ, Hk⟩
+  imodintro
+  iexists γ
+  iframe
+
+theorem toMap_singleton {V : Type _} (x : V) :
+    toMap [x] = PartialMap.insert (∅ : NatMap V) 0 x := rfl
+
+/-- Adequacy of the refinement logic (Rocq: `heap_lang_ref_adequacy`): if the target `t` refines
+the source `s`, then every result of `t` is related by `φ` to a result of `s`, and `t` is strongly
+normalizing if `s` is. The name of the `NatSourceG` instance is ignored (only its ghost-state
+embedding is used). -/
+theorem heap_lang_ref_adequacy {GF : BundledGFunctors} [SIdxLarge.{0} SI] [Hpre : RHeapPreS GF]
+    [Hna : NaInvG GF] [Enat : NatSourceG GF] (φ : Val → Val → Prop) (s t : Exp) (σ σs : State)
+    (Hobj : ∀ [Hr : RHeapG GF] [Hs : SeqG GF] [Hn : NatSourceG GF],
+      src s ⊢ seq (src := refSrc (GF := GF)) (ι := heapRefIrisGS) ⊤ t
+        fun v => iprop(∃ v' : Val, src v' ∗ ⌜φ v v'⌝)) :
+    (∀ (ts : List Exp) (σ' : State) (v : Val),
+      ReflTransGen ErasedStep ([t], σ) ((v : Exp) :: ts, σ') →
+      ∃ (v' : Val) (σs' : State) (ts' : List Exp),
+        ReflTransGen ErasedStep ([s], σs) ((v' : Exp) :: ts', σs') ∧ φ v v') ∧
+    (StronglyNormalizing ErasedStep ([s], σs) → StronglyNormalizing ErasedStep ([t], σ)) := by
+  -- allocate world satisfaction
+  have h0 : UPred.satisfiable iprop(∃ γ γe γd : GName,
+      wsat (W := WsatGS.ofNames (GF := GF) γ γe γd) ∗
+        ownE (W := WsatGS.ofNames (GF := GF) γ γe γd) ⊤) :=
+    UPred.satisfiable_bupd (UPred.satisfiable_intro (true_emp.mp.trans wsat_alloc_names))
+  obtain ⟨γ, h0⟩ := UPred.satisfiable_exists h0
+  obtain ⟨γe, h0⟩ := UPred.satisfiable_exists h0
+  obtain ⟨γd, h0⟩ := UPred.satisfiable_exists h0
+  letI W : WsatGS GF := WsatGS.ofNames γ γe γd
+  have h1 : satisfiableAt ⊤ iprop(True) :=
+    UPred.satisfiable_mono h0 (sep_mono_right sep_emp.mpr |>.trans
+      (sep_mono_right (sep_mono_right true_intro)))
+  -- the target heap
+  obtain ⟨γh, h2⟩ := satisfiableAt_alloc' h1 (genHeap_init_names (L := Loc) (V := Option Val)
+    (H := HeapF) (GF := GF) σ.heap)
+  obtain ⟨γm, h2⟩ := satisfiableAt_exists (P := fun γm : GName =>
+      genHeapInterp (G := (⟨γh, γm⟩ : genHeapGS Loc (Option Val) GF HeapF)) σ.heap)
+    (satisfiableAt_mono h2 (by
+      iintro ⟨-, %γm, Hh, -, -⟩
+      iexists γm
+      iexact Hh))
+  letI G : genHeapGS Loc (Option Val) GF HeapF := ⟨γh, γm⟩
+  -- the source thread pool, heap and trace
+  obtain ⟨γtp, h3⟩ := satisfiableAt_alloc' h2
+    (ghost_map_alloc_single (GF := GF) (H := NatMap) (V := Exp) 0 s)
+  obtain ⟨γhs, h4⟩ := satisfiableAt_alloc' h3
+    (ghost_map_alloc (GF := GF) (K := Loc) (H := HeapF) (srcHeap σs.heap))
+  obtain ⟨γtr, h5⟩ := satisfiableAt_alloc' h4
+    (ghost_map_alloc_single_persist (GF := GF) (H := NatMap) (V := Cfg) 0 ([s], σs))
+  letI Hr : RHeapG GF := {
+    toWsatGS := W, heap := G, proph := ⟨0⟩,
+    tpool := Hpre.tpool, tpoolName := γtp,
+    heapS := Hpre.heapS, heapSName := γhs,
+    trace := Hpre.trace, traceName := γtr }
+  -- the pool of non-atomic invariants and the stuttering credits
+  obtain ⟨p, h6⟩ := satisfiableAt_alloc' h5 (NonAtomicInvariant.alloc (GF := GF))
+  letI Hs : SeqG GF := { toNaInvG := Hna, name := p }
+  obtain ⟨γn, h7⟩ := satisfiableAt_alloc' h6 (iOwn_alloc (E := Enat.elem)
+    (ULift.up (● (⟨0⟩ : NatC SI))) (Auth.auth_valid.mpr trivial))
+  letI Hn : NatSourceG GF := { elem := Enat.elem, name := γn }
+  have hsat : satisfiableAt ⊤ iprop((refSrc (GF := GF)).interp (([s], σs), 0) ∗
+      heapRefIrisGS.refStateInterp σ 0 ∗
+      rwp (src := refSrc (GF := GF)) (ι := heapRefIrisGS) .NotStuck ⊤ t fun v =>
+        iprop(NonAtomicInvariant.own Hs.name ⊤ ∗ ∃ v' : Val, src v' ∗ ⌜φ v v'⌝)) := by
+    refine satisfiableAt_mono h7 ?_
+    have Hobj' := @Hobj Hr Hs Hn
+    unfold seq at Hobj'
+    iintro ⟨⟨⟨⟨⟨Hh, Htp, Hs0⟩, Hhs, -⟩, Htr, #Hidx⟩, Hna⟩, Hn0⟩
+    ihave Hwp := Hobj' $$ [Hs0] Hna
+    · unfold src tpoolPointsTo
+      iexact Hs0
+    iframe Hwp
+    delta refSrc lexSource heapLangSource natSource
+    dsimp only
+    unfold cfgInterp
+    rw [refStateInterp_eq]
+    dsimp only
+    unfold srcA
+    rw [toMap_singleton]
+    iframe
+    iexists []
+    rw [List.nil_append, toMap_singleton]
+    iframe
+    isplitr
+    · ipureintro; exact .once _
+    unfold traceIdx
+    iexact Hidx
+  refine ⟨fun ts σ' v hsteps => ?_, fun hsn => ?_⟩
+  · obtain ⟨⟨⟨tps, σs'⟩, m⟩, n, hrtc, hsat'⟩ := rwp_result (src := refSrc (GF := GF)) hsteps hsat
+    refine satisfiableAt_pure (satisfiableAt_mono hsat' ?_)
+    delta refSrc lexSource heapLangSource natSource
+    dsimp only
+    unfold cfgInterp src tpoolPointsTo
+    iintro ⟨⟨⟨Htp, -⟩, -⟩, -, -, %v', Hv', %hφ⟩
+    icases ghost_map_lookup $$ Htp Hv' with %hl
+    rw [toMap_get?] at hl
+    ipureintro
+    have hrtc' := lex_rtc_fst hrtc
+    cases tps with
+    | nil => simp at hl
+    | cons e ts' =>
+      simp only [List.getElem?_cons_zero, Option.some.injEq] at hl
+      subst hl
+      exact ⟨v', σs', ts', hrtc', hφ⟩
+  · refine rwp_sn_preservation (src := refSrc (GF := GF)) ?_ hsat
+    exact sn_lex _ _ _ _ hsn fun y => Nat.lt_wfRel.wf.apply y
+
+end Adequacy
+
 end Iris.Transfinite.Refinement
