@@ -132,8 +132,8 @@ instance {dq dq1 dq2 : DFrac} {l : List α} [h : IsOp d dq dq1 dq2] :
 /-! ## Validity -/
 
 /-- On `MaxPrefixList` — a map of `Agree` — the order and the extension inclusion agree. -/
-private theorem incExtN_of_ordN {n} {x y : MaxPrefixList α} (h : x ≼ₒ{n} y) : x ≼{n} y :=
-  Heap.lookup_ordN.mpr fun i => Option.incExtN_of_ordN (fun h => h) (h i)
+private theorem incN_of_ordN {n} {x y : MaxPrefixList α} (h : x ≼ₒ{n} y) : x ≼{n} y :=
+  Heap.lookup_ordN.mpr fun i => Option.incN_of_ordN (fun h => h) (h i)
 
 @[rocq_alias mono_list_auth_dfrac_validN]
 theorem auth_dfrac_validN {n} (dq : DFrac) (l : List α) : ✓{n} (●ML{dq} l) ↔ ✓ dq := by
@@ -191,9 +191,9 @@ theorem both_dfrac_validN {n} (dq : DFrac) (l1 l2 : List α) :
   unfold auth lb MonoList
   rw [← assoc', ← Auth.frag_op, Auth.both_dfrac_validN]
   refine ⟨fun ⟨hdq, hinc, _⟩ => ⟨hdq, ?_⟩, fun ⟨hdq, hl⟩ => ⟨hdq, ?_, ?_⟩⟩
-  · refine toMaxPrefixList_incExtN_iff.mp (incExtN_of_ordN ((CMRA.ordN_op_right ..).trans hinc))
+  · refine toMaxPrefixList_incN_iff.mp (incN_of_ordN ((CMRA.ordN_op_right ..).trans hinc))
   · have hinc := CMRA.op_monoN_right (toMaxPrefixList l1)
-      (CMRA.ordN_of_incExtN (toMaxPrefixList_incExtN_iff.mpr hl))
+      (CMRA.ordN_of_incN (toMaxPrefixList_incN_iff.mpr hl))
     rwa [op_self] at hinc
   · exact toMaxPrefixList_validN _
 
@@ -209,11 +209,11 @@ theorem both_dfrac_valid (dq : DFrac) (l1 l2 : List α) :
   unfold auth lb MonoList
   rw [← assoc', ← Auth.frag_op, Auth.both_dfrac_valid]
   refine ⟨fun ⟨hdq, hinc, _⟩ => ⟨hdq, ?_⟩, fun ⟨hdq, hl⟩ => ⟨hdq, ?_, ?_⟩⟩
-  · refine toMaxPrefixList_incExt_iff.mp (incExt_iff_forall_incExtN.mpr fun n => ?_)
-    exact incExtN_of_ordN ((CMRA.ordN_op_right ..).trans (hinc n))
+  · refine toMaxPrefixList_inc_iff.mp (inc_iff_forall_incN.mpr fun n => ?_)
+    exact incN_of_ordN ((CMRA.ordN_op_right ..).trans (hinc n))
   · intro n
-    have hinc := CMRA.op_monoN_right (toMaxPrefixList l1) (CMRA.ordN_of_incExtN
-      (RABase.incExtN_of_incExt n (toMaxPrefixList_incExt_iff.mpr hl)))
+    have hinc := CMRA.op_monoN_right (toMaxPrefixList l1) (CMRA.ordN_of_incN
+      (RABase.incN_of_inc n (toMaxPrefixList_inc_iff.mpr hl)))
     rwa [op_self] at hinc
   · exact toMaxPrefixList_valid _
 
@@ -247,13 +247,13 @@ theorem lb_mono {l1 l2 : List α} (h : l1 <+: l2) : ◯ML l1 ≼ ◯ML l2 :=
   ⟨◯ML l2, (lb_op_left h).symm⟩
 
 @[rocq_alias mono_list_included]
-theorem included (dq : DFrac) (l : List α) : ◯ML l ≼ ●ML{dq} l := RABase.incExt_op_right ..
+theorem included (dq : DFrac) (l : List α) : ◯ML l ≼ ●ML{dq} l := RABase.inc_op_right ..
 
 /-! ## Updates -/
 
 @[rocq_alias mono_list_update]
 theorem update {l1 : List α} (l2 : List α) (h : l1 <+: l2) : ●ML l1 ~~> ●ML l2 :=
-  Auth.auth_update_of_localUpdate incExtN_of_ordN (local_update h)
+  Auth.auth_update_of_localUpdate incN_of_ordN (local_update h)
 
 @[rocq_alias mono_list_auth_persist]
 theorem auth_persist (dq : DFrac) (l : List α) : ●ML{dq} l ~~> ●ML□ l :=

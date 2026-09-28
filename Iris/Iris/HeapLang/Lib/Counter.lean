@@ -160,8 +160,8 @@ theorem incr_mono_spec (l : Loc) (n : Nat) :
     imodintro
     iframe Hγ
     iapply iOwn_mono $$ Hγf
-    have hnc := CMRA.ord_of_incExt (auth_both_valid_discrete.mp Hv).1
-    refine CMRA.ord_of_incExt (frag_incExt_of_incExt (MaxNat.ord_iff.mpr ?_))
+    have hnc := CMRA.ord_of_inc (auth_both_valid_discrete.mp Hv).1
+    refine CMRA.ord_of_inc (frag_inc_of_inc (MaxNat.ord_iff.mpr ?_))
     grind [MaxNat.ord_iff]
   iintro !> Hγf
   iapply Hφ
@@ -183,7 +183,7 @@ theorem read_mono_spec (l : Loc) (j : Nat) :
     imodintro
     iframe Hγ Hγf
     ipureintro
-    have hjc := CMRA.ord_of_incExt (auth_both_valid_discrete.mp Hv).1
+    have hjc := CMRA.ord_of_inc (auth_both_valid_discrete.mp Hv).1
     grind [MaxNat.ord_iff]
   iintro !> %c ⟨%hle, Hγf⟩
   iapply Hφ

@@ -189,9 +189,9 @@ instance sbiUnfold_included [CMRA A] {a b : A} :
     siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
 @[rocq_alias sbi_unfold_internal_included]
-instance sbiUnfold_incExt [CMRA A] {a b : A} :
+instance sbiUnfold_inc [CMRA A] {a b : A} :
     SbiUnfold clo (iprop(a ≼ b) : PROP) (fun n => a ≼{n} b) :=
-  .of_closed (fun h hm => RABase.incExtN_le hm h) <|
+  .of_closed (fun h hm => RABase.incN_le hm h) <|
     siPure_mono_bi <| biEntails_of_iff fun _ => exists_holds
 
 @[rocq_alias sbi_unfold_si_pure]

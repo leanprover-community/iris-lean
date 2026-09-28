@@ -217,7 +217,7 @@ instance [OFE α] {x : Excl α} : CMRA.Exclusive x where exclusive0_l := fun _ a
 @[rocq_alias excl_cmra_discrete]
 instance [OFE α] [OFE.Discrete α] : CMRA.Discrete (Excl α) where
   discrete_valid a := a
-  discrete_ord := RABase.incExt_of_incExt0
+  discrete_ord := RABase.inc_of_inc0
 
 @[rocq_alias ExclInvalid_included]
 theorem invalid_ord [OFE α] (ea : Excl α) : ea ≼ₒ invalid := by exists invalid

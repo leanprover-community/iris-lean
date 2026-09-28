@@ -395,9 +395,9 @@ instance instCMRADynReservationMap : CMRA (DynReservationMap A H) where
 end
 
 /-- A dynamic reservation map over an affine algebra is affine. -/
-instance [CMRA.Affine A] : CMRA.Affine (DynReservationMap A H) where
-  increasing v :=
-    increasing_mk (CMRA.Affine.increasing v.data) (CMRA.Affine.increasing v.token)
+instance [CMRA.Affine A] : CMRA.Affine (DynReservationMap A H) :=
+  IncOrd.of_increasing fun v =>
+    increasing_mk (IncOrd.increasing v.data) (IncOrd.increasing v.token)
 
 @[rocq_alias dyn_reservation_mapUR]
 instance instUCMRADynReservationMap : UCMRA (DynReservationMap A H) where
@@ -419,7 +419,7 @@ theorem op_data (x y : DynReservationMap A H) : (x • y).data = x.data • y.da
 theorem op_token (x y : DynReservationMap A H) : (x • y).token = x.token • y.token := rfl
 
 @[rocq_alias dyn_reservation_map_included]
-theorem incExt_iff {x y : DynReservationMap A H} :
+theorem inc_iff {x y : DynReservationMap A H} :
     x ≼ y ↔ x.data ≼ y.data ∧ x.token ≼ y.token := by
   refine ⟨fun ⟨z, hz⟩ => ⟨⟨z.data, congrArg (·.data) hz⟩,
     ⟨z.token, congrArg (·.token) hz⟩⟩, ?_⟩

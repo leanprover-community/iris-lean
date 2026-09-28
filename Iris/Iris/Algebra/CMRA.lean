@@ -84,10 +84,10 @@ end Valid
 /-- The ordering predicate on a resource algebra. -/
 class Ordered (α : Type _) [OFE α] where
   /-- The indexed ordering predicte. This is the generic ORA order predicte, if your CMRA is Affine
-  the lemma TODO can convert this to the extension order typical of Iris CMRAs. -/
+  the lemma `inc_ord` can convert this to the extension order typical of Iris CMRAs. -/
   OrderN : Nat → α → α → Prop
   /-- The ordering predicte. This is the generic ORA order predicte, if your CMRA is Affine
-  the lemma TODO can convert this to the extension order typical of Iris CMRAs. -/
+  the lemma `inc_ord` can convert this to the extension order typical of Iris CMRAs. -/
   Order : α → α → Prop
   ordN_ne {n} {x x' y y' : α} : x ≡{n}≡ x' → y ≡{n}≡ y' → OrderN n x y → OrderN n x' y'
   ordN_succ {n} {x y : α} : OrderN n.succ x y → OrderN n x y
@@ -155,14 +155,43 @@ class Increasing {α : Type _} [OFE α] [Op α] [Ordered α] (x : α) : Prop whe
 /-- The step-indexed extension inclusion: `y` is `x` composed with some frame. This is the
 inclusion of classical resource algebras. -/
 @[rocq_alias includedN]
-def IncExtN {α : Type _} [OFE α] [Op α] (n : Nat) (x y : α) : Prop :=
+def IncludedN {α : Type _} [OFE α] [Op α] (n : Nat) (x y : α) : Prop :=
   ∃ z : α, y ≡{n}≡ x • z
-@[inherit_doc] notation:50 x " ≼{" n "} " y:51 => IncExtN n x y
+@[inherit_doc] notation:50 x " ≼{" n "} " y:51 => IncludedN n x y
 
 /-- The extension inclusion: `y` is `x` composed with some frame. -/
 @[rocq_alias included]
-def IncExt {α : Type _} [OFE α] [Op α] (x y : α) : Prop := ∃ z : α, y = x • z
-@[inherit_doc] infix:50 " ≼ " => IncExt
+def Included {α : Type _} [OFE α] [Op α] (x y : α) : Prop := ∃ z : α, y = x • z
+@[inherit_doc] infix:50 " ≼ " => Included
+
+/-- The extension inclusion is contained in the order: every element is increasing. -/
+class IncOrd (α : Type _) [OFE α] [Op α] [Ordered α] : Prop where
+  inc_ord {x y : α} : x ≼ y → x ≼ₒ y
+
+@[reducible] def CMRA.Affine (α : Type _) [OFE α] [Op α] [Ordered α] : Prop := IncOrd α
+
+/-- The order is contained in the extension inclusion: every ordered pair has a frame. -/
+class OrdInc (α : Type _) [OFE α] [Op α] [Ordered α] : Prop where
+  ord_inc {x y : α} : x ≼ₒ y → x ≼ y
+
+/-- The order is the extension inclusion. -/
+class IsInc (α : Type _) [OFE α] [Op α] [Ordered α] : Prop extends IncOrd α, OrdInc α
+
+section
+variable {α : Type _} [OFE α] [Op α] [Ordered α]
+
+theorem IncOrd.increasing [IncOrd α] (x : α) : Increasing x :=
+  ⟨fun _ => IncOrd.inc_ord ⟨x, Op.comm⟩⟩
+
+theorem IncOrd.of_increasing (h : ∀ x : α, Increasing x) : IncOrd α where
+  inc_ord {x _} := fun ⟨z, e⟩ => by subst e; rw [Op.comm]; exact (h z).increasing x
+
+instance [IncOrd α] (x : α) : Increasing x := IncOrd.increasing x
+
+theorem inc_iff_ord [IsInc α] {x y : α} : x ≼ y ↔ x ≼ₒ y :=
+  ⟨IncOrd.inc_ord, OrdInc.ord_inc⟩
+
+end
 
 /-! ## Resource algebras -/
 
@@ -552,46 +581,46 @@ open CMRA
 
 variable [RABase α]
 
-theorem incExtN_ne {n} {x x' y y' : α} (ex : x ≡{n}≡ x') (ey : y ≡{n}≡ y') :
+theorem incN_ne {n} {x x' y y' : α} (ex : x ≡{n}≡ x') (ey : y ≡{n}≡ y') :
     x ≼{n} y → x' ≼{n} y'
   | ⟨z, hz⟩ => ⟨z, ey.symm.trans (hz.trans ex.op_l)⟩
 
-theorem incExtN_of_incExtN_of_dist (h : (a : α) ≼{n} b) (e : b ≡{n}≡ c) : a ≼{n} c :=
-  incExtN_ne .rfl e h
+theorem incN_of_incN_of_dist (h : (a : α) ≼{n} b) (e : b ≡{n}≡ c) : a ≼{n} c :=
+  incN_ne .rfl e h
 
-instance {n : Nat} : Trans (IncExtN (α := α) n) (Dist n) (IncExtN n) where
-  trans := incExtN_of_incExtN_of_dist
+instance {n : Nat} : Trans (IncludedN (α := α) n) (Dist n) (IncludedN n) where
+  trans := incN_of_incN_of_dist
 
-theorem incExtN_of_dist_of_incExtN (e : (a : α) ≡{n}≡ b) (h : b ≼{n} c) : a ≼{n} c :=
-  incExtN_ne e.symm .rfl h
+theorem incN_of_dist_of_incN (e : (a : α) ≡{n}≡ b) (h : b ≼{n} c) : a ≼{n} c :=
+  incN_ne e.symm .rfl h
 
-instance {n : Nat} : Trans (Dist (α := α) n) (IncExtN n) (IncExtN n) where
-  trans := incExtN_of_dist_of_incExtN
+instance {n : Nat} : Trans (Dist (α := α) n) (IncludedN n) (IncludedN n) where
+  trans := incN_of_dist_of_incN
 
 @[rocq_alias cmra_included_includedN]
-theorem incExtN_of_incExt (n) {x y : α} : x ≼ y → x ≼{n} y
+theorem incN_of_inc (n) {x y : α} : x ≼ y → x ≼{n} y
   | ⟨z, hz⟩ => ⟨z, hz.dist⟩
 
 #rocq_ignore cmra_included_proper "OFE is Leibniz; use equality"
 
-theorem incExtN_iff_left (e : (a : α) ≡{n}≡ b) : a ≼{n} c ↔ b ≼{n} c :=
-  ⟨incExtN_ne e .rfl, incExtN_ne e.symm .rfl⟩
+theorem incN_iff_left (e : (a : α) ≡{n}≡ b) : a ≼{n} c ↔ b ≼{n} c :=
+  ⟨incN_ne e .rfl, incN_ne e.symm .rfl⟩
 
-theorem incExtN_iff_right (e : (b : α) ≡{n}≡ c) : a ≼{n} b ↔ a ≼{n} c :=
-  ⟨incExtN_ne .rfl e, incExtN_ne .rfl e.symm⟩
+theorem incN_iff_right (e : (b : α) ≡{n}≡ c) : a ≼{n} b ↔ a ≼{n} c :=
+  ⟨incN_ne .rfl e, incN_ne .rfl e.symm⟩
 
 @[rocq_alias cmra_includedN_ne]
-theorem incExtN_dist_iff (ea : (a : α) ≡{n}≡ a') (eb : (b : α) ≡{n}≡ b') :
+theorem incN_dist_iff (ea : (a : α) ≡{n}≡ a') (eb : (b : α) ≡{n}≡ b') :
     a ≼{n} b ↔ a' ≼{n} b' :=
-  ⟨incExtN_ne ea eb, incExtN_ne ea.symm eb.symm⟩
-theorem _root_.Iris.OFE.Dist.incExtN :
+  ⟨incN_ne ea eb, incN_ne ea.symm eb.symm⟩
+theorem _root_.Iris.OFE.Dist.incN :
     (a : α) ≡{n}≡ a' → b ≡{n}≡ b' → (a ≼{n} b ↔ a' ≼{n} b') :=
-  incExtN_dist_iff
+  incN_dist_iff
 
 #rocq_ignore cmra_includedN_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias cmra_included_trans]
-theorem incExt_trans {x y z : α} : x ≼ y → y ≼ z → x ≼ z
+theorem inc_trans {x y z : α} : x ≼ y → y ≼ z → x ≼ z
   | ⟨w, (hw : y = x • w)⟩, ⟨t, (ht : z = y • t)⟩ =>
     suffices h : z = x • (w • t) from ⟨w • t, h⟩
     calc
@@ -599,11 +628,11 @@ theorem incExt_trans {x y z : α} : x ≼ y → y ≼ z → x ≼ z
       _ = (x • w) • t := congrArg (· • t) hw
       _ = x • (w • t) := assoc.symm
 
-instance : Trans (IncExt (α := α)) IncExt IncExt where
-  trans := incExt_trans
+instance : Trans (Included (α := α)) Included Included where
+  trans := inc_trans
 
 @[rocq_alias cmra_includedN_trans]
-theorem incExtN_trans {x y z : α} : x ≼{n} y → y ≼{n} z → x ≼{n} z
+theorem incN_trans {x y z : α} : x ≼{n} y → y ≼{n} z → x ≼{n} z
   | ⟨w, (hw : y ≡{n}≡ x • w)⟩, ⟨t, (ht : z ≡{n}≡ y • t)⟩ =>
     suffices h : z ≡{n}≡ x • (w • t) from ⟨w • t, h⟩
     calc
@@ -611,45 +640,45 @@ theorem incExtN_trans {x y z : α} : x ≼{n} y → y ≼{n} z → x ≼{n} z
       _ ≡{n}≡ (x • w) • t := op_left_dist _ hw
       _ ≡{n}≡ x • (w • t) := op_assocN.symm
 
-instance : Trans (IncExtN (α := α) n) (IncExtN n) (IncExtN n) where
-  trans := incExtN_trans
+instance : Trans (IncludedN (α := α) n) (IncludedN n) (IncludedN n) where
+  trans := incN_trans
 
 @[rocq_alias cmra_valid_included]
-theorem valid_of_incExt {x y : α} : x ≼ y → ✓ y → ✓ x
+theorem valid_of_inc {x y : α} : x ≼ y → ✓ y → ✓ x
   | ⟨_, hz⟩, v => valid_op_left (hz ▸ v)
 
 @[rocq_alias cmra_validN_includedN]
-theorem validN_of_incExtN {n} {x y : α} : x ≼{n} y → ✓{n} y → ✓{n} x
+theorem validN_of_incN {n} {x y : α} : x ≼{n} y → ✓{n} y → ✓{n} x
   | ⟨_, hz⟩, v => validN_op_left (validN_ne hz v)
 
 @[rocq_alias cmra_validN_included]
-theorem validN_of_incExt {n} {x y : α} : x ≼ y → ✓{n} y → ✓{n} x
+theorem validN_of_inc {n} {x y : α} : x ≼ y → ✓{n} y → ✓{n} x
   | ⟨_, hz⟩, v => validN_op_left (validN_ne hz.dist v)
 
 @[rocq_alias cmra_includedN_le]
-theorem incExtN_le {n n'} {x y : α} (l1 : n' ≤ n) : x ≼{n} y → x ≼{n'} y
+theorem incN_le {n n'} {x y : α} (l1 : n' ≤ n) : x ≼{n} y → x ≼{n'} y
   | ⟨z, hz⟩ => ⟨z, Dist.le hz l1⟩
-theorem incExt0_of_incExtN {n} {x y : α} : x ≼{n} y → x ≼{0} y :=
-  incExtN_le (Nat.zero_le n)
+theorem inc0_of_incN {n} {x y : α} : x ≼{n} y → x ≼{0} y :=
+  incN_le (Nat.zero_le n)
 
 @[rocq_alias cmra.cmra_includedN_S]
-theorem incExtN_succ {n} {x y : α} : x ≼{n.succ} y → x ≼{n} y :=
-  incExtN_le (Nat.le_succ n)
+theorem incN_succ {n} {x y : α} : x ≼{n.succ} y → x ≼{n} y :=
+  incN_le (Nat.le_succ n)
 
 @[rocq_alias cmra_includedN_l]
-theorem incExtN_op_left (n) (x y : α) : x ≼{n} x • y := ⟨y, Dist.rfl⟩
+theorem incN_op_left (n) (x y : α) : x ≼{n} x • y := ⟨y, Dist.rfl⟩
 
 @[rocq_alias cmra_included_l]
-theorem incExt_op_left (x y : α) : x ≼ x • y := ⟨y, rfl⟩
+theorem inc_op_left (x y : α) : x ≼ x • y := ⟨y, rfl⟩
 
 @[rocq_alias cmra_included_r]
-theorem incExt_op_right (x y : α) : y ≼ x • y := ⟨x, comm⟩
+theorem inc_op_right (x y : α) : y ≼ x • y := ⟨x, comm⟩
 
 @[rocq_alias cmra_includedN_r]
-theorem incExtN_op_right (n) (x y : α) : y ≼{n} x • y := ⟨x, op_commN⟩
+theorem incN_op_right (n) (x y : α) : y ≼{n} x • y := ⟨x, op_commN⟩
 
 @[rocq_alias cmra_included_pcore]
-theorem pcore_incExt_self {x : α} {cx} (e : pcore x = some cx) : cx ≼ x :=
+theorem pcore_inc_self {x : α} {cx} (e : pcore x = some cx) : cx ≼ x :=
   ⟨x, (pcore_op_left e).symm⟩
 
 @[rocq_alias cmra_mono_l]
@@ -662,7 +691,7 @@ theorem op_monoN_right_ext {n x y} (z : α) : x ≼{n} y → z • x ≼{n} z �
 
 @[rocq_alias cmra_monoN_r]
 theorem op_monoN_left_ext {n x y} (z : α) (h : x ≼{n} y) : x • z ≼{n} y • z :=
-  (op_commN.incExtN op_commN).1 (op_monoN_right_ext z h)
+  (op_commN.incN op_commN).1 (op_monoN_right_ext z h)
 
 @[rocq_alias cmra_mono_r]
 theorem op_mono_left_ext {x y} (z : α) (h : x ≼ y) : x • z ≼ y • z := by
@@ -671,115 +700,115 @@ theorem op_mono_left_ext {x y} (z : α) (h : x ≼ y) : x • z ≼ y • z := b
 @[rocq_alias cmra_monoN]
 theorem op_monoN_ext {n} {x x' y y' : α} (hx : x ≼{n} x') (hy : y ≼{n} y') :
     x • y ≼{n} x' • y' :=
-  incExtN_trans (op_monoN_left_ext _ hx) (op_monoN_right_ext _ hy)
+  incN_trans (op_monoN_left_ext _ hx) (op_monoN_right_ext _ hy)
 
 #rocq_ignore cmra_monoN' "Use cmra_monoN"
 
 @[rocq_alias cmra_mono]
 theorem op_mono_ext {x x' y y' : α} (hx : x ≼ x') (hy : y ≼ y') :
     x • y ≼ x' • y' :=
-  incExt_trans (op_mono_left_ext _ hx) (op_mono_right_ext _ hy)
+  inc_trans (op_mono_left_ext _ hx) (op_mono_right_ext _ hy)
 
 #rocq_ignore cmra_mono' "Use cmra_mono"
 
 @[rocq_alias core_id_extract]
-theorem op_core_right_of_incExt {x y : α} [CoreId x] : x ≼ y → x • y = y
+theorem op_core_right_of_inc {x y : α} [CoreId x] : x ≼ y → x • y = y
   | ⟨z, hz⟩ =>
     calc x • y = x • (x • z) := congrArg (x • ·) hz
     _ = (x • x) • z := assoc'
     _ = x • z := congrArg (· • z) (op_self x)
     _ = y := hz.symm
 
-theorem op_core_left_of_incExt {x y : α} [CoreId x] (le : x ≼ y) : y • x = y :=
-  comm'.trans (op_core_right_of_incExt le)
+theorem op_core_left_of_inc {x y : α} [CoreId x] (le : x ≼ y) : y • x = y :=
+  comm'.trans (op_core_right_of_inc le)
 
 @[rocq_alias cmra_included_dist_l]
-theorem incExt_dist_l {n} {x1 x2 x1' : α} :
+theorem inc_dist_l {n} {x1 x2 x1' : α} :
     x1 ≼ x2 → x1' ≡{n}≡ x1 → ∃ x2', x1' ≼ x2' ∧ x2' ≡{n}≡ x2
-  | ⟨y, hy⟩, e => ⟨x1' • y, incExt_op_left x1' y, e.op_l.trans hy.symm.dist⟩
+  | ⟨y, hy⟩, e => ⟨x1' • y, inc_op_left x1' y, e.op_l.trans hy.symm.dist⟩
 
 @[rocq_alias exclusive_includedN]
-theorem not_valid_of_exclN_incExt {n} {x : α} [Exclusive x] {y} : x ≼{n} y → ¬✓{n} y
+theorem not_valid_of_exclN_inc {n} {x : α} [Exclusive x] {y} : x ≼{n} y → ¬✓{n} y
   | ⟨_, hz⟩, v => not_valid_exclN_op_left (validN_ne hz v)
 
 @[rocq_alias exclusive_included]
-theorem not_valid_of_excl_incExt {x : α} [Exclusive x] {y} : x ≼ y → ¬✓ y
+theorem not_valid_of_excl_inc {x : α} [Exclusive x] {y} : x ≼ y → ¬✓ y
   | ⟨_, hz⟩, v => Exclusive.exclusive0_l _ <| hz ▸ v.validN
 
 /-- Extension along the step index: `CMRA.ordN_extend` for the extension inclusion. -/
-theorem incExtN_extend {n} {x y : α} (v : ✓{n} y) :
+theorem incN_extend {n} {x y : α} (v : ✓{n} y) :
     x ≼{n} y → ∃ z, z ≼{n.succ} y ∧ z ≡{n}≡ x
   | ⟨_, hw⟩ =>
     let ⟨z₁, z₂, hy, hz₁, _⟩ := extend v hw
     ⟨z₁, ⟨z₂, hy.dist⟩, hz₁⟩
 
 /-- A non-expansive function commuting with composition preserves the extension inclusion. -/
-theorem incExtN_map {β : Type _} [RABase β] (f : α → β) [NonExpansive f]
+theorem incN_map {β : Type _} [RABase β] (f : α → β) [NonExpansive f]
     (hop : ∀ x y, f (x • y) = f x • f y) {n} {x y : α} : x ≼{n} y → f x ≼{n} f y
   | ⟨z, hz⟩ => ⟨f z, (NonExpansive.ne hz).trans (hop x z).dist⟩
 
-theorem incExt_map {β : Type _} [RABase β] (f : α → β)
+theorem inc_map {β : Type _} [RABase β] (f : α → β)
     (hop : ∀ x y, f (x • y) = f x • f y) {x y : α} : x ≼ y → f x ≼ f y
   | ⟨z, hz⟩ => ⟨f z, (congrArg f hz).trans (hop x z)⟩
 
 section total
 variable [IsTotal α]
 
-theorem incExt_refl (x : α) : x ≼ x := ⟨core x, (op_core x).symm⟩
+theorem inc_refl (x : α) : x ≼ x := ⟨core x, (op_core x).symm⟩
 
-theorem incExtN_refl (x : α) : x ≼{n} x := incExtN_of_incExt _ (incExt_refl _)
+theorem incN_refl (x : α) : x ≼{n} x := incN_of_inc _ (inc_refl _)
 
 #rocq_ignore cmra_included_preorder
-  "Reflexivity is incExt_refl; transitivity is the Trans instance"
+  "Reflexivity is inc_refl; transitivity is the Trans instance"
 #rocq_ignore cmra_includedN_preorder
-  "Reflexivity is incExtN_refl; transitivity is the Trans instance"
+  "Reflexivity is incN_refl; transitivity is the Trans instance"
 
-theorem incExtN_of_dist {n} {x y : α} (h : x ≡{n}≡ y) : x ≼{n} y :=
-  incExtN_ne .rfl h (incExtN_refl x)
-theorem _root_.Iris.OFE.Dist.to_incExtN {n} {x y : α} : x ≡{n}≡ y → x ≼{n} y :=
-  incExtN_of_dist
+theorem incN_of_dist {n} {x y : α} (h : x ≡{n}≡ y) : x ≼{n} y :=
+  incN_ne .rfl h (incN_refl x)
+theorem _root_.Iris.OFE.Dist.to_incN {n} {x y : α} : x ≡{n}≡ y → x ≼{n} y :=
+  incN_of_dist
 
 @[rocq_alias cmra_included_core]
-theorem core_incExt_self {x : α} : core x ≼ x := ⟨x, (core_op x).symm⟩
+theorem core_inc_self {x : α} : core x ≼ x := ⟨x, (core_op x).symm⟩
 
 end total
 
 section discrete
 
 @[rocq_alias cmra_discrete_included_iff]
-theorem incExt_iff_incExtN [OFE.Discrete α] (n) {x y : α} : x ≼ y ↔ x ≼{n} y :=
-  ⟨incExtN_of_incExt _, fun ⟨z, hz⟩ => ⟨z, discrete hz⟩⟩
+theorem inc_iff_incN [OFE.Discrete α] (n) {x y : α} : x ≼ y ↔ x ≼{n} y :=
+  ⟨incN_of_inc _, fun ⟨z, hz⟩ => ⟨z, discrete hz⟩⟩
 
 @[rocq_alias cmra_discrete_included_iff_0]
-theorem incExt_0_iff_incExtN [OFE.Discrete α] (n) {x y : α} : x ≼{0} y ↔ x ≼{n} y :=
-  ⟨fun ⟨z, hz⟩ => ⟨z, (discrete hz).dist⟩, incExt0_of_incExtN⟩
+theorem inc_0_iff_incN [OFE.Discrete α] (n) {x y : α} : x ≼{0} y ↔ x ≼{n} y :=
+  ⟨fun ⟨z, hz⟩ => ⟨z, (discrete hz).dist⟩, inc0_of_incN⟩
 
 /-- The `discrete_ord` law of `CMRA.Discrete` for a discrete algebra with the extension order. -/
-theorem incExt_of_incExt0 [OFE.Discrete α] {x y : α} : x ≼{0} y → x ≼ y :=
-  (incExt_iff_incExtN 0).mpr
+theorem inc_of_inc0 [OFE.Discrete α] {x y : α} : x ≼{0} y → x ≼ y :=
+  (inc_iff_incN 0).mpr
 
 @[rocq_alias cmra_discrete_included_l]
-theorem discrete_incExt_l {x y : α} [HD : DiscreteE x] (Hv : ✓{0} y) (Hle : x ≼{0} y) :
+theorem discrete_inc_l {x y : α} [HD : DiscreteE x] (Hv : ✓{0} y) (Hle : x ≼{0} y) :
     x ≼ y :=
   have ⟨_, hz⟩ := Hle
   let ⟨_, t, wt, wx, _⟩ := extend Hv hz
   ⟨t, wt.trans (congrArg (· • t) (HD.discrete wx.symm).symm)⟩
 
 @[rocq_alias cmra_discrete_included_r]
-theorem discrete_incExt_r {x y : α} [HD : DiscreteE y] : x ≼{0} y → x ≼ y
+theorem discrete_inc_r {x y : α} [HD : DiscreteE y] : x ≼{0} y → x ≼ y
   | ⟨z, hz⟩ => ⟨z, HD.discrete hz⟩
 
 end discrete
 
 /-- The extension inclusion as a step-indexed order. -/
 @[reducible] def extOrderN : Ordered α where
-  OrderN := IncExtN
-  Order := IncExt
-  ordN_ne := incExtN_ne
-  ordN_succ := incExtN_succ
-  ordN_trans := incExtN_trans
-  ord_trans := incExt_trans
-  ordN_of_ord n h := incExtN_of_incExt n h
+  OrderN := IncludedN
+  Order := Included
+  ordN_ne := incN_ne
+  ordN_succ := incN_succ
+  ordN_trans := incN_trans
+  ord_trans := inc_trans
+  ordN_of_ord n h := incN_of_inc n h
 
 /-- The one law of a classical resource algebra that is specific to the extension inclusion:
 the partial core is monotone along frames. Instantiated by such algebras only; it is the input
@@ -797,7 +826,7 @@ theorem ExtensionLaws.ofPCoreMono
     (h : ∀ {x y cx : α}, x ≼ y → pcore x = some cx → ∃ cy, pcore y = some cy ∧ cx ≼ cy) :
     ExtensionLaws α where
   pcore_op_mono e y :=
-    let ⟨_, hcy, z, hz⟩ := h (incExt_op_left _ y) e
+    let ⟨_, hcy, z, hz⟩ := h (inc_op_left _ y) e
     ⟨z, hcy.trans (congrArg some hz)⟩
 
 /-- For a total core, monotonicity of `core` along the extension inclusion suffices. -/
@@ -828,7 +857,7 @@ theorem pcore_monoN_ext' {n} {x y : α} {cx} :
     x ≼{n} y → pcore x ≡{n}≡ some cx → ∃ cy, pcore y = some cy ∧ cx ≼{n} cy
   | ⟨z, hz⟩, e =>
     let ⟨w, hw, ew⟩ := OFE.dist_some e
-    let ⟨t, ht, (et : w ≼ t)⟩ := pcore_mono_ext (incExt_op_left x z) hw
+    let ⟨t, ht, (et : w ≼ t)⟩ := pcore_mono_ext (inc_op_left x z) hw
     have : pcore y ≡{n}≡ some t :=
       have : pcore y ≡{n}≡ pcore (x • z) := NonExpansive.ne hz
       ht ▸ this
@@ -836,7 +865,7 @@ theorem pcore_monoN_ext' {n} {x y : α} {cx} :
     suffices h : cx ≼{n} r from ⟨r, hr, h⟩
     calc
       cx ≡{n}≡ w := ew
-      w  ≼{n}  t := incExtN_of_incExt n et
+      w  ≼{n}  t := incN_of_inc n et
       t  ≡{n}≡ r := er
 
 theorem pcore_monoN_ext {n} {x y : α} {cx} (h : x ≼{n} y) (e : pcore x = some cx) :
@@ -847,7 +876,7 @@ section total
 variable [IsTotal α]
 
 @[rocq_alias cmra_core_monoN]
-theorem core_incExtN_core {n} {x y : α} (le : x ≼{n} y) : core x ≼{n} core y := by
+theorem core_incN_core {n} {x y : α} (le : x ≼{n} y) : core x ≼{n} core y := by
   let ⟨cy, hcy, icy⟩ := pcore_monoN_ext' le (Dist.of_eq (pcore_eq_core x))
   cases (pcore_eq_core _).symm.trans hcy
   exact icy
@@ -869,17 +898,17 @@ section extOrder
 attribute [local instance] extOrderN
 
 /-- Under the extension order, the order is the extension inclusion. -/
-theorem incExt_iff_ord {x y : α} : x ≼ y ↔ x ≼ₒ y := .rfl
+theorem inc_iff_ord {x y : α} : x ≼ y ↔ x ≼ₒ y := .rfl
 
 /-- Under the extension order, the step-indexed order is the extension inclusion. -/
-theorem incExtN_iff_ordN {n} {x y : α} : x ≼{n} y ↔ x ≼ₒ{n} y := .rfl
+theorem incN_iff_ordN {n} {x y : α} : x ≼{n} y ↔ x ≼ₒ{n} y := .rfl
 
 /-- Every element is increasing for the extension inclusion. -/
 theorem increasing_ext (x : α) : Increasing x where
-  increasing y := incExt_op_right x y
+  increasing y := inc_op_right x y
 
 instance [IsTotal α] : OrderRefl α where
-  ord_refl := incExt_refl
+  ord_refl := inc_refl
 
 variable [ExtensionLaws α]
 
@@ -889,15 +918,15 @@ inclusion. -/
   toOrdered := extOrderN
   op_monoN_left := op_monoN_left_ext
   op_mono_left := op_mono_left_ext
-  validN_of_ordN := validN_of_incExtN
+  validN_of_ordN := validN_of_incN
   pcore_monoN := pcore_monoN_ext
   pcore_mono := pcore_mono_ext
   pcore_order_op {_ cx} e y :=
     let ⟨cy, hcy⟩ := pcore_op_mono e y
-    ⟨cx • cy, hcy, incExt_op_left cx cy⟩
+    ⟨cx • cy, hcy, inc_op_left cx cy⟩
   pcore_increasing _ := increasing_ext _
   increasing_closed _ _ := increasing_ext _
-  ordN_extend := incExtN_extend
+  ordN_extend := incN_extend
 
 end extOrder
 end RABase
@@ -906,24 +935,24 @@ section
 open RABase
 variable [RABase α]
 
-namespace IncExt
-theorem incExtN {n} {x y : α} : x ≼ y → x ≼{n} y := incExtN_of_incExt _
-theorem trans : (x : α) ≼ y → y ≼ z → x ≼ z := incExt_trans
-theorem validN {n} {x y : α} : x ≼ y → ✓{n} y → ✓{n} x := validN_of_incExt
-end IncExt
+namespace Included
+theorem incN {n} {x y : α} : x ≼ y → x ≼{n} y := incN_of_inc _
+theorem trans : (x : α) ≼ y → y ≼ z → x ≼ z := inc_trans
+theorem validN {n} {x y : α} : x ≼ y → ✓{n} y → ✓{n} x := validN_of_inc
+end Included
 
-namespace IncExtN
-theorem trans : (x : α) ≼{n} y → y ≼{n} z → x ≼{n} z := incExtN_trans
-theorem validN {n} {x y : α} : x ≼{n} y → ✓{n} y → ✓{n} x := validN_of_incExtN
-theorem le {n n'} {x y : α} : n' ≤ n → x ≼{n} y → x ≼{n'} y := incExtN_le
-theorem succ {n} {x y : α} : x ≼{n.succ} y → x ≼{n} y := incExtN_succ
-end IncExtN
+namespace IncludedN
+theorem trans : (x : α) ≼{n} y → y ≼{n} z → x ≼{n} z := incN_trans
+theorem validN {n} {x y : α} : x ≼{n} y → ✓{n} y → ✓{n} x := validN_of_incN
+theorem le {n n'} {x y : α} : n' ≤ n → x ≼{n} y → x ≼{n'} y := incN_le
+theorem succ {n} {x y : α} : x ≼{n.succ} y → x ≼{n} y := incN_succ
+end IncludedN
 
 section
 variable [IsTotal α]
 
-@[refl] theorem IncExt.rfl {x : α} : x ≼ x := incExt_refl x
-@[refl] theorem IncExtN.rfl {x : α} : x ≼{n} x := incExtN_refl x
+@[refl] theorem Included.rfl {x : α} : x ≼ x := inc_refl x
+@[refl] theorem IncludedN.rfl {x : α} : x ≼{n} x := incN_refl x
 
 end
 end
@@ -940,20 +969,11 @@ class Discrete (α : Type _) [CMRA α] extends OFE.Discrete α where
 export Discrete (discrete_valid discrete_ord)
 #rocq_ignore discrete_validN_instance "Use CMRA instance"
 
-/-- An affine algebra: every element is increasing, i.e. the extension inclusion is contained
-in the order. Classical resource algebras are affine (`RABase.affine_withExtensionOrder`), and
-`UPred M` is a `BIAffine` exactly when `M` is affine. -/
-class Affine (α : Type _) [CMRA α] : Prop where
-  increasing (x : α) : Increasing x
-
-instance [Affine α] (x : α) : Increasing x := Affine.increasing x
-
 end CMRA
 
-instance RABase.affine_withExtensionOrder [RABase α] [RABase.ExtensionLaws α] :
-    @CMRA.Affine α CMRA.withExtensionOrder :=
-  letI := CMRA.withExtensionOrder (α := α)
-  { increasing := RABase.increasing_ext }
+instance RABase.isInc_withExtensionOrder [RABase α] [RABase.ExtensionLaws α] :
+    @IsInc α _ _ (CMRA.withExtensionOrder (α := α)).toOrdered :=
+  { inc_ord := id, ord_inc := id }
 
 /-! ## Unital algebras -/
 
@@ -1201,17 +1221,17 @@ end total
 /-! ## Affine algebras -/
 
 section affine
-variable [Affine α]
+variable [CMRA.Affine α]
 
-theorem ord_op_right (x y : α) : y ≼ₒ x • y := (Affine.increasing x).increasing y
+theorem ord_op_right (x y : α) : y ≼ₒ x • y := (IncOrd.increasing x).increasing y
 theorem ord_op_left (x y : α) : x ≼ₒ x • y := comm' (x := y) (y := x) ▸ ord_op_right y x
 theorem ordN_op_left (n) (x y : α) : x ≼ₒ{n} x • y := (ord_op_left x y).ordN
 theorem ordN_op_right (n) (x y : α) : y ≼ₒ{n} x • y := (ord_op_right x y).ordN
 
 /-- In an affine algebra the extension inclusion is contained in the order. -/
-theorem ordN_of_incExtN {n} {x y : α} : x ≼{n} y → x ≼ₒ{n} y
+theorem ordN_of_incN {n} {x y : α} : x ≼{n} y → x ≼ₒ{n} y
   | ⟨z, hz⟩ => ordN_ne .rfl hz.symm (ordN_op_left n x z)
-theorem ord_of_incExt {x y : α} : x ≼ y → x ≼ₒ y
+theorem ord_of_inc {x y : α} : x ≼ y → x ≼ₒ y
   | ⟨z, hz⟩ => hz ▸ ord_op_left x z
 
 theorem pcore_ord_self {x : α} {cx} (e : pcore x = some cx) : cx ≼ₒ x :=
@@ -1338,11 +1358,11 @@ theorem unit_right_id {x : α} : x • unit = x := comm'.trans unit_left_id
 theorem unit_right_id_dist (x : α) : x • unit ≡{n}≡ x := comm'.dist.trans (unit_left_id_dist x)
 
 @[rocq_alias ucmra_unit_leastN]
-theorem _root_.Iris.RABase.incExtN_unit {n} {x : α} : unit ≼{n} x :=
+theorem _root_.Iris.RABase.incN_unit {n} {x : α} : unit ≼{n} x :=
   ⟨x, unit_left_id.symm.dist⟩
 
 @[rocq_alias ucmra_unit_least]
-theorem _root_.Iris.RABase.incExt_unit {x : α} : unit ≼ x := ⟨x, unit_left_id.symm⟩
+theorem _root_.Iris.RABase.inc_unit {x : α} : unit ≼ x := ⟨x, unit_left_id.symm⟩
 
 @[rocq_alias ucmra_unit_core_id]
 instance unit_CoreId : CoreId (unit : α) where
@@ -1378,7 +1398,7 @@ theorem unit_ord_core (x : α) : unit ≼ₒ core x := increasing_iff_unit_ord.m
 theorem unit_ordN_core {n} (x : α) : unit ≼ₒ{n} core x := (unit_ord_core x).ordN
 
 section affine
-variable [Affine α]
+variable [CMRA.Affine α]
 
 theorem ordN_unit {n} {x : α} : unit ≼ₒ{n} x := unit_left_id (x := x) ▸ ordN_op_left n unit x
 
@@ -1927,30 +1947,30 @@ theorem ord_iff {f g : ∀ x, β x} : f ≼ₒ g ↔ ∀ x, f x ≼ₒ g x := .r
 theorem ordN_iff {n} {f g : ∀ x, β x} : f ≼ₒ{n} g ↔ ∀ x, f x ≼ₒ{n} g x := .rfl
 
 @[rocq_alias discrete_fun_included_spec_1]
-theorem incExt_apply {f g : ∀ x, β x} : f ≼ g → ∀ x, f x ≼ g x
+theorem inc_apply {f g : ∀ x, β x} : f ≼ g → ∀ x, f x ≼ g x
   | ⟨h, hh⟩, x => ⟨h x, congrFun hh x⟩
 
 /-- Note: The finiteness assumption from Iris-Rocq is removed using choice. -/
 @[rocq_alias discrete_fun_included_spec]
-theorem incExt_iff {f g : ∀ x, β x} : f ≼ g ↔ ∀ x, f x ≼ g x := by
-  refine ⟨incExt_apply, fun h => ?_⟩
+theorem inc_iff {f g : ∀ x, β x} : f ≼ g ↔ ∀ x, f x ≼ g x := by
+  refine ⟨inc_apply, fun h => ?_⟩
   obtain ⟨z, hz⟩ := Classical.skolem.mp h
   exact ⟨z, funext hz⟩
 
-theorem incExtN_apply {n} {f g : ∀ x, β x} : f ≼{n} g → ∀ x, f x ≼{n} g x
+theorem incN_apply {n} {f g : ∀ x, β x} : f ≼{n} g → ∀ x, f x ≼{n} g x
   | ⟨h, hh⟩, x => ⟨h x, hh x⟩
 
 /-- Note: The finiteness assumption from Iris-Rocq is removed using choice. -/
-theorem incExtN_iff {n} {f g : ∀ x, β x} : f ≼{n} g ↔ ∀ x, f x ≼{n} g x := by
-  refine ⟨incExtN_apply, fun h => ?_⟩
+theorem incN_iff {n} {f g : ∀ x, β x} : f ≼{n} g ↔ ∀ x, f x ≼{n} g x := by
+  refine ⟨incN_apply, fun h => ?_⟩
   obtain ⟨z, hz⟩ := Classical.skolem.mp h
   exact ⟨z, hz⟩
 
 instance [∀ x, OrderRefl (β x)] : OrderRefl (∀ x, β x) where
   ord_refl f x := ord_refl (f x)
 
-instance [∀ x, Affine (β x)] : Affine (∀ x, β x) where
-  increasing f := increasing_iff.mpr fun x => Affine.increasing (f x)
+instance [∀ x, CMRA.Affine (β x)] : CMRA.Affine (∀ x, β x) :=
+  IncOrd.of_increasing fun f => increasing_iff.mpr fun x => IncOrd.increasing (f x)
 
 end DiscreteFun
 
@@ -2030,15 +2050,15 @@ def optionValid : Option α → Prop
 /-- The step-indexed order on `Option α`: `none` lies below `none` and below every increasing
 element, `some` is monotone up to `n`-equivalence, and nothing but `none` lies below `none`. -/
 @[simp]
-def optionIncludedN (n : Nat) : Option α → Option α → Prop
+def optionOrderN (n : Nat) : Option α → Option α → Prop
   | none, none => True
   | none, some y => Increasing y
   | some x, some y => x ≼ₒ*{n} y
   | some _, none => False
 
-/-- The order on `Option α`; see `optionIncludedN`. -/
+/-- The order on `Option α`; see `optionOrderN`. -/
 @[simp]
-def optionIncluded : Option α → Option α → Prop
+def optionOrder : Option α → Option α → Prop
   | none, none => True
   | none, some y => Increasing y
   | some x, some y => x ≼ₒ* y
@@ -2099,8 +2119,8 @@ namespace Option
 
 /-- The order on `Option α`. -/
 @[reducible] def orderN : Ordered (Option α) where
-  OrderN := optionIncludedN
-  Order := optionIncluded
+  OrderN := optionOrderN
+  Order := optionOrder
   ordN_ne {n x x' y y'} ex ey h := by
     rcases x, x', y, y' with ⟨_|x, _|x', _|y, _|y'⟩ <;> simp_all [Dist, Option.Forall₂]
     · exact h.of_dist ey
@@ -2451,7 +2471,7 @@ theorem valid_of_ord_valid {a b : α} (Hv : ✓ a) (Hinc : some b ≼ₒ some a)
 
 /-- Transport a pointwise order-to-extension conversion through `Option`. The conversion is a
 plain hypothesis: classical components discharge it with `fun h => h`. -/
-theorem incExtN_of_ordN {n} {mx my : Option α}
+theorem incN_of_ordN {n} {mx my : Option α}
     (hsub : ∀ {n : Nat} {x y : α}, x ≼ₒ{n} y → x ≼{n} y) (h : mx ≼ₒ{n} my) : mx ≼{n} my :=
   match mx, my, h with
   | none, none, _ => ⟨none, .rfl⟩
@@ -2461,8 +2481,8 @@ theorem incExtN_of_ordN {n} {mx my : Option α}
     let ⟨z, hz⟩ := hsub i
     ⟨some z, OFE.some_dist_some.mpr hz⟩
 
-/-- The limit-level form of `Option.incExtN_of_ordN`. -/
-theorem incExt_of_ord {mx my : Option α}
+/-- The limit-level form of `Option.incN_of_ordN`. -/
+theorem inc_of_ord {mx my : Option α}
     (hsub : ∀ {x y : α}, x ≼ₒ y → x ≼ y) (h : mx ≼ₒ my) : mx ≼ my :=
   match mx, my, h with
   | none, none, _ => ⟨none, rfl⟩
@@ -2472,31 +2492,31 @@ theorem incExt_of_ord {mx my : Option α}
     let ⟨z, hz⟩ := hsub i
     ⟨some z, congrArg some hz⟩
 
-instance [Affine α] : Affine (Option α) where
-  increasing
+instance [CMRA.Affine α] : CMRA.Affine (Option α) :=
+  IncOrd.of_increasing fun
     | none => inferInstance
-    | some a => increasing_some_iff.mpr (Affine.increasing a)
+    | some a => increasing_some_iff.mpr (IncOrd.increasing a)
 
 /-! ### The extension inclusion on `Option α` -/
 
-theorem some_incExt_some_of_dist_opM {n} {x y : α} {mz : Option α} (H : x ≡{n}≡ y •? mz) :
+theorem some_inc_some_of_dist_opM {n} {x y : α} {mz : Option α} (H : x ≡{n}≡ y •? mz) :
     some y ≼{n} some x :=
   match mz with | none => ⟨none, H⟩ | some z => ⟨some z, H⟩
 
-theorem incExt_of_some_incExt_some [IsTotal α] {x y : α} (H : some y ≼ some x) :
+theorem inc_of_some_inc_some [IsTotal α] {x y : α} (H : some y ≼ some x) :
     y ≼ x :=
   let ⟨mz, hmz⟩ := H
   match mz with
   | none => ⟨core y, (Option.some.inj hmz).trans (op_core y).symm⟩
   | some z => ⟨z, Option.some.inj hmz⟩
 
-theorem incExtN_of_some_incExtN_some [IsTotal α] {n} {x y : α} :
+theorem incN_of_some_incN_some [IsTotal α] {n} {x y : α} :
     some y ≼{n} some x → y ≼{n} x
   | ⟨none, hmz⟩ => ⟨core y, dist_of_some_dist_some hmz |>.trans (op_core_dist y).symm⟩
   | ⟨some z, hmz⟩ => ⟨z, hmz⟩
 
 @[rocq_alias option_included]
-theorem incExt_iff {ma mb : Option α} :
+theorem inc_iff {ma mb : Option α} :
     ma ≼ mb ↔
       ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ (a = b ∨ a ≼ b) := by
   refine ⟨fun ⟨mc, Hmc⟩ => ?_, ?_⟩
@@ -2514,7 +2534,7 @@ theorem incExt_iff {ma mb : Option α} :
     · exists some z
 
 @[rocq_alias option_includedN]
-theorem incExtN_iff {n} {ma mb : Option α} :
+theorem incN_iff {n} {ma mb : Option α} :
     ma ≼{n} mb ↔
       ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ (a ≡{n}≡ b ∨ a ≼{n} b) := by
   refine ⟨fun ⟨mc, Hmc⟩ => ?_, ?_⟩
@@ -2527,9 +2547,9 @@ theorem incExtN_iff {n} {ma mb : Option α} :
     · exists some z
 
 @[rocq_alias option_included_total]
-theorem incExt_iff_isTotal [IsTotal α] {ma mb : Option α} :
+theorem inc_iff_isTotal [IsTotal α] {ma mb : Option α} :
     ma ≼ mb ↔ ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ a ≼ b := by
-  rw [incExt_iff]
+  rw [inc_iff]
   constructor
   · rintro (rfl | ⟨a, b, ⟨⟩, ⟨⟩, (Heqv | Hinc)⟩)
     · simp
@@ -2540,9 +2560,9 @@ theorem incExt_iff_isTotal [IsTotal α] {ma mb : Option α} :
     · exact .inr ⟨a, b, rfl, rfl, .inr Hinc⟩
 
 @[rocq_alias option_includedN_total]
-theorem incExtN_iff_is_total [IsTotal α] {n} {ma mb : Option α} :
+theorem incN_iff_is_total [IsTotal α] {n} {ma mb : Option α} :
     ma ≼{n} mb ↔ ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ a ≼{n} b := by
-  rw [incExtN_iff]
+  rw [incN_iff]
   constructor
   · rintro (rfl | ⟨a, b, ⟨⟩, ⟨⟩, (Heqv | Hinc)⟩)
     · simp
@@ -2553,92 +2573,92 @@ theorem incExtN_iff_is_total [IsTotal α] {n} {ma mb : Option α} :
     · exact .inr ⟨a, b, rfl, rfl, .inr Hinc⟩
 
 @[rocq_alias Some_includedN]
-theorem some_incExtN_some_iff {n} {a b : α} :
+theorem some_incN_some_iff {n} {a b : α} :
     some a ≼{n} some b ↔ a ≡{n}≡ b ∨ a ≼{n} b := by
-  apply incExtN_iff.trans; simp
+  apply incN_iff.trans; simp
 
 @[rocq_alias Some_includedN_1]
-theorem dist_or_incExtN_of_some_incExtN_some {n} {a b : α} (h : some a ≼{n} some b) :
-    a ≡{n}≡ b ∨ a ≼{n} b := some_incExtN_some_iff.mp h
+theorem dist_or_incN_of_some_incN_some {n} {a b : α} (h : some a ≼{n} some b) :
+    a ≡{n}≡ b ∨ a ≼{n} b := some_incN_some_iff.mp h
 
 @[rocq_alias Some_includedN_2]
-theorem some_incExtN_some_of_dist_or_incExtN {n} {a b : α} (h : a ≡{n}≡ b ∨ a ≼{n} b) :
-    some a ≼{n} some b := some_incExtN_some_iff.mpr h
+theorem some_incN_some_of_dist_or_incN {n} {a b : α} (h : a ≡{n}≡ b ∨ a ≼{n} b) :
+    some a ≼{n} some b := some_incN_some_iff.mpr h
 
 @[rocq_alias Some_includedN_mono]
-theorem some_incExtN_some_of_incExtN {n} {a b : α} (h : a ≼{n} b) : some a ≼{n} some b :=
-  some_incExtN_some_iff.mpr (.inr h)
+theorem some_incN_some_of_incN {n} {a b : α} (h : a ≼{n} b) : some a ≼{n} some b :=
+  some_incN_some_iff.mpr (.inr h)
 
 @[rocq_alias Some_includedN_refl]
-theorem some_incExtN_some_of_dist {n} {a b : α} (h : a ≡{n}≡ b) : some a ≼{n} some b :=
-  some_incExtN_some_iff.mpr (.inl h)
+theorem some_incN_some_of_dist {n} {a b : α} (h : a ≡{n}≡ b) : some a ≼{n} some b :=
+  some_incN_some_iff.mpr (.inl h)
 
 @[rocq_alias Some_includedN_is_Some]
-theorem isSome_of_some_incExtN {n} {a : α} {mb : Option α} (h : some a ≼{n} mb) :
+theorem isSome_of_some_incN {n} {a : α} {mb : Option α} (h : some a ≼{n} mb) :
     mb.isSome := by
-  rcases incExtN_iff.mp h with h | ⟨_, _, _, rfl, _⟩ <;> simp_all
+  rcases incN_iff.mp h with h | ⟨_, _, _, rfl, _⟩ <;> simp_all
 
 @[rocq_alias Some_included]
-theorem some_incExt_some_iff {a b : α} : some a ≼ some b ↔ a = b ∨ a ≼ b := by
-  apply incExt_iff.trans; simp
+theorem some_inc_some_iff {a b : α} : some a ≼ some b ↔ a = b ∨ a ≼ b := by
+  apply inc_iff.trans; simp
 
 @[rocq_alias Some_included_1]
-theorem eq_or_incExt_of_some_incExt_some {a b : α} (h : some a ≼ some b) :
+theorem eq_or_inc_of_some_inc_some {a b : α} (h : some a ≼ some b) :
     a = b ∨ a ≼ b :=
-  some_incExt_some_iff.mp h
+  some_inc_some_iff.mp h
 
 @[rocq_alias Some_included_2]
-theorem some_incExt_some_of_eq_or_incExt {a b : α} (h : a = b ∨ a ≼ b) :
+theorem some_inc_some_of_eq_or_inc {a b : α} (h : a = b ∨ a ≼ b) :
     some a ≼ some b :=
-  some_incExt_some_iff.mpr h
+  some_inc_some_iff.mpr h
 
 @[rocq_alias Some_included_mono]
-theorem some_incExt_some_of_incExt {a b : α} (h : a ≼ b) : some a ≼ some b :=
-  some_incExt_some_iff.mpr (.inr h)
+theorem some_inc_some_of_inc {a b : α} (h : a ≼ b) : some a ≼ some b :=
+  some_inc_some_iff.mpr (.inr h)
 
 @[rocq_alias Some_included_refl]
-theorem some_incExt_some_of_eq {a b : α} (h : a = b) : some a ≼ some b :=
-  some_incExt_some_iff.mpr (.inl h)
+theorem some_inc_some_of_eq {a b : α} (h : a = b) : some a ≼ some b :=
+  some_inc_some_iff.mpr (.inl h)
 
 @[rocq_alias Some_included_is_Some]
-theorem isSome_of_some_incExt {a : α} {mb : Option α} (h : some a ≼ mb) : mb.isSome := by
-  rcases incExt_iff.mp h with h | ⟨_, _, _, rfl, _⟩ <;> simp_all
+theorem isSome_of_some_inc {a : α} {mb : Option α} (h : some a ≼ mb) : mb.isSome := by
+  rcases inc_iff.mp h with h | ⟨_, _, _, rfl, _⟩ <;> simp_all
 
 @[rocq_alias is_Some_includedN]
 theorem isSome_monoN_ext {n} {ma mb : Option α} (h : ma ≼{n} mb) :
     ma.isSome → mb.isSome := by
   cases ma with
   | none => simp
-  | some _ => exact fun _ => isSome_of_some_incExtN h
+  | some _ => exact fun _ => isSome_of_some_incN h
 
 @[rocq_alias is_Some_included]
 theorem isSome_mono_ext {ma mb : Option α} (h : ma ≼ mb) : ma.isSome → mb.isSome := by
   cases ma with
   | none => simp
-  | some _ => exact fun _ => isSome_of_some_incExt h
+  | some _ => exact fun _ => isSome_of_some_inc h
 
 @[rocq_alias Some_included_exclusive]
-theorem eqv_of_incExt_exclusive [Exclusive (a : α)] {b : α} (H : some a ≼ some b)
+theorem eqv_of_inc_exclusive [Exclusive (a : α)] {b : α} (H : some a ≼ some b)
     (Hv : ✓ b) : a = b := by
-  rcases incExt_iff.mp H with (Hcontra|H)
+  rcases inc_iff.mp H with (Hcontra|H)
   · simp at Hcontra
   · obtain ⟨_, _, ⟨_, _⟩, ⟨_, _⟩, (He|H)⟩ := H
     · exact He
-    · exact not_valid_of_excl_incExt H Hv |>.elim
+    · exact not_valid_of_excl_inc H Hv |>.elim
 
 @[rocq_alias Some_includedN_exclusive]
-theorem dist_of_incExtN_exclusive [Exclusive (a : α)] {n} {b : α} (H : some a ≼{n} some b)
+theorem dist_of_incN_exclusive [Exclusive (a : α)] {n} {b : α} (H : some a ≼{n} some b)
     (Hv : ✓{n} b) : a ≡{n}≡ b := by
-  rcases incExtN_iff.mp H with (Hcontra|H)
+  rcases incN_iff.mp H with (Hcontra|H)
   · simp at Hcontra
   · obtain ⟨_, _, ⟨_, _⟩, ⟨_, _⟩, (_|H)⟩ := H
     · trivial
-    · exact not_valid_of_exclN_incExt H Hv |>.elim
+    · exact not_valid_of_exclN_inc H Hv |>.elim
 
 @[rocq_alias Some_included_total]
-theorem some_incExt_some_iff_is_total [IsTotal α] {a b : α} :
+theorem some_inc_some_iff_is_total [IsTotal α] {a b : α} :
     some a ≼ some b ↔ a ≼ b := by
-  apply some_incExt_some_iff.trans
+  apply some_inc_some_iff.trans
   refine ⟨?_, .inr⟩
   rintro (H|H)
   · exact ⟨_, H.symm.trans (op_core a).symm⟩
@@ -2648,16 +2668,16 @@ theorem some_incExt_some_iff_is_total [IsTotal α] {a b : α} :
 theorem map_mono_ext {β : Type _} [CMRA β] (f : α → β) {ma mb : Option α}
     (hf : ∀ x y : α, x ≼ y → f x ≼ f y) (h : ma ≼ mb) :
     ma.map f ≼ mb.map f := by
-  rcases incExt_iff.mp h with rfl | ⟨a, b, rfl, rfl, hab⟩
+  rcases inc_iff.mp h with rfl | ⟨a, b, rfl, rfl, hab⟩
   · exact ⟨mb.map f, by cases mb.map f <;> rfl⟩
   · rcases hab with rfl | hab
-    · exact incExt_refl _
-    · exact some_incExt_some_iff.mpr (.inr (hf a b hab))
+    · exact inc_refl _
+    · exact some_inc_some_iff.mpr (.inr (hf a b hab))
 
 @[rocq_alias Some_includedN_total]
-theorem some_incExtN_some_iff_is_total [IsTotal α] {n} {a b : α} :
+theorem some_incN_some_iff_is_total [IsTotal α] {n} {a b : α} :
     some a ≼{n} some b ↔ a ≼{n} b := by
-  apply some_incExtN_some_iff.trans
+  apply some_incN_some_iff.trans
   refine ⟨?_, .inr⟩
   rintro (H|H)
   · exact ⟨_, H.symm.trans (CMRA.op_core_dist a).symm⟩
@@ -2681,17 +2701,17 @@ instance {ma : Option α} [∀ a : α, IdFree a] [∀ a : α, Cancelable a] : Ca
   · infer_instance
 
 @[rocq_alias cmra_validN_Some_includedN]
-theorem validN_of_incExtN_validN {n} {a b : α} (Hv : ✓{n} a) (Hinc : some b ≼{n} some a) :
+theorem validN_of_incN_validN {n} {a b : α} (Hv : ✓{n} a) (Hinc : some b ≼{n} some a) :
     ✓{n} b :=
-  validN_of_incExtN (α := Option α) Hinc Hv
+  validN_of_incN (α := Option α) Hinc Hv
 
 @[rocq_alias cmra_valid_Some_included]
-theorem valid_of_incExt_valid {a b : α} (Hv : ✓ a) (Hinc : some b ≼ some a) : ✓ b :=
-  valid_of_incExt (α := Option α) Hinc Hv
+theorem valid_of_inc_valid {a b : α} (Hv : ✓ a) (Hinc : some b ≼ some a) : ✓ b :=
+  valid_of_inc (α := Option α) Hinc Hv
 
 @[rocq_alias Some_included_opM]
-theorem some_incExt_some_iff_opM {a b : α} : some a ≼ some b ↔ ∃ mc, b = a •? mc := by
-  simp [incExt_iff]
+theorem some_inc_some_iff_opM {a b : α} : some a ≼ some b ↔ ∃ mc, b = a •? mc := by
+  simp [inc_iff]
   constructor
   · rintro (Heqv | ⟨mc', Hinc⟩)
     · exact ⟨none, by simpa [CMRA.op?] using Heqv.symm⟩
@@ -2701,9 +2721,9 @@ theorem some_incExt_some_iff_opM {a b : α} : some a ≼ some b ↔ ∃ mc, b = 
     · exact .inr ⟨z, H⟩
 
 @[rocq_alias Some_includedN_opM]
-theorem some_incExtN_some_iff_opM {n} {a b : α} :
+theorem some_incN_some_iff_opM {n} {a b : α} :
     some a ≼{n} some b ↔ ∃ mc, b ≡{n}≡ a •? mc := by
-  simp [incExtN_iff]
+  simp [incN_iff]
   constructor
   · rintro (H|H)
     · exists none; simpa [op?] using H.symm
@@ -3007,7 +3027,7 @@ theorem mk_ordN_mk {n} (a a' : α) (b b' : β) :
 
 /-- Transport pointwise order-to-extension conversions through the product. The conversions
 are plain hypotheses: classical components discharge them with `fun h => h`. -/
-theorem incExtN_of_ordN {n} {x y : α × β}
+theorem incN_of_ordN {n} {x y : α × β}
     (hsub₁ : ∀ {n : Nat} {a b : α}, a ≼ₒ{n} b → a ≼{n} b)
     (hsub₂ : ∀ {n : Nat} {a b : β}, a ≼ₒ{n} b → a ≼{n} b)
     (h : x ≼ₒ{n} y) : x ≼{n} y :=
@@ -3015,8 +3035,8 @@ theorem incExtN_of_ordN {n} {x y : α × β}
   let ⟨z₂, hz₂⟩ := hsub₂ h.2
   ⟨(z₁, z₂), ⟨hz₁, hz₂⟩⟩
 
-/-- The limit-level form of `Prod.incExtN_of_ordN`. -/
-theorem incExt_of_ord {x y : α × β}
+/-- The limit-level form of `Prod.incN_of_ordN`. -/
+theorem inc_of_ord {x y : α × β}
     (hsub₁ : ∀ {a b : α}, a ≼ₒ b → a ≼ b)
     (hsub₂ : ∀ {a b : β}, a ≼ₒ b → a ≼ b)
     (h : x ≼ₒ y) : x ≼ y :=
@@ -3025,23 +3045,23 @@ theorem incExt_of_ord {x y : α × β}
   ⟨(z₁, z₂), Prod.ext hz₁ hz₂⟩
 
 @[rocq_alias prod_included]
-theorem incExt_def {x y : α × β} : x ≼ y ↔ x.1 ≼ y.1 ∧ x.2 ≼ y.2 :=
+theorem inc_def {x y : α × β} : x ≼ y ↔ x.1 ≼ y.1 ∧ x.2 ≼ y.2 :=
   ⟨fun ⟨z, hz⟩ => ⟨⟨z.1, congrArg Prod.fst hz⟩, ⟨z.2, congrArg Prod.snd hz⟩⟩,
    fun ⟨⟨z₁, hz₁⟩, ⟨z₂, hz₂⟩⟩ => ⟨(z₁, z₂), Prod.ext hz₁ hz₂⟩⟩
 
 @[rocq_alias prod_includedN]
-theorem incExtN_def {n} {x y : α × β} :
+theorem incN_def {n} {x y : α × β} :
     x ≼{n} y ↔ x.1 ≼{n} y.1 ∧ x.2 ≼{n} y.2 :=
   ⟨fun ⟨z, hz⟩ => ⟨⟨z.1, dist_fst hz⟩, ⟨z.2, dist_snd hz⟩⟩,
    fun ⟨⟨z₁, hz₁⟩, ⟨z₂, hz₂⟩⟩ => ⟨(z₁, z₂), dist_prod_ext hz₁ hz₂⟩⟩
 
 @[rocq_alias pair_included]
-theorem mk_incExt_mk (a a' : α) (b b' : β) :
-    (a, b) ≼ (a', b') ↔ a ≼ a' ∧ b ≼ b' := incExt_def
+theorem mk_inc_mk (a a' : α) (b b' : β) :
+    (a, b) ≼ (a', b') ↔ a ≼ a' ∧ b ≼ b' := inc_def
 
 @[rocq_alias pair_includedN]
-theorem mk_incExtN_mk {n} (a a' : α) (b b' : β) :
-    (a, b) ≼{n} (a', b') ↔ a ≼{n} a' ∧ b ≼{n} b' := incExtN_def
+theorem mk_incN_mk {n} (a a' : α) (b b' : β) :
+    (a, b) ≼{n} (a', b') ↔ a ≼{n} a' ∧ b ≼{n} b' := incN_def
 
 @[rocq_alias prod_cmra_total]
 instance instIsTotalProd [IsTotal α] [IsTotal β] : IsTotal (α × β) where
@@ -3058,8 +3078,8 @@ instance instCmraDiscreteProd [CMRA.Discrete α] [CMRA.Discrete β] : CMRA.Discr
 instance [OrderRefl α] [OrderRefl β] : OrderRefl (α × β) where
   ord_refl x := ⟨CMRA.ord_refl x.1, CMRA.ord_refl x.2⟩
 
-instance [CMRA.Affine α] [CMRA.Affine β] : CMRA.Affine (α × β) where
-  increasing x := increasing_iff.mpr ⟨CMRA.Affine.increasing x.1, CMRA.Affine.increasing x.2⟩
+instance [CMRA.Affine α] [CMRA.Affine β] : CMRA.Affine (α × β) :=
+  IncOrd.of_increasing fun x => increasing_iff.mpr ⟨IncOrd.increasing x.1, IncOrd.increasing x.2⟩
 
 @[rocq_alias pair_core_id]
 instance instCoreIdPair {x : α} {y : β} [CMRA.CoreId x] [CMRA.CoreId y] :
@@ -3156,71 +3176,71 @@ theorem some_mk_ord_right {a₁ a₂ : α} {b₁ b₂ : β} (h : some (a₁, b�
     some b₁ ≼ₒ some b₂ := (some_mk_ord h).2
 
 @[rocq_alias Some_pair_includedN]
-theorem some_mk_incExtN {n} {a₁ a₂ : α} {b₁ b₂ : β}
+theorem some_mk_incN {n} {a₁ a₂ : α} {b₁ b₂ : β}
     (h : some (a₁, b₁) ≼{n} some (a₂, b₂)) :
     some a₁ ≼{n} some a₂ ∧ some b₁ ≼{n} some b₂ := by
-  rcases some_incExtN_some_iff.mp h with hd | hi
-  · exact ⟨some_incExtN_some_of_dist hd.1, some_incExtN_some_of_dist hd.2⟩
-  · have ⟨h₁, h₂⟩ := Prod.incExtN_def.mp hi
-    exact ⟨some_incExtN_some_of_incExtN h₁, some_incExtN_some_of_incExtN h₂⟩
+  rcases some_incN_some_iff.mp h with hd | hi
+  · exact ⟨some_incN_some_of_dist hd.1, some_incN_some_of_dist hd.2⟩
+  · have ⟨h₁, h₂⟩ := Prod.incN_def.mp hi
+    exact ⟨some_incN_some_of_incN h₁, some_incN_some_of_incN h₂⟩
 
 @[rocq_alias Some_pair_includedN_l]
-theorem some_mk_incExtN_left {n} {a₁ a₂ : α} {b₁ b₂ : β}
+theorem some_mk_incN_left {n} {a₁ a₂ : α} {b₁ b₂ : β}
     (h : some (a₁, b₁) ≼{n} some (a₂, b₂)) : some a₁ ≼{n} some a₂ :=
-  (some_mk_incExtN h).1
+  (some_mk_incN h).1
 
 @[rocq_alias Some_pair_includedN_r]
-theorem some_mk_incExtN_right {n} {a₁ a₂ : α} {b₁ b₂ : β}
+theorem some_mk_incN_right {n} {a₁ a₂ : α} {b₁ b₂ : β}
     (h : some (a₁, b₁) ≼{n} some (a₂, b₂)) : some b₁ ≼{n} some b₂ :=
-  (some_mk_incExtN h).2
+  (some_mk_incN h).2
 
 @[rocq_alias Some_pair_includedN_total_1]
-theorem some_mk_incExtN_total_fst [IsTotal α] {n} {a₁ a₂ : α} {b₁ b₂ : β}
+theorem some_mk_incN_total_fst [IsTotal α] {n} {a₁ a₂ : α} {b₁ b₂ : β}
     (h : some (a₁, b₁) ≼{n} some (a₂, b₂)) :
     a₁ ≼{n} a₂ ∧ some b₁ ≼{n} some b₂ :=
-  let ⟨h₁, h₂⟩ := some_mk_incExtN h
-  ⟨some_incExtN_some_iff_is_total.mp h₁, h₂⟩
+  let ⟨h₁, h₂⟩ := some_mk_incN h
+  ⟨some_incN_some_iff_is_total.mp h₁, h₂⟩
 
 @[rocq_alias Some_pair_includedN_total_2]
-theorem some_mk_incExtN_total_snd [IsTotal β] {n} {a₁ a₂ : α} {b₁ b₂ : β}
+theorem some_mk_incN_total_snd [IsTotal β] {n} {a₁ a₂ : α} {b₁ b₂ : β}
     (h : some (a₁, b₁) ≼{n} some (a₂, b₂)) :
     some a₁ ≼{n} some a₂ ∧ b₁ ≼{n} b₂ :=
-  let ⟨h₁, h₂⟩ := some_mk_incExtN h
-  ⟨h₁, some_incExtN_some_iff_is_total.mp h₂⟩
+  let ⟨h₁, h₂⟩ := some_mk_incN h
+  ⟨h₁, some_incN_some_iff_is_total.mp h₂⟩
 
 @[rocq_alias Some_pair_included]
-theorem some_mk_incExt {a₁ a₂ : α} {b₁ b₂ : β}
+theorem some_mk_inc {a₁ a₂ : α} {b₁ b₂ : β}
     (h : some (a₁, b₁) ≼ some (a₂, b₂)) :
     some a₁ ≼ some a₂ ∧ some b₁ ≼ some b₂ := by
-  rcases some_incExt_some_iff.mp h with he | hi
-  · exact ⟨some_incExt_some_of_eq (congrArg Prod.fst he),
-      some_incExt_some_of_eq (congrArg Prod.snd he)⟩
-  · have ⟨h₁, h₂⟩ := Prod.incExt_def.mp hi
-    exact ⟨some_incExt_some_of_incExt h₁, some_incExt_some_of_incExt h₂⟩
+  rcases some_inc_some_iff.mp h with he | hi
+  · exact ⟨some_inc_some_of_eq (congrArg Prod.fst he),
+      some_inc_some_of_eq (congrArg Prod.snd he)⟩
+  · have ⟨h₁, h₂⟩ := Prod.inc_def.mp hi
+    exact ⟨some_inc_some_of_inc h₁, some_inc_some_of_inc h₂⟩
 
 @[rocq_alias Some_pair_included_l]
-theorem some_mk_incExt_left {a₁ a₂ : α} {b₁ b₂ : β}
+theorem some_mk_inc_left {a₁ a₂ : α} {b₁ b₂ : β}
     (h : some (a₁, b₁) ≼ some (a₂, b₂)) : some a₁ ≼ some a₂ :=
-  (some_mk_incExt h).1
+  (some_mk_inc h).1
 
 @[rocq_alias Some_pair_included_r]
-theorem some_mk_incExt_right {a₁ a₂ : α} {b₁ b₂ : β}
+theorem some_mk_inc_right {a₁ a₂ : α} {b₁ b₂ : β}
     (h : some (a₁, b₁) ≼ some (a₂, b₂)) : some b₁ ≼ some b₂ :=
-  (some_mk_incExt h).2
+  (some_mk_inc h).2
 
 @[rocq_alias Some_pair_included_total_1]
-theorem some_mk_incExt_total_fst [IsTotal α] {a₁ a₂ : α} {b₁ b₂ : β}
+theorem some_mk_inc_total_fst [IsTotal α] {a₁ a₂ : α} {b₁ b₂ : β}
     (h : some (a₁, b₁) ≼ some (a₂, b₂)) :
     a₁ ≼ a₂ ∧ some b₁ ≼ some b₂ :=
-  let ⟨h₁, h₂⟩ := some_mk_incExt h
-  ⟨some_incExt_some_iff_is_total.mp h₁, h₂⟩
+  let ⟨h₁, h₂⟩ := some_mk_inc h
+  ⟨some_inc_some_iff_is_total.mp h₁, h₂⟩
 
 @[rocq_alias Some_pair_included_total_2]
-theorem some_mk_incExt_total_snd [IsTotal β] {a₁ a₂ : α} {b₁ b₂ : β}
+theorem some_mk_inc_total_snd [IsTotal β] {a₁ a₂ : α} {b₁ b₂ : β}
     (h : some (a₁, b₁) ≼ some (a₂, b₂)) :
     some a₁ ≼ some a₂ ∧ b₁ ≼ b₂ :=
-  let ⟨h₁, h₂⟩ := some_mk_incExt h
-  ⟨h₁, some_incExt_some_iff_is_total.mp h₂⟩
+  let ⟨h₁, h₂⟩ := some_mk_inc h
+  ⟨h₁, some_inc_some_iff_is_total.mp h₂⟩
 
 end Option
 end OptionProd
@@ -3593,7 +3613,7 @@ instance ofDiscrete_discrete [OFE α] [OFE.Discrete α] (pcore : α → Option �
   letI := ofDiscrete pcore op Valid h₁ h₂ h₃ h₄ h₅
   letI := CMRA.withExtensionOrder (α := α)
   { discrete_valid := id
-    discrete_ord := incExt_of_incExt0 }
+    discrete_ord := inc_of_inc0 }
 
 end OfDiscrete
 end RABase

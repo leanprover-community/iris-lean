@@ -182,7 +182,7 @@ theorem valid_own_op_discard {q : Qp} : ✓ own q • discard ↔ q.val < 1 := b
 @[rocq_alias dfrac_cmra_discrete]
 instance : CMRA.Discrete DFrac where
   discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
-  discrete_ord := RABase.incExt_of_incExt0
+  discrete_ord := RABase.inc_of_inc0
 
 theorem is_discrete {q : DFrac} : OFE.DiscreteE q := ⟨fun h => h⟩
 

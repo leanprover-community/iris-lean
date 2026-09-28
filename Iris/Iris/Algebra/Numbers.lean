@@ -85,7 +85,7 @@ scoped instance instCMRA : CMRA α := CMRA.withExtensionOrder
 
 scoped instance instDiscrete : CMRA.Discrete α where
   discrete_valid := id
-  discrete_ord := RABase.incExt_of_incExt0
+  discrete_ord := RABase.inc_of_inc0
 #rocq_ignore nat_cmra_discrete "Use the (ℕ, +) Constant Core instance."
 #rocq_ignore Z_cmra_discrete "Use the (ℤ, +) Constant Core instance."
 
@@ -195,7 +195,7 @@ scoped instance instCMRA : CMRA α := CMRA.withExtensionOrder
 
 scoped instance : CMRA.Discrete α where
   discrete_valid := id
-  discrete_ord := RABase.incExt_of_incExt0
+  discrete_ord := RABase.inc_of_inc0
 #rocq_ignore max_nat_cmra_discrete "Use the (ℕ, max) Universal Core instance."
 #rocq_ignore max_Z_cmra_discrete "Use the (ℤ, max) Universal Core instance."
 #rocq_ignore min_nat_cmra_discrete "Use the (ℕ, min) Universal Core instance."
@@ -230,7 +230,7 @@ theorem op_eq {x y : α} : x • y = x + y := rfl
 
 omit [Zero α] in
 theorem ord_iff {x y : α} : x ≼ₒ y ↔ x • y = y :=
-  ⟨RABase.op_core_right_of_incExt, fun h => ⟨y, h.symm⟩⟩
+  ⟨RABase.op_core_right_of_inc, fun h => ⟨y, h.symm⟩⟩
 
 omit [Zero α] in
 /-- Sufficient condition for a local update on an idempotent structure. -/
@@ -238,7 +238,7 @@ theorem idem_local_update {x y x' : α} (h : x ≼ₒ x') : (x, y) ~l~> (x', x')
   refine fun _ mz _ hn => ⟨trivial, OFE.Dist.of_eq ?_⟩
   cases mz with | none => rfl | some z =>
   replace hn : x = y • z := discrete hn
-  exact (RABase.op_core_left_of_incExt <| .trans ⟨y, hn.trans CMRA.comm'⟩ h).symm
+  exact (RABase.op_core_left_of_inc <| .trans ⟨y, hn.trans CMRA.comm'⟩ h).symm
 
 scoped instance instDiscreteE {a : α} : DiscreteE a := ⟨fun H => discrete H⟩
 
@@ -275,7 +275,7 @@ scoped instance instCMRA : CMRA α := CMRA.withExtensionOrder
 
 scoped instance instDiscrete : CMRA.Discrete α where
   discrete_valid := id
-  discrete_ord := RABase.incExt_of_incExt0
+  discrete_ord := RABase.inc_of_inc0
 #rocq_ignore pos_cmra_discrete "Use (PNat, +) No Core instance."
 
 scoped instance instCancelable [LeftCancelAdd α] {a : α} : Cancelable a where

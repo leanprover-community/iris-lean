@@ -105,7 +105,7 @@ theorem agreeN {dq : DFrac} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F b) : a �
   rw [both_dfrac_validN] at h
   rcases h.2.1 with e | i
   · exact e.2.symm
-  · exact absurd h.2.2.1 (RABase.not_valid_of_exclN_incExt (x := (1 : Qp)) i.1)
+  · exact absurd h.2.2.1 (RABase.not_valid_of_exclN_inc (x := (1 : Qp)) i.1)
 
 @[rocq_alias frac_auth_agree]
 theorem agree {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F b) : a = b :=
@@ -248,16 +248,16 @@ instance isOp_frac_auth_core_id {q q1 q2 : Qp} {a : A}
 omit [CMRA.Affine A] in
 /-- The order of the fragment algebra `Option (Qp × A)` embeds into the extension
 inclusion, given that the order of `A` does. -/
-private theorem incExtN_of_ordN (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y)
+private theorem incN_of_ordN (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y)
     {n : Nat} {x y : Option (Qp × A)} (h : x ≼ₒ{n} y) : x ≼{n} y :=
-  Option.incExtN_of_ordN (Prod.incExtN_of_ordN (fun h => h) hsub) h
+  Option.incN_of_ordN (Prod.incN_of_ordN (fun h => h) hsub) h
 
 @[rocq_alias frac_auth_update]
 theorem update {q : Qp} {a b a' b' : A}
     (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y) (h : (a, b) ~l~> (a', b')) :
     ((●F a : FracAuth) • ◯F{q} b) ~~> (●F a') • ◯F{q} b' :=
   auth_update_of_localUpdate
-    (incExtN_of_ordN hsub)
+    (incN_of_ordN hsub)
     (.option (.prod_2 _ q h))
 
 @[rocq_alias frac_auth_update_1]
@@ -265,7 +265,7 @@ theorem update_full {a b a' : A}
     (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y) (ha' : ✓ a') :
     ((●F a : FracAuth) • ◯F b) ~~> (●F a') • ◯F a' :=
   auth_update_of_localUpdate
-    (incExtN_of_ordN hsub)
+    (incN_of_ordN hsub)
     (.option (.exclusive ⟨Qp.valid_one, ha'⟩))
 
 @[rocq_alias frac_auth_update_auth_persist]

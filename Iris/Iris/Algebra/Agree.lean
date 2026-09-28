@@ -476,7 +476,7 @@ instance instDiscrete [OFE.Discrete α] : OFE.Discrete (Agree α) where
 @[rocq_alias agree_cmra_discrete]
 instance instCMRADiscrete [OFE.Discrete α] : CMRA.Discrete (Agree α) where
   discrete_valid {x} := x.ind fun _ => Raw.discrete_valid
-  discrete_ord := RABase.incExt_of_incExt0
+  discrete_ord := RABase.inc_of_inc0
 
 @[rocq_alias agree_includedN]
 theorem includedN {x y : Agree α} : x ≼ₒ{n} y ↔ y ≡{n}≡ y • x := by

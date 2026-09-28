@@ -183,7 +183,7 @@ theorem idem (x : Mra R) : x • x = x := append_idem x
 
 @[rocq_alias mra_included]
 theorem ord_iff (x y : Mra R) : x ≼ₒ y ↔ y = x • y :=
-  ⟨fun h ↦ (RABase.op_core_right_of_incExt h).symm, fun h ↦ ⟨y, h⟩⟩
+  ⟨fun h ↦ (RABase.op_core_right_of_inc h).symm, fun h ↦ ⟨y, h⟩⟩
 
 @[rocq_alias to_mra_R_op]
 theorem toMra_op_of_rel [hR : Trans R R R] (a b : α) (h : R a b) :

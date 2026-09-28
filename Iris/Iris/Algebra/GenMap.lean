@@ -303,8 +303,8 @@ instance instUCMRA_GenMap : UCMRA (GenMap β) where
 
 instance : IsTotal (GenMap β) := unit_total
 
-instance [Affine β] : Affine (GenMap β) where
-  increasing x := GenMap.increasing_of_car β (Affine.increasing x.car)
+instance [CMRA.Affine β] : CMRA.Affine (GenMap β) :=
+  IncOrd.of_increasing fun x => GenMap.increasing_of_car β (IncOrd.increasing x.car)
 
 theorem GenMap.alter_valid {g : GenMap β} (Hb : ✓{n} b) (Hg : ✓{n} g) :
     ✓{n} g.alter a b := by

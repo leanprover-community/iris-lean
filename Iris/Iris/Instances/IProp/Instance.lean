@@ -873,8 +873,8 @@ instance intoAnd_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp .split a b1 b2] 
     IntoAnd false (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
   into_and := by
     rw [h.is_op]
-    exact and_intro (iOwn_mono (CMRA.ord_of_incExt ⟨b2, rfl⟩))
-      (iOwn_mono (CMRA.ord_of_incExt ⟨b1, CMRA.comm⟩))
+    exact and_intro (iOwn_mono (CMRA.ord_of_inc ⟨b2, rfl⟩))
+      (iOwn_mono (CMRA.ord_of_inc ⟨b1, CMRA.comm⟩))
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias from_sep_own]
@@ -1023,7 +1023,7 @@ theorem iResProject_below {z : IResUR GF} {c : F.ap (IProp GF)}
     (h : iResProject F γ z = some c) : iSingleton F γ c ≼ₒ z := by
   simp only [iResProject, Option.map_eq_some_iff] at h
   obtain ⟨v, hv, rfl⟩ := h
-  exact ord_of_incExt ⟨_, (iSingleton_op_alter hv).symm⟩
+  exact ord_of_inc ⟨_, (iSingleton_op_alter hv).symm⟩
 
 /-- `iResProject` is monotone for the resource order. -/
 theorem iResProject_monoN {n} {x y : IResUR GF} (h : x ≼ₒ{n} y) :

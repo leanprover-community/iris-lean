@@ -182,16 +182,16 @@ instance isOp_ufrac_auth_core_id {q q1 q2 : Qp} {a : A} [h1 : CoreId a] [h2 : Is
 omit [CMRA.Affine A] in
 /-- The order of the fragment algebra `Option (UFrac × A)` embeds into the extension
 inclusion, given that the order of `A` does. -/
-private theorem incExtN_of_ordN (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y)
+private theorem incN_of_ordN (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y)
     {n : Nat} {x y : Option (UFrac × A)} (h : x ≼ₒ{n} y) : x ≼{n} y :=
-  Option.incExtN_of_ordN (Prod.incExtN_of_ordN (fun h => h) hsub) h
+  Option.incN_of_ordN (Prod.incN_of_ordN (fun h => h) hsub) h
 
 @[rocq_alias ufrac_auth_update]
 theorem update {p q : Qp} {a b a' b' : A}
     (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y) (h : (a, b) ~l~> (a', b')) :
     ((●U{p} a) • ◯U{q} b) ~~> (●U{p} a') • ◯U{q} b' :=
   auth_update_of_localUpdate
-    (incExtN_of_ordN hsub)
+    (incN_of_ordN hsub)
     (.option (.prod_2 _ _ h))
 
 @[rocq_alias ufrac_auth_update_surplus]
@@ -199,7 +199,7 @@ theorem update_surplus {p q : Qp} {a b : A}
     (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y) (h : ✓ (a • b)) :
     (●U{p} a) ~~> (●U{p + q} (a • b)) • ◯U{q} b := by
   refine auth_update_alloc_of_localUpdate
-    (incExtN_of_ordN hsub)
+    (incN_of_ordN hsub)
     (local_update_unital.mpr fun n mpa _ heq => ?_)
   refine ⟨⟨trivial, h.validN⟩, ?_⟩
   refine .trans ?_ (heq.trans (unit_left_id_dist mpa)).op_r
@@ -210,7 +210,7 @@ theorem update_surplus_cancel {p q : Qp} {a b : A} [CMRA.Cancelable b]
     (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y) :
     ((●U{p + q} (a • b)) • ◯U{q} b) ~~> ●U{p} a := by
   refine auth_update_dealloc_of_localUpdate
-    (incExtN_of_ordN hsub)
+    (incN_of_ordN hsub)
     (local_update_unital.mpr fun n mpa hv heq => ?_)
   match mpa with
   | none =>

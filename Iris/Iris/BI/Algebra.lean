@@ -37,7 +37,7 @@ theorem prod_validI [Sbi PROP] [CMRA A] [CMRA B] (x : A × B) :
 @[rocq_alias prod_includedI]
 theorem prod_includedI [Sbi PROP] [CMRA A] [CMRA B] (x y : A × B) :
     x ≼ y ⊣⊢@{PROP} x.1 ≼ y.1 ∧ x.2 ≼ y.2 := by
-  sbi_unfold; intro _; exact Prod.incExtN_def
+  sbi_unfold; intro _; exact Prod.incN_def
 
 end prod
 
@@ -55,8 +55,8 @@ theorem option_includedI [Sbi PROP] [CMRA A] {mx my : Option A} :
   mx ≼ my ⊣⊢@{PROP}
     mx.elim iprop(True) fun x => my.elim iprop(False) fun y => iprop((x ≼ y) ∨ (x ≡ y)) := by
   rcases mx with _ | x <;> rcases my with _ | y <;>
-    try exact internalCmraIncExt_pure fun _ => by simp [Option.incExtN_iff]
-  simp only [Option.elim]; sbi_unfold; intro _; exact Option.some_incExtN_some_iff.trans Or.comm
+    try exact internalCmraIncluded_pure fun _ => by simp [Option.incN_iff]
+  simp only [Option.elim]; sbi_unfold; intro _; exact Option.some_incN_some_iff.trans Or.comm
 
 @[rocq_alias option_included_totalI]
 theorem option_included_totalI [Sbi PROP] [CMRA A] [IsTotal A] {mx my : Option A} :
@@ -64,8 +64,8 @@ theorem option_included_totalI [Sbi PROP] [CMRA A] [IsTotal A] {mx my : Option A
     mx.elim iprop(True) fun x => my.elim iprop(False) fun y => iprop(x ≼ y) := by
   rcases mx with _ | x <;> rcases my with _ | y <;>
     first
-    | exact internalCmraIncExt_iff fun _ => by simp [Option.incExtN_iff_is_total]
-    | exact internalCmraIncExt_pure fun _ => by simp [Option.incExtN_iff_is_total]
+    | exact internalCmraIncluded_iff fun _ => by simp [Option.incN_iff_is_total]
+    | exact internalCmraIncluded_pure fun _ => by simp [Option.incN_iff_is_total]
 
 @[rocq_alias Some_included_totalI]
 theorem Some_included_totalI [Sbi PROP] [CMRA A] [IsTotal A] {x y : A} :
@@ -74,10 +74,10 @@ theorem Some_included_totalI [Sbi PROP] [CMRA A] [IsTotal A] {x y : A} :
 
 theorem some_includedI [Sbi PROP] [CMRA A] [OrderRefl A] {x y : A} :
     some x ≼ₒ some y ⊣⊢@{PROP} x ≼ₒ y :=
-  internalCmraIncluded_iff fun _ => Option.some_ordN_some_iff_ordRefl
+  internalCmraOrder_iff fun _ => Option.some_ordN_some_iff_ordRefl
 
 theorem some_includedI_none [Sbi PROP] [CMRA A] {x : A} : some x ≼ₒ none ⊢@{PROP} False :=
-  (internalCmraIncluded_pure fun _ => iff_false_intro Option.not_some_ordN_none).mp.trans
+  (internalCmraOrder_pure fun _ => iff_false_intro Option.not_some_ordN_none).mp.trans
     (pure_elim' False.elim)
 
 end option
@@ -313,7 +313,7 @@ theorem excl_validI (x : Excl A) :
 @[rocq_alias excl_includedI]
 theorem excl_includedI (x y : Excl A) :
     x ≼ y ⊣⊢@{PROP} ⌜y = Excl.invalid⌝ :=
-  internalCmraIncExt_pure ordN_iff
+  internalCmraIncluded_pure ordN_iff
 
 end excl
 
@@ -350,8 +350,8 @@ theorem csum_includedI [CMRA A] [CMRA B] (x y : Csum A B) :
       | _, _ => iprop(False) := by
   cases x <;> cases y <;>
     first
-    | exact internalCmraIncExt_iff fun _ => by simp [Csum.includedN_ext]
-    | exact internalCmraIncExt_pure fun _ => by simp [Csum.includedN_ext]
+    | exact internalCmraIncluded_iff fun _ => by simp [Csum.includedN_ext]
+    | exact internalCmraIncluded_pure fun _ => by simp [Csum.includedN_ext]
 
 end csum
 

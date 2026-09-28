@@ -360,10 +360,10 @@ instance instCMRAReservationMap : CMRA (ReservationMap A H) where
 end
 
 /-- A reservation map over an affine algebra is affine. -/
-instance [CMRA.Affine A] : CMRA.Affine (ReservationMap A H) where
-  increasing v :=
-    increasing_mk (CMRA.Affine.increasing v.data)
-      (CMRA.Affine.increasing v.token)
+instance [CMRA.Affine A] : CMRA.Affine (ReservationMap A H) :=
+  IncOrd.of_increasing fun v =>
+    increasing_mk (IncOrd.increasing v.data)
+      (IncOrd.increasing v.token)
 
 @[rocq_alias reservation_mapUR]
 instance : UCMRA (ReservationMap A H) where
@@ -383,7 +383,7 @@ theorem op_data (x y : ReservationMap A H) : (x • y).data = x.data • y.data 
 theorem op_token (x y : ReservationMap A H) : (x • y).token = x.token • y.token := rfl
 
 @[rocq_alias reservation_map_included]
-theorem incExt_iff {x y : ReservationMap A H} :
+theorem inc_iff {x y : ReservationMap A H} :
     x ≼ y ↔ x.data ≼ y.data ∧ x.token ≼ y.token := by
   constructor
   · exact fun ⟨z, H⟩ => ⟨⟨z.data, H ▸ rfl⟩, ⟨z.token, H ▸ rfl⟩⟩

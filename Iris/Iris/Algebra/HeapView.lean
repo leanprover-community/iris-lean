@@ -266,7 +266,7 @@ theorem auth_op_frag_one_validN_iff :
   · haveI : Exclusive (DFrac.own one) := DFrac.own_whole_exclusive
     rcases Hi with e | i
     · exact ⟨dq', validN_ne e.2.symm Hv.2, Hl ▸ e.2.symm⟩
-    · exact absurd Hv.1 (RABase.not_valid_of_exclN_incExt (x := DFrac.own one) i.1)
+    · exact absurd Hv.1 (RABase.not_valid_of_exclN_inc (x := DFrac.own one) i.1)
   · match h : Std.PartialMap.get? m1 k with
     | none => simp [h] at Hl
     | some v' =>
@@ -466,7 +466,7 @@ theorem update_of_local_update (hsub : ∀ {n : Nat} {x y : V}, x ≼ₒ{n} y �
     · obtain ⟨c, hc⟩ := hsub i.2
       obtain ⟨Hv', He'⟩ := Hup n (some c) Hval.2 hc
       refine ⟨⟨Hval.1, Hv'⟩, Option.some_ordN_some_iff.mpr (.inr ⟨i.1, ?_⟩)⟩
-      exact CMRA.ordN_of_incExtN ⟨c, He'⟩
+      exact CMRA.ordN_of_incN ⟨c, He'⟩
   | some p =>
     rcases Hincl with e | i
     · obtain ⟨Hv', He'⟩ := Hup n (some p.2) Hval.2 e.2.symm
@@ -475,7 +475,7 @@ theorem update_of_local_update (hsub : ∀ {n : Nat} {x y : V}, x ≼ₒ{n} y �
       have hc' := hc.trans (assoc.symm.dist (α := V))
       obtain ⟨Hv', He'⟩ := Hup n (some (p.2 • c)) Hval.2 hc'
       refine ⟨⟨Hval.1, Hv'⟩, Option.some_ordN_some_iff.mpr (.inr ⟨i.1, ?_⟩)⟩
-      exact CMRA.ordN_of_incExtN ⟨c, He'.trans assoc.dist⟩
+      exact CMRA.ordN_of_incN ⟨c, He'.trans assoc.dist⟩
 
 @[rocq_alias gmap_view_replace]
 theorem update_replace (Hval' : ✓ v2) :

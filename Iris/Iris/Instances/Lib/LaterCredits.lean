@@ -40,7 +40,7 @@ scoped instance : LeftCancelAdd Credit := ⟨Nat.add_left_cancel⟩
 scoped instance : COFE Credit := COFE.ofDiscrete _
 scoped instance : Discrete Credit := ⟨fun h => h⟩
 scoped instance : UCMRA Credit := CommMonoidLike.instUCMRA
-scoped instance : CMRA.Affine Credit := RABase.affine_withExtensionOrder
+scoped instance : CMRA.Affine Credit := RABase.isInc_withExtensionOrder.toIncOrd
 scoped instance : CMRA.Discrete Credit := CommMonoidLike.instDiscrete
 scoped instance {a : Credit} : CMRA.Cancelable a := inferInstance
 

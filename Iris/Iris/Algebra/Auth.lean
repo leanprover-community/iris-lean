@@ -156,8 +156,8 @@ theorem frag_op {b1 b2 : A} : (◯ (b1 • b2) : Auth A) = ((◯ b1 : Auth A) �
   frag_op_eq
 
 @[rocq_alias auth_frag_mono]
-nonrec theorem frag_incExt_of_incExt {b1 b2 : A} (h : b1 ≼ b2) : (◯ b1 : Auth A) ≼ ◯ b2 :=
-  frag_incExt_of_incExt h
+nonrec theorem frag_inc_of_inc {b1 b2 : A} (h : b1 ≼ b2) : (◯ b1 : Auth A) ≼ ◯ b2 :=
+  frag_inc_of_inc h
 
 @[rocq_alias auth_frag_core]
 nonrec theorem frag_core {b : A} : core (◯ b : Auth A) = ◯ (core b) :=
@@ -373,57 +373,57 @@ theorem auth_both_valid_discrete [CMRA.Discrete A] {a b : A} :
 /-! ## Inclusion -/
 
 @[rocq_alias auth_auth_dfrac_includedN]
-theorem auth_dfrac_incExtN {n : Nat} {dq1 dq2 : DFrac} {a1 a2 b : A} :
+theorem auth_dfrac_incN {n : Nat} {dq1 dq2 : DFrac} {a1 a2 b : A} :
     ((●{dq1} a1) ≼{n} ((●{dq2} a2) • ◯ b)) ↔ ((dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2) :=
-  auth_incExtN_auth_op_frag_iff
+  auth_incN_auth_op_frag_iff
 
 @[rocq_alias auth_auth_dfrac_included]
-theorem auth_dfrac_incExt {dq1 dq2 : DFrac} {a1 a2 b : A} :
+theorem auth_dfrac_inc {dq1 dq2 : DFrac} {a1 a2 b : A} :
     ((●{dq1} a1) ≼ ((●{dq2} a2) • ◯ b)) ↔ ((dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 = a2) :=
-  auth_incExt_auth_op_frag_iff
+  auth_inc_auth_op_frag_iff
 
 @[rocq_alias auth_auth_includedN]
-theorem auth_incExtN {n : Nat} {a1 a2 b : A} :
+theorem auth_incN {n : Nat} {a1 a2 b : A} :
     ((● a1 : Auth A) ≼{n} ((● a2) • ◯ b)) ↔ (a1 ≡{n}≡ a2) :=
-  auth_one_incExtN_auth_one_op_frag_iff
+  auth_one_incN_auth_one_op_frag_iff
 
 @[rocq_alias auth_auth_included]
-theorem auth_incExt {a1 a2 b : A} :
+theorem auth_inc {a1 a2 b : A} :
     ((● a1 : Auth A) ≼ ((● a2) • ◯ b)) ↔ (a1 = a2) :=
-  auth_one_incExt_auth_one_op_frag_iff
+  auth_one_inc_auth_one_op_frag_iff
 
 @[rocq_alias auth_frag_includedN]
-theorem frag_incExtN {n : Nat} {dq : DFrac} {a b1 b2 : A} :
+theorem frag_incN {n : Nat} {dq : DFrac} {a b1 b2 : A} :
     ((◯ b1) ≼{n} ((●{dq} a) • ◯ b2)) ↔ (b1 ≼{n} b2) :=
-  frag_incExtN_auth_op_frag_iff
+  frag_incN_auth_op_frag_iff
 
 @[rocq_alias auth_frag_included]
-theorem frag_incExt {dq : DFrac} {a b1 b2 : A} : ((◯ b1) ≼ ((●{dq} a) • ◯ b2)) ↔ (b1 ≼ b2) :=
-  frag_incExt_auth_op_frag_iff
+theorem frag_inc {dq : DFrac} {a b1 b2 : A} : ((◯ b1) ≼ ((●{dq} a) • ◯ b2)) ↔ (b1 ≼ b2) :=
+  frag_inc_auth_op_frag_iff
 
 /-- The weaker `auth_both_included` lemmas below are a consequence of the
     `auth_included` and `frag_included` lemmas above. -/
 @[rocq_alias auth_both_dfrac_includedN]
-theorem auth_both_dfrac_incExtN {n : Nat} {dq1 dq2 : DFrac} {a1 a2 b1 b2 : A} :
+theorem auth_both_dfrac_incN {n : Nat} {dq1 dq2 : DFrac} {a1 a2 b1 b2 : A} :
     (((●{dq1} a1) • ◯ b1) ≼{n} ((●{dq2} a2) • ◯ b2)) ↔
       ((dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 ∧ b1 ≼{n} b2) :=
-  auth_op_frag_incExtN_auth_op_frag_iff
+  auth_op_frag_incN_auth_op_frag_iff
 
 @[rocq_alias auth_both_dfrac_included]
-theorem auth_both_dfrac_incExt {dq1 dq2 : DFrac} {a1 a2 b1 b2 : A} :
+theorem auth_both_dfrac_inc {dq1 dq2 : DFrac} {a1 a2 b1 b2 : A} :
     (((●{dq1} a1) • ◯ b1) ≼ ((●{dq2} a2) • ◯ b2)) ↔
       ((dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 = a2 ∧ b1 ≼ b2) :=
-  auth_op_frag_incExt_auth_op_frag_iff
+  auth_op_frag_inc_auth_op_frag_iff
 
 @[rocq_alias auth_both_includedN]
-theorem auth_both_incExtN {n : Nat} {a1 a2 b1 b2 : A} :
+theorem auth_both_incN {n : Nat} {a1 a2 b1 b2 : A} :
     (((● a1 : Auth A) • ◯ b1) ≼{n} ((● a2) • ◯ b2)) ↔ (a1 ≡{n}≡ a2 ∧ b1 ≼{n} b2) :=
-  auth_one_op_frag_incExtN_auth_one_op_frag_iff
+  auth_one_op_frag_incN_auth_one_op_frag_iff
 
 @[rocq_alias auth_both_included]
-theorem auth_both_incExt {a1 a2 b1 b2 : A} :
+theorem auth_both_inc {a1 a2 b1 b2 : A} :
     (((● a1 : Auth A) • ◯ b1) ≼ ((● a2) • ◯ b2)) ↔ (a1 = a2 ∧ b1 ≼ b2) :=
-  auth_one_op_frag_incExt_auth_one_op_frag_iff
+  auth_one_op_frag_inc_auth_one_op_frag_iff
 
 /-! ## Updates -/
 
@@ -466,7 +466,7 @@ theorem auth_update_of_localUpdate {a b a' b' : A}
     simp only [CMRA.op?]; exact hc.trans assoc.symm.dist
   have ⟨hv', ha'_eq⟩ := hup n (some (bf • c)) hv ha_eq
   simp only [CMRA.op?] at ha'_eq
-  refine ⟨CMRA.ordN_of_incExtN ⟨c, ha'_eq.trans assoc.dist⟩, hv'⟩
+  refine ⟨CMRA.ordN_of_incN ⟨c, ha'_eq.trans assoc.dist⟩, hv'⟩
 
 /-- `auth_update_of_localUpdate` in allocation form. -/
 @[rocq_alias auth_update_alloc]
@@ -515,7 +515,7 @@ theorem auth_updateP_both_unpersist {a b : A} :
 theorem auth_update_dfrac_alloc {dq : DFrac} {a b : A} [CoreId b] (hb : b ≼ a) :
     (●{dq} a) ~~> (●{dq} a) • ◯ b := by
   refine auth_alloc fun n bf ⟨hinc, hv⟩ => ⟨?_, hv⟩
-  have hba : b • a = a := comm'.trans (RABase.op_core_left_of_incExt hb)
+  have hba : b • a = a := comm'.trans (RABase.op_core_left_of_inc hb)
   exact (CMRA.ordN_iff_right hba.dist).mp (CMRA.op_monoN_right b hinc)
 
 @[rocq_alias auth_local_update]
