@@ -459,7 +459,7 @@ theorem valid_def {x : Agree α} : ✓ x ↔ valid x := .rfl
 theorem pcore_some {x : Agree α} : CMRA.pcore x = some x := rfl
 
 @[rocq_alias agree_cmra_total]
-instance : CMRA.IsTotal (Agree α) where
+instance : IsTotal (Agree α) where
   total x := ⟨x, rfl⟩
 
 @[rocq_alias agree_idemp]

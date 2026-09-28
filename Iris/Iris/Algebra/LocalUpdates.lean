@@ -117,12 +117,12 @@ theorem LocalUpdate.valid [CMRA.Discrete α] {x y x' y' : α}
     h (CMRA.discrete_valid vx0) (CMRA.discrete_valid vy0) (RABase.incExt_of_incExt0 mz)
 
 @[rocq_alias local_update_total_valid0]
-theorem LocalUpdate.total_valid0 [CMRA.IsTotal α] {x y x' y' : α}
+theorem LocalUpdate.total_valid0 [IsTotal α] {x y x' y' : α}
     (h : ✓{0} x → ✓{0} y → y ≼{0} x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
   .valid0 fun vx0 vy0 mz => h vx0 vy0 (Option.some_incExtN_some_iff_is_total.mp mz)
 
 @[rocq_alias local_update_total_valid]
-theorem LocalUpdate.total_valid [CMRA.IsTotal α] [CMRA.Discrete α] {x y x' y' : α}
+theorem LocalUpdate.total_valid [IsTotal α] [CMRA.Discrete α] {x y x' y' : α}
     (h : ✓ x → ✓ y → y ≼ x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
   .valid fun vx vy inc => h vx vy (Option.incExt_of_some_incExt_some inc)
 

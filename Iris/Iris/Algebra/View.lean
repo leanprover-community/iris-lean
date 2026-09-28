@@ -311,14 +311,14 @@ instance instRABase : RABase (View R) where
 section
 attribute [local instance] View.orderN
 
-theorem increasing_auth {v : View R} (h : CMRA.Increasing v) : CMRA.Increasing v.auth where
+theorem increasing_auth {v : View R} (h : Increasing v) : Increasing v.auth where
   increasing w := (h.increasing ⟨w, UCMRA.unit⟩).1
 
-theorem increasing_frag {v : View R} (h : CMRA.Increasing v) : CMRA.Increasing v.frag where
+theorem increasing_frag {v : View R} (h : Increasing v) : Increasing v.frag where
   increasing w := (h.increasing ⟨none, w⟩).2
 
-theorem increasing_mk {v : View R} (ha : CMRA.Increasing v.auth) (hb : CMRA.Increasing v.frag) :
-    CMRA.Increasing v where
+theorem increasing_mk {v : View R} (ha : Increasing v.auth) (hb : Increasing v.frag) :
+    Increasing v where
   increasing w := ⟨ha.increasing w.auth, hb.increasing w.frag⟩
 
 instance instCMRA : CMRA (View R) where
@@ -595,7 +595,7 @@ theorem auth_incExtN_auth_op_frag_iff :
     (●V{dq1} a1 : View R) ≼{n} ((●V{dq2} a2) • ◯V b) ↔
       (dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 := by
   refine ⟨?_, fun H => ?_⟩
-  · simp only [Auth, Frag, RABase.IncExtN, CMRA.op]
+  · simp only [Auth, Frag, IncExtN, CMRA.op]
     rintro ⟨(_|⟨dqf, af⟩),⟨⟨x1, x2⟩, y⟩⟩
     · exact ⟨.inr x1.symm, toAgree.inj x2.symm⟩
     · exact ⟨.inl ⟨dqf, x1⟩, Agree.toAgree_includedN.mp ⟨af, x2⟩⟩

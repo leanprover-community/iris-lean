@@ -62,7 +62,7 @@ scoped instance instRABase : RABase α :=
     (fun _ => rfl)
     (fun _ _ _ => trivial)
 
-scoped instance instIsTotal : CMRA.IsTotal α where
+scoped instance instIsTotal : IsTotal α where
   total _ := ⟨zero, rfl⟩
 
 scoped instance instExtensionLaws : RABase.ExtensionLaws α :=
@@ -162,7 +162,7 @@ scoped instance instRABase : RABase α :=
     (fun _ => rfl)
     (fun _ _ _ => trivial)
 
-scoped instance instIsTotal : CMRA.IsTotal α where
+scoped instance instIsTotal : IsTotal α where
   total x := ⟨x, rfl⟩
 
 scoped instance instExtensionLaws : RABase.ExtensionLaws α := .ofCoreMono fun _ _ h => h
@@ -413,7 +413,7 @@ scoped instance : OFE.Discrete MaxInt := ⟨fun h => h⟩
 scoped instance : CMRA MaxInt := OrdCommMonoidLike.instCMRA
 scoped instance : RABase.ExtensionLaws MaxInt := OrdCommMonoidLike.instExtensionLaws
 scoped instance : CMRA.Discrete MaxInt := OrdCommMonoidLike.instDiscrete
-scoped instance : CMRA.IsTotal MaxInt := OrdCommMonoidLike.instIsTotal
+scoped instance : IsTotal MaxInt := OrdCommMonoidLike.instIsTotal
 scoped instance : CMRA.CoreId (a : MaxInt) := OrdCommMonoidLike.instCoreId _
 
 @[rocq_alias max_Z_included]
@@ -472,7 +472,7 @@ scoped instance : OFE.Discrete MinNat := ⟨fun h => h⟩
 scoped instance : CMRA MinNat := OrdCommMonoidLike.instCMRA
 scoped instance : RABase.ExtensionLaws MinNat := OrdCommMonoidLike.instExtensionLaws
 scoped instance : CMRA.Discrete MinNat := OrdCommMonoidLike.instDiscrete
-scoped instance : CMRA.IsTotal MinNat := OrdCommMonoidLike.instIsTotal
+scoped instance : IsTotal MinNat := OrdCommMonoidLike.instIsTotal
 scoped instance : CMRA.CoreId (a : MinNat) := OrdCommMonoidLike.instCoreId _
 
 @[rocq_alias min_nat_included]

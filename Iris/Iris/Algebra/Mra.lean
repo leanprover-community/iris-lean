@@ -143,7 +143,7 @@ instance (R : α → α → Prop) : CMRA (Mra R) := CMRA.withExtensionOrder
 #rocq_ignore mraR "Use Mra."
 
 @[rocq_alias mra_cmra_total]
-instance : CMRA.IsTotal (Mra R) where
+instance : IsTotal (Mra R) where
   total x := ⟨x, rfl⟩
 
 @[rocq_alias mra_core_id]

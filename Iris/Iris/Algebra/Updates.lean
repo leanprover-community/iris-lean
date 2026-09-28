@@ -124,7 +124,7 @@ theorem Update.valid0 {x y : α} : (✓{0} x → x ~~> y) → x ~~> y :=
 /-! ## Frame preserving updates for total and discete CMRAs -/
 
 @[rocq_alias cmra_total_updateP]
-theorem UpdateP.total [CMRA.IsTotal α] :
+theorem UpdateP.total [IsTotal α] :
     x ~~>: P ↔ ∀ (n : Nat) (z : α), ✓{n} (x • z) → ∃ y, P y ∧ ✓{n} (y • z) where
   mp uxp := fun n z v => uxp n (some z) v
   mpr h := fun n mz v =>
@@ -135,7 +135,7 @@ theorem UpdateP.total [CMRA.IsTotal α] :
     | some z => h n z v
 
 @[rocq_alias cmra_total_update]
-theorem Update.total [CMRA.IsTotal α] :
+theorem Update.total [IsTotal α] :
     x ~~> y ↔ ∀ (n : Nat) (z : α), ✓{n} (x • z) → ✓{n} (y • z) where
   mp uxy := fun n z v => uxy n (some z) v
   mpr h := fun n mz v =>
@@ -161,7 +161,7 @@ theorem Update.discrete [CMRA.Discrete α] {x y : α} :
   mpr h := fun n mz v => CMRA.Valid.validN <| h mz ((CMRA.valid_iff_validN' n).mpr v)
 
 @[rocq_alias cmra_discrete_total_updateP]
-theorem UpdateP.discrete_total [CMRA.Discrete α] [CMRA.IsTotal α] :
+theorem UpdateP.discrete_total [CMRA.Discrete α] [IsTotal α] :
     x ~~>: P ↔ ∀ (z : α), ✓ (x • z) → ∃ y, P y ∧ ✓ (y • z) where
   mp uxp := fun z vz =>
     let ⟨y, py, vy⟩ := UpdateP.total.mp uxp 0 z (CMRA.Valid.validN vz)
@@ -172,7 +172,7 @@ theorem UpdateP.discrete_total [CMRA.Discrete α] [CMRA.IsTotal α] :
       ⟨y, py, CMRA.Valid.validN vy⟩
 
 @[rocq_alias cmra_discrete_total_update]
-theorem Update.discrete_total [CMRA.Discrete α] [CMRA.IsTotal α] :
+theorem Update.discrete_total [CMRA.Discrete α] [IsTotal α] :
     x ~~> y ↔ ∀ (z : α), ✓ (x • z) → ✓ (y • z) where
   mp uxp := fun z vz =>
     CMRA.discrete_valid <| Update.total.mp uxp 0 z (CMRA.Valid.validN vz)

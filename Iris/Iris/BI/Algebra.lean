@@ -59,7 +59,7 @@ theorem option_includedI [Sbi PROP] [CMRA A] {mx my : Option A} :
   simp only [Option.elim]; sbi_unfold; intro _; exact Option.some_incExtN_some_iff.trans Or.comm
 
 @[rocq_alias option_included_totalI]
-theorem option_included_totalI [Sbi PROP] [CMRA A] [CMRA.IsTotal A] {mx my : Option A} :
+theorem option_included_totalI [Sbi PROP] [CMRA A] [IsTotal A] {mx my : Option A} :
   mx ≼ my ⊣⊢@{PROP}
     mx.elim iprop(True) fun x => my.elim iprop(False) fun y => iprop(x ≼ y) := by
   rcases mx with _ | x <;> rcases my with _ | y <;>
@@ -68,7 +68,7 @@ theorem option_included_totalI [Sbi PROP] [CMRA A] [CMRA.IsTotal A] {mx my : Opt
     | exact internalCmraIncExt_pure fun _ => by simp [Option.incExtN_iff_is_total]
 
 @[rocq_alias Some_included_totalI]
-theorem Some_included_totalI [Sbi PROP] [CMRA A] [CMRA.IsTotal A] {x y : A} :
+theorem Some_included_totalI [Sbi PROP] [CMRA A] [IsTotal A] {x y : A} :
     some x ≼ some y ⊣⊢@{PROP} x ≼ y :=
   option_included_totalI
 
@@ -267,7 +267,7 @@ theorem id_freeI_l [CMRA A] (x y : A) [IdFree x] :
   exact wand_intro_left (wand_intro_left ((sep_mono_right sep_emp.mp).trans H))
 
 @[rocq_alias cmra_later_opI]
-theorem cmra_later_opI [CMRA A] [CMRA.IsTotal A] (x y1 y2 : A) :
+theorem cmra_later_opI [CMRA A] [IsTotal A] (x y1 y2 : A) :
     ▷ (✓ x ∧ x ≡ y1 • y2) ⊢@{PROP}
       ∃ z1 z2, x ≡ z1 • z2 ∧ ▷ (z1 ≡ y1) ∧ ▷ (z2 ≡ y2) := by
   sbi_unfold; intro n; cases n

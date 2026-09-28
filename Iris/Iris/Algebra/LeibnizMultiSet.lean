@@ -74,7 +74,7 @@ instance : CMRA.Discrete (LeibnizMultiSet MS) where
   discrete_valid := id
   discrete_inc | ⟨z, hz⟩ => ⟨z, hz⟩
 
-instance : CMRA.IsTotal (LeibnizMultiSet MS) where
+instance : IsTotal (LeibnizMultiSet MS) where
   total _ := ⟨.ofSet ∅, rfl⟩
 
 @[rocq_alias gmultiset_op]

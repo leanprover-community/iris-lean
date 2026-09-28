@@ -55,7 +55,7 @@ end PCore
 
 /-- A resource algebra whose core is total. -/
 @[rocq_alias CmraTotal]
-class CMRA.IsTotal (α : Type _) [OFE α] [PCore α] : Prop where
+class IsTotal (α : Type _) [OFE α] [PCore α] : Prop where
   total (x : α) : ∃ cx, PCore.pcore x = some cx
 #rocq_ignore cmra_total_mixin "Use CMRA + IsTotal"
 
@@ -83,9 +83,11 @@ end Valid
 
 /-- The ordering predicate on a resource algebra. -/
 class OrderN (α : Type _) [OFE α] where
-  /-- The indexed ordering predicte. -/
+  /-- The indexed ordering predicte. This is the generic ORA order predicte, if your CMRA is Affine
+  the lemma TODO can convert this to the extension order typical of Iris CMRAs. -/
   IncludedN : Nat → α → α → Prop
-  /-- The ordering predicte. -/
+  /-- The ordering predicte. This is the generic ORA order predicte, if your CMRA is Affine
+  the lemma TODO can convert this to the extension order typical of Iris CMRAs. -/
   Included : α → α → Prop
   incN_ne {n} {x x' y y' : α} : x ≡{n}≡ x' → y ≡{n}≡ y' → IncludedN n x y → IncludedN n x' y'
   incN_succ {n} {x y : α} : IncludedN n.succ x y → IncludedN n x y
@@ -147,8 +149,20 @@ class IncRefl (α : Type _) [OFE α] [OrderN α] : Prop where
 
 /-- An element `x` is increasing if composing with it never shrinks a resource. Cores and units
 are increasing; in an affine algebra every element is. -/
-class CMRA.Increasing {α : Type _} [OFE α] [Op α] [OrderN α] (x : α) : Prop where
+class Increasing {α : Type _} [OFE α] [Op α] [OrderN α] (x : α) : Prop where
   increasing (y : α) : y ≼ₒ x • y
+
+/-- The step-indexed extension inclusion: `y` is `x` composed with some frame. This is the
+inclusion of classical resource algebras. -/
+@[rocq_alias includedN]
+def IncExtN {α : Type _} [OFE α] [Op α] (n : Nat) (x y : α) : Prop :=
+  ∃ z : α, y ≡{n}≡ x • z
+@[inherit_doc] notation:50 x " ≼{" n "} " y:51 => IncExtN n x y
+
+/-- The extension inclusion: `y` is `x` composed with some frame. -/
+@[rocq_alias included]
+def IncExt {α : Type _} [OFE α] [Op α] (x y : α) : Prop := ∃ z : α, y = x • z
+@[inherit_doc] infix:50 " ≼ " => IncExt
 
 /-! ## Resource algebras -/
 
@@ -522,8 +536,8 @@ class CMRA (α : Type _) extends RABase α, OrderN α where
     ∃ cy, pcore y = some cy ∧ cx ≼ₒ cy
   pcore_order_op {x cx : α} : pcore x = some cx →
     ∀ y, ∃ cxy, pcore (x • y) = some cxy ∧ cx ≼ₒ cxy
-  pcore_increasing {x cx : α} : pcore x = some cx → CMRA.Increasing cx
-  increasing_closed {n} {x y : α} : CMRA.Increasing x → x ≼ₒ*{n} y → CMRA.Increasing y
+  pcore_increasing {x cx : α} : pcore x = some cx → Increasing cx
+  increasing_closed {n} {x y : α} : Increasing x → x ≼ₒ*{n} y → Increasing y
   incN_extend {n} {x y : α} : ✓{n} y → x ≼ₒ{n} y → ∃ z, z ≼ₒ{n.succ} y ∧ z ≡{n}≡ x
 
 namespace CMRA
@@ -537,18 +551,6 @@ namespace RABase
 open CMRA
 
 variable [RABase α]
-
-/-- The step-indexed extension inclusion: `y` is `x` composed with some frame. This is the
-inclusion of classical resource algebras (`CMRA.withExtensionOrder` makes it the order), and
-the relation frame-based constructions such as local updates and views are stated with. -/
-@[rocq_alias includedN]
-def IncExtN (n : Nat) (x y : α) : Prop := ∃ z : α, y ≡{n}≡ x • z
-@[inherit_doc] notation:50 x " ≼{" n "} " y:51 => IncExtN n x y
-
-/-- The extension inclusion: `y` is `x` composed with some frame. -/
-@[rocq_alias included]
-def IncExt (x y : α) : Prop := ∃ z : α, y = x • z
-@[inherit_doc] infix:50 " ≼ " => IncExt
 
 theorem incExtN_ne {n} {x x' y y' : α} (ex : x ≡{n}≡ x') (ey : y ≡{n}≡ y') :
     x ≼{n} y → x' ≼{n} y'
@@ -569,7 +571,6 @@ instance {n : Nat} : Trans (Dist (α := α) n) (IncExtN n) (IncExtN n) where
 @[rocq_alias cmra_included_includedN]
 theorem incExtN_of_incExt (n) {x y : α} : x ≼ y → x ≼{n} y
   | ⟨z, hz⟩ => ⟨z, hz.dist⟩
-theorem IncExt.incExtN {n} {x y : α} : x ≼ y → x ≼{n} y := incExtN_of_incExt _
 
 #rocq_ignore cmra_included_proper "OFE is Leibniz; use equality"
 
@@ -597,7 +598,6 @@ theorem incExt_trans {x y z : α} : x ≼ y → y ≼ z → x ≼ z
       z = y • t := ht
       _ = (x • w) • t := congrArg (· • t) hw
       _ = x • (w • t) := assoc.symm
-theorem IncExt.trans : (x : α) ≼ y → y ≼ z → x ≼ z := incExt_trans
 
 instance : Trans (IncExt (α := α)) IncExt IncExt where
   trans := incExt_trans
@@ -610,7 +610,6 @@ theorem incExtN_trans {x y z : α} : x ≼{n} y → y ≼{n} z → x ≼{n} z
       z ≡{n}≡ y • t := ht
       _ ≡{n}≡ (x • w) • t := op_left_dist _ hw
       _ ≡{n}≡ x • (w • t) := op_assocN.symm
-theorem IncExtN.trans : (x : α) ≼{n} y → y ≼{n} z → x ≼{n} z := incExtN_trans
 
 instance : Trans (IncExtN (α := α) n) (IncExtN n) (IncExtN n) where
   trans := incExtN_trans
@@ -622,24 +621,20 @@ theorem valid_of_incExt {x y : α} : x ≼ y → ✓ y → ✓ x
 @[rocq_alias cmra_validN_includedN]
 theorem validN_of_incExtN {n} {x y : α} : x ≼{n} y → ✓{n} y → ✓{n} x
   | ⟨_, hz⟩, v => validN_op_left (validN_ne hz v)
-theorem IncExtN.validN {n} {x y : α} : x ≼{n} y → ✓{n} y → ✓{n} x := validN_of_incExtN
 
 @[rocq_alias cmra_validN_included]
 theorem validN_of_incExt {n} {x y : α} : x ≼ y → ✓{n} y → ✓{n} x
   | ⟨_, hz⟩, v => validN_op_left (validN_ne hz.dist v)
-theorem IncExt.validN {n} {x y : α} : x ≼ y → ✓{n} y → ✓{n} x := validN_of_incExt
 
 @[rocq_alias cmra_includedN_le]
 theorem incExtN_le {n n'} {x y : α} (l1 : n' ≤ n) : x ≼{n} y → x ≼{n'} y
   | ⟨z, hz⟩ => ⟨z, Dist.le hz l1⟩
 theorem incExt0_of_incExtN {n} {x y : α} : x ≼{n} y → x ≼{0} y :=
   incExtN_le (Nat.zero_le n)
-theorem IncExtN.le {n n'} {x y : α} : n' ≤ n → x ≼{n} y → x ≼{n'} y := incExtN_le
 
 @[rocq_alias cmra.cmra_includedN_S]
 theorem incExtN_succ {n} {x y : α} : x ≼{n.succ} y → x ≼{n} y :=
   incExtN_le (Nat.le_succ n)
-theorem IncExtN.succ {n} {x y : α} : x ≼{n.succ} y → x ≼{n} y := incExtN_succ
 
 @[rocq_alias cmra_includedN_l]
 theorem incExtN_op_left (n) (x y : α) : x ≼{n} x • y := ⟨y, Dist.rfl⟩
@@ -676,14 +671,14 @@ theorem op_mono_left_ext {x y} (z : α) (h : x ≼ y) : x • z ≼ y • z := b
 @[rocq_alias cmra_monoN]
 theorem op_monoN_ext {n} {x x' y y' : α} (hx : x ≼{n} x') (hy : y ≼{n} y') :
     x • y ≼{n} x' • y' :=
-  (op_monoN_left_ext _ hx).trans (op_monoN_right_ext _ hy)
+  incExtN_trans (op_monoN_left_ext _ hx) (op_monoN_right_ext _ hy)
 
 #rocq_ignore cmra_monoN' "Use cmra_monoN"
 
 @[rocq_alias cmra_mono]
 theorem op_mono_ext {x x' y y' : α} (hx : x ≼ x') (hy : y ≼ y') :
     x • y ≼ x' • y' :=
-  (op_mono_left_ext _ hx).trans (op_mono_right_ext _ hy)
+  incExt_trans (op_mono_left_ext _ hx) (op_mono_right_ext _ hy)
 
 #rocq_ignore cmra_mono' "Use cmra_mono"
 
@@ -731,10 +726,8 @@ section total
 variable [IsTotal α]
 
 theorem incExt_refl (x : α) : x ≼ x := ⟨core x, (op_core x).symm⟩
-@[refl] theorem IncExt.rfl {x : α} : x ≼ x := incExt_refl x
 
-theorem incExtN_refl (x : α) : x ≼{n} x := (incExt_refl _).incExtN
-@[refl] theorem IncExtN.rfl {x : α} : x ≼{n} x := incExtN_refl x
+theorem incExtN_refl (x : α) : x ≼{n} x := incExtN_of_incExt _ (incExt_refl _)
 
 #rocq_ignore cmra_included_preorder
   "Reflexivity is incExt_refl; transitivity is the Trans instance"
@@ -908,6 +901,32 @@ inclusion. -/
 
 end extOrder
 end RABase
+
+section
+open RABase
+variable [RABase α]
+
+namespace IncExt
+theorem incExtN {n} {x y : α} : x ≼ y → x ≼{n} y := incExtN_of_incExt _
+theorem trans : (x : α) ≼ y → y ≼ z → x ≼ z := incExt_trans
+theorem validN {n} {x y : α} : x ≼ y → ✓{n} y → ✓{n} x := validN_of_incExt
+end IncExt
+
+namespace IncExtN
+theorem trans : (x : α) ≼{n} y → y ≼{n} z → x ≼{n} z := incExtN_trans
+theorem validN {n} {x y : α} : x ≼{n} y → ✓{n} y → ✓{n} x := validN_of_incExtN
+theorem le {n n'} {x y : α} : n' ≤ n → x ≼{n} y → x ≼{n'} y := incExtN_le
+theorem succ {n} {x y : α} : x ≼{n.succ} y → x ≼{n} y := incExtN_succ
+end IncExtN
+
+section
+variable [IsTotal α]
+
+@[refl] theorem IncExt.rfl {x : α} : x ≼ x := incExt_refl x
+@[refl] theorem IncExtN.rfl {x : α} : x ≼{n} x := incExtN_refl x
+
+end
+end
 
 /-! ## Discrete and affine algebras -/
 
@@ -1118,30 +1137,45 @@ theorem op_extend {n} {x y₁ y₂ : α} (v : ✓{n} x) (h : y₁ • y₂ ≼�
   let ⟨z₁, z₂, hz, hz₁, hz₂⟩ := extend (validN_of_incN (incN_succ hx') v) e
   ⟨z₁, z₂, hz ▸ hx', hz₁, hz₂⟩
 
+end CMRA
+
 /-! ## Increasing elements -/
 
-theorem Increasing.of_incNR {n} {x y : α} (h : Increasing x) (hxy : x ≼ₒ*{n} y) : Increasing y :=
+section
+open CMRA
+variable [CMRA α]
+
+namespace Increasing
+
+theorem of_incNR {n} {x y : α} (h : Increasing x) (hxy : x ≼ₒ*{n} y) : Increasing y :=
   increasing_closed h hxy
-theorem Increasing.of_dist {n} {x y : α} (h : Increasing x) (e : x ≡{n}≡ y) : Increasing y :=
+theorem of_dist {n} {x y : α} (h : Increasing x) (e : x ≡{n}≡ y) : Increasing y :=
   h.of_incNR (.inl e)
-theorem Increasing.of_incN {n} {x y : α} (h : Increasing x) (hxy : x ≼ₒ{n} y) : Increasing y :=
+theorem of_incN {n} {x y : α} (h : Increasing x) (hxy : x ≼ₒ{n} y) : Increasing y :=
   h.of_incNR (.inr hxy)
-theorem Increasing.of_inc {x y : α} (h : Increasing x) (hxy : x ≼ₒ y) : Increasing y :=
+theorem of_inc {x y : α} (h : Increasing x) (hxy : x ≼ₒ y) : Increasing y :=
   h.of_incN (incN_of_inc 0 hxy)
-theorem Increasing.of_incR {x y : α} (h : Increasing x) : x ≼ₒ* y → Increasing y
+theorem of_incR {x y : α} (h : Increasing x) : x ≼ₒ* y → Increasing y
   | .inl e => e ▸ h
   | .inr hxy => h.of_inc hxy
 
-theorem Increasing.incN {n} {x : α} (h : Increasing x) (y : α) : y ≼ₒ{n} x • y :=
+theorem incN {n} {x : α} (h : Increasing x) (y : α) : y ≼ₒ{n} x • y :=
   incN_of_inc n (h.increasing y)
 
-instance (x : α) [CoreId x] : Increasing x := pcore_increasing core_id
-
-instance Increasing.op (x y : α) [Increasing x] [Increasing y] : Increasing (x • y) where
+instance op (x y : α) [Increasing x] [Increasing y] : Increasing (x • y) where
   increasing z := calc
     z ≼ₒ y • z := Increasing.increasing z
     _ ≼ₒ x • (y • z) := Increasing.increasing _
     _ = (x • y) • z := assoc'
+
+end Increasing
+
+instance (x : α) [CoreId x] : Increasing x := pcore_increasing core_id
+
+end
+
+namespace CMRA
+variable [CMRA α]
 
 section total
 variable [IsTotal α]
@@ -2890,7 +2924,7 @@ theorem pcore_eq_some {x cx : α × β} :
   exact ⟨h₁, h₂⟩
 
 theorem increasing_iff {x : α × β} :
-    CMRA.Increasing x ↔ CMRA.Increasing x.1 ∧ CMRA.Increasing x.2 :=
+    Increasing x ↔ Increasing x.1 ∧ Increasing x.2 :=
   ⟨fun h =>
     ⟨⟨fun y => (h.increasing (y, x.2)).1⟩, ⟨fun y => (h.increasing (x.1, y)).2⟩⟩,
    fun ⟨h₁, h₂⟩ => ⟨fun y => ⟨h₁.increasing y.1, h₂.increasing y.2⟩⟩⟩
@@ -2957,7 +2991,7 @@ theorem mk_pcore (a : α) (b : β) :
   rfl
 
 @[rocq_alias pair_core]
-theorem mk_core [CMRA.IsTotal α] [CMRA.IsTotal β] (a : α) (b : β) :
+theorem mk_core [IsTotal α] [IsTotal β] (a : α) (b : β) :
     CMRA.core (a, b) = (CMRA.core a, CMRA.core b) :=
   congrArg (Option.getD · (a, b))
     (pcore_eq_some.mpr ⟨CMRA.pcore_eq_core a, CMRA.pcore_eq_core b⟩)
@@ -3010,7 +3044,7 @@ theorem mk_incExtN_mk {n} (a a' : α) (b b' : β) :
     (a, b) ≼{n} (a', b') ↔ a ≼{n} a' ∧ b ≼{n} b' := incExtN_def
 
 @[rocq_alias prod_cmra_total]
-instance instIsTotalProd [CMRA.IsTotal α] [CMRA.IsTotal β] : CMRA.IsTotal (α × β) where
+instance instIsTotalProd [IsTotal α] [IsTotal β] : IsTotal (α × β) where
   total x :=
     let ⟨ca, ha⟩ := CMRA.total x.1
     let ⟨cb, hb⟩ := CMRA.total x.2

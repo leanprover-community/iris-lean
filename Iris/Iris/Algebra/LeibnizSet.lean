@@ -368,7 +368,7 @@ theorem core_equiv (X : LeibnizSet S) : core X = X := by
 
 @[rocq_alias coPset_included, rocq_alias gset_included]
 theorem included_iff_subset (X Y : S) : valid X ≼ₒ valid Y ↔ X ⊆ Y := by
-  simp only [Included, RABase.IncExt, op]
+  simp only [Included, IncExt, op]
   refine ⟨fun ⟨_, H⟩ => ?_, fun Hsub => ?_⟩
   · obtain ⟨rfl⟩ := H
     exact fun _ Hp => mem_union.mpr (.inl Hp)

@@ -64,7 +64,7 @@ theorem OFE.transpAp_inc_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x 
   cases h_fun; cases eq_of_heq h_inst; exact H
 
 theorem OFE.transpAp_increasing_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x : F₁ T T}
-    (H : CMRA.Increasing x) : CMRA.Increasing ((transpAp h_fun).mp x) := by
+    (H : Increasing x) : Increasing ((transpAp h_fun).mp x) := by
   cases h_fun; cases eq_of_heq h_inst; exact H
 
 end TranspAp

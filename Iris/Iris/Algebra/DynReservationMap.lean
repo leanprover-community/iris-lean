@@ -333,15 +333,15 @@ section
 attribute [local instance] orderN
 
 theorem increasing_data {v : DynReservationMap A H}
-    (h : CMRA.Increasing v) : CMRA.Increasing v.data where
+    (h : Increasing v) : Increasing v.data where
   increasing w := (h.increasing (mk w ∅)).1
 
 theorem increasing_token {v : DynReservationMap A H}
-    (h : CMRA.Increasing v) : CMRA.Increasing v.token where
+    (h : Increasing v) : Increasing v.token where
   increasing w := (h.increasing (mk ∅ w)).2
 
 theorem increasing_mk {v : DynReservationMap A H}
-    (hd : CMRA.Increasing v.data) (ht : CMRA.Increasing v.token) : CMRA.Increasing v where
+    (hd : Increasing v.data) (ht : Increasing v.token) : Increasing v where
   increasing w := ⟨hd.increasing w.data, ht.increasing w.token⟩
 
 instance instCMRADynReservationMap : CMRA (DynReservationMap A H) where
