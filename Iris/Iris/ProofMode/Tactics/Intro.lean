@@ -14,7 +14,7 @@ public import Iris.ProofMode.Tactics.Trivial
 namespace Iris.ProofMode
 
 public section
-open BI Std
+open BI Iris.Std
 
 @[rocq_alias tac_impl_intro_drop]
 theorem imp_intro_drop [BI PROP] {P Q A1 A2 : PROP}
@@ -75,7 +75,7 @@ theorem wand_intro_spatial [BI PROP] {P Q A1 A2 : PROP}
   "Functionality shared with the case destruction pattern for clearing"
 
 public meta section
-open Lean Elab Tactic Meta Qq BI Std
+open Lean Elab Tactic Meta Qq BI Iris.Std
 
 /--
   Used by `iIntroCore` for the pure and quantifier cases.
@@ -237,7 +237,15 @@ elab "iintro " pats:(colGt ppSpace introPat)* : tactic => do
   -- parse syntax
   let pats ← liftMacroM <| pats.mapM <| IntroPat.parse
 
-  ProofModeM.runTactic `iintro λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `iintro fun mvar { hyps, goal, .. } => do
     let pf ← iIntroCore hyps goal pats.toList
 
     mvar.assign pf
+
+end
+
+end
+
+end ProofMode
+
+end Iris

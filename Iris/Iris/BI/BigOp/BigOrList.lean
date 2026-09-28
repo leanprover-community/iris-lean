@@ -138,7 +138,7 @@ theorem bigOrL_flatMap {B : Type _} (f : A → List B) {Φ : B → PROP} {l : Li
   BiEntails.of_eq <| bigOpL_flatMap_eq f Φ l
 
 @[rocq_alias big_orL_persistently]
-theorem bigOrL_persistently {Φ : Nat → A → PROP} {l : List A} :
+theorem bigOrL_persistently [BIPersistentlyExist PROP] {Φ : Nat → A → PROP} {l : List A} :
     (<pers> [∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, <pers> Φ k x :=
   letI := MonoidHomomorphism.ofEq (PROP := PROP) persistently_ne
     (BiEntails.to_eq persistently_or) (BiEntails.to_eq ⟨persistently_elim, false_elim⟩)

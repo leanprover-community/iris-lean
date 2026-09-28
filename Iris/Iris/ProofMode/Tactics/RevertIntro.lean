@@ -48,3 +48,9 @@ def iRevertIntro
       iIntroCore hyps goal names k'
 
 initialize registerTraceClass `irevertintro
+
+end
+
+end ProofMode
+
+end Iris

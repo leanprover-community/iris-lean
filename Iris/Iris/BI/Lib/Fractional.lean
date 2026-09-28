@@ -284,3 +284,5 @@ theorem internalFractional_iff :
     · iapply Hiff $$ H2
 
 end InternalFractional
+
+end Iris

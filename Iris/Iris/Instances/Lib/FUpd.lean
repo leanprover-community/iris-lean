@@ -146,7 +146,7 @@ end Instances
 section LaterCreditLemmas
 
 @[rocq_alias fupd_unfold_no_lc]
-theorem fupd_unfold_no_lc [Hi:InvGS_gen .hasNoLC GF] E1 E2 (P : IProp GF) :
+theorem fupd_unfold_no_lc [Hi : InvGS_gen .hasNoLC GF] E1 E2 (P : IProp GF) :
   (|={E1,E2}=> P) ⊣⊢ (wsat ∗ ownE E1 ==∗ ◇ (wsat ∗ ownE E2 ∗ P)) := by
   simp only [fupd, uPred_fupd]
   rw [(le_upd_unfold_no_le (GF := GF)).to_eq]
@@ -184,7 +184,7 @@ theorem lc_fupd_add_laterN (n : Nat) {E : CoPset} {P : IProp GF} :
     iapply IH $$ [$] [$]
 
 @[rocq_alias lc_fupd_add_step_fupdN]
-theorem lc_fupd_add_step_fupdN (E1 E2 E3: CoPset) (P : IProp GF) (n : Nat) :
+theorem lc_fupd_add_step_fupdN (E1 E2 E3 : CoPset) (P : IProp GF) (n : Nat) :
     £ n -∗ (|={E1}[E2]▷=>^[n] |={E1,E3}=> P) -∗ |={E1,E3}=> P := by
   iintro Hf Hupd
   iinduction n with
@@ -229,7 +229,7 @@ delab_rule fupd_finally
 
 section fupd_finally
 
-open ProofMode Std
+open ProofMode Iris.Std
 
 variable {GF : BundledGFunctors} {hlc : HasLC} [InvGS_gen hlc GF]
 
@@ -418,7 +418,7 @@ theorem step_fupdN_fupd_finally (E1 E2 : CoPset) (n : Nat) (P : IProp GF) :
   | succ n IH =>
     simp only [Nat.repeat]
     imod HP
-    iapply fupd_finally_mono (later_laterN n).mpr
+    iapply fupd_finally_mono (laterN_succ_left n).mpr
     iapply fupd_finally_mono (later_mono (laterN_mono n except0_idem.mp))
     iapply fupd_finally_mono (later_mono (except0_laterN (P := iprop(◇ P)) n))
     iapply fupd_finally_later
@@ -534,7 +534,7 @@ end Soundness
 
 section StepIndexed
 
-open Iris Std LawfulSet BIFUpdateSbi
+open Iris Iris.Std LawfulSet BIFUpdateSbi
 
 variable {GF : BundledGFunctors}
 
@@ -546,7 +546,7 @@ theorem step_fupdN_soundness [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain P] 
   apply fupd_finally_soundness hlc (n := m) (E := ⊤)
   iintro %Hinv Hc
   imod HP $$ Hc with HP
-  rw [(laterN_later n).to_eq]
+  rw [(laterN_succ_right n).to_eq]
   iapply fupd_finally_mono (laterN_mono _ except0_into_later)
   iapply step_fupdN_fupd_finally
   iapply step_fupdN_wand $$ HP
@@ -561,7 +561,7 @@ theorem step_fupdN_soundness_close [InvGpreS GF] (n m : Nat) {P : IProp GF} [Pla
   apply fupd_finally_soundness hlc (n := m) (E := ⊤)
   iintro %Hinv Hc
   ihave HP := HP $$ Hc
-  rw [(laterN_later n).to_eq]
+  rw [(laterN_succ_right n).to_eq]
   iapply fupd_finally_mono (laterN_mono _ except0_into_later)
   iapply step_fupdN_fupd_finally
   iapply step_fupdN_wand $$ HP
@@ -575,7 +575,7 @@ theorem fupd_soundness_no_lc_unfold [InvGpreS GF] m E :
   imod wsat_alloc with ⟨%W, Hw, HE⟩
   icases (lc_alloc_no_lc m) with ⟨%Hc, _, Hlc⟩
   let Hi := @InvGS_gen.mk .hasNoLC GF (inferInstance) W Hc
-  iexists Hi, (λ E => iprop(wsat ∗ ownE E))
+  iexists Hi, (fun E => iprop(wsat ∗ ownE E))
   rw [diff_subset_decomp (s₁ := E) (s₂ := ⊤) (fun _ _ => CoPset.mem_full)]
   icases (ownE_op (disjoint_symm disjoint_diff_right)) $$ HE with ⟨_, HE⟩
   -- FIXME: iframe failed without simplication here
@@ -644,7 +644,7 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
     Lean.Elab.Term.synthesizeSyntheticMVarsNoPostponing
     instantiateMVars n
 
-  ProofModeM.runTactic `inext λ mvar { u, prop, bi, e, hyps, goal, .. } => do
+  ProofModeM.runTactic `inext fun mvar { u, prop, bi, e, hyps, goal, .. } => do
     -- Search for the later credit hypothesis from the context
     let ivar ← hyps.findWithInfo h
     let some ⟨name, _, p, ty⟩ := hyps.getDecl? ivar

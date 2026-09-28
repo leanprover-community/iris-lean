@@ -21,8 +21,8 @@ def modality_persistently [BI PROP] : Modality PROP PROP where
   | true => .id
   | false => .clear
   spec
-  | true => λ _ => persistent
-  | false => λ P => persistently_absorbing P
+  | true => fun _ => persistent
+  | false => fun P => persistently_absorbing P
   emp := persistently_emp_2
   mono := (persistently_mono ·)
   sep := persistently_sep_mpr
@@ -34,8 +34,8 @@ def modality_affinely [BI PROP] : Modality PROP PROP where
   | true => .id
   | false => .forall Affine
   spec
-  | true => λ _ => affinely_intro .rfl
-  | false => λ _ _ => affinely_intro .rfl
+  | true => fun _ => affinely_intro .rfl
+  | false => fun _ _ => affinely_intro .rfl
   emp := affinely_intro .rfl
   mono := (affinely_mono ·)
   sep := affinely_sep_mpr
@@ -47,7 +47,7 @@ def modality_intuitionistically [BI PROP] : Modality PROP PROP where
   | true => .id
   | false => .isEmpty
   spec
-  | true => λ _ => intuitionistic
+  | true => fun _ => intuitionistic
   | false => trivial
   emp := intuitionistic
   mono := (intuitionistically_mono ·)
@@ -60,8 +60,8 @@ def modality_plainly [Sbi PROP] : Modality PROP PROP where
   | true => .forall Plain
   | false => .clear
   spec
-  | true => λ _ _ => (intuitionistically_mono Plain.plain).trans intuitionistically_plainly
-  | false => λ _ => plainly_absorbing _
+  | true => fun _ _ => (intuitionistically_mono Plain.plain).trans intuitionistically_plainly
+  | false => fun _ => plainly_absorbing _
   emp := plainly_emp_2
   mono := (plainly_mono ·)
   sep := plainly_sep_2
@@ -69,8 +69,8 @@ def modality_plainly [Sbi PROP] : Modality PROP PROP where
 @[rocq_alias modality_laterN, rocq_alias modality_laterN_mixin]
 def modality_laterN (n : Nat) [BI PROP] : Modality PROP PROP where
   M := BIBase.laterN n
-  action := λ _ => .transform (IntoLaterN (progress := false) (only_head := false) n)
-  spec := λ _ _ _ h =>
+  action := fun _ => .transform (IntoLaterN (progress := false) (only_head := false) n)
+  spec := fun _ _ _ h =>
     (intuitionisticallyIf_mono (h.into_laterN)).trans (laterN_intuitionisticallyIf n)
   emp := laterN_intro n
   mono := (laterN_mono n ·)
@@ -80,10 +80,14 @@ def modality_laterN (n : Nat) [BI PROP] : Modality PROP PROP where
 def modality_embed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] : Modality PROP1 PROP2 where
   M := embed
   action _ := .transform IntoEmbed
-  spec := λ p _ P h =>
+  spec := fun p _ P h =>
     (intuitionisticallyIf_mono h.into_embed).trans <| embed_intuitionistically_if_2 P p
   emp := embed_emp_2
   mono := (embed_mono ·)
   sep := (BiEmbed.sep _ _).mpr
 
 end Modalities
+
+end ProofMode
+
+end Iris

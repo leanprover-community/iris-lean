@@ -10,7 +10,7 @@ public import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
 public section
-open BI Std
+open BI Iris.Std
 
 @[rocq_alias tac_assumption]
 theorem assumption [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption p .in A Q]
@@ -29,7 +29,7 @@ open Lean Elab Tactic Meta Qq
   intuitionistic or spatial context.
 -/
 elab "iassumption" : tactic => do
-  ProofModeM.runTactic `iassumption λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `iassumption fun mvar { hyps, goal, .. } => do
 
   if goal.isMVar then
     throwIPMError "goal is a mvar, use iaccu instead"
@@ -45,3 +45,11 @@ elab "iassumption" : tactic => do
   mvar.assign q(assumption (Q := $goal) $pf)
 
 macro_rules | `(tactic| itrivial) => `(tactic| (try iassumption) <;> done)
+
+end
+
+end
+
+end ProofMode
+
+end Iris

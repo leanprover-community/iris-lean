@@ -86,4 +86,9 @@ theorem maximum_spec_nat (s : Stuckness) (E : CoPset) (Φ : Val → IProp GF) (m
 end Spec
 
 end Arith
+
 end
+
+end HeapLang
+
+end Iris

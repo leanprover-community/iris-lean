@@ -62,7 +62,7 @@ def ownP [ι : OwnPGS State GF] (σ : State) : IProp GF :=
 
 @[rocq_alias ownP_adequacy]
 theorem ownP_adequacy [OwnPGpreS State GF] (s : Stuckness) (e : Expr) (σ : State) (φ : Val → Prop)
-    (Hwp : ∀ [OwnPGS State GF], ownP (GF := GF) σ ⊢ WP e @ s; ⊤ {{ v, ⌜φ v⌝ }}) :
+    (Hwp : ∀ [OwnPGS State GF], ownP (GF := GF) σ ⊢ WP e @ s ; ⊤ {{ v, ⌜φ v⌝ }}) :
     adequate s e σ (fun v _ => φ v) := by
   unfold ownP at Hwp
   refine wp_adequacy (GF := GF) s e σ φ @fun _ κs => ?_
@@ -78,7 +78,7 @@ theorem ownP_adequacy [OwnPGpreS State GF] (s : Stuckness) (e : Expr) (σ : Stat
 theorem ownP_invariance [OwnPGpreS State GF] (s : Stuckness) (e : Expr) (σ₁ : State)
     (t₂ : List Expr) (σ₂ : State) (φ : State → Prop)
     (Hwp : ∀ [OwnPGS State GF],
-      ownP (GF := GF) σ₁ ={⊤}=∗ WP e @ s; ⊤ {{ _v, True }} ∗ |={⊤,∅}=> ∃ σ', ownP σ' ∧ ⌜φ σ'⌝)
+      ownP (GF := GF) σ₁ ={⊤}=∗ WP e @ s ; ⊤ {{ _v, True }} ∗ |={⊤,∅}=> ∃ σ', ownP σ' ∧ ⌜φ σ'⌝)
     (Hsteps : ([e], σ₁) -·->ₜₚ* (t₂, σ₂)) :
     φ σ₂ := by
   unfold ownP at Hwp

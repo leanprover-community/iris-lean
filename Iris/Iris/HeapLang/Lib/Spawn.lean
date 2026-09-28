@@ -143,4 +143,9 @@ theorem join_spec (Ψ : Val → IProp GF) (l : Loc) :
 end Specs
 
 end Spawn
+
 end
+
+end HeapLang
+
+end Iris

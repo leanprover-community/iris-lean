@@ -25,7 +25,7 @@ open BI
 @[rocq_alias tac_pose_proof]
 theorem have_asEmpValid [bi : BI PROP] {φ} {P Q : PROP}
     [h1 : AsEmpValid .into φ .in PROP bi P] (h : φ) : Q ⊢ Q ∗ □ P :=
-  sep_emp.2.trans (sep_mono_right $ intuitionistically_emp.2.trans
+  sep_emp.2.trans (sep_mono_right <| intuitionistically_emp.2.trans
     (intuitionistically_mono (asEmpValid_1 _ h1 h)))
 
 #rocq_ignore tac_pose_proof_hyp "not needed as Expr.lean already provides the infrastructure"
@@ -36,7 +36,7 @@ theorem have_asEmpValid [bi : BI PROP] {φ} {P Q : PROP}
 #rocq_ignore into_emp_valid_tforall "Type class IntoEmpValid not needed in Lean"
 
 public meta section
-open Lean Elab Tactic Meta Qq Std
+open Lean Elab Tactic Meta Qq Iris.Std
 
 /--
 Assert a hypothesis from either a hypothesis name or a Lean proof term `tm`.
@@ -109,3 +109,11 @@ def iHave {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
   let ⟨_, hyps'', pb, B, pf'⟩ ←
     iSpecializeCore hyps' p A goal pmt.spats (try_dup_context := try_dup_context)
   return ⟨_, hyps'', pb, B, q(fun x => $(pf).trans ($pf' x))⟩
+
+end
+
+end
+
+end ProofMode
+
+end Iris

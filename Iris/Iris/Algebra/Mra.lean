@@ -159,9 +159,8 @@ instance : CMRA.Discrete (Mra R) where
 #rocq_ignore mra_unit "Replaced by the `unit` field of UCMRA instance."
 #rocq_ignore mraUR "Use Mra."
 
--- FIXME: upstream name `auth_ucmra_mixin` should be `mra_ucmra_mixin`
-@[rocq_alias auth_ucmra_mixin]
-instance (R : α → α → Prop) : Unital (Mra R) where
+@[rocq_alias mra_ucmra_mixin]
+instance (R : α → α → Prop) : UCMRA (Mra R) where
   unit := mk []
   unit_valid := trivial
   unit_left_id {x} := by

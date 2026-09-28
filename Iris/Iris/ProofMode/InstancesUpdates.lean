@@ -320,3 +320,7 @@ instance fromForall_stepFupd E1 E2 (P : PROP) (Φ : α → PROP)
   from_forall := (step_fupd_plain_forall inst.sidecondition).mpr.trans (step_fupd_mono h.from_forall)
 
 end SBIFancyUpdate
+
+end ProofMode
+
+end Iris

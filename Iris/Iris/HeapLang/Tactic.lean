@@ -119,7 +119,7 @@ structure ECtxResultOf (e : Q(Exp)) (α : Type) where unsafeMk ::
   heq : ProgramLogic.fill $K $e' =Q $e := ⟨⟩
 
 /-- Given an expression `ogE`, finds the *outermost* evaluation context `K` and
-    corresponding expression `e'` such that `K[e'] = e` and `pred K e'` does 
+    corresponding expression `e'` such that `K[e'] = e` and `pred K e'` does
     not fail. This corresponds to `reshape_expr` in Rocq. -/
 public meta partial def findECtx {α : Type _} (ogE : Q(Exp))
     (pred : Q(List ECtxItem) → Q(Exp) → ProofModeM α) :
@@ -134,7 +134,7 @@ where
     go e' (Ki :: acc)
 
 /-- Given an expression `ogE`, finds the *innermost* evaluation context `K` and
-    corresponding expression `e'` such that `K[e'] = e` and `pred K e'` does 
+    corresponding expression `e'` such that `K[e'] = e` and `pred K e'` does
     not fail -/
 public meta partial def findECtxRev {α : Type _} (ogE : Q(Exp))
     (pred : Q(List ECtxItem) → Q(Exp) → ProofModeM α) :
@@ -148,3 +148,7 @@ where
       return some {result := a, K, e'}
     let_expr List.cons _ Ki K := K | return none
     go (← fillItem e' Ki) K
+
+end HeapLang
+
+end Iris

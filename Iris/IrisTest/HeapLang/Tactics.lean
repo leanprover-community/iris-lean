@@ -49,3 +49,7 @@ example (l : Loc) (v : Val) :
   iassumption
 
 end Fractional
+
+end HeapLang
+
+end Iris

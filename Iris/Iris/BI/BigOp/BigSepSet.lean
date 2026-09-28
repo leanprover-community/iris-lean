@@ -344,6 +344,38 @@ theorem bigSepS_filter_acc (φ : A → Bool) {Φ : A → PROP} {X Y : S}
     union_comm]
   exact (bigSepS_union hdisj).1.trans <| sep_mono_right <| wand_intro_left (bigSepS_union hdisj).2
 
+/-- Split a big separating conjunction along a subset and its complement. -/
+theorem bigSepS_split_subset {Φ : A → PROP} {X Y : S} (hsub : Y ⊆ X) :
+    ([∗set] y ∈ X, Φ y) ⊣⊢ ([∗set] y ∈ Y, Φ y) ∗ ([∗set] y ∈ X \ Y, Φ y) := by
+  conv => lhs; rw [(diff_subset_decomp hsub).trans union_comm]
+  exact bigSepS_union fun a ha => (mem_diff.mp ha.right).right ha.left
+
+/-- A version of `big_sepS_filter_acc` that also allows changing the predicate `Φ`. -/
+@[rocq_alias big_sepS_filter_acc_impl]
+theorem bigSepS_filter_acc_impl (φ : A → Bool) {Φ : A → PROP} {X : S} :
+    ([∗set] y ∈ X, Φ y) ⊢
+      ([∗set] y ∈ FiniteSet.filter φ X, Φ y) ∗
+      (∀ Ψ : A → PROP, (□ (∀ y, ⌜y ∈ X⌝ → ⌜¬ φ y⌝ → Φ y -∗ Ψ y)) -∗
+        ([∗set] y ∈ FiniteSet.filter φ X, Ψ y) -∗ [∗set] y ∈ X, Ψ y) := by
+  have hfilter : FiniteSet.filter φ X ⊆ X := fun z hz => ((FiniteSet.mem_filter φ X z).mp hz).left
+  refine (bigSepS_split_subset hfilter).mp.trans <| sep_mono_right <|
+    forall_intro fun Ψ => wand_intro <| wand_intro ?_
+  refine .trans ?_ (bigSepS_split_subset hfilter).mpr
+  refine sep_comm.mp.trans <| sep_mono_right ?_
+  calc iprop(([∗set] x ∈ X \ FiniteSet.filter φ X, Φ x) ∗ □ ∀ y, ⌜y ∈ X⌝ → ⌜¬φ y = true⌝ → Φ y -∗ Ψ y)
+    _ ⊢ ([∗set] x ∈ X \ FiniteSet.filter φ X, Φ x) ∗
+        □ ∀ x, ⌜x ∈ X \ FiniteSet.filter φ X⌝ → Φ x -∗ Ψ x :=
+        sep_mono_right <| intuitionistically_mono <| forall_mono fun y =>
+          imp_intro_swap <| pure_elim_left fun hy => ?_
+    _ ⊢ ((□ ∀ x, ⌜x ∈ X \ FiniteSet.filter φ X⌝ → Φ x -∗ Ψ x) -∗
+          [∗set] x ∈ X \ FiniteSet.filter φ X, Ψ x) ∗
+        □ ∀ x, ⌜x ∈ X \ FiniteSet.filter φ X⌝ → Φ x -∗ Ψ x := sep_mono_left bigSepS_impl
+    _ ⊢ [∗set] x ∈ X \ FiniteSet.filter φ X, Ψ x := wand_elim_left
+  have hdiff : y ∈ X ∧ ¬ φ y :=
+    match mem_diff.mp hy with
+    | ⟨hyX, hyF⟩ => ⟨hyX, fun hφ => hyF ((FiniteSet.mem_filter φ X y).mpr ⟨hyX, hφ⟩)⟩
+  exact (pure_imp_elim hdiff.left).trans (pure_imp_elim hdiff.right)
+
 @[rocq_alias big_sepS_union_2]
 theorem bigSepS_union_elim {Φ : A → PROP} {X Y : S} [∀ x, TCOr (Affine (Φ x)) (Absorbing (Φ x))] :
     ⊢ ([∗set] y ∈ X, Φ y) -∗ ([∗set] y ∈ Y, Φ y) -∗ ([∗set] y ∈ X ∪ Y, Φ y) := by

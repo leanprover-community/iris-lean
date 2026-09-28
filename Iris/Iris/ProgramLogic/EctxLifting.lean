@@ -187,3 +187,7 @@ theorem wp_lift_pure_det_base_step_no_fork' [Inhabited State] (h : toVal e₁ = 
   iintro _
   refine .trans ?_ <| wp_lift_pure_det_base_step_no_fork E h Hbred Hpure
   exact step_fupd_intro Std.LawfulSet.subset_refl
+
+end ProgramLogic
+
+end Iris

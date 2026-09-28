@@ -91,3 +91,5 @@ variable (p : Bool) [CMRA.Affine M] in
 #ipm_synth IntoSep (ownM ((a • b, a • b) : M × M)) _ _
 
 end
+
+end IrisTest

@@ -71,7 +71,7 @@ def «exists» [BIBase PROP] {α : Sort _} (P : α → PROP) : PROP := sExists f
 macro:25 P:term:29 " ⊢ " Q:term:25 : term => ``(BIBase.Entails iprop($P) iprop($Q))
 
 @[inherit_doc BIBase.Entails]
-macro:25 P:term:29 " ⊢@{ " PROP:term "} " Q:term:25 : term =>
+macro:25 P:term:29 " ⊢@{" PROP:term "} " Q:term:25 : term =>
   ``(BIBase.Entails (PROP:=$PROP) iprop($P) iprop($Q))
 
 delab_rule BIBase.Entails
@@ -227,7 +227,7 @@ delab_rule wandM
 
 /-- Affine modality: `<affine> P` is equivalent to `emp ∧ P`. -/
 @[rocq_alias bi_affinely]
-def affinely    [BIBase PROP] (P : PROP) : PROP := iprop(emp ∧ P)
+def affinely [BIBase PROP] (P : PROP) : PROP := iprop(emp ∧ P)
 /-- Absorbingly modality: `<absorb> P` is equivalent to `True ∗ P`. -/
 @[rocq_alias bi_absorbingly]
 def absorbingly [BIBase PROP] (P : PROP) : PROP := iprop(True ∗ P)
@@ -245,10 +245,10 @@ structure BiEntails [BIBase PROP] (P Q : PROP) where
 def EmpValid [BIBase PROP] (P : PROP) : Prop := emp ⊢ P
 
 macro:25 "⊢ " P:term:25 : term => ``(EmpValid iprop($P))
-macro:25 "⊢@{ " PROP:term " } " P:term:25 : term =>
+macro:25 "⊢@{" PROP:term "} " P:term:25 : term =>
   ``(EmpValid (PROP:=$PROP) iprop($P))
 macro:25 P:term:29 " ⊣⊢ " Q:term:29 : term => ``(BiEntails iprop($P) iprop($Q))
-macro:25 P:term:29 " ⊣⊢@{ " PROP:term " } " Q:term:29 : term =>
+macro:25 P:term:29 " ⊣⊢@{" PROP:term "} " Q:term:29 : term =>
   ``(BiEntails (PROP:=$PROP) iprop($P) iprop($Q))
 
 macro_rules
@@ -375,6 +375,18 @@ macro_rules
 delab_rule except0
   | `($_ $P) => do ``(iprop(◇ $(← unpackIprop P)))
 
+/-- Only-0 modality: `<only0> P` is equivalent to `▷ False → P`, i.e. `P` holds at step-index 0. -/
+@[rocq_alias bi_only_0]
+def only0 [BIBase PROP] (P : PROP) := iprop(▷ False → P)
+
+syntax:max "<only0> " term:40 : term
+
+macro_rules
+  | `(iprop(<only0>%$tk $P)) => ``($(wrapIprop tk ``only0) iprop($P))
+
+delab_rule only0
+  | `($_ $P) => do ``(iprop(<only0> $(← unpackIprop P)))
+
 /-- Plainly modality (`■`). -/
 class Plainly (PROP : Type _) where
   plainly : PROP → PROP
@@ -404,3 +416,9 @@ macro_rules
 
 delab_rule Plainly.plainlyIf
   | `($_ $p $P) => do ``(iprop(■? $p $(← Iris.BI.unpackIprop P)))
+
+end BIBase
+
+end BI
+
+end Iris

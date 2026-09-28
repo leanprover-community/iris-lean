@@ -281,7 +281,7 @@ def unexpAnon : Unexpander
 
 @[app_unexpander Binder.named]
 def unexpNamed : Unexpander
-  | `($_ $s:str) => `(hl_binder($(Lean.mkIdent $ Name.mkSimple s.getString):ident))
+  | `($_ $s:str) => `(hl_binder($(Lean.mkIdent <| Name.mkSimple s.getString):ident))
   | _ => throw ()
 
 /-- delaborating values -/
@@ -294,26 +294,26 @@ def unexpLit : Unexpander
 
 partial def unexpLamVal : Term → UnexpandM Term
   | `(hl_val(rec _ $x := $e)) => do
-    unexpLamVal $ ← `(hl_val(λ $x, $e))
+    unexpLamVal <| ← `(hl_val(λ $x, $e))
   | `(hl_val(λ $x, (λ $ys*, $e))) => do
-    unexpLamVal $ ← `(hl_val(λ $x $ys*, $e))
+    unexpLamVal <| ← `(hl_val(λ $x $ys*, $e))
   | x => return x
 
 @[app_unexpander Val.rec_]
 def unexpRecVal : Unexpander
   | `($_ $f $x $e) => do
-    unexpLamVal $ ← `(hl_val(rec $(← unpackHLBinder f) $(← unpackHLBinder x) := $(← unpackHLExp e)))
+    unexpLamVal <| ← `(hl_val(rec $(← unpackHLBinder f) $(← unpackHLBinder x) := $(← unpackHLExp e)))
   | _ => throw ()
 
 partial def unexpPairVal' : Term → UnexpandM Term
   | `(hl_val(($e1, ($e2, $e3,*)))) => do
-    unexpPairVal' $ ← `(hl_val(($e1, $e2, $e3,*)))
+    unexpPairVal' <| ← `(hl_val(($e1, $e2, $e3,*)))
   | x => return x
 
 @[app_unexpander Val.pair]
 def unexpPairVal : Unexpander
   | `($_ $e1 $e2) => do
-    unexpPairVal' $ ← `(hl_val(($(← unpackHLVal e1), $(← unpackHLVal e2))))
+    unexpPairVal' <| ← `(hl_val(($(← unpackHLVal e1), $(← unpackHLVal e2))))
   | _ => throw ()
 
 @[app_unexpander Val.injL]
@@ -329,7 +329,7 @@ def unexpInjrVal : Unexpander
 /-- delaborating expressions -/
 partial def unexpValLit : Term → DelabM Term
   | `(hl(v(# $l))) => do
-    unexpValLit $ ← `(hl(# $l))
+    unexpValLit <| ← `(hl(# $l))
   | x => return x
 
 @[app_delab ToVal.ofVal]
@@ -339,11 +339,11 @@ def unexpVal : Delab := do
   let_expr ToVal.ofVal exp val _ v := e | failure
   if !exp.isConstOf ``Exp && !val.isConstOf ``Val then failure
   let v ← delab v
-  unexpValLit $ ← `(hl(v($(← unpackHLVal v))))
+  unexpValLit <| ← `(hl(v($(← unpackHLVal v))))
 
 @[app_unexpander Exp.var]
 def unexpVar : Unexpander
-  | `($_ $e:str) => do `(hl($(Lean.mkIdent $ Name.mkSimple e.getString):ident))
+  | `($_ $e:str) => do `(hl($(Lean.mkIdent <| Name.mkSimple e.getString):ident))
   | _ => throw ()
 
 @[app_unexpander Exp.binop]
@@ -377,38 +377,38 @@ def unexpIf : Unexpander
 
 partial def unexpLam : Term → UnexpandM Term
   | `(hl((rec _ $x := $e))) => do
-    unexpLam $ ← `(hl((λ $x, $e)))
+    unexpLam <| ← `(hl((λ $x, $e)))
   | `(hl((λ $x, (λ $ys*, $e)))) => do
-    unexpLam $ ← `(hl((λ $x $ys*, $e)))
+    unexpLam <| ← `(hl((λ $x $ys*, $e)))
   | x => return x
 
 @[app_unexpander Exp.rec_]
 def unexpRec : Unexpander
   | `($_ $f $x $e) => do
-    unexpLam $ ← `(hl((rec $(← unpackHLBinder f) $(← unpackHLBinder x) := $(← unpackHLExp e))))
+    unexpLam <| ← `(hl((rec $(← unpackHLBinder f) $(← unpackHLBinder x) := $(← unpackHLExp e))))
   | _ => throw ()
 
 partial def unexpLet : Term → UnexpandM Term
   | `(hl((λ $f, $e2) $e1)) => do
-    unexpLet $ ← `(hl(let $f := $e1; $e2))
+    unexpLet <| ← `(hl(let $f := $e1; $e2))
   | `(hl(let _ := $e1; $e2)) => do `(hl($e1; $e2))
   | x => return x
 
 @[app_unexpander Exp.app]
 def unexpApp : Unexpander
   | `($_ $e1 $e2) => do
-    unexpLet $ ← `(hl($(← unpackHLExp e1) $(← unpackHLExp e2)))
+    unexpLet <| ← `(hl($(← unpackHLExp e1) $(← unpackHLExp e2)))
   | _ => throw ()
 
 partial def unexpPair' : Term → UnexpandM Term
   | `(hl(($e1, ($e2, $e3,*)))) => do
-    unexpPair' $ ← `(hl(($e1, $e2, $e3,*)))
+    unexpPair' <| ← `(hl(($e1, $e2, $e3,*)))
   | x => return x
 
 @[app_unexpander Exp.pair]
 def unexpPair : Unexpander
   | `($_ $e1 $e2) => do
-    unexpPair' $ ← `(hl(($(← unpackHLExp e1), $(← unpackHLExp e2))))
+    unexpPair' <| ← `(hl(($(← unpackHLExp e1), $(← unpackHLExp e2))))
   | _ => throw ()
 
 @[app_unexpander Exp.fst]
@@ -443,7 +443,7 @@ partial def unexpRef : Term → UnexpandM Term
 
 @[app_unexpander Exp.allocN]
 def unexpAllocN : Unexpander
-  | `($_ $e1 $e2) => do unexpRef $ ← `(hl(allocn($(← unpackHLExp e1), $(← unpackHLExp e2))))
+  | `($_ $e1 $e2) => do unexpRef <| ← `(hl(allocn($(← unpackHLExp e1), $(← unpackHLExp e2))))
   | _ => throw ()
 
 @[app_unexpander Exp.free]
@@ -497,5 +497,9 @@ partial def unexpResolveProph : Term → UnexpandM Term
 @[app_unexpander Exp.resolve]
 def unexpResolve : Unexpander
   | `($_ $e1 $e2 $e3) => do
-    unexpResolveProph $ ← `(hl(resolve($(← unpackHLExp e1), $(← unpackHLExp e2), $(← unpackHLExp e3))))
+    unexpResolveProph <| ← `(hl(resolve($(← unpackHLExp e1), $(← unpackHLExp e2), $(← unpackHLExp e3))))
   | _ => throw ()
+
+end HeapLang
+
+end Iris

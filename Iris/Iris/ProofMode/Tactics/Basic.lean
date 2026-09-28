@@ -18,7 +18,7 @@ public section
 public meta section
 
 namespace Iris.ProofMode
-open Lean Elab.Tactic Meta Qq BI Std Lean.Elab Term
+open Lean Elab.Tactic Meta Qq BI Iris.Std Lean.Elab Term
 
 /-- `itrivial` collects tactics to solve trivial Iris goals. It is used by the `//` specialization
 and introduction patterns. One can add new tactics using
@@ -77,3 +77,7 @@ elab "focusLastIrisGoal" colGt tac:tactic : tactic => do
   evalTactic tac
   let goals' ← getUnsolvedGoals
   setGoals (goals_before ++ goals' ++ goals_after)
+
+end ProofMode
+
+end Iris

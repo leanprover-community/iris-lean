@@ -37,7 +37,7 @@ section Proofs
 def prophecyToListBool (vs : List (Val × Val)) : List Bool :=
   vs.map (·.2 = hl_val(#true))
 
-private theorem prophecyToListBool_cons (vs : List (Val × Val)) (v : Val) (b : Bool) :
+theorem prophecyToListBool_cons (vs : List (Val × Val)) (v : Val) (b : Bool) :
     prophecyToListBool ((v, hl_val(#b)) :: vs) = b :: prophecyToListBool vs := by
   cases b <;> rfl
 
@@ -103,3 +103,7 @@ theorem tossCoin.spec (cp : Val) (bs : List Bool) :
   iframe
 
 end Proofs
+
+end HeapLang
+
+end Iris

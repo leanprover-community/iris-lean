@@ -15,6 +15,7 @@ public import Iris.ProgramLogic.TotalEctxLifting
 public import Iris.ProgramLogic.Lifting
 public import Iris.BI.Lib.GenHeap
 public import Iris.BI.Lib.ProphMap
+public import Iris.BI.Lib.InvHeap
 public import Iris.Std.GenSetsInstances
 public import Iris.ProofMode
 public import Std.Data.ExtTreeMap
@@ -22,7 +23,7 @@ public import Std.Data.ExtTreeMap
 @[expose] public section
 namespace Iris.HeapLang
 
-open Iris ProgramLogic Language.Notation Std FromMathlib
+open Iris ProgramLogic Language.Notation Iris.Std FromMathlib
 
 section HeapLangGS
 
@@ -32,9 +33,11 @@ abbrev ProphMapF := fun V => Std.ExtTreeMap ProphId V compare
 class HeapLangGpreS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGpreS GF where
   heap_pre : genHeapPreS Loc (Option Val) GF HeapF
   proph_pre : prophMapPreS ProphId (Val × Val) GF ProphMapF
+  inv_heap_pre : invHeapPreS Loc (Option Val) GF HeapF
 
 attribute [reducible, instance] HeapLangGpreS.heap_pre
 attribute [reducible, instance] HeapLangGpreS.proph_pre
+attribute [reducible, instance] HeapLangGpreS.inv_heap_pre
 
 #rocq_ignore heap_lang.«heapΣ» "Superseded by the `HeapLangGpreS` typeclass on `BundledGFunctors`."
 #rocq_ignore heap_lang.subG_heapGpreS "Superseded by Lean's direct `ElemG` typeclass synthesis."
@@ -66,9 +69,11 @@ class HeapLangGS (hlc : outParam HasLC) (GF : BundledGFunctors) where
   [invGS : InvGS_gen hlc GF]
   heap : genHeapGS Loc (Option Val) GF HeapF
   proph : prophMapGS ProphId (Val × Val) GF ProphMapF
+  inv_heap : invHeapGS Loc (Option Val) GF HeapF
 
 attribute [reducible, instance] HeapLangGS.heap
 attribute [reducible, instance] HeapLangGS.proph
+attribute [reducible, instance] HeapLangGS.inv_heap
 
 instance HeapLangState [HeapLangGS hlc GF] : StateInterp State Observation GF where
   stateInterp σ _ κs _ := iprop% genHeapInterp σ.heap ∗ prophMapInterp κs σ.usedProphId
@@ -83,7 +88,7 @@ theorem prophMapInterp_nil_append [HeapLangGS hlc GF] (κs : List Observation)
   .rfl
 
 @[rocq_alias heap_lang.heapGS_irisGS]
-instance HeapLang [HeapLangGS hlc GF] : IrisGS_gen hlc Exp GF where
+instance heapLangInst [HeapLangGS hlc GF] : IrisGS_gen hlc Exp GF where
   invGS := HeapLangGS.invGS
   numLatersPerStep n := 0
   forkPost v := iprop(True)
@@ -96,15 +101,17 @@ theorem state_interp_step [HeapLangGS hlc GF] (σ : State) (ns : Nat)
     stateInterp (GF := GF) σ ns κs nt ⊢ |==> stateInterp σ (ns + 1) κs nt := bupd_intro
 
 def HeapLangS : BundledGFunctors
-  | 0 => ⟨InvMapF⟩
-  | 1 => ⟨constOF CoPsetDisjL⟩
-  | 2 => ⟨constOF (DisjointLeibnizSet PosSet)⟩
-  | 3 => ⟨Auth.AuthURF (constOF Credit)⟩
-  | 4 => ⟨constOF (HeapView Loc (Agree (DiscreteO (Option Val))) HeapF)⟩
-  | 5 => ⟨constOF (HeapView Loc (Agree (DiscreteO GName)) HeapF)⟩
-  | 6 => ⟨constOF MetaUR⟩
-  | 7 => ⟨constOF (HeapView ProphId (Agree (DiscreteO (List (Val × Val)))) ProphMapF)⟩
-  | _ => ⟨constOF Unit⟩
+  | 0 => ⟨InvMapF, by infer_instance⟩
+  | 1 => ⟨constOF CoPsetDisjL, by infer_instance⟩
+  | 2 => ⟨constOF (DisjointLeibnizSet PosSet), by infer_instance⟩
+  | 3 => ⟨Auth.AuthURF (constOF Credit), by infer_instance⟩
+  | 4 => ⟨constOF (HeapView Loc (Agree (DiscreteO (Option Val))) HeapF), by infer_instance⟩
+  | 5 => ⟨constOF (HeapView Loc (Agree (DiscreteO GName)) HeapF), by infer_instance⟩
+  | 6 => ⟨constOF MetaUR, by infer_instance⟩
+  | 7 => ⟨constOF (HeapView ProphId (Agree (DiscreteO (List (Val × Val)))) ProphMapF),
+          by infer_instance⟩
+  | 8 => ⟨constOF (Auth (InvHeapMapUR (Option Val) HeapF)) , by infer_instance⟩
+  | _ => ⟨constOF Unit, by infer_instance⟩
 
 instance instHeapLangGS_HeapLangS : HeapLangGpreS HasLC.hasLC HeapLangS where
   toWsatGpreS := by
@@ -126,6 +133,9 @@ instance instHeapLangGS_HeapLangS : HeapLangGpreS HasLC.hasLC HeapLangS where
     constructor
     · constructor
       exists 7
+  inv_heap_pre := by
+    constructor
+    exists 8
 
 end HeapLangGS
 
@@ -133,32 +143,21 @@ section Adequacy
 
 @[rocq_alias heap_lang.heap_adequacy]
 theorem heap_adequacy [HeapLangGpreS .hasLC GF] (e : Exp) σ (φ : Val → Prop)
-    (Hwp : ∀ [HeapLangGS .hasLC GF], ⊢@{IProp GF} (WP e {{ v, ⌜φ v⌝ }})) :
+    (Hwp : ∀ [HeapLangGS .hasLC GF], ⊢@{IProp GF} invHeapInv -∗ (WP e {{ v, ⌜φ v⌝ }})) :
     adequate .NotStuck e σ (fun v _ => φ v) := by
   refine wp_adequacy (GF := GF) .NotStuck e σ φ ?_
   intro inst κs
-  imod iOwn_alloc (E := GhostMapG.elem) (HeapView.Auth (H := HeapF) (.own 1)
-      (Std.PartialMap.map (fun v : Option Val => toAgree (DiscreteO.mk v)) σ.heap))
-    HeapView.auth_one_valid with ⟨%γh, Hh⟩
-  imod iOwn_alloc (E := GhostMapG.elem) (HeapView.Auth (H := HeapF) (.own 1)
-      (Std.PartialMap.map (fun g : GName => toAgree (DiscreteO.mk g)) (∅ : HeapF GName)))
-    HeapView.auth_one_valid with ⟨%γm, Hm⟩
-  imod (ProphMap.init (H := ProphMapF) κs σ.usedProphId) with ⟨%Gproph, Hproph⟩
-  letI instHeapLangGS : HeapLangGS .hasLC GF := ⟨⟨γh, γm⟩, Gproph⟩
+  imod genHeap_init (GF := GF) (H := HeapF) σ.heap with ⟨%γh, ⟨Hh, _⟩⟩
+  imod invHeap_init Loc _ (GF := GF) (H := HeapF) (E:= ⊤) with ⟨%γi, >Hi⟩
+  imod (ProphMap.init κs σ.usedProphId) with ⟨%Gproph, Hproph⟩
+  letI instHeapLangGS : HeapLangGS .hasLC GF := ⟨γh, Gproph, γi⟩
   imodintro
   iexists (fun σ κs => iprop% Iris.genHeapInterp σ.heap ∗ Iris.prophMapInterp κs σ.usedProphId)
   iexists (fun _ => iprop(True))
   simp only []
   -- NOTE: iframe %(@Hwp _) does not work here
-  ihave #Hwp := (@Hwp _)
-  iframe Hwp Hproph
-  simp only [Iris.genHeapInterp]
-  iexists (∅ : HeapF GName)
-  unfold ghost_map_auth
-  iframe Hh Hm
-  ipureintro
-  intro k hk
-  simp [Std.PartialMap.dom, LawfulPartialMap.get?_empty] at hk
+  ihave Hwp := (@Hwp _) $$ Hi
+  iframe Hwp Hproph Hh
 
 end Adequacy
 
@@ -298,17 +297,16 @@ theorem wp_allocN_seq (v : Val) {n : Int} (hn : 0 < n) :
 
 @[rocq_alias heap_lang.wp_alloc]
 theorem wp_alloc (v : Val) :
-    {{ True }} hl(ref(&v)) @ s; E {{ l, RET hl_val(#l); l ↦ some v }} := by
+    {{ True }} hl(ref(&v)) @ s; E {{ l, RET hl_val(#l); l ↦ some v ∗ metaToken l ⊤}} := by
   iintro %Φ _ HΦ
   iapply twp.wp_step _ rfl $$ HΦ
   iapply twp_allocN_seq (by omega)
   · itrivial
   iintro %l H HΦ
-  ihave Hpt : iprop(l ↦ some v) $$ [H]
-  · rw [Int.toNat_one, List.range_one, BI.BigSepL.bigSepL_singleton.to_eq]
-    rw [show l + 0 = l from loc_add_zero l]
-    exact BI.sep_elim_left
-  iapply HΦ $$ Hpt
+  iapply HΦ
+  rw [Int.toNat_one, List.range_one, BI.BigSepL.bigSepL_singleton.to_eq]
+  rw [show l + 0 = l from loc_add_zero l]
+  itrivial
 
 @[rocq_alias heap_lang.twp_load]
 theorem twp_load {l : Loc} {q} {v : Val} :

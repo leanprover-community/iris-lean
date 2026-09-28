@@ -35,7 +35,7 @@ export EvContextOps (empty comp)
 /-- An evaluation context `Ectx` of expressions `Expr` is an "expression
 with a hole". This hole can be filled in using the `fill` operation.
 
-For example, for a lambda calculus `t ::= v | λ x . t | t t` with
+For example, for a lambda calculus `t ::= v | fun x . t | t t` with
 values `v`, the evaluation contexts could be defined inductively as
 `K ::= □ | v K | K t`.  -/
 class EvContext (Expr : Type e) (Ectx : outParam <| Type c)
@@ -61,12 +61,12 @@ attribute [local simp] EvContext.fill_inj Function.Injective.eq_iff
 The generic reduction relation is then derived from taking the closure
 of these base steps over any context.
 
-For example, for a lambda calculus `t ::= v | λ x . t | t t` with
+For example, for a lambda calculus `t ::= v | fun x . t | t t` with
 values `v` and evaluation contexts `K ::= □ | v K | K t`, the base step
-relation could be defined as `(λ x . t) v -->ᵇ t[v/x]`, where `t[v/x]`
+relation could be defined as `(fun x . t) v -->ᵇ t[v/x]`, where `t[v/x]`
 stands for "`t` but with all references to `x` replaced with `x`". In
 particular, this is the only reduction defined for `-->ᵇ`, so a term
-like `v₂ ((λ x . t) v)` does not reduce under `-->ᵇ`! -/
+like `v₂ ((fun x . t) v)` does not reduce under `-->ᵇ`! -/
 class BaseStep (Expr : Type _) (State : outParam (Type _)) (Obs : outParam (Type _)) where
   /-- The base reduction relation of the language. See `BaseStep`. -/
   baseStep : Expr × State → List Obs → Expr × State × List Expr → Prop
@@ -127,10 +127,10 @@ def Irreducible : Expr × State → Prop
   | (e,σ) => ∀ obs e' σ' eₜ, ¬ (e,σ) -<obs>->ᵇ (e',σ',eₜ)
 
 @[rocq_alias base_stuck]
-def Stuck [ToVal Expr Val]: Expr × State → Prop
+def Stuck [ToVal Expr Val] : Expr × State → Prop
   | (e,σ) => toVal e = none ∧ Irreducible (e,σ)
 
-variable {e : Expr}{σ : State}
+variable {e : Expr} {σ : State}
 
 @[rocq_alias not_base_reducible, grind =]
 theorem not_reducible_iff_irreducible : (¬ Reducible (e, σ)) ↔ Irreducible (e, σ) := by
@@ -148,7 +148,7 @@ This typeclass is defined in terms of a base step relation `baseStep`,
 a type of evaluation contexts `Ectx` and a set of values `Val`, and
 extended with theorems that relate these concepts to one another. -/
 @[rocq_alias ectxLanguage, rocq_alias EctxLanguageMixin]
-class EctxLanguage (Expr  : Type _) (Ectx State Obs Val : outParam (Type _))
+class EctxLanguage (Expr : Type _) (Ectx State Obs Val : outParam (Type _))
   extends BaseStep Expr State Obs, ToVal Expr Val, EvContext Expr Ectx where
   /-- Removing a context out of a value gives a value -/
   fill_val K e : (toVal (fill K e)).isSome → (toVal e).isSome
@@ -378,3 +378,9 @@ theorem pureExec_fill φ n : PureExec φ n e₁ e₂ → PureExec φ n (fill K e
   Language.pureExec_fill _
 
 end EctxLanguage
+
+end
+
+end ProgramLogic
+
+end Iris

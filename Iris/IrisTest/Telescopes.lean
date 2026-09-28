@@ -19,20 +19,24 @@ variable {PROP : Type} [inst : BI PROP] {TT : Tele.{0}}
 
 /- Delaboration of the telescope-aware lambda. -/
 /-- info: λ.. x, Φ x : TT.Arg → PROP -/
-#guard_msgs in #check (λ.. x, Φ x)
+#guard_msgs in
+#check (λ.. x, Φ x)
 
 variable (TU : TT.Arg → Tele) (f : (x : TT.Arg) → (TU x).Arg → PROP) in
 /-- info: λ.. x y, f x y : (xs : TT.Arg) → (TU xs).Arg → PROP -/
-#guard_msgs in #check (λ.. x y, f x y)
+#guard_msgs in
+#check (λ.. x y, f x y)
 
 /- Delaboration of `tforall`. -/
 /-- info: tforall Φ : PROP -/
-#guard_msgs in #check (tforall Φ : PROP)
+#guard_msgs in
+#check (tforall Φ : PROP)
 
 /- Delaboration of `tforall` with partial application the predicate `P`. -/
 variable (P : TT.Arg → TT.Arg → PROP) (x : TT.Arg) in
 /-- info: tforall (P x) : PROP -/
-#guard_msgs in #check (tforall (P x) : PROP)
+#guard_msgs in
+#check (tforall (P x) : PROP)
 
 /- No delaboration when `pp.notation` is set as `false`. -/
 /-- info: tforall fun x => tforall fun y => tforall fun z => P x y z : PROP -/
@@ -51,12 +55,14 @@ variable (f : TT.Arg → TT.Arg → TT.Arg → PROP) in
 
 /- Delaboration of `texist`. -/
 /-- info: texist Φ : PROP -/
-#guard_msgs in #check (texist Φ : PROP)
+#guard_msgs in
+#check (texist Φ : PROP)
 
 /- Delaboration of `texist` with partial application the predicate `P`. -/
 variable (P : TT.Arg → TT.Arg → PROP) (x : TT.Arg) in
 /-- info: texist (P x) : PROP -/
-#guard_msgs in #check (texist (P x) : PROP)
+#guard_msgs in
+#check (texist (P x) : PROP)
 
 /-
   Nested `texist` should collapse into one binder group.
@@ -173,3 +179,5 @@ example [BI PROP] {TT : Tele} (R : PROP) (Φ Ψ : TT.Arg → PROP) :
   isplitl [HΦ]
   · iexact HΦ
   · iexact HΨ
+
+end IrisTest

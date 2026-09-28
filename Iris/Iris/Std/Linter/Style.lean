@@ -1,0 +1,538 @@
+/-
+Adapted from Mathlib.Tactic.Linter.Style
+Copyright (c) 2024 Michael Rothgang. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Michael Rothgang
+-/
+module
+
+public import Batteries.Tactic.Lint.Basic
+public meta import Lean.Linter.Basic
+public meta import Lean.Linter.EnvLinter.Basic
+public meta import Iris.Std.Linter.DeclarationNames
+
+/-!
+## Style linters
+
+These linters are adapted from `Mathlib.Tactic.Linter.Style` with slight modifications.
+The options `linter.style.*` are named `linter.iris.style.*` to avoid
+name clashes when both Iris-Lean and Mathlib are used.
+
+This file contain linters about stylistic aspects: these are only about coding style,
+but do not affect correctness nor global coherence of Iris-Lean.
+
+This file defines the following linters:
+- the `missingEnd` linter checks for sections or namespaces which are not closed by the end
+  of the file: enforcing this invariant makes minimising files or moving code between files easier
+- the `cdotLinter` linter checks for focusing dots `·` which are typed using a `.` instead:
+  this is allowed Lean syntax, but it is nicer to be uniform
+- the `dollarSyntax` linter checks for use of the dollar sign `$` instead of the `<|` pipe operator:
+  similarly, both symbols have the same meaning, but Iris-Lean prefers `<|` for the symmetry with
+  the `|>` symbol
+- the `lambdaSyntax` linter checks for uses of the `λ` symbol for anonymous functions,
+  instead of the `fun` keyword: Iris-Lean prefers the latter for reasons of readability
+- the `longFile` linter checks for files which have more than 1500 lines
+- the `longLine` linter checks for lines which have more than 100 characters
+- the `openClassical` linter checks for `open (scoped) Classical` statements which are not
+  scoped to a single declaration
+- the `show` linter checks for `show`s that change the goal and should be replaced by `change`
+- the `nameCheck` linter checks for declarations whose names are in non-standard style, such as
+  by containing a double underscore. The `defsWithUnderscore` environment linter checks for
+  definitions whose name contains an underscore: following Mathlib's style guide, this is also
+  very likely to be a violation of Iris-Lean's naming convention.
+-/
+
+namespace Iris
+
+meta section
+
+open Lean Parser Elab Command Meta Linter Iris.Std.Linter
+
+namespace Std.Linter
+
+/-!
+# The "missing end" linter
+
+The "missing end" linter emits a warning on non-closed `section`s and `namespace`s.
+It allows the "outermost" `noncomputable section` to be left open (whether or not it is named).
+-/
+
+open Lean Elab Command
+
+/-- The "missing end" linter emits a warning on non-closed `section`s and `namespace`s.
+It allows the "outermost" `noncomputable section` to be left open (whether or not it is named).
+-/
+public register_option linter.iris.style.missingEnd : Bool := {
+  defValue := false
+  descr := "enable the missing end linter"
+}
+
+namespace Style.missingEnd
+
+@[inherit_doc Std.Linter.linter.iris.style.missingEnd]
+def missingEndLinter : Linter where run := withSetOptionIn fun stx ↦ do
+    -- Only run this linter at the end of a module.
+    unless stx.isOfKind ``Lean.Parser.Command.eoi do return
+    if getLinterValue linter.iris.style.missingEnd (← getLinterOptions) &&
+        !(← MonadState.get).messages.hasErrors then
+      let sc ← getScopes
+      -- The last scope is always the "base scope", corresponding to no active `section`s or
+      -- `namespace`s. We are interested in any *other* unclosed scopes.
+      if sc.length == 1 then return
+      let ends := sc.dropLast
+      -- If the outermost scope(s) correspond to `public/meta/noncomputable section`, we ignore
+      -- them.
+      let ends := ends.reverse
+        |>.dropWhile (fun sc ↦ sc.currNamespace.isAnonymous &&
+          (sc.isMeta || sc.isPublic || sc.isNoncomputable))
+        |>.reverse
+      -- If there are any further un-closed scopes, we emit a warning.
+      if !ends.isEmpty then
+        let ending := (ends.map (·.header)).foldl (init := "") fun a b ↦
+          a ++ s!"\n\nend{if b == "" then "" else " "}{b}"
+        Linter.logLint linter.iris.style.missingEnd stx
+         m!"unclosed sections or namespaces; expected: '{ending}'"
+
+initialize addLinter missingEndLinter
+
+end Style.missingEnd
+
+/-!
+### The `cdot` linter
+
+The `cdot` linter is a syntax-linter that flags uses of the "cdot" `·` that are achieved
+by typing a character different from `·`.
+For instance, a "plain" dot `.` is allowed syntax, but is flagged by the linter.
+It also flags "isolated cdots", i.e. when the `·` is on its own line.
+-/
+
+/--
+The `cdot` linter flags uses of the "cdot" `·` that are achieved by typing a character
+different from `·`.
+For instance, a "plain" dot `.` is allowed syntax, but is flagged by the linter.
+It also flags "isolated cdots", i.e. when the `·` is on its own line. -/
+public register_option linter.iris.style.cdot : Bool := {
+  defValue := false
+  descr := "enable the `cdot` linter"
+}
+
+/-- `isCDot? stx` checks whether `stx` is a `Syntax` node corresponding to a `cdot` typed with
+the character `·`. -/
+public def isCDot? : Syntax → Bool
+  | .node _ ``cdotTk #[.atom _ v] => v == "·"
+  | .node _ ``Lean.Parser.Term.cdot #[.atom _ v, _] => v == "·"
+  | _ => false
+
+/--
+`findCDot stx` extracts from `stx` the syntax nodes of `kind` `Lean.Parser.Term.cdot` or `cdotTk`.
+-/
+partial
+def findCDot : Syntax → Array Syntax
+  | stx@(.node _ kind args) =>
+    let dargs := (args.map findCDot).flatten
+    match kind with
+      | ``Lean.Parser.Term.cdot | ``cdotTk => dargs.push stx
+      | _ =>  dargs
+  |_ => #[]
+
+/-- `unwanted_cdot stx` returns an array of syntax atoms within `stx`
+corresponding to `cdot`s that are not written with the character `·`.
+This is precisely what the `cdot` linter flags.
+-/
+def unwanted_cdot (stx : Syntax) : Array Syntax :=
+  (findCDot stx).filter (!isCDot? ·)
+
+namespace Style
+
+@[inherit_doc linter.iris.style.cdot]
+def cdotLinter : Linter where run := withSetOptionIn fun stx ↦ do
+    unless getLinterValue linter.iris.style.cdot (← getLinterOptions) do
+      return
+    if (← MonadState.get).messages.hasErrors then
+      return
+    for s in unwanted_cdot stx do
+      Linter.logLint linter.iris.style.cdot s
+        m!"Please, use '·' (typed as `\\.`) instead of '.' as 'cdot'."
+    -- We also check for isolated cdot's, i.e. when the cdot is on its own line.
+    for cdot in Std.Linter.findCDot stx do
+      -- Apply this only to cdot tactics
+      if cdot.isOfKind ``cdotTk then
+        match cdot.getTrailing? with
+        |  some afterCDot =>
+          if (afterCDot.takeWhile (·.isWhitespace)).contains '\n' then
+            Linter.logLint linter.iris.style.cdot cdot
+              m!"This central dot `·` is isolated; please merge it with the next line."
+        | _ => return
+
+initialize addLinter cdotLinter
+
+end Style
+
+/-!
+### The `dollarSyntax` linter
+
+The `dollarSyntax` linter flags uses of `<|` that are achieved by typing `$`.
+Following Mathlib, these are disallowed by Iris-Lean's style guide,
+as using `<|` pairs better with `|>`.
+-/
+
+/-- The `dollarSyntax` linter flags uses of `<|` that are achieved by typing `$`.
+Following Mathlib, these are disallowed by Iris-Lean's style guide,
+as using `<|` pairs better with `|>`. -/
+public register_option linter.iris.style.dollarSyntax : Bool := {
+  defValue := false
+  descr := "enable the `dollarSyntax` linter"
+}
+
+namespace Style.dollarSyntax
+
+/-- `findDollarSyntax stx` extracts from `stx` the syntax nodes of `kind` `$`. -/
+public partial
+def findDollarSyntax : Syntax → Array Syntax
+  | stx@(.node _ kind args) =>
+    let dargs := (args.map findDollarSyntax).flatten
+    match kind with
+      | ``«term_$__» => dargs.push stx
+      | _ => dargs
+  |_ => #[]
+
+@[inherit_doc linter.iris.style.dollarSyntax]
+def dollarSyntaxLinter : Linter where run := withSetOptionIn fun stx ↦ do
+    unless getLinterValue linter.iris.style.dollarSyntax (← getLinterOptions) do
+      return
+    if (← MonadState.get).messages.hasErrors then
+      return
+    for s in findDollarSyntax stx do
+      Linter.logLint linter.iris.style.dollarSyntax s
+        m!"Please use '<|' instead of '$' for the pipe operator."
+
+initialize addLinter dollarSyntaxLinter
+
+end Style.dollarSyntax
+
+/-!
+### The `lambdaSyntax` linter
+
+The `lambdaSyntax` linter is a syntax linter that flags uses of the symbol `λ` to define anonymous
+functions, as opposed to the `fun` keyword. These are syntactically equivalent.
+Following Mathlib, Iris-Lean prefers the latter as it is considered more readable.
+-/
+
+/--
+The `lambdaSyntax` linter flags uses of the symbol `λ` to define anonymous functions.
+This is syntactically equivalent to the `fun` keyword.
+Following Mathlib, Iris-Lean prefers using the latter.
+-/
+public register_option linter.iris.style.lambdaSyntax : Bool := {
+  defValue := false
+  descr := "enable the `lambdaSyntax` linter"
+}
+
+namespace Style.lambdaSyntax
+
+/--
+`findLambdaSyntax stx` extracts from `stx` all syntax nodes of `kind` `Term.fun`. -/
+public partial
+def findLambdaSyntax : Syntax → Array Syntax
+  | stx@(.node _ kind args) =>
+    let dargs := (args.map findLambdaSyntax).flatten
+    match kind with
+      | ``Parser.Term.fun => dargs.push stx
+      | _ =>  dargs
+  |_ => #[]
+
+@[inherit_doc linter.iris.style.lambdaSyntax]
+def lambdaSyntaxLinter : Linter where run := withSetOptionIn fun stx ↦ do
+    unless getLinterValue linter.iris.style.lambdaSyntax (← getLinterOptions) do
+      return
+    if (← MonadState.get).messages.hasErrors then
+      return
+    for s in findLambdaSyntax stx do
+      if let .atom _ "λ" := s[0] then
+        Linter.logLint linter.iris.style.lambdaSyntax s[0] m!"\
+        Please use 'fun' and not 'λ' to define anonymous functions.\n\
+        Following the Mathlib style guide, the 'λ' syntax is deprecated in Iris-Lean."
+
+initialize addLinter lambdaSyntaxLinter
+
+end Style.lambdaSyntax
+
+/-!
+### The "longFile" linter
+
+The "longFile" linter emits a warning on files which are longer than a certain number of lines
+(1500 by default).
+-/
+
+/--
+The "longFile" linter emits a warning on files which are longer than a certain number of lines
+(`linter.iris.style.longFileDefValue` by default, no limit for downstream projects).
+If this option is set to `N` lines, the linter warns once a file has more than `N` lines.
+A value of `0` silences the linter entirely.
+-/
+public register_option linter.iris.style.longFile : Nat := {
+  defValue := 0
+  descr := "enable the longFile linter"
+}
+
+/-- The number of lines that the `longFile` linter considers the default. -/
+public register_option linter.iris.style.longFileDefValue : Nat := {
+  defValue := 1500
+  descr := "a soft upper bound on the number of lines of each file"
+}
+
+namespace Style.longFile
+
+@[inherit_doc Std.Linter.linter.iris.style.longFile]
+def longFileLinter : Linter where run := withSetOptionIn fun stx ↦ do
+  let linterBound := linter.iris.style.longFile.get (← getOptions)
+  if linterBound == 0 then
+    return
+  let defValue := linter.iris.style.longFileDefValue.get (← getOptions)
+  let smallOption := match stx with
+      | `(set_option linter.iris.style.longFile $x) => TSyntax.getNat ⟨x.raw⟩ ≤ defValue
+      | _ => false
+  if smallOption then
+    logLint0Disable linter.iris.style.longFile stx
+      m!"The default value of the `longFile` linter is {defValue}.\n\
+        The current value of {linterBound} does not exceed the allowed bound.\n\
+        Please, remove the `set_option linter.iris.style.longFile {linterBound}`."
+  else
+  -- Thanks to the above check, the linter option is either not set (and hence equal
+  -- to the default) or set to some value *larger* than the default.
+  -- `Parser.isTerminalCommand` allows `stx` to be `#exit`: this is useful for tests.
+  unless Parser.isTerminalCommand stx do return
+  if let some init := stx.getTailPos? then
+    -- the last line: we subtract 1, since the last line is expected to be empty
+    let lastLine := ((← getFileMap).toPosition init).line
+    -- In this case, the file has an allowed length, and the linter option is unnecessarily set.
+    if lastLine ≤ defValue && defValue < linterBound then
+      logLint0Disable linter.iris.style.longFile stx
+        m!"The default value of the `longFile` linter is {defValue}.\n\
+          This file is {lastLine} lines long which does not exceed the allowed bound.\n\
+          Please, remove the `set_option linter.iris.style.longFile {linterBound}`."
+    else
+    -- `candidate` is divisible by `100` and satisfies `lastLine + 100 < candidate ≤ lastLine + 200`
+    -- note that either `lastLine ≤ defValue` and `defValue = linterBound` hold or
+    -- `candidate` is necessarily bigger than `lastLine` and hence bigger than `defValue`
+    let candidate := (lastLine / 100) * 100 + 200
+    let candidate := max candidate defValue
+    -- In this case, the file is longer than the default and also than what the option says.
+    if defValue ≤ linterBound && linterBound < lastLine then
+      logLint0Disable linter.iris.style.longFile stx
+        m!"This file is {lastLine} lines long, but the limit is {linterBound}.\n\n\
+          You can extend the allowed length of the file using \
+          `set_option linter.iris.style.longFile {candidate}`.\n\
+          You can completely disable this linter by setting the length limit to `0`."
+    else
+    -- Finally, the file exceeds the default value, but not the option: we only allow the value
+    -- of the option to be `candidate` or `candidate + 100`.
+    -- In particular, this flags any option that is set to an unnecessarily high value.
+    if linterBound == candidate || linterBound + 100 == candidate then return
+    else
+      logLint0Disable linter.iris.style.longFile stx
+        m!"This file is {lastLine} lines long. \
+          The current limit is {linterBound}, but it is expected to be {candidate}:\n\
+          `set_option linter.iris.style.longFile {candidate}`."
+
+initialize addLinter longFileLinter
+
+end Style.longFile
+
+/-! ### The "longLine linter" -/
+
+/-- The "longLine" linter emits a warning on lines longer than
+`linter.iris.style.longLine.maxLineLength` (which defaults to 100) characters.
+We allow lines containing URLs to be longer, though. -/
+public register_option linter.iris.style.longLine : Bool := {
+  defValue := false
+  descr := "enable the longLine linter"
+}
+
+/-- Configuration option for the "longLine" linter. This option determines the
+maximum allowed length of a line before the linter emits a warning.
+This defaults to 100. -/
+public register_option linter.iris.style.longLine.maxLineLength : Nat := {
+  defValue := 100
+  descr := "maximum line length before the longLine linter emits a warning"
+}
+
+namespace Style.longLine
+
+def isImport (s : String) : Bool :=
+  s.startsWith "import " || s.startsWith "public import " ||
+  s.startsWith "meta import " || s.startsWith "public meta import " ||
+  s.startsWith "import all " || s.startsWith "meta import all "
+
+@[inherit_doc Std.Linter.linter.iris.style.longLine]
+def longLineLinter : Linter where run := withSetOptionIn fun stx ↦ do
+    unless getLinterValue linter.iris.style.longLine (← getLinterOptions) do
+      return
+    if (← MonadState.get).messages.hasErrors then
+      return
+    -- The linter ignores the `#guard_msgs` command, in particular its doc-string.
+    -- The linter still lints the message guarded by `#guard_msgs`.
+    if stx.isOfKind ``Lean.guardMsgsCmd then
+      return
+    if stx.isOfKind ``Lean.Parser.Module.header then return
+    -- if the linter reached the end of the file, then we scan the `import` syntax instead
+    let stx ← do
+      if stx.isOfKind ``Lean.Parser.Command.eoi then
+        let fileMap ← getFileMap
+        -- `impMods` is the syntax for the modules imported in the current file
+        let (impMods, _) ← Parser.parseHeader
+          { inputString := fileMap.source, fileName := ← getFileName, fileMap := fileMap }
+        pure impMods.raw
+      else pure stx
+    let sstr := stx.getSubstring?
+    let fm ← getFileMap
+    let maxLineLength := linter.iris.style.longLine.maxLineLength.get (← getOptions)
+    let longLines := ((sstr.getD default).splitOn "\n").filter fun line ↦
+      (maxLineLength < (fm.toPosition line.stopPos).column)
+    for line in longLines do
+      if (line.splitOn "http").length ≤ 1 && !(isImport line.toString) then
+        let stringMsg := if line.contains '"' then
+          "\nYou can use \"string gaps\" to format long strings: within a string quotation, \
+          using a '\\' at the end of a line allows you to continue the string on the following \
+          line, removing all intervening whitespace."
+        else ""
+        Linter.logLint linter.iris.style.longLine
+          (.ofRange ⟨(line.drop maxLineLength).startPos, line.stopPos⟩)
+          m!"This line exceeds the {maxLineLength} character limit, please shorten it!{stringMsg}"
+
+initialize addLinter longLineLinter
+
+end Style.longLine
+
+/-- The `nameCheck` linter emits a warning on declarations whose name is non-standard style.
+(Currently, this only includes declarations whose name includes a double underscore.)
+
+**Why is this bad?** Double underscores in theorem names can be considered non-standard style and
+probably have been introduced by accident.
+**How to fix this?** Use single underscores to separate parts of a name, following standard naming
+conventions.
+-/
+public register_option linter.iris.style.nameCheck : Bool := {
+  defValue := true
+  descr := "enable the `nameCheck` linter"
+}
+
+namespace Style.nameCheck
+
+@[inherit_doc linter.iris.style.nameCheck]
+def doubleUnderscore : Linter where run := withSetOptionIn fun stx => do
+    unless getLinterValue linter.iris.style.nameCheck (← getLinterOptions) do
+      return
+    if (← get).messages.hasErrors then
+      return
+    let mut aliases := #[]
+    if let some exp := stx.find? (·.isOfKind `Lean.Parser.Command.export) then
+      aliases ← getAliasSyntax exp
+    for id in aliases.push ((stx.find? (·.isOfKind ``declId)).getD default)[0] do
+      let declName := id.getId
+      if id.getPos? == some default then continue
+      if declName.hasMacroScopes then continue
+      if id.getKind == `ident then
+        -- Check whether the declaration name contains "__".
+        if 1 < (declName.toString.splitOn "__").length then
+          Linter.logLint linter.iris.style.nameCheck id
+            m!"The declaration '{id}' contains '__', which does not follow the Iris-Lean \
+              naming conventions. Consider using single underscores instead."
+
+initialize addLinter doubleUnderscore
+
+end Style.nameCheck
+
+/-! ### The "openClassical" linter -/
+
+/-- The "openClassical" linter emits a warning on `open Classical` statements which are not
+scoped to a single declaration. A non-scoped `open Classical` can hide that some theorem statements
+would be better stated with explicit decidability statements.
+-/
+public register_option linter.iris.style.openClassical : Bool := {
+  defValue := false
+  descr := "enable the openClassical linter"
+}
+
+namespace Style.openClassical
+
+/-- If `stx` is syntax describing an `open` command, `extractOpenNames stx`
+returns an array of the syntax corresponding to the opened names,
+omitting any renamed or hidden items.
+
+This only checks independent `open` commands: for `open ... in ...` commands,
+this linter returns an empty array.
+-/
+public def extractOpenNames : Syntax → Array (TSyntax `ident)
+  | `(command|$_ in $_) => #[] -- redundant, for clarity
+  | `(command|open $decl:openDecl) => match decl with
+    | `(openDecl| $arg hiding $_*)    => #[arg]
+    | `(openDecl| $arg renaming $_,*) => #[arg]
+    | `(openDecl| $arg ($_*))         => #[arg]
+    | `(openDecl| $args*)             => args
+    | `(openDecl| scoped $args*)      => args
+    | _ => unreachable!
+  | _ => #[]
+
+@[inherit_doc Std.Linter.linter.iris.style.openClassical]
+def openClassicalLinter : Linter where run stx := do
+    unless getLinterValue linter.iris.style.openClassical (← getLinterOptions) do
+      return
+    if (← get).messages.hasErrors then
+      return
+    -- If `stx` describes an `open` command, extract the list of opened namespaces.
+    for stxN in (extractOpenNames stx).filter (·.getId == `Classical) do
+      Linter.logLint linter.iris.style.openClassical stxN "\
+      please avoid 'open (scoped) Classical' statements: this can hide theorem statements \
+      which would be better stated with explicit decidability statements.\n\
+      Instead, use `open Classical in` for definitions or instances, the `classical` tactic \
+      for proofs.\nFor theorem statements, \
+      either add missing decidability assumptions or use `open Classical in`."
+
+initialize addLinter openClassicalLinter
+
+end Style.openClassical
+
+/-! ### The "show" linter -/
+
+/--
+The "show" linter emits a warning if the `show` tactic changed the goal. `show` should only be used
+to indicate intermediate goal states for proof readability. When the goal is actually changed,
+`change` should be preferred.
+-/
+public register_option linter.iris.style.show : Bool := {
+  defValue := false
+  descr := "enable the show linter"
+}
+
+namespace Style
+
+open Tactic
+
+/-- Run the `show` tactic, with a linter warning when one should use `change` instead. -/
+def elabShow (newType : Term) : TacticM Unit := do
+  let goal :: goals ← getGoals | throwNoGoalsToBeSolved
+  let before ← instantiateMVars (← goal.getType)
+  evalTactic (← `(tactic| show $newType))
+  if getLinterValue linter.iris.style.show (← getLinterOptions) then
+    let goal' :: goals' ← getGoals | return
+    if goals != goals' then return -- `show` didn't act on first goal -> can't replace with `change`
+    let after ← instantiateMVars (← goal'.getType)
+    if before != after then
+      logLint linter.iris.style.show (← getRef) m!"\
+        The `show` tactic should only be used to indicate intermediate goal states for \
+        readability.\nHowever, this tactic invocation changed the goal. Please use `change` \
+        instead for these purposes."
+
+-- `(priority := high)` ensures we avoid producing choice nodes, and thereby avoid unexpected
+-- behavior arising from choice node elaboration
+@[tactic_alt Tactic.show]
+elab (name := «show») (priority := high) "show " newType:term : tactic => elabShow newType
+
+end Style
+
+end Std.Linter
+
+end
+
+end Iris

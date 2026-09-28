@@ -467,6 +467,12 @@ theorem persistently_elim [CMRA.Affine M] {P : UPred M} : <pers> P ⊢ P :=
 instance : BIPersistentlyForall (UPred M) where
   persistently_sForall_2 _ _ x h p hp := h _ ⟨p, rfl⟩ x (incN_refl _) .refl hp
 
+@[rocq_alias uPred_persistently_exist]
+instance : BIPersistentlyExist (UPred M) where
+  persistently_sExists_1 _ _ _ := fun ⟨p, HΨ, H⟩ => by
+    refine ⟨iprop(<pers> p), ⟨p, ?_⟩, H⟩
+    ext; exact and_iff_right HΨ
+
 #rocq_ignore uPred_primitive.persistently_forall_2 "Inlined in `BIPersistentlyForall` construction"
 
 #rocq_ignore uPred_pure_forall "BiPureForall is not needed"

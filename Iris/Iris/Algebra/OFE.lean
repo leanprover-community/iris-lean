@@ -532,7 +532,7 @@ instance [OFE α] [Discrete α] : Discrete (Option α) where
     | some _, none => H.elim
 
 @[rocq_alias Some_ne]
-instance OFE.Option.some.ne [OFE α] : OFE.NonExpansive (some : α → Option α) := ⟨fun _ _ _ => id⟩
+instance Option.some.ne [OFE α] : OFE.NonExpansive (some : α → Option α) := ⟨fun _ _ _ => id⟩
 
 @[rocq_alias Some_discrete]
 instance Option.some_is_discrete [OFE α] {e : α} [OFE.DiscreteE e] : OFE.DiscreteE (some e) where
@@ -666,8 +666,8 @@ instance mapCod_lookup_discrete [OFEFun (β : α → _)]
     (f : (x : α) → β x) (x : α) [hf : DiscreteE f] : DiscreteE (f x) where
   discrete {y} h := by
     let g : (x' : α) → β x' := fun x' => if e : x = x' then e ▸ y else f x'
-    have hgx : g x = y := dif_pos rfl
-    have hne : ∀ x', x ≠ x' → g x' = f x' := fun x' e => dif_neg e
+    have hgx : g x = y := dite_eq_left rfl
+    have hne : ∀ x', x ≠ x' → g x' = f x' := fun x' e => dite_eq_right e
     refine (congrFun (hf.discrete fun x' => ?_) x).trans hgx
     by_cases e : x = x'
     · grind
@@ -819,7 +819,7 @@ theorem dist_ext_left {x y : α} (h : (.inl x : α ⊕ β) ≡{n}≡ .inl y) : x
 theorem dist_ext_right {x y : β} (h : (.inr x : α ⊕ β) ≡{n}≡ .inr y) : x ≡{n}≡ y := h
 
 @[rocq_alias inl_ne]
-instance instNonExpansiveInl: NonExpansive (Sum.inl (α := α) (β := β)) where
+instance instNonExpansiveInl : NonExpansive (Sum.inl (α := α) (β := β)) where
   ne {_ _ _} H := dist_inl H
 
 @[rocq_alias inr_ne]
@@ -1235,7 +1235,7 @@ instance instIsCOFEProd [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (α �
   conv_compl := ⟨conv_compl, conv_compl⟩
 
 @[rocq_alias sum_cofe]
-instance instIsCOFESum  [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (α ⊕ β) where
+instance instIsCOFESum [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (α ⊕ β) where
   compl c := match c 0 with
     | .inl seed => .inl (compl (c.map ⟨Sum.elim id (Function.const _ seed), inferInstance⟩))
     | .inr seed => .inr (compl (c.map ⟨Sum.elim (Function.const _ seed) id, inferInstance⟩))
@@ -1794,7 +1794,7 @@ theorem LimitPreserving.equiv [COFE α] [COFE β] (f g : α -n> β) :
     exact g.ne.ne COFE.conv_compl.symm
 
 @[rocq_alias limit_preserving_ext]
-theorem LimitPreserving.ext {α}[COFE α] {P Q : α -> Prop} (he : ∀ {x}, (P x ↔ Q x))
+theorem LimitPreserving.ext {α} [COFE α] {P Q : α -> Prop} (he : ∀ {x}, (P x ↔ Q x))
     (hp : LimitPreserving P) : LimitPreserving Q where
   compl _ := (he.1 <| hp.compl _ <| fun _ => he.2 <| · _)
 
@@ -1908,7 +1908,7 @@ def fixpointK [COFE α] [Inhabited α] (k : Nat) (f : α → α)
 theorem fixpointK_unfold [COFE α] [Inhabited α] (k : Nat) (f : α → α)
     [Contractive (Nat.repeat f k)] : fixpointK k f = f (fixpointK k f) := by
   refine (fixpoint_unique (f := (Nat.repeat f k).toContractiveHom) ?_).symm
-  show f (fixpointK k f) = Nat.repeat f k (f (fixpointK k f))
+  change f (fixpointK k f) = Nat.repeat f k (f (fixpointK k f))
   refine ((Nat.repeat_apply_comm f k (fixpointK k f)).trans (congrArg f ?_)).symm
   exact (fixpoint_unfold (Nat.repeat f k).toContractiveHom).symm
 
@@ -2112,9 +2112,9 @@ instance isCOFE_later [OFE A] [IsCOFE A] : IsCOFE (Later A) where
     exact (IsCOFE.conv_compl (n := n') (c := laterChain c)).le (Nat.le_of_lt_succ Hlt)
 
 @[rocq_alias laterO_map]
-def laterMap [OFE A] [OFE B] (f : A -n> B)  : Later A -n> Later B := by
+def laterMap [OFE A] [OFE B] (f : A -n> B) : Later A -n> Later B := by
   refine ⟨fun x => Later.next (f x.car), ⟨?_⟩⟩
-  rintro _ ⟨⟩ ⟨⟩ H <;> simp_all only [Dist, DistLater]
+  rintro _ ⟨⟩ ⟨⟩ H; simp_all only [Dist, DistLater]
   intros m Hlt; exact f.ne.ne (H m Hlt)
 #rocq_ignore later_map "Underlying map of laterMap"
 
@@ -2258,6 +2258,8 @@ instance isoOfeCong_contractive (F : OFunctorPre) [OFunctorContractive F] {A B :
 end IsoCofe
 
 theorem OFE.cast_dist [Iα : OFE α] [Iβ : OFE β] {x y : α}
-    (Ht : α = β) (HIt : Iα = Ht ▸ Iβ)  (H : x ≡{n}≡ y) :
+    (Ht : α = β) (HIt : Iα = Ht ▸ Iβ) (H : x ≡{n}≡ y) :
     (Ht ▸ x) ≡{n}≡ (Ht ▸ y) := by
   subst Ht; subst HIt; exact H
+
+end Iris

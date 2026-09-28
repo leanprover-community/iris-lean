@@ -195,7 +195,7 @@ theorem bigSepL_wand {Φ Ψ : Nat → A → PROP} {l : List A} :
   wand_intro <| bigSepL_sep_eqv.symm.1.trans <| bigSepL_mono fun _ => wand_elim_right
 
 @[rocq_alias big_sepL_pure_1]
-theorem bigSepL_pure_intro {φ : Nat → A → Prop} {l : List A}:
+theorem bigSepL_pure_intro {φ : Nat → A → Prop} {l : List A} :
     ([∗list] k ↦ x ∈ l, ⌜φ k x⌝) ⊢ (⌜∀ k x, l[k]? = some x → φ k x⌝ : PROP) :=
   match l with
   | [] => pure_intro fun _ _ h => nomatch h
@@ -1114,7 +1114,7 @@ theorem bigSepL2_const_sepL_left {Φ : Nat → A → PROP} {l1 : List A} {l2 : L
     ([∗list] k ↦ x1;_x2 ∈ l1;l2, Φ k x1) ⊣⊢ ⌜l1.length = l2.length⌝ ∧ [∗list] k ↦ x ∈ l1, Φ k x := by
   have fst_zip : ∀ hlen : l1.length = l2.length, (l1.zip l2).map Prod.fst = l1 := by
     intro hlen; induction l1 generalizing l2 with
-    | nil => cases l2 <;> first | rfl | simp at hlen
+    | nil => cases l2 <;> rfl
     | cons _ _ ih => cases l2 with
       | nil => simp at hlen
       | cons _ _ => simp [ih (by simpa using hlen)]
@@ -1257,3 +1257,5 @@ end BigSepL2
 #rocq_ignore big_sepL2_proper' "bigSepL2 is preserved under ⊣⊢."
 
 end BI
+
+end Iris

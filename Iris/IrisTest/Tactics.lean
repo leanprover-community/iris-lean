@@ -273,9 +273,24 @@ example [BI PROP] [BIAffine PROP] φ (Q : PROP) : ⌜φ⌝ -∗ Q -∗ Q := by
   iintro %Hφ HQ
   iexact HQ
 
-/-- Tests introducing with disjunction pattern inside intuitionistic. -/
-example [BI PROP] (P1 P2 Q : PROP) : □ (P1 ∨ P2) ∗ Q ⊢ Q := by
-  iintro ⟨#(_HP1 | _HP2), HQ⟩ <;> iexact HQ
+/--
+  Tests introducing with disjunction pattern with an intuitionistic hypothesis.
+  With the `BIPersistentlyExist` instance, the resultant hypotheses remain
+  in the intuitionistic context.
+-/
+example [BI PROP] [BIPersistentlyExist PROP] (P1 P2 Q : PROP) :
+    □ (P1 ∨ P2) ∗ Q ⊢ Q := by
+  iintro ⟨#(HP1 | HP2), HQ⟩ <;> iexact HQ
+
+/--
+  Tests introducing with disjunction pattern with an intuitonistic hypothesis.
+  Without the `BIPersistentlyExist` instance, the resultant hypotheses
+  are moved into the persistent context.
+-/
+example [BI PROP] (P1 P2 Q : PROP) : □ (P1 ∨ P2) ∗ Q ⊢ (P1 ∗ Q) ∨ (P2 ∗ Q) := by
+  iintro ⟨#(HP1 | HP2), HQ⟩
+  · ileft; iframe
+  · iright; iframe
 
 /-- Tests introducing multiple spatial hypotheses. -/
 example [BI PROP] (P Q : PROP) : <affine> P -∗ Q -∗ Q := by
@@ -782,7 +797,7 @@ example [BI PROP] (Q : PROP) (H : 0 = 0 → ⊢ Q) : ⊢ Q := by
 example [BI PROP] : ⊢@{PROP} ⌜1 = 1⌝ := by
   istart
   iapply (pure_intro (P:=emp))
-  . rfl
+  · rfl
   iempintro
 
 /-- Tests `iapply` with entailment as Lean hypothesis. -/
@@ -799,7 +814,7 @@ example [BI PROP] (P Q : PROP) (H : P -∗ Q) (HP : ⊢ P) : ⊢ Q := by
 example [BI PROP] (P Q : PROP) (H1 : P ⊢ Q) (H2 : Q ⊢ R) : P ⊢ R := by
   iintro HP
   iapply (wand_intro (emp_sep.mp.trans H2))
-  . itrivial
+  · itrivial
   iapply H1 $$ HP
 
 /-- Tests `iapply` with Lean wand entailment and subgoal. -/
@@ -896,8 +911,8 @@ example [BI PROP] (P Q : Nat → PROP) :
   (P 1 -∗ P 2 -∗ Q 1) ⊢ □ P 1 -∗ P 2 -∗ Q 1 := by
   iintro H #HP1 HP2
   iapply H
-  . iexact HP1
-  . iexact HP2
+  · iexact HP1
+  · iexact HP2
 
 /-- Tests `iapply` selecting left conjunct. -/
 example [BI PROP] (P Q : Nat → PROP) :
@@ -1060,7 +1075,7 @@ example [BI PROP] (Q : Nat → PROP) (H : ∀ x, ⊢ Q x) : ⊢ Q 1 := by
 example [BI PROP] (Q : Nat → PROP) (H : ∀ (P : PROP) [Persistent P], ⊢ P) : ⊢ Q 1 := by
   ihave HQ := H
   rotate_right 1; exact iprop(□ Q 1)
-  . apply inferInstance
+  · apply inferInstance
   iexact HQ
 
 /-- Tests `ihave` with typeclass argument (successful search). -/
@@ -1102,7 +1117,7 @@ example [BI PROP] {α} (P Q : α → PROP) (a b : α) (H : ⊢ □ ∀ x, ∀ y,
 example [BI PROP] {α} (P Q : α → PROP) (a b : α) : (□ ∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
   ihave H' := H $$ %a %b [HP]
-  . iexact HP
+  · iexact HP
   iexact H'
 
 /-- Tests `ihave` with cases pattern. -/
@@ -1123,9 +1138,9 @@ example [BI PROP] [BIAffine PROP] (Q : PROP) :
 example [BI PROP] (P Q : PROP) : P -∗ (P -∗ Q) -∗ Q := by
   iintro HP Hwand
   ihave ⟨HQ, _⟩ : (Q ∗ emp) $$ [Hwand HP]
-  . isplit
-    . iapply Hwand $$ HP
-    . itrivial
+  · isplit
+    · iapply Hwand $$ HP
+    · itrivial
   iexact HQ
 
 /-- Tests `ihave` assert duplicating the context. -/
@@ -1379,7 +1394,7 @@ example [BI PROP] (P Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
 example [BI PROP] (P Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
   iintro HP HPQ
   ispecialize HPQ $$ [HP]
-  . iexact HP
+  · iexact HP
   iexact HPQ
 
 /-- Tests `ispecialize` with subgoal and `//`. -/
@@ -1410,40 +1425,40 @@ example [BI PROP] (P Q : PROP) : P ⊢ (⌜True⌝ -∗ P -∗ ⌜True⌝ -∗ Q
 example [BI PROP] (P Q R : PROP) : P ⊢ R -∗ (P -∗ R -∗ Q) -∗ Q := by
   iintro HP HR HPQ
   ispecialize HPQ $$ [- HR] [-]
-  . iexact HP
-  . iexact HR
+  · iexact HP
+  · iexact HR
   iexact HPQ
 
 /-- Tests `ispecialize` with framing subgoal. -/
 example [BI PROP] (P Q R : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
   iintro HP1 HP2 HR HPQ
   ispecialize HPQ $$ [$HP1 HP2] [-]
-  . iexact HP2
-  . iexact HR
+  · iexact HP2
+  · iexact HR
   iexact HPQ
 
 /-- Tests `ispecialize` with framing subgoal (different argument order). -/
 example [BI PROP] (P Q R : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
   iintro HP1 HP2 HR HPQ
   ispecialize HPQ $$ [HP1 $HP2] [-]
-  . iexact HP1
-  . iexact HR
+  · iexact HP1
+  · iexact HR
   iexact HPQ
 
 /-- Tests `ispecialize` with negated framing subgoal. -/
 example [BI PROP] (P Q R : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
   iintro HP1 HP2 HR HPQ
   ispecialize HPQ $$ [- $HP1 HR] [-]
-  . iexact HP2
-  . iexact HR
+  · iexact HP2
+  · iexact HR
   iexact HPQ
 
 /-- Tests `ispecialize` with negated framing subgoal (different argument order). -/
 example [BI PROP] (P Q R : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
   iintro HP1 HP2 HR HPQ
   ispecialize HPQ $$ [- HR $HP2] [-]
-  . iexact HP1
-  . iexact HR
+  · iexact HP1
+  · iexact HR
   iexact HPQ
 
 /- Tests `ispecialize` with autoframe. -/
@@ -1475,7 +1490,7 @@ example [BI PROP] (P Q : PROP) : □ P ⊢ □ (P -∗ Q) -∗ □ Q := by
 example [BI PROP] (P Q : PROP) : □ P ⊢ □ (P -∗ Q) -∗ Q := by
   iintro #HP #HPQ
   ispecialize HPQ $$ []
-  . iexact HP
+  · iexact HP
   iexact HPQ
 
 /-- Tests `ispecialize` with intuitionistic wand requiring intuitionistic argument. -/
@@ -1512,8 +1527,8 @@ example [BI PROP] (P1 P2 Q : PROP) : P1 -∗ P2 -∗ (P1 -∗ P2 -∗ Q) -∗ Q 
 example [BI PROP] (P1 P2 Q : PROP) : P1 -∗ P2 -∗ (P1 -∗ P2 -∗ Q) -∗ Q := by
   iintro HP1 HP2 HPQ
   ispecialize HPQ $$ [HP1] [HP2]
-  . iexact HP1
-  . iexact HP2
+  · iexact HP1
+  · iexact HP2
   iexact HPQ
 
 /-- Tests `ispecialize` with multiple intuitionistic arguments. -/
@@ -2167,7 +2182,8 @@ example [BI PROP] (Q : Nat → PROP) : (∃ x, Q x) ⊢ ∃ x, Q x ∨ False := 
   iexact H
 
 /-- Tests `icases` with intuitionistic existential. -/
-example [BI PROP] (Q : Nat → PROP) : □ (∃ x, Q x) ⊢ ∃ x, □ Q x ∨ False := by
+example [BI PROP] [BIPersistentlyExist PROP] (Q : Nat → PROP) :
+    □ (∃ x, Q x) ⊢ ∃ x, □ Q x ∨ False := by
   iintro ⟨%x, #H⟩
   iexists x
   ileft
@@ -2182,7 +2198,7 @@ example [BI PROP] P (Q : Nat → PROP) :
 
 /-- Tests `icases` with a comprehensive nested pattern combining existential, pure,
 intuitionistic, spatial, disjunction, and clearing. -/
-example [BI PROP] (φ : Prop) (Q : PROP) :
+example [BI PROP] [BIPersistentlyExist PROP] (φ : Prop) (Q : PROP) :
     □ (∃ _ : Nat, ⌜φ⌝ ∧ Q) ∗ (Q ∨ False) ⊢ Q := by
   iintro H
   icases H with ⟨#⟨%_, %_hφ, ∗HQ⟩, (HQ' | -)⟩
@@ -2299,8 +2315,8 @@ example [BI PROP] (a b c1 c2 c3 : Prop) (P : Prop → Prop) :
     ⊢@{PROP} □ ⌜((a = b ∧ (b ∨ (c1 ∧ c2 ∧ c3))) ∧ ∃ x, P x)⌝ -∗ ⌜a ∨ c1⌝ ∗ ⌜∃ x, P x⌝ := by
   iintro Hpure
   icases Hpure with %⟨⟨rfl, ((hb : a) | ⟨hc, _, -⟩)⟩, @⟨d : Prop, hd⟩⟩
-  · ipureintro <;> grind
-  · ipureintro <;> grind
+  · ipureintro; grind
+  · ipureintro; grind
 
 /-- Tests `icases` with a case destruction pattern involving substitution (`%rfl`). -/
 example [BI PROP] n (P : Nat → PROP) : (<affine> ⌜n = 0⌝ ∗ P 0) ⊢ P n := by
@@ -3472,7 +3488,7 @@ example {GF A} [UCMRA A] [CMRA.Affine A] [ElemG GF (constOF (Auth A))] {γ}
       iOwn (F := constOF (Auth A)) γ (●{own q2} a1) -∗
       iOwn (F := constOF (Auth A)) γ (●{dq3} a1) -∗
       iOwn (F := constOF (Auth A)) γ (●{dq4} a1) -∗
-      iOwn (F := constOF (Auth A)) γ ((◯ c) • ●{(own $ q1 + q2) • dq''} a1) := by
+      iOwn (F := constOF (Auth A)) γ ((◯ c) • ●{(own (q1 + q2)) • dq''} a1) := by
   iintro H1 H2 H3 H4 H5 H6 H7
   icombine H1 H2 H3 as HNew1
   icombine H4 H5 as HNew2
@@ -3771,7 +3787,7 @@ example {E : CoPset} {P : IProp GF} : □ P ={E}=∗ ▷ P := by
   iinv HP with #H
 
 /-- Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and `intoAcc_cinv`. -/
-example [CInvG GF]  {γ : GName} {p : Qp} :
+example [CInvG GF] {γ : GName} {p : Qp} :
     cinv N γ iprop(<pers> P) ∗ own γ p ⊢@{IProp GF} |={⊤}=> own γ p ∗ ▷ P := by
   iintro ⟨#Hinv, H⟩
   iinv Hinv with ⟨#HP, Hown⟩
@@ -3986,7 +4002,7 @@ example [BI PROP] (P Q R1 R2 S T : PROP) :
   iexists ?_
   isplit
   · iaccu
-  · ipureintro <;> rfl
+  · ipureintro; rfl
 
 /-- Tests `iaccu` where there is no spatial hypothesis in the context. -/
 example [BI PROP] (P Q R : PROP) :
@@ -3995,7 +4011,7 @@ example [BI PROP] (P Q R : PROP) :
   iexists ?_
   isplit
   · iaccu
-  · ipureintro <;> rfl
+  · ipureintro; rfl
 
 /- Tests `iaccu` where the proof goal is not a metavariable. -/
 /-- error: iaccu: R is not a metavariable -/
@@ -4080,8 +4096,8 @@ inductive NTree (α : Type)
 theorem NTree.induction_principle {α} (p : NTree α → Prop) (h_leaf : p leaf)
   (h_node : (x : α) → (ts : List (NTree α)) → (ih : ∀ t ∈ ts, p t) → p (node x ts)) :
   ∀ t : NTree α, p t :=
-  @NTree.rec α p (λ ts => ∀ t ∈ ts, p t) h_leaf h_node (List.forall_mem_nil p)
-    (λ _ _ h_head h_tail => List.forall_mem_cons.mpr (And.intro h_head h_tail))
+  @NTree.rec α p (fun ts => ∀ t ∈ ts, p t) h_leaf h_node (List.forall_mem_nil p)
+    (fun _ _ h_head h_tail => List.forall_mem_cons.mpr (And.intro h_head h_tail))
 
 def NTree.id : NTree α → NTree α
   | .leaf => .leaf
@@ -4352,3 +4368,5 @@ example [BI PROP] {P : PROP} {m n : Nat} {T : Nat → Prop}
   | succ n IH => itrivial
 
 end iinduction
+
+end IrisTest

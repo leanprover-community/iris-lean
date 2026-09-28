@@ -31,7 +31,7 @@ the named hypothesis.
 `IrisHyp` should be only inserted at the outermost level of Iris hypotheses.
 See https://github.com/leanprover-community/iris-lean/issues/469
 -/
-@[expose, reducible] public def IrisHyp {α : Sort u} (x : α) : α := x
+@[expose, reducible] def IrisHyp {α : Sort u} (x : α) : α := x
 
 structure IVarId where
   name : Name
@@ -202,7 +202,7 @@ partial def Hyps.findM? [Monad m] {prop : Q(Type u)} {bi : Q(BI $prop)}
     | some res => return some res
     | none => lhs.findM? p
 
-partial def Hyps.getDecl? {u prop bi} (ivar : IVarId) {s}:
+partial def Hyps.getDecl? {u prop bi} (ivar : IVarId) {s} :
     @Hyps u prop bi s → Option (Name × IVarId × Q(Bool) × Q($prop))
   | .emp _ => none
   | .hyp _ name ivar' p ty _ => if ivar == ivar' then (name, ivar, p, ty) else none
@@ -689,3 +689,7 @@ def Hyps.buildIntuitionisticProof {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     let pfL ← buildIntuitionisticProof lhs
     let pfR ← buildIntuitionisticProof rhs
     some q((sep_mono $pfL $pfR).trans intuitionistically_sep_mpr)
+
+end ProofMode
+
+end Iris

@@ -97,3 +97,7 @@ instance isRwLock_contractive γ lk : Contractive (rw.isRwLock L γ lk) := by
 end lemmas
 
 end
+
+end HeapLang
+
+end Iris

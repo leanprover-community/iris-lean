@@ -164,7 +164,7 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   · wp_pure
     imodintro
     iapply Hcont
-    simp only [if_pos]
+    simp only [ite_eq_left]
     iframe
 
 @[rocq_alias heap_lang.spin_lock.release_spec]
@@ -203,4 +203,9 @@ def instLock [HeapLangGS hlc GF] : Lock GF where
   release_spec γ lk R := release_spec γ lk R
 
 end SpinLock
+
 end
+
+end HeapLang
+
+end Iris

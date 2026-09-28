@@ -55,3 +55,7 @@ theorem bigOpMS_none [LawfulFiniteMultiSet MS A] {f : A → Option M} {X : MS} :
     fun h k x hi => h x (LawfulFiniteMultiSet.mem_toList.mp (List.mem_of_getElem? hi))⟩
   obtain ⟨i, hi⟩ := List.mem_iff_getElem?.mp (LawfulFiniteMultiSet.mem_toList.mpr hx)
   exact h i x hi
+
+end Algebra
+
+end Iris

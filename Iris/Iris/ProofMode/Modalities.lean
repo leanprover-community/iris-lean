@@ -27,17 +27,17 @@ variable [BI PROP1] [h2 : BI PROP2] (s : ModalityAction PROP1 PROP2)
 @[simp, rocq_alias modality_intuitionistic_action_spec, rocq_alias modality_spatial_action_spec]
 def action_spec (p : Bool) : (PROP1 → PROP2) → Prop :=
   match s, h2 with
-  | .isEmpty, _ => λ _ => True
-  | .forall C, _ => λ M =>
+  | .isEmpty, _ => fun _ => True
+  | .forall C, _ => fun M =>
       (∀ P, C P → iprop(□?p P) ⊢ M iprop(□?p P))
       -- For p = true, Iris Rocq also has the following condition, but we don't need it:
       -- ∧ (∀ P Q, iprop(M P ∧ M Q) ⊢ M iprop(P ∧ Q))
-  | .transform C, _ => λ M =>
+  | .transform C, _ => fun M =>
       (∀ P Q, C P Q → iprop(□?p P) ⊢ M iprop(□?p Q))
       -- For p = true, Iris Rocq also has the following condition, but we don't need it:
       -- ∧ (∀ P Q, iprop(M P ∧ M Q) ⊢ M iprop(P ∧ Q))
-  | .clear, _ => λ M => if p then True else ∀ P, Absorbing (M P)
-  | .id, _ => λ M => ∀ P, iprop(□?p P) ⊢ M (iprop(□?p P))
+  | .clear, _ => fun M => if p then True else ∀ P, Absorbing (M P)
+  | .id, _ => fun M => ∀ P, iprop(□?p P) ⊢ M (iprop(□?p P))
 
 end ModalityAction
 
@@ -78,3 +78,7 @@ attribute [rw_mono_rule] Modality.mono
   "Not necessary due to different env representation"
 #rocq_ignore modality_intuitionistic_id_big_and "Not necessary due to different env representation"
 #rocq_ignore modality_spatial_forall_big_sep "Not necessary due to different env representation"
+
+end ProofMode
+
+end Iris

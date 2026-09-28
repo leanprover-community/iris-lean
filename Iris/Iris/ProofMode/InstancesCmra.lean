@@ -56,3 +56,7 @@ instance fromExists_internalCmraIncExt α [CMRA α] (a b : α) :
   from_exists := siPure_exist.mpr
 
 end cmra
+
+end ProofMode
+
+end Iris

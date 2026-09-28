@@ -14,7 +14,7 @@ public import Iris.ProofMode.NatCancel
 namespace Iris.ProofMode
 open Iris.BI Iris.Std
 
-section internalEq
+section InternalEq
 
 variable {PROP} [Sbi PROP]
 
@@ -96,3 +96,9 @@ instance intoInternalEq_persistently [Sbi PROP] [OFE A] (x y : A) (P : PROP)
     [h : IntoInternalEq P x y] :
     IntoInternalEq iprop(<pers> P) x y where
   into_internal_eq := (persistently_mono h.into_internal_eq).trans (persistently_internalEq x y).1
+
+end InternalEq
+
+end ProofMode
+
+end Iris

@@ -15,7 +15,7 @@ public import Iris.Std.TC
 namespace Iris
 
 section Laterable
-open BI OFE Std ProofMode
+open BI OFE Iris.Std ProofMode
 
 /-- Require that the proposition `P` is laterable. -/
 @[rocq_alias Laterable]
@@ -54,8 +54,7 @@ theorem intuitionistic_laterable [BI PROP] (P : PROP)
 
 @[rocq_alias persistent_laterable]
 instance persistent_laterable [BI PROP] [BIAffine PROP] (P : PROP) [Persistent P] :
-    Laterable P := by
-  apply intuitionistic_laterable <;> infer_instance
+    Laterable P := intuitionistic_laterable _
 
 @[rocq_alias sep_laterable]
 instance sep_laterable [BI PROP] (P Q : PROP) [instP : Laterable P] [instQ : Laterable Q] :
@@ -270,3 +269,5 @@ instance fromModal_make_laterable [BI PROP] [Timeless (emp : PROP)] io (P : PROP
     iassumption
 
 end Laterable
+
+end Iris

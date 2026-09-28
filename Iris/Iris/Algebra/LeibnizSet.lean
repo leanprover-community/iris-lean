@@ -128,7 +128,7 @@ instance instUnitalDisjointLeibnizSet : Unital (DisjointLeibnizSet S) where
 instance instUCMRADisjointLeibnizSet : UCMRA (DisjointLeibnizSet S) := UCMRA.withExtensionOrder
 
 theorem valid_set {s : S} : ✓ valid s := ⟨⟩
-theorem validN_set {s : S}: ✓{n} valid s := ⟨⟩
+theorem validN_set {s : S} : ✓{n} valid s := ⟨⟩
 
 theorem not_valid_invalid : ¬ ✓ (error : DisjointLeibnizSet S) := False.elim
 theorem not_validN_invalid : ¬ ✓{n} (error : DisjointLeibnizSet S) := False.elim

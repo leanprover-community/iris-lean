@@ -76,9 +76,7 @@ theorem disjoint_comm {a b : State Val} : a || b ↔ b || a := by
   constructor
   all_goals
     intro h i
-    cases h i
-    <;> try { apply Or.inl ; assumption }
-    <;> try { apply Or.inr ; assumption }
+    cases h i <;> try { apply Or.inl ; assumption }; try { apply Or.inr ; assumption }
 
 theorem disjoint_assoc {a b c : State Val} : a ∪ b || c → a || b → (a || c) ∧ (b || c) := by
   simp only [Disjoint.disjoint, Union.union]
