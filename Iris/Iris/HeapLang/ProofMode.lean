@@ -633,7 +633,8 @@ public theorem tac_wp_alloc [ι : HeapLangGS hlc GF] {Δ Δ' : IProp GF}
   refine .trans ?_ (wp_bind (ProgramLogic.fill K))
   refine .trans ?_ (wand_entails (true_intro.trans
     (wand_entails ((wp_alloc v).trans (forall_elim _)))))
-  exact later_mono <| forall_intro fun l => wand_intro (hcont l)
+  exact later_mono <| forall_intro fun l =>
+    wand_intro <| (sep_mono_right sep_elim_left).trans (hcont l)
 
 @[rocq_alias heap_lang.tac_wp_free]
 public theorem tac_wp_free [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
