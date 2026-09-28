@@ -125,10 +125,10 @@ internal order. -/
 def internalCmraIncExt (a b : A) : PROP := siPure (∃ c, iprop(b ≡ (a • c)))
 
 macro_rules
-  | `(iprop($a ≼ₑ $b)) => ``(internalCmraIncExt $a $b)
+  | `(iprop($a ≼ $b)) => ``(internalCmraIncExt $a $b)
 
 delab_rule internalCmraIncExt
-  | `($_ $a $b) => ``(iprop($a ≼ₑ $b))
+  | `($_ $a $b) => ``(iprop($a ≼ $b))
 
 @[rocq_alias internal_included_nonexpansive]
 instance internalCmraIncExt_ne :
@@ -140,53 +140,53 @@ instance internalCmraIncExt_ne :
 #rocq_ignore internal_included_proper "Derivable from internalCmraIncExt_ne with NonExpansive.eqv"
 
 @[rocq_alias internal_included_intro]
-theorem internalCmraIncExt_intro {P : PROP} {a b : A} (h : a ≼ₑ b) :
-    P ⊢ a ≼ₑ b := by
+theorem internalCmraIncExt_intro {P : PROP} {a b : A} (h : a ≼ b) :
+    P ⊢ a ≼ b := by
   obtain ⟨c, hc⟩ := h
   calc (P : PROP)
     _ ⊢ True := true_intro
     _ ⊢ <si_pure> True := siPure_pure.mpr
-    _ ⊢ a ≼ₑ b := siPure_mono (BI.exists_intro_trans c (internalEq.of_equiv hc))
+    _ ⊢ a ≼ b := siPure_mono (BI.exists_intro_trans c (internalEq.of_equiv hc))
 
-/-- The `SiProp` underlying the internal `≼ₑ` holds at `n` exactly when `a ≼ₑ{n} b`. -/
+/-- The `SiProp` underlying the internal `≼` holds at `n` exactly when `a ≼{n} b`. -/
 private theorem incExt_holds {a b : A} {n : Nat} :
-    ((∃ c, iprop(b ≡ (a • c))) : SiProp).holds n ↔ a ≼ₑ{n} b := SiProp.exists_holds
+    ((∃ c, iprop(b ≡ (a • c))) : SiProp).holds n ↔ a ≼{n} b := SiProp.exists_holds
 
 /-- Two internal extension inclusions agree when they agree at every step index. -/
 theorem internalCmraIncExt_iff [CMRA B] {a b : A} {a' b' : B}
-    (h : ∀ n, a ≼ₑ{n} b ↔ a' ≼ₑ{n} b') : a ≼ₑ b ⊣⊢@{PROP} a' ≼ₑ b' :=
+    (h : ∀ n, a ≼{n} b ↔ a' ≼{n} b') : a ≼ b ⊣⊢@{PROP} a' ≼ b' :=
   siPure_mono_bi ⟨fun n hn => incExt_holds.mpr ((h n).mp (incExt_holds.mp hn)),
     fun n hn => incExt_holds.mpr ((h n).mpr (incExt_holds.mp hn))⟩
 
 /-- An internal extension inclusion that is step-index independent is a pure proposition. -/
-theorem internalCmraIncExt_pure {a b : A} {φ : Prop} (h : ∀ n, a ≼ₑ{n} b ↔ φ) :
-    a ≼ₑ b ⊣⊢@{PROP} ⌜φ⌝ :=
+theorem internalCmraIncExt_pure {a b : A} {φ : Prop} (h : ∀ n, a ≼{n} b ↔ φ) :
+    a ≼ b ⊣⊢@{PROP} ⌜φ⌝ :=
   ⟨.trans (siPure_mono fun n hn => (h n).mp (incExt_holds.mp hn)) siPure_pure.mp,
    .trans siPure_pure.mpr (siPure_mono fun n hφ => incExt_holds.mpr ((h n).mpr hφ))⟩
 
 @[rocq_alias si_pure_internal_included]
 theorem siPure_internalCmraIncExt {a b : A} :
-    <si_pure> a ≼ₑ b ⊣⊢@{PROP} a ≼ₑ b :=
+    <si_pure> a ≼ b ⊣⊢@{PROP} a ≼ b :=
   persistently_iff.symm.trans persistently_siPure
 
 @[rocq_alias persistently_internal_included]
 theorem persistently_internalCmraIncExt {a b : A} :
-    <pers> a ≼ₑ b ⊣⊢@{PROP} a ≼ₑ b :=
+    <pers> a ≼ b ⊣⊢@{PROP} a ≼ b :=
   persistently_siPure
 
 @[rocq_alias plainly_internal_included]
 theorem plainly_internalCmraIncExt {a b : A} :
-    ■ a ≼ₑ b ⊣⊢@{PROP} a ≼ₑ b :=
+    ■ a ≼ b ⊣⊢@{PROP} a ≼ b :=
   plainly_siPure
 
 @[rocq_alias intuitionistically_internal_included]
 theorem intuitionistically_internalCmraIncExt [BIAffine PROP] {a b : A} :
-    □ a ≼ₑ b ⊣⊢@{PROP} a ≼ₑ b :=
+    □ a ≼ b ⊣⊢@{PROP} a ≼ b :=
   intuitionistically_iff_persistently.trans persistently_internalCmraIncExt
 
 @[rocq_alias internal_included_discrete]
 theorem internalCmraIncExt_discrete {a b : A} [CMRA.Discrete A] :
-    a ≼ₑ b ⊣⊢@{PROP} ⌜a ≼ₑ b⌝ := by
+    a ≼ b ⊣⊢@{PROP} ⌜a ≼ b⌝ := by
   haveI : ∀ x : A, DiscreteE x := fun x => ⟨OFE.Discrete.discrete⟩
   refine ⟨?_, pure_elim' internalCmraIncExt_intro⟩
   calc internalCmraIncExt a b
@@ -194,15 +194,15 @@ theorem internalCmraIncExt_discrete {a b : A} [CMRA.Discrete A] :
     _ ⊢ <si_pure> (∃ c, ⌜b = a • c⌝) := siPure_mono <| exists_mono fun _ => discrete_eq_mp
     _ ⊢ <si_pure> ⌜∃ c, b = a • c⌝ := siPure_mono pure_exists.mp
     _ ⊢ ⌜∃ c, b = a • c⌝ := siPure_pure.mp
-    _ ⊢ ⌜a ≼ₑ b⌝ := pure_mono fun ⟨c, h⟩ => ⟨c, h⟩
+    _ ⊢ ⌜a ≼ b⌝ := pure_mono fun ⟨c, h⟩ => ⟨c, h⟩
 
 @[rocq_alias internal_included_refl]
-theorem internalCmraIncExt_refl {a : A} [IsTotal A] : ⊢@{PROP} a ≼ₑ a :=
+theorem internalCmraIncExt_refl {a : A} [IsTotal A] : ⊢@{PROP} a ≼ a :=
   internalCmraIncExt_intro .rfl
 
 @[rocq_alias internal_included_trans]
 theorem internalCmraIncExt_trans {a b c : A} :
-    ⊢@{PROP} a ≼ₑ b -∗ b ≼ₑ c -∗ a ≼ₑ c := by
+    ⊢@{PROP} a ≼ b -∗ b ≼ c -∗ a ≼ c := by
   refine BI.entails_wand (siPure_exist.mp.trans ?_)
   refine BI.exists_elim (fun a' => ?_)
   refine BI.wand_intro ((BI.sep_mono_right siPure_exist.mp).trans (BI.sep_exists_left.mp.trans ?_))
@@ -214,40 +214,40 @@ theorem internalCmraIncExt_trans {a b c : A} :
   refine Entails.trans ?_ (internalEq.trans (b := (b • b')))
   exact and_intro and_elim_r (and_elim_left_trans (BI.internalEq_entails.mpr (fun n heq => op_left_dist _ heq)))
 
-/-- The internal `≼ₑ` is monotone under any nonexpansive map commuting with `•`. -/
+/-- The internal `≼` is monotone under any nonexpansive map commuting with `•`. -/
 theorem internalCmraIncExt_map {B : Type _} [CMRA B] (g : A → B) [NonExpansive g]
     (hg : ∀ x y : A, g (x • y) = g x • g y) {a b : A} :
-    a ≼ₑ b ⊢@{PROP} g a ≼ₑ g b :=
+    a ≼ b ⊢@{PROP} g a ≼ g b :=
   siPure_mono <| BI.exists_elim fun c => BI.exists_intro_trans (g c) <| by
     rw [← hg]; exact internalEq.of_internalEquiv_ne g
 
 @[rocq_alias internal_included_timeless]
 instance internalCmraIncExt_timeless {a b : A} [CMRA.Discrete A] :
-    Timeless (PROP := PROP) iprop(a ≼ₑ b) := by
+    Timeless (PROP := PROP) iprop(a ≼ b) := by
   haveI : ∀ x : A, DiscreteE x := fun x => ⟨OFE.Discrete.discrete⟩
   unfold internalCmraIncExt
   infer_instance
 
 @[rocq_alias internal_included_plain]
 instance internalCmraIncExt_plain {a b : A} :
-    Plain (PROP := PROP) iprop(a ≼ₑ b) where
+    Plain (PROP := PROP) iprop(a ≼ b) where
   plain := plainly_internalCmraIncExt.mpr
 
 @[rocq_alias internal_included_persistent]
 instance internalCmraIncExt_persistent {a b : A} :
-    Persistent (PROP := PROP) iprop(a ≼ₑ b) where
+    Persistent (PROP := PROP) iprop(a ≼ b) where
   persistent := persistently_internalCmraIncExt.mpr
 
 @[rocq_alias internal_included_absorbing]
 instance internalCmraIncExt_absorbing {a b : A} :
-    Absorbing (PROP := PROP) iprop(a ≼ₑ b) :=
+    Absorbing (PROP := PROP) iprop(a ≼ b) :=
   siPure_absorbing _
 
 /-! ### The internal order -/
 
 /-- The step-indexed order as a step-indexed proposition. -/
 def _root_.SiProp.cmraIncluded (a b : A) : SiProp where
-  holds n := a ≼{n} b
+  holds n := a ≼ₒ{n} b
   closed h hle := h.le hle
 
 instance _root_.SiProp.cmraIncluded_timeless [CMRA.Discrete A] {a b : A} :
@@ -257,82 +257,82 @@ instance _root_.SiProp.cmraIncluded_timeless [CMRA.Discrete A] {a b : A} :
     | zero => left; trivial
     | succ n => right; exact incN_of_inc _ (CMRA.discrete_inc (inc0_of_incN h))
 
-/-- The internal order `a ≼ b`, holding at step index `n` when `a ≼{n} b`; ownership is
+/-- The internal order `a ≼ₒ b`, holding at step index `n` when `a ≼ₒ{n} b`; ownership is
 monotone along it (`ownM_mono`). -/
 def internalCmraIncluded (a b : A) : PROP := siPure (SiProp.cmraIncluded a b)
 
 macro_rules
-  | `(iprop($a ≼ $b)) => ``(internalCmraIncluded $a $b)
+  | `(iprop($a ≼ₒ $b)) => ``(internalCmraIncluded $a $b)
 
 delab_rule internalCmraIncluded
-  | `($_ $a $b) => ``(iprop($a ≼ $b))
+  | `($_ $a $b) => ``(iprop($a ≼ₒ $b))
 
 instance internalCmraIncluded_ne :
     NonExpansive₂ (internalCmraIncluded (PROP := PROP) (A := A)) where
   ne _ _ _ hx _ _ hy := siPure_ne.ne fun hm => incN_dist_iff (hx.le hm) (hy.le hm)
 
-theorem internalCmraIncluded_intro {P : PROP} {a b : A} (h : a ≼ b) : P ⊢ a ≼ b :=
+theorem internalCmraIncluded_intro {P : PROP} {a b : A} (h : a ≼ₒ b) : P ⊢ a ≼ₒ b :=
   calc (P : PROP)
     _ ⊢ True := true_intro
     _ ⊢ <si_pure> True := siPure_pure.mpr
-    _ ⊢ a ≼ b := siPure_mono fun n _ => incN_of_inc n h
+    _ ⊢ a ≼ₒ b := siPure_mono fun n _ => incN_of_inc n h
 
 /-- Two internal orders agree when they agree at every step index. -/
 theorem internalCmraIncluded_iff [CMRA B] {a b : A} {a' b' : B}
-    (h : ∀ n, a ≼{n} b ↔ a' ≼{n} b') : a ≼ b ⊣⊢@{PROP} a' ≼ b' :=
+    (h : ∀ n, a ≼ₒ{n} b ↔ a' ≼ₒ{n} b') : a ≼ₒ b ⊣⊢@{PROP} a' ≼ₒ b' :=
   siPure_mono_bi ⟨fun n => (h n).mp, fun n => (h n).mpr⟩
 
 /-- An internal order that is step-index independent is a pure proposition. -/
-theorem internalCmraIncluded_pure {a b : A} {φ : Prop} (h : ∀ n, a ≼{n} b ↔ φ) :
-    a ≼ b ⊣⊢@{PROP} ⌜φ⌝ :=
+theorem internalCmraIncluded_pure {a b : A} {φ : Prop} (h : ∀ n, a ≼ₒ{n} b ↔ φ) :
+    a ≼ₒ b ⊣⊢@{PROP} ⌜φ⌝ :=
   ⟨.trans (siPure_mono (Qi := SiProp.pure φ) fun n => (h n).mp) siPure_pure.mp,
    .trans siPure_pure.mpr (siPure_mono (Pi := SiProp.pure φ) fun n => (h n).mpr)⟩
 
-theorem siPure_internalCmraIncluded {a b : A} : <si_pure> a ≼ b ⊣⊢@{PROP} a ≼ b :=
+theorem siPure_internalCmraIncluded {a b : A} : <si_pure> a ≼ₒ b ⊣⊢@{PROP} a ≼ₒ b :=
   persistently_iff.symm.trans persistently_siPure
 
-theorem persistently_internalCmraIncluded {a b : A} : <pers> a ≼ b ⊣⊢@{PROP} a ≼ b :=
+theorem persistently_internalCmraIncluded {a b : A} : <pers> a ≼ₒ b ⊣⊢@{PROP} a ≼ₒ b :=
   persistently_siPure
 
-theorem plainly_internalCmraIncluded {a b : A} : ■ a ≼ b ⊣⊢@{PROP} a ≼ b :=
+theorem plainly_internalCmraIncluded {a b : A} : ■ a ≼ₒ b ⊣⊢@{PROP} a ≼ₒ b :=
   plainly_siPure
 
 theorem intuitionistically_internalCmraIncluded [BIAffine PROP] {a b : A} :
-    □ a ≼ b ⊣⊢@{PROP} a ≼ b :=
+    □ a ≼ₒ b ⊣⊢@{PROP} a ≼ₒ b :=
   intuitionistically_iff_persistently.trans persistently_internalCmraIncluded
 
 theorem internalCmraIncluded_discrete {a b : A} [CMRA.Discrete A] :
-    a ≼ b ⊣⊢@{PROP} ⌜a ≼ b⌝ :=
+    a ≼ₒ b ⊣⊢@{PROP} ⌜a ≼ₒ b⌝ :=
   internalCmraIncluded_pure fun n => (inc_iff_incN n).symm
 
-theorem internalCmraIncluded_refl {a : A} [IncRefl A] : ⊢@{PROP} a ≼ a :=
+theorem internalCmraIncluded_refl {a : A} [IncRefl A] : ⊢@{PROP} a ≼ₒ a :=
   internalCmraIncluded_intro (inc_refl a)
 
-theorem internalCmraIncluded_trans {a b c : A} : ⊢@{PROP} a ≼ b -∗ b ≼ c -∗ a ≼ c :=
+theorem internalCmraIncluded_trans {a b c : A} : ⊢@{PROP} a ≼ₒ b -∗ b ≼ₒ c -∗ a ≼ₒ c :=
   BI.entails_wand <| BI.wand_intro <| siPure_and_sep.mpr.trans <|
     siPure_mono fun _ h => incN_trans h.1 h.2
 
 /-- The internal order is monotone under morphisms. -/
 theorem internalCmraIncluded_map {B : Type _} [CMRA B] (g : A -C> B) {a b : A} :
-    a ≼ b ⊢@{PROP} g a ≼ g b :=
+    a ≼ₒ b ⊢@{PROP} g a ≼ₒ g b :=
   siPure_mono fun _ => g.monoN
 
 /-- In an affine algebra the internal extension inclusion implies the internal order. -/
-theorem internalCmraIncluded_of_incExt [Affine A] {a b : A} : a ≼ₑ b ⊢@{PROP} a ≼ b :=
+theorem internalCmraIncluded_of_incExt [Affine A] {a b : A} : a ≼ b ⊢@{PROP} a ≼ₒ b :=
   siPure_mono fun _ h => incN_of_incExtN (incExt_holds.mp h)
 
 instance internalCmraIncluded_timeless {a b : A} [CMRA.Discrete A] :
-    Timeless (PROP := PROP) iprop(a ≼ b) := by
+    Timeless (PROP := PROP) iprop(a ≼ₒ b) := by
   unfold internalCmraIncluded
   infer_instance
 
-instance internalCmraIncluded_plain {a b : A} : Plain (PROP := PROP) iprop(a ≼ b) where
+instance internalCmraIncluded_plain {a b : A} : Plain (PROP := PROP) iprop(a ≼ₒ b) where
   plain := plainly_internalCmraIncluded.mpr
 
-instance internalCmraIncluded_persistent {a b : A} : Persistent (PROP := PROP) iprop(a ≼ b) where
+instance internalCmraIncluded_persistent {a b : A} : Persistent (PROP := PROP) iprop(a ≼ₒ b) where
   persistent := persistently_internalCmraIncluded.mpr
 
-instance internalCmraIncluded_absorbing {a b : A} : Absorbing (PROP := PROP) iprop(a ≼ b) :=
+instance internalCmraIncluded_absorbing {a b : A} : Absorbing (PROP := PROP) iprop(a ≼ₒ b) :=
   siPure_absorbing _
 
 end CmraIncluded

@@ -48,7 +48,7 @@ classical value algebras this coincides with the extension inclusion of the Rocq
 @[rocq_alias gmap_view_rel_raw]
 def HeapR (n : Nat) (m : H V) (f : H (DFrac × V)) : Prop :=
   ∀ k fv, get? f k = some fv →
-    ∃ (v : V) (dq : DFrac), get? m k = some v ∧ ✓{n} (dq, v) ∧ (some fv ≼{n} some (dq, v))
+    ∃ (v : V) (dq : DFrac), get? m k = some v ∧ ✓{n} (dq, v) ∧ (some fv ≼ₒ{n} some (dq, v))
 
 #rocq_ignore gmap_view_rel_raw_mono "The `mono` field of the `IsViewRel (HeapR ..)` instance"
 #rocq_ignore gmap_view_rel_raw_valid "The `rel_validN` field of the `IsViewRel (HeapR ..)` instance"
@@ -58,7 +58,7 @@ def HeapR (n : Nat) (m : H V) (f : H (DFrac × V)) : Prop :=
 instance : IsViewRel (HeapR K V H) := .ofMonoOrd
   (mono_ord := by
     intro n1 m1 f1 n2 m2 f2 Hrel Hm Hf Hn k vk Hk
-    obtain Hf' : (some vk : Option ((DFrac) × V)) ≼{n2} get? f1 k := Hk ▸ Hf k
+    obtain Hf' : (some vk : Option ((DFrac) × V)) ≼ₒ{n2} get? f1 k := Hk ▸ Hf k
     match h : get? f1 k with
     | none => exact absurd (h ▸ Hf') Option.not_some_incN_none
     | some ⟨dq', v'⟩ =>
@@ -68,7 +68,7 @@ instance : IsViewRel (HeapR K V H) := .ofMonoOrd
         cases get? m2 k <;> simp
       exists v'', dq
       refine ⟨Hm2, ⟨Hvval, validN_ne Hv (validN_of_le Hn Hdqval)⟩, ?_⟩
-      suffices some vk ≼{n2} some (dq, v) by
+      suffices some vk ≼ₒ{n2} some (dq, v) by
         exact CMRA.incN_of_incN_of_dist this (OFE.some_dist_some.mpr ⟨rfl, Hv⟩)
       exact ((h ▸ Hf').trans (CMRA.incN_of_incN_le Hn Hvincl)))
   (rel_validN := fun n m f Hrel k => by
@@ -106,7 +106,7 @@ omit [CMRA.Affine V] in
 theorem singleton_get_iff n m k dq v :
     HeapR K V H n m (PartialMap.singleton k (dq, v)) ↔
       ∃ (v' : V) (dq' : DFrac),
-        get? m k = some v' ∧ ✓{n} (dq', v') ∧ some (dq, v) ≼{n} some (dq', v') := by
+        get? m k = some v' ∧ ✓{n} (dq', v') ∧ some (dq, v) ≼ₒ{n} some (dq', v') := by
   constructor
   · refine fun Hrel => Hrel k (dq, v) ?_
     rw [PartialMap.singleton, get?_insert_eq rfl]
@@ -189,7 +189,7 @@ instance [h : IsOp d dq dq1 dq2] :
 This is the workhorse for proofs that rewrite the authoritative map along identities like
 `PartialMap.map_insert`, `map_delete`, or `map_union`. -/
 theorem auth_inc_of_map_eq (dq : DFrac) (h : m1 = m2) :
-    Auth dq m1 ≼ Auth dq m2 := h ▸ CMRA.inc_refl _
+    Auth dq m1 ≼ₒ Auth dq m2 := h ▸ CMRA.inc_refl _
 
 @[rocq_alias gmap_view_auth_dfrac_op_invN]
 theorem dist_of_validN_auth_op : ✓{n} Auth dp m1 • Auth dq m2 → m1 ≡{n}≡ m2 :=
@@ -254,7 +254,7 @@ theorem frag_add_op_eqv {q1 q2 : Qp} :
 nonrec theorem auth_op_frag_validN_iff :
     ✓{n} Auth dp m1 • Frag k dq v ↔
     ∃ v' dq', ✓ dp ∧ (Std.PartialMap.get? m1 k = some v') ∧ ✓{n} (dq', v') ∧
-      some (dq, v) ≼{n} some (dq', v') :=
+      some (dq, v) ≼ₒ{n} some (dq', v') :=
   auth_op_frag_validN_iff.trans <|
     (and_congr_right fun _ => (HeapR.singleton_get_iff ..).trans <|
     exists_congr fun _ => exists_and_left).trans (by grind)
@@ -277,7 +277,7 @@ theorem auth_op_frag_one_validN_iff :
 
 @[rocq_alias gmap_view_both_dfrac_validN_total]
 theorem auth_op_frag_validN_total_iff [IncRefl V] (H : ✓{n} Auth dp m1 • Frag k dq v1) :
-    ∃ v', ✓ dp ∧ ✓ dq ∧ Std.PartialMap.get? m1 k = some v' ∧ ✓{n} v' ∧ v1 ≼{n} v' := by
+    ∃ v', ✓ dp ∧ ✓ dq ∧ Std.PartialMap.get? m1 k = some v' ∧ ✓{n} v' ∧ v1 ≼ₒ{n} v' := by
   obtain ⟨v', dq', Hdp, Hl, Hv, Hi⟩ := auth_op_frag_validN_iff.mp H
   exists v'
   refine ⟨Hdp, ?_, Hl, Hv.2, ?_⟩
@@ -292,7 +292,7 @@ theorem auth_op_frag_validN_total_iff [IncRefl V] (H : ✓{n} Auth dp m1 • Fra
 theorem auth_op_frag_discrete_valid_iff [CMRA.Discrete V] :
     ✓ Auth dp m1 • Frag k dq v1 ↔
       ∃ v' dq', ✓ dp ∧ Std.PartialMap.get? m1 k = some v' ∧ ✓ (dq', v') ∧
-        some (dq, v1) ≼ some (dq', v') := by
+        some (dq, v1) ≼ₒ some (dq', v') := by
   refine valid_iff_validN.trans ?_
   refine forall_congr' (fun _ => auth_op_frag_validN_iff) |>.trans ?_
   refine ⟨fun Hvalid' => ?_, ?_⟩
@@ -305,7 +305,7 @@ theorem auth_op_frag_discrete_valid_iff [CMRA.Discrete V] :
 @[rocq_alias gmap_view_both_dfrac_valid_discrete_total]
 theorem auth_op_frag_valid_total_discrete_iff [IncRefl V] [CMRA.Discrete V]
     (H : ✓ Auth dp m1 • Frag k dq v1) :
-    ∃ v', ✓ dp ∧ ✓ dq ∧ Std.PartialMap.get? m1 k = some v' ∧ ✓ v' ∧ v1 ≼ v' := by
+    ∃ v', ✓ dp ∧ ✓ dq ∧ Std.PartialMap.get? m1 k = some v' ∧ ✓ v' ∧ v1 ≼ₒ v' := by
   obtain ⟨v', dq', Hdp, Hl, Hv, Hi⟩ := auth_op_frag_discrete_valid_iff |>.mp H
   refine ⟨v', Hdp, ?_, Hl, Hv.2, ?_⟩
   · rcases Hi with e | i
@@ -422,8 +422,8 @@ are derived from it. -/
 theorem update_auth_op_frag
     (Hup : ∀ (n : Nat) (dq₁ : DFrac) (mv : V) (f : Option ((DFrac) × V)),
       Std.PartialMap.get? m1 k = some mv → ✓{n} (dq₁, mv) →
-      some ((dq, v) •? f) ≼{n} some (dq₁, mv) →
-      ∃ dq₂, ✓{n} (dq₂, mv') ∧ some ((dq', v') •? f) ≼{n} some (dq₂, mv')) :
+      some ((dq, v) •? f) ≼ₒ{n} some (dq₁, mv) →
+      ∃ dq₂, ✓{n} (dq₂, mv') ∧ some ((dq', v') •? f) ≼ₒ{n} some (dq₂, mv')) :
     Auth (.own one) m1 • Frag k dq v ~~>
     Auth (.own one) (Std.PartialMap.insert m1 k mv') • Frag k dq' v' := by
   refine auth_one_op_frag_update fun n bf Hrel j ⟨df, va⟩ => ?_
@@ -451,7 +451,7 @@ theorem update_auth_op_frag
     simp [get?_singleton_ne h]
 
 @[rocq_alias gmap_view_update_local]
-theorem update_of_local_update (hsub : ∀ {n : Nat} {x y : V}, x ≼{n} y → x ≼ₑ{n} y)
+theorem update_of_local_update (hsub : ∀ {n : Nat} {x y : V}, x ≼ₒ{n} y → x ≼{n} y)
     (Hl : Std.PartialMap.get? m1 k = some mv) (Hup : (mv, v) ~l~> (mv', v')) :
     Auth (.own one) m1 • Frag k dq v ~~>
     Auth (.own one) (Std.PartialMap.insert m1 k mv') • Frag k dq v' := by
@@ -512,7 +512,7 @@ theorem update_of_dfrac_update P (Hdq : dq ~~>: P) :
     -- order-inclusion).
     obtain ⟨dq'', HPdq'', dq₀, Hv₀, Hi₀⟩ :
         ∃ dq'', P dq'' ∧ ∃ dq₀, ✓{n} (dq₀, v') ∧
-          some ((dq'', v1) •? Std.PartialMap.get? bf k) ≼{n} some (dq₀, v') := by
+          some ((dq'', v1) •? Std.PartialMap.get? bf k) ≼ₒ{n} some (dq₀, v') := by
       rcases hbf : Std.PartialMap.get? bf k with _ | p <;> rw [hbf] at Hincl
       · rcases Hincl with e | i
         · obtain ⟨dq'', HP, Hv''⟩ := Hdq n none (validN_ne e.1.symm Hval.1)

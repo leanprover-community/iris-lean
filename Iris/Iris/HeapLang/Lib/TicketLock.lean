@@ -115,8 +115,8 @@ private theorem own_op_valid {γ : GName} {a₁ a₂ : TicketR} :
 
 /-- The ticket algebra is classical: its order is its extension inclusion. -/
 private theorem ticket_incExtN_of_incN {n}
-    {x y : Option (Excl (DiscreteO Nat)) × DisjointLeibnizSet Tickets} (h : x ≼{n} y) :
-    x ≼ₑ{n} y :=
+    {x y : Option (Excl (DiscreteO Nat)) × DisjointLeibnizSet Tickets} (h : x ≼ₒ{n} y) :
+    x ≼{n} y :=
   Prod.incExtN_of_incN (Option.incExtN_of_incN fun h => h) (fun h => h) h
 
 /-- Only one thread at a time holds the right to enter the critical section. -/

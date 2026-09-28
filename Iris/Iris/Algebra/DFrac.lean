@@ -245,10 +245,10 @@ theorem valid_iff {dq : DFrac} : ✓ dq ↔
   cases dq <;> rfl
 
 @[rocq_alias dfrac_discarded_included]
-theorem discard_included : (discard : DFrac) ≼ discard := ⟨discard, rfl⟩
+theorem discard_included : (discard : DFrac) ≼ₒ discard := ⟨discard, rfl⟩
 
 @[rocq_alias dfrac_own_included]
-theorem own_included {p q : Qp} : own p ≼ own q ↔ ∃ r, q = p + r := by
+theorem own_included {p q : Qp} : own p ≼ₒ own q ↔ ∃ r, q = p + r := by
   refine ⟨fun ⟨z, hz⟩ => ?_, fun ⟨r, hr⟩ => ⟨own r, hr ▸ rfl⟩⟩
   rcases z with (r|_|r) <;> simp [CMRA.op, op] at hz
   exact ⟨r, Qp.ext_iff.mpr hz⟩

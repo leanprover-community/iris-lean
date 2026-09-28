@@ -290,8 +290,8 @@ instance : RABase (ReservationMap A H) where
 
 /-- The order on `ReservationMap A H`, inherited componentwise. -/
 @[reducible] def orderN : OrderN (ReservationMap A H) where
-  IncludedN n x y := x.data ≼{n} y.data ∧ x.token ≼{n} y.token
-  Included x y := x.data ≼ y.data ∧ x.token ≼ y.token
+  IncludedN n x y := x.data ≼ₒ{n} y.data ∧ x.token ≼ₒ{n} y.token
+  Included x y := x.data ≼ₒ y.data ∧ x.token ≼ₒ y.token
   incN_ne ex ey h := ⟨CMRA.incN_ne ex.1 ey.1 h.1, CMRA.incN_ne ex.2 ey.2 h.2⟩
   incN_succ h := ⟨CMRA.incN_succ h.1, CMRA.incN_succ h.2⟩
   incN_trans h1 h2 := ⟨CMRA.incN_trans h1.1 h2.1, CMRA.incN_trans h1.2 h2.2⟩
@@ -384,7 +384,7 @@ theorem op_token (x y : ReservationMap A H) : (x • y).token = x.token • y.to
 
 @[rocq_alias reservation_map_included]
 theorem incExt_iff {x y : ReservationMap A H} :
-    x ≼ₑ y ↔ x.data ≼ₑ y.data ∧ x.token ≼ₑ y.token := by
+    x ≼ y ↔ x.data ≼ y.data ∧ x.token ≼ y.token := by
   constructor
   · exact fun ⟨z, H⟩ => ⟨⟨z.data, H ▸ rfl⟩, ⟨z.token, H ▸ rfl⟩⟩
   · obtain ⟨yd, yt⟩ := y
@@ -516,8 +516,8 @@ theorem valid_data_op_token (a : H A) (b : CoPset) (vd : ✓ mkData a)
     | inr h => simpa only [eo] using .inr h
 
 @[rocq_alias reservation_map_data_mono]
-theorem singleton_mono_ext {k} {a b : A} (Hab : a ≼ₑ b) :
-    singleton (H := H) k a ≼ₑ singleton k b :=
+theorem singleton_mono_ext {k} {a b : A} (Hab : a ≼ b) :
+    singleton (H := H) k a ≼ singleton k b :=
   let ⟨z, hz⟩ := Hab
   ⟨singleton k z, (congrArg (singleton k) hz).trans (singleton_op k a z)⟩
 

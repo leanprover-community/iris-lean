@@ -90,7 +90,7 @@ theorem opM_disjUnion (X : LeibnizMultiSet MS) (mY : Option (LeibnizMultiSet MS)
   cases X; cases mY <;> simp [op?, op, disjUnion_empty_right]
 
 @[rocq_alias gmultiset_included]
-theorem included_iff_subset {X Y : MS} : ofSet X ≼ ofSet Y ↔ X ⊆ Y where
+theorem included_iff_subset {X Y : MS} : ofSet X ≼ₒ ofSet Y ↔ X ⊆ Y where
   mp | ⟨_, h⟩ => ofSet.inj h ▸ disjUnion_subset_left
   mpr h := ⟨ofSet (Y \ X), congrArg ofSet (disjUnion_difference_of_subseteq h)⟩
 

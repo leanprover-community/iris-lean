@@ -321,8 +321,8 @@ instance instRABaseDynReservationMap : RABase (DynReservationMap A H) where
 
 /-- The order on `DynReservationMap A H`, inherited componentwise. -/
 @[reducible] def orderN : OrderN (DynReservationMap A H) where
-  IncludedN n x y := x.data ≼{n} y.data ∧ x.token ≼{n} y.token
-  Included x y := x.data ≼ y.data ∧ x.token ≼ y.token
+  IncludedN n x y := x.data ≼ₒ{n} y.data ∧ x.token ≼ₒ{n} y.token
+  Included x y := x.data ≼ₒ y.data ∧ x.token ≼ₒ y.token
   incN_ne ex ey h := ⟨CMRA.incN_ne ex.1 ey.1 h.1, CMRA.incN_ne ex.2 ey.2 h.2⟩
   incN_succ h := ⟨CMRA.incN_succ h.1, CMRA.incN_succ h.2⟩
   incN_trans h1 h2 := ⟨CMRA.incN_trans h1.1 h2.1, CMRA.incN_trans h1.2 h2.2⟩
@@ -420,7 +420,7 @@ theorem op_token (x y : DynReservationMap A H) : (x • y).token = x.token • y
 
 @[rocq_alias dyn_reservation_map_included]
 theorem incExt_iff {x y : DynReservationMap A H} :
-    x ≼ₑ y ↔ x.data ≼ₑ y.data ∧ x.token ≼ₑ y.token := by
+    x ≼ y ↔ x.data ≼ y.data ∧ x.token ≼ y.token := by
   refine ⟨fun ⟨z, hz⟩ => ⟨⟨z.data, congrArg (·.data) hz⟩,
     ⟨z.token, congrArg (·.token) hz⟩⟩, ?_⟩
   exact fun ⟨⟨z₁, hz₁⟩, ⟨z₂, hz₂⟩⟩ =>
@@ -486,8 +486,8 @@ theorem mkData_op k (a b : A) :
     Dist.of_eq (pcore_op_right_L rfl).symm⟩
 
 @[rocq_alias dyn_reservation_map_data_mono]
-theorem mkData_mono_ext {k} {a b : A} (Hab : a ≼ₑ b) :
-    mkData (H := H) k a ≼ₑ mkData k b :=
+theorem mkData_mono_ext {k} {a b : A} (Hab : a ≼ b) :
+    mkData (H := H) k a ≼ mkData k b :=
   let ⟨z, hz⟩ := Hab
   ⟨mkData k z, (congrArg (mkData k) hz).trans (mkData_op k a z)⟩
 

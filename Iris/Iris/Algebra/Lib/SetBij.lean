@@ -156,7 +156,7 @@ theorem elem_agree (h : ✓ ((elem a₁ b₁ • elem a₂ b₂) : SetBij S)) : 
     (mem_union.mpr (.inr (mem_singleton.mpr rfl)))
 
 @[rocq_alias bij_view_included]
-theorem elem_incExt_auth (h : (a, b) ∈ L) : elem a b ≼ₑ auth dq L :=
+theorem elem_incExt_auth (h : (a, b) ∈ L) : elem a b ≼ auth dq L :=
   RABase.incExt_trans
     (frag_incExt_of_incExt <| (included_iff_subset ..).mpr fun _ hx => mem_singleton.mp hx ▸ h)
     (RABase.incExt_op_right ..)

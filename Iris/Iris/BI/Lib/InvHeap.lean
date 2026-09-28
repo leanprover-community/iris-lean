@@ -53,16 +53,16 @@ theorem get?_toInvHeap_some {h : H (V × (V → Prop))} {l : L}
   rcases hh : get? h l with _ | ⟨v, I⟩ <;> rw [hh] at hl <;> simp_all
 
 /-- The invariant-heap store is classical: its order is its extension inclusion. -/
-private theorem invHeap_incExtN_of_incN {n} {x y : InvHeapMapUR V H} (h : x ≼{n} y) :
-    x ≼ₑ{n} y :=
+private theorem invHeap_incExtN_of_incN {n} {x y : InvHeapMapUR V H} (h : x ≼ₒ{n} y) :
+    x ≼{n} y :=
   Heap.lookup_incN.mpr fun i =>
     Option.incExtN_of_incN
       (Prod.incExtN_of_incN (Option.incExtN_of_incN fun h => h) fun h => h) (h i)
 
 private theorem singleton_inc_toInvHeap {h : H (V × (V → Prop))} {l : L} {I : V → Prop}
     {mv : Option (Excl (DiscreteO V))}
-    (hinc : ({[l := (mv, toAgree ⟨I⟩)]} : InvHeapMapUR V H) ≼ toInvHeap h) :
-    ∃ v, get? h l = some (v, I) ∧ mv ≼ some (excl ⟨v⟩) := by
+    (hinc : ({[l := (mv, toAgree ⟨I⟩)]} : InvHeapMapUR V H) ≼ₒ toInvHeap h) :
+    ∃ v, get? h l = some (v, I) ∧ mv ≼ₒ some (excl ⟨v⟩) := by
   replace hinc := Heap.lookup_inc.mpr fun i =>
     Option.incExt_of_inc
       (Prod.incExt_of_inc (Option.incExt_of_inc fun h => h) fun h => h) (hinc i)

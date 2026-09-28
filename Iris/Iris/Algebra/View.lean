@@ -23,18 +23,18 @@ abbrev ViewRel (A B : Type _) := Nat → A → B → Prop
 @[rocq_alias view_rel]
 class IsViewRel [OFE A] [UCMRA B] (R : ViewRel A B) where
   /-- The relation only shrinks when a summand of the fragment is dropped. -/
-  mono : R n1 a1 b1 → a1 ≡{n2}≡ a2 → b2 ≼ₑ{n2} b1 → n2 ≤ n1 → R n2 a2 b2
+  mono : R n1 a1 b1 → a1 ≡{n2}≡ a2 → b2 ≼{n2} b1 → n2 ≤ n1 → R n2 a2 b2
   /-- The relation is down-closed for the fragment order. Independent of `mono` in general;
   for an affine fragment algebra `mono` follows from it. -/
-  mono_ord : R n1 a1 b1 → a1 ≡{n2}≡ a2 → b2 ≼{n2} b1 → n2 ≤ n1 → R n2 a2 b2
+  mono_ord : R n1 a1 b1 → a1 ≡{n2}≡ a2 → b2 ≼ₒ{n2} b1 → n2 ≤ n1 → R n2 a2 b2
   rel_validN n a b : R n a b → ✓{n} b
   rel_unit n : ∃ a, R n a UCMRA.unit
 
 /-- Build an `IsViewRel` from order-closure alone: over an affine fragment algebra the
-`≼ₑ`-closure `mono` follows from `mono_ord`. -/
+`≼`-closure `mono` follows from `mono_ord`. -/
 theorem IsViewRel.ofMonoOrd [OFE A] [UCMRA B] [CMRA.Affine B] {R : ViewRel A B}
     (mono_ord : ∀ {n1 a1 b1 n2 a2 b2},
-      R n1 a1 b1 → a1 ≡{n2}≡ a2 → b2 ≼{n2} b1 → n2 ≤ n1 → R n2 a2 b2)
+      R n1 a1 b1 → a1 ≡{n2}≡ a2 → b2 ≼ₒ{n2} b1 → n2 ≤ n1 → R n2 a2 b2)
     (rel_validN : ∀ n a b, R n a b → ✓{n} b)
     (rel_unit : ∀ n, ∃ a, R n a UCMRA.unit) : IsViewRel R where
   mono h ha hb hn := mono_ord h ha (CMRA.incN_of_incExtN hb) hn
@@ -300,8 +300,8 @@ instance instRABase : RABase (View R) where
 
 /-- The order on `View R`, inherited componentwise from the authority and fragment parts. -/
 @[reducible] def orderN : OrderN (View R) where
-  IncludedN n x y := x.auth ≼{n} y.auth ∧ x.frag ≼{n} y.frag
-  Included x y := x.auth ≼ y.auth ∧ x.frag ≼ y.frag
+  IncludedN n x y := x.auth ≼ₒ{n} y.auth ∧ x.frag ≼ₒ{n} y.frag
+  Included x y := x.auth ≼ₒ y.auth ∧ x.frag ≼ₒ y.frag
   incN_ne ex ey h := ⟨CMRA.incN_ne ex.1 ey.1 h.1, CMRA.incN_ne ex.2 ey.2 h.2⟩
   incN_succ h := ⟨CMRA.incN_succ h.1, CMRA.incN_succ h.2⟩
   incN_trans h1 h2 := ⟨CMRA.incN_trans h1.1 h2.1, CMRA.incN_trans h1.2 h2.2⟩
@@ -421,7 +421,7 @@ instance isOp_view_auth_dfrac {dq dq1 dq2 : DFrac} {a : A}
 theorem frag_op_eq : (◯V (b1 • b2) : View R) = ((◯V b1) • ◯V b2 : View R) := rfl
 
 @[rocq_alias view_frag_mono]
-theorem frag_incExt_of_incExt (H : b1 ≼ₑ b2) : (◯V b1 : View R) ≼ₑ ◯V b2 := by
+theorem frag_incExt_of_incExt (H : b1 ≼ b2) : (◯V b1 : View R) ≼ ◯V b2 := by
   rcases H with ⟨c, H⟩
   rw [H, frag_op_eq]
   exact RABase.incExt_op_left _ _
@@ -592,8 +592,8 @@ theorem auth_one_op_frag_valid_iff : ✓ ((●V a : View R) • ◯V b) ↔ ∀ 
 open CMRA in
 @[rocq_alias view_auth_dfrac_includedN]
 theorem auth_incExtN_auth_op_frag_iff :
-    (●V{dq1} a1 : View R) ≼ₑ{n} ((●V{dq2} a2) • ◯V b) ↔
-      (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 := by
+    (●V{dq1} a1 : View R) ≼{n} ((●V{dq2} a2) • ◯V b) ↔
+      (dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 := by
   refine ⟨?_, fun H => ?_⟩
   · simp only [Auth, Frag, RABase.IncExtN, CMRA.op]
     rintro ⟨(_|⟨dqf, af⟩),⟨⟨x1, x2⟩, y⟩⟩
@@ -601,7 +601,7 @@ theorem auth_incExtN_auth_op_frag_iff :
     · exact ⟨.inl ⟨dqf, x1⟩, Agree.toAgree_includedN.mp ⟨af, x2⟩⟩
   · rcases H with ⟨(⟨z, HRz⟩| HRa2), HRb⟩
     · calc (●V{dq1} a1 : View R)
-             ≼ₑ{n} ((●V{dq1} a1) • ((◯V b) • ●V{z} a1)) := by exists ((◯V b) • ●V{z} a1)
+             ≼{n} ((●V{dq1} a1) • ((◯V b) • ●V{z} a1)) := by exists ((◯V b) • ●V{z} a1)
            _ ≡{n}≡ ((◯V b) • ●V{z} a1) • ●V{dq1} a1 := op_commN
            _ ≡{n}≡ (◯V b) • ((●V{z} a1) • ●V{dq1} a1) := op_assocN.symm
            _ ≡{n}≡ (◯V b) • ((●V{dq1} a1) • ●V{z} a1) := op_ne.ne op_commN
@@ -617,36 +617,36 @@ theorem auth_incExtN_auth_op_frag_iff :
 open CMRA in
 @[rocq_alias view_auth_dfrac_included]
 theorem auth_incExt_auth_op_frag_iff :
-    ((●V{dq1} a1 : View R) ≼ₑ (●V{dq2} a2 : View R) • ◯V b) ↔
-      (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 = a2 := by
+    ((●V{dq1} a1 : View R) ≼ (●V{dq2} a2 : View R) • ◯V b) ↔
+      (dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 = a2 := by
   refine ⟨fun H => ⟨?_, ?_⟩, fun H => ?_⟩
   · exact auth_incExtN_auth_op_frag_iff (n := 0) |>.mp (RABase.incExtN_of_incExt _ H) |>.1
   · refine OFE.eq_dist_2 (fun n => ?_)
     exact auth_incExtN_auth_op_frag_iff |>.mp (RABase.incExtN_of_incExt _ H) |>.2
   · rcases H with ⟨(⟨q, Hq⟩|Hq), Ha⟩
     · calc (●V{dq1} a1 : View R)
-           _ ≼ₑ (●V{dq1} a1) • ((●V{q} a1) • ◯V b) := by exists ((●V{q} a1) • ◯V b)
-           _ ≼ₑ ((●V{dq1} a1) • ●V{q} a1) • ◯V b := by rw [CMRA.assoc']
-           _ ≼ₑ (◯V b) • ((●V{dq1} a1) • ●V{q} a1) := by rw [CMRA.comm']
-           _ ≼ₑ (◯V b) • ●V{dq1 • q} a1 := by rw [View.auth_op_auth_eqv]
-           _ ≼ₑ (●V{dq2} a2) • ◯V b := by rw [Hq, Ha, comm', View.auth_op_auth_eqv]
+           _ ≼ (●V{dq1} a1) • ((●V{q} a1) • ◯V b) := by exists ((●V{q} a1) • ◯V b)
+           _ ≼ ((●V{dq1} a1) • ●V{q} a1) • ◯V b := by rw [CMRA.assoc']
+           _ ≼ (◯V b) • ((●V{dq1} a1) • ●V{q} a1) := by rw [CMRA.comm']
+           _ ≼ (◯V b) • ●V{dq1 • q} a1 := by rw [View.auth_op_auth_eqv]
+           _ ≼ (●V{dq2} a2) • ◯V b := by rw [Hq, Ha, comm', View.auth_op_auth_eqv]
     · exists (◯V b)
       rw [Hq, Ha]
 
 @[rocq_alias view_auth_includedN]
 theorem auth_one_incExtN_auth_one_op_frag_iff :
-    (●V a1 : View R) ≼ₑ{n} ((●V a2) • ◯V b) ↔ a1 ≡{n}≡ a2 :=
+    (●V a1 : View R) ≼{n} ((●V a2) • ◯V b) ↔ a1 ≡{n}≡ a2 :=
   auth_incExtN_auth_op_frag_iff.trans <| and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
 
 @[rocq_alias view_auth_included]
 theorem auth_one_incExt_auth_one_op_frag_iff :
-    (●V a1 : View R) ≼ₑ ((●V a2) • ◯V b) ↔ a1 = a2 :=
+    (●V a1 : View R) ≼ ((●V a2) • ◯V b) ↔ a1 = a2 :=
   auth_incExt_auth_op_frag_iff.trans <| and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
 
 open CMRA in
 @[rocq_alias view_frag_includedN]
 theorem frag_incExtN_auth_op_frag_iff :
-    (◯V b1 : View R) ≼ₑ{n} ((●V{p} a) • ◯V b2) ↔ b1 ≼ₑ{n} b2 := by
+    (◯V b1 : View R) ≼{n} ((●V{p} a) • ◯V b2) ↔ b1 ≼{n} b2 := by
   refine ⟨?_, ?_⟩
   · rintro ⟨xf, ⟨_, Hb⟩⟩
     have Hb' : b2 ≡{n}≡ b1 • xf.frag := CMRA.ucmra_unit_left_id.dist.symm.trans Hb
@@ -654,16 +654,16 @@ theorem frag_incExtN_auth_op_frag_iff :
     exists xf.frag
   · rintro ⟨bf, Hbf⟩
     calc (◯V b1 : View R)
-         _ ≼ₑ{n} (◯V b1) • ((◯V bf) • ●V{p} a) := by exists ((◯V bf) • ●V{p} a)
+         _ ≼{n} (◯V b1) • ((◯V bf) • ●V{p} a) := by exists ((◯V bf) • ●V{p} a)
          _ ≡{n}≡ ((◯V b1) • ◯V bf) • ●V{p} a := op_assocN
          _ ≡{n}≡ (●V{p} a) • ((◯V b1) • ◯V bf) := op_commN
-         _ ≼ₑ{n} (●V{p} a) • ◯V b1 • bf := by rw [frag_op_eq]
+         _ ≼{n} (●V{p} a) • ◯V b1 • bf := by rw [frag_op_eq]
          _ ≡{n}≡ (●V{p} a) • ◯V b2 := op_ne.ne (NonExpansive.ne Hbf.symm)
 
 open CMRA in
 @[rocq_alias view_frag_included]
 theorem frag_incExt_auth_op_frag_iff :
-    (◯V b1 : View R) ≼ₑ ((●V{p} a) • ◯V b2) ↔ b1 ≼ₑ b2 := by
+    (◯V b1 : View R) ≼ ((●V{p} a) • ◯V b2) ↔ b1 ≼ b2 := by
   constructor
   · rintro ⟨xf, HH⟩
     have Hb' : b2 = b1 • xf.frag :=
@@ -672,17 +672,17 @@ theorem frag_incExt_auth_op_frag_iff :
     exists xf.frag
   · rintro ⟨bf, Hbf⟩
     calc (◯V b1 : View R)
-         _ ≼ₑ (◯V b1) • ((◯V bf) • ●V{p} a) := by exists ((◯V bf) • ●V{p} a)
-         _ ≼ₑ ((◯V b1) • ◯V bf) • ●V{p} a := by rw [CMRA.assoc']
-         _ ≼ₑ (●V{p} a) • ((◯V b1) • ◯V bf) := by rw [CMRA.comm']
-         _ ≼ₑ (●V{p} a) • ◯V b1 • bf := by rw [frag_op_eq]
-         _ ≼ₑ (●V{p} a) • ◯V b2 := by rw [Hbf]
+         _ ≼ (◯V b1) • ((◯V bf) • ●V{p} a) := by exists ((◯V bf) • ●V{p} a)
+         _ ≼ ((◯V b1) • ◯V bf) • ●V{p} a := by rw [CMRA.assoc']
+         _ ≼ (●V{p} a) • ((◯V b1) • ◯V bf) := by rw [CMRA.comm']
+         _ ≼ (●V{p} a) • ◯V b1 • bf := by rw [frag_op_eq]
+         _ ≼ (●V{p} a) • ◯V b2 := by rw [Hbf]
 
 open CMRA in
 @[rocq_alias view_both_dfrac_includedN]
 theorem auth_op_frag_incExtN_auth_op_frag_iff :
-    ((●V{dq1} a1 : View R) • ◯V b1) ≼ₑ{n} ((●V{dq2} a2) • ◯V b2) ↔
-      (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 ∧ b1 ≼ₑ{n} b2 := by
+    ((●V{dq1} a1 : View R) • ◯V b1) ≼{n} ((●V{dq2} a2) • ◯V b2) ↔
+      (dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 ∧ b1 ≼{n} b2 := by
   refine ⟨fun H => ?_, fun ⟨H0, H1, ⟨bf, H2⟩⟩ => ?_⟩
   · rw [← and_assoc]
     refine ⟨?_, ?_⟩
@@ -691,18 +691,18 @@ theorem auth_op_frag_incExtN_auth_op_frag_iff :
     · apply (frag_incExtN_auth_op_frag_iff (R := R)).mp
       exact (RABase.incExtN_op_right _ _ _).trans H
   · calc ((●V{dq1} a1) • ◯V b1 : View R)
-         _ ≼ₑ{n} ((●V{dq2} a2) • ◯V bf) • ◯V b1 :=
+         _ ≼{n} ((●V{dq2} a2) • ◯V bf) • ◯V b1 :=
            RABase.op_monoN_left_ext _ <| auth_incExtN_auth_op_frag_iff.mpr ⟨H0, H1⟩
          _ ≡{n}≡ (●V{dq2} a2) • ((◯V bf) • ◯V b1) := op_assocN.symm
-         _ ≼ₑ{n} (●V{dq2} a2) • ◯V bf • b1 := by rw [frag_op_eq]
+         _ ≼{n} (●V{dq2} a2) • ◯V bf • b1 := by rw [frag_op_eq]
          _ ≡{n}≡ (●V{dq2} a2) • ◯V b2 :=
            CMRA.op_ne.ne (NonExpansive.ne (H2.trans comm'.dist |>.symm))
 
 open CMRA in
 @[rocq_alias view_both_dfrac_included]
 theorem auth_op_frag_incExt_auth_op_frag_iff :
-    ((●V{dq1} a1 : View R) • ◯V b1) ≼ₑ ((●V{dq2} a2) • ◯V b2) ↔
-      (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 = a2 ∧ b1 ≼ₑ b2 := by
+    ((●V{dq1} a1 : View R) • ◯V b1) ≼ ((●V{dq2} a2) • ◯V b2) ↔
+      (dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 = a2 ∧ b1 ≼ b2 := by
   refine ⟨fun H => ?_, fun ⟨H0, H1, ⟨bf, H2⟩⟩ => ?_⟩
   · rw [← and_assoc]
     refine ⟨?_, ?_⟩
@@ -711,21 +711,21 @@ theorem auth_op_frag_incExt_auth_op_frag_iff :
     · apply (frag_incExt_auth_op_frag_iff (R := R)).mp
       exact (RABase.incExt_op_right _ _).trans H
   · calc ((●V{dq1} a1) • ◯V b1 : View R)
-         _ ≼ₑ ((●V{dq2} a2) • ◯V bf) • ◯V b1 :=
+         _ ≼ ((●V{dq2} a2) • ◯V bf) • ◯V b1 :=
            RABase.op_mono_left_ext _ <| auth_incExt_auth_op_frag_iff.mpr ⟨H0, H1⟩
-         _ ≼ₑ (●V{dq2} a2) • ((◯V bf) • ◯V b1) := by rw [← CMRA.assoc']
-         _ ≼ₑ (●V{dq2} a2) • ◯V bf • b1 := .rfl
-         _ ≼ₑ (●V{dq2} a2) • ◯V b2 := by rw [← H2.trans comm]
+         _ ≼ (●V{dq2} a2) • ((◯V bf) • ◯V b1) := by rw [← CMRA.assoc']
+         _ ≼ (●V{dq2} a2) • ◯V bf • b1 := .rfl
+         _ ≼ (●V{dq2} a2) • ◯V b2 := by rw [← H2.trans comm]
 
 @[rocq_alias view_both_includedN]
 theorem auth_one_op_frag_incExtN_auth_one_op_frag_iff :
-    ((●V a1 : View R) • ◯V b1) ≼ₑ{n} ((●V a2) • ◯V b2) ↔ (a1 ≡{n}≡ a2 ∧ b1 ≼ₑ{n} b2) :=
+    ((●V a1 : View R) • ◯V b1) ≼{n} ((●V a2) • ◯V b2) ↔ (a1 ≡{n}≡ a2 ∧ b1 ≼{n} b2) :=
   auth_op_frag_incExtN_auth_op_frag_iff.trans <|
     and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
 
 @[rocq_alias view_both_included]
 theorem auth_one_op_frag_incExt_auth_one_op_frag_iff :
-    ((●V a1 : View R) • ◯V b1) ≼ₑ ((●V a2) • ◯V b2) ↔ a1 = a2 ∧ b1 ≼ₑ b2 :=
+    ((●V a1 : View R) • ◯V b1) ≼ ((●V a2) • ◯V b2) ↔ a1 = a2 ∧ b1 ≼ b2 :=
   auth_op_frag_incExt_auth_op_frag_iff.trans <|
     and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
 

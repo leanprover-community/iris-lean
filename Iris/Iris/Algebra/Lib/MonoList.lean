@@ -132,7 +132,7 @@ instance {dq dq1 dq2 : DFrac} {l : List α} [h : IsOp d dq dq1 dq2] :
 /-! ## Validity -/
 
 /-- On `MaxPrefixList` — a map of `Agree` — the order and the extension inclusion agree. -/
-private theorem incExtN_of_incN {n} {x y : MaxPrefixList α} (h : x ≼{n} y) : x ≼ₑ{n} y :=
+private theorem incExtN_of_incN {n} {x y : MaxPrefixList α} (h : x ≼ₒ{n} y) : x ≼{n} y :=
   Heap.lookup_incN.mpr fun i => Option.incExtN_of_incN (fun h => h) (h i)
 
 @[rocq_alias mono_list_auth_dfrac_validN]
@@ -243,11 +243,11 @@ theorem lb_op_valid (l1 l2 : List α) :
 #rocq_ignore mono_list_lb_op_valid_2_L "Use lb_op_valid.mpr"
 
 @[rocq_alias mono_list_lb_mono]
-theorem lb_mono {l1 l2 : List α} (h : l1 <+: l2) : ◯ML l1 ≼ₑ ◯ML l2 :=
+theorem lb_mono {l1 l2 : List α} (h : l1 <+: l2) : ◯ML l1 ≼ ◯ML l2 :=
   ⟨◯ML l2, (lb_op_left h).symm⟩
 
 @[rocq_alias mono_list_included]
-theorem included (dq : DFrac) (l : List α) : ◯ML l ≼ₑ ●ML{dq} l := RABase.incExt_op_right ..
+theorem included (dq : DFrac) (l : List α) : ◯ML l ≼ ●ML{dq} l := RABase.incExt_op_right ..
 
 /-! ## Updates -/
 

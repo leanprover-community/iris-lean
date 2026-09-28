@@ -73,14 +73,14 @@ instance : CMRA UFrac := CMRA.withExtensionOrder
 theorem op_eq (p q : UFrac) : p • q = ⟨p.frac + q.frac⟩ := rfl
 
 @[rocq_alias ufrac_included]
-theorem inc_iff {x y : UFrac} : x ≼ y ↔ x.frac < y.frac := by
+theorem inc_iff {x y : UFrac} : x ≼ₒ y ↔ x.frac < y.frac := by
   refine ⟨fun ⟨r, Hr⟩ => ?_, fun H => ?_⟩
   · have := r.frac.2; simp only [ext_iff, frac_op] at Hr; grind
   · refine ⟨⟨⟨y.frac.val - x.frac.val, by grind⟩⟩, ?_⟩
     simp only [ext_iff, frac_op]; grind
 
 @[rocq_alias ufrac_included_weak]
-theorem le_of_inc {x y : UFrac} (H : x ≼ y) : x.frac ≤ y.frac := by
+theorem le_of_inc {x y : UFrac} (H : x ≼ₒ y) : x.frac ≤ y.frac := by
   have := inc_iff.mp H; grind
 
 @[rocq_alias ufrac_cmra_discrete]

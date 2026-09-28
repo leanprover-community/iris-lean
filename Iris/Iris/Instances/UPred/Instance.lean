@@ -60,7 +60,7 @@ protected def or (P Q : UPred M) : UPred M where
 (Rocq closes under the extension inclusion instead). -/
 @[rocq_alias uPred_impl]
 protected def imp (P Q : UPred M) : UPred M where
-  holds n x := ∀ {n'} (x' : ValidAt M n'), x.val ≼{n'} x'.val → n' ≤ n → P n' x' → Q n' x'
+  holds n x := ∀ {n'} (x' : ValidAt M n'), x.val ≼ₒ{n'} x'.val → n' ≤ n → P n' x' → Q n' x'
   mono H Hle Hn := fun x' Hxle Hnle HP =>
     H x' (incN_trans (Hle.le Hnle) Hxle) (Nat.le_trans Hnle Hn) HP
 
@@ -90,12 +90,12 @@ protected def eq [OFE O] (o1 o2 : O) : UPred M where
   holds n _ := o1 ≡{n}≡ o2
   mono H1 _ H2 := H1.le H2
 
-/-- Separation splits a resource *below* `x` (`x1 • x2 ≼{n} x`), not `x` itself as in Rocq
+/-- Separation splits a resource *below* `x` (`x1 • x2 ≼ₒ{n} x`), not `x` itself as in Rocq
 (`x ≡{n}≡ x1 • x2`); for the extension order the two are equivalent, and this form is
 monotone for any order. -/
 @[rocq_alias uPred_sep]
 protected def sep (P Q : UPred M) : UPred M where
-  holds n x := ∃ x1 x2 : M, ∃ (H : x1 • x2 ≼{n} x.val),
+  holds n x := ∃ x1 x2 : M, ∃ (H : x1 • x2 ≼ₒ{n} x.val),
     P n ⟨x1, validN_op_left (validN_of_incN H x.property)⟩
     ∧ Q n ⟨x2, validN_op_right (validN_of_incN H x.property)⟩
   mono := fun ⟨x₁, x₂, Hx, HP, HQ⟩ Hm Hn =>
@@ -144,7 +144,7 @@ protected def later (P : UPred M) : UPred M where
 
 @[rocq_alias uPred_ownM]
 def ownM (m : M) : UPred M where
-  holds n x := m ≼{n} x
+  holds n x := m ≼ₒ{n} x
   mono H Hle Hn := (H.le Hn).trans Hle
 
 #rocq_ignore uPred_ownM_unseal "`UPred.ownM` is defined directly without `seal`/`unseal`."
@@ -350,8 +350,8 @@ instance : BI (UPred M) where
   sep_assoc_l n x := fun ⟨x1, x2, Hx, ⟨y1, y2, Hy, h1, h2⟩, h3⟩ => by
     refine ⟨y1, y2 • x2, ?_, h1, y2, x2, .rfl, h2, h3⟩
     calc y1 • (y2 • x2) ≡{n}≡ (y1 • y2) • x2 := op_assocN
-         _              ≼{n} x1 • x2 := op_monoN_left x2 Hy
-         _              ≼{n} x.val := Hx
+         _              ≼ₒ{n} x1 • x2 := op_monoN_left x2 Hy
+         _              ≼ₒ{n} x.val := Hx
   wand_intro H _ x HP _ x' Hn _ HQ :=
     H _ _ ⟨x, x', .rfl, UPred.mono _ HP .rfl Hn, HQ⟩
   wand_elim H n x := fun ⟨y1, y2, Hy, HP, HQ⟩ => by
@@ -682,9 +682,9 @@ theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
 /-- The inclusion in the conclusion is the internal order; on classical CMRAs it coincides
 with Rocq's extension inclusion. -/
 @[rocq_alias uPred.ownM_forall, rocq_alias uPred_primitive.ownM_forall]
-theorem ownM_forall (f : A → M) : (∀ a, ownM (f a)) ⊢ ∃ z, ownM z ∧ (∀ a, f a ≼ z) := by
+theorem ownM_forall (f : A → M) : (∀ a, ownM (f a)) ⊢ ∃ z, ownM z ∧ (∀ a, f a ≼ₒ z) := by
   intro _ x Hf
-  refine ⟨iprop(ownM x ∧ ∀ a, f a ≼ x.val), ⟨x, rfl⟩, incN_refl x.val, ?_⟩
+  refine ⟨iprop(ownM x ∧ ∀ a, f a ≼ₒ x.val), ⟨x, rfl⟩, incN_refl x.val, ?_⟩
   rintro p ⟨a, rfl⟩
   exact Hf (ownM (f a)) ⟨a, rfl⟩
 
@@ -721,7 +721,7 @@ theorem ownM_invalid (a : M) (hnv : ¬ ✓{0} a) : ownM a ⊢ False :=
   (ownM_valid a).trans (internalCmraValid_elim a) |>.trans (pure_mono hnv)
 
 @[rocq_alias uPred.ownM_mono]
-theorem ownM_mono {a b : M} (hinc : b ≼ a) : ownM a ⊢ ownM b :=
+theorem ownM_mono {a b : M} (hinc : b ≼ₒ a) : ownM a ⊢ ownM b :=
   fun n _ ha => incN_trans (incN_of_inc n hinc) ha
 
 @[rocq_alias uPred.ownM_unit']

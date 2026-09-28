@@ -479,7 +479,7 @@ instance instCMRADiscrete [OFE.Discrete α] : CMRA.Discrete (Agree α) where
   discrete_inc := RABase.incExt_of_incExt0
 
 @[rocq_alias agree_includedN]
-theorem includedN {x y : Agree α} : x ≼{n} y ↔ y ≡{n}≡ y • x := by
+theorem includedN {x y : Agree α} : x ≼ₒ{n} y ↔ y ≡{n}≡ y • x := by
   refine ⟨fun ⟨z, h⟩ => ?_, fun h => ⟨y, h.trans op_commN⟩⟩
   calc
     y ≡{n}≡ x • z := h
@@ -489,12 +489,12 @@ theorem includedN {x y : Agree α} : x ≼{n} y ↔ y ≡{n}≡ y • x := by
     _ ≡{n}≡ y • x := op_commN
 
 @[rocq_alias agree_included]
-theorem included {x y : Agree α} : x ≼ y ↔ y = y • x :=
+theorem included {x y : Agree α} : x ≼ₒ y ↔ y = y • x :=
   ⟨fun ⟨z, h⟩ => OFE.eq_dist_2 fun _ => includedN.mp ⟨z, h.dist⟩,
    fun h => ⟨y, h.trans op_comm⟩⟩
 
 @[rocq_alias agree_valid_includedN]
-theorem valid_includedN {x y : Agree α} : ✓{n} y → x ≼{n} y → x ≡{n}≡ y := by
+theorem valid_includedN {x y : Agree α} : ✓{n} y → x ≼ₒ{n} y → x ≡{n}≡ y := by
   intro hval ⟨z, heq⟩
   calc
     x ≡{n}≡ x • x := idemp.dist.symm
@@ -502,7 +502,7 @@ theorem valid_includedN {x y : Agree α} : ✓{n} y → x ≼{n} y → x ≡{n}�
     _ ≡{n}≡ y := heq.symm
 
 @[rocq_alias agree_valid_included]
-theorem valid_included {x y : Agree α} : ✓ y → x ≼ y → x = y := by
+theorem valid_included {x y : Agree α} : ✓ y → x ≼ₒ y → x = y := by
   intro hval ⟨z, heq⟩
   have hz : x = z := op_inv (heq ▸ hval : ✓ (x • z))
   rw [heq, ← hz, idemp]
@@ -566,7 +566,7 @@ instance (x : Agree α) : CMRA.CoreId x where
   core_id := pcore_some
 
 @[simp, rocq_alias to_agree_includedN]
-theorem toAgree_includedN {a b : α} : toAgree a ≼{n} toAgree b ↔ a ≡{n}≡ b := by
+theorem toAgree_includedN {a b : α} : toAgree a ≼ₒ{n} toAgree b ↔ a ≡{n}≡ b := by
   refine ⟨?_, ?_⟩ <;> intro h
   · exact toAgree_injN (valid_includedN trivial h)
   · exists toAgree a
@@ -575,7 +575,7 @@ theorem toAgree_includedN {a b : α} : toAgree a ≼{n} toAgree b ↔ a ≡{n}�
       _         ≡{n}≡ toAgree a • toAgree a := idemp.dist.symm
 
 @[simp, rocq_alias to_agree_included]
-theorem toAgree_included {a b : α} : toAgree a ≼ toAgree b ↔ a = b := by
+theorem toAgree_included {a b : α} : toAgree a ≼ₒ toAgree b ↔ a = b := by
   refine ⟨?_, ?_⟩ <;> intro h
   · exact toAgree_inj (valid_included (fun _ => trivial) h)
   · exists toAgree a

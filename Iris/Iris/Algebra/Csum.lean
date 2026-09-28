@@ -204,15 +204,15 @@ private theorem pcore_map_inr_eq [CMRA β] {b : β} {cx : Csum α β}
 `invalid` as the top element. -/
 abbrev IncludedN [CMRA α] [CMRA β] (n : Nat) : Csum α β → Csum α β → Prop
   | _, invalid => True
-  | inl a, inl a' => a ≼{n} a'
-  | inr b, inr b' => b ≼{n} b'
+  | inl a, inl a' => a ≼ₒ{n} a'
+  | inr b, inr b' => b ≼ₒ{n} b'
   | _, _ => False
 
 /-- The order on `Csum α β`; see `Csum.IncludedN`. -/
 abbrev Included [CMRA α] [CMRA β] : Csum α β → Csum α β → Prop
   | _, invalid => True
-  | inl a, inl a' => a ≼ a'
-  | inr b, inr b' => b ≼ b'
+  | inl a, inl a' => a ≼ₒ a'
+  | inr b, inr b' => b ≼ₒ b'
   | _, _ => False
 
 /-- The resource algebra on `Csum α β`. -/
@@ -297,8 +297,8 @@ theorem increasing_inr_iff {b : β} : Increasing (inr (α := α) b) ↔ Increasi
 
 instance : Increasing (invalid : Csum α β) := ⟨fun _ => trivial⟩
 
-theorem incNR_inl {n} {a a' : α} (h : inl (β := β) a ≼*{n} inl a') : a ≼*{n} a' := h.imp id id
-theorem incNR_inr {n} {b b' : β} (h : inr (α := α) b ≼*{n} inr b') : b ≼*{n} b' := h.imp id id
+theorem incNR_inl {n} {a a' : α} (h : inl (β := β) a ≼ₒ*{n} inl a') : a ≼ₒ*{n} a' := h.imp id id
+theorem incNR_inr {n} {b b' : β} (h : inr (α := α) b ≼ₒ*{n} inr b') : b ≼ₒ*{n} b' := h.imp id id
 
 instance instCMRA : CMRA (Csum α β) where
   toRABase := raBase
@@ -461,9 +461,9 @@ instance [CMRA α] [CMRA β] {b : β} [IdFree b] : IdFree (inr (α := α) b) whe
 /-! ## Included -/
 
 theorem included [CMRA α] [CMRA β] {x y : Csum α β} :
-    x ≼ y ↔ y = invalid ∨
-      (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼ a') ∨
-      (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼ b') := by
+    x ≼ₒ y ↔ y = invalid ∨
+      (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼ₒ a') ∨
+      (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼ₒ b') := by
   constructor
   · intro h
     cases x <;> cases y <;>
@@ -477,16 +477,16 @@ theorem included [CMRA α] [CMRA β] {x y : Csum α β} :
     · exact h
     · exact h
 
-theorem inl_included [CMRA α] [CMRA β] {a a' : α} : (inl (β := β) a) ≼ inl a' ↔ a ≼ a' := .rfl
+theorem inl_included [CMRA α] [CMRA β] {a a' : α} : (inl (β := β) a) ≼ₒ inl a' ↔ a ≼ₒ a' := .rfl
 
-theorem inr_included [CMRA α] [CMRA β] {b b' : β} : (inr (α := α) b) ≼ inr b' ↔ b ≼ b' := .rfl
+theorem inr_included [CMRA α] [CMRA β] {b b' : β} : (inr (α := α) b) ≼ₒ inr b' ↔ b ≼ₒ b' := .rfl
 
-theorem invalid_included [CMRA α] [CMRA β] (x : Csum α β) : x ≼ invalid := by cases x <;> trivial
+theorem invalid_included [CMRA α] [CMRA β] (x : Csum α β) : x ≼ₒ invalid := by cases x <;> trivial
 
 theorem includedN [CMRA α] [CMRA β] {n} {x y : Csum α β} :
-    x ≼{n} y ↔ y = invalid ∨
-      (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼{n} a') ∨
-      (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼{n} b') := by
+    x ≼ₒ{n} y ↔ y = invalid ∨
+      (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼ₒ{n} a') ∨
+      (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼ₒ{n} b') := by
   constructor
   · intro h
     cases x <;> cases y <;>
@@ -501,9 +501,9 @@ theorem includedN [CMRA α] [CMRA β] {n} {x y : Csum α β} :
     · exact h
 
 theorem some_included [CMRA α] [CMRA β] {x y : Csum α β} :
-    some x ≼ some y ↔ y = invalid ∨
-      (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼ some a') ∨
-      (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ some b') := by
+    some x ≼ₒ some y ↔ y = invalid ∨
+      (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼ₒ some a') ∨
+      (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ₒ some b') := by
   rw [Option.some_inc_some_iff]
   constructor
   · rintro (rfl | h)
@@ -524,9 +524,9 @@ theorem some_included [CMRA α] [CMRA β] {x y : Csum α β} :
     · exact .inr h
 
 theorem some_includedN [CMRA α] [CMRA β] {n} {x y : Csum α β} :
-    some x ≼{n} some y ↔ y = invalid ∨
-      (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼{n} some a') ∨
-      (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼{n} some b') := by
+    some x ≼ₒ{n} some y ↔ y = invalid ∨
+      (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼ₒ{n} some a') ∨
+      (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ₒ{n} some b') := by
   rw [Option.some_incN_some_iff]
   constructor
   · rintro (heq | h)
@@ -551,9 +551,9 @@ theorem some_includedN [CMRA α] [CMRA β] {n} {x y : Csum α β} :
 
 @[rocq_alias csum_included]
 theorem included_ext [CMRA α] [CMRA β] {x y : Csum α β} :
-    x ≼ₑ y ↔ y = invalid ∨
-      (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼ₑ a') ∨
-      (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼ₑ b') := by
+    x ≼ y ↔ y = invalid ∨
+      (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼ a') ∨
+      (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼ b') := by
   constructor
   · rintro ⟨z, hz⟩; cases x <;> cases z <;> cases y <;>
       first
@@ -568,7 +568,7 @@ theorem included_ext [CMRA α] [CMRA β] {x y : Csum α β} :
 
 @[rocq_alias Cinl_included]
 theorem inl_included_ext [CMRA α] [CMRA β] {a a' : α} :
-    (inl (β := β) a) ≼ₑ inl a' ↔ a ≼ₑ a' := by
+    (inl (β := β) a) ≼ inl a' ↔ a ≼ a' := by
   constructor
   · rintro ⟨z, hz⟩; cases z <;>
       first | exact ⟨_, Csum.inl.inj hz⟩ | exact absurd hz (by simp [CMRA.op, Csum.op])
@@ -576,21 +576,21 @@ theorem inl_included_ext [CMRA α] [CMRA β] {a a' : α} :
 
 @[rocq_alias Cinr_included]
 theorem inr_included_ext [CMRA α] [CMRA β] {b b' : β} :
-    (inr (α := α) b) ≼ₑ inr b' ↔ b ≼ₑ b' := by
+    (inr (α := α) b) ≼ inr b' ↔ b ≼ b' := by
   constructor
   · rintro ⟨z, hz⟩; cases z <;>
       first | exact ⟨_, Csum.inr.inj hz⟩ | exact absurd hz (by simp [CMRA.op, Csum.op])
   · rintro ⟨c, hc⟩; exact ⟨inr c, congrArg inr hc⟩
 
 @[rocq_alias CsumInvalid_included]
-theorem invalid_included_ext [CMRA α] [CMRA β] (x : Csum α β) : x ≼ₑ invalid :=
+theorem invalid_included_ext [CMRA α] [CMRA β] (x : Csum α β) : x ≼ invalid :=
   ⟨invalid, by cases x <;> rfl⟩
 
 @[rocq_alias csum_includedN]
 theorem includedN_ext [CMRA α] [CMRA β] {n} {x y : Csum α β} :
-    x ≼ₑ{n} y ↔ y = invalid ∨
-      (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼ₑ{n} a') ∨
-      (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼ₑ{n} b') := by
+    x ≼{n} y ↔ y = invalid ∨
+      (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼{n} a') ∨
+      (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼{n} b') := by
   constructor
   · rintro ⟨z, hz⟩; cases x <;> cases z <;> cases y <;>
       first
@@ -605,9 +605,9 @@ theorem includedN_ext [CMRA α] [CMRA β] {n} {x y : Csum α β} :
 
 @[rocq_alias Some_csum_included]
 theorem some_included_ext [CMRA α] [CMRA β] {x y : Csum α β} :
-    some x ≼ₑ some y ↔ y = invalid ∨
-      (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼ₑ some a') ∨
-      (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ₑ some b') := by
+    some x ≼ some y ↔ y = invalid ∨
+      (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼ some a') ∨
+      (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ some b') := by
   constructor
   · intro h; rcases Option.some_incExt_some_iff.mp h with heq | hinc
     · subst heq
@@ -627,9 +627,9 @@ theorem some_included_ext [CMRA α] [CMRA β] {x y : Csum α β} :
 
 @[rocq_alias Some_csum_includedN]
 theorem some_includedN_ext [CMRA α] [CMRA β] {n} {x y : Csum α β} :
-    some x ≼ₑ{n} some y ↔ y = invalid ∨
-      (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼ₑ{n} some a') ∨
-      (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ₑ{n} some b') := by
+    some x ≼{n} some y ↔ y = invalid ∨
+      (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼{n} some a') ∨
+      (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼{n} some b') := by
   constructor
   · intro h; rcases Option.some_incExtN_some_iff.mp h with heq | hinc
     · cases x <;> cases y <;>

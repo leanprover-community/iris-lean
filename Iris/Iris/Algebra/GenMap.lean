@@ -233,8 +233,8 @@ def pcore_genmap (x : GenMap β) : Option (GenMap β) :=
 
 /-- The order on `GenMap β`, inherited pointwise from `Nat → Option β`. -/
 @[reducible] def GenMap.orderN : OrderN (GenMap β) where
-  IncludedN n x y := x.car ≼{n} y.car
-  Included x y := x.car ≼ y.car
+  IncludedN n x y := x.car ≼ₒ{n} y.car
+  Included x y := x.car ≼ₒ y.car
   incN_ne ex ey h := incN_ne ex ey h
   incN_succ := incN_succ
   incN_trans := incN_trans

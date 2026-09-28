@@ -104,11 +104,11 @@ theorem both_valid (n m : MaxInt) : (✓ ((●MZ n) • (◯MZ m) : MonoZ)) ↔ 
   (both_dfrac_valid ..).trans ⟨And.right, fun h => ⟨DFrac.valid_own_one, h⟩⟩
 
 @[rocq_alias mono_Z_lb_mono]
-theorem lb_mono (n1 n2 : MaxInt) (h : n1 ≤ n2) : (◯MZ n1 : MonoZ) ≼ₑ ◯MZ n2 :=
+theorem lb_mono (n1 n2 : MaxInt) (h : n1 ≤ n2) : (◯MZ n1 : MonoZ) ≼ ◯MZ n2 :=
   Auth.frag_incExt_of_incExt <| Option.some_incExt_some_iff_is_total.mpr <| MaxInt.inc_iff.mpr h
 
 @[rocq_alias mono_Z_included]
-theorem included (dq : DFrac) (n : MaxInt) : (◯MZ n : MonoZ) ≼ₑ ●MZ{dq} n :=
+theorem included (dq : DFrac) (n : MaxInt) : (◯MZ n : MonoZ) ≼ ●MZ{dq} n :=
   RABase.incExt_op_right ..
 
 @[rocq_alias mono_Z_update]

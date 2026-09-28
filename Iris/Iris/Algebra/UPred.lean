@@ -39,14 +39,14 @@ theorem ValidAt.le_rfl {M : Type _} [UCMRA M] {n : Nat} {Hle : n ≤ n} {v : Val
 structure UPred (M : Type _) [UCMRA M] where
   holds : (n : Nat) → ValidAt M n → Prop
   mono {n1 n2} {x1 : ValidAt M n1} {x2 : ValidAt M n2} :
-    holds n1 x1 → (x1 : M) ≼{n2} (x2 : M) → (Hle : n2 ≤ n1) → holds n2 x2
+    holds n1 x1 → (x1 : M) ≼ₒ{n2} (x2 : M) → (Hle : n2 ≤ n1) → holds n2 x2
 
 def UPred.holds_unpacked {M : Type _} [UCMRA M] (P : UPred M) (n : Nat) (x : M) (Hx : ✓{n} x) :
     Prop :=
   P.holds n ⟨x, Hx⟩
 
 theorem UPred.mono_unpacked {M : Type _} [UCMRA M] (P : UPred M) {n1 n2 : Nat} {x1 x2 : M}
-    (Hx1 : ✓{n1} x1) (Hx2 : ✓{n2} x2) (HP : P.holds_unpacked n1 x1 Hx1) (Hxle : x1 ≼{n2} x2)
+    (Hx1 : ✓{n1} x1) (Hx2 : ✓{n2} x2) (HP : P.holds_unpacked n1 x1 Hx1) (Hxle : x1 ≼ₒ{n2} x2)
     (Hle : n2 ≤ n1) : P.holds_unpacked n2 x2 Hx2 :=
   P.mono HP Hxle Hle
 
@@ -54,10 +54,10 @@ theorem UPred.mono_unpacked {M : Type _} [UCMRA M] (P : UPred M) {n1 n2 : Nat} {
 non-expansivity, and monotonicity. -/
 @[rocq_alias uPred_alt]
 theorem uPred_alt {M : Type _} [UCMRA M] (P : Nat → M → Prop) :
-    (∀ {n1 n2} {x1 x2 : M}, P n1 x1 → x1 ≼{n1} x2 → n2 ≤ n1 → P n2 x2) ↔
+    (∀ {n1 n2} {x1 x2 : M}, P n1 x1 → x1 ≼ₒ{n1} x2 → n2 ≤ n1 → P n2 x2) ↔
     ((∀ {x : M} {n1 n2}, n2 ≤ n1 → P n1 x → P n2 x) ∧
      (∀ {n} {x1 x2 : M}, x1 ≡{n}≡ x2 → ∀ m, m ≤ n → (P m x1 ↔ P m x2)) ∧
-     (∀ {n} {x1 x2 : M}, x1 ≼{n} x2 → ∀ m, m ≤ n → P m x1 → P m x2)) := by
+     (∀ {n} {x1 x2 : M}, x1 ≼ₒ{n} x2 → ∀ m, m ≤ n → P m x1 → P m x2)) := by
   constructor
   · intro H
     refine ⟨fun Hle HP => H HP .rfl Hle, ?_, ?_⟩

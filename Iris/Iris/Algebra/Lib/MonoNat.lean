@@ -114,12 +114,12 @@ theorem both_valid (n m : MaxNat) :
 
 @[rocq_alias mono_nat_lb_mono]
 theorem lb_mono (n1 n2 : MaxNat) (h : n1 ≤ n2) :
-  (◯MN n1 : MonoNat) ≼ₑ ◯MN n2 :=
+  (◯MN n1 : MonoNat) ≼ ◯MN n2 :=
   Auth.frag_incExt_of_incExt (MaxNat.inc_iff.mpr h)
 
 @[rocq_alias mono_nat_included]
 theorem included (dq : DFrac) (n : MaxNat) :
-  (◯MN n : MonoNat) ≼ₑ ●MN{dq} n :=
+  (◯MN n : MonoNat) ≼ ●MN{dq} n :=
   RABase.incExt_op_right ..
 
 @[rocq_alias mono_nat_update]

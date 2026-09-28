@@ -148,7 +148,7 @@ theorem mem_iff_of_validN_union {x y : DisjointLeibnizSet S} (v : ✓{n} x • y
     a ∈ x • y ↔ a ∈ x ∨ a ∈ y := mem_iff_of_valid_union v a
 
 @[rocq_alias coPset_disj_included, rocq_alias gset_disj_included]
-theorem included_iff_subset {X Y : S} : valid X ≼ valid Y ↔ X ⊆ Y := by
+theorem included_iff_subset {X Y : S} : valid X ≼ₒ valid Y ↔ X ⊆ Y := by
   refine ⟨?_, ?_⟩
   · rintro ⟨(Z|_), HZ⟩
     · by_cases H : X ## Z
@@ -367,7 +367,7 @@ theorem core_equiv (X : LeibnizSet S) : core X = X := by
   simp [pcore]
 
 @[rocq_alias coPset_included, rocq_alias gset_included]
-theorem included_iff_subset (X Y : S) : valid X ≼ valid Y ↔ X ⊆ Y := by
+theorem included_iff_subset (X Y : S) : valid X ≼ₒ valid Y ↔ X ⊆ Y := by
   simp only [Included, RABase.IncExt, op]
   refine ⟨fun ⟨_, H⟩ => ?_, fun Hsub => ?_⟩
   · obtain ⟨rfl⟩ := H

@@ -453,8 +453,8 @@ def raBase : RABase (M V) where
 
 /-- The pointwise order on partial maps. -/
 @[reducible] def orderN : OrderN (M V) where
-  IncludedN n m m' := ∀ k, get? m k ≼{n} get? m' k
-  Included m m' := ∀ k, get? m k ≼ get? m' k
+  IncludedN n m m' := ∀ k, get? m k ≼ₒ{n} get? m' k
+  Included m m' := ∀ k, get? m k ≼ₒ get? m' k
   incN_ne em em' h k := incN_ne ((get?_ne k).ne em) ((get?_ne k).ne em') (h k)
   incN_succ h k := incN_succ (h k)
   incN_trans h₁ h₂ k := incN_trans (h₁ k) (h₂ k)
@@ -711,7 +711,7 @@ instance [CoreId (x : V)] : CoreId (singleton i x : M V) where
 
 open Classical in
 theorem singleton_incN_singleton_iff :
-    (singleton i x : M V) ≼{n} (singleton i y : M V) ↔ some x ≼{n} some y := by
+    (singleton i x : M V) ≼ₒ{n} (singleton i y : M V) ↔ some x ≼ₒ{n} some y := by
   refine ⟨fun h => by simpa [get?_singleton_eq rfl] using h i, fun h k => ?_⟩
   by_cases hk : i = k
   · subst hk; simpa [get?_singleton_eq rfl] using h
@@ -719,17 +719,17 @@ theorem singleton_incN_singleton_iff :
 
 open Classical in
 theorem singleton_inc_singleton_iff :
-    (singleton i x : M V) ≼ (singleton i y : M V) ↔ some x ≼ some y := by
+    (singleton i x : M V) ≼ₒ (singleton i y : M V) ↔ some x ≼ₒ some y := by
   refine ⟨fun h => by simpa [get?_singleton_eq rfl] using h i, fun h k => ?_⟩
   by_cases hk : i = k
   · subst hk; simpa [get?_singleton_eq rfl] using h
   · simp only [get?_singleton, hk, ↓reduceIte]; trivial
 
-theorem singleton_inc_singleton_mono (Hinc : x ≼ y) :
-    (singleton i x : M V) ≼ (singleton i y) :=
+theorem singleton_inc_singleton_mono (Hinc : x ≼ₒ y) :
+    (singleton i x : M V) ≼ₒ (singleton i y) :=
   singleton_inc_singleton_iff.mpr (Or.inr Hinc)
 
-theorem inc_dom_inc {m1 m2 : M V} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (dom m2) := by
+theorem inc_dom_inc {m1 m2 : M V} (Hinc : m1 ≼ₒ m2) : Set.Included (dom m1) (dom m2) := by
   intro i
   unfold dom
   have := Hinc i
@@ -739,7 +739,7 @@ theorem inc_dom_inc {m1 m2 : M V} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (do
 open Classical in
 @[rocq_alias singleton_includedN_l]
 theorem singleton_incExtN_iff {m : M V} :
-    (singleton i x) ≼ₑ{n} m ↔ ∃ y, (get? m i ≡{n}≡ some y) ∧ some x ≼ₑ{n} some y := by
+    (singleton i x) ≼{n} m ↔ ∃ y, (get? m i ≡{n}≡ some y) ∧ some x ≼{n} some y := by
   refine ⟨fun ⟨z, Hz⟩ => ?_, fun ⟨y, Hy, z, Hz⟩ => ?_⟩
   · specialize Hz i; revert Hz
     simp only [CMRA.op, Heap.op, get?_merge, get?_singleton_eq rfl]
@@ -772,7 +772,7 @@ theorem singleton_incExtN_iff {m : M V} :
 open Classical in
 @[rocq_alias singleton_included_l]
 theorem singleton_incExt_iff {m : M V} :
-    (singleton i x) ≼ₑ m ↔ ∃ y, (get? m i = some y) ∧ some x ≼ₑ some y := by
+    (singleton i x) ≼ m ↔ ∃ y, (get? m i = some y) ∧ some x ≼ some y := by
   refine ⟨fun ⟨z, Hz⟩ => ?_, fun ⟨y, Hy, z, Hz⟩ => ?_⟩
   · replace Hz := congrArg (get? · i) Hz; revert Hz
     simp only [CMRA.op, Heap.op, get?_merge, get?_singleton_eq rfl]
@@ -804,7 +804,7 @@ theorem singleton_incExt_iff {m : M V} :
 
 @[rocq_alias singleton_included_exclusive_l]
 theorem exclusive_singleton_incExt_iff {m : M V} (He : Exclusive x) (Hv : ✓ m) :
-    (singleton i x) ≼ₑ m ↔ (get? m i = some x) := by
+    (singleton i x) ≼ m ↔ (get? m i = some x) := by
   refine singleton_incExt_iff.trans ⟨fun ⟨y, Hy, Hxy⟩ => ?_, fun _ => ?_⟩
   · suffices x = y by exact Hy.trans <| OFE.some_eqv_some.mpr this.symm
     exact Option.eqv_of_incExt_exclusive Hxy <| valid_get?_valid Hv Hy
@@ -812,7 +812,7 @@ theorem exclusive_singleton_incExt_iff {m : M V} (He : Exclusive x) (Hv : ✓ m)
 
 @[rocq_alias singleton_included]
 theorem singleton_incExt_singleton_iff :
-    (singleton i x : M V) ≼ₑ (singleton i y : M V) ↔ some x ≼ₑ some y := by
+    (singleton i x : M V) ≼ (singleton i y : M V) ↔ some x ≼ some y := by
   refine singleton_incExt_iff.trans ⟨fun ⟨z, Hz, Hxz⟩ => ?_, fun H => ?_⟩
   · exact (Hz.symm.trans <| get?_singleton_eq rfl) ▸ Hxz
   · refine ⟨y, ?_, H⟩
@@ -820,12 +820,12 @@ theorem singleton_incExt_singleton_iff :
 
 @[rocq_alias singleton_included_total]
 theorem total_singleton_incExt_singleton_iff [IsTotal V] :
-    (singleton i x : M V) ≼ₑ (singleton i y) ↔ x ≼ₑ y :=
+    (singleton i x : M V) ≼ (singleton i y) ↔ x ≼ y :=
   singleton_incExt_singleton_iff.trans <| Option.some_incExt_some_iff_is_total
 
 @[rocq_alias singleton_included_mono]
-theorem singleton_incExt_singleton_mono (Hinc : x ≼ₑ y) :
-    (singleton i x : M V) ≼ₑ (singleton i y) :=
+theorem singleton_incExt_singleton_mono (Hinc : x ≼ y) :
+    (singleton i x : M V) ≼ (singleton i y) :=
   singleton_incExt_singleton_iff.mpr <| Option.some_incExt_some_iff.mpr <| .inr Hinc
 
 open Classical in
@@ -897,7 +897,7 @@ theorem dom_op_union (m1 m2 : M V) : dom (m1 • m2) = Set.Union (dom m1) (dom m
   cases get? m1 k <;> cases get? m2 k <;> simp_all [CMRA.op, dom, Set.Union, get?_merge]
 
 @[rocq_alias dom_included]
-theorem incExt_dom_inc {m1 m2 : M V} (Hinc : m1 ≼ₑ m2) : Set.Included (dom m1) (dom m2) := by
+theorem incExt_dom_inc {m1 m2 : M V} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (dom m2) := by
   intro i
   unfold dom
   rcases lookup_inc.mp Hinc i with ⟨z, Hz⟩
@@ -905,8 +905,8 @@ theorem incExt_dom_inc {m1 m2 : M V} (Hinc : m1 ≼ₑ m2) : Set.Included (dom m
   cases get? m1 i <;> cases get? m2 i <;> cases z <;> simp [CMRA.op, optionOp]
 
 @[rocq_alias gmap_fmap_mono]
-theorem map_mono_ext [CMRA V'] (f : V → V') (hf : ∀ x y : V, x ≼ₑ y → f x ≼ₑ f y) {m1 m2 : M V}
-    (Hinc : m1 ≼ₑ m2) : PartialMap.map f m1 ≼ₑ PartialMap.map f m2 := by
+theorem map_mono_ext [CMRA V'] (f : V → V') (hf : ∀ x y : V, x ≼ y → f x ≼ f y) {m1 m2 : M V}
+    (Hinc : m1 ≼ m2) : PartialMap.map f m1 ≼ PartialMap.map f m2 := by
   refine lookup_inc.mpr fun i => ?_
   obtain ⟨z, hz⟩ := Option.map_mono_ext f hf (lookup_inc.mp Hinc i)
   exact ⟨z, by rw [get?_map, get?_map, hz]⟩

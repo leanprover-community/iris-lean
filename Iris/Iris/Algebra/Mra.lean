@@ -182,7 +182,7 @@ theorem below_op (a : α) (x y : Mra R) : below a (x • y) ↔ below a x ∨ be
 theorem idem (x : Mra R) : x • x = x := append_idem x
 
 @[rocq_alias mra_included]
-theorem inc_iff (x y : Mra R) : x ≼ y ↔ y = x • y :=
+theorem inc_iff (x y : Mra R) : x ≼ₒ y ↔ y = x • y :=
   ⟨fun h ↦ (RABase.op_core_right_of_incExt h).symm, fun h ↦ ⟨y, h⟩⟩
 
 @[rocq_alias to_mra_R_op]
@@ -194,7 +194,7 @@ theorem toMra_op_of_rel [hR : Trans R R R] (a b : α) (h : R a b) :
 
 @[rocq_alias to_mra_included]
 theorem toMra_inc_iff [Std.Refl R] [Trans R R R] (a b : α) :
-    toMra (R := R) a ≼ toMra b ↔ R a b := by
+    toMra (R := R) a ≼ₒ toMra b ↔ R a b := by
   constructor
   · rintro ⟨z, hz⟩
     rw [← below_toMra (R := R) a b, hz, below_op]

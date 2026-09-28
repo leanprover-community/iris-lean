@@ -159,7 +159,7 @@ instance [OFE α] : RABase.ExtensionLaws (Excl α) where
 instance [OFE α] : CMRA (Excl α) := CMRA.withExtensionOrder
 
 @[rocq_alias excl_included]
-theorem inc_iff [OFE α] {x y : Excl α} : x ≼ y ↔ y = invalid := by
+theorem inc_iff [OFE α] {x y : Excl α} : x ≼ₒ y ↔ y = invalid := by
   constructor
   · rintro ⟨z, hz⟩
     exact hz
@@ -167,7 +167,7 @@ theorem inc_iff [OFE α] {x y : Excl α} : x ≼ y ↔ y = invalid := by
     exact ⟨invalid, h⟩
 
 @[rocq_alias excl_includedN]
-theorem incN_iff [OFE α] {x y : Excl α} (n) : x ≼{n} y ↔ y = invalid := by
+theorem incN_iff [OFE α] {x y : Excl α} (n) : x ≼ₒ{n} y ↔ y = invalid := by
   constructor
   · intro ⟨z, hz⟩; cases x <;> cases y <;> first | rfl | exact hz.elim
   · rintro rfl; exists invalid
@@ -183,7 +183,7 @@ theorem excl_dist_inj [OFE α] {a b : α} {n}
 
 @[rocq_alias Excl_included]
 theorem excl_included [OFE α] {a b : α} :
-    (some (excl a) : Option (Excl α)) ≼ some (excl b) ↔ a = b := by
+    (some (excl a) : Option (Excl α)) ≼ₒ some (excl b) ↔ a = b := by
   refine ⟨fun h => ?_, fun h => Or.inl (congrArg excl h)⟩
   rcases h with h | ⟨_, hz⟩
   · exact excl.inj h
@@ -191,7 +191,7 @@ theorem excl_included [OFE α] {a b : α} :
 
 @[rocq_alias Excl_includedN]
 theorem excl_includedN [OFE α] {a b : α} {n} :
-    (some (excl a) : Option (Excl α)) ≼{n} some (excl b) ↔ a ≡{n}≡ b := by
+    (some (excl a) : Option (Excl α)) ≼ₒ{n} some (excl b) ↔ a ≡{n}≡ b := by
   refine ⟨fun h => ?_, fun h => Or.inl h⟩
   rcases h with h | ⟨_, hz⟩
   · exact h
@@ -220,7 +220,7 @@ instance [OFE α] [OFE.Discrete α] : CMRA.Discrete (Excl α) where
   discrete_inc := RABase.incExt_of_incExt0
 
 @[rocq_alias ExclInvalid_included]
-theorem invalid_inc [OFE α] (ea : Excl α) : ea ≼ invalid := by exists invalid
+theorem invalid_inc [OFE α] (ea : Excl α) : ea ≼ₒ invalid := by exists invalid
 
 /-! ## Functors -/
 @[rocq_alias excl_map_id]

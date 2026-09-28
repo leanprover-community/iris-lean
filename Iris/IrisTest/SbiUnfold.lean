@@ -105,8 +105,8 @@ example (x : A × A) (h : ∀ n, ✓{n} x ↔ ✓{n} x.1 ∧ ✓{n} x.2) :
 
 /- The example from the module docstring: nested implications contribute no
 closure. -/
-example (x y : A × A) (h : ∀ n, x.1 ≼{n} y.1 → x.2 ≼{n} y.2 → x ≼{n} y) :
-    ⊢@{PROP} iprop(x.1 ≼ y.1 → x.2 ≼ y.2 → x ≼ y) := by
+example (x y : A × A) (h : ∀ n, x.1 ≼ₒ{n} y.1 → x.2 ≼ₒ{n} y.2 → x ≼ₒ{n} y) :
+    ⊢@{PROP} iprop(x.1 ≼ₒ y.1 → x.2 ≼ₒ y.2 → x ≼ₒ y) := by
   sbi_unfold; exact h
 
 /- `⌜_⌝` and `∧`. -/
