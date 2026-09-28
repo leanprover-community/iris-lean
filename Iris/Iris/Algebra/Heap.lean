@@ -734,7 +734,7 @@ theorem inc_dom_inc {m1 m2 : M V} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (do
   unfold dom
   have := Hinc i
   revert this
-  cases get? m1 i <;> cases get? m2 i <;> simp <;> exact id
+  cases get? m1 i <;> cases get? m2 i <;> simp; exact id
 
 open Classical in
 @[rocq_alias singleton_includedN_l]

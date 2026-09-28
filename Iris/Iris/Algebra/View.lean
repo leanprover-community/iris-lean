@@ -368,7 +368,7 @@ instance instUCMRA : UCMRA (View R) where
   unit_valid := IsViewRel.rel_unit
   unit_left_id := by
     rintro ⟨xa, xf⟩
-    show (⟨UCMRA.unit • xa, UCMRA.unit • xf⟩ : View R) = ⟨xa, xf⟩
+    change (⟨UCMRA.unit • xa, UCMRA.unit • xf⟩ : View R) = ⟨xa, xf⟩
     rw [CMRA.ucmra_unit_left_id, CMRA.ucmra_unit_left_id]
   pcore_unit := congrArg some (congrArg (View.mk _) (CMRA.core_eqv_self UCMRA.unit))
   inc_refl x := ⟨CMRA.inc_refl x.auth, CMRA.inc_refl x.frag⟩
@@ -399,16 +399,6 @@ instance [Discrete A] [CMRA.Discrete B] [IsViewRelDiscrete R] : CMRA.Discrete (V
       · exact (OFE.Discrete.discrete_0 H2).dist
       · exact IsViewRelDiscrete.discrete _ _ _ H3
     · exact fun ⟨a, H⟩ _ => ⟨a, IsViewRelDiscrete.discrete _ _ _ H⟩
-
-@[rocq_alias viewUR]
-instance : UCMRA (View R) where
-  unit := ⟨UCMRA.unit, UCMRA.unit⟩
-  unit_valid := IsViewRel.rel_unit
-  unit_left_id := by
-    rintro ⟨xa, xf⟩
-    change (⟨UCMRA.unit • xa, UCMRA.unit • xf⟩ : View R) = ⟨xa, xf⟩
-    rw [CMRA.ucmra_unit_left_id, CMRA.ucmra_unit_left_id]
-  pcore_unit := congrArg some (congrArg (View.mk _) (CMRA.core_eqv_self UCMRA.unit))
 
 #rocq_ignore view_empty_instance "Inlined in the UCMRA instance"
 #rocq_ignore view_ucmra_mixin "Not needed"

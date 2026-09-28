@@ -289,7 +289,7 @@ instance : RABase (ReservationMap A H) where
     exact fun m => ⟨xzz.dist, exy.right⟩
 
 /-- The order on `ReservationMap A H`, inherited componentwise. -/
-@[reducible] def ReservationMap.orderN : OrderN (ReservationMap A H) where
+@[reducible] def orderN : OrderN (ReservationMap A H) where
   IncludedN n x y := x.data ≼{n} y.data ∧ x.token ≼{n} y.token
   Included x y := x.data ≼ y.data ∧ x.token ≼ y.token
   incN_ne ex ey h := ⟨CMRA.incN_ne ex.1 ey.1 h.1, CMRA.incN_ne ex.2 ey.2 h.2⟩
@@ -299,23 +299,23 @@ instance : RABase (ReservationMap A H) where
   incN_of_inc n h := ⟨CMRA.incN_of_inc n h.1, CMRA.incN_of_inc n h.2⟩
 
 section
-attribute [local instance] ReservationMap.orderN
+attribute [local instance] orderN
 
-theorem ReservationMap.increasing_data {v : ReservationMap A H}
+theorem increasing_data {v : ReservationMap A H}
     (h : CMRA.Increasing v) : CMRA.Increasing v.data where
   increasing w := (h.increasing (mk w ∅)).1
 
-theorem ReservationMap.increasing_token {v : ReservationMap A H}
+theorem increasing_token {v : ReservationMap A H}
     (h : CMRA.Increasing v) : CMRA.Increasing v.token where
   increasing w := (h.increasing (mk ∅ w)).2
 
-theorem ReservationMap.increasing_mk {v : ReservationMap A H}
+theorem increasing_mk {v : ReservationMap A H}
     (hd : CMRA.Increasing v.data) (ht : CMRA.Increasing v.token) : CMRA.Increasing v where
   increasing w := ⟨hd.increasing w.data, ht.increasing w.token⟩
 
 open ReservationMap in
 instance instCMRAReservationMap : CMRA (ReservationMap A H) where
-  toOrderN := ReservationMap.orderN
+  toOrderN := orderN
   op_monoN_left z h := ⟨CMRA.op_monoN_left z.data h.1, CMRA.op_monoN_left z.token h.2⟩
   op_mono_left z h := ⟨CMRA.op_mono_left z.data h.1, CMRA.op_mono_left z.token h.2⟩
   validN_of_incN {n x y} h v := by
@@ -362,7 +362,7 @@ end
 /-- A reservation map over an affine algebra is affine. -/
 instance [CMRA.Affine A] : CMRA.Affine (ReservationMap A H) where
   increasing v :=
-    ReservationMap.increasing_mk (CMRA.Affine.increasing v.data)
+    increasing_mk (CMRA.Affine.increasing v.data)
       (CMRA.Affine.increasing v.token)
 
 @[rocq_alias reservation_mapUR]

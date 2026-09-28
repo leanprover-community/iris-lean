@@ -70,6 +70,8 @@ class CMRA.IsTotal (α : Type _) [OFE α] [PCore α] : Prop where
   total (x : α) : ∃ cx, PCore.pcore x = some cx
 #rocq_ignore cmra_total_mixin "Use CMRA + IsTotal"
 
+-- NOTE: The linter here complains that `Valid` is duplicted here.
+set_option linter.iris.dupNamespace false in
 /-- The validity predicates of a resource algebra, together with their own laws. -/
 @[rocq_alias Valid]
 class Valid (α : Type _) [OFE α] where
@@ -321,6 +323,8 @@ theorem op_opM_assoc_dist (x y : α) (mz : Option α) : (x • y) •? mz ≡{n}
 
 /-! ## Validity -/
 
+-- NOTE: The linter complains about this name, but it is correct.
+set_option linter.iris.dupNamespace false in
 theorem _root_.Iris.Valid.Valid.validN : ✓ (x : α) → ✓{n} x := (valid_iff_validN.1 · _)
 protected theorem Valid.validN : ✓ (x : α) → ✓{n} x := Iris.Valid.Valid.validN
 
@@ -483,7 +487,7 @@ instance (y : α) : CoreId (core y) := CoreId.of_pcore_eq_some (pcore_eq_core _)
 @[rocq_alias cmra_core_ne]
 theorem core_ne : NonExpansive (core : α → α) where
   ne n x₁ x₂ H := by
-    show some (core x₁) ≡{n}≡ some (core x₂)
+    change some (core x₁) ≡{n}≡ some (core x₂)
     rw [← pcore_eq_core, ← pcore_eq_core]
     exact NonExpansive.ne H
 
@@ -760,13 +764,6 @@ theorem _root_.Iris.OFE.Dist.to_incExtN {n} {x y : α} : x ≡{n}≡ y → x ≼
 theorem core_incExt_self {x : α} : core x ≼ₑ x := ⟨x, (core_op x).symm⟩
 
 end total
-
-@[rocq_alias cmra_core_ne]
-theorem core_ne : NonExpansive (core : α → α) where
-  ne n x₁ x₂ H := by
-    change some (core x₁) ≡{n}≡ some (core x₂)
-    rw [← pcore_eq_core, ← pcore_eq_core]
-    exact NonExpansive.ne H
 
 section discrete
 
@@ -1846,7 +1843,7 @@ open Classical in
 theorem increasing_apply {f : ∀ x, β x} (h : Increasing f) (x : α) : Increasing (f x) where
   increasing y := by
     let g : ∀ x', β x' := fun x' => if e : x' = x then e ▸ y else f x'
-    have hg : g x = y := dif_pos rfl
+    have hg : g x = y := dite_eq_left rfl
     rw [← hg]
     exact h.increasing g x
 
@@ -3579,10 +3576,6 @@ instance ofDiscrete_discrete [OFE α] [OFE.Discrete α] (pcore : α → Option �
     discrete_inc := incExt_of_incExt0 }
 
 end OfDiscrete
-
 end RABase
-end CMRA
-
 end CmraMixin
-
 end Iris

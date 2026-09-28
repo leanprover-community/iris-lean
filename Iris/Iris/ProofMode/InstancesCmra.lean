@@ -47,12 +47,12 @@ instance fromPure_internalCmraIncExt io α [CMRA α] (a b : α) :
 
 @[rocq_alias into_exist_internal_included]
 instance intoExists_internalCmraIncExt α [CMRA α] (a b : α) :
-  IntoExists (PROP := PROP) iprop(a ≼ₑ b) (λ c => iprop(b ≡ (a • c))) where
+  IntoExists (PROP := PROP) iprop(a ≼ₑ b) (fun c => iprop(b ≡ (a • c))) where
   into_exists := siPure_exist.mp
 
 @[rocq_alias from_exist_internal_included]
 instance fromExists_internalCmraIncExt α [CMRA α] (a b : α) :
-  FromExists (PROP := PROP) iprop(a ≼ₑ b) (λ c => iprop(b ≡ (a • c))) where
+  FromExists (PROP := PROP) iprop(a ≼ₑ b) (fun c => iprop(b ≡ (a • c))) where
   from_exists := siPure_exist.mpr
 
 end cmra

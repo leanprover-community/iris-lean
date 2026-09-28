@@ -365,9 +365,6 @@ instance : BI (UPred M) where
     exact (core_idem x.val).dist
   persistently_emp_2 _ _ _ := unit_incN_core _
   persistently_and_2 {P Q} := uPred_entails_preorder.le_refl iprop(<pers> P ∧ <pers> Q)
-  persistently_sExists_1 _ _ := fun ⟨p, HΨ, H⟩ => by
-    refine ⟨iprop(<pers> p), ⟨p, ?_⟩, H⟩
-    ext; exact and_iff_right HΨ
   persistently_absorb_l {P Q} _ _ := fun ⟨x1, x2, H1, H2, _⟩ =>
     P.mono H2 ((core_op_mono x1 x2).incN.trans (core_incN_core H1)) .refl
   persistently_and_l _ x H := ⟨core x, x, (core_op x.val).dist.to_incN, H⟩
