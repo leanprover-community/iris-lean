@@ -13,20 +13,10 @@ public import Iris.Algebra.Monoid
 namespace Iris
 open OFE
 
-/-! # Ordered resource algebras
-
-A `CMRA` is a resource algebra (`RABase`) equipped with a step-indexed order `≼{n}` and its
-limit `≼` (`OrderN`). The order need neither be reflexive nor contain the extension inclusion
-`x ≼ₑ{n} y := ∃ z, y ≡{n}≡ x • z` of frames: reflexivity is the law of unital algebras
-(`IncRefl`, part of `UCMRA`), and `≼ₑ ⊆ ≼` is affineness (`CMRA.Affine`). Every classical
-resource algebra is a `CMRA` under its extension inclusion, see `CMRA.withExtensionOrder`;
-constructions that reason about frames (local updates, views) are stated with `≼ₑ`. -/
-
-/-! ## The components of a resource algebra -/
-
-/-- The composition of a resource algebra, together with its own laws. -/
+/-- The underlying operation of a resource. -/
 @[rocq_alias Op]
 class Op (α : Type _) [OFE α] where
+  /-- The composition operation. -/
   op : α → α → α
   op_ne : NonExpansive (op x)
   assoc : op x (op y z) = op (op x y) z
@@ -34,8 +24,7 @@ class Op (α : Type _) [OFE α] where
 
 namespace Op
 
-/-- The composition operation. -/
-infix:60 " • " => op
+@[inherit_doc] infix:60 " • " => op
 
 variable [OFE α] [Op α]
 
@@ -48,7 +37,7 @@ def op? (x : α) : Option α → α
 
 end Op
 
-/-- The partial core of a resource algebra, together with its own laws. -/
+/-- The partial core operator for a resource algebra. -/
 @[rocq_alias PCore]
 class PCore (α : Type _) [OFE α] where
   pcore : α → Option α
@@ -58,7 +47,7 @@ class PCore (α : Type _) [OFE α] where
 namespace PCore
 variable [OFE α] [PCore α]
 
-/-- The total core, returning `x` itself where `pcore` is undefined. -/
+/-- The total core operation. -/
 @[rocq_alias core]
 def core (x : α) := (pcore x).getD x
 
@@ -72,10 +61,12 @@ class CMRA.IsTotal (α : Type _) [OFE α] [PCore α] : Prop where
 
 -- NOTE: The linter here complains that `Valid` is duplicted here.
 set_option linter.iris.dupNamespace false in
-/-- The validity predicates of a resource algebra, together with their own laws. -/
+/-- The validity predicates of a resource algebra.  -/
 @[rocq_alias Valid]
 class Valid (α : Type _) [OFE α] where
+  /-- The step-indexed validity predicate. -/
   ValidN : Nat → α → Prop
+  /-- The validity predicate. -/
   Valid : α → Prop
   validN_ne : x ≡{n}≡ y → ValidN n x → ValidN n y
   valid_iff_validN : Valid x ↔ ∀ n, ValidN n x
@@ -85,18 +76,16 @@ class Valid (α : Type _) [OFE α] where
 
 namespace Valid
 
-/-- Validity. -/
-prefix:50 "✓ " => Valid.Valid
-/-- Step-indexed validity. -/
-notation:50 "✓{" n "} " x:51 => Valid.ValidN n x
+@[inherit_doc] prefix:50 "✓ " => Valid.Valid
+@[inherit_doc] notation:50 "✓{" n "} " x:51 => Valid.ValidN n x
 
 end Valid
 
-/-- A step-indexed order `≼{n}` together with its limit `≼`: the step-indexed order is
-transitive, respects `≡{n}≡` and is downward closed in `n`; the limit is transitive and is
-contained in every `≼{n}`. Neither is required to be reflexive, see `IncRefl`. -/
+/-- The ordering predicate on a resource algebra. -/
 class OrderN (α : Type _) [OFE α] where
+  /-- The indexed ordering predicte. -/
   IncludedN : Nat → α → α → Prop
+  /-- The ordering predicte. -/
   Included : α → α → Prop
   incN_ne {n} {x x' y y' : α} :
     x ≡{n}≡ x' → y ≡{n}≡ y' → IncludedN n x y → IncludedN n x' y'
@@ -107,10 +96,8 @@ class OrderN (α : Type _) [OFE α] where
 
 namespace OrderN
 
-/-- The step-indexed order. -/
-notation:50 x " ≼{" n "} " y:51 => IncludedN n x y
-/-- The order. -/
-infix:50 " ≼ " => Included
+@[inherit_doc] notation:50 x " ≼{" n "} " y:51 => IncludedN n x y
+@[inherit_doc] infix:50 " ≼ " => Included
 
 variable [OFE α] [OrderN α]
 
