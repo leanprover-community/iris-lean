@@ -87,8 +87,8 @@ export Sbi (siPure_mono siEmpValid_mono siEmpValid_siPure siPure_siEmpValid siPu
   siEmpValid_affinely_mpr prop_ext_siEmpValid)
 
 #rocq_ignore SbiMixin "Uses the Sbi typeclass."
-#rocq_ignore SbiPropExtMixin "Included in Sbi."
-#rocq_ignore sbi_prop_ext_mixin "Included in Sbi."
+#rocq_ignore SbiPropExtMixin "Order in Sbi."
+#rocq_ignore sbi_prop_ext_mixin "Order in Sbi."
 
 /-- Alias for `Sbi.siEmpValid_affinely_mpr` field. -/
 @[rocq_alias si_emp_valid_affinely_2]
@@ -128,8 +128,8 @@ instance instSbiSiProp : Sbi SiProp where
   siEmpValid_affinely_mpr _ := (⟨trivial, ·⟩)
   prop_ext_siEmpValid := @SiProp.prop_ext
 
-#rocq_ignore siprop_sbi_mixin "Included in Sbi instance construction."
-#rocq_ignore siprop_sbi_prop_ext_mixin "Included in Sbi instance construction."
+#rocq_ignore siprop_sbi_mixin "Order in Sbi instance construction."
+#rocq_ignore siprop_sbi_prop_ext_mixin "Order in Sbi instance construction."
 
 @[rocq_alias siprop_sbi_emp_valid_exist]
 instance instSbiEmpValidExistSiProp : SbiEmpValidExist SiProp where

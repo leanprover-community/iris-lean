@@ -40,11 +40,11 @@ instance instViewRel_authViewRel : IsViewRel (AuthViewRel (A := A)) :=
   .ofMonoOrd
     (fun ⟨hinc, hv⟩ ha hb hn =>
       ⟨calc _ ≼ₒ{_} _ := hb
-            _ ≼ₒ{_} _ := CMRA.incN_of_incN_le hn hinc
-            _ ≼ₒ{_} _ := ha.to_incN,
+            _ ≼ₒ{_} _ := CMRA.ordN_of_ordN_le hn hinc
+            _ ≼ₒ{_} _ := ha.to_ordN,
        validN_ne ha (validN_of_le hn hv)⟩)
-    (fun _ _ _ ⟨hinc, hv⟩ => validN_of_incN hinc hv)
-    (fun _ => ⟨unit, incN_refl unit, unit_valid.validN⟩)
+    (fun _ _ _ ⟨hinc, hv⟩ => validN_of_ordN hinc hv)
+    (fun _ => ⟨unit, ordN_refl unit, unit_valid.validN⟩)
 
 #rocq_ignore auth_view_rel_raw_mono "Use the IsViewRel typeclass"
 #rocq_ignore auth_view_rel_raw_valid "Use the IsViewRel typeclass"
@@ -52,16 +52,16 @@ instance instViewRel_authViewRel : IsViewRel (AuthViewRel (A := A)) :=
 
 @[rocq_alias auth_view_rel_unit]
 theorem authViewRel_unit_iff {n : Nat} {a : A} : AuthViewRel n a unit ↔ ✓{n} a :=
-  ⟨(·.2), (⟨CMRA.incN_unit, ·⟩)⟩
+  ⟨(·.2), (⟨CMRA.ordN_unit, ·⟩)⟩
 
 @[rocq_alias auth_view_rel_exists]
 theorem authViewRel_exists_iff {n : Nat} {b : A} : (∃ a, AuthViewRel n a b) ↔ ✓{n} b :=
-  ⟨fun ⟨_, h⟩ => IsViewRel.rel_validN _ _ _ h, (⟨b, incN_refl b, ·⟩)⟩
+  ⟨fun ⟨_, h⟩ => IsViewRel.rel_validN _ _ _ h, (⟨b, ordN_refl b, ·⟩)⟩
 
 @[rocq_alias auth_view_rel_discrete]
 instance [OFE.Discrete A] [CMRA.Discrete A] : IsViewRelDiscrete (AuthViewRel (A := A)) where
   discrete _ _ _ h :=
-    ⟨CMRA.incN_of_inc _ (CMRA.discrete_inc h.1), (discrete_valid h.2).validN⟩
+    ⟨CMRA.ordN_of_ord _ (CMRA.discrete_ord h.1), (discrete_valid h.2).validN⟩
 
 end AuthViewRel
 
@@ -223,7 +223,7 @@ end BigOp
 The fragment–authority relation is stated with the primitive *order* `≼ₒ{n}`/`≼ₒ`, which for
 classical algebras — those built with `withExtensionOrder` — coincides definitionally with the
 extension inclusion of the Rocq originals. Likewise, `[IsTotal]` hypotheses that only provided
-reflexivity become `[IncRefl]`; total classical algebras satisfy it automatically. -/
+reflexivity become `[OrderRefl]`; total classical algebras satisfy it automatically. -/
 
 @[rocq_alias auth_auth_dfrac_op_invN]
 theorem auth_dfrac_op_invN {n : Nat} {dq1 dq2 : DFrac} {a b : A}
@@ -242,7 +242,7 @@ theorem auth_dfrac_op_inv {dq1 dq2 : DFrac} {a b : A}
 theorem auth_dfrac_validN {n : Nat} {dq : DFrac} {a : A} :
     (✓{n} (●{dq} a)) ↔ (✓ dq ∧ ✓{n} a) := by
   rw [auth_validN_iff]
-  exact ⟨fun ⟨hdq, _, hv⟩ => ⟨hdq, hv⟩, fun ⟨hdq, hv⟩ => ⟨hdq, CMRA.incN_unit, hv⟩⟩
+  exact ⟨fun ⟨hdq, _, hv⟩ => ⟨hdq, hv⟩, fun ⟨hdq, hv⟩ => ⟨hdq, CMRA.ordN_unit, hv⟩⟩
 
 @[rocq_alias auth_auth_validN]
 theorem auth_validN {n : Nat} {a : A} :
@@ -254,7 +254,7 @@ theorem auth_validN {n : Nat} {a : A} :
 theorem auth_dfrac_op_validN {n : Nat} {dq1 dq2 : DFrac} {a1 a2 : A} :
     (✓{n} ((●{dq1} a1) • ●{dq2} a2)) ↔ (✓ (dq1 • dq2) ∧ a1 ≡{n}≡ a2 ∧ ✓{n} a1) := by
   rw [View.auth_op_auth_validN_iff]
-  exact ⟨fun ⟨hdq, ha, ⟨_, hv⟩⟩ => ⟨hdq, ha, hv⟩, fun ⟨hdq, ha, hv⟩ => ⟨hdq, ha, CMRA.incN_unit, hv⟩⟩
+  exact ⟨fun ⟨hdq, ha, ⟨_, hv⟩⟩ => ⟨hdq, ha, hv⟩, fun ⟨hdq, ha, hv⟩ => ⟨hdq, ha, CMRA.ordN_unit, hv⟩⟩
 
 @[rocq_alias auth_auth_op_validN]
 theorem auth_op_validN {n : Nat} {a1 a2 : A} : (✓{n} ((● a1 : Auth A) • ● a2)) ↔ False :=
@@ -303,7 +303,7 @@ theorem auth_dfrac_op_valid {dq1 dq2 : DFrac} {a1 a2 : A} :
   rw [auth_op_auth_valid_iff]
   constructor
   · exact fun ⟨hdq, ha, hr⟩ => ⟨hdq, ha, valid_iff_validN.mpr (hr · |>.2)⟩
-  · exact fun ⟨hdq, ha, hv⟩ => ⟨hdq, ha, fun _ => ⟨CMRA.incN_unit, hv.validN⟩⟩
+  · exact fun ⟨hdq, ha, hv⟩ => ⟨hdq, ha, fun _ => ⟨CMRA.ordN_unit, hv.validN⟩⟩
 
 @[rocq_alias auth_auth_op_valid]
 theorem auth_op_valid {a1 a2 : A} : (✓ ((● a1 : Auth A) • ● a2)) ↔ False :=
@@ -346,7 +346,7 @@ theorem auth_both_valid {a b : A} :
 @[rocq_alias auth_both_dfrac_valid_2]
 theorem auth_both_dfrac_valid_2 {dq : DFrac} {a b : A} (hdq : ✓ dq) (ha : ✓ a)
     (hb : b ≼ₒ a) : ✓ ((●{dq} a) • ◯ b) :=
-  both_dfrac_valid.mpr ⟨hdq, (CMRA.incN_of_inc · hb), ha⟩
+  both_dfrac_valid.mpr ⟨hdq, (CMRA.ordN_of_ord · hb), ha⟩
 
 @[rocq_alias auth_both_valid_2]
 theorem auth_both_valid_2 {a b : A} (ha : ✓ a) (hb : b ≼ₒ a) :
@@ -359,7 +359,7 @@ theorem both_dfrac_valid_discrete [CMRA.Discrete A] {dq : DFrac} {a b : A} :
   constructor
   · intro h
     have ⟨hdq, hinc, hv⟩ := both_dfrac_valid.mp h
-    exact ⟨hdq, CMRA.discrete_inc (hinc 0), hv⟩
+    exact ⟨hdq, CMRA.discrete_ord (hinc 0), hv⟩
   · exact fun ⟨hdq, hinc, hv⟩ => auth_both_dfrac_valid_2 hdq hv hinc
 
 @[rocq_alias auth_both_valid_discrete]
@@ -466,7 +466,7 @@ theorem auth_update_of_localUpdate {a b a' b' : A}
     simp only [CMRA.op?]; exact hc.trans assoc.symm.dist
   have ⟨hv', ha'_eq⟩ := hup n (some (bf • c)) hv ha_eq
   simp only [CMRA.op?] at ha'_eq
-  refine ⟨CMRA.incN_of_incExtN ⟨c, ha'_eq.trans assoc.dist⟩, hv'⟩
+  refine ⟨CMRA.ordN_of_incExtN ⟨c, ha'_eq.trans assoc.dist⟩, hv'⟩
 
 /-- `auth_update_of_localUpdate` in allocation form. -/
 @[rocq_alias auth_update_alloc]
@@ -516,13 +516,13 @@ theorem auth_update_dfrac_alloc {dq : DFrac} {a b : A} [CoreId b] (hb : b ≼ a)
     (●{dq} a) ~~> (●{dq} a) • ◯ b := by
   refine auth_alloc fun n bf ⟨hinc, hv⟩ => ⟨?_, hv⟩
   have hba : b • a = a := comm'.trans (RABase.op_core_left_of_incExt hb)
-  exact (CMRA.incN_iff_right hba.dist).mp (CMRA.op_monoN_right b hinc)
+  exact (CMRA.ordN_iff_right hba.dist).mp (CMRA.op_monoN_right b hinc)
 
 @[rocq_alias auth_local_update]
 theorem auth_local_update {a b0 b1 a' b0' b1' : A} (hup : (b0, b1) ~l~> (b0', b1'))
     (hinc : b0' ≼ₒ a') (hv : ✓ a') :
     ((● a : Auth A) • ◯ b0, (● a) • ◯ b1) ~l~> ((● a' : Auth A) • ◯ b0', (● a') • ◯ b1') :=
-  view_local_update hup fun n _ => ⟨CMRA.incN_of_inc n hinc, hv.validN⟩
+  view_local_update hup fun n _ => ⟨CMRA.ordN_of_ord n hinc, hv.validN⟩
 
 /-! ## Functor -/
 

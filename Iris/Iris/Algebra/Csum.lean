@@ -158,7 +158,7 @@ instance [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where
       refine OFE.Dist.trans COFE.conv_compl ?_
       simp [chainR, en]
 
-#rocq_ignore csum_compl "Included in IsCOFE instance"
+#rocq_ignore csum_compl "Order in IsCOFE instance"
 
 /-! ## CMRA -/
 
@@ -202,14 +202,14 @@ private theorem pcore_map_inr_eq [CMRA β] {b : β} {cx : Csum α β}
 
 /-- The step-indexed order on `Csum α β`: the orders of `α` and `β` on the two summands, with
 `invalid` as the top element. -/
-abbrev IncludedN [CMRA α] [CMRA β] (n : Nat) : Csum α β → Csum α β → Prop
+abbrev OrderN [CMRA α] [CMRA β] (n : Nat) : Csum α β → Csum α β → Prop
   | _, invalid => True
   | inl a, inl a' => a ≼ₒ{n} a'
   | inr b, inr b' => b ≼ₒ{n} b'
   | _, _ => False
 
-/-- The order on `Csum α β`; see `Csum.IncludedN`. -/
-abbrev Included [CMRA α] [CMRA β] : Csum α β → Csum α β → Prop
+/-- The order on `Csum α β`; see `Csum.OrderN`. -/
+abbrev Order [CMRA α] [CMRA β] : Csum α β → Csum α β → Prop
   | _, invalid => True
   | inl a, inl a' => a ≼ₒ a'
   | inr b, inr b' => b ≼ₒ b'
@@ -266,22 +266,22 @@ def raBase [CMRA α] [CMRA β] : RABase (Csum α β) where
          exact ⟨inr z₁, inr z₂, congrArg _ hz, hz₁, hz₂⟩)
 
 /-- The order on `Csum α β`. -/
-@[reducible] def orderN [CMRA α] [CMRA β] : OrderN (Csum α β) where
-  IncludedN := IncludedN
-  Included := Included
-  incN_ne {n x x' y y'} ex ey h := by
+@[reducible] def orderN [CMRA α] [CMRA β] : Ordered (Csum α β) where
+  OrderN := OrderN
+  Order := Order
+  ordN_ne {n x x' y y'} ex ey h := by
     cases x <;> cases x' <;> cases y <;> cases y' <;>
-      first | trivial | exact ex.elim | exact ey.elim | exact h.elim | exact CMRA.incN_ne ex ey h
-  incN_succ {n x y} h := by
-    cases x <;> cases y <;> first | trivial | exact h.elim | exact CMRA.incN_succ h
-  incN_trans {n x y z} h₁ h₂ := by
+      first | trivial | exact ex.elim | exact ey.elim | exact h.elim | exact CMRA.ordN_ne ex ey h
+  ordN_succ {n x y} h := by
+    cases x <;> cases y <;> first | trivial | exact h.elim | exact CMRA.ordN_succ h
+  ordN_trans {n x y z} h₁ h₂ := by
     cases x <;> cases y <;> cases z <;>
-      first | trivial | exact h₁.elim | exact h₂.elim | exact CMRA.incN_trans h₁ h₂
-  inc_trans {x y z} h₁ h₂ := by
+      first | trivial | exact h₁.elim | exact h₂.elim | exact CMRA.ordN_trans h₁ h₂
+  ord_trans {x y z} h₁ h₂ := by
     cases x <;> cases y <;> cases z <;>
-      first | trivial | exact h₁.elim | exact h₂.elim | exact CMRA.inc_trans h₁ h₂
-  incN_of_inc {x y} n h := by
-    cases x <;> cases y <;> first | trivial | exact h.elim | exact CMRA.incN_of_inc n h
+      first | trivial | exact h₁.elim | exact h₂.elim | exact CMRA.ord_trans h₁ h₂
+  ordN_of_ord {x y} n h := by
+    cases x <;> cases y <;> first | trivial | exact h.elim | exact CMRA.ordN_of_ord n h
 
 section
 variable [CMRA α] [CMRA β]
@@ -297,20 +297,20 @@ theorem increasing_inr_iff {b : β} : Increasing (inr (α := α) b) ↔ Increasi
 
 instance : Increasing (invalid : Csum α β) := ⟨fun _ => trivial⟩
 
-theorem incNR_inl {n} {a a' : α} (h : inl (β := β) a ≼ₒ*{n} inl a') : a ≼ₒ*{n} a' := h.imp id id
-theorem incNR_inr {n} {b b' : β} (h : inr (α := α) b ≼ₒ*{n} inr b') : b ≼ₒ*{n} b' := h.imp id id
+theorem ordNR_inl {n} {a a' : α} (h : inl (β := β) a ≼ₒ*{n} inl a') : a ≼ₒ*{n} a' := h.imp id id
+theorem ordNR_inr {n} {b b' : β} (h : inr (α := α) b ≼ₒ*{n} inr b') : b ≼ₒ*{n} b' := h.imp id id
 
 instance instCMRA : CMRA (Csum α β) where
   toRABase := raBase
-  toOrderN := orderN
+  toOrdered := orderN
   op_monoN_left {n x y} z h := by
     cases x <;> cases y <;> cases z <;>
       first | trivial | exact h.elim | exact CMRA.op_monoN_left _ h
   op_mono_left {x y} z h := by
     cases x <;> cases y <;> cases z <;>
       first | trivial | exact h.elim | exact CMRA.op_mono_left _ h
-  validN_of_incN {n x y} h v := by
-    cases x <;> cases y <;> first | trivial | exact h.elim | exact v.elim | exact CMRA.validN_of_incN h v
+  validN_of_ordN {n x y} h v := by
+    cases x <;> cases y <;> first | trivial | exact h.elim | exact v.elim | exact CMRA.validN_of_ordN h v
   pcore_monoN {n x y cx} h e := by
     match x, y, h with
     | inl a, inl a', h =>
@@ -360,26 +360,26 @@ instance instCMRA : CMRA (Csum α β) where
     match x, y, h' with
     | _, invalid, _ => exact inferInstance
     | inl _, inl _, h' =>
-      exact increasing_inl_iff.mpr ((increasing_inl_iff.mp h).of_incNR (incNR_inl h'))
+      exact increasing_inl_iff.mpr ((increasing_inl_iff.mp h).of_ordNR (ordNR_inl h'))
     | inr _, inr _, h' =>
-      exact increasing_inr_iff.mpr ((increasing_inr_iff.mp h).of_incNR (incNR_inr h'))
+      exact increasing_inr_iff.mpr ((increasing_inr_iff.mp h).of_ordNR (ordNR_inr h'))
     | inl _, inr _, h' | inr _, inl _, h' | invalid, inl _, h' | invalid, inr _, h' =>
       exact h'.elim (·.elim) (·.elim)
-  incN_extend {n x y} v h := by
+  ordN_extend {n x y} v h := by
     match x, y, h with
     | inl _, inl _, h =>
-      obtain ⟨z, hz, ez⟩ := CMRA.incN_extend v h
+      obtain ⟨z, hz, ez⟩ := CMRA.ordN_extend v h
       exact ⟨inl z, hz, ez⟩
     | inr _, inr _, h =>
-      obtain ⟨z, hz, ez⟩ := CMRA.incN_extend v h
+      obtain ⟨z, hz, ez⟩ := CMRA.ordN_extend v h
       exact ⟨inr z, hz, ez⟩
     | inl _, invalid, _ | inr _, invalid, _ | invalid, invalid, _ => exact v.elim
     | inl _, inr _, h | inr _, inl _, h | invalid, inl _, h | invalid, inr _, h => exact h.elim
 
 end
 
-instance [CMRA α] [CMRA β] [IncRefl α] [IncRefl β] : IncRefl (Csum α β) where
-  inc_refl | inl a => CMRA.inc_refl a | inr b => CMRA.inc_refl b | invalid => trivial
+instance [CMRA α] [CMRA β] [OrderRefl α] [OrderRefl β] : OrderRefl (Csum α β) where
+  ord_refl | inl a => CMRA.ord_refl a | inr b => CMRA.ord_refl b | invalid => trivial
 
 instance [CMRA α] [CMRA β] [Affine α] [Affine β] : Affine (Csum α β) where
   increasing
@@ -408,9 +408,9 @@ instance [CMRA α] [CMRA β] [CMRA.Discrete α] [CMRA.Discrete β] : CMRA.Discre
     | inl a => CMRA.discrete_valid (x := a) hv
     | inr b => CMRA.discrete_valid (x := b) hv
     | invalid => hv
-  discrete_inc {x y} h := by
+  discrete_ord {x y} h := by
     cases x <;> cases y <;>
-      first | trivial | exact h.elim | exact CMRA.discrete_inc (α := α) h | exact CMRA.discrete_inc (α := β) h
+      first | trivial | exact h.elim | exact CMRA.discrete_ord (α := α) h | exact CMRA.discrete_ord (α := β) h
 
 /-! ## CoreId -/
 
@@ -458,7 +458,7 @@ instance [CMRA α] [CMRA β] {a : α} [IdFree a] : IdFree (inl (β := β) a) whe
 instance [CMRA α] [CMRA β] {b : β} [IdFree b] : IdFree (inr (α := α) b) where
   id_free0_r y hv he := by cases y with | inr b' => exact id_free0_r (x := b) _ hv he | _ => trivial
 
-/-! ## Included -/
+/-! ## Order -/
 
 theorem included [CMRA α] [CMRA β] {x y : Csum α β} :
     x ≼ₒ y ↔ y = invalid ∨
@@ -504,7 +504,7 @@ theorem some_included [CMRA α] [CMRA β] {x y : Csum α β} :
     some x ≼ₒ some y ↔ y = invalid ∨
       (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼ₒ some a') ∨
       (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ₒ some b') := by
-  rw [Option.some_inc_some_iff]
+  rw [Option.some_ord_some_iff]
   constructor
   · rintro (rfl | h)
     · cases x <;>
@@ -527,7 +527,7 @@ theorem some_includedN [CMRA α] [CMRA β] {n} {x y : Csum α β} :
     some x ≼ₒ{n} some y ↔ y = invalid ∨
       (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼ₒ{n} some a') ∨
       (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ₒ{n} some b') := by
-  rw [Option.some_incN_some_iff]
+  rw [Option.some_ordN_some_iff]
   constructor
   · rintro (heq | h)
     · cases x <;> cases y <;>

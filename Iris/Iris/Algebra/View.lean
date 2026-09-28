@@ -37,7 +37,7 @@ theorem IsViewRel.ofMonoOrd [OFE A] [UCMRA B] [CMRA.Affine B] {R : ViewRel A B}
       R n1 a1 b1 → a1 ≡{n2}≡ a2 → b2 ≼ₒ{n2} b1 → n2 ≤ n1 → R n2 a2 b2)
     (rel_validN : ∀ n a b, R n a b → ✓{n} b)
     (rel_unit : ∀ n, ∃ a, R n a UCMRA.unit) : IsViewRel R where
-  mono h ha hb hn := mono_ord h ha (CMRA.incN_of_incExtN hb) hn
+  mono h ha hb hn := mono_ord h ha (CMRA.ordN_of_incExtN hb) hn
   mono_ord := mono_ord
   rel_validN := rel_validN
   rel_unit := rel_unit
@@ -299,14 +299,14 @@ instance instRABase : RABase (View R) where
     exact congrArg (fun p => (⟨p.1, p.2⟩ : View R)) Hze
 
 /-- The order on `View R`, inherited componentwise from the authority and fragment parts. -/
-@[reducible] def orderN : OrderN (View R) where
-  IncludedN n x y := x.auth ≼ₒ{n} y.auth ∧ x.frag ≼ₒ{n} y.frag
-  Included x y := x.auth ≼ₒ y.auth ∧ x.frag ≼ₒ y.frag
-  incN_ne ex ey h := ⟨CMRA.incN_ne ex.1 ey.1 h.1, CMRA.incN_ne ex.2 ey.2 h.2⟩
-  incN_succ h := ⟨CMRA.incN_succ h.1, CMRA.incN_succ h.2⟩
-  incN_trans h1 h2 := ⟨CMRA.incN_trans h1.1 h2.1, CMRA.incN_trans h1.2 h2.2⟩
-  inc_trans h1 h2 := ⟨CMRA.inc_trans h1.1 h2.1, CMRA.inc_trans h1.2 h2.2⟩
-  incN_of_inc n h := ⟨CMRA.incN_of_inc n h.1, CMRA.incN_of_inc n h.2⟩
+@[reducible] def orderN : Ordered (View R) where
+  OrderN n x y := x.auth ≼ₒ{n} y.auth ∧ x.frag ≼ₒ{n} y.frag
+  Order x y := x.auth ≼ₒ y.auth ∧ x.frag ≼ₒ y.frag
+  ordN_ne ex ey h := ⟨CMRA.ordN_ne ex.1 ey.1 h.1, CMRA.ordN_ne ex.2 ey.2 h.2⟩
+  ordN_succ h := ⟨CMRA.ordN_succ h.1, CMRA.ordN_succ h.2⟩
+  ordN_trans h1 h2 := ⟨CMRA.ordN_trans h1.1 h2.1, CMRA.ordN_trans h1.2 h2.2⟩
+  ord_trans h1 h2 := ⟨CMRA.ord_trans h1.1 h2.1, CMRA.ord_trans h1.2 h2.2⟩
+  ordN_of_ord n h := ⟨CMRA.ordN_of_ord n h.1, CMRA.ordN_of_ord n h.2⟩
 
 section
 attribute [local instance] View.orderN
@@ -323,10 +323,10 @@ theorem increasing_mk {v : View R} (ha : Increasing v.auth) (hb : Increasing v.f
 
 instance instCMRA : CMRA (View R) where
   toRABase := instRABase
-  toOrderN := View.orderN
+  toOrdered := View.orderN
   op_monoN_left z h := ⟨CMRA.op_monoN_left z.auth h.1, CMRA.op_monoN_left z.frag h.2⟩
   op_mono_left z h := ⟨CMRA.op_mono_left z.auth h.1, CMRA.op_mono_left z.frag h.2⟩
-  validN_of_incN {n x y} h v := by
+  validN_of_ordN {n x y} h v := by
     rcases x with ⟨_|⟨q1, ag1⟩, b1⟩ <;> rcases y with ⟨_|⟨q2, ag2⟩, b2⟩
     · obtain ⟨a, Ha⟩ := v
       exact ⟨a, mono_ord Ha .rfl h.2 n.le_refl⟩
@@ -336,11 +336,11 @@ instance instCMRA : CMRA (View R) where
     · obtain ⟨Hq, a, Hag, Ha⟩ := v
       rcases h.1 with e | i
       · exact ⟨CMRA.validN_ne e.1.symm Hq, a, e.2.trans Hag, mono_ord Ha .rfl h.2 n.le_refl⟩
-      · refine ⟨CMRA.validN_of_incN i.1 Hq, a, ?_, mono_ord Ha .rfl h.2 n.le_refl⟩
+      · refine ⟨CMRA.validN_of_ordN i.1 Hq, a, ?_, mono_ord Ha .rfl h.2 n.le_refl⟩
         exact (Agree.valid_includedN (Agree.validN_ne Hag.symm trivial) i.2).trans Hag
   pcore_monoN {_ x y _} h e := by
     obtain rfl := Option.some.inj e
-    exact ⟨_, rfl, CMRA.core_incN_core h.1, CMRA.core_incN_core h.2⟩
+    exact ⟨_, rfl, CMRA.core_ordN_core h.1, CMRA.core_ordN_core h.2⟩
   pcore_mono {x y _} h e := by
     obtain rfl := Option.some.inj e
     exact ⟨_, rfl, CMRA.core_mono h.1, CMRA.core_mono h.2⟩
@@ -354,9 +354,9 @@ instance instCMRA : CMRA (View R) where
     increasing_mk
       (CMRA.increasing_closed (increasing_auth h) (Or.imp (·.1) (·.1) h'))
       (CMRA.increasing_closed (increasing_frag h) (Or.imp (·.2) (·.2) h'))
-  incN_extend {n x y} v h := by
-    obtain ⟨za, hza, ea⟩ := CMRA.incN_extend v.pair.1 h.1
-    obtain ⟨zf, hzf, ef⟩ := CMRA.incN_extend v.pair.2 h.2
+  ordN_extend {n x y} v h := by
+    obtain ⟨za, hza, ea⟩ := CMRA.ordN_extend v.pair.1 h.1
+    obtain ⟨zf, hzf, ef⟩ := CMRA.ordN_extend v.pair.2 h.2
     exact ⟨⟨za, zf⟩, ⟨hza, hzf⟩, ea, ef⟩
 
 end
@@ -371,7 +371,7 @@ instance instUCMRA : UCMRA (View R) where
     change (⟨UCMRA.unit • xa, UCMRA.unit • xf⟩ : View R) = ⟨xa, xf⟩
     rw [CMRA.ucmra_unit_left_id, CMRA.ucmra_unit_left_id]
   pcore_unit := congrArg some (congrArg (View.mk _) (CMRA.core_eqv_self UCMRA.unit))
-  inc_refl x := ⟨CMRA.inc_refl x.auth, CMRA.inc_refl x.frag⟩
+  ord_refl x := ⟨CMRA.ord_refl x.auth, CMRA.ord_refl x.frag⟩
 
 /-- A view over an affine fragment algebra is affine. -/
 instance [CMRA.Affine B] : CMRA.Affine (View R) where
@@ -390,7 +390,7 @@ instance [CMRA.Affine B] : CMRA.Affine (View R) where
 
 @[rocq_alias view_cmra_discrete]
 instance [Discrete A] [CMRA.Discrete B] [IsViewRelDiscrete R] : CMRA.Discrete (View R) where
-  discrete_inc h := ⟨CMRA.discrete_inc h.1, CMRA.discrete_inc h.2⟩
+  discrete_ord h := ⟨CMRA.discrete_ord h.1, CMRA.discrete_ord h.2⟩
   discrete_valid {x} := by
     simp only [CMRA.ValidN, ValidN, CMRA.Valid, Valid]
     split

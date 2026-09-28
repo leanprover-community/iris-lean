@@ -114,10 +114,10 @@ private theorem own_op_valid {γ : GName} {a₁ a₂ : TicketR} :
   iOwn_cmraValid_op.trans (internalCmraValid_discrete (A := TicketR)).mp
 
 /-- The ticket algebra is classical: its order is its extension inclusion. -/
-private theorem ticket_incExtN_of_incN {n}
+private theorem ticket_incExtN_of_ordN {n}
     {x y : Option (Excl (DiscreteO Nat)) × DisjointLeibnizSet Tickets} (h : x ≼ₒ{n} y) :
     x ≼{n} y :=
-  Prod.incExtN_of_incN (Option.incExtN_of_incN fun h => h) (fun h => h) h
+  Prod.incExtN_of_ordN (Option.incExtN_of_ordN fun h => h) (fun h => h) h
 
 /-- Only one thread at a time holds the right to enter the critical section. -/
 private theorem own_owner_exclusive {γ : GName} {o₁ o₂ : Nat} :
@@ -175,7 +175,7 @@ theorem newlock_spec :
   wp_alloc lo with Hlo
   imod iOwn_alloc (F := TicketLockF) ((auth 0 0 : TicketR) • owner 0) with
     ⟨%γ, ⟨Hauth, Howner⟩⟩
-  · exact Auth.auth_both_valid_2 ⟨trivial, trivial⟩ ⟨CMRA.inc_refl _, CMRA.inc_refl _⟩
+  · exact Auth.auth_both_valid_2 ⟨trivial, trivial⟩ ⟨CMRA.ord_refl _, CMRA.ord_refl _⟩
   wp_pures
   imodintro
   iapply Hcont
@@ -241,7 +241,7 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   · obtain rfl : n' = n := by simp only [Val.lit.injEq, BaseLit.int.injEq] at hsuc; omega
     imod iOwn_update (a' := (auth o' (n' + 1) : TicketR) • ticket n') $$ Hauth
       with ⟨Hauth, Hissued⟩
-    · refine Auth.auth_update_alloc_of_localUpdate ticket_incExtN_of_incN ?_
+    · refine Auth.auth_update_alloc_of_localUpdate ticket_incExtN_of_ordN ?_
       rw [setSeq_succ, Nat.zero_add]
       exact LocalUpdate.prod_2 _ _
         (localUpdate_alloc_empty_of_disj _ _ (disjoint_singleton_setSeq (by omega)))
@@ -283,7 +283,7 @@ theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
   imod iOwn_update (F := TicketLockF) (a := (auth o n' : TicketR) • owner o)
       (a' := (auth (o + 1) n' : TicketR) • owner (o + 1)) $$ [Hauth Howner]
       with ⟨Hauth, Howner⟩
-  · exact Auth.auth_update_of_localUpdate ticket_incExtN_of_incN
+  · exact Auth.auth_update_of_localUpdate ticket_incExtN_of_ordN
       (LocalUpdate.prod_1 _ _ (LocalUpdate.option (LocalUpdate.exclusive trivial)))
   · iapply iOwn_op.mpr; iframe
   imod Hclose $$ [Hlo Hln Hauth Howner HR] with -

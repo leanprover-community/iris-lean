@@ -61,7 +61,7 @@ instance instCoreId (x : MaxPrefixList α) : CoreId x :=
 instance instDiscrete [OFE.Discrete α] : CMRA.Discrete (MaxPrefixList α) where
   discrete_0 := OFE.discrete_0 (α := MaxPrefixListMap (Agree α))
   discrete_valid := CMRA.discrete_valid (α := MaxPrefixListMap (Agree α))
-  discrete_inc := CMRA.discrete_inc (α := MaxPrefixListMap (Agree α))
+  discrete_ord := CMRA.discrete_ord (α := MaxPrefixListMap (Agree α))
 
 end Instances
 
@@ -163,7 +163,7 @@ theorem incExt_iff_forall_incExtN {ml1 ml2 : MaxPrefixList α} :
 theorem toMaxPrefixList_incExtN_aux {n} {l1 l2 : List α}
     (h : toMaxPrefixList l1 ≼{n} toMaxPrefixList l2) : l2 ≡{n}≡ l1 ++ l2.drop l1.length := by
   refine list_dist_lookup.mpr fun i => ?_
-  have hi := Heap.lookup_incN (M := MaxPrefixListMap).mp h i
+  have hi := Heap.lookup_ordN (M := MaxPrefixListMap).mp h i
   rw [get?_toMaxPrefixList, get?_toMaxPrefixList] at hi
   rcases Option.incExtN_iff_is_total.mp hi with hnone | ⟨a1, a2, ha1, ha2, ha⟩
   · refine .of_eq (by grind)

@@ -67,7 +67,7 @@ theorem lb_op_le_l (n n' : MaxInt) (h : n' ≤ n) :
 
 @[rocq_alias mono_Z_auth_dfrac_valid]
 theorem auth_dfrac_valid (dq : DFrac) (n : MaxInt) : (✓ (●MZ{dq} n : MonoZ)) ↔ ✓ dq :=
-  Auth.both_dfrac_valid_discrete.trans ⟨And.left, fun h => ⟨h, CMRA.inc_refl _, trivial⟩⟩
+  Auth.both_dfrac_valid_discrete.trans ⟨And.left, fun h => ⟨h, CMRA.ord_refl _, trivial⟩⟩
 
 @[rocq_alias mono_Z_auth_valid]
 theorem auth_valid (n : MaxInt) : ✓ (●MZ n : MonoZ) :=
@@ -96,7 +96,7 @@ theorem both_dfrac_valid (dq : DFrac) (n m : MaxInt) :
     (✓ ((●MZ{dq} n) • (◯MZ m) : MonoZ)) ↔ ✓ dq ∧ m ≤ n := by
   unfold auth lb
   rw [CMRA.assoc'.symm, ← Auth.frag_op, Auth.both_dfrac_valid_discrete, ← Option.some_op,
-    Option.some_inc_some_iff_incRefl, MaxInt.inc_iff]
+    Option.some_ord_some_iff_ordRefl, MaxInt.ord_iff]
   exact ⟨fun ⟨hdq, hle, _⟩ => ⟨hdq, by grind⟩, fun ⟨hdq, hle⟩ => ⟨hdq, by grind, trivial⟩⟩
 
 @[rocq_alias mono_Z_both_valid]
@@ -105,7 +105,7 @@ theorem both_valid (n m : MaxInt) : (✓ ((●MZ n) • (◯MZ m) : MonoZ)) ↔ 
 
 @[rocq_alias mono_Z_lb_mono]
 theorem lb_mono (n1 n2 : MaxInt) (h : n1 ≤ n2) : (◯MZ n1 : MonoZ) ≼ ◯MZ n2 :=
-  Auth.frag_incExt_of_incExt <| Option.some_incExt_some_iff_is_total.mpr <| MaxInt.inc_iff.mpr h
+  Auth.frag_incExt_of_incExt <| Option.some_incExt_some_iff_is_total.mpr <| MaxInt.ord_iff.mpr h
 
 @[rocq_alias mono_Z_included]
 theorem included (dq : DFrac) (n : MaxInt) : (◯MZ n : MonoZ) ≼ ●MZ{dq} n :=
@@ -113,7 +113,7 @@ theorem included (dq : DFrac) (n : MaxInt) : (◯MZ n : MonoZ) ≼ ●MZ{dq} n :
 
 @[rocq_alias mono_Z_update]
 theorem update {n : MaxInt} (n' : MaxInt) (h : n ≤ n') : (●MZ n : MonoZ) ~~> ●MZ n' :=
-  Auth.auth_update_of_localUpdate (Option.incExtN_of_incN fun h => h)
+  Auth.auth_update_of_localUpdate (Option.incExtN_of_ordN fun h => h)
     (LocalUpdate.option (MaxInt.local_update h))
 
 @[rocq_alias mono_Z_auth_persist]

@@ -73,21 +73,21 @@ instance : CMRA UFrac := CMRA.withExtensionOrder
 theorem op_eq (p q : UFrac) : p • q = ⟨p.frac + q.frac⟩ := rfl
 
 @[rocq_alias ufrac_included]
-theorem inc_iff {x y : UFrac} : x ≼ₒ y ↔ x.frac < y.frac := by
+theorem ord_iff {x y : UFrac} : x ≼ₒ y ↔ x.frac < y.frac := by
   refine ⟨fun ⟨r, Hr⟩ => ?_, fun H => ?_⟩
   · have := r.frac.2; simp only [ext_iff, frac_op] at Hr; grind
   · refine ⟨⟨⟨y.frac.val - x.frac.val, by grind⟩⟩, ?_⟩
     simp only [ext_iff, frac_op]; grind
 
 @[rocq_alias ufrac_included_weak]
-theorem le_of_inc {x y : UFrac} (H : x ≼ₒ y) : x.frac ≤ y.frac := by
-  have := inc_iff.mp H; grind
+theorem le_of_ord {x y : UFrac} (H : x ≼ₒ y) : x.frac ≤ y.frac := by
+  have := ord_iff.mp H; grind
 
 @[rocq_alias ufrac_cmra_discrete]
 instance : CMRA.Discrete UFrac where
   discrete_0 := fun h => h
   discrete_valid := id
-  discrete_inc | ⟨z, hz⟩ => ⟨z, hz⟩
+  discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
 
 @[rocq_alias ufrac_cancelable]
 instance {q : UFrac} : CMRA.Cancelable q where

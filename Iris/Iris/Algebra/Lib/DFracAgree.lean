@@ -87,7 +87,7 @@ theorem included {d₁ d₂ : DFrac} {a₁ a₂ : A} :
 @[rocq_alias dfrac_agree_includedN]
 theorem includedN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
     mk d₁ a₁ ≼ₒ{n} mk d₂ a₂ ↔ (d₁ ≼ₒ d₂) ∧ a₁ ≡{n}≡ a₂ :=
-  and_congr (inc_iff_incN (α := DFrac) n).symm Agree.toAgree_includedN
+  and_congr (ord_iff_ordN (α := DFrac) n).symm Agree.toAgree_includedN
 
 @[rocq_alias dfrac_agree_update_2]
 theorem update₂ {d₁ d₂ : DFrac} {a₁ a₂ a' : A} (hd : d₁ • d₂ = .own 1) :

@@ -159,7 +159,7 @@ instance [OFE α] : RABase.ExtensionLaws (Excl α) where
 instance [OFE α] : CMRA (Excl α) := CMRA.withExtensionOrder
 
 @[rocq_alias excl_included]
-theorem inc_iff [OFE α] {x y : Excl α} : x ≼ₒ y ↔ y = invalid := by
+theorem ord_iff [OFE α] {x y : Excl α} : x ≼ₒ y ↔ y = invalid := by
   constructor
   · rintro ⟨z, hz⟩
     exact hz
@@ -167,7 +167,7 @@ theorem inc_iff [OFE α] {x y : Excl α} : x ≼ₒ y ↔ y = invalid := by
     exact ⟨invalid, h⟩
 
 @[rocq_alias excl_includedN]
-theorem incN_iff [OFE α] {x y : Excl α} (n) : x ≼ₒ{n} y ↔ y = invalid := by
+theorem ordN_iff [OFE α] {x y : Excl α} (n) : x ≼ₒ{n} y ↔ y = invalid := by
   constructor
   · intro ⟨z, hz⟩; cases x <;> cases y <;> first | rfl | exact hz.elim
   · rintro rfl; exists invalid
@@ -217,10 +217,10 @@ instance [OFE α] {x : Excl α} : CMRA.Exclusive x where exclusive0_l := fun _ a
 @[rocq_alias excl_cmra_discrete]
 instance [OFE α] [OFE.Discrete α] : CMRA.Discrete (Excl α) where
   discrete_valid a := a
-  discrete_inc := RABase.incExt_of_incExt0
+  discrete_ord := RABase.incExt_of_incExt0
 
 @[rocq_alias ExclInvalid_included]
-theorem invalid_inc [OFE α] (ea : Excl α) : ea ≼ₒ invalid := by exists invalid
+theorem invalid_ord [OFE α] (ea : Excl α) : ea ≼ₒ invalid := by exists invalid
 
 /-! ## Functors -/
 @[rocq_alias excl_map_id]

@@ -62,11 +62,11 @@ theorem uPred_alt {M : Type _} [UCMRA M] (P : Nat → M → Prop) :
   · intro H
     refine ⟨fun Hle HP => H HP .rfl Hle, ?_, ?_⟩
     · refine fun He m Hm => ⟨fun HP => ?_, fun HP => ?_⟩
-      · exact H HP (incN_of_dist_of_incN (He.le Hm) .rfl) (Nat.le_refl _)
-      · exact H HP (incN_of_dist_of_incN (He.le Hm).symm .rfl) (Nat.le_refl _)
-    · exact fun Hinc m Hm HP => H HP (incN_of_incN_le Hm Hinc) (Nat.le_refl _)
+      · exact H HP (ordN_of_dist_of_ordN (He.le Hm) .rfl) (Nat.le_refl _)
+      · exact H HP (ordN_of_dist_of_ordN (He.le Hm).symm .rfl) (Nat.le_refl _)
+    · exact fun Hinc m Hm HP => H HP (ordN_of_ordN_le Hm Hinc) (Nat.le_refl _)
   · refine fun ⟨Hdc, _, Hmono⟩ n1 n2 x1 x2 HP Hinc Hle => ?_
-    exact Hmono (incN_of_incN_le Hle Hinc) n2 (Nat.le_refl _) (Hdc Hle HP)
+    exact Hmono (ordN_of_ordN_le Hle Hinc) n2 (Nat.le_refl _) (Hdc Hle HP)
 
 instance [UCMRA M] : Inhabited (UPred M) :=
   ⟨fun _ _ => True, fun _ _ _ => ⟨⟩⟩
@@ -103,7 +103,7 @@ instance : OFE (UPred M) where
 
 @[rocq_alias uPred_ne]
 theorem uPred_ne {P : UPred M} {n} {m₁ m₂ : ValidAt M n} (H : (m₁ : M) ≡{n}≡ (m₂ : M)) : P n m₁ ↔ P n m₂ :=
-  ⟨fun H' => P.mono H' H.to_incN .refl, fun H' => P.mono H' H.symm.to_incN .refl⟩
+  ⟨fun H' => P.mono H' H.to_ordN .refl, fun H' => P.mono H' H.symm.to_ordN .refl⟩
 
 #rocq_ignore uPred_proper "OFE is Leibniz; use equality"
 

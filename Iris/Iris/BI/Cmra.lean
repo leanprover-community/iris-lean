@@ -255,7 +255,7 @@ instance _root_.SiProp.cmraIncluded_timeless [CMRA.Discrete A] {a b : A} :
   timeless := fun n h => by
     cases n with
     | zero => left; trivial
-    | succ n => right; exact incN_of_inc _ (CMRA.discrete_inc (inc0_of_incN h))
+    | succ n => right; exact ordN_of_ord _ (CMRA.discrete_ord (ord0_of_ordN h))
 
 /-- The internal order `a ≼ₒ b`, holding at step index `n` when `a ≼ₒ{n} b`; ownership is
 monotone along it (`ownM_mono`). -/
@@ -269,13 +269,13 @@ delab_rule internalCmraIncluded
 
 instance internalCmraIncluded_ne :
     NonExpansive₂ (internalCmraIncluded (PROP := PROP) (A := A)) where
-  ne _ _ _ hx _ _ hy := siPure_ne.ne fun hm => incN_dist_iff (hx.le hm) (hy.le hm)
+  ne _ _ _ hx _ _ hy := siPure_ne.ne fun hm => ordN_dist_iff (hx.le hm) (hy.le hm)
 
 theorem internalCmraIncluded_intro {P : PROP} {a b : A} (h : a ≼ₒ b) : P ⊢ a ≼ₒ b :=
   calc (P : PROP)
     _ ⊢ True := true_intro
     _ ⊢ <si_pure> True := siPure_pure.mpr
-    _ ⊢ a ≼ₒ b := siPure_mono fun n _ => incN_of_inc n h
+    _ ⊢ a ≼ₒ b := siPure_mono fun n _ => ordN_of_ord n h
 
 /-- Two internal orders agree when they agree at every step index. -/
 theorem internalCmraIncluded_iff [CMRA B] {a b : A} {a' b' : B}
@@ -303,14 +303,14 @@ theorem intuitionistically_internalCmraIncluded [BIAffine PROP] {a b : A} :
 
 theorem internalCmraIncluded_discrete {a b : A} [CMRA.Discrete A] :
     a ≼ₒ b ⊣⊢@{PROP} ⌜a ≼ₒ b⌝ :=
-  internalCmraIncluded_pure fun n => (inc_iff_incN n).symm
+  internalCmraIncluded_pure fun n => (ord_iff_ordN n).symm
 
-theorem internalCmraIncluded_refl {a : A} [IncRefl A] : ⊢@{PROP} a ≼ₒ a :=
-  internalCmraIncluded_intro (inc_refl a)
+theorem internalCmraIncluded_refl {a : A} [OrderRefl A] : ⊢@{PROP} a ≼ₒ a :=
+  internalCmraIncluded_intro (ord_refl a)
 
 theorem internalCmraIncluded_trans {a b c : A} : ⊢@{PROP} a ≼ₒ b -∗ b ≼ₒ c -∗ a ≼ₒ c :=
   BI.entails_wand <| BI.wand_intro <| siPure_and_sep.mpr.trans <|
-    siPure_mono fun _ h => incN_trans h.1 h.2
+    siPure_mono fun _ h => ordN_trans h.1 h.2
 
 /-- The internal order is monotone under morphisms. -/
 theorem internalCmraIncluded_map {B : Type _} [CMRA B] (g : A -C> B) {a b : A} :
@@ -319,7 +319,7 @@ theorem internalCmraIncluded_map {B : Type _} [CMRA B] (g : A -C> B) {a b : A} :
 
 /-- In an affine algebra the internal extension inclusion implies the internal order. -/
 theorem internalCmraIncluded_of_incExt [Affine A] {a b : A} : a ≼ b ⊢@{PROP} a ≼ₒ b :=
-  siPure_mono fun _ h => incN_of_incExtN (incExt_holds.mp h)
+  siPure_mono fun _ h => ordN_of_incExtN (incExt_holds.mp h)
 
 instance internalCmraIncluded_timeless {a b : A} [CMRA.Discrete A] :
     Timeless (PROP := PROP) iprop(a ≼ₒ b) := by

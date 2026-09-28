@@ -73,11 +73,11 @@ instance frag_discrete {q : Qp} {a : A} [DiscreteE a] : DiscreteE (◯U{q} a) :=
 
 @[rocq_alias ufrac_auth_validN]
 theorem validN {n : Nat} {a : A} {p : Qp} (ha : ✓{n} a) : ✓{n} (●U{p} a) • ◯U{p} a := by
-  simpa only [both_validN] using ⟨incN_refl _, ⟨trivial, ha⟩⟩
+  simpa only [both_validN] using ⟨ordN_refl _, ⟨trivial, ha⟩⟩
 
 @[rocq_alias ufrac_auth_valid]
 theorem valid {p : Qp} {a : A} (ha : ✓ a) : ✓ (●U{p} a) • ◯U{p} a :=
-  auth_both_valid_2 ⟨trivial, ha⟩ (CMRA.inc_refl _)
+  auth_both_valid_2 ⟨trivial, ha⟩ (CMRA.ord_refl _)
 
 /-! ## Agreement -/
 
@@ -102,25 +102,25 @@ theorem includedN {n : Nat} {p q : Qp} {a b : A}
     (h : ✓{n} (●U{p} a) • ◯U{q} b) : some b ≼ₒ{n} some a := by
   rw [both_validN] at h
   rcases h.1 with e | i
-  · exact Option.some_incN_some_iff.mpr (.inl e.2)
-  · exact Option.some_incN_some_iff.mpr (.inr i.2)
+  · exact Option.some_ordN_some_iff.mpr (.inl e.2)
+  · exact Option.some_ordN_some_iff.mpr (.inr i.2)
 
 @[rocq_alias ufrac_auth_included]
 theorem included [CMRA.Discrete A] {q p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{q} b) :
     some b ≼ₒ some a := by
   rw [auth_both_valid_discrete] at h
   rcases h.1 with e | i
-  · exact Option.some_inc_some_iff.mpr (.inl (congrArg Prod.snd e))
-  · exact Option.some_inc_some_iff.mpr (.inr i.2)
+  · exact Option.some_ord_some_iff.mpr (.inl (congrArg Prod.snd e))
+  · exact Option.some_ord_some_iff.mpr (.inr i.2)
 
 @[rocq_alias ufrac_auth_includedN_total]
-theorem includedN_total [IncRefl A] {n : Nat} {q p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{q} b) :
-    b ≼ₒ{n} a := (Option.some_incN_some_iff.mp (includedN h)).elim (·.to_incN) id
+theorem includedN_total [OrderRefl A] {n : Nat} {q p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{q} b) :
+    b ≼ₒ{n} a := (Option.some_ordN_some_iff.mp (includedN h)).elim (·.to_ordN) id
 
 @[rocq_alias ufrac_auth_included_total]
-theorem included_total [CMRA.Discrete A] [IncRefl A] {q p : Qp} {a b : A}
+theorem included_total [CMRA.Discrete A] [OrderRefl A] {q p : Qp} {a b : A}
     (h : ✓ (●U{p} a) • ◯U{q} b) : b ≼ₒ a :=
-  (Option.some_inc_some_iff.mp (included h)).elim (· ▸ CMRA.inc_refl b) id
+  (Option.some_ord_some_iff.mp (included h)).elim (· ▸ CMRA.ord_refl b) id
 
 /-! ## Auth-only validity -/
 
@@ -182,16 +182,16 @@ instance isOp_ufrac_auth_core_id {q q1 q2 : Qp} {a : A} [h1 : CoreId a] [h2 : Is
 omit [CMRA.Affine A] in
 /-- The order of the fragment algebra `Option (UFrac × A)` embeds into the extension
 inclusion, given that the order of `A` does. -/
-private theorem incExtN_of_incN (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y)
+private theorem incExtN_of_ordN (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y)
     {n : Nat} {x y : Option (UFrac × A)} (h : x ≼ₒ{n} y) : x ≼{n} y :=
-  Option.incExtN_of_incN (Prod.incExtN_of_incN (fun h => h) hsub) h
+  Option.incExtN_of_ordN (Prod.incExtN_of_ordN (fun h => h) hsub) h
 
 @[rocq_alias ufrac_auth_update]
 theorem update {p q : Qp} {a b a' b' : A}
     (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y) (h : (a, b) ~l~> (a', b')) :
     ((●U{p} a) • ◯U{q} b) ~~> (●U{p} a') • ◯U{q} b' :=
   auth_update_of_localUpdate
-    (incExtN_of_incN hsub)
+    (incExtN_of_ordN hsub)
     (.option (.prod_2 _ _ h))
 
 @[rocq_alias ufrac_auth_update_surplus]
@@ -199,7 +199,7 @@ theorem update_surplus {p q : Qp} {a b : A}
     (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y) (h : ✓ (a • b)) :
     (●U{p} a) ~~> (●U{p + q} (a • b)) • ◯U{q} b := by
   refine auth_update_alloc_of_localUpdate
-    (incExtN_of_incN hsub)
+    (incExtN_of_ordN hsub)
     (local_update_unital.mpr fun n mpa _ heq => ?_)
   refine ⟨⟨trivial, h.validN⟩, ?_⟩
   refine .trans ?_ (heq.trans (unit_left_id_dist mpa)).op_r
@@ -210,7 +210,7 @@ theorem update_surplus_cancel {p q : Qp} {a b : A} [CMRA.Cancelable b]
     (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y) :
     ((●U{p + q} (a • b)) • ◯U{q} b) ~~> ●U{p} a := by
   refine auth_update_dealloc_of_localUpdate
-    (incExtN_of_incN hsub)
+    (incExtN_of_ordN hsub)
     (local_update_unital.mpr fun n mpa hv heq => ?_)
   match mpa with
   | none =>

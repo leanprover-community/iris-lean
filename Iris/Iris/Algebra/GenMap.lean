@@ -232,14 +232,14 @@ def pcore_genmap (x : GenMap β) : Option (GenMap β) :=
       OFE.eq_dist_2 fun _ k => ((F k).2.2.1).dist, fun k => (F k).2.2.2.1, fun k => (F k).2.2.2.2⟩
 
 /-- The order on `GenMap β`, inherited pointwise from `Nat → Option β`. -/
-@[reducible] def GenMap.orderN : OrderN (GenMap β) where
-  IncludedN n x y := x.car ≼ₒ{n} y.car
-  Included x y := x.car ≼ₒ y.car
-  incN_ne ex ey h := incN_ne ex ey h
-  incN_succ := incN_succ
-  incN_trans := incN_trans
-  inc_trans := inc_trans
-  incN_of_inc n h := incN_of_inc n h
+@[reducible] def GenMap.orderN : Ordered (GenMap β) where
+  OrderN n x y := x.car ≼ₒ{n} y.car
+  Order x y := x.car ≼ₒ y.car
+  ordN_ne ex ey h := ordN_ne ex ey h
+  ordN_succ := ordN_succ
+  ordN_trans := ordN_trans
+  ord_trans := ord_trans
+  ordN_of_ord n h := ordN_of_ord n h
 
 section
 attribute [local instance] GenMap.raBase GenMap.orderN
@@ -260,13 +260,13 @@ theorem GenMap.increasing_of_car {x : GenMap β} (h : Increasing x.car) : Increa
 
 instance instCMRA_GenMap : CMRA (GenMap β) where
   toRABase := GenMap.raBase β
-  toOrderN := GenMap.orderN β
+  toOrdered := GenMap.orderN β
   op_monoN_left z h := op_monoN_left z.car h
   op_mono_left z h := op_mono_left z.car h
-  validN_of_incN {_ x y} h v := validN_of_incN (x := x.car) (y := y.car) h v
+  validN_of_ordN {_ x y} h v := validN_of_ordN (x := x.car) (y := y.car) h v
   pcore_monoN {_ x y _} h e := by
     obtain rfl := Option.some.inj e
-    exact ⟨_, rfl, core_incN_core (x := x.car) (y := y.car) h⟩
+    exact ⟨_, rfl, core_ordN_core (x := x.car) (y := y.car) h⟩
   pcore_mono {x y _} h e := by
     obtain rfl := Option.some.inj e
     exact ⟨_, rfl, core_mono (x := x.car) (y := y.car) h⟩
@@ -277,8 +277,8 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
     obtain rfl := Option.some.inj e
     exact increasing_of_car β (inferInstance : Increasing (core x.car))
   increasing_closed h h' := increasing_of_car β (increasing_closed (increasing_car β h) h')
-  incN_extend {n x y} v h :=
-    let ⟨z, hz, ez⟩ := incN_extend v h
+  ordN_extend {n x y} v h :=
+    let ⟨z, hz, ez⟩ := ordN_extend v h
     ⟨⟨z, by
       obtain ⟨N, hN⟩ := x.bound
       refine ⟨N, fun k hk => ?_⟩
@@ -299,7 +299,7 @@ instance instUCMRA_GenMap : UCMRA (GenMap β) where
   pcore_unit := OFE.eq_dist_2 fun _ => by
     refine OFE.some_dist_some.mpr fun k => ?_
     simp [empty, CMRA.core, CMRA.pcore, optionCore]
-  inc_refl x := inc_refl x.car
+  ord_refl x := ord_refl x.car
 
 instance : IsTotal (GenMap β) := unit_total
 

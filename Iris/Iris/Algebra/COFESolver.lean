@@ -87,8 +87,8 @@ instance : OFE (Tower F) where
   eq_dist' {_ _} := by rw [Tower.ext_iff, funext_iff]; simpa only [eq_dist] using forall_comm
   dist_lt h1 h2 _ := dist_lt (h1 _) h2
 
-#rocq_ignore solver.tower_equiv "Included in OFE (Tower F) instance"
-#rocq_ignore solver.tower_dist "Included in OFE (Tower F) instance"
+#rocq_ignore solver.tower_equiv "Order in OFE (Tower F) instance"
+#rocq_ignore solver.tower_dist "Order in OFE (Tower F) instance"
 #rocq_ignore solver.tower_ofe_mixin "Not needed"
 
 @[rocq_alias solver.tower_chain]

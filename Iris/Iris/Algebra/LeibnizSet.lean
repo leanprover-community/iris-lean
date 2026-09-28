@@ -117,7 +117,7 @@ instance : CMRA (DisjointLeibnizSet S) := CMRA.withExtensionOrder
 instance instDiscreteDisjointLeibnizSet : CMRA.Discrete (DisjointLeibnizSet S) where
   discrete_0 := fun h => h
   discrete_valid := id
-  discrete_inc | ⟨z, hz⟩ => ⟨z, hz⟩
+  discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
 
 instance instUnitalDisjointLeibnizSet : Unital (DisjointLeibnizSet S) where
   unit := .valid ∅
@@ -196,7 +196,7 @@ theorem not_mem_of_mem_and_valid_op_right {x y : DisjointLeibnizSet S}
 
 @[rocq_alias gset_disj_dealloc_local_update]
 theorem localUpdate_dealloc {X Y : S} : (valid X, valid Y) ~l~> (valid (X \ Y), valid ∅) := by
-  refine LocalUpdate.total_valid fun vx vy inc => ?_
+  refine LocalUpdate.total_valid fun vx vy le => ?_
   refine (local_update_unital_discrete ..).mpr fun z hx heq => ⟨valid_mapN (fun _ _ => vx) vx, ?_⟩
   rcases z with (z|_)
   · by_cases Hdisj : Y ## z <;> simp only [Hdisj, ↓reduceIte, op] at heq
@@ -234,8 +234,8 @@ theorem localUpdate_op_r {X Y Z : S} (Hdisj : Z ## X) :
 @[rocq_alias gset_disj_alloc_local_update]
 theorem localUpdate_union_r_of_disj (X Y Z : S) (Hdisj : Z ## X) :
     (valid X, valid Y) ~l~> (valid (Z ∪ X), valid (Z ∪ Y)) := by
-  refine LocalUpdate.total_valid fun vx vy inc => ?_
-  have HdisjY : Z ## Y := fun a ⟨Hz, Hy⟩ => Hdisj a ⟨Hz, included_iff_subset.mp inc a Hy⟩
+  refine LocalUpdate.total_valid fun vx vy le => ?_
+  have HdisjY : Z ## Y := fun a ⟨Hz, Hy⟩ => Hdisj a ⟨Hz, included_iff_subset.mp le a Hy⟩
   rw [←disj_op_union Hdisj, ←disj_op_union HdisjY]
   exact localUpdate_op_r Hdisj
 
@@ -353,7 +353,7 @@ instance : UCMRA (LeibnizSet S) := UCMRA.withExtensionOrder
 instance instDiscreteLeibnizSet : CMRA.Discrete (LeibnizSet S) where
   discrete_0 := fun h => h
   discrete_valid := id
-  discrete_inc | ⟨z, hz⟩ => ⟨z, hz⟩
+  discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
 
 @[rocq_alias gset_core_id]
 instance instCoreIdLeibnizSet (X : LeibnizSet S) : CMRA.CoreId X := ⟨rfl⟩
@@ -368,7 +368,7 @@ theorem core_equiv (X : LeibnizSet S) : core X = X := by
 
 @[rocq_alias coPset_included, rocq_alias gset_included]
 theorem included_iff_subset (X Y : S) : valid X ≼ₒ valid Y ↔ X ⊆ Y := by
-  simp only [Included, IncExt, op]
+  simp only [Order, IncExt, op]
   refine ⟨fun ⟨_, H⟩ => ?_, fun Hsub => ?_⟩
   · obtain ⟨rfl⟩ := H
     exact fun _ Hp => mem_union.mpr (.inl Hp)

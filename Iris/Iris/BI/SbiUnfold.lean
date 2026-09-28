@@ -185,7 +185,7 @@ instance sbiUnfold_cmraValid [CMRA A] {a : A} :
 
 instance sbiUnfold_included [CMRA A] {a b : A} :
     SbiUnfold clo (iprop(a ≼ₒ b) : PROP) (fun n => a ≼ₒ{n} b) :=
-  .of_closed (fun h hm => incN_of_incN_le hm h) <|
+  .of_closed (fun h hm => ordN_of_ordN_le hm h) <|
     siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
 @[rocq_alias sbi_unfold_internal_included]

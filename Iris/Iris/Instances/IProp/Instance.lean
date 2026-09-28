@@ -55,11 +55,11 @@ theorem OFE.validN_transpAp_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) 
     (H : ✓{n} ((transpAp h_fun).mp x)) : ✓{n} x := by
   cases h_fun; cases eq_of_heq h_inst; exact H
 
-theorem OFE.transpAp_incN_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x y : F₁ T T}
+theorem OFE.transpAp_ordN_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x y : F₁ T T}
     (H : x ≼ₒ{n} y) : (transpAp h_fun).mp x ≼ₒ{n} (transpAp h_fun).mp y := by
   cases h_fun; cases eq_of_heq h_inst; exact H
 
-theorem OFE.transpAp_inc_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x y : F₁ T T}
+theorem OFE.transpAp_ord_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x y : F₁ T T}
     (H : x ≼ₒ y) : (transpAp h_fun).mp x ≼ₒ (transpAp h_fun).mp y := by
   cases h_fun; cases eq_of_heq h_inst; exact H
 
@@ -576,7 +576,7 @@ theorem iSingleton_mono {γ : GName} {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ₒ a1
     iSingleton F γ a2 ≼ₒ iSingleton F γ a1 := by
   have hu : unfoldi (E.bundle a2) ≼ₒ unfoldi (E.bundle a1) :=
     (RFunctor.map (IProp.fold GF) (IProp.unfold GF)).mono
-      (OFE.transpAp_inc_mp (E.transpMap (F.ap (IProp GF))).symm
+      (OFE.transpAp_ord_mp (E.transpMap (F.ap (IProp GF))).symm
         (E.transpClass (F.ap (IProp GF))).symm H)
   intro τ'
   simp only [iSingleton]
@@ -590,7 +590,7 @@ theorem iSingleton_mono {γ : GName} {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ₒ a1
       exact .inr hu
     · rw [singleton_map_none hγ, singleton_map_none hγ]
       trivial
-  · exact CMRA.inc_refl _
+  · exact CMRA.ord_refl _
 
 @[rocq_alias own_mono]
 theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ₒ a1) : iOwn γ a1 ⊢ iOwn γ a2 :=
@@ -634,7 +634,7 @@ theorem later_iOwn {a : F.ap (IProp GF)} : ▷ iOwn γ a ⊢ ◇ ∃ b, iOwn γ 
   imodintro
   iexists b
   isplit
-  · iapply UPred.ownM_mono (CMRA.inc_op_left _ r')
+  · iapply UPred.ownM_mono (CMRA.ord_op_left _ r')
     iexact Hown
   · iexact Hab
 
@@ -873,8 +873,8 @@ instance intoAnd_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp .split a b1 b2] 
     IntoAnd false (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
   into_and := by
     rw [h.is_op]
-    exact and_intro (iOwn_mono (CMRA.inc_of_incExt ⟨b2, rfl⟩))
-      (iOwn_mono (CMRA.inc_of_incExt ⟨b1, CMRA.comm⟩))
+    exact and_intro (iOwn_mono (CMRA.ord_of_incExt ⟨b2, rfl⟩))
+      (iOwn_mono (CMRA.ord_of_incExt ⟨b1, CMRA.comm⟩))
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias from_sep_own]
@@ -1023,7 +1023,7 @@ theorem iResProject_below {z : IResUR GF} {c : F.ap (IProp GF)}
     (h : iResProject F γ z = some c) : iSingleton F γ c ≼ₒ z := by
   simp only [iResProject, Option.map_eq_some_iff] at h
   obtain ⟨v, hv, rfl⟩ := h
-  exact inc_of_incExt ⟨_, (iSingleton_op_alter hv).symm⟩
+  exact ord_of_incExt ⟨_, (iSingleton_op_alter hv).symm⟩
 
 /-- `iResProject` is monotone for the resource order. -/
 theorem iResProject_monoN {n} {x y : IResUR GF} (h : x ≼ₒ{n} y) :
@@ -1033,15 +1033,15 @@ theorem iResProject_monoN {n} {x y : IResUR GF} (h : x ≼ₒ{n} y) :
   revert hγ
   rcases (x E.τ).car γ with _ | u <;> rcases (y E.τ).car γ with _ | v <;> intro hγ
   · trivial
-  · exact Option.none_incN_some_iff.mpr <|
+  · exact Option.none_ordN_some_iff.mpr <|
       OFE.transpAp_increasing_mp (E.transpMap (F.ap (IProp GF))) (E.transpClass (F.ap (IProp GF))) <|
         (RFunctor.map (IProp.unfold GF) (IProp.fold GF)).increasing <|
-          Option.none_incN_some_iff.mp hγ
-  · exact absurd hγ Option.not_some_incN_none
-  · refine Option.some_incN_some_iff.mpr (Option.some_incN_some_iff.mp hγ |>.imp ?_ ?_)
+          Option.none_ordN_some_iff.mp hγ
+  · exact absurd hγ Option.not_some_ordN_none
+  · refine Option.some_ordN_some_iff.mpr (Option.some_ordN_some_iff.mp hγ |>.imp ?_ ?_)
     · exact fun e => ElemG.unbundle.ne.ne (foldi.ne.ne e)
     · exact fun i =>
-        OFE.transpAp_incN_mp (E.transpMap (F.ap (IProp GF))) (E.transpClass (F.ap (IProp GF))) <|
+        OFE.transpAp_ordN_mp (E.transpMap (F.ap (IProp GF))) (E.transpClass (F.ap (IProp GF))) <|
           (RFunctor.map (IProp.unfold GF) (IProp.fold GF)).monoN i
 
 @[rocq_alias iRes_project_above]
@@ -1083,7 +1083,7 @@ theorem iOwn_forall {B : Type _} [Inhabited B] (γ : GName) (f : B → F.ap (IPr
       iexact Hincl
 
 @[rocq_alias own_forall_total]
-theorem iOwn_forall_total [IncRefl (F.ap (IProp GF))] {B : Type _} [Inhabited B]
+theorem iOwn_forall_total [OrderRefl (F.ap (IProp GF))] {B : Type _} [Inhabited B]
     (γ : GName) (f : B → F.ap (IProp GF)) :
     (∀ b, iOwn γ (f b)) ⊢ ∃ c, iOwn γ c ∗ ∀ b, f b ≼ₒ c :=
   (iOwn_forall γ f).trans <|
@@ -1105,7 +1105,7 @@ theorem iOwn_and {a1 a2 : F.ap (IProp GF)} :
     · ihave #H2 := Hincl $$ %false; isimp only [Bool.cond_false] at H2; iexact H2
 
 @[rocq_alias own_and_total]
-theorem iOwn_and_total [IncRefl (F.ap (IProp GF))] {a1 a2 : F.ap (IProp GF)} :
+theorem iOwn_and_total [OrderRefl (F.ap (IProp GF))] {a1 a2 : F.ap (IProp GF)} :
     (iOwn γ a1 ∧ iOwn γ a2) ⊢ ∃ c, iOwn γ c ∗ a1 ≼ₒ c ∗ a2 ≼ₒ c :=
   iOwn_and.trans <| exists_mono fun _ =>
     sep_mono_right (sep_mono some_includedI.mp some_includedI.mp)
@@ -1126,7 +1126,7 @@ theorem iOwn_forall_pred {B : Type _} (γ : GName) (φ : B → Prop) [Inhabited 
       iapply Hincl $$ %(⟨b, hb⟩ : Subtype φ)
 
 @[rocq_alias own_forall_pred_total]
-theorem iOwn_forall_pred_total [IncRefl (F.ap (IProp GF))] {B : Type _} (γ : GName)
+theorem iOwn_forall_pred_total [OrderRefl (F.ap (IProp GF))] {B : Type _} (γ : GName)
     (φ : B → Prop) [Inhabited (Subtype φ)] (f : B → F.ap (IProp GF)) :
     (∀ b, ⌜φ b⌝ -∗ iOwn γ (f b)) ⊢ ∃ c, iOwn γ c ∗ ∀ b, ⌜φ b⌝ -∗ f b ≼ₒ c :=
   (iOwn_forall_pred γ φ f).trans <| exists_mono fun _ =>
@@ -1134,7 +1134,7 @@ theorem iOwn_forall_pred_total [IncRefl (F.ap (IProp GF))] {B : Type _} (γ : GN
 
 @[rocq_alias own_and_discrete_total]
 theorem iOwn_and_discrete_total [CMRA.Discrete (F.ap (IProp GF))]
-    [IncRefl (F.ap (IProp GF))] {a1 a2 c : F.ap (IProp GF)}
+    [OrderRefl (F.ap (IProp GF))] {a1 a2 c : F.ap (IProp GF)}
     (h : ∀ c', ✓ c' → a1 ≼ₒ c' → a2 ≼ₒ c' → c ≼ₒ c') :
     (iOwn γ a1 ∧ iOwn γ a2) ⊢ iOwn γ c := by
   iintro Hown
@@ -1145,7 +1145,7 @@ theorem iOwn_and_discrete_total [CMRA.Discrete (F.ap (IProp GF))]
 
 @[rocq_alias own_and_discrete_total_False]
 theorem iOwn_and_discrete_total_false [CMRA.Discrete (F.ap (IProp GF))]
-    [IncRefl (F.ap (IProp GF))] {a1 a2 : F.ap (IProp GF)}
+    [OrderRefl (F.ap (IProp GF))] {a1 a2 : F.ap (IProp GF)}
     (h : ∀ c', ✓ c' → a1 ≼ₒ c' → a2 ≼ₒ c' → False) :
     (iOwn γ a1 ∧ iOwn γ a2) ⊢ False := by
   iintro Hown

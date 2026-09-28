@@ -104,7 +104,7 @@ theorem auth_op_valid (n1 n2 : MaxNat) :
 theorem both_dfrac_valid (dq : DFrac) (n m : MaxNat) :
   (✓ ((●MN{dq} n) • (◯MN m) : MonoNat)) ↔ ✓ dq ∧ m ≤ n := by
   unfold auth lb
-  rw [CMRA.assoc'.symm, ← Auth.frag_op, Auth.both_dfrac_valid_discrete, MaxNat.inc_iff]
+  rw [CMRA.assoc'.symm, ← Auth.frag_op, Auth.both_dfrac_valid_discrete, MaxNat.ord_iff]
   exact ⟨fun ⟨hdq, hle, _⟩ => ⟨hdq, by grind⟩, fun ⟨hdq, hle⟩ => ⟨hdq, by grind, trivial⟩⟩
 
 @[rocq_alias mono_nat_both_valid]
@@ -115,7 +115,7 @@ theorem both_valid (n m : MaxNat) :
 @[rocq_alias mono_nat_lb_mono]
 theorem lb_mono (n1 n2 : MaxNat) (h : n1 ≤ n2) :
   (◯MN n1 : MonoNat) ≼ ◯MN n2 :=
-  Auth.frag_incExt_of_incExt (MaxNat.inc_iff.mpr h)
+  Auth.frag_incExt_of_incExt (MaxNat.ord_iff.mpr h)
 
 @[rocq_alias mono_nat_included]
 theorem included (dq : DFrac) (n : MaxNat) :

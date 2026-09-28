@@ -36,7 +36,7 @@ instance instOFE [LawfulPartialMap M K] [OFE V] : OFE (M V) where
     exact ⟨fun h n k => Dist.of_eq (h k), fun h k => eq_dist_2 fun n => h n k⟩
   dist_lt      := dist_lt
 
-#rocq_ignore gmap_dist "Included in the OFE instance"
+#rocq_ignore gmap_dist "Order in the OFE instance"
 
 @[simp] def toMap [LawfulPartialMap M K] [OFE V] : (M V) -n> (K → Option V) where
   f x := get? x
@@ -233,7 +233,7 @@ instance Heap.instCOFE [LawfulPartialMap M K] [COFE V] : COFE (M V) where
     · simp [← PartialMap.chain_get, Chain.chain_none_const (c := PartialMap.chain k c) (n := 0) (H▸rfl)]
     · exact IsCOFE.conv_compl
 
-#rocq_ignore gmap_compl "Included in COFE instance"
+#rocq_ignore gmap_compl "Order in COFE instance"
 
 @[rocq_alias gmap_ofe_discrete]
 instance instDiscreteHeap [LawfulPartialMap M K] [OFE V] [Discrete V] : Discrete (M V) where
@@ -332,7 +332,7 @@ def valid (s : M V) : Prop := ∀ k, ✓ get? s k
 def validN (n : Nat) (s : M V) : Prop := ∀ k, ✓{n} get? s k
 
 @[rocq_alias lookup_includedN]
-theorem lookup_incN {n} {m1 m2 : M V} :
+theorem lookup_ordN {n} {m1 m2 : M V} :
     (∃ (z : M V), m2 ≡{n}≡ op m1 z) ↔
     ∀ i, (∃ z, (get? m2 i) ≡{n}≡ (get? m1 i) • z) := by
   refine ⟨fun ⟨z, Hz⟩ i => ?_, fun H => ?_⟩
@@ -348,7 +348,7 @@ theorem lookup_incN {n} {m1 m2 : M V} :
     cases get? m2 i <;> cases get? m1 i <;> cases f i <;> simp
 
 @[rocq_alias lookup_included]
-theorem lookup_inc {m1 m2 : M V} :
+theorem lookup_ord {m1 m2 : M V} :
     (∃ (z : M V), m2 = op m1 z) ↔
     ∀ i, (∃ z, (get? m2 i) = (get? m1 i) • z) := by
   refine ⟨fun ⟨z, Hz⟩ i => ?_, fun H => ?_⟩
@@ -452,14 +452,14 @@ def raBase : RABase (M V) where
         refine Hz2.trans (.of_eq h)
 
 /-- The pointwise order on partial maps. -/
-@[reducible] def orderN : OrderN (M V) where
-  IncludedN n m m' := ∀ k, get? m k ≼ₒ{n} get? m' k
-  Included m m' := ∀ k, get? m k ≼ₒ get? m' k
-  incN_ne em em' h k := incN_ne ((get?_ne k).ne em) ((get?_ne k).ne em') (h k)
-  incN_succ h k := incN_succ (h k)
-  incN_trans h₁ h₂ k := incN_trans (h₁ k) (h₂ k)
-  inc_trans h₁ h₂ k := inc_trans (h₁ k) (h₂ k)
-  incN_of_inc n h k := incN_of_inc n (h k)
+@[reducible] def orderN : Ordered (M V) where
+  OrderN n m m' := ∀ k, get? m k ≼ₒ{n} get? m' k
+  Order m m' := ∀ k, get? m k ≼ₒ get? m' k
+  ordN_ne em em' h k := ordN_ne ((get?_ne k).ne em) ((get?_ne k).ne em') (h k)
+  ordN_succ h k := ordN_succ (h k)
+  ordN_trans h₁ h₂ k := ordN_trans (h₁ k) (h₂ k)
+  ord_trans h₁ h₂ k := ord_trans (h₁ k) (h₂ k)
+  ordN_of_ord n h k := ordN_of_ord n (h k)
 
 section
 attribute [local instance] raBase orderN
@@ -484,13 +484,13 @@ theorem increasing_iff {m : M V} : Increasing m ↔ ∀ k, Increasing (get? m k)
 @[rocq_alias gmapR]
 instance instStoreCMRA : CMRA (M V) where
   toRABase := raBase
-  toOrderN := orderN
+  toOrdered := orderN
   op_monoN_left z h k := by rw [get?_op, get?_op]; exact op_monoN_left _ (h k)
   op_mono_left z h k := by rw [get?_op, get?_op]; exact op_mono_left _ (h k)
-  validN_of_incN h v k := validN_of_incN (h k) (v k)
+  validN_of_ordN h v k := validN_of_ordN (h k) (v k)
   pcore_monoN {n x y cx} h e :=
     have hcx : cx = core x := Option.some.inj e.symm
-    ⟨core y, rfl, fun k => by rw [hcx, get?_core, get?_core]; exact core_incN_core (h k)⟩
+    ⟨core y, rfl, fun k => by rw [hcx, get?_core, get?_core]; exact core_ordN_core (h k)⟩
   pcore_mono {x y cx} h e :=
     have hcx : cx = core x := Option.some.inj e.symm
     ⟨core y, rfl, fun k => by rw [hcx, get?_core, get?_core]; exact core_mono (h k)⟩
@@ -504,8 +504,8 @@ instance instStoreCMRA : CMRA (M V) where
   increasing_closed h h' :=
     increasing_iff.mpr fun k =>
       increasing_closed (increasing_get? h k) (h'.imp (fun e => (get?_ne k).ne e) (· k))
-  incN_extend {n x y} v h :=
-    let ⟨f, hf⟩ := Classical.axiomOfChoice fun k => incN_extend (v k) (h k)
+  ordN_extend {n x y} v h :=
+    let ⟨f, hf⟩ := Classical.axiomOfChoice fun k => ordN_extend (v k) (h k)
     have hfx : ∀ k, get? (bindAlter (fun k _ => f k) x) k = f k := fun k => by
       rw [get?_bindAlter]
       cases hx : get? x k
@@ -528,7 +528,7 @@ instance instStoreUCMRA : UCMRA (M V) where
   pcore_unit := OFE.eq_dist_2 fun _ => by
     refine OFE.some_dist_some.mpr fun k => ?_
     simp [get?_bindAlter, get?_empty]
-  inc_refl _ := fun _ => inc_refl _
+  ord_refl _ := fun _ => ord_refl _
 
 instance [Affine V] : Affine (M V) where
   increasing _ := increasing_iff.mpr fun _ => Affine.increasing _
@@ -710,7 +710,7 @@ instance [CoreId (x : V)] : CoreId (singleton i x : M V) where
     exact core_id.dist
 
 open Classical in
-theorem singleton_incN_singleton_iff :
+theorem singleton_ordN_singleton_iff :
     (singleton i x : M V) ≼ₒ{n} (singleton i y : M V) ↔ some x ≼ₒ{n} some y := by
   refine ⟨fun h => by simpa [get?_singleton_eq rfl] using h i, fun h k => ?_⟩
   by_cases hk : i = k
@@ -718,18 +718,18 @@ theorem singleton_incN_singleton_iff :
   · simp only [get?_singleton, hk, ↓reduceIte]; trivial
 
 open Classical in
-theorem singleton_inc_singleton_iff :
+theorem singleton_ord_singleton_iff :
     (singleton i x : M V) ≼ₒ (singleton i y : M V) ↔ some x ≼ₒ some y := by
   refine ⟨fun h => by simpa [get?_singleton_eq rfl] using h i, fun h k => ?_⟩
   by_cases hk : i = k
   · subst hk; simpa [get?_singleton_eq rfl] using h
   · simp only [get?_singleton, hk, ↓reduceIte]; trivial
 
-theorem singleton_inc_singleton_mono (Hinc : x ≼ₒ y) :
+theorem singleton_ord_singleton_mono (Hinc : x ≼ₒ y) :
     (singleton i x : M V) ≼ₒ (singleton i y) :=
-  singleton_inc_singleton_iff.mpr (Or.inr Hinc)
+  singleton_ord_singleton_iff.mpr (Or.inr Hinc)
 
-theorem inc_dom_inc {m1 m2 : M V} (Hinc : m1 ≼ₒ m2) : Set.Included (dom m1) (dom m2) := by
+theorem ord_dom_ord {m1 m2 : M V} (Hinc : m1 ≼ₒ m2) : Set.Included (dom m1) (dom m2) := by
   intro i
   unfold dom
   have := Hinc i
@@ -897,18 +897,18 @@ theorem dom_op_union (m1 m2 : M V) : dom (m1 • m2) = Set.Union (dom m1) (dom m
   cases get? m1 k <;> cases get? m2 k <;> simp_all [CMRA.op, dom, Set.Union, get?_merge]
 
 @[rocq_alias dom_included]
-theorem incExt_dom_inc {m1 m2 : M V} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (dom m2) := by
+theorem incExt_dom_ord {m1 m2 : M V} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (dom m2) := by
   intro i
   unfold dom
-  rcases lookup_inc.mp Hinc i with ⟨z, Hz⟩
+  rcases lookup_ord.mp Hinc i with ⟨z, Hz⟩
   revert Hz
   cases get? m1 i <;> cases get? m2 i <;> cases z <;> simp [CMRA.op, optionOp]
 
 @[rocq_alias gmap_fmap_mono]
 theorem map_mono_ext [CMRA V'] (f : V → V') (hf : ∀ x y : V, x ≼ y → f x ≼ f y) {m1 m2 : M V}
     (Hinc : m1 ≼ m2) : PartialMap.map f m1 ≼ PartialMap.map f m2 := by
-  refine lookup_inc.mpr fun i => ?_
-  obtain ⟨z, hz⟩ := Option.map_mono_ext f hf (lookup_inc.mp Hinc i)
+  refine lookup_ord.mpr fun i => ?_
+  obtain ⟨z, hz⟩ := Option.map_mono_ext f hf (lookup_ord.mp Hinc i)
   exact ⟨z, by rw [get?_map, get?_map, hz]⟩
 
 open Iris.Algebra in
@@ -945,7 +945,7 @@ nonrec instance [HD : CMRA.Discrete V] [LawfulPartialMap M K] : Discrete (M V) w
     refine OFE.eq_dist_2 ?_
     exact fun _ k => (OFE.Discrete.discrete_0 (H k)).dist
   discrete_valid {_} := (CMRA.Discrete.discrete_valid <| · ·)
-  discrete_inc h k := CMRA.discrete_inc (h k)
+  discrete_ord h k := CMRA.discrete_ord (h k)
 
 /-! ## Frame-preserving updates -/
 

@@ -72,7 +72,7 @@ instance : UCMRA (LeibnizMultiSet MS) := UCMRA.withExtensionOrder
 instance : CMRA.Discrete (LeibnizMultiSet MS) where
   discrete_0 h := h
   discrete_valid := id
-  discrete_inc | ⟨z, hz⟩ => ⟨z, hz⟩
+  discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
 
 instance : IsTotal (LeibnizMultiSet MS) where
   total _ := ⟨.ofSet ∅, rfl⟩
@@ -116,8 +116,8 @@ theorem localUpdate_alloc {X Y X' : MS} :
 @[rocq_alias gmultiset_local_update_dealloc]
 theorem localUpdate_dealloc {X Y X' : MS} (h : X' ⊆ Y) :
     (ofSet X, ofSet Y) ~l~> (ofSet (X \ X'), ofSet (Y \ X')) := by
-  refine LocalUpdate.total_valid fun _ _ inc => localUpdate (LawfulMultiSet.ext fun a => ?_)
-  have hYX := included_iff_subset.mp inc
+  refine LocalUpdate.total_valid fun _ _ le => localUpdate (LawfulMultiSet.ext fun a => ?_)
+  have hYX := included_iff_subset.mp le
   simp only [multiplicity_disjUnion, multiplicity_difference]
   grind [subset_iff]
 

@@ -79,10 +79,10 @@ theorem LocalUpdate.replace (x y : α) [CMRA.IdFree x] (h : ✓ y) : (x, x) ~l~>
   | some _ => cases CMRA.id_freeN_r vx e.symm
 
 @[rocq_alias core_id_local_update]
-theorem LocalUpdate.core_id (x y z : α) [CMRA.CoreId y] (inc : y ≼ x) :
+theorem LocalUpdate.core_id (x y z : α) [CMRA.CoreId y] (le : y ≼ x) :
     (x, z) ~l~> (x, z • y) := by
   refine fun n mz vx e => ⟨vx, ?_⟩
-  refine (RABase.op_core_right_of_incExt inc).symm.dist.trans ?_
+  refine (RABase.op_core_right_of_incExt le).symm.dist.trans ?_
   match mz with
   | none => calc
     y • x ≡{n}≡ y • z := e.op_r
@@ -124,7 +124,7 @@ theorem LocalUpdate.total_valid0 [IsTotal α] {x y x' y' : α}
 @[rocq_alias local_update_total_valid]
 theorem LocalUpdate.total_valid [IsTotal α] [CMRA.Discrete α] {x y x' y' : α}
     (h : ✓ x → ✓ y → y ≼ x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
-  .valid fun vx vy inc => h vx vy (Option.incExt_of_some_incExt_some inc)
+  .valid fun vx vy le => h vx vy (Option.incExt_of_some_incExt_some le)
 
 end CMRA
 

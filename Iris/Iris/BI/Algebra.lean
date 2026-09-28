@@ -72,12 +72,12 @@ theorem Some_included_totalI [Sbi PROP] [CMRA A] [IsTotal A] {x y : A} :
     some x ≼ some y ⊣⊢@{PROP} x ≼ y :=
   option_included_totalI
 
-theorem some_includedI [Sbi PROP] [CMRA A] [IncRefl A] {x y : A} :
+theorem some_includedI [Sbi PROP] [CMRA A] [OrderRefl A] {x y : A} :
     some x ≼ₒ some y ⊣⊢@{PROP} x ≼ₒ y :=
-  internalCmraIncluded_iff fun _ => Option.some_incN_some_iff_incRefl
+  internalCmraIncluded_iff fun _ => Option.some_ordN_some_iff_ordRefl
 
 theorem some_includedI_none [Sbi PROP] [CMRA A] {x : A} : some x ≼ₒ none ⊢@{PROP} False :=
-  (internalCmraIncluded_pure fun _ => iff_false_intro Option.not_some_incN_none).mp.trans
+  (internalCmraIncluded_pure fun _ => iff_false_intro Option.not_some_ordN_none).mp.trans
     (pure_elim' False.elim)
 
 end option
@@ -103,7 +103,7 @@ theorem auth_op_frag_one_validI [Sbi PROP] (dp : DFrac) (m : H V) k v :
   sbi_unfold; intro _; exact auth_op_frag_one_validN_iff
 
 @[rocq_alias gmap_view_both_validI_total]
-theorem auth_op_frag_validI_total [Sbi PROP] [IncRefl V] (dp : DFrac) (m : H V) k dq v :
+theorem auth_op_frag_validI_total [Sbi PROP] [OrderRefl V] (dp : DFrac) (m : H V) k dq v :
   ✓ (Auth dp m • Frag k dq v) ⊢@{PROP}
     ∃ v', ⌜✓ dp⌝ ∧ ⌜✓ dq⌝ ∧ ⌜get? m k = .some v'⌝ ∧
       ✓ v' ∧ v ≼ₒ v' := by
@@ -313,7 +313,7 @@ theorem excl_validI (x : Excl A) :
 @[rocq_alias excl_includedI]
 theorem excl_includedI (x y : Excl A) :
     x ≼ y ⊣⊢@{PROP} ⌜y = Excl.invalid⌝ :=
-  internalCmraIncExt_pure incN_iff
+  internalCmraIncExt_pure ordN_iff
 
 end excl
 

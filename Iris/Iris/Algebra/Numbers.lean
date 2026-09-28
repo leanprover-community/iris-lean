@@ -85,7 +85,7 @@ scoped instance instCMRA : CMRA α := CMRA.withExtensionOrder
 
 scoped instance instDiscrete : CMRA.Discrete α where
   discrete_valid := id
-  discrete_inc := RABase.incExt_of_incExt0
+  discrete_ord := RABase.incExt_of_incExt0
 #rocq_ignore nat_cmra_discrete "Use the (ℕ, +) Constant Core instance."
 #rocq_ignore Z_cmra_discrete "Use the (ℤ, +) Constant Core instance."
 
@@ -115,7 +115,7 @@ theorem op_eq {x y : α} : x • y = x + y := rfl
 theorem included_iff {x y : α} : x ≼ₒ y ↔ ∃ z, y = x + z := Iff.rfl
 
 @[rocq_alias nat_included]
-theorem inc_iff_le [LE α] [LawfulAddLE α] {x y : α} : x ≼ₒ y ↔ x ≤ y :=
+theorem ord_iff_le [LE α] [LawfulAddLE α] {x y : α} : x ≼ₒ y ↔ x ≤ y :=
   included_iff.trans LawfulAddLE.le_iff_exists_add.symm
 
 /-- Sufficient condition for a local update on a LeftCancelAdd structure, such as (ℕ, +) -/
@@ -195,7 +195,7 @@ scoped instance instCMRA : CMRA α := CMRA.withExtensionOrder
 
 scoped instance : CMRA.Discrete α where
   discrete_valid := id
-  discrete_inc := RABase.incExt_of_incExt0
+  discrete_ord := RABase.incExt_of_incExt0
 #rocq_ignore max_nat_cmra_discrete "Use the (ℕ, max) Universal Core instance."
 #rocq_ignore max_Z_cmra_discrete "Use the (ℤ, max) Universal Core instance."
 #rocq_ignore min_nat_cmra_discrete "Use the (ℕ, min) Universal Core instance."
@@ -229,7 +229,7 @@ omit [Zero α] in
 theorem op_eq {x y : α} : x • y = x + y := rfl
 
 omit [Zero α] in
-theorem inc_iff {x y : α} : x ≼ₒ y ↔ x • y = y :=
+theorem ord_iff {x y : α} : x ≼ₒ y ↔ x • y = y :=
   ⟨RABase.op_core_right_of_incExt, fun h => ⟨y, h.symm⟩⟩
 
 omit [Zero α] in
@@ -275,7 +275,7 @@ scoped instance instCMRA : CMRA α := CMRA.withExtensionOrder
 
 scoped instance instDiscrete : CMRA.Discrete α where
   discrete_valid := id
-  discrete_inc := RABase.incExt_of_incExt0
+  discrete_ord := RABase.incExt_of_incExt0
 #rocq_ignore pos_cmra_discrete "Use (PNat, +) No Core instance."
 
 scoped instance instCancelable [LeftCancelAdd α] {a : α} : Cancelable a where
@@ -292,7 +292,7 @@ theorem op_eq {x y : α} : x • y = x + y := rfl
 theorem included_iff {x y : α} : x ≼ₒ y ↔ ∃ z, y = x + z := Iff.rfl
 
 @[rocq_alias pos_included]
-theorem inc_iff_lt [LT α] [LawfulAddLT α] {x y : α} : x ≼ₒ y ↔ x < y :=
+theorem ord_iff_lt [LT α] [LawfulAddLT α] {x y : α} : x ≼ₒ y ↔ x < y :=
   included_iff.trans LawfulAddLT.lt_iff_exists_add.symm
 
 set_option synthInstance.checkSynthOrder false in
@@ -361,12 +361,12 @@ scoped instance : CMRA.Discrete MaxNat := OrdCommMonoidLike.instDiscrete
 scoped instance : CMRA.CoreId (a : MaxNat) := OrdCommMonoidLike.instCoreId _
 
 @[rocq_alias max_nat_included]
-theorem MaxNat.inc_iff {a b : MaxNat} : a ≼ₒ b ↔ a ≤ b := by
-  grind [OrdCommMonoidLike.inc_iff, eq_toNat]
+theorem MaxNat.ord_iff {a b : MaxNat} : a ≼ₒ b ↔ a ≤ b := by
+  grind [OrdCommMonoidLike.ord_iff, eq_toNat]
 
 @[rocq_alias max_nat_local_update]
 theorem MaxNat.local_update {a b a' : MaxNat} (h : a ≤ a') : (a, b) ~l~> (a', a') :=
-  OrdCommMonoidLike.idem_local_update (inc_iff.mpr h)
+  OrdCommMonoidLike.idem_local_update (ord_iff.mpr h)
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias max_nat_is_op]
@@ -417,13 +417,13 @@ scoped instance : IsTotal MaxInt := OrdCommMonoidLike.instIsTotal
 scoped instance : CMRA.CoreId (a : MaxInt) := OrdCommMonoidLike.instCoreId _
 
 @[rocq_alias max_Z_included]
-theorem MaxInt.inc_iff {a b : MaxInt} : a ≼ₒ b ↔ a ≤ b := by
-  rw [OrdCommMonoidLike.inc_iff, OrdCommMonoidLike.op_eq, eq_toInt]
+theorem MaxInt.ord_iff {a b : MaxInt} : a ≼ₒ b ↔ a ≤ b := by
+  rw [OrdCommMonoidLike.ord_iff, OrdCommMonoidLike.op_eq, eq_toInt]
   grind
 
 @[rocq_alias max_Z_local_update]
 theorem MaxInt.local_update {a b a' : MaxInt} (h : a ≤ a') : (a, b) ~l~> (a', a') :=
-  OrdCommMonoidLike.idem_local_update (inc_iff.mpr h)
+  OrdCommMonoidLike.idem_local_update (ord_iff.mpr h)
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias max_Z_is_op]
@@ -476,13 +476,13 @@ scoped instance : IsTotal MinNat := OrdCommMonoidLike.instIsTotal
 scoped instance : CMRA.CoreId (a : MinNat) := OrdCommMonoidLike.instCoreId _
 
 @[rocq_alias min_nat_included]
-theorem MinNat.inc_iff {a b : MinNat} : a ≼ₒ b ↔ b ≤ a := by
-  rw [OrdCommMonoidLike.inc_iff, OrdCommMonoidLike.op_eq, eq_toNat]
+theorem MinNat.ord_iff {a b : MinNat} : a ≼ₒ b ↔ b ≤ a := by
+  rw [OrdCommMonoidLike.ord_iff, OrdCommMonoidLike.op_eq, eq_toNat]
   grind
 
 @[rocq_alias min_nat_local_update]
 theorem MinNat.local_update {a b a' : MinNat} (h : a' ≤ a) : (a, b) ~l~> (a', a') :=
-  OrdCommMonoidLike.idem_local_update (inc_iff.mpr h)
+  OrdCommMonoidLike.idem_local_update (ord_iff.mpr h)
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias min_nat_is_op]

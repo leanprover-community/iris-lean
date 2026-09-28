@@ -137,7 +137,7 @@ theorem newcounter_mono_spec :
   wp_alloc l with Hl
   imod iOwn_alloc (F := MCounterRF)
     (((● MaxNat.ofNat 0) • (◯ MaxNat.ofNat 0)) : Auth MaxNat) with ⟨%γ, Hγ, Hγ'⟩
-  · exact auth_both_valid_2 trivial (MaxNat.inc_iff.mpr (by simp))
+  · exact auth_both_valid_2 trivial (MaxNat.ord_iff.mpr (by simp))
   imod inv_alloc N _ (mcounterInv γ l) $$ [Hl Hγ] with #Hinv
   · iexists 0; iframe
   imodintro
@@ -160,9 +160,9 @@ theorem incr_mono_spec (l : Loc) (n : Nat) :
     imodintro
     iframe Hγ
     iapply iOwn_mono $$ Hγf
-    have hnc := CMRA.inc_of_incExt (auth_both_valid_discrete.mp Hv).1
-    refine CMRA.inc_of_incExt (frag_incExt_of_incExt (MaxNat.inc_iff.mpr ?_))
-    grind [MaxNat.inc_iff]
+    have hnc := CMRA.ord_of_incExt (auth_both_valid_discrete.mp Hv).1
+    refine CMRA.ord_of_incExt (frag_incExt_of_incExt (MaxNat.ord_iff.mpr ?_))
+    grind [MaxNat.ord_iff]
   iintro !> Hγf
   iapply Hφ
   iexists γ
@@ -183,8 +183,8 @@ theorem read_mono_spec (l : Loc) (j : Nat) :
     imodintro
     iframe Hγ Hγf
     ipureintro
-    have hjc := CMRA.inc_of_incExt (auth_both_valid_discrete.mp Hv).1
-    grind [MaxNat.inc_iff]
+    have hjc := CMRA.ord_of_incExt (auth_both_valid_discrete.mp Hv).1
+    grind [MaxNat.ord_iff]
   iintro !> %c ⟨%hle, Hγf⟩
   iapply Hφ
   iframe %hle
