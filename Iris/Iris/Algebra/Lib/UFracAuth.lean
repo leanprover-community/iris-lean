@@ -22,16 +22,16 @@ fragment's resource to its payload.
 @[expose] public section
 
 namespace Iris
-open OFE CMRA UCMRA Auth Iris.Option Iris.OFE.Option UFrac
+open OFE ORA UCMRA Auth Iris.Option Iris.OFE.Option UFrac
 
 /-! ## Definitions -/
 
 @[rocq_alias ufrac_authR, rocq_alias ufrac_authUR]
-abbrev UFracAuth [CMRA A] := Auth (Option (UFrac × A))
+abbrev UFracAuth [ORA A] := Auth (Option (UFrac × A))
 
 namespace UFracAuth
 
-variable [CMRA A] [CMRA.Affine A]
+variable [ORA A] [ORA.Affine A]
 
 @[rocq_alias ufrac_auth_auth]
 nonrec abbrev auth (q : Qp) (a : A) : UFracAuth (A := A) :=
@@ -77,7 +77,7 @@ theorem validN {n : Nat} {a : A} {p : Qp} (ha : ✓{n} a) : ✓{n} (●U{p} a) �
 
 @[rocq_alias ufrac_auth_valid]
 theorem valid {p : Qp} {a : A} (ha : ✓ a) : ✓ (●U{p} a) • ◯U{p} a :=
-  auth_both_valid_2 ⟨trivial, ha⟩ (CMRA.ord_refl _)
+  auth_both_valid_2 ⟨trivial, ha⟩ (ORA.ord_refl _)
 
 /-! ## Agreement -/
 
@@ -106,7 +106,7 @@ theorem includedN {n : Nat} {p q : Qp} {a b : A}
   · exact Option.some_ordN_some_iff.mpr (.inr i.2)
 
 @[rocq_alias ufrac_auth_included]
-theorem included [CMRA.Discrete A] {q p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{q} b) :
+theorem included [ORA.Discrete A] {q p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{q} b) :
     some b ≼ₒ some a := by
   rw [auth_both_valid_discrete] at h
   rcases h.1 with e | i
@@ -118,9 +118,9 @@ theorem includedN_total [OrderRefl A] {n : Nat} {q p : Qp} {a b : A} (h : ✓{n}
     b ≼ₒ{n} a := (Option.some_ordN_some_iff.mp (includedN h)).elim (·.to_ordN) id
 
 @[rocq_alias ufrac_auth_included_total]
-theorem included_total [CMRA.Discrete A] [OrderRefl A] {q p : Qp} {a b : A}
+theorem included_total [ORA.Discrete A] [OrderRefl A] {q p : Qp} {a b : A}
     (h : ✓ (●U{p} a) • ◯U{q} b) : b ≼ₒ a :=
-  (Option.some_ord_some_iff.mp (included h)).elim (· ▸ CMRA.ord_refl b) id
+  (Option.some_ord_some_iff.mp (included h)).elim (· ▸ ORA.ord_refl b) id
 
 /-! ## Auth-only validity -/
 
@@ -179,7 +179,7 @@ instance isOp_ufrac_auth_core_id {q q1 q2 : Qp} {a : A} [h1 : CoreId a] [h2 : Is
 
 /-! ## Updates -/
 
-omit [CMRA.Affine A] in
+omit [ORA.Affine A] in
 /-- The order of the fragment algebra `Option (UFrac × A)` embeds into the extension
 inclusion, given that the order of `A` does. -/
 private theorem incN_of_ordN (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y)
@@ -206,7 +206,7 @@ theorem update_surplus {p q : Qp} {a b : A}
   exact ⟨comm.dist, op_commN⟩
 
 @[rocq_alias ufrac_auth_update_surplus_cancel]
-theorem update_surplus_cancel {p q : Qp} {a b : A} [CMRA.Cancelable b]
+theorem update_surplus_cancel {p q : Qp} {a b : A} [ORA.Cancelable b]
     (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y) :
     ((●U{p + q} (a • b)) • ◯U{q} b) ~~> ●U{p} a := by
   refine auth_update_dealloc_of_localUpdate

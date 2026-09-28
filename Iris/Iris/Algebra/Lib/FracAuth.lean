@@ -20,16 +20,16 @@ fraction) and `◯F{q} a` (fragment with fraction). Splitting works differently 
 
 @[expose] public section
 
-open Iris OFE CMRA UCMRA Auth Option
+open Iris OFE ORA UCMRA Auth Option
 
 /-! ## Definitions -/
 
 @[rocq_alias frac_authR, rocq_alias frac_authUR]
-abbrev FracAuth [CMRA A] := Auth (Option (Qp × A))
+abbrev FracAuth [ORA A] := Auth (Option (Qp × A))
 
 namespace FracAuth
 
-variable [CMRA A] [CMRA.Affine A]
+variable [ORA A] [ORA.Affine A]
 
 @[rocq_alias frac_auth_auth]
 abbrev auth (dq : DFrac) (a : A) : FracAuth (A := A) := Auth.auth dq (some (1, a))
@@ -92,7 +92,7 @@ theorem validN {n : Nat} {a : A} (ha : ✓{n} a) : ✓{n} (●F a : FracAuth) �
 
 @[rocq_alias frac_auth_dfrac_valid]
 theorem dfrac_valid {dq : DFrac} {a : A} (hdq : ✓ dq) (ha : ✓ a) : ✓ (●F{dq} a) • ◯F a :=
-  auth_both_dfrac_valid_2 hdq ⟨valid_iff_validN.mpr fun _ => Qp.valid_one, ha⟩ (CMRA.ord_refl _)
+  auth_both_dfrac_valid_2 hdq ⟨valid_iff_validN.mpr fun _ => Qp.valid_one, ha⟩ (ORA.ord_refl _)
 
 @[rocq_alias frac_auth_valid]
 theorem valid {a : A} (ha : ✓ a) : ✓ (●F a : FracAuth) • ◯F a :=
@@ -105,7 +105,7 @@ theorem agreeN {dq : DFrac} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F b) : a �
   rw [both_dfrac_validN] at h
   rcases h.2.1 with e | i
   · exact e.2.symm
-  · exact absurd h.2.2.1 (RABase.not_valid_of_exclN_inc (x := (1 : Qp)) i.1)
+  · exact absurd h.2.2.1 (ORA.not_valid_of_exclN_inc (x := (1 : Qp)) i.1)
 
 @[rocq_alias frac_auth_agree]
 theorem agree {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F b) : a = b :=
@@ -124,7 +124,7 @@ theorem includedN {n : Nat} {dq : DFrac} {q : Qp} {a b : A} (h : ✓{n} (●F{dq
   · exact Option.some_ordN_some_iff.mpr (.inr i.2)
 
 @[rocq_alias frac_auth_included]
-theorem included [CMRA.Discrete A] {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F{q} b) :
+theorem included [ORA.Discrete A] {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F{q} b) :
       some b ≼ₒ some a := by
   rw [both_dfrac_valid_discrete] at h
   rcases h.2.1 with e | i
@@ -137,9 +137,9 @@ theorem includedN_total [OrderRefl A] {dq : DFrac} {a b : A} (h : ✓{n} (●F{d
   (Option.some_ordN_some_iff.mp (includedN h)).elim (·.to_ordN) id
 
 @[rocq_alias frac_auth_included_total]
-theorem included_total [CMRA.Discrete A] [OrderRefl A] {dq : DFrac} {a b : A}
+theorem included_total [ORA.Discrete A] [OrderRefl A] {dq : DFrac} {a b : A}
     (h : ✓ (●F{dq} a) • ◯F{q} b) : b ≼ₒ a :=
-  (Option.some_ord_some_iff.mp (included h)).elim (· ▸ CMRA.ord_refl b) id
+  (Option.some_ord_some_iff.mp (included h)).elim (· ▸ ORA.ord_refl b) id
 
 /-! ## Auth-only validity -/
 
@@ -245,7 +245,7 @@ instance isOp_frac_auth_core_id {q q1 q2 : Qp} {a : A}
 
 /-! ## Updates -/
 
-omit [CMRA.Affine A] in
+omit [ORA.Affine A] in
 /-- The order of the fragment algebra `Option (Qp × A)` embeds into the extension
 inclusion, given that the order of `A` does. -/
 private theorem incN_of_ordN (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y)

@@ -19,7 +19,7 @@ convenience definitions and lemmas.
 
 namespace Iris
 
-open OFE CMRA DFrac
+open OFE ORA DFrac
 
 namespace DFracAgree
 
@@ -64,7 +64,7 @@ theorem mk_op {d₁ d₂ : DFrac} {a : A} : mk (d₁ • d₂) a = mk d₁ a •
 
 @[rocq_alias dfrac_agree_op_valid]
 theorem op_valid {d₁ d₂ : DFrac} {a₁ a₂ : A} : ✓ (mk d₁ a₁ • mk d₂ a₂) ↔ ✓ (d₁ • d₂) ∧ a₁ = a₂ := by
-  simp only [Prod.op, CMRA.op, mk]
+  simp only [Prod.op, ORA.op, mk]
   exact and_congr_right fun _ => toAgree_op_valid_iff_eq
 
 #rocq_ignore dfrac_agree_op_valid_L "Use op_valid"

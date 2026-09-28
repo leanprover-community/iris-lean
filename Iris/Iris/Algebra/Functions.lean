@@ -10,13 +10,13 @@ public import Iris.Algebra.Updates
 @[expose] public section
 
 namespace Iris
-open OFE CMRA
+open OFE ORA
 
 /-!
 # Dependent Function Resources
 
 Insertion and singleton operations for dependent functions whose codomains carry
-OFE or CMRA structure, together with their non-expansiveness, validity, core,
+OFE or ORA structure, together with their non-expansiveness, validity, core,
 composition, and update laws.
 -/
 
@@ -96,15 +96,15 @@ instance instDiscreteFunInsertDiscrete (f : (a : ι) → β a) (x : ι) (y : β 
 
 end OFE
 
-section CMRA
+section ORA
 
 variable {ι : Type _} [DecidableEq ι] {β : ι → Type _} [∀ i, UCMRA (β i)]
 
 @[rocq_alias discrete_funR_cmra_discrete]
-instance instDiscreteFunCmraDiscrete [∀ i, CMRA.Discrete (β i)] :
-    CMRA.Discrete ((i : ι) → β i) where
-  discrete_valid h i := CMRA.Discrete.discrete_valid (h i)
-  discrete_ord h i := CMRA.Discrete.discrete_ord (h i)
+instance instDiscreteFunCmraDiscrete [∀ i, ORA.Discrete (β i)] :
+    ORA.Discrete ((i : ι) → β i) where
+  discrete_valid h i := ORA.Discrete.discrete_valid (h i)
+  discrete_ord h i := ORA.Discrete.discrete_ord (h i)
 
 @[rocq_alias discrete_fun_singleton_ne]
 instance instDiscreteFunSingletonNonExpansive (x : ι) :
@@ -163,7 +163,7 @@ theorem discreteFunSingleton_unit_eq (x : ι) :
 theorem discreteFunSingleton_core_eq {x : ι} (y : β x) :
     core (discreteFunSingleton x y) = discreteFunSingleton x (core y) :=
   funext fun x' => by
-    simp only [core, CMRA.pcore, Option.getD_some]
+    simp only [core, ORA.pcore, Option.getD_some]
     by_cases h : x = x'
     · subst h
       rw [discreteFunSingleton_self, discreteFunSingleton_self]
@@ -181,7 +181,7 @@ theorem discreteFunSingleton_op_eq {x : ι} (y₁ y₂ : β x) :
     discreteFunSingleton x y₁ • discreteFunSingleton x y₂ =
       discreteFunSingleton x (y₁ • y₂) :=
   funext fun x' => by
-    simp only [CMRA.op]
+    simp only [ORA.op]
     by_cases h : x = x'
     · subst h
       rw [discreteFunSingleton_self, discreteFunSingleton_self, discreteFunSingleton_self]
@@ -209,12 +209,12 @@ theorem discreteFunInsert_updateP {x : ι} {P : β x → Prop} {Q : ((a : ι) �
   refine UpdateP.total.mpr fun n gf hgf => ?_
   have hgf_at (a : ι) : ✓{n} discreteFunInsert x y₁ g a • gf a := hgf a
   obtain ⟨y₂, hy₂, hvalid⟩ := hy n (some (gf x))
-    (by simpa only [CMRA.op?, discreteFunInsert_self] using hgf_at x)
+    (by simpa only [ORA.op?, discreteFunInsert_self] using hgf_at x)
   refine ⟨discreteFunInsert x y₂ g, hQ y₂ hy₂, fun x' => ?_⟩
-  simp only [CMRA.op]
+  simp only [ORA.op]
   by_cases hx'x : x' = x
   · subst x'
-    simpa only [CMRA.op?, discreteFunInsert_self]
+    simpa only [ORA.op?, discreteFunInsert_self]
   · simpa only [discreteFunInsert_of_ne (h := Ne.symm hx'x) ..] using hgf_at x'
 
 @[rocq_alias discrete_fun_insert_updateP']
@@ -263,9 +263,9 @@ theorem discreteFunSingleton_update_unit {x : ι} {y : β x} (hy : unit ~~> y) :
   Update.of_updateP <|
     discreteFunSingleton_updateP_unit (UpdateP.of_update hy) <| fun _ hz => hz ▸ rfl
 
-end CMRA
+end ORA
 
-section CMRA
+section ORA
 
 variable {ι : Type _} {β : ι → Type _} [∀ i, UCMRA (β i)]
 
@@ -287,6 +287,6 @@ theorem discreteFun_update {f g : (a : ι) → β a} (hfg : ∀ a, f a ~~> g a) 
   Update.of_updateP <| discreteFun_updateP (fun a => UpdateP.of_update (hfg a))
     fun _ h => funext h
 
-end CMRA
+end ORA
 
 end Iris

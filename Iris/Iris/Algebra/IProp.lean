@@ -80,8 +80,8 @@ def IResUR.{u} : Type u := (i : GType) → GenMap ((GF i).F (IPre GF) (IPre GF))
 instance : UCMRA (IResUR GF) :=
   ucmraDiscreteFunO (β := fun (i : GType) => GenMap ((GF i).F (IPre GF) (IPre GF)))
 
-instance : CMRA.Affine (IResUR GF) :=
-  inferInstanceAs (CMRA.Affine ((i : GType) → GenMap ((GF i).F (IPre GF) (IPre GF))))
+instance : ORA.Affine (IResUR GF) :=
+  inferInstanceAs (ORA.Affine ((i : GType) → GenMap ((GF i).F (IPre GF) (IPre GF))))
 
 abbrev IProp.{u} : Type u := UPred (IResUR GF)
 

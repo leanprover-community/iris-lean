@@ -21,7 +21,7 @@ coincides with `R`.
 
 namespace Iris
 
-open CMRA Iris.Std OFE
+open ORA Iris.Std OFE
 
 namespace Mra
 
@@ -112,7 +112,7 @@ theorem append_idem (x : Mra R) : append x x = x := by
 #rocq_ignore mra_pcore "Replaced by the `pcore` field of the CMRA instance."
 
 @[rocq_alias mra_cmra_mixin]
-instance (R : α → α → Prop) : RABase (Mra R) where
+instance (R : α → α → Prop) : CMRA (Mra R) where
   pcore := some
   op := append
   ValidN _ _ := True
@@ -133,12 +133,8 @@ instance (R : α → α → Prop) : RABase (Mra R) where
     (congrArg (append · _) (Option.some.inj h).symm).trans (append_idem _)
   pcore_idem _ := rfl
   extend _ h := ⟨_, _, h, .rfl, .rfl⟩
-
-instance (R : α → α → Prop) : RABase.ExtensionLaws (Mra R) where
   pcore_op_mono h y :=
     ⟨y, congrArg (fun z ↦ some (append z y)) (Option.some.inj h)⟩
-
-instance (R : α → α → Prop) : CMRA (Mra R) := CMRA.withExtensionOrder
 
 #rocq_ignore mraR "Use Mra."
 
@@ -147,11 +143,11 @@ instance : IsTotal (Mra R) where
   total x := ⟨x, rfl⟩
 
 @[rocq_alias mra_core_id]
-instance (x : Mra R) : CMRA.CoreId x where
+instance (x : Mra R) : ORA.CoreId x where
   core_id := rfl
 
 @[rocq_alias mra_cmra_discrete]
-instance : CMRA.Discrete (Mra R) where
+instance : ORA.Discrete (Mra R) where
   discrete_0 := id
   discrete_valid := id
   discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
@@ -160,7 +156,7 @@ instance : CMRA.Discrete (Mra R) where
 #rocq_ignore mraUR "Use Mra."
 
 @[rocq_alias mra_ucmra_mixin]
-instance (R : α → α → Prop) : UCMRA (Mra R) where
+instance (R : α → α → Prop) : Unital (Mra R) where
   unit := mk []
   unit_valid := trivial
   unit_left_id {x} := by
@@ -168,7 +164,7 @@ instance (R : α → α → Prop) : UCMRA (Mra R) where
     | mk xs => rfl
   pcore_unit := rfl
 
-instance (R : α → α → Prop) : UCMRA (Mra R) := UCMRA.withExtensionOrder
+instance (R : α → α → Prop) : UCMRA (Mra R) := UCMRA.ofCMRA
 
 theorem eq_of_below_iff {x y : Mra R} (h : ∀ a, below a x ↔ below a y) : x = y := by
   induction x, y using ind₂ with
@@ -183,7 +179,7 @@ theorem idem (x : Mra R) : x • x = x := append_idem x
 
 @[rocq_alias mra_included]
 theorem ord_iff (x y : Mra R) : x ≼ₒ y ↔ y = x • y :=
-  ⟨fun h ↦ (RABase.op_core_right_of_inc h).symm, fun h ↦ ⟨y, h⟩⟩
+  ⟨fun h ↦ (ORA.op_core_right_of_inc h).symm, fun h ↦ ⟨y, h⟩⟩
 
 @[rocq_alias to_mra_R_op]
 theorem toMra_op_of_rel [hR : Trans R R R] (a b : α) (h : R a b) :
@@ -221,7 +217,7 @@ theorem local_update_get_frag [Std.Refl R] [Trans R R R] (a b : α) (h : R b a) 
   refine (local_update_unital_discrete ..).mpr fun z _ haz ↦ ⟨trivial, ?_⟩
   calc
     toMra a = toMra b • toMra a := (toMra_op_of_rel b a h).symm
-    _ = toMra b • z := congrArg (toMra b • ·) (haz.trans CMRA.unit_left_id)
+    _ = toMra b • z := congrArg (toMra b • ·) (haz.trans ORA.unit_left_id)
 
 private theorem rel_iff_of_toMra_eq (hab : toMra (R := R) a = toMra b) (c : α) :
     R c a ↔ R c b := by

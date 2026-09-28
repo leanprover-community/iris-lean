@@ -16,7 +16,7 @@ meta import Iris.Std.RocqPorting
 
 namespace Iris
 
-open Iris.Std CMRA OFE LawfulSet LeibnizSet View
+open Iris.Std ORA OFE LawfulSet LeibnizSet View
 
 variable {S A B : Type _} [LawfulSet S (A × B)]
 variable {a a₁ a₂ : A} {b b₁ b₂ : B} {L L' L₁ L₂ : S} {dq dq₁ dq₂ : DFrac}
@@ -68,7 +68,7 @@ instance : IsViewRel (viewRel (S := S)) := .ofMonoOrd
     intro _ x₁ y₁ n₂ x₂ y₂ h hx hy _
     obtain ⟨_⟩ := x₁; obtain ⟨_⟩ := y₁; obtain ⟨_⟩ := y₂; obtain rfl := (hx : _ = _)
     refine ⟨subset_trans ((included_iff_subset ..).mp ?_) h.1, h.2⟩
-    exact (RABase.inc_iff_incN n₂).mpr hy)
+    exact (ORA.inc_iff_incN n₂).mpr hy)
   (rel_validN := fun _ _ _ _ => trivial)
   (rel_unit := fun _ => ⟨valid ∅, subset_refl, SetBijective.empty⟩)
 
@@ -157,9 +157,9 @@ theorem elem_agree (h : ✓ ((elem a₁ b₁ • elem a₂ b₂) : SetBij S)) : 
 
 @[rocq_alias bij_view_included]
 theorem elem_inc_auth (h : (a, b) ∈ L) : elem a b ≼ auth dq L :=
-  RABase.inc_trans
+  ORA.inc_trans
     (frag_inc_of_inc <| (included_iff_subset ..).mpr fun _ hx => mem_singleton.mp hx ▸ h)
-    (RABase.inc_op_right ..)
+    (ORA.inc_op_right ..)
 
 @[rocq_alias gset_bij_auth_extend]
 theorem auth_extend (ha : ∀ b', (a, b') ∉ L) (hb : ∀ a', (a', b) ∉ L) :

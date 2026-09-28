@@ -36,9 +36,9 @@ It provides authoritative and fragmental ownership over heap elements with fract
 open Iris
 
 section heapView
-open Std PartialMap Heap OFE CMRA
+open Std PartialMap Heap OFE ORA
 
-variable (K V : Type _) (H : Type _ → Type _) [LawfulPartialMap H K] [CMRA V] [CMRA.Affine V]
+variable (K V : Type _) (H : Type _ → Type _) [LawfulPartialMap H K] [ORA V] [ORA.Affine V]
 
 #rocq_ignore gmap_view_fragUR "Inlined as the fragment type `H (DFrac × V)`"
 
@@ -69,8 +69,8 @@ instance : IsViewRel (HeapR K V H) := .ofMonoOrd
       exists v'', dq
       refine ⟨Hm2, ⟨Hvval, validN_ne Hv (validN_of_le Hn Hdqval)⟩, ?_⟩
       suffices some vk ≼ₒ{n2} some (dq, v) by
-        exact CMRA.ordN_of_ordN_of_dist this (OFE.some_dist_some.mpr ⟨rfl, Hv⟩)
-      exact ((h ▸ Hf').trans (CMRA.ordN_of_ordN_le Hn Hvincl)))
+        exact ORA.ordN_of_ordN_of_dist this (OFE.some_dist_some.mpr ⟨rfl, Hv⟩)
+      exact ((h ▸ Hf').trans (ORA.ordN_of_ordN_le Hn Hvincl)))
   (rel_validN := fun n m f Hrel k => by
     match Hf : get? f k with
     | none => simp [ValidN, optionValidN]
@@ -83,7 +83,7 @@ instance : IsViewRel (HeapR K V H) := .ofMonoOrd
 
 namespace HeapR
 
-omit [CMRA.Affine V] in
+omit [ORA.Affine V] in
 @[rocq_alias gmap_view_rel_unit]
 theorem unit : HeapR K V H n m UCMRA.unit := by
   simp [HeapR, UCMRA.unit, Heap.unit, get?_empty]
@@ -101,7 +101,7 @@ theorem exists_iff_validN {n f} : (∃ m, HeapR K V H n m f) ↔ ✓{n} f := by
   simp only [get?_bindAlter, h, Option.bind_some, true_and, FF]
   exact ⟨dq, (h ▸ Hv k : ✓{n} some (dq, v)), ordN_refl _⟩
 
-omit [CMRA.Affine V] in
+omit [ORA.Affine V] in
 @[rocq_alias gmap_view_rel_lookup]
 theorem singleton_get_iff n m k dq v :
     HeapR K V H n m (PartialMap.singleton k (dq, v)) ↔
@@ -119,10 +119,10 @@ theorem singleton_get_iff n m k dq v :
       cases Hfv
 
 @[rocq_alias gmap_view_rel_discrete]
-instance [CMRA.Discrete V] : IsViewRelDiscrete (HeapR K V H) where
+instance [ORA.Discrete V] : IsViewRelDiscrete (HeapR K V H) where
   discrete n _ _ H k v He := by
     have ⟨v, Hv1, ⟨x, Hx1, Hx2⟩⟩ := H k v He
-    refine ⟨v, Hv1, ⟨x, ?_, CMRA.ordN_of_ord _ (CMRA.discrete_ord Hx2)⟩⟩
+    refine ⟨v, Hv1, ⟨x, ?_, ORA.ordN_of_ord _ (ORA.discrete_ord Hx2)⟩⟩
     exact ⟨Hx1.1, valid_iff_validN.mp (Discrete.discrete_valid Hx1.2) _⟩
 
 end HeapR
@@ -139,9 +139,9 @@ end heapView
 
 namespace HeapView
 
-open Heap OFE View One DFrac CMRA PartialMap Std LawfulPartialMap
+open Heap OFE View One DFrac ORA PartialMap Std LawfulPartialMap
 
-variable {K V : Type _} {H : Type _ → Type _} [LawfulPartialMap H K] [CMRA V] [CMRA.Affine V]
+variable {K V : Type _} {H : Type _ → Type _} [LawfulPartialMap H K] [ORA V] [ORA.Affine V]
 
 /-- Authoritative (fractional) ownership over an entire heap. -/
 @[rocq_alias gmap_view_auth]
@@ -189,7 +189,7 @@ instance [h : IsOp d dq dq1 dq2] :
 This is the workhorse for proofs that rewrite the authoritative map along identities like
 `PartialMap.map_insert`, `map_delete`, or `map_union`. -/
 theorem auth_ord_of_map_eq (dq : DFrac) (h : m1 = m2) :
-    Auth dq m1 ≼ₒ Auth dq m2 := h ▸ CMRA.ord_refl _
+    Auth dq m1 ≼ₒ Auth dq m2 := h ▸ ORA.ord_refl _
 
 @[rocq_alias gmap_view_auth_dfrac_op_invN]
 theorem dist_of_validN_auth_op : ✓{n} Auth dp m1 • Auth dq m2 → m1 ≡{n}≡ m2 :=
@@ -266,7 +266,7 @@ theorem auth_op_frag_one_validN_iff :
   · haveI : Exclusive (DFrac.own one) := DFrac.own_whole_exclusive
     rcases Hi with e | i
     · exact ⟨dq', validN_ne e.2.symm Hv.2, Hl ▸ e.2.symm⟩
-    · exact absurd Hv.1 (RABase.not_valid_of_exclN_inc (x := DFrac.own one) i.1)
+    · exact absurd Hv.1 (ORA.not_valid_of_exclN_inc (x := DFrac.own one) i.1)
   · match h : Std.PartialMap.get? m1 k with
     | none => simp [h] at Hl
     | some v' =>
@@ -289,7 +289,7 @@ theorem auth_op_frag_validN_total_iff [OrderRefl V] (H : ✓{n} Auth dp m1 • F
     · exact i.2
 
 @[rocq_alias gmap_view_both_dfrac_valid_discrete]
-theorem auth_op_frag_discrete_valid_iff [CMRA.Discrete V] :
+theorem auth_op_frag_discrete_valid_iff [ORA.Discrete V] :
     ✓ Auth dp m1 • Frag k dq v1 ↔
       ∃ v' dq', ✓ dp ∧ Std.PartialMap.get? m1 k = some v' ∧ ✓ (dq', v') ∧
         some (dq, v1) ≼ₒ some (dq', v') := by
@@ -297,13 +297,13 @@ theorem auth_op_frag_discrete_valid_iff [CMRA.Discrete V] :
   refine forall_congr' (fun _ => auth_op_frag_validN_iff) |>.trans ?_
   refine ⟨fun Hvalid' => ?_, ?_⟩
   · obtain ⟨v', dq', Hdp, Hl, Hv, Hi⟩ := Hvalid' 0
-    refine ⟨v', dq', Hdp, Hl, ?_, (CMRA.ord_iff_ordN 0).mpr Hi⟩
+    refine ⟨v', dq', Hdp, Hl, ?_, (ORA.ord_iff_ordN 0).mpr Hi⟩
     exact ⟨discrete_valid Hv.1, discrete_valid Hv.2⟩
   · exact fun ⟨v', dq', Hdp, Hl, Hv, Hi⟩ n =>
-      ⟨v', dq', Hdp, Hl, Hv.validN, (CMRA.ord_iff_ordN n).mp Hi⟩
+      ⟨v', dq', Hdp, Hl, Hv.validN, (ORA.ord_iff_ordN n).mp Hi⟩
 
 @[rocq_alias gmap_view_both_dfrac_valid_discrete_total]
-theorem auth_op_frag_valid_total_discrete_iff [OrderRefl V] [CMRA.Discrete V]
+theorem auth_op_frag_valid_total_discrete_iff [OrderRefl V] [ORA.Discrete V]
     (H : ✓ Auth dp m1 • Frag k dq v1) :
     ∃ v', ✓ dp ∧ ✓ dq ∧ Std.PartialMap.get? m1 k = some v' ∧ ✓ v' ∧ v1 ≼ₒ v' := by
   obtain ⟨v', dq', Hdp, Hl, Hv, Hi⟩ := auth_op_frag_discrete_valid_iff |>.mp H
@@ -314,7 +314,7 @@ theorem auth_op_frag_valid_total_discrete_iff [OrderRefl V] [CMRA.Discrete V]
     · exact valid_of_ord i.1 Hv.1
   · rcases Hi with e | i
     · obtain rfl : v1 = v' := congrArg Prod.snd e
-      exact CMRA.ord_refl v1
+      exact ORA.ord_refl v1
     · exact i.2
 
 @[rocq_alias gmap_view_both_valid]
@@ -331,11 +331,11 @@ theorem auth_op_frag_one_valid_iff :
 instance [Hdq : CoreId dq] [Hv1 : CoreId v1] : CoreId (Frag (H := H) k dq v1) where
   core_id := by
     obtain ⟨H⟩ := Hdq
-    simp [CMRA.pcore] at H
-    simp only [CMRA.pcore, View.Pcore]
+    simp [ORA.pcore] at H
+    simp only [ORA.pcore, View.Pcore]
     refine congrArg some (congrArg (View.mk _) (singleton_core_eq ?_))
-    simp [CMRA.pcore, Prod.pcore]
-    cases h : CMRA.pcore v1
+    simp [ORA.pcore, Prod.pcore]
+    cases h : ORA.pcore v1
     · exact OFE.not_none_eqv_some (h ▸ Hv1.core_id) |>.elim
     · simp only [Option.bind_some, H]
       exact OFE.some_eqv_some.mpr
@@ -370,7 +370,7 @@ theorem frag_op_valid_iff :
     exact singleton_validN_iff
   refine ⟨fun H => ?_, fun ⟨Hp, Hv⟩ n => ?_⟩
   · exact ⟨valid_iff_validN.mpr (H · |>.1), valid_iff_validN.mpr (H · |>.2)⟩
-  · exact ⟨valid_iff_validN.mp Hp n, CMRA.valid_iff_validN.mp Hv n⟩
+  · exact ⟨valid_iff_validN.mp Hp n, ORA.valid_iff_validN.mp Hv n⟩
 
 section heapUpdates
 
@@ -378,7 +378,7 @@ section heapUpdates
 theorem update_one_alloc (Hfresh : Std.PartialMap.get? m1 k = none) (Hdq : ✓ dq) (Hval : ✓ v1) :
     Auth (.own one) m1 ~~> Auth (H := H) (.own one) (Std.PartialMap.insert m1 k v1) • Frag k dq v1 := by
   refine auth_one_alloc (fun n bf Hrel j => ?_)
-  simp only [CMRA.op, Heap.op, get?_merge, Option.merge, exists_and_left, Prod.forall]
+  simp only [ORA.op, Heap.op, get?_merge, Option.merge, exists_and_left, Prod.forall]
   by_cases h : k = j
   · have Hbf : Std.PartialMap.get? bf j = none := by cases _ : Std.PartialMap.get? bf j <;> grind [HeapR]
     rw [get?_singleton_eq h, Hbf]
@@ -401,14 +401,14 @@ theorem update_one_delete :
   | some v =>
     by_cases h : k = j
     · specialize Hrel k
-      simp only [CMRA.op, Heap.op, get?_merge, Option.merge, h, get?_singleton_eq rfl, He,
+      simp only [ORA.op, Heap.op, get?_merge, Option.merge, h, get?_singleton_eq rfl, He,
                  Option.some.injEq, forall_eq'] at Hrel
       obtain ⟨_, _, _, Hqv, Hinc⟩ := Hrel
       have Hval := Option.validN_of_ordN_validN (Hv := Hqv) (Hinc := Hinc)
       -- `own 1` is exclusive, so it cannot validly compose with the frame's fraction
       exact (own_whole_exclusive.exclusive0_l _ (valid0_of_validN Hval.1)).elim
     · specialize Hrel j
-      simp only [CMRA.op, Heap.op, get?_merge, exists_and_left, Prod.forall, get?_singleton_ne h,
+      simp only [ORA.op, Heap.op, get?_merge, exists_and_left, Prod.forall, get?_singleton_ne h,
         He] at Hrel
       rintro ⟨a, b⟩ ⟨rfl⟩
       obtain ⟨v, H, q, H'⟩ := Hrel a b rfl
@@ -427,25 +427,25 @@ theorem update_auth_op_frag
     Auth (.own one) m1 • Frag k dq v ~~>
     Auth (.own one) (Std.PartialMap.insert m1 k mv') • Frag k dq' v' := by
   refine auth_one_op_frag_update fun n bf Hrel j ⟨df, va⟩ => ?_
-  simp [CMRA.op, get?_merge]
+  simp [ORA.op, get?_merge]
   by_cases h : k = j
   · simp only [get?_insert_eq h, Option.some.injEq, exists_eq_left']
     intro Hbf
     specialize Hrel k ((dq, v) •? Std.PartialMap.get? bf k) ?G
     case G =>
-      simp [CMRA.op, get?_merge, op?]
+      simp [ORA.op, get?_merge, op?]
       cases _ : Std.PartialMap.get? bf k <;> simp [Option.merge, get?_singleton_eq rfl]
     obtain ⟨mv0, mdf, Hlookup, Hval, Hincl⟩ := Hrel
     obtain ⟨dq₂, Hval₂, Hincl₂⟩ := Hup n mdf mv0 (Std.PartialMap.get? bf k) Hlookup Hval Hincl
     refine ⟨dq₂, Hval₂, ?_⟩
-    refine CMRA.ordN_of_dist_of_ordN ?_ Hincl₂
+    refine ORA.ordN_of_dist_of_ordN ?_ Hincl₂
     rw [← Hbf, h]
-    simp only [Option.merge, CMRA.op?, get?_singleton_eq rfl]
+    simp only [Option.merge, ORA.op?, get?_singleton_eq rfl]
     cases Std.PartialMap.get? bf j <;> rfl
   · simp [get?_insert_ne h]
     intro Hbf
     have Hrel' := Hrel j (df, va)
-    simp only [CMRA.op, Heap.op, get?_merge, get?_singleton_ne h, exists_and_left] at Hrel'
+    simp only [ORA.op, Heap.op, get?_merge, get?_singleton_ne h, exists_and_left] at Hrel'
     refine Hrel' ?_
     rw [← Hbf]
     simp [get?_singleton_ne h]
@@ -466,7 +466,7 @@ theorem update_of_local_update (hsub : ∀ {n : Nat} {x y : V}, x ≼ₒ{n} y �
     · obtain ⟨c, hc⟩ := hsub i.2
       obtain ⟨Hv', He'⟩ := Hup n (some c) Hval.2 hc
       refine ⟨⟨Hval.1, Hv'⟩, Option.some_ordN_some_iff.mpr (.inr ⟨i.1, ?_⟩)⟩
-      exact CMRA.ordN_of_incN ⟨c, He'⟩
+      exact ORA.ordN_of_incN ⟨c, He'⟩
   | some p =>
     rcases Hincl with e | i
     · obtain ⟨Hv', He'⟩ := Hup n (some p.2) Hval.2 e.2.symm
@@ -475,7 +475,7 @@ theorem update_of_local_update (hsub : ∀ {n : Nat} {x y : V}, x ≼ₒ{n} y �
       have hc' := hc.trans (assoc.symm.dist (α := V))
       obtain ⟨Hv', He'⟩ := Hup n (some (p.2 • c)) Hval.2 hc'
       refine ⟨⟨Hval.1, Hv'⟩, Option.some_ordN_some_iff.mpr (.inr ⟨i.1, ?_⟩)⟩
-      exact CMRA.ordN_of_incN ⟨c, He'.trans assoc.dist⟩
+      exact ORA.ordN_of_incN ⟨c, He'.trans assoc.dist⟩
 
 @[rocq_alias gmap_view_replace]
 theorem update_replace (Hval' : ✓ v2) :
@@ -504,7 +504,7 @@ theorem update_of_dfrac_update P (Hdq : dq ~~>: P) :
     intro m n bf Hrel
     have Hrel' := Hrel k ((dq, v1) •? Std.PartialMap.get? bf k) ?G
     case G =>
-      simp only [CMRA.op, Heap.op, get?_merge, get?_singleton_eq rfl, op?]
+      simp only [ORA.op, Heap.op, get?_merge, get?_singleton_eq rfl, op?]
       cases _ : Std.PartialMap.get? bf k <;> simp
     obtain ⟨v', dq', Hlookup, Hval, Hincl⟩ := Hrel'
     -- Extract a fraction frame `w`, the updated fraction `dq''`, and the new authoritative
@@ -535,13 +535,13 @@ theorem update_of_dfrac_update P (Hdq : dq ~~>: P) :
     refine ⟨⟨dq'', rfl, HPdq''⟩, fun j ⟨df, va⟩ Heq => ?_⟩
     by_cases h : k = j
     · subst h
-      simp only [CMRA.op, Heap.op, get?_merge, get?_singleton_eq rfl] at Heq
+      simp only [ORA.op, Heap.op, get?_merge, get?_singleton_eq rfl] at Heq
       refine ⟨v', dq₀, Hlookup, Hv₀, ?_⟩
-      refine CMRA.ordN_of_dist_of_ordN (Dist.of_eq ?_) Hi₀
+      refine ORA.ordN_of_dist_of_ordN (Dist.of_eq ?_) Hi₀
       rw [← Heq]
       cases Std.PartialMap.get? bf k <;> rfl
     · apply Hrel
-      simp [CMRA.op, get?_merge, get?_singleton_ne h] at Heq ⊢
+      simp [ORA.op, get?_merge, get?_singleton_ne h] at Heq ⊢
       exact Heq
   · rintro y ⟨b, rfl, q, _, _⟩
     exists q
@@ -568,9 +568,9 @@ theorem heapR_map_eq [COFE A] [COFE B] [COFE A'] [COFE B'] [RFunctor T] (f : A' 
     HeapR K (T A B) H n m mv →
     HeapR K (T A' B') H n
       ((mapO H (RFunctor.map f g).toHom).f m)
-      ((mapC H (Prod.mapC (CMRA.Hom.id (α := DFrac))
+      ((mapC H (Prod.mapC (ORA.Hom.id (α := DFrac))
       (RFunctor.map (F:=T) f g))).f mv) := by
-  simp [HeapR, PartialMap.mapC, PartialMap.mapO, PartialMap.map, CMRA.Hom.id, OFE.Hom.id, Prod.mapC, get?_bindAlter]
+  simp [HeapR, PartialMap.mapC, PartialMap.mapO, PartialMap.map, ORA.Hom.id, OFE.Hom.id, Prod.mapC, get?_bindAlter]
   intros hr k a b
   rcases h : get? mv k with _ | ⟨a,b⟩ <;> simp
   rintro rfl rfl
@@ -617,7 +617,7 @@ instance {T} [RFunctor T] [RFunctorAffine T] :
     rw [<- View.map_compose']
     refine OFE.eq_dist_2 (fun n => View.map_ne x (fun a => (?_ : _ = _).dist) (fun b => (?_ : _ = _).dist))
     · exact (inferInstance : URFunctor (PartialMapOF H T)).map_comp _ _ _ _ a
-    · simp only [Prod.mapC, CMRA.Hom.id, PartialMap.mapC]
+    · simp only [Prod.mapC, ORA.Hom.id, PartialMap.mapC]
       refine .trans ?_ (PartialMap.map_compose _ _ _ _)
       refine congrArg (PartialMap.map _ · _) ?_
       rw [Prod.map_comp_map]
@@ -644,11 +644,11 @@ end heapViewFunctor
 end HeapView
 
 section FiniteHeapView
-open Std PartialMap Heap OFE CMRA HeapView
+open Std PartialMap Heap OFE ORA HeapView
 open One DFrac LawfulPartialMap Algebra
 
-variable {K V : Type _} {H : Type _ → Type _} [DecidableEq K] [LawfulFiniteMap H K] [CMRA V]
-  [CMRA.Affine V]
+variable {K V : Type _} {H : Type _ → Type _} [DecidableEq K] [LawfulFiniteMap H K] [ORA V]
+  [ORA.Affine V]
 
 omit [DecidableEq K] in
 private theorem bigOpM_frag_empty (dq : DFrac) :
@@ -662,11 +662,11 @@ theorem update_big_delete (m m' : H V) :
   induction m' using LawfulFiniteMap.induction_on with
   | hemp =>
     suffices h : (m \ ∅ : H V) = m by
-      rw [bigOpM_frag_empty, CMRA.unit_right_id, h]
+      rw [bigOpM_frag_empty, ORA.unit_right_id, h]
     exact eqv_of_Equiv fun j => by simp [get?_difference, get?_empty]
   | hins k v m2 Hm2 IH =>
     suffices h : (m \ Std.insert m2 k v) = delete (m \ m2) k by
-      rw [BigOpM.bigOpM_insert_eq _ _ Hm2, CMRA.comm' (x := Frag k (.own one) v), CMRA.assoc', h]
+      rw [BigOpM.bigOpM_insert_eq _ _ Hm2, ORA.comm' (x := Frag k (.own one) v), ORA.assoc', h]
       exact (Update.op IH .id).trans update_one_delete
     exact eqv_of_Equiv fun j => by
       by_cases hjk : k = j
@@ -684,7 +684,7 @@ theorem update_big_replace (m m0 m1 : H V)
   | hemp =>
     intro m1 Hdom Hall
     suffices h : m1 = ∅ by
-      simp only [h, bigOpM_frag_empty, CMRA.unit_right_id, union_empty_left]
+      simp only [h, bigOpM_frag_empty, ORA.unit_right_id, union_empty_left]
       exact Update.id
     refine Std.LawfulPartialMap.equiv_iff_eq.mp fun j => ?_
     cases hj : get? m1 j with
@@ -708,10 +708,10 @@ theorem update_big_replace (m m0 m1 : H V)
           cases get? m k <;> rfl
         · rw [get?_insert_ne hjk]
           simp [PartialMap.union, get?_merge, get?_delete_ne hjk]
-    rw [BigOpM.bigOpM_insert_eq _ _ Hm2, CMRA.comm' (x := Frag k (.own one) v), CMRA.assoc',
-      hunion, BigOpM.bigOpM_delete_eq _ Hin, CMRA.assoc']
+    rw [BigOpM.bigOpM_insert_eq _ _ Hm2, ORA.comm' (x := Frag k (.own one) v), ORA.assoc',
+      hunion, BigOpM.bigOpM_delete_eq _ Hin, ORA.assoc']
     refine (Update.op (IH _ hdom (all_delete _ Hall)) .id).trans ?_
-    rw [← CMRA.assoc', CMRA.comm' (y := Frag k (.own one) v), CMRA.assoc']
+    rw [← ORA.assoc', ORA.comm' (y := Frag k (.own one) v), ORA.assoc']
     exact Update.op (update_replace (Hall k v' Hin)) .id
 
 -- TODO: golf
@@ -726,8 +726,8 @@ theorem update_big_alloc (m1 m2 : H V) dq
     | hemp =>
       rw [bigOpM_frag_empty]
       refine Update.included ?_
-      rw [union_empty_left, CMRA.unit_right_id]
-      exact CMRA.ord_refl _
+      rw [union_empty_left, ORA.unit_right_id]
+      exact ORA.ord_refl _
     | hins k v m2 Hm2 IH =>
       have Hall' : all (fun k v => ✓ v) m2 := by exact all_of_all_insert _ Hm2 Hall
       have Hdisj' : m2 ##ₘ m1 := by
@@ -741,7 +741,7 @@ theorem update_big_alloc (m1 m2 : H V) dq
       have Hv := all_insert_of_all _ Hall
       have Hstep := update_one_alloc Hms Hdq Hv
       refine (Update.op Hstep .id).trans ?_
-      rw [← CMRA.assoc]
+      rw [← ORA.assoc]
       refine Update.op ?_ ?_
       · rw [← union_insert_left]
       · rw [BigOpM.bigOpM_insert_eq _ _ Hm2]

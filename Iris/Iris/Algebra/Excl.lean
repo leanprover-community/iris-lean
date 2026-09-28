@@ -121,7 +121,7 @@ instance [OFE α] [IsCOFE α] : IsCOFE (Excl α) where
     refine fun _ => .trans IsCOFE.conv_compl ?_
     simp [exclChain, e]
 
-/-! ## CMRA -/
+/-! ## ORA -/
 @[simp] def Valid : Excl α → Prop
   | excl _ => True
   | invalid => False
@@ -132,7 +132,8 @@ instance [OFE α] [IsCOFE α] : IsCOFE (Excl α) where
 #rocq_ignore excl_valid_instance "Use CMRA instance"
 #rocq_ignore excl_cmra_mixin "Not needed"
 
-instance [OFE α] : RABase (Excl α) where
+@[rocq_alias exclR]
+instance [OFE α] : CMRA (Excl α) where
   pcore _ := none
   op _ _ := invalid
   ValidN _ := Valid
@@ -151,12 +152,7 @@ instance [OFE α] : RABase (Excl α) where
   pcore_idem := by simp
   validN_op_left := by simp
   extend {n x y₁ y₂} h₁ h₂ := by cases x <;> trivial
-
-instance [OFE α] : RABase.ExtensionLaws (Excl α) where
   pcore_op_mono := by simp
-
-@[rocq_alias exclR]
-instance [OFE α] : CMRA (Excl α) := CMRA.withExtensionOrder
 
 @[rocq_alias excl_included]
 theorem ord_iff [OFE α] {x y : Excl α} : x ≼ₒ y ↔ y = invalid := by
@@ -212,12 +208,12 @@ theorem validN_inv_some_r [OFE α] {n} {mx : Option (Excl α)} {a : α}
   | some _ => exact h.elim
 
 @[rocq_alias excl_exclusive]
-instance [OFE α] {x : Excl α} : CMRA.Exclusive x where exclusive0_l := fun _ a => a
+instance [OFE α] {x : Excl α} : ORA.Exclusive x where exclusive0_l := fun _ a => a
 
 @[rocq_alias excl_cmra_discrete]
-instance [OFE α] [OFE.Discrete α] : CMRA.Discrete (Excl α) where
+instance [OFE α] [OFE.Discrete α] : ORA.Discrete (Excl α) where
   discrete_valid a := a
-  discrete_ord := RABase.inc_of_inc0
+  discrete_ord := ORA.inc_of_inc0
 
 @[rocq_alias ExclInvalid_included]
 theorem invalid_ord [OFE α] (ea : Excl α) : ea ≼ₒ invalid := by exists invalid
@@ -247,7 +243,7 @@ theorem map_ne [OFE α] [OFE β] (f : α -n> β) : NonExpansive (map f) where
 
 @[rocq_alias excl_map_cmra_morphism]
 def hom [OFE α] [OFE β] (f : α -n> β) : Excl α -C> Excl β :=
-  CMRA.Hom.withExtensionOrder ⟨map f, map_ne f⟩ (fun {_ x} _ => by cases x <;> trivial)
+  ORA.Hom.ofCMRA ⟨map f, map_ne f⟩ (fun {_ x} _ => by cases x <;> trivial)
     (fun _ => rfl) (fun _ _ => rfl)
 
 @[rocq_alias exclO_map]

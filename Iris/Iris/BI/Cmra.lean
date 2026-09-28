@@ -13,18 +13,18 @@ public import Iris.BI.InternalEq
 @[expose] public section
 
 /-!
-# Generic CMRA validity in a BI logic
+# Generic ORA validity in a BI logic
 
-This file defines the generic internal CMRA validity for any `Sbi PROP`,
+This file defines the generic internal ORA validity for any `Sbi PROP`,
 as `<si_pure> cmraValid a`.
 -/
 
 namespace Iris
-open BI OFE SiProp CMRA Sbi
+open BI OFE SiProp ORA Sbi
 
 section CmraValid
 
-variable [Sbi PROP] [CMRA A]
+variable [Sbi PROP] [ORA A]
 
 @[rocq_alias internal_cmra_valid]
 def internalCmraValid (a : A) : PROP := siPure (cmraValid a)
@@ -61,7 +61,7 @@ theorem internalCmraValid_weaken {a b : A} :
   siPure_mono cmraValid_weaken
 
 @[rocq_alias internal_cmra_valid_entails]
-theorem internalCmraValid_entails [CMRA B] {a : A} {b : B} :
+theorem internalCmraValid_entails [ORA B] {a : A} {b : B} :
     (✓ a ⊢@{PROP} ✓ b) ↔ ∀ n, ✓{n} a → ✓{n} b :=
   siPure_entails.trans cmraValid_entails_iff
 
@@ -85,7 +85,7 @@ theorem intuitionistically_internalCmraValid [BIAffine PROP] {a : A} :
   intuitionistically_iff_persistently.trans persistently_internalCmraValid
 
 @[rocq_alias internal_cmra_valid_discrete]
-theorem internalCmraValid_discrete [CMRA.Discrete A] {a : A} :
+theorem internalCmraValid_discrete [ORA.Discrete A] {a : A} :
     ✓ a ⊣⊢@{PROP} ⌜✓ a⌝ :=
   ⟨(internalCmraValid_elim a).trans <| pure_mono (discrete_valid ·),
    pure_elim' internalCmraValid_intro⟩
@@ -106,7 +106,7 @@ instance internalCmraValid_plain (a : A) :
   plain := plainly_internalCmraValid a |>.mpr
 
 @[rocq_alias internal_cmra_valid_timeless]
-instance internalCmraValid_timeless [CMRA.Discrete A] (a : A) :
+instance internalCmraValid_timeless [ORA.Discrete A] (a : A) :
     Timeless (PROP := PROP) iprop(✓ a) := by
   unfold internalCmraValid; infer_instance
 
@@ -114,7 +114,7 @@ end CmraValid
 
 section CmraOrder
 
-variable [Sbi PROP] [CMRA A]
+variable [Sbi PROP] [ORA A]
 
 /-! ### The internal extension inclusion -/
 
@@ -153,7 +153,7 @@ private theorem inc_holds {a b : A} {n : Nat} :
     ((∃ c, iprop(b ≡ (a • c))) : SiProp).holds n ↔ a ≼{n} b := SiProp.exists_holds
 
 /-- Two internal extension inclusions agree when they agree at every step index. -/
-theorem internalCmraIncluded_iff [CMRA B] {a b : A} {a' b' : B}
+theorem internalCmraIncluded_iff [ORA B] {a b : A} {a' b' : B}
     (h : ∀ n, a ≼{n} b ↔ a' ≼{n} b') : a ≼ b ⊣⊢@{PROP} a' ≼ b' :=
   siPure_mono_bi ⟨fun n hn => inc_holds.mpr ((h n).mp (inc_holds.mp hn)),
     fun n hn => inc_holds.mpr ((h n).mpr (inc_holds.mp hn))⟩
@@ -185,7 +185,7 @@ theorem intuitionistically_internalCmraIncluded [BIAffine PROP] {a b : A} :
   intuitionistically_iff_persistently.trans persistently_internalCmraIncluded
 
 @[rocq_alias internal_included_discrete]
-theorem internalCmraIncluded_discrete {a b : A} [CMRA.Discrete A] :
+theorem internalCmraIncluded_discrete {a b : A} [ORA.Discrete A] :
     a ≼ b ⊣⊢@{PROP} ⌜a ≼ b⌝ := by
   haveI : ∀ x : A, DiscreteE x := fun x => ⟨OFE.Discrete.discrete⟩
   refine ⟨?_, pure_elim' internalCmraIncluded_intro⟩
@@ -215,14 +215,14 @@ theorem internalCmraIncluded_trans {a b c : A} :
   exact and_intro and_elim_r (and_elim_left_trans (BI.internalEq_entails.mpr (fun n heq => op_left_dist _ heq)))
 
 /-- The internal `≼` is monotone under any nonexpansive map commuting with `•`. -/
-theorem internalCmraIncluded_map {B : Type _} [CMRA B] (g : A → B) [NonExpansive g]
+theorem internalCmraIncluded_map {B : Type _} [ORA B] (g : A → B) [NonExpansive g]
     (hg : ∀ x y : A, g (x • y) = g x • g y) {a b : A} :
     a ≼ b ⊢@{PROP} g a ≼ g b :=
   siPure_mono <| BI.exists_elim fun c => BI.exists_intro_trans (g c) <| by
     rw [← hg]; exact internalEq.of_internalEquiv_ne g
 
 @[rocq_alias internal_included_timeless]
-instance internalCmraIncluded_timeless {a b : A} [CMRA.Discrete A] :
+instance internalCmraIncluded_timeless {a b : A} [ORA.Discrete A] :
     Timeless (PROP := PROP) iprop(a ≼ b) := by
   haveI : ∀ x : A, DiscreteE x := fun x => ⟨OFE.Discrete.discrete⟩
   unfold internalCmraIncluded
@@ -250,12 +250,12 @@ def _root_.SiProp.cmraOrder (a b : A) : SiProp where
   holds n := a ≼ₒ{n} b
   closed h hle := h.le hle
 
-instance _root_.SiProp.cmraOrder_timeless [CMRA.Discrete A] {a b : A} :
+instance _root_.SiProp.cmraOrder_timeless [ORA.Discrete A] {a b : A} :
     Timeless (SiProp.cmraOrder a b) where
   timeless := fun n h => by
     cases n with
     | zero => left; trivial
-    | succ n => right; exact ordN_of_ord _ (CMRA.discrete_ord (ord0_of_ordN h))
+    | succ n => right; exact ordN_of_ord _ (ORA.discrete_ord (ord0_of_ordN h))
 
 /-- The internal order `a ≼ₒ b`, holding at step index `n` when `a ≼ₒ{n} b`; ownership is
 monotone along it (`ownM_mono`). -/
@@ -278,7 +278,7 @@ theorem internalCmraOrder_intro {P : PROP} {a b : A} (h : a ≼ₒ b) : P ⊢ a 
     _ ⊢ a ≼ₒ b := siPure_mono fun n _ => ordN_of_ord n h
 
 /-- Two internal orders agree when they agree at every step index. -/
-theorem internalCmraOrder_iff [CMRA B] {a b : A} {a' b' : B}
+theorem internalCmraOrder_iff [ORA B] {a b : A} {a' b' : B}
     (h : ∀ n, a ≼ₒ{n} b ↔ a' ≼ₒ{n} b') : a ≼ₒ b ⊣⊢@{PROP} a' ≼ₒ b' :=
   siPure_mono_bi ⟨fun n => (h n).mp, fun n => (h n).mpr⟩
 
@@ -301,7 +301,7 @@ theorem intuitionistically_internalCmraOrder [BIAffine PROP] {a b : A} :
     □ a ≼ₒ b ⊣⊢@{PROP} a ≼ₒ b :=
   intuitionistically_iff_persistently.trans persistently_internalCmraOrder
 
-theorem internalCmraOrder_discrete {a b : A} [CMRA.Discrete A] :
+theorem internalCmraOrder_discrete {a b : A} [ORA.Discrete A] :
     a ≼ₒ b ⊣⊢@{PROP} ⌜a ≼ₒ b⌝ :=
   internalCmraOrder_pure fun n => (ord_iff_ordN n).symm
 
@@ -313,7 +313,7 @@ theorem internalCmraOrder_trans {a b c : A} : ⊢@{PROP} a ≼ₒ b -∗ b ≼�
     siPure_mono fun _ h => ordN_trans h.1 h.2
 
 /-- The internal order is monotone under morphisms. -/
-theorem internalCmraOrder_map {B : Type _} [CMRA B] (g : A -C> B) {a b : A} :
+theorem internalCmraOrder_map {B : Type _} [ORA B] (g : A -C> B) {a b : A} :
     a ≼ₒ b ⊢@{PROP} g a ≼ₒ g b :=
   siPure_mono fun _ => g.monoN
 
@@ -321,7 +321,7 @@ theorem internalCmraOrder_map {B : Type _} [CMRA B] (g : A -C> B) {a b : A} :
 theorem internalCmraOrder_of_inc [Affine A] {a b : A} : a ≼ b ⊢@{PROP} a ≼ₒ b :=
   siPure_mono fun _ h => ordN_of_incN (inc_holds.mp h)
 
-instance internalCmraOrder_timeless {a b : A} [CMRA.Discrete A] :
+instance internalCmraOrder_timeless {a b : A} [ORA.Discrete A] :
     Timeless (PROP := PROP) iprop(a ≼ₒ b) := by
   unfold internalCmraOrder
   infer_instance

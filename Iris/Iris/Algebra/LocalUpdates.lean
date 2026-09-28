@@ -12,16 +12,16 @@ public import Iris.Algebra.CMRA
 namespace Iris
 
 @[rocq_alias local_update]
-def LocalUpdate [CMRA α] (x y : α × α) : Prop :=
+def LocalUpdate [ORA α] (x y : α × α) : Prop :=
   ∀n mz, ✓{n} x.1 → x.1 ≡{n}≡ x.2 •? mz → ✓{n} y.1 ∧ y.1 ≡{n}≡ y.2 •? mz
 
 infixr:50 " ~l~> " => LocalUpdate
 
 section LocalUpdate
 
-section CMRA
+section ORA
 
-variable [CMRA α]
+variable [ORA α]
 
 @[refl]
 theorem LocalUpdate.id (x : α × α) : x ~l~> x := fun _ _ vx e => ⟨vx, e⟩
@@ -36,10 +36,10 @@ instance : Trans LocalUpdate LocalUpdate LocalUpdate (α := α × α) where
 #rocq_ignore local_update_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias exclusive_local_update]
-theorem LocalUpdate.exclusive [CMRA.Exclusive y] {x x' : α}
+theorem LocalUpdate.exclusive [ORA.Exclusive y] {x x' : α}
     (vx' : ✓ x') : (x, y) ~l~> (x', x') := by
   intro n mz vx e
-  cases CMRA.none_of_excl_valid_op ((OFE.Dist.validN e).mp vx)
+  cases ORA.none_of_excl_valid_op ((OFE.Dist.validN e).mp vx)
   exact ⟨vx'.validN, .rfl⟩
 
 @[rocq_alias op_local_update]
@@ -48,12 +48,12 @@ theorem LocalUpdate.op {x y z : α}
   refine fun n mz vx e => ⟨h n vx, ?_⟩
   calc
     (z • x) ≡{n}≡ z • (y •? mz) := e.op_r
-    _       ≡{n}≡ (z • y) •? mz := OFE.Dist.symm (CMRA.op_opM_assoc_dist z y mz)
+    _       ≡{n}≡ (z • y) •? mz := OFE.Dist.symm (ORA.op_opM_assoc_dist z y mz)
 
 @[rocq_alias op_local_update_discrete]
-theorem LocalUpdate.op_discrete [CMRA.Discrete α] (x y z : α)
+theorem LocalUpdate.op_discrete [ORA.Discrete α] (x y z : α)
     (h : ✓ x → ✓ (z • x)) : (x, y) ~l~> (z • x, z • y) :=
-  .op fun n vx => (h ((CMRA.valid_iff_validN' n).mpr vx)).validN
+  .op fun n vx => (h ((ORA.valid_iff_validN' n).mpr vx)).validN
 
 @[rocq_alias op_local_update_frame]
 theorem LocalUpdate.op_frame (x y x' y' yf : α)
@@ -68,37 +68,37 @@ theorem LocalUpdate.op_frame (x y x' y' yf : α)
     _  ≡{n}≡ (y' • yf) •? mz      := Option.op_some_opM_assoc_dist.symm
 
 @[rocq_alias cancel_local_update]
-theorem LocalUpdate.cancel (x y z : α) [CMRA.Cancelable x] : (x • y, x • z) ~l~> (y, z) :=
-  fun _ _ vx e => ⟨CMRA.validN_op_right vx, CMRA.op_opM_cancel_dist vx e⟩
+theorem LocalUpdate.cancel (x y z : α) [ORA.Cancelable x] : (x • y, x • z) ~l~> (y, z) :=
+  fun _ _ vx e => ⟨ORA.validN_op_right vx, ORA.op_opM_cancel_dist vx e⟩
 
 @[rocq_alias replace_local_update]
-theorem LocalUpdate.replace (x y : α) [CMRA.IdFree x] (h : ✓ y) : (x, x) ~l~> (y, y) := by
+theorem LocalUpdate.replace (x y : α) [ORA.IdFree x] (h : ✓ y) : (x, x) ~l~> (y, y) := by
   intro _ mz vx e
   match mz with
   | none   => exact ⟨h.validN, .rfl⟩
-  | some _ => cases CMRA.id_freeN_r vx e.symm
+  | some _ => cases ORA.id_freeN_r vx e.symm
 
 @[rocq_alias core_id_local_update]
-theorem LocalUpdate.core_id (x y z : α) [CMRA.CoreId y] (le : y ≼ x) :
+theorem LocalUpdate.core_id (x y z : α) [ORA.CoreId y] (le : y ≼ x) :
     (x, z) ~l~> (x, z • y) := by
   refine fun n mz vx e => ⟨vx, ?_⟩
-  refine (RABase.op_core_right_of_inc le).symm.dist.trans ?_
+  refine (ORA.op_core_right_of_inc le).symm.dist.trans ?_
   match mz with
   | none => calc
     y • x ≡{n}≡ y • z := e.op_r
-    _     ≡{n}≡ z • y := CMRA.op_commN
+    _     ≡{n}≡ z • y := ORA.op_commN
   | some w => calc
-    y • x ≡{n}≡ y • (z • w) := CMRA.op_right_dist y e
-    _     ≡{n}≡ (y • z) • w := CMRA.op_assocN
-    _     ≡{n}≡ (z • y) • w := CMRA.op_commN.op_l
+    y • x ≡{n}≡ y • (z • w) := ORA.op_right_dist y e
+    _     ≡{n}≡ (y • z) • w := ORA.op_assocN
+    _     ≡{n}≡ (z • y) • w := ORA.op_commN.op_l
 
 @[rocq_alias local_update_discrete]
-theorem LocalUpdate.discrete [CMRA.Discrete α] (x y x' y' : α) :
+theorem LocalUpdate.discrete [ORA.Discrete α] (x y x' y' : α) :
     (x, y) ~l~> (x', y') ↔ ∀ mz, ✓ x → x = y •? mz → (✓ x' ∧ x' = y' •? mz) := by
   refine ⟨fun h mz vx e => ?_, fun h n mz vx e => ?_⟩
   · have ⟨vx', e⟩ := h 0 mz vx.validN e.dist
-    exact ⟨CMRA.discrete_valid vx', OFE.discrete_0 e⟩
-  · have ⟨vx', e'⟩ := h mz ((CMRA.valid_iff_validN' n).mpr vx) (OFE.discrete e)
+    exact ⟨ORA.discrete_valid vx', OFE.discrete_0 e⟩
+  · have ⟨vx', e'⟩ := h mz ((ORA.valid_iff_validN' n).mpr vx) (OFE.discrete e)
     exact ⟨vx'.validN, e'.dist⟩
 
 @[rocq_alias local_update_valid0]
@@ -106,15 +106,15 @@ theorem LocalUpdate.valid0 {x y x' y' : α}
     (h : ✓{0} x → ✓{0} y → some y ≼{0} some x → (x, y) ~l~> (x', y')) :
     (x, y) ~l~> (x', y') := by
   intro n mz vx e
-  have v0y : ✓{0} y := CMRA.valid0_of_validN <| CMRA.validN_opM ((OFE.Dist.validN e).mp vx)
-  have : some y ≼{0} some x := RABase.inc0_of_incN (Option.some_inc_some_of_dist_opM e)
-  exact h (CMRA.valid0_of_validN vx) v0y this n mz vx e
+  have v0y : ✓{0} y := ORA.valid0_of_validN <| ORA.validN_opM ((OFE.Dist.validN e).mp vx)
+  have : some y ≼{0} some x := ORA.inc0_of_incN (Option.some_inc_some_of_dist_opM e)
+  exact h (ORA.valid0_of_validN vx) v0y this n mz vx e
 
 @[rocq_alias local_update_valid]
-theorem LocalUpdate.valid [CMRA.Discrete α] {x y x' y' : α}
+theorem LocalUpdate.valid [ORA.Discrete α] {x y x' y' : α}
     (h : ✓ x → ✓ y → some y ≼ some x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
   .valid0 fun vx0 vy0 mz =>
-    h (CMRA.discrete_valid vx0) (CMRA.discrete_valid vy0) (RABase.inc_of_inc0 mz)
+    h (ORA.discrete_valid vx0) (ORA.discrete_valid vy0) (ORA.inc_of_inc0 mz)
 
 @[rocq_alias local_update_total_valid0]
 theorem LocalUpdate.total_valid0 [IsTotal α] {x y x' y' : α}
@@ -122,11 +122,11 @@ theorem LocalUpdate.total_valid0 [IsTotal α] {x y x' y' : α}
   .valid0 fun vx0 vy0 mz => h vx0 vy0 (Option.some_incN_some_iff_is_total.mp mz)
 
 @[rocq_alias local_update_total_valid]
-theorem LocalUpdate.total_valid [IsTotal α] [CMRA.Discrete α] {x y x' y' : α}
+theorem LocalUpdate.total_valid [IsTotal α] [ORA.Discrete α] {x y x' y' : α}
     (h : ✓ x → ✓ y → y ≼ x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
   .valid fun vx vy le => h vx vy (Option.inc_of_some_inc_some le)
 
-end CMRA
+end ORA
 
 section UCMRA
 
@@ -139,30 +139,30 @@ theorem local_update_unital {x y x' y' : α} :
   mpr h n mz vx e :=
     match mz with
     | none =>
-      let ⟨h1, h2⟩ := h n CMRA.unit vx (e.trans (CMRA.unit_right_id_dist y).symm)
-      ⟨h1, h2.trans (CMRA.unit_right_id_dist y')⟩
+      let ⟨h1, h2⟩ := h n ORA.unit vx (e.trans (ORA.unit_right_id_dist y).symm)
+      ⟨h1, h2.trans (ORA.unit_right_id_dist y')⟩
     | some z => h n z vx e
 
 @[rocq_alias local_update_unital_discrete]
-theorem local_update_unital_discrete [CMRA.Discrete α] (x y x' y' : α) :
+theorem local_update_unital_discrete [ORA.Discrete α] (x y x' y' : α) :
     (x, y) ~l~> (x', y') ↔ ∀ z, ✓ x → x = y • z → (✓ x' ∧ x' = y' • z) where
   mp h z vx e :=
-    have ⟨vx', e'⟩ := h 0 (some z) (CMRA.Valid.validN vx) e.dist
-    ⟨CMRA.discrete_valid vx', OFE.discrete_0 e'⟩
+    have ⟨vx', e'⟩ := h 0 (some z) (ORA.Valid.validN vx) e.dist
+    ⟨ORA.discrete_valid vx', OFE.discrete_0 e'⟩
   mpr h := by
     refine local_update_unital.mpr fun n z vnx e => ?_
-    have ⟨vx', e'⟩ := h z ((CMRA.valid_iff_validN' n).mpr vnx) (OFE.discrete e)
+    have ⟨vx', e'⟩ := h z ((ORA.valid_iff_validN' n).mpr vnx) (OFE.discrete e)
     exact ⟨vx'.validN, e'.dist⟩
 
 @[rocq_alias cancel_local_update_unit]
-theorem cancel_local_update_unit (x y : α) [CMRA.Cancelable x] : (x • y, x) ~l~> (y, CMRA.unit) :=
-  have e : (x • y, x • CMRA.unit) = (x • y, x) :=
-    OFE.equiv_prod_ext rfl CMRA.unit_right_id
-  e ▸ LocalUpdate.cancel x y CMRA.unit
+theorem cancel_local_update_unit (x y : α) [ORA.Cancelable x] : (x • y, x) ~l~> (y, ORA.unit) :=
+  have e : (x • y, x • ORA.unit) = (x • y, x) :=
+    OFE.equiv_prod_ext rfl ORA.unit_right_id
+  e ▸ LocalUpdate.cancel x y ORA.unit
 
-/-- Necessary and sufficient condition for a local update on a unital discrete leibniz CMRA
+/-- Necessary and sufficient condition for a local update on a unital discrete leibniz ORA
   with trivial validity predicate -/
-theorem discrete_unital_triv_local_update [CMRA.Discrete α]
+theorem discrete_unital_triv_local_update [ORA.Discrete α]
     (Hv : ∀ x : α, ✓ x)
     (H : ∀ {z : α}, x = y • z → x' = y' • z) :
     (x,y) ~l~> (x', y') := by
@@ -186,7 +186,7 @@ theorem LocalUpdate.discrete_fun {β : α → Type _} [∀ x, UCMRA (β x)]
     | none => exact (h x n none (vx x) (e x)).right
     | some z => exact (h x n (some (z x)) (vx x) (e x)).right
 
-variable [CMRA α] [CMRA β]
+variable [ORA α] [ORA β]
 
 @[rocq_alias prod_local_update]
 theorem LocalUpdate.prod {x y x' y' : α × β}
@@ -229,10 +229,10 @@ theorem LocalUpdate.option {x y x' y' : α}
 
 @[rocq_alias option_local_update_None]
 theorem LocalUpdate.option_none {α} [UCMRA α] {x x' y' : α}
-    (h : (x, CMRA.unit) ~l~> (x', y')) : (some x, none) ~l~> (some x', some y') := by
+    (h : (x, ORA.unit) ~l~> (x', y')) : (some x, none) ~l~> (some x', some y') := by
   intro n mz vx e
   let .some (some z) := mz
-  exact h n (some z) vx (.trans e (CMRA.unit_left_id_dist z).symm)
+  exact h n (some z) vx (.trans e (ORA.unit_left_id_dist z).symm)
 
 @[rocq_alias alloc_option_local_update]
 theorem LocalUpdate.alloc_option {x : α} (y : Option α)
@@ -245,7 +245,7 @@ theorem LocalUpdate.alloc_option {x : α} (y : Option α)
     cases e.trans hw
 
 @[rocq_alias delete_option_local_update]
-theorem LocalUpdate.delete_option (x : Option α) (y : α) [CMRA.Exclusive y] :
+theorem LocalUpdate.delete_option (x : Option α) (y : α) [ORA.Exclusive y] :
     (x, some y) ~l~> (none, none) := by
   intro n mz vx e
   match mz with
@@ -254,12 +254,12 @@ theorem LocalUpdate.delete_option (x : Option α) (y : α) [CMRA.Exclusive y] :
 
 @[rocq_alias delete_option_local_update_cancelable]
 theorem LocalUpdate.delete_option_cancelable
-    (mx : Option α) [CMRA.Cancelable mx] : (mx, mx) ~l~> (none, none) := by
+    (mx : Option α) [ORA.Cancelable mx] : (mx, mx) ~l~> (none, none) := by
   intro _ mz vx e
   match mz with
   | none | some none => exact ⟨trivial, .rfl⟩
   | some (some _) =>
-    exact ⟨trivial, CMRA.cancelableN (Option.validN_op_unit vx) ((CMRA.unit_right_id_dist mx).trans e)⟩
+    exact ⟨trivial, ORA.cancelableN (Option.validN_op_unit vx) ((ORA.unit_right_id_dist mx).trans e)⟩
 
 end LocalUpdate
 

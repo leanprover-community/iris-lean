@@ -17,7 +17,7 @@ public import Iris.Std.CoPset
 
 namespace Iris
 
-open BI CMRA OFE Iris Iris.Std LawfulSet DisjointLeibnizSet COFE ProofMode
+open BI ORA OFE Iris Iris.Std LawfulSet DisjointLeibnizSet COFE ProofMode
 
 abbrev NaInvF : OFunctorPre :=
   ProdOF (constOF CoPsetDisjL) (constOF (DisjointLeibnizSet PosSet))
@@ -42,7 +42,7 @@ instance coreId_valid_empty_empty : CoreId ((valid (∅ : CoPset), valid (∅ : 
 
 instance isUnit_valid_empty_empty : IsUnit ((valid (∅ : CoPset), valid (∅ : PosSet))) where
   unit_valid := ⟨trivial, trivial⟩
-  unit_left_id := Prod.ext CMRA.ucmra_unit_left_id CMRA.ucmra_unit_left_id
+  unit_left_id := Prod.ext ORA.ucmra_unit_left_id ORA.ucmra_unit_left_id
   pcore_unit := coreId_valid_empty_empty.core_id
 
 namespace NonAtomicInvariant

@@ -14,7 +14,7 @@ public import Iris.ProofMode
 
 namespace Iris
 
-open Iris.Std HeapView PartialMap Iris.Algebra CMRA BI ProofMode
+open Iris.Std HeapView PartialMap Iris.Algebra ORA BI ProofMode
 
 @[rocq_alias ghost_mapG]
 class GhostMapG (GF : BundledGFunctors)
@@ -323,7 +323,7 @@ theorem ghost_map_lookup {γ dq} {m : H V} {k : K} {dq' v} :
   icombine H1 H2 gives %G
   ipureintro
   have ⟨av', _, _, h_av', _, h⟩ := auth_op_frag_valid_total_discrete_iff G
-  replace h := CMRA.ord_of_inc h
+  replace h := ORA.ord_of_inc h
   cases h₂ : get? m k <;> grind [LawfulPartialMap.get?_map,Agree.toAgree_included]
 
 @[rocq_alias ghost_map_lookup_combine_gives_1]
@@ -422,7 +422,7 @@ theorem ghost_map_insert_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ
       exact auth_ord_of_map_eq _ map_union
     · iapply iOwn_mono $$ H2
       rw [BigOpM.bigOpM_map_eq]
-      exact CMRA.ord_refl _
+      exact ORA.ord_refl _
 
 @[rocq_alias ghost_map_insert_persist_big]
 theorem ghost_map_insert_persist_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ m) :
@@ -441,7 +441,7 @@ theorem ghost_map_delete_big [DecidableEq K] {γ m} (m0 : H V) :
   imod ghost_map_elems_unseal $$ H2 with H2
   unfold ghost_map_auth
   iapply iOwn_update_op $$ [$H1 $H2]
-  rw [← congrArg (CMRA.op _) (BigOpM.bigOpM_map_eq _ _ m0)]
+  rw [← congrArg (ORA.op _) (BigOpM.bigOpM_map_eq _ _ m0)]
   refine (update_big_delete _ _).trans ?_
   rw [map_difference_map]
   exact Update.id
@@ -463,7 +463,7 @@ theorem ghost_map_update_big [DecidableEq K] {γ m} (m0 m1 : H V) (Heq : dom m0 
     icombine H1 H2 as H
     rw [←(bigOpM_iOwn γ _ _ h).to_eq, ←iOwn_op.to_eq]
     iapply iOwn_update $$ H
-    rw [← congrArg (CMRA.op _) (BigOpM.bigOpM_map_eq _ _ m0)]
+    rw [← congrArg (ORA.op _) (BigOpM.bigOpM_map_eq _ _ m0)]
     have Heq' : dom (Std.PartialMap.map (fun x : V => toAgree (DiscreteO.mk x)) m0) =
         dom (Std.PartialMap.map (fun x : V => toAgree (DiscreteO.mk x)) m1) := by
       rw [dom_map, dom_map, Heq]

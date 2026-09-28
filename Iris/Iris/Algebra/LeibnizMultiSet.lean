@@ -13,9 +13,9 @@ public import Iris.Std.GenMultiSets
 
 @[expose] public section
 
-/-! ## The multiset union CMRA -/
+/-! ## The multiset union ORA -/
 
-open Iris Std CMRA OFE
+open Iris Std ORA OFE
 
 @[grind!, rocq_alias gmultisetO, rocq_alias gmultisetR, rocq_alias gmultisetUR]
 inductive LeibnizMultiSet (MS : Type _) where
@@ -37,7 +37,7 @@ variable {MS : Type _} [LawfulMultiSet MS A]
 
 open MultiSet
 
-instance : RABase (LeibnizMultiSet MS) where
+instance : CMRA (LeibnizMultiSet MS) where
   pcore _ := some (ofSet ∅)
   op | ofSet X, ofSet Y => ofSet (X ⊎ Y)
   ValidN _ _ := True
@@ -53,12 +53,11 @@ instance : RABase (LeibnizMultiSet MS) where
   pcore_op_left {_ X} := by cases X; rintro ⟨rfl⟩; exact congrArg ofSet disjUnion_empty_left
   pcore_idem := id
   extend {_ _ _ _} _ h := ⟨_, _, h, .rfl, .rfl⟩
-
-instance : RABase.ExtensionLaws (LeibnizMultiSet MS) where
   pcore_op_mono h _ :=
     ⟨.ofSet ∅, by cases h; exact congrArg (some ∘ ofSet) disjUnion_empty_left.symm⟩
 
-instance : CMRA (LeibnizMultiSet MS) := CMRA.withExtensionOrder
+
+
 
 instance : Unital (LeibnizMultiSet MS) where
   unit := .ofSet ∅
@@ -66,10 +65,10 @@ instance : Unital (LeibnizMultiSet MS) where
   unit_left_id {X} := by cases X; exact congrArg ofSet disjUnion_empty_left
   pcore_unit := rfl
 
-instance : UCMRA (LeibnizMultiSet MS) := UCMRA.withExtensionOrder
+instance : UCMRA (LeibnizMultiSet MS) := UCMRA.ofCMRA
 
 @[rocq_alias gmultiset_cmra_discrete]
-instance : CMRA.Discrete (LeibnizMultiSet MS) where
+instance : ORA.Discrete (LeibnizMultiSet MS) where
   discrete_0 h := h
   discrete_valid := id
   discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
@@ -95,7 +94,7 @@ theorem included_iff_subset {X Y : MS} : ofSet X ≼ₒ ofSet Y ↔ X ⊆ Y wher
   mpr h := ⟨ofSet (Y \ X), congrArg ofSet (disjUnion_difference_of_subseteq h)⟩
 
 @[rocq_alias gmultiset_cancelable]
-instance (X : LeibnizMultiSet MS) : CMRA.Cancelable X :=
+instance (X : LeibnizMultiSet MS) : ORA.Cancelable X :=
   discrete_cancelable fun {Y Z} _ h => by grind
 
 @[rocq_alias gmultiset_update]
@@ -130,7 +129,7 @@ variable {MS : Type _} [LawfulFiniteMultiSet MS A]
 
 @[rocq_alias big_opMS_singletons]
 theorem bigOpMS_singletons (X : MS) :
-    ([^ CMRA.op mset] x ∈ X, (ofSet {x} : LeibnizMultiSet MS)) = ofSet X := by
+    ([^ ORA.op mset] x ∈ X, (ofSet {x} : LeibnizMultiSet MS)) = ofSet X := by
   induction X using multiset_ind with
   | empty => exact BigOpMS.bigOpMS_empty
   | disjUnion_singleton a X ih => rw [BigOpMS.bigOpMS_insert, ih, op_disjUnion]

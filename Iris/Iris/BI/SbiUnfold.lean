@@ -58,7 +58,7 @@ A goal whose head is a `match` is not translated: it has to be case split (with
 -/
 
 namespace Iris
-open BI OFE CMRA _root_.Iris.SiProp
+open BI OFE ORA _root_.Iris.SiProp
 
 /-- Whether the interpretation produced by `SbiUnfold` has to be downwards closed. -/
 @[rocq_alias sbi_unfold_closure_indicator.sbi_unfold_closure_indicator]
@@ -178,20 +178,20 @@ instance sbiUnfold_internalEq [OFE A] {a b : A} :
   .of_closed Dist.le <| siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
 @[rocq_alias sbi_unfold_internal_cmra_valid]
-instance sbiUnfold_cmraValid [CMRA A] {a : A} :
+instance sbiUnfold_cmraValid [ORA A] {a : A} :
     SbiUnfold clo (iprop(✓ a) : PROP) (fun n => ✓{n} a) :=
   .of_closed (fun h hm => validN_of_le hm h) <|
     siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
-instance sbiUnfold_included [CMRA A] {a b : A} :
+instance sbiUnfold_included [ORA A] {a b : A} :
     SbiUnfold clo (iprop(a ≼ₒ b) : PROP) (fun n => a ≼ₒ{n} b) :=
   .of_closed (fun h hm => ordN_of_ordN_le hm h) <|
     siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
 @[rocq_alias sbi_unfold_internal_included]
-instance sbiUnfold_inc [CMRA A] {a b : A} :
+instance sbiUnfold_inc [ORA A] {a b : A} :
     SbiUnfold clo (iprop(a ≼ b) : PROP) (fun n => a ≼{n} b) :=
-  .of_closed (fun h hm => RABase.incN_le hm h) <|
+  .of_closed (fun h hm => ORA.incN_le hm h) <|
     siPure_mono_bi <| biEntails_of_iff fun _ => exists_holds
 
 @[rocq_alias sbi_unfold_si_pure]

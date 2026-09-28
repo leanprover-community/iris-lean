@@ -11,14 +11,14 @@ public import Iris.Algebra.IsOp
 public import Iris.Algebra.LocalUpdates
 
 /-! ## Numbers CMRAs
-For simple numerical types which form commutative monoids, there are three classes of CMRA:
+For simple numerical types which form commutative monoids, there are three classes of ORA:
 - "Constant core": the core is a fixed value such as 0 (eg. (ℕ, +))
 - "Universal core": every element is a core (eg. (ℕ, max))
 - "No core": there is no core (eg. (PNat, +))
 Depending on your application, you may either want to open these scopeds or declare an alias
 to the scoped instances.
 
-This file also includes some CMRA's for types with nonstandard operations, for example (ℕ, max).
+This file also includes some ORA's for types with nonstandard operations, for example (ℕ, max).
 These are newtyped to avoid clashing with the normal mathematical operations.
 -/
 
@@ -47,28 +47,24 @@ theorem LeftCancelAdd.cancel_right {x₁ x₂ y : α} [Add α] [LeftCancelAdd α
 /- Constant core -/
 namespace CommMonoidLike
 
-open Iris Iris.OFE Add Zero One Associative Commutative LawfulLeftIdentity CMRA
+open Iris Iris.OFE Add Zero One Associative Commutative LawfulLeftIdentity ORA
 
 variable [OFE α] [OFE.Discrete α]
 variable [Add α] [Associative (α := α) (· + ·)] [Commutative (α := α) (· + ·)]
 variable [Zero α] [LawfulLeftIdentity (α := α) (· + ·) zero]
 variable {x y x' y' : α}
 
-scoped instance instRABase : RABase α :=
-  RABase.ofDiscreteTotal (fun _ => zero) add (fun _ => True)
+scoped instance instCMRA : CMRA α :=
+  ORA.ofDiscreteTotal (fun _ => zero) add (fun _ => True)
     (fun x y z => (Associative.assoc (op := add) x y z).symm)
     (Commutative.comm (op := add))
     (fun _ => left_id (op := add) _)
     (fun _ => rfl)
     (fun _ _ _ => trivial)
+    (fun _ _ => ⟨zero, (left_id (op := add) zero).symm⟩)
 
 scoped instance instIsTotal : IsTotal α where
   total _ := ⟨zero, rfl⟩
-
-scoped instance instExtensionLaws : RABase.ExtensionLaws α :=
-  .ofCoreMono fun _ _ _ => ⟨zero, (left_id (op := add) zero).symm⟩
-
-scoped instance instCMRA : CMRA α := CMRA.withExtensionOrder
 
 #rocq_ignore natR "Use the (ℕ, +) Constant Core CMRA."
 #rocq_ignore nat_ra_mixin "Use the (ℕ, +) Constant Core CMRA."
@@ -83,9 +79,9 @@ scoped instance instCMRA : CMRA α := CMRA.withExtensionOrder
 #rocq_ignore Z_valid_instance "Use the (ℤ, +) Constant Core CMRA"
 #rocq_ignore Z_validN_instance "Use the (ℤ, +) Constant Core CMRA"
 
-scoped instance instDiscrete : CMRA.Discrete α where
+scoped instance instDiscrete : ORA.Discrete α where
   discrete_valid := id
-  discrete_ord := RABase.inc_of_inc0
+  discrete_ord := ORA.inc_of_inc0
 #rocq_ignore nat_cmra_discrete "Use the (ℕ, +) Constant Core instance."
 #rocq_ignore Z_cmra_discrete "Use the (ℤ, +) Constant Core instance."
 
@@ -95,7 +91,7 @@ scoped instance instUnital : Unital α where
   unit_left_id := pcore_op_left rfl
   pcore_unit := rfl
 
-scoped instance instUCMRA : UCMRA α := UCMRA.withExtensionOrder
+scoped instance instUCMRA : UCMRA α := UCMRA.ofCMRA
 
 #rocq_ignore natUR "Use the (ℕ, +) Constant Core UCMRA."
 #rocq_ignore nat_ucmra_mixin "Use the (ℕ, +) Constant Core UCMRA."
@@ -146,7 +142,7 @@ end CommMonoidLike
 /- Universal core -/
 namespace OrdCommMonoidLike
 
-open Iris Iris.OFE Add Zero One Associative Commutative LawfulLeftIdentity CMRA IdempotentOp
+open Iris Iris.OFE Add Zero One Associative Commutative LawfulLeftIdentity ORA IdempotentOp
 
 variable [OFE α] [OFE.Discrete α]
 variable [Add α] [Associative (α := α) (· + ·)] [Commutative (α := α) (· + ·)]
@@ -154,20 +150,17 @@ variable [IdempotentOp (α := α) (· + ·)]
 variable [Zero α]
 variable {x y x' y' : α}
 
-scoped instance instRABase : RABase α :=
-  RABase.ofDiscreteTotal id add (fun _ => True)
+scoped instance instCMRA : CMRA α :=
+  ORA.ofDiscreteTotal id add (fun _ => True)
     (fun x y z => (Associative.assoc (op := add) x y z).symm)
     (Commutative.comm (op := add))
     (fun _ => idempotent _)
     (fun _ => rfl)
     (fun _ _ _ => trivial)
+    (fun _ y => ⟨y, rfl⟩)
 
 scoped instance instIsTotal : IsTotal α where
   total x := ⟨x, rfl⟩
-
-scoped instance instExtensionLaws : RABase.ExtensionLaws α := .ofCoreMono fun _ _ h => h
-
-scoped instance instCMRA : CMRA α := CMRA.withExtensionOrder
 
 #rocq_ignore max_natO "Use the (ℕ, max) Universal Core CMRA."
 #rocq_ignore max_natR "Use the (ℕ, max) Universal Core CMRA."
@@ -193,16 +186,16 @@ scoped instance instCMRA : CMRA α := CMRA.withExtensionOrder
 #rocq_ignore min_nat_valid_instance "Use the (ℕ, max) Universal Core CMRA."
 #rocq_ignore min_nat_validN_instance "Use the (ℕ, max) Universal Core CMRA."
 
-scoped instance : CMRA.Discrete α where
+scoped instance : ORA.Discrete α where
   discrete_valid := id
-  discrete_ord := RABase.inc_of_inc0
+  discrete_ord := ORA.inc_of_inc0
 #rocq_ignore max_nat_cmra_discrete "Use the (ℕ, max) Universal Core instance."
 #rocq_ignore max_Z_cmra_discrete "Use the (ℤ, max) Universal Core instance."
 #rocq_ignore min_nat_cmra_discrete "Use the (ℕ, min) Universal Core instance."
 
 #rocq_ignore max_Z_cmra_total "Use the (ℤ, max) Universal Core instance."
 
-scoped instance instCoreId (a : α) : CMRA.CoreId a where
+scoped instance instCoreId (a : α) : ORA.CoreId a where
   core_id := rfl
 #rocq_ignore max_nat_core_id "Use the (ℕ, max) Universal Core instance."
 #rocq_ignore max_Z_core_id "Use the (ℤ, max) Universal Core instance."
@@ -215,7 +208,7 @@ scoped instance instUnital [LawfulLeftIdentity (α := α) (· + ·) zero] : Unit
   pcore_unit := rfl
 
 scoped instance instUCMRA [LawfulLeftIdentity (α := α) (· + ·) zero] : UCMRA α :=
-  UCMRA.withExtensionOrder
+  UCMRA.ofCMRA
 #rocq_ignore max_Z_unit_instance "Rocq has no `max_Z_UCMRA`."
 #rocq_ignore max_natUR "Use the (ℕ, max) Universal Core instance."
 #rocq_ignore max_nat_ucmra_mixin "Use the (ℕ, max) Universal Core instance."
@@ -230,7 +223,7 @@ theorem op_eq {x y : α} : x • y = x + y := rfl
 
 omit [Zero α] in
 theorem ord_iff {x y : α} : x ≼ₒ y ↔ x • y = y :=
-  ⟨RABase.op_core_right_of_inc, fun h => ⟨y, h.symm⟩⟩
+  ⟨ORA.op_core_right_of_inc, fun h => ⟨y, h.symm⟩⟩
 
 omit [Zero α] in
 /-- Sufficient condition for a local update on an idempotent structure. -/
@@ -238,7 +231,7 @@ theorem idem_local_update {x y x' : α} (h : x ≼ₒ x') : (x, y) ~l~> (x', x')
   refine fun _ mz _ hn => ⟨trivial, OFE.Dist.of_eq ?_⟩
   cases mz with | none => rfl | some z =>
   replace hn : x = y • z := discrete hn
-  exact (RABase.op_core_left_of_inc <| .trans ⟨y, hn.trans CMRA.comm'⟩ h).symm
+  exact (ORA.op_core_left_of_inc <| .trans ⟨y, hn.trans ORA.comm'⟩ h).symm
 
 scoped instance instDiscreteE {a : α} : DiscreteE a := ⟨fun H => discrete H⟩
 
@@ -247,24 +240,21 @@ end OrdCommMonoidLike
 /- NoCore core -/
 namespace PosCommMonoidLike
 
-open Iris Iris.OFE Add Zero One Associative Commutative LawfulLeftIdentity CMRA
+open Iris Iris.OFE Add Zero One Associative Commutative LawfulLeftIdentity ORA
 
 variable [OFE α] [OFE.Discrete α]
 variable [Add α] [Associative (α := α) (· + ·)] [Commutative (α := α) (· + ·)]
 
 variable {x y x' y' : α}
 
-scoped instance instRABase : RABase α :=
-  RABase.ofDiscrete (fun _ => none) add (fun _ => True)
+scoped instance instCMRA : CMRA α :=
+  ORA.ofDiscrete (fun _ => none) add (fun _ => True)
     (fun x y z => (Associative.assoc (op := add) x y z).symm)
     (Commutative.comm (op := add))
     (by rintro _ _ ⟨⟩)
     (by rintro _ _ ⟨⟩)
     (fun _ _ _ => trivial)
-
-scoped instance instExtensionLaws : RABase.ExtensionLaws α := .ofPCoreMono nofun
-
-scoped instance instCMRA : CMRA α := CMRA.withExtensionOrder
+    (by rintro _ _ ⟨⟩)
 
 #rocq_ignore positiveR "Use (PNat, +) No Core CMRA."
 #rocq_ignore pos_ra_mixin "Use (PNat, +) No Core CMRA."
@@ -273,16 +263,16 @@ scoped instance instCMRA : CMRA α := CMRA.withExtensionOrder
 #rocq_ignore pos_valid_instance "Use (PNat, +) No Core CMRA."
 #rocq_ignore pos_validN_instance "Use (PNat, +) No Core CMRA."
 
-scoped instance instDiscrete : CMRA.Discrete α where
+scoped instance instDiscrete : ORA.Discrete α where
   discrete_valid := id
-  discrete_ord := RABase.inc_of_inc0
+  discrete_ord := ORA.inc_of_inc0
 #rocq_ignore pos_cmra_discrete "Use (PNat, +) No Core instance."
 
 scoped instance instCancelable [LeftCancelAdd α] {a : α} : Cancelable a where
   cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ discrete
 #rocq_ignore pos_cancelable "Use (PNat, +) No Core instance."
 
-scoped instance instIdFree [IdentityFree α] {a : α} : CMRA.IdFree a where
+scoped instance instIdFree [IdentityFree α] {a : α} : ORA.IdFree a where
   id_free0_r _ _ h := IdentityFree.id_free <| discrete h
 #rocq_ignore pos_id_free "Use (PNat, +) No Core instance."
 
@@ -356,9 +346,8 @@ scoped instance : Std.IdempotentOp (α := MaxNat) (· + ·) where idempotent x :
 scoped instance : COFE MaxNat := COFE.ofDiscrete _
 scoped instance : OFE.Discrete MaxNat := ⟨fun h => h⟩
 scoped instance : UCMRA MaxNat := OrdCommMonoidLike.instUCMRA
-scoped instance : RABase.ExtensionLaws MaxNat := OrdCommMonoidLike.instExtensionLaws
-scoped instance : CMRA.Discrete MaxNat := OrdCommMonoidLike.instDiscrete
-scoped instance : CMRA.CoreId (a : MaxNat) := OrdCommMonoidLike.instCoreId _
+scoped instance : ORA.Discrete MaxNat := OrdCommMonoidLike.instDiscrete
+scoped instance : ORA.CoreId (a : MaxNat) := OrdCommMonoidLike.instCoreId _
 
 @[rocq_alias max_nat_included]
 theorem MaxNat.ord_iff {a b : MaxNat} : a ≼ₒ b ↔ a ≤ b := by
@@ -411,10 +400,9 @@ scoped instance : IdempotentOp (α := MaxInt) (· + ·) where idempotent x := by
 scoped instance : COFE MaxInt := COFE.ofDiscrete _
 scoped instance : OFE.Discrete MaxInt := ⟨fun h => h⟩
 scoped instance : CMRA MaxInt := OrdCommMonoidLike.instCMRA
-scoped instance : RABase.ExtensionLaws MaxInt := OrdCommMonoidLike.instExtensionLaws
-scoped instance : CMRA.Discrete MaxInt := OrdCommMonoidLike.instDiscrete
+scoped instance : ORA.Discrete MaxInt := OrdCommMonoidLike.instDiscrete
 scoped instance : IsTotal MaxInt := OrdCommMonoidLike.instIsTotal
-scoped instance : CMRA.CoreId (a : MaxInt) := OrdCommMonoidLike.instCoreId _
+scoped instance : ORA.CoreId (a : MaxInt) := OrdCommMonoidLike.instCoreId _
 
 @[rocq_alias max_Z_included]
 theorem MaxInt.ord_iff {a b : MaxInt} : a ≼ₒ b ↔ a ≤ b := by
@@ -470,10 +458,9 @@ scoped instance : IdempotentOp (α := MinNat) (· + ·) where idempotent _ := by
 scoped instance : COFE MinNat := COFE.ofDiscrete _
 scoped instance : OFE.Discrete MinNat := ⟨fun h => h⟩
 scoped instance : CMRA MinNat := OrdCommMonoidLike.instCMRA
-scoped instance : RABase.ExtensionLaws MinNat := OrdCommMonoidLike.instExtensionLaws
-scoped instance : CMRA.Discrete MinNat := OrdCommMonoidLike.instDiscrete
+scoped instance : ORA.Discrete MinNat := OrdCommMonoidLike.instDiscrete
 scoped instance : IsTotal MinNat := OrdCommMonoidLike.instIsTotal
-scoped instance : CMRA.CoreId (a : MinNat) := OrdCommMonoidLike.instCoreId _
+scoped instance : ORA.CoreId (a : MinNat) := OrdCommMonoidLike.instCoreId _
 
 @[rocq_alias min_nat_included]
 theorem MinNat.ord_iff {a b : MinNat} : a ≼ₒ b ↔ b ≤ a := by

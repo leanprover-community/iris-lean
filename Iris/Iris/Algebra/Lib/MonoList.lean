@@ -16,7 +16,7 @@ meta import Iris.Std.RocqPorting
 
 namespace Iris
 
-open OFE CMRA
+open OFE ORA
 
 variable {α : Type _} [OFE α]
 
@@ -26,13 +26,13 @@ def MonoList (α : Type _) [OFE α] := Auth (MaxPrefixList α)
 instance : OFE (MonoList α) :=
   Auth.instOFE
 
-instance : CMRA (MonoList α) :=
-  Auth.instCMRA
+instance : ORA (MonoList α) :=
+  Auth.instORA
 
 instance : UCMRA (MonoList α) :=
   Auth.instUCMRA
 
-instance instDiscrete [OFE.Discrete α] : CMRA.Discrete (MonoList α) := by
+instance instDiscrete [OFE.Discrete α] : ORA.Discrete (MonoList α) := by
   unfold MonoList
   infer_instance
 
@@ -191,9 +191,9 @@ theorem both_dfrac_validN {n} (dq : DFrac) (l1 l2 : List α) :
   unfold auth lb MonoList
   rw [← assoc', ← Auth.frag_op, Auth.both_dfrac_validN]
   refine ⟨fun ⟨hdq, hinc, _⟩ => ⟨hdq, ?_⟩, fun ⟨hdq, hl⟩ => ⟨hdq, ?_, ?_⟩⟩
-  · refine toMaxPrefixList_incN_iff.mp (incN_of_ordN ((CMRA.ordN_op_right ..).trans hinc))
-  · have hinc := CMRA.op_monoN_right (toMaxPrefixList l1)
-      (CMRA.ordN_of_incN (toMaxPrefixList_incN_iff.mpr hl))
+  · refine toMaxPrefixList_incN_iff.mp (incN_of_ordN ((ORA.ordN_op_right ..).trans hinc))
+  · have hinc := ORA.op_monoN_right (toMaxPrefixList l1)
+      (ORA.ordN_of_incN (toMaxPrefixList_incN_iff.mpr hl))
     rwa [op_self] at hinc
   · exact toMaxPrefixList_validN _
 
@@ -210,10 +210,10 @@ theorem both_dfrac_valid (dq : DFrac) (l1 l2 : List α) :
   rw [← assoc', ← Auth.frag_op, Auth.both_dfrac_valid]
   refine ⟨fun ⟨hdq, hinc, _⟩ => ⟨hdq, ?_⟩, fun ⟨hdq, hl⟩ => ⟨hdq, ?_, ?_⟩⟩
   · refine toMaxPrefixList_inc_iff.mp (inc_iff_forall_incN.mpr fun n => ?_)
-    exact incN_of_ordN ((CMRA.ordN_op_right ..).trans (hinc n))
+    exact incN_of_ordN ((ORA.ordN_op_right ..).trans (hinc n))
   · intro n
-    have hinc := CMRA.op_monoN_right (toMaxPrefixList l1) (CMRA.ordN_of_incN
-      (RABase.incN_of_inc n (toMaxPrefixList_inc_iff.mpr hl)))
+    have hinc := ORA.op_monoN_right (toMaxPrefixList l1) (ORA.ordN_of_incN
+      (ORA.incN_of_inc n (toMaxPrefixList_inc_iff.mpr hl)))
     rwa [op_self] at hinc
   · exact toMaxPrefixList_valid _
 
@@ -247,7 +247,7 @@ theorem lb_mono {l1 l2 : List α} (h : l1 <+: l2) : ◯ML l1 ≼ ◯ML l2 :=
   ⟨◯ML l2, (lb_op_left h).symm⟩
 
 @[rocq_alias mono_list_included]
-theorem included (dq : DFrac) (l : List α) : ◯ML l ≼ ●ML{dq} l := RABase.inc_op_right ..
+theorem included (dq : DFrac) (l : List α) : ◯ML l ≼ ●ML{dq} l := ORA.inc_op_right ..
 
 /-! ## Updates -/
 

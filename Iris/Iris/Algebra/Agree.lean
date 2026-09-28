@@ -420,7 +420,7 @@ theorem op_inv {x y : Agree α} : valid (op x y) → x = y :=
   ind₂ (fun _ _ h => OFE.eq_dist_2 (Raw.op_inv h)) x y
 
 @[rocq_alias agree_cmra_mixin]
-instance instRABase : RABase (Agree α) where
+instance instORA : CMRA (Agree α) where
   pcore := some
   op := op
   ValidN := validN
@@ -439,11 +439,10 @@ instance instRABase : RABase (Agree α) where
     have heq₂ := op_invN (validN_ne heq₁ hval)
     have heq₃ : op y₁ y₂ ≡{n}≡ y₁ := op_ne.ne heq₂.symm |>.trans op_idemp.dist
     exact ⟨x, x, op_idemp.symm, heq₁.trans heq₃, heq₁.trans heq₃ |>.trans heq₂⟩
-
-instance : RABase.ExtensionLaws (Agree α) where
   pcore_op_mono := fun {x cx} h y => by obtain rfl := Option.some.inj h; exact ⟨y, rfl⟩
 
-instance instCMRA : CMRA (Agree α) := CMRA.withExtensionOrder
+
+
 
 #rocq_ignore agreeR "Use the plain Agree type with a typeclass instance instead."
 #rocq_ignore agree_op_instance "Use the CMRA instance instead."
@@ -456,7 +455,7 @@ theorem validN_def {x : Agree α} : ✓{n} x ↔ validN n x := .rfl
 theorem valid_def {x : Agree α} : ✓ x ↔ valid x := .rfl
 
 @[rocq_alias agree_pcore]
-theorem pcore_some {x : Agree α} : CMRA.pcore x = some x := rfl
+theorem pcore_some {x : Agree α} : ORA.pcore x = some x := rfl
 
 @[rocq_alias agree_cmra_total]
 instance : IsTotal (Agree α) where
@@ -474,9 +473,9 @@ instance instDiscrete [OFE.Discrete α] : OFE.Discrete (Agree α) where
   discrete_0 {x y} := ind₂ (fun _ _ h => OFE.eq_dist_2 (Raw.discrete_0 h)) x y
 
 @[rocq_alias agree_cmra_discrete]
-instance instCMRADiscrete [OFE.Discrete α] : CMRA.Discrete (Agree α) where
+instance instORADiscrete [OFE.Discrete α] : ORA.Discrete (Agree α) where
   discrete_valid {x} := x.ind fun _ => Raw.discrete_valid
-  discrete_ord := RABase.inc_of_inc0
+  discrete_ord := ORA.inc_of_inc0
 
 @[rocq_alias agree_includedN]
 theorem includedN {x y : Agree α} : x ≼ₒ{n} y ↔ y ≡{n}≡ y • x := by
@@ -484,7 +483,7 @@ theorem includedN {x y : Agree α} : x ≼ₒ{n} y ↔ y ≡{n}≡ y • x := by
   calc
     y ≡{n}≡ x • z := h
     _ ≡{n}≡ (x • x) • z := .op_l idemp.symm.dist
-    _ ≡{n}≡ x • (x • z) := CMRA.op_assocN.symm
+    _ ≡{n}≡ x • (x • z) := ORA.op_assocN.symm
     _ ≡{n}≡ x • y := h.symm.op_r
     _ ≡{n}≡ y • x := op_commN
 
@@ -557,12 +556,12 @@ theorem toAgree.inj {a1 a2 : α} {n} (H : toAgree a1 ≡{n}≡ toAgree a2) : a1 
 namespace Agree
 
 @[rocq_alias agree_cancelable]
-instance {x : Agree α} : CMRA.Cancelable x where
+instance {x : Agree α} : ORA.Cancelable x where
   cancelableN hval heq :=
     (Agree.op_invN hval).symm.trans (Agree.op_invN ((OFE.Dist.validN heq).mp hval))
 
 @[rocq_alias agree_core_id]
-instance (x : Agree α) : CMRA.CoreId x where
+instance (x : Agree α) : ORA.CoreId x where
   core_id := pcore_some
 
 @[simp, rocq_alias to_agree_includedN]
@@ -581,7 +580,7 @@ theorem toAgree_included {a b : α} : toAgree a ≼ₒ toAgree b ↔ a = b := by
   · exists toAgree a
     calc
       toAgree b = toAgree a := congrArg toAgree h.symm
-      _         = toAgree a • toAgree a := (CMRA.pcore_op_left rfl).symm
+      _         = toAgree a • toAgree a := (ORA.pcore_op_left rfl).symm
 
 #rocq_ignore to_agree_included_L "Use toAgree_included"
 
@@ -607,7 +606,7 @@ end Agree
 theorem toAgree_op_valid_iff_eq {a : α} :
     ✓ (toAgree a • toAgree b) ↔ a = b := by
   rw [OFE.eq_dist]
-  simp [CMRA.valid_iff_validN, Agree.toAgree_op_validN_iff_dist]
+  simp [ORA.valid_iff_validN, Agree.toAgree_op_validN_iff_dist]
 
 #rocq_ignore to_agree_op_inv_L "Use toAgree_op_valid_iff_eq"
 
@@ -646,7 +645,7 @@ instance instNonExpansive_AgreeMap' : OFE.NonExpansive (Agree.map' f) where
 variable (f) in
 @[rocq_alias agree_map_morphism]
 def Agree.map : (Agree α) -C> (Agree β) :=
-  CMRA.Hom.withExtensionOrder ⟨map' f, instNonExpansive_AgreeMap'⟩
+  ORA.Hom.ofCMRA ⟨map' f, instNonExpansive_AgreeMap'⟩
     (fun {_ x} => x.ind fun _ => Raw.map'_validN) (fun _ => rfl)
     fun x y => ind₂ (fun _ _ => congrArg mk Raw.map'_op) x y
 
@@ -654,7 +653,7 @@ def Agree.map : (Agree α) -C> (Agree β) :=
     Agree.map f (mk x) = mk (Raw.map' f x) := rfl
 
 @[rocq_alias agreeO_map]
-abbrev Agree.map_hom : (Agree α) -n> (Agree β) := CMRA.Hom.toHom (Agree.map f)
+abbrev Agree.map_hom : (Agree α) -n> (Agree β) := ORA.Hom.toHom (Agree.map f)
 
 @[rocq_alias agreeO_map_ne]
 theorem Agree.map_ne {f g : α → β} [OFE.NonExpansive f] [OFE.NonExpansive g] {x : Agree α}

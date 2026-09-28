@@ -15,7 +15,7 @@ public import Iris.Std.Namespaces
 
 namespace Iris.HeapLang
 
-open BI Iris ProgramLogic CMRA OFE Auth
+open BI Iris ProgramLogic ORA OFE Auth
 
 @[expose] public section
 
@@ -160,8 +160,8 @@ theorem incr_mono_spec (l : Loc) (n : Nat) :
     imodintro
     iframe Hγ
     iapply iOwn_mono $$ Hγf
-    have hnc := CMRA.ord_of_inc (auth_both_valid_discrete.mp Hv).1
-    refine CMRA.ord_of_inc (frag_inc_of_inc (MaxNat.ord_iff.mpr ?_))
+    have hnc := ORA.ord_of_inc (auth_both_valid_discrete.mp Hv).1
+    refine ORA.ord_of_inc (frag_inc_of_inc (MaxNat.ord_iff.mpr ?_))
     grind [MaxNat.ord_iff]
   iintro !> Hγf
   iapply Hφ
@@ -183,7 +183,7 @@ theorem read_mono_spec (l : Loc) (j : Nat) :
     imodintro
     iframe Hγ Hγf
     ipureintro
-    have hjc := CMRA.ord_of_inc (auth_both_valid_discrete.mp Hv).1
+    have hjc := ORA.ord_of_inc (auth_both_valid_discrete.mp Hv).1
     grind [MaxNat.ord_iff]
   iintro !> %c ⟨%hle, Hγf⟩
   iapply Hφ
@@ -234,7 +234,7 @@ theorem newcounter_contrib_spec :
   iintro %Φ _ Hφ
   wp_lam
   wp_alloc l with Hl
-  imod iOwn_alloc (F := CCounterRF) (CMRA.op (●F (0 : Nat)) (◯F (0 : Nat))) with ⟨%γ, Hγ, Hγ'⟩
+  imod iOwn_alloc (F := CCounterRF) (ORA.op (●F (0 : Nat)) (◯F (0 : Nat))) with ⟨%γ, Hγ, Hγ'⟩
   · exact FracAuth.valid trivial
   imod inv_alloc N ⊤ (ccounterInv γ l) $$ [Hl Hγ] with #Hinv
   · iexists 0; iframe
@@ -249,7 +249,7 @@ theorem incr_contrib_spec (γ : GName) (l : Loc) (q : Qp) (n : Nat) :
   iintro %Φ ⟨#Hctx, Hγf⟩ Hφ
   iapply incr_spec (ccounter γ q n) (ccounter γ q (n+1)) l $$ [$Hctx $Hγf] Hφ
   iintro %c ⟨Hγ, Hγf⟩
-  imod iOwn_update_op (a' := CMRA.op (●F (c + 1)) (◯F{q} (n + 1))) $$ [$Hγ $Hγf] with ⟨Hγ, Hγf⟩
+  imod iOwn_update_op (a' := ORA.op (●F (c + 1)) (◯F{q} (n + 1))) $$ [$Hγ $Hγf] with ⟨Hγ, Hγf⟩
   · exact FracAuth.update (fun h => h) (CommMonoidLike.leftCancelAdd_local_update (by grind))
   imodintro
   iframe

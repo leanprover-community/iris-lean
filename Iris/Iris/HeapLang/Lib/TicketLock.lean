@@ -17,7 +17,7 @@ public import Iris.Std.Namespaces
 
 namespace Iris.HeapLang
 
-open BI Iris.Std CMRA Excl DisjointLeibnizSet LawfulSet
+open BI Iris.Std ORA Excl DisjointLeibnizSet LawfulSet
 
 @[expose] public section
 
@@ -175,7 +175,7 @@ theorem newlock_spec :
   wp_alloc lo with Hlo
   imod iOwn_alloc (F := TicketLockF) ((auth 0 0 : TicketR) • owner 0) with
     ⟨%γ, ⟨Hauth, Howner⟩⟩
-  · exact Auth.auth_both_valid_2 ⟨trivial, trivial⟩ ⟨CMRA.ord_refl _, CMRA.ord_refl _⟩
+  · exact Auth.auth_both_valid_2 ⟨trivial, trivial⟩ ⟨ORA.ord_refl _, ORA.ord_refl _⟩
   wp_pures
   imodintro
   iapply Hcont

@@ -16,7 +16,7 @@ public import Iris.BI.Lib.BUpdPlain
 
 section UPredInstance
 
-open Iris BI CMRA
+open Iris BI ORA
 
 namespace UPred
 
@@ -151,7 +151,7 @@ def ownM (m : M) : UPred M where
 #rocq_ignore uPred_ownM_def "`UPred.ownM` is defined directly without `seal`/`unseal`."
 #rocq_ignore uPred_ownM_aux "`UPred.ownM` is defined directly without `seal`/`unseal`."
 
-def cmraValid {A} [CMRA A] (a : A) : UPred M where
+def cmraValid {A} [ORA A] (a : A) : UPred M where
   holds n _ := ✓{n} a
   mono hv _ le := validN_of_le le hv
 
@@ -191,7 +191,7 @@ instance later_contractive : OFE.Contractive UPred.later (α := UPred M) where
 instance ownM_ne : OFE.NonExpansive (ownM : M → UPred M) where
   ne _ _ _ H _ _ Hn _ := OFE.Dist.ordN (OFE.Dist.le H Hn) .rfl
 
-instance {A} [CMRA A] : OFE.NonExpansive (cmraValid : A → UPred M) where
+instance {A} [ORA A] : OFE.NonExpansive (cmraValid : A → UPred M) where
   ne _ _ _ H _ _ Hn _ := (H.le Hn).validN
 
 @[rocq_alias uPred_primitive.bupd_ne]
@@ -457,7 +457,7 @@ instance : BI (UPred M) where
 #rocq_ignore uPred_bi_persistently_mixin "Inlined in `uPredI` construction"
 
 @[rocq_alias uPred_primitive.persistently_elim]
-theorem persistently_elim [CMRA.Affine M] {P : UPred M} : <pers> P ⊢ P :=
+theorem persistently_elim [ORA.Affine M] {P : UPred M} : <pers> P ⊢ P :=
   fun _ _ H => P.mono H core_ord_self.ordN .refl
 
 @[rocq_alias uPred_persistently_forall]
@@ -478,11 +478,11 @@ instance : BIPersistentlyExist (UPred M) where
 instance : BILaterContractive (UPred M) where
   toContractive := later_contractive
 
-instance [CMRA.Affine M] (P : UPred M) : Affine P where
+instance [ORA.Affine M] (P : UPred M) : Affine P where
   affine _ _ _ := ordN_unit
 
 @[rocq_alias uPred_affine]
-instance [CMRA.Affine M] : BIAffine (UPred M) := ⟨by infer_instance⟩
+instance [ORA.Affine M] : BIAffine (UPred M) := ⟨by infer_instance⟩
 
 @[rocq_alias uPred_si_pure]
 protected def uPredSiPure (Pi : SiProp) : UPred M where
@@ -604,7 +604,7 @@ theorem uPredSiEmpValid_exist_mp {α : Type _} {P : α → UPred M} :
 theorem plainly_eq_uPred_plainly (P : UPred M) : iprop(■ P) = UPred.plainly P := rfl
 
 /-- The Sbi-derived `internalCmraValid` on UPred unfolds to `UPred.cmraValid`. -/
-theorem internalCmraValid_eq_uPred_cmraValid [CMRA A] (a : A) :
+theorem internalCmraValid_eq_uPred_cmraValid [ORA A] (a : A) :
     iprop(✓ a : UPred M) = UPred.cmraValid a := rfl
 
 instance : BUpd (UPred M) := ⟨bupd⟩
@@ -656,14 +656,14 @@ theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : internalCmraV
   fun n _ => H n
 
 @[rocq_alias uPred.ownM_unit, rocq_alias uPred_primitive.ownM_unit]
-theorem ownM_unit [CMRA.Affine M] P : P ⊢ □ ownM (unit : M) :=
+theorem ownM_unit [ORA.Affine M] P : P ⊢ □ ownM (unit : M) :=
   fun _ x _ => ⟨ordN_unit, unit_ordN_core x.val⟩
 
 @[rocq_alias uPred.persistently_ownM_core, rocq_alias uPred_primitive.persistently_ownM_core]
 theorem persistently_ownM_core (a : M) : ownM a ⊢ <pers> ownM (core a) :=
   fun _ _ => core_ordN_core
 
-theorem intuitionistically_ownM_core [CMRA.Affine M] (m : M) : ownM m ⊢ □ ownM (core m) :=
+theorem intuitionistically_ownM_core [ORA.Affine M] (m : M) : ownM m ⊢ □ ownM (core m) :=
   fun _ _ h => ⟨ordN_unit, core_ordN_core h⟩
 
 instance {a : M} : Persistent (ownM (core a)) where
@@ -710,7 +710,7 @@ section derived
 #rocq_ignore uPred.ownM_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias uPred.intuitionistically_ownM]
-theorem intuitionistically_ownM [CMRA.Affine M] (a : M) [CoreId a] : □ ownM a ⊣⊢ ownM a := by
+theorem intuitionistically_ownM [ORA.Affine M] (a : M) [CoreId a] : □ ownM a ⊣⊢ ownM a := by
   refine ⟨intuitionistically_elim, ?_⟩
   refine (intuitionistically_ownM_core a).trans ?_
   refine intuitionistically_mono ?_
@@ -758,7 +758,7 @@ instance ownM_sep_homomorphism :
   map_unit := ownM_unit'.to_eq
 
 @[rocq_alias uPred.bupd_soundness]
-theorem bupd_soundness [CMRA.Affine M] {P : UPred M} [Plain P] : (⊢ |==> P) → ⊢ P :=
+theorem bupd_soundness [ORA.Affine M] {P : UPred M} [Plain P] : (⊢ |==> P) → ⊢ P :=
   fun h => h.trans bupd_elim
 
 @[rocq_alias uPred.modality]
@@ -778,7 +778,7 @@ def Modality.denote : Modality → UPred M → UPred M
 @[rocq_alias uPred.denote_modalities]
 def Modality.denoteAll (ms : List Modality) (P : UPred M) : UPred M := ms.foldr denote P
 
-theorem Modality.denoteAll_laterN [CMRA.Affine M] {P : UPred M} [Plain P] :
+theorem Modality.denoteAll_laterN [ORA.Affine M] {P : UPred M} [Plain P] :
     ∀ ms : List Modality, denoteAll ms P ⊢ ▷^[ms.length] P
   | [] => .rfl
   | .bupd :: ms => (bupd_mono (denoteAll_laterN ms)).trans (bupd_elim.trans later_intro)
@@ -789,7 +789,7 @@ theorem Modality.denoteAll_laterN [CMRA.Affine M] {P : UPred M} [Plain P] :
 
 /-- Soundness under an arbitrary nesting of modalities, for plain propositions. -/
 @[rocq_alias uPred.modal_soundness]
-theorem modal_soundness [CMRA.Affine M] {P : UPred M} [Plain P] (ms : List Modality)
+theorem modal_soundness [ORA.Affine M] {P : UPred M} [Plain P] (ms : List Modality)
     (h : ⊢ Modality.denoteAll ms P) : ⊢ P :=
   laterN_soundness (h.trans (Modality.denoteAll_laterN ms))
 
@@ -798,45 +798,45 @@ theorem consistency : ¬ (⊢@{UPred M} False) := pure_soundness
 
 end derived
 
-theorem plainly_valid_mpr [CMRA A] (a : A) :
+theorem plainly_valid_mpr [ORA A] (a : A) :
     internalCmraValid a ⊢@{UPred M} ■ internalCmraValid a :=
   fun _ _ hv => hv
 
-theorem persistently_valid_mpr [CMRA A] (a : A) :
+theorem persistently_valid_mpr [ORA A] (a : A) :
     internalCmraValid a ⊢@{UPred M} <pers> internalCmraValid a :=
   (plainly_valid_mpr a).trans plainly_elim_persistently
 
-theorem plainly_valid [CMRA A] (a : A) :
+theorem plainly_valid [ORA A] (a : A) :
     ■ internalCmraValid a ⊣⊢@{UPred M} internalCmraValid a :=
   ⟨plainly_elim, plainly_valid_mpr a⟩
 
-theorem intuitionistically_valid [CMRA.Affine M] {A} [CMRA A] (a : A) :
+theorem intuitionistically_valid [ORA.Affine M] {A} [ORA A] (a : A) :
     □ internalCmraValid a ⊣⊢@{UPred M} internalCmraValid a := by
   constructor
   · exact intuitionistically_elim
   · exact (persistently_valid_mpr a).trans intuitionistically_iff_persistently.mpr
 
-theorem discrete_valid [CMRA A] [Discrete A] (a : A) :
+theorem discrete_valid [ORA A] [Discrete A] (a : A) :
     internalCmraValid a ⊣⊢@{UPred M} ⌜✓ a⌝ :=
   ⟨fun n _ hv => (valid_iff_validN' n).mpr hv, fun _ _ hv => hv.validN⟩
 
-instance valid_timeless [CMRA A] [Discrete A] {a : A} :
+instance valid_timeless [ORA A] [Discrete A] {a : A} :
     Timeless (internalCmraValid a : UPred M) where
   timeless := by
     refine (later_mono (discrete_valid a).mp).trans ?_
     exact Timeless.timeless.trans (except0_mono (discrete_valid a).mpr)
 
-instance valid_plain [CMRA A] {a : A} : Plain (internalCmraValid a : UPred M) where
+instance valid_plain [ORA A] {a : A} : Plain (internalCmraValid a : UPred M) where
   plain := plainly_valid_mpr a
 
-instance valid_persistent [CMRA A] {a : A} : Persistent (internalCmraValid a : UPred M) where
+instance valid_persistent [ORA A] {a : A} : Persistent (internalCmraValid a : UPred M) where
   persistent := persistently_valid_mpr a
 
 end UPred
 
 section UPredAlt
 
-open BUpdPlain CMRA UPred
+open BUpdPlain ORA UPred
 
 /-
 ## Compatibility between the UPred model of BUpd and the BUpd construction for generic Sbi instances
@@ -859,7 +859,7 @@ theorem BUpdPlain_bupd [UCMRA M] (P : UPred M) : BUpdPlain P ⊢ |==> P := by
     refine ⟨z, validN_ne op_commN Hvyz, HP⟩
 
 @[rocq_alias bupd_alt_bupd_iff]
-theorem BUpdPlain_bupd_iff [UCMRA M] [CMRA.Affine M] (P : UPred M) : BUpdPlain P ⊣⊢ |==> P :=
+theorem BUpdPlain_bupd_iff [UCMRA M] [ORA.Affine M] (P : UPred M) : BUpdPlain P ⊣⊢ |==> P :=
   ⟨BUpdPlain_bupd P, BUpd_BUpdPlain (PROP := UPred M)⟩
 
 @[rocq_alias ownM_updateP]

@@ -20,7 +20,7 @@ meta import Iris.Std.RocqPorting
 
 namespace Iris
 
-open Iris.Std CMRA BI ProofMode BigSepS LawfulSet SetBij
+open Iris.Std ORA BI ProofMode BigSepS LawfulSet SetBij
 
 @[rocq_alias gset_bijG]
 class SetBijG (GF : BundledGFunctors) (A B : Type _) (S : outParam (Type _))
@@ -117,7 +117,7 @@ theorem set_bij_own_elem_agree {a a' : A} {b b' : B} :
 @[rocq_alias gset_bij_own_elem_get]
 theorem set_bij_own_elem_get (a : A) (b : B) (h : (a, b) ∈ L) :
     (γ ↪●BIJ{dq} L) ⊢@{IProp GF} γ ↪◯BIJ⟨a, b⟩ :=
-  iOwn_mono (CMRA.ord_of_inc (elem_inc_auth h))
+  iOwn_mono (ORA.ord_of_inc (elem_inc_auth h))
 
 @[rocq_alias gset_bij_elem_of]
 theorem set_bij_elem_of (a : A) (b : B) :

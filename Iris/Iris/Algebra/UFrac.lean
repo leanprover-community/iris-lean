@@ -11,9 +11,9 @@ public import Iris.Algebra.Frac
 public import Iris.Algebra.IsOp
 
 /-!
-# The UFrac CMRA
+# The UFrac ORA
 
-A variant of the Frac CMRA with unbounded validity (>1).
+A variant of the Frac ORA with unbounded validity (>1).
 -/
 
 @[expose] public section
@@ -42,7 +42,8 @@ instance : OFE.Discrete UFrac := ⟨fun h => h⟩
 
 #rocq_ignore ufrac_ra_mixin "Use CMRA instance"
 
-instance : RABase UFrac where
+@[rocq_alias ufracR]
+instance : CMRA UFrac where
   pcore _ := none
   op x y := ⟨x.frac + y.frac⟩
   Valid _ := True
@@ -58,12 +59,10 @@ instance : RABase UFrac where
   pcore_op_left H := by rcases H
   pcore_idem H := by rcases H
   extend {_ x y z} := by rintro _ rfl; exists y; exists z
-
-instance : RABase.ExtensionLaws UFrac where
   pcore_op_mono H := by rcases H
 
-@[rocq_alias ufracR]
-instance : CMRA UFrac := CMRA.withExtensionOrder
+
+
 
 @[simp, grind =] theorem frac_op (x y : UFrac) : (x • y).frac = x.frac + y.frac := rfl
 @[simp, grind =] theorem valid_iff {x : UFrac} : ✓ x ↔ True := Iff.rfl
@@ -84,18 +83,18 @@ theorem le_of_ord {x y : UFrac} (H : x ≼ₒ y) : x.frac ≤ y.frac := by
   have := ord_iff.mp H; grind
 
 @[rocq_alias ufrac_cmra_discrete]
-instance : CMRA.Discrete UFrac where
+instance : ORA.Discrete UFrac where
   discrete_0 := fun h => h
   discrete_valid := id
   discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
 
 @[rocq_alias ufrac_cancelable]
-instance {q : UFrac} : CMRA.Cancelable q where
+instance {q : UFrac} : ORA.Cancelable q where
   cancelableN {n x y} _ (H : q • x = q • y) := by
     simp only [dist_iff, ext_iff, frac_op] at *; grind
 
 @[rocq_alias ufrac_id_free]
-instance {q : UFrac} : CMRA.IdFree q where
+instance {q : UFrac} : ORA.IdFree q where
   id_free0_r b _ H := by
     have := b.frac.2; simp only [dist_iff, ext_iff, frac_op] at H; grind
 

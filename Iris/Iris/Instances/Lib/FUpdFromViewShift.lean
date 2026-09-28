@@ -25,8 +25,8 @@ open Iris OFE BI
 section fupd
 
 -- Framing spatial hypotheses into `∧`-shaped view-shift premises needs `BIAffine (UPred M)`,
--- which holds exactly for affine `M`; every classical CMRA qualifies.
-variable {M : Type u} [UCMRA M] [CMRA.Affine M]
+-- which holds exactly for affine `M`; every classical ORA qualifies.
+variable {M : Type u} [UCMRA M] [ORA.Affine M]
 variable (vs : CoPset → CoPset → UPred M → UPred M → UPred M)
 
 @[rocq_alias fupd]

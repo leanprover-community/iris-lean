@@ -22,7 +22,7 @@ public import Iris.ProgramLogic.WeakestPre
 @[expose] public section
 
 namespace IrisTest
-open Iris BI CMRA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic
+open Iris BI ORA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic
 
 /- This file contains tests with various scenarios for all available tactics. -/
 
@@ -3475,8 +3475,8 @@ example {GF} [ElemG GF (constOF DFrac)]
   · iexact Hnew2
 
 /-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
-    instances for the authoritative CMRA. -/
-example {GF A} [UCMRA A] [CMRA.Affine A] [ElemG GF (constOF (Auth A))] {γ}
+    instances for the authoritative ORA. -/
+example {GF A} [UCMRA A] [ORA.Affine A] [ElemG GF (constOF (Auth A))] {γ}
     {a1 a2 a3 b c : A} {q1 q2 : Qp} {dq'' dq3 dq4 : DFrac}
     [IsOp .merge b a2 a3] [IsOp .merge c a1 b]
     [IsOp .merge dq'' dq3 dq4] :

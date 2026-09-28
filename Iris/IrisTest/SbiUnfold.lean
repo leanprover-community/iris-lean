@@ -18,7 +18,7 @@ closure.
 -/
 
 namespace IrisTest
-open Iris BI OFE CMRA
+open Iris BI OFE ORA
 
 /-- The interpretation `sbi_unfold` gives to `▷`. Only used to state the expected
 goals below: writing the `match` under a `∃` binder makes the binder part of it. -/
@@ -96,7 +96,7 @@ example (h : ∀ n, (∀ y, ∀ m ≤ n, x ≡{m}≡ y → y ≡{m}≡ z) → x 
 end RocqTests
 
 section LeanTests
-variable [Sbi PROP] [CMRA A] [OFE B]
+variable [Sbi PROP] [ORA A] [OFE B]
 
 /- `prod_validI`. -/
 example (x : A × A) (h : ∀ n, ✓{n} x ↔ ✓{n} x.1 ∧ ✓{n} x.2) :
