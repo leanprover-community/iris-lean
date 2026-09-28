@@ -299,6 +299,7 @@ theorem sortAndCheck_spec [HeapLangGS hlc GF] (l : List Int) :
 theorem sortAndCheckAdequate (l : List Int) (σ : State) :
     adequate .NotStuck (sortAndCheck l) σ (fun v _ => v = hl_val(#true)) := by
   apply heap_adequacy (GF := HeapLangS); intro _
+  iintro _
   iapply sortAndCheck_spec <;> itrivial
 
 end Closed
