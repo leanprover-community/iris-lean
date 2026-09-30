@@ -55,7 +55,7 @@ variable [Zero α] [LawfulLeftIdentity (α := α) (· + ·) zero]
 variable {x y x' y' : α}
 
 scoped instance instCMRA : CMRA α :=
-  ORA.ofDiscreteTotal (fun _ => zero) add (fun _ => True)
+  CMRA.ofDiscreteTotal (fun _ => zero) add (fun _ => True)
     (fun x y z => (Associative.assoc (op := add) x y z).symm)
     (Commutative.comm (op := add))
     (fun _ => left_id (op := add) _)
@@ -151,7 +151,7 @@ variable [Zero α]
 variable {x y x' y' : α}
 
 scoped instance instCMRA : CMRA α :=
-  ORA.ofDiscreteTotal id add (fun _ => True)
+  CMRA.ofDiscreteTotal id add (fun _ => True)
     (fun x y z => (Associative.assoc (op := add) x y z).symm)
     (Commutative.comm (op := add))
     (fun _ => idempotent _)
@@ -248,7 +248,7 @@ variable [Add α] [Associative (α := α) (· + ·)] [Commutative (α := α) (·
 variable {x y x' y' : α}
 
 scoped instance instCMRA : CMRA α :=
-  ORA.ofDiscrete (fun _ => none) add (fun _ => True)
+  CMRA.ofDiscrete (fun _ => none) add (fun _ => True)
     (fun x y z => (Associative.assoc (op := add) x y z).symm)
     (Commutative.comm (op := add))
     (by rintro _ _ ⟨⟩)
