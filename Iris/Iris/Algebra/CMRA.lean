@@ -951,6 +951,9 @@ instance : @IsInc α _ _ (toORA (α := α)).toOrdered :=
   { inc_ord := id, ord_inc := id, ordN_incN := id }
 
 end extOrder
+
+theorem ord_of_ord0 [OFE.Discrete α] {x y : α} (h : x ≼ₒ{0} y) : x ≼ₒ y :=
+  inc_iff_ord.mp (ORA.inc_of_inc0 (incN_iff_ordN.mpr h))
 end CMRA
 
 section
@@ -1244,9 +1247,6 @@ theorem ord_op_right (x y : α) : y ≼ₒ x • y := (IncOrd.increasing x).incr
 theorem ord_op_left (x y : α) : x ≼ₒ x • y := comm' (x := y) (y := x) ▸ ord_op_right y x
 theorem ordN_op_left (n) (x y : α) : x ≼ₒ{n} x • y := (ord_op_left x y).ordN
 theorem ordN_op_right (n) (x y : α) : y ≼ₒ{n} x • y := (ord_op_right x y).ordN
-
-theorem ordN_of_incN {n} {x y : α} : x ≼{n} y → x ≼ₒ{n} y := IncOrd.incN_ordN
-theorem ord_of_inc {x y : α} : x ≼ y → x ≼ₒ y := IncOrd.inc_ord
 
 theorem pcore_ord_self {x : α} {cx} (e : pcore x = some cx) : cx ≼ₒ x :=
   pcore_op_left e ▸ ord_op_left cx x
@@ -3602,7 +3602,7 @@ instance ofDiscrete_discrete [OFE α] [OFE.Discrete α] (pcore : α → Option �
     @ORA.Discrete α (@CMRA.toORA α (ofDiscrete pcore op Valid h₁ h₂ h₃ h₄ h₅ h₆)) :=
   letI := ofDiscrete pcore op Valid h₁ h₂ h₃ h₄ h₅ h₆
   { discrete_valid := id
-    discrete_ord := inc_of_inc0 }
+    discrete_ord := CMRA.ord_of_ord0 }
 
 end OfDiscrete
 end CMRA

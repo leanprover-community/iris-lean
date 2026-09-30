@@ -161,7 +161,7 @@ theorem agree_ordI (x y : Agree A) :
 @[rocq_alias agree_includedI]
 theorem agree_includedI (x y : Agree A) :
     x ≼ y ⊣⊢@{PROP} y ≡ x • y :=
-  internalCmraIncluded_iff_ord.trans (agree_ordI x y)
+  internalCmraIncluded_iff_internalCmraOrder.trans (agree_ordI x y)
 
 theorem toAgree_ordI (a b : A) :
     toAgree a ≼ₒ toAgree b ⊣⊢@{PROP} a ≡ b := by
@@ -170,7 +170,7 @@ theorem toAgree_ordI (a b : A) :
 @[rocq_alias to_agree_includedI]
 theorem toAgree_includedI (a b : A) :
     toAgree a ≼ toAgree b ⊣⊢@{PROP} a ≡ b :=
-  internalCmraIncluded_iff_ord.trans (toAgree_ordI a b)
+  internalCmraIncluded_iff_internalCmraOrder.trans (toAgree_ordI a b)
 
 end agree_inclusion
 

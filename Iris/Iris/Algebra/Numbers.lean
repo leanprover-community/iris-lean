@@ -81,7 +81,7 @@ scoped instance instIsTotal : IsTotal α where
 
 scoped instance instDiscrete : ORA.Discrete α where
   discrete_valid := id
-  discrete_ord := ORA.inc_of_inc0
+  discrete_ord := CMRA.ord_of_ord0
 #rocq_ignore nat_cmra_discrete "Use the (ℕ, +) Constant Core instance."
 #rocq_ignore Z_cmra_discrete "Use the (ℤ, +) Constant Core instance."
 
@@ -193,7 +193,7 @@ scoped instance instIsTotal : IsTotal α where
 
 scoped instance : ORA.Discrete α where
   discrete_valid := id
-  discrete_ord := ORA.inc_of_inc0
+  discrete_ord := CMRA.ord_of_ord0
 #rocq_ignore max_nat_cmra_discrete "Use the (ℕ, max) Universal Core instance."
 #rocq_ignore max_Z_cmra_discrete "Use the (ℤ, max) Universal Core instance."
 #rocq_ignore min_nat_cmra_discrete "Use the (ℕ, min) Universal Core instance."
@@ -228,7 +228,7 @@ theorem op_eq {x y : α} : x • y = x + y := rfl
 
 omit [Zero α] in
 theorem ord_iff {x y : α} : x ≼ₒ y ↔ x • y = y :=
-  ⟨ORA.op_core_right_of_inc, fun h => ⟨y, h.symm⟩⟩
+  ⟨fun h => ORA.op_core_right_of_inc (OrdInc.ord_inc h), fun h => IncOrd.inc_ord ⟨y, h.symm⟩⟩
 
 omit [Zero α] in
 theorem inc_iff {x y : α} : x ≼ y ↔ x • y = y := inc_iff_ord.trans ord_iff
@@ -238,7 +238,7 @@ theorem idem_local_update_ord {x y x' : α} (h : x ≼ₒ x') : (x, y) ~l~> (x',
   refine fun _ mz _ hn => ⟨trivial, OFE.Dist.of_eq ?_⟩
   cases mz with | none => rfl | some z =>
   replace hn : x = y • z := discrete hn
-  exact (ORA.op_core_left_of_inc <| .trans ⟨y, hn.trans ORA.comm'⟩ h).symm
+  exact (ORA.op_core_left_of_inc <| .trans ⟨y, hn.trans ORA.comm'⟩ (OrdInc.ord_inc h)).symm
 
 omit [Zero α] in
 /-- Sufficient condition for a local update on an idempotent structure. -/
@@ -277,7 +277,7 @@ scoped instance instCMRA : CMRA α :=
 
 scoped instance instDiscrete : ORA.Discrete α where
   discrete_valid := id
-  discrete_ord := ORA.inc_of_inc0
+  discrete_ord := CMRA.ord_of_ord0
 #rocq_ignore pos_cmra_discrete "Use (PNat, +) No Core instance."
 
 scoped instance instCancelable [LeftCancelAdd α] {a : α} : Cancelable a where

@@ -466,7 +466,7 @@ theorem auth_update_of_localUpdate {a b a' b' : A}
     simp only [ORA.op?]; exact hc.trans assoc.symm.dist
   have ⟨hv', ha'_eq⟩ := hup n (some (bf • c)) hv ha_eq
   simp only [ORA.op?] at ha'_eq
-  refine ⟨ORA.ordN_of_incN ⟨c, ha'_eq.trans assoc.dist⟩, hv'⟩
+  refine ⟨IncOrd.incN_ordN ⟨c, ha'_eq.trans assoc.dist⟩, hv'⟩
 
 @[rocq_alias auth_update_alloc]
 theorem auth_update_alloc_of_localUpdate {a a' b' : A}

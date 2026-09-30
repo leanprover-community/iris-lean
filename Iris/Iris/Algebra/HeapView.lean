@@ -466,7 +466,7 @@ theorem update_of_local_update (hsub : ∀ {n : Nat} {x y : V}, x ≼ₒ{n} y �
     · obtain ⟨c, hc⟩ := hsub i.2
       obtain ⟨Hv', He'⟩ := Hup n (some c) Hval.2 hc
       refine ⟨⟨Hval.1, Hv'⟩, Option.some_ordN_some_iff.mpr (.inr ⟨i.1, ?_⟩)⟩
-      exact ORA.ordN_of_incN ⟨c, He'⟩
+      exact IncOrd.incN_ordN ⟨c, He'⟩
   | some p =>
     rcases Hincl with e | i
     · obtain ⟨Hv', He'⟩ := Hup n (some p.2) Hval.2 e.2.symm
@@ -475,7 +475,7 @@ theorem update_of_local_update (hsub : ∀ {n : Nat} {x y : V}, x ≼ₒ{n} y �
       have hc' := hc.trans (assoc.symm.dist (α := V))
       obtain ⟨Hv', He'⟩ := Hup n (some (p.2 • c)) Hval.2 hc'
       refine ⟨⟨Hval.1, Hv'⟩, Option.some_ordN_some_iff.mpr (.inr ⟨i.1, ?_⟩)⟩
-      exact ORA.ordN_of_incN ⟨c, He'.trans assoc.dist⟩
+      exact IncOrd.incN_ordN ⟨c, He'.trans assoc.dist⟩
 
 @[rocq_alias gmap_view_replace]
 theorem update_replace (Hval' : ✓ v2) :

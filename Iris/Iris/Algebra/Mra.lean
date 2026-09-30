@@ -178,7 +178,7 @@ theorem below_op (a : α) (x y : Mra R) : below a (x • y) ↔ below a x ∨ be
 theorem idem (x : Mra R) : x • x = x := append_idem x
 
 theorem ord_iff (x y : Mra R) : x ≼ₒ y ↔ y = x • y :=
-  ⟨fun h ↦ (ORA.op_core_right_of_inc h).symm, fun h ↦ ⟨y, h⟩⟩
+  ⟨fun h ↦ (ORA.op_core_right_of_inc (OrdInc.ord_inc h)).symm, fun h ↦ IncOrd.inc_ord ⟨y, h⟩⟩
 
 @[rocq_alias mra_included]
 theorem inc_iff (x y : Mra R) : x ≼ y ↔ y = x • y := inc_iff_ord.trans (ord_iff x y)

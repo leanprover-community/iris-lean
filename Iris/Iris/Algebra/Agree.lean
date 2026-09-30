@@ -472,7 +472,7 @@ instance instDiscrete [OFE.Discrete α] : OFE.Discrete (Agree α) where
 @[rocq_alias agree_cmra_discrete]
 instance instORADiscrete [OFE.Discrete α] : ORA.Discrete (Agree α) where
   discrete_valid {x} := x.ind fun _ => Raw.discrete_valid
-  discrete_ord := ORA.inc_of_inc0
+  discrete_ord := CMRA.ord_of_ord0
 
 theorem ordN {x y : Agree α} : x ≼ₒ{n} y ↔ y ≡{n}≡ y • x := by
   refine ⟨fun ⟨z, h⟩ => ?_, fun h => ⟨y, h.trans op_commN⟩⟩

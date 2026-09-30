@@ -156,11 +156,11 @@ theorem incr_mono_spec (l : Loc) (n : Nat) :
     imod iOwn_update_op
       (a' := (((● MaxNat.ofNat (c + 1)) • (◯ MaxNat.ofNat (c + 1))) : Auth MaxNat)) $$
       [$Hγ $Hγf] with ⟨Hγ, Hγf⟩
-    · exact auth_update_of_localUpdate (fun h => h) (MaxNat.local_update (by grind))
+    · exact auth_update_of_localUpdate OrdInc.ordN_incN (MaxNat.local_update (by grind))
     imodintro
     iframe Hγ
     iapply iOwn_mono $$ Hγf
-    have hnc := ORA.ord_of_inc (auth_both_valid_discrete.mp Hv).1
+    have hnc := (auth_both_valid_discrete.mp Hv).1
     refine frag_ord_of_ord (MaxNat.ord_iff.mpr ?_)
     grind [MaxNat.ord_iff]
   iintro !> Hγf
@@ -179,11 +179,11 @@ theorem read_mono_spec (l : Loc) (j : Nat) :
     icombine Hγ Hγf gives %Hv
     imod iOwn_update_op
       (a' := (((● MaxNat.ofNat c) • (◯ MaxNat.ofNat c)) : Auth MaxNat)) $$ [$Hγ $Hγf] with ⟨Hγ, Hγf⟩
-    · exact auth_update_of_localUpdate (fun h => h) (MaxNat.local_update (by simp))
+    · exact auth_update_of_localUpdate OrdInc.ordN_incN (MaxNat.local_update (by simp))
     imodintro
     iframe Hγ Hγf
     ipureintro
-    have hjc := ORA.ord_of_inc (auth_both_valid_discrete.mp Hv).1
+    have hjc := (auth_both_valid_discrete.mp Hv).1
     grind [MaxNat.ord_iff]
   iintro !> %c ⟨%hle, Hγf⟩
   iapply Hφ

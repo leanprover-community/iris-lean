@@ -61,7 +61,7 @@ private theorem singleton_ord_toInvHeap {h : H (V × (V → Prop))} {l : L} {I :
   obtain ⟨v, I', rfl, rfl, hh⟩ := get?_toInvHeap_some hy
   obtain ⟨hv, hI⟩ := Prod.inc_def.mp (Option.some_inc_some_iff_is_total.mp hinc)
   cases DiscreteO.eqv_inj (toAgree_included.mp hI)
-  exact ⟨v, hh, ORA.ord_of_inc hv⟩
+  exact ⟨v, hh, IncOrd.inc_ord hv⟩
 
 @[rocq_alias to_inv_heap_valid]
 theorem toInvHeap_valid (h : H (V × (V → Prop))) : ✓ toInvHeap h := fun l => by
@@ -187,8 +187,8 @@ theorem invPointsToOwn_inv (l : L) (v : V) (I : V → Prop) :
   iintro Hl
   unfold invPointsToOwn invPointsTo
   iapply iOwn_mono $$ Hl
-  refine ORA.ord_of_inc (frag_inc_of_inc (singleton_inc_singleton_mono ?_))
-  exact ⟨(some (.excl ⟨v⟩), toAgree ⟨I⟩), Prod.ext rfl Agree.idemp.symm⟩
+  refine frag_ord_of_ord (singleton_ord_singleton_mono ?_)
+  exact ⟨IncOrd.increasing _, ORA.ord_refl _⟩
 
 variable [genHeapGS L V GF H]
 

@@ -34,7 +34,7 @@ theorem IsViewRel.ofMonoOrd [OFE A] [UCMRA B] [ORA.Affine B] {R : ViewRel A B}
       R n1 a1 b1 → a1 ≡{n2}≡ a2 → b2 ≼ₒ{n2} b1 → n2 ≤ n1 → R n2 a2 b2)
     (rel_validN : ∀ n a b, R n a b → ✓{n} b)
     (rel_unit : ∀ n, ∃ a, R n a UCMRA.unit) : IsViewRel R where
-  mono h ha hb hn := mono_ord h ha (ORA.ordN_of_incN hb) hn
+  mono h ha hb hn := mono_ord h ha (IncOrd.incN_ordN hb) hn
   mono_ord := mono_ord
   rel_validN := rel_validN
   rel_unit := rel_unit
@@ -616,7 +616,7 @@ theorem auth_incN_auth_op_frag_iff :
   · simp only [Auth, Frag, IncludedN, ORA.op]
     rintro ⟨(_|⟨dqf, af⟩),⟨⟨x1, x2⟩, y⟩⟩
     · exact ⟨.inr x1.symm, toAgree.inj x2.symm⟩
-    · exact ⟨.inl ⟨dqf, x1⟩, Agree.toAgree_ordN.mp ⟨af, x2⟩⟩
+    · exact ⟨.inl ⟨dqf, x1⟩, Agree.toAgree_includedN.mp ⟨af, x2⟩⟩
   · rcases H with ⟨(⟨z, HRz⟩| HRa2), HRb⟩
     · calc (●V{dq1} a1 : View R)
              ≼{n} ((●V{dq1} a1) • ((◯V b) • ●V{z} a1)) := by exists ((◯V b) • ●V{z} a1)
@@ -904,7 +904,7 @@ theorem auth_alloc (Hup : ∀ n bf, R n a bf → R n a (b • bf)) :
     refine ⟨Hv, ?_⟩
     exists a0
     refine ⟨Hag, ?_⟩
-    have Heq  := Agree.toAgree_ordN.mp ⟨ag, Hag.symm⟩
+    have Heq  := Agree.toAgree_includedN.mp ⟨ag, Hag.symm⟩
     have HR' := IsViewRel.mono Hrel Heq.symm (ORA.incN_op_right n UCMRA.unit bf) n.le_refl
     apply IsViewRel.mono (Hup _ _ HR') Heq ?_ n.le_refl
     apply Iris.OFE.Dist.to_incN
