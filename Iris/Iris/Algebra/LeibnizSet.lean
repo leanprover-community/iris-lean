@@ -337,7 +337,7 @@ instance : CMRA (LeibnizSet S) where
   extend {_ _ _ _} _ h := ⟨_, _, h, .rfl, .rfl⟩
   pcore_op_mono {_ _} := by rintro ⟨rfl⟩ y; exists y
 
-instance : Unital (LeibnizSet S) where
+instance instUnital : Unital (LeibnizSet S) where
   unit := valid ∅
   unit_valid := trivial
   unit_left_id := by simp [op, union_empty_left]

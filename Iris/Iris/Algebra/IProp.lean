@@ -60,7 +60,7 @@ abbrev IResF (GF : BundledGFunctors) : OFunctorPre :=
 
 instance (GF : BundledGFunctors) (i : GType) : RFunctorContractive (GF i).F := (GF i).contractive
 
-instance (GF : BundledGFunctors) (i : GType) : RFunctorAffine (GF i).F := (GF i).affine
+instance instRFunctorAffineGF (GF : BundledGFunctors) (i : GType) : RFunctorAffine (GF i).F := (GF i).affine
 
 section IProp
 
@@ -80,7 +80,7 @@ def IResUR.{u} : Type u := (i : GType) → GenMap ((GF i).F (IPre GF) (IPre GF))
 instance : UCMRA (IResUR GF) :=
   ucmraDiscreteFunO (β := fun (i : GType) => GenMap ((GF i).F (IPre GF) (IPre GF)))
 
-instance : ORA.Affine (IResUR GF) :=
+instance instAffineIResUR : ORA.Affine (IResUR GF) :=
   inferInstanceAs (ORA.Affine ((i : GType) → GenMap ((GF i).F (IPre GF) (IPre GF))))
 
 abbrev IProp.{u} : Type u := UPred (IResUR GF)

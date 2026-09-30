@@ -258,9 +258,11 @@ theorem map_ne [OFE α] [OFE β] (f : α -n> β) : NonExpansive (map f) where
 #rocq_ignore Excl_proper "Derivable from NonExpansive.eqv"
 
 @[rocq_alias excl_map_cmra_morphism]
-def hom [OFE α] [OFE β] (f : α -n> β) : Excl α -C> Excl β :=
-  ORA.Hom.ofCMRA ⟨map f, map_ne f⟩ (fun {_ x} _ => by cases x <;> trivial)
-    (fun _ => rfl) (fun _ _ => rfl)
+def hom [OFE α] [OFE β] (f : α -n> β) : Excl α -C> Excl β := by
+  refine CMRA.Hom.toORA ⟨⟨map f, map_ne f⟩, ?_, ?_, ?_⟩
+  · intro n x h; cases x <;> trivial
+  · intro x; trivial
+  · intro x y; trivial
 
 @[rocq_alias exclO_map]
 def oMap [OFE α] [OFE β] (f : α -n> β) : Excl α -n> Excl β := ⟨map f, map_ne f⟩
@@ -295,7 +297,7 @@ instance {F} [COFE.OFunctor F] : RFunctor (ExclOF F) where
     · exact congrArg excl (COFE.OFunctor.map_comp _ _ _ _ _)
     · trivial
 
-instance {F} [COFE.OFunctor F] : RFunctorAffine (ExclOF F) where
+instance instRFunctorAffine {F} [COFE.OFunctor F] : RFunctorAffine (ExclOF F) where
   affine := inferInstance
 
 @[rocq_alias exclRF_contractive]

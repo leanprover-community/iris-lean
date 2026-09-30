@@ -661,16 +661,18 @@ instance instNonExpansive_AgreeMap' : OFE.NonExpansive (Agree.map' f) where
 
 variable (f) in
 @[rocq_alias agree_map_morphism]
-def Agree.map : (Agree α) -C> (Agree β) :=
-  ORA.Hom.ofCMRA ⟨map' f, instNonExpansive_AgreeMap'⟩
-    (fun {_ x} => x.ind fun _ => Raw.map'_validN) (fun _ => rfl)
-    fun x y => ind₂ (fun _ _ => congrArg mk Raw.map'_op) x y
+def Agree.map : (Agree α) -C> (Agree β) := CMRA.Hom.toORA {
+  f := map' f
+  ne := instNonExpansive_AgreeMap'
+  validN {_n x} := x.ind fun _ => Raw.map'_validN
+  pcore _ := rfl
+  op x y := ind₂ (fun _ _ => congrArg mk Raw.map'_op) x y }
 
 @[simp] theorem Agree.map_mk (f : α → β) [OFE.NonExpansive f] (x : Raw α) :
     Agree.map f (mk x) = mk (Raw.map' f x) := rfl
 
 @[rocq_alias agreeO_map]
-abbrev Agree.map_hom : (Agree α) -n> (Agree β) := ORA.Hom.toHom (Agree.map f)
+abbrev Agree.map_hom : (Agree α) -n> (Agree β) := (Agree.map f).toHom
 
 @[rocq_alias agreeO_map_ne]
 theorem Agree.map_ne {f g : α → β} [OFE.NonExpansive f] [OFE.NonExpansive g] {x : Agree α}
@@ -716,7 +718,7 @@ instance {F} [COFE.OFunctor F] : RFunctor (AgreeRF F) where
     rw [← Agree.map_compose]
     exact Agree.agree_map_ext (fun a => COFE.OFunctor.map_comp f g f' g' a)
 
-instance {F} [COFE.OFunctor F] : RFunctorAffine (AgreeRF F) where
+instance instRFunctorAffineAgreeRF {F} [COFE.OFunctor F] : RFunctorAffine (AgreeRF F) where
   affine := inferInstance
 
 @[rocq_alias agreeRF_contractive]

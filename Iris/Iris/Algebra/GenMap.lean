@@ -306,7 +306,7 @@ instance instUCMRA_GenMap : UCMRA (GenMap β) where
 
 instance : IsTotal (GenMap β) := unit_total
 
-instance [ORA.Affine β] : ORA.Affine (GenMap β) :=
+instance instAffineGenMap [ORA.Affine β] : ORA.Affine (GenMap β) :=
   IncOrd.of_increasing fun x => GenMap.increasing_of_car β (IncOrd.increasing x.car)
 
 theorem GenMap.alter_valid {g : GenMap β} (Hb : ✓{n} b) (Hg : ✓{n} g) :
@@ -454,7 +454,7 @@ instance instURFunctor_GenMapOF (F : COFE.OFunctorPre) [RFunctor F] :
   map_id x := OFunctor.map_id x
   map_comp f g f' g' x := OFunctor.map_comp f g f' g' x
 
-instance (F : COFE.OFunctorPre) [RFunctor F] [RFunctorAffine F] : RFunctorAffine (GenMapOF F) where
+instance instRFunctorAffineGenMapOF (F : COFE.OFunctorPre) [RFunctor F] [RFunctorAffine F] : RFunctorAffine (GenMapOF F) where
   affine := inferInstance
 
 instance instURFunctorContractive_GenMapOF (F : COFE.OFunctorPre) [RFunctorContractive F] :

@@ -187,7 +187,7 @@ theorem IncOrd.increasing [IncOrd α] (x : α) : Increasing x :=
 theorem IncOrd.of_increasing (h : ∀ x : α, Increasing x) : IncOrd α where
   inc_ord {x _} := fun ⟨z, e⟩ => by subst e; rw [Op.comm]; exact (h z).increasing x
 
-instance [IncOrd α] (x : α) : Increasing x := IncOrd.increasing x
+instance instIncreasingOfIncOrd [IncOrd α] (x : α) : Increasing x := IncOrd.increasing x
 
 theorem inc_iff_ord [IsInc α] {x y : α} : x ≼ y ↔ x ≼ₒ y :=
   ⟨IncOrd.inc_ord, OrdInc.ord_inc⟩
@@ -927,7 +927,7 @@ attribute [local instance] ORA.extOrderN
 theorem increasing_ext (x : α) : Increasing x where
   increasing y := inc_op_right x y
 
-instance [IsTotal α] : OrderRefl α where
+instance instOrderRefl [IsTotal α] : OrderRefl α where
   ord_refl := inc_refl_ext
 
 @[reducible] instance toORA : ORA α where
@@ -947,7 +947,7 @@ instance [IsTotal α] : OrderRefl α where
   increasing_closed _ _ := increasing_ext _
   ordN_extend := incN_extend
 
-instance : @IsInc α _ _ (toORA (α := α)).toOrdered :=
+instance instIsInc : @IsInc α _ _ (toORA (α := α)).toOrdered :=
   { inc_ord := id, ord_inc := id, ordN_incN := id }
 
 end extOrder
@@ -1051,7 +1051,7 @@ variable [OFE α] [Ordered α]
 theorem ordN_of_ordN_of_dist (h : (a : α) ≼ₒ{n} b) (e : b ≡{n}≡ c) : a ≼ₒ{n} c :=
   ordN_ne .rfl e h
 
-instance {n : Nat} : Trans (OrderN (α := α) n) (Dist n) (OrderN n) where
+instance instTransOrderNDist {n : Nat} : Trans (OrderN (α := α) n) (Dist n) (OrderN n) where
   trans := ordN_of_ordN_of_dist
 
 theorem ordN_of_dist_of_ordN (e : (a : α) ≡{n}≡ b) (h : b ≼ₒ{n} c) : a ≼ₒ{n} c :=
@@ -1077,13 +1077,13 @@ theorem _root_.Iris.OFE.Dist.ordN :
 
 theorem _root_.Iris.Ordered.Order.trans : (x : α) ≼ₒ y → y ≼ₒ z → x ≼ₒ z := ord_trans
 
-instance : Trans (Order (α := α)) Order Order where
+instance instTransOrder : Trans (Order (α := α)) Order Order where
   trans := ord_trans
 
 theorem _root_.Iris.Ordered.OrderN.trans : (x : α) ≼ₒ{n} y → y ≼ₒ{n} z → x ≼ₒ{n} z :=
   ordN_trans
 
-instance : Trans (OrderN (α := α) n) (OrderN n) (OrderN n) where
+instance instTransOrderN : Trans (OrderN (α := α) n) (OrderN n) (OrderN n) where
   trans := ordN_trans
 
 theorem ordN_of_ordN_le {n n'} {x y : α} (l1 : n' ≤ n) : x ≼ₒ{n} y → x ≼ₒ{n'} y :=
@@ -1210,7 +1210,7 @@ instance op (x y : α) [Increasing x] [Increasing y] : Increasing (x • y) wher
 
 end Increasing
 
-instance (x : α) [CoreId x] : Increasing x := pcore_increasing core_id
+instance instIncreasingOfCoreId (x : α) [CoreId x] : Increasing x := pcore_increasing core_id
 
 end
 
@@ -1507,15 +1507,20 @@ theorem unit_right_id_L {x : α} : x • unit = x := unit_right_id
 
 end UCMRA
 
+/-- A morphism between CMRAs is defined to be a non-expansive function which
+preserves `validN`, `pcore` and `op`. -/
+structure _root_.Iris.CMRA.Hom (α β : Type _) [OFE α] [Iris.Op α] [Iris.PCore α] [Iris.Valid α]
+    [OFE β] [Iris.Op β] [Iris.PCore β] [Iris.Valid β] extends OFE.Hom α β where
+  protected validN {n x} : ✓{n} x → ✓{n} (f x)
+  protected pcore x : (PCore.pcore x).map f = PCore.pcore (f x)
+  protected op x y : f (x • y) = f x • f y
+
 section Hom
 
 /-- A morphism between CMRAs, written `α -C> β`, is defined to be a non-expansive function which
 preserves `validN`, `pcore`, `op`, the order and increasing elements. -/
 @[ext, rocq_alias CmraMorphism]
-structure Hom (α β : Type _) [ORA α] [ORA β] extends OFE.Hom α β where
-  protected validN {n x} : ✓{n} x → ✓{n} (f x)
-  protected pcore x : (pcore x).map f = pcore (f x)
-  protected op x y : f (x • y) = f x • f y
+structure Hom (α β : Type _) [ORA α] [ORA β] extends toCMRAHom : CMRA.Hom α β where
   protected monoN {n x₁ x₂} : x₁ ≼ₒ{n} x₂ → f x₁ ≼ₒ{n} f x₂
   protected mono {x₁ x₂} : x₁ ≼ₒ x₂ → f x₁ ≼ₒ f x₂
   protected increasing {x} : Increasing x → Increasing (f x)
@@ -1582,21 +1587,19 @@ end ORA
 
 section HomExt
 open ORA
-variable [CMRA α] [CMRA β]
+variable [ORA α] [ORA β] [OrdInc α] [IncOrd β]
 
 /-- A morphism between classical resource algebras needs only the classical fields: under the
 extension order, `monoN`, `mono` and `increasing` follow from `op`. -/
-@[reducible] def ORA.Hom.ofCMRA (f : α -n> β)
-    (validN : ∀ {n} {x : α}, ✓{n} x → ✓{n} (f x))
-    (pcore : ∀ x, (ORA.pcore x).map f = ORA.pcore (f x))
-    (op : ∀ x y, f (x • y) = f x • f y) : α -C> β where
-  toHom := f
-  validN := validN
-  pcore := pcore
-  op := op
-  monoN | ⟨z, hz⟩ => ⟨f z, (f.ne.ne hz).trans (op _ _).dist⟩
-  mono | ⟨z, hz⟩ => ⟨f z, (congrArg f hz).trans (op _ _)⟩
-  increasing _ := CMRA.increasing_ext _
+@[reducible] def CMRA.Hom.toORA (g : CMRA.Hom α β) : α -C> β where
+  toCMRAHom := g
+  monoN h :=
+    let ⟨z, hz⟩ := OrdInc.ordN_incN h
+    IncOrd.incN_ordN ⟨g.f z, (g.ne.ne hz).trans (g.op _ _).dist⟩
+  mono h :=
+    let ⟨z, hz⟩ := OrdInc.ord_inc h
+    IncOrd.inc_ord ⟨g.f z, (congrArg g.f hz).trans (g.op _ _)⟩
+  increasing _ := IncOrd.increasing _
 
 end HomExt
 
@@ -1731,7 +1734,7 @@ instance urFunctorComposeOF [URFunctor F₁] : URFunctor (ComposeOF F₁ F₂) w
     simp only [map_comp_eq]
     exact URFunctor.map_comp (F := F₁) _ _ _ _ _
 
-instance [RFunctor F₁] [RFunctorAffine F₁] : RFunctorAffine (ComposeOF F₁ F₂) where
+instance instRFunctorAffineComposeOF [RFunctor F₁] [RFunctorAffine F₁] : RFunctorAffine (ComposeOF F₁ F₂) where
   affine := RFunctorAffine.affine (F := F₁)
 
 open OFunctor in
@@ -1983,10 +1986,10 @@ theorem incN_iff {n} {f g : ∀ x, β x} : f ≼{n} g ↔ ∀ x, f x ≼{n} g x 
   obtain ⟨z, hz⟩ := Classical.skolem.mp h
   exact ⟨z, hz⟩
 
-instance [∀ x, OrderRefl (β x)] : OrderRefl (∀ x, β x) where
+instance instOrderRefl [∀ x, OrderRefl (β x)] : OrderRefl (∀ x, β x) where
   ord_refl f x := ord_refl (f x)
 
-instance [∀ x, ORA.Affine (β x)] : ORA.Affine (∀ x, β x) :=
+instance instAffine [∀ x, ORA.Affine (β x)] : ORA.Affine (∀ x, β x) :=
   IncOrd.of_increasing fun f => increasing_iff.mpr fun x => IncOrd.increasing (f x)
 
 end DiscreteFun
@@ -2027,7 +2030,7 @@ instance urFunctorDiscreteFunOF {C} (F : C → COFE.OFunctorPre) [∀ c, URFunct
   map_id x := COFE.OFunctor.map_id x
   map_comp f g f' g' x := COFE.OFunctor.map_comp f g f' g' x
 
-instance {C} (F : C → COFE.OFunctorPre) [∀ c, URFunctor (F c)] [∀ c, RFunctorAffine (F c)] :
+instance instRFunctorAffineDiscreteFunOF {C} (F : C → COFE.OFunctorPre) [∀ c, URFunctor (F c)] [∀ c, RFunctorAffine (F c)] :
     RFunctorAffine (DiscreteFunOF F) where
   affine := inferInstance
 
@@ -2176,14 +2179,14 @@ theorem none_ord_some_iff {b : α} : none ≼ₒ some b ↔ Increasing b := .rfl
 theorem not_some_ordN_none {n} {a : α} : ¬some a ≼ₒ{n} none := id
 theorem not_some_ord_none {a : α} : ¬some a ≼ₒ none := id
 
-instance : OrderRefl (Option α) where
+instance instOrderRefl : OrderRefl (Option α) where
   ord_refl | none => trivial | some _ => Or.inl rfl
 
 theorem increasing_some_iff {a : α} : Increasing (some a) ↔ Increasing a where
   mp h := h.increasing none
   mpr h := ⟨fun | none => h | some b => Or.inr (h.increasing b)⟩
 
-instance : Increasing (none : Option α) := ⟨fun | none => trivial | some _ => Or.inl rfl⟩
+instance instIncreasingNone : Increasing (none : Option α) := ⟨fun | none => trivial | some _ => Or.inl rfl⟩
 
 theorem increasing_pcore (x : α) : Increasing (pcore x : Option α) :=
   match h : pcore x with
@@ -2520,12 +2523,12 @@ theorem inc_of_ord {mx my : Option α}
     let ⟨z, hz⟩ := hsub i
     ⟨some z, congrArg some hz⟩
 
-instance [ORA.Affine α] : ORA.Affine (Option α) :=
+instance instAffine [ORA.Affine α] : ORA.Affine (Option α) :=
   IncOrd.of_increasing fun
     | none => inferInstance
     | some a => increasing_some_iff.mpr (IncOrd.increasing a)
 
-instance [IsInc α] : IsInc (Option α) where
+instance instIsInc [IsInc α] : IsInc (Option α) where
   inc_ord := IncOrd.inc_ord
   ord_inc := inc_of_ord OrdInc.ord_inc
   ordN_incN := incN_of_ordN OrdInc.ordN_incN
@@ -3100,13 +3103,13 @@ instance instCmraDiscreteProd [ORA.Discrete α] [ORA.Discrete β] : ORA.Discrete
   discrete_valid v := ⟨ORA.discrete_valid v.1, ORA.discrete_valid v.2⟩
   discrete_ord h := ⟨ORA.discrete_ord h.1, ORA.discrete_ord h.2⟩
 
-instance [OrderRefl α] [OrderRefl β] : OrderRefl (α × β) where
+instance instOrderRefl [OrderRefl α] [OrderRefl β] : OrderRefl (α × β) where
   ord_refl x := ⟨ORA.ord_refl x.1, ORA.ord_refl x.2⟩
 
-instance [ORA.Affine α] [ORA.Affine β] : ORA.Affine (α × β) :=
+instance instAffine [ORA.Affine α] [ORA.Affine β] : ORA.Affine (α × β) :=
   IncOrd.of_increasing fun x => increasing_iff.mpr ⟨IncOrd.increasing x.1, IncOrd.increasing x.2⟩
 
-instance [IsInc α] [IsInc β] : IsInc (α × β) where
+instance instIsInc [IsInc α] [IsInc β] : IsInc (α × β) where
   inc_ord := IncOrd.inc_ord
   ord_inc := inc_of_ord OrdInc.ord_inc OrdInc.ord_inc
   ordN_incN := incN_of_ordN OrdInc.ordN_incN OrdInc.ordN_incN
@@ -3319,11 +3322,11 @@ variable [ORA A] [ORA A'] [ORA B] [ORA B']
 def Prod.mapC (f : A -C> A') (g : B -C> B') : A × B -C> A' × B' where
   f := Prod.map f g
   ne := inferInstance
-  validN {n x} := fun ⟨h1, h2⟩ => ⟨Hom.validN _ h1, Hom.validN _ h2⟩
+  validN {n x} := fun ⟨h1, h2⟩ => ⟨f.validN h1, g.validN h2⟩
   pcore x := by
     simp [Option.map, Prod.map, ORA.pcore, pcore]
-    have h2 := Hom.pcore g x.snd
-    have h1 := Hom.pcore f x.fst
+    have h2 := g.pcore x.snd
+    have h1 := f.pcore x.fst
     cases _ : ORA.pcore x.fst
     · cases _ : ORA.pcore (f.f x.fst) <;> simp_all
     · cases _ : ORA.pcore x.snd <;>
@@ -3352,7 +3355,7 @@ instance instRFunctorProdOF [RFunctor F1] [RFunctor F2] : RFunctor (ProdOF F1 F2
   map_comp _ _ _ _ _ :=
     equiv_prod_ext (map_comp _ _ _ _ _) (map_comp _ _ _ _ _)
 
-instance [RFunctor F1] [RFunctor F2] [RFunctorAffine F1] [RFunctorAffine F2] :
+instance instRFunctorAffineProdOF [RFunctor F1] [RFunctor F2] [RFunctorAffine F1] [RFunctorAffine F2] :
     RFunctorAffine (ProdOF F1 F2) where
   affine := inferInstance
 
@@ -3395,7 +3398,7 @@ instance urFunctorOptionOF [RFunctor F] : URFunctor (OptionOF F) where
   map_id x := COFE.OFunctor.map_id x
   map_comp f g f' g' x := COFE.OFunctor.map_comp f g f' g' x
 
-instance [RFunctor F] [RFunctorAffine F] : RFunctorAffine (OptionOF F) where
+instance instRFunctorAffineOptionOF [RFunctor F] [RFunctorAffine F] : RFunctorAffine (OptionOF F) where
   affine := inferInstance
 
 @[rocq_alias optionURF_contractive]

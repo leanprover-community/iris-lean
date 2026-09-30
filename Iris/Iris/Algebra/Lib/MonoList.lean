@@ -32,7 +32,7 @@ instance : ORA (MonoList α) :=
 instance : UCMRA (MonoList α) :=
   Auth.instUCMRA
 
-instance : IsInc (MonoList α) :=
+instance instIsIncMonoList : IsInc (MonoList α) :=
   inferInstanceAs (IsInc (Auth (MaxPrefixList α)))
 
 instance instDiscrete [OFE.Discrete α] : ORA.Discrete (MonoList α) := by

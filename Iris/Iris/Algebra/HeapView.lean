@@ -581,7 +581,7 @@ theorem heapR_map_eq [COFE A] [COFE B] [COFE A'] [COFE B'] [RFunctor T] (f : A' 
   exists fr
   constructor
   · constructor <;> simp_all
-    exact (Hom.validN _ hv2)
+    exact (CMRA.Hom.validN _ hv2)
   · rcases ho with he | he
     · exact Option.some_ordN_some_iff.mpr <| .inl (dist_prod_ext he.1 (NonExpansive.ne he.2))
     · exact Option.some_ordN_some_iff.mpr <| .inr ⟨he.1, (RFunctor.map f g).monoN he.2⟩
@@ -624,7 +624,7 @@ instance {T} [RFunctor T] [RFunctorAffine T] :
       refine funext fun p => ?_
       exact Prod.ext rfl (RFunctor.map_comp _ _ _ _ p.2)
 
-instance {T} [RFunctor T] [RFunctorAffine T] :
+instance instRFunctorAffine {T} [RFunctor T] [RFunctorAffine T] :
     RFunctorAffine (HeapViewURF (H := H) T) where
   affine := inferInstance
 

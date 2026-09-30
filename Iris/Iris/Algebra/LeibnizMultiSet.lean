@@ -56,7 +56,7 @@ instance : CMRA (LeibnizMultiSet MS) where
   pcore_op_mono h _ :=
     ⟨.ofSet ∅, by cases h; exact congrArg (some ∘ ofSet) disjUnion_empty_left.symm⟩
 
-instance : Unital (LeibnizMultiSet MS) where
+instance instUnital : Unital (LeibnizMultiSet MS) where
   unit := .ofSet ∅
   unit_valid := trivial
   unit_left_id {X} := by cases X; exact congrArg ofSet disjUnion_empty_left

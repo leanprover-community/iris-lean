@@ -404,7 +404,7 @@ instance instORADynReservationMap : ORA (DynReservationMap A H) where
 
 end
 
-instance [ORA.Affine A] : ORA.Affine (DynReservationMap A H) :=
+instance instAffine [ORA.Affine A] : ORA.Affine (DynReservationMap A H) :=
   IncOrd.of_increasing fun v =>
     increasing_mk (IncOrd.increasing v.data) (IncOrd.increasing v.token)
 

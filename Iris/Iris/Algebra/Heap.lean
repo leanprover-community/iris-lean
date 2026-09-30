@@ -539,10 +539,10 @@ instance instStoreUCMRA : UCMRA (M V) where
     simp [get?_bindAlter, get?_empty]
   ord_refl _ := fun _ => ord_refl _
 
-instance [ORA.Affine V] : ORA.Affine (M V) :=
+instance instAffine [ORA.Affine V] : ORA.Affine (M V) :=
   IncOrd.of_increasing fun _ => increasing_iff.mpr fun _ => IncOrd.increasing _
 
-instance [IsInc V] : IsInc (M V) where
+instance instIsInc [IsInc V] : IsInc (M V) where
   inc_ord := IncOrd.inc_ord
   ord_inc h := lookup_ord.mpr fun i => Option.inc_of_ord OrdInc.ord_inc (h i)
   ordN_incN h := lookup_ordN.mpr fun i => Option.incN_of_ordN OrdInc.ordN_incN (h i)
@@ -1323,7 +1323,7 @@ def mapC [ORA α] [ORA β] (f : α -C> β) : ORA.Hom (H α) (H β) where
     intro k
     rw [get?_bindAlter]
     cases (get? x k) <;> simp
-    apply ORA.Hom.validN
+    apply f.validN
   pcore m := OFE.eq_dist_2 <| by
     intro _ x
     simp [map, get?_bindAlter]
@@ -1332,12 +1332,12 @@ def mapC [ORA α] [ORA β] (f : α -C> β) : ORA.Hom (H α) (H β) where
       rw [Option.map_eq_bind]
       rfl
     rw [h]
-    exact (ORA.Hom.pcore f v).dist
+    exact (f.pcore v).dist
   op m1 m2 := OFE.eq_dist_2 <| by
     intro _ k
     simp [ORA.op, map, get?_bindAlter, get?_merge, Option.merge]
     cases get? m1 k <;> cases get? m2 k <;> simp
-    exact (ORA.Hom.op f _ _).dist
+    exact (f.op _ _).dist
   monoN h k := by rw [get?_map, get?_map]; exact (Option.mapC f).monoN (h k)
   mono h k := by rw [get?_map, get?_map]; exact (Option.mapC f).mono (h k)
   increasing h := Heap.increasing_iff.mpr fun k => by
@@ -1389,7 +1389,7 @@ instance {F} [RFunctor F] : URFunctor (PartialMapOF H F) where
     cases get? m x <;> simp
     exact (RFunctor.map_comp f g f' g' _).dist
 
-instance {F} [RFunctor F] [RFunctorAffine F] : RFunctorAffine (PartialMapOF H F) where
+instance instRFunctorAffine {F} [RFunctor F] [RFunctorAffine F] : RFunctorAffine (PartialMapOF H F) where
   affine := inferInstance
 
 @[rocq_alias gmapURF_contractive]

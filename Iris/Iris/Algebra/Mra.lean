@@ -156,7 +156,7 @@ instance : ORA.Discrete (Mra R) where
 #rocq_ignore mraUR "Use Mra."
 
 @[rocq_alias mra_ucmra_mixin]
-instance (R : α → α → Prop) : Unital (Mra R) where
+instance instUnital (R : α → α → Prop) : Unital (Mra R) where
   unit := mk []
   unit_valid := trivial
   unit_left_id {x} := by

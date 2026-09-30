@@ -527,7 +527,7 @@ theorem auth_local_update {a b0 b1 a' b0' b1' : A} (hup : (b0, b1) ~l~> (b0', b1
 theorem authViewRel_map [UCMRA A'] [UCMRA B']
     (g : A' -C> B') (n : Nat) (a : A')
     (b : A') : AuthViewRel n a b → AuthViewRel n (g a) (g b) :=
-  fun ⟨hinc, hv⟩ => ⟨g.monoN hinc, ORA.Hom.validN g hv⟩
+  fun ⟨hinc, hv⟩ => ⟨g.monoN hinc, g.validN hv⟩
 
 @[rocq_alias authURF]
 abbrev AuthURF (T : COFE.OFunctorPre) [URFunctor T] : COFE.OFunctorPre :=
@@ -552,7 +552,7 @@ instance instURFunctorAuthURF {T : COFE.OFunctorPre} [URFunctor T]
     refine congrArg (View.map _ · _ _) (funext fun _ => URFunctor.map_comp f g f' g' _) |>.trans
       (congrArg (View.map _ _ · _) (funext fun _ => URFunctor.map_comp f g f' g' _))
 
-instance {T : COFE.OFunctorPre} [URFunctor T] [RFunctorAffine T] :
+instance instRFunctorAffineURF {T : COFE.OFunctorPre} [URFunctor T] [RFunctorAffine T] :
     RFunctorAffine (AuthURF T) where
   affine := inferInstance
 
@@ -585,7 +585,7 @@ instance instRFunctorAuthRF {T : COFE.OFunctorPre} [URFunctor T]
     refine congrArg (View.map _ · _ _) (funext fun _ => URFunctor.map_comp f g f' g' _) |>.trans
       (congrArg (View.map _ _ · _) (funext fun _ => URFunctor.map_comp f g f' g' _))
 
-instance {T : COFE.OFunctorPre} [URFunctor T] [RFunctorAffine T] :
+instance instRFunctorAffineRF {T : COFE.OFunctorPre} [URFunctor T] [RFunctorAffine T] :
     RFunctorAffine (AuthRF T) where
   affine := inferInstance
 

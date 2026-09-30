@@ -280,7 +280,7 @@ theorem increasing_inr_iff {b : β} : Increasing (inr (α := α) b) ↔ Increasi
   mp h := ⟨fun b' => h.increasing (inr b')⟩
   mpr h := ⟨fun | inr b' => h.increasing b' | inl _ | invalid => trivial⟩
 
-instance : Increasing (invalid : Csum α β) := ⟨fun _ => trivial⟩
+instance instIncreasingInvalid : Increasing (invalid : Csum α β) := ⟨fun _ => trivial⟩
 
 theorem ordNR_inl {n} {a a' : α} (h : inl (β := β) a ≼ₒ*{n} inl a') : a ≼ₒ*{n} a' := h.imp id id
 theorem ordNR_inr {n} {b b' : β} (h : inr (α := α) b ≼ₒ*{n} inr b') : b ≼ₒ*{n} b' := h.imp id id
@@ -379,10 +379,10 @@ instance instORA : ORA (Csum α β) where
 
 end
 
-instance [ORA α] [ORA β] [OrderRefl α] [OrderRefl β] : OrderRefl (Csum α β) where
+instance instOrderRefl [ORA α] [ORA β] [OrderRefl α] [OrderRefl β] : OrderRefl (Csum α β) where
   ord_refl | inl a => ORA.ord_refl a | inr b => ORA.ord_refl b | invalid => trivial
 
-instance [ORA α] [ORA β] [ORA.Affine α] [ORA.Affine β] : ORA.Affine (Csum α β) :=
+instance instAffine [ORA α] [ORA β] [ORA.Affine α] [ORA.Affine β] : ORA.Affine (Csum α β) :=
   IncOrd.of_increasing fun
     | inl a => increasing_inl_iff.mpr (IncOrd.increasing a)
     | inr b => increasing_inr_iff.mpr (IncOrd.increasing b)
@@ -812,7 +812,7 @@ instance {Fa Fb} [RFunctor Fa] [RFunctor Fb] : RFunctor (OF Fa Fb) where
   map_comp f g f' g' x := by
     cases x <;> simp [cMap, map] <;> exact RFunctor.map_comp f g f' g' _
 
-instance {Fa Fb} [RFunctor Fa] [RFunctor Fb] [RFunctorAffine Fa] [RFunctorAffine Fb] :
+instance instRFunctorAffine {Fa Fb} [RFunctor Fa] [RFunctor Fb] [RFunctorAffine Fa] [RFunctorAffine Fb] :
     RFunctorAffine (OF Fa Fb) where
   affine := inferInstance
 

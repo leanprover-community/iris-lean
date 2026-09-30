@@ -377,11 +377,11 @@ instance instUCMRA : UCMRA (View R) where
   pcore_unit := congrArg some (congrArg (View.mk _) (ORA.core_eqv_self UCMRA.unit))
   ord_refl x := ⟨ORA.ord_refl x.auth, ORA.ord_refl x.frag⟩
 
-instance [ORA.Affine B] : ORA.Affine (View R) :=
+instance instAffine [ORA.Affine B] : ORA.Affine (View R) :=
   IncOrd.of_increasing fun v =>
     increasing_mk (IncOrd.increasing v.auth) (IncOrd.increasing v.frag)
 
-instance [IsInc B] : IsInc (View R) where
+instance instIsInc [IsInc B] : IsInc (View R) where
   inc_ord := IncOrd.inc_ord
   ord_inc {x y} h := by
     obtain ⟨za, ha⟩ := OrdInc.ord_inc h.1
@@ -1022,7 +1022,7 @@ def mapC [OFE A] [UCMRA B] [OFE A'] [UCMRA B']
     · rcases x.auth with _|⟨fr, a⟩ <;> simp [Prod.pcore]
       rcases (ORA.pcore fr) <;> simp
       rcases h : (ORA.pcore a) <;> cases h; simp [ORA.pcore]
-    · have _ := ORA.Hom.pcore g x.frag
+    · have _ := g.pcore x.frag
       rcases _ : (ORA.pcore x.frag) <;>
       rcases _ : (ORA.pcore (g.f x.frag)) <;> simp_all
   op x y := by
@@ -1032,7 +1032,7 @@ def mapC [OFE A] [UCMRA B] [OFE A'] [UCMRA B']
     refine ⟨?_, ?_⟩
     · cases xa <;> cases ya <;> simp [ORA.op, optionOp, Prod.op]
       exact (Agree.map f.f).op _ _
-    · exact ORA.Hom.op g xf yf
+    · exact g.op xf yf
   monoN {n x y} h := by
     refine ⟨?_, g.monoN h.2⟩
     rw [map_auth_eq, map_auth_eq]
