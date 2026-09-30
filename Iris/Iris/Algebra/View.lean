@@ -341,7 +341,7 @@ instance instORA : ORA (View R) where
       rcases h.1 with e | i
       · exact ⟨ORA.validN_ne e.1.symm Hq, a, e.2.trans Hag, mono_ord Ha .rfl h.2 n.le_refl⟩
       · refine ⟨ORA.validN_of_ordN i.1 Hq, a, ?_, mono_ord Ha .rfl h.2 n.le_refl⟩
-        exact (Agree.valid_includedN (Agree.validN_ne Hag.symm trivial) i.2).trans Hag
+        exact (Agree.valid_ordN (Agree.validN_ne Hag.symm trivial) i.2).trans Hag
   pcore_monoN {_ x y _} h e := by
     obtain rfl := Option.some.inj e
     exact ⟨_, rfl, ORA.core_ordN_core h.1, ORA.core_ordN_core h.2⟩
@@ -380,6 +380,19 @@ instance instUCMRA : UCMRA (View R) where
 instance [ORA.Affine B] : ORA.Affine (View R) :=
   IncOrd.of_increasing fun v =>
     increasing_mk (IncOrd.increasing v.auth) (IncOrd.increasing v.frag)
+
+instance [IsInc B] : IsInc (View R) where
+  inc_ord := IncOrd.inc_ord
+  ord_inc {x y} h := by
+    obtain ⟨za, ha⟩ := OrdInc.ord_inc h.1
+    obtain ⟨zf, hf⟩ := OrdInc.ord_inc h.2
+    obtain ⟨ya, yf⟩ := y
+    subst ha hf
+    exact ⟨⟨za, zf⟩, rfl⟩
+  ordN_incN h :=
+    let ⟨za, ha⟩ := OrdInc.ordN_incN h.1
+    let ⟨zf, hf⟩ := OrdInc.ordN_incN h.2
+    ⟨⟨za, zf⟩, ha, hf⟩
 
 #rocq_ignore viewR "Use the plain View type"
 #rocq_ignore view_valid_instance "In the CMRA instance"
@@ -601,7 +614,7 @@ theorem auth_incN_auth_op_frag_iff :
   · simp only [Auth, Frag, IncludedN, ORA.op]
     rintro ⟨(_|⟨dqf, af⟩),⟨⟨x1, x2⟩, y⟩⟩
     · exact ⟨.inr x1.symm, toAgree.inj x2.symm⟩
-    · exact ⟨.inl ⟨dqf, x1⟩, Agree.toAgree_includedN.mp ⟨af, x2⟩⟩
+    · exact ⟨.inl ⟨dqf, x1⟩, Agree.toAgree_ordN.mp ⟨af, x2⟩⟩
   · rcases H with ⟨(⟨z, HRz⟩| HRa2), HRb⟩
     · calc (●V{dq1} a1 : View R)
              ≼{n} ((●V{dq1} a1) • ((◯V b) • ●V{z} a1)) := by exists ((◯V b) • ●V{z} a1)
@@ -889,7 +902,7 @@ theorem auth_alloc (Hup : ∀ n bf, R n a bf → R n a (b • bf)) :
     refine ⟨Hv, ?_⟩
     exists a0
     refine ⟨Hag, ?_⟩
-    have Heq  := Agree.toAgree_includedN.mp ⟨ag, Hag.symm⟩
+    have Heq  := Agree.toAgree_ordN.mp ⟨ag, Hag.symm⟩
     have HR' := IsViewRel.mono Hrel Heq.symm (ORA.incN_op_right n UCMRA.unit bf) n.le_refl
     apply IsViewRel.mono (Hup _ _ HR') Heq ?_ n.le_refl
     apply Iris.OFE.Dist.to_incN

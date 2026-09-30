@@ -52,12 +52,6 @@ theorem get?_toInvHeap_some {h : H (V × (V → Prop))} {l : L}
   rw [toInvHeap, get?_map] at hl
   rcases hh : get? h l with _ | ⟨v, I⟩ <;> rw [hh] at hl <;> simp_all
 
-private theorem invHeap_incN_of_ordN {n} {x y : InvHeapMapUR V H} (h : x ≼ₒ{n} y) :
-    x ≼{n} y :=
-  Heap.lookup_ordN.mpr fun i =>
-    Option.incN_of_ordN
-      (Prod.incN_of_ordN (Option.incN_of_ordN fun h => h) fun h => h) (h i)
-
 private theorem singleton_ord_toInvHeap {h : H (V × (V → Prop))} {l : L} {I : V → Prop}
     {mv : Option (Excl (DiscreteO V))}
     (hinc : ({[l := (mv, toAgree ⟨I⟩)]} : InvHeapMapUR V H) ≼ₒ toInvHeap h) :
@@ -68,7 +62,7 @@ private theorem singleton_ord_toInvHeap {h : H (V × (V → Prop))} {l : L} {I :
   obtain ⟨⟨_, _⟩, hy, hinc⟩ := singleton_inc_iff.mp hinc
   obtain ⟨v, I', rfl, rfl, hh⟩ := get?_toInvHeap_some hy
   obtain ⟨hv, hI⟩ := Prod.inc_def.mp (Option.some_inc_some_iff_is_total.mp hinc)
-  cases DiscreteO.eqv_inj (toAgree_included.mp hI)
+  cases DiscreteO.eqv_inj (toAgree_ord.mp hI)
   exact ⟨v, hh, ORA.ord_of_inc hv⟩
 
 @[rocq_alias to_inv_heap_valid]
@@ -159,7 +153,7 @@ theorem invPointsToOwn_get?_some (l : L) (v : V) (h : H (V × (V → Prop))) (I 
   icombine Hauth Hl gives %Hvalid
   ipureintro
   obtain ⟨v', hh, hv⟩ := singleton_ord_toInvHeap (auth_both_valid_discrete.mp Hvalid).1
-  cases DiscreteO.eqv_inj (excl_included.mp hv)
+  cases DiscreteO.eqv_inj (excl_ord.mp hv)
   exact ⟨I, hh, rfl⟩
 
 #rocq_ignore inv_pointsto_own_proper
@@ -234,7 +228,7 @@ theorem make_invPointsTo {l : L} {v : V} {I : V → Prop} {E : CoPset} (hN : ↑
   imod inv_acc_timeless hN $$ Hinv with ⟨HP, Hclose⟩
   icases HP with ⟨%h, Hauth, HsepM⟩
   rcases hlk : get? h l with _ | ⟨v', I'⟩
-  · imod iOwn_update (auth_update_alloc_of_localUpdate invHeap_incN_of_ordN (alloc_singleton_local_update
+  · imod iOwn_update (auth_update_alloc_of_localUpdate OrdInc.ordN_incN (alloc_singleton_local_update
       (x := ((some (.excl ⟨v⟩), toAgree ⟨I⟩) :
         Option (Excl (DiscreteO V)) × Agree (DiscreteO (V → Prop))))
       (get?_toInvHeap_none hlk) ⟨trivial, toAgree_valid⟩)) $$ Hauth with ⟨Hauth, Hfrag⟩
@@ -265,7 +259,7 @@ theorem invPointsToOwn_acc_strong {E : CoPset} (hN : (↑invHeapN : CoPset) ⊆ 
   iunfold invPointsToOwn at Hl_inv
   icases bigSepM_delete hh $$ HsepM with ⟨⟨$, $⟩, HsepM⟩
   iintro %w %hIw Hl
-  imod iOwn_update_op (auth_update_of_localUpdate invHeap_incN_of_ordN (singleton_local_update
+  imod iOwn_update_op (auth_update_of_localUpdate OrdInc.ordN_incN (singleton_local_update
       (get?_heap_some_toInvHeap hh)
       (LocalUpdate.prod_1 _ _ (LocalUpdate.option (LocalUpdate.exclusive (x' := excl ⟨w⟩) trivial)))))
     $$ [$Hauth $Hl_inv] with ⟨Hauth, Hfrag⟩

@@ -240,14 +240,18 @@ theorem valid_iff {dq : DFrac} : ✓ dq ↔
     | ownDiscard f => f.val < 1 := by
   cases dq <;> rfl
 
-@[rocq_alias dfrac_discarded_included]
-theorem discard_included : (discard : DFrac) ≼ₒ discard := ⟨discard, rfl⟩
+theorem discard_ord : (discard : DFrac) ≼ₒ discard := ⟨discard, rfl⟩
 
-@[rocq_alias dfrac_own_included]
-theorem own_included {p q : Qp} : own p ≼ₒ own q ↔ ∃ r, q = p + r := by
+@[rocq_alias dfrac_discarded_included]
+theorem discard_included : (discard : DFrac) ≼ discard := inc_iff_ord.mpr discard_ord
+
+theorem own_ord {p q : Qp} : own p ≼ₒ own q ↔ ∃ r, q = p + r := by
   refine ⟨fun ⟨z, hz⟩ => ?_, fun ⟨r, hr⟩ => ⟨own r, hr ▸ rfl⟩⟩
   rcases z with (r|_|r) <;> simp [ORA.op, op] at hz
   exact ⟨r, Qp.ext_iff.mpr hz⟩
+
+@[rocq_alias dfrac_own_included]
+theorem own_included {p q : Qp} : own p ≼ own q ↔ ∃ r, q = p + r := inc_iff_ord.trans own_ord
 
 @[rocq_alias dfrac_is_op]
 instance isOp_dfrac_own {q q1 q2 : Qp} [h : IsOp d q q1 q2] :

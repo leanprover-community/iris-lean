@@ -154,7 +154,6 @@ instance [OFE α] : CMRA (Excl α) where
   extend {n x y₁ y₂} h₁ h₂ := by cases x <;> trivial
   pcore_op_mono := by simp
 
-@[rocq_alias excl_included]
 theorem ord_iff [OFE α] {x y : Excl α} : x ≼ₒ y ↔ y = invalid := by
   constructor
   · rintro ⟨z, hz⟩
@@ -162,11 +161,18 @@ theorem ord_iff [OFE α] {x y : Excl α} : x ≼ₒ y ↔ y = invalid := by
   · intro h
     exact ⟨invalid, h⟩
 
-@[rocq_alias excl_includedN]
+@[rocq_alias excl_included]
+theorem inc_iff [OFE α] {x y : Excl α} : x ≼ y ↔ y = invalid :=
+  inc_iff_ord.trans ord_iff
+
 theorem ordN_iff [OFE α] {x y : Excl α} (n) : x ≼ₒ{n} y ↔ y = invalid := by
   constructor
   · intro ⟨z, hz⟩; cases x <;> cases y <;> first | rfl | exact hz.elim
   · rintro rfl; exists invalid
+
+@[rocq_alias excl_includedN]
+theorem incN_iff [OFE α] {x y : Excl α} (n) : x ≼{n} y ↔ y = invalid :=
+  incN_iff_ordN.trans (ordN_iff n)
 
 @[rocq_alias Excl_inj]
 theorem excl_inj [OFE α] {a b : α} (h : (some (excl a) : Option (Excl α)) = some (excl b)) :
@@ -177,21 +183,29 @@ theorem excl_dist_inj [OFE α] {a b : α} {n}
     (h : (some (excl a) : Option (Excl α)) ≡{n}≡ some (excl b)) : a ≡{n}≡ b :=
   OFE.some_dist_some.mp h
 
-@[rocq_alias Excl_included]
-theorem excl_included [OFE α] {a b : α} :
+theorem excl_ord [OFE α] {a b : α} :
     (some (excl a) : Option (Excl α)) ≼ₒ some (excl b) ↔ a = b := by
   refine ⟨fun h => ?_, fun h => Or.inl (congrArg excl h)⟩
   rcases h with h | ⟨_, hz⟩
   · exact excl.inj h
   · exact (hz.dist (n := 0)).elim
 
-@[rocq_alias Excl_includedN]
-theorem excl_includedN [OFE α] {a b : α} {n} :
+@[rocq_alias Excl_included]
+theorem excl_included [OFE α] {a b : α} :
+    (some (excl a) : Option (Excl α)) ≼ some (excl b) ↔ a = b :=
+  inc_iff_ord.trans excl_ord
+
+theorem excl_ordN [OFE α] {a b : α} {n} :
     (some (excl a) : Option (Excl α)) ≼ₒ{n} some (excl b) ↔ a ≡{n}≡ b := by
   refine ⟨fun h => ?_, fun h => Or.inl h⟩
   rcases h with h | ⟨_, hz⟩
   · exact h
   · exact (hz : excl b ≡{n}≡ invalid).elim
+
+@[rocq_alias Excl_includedN]
+theorem excl_includedN [OFE α] {a b : α} {n} :
+    (some (excl a) : Option (Excl α)) ≼{n} some (excl b) ↔ a ≡{n}≡ b :=
+  incN_iff_ordN.trans excl_ordN
 
 @[rocq_alias excl_validN_inv_l]
 theorem validN_inv_some_l [OFE α] {n} {mx : Option (Excl α)} {a : α}
@@ -215,8 +229,10 @@ instance [OFE α] [OFE.Discrete α] : ORA.Discrete (Excl α) where
   discrete_valid a := a
   discrete_ord := ORA.inc_of_inc0
 
-@[rocq_alias ExclInvalid_included]
 theorem invalid_ord [OFE α] (ea : Excl α) : ea ≼ₒ invalid := by exists invalid
+
+@[rocq_alias ExclInvalid_included]
+theorem invalid_inc [OFE α] (ea : Excl α) : ea ≼ invalid := inc_iff_ord.mpr (invalid_ord ea)
 
 /-! ## Functors -/
 @[rocq_alias excl_map_id]

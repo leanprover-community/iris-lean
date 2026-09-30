@@ -143,8 +143,7 @@ theorem mem_iff_of_valid_union {x y : DisjointLeibnizSet S} (v : ✓ x • y) (a
 theorem mem_iff_of_validN_union {x y : DisjointLeibnizSet S} (v : ✓{n} x • y) (a : A) :
     a ∈ x • y ↔ a ∈ x ∨ a ∈ y := mem_iff_of_valid_union v a
 
-@[rocq_alias coPset_disj_included, rocq_alias gset_disj_included]
-theorem included_iff_subset {X Y : S} : valid X ≼ₒ valid Y ↔ X ⊆ Y := by
+theorem ord_iff_subset {X Y : S} : valid X ≼ₒ valid Y ↔ X ⊆ Y := by
   refine ⟨?_, ?_⟩
   · rintro ⟨(Z|_), HZ⟩
     · by_cases H : X ## Z
@@ -160,6 +159,10 @@ theorem included_iff_subset {X Y : S} : valid X ≼ₒ valid Y ↔ X ⊆ Y := by
       exact congrArg valid h
     ext p; rw [mem_union, mem_diff]
     refine ⟨by grind, (·.casesOn (Hsub _) (·.left))⟩
+
+@[rocq_alias coPset_disj_included, rocq_alias gset_disj_included]
+theorem included_iff_subset {X Y : S} : valid X ≼ valid Y ↔ X ⊆ Y :=
+  inc_iff_ord.trans ord_iff_subset
 
 @[rocq_alias coPset_disj_union, rocq_alias gset_disj_union]
 theorem disj_op_union {X Y : S} (Hdisj : X ## Y) :
@@ -231,7 +234,7 @@ theorem localUpdate_op_r {X Y Z : S} (Hdisj : Z ## X) :
 theorem localUpdate_union_r_of_disj (X Y Z : S) (Hdisj : Z ## X) :
     (valid X, valid Y) ~l~> (valid (Z ∪ X), valid (Z ∪ Y)) := by
   refine LocalUpdate.total_valid fun vx vy le => ?_
-  have HdisjY : Z ## Y := fun a ⟨Hz, Hy⟩ => Hdisj a ⟨Hz, included_iff_subset.mp le a Hy⟩
+  have HdisjY : Z ## Y := fun a ⟨Hz, Hy⟩ => Hdisj a ⟨Hz, ord_iff_subset.mp le a Hy⟩
   rw [←disj_op_union Hdisj, ←disj_op_union HdisjY]
   exact localUpdate_op_r Hdisj
 
@@ -358,8 +361,7 @@ theorem core_equiv (X : LeibnizSet S) : core X = X := by
   change (pcore X).getD X = X
   simp [pcore]
 
-@[rocq_alias coPset_included, rocq_alias gset_included]
-theorem included_iff_subset (X Y : S) : valid X ≼ₒ valid Y ↔ X ⊆ Y := by
+theorem ord_iff_subset (X Y : S) : valid X ≼ₒ valid Y ↔ X ⊆ Y := by
   simp only [Order, Included, op]
   refine ⟨fun ⟨_, H⟩ => ?_, fun Hsub => ?_⟩
   · obtain ⟨rfl⟩ := H
@@ -371,6 +373,10 @@ theorem included_iff_subset (X Y : S) : valid X ≼ₒ valid Y ↔ X ⊆ Y := by
     by_cases H : (p ∈ X)
     · exact .inl H
     · exact .inr ⟨H1, H⟩
+
+@[rocq_alias coPset_included, rocq_alias gset_included]
+theorem included_iff_subset (X Y : S) : valid X ≼ valid Y ↔ X ⊆ Y :=
+  inc_iff_ord.trans (ord_iff_subset X Y)
 
 @[rocq_alias coPset_opM, rocq_alias gset_opM]
 theorem opM_union (X : LeibnizSet S) (mY : Option (LeibnizSet S)) :

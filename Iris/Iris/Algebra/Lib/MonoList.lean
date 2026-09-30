@@ -32,6 +32,9 @@ instance : ORA (MonoList α) :=
 instance : UCMRA (MonoList α) :=
   Auth.instUCMRA
 
+instance : IsInc (MonoList α) :=
+  inferInstanceAs (IsInc (Auth (MaxPrefixList α)))
+
 instance instDiscrete [OFE.Discrete α] : ORA.Discrete (MonoList α) := by
   unfold MonoList
   infer_instance
@@ -131,9 +134,6 @@ instance {dq dq1 dq2 : DFrac} {l : List α} [h : IsOp d dq dq1 dq2] :
 
 /-! ## Validity -/
 
-private theorem incN_of_ordN {n} {x y : MaxPrefixList α} (h : x ≼ₒ{n} y) : x ≼{n} y :=
-  Heap.lookup_ordN.mpr fun i => Option.incN_of_ordN (fun h => h) (h i)
-
 @[rocq_alias mono_list_auth_dfrac_validN]
 theorem auth_dfrac_validN {n} (dq : DFrac) (l : List α) : ✓{n} (●ML{dq} l) ↔ ✓ dq := by
   unfold auth MonoList
@@ -190,7 +190,7 @@ theorem both_dfrac_validN {n} (dq : DFrac) (l1 l2 : List α) :
   unfold auth lb MonoList
   rw [← assoc', ← Auth.frag_op, Auth.both_dfrac_validN]
   refine ⟨fun ⟨hdq, hinc, _⟩ => ⟨hdq, ?_⟩, fun ⟨hdq, hl⟩ => ⟨hdq, ?_, ?_⟩⟩
-  · refine toMaxPrefixList_incN_iff.mp (incN_of_ordN ((ORA.ordN_op_right ..).trans hinc))
+  · refine toMaxPrefixList_incN_iff.mp (incN_iff_ordN.mpr ((ORA.ordN_op_right ..).trans hinc))
   · have hinc := ORA.op_monoN_right (toMaxPrefixList l1)
       (ORA.ordN_of_incN (toMaxPrefixList_incN_iff.mpr hl))
     rwa [op_self] at hinc
@@ -209,7 +209,7 @@ theorem both_dfrac_valid (dq : DFrac) (l1 l2 : List α) :
   rw [← assoc', ← Auth.frag_op, Auth.both_dfrac_valid]
   refine ⟨fun ⟨hdq, hinc, _⟩ => ⟨hdq, ?_⟩, fun ⟨hdq, hl⟩ => ⟨hdq, ?_, ?_⟩⟩
   · refine toMaxPrefixList_inc_iff.mp (inc_iff_forall_incN.mpr fun n => ?_)
-    exact incN_of_ordN ((ORA.ordN_op_right ..).trans (hinc n))
+    exact incN_iff_ordN.mpr ((ORA.ordN_op_right ..).trans (hinc n))
   · intro n
     have hinc := ORA.op_monoN_right (toMaxPrefixList l1) (ORA.ordN_of_incN
       (ORA.incN_of_inc n (toMaxPrefixList_inc_iff.mpr hl)))
@@ -241,18 +241,23 @@ theorem lb_op_valid (l1 l2 : List α) :
 #rocq_ignore mono_list_lb_op_valid_1_L "Use lb_op_valid.mp"
 #rocq_ignore mono_list_lb_op_valid_2_L "Use lb_op_valid.mpr"
 
+theorem lb_mono_ord {l1 l2 : List α} (h : l1 <+: l2) : ◯ML l1 ≼ₒ ◯ML l2 :=
+  lb_op_left h ▸ ORA.ord_op_left _ _
+
 @[rocq_alias mono_list_lb_mono]
 theorem lb_mono {l1 l2 : List α} (h : l1 <+: l2) : ◯ML l1 ≼ ◯ML l2 :=
-  ⟨◯ML l2, (lb_op_left h).symm⟩
+  inc_iff_ord.mpr (lb_mono_ord h)
+
+theorem ord (dq : DFrac) (l : List α) : ◯ML l ≼ₒ ●ML{dq} l := ORA.ord_op_right ..
 
 @[rocq_alias mono_list_included]
-theorem included (dq : DFrac) (l : List α) : ◯ML l ≼ ●ML{dq} l := ORA.inc_op_right ..
+theorem included (dq : DFrac) (l : List α) : ◯ML l ≼ ●ML{dq} l := inc_iff_ord.mpr (ord dq l)
 
 /-! ## Updates -/
 
 @[rocq_alias mono_list_update]
 theorem update {l1 : List α} (l2 : List α) (h : l1 <+: l2) : ●ML l1 ~~> ●ML l2 :=
-  Auth.auth_update_of_localUpdate incN_of_ordN (local_update h)
+  Auth.auth_update_of_localUpdate OrdInc.ordN_incN (local_update h)
 
 @[rocq_alias mono_list_auth_persist]
 theorem auth_persist (dq : DFrac) (l : List α) : ●ML{dq} l ~~> ●ML□ l :=

@@ -474,8 +474,7 @@ instance instORADiscrete [OFE.Discrete α] : ORA.Discrete (Agree α) where
   discrete_valid {x} := x.ind fun _ => Raw.discrete_valid
   discrete_ord := ORA.inc_of_inc0
 
-@[rocq_alias agree_includedN]
-theorem includedN {x y : Agree α} : x ≼ₒ{n} y ↔ y ≡{n}≡ y • x := by
+theorem ordN {x y : Agree α} : x ≼ₒ{n} y ↔ y ≡{n}≡ y • x := by
   refine ⟨fun ⟨z, h⟩ => ?_, fun h => ⟨y, h.trans op_commN⟩⟩
   calc
     y ≡{n}≡ x • z := h
@@ -484,24 +483,37 @@ theorem includedN {x y : Agree α} : x ≼ₒ{n} y ↔ y ≡{n}≡ y • x := by
     _ ≡{n}≡ x • y := h.symm.op_r
     _ ≡{n}≡ y • x := op_commN
 
-@[rocq_alias agree_included]
-theorem included {x y : Agree α} : x ≼ₒ y ↔ y = y • x :=
-  ⟨fun ⟨z, h⟩ => OFE.eq_dist_2 fun _ => includedN.mp ⟨z, h.dist⟩,
+@[rocq_alias agree_includedN]
+theorem includedN {x y : Agree α} : x ≼{n} y ↔ y ≡{n}≡ y • x :=
+  incN_iff_ordN.trans ordN
+
+theorem ord {x y : Agree α} : x ≼ₒ y ↔ y = y • x :=
+  ⟨fun ⟨z, h⟩ => OFE.eq_dist_2 fun _ => ordN.mp ⟨z, h.dist⟩,
    fun h => ⟨y, h.trans op_comm⟩⟩
 
-@[rocq_alias agree_valid_includedN]
-theorem valid_includedN {x y : Agree α} : ✓{n} y → x ≼ₒ{n} y → x ≡{n}≡ y := by
+@[rocq_alias agree_included]
+theorem included {x y : Agree α} : x ≼ y ↔ y = y • x :=
+  inc_iff_ord.trans ord
+
+theorem valid_ordN {x y : Agree α} : ✓{n} y → x ≼ₒ{n} y → x ≡{n}≡ y := by
   intro hval ⟨z, heq⟩
   calc
     x ≡{n}≡ x • x := idemp.dist.symm
     _ ≡{n}≡ x • z := (op_invN <| heq.validN.mp hval).op_r
     _ ≡{n}≡ y := heq.symm
 
-@[rocq_alias agree_valid_included]
-theorem valid_included {x y : Agree α} : ✓ y → x ≼ₒ y → x = y := by
+@[rocq_alias agree_valid_includedN]
+theorem valid_includedN {x y : Agree α} (hv : ✓{n} y) (h : x ≼{n} y) : x ≡{n}≡ y :=
+  valid_ordN hv (ORA.ordN_of_incN h)
+
+theorem valid_ord {x y : Agree α} : ✓ y → x ≼ₒ y → x = y := by
   intro hval ⟨z, heq⟩
   have hz : x = z := op_inv (heq ▸ hval : ✓ (x • z))
   rw [heq, ← hz, idemp]
+
+@[rocq_alias agree_valid_included]
+theorem valid_included {x y : Agree α} (hv : ✓ y) (h : x ≼ y) : x = y :=
+  valid_ord hv (ORA.ord_of_inc h)
 
 set_option synthInstance.checkSynthOrder false in
 instance {x : Agree α} : IsOp d x x x where
@@ -561,23 +573,31 @@ instance {x : Agree α} : ORA.Cancelable x where
 instance (x : Agree α) : ORA.CoreId x where
   core_id := pcore_some
 
-@[simp, rocq_alias to_agree_includedN]
-theorem toAgree_includedN {a b : α} : toAgree a ≼ₒ{n} toAgree b ↔ a ≡{n}≡ b := by
+@[simp]
+theorem toAgree_ordN {a b : α} : toAgree a ≼ₒ{n} toAgree b ↔ a ≡{n}≡ b := by
   refine ⟨?_, ?_⟩ <;> intro h
-  · exact toAgree_injN (valid_includedN trivial h)
+  · exact toAgree_injN (valid_ordN trivial h)
   · exists toAgree a
     calc
       toAgree b ≡{n}≡ toAgree a := OFE.NonExpansive.ne h.symm
       _         ≡{n}≡ toAgree a • toAgree a := idemp.dist.symm
 
-@[simp, rocq_alias to_agree_included]
-theorem toAgree_included {a b : α} : toAgree a ≼ₒ toAgree b ↔ a = b := by
+@[simp, rocq_alias to_agree_includedN]
+theorem toAgree_includedN {a b : α} : toAgree a ≼{n} toAgree b ↔ a ≡{n}≡ b :=
+  incN_iff_ordN.trans toAgree_ordN
+
+@[simp]
+theorem toAgree_ord {a b : α} : toAgree a ≼ₒ toAgree b ↔ a = b := by
   refine ⟨?_, ?_⟩ <;> intro h
-  · exact toAgree_inj (valid_included (fun _ => trivial) h)
+  · exact toAgree_inj (valid_ord (fun _ => trivial) h)
   · exists toAgree a
     calc
       toAgree b = toAgree a := congrArg toAgree h.symm
       _         = toAgree a • toAgree a := (ORA.pcore_op_left rfl).symm
+
+@[simp, rocq_alias to_agree_included]
+theorem toAgree_included {a b : α} : toAgree a ≼ toAgree b ↔ a = b :=
+  inc_iff_ord.trans toAgree_ord
 
 #rocq_ignore to_agree_included_L "Use toAgree_included"
 

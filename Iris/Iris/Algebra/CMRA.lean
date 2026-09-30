@@ -173,6 +173,7 @@ class IncOrd (α : Type _) [OFE α] [Op α] [Ordered α] : Prop where
 /-- The order is contained in the extension inclusion: every ordered pair has a frame. -/
 class OrdInc (α : Type _) [OFE α] [Op α] [Ordered α] : Prop where
   ord_inc {x y : α} : x ≼ₒ y → x ≼ y
+  ordN_incN {n} {x y : α} : x ≼ₒ{n} y → x ≼{n} y
 
 /-- The order is the extension inclusion. -/
 class IsInc (α : Type _) [OFE α] [Op α] [Ordered α] : Prop extends IncOrd α, OrdInc α
@@ -190,6 +191,12 @@ instance [IncOrd α] (x : α) : Increasing x := IncOrd.increasing x
 
 theorem inc_iff_ord [IsInc α] {x y : α} : x ≼ y ↔ x ≼ₒ y :=
   ⟨IncOrd.inc_ord, OrdInc.ord_inc⟩
+
+theorem IncOrd.inc_ordN [IncOrd α] {n} {x y : α} : x ≼{n} y → x ≼ₒ{n} y
+  | ⟨z, hz⟩ => Ordered.ordN_ne .rfl hz.symm (Ordered.ordN_of_ord n (IncOrd.inc_ord ⟨z, rfl⟩))
+
+theorem incN_iff_ordN [IsInc α] {n} {x y : α} : x ≼{n} y ↔ x ≼ₒ{n} y :=
+  ⟨IncOrd.inc_ordN, OrdInc.ordN_incN⟩
 
 end
 
@@ -944,7 +951,8 @@ instance [IsTotal α] : OrderRefl α where
   increasing_closed _ _ := increasing_ext _
   ordN_extend := incN_extend
 
-instance : @IsInc α _ _ (toORA (α := α)).toOrdered := { inc_ord := id, ord_inc := id }
+instance : @IsInc α _ _ (toORA (α := α)).toOrdered :=
+  { inc_ord := id, ord_inc := id, ordN_incN := id }
 
 end extOrder
 end CMRA
@@ -2524,6 +2532,11 @@ instance [ORA.Affine α] : ORA.Affine (Option α) :=
     | none => inferInstance
     | some a => increasing_some_iff.mpr (IncOrd.increasing a)
 
+instance [IsInc α] : IsInc (Option α) where
+  inc_ord := IncOrd.inc_ord
+  ord_inc := inc_of_ord OrdInc.ord_inc
+  ordN_incN := incN_of_ordN OrdInc.ordN_incN
+
 /-! ### The extension inclusion on `Option α` -/
 
 theorem some_inc_some_of_dist_opM {n} {x y : α} {mz : Option α} (H : x ≡{n}≡ y •? mz) :
@@ -3100,6 +3113,11 @@ instance [OrderRefl α] [OrderRefl β] : OrderRefl (α × β) where
 
 instance [ORA.Affine α] [ORA.Affine β] : ORA.Affine (α × β) :=
   IncOrd.of_increasing fun x => increasing_iff.mpr ⟨IncOrd.increasing x.1, IncOrd.increasing x.2⟩
+
+instance [IsInc α] [IsInc β] : IsInc (α × β) where
+  inc_ord := IncOrd.inc_ord
+  ord_inc := inc_of_ord OrdInc.ord_inc OrdInc.ord_inc
+  ordN_incN := incN_of_ordN OrdInc.ordN_incN OrdInc.ordN_incN
 
 @[rocq_alias pair_core_id]
 instance instCoreIdPair {x : α} {y : β} [ORA.CoreId x] [ORA.CoreId y] :

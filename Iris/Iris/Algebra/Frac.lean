@@ -141,15 +141,19 @@ instance : Pos.Countable Qp where
 #rocq_ignore frac_valid_instance "Use CMRA instance"
 #rocq_ignore frac_ra_mixin "Use CMRA instance"
 
-@[rocq_alias frac_included]
 theorem Frac.ord_iff {p q : Qp} : p ≼ₒ q ↔ p < q := by
   refine ⟨fun ⟨r, Hr⟩ => ?_, fun H => ?_⟩
   · have := r.2; simp only [Qp.lt_iff, Qp.ext_iff, Qp.val_op] at *; grind
   · exact ⟨⟨q.val - p.val, by grind⟩, by simp only [Qp.ext_iff, Qp.val_op]; grind⟩
 
-@[rocq_alias frac_included_weak]
+@[rocq_alias frac_included]
+theorem Frac.inc_iff {p q : Qp} : p ≼ q ↔ p < q := inc_iff_ord.trans ord_iff
+
 theorem Frac.le_of_ord {p q : Qp} (H : p ≼ₒ q) : p ≤ q := by
   have := ord_iff.mp H; grind
+
+@[rocq_alias frac_included_weak]
+theorem Frac.le_of_inc {p q : Qp} (H : p ≼ q) : p ≤ q := le_of_ord (ORA.ord_of_inc H)
 
 @[rocq_alias frac_cmra_discrete]
 instance instDiscreteQp : ORA.Discrete Qp where

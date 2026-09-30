@@ -103,13 +103,19 @@ theorem both_dfrac_valid (dq : DFrac) (n m : MaxInt) :
 theorem both_valid (n m : MaxInt) : (✓ ((●MZ n) • (◯MZ m) : MonoZ)) ↔ m ≤ n :=
   (both_dfrac_valid ..).trans ⟨And.right, fun h => ⟨DFrac.valid_own_one, h⟩⟩
 
+theorem lb_mono_ord (n1 n2 : MaxInt) (h : n1 ≤ n2) : (◯MZ n1 : MonoZ) ≼ₒ ◯MZ n2 :=
+  ⟨trivial, Option.some_ord_some_of_ord (MaxInt.ord_iff.mpr h)⟩
+
 @[rocq_alias mono_Z_lb_mono]
 theorem lb_mono (n1 n2 : MaxInt) (h : n1 ≤ n2) : (◯MZ n1 : MonoZ) ≼ ◯MZ n2 :=
-  Auth.frag_inc_of_inc <| Option.some_inc_some_iff_is_total.mpr <| MaxInt.ord_iff.mpr h
+  inc_iff_ord.mpr (lb_mono_ord n1 n2 h)
+
+theorem ord (dq : DFrac) (n : MaxInt) : (◯MZ n : MonoZ) ≼ₒ ●MZ{dq} n :=
+  ORA.ord_op_right ..
 
 @[rocq_alias mono_Z_included]
 theorem included (dq : DFrac) (n : MaxInt) : (◯MZ n : MonoZ) ≼ ●MZ{dq} n :=
-  ORA.inc_op_right ..
+  inc_iff_ord.mpr (ord dq n)
 
 @[rocq_alias mono_Z_update]
 theorem update {n : MaxInt} (n' : MaxInt) (h : n ≤ n') : (●MZ n : MonoZ) ~~> ●MZ n' :=

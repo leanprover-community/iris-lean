@@ -162,7 +162,7 @@ theorem agree_includedI (x y : Agree A) :
 @[rocq_alias to_agree_includedI]
 theorem toAgree_includedI (a b : A) :
     toAgree a ≼ₒ toAgree b ⊣⊢@{PROP} a ≡ b := by
-  sbi_unfold; intro _; exact toAgree_includedN
+  sbi_unfold; intro _; exact toAgree_ordN
 
 end agree_inclusion
 

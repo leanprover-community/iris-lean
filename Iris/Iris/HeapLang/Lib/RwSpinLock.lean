@@ -120,7 +120,7 @@ instance instWriterLockedTimeless (γ : GName) :
 theorem auth_valid_singleton {dq : DFrac} {v : Qp} {g : ReaderFracs}
     (h : ✓ ((●{dq} .ofSet g : Auth (LeibnizMultiSet ReaderFracs)) •
       ◯ LeibnizMultiSet.ofSet {v})) : v ∈ g :=
-  singleton_subset_iff.mp (included_iff_subset.mp (Auth.both_dfrac_valid_discrete.mp h).2.1)
+  singleton_subset_iff.mp (ord_iff_subset.mp (Auth.both_dfrac_valid_discrete.mp h).2.1)
 
 @[rocq_alias heap_lang.own_auth_gmultiset_singleton_2]
 theorem own_auth_singleton_2 {γ : GName} {dq : DFrac} {v : Qp} {g : ReaderFracs} :

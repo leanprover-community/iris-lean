@@ -112,15 +112,23 @@ theorem both_valid (n m : MaxNat) :
   (✓ ((●MN n) • (◯MN m) : MonoNat)) ↔ m ≤ n :=
   (both_dfrac_valid ..).trans ⟨And.right, fun h => ⟨DFrac.valid_own_one, h⟩⟩
 
+theorem lb_mono_ord (n1 n2 : MaxNat) (h : n1 ≤ n2) :
+  (◯MN n1 : MonoNat) ≼ₒ ◯MN n2 :=
+  ⟨trivial, MaxNat.ord_iff.mpr h⟩
+
 @[rocq_alias mono_nat_lb_mono]
 theorem lb_mono (n1 n2 : MaxNat) (h : n1 ≤ n2) :
   (◯MN n1 : MonoNat) ≼ ◯MN n2 :=
-  Auth.frag_inc_of_inc (MaxNat.ord_iff.mpr h)
+  inc_iff_ord.mpr (lb_mono_ord n1 n2 h)
+
+theorem ord (dq : DFrac) (n : MaxNat) :
+  (◯MN n : MonoNat) ≼ₒ ●MN{dq} n :=
+  ORA.ord_op_right ..
 
 @[rocq_alias mono_nat_included]
 theorem included (dq : DFrac) (n : MaxNat) :
   (◯MN n : MonoNat) ≼ ●MN{dq} n :=
-  ORA.inc_op_right ..
+  inc_iff_ord.mpr (ord dq n)
 
 @[rocq_alias mono_nat_update]
 theorem update {n : MaxNat} (n' : MaxNat) (h : n ≤ n') :

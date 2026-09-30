@@ -155,11 +155,14 @@ theorem elem_agree (h : ✓ ((elem a₁ b₁ • elem a₂ b₂) : SetBij S)) : 
   exact SetBijective.eq_iff (hbij.mono hsub) (mem_union.mpr (.inl (mem_singleton.mpr rfl)))
     (mem_union.mpr (.inr (mem_singleton.mpr rfl)))
 
+theorem elem_ord_auth (h : (a, b) ∈ L) : elem a b ≼ₒ auth dq L :=
+  Ordered.ord_trans (y := (◯V valid L : SetBij S))
+    ⟨trivial, (ord_iff_subset ..).mpr fun _ hx => mem_singleton.mp hx ▸ h⟩
+    (ORA.ord_op_right ..)
+
 @[rocq_alias bij_view_included]
 theorem elem_inc_auth (h : (a, b) ∈ L) : elem a b ≼ auth dq L :=
-  ORA.inc_trans
-    (frag_inc_of_inc <| (included_iff_subset ..).mpr fun _ hx => mem_singleton.mp hx ▸ h)
-    (ORA.inc_op_right ..)
+  inc_iff_ord.mpr (elem_ord_auth h)
 
 @[rocq_alias gset_bij_auth_extend]
 theorem auth_extend (ha : ∀ b', (a, b') ∉ L) (hb : ∀ a', (a', b) ∉ L) :

@@ -264,7 +264,7 @@ theorem read_contrib_spec (γ : GName) (l : Loc) (q : Qp) (n : Nat) :
     icombine Hγ Hγf gives %Hv
     iframe Hγ Hγf
     ipureintro
-    have ⟨z, hz⟩ := CommMonoidLike.included_iff.mp (FracAuth.included_total Hv)
+    have ⟨z, hz⟩ := CommMonoidLike.ord_iff.mp (FracAuth.included_total Hv)
     omega
   iintro !> %c ⟨%hle, Hγf⟩
   iapply Hφ

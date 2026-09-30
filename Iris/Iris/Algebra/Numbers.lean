@@ -108,11 +108,16 @@ scoped instance instCancelable [LeftCancelAdd α] {a : α} : Cancelable a where
 @[rocq_alias nat_op, rocq_alias Z_op]
 theorem op_eq {x y : α} : x • y = x + y := rfl
 
-theorem included_iff {x y : α} : x ≼ₒ y ↔ ∃ z, y = x + z := Iff.rfl
+theorem ord_iff {x y : α} : x ≼ₒ y ↔ ∃ z, y = x + z := Iff.rfl
+
+theorem included_iff {x y : α} : x ≼ y ↔ ∃ z, y = x + z := inc_iff_ord.trans ord_iff
+
+theorem ord_iff_le [LE α] [LawfulAddLE α] {x y : α} : x ≼ₒ y ↔ x ≤ y :=
+  ord_iff.trans LawfulAddLE.le_iff_exists_add.symm
 
 @[rocq_alias nat_included]
-theorem ord_iff_le [LE α] [LawfulAddLE α] {x y : α} : x ≼ₒ y ↔ x ≤ y :=
-  included_iff.trans LawfulAddLE.le_iff_exists_add.symm
+theorem inc_iff_le [LE α] [LawfulAddLE α] {x y : α} : x ≼ y ↔ x ≤ y :=
+  inc_iff_ord.trans ord_iff_le
 
 /-- Sufficient condition for a local update on a LeftCancelAdd structure, such as (ℕ, +) -/
 @[rocq_alias nat_local_update, rocq_alias Z_local_update]
@@ -226,12 +231,20 @@ theorem ord_iff {x y : α} : x ≼ₒ y ↔ x • y = y :=
   ⟨ORA.op_core_right_of_inc, fun h => ⟨y, h.symm⟩⟩
 
 omit [Zero α] in
+theorem inc_iff {x y : α} : x ≼ y ↔ x • y = y := inc_iff_ord.trans ord_iff
+
+omit [Zero α] in
 /-- Sufficient condition for a local update on an idempotent structure. -/
-theorem idem_local_update {x y x' : α} (h : x ≼ₒ x') : (x, y) ~l~> (x', x') := by
+theorem idem_local_update_ord {x y x' : α} (h : x ≼ₒ x') : (x, y) ~l~> (x', x') := by
   refine fun _ mz _ hn => ⟨trivial, OFE.Dist.of_eq ?_⟩
   cases mz with | none => rfl | some z =>
   replace hn : x = y • z := discrete hn
   exact (ORA.op_core_left_of_inc <| .trans ⟨y, hn.trans ORA.comm'⟩ h).symm
+
+omit [Zero α] in
+/-- Sufficient condition for a local update on an idempotent structure. -/
+theorem idem_local_update {x y x' : α} (h : x ≼ x') : (x, y) ~l~> (x', x') :=
+  idem_local_update_ord (ORA.ord_of_inc h)
 
 scoped instance instDiscreteE {a : α} : DiscreteE a := ⟨fun H => discrete H⟩
 
@@ -279,11 +292,16 @@ scoped instance instIdFree [IdentityFree α] {a : α} : ORA.IdFree a where
 @[rocq_alias pos_op_add]
 theorem op_eq {x y : α} : x • y = x + y := rfl
 
-theorem included_iff {x y : α} : x ≼ₒ y ↔ ∃ z, y = x + z := Iff.rfl
+theorem ord_iff {x y : α} : x ≼ₒ y ↔ ∃ z, y = x + z := Iff.rfl
+
+theorem included_iff {x y : α} : x ≼ y ↔ ∃ z, y = x + z := inc_iff_ord.trans ord_iff
+
+theorem ord_iff_lt [LT α] [LawfulAddLT α] {x y : α} : x ≼ₒ y ↔ x < y :=
+  ord_iff.trans LawfulAddLT.lt_iff_exists_add.symm
 
 @[rocq_alias pos_included]
-theorem ord_iff_lt [LT α] [LawfulAddLT α] {x y : α} : x ≼ₒ y ↔ x < y :=
-  included_iff.trans LawfulAddLT.lt_iff_exists_add.symm
+theorem inc_iff_lt [LT α] [LawfulAddLT α] {x y : α} : x ≼ y ↔ x < y :=
+  inc_iff_ord.trans ord_iff_lt
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias pos_is_op]
@@ -349,13 +367,15 @@ scoped instance : UCMRA MaxNat := OrdCommMonoidLike.instUCMRA
 scoped instance : ORA.Discrete MaxNat := OrdCommMonoidLike.instDiscrete
 scoped instance : ORA.CoreId (a : MaxNat) := OrdCommMonoidLike.instCoreId _
 
-@[rocq_alias max_nat_included]
 theorem MaxNat.ord_iff {a b : MaxNat} : a ≼ₒ b ↔ a ≤ b := by
   grind [OrdCommMonoidLike.ord_iff, eq_toNat]
 
+@[rocq_alias max_nat_included]
+theorem MaxNat.inc_iff {a b : MaxNat} : a ≼ b ↔ a ≤ b := inc_iff_ord.trans ord_iff
+
 @[rocq_alias max_nat_local_update]
 theorem MaxNat.local_update {a b a' : MaxNat} (h : a ≤ a') : (a, b) ~l~> (a', a') :=
-  OrdCommMonoidLike.idem_local_update (ord_iff.mpr h)
+  OrdCommMonoidLike.idem_local_update_ord (ord_iff.mpr h)
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias max_nat_is_op]
@@ -404,14 +424,16 @@ scoped instance : ORA.Discrete MaxInt := OrdCommMonoidLike.instDiscrete
 scoped instance : IsTotal MaxInt := OrdCommMonoidLike.instIsTotal
 scoped instance : ORA.CoreId (a : MaxInt) := OrdCommMonoidLike.instCoreId _
 
-@[rocq_alias max_Z_included]
 theorem MaxInt.ord_iff {a b : MaxInt} : a ≼ₒ b ↔ a ≤ b := by
   rw [OrdCommMonoidLike.ord_iff, OrdCommMonoidLike.op_eq, eq_toInt]
   grind
 
+@[rocq_alias max_Z_included]
+theorem MaxInt.inc_iff {a b : MaxInt} : a ≼ b ↔ a ≤ b := inc_iff_ord.trans ord_iff
+
 @[rocq_alias max_Z_local_update]
 theorem MaxInt.local_update {a b a' : MaxInt} (h : a ≤ a') : (a, b) ~l~> (a', a') :=
-  OrdCommMonoidLike.idem_local_update (ord_iff.mpr h)
+  OrdCommMonoidLike.idem_local_update_ord (ord_iff.mpr h)
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias max_Z_is_op]
@@ -462,14 +484,16 @@ scoped instance : ORA.Discrete MinNat := OrdCommMonoidLike.instDiscrete
 scoped instance : IsTotal MinNat := OrdCommMonoidLike.instIsTotal
 scoped instance : ORA.CoreId (a : MinNat) := OrdCommMonoidLike.instCoreId _
 
-@[rocq_alias min_nat_included]
 theorem MinNat.ord_iff {a b : MinNat} : a ≼ₒ b ↔ b ≤ a := by
   rw [OrdCommMonoidLike.ord_iff, OrdCommMonoidLike.op_eq, eq_toNat]
   grind
 
+@[rocq_alias min_nat_included]
+theorem MinNat.inc_iff {a b : MinNat} : a ≼ b ↔ b ≤ a := inc_iff_ord.trans ord_iff
+
 @[rocq_alias min_nat_local_update]
 theorem MinNat.local_update {a b a' : MinNat} (h : a' ≤ a) : (a, b) ~l~> (a', a') :=
-  OrdCommMonoidLike.idem_local_update (ord_iff.mpr h)
+  OrdCommMonoidLike.idem_local_update_ord (ord_iff.mpr h)
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias min_nat_is_op]

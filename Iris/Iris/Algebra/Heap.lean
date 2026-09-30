@@ -542,6 +542,11 @@ instance instStoreUCMRA : UCMRA (M V) where
 instance [ORA.Affine V] : ORA.Affine (M V) :=
   IncOrd.of_increasing fun _ => increasing_iff.mpr fun _ => IncOrd.increasing _
 
+instance [IsInc V] : IsInc (M V) where
+  inc_ord := IncOrd.inc_ord
+  ord_inc h := lookup_ord.mpr fun i => Option.inc_of_ord OrdInc.ord_inc (h i)
+  ordN_incN h := lookup_ordN.mpr fun i => Option.incN_of_ordN OrdInc.ordN_incN (h i)
+
 @[rocq_alias gmap_op_empty_l_L]
 theorem op_empty_left {m : M V} : (∅ : M V) • m = m := ORA.unit_left_id_L
 

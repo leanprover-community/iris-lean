@@ -177,9 +177,11 @@ theorem below_op (a : α) (x y : Mra R) : below a (x • y) ↔ below a x ∨ be
 @[rocq_alias mra_idemp]
 theorem idem (x : Mra R) : x • x = x := append_idem x
 
-@[rocq_alias mra_included]
 theorem ord_iff (x y : Mra R) : x ≼ₒ y ↔ y = x • y :=
   ⟨fun h ↦ (ORA.op_core_right_of_inc h).symm, fun h ↦ ⟨y, h⟩⟩
+
+@[rocq_alias mra_included]
+theorem inc_iff (x y : Mra R) : x ≼ y ↔ y = x • y := inc_iff_ord.trans (ord_iff x y)
 
 @[rocq_alias to_mra_R_op]
 theorem toMra_op_of_rel [hR : Trans R R R] (a b : α) (h : R a b) :
@@ -188,7 +190,6 @@ theorem toMra_op_of_rel [hR : Trans R R R] (a b : α) (h : R a b) :
     rw [below_op, below_toMra, below_toMra]
     exact ⟨fun hc ↦ hc.elim (fun hca ↦ hR.trans hca h) id, .inr⟩
 
-@[rocq_alias to_mra_included]
 theorem toMra_ord_iff [Std.Refl R] [Trans R R R] (a b : α) :
     toMra (R := R) a ≼ₒ toMra b ↔ R a b := by
   constructor
@@ -196,6 +197,11 @@ theorem toMra_ord_iff [Std.Refl R] [Trans R R R] (a b : α) :
     rw [← below_toMra (R := R) a b, hz, below_op]
     exact .inl ((below_toMra a a).mpr (Std.Refl.refl a))
   · exact fun h ↦ ⟨toMra b, (toMra_op_of_rel a b h).symm⟩
+
+@[rocq_alias to_mra_included]
+theorem toMra_inc_iff [Std.Refl R] [Trans R R R] (a b : α) :
+    toMra (R := R) a ≼ toMra b ↔ R a b :=
+  inc_iff_ord.trans (toMra_ord_iff a b)
 
 @[rocq_alias mra_local_update_grow]
 theorem local_update_grow [hR : Trans R R R] (a : α) (x : Mra R) (b : α) (h : R a b) :
