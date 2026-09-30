@@ -153,7 +153,7 @@ theorem Frac.le_of_ord {p q : Qp} (H : p ≼ₒ q) : p ≤ q := by
   have := ord_iff.mp H; grind
 
 @[rocq_alias frac_included_weak]
-theorem Frac.le_of_inc {p q : Qp} (H : p ≼ q) : p ≤ q := le_of_ord (ORA.ord_of_inc H)
+theorem Frac.le_of_inc {p q : Qp} (H : p ≼ q) : p ≤ q := le_of_ord (inc_iff_ord.mp H)
 
 @[rocq_alias frac_cmra_discrete]
 instance instDiscreteQp : ORA.Discrete Qp where

@@ -503,8 +503,8 @@ theorem valid_ordN {x y : Agree α} : ✓{n} y → x ≼ₒ{n} y → x ≡{n}≡
     _ ≡{n}≡ y := heq.symm
 
 @[rocq_alias agree_valid_includedN]
-theorem valid_includedN {x y : Agree α} (hv : ✓{n} y) (h : x ≼{n} y) : x ≡{n}≡ y :=
-  valid_ordN hv (ORA.ordN_of_incN h)
+theorem valid_includedN {x y : Agree α} : ✓{n} y → x ≼{n} y → x ≡{n}≡ y :=
+  fun hv h => valid_ordN hv (incN_iff_ordN.mp h)
 
 theorem valid_ord {x y : Agree α} : ✓ y → x ≼ₒ y → x = y := by
   intro hval ⟨z, heq⟩
@@ -512,8 +512,8 @@ theorem valid_ord {x y : Agree α} : ✓ y → x ≼ₒ y → x = y := by
   rw [heq, ← hz, idemp]
 
 @[rocq_alias agree_valid_included]
-theorem valid_included {x y : Agree α} (hv : ✓ y) (h : x ≼ y) : x = y :=
-  valid_ord hv (ORA.ord_of_inc h)
+theorem valid_included {x y : Agree α} : ✓ y → x ≼ y → x = y :=
+  fun hv h => valid_ord hv (inc_iff_ord.mp h)
 
 set_option synthInstance.checkSynthOrder false in
 instance {x : Agree α} : IsOp d x x x where

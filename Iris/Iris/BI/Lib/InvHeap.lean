@@ -56,13 +56,11 @@ private theorem singleton_ord_toInvHeap {h : H (V × (V → Prop))} {l : L} {I :
     {mv : Option (Excl (DiscreteO V))}
     (hinc : ({[l := (mv, toAgree ⟨I⟩)]} : InvHeapMapUR V H) ≼ₒ toInvHeap h) :
     ∃ v, get? h l = some (v, I) ∧ mv ≼ₒ some (excl ⟨v⟩) := by
-  replace hinc := Heap.lookup_ord.mpr fun i =>
-    Option.inc_of_ord
-      (Prod.inc_of_ord (Option.inc_of_ord fun h => h) fun h => h) (hinc i)
+  replace hinc := OrdInc.ord_inc hinc
   obtain ⟨⟨_, _⟩, hy, hinc⟩ := singleton_inc_iff.mp hinc
   obtain ⟨v, I', rfl, rfl, hh⟩ := get?_toInvHeap_some hy
   obtain ⟨hv, hI⟩ := Prod.inc_def.mp (Option.some_inc_some_iff_is_total.mp hinc)
-  cases DiscreteO.eqv_inj (toAgree_ord.mp hI)
+  cases DiscreteO.eqv_inj (toAgree_included.mp hI)
   exact ⟨v, hh, ORA.ord_of_inc hv⟩
 
 @[rocq_alias to_inv_heap_valid]

@@ -161,7 +161,7 @@ theorem incr_mono_spec (l : Loc) (n : Nat) :
     iframe Hγ
     iapply iOwn_mono $$ Hγf
     have hnc := ORA.ord_of_inc (auth_both_valid_discrete.mp Hv).1
-    refine ORA.ord_of_inc (frag_inc_of_inc (MaxNat.ord_iff.mpr ?_))
+    refine frag_ord_of_ord (MaxNat.ord_iff.mpr ?_)
     grind [MaxNat.ord_iff]
   iintro !> Hγf
   iapply Hφ

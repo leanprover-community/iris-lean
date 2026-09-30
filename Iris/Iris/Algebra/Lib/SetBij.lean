@@ -157,7 +157,7 @@ theorem elem_agree (h : ✓ ((elem a₁ b₁ • elem a₂ b₂) : SetBij S)) : 
 
 theorem elem_ord_auth (h : (a, b) ∈ L) : elem a b ≼ₒ auth dq L :=
   Ordered.ord_trans (y := (◯V valid L : SetBij S))
-    ⟨trivial, (ord_iff_subset ..).mpr fun _ hx => mem_singleton.mp hx ▸ h⟩
+    (frag_ord_of_ord <| (ord_iff_subset ..).mpr fun _ hx => mem_singleton.mp hx ▸ h)
     (ORA.ord_op_right ..)
 
 @[rocq_alias bij_view_included]

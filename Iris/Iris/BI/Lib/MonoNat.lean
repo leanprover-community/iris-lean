@@ -125,7 +125,7 @@ theorem lb_own_get (γ : GName) (dq : DFrac) (n : MaxNat) :
   unfold auth_own lb_own
   iintro H
   iapply iOwn_mono $$ H
-  exact ORA.ord_of_inc (included _ _)
+  exact MonoNat.ord _ _
 
 @[rocq_alias mono_nat_lb_own_le]
 theorem lb_own_le (γ : GName) (n n' : MaxNat) (h : n' ≤ n) :
@@ -133,7 +133,7 @@ theorem lb_own_le (γ : GName) (n n' : MaxNat) (h : n' ≤ n) :
   unfold lb_own
   iintro H
   iapply iOwn_mono $$ H
-  exact ORA.ord_of_inc (lb_mono _ _ h)
+  exact MonoNat.lb_mono_ord _ _ h
 
 @[rocq_alias mono_nat_lb_own_0]
 theorem lb_own_0 {GF : BundledGFunctors} [MonoNatG GF] (γ : GName) :

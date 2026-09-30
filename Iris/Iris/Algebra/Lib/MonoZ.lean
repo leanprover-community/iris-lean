@@ -104,7 +104,7 @@ theorem both_valid (n m : MaxInt) : (✓ ((●MZ n) • (◯MZ m) : MonoZ)) ↔ 
   (both_dfrac_valid ..).trans ⟨And.right, fun h => ⟨DFrac.valid_own_one, h⟩⟩
 
 theorem lb_mono_ord (n1 n2 : MaxInt) (h : n1 ≤ n2) : (◯MZ n1 : MonoZ) ≼ₒ ◯MZ n2 :=
-  ⟨trivial, Option.some_ord_some_of_ord (MaxInt.ord_iff.mpr h)⟩
+  Auth.frag_ord_of_ord <| Option.some_ord_some_of_ord <| MaxInt.ord_iff.mpr h
 
 @[rocq_alias mono_Z_lb_mono]
 theorem lb_mono (n1 n2 : MaxInt) (h : n1 ≤ n2) : (◯MZ n1 : MonoZ) ≼ ◯MZ n2 :=
@@ -119,7 +119,7 @@ theorem included (dq : DFrac) (n : MaxInt) : (◯MZ n : MonoZ) ≼ ●MZ{dq} n :
 
 @[rocq_alias mono_Z_update]
 theorem update {n : MaxInt} (n' : MaxInt) (h : n ≤ n') : (●MZ n : MonoZ) ~~> ●MZ n' :=
-  Auth.auth_update_of_localUpdate (Option.incN_of_ordN fun h => h)
+  Auth.auth_update_of_localUpdate OrdInc.ordN_incN
     (LocalUpdate.option (MaxInt.local_update h))
 
 @[rocq_alias mono_Z_auth_persist]

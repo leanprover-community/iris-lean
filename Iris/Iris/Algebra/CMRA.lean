@@ -192,11 +192,11 @@ instance [IncOrd α] (x : α) : Increasing x := IncOrd.increasing x
 theorem inc_iff_ord [IsInc α] {x y : α} : x ≼ y ↔ x ≼ₒ y :=
   ⟨IncOrd.inc_ord, OrdInc.ord_inc⟩
 
-theorem IncOrd.inc_ordN [IncOrd α] {n} {x y : α} : x ≼{n} y → x ≼ₒ{n} y
+theorem IncOrd.incN_ordN [IncOrd α] {n} {x y : α} : x ≼{n} y → x ≼ₒ{n} y
   | ⟨z, hz⟩ => Ordered.ordN_ne .rfl hz.symm (Ordered.ordN_of_ord n (IncOrd.inc_ord ⟨z, rfl⟩))
 
 theorem incN_iff_ordN [IsInc α] {n} {x y : α} : x ≼{n} y ↔ x ≼ₒ{n} y :=
-  ⟨IncOrd.inc_ordN, OrdInc.ordN_incN⟩
+  ⟨IncOrd.incN_ordN, OrdInc.ordN_incN⟩
 
 end
 
@@ -924,10 +924,6 @@ end total
 section extOrder
 attribute [local instance] ORA.extOrderN
 
-theorem inc_iff_ord {x y : α} : x ≼ y ↔ x ≼ₒ y := .rfl
-
-theorem incN_iff_ordN {n} {x y : α} : x ≼{n} y ↔ x ≼ₒ{n} y := .rfl
-
 theorem increasing_ext (x : α) : Increasing x where
   increasing y := inc_op_right x y
 
@@ -1249,10 +1245,8 @@ theorem ord_op_left (x y : α) : x ≼ₒ x • y := comm' (x := y) (y := x) ▸
 theorem ordN_op_left (n) (x y : α) : x ≼ₒ{n} x • y := (ord_op_left x y).ordN
 theorem ordN_op_right (n) (x y : α) : y ≼ₒ{n} x • y := (ord_op_right x y).ordN
 
-theorem ordN_of_incN {n} {x y : α} : x ≼{n} y → x ≼ₒ{n} y
-  | ⟨z, hz⟩ => ordN_ne .rfl hz.symm (ordN_op_left n x z)
-theorem ord_of_inc {x y : α} : x ≼ y → x ≼ₒ y
-  | ⟨z, hz⟩ => hz ▸ ord_op_left x z
+theorem ordN_of_incN {n} {x y : α} : x ≼{n} y → x ≼ₒ{n} y := IncOrd.incN_ordN
+theorem ord_of_inc {x y : α} : x ≼ y → x ≼ₒ y := IncOrd.inc_ord
 
 theorem pcore_ord_self {x : α} {cx} (e : pcore x = some cx) : cx ≼ₒ x :=
   pcore_op_left e ▸ ord_op_left cx x
@@ -2505,8 +2499,7 @@ theorem validN_of_ordN_validN {n} {a b : α} (Hv : ✓{n} a) (Hinc : some b ≼�
 theorem valid_of_ord_valid {a b : α} (Hv : ✓ a) (Hinc : some b ≼ₒ some a) : ✓ b :=
   valid_of_ord (α := Option α) Hinc Hv
 
-/-- Transport a pointwise order-to-extension conversion through `Option`. The conversion is a
-plain hypothesis: classical components discharge it with `fun h => h`. -/
+/-- Transport a pointwise order-to-extension conversion through `Option`. -/
 theorem incN_of_ordN {n} {mx my : Option α}
     (hsub : ∀ {n : Nat} {x y : α}, x ≼ₒ{n} y → x ≼{n} y) (h : mx ≼ₒ{n} my) : mx ≼{n} my :=
   match mx, my, h with
@@ -3059,8 +3052,7 @@ theorem mk_ord_mk (a a' : α) (b b' : β) : (a, b) ≼ₒ (a', b') ↔ a ≼ₒ 
 theorem mk_ordN_mk {n} (a a' : α) (b b' : β) :
     (a, b) ≼ₒ{n} (a', b') ↔ a ≼ₒ{n} a' ∧ b ≼ₒ{n} b' := .rfl
 
-/-- Transport pointwise order-to-extension conversions through the product. The conversions
-are plain hypotheses: classical components discharge them with `fun h => h`. -/
+/-- Transport pointwise order-to-extension conversions through the product. -/
 theorem incN_of_ordN {n} {x y : α × β}
     (hsub₁ : ∀ {n : Nat} {a b : α}, a ≼ₒ{n} b → a ≼{n} b)
     (hsub₂ : ∀ {n : Nat} {a b : β}, a ≼ₒ{n} b → a ≼{n} b)

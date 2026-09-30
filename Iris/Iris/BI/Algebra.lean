@@ -153,16 +153,24 @@ theorem agree_op_equiv_toAgreeI (x y : Agree A) (a : A) :
   have hxy := op_invN (h.validN.mpr toAgree_validN)
   exact ⟨hxy, ((Dist.of_eq idemp).symm.trans hxy.symm.op_l).trans h⟩
 
+theorem agree_ordI (x y : Agree A) :
+    x ≼ₒ y ⊣⊢@{PROP} y ≡ x • y := by
+  sbi_unfold; intro _
+  exact ordN.trans ⟨(·.trans op_commN), (·.trans op_commN)⟩
+
 @[rocq_alias agree_includedI]
 theorem agree_includedI (x y : Agree A) :
-    x ≼ y ⊣⊢@{PROP} y ≡ x • y := by
-  sbi_unfold; intro _
-  exact includedN.trans ⟨(·.trans op_commN), (·.trans op_commN)⟩
+    x ≼ y ⊣⊢@{PROP} y ≡ x • y :=
+  internalCmraIncluded_iff_ord.trans (agree_ordI x y)
+
+theorem toAgree_ordI (a b : A) :
+    toAgree a ≼ₒ toAgree b ⊣⊢@{PROP} a ≡ b := by
+  sbi_unfold; intro _; exact toAgree_ordN
 
 @[rocq_alias to_agree_includedI]
 theorem toAgree_includedI (a b : A) :
-    toAgree a ≼ₒ toAgree b ⊣⊢@{PROP} a ≡ b := by
-  sbi_unfold; intro _; exact toAgree_ordN
+    toAgree a ≼ toAgree b ⊣⊢@{PROP} a ≡ b :=
+  internalCmraIncluded_iff_ord.trans (toAgree_ordI a b)
 
 end agree_inclusion
 

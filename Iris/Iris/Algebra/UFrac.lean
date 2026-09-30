@@ -81,7 +81,7 @@ theorem le_of_ord {x y : UFrac} (H : x ≼ₒ y) : x.frac ≤ y.frac := by
   have := ord_iff.mp H; grind
 
 @[rocq_alias ufrac_included_weak]
-theorem le_of_inc {x y : UFrac} (H : x ≼ y) : x.frac ≤ y.frac := le_of_ord (ORA.ord_of_inc H)
+theorem le_of_inc {x y : UFrac} (H : x ≼ y) : x.frac ≤ y.frac := le_of_ord (inc_iff_ord.mp H)
 
 @[rocq_alias ufrac_cmra_discrete]
 instance : ORA.Discrete UFrac where

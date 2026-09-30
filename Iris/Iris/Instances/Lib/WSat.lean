@@ -215,7 +215,7 @@ theorem invariant_lookup (I : InvMap (IProp GF)) (i : Pos) (P : IProp GF) :
   · iapply later_equivI_mp
     iapply internalEq.symm
     rw [←Hagree]
-    iapply toAgree_includedI $$ H2
+    iapply toAgree_ordI $$ H2
 
 @[rocq_alias ownI_open]
 theorem ownI_open {i : Pos} {P : IProp GF} : wsat ∗ ownI i P ∗ ownE {i} ⊢ wsat ∗ ▷ P ∗ ownD {i} := by

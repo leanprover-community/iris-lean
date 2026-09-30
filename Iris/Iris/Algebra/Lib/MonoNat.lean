@@ -114,7 +114,7 @@ theorem both_valid (n m : MaxNat) :
 
 theorem lb_mono_ord (n1 n2 : MaxNat) (h : n1 ≤ n2) :
   (◯MN n1 : MonoNat) ≼ₒ ◯MN n2 :=
-  ⟨trivial, MaxNat.ord_iff.mpr h⟩
+  Auth.frag_ord_of_ord (MaxNat.ord_iff.mpr h)
 
 @[rocq_alias mono_nat_lb_mono]
 theorem lb_mono (n1 n2 : MaxNat) (h : n1 ≤ n2) :

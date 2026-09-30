@@ -155,6 +155,9 @@ instance {dq dq1 dq2 : DFrac} {a : A} [h : IsOp d dq dq1 dq2] :
 theorem frag_op {b1 b2 : A} : (◯ (b1 • b2) : Auth A) = ((◯ b1 : Auth A) • ◯ b2) :=
   frag_op_eq
 
+nonrec theorem frag_ord_of_ord {b1 b2 : A} (h : b1 ≼ₒ b2) : (◯ b1 : Auth A) ≼ₒ ◯ b2 :=
+  frag_ord_of_ord h
+
 @[rocq_alias auth_frag_mono]
 nonrec theorem frag_inc_of_inc {b1 b2 : A} (h : b1 ≼ b2) : (◯ b1 : Auth A) ≼ ◯ b2 :=
   frag_inc_of_inc h

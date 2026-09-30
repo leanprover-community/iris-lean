@@ -234,7 +234,6 @@ omit [Zero α] in
 theorem inc_iff {x y : α} : x ≼ y ↔ x • y = y := inc_iff_ord.trans ord_iff
 
 omit [Zero α] in
-/-- Sufficient condition for a local update on an idempotent structure. -/
 theorem idem_local_update_ord {x y x' : α} (h : x ≼ₒ x') : (x, y) ~l~> (x', x') := by
   refine fun _ mz _ hn => ⟨trivial, OFE.Dist.of_eq ?_⟩
   cases mz with | none => rfl | some z =>
@@ -244,7 +243,7 @@ theorem idem_local_update_ord {x y x' : α} (h : x ≼ₒ x') : (x, y) ~l~> (x',
 omit [Zero α] in
 /-- Sufficient condition for a local update on an idempotent structure. -/
 theorem idem_local_update {x y x' : α} (h : x ≼ x') : (x, y) ~l~> (x', x') :=
-  idem_local_update_ord (ORA.ord_of_inc h)
+  idem_local_update_ord (inc_iff_ord.mp h)
 
 scoped instance instDiscreteE {a : α} : DiscreteE a := ⟨fun H => discrete H⟩
 

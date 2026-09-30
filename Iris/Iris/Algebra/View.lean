@@ -436,6 +436,8 @@ instance isOp_view_auth_dfrac {dq dq1 dq2 : DFrac} {a : A}
 @[rocq_alias view_frag_op]
 theorem frag_op_eq : (◯V (b1 • b2) : View R) = ((◯V b1) • ◯V b2 : View R) := rfl
 
+theorem frag_ord_of_ord (H : b1 ≼ₒ b2) : (◯V b1 : View R) ≼ₒ ◯V b2 := ⟨trivial, H⟩
+
 @[rocq_alias view_frag_mono]
 theorem frag_inc_of_inc (H : b1 ≼ b2) : (◯V b1 : View R) ≼ ◯V b2 := by
   rcases H with ⟨c, H⟩

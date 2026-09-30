@@ -153,12 +153,19 @@ theorem toMaxPrefixList_op_right {l1 l2 : List α} (h : l1 <+: l2) :
 
 theorem ord_iff_forall_ordN {ml1 ml2 : MaxPrefixList α} :
     ml1 ≼ₒ ml2 ↔ ∀ n, ml1 ≼ₒ{n} ml2 := by
-  refine ⟨fun h _ => h.ordN, fun h => inc_iff_ord.mp ⟨ml2, eq_dist_2 fun n => ?_⟩⟩
-  obtain ⟨l, hl⟩ := incN_iff_ordN.mpr (h n)
-  calc ml2 ≡{n}≡ ml1 • l := hl
-    _ ≡{n}≡ (ml1 • ml1) • l := (congrArg (· • l) (op_self ml1)).symm.dist
-    _ ≡{n}≡ ml1 • (ml1 • l) := assoc'.symm.dist
-    _ ≡{n}≡ ml1 • ml2 := hl.symm.op_r
+  refine ⟨fun h _ => h.ordN, fun h k => ?_⟩
+  have hk : ∀ n, get? (M := MaxPrefixListMap) ml1 k ≼ₒ{n} get? (M := MaxPrefixListMap) ml2 k :=
+    fun n => h n k
+  revert hk
+  cases get? (M := MaxPrefixListMap) ml1 k <;> cases get? (M := MaxPrefixListMap) ml2 k <;>
+    intro hk
+  · trivial
+  · exact hk 0
+  · exact (hk 0).elim
+  · refine .inr (Agree.ord.mpr (eq_dist_2 fun n => ?_))
+    rcases hk n with e | o
+    · exact (e.op_r.trans (Dist.of_eq Agree.idemp)).symm
+    · exact Agree.ordN.mp o
 
 @[rocq_alias max_prefix_list_included_includedN]
 theorem inc_iff_forall_incN {ml1 ml2 : MaxPrefixList α} :
@@ -168,14 +175,22 @@ theorem inc_iff_forall_incN {ml1 ml2 : MaxPrefixList α} :
 theorem toMaxPrefixList_ordN_aux {n} {l1 l2 : List α}
     (h : toMaxPrefixList l1 ≼ₒ{n} toMaxPrefixList l2) : l2 ≡{n}≡ l1 ++ l2.drop l1.length := by
   refine list_dist_lookup.mpr fun i => ?_
-  have hi := Heap.lookup_ordN (M := MaxPrefixListMap).mp (incN_iff_ordN.mpr h) i
-  rw [get?_toMaxPrefixList, get?_toMaxPrefixList] at hi
-  rcases Option.incN_iff_is_total.mp hi with hnone | ⟨a1, a2, ha1, ha2, ha⟩
-  · refine .of_eq (by grind)
-  · obtain ⟨x1, hx1, rfl⟩ := Option.map_eq_some_iff.mp ha1
-    obtain ⟨x2, hx2, rfl⟩ := Option.map_eq_some_iff.mp ha2
-    rw [List.getElem?_append, hx2, ite_eq_left (List.getElem?_eq_some_iff.mp hx1).1, hx1]
-    exact some_dist_some.mpr (Agree.toAgree_ordN.mp ha).symm
+  have hi : Option.map toAgree l1[i]? ≼ₒ{n} Option.map toAgree l2[i]? := by
+    have := h i
+    rwa [get?_toMaxPrefixList, get?_toMaxPrefixList] at this
+  cases hx1 : l1[i]? with
+  | none => exact .of_eq (by grind)
+  | some x1 =>
+    cases hx2 : l2[i]? with
+    | none => rw [hx1, hx2] at hi; exact hi.elim
+    | some x2 =>
+      rw [hx1, hx2] at hi
+      have hx : x1 ≡{n}≡ x2 := by
+        rcases hi with e | o
+        · exact Agree.toAgree_injN e
+        · exact Agree.toAgree_ordN.mp o
+      rw [List.getElem?_append, ite_eq_left (List.getElem?_eq_some_iff.mp hx1).1, hx1]
+      exact some_dist_some.mpr hx.symm
 
 @[rocq_alias to_max_prefix_list_includedN_aux]
 theorem toMaxPrefixList_incN_aux {n} {l1 l2 : List α}
@@ -185,8 +200,9 @@ theorem toMaxPrefixList_incN_aux {n} {l1 l2 : List α}
 theorem toMaxPrefixList_ordN_iff {n} {l1 l2 : List α} :
     toMaxPrefixList l1 ≼ₒ{n} toMaxPrefixList l2 ↔ ∃ l, l2 ≡{n}≡ l1 ++ l := by
   refine ⟨fun h => ⟨_, toMaxPrefixList_ordN_aux h⟩, fun ⟨l, hl⟩ => ?_⟩
-  refine ORA.ordN_of_ordN_of_dist (incN_iff_ordN.mp ?_) (toMaxPrefixList_ne.ne hl).symm
-  grind [ORA.incN_of_inc, ORA.inc_op_left]
+  refine ORA.ordN_of_ordN_of_dist ?_ (toMaxPrefixList_ne.ne hl).symm
+  rw [← toMaxPrefixList_op_left (List.prefix_append l1 l)]
+  exact ORA.ordN_op_left n _ _
 
 @[rocq_alias to_max_prefix_list_includedN]
 theorem toMaxPrefixList_incN_iff {n} {l1 l2 : List α} :
@@ -196,7 +212,8 @@ theorem toMaxPrefixList_incN_iff {n} {l1 l2 : List α} :
 theorem toMaxPrefixList_ord_iff {l1 l2 : List α} :
     toMaxPrefixList l1 ≼ₒ toMaxPrefixList l2 ↔ l1 <+: l2 := by
   refine ⟨fun h => ⟨_, eq_dist_2 fun n => (toMaxPrefixList_ordN_aux h.ordN).symm⟩, fun h => ?_⟩
-  exact inc_iff_ord.mp (by grind [ORA.inc_op_left])
+  rw [← toMaxPrefixList_op_left h]
+  exact ORA.ord_op_left _ _
 
 @[rocq_alias to_max_prefix_list_included]
 theorem toMaxPrefixList_inc_iff {l1 l2 : List α} :
