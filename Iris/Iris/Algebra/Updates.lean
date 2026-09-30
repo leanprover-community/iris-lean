@@ -112,7 +112,6 @@ theorem Update.op_r {x y : α} : x • y ~~> y := fun _ _ => ORA.validN_op_opM_r
 theorem Update.included {x y : α} (h : x ≼ₒ y) : y ~~> x :=
   fun _ mz => (ORA.op?_mono_left mz h).validN
 
-/-- An update may discard a summand — `~~>` is affine whatever the order. -/
 @[rocq_alias cmra_update_included]
 theorem Update.included_ext {x y : α} : x ≼ y → y ~~> x :=
   fun ⟨_, ez⟩ => ez.symm ▸ Update.op_l

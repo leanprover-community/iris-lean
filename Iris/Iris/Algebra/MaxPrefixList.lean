@@ -51,7 +51,6 @@ instance instORA : ORA (MaxPrefixList α) :=
 instance instUCMRA : UCMRA (MaxPrefixList α) :=
   Heap.instStoreUCMRA  (M:= MaxPrefixListMap) (V := Agree α)
 
-/-- Affineness of `MaxPrefixList`, inherited from the underlying map. -/
 instance instAffine : ORA.Affine (MaxPrefixList α) :=
   inferInstanceAs (ORA.Affine (MaxPrefixListMap (Agree α)))
 

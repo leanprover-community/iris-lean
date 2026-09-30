@@ -110,9 +110,6 @@ instance : CMRA (DisjointLeibnizSet S) where
   extend {_ _ y₁ y₂} _ h := ⟨y₁, y₂, ⟨h, .rfl, .rfl⟩⟩
   pcore_op_mono h _ := ⟨.valid ∅, by cases h; simp [disjoint_empty_left]⟩
 
-
-
-
 instance instDiscreteDisjointLeibnizSet : ORA.Discrete (DisjointLeibnizSet S) where
   discrete_0 := fun h => h
   discrete_valid := id
@@ -336,9 +333,6 @@ instance : CMRA (LeibnizSet S) where
   pcore_idem := by simp
   extend {_ _ _ _} _ h := ⟨_, _, h, .rfl, .rfl⟩
   pcore_op_mono {_ _} := by rintro ⟨rfl⟩ y; exists y
-
-
-
 
 instance : Unital (LeibnizSet S) where
   unit := valid ∅

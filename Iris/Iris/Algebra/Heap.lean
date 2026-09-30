@@ -364,7 +364,6 @@ theorem lookup_ord {m1 m2 : M V} :
     cases get? m2 i <;> cases get? m1 i <;> cases f i <;> simp
 
 open OFE in
-/-- The resource algebra on partial maps, pointwise on `get?`. -/
 @[reducible]
 def raOp : Op (M V) where
   op := op
@@ -414,8 +413,6 @@ def raValid : _root_.Iris.Valid (M V) where
      fun H k => valid_iff_validN.mpr (H · k)⟩
   validN_succ H k := validN_succ (H k)
 
-
-/-- The pointwise order on partial maps. -/
 @[reducible] def orderN : Ordered (M V) where
   OrderN n m m' := ∀ k, get? m k ≼ₒ{n} get? m' k
   Order m m' := ∀ k, get? m k ≼ₒ get? m' k

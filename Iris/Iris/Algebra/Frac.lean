@@ -92,9 +92,6 @@ instance instORAQp : CMRA Qp where
     rintro H He; exact ⟨y, z, He, .rfl, .rfl⟩
   pcore_op_mono H := by rcases H
 
-
-
-
 -- TODO: A different solution to having these bridge lemmas might be to internalize
 -- positivity into the ORA's validity predicate, removing the sybtype, and having Qp
 -- become just a Leibniz ORA over Rat. This admits two-way coercions to Rat for the automation.

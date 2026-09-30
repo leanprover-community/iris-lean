@@ -22,7 +22,6 @@ abbrev ViewRel (A B : Type _) := Nat → A → B → Prop
 
 @[rocq_alias view_rel]
 class IsViewRel [OFE A] [UCMRA B] (R : ViewRel A B) where
-  /-- The relation only shrinks when a summand of the fragment is dropped. -/
   mono : R n1 a1 b1 → a1 ≡{n2}≡ a2 → b2 ≼{n2} b1 → n2 ≤ n1 → R n2 a2 b2
   /-- The relation is down-closed for the fragment order. Independent of `mono` in general;
   for an affine fragment algebra `mono` follows from it. -/
@@ -30,8 +29,6 @@ class IsViewRel [OFE A] [UCMRA B] (R : ViewRel A B) where
   rel_validN n a b : R n a b → ✓{n} b
   rel_unit n : ∃ a, R n a UCMRA.unit
 
-/-- Build an `IsViewRel` from order-closure alone: over an affine fragment algebra the
-`≼`-closure `mono` follows from `mono_ord`. -/
 theorem IsViewRel.ofMonoOrd [OFE A] [UCMRA B] [ORA.Affine B] {R : ViewRel A B}
     (mono_ord : ∀ {n1 a1 b1 n2 a2 b2},
       R n1 a1 b1 → a1 ≡{n2}≡ a2 → b2 ≼ₒ{n2} b1 → n2 ≤ n1 → R n2 a2 b2)
@@ -219,7 +216,6 @@ def Pcore (v : View R) : Option (View R) :=
 def Op (v1 v2 : View R) : View R :=
   mk (v1.auth • v2.auth) (v1.frag • v2.frag)
 
-/-- A valid view has a valid authority part and a valid fragment. -/
 theorem ValidN.pair {n} {x : View R} (Hv : ValidN n x) :
     ✓{n} ((x.auth, x.frag) : Option ((DFrac) × Agree A) × B) := by
   rcases x with ⟨_|⟨q, ag⟩, b⟩
@@ -278,7 +274,6 @@ theorem ValidN.pair {n} {x : View R} (Hv : ValidN n x) :
       exact mono Ha.2 .rfl (ORA.incN_refl x.frag) n.le_succ
     · exact fun ⟨z, HR⟩ => ⟨z, mono HR .rfl (ORA.incN_refl _) n.le_succ⟩
 
-/-- The order on `View R`, inherited componentwise from the authority and fragment parts. -/
 @[reducible] def orderN : Ordered (View R) where
   OrderN n x y := x.auth ≼ₒ{n} y.auth ∧ x.frag ≼ₒ{n} y.frag
   Order x y := x.auth ≼ₒ y.auth ∧ x.frag ≼ₒ y.frag
@@ -382,7 +377,6 @@ instance instUCMRA : UCMRA (View R) where
   pcore_unit := congrArg some (congrArg (View.mk _) (ORA.core_eqv_self UCMRA.unit))
   ord_refl x := ⟨ORA.ord_refl x.auth, ORA.ord_refl x.frag⟩
 
-/-- A view over an affine fragment algebra is affine. -/
 instance [ORA.Affine B] : ORA.Affine (View R) :=
   IncOrd.of_increasing fun v =>
     increasing_mk (IncOrd.increasing v.auth) (IncOrd.increasing v.frag)
@@ -983,7 +977,6 @@ instance mapO_ne : OFE.NonExpansive₂ (mapO (R := R) (R' := R')) where
 
 end mapO
 
-/-- The action of `View.map` on the authority part, as a morphism. -/
 def mapAuthC [OFE A] [OFE A'] (f : A -n> A') :
     Option ((DFrac) × Agree A) -C> Option ((DFrac) × Agree A') :=
   Option.mapC (Prod.mapC ORA.Hom.id (Agree.map f.f))

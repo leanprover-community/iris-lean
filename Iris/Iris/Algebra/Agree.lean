@@ -441,9 +441,6 @@ instance instORA : CMRA (Agree α) where
     exact ⟨x, x, op_idemp.symm, heq₁.trans heq₃, heq₁.trans heq₃ |>.trans heq₂⟩
   pcore_op_mono := fun {x cx} h y => by obtain rfl := Option.some.inj h; exact ⟨y, rfl⟩
 
-
-
-
 #rocq_ignore agreeR "Use the plain Agree type with a typeclass instance instead."
 #rocq_ignore agree_op_instance "Use the CMRA instance instead."
 #rocq_ignore agree_pcore_instance "Use the CMRA instance instead."

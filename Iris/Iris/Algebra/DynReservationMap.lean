@@ -301,7 +301,6 @@ theorem infinite_op_left {x y : DynReservationMap A H} (vt : ✓{n} (x.token •
     · exact validN_infinite v
     · exact validN_disj v
 
-/-- The order on `DynReservationMap A H`, inherited componentwise. -/
 @[reducible] def orderN : Ordered (DynReservationMap A H) where
   OrderN n x y := x.data ≼ₒ{n} y.data ∧ x.token ≼ₒ{n} y.token
   Order x y := x.data ≼ₒ y.data ∧ x.token ≼ₒ y.token
@@ -405,7 +404,6 @@ instance instORADynReservationMap : ORA (DynReservationMap A H) where
 
 end
 
-/-- A dynamic reservation map over an affine algebra is affine. -/
 instance [ORA.Affine A] : ORA.Affine (DynReservationMap A H) :=
   IncOrd.of_increasing fun v =>
     increasing_mk (IncOrd.increasing v.data) (IncOrd.increasing v.token)

@@ -61,9 +61,6 @@ instance : CMRA UFrac where
   extend {_ x y z} := by rintro _ rfl; exists y; exists z
   pcore_op_mono H := by rcases H
 
-
-
-
 @[simp, grind =] theorem frac_op (x y : UFrac) : (x • y).frac = x.frac + y.frac := rfl
 @[simp, grind =] theorem valid_iff {x : UFrac} : ✓ x ↔ True := Iff.rfl
 @[simp, grind =] theorem validN_iff {n} {x : UFrac} : ✓{n} x ↔ True := Iff.rfl

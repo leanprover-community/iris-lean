@@ -361,7 +361,6 @@ theorem op_mono_ext {x x' y y' : α} (hx : x ≼ x') (hy : y ≼ y') :
 
 #rocq_ignore cmra_mono' "Use cmra_mono"
 
-/-- The extension inclusion as a step-indexed order. -/
 @[reducible] def extOrderN : Ordered α where
   OrderN := IncludedN
   Order := Included
@@ -756,14 +755,12 @@ theorem not_valid_of_exclN_inc {n} {x : α} [Exclusive x] {y} : x ≼{n} y → �
 theorem not_valid_of_excl_inc {x : α} [Exclusive x] {y} : x ≼ y → ¬✓ y
   | ⟨_, hz⟩, v => Exclusive.exclusive0_l _ <| hz ▸ v.validN
 
-/-- Extension along the step index: `ORA.ordN_extend` for the extension inclusion. -/
 theorem incN_extend {n} {x y : α} (v : ✓{n} y) :
     x ≼{n} y → ∃ z, z ≼{n.succ} y ∧ z ≡{n}≡ x
   | ⟨_, hw⟩ =>
     let ⟨z₁, z₂, hy, hz₁, _⟩ := extend v hw
     ⟨z₁, ⟨z₂, hy.dist⟩, hz₁⟩
 
-/-- A non-expansive function commuting with composition preserves the extension inclusion. -/
 theorem incN_map {β : Type _} [ORA β] (f : α → β) [NonExpansive f]
     (hop : ∀ x y, f (x • y) = f x • f y) {n} {x y : α} : x ≼{n} y → f x ≼{n} f y
   | ⟨z, hz⟩ => ⟨f z, (NonExpansive.ne hz).trans (hop x z).dist⟩
@@ -803,7 +800,6 @@ theorem inc_iff_incN [OFE.Discrete α] (n) {x y : α} : x ≼ y ↔ x ≼{n} y :
 theorem inc_0_iff_incN [OFE.Discrete α] (n) {x y : α} : x ≼{0} y ↔ x ≼{n} y :=
   ⟨fun ⟨z, hz⟩ => ⟨z, (discrete hz).dist⟩, inc0_of_incN⟩
 
-/-- The `discrete_ord` law of `ORA.Discrete` for a discrete algebra with the extension order. -/
 theorem inc_of_inc0 [OFE.Discrete α] {x y : α} : x ≼{0} y → x ≼ y :=
   (inc_iff_incN 0).mpr
 
@@ -846,7 +842,6 @@ theorem pcore_op_mono_of_pcore_mono
   let ⟨_, hcy, z, hz⟩ := h (inc_op_left _ y) e
   ⟨z, hcy.trans (congrArg some hz)⟩
 
-/-- For a total core, monotonicity of `core` along the extension inclusion suffices. -/
 theorem pcore_op_mono_of_core_mono [IsTotal α] (h : ∀ x y : α, x ≼ y → core x ≼ core y)
     {x cx : α} (e : pcore x = some cx) (y) : ∃ cy : α, pcore (x • y) = some (cx • cy) :=
   pcore_op_mono_of_pcore_mono (fun {x y cx} hxy e =>
@@ -922,21 +917,16 @@ end total
 section extOrder
 attribute [local instance] ORA.extOrderN
 
-/-- Under the extension order, the order is the extension inclusion. -/
 theorem inc_iff_ord {x y : α} : x ≼ y ↔ x ≼ₒ y := .rfl
 
-/-- Under the extension order, the step-indexed order is the extension inclusion. -/
 theorem incN_iff_ordN {n} {x y : α} : x ≼{n} y ↔ x ≼ₒ{n} y := .rfl
 
-/-- Every element is increasing for the extension inclusion. -/
 theorem increasing_ext (x : α) : Increasing x where
   increasing y := inc_op_right x y
 
 instance [IsTotal α] : OrderRefl α where
   ord_refl := inc_refl_ext
 
-/-- Every classical resource algebra is an ordered resource algebra under its extension
-inclusion. -/
 @[reducible] instance toORA : ORA α where
   toOrdered := ORA.extOrderN
   validN_op_left := validN_op_left
@@ -1022,8 +1012,6 @@ class UCMRA (α : Type _) extends ORA α, OrderRefl α where
 #rocq_ignore ucmra_cmraR "Folded into Lean's UCMRA extends CMRA."
 #rocq_ignore ucmra_ofeO "Folded into Lean's UCMRA → OFE."
 
-/-- Every classical unital resource algebra is a unital ordered resource algebra under its
-extension inclusion. -/
 @[reducible] def UCMRA.ofCMRA [Unital α] : UCMRA α where
   toORA := CMRA.toORA
   unit := Unital.unit
@@ -1032,8 +1020,6 @@ extension inclusion. -/
   pcore_unit := Unital.pcore_unit
   ord_refl _ := ⟨Unital.unit, (Op.comm.trans Unital.unit_left_id).symm⟩
 
-/-- An element that behaves as a unit: valid, a left identity, and its own core. The
-element-level counterpart of `Unital`; `UCMRA.unit` satisfies it. -/
 class IsUnit [ORA α] (ε : α) : Prop where
   unit_valid : ✓ ε
   unit_left_id : ε • x = x
@@ -1177,7 +1163,6 @@ theorem _root_.Iris.Ordered.OrderR.validN {n} {x y : α} : x ≼ₒ* y → ✓{n
   | .inl e, v => e ▸ v
   | .inr h, v => validN_of_ord h v
 
-/-- Extension of a composition along the step index. -/
 theorem op_extend {n} {x y₁ y₂ : α} (v : ✓{n} x) (h : y₁ • y₂ ≼ₒ{n} x) :
     ∃ z₁ z₂ : α, z₁ • z₂ ≼ₒ{n.succ} x ∧
       z₁ ≡{n}≡ y₁ ∧ z₂ ≡{n}≡ y₂ :=
@@ -1256,7 +1241,6 @@ theorem ord_op_left (x y : α) : x ≼ₒ x • y := comm' (x := y) (y := x) ▸
 theorem ordN_op_left (n) (x y : α) : x ≼ₒ{n} x • y := (ord_op_left x y).ordN
 theorem ordN_op_right (n) (x y : α) : y ≼ₒ{n} x • y := (ord_op_right x y).ordN
 
-/-- In an affine algebra the extension inclusion is contained in the order. -/
 theorem ordN_of_incN {n} {x y : α} : x ≼{n} y → x ≼ₒ{n} y
   | ⟨z, hz⟩ => ordN_ne .rfl hz.symm (ordN_op_left n x z)
 theorem ord_of_inc {x y : α} : x ≼ y → x ≼ₒ y
@@ -1409,14 +1393,12 @@ instance empty_cancelable : Cancelable (unit : α) where
     _ ≡{n}≡ unit • t := e
     _ ≡{n}≡ t := unit_left_id.dist
 
-/-- In a unital algebra, an element is increasing exactly when it lies above the unit. -/
 theorem increasing_iff_unit_ord {x : α} : Increasing x ↔ unit ≼ₒ x :=
   ⟨fun h => unit_right_id (x := x) ▸ h.increasing unit,
    fun h => ⟨fun y => calc
     y = unit • y := unit_left_id.symm
     _ ≼ₒ x • y := op_mono_left y h⟩⟩
 
-/-- The step-indexed form of `increasing_iff_unit_ord`: elements above the unit are increasing. -/
 theorem ordN_op_right_of_unit_ordN {n} {x : α} (y : α) (h : unit ≼ₒ{n} x) : y ≼ₒ{n} x • y :=
   calc y ≡{n}≡ unit • y := (unit_left_id_dist y).symm
     _ ≼ₒ{n} x • y := op_monoN_left y h
@@ -1865,7 +1847,6 @@ variable {α : Type _} {β : α → Type _}
 section
 variable [∀ x, ORA (β x)]
 
-/-- The pointwise order on functions. -/
 @[reducible] def orderN : Ordered (∀ x, β x) where
   OrderN n f g := ∀ x, f x ≼ₒ{n} g x
   Order f g := ∀ x, f x ≼ₒ g x
@@ -1882,7 +1863,6 @@ theorem ordNR_apply {n} {f g : ∀ x, β x} (h : f ≼ₒ*{n} g) (x : α) : f x 
 
 variable [∀ x, IsTotal (β x)]
 
-/-- The pointwise resource algebra on functions. -/
 @[reducible] def raOp : Op (∀ x, β x) where
   op f g x := f x • g x
   op_ne.ne _ _ _ H y := (H y).op_r
@@ -1901,7 +1881,6 @@ variable [∀ x, IsTotal (β x)]
   validN_ne {n x y} H H1 y := (H y).validN.mp (H1 y)
   valid_iff_validN {g} := by simpa [valid_iff_validN] using forall_comm
   validN_succ H _ := validN_succ (H _)
-
 
 attribute [local instance] raOp raPCore raValid orderN
 
@@ -2092,7 +2071,6 @@ def optionOrderN (n : Nat) : Option α → Option α → Prop
   | some x, some y => x ≼ₒ*{n} y
   | some _, none => False
 
-/-- The order on `Option α`; see `optionOrderN`. -/
 @[simp]
 def optionOrder : Option α → Option α → Prop
   | none, none => True
@@ -2107,7 +2085,6 @@ def optionOrder : Option α → Option α → Prop
 
 namespace Option
 
-/-- The resource algebra on `Option α`. -/
 @[reducible] def raOp : Op (Option α) where
   op := optionOp
   op_ne.ne n x1 x2 H := by
@@ -2145,8 +2122,6 @@ namespace Option
   validN_succ {x n} := by
     rcases x with ⟨_|_⟩ <;> simp_all [validN_succ]
 
-
-/-- The order on `Option α`. -/
 @[reducible] def orderN : Ordered (Option α) where
   OrderN := optionOrderN
   Order := optionOrder
@@ -2190,7 +2165,6 @@ def extend_option {n} : ∀ {x y₁ y₂ : Option α}, ✓{n} x → x ≡{n}≡ 
   · exists some x, none
   · rcases extend Hx Hx' with ⟨mc1, mc2, hx, h1, h2⟩
     exact ⟨some mc1, some mc2, congrArg some hx, h1, h2⟩
-
 
 theorem some_ordN_some_iff {n} {a b : α} : some a ≼ₒ{n} some b ↔ a ≡{n}≡ b ∨ a ≼ₒ{n} b :=
   .rfl
@@ -2535,7 +2509,6 @@ theorem incN_of_ordN {n} {mx my : Option α}
     let ⟨z, hz⟩ := hsub i
     ⟨some z, OFE.some_dist_some.mpr hz⟩
 
-/-- The limit-level form of `Option.incN_of_ordN`. -/
 theorem inc_of_ord {mx my : Option α}
     (hsub : ∀ {x y : α}, x ≼ₒ y → x ≼ y) (h : mx ≼ₒ my) : mx ≼ my :=
   match mx, my, h with
@@ -2919,7 +2892,6 @@ abbrev Order (x y : α × β) := x.fst ≼ₒ y.fst ∧ x.snd ≼ₒ y.snd
 #rocq_ignore prod_valid_instance "Use CMRA instance"
 #rocq_ignore prod_validN_instance "Use CMRA instance"
 
-/-- The componentwise resource algebra. -/
 @[reducible] def raOp : Op (α × β) where
   op := op
   op_ne.ne _ _ _ h := dist_prod_ext (Dist.op_r <| dist_fst h) (Dist.op_r <| dist_snd h)
@@ -2957,8 +2929,6 @@ abbrev Order (x y : α × β) := x.fst ≼ₒ y.fst ∧ x.snd ≼ₒ y.snd
     · exact ORA.valid_iff_validN.mpr fun n => (h n).right
   validN_succ {x n} := fun ⟨va, vb⟩ => ⟨ORA.validN_succ va, ORA.validN_succ vb⟩
 
-
-/-- The componentwise order. -/
 @[reducible] def orderN : Ordered (α × β) where
   OrderN := OrderN
   Order := Order
@@ -3086,7 +3056,6 @@ theorem incN_of_ordN {n} {x y : α × β}
   let ⟨z₂, hz₂⟩ := hsub₂ h.2
   ⟨(z₁, z₂), ⟨hz₁, hz₂⟩⟩
 
-/-- The limit-level form of `Prod.incN_of_ordN`. -/
 theorem inc_of_ord {x y : α × β}
     (hsub₁ : ∀ {a b : α}, a ≼ₒ b → a ≼ b)
     (hsub₂ : ∀ {a b : β}, a ≼ₒ b → a ≼ b)

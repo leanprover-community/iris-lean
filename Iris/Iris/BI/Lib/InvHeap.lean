@@ -52,7 +52,6 @@ theorem get?_toInvHeap_some {h : H (V × (V → Prop))} {l : L}
   rw [toInvHeap, get?_map] at hl
   rcases hh : get? h l with _ | ⟨v, I⟩ <;> rw [hh] at hl <;> simp_all
 
-/-- The invariant-heap store is classical: its order is its extension inclusion. -/
 private theorem invHeap_incN_of_ordN {n} {x y : InvHeapMapUR V H} (h : x ≼ₒ{n} y) :
     x ≼{n} y :=
   Heap.lookup_ordN.mpr fun i =>

@@ -113,9 +113,6 @@ instance instORADFrac : CMRA DFrac where
       exists discard
       rcases z with z|_|z <;> simp [op]
 
-
-
-
 @[rocq_alias dfrac_full_exclusive]
 instance own_whole_exclusive : ORA.Exclusive (α := DFrac) (own 1) where
   exclusive0_l := by

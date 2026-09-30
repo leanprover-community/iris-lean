@@ -272,7 +272,6 @@ theorem op_token' (x y : ReservationMap A H) : (x.op y).token = x.token • y.to
     · exact (valid_0_iff_validN n).mp (validN_token_of_validN (n := n.succ) v)
     · exact validN_disj v
 
-/-- The order on `ReservationMap A H`, inherited componentwise. -/
 @[reducible] def orderN : Ordered (ReservationMap A H) where
   OrderN n x y := x.data ≼ₒ{n} y.data ∧ x.token ≼ₒ{n} y.token
   Order x y := x.data ≼ₒ y.data ∧ x.token ≼ₒ y.token
@@ -372,7 +371,6 @@ instance instORAReservationMap : ORA (ReservationMap A H) where
 
 end
 
-/-- A reservation map over an affine algebra is affine. -/
 instance [ORA.Affine A] : ORA.Affine (ReservationMap A H) :=
   IncOrd.of_increasing fun v =>
     increasing_mk (IncOrd.increasing v.data)

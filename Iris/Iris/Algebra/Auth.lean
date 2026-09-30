@@ -435,19 +435,16 @@ theorem auth_update {a b a' b' : A}
     ((● a : Auth A) • ◯ b) ~~> (● a') • ◯ b' :=
   auth_one_op_frag_update fun n bf ⟨hinc, hv⟩ => hup n bf hinc hv
 
-/-- `auth_update` in allocation form: the fragment starts empty. -/
 theorem auth_update_alloc {a a' b' : A}
     (hup : ∀ n (bf : A), bf ≼ₒ{n} a → ✓{n} a → b' • bf ≼ₒ{n} a' ∧ ✓{n} a') :
     (● a : Auth A) ~~> (● a') • ◯ b' :=
   auth_one_alloc fun n bf ⟨hinc, hv⟩ => hup n bf hinc hv
 
-/-- `auth_update` in deallocation form: the fragment is given up. -/
 theorem auth_update_dealloc {a b a' : A}
     (hup : ∀ n (bf : A), b • bf ≼ₒ{n} a → ✓{n} a → bf ≼ₒ{n} a' ∧ ✓{n} a') :
     ((● a : Auth A) • ◯ b) ~~> ● a' :=
   auth_one_op_frag_dealloc fun n bf ⟨hinc, hv⟩ => hup n bf hinc hv
 
-/-- `auth_update` for the authority alone: every fragment bound is preserved. -/
 theorem auth_update_auth {a a' : A}
     (hup : ∀ n (bf : A), bf ≼ₒ{n} a → ✓{n} a → bf ≼ₒ{n} a' ∧ ✓{n} a') :
     (● a : Auth A) ~~> ● a' :=
@@ -468,7 +465,6 @@ theorem auth_update_of_localUpdate {a b a' b' : A}
   simp only [ORA.op?] at ha'_eq
   refine ⟨ORA.ordN_of_incN ⟨c, ha'_eq.trans assoc.dist⟩, hv'⟩
 
-/-- `auth_update_of_localUpdate` in allocation form. -/
 @[rocq_alias auth_update_alloc]
 theorem auth_update_alloc_of_localUpdate {a a' b' : A}
     (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y)
@@ -477,7 +473,6 @@ theorem auth_update_alloc_of_localUpdate {a a' b' : A}
   rw [← unit_right_id (x := (● a : Auth A))]
   exact auth_update_of_localUpdate hsub hup
 
-/-- `auth_update_of_localUpdate` in deallocation form. -/
 @[rocq_alias auth_update_dealloc]
 theorem auth_update_dealloc_of_localUpdate {a b a' : A}
     (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y)
@@ -486,7 +481,6 @@ theorem auth_update_dealloc_of_localUpdate {a b a' : A}
   rw [← unit_right_id (x := (● a' : Auth A))]
   exact auth_update_of_localUpdate hsub hup
 
-/-- `auth_update_of_localUpdate` for the authority alone. -/
 @[rocq_alias auth_update_auth]
 theorem auth_update_auth_of_localUpdate {a a' b' : A}
     (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y)

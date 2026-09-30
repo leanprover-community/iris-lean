@@ -182,7 +182,6 @@ def pcore_genmap (x : GenMap β) : Option (GenMap β) :=
     refine ⟨N, fun k hk => ?_⟩
     simp [ORA.core, ORA.pcore, optionCore, hN k hk]⟩
 
-/-- The resource algebra on `GenMap β`, inherited pointwise from `Nat → Option β`. -/
 @[reducible] def GenMap.raOp : Op (GenMap β) where
   op x y := ⟨x.car • y.car, op_bound β x y⟩
   op_ne.ne {_ _ _} H := op_ne (α := Nat → Option β) |>.ne H
@@ -221,8 +220,6 @@ def pcore_genmap (x : GenMap β) : Option (GenMap β) :=
     ⟨fun Hv _ => Hv.validN, fun H => valid_iff_validN.mpr (H ·)⟩
   validN_succ {_x _n} := validN_succ
 
-
-/-- The order on `GenMap β`, inherited pointwise from `Nat → Option β`. -/
 @[reducible] def GenMap.orderN : Ordered (GenMap β) where
   OrderN n x y := x.car ≼ₒ{n} y.car
   Order x y := x.car ≼ₒ y.car

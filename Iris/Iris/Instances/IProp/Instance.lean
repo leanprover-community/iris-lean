@@ -78,7 +78,6 @@ class ElemG (FF : BundledGFunctors) (F : OFunctorPre) [RFunctorContractive F] wh
   [affine : RFunctorAffine F]
   transp : FF τ = ⟨F⟩
 
--- Every functor of the global bundle is affine.
 attribute [instance] ElemG.affine
 
 #rocq_ignore subG_inG "Superseded by Lean's direct `ElemG` typeclass synthesis."
@@ -571,7 +570,6 @@ theorem iOwn_op {a1 a2 : F.ap (IProp GF)} : iOwn γ (a1 • a2) ⊣⊢ iOwn γ a
   rw [← iSingleton_op]
   exact UPred.ownM_op _ _
 
-/-- `iSingleton` is monotone for the resource order. -/
 theorem iSingleton_mono {γ : GName} {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ₒ a1) :
     iSingleton F γ a2 ≼ₒ iSingleton F γ a1 := by
   have hu : unfoldi (E.bundle a2) ≼ₒ unfoldi (E.bundle a1) :=
@@ -1025,7 +1023,6 @@ theorem iResProject_below {z : IResUR GF} {c : F.ap (IProp GF)}
   obtain ⟨v, hv, rfl⟩ := h
   exact ord_of_inc ⟨_, (iSingleton_op_alter hv).symm⟩
 
-/-- `iResProject` is monotone for the resource order. -/
 theorem iResProject_monoN {n} {x y : IResUR GF} (h : x ≼ₒ{n} y) :
     iResProject F γ x ≼ₒ{n} iResProject F γ y := by
   have hγ : (x E.τ).car γ ≼ₒ{n} (y E.τ).car γ := h E.τ γ

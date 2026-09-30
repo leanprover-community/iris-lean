@@ -131,7 +131,6 @@ instance {dq dq1 dq2 : DFrac} {l : List α} [h : IsOp d dq dq1 dq2] :
 
 /-! ## Validity -/
 
-/-- On `MaxPrefixList` — a map of `Agree` — the order and the extension inclusion agree. -/
 private theorem incN_of_ordN {n} {x y : MaxPrefixList α} (h : x ≼ₒ{n} y) : x ≼{n} y :=
   Heap.lookup_ordN.mpr fun i => Option.incN_of_ordN (fun h => h) (h i)
 

@@ -245,7 +245,6 @@ instance internalCmraIncluded_absorbing {a b : A} :
 
 /-! ### The internal order -/
 
-/-- The step-indexed order as a step-indexed proposition. -/
 def _root_.SiProp.cmraOrder (a b : A) : SiProp where
   holds n := a ≼ₒ{n} b
   closed h hle := h.le hle
@@ -312,12 +311,10 @@ theorem internalCmraOrder_trans {a b c : A} : ⊢@{PROP} a ≼ₒ b -∗ b ≼�
   BI.entails_wand <| BI.wand_intro <| siPure_and_sep.mpr.trans <|
     siPure_mono fun _ h => ordN_trans h.1 h.2
 
-/-- The internal order is monotone under morphisms. -/
 theorem internalCmraOrder_map {B : Type _} [ORA B] (g : A -C> B) {a b : A} :
     a ≼ₒ b ⊢@{PROP} g a ≼ₒ g b :=
   siPure_mono fun _ => g.monoN
 
-/-- In an affine algebra the internal extension inclusion implies the internal order. -/
 theorem internalCmraOrder_of_inc [Affine A] {a b : A} : a ≼ b ⊢@{PROP} a ≼ₒ b :=
   siPure_mono fun _ h => ordN_of_incN (inc_holds.mp h)
 

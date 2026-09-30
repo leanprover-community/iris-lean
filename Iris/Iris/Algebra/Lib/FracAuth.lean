@@ -246,8 +246,6 @@ instance isOp_frac_auth_core_id {q q1 q2 : Qp} {a : A}
 /-! ## Updates -/
 
 omit [ORA.Affine A] in
-/-- The order of the fragment algebra `Option (Qp × A)` embeds into the extension
-inclusion, given that the order of `A` does. -/
 private theorem incN_of_ordN (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y)
     {n : Nat} {x y : Option (Qp × A)} (h : x ≼ₒ{n} y) : x ≼{n} y :=
   Option.incN_of_ordN (Prod.incN_of_ordN (fun h => h) hsub) h

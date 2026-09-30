@@ -200,22 +200,18 @@ private theorem pcore_map_inr_eq [ORA β] {b : β} {cx : Csum α β}
     ∃ cb, ORA.pcore b = some cb ∧ cx = inr cb := by
   cases _ : ORA.pcore b <;> simp_all
 
-/-- The step-indexed order on `Csum α β`: the orders of `α` and `β` on the two summands, with
-`invalid` as the top element. -/
 abbrev OrderN [ORA α] [ORA β] (n : Nat) : Csum α β → Csum α β → Prop
   | _, invalid => True
   | inl a, inl a' => a ≼ₒ{n} a'
   | inr b, inr b' => b ≼ₒ{n} b'
   | _, _ => False
 
-/-- The order on `Csum α β`; see `Csum.OrderN`. -/
 abbrev Order [ORA α] [ORA β] : Csum α β → Csum α β → Prop
   | _, invalid => True
   | inl a, inl a' => a ≼ₒ a'
   | inr b, inr b' => b ≼ₒ b'
   | _, _ => False
 
-/-- The resource algebra on `Csum α β`. -/
 @[reducible, rocq_alias csum_cmra_mixin]
 def raOp [ORA α] [ORA β] : Op (Csum α β) where
   op := Csum.op
@@ -255,8 +251,6 @@ def raOp [ORA α] [ORA β] : Op (Csum α β) where
   validN_succ {x _} h := by
     cases x with | inl | inr => exact ORA.validN_succ h | invalid => exact h
 
-
-/-- The order on `Csum α β`. -/
 @[reducible] def orderN [ORA α] [ORA β] : Ordered (Csum α β) where
   OrderN := OrderN
   Order := Order

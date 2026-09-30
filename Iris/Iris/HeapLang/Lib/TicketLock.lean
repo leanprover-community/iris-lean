@@ -113,7 +113,6 @@ private theorem own_op_valid {γ : GName} {a₁ a₂ : TicketR} :
     own (GF := GF) γ a₁ ∗ own γ a₂ ⊢ ⌜✓ (a₁ • a₂)⌝ :=
   iOwn_cmraValid_op.trans (internalCmraValid_discrete (A := TicketR)).mp
 
-/-- The ticket algebra is classical: its order is its extension inclusion. -/
 private theorem ticket_incN_of_ordN {n}
     {x y : Option (Excl (DiscreteO Nat)) × DisjointLeibnizSet Tickets} (h : x ≼ₒ{n} y) :
     x ≼{n} y :=
