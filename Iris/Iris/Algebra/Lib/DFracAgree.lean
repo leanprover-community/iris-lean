@@ -77,17 +77,25 @@ theorem op_validN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
   rw [Agree.toAgree_op_validN_iff_dist]
   exact and_congr_left' (valid_iff_validN' (α := DFrac) n)
 
-@[rocq_alias dfrac_agree_included]
-theorem included {d₁ d₂ : DFrac} {a₁ a₂ : A} :
+theorem ord {d₁ d₂ : DFrac} {a₁ a₂ : A} :
     mk d₁ a₁ ≼ₒ mk d₂ a₂ ↔ (d₁ ≼ₒ d₂) ∧ a₁ = a₂ :=
   and_congr_right' Agree.toAgree_included
 
+@[rocq_alias dfrac_agree_included]
+theorem included {d₁ d₂ : DFrac} {a₁ a₂ : A} :
+    mk d₁ a₁ ≼ mk d₂ a₂ ↔ (d₁ ≼ d₂) ∧ a₁ = a₂ :=
+  .trans ⟨ord_of_inc, Prod.inc_of_ord (fun h => h) (fun h => h)⟩ ord
+
 #rocq_ignore dfrac_agree_included_L "Use included"
+
+theorem ordN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
+    mk d₁ a₁ ≼ₒ{n} mk d₂ a₂ ↔ (d₁ ≼ₒ d₂) ∧ a₁ ≡{n}≡ a₂ :=
+  and_congr (ord_iff_ordN (α := DFrac) n).symm Agree.toAgree_includedN
 
 @[rocq_alias dfrac_agree_includedN]
 theorem includedN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
-    mk d₁ a₁ ≼ₒ{n} mk d₂ a₂ ↔ (d₁ ≼ₒ d₂) ∧ a₁ ≡{n}≡ a₂ :=
-  and_congr (ord_iff_ordN (α := DFrac) n).symm Agree.toAgree_includedN
+    mk d₁ a₁ ≼{n} mk d₂ a₂ ↔ (d₁ ≼ d₂) ∧ a₁ ≡{n}≡ a₂ :=
+  .trans ⟨ordN_of_incN, Prod.incN_of_ordN (fun h => h) (fun h => h)⟩ ordN
 
 @[rocq_alias dfrac_agree_update_2]
 theorem update₂ {d₁ d₂ : DFrac} {a₁ a₂ a' : A} (hd : d₁ • d₂ = .own 1) :
@@ -141,15 +149,21 @@ theorem op_validN {q₁ q₂ : Qp} {a₁ a₂ : A} :
     ✓{n} (mk q₁ a₁ • mk q₂ a₂) ↔ (q₁ + q₂).val ≤ 1 ∧ a₁ ≡{n}≡ a₂ :=
   DFracAgree.op_validN
 
+theorem ord {q₁ q₂ : Qp} {a₁ a₂ : A} :
+    mk q₁ a₁ ≼ₒ mk q₂ a₂ ↔ (own q₁ ≼ₒ own q₂) ∧ a₁ = a₂ := DFracAgree.ord
+
 @[rocq_alias frac_agree_included]
 theorem included {q₁ q₂ : Qp} {a₁ a₂ : A} :
-    mk q₁ a₁ ≼ₒ mk q₂ a₂ ↔ (own q₁ ≼ₒ own q₂) ∧ a₁ = a₂ := DFracAgree.included
+    mk q₁ a₁ ≼ mk q₂ a₂ ↔ (own q₁ ≼ own q₂) ∧ a₁ = a₂ := DFracAgree.included
 
 #rocq_ignore frac_agree_included_L "Use included"
 
+theorem ordN {q₁ q₂ : Qp} {a₁ a₂ : A} :
+    mk q₁ a₁ ≼ₒ{n} mk q₂ a₂ ↔ (own q₁ ≼ₒ own q₂) ∧ a₁ ≡{n}≡ a₂ := DFracAgree.ordN
+
 @[rocq_alias frac_agree_includedN]
 theorem includedN {q₁ q₂ : Qp} {a₁ a₂ : A} :
-    mk q₁ a₁ ≼ₒ{n} mk q₂ a₂ ↔ (own q₁ ≼ₒ own q₂) ∧ a₁ ≡{n}≡ a₂ := DFracAgree.includedN
+    mk q₁ a₁ ≼{n} mk q₂ a₂ ↔ (own q₁ ≼ own q₂) ∧ a₁ ≡{n}≡ a₂ := DFracAgree.includedN
 
 @[rocq_alias frac_agree_update_2]
 theorem update₂ {q₁ q₂ : Qp} {a₁ a₂ a' : A} (hq : q₁ + q₂ = 1) :
