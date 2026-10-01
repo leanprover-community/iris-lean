@@ -1054,33 +1054,30 @@ section LaterCredits
 
 variable [BILaterCredits PROP]
 
-/-- Later credits on `MonPred I PROP`, constant in the index. -/
 @[rocq_alias monPred_defs.monPred_lc]
-protected def lc (n : Nat) : MonPred I PROP :=
-  MonPred.mk (fun _ => £ n) fun _ => .rfl
+def lc (n : Nat) : MonPred I PROP := MonPred.mk (fun _ => £ n) fun _ => .rfl
 
-#rocq_ignore monPred_defs.monPred_lc_def "Rocq unsealed definition body; use MonPred.lc."
-#rocq_ignore monPred_defs.monPred_lc_aux "Rocq sealing auxiliary definition."
-#rocq_ignore monPred_defs.monPred_lc_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_lc_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_defs.monPred_lc_def "Not needed"
+#rocq_ignore monPred_defs.monPred_lc_aux "Not needed"
+#rocq_ignore monPred_defs.monPred_lc_unseal "Not needed"
+#rocq_ignore monPred_lc_unseal "Not needed"
 
 @[rocq_alias monPred_bi_lc]
 instance monPred_bi_lc : BILaterCredits (MonPred I PROP) where
   lc := MonPred.lc
   lc_split := ⟨entails_at.mpr fun _ => lc_split.mp, entails_at.mpr fun _ => lc_split.mpr⟩
-  lc_timeless n := ⟨entails_at.mpr fun _ => (lc_timeless (PROP := PROP) (n := n)).timeless⟩
-  lc_0_persistent := ⟨entails_at.mpr fun _ => (lc_0_persistent (PROP := PROP)).persistent⟩
-  lc_affine n := ⟨entails_at.mpr fun _ => (lc_0_affine (PROP := PROP) (n := n)).affine⟩
+  lc_timeless n := ⟨entails_at.mpr fun _ => (lc_timeless n).timeless⟩
+  lc_0_persistent := ⟨entails_at.mpr fun _ => lc_0_persistent.persistent⟩
+  lc_affine n := ⟨entails_at.mpr fun _ => (lc_affine n).affine⟩
 
-#rocq_ignore monPred_lc_mixin "Rocq mixin record; subsumed by the BILaterCredits instance."
+#rocq_ignore monPred_lc_mixin "Subsumed by the BILaterCredits instance."
 
 @[rocq_alias monPred_at_lc]
-theorem monPred_at_lc (i : I.car) (n : Nat) :
-    (£ n : MonPred I PROP).monPred_at i ⊣⊢ £ n :=
-  .rfl
+theorem monPred_at_lc (i : I) (n : Nat) :
+  (lc (PROP := MonPred I PROP) n).monPred_at i ⊣⊢ £ n := .rfl
 
 @[rocq_alias lc_objective]
-instance lc_objective (n : Nat) : Objective (£ n : MonPred I PROP) where
+instance lc_objective (n : Nat) : Objective (I := I) (PROP := PROP) (£ n) where
   objective_at _ _ := .rfl
 
 @[rocq_alias monPred_bi_bupd_lc]
