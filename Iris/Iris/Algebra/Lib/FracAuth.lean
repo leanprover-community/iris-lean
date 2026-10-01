@@ -109,8 +109,8 @@ theorem agreeN {dq : DFrac} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F b) : a �
     · exact e.2.symm
     · exact absurd hv.1 (not_valid_of_exclN_inc (x := (1 : Qp)) i.1)
   | some y, hc =>
-    have hv' : ✓{n} (some (fracOne, b) • some y) := validN_of_ordN hc hv
-    exact (Exclusive.exclusive0_l (x := (fracOne, b)) y (validN_of_le (Nat.zero_le n) hv')).elim
+    exfalso
+    exact Exclusive.exclusive0_l y (validN_of_le (Nat.zero_le n) (Ordered.OrderNR.validN hc hv))
 
 @[rocq_alias frac_auth_agree]
 theorem agree {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F b) : a = b :=
@@ -292,10 +292,11 @@ theorem update_full {a b a' : A} (ha' : ✓ a') :
   match bf with
   | none => exact ⟨.inl .rfl, ⟨Qp.valid_one, ha'.validN⟩⟩
   | some (q, c) =>
-    have hv' := validN_of_ordN hinc hv
-    exact ((Exclusive.exclusive0_l (x := (((1 : Qp), b) : Qp × A)) (q, c))
-      (validN_of_le (Nat.zero_le n) hv')).elim
-
+    exfalso
+    refine ((Exclusive.exclusive0_l (x := (((1 : Qp), b) : Qp × A)) (q, c))
+      (validN_of_le n.zero_le ?_)).elim
+    exact Ordered.OrderNR.validN hinc hv
+    -- have hv' := validN_of_ordN hinc hv -- Was this, now it doesn't work?
 @[rocq_alias frac_auth_update_auth_persist]
 theorem update_auth_persist {dq : DFrac} {a : A} : (●F{dq} a) ~~> ●F{.discard} a :=
   Auth.auth_update_auth_persist

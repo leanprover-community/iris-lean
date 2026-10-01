@@ -16,28 +16,22 @@ meta import Iris.Std.RocqPorting
 
 namespace Iris
 
-open OFE ORA
+open OFE ORA UORA
 
 variable {α : Type _} [OFE α]
 
 @[rocq_alias mono_listR, rocq_alias mono_listUR, implicit_reducible]
 def MonoList (α : Type _) [OFE α] := Auth (MaxPrefixList α)
 
-instance : OFE (MonoList α) :=
-  Auth.instOFE
-
-instance : ORA (MonoList α) :=
-  Auth.instORA
-
-instance : UORA (MonoList α) :=
-  Auth.instUCMRA
+instance : OFE (MonoList α) := Auth.instOFE
+instance : ORA (MonoList α) := Auth.instORA
+instance : UORA (MonoList α) := Auth.instUCMRA
 
 instance instIsIncMonoList : IsInc (MonoList α) :=
   inferInstanceAs (IsInc (Auth (MaxPrefixList α)))
 
-instance instDiscrete [OFE.Discrete α] : ORA.Discrete (MonoList α) := by
-  unfold MonoList
-  infer_instance
+instance instDiscrete [OFE.Discrete α] : ORA.Discrete (MonoList α) :=
+  inferInstanceAs (ORA.Discrete (Auth (MaxPrefixList α)))
 
 namespace MonoList
 
@@ -93,7 +87,7 @@ instance {l : List α} : CoreId (●ML□ l) := by
   unfold auth MonoList
   infer_instance
 
-theorem lb_nil : ◯ML ([] : List α) = UORA.unit := by
+theorem lb_nil : ◯ML ([] : List α) = unit := by
   unfold lb MonoList
   rw [toMaxPrefixList_nil]
   rfl

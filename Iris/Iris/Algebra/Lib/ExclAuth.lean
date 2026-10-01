@@ -103,8 +103,7 @@ theorem frag_op_valid {a b : A} : (✓ (◯E a) • ◯E b) ↔ False := by
 
 @[rocq_alias excl_auth_update]
 theorem update {a b a' : A} : ((●E a) • ◯E b) ~~> ((●E a') • ◯E a') :=
-  Auth.auth_update
-    (.option (.exclusive trivial))
+  Auth.auth_update (.option (.exclusive trivial))
 
 /-! ## Functors -/
 

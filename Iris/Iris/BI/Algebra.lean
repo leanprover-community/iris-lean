@@ -87,20 +87,20 @@ section heap_view
 open HeapView BI Iris.Std PartialMap LawfulPartialMap BIBase.BiEntails
 
 variable {F K V : Type _} {H : Type _ → Type _}
-variable [LawfulPartialMap H K] [ORA V] [ORA.Affine V]
+variable [LawfulPartialMap H K] [ORA V]
 
-theorem auth_op_frag_validI [Sbi PROP] (dp : DFrac) (m : H V) k dq v :
+theorem auth_op_frag_validI_ord [Sbi PROP] [IncOrd V] (dp : DFrac) (m : H V) k dq v :
   ✓ (Auth dp m • Frag k dq v) ⊣⊢@{PROP}
     ∃ v' dq', ⌜✓ dp⌝ ∧ ⌜get? m k = .some v'⌝ ∧ ✓ (dq', v') ∧
       some (dq, v) ≼ₒ some (dq', v') := by
-  sbi_unfold; intro _; exact auth_op_frag_validN_iff
+  sbi_unfold; intro _; exact auth_op_frag_validN_iff_ord
 
 @[rocq_alias gmap_view_both_dfrac_validI]
-theorem auth_op_frag_validI_ext [Sbi PROP] [OrdInc V] (dp : DFrac) (m : H V) k dq v :
+theorem auth_op_frag_validI [Sbi PROP] [OrdInc V] (dp : DFrac) (m : H V) k dq v :
   ✓ (Auth dp m • Frag k dq v) ⊣⊢@{PROP}
     ∃ v' dq', ⌜✓ dp⌝ ∧ ⌜get? m k = .some v'⌝ ∧ ✓ (dq', v') ∧
       some (dq, v) ≼ some (dq', v') := by
-  sbi_unfold; intro _; exact auth_op_frag_validN_iff_ext
+  sbi_unfold; intro _; exact auth_op_frag_validN_iff
 
 @[rocq_alias gmap_view_both_validI]
 theorem auth_op_frag_one_validI [Sbi PROP] (dp : DFrac) (m : H V) k v :
@@ -108,19 +108,20 @@ theorem auth_op_frag_one_validI [Sbi PROP] (dp : DFrac) (m : H V) k v :
     ⌜✓ dp⌝ ∧ ✓ v ∧ get? m k ≡ .some v := by
   sbi_unfold; intro _; exact auth_op_frag_one_validN_iff
 
-theorem auth_op_frag_validI_total [Sbi PROP] [OrderRefl V] (dp : DFrac) (m : H V) k dq v :
+theorem auth_op_frag_validI_total_ord [Sbi PROP] [OrderRefl V] [IncOrd V] (dp : DFrac) (m : H V)
+    k dq v :
   ✓ (Auth dp m • Frag k dq v) ⊢@{PROP}
     ∃ v', ⌜✓ dp⌝ ∧ ⌜✓ dq⌝ ∧ ⌜get? m k = .some v'⌝ ∧
       ✓ v' ∧ v ≼ₒ v' := by
-  sbi_unfold; intro _; exact auth_op_frag_validN_total_iff
+  sbi_unfold; intro _; exact auth_op_frag_validN_total_iff_ord
 
 @[rocq_alias gmap_view_both_validI_total]
-theorem auth_op_frag_validI_total_ext [Sbi PROP] [OrdInc V] [OrderRefl V] (dp : DFrac) (m : H V)
+theorem auth_op_frag_validI_total [Sbi PROP] [OrderRefl V] [OrdInc V] (dp : DFrac) (m : H V)
     k dq v :
   ✓ (Auth dp m • Frag k dq v) ⊢@{PROP}
     ∃ v', ⌜✓ dp⌝ ∧ ⌜✓ dq⌝ ∧ ⌜get? m k = .some v'⌝ ∧
       ✓ v' ∧ v ≼ v' := by
-  sbi_unfold; intro _; exact auth_op_frag_validN_total_iff_ext
+  sbi_unfold; intro _; exact auth_op_frag_validN_total_iff
 
 @[rocq_alias gmap_view_frag_op_validI]
 theorem frag_op_frag_validI [Sbi PROP] k dq1 dq2 v1 v2 :

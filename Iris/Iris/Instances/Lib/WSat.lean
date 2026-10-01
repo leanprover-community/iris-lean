@@ -204,7 +204,7 @@ theorem invariant_lookup (I : InvMap (IProp GF)) (i : Pos) (P : IProp GF) :
   iintro H
   ihave H := iOwn_cmraValid_op $$ H
   ihave ⟨%v', %dp', %Hdp, %Hlookup, H1, H2⟩ :=
-    (auth_op_frag_validI_total
+    (auth_op_frag_validI_total_ord
       (own 1) (map toAgree (map invariant_unfold I))) $$ H
   simp only [LawfulPartialMap.get?_map, Option.map_map, Option.map_eq_some_iff,
     Function.comp_apply] at Hlookup

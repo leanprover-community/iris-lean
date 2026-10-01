@@ -72,8 +72,8 @@ instance frag_discrete {q : Qp} {a : A} [DiscreteE a] : DiscreteE (◯U{q} a) :=
 /-! ## Validity -/
 
 @[rocq_alias ufrac_auth_validN]
-theorem validN [IncOrd A] {n : Nat} {a : A} {p : Qp} (ha : ✓{n} a) : ✓{n} (●U{p} a) • ◯U{p} a := by
-  simpa only [both_validN_ord] using ⟨ordN_refl _, ⟨trivial, ha⟩⟩
+theorem validN {n : Nat} {a : A} {p : Qp} (ha : ✓{n} a) : ✓{n} (●U{p} a) • ◯U{p} a :=
+  both_validN_frame.mpr ⟨⟨none, ordN_refl _⟩, trivial, ha⟩
 
 @[rocq_alias ufrac_auth_valid]
 theorem valid {p : Qp} {a : A} (ha : ✓ a) : ✓ (●U{p} a) • ◯U{p} a :=
@@ -82,66 +82,86 @@ theorem valid {p : Qp} {a : A} (ha : ✓ a) : ✓ (●U{p} a) • ◯U{p} a :=
 /-! ## Agreement -/
 
 @[rocq_alias ufrac_auth_agreeN]
-theorem agreeN [IncOrd A] {n : Nat} {p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{p} b) : a ≡{n}≡ b := by
-  rcases (both_validN_ord.mp h).1 with e | i
-  · exact e.2.symm
-  · obtain ⟨r, hr⟩ := i.1
-    have hp : p = p + r.frac := ext_iff.mp hr
-    grind
+theorem agreeN {n : Nat} {p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{p} b) : a ≡{n}≡ b := by
+  obtain ⟨⟨c, hc⟩, _⟩ := both_validN_frame.mp h
+  match c, hc with
+  | none, hc =>
+    rcases some_ordN_some_iff.mp hc with e | i
+    · exact e.2.symm
+    · obtain ⟨r, hr⟩ := i.1
+      have hp : p = p + r.frac := ext_iff.mp hr
+      grind
+  | some (r, _), hc =>
+    rcases some_ordN_some_iff.mp hc with e | i
+    · have hp : p + r.frac = p := ext_iff.mp e.1
+      grind
+    · obtain ⟨s, hs⟩ := i.1
+      have hp : p = p + r.frac + s.frac := ext_iff.mp hs
+      grind
 
 @[rocq_alias ufrac_auth_agree]
-theorem agree [IncOrd A] {p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{p} b) : a = b :=
+theorem agree {p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{p} b) : a = b :=
   eq_dist_2 (agreeN <| valid_iff_validN.mp h ·)
 
 #rocq_ignore ufrac_auth_agree_L "Use agree"
 
 /-! ## Inclusion -/
 
-section
-variable [IncOrd A]
+theorem ordN_frame {n : Nat} {p q : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{q} b) :
+    ∃ c, some b • c ≼ₒ{n} some a := by
+  obtain ⟨⟨c, hc⟩, _⟩ := both_validN_frame.mp h
+  have snd {x : UFrac × A} (hx : some x ≼ₒ{n} some (⟨p⟩, a)) : some x.2 ≼ₒ{n} some a :=
+    (some_ordN_some_iff.mp hx).elim (some_ordN_some_iff.mpr <| .inl ·.2)
+      (some_ordN_some_iff.mpr <| .inr ·.2)
+  match c, hc with
+  | none, hc => exact ⟨none, snd hc⟩
+  | some (_, d), hc => exact ⟨some d, snd hc⟩
 
-theorem includedN {n : Nat} {p q : Qp} {a b : A}
-    (h : ✓{n} (●U{p} a) • ◯U{q} b) : some b ≼ₒ{n} some a := by
-  rw [both_validN_ord] at h
-  rcases h.1 with e | i
-  · exact Option.some_ordN_some_iff.mpr (.inl e.2)
-  · exact Option.some_ordN_some_iff.mpr (.inr i.2)
+theorem ordN [IncOrd A] {n : Nat} {p q : Qp} {a b : A}
+    (h : ✓{n} (●U{p} a) • ◯U{q} b) : some b ≼ₒ{n} some a :=
+  exists_op_ordN_iff_ordN.mp (ordN_frame h)
 
 @[rocq_alias ufrac_auth_includedN]
-theorem includedN_ext [OrdInc A] {n : Nat} {p q : Qp} {a b : A}
+theorem includedN [OrdInc A] {n : Nat} {p q : Qp} {a b : A}
     (h : ✓{n} (●U{p} a) • ◯U{q} b) : some b ≼{n} some a :=
-  OrdInc.ordN_incN (includedN h)
+  exists_op_ordN_iff_incN.mp (ordN_frame h)
 
-theorem included [ORA.Discrete A] {q p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{q} b) :
-    some b ≼ₒ some a := by
-  rw [auth_both_valid_discrete_ord] at h
-  rcases h.1 with e | i
-  · exact Option.some_ord_some_iff.mpr (.inl (congrArg Prod.snd e))
-  · exact Option.some_ord_some_iff.mpr (.inr i.2)
+theorem ord_frame [ORA.Discrete A] {q p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{q} b) :
+    ∃ c, some b • c ≼ₒ some a := by
+  obtain ⟨⟨c, hc⟩, _⟩ := auth_both_valid_discrete_frame.mp h
+  have snd {x : UFrac × A} (hx : some x ≼ₒ some (⟨p⟩, a)) : some x.2 ≼ₒ some a :=
+    (some_ord_some_iff.mp hx).elim (some_ord_some_iff.mpr <| .inl <| congrArg Prod.snd ·)
+      (some_ord_some_iff.mpr <| .inr ·.2)
+  match c, hc with
+  | none, hc => exact ⟨none, snd hc⟩
+  | some (_, d), hc => exact ⟨some d, snd hc⟩
+
+theorem ord [ORA.Discrete A] [IncOrd A] {q p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{q} b) :
+    some b ≼ₒ some a :=
+  exists_op_ord_iff_ord.mp (ord_frame h)
 
 @[rocq_alias ufrac_auth_included]
-theorem included_ext [ORA.Discrete A] [OrdInc A] {q p : Qp} {a b : A}
+theorem included [ORA.Discrete A] [OrdInc A] {q p : Qp} {a b : A}
     (h : ✓ (●U{p} a) • ◯U{q} b) : some b ≼ some a :=
-  OrdInc.ord_inc (included h)
+  exists_op_ord_iff_inc.mp (ord_frame h)
 
-theorem includedN_total [OrderRefl A] {n : Nat} {q p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{q} b) :
-    b ≼ₒ{n} a := (Option.some_ordN_some_iff.mp (includedN h)).elim (·.to_ordN) id
+theorem ordN_total [OrderRefl A] [IncOrd A] {n : Nat} {q p : Qp} {a b : A}
+    (h : ✓{n} (●U{p} a) • ◯U{q} b) : b ≼ₒ{n} a :=
+  (Option.some_ordN_some_iff.mp (ordN h)).elim (·.to_ordN) id
 
 @[rocq_alias ufrac_auth_includedN_total]
-theorem includedN_total_ext [OrderRefl A] [OrdInc A] {n : Nat} {q p : Qp} {a b : A}
+theorem includedN_total [OrderRefl A] [OrdInc A] {n : Nat} {q p : Qp} {a b : A}
     (h : ✓{n} (●U{p} a) • ◯U{q} b) : b ≼{n} a :=
-  OrdInc.ordN_incN (includedN_total h)
+  (dist_or_incN_of_some_incN_some (includedN h)).elim (OrdInc.ordN_incN ·.to_ordN) id
 
-theorem included_total [ORA.Discrete A] [OrderRefl A] {q p : Qp} {a b : A}
+theorem ord_total [ORA.Discrete A] [OrderRefl A] [IncOrd A] {q p : Qp} {a b : A}
     (h : ✓ (●U{p} a) • ◯U{q} b) : b ≼ₒ a :=
-  (Option.some_ord_some_iff.mp (included h)).elim (· ▸ ORA.ord_refl b) id
+  (Option.some_ord_some_iff.mp (ord h)).elim (· ▸ ORA.ord_refl b) id
 
 @[rocq_alias ufrac_auth_included_total]
-theorem included_total_ext [ORA.Discrete A] [OrderRefl A] [OrdInc A] {q p : Qp} {a b : A}
+theorem included_total [ORA.Discrete A] [OrderRefl A] [OrdInc A] {q p : Qp} {a b : A}
     (h : ✓ (●U{p} a) • ◯U{q} b) : b ≼ a :=
-  OrdInc.ord_inc (included_total h)
-
-end
+  (eq_or_inc_of_some_inc_some (included h)).elim (· ▸ OrdInc.ord_inc (ORA.ord_refl b)) id
 
 /-! ## Auth-only validity -/
 
@@ -206,25 +226,13 @@ theorem update [OrdInc A] {p q : Qp} {a b a' b' : A} (h : (a, b) ~l~> (a', b')) 
   auth_update (.option (.prod_2 _ _ h))
 
 @[rocq_alias ufrac_auth_update_surplus]
-theorem update_surplus [IncOrd A] {p q : Qp} {a b : A} (h : ✓ (a • b)) :
+theorem update_surplus {p q : Qp} {a b : A} (h : ✓ (a • b)) :
     (●U{p} a) ~~> (●U{p + q} (a • b)) • ◯U{q} b := by
-  refine auth_update_alloc_ord fun n bf hinc _ => ⟨?_, ⟨trivial, h.validN⟩⟩
-  match bf, hinc with
-  | none, _ =>
-    refine .inr ⟨(UFrac.ord_iff).mpr (by change q.val < (p + q).val; grind), ?_⟩
-    exact ordN_of_ord n ((IncOrd.increasing a).increasing b)
-  | some (r, c), .inl ⟨hr, hc⟩ =>
-    refine .inl ⟨?_, ?_⟩
-    · have : r = ⟨p⟩ := hr
-      subst this
-      exact Dist.of_eq (UFrac.ext_iff.mpr
-        (show ((⟨q⟩ : UFrac) • ⟨p⟩).frac = p + q by rw [frac_op]; grind))
-    · exact (hc.op_r (x := b)).trans comm.dist
-  | some (r, c), .inr ⟨hr, hc⟩ =>
-    refine .inr ⟨UFrac.ord_iff.mpr ?_, ordN_ne .rfl comm.dist (op_monoN_right b hc)⟩
-    have := UFrac.ord_iff.mp hr
-    change ((⟨q⟩ : UFrac) • r).frac < p + q
-    rw [frac_op]; grind
+  refine auth_update_alloc_ord fun n bf hinc _ => ⟨ordN_ne .rfl ?_ (op_monoN_right _ hinc),
+    ⟨trivial, h.validN⟩⟩
+  refine some_dist_some.mpr ⟨Dist.of_eq (UFrac.ext_iff.mpr ?_), comm.dist⟩
+  change ((⟨q⟩ : UFrac) • ⟨p⟩).frac = p + q
+  rw [frac_op]; grind
 
 @[rocq_alias ufrac_auth_update_surplus_cancel]
 theorem update_surplus_cancel [OrdInc A] {p q : Qp} {a b : A} [ORA.Cancelable b] :
