@@ -440,7 +440,7 @@ theorem increasing_get? {m : M V} (h : Increasing m) (k : K) : Increasing (get? 
     | some v => by simpa [get?_op, get?_insert_eq rfl] using h.increasing (insert ∅ k v) k
 
 theorem increasing_iff {m : M V} : Increasing m ↔ ∀ k, Increasing (get? m k) :=
-  ⟨increasing_get?, fun h => { increasing := fun m' k => by rw [get?_op]; exact (h k).increasing _ }⟩
+  ⟨increasing_get?, fun h => ⟨fun m' k => by rw [get?_op]; exact (h k).increasing _⟩⟩
 
 open OFE in
 @[rocq_alias gmapR, rocq_alias gmap_cmra_mixin]
@@ -497,19 +497,15 @@ instance instStoreCMRA : ORA (M V) where
   op_monoN_left_ord z h k := by rw [get?_op, get?_op]; exact op_monoN_left_ord _ (h k)
   op_mono_left_ord z h k := by rw [get?_op, get?_op]; exact op_mono_left_ord _ (h k)
   validN_of_ordN h v k := validN_of_ordN (h k) (v k)
-  pcore_monoN_ord {n x y cx} h e :=
-    have hcx : cx = core x := Option.some.inj e.symm
-    ⟨core y, rfl, fun k => by rw [hcx, get?_core, get?_core]; exact core_ordN_core (h k)⟩
-  pcore_mono_ord {x y cx} h e :=
-    have hcx : cx = core x := Option.some.inj e.symm
-    ⟨core y, rfl, fun k => by rw [hcx, get?_core, get?_core]; exact core_mono_ord (h k)⟩
-  pcore_order_op {x cx} e y :=
-    have hcx : cx = core x := Option.some.inj e.symm
-    ⟨core (x • y), rfl, fun k => by
-      rw [hcx, get?_core, get?_core, get?_op]; exact core_op_mono_ord _ _⟩
-  pcore_increasing {x cx} e :=
-    have hcx : cx = core x := Option.some.inj e.symm
-    hcx ▸ increasing_iff.mpr fun k => by rw [get?_core]; exact inferInstance
+  pcore_monoN_ord {_ x y cx} h e := ⟨core y, rfl, fun k => by
+    rw [(Option.some.inj e.symm : cx = core x), get?_core, get?_core]; exact core_ordN_core (h k)⟩
+  pcore_mono_ord {x y cx} h e := ⟨core y, rfl, fun k => by
+    rw [(Option.some.inj e.symm : cx = core x), get?_core, get?_core]; exact core_mono_ord (h k)⟩
+  pcore_order_op {x cx} e y := ⟨core (x • y), rfl, fun k => by
+    rw [(Option.some.inj e.symm : cx = core x), get?_core, get?_core, get?_op]
+    exact core_op_mono_ord _ _⟩
+  pcore_increasing {x cx} e := (Option.some.inj e.symm : cx = core x) ▸
+    increasing_iff.mpr fun k => (get?_core x k).symm ▸ increasing_core _
   increasing_closed h h' := increasing_iff.mpr fun k =>
       increasing_closed (increasing_get? h k) (h'.imp (fun e => (get?_ne k).ne e) (· k))
   ordN_extend {n x y} v h :=
@@ -517,10 +513,7 @@ instance instStoreCMRA : ORA (M V) where
     have hfx : ∀ k, get? (bindAlter (fun k _ => f k) x) k = f k := fun k => by
       rw [get?_bindAlter]
       cases hx : get? x k
-      · have := (hf k).2
-        rw [hx] at this
-        revert this
-        cases f k <;> simp [OFE.Dist, Option.Forall₂]
+      · exact (OFE.dist_none.mp (hx ▸ (hf k).2)).symm
       · rfl
     ⟨bindAlter (fun k _ => f k) x, fun k => by rw [hfx]; exact (hf k).1,
       fun k => by rw [hfx]; exact (hf k).2⟩
@@ -755,40 +748,23 @@ open Classical in
 theorem singleton_ordN_iff [IncOrd V] {m : M V} :
     (singleton i x) ≼ₒ{n} m ↔ ∃ y, (get? m i ≡{n}≡ some y) ∧ some x ≼ₒ{n} some y := by
   refine ⟨fun h => ?_, fun ⟨y, Hy, Hxy⟩ k => ?_⟩
-  · have hi := h i
-    rw [get?_singleton_eq rfl] at hi
-    rcases hm : get? m i with _ | y
-    · rw [hm] at hi; exact (hi : False).elim
-    · rw [hm] at hi; exact ⟨y, .rfl, hi⟩
+  · have ⟨y, hy, hxy⟩ := Option.exists_of_some_ordN (get?_singleton_eq (M := M) rfl ▸ h i)
+    exact ⟨y, .of_eq hy, hxy⟩
   · by_cases hk : i = k
     · subst hk; rw [get?_singleton_eq rfl]; exact ordN_ne .rfl Hy.symm Hxy
-    · simp only [get?_singleton, hk, ↓reduceIte]
-      rcases get? m k with _ | v
-      · trivial
-      · exact IncOrd.increasing v
+    · simp only [get?_singleton, hk, ↓reduceIte]; exact ordN_unit
 
 open Classical in
 theorem singleton_ord_iff [IncOrd V] {m : M V} :
     (singleton i x) ≼ₒ m ↔ ∃ y, (get? m i = some y) ∧ some x ≼ₒ some y := by
-  refine ⟨fun h => ?_, fun ⟨y, Hy, Hxy⟩ k => ?_⟩
-  · have hi := h i
-    rw [get?_singleton_eq rfl] at hi
-    rcases hm : get? m i with _ | y
-    · rw [hm] at hi; exact (hi : False).elim
-    · rw [hm] at hi; exact ⟨y, rfl, hi⟩
+  refine ⟨fun h => Option.exists_of_some_ord (get?_singleton_eq (M := M) rfl ▸ h i),
+    fun ⟨y, Hy, Hxy⟩ k => ?_⟩
   · by_cases hk : i = k
     · subst hk; rw [get?_singleton_eq rfl, Hy]; exact Hxy
-    · simp only [get?_singleton, hk, ↓reduceIte]
-      rcases get? m k with _ | v
-      · trivial
-      · exact IncOrd.increasing v
+    · simp only [get?_singleton, hk, ↓reduceIte]; exact ord_unit
 
-theorem ord_dom_ord {m1 m2 : M V} (Hinc : m1 ≼ₒ m2) : Set.Included (dom m1) (dom m2) := by
-  intro i
-  unfold dom
-  have := Hinc i
-  revert this
-  cases get? m1 i <;> cases get? m2 i <;> simp; exact id
+theorem ord_dom_ord {m1 m2 : M V} (Hinc : m1 ≼ₒ m2) : Set.Included (dom m1) (dom m2) :=
+  fun i => Option.isSome_mono_ord (Hinc i)
 
 open Classical in
 @[rocq_alias singleton_includedN_l]
@@ -872,7 +848,8 @@ theorem singleton_inc_singleton_iff :
   · refine ⟨y, ?_, H⟩
     exact get?_singleton_eq rfl
 
-theorem exclusive_singleton_ord_iff [IncOrd V] [OrdInc V] {m : M V} (He : Exclusive x) (Hv : ✓ m) :
+theorem exclusive_singleton_ord_iff [IncOrd V] [OrdInc V] {m : M V} (He : Exclusive x)
+    (Hv : ✓ m) :
     (singleton i x) ≼ₒ m ↔ (get? m i = some x) :=
   inc_iff_ord.symm.trans (exclusive_singleton_inc_iff He Hv)
 
@@ -1438,7 +1415,8 @@ instance {F} [RFunctor F] : URFunctor (PartialMapOF H F) where
     cases get? m x <;> simp
     exact (RFunctor.map_comp f g f' g' _).dist
 
-instance instRFunctorAffine {F} [RFunctor F] [RFunctorAffine F] : RFunctorAffine (PartialMapOF H F) where
+instance instRFunctorAffine {F} [RFunctor F] [RFunctorAffine F] :
+    RFunctorAffine (PartialMapOF H F) where
   affine := inferInstance
 
 @[rocq_alias gmapURF_contractive]

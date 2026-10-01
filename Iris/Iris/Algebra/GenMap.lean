@@ -202,14 +202,9 @@ def pcore_genmap (x : GenMap β) : Option (GenMap β) := some ⟨fun k => core (
     · suffices hcx : cx.car = fun k => core (x.car k) by rw [hcx]; exact (H k).core
       simp only [pcore_genmap, Option.some.injEq] at Hm
       exact (congrArg GenMap.car Hm).symm
-  pcore_idem {x cx} H := OFE.eq_dist_2 <| by
-    have hcx : cx.car = fun k => core (x.car k) := by
-      exact (congrArg GenMap.car (Option.some.inj H)).symm
-    simp only [pcore_genmap]
-    intro n k
-    have H : cx.car k = core (x.car k) := congrFun hcx k
-    simp only [H]
-    exact (core_idem (x.car k)).dist
+  pcore_idem {x _} H := by
+    obtain rfl := Option.some.inj H
+    exact congrArg some (GenMap.ext (funext fun k => core_idem (x.car k)))
 
 @[reducible] def GenMap.raValid : _root_.Iris.Valid (GenMap β) where
   ValidN n x := ✓{n} x.car
@@ -235,8 +230,7 @@ attribute [local instance] GenMap.raOp GenMap.raPCore GenMap.raValid GenMap.orde
 theorem GenMap.increasing_apply {x : GenMap β} (h : Increasing x) (k : Nat) :
     Increasing (x.car k) where
   increasing b := by
-    have := h.increasing (empty.alter k b) k
-    simpa [alter, Iris.alter, DiscreteFun.op_apply] using this
+    simpa [alter, Iris.alter, DiscreteFun.op_apply] using h.increasing (empty.alter k b) k
 
 theorem GenMap.increasing_car {x : GenMap β} (h : Increasing x) : Increasing x.car :=
   DiscreteFun.increasing_iff.mpr (increasing_apply β h)
@@ -249,13 +243,9 @@ instance instORA_GenMap : ORA (GenMap β) where
   toPCore := GenMap.raPCore β
   toValid := GenMap.raValid β
   validN_op_left {n x y} h := validN_op_left (x := x.car) (y := y.car) h
-  pcore_op_left {x cx} H := OFE.eq_dist_2 <| by
-    have hcx : cx.car = fun k => core (x.car k) := by
-      exact (congrArg GenMap.car (Option.some.inj H)).symm
-    intro n k
-    have H : cx.car k = core (x.car k) := congrFun hcx k
-    simp only [op, optionOp, H]
-    exact (core_op (x.car k)).dist
+  pcore_op_left {x _} H := by
+    obtain rfl := Option.some.inj H
+    exact GenMap.ext (funext fun k => core_op (x.car k))
   extend {n x y1 y2} := by
     intro Hv H
     have eb := extend_bound β Hv H
@@ -281,13 +271,8 @@ instance instORA_GenMap : ORA (GenMap β) where
   increasing_closed h h' := increasing_of_car β (increasing_closed (increasing_car β h) h')
   ordN_extend {n x y} v h :=
     let ⟨z, hz, ez⟩ := ordN_extend v h
-    ⟨⟨z, by
-      obtain ⟨N, hN⟩ := x.bound
-      refine ⟨N, fun k hk => ?_⟩
-      have := ez k
-      rw [hN k hk] at this
-      revert this
-      cases z k <;> simp [Dist, Option.Forall₂]⟩, hz, ez⟩
+    let ⟨N, hN⟩ := x.bound
+    ⟨⟨z, N, fun k hk => dist_none.mp (hN k hk ▸ ez k)⟩, hz, ez⟩
 
 end
 
@@ -308,22 +293,16 @@ instance instAffineGenMap [IncOrd β] : IncOrd (GenMap β) :=
   IncOrd.of_increasing fun x => GenMap.increasing_of_car β (IncOrd.increasing x.car)
 
 instance instOrdIncGenMap [OrdInc β] : OrdInc (GenMap β) where
-  ord_inc {x y} h := by
-    obtain ⟨z, hz⟩ := OrdInc.ord_inc (α := Nat → Option β) h
-    obtain ⟨N, hN⟩ := y.bound
-    refine ⟨⟨z, N, fun k hk => ?_⟩, GenMap.ext hz⟩
-    have hk' := congrFun hz k
-    rw [hN k hk] at hk'
-    rcases hx : x.car k with _ | a <;> rcases hzk : z k with _ | b <;>
-      simp only [hx, hzk, op, optionOp] at hk' <;> first | rfl | cases hk'
-  ordN_incN {n x y} h := by
-    obtain ⟨z, hz⟩ := OrdInc.ordN_incN (α := Nat → Option β) h
-    obtain ⟨N, hN⟩ := y.bound
-    refine ⟨⟨z, N, fun k hk => ?_⟩, hz⟩
-    have hk' := hz k
-    rw [hN k hk] at hk'
-    rcases hx : x.car k with _ | a <;> rcases hzk : z k with _ | b <;>
-      simp only [hx, hzk, op, optionOp] at hk' <;> first | rfl | exact (hk' : False).elim
+  ord_inc {_ y} h :=
+    let ⟨z, hz⟩ := OrdInc.ord_inc (α := Nat → Option β) h
+    let ⟨N, hN⟩ := y.bound
+    ⟨⟨z, N, fun k hk => Option.eq_none_of_op_eq_none_right ((congrFun hz k).symm.trans (hN k hk))⟩,
+      GenMap.ext hz⟩
+  ordN_incN {_ _ y} h :=
+    let ⟨z, hz⟩ := OrdInc.ordN_incN (α := Nat → Option β) h
+    let ⟨N, hN⟩ := y.bound
+    ⟨⟨z, N, fun k hk =>
+      Option.eq_none_of_op_eq_none_right (dist_none.mp ((hz k).symm.trans (.of_eq (hN k hk))))⟩, hz⟩
 
 instance instIsIncGenMap [IsInc β] : IsInc (GenMap β) := {}
 
@@ -471,7 +450,8 @@ instance instURFunctor_GenMapOF (F : COFE.OFunctorPre) [RFunctor F] :
   map_id x := OFunctor.map_id x
   map_comp f g f' g' x := OFunctor.map_comp f g f' g' x
 
-instance instRFunctorAffineGenMapOF (F : COFE.OFunctorPre) [RFunctor F] [RFunctorAffine F] : RFunctorAffine (GenMapOF F) where
+instance instRFunctorAffineGenMapOF (F : COFE.OFunctorPre) [RFunctor F] [RFunctorAffine F] :
+    RFunctorAffine (GenMapOF F) where
   affine := inferInstance
 
 instance instURFunctorContractive_GenMapOF (F : COFE.OFunctorPre) [RFunctorContractive F] :
