@@ -34,6 +34,10 @@ theorem prod_validI [Sbi PROP] [ORA A] [ORA B] (x : A × B) :
     ✓ x ⊣⊢@{PROP} ✓ x.1 ∧ ✓ x.2 := by
   sbi_unfold; intro _; exact .rfl
 
+theorem prod_ordI [Sbi PROP] [ORA A] [ORA B] (x y : A × B) :
+    x ≼ₒ y ⊣⊢@{PROP} x.1 ≼ₒ y.1 ∧ x.2 ≼ₒ y.2 := by
+  sbi_unfold; intro _; exact Prod.ordN_def
+
 @[rocq_alias prod_includedI]
 theorem prod_includedI [Sbi PROP] [ORA A] [ORA B] (x y : A × B) :
     x ≼ y ⊣⊢@{PROP} x.1 ≼ y.1 ∧ x.2 ≼ y.2 := by
@@ -50,6 +54,16 @@ theorem option_validI [Sbi PROP] [ORA A] {mx : Option A} :
   ✓ mx ⊣⊢@{PROP} mx.elim iprop(True) internalCmraValid := by
   cases mx <;> simp only [Option.elim] <;> sbi_unfold <;> intro _ <;> exact .rfl
 
+theorem option_ordI [Sbi PROP] [ORA A] {mx my : Option A} :
+  mx ≼ₒ my ⊣⊢@{PROP}
+    mx.elim (my.elim iprop(True) fun y => iprop(⌜Increasing y⌝))
+      fun x => my.elim iprop(False) fun y => iprop((x ≼ₒ y) ∨ (x ≡ y)) := by
+  rcases mx with _ | x <;> rcases my with _ | y
+  · exact internalCmraOrder_pure fun _ => iff_true_intro trivial
+  · exact internalCmraOrder_pure fun _ => Option.none_ordN_some_iff
+  · exact internalCmraOrder_pure fun _ => iff_false_intro Option.not_some_ordN_none
+  · simp only [Option.elim]; sbi_unfold; intro _; exact Option.some_ordN_some_iff.trans Or.comm
+
 @[rocq_alias option_includedI]
 theorem option_includedI [Sbi PROP] [ORA A] {mx my : Option A} :
   mx ≼ my ⊣⊢@{PROP}
@@ -57,6 +71,14 @@ theorem option_includedI [Sbi PROP] [ORA A] {mx my : Option A} :
   rcases mx with _ | x <;> rcases my with _ | y <;>
     try exact internalCmraIncluded_pure fun _ => by simp [Option.incN_iff]
   simp only [Option.elim]; sbi_unfold; intro _; exact Option.some_incN_some_iff.trans Or.comm
+
+theorem option_ord_totalI [Sbi PROP] [ORA A] [IncOrd A] [OrderRefl A] {mx my : Option A} :
+  mx ≼ₒ my ⊣⊢@{PROP}
+    mx.elim iprop(True) fun x => my.elim iprop(False) fun y => iprop(x ≼ₒ y) := by
+  rcases mx with _ | x <;> rcases my with _ | y <;>
+    first
+    | exact internalCmraOrder_iff fun _ => by simp [Option.ordN_iff_ordRefl]
+    | exact internalCmraOrder_pure fun _ => by simp [Option.ordN_iff_ordRefl]
 
 @[rocq_alias option_included_totalI]
 theorem option_included_totalI [Sbi PROP] [ORA A] [IsTotal A] {mx my : Option A} :
@@ -340,6 +362,10 @@ theorem excl_validI (x : Excl A) :
   | excl a => exact ⟨fun _ => nofun, fun _ => trivial⟩
   | invalid => exact ⟨fun h => h.elim, fun h => (h rfl).elim⟩
 
+theorem excl_ordI (x y : Excl A) :
+    x ≼ₒ y ⊣⊢@{PROP} ⌜y = Excl.invalid⌝ :=
+  internalCmraOrder_pure ordN_iff
+
 @[rocq_alias excl_includedI]
 theorem excl_includedI (x y : Excl A) :
     x ≼ y ⊣⊢@{PROP} ⌜y = Excl.invalid⌝ :=
@@ -367,6 +393,16 @@ theorem csum_validI [ORA A] [ORA B] (x : Csum A B) : ✓ x ⊣⊢@{PROP} match x
       | inr b => iprop(✓ b)
       | invalid => iprop(False) := by
   cases x <;> sbi_unfold <;> intro _ <;> exact .rfl
+
+theorem csum_ordI [ORA A] [ORA B] (x y : Csum A B) : x ≼ₒ y ⊣⊢@{PROP} match x, y with
+      | inl a, inl b => iprop(a ≼ₒ b)
+      | inr a, inr b => iprop(a ≼ₒ b)
+      | _, invalid => iprop(True)
+      | _, _ => iprop(False) := by
+  cases x <;> cases y <;>
+    first
+    | exact internalCmraOrder_iff fun _ => by simp [Csum.ordN]
+    | exact internalCmraOrder_pure fun _ => by simp [Csum.ordN]
 
 @[rocq_alias csum_includedI]
 theorem csum_includedI [ORA A] [ORA B] (x y : Csum A B) : x ≼ y ⊣⊢@{PROP} match x, y with
