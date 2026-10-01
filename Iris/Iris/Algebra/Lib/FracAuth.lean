@@ -20,7 +20,7 @@ fraction) and `◯F{q} a` (fragment with fraction). Splitting works differently 
 
 @[expose] public section
 
-open Iris OFE ORA UCMRA Auth Option
+open Iris OFE ORA UCMRA Auth Option OrdInc
 
 /-! ## Definitions -/
 
@@ -29,7 +29,7 @@ abbrev FracAuth [ORA A] := Auth (Option (Qp × A))
 
 namespace FracAuth
 
-variable [ORA A] [ORA.Affine A]
+variable [ORA A] [Affine A]
 
 @[rocq_alias frac_auth_auth]
 abbrev auth (dq : DFrac) (a : A) : FracAuth (A := A) := Auth.auth dq (some (1, a))
@@ -92,7 +92,7 @@ theorem validN {n : Nat} {a : A} (ha : ✓{n} a) : ✓{n} (●F a : FracAuth) �
 
 @[rocq_alias frac_auth_dfrac_valid]
 theorem dfrac_valid {dq : DFrac} {a : A} (hdq : ✓ dq) (ha : ✓ a) : ✓ (●F{dq} a) • ◯F a :=
-  auth_both_dfrac_valid_2 hdq ⟨valid_iff_validN.mpr fun _ => Qp.valid_one, ha⟩ (ORA.ord_refl _)
+  auth_both_dfrac_valid_2 hdq ⟨valid_iff_validN.mpr fun _ => Qp.valid_one, ha⟩ (ord_refl _)
 
 @[rocq_alias frac_auth_valid]
 theorem valid {a : A} (ha : ✓ a) : ✓ (●F a : FracAuth) • ◯F a :=
@@ -105,7 +105,7 @@ theorem agreeN {dq : DFrac} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F b) : a �
   rw [both_dfrac_validN] at h
   rcases h.2.1 with e | i
   · exact e.2.symm
-  · exact absurd h.2.2.1 (ORA.not_valid_of_exclN_inc (x := (1 : Qp)) i.1)
+  · exact absurd h.2.2.1 (not_valid_of_exclN_inc (x := (1 : Qp)) i.1)
 
 @[rocq_alias frac_auth_agree]
 theorem agree {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F b) : a = b :=
@@ -115,7 +115,7 @@ theorem agree {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F b) : a = b :
 
 /-! ## Inclusion -/
 
-theorem includedN {n : Nat} {dq : DFrac} {q : Qp} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F{q} b) :
+theorem ordN {n : Nat} {dq : DFrac} {q : Qp} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F{q} b) :
     some b ≼ₒ{n} some a := by
   rw [both_dfrac_validN] at h
   rcases h.2.1 with e | i
@@ -123,11 +123,11 @@ theorem includedN {n : Nat} {dq : DFrac} {q : Qp} {a b : A} (h : ✓{n} (●F{dq
   · exact Option.some_ordN_some_iff.mpr (.inr i.2)
 
 @[rocq_alias frac_auth_includedN]
-theorem includedN_ext [OrdInc A] {n : Nat} {dq : DFrac} {q : Qp} {a b : A}
+theorem includedN [OrdInc A] {n : Nat} {dq : DFrac} {q : Qp} {a b : A}
     (h : ✓{n} (●F{dq} a) • ◯F{q} b) : some b ≼{n} some a :=
-  OrdInc.ordN_incN (includedN h)
+  ordN_incN (ordN h)
 
-theorem included [ORA.Discrete A] {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F{q} b) :
+theorem ord [ORA.Discrete A] {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F{q} b) :
       some b ≼ₒ some a := by
   rw [both_dfrac_valid_discrete] at h
   rcases h.2.1 with e | i
@@ -135,27 +135,27 @@ theorem included [ORA.Discrete A] {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) �
   · exact Option.some_ord_some_iff.mpr (.inr i.2)
 
 @[rocq_alias frac_auth_included]
-theorem included_ext [ORA.Discrete A] [OrdInc A] {dq : DFrac} {a b : A}
+theorem included [ORA.Discrete A] [OrdInc A] {dq : DFrac} {a b : A}
     (h : ✓ (●F{dq} a) • ◯F{q} b) : some b ≼ some a :=
-  OrdInc.ord_inc (included h)
+  ord_inc (ord h)
 
-theorem includedN_total [OrderRefl A] {dq : DFrac} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F{q} b) :
+theorem ordN_total [OrderRefl A] {dq : DFrac} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F{q} b) :
     b ≼ₒ{n} a :=
-  (Option.some_ordN_some_iff.mp (includedN h)).elim (·.to_ordN) id
+  (Option.some_ordN_some_iff.mp (ordN h)).elim (·.to_ordN) id
 
 @[rocq_alias frac_auth_includedN_total]
-theorem includedN_total_ext [OrderRefl A] [OrdInc A] {dq : DFrac} {a b : A}
+theorem includedN_total [OrderRefl A] [OrdInc A] {dq : DFrac} {a b : A}
     (h : ✓{n} (●F{dq} a) • ◯F{q} b) : b ≼{n} a :=
-  OrdInc.ordN_incN (includedN_total h)
+  ordN_incN (ordN_total h)
 
-theorem included_total [ORA.Discrete A] [OrderRefl A] {dq : DFrac} {a b : A}
+theorem ord_total [ORA.Discrete A] [OrderRefl A] {dq : DFrac} {a b : A}
     (h : ✓ (●F{dq} a) • ◯F{q} b) : b ≼ₒ a :=
-  (Option.some_ord_some_iff.mp (included h)).elim (· ▸ ORA.ord_refl b) id
+  (Option.some_ord_some_iff.mp (ord h)).elim (· ▸ ord_refl b) id
 
 @[rocq_alias frac_auth_included_total]
-theorem included_total_ext [ORA.Discrete A] [OrderRefl A] [OrdInc A] {dq : DFrac} {a b : A}
+theorem included_total [ORA.Discrete A] [OrderRefl A] [OrdInc A] {dq : DFrac} {a b : A}
     (h : ✓ (●F{dq} a) • ◯F{q} b) : b ≼ a :=
-  OrdInc.ord_inc (included_total h)
+  ord_inc (ord_total h)
 
 /-! ## Auth-only validity -/
 
@@ -274,7 +274,7 @@ theorem update_full {a b a' : A} (ha' : ✓ a') :
   | none => exact ⟨.inl .rfl, ⟨Qp.valid_one, ha'.validN⟩⟩
   | some (q, c) =>
     have hv' := validN_of_ordN hinc hv
-    exact ((ORA.Exclusive.exclusive0_l (x := (((1 : Qp), b) : Qp × A)) (q, c))
+    exact ((Exclusive.exclusive0_l (x := (((1 : Qp), b) : Qp × A)) (q, c))
       (validN_of_le (Nat.zero_le n) hv')).elim
 
 @[rocq_alias frac_auth_update_auth_persist]
