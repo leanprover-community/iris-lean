@@ -159,7 +159,7 @@ syntax:25 term:26 " ={" term "}[" term "]▷=∗^[" term "] " term:25 : term
 syntax "|={" term "}▷=>^[" term "] " term : term
 syntax:25 term:26 " ={" term "}▷=∗^[" term "] " term:25 : term
 
-/-- Iterated step-taking fancy update, backing the notation `|={Eo}[Ei]▷=>^[n] P`. -/
+/-- Iterated step-taking fancy update `|={Eo}[Ei]▷=>^[n] P`. -/
 @[rocq_alias step_fupdN]
 def step_fupdN {PROP : Type _} [BIBase PROP] [FUpd PROP] (Eo Ei : CoPset) : Nat → PROP → PROP
   | 0, P => P
@@ -758,8 +758,7 @@ theorem step_fupdN_mono {n : Nat} {Eo Ei : CoPset} {P Q : PROP} (H : P ⊢ Q) :
 theorem step_fupdN_0 {Eo Ei : CoPset} {P : PROP} : (|={Eo}[Ei]▷=>^[0] P) ⊣⊢ P := .rfl
 
 @[rocq_alias step_fupdN_1]
-theorem step_fupdN_1 {Eo Ei : CoPset} {P : PROP} :
-    (|={Eo}[Ei]▷=>^[1] P) ⊣⊢ |={Eo}[Ei]▷=> P := .rfl
+theorem step_fupdN_1 {Eo Ei : CoPset} {P : PROP} : (|={Eo}[Ei]▷=>^[1] P) ⊣⊢ |={Eo}[Ei]▷=> P := .rfl
 
 @[rocq_alias step_fupdN_succ_l]
 theorem step_fupdN_succ_l {n : Nat} {Eo Ei : CoPset} {P : PROP} :

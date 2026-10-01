@@ -2830,7 +2830,7 @@ inst✝¹ : BIFUpdate PROP
 inst✝ : BIFUpdLaterCredits PROP
 E : CoPset
 P : PROP
-⊢ 
+⊢
   ∗HP : P
   ⊢ |={E}=> P
 -/
@@ -2851,7 +2851,7 @@ inst✝ : BIFUpdLaterCredits PROP
 n : Nat
 E : CoPset
 P : PROP
-⊢ 
+⊢
   ∗HP : P
   ∗Hcred : £ n
   ⊢ |={E}=> P
@@ -3052,8 +3052,7 @@ example (P Q : PROP) :
   iintro HPQ
   irewrite [HPQ]
 
-/- Tests `irewrite` with terms that are convertible but not syntactically equal (Rocq Iris
-issue #629). -/
+/- Tests `irewrite` with terms that are convertible but not syntactically equal. -/
 example (l : List A) : l ≡ ([] : List A) ⊢@{PROP} l ≡ ([] : List (id A)) := by
   iintro H
   irewrite [← H]

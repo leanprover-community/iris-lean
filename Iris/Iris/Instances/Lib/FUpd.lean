@@ -162,8 +162,6 @@ theorem fupd_unfold_no_lc [Hi : InvGS_gen .hasNoLC GF] E1 E2 (P : IProp GF) :
 
 variable {GF : BundledGFunctors} [InvGS GF]
 
-/-- Later credits: the laws for spending credits are only available when we opt into later
-credit support (`hlc = .hasLC`). -/
 @[rocq_alias uPred_bi_fupd_lc]
 instance uPred_bi_fupd_lc : BIFUpdLaterCredits (IProp GF) where
   lc_fupd_elim_later {E P} := by

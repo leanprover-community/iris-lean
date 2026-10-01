@@ -21,9 +21,6 @@ section LaterCredits
 
 variable {PROP : Type _} [BI PROP] [BILaterCredits PROP]
 
-/- Make sure that the rule for `+` is used before `.succ`, otherwise `m + (n + 1)` would be
-split off by the `.succ` rule via unfolding `Nat.add`. See Iris issue #470. -/
-
 @[rocq_alias from_sep_lc_add]
 instance (priority := default) {n m} : FromSep (PROP := PROP) (£ (n + m)) (£ n) (£ m) where
   from_sep := lc_split.mpr
@@ -69,8 +66,7 @@ theorem tac_lc_add_laterN_split {PROP : Type u} [BI PROP] [BILaterCredits PROP]
     (hc : NatCancel m n newM 0 stuck)
     (hR : P ∗ £ newM ⊣⊢ R) (h2 : R ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
     e ⊢ goal := by
-  have hm : m = n + newM := by have := hc.nat_cancel; omega
-  subst hm
+  obtain rfl : m = n + newM := by have := hc.nat_cancel; omega
   refine heq.mp.trans ?_
   iintro ⟨HP, Hcred⟩
   iapply inst.elim_modal hφ
@@ -82,7 +78,7 @@ theorem tac_lc_add_laterN_split {PROP : Type u} [BI PROP] [BILaterCredits PROP]
     iapply lc_fupd_add_laterN n $$ Hn
     iapply laterN_mono n (h3.trans fupd_intro) $$ H
   · simp only [BIBase.intuitionisticallyIf, Bool.false_eq_true, ↓reduceIte]
-    iintro H //
+    iintro _ //
 
 theorem tac_lc_add_laterN_full {PROP : Type u} [BI PROP] [BILaterCredits PROP]
     [BIFUpdate PROP] [BIFUpdLaterCredits PROP]
@@ -122,12 +118,12 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
       | throwError m!"inext: {h} is not a spatial later credit hypothesis"
     let ⟨e', hyps', _, _, _, _, pfEq⟩ := hyps.remove false ivar
     let .some instLC ← trySynthInstance (mkAppN (.const ``BILaterCredits [u]) #[prop, bi])
-      | throwError "inext: Missing BILaterCredits instance"
+      | throwError "inext: Missing `BILaterCredits` instance"
     let .some instFUpd ← trySynthInstance (mkAppN (.const ``BIFUpdate [u]) #[prop, bi])
-      | throwError "inext: Missing BIFUpdate instance"
+      | throwError "inext: Missing `BIFUpdate` instance"
     let .some instFLC ← trySynthInstance
         (mkAppN (.const ``BIFUpdLaterCredits [u]) #[prop, bi, instLC, instFUpd])
-      | throwError "inext: Missing BIFUpdLaterCredits instance"
+      | throwError "inext: Missing `BIFUpdLaterCredits` instance"
 
     let φ ← mkFreshExprMVarQ q(Prop)
     let E ← mkFreshExprMVarQ q(CoPset)

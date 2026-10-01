@@ -67,8 +67,7 @@ variable {GF : BundledGFunctors} {hlc : HasLC} [LC : LcGS hlc GF]
 #rocq_ignore uPred_lc_def "`uPred_lc` is defined directly without `seal`/`unseal`."
 #rocq_ignore uPred_lc_aux "`uPred_lc` is defined directly without `seal`/`unseal`."
 
-/-- The user-facing credit resource, denoting ownership of `i` credits (but only if later
-credits are enabled). Use it through the generic notation `£ i`. -/
+/-- The user-facing credit resource. Use it through the generic notation `£ i`. -/
 @[rocq_alias uPred_lc]
 def uPred_lc (i : Credit) : IProp GF :=
   match hlc with
@@ -91,9 +90,6 @@ section Operations
 
 variable {GF : BundledGFunctors} {hlc : HasLC} [LC : LcGS hlc GF]
 
-/-- The primitive rules for `£` hold regardless of whether later credits are enabled. If
-later credits are disabled (`hlc = .hasNoLC`), these rules are not useful on their own, but
-they can be used to write adequacy/soundness proofs that are generic in the choice of `hlc`. -/
 @[rocq_alias uPred_bi_lc]
 instance uPred_bi_lc : BILaterCredits (IProp GF) where
   lc := uPred_lc
@@ -117,7 +113,7 @@ instance uPred_bi_lc : BILaterCredits (IProp GF) where
 #rocq_ignore uPred_lc_mixin "Included in the `uPred_bi_lc` instance."
 
 @[rocq_alias uPred_lc_unseal]
-theorem uPred_lc_unseal {n : Credit} : (£ n : IProp GF) = uPred_lc n := rfl
+private theorem uPred_lc_unseal {n : Credit} : (£ n : IProp GF) = uPred_lc n := rfl
 
 @[rocq_alias lc_no_lc]
 theorem lc_no_lc [LcGS .hasNoLC GF] (n : Credit) : £ n ⊣⊢@{IProp GF} iprop(True) := .rfl
