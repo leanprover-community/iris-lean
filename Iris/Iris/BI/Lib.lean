@@ -19,4 +19,3 @@ public import Iris.BI.Lib.MonoNat
 public import Iris.BI.Lib.MonoZ
 public import Iris.BI.Lib.ProphMap
 public import Iris.BI.Lib.Relations
-public import Iris.BI.Lib.TimeReceipts
