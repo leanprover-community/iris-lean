@@ -27,7 +27,7 @@ def discreteFunInsert {ι : Type _} [DecidableEq ι] {β : ι → Type _}
 
 @[rocq_alias discrete_fun_singleton]
 def discreteFunSingleton {ι : Type _} [DecidableEq ι] {β : ι → Type _}
-    [∀ i, UCMRA (β i)] (x : ι) (y : β x) : (a : ι) → β a :=
+    [∀ i, UORA (β i)] (x : ι) (y : β x) : (a : ι) → β a :=
   discreteFunInsert x y fun _ => unit
 
 section insert
@@ -98,7 +98,7 @@ end OFE
 
 section ORA
 
-variable {ι : Type _} [DecidableEq ι] {β : ι → Type _} [∀ i, UCMRA (β i)]
+variable {ι : Type _} [DecidableEq ι] {β : ι → Type _} [∀ i, UORA (β i)]
 
 @[rocq_alias discrete_funR_cmra_discrete]
 instance instDiscreteFunCmraDiscrete [∀ i, ORA.Discrete (β i)] :
@@ -267,7 +267,7 @@ end ORA
 
 section ORA
 
-variable {ι : Type _} {β : ι → Type _} [∀ i, UCMRA (β i)]
+variable {ι : Type _} {β : ι → Type _} [∀ i, UORA (β i)]
 
 @[rocq_alias discrete_fun_updateP]
 theorem discreteFun_updateP {f : (a : ι) → β a} {P : (a : ι) → β a → Prop}

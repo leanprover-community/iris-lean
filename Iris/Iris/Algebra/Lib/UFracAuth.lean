@@ -22,7 +22,7 @@ fragment's resource to its payload.
 @[expose] public section
 
 namespace Iris
-open OFE ORA UCMRA Auth Iris.Option Iris.OFE.Option UFrac
+open OFE ORA UORA Auth Iris.Option Iris.OFE.Option UFrac
 
 /-! ## Definitions -/
 

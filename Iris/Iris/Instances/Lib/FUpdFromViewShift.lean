@@ -24,7 +24,7 @@ open Iris OFE BI
 
 section fupd
 
-variable {M : Type u} [UCMRA M] [ORA.Affine M]
+variable {M : Type u} [UORA M] [ORA.Affine M]
 variable (vs : CoPset → CoPset → UPred M → UPred M → UPred M)
 
 @[rocq_alias fupd]

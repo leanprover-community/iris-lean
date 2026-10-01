@@ -128,9 +128,9 @@ theorem LocalUpdate.total_valid [IsTotal α] [ORA.Discrete α] {x y x' y' : α}
 
 end ORA
 
-section UCMRA
+section UORA
 
-variable [UCMRA α]
+variable [UORA α]
 
 @[rocq_alias local_update_unital]
 theorem local_update_unital {x y x' y' : α} :
@@ -169,13 +169,13 @@ theorem discrete_unital_triv_local_update [ORA.Discrete α]
   refine (local_update_unital_discrete x y x' y').mpr fun _ _ He => ?_
   refine ⟨Hv _, H He⟩
 
-end UCMRA
+end UORA
 
 @[rocq_alias unit_local_update]
 theorem LocalUpdate.unit {x y x' y' : Unit} : (x, y) ~l~> (x', y') := .id ((), ())
 
 @[rocq_alias discrete_fun_local_update]
-theorem LocalUpdate.discrete_fun {β : α → Type _} [∀ x, UCMRA (β x)]
+theorem LocalUpdate.discrete_fun {β : α → Type _} [∀ x, UORA (β x)]
     {f g f' g' : ∀ x, β x} (h : ∀ x : α, (f x, g x) ~l~> (f' x, g' x)) :
     (f, g) ~l~> (f', g') := by
   refine fun n mz vx e => ⟨fun x => ?_, fun x => ?_⟩
@@ -228,7 +228,7 @@ theorem LocalUpdate.option {x y x' y' : α}
   | some (some z) => exact h n (some z)
 
 @[rocq_alias option_local_update_None]
-theorem LocalUpdate.option_none {α} [UCMRA α] {x x' y' : α}
+theorem LocalUpdate.option_none {α} [UORA α] {x x' y' : α}
     (h : (x, ORA.unit) ~l~> (x', y')) : (some x, none) ~l~> (some x', some y') := by
   intro n mz vx e
   let .some (some z) := mz

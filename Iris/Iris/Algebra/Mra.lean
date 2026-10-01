@@ -111,8 +111,7 @@ theorem append_idem (x : Mra R) : append x x = x := by
 #rocq_ignore mra_op "Replaced by the `op` field of the CMRA instance."
 #rocq_ignore mra_pcore "Replaced by the `pcore` field of the CMRA instance."
 
-@[rocq_alias mra_cmra_mixin]
-instance (R : α → α → Prop) : CMRA (Mra R) where
+@[instance_reducible] def cmraData (R : α → α → Prop) : CMRAData (Mra R) where
   pcore := some
   op := append
   ValidN _ _ := True
@@ -136,6 +135,9 @@ instance (R : α → α → Prop) : CMRA (Mra R) where
   pcore_op_mono h y :=
     ⟨y, congrArg (fun z ↦ some (append z y)) (Option.some.inj h)⟩
 
+@[rocq_alias mra_cmra_mixin]
+instance (R : α → α → Prop) : CMRA (Mra R) := ORA.ofCMRAData (Mra.cmraData R)
+
 #rocq_ignore mraR "Use Mra."
 
 @[rocq_alias mra_cmra_total]
@@ -155,8 +157,7 @@ instance : ORA.Discrete (Mra R) where
 #rocq_ignore mra_unit "Replaced by the `unit` field of UCMRA instance."
 #rocq_ignore mraUR "Use Mra."
 
-@[rocq_alias mra_ucmra_mixin]
-instance instUnital (R : α → α → Prop) : Unital (Mra R) where
+@[instance_reducible] def ucmraData (R : α → α → Prop) : UCMRAData (Mra R) where
   unit := mk []
   unit_valid := trivial
   unit_left_id {x} := by
@@ -164,7 +165,8 @@ instance instUnital (R : α → α → Prop) : Unital (Mra R) where
     | mk xs => rfl
   pcore_unit := rfl
 
-instance (R : α → α → Prop) : UCMRA (Mra R) := UCMRA.ofCMRA
+@[rocq_alias mra_ucmra_mixin]
+instance instUnital (R : α → α → Prop) : UCMRA (Mra R) := UORA.ofUCMRAData (Mra.ucmraData R)
 
 theorem eq_of_below_iff {x y : Mra R} (h : ∀ a, below a x ↔ below a y) : x = y := by
   induction x, y using ind₂ with
@@ -219,7 +221,7 @@ theorem local_update_grow [hR : Trans R R R] (a : α) (x : Mra R) (b : α) (h : 
 
 @[rocq_alias mra_local_update_get_frag]
 theorem local_update_get_frag [Std.Refl R] [Trans R R R] (a b : α) (h : R b a) :
-    (toMra (R := R) a, UCMRA.unit) ~l~> (toMra a, toMra b) := by
+    (toMra (R := R) a, UORA.unit) ~l~> (toMra a, toMra b) := by
   refine (local_update_unital_discrete ..).mpr fun z _ haz ↦ ⟨trivial, ?_⟩
   calc
     toMra a = toMra b • toMra a := (toMra_op_of_rel b a h).symm

@@ -108,7 +108,7 @@ section ownE
 variable {GF : BundledGFunctors} [W : WsatGS GF]
 
 @[rocq_alias ownE_empty]
-theorem ownE_empty : ⊢ |==> ownE (W := W) ∅ := iOwn_unit (ε := UCMRA.unit)
+theorem ownE_empty : ⊢ |==> ownE (W := W) ∅ := iOwn_unit (ε := UORA.unit)
 
 @[rocq_alias ownE_op]
 theorem ownE_op {E1 E2} (Hdisj : E1 ## E2) : ownE (E1 ∪ E2) ⊣⊢@{IProp GF} ownE E1 ∗ ownE E2 := by
@@ -152,7 +152,7 @@ section ownD
 variable {GF : BundledGFunctors} [W : WsatGS GF]
 
 @[rocq_alias ownD_empty]
-theorem ownD_empty : ⊢@{IProp GF} |==> ownD ∅ := iOwn_unit (ε := UCMRA.unit)
+theorem ownD_empty : ⊢@{IProp GF} |==> ownD ∅ := iOwn_unit (ε := UORA.unit)
 
 @[rocq_alias ownD_op]
 theorem ownD_op {E1 E2} (Hdisj : E1 ## E2) : ownD (E1 ∪ E2) ⊣⊢@{IProp GF} ownD E1 ∗ ownD E2 := by

@@ -20,17 +20,17 @@ The authoritative camera has 2 types of elements:
 
 open Iris
 
-open OFE ORA UCMRA View
+open OFE ORA UORA View
 
 /-!
 ## Definition of the view relation for the authoritative camera.
 -/
 @[rocq_alias auth_view_rel_raw]
-def AuthViewRel [UCMRA A] : ViewRel A A := fun n a b => (∃ c, b • c ≼ₒ{n} a) ∧ ✓{n} a
+def AuthViewRel [UORA A] : ViewRel A A := fun n a b => (∃ c, b • c ≼ₒ{n} a) ∧ ✓{n} a
 
 namespace AuthViewRel
 
-variable [UCMRA A]
+variable [UORA A]
 
 @[rocq_alias auth_view_rel]
 instance instViewRel_authViewRel : IsViewRel (AuthViewRel (A := A)) where
@@ -66,15 +66,15 @@ end AuthViewRel
 
 /-! ## Definition and operations on the authoritative camera -/
 
-abbrev Auth (A : Type _) [UCMRA A] :=
+abbrev Auth (A : Type _) [UORA A] :=
   View (AuthViewRel (A := A))
 
 namespace Auth
-variable [UCMRA A]
+variable [UORA A]
 
 instance : OFE (Auth A) := View.instOFE
 instance instORA : ORA (Auth A) := View.instORA
-instance instUCMRA : UCMRA (Auth A) := View.instUCMRA
+instance instUCMRA : UORA (Auth A) := View.instUCMRA
 
 #rocq_ignore authO "Use the Auth type and View.instOFE typeclass"
 #rocq_ignore authR "Use the Auth type and View.instORA typeclass"
@@ -625,7 +625,7 @@ theorem auth_local_update {a b0 b1 a' b0' b1' : A} (hup : (b0, b1) ~l~> (b0', b1
 /-! ## Functor -/
 
 /-- The AuthViewRel is preserved under ORA homomorphisms. -/
-theorem authViewRel_map [UCMRA A'] [UCMRA B']
+theorem authViewRel_map [UORA A'] [UORA B']
     (g : A' -C> B') (n : Nat) (a : A')
     (b : A') : AuthViewRel n a b → AuthViewRel n (g a) (g b) :=
   fun ⟨⟨c, hinc⟩, hv⟩ => ⟨⟨g c, by rw [← g.op]; exact g.monoN hinc⟩, g.validN hv⟩

@@ -90,8 +90,7 @@ def op : DFrac → DFrac → DFrac
 #rocq_ignore dfrac_valid_instance "Use CMRA instance"
 #rocq_ignore dfrac_ra_mixin "Not needed"
 
-@[rocq_alias dfracR]
-instance instORADFrac : CMRA DFrac where
+@[instance_reducible] def cmraData : CMRAData DFrac where
   pcore := pcore
   op := op
   Valid := valid
@@ -112,6 +111,9 @@ instance instORADFrac : CMRA DFrac where
     · intro z
       exists discard
       rcases z with z|_|z <;> simp [op]
+
+@[rocq_alias dfracR]
+instance instORADFrac : CMRA DFrac := ORA.ofCMRAData DFrac.cmraData
 
 @[rocq_alias dfrac_full_exclusive]
 instance own_whole_exclusive : ORA.Exclusive (α := DFrac) (own 1) where

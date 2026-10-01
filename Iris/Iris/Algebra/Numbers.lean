@@ -85,13 +85,11 @@ scoped instance instDiscrete : ORA.Discrete α where
 #rocq_ignore nat_cmra_discrete "Use the (ℕ, +) Constant Core instance."
 #rocq_ignore Z_cmra_discrete "Use the (ℤ, +) Constant Core instance."
 
-scoped instance instUnital : Unital α where
+scoped instance instUCMRA : UCMRA α := UORA.ofUCMRAData {
   unit := zero
   unit_valid := trivial
   unit_left_id := pcore_op_left rfl
-  pcore_unit := rfl
-
-scoped instance instUCMRA : UCMRA α := UCMRA.ofCMRA
+  pcore_unit := rfl }
 
 #rocq_ignore natUR "Use the (ℕ, +) Constant Core UCMRA."
 #rocq_ignore nat_ucmra_mixin "Use the (ℕ, +) Constant Core UCMRA."
@@ -206,14 +204,13 @@ scoped instance instCoreId (a : α) : ORA.CoreId a where
 #rocq_ignore max_Z_core_id "Use the (ℤ, max) Universal Core instance."
 #rocq_ignore min_nat_core_id "Use the (ℕ, min) Universal Core instance."
 
-scoped instance instUnital [LawfulLeftIdentity (α := α) (· + ·) zero] : Unital α where
+scoped instance instUCMRA [LawfulLeftIdentity (α := α) (· + ·) zero] : UCMRA α :=
+  UORA.ofUCMRAData {
   unit := zero
   unit_valid := trivial
   unit_left_id := left_id _
-  pcore_unit := rfl
+  pcore_unit := rfl }
 
-scoped instance instUCMRA [LawfulLeftIdentity (α := α) (· + ·) zero] : UCMRA α :=
-  UCMRA.ofCMRA
 #rocq_ignore max_Z_unit_instance "Rocq has no `max_Z_UCMRA`."
 #rocq_ignore max_natUR "Use the (ℕ, max) Universal Core instance."
 #rocq_ignore max_nat_ucmra_mixin "Use the (ℕ, max) Universal Core instance."

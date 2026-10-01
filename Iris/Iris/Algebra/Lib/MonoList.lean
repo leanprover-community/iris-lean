@@ -29,7 +29,7 @@ instance : OFE (MonoList α) :=
 instance : ORA (MonoList α) :=
   Auth.instORA
 
-instance : UCMRA (MonoList α) :=
+instance : UORA (MonoList α) :=
   Auth.instUCMRA
 
 instance instIsIncMonoList : IsInc (MonoList α) :=
@@ -93,7 +93,7 @@ instance {l : List α} : CoreId (●ML□ l) := by
   unfold auth MonoList
   infer_instance
 
-theorem lb_nil : ◯ML ([] : List α) = UCMRA.unit := by
+theorem lb_nil : ◯ML ([] : List α) = UORA.unit := by
   unfold lb MonoList
   rw [toMaxPrefixList_nil]
   rfl

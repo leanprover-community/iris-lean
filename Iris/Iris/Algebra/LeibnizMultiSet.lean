@@ -37,7 +37,7 @@ variable {MS : Type _} [LawfulMultiSet MS A]
 
 open MultiSet
 
-instance : CMRA (LeibnizMultiSet MS) where
+@[instance_reducible] def cmraData : CMRAData (LeibnizMultiSet MS) where
   pcore _ := some (ofSet ∅)
   op | ofSet X, ofSet Y => ofSet (X ⊎ Y)
   ValidN _ _ := True
@@ -56,13 +56,15 @@ instance : CMRA (LeibnizMultiSet MS) where
   pcore_op_mono h _ :=
     ⟨.ofSet ∅, by cases h; exact congrArg (some ∘ ofSet) disjUnion_empty_left.symm⟩
 
-instance instUnital : Unital (LeibnizMultiSet MS) where
+instance : CMRA (LeibnizMultiSet MS) := ORA.ofCMRAData LeibnizMultiSet.cmraData
+
+@[instance_reducible] def ucmraData : UCMRAData (LeibnizMultiSet MS) where
   unit := .ofSet ∅
   unit_valid := trivial
   unit_left_id {X} := by cases X; exact congrArg ofSet disjUnion_empty_left
   pcore_unit := rfl
 
-instance : UCMRA (LeibnizMultiSet MS) := UCMRA.ofCMRA
+instance instUnital : UCMRA (LeibnizMultiSet MS) := UORA.ofUCMRAData LeibnizMultiSet.ucmraData
 
 @[rocq_alias gmultiset_cmra_discrete]
 instance : ORA.Discrete (LeibnizMultiSet MS) where

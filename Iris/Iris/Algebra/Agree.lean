@@ -419,8 +419,7 @@ theorem op_invN {x y : Agree α} : validN n (op x y) → x ≡{n}≡ y :=
 theorem op_inv {x y : Agree α} : valid (op x y) → x = y :=
   ind₂ (fun _ _ h => OFE.eq_dist_2 (Raw.op_inv h)) x y
 
-@[rocq_alias agree_cmra_mixin]
-instance instORA : CMRA (Agree α) where
+@[instance_reducible] def cmraData : CMRAData (Agree α) where
   pcore := some
   op := op
   ValidN := validN
@@ -440,6 +439,9 @@ instance instORA : CMRA (Agree α) where
     have heq₃ : op y₁ y₂ ≡{n}≡ y₁ := op_ne.ne heq₂.symm |>.trans op_idemp.dist
     exact ⟨x, x, op_idemp.symm, heq₁.trans heq₃, heq₁.trans heq₃ |>.trans heq₂⟩
   pcore_op_mono := fun {x cx} h y => by obtain rfl := Option.some.inj h; exact ⟨y, rfl⟩
+
+@[rocq_alias agree_cmra_mixin]
+instance instORA : CMRA (Agree α) := ORA.ofCMRAData Agree.cmraData
 
 #rocq_ignore agreeR "Use the plain Agree type with a typeclass instance instead."
 #rocq_ignore agree_op_instance "Use the CMRA instance instead."

@@ -77,7 +77,7 @@ def IResUR.{u} : Type u := (i : GType) → GenMap ((GF i).F (IPre GF) (IPre GF))
 
 #rocq_ignore iResUR "Sealed copy of `iProp_solution.iResUR`; not needed since Lean does not seal it."
 
-instance : UCMRA (IResUR GF) :=
+instance : UORA (IResUR GF) :=
   ucmraDiscreteFunO (β := fun (i : GType) => GenMap ((GF i).F (IPre GF) (IPre GF)))
 
 instance instAffineIResUR : ORA.Affine (IResUR GF) :=

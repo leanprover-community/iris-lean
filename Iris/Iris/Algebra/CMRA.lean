@@ -142,7 +142,7 @@ theorem OrderR.ordNR (n) {x y : α} : x ≼ₒ* y → x ≼ₒ*{n} y
 
 end Ordered
 
-/-- Reflexivity of the order: the order law of unital algebras (`UCMRA`), also enjoyed by
+/-- Reflexivity of the order: the order law of unital algebras (`UORA`), also enjoyed by
 total algebras under their extension inclusion. -/
 class OrderRefl (α : Type _) [OFE α] [Ordered α] : Prop where
   ord_refl (x : α) : x ≼ₒ x
@@ -830,9 +830,9 @@ end ORA
 
 /-- A classical resource algebra: composition, core and validity together with the laws
 relating them, and the monotonicity of the partial core along frames. It is not itself an
-ordered resource algebra; `CMRA.toORA` makes one of it, taking the order to be the extension
+ordered resource algebra; `ORA.ofCMRAData` makes one of it, taking the order to be the extension
 inclusion. -/
-class CMRA (α : Type _) extends OFE α, Op α, PCore α, Valid α where
+class CMRAData (α : Type _) [OFE α] extends Op α, PCore α, Valid α where
   validN_op_left {n} {x y : α} : ✓{n} (x • y) → ✓{n} x
   pcore_op_left {x cx : α} : pcore x = some cx → cx • x = x
   extend {n} {x y₁ y₂ : α} : ✓{n} x → x ≡{n}≡ y₁ • y₂ →
@@ -840,9 +840,9 @@ class CMRA (α : Type _) extends OFE α, Op α, PCore α, Valid α where
   pcore_op_mono {x cx : α} :
     pcore x = some cx → ∀ y, ∃ cy : α, pcore (x • y) = some (cx • cy)
 
-namespace CMRA
+namespace CMRAData
 open ORA
-variable [CMRA α]
+variable [OFE α] [CMRAData α]
 
 /-- The frame law follows from monotonicity of the partial core along the extension inclusion,
 the form of the law in Iris-Rocq (`cmra_pcore_mono`). -/
@@ -933,7 +933,7 @@ theorem increasing_ext (x : α) : Increasing x where
 instance instOrderRefl [IsTotal α] : OrderRefl α where
   ord_refl := inc_refl_ext
 
-@[reducible] instance toORA : ORA α where
+@[reducible] def toORA : ORA α where
   toOrdered := ORA.extOrderN
   validN_op_left := validN_op_left
   pcore_op_left := pcore_op_left
@@ -950,13 +950,33 @@ instance instOrderRefl [IsTotal α] : OrderRefl α where
   increasing_closed _ _ := increasing_ext _
   ordN_extend := incN_extend
 
-instance instIsInc : @IsInc α _ _ (toORA (α := α)).toOrdered :=
+theorem isInc : @IsInc α _ _ (toORA (α := α)).toOrdered :=
   { inc_ord := id, ord_inc := id, ordN_incN := id }
 
 end extOrder
 
+end CMRAData
+
+class CMRA (α : Type _) extends ORA α, IsInc α
+
+instance (priority := low) CMRA.ofIsInc [ORA α] [IsInc α] : CMRA α := {}
+
+@[reducible] def ORA.ofCMRAData [OFE α] (d : CMRAData α) : CMRA α :=
+  { toORA := @CMRAData.toORA α _ d, toIsInc := @CMRAData.isInc α _ d }
+
+namespace CMRA
+open ORA
+variable [CMRA α]
+
+theorem pcore_op_mono {x cx : α} (e : pcore x = some cx) (y : α) :
+    ∃ cy, pcore (x • y) = some (cx • cy) :=
+  let ⟨_, h, o⟩ := pcore_order_op e y
+  let ⟨z, hz⟩ := OrdInc.ord_inc o
+  ⟨z, h.trans (congrArg some hz)⟩
+
 theorem ord_of_ord0 [OFE.Discrete α] {x y : α} (h : x ≼ₒ{0} y) : x ≼ₒ y :=
   inc_iff_ord.mp (ORA.inc_of_inc0 (incN_iff_ordN.mpr h))
+
 end CMRA
 
 section
@@ -1001,17 +1021,10 @@ end ORA
 
 /-! ## Unital algebras -/
 
-/-- The unit of a classical unital resource algebra; the input of `UCMRA.ofCMRA`. -/
-class Unital (α : Type _) extends CMRA α where
-  unit : α
-  unit_valid : ✓ unit
-  unit_left_id : unit • x = x
-  pcore_unit : pcore unit = some unit
-
 /-- A unital ordered resource algebra: an ordered resource algebra with a unit, whose order is
 reflexive. -/
 @[rocq_alias ucmra]
-class UCMRA (α : Type _) extends ORA α, OrderRefl α where
+class UORA (α : Type _) extends ORA α, OrderRefl α where
   unit : α
   unit_valid : ✓ unit
   unit_left_id : unit • x = x
@@ -1022,28 +1035,38 @@ class UCMRA (α : Type _) extends ORA α, OrderRefl α where
 #rocq_ignore ucmra_cmraR "Folded into Lean's UCMRA extends CMRA."
 #rocq_ignore ucmra_ofeO "Folded into Lean's UCMRA → OFE."
 
-@[reducible] def UCMRA.ofCMRA [Unital α] : UCMRA α where
-  toORA := CMRA.toORA
-  unit := Unital.unit
-  unit_valid := Unital.unit_valid
-  unit_left_id := Unital.unit_left_id
-  pcore_unit := Unital.pcore_unit
-  ord_refl _ := ⟨Unital.unit, (Op.comm.trans Unital.unit_left_id).symm⟩
+/-- The unit of a classical unital resource algebra; the input of `UORA.ofUCMRAData`. -/
+class UCMRAData (α : Type _) [CMRA α] where
+  unit : α
+  unit_valid : ✓ unit
+  unit_left_id : unit • x = x
+  pcore_unit : ORA.pcore unit = some unit
+
+class UCMRA (α : Type _) extends CMRA α, UORA α
+
+instance (priority := low) UCMRA.ofIsInc [UORA α] [IsInc α] : UCMRA α := {}
+
+@[reducible] def UORA.ofUCMRAData [CMRA α] (d : UCMRAData α) : UCMRA α where
+  unit := d.unit
+  unit_valid := d.unit_valid
+  unit_left_id := d.unit_left_id
+  pcore_unit := d.pcore_unit
+  ord_refl _ := IncOrd.inc_ord ⟨d.unit, (Op.comm.trans d.unit_left_id).symm⟩
 
 class IsUnit [ORA α] (ε : α) : Prop where
   unit_valid : ✓ ε
   unit_left_id : ε • x = x
   pcore_unit : ORA.pcore ε = some ε
 
-instance [UCMRA α] : IsUnit (UCMRA.unit : α) where
-  unit_valid := UCMRA.unit_valid
-  unit_left_id := UCMRA.unit_left_id
-  pcore_unit := UCMRA.pcore_unit
+instance [UORA α] : IsUnit (UORA.unit : α) where
+  unit_valid := UORA.unit_valid
+  unit_left_id := UORA.unit_left_id
+  pcore_unit := UORA.pcore_unit
 
 namespace ORA
 variable [ORA α]
 
-export UCMRA (unit unit_valid unit_left_id pcore_unit)
+export UORA (unit unit_valid unit_left_id pcore_unit)
 
 /-! ## Order -/
 
@@ -1362,7 +1385,7 @@ end idFreeElements
 
 section ucmra
 
-variable {α : Type _} [UCMRA α]
+variable {α : Type _} [UORA α]
 
 @[rocq_alias ucmra_unit_validN]
 theorem unit_validN {n} : ✓{n} (unit : α) := valid_iff_validN.mp (unit_valid) n
@@ -1438,11 +1461,11 @@ theorem ord_unit {x : α} : unit ≼ₒ x := unit_left_id (x := x) ▸ ord_op_le
 end affine
 
 @[rocq_alias cmra_monoid]
-instance ucmraMonoidOps {α : Type _} [UCMRA α] : Algebra.MonoidOps (ORA.op (α := α)) UCMRA.unit where
+instance ucmraMonoidOps {α : Type _} [UORA α] : Algebra.MonoidOps (ORA.op (α := α)) UORA.unit where
   op_ne := ⟨fun _ _ _ hx _ _ hy => hx.op hy⟩
   op_assoc := ORA.assoc.symm
   op_comm := ORA.comm
-  op_left_id := UCMRA.unit_left_id
+  op_left_id := UORA.unit_left_id
 
 end ucmra
 
@@ -1505,9 +1528,9 @@ theorem core_eq_self {x : α} [IsTotal α] [c : CoreId x] : core x = x :=
 end Leibniz
 
 
-section UCMRA
+section UORA
 
-variable {α : Type _} [UCMRA α]
+variable {α : Type _} [UORA α]
 
 @[rocq_alias ucmra_unit_valid]
 theorem ucmra_unit_valid : ✓ (unit : α) := unit_valid
@@ -1524,7 +1547,7 @@ theorem unit_left_id_L {x : α} : unit • x = x := unit_left_id
 @[rocq_alias ucmra_unit_right_id_L]
 theorem unit_right_id_L {x : α} : x • unit = x := unit_right_id
 
-end UCMRA
+end UORA
 
 /-- A morphism between CMRAs is defined to be a non-expansive function which
 preserves `validN`, `pcore` and `op`. -/
@@ -1664,7 +1687,7 @@ section urFunctor
 
 @[rocq_alias urFunctor]
 class URFunctor (F : COFE.OFunctorPre) where
-  [cmra [COFE α] [COFE β] : UCMRA (F α β)]
+  [cmra [COFE α] [COFE β] : UORA (F α β)]
   map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -C> F α₂ β₂
   map_ne [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
@@ -1821,7 +1844,7 @@ instance OFunctor.constOF_RFunctorContractive [ORA B] :
   map_contractive.1 := fun _ => .rfl
 
 @[rocq_alias constURF]
-instance COFE.OFunctor.constOF_URFunctor [UCMRA B] : URFunctor (constOF B) where
+instance COFE.OFunctor.constOF_URFunctor [UORA B] : URFunctor (constOF B) where
   cmra := inferInstance
   map _ _ := (ORA.Hom.id : B -C> B)
   map_ne.ne _ _ _ _ _ _ _ := .rfl
@@ -1829,7 +1852,7 @@ instance COFE.OFunctor.constOF_URFunctor [UCMRA B] : URFunctor (constOF B) where
   map_comp _ _ _ _ _ := rfl
 
 @[rocq_alias constURF_contractive]
-instance OFunctor.constOF_URFunctorContractive [UCMRA B] :
+instance OFunctor.constOF_URFunctorContractive [UORA B] :
     URFunctorContractive (constOF B) where
   map_contractive.1 _ := .rfl
 
@@ -1954,7 +1977,7 @@ end
 
 variable (β) in
 @[rocq_alias discrete_funUR]
-instance _root_.Iris.ucmraDiscreteFunO [∀ x, UCMRA (β x)] : UCMRA (∀ x, β x) where
+instance _root_.Iris.ucmraDiscreteFunO [∀ x, UORA (β x)] : UORA (∀ x, β x) where
   unit _ := unit
   unit_valid _ := unit_valid
   unit_left_id := funext fun _ => unit_left_id
@@ -1970,10 +1993,10 @@ theorem core_apply [∀ x, ORA (β x)] [∀ x, IsTotal (β x)] (f : ∀ x, β x)
     core f x = core (f x) := rfl
 
 @[rocq_alias discrete_fun_lookup_empty]
-theorem unit_apply [∀ x, UCMRA (β x)] (x : α) : (unit : ∀ x, β x) x = unit := rfl
+theorem unit_apply [∀ x, UORA (β x)] (x : α) : (unit : ∀ x, β x) x = unit := rfl
 
 @[rocq_alias discrete_fun_unit_discrete]
-instance [∀ x, UCMRA (β x)] [∀ x, OFE.DiscreteE (unit : β x)] :
+instance [∀ x, UORA (β x)] [∀ x, OFE.DiscreteE (unit : β x)] :
     OFE.DiscreteE (unit : ∀ x, β x) where
   discrete h := funext fun x => OFE.DiscreteE.discrete (h x)
 
@@ -2021,7 +2044,7 @@ end DiscreteFun
 
 @[rocq_alias discrete_fun_map_cmra_morphism]
 def mapCodHomC {α : Type _} {β₁ β₂ : α → Type _}
-    [∀ x, UCMRA (β₁ x)] [∀ x, UCMRA (β₂ x)]
+    [∀ x, UORA (β₁ x)] [∀ x, UORA (β₂ x)]
     (F : ∀ x, β₁ x -C> β₂ x) : (∀ x, β₁ x) -C> (∀ x, β₂ x) where
   toHom := mapCodHom fun x => (F x).toHom
   validN h x := (F x).validN (h x)
@@ -2338,7 +2361,7 @@ instance _root_.Iris.cmraOption : ORA (Option α) where
 #rocq_ignore option_ucmra_mixin "Use UCMRA instance"
 
 @[rocq_alias optionUR]
-instance _root_.Iris.ucmraOption : UCMRA (Option α) where
+instance _root_.Iris.ucmraOption : UORA (Option α) where
   toORA := cmraOption
   unit := none
   unit_valid := trivial
@@ -2877,8 +2900,7 @@ section unit
 #rocq_ignore unit_cancelable "Subsumed by empty_cancelable"
 #rocq_ignore unit_core_id "Subsumed by unit_CoreId"
 
-@[rocq_alias unit_cmra_mixin, rocq_alias unitR]
-instance cmraUnit : CMRA Unit where
+@[instance_reducible] def Unit.cmraData : CMRAData Unit where
   pcore _ := some ()
   op _ _ := ()
   ValidN _ _ := True
@@ -2896,17 +2918,20 @@ instance cmraUnit : CMRA Unit where
   extend _ _ := ⟨(), (), rfl, .rfl, .rfl⟩
   pcore_op_mono _ _ := ⟨.unit, rfl⟩
 
+@[rocq_alias unit_cmra_mixin, rocq_alias unitR]
+instance cmraUnit : CMRA Unit := ORA.ofCMRAData Unit.cmraData
+
 #rocq_ignore unit_unit_instance "Use UCMRA instance"
 #rocq_ignore unit_ucmra_mixin "Use UCMRA instance"
 
-instance unitalUnit : Unital Unit where
+@[instance_reducible] def Unit.ucmraData : UCMRAData Unit where
   unit := ()
   unit_valid := ⟨⟩
   unit_left_id := rfl
   pcore_unit := rfl
 
 @[rocq_alias unitUR]
-instance ucmraUnit : UCMRA Unit := UCMRA.ofCMRA
+instance ucmraUnit : UCMRA Unit := UORA.ofUCMRAData Unit.ucmraData
 
 @[rocq_alias unit_cmra_discrete]
 instance : ORA.Discrete Unit where
@@ -2923,8 +2948,7 @@ section empty
 #rocq_ignore Empty_set_validN_instance "Use CMRA instance"
 #rocq_ignore Empty_set_cmra_mixin "Use CMRA instance"
 
-@[rocq_alias Empty_setR]
-instance cmraEmpty : CMRA Empty where
+@[instance_reducible] def Empty.cmraData : CMRAData Empty where
   pcore x := some x
   op x _ := x
   ValidN _ _ := False
@@ -2941,6 +2965,9 @@ instance cmraEmpty : CMRA Empty where
   pcore_idem {x} := x.elim
   extend {_ x} := x.elim
   pcore_op_mono {x} := x.elim
+
+@[rocq_alias Empty_setR]
+instance cmraEmpty : CMRA Empty := ORA.ofCMRAData Empty.cmraData
 
 @[rocq_alias Empty_set_cmra_discrete]
 instance : ORA.Discrete Empty where
@@ -3220,31 +3247,31 @@ end Prod
 section ProdUnit
 namespace Prod
 
-variable {α β : Type _} [UCMRA α] [UCMRA β]
+variable {α β : Type _} [UORA α] [UORA β]
 
 #rocq_ignore prod_unit_instance "Use UCMRA instance"
 #rocq_ignore prod_ucmra_mixin "Use UCMRA instance"
 
 @[rocq_alias prodUR]
-instance ucmraProd : UCMRA (α × β) where
-  unit := (UCMRA.unit, UCMRA.unit)
-  unit_valid := ⟨UCMRA.unit_valid, UCMRA.unit_valid⟩
-  unit_left_id := Prod.ext UCMRA.unit_left_id UCMRA.unit_left_id
-  pcore_unit := pcore_eq_some.mpr ⟨UCMRA.pcore_unit, UCMRA.pcore_unit⟩
+instance ucmraProd : UORA (α × β) where
+  unit := (UORA.unit, UORA.unit)
+  unit_valid := ⟨UORA.unit_valid, UORA.unit_valid⟩
+  unit_left_id := Prod.ext UORA.unit_left_id UORA.unit_left_id
+  pcore_unit := pcore_eq_some.mpr ⟨UORA.pcore_unit, UORA.pcore_unit⟩
   ord_refl x := ⟨ORA.ord_refl x.1, ORA.ord_refl x.2⟩
 
 @[rocq_alias pair_split, rocq_alias pair_split_L]
-theorem mk_split (a : α) (b : β) : (a, b) = ((a, UCMRA.unit) : α × β) • (UCMRA.unit, b) :=
+theorem mk_split (a : α) (b : β) : (a, b) = ((a, UORA.unit) : α × β) • (UORA.unit, b) :=
   Prod.ext ORA.unit_right_id.symm ORA.unit_left_id.symm
 
 @[rocq_alias pair_op_1, rocq_alias pair_op_1_L]
 theorem mk_op_fst (a a' : α) :
-    ((a • a', UCMRA.unit) : α × β) = ((a, UCMRA.unit) : α × β) • (a', UCMRA.unit) :=
+    ((a • a', UORA.unit) : α × β) = ((a, UORA.unit) : α × β) • (a', UORA.unit) :=
   Prod.ext rfl ORA.unit_left_id.symm
 
 @[rocq_alias pair_op_2, rocq_alias pair_op_2_L]
 theorem mk_op_snd (b b' : β) :
-    ((UCMRA.unit, b • b') : α × β) = ((UCMRA.unit, b) : α × β) • (UCMRA.unit, b') :=
+    ((UORA.unit, b • b') : α × β) = ((UORA.unit, b) : α × β) • (UORA.unit, b') :=
   Prod.ext ORA.unit_left_id.symm rfl
 
 end Prod
@@ -3530,7 +3557,8 @@ def ofInjRestrictValidity [CMRA α] [OFE β]
     fun h => g_pcore.mpr <| ORA.pcore_idem (g_pcore.mp h)
   have pcore_op_left' : ∀ {y cy : β}, pcore y = some cy → op cy y = y :=
     fun h => g_eq.mpr <| (g_op ..).trans <| ORA.pcore_op_left (g_pcore.mp h)
-  { pcore, op, Valid, ValidN
+  ORA.ofCMRAData {
+    pcore, op, Valid, ValidN
     op_ne.ne _ _ _ h := (g_dist ..).mpr <|
       (g_op ..).dist.trans <| (g_ne h).op_r.trans (g_op ..).symm.dist
     pcore_ne h hcy :=
@@ -3634,7 +3662,7 @@ def ofDiscrete [OFE α] [OFE.Discrete α]
     (valid_op_left : ∀ x y : α, Valid (op x y) → Valid x)
     (pcore_op_mono : ∀ x cx : α, pcore x = some cx →
       ∀ y, ∃ cy, pcore (op x y) = some (op cx cy)) :
-    CMRA α where
+    CMRA α := ORA.ofCMRAData {
   pcore := pcore
   op := op
   ValidN _ := Valid
@@ -3650,7 +3678,7 @@ def ofDiscrete [OFE α] [OFE.Discrete α]
   pcore_op_left := pcore_op_left _ _
   pcore_idem := pcore_idem _ _
   extend _ h := ⟨_, _, OFE.discrete h, .rfl, .rfl⟩
-  pcore_op_mono := pcore_op_mono _ _
+  pcore_op_mono := pcore_op_mono _ _ }
 
 @[reducible, rocq_alias ra_total_mixin]
 def ofDiscreteTotal [OFE α] [OFE.Discrete α]
@@ -3673,7 +3701,7 @@ section OfDiscrete
 @[rocq_alias discrete_cmra_discrete]
 instance ofDiscrete_discrete [OFE α] [OFE.Discrete α] (pcore : α → Option α)
     (op : α → α → α) (Valid : α → Prop) h₁ h₂ h₃ h₄ h₅ h₆ :
-    @ORA.Discrete α (@CMRA.toORA α (ofDiscrete pcore op Valid h₁ h₂ h₃ h₄ h₅ h₆)) :=
+    @ORA.Discrete α (ofDiscrete pcore op Valid h₁ h₂ h₃ h₄ h₅ h₆).toORA :=
   letI := ofDiscrete pcore op Valid h₁ h₂ h₃ h₄ h₅ h₆
   { discrete_valid := id
     discrete_ord := CMRA.ord_of_ord0 }

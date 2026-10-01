@@ -377,7 +377,7 @@ instance instAffine [ORA.Affine A] : ORA.Affine (ReservationMap A H) :=
       (IncOrd.increasing v.token)
 
 @[rocq_alias reservation_mapUR]
-instance : UCMRA (ReservationMap A H) where
+instance : UORA (ReservationMap A H) where
   toORA := instORAReservationMap
   unit := mk ∅ ∅
   unit_valid := ⟨Heap.valid_empty, fun _ => .inr CoPset.mem_empty⟩

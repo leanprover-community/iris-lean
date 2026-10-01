@@ -16,36 +16,36 @@ open ORA
 -- EXPERIMENT: UPred Leibniz by construction
 -- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Bi-entailment.20and.20generalized.20rewriting/with/565019365
 @[ext]
-structure ValidAt (M : Type _) [UCMRA M] (n : Nat) where
+structure ValidAt (M : Type _) [UORA M] (n : Nat) where
   val : M
   property : ✓{n} val
 
-instance {M : Type _} [UCMRA M] {n : Nat} : CoeOut (ValidAt M n) M where
+instance {M : Type _} [UORA M] {n : Nat} : CoeOut (ValidAt M n) M where
   coe := (·.val)
 
-def ValidAt.le {M : Type _} [UCMRA M] {n m : Nat} (Hle : m ≤ n) : ValidAt M n → ValidAt M m :=
+def ValidAt.le {M : Type _} [UORA M] {n m : Nat} (Hle : m ≤ n) : ValidAt M n → ValidAt M m :=
   fun v => ⟨v.val, validN_of_le Hle v.property⟩
 
 @[simp]
-theorem ValidAt.le_val {M : Type _} [UCMRA M] {n m : Nat} {Hle : m ≤ n} {v : ValidAt M n} :
+theorem ValidAt.le_val {M : Type _} [UORA M] {n m : Nat} {Hle : m ≤ n} {v : ValidAt M n} :
   (v.le Hle).val = v.val := by rfl
 
 @[simp]
-theorem ValidAt.le_rfl {M : Type _} [UCMRA M] {n : Nat} {Hle : n ≤ n} {v : ValidAt M n} :
+theorem ValidAt.le_rfl {M : Type _} [UORA M] {n : Nat} {Hle : n ≤ n} {v : ValidAt M n} :
   v.le Hle = v := by rfl
 
 /-- The data of a UPred object is an indexed proposition over M (Bundled version) -/
 @[ext, rocq_alias uPred]
-structure UPred (M : Type _) [UCMRA M] where
+structure UPred (M : Type _) [UORA M] where
   holds : (n : Nat) → ValidAt M n → Prop
   mono {n1 n2} {x1 : ValidAt M n1} {x2 : ValidAt M n2} :
     holds n1 x1 → (x1 : M) ≼ₒ{n2} (x2 : M) → (Hle : n2 ≤ n1) → holds n2 x2
 
-def UPred.holds_unpacked {M : Type _} [UCMRA M] (P : UPred M) (n : Nat) (x : M) (Hx : ✓{n} x) :
+def UPred.holds_unpacked {M : Type _} [UORA M] (P : UPred M) (n : Nat) (x : M) (Hx : ✓{n} x) :
     Prop :=
   P.holds n ⟨x, Hx⟩
 
-theorem UPred.mono_unpacked {M : Type _} [UCMRA M] (P : UPred M) {n1 n2 : Nat} {x1 x2 : M}
+theorem UPred.mono_unpacked {M : Type _} [UORA M] (P : UPred M) {n1 n2 : Nat} {x1 x2 : M}
     (Hx1 : ✓{n1} x1) (Hx2 : ✓{n2} x2) (HP : P.holds_unpacked n1 x1 Hx1) (Hxle : x1 ≼ₒ{n2} x2)
     (Hle : n2 ≤ n1) : P.holds_unpacked n2 x2 Hx2 :=
   P.mono HP Hxle Hle
@@ -53,7 +53,7 @@ theorem UPred.mono_unpacked {M : Type _} [UCMRA M] (P : UPred M) {n1 n2 : Nat} {
 /-- The definition of UPred is equivalent to separately proving pointwise down-closure,
 non-expansivity, and monotonicity. -/
 @[rocq_alias uPred_alt]
-theorem uPred_alt {M : Type _} [UCMRA M] (P : Nat → M → Prop) :
+theorem uPred_alt {M : Type _} [UORA M] (P : Nat → M → Prop) :
     (∀ {n1 n2} {x1 x2 : M}, P n1 x1 → x1 ≼ₒ{n1} x2 → n2 ≤ n1 → P n2 x2) ↔
     ((∀ {x : M} {n1 n2}, n2 ≤ n1 → P n1 x → P n2 x) ∧
      (∀ {n} {x1 x2 : M}, x1 ≡{n}≡ x2 → ∀ m, m ≤ n → (P m x1 ↔ P m x2)) ∧
@@ -68,15 +68,15 @@ theorem uPred_alt {M : Type _} [UCMRA M] (P : Nat → M → Prop) :
   · refine fun ⟨Hdc, _, Hmono⟩ n1 n2 x1 x2 HP Hinc Hle => ?_
     exact Hmono (ordN_of_ordN_le Hle Hinc) n2 (Nat.le_refl _) (Hdc Hle HP)
 
-instance [UCMRA M] : Inhabited (UPred M) :=
+instance [UORA M] : Inhabited (UPred M) :=
   ⟨fun _ _ => True, fun _ _ _ => ⟨⟩⟩
 
-instance [UCMRA M] : CoeFun (UPred M) (fun _ => (n : Nat) → ValidAt M n → Prop) where
+instance [UORA M] : CoeFun (UPred M) (fun _ => (n : Nat) → ValidAt M n → Prop) where
   coe x := x.holds
 
 section UPred
 
-variable [UCMRA M]
+variable [UORA M]
 
 open UPred
 
@@ -131,7 +131,7 @@ abbrev UPredOF (F : COFE.OFunctorPre) [URFunctor F] : COFE.OFunctorPre :=
   fun A B _ _ => UPred (F B A)
 
 @[rocq_alias uPredO_map]
-def uPred_map [UCMRA α] [UCMRA β] (f : β -C> α) : UPred α -n> UPred β := by
+def uPred_map [UORA α] [UORA β] (f : β -C> α) : UPred α -n> UPred β := by
   refine ⟨fun P => ⟨fun n x => P n ⟨(f x.val), f.validN x.property⟩, ?_⟩, ⟨?_⟩⟩
   · intro n1 n2 x1 x2 HP Hm Hn
     exact P.mono HP (f.monoN Hm) Hn

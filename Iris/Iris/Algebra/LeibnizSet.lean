@@ -68,7 +68,7 @@ namespace DisjointLeibnizSet
 
 variable {S : Type _} [LawfulSet S A] [DecidableDisj S]
 
-instance : CMRA (DisjointLeibnizSet S) where
+@[instance_reducible] def cmraData : CMRAData (DisjointLeibnizSet S) where
   pcore _ := some (.valid ∅)
   op
     | valid x, valid y => if x ## y then valid (x ∪ y) else error
@@ -110,18 +110,20 @@ instance : CMRA (DisjointLeibnizSet S) where
   extend {_ _ y₁ y₂} _ h := ⟨y₁, y₂, ⟨h, .rfl, .rfl⟩⟩
   pcore_op_mono h _ := ⟨.valid ∅, by cases h; simp [disjoint_empty_left]⟩
 
+instance : CMRA (DisjointLeibnizSet S) := ORA.ofCMRAData DisjointLeibnizSet.cmraData
+
 instance instDiscreteDisjointLeibnizSet : ORA.Discrete (DisjointLeibnizSet S) where
   discrete_0 := fun h => h
   discrete_valid := id
   discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
 
-instance instUnitalDisjointLeibnizSet : Unital (DisjointLeibnizSet S) where
+@[instance_reducible] def ucmraData : UCMRAData (DisjointLeibnizSet S) where
   unit := .valid ∅
   unit_valid := trivial
   unit_left_id {x} := by rcases x <;> simp [disjoint_empty_left, op]
   pcore_unit := by simp [pcore]
 
-instance instUCMRADisjointLeibnizSet : UCMRA (DisjointLeibnizSet S) := UCMRA.ofCMRA
+instance instUCMRADisjointLeibnizSet : UCMRA (DisjointLeibnizSet S) := UORA.ofUCMRAData DisjointLeibnizSet.ucmraData
 
 theorem valid_set {s : S} : ✓ valid s := ⟨⟩
 theorem validN_set {s : S} : ✓{n} valid s := ⟨⟩
@@ -319,7 +321,7 @@ namespace LeibnizSet
 
 variable {S : Type _} [LawfulSet S A]
 
-instance : CMRA (LeibnizSet S) where
+@[instance_reducible] def cmraData : CMRAData (LeibnizSet S) where
   pcore := some
   op | .valid x, valid y => valid (x ∪ y)
   ValidN _ _ := True
@@ -337,13 +339,15 @@ instance : CMRA (LeibnizSet S) where
   extend {_ _ _ _} _ h := ⟨_, _, h, .rfl, .rfl⟩
   pcore_op_mono {_ _} := by rintro ⟨rfl⟩ y; exists y
 
-instance instUnital : Unital (LeibnizSet S) where
+instance : CMRA (LeibnizSet S) := ORA.ofCMRAData LeibnizSet.cmraData
+
+@[instance_reducible] def ucmraData : UCMRAData (LeibnizSet S) where
   unit := valid ∅
   unit_valid := trivial
   unit_left_id := by simp [op, union_empty_left]
   pcore_unit := by simp [pcore, pcore]
 
-instance : UCMRA (LeibnizSet S) := UCMRA.ofCMRA
+instance instUnital : UCMRA (LeibnizSet S) := UORA.ofUCMRAData LeibnizSet.ucmraData
 
 instance instDiscreteLeibnizSet : ORA.Discrete (LeibnizSet S) where
   discrete_0 := fun h => h
@@ -446,7 +450,7 @@ abbrev CoPsetDisjL := DisjointLeibnizSet CoPset
 /-! ## The Gset CMRAs
 
 The `LeibnizSet`/`DisjointLeibnizSet` construction over an arbitrary `LawfulSet` also subsumes the
-`gset` resource algebras: the OFE, RA, and UCMRA structures are aliased onto the generic types
+`gset` resource algebras: the OFE, RA, and UORA structures are aliased onto the generic types
 below, and the `gset` typeclass instances / mixins are provided by the generic instances. -/
 
 #rocq_ignore gsetO "Use `[LawfulSet S A] → LeibnizSet S` and its `COFE` instance."

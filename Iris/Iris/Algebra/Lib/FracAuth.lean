@@ -20,7 +20,7 @@ fraction) and `◯F{q} a` (fragment with fraction). Splitting works differently 
 
 @[expose] public section
 
-open Iris OFE ORA UCMRA Auth Option OrdInc
+open Iris OFE ORA UORA Auth Option OrdInc
 
 /-! ## Definitions -/
 

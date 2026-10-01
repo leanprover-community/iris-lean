@@ -70,7 +70,7 @@ def Qp.divide_even (q : Qp) (n : Nat) (hn : 0 < n) : Qp :=
 
 instance instCOFEQp : COFE Qp := COFE.ofDiscrete _
 
-instance instORAQp : CMRA Qp where
+@[instance_reducible] def Qp.cmraData : CMRAData Qp where
   pcore _ := none
   op x y := x + y
   ValidN _ x := x.val ≤ 1
@@ -91,6 +91,8 @@ instance instORAQp : CMRA Qp where
   extend {_ x y z} := by
     rintro H He; exact ⟨y, z, He, .rfl, .rfl⟩
   pcore_op_mono H := by rcases H
+
+instance instORAQp : CMRA Qp := ORA.ofCMRAData Qp.cmraData
 
 -- TODO: A different solution to having these bridge lemmas might be to internalize
 -- positivity into the ORA's validity predicate, removing the sybtype, and having Qp

@@ -529,7 +529,7 @@ instance instStoreCMRA : ORA (M V) where
 end
 
 @[rocq_alias gmap_ucmra_mixin, rocq_alias gmapUR]
-instance instStoreUCMRA : UCMRA (M V) where
+instance instStoreUCMRA : UORA (M V) where
   toORA := instStoreCMRA
   unit := unit
   unit_valid := by simp [ORA.Valid, get?_empty]
@@ -583,7 +583,7 @@ theorem get?_opM (m : M V) (mm : Option (M V)) (i : K) :
 
 @[rocq_alias lookup_op_homomorphism]
 instance (i : K) : Algebra.MonoidHomomorphism (ORA.op (α := M V)) (ORA.op (α := Option V))
-    UCMRA.unit UCMRA.unit (· = ·) (get? · i) where
+    UORA.unit UORA.unit (· = ·) (get? · i) where
   rel_refl := rfl
   rel_trans := Eq.trans
   op_proper h₁ h₂ := h₁ ▸ h₂ ▸ rfl
@@ -1298,14 +1298,14 @@ section UnitalProperties
 
 open ORA PartialMap LawfulPartialMap
 
-variable [LawfulPartialMap M K] [UCMRA V]
+variable [LawfulPartialMap M K] [UORA V]
 
 namespace Heap
 
 open Classical in
 @[rocq_alias insert_alloc_local_update]
 theorem insert_alloc_local_update {m1 m2 : M V} {i : K} {x x' y' : V}
-    (hi1 : get? m1 i = some x) (hi2 : get? m2 i = none) (h : (x, UCMRA.unit) ~l~> (x', y')) :
+    (hi1 : get? m1 i = some x) (hi2 : get? m2 i = none) (h : (x, UORA.unit) ~l~> (x', y')) :
     ((m1, m2) : M V × M V) ~l~> (insert m1 i x', insert m2 i y') := by
   refine local_update fun j => ?_
   by_cases hj : i = j

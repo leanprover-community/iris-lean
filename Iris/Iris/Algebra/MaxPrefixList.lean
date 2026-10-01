@@ -47,8 +47,8 @@ instance instOFE : OFE (MaxPrefixList α) :=
 instance instORA : ORA (MaxPrefixList α) :=
   Heap.instStoreCMRA (M:= MaxPrefixListMap) (V := Agree α)
 
-/-- UCMRA instance on `MaxPrefixList`, inherited from the UCMRA on the underlying map. -/
-instance instUCMRA : UCMRA (MaxPrefixList α) :=
+/-- UORA instance on `MaxPrefixList`, inherited from the UORA on the underlying map. -/
+instance instUCMRA : UORA (MaxPrefixList α) :=
   Heap.instStoreUCMRA  (M:= MaxPrefixListMap) (V := Agree α)
 
 instance instIsInc : IsInc (MaxPrefixList α) :=
@@ -84,7 +84,7 @@ theorem get?_toMaxPrefixList {i : Nat} {l : List α} :
 
 variable [OFE α]
 
-theorem toMaxPrefixList_nil : toMaxPrefixList ([] : List α) = UCMRA.unit := by
+theorem toMaxPrefixList_nil : toMaxPrefixList ([] : List α) = UORA.unit := by
   refine LawfulPartialMap.equiv_iff_eq (M := MaxPrefixListMap).mp fun i => ?_
   rw [get?_toMaxPrefixList, List.getElem?_nil]
   exact (LawfulPartialMap.get?_empty i).symm

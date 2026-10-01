@@ -409,7 +409,7 @@ instance instAffine [ORA.Affine A] : ORA.Affine (DynReservationMap A H) :=
     increasing_mk (IncOrd.increasing v.data) (IncOrd.increasing v.token)
 
 @[rocq_alias dyn_reservation_mapUR]
-instance instUCMRADynReservationMap : UCMRA (DynReservationMap A H) where
+instance instUCMRADynReservationMap : UORA (DynReservationMap A H) where
   toORA := instORADynReservationMap
   unit := mk ∅ ∅
   unit_valid := valid_iff.mpr ⟨Heap.valid_empty, valid_set,
@@ -701,10 +701,10 @@ variable [ORA A]
 @[rocq_alias dyn_reservation_map_reserve]
 theorem reserve (Q : DynReservationMap A H → Prop)
     (HQ : ∀ e : CoPset, setInfinite e → Q (mkToken e)) :
-    (UCMRA.unit : DynReservationMap A H) ~~>: Q := by
+    (UORA.unit : DynReservationMap A H) ~~>: Q := by
   intro n mz vo
   have ⟨mf, Ef, hz, vmf, hinf, hdisj⟩ :
-      ∃ (mf : H A) (Ef : CoPset), (UCMRA.unit •? mz) = mk mf ∅ • mkToken Ef ∧
+      ∃ (mf : H A) (Ef : CoPset), (UORA.unit •? mz) = mk mf ∅ • mkToken Ef ∧
         ✓{n} mf ∧ setInfinite ((⊤ : CoPset) \ Ef) ∧
         ∀ i, get? mf i = none ∨ i ∉ Ef := by
     match mz with
@@ -735,7 +735,7 @@ theorem reserve (Q : DynReservationMap A H → Prop)
   have hframe : (mkToken (H := H) (A := A) E₁) •? mz =
       ORA.op (mkToken E₁) (ORA.op (mk mf ∅ : DynReservationMap A H) (mkToken Ef)) :=
     (show (mkToken (H := H) (A := A) E₁) •? mz =
-        ORA.op (mkToken E₁) (UCMRA.unit •? mz) from
+        ORA.op (mkToken E₁) (UORA.unit •? mz) from
       match mz with
       | none => (unit_right_id (x := mkToken E₁)).symm
       | some z => congrArg (ORA.op (mkToken E₁)) (unit_left_id (x := z)).symm).trans
@@ -769,7 +769,7 @@ theorem reserve (Q : DynReservationMap A H → Prop)
 
 @[rocq_alias dyn_reservation_map_reserve']
 theorem reserve' :
-    (UCMRA.unit : DynReservationMap A H) ~~>:
+    (UORA.unit : DynReservationMap A H) ~~>:
       fun x => ∃ e : CoPset, setInfinite e ∧ x = mkToken e :=
   reserve _ fun e hinf => ⟨e, hinf, rfl⟩
 

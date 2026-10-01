@@ -42,8 +42,7 @@ instance : OFE.Discrete UFrac := ⟨fun h => h⟩
 
 #rocq_ignore ufrac_ra_mixin "Use CMRA instance"
 
-@[rocq_alias ufracR]
-instance : CMRA UFrac where
+@[instance_reducible] def cmraData : CMRAData UFrac where
   pcore _ := none
   op x y := ⟨x.frac + y.frac⟩
   Valid _ := True
@@ -60,6 +59,9 @@ instance : CMRA UFrac where
   pcore_idem H := by rcases H
   extend {_ x y z} := by rintro _ rfl; exists y; exists z
   pcore_op_mono H := by rcases H
+
+@[rocq_alias ufracR]
+instance : CMRA UFrac := ORA.ofCMRAData UFrac.cmraData
 
 @[simp, grind =] theorem frac_op (x y : UFrac) : (x • y).frac = x.frac + y.frac := rfl
 @[simp, grind =] theorem valid_iff {x : UFrac} : ✓ x ↔ True := Iff.rfl

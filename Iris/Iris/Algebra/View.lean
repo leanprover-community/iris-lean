@@ -21,35 +21,35 @@ open Iris
 abbrev ViewRel (A B : Type _) := Nat → A → B → Prop
 
 @[rocq_alias view_rel]
-class IsViewRel [OFE A] [UCMRA B] (R : ViewRel A B) where
+class IsViewRel [OFE A] [UORA B] (R : ViewRel A B) where
   mono : R n1 a1 b1 → a1 ≡{n2}≡ a2 → b2 ≼ₒ{n2} b1 → n2 ≤ n1 → R n2 a2 b2
   op_left : R n a (b • c) → R n a b
   rel_validN n a b : R n a b → ✓{n} b
-  rel_unit n : ∃ a, R n a UCMRA.unit
+  rel_unit n : ∃ a, R n a UORA.unit
 
-theorem IsViewRel.ofMonoOrd [OFE A] [UCMRA B] [IncOrd B] {R : ViewRel A B}
+theorem IsViewRel.ofMonoOrd [OFE A] [UORA B] [IncOrd B] {R : ViewRel A B}
     (mono : ∀ {n1 a1 b1 n2 a2 b2},
       R n1 a1 b1 → a1 ≡{n2}≡ a2 → b2 ≼ₒ{n2} b1 → n2 ≤ n1 → R n2 a2 b2)
     (rel_validN : ∀ n a b, R n a b → ✓{n} b)
-    (rel_unit : ∀ n, ∃ a, R n a UCMRA.unit) : IsViewRel R where
+    (rel_unit : ∀ n, ∃ a, R n a UORA.unit) : IsViewRel R where
   mono := mono
   op_left h := mono h .rfl (IncOrd.incN_ordN (ORA.incN_op_left _ _ _)) (Nat.le_refl _)
   rel_validN := rel_validN
   rel_unit := rel_unit
 
-theorem IsViewRel.mono_inc [OFE A] [UCMRA B] {R : ViewRel A B} [IsViewRel R]
+theorem IsViewRel.mono_inc [OFE A] [UORA B] {R : ViewRel A B} [IsViewRel R]
     (H : R n1 a1 b1) (Ha : a1 ≡{n2}≡ a2) (Hb : b2 ≼{n2} b1) (Hn : n2 ≤ n1) : R n2 a2 b2 :=
   let ⟨_, hd⟩ := Hb
   op_left (mono H Ha (ORA.ordN_of_dist hd.symm) Hn)
 
 @[rocq_alias ViewRelDiscrete]
-class IsViewRelDiscrete [OFE A] [UCMRA B] (R : ViewRel A B) extends IsViewRel R where
+class IsViewRelDiscrete [OFE A] [UORA B] (R : ViewRel A B) extends IsViewRel R where
   discrete n a b : R 0 a b → R n a b
 
 namespace ViewRel
 open IsViewRel DFrac
 
-variable [OFE A] [UCMRA B] {R : ViewRel A B} [IsViewRel R]
+variable [OFE A] [UORA B] {R : ViewRel A B} [IsViewRel R]
 
 @[rocq_alias view_rel_ne]
 theorem iff_of_dist (Ha : a1 ≡{n}≡ a2) (Hb : b1 ≡{n}≡ b2) : R n a1 b1 ↔ R n a2 b2 :=
@@ -65,8 +65,8 @@ structure View {A B : Type _} (R : ViewRel A B) where
   frag : B
 
 @[rocq_alias view_auth]
-abbrev View.Auth [UCMRA B] {R : ViewRel A B} (dq : DFrac) (a : A) : View R :=
-  ⟨some (dq, toAgree a), UCMRA.unit⟩
+abbrev View.Auth [UORA B] {R : ViewRel A B} (dq : DFrac) (a : A) : View R :=
+  ⟨some (dq, toAgree a), UORA.unit⟩
 
 @[rocq_alias view_frag]
 abbrev View.Frag {R : ViewRel A B} (b : B) : View R := ⟨none, b⟩
@@ -77,7 +77,7 @@ notation "◯V " b => View.Frag b
 
 namespace View
 section OFE
-open OFE UCMRA
+open OFE UORA
 variable [OFE A] [OFE B] {R : ViewRel A B}
 
 #rocq_ignore view_equiv "OFE is Leibniz; use equality"
@@ -126,40 +126,40 @@ instance [Discrete A] [Discrete B] : Discrete (View R) where
     exact ⟨discrete_0 H.1, discrete_0 H.2⟩
 
 -- view_auth_dist_inj
-theorem auth_inj_frac [UCMRA B] {q1 q2 : DFrac} {a1 a2 : A} {n} (H : (●V{q1} a1 : View R) ≡{n}≡ ●V{q2} a2) :
+theorem auth_inj_frac [UORA B] {q1 q2 : DFrac} {a1 a2 : A} {n} (H : (●V{q1} a1 : View R) ≡{n}≡ ●V{q2} a2) :
     q1 = q2 := H.1.1
 
 -- view_auth_dist_inj
-theorem dist_of_auth_dist [UCMRA B] {q1 q2 : DFrac} {a1 a2 : A} {n} (H : (●V{q1} a1 : View R) ≡{n}≡ ●V{q2} a2) :
+theorem dist_of_auth_dist [UORA B] {q1 q2 : DFrac} {a1 a2 : A} {n} (H : (●V{q1} a1 : View R) ≡{n}≡ ●V{q2} a2) :
     a1 ≡{n}≡ a2 := toAgree.inj H.1.2
 
 @[rocq_alias view_auth_dist_inj]
-theorem auth_dist_inj [UCMRA B] {q1 q2 : DFrac} {a1 a2 : A} {n}
+theorem auth_dist_inj [UORA B] {q1 q2 : DFrac} {a1 a2 : A} {n}
     (H : (●V{q1} a1 : View R) ≡{n}≡ ●V{q2} a2) : q1 = q2 ∧ a1 ≡{n}≡ a2 :=
   ⟨auth_inj_frac H, dist_of_auth_dist H⟩
 
 @[rocq_alias view_auth_inj]
-theorem auth_eqv_inj [UCMRA B] {q1 q2 : DFrac} {a1 a2 : A}
+theorem auth_eqv_inj [UORA B] {q1 q2 : DFrac} {a1 a2 : A}
     (H : (●V{q1} a1 : View R) = ●V{q2} a2) : q1 = q2 ∧ a1 = a2 := by
   refine ⟨(auth_dist_inj (n := 0) H.dist).1, OFE.eq_dist_2 fun n => ?_⟩
   exact (auth_dist_inj H.dist).2
 
 @[rocq_alias view_frag_inj]
-theorem frag_eqv_inj [UCMRA B] {b1 b2 : B}
+theorem frag_eqv_inj [UORA B] {b1 b2 : B}
     (H : (◯V b1 : View R) = ◯V b2) : b1 = b2 := OFE.eq_dist_2 fun _ => H.dist.2
 
 @[rocq_alias view_frag_dist_inj]
-theorem dist_of_frag_dist [UCMRA B] {b1 b2 : B} {n} (H : (◯V b1 : View R) ≡{n}≡ ◯V b2) :
+theorem dist_of_frag_dist [UORA B] {b1 b2 : B} {n} (H : (◯V b1 : View R) ≡{n}≡ ◯V b2) :
     b1 ≡{n}≡ b2 := H.2
 
 @[rocq_alias view_auth_discrete]
-instance auth_discrete [UCMRA B] {dq a} [Ha : DiscreteE a] [He : DiscreteE (unit : B)] :
+instance auth_discrete [UORA B] {dq a} [Ha : DiscreteE a] [He : DiscreteE (unit : B)] :
     DiscreteE (●V{dq} a : View R) := by
   refine discrete ?_ He
   infer_instance
 
 @[rocq_alias view_frag_discrete]
-instance frag_discrete [UCMRA B] [Hb : DiscreteE b] : DiscreteE (◯V b : View R) :=
+instance frag_discrete [UORA B] [Hb : DiscreteE b] : DiscreteE (◯V b : View R) :=
   discrete Option.none_is_discrete Hb
 
 end OFE
@@ -167,7 +167,7 @@ end OFE
 section ORA
 open IsViewRel toAgree OFE DFrac
 
-variable [OFE A] [UCMRA B] {R : ViewRel A B} [IsViewRel R]
+variable [OFE A] [UORA B] {R : ViewRel A B} [IsViewRel R]
 
 theorem IsViewRel.of_agree_dist_iff (Hb : b' ≡{n}≡ b) :
     (∃ a', toAgree a ≡{n}≡ toAgree a' ∧ R n a' b') ↔ R n a b := by
@@ -291,7 +291,7 @@ attribute [local instance] View.orderN raOp raPCore raValid
 
 omit [IsViewRel R] in
 theorem increasing_auth {v : View R} (h : Increasing v) : Increasing v.auth where
-  increasing w := (h.increasing ⟨w, UCMRA.unit⟩).1
+  increasing w := (h.increasing ⟨w, UORA.unit⟩).1
 
 omit [IsViewRel R] in
 theorem increasing_frag {v : View R} (h : Increasing v) : Increasing v.frag where
@@ -369,15 +369,15 @@ instance instORA : ORA (View R) where
 end
 
 @[rocq_alias viewUR]
-instance instUCMRA : UCMRA (View R) where
+instance instUCMRA : UORA (View R) where
   toORA := instORA
-  unit := ⟨UCMRA.unit, UCMRA.unit⟩
+  unit := ⟨UORA.unit, UORA.unit⟩
   unit_valid := IsViewRel.rel_unit
   unit_left_id := by
     rintro ⟨xa, xf⟩
-    change (⟨UCMRA.unit • xa, UCMRA.unit • xf⟩ : View R) = ⟨xa, xf⟩
+    change (⟨UORA.unit • xa, UORA.unit • xf⟩ : View R) = ⟨xa, xf⟩
     rw [ORA.ucmra_unit_left_id, ORA.ucmra_unit_left_id]
-  pcore_unit := congrArg some (congrArg (View.mk _) (ORA.core_eqv_self UCMRA.unit))
+  pcore_unit := congrArg some (congrArg (View.mk _) (ORA.core_eqv_self UORA.unit))
   ord_refl x := ⟨ORA.ord_refl x.auth, ORA.ord_refl x.frag⟩
 
 instance instAffine [ORA.Affine B] : ORA.Affine (View R) :=
@@ -461,7 +461,7 @@ theorem auth_own_op_frag_core : ORA.core ((●V{.own q} a) • ◯V b : View R) 
 
 @[rocq_alias view_auth_core_id]
 instance : ORA.CoreId (●V{.discard} a : View R) where
-  core_id := congrArg some (congrArg (View.mk _) (ORA.core_eqv_self UCMRA.unit))
+  core_id := congrArg some (congrArg (View.mk _) (ORA.core_eqv_self UORA.unit))
 
 @[rocq_alias view_frag_core_id]
 instance [ORA.CoreId b] : ORA.CoreId (◯V b : View R) where
@@ -484,7 +484,7 @@ section BigOp
 open Algebra Std
 
 @[rocq_alias view_frag_sep_homomorphism]
-instance : MonoidHomomorphism ORA.op ORA.op UCMRA.unit UCMRA.unit (· = ·)
+instance : MonoidHomomorphism ORA.op ORA.op UORA.unit UORA.unit (· = ·)
     (Frag : B → View R) where
   rel_refl := rfl
   rel_trans := Eq.trans
@@ -529,16 +529,16 @@ theorem eq_of_valid_auth
   OFE.eq_dist_2 fun _ => dist_of_validN_auth H.validN
 
 @[rocq_alias view_auth_dfrac_validN]
-theorem auth_validN_iff : ✓{n} (●V{dq} a : View R) ↔ ✓{n}dq ∧ R n a UCMRA.unit :=
+theorem auth_validN_iff : ✓{n} (●V{dq} a : View R) ↔ ✓{n}dq ∧ R n a UORA.unit :=
   and_congr_right fun _ => IsViewRel.of_agree_dist_iff .rfl
 
 @[rocq_alias view_auth_validN]
-theorem auth_one_validN_iff n a : ✓{n} (●V a : View R) ↔ R n a UCMRA.unit :=
+theorem auth_one_validN_iff n a : ✓{n} (●V a : View R) ↔ R n a UORA.unit :=
   ⟨(auth_validN_iff.mp · |>.2), (auth_validN_iff.mpr ⟨valid_own_one, ·⟩)⟩
 
 @[rocq_alias view_auth_dfrac_op_validN]
 theorem auth_op_auth_validN_iff :
-    ✓{n} ((●V{dq1} a1 : View R) • ●V{dq2} a2) ↔ ✓(dq1 • dq2) ∧ a1 ≡{n}≡ a2 ∧ R n a1 UCMRA.unit := by
+    ✓{n} ((●V{dq1} a1 : View R) • ●V{dq2} a2) ↔ ✓(dq1 • dq2) ∧ a1 ≡{n}≡ a2 ∧ R n a1 UORA.unit := by
   refine ⟨fun H => ?_, fun H => ?_⟩
   · let Ha' : a1 ≡{n}≡ a2 := dist_of_validN_auth H
     rcases H with ⟨Hq, _, Ha, HR⟩
@@ -552,7 +552,7 @@ theorem auth_op_auth_validN_iff :
     refine ⟨H.1, a1, ?_, ?_⟩
     · exact (ORA.op_ne.ne <| toAgree.ne.ne H.2.1.symm).trans Agree.idemp.dist
     · refine mono_inc H.2.2 .rfl ?_ n.le_refl
-      exact OFE.Dist.to_incN <| ORA.unit_left_id_dist UCMRA.unit
+      exact OFE.Dist.to_incN <| ORA.unit_left_id_dist UORA.unit
 
 @[rocq_alias view_auth_op_validN]
 theorem auth_one_op_auth_one_validN_iff : ✓{n} ((●V a1 : View R) • ●V a2) ↔ False := by
@@ -574,15 +574,15 @@ theorem auth_one_op_frag_validN_iff : ✓{n} ((●V a : View R) • ◯V b) ↔ 
   auth_op_frag_validN_iff.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
 
 @[rocq_alias view_auth_dfrac_valid]
-theorem auth_valid_iff : ✓ (●V{dq} a : View R) ↔ ✓dq ∧ ∀ n, R n a UCMRA.unit :=
+theorem auth_valid_iff : ✓ (●V{dq} a : View R) ↔ ✓dq ∧ ∀ n, R n a UORA.unit :=
   and_congr_right (fun _=> forall_congr' fun _ => IsViewRel.of_agree_dist_iff .rfl)
 
 @[rocq_alias view_auth_valid]
-theorem auth_one_valid_iff : ✓ (●V a : View R) ↔ ∀ n, R n a UCMRA.unit :=
+theorem auth_one_valid_iff : ✓ (●V a : View R) ↔ ∀ n, R n a UORA.unit :=
   auth_valid_iff.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
 
 @[rocq_alias view_auth_dfrac_op_valid]
-theorem auth_op_auth_valid_iff : ✓ ((●V{dq1} a1 : View R) • ●V{dq2} a2) ↔ ✓(dq1 • dq2) ∧ a1 = a2 ∧ ∀ n, R n a1 UCMRA.unit := by
+theorem auth_op_auth_valid_iff : ✓ ((●V{dq1} a1 : View R) • ●V{dq2} a2) ↔ ✓(dq1 • dq2) ∧ a1 = a2 ∧ ∀ n, R n a1 UORA.unit := by
   refine ORA.valid_iff_validN.trans ?_
   refine ⟨fun H => ?_, fun H n => ?_⟩
   · simp [valid, ORA.op, op, optionOp, ORA.ValidN, ValidN] at H
@@ -689,7 +689,7 @@ theorem frag_inc_auth_op_frag_iff :
   constructor
   · rintro ⟨xf, HH⟩
     have Hb' : b2 = b1 • xf.frag :=
-      (UCMRA.unit_left_id).symm.trans (congrArg View.frag HH)
+      (UORA.unit_left_id).symm.trans (congrArg View.frag HH)
     rw [Hb']
     exists xf.frag
   · rintro ⟨bf, Hbf⟩
@@ -795,7 +795,7 @@ theorem frag_ord_auth_op_frag_iff :
     (◯V b1 : View R) ≼ₒ ((●V{p} a) • ◯V b2) ↔ b1 ≼ₒ b2 :=
   ⟨fun ⟨_, h⟩ => ucmra_unit_left_id (x := b2) ▸ h,
    fun h => ⟨IncOrd.increasing _, by
-     change b1 ≼ₒ (UCMRA.unit • b2); rw [ucmra_unit_left_id]; exact h⟩⟩
+     change b1 ≼ₒ (UORA.unit • b2); rw [ucmra_unit_left_id]; exact h⟩⟩
 
 open ORA in
 theorem auth_op_frag_ordN_auth_op_frag_iff :
@@ -819,7 +819,7 @@ theorem auth_op_frag_ord_auth_op_frag_iff :
       (dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 = a2 ∧ b1 ≼ₒ b2 := by
   have hb : ((●V{dq1} a1 : View R) • ◯V b1).frag ≼ₒ ((●V{dq2} a2 : View R) • ◯V b2).frag ↔
       b1 ≼ₒ b2 := by
-    change ((UCMRA.unit : B) • b1) ≼ₒ ((UCMRA.unit : B) • b2) ↔ _
+    change ((UORA.unit : B) • b1) ≼ₒ ((UORA.unit : B) • b2) ↔ _
     rw [ucmra_unit_left_id, ucmra_unit_left_id]
   refine ⟨fun ⟨ha, h⟩ => ?_, fun ⟨hd, ha, h⟩ => ⟨?_, hb.mpr h⟩⟩
   · refine ⟨?_, ?_, hb.mp h⟩ <;> rcases ha with e | ⟨o₁, o₂⟩
@@ -853,7 +853,7 @@ end ORA
 
 section Updates
 
-variable [OFE A] [IB : UCMRA B] {R : ViewRel A B} [IsViewRel R]
+variable [OFE A] [IB : UORA B] {R : ViewRel A B} [IsViewRel R]
 
 open ORA DFrac
 
@@ -989,7 +989,7 @@ theorem auth_alloc (Hup : ∀ n bf, R n a bf → R n a (b • bf)) :
   · simp [ORA.op, optionOp, ORA.ValidN, ValidN]
     intro Hq a' Hag HR
     refine ⟨Hq, a', Hag, ?_⟩
-    have HR' := IsViewRel.mono_inc HR (toAgree.inj Hag).symm (ORA.incN_op_right n UCMRA.unit bf) n.le_refl
+    have HR' := IsViewRel.mono_inc HR (toAgree.inj Hag).symm (ORA.incN_op_right n UORA.unit bf) n.le_refl
     apply IsViewRel.mono_inc (Hup n bf HR') (toAgree.inj Hag) ?_ n.le_refl
     apply Iris.OFE.Dist.to_incN
     refine ORA.comm.dist.trans (.trans ?_ ORA.comm.dist)
@@ -1000,7 +1000,7 @@ theorem auth_alloc (Hup : ∀ n bf, R n a bf → R n a (b • bf)) :
     exists a0
     refine ⟨Hag, ?_⟩
     have Heq  := Agree.toAgree_includedN.mp ⟨ag, Hag.symm⟩
-    have HR' := IsViewRel.mono_inc Hrel Heq.symm (ORA.incN_op_right n UCMRA.unit bf) n.le_refl
+    have HR' := IsViewRel.mono_inc Hrel Heq.symm (ORA.incN_op_right n UORA.unit bf) n.le_refl
     apply IsViewRel.mono_inc (Hup _ _ HR') Heq ?_ n.le_refl
     apply Iris.OFE.Dist.to_incN
     refine ORA.comm.dist.trans (.trans ?_ ORA.comm.dist)
@@ -1097,7 +1097,7 @@ theorem map_auth_eq [OFE A] [OFE B] [OFE A'] {R : ViewRel A B} {R' : ViewRel A' 
   rcases v with ⟨_|⟨fr, a⟩, b⟩ <;> rfl
 
 @[rocq_alias view_map_cmra_morphism]
-def mapC [OFE A] [UCMRA B] [OFE A'] [UCMRA B']
+def mapC [OFE A] [UORA B] [OFE A'] [UORA B']
     {R : ViewRel A B} [IsViewRel R] {R' : ViewRel A' B'} [IsViewRel R']
     (f : A -n> A') (g : B -C> B') (H : ∀ n a b, R n a b → R' n (f a) (g b)) :
     View R -C> View R' where

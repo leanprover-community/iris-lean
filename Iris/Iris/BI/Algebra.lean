@@ -190,7 +190,7 @@ end agree_inclusion
 section auth
 open Iris BI Auth
 
-variable [Sbi PROP] [UCMRA A]
+variable [Sbi PROP] [UORA A]
 
 @[rocq_alias auth_auth_dfrac_validI]
 theorem auth_dfrac_validI (dq : DFrac) (a : A) :
@@ -259,7 +259,7 @@ open BI ORA OFE
 variable [Sbi PROP]
 
 @[rocq_alias ucmra_unit_validI]
-theorem ucmra_unit_validI [UCMRA A] : ⊢@{PROP} ✓ (UCMRA.unit : A) :=
+theorem ucmra_unit_validI [UORA A] : ⊢@{PROP} ✓ (UORA.unit : A) :=
   internalCmraValid_intro unit_valid
 
 @[rocq_alias cmra_validI_op_r]
@@ -313,7 +313,7 @@ open BI ORA
 variable [Sbi PROP]
 
 @[rocq_alias discrete_fun_validI]
-theorem discrete_fun_validI {ι : Type _} {β : ι → Type _} [∀ i, UCMRA (β i)]
+theorem discrete_fun_validI {ι : Type _} {β : ι → Type _} [∀ i, UORA (β i)]
     (g : ∀ i, β i) : ✓ g ⊣⊢@{PROP} ∀ i, ✓ (g i) := by
   sbi_unfold; intro _; exact .rfl
 
@@ -425,7 +425,7 @@ end heap
 
 section view
 open BI ORA View ViewRel IsViewRel
-variable [Sbi PROP] [OFE A] [UCMRA B] {R : ViewRel A B} [IsViewRel R]
+variable [Sbi PROP] [OFE A] [UORA B] {R : ViewRel A B} [IsViewRel R]
 
 @[rocq_alias view_both_dfrac_validI_1]
 theorem view_both_dfrac_validI_1 (relI : SiProp) (dq : DFrac) (a : A) (b : B)
@@ -468,7 +468,7 @@ theorem view_both_validI (relI : SiProp) (a : A) (b : B)
 
 @[rocq_alias view_auth_dfrac_validI]
 theorem view_auth_dfrac_validI (relI : SiProp) (dq : DFrac) (a : A)
-    (H : ∀ n, relI.holds n ↔ R n a UCMRA.unit) :
+    (H : ∀ n, relI.holds n ↔ R n a UORA.unit) :
     ✓ (●V{dq} a : View R) ⊣⊢@{PROP} ⌜✓ dq⌝ ∧ <si_pure> relI := by
   sbi_unfold; intro _
   exact ⟨fun hn => ⟨(auth_validN_iff.mp hn).1, (H _).mpr (auth_validN_iff.mp hn).2⟩,
@@ -476,7 +476,7 @@ theorem view_auth_dfrac_validI (relI : SiProp) (dq : DFrac) (a : A)
 
 @[rocq_alias view_auth_validI]
 theorem view_auth_validI (relI : SiProp) (a : A)
-    (H : ∀ n, relI.holds n ↔ R n a UCMRA.unit) :
+    (H : ∀ n, relI.holds n ↔ R n a UORA.unit) :
     ✓ (●V a : View R) ⊣⊢@{PROP} <si_pure> relI :=
   ⟨siPure_mono fun n hn => (H n).mpr ((auth_one_validN_iff n a).mp hn),
    siPure_mono fun n hn => (auth_one_validN_iff n a).mpr ((H n).mp hn)⟩

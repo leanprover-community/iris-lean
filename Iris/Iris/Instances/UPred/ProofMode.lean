@@ -14,7 +14,7 @@ open Iris BI ORA ProofMode Std
 
 namespace UPred
 
-variable [UCMRA M]
+variable [UORA M]
 
 @[rocq_alias from_sep_ownM]
 instance fromSep_ownM {a b1 b2 : M} [h : IsOp .split a b1 b2] :

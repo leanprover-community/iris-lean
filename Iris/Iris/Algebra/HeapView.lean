@@ -79,14 +79,14 @@ instance : IsViewRel (HeapR K V H) := .ofMonoOrd
       exact (Hf ▸ validN_of_ordN Hvi Hvv))
   (rel_unit := fun n => by
     refine ⟨empty, fun _ _ => ?_⟩
-    simp [UCMRA.unit, Heap.unit, get?_empty])
+    simp [UORA.unit, Heap.unit, get?_empty])
 
 namespace HeapR
 
 omit [ORA.Affine V] in
 @[rocq_alias gmap_view_rel_unit]
-theorem unit : HeapR K V H n m UCMRA.unit := by
-  simp [HeapR, UCMRA.unit, Heap.unit, get?_empty]
+theorem unit : HeapR K V H n m UORA.unit := by
+  simp [HeapR, UORA.unit, Heap.unit, get?_empty]
 
 @[rocq_alias gmap_view_rel_exists]
 theorem exists_iff_validN {n f} : (∃ m, HeapR K V H n m f) ↔ ✓{n} f := by
@@ -705,7 +705,7 @@ variable {K V : Type _} {H : Type _ → Type _} [DecidableEq K] [LawfulFiniteMap
 
 omit [DecidableEq K] in
 private theorem bigOpM_frag_empty (dq : DFrac) :
-    bigOpM (M := HeapView K V H) op (fun k x => Frag k dq x) (∅ : H V) = UCMRA.unit :=
+    bigOpM (M := HeapView K V H) op (fun k x => Frag k dq x) (∅ : H V) = UORA.unit :=
   BigOpM.bigOpM_empty (M := HeapView K V H) (M' := H) (K := K) (op := op) (V := V) _
 
 @[rocq_alias gmap_view_delete_big]

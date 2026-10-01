@@ -314,8 +314,8 @@ theorem iSingleton_free_at_ne {γ : GName} {v : F.ap (IProp GF)} {γ' : GName} (
   exact singleton_map_none h
 
 theorem iSingleton_ne_eq_unit {γ : GName} {v : F.ap (IProp GF)} {τ' : GType} (h : τ' ≠ E.τ) :
-    (iSingleton F γ v τ').car = (UCMRA.unit : GenMap _).car := by
-  funext γ'; simp only [iSingleton, UCMRA.unit]
+    (iSingleton F γ v τ').car = (UORA.unit : GenMap _).car := by
+  funext γ'; simp only [iSingleton, UORA.unit]
   split
   next heq => subst heq; contradiction
   next => apply GenMap.empty_map_lookup
@@ -401,7 +401,7 @@ theorem iSingleton_validN_at_E_τ {a : F.ap (IProp GF)} (a_valid : ✓{n} a) :
 theorem iSingleton_validN_at_ne {a : F.ap (IProp GF)} {τ' : GType} (h : τ' ≠ E.τ) :
     ✓{n} (iSingleton F γ a τ') := by
   simp [iSingleton, h]
-  apply UCMRA.unit_valid.validN
+  apply UORA.unit_valid.validN
 
 theorem unfoldi_op {a b : GF.api (ElemG.τ GF F) (IProp GF)} :
   unfoldi.f (a • b) = (unfoldi.f a • unfoldi.f b) :=
@@ -465,7 +465,7 @@ theorem iSingleton_op_validN_at_E {a : F.ap (IProp GF)} (Hv : ✓{n} mf) :
     apply Hv_a
   · refine ORA.validN_ne (n := n) (x := mf τ') ?_ (Hv τ')
     simp only [ORA.op, iSingleton_ne_eq_unit Heq]
-    simp [UCMRA.unit, GenMap.empty, optionOp]
+    simp [UORA.unit, GenMap.empty, optionOp]
 
 theorem iSingleton_op_validN_at_γ {a : F.ap (IProp GF)} (Hv : ✓{n} mf) :
     ✓{n} ((iSingleton F γ a • mf) (ElemG.τ GF F)).car γ →
@@ -681,11 +681,11 @@ theorem IResUR.valid_exists_fresh {mf : IResUR GF} (_Hv : ✓{n} mf) : ∃ a : N
 
 theorem alloc_update_unit {f : GName → F.ap (IProp GF)} :
     (∀ (γ : GName), ✓ f γ) →
-    UCMRA.unit ~~>: fun (y : IResUR GF) => ∃ γ, y = iSingleton F γ (f γ) := by
+    UORA.unit ~~>: fun (y : IResUR GF) => ∃ γ, y = iSingleton F γ (f γ) := by
   intros Hf_valid
   apply UpdateP.total.mpr
   intros n mf Hvalid
-  replace Hvalid : ✓{n} mf := ORA.validN_ne UCMRA.unit_left_id.dist Hvalid
+  replace Hvalid : ✓{n} mf := ORA.validN_ne UORA.unit_left_id.dist Hvalid
   obtain ⟨γ, Hfresh⟩ := @IResUR.valid_exists_fresh GF F _ E n mf Hvalid
   refine ⟨iSingleton F γ (f γ), ⟨γ, rfl⟩, ?_⟩
   apply validN_iSingleton_op Hvalid (Hf_valid _).validN Hfresh
@@ -721,7 +721,7 @@ theorem iOwn_alloc_strong_dep (f : GName → F.ap (IProp GF)) (P : GName → Pro
     apply UPred.bupd_ownM_updateP
     apply UpdateP.total.mpr
     intros n mf Hvalid
-    replace Hvalid : ✓{n} mf := ORA.validN_ne UCMRA.unit_left_id.dist Hvalid
+    replace Hvalid : ✓{n} mf := ORA.validN_ne UORA.unit_left_id.dist Hvalid
     obtain ⟨γ, Hfresh, HPγ⟩ := (mf (ElemG.τ GF F)).exists_fresh_sat HP
     refine ⟨iSingleton F γ (f γ), ⟨γ, HPγ, rfl⟩, ?_⟩
     apply validN_iSingleton_op Hvalid (Hf γ HPγ).validN Hfresh
@@ -842,11 +842,11 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
   unfold iOwn
   apply (UPred.ownM_unit _).trans
   apply BI.intuitionistically_elim.trans
-  refine .trans (UPred.bupd_ownM_updateP UCMRA.unit (iSingleton F γ ε = ·) ?_) ?_
+  refine .trans (UPred.bupd_ownM_updateP UORA.unit (iSingleton F γ ε = ·) ?_) ?_
   · apply UpdateP.total.mpr
     intros n mf Hv
     refine ⟨iSingleton F γ ε, rfl, ?_⟩
-    replace Hv := ORA.validN_ne UCMRA.unit_left_id.dist Hv
+    replace Hv := ORA.validN_ne UORA.unit_left_id.dist Hv
     apply iSingleton_op_validN_at_γ Hv
     unfold iSingleton; simp [ORA.ValidN, ORA.op, GenMap.singleton_map_in]
     rcases h_at : (mf E.τ).car γ with (⟨⟩ | v) <;> simp
@@ -918,7 +918,7 @@ variable {GF F} [URFunctorContractive F] [E : ElemG GF F]
 @[rocq_alias own_cmra_sep_homomorphism]
 instance iOwn_cmra_sep_homomorphism (γ : GName) :
     WeakMonoidHomomorphism (ORA.op (α := F.ap (IProp GF))) sep
-      UCMRA.unit iprop(emp) BiEntails (iOwn γ) where
+      UORA.unit iprop(emp) BiEntails (iOwn γ) where
   rel_refl := .rfl
   rel_trans := .trans
   op_proper aa' bb' := sep_congr aa' bb'
@@ -955,7 +955,7 @@ theorem bigOpMS_iOwn {B : Type _} {MS : Type _} [LawfulFiniteMultiSet MS B] (γ 
 @[rocq_alias own_cmra_sep_entails_homomorphism]
 instance iOwn_cmra_sep_entails_homomorphism (γ : GName) :
     MonoidHomomorphism (ORA.op (α := F.ap (IProp GF))) sep
-      UCMRA.unit iprop(emp) Entails (iOwn γ) where
+      UORA.unit iprop(emp) Entails (iOwn γ) where
   rel_refl := .rfl
   rel_trans := .trans
   op_proper := sep_mono

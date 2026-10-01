@@ -116,7 +116,7 @@ theorem lc_supply_no_lc [LcGS .hasNoLC GF] (n : Credit) :
 theorem lc_zero : ⊢@{IProp GF} |==> £ 0 := by
   cases hlc with
   | hasNoLC => simp only [lc]; itrivial
-  | hasLC => exact iOwn_unit (ε := UCMRA.unit)
+  | hasLC => exact iOwn_unit (ε := UORA.unit)
 
 section LcSupplyRules
 variable [LC : LcGS .hasLC GF]

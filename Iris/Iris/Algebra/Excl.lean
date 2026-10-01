@@ -132,8 +132,7 @@ instance [OFE α] [IsCOFE α] : IsCOFE (Excl α) where
 #rocq_ignore excl_valid_instance "Use CMRA instance"
 #rocq_ignore excl_cmra_mixin "Not needed"
 
-@[rocq_alias exclR]
-instance [OFE α] : CMRA (Excl α) where
+@[instance_reducible] def cmraData [OFE α] : CMRAData (Excl α) where
   pcore _ := none
   op _ _ := invalid
   ValidN _ := Valid
@@ -153,6 +152,9 @@ instance [OFE α] : CMRA (Excl α) where
   validN_op_left := by simp
   extend {n x y₁ y₂} h₁ h₂ := by cases x <;> trivial
   pcore_op_mono := by simp
+
+@[rocq_alias exclR]
+instance [OFE α] : CMRA (Excl α) := ORA.ofCMRAData Excl.cmraData
 
 theorem ord_iff [OFE α] {x y : Excl α} : x ≼ₒ y ↔ y = invalid := by
   constructor
