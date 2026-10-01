@@ -67,7 +67,7 @@ instance : IsViewRel (HeapR K V H) where
         cases get? m2 k <;> simp
       refine ⟨v'', dq, Hm2, ⟨Hvval, validN_ne Hv (validN_of_le Hn Hdqval)⟩, c, ?_⟩
       refine ordN_of_ordN_of_dist (b := some (dq, v)) ?_ (OFE.some_dist_some.mpr ⟨rfl, Hv⟩)
-      exact (op_monoN_left c (h ▸ Hf')).trans (ordN_of_ordN_le Hn Hvincl)
+      exact (op_monoN_left_ord c (h ▸ Hf')).trans (ordN_of_ordN_le Hn Hvincl)
   op_left {n m f g} Hrel k fv Hk := by
     have e : some fv • get? g k = some (fv •? get? g k) := by cases get? g k <;> rfl
     obtain ⟨v, dq, Hm, Hv, c, Hc⟩ := Hrel k _ ((get?_op f g).trans (Hk ▸ e))
@@ -683,7 +683,7 @@ theorem heapR_map_eq [COFE A] [COFE B] [COFE A'] [COFE B'] [RFunctor T] (f : A' 
     | none, hc =>
       rcases Option.some_ordN_some_iff.mp hc with he | he
       · exact Option.some_ordN_some_iff.mpr <| .inl (dist_prod_ext he.1 (NonExpansive.ne he.2))
-      · exact Option.some_ordN_some_iff.mpr <| .inr ⟨he.1, (RFunctor.map f g).monoN he.2⟩
+      · exact Option.some_ordN_some_iff.mpr <| .inr ⟨he.1, (RFunctor.map f g).monoN_ord he.2⟩
     | some (_, c2), hc =>
       rcases Option.some_ordN_some_iff.mp hc with he | he
       · refine Option.some_ordN_some_iff.mpr <| .inl (dist_prod_ext he.1 ?_)
@@ -691,7 +691,7 @@ theorem heapR_map_eq [COFE A] [COFE B] [COFE A'] [COFE B'] [RFunctor T] (f : A' 
       · refine Option.some_ordN_some_iff.mpr <| .inr ⟨he.1, ?_⟩
         change (RFunctor.map f g).f b • (RFunctor.map f g).f c2 ≼ₒ{n} (RFunctor.map f g).f v
         rw [← (RFunctor.map f g).op b c2]
-        exact (RFunctor.map f g).monoN he.2
+        exact (RFunctor.map f g).monoN_ord he.2
 
 @[rocq_alias gmap_viewURF]
 abbrev HeapViewURF T [RFunctor T] : COFE.OFunctorPre :=
@@ -831,7 +831,7 @@ theorem update_big_alloc (m1 m2 : H V) dq
     induction m2 using LawfulFiniteMap.induction_on generalizing m1 with
     | hemp =>
       rw [bigOpM_frag_empty]
-      refine Update.included ?_
+      refine Update.ord ?_
       rw [union_empty_left, unit_right_id]
       exact ord_refl _
     | hins k v m2 Hm2 IH =>

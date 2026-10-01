@@ -328,8 +328,8 @@ instance instORAReservationMap : ORA (ReservationMap A H) where
     refine ⟨mk z₁ y₁.token, mk z₂ y₂.token, OFE.eq_dist_2 ?_, ⟨zy₁, rfl⟩, ⟨zy₂, rfl⟩⟩
     exact fun m => ⟨xzz.dist, exy.right⟩
   toOrdered := orderN
-  op_monoN_left z h := ⟨op_monoN_left z.data h.1, op_monoN_left z.token h.2⟩
-  op_mono_left z h := ⟨op_mono_left z.data h.1, op_mono_left z.token h.2⟩
+  op_monoN_left_ord z h := ⟨op_monoN_left_ord z.data h.1, op_monoN_left_ord z.token h.2⟩
+  op_mono_left_ord z h := ⟨op_mono_left_ord z.data h.1, op_mono_left_ord z.token h.2⟩
   validN_of_ordN {n x y} h v := by
     refine validN_iff.mpr ⟨?_, ?_, fun i => ?_⟩
     · exact validN_of_ordN h.1 (validN_data_of_validN v)
@@ -346,15 +346,15 @@ instance instORAReservationMap : ORA (ReservationMap A H) where
         rw [(hw : y.token = x.token • w)]
         exact (mem_iff_of_validN_union
           ((hw : y.token = x.token • w) ▸ validN_token_of_validN v) i).mpr (.inl hc)
-  pcore_monoN {_ x y _} h e := by
+  pcore_monoN_ord {_ x y _} h e := by
     cases Option.some_inj.mp e
     exact ⟨_, rfl, core_ordN_core h.1, core_ordN_core h.2⟩
-  pcore_mono {x y _} h e := by
+  pcore_mono_ord {x y _} h e := by
     cases Option.some_inj.mp e
-    exact ⟨_, rfl, core_mono h.1, core_mono h.2⟩
+    exact ⟨_, rfl, core_mono_ord h.1, core_mono_ord h.2⟩
   pcore_order_op {x _} e y := by
     cases Option.some_inj.mp e
-    exact ⟨_, rfl, core_op_mono x.data y.data, core_op_mono x.token y.token⟩
+    exact ⟨_, rfl, core_op_mono_ord x.data y.data, core_op_mono_ord x.token y.token⟩
   pcore_increasing {x _} e := by
     cases Option.some_inj.mp e
     refine increasing_mk ?_ ?_
@@ -541,12 +541,12 @@ theorem valid_data_op_token (a : H A) (b : CoPset) (vd : ✓ mkData a)
     | inl h => simpa only [h] using .inl <| rfl
     | inr h => simpa only [eo] using .inr h
 
-theorem singleton_mono {k} {a b : A} (Hab : a ≼ₒ b) :
+theorem singleton_mono_ord {k} {a b : A} (Hab : a ≼ₒ b) :
     singleton (H := H) k a ≼ₒ singleton k b :=
   ⟨Heap.singleton_ord_singleton_mono Hab, ord_refl _⟩
 
 @[rocq_alias reservation_map_data_mono]
-theorem singleton_mono_ext {k} {a b : A} (Hab : a ≼ b) :
+theorem singleton_mono {k} {a b : A} (Hab : a ≼ b) :
     singleton (H := H) k a ≼ singleton k b :=
   let ⟨z, hz⟩ := Hab
   ⟨singleton k z, (congrArg (singleton k) hz).trans (singleton_op k a z)⟩

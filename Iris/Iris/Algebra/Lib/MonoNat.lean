@@ -90,7 +90,7 @@ theorem auth_dfrac_op_valid (dq1 dq2 : DFrac) (n1 n2 : MaxNat) :
     unfold auth at h
     have ⟨hdq, heq, _⟩ := Auth.auth_dfrac_op_valid.mp <|
       valid_of_inc
-        (op_mono_ext (inc_op_left ..) (inc_op_left ..)) h
+        (op_mono (inc_op_left ..) (inc_op_left ..)) h
     exact ⟨hdq, heq⟩
   · rintro ⟨hdq, rfl⟩
     exact auth_dfrac_op dq1 dq2 n1 ▸ (auth_dfrac_valid _ n1).mpr hdq

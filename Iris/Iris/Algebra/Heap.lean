@@ -494,19 +494,19 @@ instance instStoreCMRA : ORA (M V) where
         simp only [h, Option.bind_some]
         refine Hz2.trans (.of_eq h)
   toOrdered := orderN
-  op_monoN_left z h k := by rw [get?_op, get?_op]; exact op_monoN_left _ (h k)
-  op_mono_left z h k := by rw [get?_op, get?_op]; exact op_mono_left _ (h k)
+  op_monoN_left_ord z h k := by rw [get?_op, get?_op]; exact op_monoN_left_ord _ (h k)
+  op_mono_left_ord z h k := by rw [get?_op, get?_op]; exact op_mono_left_ord _ (h k)
   validN_of_ordN h v k := validN_of_ordN (h k) (v k)
-  pcore_monoN {n x y cx} h e :=
+  pcore_monoN_ord {n x y cx} h e :=
     have hcx : cx = core x := Option.some.inj e.symm
     ⟨core y, rfl, fun k => by rw [hcx, get?_core, get?_core]; exact core_ordN_core (h k)⟩
-  pcore_mono {x y cx} h e :=
+  pcore_mono_ord {x y cx} h e :=
     have hcx : cx = core x := Option.some.inj e.symm
-    ⟨core y, rfl, fun k => by rw [hcx, get?_core, get?_core]; exact core_mono (h k)⟩
+    ⟨core y, rfl, fun k => by rw [hcx, get?_core, get?_core]; exact core_mono_ord (h k)⟩
   pcore_order_op {x cx} e y :=
     have hcx : cx = core x := Option.some.inj e.symm
     ⟨core (x • y), rfl, fun k => by
-      rw [hcx, get?_core, get?_core, get?_op]; exact core_op_mono _ _⟩
+      rw [hcx, get?_core, get?_core, get?_op]; exact core_op_mono_ord _ _⟩
   pcore_increasing {x cx} e :=
     have hcx : cx = core x := Option.some.inj e.symm
     hcx ▸ increasing_iff.mpr fun k => by rw [get?_core]; exact inferInstance
@@ -963,15 +963,15 @@ theorem inc_dom_inc {m1 m2 : M V} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (do
   revert Hz
   cases get? m1 i <;> cases get? m2 i <;> cases z <;> simp [ORA.op, optionOp]
 
-theorem map_mono [ORA V'] [IncOrd V'] (f : V → V') (hf : ∀ x y : V, x ≼ₒ y → f x ≼ₒ f y)
+theorem map_mono_ord [ORA V'] [IncOrd V'] (f : V → V') (hf : ∀ x y : V, x ≼ₒ y → f x ≼ₒ f y)
     {m1 m2 : M V} (Hinc : m1 ≼ₒ m2) : PartialMap.map f m1 ≼ₒ PartialMap.map f m2 :=
-  lookup_ord.mpr fun i => by rw [get?_map, get?_map]; exact Option.map_mono f hf (Hinc i)
+  lookup_ord.mpr fun i => by rw [get?_map, get?_map]; exact Option.map_mono_ord f hf (Hinc i)
 
 @[rocq_alias gmap_fmap_mono]
-theorem map_mono_ext [ORA V'] (f : V → V') (hf : ∀ x y : V, x ≼ y → f x ≼ f y) {m1 m2 : M V}
+theorem map_mono [ORA V'] (f : V → V') (hf : ∀ x y : V, x ≼ y → f x ≼ f y) {m1 m2 : M V}
     (Hinc : m1 ≼ m2) : PartialMap.map f m1 ≼ PartialMap.map f m2 := by
   refine lookup_inc.mpr fun i => ?_
-  obtain ⟨z, hz⟩ := Option.map_mono_ext f hf (lookup_inc.mp Hinc i)
+  obtain ⟨z, hz⟩ := Option.map_mono f hf (lookup_inc.mp Hinc i)
   exact ⟨z, by rw [get?_map, get?_map, hz]⟩
 
 open Iris.Algebra in
@@ -1388,8 +1388,8 @@ def mapC [ORA α] [ORA β] (f : α -C> β) : Hom (H α) (H β) where
     simp [op, map, get?_bindAlter, get?_merge, Option.merge]
     cases get? m1 k <;> cases get? m2 k <;> simp
     exact (f.op _ _).dist
-  monoN h k := by rw [get?_map, get?_map]; exact (Option.mapC f).monoN (h k)
-  mono h k := by rw [get?_map, get?_map]; exact (Option.mapC f).mono (h k)
+  monoN_ord h k := by rw [get?_map, get?_map]; exact (Option.mapC f).monoN_ord (h k)
+  mono_ord h k := by rw [get?_map, get?_map]; exact (Option.mapC f).mono_ord (h k)
   increasing h := Heap.increasing_iff.mpr fun k => by
     rw [get?_map]; exact (Option.mapC f).increasing (Heap.increasing_get? h k)
 

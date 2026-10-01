@@ -110,8 +110,8 @@ protected def wand (P Q : UPred M) : UPred M where
   holds n x := ∀ n' x', n' ≤ n → (H : ✓{n'} (x.val • x'))
     → P n' ⟨x', validN_op_right H⟩ → Q n' ⟨x • x', H⟩
   mono H Hm Hn _ _ Hn' Hv HP := by
-    refine Q.mono_unpacked (validN_of_ordN (op_monoN_left _ (Hm.le Hn')) Hv) Hv ?_
-      (op_monoN_left _ (ordN_of_ordN_le Hn' Hm)) .refl
+    refine Q.mono_unpacked (validN_of_ordN (op_monoN_left_ord _ (Hm.le Hn')) Hv) Hv ?_
+      (op_monoN_left_ord _ (ordN_of_ordN_le Hn' Hm)) .refl
     exact H _ _ (Nat.le_trans Hn' Hn) ?_ HP
 
 #rocq_ignore uPred_wand_unseal "`UPred.wand` is defined directly without `seal`/`unseal`."
@@ -160,7 +160,7 @@ def bupd (Q : UPred M) : UPred M where
   holds n x := ∀ k yf, k ≤ n → ✓{k} (x.val • yf)
     → ∃ x', ∃ H : ✓{k} (x' • yf), Q k ⟨x', validN_op_left H⟩
   mono HQ Hx Hn k yf Hk Hyf :=
-    HQ k yf (Nat.le_trans Hk Hn) (validN_of_ordN (op_monoN_left yf (Hx.le Hk)) Hyf)
+    HQ k yf (Nat.le_trans Hk Hn) (validN_of_ordN (op_monoN_left_ord yf (Hx.le Hk)) Hyf)
 
 #rocq_ignore uPred_bupd_unseal "`UPred.bupd` is defined directly without `seal`/`unseal`."
 #rocq_ignore uPred_bupd_def "`UPred.bupd` is defined directly without `seal`/`unseal`."
@@ -350,7 +350,7 @@ instance : BI (UPred M) where
   sep_assoc_l n x := fun ⟨x1, x2, Hx, ⟨y1, y2, Hy, h1, h2⟩, h3⟩ => by
     refine ⟨y1, y2 • x2, ?_, h1, y2, x2, .rfl, h2, h3⟩
     calc y1 • (y2 • x2) ≡{n}≡ (y1 • y2) • x2 := op_assocN
-         _              ≼ₒ{n} x1 • x2 := op_monoN_left x2 Hy
+         _              ≼ₒ{n} x1 • x2 := op_monoN_left_ord x2 Hy
          _              ≼ₒ{n} x.val := Hx
   wand_intro H _ x HP _ x' Hn _ HQ :=
     H _ _ ⟨x, x', .rfl, UPred.mono _ HP .rfl Hn, HQ⟩
@@ -366,7 +366,7 @@ instance : BI (UPred M) where
   persistently_emp_2 _ _ _ := unit_ordN_core _
   persistently_and_2 {P Q} := uPred_entails_preorder.le_refl iprop(<pers> P ∧ <pers> Q)
   persistently_absorb_l {P Q} _ _ := fun ⟨x1, x2, H1, H2, _⟩ =>
-    P.mono H2 ((core_op_mono x1 x2).ordN.trans (core_ordN_core H1)) .refl
+    P.mono H2 ((core_op_mono_ord x1 x2).ordN.trans (core_ordN_core H1)) .refl
   persistently_and_l _ x H := ⟨core x, x, (core_op x.val).dist.to_ordN, H⟩
   later_mono H := fun
     | 0, _ => id
@@ -622,7 +622,7 @@ instance : BIUpdate (UPred M) where
     Hx'' k yf k.le_refl Hx'
   frame_right {_ R} _ _ := fun ⟨x1, x2, Hx, HP, HR⟩ k yf Hk Hyf => by
     have L : ✓{k} x1 • (x2 • yf) :=
-      validN_of_ordN (ordN_of_dist_of_ordN op_assocN (op_monoN_left yf (Hx.le Hk))) Hyf
+      validN_of_ordN (ordN_of_dist_of_ordN op_assocN (op_monoN_left_ord yf (Hx.le Hk))) Hyf
     let ⟨x', Hx'1, Hx'2⟩ := HP k (x2 • yf) Hk L
     refine ⟨x' • x2, op_assocN.validN.1 Hx'1, x', x2, .rfl, Hx'2, ?_⟩
     exact R.mono HR (ordN_refl x2) Hk
@@ -650,7 +650,7 @@ theorem ownM_valid (m : M) : ownM m ⊢ internalCmraValid m := fun _ h hp => hp.
 @[rocq_alias uPred_primitive.ownM_op, rocq_alias uPred.ownM_op]
 theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 :=
   ⟨fun _ _ H => ⟨m1, m2, H, ordN_refl m1, ordN_refl m2⟩,
-   fun _ _ ⟨_, _, H, H1, H2⟩ => (op_monoN H1 H2).trans H⟩
+   fun _ _ ⟨_, _, H, H1, H2⟩ => (op_monoN_ord H1 H2).trans H⟩
 
 theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : internalCmraValid m ⊢@{UPred M} False :=
   fun n _ => H n
@@ -676,7 +676,7 @@ instance {a : M} : Persistent (ownM (core a)) where
 theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
   (x ~~>: Φ) → ownM x ⊢ |==> ∃ y, ⌜Φ y⌝ ∧ ownM y := by
   intro Hup _ _ Hx k yf Hk Hyf
-  let ⟨y, HΦy, Hyv⟩ := Hup k (some yf) (validN_of_ordN (op_monoN_left yf (Hx.le Hk)) Hyf)
+  let ⟨y, HΦy, Hyv⟩ := Hup k (some yf) (validN_of_ordN (op_monoN_left_ord yf (Hx.le Hk)) Hyf)
   exact ⟨y, Hyv, iprop(⌜Φ y⌝ ∧ ownM y), ⟨y, rfl⟩, HΦy, ordN_refl y⟩
 
 /-- The inclusion in the conclusion is the internal order; on classical CMRAs it coincides
@@ -868,7 +868,7 @@ theorem ownM_updateP [UORA M] {x : M} {R : UPred M} (Φ : M → Prop) (Hup : x ~
   rw [plainly_eq_uPred_plainly]
   intro n z ⟨x1, z2, Hx, Hx1, HR⟩
   have Hvalid : ✓{n} (x •? some z2) :=
-    validN_of_ordN ((op_monoN_left z2 Hx1).trans Hx) z.property
+    validN_of_ordN ((op_monoN_left_ord z2 Hx1).trans Hx) z.property
   have ⟨y, HΦy, Hvalid_y⟩ := Hup n (some z2) Hvalid
   have Hp := HR (iprop(⌜Φ y⌝ -∗ (UPred.ownM y -∗ UPred.plainly R))) ⟨y, rfl⟩
   exact Hp n unit .refl (validN_ne (unit_right_id_dist z2).symm (validN_op_right Hvalid)) HΦy n y

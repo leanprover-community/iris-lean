@@ -35,7 +35,7 @@ variable [UORA A]
 @[rocq_alias auth_view_rel]
 instance instViewRel_authViewRel : IsViewRel (AuthViewRel (A := A)) where
   mono := fun ⟨⟨c, hinc⟩, hv⟩ ha hb hn =>
-    ⟨⟨c, calc _ ≼ₒ{_} _ := op_monoN_left c hb
+    ⟨⟨c, calc _ ≼ₒ{_} _ := op_monoN_left_ord c hb
               _ ≼ₒ{_} _ := ordN_of_ordN_le hn hinc
               _ ≼ₒ{_} _ := ha.to_ordN⟩,
      validN_ne ha (validN_of_le hn hv)⟩
@@ -607,7 +607,7 @@ theorem auth_update_dfrac_alloc {dq : DFrac} {a b : A} [CoreId b] (hb : b ≼ a)
   refine auth_alloc fun n bf ⟨⟨c, hinc⟩, hv⟩ => ⟨⟨c, ?_⟩, hv⟩
   have hba : b • a = a := comm'.trans (op_core_left_of_inc hb)
   rw [← assoc']
-  exact (ordN_iff_right hba.dist).mp (op_monoN_right b hinc)
+  exact (ordN_iff_right hba.dist).mp (op_monoN_right_ord b hinc)
 
 theorem auth_local_update_ord {a b0 b1 a' b0' b1' : A} (hup : (b0, b1) ~l~> (b0', b1'))
     (hinc : b0' ≼ₒ a') (hv : ✓ a') :
@@ -628,7 +628,7 @@ theorem auth_local_update {a b0 b1 a' b0' b1' : A} (hup : (b0, b1) ~l~> (b0', b1
 theorem authViewRel_map [UORA A'] [UORA B']
     (g : A' -C> B') (n : Nat) (a : A')
     (b : A') : AuthViewRel n a b → AuthViewRel n (g a) (g b) :=
-  fun ⟨⟨c, hinc⟩, hv⟩ => ⟨⟨g c, by rw [← g.op]; exact g.monoN hinc⟩, g.validN hv⟩
+  fun ⟨⟨c, hinc⟩, hv⟩ => ⟨⟨g c, by rw [← g.op]; exact g.monoN_ord hinc⟩, g.validN hv⟩
 
 @[rocq_alias authURF]
 abbrev AuthURF (T : COFE.OFunctorPre) [URFunctor T] : COFE.OFunctorPre :=

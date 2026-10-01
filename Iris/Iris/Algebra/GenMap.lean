@@ -265,18 +265,18 @@ instance instORA_GenMap : ORA (GenMap β) where
     exact ⟨⟨fun k => (F k).1, eb.1⟩, ⟨fun k => (F k).2.1, eb.2⟩,
       OFE.eq_dist_2 fun _ k => ((F k).2.2.1).dist, fun k => (F k).2.2.2.1, fun k => (F k).2.2.2.2⟩
   toOrdered := GenMap.orderN β
-  op_monoN_left z h := op_monoN_left z.car h
-  op_mono_left z h := op_mono_left z.car h
+  op_monoN_left_ord z h := op_monoN_left_ord z.car h
+  op_mono_left_ord z h := op_mono_left_ord z.car h
   validN_of_ordN {_ x y} h v := validN_of_ordN (x := x.car) (y := y.car) h v
-  pcore_monoN {_ x y _} h e := by
+  pcore_monoN_ord {_ x y _} h e := by
     obtain rfl := Option.some.inj e
     exact ⟨_, rfl, core_ordN_core (x := x.car) (y := y.car) h⟩
-  pcore_mono {x y _} h e := by
+  pcore_mono_ord {x y _} h e := by
     obtain rfl := Option.some.inj e
-    exact ⟨_, rfl, core_mono (x := x.car) (y := y.car) h⟩
+    exact ⟨_, rfl, core_mono_ord (x := x.car) (y := y.car) h⟩
   pcore_order_op {x _} e y := by
     obtain rfl := Option.some.inj e
-    exact ⟨_, rfl, core_op_mono x.car y.car⟩
+    exact ⟨_, rfl, core_op_mono_ord x.car y.car⟩
   pcore_increasing {x _} e := by
     obtain rfl := Option.some.inj e
     exact increasing_of_car β (inferInstance : Increasing (core x.car))
@@ -464,8 +464,8 @@ instance instURFunctor_GenMapOF (F : COFE.OFunctorPre) [RFunctor F] :
       simp only [Option.map, op, optionOp, URFunctor.map] at Hop ⊢
       cases h : z.car γ <;> cases h' : x.car γ <;> simp_all [OFunctor.map]
       exact ((RFunctor.map f g).op _ _).dist
-    monoN h t := (URFunctor.map (F := OptionOF F) f g).monoN (h t)
-    mono h t := (URFunctor.map (F := OptionOF F) f g).mono (h t)
+    monoN_ord h t := (URFunctor.map (F := OptionOF F) f g).monoN_ord (h t)
+    mono_ord h t := (URFunctor.map (F := OptionOF F) f g).mono_ord (h t)
     increasing h :=
       GenMap.increasing_of_car _ <| DiscreteFun.increasing_iff.mpr fun t =>
         (URFunctor.map (F := OptionOF F) f g).increasing (GenMap.increasing_apply _ h t)

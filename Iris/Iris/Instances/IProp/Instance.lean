@@ -573,7 +573,7 @@ theorem iOwn_op {a1 a2 : F.ap (IProp GF)} : iOwn γ (a1 • a2) ⊣⊢ iOwn γ a
 theorem iSingleton_mono {γ : GName} {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ₒ a1) :
     iSingleton F γ a2 ≼ₒ iSingleton F γ a1 := by
   have hu : unfoldi (E.bundle a2) ≼ₒ unfoldi (E.bundle a1) :=
-    (RFunctor.map (IProp.fold GF) (IProp.unfold GF)).mono
+    (RFunctor.map (IProp.fold GF) (IProp.unfold GF)).mono_ord
       (OFE.transpAp_ord_mp (E.transpMap (F.ap (IProp GF))).symm
         (E.transpClass (F.ap (IProp GF))).symm H)
   intro τ'
@@ -1039,7 +1039,7 @@ theorem iResProject_monoN {n} {x y : IResUR GF} (h : x ≼ₒ{n} y) :
     · exact fun e => ElemG.unbundle.ne.ne (foldi.ne.ne e)
     · exact fun i =>
         OFE.transpAp_ordN_mp (E.transpMap (F.ap (IProp GF))) (E.transpClass (F.ap (IProp GF))) <|
-          (RFunctor.map (IProp.unfold GF) (IProp.fold GF)).monoN i
+          (RFunctor.map (IProp.unfold GF) (IProp.fold GF)).monoN_ord i
 
 @[rocq_alias iRes_project_above]
 theorem iResProject_above {z : IResUR GF} {c : F.ap (IProp GF)} :

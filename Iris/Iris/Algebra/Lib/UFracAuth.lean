@@ -228,7 +228,7 @@ theorem update [OrdInc A] {p q : Qp} {a b a' b' : A} (h : (a, b) ~l~> (a', b')) 
 @[rocq_alias ufrac_auth_update_surplus]
 theorem update_surplus {p q : Qp} {a b : A} (h : ✓ (a • b)) :
     (●U{p} a) ~~> (●U{p + q} (a • b)) • ◯U{q} b := by
-  refine auth_update_alloc_ord fun n bf hinc _ => ⟨ordN_ne .rfl ?_ (op_monoN_right _ hinc),
+  refine auth_update_alloc_ord fun n bf hinc _ => ⟨ordN_ne .rfl ?_ (op_monoN_right_ord _ hinc),
     ⟨trivial, h.validN⟩⟩
   refine some_dist_some.mpr ⟨Dist.of_eq (UFrac.ext_iff.mpr ?_), comm.dist⟩
   change ((⟨q⟩ : UFrac) • ⟨p⟩).frac = p + q

@@ -185,7 +185,7 @@ theorem both_dfrac_validN {n} (dq : DFrac) (l1 l2 : List α) :
   rw [← assoc', ← Auth.frag_op, Auth.both_dfrac_validN]
   refine ⟨fun ⟨hdq, hinc, _⟩ => ⟨hdq, ?_⟩, fun ⟨hdq, hl⟩ => ⟨hdq, ?_, ?_⟩⟩
   · exact toMaxPrefixList_incN_iff.mp (incN_trans (incN_op_right ..) hinc)
-  · have hinc := op_monoN_right_ext (toMaxPrefixList l1) (toMaxPrefixList_incN_iff.mpr hl)
+  · have hinc := op_monoN_right (toMaxPrefixList l1) (toMaxPrefixList_incN_iff.mpr hl)
     rwa [op_self] at hinc
   · exact toMaxPrefixList_validN _
 
@@ -202,7 +202,7 @@ theorem both_dfrac_valid (dq : DFrac) (l1 l2 : List α) :
   rw [← assoc', ← Auth.frag_op, Auth.both_dfrac_valid, ← inc_iff_forall_incN]
   refine ⟨fun ⟨hdq, hinc, _⟩ => ⟨hdq, ?_⟩, fun ⟨hdq, hl⟩ => ⟨hdq, ?_, ?_⟩⟩
   · exact toMaxPrefixList_inc_iff.mp (inc_trans (inc_op_right ..) hinc)
-  · have hinc := op_mono_right_ext (toMaxPrefixList l1) (toMaxPrefixList_inc_iff.mpr hl)
+  · have hinc := op_mono_right (toMaxPrefixList l1) (toMaxPrefixList_inc_iff.mpr hl)
     rwa [op_self] at hinc
   · exact toMaxPrefixList_valid _
 

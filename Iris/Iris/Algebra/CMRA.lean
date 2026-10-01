@@ -339,32 +339,32 @@ theorem inc_op_right (x y : α) : y ≼ x • y := ⟨x, comm⟩
 theorem incN_op_right (n) (x y : α) : y ≼{n} x • y := ⟨x, op_commN⟩
 
 @[rocq_alias cmra_mono_l]
-theorem op_mono_right_ext {x y} (z : α) : x ≼ y → z • x ≼ z • y
+theorem op_mono_right {x y} (z : α) : x ≼ y → z • x ≼ z • y
   | ⟨w, hw⟩ => ⟨w, (congrArg (z • ·) hw).trans assoc⟩
 
 @[rocq_alias cmra_monoN_l]
-theorem op_monoN_right_ext {n x y} (z : α) : x ≼{n} y → z • x ≼{n} z • y
+theorem op_monoN_right {n x y} (z : α) : x ≼{n} y → z • x ≼{n} z • y
   | ⟨w, hw⟩ => ⟨w, hw.op_r.trans op_assocN⟩
 
 @[rocq_alias cmra_monoN_r]
-theorem op_monoN_left_ext {n x y} (z : α) (h : x ≼{n} y) : x • z ≼{n} y • z :=
-  (op_commN.incN op_commN).1 (op_monoN_right_ext z h)
+theorem op_monoN_left {n x y} (z : α) (h : x ≼{n} y) : x • z ≼{n} y • z :=
+  (op_commN.incN op_commN).1 (op_monoN_right z h)
 
 @[rocq_alias cmra_mono_r]
-theorem op_mono_left_ext {x y} (z : α) (h : x ≼ y) : x • z ≼ y • z := by
-  rw [comm' (x := x) (y := z), comm' (x := y) (y := z)]; exact op_mono_right_ext z h
+theorem op_mono_left {x y} (z : α) (h : x ≼ y) : x • z ≼ y • z := by
+  rw [comm' (x := x) (y := z), comm' (x := y) (y := z)]; exact op_mono_right z h
 
 @[rocq_alias cmra_monoN]
-theorem op_monoN_ext {n} {x x' y y' : α} (hx : x ≼{n} x') (hy : y ≼{n} y') :
+theorem op_monoN {n} {x x' y y' : α} (hx : x ≼{n} x') (hy : y ≼{n} y') :
     x • y ≼{n} x' • y' :=
-  incN_trans (op_monoN_left_ext _ hx) (op_monoN_right_ext _ hy)
+  incN_trans (op_monoN_left _ hx) (op_monoN_right _ hy)
 
 #rocq_ignore cmra_monoN' "Use cmra_monoN"
 
 @[rocq_alias cmra_mono]
-theorem op_mono_ext {x x' y y' : α} (hx : x ≼ x') (hy : y ≼ y') :
+theorem op_mono {x x' y y' : α} (hx : x ≼ x') (hy : y ≼ y') :
     x • y ≼ x' • y' :=
-  inc_trans (op_mono_left_ext _ hx) (op_mono_right_ext _ hy)
+  inc_trans (op_mono_left _ hx) (op_mono_right _ hy)
 
 #rocq_ignore cmra_mono' "Use cmra_mono"
 
@@ -427,12 +427,12 @@ class ORA (α : Type _) extends OFE α, Op α, PCore α, Valid α, Ordered α wh
   pcore_op_left {x cx : α} : pcore x = some cx → cx • x = x
   extend {n} {x y₁ y₂ : α} : ✓{n} x → x ≡{n}≡ y₁ • y₂ →
     Σ' z₁ z₂ : α, x = z₁ • z₂ ∧ z₁ ≡{n}≡ y₁ ∧ z₂ ≡{n}≡ y₂
-  op_monoN_left {n} {x y : α} (z : α) : x ≼ₒ{n} y → x • z ≼ₒ{n} y • z
-  op_mono_left {x y : α} (z : α) : x ≼ₒ y → x • z ≼ₒ y • z
+  op_monoN_left_ord {n} {x y : α} (z : α) : x ≼ₒ{n} y → x • z ≼ₒ{n} y • z
+  op_mono_left_ord {x y : α} (z : α) : x ≼ₒ y → x • z ≼ₒ y • z
   validN_of_ordN {n} {x y : α} : x ≼ₒ{n} y → ✓{n} y → ✓{n} x
-  pcore_monoN {n} {x y cx : α} : x ≼ₒ{n} y → pcore x = some cx →
+  pcore_monoN_ord {n} {x y cx : α} : x ≼ₒ{n} y → pcore x = some cx →
     ∃ cy, pcore y = some cy ∧ cx ≼ₒ{n} cy
-  pcore_mono {x y cx : α} : x ≼ₒ y → pcore x = some cx →
+  pcore_mono_ord {x y cx : α} : x ≼ₒ y → pcore x = some cx →
     ∃ cy, pcore y = some cy ∧ cx ≼ₒ cy
   pcore_order_op {x cx : α} : pcore x = some cx →
     ∀ y, ∃ cxy, pcore (x • y) = some cxy ∧ cx ≼ₒ cxy
@@ -868,7 +868,7 @@ theorem incN_extend {n} {x y : α} (v : ✓{n} y) :
     ⟨z₁, ⟨z₂, hy.dist⟩, hz₁⟩
 
 @[rocq_alias cmra_pcore_mono]
-theorem pcore_mono_ext {x y : α} :
+theorem pcore_mono {x y : α} :
     x ≼ y → pcore x = some cx → ∃ cy, pcore y = some cy ∧ cx ≼ cy
   | ⟨_, hw⟩, e =>
     have ⟨z, hz⟩ := pcore_op_mono e _
@@ -876,16 +876,16 @@ theorem pcore_mono_ext {x y : α} :
     ⟨t, ht, z, et⟩
 
 @[rocq_alias cmra_pcore_mono']
-theorem pcore_mono_ext' {x y : α} {cx} (le : x ≼ y) (e : pcore x = some cx) :
+theorem pcore_mono' {x y : α} {cx} (le : x ≼ y) (e : pcore x = some cx) :
     ∃ cy, pcore y = some cy ∧ cx ≼ cy :=
-  pcore_mono_ext le e
+  pcore_mono le e
 
 @[rocq_alias cmra_pcore_monoN']
-theorem pcore_monoN_ext' {n} {x y : α} {cx} :
+theorem pcore_monoN' {n} {x y : α} {cx} :
     x ≼{n} y → pcore x ≡{n}≡ some cx → ∃ cy, pcore y = some cy ∧ cx ≼{n} cy
   | ⟨z, hz⟩, e =>
     let ⟨w, hw, ew⟩ := OFE.dist_some e
-    let ⟨t, ht, (et : w ≼ t)⟩ := pcore_mono_ext (inc_op_left x z) hw
+    let ⟨t, ht, (et : w ≼ t)⟩ := pcore_mono (inc_op_left x z) hw
     have : pcore y ≡{n}≡ some t :=
       have : pcore y ≡{n}≡ pcore (x • z) := NonExpansive.ne hz
       ht ▸ this
@@ -896,30 +896,30 @@ theorem pcore_monoN_ext' {n} {x y : α} {cx} :
       w  ≼{n}  t := incN_of_inc n et
       t  ≡{n}≡ r := er
 
-theorem pcore_monoN_ext {n} {x y : α} {cx} (h : x ≼{n} y) (e : pcore x = some cx) :
+theorem pcore_monoN {n} {x y : α} {cx} (h : x ≼{n} y) (e : pcore x = some cx) :
     ∃ cy, pcore y = some cy ∧ cx ≼{n} cy :=
-  pcore_monoN_ext' h (Dist.of_eq e)
+  pcore_monoN' h (Dist.of_eq e)
 
 section total
 variable [IsTotal α]
 
 @[rocq_alias cmra_core_monoN]
 theorem core_incN_core {n} {x y : α} (le : x ≼{n} y) : core x ≼{n} core y := by
-  let ⟨cy, hcy, icy⟩ := pcore_monoN_ext' le (Dist.of_eq (pcore_eq_core x))
+  let ⟨cy, hcy, icy⟩ := pcore_monoN' le (Dist.of_eq (pcore_eq_core x))
   cases (pcore_eq_core _).symm.trans hcy
   exact icy
 
-theorem core_op_mono_ext (x y : α) : core x ≼ core (x • y) := by
+theorem core_op_mono (x y : α) : core x ≼ core (x • y) := by
   have ⟨cy, hcy⟩ := pcore_op_mono (pcore_eq_core x) y
   simp [pcore_eq_core] at hcy
   exact ⟨_, hcy⟩
 
 @[rocq_alias cmra_core_mono]
-theorem core_mono_ext {x y : α} (Hinc : x ≼ y) : core x ≼ core y := by
+theorem core_mono {x y : α} (Hinc : x ≼ y) : core x ≼ core y := by
   have ⟨z, hz⟩ := Hinc
-  rw [hz]; exact core_op_mono_ext x z
+  rw [hz]; exact core_op_mono x z
 
-theorem inc_refl_ext (x : α) : x ≼ x :=
+theorem inc_refl (x : α) : x ≼ x :=
   ⟨core x, (Op.comm.trans (pcore_op_left (pcore_eq_core x))).symm⟩
 
 end total
@@ -927,27 +927,27 @@ end total
 section extOrder
 attribute [local instance] extOrderN
 
-theorem increasing_ext (x : α) : Increasing x where
+theorem increasing (x : α) : Increasing x where
   increasing y := inc_op_right x y
 
 instance instOrderRefl [IsTotal α] : OrderRefl α where
-  ord_refl := inc_refl_ext
+  ord_refl := inc_refl
 
 @[reducible] def toORA : ORA α where
   toOrdered := extOrderN
   validN_op_left := validN_op_left
   pcore_op_left := pcore_op_left
   extend := extend
-  op_monoN_left := op_monoN_left_ext
-  op_mono_left := op_mono_left_ext
+  op_monoN_left_ord := op_monoN_left
+  op_mono_left_ord := op_mono_left
   validN_of_ordN := validN_of_incN
-  pcore_monoN := pcore_monoN_ext
-  pcore_mono := pcore_mono_ext
+  pcore_monoN_ord := pcore_monoN
+  pcore_mono_ord := pcore_mono
   pcore_order_op {_ cx} e y :=
     let ⟨cy, hcy⟩ := pcore_op_mono e y
     ⟨cx • cy, hcy, inc_op_left cx cy⟩
-  pcore_increasing _ := increasing_ext _
-  increasing_closed _ _ := increasing_ext _
+  pcore_increasing _ := increasing _
+  increasing_closed _ _ := increasing _
   ordN_extend := incN_extend
 
 theorem isInc : @IsInc α _ _ (toORA (α := α)).toOrdered :=
@@ -1147,46 +1147,64 @@ theorem validN_of_ord {n} {x y : α} (h : x ≼ₒ y) : ✓{n} y → ✓{n} x :=
 theorem _root_.Iris.Ordered.Order.validN {n} {x y : α} : x ≼ₒ y → ✓{n} y → ✓{n} x :=
   validN_of_ord
 
-theorem pcore_mono' {x y : α} {cx} (le : x ≼ₒ y) (e : pcore x = some cx) :
+theorem pcore_mono_ord' {x y : α} {cx} (le : x ≼ₒ y) (e : pcore x = some cx) :
     ∃ cy, pcore y = some cy ∧ cx ≼ₒ cy :=
-  pcore_mono le e
+  pcore_mono_ord le e
 
-theorem pcore_monoN' {n} {x y : α} {cx} (h : x ≼ₒ{n} y) (e : pcore x ≡{n}≡ some cx) :
+theorem pcore_monoN_ord' {n} {x y : α} {cx} (h : x ≼ₒ{n} y) (e : pcore x ≡{n}≡ some cx) :
     ∃ cy, pcore y = some cy ∧ cx ≼ₒ{n} cy :=
   let ⟨_, hw, ew⟩ := OFE.dist_some e
-  let ⟨cy, hcy, hi⟩ := pcore_monoN h hw
+  let ⟨cy, hcy, hi⟩ := pcore_monoN_ord h hw
   ⟨cy, hcy, ordN_of_dist_of_ordN ew hi⟩
 
-theorem op_monoN_right {n x y} (z : α) (h : x ≼ₒ{n} y) : z • x ≼ₒ{n} z • y :=
-  (op_commN.ordN op_commN).1 (op_monoN_left z h)
+theorem pcore_mono [OrdInc α] {x y : α} :
+    x ≼ y → pcore x = some cx → ∃ cy, pcore y = some cy ∧ cx ≼ cy
+  | ⟨z, hz⟩, e =>
+    let ⟨cy, hcy, o⟩ := pcore_order_op e z
+    ⟨cy, hz ▸ hcy, OrdInc.ord_inc o⟩
 
-theorem op_mono_right {x y} (z : α) (h : x ≼ₒ y) : z • x ≼ₒ z • y := by
-  rw [comm' (x := z) (y := x), comm' (x := z) (y := y)]; exact op_mono_left z h
+theorem pcore_mono' [OrdInc α] {x y : α} {cx} (le : x ≼ y) (e : pcore x = some cx) :
+    ∃ cy, pcore y = some cy ∧ cx ≼ cy :=
+  pcore_mono le e
 
-theorem op_monoN {n} {x x' y y' : α} (hx : x ≼ₒ{n} x') (hy : y ≼ₒ{n} y') : x • y ≼ₒ{n} x' • y' :=
-  (op_monoN_left _ hx).trans (op_monoN_right _ hy)
+theorem pcore_monoN' [OrdInc α] {n} {x y : α} {cx} :
+    x ≼{n} y → pcore x ≡{n}≡ some cx → ∃ cy, pcore y = some cy ∧ cx ≼{n} cy
+  | ⟨z, hz⟩, e =>
+    let ⟨_, hw, ew⟩ := OFE.dist_some e
+    let ⟨_, ht, o⟩ := pcore_order_op hw z
+    let ⟨r, hr, er⟩ := pcore_ne' hz.symm ht
+    ⟨r, hr, incN_ne ew.symm er (incN_of_inc n (OrdInc.ord_inc o))⟩
 
-theorem op_mono {x x' y y' : α} (hx : x ≼ₒ x') (hy : y ≼ₒ y') : x • y ≼ₒ x' • y' :=
-  (op_mono_left _ hx).trans (op_mono_right _ hy)
+theorem op_monoN_right_ord {n x y} (z : α) (h : x ≼ₒ{n} y) : z • x ≼ₒ{n} z • y :=
+  (op_commN.ordN op_commN).1 (op_monoN_left_ord z h)
+
+theorem op_mono_right_ord {x y} (z : α) (h : x ≼ₒ y) : z • x ≼ₒ z • y := by
+  rw [comm' (x := z) (y := x), comm' (x := z) (y := y)]; exact op_mono_left_ord z h
+
+theorem op_monoN_ord {n} {x x' y y' : α} (hx : x ≼ₒ{n} x') (hy : y ≼ₒ{n} y') : x • y ≼ₒ{n} x' • y' :=
+  (op_monoN_left_ord _ hx).trans (op_monoN_right_ord _ hy)
+
+theorem op_mono_ord {x x' y y' : α} (hx : x ≼ₒ x') (hy : y ≼ₒ y') : x • y ≼ₒ x' • y' :=
+  (op_mono_left_ord _ hx).trans (op_mono_right_ord _ hy)
 
 theorem op?_monoN_left {n} {x y : α} (mz : Option α) (h : x ≼ₒ{n} y) : x •? mz ≼ₒ{n} y •? mz :=
   match mz with
   | none => h
-  | some z => op_monoN_left z h
+  | some z => op_monoN_left_ord z h
 
 theorem op?_mono_left {x y : α} (mz : Option α) (h : x ≼ₒ y) : x •? mz ≼ₒ y •? mz :=
   match mz with
   | none => h
-  | some z => op_mono_left z h
+  | some z => op_mono_left_ord z h
 
 theorem _root_.Iris.Ordered.OrderNR.op_left {n} {x y : α} (z : α) :
     x ≼ₒ*{n} y → x • z ≼ₒ*{n} y • z
   | .inl e => .inl e.op_l
-  | .inr h => .inr (op_monoN_left z h)
+  | .inr h => .inr (op_monoN_left_ord z h)
 
 theorem _root_.Iris.Ordered.OrderR.op_left {x y : α} (z : α) : x ≼ₒ* y → x • z ≼ₒ* y • z
   | .inl e => .inl (e ▸ rfl)
-  | .inr h => .inr (op_mono_left z h)
+  | .inr h => .inr (op_mono_left_ord z h)
 
 theorem _root_.Iris.Ordered.OrderNR.validN {n} {x y : α} : x ≼ₒ*{n} y → ✓{n} y → ✓{n} x
   | .inl e, v => validN_ne e.symm v
@@ -1247,18 +1265,29 @@ section total
 variable [IsTotal α]
 
 theorem core_ordN_core {n} {x y : α} (le : x ≼ₒ{n} y) : core x ≼ₒ{n} core y := by
-  let ⟨cy, hcy, icy⟩ := pcore_monoN le (pcore_eq_core x)
+  let ⟨cy, hcy, icy⟩ := pcore_monoN_ord le (pcore_eq_core x)
   cases (pcore_eq_core _).symm.trans hcy
   exact icy
 
-theorem core_mono {x y : α} (le : x ≼ₒ y) : core x ≼ₒ core y := by
-  let ⟨cy, hcy, icy⟩ := pcore_mono le (pcore_eq_core x)
+theorem core_mono_ord {x y : α} (le : x ≼ₒ y) : core x ≼ₒ core y := by
+  let ⟨cy, hcy, icy⟩ := pcore_mono_ord le (pcore_eq_core x)
   cases (pcore_eq_core _).symm.trans hcy
   exact icy
 
-theorem core_op_mono (x y : α) : core x ≼ₒ core (x • y) :=
+theorem core_op_mono_ord (x y : α) : core x ≼ₒ core (x • y) :=
   let ⟨_, hcxy, h⟩ := pcore_order_op (pcore_eq_core x) y
   Option.some.inj (hcxy.symm.trans (pcore_eq_core _)) ▸ h
+
+theorem core_incN_core [OrdInc α] {n} {x y : α} (le : x ≼{n} y) : core x ≼{n} core y := by
+  let ⟨cy, hcy, icy⟩ := pcore_monoN' le (Dist.of_eq (pcore_eq_core x))
+  cases (pcore_eq_core _).symm.trans hcy
+  exact icy
+
+theorem core_op_mono [OrdInc α] (x y : α) : core x ≼ core (x • y) :=
+  OrdInc.ord_inc (core_op_mono_ord x y)
+
+theorem core_mono [OrdInc α] {x y : α} : x ≼ y → core x ≼ core y
+  | ⟨z, hz⟩ => hz ▸ core_op_mono x z
 
 instance increasing_core (x : α) : Increasing (core x) := pcore_increasing (pcore_eq_core x)
 
@@ -1425,11 +1454,11 @@ theorem increasing_iff_unit_ord {x : α} : Increasing x ↔ unit ≼ₒ x :=
   ⟨fun h => unit_right_id (x := x) ▸ h.increasing unit,
    fun h => ⟨fun y => calc
     y = unit • y := unit_left_id.symm
-    _ ≼ₒ x • y := op_mono_left y h⟩⟩
+    _ ≼ₒ x • y := op_mono_left_ord y h⟩⟩
 
 theorem ordN_op_right_of_unit_ordN {n} {x : α} (y : α) (h : unit ≼ₒ{n} x) : y ≼ₒ{n} x • y :=
   calc y ≡{n}≡ unit • y := (unit_left_id_dist y).symm
-    _ ≼ₒ{n} x • y := op_monoN_left y h
+    _ ≼ₒ{n} x • y := op_monoN_left_ord y h
 
 theorem unit_ord_core (x : α) : unit ≼ₒ core x := increasing_iff_unit_ord.mp (increasing_core x)
 
@@ -1563,8 +1592,8 @@ section Hom
 preserves `validN`, `pcore`, `op`, the order and increasing elements. -/
 @[ext, rocq_alias CmraMorphism]
 structure Hom (α β : Type _) [ORA α] [ORA β] extends toCMRAHom : CMRA.Hom α β where
-  protected monoN {n x₁ x₂} : x₁ ≼ₒ{n} x₂ → f x₁ ≼ₒ{n} f x₂
-  protected mono {x₁ x₂} : x₁ ≼ₒ x₂ → f x₁ ≼ₒ f x₂
+  protected monoN_ord {n x₁ x₂} : x₁ ≼ₒ{n} x₂ → f x₁ ≼ₒ{n} f x₂
+  protected mono_ord {x₁ x₂} : x₁ ≼ₒ x₂ → f x₁ ≼ₒ f x₂
   protected increasing {x} : Increasing x → Increasing (f x)
 
 @[inherit_doc]
@@ -1588,8 +1617,8 @@ protected def Hom.id [ORA α] : α -C> α where
   validN := id
   pcore x := by dsimp; cases pcore x <;> rfl
   op _ _ := rfl
-  monoN := id
-  mono := id
+  monoN_ord := id
+  mono_ord := id
   increasing := id
 
 @[rocq_alias cmra_morphism_compose]
@@ -1598,8 +1627,8 @@ protected def Hom.comp [ORA β] [ORA γ] (g : β -C> γ) (f : α -C> β) : α -C
   validN v := g.validN (f.validN v)
   pcore x := ((Option.map_map ..).symm.trans (congrArg _ (f.pcore x))).trans (g.pcore (f x))
   op x y := (congrArg g.f (f.op x y)).trans (g.op ..)
-  monoN h := g.monoN (f.monoN h)
-  mono h := g.mono (f.mono h)
+  monoN_ord h := g.monoN_ord (f.monoN_ord h)
+  mono_ord h := g.mono_ord (f.mono_ord h)
   increasing h := g.increasing (f.increasing h)
 
 #rocq_ignore cmra_morphism_proper "OFE is Leibniz; use equality"
@@ -1611,12 +1640,12 @@ protected theorem Hom.core [ORA β] (f : α -C> β) {x : α} : core (f x) = f (c
   cases hx : pcore x <;> rw [hx] at h <;> simp only [Option.map] at h <;> simp [← h]
 
 @[rocq_alias cmra_morphism_mono]
-protected theorem Hom.mono_ext [ORA β] (f : α -C> β) {x₁ x₂ : α} :
+protected theorem Hom.mono [ORA β] (f : α -C> β) {x₁ x₂ : α} :
     x₁ ≼ x₂ → f x₁ ≼ f x₂
   | ⟨z, hz⟩ => ⟨f.f z, (congrArg f.f hz).trans (f.op _ _)⟩
 
 @[rocq_alias cmra_morphism_monoN]
-protected theorem Hom.monoN_ext [ORA β] (f : α -C> β) n {x₁ x₂ : α} :
+protected theorem Hom.monoN [ORA β] (f : α -C> β) n {x₁ x₂ : α} :
     x₁ ≼{n} x₂ → f x₁ ≼{n} f x₂
   | ⟨z, hz⟩ => ⟨f.f z, (f.ne.ne hz).trans (f.op _ _).dist⟩
 
@@ -1635,10 +1664,10 @@ variable [ORA α] [ORA β] [OrdInc α] [IncOrd β]
 extension order, `monoN`, `mono` and `increasing` follow from `op`. -/
 @[reducible] def CMRA.Hom.toORA (g : CMRA.Hom α β) : α -C> β where
   toCMRAHom := g
-  monoN h :=
+  monoN_ord h :=
     let ⟨z, hz⟩ := OrdInc.ordN_incN h
     IncOrd.incN_ordN ⟨g.f z, (g.ne.ne hz).trans (g.op _ _).dist⟩
-  mono h :=
+  mono_ord h :=
     let ⟨z, hz⟩ := OrdInc.ord_inc h
     IncOrd.inc_ord ⟨g.f z, (congrArg g.f hz).trans (g.op _ _)⟩
   increasing _ := IncOrd.increasing _
@@ -1959,12 +1988,12 @@ instance _root_.Iris.cmraDiscreteFunO : ORA (∀ x, β x) where
     exact ⟨fun x => (F x).1, fun x => (F x).2.1,
       funext fun x => (F x).2.2.1, fun x => (F x).2.2.2.1, fun x => (F x).2.2.2.2⟩
   toOrdered := orderN
-  op_monoN_left h H x := op_monoN_left (h x) (H x)
-  op_mono_left h H x := op_mono_left (h x) (H x)
+  op_monoN_left_ord h H x := op_monoN_left_ord (h x) (H x)
+  op_mono_left_ord h H x := op_mono_left_ord (h x) (H x)
   validN_of_ordN H V x := validN_of_ordN (H x) (V x)
-  pcore_monoN := by rintro n f g _ H ⟨⟩; exact ⟨_, rfl, fun x => core_ordN_core (H x)⟩
-  pcore_mono := by rintro f g _ H ⟨⟩; exact ⟨_, rfl, fun x => core_mono (H x)⟩
-  pcore_order_op := by rintro f _ ⟨⟩ g; exact ⟨_, rfl, fun x => core_op_mono (f x) (g x)⟩
+  pcore_monoN_ord := by rintro n f g _ H ⟨⟩; exact ⟨_, rfl, fun x => core_ordN_core (H x)⟩
+  pcore_mono_ord := by rintro f g _ H ⟨⟩; exact ⟨_, rfl, fun x => core_mono_ord (H x)⟩
+  pcore_order_op := by rintro f _ ⟨⟩ g; exact ⟨_, rfl, fun x => core_op_mono_ord (f x) (g x)⟩
   pcore_increasing := by rintro f _ ⟨⟩; exact increasing_iff.mpr fun x => inferInstance
   increasing_closed H₁ H₂ :=
     increasing_iff.mpr fun x => increasing_closed (increasing_apply H₁ x) (ordNR_apply H₂ x)
@@ -2052,8 +2081,8 @@ def mapCodHomC {α : Type _} {β₁ β₂ : α → Type _}
   validN h x := (F x).validN (h x)
   pcore _ := congrArg some (funext fun x => (F x).core.symm)
   op f g := funext fun x => (F x).op (f x) (g x)
-  monoN h x := (F x).monoN (h x)
-  mono h x := (F x).mono (h x)
+  monoN_ord h x := (F x).monoN_ord (h x)
+  mono_ord h x := (F x).mono_ord (h x)
   increasing h := DiscreteFun.increasing_iff.mpr fun x =>
     (F x).increasing (DiscreteFun.increasing_apply h x)
 
@@ -2072,8 +2101,8 @@ instance urFunctorDiscreteFunOF {C} (F : C → COFE.OFunctorPre) [∀ c, URFunct
       simp only [pcore, Option.map]
       exact congrArg some (funext fun c => ((URFunctor.map f g).core).symm)
     op x y := funext fun c => (URFunctor.map f g).op (x c) (y c)
-    monoN h c := (URFunctor.map f g).monoN (h c)
-    mono h c := (URFunctor.map f g).mono (h c)
+    monoN_ord h c := (URFunctor.map f g).monoN_ord (h c)
+    mono_ord h c := (URFunctor.map f g).mono_ord (h c)
     increasing h := DiscreteFun.increasing_iff.mpr fun c =>
       (URFunctor.map f g).increasing (DiscreteFun.increasing_apply h c)
   }
@@ -2261,7 +2290,7 @@ theorem pcore_ordN_pcore {n} {x y : α} (h : x ≼ₒ*{n} y) : pcore x ≼ₒ{n}
     rcases h with e | i
     · obtain ⟨cy, hcy, ecy⟩ := pcore_ne e hx
       rw [hcy]; exact Or.inl ecy
-    · obtain ⟨cy, hcy, icy⟩ := pcore_monoN i hx
+    · obtain ⟨cy, hcy, icy⟩ := pcore_monoN_ord i hx
       rw [hcy]; exact Or.inr icy
 
 theorem pcore_ord_pcore {x y : α} (h : x ≼ₒ* y) : pcore x ≼ₒ pcore y := by
@@ -2270,7 +2299,7 @@ theorem pcore_ord_pcore {x y : α} (h : x ≼ₒ* y) : pcore x ≼ₒ pcore y :=
   | some cx =>
     rcases h with rfl | i
     · rw [hx]
-    · obtain ⟨cy, hcy, icy⟩ := pcore_mono i hx
+    · obtain ⟨cy, hcy, icy⟩ := pcore_mono_ord i hx
       rw [hcy]; exact Or.inr icy
 
 theorem pcore_ord_pcore_op (x y : α) : (pcore x : Option α) ≼ₒ pcore (x • y) := by
@@ -2289,7 +2318,7 @@ instance _root_.Iris.cmraOption : ORA (Option α) where
   pcore_op_left := pcore_op_left_option
   extend := extend_option
   toOrdered := orderN
-  op_monoN_left {n x y} z h :=
+  op_monoN_left_ord {n x y} z h :=
     match x, y, z, h with
     | none, none, none, _ => trivial
     | none, none, some _, _ => Or.inl .rfl
@@ -2298,7 +2327,7 @@ instance _root_.Iris.cmraOption : ORA (Option α) where
     | some _, none, _, h => False.elim h
     | some _, some _, none, h => h
     | some _, some _, some z, h => Ordered.OrderNR.op_left z h
-  op_mono_left {x y} z h :=
+  op_mono_left_ord {x y} z h :=
     match x, y, z, h with
     | none, none, none, _ => trivial
     | none, none, some _, _ => Or.inl rfl
@@ -2312,7 +2341,7 @@ instance _root_.Iris.cmraOption : ORA (Option α) where
     | none, _, _ => trivial
     | some _, none, h => False.elim h
     | some _, some _, h => Ordered.OrderNR.validN h v
-  pcore_monoN {n x y _} h := by
+  pcore_monoN_ord {n x y _} h := by
     rintro ⟨⟩
     refine ⟨_, rfl, ?_⟩
     match x, y, h with
@@ -2320,7 +2349,7 @@ instance _root_.Iris.cmraOption : ORA (Option α) where
     | none, some y, _ => exact none_ordN_pcore y
     | some _, none, h => exact False.elim h
     | some x, some y, h => exact pcore_ordN_pcore h
-  pcore_mono {x y _} h := by
+  pcore_mono_ord {x y _} h := by
     rintro ⟨⟩
     refine ⟨_, rfl, ?_⟩
     match x, y, h with
@@ -2522,12 +2551,12 @@ theorem isSome_of_some_ord {a : α} {mb : Option α} (h : some a ≼ₒ mb) : mb
   | some _, _ => rfl
   | none, h => False.elim h
 
-theorem isSome_monoN {n} {ma mb : Option α} (h : ma ≼ₒ{n} mb) : ma.isSome → mb.isSome := by
+theorem isSome_monoN_ord {n} {ma mb : Option α} (h : ma ≼ₒ{n} mb) : ma.isSome → mb.isSome := by
   cases ma with
   | none => simp
   | some _ => exact fun _ => isSome_of_some_ordN h
 
-theorem isSome_mono {ma mb : Option α} (h : ma ≼ₒ mb) : ma.isSome → mb.isSome := by
+theorem isSome_mono_ord {ma mb : Option α} (h : ma ≼ₒ mb) : ma.isSome → mb.isSome := by
   cases ma with
   | none => simp
   | some _ => exact fun _ => isSome_of_some_ord h
@@ -2752,14 +2781,14 @@ theorem isSome_of_some_inc {a : α} {mb : Option α} (h : some a ≼ mb) : mb.is
   rcases inc_iff.mp h with h | ⟨_, _, _, rfl, _⟩ <;> simp_all
 
 @[rocq_alias is_Some_includedN]
-theorem isSome_monoN_ext {n} {ma mb : Option α} (h : ma ≼{n} mb) :
+theorem isSome_monoN {n} {ma mb : Option α} (h : ma ≼{n} mb) :
     ma.isSome → mb.isSome := by
   cases ma with
   | none => simp
   | some _ => exact fun _ => isSome_of_some_incN h
 
 @[rocq_alias is_Some_included]
-theorem isSome_mono_ext {ma mb : Option α} (h : ma ≼ mb) : ma.isSome → mb.isSome := by
+theorem isSome_mono {ma mb : Option α} (h : ma ≼ mb) : ma.isSome → mb.isSome := by
   cases ma with
   | none => simp
   | some _ => exact fun _ => isSome_of_some_inc h
@@ -2799,7 +2828,7 @@ theorem some_inc_some_iff_is_total [IsTotal α] {a b : α} :
   · exact ⟨_, H.symm.trans (op_core a).symm⟩
   · exact H
 
-theorem map_mono {β : Type _} [ORA β] [IncOrd β] (f : α → β) {ma mb : Option α}
+theorem map_mono_ord {β : Type _} [ORA β] [IncOrd β] (f : α → β) {ma mb : Option α}
     (hf : ∀ x y : α, x ≼ₒ y → f x ≼ₒ f y) (h : ma ≼ₒ mb) :
     ma.map f ≼ₒ mb.map f :=
   match ma, mb, h with
@@ -2808,7 +2837,7 @@ theorem map_mono {β : Type _} [ORA β] [IncOrd β] (f : α → β) {ma mb : Opt
   | some a, some b, h => h.elim (fun e => .inl (congrArg f e)) fun i => .inr (hf a b i)
 
 @[rocq_alias option_fmap_mono]
-theorem map_mono_ext {β : Type _} [ORA β] (f : α → β) {ma mb : Option α}
+theorem map_mono {β : Type _} [ORA β] (f : α → β) {ma mb : Option α}
     (hf : ∀ x y : α, x ≼ y → f x ≼ f y) (h : ma ≼ mb) :
     ma.map f ≼ mb.map f := by
   rcases inc_iff.mp h with rfl | ⟨a, b, rfl, rfl, hab⟩
@@ -3103,18 +3132,18 @@ instance cmraProd : ORA (α × β) where
     let ⟨z₂, w₂, hx₂, hz₂, hw₂⟩ := extend vx₂ (OFE.dist_snd e)
     ⟨(z₁, z₂), (w₁, w₂), equiv_prod_ext hx₁ hx₂, ⟨hz₁, hz₂⟩, ⟨hw₁, hw₂⟩⟩
   toOrdered := orderN
-  op_monoN_left z h := ⟨op_monoN_left z.1 h.1, op_monoN_left z.2 h.2⟩
-  op_mono_left z h := ⟨op_mono_left z.1 h.1, op_mono_left z.2 h.2⟩
+  op_monoN_left_ord z h := ⟨op_monoN_left_ord z.1 h.1, op_monoN_left_ord z.2 h.2⟩
+  op_mono_left_ord z h := ⟨op_mono_left_ord z.1 h.1, op_mono_left_ord z.2 h.2⟩
   validN_of_ordN h v := ⟨validN_of_ordN h.1 v.1, validN_of_ordN h.2 v.2⟩
-  pcore_monoN h e :=
+  pcore_monoN_ord h e :=
     let ⟨e₁, e₂⟩ := pcore_eq_some.mp e
-    let ⟨cy₁, hcy₁, i₁⟩ := pcore_monoN h.1 e₁
-    let ⟨cy₂, hcy₂, i₂⟩ := pcore_monoN h.2 e₂
+    let ⟨cy₁, hcy₁, i₁⟩ := pcore_monoN_ord h.1 e₁
+    let ⟨cy₂, hcy₂, i₂⟩ := pcore_monoN_ord h.2 e₂
     ⟨(cy₁, cy₂), pcore_eq_some.mpr ⟨hcy₁, hcy₂⟩, i₁, i₂⟩
-  pcore_mono h e :=
+  pcore_mono_ord h e :=
     let ⟨e₁, e₂⟩ := pcore_eq_some.mp e
-    let ⟨cy₁, hcy₁, i₁⟩ := pcore_mono h.1 e₁
-    let ⟨cy₂, hcy₂, i₂⟩ := pcore_mono h.2 e₂
+    let ⟨cy₁, hcy₁, i₁⟩ := pcore_mono_ord h.1 e₁
+    let ⟨cy₂, hcy₂, i₂⟩ := pcore_mono_ord h.2 e₂
     ⟨(cy₁, cy₂), pcore_eq_some.mpr ⟨hcy₁, hcy₂⟩, i₁, i₂⟩
   pcore_order_op e y :=
     let ⟨e₁, e₂⟩ := pcore_eq_some.mp e
@@ -3399,18 +3428,18 @@ def Option.mapC (f : α -C> β) : Option α -C> Option β where
   op x y := by
     cases x <;> cases y <;> try rfl
     exact congrArg some (f.op ..)
-  monoN {n x y} h :=
+  monoN_ord {n x y} h :=
     match x, y, h with
     | none, none, _ => trivial
     | none, some _, h => f.increasing h
     | some _, none, h => False.elim h
-    | some _, some _, h => Or.elim h (fun e => Or.inl (f.ne.ne e)) fun i => Or.inr (f.monoN i)
-  mono {x y} h :=
+    | some _, some _, h => Or.elim h (fun e => Or.inl (f.ne.ne e)) fun i => Or.inr (f.monoN_ord i)
+  mono_ord {x y} h :=
     match x, y, h with
     | none, none, _ => trivial
     | none, some _, h => f.increasing h
     | some _, none, h => False.elim h
-    | some _, some _, h => Or.elim h (fun e => Or.inl (congrArg f e)) fun i => Or.inr (f.mono i)
+    | some _, some _, h => Or.elim h (fun e => Or.inl (congrArg f e)) fun i => Or.inr (f.mono_ord i)
   increasing {x} h :=
     match x, h with
     | none, _ => (inferInstance : Increasing (none : Option β))
@@ -3440,8 +3469,8 @@ def Prod.mapC (f : A -C> A') (g : B -C> B') : A × B -C> A' × B' where
       cases _ : ORA.pcore (g.f x.snd) <;>
       simp_all
   op x y := equiv_prod_ext (f.op x.fst y.fst) (g.op x.snd y.snd)
-  monoN h := ⟨f.monoN h.1, g.monoN h.2⟩
-  mono h := ⟨f.mono h.1, g.mono h.2⟩
+  monoN_ord h := ⟨f.monoN_ord h.1, g.monoN_ord h.2⟩
+  mono_ord h := ⟨f.mono_ord h.1, g.mono_ord h.2⟩
   increasing h :=
     Prod.increasing_iff.mpr
       ⟨f.increasing (Prod.increasing_iff.mp h).1, g.increasing (Prod.increasing_iff.mp h).2⟩
@@ -3765,11 +3794,11 @@ step-indexed laws follow from their plain counterparts, so only the latter are a
   { validN_op_left := valid_op_left _ _
     pcore_op_left := pcore_op_left _ _
     extend _ h := ⟨_, _, OFE.discrete h, .rfl, .rfl⟩
-    op_monoN_left z h := op_mono_left _ _ z h
-    op_mono_left z h := op_mono_left _ _ z h
+    op_monoN_left_ord z h := op_mono_left _ _ z h
+    op_mono_left_ord z h := op_mono_left _ _ z h
     validN_of_ordN := valid_of_ord _ _
-    pcore_monoN h e := pcore_mono _ _ _ h e
-    pcore_mono h e := pcore_mono _ _ _ h e
+    pcore_monoN_ord h e := pcore_mono _ _ _ h e
+    pcore_mono_ord h e := pcore_mono _ _ _ h e
     pcore_order_op e y := pcore_order_op _ _ e y
     pcore_increasing e := ⟨pcore_increasing _ _ e⟩
     increasing_closed {_ x y} hx h :=

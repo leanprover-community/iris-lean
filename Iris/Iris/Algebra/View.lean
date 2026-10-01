@@ -331,8 +331,8 @@ instance instORA : ORA (View R) where
     refine ⟨⟨z1.1, z1.2⟩, ⟨z2.1, z2.2⟩, ?_, Hz1, Hz2⟩
     exact congrArg (fun p => (⟨p.1, p.2⟩ : View R)) Hze
   toOrdered := View.orderN
-  op_monoN_left z h := ⟨op_monoN_left z.auth h.1, op_monoN_left z.frag h.2⟩
-  op_mono_left z h := ⟨op_mono_left z.auth h.1, op_mono_left z.frag h.2⟩
+  op_monoN_left_ord z h := ⟨op_monoN_left_ord z.auth h.1, op_monoN_left_ord z.frag h.2⟩
+  op_mono_left_ord z h := ⟨op_mono_left_ord z.auth h.1, op_mono_left_ord z.frag h.2⟩
   validN_of_ordN {n x y} h v := by
     rcases x with ⟨_|⟨q1, ag1⟩, b1⟩ <;> rcases y with ⟨_|⟨q2, ag2⟩, b2⟩
     · obtain ⟨a, Ha⟩ := v
@@ -345,15 +345,15 @@ instance instORA : ORA (View R) where
       · exact ⟨validN_ne e.1.symm Hq, a, e.2.trans Hag, mono Ha .rfl h.2 n.le_refl⟩
       · refine ⟨validN_of_ordN i.1 Hq, a, ?_, mono Ha .rfl h.2 n.le_refl⟩
         exact (Agree.valid_ordN (Agree.validN_ne Hag.symm trivial) i.2).trans Hag
-  pcore_monoN {_ x y _} h e := by
+  pcore_monoN_ord {_ x y _} h e := by
     obtain rfl := Option.some.inj e
     exact ⟨_, rfl, core_ordN_core h.1, core_ordN_core h.2⟩
-  pcore_mono {x y _} h e := by
+  pcore_mono_ord {x y _} h e := by
     obtain rfl := Option.some.inj e
-    exact ⟨_, rfl, core_mono h.1, core_mono h.2⟩
+    exact ⟨_, rfl, core_mono_ord h.1, core_mono_ord h.2⟩
   pcore_order_op {x _} e y := by
     obtain rfl := Option.some.inj e
-    exact ⟨_, rfl, core_op_mono x.auth y.auth, core_op_mono x.frag y.frag⟩
+    exact ⟨_, rfl, core_op_mono_ord x.auth y.auth, core_op_mono_ord x.frag y.frag⟩
   pcore_increasing {x _} e := by
     obtain rfl := Option.some.inj e
     exact increasing_mk inferInstance inferInstance
@@ -714,7 +714,7 @@ theorem auth_op_frag_incN_auth_op_frag_iff :
       exact (incN_op_right _ _ _).trans H
   · calc ((●V{dq1} a1) • ◯V b1 : View R)
          _ ≼{n} ((●V{dq2} a2) • ◯V bf) • ◯V b1 :=
-           op_monoN_left_ext _ <| auth_incN_auth_op_frag_iff.mpr ⟨H0, H1⟩
+           op_monoN_left _ <| auth_incN_auth_op_frag_iff.mpr ⟨H0, H1⟩
          _ ≡{n}≡ (●V{dq2} a2) • ((◯V bf) • ◯V b1) := op_assocN.symm
          _ ≼{n} (●V{dq2} a2) • ◯V bf • b1 := by rw [frag_op_eq]
          _ ≡{n}≡ (●V{dq2} a2) • ◯V b2 :=
@@ -734,7 +734,7 @@ theorem auth_op_frag_inc_auth_op_frag_iff :
       exact (inc_op_right _ _).trans H
   · calc ((●V{dq1} a1) • ◯V b1 : View R)
          _ ≼ (((●V{dq2} a2) • ◯V bf) • ◯V b1 : View R) :=
-           op_mono_left_ext _ <| auth_inc_auth_op_frag_iff.mpr ⟨H0, H1⟩
+           op_mono_left _ <| auth_inc_auth_op_frag_iff.mpr ⟨H0, H1⟩
          _ ≼ ((●V{dq2} a2) • ((◯V bf) • ◯V b1) : View R) := by rw [← assoc']
          _ ≼ ((●V{dq2} a2) • ◯V bf • b1 : View R) := .rfl
          _ ≼ ((●V{dq2} a2) • ◯V b2 : View R) := by rw [← H2.trans comm]
@@ -1129,14 +1129,14 @@ def mapC [OFE A] [UORA B] [OFE A'] [UORA B']
     · cases xa <;> cases ya <;> simp [ORA.op, optionOp, Prod.op]
       exact (Agree.map f.f).op _ _
     · exact g.op xf yf
-  monoN {n x y} h := by
-    refine ⟨?_, g.monoN h.2⟩
+  monoN_ord {n x y} h := by
+    refine ⟨?_, g.monoN_ord h.2⟩
     rw [map_auth_eq, map_auth_eq]
-    exact (mapAuthC f).monoN h.1
-  mono {x y} h := by
-    refine ⟨?_, g.mono h.2⟩
+    exact (mapAuthC f).monoN_ord h.1
+  mono_ord {x y} h := by
+    refine ⟨?_, g.mono_ord h.2⟩
     rw [map_auth_eq, map_auth_eq]
-    exact (mapAuthC f).mono h.1
+    exact (mapAuthC f).mono_ord h.1
   increasing {v} h := by
     refine increasing_mk ?_ (g.increasing (increasing_frag h))
     rw [map_auth_eq]

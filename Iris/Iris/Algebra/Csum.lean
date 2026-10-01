@@ -295,35 +295,35 @@ instance instORA : ORA (Csum α β) where
       | (obtain ⟨z₁, z₂, hz, hz₁, hz₂⟩ := extend hv he
          exact ⟨inr z₁, inr z₂, congrArg _ hz, hz₁, hz₂⟩)
   toOrdered := orderN
-  op_monoN_left {n x y} z h := by
+  op_monoN_left_ord {n x y} z h := by
     cases x <;> cases y <;> cases z <;>
-      first | trivial | exact h.elim | exact op_monoN_left _ h
-  op_mono_left {x y} z h := by
+      first | trivial | exact h.elim | exact op_monoN_left_ord _ h
+  op_mono_left_ord {x y} z h := by
     cases x <;> cases y <;> cases z <;>
-      first | trivial | exact h.elim | exact op_mono_left _ h
+      first | trivial | exact h.elim | exact op_mono_left_ord _ h
   validN_of_ordN {n x y} h v := by
     cases x <;> cases y <;> first | trivial | exact h.elim | exact v.elim | exact validN_of_ordN h v
-  pcore_monoN {n x y cx} h e := by
+  pcore_monoN_ord {n x y cx} h e := by
     match x, y, h with
     | inl _, inl _, h =>
       obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq e
-      let ⟨c, hc, hi⟩ := pcore_monoN h hpa
+      let ⟨c, hc, hi⟩ := pcore_monoN_ord h hpa
       exact ⟨inl c, Option.map_forall₂ inl hc, hi⟩
     | inr _, inr _, h =>
       obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq e
-      let ⟨c, hc, hi⟩ := pcore_monoN h hpb
+      let ⟨c, hc, hi⟩ := pcore_monoN_ord h hpb
       exact ⟨inr c, Option.map_forall₂ inr hc, hi⟩
     | _, invalid, _ => exact ⟨invalid, rfl, trivial⟩
     | inl _, inr _, h | inr _, inl _, h | invalid, inl _, h | invalid, inr _, h => exact h.elim
-  pcore_mono {x y cx} h e := by
+  pcore_mono_ord {x y cx} h e := by
     match x, y, h with
     | inl _, inl _, h =>
       obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq e
-      let ⟨c, hc, hi⟩ := pcore_mono h hpa
+      let ⟨c, hc, hi⟩ := pcore_mono_ord h hpa
       exact ⟨inl c, Option.map_forall₂ inl hc, hi⟩
     | inr _, inr _, h =>
       obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq e
-      let ⟨c, hc, hi⟩ := pcore_mono h hpb
+      let ⟨c, hc, hi⟩ := pcore_mono_ord h hpb
       exact ⟨inr c, Option.map_forall₂ inr hc, hi⟩
     | _, invalid, _ => exact ⟨invalid, rfl, trivial⟩
     | inl _, inr _, h | inr _, inl _, h | invalid, inl _, h | invalid, inr _, h => exact h.elim
@@ -696,10 +696,10 @@ def cMap [ORA α] [ORA α'] [ORA β] [ORA β']
     | invalid => trivial
   op x y := by cases x <;> cases y <;>
     first | exact congrArg _ (fa.op _ _) | exact congrArg _ (fb.op _ _) | trivial
-  monoN {n x y} h := by
-    cases x <;> cases y <;> first | trivial | exact h.elim | exact fa.monoN h | exact fb.monoN h
-  mono {x y} h := by
-    cases x <;> cases y <;> first | trivial | exact h.elim | exact fa.mono h | exact fb.mono h
+  monoN_ord {n x y} h := by
+    cases x <;> cases y <;> first | trivial | exact h.elim | exact fa.monoN_ord h | exact fb.monoN_ord h
+  mono_ord {x y} h := by
+    cases x <;> cases y <;> first | trivial | exact h.elim | exact fa.mono_ord h | exact fb.mono_ord h
   increasing {x} h := by
     cases x with
     | inl a => exact increasing_inl_iff.mpr (fa.increasing (increasing_inl_iff.mp h))
