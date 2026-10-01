@@ -72,11 +72,11 @@ theorem Some_included_totalI [Sbi PROP] [ORA A] [IsTotal A] {x y : A} :
     some x ≼ some y ⊣⊢@{PROP} x ≼ y :=
   option_included_totalI
 
-theorem some_includedI [Sbi PROP] [ORA A] [OrderRefl A] {x y : A} :
+theorem some_ordI [Sbi PROP] [ORA A] [OrderRefl A] {x y : A} :
     some x ≼ₒ some y ⊣⊢@{PROP} x ≼ₒ y :=
   internalCmraOrder_iff fun _ => Option.some_ordN_some_iff_ordRefl
 
-theorem some_includedI_none [Sbi PROP] [ORA A] {x : A} : some x ≼ₒ none ⊢@{PROP} False :=
+theorem some_ordI_none [Sbi PROP] [ORA A] {x : A} : some x ≼ₒ none ⊢@{PROP} False :=
   (internalCmraOrder_pure fun _ => iff_false_intro Option.not_some_ordN_none).mp.trans
     (pure_elim' False.elim)
 

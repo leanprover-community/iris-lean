@@ -1056,7 +1056,7 @@ theorem iResProject_none_ord_false {z : IResUR GF} (a : F.ap (IProp GF))
     (hz : iResProject F γ z = none) : iSingleton F γ a ≼ₒ z ⊢@{IProp GF} False := by
   refine iResProject_ord_above.trans ?_
   rw [hz]
-  exact some_includedI_none
+  exact some_ordI_none
 
 /-- Nothing is owned at `γ` when the projection there is `none`. -/
 theorem iResProject_none_incl_false {z : IResUR GF} (a : F.ap (IProp GF))
@@ -1090,7 +1090,7 @@ theorem iOwn_ord_forall_total [OrderRefl (F.ap (IProp GF))] {B : Type _} [Inhabi
     (γ : GName) (f : B → F.ap (IProp GF)) :
     (∀ b, iOwn γ (f b)) ⊢ ∃ c, iOwn γ c ∗ ∀ b, f b ≼ₒ c :=
   (iOwn_ord_forall γ f).trans <|
-    exists_mono fun _ => sep_mono_right (forall_mono fun _ => some_includedI.mp)
+    exists_mono fun _ => sep_mono_right (forall_mono fun _ => some_ordI.mp)
 
 theorem iOwn_ord_and {a1 a2 : F.ap (IProp GF)} :
     (iOwn γ a1 ∧ iOwn γ a2) ⊢ ∃ c, iOwn γ c ∗ some a1 ≼ₒ some c ∗ some a2 ≼ₒ some c := by
@@ -1109,7 +1109,7 @@ theorem iOwn_ord_and {a1 a2 : F.ap (IProp GF)} :
 theorem iOwn_ord_and_total [OrderRefl (F.ap (IProp GF))] {a1 a2 : F.ap (IProp GF)} :
     (iOwn γ a1 ∧ iOwn γ a2) ⊢ ∃ c, iOwn γ c ∗ a1 ≼ₒ c ∗ a2 ≼ₒ c :=
   iOwn_ord_and.trans <| exists_mono fun _ =>
-    sep_mono_right (sep_mono some_includedI.mp some_includedI.mp)
+    sep_mono_right (sep_mono some_ordI.mp some_ordI.mp)
 
 theorem iOwn_ord_forall_pred {B : Type _} (γ : GName) (φ : B → Prop) [Inhabited (Subtype φ)]
   (f : B → F.ap (IProp GF)) :
@@ -1129,7 +1129,7 @@ theorem iOwn_ord_forall_pred_total [OrderRefl (F.ap (IProp GF))] {B : Type _} (�
     (φ : B → Prop) [Inhabited (Subtype φ)] (f : B → F.ap (IProp GF)) :
     (∀ b, ⌜φ b⌝ -∗ iOwn γ (f b)) ⊢ ∃ c, iOwn γ c ∗ ∀ b, ⌜φ b⌝ -∗ f b ≼ₒ c :=
   (iOwn_ord_forall_pred γ φ f).trans <| exists_mono fun _ =>
-    sep_mono_right (forall_mono fun _ => wand_mono_right some_includedI.mp)
+    sep_mono_right (forall_mono fun _ => wand_mono_right some_ordI.mp)
 
 theorem iOwn_ord_and_discrete_total [ORA.Discrete (F.ap (IProp GF))]
     [OrderRefl (F.ap (IProp GF))] {a1 a2 c : F.ap (IProp GF)}
