@@ -128,7 +128,7 @@ private theorem own_ticket_exclusive {γ : GName} {x : Nat} :
 private theorem own_owner_agree {γ : GName} {o o' n : Nat} :
     own (GF := GF) γ (auth o n) ∗ own γ (owner o') ⊢ ⌜o' = o⌝ :=
   own_op_valid.trans (pure_mono fun h =>
-    DiscreteO.eqv_inj (excl_ord.mp (Auth.auth_both_valid_discrete.mp h).1.1))
+    DiscreteO.eqv_inj (excl_ord.mp (Auth.auth_both_valid_discrete_ord.mp h).1.1))
 
 @[rocq_alias heap_lang.ticket_lock.locked_exclusive]
 theorem locked_exclusive (γ : GName) : locked γ ∗ locked γ ⊢@{IProp GF} False := by
@@ -169,7 +169,7 @@ theorem newlock_spec :
   wp_alloc lo with Hlo
   imod iOwn_alloc (F := TicketLockF) ((auth 0 0 : TicketR) • owner 0) with
     ⟨%γ, ⟨Hauth, Howner⟩⟩
-  · exact Auth.auth_both_valid_2 ⟨trivial, trivial⟩ ⟨ORA.ord_refl _, ORA.ord_refl _⟩
+  · exact Auth.auth_both_valid_2_ord ⟨trivial, trivial⟩ ⟨ORA.ord_refl _, ORA.ord_refl _⟩
   wp_pures
   imodintro
   iapply Hcont
@@ -235,7 +235,7 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   · obtain rfl : n' = n := by simp only [Val.lit.injEq, BaseLit.int.injEq] at hsuc; omega
     imod iOwn_update (a' := (auth o' (n' + 1) : TicketR) • ticket n') $$ Hauth
       with ⟨Hauth, Hissued⟩
-    · refine Auth.auth_update_alloc_of_localUpdate ?_
+    · refine Auth.auth_update_alloc ?_
       rw [setSeq_succ, Nat.zero_add]
       exact LocalUpdate.prod_2 _ _
         (localUpdate_alloc_empty_of_disj _ _ (disjoint_singleton_setSeq (by omega)))
@@ -277,7 +277,7 @@ theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
   imod iOwn_update (F := TicketLockF) (a := (auth o n' : TicketR) • owner o)
       (a' := (auth (o + 1) n' : TicketR) • owner (o + 1)) $$ [Hauth Howner]
       with ⟨Hauth, Howner⟩
-  · exact Auth.auth_update_of_localUpdate
+  · exact Auth.auth_update
       (LocalUpdate.prod_1 _ _ (LocalUpdate.option (LocalUpdate.exclusive trivial)))
   · iapply iOwn_op.mpr; iframe
   imod Hclose $$ [Hlo Hln Hauth Howner HR] with -

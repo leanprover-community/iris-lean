@@ -138,7 +138,7 @@ theorem invPointsTo_get?_some (l : L) (h : H (V × (V → Prop))) (I : V → Pro
   unfold invPointsTo
   icombine Hauth Hl gives %Hvalid
   ipureintro
-  obtain ⟨v, hh, -⟩ := singleton_ord_toInvHeap (auth_both_valid_discrete.mp Hvalid).1
+  obtain ⟨v, hh, -⟩ := singleton_ord_toInvHeap (auth_both_valid_discrete_ord.mp Hvalid).1
   exact ⟨v, I, hh, rfl⟩
 
 @[rocq_alias inv_pointsto_own_lookup_Some]
@@ -149,7 +149,7 @@ theorem invPointsToOwn_get?_some (l : L) (v : V) (h : H (V × (V → Prop))) (I 
   unfold invPointsToOwn
   icombine Hauth Hl gives %Hvalid
   ipureintro
-  obtain ⟨v', hh, hv⟩ := singleton_ord_toInvHeap (auth_both_valid_discrete.mp Hvalid).1
+  obtain ⟨v', hh, hv⟩ := singleton_ord_toInvHeap (auth_both_valid_discrete_ord.mp Hvalid).1
   cases DiscreteO.eqv_inj (excl_ord.mp hv)
   exact ⟨I, hh, rfl⟩
 
@@ -225,7 +225,7 @@ theorem make_invPointsTo {l : L} {v : V} {I : V → Prop} {E : CoPset} (hN : ↑
   imod inv_acc_timeless hN $$ Hinv with ⟨HP, Hclose⟩
   icases HP with ⟨%h, Hauth, HsepM⟩
   rcases hlk : get? h l with _ | ⟨v', I'⟩
-  · imod iOwn_update (auth_update_alloc_of_localUpdate (alloc_singleton_local_update
+  · imod iOwn_update (auth_update_alloc (alloc_singleton_local_update
       (x := ((some (.excl ⟨v⟩), toAgree ⟨I⟩) :
         Option (Excl (DiscreteO V)) × Agree (DiscreteO (V → Prop))))
       (get?_toInvHeap_none hlk) ⟨trivial, toAgree_valid⟩)) $$ Hauth with ⟨Hauth, Hfrag⟩
@@ -256,7 +256,7 @@ theorem invPointsToOwn_acc_strong {E : CoPset} (hN : (↑invHeapN : CoPset) ⊆ 
   iunfold invPointsToOwn at Hl_inv
   icases bigSepM_delete hh $$ HsepM with ⟨⟨$, $⟩, HsepM⟩
   iintro %w %hIw Hl
-  imod iOwn_update_op (auth_update_of_localUpdate (singleton_local_update
+  imod iOwn_update_op (auth_update (singleton_local_update
       (get?_heap_some_toInvHeap hh)
       (LocalUpdate.prod_1 _ _ (LocalUpdate.option (LocalUpdate.exclusive (x' := excl ⟨w⟩) trivial)))))
     $$ [$Hauth $Hl_inv] with ⟨Hauth, Hfrag⟩

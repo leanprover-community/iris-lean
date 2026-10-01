@@ -65,15 +65,15 @@ instance frag_discrete {a : A} [DiscreteE a] : DiscreteE (◯E a) :=
 
 @[rocq_alias excl_auth_validN]
 theorem validN {a : A} : ✓{n} (●E a) • ◯E a :=
-  Auth.both_validN.mpr ⟨.rfl, trivial⟩
+  Auth.both_validN_ord.mpr ⟨.rfl, trivial⟩
 
 @[rocq_alias excl_auth_valid]
 theorem valid {a : A} : ✓ (●E a) • ◯E a :=
-  Auth.auth_both_valid_2 trivial .rfl
+  Auth.auth_both_valid_2_ord trivial .rfl
 
 @[rocq_alias excl_auth_agreeN]
 theorem agreeN {a b : A} (h : ✓{n} (●E a) • ◯E b) : a ≡{n}≡ b := by
-  rcases (Auth.both_validN.mp h).1 with e | i
+  rcases (Auth.both_validN_ord.mp h).1 with e | i
   · exact (Excl.excl_dist_inj (OFE.some_dist_some.mpr e)).symm
   · exact nomatch (Excl.ordN_iff _).mp i
 
@@ -103,7 +103,7 @@ theorem frag_op_valid {a b : A} : (✓ (◯E a) • ◯E b) ↔ False := by
 
 @[rocq_alias excl_auth_update]
 theorem update {a b a' : A} : ((●E a) • ◯E b) ~~> ((●E a') • ◯E a') :=
-  Auth.auth_update_of_localUpdate
+  Auth.auth_update
     (.option (.exclusive trivial))
 
 /-! ## Functors -/

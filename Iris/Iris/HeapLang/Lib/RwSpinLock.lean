@@ -120,7 +120,7 @@ instance instWriterLockedTimeless (γ : GName) :
 theorem auth_valid_singleton {dq : DFrac} {v : Qp} {g : ReaderFracs}
     (h : ✓ ((●{dq} .ofSet g : Auth (LeibnizMultiSet ReaderFracs)) •
       ◯ LeibnizMultiSet.ofSet {v})) : v ∈ g :=
-  singleton_subset_iff.mp (ord_iff_subset.mp (Auth.both_dfrac_valid_discrete.mp h).2.1)
+  singleton_subset_iff.mp (ord_iff_subset.mp (Auth.both_dfrac_valid_discrete_ord.mp h).2.1)
 
 @[rocq_alias heap_lang.own_auth_gmultiset_singleton_2]
 theorem own_auth_singleton_2 {γ : GName} {dq : DFrac} {v : Qp} {g : ReaderFracs} :
@@ -252,7 +252,7 @@ theorem tryAcquireReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
       (a' := ((● LeibnizMultiSet.ofSet (g ⊎ {q.half})) •
         ◯ LeibnizMultiSet.ofSet {q.half} : Auth (LeibnizMultiSet ReaderFracs))) $$ Hauth with
       ⟨Hauth, Hview⟩
-    · refine Auth.auth_update_alloc_of_localUpdate ?_
+    · refine Auth.auth_update_alloc ?_
       have h := localUpdate_alloc (X := g) (Y := (∅ : ReaderFracs)) (X' := {q.half})
       rwa [disjUnion_empty_left] at h
     imod Hclose $$ [Hl Hauth HΦ] with -
@@ -307,7 +307,7 @@ theorem releaseReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) (q : Q
   ihave %Hmem := own_auth_singleton_2 $$ [$Hauth $Hlocked]
   icombine Hauth Hlocked as Hown
   imod iOwn_update (F := RwSpinLockF) (a' := ● .ofSet (g \ {q})) $$ Hown with Hown
-  · refine Auth.auth_update_dealloc_of_localUpdate ?_
+  · refine Auth.auth_update_dealloc ?_
     have h := localUpdate_dealloc (X := g) (X' := {q}) subset_refl
     rwa [difference_self] at h
   imod Hclose $$ [-Hφ] with -

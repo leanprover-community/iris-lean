@@ -104,7 +104,7 @@ theorem auth_op_valid (n1 n2 : MaxNat) :
 theorem both_dfrac_valid (dq : DFrac) (n m : MaxNat) :
   (✓ ((●MN{dq} n) • (◯MN m) : MonoNat)) ↔ ✓ dq ∧ m ≤ n := by
   unfold auth lb
-  rw [ORA.assoc'.symm, ← Auth.frag_op, Auth.both_dfrac_valid_discrete, MaxNat.ord_iff]
+  rw [ORA.assoc'.symm, ← Auth.frag_op, Auth.both_dfrac_valid_discrete_ord, MaxNat.ord_iff]
   exact ⟨fun ⟨hdq, hle, _⟩ => ⟨hdq, by grind⟩, fun ⟨hdq, hle⟩ => ⟨hdq, by grind, trivial⟩⟩
 
 @[rocq_alias mono_nat_both_valid]
@@ -134,7 +134,7 @@ theorem included (dq : DFrac) (n : MaxNat) :
 theorem update {n : MaxNat} (n' : MaxNat) (h : n ≤ n') :
   (●MN n : MonoNat) ~~> ●MN n' := by
   unfold auth
-  exact Auth.auth_update_of_localUpdate (MaxNat.local_update h)
+  exact Auth.auth_update (MaxNat.local_update h)
 
 @[rocq_alias mono_nat_auth_persist]
 theorem auth_persist (n : MaxNat) (dq : DFrac) :

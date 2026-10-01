@@ -25,26 +25,23 @@ open OFE ORA UCMRA View
 /-!
 ## Definition of the view relation for the authoritative camera.
 -/
-/-- The authoritative view relation: the fragment is below the authority in the *order*
-(Amaryllis-style). Meaningful for affine algebras only — dropping a fragment summand must not
-break the bound, which is affineness. -/
 @[rocq_alias auth_view_rel_raw]
-def AuthViewRel [UCMRA A] : ViewRel A A := fun n a b => b ≼ₒ{n} a ∧ ✓{n} a
+def AuthViewRel [UCMRA A] : ViewRel A A := fun n a b => (∃ c, b • c ≼ₒ{n} a) ∧ ✓{n} a
 
 namespace AuthViewRel
 
-variable [UCMRA A] [ORA.Affine A]
+variable [UCMRA A]
 
 @[rocq_alias auth_view_rel]
-instance instViewRel_authViewRel : IsViewRel (AuthViewRel (A := A)) :=
-  .ofMonoOrd
-    (fun ⟨hinc, hv⟩ ha hb hn =>
-      ⟨calc _ ≼ₒ{_} _ := hb
-            _ ≼ₒ{_} _ := ORA.ordN_of_ordN_le hn hinc
-            _ ≼ₒ{_} _ := ha.to_ordN,
-       validN_ne ha (validN_of_le hn hv)⟩)
-    (fun _ _ _ ⟨hinc, hv⟩ => validN_of_ordN hinc hv)
-    (fun _ => ⟨unit, ordN_refl unit, unit_valid.validN⟩)
+instance instViewRel_authViewRel : IsViewRel (AuthViewRel (A := A)) where
+  mono := fun ⟨⟨c, hinc⟩, hv⟩ ha hb hn =>
+    ⟨⟨c, calc _ ≼ₒ{_} _ := ORA.op_monoN_left c hb
+              _ ≼ₒ{_} _ := ORA.ordN_of_ordN_le hn hinc
+              _ ≼ₒ{_} _ := ha.to_ordN⟩,
+     validN_ne ha (validN_of_le hn hv)⟩
+  op_left {_ _ _ d} := fun ⟨⟨c, hinc⟩, hv⟩ => ⟨⟨d • c, by rw [assoc']; exact hinc⟩, hv⟩
+  rel_validN _ _ _ := fun ⟨⟨_, hinc⟩, hv⟩ => validN_op_left (validN_of_ordN hinc hv)
+  rel_unit _ := ⟨unit, ⟨unit, by rw [unit_right_id]⟩, unit_valid.validN⟩
 
 #rocq_ignore auth_view_rel_raw_mono "Use the IsViewRel typeclass"
 #rocq_ignore auth_view_rel_raw_valid "Use the IsViewRel typeclass"
@@ -52,16 +49,17 @@ instance instViewRel_authViewRel : IsViewRel (AuthViewRel (A := A)) :=
 
 @[rocq_alias auth_view_rel_unit]
 theorem authViewRel_unit_iff {n : Nat} {a : A} : AuthViewRel n a unit ↔ ✓{n} a :=
-  ⟨(·.2), (⟨ORA.ordN_unit, ·⟩)⟩
+  ⟨(·.2), (⟨⟨a, by rw [ucmra_unit_left_id]⟩, ·⟩)⟩
 
 @[rocq_alias auth_view_rel_exists]
 theorem authViewRel_exists_iff {n : Nat} {b : A} : (∃ a, AuthViewRel n a b) ↔ ✓{n} b :=
-  ⟨fun ⟨_, h⟩ => IsViewRel.rel_validN _ _ _ h, (⟨b, ordN_refl b, ·⟩)⟩
+  ⟨fun ⟨_, h⟩ => IsViewRel.rel_validN _ _ _ h,
+   (⟨b, ⟨unit, by rw [unit_right_id]⟩, ·⟩)⟩
 
 @[rocq_alias auth_view_rel_discrete]
 instance [OFE.Discrete A] [ORA.Discrete A] : IsViewRelDiscrete (AuthViewRel (A := A)) where
-  discrete _ _ _ h :=
-    ⟨ORA.ordN_of_ord _ (ORA.discrete_ord h.1), (discrete_valid h.2).validN⟩
+  discrete _ _ _ := fun ⟨⟨c, h⟩, hv⟩ =>
+    ⟨⟨c, ORA.ordN_of_ord _ (ORA.discrete_ord h)⟩, (discrete_valid hv).validN⟩
 
 end AuthViewRel
 
@@ -72,7 +70,7 @@ abbrev Auth (A : Type _) [UCMRA A] :=
   View (AuthViewRel (A := A))
 
 namespace Auth
-variable [UCMRA A] [ORA.Affine A]
+variable [UCMRA A]
 
 instance : OFE (Auth A) := View.instOFE
 instance instORA : ORA (Auth A) := View.instORA
@@ -107,24 +105,20 @@ nonrec instance frag_ne : NonExpansive (frag : A → Auth A) :=
 
 #rocq_ignore auth_frag_proper "Derivable from frag_ne with NonExpansive.eqv"
 
-omit [ORA.Affine A] in
 @[rocq_alias auth_auth_dist_inj]
 nonrec theorem auth_dist_inj {n : Nat} {dq1 dq2 : DFrac} {a1 a2 : A}
     (h : (●{dq1} a1) ≡{n}≡ ●{dq2} a2) : dq1 = dq2 ∧ a1 ≡{n}≡ a2 :=
   ⟨auth_inj_frac h, dist_of_auth_dist h⟩
 
-omit [ORA.Affine A] in
 @[rocq_alias auth_auth_inj]
 theorem auth_inj {dq1 dq2 : DFrac} {a1 a2 : A} (h : (●{dq1} a1) = ●{dq2} a2) :
     dq1 = dq2 ∧ a1 = a2 :=
   ⟨auth_inj_frac (n := 0) h.dist, OFE.eq_dist_2 fun _ => dist_of_auth_dist h.dist⟩
 
-omit [ORA.Affine A] in
 @[rocq_alias auth_frag_dist_inj]
 theorem frag_dist_inj {n : Nat} {b1 b2 : A} (h : (◯ b1 : Auth A) ≡{n}≡ ◯ b2) : b1 ≡{n}≡ b2 :=
   dist_of_frag_dist h
 
-omit [ORA.Affine A] in
 @[rocq_alias auth_frag_inj]
 theorem frag_inj {b1 b2 : A} (h : (◯ b1 : Auth A) = ◯ b2) : b1 = b2 :=
   OFE.eq_dist_2 fun _ => dist_of_frag_dist h.dist
@@ -221,12 +215,7 @@ theorem bigOpMS_frag [LawfulFiniteMultiSet MS' C] (g : C → A) (X : MS') :
 
 end BigOp
 
-/-! ## Validity
-
-The fragment–authority relation is stated with the primitive *order* `≼ₒ{n}`/`≼ₒ`, which for
-classical algebras — those built with `withExtensionOrder` — coincides definitionally with the
-extension inclusion of the Rocq originals. Likewise, `[IsTotal]` hypotheses that only provided
-reflexivity become `[OrderRefl]`; total classical algebras satisfy it automatically. -/
+/-! ## Validity -/
 
 @[rocq_alias auth_auth_dfrac_op_invN]
 theorem auth_dfrac_op_invN {n : Nat} {dq1 dq2 : DFrac} {a b : A}
@@ -245,7 +234,7 @@ theorem auth_dfrac_op_inv {dq1 dq2 : DFrac} {a b : A}
 theorem auth_dfrac_validN {n : Nat} {dq : DFrac} {a : A} :
     (✓{n} (●{dq} a)) ↔ (✓ dq ∧ ✓{n} a) := by
   rw [auth_validN_iff]
-  exact ⟨fun ⟨hdq, _, hv⟩ => ⟨hdq, hv⟩, fun ⟨hdq, hv⟩ => ⟨hdq, ORA.ordN_unit, hv⟩⟩
+  exact and_congr_right fun _ => AuthViewRel.authViewRel_unit_iff
 
 @[rocq_alias auth_auth_validN]
 theorem auth_validN {n : Nat} {a : A} :
@@ -257,7 +246,7 @@ theorem auth_validN {n : Nat} {a : A} :
 theorem auth_dfrac_op_validN {n : Nat} {dq1 dq2 : DFrac} {a1 a2 : A} :
     (✓{n} ((●{dq1} a1) • ●{dq2} a2)) ↔ (✓ (dq1 • dq2) ∧ a1 ≡{n}≡ a2 ∧ ✓{n} a1) := by
   rw [View.auth_op_auth_validN_iff]
-  exact ⟨fun ⟨hdq, ha, ⟨_, hv⟩⟩ => ⟨hdq, ha, hv⟩, fun ⟨hdq, ha, hv⟩ => ⟨hdq, ha, ORA.ordN_unit, hv⟩⟩
+  exact and_congr_right fun _ => and_congr_right fun _ => AuthViewRel.authViewRel_unit_iff
 
 @[rocq_alias auth_auth_op_validN]
 theorem auth_op_validN {n : Nat} {a1 a2 : A} : (✓{n} ((● a1 : Auth A) • ● a2)) ↔ False :=
@@ -278,23 +267,33 @@ theorem frag_op_validN {n : Nat} {b1 b2 : A} :
 #rocq_ignore auth_frag_op_validN_1 "Use frag_op_validN"
 #rocq_ignore auth_frag_op_validN_2 "Use frag_op_validN"
 
-theorem both_dfrac_validN {n : Nat} {dq : DFrac} {a b : A} :
-    (✓{n} ((●{dq} a) • ◯ b)) ↔ (✓ dq ∧ b ≼ₒ{n} a ∧ ✓{n} a) :=
+theorem both_dfrac_validN_frame {n : Nat} {dq : DFrac} {a b : A} :
+    (✓{n} ((●{dq} a) • ◯ b)) ↔ (✓ dq ∧ (∃ c, b • c ≼ₒ{n} a) ∧ ✓{n} a) :=
   auth_op_frag_validN_iff
 
-@[rocq_alias auth_both_dfrac_validN]
-theorem both_dfrac_validN_ext [OrdInc A] {n : Nat} {dq : DFrac} {a b : A} :
-    (✓{n} ((●{dq} a) • ◯ b)) ↔ (✓ dq ∧ b ≼{n} a ∧ ✓{n} a) :=
-  both_dfrac_validN.trans (and_congr_right fun _ => and_congr_left fun _ => incN_iff_ordN.symm)
+theorem both_dfrac_validN_ord [IncOrd A] {n : Nat} {dq : DFrac} {a b : A} :
+    (✓{n} ((●{dq} a) • ◯ b)) ↔ (✓ dq ∧ b ≼ₒ{n} a ∧ ✓{n} a) :=
+  both_dfrac_validN_frame.trans
+    (and_congr_right fun _ => and_congr_left fun _ => exists_op_ordN_iff_ordN)
 
-theorem both_validN {n : Nat} {a b : A} :
-    (✓{n} ((● a : Auth A) • ◯ b)) ↔ (b ≼ₒ{n} a ∧ ✓{n} a) :=
+@[rocq_alias auth_both_dfrac_validN]
+theorem both_dfrac_validN [OrdInc A] {n : Nat} {dq : DFrac} {a b : A} :
+    (✓{n} ((●{dq} a) • ◯ b)) ↔ (✓ dq ∧ b ≼{n} a ∧ ✓{n} a) :=
+  both_dfrac_validN_frame.trans
+    (and_congr_right fun _ => and_congr_left fun _ => exists_op_ordN_iff_incN)
+
+theorem both_validN_frame {n : Nat} {a b : A} :
+    (✓{n} ((● a : Auth A) • ◯ b)) ↔ ((∃ c, b • c ≼ₒ{n} a) ∧ ✓{n} a) :=
   auth_one_op_frag_validN_iff
 
+theorem both_validN_ord [IncOrd A] {n : Nat} {a b : A} :
+    (✓{n} ((● a : Auth A) • ◯ b)) ↔ (b ≼ₒ{n} a ∧ ✓{n} a) :=
+  both_validN_frame.trans (and_congr_left fun _ => exists_op_ordN_iff_ordN)
+
 @[rocq_alias auth_both_validN]
-theorem both_validN_ext [OrdInc A] {n : Nat} {a b : A} :
+theorem both_validN [OrdInc A] {n : Nat} {a b : A} :
     (✓{n} ((● a : Auth A) • ◯ b)) ↔ (b ≼{n} a ∧ ✓{n} a) :=
-  both_validN.trans (and_congr_left fun _ => incN_iff_ordN.symm)
+  both_validN_frame.trans (and_congr_left fun _ => exists_op_ordN_iff_incN)
 
 @[rocq_alias auth_auth_dfrac_valid]
 theorem auth_dfrac_valid {dq : DFrac} {a : A} : (✓ (●{dq} a : Auth A)) ↔ (✓ dq ∧ ✓ a) := by
@@ -314,7 +313,8 @@ theorem auth_dfrac_op_valid {dq1 dq2 : DFrac} {a1 a2 : A} :
   rw [auth_op_auth_valid_iff]
   constructor
   · exact fun ⟨hdq, ha, hr⟩ => ⟨hdq, ha, valid_iff_validN.mpr (hr · |>.2)⟩
-  · exact fun ⟨hdq, ha, hv⟩ => ⟨hdq, ha, fun _ => ⟨ORA.ordN_unit, hv.validN⟩⟩
+  · exact fun ⟨hdq, ha, hv⟩ =>
+      ⟨hdq, ha, fun _ => AuthViewRel.authViewRel_unit_iff.mpr hv.validN⟩
 
 @[rocq_alias auth_auth_op_valid]
 theorem auth_op_valid {a1 a2 : A} : (✓ ((● a1 : Auth A) • ● a2)) ↔ False :=
@@ -335,76 +335,98 @@ theorem frag_op_valid {b1 b2 : A} : (✓ ((◯ b1 : Auth A) • ◯ b2)) ↔ (�
 #rocq_ignore auth_frag_op_valid_1 "Use frag_op_valid"
 #rocq_ignore auth_frag_op_valid_2 "Use frag_op_valid"
 
-theorem both_dfrac_valid {dq : DFrac} {a b : A} :
-    (✓ ((●{dq} a) • ◯ b)) ↔ (✓ dq ∧ (∀ n, b ≼ₒ{n} a) ∧ ✓ a) := by
+theorem both_dfrac_valid_frame {dq : DFrac} {a b : A} :
+    (✓ ((●{dq} a) • ◯ b)) ↔ (✓ dq ∧ (∀ n, ∃ c, b • c ≼ₒ{n} a) ∧ ✓ a) := by
   simp only [valid_iff_validN]
   constructor
-  · refine fun h => ⟨fun n => (both_dfrac_validN.mp (h n)).1, fun n => ?_, fun n => ?_⟩
-    · exact (both_dfrac_validN.mp (h n)).2.1
-    · exact (both_dfrac_validN.mp (h n)).2.2
-  · exact fun ⟨hdq, hinc, hv⟩ n => both_dfrac_validN.mpr ⟨hdq n, hinc n, hv n⟩
+  · refine fun h => ⟨fun n => (both_dfrac_validN_frame.mp (h n)).1, fun n => ?_, fun n => ?_⟩
+    · exact (both_dfrac_validN_frame.mp (h n)).2.1
+    · exact (both_dfrac_validN_frame.mp (h n)).2.2
+  · exact fun ⟨hdq, hinc, hv⟩ n => both_dfrac_validN_frame.mpr ⟨hdq n, hinc n, hv n⟩
+
+theorem both_dfrac_valid_ord [IncOrd A] {dq : DFrac} {a b : A} :
+    (✓ ((●{dq} a) • ◯ b)) ↔ (✓ dq ∧ (∀ n, b ≼ₒ{n} a) ∧ ✓ a) :=
+  both_dfrac_valid_frame.trans (and_congr_right fun _ => and_congr_left fun _ =>
+    forall_congr' fun _ => exists_op_ordN_iff_ordN)
 
 @[rocq_alias auth_both_dfrac_valid]
-theorem both_dfrac_valid_ext [OrdInc A] {dq : DFrac} {a b : A} :
+theorem both_dfrac_valid [OrdInc A] {dq : DFrac} {a b : A} :
     (✓ ((●{dq} a) • ◯ b)) ↔ (✓ dq ∧ (∀ n, b ≼{n} a) ∧ ✓ a) :=
-  both_dfrac_valid.trans
-    (and_congr_right fun _ => and_congr_left fun _ => forall_congr' fun _ => incN_iff_ordN.symm)
+  both_dfrac_valid_frame.trans (and_congr_right fun _ => and_congr_left fun _ =>
+    forall_congr' fun _ => exists_op_ordN_iff_incN)
 
-theorem auth_both_valid {a b : A} :
-    (✓ ((● a : Auth A) • ◯ b)) ↔ ((∀ n, b ≼ₒ{n} a) ∧ ✓ a) := by
-  rw [both_dfrac_valid]
+theorem auth_both_valid_frame {a b : A} :
+    (✓ ((● a : Auth A) • ◯ b)) ↔ ((∀ n, ∃ c, b • c ≼ₒ{n} a) ∧ ✓ a) := by
+  rw [both_dfrac_valid_frame]
   constructor
   · exact fun ⟨_, hinc, hv⟩ => ⟨hinc, hv⟩
   · exact fun ⟨hinc, hv⟩ => ⟨DFrac.valid_own_one, hinc, hv⟩
 
+theorem auth_both_valid_ord [IncOrd A] {a b : A} :
+    (✓ ((● a : Auth A) • ◯ b)) ↔ ((∀ n, b ≼ₒ{n} a) ∧ ✓ a) :=
+  auth_both_valid_frame.trans
+    (and_congr_left fun _ => forall_congr' fun _ => exists_op_ordN_iff_ordN)
+
 @[rocq_alias auth_both_valid]
-theorem auth_both_valid_ext [OrdInc A] {a b : A} :
+theorem auth_both_valid [OrdInc A] {a b : A} :
     (✓ ((● a : Auth A) • ◯ b)) ↔ ((∀ n, b ≼{n} a) ∧ ✓ a) :=
-  auth_both_valid.trans (and_congr_left fun _ => forall_congr' fun _ => incN_iff_ordN.symm)
+  auth_both_valid_frame.trans
+    (and_congr_left fun _ => forall_congr' fun _ => exists_op_ordN_iff_incN)
+
+theorem auth_both_dfrac_valid_2_ord {dq : DFrac} {a b : A} (hdq : ✓ dq) (ha : ✓ a)
+    (hb : b ≼ₒ a) : ✓ ((●{dq} a) • ◯ b) :=
+  both_dfrac_valid_frame.mpr
+    ⟨hdq, fun n => ⟨unit, by rw [unit_right_id]; exact ORA.ordN_of_ord n hb⟩, ha⟩
 
 /-- Note: The reverse direction only holds if the camera is discrete. -/
-theorem auth_both_dfrac_valid_2 {dq : DFrac} {a b : A} (hdq : ✓ dq) (ha : ✓ a)
-    (hb : b ≼ₒ a) : ✓ ((●{dq} a) • ◯ b) :=
-  both_dfrac_valid.mpr ⟨hdq, (ORA.ordN_of_ord · hb), ha⟩
-
 @[rocq_alias auth_both_dfrac_valid_2]
-theorem auth_both_dfrac_valid_2_ext {dq : DFrac} {a b : A} (hdq : ✓ dq) (ha : ✓ a)
+theorem auth_both_dfrac_valid_2 {dq : DFrac} {a b : A} (hdq : ✓ dq) (ha : ✓ a)
     (hb : b ≼ a) : ✓ ((●{dq} a) • ◯ b) :=
-  auth_both_dfrac_valid_2 hdq ha (IncOrd.inc_ord hb)
+  let ⟨c, hc⟩ := hb
+  both_dfrac_valid_frame.mpr ⟨hdq, fun _ => ⟨c, ORA.ordN_of_dist (.of_eq hc.symm)⟩, ha⟩
 
-theorem auth_both_valid_2 {a b : A} (ha : ✓ a) (hb : b ≼ₒ a) :
+theorem auth_both_valid_2_ord {a b : A} (ha : ✓ a) (hb : b ≼ₒ a) :
+    ✓ ((● a : Auth A) • ◯ b) :=
+  auth_both_dfrac_valid_2_ord DFrac.valid_own_one ha hb
+
+@[rocq_alias auth_both_valid_2]
+theorem auth_both_valid_2 {a b : A} (ha : ✓ a) (hb : b ≼ a) :
     ✓ ((● a : Auth A) • ◯ b) :=
   auth_both_dfrac_valid_2 DFrac.valid_own_one ha hb
 
-@[rocq_alias auth_both_valid_2]
-theorem auth_both_valid_2_ext {a b : A} (ha : ✓ a) (hb : b ≼ a) :
-    ✓ ((● a : Auth A) • ◯ b) :=
-  auth_both_valid_2 ha (IncOrd.inc_ord hb)
-
-theorem both_dfrac_valid_discrete [ORA.Discrete A] {dq : DFrac} {a b : A} :
-    (✓ ((●{dq} a : Auth A) • ◯ b)) ↔ (✓ dq ∧ b ≼ₒ a ∧ ✓ a) := by
+theorem both_dfrac_valid_discrete_frame [ORA.Discrete A] {dq : DFrac} {a b : A} :
+    (✓ ((●{dq} a : Auth A) • ◯ b)) ↔ (✓ dq ∧ (∃ c, b • c ≼ₒ a) ∧ ✓ a) := by
+  rw [both_dfrac_valid_frame]
   constructor
-  · intro h
-    have ⟨hdq, hinc, hv⟩ := both_dfrac_valid.mp h
-    exact ⟨hdq, ORA.discrete_ord (hinc 0), hv⟩
-  · exact fun ⟨hdq, hinc, hv⟩ => auth_both_dfrac_valid_2 hdq hv hinc
+  · exact fun ⟨hdq, hinc, hv⟩ => let ⟨c, h⟩ := hinc 0; ⟨hdq, ⟨c, ORA.discrete_ord h⟩, hv⟩
+  · exact fun ⟨hdq, ⟨c, h⟩, hv⟩ => ⟨hdq, fun n => ⟨c, ORA.ordN_of_ord n h⟩, hv⟩
+
+theorem both_dfrac_valid_discrete_ord [ORA.Discrete A] [IncOrd A] {dq : DFrac} {a b : A} :
+    (✓ ((●{dq} a : Auth A) • ◯ b)) ↔ (✓ dq ∧ b ≼ₒ a ∧ ✓ a) :=
+  both_dfrac_valid_discrete_frame.trans
+    (and_congr_right fun _ => and_congr_left fun _ => exists_op_ord_iff_ord)
 
 @[rocq_alias auth_both_dfrac_valid_discrete]
-theorem both_dfrac_valid_discrete_ext [ORA.Discrete A] [OrdInc A] {dq : DFrac} {a b : A} :
+theorem both_dfrac_valid_discrete [ORA.Discrete A] [OrdInc A] {dq : DFrac} {a b : A} :
     (✓ ((●{dq} a : Auth A) • ◯ b)) ↔ (✓ dq ∧ b ≼ a ∧ ✓ a) :=
-  both_dfrac_valid_discrete.trans (and_congr_right fun _ => and_congr_left fun _ => inc_iff_ord.symm)
+  both_dfrac_valid_discrete_frame.trans
+    (and_congr_right fun _ => and_congr_left fun _ => exists_op_ord_iff_inc)
 
-theorem auth_both_valid_discrete [ORA.Discrete A] {a b : A} :
-    (✓ ((● a : Auth A) • ◯ b)) ↔ (b ≼ₒ a ∧ ✓ a) := by
-  rw [both_dfrac_valid_discrete]
+theorem auth_both_valid_discrete_frame [ORA.Discrete A] {a b : A} :
+    (✓ ((● a : Auth A) • ◯ b)) ↔ ((∃ c, b • c ≼ₒ a) ∧ ✓ a) := by
+  rw [both_dfrac_valid_discrete_frame]
   constructor
   · exact fun ⟨_, hinc, hv⟩ => ⟨hinc, hv⟩
   · exact fun ⟨hinc, hv⟩ => ⟨DFrac.valid_own_one, hinc, hv⟩
 
+theorem auth_both_valid_discrete_ord [ORA.Discrete A] [IncOrd A] {a b : A} :
+    (✓ ((● a : Auth A) • ◯ b)) ↔ (b ≼ₒ a ∧ ✓ a) :=
+  auth_both_valid_discrete_frame.trans (and_congr_left fun _ => exists_op_ord_iff_ord)
+
 @[rocq_alias auth_both_valid_discrete]
-theorem auth_both_valid_discrete_ext [ORA.Discrete A] [OrdInc A] {a b : A} :
+theorem auth_both_valid_discrete [ORA.Discrete A] [OrdInc A] {a b : A} :
     (✓ ((● a : Auth A) • ◯ b)) ↔ (b ≼ a ∧ ✓ a) :=
-  auth_both_valid_discrete.trans (and_congr_left fun _ => inc_iff_ord.symm)
+  auth_both_valid_discrete_frame.trans (and_congr_left fun _ => exists_op_ord_iff_inc)
 
 /-! ## Inclusion -/
 
@@ -461,19 +483,19 @@ theorem auth_both_inc {a1 a2 b1 b2 : A} :
     (((● a1 : Auth A) • ◯ b1) ≼ ((● a2) • ◯ b2)) ↔ (a1 = a2 ∧ b1 ≼ b2) :=
   auth_one_op_frag_inc_auth_one_op_frag_iff
 
-theorem auth_dfrac_ordN {n : Nat} {dq1 dq2 : DFrac} {a1 a2 b : A} :
+theorem auth_dfrac_ordN [IncOrd A] {n : Nat} {dq1 dq2 : DFrac} {a1 a2 b : A} :
     ((●{dq1} a1) ≼ₒ{n} ((●{dq2} a2) • ◯ b)) ↔ ((dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2) :=
   auth_ordN_auth_op_frag_iff
 
-theorem auth_dfrac_ord {dq1 dq2 : DFrac} {a1 a2 b : A} :
+theorem auth_dfrac_ord [IncOrd A] {dq1 dq2 : DFrac} {a1 a2 b : A} :
     ((●{dq1} a1) ≼ₒ ((●{dq2} a2) • ◯ b)) ↔ ((dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 = a2) :=
   auth_ord_auth_op_frag_iff
 
-theorem auth_ordN {n : Nat} {a1 a2 b : A} :
+theorem auth_ordN [IncOrd A] {n : Nat} {a1 a2 b : A} :
     ((● a1 : Auth A) ≼ₒ{n} ((● a2) • ◯ b)) ↔ (a1 ≡{n}≡ a2) :=
   auth_one_ordN_auth_one_op_frag_iff
 
-theorem auth_ord {a1 a2 b : A} :
+theorem auth_ord [IncOrd A] {a1 a2 b : A} :
     ((● a1 : Auth A) ≼ₒ ((● a2) • ◯ b)) ↔ (a1 = a2) :=
   auth_one_ord_auth_one_op_frag_iff
 
@@ -504,62 +526,63 @@ theorem auth_both_ord {a1 a2 b1 b2 : A} :
 
 /-! ## Updates -/
 
-/-- The primitive authority update: transport the order bound of the fragment composite
-past the update, for every fragment frame `bf`. `auth_update_of_localUpdate` recovers the
-frame-based Rocq interface for classical fragment algebras. -/
-theorem auth_update {a b a' b' : A}
+theorem auth_update_ord {a b a' b' : A}
     (hup : ∀ n (bf : A), b • bf ≼ₒ{n} a → ✓{n} a → b' • bf ≼ₒ{n} a' ∧ ✓{n} a') :
     ((● a : Auth A) • ◯ b) ~~> (● a') • ◯ b' :=
-  auth_one_op_frag_update fun n bf ⟨hinc, hv⟩ => hup n bf hinc hv
+  auth_one_op_frag_update fun n bf ⟨⟨c, hinc⟩, hv⟩ => by
+    rw [← assoc'] at hinc
+    obtain ⟨hinc', hv'⟩ := hup n (bf • c) hinc hv
+    exact ⟨⟨c, by rw [← assoc']; exact hinc'⟩, hv'⟩
 
-theorem auth_update_alloc {a a' b' : A}
+theorem auth_update_alloc_ord {a a' b' : A}
     (hup : ∀ n (bf : A), bf ≼ₒ{n} a → ✓{n} a → b' • bf ≼ₒ{n} a' ∧ ✓{n} a') :
     (● a : Auth A) ~~> (● a') • ◯ b' :=
-  auth_one_alloc fun n bf ⟨hinc, hv⟩ => hup n bf hinc hv
+  auth_one_alloc fun n bf ⟨⟨c, hinc⟩, hv⟩ => by
+    obtain ⟨hinc', hv'⟩ := hup n (bf • c) hinc hv
+    exact ⟨⟨c, by rw [← assoc']; exact hinc'⟩, hv'⟩
 
-theorem auth_update_dealloc {a b a' : A}
+theorem auth_update_dealloc_ord {a b a' : A}
     (hup : ∀ n (bf : A), b • bf ≼ₒ{n} a → ✓{n} a → bf ≼ₒ{n} a' ∧ ✓{n} a') :
     ((● a : Auth A) • ◯ b) ~~> ● a' :=
-  auth_one_op_frag_dealloc fun n bf ⟨hinc, hv⟩ => hup n bf hinc hv
+  auth_one_op_frag_dealloc fun n bf ⟨⟨c, hinc⟩, hv⟩ => by
+    rw [← assoc'] at hinc
+    obtain ⟨hinc', hv'⟩ := hup n (bf • c) hinc hv
+    exact ⟨⟨c, hinc'⟩, hv'⟩
 
-theorem auth_update_auth {a a' : A}
+theorem auth_update_auth_ord {a a' : A}
     (hup : ∀ n (bf : A), bf ≼ₒ{n} a → ✓{n} a → bf ≼ₒ{n} a' ∧ ✓{n} a') :
     (● a : Auth A) ~~> ● a' :=
-  auth_one_update fun n bf ⟨hinc, hv⟩ => hup n bf hinc hv
+  auth_one_update fun n bf ⟨⟨c, hinc⟩, hv⟩ =>
+    let ⟨hinc', hv'⟩ := hup n (bf • c) hinc hv
+    ⟨⟨c, hinc'⟩, hv'⟩
 
-/-- On a classical algebra — one whose order coincides with the extension inclusion, witnessed
-by the plain hypothesis `hsub` — a frame-based local update drives the authority update. -/
 @[rocq_alias auth_update]
-theorem auth_update_of_localUpdate [OrdInc A] {a b a' b' : A}
-    (hup : (a, b) ~l~> (a', b')) :
+theorem auth_update [OrdInc A] {a b a' b' : A} (hup : (a, b) ~l~> (a', b')) :
     ((● a : Auth A) • ◯ b) ~~> (● a') • ◯ b' := by
-  refine auth_update fun n bf hinc hv => ?_
-  obtain ⟨c, hc⟩ := OrdInc.ordN_incN hinc
-  have ha_eq : a ≡{n}≡ b •? some (bf • c) := by
-    simp only [ORA.op?]; exact hc.trans assoc.symm.dist
-  have ⟨hv', ha'_eq⟩ := hup n (some (bf • c)) hv ha_eq
+  refine auth_one_op_frag_update fun n bf ⟨⟨c, hinc⟩, hv⟩ => ?_
+  obtain ⟨d, hd⟩ := OrdInc.ordN_incN hinc
+  have ha_eq : a ≡{n}≡ b •? some (bf • (c • d)) := by
+    simp only [ORA.op?]; rw [assoc', assoc']; exact hd
+  have ⟨hv', ha'_eq⟩ := hup n (some (bf • (c • d))) hv ha_eq
   simp only [ORA.op?] at ha'_eq
-  refine ⟨IncOrd.incN_ordN ⟨c, ha'_eq.trans assoc.dist⟩, hv'⟩
+  exact ⟨⟨c • d, ORA.ordN_of_dist (by rw [← assoc']; exact ha'_eq.symm)⟩, hv'⟩
 
 @[rocq_alias auth_update_alloc]
-theorem auth_update_alloc_of_localUpdate [OrdInc A] {a a' b' : A}
-    (hup : (a, unit) ~l~> (a', b')) :
+theorem auth_update_alloc [OrdInc A] {a a' b' : A} (hup : (a, unit) ~l~> (a', b')) :
     (● a : Auth A) ~~> (● a') • ◯ b' := by
   rw [← unit_right_id (x := (● a : Auth A))]
-  exact auth_update_of_localUpdate hup
+  exact auth_update hup
 
 @[rocq_alias auth_update_dealloc]
-theorem auth_update_dealloc_of_localUpdate [OrdInc A] {a b a' : A}
-    (hup : (a, b) ~l~> (a', unit)) :
+theorem auth_update_dealloc [OrdInc A] {a b a' : A} (hup : (a, b) ~l~> (a', unit)) :
     ((● a : Auth A) • ◯ b) ~~> ● a' := by
   rw [← unit_right_id (x := (● a' : Auth A))]
-  exact auth_update_of_localUpdate hup
+  exact auth_update hup
 
 @[rocq_alias auth_update_auth]
-theorem auth_update_auth_of_localUpdate [OrdInc A] {a a' b' : A}
-    (hup : (a, unit) ~l~> (a', b')) :
+theorem auth_update_auth [OrdInc A] {a a' b' : A} (hup : (a, unit) ~l~> (a', b')) :
     (● a : Auth A) ~~> ● a' :=
-  Update.trans (auth_update_alloc_of_localUpdate hup) Update.op_l
+  Update.trans (auth_update_alloc hup) Update.op_l
 
 @[rocq_alias auth_update_auth_persist]
 theorem auth_update_auth_persist {dq : DFrac} {a : A} :
@@ -581,20 +604,23 @@ theorem auth_updateP_both_unpersist {a b : A} :
 @[rocq_alias auth_update_dfrac_alloc]
 theorem auth_update_dfrac_alloc {dq : DFrac} {a b : A} [CoreId b] (hb : b ≼ a) :
     (●{dq} a) ~~> (●{dq} a) • ◯ b := by
-  refine auth_alloc fun n bf ⟨hinc, hv⟩ => ⟨?_, hv⟩
+  refine auth_alloc fun n bf ⟨⟨c, hinc⟩, hv⟩ => ⟨⟨c, ?_⟩, hv⟩
   have hba : b • a = a := comm'.trans (ORA.op_core_left_of_inc hb)
+  rw [← assoc']
   exact (ORA.ordN_iff_right hba.dist).mp (ORA.op_monoN_right b hinc)
 
-theorem auth_local_update {a b0 b1 a' b0' b1' : A} (hup : (b0, b1) ~l~> (b0', b1'))
+theorem auth_local_update_ord {a b0 b1 a' b0' b1' : A} (hup : (b0, b1) ~l~> (b0', b1'))
     (hinc : b0' ≼ₒ a') (hv : ✓ a') :
     ((● a : Auth A) • ◯ b0, (● a) • ◯ b1) ~l~> ((● a' : Auth A) • ◯ b0', (● a') • ◯ b1') :=
-  view_local_update hup fun n _ => ⟨ORA.ordN_of_ord n hinc, hv.validN⟩
+  view_local_update hup fun n _ =>
+    ⟨⟨unit, by rw [unit_right_id]; exact ORA.ordN_of_ord n hinc⟩, hv.validN⟩
 
 @[rocq_alias auth_local_update]
-theorem auth_local_update_ext {a b0 b1 a' b0' b1' : A} (hup : (b0, b1) ~l~> (b0', b1'))
+theorem auth_local_update {a b0 b1 a' b0' b1' : A} (hup : (b0, b1) ~l~> (b0', b1'))
     (hinc : b0' ≼ a') (hv : ✓ a') :
     ((● a : Auth A) • ◯ b0, (● a) • ◯ b1) ~l~> ((● a' : Auth A) • ◯ b0', (● a') • ◯ b1') :=
-  auth_local_update hup (IncOrd.inc_ord hinc) hv
+  let ⟨c, hc⟩ := hinc
+  view_local_update hup fun _ _ => ⟨⟨c, ORA.ordN_of_dist (.of_eq hc.symm)⟩, hv.validN⟩
 
 /-! ## Functor -/
 
@@ -602,14 +628,14 @@ theorem auth_local_update_ext {a b0 b1 a' b0' b1' : A} (hup : (b0, b1) ~l~> (b0'
 theorem authViewRel_map [UCMRA A'] [UCMRA B']
     (g : A' -C> B') (n : Nat) (a : A')
     (b : A') : AuthViewRel n a b → AuthViewRel n (g a) (g b) :=
-  fun ⟨hinc, hv⟩ => ⟨g.monoN hinc, g.validN hv⟩
+  fun ⟨⟨c, hinc⟩, hv⟩ => ⟨⟨g c, by rw [← g.op]; exact g.monoN hinc⟩, g.validN hv⟩
 
 @[rocq_alias authURF]
 abbrev AuthURF (T : COFE.OFunctorPre) [URFunctor T] : COFE.OFunctorPre :=
   fun A B _ _ => Auth (T A B)
 
-instance instURFunctorAuthURF {T : COFE.OFunctorPre} [URFunctor T]
-    [RFunctorAffine T] : URFunctor (AuthURF T) where
+instance instURFunctorAuthURF {T : COFE.OFunctorPre} [URFunctor T] :
+    URFunctor (AuthURF T) where
   map {A A'} {B B'} _ _ _ _ f g :=
     mapC
       (URFunctor.map (F := T) f g).toHom
@@ -632,8 +658,8 @@ instance instRFunctorAffineURF {T : COFE.OFunctorPre} [URFunctor T] [RFunctorAff
   affine := inferInstance
 
 @[rocq_alias authURF_contractive]
-instance instURFunctorContractiveAuthURF {T : COFE.OFunctorPre} [URFunctorContractive T]
-    [RFunctorAffine T] : URFunctorContractive (AuthURF T) where
+instance instURFunctorContractiveAuthURF {T : COFE.OFunctorPre} [URFunctorContractive T] :
+    URFunctorContractive (AuthURF T) where
   map_contractive.1 h x := by
     apply map_ne <;> apply URFunctorContractive.map_contractive.1 h
 
@@ -641,8 +667,8 @@ instance instURFunctorContractiveAuthURF {T : COFE.OFunctorPre} [URFunctorContra
 abbrev AuthRF (T : COFE.OFunctorPre) [URFunctor T] : COFE.OFunctorPre :=
   fun A B _ _ => Auth (T A B)
 
-instance instRFunctorAuthRF {T : COFE.OFunctorPre} [URFunctor T]
-    [RFunctorAffine T] : RFunctor (AuthRF T) where
+instance instRFunctorAuthRF {T : COFE.OFunctorPre} [URFunctor T] :
+    RFunctor (AuthRF T) where
   map {A A'} {B B'} _ _ _ _ f g :=
     mapC
       (URFunctor.map (F := T) f g).toHom
@@ -665,8 +691,8 @@ instance instRFunctorAffineRF {T : COFE.OFunctorPre} [URFunctor T] [RFunctorAffi
   affine := inferInstance
 
 @[rocq_alias authRF_contractive]
-instance instRFunctorContractiveAuthRF {T : COFE.OFunctorPre} [URFunctorContractive T]
-    [RFunctorAffine T] : RFunctorContractive (AuthRF T) where
+instance instRFunctorContractiveAuthRF {T : COFE.OFunctorPre} [URFunctorContractive T] :
+    RFunctorContractive (AuthRF T) where
   map_contractive.1 h x := by
     apply View.map_ne <;> apply URFunctorContractive.map_contractive.1 h
 

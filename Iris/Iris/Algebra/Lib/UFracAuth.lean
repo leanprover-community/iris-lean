@@ -73,17 +73,17 @@ instance frag_discrete {q : Qp} {a : A} [DiscreteE a] : DiscreteE (◯U{q} a) :=
 
 @[rocq_alias ufrac_auth_validN]
 theorem validN {n : Nat} {a : A} {p : Qp} (ha : ✓{n} a) : ✓{n} (●U{p} a) • ◯U{p} a := by
-  simpa only [both_validN] using ⟨ordN_refl _, ⟨trivial, ha⟩⟩
+  simpa only [both_validN_ord] using ⟨ordN_refl _, ⟨trivial, ha⟩⟩
 
 @[rocq_alias ufrac_auth_valid]
 theorem valid {p : Qp} {a : A} (ha : ✓ a) : ✓ (●U{p} a) • ◯U{p} a :=
-  auth_both_valid_2 ⟨trivial, ha⟩ (ORA.ord_refl _)
+  auth_both_valid_2_ord ⟨trivial, ha⟩ (ORA.ord_refl _)
 
 /-! ## Agreement -/
 
 @[rocq_alias ufrac_auth_agreeN]
 theorem agreeN {n : Nat} {p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{p} b) : a ≡{n}≡ b := by
-  rcases (both_validN.mp h).1 with e | i
+  rcases (both_validN_ord.mp h).1 with e | i
   · exact e.2.symm
   · obtain ⟨r, hr⟩ := i.1
     have hp : p = p + r.frac := ext_iff.mp hr
@@ -99,7 +99,7 @@ theorem agree {p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{p} b) : a = b :=
 
 theorem includedN {n : Nat} {p q : Qp} {a b : A}
     (h : ✓{n} (●U{p} a) • ◯U{q} b) : some b ≼ₒ{n} some a := by
-  rw [both_validN] at h
+  rw [both_validN_ord] at h
   rcases h.1 with e | i
   · exact Option.some_ordN_some_iff.mpr (.inl e.2)
   · exact Option.some_ordN_some_iff.mpr (.inr i.2)
@@ -111,7 +111,7 @@ theorem includedN_ext [OrdInc A] {n : Nat} {p q : Qp} {a b : A}
 
 theorem included [ORA.Discrete A] {q p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{q} b) :
     some b ≼ₒ some a := by
-  rw [auth_both_valid_discrete] at h
+  rw [auth_both_valid_discrete_ord] at h
   rcases h.1 with e | i
   · exact Option.some_ord_some_iff.mpr (.inl (congrArg Prod.snd e))
   · exact Option.some_ord_some_iff.mpr (.inr i.2)
@@ -198,12 +198,12 @@ instance isOp_ufrac_auth_core_id {q q1 q2 : Qp} {a : A} [h1 : CoreId a] [h2 : Is
 @[rocq_alias ufrac_auth_update]
 theorem update [OrdInc A] {p q : Qp} {a b a' b' : A} (h : (a, b) ~l~> (a', b')) :
     ((●U{p} a) • ◯U{q} b) ~~> (●U{p} a') • ◯U{q} b' :=
-  auth_update_of_localUpdate (.option (.prod_2 _ _ h))
+  auth_update (.option (.prod_2 _ _ h))
 
 @[rocq_alias ufrac_auth_update_surplus]
 theorem update_surplus {p q : Qp} {a b : A} (h : ✓ (a • b)) :
     (●U{p} a) ~~> (●U{p + q} (a • b)) • ◯U{q} b := by
-  refine auth_update_alloc fun n bf hinc _ => ⟨?_, ⟨trivial, h.validN⟩⟩
+  refine auth_update_alloc_ord fun n bf hinc _ => ⟨?_, ⟨trivial, h.validN⟩⟩
   match bf, hinc with
   | none, _ =>
     refine .inr ⟨(UFrac.ord_iff).mpr (by change q.val < (p + q).val; grind), ?_⟩
@@ -224,7 +224,7 @@ theorem update_surplus {p q : Qp} {a b : A} (h : ✓ (a • b)) :
 @[rocq_alias ufrac_auth_update_surplus_cancel]
 theorem update_surplus_cancel [OrdInc A] {p q : Qp} {a b : A} [ORA.Cancelable b] :
     ((●U{p + q} (a • b)) • ◯U{q} b) ~~> ●U{p} a := by
-  refine auth_update_dealloc_of_localUpdate
+  refine auth_update_dealloc
     (local_update_unital.mpr fun n mpa hv heq => ?_)
   match mpa with
   | none =>

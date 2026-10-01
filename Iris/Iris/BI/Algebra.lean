@@ -190,7 +190,7 @@ end agree_inclusion
 section auth
 open Iris BI Auth
 
-variable [Sbi PROP] [UCMRA A] [ORA.Affine A]
+variable [Sbi PROP] [UCMRA A]
 
 @[rocq_alias auth_auth_dfrac_validI]
 theorem auth_dfrac_validI (dq : DFrac) (a : A) :
@@ -212,28 +212,27 @@ theorem frag_validI (a : A) :
     ✓ (◯ a : Auth A) ⊣⊢@{PROP} ✓ a := by
   sbi_unfold; intro _; exact frag_validN
 
-theorem both_dfrac_validI (dq : DFrac) (a b : A) :
+theorem both_dfrac_validI_ord [IncOrd A] (dq : DFrac) (a b : A) :
     ✓ ((●{dq} a) • ◯ b) ⊣⊢@{PROP}
     ⌜✓ dq⌝ ∧ b ≼ₒ a ∧ ✓ a := by
-  sbi_unfold; intro _; exact both_dfrac_validN
+  sbi_unfold; intro _; exact both_dfrac_validN_ord
 
 @[rocq_alias auth_both_dfrac_validI]
-theorem both_dfrac_validI_ext [OrdInc A] (dq : DFrac) (a b : A) :
+theorem both_dfrac_validI [OrdInc A] (dq : DFrac) (a b : A) :
     ✓ ((●{dq} a) • ◯ b) ⊣⊢@{PROP}
     ⌜✓ dq⌝ ∧ b ≼ a ∧ ✓ a := by
-  sbi_unfold; intro _; exact both_dfrac_validN_ext
+  sbi_unfold; intro _; exact both_dfrac_validN
 
-theorem auth_both_validI (a b : A) :
+theorem auth_both_validI_ord [IncOrd A] (a b : A) :
     ✓ ((● a : Auth A) • ◯ b) ⊣⊢@{PROP}
       b ≼ₒ a ∧ ✓ a := by
-  sbi_unfold; intro _; exact ⟨fun h => (both_dfrac_validN.mp h).2,
-    fun h => both_dfrac_validN.mpr ⟨DFrac.valid_own_one, h⟩⟩
+  sbi_unfold; intro _; exact both_validN_ord
 
 @[rocq_alias auth_both_validI]
-theorem auth_both_validI_ext [OrdInc A] (a b : A) :
+theorem auth_both_validI [OrdInc A] (a b : A) :
     ✓ ((● a : Auth A) • ◯ b) ⊣⊢@{PROP}
       b ≼ a ∧ ✓ a := by
-  sbi_unfold; intro _; exact both_validN_ext
+  sbi_unfold; intro _; exact both_validN
 
 end auth
 

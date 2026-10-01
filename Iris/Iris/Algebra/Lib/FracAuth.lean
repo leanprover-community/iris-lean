@@ -84,7 +84,7 @@ instance frag_discrete {q : Qp} {a : A} [ha : DiscreteE a] : DiscreteE (◯F{q} 
 @[rocq_alias frac_auth_dfrac_validN]
 theorem dfrac_validN {dq : DFrac} {n : Nat} {a : A} (hdq : ✓ dq) (ha : ✓{n} a) :
     ✓{n} (●F{dq} a) • ◯F a := by
-  simpa only [both_dfrac_validN] using ⟨hdq, ordN_refl _, Qp.valid_one, ha⟩
+  simpa only [both_dfrac_validN_ord] using ⟨hdq, ordN_refl _, Qp.valid_one, ha⟩
 
 @[rocq_alias frac_auth_validN]
 theorem validN {n : Nat} {a : A} (ha : ✓{n} a) : ✓{n} (●F a : FracAuth) • ◯F a :=
@@ -92,7 +92,7 @@ theorem validN {n : Nat} {a : A} (ha : ✓{n} a) : ✓{n} (●F a : FracAuth) �
 
 @[rocq_alias frac_auth_dfrac_valid]
 theorem dfrac_valid {dq : DFrac} {a : A} (hdq : ✓ dq) (ha : ✓ a) : ✓ (●F{dq} a) • ◯F a :=
-  auth_both_dfrac_valid_2 hdq ⟨valid_iff_validN.mpr fun _ => Qp.valid_one, ha⟩ (ord_refl _)
+  auth_both_dfrac_valid_2_ord hdq ⟨valid_iff_validN.mpr fun _ => Qp.valid_one, ha⟩ (ord_refl _)
 
 @[rocq_alias frac_auth_valid]
 theorem valid {a : A} (ha : ✓ a) : ✓ (●F a : FracAuth) • ◯F a :=
@@ -102,7 +102,7 @@ theorem valid {a : A} (ha : ✓ a) : ✓ (●F a : FracAuth) • ◯F a :=
 
 @[rocq_alias frac_auth_agreeN]
 theorem agreeN {dq : DFrac} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F b) : a ≡{n}≡ b := by
-  rw [both_dfrac_validN] at h
+  rw [both_dfrac_validN_ord] at h
   rcases h.2.1 with e | i
   · exact e.2.symm
   · exact absurd h.2.2.1 (not_valid_of_exclN_inc (x := (1 : Qp)) i.1)
@@ -117,7 +117,7 @@ theorem agree {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F b) : a = b :
 
 theorem ordN {n : Nat} {dq : DFrac} {q : Qp} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F{q} b) :
     some b ≼ₒ{n} some a := by
-  rw [both_dfrac_validN] at h
+  rw [both_dfrac_validN_ord] at h
   rcases h.2.1 with e | i
   · exact Option.some_ordN_some_iff.mpr (.inl e.2)
   · exact Option.some_ordN_some_iff.mpr (.inr i.2)
@@ -129,7 +129,7 @@ theorem includedN [OrdInc A] {n : Nat} {dq : DFrac} {q : Qp} {a b : A}
 
 theorem ord [ORA.Discrete A] {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F{q} b) :
       some b ≼ₒ some a := by
-  rw [both_dfrac_valid_discrete] at h
+  rw [both_dfrac_valid_discrete_ord] at h
   rcases h.2.1 with e | i
   · exact Option.some_ord_some_iff.mpr (.inl (congrArg Prod.snd e))
   · exact Option.some_ord_some_iff.mpr (.inr i.2)
@@ -264,12 +264,12 @@ instance isOp_frac_auth_core_id {q q1 q2 : Qp} {a : A}
 @[rocq_alias frac_auth_update]
 theorem update [OrdInc A] {q : Qp} {a b a' b' : A} (h : (a, b) ~l~> (a', b')) :
     ((●F a : FracAuth) • ◯F{q} b) ~~> (●F a') • ◯F{q} b' :=
-  auth_update_of_localUpdate (.option (.prod_2 _ q h))
+  auth_update (.option (.prod_2 _ q h))
 
 @[rocq_alias frac_auth_update_1]
 theorem update_full {a b a' : A} (ha' : ✓ a') :
     ((●F a : FracAuth) • ◯F b) ~~> (●F a') • ◯F a' := by
-  refine auth_update fun n bf hinc hv => ?_
+  refine auth_update_ord fun n bf hinc hv => ?_
   match bf with
   | none => exact ⟨.inl .rfl, ⟨Qp.valid_one, ha'.validN⟩⟩
   | some (q, c) =>

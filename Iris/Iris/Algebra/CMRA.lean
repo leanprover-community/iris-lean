@@ -1412,6 +1412,22 @@ theorem unit_ord_core (x : α) : unit ≼ₒ core x := increasing_iff_unit_ord.m
 
 theorem unit_ordN_core {n} (x : α) : unit ≼ₒ{n} core x := (unit_ord_core x).ordN
 
+theorem exists_op_ordN_iff_ordN [IncOrd α] {n} {x y : α} : (∃ c, x • c ≼ₒ{n} y) ↔ x ≼ₒ{n} y :=
+  ⟨fun ⟨c, h⟩ => ordN_trans (IncOrd.incN_ordN (incN_op_left n x c)) h,
+   fun h => ⟨unit, by rw [unit_right_id]; exact h⟩⟩
+
+theorem exists_op_ord_iff_ord [IncOrd α] {x y : α} : (∃ c, x • c ≼ₒ y) ↔ x ≼ₒ y :=
+  ⟨fun ⟨c, h⟩ => ord_trans (IncOrd.inc_ord (inc_op_left x c)) h,
+   fun h => ⟨unit, by rw [unit_right_id]; exact h⟩⟩
+
+theorem exists_op_ordN_iff_incN [OrdInc α] {n} {x y : α} : (∃ c, x • c ≼ₒ{n} y) ↔ x ≼{n} y :=
+  ⟨fun ⟨c, h⟩ => incN_trans (incN_op_left n x c) (OrdInc.ordN_incN h),
+   fun ⟨c, hc⟩ => ⟨c, ordN_of_dist hc.symm⟩⟩
+
+theorem exists_op_ord_iff_inc [OrdInc α] {x y : α} : (∃ c, x • c ≼ₒ y) ↔ x ≼ y :=
+  ⟨fun ⟨c, h⟩ => inc_trans (inc_op_left x c) (OrdInc.ord_inc h),
+   fun ⟨c, hc⟩ => ⟨c, by rw [hc]⟩⟩
+
 section affine
 variable [ORA.Affine α]
 
