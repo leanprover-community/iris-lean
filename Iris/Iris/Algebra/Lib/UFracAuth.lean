@@ -31,7 +31,7 @@ abbrev UFracAuth [ORA A] := Auth (Option (UFrac × A))
 
 namespace UFracAuth
 
-variable [ORA A] [ORA.Affine A]
+variable [ORA A]
 
 @[rocq_alias ufrac_auth_auth]
 nonrec abbrev auth (q : Qp) (a : A) : UFracAuth (A := A) :=
@@ -72,7 +72,7 @@ instance frag_discrete {q : Qp} {a : A} [DiscreteE a] : DiscreteE (◯U{q} a) :=
 /-! ## Validity -/
 
 @[rocq_alias ufrac_auth_validN]
-theorem validN {n : Nat} {a : A} {p : Qp} (ha : ✓{n} a) : ✓{n} (●U{p} a) • ◯U{p} a := by
+theorem validN [IncOrd A] {n : Nat} {a : A} {p : Qp} (ha : ✓{n} a) : ✓{n} (●U{p} a) • ◯U{p} a := by
   simpa only [both_validN_ord] using ⟨ordN_refl _, ⟨trivial, ha⟩⟩
 
 @[rocq_alias ufrac_auth_valid]
@@ -82,7 +82,7 @@ theorem valid {p : Qp} {a : A} (ha : ✓ a) : ✓ (●U{p} a) • ◯U{p} a :=
 /-! ## Agreement -/
 
 @[rocq_alias ufrac_auth_agreeN]
-theorem agreeN {n : Nat} {p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{p} b) : a ≡{n}≡ b := by
+theorem agreeN [IncOrd A] {n : Nat} {p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{p} b) : a ≡{n}≡ b := by
   rcases (both_validN_ord.mp h).1 with e | i
   · exact e.2.symm
   · obtain ⟨r, hr⟩ := i.1
@@ -90,12 +90,15 @@ theorem agreeN {n : Nat} {p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{p} 
     grind
 
 @[rocq_alias ufrac_auth_agree]
-theorem agree {p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{p} b) : a = b :=
+theorem agree [IncOrd A] {p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{p} b) : a = b :=
   eq_dist_2 (agreeN <| valid_iff_validN.mp h ·)
 
 #rocq_ignore ufrac_auth_agree_L "Use agree"
 
 /-! ## Inclusion -/
+
+section
+variable [IncOrd A]
 
 theorem includedN {n : Nat} {p q : Qp} {a b : A}
     (h : ✓{n} (●U{p} a) • ◯U{q} b) : some b ≼ₒ{n} some a := by
@@ -137,6 +140,8 @@ theorem included_total [ORA.Discrete A] [OrderRefl A] {q p : Qp} {a b : A}
 theorem included_total_ext [ORA.Discrete A] [OrderRefl A] [OrdInc A] {q p : Qp} {a b : A}
     (h : ✓ (●U{p} a) • ◯U{q} b) : b ≼ a :=
   OrdInc.ord_inc (included_total h)
+
+end
 
 /-! ## Auth-only validity -/
 
@@ -201,7 +206,7 @@ theorem update [OrdInc A] {p q : Qp} {a b a' b' : A} (h : (a, b) ~l~> (a', b')) 
   auth_update (.option (.prod_2 _ _ h))
 
 @[rocq_alias ufrac_auth_update_surplus]
-theorem update_surplus {p q : Qp} {a b : A} (h : ✓ (a • b)) :
+theorem update_surplus [IncOrd A] {p q : Qp} {a b : A} (h : ✓ (a • b)) :
     (●U{p} a) ~~> (●U{p + q} (a • b)) • ◯U{q} b := by
   refine auth_update_alloc_ord fun n bf hinc _ => ⟨?_, ⟨trivial, h.validN⟩⟩
   match bf, hinc with
