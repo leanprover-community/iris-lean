@@ -1266,7 +1266,7 @@ end total
 /-! ## Affine algebras -/
 
 section affine
-variable [Affine α]
+variable [IncOrd α]
 
 theorem ord_op_right (x y : α) : y ≼ₒ x • y := (IncOrd.increasing x).increasing y
 theorem ord_op_left (x y : α) : x ≼ₒ x • y := comm' (x := y) (y := x) ▸ ord_op_right y x
@@ -1449,7 +1449,7 @@ theorem exists_op_ord_iff_inc [OrdInc α] {x y : α} : (∃ c, x • c ≼ₒ y)
   ⟨fun ⟨c, h⟩ => inc_trans (inc_op_left x c) (OrdInc.ord_inc h), fun ⟨c, hc⟩ => ⟨c, by rw [hc]⟩⟩
 
 section affine
-variable [Affine α]
+variable [IncOrd α]
 
 theorem ordN_unit {n} {x : α} : unit ≼ₒ{n} x := unit_left_id (x := x) ▸ ordN_op_left n unit x
 
@@ -1707,7 +1707,7 @@ attribute [reducible, instance] URFunctor.cmra
 /-- A resource functor all of whose algebras are affine. The global ghost state of `IProp` is
 affine — so that `IProp` is an affine logic — exactly when every functor of its bundle is. -/
 class RFunctorAffine (F : COFE.OFunctorPre) [RFunctor F] : Prop where
-  affine [COFE α] [COFE β] : Affine (F α β)
+  affine [COFE α] [COFE β] : IncOrd (F α β)
 
 attribute [instance] RFunctorAffine.affine
 
@@ -1833,7 +1833,7 @@ instance COFE.OFunctor.constOF_RFunctor [ORA B] : RFunctor (constOF B) where
   map_id _ := rfl
   map_comp _ _ _ _ _ := rfl
 
-instance COFE.OFunctor.constOF_RFunctorAffine [ORA B] [Affine B] : RFunctorAffine (constOF B) where
+instance COFE.OFunctor.constOF_RFunctorAffine [ORA B] [IncOrd B] : RFunctorAffine (constOF B) where
   affine := inferInstance
 
 @[rocq_alias constRF_contractive]
@@ -2026,7 +2026,7 @@ theorem incN_iff {n} {f g : ∀ x, β x} : f ≼{n} g ↔ ∀ x, f x ≼{n} g x 
 instance instOrderRefl [∀ x, OrderRefl (β x)] : OrderRefl (∀ x, β x) where
   ord_refl f x := ord_refl (f x)
 
-instance instAffine [∀ x, Affine (β x)] : Affine (∀ x, β x) :=
+instance instAffine [∀ x, IncOrd (β x)] : IncOrd (∀ x, β x) :=
   IncOrd.of_increasing fun f => increasing_iff.mpr fun x => IncOrd.increasing (f x)
 
 instance instOrdInc [∀ x, OrdInc (β x)] : OrdInc (∀ x, β x) where
@@ -2535,7 +2535,7 @@ theorem validN_of_ordN_validN {n} {a b : α} (Hv : ✓{n} a) (Hinc : some b ≼�
 theorem valid_of_ord_valid {a b : α} (Hv : ✓ a) (Hinc : some b ≼ₒ some a) : ✓ b :=
   valid_of_ord (α := Option α) Hinc Hv
 
-instance instAffine [Affine α] : Affine (Option α) := IncOrd.of_increasing fun
+instance instAffine [IncOrd α] : IncOrd (Option α) := IncOrd.of_increasing fun
     | none => inferInstance
     | some a => increasing_some_iff.mpr (IncOrd.increasing a)
 
@@ -3173,7 +3173,7 @@ instance instCmraDiscreteProd [ORA.Discrete α] [ORA.Discrete β] : ORA.Discrete
 instance instOrderRefl [OrderRefl α] [OrderRefl β] : OrderRefl (α × β) where
   ord_refl x := ⟨ord_refl x.1, ord_refl x.2⟩
 
-instance instAffine [Affine α] [Affine β] : Affine (α × β) :=
+instance instAffine [IncOrd α] [IncOrd β] : IncOrd (α × β) :=
   IncOrd.of_increasing fun x => increasing_iff.mpr ⟨IncOrd.increasing x.1, IncOrd.increasing x.2⟩
 
 instance instOrdInc [OrdInc α] [OrdInc β] : OrdInc (α × β) where

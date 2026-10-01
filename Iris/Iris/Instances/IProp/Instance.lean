@@ -73,18 +73,16 @@ section ElemG
 
 /-- `ElemG` takes functors instead of CMRAs -/
 @[rocq_alias inG]
-class ElemG (FF : BundledGFunctors) (F : OFunctorPre) [RFunctorContractive F] where
+class ElemG (FF : BundledGFunctors) (F : OFunctorPre) [RFunctorContractive F]
+    [RFunctorAffine F] where
   τ : GType
-  [affine : RFunctorAffine F]
   transp : FF τ = ⟨F⟩
-
-attribute [instance] ElemG.affine
 
 #rocq_ignore subG_inG "Superseded by Lean's direct `ElemG` typeclass synthesis."
 
 open OFE
 
-variable [I : RFunctorContractive F]
+variable [I : RFunctorContractive F] [IA : RFunctorAffine F]
 
 theorem ElemG.transpMap (E : ElemG GF F) T [OFE T] : (GF E.τ).F = F := congrArg GFunctor.F E.transp
 
@@ -111,8 +109,7 @@ instance ElemG.unbundle.ne {E : ElemG GF F} [COFE T] :
     OFE.NonExpansive (E.unbundle (T := T)) where
   ne {_ _ _} H := OFE.transpAp_eqv_mp (E.transpMap T) (E.transpClass T) H
 
-omit I in
-theorem ElemG.bundle_discreteE {GF : BundledGFunctors} [RFunctorContractive F] (E : ElemG GF F)
+theorem ElemG.bundle_discreteE {GF : BundledGFunctors} (E : ElemG GF F)
     {v : F.ap (IProp GF)} [DiscreteE v] : DiscreteE (E.bundle v) where
   discrete hz := (congrArg (E.bundle (T := IProp GF))
     (DiscreteE.discrete ((E.unbundle_bundle v).dist.symm.trans
@@ -134,7 +131,7 @@ theorem unbundle_op {GF : BundledGFunctors} [E : ElemG GF F] (a2 ac : GF.api (El
   OFE.transpAp_op_mp (E.transpMap ((GF (ElemG.τ GF F)).F.ap (IPre GF)))
     (E.transpClass ((GF (ElemG.τ GF F)).F.ap (IPre GF)))
 
-theorem ElemG.bundle_unit {GF F} [RFunctorContractive F] (E : ElemG GF F) {ε : F.ap (IProp GF)} [IsUnit ε] :
+theorem ElemG.bundle_unit {GF} (E : ElemG GF F) {ε : F.ap (IProp GF)} [IsUnit ε] :
     IsUnit (E.bundle ε) := by
   refine { unit_valid := ?_, unit_left_id := ?_, pcore_unit := ?_ }
   · refine valid_iff_validN.mpr fun n => ?_
@@ -260,12 +257,13 @@ section iSingleton
 open IProp OFE Iris.UPred GenMap
 
 @[rocq_alias iRes_singleton]
-def iSingleton {GF} F [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (v : F.ap (IProp GF)) : IResUR GF :=
+def iSingleton {GF} F [RFunctorContractive F] [RFunctorAffine F] [E : ElemG GF F] (γ : GName)
+    (v : F.ap (IProp GF)) : IResUR GF :=
   fun τ' =>
     if H : τ' = E.τ then GenMap.singleton γ (H ▸ (unfoldi (E.bundle v)))
     else GenMap.empty
 
-variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
+variable {GF F} [RFunctorContractive F] [RFunctorAffine F] [E : ElemG GF F]
 
 theorem iResUR_op_eval (c1 c2 : IResUR GF) : (c1 • c2) τ' γ' = (c1 τ' γ') • (c2 τ' γ') := by
   simp [op, optionOp]
@@ -542,7 +540,8 @@ theorem later_internalEq_iSingleton {a : F.ap (IProp GF)} {r : IResUR GF} :
 end iSingleton
 
 @[rocq_alias own]
-def iOwn {GF F} [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (v : F.ap (IProp GF)) : IProp GF :=
+def iOwn {GF F} [RFunctorContractive F] [RFunctorAffine F] [E : ElemG GF F] (γ : GName)
+    (v : F.ap (IProp GF)) : IProp GF :=
   UPred.ownM <| iSingleton F γ v
 
 #rocq_ignore own_def "`iOwn` is defined directly without `seal`/`unseal`."
@@ -553,7 +552,7 @@ section iOwn
 
 open IProp OFE Iris.UPred BI GenMap ProofMode
 
-variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
+variable {GF F} [RFunctorContractive F] [RFunctorAffine F] [E : ElemG GF F]
 
 @[rocq_alias own_ne]
 instance iOwn_ne : NonExpansive (iOwn τ : F.ap (IProp GF) → IProp GF) where
@@ -687,7 +686,7 @@ theorem alloc_update_unit {f : GName → F.ap (IProp GF)} :
   apply UpdateP.total.mpr
   intros n mf Hvalid
   replace Hvalid : ✓{n} mf := validN_ne unit_left_id.dist Hvalid
-  obtain ⟨γ, Hfresh⟩ := @IResUR.valid_exists_fresh GF F _ E n mf Hvalid
+  obtain ⟨γ, Hfresh⟩ := @IResUR.valid_exists_fresh GF F _ _ E n mf Hvalid
   refine ⟨iSingleton F γ (f γ), ⟨γ, rfl⟩, ?_⟩
   apply validN_iSingleton_op Hvalid (Hf_valid _).validN Hfresh
 
@@ -913,7 +912,7 @@ section big_op_instances
 open IProp OFE Iris.UPred BI GenMap ProofMode Algebra Iris.Std
 open scoped Iris.Std.PartialMap
 
-variable {GF F} [URFunctorContractive F] [E : ElemG GF F]
+variable {GF F} [URFunctorContractive F] [RFunctorAffine F] [E : ElemG GF F]
 
 @[rocq_alias own_cmra_sep_homomorphism]
 instance iOwn_cmra_sep_homomorphism (γ : GName) :
@@ -991,11 +990,11 @@ section own_forall
 open IProp OFE BI
 
 @[rocq_alias iRes_project]
-def iResProject {GF} F [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (x : IResUR GF) :
-    Option (F.ap (IProp GF)) :=
+def iResProject {GF} F [RFunctorContractive F] [RFunctorAffine F] [E : ElemG GF F] (γ : GName)
+    (x : IResUR GF) : Option (F.ap (IProp GF)) :=
   ((x E.τ).car γ).map fun v => E.unbundle (foldi v)
 
-variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
+variable {GF F} [RFunctorContractive F] [RFunctorAffine F] [E : ElemG GF F]
 
 @[rocq_alias iRes_project_op]
 theorem iResProject_op (x y : IResUR GF) :

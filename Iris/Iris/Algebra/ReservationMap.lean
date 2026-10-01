@@ -369,7 +369,7 @@ instance instORAReservationMap : ORA (ReservationMap A H) where
 
 end
 
-instance instAffine [Affine A] : Affine (ReservationMap A H) := IncOrd.of_increasing fun v =>
+instance instAffine [IncOrd A] : IncOrd (ReservationMap A H) := IncOrd.of_increasing fun v =>
     increasing_mk (IncOrd.increasing v.data) (IncOrd.increasing v.token)
 
 @[rocq_alias reservation_mapUR]

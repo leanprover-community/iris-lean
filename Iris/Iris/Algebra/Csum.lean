@@ -371,7 +371,7 @@ end
 instance instOrderRefl [ORA α] [ORA β] [OrderRefl α] [OrderRefl β] : OrderRefl (Csum α β) where
   ord_refl | inl a => ord_refl a | inr b => ord_refl b | invalid => trivial
 
-instance instAffine [ORA α] [ORA β] [Affine α] [Affine β] : Affine (Csum α β) :=
+instance instAffine [ORA α] [ORA β] [IncOrd α] [IncOrd β] : IncOrd (Csum α β) :=
   IncOrd.of_increasing fun
     | inl a => increasing_inl_iff.mpr (IncOrd.increasing a)
     | inr b => increasing_inr_iff.mpr (IncOrd.increasing b)

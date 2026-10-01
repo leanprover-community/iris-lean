@@ -304,7 +304,7 @@ instance instUCMRA_GenMap : UORA (GenMap β) where
 
 instance : IsTotal (GenMap β) := unit_total
 
-instance instAffineGenMap [Affine β] : Affine (GenMap β) :=
+instance instAffineGenMap [IncOrd β] : IncOrd (GenMap β) :=
   IncOrd.of_increasing fun x => GenMap.increasing_of_car β (IncOrd.increasing x.car)
 
 instance instOrdIncGenMap [OrdInc β] : OrdInc (GenMap β) where

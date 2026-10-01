@@ -538,7 +538,7 @@ instance instStoreUCMRA : UORA (M V) where
     simp [get?_bindAlter, get?_empty]
   ord_refl _ := fun _ => ord_refl _
 
-instance instAffine [Affine V] : Affine (M V) :=
+instance instAffine [IncOrd V] : IncOrd (M V) :=
   IncOrd.of_increasing fun _ => increasing_iff.mpr fun _ => IncOrd.increasing _
 
 instance instOrdInc [OrdInc V] : OrdInc (M V) where
@@ -872,7 +872,7 @@ theorem singleton_inc_singleton_iff :
   · refine ⟨y, ?_, H⟩
     exact get?_singleton_eq rfl
 
-theorem exclusive_singleton_ord_iff [Affine V] [OrdInc V] {m : M V} (He : Exclusive x) (Hv : ✓ m) :
+theorem exclusive_singleton_ord_iff [IncOrd V] [OrdInc V] {m : M V} (He : Exclusive x) (Hv : ✓ m) :
     (singleton i x) ≼ₒ m ↔ (get? m i = some x) :=
   inc_iff_ord.symm.trans (exclusive_singleton_inc_iff He Hv)
 

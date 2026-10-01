@@ -55,6 +55,8 @@ abbrev TicketR := Auth (Option (Excl (DiscreteO Nat)) × DisjointLeibnizSet Tick
 
 abbrev TicketLockF : COFE.OFunctorPre := constOF TicketR
 
+instance : RFunctorAffine TicketLockF where affine := inferInstance
+
 @[rocq_alias heap_lang.tlockG]
 class TicketLockG (GF : BundledGFunctors) where [elemG : ElemG GF TicketLockF]
 

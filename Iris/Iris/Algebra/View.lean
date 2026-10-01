@@ -378,7 +378,7 @@ instance instUCMRA : UORA (View R) where
   pcore_unit := congrArg some (congrArg (View.mk _) (core_eqv_self unit))
   ord_refl x := ⟨ord_refl x.auth, ord_refl x.frag⟩
 
-instance instAffine [Affine B] : Affine (View R) := IncOrd.of_increasing fun v =>
+instance instAffine [IncOrd B] : IncOrd (View R) := IncOrd.of_increasing fun v =>
     increasing_mk (IncOrd.increasing v.auth) (IncOrd.increasing v.frag)
 
 instance instOrdInc [OrdInc B] : OrdInc (View R) where
