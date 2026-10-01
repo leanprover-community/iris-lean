@@ -131,8 +131,8 @@ instance {dq dq1 dq2 : DFrac} {l : List α} [h : IsOp d dq dq1 dq2] :
 @[rocq_alias mono_list_auth_dfrac_validN]
 theorem auth_dfrac_validN {n} (dq : DFrac) (l : List α) : ✓{n} (●ML{dq} l) ↔ ✓ dq := by
   unfold auth MonoList
-  rw [Auth.both_dfrac_validN_ord]
-  exact ⟨fun h => h.1, fun h => ⟨h, ordN_refl _, toMaxPrefixList_validN _⟩⟩
+  rw [Auth.both_dfrac_validN]
+  exact ⟨fun h => h.1, fun h => ⟨h, incN_refl _, toMaxPrefixList_validN _⟩⟩
 
 @[rocq_alias mono_list_auth_validN]
 theorem auth_validN {n} (l : List α) : ✓{n} (●ML l) :=
@@ -141,8 +141,8 @@ theorem auth_validN {n} (l : List α) : ✓{n} (●ML l) :=
 @[rocq_alias mono_list_auth_dfrac_valid]
 theorem auth_dfrac_valid (dq : DFrac) (l : List α) : ✓ (●ML{dq} l) ↔ ✓ dq := by
   unfold auth MonoList
-  rw [Auth.both_dfrac_valid_ord]
-  exact ⟨fun h => h.1, fun h => ⟨h, fun _ => ordN_refl _, toMaxPrefixList_valid _⟩⟩
+  rw [Auth.both_dfrac_valid]
+  exact ⟨fun h => h.1, fun h => ⟨h, fun _ => incN_refl _, toMaxPrefixList_valid _⟩⟩
 
 @[rocq_alias mono_list_auth_valid]
 theorem auth_valid (l : List α) : ✓ (●ML l) :=
@@ -182,10 +182,10 @@ theorem auth_op_valid (l1 l2 : List α) : ✓ (●ML l1 • ●ML l2) ↔ False 
 theorem both_dfrac_validN {n} (dq : DFrac) (l1 l2 : List α) :
     ✓{n} (●ML{dq} l1 • ◯ML l2) ↔ ✓ dq ∧ ∃ l, l1 ≡{n}≡ l2 ++ l := by
   unfold auth lb MonoList
-  rw [← assoc', ← Auth.frag_op, Auth.both_dfrac_validN_ord]
+  rw [← assoc', ← Auth.frag_op, Auth.both_dfrac_validN]
   refine ⟨fun ⟨hdq, hinc, _⟩ => ⟨hdq, ?_⟩, fun ⟨hdq, hl⟩ => ⟨hdq, ?_, ?_⟩⟩
-  · exact toMaxPrefixList_ordN_iff.mp ((ORA.ordN_op_right ..).trans hinc)
-  · have hinc := ORA.op_monoN_right (toMaxPrefixList l1) (toMaxPrefixList_ordN_iff.mpr hl)
+  · exact toMaxPrefixList_incN_iff.mp (incN_trans (incN_op_right ..) hinc)
+  · have hinc := op_monoN_right_ext (toMaxPrefixList l1) (toMaxPrefixList_incN_iff.mpr hl)
     rwa [op_self] at hinc
   · exact toMaxPrefixList_validN _
 
@@ -199,13 +199,10 @@ theorem both_validN {n} (l1 l2 : List α) :
 theorem both_dfrac_valid (dq : DFrac) (l1 l2 : List α) :
     ✓ (●ML{dq} l1 • ◯ML l2) ↔ ✓ dq ∧ l2 <+: l1 := by
   unfold auth lb MonoList
-  rw [← assoc', ← Auth.frag_op, Auth.both_dfrac_valid_ord]
+  rw [← assoc', ← Auth.frag_op, Auth.both_dfrac_valid, ← inc_iff_forall_incN]
   refine ⟨fun ⟨hdq, hinc, _⟩ => ⟨hdq, ?_⟩, fun ⟨hdq, hl⟩ => ⟨hdq, ?_, ?_⟩⟩
-  · exact toMaxPrefixList_ord_iff.mp
-      (ord_iff_forall_ordN.mpr fun n => (ORA.ordN_op_right ..).trans (hinc n))
-  · intro n
-    have hinc := ORA.op_monoN_right (toMaxPrefixList l1)
-      (Ordered.ordN_of_ord n (toMaxPrefixList_ord_iff.mpr hl))
+  · exact toMaxPrefixList_inc_iff.mp (inc_trans (inc_op_right ..) hinc)
+  · have hinc := op_mono_right_ext (toMaxPrefixList l1) (toMaxPrefixList_inc_iff.mpr hl)
     rwa [op_self] at hinc
   · exact toMaxPrefixList_valid _
 

@@ -137,7 +137,7 @@ theorem newcounter_mono_spec :
   wp_alloc l with Hl
   imod iOwn_alloc (F := MCounterRF)
     (((● MaxNat.ofNat 0) • (◯ MaxNat.ofNat 0)) : Auth MaxNat) with ⟨%γ, Hγ, Hγ'⟩
-  · exact auth_both_valid_2_ord trivial (MaxNat.ord_iff.mpr (by simp))
+  · exact auth_both_valid_2 trivial (MaxNat.inc_iff.mpr (by simp))
   imod inv_alloc N _ (mcounterInv γ l) $$ [Hl Hγ] with #Hinv
   · iexists 0; iframe
   imodintro
@@ -160,9 +160,8 @@ theorem incr_mono_spec (l : Loc) (n : Nat) :
     imodintro
     iframe Hγ
     iapply iOwn_mono $$ Hγf
-    have hnc := (auth_both_valid_discrete_ord.mp Hv).1
-    refine frag_ord_of_ord (MaxNat.ord_iff.mpr ?_)
-    grind [MaxNat.ord_iff]
+    refine IncOrd.inc_ord (frag_inc_of_inc (MaxNat.inc_iff.mpr ?_))
+    grind [auth_both_valid_discrete.mp Hv, MaxNat.inc_iff]
   iintro !> Hγf
   iapply Hφ
   iexists γ
@@ -183,8 +182,7 @@ theorem read_mono_spec (l : Loc) (j : Nat) :
     imodintro
     iframe Hγ Hγf
     ipureintro
-    have hjc := (auth_both_valid_discrete_ord.mp Hv).1
-    grind [MaxNat.ord_iff]
+    grind [auth_both_valid_discrete.mp Hv, MaxNat.inc_iff]
   iintro !> %c ⟨%hle, Hγf⟩
   iapply Hφ
   iframe %hle

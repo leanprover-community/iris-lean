@@ -65,17 +65,15 @@ instance frag_discrete {a : A} [DiscreteE a] : DiscreteE (◯E a) :=
 
 @[rocq_alias excl_auth_validN]
 theorem validN {a : A} : ✓{n} (●E a) • ◯E a :=
-  Auth.both_validN_ord.mpr ⟨.rfl, trivial⟩
+  Auth.both_validN.mpr ⟨.rfl, trivial⟩
 
 @[rocq_alias excl_auth_valid]
 theorem valid {a : A} : ✓ (●E a) • ◯E a :=
-  Auth.auth_both_valid_2_ord trivial .rfl
+  Auth.auth_both_valid_2 trivial .rfl
 
 @[rocq_alias excl_auth_agreeN]
-theorem agreeN {a b : A} (h : ✓{n} (●E a) • ◯E b) : a ≡{n}≡ b := by
-  rcases (Auth.both_validN_ord.mp h).1 with e | i
-  · exact (Excl.excl_dist_inj (OFE.some_dist_some.mpr e)).symm
-  · exact nomatch (Excl.ordN_iff _).mp i
+theorem agreeN {a b : A} (h : ✓{n} (●E a) • ◯E b) : a ≡{n}≡ b :=
+  dist_of_inc_exclusive (Auth.both_validN.mp h).1 trivial |>.symm
 
 @[rocq_alias excl_auth_agree]
 theorem agree {a b : A} (h : ✓ (●E a) • ◯E b) : a = b :=

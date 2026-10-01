@@ -52,14 +52,14 @@ theorem get?_toInvHeap_some {h : H (V × (V → Prop))} {l : L}
   rw [toInvHeap, get?_map] at hl
   rcases hh : get? h l with _ | ⟨v, I⟩ <;> rw [hh] at hl <;> simp_all
 
-private theorem singleton_ord_toInvHeap {h : H (V × (V → Prop))} {l : L} {I : V → Prop}
+private theorem singleton_inc_toInvHeap {h : H (V × (V → Prop))} {l : L} {I : V → Prop}
     {mv : Option (Excl (DiscreteO V))}
-    (hinc : ({[l := (mv, toAgree ⟨I⟩)]} : InvHeapMapUR V H) ≼ₒ toInvHeap h) :
-    ∃ v, get? h l = some (v, I) ∧ mv ≼ₒ some (excl ⟨v⟩) := by
-  obtain ⟨⟨_, _⟩, hy, hinc⟩ := singleton_ord_iff.mp hinc
+    (hinc : ({[l := (mv, toAgree ⟨I⟩)]} : InvHeapMapUR V H) ≼ toInvHeap h) :
+    ∃ v, get? h l = some (v, I) ∧ mv ≼ some (excl ⟨v⟩) := by
+  obtain ⟨⟨_, _⟩, hy, hinc⟩ := singleton_inc_iff.mp hinc
   obtain ⟨v, I', rfl, rfl, hh⟩ := get?_toInvHeap_some hy
-  obtain ⟨hv, hI⟩ := Option.some_ord_some_iff_ordRefl.mp hinc
-  cases DiscreteO.eqv_inj (toAgree_ord.mp hI)
+  obtain ⟨hv, hI⟩ := Prod.inc_def.mp (Option.some_inc_some_iff_is_total.mp hinc)
+  cases DiscreteO.eqv_inj (toAgree_included.mp hI)
   exact ⟨v, hh, hv⟩
 
 @[rocq_alias to_inv_heap_valid]
@@ -138,7 +138,7 @@ theorem invPointsTo_get?_some (l : L) (h : H (V × (V → Prop))) (I : V → Pro
   unfold invPointsTo
   icombine Hauth Hl gives %Hvalid
   ipureintro
-  obtain ⟨v, hh, -⟩ := singleton_ord_toInvHeap (auth_both_valid_discrete_ord.mp Hvalid).1
+  obtain ⟨v, hh, -⟩ := singleton_inc_toInvHeap (auth_both_valid_discrete.mp Hvalid).1
   exact ⟨v, I, hh, rfl⟩
 
 @[rocq_alias inv_pointsto_own_lookup_Some]
@@ -149,8 +149,8 @@ theorem invPointsToOwn_get?_some (l : L) (v : V) (h : H (V × (V → Prop))) (I 
   unfold invPointsToOwn
   icombine Hauth Hl gives %Hvalid
   ipureintro
-  obtain ⟨v', hh, hv⟩ := singleton_ord_toInvHeap (auth_both_valid_discrete_ord.mp Hvalid).1
-  cases DiscreteO.eqv_inj (excl_ord.mp hv)
+  obtain ⟨v', hh, hv⟩ := singleton_inc_toInvHeap (auth_both_valid_discrete.mp Hvalid).1
+  cases DiscreteO.eqv_inj (excl_included.mp hv)
   exact ⟨I, hh, rfl⟩
 
 #rocq_ignore inv_pointsto_own_proper

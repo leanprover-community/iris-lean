@@ -158,7 +158,7 @@ instance [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where
       refine OFE.Dist.trans COFE.conv_compl ?_
       simp [chainR, en]
 
-#rocq_ignore csum_compl "Order in IsCOFE instance"
+#rocq_ignore csum_compl "Included in IsCOFE instance"
 
 /-! ## ORA -/
 

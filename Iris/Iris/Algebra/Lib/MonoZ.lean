@@ -67,7 +67,7 @@ theorem lb_op_le_l (n n' : MaxInt) (h : n' ≤ n) :
 
 @[rocq_alias mono_Z_auth_dfrac_valid]
 theorem auth_dfrac_valid (dq : DFrac) (n : MaxInt) : (✓ (●MZ{dq} n : MonoZ)) ↔ ✓ dq :=
-  Auth.both_dfrac_valid_discrete_ord.trans ⟨And.left, fun h => ⟨h, ORA.ord_refl _, trivial⟩⟩
+  Auth.both_dfrac_valid_discrete.trans ⟨And.left, fun h => ⟨h, ORA.inc_refl _, trivial⟩⟩
 
 @[rocq_alias mono_Z_auth_valid]
 theorem auth_valid (n : MaxInt) : ✓ (●MZ n : MonoZ) :=
@@ -95,8 +95,8 @@ theorem auth_op_valid (n1 n2 : MaxInt) : (✓ ((●MZ n1) • (●MZ n2) : MonoZ
 theorem both_dfrac_valid (dq : DFrac) (n m : MaxInt) :
     (✓ ((●MZ{dq} n) • (◯MZ m) : MonoZ)) ↔ ✓ dq ∧ m ≤ n := by
   unfold auth lb
-  rw [ORA.assoc'.symm, ← Auth.frag_op, Auth.both_dfrac_valid_discrete_ord, ← Option.some_op,
-    Option.some_ord_some_iff_ordRefl, MaxInt.ord_iff]
+  rw [ORA.assoc'.symm, ← Auth.frag_op, Auth.both_dfrac_valid_discrete, ← Option.some_op,
+    Option.some_inc_some_iff_is_total, MaxInt.inc_iff]
   exact ⟨fun ⟨hdq, hle, _⟩ => ⟨hdq, by grind⟩, fun ⟨hdq, hle⟩ => ⟨hdq, by grind, trivial⟩⟩
 
 @[rocq_alias mono_Z_both_valid]

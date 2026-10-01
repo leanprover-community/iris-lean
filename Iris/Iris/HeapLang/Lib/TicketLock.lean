@@ -128,7 +128,7 @@ private theorem own_ticket_exclusive {γ : GName} {x : Nat} :
 private theorem own_owner_agree {γ : GName} {o o' n : Nat} :
     own (GF := GF) γ (auth o n) ∗ own γ (owner o') ⊢ ⌜o' = o⌝ :=
   own_op_valid.trans (pure_mono fun h =>
-    DiscreteO.eqv_inj (excl_ord.mp (Auth.auth_both_valid_discrete_ord.mp h).1.1))
+    DiscreteO.eqv_inj (excl_included.mp (Prod.inc_def.mp (Auth.auth_both_valid_discrete.mp h).1).1))
 
 @[rocq_alias heap_lang.ticket_lock.locked_exclusive]
 theorem locked_exclusive (γ : GName) : locked γ ∗ locked γ ⊢@{IProp GF} False := by
@@ -169,7 +169,7 @@ theorem newlock_spec :
   wp_alloc lo with Hlo
   imod iOwn_alloc (F := TicketLockF) ((auth 0 0 : TicketR) • owner 0) with
     ⟨%γ, ⟨Hauth, Howner⟩⟩
-  · exact Auth.auth_both_valid_2_ord ⟨trivial, trivial⟩ ⟨ORA.ord_refl _, ORA.ord_refl _⟩
+  · exact Auth.auth_both_valid_2 ⟨trivial, trivial⟩ (inc_refl _)
   wp_pures
   imodintro
   iapply Hcont
