@@ -40,7 +40,7 @@ NOTE: The keys type is currently fixed to be [Pos], though should be generalized
 in the future.
 -/
 
-@[rocq_alias reservation_map]
+@[ext, rocq_alias reservation_map]
 structure ReservationMap (A : Type) (H : Type → Type) where
   data : H A
   token : CoPsetDisjL
@@ -217,15 +217,24 @@ theorem op_data' (x y : ReservationMap A H) : (x.op y).data = x.data • y.data 
 @[simp]
 theorem op_token' (x y : ReservationMap A H) : (x.op y).token = x.token • y.token := rfl
 
+theorem validN_mono {n} {x y : ReservationMap A H} (hd : ✓{n} y.data → ✓{n} x.data)
+    (hdom : ∀ i, get? y.data i = none → get? x.data i = none) (ht : ∃ w, y.token = x.token • w)
+    (v : y.ValidN n) : x.ValidN n := by
+  obtain ⟨w, hw⟩ := ht
+  have vt : ✓{n} (x.token • w) := hw ▸ validN_token_of_validN v
+  refine validN_iff.mpr ⟨hd (validN_data_of_validN v), validN_op_left vt,
+    fun i => (validN_disj v i).imp (hdom i) fun hy hx => hy ?_⟩
+  exact hw ▸ (mem_iff_of_validN_union vt i).mpr (.inl hx)
+
 #rocq_ignore reservation_map_cmra_mixin "Not needed"
 #rocq_ignore reservation_map_ucmra_mixin "Not needed"
 #rocq_ignore reservation_mapR "Derivable using UCMRA"
 
 @[reducible] def raOp : Op (ReservationMap A H) where
   op := op
-  op_ne := ⟨fun n x₁ x₂ h => ⟨Dist.op_r h.left, Dist.op_r h.right⟩⟩
-  assoc := OFE.eq_dist_2 <| by refine fun _ => ⟨?_, ?_⟩ <;> exact assoc.dist
-  comm := OFE.eq_dist_2 <| by refine fun _ => ⟨?_, ?_⟩ <;> exact comm.dist
+  op_ne := ⟨fun _ _ _ h => ⟨Dist.op_r h.left, Dist.op_r h.right⟩⟩
+  assoc := ReservationMap.ext assoc assoc
+  comm := ReservationMap.ext comm comm
 
 @[reducible] def raPCore : PCore (ReservationMap A H) where
   pcore := some ∘ core
@@ -234,10 +243,9 @@ theorem op_token' (x y : ReservationMap A H) : (x.op y).token = x.token • y.to
     refine ⟨core y, rfl, ?_, ?_⟩
     · simp [Dist.core e.left]
     · simp [Dist.core e.right]
-  pcore_idem {x cx} h := OFE.eq_dist_2 <| by
-    refine fun n => ⟨?_, ?_⟩
-    · simp only [←Option.some_inj.mp h, core_data]; exact (core_idem x.data).dist
-    · simp [←Option.some_inj.mp h, core_token, core_idem_L]
+  pcore_idem {x _} h := by
+    cases Option.some_inj.mp h
+    exact congrArg some (ReservationMap.ext (core_idem x.data) (core_idem x.token))
 
 @[reducible] def raValid : _root_.Iris.Valid (ReservationMap A H) where
   Valid := Valid
@@ -299,28 +307,9 @@ instance instORAReservationMap : ORA (ReservationMap A H) where
   toOp := raOp
   toPCore := raPCore
   toValid := raValid
-  validN_op_left {n x y} v := by
-    refine validN_iff.mpr ⟨?_, ?_, fun i => ?_⟩
-    · exact validN_op_left (validN_data_of_validN v)
-    · exact validN_op_left (validN_token_of_validN v)
-    · cases (validN_disj v) i with
-      | inl aa =>
-        simp only [show ((x • y : ReservationMap A H)).data = x.data • y.data from rfl,
-          Heap.get?_op] at aa
-        exact .inl <| Option.eq_none_of_op_eq_none_left aa
-      | inr bb =>
-        refine .inr fun HK => bb ?_
-        refine (mem_iff_of_validN_union (validN_token_of_validN v) i).mpr ?_
-        exact .inl HK
-  pcore_op_left {x cx} h := OFE.eq_dist_2 <| by
-    refine fun n => ⟨?_, ?_⟩
-    · simp only [←Option.some_inj.mp h,
-        show ((core x • x : ReservationMap A H)).data = (core x).data • x.data from rfl,
-        core_data]
-      exact (core_op x.data).dist
-    · simp [←Option.some_inj.mp h,
-        show ((core x • x : ReservationMap A H)).token = (core x).token • x.token from rfl,
-        core_token, core_op_L]
+  validN_op_left {_ x y} := validN_mono validN_op_left
+    (fun _ h => Option.eq_none_of_op_eq_none_left ((Heap.get?_op _ _).symm.trans h)) ⟨y.token, rfl⟩
+  pcore_op_left | rfl => ReservationMap.ext (core_op _) (core_op _)
   extend {n x y₁ y₂} v exy := by
     obtain ⟨z₁, z₂, xzz, zy₁, zy₂⟩ := extend (validN_data_of_validN v) exy.left
     refine ⟨mk z₁ y₁.token, mk z₂ y₂.token, OFE.eq_dist_2 ?_, ⟨zy₁, rfl⟩, ⟨zy₂, rfl⟩⟩
@@ -328,36 +317,16 @@ instance instORAReservationMap : ORA (ReservationMap A H) where
   toOrdered := orderN
   op_monoN_left_ord z h := ⟨op_monoN_left_ord z.data h.1, op_monoN_left_ord z.token h.2⟩
   op_mono_left_ord z h := ⟨op_mono_left_ord z.data h.1, op_mono_left_ord z.token h.2⟩
-  validN_of_ordN {n x y} h v := by
-    refine validN_iff.mpr ⟨?_, ?_, fun i => ?_⟩
-    · exact validN_of_ordN h.1 (validN_data_of_validN v)
-    · exact validN_of_ordN h.2 (validN_token_of_validN v)
-    · rcases validN_disj v i with hd | ht
-      · refine .inl ?_
-        have hi := h.1 i
-        rw [hd] at hi
-        match hx : get? x.data i with
-        | none => rfl
-        | some _ => exact absurd (hx ▸ hi) Option.not_some_ordN_none
-      · refine .inr fun hc => ht ?_
-        obtain ⟨w, hw⟩ := h.2
-        rw [(hw : y.token = x.token • w)]
-        exact (mem_iff_of_validN_union
-          ((hw : y.token = x.token • w) ▸ validN_token_of_validN v) i).mpr (.inl hc)
-  pcore_monoN_ord {_ x y _} h e := by
-    cases Option.some_inj.mp e
-    exact ⟨_, rfl, core_ordN_core h.1, core_ordN_core h.2⟩
-  pcore_mono_ord {x y _} h e := by
-    cases Option.some_inj.mp e
-    exact ⟨_, rfl, core_mono_ord h.1, core_mono_ord h.2⟩
+  validN_of_ordN h := validN_mono (validN_of_ordN h.1)
+    (fun i hi => Option.eq_none_of_ordN_none (hi ▸ h.1 i)) h.2
+  pcore_monoN_ord | h, rfl => ⟨_, rfl, core_ordN_core h.1, core_ordN_core h.2⟩
+  pcore_mono_ord | h, rfl => ⟨_, rfl, core_mono_ord h.1, core_mono_ord h.2⟩
   pcore_order_op {x _} e y := by
     cases Option.some_inj.mp e
     exact ⟨_, rfl, core_op_mono_ord x.data y.data, core_op_mono_ord x.token y.token⟩
   pcore_increasing {x _} e := by
     cases Option.some_inj.mp e
-    refine increasing_mk ?_ ?_
-    · rw [core_data]; exact inferInstance
-    · rw [core_token]; exact inferInstance
+    exact increasing_mk (increasing_core x.data) (increasing_core x.token)
   increasing_closed {n x y} h h' :=
     increasing_mk
       (increasing_closed (increasing_data h) (Or.imp (·.1) (·.1) h'))
@@ -377,10 +346,9 @@ instance : UORA (ReservationMap A H) where
   toORA := instORAReservationMap
   unit := mk ∅ ∅
   unit_valid := ⟨Heap.valid_empty, fun _ => .inr CoPset.mem_empty⟩
-  unit_left_id {x} := OFE.eq_dist_2 <| by
-    refine fun n => ⟨?_, (pcore_op_left' rfl).dist⟩
-    exact (Algebra.MonoidOps.op_left_id : (∅ : H A) • x.data = x.data).dist
-  pcore_unit := OFE.eq_dist_2 <| by exact fun n => ⟨Heap.core_empty.dist, .rfl⟩
+  unit_left_id {x} := ReservationMap.ext
+    (Algebra.MonoidOps.op_left_id : (∅ : H A) • x.data = x.data) (pcore_op_left' rfl)
+  pcore_unit := congrArg some (ReservationMap.ext Heap.core_empty rfl)
   ord_refl x := ⟨ord_refl x.data, ord_refl x.token⟩
 
 @[simp]

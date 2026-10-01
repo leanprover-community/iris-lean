@@ -251,7 +251,7 @@ theorem validN_mono {n} {x y : DynReservationMap A H} (hd : ✓{n} y.data → �
 
 @[reducible] def raOp : Op (DynReservationMap A H) where
   op := op
-  op_ne := ⟨fun n x₁ x₂ h => ⟨Dist.op_r h.left, Dist.op_r h.right⟩⟩
+  op_ne := ⟨fun _ _ _ h => ⟨Dist.op_r h.left, Dist.op_r h.right⟩⟩
   assoc := DynReservationMap.ext assoc assoc
   comm := DynReservationMap.ext comm comm
 
