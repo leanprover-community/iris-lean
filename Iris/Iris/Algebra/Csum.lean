@@ -217,9 +217,8 @@ def raOp [ORA α] [ORA β] : Op (Csum α β) where
   op := Csum.op
   op_ne {x} := ⟨fun {n y₁ y₂} hy => by cases x <;> cases y₁ <;> cases y₂ <;>
     first | exact OFE.Dist.op_r hy | exact hy | trivial⟩
-  assoc {x y z} := by
-    cases x <;> cases y <;> cases z <;> first | trivial | exact congrArg _ ORA.assoc
-  comm {x y} := by cases x <;> cases y <;> first | trivial | exact congrArg _ ORA.comm
+  assoc {x y z} := by grind [ORA.assoc']
+  comm {x y} := by grind [ORA.comm']
 
 @[reducible] def raPCore [ORA α] [ORA β] : PCore (Csum α β) where
   pcore := Csum.pcore
@@ -245,11 +244,9 @@ def raOp [ORA α] [ORA β] : Op (Csum α β) where
 @[reducible] def raValid [ORA α] [ORA β] : _root_.Iris.Valid (Csum α β) where
   Valid := Csum.valid
   ValidN := Csum.validN
-  validN_ne {n x y} h hv := by
-    cases x <;> cases y <;> first | exact ORA.validN_ne h hv | exact h.elim | trivial
+  validN_ne {n x y} h hv := by change Csum.Dist n x y at h; grind [Csum.Dist, ORA.validN_ne]
   valid_iff_validN {x} := by cases x <;> simp [ORA.valid_iff_validN]
-  validN_succ {x _} h := by
-    cases x with | inl | inr => exact ORA.validN_succ h | invalid => exact h
+  validN_succ {x _} h := by grind [ORA.validN_succ]
 
 @[reducible] def orderN [ORA α] [ORA β] : Ordered (Csum α β) where
   OrderN := OrderN
@@ -257,16 +254,10 @@ def raOp [ORA α] [ORA β] : Op (Csum α β) where
   ordN_ne {n x x' y y'} ex ey h := by
     cases x <;> cases x' <;> cases y <;> cases y' <;>
       first | trivial | exact ex.elim | exact ey.elim | exact h.elim | exact ORA.ordN_ne ex ey h
-  ordN_succ {n x y} h := by
-    cases x <;> cases y <;> first | trivial | exact h.elim | exact ORA.ordN_succ h
-  ordN_trans {n x y z} h₁ h₂ := by
-    cases x <;> cases y <;> cases z <;>
-      first | trivial | exact h₁.elim | exact h₂.elim | exact ORA.ordN_trans h₁ h₂
-  ord_trans {x y z} h₁ h₂ := by
-    cases x <;> cases y <;> cases z <;>
-      first | trivial | exact h₁.elim | exact h₂.elim | exact ORA.ord_trans h₁ h₂
-  ordN_of_ord {x y} n h := by
-    cases x <;> cases y <;> first | trivial | exact h.elim | exact ORA.ordN_of_ord n h
+  ordN_succ {n x y} h := by grind [ORA.ordN_succ]
+  ordN_trans {n x y z} h₁ h₂ := by grind [ORA.ordN_trans]
+  ord_trans {x y z} h₁ h₂ := by grind [ORA.ord_trans]
+  ordN_of_ord {x y} n h := by grind [ORA.ordN_of_ord]
 
 section
 variable [ORA α] [ORA β]
@@ -314,38 +305,38 @@ instance instORA : ORA (Csum α β) where
     cases x <;> cases y <;> first | trivial | exact h.elim | exact v.elim | exact ORA.validN_of_ordN h v
   pcore_monoN {n x y cx} h e := by
     match x, y, h with
-    | inl a, inl a', h =>
+    | inl _, inl _, h =>
       obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq e
-      obtain ⟨ca', hpa', hi⟩ := ORA.pcore_monoN h hpa
-      exact ⟨inl ca', Option.map_forall₂ inl hpa', hi⟩
-    | inr b, inr b', h =>
+      let ⟨c, hc, hi⟩ := ORA.pcore_monoN h hpa
+      exact ⟨inl c, Option.map_forall₂ inl hc, hi⟩
+    | inr _, inr _, h =>
       obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq e
-      obtain ⟨cb', hpb', hi⟩ := ORA.pcore_monoN h hpb
-      exact ⟨inr cb', Option.map_forall₂ inr hpb', hi⟩
-    | inl _, invalid, _ | inr _, invalid, _ | invalid, invalid, _ => exact ⟨invalid, rfl, trivial⟩
+      let ⟨c, hc, hi⟩ := ORA.pcore_monoN h hpb
+      exact ⟨inr c, Option.map_forall₂ inr hc, hi⟩
+    | _, invalid, _ => exact ⟨invalid, rfl, trivial⟩
     | inl _, inr _, h | inr _, inl _, h | invalid, inl _, h | invalid, inr _, h => exact h.elim
   pcore_mono {x y cx} h e := by
     match x, y, h with
-    | inl a, inl a', h =>
+    | inl _, inl _, h =>
       obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq e
-      obtain ⟨ca', hpa', hi⟩ := ORA.pcore_mono h hpa
-      exact ⟨inl ca', Option.map_forall₂ inl hpa', hi⟩
-    | inr b, inr b', h =>
+      let ⟨c, hc, hi⟩ := ORA.pcore_mono h hpa
+      exact ⟨inl c, Option.map_forall₂ inl hc, hi⟩
+    | inr _, inr _, h =>
       obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq e
-      obtain ⟨cb', hpb', hi⟩ := ORA.pcore_mono h hpb
-      exact ⟨inr cb', Option.map_forall₂ inr hpb', hi⟩
-    | inl _, invalid, _ | inr _, invalid, _ | invalid, invalid, _ => exact ⟨invalid, rfl, trivial⟩
+      let ⟨c, hc, hi⟩ := ORA.pcore_mono h hpb
+      exact ⟨inr c, Option.map_forall₂ inr hc, hi⟩
+    | _, invalid, _ => exact ⟨invalid, rfl, trivial⟩
     | inl _, inr _, h | inr _, inl _, h | invalid, inl _, h | invalid, inr _, h => exact h.elim
   pcore_order_op {x cx} e y := by
     match x, y with
-    | inl a, inl a' =>
+    | inl _, inl a' =>
       obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq e
-      obtain ⟨caa, hpaa, hi⟩ := ORA.pcore_order_op hpa a'
-      exact ⟨inl caa, Option.map_forall₂ inl hpaa, hi⟩
-    | inr b, inr b' =>
+      let ⟨c, hc, hi⟩ := ORA.pcore_order_op hpa a'
+      exact ⟨inl c, Option.map_forall₂ inl hc, hi⟩
+    | inr _, inr b' =>
       obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq e
-      obtain ⟨cbb, hpbb, hi⟩ := ORA.pcore_order_op hpb b'
-      exact ⟨inr cbb, Option.map_forall₂ inr hpbb, hi⟩
+      let ⟨c, hc, hi⟩ := ORA.pcore_order_op hpb b'
+      exact ⟨inr c, Option.map_forall₂ inr hc, hi⟩
     | inl _, inr _ | inl _, invalid | inr _, inl _ | inr _, invalid
     | invalid, inl _ | invalid, inr _ | invalid, invalid => exact ⟨invalid, rfl, trivial⟩
   pcore_increasing {x cx} e := by
@@ -374,7 +365,7 @@ instance instORA : ORA (Csum α β) where
     | inr _, inr _, h =>
       obtain ⟨z, hz, ez⟩ := ORA.ordN_extend v h
       exact ⟨inr z, hz, ez⟩
-    | inl _, invalid, _ | inr _, invalid, _ | invalid, invalid, _ => exact v.elim
+    | _, invalid, _ => exact v.elim
     | inl _, inr _, h | inr _, inl _, h | invalid, inl _, h | invalid, inr _, h => exact h.elim
 
 end
@@ -410,8 +401,7 @@ instance [ORA α] [ORA β] [ORA.Discrete α] [ORA.Discrete β] : ORA.Discrete (C
     | inr b => ORA.discrete_valid (x := b) hv
     | invalid => hv
   discrete_ord {x y} h := by
-    cases x <;> cases y <;>
-      first | trivial | exact h.elim | exact ORA.discrete_ord (α := α) h | exact ORA.discrete_ord (α := β) h
+    change Csum.OrderN 0 x y at h; change Csum.Order x y; grind [ORA.discrete_ord]
 
 /-! ## CoreId -/
 
@@ -461,200 +451,105 @@ instance [ORA α] [ORA β] {b : β} [IdFree b] : IdFree (inr (α := α) b) where
 
 /-! ## Order -/
 
-theorem included [ORA α] [ORA β] {x y : Csum α β} :
+theorem ord [ORA α] [ORA β] {x y : Csum α β} :
     x ≼ₒ y ↔ y = invalid ∨
       (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼ₒ a') ∨
       (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼ₒ b') := by
-  constructor
-  · intro h
-    cases x <;> cases y <;>
-      first
-      | exact Or.inl rfl
-      | exact Or.inr (Or.inl ⟨_, _, rfl, rfl, h⟩)
-      | exact Or.inr (Or.inr ⟨_, _, rfl, rfl, h⟩)
-      | exact h.elim
-  · rintro (rfl | ⟨a, a', rfl, rfl, h⟩ | ⟨b, b', rfl, rfl, h⟩)
-    · cases x <;> trivial
-    · exact h
-    · exact h
+  change Csum.Order x y ↔ _
+  cases x <;> cases y <;> simp [Csum.Order]
 
-theorem inl_included [ORA α] [ORA β] {a a' : α} : (inl (β := β) a) ≼ₒ inl a' ↔ a ≼ₒ a' := .rfl
+theorem inl_ord [ORA α] [ORA β] {a a' : α} : (inl (β := β) a) ≼ₒ inl a' ↔ a ≼ₒ a' := .rfl
 
-theorem inr_included [ORA α] [ORA β] {b b' : β} : (inr (α := α) b) ≼ₒ inr b' ↔ b ≼ₒ b' := .rfl
+theorem inr_ord [ORA α] [ORA β] {b b' : β} : (inr (α := α) b) ≼ₒ inr b' ↔ b ≼ₒ b' := .rfl
 
-theorem invalid_included [ORA α] [ORA β] (x : Csum α β) : x ≼ₒ invalid := by cases x <;> trivial
+theorem invalid_ord [ORA α] [ORA β] (x : Csum α β) : x ≼ₒ invalid := by cases x <;> trivial
 
-theorem includedN [ORA α] [ORA β] {n} {x y : Csum α β} :
+theorem ordN [ORA α] [ORA β] {n} {x y : Csum α β} :
     x ≼ₒ{n} y ↔ y = invalid ∨
       (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼ₒ{n} a') ∨
       (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼ₒ{n} b') := by
-  constructor
-  · intro h
-    cases x <;> cases y <;>
-      first
-      | exact Or.inl rfl
-      | exact Or.inr (Or.inl ⟨_, _, rfl, rfl, h⟩)
-      | exact Or.inr (Or.inr ⟨_, _, rfl, rfl, h⟩)
-      | exact h.elim
-  · rintro (rfl | ⟨a, a', rfl, rfl, h⟩ | ⟨b, b', rfl, rfl, h⟩)
-    · cases x <;> trivial
-    · exact h
-    · exact h
+  change Csum.OrderN n x y ↔ _
+  cases x <;> cases y <;> simp [Csum.OrderN]
 
-theorem some_included [ORA α] [ORA β] {x y : Csum α β} :
+theorem some_ord [ORA α] [ORA β] {x y : Csum α β} :
     some x ≼ₒ some y ↔ y = invalid ∨
       (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼ₒ some a') ∨
       (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ₒ some b') := by
   rw [Option.some_ord_some_iff]
-  constructor
-  · rintro (rfl | h)
-    · cases x <;>
-        first
-        | exact .inl rfl
-        | exact .inr (Or.inl ⟨_, _, rfl, rfl, Or.inl rfl⟩)
-        | exact .inr (Or.inr ⟨_, _, rfl, rfl, Or.inl rfl⟩)
-    · rcases included.mp h with rfl | ⟨a, a', rfl, rfl, ha⟩ | ⟨b, b', rfl, rfl, hb⟩
-      · exact .inl rfl
-      · exact .inr (Or.inl ⟨a, a', rfl, rfl, Or.inr ha⟩)
-      · exact .inr (Or.inr ⟨b, b', rfl, rfl, Or.inr hb⟩)
-  · rintro (rfl | ⟨a, a', rfl, rfl, (rfl | h)⟩ | ⟨b, b', rfl, rfl, (rfl | h)⟩)
-    · exact .inr (invalid_included x)
-    · exact .inl rfl
-    · exact .inr h
-    · exact .inl rfl
-    · exact .inr h
+  change _ ∨ Csum.Order x y ↔ _
+  cases x <;> cases y <;> simp [Csum.Order, Option.some_ord_some_iff]
 
-theorem some_includedN [ORA α] [ORA β] {n} {x y : Csum α β} :
+theorem some_ordN [ORA α] [ORA β] {n} {x y : Csum α β} :
     some x ≼ₒ{n} some y ↔ y = invalid ∨
       (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼ₒ{n} some a') ∨
       (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ₒ{n} some b') := by
   rw [Option.some_ordN_some_iff]
-  constructor
-  · rintro (heq | h)
-    · cases x <;> cases y <;>
-        first
-        | exact .inl rfl
-        | exact heq.elim
-        | exact .inr (Or.inl ⟨_, _, rfl, rfl, Or.inl heq⟩)
-        | exact .inr (Or.inr ⟨_, _, rfl, rfl, Or.inl heq⟩)
-    · rcases includedN.mp h with rfl | ⟨a, a', rfl, rfl, ha⟩ | ⟨b, b', rfl, rfl, hb⟩
-      · exact .inl rfl
-      · exact .inr (Or.inl ⟨a, a', rfl, rfl, Or.inr ha⟩)
-      · exact .inr (Or.inr ⟨b, b', rfl, rfl, Or.inr hb⟩)
-  · rintro (rfl | ⟨a, a', rfl, rfl, (heq | h)⟩ | ⟨b, b', rfl, rfl, (heq | h)⟩)
-    · exact .inr (invalid_included x)
-    · exact .inl heq
-    · exact .inr h
-    · exact .inl heq
-    · exact .inr h
+  change Csum.Dist n x y ∨ Csum.OrderN n x y ↔ _
+  cases x <;> cases y <;> simp [Csum.OrderN, Option.some_ordN_some_iff]
 
-/-! ### The extension inclusion -/
+/-! ## Included -/
 
 @[rocq_alias csum_included]
-theorem included_ext [ORA α] [ORA β] {x y : Csum α β} :
+theorem included [ORA α] [ORA β] {x y : Csum α β} :
     x ≼ y ↔ y = invalid ∨
       (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼ a') ∨
       (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼ b') := by
-  constructor
-  · rintro ⟨z, hz⟩; cases x <;> cases z <;> cases y <;>
-      first
-      | exact Or.inl rfl
-      | exact Or.inr (Or.inl ⟨_, _, rfl, rfl, _, Csum.inl.inj hz⟩)
-      | exact Or.inr (Or.inr ⟨_, _, rfl, rfl, _, Csum.inr.inj hz⟩)
-      | exact absurd hz (by simp [ORA.op, Csum.op])
-  · rintro (rfl | ⟨a, a', rfl, rfl, c, hc⟩ | ⟨b, b', rfl, rfl, c, hc⟩)
-    · exact ⟨invalid, by cases x <;> rfl⟩
-    · exact ⟨inl c, congrArg inl hc⟩
-    · exact ⟨inr c, congrArg inr hc⟩
+  refine ⟨fun ⟨z, hz⟩ => ?_, ?_⟩
+  · subst hz; cases x <;> cases z <;> first | exact .inl rfl | simp [ORA.op, inc_op_left]
+  · rintro (rfl | ⟨a, a', rfl, rfl, c, rfl⟩ | ⟨b, b', rfl, rfl, c, rfl⟩) <;>
+      first | exact ⟨invalid, by cases x <;> rfl⟩ | exact ⟨inl c, rfl⟩ | exact ⟨inr c, rfl⟩
 
 @[rocq_alias Cinl_included]
-theorem inl_included_ext [ORA α] [ORA β] {a a' : α} :
-    (inl (β := β) a) ≼ inl a' ↔ a ≼ a' := by
-  constructor
-  · rintro ⟨z, hz⟩; cases z <;>
-      first | exact ⟨_, Csum.inl.inj hz⟩ | exact absurd hz (by simp [ORA.op, Csum.op])
-  · rintro ⟨c, hc⟩; exact ⟨inl c, congrArg inl hc⟩
+theorem inl_included [ORA α] [ORA β] {a a' : α} :
+    (inl (β := β) a) ≼ inl a' ↔ a ≼ a' :=
+  ⟨fun ⟨z, hz⟩ => (by cases z <;> first | exact ⟨_, Csum.inl.inj hz⟩ | cases hz),
+   fun ⟨c, hc⟩ => ⟨inl c, congrArg inl hc⟩⟩
 
 @[rocq_alias Cinr_included]
-theorem inr_included_ext [ORA α] [ORA β] {b b' : β} :
-    (inr (α := α) b) ≼ inr b' ↔ b ≼ b' := by
-  constructor
-  · rintro ⟨z, hz⟩; cases z <;>
-      first | exact ⟨_, Csum.inr.inj hz⟩ | exact absurd hz (by simp [ORA.op, Csum.op])
-  · rintro ⟨c, hc⟩; exact ⟨inr c, congrArg inr hc⟩
+theorem inr_included [ORA α] [ORA β] {b b' : β} :
+    (inr (α := α) b) ≼ inr b' ↔ b ≼ b' :=
+  ⟨fun ⟨z, hz⟩ => (by cases z <;> first | exact ⟨_, Csum.inr.inj hz⟩ | cases hz),
+   fun ⟨c, hc⟩ => ⟨inr c, congrArg inr hc⟩⟩
 
 @[rocq_alias CsumInvalid_included]
-theorem invalid_included_ext [ORA α] [ORA β] (x : Csum α β) : x ≼ invalid :=
+theorem invalid_included [ORA α] [ORA β] (x : Csum α β) : x ≼ invalid :=
   ⟨invalid, by cases x <;> rfl⟩
 
 @[rocq_alias csum_includedN]
-theorem includedN_ext [ORA α] [ORA β] {n} {x y : Csum α β} :
+theorem includedN [ORA α] [ORA β] {n} {x y : Csum α β} :
     x ≼{n} y ↔ y = invalid ∨
       (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼{n} a') ∨
       (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼{n} b') := by
-  constructor
-  · rintro ⟨z, hz⟩; cases x <;> cases z <;> cases y <;>
-      first
-      | exact Or.inl rfl
-      | exact hz.elim | exact (hz 0).elim
-      | exact Or.inr (Or.inl ⟨_, _, rfl, rfl, _, hz⟩)
-      | exact Or.inr (Or.inr ⟨_, _, rfl, rfl, _, hz⟩)
-  · rintro (rfl | ⟨a, a', rfl, rfl, c, hc⟩ | ⟨b, b', rfl, rfl, c, hc⟩)
-    · exact ⟨invalid, by cases x <;> exact Dist.rfl⟩
-    · exact ⟨inl c, hc⟩
-    · exact ⟨inr c, hc⟩
+  refine ⟨fun ⟨z, hz⟩ => ?_, ?_⟩
+  · change Csum.Dist n y (Csum.op x z) at hz
+    cases x <;> cases z <;> cases y <;> simp_all <;> exact ⟨_, hz⟩
+  · rintro (rfl | ⟨a, a', rfl, rfl, c, hc⟩ | ⟨b, b', rfl, rfl, c, hc⟩) <;>
+      first | exact ⟨invalid, by cases x <;> exact Dist.rfl⟩ | exact ⟨inl c, hc⟩ | exact ⟨inr c, hc⟩
 
 @[rocq_alias Some_csum_included]
-theorem some_included_ext [ORA α] [ORA β] {x y : Csum α β} :
+theorem some_included [ORA α] [ORA β] {x y : Csum α β} :
     some x ≼ some y ↔ y = invalid ∨
       (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼ some a') ∨
       (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ some b') := by
-  constructor
-  · intro h; rcases Option.some_inc_some_iff.mp h with heq | hinc
-    · subst heq
-      cases x <;>
-        first
-        | exact .inl rfl
-        | exact .inr (Or.inl ⟨_, _, rfl, rfl, Option.some_inc_some_iff.mpr (.inl rfl)⟩)
-        | exact .inr (Or.inr ⟨_, _, rfl, rfl, Option.some_inc_some_iff.mpr (.inl rfl)⟩)
-    · rcases included_ext.mp hinc with rfl | ⟨a, a', rfl, rfl, ha⟩ | ⟨b, b', rfl, rfl, hb⟩
-      · exact .inl rfl
-      · exact .inr (Or.inl ⟨a, a', rfl, rfl, Option.some_inc_some_iff.mpr (.inr ha)⟩)
-      · exact .inr (Or.inr ⟨b, b', rfl, rfl, Option.some_inc_some_iff.mpr (.inr hb)⟩)
-  · rintro (rfl | ⟨a, a', rfl, rfl, mz, hmz⟩ | ⟨b, b', rfl, rfl, mz, hmz⟩)
-    · exact ⟨some invalid, by cases x <;> rfl⟩
-    · exact ⟨mz.map inl, by cases mz <;> exact congrArg (Option.map inl) hmz⟩
-    · exact ⟨mz.map inr, by cases mz <;> exact congrArg (Option.map inr) hmz⟩
+  rw [Option.some_inc_some_iff, included]
+  cases x <;> cases y <;> simp [Option.some_inc_some_iff]
 
 @[rocq_alias Some_csum_includedN]
-theorem some_includedN_ext [ORA α] [ORA β] {n} {x y : Csum α β} :
+theorem some_includedN [ORA α] [ORA β] {n} {x y : Csum α β} :
     some x ≼{n} some y ↔ y = invalid ∨
       (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼{n} some a') ∨
       (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼{n} some b') := by
-  constructor
-  · intro h; rcases Option.some_incN_some_iff.mp h with heq | hinc
-    · cases x <;> cases y <;>
-        first
-        | exact .inl rfl
-        | exact heq.elim | exact (heq 0).elim
-        | exact .inr (Or.inl ⟨_, _, rfl, rfl, Option.some_incN_some_iff.mpr (.inl heq)⟩)
-        | exact .inr (Or.inr ⟨_, _, rfl, rfl, Option.some_incN_some_iff.mpr (.inl heq)⟩)
-    · rcases includedN_ext.mp hinc with rfl | ⟨a, a', rfl, rfl, ha⟩ | ⟨b, b', rfl, rfl, hb⟩
-      · exact .inl rfl
-      · exact .inr (Or.inl ⟨a, a', rfl, rfl, Option.some_incN_some_iff.mpr (.inr ha)⟩)
-      · exact .inr (Or.inr ⟨b, b', rfl, rfl, Option.some_incN_some_iff.mpr (.inr hb)⟩)
-  · rintro (rfl | ⟨a, a', rfl, rfl, mz, hmz⟩ | ⟨b, b', rfl, rfl, mz, hmz⟩)
-    · exact ⟨some invalid, by cases x <;> exact Dist.rfl⟩
-    · exact ⟨mz.map inl, by cases mz <;> exact hmz⟩
-    · exact ⟨mz.map inr, by cases mz <;> exact hmz⟩
+  rw [Option.some_incN_some_iff, includedN]
+  change Csum.Dist n x y ∨ _ ↔ _
+  cases x <;> cases y <;> simp [Option.some_incN_some_iff]
 
 /-! ## Updates -/
 
 instance instOrdInc [ORA α] [ORA β] [OrdInc α] [OrdInc β] : OrdInc (Csum α β) where
-  ord_inc h := included_ext.mpr <| (included.mp h).imp id fun h => h.imp
+  ord_inc h := included.mpr <| (ord.mp h).imp id fun h => h.imp
     (fun ⟨a, a', e₁, e₂, h⟩ => ⟨a, a', e₁, e₂, OrdInc.ord_inc h⟩)
     (fun ⟨b, b', e₁, e₂, h⟩ => ⟨b, b', e₁, e₂, OrdInc.ord_inc h⟩)
-  ordN_incN h := includedN_ext.mpr <| (includedN.mp h).imp id fun h => h.imp
+  ordN_incN h := includedN.mpr <| (ordN.mp h).imp id fun h => h.imp
     (fun ⟨a, a', e₁, e₂, h⟩ => ⟨a, a', e₁, e₂, OrdInc.ordN_incN h⟩)
     (fun ⟨b, b', e₁, e₂, h⟩ => ⟨b, b', e₁, e₂, OrdInc.ordN_incN h⟩)
 
@@ -740,10 +635,7 @@ theorem map_compose (f : α → α') (f' : α' → α'') (g : β → β') (g' : 
 theorem map_ext [OFE α] [OFE α'] [OFE β] [OFE β'] (f f' : α → α') (g g' : β → β')
     (hf : ∀ x, f x = f' x) (hg : ∀ x, g x = g' x) (x : Csum α β) :
     map f g x = map f' g' x := by
-  cases x with
-  | inl a => simp [map]; exact hf _
-  | inr b => simp [map]; exact hg _
-  | invalid => trivial
+  cases x <;> simp [hf, hg]
 
 @[rocq_alias csum_map_cmra_ne]
 theorem map_ne [OFE α] [OFE α'] [OFE β] [OFE β'] {n}

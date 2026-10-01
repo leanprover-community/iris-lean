@@ -381,8 +381,8 @@ theorem csum_includedI [ORA A] [ORA B] (x y : Csum A B) :
       | _, _ => iprop(False) := by
   cases x <;> cases y <;>
     first
-    | exact internalCmraIncluded_iff fun _ => by simp [Csum.includedN_ext]
-    | exact internalCmraIncluded_pure fun _ => by simp [Csum.includedN_ext]
+    | exact internalCmraIncluded_iff fun _ => by simp [Csum.includedN]
+    | exact internalCmraIncluded_pure fun _ => by simp [Csum.includedN]
 
 end csum
 

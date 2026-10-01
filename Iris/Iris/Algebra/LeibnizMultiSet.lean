@@ -118,9 +118,8 @@ theorem localUpdate_alloc {X Y X' : MS} :
 theorem localUpdate_dealloc {X Y X' : MS} (h : X' ⊆ Y) :
     (ofSet X, ofSet Y) ~l~> (ofSet (X \ X'), ofSet (Y \ X')) := by
   refine LocalUpdate.total_valid fun _ _ le => localUpdate (LawfulMultiSet.ext fun a => ?_)
-  have hYX := ord_iff_subset.mp le
   simp only [multiplicity_disjUnion, multiplicity_difference]
-  grind [subset_iff]
+  grind [subset_iff, ord_iff_subset.mp le]
 
 end LeibnizMultiSet
 
