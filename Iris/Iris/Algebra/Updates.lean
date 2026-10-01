@@ -107,7 +107,6 @@ theorem Update.op_l {x y : α} : x • y ~~> x := fun _ _ => validN_op_opM_left
 @[rocq_alias cmra_update_op_r]
 theorem Update.op_r {x y : α} : x • y ~~> y := fun _ _ => validN_op_opM_right
 
-/-- An update may descend in the order. New relative to Rocq, where the order is `≼`. -/
 theorem Update.ord {x y : α} (h : x ≼ₒ y) : y ~~> x := fun _ mz => (op?_mono_left mz h).validN
 
 @[rocq_alias cmra_update_included]
