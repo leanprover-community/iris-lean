@@ -159,7 +159,7 @@ theorem incr_mono_spec (l : Loc) (n : Nat) :
     · exact auth_update (MaxNat.local_update (by grind))
     imodintro
     iframe Hγ
-    iapply iOwn_mono $$ Hγf
+    iapply iOwn_ord_mono $$ Hγf
     refine IncOrd.inc_ord (frag_inc_of_inc (MaxNat.inc_iff.mpr ?_))
     grind [auth_both_valid_discrete.mp Hv, MaxNat.inc_iff]
   iintro !> Hγf

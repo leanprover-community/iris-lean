@@ -356,7 +356,7 @@ theorem ghost_map_insert {γ} {m : H V} (k : K) (v : V) (Heq : get? m k = .none)
     Agree.toAgree_valid) $$ H with H
   icases H with ⟨H, $⟩
   imodintro
-  iapply iOwn_mono $$ H
+  iapply iOwn_ord_mono $$ H
   exact auth_ord_of_map_eq _ map_insert
 
 @[rocq_alias ghost_map_insert_persist]
@@ -373,7 +373,7 @@ theorem ghost_map_delete {γ} {m : H V} (k : K) (v : V) :
   iintro H1 H2
   icombine H1 H2 as G
   imod iOwn_update (update_one_delete (k := k) (v1 := toAgree (⟨v⟩ : DiscreteO V))) $$ G with G
-  iapply iOwn_mono $$ G
+  iapply iOwn_ord_mono $$ G
   exact auth_ord_of_map_eq _ map_delete
 
 @[rocq_alias ghost_map_update]
@@ -384,7 +384,7 @@ theorem ghost_map_update {γ} {m : H V} {k : K} {v : V} (w : V) :
   ihave >⟨aux, $⟩ := ghost_map_insert _ w (get?_delete_eq rfl) $$ aux
   imodintro
   unfold ghost_map_auth
-  iapply iOwn_mono $$ aux
+  iapply iOwn_ord_mono $$ aux
   exact auth_ord_of_map_eq _ (map_equiv insert_delete.symm)
 
 /-! ### Big-op versions of the above lemmas -/
@@ -406,7 +406,7 @@ theorem ghost_map_insert_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ
   by_cases h : m' = ∅
   · imodintro
     isplitl [H]
-    · iapply iOwn_mono $$ H
+    · iapply iOwn_ord_mono $$ H
       exact auth_ord_of_map_eq _ (map_equiv ((union_equiv h rfl).trans union_empty_left))
     · iapply (BigSepM.bigSepM_eqv_empty h).mpr; itrivial
   · rw [←(bigOpM_iOwn γ _ _ h).to_eq, ←iOwn_op.to_eq]
@@ -417,9 +417,9 @@ theorem ghost_map_insert_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ
     icases H with ⟨H1, H2⟩
     imodintro
     isplitl [H1]
-    · iapply iOwn_mono $$ H1
+    · iapply iOwn_ord_mono $$ H1
       exact auth_ord_of_map_eq _ map_union
-    · iapply iOwn_mono $$ H2
+    · iapply iOwn_ord_mono $$ H2
       rw [BigOpM.bigOpM_map_eq]
       exact ord_refl _
 
@@ -455,7 +455,7 @@ theorem ghost_map_update_big [DecidableEq K] {γ m} (m0 m1 : H V) (Heq : dom m0 
   · imodintro
     isplitl [H1]
     · unfold ghost_map_auth
-      iapply iOwn_mono $$ H1
+      iapply iOwn_ord_mono $$ H1
       exact auth_ord_of_map_eq _ (map_equiv ((union_equiv h rfl).trans union_empty_left))
     · iapply (BigSepM.bigSepM_eqv_empty h).mpr; itrivial
   · unfold ghost_map_elem ghost_map_auth

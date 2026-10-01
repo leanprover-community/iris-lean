@@ -204,7 +204,7 @@ theorem lb_own_get (γ : GName) (dq : DFrac) (l : List α) :
     ⊢@{IProp GF} (γ ↪●ML{dq} l) -∗ (γ ↪◯ML l) := by
   unfold auth_own lb_own
   iintro H
-  iapply iOwn_mono $$ H
+  iapply iOwn_ord_mono $$ H
   exact MonoList.ord ..
 
 @[rocq_alias mono_list_lb_own_le]
@@ -212,7 +212,7 @@ theorem lb_own_le (γ : GName) {l : List α} (l' : List α) (h : l' <+: l) :
     ⊢@{IProp GF} (γ ↪◯ML l) -∗ (γ ↪◯ML l') := by
   unfold lb_own
   iintro H
-  iapply iOwn_mono $$ H
+  iapply iOwn_ord_mono $$ H
   exact MonoList.lb_mono_ord (h.map _)
 
 @[rocq_alias mono_list_lb_own_nil]

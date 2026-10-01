@@ -679,12 +679,20 @@ theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
 
 /-- The inclusion in the conclusion is the internal order; on classical CMRAs it coincides
 with Rocq's extension inclusion. -/
-@[rocq_alias uPred.ownM_forall, rocq_alias uPred_primitive.ownM_forall]
-theorem ownM_forall (f : A → M) : (∀ a, ownM (f a)) ⊢ ∃ z, ownM z ∧ (∀ a, f a ≼ₒ z) := by
+theorem ownM_ord_forall (f : A → M) : (∀ a, ownM (f a)) ⊢ ∃ z, ownM z ∧ (∀ a, f a ≼ₒ z) := by
   intro _ x Hf
   refine ⟨iprop(ownM x ∧ ∀ a, f a ≼ₒ x.val), ⟨x, rfl⟩, ordN_refl x.val, ?_⟩
   rintro p ⟨a, rfl⟩
   exact Hf (ownM (f a)) ⟨a, rfl⟩
+
+@[rocq_alias uPred.ownM_forall, rocq_alias uPred_primitive.ownM_forall]
+theorem ownM_forall [OrdInc M] (f : A → M) :
+    (∀ a, ownM (f a)) ⊢ ∃ z, ownM z ∧ (∀ a, ∃ xf, z ≡ f a • xf) := by
+  intro _ x Hf
+  refine ⟨iprop(ownM x ∧ ∀ a, ∃ xf, x.val ≡ f a • xf), ⟨x, rfl⟩, ordN_refl x.val, ?_⟩
+  rintro p ⟨a, rfl⟩
+  rcases OrdInc.ordN_incN (Hf (ownM (f a)) ⟨a, rfl⟩) with ⟨xf, Hxf⟩
+  exact ⟨iprop(x.val ≡ f a • xf), ⟨xf, rfl⟩, Hxf⟩
 
 @[rocq_alias uPred.later_ownM, rocq_alias uPred_primitive.later_ownM]
 theorem later_ownM (a : M) : ▷ ownM a ⊢ ∃ b, ownM b ∧ ▷ (a ≡ b)
@@ -717,9 +725,12 @@ theorem intuitionistically_ownM [Affine M] (a : M) [CoreId a] : □ ownM a ⊣�
 theorem ownM_invalid (a : M) (hnv : ¬ ✓{0} a) : ownM a ⊢ False :=
   (ownM_valid a).trans (internalCmraValid_elim a) |>.trans (pure_mono hnv)
 
-@[rocq_alias uPred.ownM_mono]
-theorem ownM_mono {a b : M} (hinc : b ≼ₒ a) : ownM a ⊢ ownM b :=
+theorem ownM_ord_mono {a b : M} (hinc : b ≼ₒ a) : ownM a ⊢ ownM b :=
   fun n _ ha => ordN_trans (ordN_of_ord n hinc) ha
+
+@[rocq_alias uPred.ownM_mono]
+theorem ownM_mono [IncOrd M] {a b : M} (hinc : b ≼ a) : ownM a ⊢ ownM b :=
+  ownM_ord_mono (IncOrd.inc_ord hinc)
 
 @[rocq_alias uPred.ownM_unit']
 theorem ownM_unit' : ownM unit ⊣⊢@{UPred M} emp := .rfl

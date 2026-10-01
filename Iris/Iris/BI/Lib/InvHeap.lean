@@ -185,7 +185,7 @@ theorem invPointsToOwn_inv (l : L) (v : V) (I : V → Prop) :
     l ↦_I v -∗ l ↦_I □ := by
   iintro Hl
   unfold invPointsToOwn invPointsTo
-  iapply iOwn_mono $$ Hl
+  iapply iOwn_ord_mono $$ Hl
   refine frag_ord_of_ord (singleton_ord_singleton_mono ?_)
   exact ⟨IncOrd.increasing _, ord_refl _⟩
 
