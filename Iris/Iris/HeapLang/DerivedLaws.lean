@@ -418,7 +418,7 @@ theorem wp_resolve_proph {p : ProphId} {w : Val} {pvs : List (Val × Val)} :
   rw [shape]
   iapply wp_bind
   iapply wp_pure_step_fupd (Hφ := ⟨⟩)
-  simp only [Nat.repeat, EctxItemLanguage.fill_cons, fillItem, ECtxItem.fill,
+  simp only [step_fupdN, EctxItemLanguage.fill_cons, fillItem, ECtxItem.fill,
     EctxItemLanguage.fill_nil, wp_value_iff, Ki]
   iintro !> !> !> _ !>
   have hatom : Language.Atomic Language.Atomicity.StronglyAtomic hl((v(λ _, #())) #()) := by

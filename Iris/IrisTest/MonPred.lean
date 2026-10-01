@@ -482,4 +482,25 @@ example (P Q : MonPred I PROP) :
 
 end FrameMonPredAt
 
+section LaterCredits
+
+variable {I : BiIndex} {PROP : Type _} [BI PROP] [BILaterCredits PROP] [BIUpdate PROP]
+  [BIFUpdate PROP] [BIUpdateFUpdate PROP] [BIBUpdLaterCredits PROP] [BIFUpdLaterCredits PROP]
+
+/- Combines various later credit lemmas and tactics to check that they also work for
+`MonPred`. -/
+example (n : Nat) (E : CoPset) (P : MonPred I PROP) :
+    ⊢ £ (n + 1) -∗ <obj> (▷^[n + 1] P ={E}=∗ P) := by
+  iintro ⟨Hone, Hc⟩
+  -- We keep the later credits since they are `Objective`
+  imodintro
+  iintro HP
+  imod lc_zero with Hzero
+  icombine Hone Hzero as Hone
+  inext n credit: Hc
+  inext credit: Hone
+  imodintro; iexact HP
+
+end LaterCredits
+
 end IrisTest.MonPredAsEmpValid

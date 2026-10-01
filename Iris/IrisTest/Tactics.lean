@@ -2759,10 +2759,12 @@ example [BI PROP] (p : Bool) (P Q R : PROP)
   inext
   iapply h $$ HPQ1 HPQ2 HPQ3
 
-variable {GF : BundledGFunctors} [InvGS GF]
+section LaterCredits
+
+variable {PROP : Type _} [BI PROP] [BILaterCredits PROP] [BIFUpdate PROP] [BIFUpdLaterCredits PROP]
 
 /- Tests `inext` with later credits consumption. -/
-example (E : CoPset) (P : IProp GF) : ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+example (E : CoPset) (P : PROP) : ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
   iintro Hcred HP
   -- No later credits consumed, equivalent to a no-op
   inext 0 credit: Hcred
@@ -2773,12 +2775,12 @@ example (E : CoPset) (P : IProp GF) : ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=>
 /- Tests `inext` with insufficient credits. -/
 /-- error: inext: insufficient credits -/
 #guard_msgs in
-example (E : CoPset) (P : IProp GF) : ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+example (E : CoPset) (P : PROP) : ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
   iintro Hcred HP
   inext 2 credit: Hcred
 
 /- Tests `inext` with multiple credits consumed. -/
-example (E : CoPset) (P : IProp GF) :
+example (E : CoPset) (P : PROP) :
     ⊢ £ (m + n + 6) -∗ ▷^[m + n + 6] (|={E}=> P) -∗ |={E}=> P := by
   iintro Hcred HP
   inext 3 credit: Hcred
@@ -2789,7 +2791,7 @@ example (E : CoPset) (P : IProp GF) :
   iassumption
 
 /- Tests `inext` for later credits with later modalities expressed in terms of `Nat` variables. -/
-example (m n p q : Nat) (E : CoPset) (P : IProp GF) :
+example (m n p q : Nat) (E : CoPset) (P : PROP) :
     ⊢ £ (1 + m + n + p + q + 3) -∗ ▷^[n + m + 4 + p + q] (|={E}=> P) -∗ |={E}=> P := by
   iintro Hcred HP
   inext (m + q) credit: Hcred
@@ -2798,30 +2800,99 @@ example (m n p q : Nat) (E : CoPset) (P : IProp GF) :
   iassumption
 
 /- Tests `inext` where `intoLaterN_later` should not apply and `intoLaterN_laterN_bool` applies instead -/
-example (p : Bool) (P : IProp GF) (E : CoPset) :
+example (p : Bool) (P : PROP) (E : CoPset) :
     ⊢ £ 1 -∗ ▷?p P -∗ ▷ (|={E}=> P) -∗ |={E}=> (P ∗ P) := by
   iintro Hcred H HQ
   inext credit: Hcred
+  imod HQ; imodintro
   isplitl [HQ] <;> iassumption
 
 /- Tests `inext` for later credits with an invalid hypothesis choice. -/
 /-- error: inext: Hcred is not a spatial later credit hypothesis -/
 #guard_msgs in
-example (E : CoPset) (P Q : IProp GF) : ⊢ Q -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+example (E : CoPset) (P Q : PROP) : ⊢ Q -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
   iintro Hcred HP
   inext credit: Hcred
 
 /- Tests `inext` for later credits with the hypothesis not in the spatial context. -/
 /-- error: inext: Hcred is not in the spatial context -/
 #guard_msgs in
-example (E : CoPset) (P : IProp GF) : ⊢ □ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+example (E : CoPset) (P : PROP) : ⊢ □ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
   iintro #Hcred HP
   inext credit: Hcred
 
-/- Tests `inext` with an `IProp GF` entailment where `InvGS GF` is not available. -/
-/-- error: inext: requires an InvGS (HasLC) context -/
+/- Tests `inext` discarding the used up later credit hypothesis. -/
+/--
+trace: PROP : Type u_1
+inst✝³ : BI PROP
+inst✝² : BILaterCredits PROP
+inst✝¹ : BIFUpdate PROP
+inst✝ : BIFUpdLaterCredits PROP
+E : CoPset
+P : PROP
+⊢ 
+  ∗HP : P
+  ⊢ |={E}=> P
+-/
 #guard_msgs in
-example [InvGS_gen .hasNoLC GF] (E : CoPset) (P : IProp GF) :
+example (E : CoPset) (P : PROP) : ⊢ £ 1 -∗ ▷ P ={E}=∗ P := by
+  iintro Hcred HP
+  inext credit: Hcred
+  trace_state
+  imodintro; iexact HP
+
+/- Tests `inext` keeping the residual later credits. -/
+/--
+trace: PROP : Type u_1
+inst✝³ : BI PROP
+inst✝² : BILaterCredits PROP
+inst✝¹ : BIFUpdate PROP
+inst✝ : BIFUpdLaterCredits PROP
+n : Nat
+E : CoPset
+P : PROP
+⊢ 
+  ∗HP : P
+  ∗Hcred : £ n
+  ⊢ |={E}=> P
+-/
+#guard_msgs in
+example (n : Nat) (E : CoPset) (P : PROP) : ⊢ £ (n + 1) -∗ ▷ P ={E}=∗ P := by
+  iintro Hcred HP
+  inext credit: Hcred
+  trace_state
+  imodintro; iexact HP
+
+/- Tests `inext` eliminating two laters at once. -/
+example (E : CoPset) (P : PROP) : ⊢ £ 2 -∗ ▷ ▷ P ={E}=∗ P := by
+  iintro Hcred HP
+  inext 2 credit: Hcred
+  imodintro; iexact HP
+
+/- Tests that splitting `£ (n + 1 + m)` prefers the rule for `+` over the one for `.succ`. -/
+example (n m : Nat) : £ (n + 1 + m) ⊢@{PROP} £ (n + 1) := by
+  iintro ⟨Hlc1, _⟩
+  iexact Hlc1
+
+/- Tests that `isplitl` on `£ (n + 1 + m)` splits using the rule for `+`. -/
+example (n m : Nat) : £ (n + 1) ⊢@{PROP} £ m -∗ £ (n + 1 + m) := by
+  iintro Hlc1 Hlc2
+  isplitl [Hlc1]
+  · iexact Hlc1
+  · iexact Hlc2
+
+/- Tests that combining `£ n` and `£ 1` gives `£ (n + 1)`. -/
+example (n : Nat) : £ 1 ⊢@{PROP} £ n -∗ £ (n + 1) := by
+  iintro Hlc1 Hlc2
+  icombine Hlc2 Hlc1 as Hlc
+  iexact Hlc
+
+end LaterCredits
+
+/- Tests `inext` without a `BIFUpdLaterCredits` instance. -/
+/-- error: inext: Missing BIFUpdLaterCredits instance -/
+#guard_msgs in
+example {PROP : Type _} [BI PROP] [BILaterCredits PROP] [BIFUpdate PROP] (E : CoPset) (P : PROP) :
     ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
   iintro Hcred HP
   inext credit: Hcred
@@ -2974,6 +3045,22 @@ example (P Q : PROP) :
     P ≡ Q -∗ Q := by
   iintro HPQ
   irewrite [HPQ]
+
+/- Tests `irewrite` with terms that are convertible but not syntactically equal (Rocq Iris
+issue #629). -/
+example (l : List A) : l ≡ ([] : List A) ⊢@{PROP} l ≡ ([] : List (id A)) := by
+  iintro H
+  irewrite [← H]
+  · exact internalEq.ne_r l
+  exact internalEq.refl
+
+/- Tests that `irewrite` does not fail if the rewritten term occurs in the Lean context. -/
+example (x y : A) (φ : A → Prop) (hφ : φ x) : x ≡ y ⊢@{PROP} x ≡ y := by
+  iintro H
+  irewrite [H]
+  · exact internalEq.ne_l y
+  have _ := hφ
+  exact internalEq.refl
 
 end irewrite
 

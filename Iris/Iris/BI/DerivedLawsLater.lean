@@ -334,6 +334,9 @@ theorem laterN_congr {P Q : PROP} (n : Nat) (h : P ⊣⊢ Q) : ▷^[n] P ⊣⊢ 
 @[rocq_alias bi.laterN_0]
 theorem laterN_0 {P : PROP} : ▷^[0] P ⊣⊢ P := .rfl
 
+@[rocq_alias bi.laterN_1]
+theorem laterN_1 {P : PROP} : ▷^[1] P ⊣⊢ ▷ P := .rfl
+
 @[rocq_alias bi.laterN_succ_l]
 theorem laterN_succ_left (n : Nat) {P : PROP} : ▷^[n + 1] P ⊣⊢ ▷ ▷^[n] P := .rfl
 
