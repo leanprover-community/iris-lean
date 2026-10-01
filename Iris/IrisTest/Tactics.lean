@@ -9,6 +9,7 @@ public import Iris.BI
 public import Iris.ProofMode
 public import Iris.Instances.IProp
 public import Iris.Instances.Lib.LaterCredits
+public import Iris.Instances.Lib.TimeReceipts
 public import Iris.Instances.Lib.Token
 public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.WeakestPre
@@ -2834,7 +2835,7 @@ P : PROP
   ∗HP : P
   ⊢ |={E}=> P
 -/
-#guard_msgs in
+#guard_msgs (whitespace := lax) in
 example (E : CoPset) (P : PROP) : ⊢ £ 1 -∗ ▷ P ={E}=∗ P := by
   iintro Hcred HP
   inext credit: Hcred
@@ -2856,7 +2857,7 @@ P : PROP
   ∗Hcred : £ n
   ⊢ |={E}=> P
 -/
-#guard_msgs in
+#guard_msgs (whitespace := lax) in
 example (n : Nat) (E : CoPset) (P : PROP) : ⊢ £ (n + 1) -∗ ▷ P ={E}=∗ P := by
   iintro Hcred HP
   inext credit: Hcred
@@ -2896,12 +2897,58 @@ example (n : Nat) : £ 1 ⊢@{PROP} £ n -∗ £ (n + 1) := by
 end LaterCredits
 
 /- Tests `inext` without a `BIFUpdLaterCredits` instance. -/
-/-- error: inext: Missing BIFUpdLaterCredits instance -/
+/-- error: inext: Missing `BIFUpdLaterCredits` instance -/
 #guard_msgs in
 example {PROP : Type _} [BI PROP] [BILaterCredits PROP] [BIFUpdate PROP] (E : CoPset) (P : PROP) :
     ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
   iintro Hcred HP
   inext credit: Hcred
+
+section IPropLaterCredits
+
+variable {GF : BundledGFunctors}
+
+section Generic
+
+variable {hlc : HasLC} [LcGS hlc GF]
+
+/- Tests that a literal amount splits off one credit via the `.succ` rule. -/
+example : £ 3 ⊢@{IProp GF} £ 1 ∗ £ 2 := by
+  iintro ⟨H1, H2⟩
+  isplitl [H1]
+  · iexact H1
+  · iexact H2
+
+/- Tests `lc_weaken` on `IProp`. -/
+example (n : Nat) : £ (n + 3) ⊢@{IProp GF} £ 2 := by
+  iintro H
+  iapply lc_weaken 2 (by omega) $$ H
+
+/- Tests that later credits are timeless. -/
+example (n : Nat) : ▷ £ n ⊢@{IProp GF} ◇ £ n := by
+  iintro >H
+  iexact H
+
+/- Tests that zero later credits are persistent. -/
+example : £ 0 ⊢@{IProp GF} □ £ 0 := by
+  iintro #H
+  imodintro
+  iexact H
+
+end Generic
+
+section FUpd
+
+variable [InvGS GF]
+
+/- Tests `lc_fupd_elim_later` on `IProp`. -/
+example (E : CoPset) (P : IProp GF) : ⊢ £ 1 -∗ ▷ P ={E}=∗ P := by
+  iintro Hc HP
+  iapply lc_fupd_elim_later $$ Hc HP
+
+end FUpd
+
+end IPropLaterCredits
 
 variable {Expr State Obs Val} [Λ : Language Expr State Obs Val]
 variable {GF : BundledGFunctors}
@@ -2915,6 +2962,49 @@ example : £ 1 ∗ ▷ WP e @ E {{ Φ }} ⊢ WP e @ E {{ Φ }} := by
   iassumption
 
 end inext
+
+section timeReceipts
+
+open TimeReceipt
+
+variable {GF : BundledGFunctors}
+
+section Rules
+
+variable [TimeReceiptGS GF]
+
+/- Tests that exclusive time receipts split along the `+`. -/
+example (n : Nat) : ⧖+ (n + 2) ⊢@{IProp GF} ⧖+ 2 ∗ ⧖+ n := by
+  iintro ⟨Hn, H2⟩
+  isplitl [H2]
+  · iexact H2
+  · iexact Hn
+
+/- Tests combining exclusive time receipts with `icombine`. -/
+example (n m : Nat) : ⧖+ n ∗ ⧖+ m ⊢@{IProp GF} ⧖+ (n + m) := by
+  iintro ⟨Hn, Hm⟩
+  icombine Hn Hm as H
+  iexact H
+
+/- Tests combining persistent time receipts with `icombine`. -/
+example (n m : Nat) : ⧖□ n ∗ ⧖□ m ⊢@{IProp GF} ⧖□ (max n m) := by
+  iintro ⟨Hn, Hm⟩
+  icombine Hn Hm as H
+  iexact H
+
+/- Tests that persistent time receipts are persistent and can be duplicated. -/
+example (n : Nat) : ⧖□ n ⊢@{IProp GF} ⧖□ n ∗ ⧖□ n := by
+  iintro #H
+  isplitl <;> iexact H
+
+/- Tests that time receipts are timeless. -/
+example (n m : Nat) : ▷ ⧖+ n ∗ ▷ ⧖□ m ⊢@{IProp GF} ◇ (⧖+ n ∗ ⧖□ m) := by
+  iintro ⟨>H1, >H2⟩
+  iframe
+
+end Rules
+
+end timeReceipts
 
 section irewrite
 

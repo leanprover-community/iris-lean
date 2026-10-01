@@ -113,7 +113,7 @@ instance uPred_bi_lc : BILaterCredits (IProp GF) where
 #rocq_ignore uPred_lc_mixin "Included in the `uPred_bi_lc` instance."
 
 @[rocq_alias uPred_lc_unseal]
-private theorem uPred_lc_unseal {n : Credit} : (£ n : IProp GF) = uPred_lc n := rfl
+theorem uPred_lc_unseal {n : Credit} : (£ n : IProp GF) = uPred_lc n := rfl
 
 @[rocq_alias lc_no_lc]
 theorem lc_no_lc [LcGS .hasNoLC GF] (n : Credit) : £ n ⊣⊢@{IProp GF} iprop(True) := .rfl
