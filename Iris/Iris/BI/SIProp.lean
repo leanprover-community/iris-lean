@@ -137,7 +137,7 @@ instance : IsCOFE SiProp where
   }
   conv_compl {_ c} _ hle := c.cauchy hle .refl |>.symm
 
-#rocq_ignore siProp_compl "Order in IsCOFE instance."
+#rocq_ignore siProp_compl "Included in IsCOFE instance."
 
 instance : BIBase SiProp where
   Entails := SiProp.entails
@@ -153,10 +153,10 @@ instance : BIBase SiProp where
   persistently P := P
   later := SiProp.later
 
-#rocq_ignore siProp_emp "Order in BIBase instance."
-#rocq_ignore siProp_sep "Order in BIBase instance."
-#rocq_ignore siProp_wand "Order in BIBase instance."
-#rocq_ignore siProp_persistently "Order in BIBase instance."
+#rocq_ignore siProp_emp "Included in BIBase instance."
+#rocq_ignore siProp_sep "Included in BIBase instance."
+#rocq_ignore siProp_wand "Included in BIBase instance."
+#rocq_ignore siProp_persistently "Included in BIBase instance."
 
 @[rocq_alias siProp_primitive.entails_po]
 instance siPropPreorder : Std.IsPreorder SiProp where

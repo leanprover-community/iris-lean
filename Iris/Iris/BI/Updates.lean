@@ -208,7 +208,7 @@ class BIUpdate (PROP : Type _) [BI PROP] extends BUpd PROP where
   trans {P : PROP} : |==> |==> P ⊢ |==> P
   frame_right {P R : PROP} : (|==> P) ∗ R ⊢ |==> (P ∗ R)
 
-#rocq_ignore BiBUpdMixin "Order in BIUpdate typeclass."
+#rocq_ignore BiBUpdMixin "Included in BIUpdate typeclass."
 
 @[rocq_alias BiFUpd]
 class BIFUpdate (PROP : Type _) [BI PROP] extends FUpd PROP where
@@ -221,7 +221,7 @@ class BIFUpdate (PROP : Type _) [BI PROP] extends FUpd PROP where
     E1 ## Ef → (|={E1,E2}=> ⌜E2 ## Ef⌝ → P) ⊢ |={E1 ∪ Ef,E2 ∪ Ef}=> P
   frame_right {E1 E2 : CoPset} {P R : PROP} : (|={E1,E2}=> P) ∗ R ⊢ |={E1,E2}=> P ∗ R
 
-#rocq_ignore BiFUpdMixin "Order in BIFUpdate typeclass."
+#rocq_ignore BiFUpdMixin "Included in BIFUpdate typeclass."
 
 @[rocq_alias BiBUpdFUpd]
 class BIUpdateFUpdate (PROP : Type _) [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] where

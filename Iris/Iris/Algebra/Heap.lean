@@ -36,7 +36,7 @@ instance instOFE [LawfulPartialMap M K] [OFE V] : OFE (M V) where
     exact ⟨fun h n k => Dist.of_eq (h k), fun h k => eq_dist_2 fun n => h n k⟩
   dist_lt      := dist_lt
 
-#rocq_ignore gmap_dist "Order in the OFE instance"
+#rocq_ignore gmap_dist "Included in the OFE instance"
 
 @[simp] def toMap [LawfulPartialMap M K] [OFE V] : (M V) -n> (K → Option V) where
   f x := get? x
@@ -233,7 +233,7 @@ instance Heap.instCOFE [LawfulPartialMap M K] [COFE V] : COFE (M V) where
     · simp [← PartialMap.chain_get, Chain.chain_none_const (c := PartialMap.chain k c) (n := 0) (H▸rfl)]
     · exact IsCOFE.conv_compl
 
-#rocq_ignore gmap_compl "Order in COFE instance"
+#rocq_ignore gmap_compl "Included in COFE instance"
 
 @[rocq_alias gmap_ofe_discrete]
 instance instDiscreteHeap [LawfulPartialMap M K] [OFE V] [Discrete V] : Discrete (M V) where
