@@ -56,12 +56,11 @@ private theorem singleton_ord_toInvHeap {h : H (V × (V → Prop))} {l : L} {I :
     {mv : Option (Excl (DiscreteO V))}
     (hinc : ({[l := (mv, toAgree ⟨I⟩)]} : InvHeapMapUR V H) ≼ₒ toInvHeap h) :
     ∃ v, get? h l = some (v, I) ∧ mv ≼ₒ some (excl ⟨v⟩) := by
-  replace hinc := OrdInc.ord_inc hinc
-  obtain ⟨⟨_, _⟩, hy, hinc⟩ := singleton_inc_iff.mp hinc
+  obtain ⟨⟨_, _⟩, hy, hinc⟩ := singleton_ord_iff.mp hinc
   obtain ⟨v, I', rfl, rfl, hh⟩ := get?_toInvHeap_some hy
-  obtain ⟨hv, hI⟩ := Prod.inc_def.mp (Option.some_inc_some_iff_is_total.mp hinc)
-  cases DiscreteO.eqv_inj (toAgree_included.mp hI)
-  exact ⟨v, hh, IncOrd.inc_ord hv⟩
+  obtain ⟨hv, hI⟩ := Option.some_ord_some_iff_ordRefl.mp hinc
+  cases DiscreteO.eqv_inj (toAgree_ord.mp hI)
+  exact ⟨v, hh, hv⟩
 
 @[rocq_alias to_inv_heap_valid]
 theorem toInvHeap_valid (h : H (V × (V → Prop))) : ✓ toInvHeap h := fun l => by
@@ -226,7 +225,7 @@ theorem make_invPointsTo {l : L} {v : V} {I : V → Prop} {E : CoPset} (hN : ↑
   imod inv_acc_timeless hN $$ Hinv with ⟨HP, Hclose⟩
   icases HP with ⟨%h, Hauth, HsepM⟩
   rcases hlk : get? h l with _ | ⟨v', I'⟩
-  · imod iOwn_update (auth_update_alloc_of_localUpdate OrdInc.ordN_incN (alloc_singleton_local_update
+  · imod iOwn_update (auth_update_alloc_of_localUpdate (alloc_singleton_local_update
       (x := ((some (.excl ⟨v⟩), toAgree ⟨I⟩) :
         Option (Excl (DiscreteO V)) × Agree (DiscreteO (V → Prop))))
       (get?_toInvHeap_none hlk) ⟨trivial, toAgree_valid⟩)) $$ Hauth with ⟨Hauth, Hfrag⟩
@@ -257,7 +256,7 @@ theorem invPointsToOwn_acc_strong {E : CoPset} (hN : (↑invHeapN : CoPset) ⊆ 
   iunfold invPointsToOwn at Hl_inv
   icases bigSepM_delete hh $$ HsepM with ⟨⟨$, $⟩, HsepM⟩
   iintro %w %hIw Hl
-  imod iOwn_update_op (auth_update_of_localUpdate OrdInc.ordN_incN (singleton_local_update
+  imod iOwn_update_op (auth_update_of_localUpdate (singleton_local_update
       (get?_heap_some_toInvHeap hh)
       (LocalUpdate.prod_1 _ _ (LocalUpdate.option (LocalUpdate.exclusive (x' := excl ⟨w⟩) trivial)))))
     $$ [$Hauth $Hl_inv] with ⟨Hauth, Hfrag⟩

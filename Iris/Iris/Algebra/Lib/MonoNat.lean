@@ -134,7 +134,7 @@ theorem included (dq : DFrac) (n : MaxNat) :
 theorem update {n : MaxNat} (n' : MaxNat) (h : n ≤ n') :
   (●MN n : MonoNat) ~~> ●MN n' := by
   unfold auth
-  exact Auth.auth_update_of_localUpdate OrdInc.ordN_incN (MaxNat.local_update h)
+  exact Auth.auth_update_of_localUpdate (MaxNat.local_update h)
 
 @[rocq_alias mono_nat_auth_persist]
 theorem auth_persist (n : MaxNat) (dq : DFrac) :

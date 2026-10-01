@@ -256,7 +256,7 @@ theorem included (dq : DFrac) (l : List α) : ◯ML l ≼ ●ML{dq} l := inc_iff
 
 @[rocq_alias mono_list_update]
 theorem update {l1 : List α} (l2 : List α) (h : l1 <+: l2) : ●ML l1 ~~> ●ML l2 :=
-  Auth.auth_update_of_localUpdate OrdInc.ordN_incN (local_update h)
+  Auth.auth_update_of_localUpdate (local_update h)
 
 @[rocq_alias mono_list_auth_persist]
 theorem auth_persist (dq : DFrac) (l : List α) : ●ML{dq} l ~~> ●ML□ l :=

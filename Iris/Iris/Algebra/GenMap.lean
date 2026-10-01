@@ -309,6 +309,26 @@ instance : IsTotal (GenMap β) := unit_total
 instance instAffineGenMap [ORA.Affine β] : ORA.Affine (GenMap β) :=
   IncOrd.of_increasing fun x => GenMap.increasing_of_car β (IncOrd.increasing x.car)
 
+instance instOrdIncGenMap [OrdInc β] : OrdInc (GenMap β) where
+  ord_inc {x y} h := by
+    obtain ⟨z, hz⟩ := OrdInc.ord_inc (α := Nat → Option β) h
+    obtain ⟨N, hN⟩ := y.bound
+    refine ⟨⟨z, N, fun k hk => ?_⟩, GenMap.ext hz⟩
+    have hk' := congrFun hz k
+    rw [hN k hk] at hk'
+    rcases hx : x.car k with _ | a <;> rcases hzk : z k with _ | b <;>
+      simp only [hx, hzk, ORA.op, optionOp] at hk' <;> first | rfl | cases hk'
+  ordN_incN {n x y} h := by
+    obtain ⟨z, hz⟩ := OrdInc.ordN_incN (α := Nat → Option β) h
+    obtain ⟨N, hN⟩ := y.bound
+    refine ⟨⟨z, N, fun k hk => ?_⟩, hz⟩
+    have hk' := hz k
+    rw [hN k hk] at hk'
+    rcases hx : x.car k with _ | a <;> rcases hzk : z k with _ | b <;>
+      simp only [hx, hzk, ORA.op, optionOp] at hk' <;> first | rfl | exact (hk' : False).elim
+
+instance instIsIncGenMap [IsInc β] : IsInc (GenMap β) := {}
+
 theorem GenMap.alter_valid {g : GenMap β} (Hb : ✓{n} b) (Hg : ✓{n} g) :
     ✓{n} g.alter a b := by
   intro k

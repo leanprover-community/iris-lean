@@ -278,15 +278,23 @@ theorem frag_op_validN {n : Nat} {b1 b2 : A} :
 #rocq_ignore auth_frag_op_validN_1 "Use frag_op_validN"
 #rocq_ignore auth_frag_op_validN_2 "Use frag_op_validN"
 
-@[rocq_alias auth_both_dfrac_validN]
 theorem both_dfrac_validN {n : Nat} {dq : DFrac} {a b : A} :
     (✓{n} ((●{dq} a) • ◯ b)) ↔ (✓ dq ∧ b ≼ₒ{n} a ∧ ✓{n} a) :=
   auth_op_frag_validN_iff
 
-@[rocq_alias auth_both_validN]
+@[rocq_alias auth_both_dfrac_validN]
+theorem both_dfrac_validN_ext [OrdInc A] {n : Nat} {dq : DFrac} {a b : A} :
+    (✓{n} ((●{dq} a) • ◯ b)) ↔ (✓ dq ∧ b ≼{n} a ∧ ✓{n} a) :=
+  both_dfrac_validN.trans (and_congr_right fun _ => and_congr_left fun _ => incN_iff_ordN.symm)
+
 theorem both_validN {n : Nat} {a b : A} :
     (✓{n} ((● a : Auth A) • ◯ b)) ↔ (b ≼ₒ{n} a ∧ ✓{n} a) :=
   auth_one_op_frag_validN_iff
+
+@[rocq_alias auth_both_validN]
+theorem both_validN_ext [OrdInc A] {n : Nat} {a b : A} :
+    (✓{n} ((● a : Auth A) • ◯ b)) ↔ (b ≼{n} a ∧ ✓{n} a) :=
+  both_validN.trans (and_congr_left fun _ => incN_iff_ordN.symm)
 
 @[rocq_alias auth_auth_dfrac_valid]
 theorem auth_dfrac_valid {dq : DFrac} {a : A} : (✓ (●{dq} a : Auth A)) ↔ (✓ dq ∧ ✓ a) := by
@@ -327,7 +335,6 @@ theorem frag_op_valid {b1 b2 : A} : (✓ ((◯ b1 : Auth A) • ◯ b2)) ↔ (�
 #rocq_ignore auth_frag_op_valid_1 "Use frag_op_valid"
 #rocq_ignore auth_frag_op_valid_2 "Use frag_op_valid"
 
-@[rocq_alias auth_both_dfrac_valid]
 theorem both_dfrac_valid {dq : DFrac} {a b : A} :
     (✓ ((●{dq} a) • ◯ b)) ↔ (✓ dq ∧ (∀ n, b ≼ₒ{n} a) ∧ ✓ a) := by
   simp only [valid_iff_validN]
@@ -337,7 +344,12 @@ theorem both_dfrac_valid {dq : DFrac} {a b : A} :
     · exact (both_dfrac_validN.mp (h n)).2.2
   · exact fun ⟨hdq, hinc, hv⟩ n => both_dfrac_validN.mpr ⟨hdq n, hinc n, hv n⟩
 
-@[rocq_alias auth_both_valid]
+@[rocq_alias auth_both_dfrac_valid]
+theorem both_dfrac_valid_ext [OrdInc A] {dq : DFrac} {a b : A} :
+    (✓ ((●{dq} a) • ◯ b)) ↔ (✓ dq ∧ (∀ n, b ≼{n} a) ∧ ✓ a) :=
+  both_dfrac_valid.trans
+    (and_congr_right fun _ => and_congr_left fun _ => forall_congr' fun _ => incN_iff_ordN.symm)
+
 theorem auth_both_valid {a b : A} :
     (✓ ((● a : Auth A) • ◯ b)) ↔ ((∀ n, b ≼ₒ{n} a) ∧ ✓ a) := by
   rw [both_dfrac_valid]
@@ -345,18 +357,30 @@ theorem auth_both_valid {a b : A} :
   · exact fun ⟨_, hinc, hv⟩ => ⟨hinc, hv⟩
   · exact fun ⟨hinc, hv⟩ => ⟨DFrac.valid_own_one, hinc, hv⟩
 
+@[rocq_alias auth_both_valid]
+theorem auth_both_valid_ext [OrdInc A] {a b : A} :
+    (✓ ((● a : Auth A) • ◯ b)) ↔ ((∀ n, b ≼{n} a) ∧ ✓ a) :=
+  auth_both_valid.trans (and_congr_left fun _ => forall_congr' fun _ => incN_iff_ordN.symm)
+
 /-- Note: The reverse direction only holds if the camera is discrete. -/
-@[rocq_alias auth_both_dfrac_valid_2]
 theorem auth_both_dfrac_valid_2 {dq : DFrac} {a b : A} (hdq : ✓ dq) (ha : ✓ a)
     (hb : b ≼ₒ a) : ✓ ((●{dq} a) • ◯ b) :=
   both_dfrac_valid.mpr ⟨hdq, (ORA.ordN_of_ord · hb), ha⟩
 
-@[rocq_alias auth_both_valid_2]
+@[rocq_alias auth_both_dfrac_valid_2]
+theorem auth_both_dfrac_valid_2_ext {dq : DFrac} {a b : A} (hdq : ✓ dq) (ha : ✓ a)
+    (hb : b ≼ a) : ✓ ((●{dq} a) • ◯ b) :=
+  auth_both_dfrac_valid_2 hdq ha (IncOrd.inc_ord hb)
+
 theorem auth_both_valid_2 {a b : A} (ha : ✓ a) (hb : b ≼ₒ a) :
     ✓ ((● a : Auth A) • ◯ b) :=
   auth_both_dfrac_valid_2 DFrac.valid_own_one ha hb
 
-@[rocq_alias auth_both_dfrac_valid_discrete]
+@[rocq_alias auth_both_valid_2]
+theorem auth_both_valid_2_ext {a b : A} (ha : ✓ a) (hb : b ≼ a) :
+    ✓ ((● a : Auth A) • ◯ b) :=
+  auth_both_valid_2 ha (IncOrd.inc_ord hb)
+
 theorem both_dfrac_valid_discrete [ORA.Discrete A] {dq : DFrac} {a b : A} :
     (✓ ((●{dq} a : Auth A) • ◯ b)) ↔ (✓ dq ∧ b ≼ₒ a ∧ ✓ a) := by
   constructor
@@ -365,7 +389,11 @@ theorem both_dfrac_valid_discrete [ORA.Discrete A] {dq : DFrac} {a b : A} :
     exact ⟨hdq, ORA.discrete_ord (hinc 0), hv⟩
   · exact fun ⟨hdq, hinc, hv⟩ => auth_both_dfrac_valid_2 hdq hv hinc
 
-@[rocq_alias auth_both_valid_discrete]
+@[rocq_alias auth_both_dfrac_valid_discrete]
+theorem both_dfrac_valid_discrete_ext [ORA.Discrete A] [OrdInc A] {dq : DFrac} {a b : A} :
+    (✓ ((●{dq} a : Auth A) • ◯ b)) ↔ (✓ dq ∧ b ≼ a ∧ ✓ a) :=
+  both_dfrac_valid_discrete.trans (and_congr_right fun _ => and_congr_left fun _ => inc_iff_ord.symm)
+
 theorem auth_both_valid_discrete [ORA.Discrete A] {a b : A} :
     (✓ ((● a : Auth A) • ◯ b)) ↔ (b ≼ₒ a ∧ ✓ a) := by
   rw [both_dfrac_valid_discrete]
@@ -373,16 +401,21 @@ theorem auth_both_valid_discrete [ORA.Discrete A] {a b : A} :
   · exact fun ⟨_, hinc, hv⟩ => ⟨hinc, hv⟩
   · exact fun ⟨hinc, hv⟩ => ⟨DFrac.valid_own_one, hinc, hv⟩
 
+@[rocq_alias auth_both_valid_discrete]
+theorem auth_both_valid_discrete_ext [ORA.Discrete A] [OrdInc A] {a b : A} :
+    (✓ ((● a : Auth A) • ◯ b)) ↔ (b ≼ a ∧ ✓ a) :=
+  auth_both_valid_discrete.trans (and_congr_left fun _ => inc_iff_ord.symm)
+
 /-! ## Inclusion -/
 
 @[rocq_alias auth_auth_dfrac_includedN]
 theorem auth_dfrac_incN {n : Nat} {dq1 dq2 : DFrac} {a1 a2 b : A} :
-    ((●{dq1} a1) ≼{n} ((●{dq2} a2) • ◯ b)) ↔ ((dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2) :=
+    ((●{dq1} a1) ≼{n} ((●{dq2} a2) • ◯ b)) ↔ ((dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2) :=
   auth_incN_auth_op_frag_iff
 
 @[rocq_alias auth_auth_dfrac_included]
 theorem auth_dfrac_inc {dq1 dq2 : DFrac} {a1 a2 b : A} :
-    ((●{dq1} a1) ≼ ((●{dq2} a2) • ◯ b)) ↔ ((dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 = a2) :=
+    ((●{dq1} a1) ≼ ((●{dq2} a2) • ◯ b)) ↔ ((dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 = a2) :=
   auth_inc_auth_op_frag_iff
 
 @[rocq_alias auth_auth_includedN]
@@ -409,13 +442,13 @@ theorem frag_inc {dq : DFrac} {a b1 b2 : A} : ((◯ b1) ≼ ((●{dq} a) • ◯
 @[rocq_alias auth_both_dfrac_includedN]
 theorem auth_both_dfrac_incN {n : Nat} {dq1 dq2 : DFrac} {a1 a2 b1 b2 : A} :
     (((●{dq1} a1) • ◯ b1) ≼{n} ((●{dq2} a2) • ◯ b2)) ↔
-      ((dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 ∧ b1 ≼{n} b2) :=
+      ((dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 ∧ b1 ≼{n} b2) :=
   auth_op_frag_incN_auth_op_frag_iff
 
 @[rocq_alias auth_both_dfrac_included]
 theorem auth_both_dfrac_inc {dq1 dq2 : DFrac} {a1 a2 b1 b2 : A} :
     (((●{dq1} a1) • ◯ b1) ≼ ((●{dq2} a2) • ◯ b2)) ↔
-      ((dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 = a2 ∧ b1 ≼ b2) :=
+      ((dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 = a2 ∧ b1 ≼ b2) :=
   auth_op_frag_inc_auth_op_frag_iff
 
 @[rocq_alias auth_both_includedN]
@@ -427,6 +460,47 @@ theorem auth_both_incN {n : Nat} {a1 a2 b1 b2 : A} :
 theorem auth_both_inc {a1 a2 b1 b2 : A} :
     (((● a1 : Auth A) • ◯ b1) ≼ ((● a2) • ◯ b2)) ↔ (a1 = a2 ∧ b1 ≼ b2) :=
   auth_one_op_frag_inc_auth_one_op_frag_iff
+
+theorem auth_dfrac_ordN {n : Nat} {dq1 dq2 : DFrac} {a1 a2 b : A} :
+    ((●{dq1} a1) ≼ₒ{n} ((●{dq2} a2) • ◯ b)) ↔ ((dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2) :=
+  auth_ordN_auth_op_frag_iff
+
+theorem auth_dfrac_ord {dq1 dq2 : DFrac} {a1 a2 b : A} :
+    ((●{dq1} a1) ≼ₒ ((●{dq2} a2) • ◯ b)) ↔ ((dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 = a2) :=
+  auth_ord_auth_op_frag_iff
+
+theorem auth_ordN {n : Nat} {a1 a2 b : A} :
+    ((● a1 : Auth A) ≼ₒ{n} ((● a2) • ◯ b)) ↔ (a1 ≡{n}≡ a2) :=
+  auth_one_ordN_auth_one_op_frag_iff
+
+theorem auth_ord {a1 a2 b : A} :
+    ((● a1 : Auth A) ≼ₒ ((● a2) • ◯ b)) ↔ (a1 = a2) :=
+  auth_one_ord_auth_one_op_frag_iff
+
+theorem frag_ordN {n : Nat} {dq : DFrac} {a b1 b2 : A} :
+    ((◯ b1) ≼ₒ{n} ((●{dq} a) • ◯ b2)) ↔ (b1 ≼ₒ{n} b2) :=
+  frag_ordN_auth_op_frag_iff
+
+theorem frag_ord {dq : DFrac} {a b1 b2 : A} : ((◯ b1) ≼ₒ ((●{dq} a) • ◯ b2)) ↔ (b1 ≼ₒ b2) :=
+  frag_ord_auth_op_frag_iff
+
+theorem auth_both_dfrac_ordN {n : Nat} {dq1 dq2 : DFrac} {a1 a2 b1 b2 : A} :
+    (((●{dq1} a1) • ◯ b1) ≼ₒ{n} ((●{dq2} a2) • ◯ b2)) ↔
+      ((dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 ∧ b1 ≼ₒ{n} b2) :=
+  auth_op_frag_ordN_auth_op_frag_iff
+
+theorem auth_both_dfrac_ord {dq1 dq2 : DFrac} {a1 a2 b1 b2 : A} :
+    (((●{dq1} a1) • ◯ b1) ≼ₒ ((●{dq2} a2) • ◯ b2)) ↔
+      ((dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 = a2 ∧ b1 ≼ₒ b2) :=
+  auth_op_frag_ord_auth_op_frag_iff
+
+theorem auth_both_ordN {n : Nat} {a1 a2 b1 b2 : A} :
+    (((● a1 : Auth A) • ◯ b1) ≼ₒ{n} ((● a2) • ◯ b2)) ↔ (a1 ≡{n}≡ a2 ∧ b1 ≼ₒ{n} b2) :=
+  auth_one_op_frag_ordN_auth_one_op_frag_iff
+
+theorem auth_both_ord {a1 a2 b1 b2 : A} :
+    (((● a1 : Auth A) • ◯ b1) ≼ₒ ((● a2) • ◯ b2)) ↔ (a1 = a2 ∧ b1 ≼ₒ b2) :=
+  auth_one_op_frag_ord_auth_one_op_frag_iff
 
 /-! ## Updates -/
 
@@ -456,12 +530,11 @@ theorem auth_update_auth {a a' : A}
 /-- On a classical algebra — one whose order coincides with the extension inclusion, witnessed
 by the plain hypothesis `hsub` — a frame-based local update drives the authority update. -/
 @[rocq_alias auth_update]
-theorem auth_update_of_localUpdate {a b a' b' : A}
-    (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y)
+theorem auth_update_of_localUpdate [OrdInc A] {a b a' b' : A}
     (hup : (a, b) ~l~> (a', b')) :
     ((● a : Auth A) • ◯ b) ~~> (● a') • ◯ b' := by
   refine auth_update fun n bf hinc hv => ?_
-  obtain ⟨c, hc⟩ := hsub hinc
+  obtain ⟨c, hc⟩ := OrdInc.ordN_incN hinc
   have ha_eq : a ≡{n}≡ b •? some (bf • c) := by
     simp only [ORA.op?]; exact hc.trans assoc.symm.dist
   have ⟨hv', ha'_eq⟩ := hup n (some (bf • c)) hv ha_eq
@@ -469,27 +542,24 @@ theorem auth_update_of_localUpdate {a b a' b' : A}
   refine ⟨IncOrd.incN_ordN ⟨c, ha'_eq.trans assoc.dist⟩, hv'⟩
 
 @[rocq_alias auth_update_alloc]
-theorem auth_update_alloc_of_localUpdate {a a' b' : A}
-    (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y)
+theorem auth_update_alloc_of_localUpdate [OrdInc A] {a a' b' : A}
     (hup : (a, unit) ~l~> (a', b')) :
     (● a : Auth A) ~~> (● a') • ◯ b' := by
   rw [← unit_right_id (x := (● a : Auth A))]
-  exact auth_update_of_localUpdate hsub hup
+  exact auth_update_of_localUpdate hup
 
 @[rocq_alias auth_update_dealloc]
-theorem auth_update_dealloc_of_localUpdate {a b a' : A}
-    (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y)
+theorem auth_update_dealloc_of_localUpdate [OrdInc A] {a b a' : A}
     (hup : (a, b) ~l~> (a', unit)) :
     ((● a : Auth A) • ◯ b) ~~> ● a' := by
   rw [← unit_right_id (x := (● a' : Auth A))]
-  exact auth_update_of_localUpdate hsub hup
+  exact auth_update_of_localUpdate hup
 
 @[rocq_alias auth_update_auth]
-theorem auth_update_auth_of_localUpdate {a a' b' : A}
-    (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y)
+theorem auth_update_auth_of_localUpdate [OrdInc A] {a a' b' : A}
     (hup : (a, unit) ~l~> (a', b')) :
     (● a : Auth A) ~~> ● a' :=
-  Update.trans (auth_update_alloc_of_localUpdate hsub hup) Update.op_l
+  Update.trans (auth_update_alloc_of_localUpdate hup) Update.op_l
 
 @[rocq_alias auth_update_auth_persist]
 theorem auth_update_auth_persist {dq : DFrac} {a : A} :
@@ -515,11 +585,16 @@ theorem auth_update_dfrac_alloc {dq : DFrac} {a b : A} [CoreId b] (hb : b ≼ a)
   have hba : b • a = a := comm'.trans (ORA.op_core_left_of_inc hb)
   exact (ORA.ordN_iff_right hba.dist).mp (ORA.op_monoN_right b hinc)
 
-@[rocq_alias auth_local_update]
 theorem auth_local_update {a b0 b1 a' b0' b1' : A} (hup : (b0, b1) ~l~> (b0', b1'))
     (hinc : b0' ≼ₒ a') (hv : ✓ a') :
     ((● a : Auth A) • ◯ b0, (● a) • ◯ b1) ~l~> ((● a' : Auth A) • ◯ b0', (● a') • ◯ b1') :=
   view_local_update hup fun n _ => ⟨ORA.ordN_of_ord n hinc, hv.validN⟩
+
+@[rocq_alias auth_local_update]
+theorem auth_local_update_ext {a b0 b1 a' b0' b1' : A} (hup : (b0, b1) ~l~> (b0', b1'))
+    (hinc : b0' ≼ a') (hv : ✓ a') :
+    ((● a : Auth A) • ◯ b0, (● a) • ◯ b1) ~l~> ((● a' : Auth A) • ◯ b0', (● a') • ◯ b1') :=
+  auth_local_update hup (IncOrd.inc_ord hinc) hv
 
 /-! ## Functor -/
 

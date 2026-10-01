@@ -119,7 +119,7 @@ theorem included (dq : DFrac) (n : MaxInt) : (◯MZ n : MonoZ) ≼ ●MZ{dq} n :
 
 @[rocq_alias mono_Z_update]
 theorem update {n : MaxInt} (n' : MaxInt) (h : n ≤ n') : (●MZ n : MonoZ) ~~> ●MZ n' :=
-  Auth.auth_update_of_localUpdate OrdInc.ordN_incN
+  Auth.auth_update_of_localUpdate
     (LocalUpdate.option (MaxInt.local_update h))
 
 @[rocq_alias mono_Z_auth_persist]

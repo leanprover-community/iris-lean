@@ -402,6 +402,21 @@ theorem inc_iff {x y : ReservationMap A H} :
     rintro ⟨⟨z₁, rfl⟩, ⟨z₂, rfl⟩⟩
     exact ⟨mk z₁ z₂, rfl⟩
 
+theorem ord_iff {x y : ReservationMap A H} :
+    x ≼ₒ y ↔ x.data ≼ₒ y.data ∧ x.token ≼ₒ y.token := .rfl
+
+theorem ordN_iff {n} {x y : ReservationMap A H} :
+    x ≼ₒ{n} y ↔ x.data ≼ₒ{n} y.data ∧ x.token ≼ₒ{n} y.token := .rfl
+
+instance instOrdInc [OrdInc A] : OrdInc (ReservationMap A H) where
+  ord_inc h := inc_iff.mpr ⟨OrdInc.ord_inc h.1, OrdInc.ord_inc h.2⟩
+  ordN_incN h :=
+    let ⟨z₁, h₁⟩ := OrdInc.ordN_incN h.1
+    let ⟨z₂, h₂⟩ := OrdInc.ordN_incN h.2
+    ⟨mk z₁ z₂, h₁, h₂⟩
+
+instance instIsInc [IsInc A] : IsInc (ReservationMap A H) := {}
+
 @[rocq_alias reservation_map_cmra_discrete]
 instance [ORA.Discrete A] : ORA.Discrete (ReservationMap A H) where
   discrete_valid {_} v := by
@@ -525,6 +540,10 @@ theorem valid_data_op_token (a : H A) (b : CoPset) (vd : ✓ mkData a)
     cases disj i with
     | inl h => simpa only [h] using .inl <| rfl
     | inr h => simpa only [eo] using .inr h
+
+theorem singleton_mono {k} {a b : A} (Hab : a ≼ₒ b) :
+    singleton (H := H) k a ≼ₒ singleton k b :=
+  ⟨Heap.singleton_ord_singleton_mono Hab, ORA.ord_refl _⟩
 
 @[rocq_alias reservation_map_data_mono]
 theorem singleton_mono_ext {k} {a b : A} (Hab : a ≼ b) :

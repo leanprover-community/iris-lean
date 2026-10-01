@@ -435,6 +435,21 @@ theorem inc_iff {x y : DynReservationMap A H} :
   exact fun ⟨⟨z₁, hz₁⟩, ⟨z₂, hz₂⟩⟩ =>
     ⟨mk z₁ z₂, eq_dist_2 (by exact fun n => ⟨hz₁.dist, hz₂.dist⟩)⟩
 
+theorem ord_iff {x y : DynReservationMap A H} :
+    x ≼ₒ y ↔ x.data ≼ₒ y.data ∧ x.token ≼ₒ y.token := .rfl
+
+theorem ordN_iff {n} {x y : DynReservationMap A H} :
+    x ≼ₒ{n} y ↔ x.data ≼ₒ{n} y.data ∧ x.token ≼ₒ{n} y.token := .rfl
+
+instance instOrdInc [OrdInc A] : OrdInc (DynReservationMap A H) where
+  ord_inc h := inc_iff.mpr ⟨OrdInc.ord_inc h.1, OrdInc.ord_inc h.2⟩
+  ordN_incN h :=
+    let ⟨z₁, h₁⟩ := OrdInc.ordN_incN h.1
+    let ⟨z₂, h₂⟩ := OrdInc.ordN_incN h.2
+    ⟨mk z₁ z₂, h₁, h₂⟩
+
+instance instIsInc [IsInc A] : IsInc (DynReservationMap A H) := {}
+
 @[rocq_alias dyn_reservation_map_data_proj_validN]
 theorem data_proj_validN {n} {x : DynReservationMap A H} (h : ✓{n} x) : ✓{n} x.data :=
   validN_data_of_validN h
@@ -493,6 +508,10 @@ theorem mkData_op k (a b : A) :
   refine OFE.eq_dist_2 ?_
   refine fun _ => ⟨Dist.of_eq Heap.singleton_op_singleton.symm,
     Dist.of_eq (pcore_op_right_L rfl).symm⟩
+
+theorem mkData_mono {k} {a b : A} (Hab : a ≼ₒ b) :
+    mkData (H := H) k a ≼ₒ mkData k b :=
+  ⟨Heap.singleton_ord_singleton_mono Hab, ORA.ord_refl _⟩
 
 @[rocq_alias dyn_reservation_map_data_mono]
 theorem mkData_mono_ext {k} {a b : A} (Hab : a ≼ b) :

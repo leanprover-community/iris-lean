@@ -89,12 +89,18 @@ open HeapView BI Iris.Std PartialMap LawfulPartialMap BIBase.BiEntails
 variable {F K V : Type _} {H : Type _ → Type _}
 variable [LawfulPartialMap H K] [ORA V] [ORA.Affine V]
 
-@[rocq_alias gmap_view_both_dfrac_validI]
 theorem auth_op_frag_validI [Sbi PROP] (dp : DFrac) (m : H V) k dq v :
   ✓ (Auth dp m • Frag k dq v) ⊣⊢@{PROP}
     ∃ v' dq', ⌜✓ dp⌝ ∧ ⌜get? m k = .some v'⌝ ∧ ✓ (dq', v') ∧
       some (dq, v) ≼ₒ some (dq', v') := by
   sbi_unfold; intro _; exact auth_op_frag_validN_iff
+
+@[rocq_alias gmap_view_both_dfrac_validI]
+theorem auth_op_frag_validI_ext [Sbi PROP] [OrdInc V] (dp : DFrac) (m : H V) k dq v :
+  ✓ (Auth dp m • Frag k dq v) ⊣⊢@{PROP}
+    ∃ v' dq', ⌜✓ dp⌝ ∧ ⌜get? m k = .some v'⌝ ∧ ✓ (dq', v') ∧
+      some (dq, v) ≼ some (dq', v') := by
+  sbi_unfold; intro _; exact auth_op_frag_validN_iff_ext
 
 @[rocq_alias gmap_view_both_validI]
 theorem auth_op_frag_one_validI [Sbi PROP] (dp : DFrac) (m : H V) k v :
@@ -102,12 +108,19 @@ theorem auth_op_frag_one_validI [Sbi PROP] (dp : DFrac) (m : H V) k v :
     ⌜✓ dp⌝ ∧ ✓ v ∧ get? m k ≡ .some v := by
   sbi_unfold; intro _; exact auth_op_frag_one_validN_iff
 
-@[rocq_alias gmap_view_both_validI_total]
 theorem auth_op_frag_validI_total [Sbi PROP] [OrderRefl V] (dp : DFrac) (m : H V) k dq v :
   ✓ (Auth dp m • Frag k dq v) ⊢@{PROP}
     ∃ v', ⌜✓ dp⌝ ∧ ⌜✓ dq⌝ ∧ ⌜get? m k = .some v'⌝ ∧
       ✓ v' ∧ v ≼ₒ v' := by
   sbi_unfold; intro _; exact auth_op_frag_validN_total_iff
+
+@[rocq_alias gmap_view_both_validI_total]
+theorem auth_op_frag_validI_total_ext [Sbi PROP] [OrdInc V] [OrderRefl V] (dp : DFrac) (m : H V)
+    k dq v :
+  ✓ (Auth dp m • Frag k dq v) ⊢@{PROP}
+    ∃ v', ⌜✓ dp⌝ ∧ ⌜✓ dq⌝ ∧ ⌜get? m k = .some v'⌝ ∧
+      ✓ v' ∧ v ≼ v' := by
+  sbi_unfold; intro _; exact auth_op_frag_validN_total_iff_ext
 
 @[rocq_alias gmap_view_frag_op_validI]
 theorem frag_op_frag_validI [Sbi PROP] k dq1 dq2 v1 v2 :
@@ -199,18 +212,28 @@ theorem frag_validI (a : A) :
     ✓ (◯ a : Auth A) ⊣⊢@{PROP} ✓ a := by
   sbi_unfold; intro _; exact frag_validN
 
-@[rocq_alias auth_both_dfrac_validI]
 theorem both_dfrac_validI (dq : DFrac) (a b : A) :
     ✓ ((●{dq} a) • ◯ b) ⊣⊢@{PROP}
     ⌜✓ dq⌝ ∧ b ≼ₒ a ∧ ✓ a := by
   sbi_unfold; intro _; exact both_dfrac_validN
 
-@[rocq_alias auth_both_validI]
+@[rocq_alias auth_both_dfrac_validI]
+theorem both_dfrac_validI_ext [OrdInc A] (dq : DFrac) (a b : A) :
+    ✓ ((●{dq} a) • ◯ b) ⊣⊢@{PROP}
+    ⌜✓ dq⌝ ∧ b ≼ a ∧ ✓ a := by
+  sbi_unfold; intro _; exact both_dfrac_validN_ext
+
 theorem auth_both_validI (a b : A) :
     ✓ ((● a : Auth A) • ◯ b) ⊣⊢@{PROP}
       b ≼ₒ a ∧ ✓ a := by
   sbi_unfold; intro _; exact ⟨fun h => (both_dfrac_validN.mp h).2,
     fun h => both_dfrac_validN.mpr ⟨DFrac.valid_own_one, h⟩⟩
+
+@[rocq_alias auth_both_validI]
+theorem auth_both_validI_ext [OrdInc A] (a b : A) :
+    ✓ ((● a : Auth A) • ◯ b) ⊣⊢@{PROP}
+      b ≼ a ∧ ✓ a := by
+  sbi_unfold; intro _; exact both_validN_ext
 
 end auth
 

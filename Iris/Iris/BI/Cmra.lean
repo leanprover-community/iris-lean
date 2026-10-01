@@ -318,7 +318,7 @@ theorem internalCmraOrder_map {B : Type _} [ORA B] (g : A -C> B) {a b : A} :
 theorem internalCmraOrder_of_inc [Affine A] {a b : A} : a ≼ b ⊢@{PROP} a ≼ₒ b :=
   siPure_mono fun _ h => IncOrd.incN_ordN (inc_holds.mp h)
 
-theorem internalCmraIncluded_iff_internalCmraOrder [IsInc A] {a b : A} : a ≼ b ⊣⊢@{PROP} a ≼ₒ b :=
+theorem internalCmraIncluded_iff_internalCmraOrder [IncOrd A] [OrdInc A] {a b : A} : a ≼ b ⊣⊢@{PROP} a ≼ₒ b :=
   siPure_mono_bi ⟨fun _ hn => incN_iff_ordN.mp (inc_holds.mp hn),
     fun _ hn => inc_holds.mpr (incN_iff_ordN.mpr hn)⟩
 

@@ -332,7 +332,7 @@ def valid (s : M V) : Prop := ∀ k, ✓ get? s k
 def validN (n : Nat) (s : M V) : Prop := ∀ k, ✓{n} get? s k
 
 @[rocq_alias lookup_includedN]
-theorem lookup_ordN {n} {m1 m2 : M V} :
+theorem lookup_incN {n} {m1 m2 : M V} :
     (∃ (z : M V), m2 ≡{n}≡ op m1 z) ↔
     ∀ i, (∃ z, (get? m2 i) ≡{n}≡ (get? m1 i) • z) := by
   refine ⟨fun ⟨z, Hz⟩ i => ?_, fun H => ?_⟩
@@ -348,7 +348,7 @@ theorem lookup_ordN {n} {m1 m2 : M V} :
     cases get? m2 i <;> cases get? m1 i <;> cases f i <;> simp
 
 @[rocq_alias lookup_included]
-theorem lookup_ord {m1 m2 : M V} :
+theorem lookup_inc {m1 m2 : M V} :
     (∃ (z : M V), m2 = op m1 z) ↔
     ∀ i, (∃ z, (get? m2 i) = (get? m1 i) • z) := by
   refine ⟨fun ⟨z, Hz⟩ i => ?_, fun H => ?_⟩
@@ -542,10 +542,15 @@ instance instStoreUCMRA : UCMRA (M V) where
 instance instAffine [ORA.Affine V] : ORA.Affine (M V) :=
   IncOrd.of_increasing fun _ => increasing_iff.mpr fun _ => IncOrd.increasing _
 
-instance instIsInc [IsInc V] : IsInc (M V) where
-  inc_ord := IncOrd.inc_ord
-  ord_inc h := lookup_ord.mpr fun i => Option.inc_of_ord OrdInc.ord_inc (h i)
-  ordN_incN h := lookup_ordN.mpr fun i => Option.incN_of_ordN OrdInc.ordN_incN (h i)
+instance instOrdInc [OrdInc V] : OrdInc (M V) where
+  ord_inc h := lookup_inc.mpr fun i => OrdInc.ord_inc (h i)
+  ordN_incN h := lookup_incN.mpr fun i => OrdInc.ordN_incN (h i)
+
+instance instIsInc [IsInc V] : IsInc (M V) := {}
+
+theorem lookup_ordN {n} {m1 m2 : M V} : m1 ≼ₒ{n} m2 ↔ ∀ i, get? m1 i ≼ₒ{n} get? m2 i := .rfl
+
+theorem lookup_ord {m1 m2 : M V} : m1 ≼ₒ m2 ↔ ∀ i, get? m1 i ≼ₒ get? m2 i := .rfl
 
 @[rocq_alias gmap_op_empty_l_L]
 theorem op_empty_left {m : M V} : (∅ : M V) • m = m := ORA.unit_left_id_L
@@ -743,6 +748,42 @@ theorem singleton_ord_singleton_mono (Hinc : x ≼ₒ y) :
     (singleton i x : M V) ≼ₒ (singleton i y) :=
   singleton_ord_singleton_iff.mpr (Or.inr Hinc)
 
+theorem total_singleton_ord_singleton_iff [OrderRefl V] :
+    (singleton i x : M V) ≼ₒ (singleton i y) ↔ x ≼ₒ y :=
+  singleton_ord_singleton_iff.trans Option.some_ord_some_iff_ordRefl
+
+open Classical in
+theorem singleton_ordN_iff [IncOrd V] {m : M V} :
+    (singleton i x) ≼ₒ{n} m ↔ ∃ y, (get? m i ≡{n}≡ some y) ∧ some x ≼ₒ{n} some y := by
+  refine ⟨fun h => ?_, fun ⟨y, Hy, Hxy⟩ k => ?_⟩
+  · have hi := h i
+    rw [get?_singleton_eq rfl] at hi
+    rcases hm : get? m i with _ | y
+    · rw [hm] at hi; exact (hi : False).elim
+    · rw [hm] at hi; exact ⟨y, .rfl, hi⟩
+  · by_cases hk : i = k
+    · subst hk; rw [get?_singleton_eq rfl]; exact ORA.ordN_ne .rfl Hy.symm Hxy
+    · simp only [get?_singleton, hk, ↓reduceIte]
+      rcases get? m k with _ | v
+      · trivial
+      · exact IncOrd.increasing v
+
+open Classical in
+theorem singleton_ord_iff [IncOrd V] {m : M V} :
+    (singleton i x) ≼ₒ m ↔ ∃ y, (get? m i = some y) ∧ some x ≼ₒ some y := by
+  refine ⟨fun h => ?_, fun ⟨y, Hy, Hxy⟩ k => ?_⟩
+  · have hi := h i
+    rw [get?_singleton_eq rfl] at hi
+    rcases hm : get? m i with _ | y
+    · rw [hm] at hi; exact (hi : False).elim
+    · rw [hm] at hi; exact ⟨y, rfl, hi⟩
+  · by_cases hk : i = k
+    · subst hk; rw [get?_singleton_eq rfl, Hy]; exact Hxy
+    · simp only [get?_singleton, hk, ↓reduceIte]
+      rcases get? m k with _ | v
+      · trivial
+      · exact IncOrd.increasing v
+
 theorem ord_dom_ord {m1 m2 : M V} (Hinc : m1 ≼ₒ m2) : Set.Included (dom m1) (dom m2) := by
   intro i
   unfold dom
@@ -832,6 +873,10 @@ theorem singleton_inc_singleton_iff :
   · refine ⟨y, ?_, H⟩
     exact get?_singleton_eq rfl
 
+theorem exclusive_singleton_ord_iff [ORA.Affine V] [OrdInc V] {m : M V} (He : Exclusive x) (Hv : ✓ m) :
+    (singleton i x) ≼ₒ m ↔ (get? m i = some x) :=
+  inc_iff_ord.symm.trans (exclusive_singleton_inc_iff He Hv)
+
 @[rocq_alias singleton_included_total]
 theorem total_singleton_inc_singleton_iff [IsTotal V] :
     (singleton i x : M V) ≼ (singleton i y) ↔ x ≼ y :=
@@ -911,18 +956,22 @@ theorem dom_op_union (m1 m2 : M V) : dom (m1 • m2) = Set.Union (dom m1) (dom m
   cases get? m1 k <;> cases get? m2 k <;> simp_all [ORA.op, dom, Set.Union, get?_merge]
 
 @[rocq_alias dom_included]
-theorem inc_dom_ord {m1 m2 : M V} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (dom m2) := by
+theorem inc_dom_inc {m1 m2 : M V} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (dom m2) := by
   intro i
   unfold dom
-  rcases lookup_ord.mp Hinc i with ⟨z, Hz⟩
+  rcases lookup_inc.mp Hinc i with ⟨z, Hz⟩
   revert Hz
   cases get? m1 i <;> cases get? m2 i <;> cases z <;> simp [ORA.op, optionOp]
+
+theorem map_mono [ORA V'] [IncOrd V'] (f : V → V') (hf : ∀ x y : V, x ≼ₒ y → f x ≼ₒ f y)
+    {m1 m2 : M V} (Hinc : m1 ≼ₒ m2) : PartialMap.map f m1 ≼ₒ PartialMap.map f m2 :=
+  lookup_ord.mpr fun i => by rw [get?_map, get?_map]; exact Option.map_mono f hf (Hinc i)
 
 @[rocq_alias gmap_fmap_mono]
 theorem map_mono_ext [ORA V'] (f : V → V') (hf : ∀ x y : V, x ≼ y → f x ≼ f y) {m1 m2 : M V}
     (Hinc : m1 ≼ m2) : PartialMap.map f m1 ≼ PartialMap.map f m2 := by
-  refine lookup_ord.mpr fun i => ?_
-  obtain ⟨z, hz⟩ := Option.map_mono_ext f hf (lookup_ord.mp Hinc i)
+  refine lookup_inc.mpr fun i => ?_
+  obtain ⟨z, hz⟩ := Option.map_mono_ext f hf (lookup_inc.mp Hinc i)
   exact ⟨z, by rw [get?_map, get?_map, hz]⟩
 
 open Iris.Algebra in

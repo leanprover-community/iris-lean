@@ -189,13 +189,13 @@ theorem IncOrd.of_increasing (h : ∀ x : α, Increasing x) : IncOrd α where
 
 instance instIncreasingOfIncOrd [IncOrd α] (x : α) : Increasing x := IncOrd.increasing x
 
-theorem inc_iff_ord [IsInc α] {x y : α} : x ≼ y ↔ x ≼ₒ y :=
+theorem inc_iff_ord [IncOrd α] [OrdInc α] {x y : α} : x ≼ y ↔ x ≼ₒ y :=
   ⟨IncOrd.inc_ord, OrdInc.ord_inc⟩
 
 theorem IncOrd.incN_ordN [IncOrd α] {n} {x y : α} : x ≼{n} y → x ≼ₒ{n} y
   | ⟨z, hz⟩ => Ordered.ordN_ne .rfl hz.symm (Ordered.ordN_of_ord n (IncOrd.inc_ord ⟨z, rfl⟩))
 
-theorem incN_iff_ordN [IsInc α] {n} {x y : α} : x ≼{n} y ↔ x ≼ₒ{n} y :=
+theorem incN_iff_ordN [IncOrd α] [OrdInc α] {n} {x y : α} : x ≼{n} y ↔ x ≼ₒ{n} y :=
   ⟨IncOrd.incN_ordN, OrdInc.ordN_incN⟩
 
 end
@@ -697,6 +697,9 @@ theorem coreId_iff_core_eqv_self : CoreId (x : α) ↔ core x = x :=
 
 @[rocq_alias cmra_core_idemp]
 theorem core_idem (x : α) : core (core x) = core x := core_eqv_self _
+
+instance instOrderReflOfIsTotal [IncOrd α] : OrderRefl α where
+  ord_refl x := IncOrd.inc_ord ⟨core x, (op_core x).symm⟩
 
 end total
 
@@ -1992,6 +1995,12 @@ instance instOrderRefl [∀ x, OrderRefl (β x)] : OrderRefl (∀ x, β x) where
 instance instAffine [∀ x, ORA.Affine (β x)] : ORA.Affine (∀ x, β x) :=
   IncOrd.of_increasing fun f => increasing_iff.mpr fun x => IncOrd.increasing (f x)
 
+instance instOrdInc [∀ x, OrdInc (β x)] : OrdInc (∀ x, β x) where
+  ord_inc h := inc_iff.mpr fun x => OrdInc.ord_inc (h x)
+  ordN_incN h := incN_iff.mpr fun x => OrdInc.ordN_incN (h x)
+
+instance instIsInc [∀ x, IsInc (β x)] : IsInc (∀ x, β x) := {}
+
 end DiscreteFun
 
 @[rocq_alias discrete_fun_map_cmra_morphism]
@@ -2502,42 +2511,40 @@ theorem validN_of_ordN_validN {n} {a b : α} (Hv : ✓{n} a) (Hinc : some b ≼�
 theorem valid_of_ord_valid {a b : α} (Hv : ✓ a) (Hinc : some b ≼ₒ some a) : ✓ b :=
   valid_of_ord (α := Option α) Hinc Hv
 
-/-- Transport a pointwise order-to-extension conversion through `Option`. -/
-theorem incN_of_ordN {n} {mx my : Option α}
-    (hsub : ∀ {n : Nat} {x y : α}, x ≼ₒ{n} y → x ≼{n} y) (h : mx ≼ₒ{n} my) : mx ≼{n} my :=
-  match mx, my, h with
-  | none, none, _ => ⟨none, .rfl⟩
-  | none, some b, _ => ⟨some b, .rfl⟩
-  | some _, some _, .inl e => ⟨none, OFE.some_dist_some.mpr e.symm⟩
-  | some _, some _, .inr i =>
-    let ⟨z, hz⟩ := hsub i
-    ⟨some z, OFE.some_dist_some.mpr hz⟩
-
-theorem inc_of_ord {mx my : Option α}
-    (hsub : ∀ {x y : α}, x ≼ₒ y → x ≼ y) (h : mx ≼ₒ my) : mx ≼ my :=
-  match mx, my, h with
-  | none, none, _ => ⟨none, rfl⟩
-  | none, some b, _ => ⟨some b, rfl⟩
-  | some _, some _, .inl e => ⟨none, congrArg some e.symm⟩
-  | some _, some _, .inr i =>
-    let ⟨z, hz⟩ := hsub i
-    ⟨some z, congrArg some hz⟩
-
 instance instAffine [ORA.Affine α] : ORA.Affine (Option α) :=
   IncOrd.of_increasing fun
     | none => inferInstance
     | some a => increasing_some_iff.mpr (IncOrd.increasing a)
 
-instance instIsInc [IsInc α] : IsInc (Option α) where
-  inc_ord := IncOrd.inc_ord
-  ord_inc := inc_of_ord OrdInc.ord_inc
-  ordN_incN := incN_of_ordN OrdInc.ordN_incN
+instance instOrdInc [OrdInc α] : OrdInc (Option α) where
+  ord_inc {mx my} h :=
+    match mx, my, h with
+    | none, none, _ => ⟨none, rfl⟩
+    | none, some b, _ => ⟨some b, rfl⟩
+    | some _, some _, .inl e => ⟨none, congrArg some e.symm⟩
+    | some _, some _, .inr i =>
+      let ⟨z, hz⟩ := OrdInc.ord_inc i
+      ⟨some z, congrArg some hz⟩
+  ordN_incN {_ mx my} h :=
+    match mx, my, h with
+    | none, none, _ => ⟨none, .rfl⟩
+    | none, some b, _ => ⟨some b, .rfl⟩
+    | some _, some _, .inl e => ⟨none, OFE.some_dist_some.mpr e.symm⟩
+    | some _, some _, .inr i =>
+      let ⟨z, hz⟩ := OrdInc.ordN_incN i
+      ⟨some z, OFE.some_dist_some.mpr hz⟩
+
+instance instIsInc [IsInc α] : IsInc (Option α) := {}
 
 /-! ### The extension inclusion on `Option α` -/
 
 theorem some_inc_some_of_dist_opM {n} {x y : α} {mz : Option α} (H : x ≡{n}≡ y •? mz) :
     some y ≼{n} some x :=
   match mz with | none => ⟨none, H⟩ | some z => ⟨some z, H⟩
+
+theorem some_ordN_some_of_dist_opM [IncOrd α] {n} {x y : α} {mz : Option α}
+    (H : x ≡{n}≡ y •? mz) : some y ≼ₒ{n} some x :=
+  IncOrd.incN_ordN (some_inc_some_of_dist_opM H)
 
 theorem inc_of_some_inc_some [IsTotal α] {x y : α} (H : some y ≼ some x) :
     y ≼ x :=
@@ -2550,6 +2557,21 @@ theorem incN_of_some_incN_some [IsTotal α] {n} {x y : α} :
     some y ≼{n} some x → y ≼{n} x
   | ⟨none, hmz⟩ => ⟨core y, dist_of_some_dist_some hmz |>.trans (op_core_dist y).symm⟩
   | ⟨some z, hmz⟩ => ⟨z, hmz⟩
+
+theorem ord_iff [IncOrd α] {ma mb : Option α} :
+    ma ≼ₒ mb ↔
+      ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ (a = b ∨ a ≼ₒ b) := by
+  refine ⟨fun h => ?_, ?_⟩
+  · rcases ma with _ | a
+    · exact .inl rfl
+    rcases mb with _ | b
+    · exact (h : False).elim
+    · exact .inr ⟨a, b, rfl, rfl, h⟩
+  · rintro (rfl | ⟨a, b, rfl, rfl, h⟩)
+    · rcases mb with _ | b
+      · trivial
+      · exact IncOrd.increasing b
+    · exact h
 
 @[rocq_alias option_included]
 theorem inc_iff {ma mb : Option α} :
@@ -2569,6 +2591,21 @@ theorem inc_iff {ma mb : Option α} :
     · exists none
     · exists some z
 
+theorem ordN_iff [IncOrd α] {n} {ma mb : Option α} :
+    ma ≼ₒ{n} mb ↔
+      ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ (a ≡{n}≡ b ∨ a ≼ₒ{n} b) := by
+  refine ⟨fun h => ?_, ?_⟩
+  · rcases ma with _ | a
+    · exact .inl rfl
+    rcases mb with _ | b
+    · exact (h : False).elim
+    · exact .inr ⟨a, b, rfl, rfl, h⟩
+  · rintro (rfl | ⟨a, b, rfl, rfl, h⟩)
+    · rcases mb with _ | b
+      · trivial
+      · exact IncOrd.increasing b
+    · exact h
+
 @[rocq_alias option_includedN]
 theorem incN_iff {n} {ma mb : Option α} :
     ma ≼{n} mb ↔
@@ -2582,6 +2619,12 @@ theorem incN_iff {n} {ma mb : Option α} :
     · exists none; simp [op]; exact H.symm
     · exists some z
 
+theorem ord_iff_ordRefl [IncOrd α] [OrderRefl α] {ma mb : Option α} :
+    ma ≼ₒ mb ↔ ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ a ≼ₒ b := by
+  rw [ord_iff]
+  refine or_congr_right (exists₂_congr fun a b => and_congr_right fun _ => and_congr_right fun _ =>
+    ⟨fun h => h.elim (· ▸ ord_refl a) id, .inr⟩)
+
 @[rocq_alias option_included_total]
 theorem inc_iff_isTotal [IsTotal α] {ma mb : Option α} :
     ma ≼ mb ↔ ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ a ≼ b := by
@@ -2594,6 +2637,12 @@ theorem inc_iff_isTotal [IsTotal α] {ma mb : Option α} :
   · rintro (rfl | ⟨a, b, rfl, rfl, Hinc⟩)
     · simp
     · exact .inr ⟨a, b, rfl, rfl, .inr Hinc⟩
+
+theorem ordN_iff_ordRefl [IncOrd α] [OrderRefl α] {n} {ma mb : Option α} :
+    ma ≼ₒ{n} mb ↔ ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ a ≼ₒ{n} b := by
+  rw [ordN_iff]
+  refine or_congr_right (exists₂_congr fun a b => and_congr_right fun _ => and_congr_right fun _ =>
+    ⟨fun h => h.elim Dist.to_ordN id, .inr⟩)
 
 @[rocq_alias option_includedN_total]
 theorem incN_iff_is_total [IsTotal α] {n} {ma mb : Option α} :
@@ -2673,6 +2722,10 @@ theorem isSome_mono_ext {ma mb : Option α} (h : ma ≼ mb) : ma.isSome → mb.i
   | none => simp
   | some _ => exact fun _ => isSome_of_some_inc h
 
+theorem eqv_of_ord_exclusive [OrdInc α] [Exclusive (a : α)] {b : α} (H : some a ≼ₒ some b)
+    (Hv : ✓ b) : a = b :=
+  H.elim id fun h => (not_valid_of_excl_inc (OrdInc.ord_inc h) Hv).elim
+
 @[rocq_alias Some_included_exclusive]
 theorem eqv_of_inc_exclusive [Exclusive (a : α)] {b : α} (H : some a ≼ some b)
     (Hv : ✓ b) : a = b := by
@@ -2682,8 +2735,12 @@ theorem eqv_of_inc_exclusive [Exclusive (a : α)] {b : α} (H : some a ≼ some 
     · exact He
     · exact not_valid_of_excl_inc H Hv |>.elim
 
+theorem dist_of_ord_exclusive [OrdInc α] [Exclusive (a : α)] {n} {b : α}
+    (H : some a ≼ₒ{n} some b) (Hv : ✓{n} b) : a ≡{n}≡ b :=
+  H.elim id fun h => (not_valid_of_exclN_inc (OrdInc.ordN_incN h) Hv).elim
+
 @[rocq_alias Some_includedN_exclusive]
-theorem dist_of_incN_exclusive [Exclusive (a : α)] {n} {b : α} (H : some a ≼{n} some b)
+theorem dist_of_inc_exclusive [Exclusive (a : α)] {n} {b : α} (H : some a ≼{n} some b)
     (Hv : ✓{n} b) : a ≡{n}≡ b := by
   rcases incN_iff.mp H with (Hcontra|H)
   · simp at Hcontra
@@ -2699,6 +2756,14 @@ theorem some_inc_some_iff_is_total [IsTotal α] {a b : α} :
   rintro (H|H)
   · exact ⟨_, H.symm.trans (op_core a).symm⟩
   · exact H
+
+theorem map_mono {β : Type _} [ORA β] [IncOrd β] (f : α → β) {ma mb : Option α}
+    (hf : ∀ x y : α, x ≼ₒ y → f x ≼ₒ f y) (h : ma ≼ₒ mb) :
+    ma.map f ≼ₒ mb.map f :=
+  match ma, mb, h with
+  | none, none, _ => trivial
+  | none, some b, _ => IncOrd.increasing (f b)
+  | some a, some b, h => h.elim (fun e => .inl (congrArg f e)) fun i => .inr (hf a b i)
 
 @[rocq_alias option_fmap_mono]
 theorem map_mono_ext {β : Type _} [ORA β] (f : α → β) {ma mb : Option α}
@@ -3055,23 +3120,6 @@ theorem mk_ord_mk (a a' : α) (b b' : β) : (a, b) ≼ₒ (a', b') ↔ a ≼ₒ 
 theorem mk_ordN_mk {n} (a a' : α) (b b' : β) :
     (a, b) ≼ₒ{n} (a', b') ↔ a ≼ₒ{n} a' ∧ b ≼ₒ{n} b' := .rfl
 
-/-- Transport pointwise order-to-extension conversions through the product. -/
-theorem incN_of_ordN {n} {x y : α × β}
-    (hsub₁ : ∀ {n : Nat} {a b : α}, a ≼ₒ{n} b → a ≼{n} b)
-    (hsub₂ : ∀ {n : Nat} {a b : β}, a ≼ₒ{n} b → a ≼{n} b)
-    (h : x ≼ₒ{n} y) : x ≼{n} y :=
-  let ⟨z₁, hz₁⟩ := hsub₁ h.1
-  let ⟨z₂, hz₂⟩ := hsub₂ h.2
-  ⟨(z₁, z₂), ⟨hz₁, hz₂⟩⟩
-
-theorem inc_of_ord {x y : α × β}
-    (hsub₁ : ∀ {a b : α}, a ≼ₒ b → a ≼ b)
-    (hsub₂ : ∀ {a b : β}, a ≼ₒ b → a ≼ b)
-    (h : x ≼ₒ y) : x ≼ y :=
-  let ⟨z₁, hz₁⟩ := hsub₁ h.1
-  let ⟨z₂, hz₂⟩ := hsub₂ h.2
-  ⟨(z₁, z₂), Prod.ext hz₁ hz₂⟩
-
 @[rocq_alias prod_included]
 theorem inc_def {x y : α × β} : x ≼ y ↔ x.1 ≼ y.1 ∧ x.2 ≼ y.2 :=
   ⟨fun ⟨z, hz⟩ => ⟨⟨z.1, congrArg Prod.fst hz⟩, ⟨z.2, congrArg Prod.snd hz⟩⟩,
@@ -3109,10 +3157,17 @@ instance instOrderRefl [OrderRefl α] [OrderRefl β] : OrderRefl (α × β) wher
 instance instAffine [ORA.Affine α] [ORA.Affine β] : ORA.Affine (α × β) :=
   IncOrd.of_increasing fun x => increasing_iff.mpr ⟨IncOrd.increasing x.1, IncOrd.increasing x.2⟩
 
-instance instIsInc [IsInc α] [IsInc β] : IsInc (α × β) where
-  inc_ord := IncOrd.inc_ord
-  ord_inc := inc_of_ord OrdInc.ord_inc OrdInc.ord_inc
-  ordN_incN := incN_of_ordN OrdInc.ordN_incN OrdInc.ordN_incN
+instance instOrdInc [OrdInc α] [OrdInc β] : OrdInc (α × β) where
+  ord_inc h :=
+    let ⟨z₁, hz₁⟩ := OrdInc.ord_inc h.1
+    let ⟨z₂, hz₂⟩ := OrdInc.ord_inc h.2
+    ⟨(z₁, z₂), Prod.ext hz₁ hz₂⟩
+  ordN_incN h :=
+    let ⟨z₁, hz₁⟩ := OrdInc.ordN_incN h.1
+    let ⟨z₂, hz₂⟩ := OrdInc.ordN_incN h.2
+    ⟨(z₁, z₂), ⟨hz₁, hz₂⟩⟩
+
+instance instIsInc [IsInc α] [IsInc β] : IsInc (α × β) := {}
 
 @[rocq_alias pair_core_id]
 instance instCoreIdPair {x : α} {y : β} [ORA.CoreId x] [ORA.CoreId y] :

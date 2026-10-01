@@ -97,7 +97,6 @@ theorem agree {p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{p} b) : a = b :=
 
 /-! ## Inclusion -/
 
-@[rocq_alias ufrac_auth_includedN]
 theorem includedN {n : Nat} {p q : Qp} {a b : A}
     (h : ✓{n} (●U{p} a) • ◯U{q} b) : some b ≼ₒ{n} some a := by
   rw [both_validN] at h
@@ -105,7 +104,11 @@ theorem includedN {n : Nat} {p q : Qp} {a b : A}
   · exact Option.some_ordN_some_iff.mpr (.inl e.2)
   · exact Option.some_ordN_some_iff.mpr (.inr i.2)
 
-@[rocq_alias ufrac_auth_included]
+@[rocq_alias ufrac_auth_includedN]
+theorem includedN_ext [OrdInc A] {n : Nat} {p q : Qp} {a b : A}
+    (h : ✓{n} (●U{p} a) • ◯U{q} b) : some b ≼{n} some a :=
+  OrdInc.ordN_incN (includedN h)
+
 theorem included [ORA.Discrete A] {q p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{q} b) :
     some b ≼ₒ some a := by
   rw [auth_both_valid_discrete] at h
@@ -113,14 +116,27 @@ theorem included [ORA.Discrete A] {q p : Qp} {a b : A} (h : ✓ (●U{p} a) • 
   · exact Option.some_ord_some_iff.mpr (.inl (congrArg Prod.snd e))
   · exact Option.some_ord_some_iff.mpr (.inr i.2)
 
-@[rocq_alias ufrac_auth_includedN_total]
+@[rocq_alias ufrac_auth_included]
+theorem included_ext [ORA.Discrete A] [OrdInc A] {q p : Qp} {a b : A}
+    (h : ✓ (●U{p} a) • ◯U{q} b) : some b ≼ some a :=
+  OrdInc.ord_inc (included h)
+
 theorem includedN_total [OrderRefl A] {n : Nat} {q p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{q} b) :
     b ≼ₒ{n} a := (Option.some_ordN_some_iff.mp (includedN h)).elim (·.to_ordN) id
 
-@[rocq_alias ufrac_auth_included_total]
+@[rocq_alias ufrac_auth_includedN_total]
+theorem includedN_total_ext [OrderRefl A] [OrdInc A] {n : Nat} {q p : Qp} {a b : A}
+    (h : ✓{n} (●U{p} a) • ◯U{q} b) : b ≼{n} a :=
+  OrdInc.ordN_incN (includedN_total h)
+
 theorem included_total [ORA.Discrete A] [OrderRefl A] {q p : Qp} {a b : A}
     (h : ✓ (●U{p} a) • ◯U{q} b) : b ≼ₒ a :=
   (Option.some_ord_some_iff.mp (included h)).elim (· ▸ ORA.ord_refl b) id
+
+@[rocq_alias ufrac_auth_included_total]
+theorem included_total_ext [ORA.Discrete A] [OrderRefl A] [OrdInc A] {q p : Qp} {a b : A}
+    (h : ✓ (●U{p} a) • ◯U{q} b) : b ≼ a :=
+  OrdInc.ord_inc (included_total h)
 
 /-! ## Auth-only validity -/
 
@@ -179,36 +195,36 @@ instance isOp_ufrac_auth_core_id {q q1 q2 : Qp} {a : A} [h1 : CoreId a] [h2 : Is
 
 /-! ## Updates -/
 
-omit [ORA.Affine A] in
-private theorem incN_of_ordN (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y)
-    {n : Nat} {x y : Option (UFrac × A)} (h : x ≼ₒ{n} y) : x ≼{n} y :=
-  Option.incN_of_ordN (Prod.incN_of_ordN (fun h => h) hsub) h
-
 @[rocq_alias ufrac_auth_update]
-theorem update {p q : Qp} {a b a' b' : A}
-    (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y) (h : (a, b) ~l~> (a', b')) :
+theorem update [OrdInc A] {p q : Qp} {a b a' b' : A} (h : (a, b) ~l~> (a', b')) :
     ((●U{p} a) • ◯U{q} b) ~~> (●U{p} a') • ◯U{q} b' :=
-  auth_update_of_localUpdate
-    (incN_of_ordN hsub)
-    (.option (.prod_2 _ _ h))
+  auth_update_of_localUpdate (.option (.prod_2 _ _ h))
 
 @[rocq_alias ufrac_auth_update_surplus]
-theorem update_surplus {p q : Qp} {a b : A}
-    (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y) (h : ✓ (a • b)) :
+theorem update_surplus {p q : Qp} {a b : A} (h : ✓ (a • b)) :
     (●U{p} a) ~~> (●U{p + q} (a • b)) • ◯U{q} b := by
-  refine auth_update_alloc_of_localUpdate
-    (incN_of_ordN hsub)
-    (local_update_unital.mpr fun n mpa _ heq => ?_)
-  refine ⟨⟨trivial, h.validN⟩, ?_⟩
-  refine .trans ?_ (heq.trans (unit_left_id_dist mpa)).op_r
-  exact ⟨comm.dist, op_commN⟩
+  refine auth_update_alloc fun n bf hinc _ => ⟨?_, ⟨trivial, h.validN⟩⟩
+  match bf, hinc with
+  | none, _ =>
+    refine .inr ⟨(UFrac.ord_iff).mpr (by show q.val < (p + q).val; grind), ?_⟩
+    exact ordN_of_ord n ((IncOrd.increasing a).increasing b)
+  | some (r, c), .inl ⟨hr, hc⟩ =>
+    refine .inl ⟨?_, ?_⟩
+    · have : r = ⟨p⟩ := hr
+      subst this
+      exact Dist.of_eq (UFrac.ext_iff.mpr
+        (show ((⟨q⟩ : UFrac) • ⟨p⟩).frac = p + q by rw [frac_op]; grind))
+    · exact (hc.op_r (x := b)).trans comm.dist
+  | some (r, c), .inr ⟨hr, hc⟩ =>
+    refine .inr ⟨UFrac.ord_iff.mpr ?_, ordN_ne .rfl comm.dist (op_monoN_right b hc)⟩
+    have := UFrac.ord_iff.mp hr
+    show ((⟨q⟩ : UFrac) • r).frac < p + q
+    rw [frac_op]; grind
 
 @[rocq_alias ufrac_auth_update_surplus_cancel]
-theorem update_surplus_cancel {p q : Qp} {a b : A} [ORA.Cancelable b]
-    (hsub : ∀ {n : Nat} {x y : A}, x ≼ₒ{n} y → x ≼{n} y) :
+theorem update_surplus_cancel [OrdInc A] {p q : Qp} {a b : A} [ORA.Cancelable b] :
     ((●U{p + q} (a • b)) • ◯U{q} b) ~~> ●U{p} a := by
   refine auth_update_dealloc_of_localUpdate
-    (incN_of_ordN hsub)
     (local_update_unital.mpr fun n mpa hv heq => ?_)
   match mpa with
   | none =>

@@ -650,6 +650,16 @@ theorem some_includedN_ext [ORA α] [ORA β] {n} {x y : Csum α β} :
 
 /-! ## Updates -/
 
+instance instOrdInc [ORA α] [ORA β] [OrdInc α] [OrdInc β] : OrdInc (Csum α β) where
+  ord_inc h := included_ext.mpr <| (included.mp h).imp id fun h => h.imp
+    (fun ⟨a, a', e₁, e₂, h⟩ => ⟨a, a', e₁, e₂, OrdInc.ord_inc h⟩)
+    (fun ⟨b, b', e₁, e₂, h⟩ => ⟨b, b', e₁, e₂, OrdInc.ord_inc h⟩)
+  ordN_incN h := includedN_ext.mpr <| (includedN.mp h).imp id fun h => h.imp
+    (fun ⟨a, a', e₁, e₂, h⟩ => ⟨a, a', e₁, e₂, OrdInc.ordN_incN h⟩)
+    (fun ⟨b, b', e₁, e₂, h⟩ => ⟨b, b', e₁, e₂, OrdInc.ordN_incN h⟩)
+
+instance instIsInc [ORA α] [ORA β] [IsInc α] [IsInc β] : IsInc (Csum α β) := {}
+
 @[rocq_alias csum_update_l]
 theorem update_l [ORA α] [ORA β] {a₁ a₂ : α}
     (h : a₁ ~~> a₂) : (inl (β := β) a₁) ~~> inl a₂ := by
