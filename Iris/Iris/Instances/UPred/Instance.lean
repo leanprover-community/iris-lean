@@ -715,11 +715,9 @@ section derived
 #rocq_ignore uPred.ownM_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias uPred.intuitionistically_ownM]
-theorem intuitionistically_ownM [IncOrd M] (a : M) [CoreId a] : □ ownM a ⊣⊢ ownM a := by
-  refine ⟨intuitionistically_elim, ?_⟩
-  refine (intuitionistically_ownM_core a).trans ?_
-  refine intuitionistically_mono ?_
-  simp only [core_eqv_self, BIBase.Entails.rfl]
+theorem intuitionistically_ownM (a : M) [CoreId a] : □ ownM a ⊣⊢ ownM a :=
+  ⟨intuitionistically_elim, fun _ _ h =>
+    ⟨ordN_trans (ordN_unit (x := a)) h, core_eqv_self a ▸ core_ordN_core h⟩⟩
 
 @[rocq_alias uPred.ownM_invalid]
 theorem ownM_invalid (a : M) (hnv : ¬ ✓{0} a) : ownM a ⊢ False :=
@@ -766,8 +764,9 @@ instance ownM_sep_homomorphism :
   map_unit := ownM_unit'.to_eq
 
 @[rocq_alias uPred.bupd_soundness]
-theorem bupd_soundness [IncOrd M] {P : UPred M} [Plain P] : (⊢ |==> P) → ⊢ P :=
-  fun h => h.trans bupd_elim
+theorem bupd_soundness {P : UPred M} [Plain P] : (⊢ |==> P) → ⊢ P := fun h n x hx =>
+  let ⟨_, _, HP⟩ := h n x hx n unit n.le_refl (unit_right_id.symm.dist.validN.1 x.property)
+  P.mono (Plain.plain (P := P) n _ HP) hx .refl
 
 @[rocq_alias uPred.modality]
 inductive Modality where
@@ -786,6 +785,20 @@ def Modality.denote : Modality → UPred M → UPred M
 @[rocq_alias uPred.denote_modalities]
 def Modality.denoteAll (ms : List Modality) (P : UPred M) : UPred M := ms.foldr denote P
 
+private theorem Modality.denoteAll_plainly_laterN {P : UPred M} [Plain P] :
+    ∀ ms : List Modality, denoteAll ms P ⊢ ■ ▷^[ms.length] P
+  | [] => Plain.plain (P := P)
+  | .bupd :: ms =>
+    (bupd_mono ((denoteAll_plainly_laterN ms).trans plainly_idem.mpr)).trans
+      (bupd_plainly_elim.trans (plainly_mono later_intro))
+  | .later :: ms => (later_mono (denoteAll_plainly_laterN ms)).trans later_plainly.mp
+  | .persistently :: ms =>
+    (persistently_mono (denoteAll_plainly_laterN ms)).trans
+      (persistently_elim_plainly.mp.trans (plainly_mono later_intro))
+  | .plainly :: ms =>
+    (plainly_mono (denoteAll_plainly_laterN ms)).trans
+      (plainly_idem.mp.trans (plainly_mono later_intro))
+
 theorem Modality.denoteAll_laterN [IncOrd M] {P : UPred M} [Plain P] :
     ∀ ms : List Modality, denoteAll ms P ⊢ ▷^[ms.length] P
   | [] => .rfl
@@ -797,9 +810,10 @@ theorem Modality.denoteAll_laterN [IncOrd M] {P : UPred M} [Plain P] :
 
 /-- Soundness under an arbitrary nesting of modalities, for plain propositions. -/
 @[rocq_alias uPred.modal_soundness]
-theorem modal_soundness [IncOrd M] {P : UPred M} [Plain P] (ms : List Modality)
+theorem modal_soundness {P : UPred M} [Plain P] (ms : List Modality)
     (h : ⊢ Modality.denoteAll ms P) : ⊢ P :=
-  laterN_soundness (h.trans (Modality.denoteAll_laterN ms))
+  laterN_soundness <| (and_intro .rfl ((h.trans (Modality.denoteAll_plainly_laterN ms)).trans
+    plainly_elim_persistently)).trans persistently_and_emp_elim
 
 @[rocq_alias uPred.consistency]
 theorem consistency : ¬ (⊢@{UPred M} False) := pure_soundness
@@ -867,7 +881,7 @@ theorem BUpdPlain_bupd [UORA M] (P : UPred M) : BUpdPlain P ⊢ |==> P := by
     refine ⟨z, validN_ne op_commN Hvyz, HP⟩
 
 @[rocq_alias bupd_alt_bupd_iff]
-theorem BUpdPlain_bupd_iff [UORA M] [IncOrd M] (P : UPred M) : BUpdPlain P ⊣⊢ |==> P :=
+theorem BUpdPlain_bupd_iff [UORA M] (P : UPred M) : BUpdPlain P ⊣⊢ |==> P :=
   ⟨BUpdPlain_bupd P, BUpd_BUpdPlain (PROP := UPred M)⟩
 
 @[rocq_alias ownM_updateP]

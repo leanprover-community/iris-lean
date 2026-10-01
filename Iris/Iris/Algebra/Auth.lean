@@ -482,19 +482,19 @@ theorem auth_both_inc {a1 a2 b1 b2 : A} :
     (((● a1 : Auth A) • ◯ b1) ≼ ((● a2) • ◯ b2)) ↔ (a1 = a2 ∧ b1 ≼ b2) :=
   auth_one_op_frag_inc_auth_one_op_frag_iff
 
-theorem auth_dfrac_ordN [IncOrd A] {n : Nat} {dq1 dq2 : DFrac} {a1 a2 b : A} :
+theorem auth_dfrac_ordN {n : Nat} {dq1 dq2 : DFrac} {a1 a2 b : A} [Increasing b] :
     ((●{dq1} a1) ≼ₒ{n} ((●{dq2} a2) • ◯ b)) ↔ ((dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2) :=
   auth_ordN_auth_op_frag_iff
 
-theorem auth_dfrac_ord [IncOrd A] {dq1 dq2 : DFrac} {a1 a2 b : A} :
+theorem auth_dfrac_ord {dq1 dq2 : DFrac} {a1 a2 b : A} [Increasing b] :
     ((●{dq1} a1) ≼ₒ ((●{dq2} a2) • ◯ b)) ↔ ((dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 = a2) :=
   auth_ord_auth_op_frag_iff
 
-theorem auth_ordN [IncOrd A] {n : Nat} {a1 a2 b : A} :
+theorem auth_ordN {n : Nat} {a1 a2 b : A} [Increasing b] :
     ((● a1 : Auth A) ≼ₒ{n} ((● a2) • ◯ b)) ↔ (a1 ≡{n}≡ a2) :=
   auth_one_ordN_auth_one_op_frag_iff
 
-theorem auth_ord [IncOrd A] {a1 a2 b : A} :
+theorem auth_ord {a1 a2 b : A} [Increasing b] :
     ((● a1 : Auth A) ≼ₒ ((● a2) • ◯ b)) ↔ (a1 = a2) :=
   auth_one_ord_auth_one_op_frag_iff
 

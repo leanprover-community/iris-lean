@@ -680,8 +680,9 @@ theorem coreId_iff_core_eqv_self : CoreId (x : α) ↔ core x = x :=
 @[rocq_alias cmra_core_idemp]
 theorem core_idem (x : α) : core (core x) = core x := core_eqv_self _
 
-instance instOrderReflOfIsTotal [IncOrd α] : OrderRefl α where
-  ord_refl x := IncOrd.inc_ord ⟨core x, (op_core x).symm⟩
+instance instOrderReflOfIsTotal : OrderRefl α where
+  ord_refl x :=
+    (congrArg (x ≼ₒ ·) (core_op x)).mp ((pcore_increasing (pcore_eq_core x)).increasing x)
 
 end total
 
@@ -1265,20 +1266,21 @@ end total
 
 /-! ## Affine algebras -/
 
-section affine
-variable [IncOrd α]
+section increasing
 
-theorem ord_op_right (x y : α) : y ≼ₒ x • y := (IncOrd.increasing x).increasing y
-theorem ord_op_left (x y : α) : x ≼ₒ x • y := comm' (x := y) (y := x) ▸ ord_op_right y x
-theorem ordN_op_left (n) (x y : α) : x ≼ₒ{n} x • y := (ord_op_left x y).ordN
-theorem ordN_op_right (n) (x y : α) : y ≼ₒ{n} x • y := (ord_op_right x y).ordN
+theorem ord_op_right (x y : α) [Increasing x] : y ≼ₒ x • y := Increasing.increasing y
+theorem ord_op_left (x y : α) [Increasing y] : x ≼ₒ x • y :=
+  comm' (x := y) (y := x) ▸ ord_op_right y x
+theorem ordN_op_left (n) (x y : α) [Increasing y] : x ≼ₒ{n} x • y := (ord_op_left x y).ordN
+theorem ordN_op_right (n) (x y : α) [Increasing x] : y ≼ₒ{n} x • y := (ord_op_right x y).ordN
 
-theorem pcore_ord_self {x : α} {cx} (e : pcore x = some cx) : cx ≼ₒ x :=
+theorem pcore_ord_self {x : α} {cx} [Increasing x] (e : pcore x = some cx) : cx ≼ₒ x :=
   pcore_op_left e ▸ ord_op_left cx x
 
-theorem core_ord_self [IsTotal α] {x : α} : core x ≼ₒ x := pcore_ord_self (pcore_eq_core x)
+theorem core_ord_self [IsTotal α] {x : α} [Increasing x] : core x ≼ₒ x :=
+  pcore_ord_self (pcore_eq_core x)
 
-end affine
+end increasing
 
 section discreteORA
 
@@ -1448,14 +1450,14 @@ theorem exists_op_ordN_iff_incN [OrdInc α] {n} {x y : α} : (∃ c, x • c ≼
 theorem exists_op_ord_iff_inc [OrdInc α] {x y : α} : (∃ c, x • c ≼ₒ y) ↔ x ≼ y :=
   ⟨fun ⟨c, h⟩ => inc_trans (inc_op_left x c) (OrdInc.ord_inc h), fun ⟨c, hc⟩ => ⟨c, by rw [hc]⟩⟩
 
-section affine
-variable [IncOrd α]
+section increasing
 
-theorem ordN_unit {n} {x : α} : unit ≼ₒ{n} x := unit_left_id (x := x) ▸ ordN_op_left n unit x
+theorem ordN_unit {n} {x : α} [Increasing x] : unit ≼ₒ{n} x :=
+  unit_left_id (x := x) ▸ ordN_op_left n unit x
 
-theorem ord_unit {x : α} : unit ≼ₒ x := unit_left_id (x := x) ▸ ord_op_left unit x
+theorem ord_unit {x : α} [Increasing x] : unit ≼ₒ x := unit_left_id (x := x) ▸ ord_op_left unit x
 
-end affine
+end increasing
 
 @[rocq_alias cmra_monoid]
 instance ucmraMonoidOps {α : Type _} [UORA α] : Algebra.MonoidOps (op (α := α)) unit where

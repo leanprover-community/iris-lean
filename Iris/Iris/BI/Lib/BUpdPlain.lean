@@ -86,11 +86,9 @@ theorem BUpdPlain_plainly {P : PROP} : BUpdPlain iprop(■ P) ⊢ (■ P) := by
 
 /- BiBUpdPlainly entails the alternative definition -/
 @[rocq_alias bupd_bupd_alt]
-theorem BUpd_BUpdPlain [BIUpdate PROP] [BIBUpdateSbi PROP] [BIAffine PROP] {P : PROP} : (|==> P) ⊢ BUpdPlain P := by
-  unfold BUpdPlain
-  iintro HP %_ Hx
-  imod HP
-  iapply Hx $$ HP
+theorem BUpd_BUpdPlain [BIUpdate PROP] [BIBUpdateSbi PROP] {P : PROP} : (|==> P) ⊢ BUpdPlain P :=
+  forall_intro fun _ => wand_intro <| bupd_frame_right.trans <|
+    (BIUpdate.mono (wand_elim_right.trans plainly_idem.mpr)).trans bupd_plainly_elim
 
 /-- We get the usual rule for frame preserving updates if we have an `own`
 connective satisfying the following rule w.r.t. interaction with plainly. -/
