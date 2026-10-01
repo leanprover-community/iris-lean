@@ -467,7 +467,7 @@ instance instStoreCMRA : ORA (M V) where
       refine (get?_ne i |>.ne Heq).trans ?_
       simp [ORA.op, get?_merge, optionOp]
       cases get? y1 i <;> cases get? y2 i <;> simp
-    let extendF (i : K) := ORA.extend (Hm i) (Hslice i)
+    let extendF (i : K) := extend (Hm i) (Hslice i)
     exists bindAlter (fun k (_ : V) => extendF k |>.fst) y1
     exists bindAlter (fun k (_ : V) => extendF k |>.snd.fst) y2
     simp [ORA.op, op]
@@ -539,7 +539,7 @@ instance instStoreUCMRA : UORA (M V) where
     simp [get?_bindAlter, get?_empty]
   ord_refl _ := fun _ => ord_refl _
 
-instance instAffine [ORA.Affine V] : ORA.Affine (M V) :=
+instance instAffine [Affine V] : Affine (M V) :=
   IncOrd.of_increasing fun _ => increasing_iff.mpr fun _ => IncOrd.increasing _
 
 instance instOrdInc [OrdInc V] : OrdInc (M V) where
@@ -553,10 +553,10 @@ theorem lookup_ordN {n} {m1 m2 : M V} : m1 ≼ₒ{n} m2 ↔ ∀ i, get? m1 i ≼
 theorem lookup_ord {m1 m2 : M V} : m1 ≼ₒ m2 ↔ ∀ i, get? m1 i ≼ₒ get? m2 i := .rfl
 
 @[rocq_alias gmap_op_empty_l_L]
-theorem op_empty_left {m : M V} : (∅ : M V) • m = m := ORA.unit_left_id_L
+theorem op_empty_left {m : M V} : (∅ : M V) • m = m := unit_left_id_L
 
 @[rocq_alias gmap_op_empty_r]
-theorem op_empty_right {m : M V} : m • (∅ : M V) = m := ORA.unit_right_id_L
+theorem op_empty_right {m : M V} : m • (∅ : M V) = m := unit_right_id_L
 
 instance instIsTotalHeap : IsTotal (M V) where
   total _ := Option.isSome_iff_exists.mp rfl
@@ -762,7 +762,7 @@ theorem singleton_ordN_iff [IncOrd V] {m : M V} :
     · rw [hm] at hi; exact (hi : False).elim
     · rw [hm] at hi; exact ⟨y, .rfl, hi⟩
   · by_cases hk : i = k
-    · subst hk; rw [get?_singleton_eq rfl]; exact ORA.ordN_ne .rfl Hy.symm Hxy
+    · subst hk; rw [get?_singleton_eq rfl]; exact ordN_ne .rfl Hy.symm Hxy
     · simp only [get?_singleton, hk, ↓reduceIte]
       rcases get? m k with _ | v
       · trivial
@@ -873,7 +873,7 @@ theorem singleton_inc_singleton_iff :
   · refine ⟨y, ?_, H⟩
     exact get?_singleton_eq rfl
 
-theorem exclusive_singleton_ord_iff [ORA.Affine V] [OrdInc V] {m : M V} (He : Exclusive x) (Hv : ✓ m) :
+theorem exclusive_singleton_ord_iff [Affine V] [OrdInc V] {m : M V} (He : Exclusive x) (Hv : ✓ m) :
     (singleton i x) ≼ₒ m ↔ (get? m i = some x) :=
   inc_iff_ord.symm.trans (exclusive_singleton_inc_iff He Hv)
 
@@ -1003,12 +1003,12 @@ theorem bigOpS_ofSet {A S : Type _} [LawfulFiniteSet S A] {M' : Type _ → Type 
       (Heap.insert_equiv_singleton_op_singleton (LawfulFiniteMap.get?_ofSet_of_not_mem hx))).symm
 
 @[rocq_alias gmap_cmra_discrete]
-nonrec instance [HD : ORA.Discrete V] [LawfulPartialMap M K] : Discrete (M V) where
+nonrec instance [HD : Discrete V] [LawfulPartialMap M K] : Discrete (M V) where
   discrete_0 {_ _} H := by
     refine OFE.eq_dist_2 ?_
     exact fun _ k => (OFE.Discrete.discrete_0 (H k)).dist
-  discrete_valid {_} := (ORA.Discrete.discrete_valid <| · ·)
-  discrete_ord h k := ORA.discrete_ord (h k)
+  discrete_valid {_} := (Discrete.discrete_valid <| · ·)
+  discrete_ord h k := discrete_ord (h k)
 
 /-! ## Frame-preserving updates -/
 
@@ -1323,6 +1323,7 @@ section HeapFunctor
 variable {K} (H : Type _ → Type _) [LawfulPartialMap H K]
 
 namespace PartialMap
+open ORA
 
 def map (f : α → β) : H α → H β := PartialMap.bindAlter (fun _ a => some <| f a)
 
@@ -1363,11 +1364,11 @@ theorem get?_map (f : α → β) (m : H α) (k : K) : get? (map H f m) k = (get?
   cases get? m k <;> rfl
 
 @[rocq_alias gmap_fmap_cmra_morphism]
-def mapC [ORA α] [ORA β] (f : α -C> β) : ORA.Hom (H α) (H β) where
+def mapC [ORA α] [ORA β] (f : α -C> β) : Hom (H α) (H β) where
   f := PartialMap.map H f
   ne := inferInstance
   validN {n x} := by
-    simp only [map, ORA.ValidN, Heap.validN, optionValidN]
+    simp only [map, ValidN, Heap.validN, optionValidN]
     apply forall_imp
     intro k
     rw [get?_bindAlter]
@@ -1377,14 +1378,14 @@ def mapC [ORA α] [ORA β] (f : α -C> β) : ORA.Hom (H α) (H β) where
     intro _ x
     simp [map, get?_bindAlter]
     rcases get? m x with _|v <;> simp
-    have h : (ORA.pcore v).bind (fun a => some (f a)) = (ORA.pcore v).map f := by
+    have h : (pcore v).bind (fun a => some (f a)) = (pcore v).map f := by
       rw [Option.map_eq_bind]
       rfl
     rw [h]
     exact (f.pcore v).dist
   op m1 m2 := OFE.eq_dist_2 <| by
     intro _ k
-    simp [ORA.op, map, get?_bindAlter, get?_merge, Option.merge]
+    simp [op, map, get?_bindAlter, get?_merge, Option.merge]
     cases get? m1 k <;> cases get? m2 k <;> simp
     exact (f.op _ _).dist
   monoN h k := by rw [get?_map, get?_map]; exact (Option.mapC f).monoN (h k)

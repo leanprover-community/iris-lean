@@ -32,6 +32,7 @@ theorem mul_div_cancel_left {a b : Rat} (ha : a ≠ 0) : a * (b / a) = b := by
 end Rat
 
 namespace Iris
+open ORA
 
 /-- The type of positive rational numbers, used as fractions -/
 @[rocq_alias fracO, rocq_alias fracR]
@@ -92,7 +93,7 @@ instance instCOFEQp : COFE Qp := COFE.ofDiscrete _
     rintro H He; exact ⟨y, z, He, .rfl, .rfl⟩
   pcore_op_mono H := by rcases H
 
-instance instORAQp : CMRA Qp := ORA.ofCMRAData Qp.cmraData
+instance instORAQp : CMRA Qp := ofCMRAData Qp.cmraData
 
 -- TODO: A different solution to having these bridge lemmas might be to internalize
 -- positivity into the ORA's validity predicate, removing the sybtype, and having Qp
@@ -158,22 +159,22 @@ theorem Frac.le_of_ord {p q : Qp} (H : p ≼ₒ q) : p ≤ q := by
 theorem Frac.le_of_inc {p q : Qp} (H : p ≼ q) : p ≤ q := le_of_ord (inc_iff_ord.mp H)
 
 @[rocq_alias frac_cmra_discrete]
-instance instDiscreteQp : ORA.Discrete Qp where
+instance instDiscreteQp : Discrete Qp where
   discrete_0 := fun h => h
   discrete_valid := id
   discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
 
 @[rocq_alias frac_full_exclusive]
-instance instExclusiveQp1 : ORA.Exclusive (α := Qp) 1 where
+instance instExclusiveQp1 : Exclusive (α := Qp) 1 where
   exclusive0_l x := by have := x.2; grind
 
 @[rocq_alias frac_cancelable]
-instance instCancelableQp {a : Qp} : ORA.Cancelable (α := Qp) a where
+instance instCancelableQp {a : Qp} : Cancelable (α := Qp) a where
   cancelableN {n x y} _ (H : a • x = a • y) := by
     simp only [Qp.dist_iff, Qp.ext_iff, Qp.val_op] at *; grind
 
 @[rocq_alias frac_id_free]
-instance instIdFreeQp {a : Qp} : ORA.IdFree a where
+instance instIdFreeQp {a : Qp} : IdFree a where
   id_free0_r b _ H := by
     have := b.2; simp only [Qp.dist_iff, Qp.val_op] at H; grind
 

@@ -59,8 +59,8 @@ instance instCoreId (x : MaxPrefixList α) : CoreId x :=
 
 instance instDiscrete [OFE.Discrete α] : ORA.Discrete (MaxPrefixList α) where
   discrete_0 := OFE.discrete_0 (α := MaxPrefixListMap (Agree α))
-  discrete_valid := ORA.discrete_valid (α := MaxPrefixListMap (Agree α))
-  discrete_ord := ORA.discrete_ord (α := MaxPrefixListMap (Agree α))
+  discrete_valid := discrete_valid (α := MaxPrefixListMap (Agree α))
+  discrete_ord := discrete_ord (α := MaxPrefixListMap (Agree α))
 
 end Instances
 
@@ -84,7 +84,7 @@ theorem get?_toMaxPrefixList {i : Nat} {l : List α} :
 
 variable [OFE α]
 
-theorem toMaxPrefixList_nil : toMaxPrefixList ([] : List α) = UORA.unit := by
+theorem toMaxPrefixList_nil : toMaxPrefixList ([] : List α) = unit := by
   refine LawfulPartialMap.equiv_iff_eq (M := MaxPrefixListMap).mp fun i => ?_
   rw [get?_toMaxPrefixList, List.getElem?_nil]
   exact (LawfulPartialMap.get?_empty i).symm
@@ -197,9 +197,9 @@ theorem toMaxPrefixList_incN_aux {n} {l1 l2 : List α}
 theorem toMaxPrefixList_ordN_iff {n} {l1 l2 : List α} :
     toMaxPrefixList l1 ≼ₒ{n} toMaxPrefixList l2 ↔ ∃ l, l2 ≡{n}≡ l1 ++ l := by
   refine ⟨fun h => ⟨_, toMaxPrefixList_ordN_aux h⟩, fun ⟨l, hl⟩ => ?_⟩
-  refine ORA.ordN_of_ordN_of_dist ?_ (toMaxPrefixList_ne.ne hl).symm
+  refine ordN_of_ordN_of_dist ?_ (toMaxPrefixList_ne.ne hl).symm
   rw [← toMaxPrefixList_op_left (List.prefix_append l1 l)]
-  exact ORA.ordN_op_left n _ _
+  exact ordN_op_left n _ _
 
 @[rocq_alias to_max_prefix_list_includedN]
 theorem toMaxPrefixList_incN_iff {n} {l1 l2 : List α} :
@@ -210,7 +210,7 @@ theorem toMaxPrefixList_ord_iff {l1 l2 : List α} :
     toMaxPrefixList l1 ≼ₒ toMaxPrefixList l2 ↔ l1 <+: l2 := by
   refine ⟨fun h => ⟨_, eq_dist_2 fun n => (toMaxPrefixList_ordN_aux h.ordN).symm⟩, fun h => ?_⟩
   rw [← toMaxPrefixList_op_left h]
-  exact ORA.ord_op_left _ _
+  exact ord_op_left _ _
 
 @[rocq_alias to_max_prefix_list_included]
 theorem toMaxPrefixList_inc_iff {l1 l2 : List α} :

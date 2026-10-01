@@ -163,7 +163,7 @@ theorem discreteFunSingleton_unit_eq (x : ι) :
 theorem discreteFunSingleton_core_eq {x : ι} (y : β x) :
     core (discreteFunSingleton x y) = discreteFunSingleton x (core y) :=
   funext fun x' => by
-    simp only [core, ORA.pcore, Option.getD_some]
+    simp only [core, pcore, Option.getD_some]
     by_cases h : x = x'
     · subst h
       rw [discreteFunSingleton_self, discreteFunSingleton_self]
@@ -181,7 +181,7 @@ theorem discreteFunSingleton_op_eq {x : ι} (y₁ y₂ : β x) :
     discreteFunSingleton x y₁ • discreteFunSingleton x y₂ =
       discreteFunSingleton x (y₁ • y₂) :=
   funext fun x' => by
-    simp only [ORA.op]
+    simp only [op]
     by_cases h : x = x'
     · subst h
       rw [discreteFunSingleton_self, discreteFunSingleton_self, discreteFunSingleton_self]
@@ -209,12 +209,12 @@ theorem discreteFunInsert_updateP {x : ι} {P : β x → Prop} {Q : ((a : ι) �
   refine UpdateP.total.mpr fun n gf hgf => ?_
   have hgf_at (a : ι) : ✓{n} discreteFunInsert x y₁ g a • gf a := hgf a
   obtain ⟨y₂, hy₂, hvalid⟩ := hy n (some (gf x))
-    (by simpa only [ORA.op?, discreteFunInsert_self] using hgf_at x)
+    (by simpa only [op?, discreteFunInsert_self] using hgf_at x)
   refine ⟨discreteFunInsert x y₂ g, hQ y₂ hy₂, fun x' => ?_⟩
-  simp only [ORA.op]
+  simp only [op]
   by_cases hx'x : x' = x
   · subst x'
-    simpa only [ORA.op?, discreteFunInsert_self]
+    simpa only [op?, discreteFunInsert_self]
   · simpa only [discreteFunInsert_of_ne (h := Ne.symm hx'x) ..] using hgf_at x'
 
 @[rocq_alias discrete_fun_insert_updateP']

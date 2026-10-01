@@ -260,7 +260,7 @@ open BI ORA OFE
 variable [Sbi PROP]
 
 @[rocq_alias ucmra_unit_validI]
-theorem ucmra_unit_validI [UORA A] : ⊢@{PROP} ✓ (UORA.unit : A) :=
+theorem ucmra_unit_validI [UORA A] : ⊢@{PROP} ✓ (unit : A) :=
   internalCmraValid_intro unit_valid
 
 @[rocq_alias cmra_validI_op_r]
@@ -469,7 +469,7 @@ theorem view_both_validI (relI : SiProp) (a : A) (b : B)
 
 @[rocq_alias view_auth_dfrac_validI]
 theorem view_auth_dfrac_validI (relI : SiProp) (dq : DFrac) (a : A)
-    (H : ∀ n, relI.holds n ↔ R n a UORA.unit) :
+    (H : ∀ n, relI.holds n ↔ R n a unit) :
     ✓ (●V{dq} a : View R) ⊣⊢@{PROP} ⌜✓ dq⌝ ∧ <si_pure> relI := by
   sbi_unfold; intro _
   exact ⟨fun hn => ⟨(auth_validN_iff.mp hn).1, (H _).mpr (auth_validN_iff.mp hn).2⟩,
@@ -477,7 +477,7 @@ theorem view_auth_dfrac_validI (relI : SiProp) (dq : DFrac) (a : A)
 
 @[rocq_alias view_auth_validI]
 theorem view_auth_validI (relI : SiProp) (a : A)
-    (H : ∀ n, relI.holds n ↔ R n a UORA.unit) :
+    (H : ∀ n, relI.holds n ↔ R n a unit) :
     ✓ (●V a : View R) ⊣⊢@{PROP} <si_pure> relI :=
   ⟨siPure_mono fun n hn => (H n).mpr ((auth_one_validN_iff n a).mp hn),
    siPure_mono fun n hn => (auth_one_validN_iff n a).mpr ((H n).mp hn)⟩

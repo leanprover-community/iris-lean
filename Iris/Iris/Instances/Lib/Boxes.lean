@@ -51,7 +51,7 @@ instance box_own_auth_timeless (γ : SliceName) (a : Auth (Option (Excl BoolO)))
 
 @[rocq_alias box_own_prop]
 def box_own_prop (γ : SliceName) (P : IProp GF) : IProp GF :=
-  iOwn (F := BoxF) γ (UORA.unit, some (toAgree (Later.next P)))
+  iOwn (F := BoxF) γ (unit, some (toAgree (Later.next P)))
 
 instance box_own_prop_persistent (γ : SliceName) (P : IProp GF) :
     Persistent (box_own_prop γ P) := by
@@ -154,7 +154,7 @@ theorem slice_insert_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   unfold box
   iintro ⟨%Φ, #Heq, H⟩
   imod (iOwn_alloc_cofinite (F := BoxF) ((((●E (⟨false⟩ : BoolO)), none) • ((◯E (⟨false⟩ : BoolO)), none)) •
-        (UORA.unit, some (toAgree (Later.next Q)))) ((toList f).map Prod.fst)) with ⟨%γ, %Hγ, Hown⟩
+        (unit, some (toAgree (Later.next Q)))) ((toList f).map Prod.fst)) with ⟨%γ, %Hγ, Hown⟩
   · exact ⟨ExclAuth.valid, Agree.toAgree_valid⟩
   have hfresh : get? f γ = none := by
     rw [Option.eq_none_iff_forall_not_mem]

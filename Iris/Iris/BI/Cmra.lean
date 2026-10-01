@@ -254,7 +254,7 @@ instance _root_.SiProp.cmraOrder_timeless [ORA.Discrete A] {a b : A} :
   timeless := fun n h => by
     cases n with
     | zero => left; trivial
-    | succ n => right; exact ordN_of_ord _ (ORA.discrete_ord (ord0_of_ordN h))
+    | succ n => right; exact ordN_of_ord _ (discrete_ord (ord0_of_ordN h))
 
 /-- The internal order `a ≼ₒ b`, holding at step index `n` when `a ≼ₒ{n} b`; ownership is
 monotone along it (`ownM_mono`). -/

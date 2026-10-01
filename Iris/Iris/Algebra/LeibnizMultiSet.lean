@@ -56,7 +56,7 @@ open MultiSet
   pcore_op_mono h _ :=
     ⟨.ofSet ∅, by cases h; exact congrArg (some ∘ ofSet) disjUnion_empty_left.symm⟩
 
-instance : CMRA (LeibnizMultiSet MS) := ORA.ofCMRAData LeibnizMultiSet.cmraData
+instance : CMRA (LeibnizMultiSet MS) := ofCMRAData LeibnizMultiSet.cmraData
 
 @[instance_reducible] def ucmraData : UCMRAData (LeibnizMultiSet MS) where
   unit := .ofSet ∅
@@ -96,7 +96,7 @@ theorem included_iff_subset {X Y : MS} : ofSet X ≼ ofSet Y ↔ X ⊆ Y :=
   inc_iff_ord.trans ord_iff_subset
 
 @[rocq_alias gmultiset_cancelable]
-instance (X : LeibnizMultiSet MS) : ORA.Cancelable X :=
+instance (X : LeibnizMultiSet MS) : Cancelable X :=
   discrete_cancelable fun {Y Z} _ h => by grind
 
 @[rocq_alias gmultiset_update]
@@ -130,7 +130,7 @@ variable {MS : Type _} [LawfulFiniteMultiSet MS A]
 
 @[rocq_alias big_opMS_singletons]
 theorem bigOpMS_singletons (X : MS) :
-    ([^ ORA.op mset] x ∈ X, (ofSet {x} : LeibnizMultiSet MS)) = ofSet X := by
+    ([^ op mset] x ∈ X, (ofSet {x} : LeibnizMultiSet MS)) = ofSet X := by
   induction X using multiset_ind with
   | empty => exact BigOpMS.bigOpMS_empty
   | disjUnion_singleton a X ih => rw [BigOpMS.bigOpMS_insert, ih, op_disjUnion]

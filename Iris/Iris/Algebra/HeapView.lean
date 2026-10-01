@@ -66,13 +66,13 @@ instance : IsViewRel (HeapR K V H) where
         have Hmm := Hm1 ▸ Hm k; revert Hmm
         cases get? m2 k <;> simp
       refine ⟨v'', dq, Hm2, ⟨Hvval, validN_ne Hv (validN_of_le Hn Hdqval)⟩, c, ?_⟩
-      refine ORA.ordN_of_ordN_of_dist (b := some (dq, v)) ?_ (OFE.some_dist_some.mpr ⟨rfl, Hv⟩)
-      exact (op_monoN_left c (h ▸ Hf')).trans (ORA.ordN_of_ordN_le Hn Hvincl)
+      refine ordN_of_ordN_of_dist (b := some (dq, v)) ?_ (OFE.some_dist_some.mpr ⟨rfl, Hv⟩)
+      exact (op_monoN_left c (h ▸ Hf')).trans (ordN_of_ordN_le Hn Hvincl)
   op_left {n m f g} Hrel k fv Hk := by
     have e : some fv • get? g k = some (fv •? get? g k) := by cases get? g k <;> rfl
     obtain ⟨v, dq, Hm, Hv, c, Hc⟩ := Hrel k _ ((get?_op f g).trans (Hk ▸ e))
     refine ⟨v, dq, Hm, Hv, get? g k • c, ?_⟩
-    rw [ORA.assoc', e]
+    rw [assoc', e]
     exact Hc
   rel_validN n m f Hrel k := by
     match Hf : get? f k with
@@ -137,7 +137,7 @@ theorem singleton_get_iff [OrdInc V] n m k dq v :
 instance [ORA.Discrete V] : IsViewRelDiscrete (HeapR K V H) where
   discrete n _ _ H k v He := by
     have ⟨v, Hv1, ⟨x, Hx1, c, Hx2⟩⟩ := H k v He
-    refine ⟨v, Hv1, ⟨x, ?_, c, ORA.ordN_of_ord _ (ORA.discrete_ord Hx2)⟩⟩
+    refine ⟨v, Hv1, ⟨x, ?_, c, ordN_of_ord _ (discrete_ord Hx2)⟩⟩
     exact ⟨Hx1.1, valid_iff_validN.mp (Discrete.discrete_valid Hx1.2) _⟩
 
 end HeapR
@@ -204,7 +204,7 @@ instance [h : IsOp d dq dq1 dq2] :
 This is the workhorse for proofs that rewrite the authoritative map along identities like
 `PartialMap.map_insert`, `map_delete`, or `map_union`. -/
 theorem auth_ord_of_map_eq (dq : DFrac) (h : m1 = m2) :
-    Auth dq m1 ≼ₒ Auth dq m2 := h ▸ ORA.ord_refl _
+    Auth dq m1 ≼ₒ Auth dq m2 := h ▸ ord_refl _
 
 @[rocq_alias gmap_view_auth_dfrac_op_invN]
 theorem dist_of_validN_auth_op : ✓{n} Auth dp m1 • Auth dq m2 → m1 ≡{n}≡ m2 :=
@@ -300,7 +300,7 @@ theorem auth_op_frag_one_validN_iff :
     | none, Hi =>
       rcases Option.some_ordN_some_iff.mp Hi with e | i
       · exact ⟨Hp, validN_ne e.2.symm Hv.2, Hl ▸ e.2.symm⟩
-      · exact absurd Hv.1 (ORA.not_valid_of_exclN_inc (x := DFrac.own one) i.1)
+      · exact absurd Hv.1 (not_valid_of_exclN_inc (x := DFrac.own one) i.1)
     | some y, Hi =>
       have hv' : ✓{n} (some ((DFrac.own one, v1) : DFrac × V) • some y) := validN_of_ordN Hi Hv
       exact (Exclusive.exclusive0_l (x := DFrac.own one) y.1 (validN_of_le (Nat.zero_le n) hv'.1)).elim
@@ -344,10 +344,10 @@ theorem auth_op_frag_discrete_valid_iff_frame [ORA.Discrete V] :
   refine forall_congr' (fun _ => auth_op_frag_validN_iff_frame) |>.trans ?_
   refine ⟨fun Hvalid' => ?_, ?_⟩
   · obtain ⟨v', dq', Hdp, Hl, Hv, c, Hi⟩ := Hvalid' 0
-    refine ⟨v', dq', Hdp, Hl, ?_, c, (ORA.ord_iff_ordN 0).mpr Hi⟩
+    refine ⟨v', dq', Hdp, Hl, ?_, c, (ord_iff_ordN 0).mpr Hi⟩
     exact ⟨discrete_valid Hv.1, discrete_valid Hv.2⟩
   · exact fun ⟨v', dq', Hdp, Hl, Hv, c, Hi⟩ n =>
-      ⟨v', dq', Hdp, Hl, Hv.validN, c, (ORA.ord_iff_ordN n).mp Hi⟩
+      ⟨v', dq', Hdp, Hl, Hv.validN, c, (ord_iff_ordN n).mp Hi⟩
 
 theorem auth_op_frag_discrete_valid_iff_ord [ORA.Discrete V] [IncOrd V] :
     ✓ Auth dp m1 • Frag k dq v1 ↔
@@ -377,7 +377,7 @@ theorem auth_op_frag_valid_total_discrete_iff_ord [OrderRefl V] [ORA.Discrete V]
     · exact valid_of_ord i.1 Hv.1
   · rcases Hi with e | i
     · obtain rfl : v1 = v' := congrArg Prod.snd e
-      exact ORA.ord_refl v1
+      exact ord_refl v1
     · exact i.2
 
 @[rocq_alias gmap_view_both_dfrac_valid_discrete_total]
@@ -392,7 +392,7 @@ theorem auth_op_frag_valid_total_discrete_iff [OrderRefl V] [ORA.Discrete V] [Or
     · exact (valid_of_inc i Hv).1
   · rcases Option.eq_or_inc_of_some_inc_some Hi with e | ⟨z, hz⟩
     · obtain rfl : v1 = v' := congrArg Prod.snd e
-      exact OrdInc.ord_inc (ORA.ord_refl v1)
+      exact OrdInc.ord_inc (ord_refl v1)
     · exact ⟨z.2, congrArg Prod.snd hz⟩
 
 @[rocq_alias gmap_view_both_valid]
@@ -448,7 +448,7 @@ theorem frag_op_valid_iff :
     exact singleton_validN_iff
   refine ⟨fun H => ?_, fun ⟨Hp, Hv⟩ n => ?_⟩
   · exact ⟨valid_iff_validN.mpr (H · |>.1), valid_iff_validN.mpr (H · |>.2)⟩
-  · exact ⟨valid_iff_validN.mp Hp n, ORA.valid_iff_validN.mp Hv n⟩
+  · exact ⟨valid_iff_validN.mp Hp n, valid_iff_validN.mp Hv n⟩
 
 section heapUpdates
 
@@ -516,7 +516,7 @@ theorem update_auth_op_frag_frame
     rw [e] at Hincl
     obtain ⟨dq₂, g, Hval₂, Hincl₂⟩ := Hup n mdf mv0 _ Hlookup Hval Hincl
     refine ⟨mv', dq₂, rfl, Hval₂, c • g, ?_⟩
-    rw [← Hj, Option.some_op_opM (a := (dq', v')), ORA.assoc', e]
+    rw [← Hj, Option.some_op_opM (a := (dq', v')), assoc', e]
     exact Hincl₂
   · rw [get?_singleton_ne h] at Hj
     rw [get?_insert_ne h]
@@ -553,7 +553,7 @@ theorem update_auth_op_frag [OrdInc V]
     (hF.2.trans (Dist.of_eq (key (dq, v) (f • g)).2))
   have hE : (dq' •? (Option.map Prod.fst (f • g)), mv') ≡{n}≡ (dq', v') •? (f • g) :=
     ⟨Dist.of_eq (key (dq', v') (f • g)).1.symm, He'.trans (Dist.of_eq (key (dq', v') (f • g)).2.symm)⟩
-  refine ⟨dq' •? (Option.map Prod.fst (f • g)), g, validN_ne hE.symm Hv', ORA.ordN_of_dist ?_⟩
+  refine ⟨dq' •? (Option.map Prod.fst (f • g)), g, validN_ne hE.symm Hv', ordN_of_dist ?_⟩
   rw [Option.some_op_opM, Option.opM_opM_assoc]
   exact OFE.some_dist_some.mpr hE.symm
 
@@ -632,7 +632,7 @@ theorem update_of_dfrac_update P (Hdq : dq ~~>: P) :
     by_cases h : k = j
     · subst h
       simp only [ORA.op, Heap.op, get?_merge, get?_singleton_eq rfl] at Heq
-      refine ⟨v', dq₀, Hlookup, Hv₀, c, ORA.ordN_of_dist_of_ordN (Dist.of_eq ?_) Hi₀⟩
+      refine ⟨v', dq₀, Hlookup, Hv₀, c, ordN_of_dist_of_ordN (Dist.of_eq ?_) Hi₀⟩
       rw [← Option.opM_opM_assoc, ← Option.some_op_opM, ← Heq]
       cases Std.PartialMap.get? bf k <;> rfl
     · apply Hrel
@@ -768,11 +768,11 @@ theorem update_big_delete (m m' : H V) :
   induction m' using LawfulFiniteMap.induction_on with
   | hemp =>
     suffices h : (m \ ∅ : H V) = m by
-      rw [bigOpM_frag_empty, ORA.unit_right_id, h]
+      rw [bigOpM_frag_empty, unit_right_id, h]
     exact eqv_of_Equiv fun j => by simp [get?_difference, get?_empty]
   | hins k v m2 Hm2 IH =>
     suffices h : (m \ Std.insert m2 k v) = delete (m \ m2) k by
-      rw [BigOpM.bigOpM_insert_eq _ _ Hm2, ORA.comm' (x := Frag k (.own one) v), ORA.assoc', h]
+      rw [BigOpM.bigOpM_insert_eq _ _ Hm2, comm' (x := Frag k (.own one) v), assoc', h]
       exact (Update.op IH .id).trans update_one_delete
     exact eqv_of_Equiv fun j => by
       by_cases hjk : k = j
@@ -790,7 +790,7 @@ theorem update_big_replace (m m0 m1 : H V)
   | hemp =>
     intro m1 Hdom Hall
     suffices h : m1 = ∅ by
-      simp only [h, bigOpM_frag_empty, ORA.unit_right_id, union_empty_left]
+      simp only [h, bigOpM_frag_empty, unit_right_id, union_empty_left]
       exact Update.id
     refine Std.LawfulPartialMap.equiv_iff_eq.mp fun j => ?_
     cases hj : get? m1 j with
@@ -814,10 +814,10 @@ theorem update_big_replace (m m0 m1 : H V)
           cases get? m k <;> rfl
         · rw [get?_insert_ne hjk]
           simp [PartialMap.union, get?_merge, get?_delete_ne hjk]
-    rw [BigOpM.bigOpM_insert_eq _ _ Hm2, ORA.comm' (x := Frag k (.own one) v), ORA.assoc',
-      hunion, BigOpM.bigOpM_delete_eq _ Hin, ORA.assoc']
+    rw [BigOpM.bigOpM_insert_eq _ _ Hm2, comm' (x := Frag k (.own one) v), assoc',
+      hunion, BigOpM.bigOpM_delete_eq _ Hin, assoc']
     refine (Update.op (IH _ hdom (all_delete _ Hall)) .id).trans ?_
-    rw [← ORA.assoc', ORA.comm' (y := Frag k (.own one) v), ORA.assoc']
+    rw [← assoc', comm' (y := Frag k (.own one) v), assoc']
     exact Update.op (update_replace (Hall k v' Hin)) .id
 
 -- TODO: golf
@@ -832,8 +832,8 @@ theorem update_big_alloc (m1 m2 : H V) dq
     | hemp =>
       rw [bigOpM_frag_empty]
       refine Update.included ?_
-      rw [union_empty_left, ORA.unit_right_id]
-      exact ORA.ord_refl _
+      rw [union_empty_left, unit_right_id]
+      exact ord_refl _
     | hins k v m2 Hm2 IH =>
       have Hall' : all (fun k v => ✓ v) m2 := by exact all_of_all_insert _ Hm2 Hall
       have Hdisj' : m2 ##ₘ m1 := by
@@ -847,7 +847,7 @@ theorem update_big_alloc (m1 m2 : H V) dq
       have Hv := all_insert_of_all _ Hall
       have Hstep := update_one_alloc Hms Hdq Hv
       refine (Update.op Hstep .id).trans ?_
-      rw [← ORA.assoc]
+      rw [← assoc]
       refine Update.op ?_ ?_
       · rw [← union_insert_left]
       · rw [BigOpM.bigOpM_insert_eq _ _ Hm2]

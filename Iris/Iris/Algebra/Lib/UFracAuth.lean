@@ -77,7 +77,7 @@ theorem validN {n : Nat} {a : A} {p : Qp} (ha : ✓{n} a) : ✓{n} (●U{p} a) �
 
 @[rocq_alias ufrac_auth_valid]
 theorem valid {p : Qp} {a : A} (ha : ✓ a) : ✓ (●U{p} a) • ◯U{p} a :=
-  auth_both_valid_2_ord ⟨trivial, ha⟩ (ORA.ord_refl _)
+  auth_both_valid_2_ord ⟨trivial, ha⟩ (ord_refl _)
 
 /-! ## Agreement -/
 
@@ -156,12 +156,12 @@ theorem includedN_total [OrderRefl A] [OrdInc A] {n : Nat} {q p : Qp} {a b : A}
 
 theorem ord_total [ORA.Discrete A] [OrderRefl A] [IncOrd A] {q p : Qp} {a b : A}
     (h : ✓ (●U{p} a) • ◯U{q} b) : b ≼ₒ a :=
-  (Option.some_ord_some_iff.mp (ord h)).elim (· ▸ ORA.ord_refl b) id
+  (Option.some_ord_some_iff.mp (ord h)).elim (· ▸ ord_refl b) id
 
 @[rocq_alias ufrac_auth_included_total]
 theorem included_total [ORA.Discrete A] [OrderRefl A] [OrdInc A] {q p : Qp} {a b : A}
     (h : ✓ (●U{p} a) • ◯U{q} b) : b ≼ a :=
-  (eq_or_inc_of_some_inc_some (included h)).elim (· ▸ OrdInc.ord_inc (ORA.ord_refl b)) id
+  (eq_or_inc_of_some_inc_some (included h)).elim (· ▸ OrdInc.ord_inc (ord_refl b)) id
 
 /-! ## Auth-only validity -/
 
@@ -235,7 +235,7 @@ theorem update_surplus {p q : Qp} {a b : A} (h : ✓ (a • b)) :
   rw [frac_op]; grind
 
 @[rocq_alias ufrac_auth_update_surplus_cancel]
-theorem update_surplus_cancel [OrdInc A] {p q : Qp} {a b : A} [ORA.Cancelable b] :
+theorem update_surplus_cancel [OrdInc A] {p q : Qp} {a b : A} [Cancelable b] :
     ((●U{p + q} (a • b)) • ◯U{q} b) ~~> ●U{p} a := by
   refine auth_update_dealloc
     (local_update_unital.mpr fun n mpa hv heq => ?_)

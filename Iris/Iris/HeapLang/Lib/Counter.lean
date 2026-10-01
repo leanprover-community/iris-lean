@@ -232,7 +232,7 @@ theorem newcounter_contrib_spec :
   iintro %Φ _ Hφ
   wp_lam
   wp_alloc l with Hl
-  imod iOwn_alloc (F := CCounterRF) (ORA.op (●F (0 : Nat)) (◯F (0 : Nat))) with ⟨%γ, Hγ, Hγ'⟩
+  imod iOwn_alloc (F := CCounterRF) (op (●F (0 : Nat)) (◯F (0 : Nat))) with ⟨%γ, Hγ, Hγ'⟩
   · exact FracAuth.valid trivial
   imod inv_alloc N ⊤ (ccounterInv γ l) $$ [Hl Hγ] with #Hinv
   · iexists 0; iframe
@@ -247,7 +247,7 @@ theorem incr_contrib_spec (γ : GName) (l : Loc) (q : Qp) (n : Nat) :
   iintro %Φ ⟨#Hctx, Hγf⟩ Hφ
   iapply incr_spec (ccounter γ q n) (ccounter γ q (n+1)) l $$ [$Hctx $Hγf] Hφ
   iintro %c ⟨Hγ, Hγf⟩
-  imod iOwn_update_op (a' := ORA.op (●F (c + 1)) (◯F{q} (n + 1))) $$ [$Hγ $Hγf] with ⟨Hγ, Hγf⟩
+  imod iOwn_update_op (a' := op (●F (c + 1)) (◯F{q} (n + 1))) $$ [$Hγ $Hγf] with ⟨Hγ, Hγf⟩
   · exact FracAuth.update (CommMonoidLike.leftCancelAdd_local_update (by grind))
   imodintro
   iframe

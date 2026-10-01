@@ -110,7 +110,7 @@ variable {S : Type _} [LawfulSet S A] [DecidableDisj S]
   extend {_ _ y₁ y₂} _ h := ⟨y₁, y₂, ⟨h, .rfl, .rfl⟩⟩
   pcore_op_mono h _ := ⟨.valid ∅, by cases h; simp [disjoint_empty_left]⟩
 
-instance : CMRA (DisjointLeibnizSet S) := ORA.ofCMRAData DisjointLeibnizSet.cmraData
+instance : CMRA (DisjointLeibnizSet S) := ofCMRAData DisjointLeibnizSet.cmraData
 
 instance instDiscreteDisjointLeibnizSet : ORA.Discrete (DisjointLeibnizSet S) where
   discrete_0 := fun h => h
@@ -193,7 +193,7 @@ theorem not_mem_of_mem_and_valid_op_left {x y : DisjointLeibnizSet S} (v : ✓ x
 theorem not_mem_of_mem_and_valid_op_right {x y : DisjointLeibnizSet S}
   (v : ✓ x • y) {p : A} (m : p ∈ y)
     : ¬ p ∈ x :=
-  not_mem_of_mem_and_valid_op_left (ORA.comm' (x := x) ▸ v) m
+  not_mem_of_mem_and_valid_op_left (comm' (x := x) ▸ v) m
 
 @[rocq_alias gset_disj_dealloc_local_update]
 theorem localUpdate_dealloc {X Y : S} : (valid X, valid Y) ~l~> (valid (X \ Y), valid ∅) := by
@@ -339,7 +339,7 @@ variable {S : Type _} [LawfulSet S A]
   extend {_ _ _ _} _ h := ⟨_, _, h, .rfl, .rfl⟩
   pcore_op_mono {_ _} := by rintro ⟨rfl⟩ y; exists y
 
-instance : CMRA (LeibnizSet S) := ORA.ofCMRAData LeibnizSet.cmraData
+instance : CMRA (LeibnizSet S) := ofCMRAData LeibnizSet.cmraData
 
 @[instance_reducible] def ucmraData : UCMRAData (LeibnizSet S) where
   unit := valid ∅
@@ -355,7 +355,7 @@ instance instDiscreteLeibnizSet : ORA.Discrete (LeibnizSet S) where
   discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
 
 @[rocq_alias gset_core_id]
-instance instCoreIdLeibnizSet (X : LeibnizSet S) : ORA.CoreId X := ⟨rfl⟩
+instance instCoreIdLeibnizSet (X : LeibnizSet S) : CoreId X := ⟨rfl⟩
 
 @[rocq_alias coPset_op, rocq_alias gset_op]
 theorem op_union (X Y : S) : (valid X) • (valid Y) = valid (X ∪ Y) := by simp [op]
@@ -411,7 +411,7 @@ variable {S : Type _} [LawfulFiniteSet S A]
 
 @[rocq_alias big_opS_singletons]
 theorem bigOpS_singletons (X : S) :
-    ([^ ORA.op set] x ∈ X, (valid {x} : LeibnizSet S)) = .valid X := by
+    ([^ op set] x ∈ X, (valid {x} : LeibnizSet S)) = .valid X := by
   induction X using FiniteSet.set_ind with
   | hemp => exact BigOpS.bigOpS_empty
   | hadd x X hx ih => rw [insert_union, BigOpS.bigOpS_insert hx, ih, op_union]

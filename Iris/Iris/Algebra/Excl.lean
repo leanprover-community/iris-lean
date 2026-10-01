@@ -21,7 +21,7 @@ inductive Excl α where
 #rocq_ignore maybe_Excl "std++ `Maybe` class; pattern match instead"
 
 namespace Excl
-open OFE
+open OFE ORA
 
 /-! ## COFE -/
 
@@ -154,7 +154,7 @@ instance [OFE α] [IsCOFE α] : IsCOFE (Excl α) where
   pcore_op_mono := by simp
 
 @[rocq_alias exclR]
-instance [OFE α] : CMRA (Excl α) := ORA.ofCMRAData Excl.cmraData
+instance [OFE α] : CMRA (Excl α) := ofCMRAData Excl.cmraData
 
 theorem ord_iff [OFE α] {x y : Excl α} : x ≼ₒ y ↔ y = invalid := by
   constructor
@@ -224,7 +224,7 @@ theorem validN_inv_some_r [OFE α] {n} {mx : Option (Excl α)} {a : α}
   | some _ => exact h.elim
 
 @[rocq_alias excl_exclusive]
-instance [OFE α] {x : Excl α} : ORA.Exclusive x where exclusive0_l := fun _ a => a
+instance [OFE α] {x : Excl α} : Exclusive x where exclusive0_l := fun _ a => a
 
 @[rocq_alias excl_cmra_discrete]
 instance [OFE α] [OFE.Discrete α] : ORA.Discrete (Excl α) where

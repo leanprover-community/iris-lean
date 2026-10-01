@@ -24,6 +24,7 @@ infixr:50 " ~~> " => Update
 #rocq_ignore cmra_update_rewrite_relation "Not needed"
 
 section Updates
+open ORA
 
 variable [ORA α] [ORA β] (f : α → β) (g : β → α)
 
@@ -60,8 +61,8 @@ theorem UpdateP.weaken {x : α} (uxp : x ~~>: P) (pq : ∀ y, P y → Q y) : x ~
   fun n mz v => let ⟨y, py, vy⟩ := uxp n mz v; ⟨y, pq y py, vy⟩
 
 @[rocq_alias cmra_update_exclusive]
-theorem Update.exclusive {x y : α} [ORA.Exclusive x] (vy : ✓ y) : x ~~> y :=
-  fun _ _ P => ORA.none_of_excl_valid_op P ▸ vy.validN
+theorem Update.exclusive {x y : α} [Exclusive x] (vy : ✓ y) : x ~~> y :=
+  fun _ _ P => none_of_excl_valid_op P ▸ vy.validN
 
 instance [ORA α] : Std.Refl (Update (α := α)) where
   refl _ := Update.id
@@ -81,14 +82,14 @@ theorem UpdateP.op {P Q R : α → Prop} {x y}
     (uxp : x ~~>: P) (uyq : y ~~>: Q) (pqr : ∀ z w, P z → Q w → R (z • w)) : x • y ~~>: R := by
   intro n mz v
   have e₁ : (x • y) •? mz ≡{n}≡ y •? some (x •? mz) :=
-    (ORA.opM_left_dist mz ORA.op_commN).trans (ORA.op_opM_assoc_dist _ _ mz)
-  let ⟨w, pw, vw⟩ := uyq n (some (x •? mz)) (ORA.validN_ne e₁ v)
+    (opM_left_dist mz op_commN).trans (op_opM_assoc_dist _ _ mz)
+  let ⟨w, pw, vw⟩ := uyq n (some (x •? mz)) (validN_ne e₁ v)
   have e₂ : w •? some (x •? mz) ≡{n}≡ x •? some (w •? mz) := calc
-    w •? some (x •? mz) ≡{n}≡ (w • x) •? mz       := (ORA.op_opM_assoc_dist w x mz).symm
-    _                   ≡{n}≡ (x • w) •? mz       := (ORA.opM_left_dist mz ORA.op_commN)
-    _                   ≡{n}≡ x •? some (w •? mz) := ORA.op_opM_assoc_dist x w mz
-  let ⟨z, pz, vz⟩ := uxp n (some (w •? mz)) (ORA.validN_ne e₂ vw)
-  exact ⟨z • w, pqr z w pz pw, ORA.validN_ne (ORA.op_opM_assoc_dist z w mz).symm vz⟩
+    w •? some (x •? mz) ≡{n}≡ (w • x) •? mz       := (op_opM_assoc_dist w x mz).symm
+    _                   ≡{n}≡ (x • w) •? mz       := (opM_left_dist mz op_commN)
+    _                   ≡{n}≡ x •? some (w •? mz) := op_opM_assoc_dist x w mz
+  let ⟨z, pz, vz⟩ := uxp n (some (w •? mz)) (validN_ne e₂ vw)
+  exact ⟨z • w, pqr z w pz pw, validN_ne (op_opM_assoc_dist z w mz).symm vz⟩
 
 @[rocq_alias cmra_updateP_op']
 theorem UpdateP.op' {P Q : α → Prop} {x y : α} (uxp : x ~~>: P) (uyq : y ~~>: Q) :
@@ -103,14 +104,14 @@ theorem Update.op {x₁ x₂ y₁ y₂ : α} (xy₁ : x₁ ~~> y₁) (xy₂ : x�
 #rocq_ignore cmra_update_op_flip_proper "Rocq setoid-rewriting instance; use Update.op"
 
 @[rocq_alias cmra_update_op_l]
-theorem Update.op_l {x y : α} : x • y ~~> x := fun _ _ => ORA.validN_op_opM_left
+theorem Update.op_l {x y : α} : x • y ~~> x := fun _ _ => validN_op_opM_left
 
 @[rocq_alias cmra_update_op_r]
-theorem Update.op_r {x y : α} : x • y ~~> y := fun _ _ => ORA.validN_op_opM_right
+theorem Update.op_r {x y : α} : x • y ~~> y := fun _ _ => validN_op_opM_right
 
 /-- An update may descend in the order. New relative to Rocq, where the order is `≼`. -/
 theorem Update.included {x y : α} (h : x ≼ₒ y) : y ~~> x :=
-  fun _ mz => (ORA.op?_mono_left mz h).validN
+  fun _ mz => (op?_mono_left mz h).validN
 
 @[rocq_alias cmra_update_included]
 theorem Update.included_ext {x y : α} : x ≼ y → y ~~> x :=
@@ -118,7 +119,7 @@ theorem Update.included_ext {x y : α} : x ≼ y → y ~~> x :=
 
 @[rocq_alias cmra_update_valid0]
 theorem Update.valid0 {x y : α} : (✓{0} x → x ~~> y) → x ~~> y :=
-  fun h n mz v => h (ORA.valid0_of_validN (ORA.validN_opM v)) n mz v
+  fun h n mz v => h (valid0_of_validN (validN_opM v)) n mz v
 
 /-! ## Frame preserving updates for total and discete CMRAs -/
 
@@ -129,8 +130,8 @@ theorem UpdateP.total [IsTotal α] :
   mpr h := fun n mz v =>
     match mz with
     | none =>
-      let ⟨y, py, vy⟩ := h n (ORA.core x) (ORA.validN_ne (ORA.op_core_dist x).symm v)
-      ⟨y, py, ORA.validN_op_opM_left vy⟩
+      let ⟨y, py, vy⟩ := h n (core x) (validN_ne (op_core_dist x).symm v)
+      ⟨y, py, validN_op_opM_left vy⟩
     | some z => h n z v
 
 @[rocq_alias cmra_total_update]
@@ -140,42 +141,42 @@ theorem Update.total [IsTotal α] :
   mpr h := fun n mz v =>
     match mz with
     | none =>
-      ORA.validN_op_opM_left <| h n (ORA.core x) (ORA.validN_ne (ORA.op_core_dist x).symm v)
+      validN_op_opM_left <| h n (core x) (validN_ne (op_core_dist x).symm v)
     | some z => h n z v
 
 @[rocq_alias cmra_discrete_updateP]
-theorem UpdateP.discrete [ORA.Discrete α] :
+theorem UpdateP.discrete [Discrete α] :
     x ~~>: P ↔ ∀ (mz : Option α), ✓ (x •? mz) → ∃ y, P y ∧ ✓ (y •? mz) where
   mp uxp := fun mz v =>
-    let ⟨y, py, vy⟩ := uxp 0 mz (ORA.Valid.validN v)
-    ⟨y, py, ORA.discrete_valid vy⟩
+    let ⟨y, py, vy⟩ := uxp 0 mz (Valid.validN v)
+    ⟨y, py, discrete_valid vy⟩
   mpr h := fun n mz v =>
-    let ⟨y, py, vy⟩ := h mz ((ORA.valid_iff_validN' n).mpr v)
-    ⟨y, py, ORA.Valid.validN vy⟩
+    let ⟨y, py, vy⟩ := h mz ((valid_iff_validN' n).mpr v)
+    ⟨y, py, Valid.validN vy⟩
 
 @[rocq_alias cmra_discrete_update]
-theorem Update.discrete [ORA.Discrete α] {x y : α} :
+theorem Update.discrete [Discrete α] {x y : α} :
     x ~~> y ↔ ∀ (mz : Option α), ✓ (x •? mz) → ✓ (y •? mz) where
-  mp uxp := fun mz v => ORA.discrete_valid <| uxp 0 mz (ORA.Valid.validN v)
-  mpr h := fun n mz v => ORA.Valid.validN <| h mz ((ORA.valid_iff_validN' n).mpr v)
+  mp uxp := fun mz v => discrete_valid <| uxp 0 mz (Valid.validN v)
+  mpr h := fun n mz v => Valid.validN <| h mz ((valid_iff_validN' n).mpr v)
 
 @[rocq_alias cmra_discrete_total_updateP]
-theorem UpdateP.discrete_total [ORA.Discrete α] [IsTotal α] :
+theorem UpdateP.discrete_total [Discrete α] [IsTotal α] :
     x ~~>: P ↔ ∀ (z : α), ✓ (x • z) → ∃ y, P y ∧ ✓ (y • z) where
   mp uxp := fun z vz =>
-    let ⟨y, py, vy⟩ := UpdateP.total.mp uxp 0 z (ORA.Valid.validN vz)
-    ⟨y, py, ORA.discrete_valid vy⟩
+    let ⟨y, py, vy⟩ := UpdateP.total.mp uxp 0 z (Valid.validN vz)
+    ⟨y, py, discrete_valid vy⟩
   mpr h :=
     UpdateP.total.mpr fun n z v =>
-      let ⟨y, py, vy⟩ := h z ((ORA.valid_iff_validN' n).mpr v)
-      ⟨y, py, ORA.Valid.validN vy⟩
+      let ⟨y, py, vy⟩ := h z ((valid_iff_validN' n).mpr v)
+      ⟨y, py, Valid.validN vy⟩
 
 @[rocq_alias cmra_discrete_total_update]
-theorem Update.discrete_total [ORA.Discrete α] [IsTotal α] :
+theorem Update.discrete_total [Discrete α] [IsTotal α] :
     x ~~> y ↔ ∀ (z : α), ✓ (x • z) → ✓ (y • z) where
   mp uxp := fun z vz =>
-    ORA.discrete_valid <| Update.total.mp uxp 0 z (ORA.Valid.validN vz)
-  mpr h := Update.total.mpr fun n z v => (h z ((ORA.valid_iff_validN' n).mpr v)).validN
+    discrete_valid <| Update.total.mp uxp 0 z (Valid.validN vz)
+  mpr h := Update.total.mpr fun n z v => (h z ((valid_iff_validN' n).mpr v)).validN
 
 -- (** * Transport *)
 -- `cmra_transport` itself is ignored (see `ORA.lean`): equality `A = B` between CMRAs is
@@ -199,13 +200,13 @@ theorem UpdateP.iso
     | none => (g_validN n _).mp v
     | some z =>
       have : g y • z = g (y • f z) := by rw [g_op, gf]
-      (g_validN n _).mp (ORA.validN_ne this.dist v)
+      (g_validN n _).mp (validN_ne this.dist v)
   have ⟨x, px, vx⟩ := uyp n (mz.map f) this
   have : g (x •? Option.map f mz) = g x •? mz :=
     match mz with
     | none => rfl
-    | some z => by simp only [Option.map_some, ORA.op?, g_op, gf]
-  exact ⟨g x, pq x px, ORA.validN_ne this.dist ((g_validN n _).mpr vx)⟩
+    | some z => by simp only [Option.map_some, op?, g_op, gf]
+  exact ⟨g x, pq x px, validN_ne this.dist ((g_validN n _).mpr vx)⟩
 
 @[rocq_alias iso_cmra_updateP']
 theorem UpdateP.iso'

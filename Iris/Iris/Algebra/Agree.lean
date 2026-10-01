@@ -353,6 +353,7 @@ theorem mem_of_agree (x : Agree α) : ∃ a, a ∈ x := x.ind fun r => Raw.mem r
 end Agree
 
 namespace Agree
+open ORA
 
 variable [OFE α] [OFE β]
 
@@ -441,7 +442,7 @@ theorem op_inv {x y : Agree α} : valid (op x y) → x = y :=
   pcore_op_mono := fun {x cx} h y => by obtain rfl := Option.some.inj h; exact ⟨y, rfl⟩
 
 @[rocq_alias agree_cmra_mixin]
-instance instORA : CMRA (Agree α) := ORA.ofCMRAData Agree.cmraData
+instance instORA : CMRA (Agree α) := ofCMRAData Agree.cmraData
 
 #rocq_ignore agreeR "Use the plain Agree type with a typeclass instance instead."
 #rocq_ignore agree_op_instance "Use the CMRA instance instead."
@@ -454,7 +455,7 @@ theorem validN_def {x : Agree α} : ✓{n} x ↔ validN n x := .rfl
 theorem valid_def {x : Agree α} : ✓ x ↔ valid x := .rfl
 
 @[rocq_alias agree_pcore]
-theorem pcore_some {x : Agree α} : ORA.pcore x = some x := rfl
+theorem pcore_some {x : Agree α} : pcore x = some x := rfl
 
 @[rocq_alias agree_cmra_total]
 instance : IsTotal (Agree α) where
@@ -481,7 +482,7 @@ theorem ordN {x y : Agree α} : x ≼ₒ{n} y ↔ y ≡{n}≡ y • x := by
   calc
     y ≡{n}≡ x • z := h
     _ ≡{n}≡ (x • x) • z := .op_l idemp.symm.dist
-    _ ≡{n}≡ x • (x • z) := ORA.op_assocN.symm
+    _ ≡{n}≡ x • (x • z) := op_assocN.symm
     _ ≡{n}≡ x • y := h.symm.op_r
     _ ≡{n}≡ y • x := op_commN
 
@@ -565,14 +566,15 @@ theorem toAgree.inj {a1 a2 : α} {n} (H : toAgree a1 ≡{n}≡ toAgree a2) : a1 
   Agree.toAgree_injN H
 
 namespace Agree
+open ORA
 
 @[rocq_alias agree_cancelable]
-instance {x : Agree α} : ORA.Cancelable x where
+instance {x : Agree α} : Cancelable x where
   cancelableN hval heq :=
     (Agree.op_invN hval).symm.trans (Agree.op_invN ((OFE.Dist.validN heq).mp hval))
 
 @[rocq_alias agree_core_id]
-instance (x : Agree α) : ORA.CoreId x where
+instance (x : Agree α) : CoreId x where
   core_id := pcore_some
 
 @[simp]
@@ -595,7 +597,7 @@ theorem toAgree_ord {a b : α} : toAgree a ≼ₒ toAgree b ↔ a = b := by
   · exists toAgree a
     calc
       toAgree b = toAgree a := congrArg toAgree h.symm
-      _         = toAgree a • toAgree a := (ORA.pcore_op_left rfl).symm
+      _         = toAgree a • toAgree a := (pcore_op_left rfl).symm
 
 @[simp, rocq_alias to_agree_included]
 theorem toAgree_included {a b : α} : toAgree a ≼ toAgree b ↔ a = b :=

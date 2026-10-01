@@ -27,6 +27,7 @@ structure UFrac where
 #rocq_ignore ufracO "Use UFrac type with typeclass inference"
 
 namespace UFrac
+open ORA
 
 @[simp] theorem ext_iff {x y : UFrac} : x = y ↔ x.frac = y.frac := by
   cases x; cases y; simp
@@ -61,7 +62,7 @@ instance : OFE.Discrete UFrac := ⟨fun h => h⟩
   pcore_op_mono H := by rcases H
 
 @[rocq_alias ufracR]
-instance : CMRA UFrac := ORA.ofCMRAData UFrac.cmraData
+instance : CMRA UFrac := ofCMRAData UFrac.cmraData
 
 @[simp, grind =] theorem frac_op (x y : UFrac) : (x • y).frac = x.frac + y.frac := rfl
 @[simp, grind =] theorem valid_iff {x : UFrac} : ✓ x ↔ True := Iff.rfl
@@ -86,18 +87,18 @@ theorem le_of_ord {x y : UFrac} (H : x ≼ₒ y) : x.frac ≤ y.frac := by
 theorem le_of_inc {x y : UFrac} (H : x ≼ y) : x.frac ≤ y.frac := le_of_ord (inc_iff_ord.mp H)
 
 @[rocq_alias ufrac_cmra_discrete]
-instance : ORA.Discrete UFrac where
+instance : Discrete UFrac where
   discrete_0 := fun h => h
   discrete_valid := id
   discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
 
 @[rocq_alias ufrac_cancelable]
-instance {q : UFrac} : ORA.Cancelable q where
+instance {q : UFrac} : Cancelable q where
   cancelableN {n x y} _ (H : q • x = q • y) := by
     simp only [dist_iff, ext_iff, frac_op] at *; grind
 
 @[rocq_alias ufrac_id_free]
-instance {q : UFrac} : ORA.IdFree q where
+instance {q : UFrac} : IdFree q where
   id_free0_r b _ H := by
     have := b.frac.2; simp only [dist_iff, ext_iff, frac_op] at H; grind
 

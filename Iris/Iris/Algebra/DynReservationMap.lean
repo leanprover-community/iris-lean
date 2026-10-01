@@ -248,8 +248,8 @@ theorem infinite_op_left {x y : DynReservationMap A H} (vt : ✓{n} (x.token •
 @[reducible] def raOp : Op (DynReservationMap A H) where
   op := op
   op_ne := ⟨fun n x₁ x₂ h => ⟨Dist.op_r h.left, Dist.op_r h.right⟩⟩
-  assoc := eq_dist_2 <| by refine fun _ => ⟨?_, ?_⟩ <;> exact ORA.assoc.dist
-  comm := eq_dist_2 <| by refine fun _ => ⟨?_, ?_⟩ <;> exact ORA.comm.dist
+  assoc := eq_dist_2 <| by refine fun _ => ⟨?_, ?_⟩ <;> exact assoc.dist
+  comm := eq_dist_2 <| by refine fun _ => ⟨?_, ?_⟩ <;> exact comm.dist
 
 @[reducible] def raPCore : PCore (DynReservationMap A H) where
   pcore := some ∘ core
@@ -304,11 +304,11 @@ theorem infinite_op_left {x y : DynReservationMap A H} (vt : ✓{n} (x.token •
 @[reducible] def orderN : Ordered (DynReservationMap A H) where
   OrderN n x y := x.data ≼ₒ{n} y.data ∧ x.token ≼ₒ{n} y.token
   Order x y := x.data ≼ₒ y.data ∧ x.token ≼ₒ y.token
-  ordN_ne ex ey h := ⟨ORA.ordN_ne ex.1 ey.1 h.1, ORA.ordN_ne ex.2 ey.2 h.2⟩
-  ordN_succ h := ⟨ORA.ordN_succ h.1, ORA.ordN_succ h.2⟩
-  ordN_trans h1 h2 := ⟨ORA.ordN_trans h1.1 h2.1, ORA.ordN_trans h1.2 h2.2⟩
-  ord_trans h1 h2 := ⟨ORA.ord_trans h1.1 h2.1, ORA.ord_trans h1.2 h2.2⟩
-  ordN_of_ord n h := ⟨ORA.ordN_of_ord n h.1, ORA.ordN_of_ord n h.2⟩
+  ordN_ne ex ey h := ⟨ordN_ne ex.1 ey.1 h.1, ordN_ne ex.2 ey.2 h.2⟩
+  ordN_succ h := ⟨ordN_succ h.1, ordN_succ h.2⟩
+  ordN_trans h1 h2 := ⟨ordN_trans h1.1 h2.1, ordN_trans h1.2 h2.2⟩
+  ord_trans h1 h2 := ⟨ord_trans h1.1 h2.1, ord_trans h1.2 h2.2⟩
+  ordN_of_ord n h := ⟨ordN_of_ord n h.1, ordN_of_ord n h.2⟩
 
 section
 attribute [local instance] orderN raOp raPCore raValid
@@ -352,16 +352,16 @@ instance instORADynReservationMap : ORA (DynReservationMap A H) where
         show ((core x • x : DynReservationMap A H)).token = (core x).token • x.token from rfl,
         core_token, core_op_L]
   extend {n x y₁ y₂} v exy := by
-    obtain ⟨z₁, z₂, xzz, zy₁, zy₂⟩ := ORA.extend (validN_data_of_validN v) exy.left
+    obtain ⟨z₁, z₂, xzz, zy₁, zy₂⟩ := extend (validN_data_of_validN v) exy.left
     refine ⟨mk z₁ y₁.token, mk z₂ y₂.token, eq_dist_2 ?_, ⟨zy₁, rfl⟩, ⟨zy₂, rfl⟩⟩
     exact fun m => ⟨xzz.dist, exy.right⟩
   toOrdered := orderN
-  op_monoN_left z h := ⟨ORA.op_monoN_left z.data h.1, ORA.op_monoN_left z.token h.2⟩
-  op_mono_left z h := ⟨ORA.op_mono_left z.data h.1, ORA.op_mono_left z.token h.2⟩
+  op_monoN_left z h := ⟨op_monoN_left z.data h.1, op_monoN_left z.token h.2⟩
+  op_mono_left z h := ⟨op_mono_left z.data h.1, op_mono_left z.token h.2⟩
   validN_of_ordN {n x y} h v := by
     refine validN_iff.mpr ⟨?_, ?_, ?_, fun i => ?_⟩
-    · exact ORA.validN_of_ordN h.1 (validN_data_of_validN v)
-    · exact ORA.validN_of_ordN h.2 (validN_token_of_validN v)
+    · exact validN_of_ordN h.1 (validN_data_of_validN v)
+    · exact validN_of_ordN h.2 (validN_token_of_validN v)
     · obtain ⟨w, hw⟩ := h.2
       refine infinite_op_left (y := mk ∅ w)
         ((hw : y.token = x.token • w) ▸ validN_token_of_validN v) ?_
@@ -381,13 +381,13 @@ instance instORADynReservationMap : ORA (DynReservationMap A H) where
           ((hw : y.token = x.token • w) ▸ validN_token_of_validN v) i).mpr (.inl hc)
   pcore_monoN {_ x y _} h e := by
     cases Option.some_inj.mp e
-    exact ⟨_, rfl, ORA.core_ordN_core h.1, ORA.core_ordN_core h.2⟩
+    exact ⟨_, rfl, core_ordN_core h.1, core_ordN_core h.2⟩
   pcore_mono {x y _} h e := by
     cases Option.some_inj.mp e
-    exact ⟨_, rfl, ORA.core_mono h.1, ORA.core_mono h.2⟩
+    exact ⟨_, rfl, core_mono h.1, core_mono h.2⟩
   pcore_order_op {x _} e y := by
     cases Option.some_inj.mp e
-    exact ⟨_, rfl, ORA.core_op_mono x.data y.data, ORA.core_op_mono x.token y.token⟩
+    exact ⟨_, rfl, core_op_mono x.data y.data, core_op_mono x.token y.token⟩
   pcore_increasing {x _} e := by
     cases Option.some_inj.mp e
     refine increasing_mk ?_ ?_
@@ -395,16 +395,16 @@ instance instORADynReservationMap : ORA (DynReservationMap A H) where
     · rw [core_token]; exact inferInstance
   increasing_closed {n x y} h h' :=
     increasing_mk
-      (ORA.increasing_closed (increasing_data h) (Or.imp (·.1) (·.1) h'))
-      (ORA.increasing_closed (increasing_token h) (Or.imp (·.2) (·.2) h'))
+      (increasing_closed (increasing_data h) (Or.imp (·.1) (·.1) h'))
+      (increasing_closed (increasing_token h) (Or.imp (·.2) (·.2) h'))
   ordN_extend {n x y} v h := by
-    obtain ⟨zd, hzd, ed⟩ := ORA.ordN_extend (validN_data_of_validN v) h.1
-    obtain ⟨zt, hzt, et⟩ := ORA.ordN_extend (validN_token_of_validN v) h.2
+    obtain ⟨zd, hzd, ed⟩ := ordN_extend (validN_data_of_validN v) h.1
+    obtain ⟨zt, hzt, et⟩ := ordN_extend (validN_token_of_validN v) h.2
     exact ⟨mk zd zt, ⟨hzd, hzt⟩, ed, et⟩
 
 end
 
-instance instAffine [ORA.Affine A] : ORA.Affine (DynReservationMap A H) :=
+instance instAffine [Affine A] : Affine (DynReservationMap A H) :=
   IncOrd.of_increasing fun v =>
     increasing_mk (IncOrd.increasing v.data) (IncOrd.increasing v.token)
 
@@ -419,7 +419,7 @@ instance instUCMRADynReservationMap : UORA (DynReservationMap A H) where
     exact fun n => ⟨(Algebra.MonoidOps.op_left_id : (∅ : H A) • x.data = x.data).dist,
       (pcore_op_left' rfl).dist⟩
   pcore_unit := eq_dist_2 <| by exact fun n => ⟨Heap.core_empty.dist, .rfl⟩
-  ord_refl x := ⟨ORA.ord_refl x.data, ORA.ord_refl x.token⟩
+  ord_refl x := ⟨ord_refl x.data, ord_refl x.token⟩
 
 @[simp]
 theorem op_data (x y : DynReservationMap A H) : (x • y).data = x.data • y.data := rfl
@@ -462,7 +462,7 @@ theorem token_proj_validN {n} {x : DynReservationMap A H} (h : ✓{n} x) : ✓{n
 instance [ORA.Discrete A] : ORA.Discrete (DynReservationMap A H) where
   discrete_valid {_} v := valid_iff.mpr ⟨discrete_valid (validN_data_of_validN v),
     validN_token_of_validN v, validN_infinite v, validN_disj v⟩
-  discrete_ord h := ⟨fun k => ORA.discrete_ord (h.1 k), ORA.discrete_ord h.2⟩
+  discrete_ord h := ⟨fun k => discrete_ord (h.1 k), discrete_ord h.2⟩
 
 @[rocq_alias dyn_reservation_map_data_core_id]
 instance instCoreIdSingleton {a : A} [CoreId a] : CoreId (mkData (H := H) k a) where
@@ -511,7 +511,7 @@ theorem mkData_op k (a b : A) :
 
 theorem mkData_mono {k} {a b : A} (Hab : a ≼ₒ b) :
     mkData (H := H) k a ≼ₒ mkData k b :=
-  ⟨Heap.singleton_ord_singleton_mono Hab, ORA.ord_refl _⟩
+  ⟨Heap.singleton_ord_singleton_mono Hab, ord_refl _⟩
 
 @[rocq_alias dyn_reservation_map_data_mono]
 theorem mkData_mono_ext {k} {a b : A} (Hab : a ≼ b) :
@@ -701,16 +701,16 @@ variable [ORA A]
 @[rocq_alias dyn_reservation_map_reserve]
 theorem reserve (Q : DynReservationMap A H → Prop)
     (HQ : ∀ e : CoPset, setInfinite e → Q (mkToken e)) :
-    (UORA.unit : DynReservationMap A H) ~~>: Q := by
+    (unit : DynReservationMap A H) ~~>: Q := by
   intro n mz vo
   have ⟨mf, Ef, hz, vmf, hinf, hdisj⟩ :
-      ∃ (mf : H A) (Ef : CoPset), (UORA.unit •? mz) = mk mf ∅ • mkToken Ef ∧
+      ∃ (mf : H A) (Ef : CoPset), (unit •? mz) = mk mf ∅ • mkToken Ef ∧
         ✓{n} mf ∧ setInfinite ((⊤ : CoPset) \ Ef) ∧
         ∀ i, get? mf i = none ∨ i ∉ Ef := by
     match mz with
     | none =>
       exact ⟨∅, ∅, OFE.eq_dist_2 (by exact fun n =>
-        ⟨(ORA.unit_left_id_dist (∅ : H A)).symm,
+        ⟨(unit_left_id_dist (∅ : H A)).symm,
           Dist.of_eq (pcore_op_left_L rfl).symm⟩), Heap.valid_empty.validN, top_infinite,
         fun i => .inl (get?_empty i)⟩
     | some z =>
@@ -735,7 +735,7 @@ theorem reserve (Q : DynReservationMap A H → Prop)
   have hframe : (mkToken (H := H) (A := A) E₁) •? mz =
       ORA.op (mkToken E₁) (ORA.op (mk mf ∅ : DynReservationMap A H) (mkToken Ef)) :=
     (show (mkToken (H := H) (A := A) E₁) •? mz =
-        ORA.op (mkToken E₁) (UORA.unit •? mz) from
+        ORA.op (mkToken E₁) (unit •? mz) from
       match mz with
       | none => (unit_right_id (x := mkToken E₁)).symm
       | some z => congrArg (ORA.op (mkToken E₁)) (unit_left_id (x := z)).symm).trans
@@ -744,10 +744,10 @@ theorem reserve (Q : DynReservationMap A H → Prop)
   have hrearrange :
       ORA.op (mkToken (H := H) (A := A) E₁) (ORA.op (mk mf ∅ : DynReservationMap A H) (mkToken Ef)) =
         ORA.op (mk mf ∅ : DynReservationMap A H) (ORA.op (mkToken E₁) (mkToken Ef)) :=
-    ORA.assoc'.trans
+    assoc'.trans
       ((congrArg (ORA.op · (mkToken Ef))
-        (ORA.comm' (x := mkToken E₁) (y := mk mf ∅))).trans
-        ORA.assoc'.symm)
+        (comm' (x := mkToken E₁) (y := mk mf ∅))).trans
+        assoc'.symm)
   rw [← hframe.symm, ← hrearrange.symm, ← token_union hE₁Ef]
   refine validN_data_op_token vmf ?_ ?_
   · refine setInfinite_mono (fun i hi => ?_) hE₂inf
@@ -769,7 +769,7 @@ theorem reserve (Q : DynReservationMap A H → Prop)
 
 @[rocq_alias dyn_reservation_map_reserve']
 theorem reserve' :
-    (UORA.unit : DynReservationMap A H) ~~>:
+    (unit : DynReservationMap A H) ~~>:
       fun x => ∃ e : CoPset, setInfinite e ∧ x = mkToken e :=
   reserve _ fun e hinf => ⟨e, hinf, rfl⟩
 

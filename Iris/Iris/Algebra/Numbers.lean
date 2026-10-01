@@ -198,7 +198,7 @@ scoped instance : ORA.Discrete α where
 
 #rocq_ignore max_Z_cmra_total "Use the (ℤ, max) Universal Core instance."
 
-scoped instance instCoreId (a : α) : ORA.CoreId a where
+scoped instance instCoreId (a : α) : CoreId a where
   core_id := rfl
 #rocq_ignore max_nat_core_id "Use the (ℕ, max) Universal Core instance."
 #rocq_ignore max_Z_core_id "Use the (ℤ, max) Universal Core instance."
@@ -225,7 +225,7 @@ theorem op_eq {x y : α} : x • y = x + y := rfl
 
 omit [Zero α] in
 theorem ord_iff {x y : α} : x ≼ₒ y ↔ x • y = y :=
-  ⟨fun h => ORA.op_core_right_of_inc (OrdInc.ord_inc h), fun h => IncOrd.inc_ord ⟨y, h.symm⟩⟩
+  ⟨fun h => op_core_right_of_inc (OrdInc.ord_inc h), fun h => IncOrd.inc_ord ⟨y, h.symm⟩⟩
 
 omit [Zero α] in
 theorem inc_iff {x y : α} : x ≼ y ↔ x • y = y := inc_iff_ord.trans ord_iff
@@ -235,7 +235,7 @@ theorem idem_local_update_ord {x y x' : α} (h : x ≼ₒ x') : (x, y) ~l~> (x',
   refine fun _ mz _ hn => ⟨trivial, OFE.Dist.of_eq ?_⟩
   cases mz with | none => rfl | some z =>
   replace hn : x = y • z := discrete hn
-  exact (ORA.op_core_left_of_inc <| .trans ⟨y, hn.trans ORA.comm'⟩ (OrdInc.ord_inc h)).symm
+  exact (op_core_left_of_inc <| .trans ⟨y, hn.trans comm'⟩ (OrdInc.ord_inc h)).symm
 
 omit [Zero α] in
 /-- Sufficient condition for a local update on an idempotent structure. -/
@@ -281,7 +281,7 @@ scoped instance instCancelable [LeftCancelAdd α] {a : α} : Cancelable a where
   cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ discrete
 #rocq_ignore pos_cancelable "Use (PNat, +) No Core instance."
 
-scoped instance instIdFree [IdentityFree α] {a : α} : ORA.IdFree a where
+scoped instance instIdFree [IdentityFree α] {a : α} : IdFree a where
   id_free0_r _ _ h := IdentityFree.id_free <| discrete h
 #rocq_ignore pos_id_free "Use (PNat, +) No Core instance."
 
@@ -317,6 +317,7 @@ wrapped in custom structures:
 namespace Iris
 
 section MaxNat
+open ORA
 
 @[grind cases, rocq_alias max_nat]
 structure MaxNat where
@@ -361,7 +362,7 @@ scoped instance : COFE MaxNat := COFE.ofDiscrete _
 scoped instance : OFE.Discrete MaxNat := ⟨fun h => h⟩
 scoped instance : UCMRA MaxNat := OrdCommMonoidLike.instUCMRA
 scoped instance : ORA.Discrete MaxNat := OrdCommMonoidLike.instDiscrete
-scoped instance : ORA.CoreId (a : MaxNat) := OrdCommMonoidLike.instCoreId _
+scoped instance : CoreId (a : MaxNat) := OrdCommMonoidLike.instCoreId _
 
 theorem MaxNat.ord_iff {a b : MaxNat} : a ≼ₒ b ↔ a ≤ b := by
   grind [OrdCommMonoidLike.ord_iff, eq_toNat]
@@ -382,6 +383,7 @@ instance {a b : Nat} :
 end MaxNat
 
 section MaxInt
+open ORA
 
 @[grind cases, rocq_alias max_Z]
 structure MaxInt where
@@ -418,7 +420,7 @@ scoped instance : OFE.Discrete MaxInt := ⟨fun h => h⟩
 scoped instance : CMRA MaxInt := OrdCommMonoidLike.instCMRA
 scoped instance : ORA.Discrete MaxInt := OrdCommMonoidLike.instDiscrete
 scoped instance : IsTotal MaxInt := OrdCommMonoidLike.instIsTotal
-scoped instance : ORA.CoreId (a : MaxInt) := OrdCommMonoidLike.instCoreId _
+scoped instance : CoreId (a : MaxInt) := OrdCommMonoidLike.instCoreId _
 
 theorem MaxInt.ord_iff {a b : MaxInt} : a ≼ₒ b ↔ a ≤ b := by
   rw [OrdCommMonoidLike.ord_iff, OrdCommMonoidLike.op_eq, eq_toInt]
@@ -440,6 +442,7 @@ instance {a b : Int} :
 end MaxInt
 
 section MinNat
+open ORA
 
 @[grind cases, rocq_alias min_nat]
 structure MinNat where
@@ -478,7 +481,7 @@ scoped instance : OFE.Discrete MinNat := ⟨fun h => h⟩
 scoped instance : CMRA MinNat := OrdCommMonoidLike.instCMRA
 scoped instance : ORA.Discrete MinNat := OrdCommMonoidLike.instDiscrete
 scoped instance : IsTotal MinNat := OrdCommMonoidLike.instIsTotal
-scoped instance : ORA.CoreId (a : MinNat) := OrdCommMonoidLike.instCoreId _
+scoped instance : CoreId (a : MinNat) := OrdCommMonoidLike.instCoreId _
 
 theorem MinNat.ord_iff {a b : MinNat} : a ≼ₒ b ↔ b ≤ a := by
   rw [OrdCommMonoidLike.ord_iff, OrdCommMonoidLike.op_eq, eq_toNat]

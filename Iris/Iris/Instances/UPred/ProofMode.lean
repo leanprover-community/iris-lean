@@ -40,7 +40,7 @@ instance fromAnd_ownM_coreId {a b1 b2 : M} [h : IsOp .split a b1 b2]
     cases (inferInstance : TCOr (CoreId b1) (CoreId b2)) <;> exact persistent_and_sep_mp
 
 @[rocq_alias into_and_ownM]
-instance intoAnd_ownM [ORA.Affine M] (p : Bool) {a b1 b2 : M} [h : IsOp .split a b1 b2] :
+instance intoAnd_ownM [Affine M] (p : Bool) {a b1 b2 : M} [h : IsOp .split a b1 b2] :
     IntoAnd p (ownM a) (ownM b1) (ownM b2) where
   into_and := intuitionisticallyIf_mono <| by rw [h.is_op]; exact (ownM_op ..).mp.trans sep_and
 

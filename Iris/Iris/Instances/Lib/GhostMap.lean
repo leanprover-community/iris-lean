@@ -421,7 +421,7 @@ theorem ghost_map_insert_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ
       exact auth_ord_of_map_eq _ map_union
     · iapply iOwn_mono $$ H2
       rw [BigOpM.bigOpM_map_eq]
-      exact ORA.ord_refl _
+      exact ord_refl _
 
 @[rocq_alias ghost_map_insert_persist_big]
 theorem ghost_map_insert_persist_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ m) :
@@ -440,7 +440,7 @@ theorem ghost_map_delete_big [DecidableEq K] {γ m} (m0 : H V) :
   imod ghost_map_elems_unseal $$ H2 with H2
   unfold ghost_map_auth
   iapply iOwn_update_op $$ [$H1 $H2]
-  rw [← congrArg (ORA.op _) (BigOpM.bigOpM_map_eq _ _ m0)]
+  rw [← congrArg (op _) (BigOpM.bigOpM_map_eq _ _ m0)]
   refine (update_big_delete _ _).trans ?_
   rw [map_difference_map]
   exact Update.id
@@ -462,7 +462,7 @@ theorem ghost_map_update_big [DecidableEq K] {γ m} (m0 m1 : H V) (Heq : dom m0 
     icombine H1 H2 as H
     rw [←(bigOpM_iOwn γ _ _ h).to_eq, ←iOwn_op.to_eq]
     iapply iOwn_update $$ H
-    rw [← congrArg (ORA.op _) (BigOpM.bigOpM_map_eq _ _ m0)]
+    rw [← congrArg (op _) (BigOpM.bigOpM_map_eq _ _ m0)]
     have Heq' : dom (Std.PartialMap.map (fun x : V => toAgree (DiscreteO.mk x)) m0) =
         dom (Std.PartialMap.map (fun x : V => toAgree (DiscreteO.mk x)) m1) := by
       rw [dom_map, dom_map, Heq]

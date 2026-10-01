@@ -68,7 +68,7 @@ instance : IsViewRel (viewRel (S := S)) := .ofMonoOrd
     intro _ x₁ y₁ n₂ x₂ y₂ h hx hy _
     obtain ⟨_⟩ := x₁; obtain ⟨_⟩ := y₁; obtain ⟨_⟩ := y₂; obtain rfl := (hx : _ = _)
     refine ⟨subset_trans ((included_iff_subset ..).mp ?_) h.1, h.2⟩
-    exact (ORA.inc_iff_incN n₂).mpr hy)
+    exact (inc_iff_incN n₂).mpr hy)
   (rel_validN := fun _ _ _ _ => trivial)
   (rel_unit := fun _ => ⟨valid ∅, subset_refl, SetBijective.empty⟩)
 
@@ -158,7 +158,7 @@ theorem elem_agree (h : ✓ ((elem a₁ b₁ • elem a₂ b₂) : SetBij S)) : 
 theorem elem_ord_auth (h : (a, b) ∈ L) : elem a b ≼ₒ auth dq L :=
   Ordered.ord_trans (y := (◯V valid L : SetBij S))
     (frag_ord_of_ord <| (ord_iff_subset ..).mpr fun _ hx => mem_singleton.mp hx ▸ h)
-    (ORA.ord_op_right ..)
+    (ord_op_right ..)
 
 @[rocq_alias bij_view_included]
 theorem elem_inc_auth (h : (a, b) ∈ L) : elem a b ≼ auth dq L :=

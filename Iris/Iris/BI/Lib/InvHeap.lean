@@ -187,7 +187,7 @@ theorem invPointsToOwn_inv (l : L) (v : V) (I : V → Prop) :
   unfold invPointsToOwn invPointsTo
   iapply iOwn_mono $$ Hl
   refine frag_ord_of_ord (singleton_ord_singleton_mono ?_)
-  exact ⟨IncOrd.increasing _, ORA.ord_refl _⟩
+  exact ⟨IncOrd.increasing _, ord_refl _⟩
 
 variable [genHeapGS L V GF H]
 

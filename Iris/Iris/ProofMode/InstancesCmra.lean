@@ -14,11 +14,12 @@ namespace Iris.ProofMode
 open Iris
 
 section cmra
+open ORA
 
 variable {PROP} [Sbi PROP]
 
 @[rocq_alias into_pure_internal_cmra_valid]
-instance intoPure_internalCmraValid α [ORA α] [ORA.Discrete α] (a : α) :
+instance intoPure_internalCmraValid α [ORA α] [Discrete α] (a : α) :
   IntoPure (PROP := PROP) iprop(✓ a) (✓ a) where
   into_pure := internalCmraValid_discrete.1
 
@@ -27,7 +28,7 @@ instance fromPure_internalCmraValid io α [ORA α] (a : α) :
   FromPure (PROP := PROP) false iprop(✓ a) io (✓ a) where
   from_pure := BI.pure_elim' internalCmraValid_intro
 
-instance intoPure_internalCmraOrder α [ORA α] [ORA.Discrete α] (a b : α) :
+instance intoPure_internalCmraOrder α [ORA α] [Discrete α] (a b : α) :
   IntoPure (PROP := PROP) iprop(a ≼ₒ b) (a ≼ₒ b) where
   into_pure := internalCmraOrder_discrete.1
 
@@ -36,7 +37,7 @@ instance fromPure_internalCmraOrder io α [ORA α] (a b : α) :
   from_pure := BI.pure_elim' internalCmraOrder_intro
 
 @[rocq_alias into_pure_internal_included]
-instance intoPure_internalCmraIncluded α [ORA α] [ORA.Discrete α] (a b : α) :
+instance intoPure_internalCmraIncluded α [ORA α] [Discrete α] (a b : α) :
   IntoPure (PROP := PROP) iprop(a ≼ b) (a ≼ b) where
   into_pure := internalCmraIncluded_discrete.1
 

@@ -42,10 +42,10 @@ theorem OFE.transpAp_op_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x y
   cases h_fun; cases eq_of_heq h_inst; rfl
 
 theorem OFE.transpAp_pcore_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x : F₁ T T} :
-    (ORA.pcore x).map (transpAp h_fun).mp = ORA.pcore ((transpAp h_fun).mp x) := by
+    (pcore x).map (transpAp h_fun).mp = pcore ((transpAp h_fun).mp x) := by
   cases h_fun; cases eq_of_heq h_inst
-  change (ORA.pcore x).map _ = ORA.pcore x
-  cases ORA.pcore x <;> rfl
+  change (pcore x).map _ = pcore x
+  cases pcore x <;> rfl
 
 theorem OFE.transpAp_validN_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x : F₁ T T} (H : ✓{n} x) :
     ✓{n} ((transpAp h_fun).mp x) := by
@@ -127,8 +127,8 @@ theorem bundle_op {GF : BundledGFunctors} [E : ElemG GF F] (a2 ac : F.ap (IProp 
   have h_fun := E.transpMap <| F.ap (IProp GF)
   have h_inst := E.transpClass <| F.ap (IProp GF)
   apply Eq.trans (transpAp_op_mp h_fun h_inst)
-  apply (congrArg (ORA.op · _) (ElemG.unbundle_bundle E a2)).trans
-  apply congrArg (ORA.op _ ·) (ElemG.unbundle_bundle E ac)
+  apply (congrArg (op · _) (ElemG.unbundle_bundle E a2)).trans
+  apply congrArg (op _ ·) (ElemG.unbundle_bundle E ac)
 
 theorem unbundle_op {GF : BundledGFunctors} [E : ElemG GF F] (a2 ac : GF.api (ElemG.τ GF F) (IProp GF)) :
   E.unbundle (a2 • ac) = E.unbundle a2 • E.unbundle ac :=
@@ -138,7 +138,7 @@ theorem unbundle_op {GF : BundledGFunctors} [E : ElemG GF F] (a2 ac : GF.api (El
 theorem ElemG.bundle_unit {GF F} [RFunctorContractive F] (E : ElemG GF F) {ε : F.ap (IProp GF)} [IsUnit ε] :
     IsUnit (E.bundle ε) := by
   refine { unit_valid := ?_, unit_left_id := ?_, pcore_unit := ?_ }
-  · refine ORA.valid_iff_validN.mpr fun n => ?_
+  · refine valid_iff_validN.mpr fun n => ?_
     apply transpAp_validN_mp (E.transpMap <| F.ap (IProp GF)).symm (E.transpClass <| F.ap (IProp GF)).symm
     apply IsUnit.unit_valid.validN
   · intro x
@@ -146,20 +146,20 @@ theorem ElemG.bundle_unit {GF F} [RFunctorContractive F] (E : ElemG GF F) {ε : 
       calc E.unbundle (E.bundle ε • x)
         _ = E.unbundle (E.bundle ε) • E.unbundle x :=
             transpAp_op_mp (E.transpMap <| F.ap (IProp GF)) (E.transpClass <| F.ap (IProp GF))
-        _ = ε • E.unbundle x := congrArg (ORA.op · _) (ElemG.unbundle_bundle E ε)
+        _ = ε • E.unbundle x := congrArg (op · _) (ElemG.unbundle_bundle E ε)
         _ = E.unbundle x := IsUnit.unit_left_id
     calc E.bundle ε • x
        = E.bundle (E.unbundle (E.bundle ε • x)) := (ElemG.bundle_unbundle E _).symm
      _ = E.bundle (E.unbundle x) := congrArg E.bundle h1
      _ = x := ElemG.bundle_unbundle E x
-  · calc ORA.pcore (E.bundle ε)
-       = (ORA.pcore ε).map E.bundle :=
+  · calc pcore (E.bundle ε)
+       = (pcore ε).map E.bundle :=
              (transpAp_pcore_mp
                (E.transpMap <| F.ap (IProp GF)).symm
                (E.transpClass <| F.ap (IProp GF)).symm).symm
      _ = Option.map E.bundle (some ε) := by
         have h_pcore := ‹IsUnit ε›.pcore_unit
-        rcases eqn : ORA.pcore ε with (_ | c)
+        rcases eqn : pcore ε with (_ | c)
         · exact absurd (eqn ▸ h_pcore) OFE.not_none_eqv_some
         · simp only [Option.map]
           exact congrArg (fun z => some (E.bundle z)) (Option.some.inj (eqn ▸ h_pcore))
@@ -222,10 +222,10 @@ theorem IProp.unfoldi_validN {n : Nat} (x : FF.api τ (IProp FF)) (H : ✓{n} x)
   RFunctor.map (IProp.fold FF) (IProp.unfold FF) |>.validN H
 
 theorem IProp.validN_foldi {n : Nat} (x : FF.api τ (IPre FF)) (H : ✓{n} (foldi x)) : ✓{n} x :=
-  ORA.validN_ne (IProp.unfoldi_foldi x).dist (IProp.unfoldi_validN _ H)
+  validN_ne (IProp.unfoldi_foldi x).dist (IProp.unfoldi_validN _ H)
 
 theorem IProp.validN_unfoldi_mp {n : Nat} (x : FF.api τ (IProp FF)) (H : ✓{n} (unfoldi x)) : ✓{n} x :=
-  ORA.validN_ne (IProp.foldi_unfoldi x).dist (IProp.foldi_validN _ H)
+  validN_ne (IProp.foldi_unfoldi x).dist (IProp.foldi_validN _ H)
 
 @[rocq_alias inG_unfold_validN]
 theorem IProp.validN_unfoldi {n : Nat} (x : FF.api τ (IProp FF)) : ✓{n} (unfoldi x) ↔ ✓{n} x :=
@@ -235,20 +235,20 @@ theorem IProp.validN_unfoldi {n : Nat} (x : FF.api τ (IProp FF)) : ✓{n} (unfo
 theorem IProp.unfoldi_unit {τ : GType} {x : FF.api τ (IProp FF)} [IsUnit x] :
     IsUnit (unfoldi x) := by
   refine { unit_valid := ?_, unit_left_id := ?_, pcore_unit := ?_ }
-  · exact ORA.valid_iff_validN.mpr fun n => IProp.unfoldi_validN x IsUnit.unit_valid.validN
+  · exact valid_iff_validN.mpr fun n => IProp.unfoldi_validN x IsUnit.unit_valid.validN
   · intro y
     have h : foldi (unfoldi x • y) = foldi y := by
       calc foldi (unfoldi x • y)
         _ = foldi (unfoldi x) • foldi y := foldi_op _ _
-        _ = x • foldi y := congrArg (ORA.op · _) (foldi_unfoldi x)
+        _ = x • foldi y := congrArg (op · _) (foldi_unfoldi x)
         _ = foldi y := IsUnit.unit_left_id
     calc unfoldi x • y
       _ = unfoldi (foldi (unfoldi x • y)) := (IProp.unfoldi_foldi _).symm
       _ = unfoldi (foldi y) := congrArg unfoldi.f h
       _ = y := IProp.unfoldi_foldi y
   · letI : RFunctor (FF τ).F := (FF τ).contractive.toRFunctor
-    calc ORA.pcore (unfoldi.f x)
-      _ = (ORA.pcore x).map unfoldi.f :=
+    calc pcore (unfoldi.f x)
+      _ = (pcore x).map unfoldi.f :=
         ((RFunctor.map (IProp.fold FF) (IProp.unfold FF)).pcore x).symm
       _ = (some x).map unfoldi.f :=
         Option.map_forall₂ _ IsUnit.pcore_unit
@@ -270,7 +270,7 @@ def iSingleton {GF} F [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (v :
 variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
 
 theorem iResUR_op_eval (c1 c2 : IResUR GF) : (c1 • c2) τ' γ' = (c1 τ' γ') • (c2 τ' γ') := by
-  simp [ORA.op, optionOp]
+  simp [op, optionOp]
 
 instance IResUR.lookup_ne {τ : GType} {γ : GName} :
     NonExpansive (fun r : IResUR GF => (r τ).car γ) where
@@ -299,14 +299,14 @@ theorem iSingleton_op (x y : F.ap (IProp GF)) : (iSingleton F γ x) • iSinglet
   simp only [iSingleton]
   split
   next h =>
-    subst h; simp only [ORA.op, optionOp]
+    subst h; simp only [op, optionOp]
     by_cases heq : γ' = γ
     · subst heq
       simp only [iSingleton, ↓reduceDIte, GenMap.singleton_map_in, some_dist_some]
       exact (((RFunctor.map (fold GF) (unfold GF)).op _ _).symm.trans
         (congrArg (RFunctor.map (fold GF) (unfold GF)) (bundle_op x y).symm)).dist
     · simp only [iSingleton, ↓reduceDIte, singleton_map_none heq]; rfl
-  next h => simp [iSingleton, h, ORA.op, GenMap.empty_map_lookup]
+  next h => simp [iSingleton, h, op, GenMap.empty_map_lookup]
 
 theorem iSingleton_free_at_ne {γ : GName} {v : F.ap (IProp GF)} {γ' : GName} (h : γ' ≠ γ) :
     (iSingleton F γ v E.τ).car γ' = none := by
@@ -314,8 +314,8 @@ theorem iSingleton_free_at_ne {γ : GName} {v : F.ap (IProp GF)} {γ' : GName} (
   exact singleton_map_none h
 
 theorem iSingleton_ne_eq_unit {γ : GName} {v : F.ap (IProp GF)} {τ' : GType} (h : τ' ≠ E.τ) :
-    (iSingleton F γ v τ').car = (UORA.unit : GenMap _).car := by
-  funext γ'; simp only [iSingleton, UORA.unit]
+    (iSingleton F γ v τ').car = (unit : GenMap _).car := by
+  funext γ'; simp only [iSingleton, unit]
   split
   next heq => subst heq; contradiction
   next => apply GenMap.empty_map_lookup
@@ -323,42 +323,42 @@ theorem iSingleton_ne_eq_unit {γ : GName} {v : F.ap (IProp GF)} {τ' : GType} (
 theorem iSingleton_op_ne_free {γ : GName} {v : F.ap (IProp GF)}
     {m : GenMap (GF.api E.τ (IPre GF))} {γ' : GName} (h_ne : γ' ≠ γ) (h_free : m.car γ' = none) :
     ((iSingleton F γ v E.τ) • m).car γ' = none := by
-  simp [ORA.op, optionOp, iSingleton, h_free]
+  simp [op, optionOp, iSingleton, h_free]
   rw [singleton_map_none h_ne]
 
-theorem unfoldi_bundle_coreId {a : F.ap (IProp GF)} [ORA.CoreId a] :
-    ORA.CoreId (unfoldi (E.bundle a)) := by
+theorem unfoldi_bundle_coreId {a : F.ap (IProp GF)} [CoreId a] :
+    CoreId (unfoldi (E.bundle a)) := by
   constructor
   simp only [unfoldi, OFunctor.map]
   letI : RFunctor (GF E.τ).F := (GF E.τ).contractive.toRFunctor
-  have bundle_coreId : ORA.CoreId (E.bundle a) := by
+  have bundle_coreId : CoreId (E.bundle a) := by
     constructor
-    calc ORA.pcore (E.bundle a)
-      = (ORA.pcore a).map E.bundle :=
+    calc pcore (E.bundle a)
+      = (pcore a).map E.bundle :=
           (OFE.transpAp_pcore_mp (E.transpMap (F.ap (IProp GF))).symm (E.transpClass (F.ap (IProp GF))).symm).symm
-    _ = (some a).map E.bundle := Option.map_forall₂ _ ORA.CoreId.core_id
+    _ = (some a).map E.bundle := Option.map_forall₂ _ CoreId.core_id
     _ = some (E.bundle a) := by rfl
-  calc ORA.pcore ((RFunctor.map (IProp.fold GF) (IProp.unfold GF)).toHom.f (E.bundle a))
-    = (ORA.pcore (E.bundle a)).map (RFunctor.map (IProp.fold GF) (IProp.unfold GF)).toHom.f :=
+  calc pcore ((RFunctor.map (IProp.fold GF) (IProp.unfold GF)).toHom.f (E.bundle a))
+    = (pcore (E.bundle a)).map (RFunctor.map (IProp.fold GF) (IProp.unfold GF)).toHom.f :=
       ((RFunctor.map (IProp.fold GF) (IProp.unfold GF)).pcore (E.bundle a)).symm
   _ = (some (E.bundle a)).map (RFunctor.map (IProp.fold GF) (IProp.unfold GF)).toHom.f :=
     Option.map_forall₂ _ bundle_coreId.core_id
   _ = some ((RFunctor.map (IProp.fold GF) (IProp.unfold GF)).toHom.f (E.bundle a)) := by rfl
 
 @[rocq_alias iRes_singleton_core_id]
-instance {a : F.ap (IProp GF)} [ORA.CoreId a] : ORA.CoreId (iSingleton F γ a) where
+instance {a : F.ap (IProp GF)} [CoreId a] : CoreId (iSingleton F γ a) where
   core_id := OFE.eq_dist_2 fun n τ' γ' => by
-    change ORA.core ((iSingleton F γ a τ').car γ') ≡{n}≡ (iSingleton F γ a τ').car γ'
+    change core ((iSingleton F γ a τ').car γ') ≡{n}≡ (iSingleton F γ a τ').car γ'
     simp only [iSingleton]
     split
     next h =>
       subst h
       by_cases heq : γ' = γ
       · subst heq
-        simp only [GenMap.singleton_map_in, ORA.core, optionCore, ORA.pcore, Option.bind]
+        simp only [GenMap.singleton_map_in, core, optionCore, pcore, Option.bind]
         exact unfoldi_bundle_coreId.core_id.dist
-      · simp [singleton_map_none heq, ORA.core, optionCore, ORA.pcore]
-    next => simp [GenMap.empty_map_lookup, ORA.core, optionCore, ORA.pcore]
+      · simp [singleton_map_none heq, core, optionCore, pcore]
+    next => simp [GenMap.empty_map_lookup, core, optionCore, pcore]
 
 theorem ElemG.bundle_validN {a : F.ap (IProp GF)} (H : ✓{n} a) :
     ✓{n} (E.bundle a) :=
@@ -380,9 +380,9 @@ theorem IProp.unfoldi_bundle_unit {ε : F.ap (IProp GF)} [IsUnit ε] :
 theorem validN_of_iSingleton {a : F.ap (IProp GF)} (Hv : ✓{n} iSingleton F γ a) : ✓{n} a := by
   have h_at_gamma : ✓{n} (((iSingleton F γ a) E.τ).car γ) := Hv E.τ γ
   simp [iSingleton, GenMap.singleton_map_in] at h_at_gamma
-  apply ORA.validN_ne (ElemG.unbundle_bundle E a).dist
+  apply validN_ne (ElemG.unbundle_bundle E a).dist
   apply ElemG.unbundle_validN
-  apply ORA.validN_ne (foldi_unfoldi (E.bundle a)).dist
+  apply validN_ne (foldi_unfoldi (E.bundle a)).dist
   exact foldi_validN (unfoldi (E.bundle a)) h_at_gamma
 
 @[rocq_alias iRes_singleton_validI]
@@ -394,14 +394,14 @@ theorem iSingleton_validN_at_E_τ {a : F.ap (IProp GF)} (a_valid : ✓{n} a) :
     ✓{n} (iSingleton F γ a E.τ) := by
   intro γ'
   simp [iSingleton]
-  by_cases h_gamma : γ' = γ <;> simp [h_gamma, ORA.ValidN, optionValidN, GenMap.singleton_map_in]
+  by_cases h_gamma : γ' = γ <;> simp [h_gamma, ValidN, optionValidN, GenMap.singleton_map_in]
   · exact IProp.unfoldi_bundle_validN a_valid
   · simp [singleton_map_none h_gamma]
 
 theorem iSingleton_validN_at_ne {a : F.ap (IProp GF)} {τ' : GType} (h : τ' ≠ E.τ) :
     ✓{n} (iSingleton F γ a τ') := by
   simp [iSingleton, h]
-  apply UORA.unit_valid.validN
+  apply unit_valid.validN
 
 theorem unfoldi_op {a b : GF.api (ElemG.τ GF F) (IProp GF)} :
   unfoldi.f (a • b) = (unfoldi.f a • unfoldi.f b) :=
@@ -411,22 +411,22 @@ theorem validN_bundle_op_foldi {a' : F.ap (IProp GF)} {v : GF.api E.τ (IPre GF)
     (h : ✓{n} (a' • E.unbundle (foldi v))) :
     ✓{n} (unfoldi (E.bundle a') • v) := by
   have h_unfoldi_foldi := IProp.unfoldi_foldi v
-  apply ORA.validN_ne (congrArg (ORA.op _ ·) h_unfoldi_foldi).dist
-  apply ORA.validN_ne unfoldi_op.dist
+  apply validN_ne (congrArg (op _ ·) h_unfoldi_foldi).dist
+  apply validN_ne unfoldi_op.dist
   apply IProp.unfoldi_validN
   have h_unbundle_bundle := ElemG.bundle_unbundle E (foldi v)
-  apply ORA.validN_ne (congrArg (ORA.op _ ·) h_unbundle_bundle).dist
-  apply ORA.validN_ne (bundle_op _ _).dist
+  apply validN_ne (congrArg (op _ ·) h_unbundle_bundle).dist
+  apply validN_ne (bundle_op _ _).dist
   apply ElemG.bundle_validN h
 
 theorem validN_of_iSingleton_op_free {mf : IResUR GF} {y : F.ap (IProp GF)}
     (Hv : ✓{n} iSingleton F γ y • mf) (Hfree : IsFree (mf E.τ).car γ) : ✓{n} y := by
   have h_at_gamma : ✓{n} ((((iSingleton F γ y) • mf) E.τ).car γ) := Hv E.τ γ
   simp [IsFree] at Hfree
-  simp [iSingleton, ORA.op, Hfree, GenMap.singleton_map_in] at h_at_gamma
-  apply ORA.validN_ne (ElemG.unbundle_bundle E y).dist
+  simp [iSingleton, op, Hfree, GenMap.singleton_map_in] at h_at_gamma
+  apply validN_ne (ElemG.unbundle_bundle E y).dist
   apply ElemG.unbundle_validN
-  apply ORA.validN_ne (foldi_unfoldi (E.bundle y)).dist
+  apply validN_ne (foldi_unfoldi (E.bundle y)).dist
   exact foldi_validN (unfoldi (E.bundle y)) h_at_gamma
 
 theorem validN_mf_at_E_τ_of_iSingleton_op_free {mf : IResUR GF} {y : F.ap (IProp GF)}
@@ -435,16 +435,16 @@ theorem validN_mf_at_E_τ_of_iSingleton_op_free {mf : IResUR GF} {y : F.ap (IPro
   simp [IsFree] at Hfree
   intro γ'
   by_cases h_gamma : γ' = γ
-  · simp [h_gamma, Hfree, ORA.ValidN]
+  · simp [h_gamma, Hfree, ValidN]
   · have h := Hv E.τ γ'
-    simp [ORA.op, iSingleton, singleton_map_none h_gamma, optionOp] at h
+    simp [op, iSingleton, singleton_map_none h_gamma, optionOp] at h
     exact h
 
 theorem validN_mf_at_ne_of_iSingleton_op {mf : IResUR GF} {y : F.ap (IProp GF)}
     (Hv : ✓{n} iSingleton F γ y • mf) {τ' : GType} (h : τ' ≠ E.τ) :
     ✓{n} (mf τ') := by
   have h_frame_valid := Hv τ'
-  simp [ORA.op, iSingleton, h, GenMap.empty] at h_frame_valid ⊢
+  simp [op, iSingleton, h, GenMap.empty] at h_frame_valid ⊢
   exact h_frame_valid
 
 theorem extract_frame_validN {τ : GType} {n : Nat}
@@ -453,7 +453,7 @@ theorem extract_frame_validN {τ : GType} {n : Nat}
     {γ : GName} {v : GF.api τ (IPre GF)} (h_at : (mz' τ).car γ = some v) :
     ✓{n} v := by
   have := h_valid γ
-  simp [ORA.ValidN, optionValidN, h_at] at this
+  simp [ValidN, optionValidN, h_at] at this
   exact this
 
 theorem iSingleton_op_validN_at_E {a : F.ap (IProp GF)} (Hv : ✓{n} mf) :
@@ -463,9 +463,9 @@ theorem iSingleton_op_validN_at_E {a : F.ap (IProp GF)} (Hv : ✓{n} mf) :
   by_cases Heq : τ' = E.τ
   · subst τ'
     apply Hv_a
-  · refine ORA.validN_ne (n := n) (x := mf τ') ?_ (Hv τ')
-    simp only [ORA.op, iSingleton_ne_eq_unit Heq]
-    simp [UORA.unit, GenMap.empty, optionOp]
+  · refine validN_ne (n := n) (x := mf τ') ?_ (Hv τ')
+    simp only [op, iSingleton_ne_eq_unit Heq]
+    simp [unit, GenMap.empty, optionOp]
 
 theorem iSingleton_op_validN_at_γ {a : F.ap (IProp GF)} (Hv : ✓{n} mf) :
     ✓{n} ((iSingleton F γ a • mf) (ElemG.τ GF F)).car γ →
@@ -475,7 +475,7 @@ theorem iSingleton_op_validN_at_γ {a : F.ap (IProp GF)} (Hv : ✓{n} mf) :
   intro γ'
   by_cases h_key : γ' = γ
   · subst γ'; exact Hv_a
-  · simp [ORA.ValidN, ORA.op, iSingleton, singleton_map_none h_key]
+  · simp [ValidN, op, iSingleton, singleton_map_none h_key]
     rcases h_at : (mf E.τ).car γ' with (⟨⟩ | v)
     · trivial
     · simp; exact extract_frame_validN (Hv E.τ) h_at
@@ -588,7 +588,7 @@ theorem iSingleton_mono {γ : GName} {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ₒ a1
       exact .inr hu
     · rw [singleton_map_none hγ, singleton_map_none hγ]
       trivial
-  · exact ORA.ord_refl _
+  · exact ord_refl _
 
 @[rocq_alias own_mono]
 theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ₒ a1) : iOwn γ a1 ⊢ iOwn γ a2 :=
@@ -611,12 +611,12 @@ theorem iOwn_valid_l {a : F.ap (IProp GF)} : iOwn γ a ⊢ ✓ a ∗ iOwn γ a :
   BI.persistent_entails_right iOwn_cmraValid
 
 @[rocq_alias own_core_persistent]
-instance {a : F.ap (IProp GF)} [ORA.CoreId a] : BI.Persistent (iOwn γ a) where
+instance {a : F.ap (IProp GF)} [CoreId a] : BI.Persistent (iOwn γ a) where
   persistent := by
     simp [iOwn]
     refine (UPred.persistently_ownM_core _).trans ?_
     refine persistently_mono ?_
-    rw [ORA.core_eqv_self]
+    rw [core_eqv_self]
 
 @[rocq_alias own_timeless]
 instance iOwn_timeless {a : F.ap (IProp GF)} [OFE.DiscreteE a] : BI.Timeless (iOwn γ a) :=
@@ -632,7 +632,7 @@ theorem later_iOwn {a : F.ap (IProp GF)} : ▷ iOwn γ a ⊢ ◇ ∃ b, iOwn γ 
   imodintro
   iexists b
   isplit
-  · iapply UPred.ownM_mono (ORA.ord_op_left _ r')
+  · iapply UPred.ownM_mono (ord_op_left _ r')
     iexact Hown
   · iexact Hab
 
@@ -650,7 +650,7 @@ theorem validN_iSingleton_op {mf : IResUR GF} {y} :
     exact GenMap.alter_valid _ (IProp.unfoldi_bundle_validN Hvalid) (Hvalid_mf E.τ)
   · change ✓{n} (iSingleton F γ y τ • mf τ)
     simp only [iSingleton, dite_eq_right h]
-    exact Dist.validN (ORA.unit_left_id_dist (n := n) (x := mf τ)) |>.mpr (Hvalid_mf τ)
+    exact Dist.validN (unit_left_id_dist (n := n) (x := mf τ)) |>.mpr (Hvalid_mf τ)
 
 theorem iSingleton_op_validN_free {mf : IResUR GF} {y : F.ap (IProp GF)} :
     ✓{n} iSingleton F γ y • mf →
@@ -668,12 +668,12 @@ theorem iSingleton_op_validN_notfree {mf : IResUR GF} {y : F.ap (IProp GF)} :
     ✓{n} (y • E.unbundle (IProp.foldi v)) := by
   intros Hv Hnfree
   have h_at_gamma : ✓{n} ((((iSingleton F γ y) • mf) E.τ).car γ) := Hv E.τ γ
-  simp [iSingleton, ORA.op, Hnfree, GenMap.singleton_map_in] at h_at_gamma
-  apply ORA.validN_ne (congrArg (ORA.op · _) (ElemG.unbundle_bundle E y)).dist
-  apply ORA.validN_ne (unbundle_op (E.bundle y) (foldi.f v)).dist
+  simp [iSingleton, op, Hnfree, GenMap.singleton_map_in] at h_at_gamma
+  apply validN_ne (congrArg (op · _) (ElemG.unbundle_bundle E y)).dist
+  apply validN_ne (unbundle_op (E.bundle y) (foldi.f v)).dist
   apply ElemG.unbundle_validN
-  apply ORA.validN_ne (congrArg (ORA.op · _) (foldi_unfoldi _)).dist
-  apply ORA.validN_ne (foldi_op _ _).dist
+  apply validN_ne (congrArg (op · _) (foldi_unfoldi _)).dist
+  apply validN_ne (foldi_op _ _).dist
   apply IProp.foldi_validN _ h_at_gamma
 
 theorem IResUR.valid_exists_fresh {mf : IResUR GF} (_Hv : ✓{n} mf) : ∃ a : Nat, (mf (ElemG.τ GF F)).car a = none :=
@@ -681,11 +681,11 @@ theorem IResUR.valid_exists_fresh {mf : IResUR GF} (_Hv : ✓{n} mf) : ∃ a : N
 
 theorem alloc_update_unit {f : GName → F.ap (IProp GF)} :
     (∀ (γ : GName), ✓ f γ) →
-    UORA.unit ~~>: fun (y : IResUR GF) => ∃ γ, y = iSingleton F γ (f γ) := by
+    unit ~~>: fun (y : IResUR GF) => ∃ γ, y = iSingleton F γ (f γ) := by
   intros Hf_valid
   apply UpdateP.total.mpr
   intros n mf Hvalid
-  replace Hvalid : ✓{n} mf := ORA.validN_ne UORA.unit_left_id.dist Hvalid
+  replace Hvalid : ✓{n} mf := validN_ne unit_left_id.dist Hvalid
   obtain ⟨γ, Hfresh⟩ := @IResUR.valid_exists_fresh GF F _ E n mf Hvalid
   refine ⟨iSingleton F γ (f γ), ⟨γ, rfl⟩, ?_⟩
   apply validN_iSingleton_op Hvalid (Hf_valid _).validN Hfresh
@@ -721,7 +721,7 @@ theorem iOwn_alloc_strong_dep (f : GName → F.ap (IProp GF)) (P : GName → Pro
     apply UPred.bupd_ownM_updateP
     apply UpdateP.total.mpr
     intros n mf Hvalid
-    replace Hvalid : ✓{n} mf := ORA.validN_ne UORA.unit_left_id.dist Hvalid
+    replace Hvalid : ✓{n} mf := validN_ne unit_left_id.dist Hvalid
     obtain ⟨γ, Hfresh, HPγ⟩ := (mf (ElemG.τ GF F)).exists_fresh_sat HP
     refine ⟨iSingleton F γ (f γ), ⟨γ, HPγ, rfl⟩, ?_⟩
     apply validN_iSingleton_op Hvalid (Hf γ HPγ).validN Hfresh
@@ -776,12 +776,12 @@ theorem validN_iSingleton_op_notfree {mz' : IResUR GF} :
     ✓{n} (iSingleton F γ a' • mz') (ElemG.τ GF F) := by
   intros Hv Hnotfree Ha'_valid
   intro γ'
-  simp [ORA.op]
+  simp [op]
   by_cases h_gamma : γ' = γ
-  · simp [h_gamma, iSingleton, Hnotfree, ORA.ValidN, optionValidN, GenMap.singleton_map_in]
+  · simp [h_gamma, iSingleton, Hnotfree, ValidN, optionValidN, GenMap.singleton_map_in]
     exact validN_bundle_op_foldi Ha'_valid
   · have h_at_gamma' := Hv E.τ γ'
-    simp [ORA.op, iSingleton, singleton_map_none h_gamma, optionOp] at h_at_gamma' ⊢
+    simp [op, iSingleton, singleton_map_none h_gamma, optionOp] at h_at_gamma' ⊢
     exact h_at_gamma'
 
 theorem singleton_updateP {a : F.ap (IProp GF)} (Hupd : a ~~>: P) :
@@ -791,19 +791,19 @@ theorem singleton_updateP {a : F.ap (IProp GF)} (Hupd : a ~~>: P) :
   cases h_mf_gamma : (mf E.τ).car γ with
   | none =>
     have ⟨a_valid, mz'_valid⟩ : ✓{n} a ∧ ✓{n} mf := iSingleton_op_validN_free Hv h_mf_gamma
-    obtain ⟨a', Ha'_P, Ha'_valid : ✓{n} a'⟩ := Hupd n none (by simp [ORA.op?]; exact a_valid)
+    obtain ⟨a', Ha'_P, Ha'_valid : ✓{n} a'⟩ := Hupd n none (by simp [op?]; exact a_valid)
     refine ⟨iSingleton F γ a', ⟨a', rfl, Ha'_P⟩, ?_⟩
     apply validN_iSingleton_op mz'_valid Ha'_valid h_mf_gamma
   | some v =>
     have a_valid : ✓{n} (a • E.unbundle (IProp.foldi v)) := iSingleton_op_validN_notfree Hv h_mf_gamma
-    obtain ⟨a', Ha'_P, a'_valid : ✓{n} a' • _⟩ := Hupd n (some (E.unbundle (IProp.foldi v))) (by simp [ORA.op?]; exact a_valid)
+    obtain ⟨a', Ha'_P, a'_valid : ✓{n} a' • _⟩ := Hupd n (some (E.unbundle (IProp.foldi v))) (by simp [op?]; exact a_valid)
     refine ⟨iSingleton F γ a', ⟨a', rfl, Ha'_P⟩, ?_⟩
     intro τ'
     by_cases h_tau : τ' = E.τ
     · subst h_tau
       apply validN_iSingleton_op_notfree Hv h_mf_gamma a'_valid
     · have h_frame_valid := Hv τ'
-      simp [ORA.op, iSingleton, h_tau] at h_frame_valid ⊢
+      simp [op, iSingleton, h_tau] at h_frame_valid ⊢
       exact h_frame_valid
 
 @[rocq_alias own.own_updateP]
@@ -842,17 +842,17 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
   unfold iOwn
   apply (UPred.ownM_unit _).trans
   apply BI.intuitionistically_elim.trans
-  refine .trans (UPred.bupd_ownM_updateP UORA.unit (iSingleton F γ ε = ·) ?_) ?_
+  refine .trans (UPred.bupd_ownM_updateP unit (iSingleton F γ ε = ·) ?_) ?_
   · apply UpdateP.total.mpr
     intros n mf Hv
     refine ⟨iSingleton F γ ε, rfl, ?_⟩
-    replace Hv := ORA.validN_ne UORA.unit_left_id.dist Hv
+    replace Hv := validN_ne unit_left_id.dist Hv
     apply iSingleton_op_validN_at_γ Hv
-    unfold iSingleton; simp [ORA.ValidN, ORA.op, GenMap.singleton_map_in]
+    unfold iSingleton; simp [ValidN, op, GenMap.singleton_map_in]
     rcases h_at : (mf E.τ).car γ with (⟨⟩ | v) <;> simp
     · exact IProp.unfoldi_bundle_validN Hε.unit_valid.validN
     · have h_unit : IsUnit (IProp.unfoldi (E.bundle ε)) := IProp.unfoldi_bundle_unit
-      apply ORA.validN_ne h_unit.unit_left_id.dist.symm
+      apply validN_ne h_unit.unit_left_id.dist.symm
       apply extract_frame_validN (Hv E.τ) h_at
   · refine BIUpdate.mono ?_
     iintro ⟨%y, %hy, Hown⟩
@@ -872,7 +872,7 @@ instance intoAnd_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp .split a b1 b2] 
   into_and := by
     rw [h.is_op]
     exact and_intro (iOwn_mono (IncOrd.inc_ord ⟨b2, rfl⟩))
-      (iOwn_mono (IncOrd.inc_ord ⟨b1, ORA.comm⟩))
+      (iOwn_mono (IncOrd.inc_ord ⟨b1, comm⟩))
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias from_sep_own]
@@ -917,8 +917,8 @@ variable {GF F} [URFunctorContractive F] [E : ElemG GF F]
 
 @[rocq_alias own_cmra_sep_homomorphism]
 instance iOwn_cmra_sep_homomorphism (γ : GName) :
-    WeakMonoidHomomorphism (ORA.op (α := F.ap (IProp GF))) sep
-      UORA.unit iprop(emp) BiEntails (iOwn γ) where
+    WeakMonoidHomomorphism (op (α := F.ap (IProp GF))) sep
+      unit iprop(emp) BiEntails (iOwn γ) where
   rel_refl := .rfl
   rel_trans := .trans
   op_proper aa' bb' := sep_congr aa' bb'
@@ -928,34 +928,34 @@ instance iOwn_cmra_sep_homomorphism (γ : GName) :
 @[rocq_alias big_opL_own]
 theorem bigOpL_iOwn {B : Type _} (γ : GName) (f : Nat → B → F.ap (IProp GF)) (l : List B) :
     l ≠ [] →
-    iOwn γ ([^ ORA.op list] k ↦ x ∈ l, f k x) ⊣⊢ [∗list] k ↦ x ∈ l, iOwn γ (f k x) :=
+    iOwn γ ([^ op list] k ↦ x ∈ l, f k x) ⊣⊢ [∗list] k ↦ x ∈ l, iOwn γ (f k x) :=
   BigOpL.bigOpL_hom_weak f
 
 @[rocq_alias big_opM_own]
 theorem bigOpM_iOwn {K : Type _} {M : Type _ → Type _} {B : Type _} [LawfulFiniteMap M K]
     [DecidableEq K] (γ : GName) (g : K → B → F.ap (IProp GF)) (m : M B) :
     ¬ m = (∅ : M B) →
-    iOwn γ ([^ ORA.op map] k ↦ x ∈ m, g k x) ⊣⊢ [∗map] k ↦ x ∈ m, iOwn γ (g k x) :=
+    iOwn γ ([^ op map] k ↦ x ∈ m, g k x) ⊣⊢ [∗map] k ↦ x ∈ m, iOwn γ (g k x) :=
   fun h => BigOpM.bigOpM_weak_hom g m (fun he => h he)
 
 @[rocq_alias big_opS_own]
 theorem bigOpS_iOwn {B : Type _} {S : Type _} [LawfulFiniteSet S B] (γ : GName)
     (g : B → F.ap (IProp GF)) (X : S) :
     X ≠ ∅ →
-    iOwn γ ([^ ORA.op set] x ∈ X, g x) ⊣⊢ [∗set] x ∈ X, iOwn γ (g x) :=
+    iOwn γ ([^ op set] x ∈ X, g x) ⊣⊢ [∗set] x ∈ X, iOwn γ (g x) :=
   BigOpS.hom_weak (iOwn_cmra_sep_homomorphism γ) g X
 
 @[rocq_alias big_opMS_own]
 theorem bigOpMS_iOwn {B : Type _} {MS : Type _} [LawfulFiniteMultiSet MS B] (γ : GName)
     (g : B → F.ap (IProp GF)) (X : MS) :
     X ≠ ∅ →
-    iOwn γ ([^ ORA.op mset] x ∈ X, g x) ⊣⊢ [∗mset] x ∈ X, iOwn γ (g x) :=
+    iOwn γ ([^ op mset] x ∈ X, g x) ⊣⊢ [∗mset] x ∈ X, iOwn γ (g x) :=
   BigOpMS.hom_weak (iOwn_cmra_sep_homomorphism γ) g X
 
 @[rocq_alias own_cmra_sep_entails_homomorphism]
 instance iOwn_cmra_sep_entails_homomorphism (γ : GName) :
-    MonoidHomomorphism (ORA.op (α := F.ap (IProp GF))) sep
-      UORA.unit iprop(emp) Entails (iOwn γ) where
+    MonoidHomomorphism (op (α := F.ap (IProp GF))) sep
+      unit iprop(emp) Entails (iOwn γ) where
   rel_refl := .rfl
   rel_trans := .trans
   op_proper := sep_mono
@@ -965,25 +965,25 @@ instance iOwn_cmra_sep_entails_homomorphism (γ : GName) :
 
 @[rocq_alias big_opL_own_1]
 theorem bigOpL_iOwn_entail {B : Type _} (γ : GName) (f : Nat → B → F.ap (IProp GF)) (l : List B) :
-    iOwn γ ([^ ORA.op list] k ↦ x ∈ l, f k x) ⊢ [∗list] k ↦ x ∈ l, iOwn γ (f k x) :=
+    iOwn γ ([^ op list] k ↦ x ∈ l, f k x) ⊢ [∗list] k ↦ x ∈ l, iOwn γ (f k x) :=
   BigOpL.bigOpL_hom f l
 
 @[rocq_alias big_opM_own_1]
 theorem bigOpM_iOwn_entail {K : Type _} {M : Type _ → Type _} {B : Type _} [LawfulFiniteMap M K]
     (γ : GName) (g : K → B → F.ap (IProp GF)) (m : M B) :
-    iOwn γ ([^ ORA.op map] k ↦ x ∈ m, g k x) ⊢ [∗map] k ↦ x ∈ m, iOwn γ (g k x) :=
+    iOwn γ ([^ op map] k ↦ x ∈ m, g k x) ⊢ [∗map] k ↦ x ∈ m, iOwn γ (g k x) :=
   BigOpM.bigOpM_hom g m
 
 @[rocq_alias big_opS_own_1]
 theorem bigOpS_iOwn_entail {B : Type _} {S : Type _} [LawfulFiniteSet S B] (γ : GName)
     (g : B → F.ap (IProp GF)) (X : S) :
-    iOwn γ ([^ ORA.op set] x ∈ X, g x) ⊢ [∗set] x ∈ X, iOwn γ (g x) :=
+    iOwn γ ([^ op set] x ∈ X, g x) ⊢ [∗set] x ∈ X, iOwn γ (g x) :=
   BigOpS.hom (iOwn_cmra_sep_entails_homomorphism γ) g X
 
 @[rocq_alias big_opMS_own_1]
 theorem bigOpMS_iOwn_entail {B : Type _} {MS : Type _} [LawfulFiniteMultiSet MS B] (γ : GName)
     (g : B → F.ap (IProp GF)) (X : MS) :
-    iOwn γ ([^ ORA.op mset] x ∈ X, g x) ⊢ [∗mset] x ∈ X, iOwn γ (g x) :=
+    iOwn γ ([^ op mset] x ∈ X, g x) ⊢ [∗mset] x ∈ X, iOwn γ (g x) :=
   BigOpMS.hom (iOwn_cmra_sep_entails_homomorphism γ) g X
 
 end big_op_instances
@@ -1004,7 +1004,7 @@ theorem iResProject_op (x y : IResUR GF) :
     iResProject F γ (x • y) = iResProject F γ x • iResProject F γ y := by
   simp only [iResProject, iResUR_op_eval]
   rcases (x E.τ).car γ with _ | x1 <;> rcases (y E.τ).car γ with _ | y1 <;>
-    simp [ORA.op, optionOp]
+    simp [op, optionOp]
   rw [foldi_op, unbundle_op]
 
 @[rocq_alias iRes_project_ne]

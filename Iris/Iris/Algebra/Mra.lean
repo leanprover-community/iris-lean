@@ -136,7 +136,7 @@ theorem append_idem (x : Mra R) : append x x = x := by
     ⟨y, congrArg (fun z ↦ some (append z y)) (Option.some.inj h)⟩
 
 @[rocq_alias mra_cmra_mixin]
-instance (R : α → α → Prop) : CMRA (Mra R) := ORA.ofCMRAData (Mra.cmraData R)
+instance (R : α → α → Prop) : CMRA (Mra R) := ofCMRAData (Mra.cmraData R)
 
 #rocq_ignore mraR "Use Mra."
 
@@ -145,7 +145,7 @@ instance : IsTotal (Mra R) where
   total x := ⟨x, rfl⟩
 
 @[rocq_alias mra_core_id]
-instance (x : Mra R) : ORA.CoreId x where
+instance (x : Mra R) : CoreId x where
   core_id := rfl
 
 @[rocq_alias mra_cmra_discrete]
@@ -180,7 +180,7 @@ theorem below_op (a : α) (x y : Mra R) : below a (x • y) ↔ below a x ∨ be
 theorem idem (x : Mra R) : x • x = x := append_idem x
 
 theorem ord_iff (x y : Mra R) : x ≼ₒ y ↔ y = x • y :=
-  ⟨fun h ↦ (ORA.op_core_right_of_inc (OrdInc.ord_inc h)).symm, fun h ↦ IncOrd.inc_ord ⟨y, h⟩⟩
+  ⟨fun h ↦ (op_core_right_of_inc (OrdInc.ord_inc h)).symm, fun h ↦ IncOrd.inc_ord ⟨y, h⟩⟩
 
 @[rocq_alias mra_included]
 theorem inc_iff (x y : Mra R) : x ≼ y ↔ y = x • y := inc_iff_ord.trans (ord_iff x y)
@@ -221,11 +221,11 @@ theorem local_update_grow [hR : Trans R R R] (a : α) (x : Mra R) (b : α) (h : 
 
 @[rocq_alias mra_local_update_get_frag]
 theorem local_update_get_frag [Std.Refl R] [Trans R R R] (a b : α) (h : R b a) :
-    (toMra (R := R) a, UORA.unit) ~l~> (toMra a, toMra b) := by
+    (toMra (R := R) a, unit) ~l~> (toMra a, toMra b) := by
   refine (local_update_unital_discrete ..).mpr fun z _ haz ↦ ⟨trivial, ?_⟩
   calc
     toMra a = toMra b • toMra a := (toMra_op_of_rel b a h).symm
-    _ = toMra b • z := congrArg (toMra b • ·) (haz.trans ORA.unit_left_id)
+    _ = toMra b • z := congrArg (toMra b • ·) (haz.trans unit_left_id)
 
 private theorem rel_iff_of_toMra_eq (hab : toMra (R := R) a = toMra b) (c : α) :
     R c a ↔ R c b := by

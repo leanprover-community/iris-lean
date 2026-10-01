@@ -148,20 +148,20 @@ theorem op_bound (x y : GenMap β) :
   obtain ⟨Nx, hx⟩ := x.bound
   obtain ⟨Ny, hy⟩ := y.bound
   refine ⟨max Nx Ny, fun k hk => ?_⟩
-  simp [ORA.op, optionOp, hx k (by omega), hy k (by omega)]
+  simp [op, optionOp, hx k (by omega), hy k (by omega)]
 
 theorem pcore_bound (x : GenMap β) (cx : Nat → Option β)
-    (hpc : ORA.pcore x.car = some cx) :
+    (hpc : pcore x.car = some cx) :
     ∃ N, ∀ k, N ≤ k → cx k = none := by
   obtain ⟨N, hN⟩ := x.bound
-  have hcx : cx = fun k => ORA.core (x.car k) := (Option.some.inj hpc).symm
+  have hcx : cx = fun k => core (x.car k) := (Option.some.inj hpc).symm
   refine ⟨N, fun k hk => ?_⟩
   rw [hcx]
-  simp [ORA.core, ORA.pcore, optionCore, hN k hk]
+  simp [core, pcore, optionCore, hN k hk]
 
 theorem extend_bound {n : Nat} {x : GenMap β}
     {y1 y2 : Nat → Option β} (Hv : ✓{n} x.car) (He : x.car ≡{n}≡ y1 • y2) :
-    let F k := ORA.extend (Hv k) (He k)
+    let F k := extend (Hv k) (He k)
     (∃ N, ∀ k, N ≤ k → (fun k => (F k).1) k = none) ∧
     (∃ N, ∀ k, N ≤ k → (fun k => (F k).2.1) k = none) := by
   obtain ⟨N, hN⟩ := x.bound
@@ -171,16 +171,16 @@ theorem extend_bound {n : Nat} {x : GenMap β}
     have h : none = z₁ • z₂ := (hN k hk) ▸ hp1
     cases z₁ <;> cases z₂
     · exact ⟨rfl, rfl⟩
-    all_goals exact absurd h (by simp [ORA.op, optionOp])
+    all_goals exact absurd h (by simp [op, optionOp])
   constructor
-  · exact ⟨N, fun k hk => (aux k hk _ _ (ORA.extend (Hv k) (He k)).2.2.1).1⟩
-  · exact ⟨N, fun k hk => (aux k hk _ _ (ORA.extend (Hv k) (He k)).2.2.1).2⟩
+  · exact ⟨N, fun k hk => (aux k hk _ _ (extend (Hv k) (He k)).2.2.1).1⟩
+  · exact ⟨N, fun k hk => (aux k hk _ _ (extend (Hv k) (He k)).2.2.1).2⟩
 
 def pcore_genmap (x : GenMap β) : Option (GenMap β) :=
-  some ⟨fun k => ORA.core (x.car k), by
+  some ⟨fun k => core (x.car k), by
     obtain ⟨N, hN⟩ := x.bound
     refine ⟨N, fun k hk => ?_⟩
-    simp [ORA.core, ORA.pcore, optionCore, hN k hk]⟩
+    simp [core, pcore, optionCore, hN k hk]⟩
 
 @[reducible] def GenMap.raOp : Op (GenMap β) where
   op x y := ⟨x.car • y.car, op_bound β x y⟩
@@ -197,18 +197,18 @@ def pcore_genmap (x : GenMap β) : Option (GenMap β) :=
 @[reducible] def GenMap.raPCore : PCore (GenMap β) where
   pcore := pcore_genmap β
   pcore_ne {n x y cx} H Hm := by
-    refine ⟨⟨fun k => ORA.core (y.car k), ?_⟩, by simp [pcore_genmap], fun k => ?_⟩
+    refine ⟨⟨fun k => core (y.car k), ?_⟩, by simp [pcore_genmap], fun k => ?_⟩
     · obtain ⟨N, hN⟩ := y.bound
-      exact ⟨N, fun k hk => by simp [ORA.core, ORA.pcore, optionCore, hN k hk]⟩
-    · suffices hcx : cx.car = fun k => ORA.core (x.car k) by rw [hcx]; exact (H k).core
+      exact ⟨N, fun k hk => by simp [core, pcore, optionCore, hN k hk]⟩
+    · suffices hcx : cx.car = fun k => core (x.car k) by rw [hcx]; exact (H k).core
       simp only [pcore_genmap, Option.some.injEq] at Hm
       exact (congrArg GenMap.car Hm).symm
   pcore_idem {x cx} H := OFE.eq_dist_2 <| by
-    have hcx : cx.car = fun k => ORA.core (x.car k) := by
+    have hcx : cx.car = fun k => core (x.car k) := by
       exact (congrArg GenMap.car (Option.some.inj H)).symm
     simp only [pcore_genmap]
     intro n k
-    have H : cx.car k = ORA.core (x.car k) := congrFun hcx k
+    have H : cx.car k = core (x.car k) := congrFun hcx k
     simp only [H]
     exact (core_idem (x.car k)).dist
 
@@ -250,18 +250,18 @@ instance instORA_GenMap : ORA (GenMap β) where
   toOp := GenMap.raOp β
   toPCore := GenMap.raPCore β
   toValid := GenMap.raValid β
-  validN_op_left {n x y} h := ORA.validN_op_left (x := x.car) (y := y.car) h
+  validN_op_left {n x y} h := validN_op_left (x := x.car) (y := y.car) h
   pcore_op_left {x cx} H := OFE.eq_dist_2 <| by
-    have hcx : cx.car = fun k => ORA.core (x.car k) := by
+    have hcx : cx.car = fun k => core (x.car k) := by
       exact (congrArg GenMap.car (Option.some.inj H)).symm
     intro n k
-    have H : cx.car k = ORA.core (x.car k) := congrFun hcx k
-    simp only [ORA.op, optionOp, H]
+    have H : cx.car k = core (x.car k) := congrFun hcx k
+    simp only [op, optionOp, H]
     exact (core_op (x.car k)).dist
   extend {n x y1 y2} := by
     intro Hv H
     have eb := extend_bound β Hv H
-    let F k := ORA.extend (Hv k) (H k)
+    let F k := extend (Hv k) (H k)
     exact ⟨⟨fun k => (F k).1, eb.1⟩, ⟨fun k => (F k).2.1, eb.2⟩,
       OFE.eq_dist_2 fun _ k => ((F k).2.2.1).dist, fun k => (F k).2.2.2.1, fun k => (F k).2.2.2.2⟩
   toOrdered := GenMap.orderN β
@@ -298,15 +298,15 @@ instance instUCMRA_GenMap : UORA (GenMap β) where
   unit := GenMap.empty
   unit_valid _ := trivial
   unit_left_id {x} := GenMap.ext <| OFE.eq_dist_2 fun _ k => by
-    simp only [ORA.op, optionOp, empty]
+    simp only [op, optionOp, empty]
     cases x.car k <;> simp
   pcore_unit := congrArg some <| GenMap.ext <| OFE.eq_dist_2 fun _ k => by
-    simp [empty, ORA.core, ORA.pcore, optionCore]
+    simp [empty, core, pcore, optionCore]
   ord_refl x := ord_refl x.car
 
 instance : IsTotal (GenMap β) := unit_total
 
-instance instAffineGenMap [ORA.Affine β] : ORA.Affine (GenMap β) :=
+instance instAffineGenMap [Affine β] : Affine (GenMap β) :=
   IncOrd.of_increasing fun x => GenMap.increasing_of_car β (IncOrd.increasing x.car)
 
 instance instOrdIncGenMap [OrdInc β] : OrdInc (GenMap β) where
@@ -317,7 +317,7 @@ instance instOrdIncGenMap [OrdInc β] : OrdInc (GenMap β) where
     have hk' := congrFun hz k
     rw [hN k hk] at hk'
     rcases hx : x.car k with _ | a <;> rcases hzk : z k with _ | b <;>
-      simp only [hx, hzk, ORA.op, optionOp] at hk' <;> first | rfl | cases hk'
+      simp only [hx, hzk, op, optionOp] at hk' <;> first | rfl | cases hk'
   ordN_incN {n x y} h := by
     obtain ⟨z, hz⟩ := OrdInc.ordN_incN (α := Nat → Option β) h
     obtain ⟨N, hN⟩ := y.bound
@@ -325,7 +325,7 @@ instance instOrdIncGenMap [OrdInc β] : OrdInc (GenMap β) where
     have hk' := hz k
     rw [hN k hk] at hk'
     rcases hx : x.car k with _ | a <;> rcases hzk : z k with _ | b <;>
-      simp only [hx, hzk, ORA.op, optionOp] at hk' <;> first | rfl | exact (hk' : False).elim
+      simp only [hx, hzk, op, optionOp] at hk' <;> first | rfl | exact (hk' : False).elim
 
 instance instIsIncGenMap [IsInc β] : IsInc (GenMap β) := {}
 
@@ -344,7 +344,7 @@ theorem GenMap.singleton_map_op (x : Nat) (y1 y2 : β) :
     (singleton x y1 : GenMap β) • singleton x y2 = singleton x (y1 • y2) := by
   apply GenMap.ext
   funext γ
-  simp only [ORA.op, optionOp]
+  simp only [op, optionOp]
   by_cases h : γ = x
   · subst h; simp [singleton, empty, alter, Iris.alter]
   · simp only [singleton, empty, alter, Iris.alter]
@@ -372,9 +372,9 @@ theorem GenMap.op_singleton_comm {mf : GenMap β} {x : Nat} (y : β)
   simp only [IsFree] at H_free
   by_cases heq : k = x
   · subst heq
-    simp only [ORA.op, optionOp, alter, Iris.alter, singleton, empty, ↓reduceIte]
+    simp only [op, optionOp, alter, Iris.alter, singleton, empty, ↓reduceIte]
     simp [H_free]
-  · simp only [ORA.op, optionOp, alter, Iris.alter, singleton, empty]
+  · simp only [op, optionOp, alter, Iris.alter, singleton, empty]
     have : x ≠ k := Ne.symm heq
     simp [ite_eq_right this]
 
@@ -390,9 +390,9 @@ theorem GenMap.validN_op_comm {m mf : GenMap β} (x : Nat) (y : β) (H : IsFree 
   simp only [IsFree] at H
   by_cases heq : k = x
   · subst heq
-    simp only [ORA.op, alter, Iris.alter, ↓reduceIte, optionOp]
+    simp only [op, alter, Iris.alter, ↓reduceIte, optionOp]
     simp [H]
-  · simp only [ORA.op, alter, Iris.alter]
+  · simp only [op, alter, Iris.alter]
     have : x ≠ k := Ne.symm heq
     simp [ite_eq_right this]
 
@@ -439,19 +439,19 @@ instance instURFunctor_GenMapOF (F : COFE.OFunctorPre) [RFunctor F] :
     toHom := GenMap.lift <| OFunctor.map f g
     validN {n x} hv z := by
       cases h : x.car z with
-      | none => simp [Option.map, h, ORA.ValidN, optionValidN]
+      | none => simp [Option.map, h, ValidN, optionValidN]
       | some v =>
-        simp only [Option.map, ORA.ValidN, optionValidN, h]
+        simp only [Option.map, ValidN, optionValidN, h]
         have Hvalid := @(URFunctor.map (F := OptionOF F) f g).validN n v
-        simp only [ORA.ValidN, optionValidN, URFunctor.map] at Hvalid
+        simp only [ValidN, optionValidN, URFunctor.map] at Hvalid
         have hv' := hv z
-        simp only [h, ORA.ValidN, optionValidN] at hv'
+        simp only [h, ValidN, optionValidN] at hv'
         exact Hvalid hv'
     pcore x := OFE.eq_dist_2 <| by
       intro _ γ
       have Hcore := @(URFunctor.map (F := OptionOF F) f g).pcore (x.car γ)
-      simp only [ORA.pcore, optionCore, Option.bind, Option.map, URFunctor.map,
-                 OFunctor.map, ORA.core] at Hcore ⊢
+      simp only [pcore, optionCore, Option.bind, Option.map, URFunctor.map,
+                 OFunctor.map, core] at Hcore ⊢
       cases h : x.car γ with
       | none => simp
       | some v =>
@@ -461,7 +461,7 @@ instance instURFunctor_GenMapOF (F : COFE.OFunctorPre) [RFunctor F] :
     op z x := OFE.eq_dist_2 <| by
       intro _ γ
       have Hop := @(URFunctor.map (F := OptionOF F) f g).op (z.car γ) (x.car γ)
-      simp only [Option.map, ORA.op, optionOp, URFunctor.map] at Hop ⊢
+      simp only [Option.map, op, optionOp, URFunctor.map] at Hop ⊢
       cases h : z.car γ <;> cases h' : x.car γ <;> simp_all [OFunctor.map]
       exact ((RFunctor.map f g).op _ _).dist
     monoN h t := (URFunctor.map (F := OptionOF F) f g).monoN (h t)

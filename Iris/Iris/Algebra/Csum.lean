@@ -217,47 +217,47 @@ def raOp [ORA α] [ORA β] : Op (Csum α β) where
   op := Csum.op
   op_ne {x} := ⟨fun {n y₁ y₂} hy => by cases x <;> cases y₁ <;> cases y₂ <;>
     first | exact OFE.Dist.op_r hy | exact hy | trivial⟩
-  assoc {x y z} := by grind [ORA.assoc']
-  comm {x y} := by grind [ORA.comm']
+  assoc {x y z} := by grind [assoc']
+  comm {x y} := by grind [comm']
 
 @[reducible] def raPCore [ORA α] [ORA β] : PCore (Csum α β) where
   pcore := Csum.pcore
   pcore_ne {n x y cx} hxy hpx := by
     cases x <;> cases y <;> try exact hxy.elim
     · obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq hpx
-      obtain ⟨cy, hcy, ecy⟩ := ORA.pcore_ne (cx := ca) hxy hpa
+      obtain ⟨cy, hcy, ecy⟩ := pcore_ne (cx := ca) hxy hpa
       exact ⟨inl cy, by simp [Csum.pcore, hcy], ecy⟩
     · obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx
-      obtain ⟨cy, hcy, ecy⟩ := ORA.pcore_ne (cx := cb) hxy hpb
+      obtain ⟨cy, hcy, ecy⟩ := pcore_ne (cx := cb) hxy hpb
       exact ⟨inr cy, by simp [Csum.pcore, hcy], ecy⟩
     · simp only [Csum.pcore, Option.some.injEq] at hpx
       exact ⟨invalid, rfl, hpx ▸ .rfl⟩
   pcore_idem {x cx} hpx := by cases x with
     | inl a =>
       obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq hpx
-      exact Option.map_forall₂ inl (ORA.pcore_idem hpa)
+      exact Option.map_forall₂ inl (pcore_idem hpa)
     | inr b =>
       obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx
-      exact Option.map_forall₂ inr (ORA.pcore_idem hpb)
+      exact Option.map_forall₂ inr (pcore_idem hpb)
     | invalid => simp only [Csum.pcore, Option.some.injEq] at hpx; exact hpx ▸ rfl
 
 @[reducible] def raValid [ORA α] [ORA β] : _root_.Iris.Valid (Csum α β) where
   Valid := Csum.valid
   ValidN := Csum.validN
-  validN_ne {n x y} h hv := by change Csum.Dist n x y at h; grind [Csum.Dist, ORA.validN_ne]
-  valid_iff_validN {x} := by cases x <;> simp [ORA.valid_iff_validN]
-  validN_succ {x _} h := by grind [ORA.validN_succ]
+  validN_ne {n x y} h hv := by change Csum.Dist n x y at h; grind [Csum.Dist, validN_ne]
+  valid_iff_validN {x} := by cases x <;> simp [valid_iff_validN]
+  validN_succ {x _} h := by grind [validN_succ]
 
 @[reducible] def orderN [ORA α] [ORA β] : Ordered (Csum α β) where
   OrderN := OrderN
   Order := Order
   ordN_ne {n x x' y y'} ex ey h := by
     cases x <;> cases x' <;> cases y <;> cases y' <;>
-      first | trivial | exact ex.elim | exact ey.elim | exact h.elim | exact ORA.ordN_ne ex ey h
-  ordN_succ {n x y} h := by grind [ORA.ordN_succ]
-  ordN_trans {n x y z} h₁ h₂ := by grind [ORA.ordN_trans]
-  ord_trans {x y z} h₁ h₂ := by grind [ORA.ord_trans]
-  ordN_of_ord {x y} n h := by grind [ORA.ordN_of_ord]
+      first | trivial | exact ex.elim | exact ey.elim | exact h.elim | exact ordN_ne ex ey h
+  ordN_succ {n x y} h := by grind [ordN_succ]
+  ordN_trans {n x y z} h₁ h₂ := by grind [ordN_trans]
+  ord_trans {x y z} h₁ h₂ := by grind [ord_trans]
+  ordN_of_ord {x y} n h := by grind [ordN_of_ord]
 
 section
 variable [ORA α] [ORA β]
@@ -281,37 +281,37 @@ instance instORA : ORA (Csum α β) where
   toPCore := raPCore
   toValid := raValid
   pcore_op_left {x cx} hpx := by cases x with
-    | inl a => obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq hpx; exact congrArg _ (ORA.pcore_op_left hpa)
-    | inr b => obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx; exact congrArg _ (ORA.pcore_op_left hpb)
+    | inl a => obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq hpx; exact congrArg _ (pcore_op_left hpa)
+    | inr b => obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx; exact congrArg _ (pcore_op_left hpb)
     | invalid => exact (Option.some.inj hpx) ▸ rfl
   validN_op_left {n x y} h := by
-    cases x <;> cases y <;> first | exact ORA.validN_op_left h | exact h.elim
+    cases x <;> cases y <;> first | exact validN_op_left h | exact h.elim
   extend {n x y₁ y₂} hv he := by
     cases x <;> cases y₁ <;> cases y₂ <;> first
       | exact he.elim
       | exact hv.elim
-      | (obtain ⟨z₁, z₂, hz, hz₁, hz₂⟩ := ORA.extend hv he
+      | (obtain ⟨z₁, z₂, hz, hz₁, hz₂⟩ := extend hv he
          exact ⟨inl z₁, inl z₂, congrArg _ hz, hz₁, hz₂⟩)
-      | (obtain ⟨z₁, z₂, hz, hz₁, hz₂⟩ := ORA.extend hv he
+      | (obtain ⟨z₁, z₂, hz, hz₁, hz₂⟩ := extend hv he
          exact ⟨inr z₁, inr z₂, congrArg _ hz, hz₁, hz₂⟩)
   toOrdered := orderN
   op_monoN_left {n x y} z h := by
     cases x <;> cases y <;> cases z <;>
-      first | trivial | exact h.elim | exact ORA.op_monoN_left _ h
+      first | trivial | exact h.elim | exact op_monoN_left _ h
   op_mono_left {x y} z h := by
     cases x <;> cases y <;> cases z <;>
-      first | trivial | exact h.elim | exact ORA.op_mono_left _ h
+      first | trivial | exact h.elim | exact op_mono_left _ h
   validN_of_ordN {n x y} h v := by
-    cases x <;> cases y <;> first | trivial | exact h.elim | exact v.elim | exact ORA.validN_of_ordN h v
+    cases x <;> cases y <;> first | trivial | exact h.elim | exact v.elim | exact validN_of_ordN h v
   pcore_monoN {n x y cx} h e := by
     match x, y, h with
     | inl _, inl _, h =>
       obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq e
-      let ⟨c, hc, hi⟩ := ORA.pcore_monoN h hpa
+      let ⟨c, hc, hi⟩ := pcore_monoN h hpa
       exact ⟨inl c, Option.map_forall₂ inl hc, hi⟩
     | inr _, inr _, h =>
       obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq e
-      let ⟨c, hc, hi⟩ := ORA.pcore_monoN h hpb
+      let ⟨c, hc, hi⟩ := pcore_monoN h hpb
       exact ⟨inr c, Option.map_forall₂ inr hc, hi⟩
     | _, invalid, _ => exact ⟨invalid, rfl, trivial⟩
     | inl _, inr _, h | inr _, inl _, h | invalid, inl _, h | invalid, inr _, h => exact h.elim
@@ -319,11 +319,11 @@ instance instORA : ORA (Csum α β) where
     match x, y, h with
     | inl _, inl _, h =>
       obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq e
-      let ⟨c, hc, hi⟩ := ORA.pcore_mono h hpa
+      let ⟨c, hc, hi⟩ := pcore_mono h hpa
       exact ⟨inl c, Option.map_forall₂ inl hc, hi⟩
     | inr _, inr _, h =>
       obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq e
-      let ⟨c, hc, hi⟩ := ORA.pcore_mono h hpb
+      let ⟨c, hc, hi⟩ := pcore_mono h hpb
       exact ⟨inr c, Option.map_forall₂ inr hc, hi⟩
     | _, invalid, _ => exact ⟨invalid, rfl, trivial⟩
     | inl _, inr _, h | inr _, inl _, h | invalid, inl _, h | invalid, inr _, h => exact h.elim
@@ -331,11 +331,11 @@ instance instORA : ORA (Csum α β) where
     match x, y with
     | inl _, inl a' =>
       obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq e
-      let ⟨c, hc, hi⟩ := ORA.pcore_order_op hpa a'
+      let ⟨c, hc, hi⟩ := pcore_order_op hpa a'
       exact ⟨inl c, Option.map_forall₂ inl hc, hi⟩
     | inr _, inr b' =>
       obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq e
-      let ⟨c, hc, hi⟩ := ORA.pcore_order_op hpb b'
+      let ⟨c, hc, hi⟩ := pcore_order_op hpb b'
       exact ⟨inr c, Option.map_forall₂ inr hc, hi⟩
     | inl _, inr _ | inl _, invalid | inr _, inl _ | inr _, invalid
     | invalid, inl _ | invalid, inr _ | invalid, invalid => exact ⟨invalid, rfl, trivial⟩
@@ -343,10 +343,10 @@ instance instORA : ORA (Csum α β) where
     match x with
     | inl a =>
       obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq e
-      exact increasing_inl_iff.mpr (ORA.pcore_increasing hpa)
+      exact increasing_inl_iff.mpr (pcore_increasing hpa)
     | inr b =>
       obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq e
-      exact increasing_inr_iff.mpr (ORA.pcore_increasing hpb)
+      exact increasing_inr_iff.mpr (pcore_increasing hpb)
     | invalid => cases e; exact inferInstance
   increasing_closed {n x y} h h' := by
     match x, y, h' with
@@ -360,10 +360,10 @@ instance instORA : ORA (Csum α β) where
   ordN_extend {n x y} v h := by
     match x, y, h with
     | inl _, inl _, h =>
-      obtain ⟨z, hz, ez⟩ := ORA.ordN_extend v h
+      obtain ⟨z, hz, ez⟩ := ordN_extend v h
       exact ⟨inl z, hz, ez⟩
     | inr _, inr _, h =>
-      obtain ⟨z, hz, ez⟩ := ORA.ordN_extend v h
+      obtain ⟨z, hz, ez⟩ := ordN_extend v h
       exact ⟨inr z, hz, ez⟩
     | _, invalid, _ => exact v.elim
     | inl _, inr _, h | inr _, inl _, h | invalid, inl _, h | invalid, inr _, h => exact h.elim
@@ -371,9 +371,9 @@ instance instORA : ORA (Csum α β) where
 end
 
 instance instOrderRefl [ORA α] [ORA β] [OrderRefl α] [OrderRefl β] : OrderRefl (Csum α β) where
-  ord_refl | inl a => ORA.ord_refl a | inr b => ORA.ord_refl b | invalid => trivial
+  ord_refl | inl a => ord_refl a | inr b => ord_refl b | invalid => trivial
 
-instance instAffine [ORA α] [ORA β] [ORA.Affine α] [ORA.Affine β] : ORA.Affine (Csum α β) :=
+instance instAffine [ORA α] [ORA β] [Affine α] [Affine β] : Affine (Csum α β) :=
   IncOrd.of_increasing fun
     | inl a => increasing_inl_iff.mpr (IncOrd.increasing a)
     | inr b => increasing_inr_iff.mpr (IncOrd.increasing b)
@@ -397,11 +397,11 @@ theorem inr_valid [ORA α] [ORA β] {b : β} : ✓ (inr (α := α) b) ↔ ✓ b 
 instance [ORA α] [ORA β] [ORA.Discrete α] [ORA.Discrete β] : ORA.Discrete (Csum α β) where
   discrete_valid {x} hv :=
     match x with
-    | inl a => ORA.discrete_valid (x := a) hv
-    | inr b => ORA.discrete_valid (x := b) hv
+    | inl a => discrete_valid (x := a) hv
+    | inr b => discrete_valid (x := b) hv
     | invalid => hv
   discrete_ord {x y} h := by
-    change Csum.OrderN 0 x y at h; change Csum.Order x y; grind [ORA.discrete_ord]
+    change Csum.OrderN 0 x y at h; change Csum.Order x y; grind [discrete_ord]
 
 /-! ## CoreId -/
 

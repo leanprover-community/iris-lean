@@ -37,6 +37,7 @@ instance : OFE.Discrete DFrac := ⟨fun h => h⟩
 #rocq_ignore dfracO "Use DFrac type with typeclass inference"
 
 namespace DFrac
+open ORA
 
 open DFrac OFE.Discrete IsOp
 
@@ -113,35 +114,35 @@ def op : DFrac → DFrac → DFrac
       rcases z with z|_|z <;> simp [op]
 
 @[rocq_alias dfracR]
-instance instORADFrac : CMRA DFrac := ORA.ofCMRAData DFrac.cmraData
+instance instORADFrac : CMRA DFrac := ofCMRAData DFrac.cmraData
 
 @[rocq_alias dfrac_full_exclusive]
-instance own_whole_exclusive : ORA.Exclusive (α := DFrac) (own 1) where
+instance own_whole_exclusive : Exclusive (α := DFrac) (own 1) where
   exclusive0_l := by
     rintro (y|_|y) <;>
-    simp only [ORA.ValidN, valid, ORA.op, op] <;>
+    simp only [ValidN, valid, ORA.op, op] <;>
     grind
 
-instance one_exclusive_left [ORA V] {v : V} : ORA.Exclusive (own (One.one : Qp), v) where
+instance one_exclusive_left [ORA V] {v : V} : Exclusive (own (One.one : Qp), v) where
   exclusive0_l := by
     refine fun ⟨y1, _⟩ ⟨Hv1, _⟩ => ?_
     have h1 : (One.one : Qp).val = 1 := rfl
     rcases y1 with (y|_|y) <;>
-      simp only [ORA.ValidN, ORA.op, op, valid] at Hv1 <;>
+      simp only [ValidN, ORA.op, op, valid] at Hv1 <;>
       grind
 
-instance one_exclusive_right [ORA V] {v : V} : ORA.Exclusive (v, own (One.one : Qp)) where
+instance one_exclusive_right [ORA V] {v : V} : Exclusive (v, own (One.one : Qp)) where
   exclusive0_l := by
     refine fun ⟨_, y2⟩ ⟨_, Hv2⟩ => ?_
     have h1 : (One.one : Qp).val = 1 := rfl
     rcases y2 with (y|_|y) <;>
-      simp only [ORA.ValidN, ORA.op, op, valid] at Hv2 <;>
+      simp only [ValidN, ORA.op, op, valid] at Hv2 <;>
       grind
 
 @[rocq_alias dfrac_cancelable]
-instance {f : Qp} : ORA.Cancelable (own f) where
+instance {f : Qp} : Cancelable (own f) where
   cancelableN {_} := by
-    rintro (a|_|a) (b|_|b) <;> simp [ORA.ValidN, ORA.op, op] <;> intro H Hxyz
+    rintro (a|_|a) (b|_|b) <;> simp [ValidN, ORA.op, op] <;> intro H Hxyz
     any_goals have Hxyz' := discrete Hxyz; simp at Hxyz'
     · exact congrArg own (Subtype.ext (by grind))
     · exact absurd Hxyz' (by have := b.2; grind)
@@ -149,10 +150,10 @@ instance {f : Qp} : ORA.Cancelable (own f) where
     · exact congrArg ownDiscard (Subtype.ext (by grind))
 
 @[rocq_alias dfrac_own_id_free]
-instance {f : Qp} : ORA.IdFree (own f) where
+instance {f : Qp} : IdFree (own f) where
   id_free0_r := by
     rintro (y|_|y) <;>
-      simp [ORA.ValidN, ORA.op, op] <;>
+      simp [ValidN, ORA.op, op] <;>
       intro H Hxyz <;>
       any_goals have Hxyz' := discrete Hxyz; simp at Hxyz'
     exact absurd Hxyz' (by have := y.2; grind)
@@ -168,7 +169,7 @@ theorem valid_op_own {dq : DFrac} {q : Qp} : ✓ dq • own q → q.val < 1 := b
 
 @[rocq_alias dfrac_valid_own_l]
 theorem valid_own_op {dq : DFrac} {q : Qp} : ✓ own q • dq → q.val < 1 :=
-  fun h => valid_op_own (ORA.comm' (y := dq) ▸ h)
+  fun h => valid_op_own (comm' (y := dq) ▸ h)
 
 @[rocq_alias dfrac_valid_discarded]
 theorem valid_discard : ✓ (discard : DFrac) := by simp [ORA.Valid, valid]
@@ -178,21 +179,21 @@ theorem valid_own_op_discard {q : Qp} : ✓ own q • discard ↔ q.val < 1 := b
   simp [ORA.op, op, ORA.Valid, valid]
 
 @[rocq_alias dfrac_cmra_discrete]
-instance : ORA.Discrete DFrac where
+instance : Discrete DFrac where
   discrete_valid {x} := by simp [ORA.Valid, ORA.ValidN]
   discrete_ord := CMRA.ord_of_ord0
 
 theorem is_discrete {q : DFrac} : OFE.DiscreteE q := ⟨fun h => h⟩
 
 @[rocq_alias dfrac_discarded_core_id]
-instance : ORA.CoreId (DFrac.discard) where
+instance : CoreId (DFrac.discard) where
   core_id := by simp [ORA.pcore, DFrac.pcore]
 
 @[rocq_alias dfrac_discard_update]
 theorem update_discard {dq : DFrac} : dq ~~> .discard := by
   intros n q H
-  apply (ORA.valid_iff_validN' n).mp
-  have H' := (ORA.valid_iff_validN' n).mpr H
+  apply (valid_iff_validN' n).mp
+  have H' := (valid_iff_validN' n).mpr H
   simp [ORA.op?] at H' ⊢
   rcases q with (_|⟨q|_|q⟩) <;>
     simp [ORA.Valid, valid, ORA.op, op] <;>

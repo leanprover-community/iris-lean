@@ -232,13 +232,13 @@ theorem lb_op_valid (l1 l2 : List α) :
 #rocq_ignore mono_list_lb_op_valid_2_L "Use lb_op_valid.mpr"
 
 theorem lb_mono_ord {l1 l2 : List α} (h : l1 <+: l2) : ◯ML l1 ≼ₒ ◯ML l2 :=
-  lb_op_left h ▸ ORA.ord_op_left _ _
+  lb_op_left h ▸ ord_op_left _ _
 
 @[rocq_alias mono_list_lb_mono]
 theorem lb_mono {l1 l2 : List α} (h : l1 <+: l2) : ◯ML l1 ≼ ◯ML l2 :=
   inc_iff_ord.mpr (lb_mono_ord h)
 
-theorem ord (dq : DFrac) (l : List α) : ◯ML l ≼ₒ ●ML{dq} l := ORA.ord_op_right ..
+theorem ord (dq : DFrac) (l : List α) : ◯ML l ≼ₒ ●ML{dq} l := ord_op_right ..
 
 @[rocq_alias mono_list_included]
 theorem included (dq : DFrac) (l : List α) : ◯ML l ≼ ●ML{dq} l := inc_iff_ord.mpr (ord dq l)
