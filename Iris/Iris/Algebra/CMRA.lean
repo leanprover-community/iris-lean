@@ -2220,6 +2220,8 @@ theorem some_ord_some_iff {a b : α} : some a ≼ₒ some b ↔ a = b ∨ a ≼�
 theorem none_ordN_some_iff {n} {b : α} : none ≼ₒ{n} some b ↔ Increasing b := .rfl
 theorem none_ord_some_iff {b : α} : none ≼ₒ some b ↔ Increasing b := .rfl
 theorem not_some_ordN_none {n} {a : α} : ¬some a ≼ₒ{n} none := id
+theorem eq_none_of_ordN_none {n} {ma : Option α} : ma ≼ₒ{n} none → ma = none :=
+  match ma with | none => fun _ => rfl | some _ => False.elim
 theorem not_some_ord_none {a : α} : ¬some a ≼ₒ none := id
 
 instance instOrderRefl : OrderRefl (Option α) where
