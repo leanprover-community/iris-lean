@@ -206,7 +206,7 @@ theorem update_surplus {p q : Qp} {a b : A} (h : ✓ (a • b)) :
   refine auth_update_alloc fun n bf hinc _ => ⟨?_, ⟨trivial, h.validN⟩⟩
   match bf, hinc with
   | none, _ =>
-    refine .inr ⟨(UFrac.ord_iff).mpr (by show q.val < (p + q).val; grind), ?_⟩
+    refine .inr ⟨(UFrac.ord_iff).mpr (by change q.val < (p + q).val; grind), ?_⟩
     exact ordN_of_ord n ((IncOrd.increasing a).increasing b)
   | some (r, c), .inl ⟨hr, hc⟩ =>
     refine .inl ⟨?_, ?_⟩
@@ -218,7 +218,7 @@ theorem update_surplus {p q : Qp} {a b : A} (h : ✓ (a • b)) :
   | some (r, c), .inr ⟨hr, hc⟩ =>
     refine .inr ⟨UFrac.ord_iff.mpr ?_, ordN_ne .rfl comm.dist (op_monoN_right b hc)⟩
     have := UFrac.ord_iff.mp hr
-    show ((⟨q⟩ : UFrac) • r).frac < p + q
+    change ((⟨q⟩ : UFrac) • r).frac < p + q
     rw [frac_op]; grind
 
 @[rocq_alias ufrac_auth_update_surplus_cancel]

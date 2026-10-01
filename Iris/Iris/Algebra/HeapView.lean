@@ -56,7 +56,7 @@ def HeapR (n : Nat) (m : H V) (f : H (DFrac × V)) : Prop :=
 
 @[rocq_alias gmap_view_rel]
 instance : IsViewRel (HeapR K V H) := .ofMonoOrd
-  (mono_ord := by
+  (mono := by
     intro n1 m1 f1 n2 m2 f2 Hrel Hm Hf Hn k vk Hk
     obtain Hf' : (some vk : Option ((DFrac) × V)) ≼ₒ{n2} get? f1 k := Hk ▸ Hf k
     match h : get? f1 k with
