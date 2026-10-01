@@ -260,8 +260,7 @@ open BI ORA OFE
 variable [Sbi PROP]
 
 @[rocq_alias ucmra_unit_validI]
-theorem ucmra_unit_validI [UORA A] : ⊢@{PROP} ✓ (unit : A) :=
-  internalCmraValid_intro unit_valid
+theorem ucmra_unit_validI [UORA A] : ⊢@{PROP} ✓ (unit : A) := internalCmraValid_intro unit_valid
 
 @[rocq_alias cmra_validI_op_r]
 theorem cmra_validI_op_r [ORA A] (x y : A) : ✓ (x • y) ⊢@{PROP} ✓ y :=
@@ -363,18 +362,14 @@ theorem csum_equivI [OFE A] [OFE B] (x y : Csum A B) :
   BI.csum_equivI x y
 
 @[rocq_alias csum_validI]
-theorem csum_validI [ORA A] [ORA B] (x : Csum A B) :
-    ✓ x ⊣⊢@{PROP}
-      match x with
+theorem csum_validI [ORA A] [ORA B] (x : Csum A B) : ✓ x ⊣⊢@{PROP} match x with
       | inl a => iprop(✓ a)
       | inr b => iprop(✓ b)
       | invalid => iprop(False) := by
   cases x <;> sbi_unfold <;> intro _ <;> exact .rfl
 
 @[rocq_alias csum_includedI]
-theorem csum_includedI [ORA A] [ORA B] (x y : Csum A B) :
-    x ≼ y ⊣⊢@{PROP}
-      match x, y with
+theorem csum_includedI [ORA A] [ORA B] (x y : Csum A B) : x ≼ y ⊣⊢@{PROP} match x, y with
       | inl a, inl b => iprop(a ≼ b)
       | inr a, inr b => iprop(a ≼ b)
       | _, invalid => iprop(True)

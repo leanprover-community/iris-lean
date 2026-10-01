@@ -510,8 +510,7 @@ instance instStoreCMRA : ORA (M V) where
   pcore_increasing {x cx} e :=
     have hcx : cx = core x := Option.some.inj e.symm
     hcx ▸ increasing_iff.mpr fun k => by rw [get?_core]; exact inferInstance
-  increasing_closed h h' :=
-    increasing_iff.mpr fun k =>
+  increasing_closed h h' := increasing_iff.mpr fun k =>
       increasing_closed (increasing_get? h k) (h'.imp (fun e => (get?_ne k).ne e) (· k))
   ordN_extend {n x y} v h :=
     let ⟨f, hf⟩ := Classical.axiomOfChoice fun k => ordN_extend (v k) (h k)

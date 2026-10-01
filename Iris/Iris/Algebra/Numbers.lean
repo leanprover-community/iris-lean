@@ -114,8 +114,7 @@ theorem ord_iff_le [LE α] [LawfulAddLE α] {x y : α} : x ≼ₒ y ↔ x ≤ y 
   ord_iff.trans LawfulAddLE.le_iff_exists_add.symm
 
 @[rocq_alias nat_included]
-theorem inc_iff_le [LE α] [LawfulAddLE α] {x y : α} : x ≼ y ↔ x ≤ y :=
-  inc_iff_ord.trans ord_iff_le
+theorem inc_iff_le [LE α] [LawfulAddLE α] {x y : α} : x ≼ y ↔ x ≤ y := inc_iff_ord.trans ord_iff_le
 
 /-- Sufficient condition for a local update on a LeftCancelAdd structure, such as (ℕ, +) -/
 @[rocq_alias nat_local_update, rocq_alias Z_local_update]
@@ -296,8 +295,7 @@ theorem ord_iff_lt [LT α] [LawfulAddLT α] {x y : α} : x ≼ₒ y ↔ x < y :=
   ord_iff.trans LawfulAddLT.lt_iff_exists_add.symm
 
 @[rocq_alias pos_included]
-theorem inc_iff_lt [LT α] [LawfulAddLT α] {x y : α} : x ≼ y ↔ x < y :=
-  inc_iff_ord.trans ord_iff_lt
+theorem inc_iff_lt [LT α] [LawfulAddLT α] {x y : α} : x ≼ y ↔ x < y := inc_iff_ord.trans ord_iff_lt
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias pos_is_op]

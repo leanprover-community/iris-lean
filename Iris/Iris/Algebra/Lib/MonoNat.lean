@@ -54,8 +54,7 @@ instance {l : MaxNat} : CoreId (●MN□ l : MonoNat) := by
 theorem auth_dfrac_op (dq1 dq2 : DFrac) (n : MaxNat) :
   (●MN{dq1 • dq2} n : MonoNat) = (●MN{dq1} n) • (●MN{dq2} n) := by
   unfold auth
-  rw [← assoc', op_core_right_of_inc (inc_op_right ..), assoc',
-    ← Auth.auth_dfrac_op]
+  rw [← assoc', op_core_right_of_inc (inc_op_right ..), assoc', ← Auth.auth_dfrac_op]
 
 @[rocq_alias mono_nat_lb_op]
 theorem lb_op (n1 n2 : MaxNat) :
@@ -89,8 +88,7 @@ theorem auth_dfrac_op_valid (dq1 dq2 : DFrac) (n1 n2 : MaxNat) :
   · intro h
     unfold auth at h
     have ⟨hdq, heq, _⟩ := Auth.auth_dfrac_op_valid.mp <|
-      valid_of_inc
-        (op_mono (inc_op_left ..) (inc_op_left ..)) h
+      valid_of_inc (op_mono (inc_op_left ..) (inc_op_left ..)) h
     exact ⟨hdq, heq⟩
   · rintro ⟨hdq, rfl⟩
     exact auth_dfrac_op dq1 dq2 n1 ▸ (auth_dfrac_valid _ n1).mpr hdq
@@ -122,9 +120,7 @@ theorem lb_mono (n1 n2 : MaxNat) (h : n1 ≤ n2) :
   (◯MN n1 : MonoNat) ≼ ◯MN n2 :=
   inc_iff_ord.mpr (lb_mono_ord n1 n2 h)
 
-theorem ord (dq : DFrac) (n : MaxNat) :
-  (◯MN n : MonoNat) ≼ₒ ●MN{dq} n :=
-  ord_op_right ..
+theorem ord (dq : DFrac) (n : MaxNat) : (◯MN n : MonoNat) ≼ₒ ●MN{dq} n := ord_op_right ..
 
 @[rocq_alias mono_nat_included]
 theorem included (dq : DFrac) (n : MaxNat) :

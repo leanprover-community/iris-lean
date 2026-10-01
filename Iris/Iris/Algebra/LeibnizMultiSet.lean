@@ -96,8 +96,7 @@ theorem included_iff_subset {X Y : MS} : ofSet X ≼ ofSet Y ↔ X ⊆ Y :=
   inc_iff_ord.trans ord_iff_subset
 
 @[rocq_alias gmultiset_cancelable]
-instance (X : LeibnizMultiSet MS) : Cancelable X :=
-  discrete_cancelable fun {Y Z} _ h => by grind
+instance (X : LeibnizMultiSet MS) : Cancelable X := discrete_cancelable fun {Y Z} _ h => by grind
 
 @[rocq_alias gmultiset_update]
 theorem update (X Y : MS) : ofSet X ~~> ofSet Y := fun _ _ _ => trivial

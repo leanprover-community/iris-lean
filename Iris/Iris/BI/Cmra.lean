@@ -293,8 +293,7 @@ theorem siPure_internalCmraOrder {a b : A} : <si_pure> a ≼ₒ b ⊣⊢@{PROP} 
 theorem persistently_internalCmraOrder {a b : A} : <pers> a ≼ₒ b ⊣⊢@{PROP} a ≼ₒ b :=
   persistently_siPure
 
-theorem plainly_internalCmraOrder {a b : A} : ■ a ≼ₒ b ⊣⊢@{PROP} a ≼ₒ b :=
-  plainly_siPure
+theorem plainly_internalCmraOrder {a b : A} : ■ a ≼ₒ b ⊣⊢@{PROP} a ≼ₒ b := plainly_siPure
 
 theorem intuitionistically_internalCmraOrder [BIAffine PROP] {a b : A} :
     □ a ≼ₒ b ⊣⊢@{PROP} a ≼ₒ b :=

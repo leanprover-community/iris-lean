@@ -68,8 +68,7 @@ theorem uPred_alt {M : Type _} [UORA M] (P : Nat → M → Prop) :
   · refine fun ⟨Hdc, _, Hmono⟩ n1 n2 x1 x2 HP Hinc Hle => ?_
     exact Hmono (ordN_of_ordN_le Hle Hinc) n2 (Nat.le_refl _) (Hdc Hle HP)
 
-instance [UORA M] : Inhabited (UPred M) :=
-  ⟨fun _ _ => True, fun _ _ _ => ⟨⟩⟩
+instance [UORA M] : Inhabited (UPred M) := ⟨fun _ _ => True, fun _ _ _ => ⟨⟩⟩
 
 instance [UORA M] : CoeFun (UPred M) (fun _ => (n : Nat) → ValidAt M n → Prop) where
   coe x := x.holds

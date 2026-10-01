@@ -330,8 +330,7 @@ instance : BI (UPred M) where
   or_elim H1 H2 _ Hv := fun
     | .inl H => H1 _ Hv H
     | .inr H => H2 _ Hv H
-  imp_intro I _ _ HP _ Hv Hin Hle HQ :=
-    I _ Hv ⟨UPred.mono _ HP Hin Hle, HQ⟩
+  imp_intro I _ _ HP _ Hv Hin Hle HQ := I _ Hv ⟨UPred.mono _ HP Hin Hle, HQ⟩
   imp_elim H' _ Hv := fun ⟨HP, HQ⟩ =>
     H' _ Hv HP Hv (ordN_refl _) .refl HQ
   sForall_intro H _ _ Hp _ HΨ := H _ HΨ _ _ Hp
@@ -660,8 +659,7 @@ theorem ownM_unit [Affine M] P : P ⊢ □ ownM (unit : M) :=
   fun _ x _ => ⟨ordN_unit, unit_ordN_core x.val⟩
 
 @[rocq_alias uPred.persistently_ownM_core, rocq_alias uPred_primitive.persistently_ownM_core]
-theorem persistently_ownM_core (a : M) : ownM a ⊢ <pers> ownM (core a) :=
-  fun _ _ => core_ordN_core
+theorem persistently_ownM_core (a : M) : ownM a ⊢ <pers> ownM (core a) := fun _ _ => core_ordN_core
 
 theorem intuitionistically_ownM_core [Affine M] (m : M) : ownM m ⊢ □ ownM (core m) :=
   fun _ _ h => ⟨ordN_unit, core_ordN_core h⟩
@@ -695,8 +693,7 @@ theorem later_ownM (a : M) : ▷ ownM a ⊢ ∃ b, ownM b ∧ ▷ (a ≡ b)
     let ⟨b, hb, hab⟩ := ordN_extend (validN_succ x.property) hx
     ⟨iprop(ownM b ∧ ▷ (a ≡ b)), ⟨b, rfl⟩, hb, hab.symm⟩
 
-theorem pure_soundness : (⊢ (⌜P⌝ : UPred M)) → P :=
-  (· 0 ⟨unit, unit_validN⟩ (ordN_refl unit))
+theorem pure_soundness : (⊢ (⌜P⌝ : UPred M)) → P := (· 0 ⟨unit, unit_validN⟩ (ordN_refl unit))
 
 theorem later_soundness : (⊢ ▷ P) → ⊢@{UPred M} P :=
   fun HP n _ H => P.mono (HP n.succ ⟨unit, unit_validN⟩ (ordN_refl unit)) H .refl

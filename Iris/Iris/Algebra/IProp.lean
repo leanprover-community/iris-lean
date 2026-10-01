@@ -49,8 +49,7 @@ abbrev GName := Nat
 #rocq_ignore gnameO "Use `LeibnizO GName`."
 
 @[rocq_alias iResF]
-abbrev IResF (GF : BundledGFunctors) : OFunctorPre :=
-  DiscreteFunOF (fun i => GenMapOF (GF i).F)
+abbrev IResF (GF : BundledGFunctors) : OFunctorPre := DiscreteFunOF (fun i => GenMapOF (GF i).F)
 
 #rocq_ignore subG "Superseded by `ElemG`."
 #rocq_ignore subG_inv "Lemma about `subG`; obsolete with `ElemG`."

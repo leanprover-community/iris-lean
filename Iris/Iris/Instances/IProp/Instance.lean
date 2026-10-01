@@ -86,8 +86,7 @@ open OFE
 
 variable [I : RFunctorContractive F]
 
-theorem ElemG.transpMap (E : ElemG GF F) T [OFE T] : (GF E.τ).F = F :=
-  congrArg GFunctor.F E.transp
+theorem ElemG.transpMap (E : ElemG GF F) T [OFE T] : (GF E.τ).F = F := congrArg GFunctor.F E.transp
 
 theorem ElemG.transpClass (E : ElemG GF F) T [OFE T] : (GF E.τ).contractive ≍ I := by
   rw [E.transp]
@@ -248,8 +247,7 @@ theorem IProp.unfoldi_unit {τ : GType} {x : FF.api τ (IProp FF)} [IsUnit x] :
       _ = y := IProp.unfoldi_foldi y
   · letI : RFunctor (FF τ).F := (FF τ).contractive.toRFunctor
     calc pcore (unfoldi.f x)
-      _ = (pcore x).map unfoldi.f :=
-        ((RFunctor.map (IProp.fold FF) (IProp.unfold FF)).pcore x).symm
+      _ = (pcore x).map unfoldi.f := ((RFunctor.map (IProp.fold FF) (IProp.unfold FF)).pcore x).symm
       _ = (some x).map unfoldi.f :=
         Option.map_forall₂ _ IsUnit.pcore_unit
       _ = some (unfoldi.f x) := by
@@ -871,8 +869,7 @@ instance intoAnd_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp .split a b1 b2] 
     IntoAnd false (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
   into_and := by
     rw [h.is_op]
-    exact and_intro (iOwn_mono (IncOrd.inc_ord ⟨b2, rfl⟩))
-      (iOwn_mono (IncOrd.inc_ord ⟨b1, comm⟩))
+    exact and_intro (iOwn_mono (IncOrd.inc_ord ⟨b2, rfl⟩)) (iOwn_mono (IncOrd.inc_ord ⟨b1, comm⟩))
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias from_sep_own]
@@ -917,8 +914,7 @@ variable {GF F} [URFunctorContractive F] [E : ElemG GF F]
 
 @[rocq_alias own_cmra_sep_homomorphism]
 instance iOwn_cmra_sep_homomorphism (γ : GName) :
-    WeakMonoidHomomorphism (op (α := F.ap (IProp GF))) sep
-      unit iprop(emp) BiEntails (iOwn γ) where
+    WeakMonoidHomomorphism (op (α := F.ap (IProp GF))) sep unit iprop(emp) BiEntails (iOwn γ) where
   rel_refl := .rfl
   rel_trans := .trans
   op_proper aa' bb' := sep_congr aa' bb'
@@ -954,8 +950,7 @@ theorem bigOpMS_iOwn {B : Type _} {MS : Type _} [LawfulFiniteMultiSet MS B] (γ 
 
 @[rocq_alias own_cmra_sep_entails_homomorphism]
 instance iOwn_cmra_sep_entails_homomorphism (γ : GName) :
-    MonoidHomomorphism (op (α := F.ap (IProp GF))) sep
-      unit iprop(emp) Entails (iOwn γ) where
+    MonoidHomomorphism (op (α := F.ap (IProp GF))) sep unit iprop(emp) Entails (iOwn γ) where
   rel_refl := .rfl
   rel_trans := .trans
   op_proper := sep_mono
@@ -1003,8 +998,7 @@ variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
 theorem iResProject_op (x y : IResUR GF) :
     iResProject F γ (x • y) = iResProject F γ x • iResProject F γ y := by
   simp only [iResProject, iResUR_op_eval]
-  rcases (x E.τ).car γ with _ | x1 <;> rcases (y E.τ).car γ with _ | y1 <;>
-    simp [op, optionOp]
+  rcases (x E.τ).car γ with _ | x1 <;> rcases (y E.τ).car γ with _ | y1 <;> simp [op, optionOp]
   rw [foldi_op, unbundle_op]
 
 @[rocq_alias iRes_project_ne]

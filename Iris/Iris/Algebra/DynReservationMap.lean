@@ -313,12 +313,10 @@ theorem infinite_op_left {x y : DynReservationMap A H} (vt : ✓{n} (x.token •
 section
 attribute [local instance] orderN raOp raPCore raValid
 
-theorem increasing_data {v : DynReservationMap A H}
-    (h : Increasing v) : Increasing v.data where
+theorem increasing_data {v : DynReservationMap A H} (h : Increasing v) : Increasing v.data where
   increasing w := (h.increasing (mk w ∅)).1
 
-theorem increasing_token {v : DynReservationMap A H}
-    (h : Increasing v) : Increasing v.token where
+theorem increasing_token {v : DynReservationMap A H} (h : Increasing v) : Increasing v.token where
   increasing w := (h.increasing (mk ∅ w)).2
 
 theorem increasing_mk {v : DynReservationMap A H}
@@ -404,8 +402,7 @@ instance instORADynReservationMap : ORA (DynReservationMap A H) where
 
 end
 
-instance instAffine [Affine A] : Affine (DynReservationMap A H) :=
-  IncOrd.of_increasing fun v =>
+instance instAffine [Affine A] : Affine (DynReservationMap A H) := IncOrd.of_increasing fun v =>
     increasing_mk (IncOrd.increasing v.data) (IncOrd.increasing v.token)
 
 @[rocq_alias dyn_reservation_mapUR]
@@ -734,9 +731,7 @@ theorem reserve (Q : DynReservationMap A H → Prop)
       (LawfulSet.mem_union.mpr (.inl hEf))
   have hframe : (mkToken (H := H) (A := A) E₁) •? mz =
       ORA.op (mkToken E₁) (ORA.op (mk mf ∅ : DynReservationMap A H) (mkToken Ef)) :=
-    (show (mkToken (H := H) (A := A) E₁) •? mz =
-        ORA.op (mkToken E₁) (unit •? mz) from
-      match mz with
+    (show (mkToken (H := H) (A := A) E₁) •? mz = ORA.op (mkToken E₁) (unit •? mz) from match mz with
       | none => (unit_right_id (x := mkToken E₁)).symm
       | some z => congrArg (ORA.op (mkToken E₁)) (unit_left_id (x := z)).symm).trans
         (congrArg (ORA.op (mkToken E₁)) hz)
@@ -769,8 +764,7 @@ theorem reserve (Q : DynReservationMap A H → Prop)
 
 @[rocq_alias dyn_reservation_map_reserve']
 theorem reserve' :
-    (unit : DynReservationMap A H) ~~>:
-      fun x => ∃ e : CoPset, setInfinite e ∧ x = mkToken e :=
+    (unit : DynReservationMap A H) ~~>: fun x => ∃ e : CoPset, setInfinite e ∧ x = mkToken e :=
   reserve _ fun e hinf => ⟨e, hinf, rfl⟩
 
 end

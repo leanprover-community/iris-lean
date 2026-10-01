@@ -164,8 +164,7 @@ theorem ord_iff [OFE α] {x y : Excl α} : x ≼ₒ y ↔ y = invalid := by
     exact ⟨invalid, h⟩
 
 @[rocq_alias excl_included]
-theorem inc_iff [OFE α] {x y : Excl α} : x ≼ y ↔ y = invalid :=
-  inc_iff_ord.trans ord_iff
+theorem inc_iff [OFE α] {x y : Excl α} : x ≼ y ↔ y = invalid := inc_iff_ord.trans ord_iff
 
 theorem ordN_iff [OFE α] {x y : Excl α} (n) : x ≼ₒ{n} y ↔ y = invalid := by
   constructor

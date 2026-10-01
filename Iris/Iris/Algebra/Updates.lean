@@ -12,13 +12,11 @@ public import Iris.Algebra.CMRA
 namespace Iris
 
 @[rocq_alias cmra_updateP]
-def UpdateP [ORA α] (x : α) (P : α → Prop) := ∀ n mz,
-  ✓{n} (x •? mz) → ∃ y, P y ∧ ✓{n} (y •? mz)
+def UpdateP [ORA α] (x : α) (P : α → Prop) := ∀ n mz, ✓{n} (x •? mz) → ∃ y, P y ∧ ✓{n} (y •? mz)
 infixr:50 " ~~>: " => UpdateP
 
 @[rocq_alias cmra_update]
-def Update [ORA α] (x y : α) := ∀ n mz,
-  ✓{n} (x •? mz) → ✓{n} (y •? mz)
+def Update [ORA α] (x y : α) := ∀ n mz, ✓{n} (x •? mz) → ✓{n} (y •? mz)
 infixr:50 " ~~> " => Update
 
 #rocq_ignore cmra_update_rewrite_relation "Not needed"
@@ -110,8 +108,7 @@ theorem Update.op_l {x y : α} : x • y ~~> x := fun _ _ => validN_op_opM_left
 theorem Update.op_r {x y : α} : x • y ~~> y := fun _ _ => validN_op_opM_right
 
 /-- An update may descend in the order. New relative to Rocq, where the order is `≼`. -/
-theorem Update.ord {x y : α} (h : x ≼ₒ y) : y ~~> x :=
-  fun _ mz => (op?_mono_left mz h).validN
+theorem Update.ord {x y : α} (h : x ≼ₒ y) : y ~~> x := fun _ mz => (op?_mono_left mz h).validN
 
 @[rocq_alias cmra_update_included]
 theorem Update.included {x y : α} : x ≼ y → y ~~> x :=
@@ -135,8 +132,7 @@ theorem UpdateP.total [IsTotal α] :
     | some z => h n z v
 
 @[rocq_alias cmra_total_update]
-theorem Update.total [IsTotal α] :
-    x ~~> y ↔ ∀ (n : Nat) (z : α), ✓{n} (x • z) → ✓{n} (y • z) where
+theorem Update.total [IsTotal α] : x ~~> y ↔ ∀ (n : Nat) (z : α), ✓{n} (x • z) → ✓{n} (y • z) where
   mp uxy := fun n z v => uxy n (some z) v
   mpr h := fun n mz v =>
     match mz with

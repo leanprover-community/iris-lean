@@ -27,8 +27,7 @@ instance : OFE (MonoList α) := Auth.instOFE
 instance : ORA (MonoList α) := Auth.instORA
 instance : UORA (MonoList α) := Auth.instUCMRA
 
-instance instIsIncMonoList : IsInc (MonoList α) :=
-  inferInstanceAs (IsInc (Auth (MaxPrefixList α)))
+instance instIsIncMonoList : IsInc (MonoList α) := inferInstanceAs (IsInc (Auth (MaxPrefixList α)))
 
 instance instDiscrete [OFE.Discrete α] : ORA.Discrete (MonoList α) :=
   inferInstanceAs (ORA.Discrete (Auth (MaxPrefixList α)))

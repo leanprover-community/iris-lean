@@ -237,8 +237,7 @@ theorem update_surplus {p q : Qp} {a b : A} (h : ✓ (a • b)) :
 @[rocq_alias ufrac_auth_update_surplus_cancel]
 theorem update_surplus_cancel [OrdInc A] {p q : Qp} {a b : A} [Cancelable b] :
     ((●U{p + q} (a • b)) • ◯U{q} b) ~~> ●U{p} a := by
-  refine auth_update_dealloc
-    (local_update_unital.mpr fun n mpa hv heq => ?_)
+  refine auth_update_dealloc (local_update_unital.mpr fun n mpa hv heq => ?_)
   match mpa with
   | none =>
     grind [show p + q = q from ext_iff.mp heq.1]

@@ -127,17 +127,13 @@ instance one_exclusive_left [ORA V] {v : V} : Exclusive (own (One.one : Qp), v) 
   exclusive0_l := by
     refine fun ⟨y1, _⟩ ⟨Hv1, _⟩ => ?_
     have h1 : (One.one : Qp).val = 1 := rfl
-    rcases y1 with (y|_|y) <;>
-      simp only [ValidN, ORA.op, op, valid] at Hv1 <;>
-      grind
+    rcases y1 with (y|_|y) <;> simp only [ValidN, ORA.op, op, valid] at Hv1 <;> grind
 
 instance one_exclusive_right [ORA V] {v : V} : Exclusive (v, own (One.one : Qp)) where
   exclusive0_l := by
     refine fun ⟨_, y2⟩ ⟨_, Hv2⟩ => ?_
     have h1 : (One.one : Qp).val = 1 := rfl
-    rcases y2 with (y|_|y) <;>
-      simp only [ValidN, ORA.op, op, valid] at Hv2 <;>
-      grind
+    rcases y2 with (y|_|y) <;> simp only [ValidN, ORA.op, op, valid] at Hv2 <;> grind
 
 @[rocq_alias dfrac_cancelable]
 instance {f : Qp} : Cancelable (own f) where
@@ -163,9 +159,7 @@ theorem valid_own_one : ✓ own (1 : Qp) := by change (1 : Qp).val ≤ 1; grind
 
 @[rocq_alias dfrac_valid_own_r]
 theorem valid_op_own {dq : DFrac} {q : Qp} : ✓ dq • own q → q.val < 1 := by
-  obtain y|_|y := dq <;>
-    simp only [ORA.Valid, ORA.op, op, valid] <;>
-    grind
+  obtain y|_|y := dq <;> simp only [ORA.Valid, ORA.op, op, valid] <;> grind
 
 @[rocq_alias dfrac_valid_own_l]
 theorem valid_own_op {dq : DFrac} {q : Qp} : ✓ own q • dq → q.val < 1 :=

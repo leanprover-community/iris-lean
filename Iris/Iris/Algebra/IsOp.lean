@@ -42,15 +42,13 @@ class IsOp [ORA α]
 set_option synthInstance.checkSynthOrder false in
 /-- Merging with `•` should have the lowest priority. -/
 @[rocq_alias is_op_op]
-instance (priority := low) isOpMerge_op [ORA α] (a b : α) :
-    IsOp .merge (a • b) a b where
+instance (priority := low) isOpMerge_op [ORA α] (a b : α) : IsOp .merge (a • b) a b where
   is_op := rfl
 
 set_option synthInstance.checkSynthOrder false in
 /-- Splitting with `•` should have the highest priority. -/
 @[rocq_alias is_op_lr_op]
-instance (priority := high) isOpSplit_op [ORA α] (a b : α) :
-    IsOp .split (a • b) a b where
+instance (priority := high) isOpSplit_op [ORA α] (a b : α) : IsOp .split (a • b) a b where
   is_op := rfl
 
 /-

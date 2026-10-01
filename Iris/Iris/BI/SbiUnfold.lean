@@ -185,14 +185,12 @@ instance sbiUnfold_cmraValid [ORA A] {a : A} :
 
 instance sbiUnfold_included [ORA A] {a b : A} :
     SbiUnfold clo (iprop(a ≼ₒ b) : PROP) (fun n => a ≼ₒ{n} b) :=
-  .of_closed (fun h hm => ordN_of_ordN_le hm h) <|
-    siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
+  .of_closed (fun h hm => ordN_of_ordN_le hm h) <| siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
 @[rocq_alias sbi_unfold_internal_included]
 instance sbiUnfold_inc [ORA A] {a b : A} :
     SbiUnfold clo (iprop(a ≼ b) : PROP) (fun n => a ≼{n} b) :=
-  .of_closed (fun h hm => incN_le hm h) <|
-    siPure_mono_bi <| biEntails_of_iff fun _ => exists_holds
+  .of_closed (fun h hm => incN_le hm h) <| siPure_mono_bi <| biEntails_of_iff fun _ => exists_holds
 
 @[rocq_alias sbi_unfold_si_pure]
 instance sbiUnfold_siPure {Psi : SiProp} [h : SbiUnfold clo Psi Pi] :

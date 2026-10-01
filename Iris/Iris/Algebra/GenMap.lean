@@ -176,8 +176,7 @@ theorem extend_bound {n : Nat} {x : GenMap β}
   · exact ⟨N, fun k hk => (aux k hk _ _ (extend (Hv k) (He k)).2.2.1).1⟩
   · exact ⟨N, fun k hk => (aux k hk _ _ (extend (Hv k) (He k)).2.2.1).2⟩
 
-def pcore_genmap (x : GenMap β) : Option (GenMap β) :=
-  some ⟨fun k => core (x.car k), by
+def pcore_genmap (x : GenMap β) : Option (GenMap β) := some ⟨fun k => core (x.car k), by
     obtain ⟨N, hN⟩ := x.bound
     refine ⟨N, fun k hk => ?_⟩
     simp [core, pcore, optionCore, hN k hk]⟩
@@ -216,8 +215,7 @@ def pcore_genmap (x : GenMap β) : Option (GenMap β) :=
   ValidN n x := ✓{n} x.car
   Valid x := ✓ x.car
   validN_ne {_n _x _y H} := Dist.validN H |>.mp
-  valid_iff_validN {_x} :=
-    ⟨fun Hv _ => Hv.validN, fun H => valid_iff_validN.mpr (H ·)⟩
+  valid_iff_validN {_x} := ⟨fun Hv _ => Hv.validN, fun H => valid_iff_validN.mpr (H ·)⟩
   validN_succ {_x _n} := validN_succ
 
 @[reducible] def GenMap.orderN : Ordered (GenMap β) where
@@ -466,8 +464,7 @@ instance instURFunctor_GenMapOF (F : COFE.OFunctorPre) [RFunctor F] :
       exact ((RFunctor.map f g).op _ _).dist
     monoN_ord h t := (URFunctor.map (F := OptionOF F) f g).monoN_ord (h t)
     mono_ord h t := (URFunctor.map (F := OptionOF F) f g).mono_ord (h t)
-    increasing h :=
-      GenMap.increasing_of_car _ <| DiscreteFun.increasing_iff.mpr fun t =>
+    increasing h := GenMap.increasing_of_car _ <| DiscreteFun.increasing_iff.mpr fun t =>
         (URFunctor.map (F := OptionOF F) f g).increasing (GenMap.increasing_apply _ h t)
   }
   map_ne.ne := OFunctor.map_ne.ne

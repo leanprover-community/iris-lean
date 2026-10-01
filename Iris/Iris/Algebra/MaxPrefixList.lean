@@ -51,8 +51,7 @@ instance instORA : ORA (MaxPrefixList α) :=
 instance instUCMRA : UORA (MaxPrefixList α) :=
   Heap.instStoreUCMRA  (M:= MaxPrefixListMap) (V := Agree α)
 
-instance instIsInc : IsInc (MaxPrefixList α) :=
-  inferInstanceAs (IsInc (MaxPrefixListMap (Agree α)))
+instance instIsInc : IsInc (MaxPrefixList α) := inferInstanceAs (IsInc (MaxPrefixListMap (Agree α)))
 
 instance instCoreId (x : MaxPrefixList α) : CoreId x :=
   Heap.instCoreId (M:= MaxPrefixListMap) (V := Agree α)
@@ -154,8 +153,7 @@ theorem ord_iff_forall_ordN {ml1 ml2 : MaxPrefixList α} :
   have hk : ∀ n, get? (M := MaxPrefixListMap) ml1 k ≼ₒ{n} get? (M := MaxPrefixListMap) ml2 k :=
     fun n => h n k
   revert hk
-  cases get? (M := MaxPrefixListMap) ml1 k <;> cases get? (M := MaxPrefixListMap) ml2 k <;>
-    intro hk
+  cases get? (M := MaxPrefixListMap) ml1 k <;> cases get? (M := MaxPrefixListMap) ml2 k <;> intro hk
   · trivial
   · exact hk 0
   · exact (hk 0).elim

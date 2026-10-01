@@ -46,8 +46,7 @@ variable (K V : Type _) (H : Type _ → Type _) [LawfulPartialMap H K] [ORA V]
 @[rocq_alias gmap_view_rel_raw]
 def HeapR (n : Nat) (m : H V) (f : H (DFrac × V)) : Prop :=
   ∀ k fv, get? f k = some fv →
-    ∃ (v : V) (dq : DFrac), get? m k = some v ∧ ✓{n} (dq, v) ∧
-      ∃ c, some fv • c ≼ₒ{n} some (dq, v)
+    ∃ (v : V) (dq : DFrac), get? m k = some v ∧ ✓{n} (dq, v) ∧ ∃ c, some fv • c ≼ₒ{n} some (dq, v)
 
 #rocq_ignore gmap_view_rel_raw_mono "The `mono` field of the `IsViewRel (HeapR ..)` instance"
 #rocq_ignore gmap_view_rel_raw_valid "The `rel_validN` field of the `IsViewRel (HeapR ..)` instance"
@@ -612,8 +611,7 @@ theorem update_of_dfrac_update P (Hdq : dq ~~>: P) :
       rcases hbf : Std.PartialMap.get? bf k • c with _ | p <;> rw [hbf] at Hincl
       · rcases Hincl with e | i
         · obtain ⟨dq'', HP, Hv''⟩ := Hdq n none (validN_ne e.1.symm Hval.1)
-          exact ⟨dq'', HP, dq'', ⟨Hv'', Hval.2⟩,
-            Option.some_ordN_some_iff.mpr (.inl ⟨.rfl, e.2⟩)⟩
+          exact ⟨dq'', HP, dq'', ⟨Hv'', Hval.2⟩, Option.some_ordN_some_iff.mpr (.inl ⟨.rfl, e.2⟩)⟩
         · obtain ⟨w, hw⟩ := i.1
           obtain ⟨dq'', HP, Hv''⟩ := Hdq n (some w) (validN_ne hw Hval.1)
           exact ⟨dq'', HP, dq'' • w, ⟨Hv'', Hval.2⟩,

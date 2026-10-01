@@ -487,16 +487,13 @@ theorem ordN {x y : Agree α} : x ≼ₒ{n} y ↔ y ≡{n}≡ y • x := by
     _ ≡{n}≡ y • x := op_commN
 
 @[rocq_alias agree_includedN]
-theorem includedN {x y : Agree α} : x ≼{n} y ↔ y ≡{n}≡ y • x :=
-  incN_iff_ordN.trans ordN
+theorem includedN {x y : Agree α} : x ≼{n} y ↔ y ≡{n}≡ y • x := incN_iff_ordN.trans ordN
 
 theorem ord {x y : Agree α} : x ≼ₒ y ↔ y = y • x :=
-  ⟨fun ⟨z, h⟩ => OFE.eq_dist_2 fun _ => ordN.mp ⟨z, h.dist⟩,
-   fun h => ⟨y, h.trans op_comm⟩⟩
+  ⟨fun ⟨z, h⟩ => OFE.eq_dist_2 fun _ => ordN.mp ⟨z, h.dist⟩, fun h => ⟨y, h.trans op_comm⟩⟩
 
 @[rocq_alias agree_included]
-theorem included {x y : Agree α} : x ≼ y ↔ y = y • x :=
-  inc_iff_ord.trans ord
+theorem included {x y : Agree α} : x ≼ y ↔ y = y • x := inc_iff_ord.trans ord
 
 theorem valid_ordN {x y : Agree α} : ✓{n} y → x ≼ₒ{n} y → x ≡{n}≡ y := by
   intro hval ⟨z, heq⟩
@@ -600,8 +597,7 @@ theorem toAgree_ord {a b : α} : toAgree a ≼ₒ toAgree b ↔ a = b := by
       _         = toAgree a • toAgree a := (pcore_op_left rfl).symm
 
 @[simp, rocq_alias to_agree_included]
-theorem toAgree_included {a b : α} : toAgree a ≼ toAgree b ↔ a = b :=
-  inc_iff_ord.trans toAgree_ord
+theorem toAgree_included {a b : α} : toAgree a ≼ toAgree b ↔ a = b := inc_iff_ord.trans toAgree_ord
 
 #rocq_ignore to_agree_included_L "Use toAgree_included"
 

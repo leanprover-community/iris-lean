@@ -50,8 +50,7 @@ instance {l : MaxInt} : CoreId (●MZ□ l : MonoZ) := by
 theorem auth_dfrac_op (dq1 dq2 : DFrac) (n : MaxInt) :
     (●MZ{dq1 • dq2} n : MonoZ) = (●MZ{dq1} n) • (●MZ{dq2} n) := by
   unfold auth
-  rw [← assoc', op_core_right_of_inc (inc_op_right ..), assoc',
-    ← Auth.auth_dfrac_op]
+  rw [← assoc', op_core_right_of_inc (inc_op_right ..), assoc', ← Auth.auth_dfrac_op]
 
 @[rocq_alias mono_Z_lb_op]
 theorem lb_op (n1 n2 : MaxInt) : (◯MZ (n1 + n2) : MonoZ) = ((◯MZ n1) • (◯MZ n2) : MonoZ) :=
@@ -81,8 +80,7 @@ theorem auth_dfrac_op_valid (dq1 dq2 : DFrac) (n1 n2 : MaxInt) :
   · intro h
     unfold auth at h
     have ⟨hdq, heq, _⟩ := Auth.auth_dfrac_op_valid.mp <|
-      valid_of_inc
-        (op_mono (inc_op_left ..) (inc_op_left ..)) h
+      valid_of_inc (op_mono (inc_op_left ..) (inc_op_left ..)) h
     exact ⟨hdq, Option.some_inj.mp heq⟩
   · rintro ⟨hdq, rfl⟩
     exact auth_dfrac_op dq1 dq2 n1 ▸ (auth_dfrac_valid _ n1).mpr hdq
@@ -111,8 +109,7 @@ theorem lb_mono_ord (n1 n2 : MaxInt) (h : n1 ≤ n2) : (◯MZ n1 : MonoZ) ≼ₒ
 theorem lb_mono (n1 n2 : MaxInt) (h : n1 ≤ n2) : (◯MZ n1 : MonoZ) ≼ ◯MZ n2 :=
   inc_iff_ord.mpr (lb_mono_ord n1 n2 h)
 
-theorem ord (dq : DFrac) (n : MaxInt) : (◯MZ n : MonoZ) ≼ₒ ●MZ{dq} n :=
-  ord_op_right ..
+theorem ord (dq : DFrac) (n : MaxInt) : (◯MZ n : MonoZ) ≼ₒ ●MZ{dq} n := ord_op_right ..
 
 @[rocq_alias mono_Z_included]
 theorem included (dq : DFrac) (n : MaxInt) : (◯MZ n : MonoZ) ≼ ●MZ{dq} n :=
@@ -120,8 +117,7 @@ theorem included (dq : DFrac) (n : MaxInt) : (◯MZ n : MonoZ) ≼ ●MZ{dq} n :
 
 @[rocq_alias mono_Z_update]
 theorem update {n : MaxInt} (n' : MaxInt) (h : n ≤ n') : (●MZ n : MonoZ) ~~> ●MZ n' :=
-  Auth.auth_update
-    (LocalUpdate.option (MaxInt.local_update h))
+  Auth.auth_update (LocalUpdate.option (MaxInt.local_update h))
 
 @[rocq_alias mono_Z_auth_persist]
 theorem auth_persist (n : MaxInt) (dq : DFrac) : (●MZ{dq} n : MonoZ) ~~> ●MZ□ n :=

@@ -284,12 +284,10 @@ theorem op_token' (x y : ReservationMap A H) : (x.op y).token = x.token • y.to
 section
 attribute [local instance] orderN raOp raPCore raValid
 
-theorem increasing_data {v : ReservationMap A H}
-    (h : Increasing v) : Increasing v.data where
+theorem increasing_data {v : ReservationMap A H} (h : Increasing v) : Increasing v.data where
   increasing w := (h.increasing (mk w ∅)).1
 
-theorem increasing_token {v : ReservationMap A H}
-    (h : Increasing v) : Increasing v.token where
+theorem increasing_token {v : ReservationMap A H} (h : Increasing v) : Increasing v.token where
   increasing w := (h.increasing (mk ∅ w)).2
 
 theorem increasing_mk {v : ReservationMap A H}
@@ -371,10 +369,8 @@ instance instORAReservationMap : ORA (ReservationMap A H) where
 
 end
 
-instance instAffine [Affine A] : Affine (ReservationMap A H) :=
-  IncOrd.of_increasing fun v =>
-    increasing_mk (IncOrd.increasing v.data)
-      (IncOrd.increasing v.token)
+instance instAffine [Affine A] : Affine (ReservationMap A H) := IncOrd.of_increasing fun v =>
+    increasing_mk (IncOrd.increasing v.data) (IncOrd.increasing v.token)
 
 @[rocq_alias reservation_mapUR]
 instance : UORA (ReservationMap A H) where

@@ -101,8 +101,7 @@ section ORA
 variable {ι : Type _} [DecidableEq ι] {β : ι → Type _} [∀ i, UORA (β i)]
 
 @[rocq_alias discrete_funR_cmra_discrete]
-instance instDiscreteFunCmraDiscrete [∀ i, ORA.Discrete (β i)] :
-    ORA.Discrete ((i : ι) → β i) where
+instance instDiscreteFunCmraDiscrete [∀ i, ORA.Discrete (β i)] : ORA.Discrete ((i : ι) → β i) where
   discrete_valid h i := ORA.Discrete.discrete_valid (h i)
   discrete_ord h i := ORA.Discrete.discrete_ord (h i)
 

@@ -53,8 +53,7 @@ theorem authViewRel_unit_iff {n : Nat} {a : A} : AuthViewRel n a unit ↔ ✓{n}
 
 @[rocq_alias auth_view_rel_exists]
 theorem authViewRel_exists_iff {n : Nat} {b : A} : (∃ a, AuthViewRel n a b) ↔ ✓{n} b :=
-  ⟨fun ⟨_, h⟩ => IsViewRel.rel_validN _ _ _ h,
-   (⟨b, ⟨unit, by rw [unit_right_id]⟩, ·⟩)⟩
+  ⟨fun ⟨_, h⟩ => IsViewRel.rel_validN _ _ _ h, (⟨b, ⟨unit, by rw [unit_right_id]⟩, ·⟩)⟩
 
 @[rocq_alias auth_view_rel_discrete]
 instance [OFE.Discrete A] [ORA.Discrete A] : IsViewRelDiscrete (AuthViewRel (A := A)) where

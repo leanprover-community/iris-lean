@@ -296,11 +296,9 @@ instance instORA : ORA (Csum α β) where
          exact ⟨inr z₁, inr z₂, congrArg _ hz, hz₁, hz₂⟩)
   toOrdered := orderN
   op_monoN_left_ord {n x y} z h := by
-    cases x <;> cases y <;> cases z <;>
-      first | trivial | exact h.elim | exact op_monoN_left_ord _ h
+    cases x <;> cases y <;> cases z <;> first | trivial | exact h.elim | exact op_monoN_left_ord _ h
   op_mono_left_ord {x y} z h := by
-    cases x <;> cases y <;> cases z <;>
-      first | trivial | exact h.elim | exact op_mono_left_ord _ h
+    cases x <;> cases y <;> cases z <;> first | trivial | exact h.elim | exact op_mono_left_ord _ h
   validN_of_ordN {n x y} h v := by
     cases x <;> cases y <;> first | trivial | exact h.elim | exact v.elim | exact validN_of_ordN h v
   pcore_monoN_ord {n x y cx} h e := by

@@ -161,8 +161,7 @@ theorem elem_ord_auth (h : (a, b) ∈ L) : elem a b ≼ₒ auth dq L :=
     (ord_op_right ..)
 
 @[rocq_alias bij_view_included]
-theorem elem_inc_auth (h : (a, b) ∈ L) : elem a b ≼ auth dq L :=
-  inc_iff_ord.mpr (elem_ord_auth h)
+theorem elem_inc_auth (h : (a, b) ∈ L) : elem a b ≼ auth dq L := inc_iff_ord.mpr (elem_ord_auth h)
 
 @[rocq_alias gset_bij_auth_extend]
 theorem auth_extend (ha : ∀ b', (a, b') ∉ L) (hb : ∀ a', (a', b) ∉ L) :
