@@ -491,7 +491,7 @@ variable {I : BiIndex} {PROP : Type _} [BI PROP] [BILaterCredits PROP] [BIUpdate
 `MonPred`. -/
 example (n : Nat) (E : CoPset) (P : MonPred I PROP) :
     ⊢ £ (n + 1) -∗ <obj> (▷^[n + 1] P ={E}=∗ P) := by
-  iintro ⟨Hone, Hc⟩
+  iintro ⟨Hc, Hone⟩
   -- We keep the later credits since they are `Objective`
   imodintro
   iintro HP

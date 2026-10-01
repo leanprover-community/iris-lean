@@ -2874,6 +2874,12 @@ example (n m : Nat) : £ (n + 1 + m) ⊢@{PROP} £ (n + 1) := by
   iintro ⟨Hlc1, _⟩
   iexact Hlc1
 
+/- Tests that splitting `£ (m + (n + 1))` uses the rule for `+`, not the one for `.succ` that
+would unfold `Nat.add` (Iris issue #470). -/
+example (n m : Nat) : £ (m + (n + 1)) ⊢@{PROP} £ (n + 1) := by
+  iintro ⟨_, Hlc⟩
+  iexact Hlc
+
 /- Tests that `isplitl` on `£ (n + 1 + m)` splits using the rule for `+`. -/
 example (n m : Nat) : £ (n + 1) ⊢@{PROP} £ m -∗ £ (n + 1 + m) := by
   iintro Hlc1 Hlc2

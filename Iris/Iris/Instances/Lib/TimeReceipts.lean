@@ -155,12 +155,12 @@ theorem supply_incr (k m n : Nat) :
   imod iOwn_update_op (auth_incr m n k) $$ [$Hauth $Htrp] with ⟨⟨$, $⟩, $⟩
 
 @[rocq_alias from_sep_time_receipt_excl_add]
-instance (priority := default - 10) {n₁ n₂ : Nat} :
+instance (priority := default) {n₁ n₂ : Nat} :
     FromSep (PROP := IProp GF) (⧖+ (n₁ + n₂)) (⧖+ n₁) (⧖+ n₂) where
   from_sep := (excl_split n₁ n₂).mpr
 
 @[rocq_alias from_sep_time_receipt_excl_S]
-instance (priority := default) {n : Nat} :
+instance (priority := default - 10) {n : Nat} :
     FromSep (PROP := IProp GF) (⧖+ (.succ n)) (⧖+ 1) (⧖+ n) where
   from_sep := (excl_succ n).mpr
 
@@ -175,12 +175,12 @@ instance (priority := default - 10) {n : Nat} :
   combine_sep_as := (excl_split n 1).mpr
 
 @[rocq_alias into_sep_time_receipt_excl_add]
-instance (priority := default - 10) {n₁ n₂ : Nat} :
+instance (priority := default) {n₁ n₂ : Nat} :
     IntoSep (PROP := IProp GF) (⧖+ (n₁ + n₂)) (⧖+ n₁) (⧖+ n₂) where
   into_sep := (excl_split n₁ n₂).mp
 
 @[rocq_alias into_sep_time_receipt_excl_S]
-instance (priority := default) {n : Nat} :
+instance (priority := default - 10) {n : Nat} :
     IntoSep (PROP := IProp GF) (⧖+ (.succ n)) (⧖+ 1) (⧖+ n) where
   into_sep := (excl_succ n).mp
 

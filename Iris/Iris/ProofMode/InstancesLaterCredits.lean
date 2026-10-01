@@ -21,22 +21,23 @@ section LaterCredits
 
 variable {PROP : Type _} [BI PROP] [BILaterCredits PROP]
 
-/- The `.succ` rules take priority over the `+` rules, so `n + 1` splits off `1` first. -/
+/- Make sure that the rule for `+` is used before `.succ`, otherwise `m + (n + 1)` would be
+split off by the `.succ` rule via unfolding `Nat.add`. See Iris issue #470. -/
 
 @[rocq_alias from_sep_lc_add]
-instance (priority := default - 10) {n m} : FromSep (PROP := PROP) (£ (n + m)) (£ n) (£ m) where
+instance (priority := default) {n m} : FromSep (PROP := PROP) (£ (n + m)) (£ n) (£ m) where
   from_sep := lc_split.mpr
 
 @[rocq_alias from_sep_lc_S]
-instance (priority := default) {n} : FromSep (PROP := PROP) (£ (.succ n)) (£ 1) (£ n) where
+instance (priority := default - 10) {n} : FromSep (PROP := PROP) (£ (.succ n)) (£ 1) (£ n) where
   from_sep := lc_succ.mpr
 
 @[rocq_alias into_sep_lc_add]
-instance (priority := default - 10) {n m} : IntoSep (PROP := PROP) (£ (n + m)) (£ n) (£ m) where
+instance (priority := default) {n m} : IntoSep (PROP := PROP) (£ (n + m)) (£ n) (£ m) where
   into_sep := lc_split.mp
 
 @[rocq_alias into_sep_lc_S]
-instance (priority := default) {n} : IntoSep (PROP := PROP) (£ (.succ n)) (£ 1) (£ n) where
+instance (priority := default - 10) {n} : IntoSep (PROP := PROP) (£ (.succ n)) (£ 1) (£ n) where
   into_sep := lc_succ.mp
 
 @[rocq_alias combine_sep_lc_add]
