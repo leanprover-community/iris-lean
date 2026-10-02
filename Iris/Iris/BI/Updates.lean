@@ -221,6 +221,8 @@ class BIFUpdate (PROP : Type _) [BI PROP] extends FUpd PROP where
     E1 ## Ef → (|={E1,E2}=> ⌜E2 ## Ef⌝ → P) ⊢ |={E1 ∪ Ef,E2 ∪ Ef}=> P
   frame_right {E1 E2 : CoPset} {P R : PROP} : (|={E1,E2}=> P) ∗ R ⊢ |={E1,E2}=> P ∗ R
 
+attribute [instance] BIFUpdate.ne
+
 #rocq_ignore BiFUpdMixin "Included in BIFUpdate typeclass."
 
 @[rocq_alias BiBUpdFUpd]
@@ -654,14 +656,14 @@ variable [BI PROP] [BIFUpdate PROP]
 
 open BIFUpdate LawfulSet
 
-theorem step_fupdN_contractive {E1 E2 : CoPset} {n : Nat} [ι : BILaterContractive PROP] :
+instance step_fupdN_contractive {E1 E2 : CoPset} {n : Nat} [ι : BILaterContractive PROP] :
     OFE.Contractive (iprop(|={E1}[E2]▷=>^[n + 1] · : PROP)) where
   distLater_dist {i x y} xy_i := by
     induction n with
     | zero => exact ne.ne (ι.distLater_dist (ne.ne <| xy_i · ·))
     | succ n IH => exact ne.ne (later_ne.ne (ne.ne IH))
 
-theorem step_fupdN_ne {E1 E2 : CoPset} {n : Nat} :
+instance step_fupdN_ne {E1 E2 : CoPset} {n : Nat} :
     OFE.NonExpansive (iprop(|={E1}[E2]▷=>^[n] · : PROP)) where
   ne {i x y} xy_i := by
     induction n with
