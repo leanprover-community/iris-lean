@@ -188,7 +188,7 @@ theorem wp_pure_step_fupd [Inhabited State] (E₂ : CoPset)
     [Hexec : PureExec φ n e₁ e₂] (Hφ : φ) :
     (|={E}[E₂]▷=>^[n] £ n -∗ WP e₂ @ s; E {{ Φ }}) ⊢ WP e₁ @ s; E {{ Φ }} := by
   replace Hexec := Hexec.pureExec Hφ
-  iinduction Hexec using Relation.Iterate.head_induction_on with simp only [Nat.repeat]
+  iinduction Hexec using Relation.Iterate.head_induction_on with simp only [step_fupdN]
   | rfl =>
     iintro Hwp
     rw (occs := [2]) [fupd_wp_iff.to_eq]
@@ -221,7 +221,7 @@ theorem wp_pure_step_later [Inhabited State] [Hexec : PureExec φ n e₁ e₂] (
   induction n with
   | zero => exact .rfl
   | succ n IH =>
-    simp only [Nat.repeat]
+    simp only [step_fupdN]
     rw [(laterN_succ_left n).to_eq]
     refine (later_mono IH).trans ?_
     exact step_fupd_intro Std.LawfulSet.subset_refl
