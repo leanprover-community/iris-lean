@@ -15,29 +15,29 @@ public import Iris.BI.Cmra
 The tactic takes a (bi-)entailment of plain propositions and turns it into a
 (bi-)implication in the pure step-indexed model. For example, given the goal
 
-  `x ≼ y ⊣⊢ x.1 ≼ y.1 ∧ x.2 ≼ y.2`
+  `x ≼ₒ y ⊣⊢ x.1 ≼ₒ y.1 ∧ x.2 ≼ₒ y.2`
 
 the tactic `sbi_unfold` turns it into
 
-  `∀ n, x ≼{n} y ↔ x.1 ≼{n} y.1 ∧ x.2 ≼{n} y.2`
+  `∀ n, x ≼ₒ{n} y ↔ x.1 ≼ₒ{n} y.1 ∧ x.2 ≼ₒ{n} y.2`
 
 The tactic `sbi_unfold` works for goals of the shape `⊢ P`, `P ⊢ Q`, `P ⊣⊢ Q`.
 Here, `P` and `Q` should be in the "plain" subset of propositions, i.e. `⌜_⌝`,
-`<si_pure>`, `✓`, `≡`, `≼`, closed under `∧`, `∨`, `→`, `↔`, `∀`, `∃`, and `▷`.
+`<si_pure>`, `✓`, `≡`, `≼ₒ`, closed under `∧`, `∨`, `→`, `↔`, `∀`, `∃`, and `▷`.
 The separating connectives `∗`/`-∗`/`∗-∗` are translated to `∧`/`→`/`↔`.
 
 The tactic attempts to minimize the number of "down closures" `∀ n' ≤ n, _` due
 to the use of nested implications. For example, given
 
-  `⊢ x.1 ≼ y.1 → x.2 ≼ y.2 → x ≼ y`
+  `⊢ x.1 ≼ₒ y.1 → x.2 ≼ₒ y.2 → x ≼ₒ y`
 
 the tactic `sbi_unfold` turns it into
 
-  `∀ n, x.1 ≼{n} y.1 → x.2 ≼{n} y.2 → x ≼{n} y`
+  `∀ n, x.1 ≼ₒ{n} y.1 → x.2 ≼ₒ{n} y.2 → x ≼ₒ{n} y`
 
 instead of (the logically equivalent, but more verbose)
 
-  `∀ n, ∀ n' ≤ n, x.1 ≼{n'} y.1 → ∀ n'' ≤ n', x.2 ≼{n''} y.2 → x ≼{n''} y`
+  `∀ n, ∀ n' ≤ n, x.1 ≼ₒ{n'} y.1 → ∀ n'' ≤ n', x.2 ≼ₒ{n''} y.2 → x ≼ₒ{n''} y`
 
 The tactic is implemented using the type class `SbiUnfold clo P Pi`, which takes
 a proposition `P` (which is intended to be plain) as input and produces its
@@ -58,7 +58,7 @@ A goal whose head is a `match` is not translated: it has to be case split (with
 -/
 
 namespace Iris
-open BI OFE CMRA SiProp
+open BI OFE ORA _root_.Iris.SiProp
 
 /-- Whether the interpretation produced by `SbiUnfold` has to be downwards closed. -/
 @[rocq_alias sbi_unfold_closure_indicator.sbi_unfold_closure_indicator]
@@ -178,13 +178,17 @@ instance sbiUnfold_internalEq [OFE A] {a b : A} :
   .of_closed Dist.le <| siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
 @[rocq_alias sbi_unfold_internal_cmra_valid]
-instance sbiUnfold_cmraValid [CMRA A] {a : A} :
+instance sbiUnfold_cmraValid [ORA A] {a : A} :
     SbiUnfold clo (iprop(✓ a) : PROP) (fun n => ✓{n} a) :=
   .of_closed (fun h hm => validN_of_le hm h) <|
     siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
+instance sbiUnfold_included [ORA A] {a b : A} :
+    SbiUnfold clo (iprop(a ≼ₒ b) : PROP) (fun n => a ≼ₒ{n} b) :=
+  .of_closed (fun h hm => ordN_of_ordN_le hm h) <| siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
+
 @[rocq_alias sbi_unfold_internal_included]
-instance sbiUnfold_included [CMRA A] {a b : A} :
+instance sbiUnfold_inc [ORA A] {a b : A} :
     SbiUnfold clo (iprop(a ≼ b) : PROP) (fun n => a ≼{n} b) :=
   .of_closed (fun h hm => incN_of_incN_le hm h) <|
     siPure_mono_bi <| biEntails_of_iff fun _ => exists_holds

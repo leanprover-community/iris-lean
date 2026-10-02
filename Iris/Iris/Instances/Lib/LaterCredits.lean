@@ -23,6 +23,7 @@ open _root_.Std (Associative Commutative LeftIdentity LawfulLeftIdentity)
 open Iris OFE COFE BI Auth CommMonoidLike Iris.Std
 
 section LcGS
+open ORA
 
 abbrev Credit := Nat
 
@@ -40,8 +41,9 @@ scoped instance : LeftCancelAdd Credit := ⟨Nat.add_left_cancel⟩
 scoped instance : COFE Credit := COFE.ofDiscrete _
 scoped instance : Discrete Credit := ⟨fun h => h⟩
 scoped instance : UCMRA Credit := CommMonoidLike.instUCMRA
-scoped instance : CMRA.Discrete Credit := CommMonoidLike.instDiscrete
-scoped instance {a : Credit} : CMRA.Cancelable a := inferInstance
+scoped instance instIncOrdCredit : IncOrd Credit := inferInstance
+scoped instance : ORA.Discrete Credit := CommMonoidLike.instDiscrete
+scoped instance {a : Credit} : Cancelable a := inferInstance
 
 /-- Later credits inclusion typeclass (`GF` contains the necessary functors for later credits) -/
 @[rocq_alias lcGpreS]
@@ -115,7 +117,7 @@ theorem lc_supply_no_lc [LcGS .hasNoLC GF] (n : Credit) :
 theorem lc_zero : ⊢@{IProp GF} |==> £ 0 := by
   cases hlc with
   | hasNoLC => simp only [lc]; itrivial
-  | hasLC => exact iOwn_unit (ε := UCMRA.unit)
+  | hasLC => exact iOwn_unit (ε := UORA.unit)
 
 section LcSupplyRules
 variable [LC : LcGS .hasLC GF]
@@ -150,7 +152,8 @@ theorem lc_increase_supply n m : lc_supply m ⊢@{IProp GF} |==> (lc_supply (n +
   unfold lc lc_supply
   iintro H
   imod iOwn_update $$ H with Hown
-  · exact auth_update_alloc (leftCancelAdd_local_update (y := 0) (x' := (n + m)) (y' := n) (by grind))
+  · exact auth_update_alloc
+      (leftCancelAdd_local_update (y := 0) (x' := (n + m)) (y' := n) (by grind))
   icases iOwn_op $$ Hown with ⟨Hm, _⟩
   iframe
 

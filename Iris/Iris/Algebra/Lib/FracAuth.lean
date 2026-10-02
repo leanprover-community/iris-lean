@@ -20,16 +20,16 @@ fraction) and `◯F{q} a` (fragment with fraction). Splitting works differently 
 
 @[expose] public section
 
-open Iris OFE CMRA UCMRA Auth Option
+open Iris OFE ORA UORA Auth Option OrdInc
 
 /-! ## Definitions -/
 
 @[rocq_alias frac_authR, rocq_alias frac_authUR]
-abbrev FracAuth [CMRA A] := Auth (Option (Qp × A))
+abbrev FracAuth [ORA A] := Auth (Option (Qp × A))
 
 namespace FracAuth
 
-variable [CMRA A]
+variable [ORA A]
 
 @[rocq_alias frac_auth_auth]
 abbrev auth (dq : DFrac) (a : A) : FracAuth (A := A) := Auth.auth dq (some (1, a))
@@ -83,8 +83,8 @@ instance frag_discrete {q : Qp} {a : A} [ha : DiscreteE a] : DiscreteE (◯F{q} 
 
 @[rocq_alias frac_auth_dfrac_validN]
 theorem dfrac_validN {dq : DFrac} {n : Nat} {a : A} (hdq : ✓ dq) (ha : ✓{n} a) :
-    ✓{n} (●F{dq} a) • ◯F a := by
-  simpa only [both_dfrac_validN] using ⟨hdq, ⟨none, .rfl⟩, Qp.valid_one, ha⟩
+    ✓{n} (●F{dq} a) • ◯F a :=
+  both_dfrac_validN_frame.mpr ⟨hdq, ⟨none, ordN_refl _⟩, Qp.valid_one, ha⟩
 
 @[rocq_alias frac_auth_validN]
 theorem validN {n : Nat} {a : A} (ha : ✓{n} a) : ✓{n} (●F a : FracAuth) • ◯F a :=
@@ -92,7 +92,7 @@ theorem validN {n : Nat} {a : A} (ha : ✓{n} a) : ✓{n} (●F a : FracAuth) �
 
 @[rocq_alias frac_auth_dfrac_valid]
 theorem dfrac_valid {dq : DFrac} {a : A} (hdq : ✓ dq) (ha : ✓ a) : ✓ (●F{dq} a) • ◯F a :=
-  auth_both_dfrac_valid_2 hdq ⟨valid_iff_validN.mpr fun _ => Qp.valid_one, ha⟩ ⟨none, rfl⟩
+  auth_both_dfrac_valid_2_ord hdq ⟨valid_iff_validN.mpr fun _ => Qp.valid_one, ha⟩ (ord_refl _)
 
 @[rocq_alias frac_auth_valid]
 theorem valid {a : A} (ha : ✓ a) : ✓ (●F a : FracAuth) • ◯F a :=
@@ -102,8 +102,10 @@ theorem valid {a : A} (ha : ✓ a) : ✓ (●F a : FracAuth) • ◯F a :=
 
 @[rocq_alias frac_auth_agreeN]
 theorem agreeN {dq : DFrac} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F b) : a ≡{n}≡ b := by
-  rw [both_dfrac_validN] at h
-  exact (dist_of_inc_exclusive h.2.1 h.2.2).2.symm
+  obtain ⟨_, ⟨c, hc⟩, hv⟩ := both_dfrac_validN_frame.mp h
+  cases c with
+  | none => exact hc.elim (·.2.symm) (absurd hv.1 <| not_valid_of_exclN_inc (x := (1 : Qp)) ·.1)
+  | some _ => exact absurd (Ordered.OrderNR.validN hc hv) not_valid_exclN_op_left
 
 @[rocq_alias frac_auth_agree]
 theorem agree {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F b) : a = b :=
@@ -113,33 +115,50 @@ theorem agree {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F b) : a = b :
 
 /-! ## Inclusion -/
 
+theorem ordN_frame {n : Nat} {dq : DFrac} {q : Qp} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F{q} b) :
+    ∃ c, some b • c ≼ₒ{n} some a := by
+  obtain ⟨_, ⟨c, hc⟩, _⟩ := both_dfrac_validN_frame.mp h
+  exact ⟨c.map Prod.snd, by cases c <;> exact hc.imp (·.2) (·.2)⟩
+
+theorem ordN [IncOrd A] {n : Nat} {dq : DFrac} {q : Qp} {a b : A}
+    (h : ✓{n} (●F{dq} a) • ◯F{q} b) : some b ≼ₒ{n} some a :=
+  exists_op_ordN_iff_ordN.mp (ordN_frame h)
+
 @[rocq_alias frac_auth_includedN]
-theorem includedN {n : Nat} {dq : DFrac} {q : Qp} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F{q} b) :
-    some b ≼{n} some a := by
-  rw [both_dfrac_validN] at h
-  obtain ⟨_, ⟨mc, hmc⟩, hv⟩ := h
-  match mc with
-  | none => exact ⟨none, hmc.2⟩
-  | some (_, cr) => exact ⟨some cr, hmc.2⟩
+theorem includedN [OrdInc A] {n : Nat} {dq : DFrac} {q : Qp} {a b : A}
+    (h : ✓{n} (●F{dq} a) • ◯F{q} b) : some b ≼{n} some a :=
+  exists_op_ordN_iff_incN.mp (ordN_frame h)
+
+theorem ord_frame [ORA.Discrete A] {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F{q} b) :
+    ∃ c, some b • c ≼ₒ some a :=
+  let ⟨c, hc⟩ := ordN_frame (valid_iff_validN.mp h 0); ⟨c, discrete_ord hc⟩
+
+theorem ord [ORA.Discrete A] [IncOrd A] {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F{q} b) :
+    some b ≼ₒ some a :=
+  exists_op_ord_iff_ord.mp (ord_frame h)
 
 @[rocq_alias frac_auth_included]
-theorem included [CMRA.Discrete A] {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F{q} b) :
-      some b ≼ some a := by
-  rw [both_dfrac_valid_discrete] at h
-  obtain ⟨_, ⟨mc, hmc⟩, hv⟩ := h
-  match mc with
-  | none => exact ⟨none, congrArg (fun p => some p.snd) (some_eqv_some.mp hmc)⟩
-  | some (_, cr) => exact ⟨some cr, congrArg (fun p => some p.snd) (some_eqv_some.mp hmc)⟩
+theorem included [ORA.Discrete A] [OrdInc A] {dq : DFrac} {a b : A}
+    (h : ✓ (●F{dq} a) • ◯F{q} b) : some b ≼ some a :=
+  exists_op_ord_iff_inc.mp (ord_frame h)
+
+theorem ordN_total [OrderRefl A] [IncOrd A] {dq : DFrac} {a b : A}
+    (h : ✓{n} (●F{dq} a) • ◯F{q} b) : b ≼ₒ{n} a :=
+  some_ordN_some_iff_orderRefl.mp (ordN h)
 
 @[rocq_alias frac_auth_includedN_total]
-theorem includedN_total [IsTotal A] {dq : DFrac} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F{q} b) :
-    b ≼{n} a :=
-  some_incN_some_iff_is_total.mp (includedN h)
+theorem includedN_total [OrderRefl A] [OrdInc A] {dq : DFrac} {a b : A}
+    (h : ✓{n} (●F{dq} a) • ◯F{q} b) : b ≼{n} a :=
+  (dist_or_incN_of_some_incN_some (includedN h)).elim (ordN_incN ·.to_ordN) id
+
+theorem ord_total [ORA.Discrete A] [OrderRefl A] [IncOrd A] {dq : DFrac} {a b : A}
+    (h : ✓ (●F{dq} a) • ◯F{q} b) : b ≼ₒ a :=
+  some_ord_some_iff_orderRefl.mp (ord h)
 
 @[rocq_alias frac_auth_included_total]
-theorem included_total [CMRA.Discrete A] [IsTotal A] {dq : DFrac} {a b : A}
+theorem included_total [ORA.Discrete A] [OrderRefl A] [OrdInc A] {dq : DFrac} {a b : A}
     (h : ✓ (●F{dq} a) • ◯F{q} b) : b ≼ a :=
-  inc_of_some_inc_some (included h)
+  (eq_or_inc_of_some_inc_some (included h)).elim (· ▸ ord_inc (ord_refl b)) id
 
 /-! ## Auth-only validity -/
 
@@ -246,14 +265,16 @@ instance isOp_frac_auth_core_id {q q1 q2 : Qp} {a : A}
 /-! ## Updates -/
 
 @[rocq_alias frac_auth_update]
-theorem update {q : Qp} {a b a' b' : A} (h : (a, b) ~l~> (a', b')) :
+theorem update [OrdInc A] {q : Qp} {a b a' b' : A} (h : (a, b) ~l~> (a', b')) :
     ((●F a : FracAuth) • ◯F{q} b) ~~> (●F a') • ◯F{q} b' :=
   auth_update (.option (.prod_2 _ q h))
 
 @[rocq_alias frac_auth_update_1]
 theorem update_full {a b a' : A} (ha' : ✓ a') :
     ((●F a : FracAuth) • ◯F b) ~~> (●F a') • ◯F a' :=
-   auth_update (.option (.exclusive ⟨Qp.valid_one, ha'⟩))
+  auth_update_ord fun _ bf hinc hv => match bf with
+    | none => ⟨.inl .rfl, Qp.valid_one, ha'.validN⟩
+    | some _ => absurd (Ordered.OrderNR.validN hinc hv) not_valid_exclN_op_left
 
 @[rocq_alias frac_auth_update_auth_persist]
 theorem update_auth_persist {dq : DFrac} {a : A} : (●F{dq} a) ~~> ●F{.discard} a :=

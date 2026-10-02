@@ -22,16 +22,16 @@ fragment's resource to its payload.
 @[expose] public section
 
 namespace Iris
-open OFE CMRA UCMRA Auth Iris.Option Iris.OFE.Option UFrac
+open OFE ORA UORA Auth Iris.Option Iris.OFE.Option UFrac
 
 /-! ## Definitions -/
 
 @[rocq_alias ufrac_authR, rocq_alias ufrac_authUR]
-abbrev UFracAuth [CMRA A] := Auth (Option (UFrac × A))
+abbrev UFracAuth [ORA A] := Auth (Option (UFrac × A))
 
 namespace UFracAuth
 
-variable [CMRA A]
+variable [ORA A]
 
 @[rocq_alias ufrac_auth_auth]
 nonrec abbrev auth (q : Qp) (a : A) : UFracAuth (A := A) :=
@@ -72,23 +72,23 @@ instance frag_discrete {q : Qp} {a : A} [DiscreteE a] : DiscreteE (◯U{q} a) :=
 /-! ## Validity -/
 
 @[rocq_alias ufrac_auth_validN]
-theorem validN {n : Nat} {a : A} {p : Qp} (ha : ✓{n} a) : ✓{n} (●U{p} a) • ◯U{p} a := by
-  simpa only [both_validN] using ⟨incN_refl _, ⟨trivial, ha⟩⟩
+theorem validN {n : Nat} {a : A} {p : Qp} (ha : ✓{n} a) : ✓{n} (●U{p} a) • ◯U{p} a :=
+  both_validN_frame.mpr ⟨⟨none, ordN_refl _⟩, trivial, ha⟩
 
 @[rocq_alias ufrac_auth_valid]
 theorem valid {p : Qp} {a : A} (ha : ✓ a) : ✓ (●U{p} a) • ◯U{p} a :=
-  auth_both_valid_2 ⟨trivial, ha⟩ ⟨none, rfl⟩
+  auth_both_valid_2_ord ⟨trivial, ha⟩ (ord_refl _)
 
 /-! ## Agreement -/
 
 @[rocq_alias ufrac_auth_agreeN]
 theorem agreeN {n : Nat} {p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{p} b) : a ≡{n}≡ b := by
-  obtain ⟨mc, hmc⟩ := (both_validN.mp h).1
-  match mc with
-  | none => exact hmc.2
-  | some (r, _) =>
-    have hp : p = p + r.frac := ext_iff.mp hmc.1
-    grind
+  obtain ⟨⟨c, hc⟩, _⟩ := both_validN_frame.mp h
+  rcases c with _ | ⟨r, _⟩ <;> rcases hc with e | ⟨⟨s, e⟩, _⟩
+  · exact e.2.symm
+  · have : p = p + s.frac := ext_iff.mp e; grind
+  · have : p + r.frac = p := ext_iff.mp e.1; grind
+  · have : p = p + r.frac + s.frac := ext_iff.mp e; grind
 
 @[rocq_alias ufrac_auth_agree]
 theorem agree {p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{p} b) : a = b :=
@@ -98,32 +98,50 @@ theorem agree {p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{p} b) : a = b :=
 
 /-! ## Inclusion -/
 
+theorem ordN_frame {n : Nat} {p q : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{q} b) :
+    ∃ c, some b • c ≼ₒ{n} some a := by
+  obtain ⟨⟨c, hc⟩, _⟩ := both_validN_frame.mp h
+  exact ⟨c.map Prod.snd, by cases c <;> exact hc.imp (·.2) (·.2)⟩
+
+theorem ordN [IncOrd A] {n : Nat} {p q : Qp} {a b : A}
+    (h : ✓{n} (●U{p} a) • ◯U{q} b) : some b ≼ₒ{n} some a :=
+  exists_op_ordN_iff_ordN.mp (ordN_frame h)
+
 @[rocq_alias ufrac_auth_includedN]
-theorem includedN {n : Nat} {p q : Qp} {a b : A}
-    (h : ✓{n} (●U{p} a) • ◯U{q} b) : some b ≼{n} some a := by
-  rw [both_validN] at h
-  obtain ⟨⟨mc, hmc⟩, _⟩ := h
-  match mc with
-  | none => exact ⟨none, hmc.2⟩
-  | some (_, cr) => exact ⟨some cr, hmc.2⟩
+theorem includedN [OrdInc A] {n : Nat} {p q : Qp} {a b : A}
+    (h : ✓{n} (●U{p} a) • ◯U{q} b) : some b ≼{n} some a :=
+  exists_op_ordN_iff_incN.mp (ordN_frame h)
+
+theorem ord_frame [ORA.Discrete A] {q p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{q} b) :
+    ∃ c, some b • c ≼ₒ some a :=
+  let ⟨c, hc⟩ := ordN_frame (valid_iff_validN.mp h 0); ⟨c, discrete_ord hc⟩
+
+theorem ord [ORA.Discrete A] [IncOrd A] {q p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{q} b) :
+    some b ≼ₒ some a :=
+  exists_op_ord_iff_ord.mp (ord_frame h)
 
 @[rocq_alias ufrac_auth_included]
-theorem included [CMRA.Discrete A] {q p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{q} b) :
-    some b ≼ some a := by
-  rw [auth_both_valid_discrete] at h
-  obtain ⟨⟨mc, hmc⟩, _⟩ := h
-  match mc with
-  | none => exact ⟨none, congrArg (some ·.snd) (some_eqv_some.mp hmc)⟩
-  | some (_, cr) => exact ⟨some cr, congrArg (some ·.snd) (some_eqv_some.mp hmc)⟩
+theorem included [ORA.Discrete A] [OrdInc A] {q p : Qp} {a b : A}
+    (h : ✓ (●U{p} a) • ◯U{q} b) : some b ≼ some a :=
+  exists_op_ord_iff_inc.mp (ord_frame h)
+
+theorem ordN_total [OrderRefl A] [IncOrd A] {n : Nat} {q p : Qp} {a b : A}
+    (h : ✓{n} (●U{p} a) • ◯U{q} b) : b ≼ₒ{n} a :=
+  some_ordN_some_iff_orderRefl.mp (ordN h)
 
 @[rocq_alias ufrac_auth_includedN_total]
-theorem includedN_total [IsTotal A] {n : Nat} {q p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{q} b) :
-    b ≼{n} a := some_incN_some_iff_is_total.mp <| includedN h
+theorem includedN_total [OrderRefl A] [OrdInc A] {n : Nat} {q p : Qp} {a b : A}
+    (h : ✓{n} (●U{p} a) • ◯U{q} b) : b ≼{n} a :=
+  (dist_or_incN_of_some_incN_some (includedN h)).elim (OrdInc.ordN_incN ·.to_ordN) id
+
+theorem ord_total [ORA.Discrete A] [OrderRefl A] [IncOrd A] {q p : Qp} {a b : A}
+    (h : ✓ (●U{p} a) • ◯U{q} b) : b ≼ₒ a :=
+  some_ord_some_iff_orderRefl.mp (ord h)
 
 @[rocq_alias ufrac_auth_included_total]
-theorem included_total [CMRA.Discrete A] [IsTotal A] {q p : Qp} {a b : A}
+theorem included_total [ORA.Discrete A] [OrderRefl A] [OrdInc A] {q p : Qp} {a b : A}
     (h : ✓ (●U{p} a) • ◯U{q} b) : b ≼ a :=
-  inc_of_some_inc_some <| included h
+  (eq_or_inc_of_some_inc_some (included h)).elim (· ▸ OrdInc.ord_inc (ord_refl b)) id
 
 /-! ## Auth-only validity -/
 
@@ -183,20 +201,19 @@ instance isOp_ufrac_auth_core_id {q q1 q2 : Qp} {a : A} [h1 : CoreId a] [h2 : Is
 /-! ## Updates -/
 
 @[rocq_alias ufrac_auth_update]
-theorem update {p q : Qp} {a b a' b' : A} (h : (a, b) ~l~> (a', b')) :
+theorem update [OrdInc A] {p q : Qp} {a b a' b' : A} (h : (a, b) ~l~> (a', b')) :
     ((●U{p} a) • ◯U{q} b) ~~> (●U{p} a') • ◯U{q} b' :=
-  auth_update <| .option (.prod_2 _ _ h)
+  auth_update (.option (.prod_2 _ _ h))
 
 @[rocq_alias ufrac_auth_update_surplus]
 theorem update_surplus {p q : Qp} {a b : A} (h : ✓ (a • b)) :
     (●U{p} a) ~~> (●U{p + q} (a • b)) • ◯U{q} b := by
-  refine auth_update_alloc (local_update_unital.mpr fun n mpa _ heq => ?_)
-  refine ⟨⟨trivial, h.validN⟩, ?_⟩
-  refine .trans ?_ (heq.trans (unit_left_id_dist mpa)).op_r
-  exact ⟨comm.dist, op_commN⟩
+  refine auth_update_alloc_ord fun _ _ hinc _ => ⟨ordN_ne .rfl ?_ (op_monoN_right_ord _ hinc),
+    trivial, h.validN⟩
+  exact some_dist_some.mpr ⟨.of_eq (UFrac.ext_iff.mpr (show q + p = p + q by grind)), comm.dist⟩
 
 @[rocq_alias ufrac_auth_update_surplus_cancel]
-theorem update_surplus_cancel {p q : Qp} {a b : A} [CMRA.Cancelable b] :
+theorem update_surplus_cancel [OrdInc A] {p q : Qp} {a b : A} [Cancelable b] :
     ((●U{p + q} (a • b)) • ◯U{q} b) ~~> ●U{p} a := by
   refine auth_update_dealloc (local_update_unital.mpr fun n mpa hv heq => ?_)
   match mpa with

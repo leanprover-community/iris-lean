@@ -16,25 +16,21 @@ meta import Iris.Std.RocqPorting
 
 namespace Iris
 
-open OFE CMRA
+open OFE ORA UORA
 
 variable {α : Type _} [OFE α]
 
 @[rocq_alias mono_listR, rocq_alias mono_listUR, implicit_reducible]
 def MonoList (α : Type _) [OFE α] := Auth (MaxPrefixList α)
 
-instance : OFE (MonoList α) :=
-  Auth.instOFE
+instance : OFE (MonoList α) := Auth.instOFE
+instance : ORA (MonoList α) := Auth.instORA
+instance : UORA (MonoList α) := Auth.instUCMRA
 
-instance : CMRA (MonoList α) :=
-  Auth.instCMRA
+instance instIsIncMonoList : IsInc (MonoList α) := inferInstanceAs (IsInc (Auth (MaxPrefixList α)))
 
-instance : UCMRA (MonoList α) :=
-  Auth.instUCMRA
-
-instance instDiscrete [OFE.Discrete α] : CMRA.Discrete (MonoList α) := by
-  unfold MonoList
-  infer_instance
+instance instDiscrete [OFE.Discrete α] : ORA.Discrete (MonoList α) :=
+  inferInstanceAs (ORA.Discrete (Auth (MaxPrefixList α)))
 
 namespace MonoList
 
@@ -90,7 +86,7 @@ instance {l : List α} : CoreId (●ML□ l) := by
   unfold auth MonoList
   infer_instance
 
-theorem lb_nil : ◯ML ([] : List α) = UCMRA.unit := by
+theorem lb_nil : ◯ML ([] : List α) = unit := by
   unfold lb MonoList
   rw [toMaxPrefixList_nil]
   rfl
@@ -234,12 +230,17 @@ theorem lb_op_valid (l1 l2 : List α) :
 #rocq_ignore mono_list_lb_op_valid_1_L "Use lb_op_valid.mp"
 #rocq_ignore mono_list_lb_op_valid_2_L "Use lb_op_valid.mpr"
 
+theorem lb_mono_ord {l1 l2 : List α} (h : l1 <+: l2) : ◯ML l1 ≼ₒ ◯ML l2 :=
+  lb_op_left h ▸ ord_op_left _ _
+
 @[rocq_alias mono_list_lb_mono]
 theorem lb_mono {l1 l2 : List α} (h : l1 <+: l2) : ◯ML l1 ≼ ◯ML l2 :=
-  ⟨◯ML l2, (lb_op_left h).symm⟩
+  inc_iff_ord.mpr (lb_mono_ord h)
+
+theorem ord (dq : DFrac) (l : List α) : ◯ML l ≼ₒ ●ML{dq} l := ord_op_right ..
 
 @[rocq_alias mono_list_included]
-theorem included (dq : DFrac) (l : List α) : ◯ML l ≼ ●ML{dq} l := inc_op_right ..
+theorem included (dq : DFrac) (l : List α) : ◯ML l ≼ ●ML{dq} l := inc_iff_ord.mpr (ord dq l)
 
 /-! ## Updates -/
 

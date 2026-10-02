@@ -405,7 +405,7 @@ variable (m n p q : Nat)
 end NatCancel
 
 section IsOp
-open Iris CMRA ProofMode
+open Iris ORA ProofMode
 
 variable (q q1 q2 : Qp)
 
@@ -417,7 +417,7 @@ variable (q q1 q2 : Qp)
 #guard_msgs (whitespace := lax) in
 #ipm_synth IsOp .split (q1 + q2 : Qp) _ _
 
-/- Splitting a CMRA operation: `isOpFrac_split` is used instead of `isOpFrac_half`. -/
+/- Splitting a ORA operation: `isOpFrac_split` is used instead of `isOpFrac_half`. -/
 /-- info:
   solution: IsOp IsOp.Direction.split (q1 • q2) q1 q2,
   new goals: []
