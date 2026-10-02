@@ -224,7 +224,7 @@ end TruncO
 /-- Limits of bounded chains of limit length `n` agree up to `n` if the chains agree pointwise
 (Transfinite Iris, `BcomplUniqueLim`). The transfinite COFE solver requires this of the functor. -/
 @[rocq_alias BcomplUniqueLim]
-class BcomplUniqueLim (A : Type _) [COFE A] : Prop where
+class BcomplUniqueLim {SI : Type _ := by exact defaultSI _} [SIdx SI] (A : Type _) [COFE A] : Prop where
   lbcompl_unique {n : SI} (hn : SIdx.Limit n) (c d : BChain A n) :
     (∀ m (hm : m < n), c.bchain m hm ≡{m}≡ d.bchain m hm) → IsCOFE.lbcompl hn c ≡{n}≡ IsCOFE.lbcompl hn d
 

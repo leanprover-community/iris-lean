@@ -1021,12 +1021,12 @@ instance or_affine [BI PROP] (P Q : PROP) [Affine P] [Affine Q] : Affine iprop(P
   affine := or_elim affine affine
 
 @[rocq_alias bi.forall_affine]
-instance forall_affine [Inhabited α] [BI PROP] (Φ : α → PROP) [∀ x, Affine (Φ x)] :
+instance forall_affine [Inhabited α] [BI PROP] (Φ : α → PROP) [∀ x, Affine (SI := SI) (Φ x)] :
     Affine iprop(∀ x, Φ x) where
   affine := (forall_elim default).trans affine
 
 @[rocq_alias bi.exist_affine]
-instance exists_affine [BI PROP] (Φ : α → PROP) [∀ x, Affine (Φ x)] : Affine iprop(∃ x, Φ x) where
+instance exists_affine [BI PROP] (Φ : α → PROP) [∀ x, Affine (SI := SI) (Φ x)] : Affine iprop(∃ x, Φ x) where
   affine := exists_elim fun _ => affine
 
 @[rocq_alias bi.sep_affine]
@@ -1150,12 +1150,12 @@ instance or_absorbing [BI PROP] (P Q : PROP) [Absorbing P] [Absorbing Q] :
   absorbing := absorbingly_or.1.trans (or_mono absorbing absorbing)
 
 @[rocq_alias bi.forall_absorbing]
-instance forall_absorbing [BI PROP] (Φ : α → PROP) [∀ x, Absorbing (Φ x)] :
+instance forall_absorbing [BI PROP] (Φ : α → PROP) [∀ x, Absorbing (SI := SI) (Φ x)] :
     Absorbing iprop(∀ x, Φ x) where
   absorbing := absorbingly_forall.trans (forall_mono fun _ => absorbing)
 
 @[rocq_alias bi.exist_absorbing]
-instance exists_absorbing [BI PROP] (Φ : α → PROP) [∀ x, Absorbing (Φ x)] :
+instance exists_absorbing [BI PROP] (Φ : α → PROP) [∀ x, Absorbing (SI := SI) (Φ x)] :
     Absorbing iprop(∃ x, Φ x) where
   absorbing := absorbingly_exists.1.trans (exists_mono fun _ => absorbing)
 
@@ -1391,7 +1391,7 @@ theorem persistently_or [BI PROP] [BIPersistentlyExist PROP] {P Q : PROP} :
   _ ⊣⊢ <pers> ∃ b, if b = true then P else Q := persistently_congr or_exists_ite
   _ ⊣⊢ ∃ a, <pers> if a = true then P else Q := persistently_exists
   _ ⊣⊢ <pers> P ∨ <pers> Q :=
-    (or_exists_ite.trans <| exists_congr fun _ => persistently_ite (PROP := PROP) ▸ .rfl).symm
+    (or_exists_ite.trans <| exists_congr fun _ => persistently_ite (SI := SI) (PROP := PROP) ▸ .rfl).symm
 
 @[rocq_alias bi.persistently_impl]
 theorem persistently_imp [BI PROP] {P Q : PROP} : <pers> (P → Q) ⊢ (<pers> P → <pers> Q) :=
@@ -1626,22 +1626,22 @@ instance or_persistent [BI PROP] (P Q : PROP) [Persistent P] [Persistent Q] :
   persistent := (or_mono persistent persistent).trans persistently_or_mpr
 
 theorem sForall_persistent [BI PROP] [h : BIPersistentlyForall PROP] (Ψ : PROP → Prop)
-    (H : ∀ p, Ψ p → Persistent p) : Persistent iprop(sForall Ψ) where
+    (H : ∀ p, Ψ p → Persistent (SI := SI) p) : Persistent iprop(sForall Ψ) where
   persistent := by
     refine (forall_intro fun _ => imp_intro ?_).trans (h.1 _)
     exact pure_elim_right fun h => (sForall_elim h).trans (H _ h).1
 
 @[rocq_alias bi.forall_persistent]
 instance forall_persistent [BI PROP] [BIPersistentlyForall PROP] (Ψ : α → PROP)
-    [h : ∀ x, Persistent (Ψ x)] : Persistent iprop(∀ x, Ψ x) :=
+    [h : ∀ x, Persistent (SI := SI) (Ψ x)] : Persistent iprop(∀ x, Ψ x) :=
   sForall_persistent _ fun _ ⟨_, eq⟩ => eq ▸ h _
 
 theorem sExists_persistent [BI PROP] (Ψ : PROP → Prop)
-    (H : ∀ p, Ψ p → Persistent p) : Persistent iprop(sExists Ψ) where
+    (H : ∀ p, Ψ p → Persistent (SI := SI) p) : Persistent iprop(sExists Ψ) where
   persistent := sExists_elim fun _ hp => (H _ hp).1.trans (persistently_mono <| sExists_intro hp)
 
 @[rocq_alias bi.exist_persistent]
-instance exists_persistent [BI PROP] (Ψ : α → PROP) [h : ∀ x, Persistent (Ψ x)] :
+instance exists_persistent [BI PROP] (Ψ : α → PROP) [h : ∀ x, Persistent (SI := SI) (Ψ x)] :
     Persistent iprop(∃ x, Ψ x) := sExists_persistent _ fun _ ⟨_, eq⟩ => eq ▸ h _
 
 @[rocq_alias bi.sep_persistent]
@@ -2579,7 +2579,7 @@ theorem persistent_impl_wand_affinely [BI PROP] {P Q : PROP} [Persistent P] [Abs
 
 @[rocq_alias bi.from_option_persistent]
 instance from_option_persistent [BI PROP] {P : PROP} {Ψ : α → PROP} {mx : Option α}
-    [inst : ∀ x, Persistent (Ψ x)] [Persistent P] : Persistent (mx.elim P Ψ) := by
+    [inst : ∀ x, Persistent (SI := SI) (Ψ x)] [Persistent P] : Persistent (mx.elim P Ψ) := by
   cases mx with
   | none => assumption
   | some x => apply inst
@@ -2611,21 +2611,21 @@ instance limitPreserving_emp_valid [BI PROP] [SIdxFinite SI] [COFE A] (Φ : A �
 
 @[rocq_alias bi.limit_preserving_Persistent]
 instance limitPreserving_persistent [BI PROP] [SIdxFinite SI] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
-    LimitPreserving (fun x => Persistent (Φ x)) := by
+    LimitPreserving (fun x => Persistent (SI := SI) (Φ x)) := by
   letI _ : OFE.NonExpansive fun x => iprop(<pers> Φ x) := .comp persistently_ne Φne
   refine ⟨fun c h => ⟨?_⟩, fun hn _ _ => absurd hn (SIdx.limit_finite _)⟩
   refine (LimitPreserving.entails _ (fun x => iprop(<pers> (Φ x)))).compl _ ?_
   exact (fun n => h n |>.persistent)
 
 instance limitPreserving_absorbing [BI PROP] [SIdxFinite SI] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
-    LimitPreserving (fun x => Absorbing (Φ x)) := by
+    LimitPreserving (fun x => Absorbing (SI := SI) (Φ x)) := by
   letI _ : OFE.NonExpansive fun x => iprop(<absorb> Φ x) := .comp absorbingly_ne Φne
   refine ⟨fun c h => ⟨?_⟩, fun hn _ _ => absurd hn (SIdx.limit_finite _)⟩
   refine (LimitPreserving.entails (fun x => iprop(<absorb> (Φ x))) _).compl _ ?_
   exact (fun n => h n |>.absorbing)
 
 instance limitPreserving_affine [BI PROP] [SIdxFinite SI] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
-    LimitPreserving (fun x => Affine (Φ x)) := by
+    LimitPreserving (fun x => Affine (SI := SI) (Φ x)) := by
   refine ⟨fun c h => ⟨?_⟩, fun hn _ _ => absurd hn (SIdx.limit_finite _)⟩
   refine (LimitPreserving.entails (fun x => iprop((Φ x))) (fun _ => iprop(emp))).compl _ ?_
   exact (fun n => h n |>.affine)

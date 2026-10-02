@@ -17,13 +17,13 @@ namespace Iris
 open Iris.Std BI OFE ProofMode
 
 @[rocq_alias Fractional]
-class Fractional [BI PROP] (Φ : Qp → PROP) where
+class Fractional {SI : Type _ := by exact Iris.defaultSI _} [Iris.SIdx SI] [BI PROP] (Φ : Qp → PROP) where
   fractional p q : Φ (p + q) ⊣⊢ Φ p ∗ Φ q
 
 #rocq_ignore Fractional_proper "OFE equivalence is Lean equality; use `congrArg`."
 
 @[ipm_class, rocq_alias AsFractional]
-class AsFractional {PROP : Type u} [BI PROP] (P : PROP) (ioΦ : InOut)
+class AsFractional {SI : Type _ := by exact Iris.defaultSI _} [Iris.SIdx SI] {PROP : Type u} [BI PROP] (P : PROP) (ioΦ : InOut)
     (Φ : semiOutParamIPM ioΦ (Qp → PROP)) (ioq : InOut)
     (q : semiOutParamIPM ioq Qp) where
   as_fractional : P ⊣⊢ Φ q

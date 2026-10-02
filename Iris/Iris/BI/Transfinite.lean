@@ -112,7 +112,7 @@ The rules for existential quantification require properties of the step-index ty
 `finite_exists` holds for every type of step-indices (Lean is classical, so Transfinite Iris's
 `FiniteExistential` is always available), while `exists` requires `SIdxLarge`. -/
 @[rocq_alias Satisfiable]
-class Satisfiable.{w, v} {SI : outParam (Type _)} [instSI : outParam (SIdx SI)] (PROP : Type _)
+class Satisfiable.{w, v} {SI : Type _ := by exact defaultSI _} [instSI : SIdx SI] (PROP : Type _)
     [outParam (Sbi (SI := SI) PROP)] [outParam (BIUpdate PROP)] where
   satisfiable : PROP → Prop
   intro {P : PROP} : (True ⊢ P) → satisfiable P

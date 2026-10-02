@@ -83,15 +83,15 @@ theorem castObj_heq {A B : Obj.{u} (SI := SI)} (h : A = B) (x : A.car) : HEq (ca
   subst h; rfl
 
 /-- A constant non-expansive map. -/
-def constHom {A B : Type _} [OFE A] [OFE B] (y : B) : A -n> B := ⟨fun _ => y, ⟨fun _ _ _ _ => .rfl⟩⟩
+def constHom {SI : Type _ := by exact defaultSI _} [SIdx SI] {A B : Type _} [OFE A] [OFE B] (y : B) : A -n> B := ⟨fun _ => y, ⟨fun _ _ _ _ => .rfl⟩⟩
 
 theorem constHom_apply {A B : Type _} [OFE A] [OFE B] (y : B) (x : A) :
     constHom y x = y := rfl
 
 /-! ## The functor -/
 
-variable {F : ∀ α β [COFE α] [COFE β], Type (max u v)} [OFunctorContractive F]
-variable [∀ α [COFE α], IsCOFE (F α α)]
+variable {F : ∀ α β [COFE (SI := SI) α] [COFE (SI := SI) β], Type (max u v)} [OFunctorContractive F]
+variable [∀ α [COFE (SI := SI) α], IsCOFE (SI := SI) (F α α)]
 variable [inh : Inhabited (F (ULift Unit) (ULift Unit))]
 
 /-- The unit COFE, bundled. -/
@@ -108,7 +108,7 @@ noncomputable abbrev TG (α : SI) (X : Obj.{u} (SI := SI)) : Obj.{u} (SI := SI) 
 
 theorem TG_car (α : SI) (X : Obj.{u} (SI := SI)) : (TG F α X).car = TruncO α (F X.car X.car) := rfl
 
-omit [∀ α [COFE α], IsCOFE (F α α)] inh in
+omit [∀ α [COFE (SI := SI) α], IsCOFE (SI := SI) (F α α)] inh in
 theorem map_congr {A B C D : Type (max u v)} [COFE A] [COFE B] [COFE C] [COFE D]
     {f f' : C -n> A} {g g' : B -n> D} (h1 : ∀ x, f x = f' x) (h2 : ∀ x, g x = g' x) (y : F A B) :
     map (F := F) f g y = map (F := F) f' g' y := by
@@ -623,7 +623,7 @@ noncomputable def ϕLchain (x : LimCar f) : BChain (TG F γ (LimObj hlim hf)).ca
 /-- `ψL` as a map into the bundled inverse limit. -/
 noncomputable def ψL' : (TG F γ (LimObj hlim hf)).car -n> (LimObj hlim hf).car := ψL hlim hf
 
-variable [∀ α [COFE α], BcomplUniqueLim (F α α)]
+variable [∀ α [COFE (SI := SI) α], BcomplUniqueLim (SI := SI) (F α α)]
 
 /-- Rocq: `ϕβ`. -/
 noncomputable def ϕL : (LimObj hlim hf).car -n> (TG F γ (LimObj hlim hf)).car where
@@ -679,23 +679,23 @@ end LimitStage
 section LimitStageLaws
 
 variable {γ : SI} (hlim : SIdx.Limit γ) {f : Fam F γ} (hf : FamGood f)
-variable [∀ α [COFE α], BcomplUniqueLim (F α α)]
+variable [∀ α [COFE (SI := SI) α], BcomplUniqueLim (SI := SI) (F α α)]
 
 /-! ### Laws of the limit stage -/
 
-omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+omit [∀ α [COFE (SI := SI) α], BcomplUniqueLim (SI := SI) (F α α)] in
 /-- Rocq: `pβ_eβ_up`. -/
 theorem pL_eL_up (β β' : SI) (hβ : β < γ) (hβ' : β' < γ) (hlt : β < β') (x) :
     pL f β' hβ' (eL hlim hf β hβ x) = f.e β β' hβ hβ' hlt x := by
   rw [eL_functorial hlim hf β β' hβ hβ' hlt, pL_eL]
 
-omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+omit [∀ α [COFE (SI := SI) α], BcomplUniqueLim (SI := SI) (F α α)] in
 /-- Rocq: `pβ_eβ_down`. -/
 theorem pL_eL_down (β' β : SI) (hβ' : β' < γ) (hβ : β < γ) (hlt : β' < β) (x) :
     pL f β' hβ' (eL hlim hf β hβ x) = f.p β' β hβ' hβ hlt x := by
   rw [pL_functorial hf β' β hβ' hβ hlt (hlim.succ_lt β' hβ') (hlim.succ_lt β hβ), pL_eL]
 
-omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+omit [∀ α [COFE (SI := SI) α], BcomplUniqueLim (SI := SI) (F α α)] in
 theorem ψL_val (y) (β : SI) (hβ : β < γ) :
     (ψL hlim hf y).val β hβ = truncMap γ (σ β) (map (F := F) (eL' hlim hf β hβ) (pL' hlim hf β hβ)) y :=
   rfl
@@ -727,7 +727,7 @@ theorem ϕL_ψL (y) (k : SI) (hk : k < γ) : ϕL hlim hf (ψL' hlim hf y) ≡{k}
   · exact eL_pL hlim hf k hk w
   · exact eL_pL hlim hf k hk w
 
-omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+omit [∀ α [COFE (SI := SI) α], BcomplUniqueLim (SI := SI) (F α α)] in
 /-- Rocq: `Fep_p_limit` (for the inverse limit). -/
 theorem fld_truncMap_eL (γ0 : SI) (h0 : γ0 < γ) (hs0 : σ γ0 < γ) (y) :
     f.fld γ0 h0 hs0 (truncMap γ (σ γ0) (map (F := F) (eL' hlim hf γ0 h0) (pL' hlim hf γ0 h0)) y) =
@@ -781,7 +781,7 @@ theorem eS_functorial (β β' : SI) (hβ : β < γ) (hβ' : β' < γ) (hlt : β 
     eS hlim hf β' hβ' (f.e β β' hβ hβ' hlt x) = eS hlim hf β hβ x :=
   congrArg (ϕL hlim hf) (eL_functorial hlim hf β β' hβ hβ' hlt x).symm
 
-omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+omit [∀ α [COFE (SI := SI) α], BcomplUniqueLim (SI := SI) (F α α)] in
 /-- Rocq: `pβ'_functorial`. -/
 theorem pS_functorial (β β' : SI) (hβ : β < γ) (hβ' : β' < γ) (hlt : β < β') (y) :
     f.p β β' hβ hβ' hlt (pS hlim hf β' hβ' y) = pS hlim hf β hβ y :=
@@ -802,7 +802,7 @@ end LimitStageLaws
 
 /-! ## The recursion -/
 
-variable [∀ α [COFE α], BcomplUniqueLim (F α α)]
+variable [∀ α [COFE (SI := SI) α], BcomplUniqueLim (SI := SI) (F α α)]
 
 variable (F) in
 /-- A junk stage, used at limit indices whose earlier stages do not satisfy the laws (which never
@@ -958,13 +958,13 @@ theorem transport_p (β : SI) (h : β < γ) (hT : T.prev β h = X F β) (hS : S.
     castObj hT (T.p β h y) = castObj hS (S.p β h (castObj (congrArg Stage.X hTS) y)) := by
   subst hTS; rfl
 
-omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+omit [∀ α [COFE (SI := SI) α], BcomplUniqueLim (SI := SI) (F α α)] in
 theorem transport_ϕ (y : T.X.car) :
     T.ϕ y = castObj (congrArg (fun S : Stage F γ => TG F (σ γ) S.X) hTS).symm
       (S.ϕ (castObj (congrArg Stage.X hTS) y)) := by
   subst hTS; rfl
 
-omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+omit [∀ α [COFE (SI := SI) α], BcomplUniqueLim (SI := SI) (F α α)] in
 theorem transport_ψ (z : (TG F (σ γ) T.X).car) :
     T.ψ z = castObj (congrArg Stage.X hTS).symm
       (S.ψ (castObj (congrArg (fun S : Stage F γ => TG F (σ γ) S.X) hTS) z)) := by
@@ -974,7 +974,7 @@ end Transport
 
 /-! ### Successor indices -/
 
-omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+omit [∀ α [COFE (SI := SI) α], BcomplUniqueLim (SI := SI) (F α α)] in
 /-- Transport along an equality of COFEs commutes with the functor. -/
 theorem cast_truncMap_map {A B C : Obj.{u} (SI := SI)} (hAB : A = B) (α α' : SI)
     (h' : TG F α A = TG F α B) (g : A.car -n> C.car) (h : C.car -n> A.car)
@@ -983,7 +983,7 @@ theorem cast_truncMap_map {A B C : Obj.{u} (SI := SI)} (hAB : A = B) (α α' : S
       truncMap α' α (map (F := F) (g.comp (castObj hAB.symm)) ((castObj hAB).comp h)) w := by
   subst hAB; rfl
 
-omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+omit [∀ α [COFE (SI := SI) α], BcomplUniqueLim (SI := SI) (F α α)] in
 /-- Transport along an equality of COFEs commutes with the functor. -/
 theorem truncMap_map_cast {A B C : Obj.{u} (SI := SI)} (hAB : A = B) (α α' : SI)
     (h' : TG F α' B = TG F α' A) (g : C.car -n> A.car) (h : A.car -n> C.car)
@@ -996,23 +996,23 @@ section Succ
 
 variable (m : SI)
 
-omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+omit [∀ α [COFE (SI := SI) α], BcomplUniqueLim (SI := SI) (F α α)] in
 theorem succStage_e_self (f : Fam F (σ m)) (h : m < σ m) (x : (f.X m h).car) :
     (succStage F m f).e m h x = f.ϕ m h x := by
   unfold succStage; dsimp only; rw [dite_eq_left rfl]; rfl
 
-omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+omit [∀ α [COFE (SI := SI) α], BcomplUniqueLim (SI := SI) (F α α)] in
 theorem succStage_e_lt (f : Fam F (σ m)) (β : SI) (h : β < σ m) (hβ : β < m) (x) :
     (succStage F m f).e β h x = f.ϕ m (SIdx.lt_succ_self m) (f.e β m h _ hβ x) := by
   unfold succStage; dsimp only
   rw [dite_eq_right (fun (hβm : β = m) => SIdx.lt_irrefl m (hβm ▸ hβ))]; rfl
 
-omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+omit [∀ α [COFE (SI := SI) α], BcomplUniqueLim (SI := SI) (F α α)] in
 theorem succStage_p_self (f : Fam F (σ m)) (h : m < σ m) (y) :
     (succStage F m f).p m h y = f.ψ m h y := by
   unfold succStage; dsimp only; rw [dite_eq_left rfl]; rfl
 
-omit [∀ α [COFE α], BcomplUniqueLim (F α α)] in
+omit [∀ α [COFE (SI := SI) α], BcomplUniqueLim (SI := SI) (F α α)] in
 theorem succStage_p_lt (f : Fam F (σ m)) (β : SI) (h : β < σ m) (hβ : β < m) (y) :
     (succStage F m f).p β h y = f.p β m h _ hβ (f.ψ m (SIdx.lt_succ_self m) y) := by
   unfold succStage; dsimp only

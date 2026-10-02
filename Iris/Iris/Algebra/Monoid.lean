@@ -27,7 +27,7 @@ open OFE
 /-- A commutative monoid on an OFE, used for big operators.
 The operation must be non-expansive, associative, commutative, and have a left identity. -/
 @[rocq_alias Monoid]
-class MonoidOps {M : Type u} [OFE M] (op : M → M → M) (unit : outParam M) where
+class MonoidOps {SI : Type _ := by exact defaultSI _} [SIdx SI] {M : Type u} [OFE M] (op : M → M → M) (unit : outParam M) where
   /-- The operation is non-expansive in both arguments -/
   op_ne : NonExpansive₂ op
   /-- Associativity -/
@@ -66,25 +66,25 @@ theorem op_left_id [MonoidOps op unit] {a : M} : op unit a = a :=
 /-- Right identity follows from commutativity and left identity. -/
 @[rocq_alias monoid_right_id]
 theorem op_right_id [MonoidOps op unit] : op a unit = a :=
-  op_comm.trans op_left_id
+  (op_comm (SI := SI)).trans (op_left_id (SI := SI))
 
 /-- Rearrange `(a * b) * (c * d)` to `(a * c) * (b * d)`. -/
 theorem op_op_op_comm [MonoidOps op unit] {a b c d : M} :
     op (op a b) (op c d) = op (op a c) (op b d) :=
   calc op (op a b) (op c d)
-      _ = op a (op b (op c d)) := op_assoc
-      _ = op a (op (op b c) d) := congrArg (op a) op_assoc.symm
-      _ = op a (op (op c b) d) := congrArg (op a) (congrArg (op · d) op_comm)
-      _ = op a (op c (op b d)) := congrArg (op a) op_assoc
-      _ = op (op a c) (op b d) := op_assoc.symm
+      _ = op a (op b (op c d)) := op_assoc (SI := SI)
+      _ = op a (op (op b c) d) := congrArg (op a) (op_assoc (SI := SI)).symm
+      _ = op a (op (op c b) d) := congrArg (op a) (congrArg (op · d) (op_comm (SI := SI)))
+      _ = op a (op c (op b d)) := congrArg (op a) (op_assoc (SI := SI))
+      _ = op (op a c) (op b d) := (op_assoc (SI := SI)).symm
 
 /-- Swap inner elements: `a * (b * c)` to `b * (a * c)`. -/
 theorem op_left_comm [MonoidOps op unit] {a b c : M} :
     op a (op b c) = op b (op a c) :=
   calc op a (op b c)
-      _ = op (op a b) c := op_assoc.symm
-      _ = op (op b a) c := congrArg (op · c) op_comm
-      _ = op b (op a c) := op_assoc
+      _ = op (op a b) c := (op_assoc (SI := SI)).symm
+      _ = op (op b a) c := congrArg (op · c) (op_comm (SI := SI))
+      _ = op b (op a c) := op_assoc (SI := SI)
 
 /-- Non-expansiveness for dist. -/
 theorem op_dist [MonoidOps op unit] (ha : a ≡{n}≡ a') (hb : b ≡{n}≡ b') :
@@ -96,7 +96,7 @@ end MonoidOps
 
 /-- A weak monoid homomorphism preserves the operation but not necessarily the unit. -/
 @[rocq_alias WeakMonoidHomomorphism]
-class WeakMonoidHomomorphism {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M₂]
+class WeakMonoidHomomorphism {SI : Type _ := by exact defaultSI _} [SIdx SI] {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M₂]
     (op₁ : M₁ → M₁ → M₁) (op₂ : M₂ → M₂ → M₂) (unit₁ : M₁) (unit₂ : M₂)
     [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
     (R : M₂ → M₂ → Prop) (f : M₁ → M₂) where
@@ -115,7 +115,7 @@ class WeakMonoidHomomorphism {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M�
 
 /-- A monoid homomorphism preserves both the operation and the unit. -/
 @[rocq_alias MonoidHomomorphism]
-class MonoidHomomorphism {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M₂]
+class MonoidHomomorphism {SI : Type _ := by exact defaultSI _} [SIdx SI] {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M₂]
     (op₁ : M₁ → M₁ → M₁) (op₂ : M₂ → M₂ → M₂) (unit₁ : M₁) (unit₂ : M₂)
     [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
     (R : M₂ → M₂ → Prop) (f : M₁ → M₂)

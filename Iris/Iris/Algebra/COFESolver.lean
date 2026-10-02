@@ -17,15 +17,15 @@ namespace Iris.COFE.OFunctor
 open OFE
 
 
-variable {F : ∀ α β [COFE α] [COFE β], Type u} [OFunctorContractive F]
-variable [∀ α [COFE α], IsCOFE (F α α)]
+variable {F : ∀ α β [COFE (SI := SI) α] [COFE (SI := SI) β], Type u} [OFunctorContractive F]
+variable [∀ α [COFE (SI := SI) α], IsCOFE (SI := SI) (F α α)]
 variable [inh : Inhabited (F (ULift Unit) (ULift Unit))]
 
 namespace Fix.Impl
 
 variable (F) in
 @[rocq_alias solver.A']
-def A' : Nat → Σ α : Type u, COFE α
+def A' : Nat → Σ α : Type u, COFE (SI := SI) α
   | 0 => ⟨ULift Unit, inferInstance⟩
   | n+1 => let ⟨A, _⟩ := A' n; ⟨F A A, inferInstance⟩
 

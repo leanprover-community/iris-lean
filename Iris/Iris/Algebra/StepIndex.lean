@@ -34,16 +34,7 @@ class DefaultSI (SI : outParam (Type u)) where
   private mk ::
   sidx : SIdx SI
 
-/-- Default instance for the step index type.
-If no step indices are found, look for a `DefaultSI` instance, and use that.
-
-Note: `dfltSIdx` must not have further instance-implicit arguments (such as an `[SIdx SI]`
-argument); otherwise a missing `DefaultSI` instance makes the default-instance mechanism retry
-indefinitely instead of failing. The instances created by `stepindex` are `@[expose, reducible]`,
-so `d.sidx` unfolds to the ambient `SIdx` instance in every module. -/
-@[default_instance, reducible]
-def dfltSIdx {SI : Type u} [d : DefaultSI SI] : SIdx SI := d.sidx
-
+abbrev defaultSI (SI : Type u) [DefaultSI SI] : Type u := SI
 
 open Lean Parser in
 /--

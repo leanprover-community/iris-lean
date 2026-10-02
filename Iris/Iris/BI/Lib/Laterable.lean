@@ -21,11 +21,11 @@ open BI OFE Iris.Std ProofMode
 
 /-- Require that the proposition `P` is laterable. -/
 @[rocq_alias Laterable]
-class Laterable [BI PROP] (P : PROP) where
+class Laterable {SI : Type _ := by exact Iris.defaultSI _} [Iris.SIdx SI] [BI PROP] (P : PROP) where
   laterable : P ⊢ ∃ Q, ▷ Q ∗ □ (▷ Q -∗ ◇ P)
 
 @[rocq_alias IntoLaterable]
-class IntoLaterable [BI PROP] (P : PROP) (Q : outParam PROP) where
+class IntoLaterable {SI : Type _ := by exact Iris.defaultSI _} [Iris.SIdx SI] [BI PROP] (P : PROP) (Q : outParam PROP) where
   into_laterable : P ⊢ Q
   into_laterable_result_laterable : Laterable Q
 

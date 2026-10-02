@@ -18,7 +18,7 @@ variable {SI : Type _} [instSI : SIdx SI]
 local stepindex SI
 
 @[rocq_alias cmra]
-class CMRA {SI : outParam (Type _)} [instSI : outParam (SIdx SI)] (α : Type _) extends OFE (SI := SI) α where
+class CMRA {SI : Type _ := by exact defaultSI _} [instSI : SIdx SI] (α : Type _) extends OFE (SI := SI) α where
   pcore {SI} : α → Option α
   op {SI} : α → α → α
   ValidN : SI → α → Prop
@@ -137,7 +137,7 @@ export IdFree (id_free0_r)
 #rocq_ignore IdFree_proper "Derived from nonexpansivity"
 
 @[rocq_alias CmraTotal]
-class IsTotal {SI : outParam (Type _)} [instSI : outParam (SIdx SI)] (α : Type _) [inst : CMRA α] where
+class IsTotal {SI : Type _ := by exact defaultSI _} [instSI : SIdx SI] (α : Type _) [inst : CMRA α] where
   total (x : α) : ∃ cx, pcore x = some cx
 export IsTotal (total)
 
@@ -147,7 +147,7 @@ export IsTotal (total)
 def core (x : α) := (pcore x).getD x
 
 @[rocq_alias CmraDiscrete]
-class Discrete (α : Type _) [CMRA α] extends OFE.Discrete α where
+class Discrete {SI : Type _ := by exact defaultSI _} [SIdx SI] (α : Type _) [CMRA α] extends OFE.Discrete α where
   discrete_valid {x : α} : ✓{0} x → ✓ x
 export Discrete (discrete_valid)
 #rocq_ignore RAMixin "Bundled record of RA laws; Lean passes them as arguments to `CMRA.ofDiscrete`."
@@ -156,7 +156,7 @@ export Discrete (discrete_valid)
 end CMRA
 
 @[rocq_alias ucmra]
-class UCMRA {SI : outParam (Type _)} [instSI : outParam (SIdx SI)] (α : Type _) extends CMRA (SI := SI) α where
+class UCMRA {SI : Type _ := by exact defaultSI _} [instSI : SIdx SI] (α : Type _) extends CMRA (SI := SI) α where
   unit {SI} : α
   unit_valid : ✓ unit
   unit_left_id : unit • x = x
@@ -167,7 +167,7 @@ class UCMRA {SI : outParam (Type _)} [instSI : outParam (SIdx SI)] (α : Type _)
 #rocq_ignore ucmra_cmraR "Folded into Lean's UCMRA extends CMRA."
 #rocq_ignore ucmra_ofeO "Folded into Lean's UCMRA → OFE."
 
-class IsUnit [CMRA α] (ε : α) : Prop where
+class IsUnit {SI : Type _ := by exact defaultSI _} [SIdx SI] [CMRA α] (ε : α) : Prop where
   unit_valid : ✓ ε
   unit_left_id : ε • x = x
   pcore_unit : CMRA.pcore ε = some ε

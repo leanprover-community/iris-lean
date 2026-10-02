@@ -27,7 +27,7 @@ theorem liftRel_eq : liftRel (@Eq α) A B ↔ A = B := by
 /-- Require that a separation logic with carrier type `PROP` fulfills all necessary axioms. -/
 @[rocq_alias bi, rocq_alias BiMixin,
   rocq_alias BiPersistentlyMixin, rocq_alias BiLaterMixin]
-class BI {SI : outParam (Type _)} [instSI : outParam (SIdx SI)] (PROP : Type _)
+class BI {SI : Type _ := by exact defaultSI _} [instSI : SIdx SI] (PROP : Type _)
     extends COFE (SI := SI) PROP, BI.BIBase PROP where
   entails_refl {P : PROP} : P ⊢ P
   entails_trans {P Q R : PROP} : (P ⊢ Q) → (Q ⊢ R) → P ⊢ R

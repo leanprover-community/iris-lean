@@ -56,7 +56,7 @@ intro/elim form: for any predicate `Ψ : PROP1 → Prop`, `forall_2` builds
 `R ⊢ ⎡sForall Ψ⎤` from pointwise `R ⊢ ⎡P⎤`, and `exist_1` builds `⎡sExists Ψ⎤ ⊢ R`
 from pointwise `⎡P⎤ ⊢ R`. -/
 @[rocq_alias BiEmbed]
-class BiEmbed (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] extends Embed PROP1 PROP2 where
+class BiEmbed {SI : Type _ := by exact Iris.defaultSI _} [Iris.SIdx SI] (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] extends Embed PROP1 PROP2 where
   [ne : OFE.NonExpansive embed]
   mono           : ∀ {P Q : PROP1}, (P ⊢ Q) → ((⎡P⎤ : PROP2) ⊢ ⎡Q⎤)
   emp_valid_inj  : ∀ (P : PROP1), (⊢ (⎡P⎤ : PROP2)) → (⊢ P)
@@ -72,29 +72,29 @@ class BiEmbed (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] extends Embed PROP1 P
 
 /-- `⎡emp⎤ ⊣⊢ emp`. -/
 @[rocq_alias BiEmbedEmp]
-class BiEmbedEmp (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] where
+class BiEmbedEmp {SI : Type _ := by exact Iris.defaultSI _} [Iris.SIdx SI] (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] where
   embed_emp_1 : (⎡(emp : PROP1)⎤ : PROP2) ⊢ emp
 
 /-- `⎡▷ P⎤ ⊣⊢ ▷ ⎡P⎤`. -/
 @[rocq_alias BiEmbedLater]
-class BiEmbedLater (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] where
+class BiEmbedLater {SI : Type _ := by exact Iris.defaultSI _} [Iris.SIdx SI] (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] where
   embed_later : ∀ (P : PROP1), (⎡▷ P⎤ : PROP2) ⊣⊢ ▷ ⎡P⎤
 
 /-- `⎡|==> P⎤ ⊣⊢ |==> ⎡P⎤`. -/
 @[rocq_alias BiEmbedBUpd]
-class BiEmbedBUpd (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+class BiEmbedBUpd {SI : Type _ := by exact Iris.defaultSI _} [Iris.SIdx SI] (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
     [BIUpdate PROP1] [BIUpdate PROP2] where
   embed_bupd : ∀ (P : PROP1), (⎡|==> P⎤ : PROP2) ⊣⊢ |==> ⎡P⎤
 
 /-- `⎡|={E1,E2}=> P⎤ ⊣⊢ |={E1,E2}=> ⎡P⎤`. -/
 @[rocq_alias BiEmbedFUpd]
-class BiEmbedFUpd (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+class BiEmbedFUpd {SI : Type _ := by exact Iris.defaultSI _} [Iris.SIdx SI] (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
     [BIFUpdate PROP1] [BIFUpdate PROP2] where
   embed_fupd : ∀ (E1 E2 : CoPset) (P : PROP1), (⎡|={E1,E2}=> P⎤ : PROP2) ⊣⊢ |={E1,E2}=> ⎡P⎤
 
 /-- The `Sbi` (internal-equality / plainly) embedding laws. -/
 @[rocq_alias BiEmbedSbi]
-class BiEmbedSbi (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+class BiEmbedSbi {SI : Type _ := by exact Iris.defaultSI _} [Iris.SIdx SI] (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
     [Sbi PROP1] [Sbi PROP2] where
   embed_siEmpValid : ∀ (P : PROP1),
     SiEmpValid.siEmpValid (embed P : PROP2) ⊣⊢ SiEmpValid.siEmpValid P

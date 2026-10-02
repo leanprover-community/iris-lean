@@ -203,7 +203,7 @@ delab_rule BIBase.wand
     `(iprop($(← unpackIprop Q) ={$E₁}▷=∗^[$n] $P))
 
 @[rocq_alias BiBUpd]
-class BIUpdate {SI : outParam (Type _)} [instSI : outParam (SIdx SI)] (PROP : Type _)
+class BIUpdate {SI : Type _ := by exact defaultSI _} [instSI : SIdx SI] (PROP : Type _)
     [outParam (BI (SI := SI) PROP)] extends BUpd PROP where
   [bupd_ne : OFE.NonExpansive (BUpd.bupd (PROP := PROP))]
   intro {P : PROP} : P ⊢ |==> P
@@ -214,7 +214,7 @@ class BIUpdate {SI : outParam (Type _)} [instSI : outParam (SIdx SI)] (PROP : Ty
 #rocq_ignore BiBUpdMixin "Included in BIUpdate typeclass."
 
 @[rocq_alias BiFUpd]
-class BIFUpdate {SI : outParam (Type _)} [instSI : outParam (SIdx SI)] (PROP : Type _)
+class BIFUpdate {SI : Type _ := by exact defaultSI _} [instSI : SIdx SI] (PROP : Type _)
     [outParam (BI (SI := SI) PROP)] extends FUpd PROP where
   [ne {E1 E2 : CoPset} : OFE.NonExpansive (iprop(|={E1,E2}=> · : PROP))]
   subset {E1 E2 : CoPset} : E2 ⊆ E1 → ⊢ |={E1,E2}=> |={E2,E1}=> (emp : PROP)
@@ -228,11 +228,11 @@ class BIFUpdate {SI : outParam (Type _)} [instSI : outParam (SIdx SI)] (PROP : T
 #rocq_ignore BiFUpdMixin "Included in BIFUpdate typeclass."
 
 @[rocq_alias BiBUpdFUpd]
-class BIUpdateFUpdate (PROP : Type _) [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] where
+class BIUpdateFUpdate {SI : Type _ := by exact Iris.defaultSI _} [Iris.SIdx SI] (PROP : Type _) [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] where
   fupd_of_bupd {P : PROP} {E : CoPset} : (|==> P) ⊢ |={E}=> P
 
 @[rocq_alias BiFUpdSbi]
-class BIFUpdateSbi (PROP : Type _) [BI PROP] [BIFUpdate PROP] [Sbi PROP] where
+class BIFUpdateSbi {SI : Type _ := by exact Iris.defaultSI _} [Iris.SIdx SI] (PROP : Type _) [BI PROP] [BIFUpdate PROP] [Sbi PROP] where
   fupd_keep_siPure {E} E' Pi (R : PROP) :
     (|={E,E'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E}=∗ R) ⊢ |={E}=> R
   fupd_siPure_later (E : CoPset) (Pi : (SiProp stepindex%)) :
@@ -241,7 +241,7 @@ class BIFUpdateSbi (PROP : Type _) [BI PROP] [BIFUpdate PROP] [Sbi PROP] where
     (∀ q, ⌜Ψi q⌝ → |={E}=> <si_pure> q) ⊢@{PROP} |={E}=> <si_pure> (sForall Ψi)
 
 @[rocq_alias BiBUpdSbi]
-class BIBUpdateSbi (PROP : Type _) [BI PROP] [BIUpdate PROP] [Sbi PROP] where
+class BIBUpdateSbi {SI : Type _ := by exact Iris.defaultSI _} [Iris.SIdx SI] (PROP : Type _) [BI PROP] [BIUpdate PROP] [Sbi PROP] where
   bupd_siPure (Pi : (SiProp stepindex%)) : iprop(|==> <si_pure> Pi ⊢@{PROP} <si_pure> Pi)
 
 section BUpdLaws

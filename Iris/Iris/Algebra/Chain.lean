@@ -26,7 +26,7 @@ variable {α : Type u} [OFE α]
 def Equiv (x y : Chain α) : Prop :=
   ∀ n, x n ≡{n}≡ y n
 
-theorem equiv_equivalence : Equivalence (Equiv (α := α)) where
+theorem equiv_equivalence : Equivalence (Equiv (SI := SI) (α := α)) where
   refl _ _ := .rfl
   symm h _ := (h _).symm
   trans h₁ h₂ _ := (h₁ _).trans (h₂ _)
@@ -37,7 +37,7 @@ def quotientSetoid : Setoid (Chain α) := ⟨Equiv, equiv_equivalence⟩
 def dist (n : SI) (x y : Chain α) : Prop :=
   ∀ m, m ≤ n → x m ≡{m}≡ y m
 
-theorem dist_equivalence : Equivalence (dist (α := α) n) where
+theorem dist_equivalence : Equivalence (dist (SI := SI) (α := α) n) where
   refl _ _ _ := .rfl
   symm h _ hm := (h _ hm).symm
   trans h₁ h₂ _ hm := (h₁ _ hm).trans (h₂ _ hm)
@@ -46,6 +46,7 @@ theorem dist_lt {n m : SI} {x y : Chain α} (h : dist n x y) (hlt : m < n) :
     dist m x y :=
   fun k hk => h k (SIdx.le_trans hk (SIdx.lt_le_incl hlt))
 
+set_option trace.Meta.synthInstance true in
 theorem equiv_iff_dist (x y : Chain α) : Equiv x y ↔ ∀ n, dist n x y :=
   ⟨fun h _ _ _ => h _, fun h n => h n n SIdx.le_refl⟩
 

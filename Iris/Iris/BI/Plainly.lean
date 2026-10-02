@@ -398,7 +398,7 @@ end PlainlyLaws
 section PlainLaws
 
 @[rocq_alias Plain]
-class Plain [BI PROP] [BIBase.Plainly PROP] (P : PROP) where
+class Plain {SI : Type _ := by exact Iris.defaultSI _} [Iris.SIdx SI] [BI PROP] [BIBase.Plainly PROP] (P : PROP) where
   plain : P ⊢ ■ P
 
 #rocq_ignore Plain_proper "Derivable from BI."

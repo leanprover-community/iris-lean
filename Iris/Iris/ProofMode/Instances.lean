@@ -743,7 +743,7 @@ instance (priority := default + 20) fromSep_bigSepMS_disjUnion [BI PROP] {MS A :
 /-! ### AndIntoSep -/
 
 @[ipm_class, rocq_alias AndIntoSep]
-class inductive AndIntoSep {PROP} [BI PROP] : PROP → outParam PROP → PROP → outParam PROP → Prop
+class inductive {SI : Type _ := by exact Iris.defaultSI _} [Iris.SIdx SI] AndIntoSep {PROP} [BI PROP] : PROP → outParam PROP → PROP → outParam PROP → Prop
   | affine (P Q Q' : PROP) [Affine P] [h : FromAffinely Q' Q] : AndIntoSep P P Q Q'
   | affinely (P Q : PROP) : AndIntoSep P iprop(<affine> P) Q Q
 

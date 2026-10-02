@@ -30,7 +30,7 @@ open OFE BI Iris.BI.BIBase
 
 /-- Embedding of step-indexed propositions into a BI. -/
 @[rocq_alias SiPure]
-class SiPure {SI : outParam (Type _)} [outParam (SIdx SI)] (PROP : Type _) where
+class SiPure {SI : Type _ := by exact defaultSI _} [SIdx SI] (PROP : Type _) where
   siPure : (SiProp stepindex%) → PROP
 export SiPure (siPure)
 
@@ -38,7 +38,7 @@ attribute [inherit_doc SiPure] SiPure.siPure
 
 /-- Step-indexed validity of BI propositions. -/
 @[rocq_alias SiEmpValid]
-class SiEmpValid {SI : outParam (Type _)} [outParam (SIdx SI)] (PROP : Type _) where
+class SiEmpValid {SI : Type _ := by exact defaultSI _} [SIdx SI] (PROP : Type _) where
   siEmpValid : PROP → (SiProp stepindex%)
 export SiEmpValid (siEmpValid)
 
@@ -63,7 +63,7 @@ end Notation
 
 /-- The `Sbi` class: a BI with step-indexed structure. -/
 @[rocq_alias Sbi]
-class Sbi {SI : outParam (Type _)} [outParam (SIdx SI)] (PROP : Type _)
+class Sbi {SI : Type _ := by exact defaultSI _} [SIdx SI] (PROP : Type _)
     extends BI (SI := SI) PROP, SiPure (SI := SI) PROP, SiEmpValid (SI := SI) PROP where
   siPure_ne : NonExpansive (α := (SiProp stepindex%)) (β := PROP) SiPure.siPure
   siEmpValid_ne : NonExpansive (α := PROP) (β := (SiProp stepindex%)) SiEmpValid.siEmpValid
@@ -101,7 +101,7 @@ theorem siEmpValid_affinely_2 [Sbi PROP] {P : PROP} :
 
 /-- `SbiEmpValidExist` generalizes that plainly commutes with existentials and disjunction. -/
 @[rocq_alias SbiEmpValidExist]
-class SbiEmpValidExist (PROP : Type _) [BI PROP] [SiEmpValid PROP] where
+class SbiEmpValidExist {SI : Type _ := by exact Iris.defaultSI _} [Iris.SIdx SI] (PROP : Type _) [BI PROP] [SiEmpValid PROP] where
   siEmpValid_sExists_1 (Ψ : PROP → Prop) :
     iprop(<si_emp_valid> sExists Ψ ⊢@{(SiProp stepindex%)} ∃ p, ⌜Ψ p⌝ ∧ <si_emp_valid> p)
 export SbiEmpValidExist (siEmpValid_sExists_1)

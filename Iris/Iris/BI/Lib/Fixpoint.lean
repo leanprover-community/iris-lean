@@ -17,7 +17,7 @@ open Iris.Std BI OFE
 
 
 @[rocq_alias BiMonoPred]
-class BIMonoPred [BI PROP] [OFE A] (F : (A → PROP) → (A → PROP)) where
+class BIMonoPred {SI : Type _ := by exact Iris.defaultSI _} [Iris.SIdx SI] [BI PROP] [OFE A] (F : (A → PROP) → (A → PROP)) where
   mono_pred {Φ Ψ : A → PROP} [NonExpansive Φ] [NonExpansive Ψ] :
     ⊢ □ (∀ x, Φ x -∗ Ψ x) -∗ ∀ x, F Φ x -∗ F Ψ x
   mono_pred_ne {Φ : A → PROP} [NonExpansive Φ] : NonExpansive (F Φ)

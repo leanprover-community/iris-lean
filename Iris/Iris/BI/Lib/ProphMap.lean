@@ -36,7 +36,7 @@ class prophMapPreS (P V : Type _) (GF : BundledGFunctors) (H : outParam <| Type 
 attribute [reducible, instance] prophMapPreS.inG
 
 @[rocq_alias proph_mapGS]
-class prophMapGS {SI : outParam (Type _)} [outParam (Iris.SIdx SI)] (P V : outParam <| Type _)
+class prophMapGS {SI : Type _ := by exact defaultSI _} [Iris.SIdx SI] (P V : outParam <| Type _)
     (GF : outParam <| BundledGFunctors (SI := SI))
     (H : outParam <| Type _ → Type _) [LawfulFiniteMap H P]
     extends prophMapPreS P V GF H where

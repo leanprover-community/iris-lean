@@ -62,7 +62,7 @@ attribute [reducible, instance] genHeapPreS.metaData
 attribute [instance] GhostMapG.elem
 
 @[rocq_alias gen_heapGS]
-class genHeapGS {SI : outParam (Type _)} [outParam (Iris.SIdx SI)] (L V : outParam <| Type _)
+class genHeapGS {SI : Type _ := by exact defaultSI _} [Iris.SIdx SI] (L V : outParam <| Type _)
     (GF : outParam <| BundledGFunctors (SI := SI))
     (H : outParam <| Type _ → Type _) [Std.LawfulFiniteMap H L]
     extends genHeapPreS L V GF H where
