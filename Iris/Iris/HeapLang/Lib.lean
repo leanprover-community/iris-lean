@@ -7,12 +7,15 @@ module
 public import Iris.HeapLang.Lib.Arith
 public import Iris.HeapLang.Lib.Array
 public import Iris.HeapLang.Lib.Assert
+public import Iris.HeapLang.Lib.AtomicHeap
 public import Iris.HeapLang.Lib.ClairvoyantCoin
 public import Iris.HeapLang.Lib.Counter
 public import Iris.HeapLang.Lib.Diverge
+public import Iris.HeapLang.Lib.Increment
 public import Iris.HeapLang.Lib.LandinsKnot
 public import Iris.HeapLang.Lib.LazyCoin
 public import Iris.HeapLang.Lib.Lock
+public import Iris.HeapLang.Lib.LogatomLock
 public import Iris.HeapLang.Lib.NondetBool
 public import Iris.HeapLang.Lib.Par
 public import Iris.HeapLang.Lib.Quicksort
