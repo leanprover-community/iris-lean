@@ -28,6 +28,8 @@ open OFE ORA UORA View
 @[rocq_alias auth_view_rel_raw]
 def AuthViewRel [UORA A] : ViewRel A A := fun n a b => (∃ c, b • c ≼ₒ{n} a) ∧ ✓{n} a
 
+def AuthViewRelInc [UORA A] : ViewRel A A := fun n a b => b ≼{n} a ∧ ✓{n} a
+
 namespace AuthViewRel
 
 variable [UORA A]
@@ -42,6 +44,12 @@ instance instViewRel_authViewRel : IsViewRel (AuthViewRel (A := A)) where
   op_left {_ _ _ d} := fun ⟨⟨c, hinc⟩, hv⟩ => ⟨⟨d • c, by rw [assoc']; exact hinc⟩, hv⟩
   rel_validN _ _ _ := fun ⟨⟨_, hinc⟩, hv⟩ => validN_op_left (validN_of_ordN hinc hv)
   rel_unit _ := ⟨unit, ⟨unit, by rw [unit_right_id]⟩, unit_valid.validN⟩
+
+theorem of_inc {n} {a b : A} : AuthViewRelInc n a b → AuthViewRel n a b
+  | ⟨⟨c, hc⟩, hv⟩ => ⟨⟨c, ordN_of_dist hc.symm⟩, hv⟩
+
+theorem iff_inc [OrdInc A] {n} {a b : A} : AuthViewRel n a b ↔ AuthViewRelInc n a b :=
+  and_congr_left fun _ => exists_op_ordN_iff_incN
 
 #rocq_ignore auth_view_rel_raw_mono "Use the IsViewRel typeclass"
 #rocq_ignore auth_view_rel_raw_valid "Use the IsViewRel typeclass"
@@ -558,13 +566,10 @@ theorem auth_update_auth_ord {a a' : A}
 @[rocq_alias auth_update]
 theorem auth_update [OrdInc A] {a b a' b' : A} (hup : (a, b) ~l~> (a', b')) :
     ((● a : Auth A) • ◯ b) ~~> (● a') • ◯ b' := by
-  refine auth_one_op_frag_update fun n bf ⟨⟨c, hinc⟩, hv⟩ => ?_
-  obtain ⟨d, hd⟩ := OrdInc.ordN_incN hinc
-  have ha_eq : a ≡{n}≡ b •? some (bf • (c • d)) := by
-    simp only [op?]; rw [assoc', assoc']; exact hd
-  have ⟨hv', ha'_eq⟩ := hup n (some (bf • (c • d))) hv ha_eq
-  simp only [op?] at ha'_eq
-  exact ⟨⟨c • d, ordN_of_dist (by rw [← assoc']; exact ha'_eq.symm)⟩, hv'⟩
+  refine auth_one_op_frag_update fun n bf h => ?_
+  obtain ⟨⟨c, hinc⟩, hv⟩ := AuthViewRel.iff_inc.mp h
+  have ⟨hv', ha'_eq⟩ := hup n (some (bf • c)) hv (hinc.trans assoc.symm.dist)
+  exact AuthViewRel.of_inc ⟨⟨c, ha'_eq.trans assoc.dist⟩, hv'⟩
 
 @[rocq_alias auth_update_alloc]
 theorem auth_update_alloc [OrdInc A] {a a' b' : A} (hup : (a, unit) ~l~> (a', b')) :

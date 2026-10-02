@@ -48,6 +48,10 @@ def HeapR (n : Nat) (m : H V) (f : H (DFrac × V)) : Prop :=
   ∀ k fv, get? f k = some fv →
     ∃ (v : V) (dq : DFrac), get? m k = some v ∧ ✓{n} (dq, v) ∧ ∃ c, some fv • c ≼ₒ{n} some (dq, v)
 
+def HeapRInc (n : Nat) (m : H V) (f : H (DFrac × V)) : Prop :=
+  ∀ k fv, get? f k = some fv →
+    ∃ (v : V) (dq : DFrac), get? m k = some v ∧ ✓{n} (dq, v) ∧ some fv ≼{n} some (dq, v)
+
 #rocq_ignore gmap_view_rel_raw_mono "The `mono` field of the `IsViewRel (HeapR ..)` instance"
 #rocq_ignore gmap_view_rel_raw_valid "The `rel_validN` field of the `IsViewRel (HeapR ..)` instance"
 #rocq_ignore gmap_view_rel_raw_unit "The `rel_unit` field of the `IsViewRel (HeapR ..)` instance"
@@ -84,6 +88,14 @@ instance : IsViewRel (HeapR K V H) where
     simp [UORA.unit, Heap.unit, get?_empty]
 
 namespace HeapR
+
+theorem of_inc {n m f} (h : HeapRInc K V H n m f) : HeapR K V H n m f := fun k fv hk =>
+  let ⟨v, dq, hm, hv, c, hc⟩ := h k fv hk
+  ⟨v, dq, hm, hv, c, ordN_of_dist hc.symm⟩
+
+theorem iff_inc [OrdInc V] {n m f} : HeapR K V H n m f ↔ HeapRInc K V H n m f :=
+  forall₂_congr fun _ _ => imp_congr_right fun _ => exists₂_congr fun _ _ =>
+    and_congr_right fun _ => and_congr_right fun _ => exists_op_ordN_iff_incN
 
 @[rocq_alias gmap_view_rel_unit]
 theorem unit : HeapR K V H n m UORA.unit := by
