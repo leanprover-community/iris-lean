@@ -413,7 +413,7 @@ def raValid : _root_.Iris.Valid (M V) where
      fun H k => valid_iff_validN.mpr (H · k)⟩
   validN_succ H k := validN_succ (H k)
 
-@[reducible] def orderN : Ordered (M V) where
+@[reducible] def raOrdered : Ordered (M V) where
   OrderN n m m' := ∀ k, get? m k ≼ₒ{n} get? m' k
   Order m m' := ∀ k, get? m k ≼ₒ get? m' k
   ordN_ne em em' h k := ordN_ne ((get?_ne k).ne em) ((get?_ne k).ne em') (h k)
@@ -423,7 +423,7 @@ def raValid : _root_.Iris.Valid (M V) where
   ordN_of_ord n h k := ordN_of_ord n (h k)
 
 section
-attribute [local instance] raOp raPCore raValid orderN
+attribute [local instance] raOp raPCore raValid raOrdered
 
 @[rocq_alias lookup_op]
 theorem get?_op (x y : M V) : get? (x • y) i = get? x i • get? y i := by
@@ -493,7 +493,7 @@ instance instStoreCMRA : ORA (M V) where
       · rw [get?_bindAlter, hF]
         simp only [h, Option.bind_some]
         refine Hz2.trans (.of_eq h)
-  toOrdered := orderN
+  toOrdered := raOrdered
   op_monoN_left_ord z h k := by rw [get?_op, get?_op]; exact op_monoN_left_ord _ (h k)
   op_mono_left_ord z h k := by rw [get?_op, get?_op]; exact op_mono_left_ord _ (h k)
   validN_of_ordN h v k := validN_of_ordN (h k) (v k)
@@ -531,7 +531,7 @@ instance instStoreUCMRA : UORA (M V) where
     simp [get?_bindAlter, get?_empty]
   ord_refl _ := fun _ => ord_refl _
 
-instance instAffine [IncOrd V] : IncOrd (M V) :=
+instance instIncOrd [IncOrd V] : IncOrd (M V) :=
   IncOrd.of_increasing fun _ => increasing_iff.mpr fun _ => IncOrd.increasing _
 
 instance instOrdInc [OrdInc V] : OrdInc (M V) where
@@ -742,7 +742,7 @@ theorem singleton_ord_singleton_mono (Hinc : x ≼ₒ y) :
 
 theorem total_singleton_ord_singleton_iff [OrderRefl V] :
     (singleton i x : M V) ≼ₒ (singleton i y) ↔ x ≼ₒ y :=
-  singleton_ord_singleton_iff.trans Option.some_ord_some_iff_ordRefl
+  singleton_ord_singleton_iff.trans Option.some_ord_some_iff_orderRefl
 
 open Classical in
 theorem singleton_ordN_iff [IncOrd V] {m : M V} :

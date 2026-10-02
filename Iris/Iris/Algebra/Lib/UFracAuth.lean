@@ -127,7 +127,7 @@ theorem included [ORA.Discrete A] [OrdInc A] {q p : Qp} {a b : A}
 
 theorem ordN_total [OrderRefl A] [IncOrd A] {n : Nat} {q p : Qp} {a b : A}
     (h : ✓{n} (●U{p} a) • ◯U{q} b) : b ≼ₒ{n} a :=
-  some_ordN_some_iff_ordRefl.mp (ordN h)
+  some_ordN_some_iff_orderRefl.mp (ordN h)
 
 @[rocq_alias ufrac_auth_includedN_total]
 theorem includedN_total [OrderRefl A] [OrdInc A] {n : Nat} {q p : Qp} {a b : A}
@@ -136,7 +136,7 @@ theorem includedN_total [OrderRefl A] [OrdInc A] {n : Nat} {q p : Qp} {a b : A}
 
 theorem ord_total [ORA.Discrete A] [OrderRefl A] [IncOrd A] {q p : Qp} {a b : A}
     (h : ✓ (●U{p} a) • ◯U{q} b) : b ≼ₒ a :=
-  some_ord_some_iff_ordRefl.mp (ord h)
+  some_ord_some_iff_orderRefl.mp (ord h)
 
 @[rocq_alias ufrac_auth_included_total]
 theorem included_total [ORA.Discrete A] [OrderRefl A] [OrdInc A] {q p : Qp} {a b : A}

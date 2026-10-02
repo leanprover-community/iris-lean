@@ -305,7 +305,7 @@ theorem validN_mono {n} {x y : DynReservationMap A H} (hd : ✓{n} y.data → �
     · exact validN_infinite v
     · exact validN_disj v
 
-@[reducible] def orderN : Ordered (DynReservationMap A H) where
+@[reducible] def raOrdered : Ordered (DynReservationMap A H) where
   OrderN n x y := x.data ≼ₒ{n} y.data ∧ x.token ≼ₒ{n} y.token
   Order x y := x.data ≼ₒ y.data ∧ x.token ≼ₒ y.token
   ordN_ne ex ey h := ⟨ordN_ne ex.1 ey.1 h.1, ordN_ne ex.2 ey.2 h.2⟩
@@ -315,7 +315,7 @@ theorem validN_mono {n} {x y : DynReservationMap A H} (hd : ✓{n} y.data → �
   ordN_of_ord n h := ⟨ordN_of_ord n h.1, ordN_of_ord n h.2⟩
 
 section
-attribute [local instance] orderN raOp raPCore raValid
+attribute [local instance] raOrdered raOp raPCore raValid
 
 theorem increasing_data {v : DynReservationMap A H} (h : Increasing v) : Increasing v.data where
   increasing w := (h.increasing (mk w ∅)).1
@@ -338,7 +338,7 @@ instance instORADynReservationMap : ORA (DynReservationMap A H) where
     obtain ⟨z₁, z₂, xzz, zy₁, zy₂⟩ := extend (validN_data_of_validN v) exy.left
     refine ⟨mk z₁ y₁.token, mk z₂ y₂.token, eq_dist_2 ?_, ⟨zy₁, rfl⟩, ⟨zy₂, rfl⟩⟩
     exact fun m => ⟨xzz.dist, exy.right⟩
-  toOrdered := orderN
+  toOrdered := raOrdered
   op_monoN_left_ord z h := ⟨op_monoN_left_ord z.data h.1, op_monoN_left_ord z.token h.2⟩
   op_mono_left_ord z h := ⟨op_mono_left_ord z.data h.1, op_mono_left_ord z.token h.2⟩
   validN_of_ordN h := validN_mono (validN_of_ordN h.1)
@@ -362,7 +362,7 @@ instance instORADynReservationMap : ORA (DynReservationMap A H) where
 
 end
 
-instance instAffine [IncOrd A] : IncOrd (DynReservationMap A H) := IncOrd.of_increasing fun v =>
+instance instIncOrd [IncOrd A] : IncOrd (DynReservationMap A H) := IncOrd.of_increasing fun v =>
     increasing_mk (IncOrd.increasing v.data) (IncOrd.increasing v.token)
 
 @[rocq_alias dyn_reservation_mapUR]

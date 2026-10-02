@@ -385,7 +385,7 @@ instance : BI (UPred M) where
   later_sep {_ _} := by
     constructor <;> rintro (_ | n) x ⟨x1, x2, H1, H2, H3⟩
     · exact ⟨unit, x, unit_left_id.dist.to_ordN, trivial, trivial⟩
-    · let ⟨y1, y2, H1', H2', H3'⟩ := op_extend (validN_succ x.property) H1
+    · let ⟨y1, y2, H1', H2', H3'⟩ := op_extend_ord (validN_succ x.property) H1
       exact ⟨y1, y2, H1',
         (uPred_ne (m₁ := ⟨_, _⟩) (m₂ := ⟨_, _⟩) H2').mpr H2,
         (uPred_ne (m₁ := ⟨_, _⟩) (m₂ := ⟨_, _⟩) H3').mpr H3⟩

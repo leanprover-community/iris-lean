@@ -248,7 +248,7 @@ def raOp [ORA α] [ORA β] : Op (Csum α β) where
   valid_iff_validN {x} := by cases x <;> simp [valid_iff_validN]
   validN_succ {x _} h := by grind [validN_succ]
 
-@[reducible] def orderN [ORA α] [ORA β] : Ordered (Csum α β) where
+@[reducible] def raOrdered [ORA α] [ORA β] : Ordered (Csum α β) where
   OrderN := OrderN
   Order := Order
   ordN_ne {n x x' y y'} ex ey h := by
@@ -261,7 +261,7 @@ def raOp [ORA α] [ORA β] : Op (Csum α β) where
 
 section
 variable [ORA α] [ORA β]
-attribute [local instance] raOp raPCore raValid orderN
+attribute [local instance] raOp raPCore raValid raOrdered
 
 theorem increasing_inl_iff {a : α} : Increasing (inl (β := β) a) ↔ Increasing a where
   mp h := ⟨fun a' => h.increasing (inl a')⟩
@@ -294,7 +294,7 @@ instance instORA : ORA (Csum α β) where
          exact ⟨inl z₁, inl z₂, congrArg _ hz, hz₁, hz₂⟩)
       | (obtain ⟨z₁, z₂, hz, hz₁, hz₂⟩ := extend hv he
          exact ⟨inr z₁, inr z₂, congrArg _ hz, hz₁, hz₂⟩)
-  toOrdered := orderN
+  toOrdered := raOrdered
   op_monoN_left_ord {n x y} z h := by
     cases x <;> cases y <;> cases z <;> first | trivial | exact h.elim | exact op_monoN_left_ord _ h
   op_mono_left_ord {x y} z h := by
@@ -371,7 +371,7 @@ end
 instance instOrderRefl [ORA α] [ORA β] [OrderRefl α] [OrderRefl β] : OrderRefl (Csum α β) where
   ord_refl | inl a => ord_refl a | inr b => ord_refl b | invalid => trivial
 
-instance instAffine [ORA α] [ORA β] [IncOrd α] [IncOrd β] : IncOrd (Csum α β) :=
+instance instIncOrd [ORA α] [ORA β] [IncOrd α] [IncOrd β] : IncOrd (Csum α β) :=
   IncOrd.of_increasing fun
     | inl a => increasing_inl_iff.mpr (IncOrd.increasing a)
     | inr b => increasing_inr_iff.mpr (IncOrd.increasing b)

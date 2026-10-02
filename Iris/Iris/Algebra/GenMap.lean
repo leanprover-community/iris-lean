@@ -213,7 +213,7 @@ def pcore_genmap (x : GenMap β) : Option (GenMap β) := some ⟨fun k => core (
   valid_iff_validN {_x} := ⟨fun Hv _ => Hv.validN, fun H => valid_iff_validN.mpr (H ·)⟩
   validN_succ {_x _n} := validN_succ
 
-@[reducible] def GenMap.orderN : Ordered (GenMap β) where
+@[reducible] def GenMap.raOrdered : Ordered (GenMap β) where
   OrderN n x y := x.car ≼ₒ{n} y.car
   Order x y := x.car ≼ₒ y.car
   ordN_ne ex ey h := ordN_ne ex ey h
@@ -223,7 +223,7 @@ def pcore_genmap (x : GenMap β) : Option (GenMap β) := some ⟨fun k => core (
   ordN_of_ord n h := ordN_of_ord n h
 
 section
-attribute [local instance] GenMap.raOp GenMap.raPCore GenMap.raValid GenMap.orderN
+attribute [local instance] GenMap.raOp GenMap.raPCore GenMap.raValid GenMap.raOrdered
 
 @[simp] theorem GenMap.op_car (x y : GenMap β) : (x • y).car = x.car • y.car := rfl
 
@@ -252,7 +252,7 @@ instance instORA_GenMap : ORA (GenMap β) where
     let F k := extend (Hv k) (H k)
     exact ⟨⟨fun k => (F k).1, eb.1⟩, ⟨fun k => (F k).2.1, eb.2⟩,
       OFE.eq_dist_2 fun _ k => ((F k).2.2.1).dist, fun k => (F k).2.2.2.1, fun k => (F k).2.2.2.2⟩
-  toOrdered := GenMap.orderN β
+  toOrdered := GenMap.raOrdered β
   op_monoN_left_ord z h := op_monoN_left_ord z.car h
   op_mono_left_ord z h := op_mono_left_ord z.car h
   validN_of_ordN {_ x y} h v := validN_of_ordN (x := x.car) (y := y.car) h v
@@ -289,7 +289,7 @@ instance instUCMRA_GenMap : UORA (GenMap β) where
 
 instance : IsTotal (GenMap β) := unit_total
 
-instance instAffineGenMap [IncOrd β] : IncOrd (GenMap β) :=
+instance instIncOrdGenMap [IncOrd β] : IncOrd (GenMap β) :=
   IncOrd.of_increasing fun x => GenMap.increasing_of_car β (IncOrd.increasing x.car)
 
 instance instOrdIncGenMap [OrdInc β] : OrdInc (GenMap β) where

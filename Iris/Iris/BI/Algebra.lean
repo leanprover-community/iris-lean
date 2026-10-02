@@ -77,8 +77,8 @@ theorem option_ord_totalI [Sbi PROP] [ORA A] [IncOrd A] [OrderRefl A] {mx my : O
     mx.elim iprop(True) fun x => my.elim iprop(False) fun y => iprop(x ≼ₒ y) := by
   rcases mx with _ | x <;> rcases my with _ | y <;>
     first
-    | exact internalCmraOrder_iff fun _ => by simp [Option.ordN_iff_ordRefl]
-    | exact internalCmraOrder_pure fun _ => by simp [Option.ordN_iff_ordRefl]
+    | exact internalCmraOrder_iff fun _ => by simp [Option.ordN_iff_orderRefl]
+    | exact internalCmraOrder_pure fun _ => by simp [Option.ordN_iff_orderRefl]
 
 @[rocq_alias option_included_totalI]
 theorem option_included_totalI [Sbi PROP] [ORA A] [IsTotal A] {mx my : Option A} :
@@ -96,7 +96,7 @@ theorem Some_included_totalI [Sbi PROP] [ORA A] [IsTotal A] {x y : A} :
 
 theorem some_ordI [Sbi PROP] [ORA A] [OrderRefl A] {x y : A} :
     some x ≼ₒ some y ⊣⊢@{PROP} x ≼ₒ y :=
-  internalCmraOrder_iff fun _ => Option.some_ordN_some_iff_ordRefl
+  internalCmraOrder_iff fun _ => Option.some_ordN_some_iff_orderRefl
 
 theorem some_ordI_none [Sbi PROP] [ORA A] {x : A} : some x ≼ₒ none ⊢@{PROP} False :=
   (internalCmraOrder_pure fun _ => iff_false_intro Option.not_some_ordN_none).mp.trans

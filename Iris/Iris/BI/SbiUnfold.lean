@@ -190,7 +190,8 @@ instance sbiUnfold_included [ORA A] {a b : A} :
 @[rocq_alias sbi_unfold_internal_included]
 instance sbiUnfold_inc [ORA A] {a b : A} :
     SbiUnfold clo (iprop(a ≼ b) : PROP) (fun n => a ≼{n} b) :=
-  .of_closed (fun h hm => incN_le hm h) <| siPure_mono_bi <| biEntails_of_iff fun _ => exists_holds
+  .of_closed (fun h hm => incN_of_incN_le hm h) <|
+    siPure_mono_bi <| biEntails_of_iff fun _ => exists_holds
 
 @[rocq_alias sbi_unfold_si_pure]
 instance sbiUnfold_siPure {Psi : SiProp} [h : SbiUnfold clo Psi Pi] :

@@ -275,7 +275,7 @@ theorem ValidN.pair {n} {x : View R} (Hv : ValidN n x) :
       exact mono_inc Ha.2 .rfl (incN_refl x.frag) n.le_succ
     · exact fun ⟨z, HR⟩ => ⟨z, mono_inc HR .rfl (incN_refl _) n.le_succ⟩
 
-@[reducible] def orderN : Ordered (View R) where
+@[reducible] def raOrdered : Ordered (View R) where
   OrderN n x y := x.auth ≼ₒ{n} y.auth ∧ x.frag ≼ₒ{n} y.frag
   Order x y := x.auth ≼ₒ y.auth ∧ x.frag ≼ₒ y.frag
   ordN_ne ex ey h := ⟨ordN_ne ex.1 ey.1 h.1, ordN_ne ex.2 ey.2 h.2⟩
@@ -285,7 +285,7 @@ theorem ValidN.pair {n} {x : View R} (Hv : ValidN n x) :
   ordN_of_ord n h := ⟨ordN_of_ord n h.1, ordN_of_ord n h.2⟩
 
 section
-attribute [local instance] View.orderN raOp raPCore raValid
+attribute [local instance] View.raOrdered raOp raPCore raValid
 
 omit [IsViewRel R] in
 theorem increasing_auth {v : View R} (h : Increasing v) : Increasing v.auth where
@@ -328,7 +328,7 @@ instance instORA : ORA (View R) where
       with ⟨z1, z2, Hze, Hz1, Hz2⟩
     refine ⟨⟨z1.1, z1.2⟩, ⟨z2.1, z2.2⟩, ?_, Hz1, Hz2⟩
     exact congrArg (fun p => (⟨p.1, p.2⟩ : View R)) Hze
-  toOrdered := View.orderN
+  toOrdered := View.raOrdered
   op_monoN_left_ord z h := ⟨op_monoN_left_ord z.auth h.1, op_monoN_left_ord z.frag h.2⟩
   op_mono_left_ord z h := ⟨op_mono_left_ord z.auth h.1, op_mono_left_ord z.frag h.2⟩
   validN_of_ordN {n x y} h v := by
@@ -378,7 +378,7 @@ instance instUCMRA : UORA (View R) where
   pcore_unit := congrArg some (congrArg (View.mk _) (core_eqv_self unit))
   ord_refl x := ⟨ord_refl x.auth, ord_refl x.frag⟩
 
-instance instAffine [IncOrd B] : IncOrd (View R) := IncOrd.of_increasing fun v =>
+instance instIncOrd [IncOrd B] : IncOrd (View R) := IncOrd.of_increasing fun v =>
     increasing_mk (IncOrd.increasing v.auth) (IncOrd.increasing v.frag)
 
 instance instOrdInc [OrdInc B] : OrdInc (View R) where
