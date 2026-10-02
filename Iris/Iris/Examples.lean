@@ -11,8 +11,3 @@ public import Iris.Examples.IProp
 public import Iris.Examples.Namesets
 public import Iris.Examples.Proofs
 public import Iris.Examples.Resources
-public import Iris.Examples.TransfiniteCounterexamples
-public import Iris.Examples.TransfiniteSimulations
-public import Iris.Examples.TransfiniteInvariants
-public import Iris.Examples.TransfiniteHeapLang
-public import Iris.Examples.Refinements

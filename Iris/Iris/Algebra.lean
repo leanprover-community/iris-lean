@@ -36,7 +36,6 @@ public import Iris.Algebra.OFE
 public import Iris.Algebra.Porting
 public import Iris.Algebra.ReservationMap
 public import Iris.Algebra.StepIndex
-public import Iris.Algebra.StepIndexPair
 public import Iris.Algebra.StepIndexTransfinite
 public import Iris.Algebra.Truncation
 public import Iris.Algebra.UFrac
