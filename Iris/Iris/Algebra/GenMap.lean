@@ -306,6 +306,12 @@ instance instOrdIncGenMap [OrdInc β] : OrdInc (GenMap β) where
 
 instance instIsIncGenMap [IsInc β] : IsInc (GenMap β) := {}
 
+theorem GenMap.singleton_ord_mono {x : Nat} {y y' : β} (h : y ≼ₒ y') :
+    (singleton x y : GenMap β) ≼ₒ singleton x y' := fun x' => by
+  by_cases hx : x' = x
+  · subst hx; rw [singleton_map_in, singleton_map_in]; exact .inr h
+  · rw [singleton_map_none hx, singleton_map_none hx]; trivial
+
 theorem GenMap.alter_valid {g : GenMap β} (Hb : ✓{n} b) (Hg : ✓{n} g) :
     ✓{n} g.alter a b := by
   intro k

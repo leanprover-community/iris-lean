@@ -55,17 +55,15 @@ theorem OFE.validN_transpAp_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) 
     (H : ✓{n} ((transpAp h_fun).mp x)) : ✓{n} x := by
   cases h_fun; cases eq_of_heq h_inst; exact H
 
-theorem OFE.transpAp_ordN_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x y : F₁ T T}
-    (H : x ≼ₒ{n} y) : (transpAp h_fun).mp x ≼ₒ{n} (transpAp h_fun).mp y := by
-  cases h_fun; cases eq_of_heq h_inst; exact H
-
-theorem OFE.transpAp_ord_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x y : F₁ T T}
-    (H : x ≼ₒ y) : (transpAp h_fun).mp x ≼ₒ (transpAp h_fun).mp y := by
-  cases h_fun; cases eq_of_heq h_inst; exact H
-
-theorem OFE.transpAp_increasing_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x : F₁ T T}
-    (H : Increasing x) : Increasing ((transpAp h_fun).mp x) := by
-  cases h_fun; cases eq_of_heq h_inst; exact H
+def OFE.transpApC (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) : F₁ T T -C> F₂ T T where
+  f := (transpAp h_fun).mp
+  ne := ⟨fun _ _ _ h => transpAp_eqv_mp h_fun h_inst h⟩
+  validN := transpAp_validN_mp h_fun h_inst
+  pcore _ := transpAp_pcore_mp h_fun h_inst
+  op _ _ := transpAp_op_mp h_fun h_inst
+  monoN_ord h := by cases h_fun; cases eq_of_heq h_inst; exact h
+  mono_ord h := by cases h_fun; cases eq_of_heq h_inst; exact h
+  increasing h := by cases h_fun; cases eq_of_heq h_inst; exact h
 
 end TranspAp
 
@@ -94,6 +92,12 @@ def ElemG.bundle (E : ElemG GF F) [COFE T] : F.ap T → GF.api E.τ T :=
 
 def ElemG.unbundle (E : ElemG GF F) [COFE T] : GF.api E.τ T → F.ap T :=
   transpAp (E.transpMap T) |>.mp
+
+def ElemG.bundleC (E : ElemG GF F) [COFE T] : F.ap T -C> GF.api E.τ T :=
+  OFE.transpApC (E.transpMap T).symm (E.transpClass T).symm
+
+def ElemG.unbundleC (E : ElemG GF F) [COFE T] : GF.api E.τ T -C> F.ap T :=
+  OFE.transpApC (E.transpMap T) (E.transpClass T)
 
 theorem ElemG.bundle_unbundle (E : ElemG GF F) [COFE T] (x : GF.api E.τ T) :
     E.bundle (E.unbundle x) = x := by simp [bundle, unbundle]
@@ -570,21 +574,11 @@ theorem iOwn_op {a1 a2 : F.ap (IProp GF)} : iOwn γ (a1 • a2) ⊣⊢ iOwn γ a
 theorem iSingleton_ord_mono {γ : GName} {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ₒ a1) :
     iSingleton F γ a2 ≼ₒ iSingleton F γ a1 := by
   have hu : unfoldi (E.bundle a2) ≼ₒ unfoldi (E.bundle a1) :=
-    (RFunctor.map (IProp.fold GF) (IProp.unfold GF)).mono_ord
-      (OFE.transpAp_ord_mp (E.transpMap (F.ap (IProp GF))).symm
-        (E.transpClass (F.ap (IProp GF))).symm H)
+    ((RFunctor.map (IProp.fold GF) (IProp.unfold GF)).comp E.bundleC).mono_ord H
   intro τ'
   simp only [iSingleton]
   split
-  · next h =>
-    subst h
-    intro γ'
-    by_cases hγ : γ' = γ
-    · subst hγ
-      rw [GenMap.singleton_map_in, GenMap.singleton_map_in]
-      exact .inr hu
-    · rw [singleton_map_none hγ, singleton_map_none hγ]
-      trivial
+  · next h => subst h; exact GenMap.singleton_ord_mono _ hu
   · exact ord_refl _
 
 theorem iOwn_ord_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ₒ a1) : iOwn γ a1 ⊢ iOwn γ a2 :=
@@ -1020,30 +1014,14 @@ theorem iResProject_below {z : IResUR GF} {c : F.ap (IProp GF)}
   exact ⟨_, (iSingleton_op_alter hv).symm⟩
 
 theorem iResProject_ord_monoN {n} {x y : IResUR GF} (h : x ≼ₒ{n} y) :
-    iResProject F γ x ≼ₒ{n} iResProject F γ y := by
-  have hγ : (x E.τ).car γ ≼ₒ{n} (y E.τ).car γ := h E.τ γ
-  simp only [iResProject]
-  revert hγ
-  rcases (x E.τ).car γ with _ | u <;> rcases (y E.τ).car γ with _ | v <;> intro hγ
-  · trivial
-  · exact Option.none_ordN_some_iff.mpr <|
-      OFE.transpAp_increasing_mp (E.transpMap (F.ap (IProp GF))) (E.transpClass (F.ap (IProp GF))) <|
-        (RFunctor.map (IProp.unfold GF) (IProp.fold GF)).increasing <|
-          Option.none_ordN_some_iff.mp hγ
-  · exact absurd hγ Option.not_some_ordN_none
-  · refine Option.some_ordN_some_iff.mpr (Option.some_ordN_some_iff.mp hγ |>.imp ?_ ?_)
-    · exact fun e => ElemG.unbundle.ne.ne (foldi.ne.ne e)
-    · exact fun i =>
-        OFE.transpAp_ordN_mp (E.transpMap (F.ap (IProp GF))) (E.transpClass (F.ap (IProp GF))) <|
-          (RFunctor.map (IProp.unfold GF) (IProp.fold GF)).monoN_ord i
+    iResProject F γ x ≼ₒ{n} iResProject F γ y :=
+  (Option.mapC (E.unbundleC.comp (RFunctor.map (IProp.unfold GF) (IProp.fold GF)))).monoN_ord
+    (h E.τ γ)
 
 theorem iResProject_ord_above {z : IResUR GF} {c : F.ap (IProp GF)} :
     iSingleton F γ c ≼ₒ z ⊢@{IProp GF} some c ≼ₒ iResProject F γ z := by
   sbi_unfold
-  intro n h
-  have h2 := iResProject_ord_monoN (F := F) (γ := γ) h
-  rw [iResProject_iSingleton] at h2
-  exact h2
+  exact fun _ h => iResProject_iSingleton (F := F) c ▸ iResProject_ord_monoN h
 
 @[rocq_alias iRes_project_above]
 theorem iResProject_above {z : IResUR GF} {c : F.ap (IProp GF)} :
@@ -1194,22 +1172,17 @@ theorem iOwn_forall_pred_total [OrdInc (F.ap (IProp GF))] [IsTotal (F.ap (IProp 
 theorem iOwn_and_discrete_total [ORA.Discrete (F.ap (IProp GF))] [OrdInc (F.ap (IProp GF))]
     [IsTotal (F.ap (IProp GF))] {a1 a2 c : F.ap (IProp GF)}
     (h : ∀ c', ✓ c' → a1 ≼ c' → a2 ≼ c' → c ≼ c') :
-    (iOwn γ a1 ∧ iOwn γ a2) ⊢ iOwn γ c := by
-  iintro Hown
-  icases iOwn_and_total $$ Hown with ⟨%c', Hown, %Ha1, %Ha2⟩
-  ihave %hv := iOwn_cmraValid $$ Hown
-  iapply iOwn_mono (h c' hv Ha1 Ha2)
-  iexact Hown
+    (iOwn γ a1 ∧ iOwn γ a2) ⊢ iOwn γ c :=
+  iOwn_ord_and_discrete_total fun c' hv h1 h2 =>
+    IncOrd.inc_ord (h c' hv (OrdInc.ord_inc h1) (OrdInc.ord_inc h2))
 
 @[rocq_alias own_and_discrete_total_False]
 theorem iOwn_and_discrete_total_false [ORA.Discrete (F.ap (IProp GF))]
     [OrdInc (F.ap (IProp GF))] [IsTotal (F.ap (IProp GF))] {a1 a2 : F.ap (IProp GF)}
     (h : ∀ c', ✓ c' → a1 ≼ c' → a2 ≼ c' → False) :
-    (iOwn γ a1 ∧ iOwn γ a2) ⊢ False := by
-  iintro Hown
-  icases iOwn_and_total $$ Hown with ⟨%c', Hown, %Ha1, %Ha2⟩
-  ihave %hv := iOwn_cmraValid $$ Hown
-  exact (h c' hv Ha1 Ha2).elim
+    (iOwn γ a1 ∧ iOwn γ a2) ⊢ False :=
+  iOwn_ord_and_discrete_total_false fun c' hv h1 h2 =>
+    h c' hv (OrdInc.ord_inc h1) (OrdInc.ord_inc h2)
 
 end own_forall
 
