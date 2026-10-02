@@ -194,6 +194,7 @@ def synthInstanceCore? (type : Expr) (maxResultSize? : Option Nat := none) :
     transparency := TransparencyMode.instances,
     foApprox := true, ctxApprox := true, constApprox := false,
     univApprox := false }) do
+  withOptions (backward.isDefEq.respectTransparency.instanceSearchTypes.set · false) do
   withInTypeClassResolution do
     let type ← instantiateMVars type
     -- TODO: if it becomes necessary, run whnf under the ∀ quantifiers of type
