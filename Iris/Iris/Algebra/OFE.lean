@@ -389,6 +389,9 @@ instance [OFE α] : OFE (ULift α) where
   eq_dist' {x y} := by cases x; cases y; rw [ULift.up.injEq]; exact eq_dist
   dist_lt := dist_lt
 
+instance [OFE α] [Discrete α] : Discrete (ULift α) where
+  discrete_0 h := congrArg ULift.up (discrete_0 h)
+
 def uliftUpHom [OFE α] : α -n> ULift α where
   f := .up
   ne.1 _ _ _ := id

@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Markus de Medeiros. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
@@ -10,6 +10,7 @@ public import Iris.Algebra.OFE
 public import Iris.Algebra.UPred
 public import Iris.Algebra.GenMap
 public import Iris.Algebra.COFESolver
+public import Iris.Algebra.StepIndexFinite
 public import Init.Data.Vector
 
 @[expose] public section

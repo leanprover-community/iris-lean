@@ -6,6 +6,7 @@ module
 
 public import Iris.Algebra.OFE
 public import Iris.Algebra.COFESolver
+public import Iris.Algebra.StepIndexFinite
 
 @[expose] public section
 local stepindex Nat
