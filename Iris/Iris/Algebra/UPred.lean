@@ -7,6 +7,7 @@ module
 
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.OFE
+public import Iris.Algebra.COFESolver
 
 @[expose] public section
 
@@ -116,7 +117,7 @@ theorem uPred_holds_ne {P Q : UPred M} {n₁ n₂} {x : M}
   (HPQ _ _ SIdx.le_refl Hx).mpr (Q.mono HQ .rfl Hn)
 
 @[rocq_alias uPred_cofe]
-instance [SIdxFinite SI] : IsCOFE (UPred M) where
+instance : IsCOFE (UPred M) where
   compl c := {
     holds n x := ∀ n', (Hle : n' ≤ n) → (c n') n' (x.le Hle)
     mono {n1 n2 x1 x2 HP Hx12 Hn12 n3 Hn23} := by
@@ -127,11 +128,43 @@ instance [SIdxFinite SI] : IsCOFE (UPred M) where
     refine .trans ?_ (c.cauchy Hin _ _ SIdx.le_refl Hv).symm
     refine ⟨fun H => H _ SIdx.le_refl, fun H n' Hn' => ?_⟩
     exact (c.cauchy Hn' _ _ SIdx.le_refl _).mp (mono _ H .rfl Hn')
-  lbcompl := (·.elim)
-  conv_lbcompl := (·.elim)
-  lbcompl_ne := (·.elim)
+  lbcompl {n} _ c := {
+    holds k x := ∀ k', (Hle : k' ≤ k) → (Hlt : k' < n) → (c.bchain k' Hlt) k' (x.le Hle)
+    mono {k1 k2 x1 x2 HP Hx12 Hk12 k Hk Hlt} := by
+      refine mono _ (HP k (SIdx.le_trans Hk Hk12) Hlt) ?_ SIdx.le_refl
+      exact Hx12.le Hk
+  }
+  conv_lbcompl {n} _ c m Hm k x Hk Hv := by
+    refine ⟨fun H => ?_, fun H k' Hk' Hlt => ?_⟩
+    · have Hlt := SIdx.le_lt_trans Hk Hm
+      exact (c.bcauchy Hlt Hm Hk _ _ SIdx.le_refl Hv).mpr (H k SIdx.le_refl Hlt)
+    · refine (c.bcauchy Hlt Hm (SIdx.le_trans Hk' Hk) _ _ SIdx.le_refl _).mp ?_
+      exact mono _ H .rfl Hk'
+  lbcompl_ne _ _ _ _ Hc k x Hk _ :=
+    forall_congr' fun k' => forall_congr' fun Hk' => forall_congr' fun Hlt =>
+      Hc k' Hlt k' x (SIdx.le_trans Hk' Hk) _
 
 #rocq_ignore uPred_compl "Inlined in the `IsCOFE` construction"
+
+def UPred.truncate (K : Enriched.LimitCut SI) : UPred M -n> UPred M where
+  f P := {
+    holds n x := ∀ m, K.mem m → (Hle : m ≤ n) → P m (x.le Hle)
+    mono {n1 n2 x1 x2 HP Hx12 Hn12 m Hm Hle} := by
+      refine P.mono (HP m Hm (SIdx.le_trans Hle Hn12)) ?_ SIdx.le_refl
+      exact Hx12.le Hle
+  }
+  ne.ne _ _ _ HPQ n x Hn _ :=
+    forall_congr' fun m => forall_congr' fun _ => forall_congr' fun Hle =>
+      HPQ m x (SIdx.le_trans Hle Hn) _
+
+def UPred.truncation (K : Enriched.LimitCut SI) : Enriched.COFE.Truncation K (UPred M) where
+  truncate := UPred.truncate K
+  conv P _ HK n _ Hn _ :=
+    ⟨fun H => H n (K.down Hn HK) SIdx.le_refl, fun H _ _ Hle => P.mono H .rfl Hle⟩
+  truncated _ _ HPQ := by
+    ext n x
+    exact forall_congr' fun m => forall_congr' fun Hm => forall_congr' fun _ =>
+      HPQ m Hm m _ SIdx.le_refl _
 
 abbrev UPredOF (F : COFE.OFunctorPre) [URFunctor F] : COFE.OFunctorPre :=
   fun A B _ _ => UPred (F B A)
@@ -174,5 +207,9 @@ instance instUPredOFunctorContractive [URFunctorContractive F] : COFE.OFunctorCo
     refine uPred_ne (P := P) <|
       ((URFunctorContractive.map_contractive.1 (x := (x.snd, x.fst)) (y := (y.snd, y.fst))) ?_ a).le Hmn
     exact fun m Hm => ⟨(HKL m Hm).2, (HKL m Hm).1⟩
+
+instance instUPredOFTruncatable [URFunctorContractive F] :
+    Enriched.Truncatable SI (Enriched.COFE.oFunctorObj (SI := SI) (UPredOF F)) :=
+  Enriched.COFE.truncatableOfTruncations _ fun K _ _ => UPred.truncation K
 
 end UPred

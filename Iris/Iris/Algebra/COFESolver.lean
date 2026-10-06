@@ -182,9 +182,49 @@ instance instHasTowerLimits : HasTowerLimits SI (CofeObj.{v, w} SI) where
   π_comp_lift _ _ _ _ _ _ _ := rfl
   ext_dist _ _ _ _ _ _ h := fun y β hβ => h β hβ y
 
+structure Truncation (K : LimitCut SI) (A : Type _) [OFE A] where
+  truncate : A -n> A
+  conv : ∀ x m, K.mem m → truncate x ≡{m}≡ x
+  truncated : ∀ x y, K.dist x y → truncate x = truncate y
+
+namespace Truncation
+
+variable {K : LimitCut SI} {A : Type _} [COFE A] (t : Truncation K A)
+
+theorem truncate_truncate (x : A) : t.truncate (t.truncate x) = t.truncate x :=
+  t.truncated _ _ fun m hm => t.conv x m hm
+
+def Fixed : Type _ := {x : A // t.truncate x = x}
+
+instance : OFE t.Fixed := inferInstanceAs (OFE {x : A // t.truncate x = x})
+
+def Fixed.proj : A -n> t.Fixed :=
+  ⟨fun x => ⟨t.truncate x, t.truncate_truncate x⟩, ⟨fun _ _ _ h => t.truncate.ne.ne h⟩⟩
+
+def Fixed.inclusion : t.Fixed -n> A := ⟨Subtype.val, ⟨fun _ _ _ h => h⟩⟩
+
+instance : IsCOFE t.Fixed where
+  compl c := Fixed.proj t (COFE.compl (c.map (Fixed.inclusion t)))
+  conv_compl {n c} := by
+    change t.truncate (COFE.compl (c.map (Fixed.inclusion t))) ≡{n}≡ (c n).val
+    rw [← (c n).2]
+    exact (Fixed.proj t).ne.ne (COFE.conv_compl (c := c.map (Fixed.inclusion t)))
+  lbcompl hl c := Fixed.proj t (IsCOFE.lbcompl hl (c.map (Fixed.inclusion t)))
+  conv_lbcompl hl c m hm := by
+    change t.truncate (IsCOFE.lbcompl hl (c.map (Fixed.inclusion t))) ≡{m}≡ (c.bchain m hm).val
+    rw [← (c.bchain m hm).2]
+    exact (Fixed.proj t).ne.ne (IsCOFE.conv_lbcompl hl (c.map (Fixed.inclusion t)) hm)
+  lbcompl_ne hl _ _ _ hc :=
+    (Fixed.proj t).ne.ne (IsCOFE.lbcompl_ne hl _ _ fun p hp => hc p hp)
+
+theorem Fixed.determined : PointsDetermined K t.Fixed := fun x y h =>
+  Subtype.ext (x.2 ▸ y.2 ▸ t.truncated _ _ h)
+
+end Truncation
+
 section Classical
 
-variable (K : LimitCut SI) {A : Type (max v w)} [COFE A]
+variable (K : LimitCut SI) {A : Type _} [COFE A]
 
 noncomputable def classicalRep (x : A) : A := @Classical.epsilon A ⟨x⟩ fun y => K.dist x y
 
@@ -197,43 +237,16 @@ theorem classicalRep_congr {x y : A} (h : K.dist x y) : classicalRep K x = class
   exact funext fun _ => propext ⟨fun hz n hn => (h n hn).symm.trans (hz n hn),
     fun hz n hn => (h n hn).trans (hz n hn)⟩
 
-theorem classicalRep_idem (x : A) : classicalRep K (classicalRep K x) = classicalRep K x :=
-  (classicalRep_congr K (classicalRep_spec K x)).symm
-
-variable (A) in
-def Fixed : Type (max v w) := {x : A // classicalRep K x = x}
-
-instance : OFE (Fixed K A) := inferInstanceAs (OFE {x : A // classicalRep K x = x})
-
-noncomputable def Fixed.proj : A -n> Fixed K A :=
-  ⟨fun x => ⟨classicalRep K x, classicalRep_idem K x⟩, ⟨fun m x y h => by
+noncomputable def classicalTruncation : Truncation K A where
+  truncate := ⟨classicalRep K, ⟨fun m x y h => by
     by_cases hm : K.mem m
     · exact (classicalRep_spec K x m hm).symm.trans (h.trans (classicalRep_spec K y m hm))
-    · refine .of_eq (Subtype.ext (classicalRep_congr K fun n hn => h.le ?_))
+    · refine .of_eq (classicalRep_congr K fun n hn => h.le ?_)
       rcases SIdx.le_total (n := n) (m := m) with h' | h'
       · exact h'
       · exact absurd (K.down h' hn) hm⟩⟩
-
-variable (A) in
-def Fixed.inclusion : Fixed K A -n> A := ⟨Subtype.val, ⟨fun _ _ _ h => h⟩⟩
-
-noncomputable instance : IsCOFE (Fixed K A) where
-  compl c := Fixed.proj K (COFE.compl (c.map (Fixed.inclusion K A)))
-  conv_compl {n c} := by
-    change classicalRep K (COFE.compl (c.map (Fixed.inclusion K A))) ≡{n}≡ (c n).val
-    rw [← (c n).2]
-    exact (Fixed.proj K).ne.ne (COFE.conv_compl (c := c.map (Fixed.inclusion K A)))
-  lbcompl hl c := Fixed.proj K (IsCOFE.lbcompl hl (c.map (Fixed.inclusion K A)))
-  conv_lbcompl hl c m hm := by
-    change classicalRep K (IsCOFE.lbcompl hl (c.map (Fixed.inclusion K A))) ≡{m}≡
-      (c.bchain m hm).val
-    rw [← (c.bchain m hm).2]
-    exact (Fixed.proj K).ne.ne (IsCOFE.conv_lbcompl hl (c.map (Fixed.inclusion K A)) hm)
-  lbcompl_ne hl _ _ _ hc :=
-    (Fixed.proj K).ne.ne (IsCOFE.lbcompl_ne hl _ _ fun p hp => hc p hp)
-
-theorem Fixed.determined : PointsDetermined K (Fixed K A) := fun x y h =>
-  Subtype.ext (x.2 ▸ y.2 ▸ classicalRep_congr K h)
+  conv x m hm := (classicalRep_spec K x m hm).symm
+  truncated _ _ h := classicalRep_congr K h
 
 end Classical
 
@@ -250,16 +263,21 @@ instance instEFunctor : EFunctor SI (oFunctorObj (SI := SI) F) where
   map_id _ _ := OFE.Hom.ext (funext fun x => OFunctor.map_id (F := F) x)
   map_comp f g f' g' := OFE.Hom.ext (funext fun x => OFunctor.map_comp (F := F) f g f' g' x)
 
+@[reducible] def truncatableOfTruncations
+    (t : ∀ (K : LimitCut SI) (A : CofeObj.{v, w} SI), Determined K A → Truncation K (F A.1 A.1)) :
+    Truncatable SI (oFunctorObj (SI := SI) F) where
+  trunc K A hA := ⟨(t K A hA).Fixed, inferInstance⟩
+  proj K A hA := Truncation.Fixed.proj (t K A hA)
+  rep K A hA := Truncation.Fixed.inclusion (t K A hA)
+  proj_rep _ _ _ := OFE.Hom.ext (funext fun y => Subtype.ext y.2)
+  rep_proj K A hA m hm := fun x => (t K A hA).conv x m hm
+  determined _ _ _ := Determined.of_points (Truncation.Fixed.determined _)
+
 /-- Truncations by choice for every functor. Not an instance, so that using choice is explicit:
 enable it with `attribute [local instance] classicalOFunctorTruncatable`. -/
 @[reducible] noncomputable def classicalOFunctorTruncatable :
-    Truncatable SI (oFunctorObj (SI := SI) F) where
-  trunc K A _ := ⟨Fixed K (F A.1 A.1), inferInstance⟩
-  proj K _ _ := Fixed.proj K
-  rep K A _ := Fixed.inclusion K (F A.1 A.1)
-  proj_rep _ _ _ := OFE.Hom.ext (funext fun y => Subtype.ext y.2)
-  rep_proj K _ _ m hm := fun x => (classicalRep_spec K x m hm).symm
-  determined K _ _ := Determined.of_points (Fixed.determined K)
+    Truncatable SI (oFunctorObj (SI := SI) F) :=
+  truncatableOfTruncations F fun K _ _ => classicalTruncation K
 
 instance instHasSeed [Inhabited (F (ULift.{max v w} Unit) (ULift.{max v w} Unit))] :
     HasSeed SI (oFunctorObj (SI := SI) F) where
