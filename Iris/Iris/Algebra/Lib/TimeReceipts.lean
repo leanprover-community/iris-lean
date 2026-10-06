@@ -51,13 +51,13 @@ private instance : IsViewRel viewRel where
 #rocq_ignore time_receipt_view_rel_raw_unit "Defined in the IsViewRel instance"
 
 @[rocq_alias time_receipt_view_rel_exists]
-private theorem viewRel_exists_iff : (∃ a, viewRel n a f) ↔ ✓{n} f :=
+theorem viewRel_exists_iff : (∃ a, viewRel n a f) ↔ ✓{n} f :=
   ⟨fun _ => ⟨trivial, trivial⟩,
    fun _ => ⟨_, f.1, max f.1 f.2.toNat, rfl, Nat.le_max_left .., Nat.le_refl _,
      Nat.le_max_right ..⟩⟩
 
 @[rocq_alias time_receipt_view_rel_unit]
-private theorem viewRel_unit_iff : viewRel n a UCMRA.unit ↔ ✓{n} a :=
+theorem viewRel_unit_iff : viewRel n a UCMRA.unit ↔ ✓{n} a :=
   ⟨fun _ => trivial,
    fun _ => ⟨0, a, (Nat.zero_add a).symm, Nat.zero_le _, Nat.le_refl _,
      Nat.zero_le _⟩⟩

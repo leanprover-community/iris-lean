@@ -783,9 +783,11 @@ theorem step_fupdN_add {n m : Nat} {Eo Ei : CoPset} {P : PROP} :
 @[rocq_alias step_fupdN_S_fupd]
 theorem step_fupdN_S_fupd {n : Nat} {E : CoPset} {P : PROP} :
     (|={E}[∅]▷=>^[n + 1] P) ⊣⊢ (|={E}[∅]▷=>^[n + 1] |={E}=> P) :=
-  step_fupdN_succ_r.trans <|
-    (⟨step_fupdN_mono step_fupd_fupd.1, step_fupdN_mono step_fupd_fupd.2⟩ : _ ⊣⊢ _).trans
-      step_fupdN_succ_r.symm
+  calc
+    _ ⊣⊢ |={E}[∅]▷=>^[n] |={E}[∅]▷=> P := step_fupdN_succ_r
+    _ ⊣⊢ |={E}[∅]▷=>^[n] |={E}[∅]▷=> |={E}=> P :=
+      ⟨step_fupdN_mono step_fupd_fupd.1, step_fupdN_mono step_fupd_fupd.2⟩
+    _ ⊣⊢ _ := step_fupdN_succ_r.symm
 
 @[rocq_alias step_fupd_frame_l]
 theorem step_fupd_frame_left {Eo Ei : CoPset} {R Q : PROP} :

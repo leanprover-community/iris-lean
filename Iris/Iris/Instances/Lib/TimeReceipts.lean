@@ -69,24 +69,20 @@ notation:max "⧖+ " n:40 => excl n
 notation:max "⧖□ " n:40 => pers n
 
 @[rocq_alias time_receipt_excl_timeless]
-instance {n : Nat} : Timeless (PROP := IProp GF) (⧖+ n) := by
-  unfold excl
-  infer_instance
+instance {n : Nat} : Timeless (PROP := IProp GF) (⧖+ n) :=
+  inferInstanceAs (Timeless (iOwn (E := TR.elem) TR.name _))
 
 @[rocq_alias time_receipt_excl_0_persistent]
-instance : Persistent (PROP := IProp GF) (⧖+ 0) := by
-  unfold excl
-  infer_instance
+instance : Persistent (PROP := IProp GF) (⧖+ 0) :=
+  inferInstanceAs (Persistent (iOwn (E := TR.elem) TR.name _))
 
 @[rocq_alias time_receipt_pers_timeless]
-instance {n : Nat} : Timeless (PROP := IProp GF) (⧖□ n) := by
-  unfold pers
-  infer_instance
+instance {n : Nat} : Timeless (PROP := IProp GF) (⧖□ n) :=
+  inferInstanceAs (Timeless (iOwn (E := TR.elem) TR.name _))
 
 @[rocq_alias time_receipt_pers_persistent]
-instance {n : Nat} : Persistent (PROP := IProp GF) (⧖□ n) := by
-  unfold pers
-  infer_instance
+instance {n : Nat} : Persistent (PROP := IProp GF) (⧖□ n) :=
+  inferInstanceAs (Persistent (iOwn (E := TR.elem) TR.name _))
 
 @[rocq_alias time_receipt_excl_split]
 theorem excl_split (n₁ n₂ : Nat) : ⧖+ (n₁ + n₂) ⊣⊢@{IProp GF} ⧖+ n₁ ∗ ⧖+ n₂ :=
