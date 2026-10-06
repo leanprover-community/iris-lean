@@ -360,7 +360,7 @@ theorem to_wp_fupdN_strong {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : 
     iapply to_wp
     iapply strong_mono (Std.IsPreorder.le_refl _) HSub $$ Hwp
     iintro %v HΦ
-    dsimp only [Nat.repeat]
+    dsimp only [step_fupdN]
     imod Hp
     imod lc_zero with Hlc
     imod Hp $$ Hlc with Hp
@@ -377,7 +377,7 @@ theorem to_wp_fupdN_strong {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : 
         grind
       iintro %e₂ %σ₂ %eₜ %Hstep Hcred
       ispecialize Hwp $$ %obs %e₂ %σ₂ %eₜ %Hstep
-      dsimp only [Nat.repeat]
+      dsimp only [step_fupdN]
       imod Hp $$ [Hcred] with Hp
       · iapply lc_weaken (n + 1) (Nat.succ_le_succ Hn) $$ Hcred
       iintro !> !>

@@ -141,6 +141,14 @@ instance {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIUpdateFUpdate (IProp GF)
     imod H; imodintro
     iassumption
 
+@[rocq_alias uPred_bi_bupd_lc]
+instance uPred_bi_bupd_lc {GF : BundledGFunctors} [LcGS hlc GF] : BIBUpdLaterCredits (IProp GF) where
+  lc_zero := by
+    rw [uPred_lc_unseal]
+    cases hlc with
+    | hasNoLC => simp only [uPred_lc]; itrivial
+    | hasLC => exact iOwn_unit (ε := UCMRA.unit)
+
 end Instances
 
 section LaterCreditLemmas
@@ -154,51 +162,15 @@ theorem fupd_unfold_no_lc [Hi : InvGS_gen .hasNoLC GF] E1 E2 (P : IProp GF) :
 
 variable {GF : BundledGFunctors} [InvGS GF]
 
-@[rocq_alias lc_fupd_elim_later]
-theorem lc_fupd_elim_later {E : CoPset} {P : IProp GF} : ⊢ £ 1 -∗ (▷ P) -∗ |={E}=> P := by
-  iintro Hcr HP
-  simp only [fupd, uPred_fupd]
-  iintro ⟨Hwsat, HE⟩
-  iapply le_upd_later $$ Hcr
-  inext
-  iframe
-
-@[rocq_alias lc_fupd_add_later]
-theorem lc_fupd_add_later {E1 E2 : CoPset} {P : IProp GF} : ⊢ £ 1 -∗ (▷ |={E1, E2}=>P) -∗ |={E1, E2}=> P := by
-  iintro Hf Hupd
-  iapply (BIFUpdate.trans (E1 := E1) (E2 := E1))
-  iapply lc_fupd_elim_later $$ Hf Hupd
-
-@[rocq_alias lc_fupd_add_laterN]
-theorem lc_fupd_add_laterN (n : Nat) {E : CoPset} {P : IProp GF} :
-    ⊢ £ n -∗ (▷^[n] |={E}=> P) -∗ |={E}=> P := by
-  iintro Hf Hupd
-  iinduction n with
-  | zero =>
-    dsimp only [BIBase.laterN, Nat.repeat]
-    iexact Hupd
-  | succ n IH =>
-    icases Hf with ⟨H1, Hf⟩
-    iapply lc_fupd_add_later $$ H1
+@[rocq_alias uPred_bi_fupd_lc]
+instance uPred_bi_fupd_lc : BIFUpdLaterCredits (IProp GF) where
+  lc_fupd_elim_later {E P} := by
+    iintro Hcr HP
+    simp only [fupd, uPred_fupd]
+    iintro ⟨Hwsat, HE⟩
+    iapply le_upd_later $$ Hcr
     inext
-    iapply IH $$ [$] [$]
-
-@[rocq_alias lc_fupd_add_step_fupdN]
-theorem lc_fupd_add_step_fupdN (E1 E2 E3 : CoPset) (P : IProp GF) (n : Nat) :
-    £ n -∗ (|={E1}[E2]▷=>^[n] |={E1,E3}=> P) -∗ |={E1,E3}=> P := by
-  iintro Hf Hupd
-  iinduction n with
-  | zero =>
-    simp only [Nat.repeat]
-    iexact Hupd
-  | succ n IH =>
-    simp only [Nat.repeat]
-    imod Hupd
-    icases Hf with ⟨H1, Hf⟩
-    iapply lc_fupd_add_later $$ H1
-    inext
-    imod Hupd
-    iapply IH $$ [$] [$]
+    iframe
 
 end LaterCreditLemmas
 
@@ -413,10 +385,10 @@ theorem step_fupdN_fupd_finally (E1 E2 : CoPset) (n : Nat) (P : IProp GF) :
   iintro HP
   iinduction n with
   | zero =>
-    simp only [Nat.repeat]
+    simp only [step_fupdN]
     exact fupd_finally_mono except0_intro
   | succ n IH =>
-    simp only [Nat.repeat]
+    simp only [step_fupdN]
     imod HP
     iapply fupd_finally_mono (laterN_succ_left n).mpr
     iapply fupd_finally_mono (later_mono (laterN_mono n except0_idem.mp))
@@ -591,119 +563,5 @@ end StepIndexed
 
 end Iris
 
-public section
-
-open Lean Tactic Meta Qq Iris BI ProofMode
-
-@[rocq_alias tac_lc_add_laterN_split]
-theorem tac_lc_add_laterN_split {GF : BundledGFunctors} [InvGS GF]
-    {φ : Prop} {n m newM : Nat} {stuck : Bool} {E : CoPset}
-    {e P R Q goal : IProp GF}
-    (heq : e ⊣⊢ P ∗ £ m)
-    (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
-    (hc : NatCancel m n newM 0 stuck)
-    (hR : P ∗ £ newM ⊣⊢ R) (h2 : R ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
-    e ⊢ goal := by
-  have hm : m = n + newM := by have := hc.nat_cancel; omega
-  subst hm
-  refine heq.mp.trans ?_
-  iintro ⟨HP, Hcred⟩
-  iapply inst.elim_modal hφ
-  isplitl
-  · icases lc_split.mp $$ Hcred with ⟨Hn, Hm⟩
-    icombine HP Hm as H
-    ihave H := (hR.mp.trans h2) $$ H
-    iapply lc_fupd_add_laterN n $$ Hn
-    inext
-    imodintro
-    iapply h3 $$ H
-  · iintro _ //
-
-theorem tac_lc_add_laterN_full {GF : BundledGFunctors} [InvGS GF]
-    {φ : Prop} {n m : Nat} {stuck : Bool} {E : CoPset}
-    {e P Q goal : IProp GF}
-    (heq : e ⊣⊢ P ∗ £ m)
-    (inst : ElimModal φ false .in false iprop(|={E}=> goal) goal goal goal) (hφ : φ)
-    (hc : NatCancel m n 0 0 stuck)
-    (h2 : P ⊢ ▷^[n] Q) (h3 : Q ⊢ goal) :
-    e ⊢ goal :=
-  tac_lc_add_laterN_split heq inst hφ hc .rfl (sep_elim_left.trans h2) h3
-
-public meta section
-
-/-- The `ElimModal` instance shape needed to eliminate a fancy update at the goal. -/
-abbrev ElimFUpdGoal (GF : BundledGFunctors) [InvGS GF]
-    (φ : Prop) (E : CoPset) (goal Q : IProp GF) : Prop :=
-  ElimModal φ false .in false iprop(|={E}=> goal) goal goal Q
-
-elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
-  let n : Q(Nat) ← match t with
-  | none => pure <| mkNatLit 1
-  | some t => do
-    let n ← Lean.Elab.Term.elabTermEnsuringType t q(Nat)
-    Lean.Elab.Term.synthesizeSyntheticMVarsNoPostponing
-    instantiateMVars n
-
-  ProofModeM.runTactic `inext fun mvar { u, prop, bi, e, hyps, goal, .. } => do
-    -- Search for the later credit hypothesis from the context
-    let ivar ← hyps.findWithInfo h
-    let some ⟨name, _, p, ty⟩ := hyps.getDecl? ivar
-      | throwError m!"inext: unknown hypothesis {h}"
-    if isTrue p then throwError "inext: {h} is not in the spatial context"
-    -- We use direct `Expr` manipulation here and below since `Qq` makes compiling this function very slow
-    --- see https://github.com/leanprover-community/iris-lean/pull/633
-    let some #[_, _, _, c] := Expr.appM? ty ``lc
-      | throwError m!"inext: {h} is not a spatial later credit hypothesis"
-    let some #[GF] := Expr.appM? prop ``IProp
-      | throwError "inext: the goal must be an `IProp`"
-    let ⟨e', hyps', _, _, _, _, pfEq⟩ := hyps.remove false ivar
-    let .some instInvGS ← trySynthInstance (mkApp (.const ``InvGS []) GF)
-      | throwError "inext: requires an InvGS (HasLC) context"
-
-    let φ ← mkFreshExprMVarQ q(Prop)
-    let E ← mkFreshExprMVarQ q(CoPset)
-    let Q' ← mkFreshExprMVarQ q($prop)
-    let elimTy := mkAppN (.const ``ElimFUpdGoal []) #[GF, instInvGS, φ, E, goal, Q']
-    let .some ⟨inst, _⟩ ← ProofMode.trySynthInstance elimTy
-    | throwError "inext: ElimModal type class synthesis failed with {goal}"
-    unless ← isDefEq Q' goal do
-      throwError "inext: eliminating the fancy update does not preserve the goal {goal}"
-
-    let hφ ← iSolveSidecondition q($φ)
-
-    let newC ← mkFreshExprMVarQ q(Nat)
-    let newN ← mkFreshExprMVarQ q(Nat)
-    let stuck ← mkFreshExprMVarQ q(Bool)
-    have c : Q(Nat) := c
-    let some hcancel ← ProofModeM.trySynthInstanceQ q(NatCancel $c $n $newC $newN $stuck)
-      | throwError "inext: unable to cancel {n} later credits from {c}"
-    unless ← isDefEq newN q(0) do
-      throwError "inext: insufficient credits"
-
-    have modality : Q(@Modality $prop $prop $bi $bi) :=
-      mkAppN (.const ``modality_laterN [u]) #[prop, n, bi]
-
-    let newC : Q(Nat) ← instantiateMVars newC
-    match newC.nat? with
-    -- Later credits used up, discard the later credits hypothesis
-    | some 0 =>
-      let ⟨eQ, newHyps', pfModAction⟩ ← iModAction hyps' modality
-      let pf ← addBIGoal newHyps' goal
-      mvar.assign <| mkAppN (.const ``tac_lc_add_laterN_full [])
-        #[GF, instInvGS, φ, n, c, stuck, E,
-          e, e', eQ, goal, pfEq, inst, hφ, hcancel, pfModAction, pf]
-    -- Update the later credits hypothesis and introduce it into the context
-    | _ =>
-      let newTy := mkApp ty.appFn! newC
-      let ⟨eAdd, newHyps, pfNewHyps⟩ := Hyps.add _ name ivar q(false) newTy hyps'
-      let ⟨eQ, newHyps', pfModAction⟩ ← iModAction newHyps modality
-      let pf ← addBIGoal newHyps' goal
-      mvar.assign <| mkAppN (.const ``tac_lc_add_laterN_split [])
-        #[GF, instInvGS, φ, n, c, newC, stuck, E,
-          e, e', eAdd, eQ, goal, pfEq, inst, hφ, hcancel, pfNewHyps, pfModAction, pf]
-
-end
-
-end
 
 end

@@ -16,6 +16,7 @@ public import Iris.BI.Embedding
 public import Iris.BI.Extensions
 public import Iris.BI.Instances
 public import Iris.BI.InternalEq
+public import Iris.BI.LaterCredits
 public import Iris.BI.MonPred
 public import Iris.BI.Notation
 public import Iris.BI.Plainly
