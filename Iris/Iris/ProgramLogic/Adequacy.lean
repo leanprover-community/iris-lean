@@ -126,7 +126,7 @@ theorem wptp_preservation (s : Stuckness) (n : Nat) (es1 es2 : List Expr)
   induction Hsteps generalizing nt κs' Φs ns es1 σ1 es2 σ2 with
   | refl ρ =>
     cases hρ1; cases hρ2
-    simp only [Nat.zero_add, List.nil_append, steps_sum, Nat.repeat]
+    simp only [Nat.zero_add, List.nil_append, steps_sum, step_fupdN]
     iintro Hσ _ Hwptp
     iapply fupd_mask_intro empty_subset
     iintro Hcl; imod Hcl; imodintro
@@ -139,7 +139,7 @@ theorem wptp_preservation (s : Stuckness) (n : Nat) (es1 es2 : List Expr)
     cases ρ_mid with | mk e_mid σ_mid =>
     rw [List.append_assoc obs obs' κs']
     dsimp only [steps_sum]
-    rw [Nat.repeat_add]
+    rw [step_fupdN_add.to_eq]
     iintro Hσ ⟨Hcred1, Hcred2⟩ Hwptp
     icases wptp_step s es1 e_mid obs (obs' ++ κs') σ1 σ_mid ns Φs nt hstep
             $$ Hσ Hcred1 Hwptp with ⟨%nt'_step, >Hwptp_step⟩

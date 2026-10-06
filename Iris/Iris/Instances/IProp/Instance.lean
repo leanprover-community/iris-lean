@@ -543,7 +543,7 @@ theorem later_internalEq_iSingleton {a : F.ap (IProp GF)} {r : IResUR GF} :
 
 end iSingleton
 
-@[rocq_alias own]
+@[rocq_alias own, irreducible]
 def iOwn {GF F} [RFunctorContractive F] [RFunctorAffine F] [E : ElemG GF F] (γ : GName)
     (v : F.ap (IProp GF)) : IProp GF :=
   UPred.ownM <| iSingleton F γ v
@@ -581,16 +581,18 @@ theorem iSingleton_ord_mono {γ : GName} {a1 a2 : F.ap (IProp GF)} (H : a2 ≼�
   · next h => subst h; exact GenMap.singleton_ord_mono _ hu
   · exact ord_refl _
 
-theorem iOwn_ord_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ₒ a1) : iOwn γ a1 ⊢ iOwn γ a2 :=
-  UPred.ownM_ord_mono (iSingleton_ord_mono H)
+theorem iOwn_ord_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ₒ a1) : iOwn γ a1 ⊢ iOwn γ a2 := by
+  unfold iOwn
+  exact UPred.ownM_ord_mono (iSingleton_ord_mono H)
 
 @[rocq_alias own_mono]
 theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ a1) : iOwn γ a1 ⊢ iOwn γ a2 :=
   iOwn_ord_mono (IncOrd.inc_ord H)
 
 @[rocq_alias own_valid]
-theorem iOwn_cmraValid {a : F.ap (IProp GF)} : iOwn γ a ⊢ ✓ a :=
-  (UPred.ownM_valid _).trans iSingleton_cmraValid
+theorem iOwn_cmraValid {a : F.ap (IProp GF)} : iOwn γ a ⊢ ✓ a := by
+  unfold iOwn
+  exact (UPred.ownM_valid _).trans iSingleton_cmraValid
 
 @[rocq_alias own_valid_2]
 theorem iOwn_cmraValid_op {a1 a2 : F.ap (IProp GF)} :
@@ -613,8 +615,9 @@ instance {a : F.ap (IProp GF)} [CoreId a] : BI.Persistent (iOwn γ a) where
     rw [core_eqv_self]
 
 @[rocq_alias own_timeless]
-instance iOwn_timeless {a : F.ap (IProp GF)} [OFE.DiscreteE a] : BI.Timeless (iOwn γ a) :=
-  _root_.UPred.ownM_timeless (iSingleton F γ a)
+instance iOwn_timeless {a : F.ap (IProp GF)} [OFE.DiscreteE a] : BI.Timeless (iOwn γ a) := by
+  unfold iOwn
+  exact _root_.UPred.ownM_timeless (iSingleton F γ a)
 
 @[rocq_alias later_own]
 theorem later_iOwn {a : F.ap (IProp GF)} : ▷ iOwn γ a ⊢ ◇ ∃ b, iOwn γ b ∧ ▷ (a ≡ b) := by
@@ -802,6 +805,7 @@ theorem singleton_updateP {a : F.ap (IProp GF)} (Hupd : a ~~>: P) :
 
 @[rocq_alias own.own_updateP]
 theorem iOwn_updateP {P γ a} (Hupd : a ~~>: P) : iOwn γ a ⊢ |==> ∃ a' : F.ap (IProp GF), ⌜P a'⌝ ∗ iOwn γ a' := by
+  unfold iOwn
   refine .trans (Q := iprop(|==> ∃ m, ⌜ ∃ a', m = (iSingleton F γ a') ∧ P a' ⌝ ∧ UPred.ownM m)) ?_ ?_
   · apply UPred.bupd_ownM_updateP
     apply singleton_updateP Hupd

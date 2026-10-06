@@ -13,6 +13,7 @@ public import Iris.BI.Extensions
 public import Iris.BI.Classes
 public import Iris.BI.Embedding
 public import Iris.BI.Updates
+public import Iris.BI.LaterCredits
 public import Iris.BI.Plainly
 public import Iris.BI.Sbi
 public import Iris.BI.BigOp.BigOp
@@ -1046,6 +1047,51 @@ instance bupd_objective [BIUpdate PROP] (P : MonPred I PROP) [Objective P] :
 instance fupd_objective [BIFUpdate PROP] (E1 E2 : CoPset) (P : MonPred I PROP) [Objective P] :
     Objective iprop(|={E1,E2}=> P) where
   objective_at i j := BIFUpdate.mono (Objective.objective_at i j)
+
+/-! ### Later credits -/
+
+section LaterCredits
+
+variable [BILaterCredits PROP]
+
+@[rocq_alias monPred_defs.monPred_lc]
+def lc (n : Nat) : MonPred I PROP := MonPred.mk (fun _ => £ n) fun _ => .rfl
+
+#rocq_ignore monPred_defs.monPred_lc_def "Not needed"
+#rocq_ignore monPred_defs.monPred_lc_aux "Not needed"
+#rocq_ignore monPred_defs.monPred_lc_unseal "Not needed"
+#rocq_ignore monPred_lc_unseal "Not needed"
+
+@[rocq_alias monPred_bi_lc]
+instance monPred_bi_lc : BILaterCredits (MonPred I PROP) where
+  lc := MonPred.lc
+  lc_split := ⟨entails_at.mpr fun _ => lc_split.mp, entails_at.mpr fun _ => lc_split.mpr⟩
+  lc_timeless n := ⟨entails_at.mpr fun _ => (lc_timeless n).timeless⟩
+  lc_0_persistent := ⟨entails_at.mpr fun _ => lc_0_persistent.persistent⟩
+  lc_affine n := ⟨entails_at.mpr fun _ => (lc_affine n).affine⟩
+
+#rocq_ignore monPred_lc_mixin "Subsumed by the BILaterCredits instance."
+
+@[rocq_alias monPred_at_lc]
+theorem monPred_at_lc (i : I) (n : Nat) :
+  (lc (PROP := MonPred I PROP) n).monPred_at i ⊣⊢ £ n := .rfl
+
+@[rocq_alias lc_objective]
+instance lc_objective (n : Nat) : Objective (I := I) (PROP := PROP) (£ n) where
+  objective_at _ _ := .rfl
+
+@[rocq_alias monPred_bi_bupd_lc]
+instance monPred_bi_bupd_lc [BIUpdate PROP] [BIBUpdLaterCredits PROP] :
+    BIBUpdLaterCredits (MonPred I PROP) where
+  lc_zero := entails_at.mpr fun _ => lc_zero
+
+@[rocq_alias monPred_bi_fupd_lc]
+instance monPred_bi_fupd_lc [BIFUpdate PROP] [BIFUpdLaterCredits PROP] :
+    BIFUpdLaterCredits (MonPred I PROP) where
+  lc_fupd_elim_later := entails_wand <| wand_intro <|
+    entails_at.mpr fun _ => wand_elim (wand_entails lc_fupd_elim_later)
+
+end LaterCredits
 
 /-! ### The `objectively` modality -/
 

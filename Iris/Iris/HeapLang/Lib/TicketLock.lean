@@ -51,7 +51,7 @@ def release : Val := hl_val%
 abbrev Tickets := Std.ExtTreeSet Nat compare
 
 /-- The ticket now being served, together with the set of tickets handed out so far. -/
-abbrev TicketR := Auth (Option (Excl (DiscreteO Nat)) × DisjointLeibnizSet Tickets)
+abbrev TicketR := Auth (Option (Excl Unit) × DisjointLeibnizSet Tickets)
 
 abbrev TicketLockF : COFE.OFunctorPre := constOF TicketR
 
@@ -74,11 +74,11 @@ def ticketLockN : Namespace := nroot .@ "ticket_lock"
 
 abbrev own (γ : GName) (a : TicketR) : IProp GF := iOwn (F := TicketLockF) γ a
 
-/-- The authority: ticket `o` is being served, and tickets `0, …, n - 1` have been handed out. -/
-abbrev auth (o n : Nat) : TicketR := ● (some (excl ⟨o⟩), .valid (setSeq 0 n))
+/-- The authority: tickets `0, …, n - 1` have been handed out. -/
+abbrev auth (n : Nat) : TicketR := ● (some (excl ()), .valid (setSeq 0 n))
 
-/-- The right to enter the critical section, held by whoever drew ticket `o`. -/
-abbrev owner (o : Nat) : TicketR := ◯ (some (excl ⟨o⟩), ∅)
+/-- The right to enter the critical section, held by whoever is being served. -/
+abbrev owner : TicketR := ◯ (some (excl ()), ∅)
 
 /-- Ticket `x` has been handed out. -/
 abbrev ticket (x : Nat) : TicketR := ◯ (none, .valid {x})
@@ -86,8 +86,8 @@ abbrev ticket (x : Nat) : TicketR := ◯ (none, .valid {x})
 @[rocq_alias heap_lang.ticket_lock.lock_inv]
 def lockInv (γ : GName) (lo ln : Loc) (R : IProp GF) : IProp GF := iprop(
   ∃ o n : Nat,
-    lo ↦ some hl_val(#o) ∗ ln ↦ some hl_val(#n) ∗ own γ (auth o n) ∗
-    (own γ (owner o) ∗ R ∨ own γ (ticket o)))
+    lo ↦ some hl_val(#o) ∗ ln ↦ some hl_val(#n) ∗ own γ (auth n) ∗
+    (own γ owner ∗ R ∨ own γ (ticket o)))
 
 @[rocq_alias heap_lang.ticket_lock.is_lock]
 def isLock (γ : GName) (lk : Val) (R : IProp GF) : IProp GF := iprop(
@@ -97,12 +97,12 @@ def isLock (γ : GName) (lk : Val) (R : IProp GF) : IProp GF := iprop(
 def issued (γ : GName) (x : Nat) : IProp GF := own γ (ticket x)
 
 @[rocq_alias heap_lang.ticket_lock.locked]
-def locked (γ : GName) : IProp GF := iprop(∃ o : Nat, own γ (owner o))
+def locked (γ : GName) : IProp GF := own γ owner
 
 instance instIsLockPersistent (γ : GName) (lk : Val) (R : IProp GF) :
     Persistent (isLock γ lk R) := by unfold isLock; infer_instance
 
-instance instOwnerTimeless (γ : GName) (o : Nat) : Timeless (own (GF := GF) γ (owner o)) :=
+instance instOwnerTimeless (γ : GName) : Timeless (own (GF := GF) γ owner) :=
   iOwn_timeless
 
 instance instLockedTimeless (γ : GName) : Timeless (locked (GF := GF) γ) := by
@@ -116,8 +116,8 @@ private theorem own_op_valid {γ : GName} {a₁ a₂ : TicketR} :
   iOwn_cmraValid_op.trans (internalCmraValid_discrete (A := TicketR)).mp
 
 /-- Only one thread at a time holds the right to enter the critical section. -/
-private theorem own_owner_exclusive {γ : GName} {o₁ o₂ : Nat} :
-    own (GF := GF) γ (owner o₁) ∗ own γ (owner o₂) ⊢ False :=
+private theorem own_owner_exclusive {γ : GName} :
+    own (GF := GF) γ owner ∗ own γ owner ⊢ False :=
   pure_elim _ own_op_valid fun h => (Auth.frag_op_valid.mp h).1.elim
 
 /-- A ticket is handed out at most once. -/
@@ -126,16 +126,10 @@ private theorem own_ticket_exclusive {γ : GName} {x : Nat} :
   pure_elim _ own_op_valid fun h => (disjoint_singleton_left.mp
     (valid_op_iff_disj.mp (Auth.frag_op_valid.mp h).2) (mem_singleton.mpr rfl)).elim
 
-/-- The authority agrees with the holder of the right to enter the critical section. -/
-private theorem own_owner_agree {γ : GName} {o o' n : Nat} :
-    own (GF := GF) γ (auth o n) ∗ own γ (owner o') ⊢ ⌜o' = o⌝ :=
-  own_op_valid.trans (pure_mono fun h =>
-    DiscreteO.eqv_inj (excl_included.mp (Prod.inc_def.mp (Auth.auth_both_valid_discrete.mp h).1).1))
-
 @[rocq_alias heap_lang.ticket_lock.locked_exclusive]
 theorem locked_exclusive (γ : GName) : locked γ ∗ locked γ ⊢@{IProp GF} False := by
   unfold locked
-  iintro ⟨⟨%o₁, H₁⟩, ⟨%o₂, H₂⟩⟩
+  iintro ⟨H₁, H₂⟩
   iapply own_owner_exclusive $$ [$H₁ $H₂]
 
 /-! ## The lock invariant -/
@@ -169,7 +163,7 @@ theorem newlock_spec :
   wp_rec
   wp_alloc ln with Hln
   wp_alloc lo with Hlo
-  imod iOwn_alloc (F := TicketLockF) ((auth 0 0 : TicketR) • owner 0) with
+  imod iOwn_alloc (F := TicketLockF) ((auth 0 : TicketR) • owner) with
     ⟨%γ, ⟨Hauth, Howner⟩⟩
   · exact Auth.auth_both_valid_2 ⟨trivial, trivial⟩ (inc_refl _)
   wp_pures
@@ -235,7 +229,7 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   iinv Hinv with ⟨%o', %n', >Hlo, >Hln, >Hauth, Hstate⟩ Hclose
   wp_cmpxchg with hsuc hfail
   · obtain rfl : n' = n := by simp only [Val.lit.injEq, BaseLit.int.injEq] at hsuc; omega
-    imod iOwn_update (a' := (auth o' (n' + 1) : TicketR) • ticket n') $$ Hauth
+    imod iOwn_update (a' := (auth (n' + 1) : TicketR) • ticket n') $$ Hauth
       with ⟨Hauth, Hissued⟩
     · refine Auth.auth_update_alloc ?_
       rw [setSeq_succ, Nat.zero_add]
@@ -260,28 +254,20 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
 theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
     {{ isLock γ lk R ∗ locked γ ∗ R }} hl(&release &lk) {{ RET hl_val(#()); True }} := by
   unfold isLock locked lockInv
-  iintro %Φ ⟨⟨%lo, %ln, %rfl, #Hinv⟩, ⟨%o, Howner⟩, HR⟩ Hcont
+  iintro %Φ ⟨⟨%lo, %ln, %rfl, #Hinv⟩, Howner, HR⟩ Hcont
   wp_rec
   wp_pures
   wp_bind !_
-  iinv Hinv with ⟨%o', %n, >Hlo, >Hln, >Hauth, Hstate⟩ Hclose
+  iinv Hinv with ⟨%o, %n, >Hlo, >Hln, >Hauth, Hstate⟩ Hclose
   wp_load
-  ihave %rfl := own_owner_agree $$ [$Hauth $Howner]
   imod Hclose $$ [$Hlo $Hln $Hauth $Hstate] with -
   imodintro
   wp_pures
   iapply wp_fupd
   iinv Hinv with ⟨%o', %n', >Hlo, >Hln, >Hauth, Hstate⟩ Hclose
   wp_store
-  ihave %rfl := own_owner_agree $$ [$Hauth $Howner]
   icases Hstate with (⟨Howner', -⟩ | Hissued)
   · iexfalso; iapply own_owner_exclusive $$ [$Howner $Howner']
-  imod iOwn_update (F := TicketLockF) (a := (auth o n' : TicketR) • owner o)
-      (a' := (auth (o + 1) n' : TicketR) • owner (o + 1)) $$ [Hauth Howner]
-      with ⟨Hauth, Howner⟩
-  · exact Auth.auth_update
-      (LocalUpdate.prod_1 _ _ (LocalUpdate.option (LocalUpdate.exclusive trivial)))
-  · iapply iOwn_op.mpr; iframe
   imod Hclose $$ [Hlo Hln Hauth Howner HR] with -
   · iexists o + 1, n'
     rw [Int.natCast_succ]

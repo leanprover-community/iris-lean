@@ -174,7 +174,7 @@ theorem wp_rec {f x : Binder} {e : Exp} {vf v : Val}
     ⊢ WP hl(&vf &v) @ s; E {{ Φ }} := by
   iintro Hwp; subst h
   iapply wp_pure_step_fupd (Hφ := True.intro)
-  dsimp only [Nat.repeat]
+  dsimp only [step_fupdN]
   iintro !> !> !> -; iframe
 
 @[rocq_alias heap_lang.wp_fork_fupd]

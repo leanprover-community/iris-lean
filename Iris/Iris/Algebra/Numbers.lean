@@ -364,6 +364,8 @@ scoped instance : CoreId (a : MaxNat) := OrdCommMonoidLike.instCoreId _
 theorem MaxNat.ord_iff {a b : MaxNat} : a ≼ₒ b ↔ a ≤ b := by
   grind [OrdCommMonoidLike.ord_iff, eq_toNat]
 
+theorem MaxNat.toNat_op (a b : MaxNat) : (a • b).toNat = Max.max a.toNat b.toNat := rfl
+
 @[rocq_alias max_nat_included]
 theorem MaxNat.inc_iff {a b : MaxNat} : a ≼ b ↔ a ≤ b := inc_iff_ord.trans ord_iff
 

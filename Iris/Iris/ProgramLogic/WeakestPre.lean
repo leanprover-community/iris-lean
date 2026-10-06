@@ -214,7 +214,7 @@ theorem wp_strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : V
       ipureintro
       grind [cases Stuckness]
     · iintro %e₂ %σ₂ %eₜ #hstep hc
-      dsimp only [Nat.repeat]
+      dsimp only [step_fupdN]
       imod H $$ hstep hc with H
       iintro !> !>; imod H; iintro !>
       iapply step_fupdN_wand $$ H
@@ -333,7 +333,7 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P : IProp
   ihave Hc := lc_weaken _ (Htri m k) $$ Hc
   icases lc_split $$ Hc with ⟨Hm, Hk⟩
   icombine Hm Hone as Hm
-  dsimp only [Nat.repeat]
+  dsimp only [step_fupdN]
   ihave Hwp := Hwp $$ [//] [Hm]
   · simp [lc_split.to_eq]; itrivial
   iapply step_fupd_wand $$ Hwp; iintro Hwp
@@ -357,7 +357,7 @@ theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IP
     iintro ⟨-, ⟨Hp, Hwp⟩⟩
     iapply wp_strong_mono (Std.IsPreorder.le_refl s) E2_E1 $$ Hwp
     iintro %v H
-    dsimp only [Nat.repeat]
+    dsimp only [step_fupdN]
     imod Hp
     imod Hp
     iapply H $$ Hp
@@ -368,7 +368,7 @@ theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IP
     by_cases Hn : n ≤ ι.numLatersPerStep ns
     · icases H with ⟨-, ⟨Hp, Hwp⟩⟩
       imod Hp
-      dsimp only [Nat.repeat]
+      dsimp only [step_fupdN]
       imod Hwp $$ Hσ₁ with ⟨$, H⟩
       iintro !> %e₂ %σ₂ %efs %Hstep Hcred
       icases H $$ %_ %_ %_ %Hstep Hcred with H
@@ -381,7 +381,7 @@ theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IP
       | zero =>
         iapply step_fupdN_wand $$ H
         iintro >⟨$, Hwp, $⟩
-        dsimp only [Nat.repeat]
+        dsimp only [step_fupdN]
         imod Hp
         imodintro
         iapply wp_strong_mono (Std.IsPreorder.le_refl s) E2_E1 $$ Hwp
@@ -389,7 +389,7 @@ theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IP
         iapply HΦ $$ Hp
       | succ n IH =>
         obtain ⟨n0, rfl⟩ : ∃ n0', n0 = n0' + 1 := by cases n0 <;> grind
-        dsimp only [Nat.repeat]
+        dsimp only [step_fupdN]
         imod Hp; imod H; imodintro; imodintro; imod Hp; imod H; imodintro
         -- TODO: remove this once we have iinduction
         unfold ProofMode.Entails' at IH
@@ -416,7 +416,7 @@ theorem wp_bind_iff (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness
   | none =>
     rw [wp_unfold.to_eq]
     dsimp only
-    simp only [wp.pre, κ.toVal_eq_none_fill h, Nat.repeat]
+    simp only [wp.pre, κ.toVal_eq_none_fill h, step_fupdN]
     isplit <;>
     (iintro H %σ₁ %step %obs %obs' %n Hσ; imod H $$ [$] with ⟨%_, H⟩; imodintro; isplit)
     · ipureintro; grind only [cases Stuckness, Language.Context.reducible_fill]
@@ -544,7 +544,7 @@ theorem wp_step_fupd {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : IProp 
     iapply fupd_mask_intro_discard LawfulSet.empty_subset $$ [HR]
     itrivial
   · imod HR
-    dsimp only [Nat.repeat]
+    dsimp only [step_fupdN]
     iframe
 
 @[rocq_alias wp_frame_step_l]
