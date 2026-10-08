@@ -106,7 +106,7 @@ theorem bigOpL_eq {Φ Ψ : Nat → A → M} {l : List A} (h : ∀ {i x}, l[i]? =
   | .cons _ _ => (congrArg (op · _) (h rfl)).trans (congrArg (op _) (bigOpL_eq (h ·)))
 
 @[rocq_alias big_opL_ne]
-theorem bigOpL_dist {Φ Ψ : Nat → A → M} {l : List A} {n : Nat}
+theorem bigOpL_dist [NonExpansive₂ op] {Φ Ψ : Nat → A → M} {l : List A} {n : Nat}
     (h : ∀ {i x}, l[i]? = some x → Φ i x ≡{n}≡ Ψ i x) :
     ([^ op list] k ↦ x ∈ l, Φ k x) ≡{n}≡ ([^ op list] k ↦ x ∈ l, Ψ k x) :=
   match l with | .nil => .rfl | .cons _ _ => op_dist (h rfl) (bigOpL_dist (h ·))
@@ -422,7 +422,7 @@ theorem bigOpM_gen_proper {R : M → M → Prop} {Φ Ψ : K → V → M} {m : M'
 #rocq_ignore big_opM_ext "Merged into bigOpM_eq"
 
 @[rocq_alias big_opM_ne]
-theorem bigOpM_dist {Φ Ψ : K → V → M} {m : M' V}
+theorem bigOpM_dist [NonExpansive₂ op] {Φ Ψ : K → V → M} {m : M' V}
     (hf : ∀ {k x}, get? m k = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([^ op map] k ↦ x ∈ m, Φ k x) ≡{n}≡ ([^ op map] k ↦ x ∈ m, Ψ k x) :=
   bigOpM_gen_proper .rfl op_dist hf
@@ -439,7 +439,7 @@ theorem bigOpM_eq_strong [OFE A] {Φ Ψ : K → A → M} {m1 m2 : M' A} (hm : �
   bigOpM_gen_proper_2 id equivalence_eq (· ▸ · ▸ rfl) (fun k => by rw [hm k])
     fun h1 h2 => hf h1 h2 (by rw [hm _] at h1; exact Option.some.inj (h1.symm.trans h2))
 
-theorem bigOpM_dist_pointwise {Φ Ψ : K → V → M} {n : Nat} (m : M' V)
+theorem bigOpM_dist_pointwise [NonExpansive₂ op] {Φ Ψ : K → V → M} {n : Nat} (m : M' V)
     (hf : ∀ {k x}, Φ k x ≡{n}≡ Ψ k x) :
     ([^ op map] k ↦ x ∈ m, Φ k x) ≡{n}≡ ([^ op map] k ↦ x ∈ m, Ψ k x) :=
   bigOpM_dist fun _ => hf
@@ -740,7 +740,7 @@ theorem bigOpS_eq_of_forall_eq {Φ Ψ : A → M} {s : S} (h : ∀ {x}, Φ x = Ψ
   bigOpL_eq_of_forall_eq h
 
 @[rocq_alias big_opS_ne]
-theorem bigOpS_dist {Φ Ψ : A → M} {s : S} {n : Nat} (h : ∀ {x}, x ∈ s → Φ x ≡{n}≡ Ψ x) :
+theorem bigOpS_dist [NonExpansive₂ op] {Φ Ψ : A → M} {s : S} {n : Nat} (h : ∀ {x}, x ∈ s → Φ x ≡{n}≡ Ψ x) :
     ([^ op set] x ∈ s, Φ x) ≡{n}≡ ([^ op set] x ∈ s, Ψ x) := by
   refine bigOpL_dist (fun {i _} _ => h ?_)
   rw [←Std.mem_toList, List.mem_iff_getElem?]
@@ -928,7 +928,7 @@ theorem bigOpMS_eq_of_forall_eq {Φ Ψ : A → M} {X : MS} (h : ∀ {x}, Φ x = 
   bigOpL_eq_of_forall_eq h
 
 @[rocq_alias big_opMS_ne]
-theorem bigOpMS_dist {Φ Ψ : A → M} {X : MS} {n : Nat} (h : ∀ {x}, x ∈ X → Φ x ≡{n}≡ Ψ x) :
+theorem bigOpMS_dist [NonExpansive₂ op] {Φ Ψ : A → M} {X : MS} {n : Nat} (h : ∀ {x}, x ∈ X → Φ x ≡{n}≡ Ψ x) :
     ([^ op mset] x ∈ X, Φ x) ≡{n}≡ ([^ op mset] x ∈ X, Ψ x) := by
   refine bigOpL_dist (fun {i _} hi => h ?_)
   rw [← LawfulFiniteMultiSet.mem_toList, List.mem_iff_getElem?]

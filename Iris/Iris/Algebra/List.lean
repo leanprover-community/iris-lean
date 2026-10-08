@@ -324,7 +324,7 @@ end higher_order
 /-! ## Big operators -/
 
 @[rocq_alias big_opL_ne_2]
-theorem bigOpL_dist_2 {M α : Type _} [OFE M] [OFE α] {op : M → M → M} {unit : M} [MonoidOps op unit]
+theorem bigOpL_dist_2 {M α : Type _} [OFE M] [OFE α] {op : M → M → M} {unit : M} [MonoidOps op unit] [NonExpansive₂ op]
     {n : Nat} {l1 l2 : List α} (hl : l1 ≡{n}≡ l2) : ∀ {f g : Nat → α → M},
     (∀ {k : Nat} {y1 y2}, l1[k]? = some y1 → l2[k]? = some y2 → y1 ≡{n}≡ y2 → f k y1 ≡{n}≡ g k y2) →
     bigOpL op f l1 ≡{n}≡ bigOpL op g l2 := by

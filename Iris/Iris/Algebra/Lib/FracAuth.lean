@@ -149,7 +149,7 @@ theorem ordN_total [OrderRefl A] [IncOrd A] {dq : DFrac} {a b : A}
 @[rocq_alias frac_auth_includedN_total]
 theorem includedN_total [OrderRefl A] [OrdInc A] {dq : DFrac} {a b : A}
     (h : ✓{n} (●F{dq} a) • ◯F{q} b) : b ≼{n} a :=
-  (dist_or_incN_of_some_incN_some (includedN h)).elim (ordN_incN ·.to_ordN) id
+  (dist_or_incN_of_some_incN_some (includedN h)).elim (Iris.ordN_incN ·.to_ordN) id
 
 theorem ord_total [ORA.Discrete A] [OrderRefl A] [IncOrd A] {dq : DFrac} {a b : A}
     (h : ✓ (●F{dq} a) • ◯F{q} b) : b ≼ₒ a :=
@@ -158,7 +158,7 @@ theorem ord_total [ORA.Discrete A] [OrderRefl A] [IncOrd A] {dq : DFrac} {a b : 
 @[rocq_alias frac_auth_included_total]
 theorem included_total [ORA.Discrete A] [OrderRefl A] [OrdInc A] {dq : DFrac} {a b : A}
     (h : ✓ (●F{dq} a) • ◯F{q} b) : b ≼ a :=
-  (eq_or_inc_of_some_inc_some (included h)).elim (· ▸ ord_inc (ord_refl b)) id
+  (eq_or_inc_of_some_inc_some (included h)).elim (· ▸ Iris.ord_inc (ord_refl b)) id
 
 /-! ## Auth-only validity -/
 

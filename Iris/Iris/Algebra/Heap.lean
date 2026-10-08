@@ -187,7 +187,8 @@ theorem union_dist_iff [LawfulPartialMap M K] [OFE V] {n : Nat} {m m₁ m₂ : M
 
 open Iris.Algebra in
 @[rocq_alias big_opM_ne_2]
-theorem bigOpM_dist_2 [LawfulFiniteMap M' K] [OFE M] [MonoidOps op unit] [OFE V]
+theorem bigOpM_dist_2 [LawfulFiniteMap M' K] [OFE M] {op : M → M → M} {unit : M}
+    [MonoidOps op unit] [NonExpansive₂ op] [OFE V]
     {Φ Ψ : K → V → M} {m₁ m₂ : M' V} {n : Nat} (hm : m₁ ≡{n}≡ m₂)
     (hf : ∀ {k y₁ y₂}, get? m₁ k = some y₁ → get? m₂ k = some y₂ → y₁ ≡{n}≡ y₂ →
       Φ k y₁ ≡{n}≡ Ψ k y₂) :
@@ -367,12 +368,6 @@ open OFE in
 @[reducible]
 def raOp : Op (M V) where
   op := op
-  op_ne.ne _ x1 x2 H i := by
-    rename_i x _
-    specialize H i; revert H
-    simp [get?_merge]
-    cases get? x1 i <;> cases get? x2 i <;> cases get? x i <;> simp
-    apply op_right_dist
   assoc {x y z} := eq_dist_2 fun _ k => by
     simp only [op, get?_merge]
     cases get? x k <;> cases get? y k <;> cases get? z k <;> simp
@@ -386,12 +381,6 @@ open OFE in
 @[reducible]
 def raPCore : PCore (M V) where
   pcore := pcore
-  pcore_ne {n x y _} H := by
-    simp only [pcore, Option.some.injEq, exists_eq_left']
-    refine (· ▸ fun k => ?_); specialize H k; revert H
-    rw [get?_bindAlter, get?_bindAlter]
-    cases get? x k <;> cases get? y k <;> simp
-    exact (NonExpansive.ne ·)
   pcore_idem {x cx} H := eq_dist_2 <| by
     simp only [pcore, Option.some.injEq] at H
     simp only [pcore, ← H]
@@ -406,24 +395,24 @@ open OFE in
 def raValid : _root_.Iris.Valid (M V) where
   ValidN := validN
   Valid := valid
-  validN_ne Hx H k :=
-    validN_ne (NonExpansive.ne (f := (get? · k : M V → Option V)) Hx) (H k)
   valid_iff_validN :=
     ⟨fun H n k => valid_iff_validN.mp (H k) n,
      fun H k => valid_iff_validN.mpr (H · k)⟩
-  validN_succ H k := validN_succ (H k)
 
 @[reducible] def raOrdered : Ordered (M V) where
   OrderN n m m' := ∀ k, get? m k ≼ₒ{n} get? m' k
   Order m m' := ∀ k, get? m k ≼ₒ get? m' k
-  ordN_ne em em' h k := ordN_ne ((get?_ne k).ne em) ((get?_ne k).ne em') (h k)
-  ordN_succ h k := ordN_succ (h k)
   ordN_trans h₁ h₂ k := ordN_trans (h₁ k) (h₂ k)
   ord_trans h₁ h₂ k := ord_trans (h₁ k) (h₂ k)
   ordN_of_ord n h k := ordN_of_ord n (h k)
 
+attribute [local instance] raOrdered in
+theorem raOrderedNE : OrderedNE (M V) where
+  ordN_ne em em' h k := ordN_ne ((get?_ne k).ne em) ((get?_ne k).ne em') (h k)
+  ordN_succ h k := ordN_succ (h k)
+
 section
-attribute [local instance] raOp raPCore raValid raOrdered
+attribute [local instance] raOp raPCore raValid raOrdered raOrderedNE
 
 @[rocq_alias lookup_op]
 theorem get?_op (x y : M V) : get? (x • y) i = get? x i • get? y i := by
@@ -448,6 +437,22 @@ instance instStoreCMRA : ORA (M V) where
   toOp := raOp
   toPCore := raPCore
   toValid := raValid
+  op_ne.ne _ x1 x2 H i := by
+    rename_i x _
+    specialize H i; revert H
+    simp [Op.op, get?_merge]
+    cases get? x1 i <;> cases get? x2 i <;> cases get? x i <;> simp
+    apply op_right_dist
+  pcore_ne {n x y _} H := by
+    simp only [PCore.pcore, pcore, Option.some.injEq, exists_eq_left']
+    refine (· ▸ fun k => ?_); specialize H k; revert H
+    rw [get?_bindAlter, get?_bindAlter]
+    cases get? x k <;> cases get? y k <;> simp
+    exact (NonExpansive.ne ·)
+  validN_ne {n x y} Hx H k :=
+    validN_ne (NonExpansive.ne (f := (get? · k : M V → Option V)) Hx) (H k)
+  validN_succ H k := validN_succ (H k)
+  toOrderedNE := raOrderedNE
   validN_op_left {n x1 x2} H k := by
     refine validN_op_left (y := get? x2 k) ?_
     specialize H k; revert H

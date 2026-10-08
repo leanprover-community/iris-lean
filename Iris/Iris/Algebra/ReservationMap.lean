@@ -232,17 +232,11 @@ theorem validN_mono {n} {x y : ReservationMap A H} (hd : ✓{n} y.data → ✓{n
 
 @[reducible] def raOp : Op (ReservationMap A H) where
   op := op
-  op_ne := ⟨fun _ _ _ h => ⟨Dist.op_r h.left, Dist.op_r h.right⟩⟩
   assoc := ReservationMap.ext assoc assoc
   comm := ReservationMap.ext comm comm
 
 @[reducible] def raPCore : PCore (ReservationMap A H) where
   pcore := some ∘ core
-  pcore_ne {n x y cx} e pe := by
-    cases Option.some_inj.mp pe.symm
-    refine ⟨core y, rfl, ?_, ?_⟩
-    · simp [Dist.core e.left]
-    · simp [Dist.core e.right]
   pcore_idem {x _} h := by
     cases Option.some_inj.mp h
     exact congrArg some (ReservationMap.ext (core_idem x.data) (core_idem x.token))
@@ -250,20 +244,6 @@ theorem validN_mono {n} {x y : ReservationMap A H} (hd : ✓{n} y.data → ✓{n
 @[reducible] def raValid : _root_.Iris.Valid (ReservationMap A H) where
   Valid := Valid
   ValidN := ValidN
-  validN_ne {n x y} h v := by
-    refine validN_iff.mpr ⟨?_, ?_, fun i => ?_⟩
-    · exact (Dist.validN h.left).mp (validN_data_of_validN v)
-    · exact (Dist.validN h.right).mp (validN_token_of_validN v)
-    · cases (validN_disj v) i with
-      | inl gn =>
-        refine .inl <| ?_
-        rw [←dist_none (n := n)]
-        refine .trans (h.left i).symm ?_
-        simp [gn]
-      | inr ni =>
-        refine .inr fun hc => ni ?_
-        rw [congrFun ((congrArg Membership.mem h.right)) i]
-        exact hc
   valid_iff_validN {x} := by
     refine ⟨fun h n => ?_, fun v => ?_⟩
     · refine validN_iff.mpr ⟨?_, ?_, ?_⟩
@@ -274,23 +254,21 @@ theorem validN_mono {n} {x y : ReservationMap A H} (hd : ✓{n} y.data → ✓{n
       · exact valid_iff_validN.mpr (fun n => validN_data_of_validN (v n))
       · exact valid_iff_validN.mpr (fun n => validN_token_of_validN (v n))
       · exact validN_disj (v 0)
-  validN_succ {x n} v := by
-    refine validN_iff.mpr ⟨?_, ?_, ?_⟩
-    · exact validN_succ (validN_data_of_validN v)
-    · exact (valid_0_iff_validN n).mp (validN_token_of_validN (n := n.succ) v)
-    · exact validN_disj v
 
 @[reducible] def raOrdered : Ordered (ReservationMap A H) where
   OrderN n x y := x.data ≼ₒ{n} y.data ∧ x.token ≼ₒ{n} y.token
   Order x y := x.data ≼ₒ y.data ∧ x.token ≼ₒ y.token
-  ordN_ne ex ey h := ⟨ordN_ne ex.1 ey.1 h.1, ordN_ne ex.2 ey.2 h.2⟩
-  ordN_succ h := ⟨ordN_succ h.1, ordN_succ h.2⟩
   ordN_trans h1 h2 := ⟨ordN_trans h1.1 h2.1, ordN_trans h1.2 h2.2⟩
   ord_trans h1 h2 := ⟨ord_trans h1.1 h2.1, ord_trans h1.2 h2.2⟩
   ordN_of_ord n h := ⟨ordN_of_ord n h.1, ordN_of_ord n h.2⟩
 
+attribute [local instance] raOrdered in
+theorem raOrderedNE : OrderedNE (ReservationMap A H) where
+  ordN_ne ex ey h := ⟨ordN_ne ex.1 ey.1 h.1, ordN_ne ex.2 ey.2 h.2⟩
+  ordN_succ h := ⟨ordN_succ h.1, ordN_succ h.2⟩
+
 section
-attribute [local instance] raOrdered raOp raPCore raValid
+attribute [local instance] raOrdered raOp raPCore raValid raOrderedNE
 
 theorem increasing_data {v : ReservationMap A H} (h : Increasing v) : Increasing v.data where
   increasing w := (h.increasing (mk w ∅)).1
@@ -307,6 +285,32 @@ instance instORAReservationMap : ORA (ReservationMap A H) where
   toOp := raOp
   toPCore := raPCore
   toValid := raValid
+  op_ne := ⟨fun _ _ _ h => ⟨Dist.op_r h.left, Dist.op_r h.right⟩⟩
+  pcore_ne {n x y cx} e pe := by
+    cases Option.some_inj.mp pe.symm
+    refine ⟨core y, rfl, ?_, ?_⟩
+    · simp [Dist.core e.left]
+    · simp [Dist.core e.right]
+  validN_ne {n x y} h v := by
+    refine validN_iff.mpr ⟨?_, ?_, fun i => ?_⟩
+    · exact (Dist.validN h.left).mp (validN_data_of_validN v)
+    · exact (Dist.validN h.right).mp (validN_token_of_validN v)
+    · cases (validN_disj v) i with
+      | inl gn =>
+        refine .inl <| ?_
+        rw [←dist_none (n := n)]
+        refine .trans (h.left i).symm ?_
+        simp [gn]
+      | inr ni =>
+        refine .inr fun hc => ni ?_
+        rw [congrFun ((congrArg Membership.mem h.right)) i]
+        exact hc
+  validN_succ {n x} v := by
+    refine validN_iff.mpr ⟨?_, ?_, ?_⟩
+    · exact validN_succ (validN_data_of_validN v)
+    · exact (valid_0_iff_validN n).mp (validN_token_of_validN (n := n.succ) v)
+    · exact validN_disj v
+  toOrderedNE := raOrderedNE
   validN_op_left {_ x y} := validN_mono validN_op_left
     (fun _ h => Option.eq_none_of_op_eq_none_left ((Heap.get?_op _ _).symm.trans h)) ⟨y.token, rfl⟩
   pcore_op_left | rfl => ReservationMap.ext (core_op _) (core_op _)

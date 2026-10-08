@@ -19,22 +19,24 @@ open Iris.Algebra Iris.Std OFE BIBase
 /-! ## MonoidOps instances for BI connectives -/
 
 instance sepMonoidOps [BI PROP] : MonoidOps (sep (PROP := PROP)) emp where
-  op_ne := BI.sep_ne
   op_assoc := (BiEntails.to_eq sep_assoc)
   op_comm := (BiEntails.to_eq sep_comm)
   op_left_id := (BiEntails.to_eq emp_sep)
 
 instance andMonoidOps [BI PROP] : MonoidOps (and (PROP := PROP)) iprop(True) where
-  op_ne := BI.and_ne
   op_assoc := (BiEntails.to_eq and_assoc)
   op_comm := (BiEntails.to_eq and_comm)
   op_left_id := (BiEntails.to_eq true_and)
 
 instance orMonoidOps [BI PROP] : MonoidOps (or (PROP := PROP)) iprop(False) where
-  op_ne := BI.or_ne
   op_assoc := (BiEntails.to_eq or_assoc)
   op_comm := (BiEntails.to_eq or_comm)
   op_left_id := (BiEntails.to_eq false_or)
+
+/-! Non-expansiveness of the connectives as instances (`MonoidOps` has no OFE parameter). -/
+instance sep_ne_inst [BI PROP] : NonExpansive₂ (sep (PROP := PROP)) := BI.sep_ne
+instance and_ne_inst [BI PROP] : NonExpansive₂ (and (PROP := PROP)) := BI.and_ne
+instance or_ne_inst [BI PROP] : NonExpansive₂ (or (PROP := PROP)) := BI.or_ne
 
 /-! ## Homomorphism helpers for OFE equivalence -/
 

@@ -19,12 +19,11 @@ namespace Iris.Algebra
 
 open OFE
 
-/-- A commutative monoid on an OFE, used for big operators.
-The operation must be non-expansive, associative, commutative, and have a left identity. -/
+/-- A commutative monoid, used for big operators: the operation is associative, commutative, and
+has a left identity. Non-expansiveness of `op` is a separate `NonExpansive₂ op` assumption where it is
+needed (Mathlib-style: the class has no instance parameters). -/
 @[rocq_alias Monoid]
-class MonoidOps {M : Type u} [OFE M] (op : M → M → M) (unit : outParam M) where
-  /-- The operation is non-expansive in both arguments -/
-  op_ne : NonExpansive₂ op
+class MonoidOps {M : Type u} (op : M → M → M) (unit : outParam M) : Prop where
   /-- Associativity -/
   op_assoc : ∀ {a b c : M}, op (op a b) c = op a (op b c)
   /-- Commutativity -/
@@ -37,9 +36,7 @@ class MonoidOps {M : Type u} [OFE M] (op : M → M → M) (unit : outParam M) wh
 
 namespace MonoidOps
 
-attribute [instance] op_ne
-
-variable {M : Type u} [OFE M] {unit : M} {op : M → M → M}
+variable {M : Type u} {unit : M} {op : M → M → M}
 
 #rocq_ignore monoid_proper "OFE is Leibniz; use equality"
 
@@ -67,7 +64,7 @@ theorem op_left_comm [MonoidOps op unit] {a b c : M} :
       _ = op b (op a c) := op_assoc
 
 /-- Non-expansiveness for dist. -/
-theorem op_dist [MonoidOps op unit] (ha : a ≡{n}≡ a') (hb : b ≡{n}≡ b') :
+theorem op_dist [OFE M] [NonExpansive₂ op] (ha : a ≡{n}≡ a') (hb : b ≡{n}≡ b') :
     op a b ≡{n}≡ op a' b' := NonExpansive₂.ne ha hb
 
 end MonoidOps

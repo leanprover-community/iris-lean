@@ -803,7 +803,7 @@ theorem update_big_alloc (m1 m2 : H V) dq
       rw [bigOpM_frag_empty]
       refine Update.ord ?_
       rw [union_empty_left, unit_right_id]
-      exact ord_refl _
+      try exact ord_refl _
     | hins k v m2 Hm2 IH =>
       have Hall' : all (fun k v => ✓ v) m2 := by exact all_of_all_insert _ Hm2 Hall
       have Hdisj' : m2 ##ₘ m1 := by

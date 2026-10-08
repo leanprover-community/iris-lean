@@ -227,20 +227,11 @@ theorem ValidN.pair {n} {x : View R} (Hv : ValidN n x) :
 
 @[reducible] def raOp : _root_.Iris.Op (View R) where
   op := Op
-  op_ne.ne n x1 x2 H := by
-    refine mk.ne.ne ?_ ?_
-    · exact cmraOption.op_ne.ne <| NonExpansive.ne H
-    · exact op_ne.ne  <| NonExpansive.ne H
   assoc := by simp only [Op, View.mk.injEq]; exact ⟨assoc', assoc'⟩
   comm := by simp only [Op, View.mk.injEq]; exact ⟨comm', comm'⟩
 
 @[reducible] def raPCore : PCore (View R) where
   pcore := Pcore
-  pcore_ne {n x y} cx H := by
-    simp only [Pcore, Option.some.injEq]
-    rintro ⟨rfl⟩
-    exists ⟨core y.auth, core y.frag⟩
-    exact ⟨rfl, OFE.Dist.core H.1, OFE.Dist.core H.2⟩
   pcore_idem {_ cx} := by
     simp only [Pcore, Option.some.injEq]
     rcases cx
@@ -251,41 +242,26 @@ theorem ValidN.pair {n} {x : View R} (Hv : ValidN n x) :
 @[reducible] def raValid : _root_.Iris.Valid (View R) where
   ValidN := ValidN
   Valid := Valid
-  validN_ne {n x1 x2} := by
-    rintro ⟨Hl, Hr⟩
-    rcases x1 with ⟨_|⟨q1, ag1⟩, b1⟩ <;>
-    rcases x2 with ⟨_|⟨q2, ag2⟩, b2⟩ <;>
-    simp_all
-    · exact fun x H => ⟨x, mono_inc H .rfl Hr.symm.to_incN n.le_refl⟩
-    intro Hq a Hag HR
-    refine ⟨validN_ne Hl.1 Hq, ?_⟩
-    refine ⟨a, ?_⟩
-    refine ⟨Hl.2.symm.trans Hag, ?_⟩
-    exact mono_inc HR .rfl Hr.symm.to_incN n.le_refl
   valid_iff_validN {x} := by
     simp only [Valid, ValidN]; split
     · exact ⟨fun H n => ⟨H.1, H.2 n⟩, fun H => ⟨(H 0).1, fun n => (H n).2⟩⟩
     · exact Eq.to_iff rfl
-  validN_succ {x n} := by
-    simp only [ValidN]
-    split
-    · refine fun H => ⟨H.1, ?_⟩
-      rcases H.2 with ⟨ag, Ha⟩; exists ag
-      refine ⟨Dist.le Ha.1 n.le_succ, ?_⟩
-      exact mono_inc Ha.2 .rfl (incN_refl x.frag) n.le_succ
-    · exact fun ⟨z, HR⟩ => ⟨z, mono_inc HR .rfl (incN_refl _) n.le_succ⟩
 
 @[reducible] def raOrdered : Ordered (View R) where
   OrderN n x y := x.auth ≼ₒ{n} y.auth ∧ x.frag ≼ₒ{n} y.frag
   Order x y := x.auth ≼ₒ y.auth ∧ x.frag ≼ₒ y.frag
-  ordN_ne ex ey h := ⟨ordN_ne ex.1 ey.1 h.1, ordN_ne ex.2 ey.2 h.2⟩
-  ordN_succ h := ⟨ordN_succ h.1, ordN_succ h.2⟩
   ordN_trans h1 h2 := ⟨ordN_trans h1.1 h2.1, ordN_trans h1.2 h2.2⟩
   ord_trans h1 h2 := ⟨ord_trans h1.1 h2.1, ord_trans h1.2 h2.2⟩
   ordN_of_ord n h := ⟨ordN_of_ord n h.1, ordN_of_ord n h.2⟩
 
+omit [IsViewRel R] in
+attribute [local instance] raOrdered in
+theorem raOrderedNE : OrderedNE (View R) where
+  ordN_ne ex ey h := ⟨ordN_ne ex.1 ey.1 h.1, ordN_ne ex.2 ey.2 h.2⟩
+  ordN_succ h := ⟨ordN_succ h.1, ordN_succ h.2⟩
+
 section
-attribute [local instance] View.raOrdered raOp raPCore raValid
+attribute [local instance] View.raOrdered raOp raPCore raValid raOrderedNE
 
 omit [IsViewRel R] in
 theorem increasing_auth {v : View R} (h : Increasing v) : Increasing v.auth where
@@ -305,6 +281,35 @@ instance instORA : ORA (View R) where
   toOp := raOp
   toPCore := raPCore
   toValid := raValid
+  op_ne.ne n x1 x2 H := by
+    refine mk.ne.ne ?_ ?_
+    · exact cmraOption.op_ne.ne <| NonExpansive.ne H
+    · exact op_ne.ne  <| NonExpansive.ne H
+  pcore_ne {n x y cx} H := by
+    simp only [PCore.pcore, Pcore, Option.some.injEq]
+    rintro ⟨rfl⟩
+    exists ⟨core y.auth, core y.frag⟩
+    exact ⟨rfl, OFE.Dist.core H.1, OFE.Dist.core H.2⟩
+  validN_ne {n x1 x2} := by
+    rintro ⟨Hl, Hr⟩
+    rcases x1 with ⟨_|⟨q1, ag1⟩, b1⟩ <;>
+    rcases x2 with ⟨_|⟨q2, ag2⟩, b2⟩ <;>
+    simp_all [Valid.ValidN]
+    · exact fun x H => ⟨x, mono_inc H .rfl Hr.symm.to_incN n.le_refl⟩
+    intro Hq a Hag HR
+    refine ⟨validN_ne Hl.1 Hq, ?_⟩
+    refine ⟨a, ?_⟩
+    refine ⟨Hl.2.symm.trans Hag, ?_⟩
+    exact mono_inc HR .rfl Hr.symm.to_incN n.le_refl
+  validN_succ {n x} := by
+    simp only [Valid.ValidN, ValidN]
+    split
+    · refine fun H => ⟨H.1, ?_⟩
+      rcases H.2 with ⟨ag, Ha⟩; exists ag
+      refine ⟨Dist.le Ha.1 n.le_succ, ?_⟩
+      exact mono_inc Ha.2 .rfl (incN_refl x.frag) n.le_succ
+    · exact fun ⟨z, HR⟩ => ⟨z, mono_inc HR .rfl (incN_refl _) n.le_succ⟩
+  toOrderedNE := raOrderedNE
   validN_op_left {n x y} := by
     rcases x with ⟨_|⟨q1, ag1⟩, b1⟩ <;>
     rcases y with ⟨_|⟨q2, ag2⟩, b2⟩ <;>

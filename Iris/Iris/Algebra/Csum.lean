@@ -215,23 +215,11 @@ abbrev Order [ORA α] [ORA β] : Csum α β → Csum α β → Prop
 @[reducible, rocq_alias csum_cmra_mixin]
 def raOp [ORA α] [ORA β] : Op (Csum α β) where
   op := Csum.op
-  op_ne {x} := ⟨fun {n y₁ y₂} hy => by cases x <;> cases y₁ <;> cases y₂ <;>
-    first | exact OFE.Dist.op_r hy | exact hy | trivial⟩
   assoc {x y z} := by grind [assoc']
   comm {x y} := by grind [comm']
 
 @[reducible] def raPCore [ORA α] [ORA β] : PCore (Csum α β) where
   pcore := Csum.pcore
-  pcore_ne {n x y cx} hxy hpx := by
-    cases x <;> cases y <;> try exact hxy.elim
-    · obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq hpx
-      obtain ⟨cy, hcy, ecy⟩ := pcore_ne (cx := ca) hxy hpa
-      exact ⟨inl cy, by simp [Csum.pcore, hcy], ecy⟩
-    · obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx
-      obtain ⟨cy, hcy, ecy⟩ := pcore_ne (cx := cb) hxy hpb
-      exact ⟨inr cy, by simp [Csum.pcore, hcy], ecy⟩
-    · simp only [Csum.pcore, Option.some.injEq] at hpx
-      exact ⟨invalid, rfl, hpx ▸ .rfl⟩
   pcore_idem {x cx} hpx := by cases x with
     | inl a =>
       obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq hpx
@@ -244,24 +232,29 @@ def raOp [ORA α] [ORA β] : Op (Csum α β) where
 @[reducible] def raValid [ORA α] [ORA β] : _root_.Iris.Valid (Csum α β) where
   Valid := Csum.valid
   ValidN := Csum.validN
-  validN_ne {n x y} h hv := by change Csum.Dist n x y at h; grind [Csum.Dist, validN_ne]
   valid_iff_validN {x} := by cases x <;> simp [valid_iff_validN]
-  validN_succ {x _} h := by grind [validN_succ]
 
 @[reducible] def raOrdered [ORA α] [ORA β] : Ordered (Csum α β) where
   OrderN := OrderN
   Order := Order
-  ordN_ne {n x x' y y'} ex ey h := by
-    cases x <;> cases x' <;> cases y <;> cases y' <;>
-      first | trivial | exact ex.elim | exact ey.elim | exact h.elim | exact ordN_ne ex ey h
-  ordN_succ {n x y} h := by grind [ordN_succ]
   ordN_trans {n x y z} h₁ h₂ := by grind [ordN_trans]
   ord_trans {x y z} h₁ h₂ := by grind [ord_trans]
   ordN_of_ord {x y} n h := by grind [ordN_of_ord]
 
+attribute [local instance] raOrdered in
+theorem raOrderedNE [ORA α] [ORA β] : OrderedNE (Csum α β) where
+  ordN_ne {n x x' y y'} ex ey h := by
+    cases x <;> cases x' <;> cases y <;> cases y' <;>
+      first
+        | trivial | exact ex.elim | exact ey.elim | exact h.elim
+        | exact ordN_ne (α := α) ex ey h | exact ordN_ne (α := β) ex ey h
+  ordN_succ {n x y} h := by
+    cases x <;> cases y <;>
+      first | trivial | exact ordN_succ (α := α) h | exact ordN_succ (α := β) h | exact h
+
 section
 variable [ORA α] [ORA β]
-attribute [local instance] raOp raPCore raValid raOrdered
+attribute [local instance] raOp raPCore raValid raOrdered raOrderedNE
 
 theorem increasing_inl_iff {a : α} : Increasing (inl (β := β) a) ↔ Increasing a where
   mp h := ⟨fun a' => h.increasing (inl a')⟩
@@ -280,6 +273,28 @@ instance instORA : ORA (Csum α β) where
   toOp := raOp
   toPCore := raPCore
   toValid := raValid
+  op_ne {x} := ⟨fun {n y₁ y₂} hy => by cases x <;> cases y₁ <;> cases y₂ <;>
+    first | exact OFE.Dist.op_r (α := α) hy | exact OFE.Dist.op_r (α := β) hy | exact hy | trivial⟩
+  pcore_ne {n x y cx} hxy hpx := by
+    cases x <;> cases y <;> try exact hxy.elim
+    · obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq hpx
+      obtain ⟨cy, hcy, ecy⟩ := pcore_ne (cx := ca) hxy hpa
+      exact ⟨inl cy, by simp [PCore.pcore, Csum.pcore, hcy], ecy⟩
+    · obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx
+      obtain ⟨cy, hcy, ecy⟩ := pcore_ne (cx := cb) hxy hpb
+      exact ⟨inr cy, by simp [PCore.pcore, Csum.pcore, hcy], ecy⟩
+    · simp only [PCore.pcore, Csum.pcore, Option.some.injEq] at hpx
+      exact ⟨invalid, rfl, hpx ▸ .rfl⟩
+  validN_ne {n x y} h hv := by
+    cases x <;> cases y <;> first
+      | exact h.elim | exact hv.elim
+      | exact validN_ne (α := α) h hv | exact validN_ne (α := β) h hv
+  validN_succ {n x} h := by
+    cases x with
+    | inl => exact validN_succ (α := α) h
+    | inr => exact validN_succ (α := β) h
+    | invalid => exact h
+  toOrderedNE := raOrderedNE
   pcore_op_left {x cx} hpx := by cases x with
     | inl a => obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq hpx; exact congrArg _ (pcore_op_left hpa)
     | inr b => obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx; exact congrArg _ (pcore_op_left hpb)

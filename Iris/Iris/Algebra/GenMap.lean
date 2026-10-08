@@ -183,7 +183,6 @@ def pcore_genmap (x : GenMap β) : Option (GenMap β) := some ⟨fun k => core (
 
 @[reducible] def GenMap.raOp : Op (GenMap β) where
   op x y := ⟨x.car • y.car, op_bound β x y⟩
-  op_ne.ne {_ _ _} H := op_ne (α := Nat → Option β) |>.ne H
   assoc {x y z} := OFE.eq_dist_2 fun _ a => by
     cases _ : x.car a <;> cases _ : y.car a <;> cases _ : z.car a <;>
     simp_all [op, optionOp]
@@ -195,13 +194,6 @@ def pcore_genmap (x : GenMap β) : Option (GenMap β) := some ⟨fun k => core (
 
 @[reducible] def GenMap.raPCore : PCore (GenMap β) where
   pcore := pcore_genmap β
-  pcore_ne {n x y cx} H Hm := by
-    refine ⟨⟨fun k => core (y.car k), ?_⟩, by simp [pcore_genmap], fun k => ?_⟩
-    · obtain ⟨N, hN⟩ := y.bound
-      exact ⟨N, fun k hk => by simp [core, pcore, optionCore, hN k hk]⟩
-    · suffices hcx : cx.car = fun k => core (x.car k) by rw [hcx]; exact (H k).core
-      simp only [pcore_genmap, Option.some.injEq] at Hm
-      exact (congrArg GenMap.car Hm).symm
   pcore_idem {x _} H := by
     obtain rfl := Option.some.inj H
     exact congrArg some (GenMap.ext (funext fun k => core_idem (x.car k)))
@@ -209,21 +201,23 @@ def pcore_genmap (x : GenMap β) : Option (GenMap β) := some ⟨fun k => core (
 @[reducible] def GenMap.raValid : _root_.Iris.Valid (GenMap β) where
   ValidN n x := ✓{n} x.car
   Valid x := ✓ x.car
-  validN_ne {_n _x _y H} := Dist.validN H |>.mp
   valid_iff_validN {_x} := ⟨fun Hv _ => Hv.validN, fun H => valid_iff_validN.mpr (H ·)⟩
-  validN_succ {_x _n} := validN_succ
 
 @[reducible] def GenMap.raOrdered : Ordered (GenMap β) where
   OrderN n x y := x.car ≼ₒ{n} y.car
   Order x y := x.car ≼ₒ y.car
-  ordN_ne ex ey h := ordN_ne ex ey h
-  ordN_succ := ordN_succ
   ordN_trans := ordN_trans
   ord_trans := ord_trans
   ordN_of_ord n h := ordN_of_ord n h
 
+attribute [local instance] GenMap.raOrdered in
+theorem GenMap.raOrderedNE : OrderedNE (GenMap β) where
+  ordN_ne ex ey h := ordN_ne (α := Nat → Option β) ex ey h
+  ordN_succ h := ordN_succ (α := Nat → Option β) h
+
 section
 attribute [local instance] GenMap.raOp GenMap.raPCore GenMap.raValid GenMap.raOrdered
+  GenMap.raOrderedNE
 
 @[simp] theorem GenMap.op_car (x y : GenMap β) : (x • y).car = x.car • y.car := rfl
 
@@ -242,6 +236,16 @@ instance instORA_GenMap : ORA (GenMap β) where
   toOp := GenMap.raOp β
   toPCore := GenMap.raPCore β
   toValid := GenMap.raValid β
+  op_ne.ne {_ _ _} H := op_ne (α := Nat → Option β) |>.ne H
+  pcore_ne {n x y cx} H Hm := by
+    refine ⟨⟨fun k => core (y.car k), ?_⟩, by simp [PCore.pcore, pcore_genmap], fun k => ?_⟩
+    · obtain ⟨N, hN⟩ := y.bound
+      exact ⟨N, fun k hk => by simp [core, pcore, optionCore, hN k hk]⟩
+    · suffices hcx : cx.car = fun k => core (x.car k) by rw [hcx]; exact (H k).core
+      simp only [PCore.pcore, pcore_genmap, Option.some.injEq] at Hm
+      exact (congrArg GenMap.car Hm).symm
+  validN_ne {_n _x _y} H := (Dist.validN (α := Nat → Option β) H).mp
+  validN_succ {_n _x} := validN_succ (α := Nat → Option β)
   validN_op_left {n x y} h := validN_op_left (x := x.car) (y := y.car) h
   pcore_op_left {x _} H := by
     obtain rfl := Option.some.inj H
@@ -253,6 +257,7 @@ instance instORA_GenMap : ORA (GenMap β) where
     exact ⟨⟨fun k => (F k).1, eb.1⟩, ⟨fun k => (F k).2.1, eb.2⟩,
       OFE.eq_dist_2 fun _ k => ((F k).2.2.1).dist, fun k => (F k).2.2.2.1, fun k => (F k).2.2.2.2⟩
   toOrdered := GenMap.raOrdered β
+  toOrderedNE := GenMap.raOrderedNE β
   op_monoN_left_ord z h := op_monoN_left_ord z.car h
   op_mono_left_ord z h := op_mono_left_ord z.car h
   validN_of_ordN {_ x y} h v := validN_of_ordN (x := x.car) (y := y.car) h v
@@ -310,7 +315,7 @@ theorem GenMap.singleton_ord_mono {x : Nat} {y y' : β} (h : y ≼ₒ y') :
     (singleton x y : GenMap β) ≼ₒ singleton x y' := fun x' => by
   by_cases hx : x' = x
   · subst hx; rw [singleton_map_in, singleton_map_in]; exact .inr h
-  · rw [singleton_map_none hx, singleton_map_none hx]; trivial
+  · rw [singleton_map_none hx, singleton_map_none hx]
 
 theorem GenMap.alter_valid {g : GenMap β} (Hb : ✓{n} b) (Hg : ✓{n} g) :
     ✓{n} g.alter a b := by
