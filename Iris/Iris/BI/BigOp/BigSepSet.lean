@@ -22,7 +22,7 @@ open Iris.Algebra BigOpL BigOpS BIBase Iris.Std BigSepL LawfulSet
 
 /-! # Big Separating Conjunction over Sets -/
 
-variable {PROP : Type _} [BI SI PROP]
+variable {PROP : Type _} [BI PROP]
 variable {S : Type _} {A : Type _} [LawfulFiniteSet S A]
 
 namespace BigSepS
@@ -33,7 +33,7 @@ theorem bigSepS_mono {Φ Ψ : A → PROP} {X : S} (h : ∀ {x}, x ∈ X → Φ x
   bigOpS_gen_proper _ .rfl sep_mono fun hy => h hy
 
 @[rocq_alias big_sepS_ne]
-theorem bigSepS_ne {Φ Ψ : A → PROP} {X : S} {n : SI} (h : ∀ {x}, x ∈ X → Φ x ≡{n}≡ Ψ x) :
+theorem bigSepS_ne [BIStepIndexed SI PROP] {Φ Ψ : A → PROP} {X : S} {n : SI} (h : ∀ {x}, x ∈ X → Φ x ≡{n}≡ Ψ x) :
     ([∗set] x ∈ X, Φ x) ≡{n}≡ ([∗set] x ∈ X, Ψ x) :=
   bigOpS_dist fun hy => h hy
 
@@ -251,15 +251,15 @@ theorem bigSepS_elem_of_acc_impl {Φ : A → PROP} {X : S} {x : A} (h : x ∈ X)
 @[rocq_alias big_sepS_persistently]
 theorem bigSepS_persistently [BIAffine PROP] {Φ : A → PROP} {X : S} :
     (<pers> ([∗set] y ∈ X, Φ y)) ⊣⊢ [∗set] y ∈ X, <pers> (Φ y) :=
-  letI := MonoidHomomorphism.ofEq persistently_ne
+  letI := MonoidHomomorphism.ofEq
     (BiEntails.to_eq persistently_sep) (BiEntails.to_eq persistently_emp_affine)
   BiEntails.of_eq <| BigOpS.hom this Φ X
 
 @[rocq_alias big_sepS_later]
-theorem bigSepS_later [SIdxFinite SI] [BIAffine PROP] {Φ : A → PROP} {X : S} :
+theorem bigSepS_later [BIStepIndexed SI PROP] [SIdxFinite SI] [BIAffine PROP] {Φ : A → PROP} {X : S} :
     (▷ [∗set] y ∈ X, Φ y) ⊣⊢ [∗set] y ∈ X, ▷ Φ y :=
-  letI := MonoidHomomorphism.ofEq later_ne
-    (BiEntails.to_eq later_sep) (BiEntails.to_eq later_emp)
+  letI := MonoidHomomorphism.ofEq
+    (BiEntails.to_eq (later_sep (SI := SI))) (BiEntails.to_eq later_emp)
   BiEntails.of_eq <| BigOpS.hom this Φ X
 
 @[rocq_alias big_sepS_later_2]
@@ -268,11 +268,11 @@ theorem bigSepS_later_2 {Φ : A → PROP} {X : S} :
   bigSepS_elements.1.trans <| bigSepL_later_2.trans <| later_mono bigSepS_elements.2
 
 @[rocq_alias big_sepS_laterN]
-theorem bigSepS_laterN [SIdxFinite SI] [BIAffine PROP] {Φ : A → PROP} {n : Nat} {X : S} :
+theorem bigSepS_laterN [BIStepIndexed SI PROP] [SIdxFinite SI] [BIAffine PROP] {Φ : A → PROP} {n : Nat} {X : S} :
     (▷^[n] [∗set] y ∈ X, Φ y) ⊣⊢ [∗set] y ∈ X, ▷^[n] Φ y :=
   match n with
   | 0 => .rfl
-  | _ + 1 => (later_congr bigSepS_laterN).trans bigSepS_later
+  | _ + 1 => (later_congr bigSepS_laterN).trans (bigSepS_later (SI := SI))
 
 @[rocq_alias big_sepS_laterN_2]
 theorem bigSepS_laterN_2 {Φ : A → PROP} {n : Nat} {X : S} :

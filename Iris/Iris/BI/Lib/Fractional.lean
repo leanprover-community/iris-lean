@@ -37,7 +37,7 @@ class FrameFractionalQp (qR qP : Qp) (r : outParam Qp) : Prop where
   frame_fractional_qp : qP = qR + r
 
 section Lemmas
-variable {PROP : Type _} [BI SI PROP] {P P1 P2 : PROP} {Φ : Qp → PROP} {q q1 q2 : Qp}
+variable {PROP : Type _} [BI PROP] {P P1 P2 : PROP} {Φ : Qp → PROP} {q q1 q2 : Qp}
 
 /-- ## AsFractional manipulation lemmas
 
@@ -125,7 +125,7 @@ instance fractional_sep {Ψ : Qp → PROP} [hΦ : Fractional Φ] [hΨ : Fraction
   fractional p q := (sep_congr (hΦ.fractional p q) (hΨ.fractional p q)).trans sep_sep_sep_comm
 
 @[rocq_alias fractional_embed]
-instance fractional_embed {PROP' : Type _} [BI SI PROP'] [BiEmbed SI PROP PROP'] [hΦ : Fractional Φ] :
+instance fractional_embed {PROP' : Type _} [BI PROP'] [BiEmbed PROP PROP'] [hΦ : Fractional Φ] :
     Fractional (fun q => (iprop(⎡Φ q⎤) : PROP')) where
   fractional p q := calc
     (iprop(⎡Φ (p + q)⎤) : PROP')
@@ -133,7 +133,7 @@ instance fractional_embed {PROP' : Type _} [BI SI PROP'] [BiEmbed SI PROP PROP']
     _ ⊣⊢ ⎡Φ p⎤ ∗ ⎡Φ q⎤ := embed_sep ..
 
 @[rocq_alias as_fractional_embed]
-instance as_fractional_embed {PROP' : Type _} [BI SI PROP'] [BiEmbed SI PROP PROP']
+instance as_fractional_embed {PROP' : Type _} [BI PROP'] [BiEmbed PROP PROP']
     [h : AsFractional P ioΦ Φ ioq q] :
     AsFractional (iprop(⎡P⎤) : PROP') ioΦ (fun q => iprop(⎡Φ q⎤)) ioq q where
   as_fractional := .ofMono embed_mono h.as_fractional
@@ -204,7 +204,7 @@ theorem frame_fractional (Φ : Qp → PROP) (qR qP r : Qp) {p : Bool} {R : PROP}
 end Lemmas
 
 section Divide
-variable {PROP : Type _} [BI SI PROP]
+variable {PROP : Type _} [BI PROP]
 open BI.BigSepL
 
 theorem fractional_bigSepL_replicate {Φ : Qp → PROP} [Fractional Φ] (r : Qp) (k : Nat) :
@@ -242,35 +242,35 @@ end Divide
 invariant and transported along an internal `∗-∗`. -/
 
 section InternalFractional
-variable {PROP : Type _} [BI SI PROP] {Φ Ψ : Qp → PROP}
+variable {PROP : Type _} [BI PROP] {Φ Ψ : Qp → PROP}
 
 @[rocq_alias internal_fractional]
 def internalFractional (Φ : Qp → PROP) : PROP := iprop(□ ∀ p q, Φ (p + q) ∗-∗ Φ p ∗ Φ q)
 
 @[rocq_alias internal_fractional_ne]
-instance internalFractional_ne : NonExpansive SI (internalFractional (SI := SI) (PROP := PROP)) where
+instance internalFractional_ne [BIStepIndexed SI PROP] : NonExpansive SI (internalFractional (PROP := PROP)) where
   ne _ _ _ h := intuitionistically_ne.ne <|
     forall_ne fun p => forall_ne fun q => wandIff_ne.ne (h _) (sep_ne.ne (h p) (h q))
 
 #rocq_ignore internal_fractional_proper "OFE equivalence is Lean equality; use `congrArg`."
 
 @[rocq_alias internal_fractional_affine]
-instance internalFractional_affine : Affine (internalFractional (SI := SI) Φ) := by
+instance internalFractional_affine : Affine (internalFractional Φ) := by
   unfold internalFractional; infer_instance
 
 @[rocq_alias internal_fractional_persistent]
-instance internalFractional_persistent : Persistent (internalFractional (SI := SI) Φ) := by
+instance internalFractional_persistent : Persistent (internalFractional Φ) := by
   unfold internalFractional; infer_instance
 
 @[rocq_alias fractional_internal_fractional]
-theorem fractional_internalFractional (h : Fractional Φ) : ⊢ internalFractional (SI := SI) Φ := by
+theorem fractional_internalFractional (h : Fractional Φ) : ⊢ internalFractional Φ := by
   unfold internalFractional
   iintro !> %p %q
   iapply equiv_wandIff (h.fractional p q)
 
 @[rocq_alias internal_fractional_iff]
 theorem internalFractional_iff :
-    □ (∀ q, Φ q ∗-∗ Ψ q) ⊢ internalFractional (SI := SI) Φ -∗ internalFractional (SI := SI) Ψ := by
+    □ (∀ q, Φ q ∗-∗ Ψ q) ⊢ internalFractional Φ -∗ internalFractional Ψ := by
   unfold internalFractional
   iintro #Hiff #Hdup !> %p %q
   isplit

@@ -55,7 +55,7 @@ structure Modality PROP1 PROP2 [BI.BIBase PROP1] [BI.BIBase PROP2] where
   sep : ∀ {P Q}, iprop(M P ∗ M Q) ⊢ M iprop(P ∗ Q)
 
 @[rocq_alias modality_id, rocq_alias modality_id_mixin]
-def modality_id [BI SI PROP] : Modality PROP PROP where
+def modality_id [BI PROP] : Modality PROP PROP where
   M := id
   action _ := .id
   spec := by simp

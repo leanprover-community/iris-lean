@@ -156,7 +156,7 @@ instance : IsCOFE SI (SiProp SI) where
 section BIInstance
 
 /-- The connectives of `SiProp`. Not a global instance: outside this section `BIBase (SiProp SI)`
-is only reachable through `BI.toBIBase instBI`, so generic `[BI SI PROP]` lemmas unify at
+is only reachable through `BI.toBIBase instBI`, so generic `[BI PROP]` lemmas unify at
 `SiProp SI` without pinning `SI`. -/
 @[reducible] def instBIBase : BIBase (SiProp SI) where
   Entails := SiProp.entails
@@ -187,13 +187,55 @@ instance siPropPreorder : Std.IsPreorder (SiProp SI) where
 /-! ## BI instance -/
 
 @[rocq_alias siPropI]
-instance instBI : BI SI (SiProp SI) where
+instance instBI : BI (SiProp SI) where
   toBIBase := instBIBase
   entails_refl := siPropPreorder.le_refl _
   entails_trans := siPropPreorder.le_trans _ _ _
   equiv_iff := OFE.eq_dist.trans
     ⟨fun heq => ⟨fun n hP => (heq n SIdx.le_refl).mp hP, fun n hQ => (heq n SIdx.le_refl).mpr hQ⟩,
      fun H _ _ _ => ⟨H.1 _, H.2 _⟩⟩
+  pure_intro h _ _ := h
+  pure_elim' h _ hφ := h hφ _ trivial
+  and_elim_l _ h := h.1
+  and_elim_r _ h := h.2
+  and_intro h₁ h₂ _ h := ⟨h₁ _ h, h₂ _ h⟩
+  or_intro_l _ h := .inl h
+  or_intro_r _ h := .inr h
+  or_elim h₁ h₂ _ h := h.elim (h₁ _) (h₂ _)
+  imp_intro {P _ _} h n hP n' hle hQ := h n' ⟨P.closed hP hle, hQ⟩
+  imp_elim h n hPQ := h n hPQ.1 n SIdx.le_refl hPQ.2
+  sForall_intro h _ hP P hΨ := h P hΨ _ hP
+  sForall_elim h _ hF := hF _ h
+  sExists_intro h _ hP := ⟨_, h, hP⟩
+  sExists_elim h := fun _ ⟨_, hΨ, hP⟩ => h _ hΨ _ hP
+  sep_mono h₁ h₂ _ hPQ := ⟨h₁ _ hPQ.1, h₂ _ hPQ.2⟩
+  emp_sep := ⟨fun _ hPQ => hPQ.2, fun _ hP => ⟨trivial, hP⟩⟩
+  sep_symm _ hPQ := ⟨hPQ.2, hPQ.1⟩
+  sep_assoc_l _ hPQR := ⟨hPQR.1.1, hPQR.1.2, hPQR.2⟩
+  wand_intro := fun {P _ _} h n hP n' hle hQ => h n' ⟨P.closed hP hle, hQ⟩
+  wand_elim h n hPQ := h n hPQ.1 n SIdx.le_refl hPQ.2
+  persistently_mono h := h
+  persistently_idem_2 _ h := h
+  persistently_emp_2 _ h := h
+  persistently_and_2 _ h := h
+  persistently_absorb_l _ h := h.1
+  persistently_and_l _ h := h
+  later_mono h _ hlP k hk := h k (hlP k hk)
+  later_intro {P} _ hP _ hk := P.closed hP (SIdx.lt_le_incl hk)
+  later_sForall_2 n h _ hk P hP := h _ ⟨P, rfl⟩ n SIdx.le_refl hP _ hk
+  later_false_sExists {Φ} n h := by
+    obtain ⟨P, hΦP, hP0⟩ := h (0 : SI) SIdx.le_0_l fun k hk => absurd hk (SIdx.not_lt_zero k)
+    exact ⟨_, ⟨P, rfl⟩, hΦP, fun _ _ hF => P.closed hP0 (SIdx.le_ngt.mpr fun hlt => hF _ hlt)⟩
+  later_false_sep _ h := ⟨fun n' hn' hF => (h n' hn' hF).1, fun n' hn' hF => (h n' hn' hF).2⟩
+  later_sep_2 _ h k hk := ⟨h.1 k hk, h.2 k hk⟩
+  later_persistently := ⟨fun _ => id, fun _ => id⟩
+  later_false_em {P} n hP := by
+    by_cases hn : n = 0
+    · subst hn; exact .inl fun k hk => absurd hk (SIdx.not_lt_zero k)
+    · exact .inr fun _ _ hF =>
+        P.closed (hP 0 (SIdx.neq_0_lt_0.mp hn)) (SIdx.le_ngt.mpr fun hlt => hF _ hlt)
+
+instance instBIStepIndexed : BIStepIndexed SI (SiProp SI) where
   and_ne.ne _ _ _ h₁ _ _ h₂ m h := ⟨.imp (h₁ h).mp (h₂ h).mp, .imp (h₁ h).mpr (h₂ h).mpr⟩
   or_ne.ne _ _ _ h₁ _ _ h₂ m h := ⟨.imp (h₁ h).mp (h₂ h).mp, .imp (h₁ h).mpr (h₂ h).mpr⟩
   imp_ne.ne _ _ _ h₁ _ _ h₂ m hle := {
@@ -227,52 +269,12 @@ instance instBI : BI SI (SiProp SI) where
   later_ne.ne _ _ _ h _ hle :=
     ⟨fun hP k hk => (h (SIdx.le_trans (SIdx.lt_le_incl hk) hle)).mp (hP k hk),
      fun hQ k hk => (h (SIdx.le_trans (SIdx.lt_le_incl hk) hle)).mpr (hQ k hk)⟩
-  pure_intro h _ _ := h
-  pure_elim' h _ hφ := h hφ _ trivial
-  and_elim_l _ h := h.1
-  and_elim_r _ h := h.2
-  and_intro h₁ h₂ _ h := ⟨h₁ _ h, h₂ _ h⟩
-  or_intro_l _ h := .inl h
-  or_intro_r _ h := .inr h
-  or_elim h₁ h₂ _ h := h.elim (h₁ _) (h₂ _)
-  imp_intro {P _ _} h n hP n' hle hQ := h n' ⟨P.closed hP hle, hQ⟩
-  imp_elim h n hPQ := h n hPQ.1 n SIdx.le_refl hPQ.2
-  sForall_intro h _ hP P hΨ := h P hΨ _ hP
-  sForall_elim h _ hF := hF _ h
-  sExists_intro h _ hP := ⟨_, h, hP⟩
-  sExists_elim h := fun _ ⟨_, hΨ, hP⟩ => h _ hΨ _ hP
-  sep_mono h₁ h₂ _ hPQ := ⟨h₁ _ hPQ.1, h₂ _ hPQ.2⟩
-  emp_sep := ⟨fun _ hPQ => hPQ.2, fun _ hP => ⟨trivial, hP⟩⟩
-  sep_symm _ hPQ := ⟨hPQ.2, hPQ.1⟩
-  sep_assoc_l _ hPQR := ⟨hPQR.1.1, hPQR.1.2, hPQR.2⟩
-  wand_intro := fun {P _ _} h n hP n' hle hQ => h n' ⟨P.closed hP hle, hQ⟩
-  wand_elim h n hPQ := h n hPQ.1 n SIdx.le_refl hPQ.2
-  persistently_mono h := h
-  persistently_idem_2 _ h := h
-  persistently_emp_2 _ h := h
-  persistently_and_2 _ h := h
-  persistently_absorb_l _ h := h.1
-  persistently_and_l _ h := h
-  later_mono h _ hlP k hk := h k (hlP k hk)
-  later_intro {P} _ hP _ hk := P.closed hP (SIdx.lt_le_incl hk)
-  later_sForall_2 n h _ hk P hP := h _ ⟨P, rfl⟩ n SIdx.le_refl hP _ hk
-  later_false_sExists {Φ} n h := by
-    obtain ⟨P, hΦP, hP0⟩ := h (0 : SI) SIdx.le_0_l fun k hk => absurd hk (SIdx.not_lt_zero k)
-    exact ⟨_, ⟨P, rfl⟩, hΦP, fun _ _ hF => P.closed hP0 (SIdx.le_ngt.mpr fun hlt => hF _ hlt)⟩
   later_sExists_false n h := by
     rcases SIdxFinite.finite_index n with rfl | ⟨m, rfl⟩
     · exact .inl fun k hk => absurd hk (SIdx.not_lt_zero k)
     · obtain ⟨P, hΦP, hPm⟩ := h m (SIdx.lt_succ_self m)
       exact .inr ⟨_, ⟨P, rfl⟩, hΦP, fun _ hk => P.closed hPm (SIdx.lt_succ_r.mp hk)⟩
-  later_false_sep _ h := ⟨fun n' hn' hF => (h n' hn' hF).1, fun n' hn' hF => (h n' hn' hF).2⟩
   later_sep_1 _ h := ⟨fun k hk => (h k hk).1, fun k hk => (h k hk).2⟩
-  later_sep_2 _ h k hk := ⟨h.1 k hk, h.2 k hk⟩
-  later_persistently := ⟨fun _ => id, fun _ => id⟩
-  later_false_em {P} n hP := by
-    by_cases hn : n = 0
-    · subst hn; exact .inl fun k hk => absurd hk (SIdx.not_lt_zero k)
-    · exact .inr fun _ _ hF =>
-        P.closed (hP 0 (SIdx.neq_0_lt_0.mp hn)) (SIdx.le_ngt.mpr fun hlt => hF _ hlt)
 
 end BIInstance
 

@@ -49,7 +49,7 @@ instance heapPropPreorder : Std.IsPreorder (HeapProp Val) where
 
 instance : COFE Nat (HeapProp Val) := COFE.ofDiscrete _
 
-instance : BI Nat (HeapProp Val) where
+instance : BI (HeapProp Val) where
   toBIBase := instBIBaseHeapProp
   entails_refl := heapPropPreorder.le_refl _
   entails_trans := heapPropPreorder.le_trans _ _ _
@@ -57,16 +57,6 @@ instance : BI Nat (HeapProp Val) where
     fun h => h ▸ ⟨Std.IsPreorder.le_refl P, Std.IsPreorder.le_refl P⟩,
     fun ⟨h₁, h₂⟩ => funext fun σ => propext ⟨h₁ σ, h₂ σ⟩
   ⟩
-
-  and_ne          := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩
-  or_ne           := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩
-  imp_ne          := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩
-  sep_ne          := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩
-  wand_ne         := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩
-  persistently_ne := ⟨by rintro _ _ _ h; exact (h : _ = _) ▸ rfl⟩
-  later_ne        := ⟨fun _ _ _ _ => rfl⟩
-  sForall_ne {_ P Q} h := (liftRel_eq.1 (h : liftRel Eq P Q)) ▸ rfl
-  sExists_ne {_ P Q} h := (liftRel_eq.1 (h : liftRel Eq P Q)) ▸ rfl
 
   pure_intro h _ _ := h
   pure_elim' h_φP σ h_φ := h_φP h_φ σ ⟨⟩
@@ -264,15 +254,25 @@ instance : BI Nat (HeapProp Val) where
   later_false_sExists _ h :=
     let ⟨p, hΦ, hp⟩ := h trivial
     ⟨_, ⟨p, rfl⟩, hΦ, fun _ => hp⟩
-  later_sExists_false _ _ := .inl trivial
   later_false_sep _ h :=
     let ⟨σ1, σ2, hu, hd, hP, hQ⟩ := h trivial
     ⟨σ1, σ2, hu, hd, fun _ => hP, fun _ => hQ⟩
-  later_sep_1 σ _ := ⟨∅, σ, empty_union, empty_disjoint, trivial, trivial⟩
   later_sep_2 _ _ := trivial
   later_persistently := ⟨fun _ _ => trivial, fun _ _ => trivial⟩
   later_false_em _ _ := .inl trivial
 
+instance : BIStepIndexed Nat (HeapProp Val) where
+  and_ne          := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩
+  or_ne           := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩
+  imp_ne          := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩
+  sep_ne          := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩
+  wand_ne         := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩
+  persistently_ne := ⟨by rintro _ _ _ h; exact (h : _ = _) ▸ rfl⟩
+  later_ne        := ⟨fun _ _ _ _ => rfl⟩
+  sForall_ne {_ P Q} h := (liftRel_eq.1 (h : liftRel Eq P Q)) ▸ rfl
+  sExists_ne {_ P Q} h := (liftRel_eq.1 (h : liftRel Eq P Q)) ▸ rfl
+  later_sExists_false _ _ := .inl trivial
+  later_sep_1 σ _ := ⟨∅, σ, empty_union, empty_disjoint, trivial, trivial⟩
 
 end BIInstance
 end Classical

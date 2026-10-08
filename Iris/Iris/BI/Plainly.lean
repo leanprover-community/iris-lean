@@ -27,7 +27,7 @@ open BI
 namespace BI
 open Iris.Std
 
-variable [Sbi SI PROP]
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP]
 variable {P Q R : PROP}
 
 section PlainlyLaws
@@ -416,10 +416,14 @@ theorem plainly_intro [ι : Plain P] : iprop(P ⊢ Q) → P ⊢ ■ Q := fun h =
     _ ⊢ ■ P := Plain.plain
     _ ⊢ ■ Q := plainly_mono h
 
+-- Plainly is defined through `Sbi`: SI is fixed by the `Plain`/`■` premise.
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias plain_persistent]
 instance plain_persistent [Plain P] : Persistent P where
-  persistent := Plain.plain.trans plainly_elim_persistently
+  persistent := Plain.plain.trans (plainly_elim_persistently (SI := SI))
 
+-- Plainly is defined through `Sbi`: SI is fixed by the `Plain`/`■` premise.
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias impl_persistent]
 instance impl_persistent [Absorbing P] [Plain P] [Persistent Q] : Persistent iprop(P → Q) where
   persistent := by
@@ -430,10 +434,14 @@ instance impl_persistent [Absorbing P] [Plain P] [Persistent Q] : Persistent ipr
       _ ⊢ <pers> (■ P → Q) := persistently_impl_plainly
       _ ⊢ <pers> (P → Q)   := persistently_mono (imp_mono_left Plain.plain)
 
+-- Plainly is defined through `Sbi`: SI is fixed by the `Plain`/`■` premise.
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias plainly_persistent]
 instance plainly_persistent : Persistent iprop(■ P) where
   persistent := persistently_elim_plainly.2
 
+-- Plainly is defined through `Sbi`: SI is fixed by the `Plain`/`■` premise.
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias wand_persistent]
 instance wand_persistent [Plain P] [Persistent Q] [Absorbing Q] :
   Persistent iprop(P -∗ Q) where
@@ -458,85 +466,80 @@ section BigOp
 
 @[rocq_alias plainly_sep_weak_homomorphism]
 instance plainly_sep_weak_homomorphism [BIPositive PROP] [BIAffine PROP] :
-    Algebra.WeakMonoidHomomorphism SI BIBase.sep BIBase.sep iprop(emp) iprop(emp) BiEntails
+    Algebra.WeakMonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp) BiEntails
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
   op_proper aa' bb' := aa'.to_eq ▸ bb'.to_eq ▸ .rfl
-  map_ne := inferInstance
   map_op := plainly_sep
 
 instance plainly_and_weak_homomorphism :
-    Algebra.WeakMonoidHomomorphism SI BIBase.and BIBase.and iprop(True) iprop(True) BiEntails
+    Algebra.WeakMonoidHomomorphism BIBase.and BIBase.and iprop(True) iprop(True) BiEntails
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
   op_proper aa' bb' := aa'.to_eq ▸ bb'.to_eq ▸ .rfl
-  map_ne := inferInstance
   map_op := plainly_and
 
 instance plainly_or_weak_homomorphism [SbiEmpValidExist SI PROP] :
-    Algebra.WeakMonoidHomomorphism SI BIBase.or BIBase.or iprop(False) iprop(False) BiEntails
+    Algebra.WeakMonoidHomomorphism BIBase.or BIBase.or iprop(False) iprop(False) BiEntails
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
   op_proper aa' bb' := aa'.to_eq ▸ bb'.to_eq ▸ .rfl
-  map_ne := inferInstance
   map_op := plainly_or
 
 @[rocq_alias plainly_sep_homomorphism]
 instance plainly_sep_homomorphism [BIAffine PROP] :
-    Algebra.MonoidHomomorphism SI BIBase.sep BIBase.sep iprop(emp) iprop(emp) BiEntails
+    Algebra.MonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp) BiEntails
     (BIBase.plainly (PROP := PROP)) where
   map_unit := plainly_emp
 
 @[rocq_alias plainly_and_homomorphism]
 instance plainly_and_homomorphism :
-    Algebra.MonoidHomomorphism SI BIBase.and BIBase.and iprop(True) iprop(True) BIBase.BiEntails
+    Algebra.MonoidHomomorphism BIBase.and BIBase.and iprop(True) iprop(True) BIBase.BiEntails
     (BIBase.plainly (PROP := PROP)) where
   map_unit := plainly_pure
 
 @[rocq_alias plainly_sep_entails_weak_homomorphism]
 instance plainly_sep_entails_weak_homomorphism :
-    Algebra.WeakMonoidHomomorphism SI BIBase.sep BIBase.sep iprop(emp) iprop(emp) (flip Entails)
+    Algebra.WeakMonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp) (flip Entails)
       (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := flip .trans
   op_proper := sep_mono
-  map_ne := inferInstance
   map_op := plainly_sep_2
 
 @[rocq_alias plainly_sep_entails_homomorphism]
 instance plainly_sep_entails_homomorphism [BIAffine PROP] :
-    Algebra.MonoidHomomorphism SI BIBase.sep BIBase.sep iprop(emp) iprop(emp) (flip Entails)
+    Algebra.MonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp) (flip Entails)
       (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := flip .trans
   op_proper := sep_mono
-  map_ne := inferInstance
   map_op := plainly_sep_2
   map_unit := plainly_emp.mpr
 
 @[rocq_alias plainly_or_homomorphism]
 instance plainly_or_homomorphism [SbiEmpValidExist SI PROP] :
-    Algebra.MonoidHomomorphism SI BIBase.or BIBase.or iprop(False) iprop(False) BiEntails
+    Algebra.MonoidHomomorphism BIBase.or BIBase.or iprop(False) iprop(False) BiEntails
     (BIBase.plainly (PROP := PROP)) where
   map_unit := plainly_pure
 
 @[rocq_alias big_sepL_plainly]
 theorem bigSepL_plainly [BIAffine PROP] {A} {Φ : Nat → A → PROP} {l} :
     iprop(■ ([∗list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∗list] k ↦ x ∈ l, ■ (Φ k x)) :=
-  (Algebra.BigOpL.bigOpL_hom (SI := SI) ..)
+  (Algebra.BigOpL.bigOpL_hom ..)
 
 @[rocq_alias big_andL_plainly]
 theorem bigAndL_plainly {A} (Φ : Nat → A → PROP) l :
     iprop(■ ([∧list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∧list] k ↦ x ∈ l, ■ (Φ k x)) :=
-  (Algebra.BigOpL.bigOpL_hom (SI := SI) ..)
+  (Algebra.BigOpL.bigOpL_hom ..)
 
 @[rocq_alias big_orL_plainly]
 theorem bigOrL_plainly [SbiEmpValidExist SI PROP] {A} (Φ : Nat → A → PROP) l :
     iprop(■ ([∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, ■ (Φ k x)) :=
-  (Algebra.BigOpL.bigOpL_hom (SI := SI) ..)
+  (Algebra.BigOpL.bigOpL_hom ..)
 
 @[rocq_alias big_sepL2_plainly]
 theorem bigSepL2_plainly [BIAffine PROP] {A B} (Φ : Nat → A → B → PROP) l₁ l₂ :
@@ -553,7 +556,7 @@ theorem bigSepL2_plainly [BIAffine PROP] {A B} (Φ : Nat → A → B → PROP) l
 theorem bigSepM_plainly [BIAffine PROP] [LawfulFiniteMap M K]
   {A} (Φ : K → A → PROP) (m : M A) :
     ■ ([∗map] k↦x ∈ m, Φ k x) ⊣⊢ [∗map] k↦x ∈ m, ■ (Φ k x) :=
-  (Algebra.BigOpM.bigOpM_hom (SI := SI) ..)
+  (Algebra.BigOpM.bigOpM_hom ..)
 
 @[rocq_alias big_sepM2_plainly]
 theorem bigSepM2_plainly [BIAffine PROP] [LawfulFiniteMap M K] {A B}
@@ -570,13 +573,13 @@ open Algebra in
 @[rocq_alias big_sepS_plainly]
 theorem bigSepS_plainly [BIAffine PROP] [LawfulFiniteSet S A] (Φ : A → PROP) (s : S) :
     ■ ([^ sep set] y ∈ s, Φ y) ⊣⊢ [^ sep set] y ∈ s, iprop(■ (Φ y)) :=
-  (BigOpS.hom (SI := SI) (hom := inferInstance) ..)
+  (BigOpS.hom (hom := inferInstance) ..)
 
 open Algebra in
 @[rocq_alias big_sepMS_plainly]
 theorem bigSepMS_plainly [BIAffine PROP] [LawfulFiniteMultiSet MS A] (Φ : A → PROP) (X : MS) :
     ■ ([^ sep mset] y ∈ X, Φ y) ⊣⊢ [^ sep mset] y ∈ X, iprop(■ (Φ y)) :=
-  (BigOpMS.hom (SI := SI) (hom := inferInstance) ..)
+  (BigOpMS.hom (hom := inferInstance) ..)
 
 end BigOp
 
@@ -816,7 +819,7 @@ theorem plainly_internalEq {A} [OFE SI A] {a b : A} :
   have : OFE.NonExpansive SI (β := PROP) (fun x ↦ iprop(■ (a ≡[SI] x))) :=  {
     ne n x x' xx' := instPlainly_ne.ne ((internalEq.ne_r a).ne xx')
   }
-  refine .trans ?_ (imp_elim <| internalEq.rewrite (a := a) (fun x ↦ iprop(■ a ≡[SI] x)))
+  refine .trans ?_ (imp_elim <| internalEq.rewrite (SI := SI) (a := a) (fun x ↦ iprop(■ a ≡[SI] x)))
   refine and_intro .rfl ?_
   calc iprop(a ≡[SI] b)
     _ ⊢ True := true_intro

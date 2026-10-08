@@ -25,7 +25,7 @@ goals below: writing the `match` under a `∃` binder makes the binder part of i
 private def laterP (φ : Nat → Prop) (n : Nat) : Prop := ∀ (m : Nat), m < n → φ m
 
 section RocqTests
-variable [Sbi Nat PROP] {A : Type _} [OFE Nat A] (x y z : A)
+variable [BI PROP] [BIStepIndexed Nat PROP] [Sbi Nat PROP] {A : Type _} [OFE Nat A] (x y z : A)
 
 /-! ### These should *not* include a `∀ m ≤ n` -/
 
@@ -94,7 +94,7 @@ example (h : ∀ (n : Nat), (∀ y, ∀ m ≤ n, x ≡{m}≡ y → y ≡{m}≡ z
 end RocqTests
 
 section LeanTests
-variable [Sbi Nat PROP] [ORA Nat A] [OFE Nat B]
+variable [BI PROP] [BIStepIndexed Nat PROP] [Sbi Nat PROP] [ORA Nat A] [OFE Nat B]
 
 /- `prod_validI`. -/
 example (x : A × A) (h : ∀ (n : Nat), ✓{n} x ↔ ✓{n} x.1 ∧ ✓{n} x.2) :

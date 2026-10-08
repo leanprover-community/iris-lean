@@ -27,7 +27,7 @@ open BI OFE SiProp ORA Sbi
 
 section CmraValid
 
-variable [Sbi SI PROP] [ORA SI A]
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [ORA SI A]
 
 @[rocq_alias internal_cmra_valid]
 def internalCmraValid (a : A) : PROP := siPure (cmraValid (SI := SI) a)
@@ -124,7 +124,7 @@ end CmraValid
 
 section CmraOrder
 
-variable [Sbi SI PROP] [ORA SI A]
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [ORA SI A]
 
 /-! ### The internal extension inclusion -/
 

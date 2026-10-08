@@ -691,7 +691,7 @@ theorem alloc_update_unit {f : GName → F.ap (IProp GF)} :
 theorem iOwn_alloc_dep (f : GName → F.ap (IProp GF)) (Ha : ∀ γ, ✓[Nat] (f γ)) :
     ⊢ |==> ∃ γ, iOwn γ (f γ) := by
   unfold iOwn
-  refine .trans (Q := iprop(|==> ∃ m, ⌜∃ γ, m = iSingleton F γ (f γ)⌝ ∧ UPred.ownM m)) ?_ (BIUpdate.mono (SI := Nat) ?_)
+  refine .trans (Q := iprop(|==> ∃ m, ⌜∃ γ, m = iSingleton F γ (f γ)⌝ ∧ UPred.ownM m)) ?_ (BIUpdate.mono ?_)
   · refine .trans (UPred.ownM_unit iprop(emp)) ?_
     refine .trans intuitionistically_elim ?_
     apply UPred.bupd_ownM_updateP
@@ -712,7 +712,7 @@ theorem iOwn_alloc_strong_dep (f : GName → F.ap (IProp GF)) (P : GName → Pro
     (Hf : ∀ γ, P γ → ✓[Nat] (f γ)) :
     ⊢ |==> ∃ γ, ⌜P γ⌝ ∗ iOwn γ (f γ) := by
   unfold iOwn
-  refine .trans (Q := iprop(|==> ∃ m, ⌜∃ γ, P γ ∧ m = iSingleton F γ (f γ)⌝ ∧ UPred.ownM m)) ?_ (BIUpdate.mono (SI := Nat) ?_)
+  refine .trans (Q := iprop(|==> ∃ m, ⌜∃ γ, P γ ∧ m = iSingleton F γ (f γ)⌝ ∧ UPred.ownM m)) ?_ (BIUpdate.mono ?_)
   · refine .trans (UPred.ownM_unit iprop(emp)) ?_
     refine .trans intuitionistically_elim ?_
     apply UPred.bupd_ownM_updateP
@@ -815,7 +815,7 @@ theorem iOwn_updateP {P γ a} (Hupd : a ~~>:[Nat] P) : iOwn γ a ⊢ |==> ∃ a'
 
 @[rocq_alias own_update]
 theorem iOwn_update {γ} {a a' : F.ap (IProp GF)} (Hupd : a ~~>[Nat] a') : iOwn γ a ⊢ |==> iOwn γ a' := by
-  refine (iOwn_updateP <| UpdateP.of_update Hupd).trans (BIUpdate.mono (SI := Nat) ?_)
+  refine (iOwn_updateP <| UpdateP.of_update Hupd).trans (BIUpdate.mono ?_)
   iintro ⟨%m, %hm, Hown⟩
   subst hm
   iexact Hown
@@ -852,7 +852,7 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit Nat ε] : ⊢ |==> i
     · have h_unit : IsUnit Nat (IProp.unfoldi (E.bundle ε)) := IProp.unfoldi_bundle_unit
       apply validN_ne h_unit.unit_left_id.dist.symm
       apply extract_frame_validN (Hv E.τ) h_at
-  · refine BIUpdate.mono (SI := Nat) ?_
+  · refine BIUpdate.mono ?_
     iintro ⟨%y, %hy, Hown⟩
     subst hy
     iexact Hown
@@ -914,25 +914,24 @@ variable {GF F} [URFunctorContractive Nat F] [RFunctorAffine Nat F] [E : ElemG G
 
 @[rocq_alias own_cmra_sep_homomorphism]
 instance iOwn_cmra_sep_homomorphism (γ : GName) :
-    WeakMonoidHomomorphism Nat (op (α := F.ap (IProp GF))) sep unit iprop(emp) BiEntails (iOwn γ) where
+    WeakMonoidHomomorphism (op (α := F.ap (IProp GF))) sep unit iprop(emp) BiEntails (iOwn γ) where
   rel_refl := .rfl
   rel_trans := .trans
   op_proper aa' bb' := sep_congr aa' bb'
-  map_ne := iOwn_ne
   map_op := iOwn_op
 
 @[rocq_alias big_opL_own]
 theorem bigOpL_iOwn {B : Type _} (γ : GName) (f : Nat → B → F.ap (IProp GF)) (l : List B) :
     l ≠ [] →
     iOwn γ ([^ op list] k ↦ x ∈ l, f k x) ⊣⊢ [∗list] k ↦ x ∈ l, iOwn γ (f k x) :=
-  BigOpL.bigOpL_hom_weak (SI := Nat) f
+  BigOpL.bigOpL_hom_weak f
 
 @[rocq_alias big_opM_own]
 theorem bigOpM_iOwn {K : Type _} {M : Type _ → Type _} {B : Type _} [LawfulFiniteMap M K]
     [DecidableEq K] (γ : GName) (g : K → B → F.ap (IProp GF)) (m : M B) :
     ¬ m = (∅ : M B) →
     iOwn γ ([^ op map] k ↦ x ∈ m, g k x) ⊣⊢ [∗map] k ↦ x ∈ m, iOwn γ (g k x) :=
-  fun h => BigOpM.bigOpM_weak_hom (SI := Nat) g m (fun he => h he)
+  fun h => BigOpM.bigOpM_weak_hom g m (fun he => h he)
 
 @[rocq_alias big_opS_own]
 theorem bigOpS_iOwn {B : Type _} {S : Type _} [LawfulFiniteSet S B] (γ : GName)
@@ -950,24 +949,23 @@ theorem bigOpMS_iOwn {B : Type _} {MS : Type _} [LawfulFiniteMultiSet MS B] (γ 
 
 @[rocq_alias own_cmra_sep_entails_homomorphism]
 instance iOwn_cmra_sep_entails_homomorphism (γ : GName) :
-    MonoidHomomorphism Nat (op (α := F.ap (IProp GF))) sep unit iprop(emp) Entails (iOwn γ) where
+    MonoidHomomorphism (op (α := F.ap (IProp GF))) sep unit iprop(emp) Entails (iOwn γ) where
   rel_refl := .rfl
   rel_trans := .trans
   op_proper := sep_mono
-  map_ne := iOwn_ne
   map_op := iOwn_op.mp
   map_unit := affine
 
 @[rocq_alias big_opL_own_1]
 theorem bigOpL_iOwn_entail {B : Type _} (γ : GName) (f : Nat → B → F.ap (IProp GF)) (l : List B) :
     iOwn γ ([^ op list] k ↦ x ∈ l, f k x) ⊢ [∗list] k ↦ x ∈ l, iOwn γ (f k x) :=
-  BigOpL.bigOpL_hom (SI := Nat) f l
+  BigOpL.bigOpL_hom f l
 
 @[rocq_alias big_opM_own_1]
 theorem bigOpM_iOwn_entail {K : Type _} {M : Type _ → Type _} {B : Type _} [LawfulFiniteMap M K]
     (γ : GName) (g : K → B → F.ap (IProp GF)) (m : M B) :
     iOwn γ ([^ op map] k ↦ x ∈ m, g k x) ⊢ [∗map] k ↦ x ∈ m, iOwn γ (g k x) :=
-  BigOpM.bigOpM_hom (SI := Nat) g m
+  BigOpM.bigOpM_hom g m
 
 @[rocq_alias big_opS_own_1]
 theorem bigOpS_iOwn_entail {B : Type _} {S : Type _} [LawfulFiniteSet S B] (γ : GName)

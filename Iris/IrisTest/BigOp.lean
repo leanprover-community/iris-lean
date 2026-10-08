@@ -16,7 +16,7 @@ open Iris BI ProofMode Std
 section Tests
 open OFE BIBase
 
-variable [BI Nat PROP] (P : Nat → PROP) (Q : Nat → Nat → PROP) (l l1 l2 : List Nat)
+variable [BI PROP] (P : Nat → PROP) (Q : Nat → Nat → PROP) (l l1 l2 : List Nat)
   (Q' : Nat → Nat → Nat → PROP)
 
 /-! ## Delaborator round-trip tests -/
@@ -65,7 +65,7 @@ end Tests
 
 section MapTests
 open Iris.Std OFE BIBase
-variable [BI Nat PROP] {K : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
+variable [BI PROP] {K : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
   (P : Nat → PROP) (Q : K → Nat → PROP) (m : M Nat)
   (Q2 : Nat → Nat → PROP) (Q2' : K → Nat → Nat → PROP) (m1 m2 : M Nat)
 
@@ -103,7 +103,7 @@ end MapTests
 
 section SetTests
 open Iris.Std OFE BIBase
-variable [BI Nat PROP] {S : Type _} {A : Type _} [FiniteSet S A]
+variable [BI PROP] {S : Type _} {A : Type _} [FiniteSet S A]
   (P : A → PROP) (s : S)
 
 -- bigSepS
@@ -115,7 +115,7 @@ end SetTests
 
 section ProofModeInstances
 
-variable {PROP : Type} [BI Nat PROP] {A B : Type} (p : Bool)
+variable {PROP : Type} [BI PROP] {A B : Type} (p : Bool)
 variable (Φ : Nat → A → PROP) (Ψ : Nat → A → B → PROP) (Ξ : A → PROP)
 variable (x x' : A) (y : B) (l l1 l2 : List A) (k1 k2 : List B)
 variable {MS : Type} [LawfulFiniteMultiSet MS A] (X1 X2 : MS)

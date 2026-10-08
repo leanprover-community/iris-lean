@@ -24,7 +24,7 @@ open Iris.Std BI ProofMode
 -/
 namespace AffineEM
 
-variable {PROP : Type _} [BI SI PROP] [BIPersistentlyExist PROP]
+variable {PROP : Type _} [BI PROP] [BIPersistentlyExist PROP]
 variable (em : ∀ P : PROP, ⊢ P ∨ ¬P)
 variable (P Q : PROP)
 include em
@@ -58,7 +58,7 @@ end AffineEM
 namespace LoebEM
 
 @[rocq_alias löb_em.later_anything]
-theorem later_anything [BI SI PROP] [BIPersistentlyExist PROP]
+theorem later_anything [BI PROP] [BIPersistentlyExist PROP]
     (em : ∀ P : PROP, ⊢ P ∨ ¬P) [BILoeb PROP] :
     ⊢@{PROP} ▷ P := by
   icases (em iprop(▷ False)) with #(HP | HnotP)
@@ -71,9 +71,10 @@ theorem later_anything [BI SI PROP] [BIPersistentlyExist PROP]
     iassumption
 
 @[rocq_alias löb_em.later_inconsistent]
-theorem later_inconsistent [Sbi SI PROP] [BIPersistentlyExist PROP]
+theorem later_inconsistent [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [BIPersistentlyExist PROP]
     (em : ∀ P : PROP, ⊢ P ∨ ¬P) : ⊢@{PROP} False := by
-  apply later_soundness (PROP := PROP) (P := iprop(False))
+  haveI : BILoeb PROP := .ofLaterContractive SI
+  apply later_soundness (SI := SI) (PROP := PROP) (P := iprop(False))
   apply later_anything
   assumption
 
@@ -82,7 +83,7 @@ end LoebEM
 /- We need the `▷` in a "Saved Proposition" construction with name-dependent allocation. -/
 namespace SavedProp
 
-variable [BI SI PROP] [instPersExist : BIPersistentlyExist PROP]
+variable [BI PROP] [instPersExist : BIPersistentlyExist PROP]
   [instAffine : BIAffine PROP] {P Q : PROP}
 variable (bupd : PROP → PROP)
 variable (ident : Type _) (saved : ident → PROP → PROP)
@@ -117,11 +118,11 @@ def A (i : ident) : PROP := iprop(∃ P, □ (¬P ∗ saved i P))
 include sprop_alloc_dep in
 omit instAffine instPers instPersExist in
 @[rocq_alias savedprop.A_alloc]
-theorem A_alloc : ⊢ bupd (∃ i, saved i (A (SI := SI) ident saved i)) := sprop_alloc_dep
+theorem A_alloc : ⊢ bupd (∃ i, saved i (A ident saved i)) := sprop_alloc_dep
 
 include sprop_agree in
 @[rocq_alias savedprop.saved_NA]
-theorem saved_NA (i : ident) : saved i (A (SI := SI) ident saved i) ⊢ ¬A (SI := SI) ident saved i := by
+theorem saved_NA (i : ident) : saved i (A ident saved i) ⊢ ¬A ident saved i := by
   iintro #Hs #HA
   ihave ⟨%P, HNP, HsP⟩ := HA
   iapply HNP
@@ -131,7 +132,7 @@ theorem saved_NA (i : ident) : saved i (A (SI := SI) ident saved i) ⊢ ¬A (SI 
 
 include sprop_agree in
 @[rocq_alias savedprop.saved_A]
-theorem saved_A (i : ident) : saved i (A (SI := SI) ident saved i) ⊢ A (SI := SI) ident saved i := by
+theorem saved_A (i : ident) : saved i (A ident saved i) ⊢ A ident saved i := by
   iintro #Hs
   iexists A ident saved i
   iintro {$Hs} !>
@@ -166,7 +167,7 @@ inductive Mask where | M0 | M1 deriving DecidableEq, Inhabited
 
 open Mask
 
-variable {PROP : Type _} [BI SI PROP] [instAffine : BIAffine PROP] [instBFupd : BIFUpdate SI PROP]
+variable {PROP : Type _} [BI PROP] [instAffine : BIAffine PROP] [instBFupd : BIFUpdate PROP]
 variable {P Q R : PROP}
 variable (fupd : Mask → PROP → PROP)
 variable (name : Type _) (inv : name → PROP → PROP)
@@ -258,13 +259,13 @@ def saved (γ : gname) (P : PROP) : PROP :=
 omit instAffine instBFupd in
 @[rocq_alias inv.saved_persistent]
 theorem saved_persistent (γ : gname) (P : PROP) :
-    Persistent (saved (SI := SI) name inv gname start finished γ P) := by infer_instance
+    Persistent (saved name inv gname start finished γ P) := by infer_instance
 
 include sts_alloc fupd_mono fupd_intro fupd_fupd fupd_frame_left fupd_mask_mono inv_alloc in
 omit instBFupd in
 @[rocq_alias inv.saved_alloc]
 theorem saved_alloc (P : gname → PROP) :
-    ⊢ fupd M1 iprop(∃ γ, saved (SI := SI) name inv gname start finished γ (P γ)) := by
+    ⊢ fupd M1 iprop(∃ γ, saved name inv gname start finished γ (P γ)) := by
   haveI {p : Bool} {P Q : PROP} :
       ElimModal True p .out false (fupd M0 P) P (fupd M1 Q) (fupd M1 Q) :=
     elim_fupd0_fupd1 fupd fupd_mono fupd_fupd fupd_frame_left fupd_mask_mono p
@@ -282,8 +283,8 @@ include fupd_intro fupd_mono fupd_fupd fupd_frame_left inv_fupd
 omit instBFupd in
 @[rocq_alias inv.saved_cast]
 theorem saved_cast (γ : gname) :
-    saved (SI := SI) name inv gname start finished γ P ∗
-    saved (SI := SI) name inv gname start finished γ Q ∗ □ P ⊢ fupd M1 iprop(□ Q) := by
+    saved name inv gname start finished γ P ∗
+    saved name inv gname start finished γ Q ∗ □ P ⊢ fupd M1 iprop(□ Q) := by
   haveI {p : Bool} {E : Mask} {P Q : PROP} :
       ElimModal True p .out false (fupd E P) P (fupd E Q) (fupd E Q) :=
     elim_fupd_fupd fupd fupd_mono fupd_fupd fupd_frame_left p E
@@ -320,18 +321,18 @@ def notFUpd (P : PROP) : PROP := iprop(□ (P -∗ fupd M1 iprop(False)))
 /-- A bad recursive reference: assertion with name `i` does not hold. -/
 @[reducible, rocq_alias inv.A]
 def A (i : gname) : PROP :=
-  iprop(∃ P, notFUpd (SI := SI) fupd P ∗ saved (SI := SI) name inv gname start finished i P)
+  iprop(∃ P, notFUpd fupd P ∗ saved name inv gname start finished i P)
 
 @[rocq_alias inv.A_persistent]
 instance A_persistent (i : gname) :
-    Persistent (A (SI := SI) fupd name inv gname start finished i) := by infer_instance
+    Persistent (A fupd name inv gname start finished i) := by infer_instance
 
 include sts_alloc fupd_intro fupd_mono fupd_fupd fupd_frame_left fupd_mask_mono inv_alloc in
 omit instBFupd in
 @[rocq_alias inv.A_alloc]
 theorem A_alloc :
-    ⊢ fupd M1 (∃ i, saved (SI := SI) name inv gname start finished i
-      (A (SI := SI) fupd name inv gname start finished i)) :=
+    ⊢ fupd M1 (∃ i, saved name inv gname start finished i
+      (A fupd name inv gname start finished i)) :=
   saved_alloc fupd name inv fupd_intro fupd_mono fupd_fupd fupd_frame_left fupd_mask_mono
     inv_alloc gname start finished sts_alloc
     (P := fun i => A fupd name inv gname start finished i)
@@ -341,8 +342,8 @@ include fupd_intro fupd_mono fupd_fupd fupd_frame_left inv_fupd
 omit instBFupd in
 @[rocq_alias inv.saved_NA]
 theorem saved_NA (i : gname) :
-    saved (SI := SI) name inv gname start finished i (A (SI := SI) fupd name inv gname start finished i) ⊢
-      notFUpd (SI := SI) fupd (A (SI := SI) fupd name inv gname start finished i) := by
+    saved name inv gname start finished i (A fupd name inv gname start finished i) ⊢
+      notFUpd fupd (A fupd name inv gname start finished i) := by
   haveI {p : Bool} {E : Mask} {P Q : PROP} :
       ElimModal True p .out false (fupd E P) P (fupd E Q) (fupd E Q) :=
     elim_fupd_fupd fupd fupd_mono fupd_fupd fupd_frame_left p E
@@ -359,8 +360,8 @@ include fupd_intro fupd_mono fupd_fupd fupd_frame_left inv_fupd
 omit instBFupd in
 @[rocq_alias inv.saved_A]
 theorem saved_A (i : gname) :
-    saved (SI := SI) name inv gname start finished i (A (SI := SI) fupd name inv gname start finished i) ⊢
-      A (SI := SI) fupd name inv gname start finished i := by
+    saved name inv gname start finished i (A fupd name inv gname start finished i) ⊢
+      A fupd name inv gname start finished i := by
   iintro #Hi
   iexists A fupd name inv gname start finished i
   iframe Hi
@@ -403,16 +404,16 @@ variable (finished_not_start : ∀ γ, start γ ∗ finished γ ⊢ (False : PRO
 def B : PROP := iprop(□ fupd M1 iprop(False))
 
 @[reducible, rocq_alias inv.P]
-def P' (γ : gname) : PROP := iprop(start γ ∨ B (SI := SI) fupd)
+def P' (γ : gname) : PROP := iprop(start γ ∨ B fupd)
 
 @[reducible, rocq_alias inv.I]
-def I (i : name) (γ : gname) : PROP := inv i (P' (SI := SI) fupd start γ)
+def I (i : name) (γ : gname) : PROP := inv i (P' fupd start γ)
 
 include fupd_intro fupd_fupd inv_fupd finished_not_start in
 omit instBFupd in
 @[rocq_alias inv.finished_contradiction]
 theorem finished_contradiction (γ : gname) (i : name) :
-    finished γ ∗ I (SI := SI) fupd name inv start i γ ⊢ B (SI := SI) fupd := by
+    finished γ ∗ I fupd name inv start i γ ⊢ B fupd := by
   iintro ⟨#Hfin, #Hi⟩ !>
   iapply inv_fupd' fupd name inv fupd_fupd inv_fupd i
   isplit
@@ -431,7 +432,7 @@ include fupd_intro fupd_mono fupd_fupd fupd_frame_left inv_fupd
 omit instBFupd in
 @[rocq_alias inv.invariant_contradiction]
 theorem invariant_contradiction {γ : gname} {i : name} :
-    I (SI := SI) fupd name inv start i γ ⊢ B (SI := SI) fupd := by
+    I fupd name inv start i γ ⊢ B fupd := by
   haveI {p : Bool} {E : Mask} {P Q : PROP} :
       ElimModal True p .out false (fupd E P) P (fupd E Q) (fupd E Q) :=
     elim_fupd_fupd fupd fupd_mono fupd_fupd fupd_frame_left p E
@@ -486,7 +487,7 @@ namespace Linear
 @[rocq_alias linear.mask]
 inductive Mask where | M0 | M1 deriving DecidableEq, Inhabited
 
-variable {PROP : Type _} [BI SI PROP]
+variable {PROP : Type _} [BI PROP]
 variable {P Q : PROP}
 variable (fupd : Mask → Mask → PROP → PROP)
 variable (gname : Type _) (cinv : gname → PROP → PROP) (cinv_own : gname → PROP)
@@ -550,9 +551,9 @@ end Linear
 -/
 namespace LaterCreditsPlain
 
-variable [instFin : SIdxFinite SI] [instSbi : Sbi SI PROP]
+variable [instFin : SIdxFinite SI] [BI PROP] [BIStepIndexed SI PROP] [instSbi : Sbi SI PROP]
   [instPersExist : BIPersistentlyExist PROP]
-  [instBFupd : BIFUpdate SI PROP]
+  [instBFupd : BIFUpdate PROP]
 variable {lc : PROP}
 
 variable (lc_fupd_elim_later : ∀ E P, lc ∗ ▷ P ⊢ |={E}=> P)
@@ -575,11 +576,12 @@ theorem lc_fupd_elim_later_keep {E : CoPset} {P : PROP} [inst1 : Plain P] [inst2
   · iintro HP' !> {$Hlc} {HP}
     exact siPure_siEmpValid_elim
 
-omit instBFupd in
+include instFin in
+omit instBFupd instSbi in
 @[rocq_alias later_credits_plain.laterN_False]
 theorem laterN_False [BILoeb PROP] : ⊢@{PROP} ∃ n, ▷^[n] False := by
   iloeb as IH
-  icases IH with ⟨%n, Hn⟩
+  icases (later_exists (SI := SI)).2 $$ IH with ⟨%n, Hn⟩
   iexists n + 1
   dsimp [BIBase.laterN, Nat.repeat]
   iassumption
@@ -590,7 +592,7 @@ theorem contradiction [BILoeb PROP] : False := by
   apply pure_soundness (SI := SI) (PROP := PROP)
   apply lc_soundness _ ⊤
   iintro Hlc
-  icases laterN_False with ⟨%n, ∗Hfalse⟩
+  icases laterN_False (SI := SI) with ⟨%n, ∗Hfalse⟩
   icases affinely_elim $$ Hfalse with Hfalse
   iinduction n with
   | zero =>

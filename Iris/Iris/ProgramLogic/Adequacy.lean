@@ -191,7 +191,7 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness) (es : List Expr) (�
     (Hsteps : (es, σ1) -<κs>->ₜₚ^[n] (t2, σ2)) :
     φ := by
   apply pure_soundness (SI := Nat) (PROP := IProp GF)
-  apply laterN_soundness (n := steps_sum numLaters 0 n + 1)
+  apply laterN_soundness (SI := Nat) (n := steps_sum numLaters 0 n + 1)
   rw [(laterN_succ_right _).to_eq]
   refine Entails.trans ?_ (laterN_mono _ except0_into_later)
   apply fupd_finally_soundness hlc (steps_sum numLaters 0 n) ⊤

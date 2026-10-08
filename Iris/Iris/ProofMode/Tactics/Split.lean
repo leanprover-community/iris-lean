@@ -11,19 +11,16 @@ public import Iris.ProofMode.ProofModeM
 
 namespace Iris.ProofMode
 
-variable {SI : Type _} [Iris.SIdx SI]
-
-
 public section
 open BI
 
 @[rocq_alias tac_and_split]
-theorem from_and_intro [BI SI PROP] {P Q A1 A2 : PROP} [inst : FromAnd Q A1 A2]
+theorem from_and_intro [BI PROP] {P Q A1 A2 : PROP} [inst : FromAnd Q A1 A2]
     (h1 : P ⊢ A1) (h2 : P ⊢ A2) : P ⊢ Q :=
   (and_intro h1 h2).trans inst.1
 
 @[rocq_alias tac_sep_split]
-theorem sep_split [BI SI PROP] {P P1 P2 Q Q1 Q2 : PROP} [inst : FromSep Q Q1 Q2]
+theorem sep_split [BI PROP] {P P1 P2 Q Q1 Q2 : PROP} [inst : FromSep Q Q1 Q2]
     (h : P ⊣⊢ P1 ∗ P2) (h1 : P1 ⊢ Q1) (h2 : P2 ⊢ Q2) : P ⊢ Q := calc
   P ⊢ P1 ∗ P2 := h.1
   _ ⊢ Q1 ∗ Q2 := sep_mono h1 h2

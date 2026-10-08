@@ -9,7 +9,7 @@ public import Iris.BI.Updates
 
 open Iris
 
-variable [BI Nat PROP] [BUpd PROP] [FUpd PROP] (P Q : PROP) (E₁ E₂ : CoPset)
+variable [BI PROP] [BUpd PROP] [FUpd PROP] (P Q : PROP) (E₁ E₂ : CoPset)
 
 /-- info: iprop(P ==∗ Q) : PROP -/
 #guard_msgs in

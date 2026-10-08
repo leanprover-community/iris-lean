@@ -10,14 +10,11 @@ public meta import Iris.ProofMode.Tactics.Cases
 
 namespace Iris.ProofMode
 
-variable {SI : Type _} [Iris.SIdx SI]
-
-
 public section
 open BI
 
 @[rocq_alias tac_assert]
-theorem ihave_assert [BI SI PROP] {A B C : PROP}
+theorem ihave_assert [BI PROP] {A B C : PROP}
     (h1 : A ∗ □ (B -∗ B) ⊢ C) : A ⊢ C := calc
   _ ⊢ A ∧ <pers> (B -∗ B) :=
       and_intro .rfl <| persistently_emp_intro.trans <| persistently_mono <| wand_intro emp_sep.1

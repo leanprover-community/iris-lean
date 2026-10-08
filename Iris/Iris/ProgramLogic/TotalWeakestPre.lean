@@ -103,12 +103,12 @@ instance pre'_mono (s : Stuckness) : BIMonoPred Nat (pre' (ι := ι) s) where
     obtain rfl := show e₁ = e₂ from he
     simp only [pre', pre]
     match toVal e₁ with
-    | some v => exact BIFUpdate.ne.ne (hΦ v)
+    | some v => exact FUpdNE.fupd_ne.ne (hΦ v)
     | none =>
       refine forall_ne fun _ => forall_ne fun _ => forall_ne fun _ => forall_ne fun _ => ?_
-      refine wand_ne.ne .rfl <| BIFUpdate.ne.ne <| sep_ne.ne .rfl ?_
+      refine wand_ne.ne .rfl <| FUpdNE.fupd_ne.ne <| sep_ne.ne .rfl ?_
       refine forall_ne fun _ => forall_ne fun e => forall_ne fun _ => forall_ne fun _ => ?_
-      refine wand_ne.ne .rfl <| BIFUpdate.ne.ne <| sep_ne.ne .rfl <| sep_ne.ne .rfl <| sep_ne.ne ?_ .rfl
+      refine wand_ne.ne .rfl <| FUpdNE.fupd_ne.ne <| sep_ne.ne .rfl <| sep_ne.ne .rfl <| sep_ne.ne ?_ .rfl
       refine NonExpansive.ne ?_
       exact ⟨.rfl, .rfl, hΦ⟩
 

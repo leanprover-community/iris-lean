@@ -10,7 +10,6 @@ public import Iris.ProofMode.Expr
 public meta section
 
 namespace Iris.ProofMode
-
 open Iris.BI Qq
 open Lean Lean.Expr Lean.Meta Lean.PrettyPrinter.Delaborator Lean.PrettyPrinter.Delaborator.SubExpr
 
@@ -48,15 +47,15 @@ def delabIrisHyp : Delab := withAppArg delab
 def delabIrisGoal : Delab := do
   let some { hyps, goal, .. } := parseIrisGoal? (← instantiateMVars (← getExpr)) | failure
   -- Delaboration for the hypotheses
-  let ⟨_, hypStxs⟩ ← withNaryArg 4 <| delabHypotheses hyps ({}, #[])
+  let ⟨_, hypStxs⟩ ← withNaryArg 2 <| delabHypotheses hyps ({}, #[])
   -- Delaboration for the proof goal
-  let goalStx ← withNaryArg 5 delabIProp
+  let goalStx ← withNaryArg 3 delabIProp
   -- Conceal internal machinery (`Entails'`, `IrisHyp`) from user's view
   let stx ← annotateCurPos ⟨← `(irisGoalStx| $hypStxs.reverse* ⊢ $goalStx:term)⟩
   addTermInfo (← getPos) stx q(Entails $(clean hyps) $goal)
   return stx
 where
-  delabHypotheses {u v prop si sidx bi s} (hyps : @Hyps u v prop si sidx bi s)
+  delabHypotheses {u prop bi s} (hyps : @Hyps u prop bi s)
       (acc : NameMap Nat × Array (TSyntax ``irisHyp)) :
       DelabM (NameMap Nat × Array (TSyntax ``irisHyp)) := do
     match hyps with
@@ -86,7 +85,7 @@ where
       else
         `(irisHyp| ∗$nameStx : $tyStx)
       pure (map.insert name idx, acc.push stx)
-  clean {u v prop si sidx bi s} (hyps : @Hyps u v prop si sidx bi s) : Q($prop) :=
+  clean {u prop bi s} (hyps : @Hyps u prop bi s) : Q($prop) :=
     match hyps with
     | .emp _ => q(emp)
     | .sep _ _ _ _ lhs rhs => q(iprop($(clean lhs) ∗ $(clean rhs)))

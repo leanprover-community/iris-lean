@@ -20,10 +20,10 @@ section Core
 open BI OFE
 
 @[rocq_alias coreP]
-def coreP [Sbi SI PROP] (P : PROP) : PROP :=
+def coreP [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] (P : PROP) : PROP :=
   iprop% ∀ Q, <affine> ■ (Q -∗ <pers> Q) -∗ <affine> ■ (P -∗ Q) -∗ Q
 
-variable [Sbi SI PROP]
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP]
 
 @[rocq_alias coreP_intro]
 theorem coreP_intro {P : PROP} : P -∗ coreP (SI := SI) P := by

@@ -9,14 +9,11 @@ public import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
 
-variable {SI : Type _} [Iris.SIdx SI]
-
-
 public section
 open BI
 
 @[rocq_alias tac_ex_falso]
-theorem exfalso [BI SI PROP] {P Q : PROP} (h : P ⊢ False) : P ⊢ Q := h.trans false_elim
+theorem exfalso [BI PROP] {P Q : PROP} (h : P ⊢ False) : P ⊢ Q := h.trans false_elim
 
 public meta section
 open Lean Elab.Tactic Meta Qq

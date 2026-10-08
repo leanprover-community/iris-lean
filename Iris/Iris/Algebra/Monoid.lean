@@ -74,10 +74,9 @@ end MonoidOps
 
 /-! ## Monoid Homomorphisms -/
 
-variable (SI) in
 /-- A weak monoid homomorphism preserves the operation but not necessarily the unit. -/
 @[rocq_alias WeakMonoidHomomorphism]
-class WeakMonoidHomomorphism {M₁ : Type u} {M₂ : Type v} [OFE SI M₁] [OFE SI M₂]
+class WeakMonoidHomomorphism {M₁ : Type u} {M₂ : Type v}
     (op₁ : M₁ → M₁ → M₁) (op₂ : M₂ → M₂ → M₂) (unit₁ : M₁) (unit₂ : M₂)
     [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
     (R : M₂ → M₂ → Prop) (f : M₁ → M₂) where
@@ -87,21 +86,18 @@ class WeakMonoidHomomorphism {M₁ : Type u} {M₂ : Type v} [OFE SI M₁] [OFE 
   rel_trans : ∀ {a b c : M₂}, R a b → R b c → R a c
   /-- The operation is proper with respect to R -/
   op_proper : ∀ {a a' b b' : M₂}, R a a' → R b b' → R (op₂ a b) (op₂ a' b')
-  /-- The function is non-expansive -/
-  map_ne : NonExpansive SI f
   /-- The homomorphism property -/
   map_op : ∀ {x y}, R (f (op₁ x y)) (op₂ (f x) (f y))
 
 #rocq_ignore weak_monoid_homomorphism_proper "OFE is Leibniz; use equality"
 
-variable (SI) in
 /-- A monoid homomorphism preserves both the operation and the unit. -/
 @[rocq_alias MonoidHomomorphism]
-class MonoidHomomorphism {M₁ : Type u} {M₂ : Type v} [OFE SI M₁] [OFE SI M₂]
+class MonoidHomomorphism {M₁ : Type u} {M₂ : Type v}
     (op₁ : M₁ → M₁ → M₁) (op₂ : M₂ → M₂ → M₂) (unit₁ : M₁) (unit₂ : M₂)
     [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
     (R : M₂ → M₂ → Prop) (f : M₁ → M₂)
-    extends WeakMonoidHomomorphism SI op₁ op₂ unit₁ unit₂ R f where
+    extends WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R f where
   /-- The unit is preserved -/
   map_unit : R (f unit₁) unit₂
 

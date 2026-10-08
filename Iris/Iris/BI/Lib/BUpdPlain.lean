@@ -35,7 +35,7 @@ section BupdPlainDef
 
 open OFE
 
-variable [Sbi SI PROP]
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP]
 
 @[rocq_alias bupd_alt_ne]
 instance BUpdPlain_ne : NonExpansive SI (BUpdPlain (PROP := PROP)) where
@@ -89,7 +89,7 @@ theorem BUpdPlain_plainly {P : PROP} : BUpdPlain iprop(■ P) ⊢ (■ P) := by
 
 /- BiBUpdPlainly entails the alternative definition -/
 @[rocq_alias bupd_bupd_alt]
-theorem BUpd_BUpdPlain [BIUpdate SI PROP] [BIBUpdateSbi SI PROP] {P : PROP} : (|==> P) ⊢ BUpdPlain P :=
+theorem BUpd_BUpdPlain [BIUpdate PROP] [BIBUpdateSbi SI PROP] {P : PROP} : (|==> P) ⊢ BUpdPlain P :=
   forall_intro fun _ => wand_intro <| bupd_frame_right.trans <|
     (BIUpdate.mono (wand_elim_right.trans plainly_idem.mpr)).trans bupd_plainly_elim
 

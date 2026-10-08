@@ -10,14 +10,11 @@ public import Iris.ProofMode.ClassesMake
 
 namespace Iris.ProofMode
 
-variable {SI : Type _} [Iris.SIdx SI]
-
-
 public section
 open BI Iris.Std
 
 /-- Auxiliary lemma for combining two hypotheses using `CombineSepAs` -/
-theorem combine_as_step [BI SI PROP] {p1 p2 : Bool} {e e1 e2 out1 out2 out : PROP}
+theorem combine_as_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1 out2 out : PROP}
     (inst : CombineSepAs out2 out1 out)
     (pf1 : e ⊢ e1 ∗ □?p1 out1)
     (pf2 : e1 ⊢ e2 ∗ □?p2 out2) :
@@ -31,11 +28,11 @@ theorem combine_as_step [BI SI PROP] {p1 p2 : Bool} {e e1 e2 out1 out2 out : PRO
       sep_mono_right <| intuitionisticallyIf_mono <| sep_comm.mp.trans inst.combine_sep_as
 
 /-- Auxiliary lemma for the base case where up to one hypothesis is given -/
-theorem combine_gives_nil_singleton [BI SI PROP] {e : PROP} : e ⊢ e ∗ □ True :=
+theorem combine_gives_nil_singleton [BI PROP] {e : PROP} : e ⊢ e ∗ □ True :=
   sep_emp.mpr.trans <| sep_mono_right intuitionistically_true.mpr
 
 /-- Auxiliary lemma for the step case for combining two hypotheses using `CombineSepGives` -/
-theorem combine_gives_step [BI SI PROP] {p1 p2 : Bool} {e e1 e2 out1 out2 out : PROP}
+theorem combine_gives_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1 out2 out : PROP}
     (inst : CombineSepGives out2 out1 out)
     (pf1 : e ⊣⊢ e1 ∗ □?p1 out1)
     (pf2 : e1 ⊣⊢ e2 ∗ □?p2 out2) :
@@ -59,7 +56,7 @@ theorem combine_gives_step [BI SI PROP] {p1 p2 : Bool} {e e1 e2 out1 out2 out : 
     _ ⊢ <pers> out                 := intuitionisticallyIf_elim
 
 /-- Auxiliary lemma for combining hypotheses derived using `CombineSepGives` by conjunction -/
-theorem combine_gives_step_conj [BI SI PROP] {p1 p2 : Bool}
+theorem combine_gives_step_conj [BI PROP] {p1 p2 : Bool}
     {e e1 e2 outGives newOutGives outGivesCombined out1 out2 : PROP}
     (instGives : CombineSepGives out2 out1 newOutGives)
     (instGivesCombined : MakeAnd outGives newOutGives outGivesCombined)
@@ -91,7 +88,7 @@ theorem combine_gives_step_conj [BI SI PROP] {p1 p2 : Bool}
     _ ⊢ e ∗ □ outGivesCombined                                  := sep_mono_left sep_elim_left
 
 @[rocq_alias tac_combine_as_gives]
-theorem combine_as_gives [BI SI PROP] {p : Bool} {newE e outAs outGives goal : PROP}
+theorem combine_as_gives [BI PROP] {p : Bool} {newE e outAs outGives goal : PROP}
     (pfAs : e ⊢ newE ∗ □?p outAs)
     (pfGives : e ⊢ e ∗ □ outGives)
     (pfAsGives : newE ∗ □?p (outAs ∗ □ outGives) ⊢ goal) :
@@ -126,8 +123,7 @@ open Lean Elab Tactic Meta Qq BI Iris.Std
   The tactic with the `gives` syntax allows one to derive an additional
   hypothesis in the intuitionistic context without changing existing hypotheses.
 -/
-private structure CombineState {u v} {prop : Q(Type u)} {si : Q(Type v)} {sidx : Q(SIdx $si)}
-    {bi : Q(BI $si $prop)} (origE goal : Q($prop)) where
+private structure CombineState {u} {prop : Q(Type u)} {bi} (origE goal : Q($prop)) where
   -- The remaining hypotheses after combining hypotheses
   {newE : Q($prop)}
   (newHyps : Hyps bi newE)
@@ -148,9 +144,9 @@ private structure CombineState {u v} {prop : Q(Type u)} {si : Q(Type v)} {sidx :
   hypothesis at a time. This function is called by `iCombineCore` iteratively
   for every hypotheses being combined.
 -/
-private def CombineState.combineProofModeHyp {u v prop si sidx bi origE goal} :
-    @CombineState u v prop si sidx bi origE goal → IVarId →
-    ProofModeM (@CombineState u v prop si sidx bi origE goal)
+private def CombineState.combineProofModeHyp {u prop bi origE goal} :
+    @CombineState u prop bi origE goal → IVarId →
+    ProofModeM (@CombineState u prop bi origE goal)
   | { newHyps, p := p1, outAs, pfAs, outGives, pfGives, .. }, ivar => do
     let some (_, ⟨_, hyps2, _, out2, p2, _, pf2⟩) ←
         newHyps.removeG false <| fun _ ivar' _ _ => return guard <| ivar' == ivar
@@ -199,10 +195,9 @@ private def CombineState.combineProofModeHyp {u v prop si sidx bi origE goal} :
   iteratively calls `CombineState.combineProofMode` for each hypothesis in `hs`
   and returns the instance.
 -/
-private def iCombineCore {u v} {prop : Q(Type $u)} {si : Q(Type v)} {sidx : Q(SIdx $si)}
-    {bi : Q(BI $si $prop)} {e : Q($prop)}
+private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     (ivars : List IVarId) (hyps : Hyps bi e) (goal : Q($prop)) :
-    ProofModeM (@CombineState u v prop si sidx bi e goal) := do
+    ProofModeM (@CombineState u prop bi e goal) := do
   match ivars.reverse with
   | [] =>
     return { newHyps := hyps, p := q(true), outAs := q(emp),
@@ -224,8 +219,7 @@ private def iCombineCore {u v} {prop : Q(Type $u)} {si : Q(Type v)} {sidx : Q(SI
     return st
 
 /-- Parse the selection patterns and return a list of `IVarID` values. -/
-private def iCombineParseSelPats {u v} {prop : Q(Type $u)} {si : Q(Type v)} {sidx : Q(SIdx $si)}
-    {bi : Q(BI $si $prop)} {e : Q($prop)}
+private def iCombineParseSelPats {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     (hyps : Hyps bi e) (patSels : TSyntaxArray `selPat) :
     ProofModeM (List IVarId) := do
   let selPats ← liftMacroM <| SelPat.parse patSels

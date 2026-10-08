@@ -33,7 +33,7 @@ class BILoeb (PROP : Type _) [BI.BIBase PROP] where
 export BILoeb (loeb_weak)
 
 @[rocq_alias BiLaterContractive]
-class BILaterContractive (SI : Type _) [SIdx SI] (PROP : Type _) [BI SI PROP] extends OFE.Contractive SI later (α := PROP)
+class BILaterContractive (SI : Type _) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed SI PROP] extends OFE.Contractive SI later (α := PROP)
 
 #rocq_ignore BiPureForall "BIPureForall is provable for all BIs using classical logic, see pure_forall_2"
 
@@ -52,7 +52,7 @@ A discrete BI whose persistently modality is
 `<pers> P := ⌜emp ⊢ P⌝` validates `BIPersistentlyExist` as soon as it satisfies the
 "existential property" `(emp ⊢ ∃ x, Φ x) → ∃ x, emp ⊢ Φ x`.
 -/
-theorem BIPersistentlyExist.ofDiscrete {PROP : Type _} [BI SI PROP]
+theorem BIPersistentlyExist.ofDiscrete {PROP : Type _} [BI PROP]
     (existential : ∀ {Ψ : PROP → Prop}, (emp ⊢ sExists Ψ) → ∃ p, Ψ p ∧ (emp ⊢ p))
     (persistently_eq : ∀ P : PROP, iprop(<pers> P) = iprop(⌜emp ⊢ P⌝)) :
     BIPersistentlyExist PROP where

@@ -50,7 +50,6 @@ The `#imp_synth` command allows testing ipm synthesis, similar to the `#synth` c
 -/
 
 namespace Iris.ProofMode
-
 open Lean Elab Tactic Meta Qq BI Iris.Std
 
 def MessageData.withMCtx (mctx : MetavarContext) (d : MessageData) : MessageData :=
@@ -63,6 +62,47 @@ private local instance : ExceptToTraceResult ε (Option α × Bool) where
     | .error _        => .error
     | .ok (some _, _) => .success
     | .ok (none,   _) => .failure
+
+/--
+  Whether all unassigned mvars of `e` are internal to the current instance resolution, i.e. they
+  are not declared in `old` and do not occur in (the instantiation of) the goal type `goal`.
+-/
+def onlyFreshMVars (old : MetavarContext) (goal e : Expr) : MetaM Bool := do
+  let goalMVars ← getMVars (← instantiateMVars goal)
+  return (← getMVars e).all fun m => !old.decls.contains m && !goalMVars.contains m
+
+mutual
+/--
+  Solve the postponed (non-IPM) subgoals `gs` of an instance. These are subgoals like `SIdx ?SI`
+  whose mvars could not be determined by the other subgoals. Like Lean's own TC resolution,
+  we resolve them in order against all instances, allowing their mvars to be assigned, and
+  backtrack over the conjunction on failure. Only mvars that are internal to the resolution of the
+  instance for the goal of type `goal` (see `onlyFreshMVars`) may be assigned this way.
+-/
+partial def synthPostponed (old : MetavarContext) (goal : Expr) (gs : List Expr) :
+    MetaM Bool := do
+  match gs with
+  | [] => return true
+  | g :: rest =>
+    let gType ← instantiateMVars (← inferType g)
+    if !gType.hasExprMVar || (← checkIPMSynthParams gType).isSome ||
+        !(← onlyFreshMVars old goal gType) then
+      let some _ ← synthInstanceMainCore g | return false
+      return ← synthPostponed old goal rest
+    let instances ← SynthInstance.getInstances gType
+    let mctx ← getMCtx
+    for inst in instances.reverse do
+      let ok ← withTraceNode `Meta.synthInstance
+        (fun _ => withMCtx mctx do return MessageData.withMCtx mctx m!"apply {inst.val} to \
+        postponed {← instantiateMVars (← inferType g)}") do
+        setMCtx mctx
+        let some (mctx', subgoals) ←
+          withAssignableSyntheticOpaque (SynthInstance.tryResolve g inst) | return false
+        setMCtx mctx'
+        synthPostponed old goal (subgoals ++ rest)
+      if ok then return true
+    setMCtx mctx
+    return false
 
 partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
   withIncRecDepth do
@@ -140,8 +180,23 @@ partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
           withAssignableSyntheticOpaque (SynthInstance.tryResolve mvar inst)
           | return (none, false)
         setMCtx mctx'
+        -- A non-IPM subgoal whose type still contains mvars may only be determined by a later
+        -- subgoal (e.g. `SIdx ?SI` before `BIStepIndexed ?SI PROP`). If it fails now, postpone it
+        -- and retry once all other subgoals are solved (only if its mvars are fresh, see
+        -- `synthPostponed`).
+        let mut postponed := #[]
         for g in subgoals do
-          let some _ ← synthInstanceMainCore g | return (none, true)
+          let gType ← instantiateMVars (← inferType g)
+          if gType.hasExprMVar && (← checkIPMSynthParams gType).isNone then
+            let mctxg ← getMCtx
+            if (← synthInstanceMainCore g).isNone then
+              if !(← onlyFreshMVars mctx mvarType gType) then return (none, true)
+              trace[Meta.synthInstance] m!"postponing stuck subgoal {gType}"
+              setMCtx mctxg
+              postponed := postponed.push g
+          else
+            let some _ ← synthInstanceMainCore g | return (none, true)
+        if !(← synthPostponed mctx mvarType postponed.toList) then return (none, true)
         return (some (), true)
       if res.isSome then
         return res
@@ -149,6 +204,7 @@ partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
         trace[Meta.synthInstance] "no backtracking to other instances"
         return res
     return none
+end
 
 /--
   This function should only be directly used by IPM tactic instances to initiate recursive

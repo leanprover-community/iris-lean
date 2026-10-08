@@ -20,7 +20,7 @@ open scoped PartialMap
 
 /-! # Big Conjunction over Maps -/
 
-variable {PROP : Type _} [BI SI PROP]
+variable {PROP : Type _} [BI PROP]
 variable {K : Type _} {V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
 
 namespace BigAndM
@@ -76,7 +76,7 @@ theorem bigAndM_eq_of_forall_eq {Φ Ψ : K → V → PROP} {m : M V}
   bigOpM_eq_of_forall_eq m h
 
 @[rocq_alias big_andM_ne]
-theorem bigAndM_dist {Φ Ψ : K → V → PROP} {m : M V} {n : SI}
+theorem bigAndM_dist [BIStepIndexed SI PROP] {Φ Ψ : K → V → PROP} {m : M V} {n : SI}
     (h : ∀ {k x}, get? m k = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([∧map] k ↦ x ∈ m, Φ k x) ≡{n}≡ [∧map] k ↦ x ∈ m, Ψ k x :=
   bigOpM_dist h
@@ -199,9 +199,9 @@ theorem bigAndM_and_eq {Φ Ψ : K → V → PROP} {m : M V} :
 @[rocq_alias big_andM_persistently]
 theorem bigAndM_persistently {Φ : K → V → PROP} {m : M V} :
     (<pers> [∧map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∧map] k ↦ x ∈ m, <pers> Φ k x :=
-  letI := MonoidHomomorphism.ofEq (PROP := PROP) persistently_ne (SI := SI)
+  letI := MonoidHomomorphism.ofEq (PROP := PROP)
        (BiEntails.to_eq persistently_and) (BiEntails.to_eq persistently_true)
-  BiEntails.of_eq <| bigOpL_hom (SI := SI) _ <| toList m
+  BiEntails.of_eq <| bigOpL_hom _ <| toList m
 
 @[rocq_alias big_andM_pure_1]
 theorem bigAndM_pure_intro {φ : K → V → Prop} {m : M V} :
@@ -223,9 +223,9 @@ theorem bigAndM_pure {φ : K → V → Prop} {m : M V} :
 @[rocq_alias big_andM_later]
 theorem bigAndM_later {Φ : K → V → PROP} {m : M V} :
     (▷ [∧map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∧map] k ↦ x ∈ m, (▷ Φ k x) :=
-  letI := MonoidHomomorphism.ofEq (PROP := PROP) later_ne (SI := SI)
+  letI := MonoidHomomorphism.ofEq (PROP := PROP)
     (BiEntails.to_eq later_and) (BiEntails.to_eq later_true)
-  BiEntails.of_eq <| bigOpL_hom (SI := SI) _ <| toList m
+  BiEntails.of_eq <| bigOpL_hom _ <| toList m
 
 @[rocq_alias big_andM_laterN]
 theorem bigAndM_laterN {Φ : K → V → PROP} {m : M V} {n : Nat} :

@@ -14,16 +14,13 @@ public import Iris.ProofMode.Tactics
 
 @[expose] public section
 
-
-variable {SI : Type _} [Iris.SIdx SI]
-
 namespace Iris.ProofMode
 
 open Iris.BI
 
 section LaterCredits
 
-variable {PROP : Type _} [BI SI PROP] [BILaterCredits PROP]
+variable {PROP : Type _} [BI PROP] [BILaterCredits PROP]
 
 @[rocq_alias from_sep_lc_add]
 instance (priority := default) {n m} : FromSep (PROP := PROP) (£ (n + m)) (£ n) (£ m) where
@@ -61,8 +58,8 @@ open Lean Tactic Meta Qq Iris BI ProofMode
 universe u
 
 @[rocq_alias tac_lc_add_laterN_split]
-theorem tac_lc_add_laterN_split {PROP : Type u} [BI SI PROP] [BILaterCredits PROP]
-    [BIFUpdate SI PROP] [BIFUpdLaterCredits PROP]
+theorem tac_lc_add_laterN_split {PROP : Type u} [BI PROP] [BILaterCredits PROP]
+    [BIFUpdate PROP] [BIFUpdLaterCredits PROP]
     {φ : Prop} {n m newM : Nat} {stuck : Bool} {E : CoPset}
     {e P R Q goal : PROP}
     (heq : e ⊣⊢ P ∗ £ m)
@@ -84,8 +81,8 @@ theorem tac_lc_add_laterN_split {PROP : Type u} [BI SI PROP] [BILaterCredits PRO
   · simp only [BIBase.intuitionisticallyIf, Bool.false_eq_true, ↓reduceIte]
     iintro _ //
 
-theorem tac_lc_add_laterN_full {PROP : Type u} [BI SI PROP] [BILaterCredits PROP]
-    [BIFUpdate SI PROP] [BIFUpdLaterCredits PROP]
+theorem tac_lc_add_laterN_full {PROP : Type u} [BI PROP] [BILaterCredits PROP]
+    [BIFUpdate PROP] [BIFUpdLaterCredits PROP]
     {φ : Prop} {n m : Nat} {stuck : Bool} {E : CoPset}
     {e P Q goal : PROP}
     (heq : e ⊣⊢ P ∗ £ m)
@@ -98,7 +95,7 @@ theorem tac_lc_add_laterN_full {PROP : Type u} [BI SI PROP] [BILaterCredits PROP
 public meta section
 
 /-- The `ElimModal` instance shape needed to eliminate a fancy update at the goal. -/
-abbrev ElimFUpdGoal (PROP : Type u) [BI SI PROP] [BIFUpdate SI PROP]
+abbrev ElimFUpdGoal (PROP : Type u) [BI PROP] [BIFUpdate PROP]
     (φ : Prop) (E : CoPset) (goal Q : PROP) : Prop :=
   ElimModal φ false .in false iprop(|={E}=> goal) goal goal Q
 
@@ -110,7 +107,7 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
     Lean.Elab.Term.synthesizeSyntheticMVarsNoPostponing
     instantiateMVars n
 
-  ProofModeM.runTactic `inext fun mvar { v, prop, si, sidx, bi, e, hyps, goal, .. } => do
+  ProofModeM.runTactic `inext fun mvar { prop, bi, e, hyps, goal, .. } => do
     -- Search for the later credit hypothesis from the context
     let ivar ← hyps.findWithInfo h
     let some ⟨name, _, p, ty⟩ := hyps.getDecl? ivar
@@ -121,13 +118,13 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
     let some #[_, _, c] := Expr.appM? ty ``LaterCredits.lc
       | throwError m!"inext: {h} is not a spatial later credit hypothesis"
     let ⟨e', hyps', _, _, _, _, pfEq⟩ := hyps.remove false ivar
-    let biBase ← mkAppOptM ``BI.toBIBase #[si, sidx, prop, bi]
+    let biBase ← mkAppOptM ``BI.toBIBase #[prop, bi]
     let .some instLC ← trySynthInstance (← mkAppOptM ``BILaterCredits #[prop, biBase])
       | throwError "inext: Missing `BILaterCredits` instance"
-    let .some instFUpd ← trySynthInstance (← mkAppOptM ``BIFUpdate #[si, sidx, prop, bi])
+    let .some instFUpd ← trySynthInstance (← mkAppOptM ``BIFUpdate #[prop, bi])
       | throwError "inext: Missing `BIFUpdate` instance"
     let lc ← mkAppOptM ``BILaterCredits.toLaterCredits #[prop, biBase, instLC]
-    let fupd ← mkAppOptM ``BIFUpdate.toFUpd #[si, sidx, prop, bi, instFUpd]
+    let fupd ← mkAppOptM ``BIFUpdate.toFUpd #[prop, bi, instFUpd]
     let .some instFLC ← trySynthInstance
         (← mkAppOptM ``BIFUpdLaterCredits #[prop, biBase, lc, fupd])
       | throwError "inext: Missing `BIFUpdLaterCredits` instance"
@@ -135,7 +132,7 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
     let φ ← mkFreshExprMVarQ q(Prop)
     let E ← mkFreshExprMVarQ q(CoPset)
     let Q' ← mkFreshExprMVarQ q($prop)
-    let elimTy ← mkAppOptM ``ElimFUpdGoal #[si, sidx, prop, bi, instFUpd, φ, E, goal, Q']
+    let elimTy ← mkAppOptM ``ElimFUpdGoal #[prop, bi, instFUpd, φ, E, goal, Q']
     let .some ⟨inst, _⟩ ← ProofMode.trySynthInstance elimTy
     | throwError "inext: ElimModal type class synthesis failed with {goal}"
     unless ← isDefEq Q' goal do
@@ -152,7 +149,7 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
     unless ← isDefEq newN q(0) do
       throwError "inext: insufficient credits"
 
-    let modality ← mkAppOptM ``modality_laterN #[si, sidx, prop, n, bi]
+    let modality ← mkAppOptM ``modality_laterN #[prop, n, bi]
     have modality : Q(Modality $prop $prop) := modality
 
     let newC : Q(Nat) ← instantiateMVars newC
@@ -161,7 +158,7 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
     | some 0 =>
       let ⟨eQ, newHyps', pfModAction⟩ ← iModAction hyps' modality
       let pf ← addBIGoal newHyps' goal
-      mvar.assign <| ← mkAppOptM ``tac_lc_add_laterN_full <| #[si, sidx, prop, bi,
+      mvar.assign <| ← mkAppOptM ``tac_lc_add_laterN_full <| #[prop, bi,
         instLC, instFUpd, instFLC, φ, n, c, stuck, E,
         e, e', eQ, goal, pfEq, inst, hφ, hcancel, pfModAction, pf].map some
     -- Update the later credits hypothesis and introduce it into the context
@@ -170,7 +167,7 @@ elab "inext " t:(colGt term:max)? " credit: " h:ident : tactic => do
       let ⟨eAdd, newHyps, pfNewHyps⟩ := Hyps.add _ name ivar q(false) newTy hyps'
       let ⟨eQ, newHyps', pfModAction⟩ ← iModAction newHyps modality
       let pf ← addBIGoal newHyps' goal
-      mvar.assign <| ← mkAppOptM ``tac_lc_add_laterN_split <| #[si, sidx, prop, bi,
+      mvar.assign <| ← mkAppOptM ``tac_lc_add_laterN_split <| #[prop, bi,
         instLC, instFUpd, instFLC, φ, n, c, newC, stuck, E,
         e, e', eAdd, eQ, goal, pfEq, inst, hφ, hcancel, pfNewHyps, pfModAction, pf].map some
 

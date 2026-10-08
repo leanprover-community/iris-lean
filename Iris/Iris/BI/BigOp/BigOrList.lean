@@ -18,7 +18,7 @@ open Iris.Algebra BigOpL BIBase
 
 /-! # Big Disjunction over Lists -/
 
-variable {PROP : Type _} [BI SI PROP] {A : Type _}
+variable {PROP : Type _} [BI PROP] {A : Type _}
 
 namespace BigOrL
 
@@ -63,7 +63,7 @@ theorem bigOrL_eq_of_forall_eq {Φ Ψ : Nat → A → PROP} {l : List A} (h : �
   bigOpL_eq_of_forall_eq h
 
 @[rocq_alias big_orL_ne]
-theorem bigOrL_dist {Φ Ψ : Nat → A → PROP} {l : List A} {n : SI}
+theorem bigOrL_dist [BIStepIndexed SI PROP] {Φ Ψ : Nat → A → PROP} {l : List A} {n : SI}
     (h : ∀ {k x}, l[k]? = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([∨list] k ↦ x ∈ l, Φ k x) ≡{n}≡ [∨list] k ↦ x ∈ l, Ψ k x :=
   bigOpL_dist h
@@ -143,22 +143,22 @@ theorem bigOrL_flatMap {B : Type _} (f : A → List B) {Φ : B → PROP} {l : Li
 @[rocq_alias big_orL_persistently]
 theorem bigOrL_persistently [BIPersistentlyExist PROP] {Φ : Nat → A → PROP} {l : List A} :
     (<pers> [∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, <pers> Φ k x :=
-  letI := MonoidHomomorphism.ofEq (PROP := PROP) persistently_ne
+  letI := MonoidHomomorphism.ofEq (PROP := PROP)
     (BiEntails.to_eq persistently_or) (BiEntails.to_eq ⟨persistently_elim, false_elim⟩)
-  BiEntails.of_eq <| bigOpL_hom (SI := SI) Φ l
+  BiEntails.of_eq <| bigOpL_hom Φ l
 
 @[rocq_alias big_orL_later]
-theorem bigOrL_later [SIdxFinite SI] {Φ : Nat → A → PROP} {l : List A} (hne : l ≠ []) :
+theorem bigOrL_later [BIStepIndexed SI PROP] [SIdxFinite SI] {Φ : Nat → A → PROP} {l : List A} (hne : l ≠ []) :
     (▷ [∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, ▷ Φ k x :=
-  letI := WeakMonoidHomomorphism.ofEq (PROP := PROP) later_ne (SI := SI) (BiEntails.to_eq later_or)
-  BiEntails.of_eq <| bigOpL_hom_weak (SI := SI) Φ hne
+  letI := WeakMonoidHomomorphism.ofEq (PROP := PROP) (BiEntails.to_eq (later_or (SI := SI)))
+  BiEntails.of_eq <| bigOpL_hom_weak Φ hne
 
 @[rocq_alias big_orL_laterN]
-theorem bigOrL_laterN [SIdxFinite SI] {Φ : Nat → A → PROP} {l : List A} {n : Nat} (hne : l ≠ []) :
+theorem bigOrL_laterN [BIStepIndexed SI PROP] [SIdxFinite SI] {Φ : Nat → A → PROP} {l : List A} {n : Nat} (hne : l ≠ []) :
     (▷^[n] [∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, ▷^[n] Φ k x :=
   match n with
   | 0 => .rfl
-  | _ + 1 => (later_congr <| bigOrL_laterN hne).trans <| bigOrL_later hne
+  | _ + 1 => (later_congr <| bigOrL_laterN hne).trans <| bigOrL_later (SI := SI) hne
 
 theorem bigOrL_perm {Φ : A → PROP} {l₁ l₂ : List A} (hp : l₁.Perm l₂) :
     ([∨list] x ∈ l₁, Φ x) = [∨list] x ∈ l₂, Φ x :=

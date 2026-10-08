@@ -33,16 +33,16 @@ section prod
 open BI Iris.Std BIBase.BiEntails
 
 @[rocq_alias prod_validI]
-theorem prod_validI [Sbi SI PROP] [ORA SI A] [ORA SI B] (x : A × B) :
+theorem prod_validI [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [ORA SI A] [ORA SI B] (x : A × B) :
     ✓[SI] x ⊣⊢@{PROP} ✓[SI] x.1 ∧ ✓[SI] x.2 := by
   sbi_unfold; intro _; exact .rfl
 
-theorem prod_ordI [Sbi SI PROP] [ORA SI A] [ORA SI B] (x y : A × B) :
+theorem prod_ordI [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [ORA SI A] [ORA SI B] (x y : A × B) :
     x ≼ₒ[SI] y ⊣⊢@{PROP} x.1 ≼ₒ[SI] y.1 ∧ x.2 ≼ₒ[SI] y.2 := by
   sbi_unfold; intro _; exact Prod.ordN_def
 
 @[rocq_alias prod_includedI]
-theorem prod_includedI [Sbi SI PROP] [ORA SI A] [ORA SI B] (x y : A × B) :
+theorem prod_includedI [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [ORA SI A] [ORA SI B] (x y : A × B) :
     x ≼[SI] y ⊣⊢@{PROP} x.1 ≼[SI] y.1 ∧ x.2 ≼[SI] y.2 := by
   sbi_unfold; intro _; exact Prod.incN_def
 
@@ -53,11 +53,11 @@ section option
 open BI Iris.Std BIBase.BiEntails
 
 @[rocq_alias option_validI]
-theorem option_validI [Sbi SI PROP] [ORA SI A] {mx : Option A} :
+theorem option_validI [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [ORA SI A] {mx : Option A} :
   ✓[SI] mx ⊣⊢@{PROP} mx.elim iprop(True) (internalCmraValid (SI := SI)) := by
   cases mx <;> simp only [Option.elim] <;> sbi_unfold <;> intro _ <;> exact .rfl
 
-theorem option_ordI [Sbi SI PROP] [ORA SI A] {mx my : Option A} :
+theorem option_ordI [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [ORA SI A] {mx my : Option A} :
   mx ≼ₒ[SI] my ⊣⊢@{PROP}
     mx.elim (my.elim iprop(True) fun y => iprop(⌜Increasing SI y⌝))
       fun x => my.elim iprop(False) fun y => iprop((x ≼ₒ[SI] y) ∨ (x ≡[SI] y)) := by
@@ -68,14 +68,14 @@ theorem option_ordI [Sbi SI PROP] [ORA SI A] {mx my : Option A} :
   · simp only [Option.elim]; sbi_unfold; intro _; exact Option.some_ordN_some_iff.trans Or.comm
 
 @[rocq_alias option_includedI]
-theorem option_includedI [Sbi SI PROP] [ORA SI A] {mx my : Option A} :
+theorem option_includedI [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [ORA SI A] {mx my : Option A} :
   mx ≼[SI] my ⊣⊢@{PROP}
     mx.elim iprop(True) fun x => my.elim iprop(False) fun y => iprop((x ≼[SI] y) ∨ (x ≡[SI] y)) := by
   rcases mx with _ | x <;> rcases my with _ | y <;>
     try exact internalCmraIncluded_pure fun _ => by simp [Option.incN_iff]
   simp only [Option.elim]; sbi_unfold; intro _; exact Option.some_incN_some_iff.trans Or.comm
 
-theorem option_ord_totalI [Sbi SI PROP] [ORA SI A] [IncOrd SI A] [OrderRefl SI A] {mx my : Option A} :
+theorem option_ord_totalI [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [ORA SI A] [IncOrd SI A] [OrderRefl SI A] {mx my : Option A} :
   mx ≼ₒ[SI] my ⊣⊢@{PROP}
     mx.elim iprop(True) fun x => my.elim iprop(False) fun y => iprop(x ≼ₒ[SI] y) := by
   rcases mx with _ | x <;> rcases my with _ | y <;>
@@ -84,7 +84,7 @@ theorem option_ord_totalI [Sbi SI PROP] [ORA SI A] [IncOrd SI A] [OrderRefl SI A
     | exact internalCmraOrder_pure fun _ => by simp [Option.ordN_iff_orderRefl]
 
 @[rocq_alias option_included_totalI]
-theorem option_included_totalI [Sbi SI PROP] [ORA SI A] [IsTotal A] {mx my : Option A} :
+theorem option_included_totalI [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [ORA SI A] [IsTotal A] {mx my : Option A} :
   mx ≼[SI] my ⊣⊢@{PROP}
     mx.elim iprop(True) fun x => my.elim iprop(False) fun y => iprop(x ≼[SI] y) := by
   rcases mx with _ | x <;> rcases my with _ | y <;>
@@ -93,15 +93,15 @@ theorem option_included_totalI [Sbi SI PROP] [ORA SI A] [IsTotal A] {mx my : Opt
     | exact internalCmraIncluded_pure fun _ => by simp [Option.incN_iff_is_total]
 
 @[rocq_alias Some_included_totalI]
-theorem Some_included_totalI [Sbi SI PROP] [ORA SI A] [IsTotal A] {x y : A} :
+theorem Some_included_totalI [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [ORA SI A] [IsTotal A] {x y : A} :
     some x ≼[SI] some y ⊣⊢@{PROP} x ≼[SI] y :=
   option_included_totalI
 
-theorem some_ordI [Sbi SI PROP] [ORA SI A] [OrderRefl SI A] {x y : A} :
+theorem some_ordI [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [ORA SI A] [OrderRefl SI A] {x y : A} :
     some x ≼ₒ[SI] some y ⊣⊢@{PROP} x ≼ₒ[SI] y :=
   internalCmraOrder_iff fun _ => Option.some_ordN_some_iff_orderRefl
 
-theorem some_ordI_none [Sbi SI PROP] [ORA SI A] {x : A} : some x ≼ₒ[SI] none ⊢@{PROP} False :=
+theorem some_ordI_none [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [ORA SI A] {x : A} : some x ≼ₒ[SI] none ⊢@{PROP} False :=
   (internalCmraOrder_pure fun _ => iff_false_intro Option.not_some_ordN_none).mp.trans
     (pure_elim' False.elim)
 
@@ -114,26 +114,26 @@ open HeapView BI Iris.Std PartialMap LawfulPartialMap BIBase.BiEntails
 variable {F K V : Type _} {H : Type _ → Type _}
 variable [LawfulPartialMap H K] [ORA SI V]
 
-theorem auth_op_frag_validI_ord [Sbi SI PROP] [IncOrd SI V] (dp : DFrac) (m : H V) k dq v :
+theorem auth_op_frag_validI_ord [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [IncOrd SI V] (dp : DFrac) (m : H V) k dq v :
   ✓[SI] (Auth (SI := SI) dp m • Frag k dq v) ⊣⊢@{PROP}
     ∃ v' dq', ⌜✓[SI] dp⌝ ∧ ⌜get? m k = .some v'⌝ ∧ ✓[SI] (dq', v') ∧
       some (dq, v) ≼ₒ[SI] some (dq', v') := by
   sbi_unfold; intro _; exact auth_op_frag_validN_iff_ord
 
 @[rocq_alias gmap_view_both_dfrac_validI]
-theorem auth_op_frag_validI [Sbi SI PROP] [OrdInc SI V] (dp : DFrac) (m : H V) k dq v :
+theorem auth_op_frag_validI [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OrdInc SI V] (dp : DFrac) (m : H V) k dq v :
   ✓[SI] (Auth (SI := SI) dp m • Frag k dq v) ⊣⊢@{PROP}
     ∃ v' dq', ⌜✓[SI] dp⌝ ∧ ⌜get? m k = .some v'⌝ ∧ ✓[SI] (dq', v') ∧
       some (dq, v) ≼[SI] some (dq', v') := by
   sbi_unfold; intro _; exact auth_op_frag_validN_iff
 
 @[rocq_alias gmap_view_both_validI]
-theorem auth_op_frag_one_validI [Sbi SI PROP] (dp : DFrac) (m : H V) k v :
+theorem auth_op_frag_one_validI [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] (dp : DFrac) (m : H V) k v :
   ✓[SI] (Auth (SI := SI) dp m • Frag k (.own One.one) v) ⊣⊢@{PROP}
     ⌜✓[SI] dp⌝ ∧ ✓[SI] v ∧ get? m k ≡[SI] .some v := by
   sbi_unfold; intro _; exact auth_op_frag_one_validN_iff
 
-theorem auth_op_frag_validI_total_ord [Sbi SI PROP] [OrderRefl SI V] [IncOrd SI V] (dp : DFrac) (m : H V)
+theorem auth_op_frag_validI_total_ord [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OrderRefl SI V] [IncOrd SI V] (dp : DFrac) (m : H V)
     k dq v :
   ✓[SI] (Auth (SI := SI) dp m • Frag k dq v) ⊢@{PROP}
     ∃ v', ⌜✓[SI] dp⌝ ∧ ⌜✓[SI] dq⌝ ∧ ⌜get? m k = .some v'⌝ ∧
@@ -141,7 +141,7 @@ theorem auth_op_frag_validI_total_ord [Sbi SI PROP] [OrderRefl SI V] [IncOrd SI 
   sbi_unfold; intro _; exact auth_op_frag_validN_total_iff_ord
 
 @[rocq_alias gmap_view_both_validI_total]
-theorem auth_op_frag_validI_total [Sbi SI PROP] [OrderRefl SI V] [OrdInc SI V] (dp : DFrac) (m : H V)
+theorem auth_op_frag_validI_total [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OrderRefl SI V] [OrdInc SI V] (dp : DFrac) (m : H V)
     k dq v :
   ✓[SI] (Auth (SI := SI) dp m • Frag k dq v) ⊢@{PROP}
     ∃ v', ⌜✓[SI] dp⌝ ∧ ⌜✓[SI] dq⌝ ∧ ⌜get? m k = .some v'⌝ ∧
@@ -149,7 +149,7 @@ theorem auth_op_frag_validI_total [Sbi SI PROP] [OrderRefl SI V] [OrdInc SI V] (
   sbi_unfold; intro _; exact auth_op_frag_validN_total_iff
 
 @[rocq_alias gmap_view_frag_op_validI]
-theorem frag_op_frag_validI [Sbi SI PROP] k dq1 dq2 v1 v2 :
+theorem frag_op_frag_validI [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] k dq1 dq2 v1 v2 :
   ✓[SI] (Frag (H := H) (V := V) k dq1 v1 • Frag (SI := SI) k dq2 v2) ⊣⊢@{PROP}
     ⌜✓[SI] (dq1 • dq2)⌝ ∧ ✓[SI] (v1 • v2) := by
   sbi_unfold; intro _; exact frag_op_validN_iff
@@ -160,7 +160,7 @@ section agree_inclusion
 
 open Iris BI Agree OFE
 
-variable [Sbi SI PROP] [OFE SI A]
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A]
 
 @[rocq_alias agree_equivI]
 theorem agree_equivI {a b : A} : toAgree a ≡[SI] toAgree b ⊣⊢@{PROP} a ≡[SI] b := by
@@ -216,7 +216,7 @@ end agree_inclusion
 section auth
 open Iris BI Auth
 
-variable [Sbi SI PROP] [UORA SI A]
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [UORA SI A]
 
 @[rocq_alias auth_auth_dfrac_validI]
 theorem auth_dfrac_validI (dq : DFrac) (a : A) :
@@ -263,7 +263,7 @@ theorem auth_both_validI [OrdInc SI A] (a b : A) :
 end auth
 
 section dfrac_agree
-variable [Sbi SI PROP] {A : Type _} [OFE SI A]
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {A : Type _} [OFE SI A]
 
 open BI
 
@@ -282,7 +282,7 @@ end dfrac_agree
 
 section generic
 open BI ORA OFE
-variable [Sbi SI PROP]
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP]
 
 @[rocq_alias ucmra_unit_validI]
 theorem ucmra_unit_validI [UORA SI A] : ⊢@{PROP} ✓[SI] (unit : A) := internalCmraValid_intro unit_valid
@@ -350,7 +350,7 @@ end generic
 
 section discrete_fun
 open BI ORA
-variable [Sbi SI PROP]
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP]
 
 @[rocq_alias discrete_fun_validI]
 theorem discrete_fun_validI {ι : Type _} {β : ι → Type _} [∀ i, UORA SI (β i)]
@@ -361,7 +361,7 @@ end discrete_fun
 
 section excl
 open BI Excl OFE
-variable [Sbi SI PROP] [OFE SI A]
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A]
 
 @[rocq_alias algebra.excl_equivI]
 theorem excl_equivI (x y : Excl A) :
@@ -393,7 +393,7 @@ end excl
 
 section csum
 open BI Csum OFE ORA
-variable [Sbi SI PROP]
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP]
 
 @[rocq_alias algebra.csum_equivI]
 theorem csum_equivI [OFE SI A] [OFE SI B] (x y : Csum A B) :
@@ -437,7 +437,7 @@ end csum
 
 section list
 open BI OFE
-variable [Sbi SI PROP] [OFE SI A]
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A]
 
 @[rocq_alias list_equivI]
 theorem list_equivI (l1 l2 : List A) :
@@ -448,7 +448,7 @@ end list
 
 section heap
 open BI ORA Iris.Std PartialMap
-variable [Sbi SI PROP] {M : Type _ → Type _} {K : Type _} [LawfulPartialMap M K]
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {M : Type _ → Type _} {K : Type _} [LawfulPartialMap M K]
 
 @[rocq_alias gmap_equivI]
 theorem heap_equivI [OFE SI V] (m1 m2 : M V) :
@@ -475,7 +475,7 @@ end heap
 
 section view
 open BI ORA View ViewRel IsViewRel
-variable [Sbi SI PROP] [OFE SI A] [UORA SI B] {R : ViewRel SI A B} [IsViewRel R]
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A] [UORA SI B] {R : ViewRel SI A B} [IsViewRel R]
 
 @[rocq_alias view_both_dfrac_validI_1]
 theorem view_both_dfrac_validI_1 (relI : SiProp SI) (dq : DFrac) (a : A) (b : B)
@@ -542,7 +542,7 @@ end view
 
 section excl_auth
 open BI ExclAuth
-variable [Sbi SI PROP] [OFE SI A]
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A]
 
 @[rocq_alias excl_auth_agreeI]
 theorem excl_auth_agreeI (a b : A) :
@@ -553,7 +553,7 @@ end excl_auth
 
 section frac_agree
 open BI DFracAgree
-variable [Sbi SI PROP] {A : Type _} [OFE SI A]
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {A : Type _} [OFE SI A]
 
 @[rocq_alias frac_agree_validI]
 theorem frac_agree_validI (q : Qp) (a : A) :

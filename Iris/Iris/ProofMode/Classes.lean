@@ -38,34 +38,34 @@ def AsEmpValid.Direction.toInOut : AsEmpValid.Direction → InOut
 end
 
 @[ipm_class, rocq_alias AsEmpValid]
-class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop) io (SI : Type _) [SIdx SI]
+class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop) io
     (PROP : semiOutParamIPM io (Type _))
-    (bi : semiOutParamIPM io (BI SI PROP))
+    (bi : semiOutParamIPM io (BI PROP))
     (P : outParam PROP) where
   as_emp_valid : (d = .into → φ → ⊢ P) ∧ (d = .from → (⊢ P) → φ)
 
 @[rocq_alias as_emp_valid_1]
-theorem asEmpValid_1 {PROP} [bi : BI SI PROP] {φ : Prop} (P : PROP) {io}
-    (inst : AsEmpValid .into φ io SI PROP bi P) : φ → ⊢ P :=
+theorem asEmpValid_1 {PROP} [bi : BI PROP] {φ : Prop} (P : PROP) {io}
+    (inst : AsEmpValid .into φ io PROP bi P) : φ → ⊢ P :=
   inst.as_emp_valid.left rfl
 
 @[rocq_alias as_emp_valid_2]
-theorem asEmpValid_2 {PROP} [bi : BI SI PROP] {P : PROP} (φ : Prop) {io}
-    (inst : AsEmpValid .from φ io SI PROP bi P) : (⊢ P) → φ :=
+theorem asEmpValid_2 {PROP} [bi : BI PROP] {P : PROP} (φ : Prop) {io}
+    (inst : AsEmpValid .from φ io PROP bi P) : (⊢ P) → φ :=
   inst.as_emp_valid.right rfl
 
 @[ipm_class, rocq_alias AsEmpValid0]
-class AsEmpValid0 (d : AsEmpValid.Direction) (φ : Prop) (io : InOut) (SI : Type _) [SIdx SI]
+class AsEmpValid0 (d : AsEmpValid.Direction) (φ : Prop) (io : InOut)
     (PROP : semiOutParamIPM io (Type _))
-    (bi : semiOutParamIPM io (BI SI PROP))
+    (bi : semiOutParamIPM io (BI PROP))
     ioP (P : semiOutParamIPM ioP PROP) where
-  as_emp_valid_0 : AsEmpValid d φ io SI PROP bi P
+  as_emp_valid_0 : AsEmpValid d φ io PROP bi P
 
 @[ipm_backtrack]
 instance asEmpValid_of_asEmpValid0 (d : AsEmpValid.Direction) (φ : Prop) io
-    (SI : Type _) [SIdx SI] (PROP : Type _) (bi : BI SI PROP) (P : PROP)
-    [inst : AsEmpValid0 d φ io SI PROP bi .out P] :
-    AsEmpValid d φ io SI PROP bi P := inst.as_emp_valid_0
+    (PROP : Type _) (bi : BI PROP) (P : PROP)
+    [inst : AsEmpValid0 d φ io PROP bi .out P] :
+    AsEmpValid d φ io PROP bi P := inst.as_emp_valid_0
 
 /- Depending on the use case, type classes with the prefix `From` or `Into` are used. Type classes
 with the prefix `From` are used to generate one or more propositions *from* which the original
@@ -187,7 +187,7 @@ class IntoOr {PROP} [BI.BIBase PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
 export IntoOr (into_or)
 
 @[ipm_class, rocq_alias IntoInternalEq]
-class IntoInternalEq (SI : Type _) [SIdx SI] {PROP} [Sbi SI PROP] {A : outParam <| Type _}
+class IntoInternalEq (SI : Type _) [SIdx SI] {PROP} [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {A : outParam <| Type _}
     [ofe : outParam <| OFE SI A] (P : PROP) (x y : outParam A) where
   into_internal_eq : P ⊢@{PROP} x ≡[SI] y
 export IntoInternalEq (into_internal_eq)
@@ -280,7 +280,7 @@ class AddModal {PROP} [BI.BIBase PROP] (P : outParam PROP) (P' Q : PROP) where
 export AddModal (add_modal)
 
 @[rocq_alias add_modal_id]
-theorem addModal_id {PROP} [BI SI PROP] (P Q : PROP) : AddModal P P Q where
+theorem addModal_id {PROP} [BI PROP] (P Q : PROP) : AddModal P P Q where
   add_modal := wand_elim_right
 
 @[ipm_class, rocq_alias IsCons]

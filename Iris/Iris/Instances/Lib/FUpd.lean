@@ -85,7 +85,7 @@ section FUpdInstance
 attribute [local instance] uPred_fupd_instance
 
 @[rocq_alias uPred_bi_fupd]
-instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate Nat (IProp GF) where
+instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate (IProp GF) where
   fupd := uPred_fupd
   subset Hsub := by
     simp only [uPred_fupd]
@@ -138,6 +138,9 @@ instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate Na
     iintro ⟨⟨$, $, $⟩, $⟩
 
 end FUpdInstance
+
+instance {GF : BundledGFunctors} [InvGS_gen hlc GF] : FUpdNE Nat (IProp GF) where
+  fupd_ne {E1 E2} := (inferInstance : NonExpansive Nat (uPred_fupd (GF := GF) (hlc := hlc) E1 E2))
 
 @[rocq_alias uPred_bi_bupd_fupd]
 instance {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIUpdateFUpdate (IProp GF) where
@@ -354,7 +357,7 @@ theorem fupd_finally_mask_mono (E1 E2 : CoPset) (P : IProp GF) (H : E1 ⊆ E2) :
 
 @[rocq_alias from_modal_fupd_finally]
 instance fromModal_fupd_finally (E : CoPset) io (P : IProp GF) :
-    FromModal io modality_plainly True iprop(|={E|}=> P) iprop(|={E|}=> P) P where
+    FromModal io (modality_plainly (SI := Nat)) True iprop(|={E|}=> P) iprop(|={E|}=> P) P where
   from_modal _ := fupd_finally_intro E P
 
 @[rocq_alias is_except_0_fupd_finally]
@@ -521,7 +524,7 @@ variable {GF : BundledGFunctors}
 theorem step_fupdN_soundness [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain P] :
     (∀ (_ : InvGS_gen hlc GF), ⊢ £ m -∗ |={⊤,∅}=> |={∅}▷=>^[n] P) → ⊢ P := by
   intros HP
-  apply laterN_soundness (n := n + 1)
+  apply laterN_soundness (SI := Nat) (n := n + 1)
   apply fupd_finally_soundness hlc (n := m) (E := ⊤)
   iintro %Hinv Hc
   imod HP $$ Hc with HP
@@ -536,7 +539,7 @@ theorem step_fupdN_soundness [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain P] 
 theorem step_fupdN_soundness_close [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain P] :
     (∀ (_ : InvGS_gen hlc GF), ⊢ £ m -∗ |={⊤}[∅]▷=>^[n] P) → ⊢ P := by
   intros HP
-  apply laterN_soundness (n := n + 1)
+  apply laterN_soundness (SI := Nat) (n := n + 1)
   apply fupd_finally_soundness hlc (n := m) (E := ⊤)
   iintro %Hinv Hc
   ihave HP := HP $$ Hc

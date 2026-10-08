@@ -22,7 +22,7 @@ open BI OFE Iris.Std
   defined as `siPure (SiProp.internalEq a b)`.
 -/
 @[rocq_alias internal_eq]
-def internalEq [Sbi SI PROP] {A : Type _} [OFE SI A] (a b : A) : PROP :=
+def internalEq [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {A : Type _} [OFE SI A] (a b : A) : PROP :=
   iprop(<si_pure> (SiProp.internalEq (SI := SI) a b))
 
 /-- Internal equality `a ≡[S] b` inside `iprop(…)`, with the step index `S` explicit. -/
@@ -45,7 +45,7 @@ namespace BI
 
 section internalEqLaws
 
-variable {PROP : Type u} [Sbi SI PROP] {P Q : PROP}
+variable {PROP : Type u} [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {P Q : PROP}
 
 namespace internalEq
 

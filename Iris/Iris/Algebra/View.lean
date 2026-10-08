@@ -517,33 +517,32 @@ local instance : MonoidOps (ORA.op (α := B)) unit := ucmraMonoidOps (SI := SI)
 instance instMonoidOps : MonoidOps (ORA.op (α := View R)) unit := ucmraMonoidOps (SI := SI)
 
 @[rocq_alias view_frag_sep_homomorphism]
-instance : MonoidHomomorphism SI ORA.op ORA.op unit unit (· = ·) (Frag : B → View R) where
+instance : MonoidHomomorphism ORA.op ORA.op unit unit (· = ·) (Frag : B → View R) where
   rel_refl := rfl
   rel_trans := Eq.trans
   op_proper h₁ h₂ := h₁ ▸ h₂ ▸ rfl
-  map_ne := frag_ne
   map_op := frag_op_eq
   map_unit := rfl
 
 @[rocq_alias big_opL_view_frag]
 theorem bigOpL_frag (g : Nat → C → B) (l : List C) :
     (◯V ([^ ORA.op list] k ↦ x ∈ l, g k x) : View R) = [^ ORA.op list] k ↦ x ∈ l, ◯V (g k x) :=
-  BigOpL.bigOpL_hom (SI := SI) _ _
+  BigOpL.bigOpL_hom _ _
 
 @[rocq_alias big_opM_view_frag]
 theorem bigOpM_frag [LawfulFiniteMap M' K] (g : K → C → B) (m : M' C) :
     (◯V ([^ ORA.op map] k ↦ x ∈ m, g k x) : View R) = [^ ORA.op map] k ↦ x ∈ m, ◯V (g k x) :=
-  BigOpM.bigOpM_hom (SI := SI) _ _
+  BigOpM.bigOpM_hom _ _
 
 @[rocq_alias big_opS_view_frag]
 theorem bigOpS_frag [LawfulFiniteSet S' C] (g : C → B) (X : S') :
     (◯V ([^ ORA.op set] x ∈ X, g x) : View R) = [^ ORA.op set] x ∈ X, ◯V (g x) :=
-  BigOpS.hom (SI := SI) inferInstance _ _
+  BigOpS.hom inferInstance _ _
 
 @[rocq_alias big_opMS_view_frag]
 theorem bigOpMS_frag [LawfulFiniteMultiSet MS' C] (g : C → B) (X : MS') :
     (◯V ([^ ORA.op mset] x ∈ X, g x) : View R) = [^ ORA.op mset] x ∈ X, ◯V (g x) :=
-  BigOpMS.hom (SI := SI) inferInstance _ _
+  BigOpMS.hom inferInstance _ _
 
 end BigOp
 

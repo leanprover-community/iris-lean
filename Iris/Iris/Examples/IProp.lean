@@ -129,7 +129,7 @@ instance wp_F_contractive : Contractive Nat (@wp_F Expr State Value _ GF _) wher
     refine exists_ne (fun _ => ?_)
     refine sep_ne.ne (.of_eq rfl) ?_
     refine Contractive.distLater_dist fun m Hm => ?_
-    refine BIUpdate.bupd_ne.ne ?_
+    refine BUpdNE.bupd_ne.ne ?_
     refine sep_ne.ne (.of_eq rfl) ?_
     exact HL m Hm v Φ
 

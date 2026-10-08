@@ -25,7 +25,7 @@ open scoped PartialMap
 
 namespace BigSepM2
 
-variable {PROP : Type _} [BI SI PROP]
+variable {PROP : Type _} [BI PROP]
 variable {K : Type _} {A B : Type u} {M : Type _ → Type _} [LawfulFiniteMap M K]
 
 attribute [local grind =]
@@ -127,7 +127,7 @@ theorem bigSepM2_mono {Φ Ψ : K → A → B → PROP} {m1 : M A} {m2 : M B}
     h h1 h2
 
 @[rocq_alias big_sepM2_ne]
-theorem bigSepM2_dist (Φ Ψ : K → A → B → PROP) (m1 : M A) (m2 : M B) (n : SI)
+theorem bigSepM2_dist [BIStepIndexed SI PROP] (Φ Ψ : K → A → B → PROP) (m1 : M A) (m2 : M B) (n : SI)
     (h : ∀ {k x1 x2}, get? m1 k = some x1 → get? m2 k = some x2 → Φ k x1 x2 ≡{n}≡ Ψ k x1 x2) :
     ([∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2) ≡{n}≡ [∗map] k ↦ x1;x2 ∈ m1;m2, Ψ k x1 x2 :=
   and_ne.ne .rfl <| bigSepM_dist fun hget =>
@@ -161,7 +161,7 @@ theorem bigSepM2_proper_2 [HasEquiv A] [HasEquiv B]
   exact h hx1 hx1' (by grind) hx2 hx2' (by grind)
 
 @[rocq_alias big_sepM2_ne']
-theorem bigSepM2_dist_of_forall (n : SI) (Φ Ψ : K → A → B → PROP) (m1 : M A) (m2 : M B)
+theorem bigSepM2_dist_of_forall [BIStepIndexed SI PROP] (n : SI) (Φ Ψ : K → A → B → PROP) (m1 : M A) (m2 : M B)
     (h : ∀ {k x1 x2}, Φ k x1 x2 ≡{n}≡ Ψ k x1 x2) :
     ([∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2) ≡{n}≡ [∗map] k ↦ x1;x2 ∈ m1;m2, Ψ k x1 x2 :=
   bigSepM2_dist Φ Ψ m1 m2 n fun _ _ => h
@@ -530,10 +530,10 @@ theorem bigSepM2_lookup_acc_impl [DecidableEq K] {Φ : K → A → B → PROP}
   exact pure_imp_elim fun hki => hne hki.symm
 
 @[rocq_alias big_sepM2_later_1]
-theorem bigSepM2_later_1 [SIdxFinite SI] [BIAffine PROP] {Φ : K → A → B → PROP} {m1 : M A} {m2 : M B} :
+theorem bigSepM2_later_1 [BIStepIndexed SI PROP] [SIdxFinite SI] [BIAffine PROP] {Φ : K → A → B → PROP} {m1 : M A} {m2 : M B} :
     (▷ [∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2) ⊢ ◇ [∗map] k ↦ x1;x2 ∈ m1;m2, ▷ Φ k x1 x2 := by
   refine (later_mono bigSepM2_alt.mp).trans <| later_and.1.trans ?_
-  refine (and_mono (Timeless.except0 inferInstance) (bigSepM_later.1.trans except0_intro (SI := SI))).trans ?_
+  refine (and_mono (Timeless.except0 inferInstance) (((bigSepM_later (SI := SI)).1).trans except0_intro)).trans ?_
   exact except0_and.2.trans <| except0_mono (bigSepM2_alt (Φ := fun k x1 x2 => iprop(▷ Φ k x1 x2))).mpr
 
 @[rocq_alias big_sepM2_later_2]
@@ -627,7 +627,7 @@ theorem bigSepM_bigSepM2_diag (Φ : K → A → A → PROP) (m : M A) :
   cases get? m k <;> rfl
 
 @[rocq_alias big_sepM2_ne_2]
-theorem bigSepM2_dist_2 (A B : Type uV) [OFE SI A] [OFE SI B]
+theorem bigSepM2_dist_2 [BIStepIndexed SI PROP] (A B : Type uV) [OFE SI A] [OFE SI B]
     (Φ Ψ : K → A → B → PROP) (m1 : M A) (m2 : M B) (m1' : M A) (m2' : M B) (n : SI)
     (hm1 : ∀ k, Option.Rel (fun x y => x ≡{n}≡ y) (get? m1 k) (get? m1' k))
     (hm2 : ∀ k, Option.Rel (fun x y => x ≡{n}≡ y) (get? m2 k) (get? m2' k))

@@ -596,12 +596,11 @@ theorem get?_opM (m : M V) (mm : Option (M V)) (i : K) :
 local instance : Algebra.MonoidOps (ORA.op (α := Option V)) none := ucmraMonoidOps (SI := SI)
 
 @[rocq_alias lookup_op_homomorphism]
-instance (i : K) : Algebra.MonoidHomomorphism SI (ORA.op (α := M V)) (ORA.op (α := Option V))
+instance (i : K) : Algebra.MonoidHomomorphism (ORA.op (α := M V)) (ORA.op (α := Option V))
     ∅ none (· = ·) (get? · i) where
   rel_refl := rfl
   rel_trans := Eq.trans
   op_proper h₁ h₂ := h₁ ▸ h₂ ▸ rfl
-  map_ne := get?_ne i
   map_op := get?_op ..
   map_unit := get?_empty i
 

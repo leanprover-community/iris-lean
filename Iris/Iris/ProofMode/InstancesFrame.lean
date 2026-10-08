@@ -26,9 +26,6 @@ end
 
 @[expose] public section
 
-
-variable {SI : Type _} [Iris.SIdx SI]
-
 namespace Iris.ProofMode
 open Qq Iris.BI Iris.Std
 
@@ -37,7 +34,7 @@ When framing [R] against itself, we leave [True] if possible since it is a weake
 Otherwise we leave [emp]. Only if all those options fail, we start decomposing [R].
 -/
 @[ipm_backtrack, rocq_alias frame_here_absorbing]
-instance (priority := high + 10) frame_here_absorbing [BI SI PROP]
+instance (priority := high + 10) frame_here_absorbing [BI PROP]
     p (R : PROP) [QuickAbsorbing R] :
     Frame p R R iprop(True) where
   frame := calc
@@ -46,12 +43,12 @@ instance (priority := high + 10) frame_here_absorbing [BI SI PROP]
     _ ⊢ R            := quick_absorbing.absorbing
 
 @[ipm_backtrack, rocq_alias frame_here]
-instance (priority := high + 5) frame_here [BI SI PROP] p (R : PROP) :
+instance (priority := high + 5) frame_here [BI PROP] p (R : PROP) :
     Frame p R R iprop(emp) where
   frame := sep_emp.1.trans intuitionisticallyIf_elim
 
 @[ipm_backtrack, rocq_alias frame_affinely_here_absorbing]
-instance (priority := high + 10) frame_affinely_here_absorbing [BI SI PROP] p (R : PROP)
+instance (priority := high + 10) frame_affinely_here_absorbing [BI PROP] p (R : PROP)
     [QuickAbsorbing R] : Frame p iprop(<affine> R) R iprop(True) where
   frame := calc
     _ ⊢ True ∗ □?p <affine> R := sep_comm.mp
@@ -59,7 +56,7 @@ instance (priority := high + 10) frame_affinely_here_absorbing [BI SI PROP] p (R
     _ ⊢ R                     := quick_absorbing.absorbing
 
 @[ipm_backtrack, rocq_alias frame_affinely_here]
-instance (priority := high + 10) frame_affinely_here [BI SI PROP] p (R : PROP) :
+instance (priority := high + 10) frame_affinely_here [BI PROP] p (R : PROP) :
     Frame p iprop(<affine> R) R iprop(emp) where
   frame := calc
     _ ⊢ □?p <affine> R := sep_emp.mp
@@ -67,7 +64,7 @@ instance (priority := high + 10) frame_affinely_here [BI SI PROP] p (R : PROP) :
     _ ⊢ R              := affinely_elim
 
 @[ipm_backtrack, rocq_alias frame_here_pure_persistent]
-instance frame_here_pure_persistent [BI SI PROP] {a : Bool} {φ : Prop} {Q : PROP}
+instance frame_here_pure_persistent [BI PROP] {a : Bool} {φ : Prop} {Q : PROP}
     [hfp : FromPure a Q .in φ] : Frame true iprop(⌜φ⌝) Q iprop(emp) where
   frame := calc
     _ ⊢ □ ⌜φ⌝               := sep_emp.mp
@@ -76,7 +73,7 @@ instance frame_here_pure_persistent [BI SI PROP] {a : Bool} {φ : Prop} {Q : PRO
     _ ⊢ Q                   := hfp.1
 
 @[ipm_backtrack, rocq_alias frame_here_pure]
-instance frame_here_pure [BI SI PROP] {a : Bool} {φ : Prop} {Q : PROP}
+instance frame_here_pure [BI PROP] {a : Bool} {φ : Prop} {Q : PROP}
     [h1 : FromPure a Q .in φ] [hor : TCOr (TCEq a false) (BIAffine PROP)] :
     Frame false iprop(⌜φ⌝) Q iprop(emp) where
   frame :=
@@ -90,7 +87,7 @@ instance frame_here_pure [BI SI PROP] {a : Bool} {φ : Prop} {Q : PROP}
         _ ⊢ Q              := h1.1
 
 @[ipm_backtrack, rocq_alias frame_wand]
-instance frame_wand [BI SI PROP] p (R P1 P2 Q2 : PROP)
+instance frame_wand [BI PROP] p (R P1 P2 Q2 : PROP)
     [h : FrameInstantiateExistDisabled p R P2 Q2] :
     Frame p R iprop(P1 -∗ P2) iprop(P1 -∗ Q2) where
   frame := by
@@ -101,7 +98,7 @@ instance frame_wand [BI SI PROP] p (R P1 P2 Q2 : PROP)
       _ ⊢ P2                      := h.frame_instantiatiate_exist_disabled.frame
 
 @[ipm_backtrack, rocq_alias frame_affinely]
-instance frame_affinely [BI SI PROP] p (R P Q Q' : PROP)
+instance frame_affinely [BI PROP] p (R P Q Q' : PROP)
     [hor : TCOr (TCEq p true) (QuickAffine R)]
     [h1 : Frame p R P Q] [h2 : MakeAffinely Q Q'] :
     Frame p R iprop(<affine> P) Q' where
@@ -116,7 +113,7 @@ instance frame_affinely [BI SI PROP] p (R P Q Q' : PROP)
       _ ⊢ <affine> P                  := affinely_mono h1.frame
 
 @[ipm_backtrack, rocq_alias frame_intuitionistically]
-instance frame_intuitionistically [BI SI PROP] (R P Q Q' : PROP)
+instance frame_intuitionistically [BI PROP] (R P Q Q' : PROP)
     [h1 : Frame true R P Q] [h2 : MakeIntuitionistically Q Q'] :
     Frame true R iprop(□ P) Q' where
   frame := calc
@@ -126,7 +123,7 @@ instance frame_intuitionistically [BI SI PROP] (R P Q Q' : PROP)
     _ ⊢ □ P         := intuitionistically_mono h1.frame
 
 @[ipm_backtrack, rocq_alias frame_absorbingly]
-instance frame_absorbingly [BI SI PROP] p (R P Q Q' : PROP)
+instance frame_absorbingly [BI PROP] p (R P Q Q' : PROP)
     [h1 : Frame p R P Q] [h2 : MakeAbsorbingly Q Q'] :
     Frame p R iprop(<absorb> P) Q' where
   frame := calc
@@ -135,7 +132,7 @@ instance frame_absorbingly [BI SI PROP] p (R P Q Q' : PROP)
     _ ⊢ <absorb> P           := absorbingly_mono h1.frame
 
 @[ipm_backtrack, rocq_alias frame_persistently]
-instance frame_persistently [BI SI PROP] (R P Q Q' : PROP)
+instance frame_persistently [BI PROP] (R P Q Q' : PROP)
     [h1 : Frame true R P Q] [h2 : MakePersistently Q Q'] :
     Frame true R iprop(<pers> P) Q' where
   frame := calc
@@ -145,14 +142,14 @@ instance frame_persistently [BI SI PROP] (R P Q Q' : PROP)
     _ ⊢ <pers> P              := persistently_mono h1.frame
 
 @[ipm_backtrack, rocq_alias frame_forall]
-instance frame_forall {α} [BI SI PROP] p R (Φ Ψ : α → PROP)
+instance frame_forall {α} [BI PROP] p R (Φ Ψ : α → PROP)
     [h : ∀ a, FrameInstantiateExistDisabled p R (Φ a) (Ψ a)] :
     Frame p R iprop(∀ x, Φ x) iprop(∀ x, Ψ x) where
   frame := forall_intro fun a =>
     (sep_mono_right (forall_elim a)).trans (h a).frame_instantiatiate_exist_disabled.frame
 
 @[ipm_backtrack, rocq_alias frame_impl_persistent]
-instance frame_impl_persistent [BI SI PROP] (R P1 P2 Q2 : PROP)
+instance frame_impl_persistent [BI PROP] (R P1 P2 Q2 : PROP)
     [h : FrameInstantiateExistDisabled true R P2 Q2] :
     Frame true R iprop(P1 → P2) iprop(P1 → Q2) where
   frame := by
@@ -174,7 +171,7 @@ same term over and over again, but here [P1] is encountered at most once. It is 
 adding a new typeclass just for this extremely rarely used instance.
 -/
 @[ipm_backtrack, rocq_alias frame_impl]
-instance frame_impl [BI SI PROP] (R P1 P2 Q2 : PROP)
+instance frame_impl [BI PROP] (R P1 P2 Q2 : PROP)
     [hp : Persistent P1] [ha : QuickAbsorbing P1]
     [h : FrameInstantiateExistDisabled false R P2 Q2] :
     Frame false R iprop(P1 → P2) iprop(P1 → Q2) where
@@ -192,7 +189,7 @@ instance frame_impl [BI SI PROP] (R P1 P2 Q2 : PROP)
       _ ⊢ Q2                      := imp_elim_right
 
 @[ipm_backtrack, rocq_alias frame_later]
-instance frame_later [BI SI PROP] p (R R' P Q Q' : PROP)
+instance frame_later [BI PROP] p (R R' P Q Q' : PROP)
     [h1 : IntoLaterN (progress := false) (only_head := true) 1 R' R]
     [h2 : Frame p R P Q] [h3 : MakeLaterN 1 Q Q'] :
     Frame p R' iprop(▷ P) Q' where
@@ -204,7 +201,7 @@ instance frame_later [BI SI PROP] p (R R' P Q Q' : PROP)
     _ ⊢ ▷ P                                                 := later_mono h2.frame
 
 @[ipm_backtrack, rocq_alias frame_laterN]
-instance frame_laterN [BI SI PROP] p n (R R' P Q Q' : PROP)
+instance frame_laterN [BI PROP] p n (R R' P Q Q' : PROP)
     [h1 : IntoLaterN (progress := false) (only_head := true) n R' R]
     [h2 : Frame p R P Q] [h3 : MakeLaterN n Q Q'] :
     Frame p R' iprop(▷^[n] P) Q' where
@@ -216,7 +213,7 @@ instance frame_laterN [BI SI PROP] p n (R R' P Q Q' : PROP)
     _ ⊢ ▷^[n]P               := laterN_mono n h2.frame
 
 @[ipm_backtrack, rocq_alias frame_bupd]
-instance frame_bupd [BI SI PROP] [BIUpdate SI PROP] p (R P Q Q' : PROP)
+instance frame_bupd [BI PROP] [BIUpdate PROP] p (R P Q Q' : PROP)
     [h : Frame p R P Q] [h2 : MakeBUpd Q Q'] : Frame p R iprop(|==> P) Q' where
   frame := calc
     _ ⊢ □?p R ∗ |==> Q   := sep_mono_right h2.make_bupd.mpr
@@ -224,7 +221,7 @@ instance frame_bupd [BI SI PROP] [BIUpdate SI PROP] p (R P Q Q' : PROP)
     _ ⊢ |==> P           := BIUpdate.mono h.frame
 
 @[ipm_backtrack, rocq_alias frame_fupd]
-instance frame_fupd [BI SI PROP] [BIFUpdate SI PROP] p (E1 E2 : CoPset) (R P Q Q' : PROP)
+instance frame_fupd [BI PROP] [BIFUpdate PROP] p (E1 E2 : CoPset) (R P Q Q' : PROP)
     [h : Frame p R P Q] [h2 : MakeFUpd E1 E2 Q Q'] : Frame p R iprop(|={E1,E2}=> P) Q' where
   frame := calc
     _ ⊢ □?p R ∗ |={E1, E2}=> Q := sep_mono_right h2.make_fupd.mpr
@@ -232,7 +229,7 @@ instance frame_fupd [BI SI PROP] [BIFUpdate SI PROP] p (E1 E2 : CoPset) (R P Q Q
     _ ⊢ |={E1, E2}=> P         := BIFUpdate.mono h.frame
 
 @[ipm_backtrack, rocq_alias frame_except_0]
-instance frame_except_0 [BI SI PROP] p (R P Q Q' : PROP)
+instance frame_except_0 [BI PROP] p (R P Q Q' : PROP)
     [h1 : Frame p R P Q] [h2 : MakeExcept0 Q Q'] : Frame p R iprop(◇ P) Q' where
   frame := calc
     _ ⊢ □?p R ∗ ◇ Q    := sep_mono_right h2.make_except0.mpr
@@ -240,7 +237,7 @@ instance frame_except_0 [BI SI PROP] p (R P Q Q' : PROP)
     _ ⊢ ◇ (□?p R ∗ Q)  := except0_sep.mpr
     _ ⊢ ◇ P            := except0_mono h1.frame
 
-theorem frame_embed_core [BI SI PROP1] [BI SI PROP2] [BiEmbed SI PROP1 PROP2]
+theorem frame_embed_core [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
     {p : Bool} {R P Q : PROP1} {Q' : PROP2}
     (h1 : Frame p R P Q) (h2 : MakeEmbed Q Q') :
     □?p ⎡R⎤ ∗ Q' ⊢ ⎡P⎤ := calc
@@ -250,7 +247,7 @@ theorem frame_embed_core [BI SI PROP1] [BI SI PROP2] [BiEmbed SI PROP1 PROP2]
   _ ⊢ ⎡P⎤           := embed_mono h1.frame
 
 @[ipm_backtrack, rocq_alias frame_embed]
-instance frame_embed [BI SI PROP1] [BI SI PROP2] [BiEmbed SI PROP1 PROP2]
+instance frame_embed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
     (p : Bool) (R P Q : PROP1) (Q' : PROP2)
     [h1 : Frame p R P Q] [h2 : MakeEmbed Q Q'] :
     Frame p iprop(⎡R⎤) iprop(⎡P⎤) Q' where
@@ -258,7 +255,7 @@ instance frame_embed [BI SI PROP1] [BI SI PROP2] [BiEmbed SI PROP1 PROP2]
 
 @[ipm_backtrack, rocq_alias frame_pure_embed]
 instance (priority := default - 1) frame_pure_embed
-    [BI SI PROP1] [BI SI PROP2] [BiEmbed SI PROP1 PROP2]
+    [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
     (p : Bool) (φ : Prop) (P Q : PROP1) (Q' : PROP2)
     [h1 : Frame p iprop(⌜φ⌝) P Q] [h2 : MakeEmbed Q Q'] :
     Frame p iprop(⌜φ⌝) iprop(⎡P⎤) Q' where
@@ -267,7 +264,9 @@ instance (priority := default - 1) frame_pure_embed
 
 @[ipm_backtrack, rocq_alias frame_eq_embed]
 instance (priority := default - 1) frame_eq_embed
-    [Sbi SI P1] [Sbi SI P2] [BiEmbed SI P1 P2] [BiEmbedSbi SI P1 P2]
+    {SI : Type _} [SIdx SI]
+    [BI P1] [BIStepIndexed SI P1] [Sbi SI P1] [BI P2] [BIStepIndexed SI P2] [Sbi SI P2]
+    [BiEmbed P1 P2] [BiEmbedSbi SI P1 P2]
     (p : Bool) {A : Type _} [OFE SI A] (a b : A) (P Q : P1) (Q' : P2)
     [h1 : Frame p iprop(a ≡[SI] b) P Q] [h2 : MakeEmbed Q Q'] :
     Frame p iprop(a ≡[SI] b) iprop(⎡P⎤) Q' where
@@ -275,7 +274,7 @@ instance (priority := default - 1) frame_eq_embed
     (frame_embed_core h1 h2)
 
 @[ipm_backtrack, rocq_alias frame_texist]
-instance frame_texist {TT : Tele} [BI SI PROP] p (R : PROP) (Φ Ψ : TT.Arg → PROP)
+instance frame_texist {TT : Tele} [BI PROP] p (R : PROP) (Φ Ψ : TT.Arg → PROP)
     [h : ∀ x, Frame p R (Φ x) (Ψ x)] :
     Frame p R iprop(∃.. x, Φ x) iprop(∃.. x, Ψ x) where
   frame := calc
@@ -285,7 +284,7 @@ instance frame_texist {TT : Tele} [BI SI PROP] p (R : PROP) (Φ Ψ : TT.Arg → 
     _ ⊢ texist Φ         := (texist_exist Φ).mpr
 
 @[ipm_backtrack, rocq_alias frame_tforall]
-instance frame_tforall {TT : Tele} [BI SI PROP] p (R : PROP) (Φ Ψ : TT.Arg → PROP)
+instance frame_tforall {TT : Tele} [BI PROP] p (R : PROP) (Φ Ψ : TT.Arg → PROP)
     [h : ∀ x, FrameInstantiateExistDisabled p R (Φ x) (Ψ x)] :
     Frame p R iprop(∀.. x, Φ x) iprop(∀.. x, Ψ x) where
   frame := by
@@ -295,7 +294,7 @@ instance frame_tforall {TT : Tele} [BI SI PROP] p (R : PROP) (Φ Ψ : TT.Arg →
       (h x).frame_instantiatiate_exist_disabled.frame
 
 @[ipm_backtrack, rocq_alias frame_big_sepL_cons]
-instance frame_bigSepL_cons [BI SI PROP] {A} p (Φ : Nat → A → PROP)
+instance frame_bigSepL_cons [BI PROP] {A} p (Φ : Nat → A → PROP)
     (R Q : PROP) (l : List A) (x : A) (l' : List A)
     [hc : IsCons l x l']
     [hf : Frame p R iprop(Φ 0 x ∗ [∗list] k ↦ y ∈ l', Φ (k + 1) y) Q] :
@@ -303,7 +302,7 @@ instance frame_bigSepL_cons [BI SI PROP] {A} p (Φ : Nat → A → PROP)
   frame := hc.is_cons ▸ hf.frame.trans BigSepL.bigSepL_cons.mpr
 
 @[ipm_backtrack, rocq_alias frame_big_sepL_app]
-instance frame_bigSepL_app [BI SI PROP] {A} p (Φ : Nat → A → PROP)
+instance frame_bigSepL_app [BI PROP] {A} p (Φ : Nat → A → PROP)
     (R Q : PROP) (l l1 l2 : List A)
     [ha : IsApp l l1 l2]
     [hf : Frame p R iprop(([∗list] k ↦ y ∈ l1, Φ k y) ∗
@@ -312,7 +311,7 @@ instance frame_bigSepL_app [BI SI PROP] {A} p (Φ : Nat → A → PROP)
   frame := ha.is_app ▸ hf.frame.trans BigSepL.bigSepL_append.mpr
 
 @[ipm_backtrack, rocq_alias frame_big_sepL2_cons]
-instance frame_bigSepL2_cons [BI SI PROP] {A B} p (Φ : Nat → A → B → PROP)
+instance frame_bigSepL2_cons [BI PROP] {A B} p (Φ : Nat → A → B → PROP)
     (R Q : PROP) (l1 : List A) (x1 : A) (l1' : List A)
     (l2 : List B) (x2 : B) (l2' : List B)
     [hc1 : IsCons l1 x1 l1'] [hc2 : IsCons l2 x2 l2']
@@ -322,7 +321,7 @@ instance frame_bigSepL2_cons [BI SI PROP] {A B} p (Φ : Nat → A → B → PROP
   frame := hc1.is_cons ▸ hc2.is_cons ▸ hf.frame.trans BigSepL2.bigSepL2_cons.mpr
 
 @[ipm_backtrack, rocq_alias frame_big_sepL2_app]
-instance frame_bigSepL2_app [BI SI PROP] {A B} p (Φ : Nat → A → B → PROP)
+instance frame_bigSepL2_app [BI PROP] {A B} p (Φ : Nat → A → B → PROP)
     (R Q : PROP) (l1 l1' l1'' : List A) (l2 l2' l2'' : List B)
     [ha1 : IsApp l1 l1' l1''] [ha2 : IsApp l2 l2' l2'']
     [hf : Frame p R iprop(([∗list] k ↦ y1;y2 ∈ l1';l2', Φ k y1 y2) ∗
@@ -340,7 +339,7 @@ instance frame_bigSepL2_app [BI SI PROP] {A B} p (Φ : Nat → A → B → PROP)
           wand_elim_swap BigSepL2.bigSepL2_app_wand
 
 @[ipm_backtrack, rocq_alias frame_big_sepMS_disj_union]
-instance frame_bigSepMS_disjUnion [BI SI PROP] {MS A}
+instance frame_bigSepMS_disjUnion [BI PROP] {MS A}
     [LawfulFiniteMultiSet MS A] p (Φ : A → PROP) (R Q : PROP) (X X1 X2 : MS)
     [hd : IsDisjUnion X X1 X2]
     [hf : Frame p R iprop(([∗mset] y ∈ X1, Φ y) ∗ [∗mset] y ∈ X2, Φ y) Q] :
@@ -350,18 +349,18 @@ instance frame_bigSepMS_disjUnion [BI SI PROP] {MS A}
 section TacticTheorems
 
 @[rocq_alias maybe_frame_default_persistent]
-theorem maybeFrame_default_persistent [BI SI PROP] (R P : PROP) :
+theorem maybeFrame_default_persistent [BI PROP] (R P : PROP) :
   Frame true R P P where
   frame := sep_elim_right
 
 @[rocq_alias maybe_frame_default]
-theorem maybeFrame_default [BI SI PROP] (R P : PROP)
+theorem maybeFrame_default [BI PROP] (R P : PROP)
   [h : TCOr (Affine R) (Absorbing P)] :
   Frame false R P P where
   frame := by simp only [intuitionisticallyIf_false']; exact sep_elim_right
 
 @[rocq_alias frame_sep_persistent_l]
-theorem frame_sep_both [BI SI PROP] (R P1 P2 Q1 Q2 Q' : PROP)
+theorem frame_sep_both [BI PROP] (R P1 P2 Q1 Q2 Q' : PROP)
   [h1 : Frame true R P1 Q1] [h2 : Frame true R P2 Q2] [MakeSep Q1 Q2 Q'] :
   Frame true R iprop(P1 ∗ P2) Q' where
   frame := calc
@@ -371,7 +370,7 @@ theorem frame_sep_both [BI SI PROP] (R P1 P2 Q1 Q2 Q' : PROP)
     _ ⊢ P1 ∗ P2               := sep_mono h1.frame h2.frame
 
 @[rocq_alias frame_sep_l]
-theorem frame_sep_left [BI SI PROP] p (R P1 P2 Q Q' : PROP)
+theorem frame_sep_left [BI PROP] p (R P1 P2 Q Q' : PROP)
     [h1 : Frame p R P1 Q] [h2 : MakeSep Q P2 Q'] :
     Frame p R iprop(P1 ∗ P2) Q' where
   frame := calc
@@ -380,7 +379,7 @@ theorem frame_sep_left [BI SI PROP] p (R P1 P2 Q Q' : PROP)
     _ ⊢ P1 ∗ P2          := sep_mono_left h1.frame
 
 @[rocq_alias frame_sep_r]
-theorem frame_sep_right [BI SI PROP] p (R P1 P2 Q Q' : PROP)
+theorem frame_sep_right [BI PROP] p (R P1 P2 Q Q' : PROP)
     [h1 : Frame p R P2 Q] [h2 : MakeSep P1 Q Q'] :
     Frame p R iprop(P1 ∗ P2) Q' where
   frame := calc
@@ -389,7 +388,7 @@ theorem frame_sep_right [BI SI PROP] p (R P1 P2 Q Q' : PROP)
     _ ⊢ P1 ∗ P2        := sep_mono_right h1.frame
 
 @[rocq_alias frame_and]
-theorem frame_and [BI SI PROP] p (R P1 P2 Q1 Q2 Q' : PROP)
+theorem frame_and [BI PROP] p (R P1 P2 Q1 Q2 Q' : PROP)
     [h1 : Frame p R P1 Q1] [h2 : Frame p R P2 Q2] [h3 : MakeAnd Q1 Q2 Q'] :
     Frame p R iprop(P1 ∧ P2) Q' where
   frame := and_intro
@@ -397,7 +396,7 @@ theorem frame_and [BI SI PROP] p (R P1 P2 Q1 Q2 Q' : PROP)
     ((sep_mono_right (h3.make_and.2.trans and_elim_r)).trans h2.frame)
 
 @[rocq_alias frame_or_spatial, rocq_alias frame_or_persistent]
-theorem frame_or [BI SI PROP] p (R P1 P2 Q1 Q2 Q' : PROP)
+theorem frame_or [BI PROP] p (R P1 P2 Q1 Q2 Q' : PROP)
     [h1 : Frame p R P1 Q1] [h2 : Frame p R P2 Q2] [h3 : MakeOr Q1 Q2 Q'] :
     Frame p R iprop(P1 ∨ P2) Q' where
   frame := calc
@@ -406,13 +405,13 @@ theorem frame_or [BI SI PROP] p (R P1 P2 Q1 Q2 Q' : PROP)
     _ ⊢ P1 ∨ P2                 := or_mono h1.frame h2.frame
 
 @[rocq_alias frame_exist]
-theorem frame_exist [BI SI PROP] {α} (p : Bool) (R : PROP) (Φ : α → PROP)
+theorem frame_exist [BI PROP] {α} (p : Bool) (R : PROP) (Φ : α → PROP)
     (a : α) (Q : PROP) (inst : Frame p R (Φ a) Q) :
     Frame p R iprop(BI.exists Φ) Q where
   frame := inst.frame.trans <| exists_intro a
 
 @[rocq_alias frame_exist_no_instantiate]
-theorem frame_exist_no_instantiate [BI SI PROP] {α} (p : Bool) (R : PROP) (Φ Ψ : α → PROP)
+theorem frame_exist_no_instantiate [BI PROP] {α} (p : Bool) (R : PROP) (Φ Ψ : α → PROP)
     (inst : ∀ a, Frame p R (Φ a) (Ψ a)) :
     Frame p R iprop(BI.exists Φ) iprop(BI.exists Ψ) where
   frame := sep_exists_left.mp.trans <|
@@ -429,16 +428,16 @@ def frameInstantiateExistsEnabled : MetaM Bool := do
 def withFrameInstantiateExistsDisabled {α} (x : MetaM α) : MetaM α :=
   withOptions (iris.frame.instantiateExists.set · false) x
 
-theorem frameInstantiateExistsDisabled_of [BI SI PROP] {p} {R P Q : PROP} (h : Frame p R P Q) :
+theorem frameInstantiateExistsDisabled_of [BI PROP] {p} {R P Q : PROP} (h : Frame p R P Q) :
     FrameInstantiateExistDisabled p R P Q := ⟨h⟩
 
 @[ipm_tactic_instance FrameInstantiateExistDisabled _ _ _ _]
 def frameNoInstantiateExist : SynthTactic := fun e => do
   let_expr FrameInstantiateExistDisabled prop biBase p R P G := e | return .continue
-  let some ⟨v, si, _sidx, bi⟩ ← parseBIBase? biBase | return .continue
+  let some bi ← parseBIBase? biBase | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
-  have _bi : Q(BI $si $prop) := bi
+  have _bi : Q(BI $prop) := bi
   have p : Q(Bool) := p
   have R : Q($prop) := R
   have P : Q($prop) := P
@@ -449,7 +448,7 @@ def frameNoInstantiateExist : SynthTactic := fun e => do
 
 /-- corresponds to the MaybeFrame typeclass in Rocq -/
 @[rocq_alias MaybeFrame', rocq_alias maybe_frame_frame]
-def maybeFrame {prop : Q(Type u)} {si : Q(Type v)} {sidx : Q(SIdx $si)} {bi : Q(BI $si $prop)} (p : Q(Bool))
+def maybeFrame {prop : Q(Type u)} {bi : Q(BI $prop)} (p : Q(Bool))
     (R P Q : Q($prop)) (f : Option Q(Frame $p $R $P $Q)) :
   MetaM (Option Q(Frame $p $R $P $Q)) := do
   if let some f := f then return some f
@@ -468,10 +467,10 @@ def maybeFrame {prop : Q(Type u)} {si : Q(Type v)} {sidx : Q(SIdx $si)} {bi : Q(
 @[ipm_tactic_instance Frame _ _ iprop(_ ∗ _) _]
 def frameSep : SynthTactic := fun e => do
   let_expr Frame prop biBase p R P _ := e | return .continue
-  let some ⟨v, si, _sidx, bi⟩ ← parseBIBase? biBase | return .continue
+  let some bi ← parseBIBase? biBase | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
-  have _bi : Q(BI $si $prop) := bi
+  have _bi : Q(BI $prop) := bi
   have p : Q(Bool) := p
   have R : Q($prop) := R
   let_expr BI.sep _ _ P1 P2 := P | return .continue
@@ -486,11 +485,11 @@ def frameSep : SynthTactic := fun e => do
         let Q' : Q($prop) ← mkFreshExprMVarQ q($prop)
         let .some _ ← synthInstanceRecursiveQ q(MakeSep $Q1 $Q2 $Q') |
           throwError "MakeSep should always succeed"
-        return .success q(frame_sep_both (SI := $si) $R $P1 $P2 $Q1 $Q2 $Q')
+        return .success q(frame_sep_both $R $P1 $P2 $Q1 $Q2 $Q')
     let Q' : Q($prop) ← mkFreshExprMVarQ q($prop)
     let .some _ ← synthInstanceRecursiveQ q(MakeSep $Q1 $P2 $Q') |
       throwError "MakeSep should always succeed"
-    return .success q(frame_sep_left (SI := $si) $p $R $P1 $P2 $Q1 $Q')
+    return .success q(frame_sep_left $p $R $P1 $P2 $Q1 $Q')
   else
     let Q2 : Q($prop) ← mkFreshExprMVarQ q($prop)
     let .some _ ← synthInstanceRecursiveQ q(Frame $p $R $P2 $Q2) |
@@ -498,15 +497,15 @@ def frameSep : SynthTactic := fun e => do
     let Q' : Q($prop) ← mkFreshExprMVarQ q($prop)
     let .some _ ← synthInstanceRecursiveQ q(MakeSep $P1 $Q2 $Q') |
       throwError "MakeSep should always succeed"
-    return .success q(frame_sep_right (SI := $si) $p $R $P1 $P2 $Q2 $Q')
+    return .success q(frame_sep_right $p $R $P1 $P2 $Q2 $Q')
 
 @[ipm_tactic_instance Frame _ _ iprop(_ ∧ _) _]
 def frameAnd : SynthTactic := fun e => do
   let_expr Frame prop biBase p R P _ := e | return .continue
-  let some ⟨v, si, _sidx, bi⟩ ← parseBIBase? biBase | return .continue
+  let some bi ← parseBIBase? biBase | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
-  have _bi : Q(BI $si $prop) := bi
+  have _bi : Q(BI $prop) := bi
   have p : Q(Bool) := p
   have R : Q($prop) := R
   let_expr BI.and _ _ P1 P2 := P | return .continue
@@ -517,12 +516,12 @@ def frameAnd : SynthTactic := fun e => do
   let Q2 : Q($prop) ← mkFreshExprMVarQ q($prop)
   let f2 ← synthInstanceRecursiveQ q(Frame $p $R $P2 $Q2)
   if f1.isNone && f2.isNone then return .continue
-  let .some _ ← maybeFrame (bi := _bi) p R P1 Q1 f1 | return .continue
-  let .some _ ← maybeFrame (bi := _bi) p R P2 Q2 f2 | return .continue
+  let .some _ ← maybeFrame p R P1 Q1 f1 | return .continue
+  let .some _ ← maybeFrame p R P2 Q2 f2 | return .continue
   let Q' : Q($prop) ← mkFreshExprMVarQ q($prop)
   let .some _ ← synthInstanceRecursiveQ q(MakeAnd $Q1 $Q2 $Q') |
     throwError "MakeAnd should always succeed"
-  return .success q(frame_and (SI := $si) $p $R $P1 $P2 $Q1 $Q2 $Q')
+  return .success q(frame_and $p $R $P1 $P2 $Q1 $Q2 $Q')
 
 def isBITrue (e : Expr) : Bool :=
   let_expr BI.pure _ _ P := e | false
@@ -532,10 +531,10 @@ def isBITrue (e : Expr) : Bool :=
 @[ipm_tactic_instance Frame _ _ iprop(_ ∨ _) _]
 def frameOr : SynthTactic := fun e => do
   let_expr Frame prop biBase p R P _ := e | return .continue
-  let some ⟨v, si, _sidx, bi⟩ ← parseBIBase? biBase | return .continue
+  let some bi ← parseBIBase? biBase | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
-  have _bi : Q(BI $si $prop) := bi
+  have _bi : Q(BI $prop) := bi
   have p : Q(Bool) := p
   have R : Q($prop) := R
   let_expr BI.or _ _ P1 P2 := P | return .continue
@@ -555,27 +554,27 @@ def frameOr : SynthTactic := fun e => do
      || (f1.isSome && isBITrue Q1) -- or if the left side was changed to True
      || (f2.isSome && isBITrue Q2) -- or if the right side was changed to True
   then
-    let .some _ ← maybeFrame (bi := _bi) p R P1 Q1 f1 | return .continue
-    let .some _ ← maybeFrame (bi := _bi) p R P2 Q2 f2 | return .continue
+    let .some _ ← maybeFrame p R P1 Q1 f1 | return .continue
+    let .some _ ← maybeFrame p R P2 Q2 f2 | return .continue
     let Q' : Q($prop) ← mkFreshExprMVarQ q($prop)
     let .some _ ← synthInstanceRecursiveQ q(MakeOr $Q1 $Q2 $Q') |
       throwError "MakeOr should always succeed"
-    return .success q(frame_or (SI := $si) $p $R $P1 $P2 $Q1 $Q2 $Q')
+    return .success q(frame_or $p $R $P1 $P2 $Q1 $Q2 $Q')
   return .continue
 
 @[ipm_tactic_instance Frame _ _ iprop(∃ _, _) _]
 def frameExist : SynthTactic := fun e => do
   let_expr Frame prop biBase p R P _ := e | return .continue
-  let some ⟨v, si, _sidx, bi⟩ ← parseBIBase? biBase | return .continue
+  let some bi ← parseBIBase? biBase | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
-  have _bi : Q(BI $si $prop) := bi
+  have _bi : Q(BI $prop) := bi
   have p : Q(Bool) := p
   have R : Q($prop) := R
   let_expr BI.exists _ _ α Φ := P | return .continue
 
-  let .sort w ← inferType α | return .continue
-  have α : Q(Sort w) := α
+  let .sort v ← inferType α | return .continue
+  have α : Q(Sort v) := α
   have Φ : Q($α → $prop) := Φ
 
   -- Find the binder name so that it can be reused after framing

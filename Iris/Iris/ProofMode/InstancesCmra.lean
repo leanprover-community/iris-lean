@@ -19,7 +19,7 @@ open Iris
 section cmra
 open ORA
 
-variable {PROP} [Sbi SI PROP]
+variable {PROP} [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP]
 
 @[rocq_alias into_pure_internal_cmra_valid]
 instance intoPure_internalCmraValid α [ORA SI α] [Discrete SI α] (a : α) :

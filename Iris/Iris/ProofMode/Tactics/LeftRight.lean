@@ -11,19 +11,16 @@ public import Iris.ProofMode.ProofModeM
 
 namespace Iris.ProofMode
 
-variable {SI : Type _} [Iris.SIdx SI]
-
-
 public section
 open BI
 
 @[rocq_alias tac_or_l]
-theorem from_or_left [BI SI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
+theorem from_or_left [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
     (h1 : P ⊢ A1) : P ⊢ Q :=
   (or_intro_left_trans h1).trans inst.1
 
 @[rocq_alias tac_or_r]
-theorem from_or_right [BI SI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
+theorem from_or_right [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
     (h1 : P ⊢ A2) : P ⊢ Q :=
   (or_intro_right_trans h1).trans inst.1
 

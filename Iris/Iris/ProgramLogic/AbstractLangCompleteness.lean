@@ -101,7 +101,7 @@ private theorem own_divide_forks {α : Type _} {γ : GName} {qc : Qp} (l : List 
       CancelableInvariant.own γ (qc.divide_even (l.length + 1) (Nat.succ_pos _) : Qp) ∗
       ([∗list] _x ∈ l,
         CancelableInvariant.own γ (qc.divide_even (l.length + 1) (Nat.succ_pos _) : Qp)) := by
-  have h := fractional_divide_equal (SI := Nat)
+  have h := fractional_divide_equal
     (Φ := fun p : Qp => CancelableInvariant.own (GF := GF) γ p) qc l.length
   rw [List.replicate_succ'] at h
   refine h.trans ((BigSepL.bigSepL_snoc).1.trans

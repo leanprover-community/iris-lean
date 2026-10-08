@@ -53,7 +53,7 @@ export BIFUpdLaterCredits (lc_fupd_elim_later)
 
 section LcLaws
 
-variable {PROP : Type _} [BI SI PROP] [BILaterCredits PROP]
+variable {PROP : Type _} [BI PROP] [BILaterCredits PROP]
 
 #rocq_ignore lc_split "Defined in the `BILaterCredits` class."
 #rocq_ignore lc_timeless "Defined in the `BILaterCredits` class."
@@ -74,7 +74,7 @@ end LcLaws
 
 section LcFUpdDerived
 
-variable {PROP : Type _} [BI SI PROP] [BILaterCredits PROP] [BIFUpdate SI PROP] [BIFUpdLaterCredits PROP]
+variable {PROP : Type _} [BI PROP] [BILaterCredits PROP] [BIFUpdate PROP] [BIFUpdLaterCredits PROP]
 
 @[rocq_alias lc_fupd_add_later]
 theorem lc_fupd_add_later {E1 E2 : CoPset} {P : PROP} :

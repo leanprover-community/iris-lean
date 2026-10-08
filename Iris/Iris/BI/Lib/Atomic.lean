@@ -21,7 +21,7 @@ open Iris.Std Iris.ProofMode BI OFE
 
 section definition
 
-variable {PROP : Type _} [BI SI PROP] [BIFUpdate SI PROP] {TA TB : Tele}
+variable {PROP : Type _} [BI PROP] [BIStepIndexed SI PROP] [BIFUpdate PROP] {TA TB : Tele}
 
 /-- `atomic_acc` as the "introduction form" of atomic updates: An accessor that can be aborted
 back to `P`. -/
@@ -34,7 +34,7 @@ def atomic_acc (Eo Ei : CoPset) (α : TA.Arg → PROP) (P : PROP)
 theorem atomic_acc_wand {Eo Ei : CoPset} {α : TA.Arg → PROP} {P1 P2 : PROP}
     {β Φ1 Φ2 : TA.Arg → TB.Arg → PROP} :
     ((P1 -∗ P2) ∧ (∀.. x, ∀.. y, Φ1 x y -∗ Φ2 x y)) -∗
-      atomic_acc (SI := SI) Eo Ei α P1 β Φ1 -∗ atomic_acc (SI := SI) Eo Ei α P2 β Φ2 := by
+      atomic_acc Eo Ei α P1 β Φ1 -∗ atomic_acc Eo Ei α P2 β Φ2 := by
   iintro HP12 AS
   unfold atomic_acc
   imod AS with ⟨%x, Hα, Hclose⟩
@@ -56,7 +56,7 @@ theorem atomic_acc_wand {Eo Ei : CoPset} {α : TA.Arg → PROP} {P1 P2 : PROP}
 @[rocq_alias atomic_acc_mask]
 theorem atomic_acc_mask {Eo Ed : CoPset} {α : TA.Arg → PROP} {P : PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} :
-    atomic_acc (SI := SI) Eo (Eo \ Ed) α P β Φ ⊣⊢ ∀ E, ⌜Eo ⊆ E⌝ → atomic_acc (SI := SI) E (E \ Ed) α P β Φ := by
+    atomic_acc Eo (Eo \ Ed) α P β Φ ⊣⊢ ∀ E, ⌜Eo ⊆ E⌝ → atomic_acc E (E \ Ed) α P β Φ := by
   isplit
   · iintro Hstep %E %HE
     unfold atomic_acc
@@ -79,7 +79,7 @@ theorem atomic_acc_mask {Eo Ed : CoPset} {α : TA.Arg → PROP} {P : PROP}
 @[rocq_alias atomic_acc_mask_weaken]
 theorem atomic_acc_mask_weaken {Eo1 Eo2 Ei : CoPset} {α : TA.Arg → PROP} {P : PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} (HE : Eo1 ⊆ Eo2) :
-    atomic_acc (SI := SI) Eo1 Ei α P β Φ -∗ atomic_acc (SI := SI) Eo2 Ei α P β Φ := by
+    atomic_acc Eo1 Ei α P β Φ -∗ atomic_acc Eo2 Ei α P β Φ := by
   iintro Hstep
   unfold atomic_acc
   imod (fupd_mask_subseteq HE) with Hclose1
@@ -104,11 +104,11 @@ theorem atomic_acc_mask_weaken {Eo1 Eo2 Ei : CoPset} {α : TA.Arg → PROP} {P :
 @[rocq_alias atomic_update_pre]
 def atomic_update_pre (Eo Ei : CoPset) (α : TA.Arg → PROP)
     (β Φ : TA.Arg → TB.Arg → PROP) : (Unit → PROP) → Unit → PROP :=
-  fun Ψ _ => atomic_acc (SI := SI) Eo Ei α (Ψ ()) β Φ
+  fun Ψ _ => atomic_acc Eo Ei α (Ψ ()) β Φ
 
 @[rocq_alias atomic_update_pre_mono]
 instance atomic_update_pre_mono {Eo Ei : CoPset} {α : TA.Arg → PROP}
-    {β Φ : TA.Arg → TB.Arg → PROP} : BIMonoPred SI (atomic_update_pre (SI := SI) Eo Ei α β Φ) where
+    {β Φ : TA.Arg → TB.Arg → PROP} : BIMonoPred SI (atomic_update_pre Eo Ei α β Φ) where
   mono_pred {P1 P2 _ _} := by
     unfold atomic_update_pre
     iintro #HP12 %_ AU
@@ -122,7 +122,7 @@ instance atomic_update_pre_mono {Eo Ei : CoPset} {α : TA.Arg → PROP}
 @[rocq_alias atomic_update]
 def atomic_update (Eo Ei : CoPset) (α : TA.Arg → PROP)
     (β Φ : TA.Arg → TB.Arg → PROP) : PROP :=
-  bi_greatest_fixpoint (SI := SI) (atomic_update_pre (SI := SI) Eo Ei α β Φ) ()
+  bi_greatest_fixpoint (SI := SI) (atomic_update_pre Eo Ei α β Φ) ()
 
 #rocq_ignore atomic_update_def "Rocq sealing auxiliary; folded into `atomic_update` (no sealing in Lean)."
 #rocq_ignore atomic_update_aux "Rocq sealing auxiliary."
@@ -200,15 +200,17 @@ def auAllGroup (ys : Array Ident) : DelabM (Option (TSyntax ``auAllBinders)) := 
 @[app_delab Iris.atomic_update]
 def delabAtomicUpdate : Delab := do
   let e ← getExpr
-  unless e.isAppOfArity ``atomic_update 12 do failure
-  let some nA := Tele.literalArity? (e.getArg! 5) | failure
-  let some nB := Tele.literalArity? (e.getArg! 6) | failure
-  let Eo ← withNaryArg 7 delab
-  let Ei ← withNaryArg 8 delab
-  let (xs, α) ← withNaryArg 9 <| Tele.withFun nA fun xs => return (xs, ← delab)
-  let (ys, β) ← withNaryArg 10 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
+  -- the leading (step-index and instance) arguments are skipped; `TA` is the 7th-to-last
+  unless e.isAppOf ``atomic_update && e.getAppNumArgs ≥ 7 do failure
+  let o := e.getAppNumArgs - 7
+  let some nA := Tele.literalArity? (e.getArg! o) | failure
+  let some nB := Tele.literalArity? (e.getArg! (o+1)) | failure
+  let Eo ← withNaryArg (o+2) delab
+  let Ei ← withNaryArg (o+3) delab
+  let (xs, α) ← withNaryArg (o+4) <| Tele.withFun nA fun xs => return (xs, ← delab)
+  let (ys, β) ← withNaryArg (o+5) <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
     Tele.withFun nB fun ys => return (ys, ← delab)
-  let Φ ← withNaryArg 11 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
+  let Φ ← withNaryArg (o+6) <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
     Tele.withFunUsing nB (ys.map (·.getId)) fun _ => delab
   `(iprop(AU <{ $[$(← auExGroup xs)]? $(← unpackIprop α) }> @ $Eo, $Ei
       <{ $[$(← auAllGroup ys)]? $(← unpackIprop β), COMM $(← unpackIprop Φ) }>))
@@ -216,16 +218,16 @@ def delabAtomicUpdate : Delab := do
 @[app_delab Iris.atomic_acc]
 def delabAtomicAcc : Delab := do
   let e ← getExpr
-  unless e.isAppOfArity ``atomic_acc 13 do failure
-  let some nA := Tele.literalArity? (e.getArg! 5) | failure
-  let some nB := Tele.literalArity? (e.getArg! 6) | failure
-  let Eo ← withNaryArg 7 delab
-  let Ei ← withNaryArg 8 delab
-  let (xs, α) ← withNaryArg 9 <| Tele.withFun nA fun xs => return (xs, ← delab)
-  let P ← withNaryArg 10 delab
-  let (ys, β) ← withNaryArg 11 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
+  unless e.isAppOfArity ``atomic_acc 11 do failure
+  let some nA := Tele.literalArity? (e.getArg! 3) | failure
+  let some nB := Tele.literalArity? (e.getArg! 4) | failure
+  let Eo ← withNaryArg 5 delab
+  let Ei ← withNaryArg 6 delab
+  let (xs, α) ← withNaryArg 7 <| Tele.withFun nA fun xs => return (xs, ← delab)
+  let P ← withNaryArg 8 delab
+  let (ys, β) ← withNaryArg 9 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
     Tele.withFun nB fun ys => return (ys, ← delab)
-  let Φ ← withNaryArg 12 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
+  let Φ ← withNaryArg 10 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
     Tele.withFunUsing nB (ys.map (·.getId)) fun _ => delab
   `(iprop(AACC <{ $[$(← auExGroup xs)]? $(← unpackIprop α), ABORT $(← unpackIprop P) }>
       @ $Eo, $Ei <{ $[$(← auAllGroup ys)]? $(← unpackIprop β), COMM $(← unpackIprop Φ) }>))
@@ -234,20 +236,20 @@ end
 
 section lemmas
 
-variable {PROP : Type _} [BI SI PROP] [BIFUpdate SI PROP] {TA TB : Tele}
+variable {PROP : Type _} [BI PROP] [BIStepIndexed SI PROP] [BIFUpdate PROP] {TA TB : Tele}
 
 @[rocq_alias atomic_acc_ne]
-theorem atomic_acc_ne {Eo Ei : CoPset} {n : SI} {α1 α2 : TA.Arg → PROP} {P1 P2 : PROP}
+theorem atomic_acc_ne [FUpdNE SI PROP] {Eo Ei : CoPset} {n : SI} {α1 α2 : TA.Arg → PROP} {P1 P2 : PROP}
     {β1 β2 Φ1 Φ2 : TA.Arg → TB.Arg → PROP} (hα : ∀ x, α1 x ≡{n}≡ α2 x)
     (hP : P1 ≡{n}≡ P2) (hβ : ∀ x y, β1 x y ≡{n}≡ β2 x y) (hΦ : ∀ x y, Φ1 x y ≡{n}≡ Φ2 x y) :
-    atomic_acc (SI := SI) Eo Ei α1 P1 β1 Φ1 ≡{n}≡ atomic_acc (SI := SI) Eo Ei α2 P2 β2 Φ2 := by
+    atomic_acc Eo Ei α1 P1 β1 Φ1 ≡{n}≡ atomic_acc Eo Ei α2 P2 β2 Φ2 := by
   unfold atomic_acc
-  exact BIFUpdate.ne.ne <| texist_ne fun x => sep_ne.ne (hα x) <| and_ne.ne
-    (wand_ne.ne (hα x) (BIFUpdate.ne.ne hP))
-    (tforall_ne fun y => wand_ne.ne (hβ x y) (BIFUpdate.ne.ne (hΦ x y)))
+  exact FUpdNE.fupd_ne.ne <| texist_ne fun x => sep_ne.ne (hα x) <| and_ne.ne
+    (wand_ne.ne (hα x) (FUpdNE.fupd_ne.ne hP))
+    (tforall_ne fun y => wand_ne.ne (hβ x y) (FUpdNE.fupd_ne.ne (hΦ x y)))
 
 @[rocq_alias atomic_update_ne]
-theorem atomic_update_ne {Eo Ei : CoPset} {n : SI} {α1 α2 : TA.Arg → PROP}
+theorem atomic_update_ne [FUpdNE SI PROP] {Eo Ei : CoPset} {n : SI} {α1 α2 : TA.Arg → PROP}
     {β1 β2 Φ1 Φ2 : TA.Arg → TB.Arg → PROP} (hα : ∀ x, α1 x ≡{n}≡ α2 x)
     (hβ : ∀ x y, β1 x y ≡{n}≡ β2 x y) (hΦ : ∀ x y, Φ1 x y ≡{n}≡ Φ2 x y) :
     atomic_update (SI := SI) Eo Ei α1 β1 Φ1 ≡{n}≡ atomic_update (SI := SI) Eo Ei α2 β2 Φ2 := by
@@ -257,20 +259,20 @@ theorem atomic_update_ne {Eo Ei : CoPset} {n : SI} {α1 α2 : TA.Arg → PROP}
 
 @[rocq_alias aupd_unfold]
 theorem aupd_unfold {Eo Ei : CoPset} {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP} :
-    atomic_update (SI := SI) Eo Ei α β Φ ⊣⊢ atomic_acc (SI := SI) Eo Ei α (atomic_update (SI := SI) Eo Ei α β Φ) β Φ := by
+    atomic_update (SI := SI) Eo Ei α β Φ ⊣⊢ atomic_acc Eo Ei α (atomic_update (SI := SI) Eo Ei α β Φ) β Φ := by
   unfold atomic_update
   exact (greatest_fixpoint_unfold (atomic_update_pre Eo Ei α β Φ)).to_bi
 
 @[rocq_alias aupd_aacc]
 theorem aupd_aacc {Eo Ei : CoPset} {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP} :
-    atomic_update (SI := SI) Eo Ei α β Φ ⊢ atomic_acc (SI := SI) Eo Ei α (atomic_update (SI := SI) Eo Ei α β Φ) β Φ :=
+    atomic_update (SI := SI) Eo Ei α β Φ ⊢ atomic_acc Eo Ei α (atomic_update (SI := SI) Eo Ei α β Φ) β Φ :=
   aupd_unfold.mp
 
 @[rocq_alias atomic_update_mask_weaken]
 theorem atomic_update_mask_weaken {Eo1 Eo2 Ei : CoPset} {α : TA.Arg → PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} (HE : Eo1 ⊆ Eo2) :
     atomic_update (SI := SI) Eo1 Ei α β Φ ⊢ atomic_update (SI := SI) Eo2 Ei α β Φ := by
-  change atomic_update Eo1 Ei α β Φ ⊢ bi_greatest_fixpoint (SI := SI) (atomic_update_pre (SI := SI) Eo2 Ei α β Φ) ()
+  change atomic_update Eo1 Ei α β Φ ⊢ bi_greatest_fixpoint (SI := SI) (atomic_update_pre Eo2 Ei α β Φ) ()
   iintro HAU
   iapply greatest_fixpoint_coiter (atomic_update_pre Eo2 Ei α β Φ)
     (fun _ => atomic_update (SI := SI) Eo1 Ei α β Φ) $$ [] HAU
@@ -300,9 +302,9 @@ instance elim_mod_aupd {φ} {io : InOut} {Eo Ei E : CoPset} {α : TA.Arg → PRO
 @[rocq_alias aupd_intro]
 theorem aupd_intro {Eo Ei : CoPset} {P Q : PROP} {α : TA.Arg → PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} [Absorbing P] [Persistent P]
-    (HAU : P ∧ Q ⊢ atomic_acc (SI := SI) Eo Ei α Q β Φ) :
+    (HAU : P ∧ Q ⊢ atomic_acc Eo Ei α Q β Φ) :
     P ∧ Q ⊢ atomic_update (SI := SI) Eo Ei α β Φ := by
-  change iprop(P ∧ Q) ⊢ bi_greatest_fixpoint (atomic_update_pre (SI := SI) Eo Ei α β Φ) ()
+  change iprop(P ∧ Q) ⊢ bi_greatest_fixpoint (atomic_update_pre Eo Ei α β Φ) ()
   iintro ⟨#HP, HQ⟩
   iapply greatest_fixpoint_coiter (atomic_update_pre Eo Ei α β Φ) (fun _ => Q) $$ [] HQ
   iintro !> %_ HQ
@@ -313,7 +315,7 @@ theorem aupd_intro {Eo Ei : CoPset} {P Q : PROP} {α : TA.Arg → PROP}
 private theorem aacc_intro {Eo Ei : CoPset} {α : TA.Arg → PROP} {P : PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} (HEi : Ei ⊆ Eo) :
     ∀.. x, α x -∗
-      ((α x ={Eo}=∗ P) ∧ (∀.. y, β x y ={Eo}=∗ Φ x y)) -∗ atomic_acc (SI := SI) Eo Ei α P β Φ := by
+      ((α x ={Eo}=∗ P) ∧ (∀.. y, β x y ={Eo}=∗ Φ x y)) -∗ atomic_acc Eo Ei α P β Φ := by
   iintro %x Hα Hclose
   unfold atomic_acc
   iapply fupd_mask_intro HEi
@@ -334,8 +336,8 @@ private theorem aacc_intro {Eo Ei : CoPset} {α : TA.Arg → PROP} {P : PROP}
 instance elim_acc_aacc {X} {E1 E2 Ei : CoPset} {α' β' : X → PROP} {γ' : X → Option PROP}
     {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP} {Pas : PROP} :
     ElimAcc True (FUpd.fupd E1 E2) (FUpd.fupd E2 E1) α' β' γ'
-      (atomic_acc (SI := SI) E1 Ei α Pas β Φ)
-      (fun x' => atomic_acc (SI := SI) E2 Ei α iprop(β' x' ∗ (γ' x' -∗? Pas)) β
+      (atomic_acc E1 Ei α Pas β Φ)
+      (fun x' => atomic_acc E2 Ei α iprop(β' x' ∗ (γ' x' -∗? Pas)) β
         (λ.. x y, iprop(β' x' ∗ (γ' x' -∗? Φ x y)))) where
   elim_acc := by
     intro _
@@ -367,18 +369,18 @@ instance elim_acc_aacc {X} {E1 E2 Ei : CoPset} {α' β' : X → PROP} {γ' : X �
 instance elim_modal_acc {p : Bool} {io : InOut} {q : Bool} {φ} {P P' : PROP} {Eo Ei : CoPset}
     {α : TA.Arg → PROP} {Pas : PROP} {β Φ : TA.Arg → TB.Arg → PROP}
     [H : ∀ R, ElimModal φ p io q P P' iprop(|={Eo,Ei}=> R) iprop(|={Eo,Ei}=> R)] :
-    ElimModal φ p io q P P' (atomic_acc (SI := SI) Eo Ei α Pas β Φ) (atomic_acc (SI := SI) Eo Ei α Pas β Φ) :=
+    ElimModal φ p io q P P' (atomic_acc Eo Ei α Pas β Φ) (atomic_acc Eo Ei α Pas β Φ) :=
   H _
 
 @[rocq_alias aacc_aacc]
 theorem aacc_aacc {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     {α : TA.Arg → PROP} {P : PROP} {β Φ : TA.Arg → TB.Arg → PROP}
     {α' : TA'.Arg → PROP} {P' : PROP} {β' Φ' : TA'.Arg → TB'.Arg → PROP} (HE : E1' ⊆ E1) :
-    atomic_acc (SI := SI) E1' E2 α P β Φ -∗
-    iprop((∀.. x, α x -∗ atomic_acc (SI := SI) E2 E3 α' iprop(α x ∗ (P ={E1}=∗ P')) β'
+    atomic_acc E1' E2 α P β Φ -∗
+    iprop((∀.. x, α x -∗ atomic_acc E2 E3 α' iprop(α x ∗ (P ={E1}=∗ P')) β'
       (λ.. x' y', iprop((α x ∗ (P ={E1}=∗ Φ' x' y'))
         ∨ ∃.. y, β x y ∗ (Φ x y ={E1}=∗ Φ' x' y')))) -∗
-      atomic_acc (SI := SI) E1 E3 α' P' β' Φ') := by
+      atomic_acc E1 E3 α' P' β' Φ') := by
   iintro Hupd Hstep
   iunfold atomic_acc at Hstep
   iunfold atomic_acc
@@ -414,11 +416,11 @@ theorem aacc_aupd {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP}
     {α' : TA'.Arg → PROP} {P' : PROP} {β' Φ' : TA'.Arg → TB'.Arg → PROP} (HE : E1' ⊆ E1) :
     atomic_update (SI := SI) E1' E2 α β Φ -∗
-    (∀.. x, α x -∗ atomic_acc (SI := SI) E2 E3 α'
+    (∀.. x, α x -∗ atomic_acc E2 E3 α'
       iprop(α x ∗ (atomic_update (SI := SI) E1' E2 α β Φ ={E1}=∗ P')) β'
       (λ.. x' y', iprop((α x ∗ (atomic_update (SI := SI) E1' E2 α β Φ ={E1}=∗ Φ' x' y'))
         ∨ ∃.. y, β x y ∗ (Φ x y ={E1}=∗ Φ' x' y')))) -∗
-      atomic_acc (SI := SI) E1 E3 α' P' β' Φ' := by
+      atomic_acc E1 E3 α' P' β' Φ' := by
   iintro Hupd Hstep
   iapply aacc_aacc HE $$ [Hupd] Hstep
   iapply aupd_aacc $$ Hupd
@@ -428,10 +430,10 @@ theorem aacc_aupd_commit {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP}
     {α' : TA'.Arg → PROP} {P' : PROP} {β' Φ' : TA'.Arg → TB'.Arg → PROP} (HE : E1' ⊆ E1) :
     atomic_update (SI := SI) E1' E2 α β Φ ⊢
-    (∀.. x, α x -∗ atomic_acc (SI := SI) E2 E3 α'
+    (∀.. x, α x -∗ atomic_acc E2 E3 α'
       iprop(α x ∗ (atomic_update (SI := SI) E1' E2 α β Φ ={E1}=∗ P')) β'
       (λ.. x' y', iprop(∃.. y, β x y ∗ (Φ x y ={E1}=∗ Φ' x' y')))) -∗
-      atomic_acc (SI := SI) E1 E3 α' P' β' Φ' := by
+      atomic_acc E1 E3 α' P' β' Φ' := by
   iintro Hupd Hstep
   iapply aacc_aupd HE $$ Hupd
   iintro %x Hα
@@ -448,10 +450,10 @@ theorem aacc_aupd_abort {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP}
     {α' : TA'.Arg → PROP} {P' : PROP} {β' Φ' : TA'.Arg → TB'.Arg → PROP} (HE : E1' ⊆ E1) :
     atomic_update (SI := SI) E1' E2 α β Φ ⊢
-    (∀.. x, α x -∗ atomic_acc (SI := SI) E2 E3 α'
+    (∀.. x, α x -∗ atomic_acc E2 E3 α'
       iprop(α x ∗ (atomic_update (SI := SI) E1' E2 α β Φ ={E1}=∗ P')) β'
       (λ.. x' y', iprop(α x ∗ (atomic_update (SI := SI) E1' E2 α β Φ ={E1}=∗ Φ' x' y')))) -∗
-      atomic_acc (SI := SI) E1 E3 α' P' β' Φ' := by
+      atomic_acc E1 E3 α' P' β' Φ' := by
   iintro Hupd Hstep
   iapply aacc_aupd HE $$ Hupd
   iintro %x Hα
@@ -467,12 +469,12 @@ end lemmas
 
 section ProofMode
 
-variable [BI SI PROP] [BIFUpdate SI PROP] {TA TB : Tele}
+variable [BI PROP] [BIStepIndexed SI PROP] [BIFUpdate PROP] {TA TB : Tele}
 
 @[rocq_alias tac_aupd_intro]
 theorem tac_aupd_intro {e eI eS : PROP} {Eo Ei : CoPset} {α : TA.Arg → PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} (hsplit : e ⊣⊢ eI ∗ eS) (hI : eI ⊢ □ eI)
-    (H : e ⊢ atomic_acc (SI := SI) Eo Ei α eS β Φ) :
+    (H : e ⊢ atomic_acc Eo Ei α eS β Φ) :
     e ⊢ atomic_update (SI := SI) Eo Ei α β Φ := by
   have h : e ⊣⊢ <pers> eI ∧ eS := calc
     _ ⊣⊢ eI ∗ eS        := hsplit
@@ -480,7 +482,7 @@ theorem tac_aupd_intro {e eI eS : PROP} {Eo Ei : CoPset} {α : TA.Arg → PROP}
     _ ⊣⊢ <pers> eI ∧ eS := persistently_and_intuitionistically_sep_left.symm
   exact h.mp.trans <| aupd_intro (h.mpr.trans H)
 
-omit [BIFUpdate SI PROP] in
+omit [BIFUpdate PROP] in
 theorem tac_aacc_intro {pa pb : Bool} {e e' A R1 R2 Q : PROP} (hlem : ⊢ □?pa A)
     (hspec : (e' ∗ □?pb ((R1 ∧ R2) -∗ Q) ⊢ Q) → e ∗ □?pa A ⊢ Q) (hR1 : e' ⊢ R1) (hR2 : e' ⊢ R2) : e ⊢ Q := calc
   e ⊢ e ∗ emp    := sep_emp.mpr
@@ -489,7 +491,7 @@ theorem tac_aacc_intro {pa pb : Bool} {e e' A R1 R2 Q : PROP} (hlem : ⊢ □?pa
 
 theorem aacc_intro_wand (Eo Ei : CoPset) (α : TA.Arg → PROP) (P : PROP)
     (β Φ : TA.Arg → TB.Arg → PROP) (HEi : Ei ⊆ Eo) (x : TA.Arg) :
-    ⊢ (α x -∗ ((α x ={Eo}=∗ P) ∧ (∀.. y, β x y ={Eo}=∗ Φ x y)) -∗ atomic_acc (SI := SI) Eo Ei α P β Φ) :=
+    ⊢ (α x -∗ ((α x ={Eo}=∗ P) ∧ (∀.. y, β x y ={Eo}=∗ Φ x y)) -∗ atomic_acc Eo Ei α P β Φ) :=
   (Tele.tforall_forall _).mp (aacc_intro HEi) x
 
 public meta section
@@ -501,14 +503,30 @@ corresponding atomic accessor (`atomic_acc`), whose abort condition is the
 separating conjunction of the spatial hypotheses.
 -/
 elab "iauintro" : tactic => do
-  ProofModeM.runTactic `iauintro fun mvar { hyps, goal, .. } => do
-    let_expr atomic_update si sidx prop' bi fupd TA TB Eo Ei α β Φ := goal
-      | throwIPMError "the goal {goal} is not an atomic update"
+  ProofModeM.runTactic `iauintro fun mvar { e, hyps, goal, .. } => do
+    -- `atomic_update` genuinely depends on the step index (via `bi_greatest_fixpoint`), so its
+    -- leading arguments vary; only its last five arguments are needed here.
+    let goal' := goal.consumeMData
+    unless goal'.isAppOf ``atomic_update do
+      throwIPMError "the goal {goal} is not an atomic update"
+    let args := goal'.getAppArgs
+    let n := args.size
+    let (Eo, Ei, α, β, Φ) := (args[n-5]!, args[n-4]!, args[n-3]!, args[n-2]!, args[n-1]!)
     -- Split the context into its intuitionistic and spatial parts
     let ⟨_, eS, pfSplit, pfInt⟩ := hyps.splitIntuitionisticSpatial
-    let newGoal ← mkAppOptM ``atomic_acc
-      (#[si, sidx, prop', bi, fupd, TA, TB, Eo, Ei, α, eS, β, Φ].map some)
-    mvar.assign <| ← mkAppM ``tac_aupd_intro #[pfSplit, pfInt, ← addBIGoal hyps newGoal]
+    let newGoal ← mkAppM ``atomic_acc #[Eo, Ei, α, eS, β, Φ]
+    let pfAcc ← addBIGoal hyps newGoal
+    -- `tac_aupd_intro` has the step index as an implicit argument that `mkAppM` cannot infer
+    -- from its explicit arguments: unify its conclusion with the goal instead.
+    let thm ← mkConstWithFreshMVarLevels ``tac_aupd_intro
+    let (xs, _, concl) ← forallMetaTelescopeReducing (← inferType thm)
+    let k := xs.size
+    unless ← isDefEq concl (← mkAppM ``BI.BIBase.Entails #[e, goal]) do
+      throwIPMError "internal error: unexpected statement of tac_aupd_intro"
+    for (x, pf) in [(xs[k-3]!, (pfSplit : Expr)), (xs[k-2]!, pfInt), (xs[k-1]!, pfAcc)] do
+      unless ← isDefEq x pf do
+        throwIPMError "internal error: unexpected statement of tac_aupd_intro"
+    mvar.assign (← instantiateMVars (mkAppN thm xs))
 
 /--
 `iaaccintro spats` prove an atomic accessor by applying `aacc_intro`, where
@@ -529,7 +547,7 @@ elab "iaaccintro" spats:(colGt ppSpace specPat)+ : tactic => do
     | _                    => (none, spats)
 
   ProofModeM.runTactic `iaaccintro fun mvar { prop, e, hyps, goal, .. } => do
-    let_expr atomic_acc si sidx prop' bi fupd TA TB Eo Ei α P β Φ := goal
+    let_expr atomic_acc _ _ _ _ _ Eo Ei α P β Φ := goal
       | throwIPMError "the goal {goal} is not an atomic accessor"
     have Eo : Q(CoPset) := Eo
     have Ei : Q(CoPset) := Ei
@@ -539,8 +557,7 @@ elab "iaaccintro" spats:(colGt ppSpace specPat)+ : tactic => do
     let x ← match t with
       | some t => Term.elabTermEnsuringType t xTy
       | none => mkFreshExprMVar xTy
-    let pfAacc ← mkAppOptM ``aacc_intro_wand
-      (#[prop', si, sidx, bi, fupd, TA, TB, Eo, Ei, α, P, β, Φ, mask, x].map some)
+    let pfAacc ← mkAppM ``aacc_intro_wand #[Eo, Ei, α, P, β, Φ, mask, x]
     let A : Q($prop) ← mkFreshExprMVarQ prop
     unless ← isDefEq (← inferType pfAacc) q(⊢ $A) do
       throwIPMError "internal error: unexpected statement of aacc_intro_wand"

@@ -190,11 +190,11 @@ theorem slice_delete_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   unfold slice box
   iintro ⟨⟨#Hprop, #Hinv⟩, %Φ, #Heq, Hbig⟩
   iexists iprop([∗map] γ' ↦ _x ∈ delete f γ, Φ γ')
-  icases bigSepM_laterN $$ Hbig with Hbig
+  icases (bigSepM_laterN (SI := Nat)) $$ Hbig with Hbig
   icases bigSepM_delete Hf $$ Hbig with ⟨⟨Hfrag, #Hprop', #Hsliceinv⟩, Hbig⟩
   imodintro
-  rw [← (laterN_sep _).to_eq]
-  icases bigSepM_laterN $$ Hbig with Hbig
+  rw [← ((laterN_sep (SI := Nat)) _).to_eq]
+  icases (bigSepM_laterN (SI := Nat)) $$ Hbig with Hbig
   inext
   ihave #Heq' := (box_own_agree γ Q (Φ γ)) $$ [$Hprop $Hprop']
   isplit
@@ -218,7 +218,7 @@ theorem slice_fill {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     |={E}=> ▷?q box N (insert f γ true) P := by
   unfold slice box
   iintro ⟨⟨#Hprop, #Hinv⟩, HQ, %Φ, #Heq, Hbig⟩
-  icases bigSepM_laterN $$ Hbig with Hbig
+  icases (bigSepM_laterN (SI := Nat)) $$ Hbig with Hbig
   icases bigSepM_delete Hf $$ Hbig with ⟨⟨Hfrag, Hprop', Hsliceinv⟩, Hbig⟩
   imod inv_acc HE $$ Hinv with ⟨Hsinv, Hclose⟩
   unfold slice_inv; icases Hsinv with ⟨%b, >Hauth, Hb⟩
@@ -227,7 +227,7 @@ theorem slice_fill {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   imod Hclose $$ [Hauth HQ] with ⟨-⟩
   · inext; iexists true; simp only [ite_true]; iframe
   imodintro
-  icases bigSepM_laterN $$ Hbig with Hbig
+  icases (bigSepM_laterN (SI := Nat)) $$ Hbig with Hbig
   inext
   iexists Φ
   rw [(bigSepM_insert_delete.trans (bigSepM_delete (Φ := fun k _ => Φ k) Hf).symm).to_eq]
@@ -244,7 +244,7 @@ theorem slice_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     |={E}=> ▷ Q ∗ (▷?q box N (insert f γ false) P) := by
   unfold slice box
   iintro ⟨⟨#Hprop, #Hinv⟩, %Φ, #Heq, Hbig⟩
-  simp only [bigSepM_laterN.to_eq]
+  simp only [(bigSepM_laterN (SI := Nat)).to_eq]
   icases bigSepM_delete Hf $$ Hbig with ⟨⟨Hfrag, Hprop', Hsliceinv⟩, Hbig⟩
   imod inv_acc HE $$ Hinv with ⟨Hsinv, Hclose⟩
   unfold slice_inv
@@ -257,7 +257,7 @@ theorem slice_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   imodintro
   simp only [ite_true]; iframe Hb
   iexists Φ
-  icases bigSepM_laterN $$ Hbig with Hbig
+  icases (bigSepM_laterN (SI := Nat)) $$ Hbig with Hbig
   inext
   rw [(bigSepM_insert_delete.trans (bigSepM_delete (Φ := fun k _ => Φ k) Hf).symm).to_eq]
   iframe Heq
@@ -315,7 +315,7 @@ theorem box_fill {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     · inext; iapply internalEq_iff $$ Heq
     icases later_iff $$ Hiff with ⟨Hif, -⟩
     icases Hif $$ HP with HP
-    icases bigSepM_later $$ HP with HP
+    icases (bigSepM_later (SI := Nat)) $$ HP with HP
     icombine Hbig HP as Hbig
     icases bigSepM_sep_eq $$ Hbig with Hbig
     rw [bigSepM_map (f := fun x => true)]
@@ -357,7 +357,7 @@ theorem box_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     simp only [ite_true]; iframe Hb HγΦ Hfrag Hinv
   · imodintro
     isplitl [HΦ]
-    · icases bigSepM_later $$ HΦ with HΦ
+    · icases (bigSepM_later (SI := Nat)) $$ HΦ with HΦ
       inext
       icases internalEq_iff $$ Heq with ⟨-, Himpl⟩
       iapply Himpl $$ HΦ
@@ -432,7 +432,7 @@ theorem slice_split {M : Type _ → Type _} [LawfulFiniteMap M SliceName] [Decid
     iexists γ1, γ2
     iframe %Hfresh1 %Hfresh2 %Hne Hslice1 Hslice2
     inext
-    iapply (internalEq_rewrite_contractive iprop(Q2 ∗ Q1 ∗ Pold) P (box N _))
+    iapply (internalEq_rewrite_contractive (SI := Nat) iprop(Q2 ∗ Q1 ∗ Pold) P (box N _))
     · inext
       iapply internalEq.symm
       irewrite [HeqP]
@@ -449,7 +449,7 @@ theorem slice_split {M : Type _ → Type _} [LawfulFiniteMap M SliceName] [Decid
     iexists γ1, γ2
     iframe %Hfresh1 %Hfresh2 %Hne Hslice1 Hslice2
     inext
-    iapply (internalEq_rewrite_contractive iprop(Q2 ∗ Q1 ∗ Pold) P (box N _))
+    iapply (internalEq_rewrite_contractive (SI := Nat) iprop(Q2 ∗ Q1 ∗ Pold) P (box N _))
     · inext
       iapply internalEq.symm
       irewrite [HeqP]
@@ -477,7 +477,7 @@ theorem slice_combine {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     iexists γ
     iframe %Hfresh Hslice
     inext
-    iapply (internalEq_rewrite_contractive iprop((Q1 ∗ Q2) ∗ Pold2) P (box N _))
+    iapply (internalEq_rewrite_contractive (SI := Nat) iprop((Q1 ∗ Q2) ∗ Pold2) P (box N _))
     · inext
       iapply internalEq.symm
       irewrite [HeqP1]
@@ -496,7 +496,7 @@ theorem slice_combine {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     iexists γ
     iframe %Hfresh Hslice
     inext
-    iapply (internalEq_rewrite_contractive iprop((Q1 ∗ Q2) ∗ Pold2) P (box N _))
+    iapply (internalEq_rewrite_contractive (SI := Nat) iprop((Q1 ∗ Q2) ∗ Pold2) P (box N _))
     · inext
       iapply internalEq.symm
       irewrite [HeqP1]

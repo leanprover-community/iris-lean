@@ -48,7 +48,7 @@ meta def delabBITexist : PrettyPrinter.Delaborator.Delab :=
     (fun | `(∃.. $x:ident $[$xs:ident]*, $Ψ) => some (x, xs, Ψ) | _ => none)
 
 section Telescopes
-variable [BI SI PROP] {TT : Tele}
+variable [BI PROP] {TT : Tele}
 
 @[simp] theorem tforall_nil (Ψ : Tele.Arg .nil → PROP) : tforall Ψ = Ψ .nil := rfl
 
@@ -91,7 +91,7 @@ theorem texist_exist (Ψ : TT.Arg → PROP) : texist Ψ ⊣⊢ ∃ x, Ψ x := by
       exact (exists_intro (Ψ := fun ys => Ψ (.cons x ys)) xs).trans (ih x _).mpr
 
 @[rocq_alias bi_tforall_ne]
-theorem tforall_ne {n : SI} {Φ Ψ : TT.Arg → PROP} (h : ∀ x, Φ x ≡{n}≡ Ψ x) :
+theorem tforall_ne [BIStepIndexed SI PROP] {n : SI} {Φ Ψ : TT.Arg → PROP} (h : ∀ x, Φ x ≡{n}≡ Ψ x) :
     tforall Φ ≡{n}≡ tforall Ψ := by
   rw [(tforall_forall Φ).to_eq, (tforall_forall Ψ).to_eq]
   exact forall_ne h
@@ -106,7 +106,7 @@ theorem tforall_congr {Φ Ψ : TT.Arg → PROP} (h : ∀ x, Φ x ⊣⊢ Ψ x) :
 #rocq_ignore bi_tforall_proper "Use `tforall_congr`."
 
 @[rocq_alias bi_texist_ne]
-theorem texist_ne {n : SI} {Φ Ψ : TT.Arg → PROP} (h : ∀ x, Φ x ≡{n}≡ Ψ x) :
+theorem texist_ne [BIStepIndexed SI PROP] {n : SI} {Φ Ψ : TT.Arg → PROP} (h : ∀ x, Φ x ≡{n}≡ Ψ x) :
     texist Φ ≡{n}≡ texist Ψ := by
   rw [(texist_exist Φ).to_eq, (texist_exist Ψ).to_eq]
   exact exists_ne h

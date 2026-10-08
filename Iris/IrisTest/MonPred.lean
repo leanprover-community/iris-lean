@@ -16,7 +16,7 @@ open Iris BI ProofMode MonPred
 
 section AsEmpValid
 
-variable {I : BiIndex} {PROP : Type _} [bi : BI Nat PROP]
+variable {I : BiIndex} {PROP : Type _} [bi : BI PROP]
 
 /-
   Tests `asEmpValid_monPred_at`, `makeMonPredAt_and` and `makeMonPredAt_pure`:
@@ -25,7 +25,7 @@ variable {I : BiIndex} {PROP : Type _} [bi : BI Nat PROP]
 /-- trace:
 I : BiIndex
 PROP : Type u_1
-bi : BI Nat PROP
+bi : BI PROP
 φ ψ : Prop
 hφ : φ
 hψ : ψ
@@ -47,7 +47,7 @@ example (φ ψ : Prop) (hφ : φ) (hψ : ψ) : ⊢@{MonPred I PROP} ⌜φ⌝ ∧
 /-- trace:
 I : BiIndex
 PROP : Type u_1
-bi : BI Nat PROP
+bi : BI PROP
 𝓟 : PROP
 φ : Prop
 hφ : φ
@@ -70,7 +70,7 @@ example (𝓟 : PROP) (φ : Prop) (hφ : φ) : ⊢@{MonPred I PROP} ⎡𝓟⎤ �
 /-- trace:
 I : BiIndex
 PROP : Type u_1
-bi : BI Nat PROP
+bi : BI PROP
 𝓟 : PROP
 ⊢
 ⊢ ∀ i, □ 𝓟 ∨ emp
@@ -87,7 +87,7 @@ example (𝓟 : PROP) : ⊢@{MonPred I PROP} □ ⎡𝓟⎤ ∨ emp := by
 /-- trace:
 I : BiIndex
 PROP : Type u_1
-bi : BI Nat PROP
+bi : BI PROP
 φ : Prop
 hφ : φ
 ⊢
@@ -106,7 +106,7 @@ example (φ : Prop) (hφ : φ) : ⊢@{MonPred I PROP} ⌜φ⌝ ∧ ⌜φ⌝ := b
 /-- trace:
 I : BiIndex
 PROP : Type u_1
-bi : BI Nat PROP
+bi : BI PROP
 𝓟 𝓠 : PROP
 ⊢
 ⊢ ∀ i, 𝓟 ∗ 𝓠 -∗ 𝓠 ∗ 𝓟
@@ -128,7 +128,7 @@ example (𝓟 𝓠 : PROP) : ⎡𝓟⎤ ∗ ⎡𝓠⎤ ⊢@{MonPred I PROP} ⎡�
 /-- trace:
 I : BiIndex
 PROP : Type u_1
-bi : BI Nat PROP
+bi : BI PROP
 𝓟 𝓠 : PROP
 ⊢
 ⊢ ∀ i, 𝓟 ∗ 𝓠 -∗ 𝓟 ∗ 𝓠
@@ -144,7 +144,7 @@ example (𝓟 𝓠 : PROP) : ⎡𝓟⎤ ∗ ⎡𝓠⎤ ⊢@{MonPred I PROP} ⎡�
 /-- trace:
 I : BiIndex
 PROP : Type u_2
-bi : BI Nat PROP
+bi : BI PROP
 α : Type u_1
 Φ : α → PROP
 a : α
@@ -165,7 +165,7 @@ example {α : Type _} (Φ : α → PROP) (a : α) :
 /-- trace:
 I : BiIndex
 PROP : Type u_1
-bi : BI Nat PROP
+bi : BI PROP
 j : I.car
 ⊢
 ⊢ ∀ i, ⌜j ≤ i⌝ -∗ ⌜j ≤ i⌝
@@ -185,7 +185,7 @@ example (j : I.car) :
 /-- trace:
 I : BiIndex
 PROP : Type u_2
-bi : BI Nat PROP
+bi : BI PROP
 α : Type u_1
 Φ : α → PROP
 ⊢
@@ -202,22 +202,22 @@ example {α : Type _} (Φ : α → PROP) :
 /- Tests `asEmpValid_monPred_at_wand`, which has higher priority than `asEmpValid_monPred_at`. -/
 /-- info:
   solution: AsEmpValid AsEmpValid.Direction.from (⎡𝓟⎤ ⊢ ⎡𝓠⎤)
-    InOut.in Nat PROP bi iprop(∀ i, 𝓟 -∗ 𝓠),
+    InOut.in PROP bi iprop(∀ i, 𝓟 -∗ 𝓠),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
 variable (𝓟 𝓠 : PROP) in
-#ipm_synth AsEmpValid .from ((⎡𝓟⎤ : MonPred I PROP) ⊢ ⎡𝓠⎤) .in Nat PROP bi _
+#ipm_synth AsEmpValid .from ((⎡𝓟⎤ : MonPred I PROP) ⊢ ⎡𝓠⎤) .in PROP bi _
 
 /- Tests `asEmpValid_monPred_at_equiv`, which has higher priority than `asEmpValid_monPred_at`. -/
 /-- info:
   solution: AsEmpValid AsEmpValid.Direction.from (⎡𝓟⎤ ⊣⊢ ⎡𝓠⎤)
-    InOut.in Nat PROP bi iprop(∀ i, 𝓟 ∗-∗ 𝓠),
+    InOut.in PROP bi iprop(∀ i, 𝓟 ∗-∗ 𝓠),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
 variable (𝓟 𝓠 : PROP) in
-#ipm_synth AsEmpValid .from ((⎡𝓟⎤ : MonPred I PROP) ⊣⊢ ⎡𝓠⎤) .in Nat PROP bi _
+#ipm_synth AsEmpValid .from ((⎡𝓟⎤ : MonPred I PROP) ⊣⊢ ⎡𝓠⎤) .in PROP bi _
 
 /-
   Tests `asEmpValid_monPred_at` after ``asEmpValid_monPred_at_wand` and
@@ -225,18 +225,18 @@ variable (𝓟 𝓠 : PROP) in
 -/
 /-- info:
   solution: AsEmpValid AsEmpValid.Direction.from (⊢ ⌜φ⌝ ∧ ⌜φ⌝)
-    InOut.in Nat PROP bi iprop(∀ i, ⌜φ⌝ ∧ ⌜φ⌝),
+    InOut.in PROP bi iprop(∀ i, ⌜φ⌝ ∧ ⌜φ⌝),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
 variable (φ : Prop) in
-#ipm_synth AsEmpValid .from (⊢@{MonPred I PROP} ⌜φ⌝ ∧ ⌜φ⌝) .in Nat PROP bi _
+#ipm_synth AsEmpValid .from (⊢@{MonPred I PROP} ⌜φ⌝ ∧ ⌜φ⌝) .in PROP bi _
 
 end AsEmpValid
 
 section MakeMonPredAt
 
-variable {I : BiIndex} {PROP : Type _} [bi : BI Nat PROP]
+variable {I : BiIndex} {PROP : Type _} [bi : BI PROP]
 
 /-- A monotone predicate for testing. -/
 def testMonPred (𝓟 : PROP) : MonPred I PROP where
@@ -247,7 +247,7 @@ def testMonPred (𝓟 : PROP) : MonPred I PROP where
 /-- trace:
 I : BiIndex
 PROP : Type u_1
-bi : BI Nat PROP
+bi : BI PROP
 𝓟 𝓠 : PROP
 ⊢
 ⊢
@@ -274,7 +274,7 @@ instance makeMonPredAt_testMonPred (d : MakeMonPredAt.Kind) (i : I.car) (𝓟 : 
 /-- trace:
 I : BiIndex
 PROP : Type u_1
-bi : BI Nat PROP
+bi : BI PROP
 𝓟 𝓠 : PROP
 ⊢
 ⊢ ∀ i, 𝓟 ∗ 𝓠 -∗ 𝓠 ∗ 𝓟
@@ -293,7 +293,7 @@ end MakeMonPredAt
 
 section ProofModeInstances
 
-variable {I : BiIndex} {PROP : Type _} [bi : BI Nat PROP]
+variable {I : BiIndex} {PROP : Type _} [bi : BI PROP]
 
 /- Tests `intoExcept0_monPred_at_fwd`. -/
 /-- info:
@@ -348,7 +348,7 @@ variable (P : MonPred I PROP) in
 /-- trace:
 I : BiIndex
 PROP : Type u_1
-bi : BI Nat PROP
+bi : BI PROP
 φ : Prop
 hφ : φ
 ⊢
@@ -371,7 +371,7 @@ example (𝓟 : PROP) : ⊢@{MonPred I PROP} ⎡𝓟⎤ -∗ <obj> ⎡𝓟⎤ :=
 /-- trace:
 I : BiIndex
 PROP : Type u_2
-bi : BI Nat PROP
+bi : BI PROP
 α : Sort u_1
 Φ : α → PROP
 a : α
@@ -395,7 +395,7 @@ example {α} (Φ : α → PROP) (a : α) (i : I.car) :
 /-- trace:
 I : BiIndex
 PROP : Type u_1
-bi : BI Nat PROP
+bi : BI PROP
 P : MonPred I PROP
 i j : I.car
 hij : i ≤ j
@@ -434,7 +434,7 @@ end ProofModeInstances
 
 section FrameMonPredAt
 
-variable {I : BiIndex} {PROP : Type _} [bi : BI Nat PROP]
+variable {I : BiIndex} {PROP : Type _} [bi : BI PROP]
 variable (i j : I.car) [instRel : IsBiIndexRel i j]
 
 /- Tests `frameMonPredAt_here`, which has a higher priority than `frameMonPredAt_sep`. -/
@@ -484,8 +484,8 @@ end FrameMonPredAt
 
 section LaterCredits
 
-variable {I : BiIndex} {PROP : Type _} [BI Nat PROP] [BILaterCredits PROP] [BIUpdate Nat PROP]
-  [BIFUpdate Nat PROP] [BIUpdateFUpdate PROP] [BIBUpdLaterCredits PROP] [BIFUpdLaterCredits PROP]
+variable {I : BiIndex} {PROP : Type _} [BI PROP] [BILaterCredits PROP] [BIUpdate PROP]
+  [BIFUpdate PROP] [BIUpdateFUpdate PROP] [BIBUpdLaterCredits PROP] [BIFUpdLaterCredits PROP]
 
 /- Combines various later credit lemmas and tactics to check that they also work for
 `MonPred`. -/

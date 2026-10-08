@@ -50,15 +50,14 @@ delab_rule Embed.embed
 
 /-! ## The `BiEmbed` class -/
 
-#rocq_ignore BiEmbedMixin "Use the BiEmbed SI type class."
+#rocq_ignore BiEmbedMixin "Use the BiEmbed type class."
 
 /-- A lawful embedding `⎡·⎤ : PROP1 → PROP2`. The `forall_2`/`exist_1` fields take an
 intro/elim form: for any predicate `Ψ : PROP1 → Prop`, `forall_2` builds
 `R ⊢ ⎡sForall Ψ⎤` from pointwise `R ⊢ ⎡P⎤`, and `exist_1` builds `⎡sExists Ψ⎤ ⊢ R`
 from pointwise `⎡P⎤ ⊢ R`. -/
 @[rocq_alias BiEmbed]
-class BiEmbed (SI : Type _) [SIdx SI] (PROP1 PROP2 : Type _) [BI SI PROP1] [BI SI PROP2] extends Embed PROP1 PROP2 where
-  [ne : OFE.NonExpansive SI embed]
+class BiEmbed (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] extends Embed PROP1 PROP2 where
   mono           : ∀ {P Q : PROP1}, (P ⊢ Q) → ((⎡P⎤ : PROP2) ⊢ ⎡Q⎤)
   emp_valid_inj  : ∀ (P : PROP1), (⊢ (⎡P⎤ : PROP2)) → (⊢ P)
   emp_2          : (emp : PROP2) ⊢ ⎡(emp : PROP1)⎤
@@ -70,6 +69,12 @@ class BiEmbed (SI : Type _) [SIdx SI] (PROP1 PROP2 : Type _) [BI SI PROP1] [BI S
   sep            : ∀ (P Q : PROP1), (⎡P ∗ Q⎤ : PROP2) ⊣⊢ ⎡P⎤ ∗ ⎡Q⎤
   wand_2         : ∀ (P Q : PROP1), (⎡P⎤ -∗ ⎡Q⎤) ⊢ (⎡P -∗ Q⎤ : PROP2)
   persistently   : ∀ (P : PROP1), (⎡<pers> P⎤ : PROP2) ⊣⊢ <pers> ⎡P⎤
+
+/-- Non-expansiveness of an embedding (step-indexed mixin; the embedding laws are SI-free). -/
+class EmbedNE (SI : Type _) [SIdx SI] (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2]
+    [BIStepIndexed SI PROP1] [BIStepIndexed SI PROP2] [Embed PROP1 PROP2] : Prop where
+  embed_ne : OFE.NonExpansive SI (embed (A := PROP1) (B := PROP2))
+attribute [instance] EmbedNE.embed_ne
 
 /-- `⎡emp⎤ ⊣⊢ emp`. -/
 @[rocq_alias BiEmbedEmp]
@@ -95,7 +100,8 @@ class BiEmbedFUpd (PROP1 PROP2 : Type _) [BI.BIBase PROP1] [BI.BIBase PROP2] [Em
 
 /-- The `Sbi` (internal-equality / plainly) embedding laws. -/
 @[rocq_alias BiEmbedSbi]
-class BiEmbedSbi (SI : Type _) [SIdx SI] (PROP1 PROP2 : Type _) [BI SI PROP1] [BI SI PROP2] [Embed PROP1 PROP2]
+class BiEmbedSbi (SI : Type _) [SIdx SI] (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2]
+    [BIStepIndexed SI PROP1] [BIStepIndexed SI PROP2] [Embed PROP1 PROP2]
     [Sbi SI PROP1] [Sbi SI PROP2] where
   embed_siEmpValid : ∀ (P : PROP1),
     SiEmpValid.siEmpValid (embed P : PROP2) ⊣⊢ SiEmpValid.siEmpValid (SI := SI) P
@@ -105,10 +111,11 @@ class BiEmbedSbi (SI : Type _) [SIdx SI] (PROP1 PROP2 : Type _) [BI SI PROP1] [B
 /-! ## Projections -/
 
 section
-variable {PROP1 PROP2 : Type _} [BI SI PROP1] [BI SI PROP2] [BiEmbed SI PROP1 PROP2]
+variable {PROP1 PROP2 : Type _} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
 
 @[rocq_alias embed_ne]
-instance embed_ne : OFE.NonExpansive SI (embed (A := PROP1) (B := PROP2)) := BiEmbed.ne
+theorem embed_ne [BIStepIndexed SI PROP1] [BIStepIndexed SI PROP2] [EmbedNE SI PROP1 PROP2] :
+    OFE.NonExpansive SI (embed (A := PROP1) (B := PROP2)) := EmbedNE.embed_ne
 
 @[rocq_alias embed_mono]
 theorem embed_mono {P Q : PROP1} (h : P ⊢ Q) : (⎡P⎤ : PROP2) ⊢ ⎡Q⎤ := BiEmbed.mono h
@@ -338,40 +345,38 @@ theorem mkEmbedHom {op₁ : PROP1 → PROP1 → PROP1} {op₂ : PROP2 → PROP2 
     {u₁ : PROP1} {u₂ : PROP2} [MonoidOps op₁ u₁] [MonoidOps op₂ u₂]
     (hop : ∀ {x y}, (embed (op₁ x y) : PROP2) = op₂ (embed x) (embed y))
     (hunit : (embed u₁ : PROP2) = u₂) :
-    MonoidHomomorphism SI op₁ op₂ u₁ u₂ (· = ·) (embed (A := PROP1) (B := PROP2)) where
+    MonoidHomomorphism op₁ op₂ u₁ u₂ (· = ·) (embed (A := PROP1) (B := PROP2)) where
   rel_refl := rfl
   rel_trans := Eq.trans
   op_proper ha hb := ha ▸ hb ▸ rfl
-  map_ne := embed_ne
   map_op := hop
   map_unit := hunit
 
 @[rocq_alias embed_and_homomorphism]
 instance embed_and_homomorphism :
-    MonoidHomomorphism SI (and (PROP := PROP1)) (and (PROP := PROP2)) iprop(True) iprop(True)
+    MonoidHomomorphism (and (PROP := PROP1)) (and (PROP := PROP2)) iprop(True) iprop(True)
       (· = ·) (embed (A := PROP1) (B := PROP2)) :=
   mkEmbedHom (fun {x y} => (embed_and x y).to_eq) (embed_pure _).to_eq
 
 @[rocq_alias embed_or_homomorphism]
 instance embed_or_homomorphism :
-    MonoidHomomorphism SI (or (PROP := PROP1)) (or (PROP := PROP2)) iprop(False) iprop(False)
+    MonoidHomomorphism (or (PROP := PROP1)) (or (PROP := PROP2)) iprop(False) iprop(False)
       (· = ·) (embed (A := PROP1) (B := PROP2)) :=
   mkEmbedHom (fun {x y} => (embed_or x y).to_eq) (embed_pure False).to_eq
 
 @[rocq_alias embed_sep_entails_homomorphism]
 instance embed_sep_entails_homomorphism :
-    MonoidHomomorphism SI (sep (PROP := PROP1)) (sep (PROP := PROP2)) emp emp
+    MonoidHomomorphism (sep (PROP := PROP1)) (sep (PROP := PROP2)) emp emp
       (flip Entails) (embed (A := PROP1) (B := PROP2)) where
   rel_refl := .rfl
   rel_trans := flip .trans
   op_proper := sep_mono
-  map_ne := embed_ne
   map_op := fun {x y} => (embed_sep x y).mpr
   map_unit := embed_emp_2
 
 @[rocq_alias embed_sep_homomorphism]
 instance embed_sep_homomorphism [BiEmbedEmp PROP1 PROP2] :
-    MonoidHomomorphism SI (sep (PROP := PROP1)) (sep (PROP := PROP2)) emp emp
+    MonoidHomomorphism (sep (PROP := PROP1)) (sep (PROP := PROP2)) emp emp
       (· = ·) (embed (A := PROP1) (B := PROP2)) :=
   mkEmbedHom (fun {x y} => (embed_sep x y).to_eq) embed_emp.to_eq
 
@@ -432,9 +437,9 @@ end
 `si_pure` / `internal_eq` / `internal_inj` / `plainly` / `plainly_if` / `plain`. For an
 `Sbi`, `■ P` is by definition `<si_pure> <si_emp_valid> P` (instance `instPlainlySbi`),
 so the `plainly` laws reduce to `embed_si_pure` + `embed_si_emp_valid`. Uses fresh
-`P1`/`P2`/`P3` so each `BI` instance comes solely from `Sbi` (no diamond with `[BI SI _]`). -/
+`P1`/`P2`/`P3` so each `BI` instance comes solely from `Sbi` (no diamond with `[BI _]`). -/
 section
-variable {P1 P2 : Type _} [Sbi SI P1] [Sbi SI P2] [BiEmbed SI P1 P2] [BiEmbedSbi SI P1 P2]
+variable {P1 P2 : Type _} [BI P1] [BIStepIndexed SI P1] [Sbi SI P1] [BI P2] [BIStepIndexed SI P2] [Sbi SI P2] [BiEmbed P1 P2] [BiEmbedSbi SI P1 P2]
 
 @[rocq_alias embed_si_pure]
 theorem embed_siPure (Pi : SiProp SI) :
@@ -468,7 +473,7 @@ instance embed_plain (P : P1) [Plain P] : Plain (embed P : P2) where
 
 /-- `⎡·⎤` reflects internal equality. -/
 @[rocq_alias embed_internal_inj]
-theorem embed_internal_inj {P3 : Type _} [Sbi SI P3] (P Q : P1) :
+theorem embed_internal_inj {P3 : Type _} [BI P3] [BIStepIndexed SI P3] [Sbi SI P3] (P Q : P1) :
     ((embed P : P2) ≡[SI] embed Q : P3) ⊢ P ≡[SI] Q := by
   refine siPure_mono ?_
   calc
@@ -487,29 +492,28 @@ end
 Two embeddings `PA → PB → PC` compose to an embedding `PA → PC`. In Rocq these are
 `Local Instance`s; here `embedEmbed` is a plain `def` (a global instance would loop). -/
 section
-variable {PA PC : Type _} [BI SI PA] [BI SI PC]
+variable {PA PC : Type _} [BI PA] [BI PC]
 
 /-- The composed embedding `⎡⎡·⎤⎤ : PA → PC`. The intermediate `PB` is an explicit
 parameter (it is not determined by `Embed PA PC`, so this cannot be a global
 instance — Rocq makes it a `Local Instance`). -/
 @[reducible, rocq_alias embed_embed]
-def embedEmbed (PB : Type _) [BI SI PB] [BiEmbed SI PA PB] [BiEmbed SI PB PC] : Embed PA PC :=
+def embedEmbed (PB : Type _) [BI PB] [BiEmbed PA PB] [BiEmbed PB PC] : Embed PA PC :=
   ⟨fun P => embed (embed P : PB)⟩
 
 @[rocq_alias embed_embed_alt]
-theorem embed_embed_alt (PB : Type _) [BI SI PB] [BiEmbed SI PA PB] [BiEmbed SI PB PC] (P : PA) :
-    (embedEmbed (SI := SI) PB).embed P ⊣⊢ (embed (embed P : PB) : PC) := .rfl
+theorem embed_embed_alt (PB : Type _) [BI PB] [BiEmbed PA PB] [BiEmbed PB PC] (P : PA) :
+    (embedEmbed PB).embed P ⊣⊢ (embed (embed P : PB) : PC) := .rfl
 
-variable (PB : Type _) [BI SI PB] [BiEmbed SI PA PB] [BiEmbed SI PB PC]
+variable (PB : Type _) [BI PB] [BiEmbed PA PB] [BiEmbed PB PC]
 
 #rocq_ignore embed_embedding_mixin "Subsumed by embedBiEmbed."
 
-/-- The composed `BiEmbed SI PA PC`. -/
+/-- The composed `BiEmbed PA PC`. -/
 @[reducible, rocq_alias embed_bi_embed]
-def embedBiEmbed : BiEmbed SI PA PC :=
+def embedBiEmbed : BiEmbed PA PC :=
   letI : Embed PA PC := embedEmbed PB
   {
-    ne := (embed_ne (PROP1 := PB) (PROP2 := PC)).comp (embed_ne (PROP1 := PA) (PROP2 := PB))
     mono := fun h => embed_mono (embed_mono h)
     emp_valid_inj := fun _ h => embed_emp_valid_inj (embed_emp_valid_inj h)
     emp_2 := embed_emp_2.trans (embed_mono embed_emp_2)
@@ -534,8 +538,8 @@ def embedBiEmbed : BiEmbed SI PA PC :=
 /-- `BiEmbedEmp` transfers along composition. -/
 @[rocq_alias embed_embed_emp]
 theorem embed_embed_emp [BiEmbedEmp PA PB] [BiEmbedEmp PB PC] :
-    @BiEmbedEmp PA PC _ _ (embedBiEmbed (SI := SI) PB).toEmbed :=
-  letI : BiEmbed SI PA PC := embedBiEmbed PB
+    @BiEmbedEmp PA PC _ _ (embedBiEmbed PB).toEmbed :=
+  letI : BiEmbed PA PC := embedBiEmbed PB
   { embed_emp_1 := (embed_mono (PROP1 := PB) (PROP2 := PC)
       (BiEmbedEmp.embed_emp_1 (PROP1 := PA) (PROP2 := PB))).trans
       (BiEmbedEmp.embed_emp_1 (PROP1 := PB) (PROP2 := PC)) }
@@ -543,28 +547,28 @@ theorem embed_embed_emp [BiEmbedEmp PA PB] [BiEmbedEmp PB PC] :
 /-- `BiEmbedLater` transfers along composition. -/
 @[rocq_alias embed_embed_later]
 theorem embed_embed_later [BiEmbedLater PA PB] [BiEmbedLater PB PC] :
-    @BiEmbedLater PA PC _ _ (embedBiEmbed (SI := SI) PB).toEmbed :=
-  letI : BiEmbed SI PA PC := embedBiEmbed PB
+    @BiEmbedLater PA PC _ _ (embedBiEmbed PB).toEmbed :=
+  letI : BiEmbed PA PC := embedBiEmbed PB
   { embed_later := fun P => (embed_congr (PROP1 := PB) (PROP2 := PC)
       (BiEmbedLater.embed_later (PROP1 := PA) (PROP2 := PB) P)).trans
       (BiEmbedLater.embed_later (PROP1 := PB) (PROP2 := PC) (embed (A := PA) (B := PB) P)) }
 
 /-- `BiEmbedBUpd` transfers along composition. -/
 @[rocq_alias embed_embed_bupd]
-theorem embed_embed_bupd [BIUpdate SI PA] [BIUpdate SI PB] [BIUpdate SI PC]
+theorem embed_embed_bupd [BIUpdate PA] [BIUpdate PB] [BIUpdate PC]
     [BiEmbedBUpd PA PB] [BiEmbedBUpd PB PC] :
-    @BiEmbedBUpd PA PC _ _ (embedBiEmbed (SI := SI) PB).toEmbed _ _ :=
-  letI : BiEmbed SI PA PC := embedBiEmbed PB
+    @BiEmbedBUpd PA PC _ _ (embedBiEmbed PB).toEmbed _ _ :=
+  letI : BiEmbed PA PC := embedBiEmbed PB
   { embed_bupd := fun P => (embed_congr (PROP1 := PB) (PROP2 := PC)
       (BiEmbedBUpd.embed_bupd (PROP1 := PA) (PROP2 := PB) P)).trans
       (BiEmbedBUpd.embed_bupd (PROP1 := PB) (PROP2 := PC) (embed (A := PA) (B := PB) P)) }
 
 /-- `BiEmbedFUpd` transfers along composition. -/
 @[rocq_alias embed_embed_fupd]
-theorem embed_embed_fupd [BIFUpdate SI PA] [BIFUpdate SI PB] [BIFUpdate SI PC]
+theorem embed_embed_fupd [BIFUpdate PA] [BIFUpdate PB] [BIFUpdate PC]
     [BiEmbedFUpd PA PB] [BiEmbedFUpd PB PC] :
-    @BiEmbedFUpd PA PC _ _ (embedBiEmbed (SI := SI) PB).toEmbed _ _ :=
-  letI : BiEmbed SI PA PC := embedBiEmbed PB
+    @BiEmbedFUpd PA PC _ _ (embedBiEmbed PB).toEmbed _ _ :=
+  letI : BiEmbed PA PC := embedBiEmbed PB
   { embed_fupd := fun E1 E2 P => (embed_congr (PROP1 := PB) (PROP2 := PC)
       (BiEmbedFUpd.embed_fupd (PROP1 := PA) (PROP2 := PB) E1 E2 P)).trans
       (BiEmbedFUpd.embed_fupd (PROP1 := PB) (PROP2 := PC) E1 E2 (embed (A := PA) (B := PB) P)) }
@@ -572,14 +576,14 @@ theorem embed_embed_fupd [BIFUpdate SI PA] [BIFUpdate SI PB] [BIFUpdate SI PC]
 end
 
 /- `BiEmbedSbi` transfers along composition. Fresh `Sbi` type
-names so each `BI` instance comes from `Sbi` (no diamond with the `[BI SI _]` above). -/
+names so each `BI` instance comes from `Sbi` (no diamond with the `[BI _]` above). -/
 section
-variable {QA QB QC : Type _} [Sbi SI QA] [Sbi SI QB] [Sbi SI QC]
-  [BiEmbed SI QA QB] [BiEmbed SI QB QC] [BiEmbedSbi SI QA QB] [BiEmbedSbi SI QB QC]
+variable {QA QB QC : Type _} [BI QA] [BIStepIndexed SI QA] [Sbi SI QA] [BI QB] [BIStepIndexed SI QB] [Sbi SI QB] [BI QC] [BIStepIndexed SI QC] [Sbi SI QC]
+  [BiEmbed QA QB] [BiEmbed QB QC] [BiEmbedSbi SI QA QB] [BiEmbedSbi SI QB QC]
 
 @[rocq_alias embed_embed_sbi]
-theorem embed_embed_sbi : @BiEmbedSbi SI _ QA QC _ _ (embedBiEmbed (SI := SI) QB).toEmbed _ _ :=
-  letI : BiEmbed SI QA QC := embedBiEmbed QB
+theorem embed_embed_sbi : @BiEmbedSbi SI _ QA QC _ _ _ _ (embedBiEmbed QB).toEmbed _ _ :=
+  letI : BiEmbed QA QC := embedBiEmbed QB
   { embed_siEmpValid := fun P =>
       (BiEmbedSbi.embed_siEmpValid (PROP1 := QB) (PROP2 := QC) (embed (A := QA) (B := QB) P)).trans
         (BiEmbedSbi.embed_siEmpValid (PROP1 := QA) (PROP2 := QB) P)

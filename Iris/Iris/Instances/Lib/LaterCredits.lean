@@ -575,7 +575,7 @@ theorem le_upd_keep (P Q : IProp GF) [TCOr (TCEq hlc .hasNoLC) (Timeless P)] :
     unfold le_upd_finally
     cases ‹TCOr (TCEq hlc .hasNoLC) (Timeless P)› with
     | r =>
-      iapply timeless_laterN
+      iapply timeless_laterN (SI := Nat)
       ispecialize H $$ Hc
       icases (laterN_mono n except0_into_later) $$ H with H
       icases (laterN_succ_right _).mpr $$ H with $
@@ -616,20 +616,20 @@ theorem le_upd_finally_soundness (hlc : HasLC) [LcGpreS GF] n (P : IProp GF) :
   intro HP
   cases hlc with
   | hasLC =>
-    apply laterN_soundness (n := n.succ)
+    apply laterN_soundness (SI := Nat) (n := n.succ)
     iintro _
     iapply (laterN_succ_right _).mpr
     iapply (laterN_mono _ except0_into_later)
-    iapply (laterN_mono _ (except0_mono plainly_elim))
+    iapply (laterN_mono _ (except0_mono (plainly_elim (SI := Nat))))
     imod lc_alloc n with ⟨%LC, Hlc, Hl⟩
     have HP' : £ n ⊢ iprop(∀ m, lc_supply m -∗ ▷^[m] ◇ ■ P) := HP
     iapply HP' $$ Hl Hlc
   | hasNoLC =>
-    apply laterN_soundness (n := 1)
+    apply laterN_soundness (SI := Nat) (n := 1)
     iintro _
     iapply (laterN_succ_right 0).mpr
     iapply laterN_0.mpr
-    iapply later_mono plainly_elim
+    iapply later_mono (plainly_elim (SI := Nat))
     iapply except0_into_later
     icases lc_alloc_no_lc n with ⟨%LC, Hlc, Hl⟩
     unfold le_upd_finally at HP

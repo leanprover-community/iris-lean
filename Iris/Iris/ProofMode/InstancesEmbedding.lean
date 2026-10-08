@@ -19,15 +19,15 @@ open BI
 
 section BiEmbed
 
-variable [bi1 : BI SI PROP1] [bi2 : BI SI PROP2] [BiEmbed SI PROP1 PROP2]
+variable [bi1 : BI PROP1] [bi2 : BI PROP2] [BiEmbed PROP1 PROP2]
 
 /-! ### AsEmpValid -/
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias as_emp_valid_embed]
 instance (priority := low) asEmpValid_embed d φ (P : PROP1)
-    [inst : AsEmpValid0 d φ .in SI PROP1 bi1 .out P] :
-    AsEmpValid d φ .in SI PROP2 bi2 (embed P) where
+    [inst : AsEmpValid0 d φ .in PROP1 bi1 .out P] :
+    AsEmpValid d φ .in PROP2 bi2 (embed P) where
   as_emp_valid := by
     constructor
     · exact fun hd hφ => (embed_emp_valid P).mpr <| inst.as_emp_valid_0.as_emp_valid.left hd hφ
@@ -72,7 +72,7 @@ instance intoEmbed_embed (P : PROP1) : IntoEmbed (PROP1 := PROP1) (PROP2 := PROP
   into_embed := .rfl
 
 @[rocq_alias into_embed_affinely]
-instance intoEmbed_affinely [BIUpdate SI PROP1] [BIUpdate SI PROP2]
+instance intoEmbed_affinely [BIUpdate PROP1] [BIUpdate PROP2]
     [BiEmbedBUpd PROP1 PROP2] (P : PROP2) (Q : PROP1) [inst : IntoEmbed P Q] :
     IntoEmbed iprop(<affine> P) iprop(<affine> Q) where
   into_embed := (affinely_mono inst.into_embed).trans <| embed_affinely_2 Q
@@ -301,12 +301,12 @@ end BiEmbed
 
 section SbiEmbed
 
-variable [Sbi SI P1] [Sbi SI P2] [BiEmbed SI P1 P2] [BiEmbedSbi SI P1 P2]
+variable [BI P1] [BIStepIndexed SI P1] [Sbi SI P1] [BI P2] [BIStepIndexed SI P2] [Sbi SI P2] [BiEmbed P1 P2] [BiEmbedSbi SI P1 P2]
 
 @[ipm_backtrack, rocq_alias from_modal_plainly_embed]
 instance (priority := low) fromModal_plainly_embed {α} φ io (sel : α)
-    (P Q : P1) [inst : FromModal .in modality_plainly φ sel P Q] :
-    FromModal io modality_plainly φ sel iprop(⎡P⎤ : P2) iprop(⎡Q⎤) where
+    (P Q : P1) [inst : FromModal .in (modality_plainly (SI := SI)) φ sel P Q] :
+    FromModal io (modality_plainly (SI := SI)) φ sel iprop(⎡P⎤ : P2) iprop(⎡Q⎤) where
   from_modal h := (embed_plainly Q).mpr.trans (embed_mono <| inst.from_modal h)
 
 @[rocq_alias into_internal_eq_embed]
@@ -319,8 +319,8 @@ end SbiEmbed
 section BiEmbedBUpd
 open BiEmbedBUpd
 
-variable [BI SI PROP1] [BI SI PROP2] [BiEmbed SI PROP1 PROP2]
-  [BIUpdate SI PROP1] [BIUpdate SI PROP2] [BiEmbedBUpd PROP1 PROP2]
+variable [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
+  [BIUpdate PROP1] [BIUpdate PROP2] [BiEmbedBUpd PROP1 PROP2]
 
 @[rocq_alias elim_modal_embed_bupd_goal]
 instance elimModal_embed_bupd_goal φ p io p' (P P' : PROP2) (Q Q' : PROP1)
@@ -351,7 +351,7 @@ end BiEmbedBUpd
 section BiEmbedFUpd
 open BiEmbedFUpd
 
-variable [BI SI PROP1] [BI SI PROP2] [BiEmbed SI PROP1 PROP2] [BIFUpdate SI PROP1] [BIFUpdate SI PROP2] [BiEmbedFUpd PROP1 PROP2]
+variable [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] [BIFUpdate PROP1] [BIFUpdate PROP2] [BiEmbedFUpd PROP1 PROP2]
 
 @[rocq_alias elim_modal_embed_fupd_goal]
 instance elimModal_embed_fupd_goal φ p io p'

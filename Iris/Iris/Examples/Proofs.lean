@@ -13,7 +13,7 @@ public import Iris.ProofMode
 namespace Iris.Examples
 open Iris.BI
 
-theorem proof_example_1 [BI Nat PROP] [BIPersistentlyExist PROP]
+theorem proof_example_1 [BI PROP] [BIPersistentlyExist PROP]
     (P Q R : PROP) (Φ : α → PROP) :
     P ∗ Q ∗ □ R ⊢ □ (R -∗ ∃ x, Φ x) -∗ ∃ x, Φ x ∗ P ∗ Q := by
   iintro ⟨HP, HQ, #HR⟩ #HRΦ

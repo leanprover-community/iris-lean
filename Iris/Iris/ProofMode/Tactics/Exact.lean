@@ -9,7 +9,6 @@ public import Iris.ProofMode.Tactics.Assumption
 
 namespace Iris.ProofMode
 
-
 public meta section
 open Lean Elab Tactic Meta Qq BI Iris.Std
 

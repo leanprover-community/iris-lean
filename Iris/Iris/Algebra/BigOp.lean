@@ -328,7 +328,7 @@ variable {B : Type w} {R : M₂ → M₂ → Prop} {f : M₁ → M₂}
 
 /-- Monoid homomorphisms distribute over big ops. -/
 @[rocq_alias big_opL_commute]
-theorem bigOpL_hom [H : MonoidHomomorphism SI op₁ op₂ unit₁ unit₂ R f] (Φ : Nat → B → M₁) (l : List B) :
+theorem bigOpL_hom [H : MonoidHomomorphism op₁ op₂ unit₁ unit₂ R f] (Φ : Nat → B → M₁) (l : List B) :
     R (f ([^ op₁ list] k ↦ x ∈ l, Φ k x)) ([^ op₂ list] k ↦ x ∈ l, f (Φ k x)) :=
   match l with
   | .nil => H.map_unit
@@ -336,7 +336,7 @@ theorem bigOpL_hom [H : MonoidHomomorphism SI op₁ op₂ unit₁ unit₂ R f] (
 
 /-- Weak monoid homomorphisms distribute over non-empty big ops. -/
 @[rocq_alias big_opL_commute1]
-theorem bigOpL_hom_weak [H : WeakMonoidHomomorphism SI op₁ op₂ unit₁ unit₂ R f] {l : List B}
+theorem bigOpL_hom_weak [H : WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R f] {l : List B}
     (Φ : Nat → B → M₁) (hne : l ≠ []) :
     R (f ([^ op₁ list] k ↦ x ∈ l, Φ k x)) ([^ op₂ list] k ↦ x ∈ l, f (Φ k x)) :=
   match l with
@@ -669,12 +669,12 @@ variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit
 variable [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
 
 @[rocq_alias big_opM_commute]
-theorem bigOpM_hom [ι : MonoidHomomorphism SI op₁ op₂ unit₁ unit₂ R h] (f : K → A → M₁) (m : M' A) :
+theorem bigOpM_hom [ι : MonoidHomomorphism op₁ op₂ unit₁ unit₂ R h] (f : K → A → M₁) (m : M' A) :
     R (h ([^op₁ map] k↦x ∈ m, f k x)) ([^op₂ map] k↦x ∈ m, h (f k x)) := by
   exact bigOpL_hom (H := ι) _ _
 
 @[rocq_alias big_opM_commute1]
-theorem bigOpM_weak_hom [DecidableEq K] [ι : WeakMonoidHomomorphism SI op₁ op₂ unit₁ unit₂ R h]
+theorem bigOpM_weak_hom [DecidableEq K] [ι : WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R h]
     (f : K → A → M₁) (m : M' A) (Hne : ¬ m = ∅) :
     R (h ([^op₁ map] k↦x ∈ m, f k x)) ([^op₂ map] k↦x ∈ m, h (f k x)) := by
   refine bigOpL_hom_weak (H := ι) _ ?_
@@ -862,7 +862,7 @@ variable [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
 
 @[rocq_alias big_opS_commute]
 theorem hom {B : Type w} {S' : Type _} [LawfulFiniteSet S' B] {R : M₂ → M₂ → Prop} {f : M₁ → M₂}
-    (hom : MonoidHomomorphism SI op₁ op₂ unit₁ unit₂ R f) (Φ : B → M₁) (s : S') :
+    (hom : MonoidHomomorphism op₁ op₂ unit₁ unit₂ R f) (Φ : B → M₁) (s : S') :
     R (f ([^ op₁ set] x ∈ s, Φ x)) ([^ op₂ set] x ∈ s, f (Φ x)) := by
   rw [bigOpS_bigOpL]
   refine hom.rel_trans (bigOpL_hom (H := hom) _ (toList s)) ?_
@@ -871,7 +871,7 @@ theorem hom {B : Type w} {S' : Type _} [LawfulFiniteSet S' B] {R : M₂ → M₂
 
 @[rocq_alias big_opS_commute1]
 theorem hom_weak {B : Type w} {S' : Type _} [LawfulFiniteSet S' B] {R : M₂ → M₂ → Prop} {f : M₁ → M₂}
-    (hom : WeakMonoidHomomorphism SI op₁ op₂ unit₁ unit₂ R f) (Φ : B → M₁) (s : S') (hne : s ≠ ∅) :
+    (hom : WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R f) (Φ : B → M₁) (s : S') (hne : s ≠ ∅) :
     R (f ([^ op₁ set] x ∈ s, Φ x)) ([^ op₂ set] x ∈ s, f (Φ x)) := by
   rw [bigOpS_bigOpL]
   refine (hom.rel_trans (bigOpL_hom_weak (H := hom) _ (fun heq => ?_))) ?_
@@ -987,7 +987,7 @@ variable [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
 
 @[rocq_alias big_opMS_commute]
 theorem hom {B : Type w} {MS' : Type _} [LawfulFiniteMultiSet MS' B] {R : M₂ → M₂ → Prop}
-    {f : M₁ → M₂} (hom : MonoidHomomorphism SI op₁ op₂ unit₁ unit₂ R f) (Φ : B → M₁) (X : MS') :
+    {f : M₁ → M₂} (hom : MonoidHomomorphism op₁ op₂ unit₁ unit₂ R f) (Φ : B → M₁) (X : MS') :
     R (f ([^ op₁ mset] x ∈ X, Φ x)) ([^ op₂ mset] x ∈ X, f (Φ x)) := by
   rw [bigOpMS_bigOpL]
   refine hom.rel_trans (bigOpL_hom (H := hom) _ (FiniteMultiSet.toList X)) ?_
@@ -996,7 +996,7 @@ theorem hom {B : Type w} {MS' : Type _} [LawfulFiniteMultiSet MS' B] {R : M₂ �
 
 @[rocq_alias big_opMS_commute1]
 theorem hom_weak {B : Type w} {MS' : Type _} [LawfulFiniteMultiSet MS' B] {R : M₂ → M₂ → Prop}
-    {f : M₁ → M₂} (hom : WeakMonoidHomomorphism SI op₁ op₂ unit₁ unit₂ R f) (Φ : B → M₁) (X : MS')
+    {f : M₁ → M₂} (hom : WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R f) (Φ : B → M₁) (X : MS')
     (hne : X ≠ ∅) :
     R (f ([^ op₁ mset] x ∈ X, Φ x)) ([^ op₂ mset] x ∈ X, f (Φ x)) := by
   rw [bigOpMS_bigOpL]

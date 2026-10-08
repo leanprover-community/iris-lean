@@ -19,7 +19,7 @@ open Iris.Algebra BigOpL BIBase
 
 /-! # Big Conjunction over Lists -/
 
-variable {PROP : Type _} [BI SI PROP] {A : Type _}
+variable {PROP : Type _} [BI PROP] {A : Type _}
 
 namespace BigAndL
 
@@ -112,9 +112,9 @@ theorem bigAndL_impl {Φ Ψ : Nat → A → PROP} {l : List A} :
 @[rocq_alias big_andL_persistently]
 theorem bigAndL_persistently {Φ : Nat → A → PROP} {l : List A} :
     (<pers> [∧list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∧list] k ↦ x ∈ l, <pers> Φ k x :=
-  letI := MonoidHomomorphism.ofEq (PROP := PROP) persistently_ne (SI := SI)
+  letI := MonoidHomomorphism.ofEq (PROP := PROP)
        (BiEntails.to_eq persistently_and) (BiEntails.to_eq persistently_true)
-  BiEntails.of_eq <| bigOpL_hom (SI := SI) Φ l
+  BiEntails.of_eq <| bigOpL_hom Φ l
 
 @[rocq_alias big_andL_pure_1]
 theorem bigAndL_pure_intro {φ : Nat → A → Prop} {l : List A} :
@@ -159,9 +159,9 @@ theorem bigAndL_flatMap {B : Type _} (f : A → List B) {Φ : B → PROP} {l : L
 @[rocq_alias big_andL_later]
 theorem bigAndL_later {Φ : Nat → A → PROP} {l : List A} :
     (▷ [∧list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∧list] k ↦ x ∈ l, (▷ Φ k x) :=
-  letI := MonoidHomomorphism.ofEq (PROP := PROP) later_ne (SI := SI)
+  letI := MonoidHomomorphism.ofEq (PROP := PROP)
     (BiEntails.to_eq later_and) (BiEntails.to_eq later_true)
-  BiEntails.of_eq <| bigOpL_hom (SI := SI)  Φ l
+  BiEntails.of_eq <| bigOpL_hom  Φ l
 
 @[rocq_alias big_andL_laterN]
 theorem bigAndL_laterN {Φ : Nat → A → PROP} {l : List A} {n : Nat} :
@@ -181,7 +181,7 @@ theorem bigAndL_submseteq {Φ : A → PROP} {l₁ l₂ l : List A} (h : (l₁ ++
   bigAndL_append.1.trans and_elim_l
 
 @[rocq_alias big_andL_ne]
-theorem bigAndL_dist {Φ Ψ : Nat → A → PROP} {l : List A} {n : SI}
+theorem bigAndL_dist [BIStepIndexed SI PROP] {Φ Ψ : Nat → A → PROP} {l : List A} {n : SI}
     (h : ∀ {k x}, l[k]? = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([∧list] k ↦ x ∈ l, Φ k x) ≡{n}≡ [∧list] k ↦ x ∈ l, Ψ k x :=
   bigOpL_dist h

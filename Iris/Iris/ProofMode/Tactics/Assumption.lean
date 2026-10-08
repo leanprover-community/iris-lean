@@ -9,14 +9,11 @@ import Iris.BI
 public import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
-
-variable {SI : Type _} [Iris.SIdx SI]
-
 public section
 open BI Iris.Std
 
 @[rocq_alias tac_assumption]
-theorem assumption [BI SI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption p .in A Q]
+theorem assumption [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption p .in A Q]
     [TCOr (Affine P') (Absorbing Q)] (h : P ⊣⊢ P' ∗ □?p A) : P ⊢ Q := calc
   P ⊢ P' ∗ □?p A := h.mp
   _ ⊢ P' ∗ Q     := sep_mono_right inst.from_assumption

@@ -15,13 +15,13 @@ open Iris BI ProofMode
 
 section IPMInstances
 
-variable {PROP1 PROP2 : Type u} [BI Nat PROP1] [BI Nat PROP2] [BiEmbed Nat PROP1 PROP2]
+variable {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
 
 /-
   Tests `imodintro`, where `fromModal_embed` is preferred over
   `fromModal_id_embed` on `⎡|==> P⎤`.
 -/
-example [BIUpdate Nat PROP1] (P : PROP1) : ⎡P⎤ ⊢@{PROP2} ⎡|==> P⎤ := by
+example [BIUpdate PROP1] (P : PROP1) : ⎡P⎤ ⊢@{PROP2} ⎡|==> P⎤ := by
   iintro HP
   imodintro _
   imodintro (|==> _)
@@ -49,7 +49,7 @@ example (P Q R : PROP1) [Affine P] :
       iexact HR
 
 /-- Tests `imodintro` prefers `fromModal_embed` over `fromModal_plainly_embed`. -/
-example {P1 P2 : Type u} [Sbi Nat P1] [Sbi Nat P2] [BiEmbed Nat P1 P2] [BiEmbedSbi Nat P1 P2]
+example {P1 P2 : Type u} [BI P1] [BIStepIndexed Nat P1] [Sbi Nat P1] [BI P2] [BIStepIndexed Nat P2] [Sbi Nat P2] [BiEmbed P1 P2] [BiEmbedSbi Nat P1 P2]
     (P : P1) [Plain P] : □ ⎡P⎤ ⊢@{P2} ⎡■ P⎤ := by
   iintro #HP
   imodintro _
@@ -60,8 +60,8 @@ example {P1 P2 : Type u} [Sbi Nat P1] [Sbi Nat P2] [BiEmbed Nat P1 P2] [BiEmbedS
   Tests that the spatial context is transformed by `IntoEmbed`, i.e. that the
   embedding really was introduced and not the inner modality.
 -/
-example [BIUpdate Nat PROP1]
-    [BiEmbed Nat PROP1 PROP2] (P Q : PROP1) : ⎡P⎤ ∗ ⎡P -∗ Q⎤ ⊢@{PROP2} ⎡|==> Q⎤ := by
+example [BIUpdate PROP1]
+    [BiEmbed PROP1 PROP2] (P Q : PROP1) : ⎡P⎤ ∗ ⎡P -∗ Q⎤ ⊢@{PROP2} ⎡|==> Q⎤ := by
   iintro ⟨HP, HPQ⟩
   imodintro _
   imodintro (|==> _)
@@ -106,7 +106,7 @@ variable (P : PROP1) in
 info: solution: FromModal InOut.in modality_id True iprop(|==> P) iprop(|==> P) P, new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-variable (P : PROP1) [BIUpdate Nat PROP1] in
+variable (P : PROP1) [BIUpdate PROP1] in
 #ipm_synth FromModal .in (α := PROP1) modality_id _ _ iprop(|==> P : PROP1) _
 
 /-
@@ -116,7 +116,7 @@ variable (P : PROP1) [BIUpdate Nat PROP1] in
 info: solution: FromModal InOut.out modality_affinely True iprop(<affine> P) ⎡⎡<affine> P⎤⎤ ⎡⎡P⎤⎤, new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-variable {PROP3 : Type u} [BI Nat PROP3] [BiEmbed Nat PROP2 PROP3] (P : PROP1) in
+variable {PROP3 : Type u} [BI PROP3] [BiEmbed PROP2 PROP3] (P : PROP1) in
 #ipm_synth FromModal .out _ _ iprop(<affine> P) iprop(⎡(⎡<affine> P⎤ : PROP2)⎤ : PROP3) _
 
 /-
@@ -124,7 +124,7 @@ variable {PROP3 : Type u} [BI Nat PROP3] [BiEmbed Nat PROP2 PROP3] (P : PROP1) i
   that `PROP1` is supplied.
 -/
 /--
-error: parameter #1 PROP1 of FromModal InOut.out ?m.10 ?m.11 iprop(□ P) iprop(□ P) ?m.16 is an out parameter that is not an mvar
+error: parameter #1 PROP1 of FromModal InOut.out ?m.7 ?m.8 iprop(□ P) iprop(□ P) ?m.13 is an out parameter that is not an mvar
 -/
 #guard_msgs (whitespace := lax) in
 variable (P : PROP1) in
@@ -211,7 +211,7 @@ end IPMInstances
 
 section Frame
 
-variable {PROP1 PROP2 : Type u} [BI Nat PROP1] [BI Nat PROP2] [BiEmbed Nat PROP1 PROP2]
+variable {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
 
 /-
   The instance `frame_here` has a higher priority than `frame_embed` so that
@@ -285,8 +285,8 @@ end Frame
 
 section
 
-variable [Sbi Nat PROP1] [Sbi Nat PROP2]
-  [BiEmbed Nat PROP1 PROP2] [BiEmbedSbi Nat PROP1 PROP2]
+variable [BI PROP1] [BIStepIndexed Nat PROP1] [Sbi Nat PROP1] [BI PROP2] [BIStepIndexed Nat PROP2] [Sbi Nat PROP2]
+  [BiEmbed PROP1 PROP2] [BiEmbedSbi Nat PROP1 PROP2]
 
 /- The instance `frame_eq_embed` is used. -/
 /-- info:

@@ -6,6 +6,7 @@ Authors: Markus de Medeiros
 module
 
 public import Iris.BI.Cmra
+public meta import Lean.Elab.Tactic
 
 @[expose] public section
 
@@ -75,7 +76,7 @@ inductive SbiUnfoldClosure where
 embedding of the down closure of `Pi`, and that `Pi` is downwards closed whenever
 `clo` demands it. -/
 @[rocq_alias SbiUnfold]
-class SbiUnfold (SI : Type _) [SIdx SI] {PROP : Type _} [Sbi SI PROP] (clo : SbiUnfoldClosure) (P : PROP)
+class SbiUnfold (SI : Type _) [SIdx SI] {PROP : Type _} [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] (clo : SbiUnfoldClosure) (P : PROP)
     (Pi : outParam (SI → Prop)) where
   closed {n₁ n₂ : SI} : clo = .downClosed → Pi n₁ → n₂ ≤ n₁ → Pi n₂
   as_siPure : P ⊣⊢ iprop(<si_pure> downClose Pi)
@@ -87,7 +88,7 @@ def SbiUnfoldClosure.maybeDownClose : SbiUnfoldClosure → (SI → Prop) → SI 
   | .notClosed, Pi, n => Pi n
 
 namespace SbiUnfold
-variable [Sbi SI PROP] {clo : SbiUnfoldClosure} {P : PROP} {Pi : SI → Prop}
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {clo : SbiUnfoldClosure} {P : PROP} {Pi : SI → Prop}
 
 theorem downClose_of_closed (h : ∀ {n₁ n₂ : SI}, Pi n₁ → n₂ ≤ n₁ → Pi n₂) {n : SI} :
     (downClose Pi).holds n ↔ Pi n :=
@@ -122,7 +123,7 @@ instance (priority := low) sbiUnfold_siProp (clo : SbiUnfoldClosure) (P : SiProp
   .of_closed P.closed .rfl
 
 section
-variable [Sbi SI PROP] {clo : SbiUnfoldClosure} {P Q : PROP} {Pi Qi : SI → Prop}
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {clo : SbiUnfoldClosure} {P Q : PROP} {Pi Qi : SI → Prop}
 
 /-! ## The top-level lemmas used by the tactic -/
 
@@ -333,16 +334,38 @@ end
 pure step-indexed model. -/
 syntax (name := sbiUnfoldTac) "sbi_unfold" : tactic
 
+/-- `sbi_unfold` at a fixed step index `si`. -/
+syntax (name := sbiUnfoldAtTac) "sbi_unfold_at " term : tactic
+
 macro_rules
-  | `(tactic| sbi_unfold) =>
+  | `(tactic| sbi_unfold_at $si) =>
     -- Some instances leave a down closure, which the `dsimp` reduces away.
     `(tactic|
       (first
-        | refine SbiUnfold.empValid_iff.mpr ?_
-        | refine SbiUnfold.biEntails_iff.mpr ?_
-        | refine SbiUnfold.entails_iff.mpr ?_
-        | fail "sbi_unfold: not a BI entailment") <;>
+        | refine (SbiUnfold.empValid_iff (SI := $si)).mpr ?_
+        | refine (SbiUnfold.biEntails_iff (SI := $si)).mpr ?_
+        | refine (SbiUnfold.entails_iff (SI := $si)).mpr ?_) <;>
       try dsimp only [SbiUnfoldClosure.maybeDownClose])
+
+open Lean Elab Tactic Meta in
+/-- The step index is not determined by an (SI-free) entailment, so it is taken from the
+`Sbi s _` instances in the local context (in order), falling back to `Nat`. -/
+@[tactic sbiUnfoldTac] meta def evalSbiUnfold : Tactic := fun _ => withMainContext do
+  let mut cands : Array Expr := #[]
+  for li in (← getLocalInstances) do
+    let ty ← instantiateMVars (← inferType li.fvar)
+    if ty.isAppOf ``Sbi && ty.getAppNumArgs ≥ 1 then
+      let si := ty.getAppArgs[0]!
+      unless cands.any (· == si) do cands := cands.push si
+  unless cands.any (·.isConstOf ``Nat) do cands := cands.push (mkConst ``Nat)
+  for si in cands do
+    let s ← saveState
+    try
+      let siStx ← Term.exprToSyntax si
+      evalTactic (← `(tactic| sbi_unfold_at $siStx))
+      return
+    catch _ => s.restore
+  throwError "sbi_unfold: not a BI entailment"
 
 #rocq_ignore sbi_unfold_tceq "Only needed for the Rocq `Hint Extern` that translates `match`."
 #rocq_concept bi "sbi_unfold" ported "Implemented as the sbi_unfold tactic."

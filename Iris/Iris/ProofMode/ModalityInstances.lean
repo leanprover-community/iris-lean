@@ -18,7 +18,7 @@ open Iris.BI
 section Modalities
 
 @[rocq_alias modality_persistently, rocq_alias modality_persistently_mixin]
-def modality_persistently [BI SI PROP] : Modality PROP PROP where
+def modality_persistently [BI PROP] : Modality PROP PROP where
   M := persistently
   action
   | true => .id
@@ -31,7 +31,7 @@ def modality_persistently [BI SI PROP] : Modality PROP PROP where
   sep := persistently_sep_mpr
 
 @[rocq_alias modality_affinely, rocq_alias modality_affinely_mixin]
-def modality_affinely [BI SI PROP] : Modality PROP PROP where
+def modality_affinely [BI PROP] : Modality PROP PROP where
   M := affinely
   action
   | true => .id
@@ -44,7 +44,7 @@ def modality_affinely [BI SI PROP] : Modality PROP PROP where
   sep := affinely_sep_mpr
 
 @[rocq_alias modality_intuitionistically, rocq_alias modality_intuitionistically_mixin]
-def modality_intuitionistically [BI SI PROP] : Modality PROP PROP where
+def modality_intuitionistically [BI PROP] : Modality PROP PROP where
   M := intuitionistically
   action
   | true => .id
@@ -57,7 +57,7 @@ def modality_intuitionistically [BI SI PROP] : Modality PROP PROP where
   sep := intuitionistically_sep_mpr
 
 @[rocq_alias modality_plainly, rocq_alias modality_plainly_mixin]
-def modality_plainly [Sbi SI PROP] : Modality PROP PROP where
+def modality_plainly [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] : Modality PROP PROP where
   M := BIBase.Plainly.plainly
   action
   | true => .forall Plain
@@ -70,7 +70,7 @@ def modality_plainly [Sbi SI PROP] : Modality PROP PROP where
   sep := plainly_sep_2
 
 @[rocq_alias modality_laterN, rocq_alias modality_laterN_mixin]
-def modality_laterN (n : Nat) [BI SI PROP] : Modality PROP PROP where
+def modality_laterN (n : Nat) [BI PROP] : Modality PROP PROP where
   M := BIBase.laterN n
   action := fun _ => .transform (IntoLaterN (progress := false) (only_head := false) n)
   spec := fun _ _ _ h =>
@@ -80,7 +80,7 @@ def modality_laterN (n : Nat) [BI SI PROP] : Modality PROP PROP where
   sep := laterN_sep_2 n
 
 @[rocq_alias modality_embed, rocq_alias modality_embed_mixin]
-def modality_embed [BI SI PROP1] [BI SI PROP2] [BiEmbed SI PROP1 PROP2] : Modality PROP1 PROP2 where
+def modality_embed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] : Modality PROP1 PROP2 where
   M := embed
   action _ := .transform IntoEmbed
   spec := fun p _ P h =>

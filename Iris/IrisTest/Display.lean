@@ -74,7 +74,7 @@ info:
 ⋆ Q : PROP
 -/
 #guard_msgs (whitespace := lax) in
-example [BI Nat PROP] (P Q R : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
+example [BI PROP] (P Q R : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
   iintro HP1 HP2 HR HPQ
   trace_delab
   ispecialize HPQ $$ [$HP1 HP2] [-]
@@ -120,7 +120,7 @@ info:
 ⋆ Q : PROP
 -/
 #guard_msgs (whitespace := lax) in
-example [BI Nat PROP] {P1 P2 Q : PROP} :
+example [BI PROP] {P1 P2 Q : PROP} :
     ⊢ <absorb> P1 -∗ <absorb> P2 -∗ <absorb> <affine> P3 -∗ <absorb> <affine> P4 -∗
       (<absorb> (P1 ∗ P2 ∗ <affine> (P3 ∗ P4)) -∗ Q) -∗ Q := by
   iintro HP1 HP2 HP3 HP4 H
@@ -168,7 +168,7 @@ info:
       ⋆ c : Prop
 -/
 #guard_msgs (whitespace := lax) in
-example [BI Nat PROP] (m n : Nat) (a b c : Prop) :
+example [BI PROP] (m n : Nat) (a b c : Prop) :
     ⊢@{PROP} ⌜m = 2⌝ -∗ ⌜3 = n⌝ -∗ ⌜a = b⌝ -∗ ⌜b = c⌝ -∗ ⌜m.succ = n ∧ a = c⌝ := by
   iintro #H1 H2 #H3 H4
   trace_delab
@@ -199,7 +199,7 @@ info:
 ⋆ False : PROP
 -/
 #guard_msgs (whitespace := lax) in
-example [BI Nat PROP] (Q : PROP) (n : Nat) :
+example [BI PROP] (Q : PROP) (n : Nat) :
   □ (∀ x, Q -∗ ⌜x = n⌝) ⊢ Q -∗ False := by
   iintro #Hwand HQ
   trace_delab
@@ -213,31 +213,31 @@ section LaterIf
 
 /- `▷?p P` is always delaborated as the same syntax. -/
 /--
-info: fun {PROP} [BI Nat PROP] p P => iprop(▷?p P) : {PROP : Type u_1} → [BI Nat PROP] → Bool → PROP → PROP
+info: fun {PROP} [BI PROP] p P => iprop(▷?p P) : {PROP : Type u_1} → [BI PROP] → Bool → PROP → PROP
 -/
 #guard_msgs in
-#check fun {PROP} [BI Nat PROP] (p : Bool) (P : PROP) => iprop(▷?p P)
+#check fun {PROP} [BI PROP] (p : Bool) (P : PROP) => iprop(▷?p P)
 
 /- `▷^[p.toNat]` is always delaborated as `▷?p P`. -/
 /--
-info: fun {PROP} [BI Nat PROP] p P => iprop(▷?p P) : {PROP : Type u_1} → [BI Nat PROP] → Bool → PROP → PROP
+info: fun {PROP} [BI PROP] p P => iprop(▷?p P) : {PROP : Type u_1} → [BI PROP] → Bool → PROP → PROP
 -/
 #guard_msgs in
-#check fun {PROP} [BI Nat PROP] (p : Bool) (P : PROP) => iprop(▷^[p.toNat] P)
+#check fun {PROP} [BI PROP] (p : Bool) (P : PROP) => iprop(▷^[p.toNat] P)
 
 /- `▷^[0]` is always delaborated as the same syntax, no `▷?false` involved. -/
 /--
-info: fun {PROP} [BI Nat PROP] P => iprop(▷^[0] P) : {PROP : Type u_1} → [BI Nat PROP] → PROP → PROP
+info: fun {PROP} [BI PROP] P => iprop(▷^[0] P) : {PROP : Type u_1} → [BI PROP] → PROP → PROP
 -/
 #guard_msgs in
-#check fun {PROP} [BI Nat PROP] (P : PROP) => iprop(▷^[0] P)
+#check fun {PROP} [BI PROP] (P : PROP) => iprop(▷^[0] P)
 
 /- `▷^[1]` is always delaborated as the same syntax, no `▷?true` involved. -/
 /--
-info: fun {PROP} [BI Nat PROP] P => iprop(▷^[1] P) : {PROP : Type u_1} → [BI Nat PROP] → PROP → PROP
+info: fun {PROP} [BI PROP] P => iprop(▷^[1] P) : {PROP : Type u_1} → [BI PROP] → PROP → PROP
 -/
 #guard_msgs in
-#check fun {PROP} [BI Nat PROP] (P : PROP) => iprop(▷^[1] P)
+#check fun {PROP} [BI PROP] (P : PROP) => iprop(▷^[1] P)
 
 end LaterIf
 
