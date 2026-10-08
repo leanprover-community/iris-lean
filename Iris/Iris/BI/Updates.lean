@@ -189,7 +189,7 @@ delab_rule BIBase.wand
 
 @[rocq_alias BiBUpd]
 class BIUpdate (PROP : Type _) [BI PROP] extends BUpd PROP where
-  [bupd_ne : OFE.NonExpansive (BUpd.bupd (PROP := PROP))]
+  [bupd_ne : OFE.NonExpansive Nat (BUpd.bupd (PROP := PROP))]
   intro {P : PROP} : P ⊢ |==> P
   mono {P Q : PROP} : (P ⊢ Q) → |==> P ⊢ |==> Q
   trans {P : PROP} : |==> |==> P ⊢ |==> P
@@ -199,7 +199,7 @@ class BIUpdate (PROP : Type _) [BI PROP] extends BUpd PROP where
 
 @[rocq_alias BiFUpd]
 class BIFUpdate (PROP : Type _) [BI PROP] extends FUpd PROP where
-  [ne {E1 E2 : CoPset} : OFE.NonExpansive (iprop(|={E1,E2}=> · : PROP))]
+  [ne {E1 E2 : CoPset} : OFE.NonExpansive Nat (iprop(|={E1,E2}=> · : PROP))]
   subset {E1 E2 : CoPset} : E2 ⊆ E1 → ⊢ |={E1,E2}=> |={E2,E1}=> (emp : PROP)
   except0 {E1 E2 : CoPset} {P : PROP} : (◇ |={E1,E2}=> P) ⊢ |={E1,E2}=> P
   mono {E1 E2 : CoPset} {P Q : PROP} : (P ⊢ Q) → (|={E1,E2}=> P) ⊢ |={E1,E2}=> Q
@@ -234,7 +234,7 @@ variable [BI PROP] [BIUpdate PROP]
 open BIUpdate
 
 @[rocq_alias bupd_ne]
-instance bupd_ne : OFE.NonExpansive (BUpd.bupd (PROP := PROP)) := BIUpdate.bupd_ne
+instance bupd_ne : OFE.NonExpansive Nat (BUpd.bupd (PROP := PROP)) := BIUpdate.bupd_ne
 #rocq_ignore bupd_mono' "Use bupd_mono."
 #rocq_ignore bupd_flip_mono' "Use bupd_mono."
 #rocq_ignore bupd_proper "Derivable from bupd_ne with NonExpansive.eqv"
@@ -302,7 +302,7 @@ instance {P : PROP} [Absorbing P] : Absorbing iprop(|==> P) :=
 
 @[rocq_alias bupd_sep_homomorphism]
 instance bupd_sep_homomorphism :
-  Algebra.MonoidHomomorphism (M₁ := PROP) sep sep emp emp (flip Entails) bupd where
+  Algebra.MonoidHomomorphism Nat (M₁ := PROP) sep sep emp emp (flip Entails) bupd where
   rel_refl := .rfl
   rel_trans := flip .trans
   op_proper := sep_mono
@@ -312,7 +312,7 @@ instance bupd_sep_homomorphism :
 
 @[rocq_alias bupd_or_homomorphism]
 instance bupd_or_homomorphism :
-  Algebra.MonoidHomomorphism (M₁ := PROP) (M₂ := PROP) or or iprop(False) iprop(False)
+  Algebra.MonoidHomomorphism Nat (M₁ := PROP) (M₂ := PROP) or or iprop(False) iprop(False)
     (flip Entails) bupd where
   rel_refl := .rfl
   rel_trans := flip .trans
@@ -324,12 +324,12 @@ instance bupd_or_homomorphism :
 @[rocq_alias big_sepL_bupd]
 theorem BigSepL.bigSepL_bupd (Φ : Nat → A → PROP) (l : List A) :
     ([∗list] k↦x ∈ l, |==> Φ k x) ⊢ |==> [∗list] k↦x ∈ l, Φ k x :=
-  Algebra.BigOpL.bigOpL_hom (R := flip Entails) Φ l
+  Algebra.BigOpL.bigOpL_hom (SI := Nat) (R := flip Entails) Φ l
 
 @[rocq_alias big_sepM_bupd]
 theorem BigSepM.bigSepM_bupd [LawfulFiniteMap M' K] (Φ : K → V → PROP) {l : M' V} :
     ([∗map] k↦x ∈ l, |==> Φ k x) ⊢ |==> [∗map] k↦x ∈ l, Φ k x :=
-    Algebra.BigOpM.bigOpM_hom (R := flip Entails) Φ l
+    Algebra.BigOpM.bigOpM_hom (SI := Nat) (R := flip Entails) Φ l
 
 @[rocq_alias big_sepM2_bupd]
 theorem BigSepM2.bigSepM2_bupd [LawfulFiniteMap M' K] (Φ : K → V → W → PROP)
@@ -391,7 +391,7 @@ variable [BI PROP] [BIFUpdate PROP]
 open BIFUpdate LawfulSet
 
 @[rocq_alias updates.fupd_ne]
-instance fupd_ne {E1 E2 : CoPset} : OFE.NonExpansive (iprop(|={E1,E2}=> · : PROP)) := ne
+instance fupd_ne {E1 E2 : CoPset} : OFE.NonExpansive Nat (iprop(|={E1,E2}=> · : PROP)) := ne
 
 @[rocq_alias updates.fupd_mono]
 theorem fupd_mono {E1 E2 : CoPset} {P Q : PROP} (h : P ⊢ Q) : (|={E1,E2}=> P) ⊢ |={E1,E2}=> Q :=
@@ -573,7 +573,7 @@ theorem fupd_trans_frame {E1 E2 E3 : CoPset} {P Q : PROP} :
 
 @[rocq_alias fupd_sep_homomorphism]
 instance fupd_sep_homomorphism E :
-  Algebra.MonoidHomomorphism (M₁ := PROP) sep sep emp emp (flip Entails) (fupd E E) where
+  Algebra.MonoidHomomorphism Nat (M₁ := PROP) sep sep emp emp (flip Entails) (fupd E E) where
   rel_refl := .rfl
   rel_trans := flip .trans
   op_proper := sep_mono
@@ -583,7 +583,7 @@ instance fupd_sep_homomorphism E :
 
 @[rocq_alias fupd_or_homomorphism]
 instance fupd_or_homomorphism E :
-  Algebra.MonoidHomomorphism (M₁ := PROP) (M₂ := PROP) or or iprop(False) iprop(False)
+  Algebra.MonoidHomomorphism Nat (M₁ := PROP) (M₂ := PROP) or or iprop(False) iprop(False)
     (flip Entails) (fupd E E) where
   rel_refl := .rfl
   rel_trans := flip .trans
@@ -595,12 +595,12 @@ instance fupd_or_homomorphism E :
 @[rocq_alias big_sepM_fupd]
 theorem BigSepM.bigSepM_fupd [LawfulFiniteMap M' K] E (Φ : K → V → PROP) (l : M' V) :
     ([∗map] k↦x ∈ l, |={E}=> Φ k x) ⊢ |={E}=> [∗map] k↦x ∈ l, Φ k x :=
-    Algebra.BigOpM.bigOpM_hom (R := flip Entails) Φ l
+    Algebra.BigOpM.bigOpM_hom (SI := Nat) (R := flip Entails) Φ l
 
 @[rocq_alias big_sepL_fupd]
 theorem BigSepL2.bigSepL_fupd {A : Type _} E (Φ : Nat → A → PROP) l :
     ([∗list] k↦x ∈ l, |={E}=> Φ k x) ⊢ |={E}=> [∗list] k↦x ∈ l, Φ k x :=
-    Algebra.BigOpL.bigOpL_hom (R := flip Entails) Φ l
+    Algebra.BigOpL.bigOpL_hom (SI := Nat) (R := flip Entails) Φ l
 
 @[rocq_alias big_sepL2_fupd]
 theorem BigSepL2.bigSepL2_fupd {A B : Type _} E (Φ : Nat → A → B → PROP) l1 l2 :
@@ -642,7 +642,7 @@ variable [BI PROP] [BIFUpdate PROP]
 open BIFUpdate LawfulSet
 
 theorem step_fupdN_contractive {E1 E2 : CoPset} {n : Nat} [ι : BILaterContractive PROP] :
-    OFE.Contractive (iprop(|={E1}[E2]▷=>^[n + 1] · : PROP)) where
+    OFE.Contractive Nat (iprop(|={E1}[E2]▷=>^[n + 1] · : PROP)) where
   distLater_dist {i x y} xy_i := by
     induction n with
     | zero => exact ne.ne (ι.distLater_dist (ne.ne <| xy_i · ·))
@@ -650,7 +650,7 @@ theorem step_fupdN_contractive {E1 E2 : CoPset} {n : Nat} [ι : BILaterContracti
 
 @[rocq_alias step_fupdN_ne]
 instance step_fupdN_ne {E1 E2 : CoPset} {n : Nat} :
-    OFE.NonExpansive (iprop(|={E1}[E2]▷=>^[n] · : PROP)) where
+    OFE.NonExpansive Nat (iprop(|={E1}[E2]▷=>^[n] · : PROP)) where
   ne {i x y} xy_i := by
     induction n with
     | zero => exact xy_i
@@ -775,7 +775,7 @@ theorem step_fupdN_succ_r {n : Nat} {Eo Ei : CoPset} {P : PROP} :
 theorem step_fupdN_add {n m : Nat} {Eo Ei : CoPset} {P : PROP} :
     (|={Eo}[Ei]▷=>^[n + m] P) ⊣⊢ (|={Eo}[Ei]▷=>^[n] |={Eo}[Ei]▷=>^[m] P) := by
   induction n with
-  | zero => rw [Nat.zero_add]; exact .rfl
+  | zero => rw [Nat.zero_add] <;> exact .rfl
   | succ n IH =>
     rw [Nat.add_right_comm n 1 m]
     exact ⟨step_fupd_mono IH.1, step_fupd_mono IH.2⟩

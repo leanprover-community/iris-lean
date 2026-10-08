@@ -30,7 +30,7 @@ class BILoeb (PROP : Type _) [BI PROP] where
 export BILoeb (loeb_weak)
 
 @[rocq_alias BiLaterContractive]
-class BILaterContractive (PROP : Type _) [BI PROP] extends OFE.Contractive later (α := PROP)
+class BILaterContractive (PROP : Type _) [BI PROP] extends OFE.Contractive Nat later (α := PROP)
 
 #rocq_ignore BiPureForall "BIPureForall is provable for all BIs using classical logic, see pure_forall_2"
 

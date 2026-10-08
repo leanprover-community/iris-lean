@@ -95,7 +95,7 @@ def exist (Φ : SiProp → Prop) : SiProp where
 @[rocq_alias siProp_later]
 def later (P : SiProp) : SiProp where
   holds n := match n with | 0 => True | n + 1 => P.holds n
-  closed {n₁ n₂} h hle := by
+  closed {n₁ n₂ : Nat} h hle := by
     cases n₂ with
     | zero => trivial
     | succ n₂ => cases n₁ with | zero => omega | succ n₁ => exact P.closed h (by omega)
@@ -110,8 +110,8 @@ def later (P : SiProp) : SiProp where
 def entails (P Q : SiProp) : Prop := ∀ n, P.holds n → Q.holds n
 
 @[rocq_alias siPropO]
-instance : OFE SiProp where
-  Dist n P Q := ∀ {m}, m ≤ n → (P.holds m ↔ Q.holds m)
+instance : OFE Nat SiProp where
+  dist n P Q := ∀ {m : Nat}, m ≤ n → (P.holds m ↔ Q.holds m)
   dist_eqv.refl _ _ _ := Iff.rfl
   dist_eqv.symm h _ hle := (h hle).symm
   dist_eqv.trans h₁ h₂ _ hle := (h₁ hle).trans (h₂ hle)
@@ -130,12 +130,15 @@ instance : OFE SiProp where
 #rocq_ignore siProp_ofe_mixin "Not needed in Lean."
 
 @[rocq_alias siProp_cofe]
-instance : IsCOFE SiProp where
+instance : IsCOFE Nat SiProp where
   compl c := {
     holds n := (c n).holds n
-    closed {n₁ _} h hle := (c.cauchy hle .refl).mp (c n₁ |>.closed h hle)
+    closed {n₁ : Nat} {_} h hle := (c.cauchy hle .refl).mp (c n₁ |>.closed h hle)
   }
   conv_compl {_ c} _ hle := c.cauchy hle .refl |>.symm
+  lbcompl := (·.elim)
+  conv_lbcompl := (·.elim)
+  lbcompl_ne := (·.elim)
 
 #rocq_ignore siProp_compl "Included in IsCOFE instance."
 
@@ -254,34 +257,34 @@ meta-level counterparts by `rfl`; the remaining connectives do. -/
 theorem biEntails_of_iff {P Q : SiProp} (h : ∀ n, P.holds n ↔ Q.holds n) : P ⊣⊢ Q :=
   ⟨fun n => (h n).mp, fun n => (h n).mpr⟩
 
-@[simp] theorem pure_holds {φ : Prop} {n} : (iprop(⌜φ⌝) : SiProp).holds n ↔ φ := .rfl
+@[simp] theorem pure_holds {φ : Prop} {n : Nat} : (iprop(⌜φ⌝) : SiProp).holds n ↔ φ := .rfl
 
-@[simp] theorem and_holds {P Q : SiProp} {n} :
+@[simp] theorem and_holds {P Q : SiProp} {n : Nat} :
     (iprop(P ∧ Q) : SiProp).holds n ↔ P.holds n ∧ Q.holds n := .rfl
 
-@[simp] theorem sep_holds {P Q : SiProp} {n} :
+@[simp] theorem sep_holds {P Q : SiProp} {n : Nat} :
     (iprop(P ∗ Q) : SiProp).holds n ↔ P.holds n ∧ Q.holds n := .rfl
 
-@[simp] theorem or_holds {P Q : SiProp} {n} :
+@[simp] theorem or_holds {P Q : SiProp} {n : Nat} :
     (iprop(P ∨ Q) : SiProp).holds n ↔ P.holds n ∨ Q.holds n := .rfl
 
 @[simp] theorem later_holds_zero {P : SiProp} : (iprop(▷ P) : SiProp).holds 0 ↔ True := .rfl
 
-@[simp] theorem later_holds_succ {P : SiProp} {n} :
+@[simp] theorem later_holds_succ {P : SiProp} {n : Nat} :
     (iprop(▷ P) : SiProp).holds (n + 1) ↔ P.holds n := .rfl
 
-@[simp] theorem exists_holds {α : Sort _} {Φ : α → SiProp} {n} :
+@[simp] theorem exists_holds {α : Sort _} {Φ : α → SiProp} {n : Nat} :
     (iprop(∃ x, Φ x) : SiProp).holds n ↔ ∃ x, (Φ x).holds n :=
   ⟨fun ⟨_, ⟨x, rfl⟩, h⟩ => ⟨x, h⟩, fun ⟨x, h⟩ => ⟨Φ x, ⟨x, rfl⟩, h⟩⟩
 
-@[simp] theorem forall_holds {α : Sort _} {Φ : α → SiProp} {n} :
+@[simp] theorem forall_holds {α : Sort _} {Φ : α → SiProp} {n : Nat} :
     (iprop(∀ x, Φ x) : SiProp).holds n ↔ ∀ x, (Φ x).holds n := by
   refine ⟨fun h x => h (Φ x) ⟨x, rfl⟩, fun h P hP => ?_⟩
   obtain ⟨x, rfl⟩ := hP
   exact h x
 
 @[rocq_alias siProp_primitive.pure_ne]
-theorem pure_dist_of_iff {Φ Ψ : Prop} (H : Φ ↔ Ψ) : pure Φ ≡{n}≡ pure Ψ := fun _ => iff_comm.mp H.symm
+theorem pure_dist_of_iff {n : Nat} {Φ Ψ : Prop} (H : Φ ↔ Ψ) : pure Φ ≡{n}≡ pure Ψ := fun _ => iff_comm.mp H.symm
 
 /-! The primitive laws of `siProp` are the fields of the `siPropI` instance above; each one
 is named in Lean by the corresponding `BI` field, so the Rocq names alias those. -/
@@ -369,11 +372,11 @@ instance instPersistentlyExist : BIPersistentlyExist SiProp where
 /-! ## Internal equality -/
 
 @[rocq_alias siProp_internal_eq]
-def internalEq [OFE A] (a₁ a₂ : A) : SiProp where
+def internalEq [OFE Nat A] (a₁ a₂ : A) : SiProp where
   holds n := a₁ ≡{n}≡ a₂
   closed h hle := Dist.le h hle
 
-@[simp] theorem internalEq_holds [OFE A] {a b : A} {n} :
+@[simp] theorem internalEq_holds [OFE Nat A] {a b : A} {n : Nat} :
     (internalEq a b).holds n ↔ a ≡{n}≡ b := .rfl
 
 #rocq_ignore siProp_internal_eq_def "Not needed in Lean."
@@ -381,17 +384,17 @@ def internalEq [OFE A] (a₁ a₂ : A) : SiProp where
 #rocq_ignore siProp_internal_eq_unseal "Not needed in Lean."
 
 @[rocq_alias siProp_primitive.internal_eq_ne]
-instance instNonExpansive₂InternalEq [OFE A] : NonExpansive₂ (internalEq (A := A)) where
+instance instNonExpansive₂InternalEq [OFE Nat A] : NonExpansive₂ Nat (internalEq (A := A)) where
   ne _ _ _ h₁ _ _ h₂ _ hle :=
     ⟨fun heq => (Dist.le h₁ hle).symm.trans (heq.trans (Dist.le h₂ hle)),
      fun heq => (Dist.le h₁ hle).trans (heq.trans (Dist.le h₂ hle).symm)⟩
 
 @[rocq_alias siProp_primitive.internal_eq_refl]
-theorem internalEq_refl [OFE A] (P : SiProp) (a : A) : P ⊢ internalEq a a :=
+theorem internalEq_refl [OFE Nat A] (P : SiProp) (a : A) : P ⊢ internalEq a a :=
   fun _ _ => Dist.rfl
 
 @[rocq_alias siProp_primitive.internal_eq_rewrite]
-theorem internalEq_rewrite [OFE A] (a b : A) (Ψ : A → SiProp) [HΨ : NonExpansive Ψ] :
+theorem internalEq_rewrite [OFE Nat A] (a b : A) (Ψ : A → SiProp) [HΨ : NonExpansive Nat Ψ] :
     internalEq a b ⊢ Ψ a → Ψ b :=
   fun _ hab _ hle => (HΨ.ne (.le hab hle) .refl).mp
 
@@ -400,34 +403,34 @@ theorem prop_ext (P Q : SiProp) : (P → Q) ∧ (Q → P) ⊢ internalEq P Q :=
   fun _ ⟨hPQ, hQP⟩ n' hle => ⟨hPQ n' hle, hQP n' hle⟩
 
 @[rocq_alias siProp_primitive.internal_eq_entails]
-theorem internalEq_entails [OFE A] [OFE B] (a₁ a₂ : A) (b₁ b₂ : B) :
-    (internalEq a₁ a₂ ⊢ internalEq b₁ b₂) ↔ (∀ n, a₁ ≡{n}≡ a₂ → b₁ ≡{n}≡ b₂) :=
+theorem internalEq_entails [OFE Nat A] [OFE Nat B] (a₁ a₂ : A) (b₁ b₂ : B) :
+    (internalEq a₁ a₂ ⊢ internalEq b₁ b₂) ↔ (∀ (n : Nat), a₁ ≡{n}≡ a₂ → b₁ ≡{n}≡ b₂) :=
   Iff.rfl
 
 @[rocq_alias siProp_primitive.fun_extI]
-theorem fun_ext_internalEq [OFEFun (B : A → _)] (g₁ g₂ : (x : A) → B x) :
+theorem fun_ext_internalEq [OFEFun Nat (B : A → _)] (g₁ g₂ : (x : A) → B x) :
     (∀ (i : A), internalEq (g₁ i) (g₂ i)) ⊢ internalEq g₁ g₂ :=
   fun _ h x => h _ ⟨x, rfl⟩
 
 @[rocq_alias siProp_primitive.sig_equivI_1]
-theorem sig_equiv_internalEq [OFE A] (P : A → Prop) (x y : { a : A // P a }) :
+theorem sig_equiv_internalEq [OFE Nat A] (P : A → Prop) (x y : { a : A // P a }) :
     internalEq x.val y.val ⊢ internalEq x y :=
   fun _ => id
 
 @[rocq_alias siProp_primitive.discrete_eq_1]
-theorem discrete_eq_internalEq [OFE A] (a b : A) [Idisc : Std.TCOr (DiscreteE a) (DiscreteE b)] :
+theorem discrete_eq_internalEq [OFE Nat A] (a b : A) [Idisc : Std.TCOr (DiscreteE Nat a) (DiscreteE Nat b)] :
     internalEq a b ⊢ ⌜a = b⌝ := by
   cases Idisc with
   | l => exact fun _ hab => DiscreteE.discrete (hab.le (Nat.zero_le _))
   | r => exact fun _ hab => (DiscreteE.discrete (hab.le (Nat.zero_le _)).symm).symm
 
 @[rocq_alias siProp_primitive.later_equivI_1]
-theorem later_equiv_internalEq_mp [OFE A] (x y : A) :
+theorem later_equiv_internalEq_mp [OFE Nat A] (x y : A) :
     internalEq (Later.next x) (Later.next y) ⊢ ▷ internalEq x y :=
   fun n h => match n with | .zero => trivial | .succ n => h n n.lt_succ_self
 
 @[rocq_alias siProp_primitive.later_equivI_2]
-theorem later_equiv_internalEq_mpr [OFE A] (x y : A) :
+theorem later_equiv_internalEq_mpr [OFE Nat A] (x y : A) :
     ▷ internalEq x y ⊢ internalEq (Later.next x) (Later.next y) := by
   intro n hP m hlt
   cases n with
@@ -437,11 +440,11 @@ theorem later_equiv_internalEq_mpr [OFE A] (x y : A) :
 /-! ## ORA validity -/
 
 @[rocq_alias siProp_cmra_valid]
-def cmraValid [ORA A] (a : A) : SiProp where
+def cmraValid [ORA Nat A] (a : A) : SiProp where
   holds n := ✓{n} a
   closed h hle := validN_of_le hle h
 
-@[simp] theorem cmraValid_holds [ORA A] {a : A} {n} :
+@[simp] theorem cmraValid_holds [ORA Nat A] {a : A} {n : Nat} :
     (cmraValid a).holds n ↔ ✓{n} a := .rfl
 
 #rocq_ignore siProp_cmra_valid_def "Not needed in Lean."
@@ -449,28 +452,28 @@ def cmraValid [ORA A] (a : A) : SiProp where
 #rocq_ignore siProp_cmra_valid_unseal "Not needed in Lean."
 
 @[rocq_alias siProp_primitive.cmra_valid_ne]
-instance instNonExpansiveCmraValid [ORA A] : NonExpansive (cmraValid (A := A)) where
+instance instNonExpansiveCmraValid [ORA Nat A] : NonExpansive Nat (cmraValid (A := A)) where
   ne _ _ _ h _ hle := ⟨validN_ne (Dist.le h hle), validN_ne (Dist.le h hle).symm⟩
 
 @[rocq_alias siProp_primitive.cmra_valid_intro]
-theorem cmraValid_intro [ORA A] {P : SiProp} {a : A} (h : ORA.Valid a) :
+theorem cmraValid_intro [ORA Nat A] {P : SiProp} {a : A} (h : ✓[Nat] a) :
     P ⊢ cmraValid a :=
   fun n _ => (valid_iff_validN.mp h) n
 
 @[rocq_alias siProp_primitive.cmra_valid_elim]
-theorem cmraValid_elim [ORA A] {a : A} : cmraValid a ⊢ ⌜✓{0} a⌝ :=
+theorem cmraValid_elim [ORA Nat A] {a : A} : cmraValid a ⊢ ⌜✓{0} a⌝ :=
   fun _ => validN_of_le (Nat.zero_le _)
 
 @[rocq_alias siProp_primitive.cmra_valid_weaken]
-theorem cmraValid_weaken [ORA A] {a b : A} : cmraValid (a • b) ⊢ cmraValid a :=
+theorem cmraValid_weaken [ORA Nat A] {a b : A} : cmraValid (a • b) ⊢ cmraValid a :=
   fun _ => validN_op_left
 
 @[rocq_alias siProp_primitive.valid_entails]
-theorem cmraValid_entails_iff [ORA A] [ORA B] {a : A} {b : B} :
-    (cmraValid a ⊢ cmraValid b) ↔ ∀ n, ✓{n} a → ✓{n} b :=
+theorem cmraValid_entails_iff [ORA Nat A] [ORA Nat B] {a : A} {b : B} :
+    (cmraValid a ⊢ cmraValid b) ↔ ∀ (n : Nat), ✓{n} a → ✓{n} b :=
   .rfl
 
-instance cmraValid_timeless [ORA A] [ORA.Discrete A] {a : A} : Timeless (cmraValid a : SiProp) where
+instance cmraValid_timeless [ORA Nat A] [ORA.Discrete Nat A] {a : A} : Timeless (cmraValid a : SiProp) where
   timeless := fun n h => by
     cases n with
     | zero => left; trivial
@@ -484,7 +487,7 @@ instance cmraValid_timeless [ORA A] [ORA.Discrete A] {a : A} : Timeless (cmraVal
 theorem pure_soundness {φ : Prop} (h : True ⊢@{SiProp} ⌜φ⌝) : φ := h 0 trivial
 
 @[rocq_alias siProp_primitive.internal_eq_soundness]
-theorem internalEq_soundness [OFE A] {x y : A} (h : True ⊢@{SiProp} internalEq x y) : x = y :=
+theorem internalEq_soundness [OFE Nat A] {x y : A} (h : True ⊢@{SiProp} internalEq x y) : x = y :=
   OFE.eq_dist_2 fun n => h n trivial
 
 @[rocq_alias siProp_primitive.later_soundness]

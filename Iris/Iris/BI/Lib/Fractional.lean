@@ -245,7 +245,7 @@ variable {PROP : Type _} [BI PROP] {Φ Ψ : Qp → PROP}
 def internalFractional (Φ : Qp → PROP) : PROP := iprop(□ ∀ p q, Φ (p + q) ∗-∗ Φ p ∗ Φ q)
 
 @[rocq_alias internal_fractional_ne]
-instance internalFractional_ne : NonExpansive (internalFractional (PROP := PROP)) where
+instance internalFractional_ne : NonExpansive Nat (internalFractional (PROP := PROP)) where
   ne _ _ _ h := intuitionistically_ne.ne <|
     forall_ne fun p => forall_ne fun q => wandIff_ne.ne (h _) (sep_ne.ne (h p) (h q))
 

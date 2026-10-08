@@ -18,10 +18,10 @@ open Iris.BI COFE
 
 section no_resources
 
-variable [UORA M]
+variable [UORA Nat M]
 
 -- A proof with no resources
-example (P Q : UPred M) : P ∗ Q ⊢ ⌜True⌝ := by
+example (P Q : UPred Nat M) : P ∗ Q ⊢ ⌜True⌝ := by
   iintro ⟨HP, HQ⟩
   ipureintro
   trivial
@@ -44,7 +44,7 @@ theorem MyR_always_invalid (S₁ S₂ : String) (Hne : S₁ ≠ S₂) (n : Nat) 
   simp only [ValidN, op, MyAg, optionValidN, optionOp]
   exact (Hne <| DiscreteO.dist_inj <| Agree.toAgree_op_validN_iff_dist.mp ·)
 
-def AgreeString (S : String) : UPred (Option (Agree (DiscreteO String))) := UPred.ownM (MyAg S)
+def AgreeString (S : String) : UPred Nat (Option (Agree (DiscreteO String))) := UPred.ownM (MyAg S)
 
 example : AgreeString "I <3 iris-lean!" ⊢ (AgreeString "I don't :<" -∗ False) := by
   iintro H H2

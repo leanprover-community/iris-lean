@@ -19,6 +19,8 @@ This version follows Iris Rocq in fixing the underlying type of fractions to be 
 
 @[expose] public section
 
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+
 namespace Rat
 
 /-- ## Helper lemmas for Rat -/
@@ -69,31 +71,37 @@ def Qp.threeQuarters : Qp := ⟨3 / 4, by grind⟩
 def Qp.divide_even (q : Qp) (n : Nat) (hn : 0 < n) : Qp :=
   ⟨q.val / n, Rat.div_pos q.2 (by exact_mod_cast hn)⟩
 
-instance instCOFEQp : COFE Qp := COFE.ofDiscrete _
+set_option synthInstance.checkSynthOrder false in
+instance instCOFEQp : COFE SI Qp := COFE.ofDiscrete _
 
-@[instance_reducible] def Qp.cmraData : CMRAData Qp where
-  pcore _ := none
+/-- Fraction addition as a step-index-free data instance (Mathlib-style). -/
+instance Qp.instOp : Op Qp where
   op x y := x + y
+  assoc := Subtype.ext (Rat.add_assoc ..).symm
+  comm := Subtype.ext (Rat.add_comm ..)
+
+@[instance_reducible] def Qp.cmraData : CMRAData SI Qp where
+  toOp := Qp.instOp
+  pcore _ := none
   ValidN _ x := x.val ≤ 1
   Valid x := x.val ≤ 1
-  op_ne.ne n x1 x2 H := by rw [(H : x1 = x2)]
+  op_ne.ne n x1 x2 H := by rw [(H : x1 = x2)] <;> exact .rfl
   pcore_ne _ H := by rcases H
   validN_ne H := by rw [(H : _ = _)]; exact id
   valid_iff_validN := .symm (forall_const _)
-  validN_succ := id
-  validN_op_left {n x y} h := by
+  validN_le := fun h _ => h
+  validN_op_left {n : SI} {x y} h := by
     show x.val ≤ 1
     have h' : x.val + y.val ≤ 1 := h
     grind
-  assoc := Subtype.ext (Rat.add_assoc ..).symm
-  comm := Subtype.ext (Rat.add_comm ..)
   pcore_op_left H := by rcases H
   pcore_idem H := by rcases H
   extend {_ x y z} := by
     rintro H He; exact ⟨y, z, He, .rfl, .rfl⟩
   pcore_op_mono H := by rcases H
 
-instance instORAQp : CMRA Qp := ofCMRAData Qp.cmraData
+set_option synthInstance.checkSynthOrder false in
+instance instORAQp : CMRA SI Qp := ofCMRAData Qp.cmraData
 
 -- TODO: A different solution to having these bridge lemmas might be to internalize
 -- positivity into the ORA's validity predicate, removing the sybtype, and having Qp
@@ -108,13 +116,13 @@ instance instORAQp : CMRA Qp := ofCMRAData Qp.cmraData
 @[simp, grind =] theorem Qp.val_divide_even (q : Qp) (n : Nat) (hn : 0 < n) :
     (q.divide_even n hn).val = q.val / n := rfl
 @[simp, grind =] theorem Qp.val_op (x y : Qp) : (x • y).val = x.val + y.val := rfl
-@[simp, grind =] theorem Qp.validN_iff {n} {x : Qp} : ✓{n} x ↔ x.val ≤ 1 := Iff.rfl
-@[simp, grind =] theorem Qp.valid_iff {x : Qp} : ✓ x ↔ x.val ≤ 1 := Iff.rfl
+@[simp, grind =] theorem Qp.validN_iff {n : SI} {x : Qp} : ✓{n} x ↔ x.val ≤ 1 := Iff.rfl
+@[simp, grind =] theorem Qp.valid_iff {x : Qp} : ✓[SI] x ↔ x.val ≤ 1 := Iff.rfl
 @[simp, grind =] theorem Qp.le_iff {x y : Qp} : x ≤ y ↔ x.val ≤ y.val := Iff.rfl
 @[simp, grind =] theorem Qp.lt_iff {x y : Qp} : x < y ↔ x.val < y.val := Iff.rfl
 @[simp] theorem Qp.ext_iff {x y : Qp} : x = y ↔ x.val = y.val := Subtype.ext_iff
-@[simp] theorem Qp.dist_iff {n} {x y : Qp} : x ≡{n}≡ y ↔ x.val = y.val := Subtype.ext_iff
-@[simp, rocq_alias frac_valid_1] theorem Qp.valid_one : ✓ (1 : Qp) := by grind
+@[simp] theorem Qp.dist_iff {n : SI} {x y : Qp} : x ≡{n}≡ y ↔ x.val = y.val := Subtype.ext_iff
+@[simp, rocq_alias frac_valid_1] theorem Qp.valid_one : ✓[SI] (1 : Qp) := by grind
 @[simp, grind =] theorem Qp.half_add_half (q : Qp) : q.half + q.half = q := Subtype.ext (by grind)
 @[grind =] theorem Qp.add_left_comm (x y z : Qp) : x + (y + z) = y + (x + z) := by grind
 @[simp, grind =] theorem Qp.quarter_add_threeQuarters : Qp.quarter + Qp.threeQuarters = 1 := by
@@ -144,37 +152,40 @@ instance : Pos.Countable Qp where
 #rocq_ignore frac_valid_instance "Use CMRA instance"
 #rocq_ignore frac_ra_mixin "Use CMRA instance"
 
-theorem Frac.ord_iff {p q : Qp} : p ≼ₒ q ↔ p < q := by
+theorem Frac.ord_iff {p q : Qp} : p ≼ₒ[SI] q ↔ p < q := by
   refine ⟨fun ⟨r, Hr⟩ => ?_, fun H => ?_⟩
   · have := r.2; simp only [Qp.lt_iff, Qp.ext_iff, Qp.val_op] at *; grind
   · exact ⟨⟨q.val - p.val, by grind⟩, by simp only [Qp.ext_iff, Qp.val_op]; grind⟩
 
 @[rocq_alias frac_included]
-theorem Frac.inc_iff {p q : Qp} : p ≼ q ↔ p < q := inc_iff_ord.trans ord_iff
+theorem Frac.inc_iff {p q : Qp} : p ≼ q ↔ p < q :=
+  ⟨fun ⟨r, h⟩ => Qp.lt_iff_exists_add.mpr ⟨r, h.symm⟩,
+   fun h => let ⟨c, hc⟩ := Qp.lt_iff_exists_add.mp h; ⟨c, hc.symm⟩⟩
 
-theorem Frac.le_of_ord {p q : Qp} (H : p ≼ₒ q) : p ≤ q := by
+theorem Frac.le_of_ord {p q : Qp} (H : p ≼ₒ[SI] q) : p ≤ q := by
   have := ord_iff.mp H; grind
 
 @[rocq_alias frac_included_weak]
-theorem Frac.le_of_inc {p q : Qp} (H : p ≼ q) : p ≤ q := le_of_ord (inc_iff_ord.mp H)
+theorem Frac.le_of_inc {p q : Qp} (H : p ≼ q) : p ≤ q := by
+  have := Frac.inc_iff.mp H; simp only [Qp.lt_iff, Qp.le_iff] at *; grind
 
 @[rocq_alias frac_cmra_discrete]
-instance instDiscreteQp : Discrete Qp where
+instance instDiscreteQp : Discrete SI Qp where
   discrete_0 := fun h => h
   discrete_valid := id
   discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
 
 @[rocq_alias frac_full_exclusive]
-instance instExclusiveQp1 : Exclusive (α := Qp) 1 where
+instance instExclusiveQp1 : Exclusive SI (α := Qp) 1 where
   exclusive0_l x := by have := x.2; grind
 
 @[rocq_alias frac_cancelable]
-instance instCancelableQp {a : Qp} : Cancelable (α := Qp) a where
-  cancelableN {n x y} _ (H : a • x = a • y) := by
+instance instCancelableQp {a : Qp} : Cancelable SI (α := Qp) a where
+  cancelableN {n : SI} {x y} _ (H : a • x = a • y) := by
     simp only [Qp.dist_iff, Qp.ext_iff, Qp.val_op] at *; grind
 
 @[rocq_alias frac_id_free]
-instance instIdFreeQp {a : Qp} : IdFree a where
+instance instIdFreeQp {a : Qp} : IdFree SI a where
   id_free0_r b _ H := by
     have := b.2; simp only [Qp.dist_iff, Qp.val_op] at H; grind
 
@@ -182,17 +193,17 @@ instance instIdFreeQp {a : Qp} : IdFree a where
 theorem Frac.op_eq (p q : Qp) : p • q = p + q := rfl
 
 @[rocq_alias frac_valid]
-theorem Frac.valid_iff {p : Qp} : ✓ p ↔ p.val ≤ 1 := .rfl
+theorem Frac.valid_iff {p : Qp} : ✓[SI] p ↔ p.val ≤ 1 := .rfl
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias frac_is_op]
 instance (priority := low) isOpFrac_merge (q1 q2 : Qp) :
-    IsOp .merge (q1 + q2) q1 q2 where
+    IsOp SI .merge (q1 + q2) q1 q2 where
   is_op := rfl
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_frac]
-instance isOpFrac_half d (q : Qp) : IsOp d q q.half q.half where
+instance isOpFrac_half d (q : Qp) : IsOp SI d q q.half q.half where
   is_op := by refine (q.ext ?_); grind
 
 set_option synthInstance.checkSynthOrder false in
@@ -202,13 +213,13 @@ set_option synthInstance.checkSynthOrder false in
   is required.
 -/
 instance (priority := high) isOpFrac_split (q1 q2 : Qp) :
-    IsOp .split (q1 + q2) q1 q2 where
+    IsOp SI .split (q1 + q2) q1 q2 where
   is_op := rfl
 
-instance (priority := default - 500) isOpFrac_quarters_left d : IsOp d instQpOne.one Qp.quarter Qp.threeQuarters where
+instance (priority := default - 500) isOpFrac_quarters_left d : IsOp SI d instQpOne.one Qp.quarter Qp.threeQuarters where
   is_op := by refine Qp.ext_iff.mpr ?_; grind [instQpOne]
 
-instance (priority := default - 500) isOpFrac_quarters_right d : IsOp d instQpOne.one Qp.threeQuarters Qp.quarter where
+instance (priority := default - 500) isOpFrac_quarters_right d : IsOp SI d instQpOne.one Qp.threeQuarters Qp.quarter where
   is_op := by refine Qp.ext_iff.mpr ?_; grind [instQpOne]
 
 end Iris

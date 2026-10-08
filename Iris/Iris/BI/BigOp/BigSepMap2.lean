@@ -626,7 +626,7 @@ theorem bigSepM_bigSepM2_diag (Φ : K → A → A → PROP) (m : M A) :
   cases get? m k <;> rfl
 
 @[rocq_alias big_sepM2_ne_2]
-theorem bigSepM2_dist_2 (A B : Type uV) [OFE A] [OFE B]
+theorem bigSepM2_dist_2 (A B : Type uV) [OFE Nat A] [OFE Nat B]
     (Φ Ψ : K → A → B → PROP) (m1 : M A) (m2 : M B) (m1' : M A) (m2' : M B) (n : Nat)
     (hm1 : ∀ k, Option.Rel (fun x y => x ≡{n}≡ y) (get? m1 k) (get? m1' k))
     (hm2 : ∀ k, Option.Rel (fun x y => x ≡{n}≡ y) (get? m2 k) (get? m2' k))
@@ -634,7 +634,7 @@ theorem bigSepM2_dist_2 (A B : Type uV) [OFE A] [OFE B]
       x1 ≡{n}≡ x1' → get? m2 k = some x2 → get? m2' k = some x2' → x2 ≡{n}≡ x2' →
       Φ k x1 x2 ≡{n}≡ Ψ k x1' x2') :
     ([∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2) ≡{n}≡ [∗map] k ↦ x1;x2 ∈ m1';m2', Ψ k x1 x2 := by
-  apply and_ne.ne (by rw [dom_eq_of_option_rel hm1, dom_eq_of_option_rel hm2])
+  apply and_ne.ne (by rw [dom_eq_of_option_rel hm1, dom_eq_of_option_rel hm2] <;> exact .rfl)
   apply bigOpM_gen_proper_2 (fun hEq => hEq ▸ .rfl) OFE.dist_equivalence
     (fun hΦ hΨ => sep_ne.ne hΦ hΨ) (isSome_zipWith_prod_congr hm1 hm2)
   rintro k ⟨x1, x2⟩ ⟨x1', x2'⟩ hxy hxy'

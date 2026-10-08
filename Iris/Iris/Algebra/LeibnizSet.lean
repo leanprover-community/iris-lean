@@ -16,6 +16,8 @@ public import Iris.Std.CoPset
 
 @[expose] public section
 
+variable {SI : Type _} [instSI : Iris.SIdx SI]
+
 /-! ## Leibniz Set algebras
 This file defines generic set algebras.
 This generic construction specializes to both the union and disjoint-union set CMRAs.
@@ -39,10 +41,10 @@ inductive DisjointLeibnizSet (S : Type _) where
 #rocq_ignore set_unfold_gset_disj_valid_op
   "std++ `SetUnfold` instance for `set_solver`; use DisjointLeibnizSet.valid_op_iff_disj"
 
-instance : COFE (DisjointLeibnizSet S) := COFE.ofDiscrete _
+instance : COFE SI (DisjointLeibnizSet S) := COFE.ofDiscrete _
 
 instance inst_disjointLeibnizSet_DiscreteE {S : Type _} (x : DisjointLeibnizSet S) :
-    DiscreteE x := ⟨fun h => h⟩
+    DiscreteE SI x := ⟨fun h => h⟩
 
 instance instEmptyCollectionDisjointLeibnizSet [LawfulSet S A] :
     EmptyCollection (DisjointLeibnizSet S) where
@@ -68,18 +70,18 @@ namespace DisjointLeibnizSet
 
 variable {S : Type _} [LawfulSet S A] [DecidableDisj S]
 
-@[instance_reducible] def cmraData : CMRAData (DisjointLeibnizSet S) where
+@[instance_reducible] def cmraData : CMRAData SI (DisjointLeibnizSet S) where
   pcore _ := some (.valid ∅)
   op
     | valid x, valid y => if x ## y then valid (x ∪ y) else error
     | _, _ => error
   ValidN _ | valid _ => True | _ => False
   Valid | valid _ => True | _ => False
-  op_ne.ne _ _ _ H := by rw [(H : _ = _)]
+  op_ne.ne _ _ _ H := by rw [(H : _ = _)] <;> exact .rfl
   pcore_ne {_ _ _ cx} _ H := ⟨cx, H, .rfl⟩
   validN_ne H G := (H : _ = _) ▸ G
   valid_iff_validN := ⟨(fun _ => ·), (· 0)⟩
-  validN_succ := id
+  validN_le := fun h _ => h
   validN_op_left {_ x y} := by rcases x <;> rcases y <;> simp
   assoc {x y z} := by
     rcases x with (x|_) <;> rcases y with (y|_) <;> rcases z with (z|_) <;> (try · simp)
@@ -110,28 +112,30 @@ variable {S : Type _} [LawfulSet S A] [DecidableDisj S]
   extend {_ _ y₁ y₂} _ h := ⟨y₁, y₂, ⟨h, .rfl, .rfl⟩⟩
   pcore_op_mono h _ := ⟨.valid ∅, by cases h; simp [disjoint_empty_left]⟩
 
-instance : CMRA (DisjointLeibnizSet S) := ofCMRAData DisjointLeibnizSet.cmraData
+set_option synthInstance.checkSynthOrder false in
+instance : CMRA SI (DisjointLeibnizSet S) := ofCMRAData DisjointLeibnizSet.cmraData
 
-instance instDiscreteDisjointLeibnizSet : ORA.Discrete (DisjointLeibnizSet S) where
+instance instDiscreteDisjointLeibnizSet : ORA.Discrete SI (DisjointLeibnizSet S) where
   discrete_0 := fun h => h
   discrete_valid := id
   discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
 
-@[instance_reducible] def ucmraData : UCMRAData (DisjointLeibnizSet S) where
+@[instance_reducible] def ucmraData : UCMRAData SI (DisjointLeibnizSet S) where
   unit := .valid ∅
   unit_valid := trivial
   unit_left_id {x} := by rcases x <;> simp [disjoint_empty_left, op]
   pcore_unit := by simp [pcore]
 
-instance instUCMRADisjointLeibnizSet : UCMRA (DisjointLeibnizSet S) := UORA.ofUCMRAData DisjointLeibnizSet.ucmraData
+set_option synthInstance.checkSynthOrder false in
+instance instUCMRADisjointLeibnizSet : UCMRA SI (DisjointLeibnizSet S) := UORA.ofUCMRAData DisjointLeibnizSet.ucmraData
 
-theorem valid_set {s : S} : ✓ valid s := ⟨⟩
-theorem validN_set {s : S} : ✓{n} valid s := ⟨⟩
+theorem valid_set {s : S} : ✓[SI] valid s := ⟨⟩
+theorem validN_set {n : SI} {s : S} : ✓{n} valid s := ⟨⟩
 
-theorem not_valid_invalid : ¬ ✓ (error : DisjointLeibnizSet S) := False.elim
-theorem not_validN_invalid : ¬ ✓{n} (error : DisjointLeibnizSet S) := False.elim
+theorem not_valid_invalid : ¬ ✓[SI] (error : DisjointLeibnizSet S) := False.elim
+theorem not_validN_invalid {n : SI} : ¬ ✓{n} (error : DisjointLeibnizSet S) := False.elim
 
-theorem mem_iff_of_valid_union {x y : DisjointLeibnizSet S} (v : ✓ x • y) (a : A) :
+theorem mem_iff_of_valid_union {x y : DisjointLeibnizSet S} (v : ✓[SI] x • y) (a : A) :
     a ∈ x • y ↔ a ∈ x ∨ a ∈ y := by
   match x, y with
   | error, _ => exact v.elim
@@ -142,10 +146,10 @@ theorem mem_iff_of_valid_union {x y : DisjointLeibnizSet S} (v : ✓ x • y) (a
       exact mem_union
     · simp only [op, h, ↓reduceIte] at v; exact v.elim
 
-theorem mem_iff_of_validN_union {x y : DisjointLeibnizSet S} (v : ✓{n} x • y) (a : A) :
+theorem mem_iff_of_validN_union {n : SI} {x y : DisjointLeibnizSet S} (v : ✓{n} x • y) (a : A) :
     a ∈ x • y ↔ a ∈ x ∨ a ∈ y := mem_iff_of_valid_union v a
 
-theorem ord_iff_subset {X Y : S} : valid X ≼ₒ valid Y ↔ X ⊆ Y := by
+theorem ord_iff_subset {X Y : S} : valid X ≼ₒ[SI] valid Y ↔ X ⊆ Y := by
   refine ⟨?_, ?_⟩
   · rintro ⟨(Z|_), HZ⟩
     · by_cases H : X ## Z
@@ -164,7 +168,7 @@ theorem ord_iff_subset {X Y : S} : valid X ≼ₒ valid Y ↔ X ⊆ Y := by
 
 @[rocq_alias coPset_disj_included, rocq_alias gset_disj_included]
 theorem included_iff_subset {X Y : S} : valid X ≼ valid Y ↔ X ⊆ Y :=
-  inc_iff_ord.trans ord_iff_subset
+  inc_iff_ord.trans (ord_iff_subset (SI := SI))
 
 @[rocq_alias coPset_disj_union, rocq_alias gset_disj_union]
 theorem disj_op_union {X Y : S} (Hdisj : X ## Y) :
@@ -172,17 +176,17 @@ theorem disj_op_union {X Y : S} (Hdisj : X ## Y) :
   simp [op, Hdisj]
 
 @[rocq_alias coPset_disj_valid_op, rocq_alias gset_disj_valid_op]
-theorem valid_op_iff_disj {X Y : S} : ✓ ((valid X) • (valid Y)) ↔ X ## Y := by
+theorem valid_op_iff_disj {X Y : S} : ✓[SI] ((valid X) • (valid Y)) ↔ X ## Y := by
   by_cases H : X ## Y <;> simp [H, op, ORA.Valid]
 
 @[rocq_alias coPset_disj_valid_inv_l, rocq_alias gset_disj_valid_inv_l]
 theorem valid_inv_l {X : S} {Y : DisjointLeibnizSet S} :
-    ✓ (valid X) • Y → ∃ Y', Y = valid Y' ∧ X ## Y' := by
+    ✓[SI] (valid X) • Y → ∃ Y', Y = valid Y' ∧ X ## Y' := by
   simp only [op, ORA.Valid]
   rcases Y with (Y|_) <;> try (· simp)
   by_cases H : X ## Y <;> simp [H]
 
-theorem not_mem_of_mem_and_valid_op_left {x y : DisjointLeibnizSet S} (v : ✓ x • y) {p : A} (m : p ∈ x)
+theorem not_mem_of_mem_and_valid_op_left {x y : DisjointLeibnizSet S} (v : ✓[SI] x • y) {p : A} (m : p ∈ x)
     : ¬ p ∈ y := by
   intro h
   obtain ⟨x', hx⟩ := exist_set_of_mem m
@@ -191,12 +195,12 @@ theorem not_mem_of_mem_and_valid_op_left {x y : DisjointLeibnizSet S} (v : ✓ x
     ⟨show p ∈ valid x' from hx ▸ m, show p ∈ valid y' from hy ▸ h⟩).elim
 
 theorem not_mem_of_mem_and_valid_op_right {x y : DisjointLeibnizSet S}
-  (v : ✓ x • y) {p : A} (m : p ∈ y)
+  (v : ✓[SI] x • y) {p : A} (m : p ∈ y)
     : ¬ p ∈ x :=
   not_mem_of_mem_and_valid_op_left (comm' (x := x) ▸ v) m
 
 @[rocq_alias gset_disj_dealloc_local_update]
-theorem localUpdate_dealloc {X Y : S} : (valid X, valid Y) ~l~> (valid (X \ Y), valid ∅) := by
+theorem localUpdate_dealloc {X Y : S} : (valid X, valid Y) ~l~>[SI] (valid (X \ Y), valid ∅) := by
   refine LocalUpdate.total_valid fun vx vy le => ?_
   refine (local_update_unital_discrete ..).mpr fun z hx heq => ⟨valid_mapN (fun _ _ => vx) vx, ?_⟩
   rcases z with (z|_)
@@ -210,7 +214,7 @@ theorem localUpdate_dealloc {X Y : S} : (valid X, valid Y) ~l~> (valid (X \ Y), 
 
 @[rocq_alias gset_disj_dealloc_empty_local_update]
 theorem localUpdate_dealloc_empty {X Z : S} :
-    (valid Z • valid X, valid Z) ~l~> (valid X, valid ∅) := by
+    (valid Z • valid X, valid Z) ~l~>[SI] (valid X, valid ∅) := by
   refine LocalUpdate.total_valid fun Hdisj _ _ => ?_
   rw [valid_op_iff_disj] at Hdisj
   rw [disj_op_union Hdisj]
@@ -222,27 +226,27 @@ theorem localUpdate_dealloc_empty {X Z : S} :
 
 @[rocq_alias gset_disj_dealloc_op_local_update]
 theorem localUpdate_op_l {X Y Z : S} :
-    (valid Z • valid X, valid Z • valid Y) ~l~> (valid X, valid Y) := by
-  suffices (valid Z • valid X, valid Z • valid Y) ~l~> (valid X, unit • valid Y) by
+    (valid Z • valid X, valid Z • valid Y) ~l~>[SI] (valid X, valid Y) := by
+  suffices (valid Z • valid X, valid Z • valid Y) ~l~>[SI] (valid X, unit • valid Y) by
     rwa [unit_left_id] at this
   exact LocalUpdate.op_frame _ _ _ _ _ localUpdate_dealloc_empty
 
 @[rocq_alias gset_disj_alloc_op_local_update]
 theorem localUpdate_op_r {X Y Z : S} (Hdisj : Z ## X) :
-    (valid X, valid Y) ~l~> (valid Z • valid X, valid Z • valid Y) :=
+    (valid X, valid Y) ~l~>[SI] (valid Z • valid X, valid Z • valid Y) :=
   LocalUpdate.op_discrete _ _ _ fun _ => valid_op_iff_disj.mpr Hdisj
 
 @[rocq_alias gset_disj_alloc_local_update]
 theorem localUpdate_union_r_of_disj (X Y Z : S) (Hdisj : Z ## X) :
-    (valid X, valid Y) ~l~> (valid (Z ∪ X), valid (Z ∪ Y)) := by
+    (valid X, valid Y) ~l~>[SI] (valid (Z ∪ X), valid (Z ∪ Y)) := by
   refine LocalUpdate.total_valid fun vx vy le => ?_
   have HdisjY : Z ## Y := fun a ⟨Hz, Hy⟩ => Hdisj a ⟨Hz, ord_iff_subset.mp le a Hy⟩
-  rw [←disj_op_union Hdisj, ←disj_op_union HdisjY]
+  rw [←disj_op_union (SI := SI) Hdisj, ←disj_op_union (SI := SI) HdisjY]
   exact localUpdate_op_r Hdisj
 
 @[rocq_alias gset_disj_alloc_empty_local_update]
 theorem localUpdate_alloc_empty_of_disj (X Z : S) (Hdisj : Z ## X) :
-    (valid X, valid ∅) ~l~>
+    (valid X, valid ∅) ~l~>[SI]
     (valid (Z ∪ X), valid Z) := by
   rw [show valid Z = valid (Z ∪ ∅) by simp [union_empty_right]]
   exact localUpdate_union_r_of_disj X ∅ Z Hdisj
@@ -250,7 +254,7 @@ theorem localUpdate_alloc_empty_of_disj (X Z : S) (Hdisj : Z ## X) :
 @[rocq_alias gset_disj_alloc_updateP_strong]
 theorem alloc_updateP_strong {P : A → Prop} {Q : DisjointLeibnizSet S → Prop} {X : S}
     (Hfresh : ∀ Y, X ⊆ Y → ∃ j, j ∉ Y ∧ P j) (HQ : ∀ {i}, i ∉ X → P i → Q (valid ({i} ∪ X))) :
-    valid X ~~>: Q := by
+    valid X ~~>:[SI] Q := by
   refine UpdateP.discrete_total.mpr fun z H => ?_
   obtain ⟨Y, rfl, Hdisj⟩ := valid_inv_l H
   have ⟨y, Hnotin, HP⟩ := Hfresh (X ∪ Y) (fun _ => (mem_union.mpr <| .inl ·))
@@ -264,20 +268,20 @@ theorem alloc_updateP_strong {P : A → Prop} {Q : DisjointLeibnizSet S → Prop
 
 @[rocq_alias gset_disj_alloc_updateP_strong']
 theorem alloc_updateP_strong' {P : A → Prop} {X : S} (H : ∀ Y, X ⊆ Y → ∃ j, j ∉ Y ∧ P j) :
-    valid X ~~>: fun Y => ∃ i, Y = valid ({i} ∪ X) ∧ i ∉ X ∧ P i :=
+    valid X ~~>:[SI] fun Y => ∃ i, Y = valid ({i} ∪ X) ∧ i ∉ X ∧ P i :=
   alloc_updateP_strong H (by grind)
 
 @[rocq_alias gset_disj_alloc_empty_updateP_strong]
 theorem alloc_empty_updateP_strong {P : A → Prop} {Q : DisjointLeibnizSet S → Prop}
   (Hfresh : ∀ Y : S, ∃ j, j ∉ Y ∧ P j) (Hvalid : ∀ {i}, P i → Q (valid {i})) :
-    valid ∅ ~~>: Q := by
+    valid ∅ ~~>:[SI] Q := by
   refine alloc_updateP_strong (fun _ => Hfresh ·) (fun _ HP => ?_)
   rw [union_empty_right]
   exact Hvalid HP
 
 @[rocq_alias gset_disj_alloc_empty_updateP_strong']
 theorem alloc_empty_updateP_strong' {P : A → Prop} (Hfresh : ∀ Y : S, ∃ j, j ∉ Y ∧ P j) :
-    valid (∅ : S) ~~>: fun Y => ∃ i, Y = valid {i} ∧ P i := by
+    valid (∅ : S) ~~>:[SI] fun Y => ∃ i, Y = valid {i} ∧ P i := by
   refine alloc_updateP_strong (fun _ => Hfresh ·) ?_
   refine fun _ HP => ⟨_, ⟨?_, HP⟩⟩
   rw [union_empty_right]
@@ -290,24 +294,24 @@ variable {S : Type _} [LawfulFiniteSet S A] [DecidableDisj S] [InfiniteType A]
 
 @[rocq_alias gset_disj_alloc_updateP]
 theorem alloc_updateP {Q : DisjointLeibnizSet S → Prop} {X} (Hv : ∀ {i}, i ∉ X → Q (valid ({i} ∪ X))) :
-    valid X ~~>: Q := by
+    valid X ~~>:[SI] Q := by
   refine alloc_updateP_strong (P := fun _ => True) (fun Y H => ?_) (fun _ => Hv ·)
   obtain ⟨a, _⟩ := FiniteSet.fresh Y
   exists a
 
 @[rocq_alias gset_disj_alloc_updateP']
-theorem alloc_updateP' {X : S} : valid X ~~>: fun Y => ∃ i : A, Y = valid ({i} ∪ X) ∧ i ∉ X :=
+theorem alloc_updateP' {X : S} : valid X ~~>:[SI] fun Y => ∃ i : A, Y = valid ({i} ∪ X) ∧ i ∉ X :=
   alloc_updateP (by grind)
 
 @[rocq_alias gset_disj_alloc_empty_updateP]
 theorem alloc_empty_updateP {Q : DisjointLeibnizSet S → Prop} (Hv : ∀ {i}, Q (valid {i})) :
-    valid ∅ ~~>: Q := by
+    valid ∅ ~~>:[SI] Q := by
   refine alloc_updateP (fun i => ?_)
   rw [union_empty_right]
   exact Hv
 
 @[rocq_alias gset_disj_alloc_empty_updateP']
-theorem alloc_empty_updateP' : valid (∅ : S) ~~>: fun Y => ∃ i, Y = valid {i} :=
+theorem alloc_empty_updateP' : valid (∅ : S) ~~>:[SI] fun Y => ∃ i, Y = valid {i} :=
   alloc_empty_updateP (by grind)
 
 end DisjointLeibnizSet
@@ -315,22 +319,22 @@ end DisjointLeibnizSet
 inductive LeibnizSet (S : Type _) where
   | valid (s : S)
 
-instance : COFE (LeibnizSet S) := COFE.ofDiscrete _
+instance : COFE SI (LeibnizSet S) := COFE.ofDiscrete _
 
 namespace LeibnizSet
 
 variable {S : Type _} [LawfulSet S A]
 
-@[instance_reducible] def cmraData : CMRAData (LeibnizSet S) where
+@[instance_reducible] def cmraData : CMRAData SI (LeibnizSet S) where
   pcore := some
   op | .valid x, valid y => valid (x ∪ y)
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ H := by rw [(H : _ = _)]
+  op_ne.ne _ _ _ H := by rw [(H : _ = _)] <;> exact .rfl
   pcore_ne {_ _ _} _ H1 H2 :=  ⟨_, rfl, .trans (.of_eq <| Option.some.injEq _ _ ▸ H2.symm) H1⟩
   validN_ne _ _ := by simp
   valid_iff_validN := by simp
-  validN_succ _ := by simp
+  validN_le _ _ := by simp
   validN_op_left _ := by simp
   assoc := by simp [union_assoc]
   comm := by simp [union_comm]
@@ -339,17 +343,19 @@ variable {S : Type _} [LawfulSet S A]
   extend {_ _ _ _} _ h := ⟨_, _, h, .rfl, .rfl⟩
   pcore_op_mono {_ _} := by rintro ⟨rfl⟩ y; exists y
 
-instance : CMRA (LeibnizSet S) := ofCMRAData LeibnizSet.cmraData
+set_option synthInstance.checkSynthOrder false in
+instance : CMRA SI (LeibnizSet S) := ofCMRAData LeibnizSet.cmraData
 
-@[instance_reducible] def ucmraData : UCMRAData (LeibnizSet S) where
+@[instance_reducible] def ucmraData : UCMRAData SI (LeibnizSet S) where
   unit := valid ∅
   unit_valid := trivial
   unit_left_id := by simp [op, union_empty_left]
   pcore_unit := by simp [pcore, pcore]
 
-instance instUnital : UCMRA (LeibnizSet S) := UORA.ofUCMRAData LeibnizSet.ucmraData
+set_option synthInstance.checkSynthOrder false in
+instance instUnital : UCMRA SI (LeibnizSet S) := UORA.ofUCMRAData LeibnizSet.ucmraData
 
-instance instDiscreteLeibnizSet : ORA.Discrete (LeibnizSet S) where
+instance instDiscreteLeibnizSet : ORA.Discrete SI (LeibnizSet S) where
   discrete_0 := fun h => h
   discrete_valid := id
   discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
@@ -365,7 +371,7 @@ theorem core_equiv (X : LeibnizSet S) : core X = X := by
   change (pcore X).getD X = X
   simp [pcore]
 
-theorem ord_iff_subset (X Y : S) : valid X ≼ₒ valid Y ↔ X ⊆ Y := by
+theorem ord_iff_subset (X Y : S) : valid X ≼ₒ[SI] valid Y ↔ X ⊆ Y := by
   simp only [Order, Included, op]
   refine ⟨fun ⟨_, H⟩ => ?_, fun Hsub => ?_⟩
   · obtain ⟨rfl⟩ := H
@@ -380,7 +386,7 @@ theorem ord_iff_subset (X Y : S) : valid X ≼ₒ valid Y ↔ X ⊆ Y := by
 
 @[rocq_alias coPset_included, rocq_alias gset_included]
 theorem included_iff_subset (X Y : S) : valid X ≼ valid Y ↔ X ⊆ Y :=
-  inc_iff_ord.trans (ord_iff_subset X Y)
+  inc_iff_ord.trans (ord_iff_subset (SI := SI) X Y)
 
 @[rocq_alias coPset_opM, rocq_alias gset_opM]
 theorem opM_union (X : LeibnizSet S) (mY : Option (LeibnizSet S)) :
@@ -388,12 +394,12 @@ theorem opM_union (X : LeibnizSet S) (mY : Option (LeibnizSet S)) :
   cases mY <;> simp [op?, op, union_empty_right]
 
 @[rocq_alias coPset_update, rocq_alias gset_update]
-theorem update (X Y : S) : valid X ~~> valid Y :=
+theorem update (X Y : S) : valid X ~~>[SI] valid Y :=
   fun _ _ _ => trivial
 
 @[rocq_alias coPset_local_update, rocq_alias gset_local_update]
 theorem localUpdate (X Y X' : S) (H : X ⊆ X') :
-    (valid X, valid Y) ~l~> (valid X', valid X') := by
+    (valid X, valid Y) ~l~>[SI] (valid X', valid X') := by
   refine (LocalUpdate.discrete ..).mpr fun mz _ e => ⟨trivial, ?_⟩
   match mz with
   | none => rfl

@@ -294,10 +294,10 @@ variable [Sbi PROP1] [Sbi PROP2]
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-variable [OFE A] (a b : A) (P : PROP1) in
+variable [OFE Nat A] (a b : A) (P : PROP1) in
 #ipm_synth Frame (PROP := PROP2) false iprop(a ≡ b) iprop(⎡(a ≡ b) ∗ P⎤) _
 
-example {A : Type _} [OFE A] (x y : A) (P Q : PROP1) (φ ψ : Prop) (hψ : ψ) :
+example {A : Type _} [OFE Nat A] (x y : A) (P Q : PROP1) (φ ψ : Prop) (hψ : ψ) :
     □ ⎡P⎤ ∗ ⌜φ⌝ ∗ (x ≡ y) ∗ ⎡Q⎤ ⊢@{PROP2} ⎡□ P⎤ ∗ ⎡(⌜φ⌝ ∗ ⌜ψ⌝ : PROP1)⎤ ∗ ⎡(x ≡ y) ∗ Q⎤ := by
   iintro ⟨#H1, H2, H3, H4⟩
   -- `frame_embed`: cancelling `⎡P⎤` against `⎡□ P⎤`

@@ -50,7 +50,7 @@ instance coreP_affine (P : PROP) [Affine P] : Affine (coreP P) where
     iapply HC <;> iintro !> !> _ //
 
 @[rocq_alias coreP_ne]
-instance coreP_ne : NonExpansive (coreP (PROP := PROP)) where
+instance coreP_ne : NonExpansive Nat (coreP (PROP := PROP)) where
   ne _ _ _ H :=
     forall_ne fun _ => wand_ne.ne .rfl (wand_ne.ne
       (affinely_ne.ne (instPlainly_ne.ne (wand_ne.ne H .rfl))) .rfl)

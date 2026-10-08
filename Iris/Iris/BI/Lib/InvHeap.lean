@@ -56,14 +56,14 @@ private theorem singleton_inc_toInvHeap {h : H (V × (V → Prop))} {l : L} {I :
     {mv : Option (Excl (DiscreteO V))}
     (hinc : ({[l := (mv, toAgree ⟨I⟩)]} : InvHeapMapUR V H) ≼ toInvHeap h) :
     ∃ v, get? h l = some (v, I) ∧ mv ≼ some (excl ⟨v⟩) := by
-  obtain ⟨⟨_, _⟩, hy, hinc⟩ := singleton_inc_iff.mp hinc
+  obtain ⟨⟨_, _⟩, hy, hinc⟩ := (singleton_inc_iff (SI := Nat)).mp hinc
   obtain ⟨v, I', rfl, rfl, hh⟩ := get?_toInvHeap_some hy
   obtain ⟨hv, hI⟩ := Prod.inc_def.mp (Option.some_inc_some_iff_is_total.mp hinc)
   cases DiscreteO.eqv_inj (toAgree_included.mp hI)
   exact ⟨v, hh, hv⟩
 
 @[rocq_alias to_inv_heap_valid]
-theorem toInvHeap_valid (h : H (V × (V → Prop))) : ✓ toInvHeap h := fun l => by
+theorem toInvHeap_valid (h : H (V × (V → Prop))) : ✓[Nat] toInvHeap h := fun l => by
   rcases hh : get? h l with _ | ⟨v, I⟩
   · rw [get?_toInvHeap_none hh]; trivial
   · exact get?_heap_some_toInvHeap hh ▸ ⟨trivial, toAgree_valid⟩
@@ -83,7 +83,7 @@ end toInvHeap
 @[rocq_alias inv_heapGpreS]
 class invHeapPreS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ → Type _)
     [LawfulFiniteMap H L] where
-  invHeap : ElemG GF (constOF (Auth (InvHeapMapUR V H)))
+  invHeap : ElemG GF (constOF (Auth (SI := Nat) (InvHeapMapUR V H)))
 
 attribute [reducible, instance] invHeapPreS.invHeap
 
@@ -160,7 +160,7 @@ theorem invPointsToOwn_get?_some (l : L) (v : V) (h : H (V × (V → Prop))) (I 
 
 @[rocq_alias inv_pointsto_persistent]
 instance instPersistentInvPointsTo (l : L) (I : V → Prop) : Persistent (l ↦_I □) := by
-  haveI : CoreId (none : Option (Excl (DiscreteO V))) := unit_CoreId
+  haveI : CoreId (none : Option (Excl (DiscreteO V))) := unit_CoreId (SI := Nat)
   unfold invPointsTo
   infer_instance
 
@@ -228,7 +228,7 @@ theorem make_invPointsTo {l : L} {v : V} {I : V → Prop} {E : CoPset} (hN : ↑
   · imod iOwn_update (auth_update_alloc (alloc_singleton_local_update
       (x := ((some (.excl ⟨v⟩), toAgree ⟨I⟩) :
         Option (Excl (DiscreteO V)) × Agree (DiscreteO (V → Prop))))
-      (get?_toInvHeap_none hlk) ⟨trivial, toAgree_valid⟩)) $$ Hauth with ⟨Hauth, Hfrag⟩
+      (get?_toInvHeap_none hlk) ((Prod.mk_valid _ _).mpr ⟨trivial, toAgree_valid⟩))) $$ Hauth with ⟨Hauth, Hfrag⟩
     imod Hclose $$ [Hauth HsepM Hl] with -
     · iexists insert h l (v, I)
       rw [toInvHeap_insert]

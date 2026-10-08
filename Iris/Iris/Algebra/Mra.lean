@@ -21,6 +21,8 @@ coincides with `R`.
 
 namespace Iris
 
+variable {SI : Type _} [instSI : SIdx SI]
+
 open ORA Iris.Std OFE
 
 namespace Mra
@@ -85,7 +87,7 @@ theorem below_toMra (a b : α) : below a (toMra (R := R) b) ↔ R a b :=
 #rocq_ignore mra_equiv_equiv "Use equality."
 
 @[rocq_alias mraO]
-instance (R : α → α → Prop) : COFE (Mra R) := COFE.ofDiscrete _
+instance (R : α → α → Prop) : COFE SI (Mra R) := COFE.ofDiscrete _
 
 theorem belowList_append (a : α) (xs ys : List α) :
     belowList R a (xs ++ ys) ↔ belowList R a xs ∨ belowList R a ys := by
@@ -111,16 +113,16 @@ theorem append_idem (x : Mra R) : append x x = x := by
 #rocq_ignore mra_op "Replaced by the `op` field of the CMRA instance."
 #rocq_ignore mra_pcore "Replaced by the `pcore` field of the CMRA instance."
 
-@[instance_reducible] def cmraData (R : α → α → Prop) : CMRAData (Mra R) where
+@[instance_reducible] def cmraData (R : α → α → Prop) : CMRAData SI (Mra R) where
   pcore := some
   op := append
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ h := by rw [h]
+  op_ne.ne _ _ _ h := by rw [h] <;> exact .rfl
   pcore_ne hxy h := ⟨_, (congrArg some hxy.symm).trans h, .rfl⟩
   validN_ne _ := id
   valid_iff_validN := by simp
-  validN_succ := id
+  validN_le := fun h _ => h
   validN_op_left _ := trivial
   assoc {x y z} := by
     induction x, y, z using ind₃ with
@@ -135,11 +137,13 @@ theorem append_idem (x : Mra R) : append x x = x := by
   pcore_op_mono h y :=
     ⟨y, congrArg (fun z ↦ some (append z y)) (Option.some.inj h)⟩
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias mra_cmra_mixin]
-instance (R : α → α → Prop) : CMRA (Mra R) := ofCMRAData (Mra.cmraData R)
+instance (R : α → α → Prop) : CMRA SI (Mra R) := ofCMRAData (Mra.cmraData R)
 
 #rocq_ignore mraR "Use Mra."
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias mra_cmra_total]
 instance : IsTotal (Mra R) where
   total x := ⟨x, rfl⟩
@@ -149,7 +153,7 @@ instance (x : Mra R) : CoreId x where
   core_id := rfl
 
 @[rocq_alias mra_cmra_discrete]
-instance : ORA.Discrete (Mra R) where
+instance : ORA.Discrete SI (Mra R) where
   discrete_0 := id
   discrete_valid := id
   discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
@@ -157,7 +161,7 @@ instance : ORA.Discrete (Mra R) where
 #rocq_ignore mra_unit "Replaced by the `unit` field of UCMRA instance."
 #rocq_ignore mraUR "Use Mra."
 
-@[instance_reducible] def ucmraData (R : α → α → Prop) : UCMRAData (Mra R) where
+@[instance_reducible] def ucmraData (R : α → α → Prop) : UCMRAData SI (Mra R) where
   unit := mk []
   unit_valid := trivial
   unit_left_id {x} := by
@@ -165,8 +169,9 @@ instance : ORA.Discrete (Mra R) where
     | mk xs => rfl
   pcore_unit := rfl
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias mra_ucmra_mixin]
-instance instUnital (R : α → α → Prop) : UCMRA (Mra R) := UORA.ofUCMRAData (Mra.ucmraData R)
+instance instUnital (R : α → α → Prop) : UCMRA SI (Mra R) := UORA.ofUCMRAData (Mra.ucmraData R)
 
 theorem eq_of_below_iff {x y : Mra R} (h : ∀ a, below a x ↔ below a y) : x = y := by
   induction x, y using ind₂ with
@@ -179,8 +184,8 @@ theorem below_op (a : α) (x y : Mra R) : below a (x • y) ↔ below a x ∨ be
 @[rocq_alias mra_idemp]
 theorem idem (x : Mra R) : x • x = x := append_idem x
 
-theorem ord_iff (x y : Mra R) : x ≼ₒ y ↔ y = x • y :=
-  ⟨fun h ↦ (op_core_right_of_inc (OrdInc.ord_inc h)).symm, fun h ↦ IncOrd.inc_ord ⟨y, h⟩⟩
+theorem ord_iff (x y : Mra R) : x ≼ₒ[SI] y ↔ y = x • y :=
+  ⟨fun h ↦ (op_core_right_of_inc (inc_iff_ord.mpr h)).symm, fun h ↦ inc_iff_ord.mp ⟨y, h⟩⟩
 
 @[rocq_alias mra_included]
 theorem inc_iff (x y : Mra R) : x ≼ y ↔ y = x • y := inc_iff_ord.trans (ord_iff x y)
@@ -193,7 +198,7 @@ theorem toMra_op_of_rel [hR : Trans R R R] (a b : α) (h : R a b) :
     exact ⟨fun hc ↦ hc.elim (fun hca ↦ hR.trans hca h) id, .inr⟩
 
 theorem toMra_ord_iff [Std.Refl R] [Trans R R R] (a b : α) :
-    toMra (R := R) a ≼ₒ toMra b ↔ R a b := by
+    toMra (R := R) a ≼ₒ[SI] toMra b ↔ R a b := by
   constructor
   · rintro ⟨z, hz⟩
     rw [← below_toMra (R := R) a b, hz, below_op]
@@ -203,11 +208,11 @@ theorem toMra_ord_iff [Std.Refl R] [Trans R R R] (a b : α) :
 @[rocq_alias to_mra_included]
 theorem toMra_inc_iff [Std.Refl R] [Trans R R R] (a b : α) :
     toMra (R := R) a ≼ toMra b ↔ R a b :=
-  inc_iff_ord.trans (toMra_ord_iff a b)
+  inc_iff_ord.trans (toMra_ord_iff (SI := SI) a b)
 
 @[rocq_alias mra_local_update_grow]
 theorem local_update_grow [hR : Trans R R R] (a : α) (x : Mra R) (b : α) (h : R a b) :
-    (toMra (R := R) a, x) ~l~> (toMra b, toMra b) := by
+    (toMra (R := R) a, x) ~l~>[SI] (toMra b, toMra b) := by
   refine (local_update_unital_discrete ..).mpr fun z _ haz ↦ ⟨trivial, ?_⟩
   refine eq_of_below_iff fun c ↦ ?_
   rw [below_toMra, below_op, below_toMra]
@@ -221,7 +226,7 @@ theorem local_update_grow [hR : Trans R R R] (a : α) (x : Mra R) (b : α) (h : 
 
 @[rocq_alias mra_local_update_get_frag]
 theorem local_update_get_frag [Std.Refl R] [Trans R R R] (a b : α) (h : R b a) :
-    (toMra (R := R) a, unit) ~l~> (toMra a, toMra b) := by
+    (toMra (R := R) a, unit) ~l~>[SI] (toMra a, toMra b) := by
   refine (local_update_unital_discrete ..).mpr fun z _ haz ↦ ⟨trivial, ?_⟩
   calc
     toMra a = toMra b • toMra a := (toMra_op_of_rel b a h).symm

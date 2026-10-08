@@ -307,7 +307,7 @@ instance (priority := low) fromModal_plainly_embed {α} φ io (sel : α)
   from_modal h := (embed_plainly Q).mpr.trans (embed_mono <| inst.from_modal h)
 
 @[rocq_alias into_internal_eq_embed]
-instance intoInternalEq_embed {A} [OFE A] (x y : A) (P : P1)
+instance intoInternalEq_embed {A} [OFE Nat A] (x y : A) (P : P1)
     [inst : IntoInternalEq P x y] : IntoInternalEq iprop(⎡P⎤ : P2) x y where
   into_internal_eq := (embed_mono inst.into_internal_eq).trans (embed_internal_eq x y).mp
 

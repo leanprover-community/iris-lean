@@ -265,7 +265,7 @@ instance (priority := default - 1) frame_pure_embed
 @[ipm_backtrack, rocq_alias frame_eq_embed]
 instance (priority := default - 1) frame_eq_embed
     [Sbi P1] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
-    (p : Bool) {A : Type _} [OFE A] (a b : A) (P Q : P1) (Q' : P2)
+    (p : Bool) {A : Type _} [OFE Nat A] (a b : A) (P Q : P1) (Q' : P2)
     [h1 : Frame p iprop(a ≡ b) P Q] [h2 : MakeEmbed Q Q'] :
     Frame p iprop(a ≡ b) iprop(⎡P⎤) Q' where
   frame := (sep_mono_left <| intuitionisticallyIf_mono (embed_internal_eq a b).mpr).trans

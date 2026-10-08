@@ -19,7 +19,7 @@ namespace Iris
 
 open BI ORA OFE Iris Iris.Std LawfulSet DisjointLeibnizSet COFE ProofMode
 
-abbrev NaInvF : OFunctorPre :=
+abbrev NaInvF : OFunctorPre Nat :=
   ProdOF (constOF CoPsetDisjL) (constOF (DisjointLeibnizSet PosSet))
 
 @[rocq_alias na_invG]
@@ -35,12 +35,12 @@ attribute [reducible, instance] NaInvG.inv
 abbrev NaInvPoolName := GName
 
 instance instNaInvF_discreteE {α β : Type _} (x : DisjointLeibnizSet α) (y : DisjointLeibnizSet β) :
-    DiscreteE (x, y) := by infer_instance
+    DiscreteE Nat (x, y) := by infer_instance
 
 instance coreId_valid_empty_empty : CoreId ((valid (∅ : CoPset), valid (∅ : PosSet))) where
   core_id := by rfl
 
-instance isUnit_valid_empty_empty : IsUnit ((valid (∅ : CoPset), valid (∅ : PosSet))) where
+instance isUnit_valid_empty_empty : IsUnit Nat ((valid (∅ : CoPset), valid (∅ : PosSet))) where
   unit_valid := ⟨trivial, trivial⟩
   unit_left_id := Prod.ext ucmra_unit_left_id ucmra_unit_left_id
   pcore_unit := coreId_valid_empty_empty.core_id
@@ -64,14 +64,14 @@ instance instTimeless_own (p : NaInvPoolName) (E : CoPset) : Timeless (own (GF :
 
 @[rocq_alias na_inv_contractive]
 instance instContractive_inv (p : NaInvPoolName) (N : Namespace) :
-    Contractive (inv (GF := GF) p N) where
-  distLater_dist {n x y} H := by
+    Contractive Nat (inv (GF := GF) p N) where
+  distLater_dist {n : Nat} {x y} H := by
     refine exists_ne fun i => and_ne.ne .rfl ?_
     refine Contractive.distLater_dist fun m hm => ?_
     exact or_ne.ne (sep_ne.ne (H _ hm) .rfl) .rfl
 
 @[rocq_alias na_inv_ne]
-instance instNonExpansive_inv (p : NaInvPoolName) (N : Namespace) : NonExpansive (inv (GF := GF) p N) :=
+instance instNonExpansive_inv (p : NaInvPoolName) (N : Namespace) : NonExpansive Nat (inv (GF := GF) p N) :=
   ne_of_contractive _
 
 #rocq_ignore na_inv_proper "Subsumed by the NonExpansive instance `na_inv_ne`."
@@ -131,7 +131,7 @@ theorem own_union {p : NaInvPoolName} {E1 E2 : CoPset} (Hdisj : E1 ## E2) :
     own (GF := GF) p (E1 ∪ E2) ⊣⊢ own p E1 ∗ own p E2 := by
   refine .trans ?_ iOwn_op
   refine (congrArg (iOwn (E := W.inv) p) ?_).to_bi
-  refine .symm (OFE.equiv_prod_ext (disj_op_union Hdisj) ?_)
+  refine .symm (OFE.equiv_prod_ext (SI := Nat) (disj_op_union Hdisj) ?_)
   exact (disj_op_union disjoint_empty_left).trans (by simp)
 
 @[rocq_alias na_own_acc]
@@ -153,7 +153,7 @@ nonrec theorem inv_alloc {p : NaInvPoolName} {E : CoPset} {N : Namespace} {P : I
     ⊢ ▷ P ={E}=∗ inv p N P := by
   iintro HP
   imod (iOwn_unit (E := W.inv) (γ := p) (ε := (.valid ∅, .valid ∅))) with Hempty
-  have Hupd : (.valid (∅ : CoPset), .valid (∅ : PosSet)) ~~>:
+  have Hupd : (.valid (∅ : CoPset), .valid (∅ : PosSet)) ~~>:[Nat]
       fun y : NaInvF.ap (IProp GF) => ∃ i, y = (.valid ∅, .valid {i}) ∧ i ∈ (↑N : CoPset) :=
     .prod (P := (· = .valid ∅)) (.id rfl) (alloc_empty_updateP_strong' (fresh_name · N))
       (fun a b ha ⟨i, hb, hi⟩ => ⟨i, Prod.ext ha hb, hi⟩)

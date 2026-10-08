@@ -20,7 +20,7 @@ open Iris.Std HeapView PartialMap Iris.Algebra ORA BI ProofMode
 class GhostMapG (GF : BundledGFunctors)
     (K V : Type _) (H : outParam <| Type _ → Type _)
     [LawfulFiniteMap H K] where
-  elem : ElemG GF (constOF (HeapView K (Agree (DiscreteO V)) H))
+  elem : ElemG GF (constOF (HeapView (SI := Nat) K (Agree (DiscreteO V)) H))
 
 attribute [reducible, instance] GhostMapG.elem
 
@@ -106,7 +106,7 @@ theorem ghost_map_elems_unseal [DecidableEq K] γ (m : H V) dq :
 
 @[rocq_alias ghost_map_elem_valid]
 theorem ghost_map_elem_valid (γ : GName) (k : K) (dq : DFrac) (v : V) :
-    (γ ↪◯MAP[k]{dq} v) ⊢@{IProp GF} ✓ dq := by
+    (γ ↪◯MAP[k]{dq} v) ⊢@{IProp GF} ✓[Nat] dq := by
   refine iOwn_cmraValid.trans ?_
   iintro %h
   ipureintro
@@ -115,7 +115,7 @@ theorem ghost_map_elem_valid (γ : GName) (k : K) (dq : DFrac) (v : V) :
 @[rocq_alias ghost_map_elem_valid_2]
 theorem ghost_map_elem_valid_2 (γ : GName) (k : K) (dq1 dq2 : DFrac) (v1 v2 : V) :
     (γ ↪◯MAP[k]{dq1} v1) ∗ (γ ↪◯MAP[k]{dq2} v2) ⊢@{IProp GF}
-      ✓ (dq1 • dq2) ∧ ⌜v1 = v2⌝ := by
+      ✓[Nat] (dq1 • dq2) ∧ ⌜v1 = v2⌝ := by
   unfold ghost_map_elem
   iintro ⟨H1, H2⟩
   icombine H1 H2 gives %H
@@ -133,7 +133,7 @@ theorem ghost_map_elem_agree (γ : GName) (k : K) (dq1 dq2 : DFrac) (v1 v2 : V) 
 instance ghost_map_elem_combine_gives γ (k : K) (dq1 dq2 : DFrac) (v1 v2 : V) :
     CombineSepGives (PROP := IProp GF)
       (γ ↪◯MAP[k]{dq1} v1) (γ ↪◯MAP[k]{dq2} v2)
-      iprop(⌜✓ (dq1 • dq2) ∧ v1 = v2⌝) where
+      iprop(⌜✓[Nat] (dq1 • dq2) ∧ v1 = v2⌝) where
   combine_sep_gives := by
     iintro H
     icases ghost_map_elem_valid_2 $$ H with %H
@@ -160,7 +160,7 @@ instance ghost_map_elem_combine_as (γ : GName) (k : K) (dq1 dq2 : DFrac) (v1 v2
     iframe
 
 @[rocq_alias ghost_map_elem_frac_ne]
-theorem ghost_map_elem_frac_ne γ (k1 k2 : K) (dq1 dq2 : DFrac) (v1 v2 : V) (Hk : ¬ ✓ (dq1 • dq2)) :
+theorem ghost_map_elem_frac_ne γ (k1 k2 : K) (dq1 dq2 : DFrac) (v1 v2 : V) (Hk : ¬ ✓[Nat] (dq1 • dq2)) :
     ⊢@{IProp GF} (γ ↪◯MAP[k1]{dq1} v1) -∗ (γ ↪◯MAP[k2]{dq2} v2) -∗ ⌜k1 ≠ k2⌝ := by
   iintro Hl1 Hl2
   iintro %Heq; subst Heq
@@ -211,7 +211,7 @@ theorem ghost_map_alloc_strong [DecidableEq K] (P : GName → Prop) (m : H V) :
     iapply BIUpdate.mono <| iOwn_op.mp
     iapply iOwn_update $$ G
     have H := update_big_alloc _ (Std.PartialMap.map (fun x : V ↦ toAgree (DiscreteO.mk x)) m) _
-        (disjoint_empty_right _) DFrac.valid_own_one
+        (disjoint_empty_right _) DFrac.valid_own_one (SI := Nat)
         (all_map fun _ _ => Agree.toAgree_valid)
     rw [union_empty_right, BigOpM.bigOpM_map_eq] at H
     exact H
@@ -228,7 +228,7 @@ theorem ghost_map_alloc_strong_empty [DecidableEq K] (P : GName → Prop)
 theorem ghost_map_alloc [DecidableEq K] (m : H V) :
     ⊢@{IProp GF} |==> ∃ γ, (γ ↪●MAP m) ∗ [∗map] k ↦ v ∈ m, γ ↪◯MAP[k] v := by
   imod (ghost_map_alloc_strong (fun _ => True) m) with ⟨%γ, -, H1, H2⟩
-  · intro N; exists N; simp
+  · intro N; exists N
   · iexists γ
     iframe H1 H2
 
@@ -267,7 +267,7 @@ instance (γ : GName) (m : H V) (q : Qp) :
 
 @[rocq_alias ghost_map_auth_valid]
 theorem ghost_map_auth_valid γ (dq : DFrac) (m : H V) :
-    ⊢@{IProp GF} (γ ↪●MAP{dq} m) -∗ ⌜✓ dq⌝ := by
+    ⊢@{IProp GF} (γ ↪●MAP{dq} m) -∗ ⌜✓[Nat] dq⌝ := by
   unfold ghost_map_auth
   iintro _
   refine iOwn_cmraValid.trans ?_
@@ -276,7 +276,7 @@ theorem ghost_map_auth_valid γ (dq : DFrac) (m : H V) :
 
 @[rocq_alias ghost_map_auth_valid_2]
 theorem ghost_map_auth_valid_2 {γ} {dq1 dq2 : DFrac} {m1 m2 : H V} :
-    ⊢@{IProp GF} (γ ↪●MAP{dq1} m1) -∗ (γ ↪●MAP{dq2} m2) -∗ ⌜✓ (dq1 • dq2) ∧ m1 = m2⌝ := by
+    ⊢@{IProp GF} (γ ↪●MAP{dq1} m1) -∗ (γ ↪●MAP{dq2} m2) -∗ ⌜✓[Nat] (dq1 • dq2) ∧ m1 = m2⌝ := by
   unfold ghost_map_auth
   iintro H1 H2
   icombine H1 H2 gives %G
@@ -287,9 +287,9 @@ theorem ghost_map_auth_valid_2 {γ} {dq1 dq2 : DFrac} {m1 m2 : H V} :
   simp only [LawfulPartialMap.get?_map, Option.map] at h
   cases h₁ : get? m1 k <;> cases h₂ : get? m2 k <;> simp only [h₁, h₂] at h
   · rfl
-  · exact (OFE.not_none_eqv_some h).elim
-  · exact (OFE.not_some_eqv_none h).elim
-  · exact congrArg some (DiscreteO.eqv_inj (Agree.toAgree_inj (Option.some.inj h)))
+  · exact (OFE.not_none_eqv_some (SI := Nat) h).elim
+  · exact (OFE.not_some_eqv_none (SI := Nat) h).elim
+  · exact congrArg some (DiscreteO.eqv_inj (Agree.toAgree_inj (SI := Nat) (Option.some.inj h)))
 
 @[rocq_alias ghost_map_auth_agree]
 theorem ghost_map_auth_agree γ (dq1 dq2 : DFrac) (m1 m2 : H V) :

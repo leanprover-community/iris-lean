@@ -34,7 +34,7 @@ instance : DecidableDisj (SetImpl α cmp) := disjoint_dec
 
 @[simp]
 def MySet (S : SetImpl α cmp) : DisjointLeibnizSet (SetImpl α cmp) := .valid S
-def SetOwn (S : SetImpl α cmp) : UPred (DisjointLeibnizSet (SetImpl α cmp)) := UPred.ownM (MySet S)
+def SetOwn (S : SetImpl α cmp) : UPred Nat (DisjointLeibnizSet (SetImpl α cmp)) := UPred.ownM (MySet S)
 
 -- Example: Owning overlapping sets leads to a contradiction.
 example {x y : α} : SetOwn {x, y} ⊢ (SetOwn ({x} : SetImpl α cmp) -∗ False) := by
@@ -52,7 +52,7 @@ abbrev gname := Pos
 
 @[simp]
 def MyCoPSet (S : CoPset) : CoPsetDisjL := .valid S
-def CoPSetOwn (S : CoPset) : UPred CoPsetDisjL := UPred.ownM (MyCoPSet S)
+def CoPSetOwn (S : CoPset) : UPred Nat CoPsetDisjL := UPred.ownM (MyCoPSet S)
 
 -- Example: Owning a subset and the full set simultaneously leads to a contradiction.
 example {x y : gname} : CoPSetOwn {x, y} ⊢ (CoPSetOwn CoPset.full -∗ False) := by

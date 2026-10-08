@@ -199,7 +199,7 @@ theorem bigAndM_persistently {Φ : K → V → PROP} {m : M V} :
     (<pers> [∧map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∧map] k ↦ x ∈ m, <pers> Φ k x :=
   letI := MonoidHomomorphism.ofEq (PROP := PROP) persistently_ne
        (BiEntails.to_eq persistently_and) (BiEntails.to_eq persistently_true)
-  BiEntails.of_eq <| bigOpL_hom _ <| toList m
+  BiEntails.of_eq <| bigOpL_hom (SI := Nat) _ <| toList m
 
 @[rocq_alias big_andM_pure_1]
 theorem bigAndM_pure_intro {φ : K → V → Prop} {m : M V} :
@@ -223,7 +223,7 @@ theorem bigAndM_later {Φ : K → V → PROP} {m : M V} :
     (▷ [∧map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∧map] k ↦ x ∈ m, (▷ Φ k x) :=
   letI := MonoidHomomorphism.ofEq (PROP := PROP) later_ne
     (BiEntails.to_eq later_and) (BiEntails.to_eq later_true)
-  BiEntails.of_eq <| bigOpL_hom _ <| toList m
+  BiEntails.of_eq <| bigOpL_hom (SI := Nat) _ <| toList m
 
 @[rocq_alias big_andM_laterN]
 theorem bigAndM_laterN {Φ : K → V → PROP} {m : M V} {n : Nat} :

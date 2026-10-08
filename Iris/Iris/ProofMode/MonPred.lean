@@ -1068,7 +1068,7 @@ variable {I : BiIndex} {PROP : Type _} [Sbi PROP]
 /-! ### IntoInternalEq -/
 
 @[rocq_alias into_internal_eq_monPred_at]
-instance intoInternalEq_monPred_at {A} [OFE A] (x y : A)
+instance intoInternalEq_monPred_at {A} [OFE Nat A] (x y : A)
     (P : MonPred I PROP) (i : I.car) [h : IntoInternalEq P x y] :
     IntoInternalEq (P.monPred_at i) x y where
   into_internal_eq := (entails_at.mp h.into_internal_eq i).trans (monPred_at_internal_eq i x y).mp
@@ -1095,7 +1095,7 @@ instance intoForall_monPred_at_plainly (P : MonPred I PROP) (Φ : I.car → PROP
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias make_monPred_at_internal_eq]
-instance makeMonPredAt_internalEq {A} [OFE A] (d : MakeMonPredAt.Kind)
+instance makeMonPredAt_internalEq {A} [OFE Nat A] (d : MakeMonPredAt.Kind)
     (i : I.car) (x y : A) :
     MakeMonPredAt (PROP := PROP) d i iprop(x ≡ y) iprop(x ≡ y) where
   make_monPred_at := monPred_at_internal_eq i x y

@@ -16,7 +16,7 @@ open Iris BI ProofMode ORA UPred
 
 section
 
-variable [UCMRA M] (a b : M) (c : M) [CoreId c]
+variable [UCMRA Nat M] (a b : M) (c : M) [CoreId c]
 
 /- Tests `fromSep_ownM`. -/
 /-- info:
@@ -40,7 +40,7 @@ variable [UCMRA M] (a b : M) (c : M) [CoreId c]
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-variable (p : Bool) [ORA.Affine M] in
+variable (p : Bool) [ORA.Affine (SI := Nat) M] in
 #ipm_synth IntoAnd p (ownM (a • b)) _ _
 
 /-
@@ -56,7 +56,7 @@ variable (p : Bool) [ORA.Affine M] in
 
 /- Tests `combineSepGives_ownM`. -/
 /-- info:
-  solution: CombineSepGives (ownM a) (ownM b) iprop(✓ a • b),
+  solution: CombineSepGives (ownM a) (ownM b) iprop(✓[Nat] a • b),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
@@ -64,7 +64,7 @@ variable (p : Bool) [ORA.Affine M] in
 
 /- Using `combineSepGives_ownM` along with `combineSepGives_intuitionistically`. -/
 /-- info:
-  solution: CombineSepGives iprop(□ ownM a) iprop(□ ownM b) iprop(✓ a • b),
+  solution: CombineSepGives iprop(□ ownM a) iprop(□ ownM b) iprop(✓[Nat] a • b),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in

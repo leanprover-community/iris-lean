@@ -234,7 +234,7 @@ section lemmas
 variable {PROP : Type _} [BI PROP] [BIFUpdate PROP] {TA TB : Tele}
 
 @[rocq_alias atomic_acc_ne]
-theorem atomic_acc_ne {Eo Ei : CoPset} {n} {α1 α2 : TA.Arg → PROP} {P1 P2 : PROP}
+theorem atomic_acc_ne {Eo Ei : CoPset} {n : Nat} {α1 α2 : TA.Arg → PROP} {P1 P2 : PROP}
     {β1 β2 Φ1 Φ2 : TA.Arg → TB.Arg → PROP} (hα : ∀ x, α1 x ≡{n}≡ α2 x)
     (hP : P1 ≡{n}≡ P2) (hβ : ∀ x y, β1 x y ≡{n}≡ β2 x y) (hΦ : ∀ x y, Φ1 x y ≡{n}≡ Φ2 x y) :
     atomic_acc Eo Ei α1 P1 β1 Φ1 ≡{n}≡ atomic_acc Eo Ei α2 P2 β2 Φ2 := by
@@ -244,7 +244,7 @@ theorem atomic_acc_ne {Eo Ei : CoPset} {n} {α1 α2 : TA.Arg → PROP} {P1 P2 : 
     (tforall_ne fun y => wand_ne.ne (hβ x y) (BIFUpdate.ne.ne (hΦ x y)))
 
 @[rocq_alias atomic_update_ne]
-theorem atomic_update_ne {Eo Ei : CoPset} {n} {α1 α2 : TA.Arg → PROP}
+theorem atomic_update_ne {Eo Ei : CoPset} {n : Nat} {α1 α2 : TA.Arg → PROP}
     {β1 β2 Φ1 Φ2 : TA.Arg → TB.Arg → PROP} (hα : ∀ x, α1 x ≡{n}≡ α2 x)
     (hβ : ∀ x y, β1 x y ≡{n}≡ β2 x y) (hΦ : ∀ x y, Φ1 x y ≡{n}≡ Φ2 x y) :
     atomic_update Eo Ei α1 β1 Φ1 ≡{n}≡ atomic_update Eo Ei α2 β2 Φ2 := by

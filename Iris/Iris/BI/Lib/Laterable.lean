@@ -122,7 +122,7 @@ def make_laterable [BI PROP] (Q : PROP) : PROP :=
   iprop(∃ P, ▷ P ∗ □ (▷ P -∗ ◇ Q))
 
 @[rocq_alias make_laterable_ne]
-instance make_laterable_ne [BI PROP] : NonExpansive <| make_laterable (PROP := PROP) where
+instance make_laterable_ne [BI PROP] : NonExpansive Nat <| make_laterable (PROP := PROP) where
   ne := by
     intro n P Q HPQ
     unfold make_laterable

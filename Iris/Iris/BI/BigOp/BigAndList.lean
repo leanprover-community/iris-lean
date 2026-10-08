@@ -111,7 +111,7 @@ theorem bigAndL_persistently {Φ : Nat → A → PROP} {l : List A} :
     (<pers> [∧list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∧list] k ↦ x ∈ l, <pers> Φ k x :=
   letI := MonoidHomomorphism.ofEq (PROP := PROP) persistently_ne
        (BiEntails.to_eq persistently_and) (BiEntails.to_eq persistently_true)
-  BiEntails.of_eq <| bigOpL_hom Φ l
+  BiEntails.of_eq <| bigOpL_hom (SI := Nat) Φ l
 
 @[rocq_alias big_andL_pure_1]
 theorem bigAndL_pure_intro {φ : Nat → A → Prop} {l : List A} :
@@ -158,7 +158,7 @@ theorem bigAndL_later {Φ : Nat → A → PROP} {l : List A} :
     (▷ [∧list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∧list] k ↦ x ∈ l, (▷ Φ k x) :=
   letI := MonoidHomomorphism.ofEq (PROP := PROP) later_ne
     (BiEntails.to_eq later_and) (BiEntails.to_eq later_true)
-  BiEntails.of_eq <| bigOpL_hom  Φ l
+  BiEntails.of_eq <| bigOpL_hom (SI := Nat)  Φ l
 
 @[rocq_alias big_andL_laterN]
 theorem bigAndL_laterN {Φ : Nat → A → PROP} {l : List A} {n : Nat} :

@@ -19,7 +19,7 @@ The tactic takes a (bi-)entailment of plain propositions and turns it into a
 
 the tactic `sbi_unfold` turns it into
 
-  `∀ n, x ≼ₒ{n} y ↔ x.1 ≼ₒ{n} y.1 ∧ x.2 ≼ₒ{n} y.2`
+  `∀ (n : Nat), x ≼ₒ{n} y ↔ x.1 ≼ₒ{n} y.1 ∧ x.2 ≼ₒ{n} y.2`
 
 The tactic `sbi_unfold` works for goals of the shape `⊢ P`, `P ⊢ Q`, `P ⊣⊢ Q`.
 Here, `P` and `Q` should be in the "plain" subset of propositions, i.e. `⌜_⌝`,
@@ -33,7 +33,7 @@ to the use of nested implications. For example, given
 
 the tactic `sbi_unfold` turns it into
 
-  `∀ n, x.1 ≼ₒ{n} y.1 → x.2 ≼ₒ{n} y.2 → x ≼ₒ{n} y`
+  `∀ (n : Nat), x.1 ≼ₒ{n} y.1 → x.2 ≼ₒ{n} y.2 → x ≼ₒ{n} y`
 
 instead of (the logically equivalent, but more verbose)
 
@@ -74,7 +74,7 @@ embedding of the down closure of `Pi`, and that `Pi` is downwards closed wheneve
 @[rocq_alias SbiUnfold]
 class SbiUnfold [Sbi PROP] (clo : SbiUnfoldClosure) (P : PROP)
     (Pi : outParam (Nat → Prop)) where
-  closed {n₁ n₂} : clo = .downClosed → Pi n₁ → n₂ ≤ n₁ → Pi n₂
+  closed {n₁ n₂ : Nat} : clo = .downClosed → Pi n₁ → n₂ ≤ n₁ → Pi n₂
   as_siPure : P ⊣⊢ iprop(<si_pure> downClose Pi)
 
 /-- Implications and bi-implications need to be down closed when `clo = .downClosed`. -/
@@ -86,12 +86,12 @@ def SbiUnfoldClosure.maybeDownClose : SbiUnfoldClosure → (Nat → Prop) → Na
 namespace SbiUnfold
 variable [Sbi PROP] {clo : SbiUnfoldClosure} {P : PROP} {Pi : Nat → Prop}
 
-theorem downClose_of_closed (h : ∀ {n₁ n₂}, Pi n₁ → n₂ ≤ n₁ → Pi n₂) {n} :
+theorem downClose_of_closed (h : ∀ {n₁ n₂ : Nat}, Pi n₁ → n₂ ≤ n₁ → Pi n₂) {n : Nat} :
     (downClose Pi).holds n ↔ Pi n :=
   ⟨(· n .refl), fun hh _ hm => h hh hm⟩
 
 @[rocq_alias SbiUnfold_closed]
-theorem of_closed (hPi : ∀ {n₁ n₂}, Pi n₁ → n₂ ≤ n₁ → Pi n₂)
+theorem of_closed (hPi : ∀ {n₁ n₂ : Nat}, Pi n₁ → n₂ ≤ n₁ → Pi n₂)
     (h : P ⊣⊢ iprop(<si_pure> (⟨Pi, hPi⟩ : SiProp))) : SbiUnfold clo P Pi where
   closed _ := hPi
   as_siPure := h.trans <| siPure_mono_bi <| biEntails_of_iff fun _ => (downClose_of_closed hPi).symm
@@ -173,22 +173,22 @@ instance sbiUnfold_pure {φ : Prop} : SbiUnfold clo (iprop(⌜φ⌝) : PROP) (fu
     siPure_pure.symm.trans <| siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
 @[rocq_alias sbi_unfold_internal_eq]
-instance sbiUnfold_internalEq [OFE A] {a b : A} :
+instance sbiUnfold_internalEq [OFE Nat A] {a b : A} :
     SbiUnfold clo (iprop(a ≡ b) : PROP) (fun n => a ≡{n}≡ b) :=
   .of_closed Dist.le <| siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
 @[rocq_alias sbi_unfold_internal_cmra_valid]
-instance sbiUnfold_cmraValid [ORA A] {a : A} :
-    SbiUnfold clo (iprop(✓ a) : PROP) (fun n => ✓{n} a) :=
+instance sbiUnfold_cmraValid [ORA Nat A] {a : A} :
+    SbiUnfold clo (iprop(✓[Nat] a) : PROP) (fun n => ✓{n} a) :=
   .of_closed (fun h hm => validN_of_le hm h) <|
     siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
-instance sbiUnfold_included [ORA A] {a b : A} :
-    SbiUnfold clo (iprop(a ≼ₒ b) : PROP) (fun n => a ≼ₒ{n} b) :=
+instance sbiUnfold_included [ORA Nat A] {a b : A} :
+    SbiUnfold clo (iprop(a ≼ₒ[Nat] b) : PROP) (fun n => a ≼ₒ{n} b) :=
   .of_closed (fun h hm => ordN_of_ordN_le hm h) <| siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
 @[rocq_alias sbi_unfold_internal_included]
-instance sbiUnfold_inc [ORA A] {a b : A} :
+instance sbiUnfold_inc [ORA Nat A] {a b : A} :
     SbiUnfold clo (iprop(a ≼ b) : PROP) (fun n => a ≼{n} b) :=
   .of_closed (fun h hm => incN_of_incN_le hm h) <|
     siPure_mono_bi <| biEntails_of_iff fun _ => exists_holds
@@ -316,7 +316,7 @@ instance sbiUnfold_exists {A : Sort _} {Φ : A → PROP} {Φi : A → Nat → Pr
 @[rocq_alias sbi_unfold_later]
 instance sbiUnfold_later [hP : SbiUnfold clo P Pi] :
     SbiUnfold clo iprop(▷ P) (fun n => match n with | 0 => True | m + 1 => Pi m) where
-  closed {n₁ n₂} hc hh hm :=
+  closed {n₁ n₂ : Nat} hc hh hm :=
     match n₁, n₂ with
     | _, 0 => trivial
     | 0, _ + 1 => absurd hm (by omega)

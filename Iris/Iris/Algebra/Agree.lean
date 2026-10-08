@@ -13,6 +13,8 @@ public import Iris.Algebra.IsOp
 
 namespace Iris
 
+variable {SI : Type _} [instSI : SIdx SI]
+
 /-!
 # The agreement camera
 
@@ -81,13 +83,15 @@ theorem map'_sameElems {f : α → β} {x y : Raw α} (h : SameElems x y) :
     obtain ⟨b, hb, rfl⟩ := ha
     exact ⟨b, by first | exact h.1 _ hb | exact h.2 _ hb, rfl⟩
 
-variable [OFE α]
+variable [OFE SI α]
+-- Step indices used by the `Raw` predicates below (module style: no default instance).
+variable {n m : SI}
 
-def dist (n : Nat) (x y : Raw α) : Prop :=
+def dist (n : SI) (x y : Raw α) : Prop :=
   (∀ a ∈ x.car, ∃ b ∈ y.car, a ≡{n}≡ b) ∧
   (∀ b ∈ y.car, ∃ a ∈ x.car, a ≡{n}≡ b)
 
-theorem dist_equiv : Equivalence (dist (α := α) n) where
+theorem dist_equiv : Equivalence (dist (SI := SI) (α := α) n) where
   refl := fun ⟨x, h⟩ => by
     refine ⟨?_, ?_⟩
     · intro a ha; exists a
@@ -121,39 +125,39 @@ theorem dist_lt {x y : Raw α} (h : dist n x y) (hlt : m < n) : dist m x y := by
     obtain ⟨a, ha, hd⟩ := h₂ b hb
     exact ⟨a, ha, OFE.Dist.lt hd hlt⟩
 
-theorem dist_of_sameElems {x y : Raw α} (h : SameElems x y) (n) : dist n x y :=
+theorem dist_of_sameElems {x y : Raw α} (h : SameElems x y) (n : SI) : dist n x y :=
   ⟨fun a ha => ⟨a, h.1 a ha, .rfl⟩, fun b hb => ⟨b, h.2 b hb, .rfl⟩⟩
 
-def validN (n : Nat) (x : Raw α) : Prop :=
+def validN (n : SI) (x : Raw α) : Prop :=
   match x.car with
   | [_] => True
   | _ => ∀ a ∈ x.car, ∀ b ∈ x.car, a ≡{n}≡ b
 
-theorem validN_iff {x : Raw α} :
+theorem validN_iff {n : SI} {x : Raw α} :
     x.validN n ↔ ∀ a ∈ x.car, ∀ b ∈ x.car, a ≡{n}≡ b := by
   rcases x with ⟨⟨⟩ | ⟨a, ⟨⟩| _⟩, _⟩ <;> simp_all [validN]
 
-theorem validN_congr {x y : Raw α} (h : SameElems x y) : validN n x ↔ validN n y := by
+theorem validN_congr {x y : Raw α} (h : SameElems x y) : validN (SI := SI) n x ↔ validN n y := by
   simp only [validN_iff]
   exact ⟨fun hv a ha b hb => hv a (h.2 a ha) b (h.2 b hb),
          fun hv a ha b hb => hv a (h.1 a ha) b (h.1 b hb)⟩
 
-def valid (x : Raw α) : Prop := ∀ n, x.validN n
+def valid (x : Raw α) : Prop := ∀ (n : SI), x.validN n
 
-theorem op_comm {x y : Raw α} : ∀ n, dist n (op x y) (op y x) := by
+theorem op_comm {x y : Raw α} : ∀ (n : SI), dist n (op x y) (op y x) := by
   intro n; simp_all only [dist, op, List.mem_append]
   refine ⟨?_, ?_⟩ <;> exact fun _ ha => ⟨_, ha.symm, .rfl⟩
 
-theorem op_commN {x y : Raw α} : dist n (op x y) (op y x) := op_comm n
+theorem op_commN {x y : Raw α} : dist (SI := SI) n (op x y) (op y x) := op_comm n
 
-theorem op_assoc {x y z : Raw α} : ∀ n, dist n (op x (op y z)) (op (op x y) z) := by
+theorem op_assoc {x y z : Raw α} : ∀ (n : SI), dist n (op x (op y z)) (op (op x y) z) := by
   intro n; simp_all only [dist, op, List.mem_append, List.append_assoc]
   refine ⟨?_, ?_⟩ <;> (intro a ha; exists a)
 
-theorem idemp {x : Raw α} : ∀ n, dist n (op x x) x := by
+theorem idemp {x : Raw α} : ∀ (n : SI), dist n (op x x) x := by
   intro n; refine ⟨?_, ?_⟩ <;> (intro a ha; exists a; simp_all [op])
 
-theorem validN_ne {x y : Raw α} : dist n x y → x.validN n → y.validN n := by
+theorem validN_ne {x y : Raw α} : dist (SI := SI) n x y → x.validN n → y.validN n := by
   simp only [dist, validN_iff, and_imp]
   intro h₁ h₂ hn a ha b hb
   have ⟨a', ha', ha'a⟩ := h₂ _ ha
@@ -161,15 +165,15 @@ theorem validN_ne {x y : Raw α} : dist n x y → x.validN n → y.validN n := b
   have ha'b' := hn _ ha' _ hb'
   exact ha'a.symm.trans (ha'b'.trans hb'b)
 
-theorem validN_succ {x : Raw α} : x.validN (n + 1) → x.validN n := by
-  simp only [validN_iff]; intro hsuc a ha b hb
-  exact OFE.dist_lt (hsuc a ha b hb) (by omega)
+theorem validN_le {x : Raw α} {n n' : SI} (h : x.validN n) (hle : n' ≤ n) : x.validN n' := by
+  simp only [validN_iff] at h ⊢; intro a ha b hb
+  exact OFE.Dist.le (h a ha b hb) hle
 
-theorem validN_op_left {x y : Raw α} : (op x y).validN n → x.validN n := by
+theorem validN_op_left {x y : Raw α} : (op x y).validN n → x.validN (SI := SI) n := by
   simp only [op, validN_iff, List.mem_append]
   exact fun h a ha b hb => h _ (.inl ha) _ (.inl hb)
 
-theorem op_ne {x y₁ y₂ : Raw α} (h : dist n y₁ y₂) : dist n (op x y₁) (op x y₂) := by
+theorem op_ne {x y₁ y₂ : Raw α} (h : dist (SI := SI) n y₁ y₂) : dist n (op x y₁) (op x y₂) := by
   obtain ⟨heq₁, heq₂⟩ := h
   simp only [dist, op, List.mem_append]
   refine ⟨?_, ?_⟩
@@ -182,12 +186,12 @@ theorem op_ne {x y₁ y₂ : Raw α} (h : dist n y₁ y₂) : dist n (op x y₁)
     · obtain ⟨b, hb, heq⟩ := heq₂ _ hy
       exists b; simp_all
 
-theorem op_ne₂ {x₁ x₂ y₁ y₂ : Raw α} (hx : dist n x₁ x₂) (hy : dist n y₁ y₂) :
+theorem op_ne₂ {x₁ x₂ y₁ y₂ : Raw α} (hx : dist (SI := SI) n x₁ x₂) (hy : dist n y₁ y₂) :
     dist n (op x₁ y₁) (op x₂ y₂) :=
   dist_equiv.trans (op_ne hy) <| dist_equiv.trans (op_comm n) <|
     dist_equiv.trans (op_ne hx) (op_comm n)
 
-theorem op_invN {x y : Raw α} : (op x y).validN n → dist n x y := by
+theorem op_invN {x y : Raw α} : (op x y).validN n → dist (SI := SI) n x y := by
   simp only [op, validN_iff, List.mem_append, dist]
   intro h; refine ⟨?_, ?_⟩
   · intro a ha
@@ -197,7 +201,7 @@ theorem op_invN {x y : Raw α} : (op x y).validN n → dist n x y := by
     obtain ⟨b, hb⟩ := mem x
     exists b; simp_all
 
-theorem op_inv {x y : Raw α} : (op x y).valid → ∀ n, dist n x y := by
+theorem op_inv {x y : Raw α} : (op x y).valid (SI := SI) → ∀ (n : SI), dist n x y := by
   simp only [valid]
   intro h n
   exact op_invN (h n)
@@ -205,10 +209,10 @@ theorem op_inv {x y : Raw α} : (op x y).valid → ∀ n, dist n x y := by
 @[simp] theorem toAgree_validN {a : α} : (toAgree a).validN n := by
   simp [validN, toAgree]
 
-theorem toAgree_injN {a b : α} : dist n (toAgree a) (toAgree b) → a ≡{n}≡ b := by
+theorem toAgree_injN {n : SI} {a b : α} : dist n (toAgree a) (toAgree b) → a ≡{n}≡ b := by
   intro ⟨h₁, h₂⟩; simp_all [toAgree]
 
-theorem toAgree_uninjN {x : Raw α} : x.validN n → ∃ a, dist n (toAgree a) x := by
+theorem toAgree_uninjN {x : Raw α} : x.validN (SI := SI) n → ∃ a, dist n (toAgree a) x := by
   rw [validN_iff]
   obtain ⟨a, ha⟩ := mem x
   intro h; exists a
@@ -216,7 +220,7 @@ theorem toAgree_uninjN {x : Raw α} : x.validN n → ∃ a, dist n (toAgree a) x
   · exists a; simp_all [toAgree]
   · simp_all [toAgree]
 
-theorem toAgree_uninj {x : Raw α} : x.valid → ∃ a, ∀ n, dist n (toAgree a) x := by
+theorem toAgree_uninj {x : Raw α} : x.valid (SI := SI) → ∃ a, ∀ (n : SI), dist (SI := SI) n (toAgree a) x := by
   simp only [valid, validN_iff]
   obtain ⟨a, ha⟩ := mem x
   intro h; exists a; intro n
@@ -224,9 +228,9 @@ theorem toAgree_uninj {x : Raw α} : x.valid → ∃ a, ∀ n, dist n (toAgree a
   · exists a; simp_all [toAgree]
   · simp_all [toAgree]
 
-variable [OFE β] {f : α → β}
+variable [OFE SI β] {f : α → β}
 
-theorem map'_ne [OFE.NonExpansive f] {x₁ x₂ : Raw α} (h : dist n x₁ x₂) :
+theorem map'_ne [OFE.NonExpansive SI f] {x₁ x₂ : Raw α} (h : dist (SI := SI) n x₁ x₂) :
     dist n (map' f x₁) (map' f x₂) := by
   refine ⟨?_, ?_⟩
   · simp only [map', List.mem_map, forall_exists_index, and_imp, forall_apply_eq_imp_iff₂]
@@ -238,23 +242,23 @@ theorem map'_ne [OFE.NonExpansive f] {x₁ x₂ : Raw α} (h : dist n x₁ x₂)
     obtain ⟨b, hb, heq⟩ := h.2 a ha
     exact ⟨f b, ⟨b, hb, rfl⟩, OFE.NonExpansive.ne heq⟩
 
-theorem map'_validN [OFE.NonExpansive f] {x : Raw α} (h : x.validN n) : (map' f x).validN n := by
+theorem map'_validN [OFE.NonExpansive SI f] {x : Raw α} (h : x.validN (SI := SI) n) : (map' f x).validN n := by
   rw [validN_iff] at h ⊢
   simp only [map'_car, List.mem_map, forall_exists_index, and_imp, forall_apply_eq_imp_iff₂]
   exact fun a ha b hb => OFE.NonExpansive.ne (h a ha b hb)
 
-theorem discrete_0 [OFE.Discrete α] {x y : Raw α} (h : dist 0 x y) (n) : dist n x y := by
+theorem discrete_0 [OFE.Discrete SI α] {x y : Raw α} (h : dist (0 : SI) x y) (n : SI) : dist n x y := by
   refine ⟨fun a ha => ?_, fun b hb => ?_⟩
   · obtain ⟨b, hb, heq⟩ := h.1 a ha; exact ⟨b, hb, OFE.discrete_n heq⟩
   · obtain ⟨a, ha, heq⟩ := h.2 b hb; exact ⟨a, ha, OFE.discrete_n heq⟩
 
-theorem discrete_valid [OFE.Discrete α] {x : Raw α} (h : x.validN 0) : x.valid := by
+theorem discrete_valid [OFE.Discrete SI α] {x : Raw α} (h : x.validN (0 : SI)) : x.valid (SI := SI) := by
   rw [validN_iff] at h
   intro n; rw [validN_iff]
   exact fun a ha b hb => OFE.discrete_n (h a ha b hb)
 
-theorem toAgree_discrete {a : α} [Ha : OFE.DiscreteE a] {y : Raw α}
-    (h : dist 0 (toAgree a) y) (n) : dist n (toAgree a) y := by
+theorem toAgree_discrete {a : α} [Ha : OFE.DiscreteE SI a] {y : Raw α}
+    (h : dist (0 : SI) (toAgree a) y) (n : SI) : dist n (toAgree a) y := by
   refine ⟨fun x hx => ?_, fun c hc => ?_⟩
   · rw [show x = a from by simpa [toAgree] using hx]
     obtain ⟨b, hb, hd⟩ := h.1 a (by simp [toAgree])
@@ -265,25 +269,30 @@ theorem toAgree_discrete {a : α} [Ha : OFE.DiscreteE a] {y : Raw α}
 
 /-- A list has only finitely many elements to choose from, so a point that is `n`-close to some
 element of `l` for every `n` is `≡`-equal to a single one of them, hence (by Leibniz) a member. -/
-theorem mem_of_forall_dist {a : α} {l : List α} (h : ∀ n, ∃ b ∈ l, a ≡{n}≡ b) : a ∈ l := by
+theorem mem_of_forall_dist {a : α} {l : List α} (h : ∀ (n : SI), ∃ b ∈ l, a ≡{n}≡ b) : a ∈ l := by
   induction l with
   | nil => simpa using h 0
   | cons c l ih =>
     by_cases hc : a = c
     · exact hc ▸ List.mem_cons_self
     · refine List.mem_cons_of_mem _ (ih fun n => ?_)
-      obtain ⟨n₀, hn₀⟩ := Classical.not_forall.mp fun hall => hc (OFE.eq_dist_2 hall)
-      obtain ⟨b, hb, hd⟩ := h (max n n₀)
-      rcases List.mem_cons.mp hb with rfl | hb'
-      · exact absurd (hd.le (Nat.le_max_right n n₀)) hn₀
-      · exact ⟨b, hb', hd.le (Nat.le_max_left n n₀)⟩
+      obtain ⟨n₀, hn₀⟩ := Classical.not_forall.mp fun hall => hc (OFE.eq_dist_2 (SI := SI) hall)
+      rcases SIdx.le_total (n := n) (m := n₀) with hle | hle
+      · obtain ⟨b, hb, hd⟩ := h n₀
+        rcases List.mem_cons.mp hb with rfl | hb'
+        · exact absurd hd hn₀
+        · exact ⟨b, hb', hd.le hle⟩
+      · obtain ⟨b, hb, hd⟩ := h n
+        rcases List.mem_cons.mp hb with rfl | hb'
+        · exact absurd (hd.le hle) hn₀
+        · exact ⟨b, hb', hd⟩
 
-theorem sameElems_of_dist {x y : Raw α} (h : ∀ n, dist n x y) : SameElems x y :=
+theorem sameElems_of_dist {x y : Raw α} (h : ∀ (n : SI), dist n x y) : SameElems x y :=
   have key : ∀ {x y : Raw α}, (∀ n, dist n x y) → ∀ a ∈ x.car, a ∈ y.car :=
     fun h _ ha => mem_of_forall_dist fun n => (h n).1 _ ha
   ⟨key h, key (fun n => Raw.dist_equiv.symm (h n))⟩
 
-theorem sameElems_iff_dist {x y : Raw α} : SameElems x y ↔ ∀ n, dist n x y :=
+theorem sameElems_iff_dist {x y : Raw α} : SameElems x y ↔ ∀ (n : SI), dist n x y :=
   ⟨dist_of_sameElems, sameElems_of_dist⟩
 
 end Agree.Raw
@@ -355,94 +364,101 @@ end Agree
 namespace Agree
 open ORA
 
-variable [OFE α] [OFE β]
+variable [OFE SI α] [OFE SI β]
 
 @[rocq_alias agree_ofe_mixin]
-instance instOFE : OFE (Agree α) :=
+instance instOFE : OFE SI (Agree α) :=
   OFE.ofQuotient Raw.dist Raw.dist_equiv Raw.dist_lt fun _ _ => Raw.sameElems_iff_dist
 
 #rocq_ignore agreeO "Use Agree with a typeclass instance instead."
 #rocq_ignore agree_equiv "Defined in Agree OFE instance."
 
-def validN (n : Nat) : Agree α → Prop :=
+def validN (n : SI) : Agree α → Prop :=
   lift (Raw.validN n) (fun _ _ h => propext (Raw.validN_congr h))
 
 @[rocq_alias agree_validN_def]
-theorem validN_iff {x : Agree α} : validN n x ↔ ∀ a ∈ x, ∀ b ∈ x, a ≡{n}≡ b :=
+theorem validN_iff {n : SI} {x : Agree α} : validN n x ↔ ∀ a ∈ x, ∀ b ∈ x, a ≡{n}≡ b :=
   x.ind fun _ => Raw.validN_iff
 
 def valid : Agree α → Prop :=
-  lift Raw.valid fun _ _ h => propext
+  lift (Raw.valid (SI := SI)) fun _ _ h => propext
     ⟨fun hv m => (Raw.validN_congr h).mp (hv m), fun hv m => (Raw.validN_congr h).mpr (hv m)⟩
 
 @[simp, rocq_alias agree_dist]
-theorem dist_mk {n} {x y : Raw α} : mk x ≡{n}≡ mk y ↔ Raw.dist n x y := .rfl
-@[simp] theorem validN_mk {n} {x : Raw α} : validN n (mk x) ↔ x.validN n := .rfl
-@[simp] theorem valid_mk {x : Raw α} : valid (mk x) ↔ x.valid := .rfl
+theorem dist_mk {n : SI} {x y : Raw α} : mk x ≡{n}≡ mk y ↔ Raw.dist n x y := .rfl
+@[simp] theorem validN_mk {n : SI} {x : Raw α} : validN n (mk x) ↔ x.validN n := .rfl
+@[simp] theorem valid_mk {x : Raw α} : valid (SI := SI) (mk x) ↔ x.valid (SI := SI) := .rfl
 
 @[rocq_alias agree_comm]
 theorem op_comm {x y : Agree α} : op x y = op y x :=
-  OFE.eq_dist_2 (ind₂ (fun _ _ => Raw.op_comm) x y)
+  ind₂ (fun _ _ => sound
+    ⟨fun _ h => by simp only [Raw.op, List.mem_append] at h ⊢; exact h.symm,
+     fun _ h => by simp only [Raw.op, List.mem_append] at h ⊢; exact h.symm⟩) x y
 
-theorem op_commN {x y : Agree α} : op x y ≡{n}≡ op y x := op_comm.dist
+theorem op_commN {n : SI} {x y : Agree α} : op x y ≡{n}≡ op y x := op_comm.dist
 
 @[rocq_alias agree_assoc]
 theorem op_assoc {x y z : Agree α} : op x (op y z) = op (op x y) z :=
-  OFE.eq_dist_2 (ind₃ (fun _ _ _ => Raw.op_assoc) x y z)
+  ind₃ (fun _ _ _ => sound
+    ⟨fun _ h => by simp only [Raw.op, List.mem_append] at h ⊢; exact or_assoc.mpr h,
+     fun _ h => by simp only [Raw.op, List.mem_append] at h ⊢; exact or_assoc.mp h⟩) x y z
 
 theorem op_idemp {x : Agree α} : op x x = x :=
-  OFE.eq_dist_2 (x.ind fun _ => Raw.idemp)
+  x.ind fun _ => sound
+    ⟨fun _ h => by simp only [Raw.op, List.mem_append] at h; exact h.elim id id,
+     fun _ h => by simp only [Raw.op, List.mem_append]; exact .inl h⟩
+
+/-- The operation and core as step-index-free data instances (Mathlib-style). -/
+instance instOp : Op (Agree α) := ⟨op, op_assoc, op_comm⟩
+instance instPCore : PCore (Agree α) := ⟨some, fun _ => rfl⟩
 
 @[rocq_alias agree_validN_ne]
-theorem validN_ne {x y : Agree α} : x ≡{n}≡ y → validN n x → validN n y :=
+theorem validN_ne {n : SI} {x y : Agree α} : x ≡{n}≡ y → validN n x → validN n y :=
   ind₂ (fun _ _ => Raw.validN_ne) x y
 
-theorem validN_succ {x : Agree α} : validN (n + 1) x → validN n x :=
-  x.ind fun _ => Raw.validN_succ
+theorem validN_le {x : Agree α} {n n' : SI} (h : validN n x) (hle : n' ≤ n) : validN n' x :=
+  x.ind (motive := fun x => validN n x → validN n' x) (fun _ h => Raw.validN_le h hle) h
 
-theorem validN_op_left {x y : Agree α} : validN n (op x y) → validN n x :=
+theorem validN_op_left {x y : Agree α} : validN n (op x y) → validN (SI := SI) n x :=
   ind₂ (fun _ _ => Raw.validN_op_left) x y
 
 @[rocq_alias agree_op_ne']
-theorem op_ne {x : Agree α} : OFE.NonExpansive (op x) :=
+theorem op_ne {x : Agree α} : OFE.NonExpansive SI (op x) :=
   ⟨fun {_} y₁ y₂ => ind₃ (fun _ _ _ h => Raw.op_ne (dist_mk.mp h)) x y₁ y₂⟩
 
 @[rocq_alias agree_op_ne]
-theorem op_ne₂ : OFE.NonExpansive₂ (op (α := α)) := by
-  refine ⟨fun {n} x₁ x₂ hx y₁ y₂ hy => ?_⟩
+theorem op_ne₂ : OFE.NonExpansive₂ SI (op (α := α)) := by
+  refine ⟨fun {n : SI} x₁ x₂ hx y₁ y₂ hy => ?_⟩
   exact op_ne.ne hy |>.trans op_commN |>.trans (op_ne.ne hx) |>.trans op_commN
 
 @[rocq_alias agree_op_invN]
-theorem op_invN {x y : Agree α} : validN n (op x y) → x ≡{n}≡ y :=
+theorem op_invN {n : SI} {x y : Agree α} : validN n (op x y) → x ≡{n}≡ y :=
   ind₂ (fun _ _ => Raw.op_invN) x y
 
 @[rocq_alias agree_op_inv]
-theorem op_inv {x y : Agree α} : valid (op x y) → x = y :=
-  ind₂ (fun _ _ h => OFE.eq_dist_2 (Raw.op_inv h)) x y
+theorem op_inv {x y : Agree α} : valid (SI := SI) (op x y) → x = y :=
+  ind₂ (fun _ _ h => OFE.eq_dist_2 (SI := SI) (Raw.op_inv h)) x y
 
-@[instance_reducible] def cmraData : CMRAData (Agree α) where
-  pcore := some
-  op := op
+@[instance_reducible] def cmraData : CMRAData SI (Agree α) where
+  toOp := instOp
+  toPCore := instPCore
   ValidN := validN
-  Valid := valid
+  Valid := valid (SI := SI)
   op_ne := op_ne
-  pcore_ne := by simp
+  pcore_ne h hx := ⟨_, rfl, (Option.some.inj hx) ▸ h⟩
   validN_ne := validN_ne
   valid_iff_validN := fun {x} => x.ind fun _ => .rfl
-  validN_succ := validN_succ
-  assoc := op_assoc
-  comm := op_comm
+  validN_le := validN_le
   pcore_op_left := fun {x cx} h => by obtain rfl := Option.some.inj h; exact op_idemp
-  pcore_idem := fun {x cx} h => by obtain rfl := Option.some.inj h; exact rfl
   validN_op_left := validN_op_left
-  extend {n x y₁ y₂ hval heq₁} := by
+  extend {n : SI} {x y₁ y₂ hval heq₁} := by
     have heq₂ := op_invN (validN_ne heq₁ hval)
     have heq₃ : op y₁ y₂ ≡{n}≡ y₁ := op_ne.ne heq₂.symm |>.trans op_idemp.dist
     exact ⟨x, x, op_idemp.symm, heq₁.trans heq₃, heq₁.trans heq₃ |>.trans heq₂⟩
   pcore_op_mono := fun {x cx} h y => by obtain rfl := Option.some.inj h; exact ⟨y, rfl⟩
 
 @[rocq_alias agree_cmra_mixin]
-instance instORA : CMRA (Agree α) := ofCMRAData Agree.cmraData
+instance instORA : CMRA SI (Agree α) := ofCMRAData Agree.cmraData
 
 #rocq_ignore agreeR "Use the plain Agree type with a typeclass instance instead."
 #rocq_ignore agree_op_instance "Use the CMRA instance instead."
@@ -451,8 +467,8 @@ instance instORA : CMRA (Agree α) := ofCMRAData Agree.cmraData
 #rocq_ignore agree_valid_instance "Use the CMRA instance instead."
 
 theorem op_def {x y : Agree α} : x • y = op x y := rfl
-theorem validN_def {x : Agree α} : ✓{n} x ↔ validN n x := .rfl
-theorem valid_def {x : Agree α} : ✓ x ↔ valid x := .rfl
+theorem validN_def {n : SI} {x : Agree α} : ✓{n} x ↔ validN n x := .rfl
+theorem valid_def {x : Agree α} : ✓[SI] x ↔ valid (SI := SI) x := .rfl
 
 @[rocq_alias agree_pcore]
 theorem pcore_some {x : Agree α} : pcore x = some x := rfl
@@ -469,15 +485,15 @@ theorem idemp {x : Agree α} : x • x = x := op_idemp
 #rocq_ignore to_agree_op_invN "Use the general Agree.op_invN theorem"
 #rocq_ignore to_agree_op_inv "Use the general Agree.op_inv theorem"
 
-instance instDiscrete [OFE.Discrete α] : OFE.Discrete (Agree α) where
+instance instDiscrete [OFE.Discrete SI α] : OFE.Discrete SI (Agree α) where
   discrete_0 {x y} := ind₂ (fun _ _ h => OFE.eq_dist_2 (Raw.discrete_0 h)) x y
 
 @[rocq_alias agree_cmra_discrete]
-instance instORADiscrete [OFE.Discrete α] : ORA.Discrete (Agree α) where
-  discrete_valid {x} := x.ind fun _ => Raw.discrete_valid
+instance instORADiscrete [OFE.Discrete SI α] : ORA.Discrete SI (Agree α) where
+  discrete_valid {x} := x.ind fun _ => Raw.discrete_valid (SI := SI)
   discrete_ord := CMRA.ord_of_ord0
 
-theorem ordN {x y : Agree α} : x ≼ₒ{n} y ↔ y ≡{n}≡ y • x := by
+theorem ordN {n : SI} {x y : Agree α} : x ≼ₒ{n} y ↔ y ≡{n}≡ y • x := by
   refine ⟨fun ⟨z, h⟩ => ?_, fun h => ⟨y, h.trans op_commN⟩⟩
   calc
     y ≡{n}≡ x • z := h
@@ -487,15 +503,18 @@ theorem ordN {x y : Agree α} : x ≼ₒ{n} y ↔ y ≡{n}≡ y • x := by
     _ ≡{n}≡ y • x := op_commN
 
 @[rocq_alias agree_includedN]
-theorem includedN {x y : Agree α} : x ≼{n} y ↔ y ≡{n}≡ y • x := incN_iff_ordN.trans ordN
+theorem includedN {n : SI} {x y : Agree α} : x ≼{n} y ↔ y ≡{n}≡ y • x := incN_iff_ordN.trans ordN
 
-theorem ord {x y : Agree α} : x ≼ₒ y ↔ y = y • x :=
+theorem ord {x y : Agree α} : x ≼ₒ[SI] y ↔ y = y • x :=
   ⟨fun ⟨z, h⟩ => OFE.eq_dist_2 fun _ => ordN.mp ⟨z, h.dist⟩, fun h => ⟨y, h.trans op_comm⟩⟩
 
 @[rocq_alias agree_included]
-theorem included {x y : Agree α} : x ≼ y ↔ y = y • x := inc_iff_ord.trans ord
+theorem included {x y : Agree α} : x ≼ y ↔ y = y • x :=
+  ⟨fun ⟨z, hz⟩ => by
+    subst hz; show op x z = op (op x z) x; rw [op_comm (x := op x z), op_assoc, op_idemp],
+   fun h => ⟨y, h.trans op_comm⟩⟩
 
-theorem valid_ordN {x y : Agree α} : ✓{n} y → x ≼ₒ{n} y → x ≡{n}≡ y := by
+theorem valid_ordN {n : SI} {x y : Agree α} : ✓{n} y → x ≼ₒ{n} y → x ≡{n}≡ y := by
   intro hval ⟨z, heq⟩
   calc
     x ≡{n}≡ x • x := idemp.dist.symm
@@ -503,20 +522,20 @@ theorem valid_ordN {x y : Agree α} : ✓{n} y → x ≼ₒ{n} y → x ≡{n}≡
     _ ≡{n}≡ y := heq.symm
 
 @[rocq_alias agree_valid_includedN]
-theorem valid_includedN {x y : Agree α} : ✓{n} y → x ≼{n} y → x ≡{n}≡ y :=
+theorem valid_includedN {n : SI} {x y : Agree α} : ✓{n} y → x ≼{n} y → x ≡{n}≡ y :=
   fun hv h => valid_ordN hv (incN_iff_ordN.mp h)
 
-theorem valid_ord {x y : Agree α} : ✓ y → x ≼ₒ y → x = y := by
+theorem valid_ord {x y : Agree α} : ✓[SI] y → x ≼ₒ[SI] y → x = y := by
   intro hval ⟨z, heq⟩
-  have hz : x = z := op_inv (heq ▸ hval : ✓ (x • z))
+  have hz : x = z := op_inv (heq ▸ hval : ✓[SI] (x • z))
   rw [heq, ← hz, idemp]
 
 @[rocq_alias agree_valid_included]
-theorem valid_included {x y : Agree α} : ✓ y → x ≼ y → x = y :=
+theorem valid_included {x y : Agree α} : ✓[SI] y → x ≼ y → x = y :=
   fun hv h => valid_ord hv (inc_iff_ord.mp h)
 
 set_option synthInstance.checkSynthOrder false in
-instance {x : Agree α} : IsOp d x x x where
+instance {x : Agree α} : IsOp SI d x x x where
   is_op := idemp.symm
 
 end Agree
@@ -528,45 +547,45 @@ theorem toAgree_def {a : α} : toAgree a = Agree.mk (Agree.Raw.toAgree a) := rfl
 
 section
 
-variable [OFE α]
+variable [OFE SI α]
 
 @[rocq_alias to_agree_ne]
-instance instNonExpansive_toAgree : OFE.NonExpansive (@toAgree α) where
+instance instNonExpansive_toAgree : OFE.NonExpansive SI (@toAgree α) where
   ne n x₁ x₂ heq := by refine ⟨?_, ?_⟩ <;> simp_all [Agree.Raw.toAgree]
 
 #rocq_ignore to_agree_proper "Derivable from instNonExpansive_toAgree with NonExpansive.eqv"
 
 @[rocq_alias to_agree_injN]
-theorem Agree.toAgree_injN {a b : α} : toAgree a ≡{n}≡ toAgree b → a ≡{n}≡ b :=
+theorem Agree.toAgree_injN {n : SI} {a b : α} : toAgree a ≡{n}≡ toAgree b → a ≡{n}≡ b :=
   Raw.toAgree_injN
 
 @[rocq_alias to_agree_inj]
-theorem Agree.toAgree_inj {a b : α} : toAgree a = toAgree b → a = b :=
-  fun heq => OFE.eq_dist_2 fun _ => toAgree_injN heq.dist
+theorem Agree.toAgree_inj [OFE SI α] {a b : α} : toAgree a = toAgree b → a = b :=
+  fun heq => OFE.eq_dist_2 (SI := SI) fun _ => toAgree_injN heq.dist
 
-@[simp] theorem Agree.toAgree_validN {a : α} : ✓{n} toAgree a := Raw.toAgree_validN (a := a) (n := n)
+@[simp] theorem Agree.toAgree_validN {n : SI} {a : α} : ✓{n} toAgree a := Raw.toAgree_validN (a := a) (n := n)
 
-@[simp] theorem Agree.toAgree_valid {a : α} : ✓ toAgree a :=
+@[simp] theorem Agree.toAgree_valid {a : α} : ✓[SI] toAgree a :=
   fun m => Agree.toAgree_validN (a := a) (n := m)
 
 @[rocq_alias to_agree_uninjN]
-theorem Agree.toAgree_uninjN {x : Agree α} : ✓{n} x → ∃ a, toAgree a ≡{n}≡ x :=
+theorem Agree.toAgree_uninjN {n : SI} {x : Agree α} : ✓{n} x → ∃ a, toAgree a ≡{n}≡ x :=
   x.ind fun _ h => Raw.toAgree_uninjN h
 
 @[rocq_alias to_agree_uninj]
-theorem Agree.toAgree_uninj {x : Agree α} : ✓ x → ∃ a, toAgree a = x :=
+theorem Agree.toAgree_uninj {x : Agree α} : ✓[SI] x → ∃ a, toAgree a = x :=
   x.ind fun _ h => (Raw.toAgree_uninj h).imp fun _ h => OFE.eq_dist_2 fun n => h n
 
-instance toAgree.ne : OFE.NonExpansive (toAgree : α → Agree α) := instNonExpansive_toAgree
+instance toAgree.ne : OFE.NonExpansive SI (toAgree : α → Agree α) := instNonExpansive_toAgree
 
-theorem toAgree.inj {a1 a2 : α} {n} (H : toAgree a1 ≡{n}≡ toAgree a2) : a1 ≡{n}≡ a2 :=
+theorem toAgree.inj {a1 a2 : α} {n : SI} (H : toAgree a1 ≡{n}≡ toAgree a2) : a1 ≡{n}≡ a2 :=
   Agree.toAgree_injN H
 
 namespace Agree
 open ORA
 
 @[rocq_alias agree_cancelable]
-instance {x : Agree α} : Cancelable x where
+instance {x : Agree α} : Cancelable SI x where
   cancelableN hval heq :=
     (Agree.op_invN hval).symm.trans (Agree.op_invN ((OFE.Dist.validN heq).mp hval))
 
@@ -575,7 +594,7 @@ instance (x : Agree α) : CoreId x where
   core_id := pcore_some
 
 @[simp]
-theorem toAgree_ordN {a b : α} : toAgree a ≼ₒ{n} toAgree b ↔ a ≡{n}≡ b := by
+theorem toAgree_ordN {n : SI} {a b : α} : toAgree a ≼ₒ{n} toAgree b ↔ a ≡{n}≡ b := by
   refine ⟨?_, ?_⟩ <;> intro h
   · exact toAgree_injN (valid_ordN trivial h)
   · exists toAgree a
@@ -584,25 +603,30 @@ theorem toAgree_ordN {a b : α} : toAgree a ≼ₒ{n} toAgree b ↔ a ≡{n}≡ 
       _         ≡{n}≡ toAgree a • toAgree a := idemp.dist.symm
 
 @[simp, rocq_alias to_agree_includedN]
-theorem toAgree_includedN {a b : α} : toAgree a ≼{n} toAgree b ↔ a ≡{n}≡ b :=
+theorem toAgree_includedN {n : SI} {a b : α} : toAgree a ≼{n} toAgree b ↔ a ≡{n}≡ b :=
   incN_iff_ordN.trans toAgree_ordN
 
 @[simp]
-theorem toAgree_ord {a b : α} : toAgree a ≼ₒ toAgree b ↔ a = b := by
+theorem toAgree_ord {a b : α} : toAgree a ≼ₒ[SI] toAgree b ↔ a = b := by
   refine ⟨?_, ?_⟩ <;> intro h
-  · exact toAgree_inj (valid_ord (fun _ => trivial) h)
+  · exact toAgree_inj (SI := SI) (valid_ord (SI := SI) (fun _ => trivial) h)
   · exists toAgree a
     calc
       toAgree b = toAgree a := congrArg toAgree h.symm
-      _         = toAgree a • toAgree a := (pcore_op_left rfl).symm
+      _         = toAgree a • toAgree a := op_idemp.symm
 
 @[simp, rocq_alias to_agree_included]
-theorem toAgree_included {a b : α} : toAgree a ≼ toAgree b ↔ a = b := inc_iff_ord.trans toAgree_ord
+theorem toAgree_included {a b : α} : toAgree a ≼ toAgree b ↔ a = b := by
+  refine ⟨fun ⟨z, hz⟩ => ?_, fun h => h ▸ ⟨toAgree a, op_idemp.symm⟩⟩
+  have : a ∈ toAgree b := by
+    rw [hz]; induction z using ind with
+    | mk r => simp [toAgree, Raw.toAgree, Op.op, op, Raw.op]
+  simpa [toAgree, Raw.toAgree] using this
 
 #rocq_ignore to_agree_included_L "Use toAgree_included"
 
 @[rocq_alias to_agree_op_validN]
-theorem toAgree_op_validN_iff_dist {a b : α} :
+theorem toAgree_op_validN_iff_dist {n : SI} {a b : α} :
     ✓{n} (toAgree a • toAgree b) ↔ a ≡{n}≡ b := by
   refine ⟨?_, ?_⟩ <;> intro h
   · exact toAgree_injN (op_invN h)
@@ -614,15 +638,15 @@ theorem toAgree_op_validN_iff_dist {a b : α} :
 #rocq_ignore to_agree_op_valid "Use toAgree_op_valid_iff_eq"
 
 @[rocq_alias to_agree_discrete]
-instance toAgree.is_discrete {a : α} [OFE.DiscreteE a] : OFE.DiscreteE (toAgree a) where
+instance toAgree.is_discrete {a : α} [OFE.DiscreteE SI a] : OFE.DiscreteE SI (toAgree a) where
   discrete {y} := y.ind fun _ h => OFE.eq_dist_2 (Raw.toAgree_discrete h)
 
 end Agree
 
 @[rocq_alias to_agree_op_valid_L]
 theorem toAgree_op_valid_iff_eq {a : α} :
-    ✓ (toAgree a • toAgree b) ↔ a = b := by
-  rw [OFE.eq_dist]
+    ✓[SI] (toAgree a • toAgree b) ↔ a = b := by
+  rw [OFE.eq_dist (SI := SI)]
   simp [ORA.valid_iff_validN, Agree.toAgree_op_validN_iff_dist]
 
 #rocq_ignore to_agree_op_inv_L "Use toAgree_op_valid_iff_eq"
@@ -651,53 +675,53 @@ theorem Agree.map'_compose {f : α → β} {g : β → γ} (x : Agree α) :
     Agree.map' (g ∘ f) x = Agree.map' g (Agree.map' f x) :=
   x.ind fun _ => congrArg mk (Raw.ext (by simp [Raw.map'_car, List.map_map]))
 
-variable {α β γ : Type _} [OFE α] [OFE β] [OFE γ] {f : α → β} [hne : OFE.NonExpansive f]
+variable {α β γ : Type _} [OFE SI α] [OFE SI β] [OFE SI γ] {f : α → β} [hne : OFE.NonExpansive SI f]
 
 @[rocq_alias agree_map_ne]
-instance instNonExpansive_AgreeMap' : OFE.NonExpansive (Agree.map' f) where
+instance instNonExpansive_AgreeMap' : OFE.NonExpansive SI (Agree.map' f) where
   ne _ x y := Agree.ind₂ (fun _ _ h => Raw.map'_ne (Agree.dist_mk.mp h)) x y
 
 #rocq_ignore agree_map_proper "Derivable from instNonExpansive_AgreeMap' with NonExpansive.eqv"
 
 variable (f) in
 @[rocq_alias agree_map_morphism]
-def Agree.map : (Agree α) -C> (Agree β) := CMRA.Hom.toORA {
+def Agree.map : (Agree α) -C>[SI] (Agree β) := CMRA.Hom.toORA {
   f := map' f
   ne := instNonExpansive_AgreeMap'
   validN {_n x} := x.ind fun _ => Raw.map'_validN
   pcore _ := rfl
   op x y := ind₂ (fun _ _ => congrArg mk Raw.map'_op) x y }
 
-@[simp] theorem Agree.map_mk (f : α → β) [OFE.NonExpansive f] (x : Raw α) :
-    Agree.map f (mk x) = mk (Raw.map' f x) := rfl
+@[simp] theorem Agree.map_mk (f : α → β) [OFE.NonExpansive SI f] (x : Raw α) :
+    Agree.map (SI := SI) f (mk x) = mk (Raw.map' f x) := rfl
 
 @[rocq_alias agreeO_map]
-abbrev Agree.map_hom : (Agree α) -n> (Agree β) := (Agree.map f).toHom
+abbrev Agree.map_hom : (Agree α) -n>[SI] (Agree β) := (Agree.map (SI := SI) f).toHom
 
 @[rocq_alias agreeO_map_ne]
-theorem Agree.map_ne {f g : α → β} [OFE.NonExpansive f] [OFE.NonExpansive g] {x : Agree α}
-    (heq : ∀ a, f a ≡{n}≡ g a) : map f x ≡{n}≡ map g x :=
+theorem Agree.map_ne {n : SI} {f g : α → β} [OFE.NonExpansive SI f] [OFE.NonExpansive SI g] {x : Agree α}
+    (heq : ∀ a, f a ≡{n}≡ g a) : map (SI := SI) f x ≡{n}≡ map (SI := SI) g x :=
   x.ind fun _ => by
     refine dist_mk.mpr ⟨?_, ?_⟩ <;> simp only [Raw.map'_car, List.mem_map] <;> rintro _ ⟨a, ha, rfl⟩
     · exact ⟨g a, ⟨a, ha, rfl⟩, heq a⟩
     · exact ⟨f a, ⟨a, ha, rfl⟩, heq a⟩
 
 @[rocq_alias agree_map_ext]
-theorem Agree.agree_map_ext {f g : α → β} [OFE.NonExpansive f] [OFE.NonExpansive g] {x : Agree α}
-    (H : ∀ a, f a = g a) : map f x = map g x :=
+theorem Agree.agree_map_ext {f g : α → β} [OFE.NonExpansive SI f] [OFE.NonExpansive SI g] {x : Agree α}
+    (H : ∀ a, f a = g a) : map (SI := SI) f x = map (SI := SI) g x :=
   OFE.eq_dist_2 fun _ => map_ne (H · |>.dist)
 
 @[rocq_alias agree_map_id]
-theorem Agree.map_id (x : Agree α) : Agree.map id x = x :=
+theorem Agree.map_id (x : Agree α) : Agree.map (SI := SI) id x = x :=
   x.ind fun _ => congrArg mk (Raw.ext (by simp [Raw.map'_car]))
 
 @[rocq_alias agree_map_compose]
-theorem Agree.map_compose (f : α -n> β) (g : β -n> γ) (x : Agree α) :
-    Agree.map (g.comp f) x = Agree.map g (Agree.map f x) :=
+theorem Agree.map_compose (f : α -n>[SI] β) (g : β -n>[SI] γ) (x : Agree α) :
+    Agree.map (SI := SI) (g.comp f) x = Agree.map (SI := SI) g (Agree.map (SI := SI) f x) :=
   x.ind fun _ => congrArg mk (Raw.ext (by simp [Raw.map'_car, OFE.Hom.comp, List.map_map]))
 
 @[rocq_alias agree_map_to_agree]
-theorem Agree.map_toAgree {x : α} : Agree.map f (toAgree x) = toAgree (f x) :=
+theorem Agree.map_toAgree {x : α} : Agree.map (SI := SI) f (toAgree x) = toAgree (f x) :=
   congrArg mk (Raw.ext rfl)
 
 end agree_map
@@ -705,25 +729,25 @@ end agree_map
 section agree_rfunctor
 
 @[rocq_alias agreeRF]
-abbrev AgreeRF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
+abbrev AgreeRF (F : COFE.OFunctorPre SI) : COFE.OFunctorPre SI :=
   fun A B _ _ => Agree (F A B)
 
-instance {F} [COFE.OFunctor F] : RFunctor (AgreeRF F) where
-  map f g := Agree.map (COFE.OFunctor.map f g)
-  map_ne.ne _ _ _ Hx _ _ Hy _ := Agree.map_ne <| COFE.OFunctor.map_ne.ne Hx Hy
+instance {F} [COFE.OFunctor SI F] : RFunctor SI (AgreeRF F) where
+  map f g := Agree.map (SI := SI) (COFE.OFunctor.map f g)
+  map_ne.ne _ _ _ Hx _ _ Hy _ := Agree.map_ne (SI := SI) <| COFE.OFunctor.map_ne.ne Hx Hy
   map_id x := by
-    conv => right; rw [← (Agree.map_id x)]
-    exact Agree.agree_map_ext (fun a => COFE.OFunctor.map_id a)
+    conv => right; rw [← (Agree.map_id (SI := SI) x)]
+    exact Agree.agree_map_ext (SI := SI) (fun a => COFE.OFunctor.map_id (F := F) a)
   map_comp f g f' g' x := by
     rw [← Agree.map_compose]
-    exact Agree.agree_map_ext (fun a => COFE.OFunctor.map_comp f g f' g' a)
+    exact Agree.agree_map_ext (SI := SI) (fun a => COFE.OFunctor.map_comp (F := F) f g f' g' a)
 
-instance instRFunctorAffineAgreeRF {F} [COFE.OFunctor F] : RFunctorAffine (AgreeRF F) where
+instance instRFunctorAffineAgreeRF {F} [COFE.OFunctor SI F] : RFunctorAffine SI (AgreeRF F) where
   affine := inferInstance
 
 @[rocq_alias agreeRF_contractive]
-instance {F} [COFE.OFunctorContractive F] : RFunctorContractive (AgreeRF F) where
-  map_contractive.1 H _ := Agree.map_ne (COFE.OFunctorContractive.map_contractive.1 H)
+instance {F} [COFE.OFunctorContractive SI F] : RFunctorContractive SI (AgreeRF F) where
+  map_contractive.1 H _ := Agree.map_ne (SI := SI) (COFE.OFunctorContractive.map_contractive.1 H)
 
 end agree_rfunctor
 

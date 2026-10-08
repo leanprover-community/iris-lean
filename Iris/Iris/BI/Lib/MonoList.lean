@@ -140,7 +140,7 @@ instance {γ} {l : List α} q :
 @[rocq_alias mono_list_auth_own_agree]
 theorem auth_own_agree (γ : GName) (dq1 dq2 : DFrac) (l1 l2 : List α) :
     ⊢@{IProp GF} (γ ↪●ML{dq1} l1) -∗ (γ ↪●ML{dq2} l2) -∗
-      ⌜✓ (dq1 • dq2) ∧ l1 = l2⌝ := by
+      ⌜✓[Nat] (dq1 • dq2) ∧ l1 = l2⌝ := by
   unfold auth_own
   iintro H1 H2
   icases iOwn_cmraValid_op $$ [$H1 $H2] with %Hvalid
@@ -159,7 +159,7 @@ theorem auth_own_exclusive (γ : GName) (l1 l2 : List α) :
 
 @[rocq_alias mono_list_auth_lb_own_valid]
 theorem auth_lb_own_valid (γ : GName) (dq : DFrac) (l1 l2 : List α) :
-    ⊢@{IProp GF} (γ ↪●ML{dq} l1) -∗ (γ ↪◯ML l2) -∗ ⌜✓ dq ∧ l2 <+: l1⌝ := by
+    ⊢@{IProp GF} (γ ↪●ML{dq} l1) -∗ (γ ↪◯ML l2) -∗ ⌜✓[Nat] dq ∧ l2 <+: l1⌝ := by
   unfold auth_own lb_own
   iintro H1 H2
   icases iOwn_cmraValid_op $$ [$H1 $H2] with %Hvalid

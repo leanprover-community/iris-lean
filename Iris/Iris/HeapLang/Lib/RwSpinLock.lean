@@ -62,7 +62,7 @@ def releaseWriter : Val := hl_val%
 
 abbrev ReaderFracs := ListPerm Qp
 
-abbrev RwSpinLockF : COFE.OFunctorPre := constOF (Auth (LeibnizMultiSet ReaderFracs))
+abbrev RwSpinLockF : COFE.OFunctorPre Nat := constOF (Auth (SI := Nat) (LeibnizMultiSet ReaderFracs))
 
 @[rocq_alias heap_lang.rw_spin_lockG]
 class RwSpinLockG (GF : BundledGFunctors) where [elemG : ElemG GF RwSpinLockF]
@@ -80,7 +80,7 @@ variable {GF : BundledGFunctors} [HeapLangGS hlc GF] [RwSpinLockG GF]
 
 def rwLockN : Namespace := nroot .@ "rw_lock"
 
-abbrev own (γ : GName) (a : Auth (LeibnizMultiSet ReaderFracs)) : IProp GF :=
+abbrev own (γ : GName) (a : Auth (SI := Nat) (LeibnizMultiSet ReaderFracs)) : IProp GF :=
   iOwn (F := RwSpinLockF) γ a
 
 /-- The quarter kept while write-locked contradicts `readerLocked`; `writerLocked` owns the rest. -/
@@ -118,7 +118,7 @@ instance instWriterLockedTimeless (γ : GName) :
 
 @[rocq_alias heap_lang.auth_valid_gmultiset_singleton]
 theorem auth_valid_singleton {dq : DFrac} {v : Qp} {g : ReaderFracs}
-    (h : ✓ ((●{dq} .ofSet g : Auth (LeibnizMultiSet ReaderFracs)) •
+    (h : ✓[Nat] ((●{dq} .ofSet g : Auth (SI := Nat) (LeibnizMultiSet ReaderFracs)) •
       ◯ LeibnizMultiSet.ofSet {v})) : v ∈ g :=
   singleton_subset_iff.mp (included_iff_subset.mp (Auth.both_dfrac_valid_discrete.mp h).2.1)
 
@@ -253,7 +253,7 @@ theorem tryAcquireReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
         ◯ LeibnizMultiSet.ofSet {q.half} : Auth (LeibnizMultiSet ReaderFracs))) $$ Hauth with
       ⟨Hauth, Hview⟩
     · refine Auth.auth_update_alloc ?_
-      have h := localUpdate_alloc (X := g) (Y := (∅ : ReaderFracs)) (X' := {q.half})
+      have h := localUpdate_alloc (SI := Nat) (X := g) (Y := (∅ : ReaderFracs)) (X' := {q.half})
       rwa [disjUnion_empty_left] at h
     imod Hclose $$ [Hl Hauth HΦ] with -
     · iapply rwStateInv_readLocked (by omega) $$ [$]
@@ -308,7 +308,7 @@ theorem releaseReader_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) (q : Q
   icombine Hauth Hlocked as Hown
   imod iOwn_update (F := RwSpinLockF) (a' := ● .ofSet (g \ {q})) $$ Hown with Hown
   · refine Auth.auth_update_dealloc ?_
-    have h := localUpdate_dealloc (X := g) (X' := {q}) subset_refl
+    have h := localUpdate_dealloc (SI := Nat) (X := g) (X' := {q}) subset_refl
     rwa [difference_self] at h
   imod Hclose $$ [-Hφ] with -
   · inext

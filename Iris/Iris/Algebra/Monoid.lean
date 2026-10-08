@@ -6,10 +6,13 @@ Authors: Zongyuan Liu
 module
 
 public import Iris.Algebra.OFE
+public import Iris.Algebra.StepIndexFinite
 
 public section
 
 namespace Iris.Algebra
+
+variable {SI : Type _} [instSI : SIdx SI]
 
 /-! # Monoids for Big Operators
 
@@ -21,7 +24,7 @@ open OFE
 
 /-- A commutative monoid, used for big operators: the operation is associative, commutative, and
 has a left identity. Non-expansiveness of `op` is a separate `NonExpansive₂ op` assumption where it is
-needed (Mathlib-style: the class has no instance parameters). -/
+needed, so this class carries no step index (Mathlib-style: no instance parameters). -/
 @[rocq_alias Monoid]
 class MonoidOps {M : Type u} (op : M → M → M) (unit : outParam M) : Prop where
   /-- Associativity -/
@@ -64,16 +67,17 @@ theorem op_left_comm [MonoidOps op unit] {a b c : M} :
       _ = op b (op a c) := op_assoc
 
 /-- Non-expansiveness for dist. -/
-theorem op_dist [OFE M] [NonExpansive₂ op] (ha : a ≡{n}≡ a') (hb : b ≡{n}≡ b') :
+theorem op_dist {n : SI} [OFE SI M] [NonExpansive₂ SI op] (ha : a ≡{n}≡ a') (hb : b ≡{n}≡ b') :
     op a b ≡{n}≡ op a' b' := NonExpansive₂.ne ha hb
 
 end MonoidOps
 
 /-! ## Monoid Homomorphisms -/
 
+variable (SI) in
 /-- A weak monoid homomorphism preserves the operation but not necessarily the unit. -/
 @[rocq_alias WeakMonoidHomomorphism]
-class WeakMonoidHomomorphism {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M₂]
+class WeakMonoidHomomorphism {M₁ : Type u} {M₂ : Type v} [OFE SI M₁] [OFE SI M₂]
     (op₁ : M₁ → M₁ → M₁) (op₂ : M₂ → M₂ → M₂) (unit₁ : M₁) (unit₂ : M₂)
     [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
     (R : M₂ → M₂ → Prop) (f : M₁ → M₂) where
@@ -84,19 +88,20 @@ class WeakMonoidHomomorphism {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M�
   /-- The operation is proper with respect to R -/
   op_proper : ∀ {a a' b b' : M₂}, R a a' → R b b' → R (op₂ a b) (op₂ a' b')
   /-- The function is non-expansive -/
-  map_ne : NonExpansive f
+  map_ne : NonExpansive SI f
   /-- The homomorphism property -/
   map_op : ∀ {x y}, R (f (op₁ x y)) (op₂ (f x) (f y))
 
 #rocq_ignore weak_monoid_homomorphism_proper "OFE is Leibniz; use equality"
 
+variable (SI) in
 /-- A monoid homomorphism preserves both the operation and the unit. -/
 @[rocq_alias MonoidHomomorphism]
-class MonoidHomomorphism {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M₂]
+class MonoidHomomorphism {M₁ : Type u} {M₂ : Type v} [OFE SI M₁] [OFE SI M₂]
     (op₁ : M₁ → M₁ → M₁) (op₂ : M₂ → M₂ → M₂) (unit₁ : M₁) (unit₂ : M₂)
     [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
     (R : M₂ → M₂ → Prop) (f : M₁ → M₂)
-    extends WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R f where
+    extends WeakMonoidHomomorphism SI op₁ op₂ unit₁ unit₂ R f where
   /-- The unit is preserved -/
   map_unit : R (f unit₁) unit₂
 

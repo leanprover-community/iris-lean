@@ -23,7 +23,7 @@ abbrev BoolO := DiscreteO Bool
 
 variable (GF : BundledGFunctors)
 
-abbrev BoxF : OFunctorPre :=
+abbrev BoxF : OFunctorPre Nat :=
   ProdOF (AuthURF (OptionOF (ExclOF (constOF BoolO))))
     (OptionOF (AgreeRF (LaterOF IdOF)))
 
@@ -42,7 +42,7 @@ variable {GF : BundledGFunctors} [InvGS_gen hlc GF] [BoxG GF]
 abbrev SliceName := GName
 
 @[rocq_alias box_own_auth]
-def box_own_auth (γ : SliceName) (a : Auth (Option (Excl BoolO))) : IProp GF :=
+def box_own_auth (γ : SliceName) (a : Auth (SI := Nat) (Option (Excl BoolO))) : IProp GF :=
   iOwn (F := BoxF) γ (a, none)
 
 instance box_own_auth_timeless (γ : SliceName) (a : Auth (Option (Excl BoolO))) :
@@ -58,12 +58,12 @@ instance box_own_prop_persistent (γ : SliceName) (P : IProp GF) :
   unfold box_own_prop; infer_instance
 
 @[rocq_alias box_own_prop_contractive]
-instance box_own_prop_contractive (γ : SliceName) : Contractive (box_own_prop (GF := GF) γ) :=
+instance box_own_prop_contractive (γ : SliceName) : Contractive Nat (box_own_prop (GF := GF) γ) :=
   ⟨fun {_ _ _} h => iOwn_ne.ne <|
     dist_prod_ext Dist.rfl (toAgree.ne.ne (NextContractive.distLater_dist h))⟩
 
 @[rocq_alias box_own_prop_ne]
-instance box_own_prop_ne (γ : SliceName) : NonExpansive (box_own_prop (GF := GF) γ) := ne_of_contractive _
+instance box_own_prop_ne (γ : SliceName) : NonExpansive Nat (box_own_prop (GF := GF) γ) := ne_of_contractive _
 
 @[rocq_alias slice_inv]
 def slice_inv (γ : SliceName) (P : IProp GF) : IProp GF :=
@@ -81,17 +81,17 @@ def box {M : Type _ → Type _} [LawfulFiniteMap M SliceName] (N : Namespace) (f
     [∗map] γ ↦ b ∈ f, box_own_auth γ (◯E (⟨b⟩ : BoolO)) ∗ box_own_prop γ (Φ γ) ∗ inv N (slice_inv γ (Φ γ))
 
 @[rocq_alias box_inv_ne]
-instance slice_inv_ne (γ : SliceName) : NonExpansive (slice_inv (GF := GF) γ) :=
+instance slice_inv_ne (γ : SliceName) : NonExpansive Nat (slice_inv (GF := GF) γ) :=
   ⟨fun _ _ _ h => exists_ne (fun b => sep_ne.ne Dist.rfl (b.casesOn Dist.rfl h))⟩
 
 @[rocq_alias slice_ne]
-instance slice_ne (N : Namespace) (γ : SliceName) : NonExpansive (slice (GF := GF) N γ) :=
+instance slice_ne (N : Namespace) (γ : SliceName) : NonExpansive Nat (slice (GF := GF) N γ) :=
   ⟨fun {_ _ _} h => sep_ne.ne ((box_own_prop_ne γ).ne h) ((inv_ne N).ne ((slice_inv_ne γ).ne h))⟩
 
 #rocq_ignore slice_proper "Subsumed by the NonExpansive instance `slice_ne`."
 
 @[rocq_alias slice_contractive]
-instance slice_contractive (N : Namespace) (γ : SliceName) : Contractive (slice (GF := GF) N γ) :=
+instance slice_contractive (N : Namespace) (γ : SliceName) : Contractive Nat (slice (GF := GF) N γ) :=
   ⟨fun {_ _ _} h => sep_ne.ne ((box_own_prop_contractive γ).distLater_dist h)
     ((inv_contractive N).distLater_dist (fun m hm => (slice_inv_ne γ).ne (h m hm)))⟩
 
@@ -102,13 +102,13 @@ instance slice_persistent (N : Namespace) (γ : SliceName) (P : IProp GF) :
 
 @[rocq_alias box_contractive]
 instance box_contractive {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
-    (N : Namespace) (f : M Bool) : Contractive (box (GF := GF) N f) :=
+    (N : Namespace) (f : M Bool) : Contractive Nat (box (GF := GF) N f) :=
   ⟨fun {_ _ _} h => exists_ne fun _ => sep_ne.ne
     (Contractive.distLater_dist fun _ hm => (internalEq.ne_l _).ne (h _ hm)) Dist.rfl⟩
 
 @[rocq_alias box_ne]
 instance box_ne {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
-  (N : Namespace) (f : M Bool) : NonExpansive (box (GF := GF) N f) := ne_of_contractive _
+  (N : Namespace) (f : M Bool) : NonExpansive Nat (box (GF := GF) N f) := ne_of_contractive _
 
 #rocq_ignore box_proper "Subsumed by the NonExpansive instance `box_ne`."
 

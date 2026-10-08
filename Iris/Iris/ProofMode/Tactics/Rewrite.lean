@@ -13,8 +13,8 @@ namespace Iris.ProofMode
 public section
 open BI Iris.Std
 
-theorem rewrite_tac [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p}
-    (Ψ : A → PROP) [ne : OFE.NonExpansive Ψ] [heq : IntoInternalEq Q a b]
+theorem rewrite_tac [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE Nat A] {a b : A} {p}
+    (Ψ : A → PROP) [ne : OFE.NonExpansive Nat Ψ] [heq : IntoInternalEq Q a b]
     (h1 : P ⊢ P' ∗ □?p Q) : P ⊢ <pers> (Ψ a ∗-∗ Ψ b) := calc
   P ⊢ P' ∗ a ≡ b := h1.trans (sep_mono_right (intuitionisticallyIf_elim.trans heq.1))
   _ ⊢ a ≡ b := sep_elim_right
@@ -23,8 +23,8 @@ theorem rewrite_tac [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p
   _ ⊢ <pers> <affine> Ψ a ≡ Ψ b := persistently_affinely.2
   _ ⊢ <pers> (Ψ a ∗-∗ Ψ b) := persistently_mono (affinely_internalEq_wandIff _ _)
 
-theorem rewrite_tac_symm [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p}
-    (Ψ : A → PROP) [ne : OFE.NonExpansive Ψ] [IntoInternalEq Q a b]
+theorem rewrite_tac_symm [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE Nat A] {a b : A} {p}
+    (Ψ : A → PROP) [ne : OFE.NonExpansive Nat Ψ] [IntoInternalEq Q a b]
     (h_eq : P ⊢ P' ∗ □?p Q) : P ⊢ <pers> (Ψ b ∗-∗ Ψ a) :=
   (rewrite_tac Ψ h_eq).trans (persistently_mono and_symm)
 
@@ -124,7 +124,7 @@ private def iRewriteCore {prop : Q(Type u)} {bi : Q(BI $prop)}
   let A   : Q(Type v) ← mkFreshExprMVarQ q(Type v)
   let a   : Q($A)     ← mkFreshExprMVarQ q($A)
   let b   : Q($A)     ← mkFreshExprMVarQ q($A)
-  let _ofe : Q(OFE $A) ← mkFreshExprMVarQ q(OFE $A)
+  let _ofe : Q(OFE Nat $A) ← mkFreshExprMVarQ q(OFE Nat $A)
 
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoInternalEq (PROP := $prop) $eq $a $b)
     | throwIPMError "{eq} is not an internal equality"
@@ -141,10 +141,10 @@ private def iRewriteCore {prop : Q(Type u)} {bi : Q(BI $prop)}
   have Ψ : Q($A → $prop) := mkLambda `x .default A goalAbstracted
 
   -- add OFE.NonExpansive to be solved by TC synthesis or left as a goal otherwise
-  let _ ← match ← trySynthInstanceQ q(OFE.NonExpansive $Ψ) with
+  let _ ← match ← trySynthInstanceQ q(OFE.NonExpansive Nat $Ψ) with
     | .some x => pure x
     | _ =>
-      let ne ← mkFreshExprMVarQ q(OFE.NonExpansive $Ψ)
+      let ne ← mkFreshExprMVarQ q(OFE.NonExpansive Nat $Ψ)
       addMVarGoal ne.mvarId!
       pure ne
 

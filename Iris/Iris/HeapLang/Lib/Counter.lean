@@ -98,7 +98,7 @@ end CounterProof
 
 /-! ## Monotone counter -/
 
-abbrev MCounterRF : COFE.OFunctorPre := constOF (Auth MaxNat)
+abbrev MCounterRF : COFE.OFunctorPre Nat := constOF (Auth (SI := Nat) MaxNat)
 
 @[rocq_alias heap_lang.mcounterG]
 class MCounterG (GF : BundledGFunctors) where [elemG : ElemG GF MCounterRF]
@@ -193,7 +193,7 @@ end MonoProof
 
 /-! ## Counter with contributions -/
 
-abbrev CCounterRF : COFE.OFunctorPre := constOF (FracAuth (A := Nat))
+abbrev CCounterRF : COFE.OFunctorPre Nat := constOF (FracAuth (SI := Nat) (A := Nat))
 
 @[rocq_alias heap_lang.ccounterG]
 class CCounterG (GF : BundledGFunctors) where [elemG : ElemG GF CCounterRF]

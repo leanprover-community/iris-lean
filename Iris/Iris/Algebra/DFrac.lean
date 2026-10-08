@@ -16,6 +16,8 @@ public import Iris.Algebra.IsOp
 
 namespace Iris
 
+variable {SI : Type _} [instSI : SIdx SI]
+
 /-- Knowledge about a discardable fraction. -/
 @[rocq_alias dfrac]
 inductive DFrac where
@@ -32,8 +34,8 @@ attribute [rocq_alias dfrac_eq_dec] instDecidableEqDFrac
 #rocq_ignore DfracOwn_inj "Not needed"
 #rocq_ignore DfracBoth_inj "Not needed"
 
-@[simp] instance : COFE DFrac := COFE.ofDiscrete _
-instance : OFE.Discrete DFrac := ⟨fun h => h⟩
+@[simp] instance : COFE SI DFrac := COFE.ofDiscrete _
+instance : OFE.Discrete SI DFrac := ⟨fun h => h⟩
 #rocq_ignore dfracO "Use DFrac type with typeclass inference"
 
 namespace DFrac
@@ -91,52 +93,57 @@ def op : DFrac → DFrac → DFrac
 #rocq_ignore dfrac_valid_instance "Use CMRA instance"
 #rocq_ignore dfrac_ra_mixin "Not needed"
 
-@[instance_reducible] def cmraData : CMRAData DFrac where
-  pcore := pcore
+/-- The operation as a step-index-free data instance (Mathlib-style). -/
+instance instOp : Op DFrac where
   op := op
+  assoc := by rintro ⟨⟩ ⟨⟩ ⟨⟩ <;> grind [op]
+  comm := by rintro ⟨⟩ ⟨⟩ <;> grind [op]
+
+@[instance_reducible] def cmraData : CMRAData SI DFrac where
+  toOp := instOp
+  pcore := pcore
   Valid := valid
   ValidN _ := valid
   op_ne := { ne _ _ _ := congrArg (op _) }
   pcore_ne {_} := by rintro ⟨⟩ ⟨⟩ <;> simp [pcore] <;> nofun
   validN_ne H := H ▸ id
   valid_iff_validN := ⟨fun x _ => x, fun x => x 0⟩
-  validN_succ := id
-  validN_op_left {_} := by rintro ⟨⟩ ⟨⟩ <;> simp [valid, op] <;> grind
-  assoc := by rintro ⟨⟩ ⟨⟩ ⟨⟩ <;> grind [op]
-  comm := by rintro ⟨⟩ ⟨⟩ <;> grind [op]
-  pcore_op_left := by rintro ⟨⟩ ⟨⟩ <;> simp [op, pcore]
+  validN_le := fun h _ => h
+  validN_op_left {_} := by rintro ⟨⟩ ⟨⟩ <;> simp [valid, Op.op, op] <;> grind
+  pcore_op_left := by rintro ⟨⟩ ⟨⟩ <;> simp [Op.op, op, pcore]
   pcore_idem := by rintro ⟨⟩ ⟨⟩ <;> simp [pcore]
   extend _ Hxyz := ⟨_, _, discrete Hxyz, .rfl, .rfl⟩
   pcore_op_mono := by
     rintro ⟨⟩ ⟨⟩ <;> simp [pcore] <;>
     · intro z
       exists discard
-      rcases z with z|_|z <;> simp [op]
+      rcases z with z|_|z <;> simp [Op.op, op]
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias dfracR]
-instance instORADFrac : CMRA DFrac := ofCMRAData DFrac.cmraData
+instance instORADFrac : CMRA SI DFrac := ofCMRAData DFrac.cmraData
 
 @[rocq_alias dfrac_full_exclusive]
-instance own_whole_exclusive : Exclusive (α := DFrac) (own 1) where
+instance own_whole_exclusive : Exclusive SI (α := DFrac) (own 1) where
   exclusive0_l := by
     rintro (y|_|y) <;>
     simp only [ValidN, valid, ORA.op, op] <;>
     grind
 
-instance one_exclusive_left [ORA V] {v : V} : Exclusive (own (One.one : Qp), v) where
+instance one_exclusive_left [ORA SI V] {v : V} : Exclusive SI (own (One.one : Qp), v) where
   exclusive0_l := by
     refine fun ⟨y1, _⟩ ⟨Hv1, _⟩ => ?_
     have h1 : (One.one : Qp).val = 1 := rfl
     rcases y1 with (y|_|y) <;> simp only [ValidN, ORA.op, op, valid] at Hv1 <;> grind
 
-instance one_exclusive_right [ORA V] {v : V} : Exclusive (v, own (One.one : Qp)) where
+instance one_exclusive_right [ORA SI V] {v : V} : Exclusive SI (v, own (One.one : Qp)) where
   exclusive0_l := by
     refine fun ⟨_, y2⟩ ⟨_, Hv2⟩ => ?_
     have h1 : (One.one : Qp).val = 1 := rfl
     rcases y2 with (y|_|y) <;> simp only [ValidN, ORA.op, op, valid] at Hv2 <;> grind
 
 @[rocq_alias dfrac_cancelable]
-instance {f : Qp} : Cancelable (own f) where
+instance {f : Qp} : Cancelable SI (own f) where
   cancelableN {_} := by
     rintro (a|_|a) (b|_|b) <;> simp [ValidN, ORA.op, op] <;> intro H Hxyz
     any_goals have Hxyz' := discrete Hxyz; simp at Hxyz'
@@ -146,7 +153,7 @@ instance {f : Qp} : Cancelable (own f) where
     · exact congrArg ownDiscard (Subtype.ext (by grind))
 
 @[rocq_alias dfrac_own_id_free]
-instance {f : Qp} : IdFree (own f) where
+instance {f : Qp} : IdFree SI (own f) where
   id_free0_r := by
     rintro (y|_|y) <;>
       simp [ValidN, ORA.op, op] <;>
@@ -155,36 +162,36 @@ instance {f : Qp} : IdFree (own f) where
     exact absurd Hxyz' (by have := y.2; grind)
 
 @[rocq_alias dfrac_valid_own_1]
-theorem valid_own_one : ✓ own (1 : Qp) := by change (1 : Qp).val ≤ 1; grind
+theorem valid_own_one : ✓[SI] own (1 : Qp) := by change (1 : Qp).val ≤ 1; grind
 
 @[rocq_alias dfrac_valid_own_r]
-theorem valid_op_own {dq : DFrac} {q : Qp} : ✓ dq • own q → q.val < 1 := by
+theorem valid_op_own {dq : DFrac} {q : Qp} : ✓[SI] dq • own q → q.val < 1 := by
   obtain y|_|y := dq <;> simp only [ORA.Valid, ORA.op, op, valid] <;> grind
 
 @[rocq_alias dfrac_valid_own_l]
-theorem valid_own_op {dq : DFrac} {q : Qp} : ✓ own q • dq → q.val < 1 :=
+theorem valid_own_op {dq : DFrac} {q : Qp} : ✓[SI] own q • dq → q.val < 1 :=
   fun h => valid_op_own (comm' (y := dq) ▸ h)
 
 @[rocq_alias dfrac_valid_discarded]
-theorem valid_discard : ✓ (discard : DFrac) := by simp [ORA.Valid, valid]
+theorem valid_discard : ✓[SI] (discard : DFrac) := by simp [ORA.Valid, valid]
 
 @[rocq_alias dfrac_valid_own_discarded]
-theorem valid_own_op_discard {q : Qp} : ✓ own q • discard ↔ q.val < 1 := by
+theorem valid_own_op_discard {q : Qp} : ✓[SI] own q • discard ↔ q.val < 1 := by
   simp [ORA.op, op, ORA.Valid, valid]
 
 @[rocq_alias dfrac_cmra_discrete]
-instance : Discrete DFrac where
+instance : Discrete SI DFrac where
   discrete_valid {x} := by simp [ORA.Valid, ORA.ValidN]
   discrete_ord := CMRA.ord_of_ord0
 
-theorem is_discrete {q : DFrac} : OFE.DiscreteE q := ⟨fun h => h⟩
+theorem is_discrete {q : DFrac} : OFE.DiscreteE SI q := ⟨fun h => h⟩
 
 @[rocq_alias dfrac_discarded_core_id]
 instance : CoreId (DFrac.discard) where
   core_id := by simp [ORA.pcore, DFrac.pcore]
 
 @[rocq_alias dfrac_discard_update]
-theorem update_discard {dq : DFrac} : dq ~~> .discard := by
+theorem update_discard {dq : DFrac} : dq ~~>[SI] .discard := by
   intros n q H
   apply (valid_iff_validN' n).mp
   have H' := (valid_iff_validN' n).mpr H
@@ -197,7 +204,7 @@ theorem update_discard {dq : DFrac} : dq ~~> .discard := by
 
 @[rocq_alias dfrac_undiscard_update]
 theorem update_acquire :
-    (.discard : DFrac) ~~>: fun k => ∃ q, k = .own q := by
+    (.discard : DFrac) ~~>:[SI] fun k => ∃ q, k = .own q := by
   apply UpdateP.discrete.mpr
   rintro (_|q)
   · rintro _
@@ -227,32 +234,35 @@ theorem op_own {p q : Qp} : own p • own q = own (p + q) := rfl
 theorem op_discard : (discard : DFrac) • discard = discard := rfl
 
 @[rocq_alias dfrac_valid_own]
-theorem valid_own {p : Qp} : ✓ own p ↔ p.val ≤ 1 := .rfl
+theorem valid_own {p : Qp} : ✓[SI] own p ↔ p.val ≤ 1 := .rfl
 
 @[rocq_alias dfrac_valid]
-theorem valid_iff {dq : DFrac} : ✓ dq ↔
+theorem valid_iff {dq : DFrac} : ✓[SI] dq ↔
     match dq with
     | own f => f.val ≤ 1
     | discard => True
     | ownDiscard f => f.val < 1 := by
   cases dq <;> rfl
 
-theorem discard_ord : (discard : DFrac) ≼ₒ discard := ⟨discard, rfl⟩
+theorem discard_ord : (discard : DFrac) ≼ₒ[SI] discard := ⟨discard, rfl⟩
 
 @[rocq_alias dfrac_discarded_included]
-theorem discard_included : (discard : DFrac) ≼ discard := inc_iff_ord.mpr discard_ord
+theorem discard_included : (discard : DFrac) ≼ discard := ⟨discard, rfl⟩
 
-theorem own_ord {p q : Qp} : own p ≼ₒ own q ↔ ∃ r, q = p + r := by
+theorem own_ord {p q : Qp} : own p ≼ₒ[SI] own q ↔ ∃ r, q = p + r := by
   refine ⟨fun ⟨z, hz⟩ => ?_, fun ⟨r, hr⟩ => ⟨own r, hr ▸ rfl⟩⟩
   rcases z with (r|_|r) <;> simp [ORA.op, op] at hz
   exact ⟨r, Qp.ext_iff.mpr hz⟩
 
 @[rocq_alias dfrac_own_included]
-theorem own_included {p q : Qp} : own p ≼ own q ↔ ∃ r, q = p + r := inc_iff_ord.trans own_ord
+theorem own_included {p q : Qp} : own p ≼ own q ↔ ∃ r, q = p + r := by
+  refine ⟨fun ⟨z, hz⟩ => ?_, fun ⟨r, hr⟩ => ⟨own r, hr ▸ rfl⟩⟩
+  rcases z with (r|_|r) <;> simp [Op.op, op] at hz
+  exact ⟨r, Qp.ext_iff.mpr hz⟩
 
 @[rocq_alias dfrac_is_op]
-instance isOp_dfrac_own {q q1 q2 : Qp} [h : IsOp d q q1 q2] :
-    IsOp d (own q) (own q1) (own q2) where
+instance isOp_dfrac_own {q q1 q2 : Qp} [h : IsOp SI d q q1 q2] :
+    IsOp SI d (own q) (own q1) (own q2) where
   is_op := by rw [h.is_op]; rfl
 
 end DFrac

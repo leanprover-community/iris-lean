@@ -39,12 +39,12 @@ scoped instance : LeftIdentity (Add.add (α := Credit)) (0 : Credit) where
 scoped instance : LawfulLeftIdentity (Add.add (α := Credit)) (0 : Credit) := ⟨Nat.zero_add⟩
 scoped instance : LeftCancelAdd Credit := ⟨Nat.add_left_cancel⟩
 
-scoped instance : COFE Credit := COFE.ofDiscrete _
-scoped instance : Discrete Credit := ⟨fun h => h⟩
-scoped instance : UCMRA Credit := CommMonoidLike.instUCMRA
-scoped instance instIncOrdCredit : IncOrd Credit := inferInstance
-scoped instance : ORA.Discrete Credit := CommMonoidLike.instDiscrete
-scoped instance {a : Credit} : Cancelable a := inferInstance
+scoped instance : COFE Nat Credit := COFE.ofDiscrete _
+scoped instance : OFE.Discrete Nat Credit := ⟨fun h => h⟩
+scoped instance : UCMRA Nat Credit := CommMonoidLike.instUCMRA
+scoped instance instIncOrdCredit : IncOrd Nat Credit := inferInstance
+scoped instance : ORA.Discrete Nat Credit := CommMonoidLike.instDiscrete
+scoped instance {a : Credit} : Cancelable Nat a := inferInstance
 
 /-- Later credits inclusion typeclass (`GF` contains the necessary functors for later credits) -/
 @[rocq_alias lcGpreS]
@@ -95,7 +95,7 @@ variable {GF : BundledGFunctors} {hlc : HasLC} [LC : LcGS hlc GF]
 @[rocq_alias uPred_bi_lc]
 instance uPred_bi_lc : BILaterCredits (IProp GF) where
   lc := uPred_lc
-  lc_split {n m} := by
+  lc_split {n m : Nat} := by
     cases hlc with
     | hasNoLC => exact (true_sep (P := iprop(True))).symm
     | hasLC =>
@@ -128,7 +128,7 @@ section LcSupplyRules
 variable [LC : LcGS .hasLC GF]
 
 @[rocq_alias lc_supply_bound]
-theorem lc_supply_bound {n m} : ⊢@{IProp GF} lc_supply m -∗ £ n -∗ ⌜n ≤ m⌝ := by
+theorem lc_supply_bound {n m : Nat} : ⊢@{IProp GF} lc_supply m -∗ £ n -∗ ⌜n ≤ m⌝ := by
   iintro Hsupp Hcred
   icases iOwn_op $$ [Hsupp Hcred] with H
   · rw [uPred_lc_unseal]; unfold uPred_lc lc_supply
@@ -141,7 +141,7 @@ theorem lc_supply_bound {n m} : ⊢@{IProp GF} lc_supply m -∗ £ n -∗ ⌜n �
   exact n.le_add_right k
 
 @[rocq_alias lc_decrease_supply]
-theorem lc_decrease_supply {n m} : ⊢@{IProp GF} lc_supply (n + m) -∗ £ n -∗ |==> lc_supply m := by
+theorem lc_decrease_supply {n m : Nat} : ⊢@{IProp GF} lc_supply (n + m) -∗ £ n -∗ |==> lc_supply m := by
   iintro H1 H2
   imod iOwn_update_op (E := LC.lc_elem)
     (auth_update (leftCancelAdd_local_update ((Nat.add_assoc n m 0).trans (Nat.add_comm n m))))
@@ -178,8 +178,8 @@ def le_upd_pre (P le_upd : IProp GF) : IProp GF :=
     (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ le_upd))
 
 @[rocq_alias le_upd.le_upd_pre_contractive]
-instance {P : IProp GF} : Contractive (le_upd_pre P) where
-  distLater_dist {n x y} H := by
+instance {P : IProp GF} : Contractive Nat (le_upd_pre P) where
+  distLater_dist {n : Nat} {x y} H := by
     simp only [le_upd_pre]
     refine forall_ne (fun i => ?_)
     refine wand_ne.ne .rfl ?_
@@ -199,7 +199,7 @@ instance {P : IProp GF} : Contractive (le_upd_pre P) where
 #rocq_ignore le_upd.le_upd_unseal "`le_upd` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias le_upd.le_upd]
-def le_upd (P : IProp GF) : IProp GF := fixpoint (le_upd_pre P)
+def le_upd (P : IProp GF) : IProp GF := fixpoint (SI := Nat) (le_upd_pre P)
 
 syntax:max "|==£> " term:40 : term
 
@@ -217,8 +217,8 @@ theorem le_upd_unfold {P : IProp GF} :
     (fixpoint_unfold ⟨le_upd_pre P, inferInstance⟩).to_bi.trans .rfl
 
 @[rocq_alias le_upd.le_upd_ne]
-instance : NonExpansive (le_upd (GF := GF)) where
-  ne {n} := by
+instance : NonExpansive Nat (le_upd (GF := GF)) where
+  ne {n : Nat} := by
     apply WellFounded.induction Nat.lt_wfRel.wf n
     intro m IH P Q H
     refine ((equiv_iff.mpr le_upd_unfold).dist).trans ?_
@@ -479,7 +479,7 @@ section le_upd_finally_rules
 variable {hlc : HasLC} [LcGS hlc GF]
 
 @[rocq_alias le_upd.le_upd_finally_ne]
-instance le_upd_finally_ne : NonExpansive (le_upd_finally (GF := GF)) where
+instance le_upd_finally_ne : NonExpansive Nat (le_upd_finally (GF := GF)) where
   ne _ _ _ H := by
     simp only [le_upd_finally]
     refine forall_ne (fun m => ?_)

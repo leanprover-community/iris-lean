@@ -142,13 +142,13 @@ theorem bigOrL_persistently [BIPersistentlyExist PROP] {Φ : Nat → A → PROP}
     (<pers> [∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, <pers> Φ k x :=
   letI := MonoidHomomorphism.ofEq (PROP := PROP) persistently_ne
     (BiEntails.to_eq persistently_or) (BiEntails.to_eq ⟨persistently_elim, false_elim⟩)
-  BiEntails.of_eq <| bigOpL_hom Φ l
+  BiEntails.of_eq <| bigOpL_hom (SI := Nat) Φ l
 
 @[rocq_alias big_orL_later]
 theorem bigOrL_later {Φ : Nat → A → PROP} {l : List A} (hne : l ≠ []) :
     (▷ [∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, ▷ Φ k x :=
   letI := WeakMonoidHomomorphism.ofEq (PROP := PROP) later_ne (BiEntails.to_eq later_or)
-  BiEntails.of_eq <| bigOpL_hom_weak Φ hne
+  BiEntails.of_eq <| bigOpL_hom_weak (SI := Nat) Φ hne
 
 @[rocq_alias big_orL_laterN]
 theorem bigOrL_laterN {Φ : Nat → A → PROP} {l : List A} {n : Nat} (hne : l ≠ []) :

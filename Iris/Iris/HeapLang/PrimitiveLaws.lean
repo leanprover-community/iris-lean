@@ -105,11 +105,11 @@ def HeapLangS : BundledGFunctors
   | 1 => ⟨constOF CoPsetDisjL⟩
   | 2 => ⟨constOF (DisjointLeibnizSet PosSet)⟩
   | 3 => ⟨Auth.AuthURF (constOF Credit)⟩
-  | 4 => ⟨constOF (HeapView Loc (Agree (DiscreteO (Option Val))) HeapF)⟩
-  | 5 => ⟨constOF (HeapView Loc (Agree (DiscreteO GName)) HeapF)⟩
+  | 4 => ⟨constOF (HeapView (SI := Nat) Loc (Agree (DiscreteO (Option Val))) HeapF)⟩
+  | 5 => ⟨constOF (HeapView (SI := Nat) Loc (Agree (DiscreteO GName)) HeapF)⟩
   | 6 => ⟨constOF MetaUR⟩
-  | 7 => ⟨constOF (HeapView ProphId (Agree (DiscreteO (List (Val × Val)))) ProphMapF)⟩
-  | 8 => ⟨constOF (Auth (InvHeapMapUR (Option Val) HeapF))⟩
+  | 7 => ⟨constOF (HeapView (SI := Nat) ProphId (Agree (DiscreteO (List (Val × Val)))) ProphMapF)⟩
+  | 8 => ⟨constOF (Auth (SI := Nat) (InvHeapMapUR (Option Val) HeapF))⟩
   | _ => ⟨constOF Unit⟩
 
 instance instHeapLangGS_HeapLangS : HeapLangGpreS HasLC.hasLC HeapLangS where

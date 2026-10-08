@@ -6,6 +6,7 @@ Authors: Lars König, Mario Carneiro
 module
 
 public import Iris.Algebra.OFE
+public import Iris.Algebra.StepIndexFinite
 public import Iris.BI.BIBase
 
 @[expose] public section
@@ -23,19 +24,19 @@ theorem liftRel_eq : liftRel (@Eq α) A B ↔ A = B := by
 /-- Require that a separation logic with carrier type `PROP` fulfills all necessary axioms. -/
 @[rocq_alias bi, rocq_alias BiMixin,
   rocq_alias BiPersistentlyMixin, rocq_alias BiLaterMixin]
-class BI (PROP : Type _) extends COFE PROP, BI.BIBase PROP where
+class BI (PROP : Type _) extends COFE Nat PROP, BI.BIBase PROP where
   entails_refl {P : PROP} : P ⊢ P
   entails_trans {P Q R : PROP} : (P ⊢ Q) → (Q ⊢ R) → P ⊢ R
-  equiv_iff {P Q : PROP} : (P = Q) ↔ P ⊣⊢ Q := by rw [OFE.eq_dist]; simp
-  and_ne : OFE.NonExpansive₂ and
-  or_ne : OFE.NonExpansive₂ or
-  imp_ne : OFE.NonExpansive₂ imp
-  sForall_ne {P₁ P₂} : liftRel (· ≡{n}≡ ·) P₁ P₂ → sForall P₁ ≡{n}≡ sForall P₂
-  sExists_ne {P₁ P₂} : liftRel (· ≡{n}≡ ·) P₁ P₂ → sExists P₁ ≡{n}≡ sExists P₂
-  sep_ne : OFE.NonExpansive₂ sep
-  wand_ne : OFE.NonExpansive₂ wand
-  persistently_ne : OFE.NonExpansive persistently
-  later_ne : OFE.NonExpansive later
+  equiv_iff {P Q : PROP} : (P = Q) ↔ P ⊣⊢ Q := by rw [(OFE.eq_dist _)]; simp
+  and_ne : OFE.NonExpansive₂ Nat and
+  or_ne : OFE.NonExpansive₂ Nat or
+  imp_ne : OFE.NonExpansive₂ Nat imp
+  sForall_ne {n : Nat} {P₁ P₂} : liftRel (· ≡{n}≡ ·) P₁ P₂ → sForall P₁ ≡{n}≡ sForall P₂
+  sExists_ne {n : Nat} {P₁ P₂} : liftRel (· ≡{n}≡ ·) P₁ P₂ → sExists P₁ ≡{n}≡ sExists P₂
+  sep_ne : OFE.NonExpansive₂ Nat sep
+  wand_ne : OFE.NonExpansive₂ Nat wand
+  persistently_ne : OFE.NonExpansive Nat persistently
+  later_ne : OFE.NonExpansive Nat later
 
   pure_intro {φ : Prop} {P : PROP} : φ → P ⊢ ⌜φ⌝
   pure_elim' {φ : Prop} {P : PROP} : (φ → True ⊢ P) → ⌜φ⌝ ⊢ P
@@ -180,7 +181,7 @@ attribute [rocq_alias bi_cofe] BI.toCOFE
 
 section PersistentlyDiscrete
 
-variable {PROP : Type _} [BIBase PROP] [COFE PROP]
+variable {PROP : Type _} [BIBase PROP] [COFE Nat PROP]
   (entails_refl : ∀ {P : PROP}, P ⊢ P)
   (entails_trans : ∀ {P Q R : PROP}, (P ⊢ Q) → (Q ⊢ R) → P ⊢ R)
   (equiv_iff : ∀ {P Q : PROP}, (P = Q) ↔ P ⊣⊢ Q)
@@ -212,7 +213,7 @@ variable {PROP : Type _} [BIBase PROP] [COFE PROP]
   (later_sep : ∀ {P Q : PROP}, ▷ (P ∗ Q) ⊣⊢ ▷ P ∗ ▷ Q)
   (later_persistently : ∀ {P : PROP}, ▷ <pers> P ⊣⊢ <pers> ▷ P)
   (later_false_em : ∀ {P : PROP}, ▷ P ⊢ ▷ False ∨ (▷ False → P))
-  (discrete : ∀ {n} {P Q : PROP}, P ≡{n}≡ Q → P = Q)
+  (discrete : ∀ {n : Nat} {P Q : PROP}, P ≡{n}≡ Q → P = Q)
   (persistently_eq : ∀ P : PROP, iprop(<pers> P) = iprop(⌜emp ⊢ P⌝))
 
 @[reducible, rocq_alias bi_persistently_mixin_discrete]

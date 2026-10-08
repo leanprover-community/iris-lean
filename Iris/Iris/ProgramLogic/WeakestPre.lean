@@ -84,7 +84,7 @@ def wp.pre (s : Stuckness) (wp : CoPset -> Expr -> (Val -> IProp GF) -> IProp GF
       wp E e₂ Φ ∗ [∗list] e' ∈ eₜ, wp ⊤ e' ι.forkPost)
 
 @[rocq_alias wp_pre_contractive]
-instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
+instance wp.pre.contractive s : OFE.Contractive Nat (wp.pre s (ι := ι)) where
   distLater_dist := by
     intros n wp wp' Hwp E e₁ Φ
     unfold pre
@@ -117,7 +117,7 @@ instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
 
 @[rocq_alias wp_def]
 instance wp.def : Wp (IProp GF) (Expr) (Val) Stuckness where
-  wp s := fixpoint (wp.pre s)
+  wp s := fixpoint (SI := Nat) (wp.pre s)
 
 #rocq_ignore wp_aux "We do not use Iris' custom seal/unseal visibility control"
 #rocq_ignore wp' "We do not use Iris' custom seal/unseal visibility control"
@@ -129,12 +129,12 @@ section Wp
 theorem wp_unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E {{ Φ }} ⊣⊢ wp.pre s (Wp.wp (PROP := IProp GF) s) E e Φ :=
   BI.equiv_iff.1 <| OFE.eq_dist_2 <|
-    fun _n => (fixpoint_unfold (f := (wp.pre s).toContractiveHom)).dist E e Φ
+    fun _n => (fixpoint_unfold (f := (wp.pre s).toContractiveHom)).dist (SI := Nat) E e Φ
 
 @[rocq_alias wp_ne]
 instance wp_ne {s : Stuckness} {E} {e : Expr} :
-    OFE.NonExpansive (Wp.wp (PROP := IProp GF) s E e) where
-  ne {n Φ₁ Φ₂} HΦ := by
+    OFE.NonExpansive Nat (Wp.wp (PROP := IProp GF) s E e) where
+  ne {n : Nat} {Φ₁ Φ₂} HΦ := by
     induction n using Nat.strongRecOn generalizing e E Φ₁ Φ₂ with | ind n IH =>
     simp only [wp_unfold.to_eq]
     dsimp only [wp.pre]
@@ -165,8 +165,8 @@ instance wp_ne {s : Stuckness} {E} {e : Expr} :
 
 @[rocq_alias wp_contractive]
 theorem wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
-    OFE.Contractive (Wp.wp (PROP := IProp GF) s E e) where
-  distLater_dist {n Φ₁ Φ₂} HΦ := by
+    OFE.Contractive Nat (Wp.wp (PROP := IProp GF) s E e) where
+  distLater_dist {n : Nat} {Φ₁ Φ₂} HΦ := by
     simp only [wp_unfold.to_eq]
     simp only [wp.pre, h]
     refine BI.forall_ne fun σ₁ => ?_
@@ -346,7 +346,7 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P : IProp
   iapply HΦ $$ HP
 
 @[rocq_alias wp_step_fupdN_strong]
-theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IProp GF} {Φ} {n}
+theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IProp GF} {Φ} {n : Nat}
     (toVal_e : toVal e = none) (E2_E1 : E2 ⊆ E1) :
     (∀ (σ : State) ns obs nt, stateInterp σ ns obs nt ={E1, ∅}=∗ ⌜n ≤ ι.numLatersPerStep ns + 1⌝)
     ∧ ((|={E1,E2}=> |={∅}▷=>^[n] |={E2,E1}=> P)

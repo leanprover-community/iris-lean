@@ -370,12 +370,12 @@ theorem bigSepM_ofList [DecidableEq K] {Φ : K → V → PROP} {l : List (K × V
 @[rocq_alias big_sepM_persistently]
 theorem bigSepM_persistently {Φ : K → V → PROP} {m : M V} [BIAffine PROP] :
     (<pers> [∗map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∗map] k ↦ x ∈ m, <pers> Φ k x :=
-  BiEntails.of_eq <| bigOpL_hom _ (toList m)
+  BiEntails.of_eq <| bigOpL_hom (SI := Nat) _ (toList m)
 
 @[rocq_alias big_sepM_later]
 theorem bigSepM_later {Φ : K → V → PROP} {m : M V} [BIAffine PROP] :
     (▷ [∗map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∗map] k ↦ x ∈ m, ▷ Φ k x :=
-  BiEntails.of_eq <| bigOpL_hom _ <| toList m
+  BiEntails.of_eq <| bigOpL_hom (SI := Nat) _ <| toList m
 
 @[rocq_alias big_sepM_later_2]
 theorem bigSepM_later_2 {Φ : K → V → PROP} {m : M V} :

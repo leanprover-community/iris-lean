@@ -33,18 +33,18 @@ instance orMonoidOps [BI PROP] : MonoidOps (or (PROP := PROP)) iprop(False) wher
   op_comm := (BiEntails.to_eq or_comm)
   op_left_id := (BiEntails.to_eq false_or)
 
-/-! Non-expansiveness of the connectives as instances (`MonoidOps` has no OFE parameter). -/
-instance sep_ne_inst [BI PROP] : NonExpansive₂ (sep (PROP := PROP)) := BI.sep_ne
-instance and_ne_inst [BI PROP] : NonExpansive₂ (and (PROP := PROP)) := BI.and_ne
-instance or_ne_inst [BI PROP] : NonExpansive₂ (or (PROP := PROP)) := BI.or_ne
+/-! Non-expansiveness of the connectives as instances (`MonoidOps` carries no step index). -/
+instance sep_ne_inst [BI PROP] : NonExpansive₂ Nat (sep (PROP := PROP)) := BI.sep_ne
+instance and_ne_inst [BI PROP] : NonExpansive₂ Nat (and (PROP := PROP)) := BI.and_ne
+instance or_ne_inst [BI PROP] : NonExpansive₂ Nat (or (PROP := PROP)) := BI.or_ne
 
 /-! ## Homomorphism helpers for OFE equivalence -/
 
 /-- Build a `MonoidHomomorphism` for Leibniz equality from just the essential fields. -/
-theorem MonoidHomomorphism.ofEq [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
+theorem MonoidHomomorphism.ofEq [OFE Nat PROP] {op₁ op₂ : PROP → PROP → PROP}
     {u₁ u₂ : PROP} [MonoidOps op₁ u₁] [MonoidOps op₂ u₂] {f : PROP → PROP}
-    (hne : NonExpansive f) (hop : ∀ {x y}, f (op₁ x y) = op₂ (f x) (f y))
-    (hunit : f u₁ = u₂) : MonoidHomomorphism op₁ op₂ u₁ u₂ (· = ·) f where
+    (hne : NonExpansive Nat f) (hop : ∀ {x y}, f (op₁ x y) = op₂ (f x) (f y))
+    (hunit : f u₁ = u₂) : MonoidHomomorphism Nat op₁ op₂ u₁ u₂ (· = ·) f where
   rel_refl := rfl
   rel_trans := Eq.trans
   op_proper ha hb := ha ▸ hb ▸ rfl
@@ -53,10 +53,10 @@ theorem MonoidHomomorphism.ofEq [OFE PROP] {op₁ op₂ : PROP → PROP → PROP
   map_unit := hunit
 
 /-- Build a `WeakMonoidHomomorphism` for Leibniz equality from just the essential fields. -/
-theorem WeakMonoidHomomorphism.ofEq [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
+theorem WeakMonoidHomomorphism.ofEq [OFE Nat PROP] {op₁ op₂ : PROP → PROP → PROP}
     {u₁ u₂ : PROP} [MonoidOps op₁ u₁] [MonoidOps op₂ u₂] {f : PROP → PROP}
-    (hne : NonExpansive f) (hop : ∀ {x y}, f (op₁ x y) = op₂ (f x) (f y)) :
-    WeakMonoidHomomorphism op₁ op₂ u₁ u₂ (· = ·) f where
+    (hne : NonExpansive Nat f) (hop : ∀ {x y}, f (op₁ x y) = op₂ (f x) (f y)) :
+    WeakMonoidHomomorphism Nat op₁ op₂ u₁ u₂ (· = ·) f where
   rel_refl := rfl
   rel_trans := Eq.trans
   op_proper ha hb := ha ▸ hb ▸ rfl
@@ -580,13 +580,13 @@ open Iris.Algebra Iris.Std OFE BIBase
 
 @[rocq_alias bi.bi_persistently_and_homomorphism]
 instance bi_persistently_and_homomorphism [BI PROP] :
-    MonoidHomomorphism (and (PROP := PROP)) and iprop(True) iprop(True) (· = ·) persistently :=
+    MonoidHomomorphism Nat (and (PROP := PROP)) and iprop(True) iprop(True) (· = ·) persistently :=
   MonoidHomomorphism.ofEq BI.persistently_ne
     (BiEntails.to_eq persistently_and) (BiEntails.to_eq persistently_true)
 
 @[rocq_alias bi.bi_persistently_or_homomorphism_2]
 instance bi_persistently_or_homomorphism_mpr [BI PROP] :
-    MonoidHomomorphism (or (PROP := PROP)) or iprop(False) iprop(False) (flip Entails)
+    MonoidHomomorphism Nat (or (PROP := PROP)) or iprop(False) iprop(False) (flip Entails)
       persistently where
   rel_refl := .rfl
   rel_trans := flip .trans
@@ -597,24 +597,24 @@ instance bi_persistently_or_homomorphism_mpr [BI PROP] :
 
 @[rocq_alias bi.bi_persistently_or_homomorphism]
 instance bi_persistently_or_homomorphism [BI PROP] [BIPersistentlyExist PROP] :
-    MonoidHomomorphism (or (PROP := PROP)) or iprop(False) iprop(False) (· = ·) persistently :=
+    MonoidHomomorphism Nat (or (PROP := PROP)) or iprop(False) iprop(False) (· = ·) persistently :=
   MonoidHomomorphism.ofEq BI.persistently_ne
     (BiEntails.to_eq persistently_or) (BiEntails.to_eq persistently_pure)
 
 @[rocq_alias bi.bi_persistently_sep_weak_homomorphism]
 instance bi_persistently_sep_weak_homomorphism [BI PROP] [BIPositive PROP] :
-    WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·) persistently :=
+    WeakMonoidHomomorphism Nat (sep (PROP := PROP)) sep emp emp (· = ·) persistently :=
   WeakMonoidHomomorphism.ofEq BI.persistently_ne (BiEntails.to_eq persistently_sep)
 
 @[rocq_alias bi.bi_persistently_sep_homomorphism]
 instance bi_persistently_sep_homomorphism [BI PROP] [BIAffine PROP] :
-    MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·) persistently :=
+    MonoidHomomorphism Nat (sep (PROP := PROP)) sep emp emp (· = ·) persistently :=
   MonoidHomomorphism.ofEq BI.persistently_ne
     (BiEntails.to_eq persistently_sep) (BiEntails.to_eq persistently_emp_affine)
 
 @[rocq_alias bi.bi_persistently_sep_entails_weak_homomorphism]
 instance bi_persistently_sep_entails_weak_homomorphism [BI PROP] :
-    WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (flip Entails) persistently where
+    WeakMonoidHomomorphism Nat (sep (PROP := PROP)) sep emp emp (flip Entails) persistently where
   rel_refl := .rfl
   rel_trans := flip .trans
   op_proper := sep_mono
@@ -623,7 +623,7 @@ instance bi_persistently_sep_entails_weak_homomorphism [BI PROP] :
 
 @[rocq_alias bi.bi_persistently_sep_entails_homomorphism]
 instance bi_persistently_sep_entails_homomorphism [BI PROP] :
-    MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (flip Entails) persistently where
+    MonoidHomomorphism Nat (sep (PROP := PROP)) sep emp emp (flip Entails) persistently where
   rel_refl := .rfl
   rel_trans := flip .trans
   op_proper := sep_mono

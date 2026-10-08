@@ -1,7 +1,7 @@
 /-
 Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Michael Sammler, Alvin Tang
+Authors: Michael Sammler, Alvin Tang, Markus de Medeiros
 -/
 module
 

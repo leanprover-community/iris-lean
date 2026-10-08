@@ -10,6 +10,7 @@ public import Iris.Algebra.OFE
 public import Iris.Algebra.UPred
 public import Iris.Algebra.GenMap
 public import Iris.Algebra.COFESolver
+public import Iris.Algebra.StepIndexFinite
 public import Init.Data.Vector
 
 @[expose] public section
@@ -24,9 +25,9 @@ set_option linter.checkUnivs false in
 /-- A resource functor admissible in the global ghost state: contractive, with affine algebras. -/
 @[rocq_alias gFunctor]
 structure GFunctor.{u, v, w} where
-  F : OFunctorPre.{u, v, w}
-  [contractive : RFunctorContractive F]
-  [affine : RFunctorAffine F]
+  F : OFunctorPre.{_, u, v, w} (SI := Nat)
+  [contractive : RFunctorContractive Nat F]
+  [affine : RFunctorAffine Nat F]
 
 set_option linter.checkUnivs false in
 @[rocq_alias gFunctors]
@@ -49,7 +50,7 @@ abbrev GName := Nat
 #rocq_ignore gnameO "Use `LeibnizO GName`."
 
 @[rocq_alias iResF]
-abbrev IResF (GF : BundledGFunctors) : OFunctorPre := DiscreteFunOF (fun i => GenMapOF (GF i).F)
+abbrev IResF (GF : BundledGFunctors) : OFunctorPre Nat := DiscreteFunOF (fun i => GenMapOF (GF i).F)
 
 #rocq_ignore subG "Superseded by `ElemG`."
 #rocq_ignore subG_inv "Lemma about `subG`; obsolete with `ElemG`."
@@ -57,9 +58,9 @@ abbrev IResF (GF : BundledGFunctors) : OFunctorPre := DiscreteFunOF (fun i => Ge
 #rocq_ignore subG_app_l "Lemma about `subG`; obsolete with `ElemG`."
 #rocq_ignore subG_app_r "Lemma about `subG`; obsolete with `ElemG`."
 
-instance (GF : BundledGFunctors) (i : GType) : RFunctorContractive (GF i).F := (GF i).contractive
+instance (GF : BundledGFunctors) (i : GType) : RFunctorContractive Nat (GF i).F := (GF i).contractive
 
-instance instRFunctorAffineGF (GF : BundledGFunctors) (i : GType) : RFunctorAffine (GF i).F := (GF i).affine
+instance instRFunctorAffineGF (GF : BundledGFunctors) (i : GType) : RFunctorAffine Nat (GF i).F := (GF i).affine
 
 section IProp
 open ORA
@@ -70,27 +71,27 @@ variable (GF : BundledGFunctors)
 def IPre : Type _ := OFunctor.Fix (UPredOF (IResF GF))
 
 @[rocq_alias iProp_solution.iPreProp_cofe]
-instance : COFE (IPre GF) := inferInstanceAs (COFE (OFunctor.Fix _))
+instance : COFE Nat (IPre GF) := inferInstanceAs (COFE Nat (OFunctor.Fix _))
 
 @[rocq_alias iProp_solution.iResUR]
 def IResUR.{u} : Type u := (i : GType) → GenMap ((GF i).F (IPre GF) (IPre GF))
 
 #rocq_ignore iResUR "Sealed copy of `iProp_solution.iResUR`; not needed since Lean does not seal it."
 
-instance : UORA (IResUR GF) :=
+instance : UORA Nat (IResUR GF) :=
   ucmraDiscreteFunO (β := fun (i : GType) => GenMap ((GF i).F (IPre GF) (IPre GF)))
 
-instance instIncOrdIResUR : IncOrd (IResUR GF) :=
-  inferInstanceAs (IncOrd ((i : GType) → GenMap ((GF i).F (IPre GF) (IPre GF))))
+instance instIncOrdIResUR : IncOrd Nat (IResUR GF) :=
+  inferInstanceAs (IncOrd Nat ((i : GType) → GenMap ((GF i).F (IPre GF) (IPre GF))))
 
-abbrev IProp.{u} : Type u := UPred (IResUR GF)
+abbrev IProp.{u} : Type u := UPred Nat (IResUR GF)
 
 @[rocq_alias iProp_solution.iProp_unfold]
-def IProp.unfold : IProp GF -n> IPre GF :=
+def IProp.unfold : IProp GF -n>[Nat] IPre GF :=
   OFE.Iso.hom <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
 
 @[rocq_alias iProp_solution.iProp_fold]
-def IProp.fold : IPre GF -n> IProp GF :=
+def IProp.fold : IPre GF -n>[Nat] IProp GF :=
   OFE.Iso.inv <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
 
 @[rocq_alias iProp_solution.iProp_fold_unfold]

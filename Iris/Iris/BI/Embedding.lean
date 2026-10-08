@@ -55,7 +55,7 @@ intro/elim form: for any predicate `Ψ : PROP1 → Prop`, `forall_2` builds
 from pointwise `⎡P⎤ ⊢ R`. -/
 @[rocq_alias BiEmbed]
 class BiEmbed (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] extends Embed PROP1 PROP2 where
-  [ne : OFE.NonExpansive embed]
+  [ne : OFE.NonExpansive Nat embed]
   mono           : ∀ {P Q : PROP1}, (P ⊢ Q) → ((⎡P⎤ : PROP2) ⊢ ⎡Q⎤)
   emp_valid_inj  : ∀ (P : PROP1), (⊢ (⎡P⎤ : PROP2)) → (⊢ P)
   emp_2          : (emp : PROP2) ⊢ ⎡(emp : PROP1)⎤
@@ -105,7 +105,7 @@ section
 variable {PROP1 PROP2 : Type _} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
 
 @[rocq_alias embed_ne]
-instance embed_ne : OFE.NonExpansive (embed (A := PROP1) (B := PROP2)) := BiEmbed.ne
+instance embed_ne : OFE.NonExpansive Nat (embed (A := PROP1) (B := PROP2)) := BiEmbed.ne
 
 @[rocq_alias embed_mono]
 theorem embed_mono {P Q : PROP1} (h : P ⊢ Q) : (⎡P⎤ : PROP2) ⊢ ⎡Q⎤ := BiEmbed.mono h
@@ -336,7 +336,7 @@ theorem mkEmbedHom {op₁ : PROP1 → PROP1 → PROP1} {op₂ : PROP2 → PROP2 
     {u₁ : PROP1} {u₂ : PROP2} [MonoidOps op₁ u₁] [MonoidOps op₂ u₂]
     (hop : ∀ {x y}, (embed (op₁ x y) : PROP2) = op₂ (embed x) (embed y))
     (hunit : (embed u₁ : PROP2) = u₂) :
-    MonoidHomomorphism op₁ op₂ u₁ u₂ (· = ·) (embed (A := PROP1) (B := PROP2)) where
+    MonoidHomomorphism Nat op₁ op₂ u₁ u₂ (· = ·) (embed (A := PROP1) (B := PROP2)) where
   rel_refl := rfl
   rel_trans := Eq.trans
   op_proper ha hb := ha ▸ hb ▸ rfl
@@ -346,19 +346,19 @@ theorem mkEmbedHom {op₁ : PROP1 → PROP1 → PROP1} {op₂ : PROP2 → PROP2 
 
 @[rocq_alias embed_and_homomorphism]
 instance embed_and_homomorphism :
-    MonoidHomomorphism (and (PROP := PROP1)) (and (PROP := PROP2)) iprop(True) iprop(True)
+    MonoidHomomorphism Nat (and (PROP := PROP1)) (and (PROP := PROP2)) iprop(True) iprop(True)
       (· = ·) (embed (A := PROP1) (B := PROP2)) :=
   mkEmbedHom (fun {x y} => (embed_and x y).to_eq) (embed_pure _).to_eq
 
 @[rocq_alias embed_or_homomorphism]
 instance embed_or_homomorphism :
-    MonoidHomomorphism (or (PROP := PROP1)) (or (PROP := PROP2)) iprop(False) iprop(False)
+    MonoidHomomorphism Nat (or (PROP := PROP1)) (or (PROP := PROP2)) iprop(False) iprop(False)
       (· = ·) (embed (A := PROP1) (B := PROP2)) :=
   mkEmbedHom (fun {x y} => (embed_or x y).to_eq) (embed_pure False).to_eq
 
 @[rocq_alias embed_sep_entails_homomorphism]
 instance embed_sep_entails_homomorphism :
-    MonoidHomomorphism (sep (PROP := PROP1)) (sep (PROP := PROP2)) emp emp
+    MonoidHomomorphism Nat (sep (PROP := PROP1)) (sep (PROP := PROP2)) emp emp
       (flip Entails) (embed (A := PROP1) (B := PROP2)) where
   rel_refl := .rfl
   rel_trans := flip .trans
@@ -369,7 +369,7 @@ instance embed_sep_entails_homomorphism :
 
 @[rocq_alias embed_sep_homomorphism]
 instance embed_sep_homomorphism [BiEmbedEmp PROP1 PROP2] :
-    MonoidHomomorphism (sep (PROP := PROP1)) (sep (PROP := PROP2)) emp emp
+    MonoidHomomorphism Nat (sep (PROP := PROP1)) (sep (PROP := PROP2)) emp emp
       (· = ·) (embed (A := PROP1) (B := PROP2)) :=
   mkEmbedHom (fun {x y} => (embed_sep x y).to_eq) embed_emp.to_eq
 
@@ -442,7 +442,7 @@ theorem embed_siPure (Pi : SiProp) :
      siPure_siEmpValid_elim⟩
 
 @[rocq_alias embed_internal_eq]
-theorem embed_internal_eq {A : Type _} [OFE A] (x y : A) :
+theorem embed_internal_eq {A : Type _} [OFE Nat A] (x y : A) :
     (embed (iprop(x ≡ y) : P1) : P2) ⊣⊢ x ≡ y :=
   embed_siPure (SiProp.internalEq x y)
 

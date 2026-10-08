@@ -60,11 +60,11 @@ variable {GF : BundledGFunctors} {hlc : HasLC} [InvGS_gen hlc GF]
 def uPred_fupd (E1 E2 : CoPset) (P : IProp GF) : IProp GF :=
   iprop(wsat ∗ ownE E1 -∗ |==£> (wsat ∗ ownE E2 ∗ P))
 
-instance {E1 E2 : CoPset} : NonExpansive (uPred_fupd (GF := GF) (hlc := hlc) E1 E2) where
+instance {E1 E2 : CoPset} : NonExpansive Nat (uPred_fupd (GF := GF) (hlc := hlc) E1 E2) where
   ne {_ _ _} h := by
     simp only [uPred_fupd]
     refine wand_ne.ne .rfl ?_
-    refine (inferInstance : NonExpansive le_upd).ne ?_
+    refine (inferInstance : NonExpansive Nat le_upd).ne ?_
     refine sep_ne.ne .rfl ?_
     refine sep_ne.ne .rfl h
 
@@ -147,7 +147,7 @@ instance uPred_bi_bupd_lc {GF : BundledGFunctors} [LcGS hlc GF] : BIBUpdLaterCre
     rw [uPred_lc_unseal]
     cases hlc with
     | hasNoLC => simp only [uPred_lc]; itrivial
-    | hasLC => exact iOwn_unit (ε := UORA.unit)
+    | hasLC => exact iOwn_unit (ε := UnitOp.unit)
 
 end Instances
 
@@ -206,7 +206,7 @@ open ProofMode Iris.Std
 variable {GF : BundledGFunctors} {hlc : HasLC} [InvGS_gen hlc GF]
 
 @[rocq_alias fupd_finally_ne]
-instance fupd_finally_ne (E : CoPset) : NonExpansive (fupd_finally (GF := GF) (hlc := hlc) E) where
+instance fupd_finally_ne (E : CoPset) : NonExpansive Nat (fupd_finally (GF := GF) (hlc := hlc) E) where
   ne {_ _ _} h := by
     simp only [fupd_finally]
     refine wand_ne.ne .rfl ?_

@@ -19,7 +19,7 @@ open BI ProofMode Algebra
 
 @[rocq_alias time_receiptGpreS]
 class TimeReceiptGpreS (GF : BundledGFunctors) where
-  elem : ElemG GF (constOF TimeReceipt)
+  elem : ElemG GF (constOF (TimeReceipt (SI := Nat)))
 
 attribute [reducible, instance] TimeReceiptGpreS.elem
 
@@ -94,11 +94,11 @@ theorem pers_split (n₁ n₂ : Nat) : ⧖□ (max n₁ n₂) ⊣⊢@{IProp GF} 
 
 @[rocq_alias time_receipt_excl_zero]
 theorem excl_zero : ⊢@{IProp GF} |==> ⧖+ 0 :=
-  iOwn_unit (ε := UORA.unit)
+  iOwn_unit (ε := UnitOp.unit)
 
 @[rocq_alias time_receipt_pers_zero]
 theorem pers_zero : ⊢@{IProp GF} |==> ⧖□ 0 :=
-  iOwn_unit (ε := UORA.unit)
+  iOwn_unit (ε := UnitOp.unit)
 
 @[rocq_alias time_receipt_excl_weaken]
 theorem excl_weaken {n₁ : Nat} (n₂ : Nat) (h : n₂ ≤ n₁) : ⊢@{IProp GF} ⧖+ n₁ -∗ ⧖+ n₂ := by

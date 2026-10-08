@@ -25,7 +25,7 @@ open Iris.Std ORA BI ProofMode BigSepS LawfulSet SetBij
 @[rocq_alias gset_bijG]
 class SetBijG (GF : BundledGFunctors) (A B : Type _) (S : outParam (Type _))
     [LawfulSet S (A × B)] where
-  elem : ElemG GF (constOF (SetBij S))
+  elem : ElemG GF (constOF (SetBij (SI := Nat) S))
 
 attribute [reducible, instance] SetBijG.elem
 
@@ -90,7 +90,7 @@ instance (q : Qp) : AsFractional (PROP := IProp GF) (γ ↪●BIJ{.own q} L)
   as_fractional_fractional := inferInstance
 
 /-- Turn the internal validity of a composite `SetBij` resource into a pure fact. -/
-private theorem cmraValid_op_pure {a₁ a₂ : SetBij S} {φ : Prop} (h : ✓ (a₁ • a₂) → φ) :
+private theorem cmraValid_op_pure {a₁ a₂ : SetBij S} {φ : Prop} (h : ✓[Nat] (a₁ • a₂) → φ) :
     iOwn (E := SetBijG.elem) γ a₁ ∗ iOwn (E := SetBijG.elem) γ a₂ ⊢@{IProp GF} ⌜φ⌝ := by
   iintro H
   icases iOwn_cmraValid_op $$ H with %Hv
@@ -98,7 +98,7 @@ private theorem cmraValid_op_pure {a₁ a₂ : SetBij S} {φ : Prop} (h : ✓ (a
 
 @[rocq_alias gset_bij_own_auth_agree]
 theorem set_bij_own_auth_agree :
-    (γ ↪●BIJ{dq₁} L₁) ∗ (γ ↪●BIJ{dq₂} L₂) ⊢@{IProp GF} ⌜✓ (dq₁ • dq₂) ∧ L₁ = L₂ ∧ SetBijective L₁⌝ :=
+    (γ ↪●BIJ{dq₁} L₁) ∗ (γ ↪●BIJ{dq₂} L₂) ⊢@{IProp GF} ⌜✓[Nat] (dq₁ • dq₂) ∧ L₁ = L₂ ∧ SetBijective L₁⌝ :=
   cmraValid_op_pure auth_op_auth_valid_iff.mp
 
 @[rocq_alias gset_bij_own_auth_exclusive]
@@ -106,7 +106,7 @@ theorem set_bij_own_auth_exclusive : (γ ↪●BIJ L₁) ∗ (γ ↪●BIJ L₂)
   (cmraValid_op_pure (φ := False) auth_one_op_auth_one_valid_iff.mp).trans (pure_elim' False.elim)
 
 @[rocq_alias gset_bij_own_valid]
-theorem set_bij_own_valid : (γ ↪●BIJ{dq} L) ⊢@{IProp GF} ⌜✓ dq ∧ SetBijective L⌝ :=
+theorem set_bij_own_valid : (γ ↪●BIJ{dq} L) ⊢@{IProp GF} ⌜✓[Nat] dq ∧ SetBijective L⌝ :=
   iOwn_cmraValid.trans <| internalCmraValid_discrete.mp.trans <| pure_mono auth_valid_iff.mp
 
 @[rocq_alias gset_bij_own_elem_agree]

@@ -31,7 +31,7 @@ abbrev PosSet := Std.ExtTreeSet Pos compare
 
 abbrev InvMap (x : Type _) := Std.ExtTreeMap Pos x compare
 
-abbrev InvMapF := HeapViewURF (H := InvMap) (AgreeRF (LaterOF IdOF))
+abbrev InvMapF := HeapViewURF (H := InvMap) (AgreeRF (LaterOF IdOF (SI := Nat)))
 
 /-- Wsat inclusion typeclass (`GF` contains the necessary functors for wsat) -/
 @[rocq_alias wsatGS.wsatGpreS]
@@ -89,7 +89,7 @@ def wsat : IProp GF := iprop(
 #rocq_ignore invariant_unfold_contractive "Only needed for ownI_contractive which is proved directly"
 
 @[rocq_alias ownI_contractive]
-instance (i : Pos) : Contractive (ownI (W := W) i) where
+instance (i : Pos) : Contractive Nat (ownI (W := W) i) where
   distLater_dist h := by
     unfold ownI
     refine NonExpansive.ne ?_
@@ -108,7 +108,7 @@ section ownE
 variable {GF : BundledGFunctors} [W : WsatGS GF]
 
 @[rocq_alias ownE_empty]
-theorem ownE_empty : ⊢ |==> ownE (W := W) ∅ := iOwn_unit (ε := UORA.unit)
+theorem ownE_empty : ⊢ |==> ownE (W := W) ∅ := iOwn_unit (ε := UnitOp.unit)
 
 @[rocq_alias ownE_op]
 theorem ownE_op {E1 E2} (Hdisj : E1 ## E2) : ownE (E1 ∪ E2) ⊣⊢@{IProp GF} ownE E1 ∗ ownE E2 := by
@@ -152,7 +152,7 @@ section ownD
 variable {GF : BundledGFunctors} [W : WsatGS GF]
 
 @[rocq_alias ownD_empty]
-theorem ownD_empty : ⊢@{IProp GF} |==> ownD ∅ := iOwn_unit (ε := UORA.unit)
+theorem ownD_empty : ⊢@{IProp GF} |==> ownD ∅ := iOwn_unit (ε := UnitOp.unit)
 
 @[rocq_alias ownD_op]
 theorem ownD_op {E1 E2} (Hdisj : E1 ## E2) : ownD (E1 ∪ E2) ⊣⊢@{IProp GF} ownD E1 ∗ ownD E2 := by

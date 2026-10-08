@@ -11,11 +11,17 @@ public import Iris.Algebra.CMRA
 @[expose] public section
 
 namespace Iris.Algebra
+
+variable {SI : Type _} [instSI : SIdx SI]
 open ORA
 
 open OFE Iris.Std
 
-variable [ORA M]
+variable [ORA SI M]
+
+/-- SI-free `MonoidOps` for `Option M`: `ucmraMonoidOps` cannot infer `SI` from `op` alone. -/
+instance Option.instMonoidOps : MonoidOps (op (α := Option M)) none :=
+  ucmraMonoidOps (SI := SI)
 
 @[rocq_alias big_opL_None]
 theorem bigOpL_none {f : Nat → A → Option M} {l : List A} :

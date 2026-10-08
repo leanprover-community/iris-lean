@@ -23,10 +23,10 @@ variable {Expr State Obs Val : Type _} [Λ : Language Expr State Obs Val]
 variable {hlc : HasLC} {GF : BundledGFunctors}
 variable [ι : IrisGS_gen hlc Expr GF]
 
-local instance : OFE (List Expr) := OFE.ofDiscrete _
-local instance list_nonexpansive (Ψ : List Expr → IProp GF) : NonExpansive Ψ :=
+local instance : OFE Nat (List Expr) := OFE.ofDiscrete _
+local instance list_nonexpansive (Ψ : List Expr → IProp GF) : NonExpansive Nat Ψ :=
   ⟨fun _ _ _ hxy => hxy ▸ .rfl⟩
-local instance : OFE Val := OFE.ofDiscrete _
+local instance (priority := low) : OFE Nat Val := OFE.ofDiscrete _
 
 namespace twptp
 
@@ -77,7 +77,7 @@ theorem pre_mono (X Y : List Expr → IProp GF) :
 def get (t : List Expr) : IProp GF :=
   bi_least_fixpoint pre t
 
-instance get_ne : NonExpansive (get (ι := ι)) := list_nonexpansive _
+instance get_ne : NonExpansive Nat (get (ι := ι)) := list_nonexpansive _
 
 @[rocq_alias twptp_unfold]
 theorem unfold (t : List Expr) :
@@ -144,7 +144,7 @@ private theorem get_nil : ⊢ get (ι := ι) ([] : List Expr) := by
 theorem of_twp (s : Stuckness) (e : Expr) (Φ : Val → IProp GF) :
     WP e @ s ; ⊤ [{ Φ }] ⊢ get [e] := by
   let Ψ := fun (E : CoPset) (e : Expr) (_ : Val → IProp GF) => iprop(⌜E = ⊤⌝ -∗ get (ι := ι) [e])
-  letI : NonExpansive
+  letI : NonExpansive Nat
       (fun x : twp.Internal.Args Expr Val GF => Ψ x.1 x.2.1 x.2.2) :=
     ⟨fun _ _ _ ⟨hE, he, _⟩ => hE ▸ he ▸ .rfl⟩
   iintro He
