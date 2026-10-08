@@ -19,12 +19,13 @@ public meta import Iris.ProofMode.Tactics.Specialize
 
 namespace Iris.ProofMode
 
+
 public section
 open BI
 
 @[rocq_alias tac_pose_proof]
-theorem have_asEmpValid [bi : BI PROP] {φ} {P Q : PROP}
-    [h1 : AsEmpValid .into φ .in PROP bi P] (h : φ) : Q ⊢ Q ∗ □ P :=
+theorem have_asEmpValid {SI : Type _} [SIdx SI] [bi : BI SI PROP] {φ} {P Q : PROP}
+    [h1 : AsEmpValid .into φ .in SI PROP bi P] (h : φ) : Q ⊢ Q ∗ □ P :=
   sep_emp.2.trans (sep_mono_right <| intuitionistically_emp.2.trans
     (intuitionistically_mono (asEmpValid_1 _ h1 h)))
 
@@ -56,7 +57,7 @@ A tuple containing:
 - `out`: Asserted proposition
 - `pf`: Proof of `hyps ⊢ hyps' ∗ □?p out`
 -/
-private def iHaveCore {e} (hyps : @Hyps u prop bi e)
+private def iHaveCore {e} (hyps : @Hyps u v prop si sidx bi e)
     (tm : Term) (keep : Bool) :
     ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) ×
       (out : Q($prop)) × Q($e ⊢ $e' ∗ □?$p $out)) := do
@@ -94,12 +95,12 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
     have val : Q($ty) := val
 
     let hyp ← mkFreshExprMVarQ q($prop)
-    let some _ ← ProofModeM.trySynthInstanceQ q(AsEmpValid .into $ty .in $prop $bi $hyp)
+    let some _ ← ProofModeM.trySynthInstanceQ q(AsEmpValid .into $ty .in $si $prop $bi $hyp)
       | throwIPMError "{ty} is not an entailment"
 
     return ⟨_, hyps, q(true), hyp, q(have_asEmpValid $val)⟩
 
-def iHave {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
+def iHave {e} (hyps : @Hyps u v prop si sidx bi e) (goal : Q($prop))
     (pmt : PMTerm) (keep : Bool) (try_dup_context : Bool := false) :
     ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) × (out : Q($prop)) ×
       Q(($e' ∗ □?$p $out ⊢ $goal) → $e ⊢ $goal)) := do

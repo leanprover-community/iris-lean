@@ -97,18 +97,18 @@ theorem saved_anything_valid (γ : GName) (dq : DFrac) (x : F.ap (IProp GF)) :
 @[rocq_alias saved_anything_valid_2]
 theorem saved_anything_valid_2 (γ : GName) (dq1 dq2 : DFrac) (x y : F.ap (IProp GF)) :
     saved_anything_own γ dq1 x ∗ saved_anything_own γ dq2 y ⊢@{IProp GF}
-      ⌜✓[Nat] (dq1 • dq2)⌝ ∧ internalEq x y :=
+      ⌜✓[Nat] (dq1 • dq2)⌝ ∧ internalEq (SI := Nat) x y :=
   iOwn_cmraValid_op.trans (dfrac_agree_validI_2 dq1 dq2 x y).mp
 
 @[rocq_alias saved_anything_agree]
 theorem saved_anything_agree (γ : GName) (dq1 dq2 : DFrac) (x y : F.ap (IProp GF)) :
-    saved_anything_own γ dq1 x ∗ saved_anything_own γ dq2 y ⊢@{IProp GF} internalEq x y :=
+    saved_anything_own γ dq1 x ∗ saved_anything_own γ dq2 y ⊢@{IProp GF} internalEq (SI := Nat) x y :=
   (saved_anything_valid_2 γ dq1 dq2 x y).trans and_elim_r
 
 @[rocq_alias saved_anything_combine_gives]
 instance saved_anything_combine_gives (γ : GName) (dq1 dq2 : DFrac) (x y : F.ap (IProp GF)) :
     CombineSepGives (saved_anything_own γ dq1 x) (saved_anything_own γ dq2 y)
-      iprop(⌜✓[Nat] (dq1 • dq2)⌝ ∧ internalEq x y) where
+      iprop(⌜✓[Nat] (dq1 • dq2)⌝ ∧ internalEq (SI := Nat) x y) where
   combine_sep_gives :=
     (saved_anything_valid_2 γ dq1 dq2 x y).trans Persistent.persistent
 
@@ -233,13 +233,13 @@ theorem saved_prop_valid (γ : GName) (dq : DFrac) (P : IProp GF) :
 @[rocq_alias saved_prop_valid_2]
 theorem saved_prop_valid_2 (γ : GName) (dq1 dq2 : DFrac) (P Q : IProp GF) :
     saved_prop_own γ dq1 P ∗ saved_prop_own γ dq2 Q ⊢@{IProp GF}
-      ⌜✓[Nat] (dq1 • dq2)⌝ ∧ ▷ internalEq P Q :=
+      ⌜✓[Nat] (dq1 • dq2)⌝ ∧ ▷ internalEq (SI := Nat) P Q :=
   (saved_anything_valid_2 (F := LaterOF IdOF) γ dq1 dq2 (Later.next P) (Later.next Q)).trans
     (and_mono_right (later_equivI P Q).mp)
 
 @[rocq_alias saved_prop_agree]
 theorem saved_prop_agree (γ : GName) (dq1 dq2 : DFrac) (P Q : IProp GF) :
-    saved_prop_own γ dq1 P ∗ saved_prop_own γ dq2 Q ⊢@{IProp GF} ▷ internalEq P Q :=
+    saved_prop_own γ dq1 P ∗ saved_prop_own γ dq2 Q ⊢@{IProp GF} ▷ internalEq (SI := Nat) P Q :=
   (saved_prop_valid_2 γ dq1 dq2 P Q).trans and_elim_r
 
 @[rocq_alias saved_prop_persist]
@@ -336,7 +336,7 @@ theorem saved_pred_valid (γ : GName) (dq : DFrac) (Φ : A → IProp GF) :
 @[rocq_alias saved_pred_valid_2]
 theorem saved_pred_valid_2 (γ : GName) (dq1 dq2 : DFrac) (Φ Ψ : A → IProp GF) (x : A) :
     saved_pred_own γ dq1 Φ ∗ saved_pred_own γ dq2 Ψ ⊢@{IProp GF}
-      ⌜✓[Nat] (dq1 • dq2)⌝ ∧ ▷ internalEq (Φ x) (Ψ x) := by
+      ⌜✓[Nat] (dq1 • dq2)⌝ ∧ ▷ internalEq (SI := Nat) (Φ x) (Ψ x) := by
   unfold saved_pred_own
   refine (saved_anything_valid_2 (F := DiscreteFunOF (fun _ : A => LaterOF IdOF))
     γ dq1 dq2 _ _).trans (and_mono_right ?_)
@@ -344,7 +344,7 @@ theorem saved_pred_valid_2 (γ : GName) (dq1 dq2 : DFrac) (Φ Ψ : A → IProp G
 
 @[rocq_alias saved_pred_agree]
 theorem saved_pred_agree (γ : GName) (dq1 dq2 : DFrac) (Φ Ψ : A → IProp GF) (x : A) :
-    saved_pred_own γ dq1 Φ ∗ saved_pred_own γ dq2 Ψ ⊢@{IProp GF} ▷ internalEq (Φ x) (Ψ x) :=
+    saved_pred_own γ dq1 Φ ∗ saved_pred_own γ dq2 Ψ ⊢@{IProp GF} ▷ internalEq (SI := Nat) (Φ x) (Ψ x) :=
   (saved_pred_valid_2 γ dq1 dq2 Φ Ψ x).trans and_elim_r
 
 @[rocq_alias saved_pred_persist]

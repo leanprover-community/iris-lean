@@ -13,21 +13,24 @@ public import Iris.ProofMode.Tactics.Trivial
 
 namespace Iris.ProofMode
 
+variable {SI : Type _} [Iris.SIdx SI]
+
+
 public section
 open BI Iris.Std
 
 @[rocq_alias tac_impl_intro_drop]
-theorem imp_intro_drop [BI PROP] {P Q A1 A2 : PROP}
+theorem imp_intro_drop [BI SI PROP] {P Q A1 A2 : PROP}
     [inst : FromImp Q A1 A2] (h : P ⊢ A2) : P ⊢ Q :=
   BI.imp_intro (and_elim_left_trans h) |>.trans inst.1
 
 @[rocq_alias tac_forall_intro]
-theorem from_forall_intro [BI PROP] {P Q : PROP} {Φ : α → PROP} [inst : FromForall Q Φ]
+theorem from_forall_intro [BI SI PROP] {P Q : PROP} {Φ : α → PROP} [inst : FromForall Q Φ]
     (h : ∀ a, P ⊢ Φ a) : P ⊢ Q :=
   (forall_intro h).trans inst.1
 
 @[rocq_alias tac_impl_intro_intuitionistic]
-theorem imp_intro_intuitionistic [BI PROP] {P Q A1 A2 B : PROP}
+theorem imp_intro_intuitionistic [BI SI PROP] {P Q A1 A2 B : PROP}
     [FromImp Q A1 A2] [inst : IntoPersistently false A1 B] (h : P ∗ □ B ⊢ A2) : P ⊢ Q := by
   refine BI.imp_intro ?_ |>.trans from_imp
   calc
@@ -36,7 +39,7 @@ theorem imp_intro_intuitionistic [BI PROP] {P Q A1 A2 B : PROP}
     _ ⊢ A2           := h
 
 @[rocq_alias tac_wand_intro_intuitionistic]
-theorem wand_intro_intuitionistic [BI PROP] {P Q A1 A2 B : PROP}
+theorem wand_intro_intuitionistic [BI SI PROP] {P Q A1 A2 B : PROP}
     [instFromWand : FromWand Q .out A1 A2]
     [inst : IntoPersistently false A1 B] [or : TCOr (Affine A1) (Absorbing A2)]
     (h : P ∗ □ B ⊢ A2) : P ⊢ Q := by
@@ -52,7 +55,7 @@ theorem wand_intro_intuitionistic [BI PROP] {P Q A1 A2 B : PROP}
       _ ⊢ A2                 := absorbing
 
 @[rocq_alias tac_impl_intro]
-theorem imp_intro_spatial [BI PROP] {P Q A1 A2 B : PROP}
+theorem imp_intro_spatial [BI SI PROP] {P Q A1 A2 B : PROP}
     [FromImp Q A1 A2] [inst : FromAffinely B A1] [or : TCOr (Persistent A1) (Intuitionistic P)]
     (h : P ∗ B ⊢ A2) : P ⊢ Q := by
   refine (BI.imp_intro ?_).trans from_imp
@@ -67,7 +70,7 @@ theorem imp_intro_spatial [BI PROP] {P Q A1 A2 B : PROP}
       _ ⊢ P ∗ <affine> A1        := sep_mono_left intuitionistically_elim
 
 @[rocq_alias tac_wand_intro]
-theorem wand_intro_spatial [BI PROP] {P Q A1 A2 : PROP}
+theorem wand_intro_spatial [BI SI PROP] {P Q A1 A2 : PROP}
     [inst : FromWand Q .out A1 A2] (h : P ∗ A1 ⊢ A2) : P ⊢ Q :=
   (wand_intro h).trans inst.from_wand
 
@@ -84,13 +87,14 @@ open Lean Elab Tactic Meta Qq BI Iris.Std
   using `FromForall` fails. The fallback option is applicable only for
   `.all` and `.allwand`.
 -/
-private def iIntroCoreForallIntro {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
+private def iIntroCoreForallIntro {u v} {prop : Q(Type u)}
+    {si : Q(Type v)} {sidx : Q(SIdx $si)} {bi : Q(BI $si $prop)}
     {P : Q($prop)} (hyps : Hyps bi P) (pat : TSyntax `rcasesPat)
     (Q : Q($prop)) (k' : Option <| ProofModeM Q($P ⊢ $Q))
     (k : MVarId → ∀ {P' : Q($prop)}, Hyps bi P' → (B : Q($prop)) → ProofModeM Q($P' ⊢ $B)) :
     ProofModeM Q($P ⊢ $Q) := do
-  let v ← mkFreshLevelMVar
-  let α ← mkFreshExprMVarQ q(Sort v)
+  let w ← mkFreshLevelMVar
+  let α ← mkFreshExprMVarQ q(Sort w)
   let Φ ← mkFreshExprMVarQ q($α → $prop)
   match ← ProofModeM.trySynthInstanceQ q(FromForall $Q $Φ), k' with
   | none, none =>
@@ -107,7 +111,8 @@ private def iIntroCoreForallIntro {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     return q(from_forall_intro (Q := $Q) $pf)
 
 /-- Return `true` if there is a premise to introduce using `.allwand` (`**`). -/
-private def iIntroCoreAllWandCheck {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
+private def iIntroCoreAllWandCheck {u v} {prop : Q(Type u)}
+    {si : Q(Type v)} {sidx : Q(SIdx $si)} {bi : Q(BI $si $prop)}
     (P Q : Q($prop)) : ProofModeM Bool := do
   let A1 ← mkFreshExprMVarQ q($prop)
   let A2 ← mkFreshExprMVarQ q($prop)
@@ -129,9 +134,11 @@ The type of the current goal is given by `Q`.
 This function returns the proof of `P ⊢ Q` to be assigned. The new context is included in the
 `goals` directly by the tactic.
 -/
-partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
+partial def iIntroCore {u v} {prop : Q(Type u)}
+    {si : Q(Type v)} {sidx : Q(SIdx $si)} {bi : Q(BI $si $prop)}
     {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List (Syntax × IntroPat))
-    (k : ∀ {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)},
+    (k : ∀ {u v} {prop : Q(Type u)}
+    {si : Q(Type v)} {_sidx : Q(SIdx $si)} {bi : Q(BI $si $prop)} {e : Q($prop)},
       Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
     ProofModeM (Q($P ⊢ $Q)) := do
   match pats with

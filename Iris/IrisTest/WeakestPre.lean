@@ -96,7 +96,7 @@ variable (Φ : PROP)
 #check WP e ? [{v,  Φ }]
 
 -- BI binder cases
-variable [BI PROP]
+variable [BI Nat PROP]
 
 /-- info: WP e ? {{ v, Φ ∗ Φ }} : PROP -/
 #guard_msgs in
@@ -162,7 +162,7 @@ set_option linter.unusedVariables false
 variable (PROP Expr : Type _) (A : Type _)
 variable [Wp PROP Expr Nat A]
 variable [Wp PROP Expr Nat Stuckness]
-variable [BI PROP]
+variable [BI Nat PROP]
 
 variable (e : Expr) (s : A) (E : CoPset)
 variable (P Q : PROP)
@@ -251,7 +251,7 @@ end TestTexanTriple
 
 section TestTotalTexanTriple
 
-variable (PROP Expr Val A : Type _) [BI PROP]
+variable (PROP Expr Val A : Type _) [BI Nat PROP]
 variable [TotalWp PROP Expr Val A] [TotalWp PROP Expr Val Stuckness]
 variable (e : Expr) (s : A) (E : CoPset) (P Q : PROP) (v : Val)
 
@@ -318,7 +318,7 @@ set_option linter.unusedVariables false
 
 open Iris.HeapLang
 
-variable (PROP : Type _) [BI PROP]
+variable (PROP : Type _) [BI Nat PROP]
 variable [Wp PROP Exp Val Stuckness]
 variable (E : CoPset) (Φ : Val → PROP) (P : PROP)
 
@@ -363,7 +363,7 @@ set_option linter.unusedVariables false
 
 open Iris.HeapLang
 
-variable (PROP : Type _) [BI PROP]
+variable (PROP : Type _) [BI Nat PROP]
 variable [Wp PROP Exp Val Stuckness]
 variable (E : CoPset) (P Q : PROP)
 

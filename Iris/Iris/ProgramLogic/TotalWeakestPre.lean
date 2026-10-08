@@ -90,7 +90,7 @@ theorem pre_mono (s : Stuckness) (X Y : CoPset → Expr → (Val → IProp GF) �
 namespace Internal
 
 @[rocq_alias twp_pre_mono']
-instance pre'_mono (s : Stuckness) : BIMonoPred (pre' (ι := ι) s) where
+instance pre'_mono (s : Stuckness) : BIMonoPred Nat (pre' (ι := ι) s) where
   mono_pred := by
     intro X Y _ _
     iintro #HXY %⟨E, e, Φ⟩ HX
@@ -114,7 +114,7 @@ instance pre'_mono (s : Stuckness) : BIMonoPred (pre' (ι := ι) s) where
 
 @[rocq_alias twp']
 def get (s : Stuckness) (E : CoPset) (e : Expr) (Φ : Val → IProp GF) : IProp GF :=
-  bi_least_fixpoint (pre' s) (E, e, Φ)
+  bi_least_fixpoint (SI := Nat) (pre' s) (E, e, Φ)
 
 #rocq_ignore twp_aux "Not needed"
 #rocq_ignore twp_def "Not needed"
@@ -130,7 +130,7 @@ section Rules
 @[rocq_alias twp_unfold]
 theorem unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E [{ Φ }] ⊣⊢ pre s (TotalWp.totalWp s) E e Φ :=
-  equiv_iff.mp (least_fixpoint_unfold (Internal.pre' s))
+  equiv_iff.mp (least_fixpoint_unfold (SI := Nat) (Internal.pre' s))
 
 @[rocq_alias twp_ind]
 theorem induction (s : Stuckness) (Ψ : CoPset → Expr → (Val → IProp GF) → IProp GF)
@@ -148,7 +148,7 @@ theorem induction (s : Stuckness) (Ψ : CoPset → Expr → (Val → IProp GF) �
 instance ne {s : Stuckness} {E} {e : Expr} :
     NonExpansive Nat (TotalWp.totalWp (PROP := IProp GF) s E e) where
   ne {n : Nat} {Φ₁ Φ₂} HΦ := by
-    refine NonExpansive.ne (f := bi_least_fixpoint (Internal.pre' s)) ?_
+    refine NonExpansive.ne (f := bi_least_fixpoint (SI := Nat) (Internal.pre' s)) ?_
     exact ⟨.rfl, .rfl, HΦ⟩
 
 #rocq_ignore twp_proper "OFE is Leibniz; use equality"

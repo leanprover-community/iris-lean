@@ -12,12 +12,15 @@ public import Iris.ProofMode.SynthInstance
 
 @[expose] public section
 
+
+variable {SI : Type _} [Iris.SIdx SI]
+
 namespace Iris.ProofMode
 open BI Iris.Std MonPred
 
 section Classes
 
-variable {I : BiIndex} {PROP : Type _} [bi : BI PROP]
+variable {I : BiIndex} {PROP : Type _} [BI.BIBase PROP]
 
 inductive MakeMonPredAt.Kind where
   -- Known index `i`, and the proposition `𝓟` is computed by evaluating `P` at `i`
@@ -69,6 +72,12 @@ class FrameMonPredAt (p : Bool) (i : I.car) (𝓡 : PROP) (P : MonPred I PROP)
   frame_monPred_at : □?p 𝓡 ∗ 𝓠 ⊢ P.monPred_at i
 export FrameMonPredAt (frame_monPred_at)
 
+end Classes
+
+section ModalityObjectively
+
+variable {I : BiIndex} {PROP : Type _} [BI SI PROP] [SIdxFinite SI]
+
 /-! ### Modality -/
 
 @[rocq_alias modality_objectively, rocq_alias modality_objectively_mixin]
@@ -80,20 +89,20 @@ def modality_objectively : Modality (MonPred I PROP) (MonPred I PROP) where
   mono := monPred_objectively_mono
   sep := monPred_objectively_sep_2 _ _
 
-end Classes
+end ModalityObjectively
 
 section BIInstances
 
-variable {I : BiIndex} {PROP : Type _} [bi : BI PROP]
+variable {I : BiIndex} {PROP : Type _} [bi : BI SI PROP] [SIdxFinite SI]
 
 /-! ### AsEmpValid -/
 
 @[ipm_backtrack, rocq_alias as_emp_valid_monPred_at]
 instance (priority := low) asEmpValid_monPred_at (d : AsEmpValid.Direction) (φ : Prop)
     (P : MonPred I PROP) (Φ : I.car → PROP)
-    [inst : AsEmpValid0 d φ .in (MonPred I PROP) inferInstance .out P]
+    [inst : AsEmpValid0 d φ .in SI (MonPred I PROP) inferInstance .out P]
     [instMP : ∀ i, MakeMonPredAt .indexToProp i P (Φ i)] :
-    AsEmpValid d φ .in PROP bi iprop(∀ i, Φ i) where
+    AsEmpValid d φ .in SI PROP bi iprop(∀ i, Φ i) where
   as_emp_valid := by
     constructor
     · refine fun hd hφ => forall_intro fun i => ?_
@@ -109,10 +118,10 @@ instance (priority := low) asEmpValid_monPred_at (d : AsEmpValid.Direction) (φ 
 @[ipm_backtrack, rocq_alias as_emp_valid_monPred_at_wand]
 instance (priority := default - 50) asEmpValid_monPred_at_wand (d : AsEmpValid.Direction) (φ : Prop)
     (P Q : MonPred I PROP) (Φ Ψ : I.car → PROP)
-    [inst : AsEmpValid0 d φ .in (MonPred I PROP) inferInstance .in iprop(P -∗ Q)]
+    [inst : AsEmpValid0 d φ .in SI (MonPred I PROP) inferInstance .in iprop(P -∗ Q)]
     [h1 : ∀ i, MakeMonPredAt .indexToProp i P (Φ i)]
     [h2 : ∀ i, MakeMonPredAt .indexToProp i Q (Ψ i)] :
-    AsEmpValid d φ .in PROP bi iprop(∀ i, Φ i -∗ Ψ i) where
+    AsEmpValid d φ .in SI PROP bi iprop(∀ i, Φ i -∗ Ψ i) where
   as_emp_valid := by
     constructor
     · refine fun hd hφ => forall_intro fun i => entails_wand ?_
@@ -131,10 +140,10 @@ instance (priority := default - 50) asEmpValid_monPred_at_wand (d : AsEmpValid.D
 @[ipm_backtrack, rocq_alias as_emp_valid_monPred_at_equiv]
 instance (priority := default - 50) asEmpValid_monPred_at_equiv (d : AsEmpValid.Direction) (φ : Prop)
     (P Q : MonPred I PROP) (Φ Ψ : I.car → PROP)
-    [inst : AsEmpValid0 d φ .in (MonPred I PROP) inferInstance .in iprop(P ∗-∗ Q)]
+    [inst : AsEmpValid0 d φ .in SI (MonPred I PROP) inferInstance .in iprop(P ∗-∗ Q)]
     [h1 : ∀ i, MakeMonPredAt .indexToProp i P (Φ i)]
     [h2 : ∀ i, MakeMonPredAt .indexToProp i Q (Ψ i)] :
-    AsEmpValid d φ .in PROP bi iprop(∀ i, Φ i ∗-∗ Ψ i) where
+    AsEmpValid d φ .in SI PROP bi iprop(∀ i, Φ i ∗-∗ Ψ i) where
   as_emp_valid := by
     constructor
     · refine fun hd hφ => forall_intro fun i => equiv_wandIff ?_
@@ -579,7 +588,7 @@ instance elimModal_at (φ : Prop) (p : Bool) io (p' : Bool) (𝓟 𝓟' : PROP)
       ((monPred_at_intuitionistically_if j p' iprop(⎡𝓟'⎤)).mp) (P'.monPred_mono hVj)
 
 @[rocq_alias elim_modal_at_bupd_goal]
-instance elimModal_at_bupd_goal [BIUpdate PROP] (φ : Prop) (p : Bool) io (p' : Bool)
+instance elimModal_at_bupd_goal [SIdxFinite SI] [BIUpdate SI PROP] (φ : Prop) (p : Bool) io (p' : Bool)
     (𝓟 𝓟' : PROP) (Q Q' : MonPred I PROP) (i : I.car)
     [h : ElimModal φ p io p' 𝓟 𝓟' iprop(|==> Q.monPred_at i) iprop(|==> Q'.monPred_at i)] :
     ElimModal φ p io p' 𝓟 𝓟'
@@ -592,7 +601,7 @@ instance elimModal_at_bupd_goal [BIUpdate PROP] (φ : Prop) (p : Bool) io (p' : 
     _ ⊢ iprop(|==> Q).monPred_at i             := (monPred_at_bupd i Q).mpr
 
 @[rocq_alias elim_modal_at_bupd_hyp]
-instance elimModal_at_bupd_hyp [BIUpdate PROP] (φ : Prop) (p : Bool) io (p' : Bool)
+instance elimModal_at_bupd_hyp [SIdxFinite SI] [BIUpdate SI PROP] (φ : Prop) (p : Bool) io (p' : Bool)
     (P : MonPred I PROP) (𝓟 𝓟' 𝓠 𝓠' : PROP) (i : I.car)
     [instMP : MakeMonPredAt .indexToProp i P 𝓟]
     [h : ElimModal φ p io p' iprop(|==> 𝓟) 𝓟' 𝓠 𝓠'] :
@@ -603,7 +612,7 @@ instance elimModal_at_bupd_hyp [BIUpdate PROP] (φ : Prop) (p : Bool) io (p' : B
     h.elim_modal hφ
 
 @[rocq_alias elim_modal_at_fupd_goal]
-instance elimModal_at_fupd_goal [BIFUpdate PROP] (φ : Prop) (p : Bool) io (p' : Bool)
+instance elimModal_at_fupd_goal [SIdxFinite SI] [BIFUpdate SI PROP] (φ : Prop) (p : Bool) io (p' : Bool)
     (E1 E2 E3 : CoPset) (𝓟 𝓟' : PROP) (Q Q' : MonPred I PROP) (i : I.car)
     [h : ElimModal φ p io p' 𝓟 𝓟'
           iprop(|={E1,E3}=> Q.monPred_at i) iprop(|={E2,E3}=> Q'.monPred_at i)] :
@@ -616,7 +625,7 @@ instance elimModal_at_fupd_goal [BIFUpdate PROP] (φ : Prop) (p : Bool) io (p' :
     (monPred_at_fupd i E1 E3 Q).mpr
 
 @[rocq_alias elim_modal_at_fupd_hyp]
-instance elimModal_at_fupd_hyp [BIFUpdate PROP] (φ : Prop) (p : Bool) io (p' : Bool)
+instance elimModal_at_fupd_hyp [SIdxFinite SI] [BIFUpdate SI PROP] (φ : Prop) (p : Bool) io (p' : Bool)
     (E1 E2 : CoPset) (P : MonPred I PROP) (𝓟 𝓟' 𝓠 𝓠' : PROP) (i : I.car)
     [instMP : MakeMonPredAt .indexToProp i P 𝓟]
     [h : ElimModal φ p io p' iprop(|={E1,E2}=> 𝓟) 𝓟' 𝓠 𝓠'] :
@@ -629,7 +638,7 @@ instance elimModal_at_fupd_hyp [BIFUpdate PROP] (φ : Prop) (p : Bool) io (p' : 
 /-! ### AddModal -/
 
 @[rocq_alias add_modal_at_bupd_goal]
-instance addModal_at_bupd_goal [BIUpdate PROP] (𝓟 𝓟' : PROP) (Q : MonPred I PROP) (i : I.car)
+instance addModal_at_bupd_goal [SIdxFinite SI] [BIUpdate SI PROP] (𝓟 𝓟' : PROP) (Q : MonPred I PROP) (i : I.car)
     [h : AddModal 𝓟 𝓟' iprop(|==> Q.monPred_at i)] :
     AddModal 𝓟 𝓟' (iprop(|==> Q).monPred_at i) where
   add_modal := calc
@@ -638,7 +647,7 @@ instance addModal_at_bupd_goal [BIUpdate PROP] (𝓟 𝓟' : PROP) (Q : MonPred 
     _ ⊢ iprop(|==> Q).monPred_at i  := (monPred_at_bupd i Q).mpr
 
 @[rocq_alias add_modal_at_fupd_goal]
-instance addModal_at_fupd_goal [BIFUpdate PROP] (E1 E2 : CoPset) (𝓟 𝓟' : PROP)
+instance addModal_at_fupd_goal [SIdxFinite SI] [BIFUpdate SI PROP] (E1 E2 : CoPset) (𝓟 𝓟' : PROP)
     (Q : MonPred I PROP) (i : I.car)
     [h : AddModal 𝓟 𝓟' iprop(|={E1,E2}=> Q.monPred_at i)] :
     AddModal 𝓟 𝓟' (iprop(|={E1,E2}=> Q).monPred_at i) where
@@ -651,7 +660,7 @@ instance addModal_at_fupd_goal [BIFUpdate PROP] (E1 E2 : CoPset) (𝓟 𝓟' : P
 /-! ### ElimAcc -/
 
 @[rocq_alias elim_acc_at_None]
-instance elimAcc_at_none [BIFUpdate PROP] {X : Type} (φ : Prop) (E1 E2 E3 E4 : CoPset)
+instance elimAcc_at_none [BIFUpdate SI PROP] {X : Type} (φ : Prop) (E1 E2 E3 E4 : CoPset)
     (α β : X → PROP) (α' β' : X → MonPred I PROP)
     (P : MonPred I PROP) (P'x : X → MonPred I PROP) (i : I.car)
     [hα : ∀ x, MakeEmbed (α x) (α' x)] [hβ : ∀ x, MakeEmbed (β x) (β' x)]
@@ -677,7 +686,7 @@ instance elimAcc_at_none [BIFUpdate PROP] {X : Type} (φ : Prop) (E1 E2 E3 E4 : 
         pure_imp_forall.mpr
 
 @[rocq_alias elim_acc_at_Some]
-instance elimAcc_at_some [BIFUpdate PROP] {X : Type} (φ : Prop) (E1 E2 E3 E4 : CoPset)
+instance elimAcc_at_some [BIFUpdate SI PROP] {X : Type} (φ : Prop) (E1 E2 E3 E4 : CoPset)
     (α β γ : X → PROP) (α' β' γ' : X → MonPred I PROP)
     (P : MonPred I PROP) (P'x : X → MonPred I PROP) (i : I.car)
     [hα : ∀ x, MakeEmbed (α x) (α' x)] [hβ : ∀ x, MakeEmbed (β x) (β' x)]
@@ -780,28 +789,28 @@ instance makeMonPredAt_in (d : MakeMonPredAt.Kind) (i j : I.car) :
   make_monPred_at := monPred_at_in j i
 
 @[rocq_alias make_monPred_at_sep]
-instance makeMonPredAt_sep (i : I.car) (P Q : MonPred I PROP) (𝓟 𝓠 : PROP)
+instance makeMonPredAt_sep [SIdxFinite SI] (i : I.car) (P Q : MonPred I PROP) (𝓟 𝓠 : PROP)
     [h1 : MakeMonPredAt .indexToProp i P 𝓟] [h2 : MakeMonPredAt .indexToProp i Q 𝓠] :
     MakeMonPredAt .indexToProp i iprop(P ∗ Q) iprop(𝓟 ∗ 𝓠) where
   make_monPred_at :=
     (monPred_at_sep i P Q).trans (sep_congr h1.make_monPred_at h2.make_monPred_at)
 
 @[rocq_alias make_monPred_at_and]
-instance makeMonPredAt_and (i : I.car) (P Q : MonPred I PROP) (𝓟 𝓠 : PROP)
+instance makeMonPredAt_and [SIdxFinite SI] (i : I.car) (P Q : MonPred I PROP) (𝓟 𝓠 : PROP)
     [h1 : MakeMonPredAt .indexToProp i P 𝓟] [h2 : MakeMonPredAt .indexToProp i Q 𝓠] :
     MakeMonPredAt .indexToProp i iprop(P ∧ Q) iprop(𝓟 ∧ 𝓠) where
   make_monPred_at :=
     (monPred_at_and i P Q).trans (and_congr h1.make_monPred_at h2.make_monPred_at)
 
 @[rocq_alias make_monPred_at_or]
-instance makeMonPredAt_or (i : I.car) (P Q : MonPred I PROP) (𝓟 𝓠 : PROP)
+instance makeMonPredAt_or [SIdxFinite SI] (i : I.car) (P Q : MonPred I PROP) (𝓟 𝓠 : PROP)
     [h1 : MakeMonPredAt .indexToProp i P 𝓟] [h2 : MakeMonPredAt .indexToProp i Q 𝓠] :
     MakeMonPredAt .indexToProp i iprop(P ∨ Q) iprop(𝓟 ∨ 𝓠) where
   make_monPred_at :=
     (monPred_at_or i P Q).trans (or_congr h1.make_monPred_at h2.make_monPred_at)
 
 @[rocq_alias make_monPred_at_forall]
-instance makeMonPredAt_forall {α} (d : MakeMonPredAt.Kind) (i : I.car)
+instance makeMonPredAt_forall [SIdxFinite SI] {α} (d : MakeMonPredAt.Kind) (i : I.car)
     (Φ : α → MonPred I PROP) (Ψ : α → PROP)
     [h : ∀ a, MakeMonPredAt d i (Φ a) (Ψ a)] :
     MakeMonPredAt d i iprop(∀ a, Φ a) iprop(∀ a, Ψ a) where
@@ -809,7 +818,7 @@ instance makeMonPredAt_forall {α} (d : MakeMonPredAt.Kind) (i : I.car)
     (monPred_at_forall i Φ).trans (forall_congr fun a => (h a).make_monPred_at)
 
 @[rocq_alias make_monPred_at_exists]
-instance makeMonPredAt_exists {α} (d : MakeMonPredAt.Kind) (i : I.car)
+instance makeMonPredAt_exists [SIdxFinite SI] {α} (d : MakeMonPredAt.Kind) (i : I.car)
     (Φ : α → MonPred I PROP) (Ψ : α → PROP)
     [h : ∀ a, MakeMonPredAt d i (Φ a) (Ψ a)] :
     MakeMonPredAt d i iprop(∃ a, Φ a) iprop(∃ a, Ψ a) where
@@ -817,13 +826,13 @@ instance makeMonPredAt_exists {α} (d : MakeMonPredAt.Kind) (i : I.car)
     (monPred_at_exist i Φ).trans (exists_congr fun a => (h a).make_monPred_at)
 
 @[rocq_alias make_monPred_at_persistently]
-instance makeMonPredAt_persistently (d : MakeMonPredAt.Kind) (i : I.car)
+instance makeMonPredAt_persistently [SIdxFinite SI] (d : MakeMonPredAt.Kind) (i : I.car)
     (P : MonPred I PROP) (𝓟 : PROP) [h : MakeMonPredAt d i P 𝓟] :
     MakeMonPredAt d i iprop(<pers> P) iprop(<pers> 𝓟) where
   make_monPred_at := (monPred_at_persistently i P).trans (persistently_congr h.make_monPred_at)
 
 @[rocq_alias make_monPred_at_affinely]
-instance makeMonPredAt_affinely (d : MakeMonPredAt.Kind) (i : I.car)
+instance makeMonPredAt_affinely [SIdxFinite SI] (d : MakeMonPredAt.Kind) (i : I.car)
     (P : MonPred I PROP) (𝓟 : PROP) [h : MakeMonPredAt d i P 𝓟] :
     MakeMonPredAt d i iprop(<affine> P) iprop(<affine> 𝓟) where
   make_monPred_at := (monPred_at_affinely i P).trans (affinely_congr h.make_monPred_at)
@@ -870,14 +879,14 @@ instance makeMonPredAt_intuitionisticallyIf (d : MakeMonPredAt.Kind) (p : Bool) 
     (monPred_at_intuitionistically_if i p P).trans (intuitionisticallyIf_congr h.make_monPred_at)
 
 @[rocq_alias make_monPred_at_bupd]
-instance makeMonPredAt_bupd [BIUpdate PROP] (d : MakeMonPredAt.Kind) (i : I.car)
+instance makeMonPredAt_bupd [BIUpdate SI PROP] (d : MakeMonPredAt.Kind) (i : I.car)
     (P : MonPred I PROP) (𝓟 : PROP) [h : MakeMonPredAt d i P 𝓟] :
     MakeMonPredAt d i iprop(|==> P) iprop(|==> 𝓟) where
   make_monPred_at := (monPred_at_bupd i P).trans
     ⟨BIUpdate.mono h.make_monPred_at.mp, BIUpdate.mono h.make_monPred_at.mpr⟩
 
 @[rocq_alias make_monPred_at_fupd]
-instance makeMonPredAt_fupd [BIFUpdate PROP] (d : MakeMonPredAt.Kind) (i : I.car)
+instance makeMonPredAt_fupd [BIFUpdate SI PROP] (d : MakeMonPredAt.Kind) (i : I.car)
     (E1 E2 : CoPset) (P : MonPred I PROP) (𝓟 : PROP) [h : MakeMonPredAt d i P 𝓟] :
     MakeMonPredAt d i iprop(|={E1,E2}=> P) iprop(|={E1,E2}=> 𝓟) where
   make_monPred_at := (monPred_at_fupd i E1 E2 P).trans
@@ -1035,13 +1044,13 @@ instance frameMonPredAt_subjectively (p : Bool) (i : I.car) (𝓡 𝓠 : PROP)
   frame_monPred_at := h.frame.trans (monPred_at_subjectively i P).mpr
 
 @[rocq_alias frame_monPred_at_bupd]
-instance frameMonPredAt_bupd [BIUpdate PROP] (p : Bool) (i : I.car) (𝓡 𝓠 : PROP)
+instance frameMonPredAt_bupd [BIUpdate SI PROP] (p : Bool) (i : I.car) (𝓡 𝓠 : PROP)
     (P : MonPred I PROP) [h : Frame p 𝓡 iprop(|==> P.monPred_at i) 𝓠] :
     FrameMonPredAt p i 𝓡 iprop(|==> P) 𝓠 where
   frame_monPred_at := h.frame.trans (monPred_at_bupd i P).mpr
 
 @[rocq_alias frame_monPred_at_fupd]
-instance frameMonPredAt_fupd [BIFUpdate PROP] (p : Bool) (i : I.car) (E1 E2 : CoPset)
+instance frameMonPredAt_fupd [BIFUpdate SI PROP] (p : Bool) (i : I.car) (E1 E2 : CoPset)
     (𝓡 𝓠 : PROP) (P : MonPred I PROP)
     [h : Frame p 𝓡 iprop(|={E1,E2}=> P.monPred_at i) 𝓠] :
     FrameMonPredAt p i 𝓡 iprop(|={E1,E2}=> P) 𝓠 where
@@ -1063,14 +1072,14 @@ end BIInstances
 
 section SbiInstances
 
-variable {I : BiIndex} {PROP : Type _} [Sbi PROP]
+variable {I : BiIndex} {PROP : Type _} [Sbi SI PROP] [SIdxFinite SI]
 
 /-! ### IntoInternalEq -/
 
 @[rocq_alias into_internal_eq_monPred_at]
-instance intoInternalEq_monPred_at {A} [OFE Nat A] (x y : A)
-    (P : MonPred I PROP) (i : I.car) [h : IntoInternalEq P x y] :
-    IntoInternalEq (P.monPred_at i) x y where
+instance intoInternalEq_monPred_at {A} [OFE SI A] (x y : A)
+    (P : MonPred I PROP) (i : I.car) [h : IntoInternalEq SI P x y] :
+    IntoInternalEq SI (P.monPred_at i) x y where
   into_internal_eq := (entails_at.mp h.into_internal_eq i).trans (monPred_at_internal_eq i x y).mp
 
 /-! ### FromForall -/
@@ -1095,9 +1104,9 @@ instance intoForall_monPred_at_plainly (P : MonPred I PROP) (Φ : I.car → PROP
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias make_monPred_at_internal_eq]
-instance makeMonPredAt_internalEq {A} [OFE Nat A] (d : MakeMonPredAt.Kind)
+instance makeMonPredAt_internalEq {A} [OFE SI A] (d : MakeMonPredAt.Kind)
     (i : I.car) (x y : A) :
-    MakeMonPredAt (PROP := PROP) d i iprop(x ≡ y) iprop(x ≡ y) where
+    MakeMonPredAt (PROP := PROP) d i iprop(x ≡[SI] y) iprop(x ≡[SI] y) where
   make_monPred_at := monPred_at_internal_eq i x y
 
 end SbiInstances

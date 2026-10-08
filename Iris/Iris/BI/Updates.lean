@@ -16,6 +16,9 @@ public import Iris.Std.CoPset
 
 @[expose] public section
 
+
+variable {SI : Type _} [Iris.SIdx SI]
+
 namespace Iris
 open Iris.Std BI
 
@@ -188,18 +191,18 @@ delab_rule BIBase.wand
     `(iprop($(← unpackIprop Q) ={$E₁}▷=∗^[$n] $P))
 
 @[rocq_alias BiBUpd]
-class BIUpdate (PROP : Type _) [BI PROP] extends BUpd PROP where
-  [bupd_ne : OFE.NonExpansive Nat (BUpd.bupd (PROP := PROP))]
+class BIUpdate (SI : Type _) [SIdx SI] (PROP : Type _) [BI SI PROP] extends BUpd PROP where
+  [bupd_ne : OFE.NonExpansive SI (BUpd.bupd (PROP := PROP))]
   intro {P : PROP} : P ⊢ |==> P
   mono {P Q : PROP} : (P ⊢ Q) → |==> P ⊢ |==> Q
   trans {P : PROP} : |==> |==> P ⊢ |==> P
   frame_right {P R : PROP} : (|==> P) ∗ R ⊢ |==> (P ∗ R)
 
-#rocq_ignore BiBUpdMixin "Included in BIUpdate typeclass."
+#rocq_ignore BiBUpdMixin "Included in BIUpdate SI typeclass."
 
 @[rocq_alias BiFUpd]
-class BIFUpdate (PROP : Type _) [BI PROP] extends FUpd PROP where
-  [ne {E1 E2 : CoPset} : OFE.NonExpansive Nat (iprop(|={E1,E2}=> · : PROP))]
+class BIFUpdate (SI : Type _) [SIdx SI] (PROP : Type _) [BI SI PROP] extends FUpd PROP where
+  [ne {E1 E2 : CoPset} : OFE.NonExpansive SI (iprop(|={E1,E2}=> · : PROP))]
   subset {E1 E2 : CoPset} : E2 ⊆ E1 → ⊢ |={E1,E2}=> |={E2,E1}=> (emp : PROP)
   except0 {E1 E2 : CoPset} {P : PROP} : (◇ |={E1,E2}=> P) ⊢ |={E1,E2}=> P
   mono {E1 E2 : CoPset} {P Q : PROP} : (P ⊢ Q) → (|={E1,E2}=> P) ⊢ |={E1,E2}=> Q
@@ -208,33 +211,33 @@ class BIFUpdate (PROP : Type _) [BI PROP] extends FUpd PROP where
     E1 ## Ef → (|={E1,E2}=> ⌜E2 ## Ef⌝ → P) ⊢ |={E1 ∪ Ef,E2 ∪ Ef}=> P
   frame_right {E1 E2 : CoPset} {P R : PROP} : (|={E1,E2}=> P) ∗ R ⊢ |={E1,E2}=> P ∗ R
 
-#rocq_ignore BiFUpdMixin "Included in BIFUpdate typeclass."
+#rocq_ignore BiFUpdMixin "Included in BIFUpdate SI typeclass."
 
 @[rocq_alias BiBUpdFUpd]
-class BIUpdateFUpdate (PROP : Type _) [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] where
+class BIUpdateFUpdate (PROP : Type _) [BI.BIBase PROP] [BUpd PROP] [FUpd PROP] where
   fupd_of_bupd {P : PROP} {E : CoPset} : (|==> P) ⊢ |={E}=> P
 
 @[rocq_alias BiFUpdSbi]
-class BIFUpdateSbi (PROP : Type _) [BI PROP] [BIFUpdate PROP] [Sbi PROP] where
-  fupd_keep_siPure {E} E' Pi (R : PROP) :
+class BIFUpdateSbi (SI : Type _) [SIdx SI] (PROP : Type _) [Sbi SI PROP] [FUpd PROP] where
+  fupd_keep_siPure {E} E' (Pi : SiProp SI) (R : PROP) :
     (|={E,E'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E}=∗ R) ⊢ |={E}=> R
-  fupd_siPure_later (E : CoPset) (Pi : SiProp) :
+  fupd_siPure_later (E : CoPset) (Pi : SiProp SI) :
     (▷ |={E}=> <si_pure> Pi) ⊢@{PROP} |={E}=> ▷ ◇ <si_pure> Pi
-  fupd_siPure_sForall_2 (E : CoPset) (Ψi : SiProp → Prop) :
+  fupd_siPure_sForall_2 (E : CoPset) (Ψi : SiProp SI → Prop) :
     (∀ q, ⌜Ψi q⌝ → |={E}=> <si_pure> q) ⊢@{PROP} |={E}=> <si_pure> (sForall Ψi)
 
 @[rocq_alias BiBUpdSbi]
-class BIBUpdateSbi (PROP : Type _) [BI PROP] [BIUpdate PROP] [Sbi PROP] where
-  bupd_siPure (Pi : SiProp) : iprop(|==> <si_pure> Pi ⊢@{PROP} <si_pure> Pi)
+class BIBUpdateSbi (SI : Type _) [SIdx SI] (PROP : Type _) [Sbi SI PROP] [BUpd PROP] where
+  bupd_siPure (Pi : SiProp SI) : iprop(|==> <si_pure> Pi ⊢@{PROP} <si_pure> Pi)
 
 section BUpdLaws
 
-variable [BI PROP] [BIUpdate PROP]
+variable [BI SI PROP] [BIUpdate SI PROP]
 
 open BIUpdate
 
 @[rocq_alias bupd_ne]
-instance bupd_ne : OFE.NonExpansive Nat (BUpd.bupd (PROP := PROP)) := BIUpdate.bupd_ne
+instance bupd_ne : OFE.NonExpansive SI (BUpd.bupd (PROP := PROP)) := BIUpdate.bupd_ne
 #rocq_ignore bupd_mono' "Use bupd_mono."
 #rocq_ignore bupd_flip_mono' "Use bupd_mono."
 #rocq_ignore bupd_proper "Derivable from bupd_ne with NonExpansive.eqv"
@@ -302,7 +305,7 @@ instance {P : PROP} [Absorbing P] : Absorbing iprop(|==> P) :=
 
 @[rocq_alias bupd_sep_homomorphism]
 instance bupd_sep_homomorphism :
-  Algebra.MonoidHomomorphism Nat (M₁ := PROP) sep sep emp emp (flip Entails) bupd where
+  Algebra.MonoidHomomorphism SI (M₁ := PROP) sep sep emp emp (flip Entails) bupd where
   rel_refl := .rfl
   rel_trans := flip .trans
   op_proper := sep_mono
@@ -312,7 +315,7 @@ instance bupd_sep_homomorphism :
 
 @[rocq_alias bupd_or_homomorphism]
 instance bupd_or_homomorphism :
-  Algebra.MonoidHomomorphism Nat (M₁ := PROP) (M₂ := PROP) or or iprop(False) iprop(False)
+  Algebra.MonoidHomomorphism SI (M₁ := PROP) (M₂ := PROP) or or iprop(False) iprop(False)
     (flip Entails) bupd where
   rel_refl := .rfl
   rel_trans := flip .trans
@@ -324,12 +327,12 @@ instance bupd_or_homomorphism :
 @[rocq_alias big_sepL_bupd]
 theorem BigSepL.bigSepL_bupd (Φ : Nat → A → PROP) (l : List A) :
     ([∗list] k↦x ∈ l, |==> Φ k x) ⊢ |==> [∗list] k↦x ∈ l, Φ k x :=
-  Algebra.BigOpL.bigOpL_hom (SI := Nat) (R := flip Entails) Φ l
+  Algebra.BigOpL.bigOpL_hom (SI := SI) (R := flip Entails) Φ l
 
 @[rocq_alias big_sepM_bupd]
 theorem BigSepM.bigSepM_bupd [LawfulFiniteMap M' K] (Φ : K → V → PROP) {l : M' V} :
     ([∗map] k↦x ∈ l, |==> Φ k x) ⊢ |==> [∗map] k↦x ∈ l, Φ k x :=
-    Algebra.BigOpM.bigOpM_hom (SI := Nat) (R := flip Entails) Φ l
+    Algebra.BigOpM.bigOpM_hom (SI := SI) (R := flip Entails) Φ l
 
 @[rocq_alias big_sepM2_bupd]
 theorem BigSepM2.bigSepM2_bupd [LawfulFiniteMap M' K] (Φ : K → V → W → PROP)
@@ -353,7 +356,7 @@ end BUpdLaws
 
 section BUpdPlainlyLaws
 
-variable [Sbi PROP] [BIUpdate PROP] [BIBUpdateSbi PROP]
+variable [Sbi SI PROP] [BIUpdate SI PROP] [BIBUpdateSbi SI PROP]
 open BIUpdate
 
 @[rocq_alias bupd_plainly]
@@ -386,12 +389,12 @@ end BUpdPlainlyLaws
 
 section FUpdLaws
 
-variable [BI PROP] [BIFUpdate PROP]
+variable [BI SI PROP] [BIFUpdate SI PROP]
 
 open BIFUpdate LawfulSet
 
 @[rocq_alias updates.fupd_ne]
-instance fupd_ne {E1 E2 : CoPset} : OFE.NonExpansive Nat (iprop(|={E1,E2}=> · : PROP)) := ne
+instance fupd_ne {E1 E2 : CoPset} : OFE.NonExpansive SI (iprop(|={E1,E2}=> · : PROP)) := ne
 
 @[rocq_alias updates.fupd_mono]
 theorem fupd_mono {E1 E2 : CoPset} {P Q : PROP} (h : P ⊢ Q) : (|={E1,E2}=> P) ⊢ |={E1,E2}=> Q :=
@@ -573,7 +576,7 @@ theorem fupd_trans_frame {E1 E2 E3 : CoPset} {P Q : PROP} :
 
 @[rocq_alias fupd_sep_homomorphism]
 instance fupd_sep_homomorphism E :
-  Algebra.MonoidHomomorphism Nat (M₁ := PROP) sep sep emp emp (flip Entails) (fupd E E) where
+  Algebra.MonoidHomomorphism SI (M₁ := PROP) sep sep emp emp (flip Entails) (fupd E E) where
   rel_refl := .rfl
   rel_trans := flip .trans
   op_proper := sep_mono
@@ -583,7 +586,7 @@ instance fupd_sep_homomorphism E :
 
 @[rocq_alias fupd_or_homomorphism]
 instance fupd_or_homomorphism E :
-  Algebra.MonoidHomomorphism Nat (M₁ := PROP) (M₂ := PROP) or or iprop(False) iprop(False)
+  Algebra.MonoidHomomorphism SI (M₁ := PROP) (M₂ := PROP) or or iprop(False) iprop(False)
     (flip Entails) (fupd E E) where
   rel_refl := .rfl
   rel_trans := flip .trans
@@ -595,12 +598,12 @@ instance fupd_or_homomorphism E :
 @[rocq_alias big_sepM_fupd]
 theorem BigSepM.bigSepM_fupd [LawfulFiniteMap M' K] E (Φ : K → V → PROP) (l : M' V) :
     ([∗map] k↦x ∈ l, |={E}=> Φ k x) ⊢ |={E}=> [∗map] k↦x ∈ l, Φ k x :=
-    Algebra.BigOpM.bigOpM_hom (SI := Nat) (R := flip Entails) Φ l
+    Algebra.BigOpM.bigOpM_hom (SI := SI) (R := flip Entails) Φ l
 
 @[rocq_alias big_sepL_fupd]
 theorem BigSepL2.bigSepL_fupd {A : Type _} E (Φ : Nat → A → PROP) l :
     ([∗list] k↦x ∈ l, |={E}=> Φ k x) ⊢ |={E}=> [∗list] k↦x ∈ l, Φ k x :=
-    Algebra.BigOpL.bigOpL_hom (SI := Nat) (R := flip Entails) Φ l
+    Algebra.BigOpL.bigOpL_hom (SI := SI) (R := flip Entails) Φ l
 
 @[rocq_alias big_sepL2_fupd]
 theorem BigSepL2.bigSepL2_fupd {A B : Type _} E (Φ : Nat → A → B → PROP) l1 l2 :
@@ -637,12 +640,12 @@ end FUpdLaws
 
 section StepFUpdLaws
 
-variable [BI PROP] [BIFUpdate PROP]
+variable [BI SI PROP] [BIFUpdate SI PROP]
 
 open BIFUpdate LawfulSet
 
-theorem step_fupdN_contractive {E1 E2 : CoPset} {n : Nat} [ι : BILaterContractive PROP] :
-    OFE.Contractive Nat (iprop(|={E1}[E2]▷=>^[n + 1] · : PROP)) where
+theorem step_fupdN_contractive {E1 E2 : CoPset} {n : Nat} [ι : BILaterContractive SI PROP] :
+    OFE.Contractive SI (iprop(|={E1}[E2]▷=>^[n + 1] · : PROP)) where
   distLater_dist {i x y} xy_i := by
     induction n with
     | zero => exact ne.ne (ι.distLater_dist (ne.ne <| xy_i · ·))
@@ -650,7 +653,7 @@ theorem step_fupdN_contractive {E1 E2 : CoPset} {n : Nat} [ι : BILaterContracti
 
 @[rocq_alias step_fupdN_ne]
 instance step_fupdN_ne {E1 E2 : CoPset} {n : Nat} :
-    OFE.NonExpansive Nat (iprop(|={E1}[E2]▷=>^[n] · : PROP)) where
+    OFE.NonExpansive SI (iprop(|={E1}[E2]▷=>^[n] · : PROP)) where
   ne {i x y} xy_i := by
     induction n with
     | zero => exact xy_i
@@ -673,7 +676,7 @@ theorem step_fupdN_wand {Eo Ei : CoPset} {n : Nat} {P Q : PROP} :
     calc iprop((P -∗ Q) ∗ |={Eo,Ei}=> ▷ |={Ei,Eo}=> _)
       _ ⊢ |={Eo,Ei}=> (P -∗ Q) ∗ ▷ |={Ei,Eo}=> _  := (fupd_frame_left ..)
       _ ⊢ |={Eo,Ei}=> (▷ (P -∗ Q)) ∗ ▷ |={Ei,Eo}=> _  := mono (sep_mono (later_intro) .rfl)
-      _ ⊢ |={Eo,Ei}=> ▷ ((P -∗ Q) ∗ |={Ei,Eo}=> _) := mono (later_sep.2)
+      _ ⊢ |={Eo,Ei}=> ▷ ((P -∗ Q) ∗ |={Ei,Eo}=> _) := mono (later_sep_2)
       _ ⊢ |={Eo,Ei}=> ▷ |={Ei,Eo}=> ((P -∗ Q) ∗ _) := mono (later_mono (fupd_frame_left ..))
       _ ⊢ |={Eo,Ei}=> ▷ |={Ei,Eo}=> _ := step_fupd_mono IH
 
@@ -696,7 +699,7 @@ theorem step_fupd_mask_mono {Eo₁ Eo₂ Ei₁ Ei₂ : CoPset} {P : PROP}
   refine frame_right.trans ?_
   refine mono ?_
   refine (sep_mono_left later_intro).trans ?_
-  refine later_sep.2.trans ?_
+  refine later_sep_2.trans ?_
   refine later_mono ?_
   refine frame_right.trans ?_
   refine .trans (mono ?_) (trans (E2 := Ei₁))
@@ -795,7 +798,7 @@ theorem step_fupd_frame_left {Eo Ei : CoPset} {R Q : PROP} :
   refine fupd_frame_left.trans <| mono ?_
   calc
     _ ⊢ ▷ R ∗ ▷ |={Ei,Eo}=> Q := sep_mono_left later_intro
-    _ ⊢ ▷ (R ∗ |={Ei,Eo}=> Q)  := later_sep.mpr
+    _ ⊢ ▷ (R ∗ |={Ei,Eo}=> Q)  := later_sep_2
     _ ⊢ ▷ |={Ei,Eo}=> R ∗ Q    := later_mono fupd_frame_left
 
 @[rocq_alias step_fupdN_frame_l]
@@ -809,12 +812,12 @@ end StepFUpdLaws
 
 section StepFUpdPlainlyLaws
 
-variable [Sbi PROP] [BIFUpdate PROP] [BIFUpdateSbi PROP]
+variable [Sbi SI PROP] [BIFUpdate SI PROP] [BIFUpdateSbi SI PROP]
 
 open BIFUpdate BIFUpdateSbi
 
 @[rocq_alias fupd_keep_si_pure]
-theorem fupd_keep_siPure {E1 E2 : CoPset} E2' Pi {R : PROP} :
+theorem fupd_keep_siPure {E1 E2 : CoPset} E2' (Pi : SiProp SI) {R : PROP} :
     (|={E1,E2'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E1,E2}=∗ R) ⊢ |={E1,E2}=> R := calc
   _ ⊢ (|={E1, E2'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E1}=∗ |={E1, E2}=> R) :=
       and_mono_right <| wand_mono_right fupd_intro
@@ -898,7 +901,7 @@ theorem step_fupdN_plain [BIAffine PROP] {E1 E2 : CoPset} {n : Nat} {P : PROP} [
       _ ⊢ |={E1}=> ▷ ▷^[n] ◇ ◇ P          := mono <| later_mono <| except0_laterN n
       _ ⊢ |={E1}=> ▷^[n + 1] ◇ P            := mono <| laterN_mono (n + 1) except0_idem.mp
 
-omit [BIFUpdate PROP] [BIFUpdateSbi PROP] in
+omit [BIFUpdate SI PROP] [BIFUpdateSbi SI PROP] in
 theorem sForall_eq_forall {Φ : α → PROP} :
     sForall (fun p => ∃ a, p = Φ a) ⊣⊢ ∀ a, Φ a :=
   ⟨forall_intro fun a => sForall_elim ⟨a, rfl⟩,
@@ -908,7 +911,7 @@ theorem sForall_eq_forall {Φ : α → PROP} :
   Proves that the Rocq class field `fupd_si_pure_forall_2` for `BIFUpdSbi`
   follows from `BIFUpdateSbi.fupd_siPure_sForall_2`.
 -/
-theorem fupd_siPure_forall_2 {E : CoPset} {A : Sort _} {Φi : A → SiProp} :
+theorem fupd_siPure_forall_2 {E : CoPset} {A : Sort _} {Φi : A → SiProp SI} :
     (∀ x, |={E}=> <si_pure> Φi x) ⊢@{PROP} |={E}=> ∀ x, <si_pure> Φi x := calc
   _ ⊢ ∀ q, ⌜∃ x, q = Φi x⌝ → |={E}=> <si_pure> q :=
       forall_intro fun _ => imp_intro_swap <| pure_elim_left fun ⟨x, hx⟩ => hx ▸ forall_elim x

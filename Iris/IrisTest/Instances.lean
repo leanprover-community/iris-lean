@@ -20,7 +20,7 @@ open Lean Qq Iris BI ProofMode
 
 /- Tests the mvar handling of synth and ipm_synth -/
 section mvars
-variable (PROP : Type u) [BI PROP]
+variable (PROP : Type u) [BI Nat PROP]
 
 set_option pp.mvars false
 
@@ -52,7 +52,7 @@ end mvars
 /- Test the backtracking of ipm_synth -/
 section backtracking
 
-variable [BI PROP] (P1 P2 Q : PROP) [FromAssumption p .in P1 Q] [FromAssumption p .in P2 Q]
+variable [BI Nat PROP] (P1 P2 Q : PROP) [FromAssumption p .in P1 Q] [FromAssumption p .in P2 Q]
 
 /- Test backtracking with both options. IPM backtracking search will search for right conjuncts before
 left conjuncts, because `fromAssumption_and_r` is declared after `fromAssumption_and_l`.
@@ -76,7 +76,7 @@ end backtracking
 /- Test creation and instantiation of mvars using of ipm_synth -/
 section mvars
 
-variable [BI PROP] (P1 P2 : Nat → PROP)
+variable [BI Nat PROP] (P1 P2 : Nat → PROP)
 
 /- Test creation of mvars -/
 set_option pp.mvars false in
@@ -100,10 +100,18 @@ end mvars
 
 section trace
 
-variable [BI PROP] (P1 : PROP)
+variable [BI Nat PROP] (P1 : PROP)
 
 /--
 info: solution: FromAssumption false InOut.out P1 P1, new goals: []
+---
+trace: [Meta.synthInstance] ✅️ SIdx Nat
+  [Meta.synthInstance] ✅️ new goal SIdx Nat
+    [Meta.synthInstance.instances] #[natSIdx]
+  [Meta.synthInstance.apply] ✅️ apply natSIdx to SIdx Nat
+    [Meta.synthInstance.tryResolve] ✅️ SIdx Nat ≟ SIdx Nat
+    [Meta.synthInstance.answer] ✅️ SIdx Nat
+  [Meta.synthInstance] result natSIdx
 ---
 trace: [Meta.synthInstance] ✅️ IPM: FromAssumption false InOut.out P1 P1
   [Meta.synthInstance] ✅️ IPM: new goal FromAssumption false InOut.out ?_ P1 => FromAssumption false InOut.out P1 P1
@@ -111,23 +119,43 @@ trace: [Meta.synthInstance] ✅️ IPM: FromAssumption false InOut.out P1 P1
     [Meta.synthInstance.instances] #[@fromAssumption_exact]
     [Meta.synthInstance] ✅️ apply @fromAssumption_exact to FromAssumption false InOut.out ?_ P1
       [Meta.synthInstance.tryResolve] ✅️ FromAssumption false InOut.out P1 P1 ≟ FromAssumption false InOut.out P1 P1
-      [Meta.synthInstance] ✅️ switch to normal synthInstance
-        [Meta.synthInstance] ✅️ BI PROP
-          [Meta.synthInstance] ✅️ new goal BI PROP
+        [Meta.synthInstance] 💥️ BI ?_ PROP
+          [Meta.synthInstance] ✅️ new goal BI ?_ PROP
             [Meta.synthInstance.instances] #[@Sbi.toBI, inst✝]
-          [Meta.synthInstance.apply] ✅️ apply inst✝ to BI PROP
-            [Meta.synthInstance.tryResolve] ✅️ BI PROP ≟ BI PROP
-            [Meta.synthInstance.answer] ✅️ BI PROP
+          [Meta.synthInstance.apply] 💥️ apply inst✝ to BI ?_ PROP
+            [Meta.synthInstance.tryResolve] 💥️ BI ?_ PROP ≟ BI Nat PROP
+      [Meta.synthInstance] ✅️ switch to normal synthInstance
+        [Meta.synthInstance] ✅️ SIdx Nat
+          [Meta.synthInstance] ✅️ new goal SIdx Nat
+            [Meta.synthInstance.instances] #[natSIdx]
+          [Meta.synthInstance.apply] ✅️ apply natSIdx to SIdx Nat
+            [Meta.synthInstance.tryResolve] ✅️ SIdx Nat ≟ SIdx Nat
+            [Meta.synthInstance.answer] ✅️ SIdx Nat
+          [Meta.synthInstance] result natSIdx
+      [Meta.synthInstance] ✅️ switch to normal synthInstance
+        [Meta.synthInstance] ✅️ BI Nat PROP
+          [Meta.synthInstance] ✅️ new goal BI Nat PROP
+            [Meta.synthInstance.instances] #[@Sbi.toBI, inst✝]
+          [Meta.synthInstance.apply] ✅️ apply inst✝ to BI Nat PROP
+            [Meta.synthInstance.tryResolve] ✅️ BI Nat PROP ≟ BI Nat PROP
+            [Meta.synthInstance.answer] ✅️ BI Nat PROP
           [Meta.synthInstance] result inst✝
   [Meta.synthInstance] result fromAssumption_exact false InOut.out P1
 ---
-trace: [Meta.synthInstance] ✅️ BI PROP
-  [Meta.synthInstance] ✅️ new goal BI PROP
-    [Meta.synthInstance.instances] #[@Sbi.toBI, inst✝]
-  [Meta.synthInstance.apply] ✅️ apply inst✝ to BI PROP
-    [Meta.synthInstance.tryResolve] ✅️ BI PROP ≟ BI PROP
-    [Meta.synthInstance.answer] ✅️ BI PROP
-  [Meta.synthInstance] result inst✝
+trace: [Meta.synthInstance] ✅️ BIBase PROP
+  [Meta.synthInstance] ✅️ new goal BIBase PROP
+    [Meta.synthInstance.instances] #[toBIBase]
+  [Meta.synthInstance.apply] ✅️ apply toBIBase to BIBase PROP
+    [Meta.synthInstance.tryResolve] ✅️ BIBase PROP ≟ BIBase PROP
+    [Meta.synthInstance] ✅️ new goal BI _tc.1 PROP
+      [Meta.synthInstance.instances] #[@Sbi.toBI, inst✝]
+  [Meta.synthInstance.apply] ✅️ apply inst✝ to BI Nat PROP
+    [Meta.synthInstance.tryResolve] ✅️ BI Nat PROP ≟ BI Nat PROP
+    [Meta.synthInstance.answer] ✅️ BI Nat PROP
+  [Meta.synthInstance.resume] ✅️ propagating BI Nat PROP to subgoal BI Nat PROP of BIBase PROP
+    [Meta.synthInstance.resume] size: 1
+    [Meta.synthInstance.answer] ✅️ BIBase PROP
+  [Meta.synthInstance] result inst✝.toBIBase Nat
 -/
 #guard_msgs in
 set_option trace.Meta.synthInstance true in
@@ -139,7 +167,7 @@ end trace
 meta section tactics
 
 @[ipm_class]
-class TacticTest [BI PROP] (P : PROP) (Q : outParam PROP) where
+class TacticTest [BI Nat PROP] (P : PROP) (Q : outParam PROP) where
   tactic_test : P ⊢ Q
 
 @[ipm_tactic_instance:high TacticTest _ _]
@@ -147,20 +175,20 @@ def tac_continue : SynthTactic := fun e => do
   logInfo m!"tac_continue called with {e}"
   return .continue
 
-theorem tactic_test_emp [BI PROP] (P : PROP) : TacticTest iprop(emp ∗ P) P := ⟨sep_elim_right⟩
+theorem tactic_test_emp [BI Nat PROP] (P : PROP) : TacticTest iprop(emp ∗ P) P := ⟨sep_elim_right⟩
 
 @[ipm_tactic_instance TacticTest iprop(emp ∗ _) _]
 def tac_emp : SynthTactic := fun e => do
   let_expr TacticTest prop bi P _ := e | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
-  have _bi : Q(BI $prop) := bi
+  have _bi : Q(BI Nat $prop) := bi
   let_expr BI.sep _ _ E Q := P | return .continue
   let_expr BI.emp _ _ := E | return .continue
   have Q : Q($prop) := Q
   return .success q(tactic_test_emp $Q)
 
-theorem tactic_test_sep [BI PROP] (P P' Q : PROP) :
+theorem tactic_test_sep [BI Nat PROP] (P P' Q : PROP) :
   TacticTest P P' →
   TacticTest iprop(P ∗ Q) iprop(P' ∗ Q) := fun h => ⟨sep_mono h.1 .rfl⟩
 
@@ -169,7 +197,7 @@ def tac_sep : SynthTactic := fun e => do
   let_expr TacticTest prop bi S _ := e | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
-  have _bi : Q(BI $prop) := bi
+  have _bi : Q(BI Nat $prop) := bi
   let_expr BI.sep _ _ P Q := S | return .continue
   have P : Q($prop) := P
   have Q : Q($prop) := Q
@@ -177,7 +205,7 @@ def tac_sep : SynthTactic := fun e => do
   let .some pf ← synthInstanceRecursiveQ q(TacticTest $P $P') | return .continue
   return .success q(tactic_test_sep $P $P' $Q $pf)
 
-instance tactic_test_all {α} [BI PROP] (P P' : α → PROP)
+instance tactic_test_all {α} [BI Nat PROP] (P P' : α → PROP)
   [h : ∀ a, TacticTest (P a) (P' a)] :
   TacticTest iprop(∀ a, P a) iprop(∀ a, P' a) :=
   ⟨forall_mono (fun a => (h a).1)⟩
@@ -186,12 +214,20 @@ instance tactic_test_all {α} [BI PROP] (P P' : α → PROP)
 @[ipm_tactic_instance:low TacticTest iprop(False) _, TacticTest iprop(True) _]
 def tac_fail : SynthTactic := fun _ => return .fail
 
-variable {PROP} [BI PROP] (P : PROP)
+variable {PROP} [BI Nat PROP] (P : PROP)
 
 /--
 info: tac_continue called with TacticTest iprop(emp ∗ P) ?_
 ---
 info: solution: TacticTest iprop(emp ∗ P) P, new goals: []
+---
+trace: [Meta.synthInstance] ✅️ SIdx Nat
+  [Meta.synthInstance] ✅️ new goal SIdx Nat
+    [Meta.synthInstance.instances] #[natSIdx]
+  [Meta.synthInstance.apply] ✅️ apply natSIdx to SIdx Nat
+    [Meta.synthInstance.tryResolve] ✅️ SIdx Nat ≟ SIdx Nat
+    [Meta.synthInstance.answer] ✅️ SIdx Nat
+  [Meta.synthInstance] result natSIdx
 ---
 trace: [Meta.synthInstance] ✅️ IPM: TacticTest iprop(emp ∗ P) P
   [Meta.synthInstance] ✅️ IPM: new goal TacticTest iprop(emp ∗ P) ?_ => TacticTest iprop(emp ∗ P) P
@@ -213,6 +249,14 @@ info: tac_continue called with TacticTest iprop((emp ∗ P) ∗ P) ?_
 info: tac_continue called with TacticTest iprop(emp ∗ P) ?_
 ---
 info: solution: TacticTest iprop((emp ∗ P) ∗ P) iprop(P ∗ P), new goals: []
+---
+trace: [Meta.synthInstance] ✅️ SIdx Nat
+  [Meta.synthInstance] ✅️ new goal SIdx Nat
+    [Meta.synthInstance.instances] #[natSIdx]
+  [Meta.synthInstance.apply] ✅️ apply natSIdx to SIdx Nat
+    [Meta.synthInstance.tryResolve] ✅️ SIdx Nat ≟ SIdx Nat
+    [Meta.synthInstance.answer] ✅️ SIdx Nat
+  [Meta.synthInstance] result natSIdx
 ---
 trace: [Meta.synthInstance] ✅️ IPM: TacticTest iprop((emp ∗ P) ∗ P) iprop(P ∗ P)
   [Meta.synthInstance] ✅️ IPM: new goal TacticTest iprop((emp ∗ P) ∗ P)
@@ -244,6 +288,14 @@ info: tac_continue called with TacticTest iprop(emp ∗ ⌜a = 5⌝) ?_
 ---
 info: solution: TacticTest iprop(∀ a, (emp ∗ ⌜a = 5⌝) ∗ P) iprop(∀ a, ⌜a = 5⌝ ∗ P), new goals: []
 ---
+trace: [Meta.synthInstance] ✅️ SIdx Nat
+  [Meta.synthInstance] ✅️ new goal SIdx Nat
+    [Meta.synthInstance.instances] #[natSIdx]
+  [Meta.synthInstance.apply] ✅️ apply natSIdx to SIdx Nat
+    [Meta.synthInstance.tryResolve] ✅️ SIdx Nat ≟ SIdx Nat
+    [Meta.synthInstance.answer] ✅️ SIdx Nat
+  [Meta.synthInstance] result natSIdx
+---
 trace: [Meta.synthInstance] ✅️ IPM: TacticTest iprop(∀ a, (emp ∗ ⌜a = 5⌝) ∗ P) iprop(∀ a, ⌜a = 5⌝ ∗ P)
   [Meta.synthInstance] ✅️ IPM: new goal TacticTest iprop(∀ a, (emp ∗ ⌜a = 5⌝) ∗ P)
         ?_ => TacticTest iprop(∀ a, (emp ∗ ⌜a = 5⌝) ∗ P) iprop(∀ a, ⌜a = 5⌝ ∗ P)
@@ -255,12 +307,12 @@ trace: [Meta.synthInstance] ✅️ IPM: TacticTest iprop(∀ a, (emp ∗ ⌜a = 
       [Meta.synthInstance.tryResolve] ✅️ TacticTest iprop(∀ a, (emp ∗ ⌜a = 5⌝) ∗ P)
             iprop(∀ a, ?_ a) ≟ TacticTest iprop(∀ a, (emp ∗ ⌜a = 5⌝) ∗ P) iprop(∀ a, ?_ a)
       [Meta.synthInstance] ✅️ switch to normal synthInstance
-        [Meta.synthInstance] ✅️ BI PROP
-          [Meta.synthInstance] ✅️ new goal BI PROP
+        [Meta.synthInstance] ✅️ BI Nat PROP
+          [Meta.synthInstance] ✅️ new goal BI Nat PROP
             [Meta.synthInstance.instances] #[@Sbi.toBI, inst✝]
-          [Meta.synthInstance.apply] ✅️ apply inst✝ to BI PROP
-            [Meta.synthInstance.tryResolve] ✅️ BI PROP ≟ BI PROP
-            [Meta.synthInstance.answer] ✅️ BI PROP
+          [Meta.synthInstance.apply] ✅️ apply inst✝ to BI Nat PROP
+            [Meta.synthInstance.tryResolve] ✅️ BI Nat PROP ≟ BI Nat PROP
+            [Meta.synthInstance.answer] ✅️ BI Nat PROP
           [Meta.synthInstance] result inst✝
       [Meta.synthInstance] ✅️ IPM: new goal ∀ (a : Nat),
             TacticTest iprop((emp ∗ ⌜a = 5⌝) ∗ P)
@@ -291,6 +343,14 @@ set_option pp.mvars false in
 info: tac_continue called with TacticTest iprop(True) ?_
 ---
 info: None
+---
+trace: [Meta.synthInstance] ✅️ SIdx Nat
+  [Meta.synthInstance] ✅️ new goal SIdx Nat
+    [Meta.synthInstance.instances] #[natSIdx]
+  [Meta.synthInstance.apply] ✅️ apply natSIdx to SIdx Nat
+    [Meta.synthInstance.tryResolve] ✅️ SIdx Nat ≟ SIdx Nat
+    [Meta.synthInstance.answer] ✅️ SIdx Nat
+  [Meta.synthInstance] result natSIdx
 ---
 trace: [Meta.synthInstance] ❌️ IPM: TacticTest iprop(True) ?_
   [Meta.synthInstance] ❌️ IPM: new goal TacticTest iprop(True) ?_ => TacticTest iprop(True) ?_
@@ -489,7 +549,7 @@ end IsOp
 
 section ProofModeInstances
 
-variable [BI PROP] (P Q : PROP) (φ : Prop)
+variable [BI Nat PROP] (P Q : PROP) (φ : Prop)
 
 /-
   The instance `intoForall_wand` has lower priority than `intoForall_wand_pure`
@@ -608,7 +668,7 @@ end ProofModeInstances
 
 section TCSideCondition
 
-variable [Sbi PROP] [BIFUpdate PROP] [BIFUpdateSbi PROP] [BIAffine PROP]
+variable [Sbi Nat PROP] [BIFUpdate Nat PROP] [BIFUpdateSbi Nat PROP] [BIAffine PROP]
 variable (E : CoPset) (Ψ : Nat → PROP) [∀ n, Plain (Ψ n)]
 
 /- Tests `TCSideCondition` with sidecondition that can be solved. -/

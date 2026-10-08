@@ -166,7 +166,7 @@ theorem wptp_postconditions (Φs : List (Val → IProp GF)) (s : Stuckness) (es 
   cases hv : toVal x1
   · imodintro; apply true_intro
   · simp only [Option.elim_some]
-    iapply wp_value_fupd $$ Hwp
+    iapply (wp_value_fupd ?_).mp $$ Hwp
     constructor; grind
 
 omit iG in
@@ -190,7 +190,7 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness) (es : List Expr) (�
             |={⊤,∅}=> ⌜φ⌝)))
     (Hsteps : (es, σ1) -<κs>->ₜₚ^[n] (t2, σ2)) :
     φ := by
-  apply pure_soundness (PROP := IProp GF)
+  apply pure_soundness (SI := Nat) (PROP := IProp GF)
   apply laterN_soundness (n := steps_sum numLaters 0 n + 1)
   rw [(laterN_succ_right _).to_eq]
   refine Entails.trans ?_ (laterN_mono _ except0_into_later)

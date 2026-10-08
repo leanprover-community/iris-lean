@@ -17,7 +17,7 @@ telescopes parses, elaborates to the corresponding `atomic_update`/`atomic_acc` 
 prints back in notation form. -/
 
 section atomicNotation
-variable {PROP : Type} [BI PROP] [BIFUpdate PROP] (Eo Ei : CoPset) (P Q : PROP)
+variable {PROP : Type} [BI Nat PROP] [BIFUpdate Nat PROP] (Eo Ei : CoPset) (P Q : PROP)
   (α : Nat → PROP) (β : Nat → Bool → PROP) (Ψ : Nat → Bool → PROP)
 
 /-! Both telescopes non-empty. -/
@@ -103,11 +103,10 @@ example (AU AACC : Nat) : Nat := AU + AACC
 
 /-! The notation elaborates to exactly the terms the lemmas about `atomic_update` and
 `atomic_acc` are stated with. -/
-example : (AU <{ ∃∃ x, α x }> @ Eo, Ei <{ ∀∀ y, β x y, COMM Ψ x y }>) ⊢
+example := (aupd_aacc (SI := Nat) : (AU <{ ∃∃ x, α x }> @ Eo, Ei <{ ∀∀ y, β x y, COMM Ψ x y }>) ⊢
     AACC <{ ∃∃ x, α x,
         ABORT AU <{ ∃∃ x, α x }> @ Eo, Ei <{ ∀∀ y, β x y, COMM Ψ x y }> }>
-      @ Eo, Ei <{ ∀∀ y, β x y, COMM Ψ x y }> :=
-  aupd_aacc
+      @ Eo, Ei <{ ∀∀ y, β x y, COMM Ψ x y }>)
 
 end atomicNotation
 
@@ -183,14 +182,14 @@ example : (<<{ ∀∀ x, α x }>> e @ E <<{ ∃∃ y, β x y | RET w }>>) ⊢
 end atomicWpNotation
 section ProofModeTactics
 
-variable {PROP : Type u} [instBI : BI PROP] [instBIFUpd : BIFUpdate PROP] {TA TB : Tele}
+variable {PROP : Type u} [instBI : BI Nat PROP] [instBIFUpd : BIFUpdate Nat PROP] {TA TB : Tele}
 variable {Eo Ei : CoPset} {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP}
 
 /--
   Tests `iauintro` for reducing `atomic_update Eo Ei α β β` to `atomic_acc Eo Ei α (α x) β β`.
   Tests `iaaccintro` with `α x` for abort and `β x y` for commit.
 -/
-example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_update Eo Ei α β β := by
+example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_update (SI := Nat) Eo Ei α β β := by
   iintro Hα
   iauintro
   iaaccintro Hα
@@ -201,7 +200,7 @@ example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_update Eo Ei α β β :
   Tests `iaaccintro` with `α x` for abort and `β x y` for commit.
   The argument for the telescopic quantifier is supplied.
 -/
-example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_acc Eo Ei α (α x) β β := by
+example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_acc (SI := Nat) Eo Ei α (α x) β β := by
   iintro Hα
   iaaccintro %x Hα
   · iintro Hα !> //
@@ -209,7 +208,7 @@ example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_acc Eo Ei α (α x) β 
 
 /-- Tests `iaaccintro` with the pre-condition `α x` obtained from several hypotheses. -/
 example (HEi : Ei ⊆ Eo) (x : TA.Arg) {Q R : PROP} (hα : α x = iprop(Q ∗ R)) :
-    Q ∗ R ⊢ atomic_acc Eo Ei α (α x) β β := by
+    Q ∗ R ⊢ atomic_acc (SI := Nat) Eo Ei α (α x) β β := by
   iintro ⟨HQ, HR⟩
   iaaccintro [HQ HR]
   · rw [hα]; iframe
@@ -233,7 +232,7 @@ example {Q : PROP} : Q ⊢ Q := by
   leaving atomic_acc Eo Ei α (α x) β β
 -/
 #guard_msgs (whitespace := lax) in
-example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_acc Eo Ei α (α x) β β := by
+example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_acc (SI := Nat) Eo Ei α (α x) β β := by
   iintro Hα
   iaaccintro %x Hα []
 

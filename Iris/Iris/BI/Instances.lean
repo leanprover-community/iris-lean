@@ -13,35 +13,38 @@ public import Iris.Std.Classes
 
 @[expose] public section
 
+
+variable {SI : Type _} [Iris.SIdx SI]
+
 namespace Iris.BI
 open Iris.Std
 open BI
 
 
 -- Intuitionistic
-instance emp_intuitionistic [BI PROP] : Intuitionistic iprop(emp : PROP) where
+instance emp_intuitionistic [BI SI PROP] : Intuitionistic iprop(emp : PROP) where
   intuitionistic := intuitionistically_emp.2
 
-instance and_intuitionistic [BI PROP] (P Q : PROP) [Intuitionistic P] [Intuitionistic Q] :
+instance and_intuitionistic [BI SI PROP] (P Q : PROP) [Intuitionistic P] [Intuitionistic Q] :
     Intuitionistic iprop(P ∧ Q) where
   intuitionistic := (and_mono intuitionistic intuitionistic).trans intuitionistically_and.2
 
-instance or_intuitionistic [BI PROP] (P Q : PROP) [Intuitionistic P] [Intuitionistic Q] :
+instance or_intuitionistic [BI SI PROP] (P Q : PROP) [Intuitionistic P] [Intuitionistic Q] :
     Intuitionistic iprop(P ∨ Q) where
   intuitionistic := (or_mono intuitionistic intuitionistic).trans intuitionistically_or_mpr
 
-instance exists_intuitionistic [BI PROP] (Φ : α → PROP) [∀ x, Intuitionistic (Φ x)] :
+instance exists_intuitionistic [BI SI PROP] (Φ : α → PROP) [∀ x, Intuitionistic (Φ x)] :
     Intuitionistic iprop(∃ x, Φ x) where
   intuitionistic := (exists_mono fun _ => intuitionistic).trans intuitionistically_exists_mpr
 
-instance sep_intuitionistic [BI PROP] (P Q : PROP) [Intuitionistic P] [Intuitionistic Q] :
+instance sep_intuitionistic [BI SI PROP] (P Q : PROP) [Intuitionistic P] [Intuitionistic Q] :
     Intuitionistic iprop(P ∗ Q) where
   intuitionistic := (sep_mono intuitionistic intuitionistic).trans intuitionistically_sep_mpr
 
-instance intuitionistically_intuitionistic [BI PROP] (P : PROP) : Intuitionistic iprop(□ P) where
+instance intuitionistically_intuitionistic [BI SI PROP] (P : PROP) : Intuitionistic iprop(□ P) where
   intuitionistic := intuitionistically_idem.2
 
-instance intuitionisticallyIf_true_intuitionistic [BI PROP] (P : PROP) : Intuitionistic iprop(□?true P)
+instance intuitionisticallyIf_true_intuitionistic [BI SI PROP] (P : PROP) : Intuitionistic iprop(□?true P)
   := inferInstanceAs (Intuitionistic iprop(□ P))
 
 end BI

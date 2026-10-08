@@ -9,6 +9,9 @@ public import Iris.BI
 
 @[expose] public section
 
+
+variable {SI : Type _} [Iris.SIdx SI]
+
 namespace Iris.ProofMode
 open Iris.BI
 
@@ -22,7 +25,7 @@ inductive ModalityAction (PROP1 : Type u) : Type u → Type (u + 1) where
 
 namespace ModalityAction
 
-variable [BI PROP1] [h2 : BI PROP2] (s : ModalityAction PROP1 PROP2)
+variable [BI.BIBase PROP1] [h2 : BI.BIBase PROP2] (s : ModalityAction PROP1 PROP2)
 
 @[simp, rocq_alias modality_intuitionistic_action_spec, rocq_alias modality_spatial_action_spec]
 def action_spec (p : Bool) : (PROP1 → PROP2) → Prop :=
@@ -43,7 +46,7 @@ end ModalityAction
 
 @[rocq_alias modality, rocq_alias modality_mixin, rocq_alias modality_emp,
   rocq_alias modality_mono, rocq_alias modality_sep]
-structure Modality PROP1 PROP2 [BI PROP1] [BI PROP2] where
+structure Modality PROP1 PROP2 [BI.BIBase PROP1] [BI.BIBase PROP2] where
   M : PROP1 → PROP2
   action : Bool → ModalityAction PROP1 PROP2
   spec : ∀ p, (action p).action_spec p M
@@ -52,7 +55,7 @@ structure Modality PROP1 PROP2 [BI PROP1] [BI PROP2] where
   sep : ∀ {P Q}, iprop(M P ∗ M Q) ⊢ M iprop(P ∗ Q)
 
 @[rocq_alias modality_id, rocq_alias modality_id_mixin]
-def modality_id [BI PROP] : Modality PROP PROP where
+def modality_id [BI SI PROP] : Modality PROP PROP where
   M := id
   action _ := .id
   spec := by simp

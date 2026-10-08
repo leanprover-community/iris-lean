@@ -50,6 +50,7 @@ The `#imp_synth` command allows testing ipm synthesis, similar to the `#synth` c
 -/
 
 namespace Iris.ProofMode
+
 open Lean Elab Tactic Meta Qq BI Iris.Std
 
 def MessageData.withMCtx (mctx : MetavarContext) (d : MessageData) : MessageData :=

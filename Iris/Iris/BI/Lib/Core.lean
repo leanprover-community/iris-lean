@@ -11,25 +11,28 @@ public import Iris.ProofMode
 
 @[expose] public section
 
+
+variable {SI : Type _} [Iris.SIdx SI]
+
 namespace Iris
 
 section Core
 open BI OFE
 
 @[rocq_alias coreP]
-def coreP [Sbi PROP] (P : PROP) : PROP :=
+def coreP [Sbi SI PROP] (P : PROP) : PROP :=
   iprop% ∀ Q, <affine> ■ (Q -∗ <pers> Q) -∗ <affine> ■ (P -∗ Q) -∗ Q
 
-variable [Sbi PROP]
+variable [Sbi SI PROP]
 
 @[rocq_alias coreP_intro]
-theorem coreP_intro {P : PROP} : P -∗ coreP P := by
+theorem coreP_intro {P : PROP} : P -∗ coreP (SI := SI) P := by
   unfold coreP
   iintro HP %Q HQ HPQ
   iapply affinely_plainly_elim $$ HPQ HP
 
 @[rocq_alias coreP_persistent]
-instance coreP_persistent [BIPersistentlyForall PROP] (P : PROP) : Persistent (coreP P) where
+instance coreP_persistent [BIPersistentlyForall PROP] (P : PROP) : Persistent (coreP (SI := SI) P) where
   persistent := by
     unfold coreP
     iintro HC %Q
@@ -43,20 +46,20 @@ instance coreP_persistent [BIPersistentlyForall PROP] (P : PROP) : Persistent (c
     iapply HPQ
 
 @[rocq_alias coreP_affine]
-instance coreP_affine (P : PROP) [Affine P] : Affine (coreP P) where
+instance coreP_affine (P : PROP) [Affine P] : Affine (coreP (SI := SI) P) where
   affine := by
     unfold coreP
     iintro HC
     iapply HC <;> iintro !> !> _ //
 
 @[rocq_alias coreP_ne]
-instance coreP_ne : NonExpansive Nat (coreP (PROP := PROP)) where
+instance coreP_ne : NonExpansive SI (coreP (SI := SI) (PROP := PROP)) where
   ne _ _ _ H :=
     forall_ne fun _ => wand_ne.ne .rfl (wand_ne.ne
       (affinely_ne.ne (instPlainly_ne.ne (wand_ne.ne H .rfl))) .rfl)
 
 @[rocq_alias coreP_wand]
-theorem coreP_wand (P Q : PROP) : <affine> ■ (P -∗ Q) -∗ coreP P -∗ coreP Q := by
+theorem coreP_wand (P Q : PROP) : <affine> ■ (P -∗ Q) -∗ coreP (SI := SI) P -∗ coreP (SI := SI) Q := by
   unfold coreP
   iintro #HPQ HP %R #HR #HQR
   iapply HP $$ HR
@@ -65,7 +68,7 @@ theorem coreP_wand (P Q : PROP) : <affine> ■ (P -∗ Q) -∗ coreP P -∗ core
   iapply HPQ $$ HP
 
 @[rocq_alias coreP_elim]
-theorem coreP_elim (P : PROP) [Persistent P] : coreP P -∗ P := by
+theorem coreP_elim (P : PROP) [Persistent P] : coreP (SI := SI) P -∗ P := by
   unfold coreP
   iintro HCP
   iapply HCP
@@ -74,7 +77,7 @@ theorem coreP_elim (P : PROP) [Persistent P] : coreP P -∗ P := by
 
 /- This is an instance of `Proper` in the Rocq version. -/
 @[rw_mono_rule, rocq_alias coreP_mono]
-theorem coreP_mono {P Q : PROP} (h : P ⊢ Q) : coreP P ⊢ coreP Q := by
+theorem coreP_mono {P Q : PROP} (h : P ⊢ Q) : coreP (SI := SI) P ⊢ coreP (SI := SI) Q := by
   unfold coreP
   iintro HPQ %R HR HQR
   iapply HPQ $$ HR
@@ -83,12 +86,12 @@ theorem coreP_mono {P Q : PROP} (h : P ⊢ Q) : coreP P ⊢ coreP Q := by
 
 /- This is an instance of `Proper` in the Rocq version. -/
 @[rocq_alias coreP_proper]
-theorem coreP_proper {P Q : PROP} (h : P ⊣⊢ Q) : coreP P ⊣⊢ coreP Q :=
+theorem coreP_proper {P Q : PROP} (h : P ⊣⊢ Q) : coreP (SI := SI) P ⊣⊢ coreP (SI := SI) Q :=
   .ofMono coreP_mono h
 
 @[rocq_alias coreP_entails]
 theorem coreP_entails [BIPersistentlyForall PROP] (P Q : PROP) :
-    (<affine> coreP P ⊢ Q) ↔ (P ⊢ <pers> Q) := by
+    (<affine> coreP (SI := SI) P ⊢ Q) ↔ (P ⊢ <pers> Q) := by
   constructor <;> intro h
   · iintro HP
     ihave #HPQ := coreP_intro $$ HP
@@ -100,7 +103,7 @@ theorem coreP_entails [BIPersistentlyForall PROP] (P Q : PROP) :
 
 @[rocq_alias coreP_entails']
 theorem coreP_entails' [BIPersistentlyForall PROP] {P Q : PROP} [Affine P] :
-    (coreP P ⊢ Q) ↔ (P ⊢ □ Q) := by
+    (coreP (SI := SI) P ⊢ Q) ↔ (P ⊢ □ Q) := by
   constructor <;> intro h
   · exact affinely_intro <| (coreP_entails P Q).mp <| affinely_elim.trans h
   · refine (coreP_mono h).trans ?_

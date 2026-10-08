@@ -9,6 +9,9 @@ public import Iris.BI.Cmra
 
 @[expose] public section
 
+
+variable {SI : Type _} [Iris.SIdx SI]
+
 /-!
 # `sbi_unfold`
 
@@ -19,7 +22,7 @@ The tactic takes a (bi-)entailment of plain propositions and turns it into a
 
 the tactic `sbi_unfold` turns it into
 
-  `∀ (n : Nat), x ≼ₒ{n} y ↔ x.1 ≼ₒ{n} y.1 ∧ x.2 ≼ₒ{n} y.2`
+  `∀ (n : SI), x ≼ₒ{n} y ↔ x.1 ≼ₒ{n} y.1 ∧ x.2 ≼ₒ{n} y.2`
 
 The tactic `sbi_unfold` works for goals of the shape `⊢ P`, `P ⊢ Q`, `P ⊣⊢ Q`.
 Here, `P` and `Q` should be in the "plain" subset of propositions, i.e. `⌜_⌝`,
@@ -33,15 +36,15 @@ to the use of nested implications. For example, given
 
 the tactic `sbi_unfold` turns it into
 
-  `∀ (n : Nat), x.1 ≼ₒ{n} y.1 → x.2 ≼ₒ{n} y.2 → x ≼ₒ{n} y`
+  `∀ (n : SI), x.1 ≼ₒ{n} y.1 → x.2 ≼ₒ{n} y.2 → x ≼ₒ{n} y`
 
 instead of (the logically equivalent, but more verbose)
 
-  `∀ n, ∀ n' ≤ n, x.1 ≼ₒ{n'} y.1 → ∀ n'' ≤ n', x.2 ≼ₒ{n''} y.2 → x ≼ₒ{n''} y`
+  `∀ (n : SI), ∀ n' ≤ n, x.1 ≼ₒ{n'} y.1 → ∀ n'' ≤ n', x.2 ≼ₒ{n''} y.2 → x ≼ₒ{n''} y`
 
-The tactic is implemented using the type class `SbiUnfold clo P Pi`, which takes
+The tactic is implemented using the type class `SbiUnfold SI clo P Pi`, which takes
 a proposition `P` (which is intended to be plain) as input and produces its
-interpretation `Pi : Nat → Prop` in the step-indexed model as output, so that
+interpretation `Pi : SI → Prop` in the step-indexed model as output, so that
 the down closure of `Pi` is equivalent to `P`.
 
 The input indicator `clo` indicates whether the output `Pi` should be down
@@ -68,80 +71,80 @@ inductive SbiUnfoldClosure where
   /-- The interpretation need not be downwards closed. -/
   | notClosed
 
-/-- `SbiUnfold clo P Pi` states that the plain proposition `P` is the `<si_pure>`
+/-- `SbiUnfold SI clo P Pi` states that the plain proposition `P` is the `<si_pure>`
 embedding of the down closure of `Pi`, and that `Pi` is downwards closed whenever
 `clo` demands it. -/
 @[rocq_alias SbiUnfold]
-class SbiUnfold [Sbi PROP] (clo : SbiUnfoldClosure) (P : PROP)
-    (Pi : outParam (Nat → Prop)) where
-  closed {n₁ n₂ : Nat} : clo = .downClosed → Pi n₁ → n₂ ≤ n₁ → Pi n₂
+class SbiUnfold (SI : Type _) [SIdx SI] {PROP : Type _} [Sbi SI PROP] (clo : SbiUnfoldClosure) (P : PROP)
+    (Pi : outParam (SI → Prop)) where
+  closed {n₁ n₂ : SI} : clo = .downClosed → Pi n₁ → n₂ ≤ n₁ → Pi n₂
   as_siPure : P ⊣⊢ iprop(<si_pure> downClose Pi)
 
 /-- Implications and bi-implications need to be down closed when `clo = .downClosed`. -/
 @[rocq_alias sbi_unfold_maybe_downclose]
-def SbiUnfoldClosure.maybeDownClose : SbiUnfoldClosure → (Nat → Prop) → Nat → Prop
-  | .downClosed, Pi, n => ∀ m ≤ n, Pi m
+def SbiUnfoldClosure.maybeDownClose : SbiUnfoldClosure → (SI → Prop) → SI → Prop
+  | .downClosed, Pi, n => ∀ (m : SI), m ≤ n → Pi m
   | .notClosed, Pi, n => Pi n
 
 namespace SbiUnfold
-variable [Sbi PROP] {clo : SbiUnfoldClosure} {P : PROP} {Pi : Nat → Prop}
+variable [Sbi SI PROP] {clo : SbiUnfoldClosure} {P : PROP} {Pi : SI → Prop}
 
-theorem downClose_of_closed (h : ∀ {n₁ n₂ : Nat}, Pi n₁ → n₂ ≤ n₁ → Pi n₂) {n : Nat} :
+theorem downClose_of_closed (h : ∀ {n₁ n₂ : SI}, Pi n₁ → n₂ ≤ n₁ → Pi n₂) {n : SI} :
     (downClose Pi).holds n ↔ Pi n :=
-  ⟨(· n .refl), fun hh _ hm => h hh hm⟩
+  ⟨(· n SIdx.le_refl), fun hh _ hm => h hh hm⟩
 
 @[rocq_alias SbiUnfold_closed]
-theorem of_closed (hPi : ∀ {n₁ n₂ : Nat}, Pi n₁ → n₂ ≤ n₁ → Pi n₂)
-    (h : P ⊣⊢ iprop(<si_pure> (⟨Pi, hPi⟩ : SiProp))) : SbiUnfold clo P Pi where
+theorem of_closed (hPi : ∀ {n₁ n₂ : SI}, Pi n₁ → n₂ ≤ n₁ → Pi n₂)
+    (h : P ⊣⊢ iprop(<si_pure> (⟨Pi, hPi⟩ : SiProp SI))) : SbiUnfold SI clo P Pi where
   closed _ := hPi
   as_siPure := h.trans <| siPure_mono_bi <| biEntails_of_iff fun _ => (downClose_of_closed hPi).symm
 
 /-- Wrap the interpretation in a down closure when `clo` demands one. -/
 @[rocq_alias SbiUnfold_downclose]
 theorem of_downClose (h : P ⊣⊢ iprop(<si_pure> downClose Pi)) :
-    SbiUnfold clo P (clo.maybeDownClose Pi) := by
+    SbiUnfold SI clo P (clo.maybeDownClose Pi) := by
   cases clo with
   | notClosed => exact ⟨(nomatch ·), h⟩
-  | downClosed => exact of_closed (fun hh hm _ hk => hh _ (Nat.le_trans hk hm)) h
+  | downClosed => exact of_closed (fun hh hm _ hk => hh _ (SIdx.le_trans hk hm)) h
 
 @[rocq_alias sbi_unfold_closed_weaken]
-theorem weaken [h : SbiUnfold .downClosed P Pi] : SbiUnfold clo P Pi where
+theorem weaken [h : SbiUnfold SI .downClosed P Pi] : SbiUnfold SI clo P Pi where
   closed _ := h.closed rfl
   as_siPure := h.as_siPure
 
 end SbiUnfold
 
-/-- This instance can be applied to any `P : SiProp` so it has a low priority to
+/-- This instance can be applied to any `P : SiProp SI` so it has a low priority to
 make sure it's only used if no other instance can be used. -/
 @[rocq_alias sbi_unfold_siprop]
-instance (priority := low) sbiUnfold_siProp (clo : SbiUnfoldClosure) (P : SiProp) :
-    SbiUnfold clo P P.holds :=
+instance (priority := low) sbiUnfold_siProp (clo : SbiUnfoldClosure) (P : SiProp SI) :
+    SbiUnfold SI clo P P.holds :=
   .of_closed P.closed .rfl
 
 section
-variable [Sbi PROP] {clo : SbiUnfoldClosure} {P Q : PROP} {Pi Qi : Nat → Prop}
+variable [Sbi SI PROP] {clo : SbiUnfoldClosure} {P Q : PROP} {Pi Qi : SI → Prop}
 
 /-! ## The top-level lemmas used by the tactic -/
 
 namespace SbiUnfold
 
 @[rocq_alias sbi_unfold_entails]
-theorem entails_iff [hP : SbiUnfold .downClosed P Pi] [hQ : SbiUnfold .notClosed Q Qi] :
-    (P ⊢ Q) ↔ ∀ n, Pi n → Qi n :=
+theorem entails_iff [hP : SbiUnfold SI .downClosed P Pi] [hQ : SbiUnfold SI .notClosed Q Qi] :
+    (P ⊢ Q) ↔ ∀ (n : SI), Pi n → Qi n :=
   calc (P ⊢ Q)
     _ ↔ (iprop(<si_pure> downClose Pi) ⊢ iprop(<si_pure> downClose Qi)) := by
       refine ⟨fun h => ?_, fun h => ?_⟩
       · exact hP.as_siPure.mpr.trans (h.trans hQ.as_siPure.mp)
       · exact hP.as_siPure.mp.trans (h.trans hQ.as_siPure.mpr)
-    _ ↔ (downClose Pi ⊢@{SiProp} downClose Qi) := siPure_entails
-    _ ↔ ∀ n, Pi n → Qi n := by
+    _ ↔ (downClose Pi ⊢@{SiProp SI} downClose Qi) := siPure_entails
+    _ ↔ ∀ (n : SI), Pi n → Qi n := by
       refine ⟨fun h n hp => ?_, fun h _ hp m hm => ?_⟩
-      · exact h n (fun _ hm => hP.closed rfl hp hm) n .refl
+      · exact h n (fun _ hm => hP.closed rfl hp hm) n SIdx.le_refl
       · exact h m (hp m hm)
 
 @[rocq_alias sbi_unfold_equiv]
-theorem biEntails_iff [hP : SbiUnfold .downClosed P Pi] [hQ : SbiUnfold .downClosed Q Qi] :
-    (P ⊣⊢ Q) ↔ ∀ n, Pi n ↔ Qi n := by
+theorem biEntails_iff [hP : SbiUnfold SI .downClosed P Pi] [hQ : SbiUnfold SI .downClosed Q Qi] :
+    (P ⊣⊢ Q) ↔ ∀ (n : SI), Pi n ↔ Qi n := by
   have hPQ := entails_iff (hP := hP) (hQ := .weaken (h := hQ))
   have hQP := entails_iff (hP := hQ) (hQ := .weaken (h := hP))
   refine ⟨fun h n => ⟨?_, ?_⟩, fun h => ⟨?_, ?_⟩⟩
@@ -151,16 +154,16 @@ theorem biEntails_iff [hP : SbiUnfold .downClosed P Pi] [hQ : SbiUnfold .downClo
   · exact hQP.mpr fun n => (h n).mpr
 
 @[rocq_alias sbi_unfold_emp_valid]
-theorem empValid_iff [hQ : SbiUnfold .notClosed Q Qi] : (⊢ Q) ↔ ∀ n, Qi n :=
+theorem empValid_iff [hQ : SbiUnfold SI .notClosed Q Qi] : (⊢ Q) ↔ ∀ (n : SI), Qi n :=
   calc (⊢ Q)
     _ ↔ (⊢ iprop(<si_pure> downClose Qi)) := by
       refine ⟨fun h => ?_, fun h => ?_⟩
       · exact h.trans hQ.as_siPure.mp
       · exact h.trans hQ.as_siPure.mpr
-    _ ↔ (⊢@{SiProp} downClose Qi) := siPure_emp_valid
-    _ ↔ ∀ n, Qi n := by
+    _ ↔ (⊢@{SiProp SI} downClose Qi) := siPure_emp_valid
+    _ ↔ ∀ (n : SI), Qi n := by
       refine ⟨fun h n => ?_, fun h _ _ m _ => ?_⟩
-      · exact h n trivial n .refl
+      · exact h n trivial n SIdx.le_refl
       · exact h m
 
 end SbiUnfold
@@ -168,40 +171,40 @@ end SbiUnfold
 /-! ## The instances -/
 
 @[rocq_alias sbi_unfold_pure]
-instance sbiUnfold_pure {φ : Prop} : SbiUnfold clo (iprop(⌜φ⌝) : PROP) (fun _ => φ) :=
+instance sbiUnfold_pure {φ : Prop} : SbiUnfold SI clo (iprop(⌜φ⌝) : PROP) (fun _ => φ) :=
   .of_closed (fun h _ => h) <|
     siPure_pure.symm.trans <| siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
 @[rocq_alias sbi_unfold_internal_eq]
-instance sbiUnfold_internalEq [OFE Nat A] {a b : A} :
-    SbiUnfold clo (iprop(a ≡ b) : PROP) (fun n => a ≡{n}≡ b) :=
+instance sbiUnfold_internalEq [OFE SI A] {a b : A} :
+    SbiUnfold SI clo (iprop(a ≡[SI] b) : PROP) (fun (n : SI) => a ≡{n}≡ b) :=
   .of_closed Dist.le <| siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
 @[rocq_alias sbi_unfold_internal_cmra_valid]
-instance sbiUnfold_cmraValid [ORA Nat A] {a : A} :
-    SbiUnfold clo (iprop(✓[Nat] a) : PROP) (fun n => ✓{n} a) :=
+instance sbiUnfold_cmraValid [ORA SI A] {a : A} :
+    SbiUnfold SI clo (iprop(✓[SI] a) : PROP) (fun (n : SI) => ✓{n} a) :=
   .of_closed (fun h hm => validN_of_le hm h) <|
     siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
-instance sbiUnfold_included [ORA Nat A] {a b : A} :
-    SbiUnfold clo (iprop(a ≼ₒ[Nat] b) : PROP) (fun n => a ≼ₒ{n} b) :=
+instance sbiUnfold_included [ORA SI A] {a b : A} :
+    SbiUnfold SI clo (iprop(a ≼ₒ[SI] b) : PROP) (fun (n : SI) => a ≼ₒ{n} b) :=
   .of_closed (fun h hm => ordN_of_ordN_le hm h) <| siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
 @[rocq_alias sbi_unfold_internal_included]
-instance sbiUnfold_inc [ORA Nat A] {a b : A} :
-    SbiUnfold clo (iprop(a ≼ b) : PROP) (fun n => a ≼{n} b) :=
+instance sbiUnfold_inc [ORA SI A] {a b : A} :
+    SbiUnfold SI clo (iprop(a ≼[SI] b) : PROP) (fun (n : SI) => a ≼{n} b) :=
   .of_closed (fun h hm => incN_of_incN_le hm h) <|
     siPure_mono_bi <| biEntails_of_iff fun _ => exists_holds
 
 @[rocq_alias sbi_unfold_si_pure]
-instance sbiUnfold_siPure {Psi : SiProp} [h : SbiUnfold clo Psi Pi] :
-    SbiUnfold clo (iprop(<si_pure> Psi) : PROP) Pi where
+instance sbiUnfold_siPure {Psi : SiProp SI} [h : SbiUnfold SI clo Psi Pi] :
+    SbiUnfold SI clo (iprop(<si_pure> Psi) : PROP) Pi where
   closed := h.closed
   as_siPure := siPure_mono_bi h.as_siPure
 
 @[rocq_alias sbi_unfold_and]
-instance sbiUnfold_and [hP : SbiUnfold clo P Pi] [hQ : SbiUnfold clo Q Qi] :
-    SbiUnfold clo iprop(P ∧ Q) (fun n => Pi n ∧ Qi n) where
+instance sbiUnfold_and [hP : SbiUnfold SI clo P Pi] [hQ : SbiUnfold SI clo Q Qi] :
+    SbiUnfold SI clo iprop(P ∧ Q) (fun (n : SI) => Pi n ∧ Qi n) where
   closed hc hh hm := ⟨hP.closed hc hh.1 hm, hQ.closed hc hh.2 hm⟩
   as_siPure := by
     refine (and_congr hP.as_siPure hQ.as_siPure).trans ?_
@@ -211,8 +214,8 @@ instance sbiUnfold_and [hP : SbiUnfold clo P Pi] [hQ : SbiUnfold clo Q Qi] :
     · exact fun hh => ⟨fun m hm => (hh m hm).1, fun m hm => (hh m hm).2⟩
 
 @[rocq_alias sbi_unfold_sep]
-instance sbiUnfold_sep [hP : SbiUnfold clo P Pi] [hQ : SbiUnfold clo Q Qi] :
-    SbiUnfold clo iprop(P ∗ Q) (fun n => Pi n ∧ Qi n) where
+instance sbiUnfold_sep [hP : SbiUnfold SI clo P Pi] [hQ : SbiUnfold SI clo Q Qi] :
+    SbiUnfold SI clo iprop(P ∗ Q) (fun (n : SI) => Pi n ∧ Qi n) where
   closed hc hh hm := ⟨hP.closed hc hh.1 hm, hQ.closed hc hh.2 hm⟩
   as_siPure := by
     refine (sep_congr hP.as_siPure hQ.as_siPure).trans ?_
@@ -224,74 +227,74 @@ instance sbiUnfold_sep [hP : SbiUnfold clo P Pi] [hQ : SbiUnfold clo Q Qi] :
 /-- The instance for disjunction needs the sub-expressions to be already down
 closed because `∨` and `∀` do not commute. -/
 @[rocq_alias sbi_unfold_or]
-instance sbiUnfold_or [hP : SbiUnfold .downClosed P Pi] [hQ : SbiUnfold .downClosed Q Qi] :
-    SbiUnfold clo iprop(P ∨ Q) (fun n => Pi n ∨ Qi n) := by
+instance sbiUnfold_or [hP : SbiUnfold SI .downClosed P Pi] [hQ : SbiUnfold SI .downClosed Q Qi] :
+    SbiUnfold SI clo iprop(P ∨ Q) (fun (n : SI) => Pi n ∨ Qi n) := by
   refine .of_closed (fun hh hm => hh.imp (hP.closed rfl · hm) (hQ.closed rfl · hm)) ?_
   refine (or_congr hP.as_siPure hQ.as_siPure).trans ?_
   refine siPure_or.symm.trans ?_
   refine siPure_mono_bi (biEntails_of_iff fun n => ⟨?_, ?_⟩)
-  · exact fun hh => hh.imp (· n .refl) (· n .refl)
+  · exact fun hh => hh.imp (· n SIdx.le_refl) (· n SIdx.le_refl)
   · refine fun hh => hh.imp (fun hp _ hm => ?_) (fun hq _ hm => ?_)
     · exact hP.closed rfl hp hm
     · exact hQ.closed rfl hq hm
 
 @[rocq_alias sbi_unfold_impl]
-instance sbiUnfold_imp [hP : SbiUnfold .downClosed P Pi] [hQ : SbiUnfold .notClosed Q Qi] :
-    SbiUnfold clo iprop(P → Q) (clo.maybeDownClose fun n => Pi n → Qi n) := by
+instance sbiUnfold_imp [hP : SbiUnfold SI .downClosed P Pi] [hQ : SbiUnfold SI .notClosed Q Qi] :
+    SbiUnfold SI clo iprop(P → Q) (clo.maybeDownClose fun (n : SI) => Pi n → Qi n) := by
   refine .of_downClose ?_
   refine (imp_congr hP.as_siPure hQ.as_siPure).trans ?_
   refine siPure_imp.symm.trans ?_
   refine siPure_mono_bi (biEntails_of_iff fun _ => ⟨?_, ?_⟩)
-  · refine fun hh m hm hp => hh m hm ?_ m .refl
+  · refine fun hh m hm hp => hh m hm ?_ m SIdx.le_refl
     exact fun _ hk => hP.closed rfl hp hk
   · refine fun hh _ hm hp k hk => hh k ?_ (hp k hk)
-    exact Nat.le_trans hk hm
+    exact SIdx.le_trans hk hm
 
 @[rocq_alias sbi_unfold_wand]
-instance sbiUnfold_wand [hP : SbiUnfold .downClosed P Pi] [hQ : SbiUnfold .notClosed Q Qi] :
-    SbiUnfold clo iprop(P -∗ Q) (clo.maybeDownClose fun n => Pi n → Qi n) := by
+instance sbiUnfold_wand [hP : SbiUnfold SI .downClosed P Pi] [hQ : SbiUnfold SI .notClosed Q Qi] :
+    SbiUnfold SI clo iprop(P -∗ Q) (clo.maybeDownClose fun (n : SI) => Pi n → Qi n) := by
   refine .of_downClose ?_
   refine (wand_congr hP.as_siPure hQ.as_siPure).trans ?_
   refine siPure_imp_wand.symm.trans ?_
   refine siPure_mono_bi (biEntails_of_iff fun _ => ⟨?_, ?_⟩)
-  · refine fun hh m hm hp => hh m hm ?_ m .refl
+  · refine fun hh m hm hp => hh m hm ?_ m SIdx.le_refl
     exact fun _ hk => hP.closed rfl hp hk
   · refine fun hh _ hm hp k hk => hh k ?_ (hp k hk)
-    exact Nat.le_trans hk hm
+    exact SIdx.le_trans hk hm
 
 @[rocq_alias sbi_unfold_iff]
-instance sbiUnfold_iff [hP : SbiUnfold .downClosed P Pi] [hQ : SbiUnfold .downClosed Q Qi] :
-    SbiUnfold clo iprop(P ↔ Q) (clo.maybeDownClose fun n => Pi n ↔ Qi n) := by
+instance sbiUnfold_iff [hP : SbiUnfold SI .downClosed P Pi] [hQ : SbiUnfold SI .downClosed Q Qi] :
+    SbiUnfold SI clo iprop(P ↔ Q) (clo.maybeDownClose fun (n : SI) => Pi n ↔ Qi n) := by
   refine .of_downClose ?_
   refine (and_congr (imp_congr hP.as_siPure hQ.as_siPure)
     (imp_congr hQ.as_siPure hP.as_siPure)).trans ?_
   refine siPure_iff.symm.trans ?_
   refine siPure_mono_bi (biEntails_of_iff fun _ => ⟨?_, ?_⟩)
   · refine fun hh m hm => ⟨fun hp => ?_, fun hq => ?_⟩
-    · exact hh.1 m hm (fun _ hk => hP.closed rfl hp hk) m .refl
-    · exact hh.2 m hm (fun _ hk => hQ.closed rfl hq hk) m .refl
+    · exact hh.1 m hm (fun _ hk => hP.closed rfl hp hk) m SIdx.le_refl
+    · exact hh.2 m hm (fun _ hk => hQ.closed rfl hq hk) m SIdx.le_refl
   · refine fun hh => ⟨fun _ hm hp k hk => ?_, fun _ hm hq k hk => ?_⟩
-    · exact (hh k (Nat.le_trans hk hm)).mp (hp k hk)
-    · exact (hh k (Nat.le_trans hk hm)).mpr (hq k hk)
+    · exact (hh k (SIdx.le_trans hk hm)).mp (hp k hk)
+    · exact (hh k (SIdx.le_trans hk hm)).mpr (hq k hk)
 
 @[rocq_alias sbi_unfold_iff_wand]
-instance sbiUnfold_wandIff [hP : SbiUnfold .downClosed P Pi] [hQ : SbiUnfold .downClosed Q Qi] :
-    SbiUnfold clo iprop(P ∗-∗ Q) (clo.maybeDownClose fun n => Pi n ↔ Qi n) := by
+instance sbiUnfold_wandIff [hP : SbiUnfold SI .downClosed P Pi] [hQ : SbiUnfold SI .downClosed Q Qi] :
+    SbiUnfold SI clo iprop(P ∗-∗ Q) (clo.maybeDownClose fun (n : SI) => Pi n ↔ Qi n) := by
   refine .of_downClose ?_
   refine (wandIff_congr hP.as_siPure hQ.as_siPure).trans ?_
   refine siPure_iff_wandIff.symm.trans ?_
   refine siPure_mono_bi (biEntails_of_iff fun _ => ⟨?_, ?_⟩)
   · refine fun hh m hm => ⟨fun hp => ?_, fun hq => ?_⟩
-    · exact hh.1 m hm (fun _ hk => hP.closed rfl hp hk) m .refl
-    · exact hh.2 m hm (fun _ hk => hQ.closed rfl hq hk) m .refl
+    · exact hh.1 m hm (fun _ hk => hP.closed rfl hp hk) m SIdx.le_refl
+    · exact hh.2 m hm (fun _ hk => hQ.closed rfl hq hk) m SIdx.le_refl
   · refine fun hh => ⟨fun _ hm hp k hk => ?_, fun _ hm hq k hk => ?_⟩
-    · exact (hh k (Nat.le_trans hk hm)).mp (hp k hk)
-    · exact (hh k (Nat.le_trans hk hm)).mpr (hq k hk)
+    · exact (hh k (SIdx.le_trans hk hm)).mp (hp k hk)
+    · exact (hh k (SIdx.le_trans hk hm)).mpr (hq k hk)
 
 @[rocq_alias sbi_unfold_forall]
-instance sbiUnfold_forall {A : Sort _} {Φ : A → PROP} {Φi : A → Nat → Prop}
-    [h : ∀ x, SbiUnfold clo (Φ x) (Φi x)] :
-    SbiUnfold clo iprop(∀ x, Φ x) (fun n => ∀ x, Φi x n) where
+instance sbiUnfold_forall {A : Sort _} {Φ : A → PROP} {Φi : A → SI → Prop}
+    [h : ∀ x, SbiUnfold SI clo (Φ x) (Φi x)] :
+    SbiUnfold SI clo iprop(∀ x, Φ x) (fun (n : SI) => ∀ x, Φi x n) where
   closed hc hh hm x := (h x).closed hc (hh x) hm
   as_siPure := by
     refine (forall_congr fun x => (h x).as_siPure).trans ?_
@@ -303,39 +306,26 @@ instance sbiUnfold_forall {A : Sort _} {Φ : A → PROP} {Φi : A → Nat → Pr
 /-- The instance for existentials needs the sub-expression to be already down
 closed because `∃` and `∀` do not commute. -/
 @[rocq_alias sbi_unfold_exist]
-instance sbiUnfold_exists {A : Sort _} {Φ : A → PROP} {Φi : A → Nat → Prop}
-    [h : ∀ x, SbiUnfold .downClosed (Φ x) (Φi x)] :
-    SbiUnfold clo iprop(∃ x, Φ x) (fun n => ∃ x, Φi x n) := by
+instance sbiUnfold_exists {A : Sort _} {Φ : A → PROP} {Φi : A → SI → Prop}
+    [h : ∀ x, SbiUnfold SI .downClosed (Φ x) (Φi x)] :
+    SbiUnfold SI clo iprop(∃ x, Φ x) (fun (n : SI) => ∃ x, Φi x n) := by
   refine .of_closed (fun ⟨x, hx⟩ hm => ⟨x, (h x).closed rfl hx hm⟩) ?_
   refine (exists_congr fun x => (h x).as_siPure).trans ?_
   refine siPure_exist.symm.trans ?_
   refine siPure_mono_bi (biEntails_of_iff fun n => exists_holds.trans ⟨?_, ?_⟩)
-  · exact fun ⟨x, hx⟩ => ⟨x, hx n .refl⟩
+  · exact fun ⟨x, hx⟩ => ⟨x, hx n SIdx.le_refl⟩
   · exact fun ⟨x, hx⟩ => ⟨x, fun _ hm => (h x).closed rfl hx hm⟩
 
 @[rocq_alias sbi_unfold_later]
-instance sbiUnfold_later [hP : SbiUnfold clo P Pi] :
-    SbiUnfold clo iprop(▷ P) (fun n => match n with | 0 => True | m + 1 => Pi m) where
-  closed {n₁ n₂ : Nat} hc hh hm :=
-    match n₁, n₂ with
-    | _, 0 => trivial
-    | 0, _ + 1 => absurd hm (by omega)
-    | _ + 1, _ + 1 => hP.closed hc hh (by omega)
+instance sbiUnfold_later [hP : SbiUnfold SI clo P Pi] :
+    SbiUnfold SI clo iprop(▷ P) (fun (n : SI) => ∀ (m : SI), m < n → Pi m) where
+  closed _ hh hm m hlt := hh m (SIdx.lt_le_trans hlt hm)
   as_siPure := by
     refine (later_congr hP.as_siPure).trans ?_
     refine siPure_later.symm.trans ?_
-    refine siPure_mono_bi (biEntails_of_iff fun n => ?_)
-    match n with
-    | 0 =>
-      refine ⟨fun _ m hm => ?_, fun _ => trivial⟩
-      match m with
-      | 0 => exact trivial
-      | _ + 1 => omega
-    | _ + 1 =>
-      refine ⟨fun hh m hm => ?_, fun hh k hk => hh (k + 1) (by omega)⟩
-      match m with
-      | 0 => exact trivial
-      | _ + 1 => exact hh _ (by omega)
+    refine siPure_mono_bi (biEntails_of_iff fun n => ⟨?_, ?_⟩)
+    · exact fun hh _ hn' m hm => hh m (SIdx.lt_le_trans hm hn') m SIdx.le_refl
+    · exact fun hh m hm k hk => hh n SIdx.le_refl k (SIdx.le_lt_trans hk hm)
 
 end
 

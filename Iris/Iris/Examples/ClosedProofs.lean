@@ -57,7 +57,7 @@ instance : InvGpreS GF where
   toLcGpreS := inferInstance
 
 example : True := by
-  apply pure_soundness (PROP := IProp GF)
+  apply pure_soundness (SI := Nat) (PROP := IProp GF)
   iapply step_fupdN_soundness_close (hlc := .hasNoLC) (m := 0) (n := 1)
   iintro %_ _
   simp only [step_fupdN]

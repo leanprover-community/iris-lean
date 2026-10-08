@@ -11,15 +11,18 @@ public meta import Iris.ProofMode.Patterns.SelPattern
 
 namespace Iris.ProofMode
 
+variable {SI : Type _} [Iris.SIdx SI]
+
+
 public section
 open BI
 
-theorem frame_init [BI PROP] {e goal : PROP} :
+theorem frame_init [BI SI PROP] {e goal : PROP} :
     e ⊢ e ∗ (goal -∗ goal) :=
   sep_emp.2.trans (sep_mono_right (wand_intro emp_sep.1))
 
 @[rocq_alias tac_frame]
-theorem frame_hyp [BI PROP] {p} {e e' origE goal goal' origGoal R : PROP}
+theorem frame_hyp [BI SI PROP] {p} {e e' origE goal goal' origGoal R : PROP}
     (h1 : origE ⊢ e ∗ (goal -∗ origGoal))
     [h2 : Frame p R goal goal']
     (h3 : e ⊣⊢ e' ∗ □?p R) :
@@ -37,7 +40,7 @@ theorem frame_hyp [BI PROP] {p} {e e' origE goal goal' origGoal R : PROP}
     _ ⊢ origGoal                             := wand_elim_right
 
 @[rocq_alias tac_frame_pure]
-theorem frame_pure [BI PROP] {origE e goal goal' origGoal : PROP} (φ : Prop)
+theorem frame_pure [BI SI PROP] {origE e goal goal' origGoal : PROP} (φ : Prop)
     (h1 : origE ⊢ e ∗ (goal -∗ origGoal))
     [h2 : Frame true iprop(⌜φ⌝) goal goal'] (h : φ) :
     origE ⊢ e ∗ (goal' -∗ origGoal) := by
@@ -51,21 +54,21 @@ theorem frame_pure [BI PROP] {origE e goal goal' origGoal : PROP} (φ : Prop)
     _ ⊢ goal ∗ (goal -∗ origGoal)            := sep_mono_left h2.frame
     _ ⊢ origGoal                             := wand_elim_right
 
-theorem frame_finish [BI PROP] {e origE goal origGoal : PROP}
+theorem frame_finish [BI SI PROP] {e origE goal origGoal : PROP}
     (h1 : origE ⊢ e ∗ (goal -∗ origGoal)) (h2 : e ⊢ goal) :
     origE ⊢ origGoal := calc
   _ ⊢ e ∗ (goal -∗ origGoal)    := h1
   _ ⊢ goal ∗ (goal -∗ origGoal) := sep_mono_left h2
   _ ⊢ origGoal                  := wand_elim_right
 
-theorem frame_true_done [BI PROP] (P : PROP) : P ⊢ True :=
+theorem frame_true_done [BI SI PROP] (P : PROP) : P ⊢ True :=
   pure_intro .intro
 
-theorem frame_finish_close_true [BI PROP] {e origE origGoal : PROP}
+theorem frame_finish_close_true [BI SI PROP] {e origE origGoal : PROP}
     (h1 : origE ⊢ e ∗ (True -∗ origGoal)) :
   origE ⊢ e ∗ origGoal := h1.trans (sep_mono_right <| true_sep_mpr.trans wand_elim_right)
 
-theorem frame_finish_close_emp [BI PROP] {e origE origGoal : PROP}
+theorem frame_finish_close_emp [BI SI PROP] {e origE origGoal : PROP}
     (h1 : origE ⊢ e ∗ (emp -∗ origGoal)) :
   origE ⊢ e ∗ origGoal := h1.trans (sep_mono_right <| emp_sep.2.trans wand_elim_right)
 
@@ -76,12 +79,13 @@ theorem frame_finish_close_emp [BI PROP] {e origE origGoal : PROP}
 public meta section
 open Lean Elab Tactic Meta Qq Iris.Std
 
-structure FrameResult {u} {prop : Q(Type u)} (bi : Q(BI $prop)) (origE origGoal : Q($prop)) where
+structure FrameResult {u v} {prop : Q(Type u)}
+    {si : Q(Type v)} {sidx : Q(SIdx $si)} (bi : Q(BI $si $prop)) (origE origGoal : Q($prop)) where
   (progress : Bool) (e : Q($prop)) (hyps : Hyps bi e) (goal : Q($prop))
   pf : Q($origE ⊢ $e ∗ ($goal -∗ $origGoal))
 
-private def FrameResult.step {u prop bi origE origGoal} :
-    @FrameResult u prop bi origE origGoal → SelTarget → ProofModeM (FrameResult bi origE origGoal)
+private def FrameResult.step {u v prop si sidx bi origE origGoal} :
+    @FrameResult u v prop si sidx bi origE origGoal → SelTarget → ProofModeM (FrameResult bi origE origGoal)
   | st@{hyps, goal, pf, ..}, {explicit, kind := .ipm ivar, ..} => do
     let ⟨e', hyps', _, out', p, _, hrem⟩ := hyps.remove false ivar
     let goal' ← mkFreshExprMVarQ q($prop)
@@ -105,7 +109,8 @@ private def FrameResult.step {u prop bi origE origGoal} :
     else
       return st
 
-def iFrame {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
+def iFrame {u v} {prop : Q(Type u)}
+    {si : Q(Type v)} {sidx : Q(SIdx $si)} {bi : Q(BI $si $prop)} {e : Q($prop)}
     (hyps : Hyps bi e) (goal : Q($prop)) (sels : List SelTarget) :
     ProofModeM (FrameResult bi e goal) := do
   let mut st : FrameResult bi e goal := { progress := false, e, hyps, goal, pf := q(frame_init) }
@@ -117,7 +122,7 @@ def iFrame {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
   handles the subgoal remaining after framing. This function k might not be called if the framing
   made the goal trivial.
 -/
-def FrameResult.finish {u prop bi origE origGoal} (res : @FrameResult u prop bi origE origGoal)
+def FrameResult.finish {u v prop si sidx bi origE origGoal} (res : @FrameResult u v prop si sidx bi origE origGoal)
     (k : ∀ {e}, Hyps bi e → (goal : Q($prop)) → ProofModeM Q($e ⊢ $goal)) :
     ProofModeM Q($origE ⊢ $origGoal) := do
   let {progress, e, hyps, goal, pf} := res
@@ -136,8 +141,8 @@ def FrameResult.finish {u prop bi origE origGoal} (res : @FrameResult u prop bi 
 
 /-- FrameResult.finishClose checks that the original goal was fully solved by framing and gives it
   back with the remaining hypotheses. -/
-def FrameResult.finishClose {u prop bi origE origGoal}
-    (res : @FrameResult u prop bi origE origGoal) :
+def FrameResult.finishClose {u v prop si sidx bi origE origGoal}
+    (res : @FrameResult u v prop si sidx bi origE origGoal) :
     ProofModeM ((e : Q($prop)) × (_ : Hyps bi e) × Q($origE ⊢ $e ∗ $origGoal)) := do
   let {e, hyps, goal, pf, ..} := res
   -- try closing the goal for emp or True without calling k

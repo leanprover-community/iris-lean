@@ -11,6 +11,9 @@ public import Iris.BI.BIBase
 
 @[expose] public section
 
+
+variable {SI : Type _} [Iris.SIdx SI]
+
 namespace Iris
 open Iris.Std OFE
 open Lean
@@ -24,19 +27,19 @@ theorem liftRel_eq : liftRel (@Eq α) A B ↔ A = B := by
 /-- Require that a separation logic with carrier type `PROP` fulfills all necessary axioms. -/
 @[rocq_alias bi, rocq_alias BiMixin,
   rocq_alias BiPersistentlyMixin, rocq_alias BiLaterMixin]
-class BI (PROP : Type _) extends COFE Nat PROP, BI.BIBase PROP where
+class BI (SI : Type _) [SIdx SI] (PROP : Type _) extends COFE SI PROP, BI.BIBase PROP where
   entails_refl {P : PROP} : P ⊢ P
   entails_trans {P Q R : PROP} : (P ⊢ Q) → (Q ⊢ R) → P ⊢ R
   equiv_iff {P Q : PROP} : (P = Q) ↔ P ⊣⊢ Q := by rw [(OFE.eq_dist _)]; simp
-  and_ne : OFE.NonExpansive₂ Nat and
-  or_ne : OFE.NonExpansive₂ Nat or
-  imp_ne : OFE.NonExpansive₂ Nat imp
-  sForall_ne {n : Nat} {P₁ P₂} : liftRel (· ≡{n}≡ ·) P₁ P₂ → sForall P₁ ≡{n}≡ sForall P₂
-  sExists_ne {n : Nat} {P₁ P₂} : liftRel (· ≡{n}≡ ·) P₁ P₂ → sExists P₁ ≡{n}≡ sExists P₂
-  sep_ne : OFE.NonExpansive₂ Nat sep
-  wand_ne : OFE.NonExpansive₂ Nat wand
-  persistently_ne : OFE.NonExpansive Nat persistently
-  later_ne : OFE.NonExpansive Nat later
+  and_ne : OFE.NonExpansive₂ SI and
+  or_ne : OFE.NonExpansive₂ SI or
+  imp_ne : OFE.NonExpansive₂ SI imp
+  sForall_ne {n : SI} {P₁ P₂} : liftRel (· ≡{n}≡ ·) P₁ P₂ → sForall P₁ ≡{n}≡ sForall P₂
+  sExists_ne {n : SI} {P₁ P₂} : liftRel (· ≡{n}≡ ·) P₁ P₂ → sExists P₁ ≡{n}≡ sExists P₂
+  sep_ne : OFE.NonExpansive₂ SI sep
+  wand_ne : OFE.NonExpansive₂ SI wand
+  persistently_ne : OFE.NonExpansive SI persistently
+  later_ne : OFE.NonExpansive SI later
 
   pure_intro {φ : Prop} {P : PROP} : φ → P ⊢ ⌜φ⌝
   pure_elim' {φ : Prop} {P : PROP} : (φ → True ⊢ P) → ⌜φ⌝ ⊢ P
@@ -77,8 +80,16 @@ class BI (PROP : Type _) extends COFE Nat PROP, BI.BIBase PROP where
   later_intro {P : PROP} : P ⊢ ▷ P
 
   later_sForall_2 {Φ : PROP → Prop} : (∀ p, ⌜Φ p⌝ → ▷ p) ⊢ ▷ sForall Φ
-  later_sExists_false {Φ : PROP → Prop} : (▷ sExists Φ) ⊢ ▷ False ∨ ∃ p, ⌜Φ p⌝ ∧ ▷ p
-  later_sep {P Q : PROP} : ▷ (P ∗ Q) ⊣⊢ ▷ P ∗ ▷ Q
+  /-- Transfinite-compatible law (Iris !1256, `later_false_exist`). -/
+  later_false_sExists {Φ : PROP → Prop} : (▷ False → sExists Φ) ⊢ ∃ p, ⌜Φ p⌝ ∧ (▷ False → p)
+  /-- Only valid for finite step indices (Iris !1256, `later_exist_false`). -/
+  later_sExists_false [SIdxFinite SI] {Φ : PROP → Prop} :
+    (▷ sExists Φ) ⊢ ▷ False ∨ ∃ p, ⌜Φ p⌝ ∧ ▷ p
+  /-- Transfinite-compatible law (Iris !1256, `later_false_sep`). -/
+  later_false_sep {P Q : PROP} : (▷ False → P ∗ Q) ⊢ (▷ False → P) ∗ (▷ False → Q)
+  /-- Only valid for finite step indices (Iris !1256, `later_sep_1`). -/
+  later_sep_1 [SIdxFinite SI] {P Q : PROP} : ▷ (P ∗ Q) ⊢ ▷ P ∗ ▷ Q
+  later_sep_2 {P Q : PROP} : ▷ P ∗ ▷ Q ⊢ ▷ (P ∗ Q)
   later_persistently {P : PROP} : ▷ <pers> P ⊣⊢ <pers> ▷ P
   later_false_em {P : PROP} : ▷ P ⊢ ▷ False ∨ (▷ False → P)
 
@@ -88,35 +99,40 @@ instance [BIBase PROP] : LE PROP where
   le := BIBase.Entails
 
 @[rocq_alias bi.entails_po]
-instance entails_preorder [BI PROP] : Std.IsPreorder PROP where
+instance entails_preorder [BI SI PROP] : Std.IsPreorder PROP where
   le_refl _ := BI.entails_refl
   le_trans _ _ _ := BI.entails_trans
 
-instance [BI PROP] : Std.Refl <| BIBase.Entails (PROP := PROP) where
+instance [BI SI PROP] : Std.Refl <| BIBase.Entails (PROP := PROP) where
   refl _ := BI.entails_refl
 
-theorem BIBase.Entails.trans [BI PROP] {P Q R : PROP} (h1 : P ⊢ Q) (h2 : Q ⊢ R) : P ⊢ R :=
+theorem BIBase.Entails.trans [BI SI PROP] {P Q R : PROP} (h1 : P ⊢ Q) (h2 : Q ⊢ R) : P ⊢ R :=
   BI.entails_trans h1 h2
 
-@[simp, refl] theorem BIBase.Entails.rfl [BI PROP] {P : PROP} : P ⊢ P := BI.entails_refl
-@[simp, refl] theorem BIBase.Entails.refl [BI PROP] (P : PROP) : P ⊢ P := BI.entails_refl
+@[simp] theorem BIBase.Entails.rfl [BI SI PROP] {P : PROP} : P ⊢ P := BI.entails_refl
+@[simp] theorem BIBase.Entails.refl [BI SI PROP] (P : PROP) : P ⊢ P := BI.entails_refl
 
-theorem BIBase.Entails.of_eq [BI PROP] {P Q : PROP} (h : P = Q) : P ⊢ Q := h ▸ .rfl
+/-- SI-free reflexivity for the `rfl` tactic: the `Std.Refl` instance is found from the local
+`BI SI PROP`, so goals `P ⊢ P` close without the step index being determined by the goal. -/
+@[refl] theorem BIBase.Entails.refl' [BIBase PROP] [Std.Refl (BIBase.Entails (PROP := PROP))]
+    (P : PROP) : P ⊢ P := Std.Refl.refl P
 
-@[simp] theorem BIBase.BiEntails.rfl [BI PROP] {P : PROP} : P ⊣⊢ P := ⟨.rfl, .rfl⟩
-@[simp] theorem BIBase.BiEntails.refl [BI PROP] (P : PROP) : P ⊣⊢ P := ⟨.rfl, .rfl⟩
+theorem BIBase.Entails.of_eq [BI SI PROP] {P Q : PROP} (h : P = Q) : P ⊢ Q := h ▸ .rfl
 
-theorem BIBase.BiEntails.of_eq [BI PROP] {P Q : PROP} (h : P = Q) : P ⊣⊢ Q := h ▸ .rfl
-theorem _root_.Eq.to_bi [BI PROP] {P Q : PROP} (h : P = Q) : P ⊣⊢ Q := h ▸ .rfl
+@[simp] theorem BIBase.BiEntails.rfl [BI SI PROP] {P : PROP} : P ⊣⊢ P := ⟨.rfl, .rfl⟩
+@[simp] theorem BIBase.BiEntails.refl [BI SI PROP] (P : PROP) : P ⊣⊢ P := ⟨.rfl, .rfl⟩
 
-theorem BIBase.BiEntails.to_eq [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : P = Q := equiv_iff.mpr h
+theorem BIBase.BiEntails.of_eq [BI SI PROP] {P Q : PROP} (h : P = Q) : P ⊣⊢ Q := h ▸ .rfl
+theorem _root_.Eq.to_bi [BI SI PROP] {P Q : PROP} (h : P = Q) : P ⊣⊢ Q := h ▸ .rfl
 
-theorem BIBase.BiEntails.symm [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : Q ⊣⊢ P := ⟨h.2, h.1⟩
+theorem BIBase.BiEntails.to_eq [BI SI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : P = Q := equiv_iff.mpr h
 
-theorem BIBase.BiEntails.trans [BI PROP] {P Q R : PROP} (h1 : P ⊣⊢ Q) (h2 : Q ⊣⊢ R) : P ⊣⊢ R :=
+theorem BIBase.BiEntails.symm [BI SI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : Q ⊣⊢ P := ⟨h.2, h.1⟩
+
+theorem BIBase.BiEntails.trans [BI SI PROP] {P Q R : PROP} (h1 : P ⊣⊢ Q) (h2 : Q ⊣⊢ R) : P ⊣⊢ R :=
   ⟨h1.1.trans h2.1, h2.2.trans h1.2⟩
 
-theorem BIBase.BiEntails.ofMono [BI PROP1] [BI PROP2] {mod : PROP1 → PROP2}
+theorem BIBase.BiEntails.ofMono [BI SI PROP1] [BI SI PROP2] {mod : PROP1 → PROP2}
     (mono : ∀ {P Q}, iprop(P ⊢ Q) → iprop(mod P ⊢ mod Q)) :
     ∀ {P Q : PROP1}, P ⊣⊢ Q → mod P ⊣⊢ mod Q :=
   fun h => ⟨mono h.1, mono h.2⟩
@@ -168,7 +184,14 @@ attribute [rocq_alias bi.persistently_and_sep_elim] BI.persistently_and_l
 attribute [rocq_alias bi.later_mono] BI.later_mono
 attribute [rocq_alias bi.later_intro] BI.later_intro
 
-attribute [rocq_alias bi.later_sep_1, rocq_alias bi.later_sep_2] BI.later_sep
+attribute [rocq_alias bi.later_sep_1] BI.later_sep_1
+attribute [rocq_alias bi.later_sep_2] BI.later_sep_2
+attribute [rocq_alias bi.later_false_sep] BI.later_false_sep
+attribute [rocq_alias bi.later_false_exist] BI.later_false_sExists
+
+/-- `later_sep` as an equivalence; only for finite step indices. -/
+theorem later_sep [BI SI PROP] [SIdxFinite SI] {P Q : PROP} : ▷ (P ∗ Q) ⊣⊢ ▷ P ∗ ▷ Q :=
+  ⟨later_sep_1, later_sep_2⟩
 attribute [rocq_alias bi.later_persistently_1,
            rocq_alias bi.later_persistently_2] BI.later_persistently
 attribute [rocq_alias bi.later_false_em] BI.later_false_em
@@ -181,7 +204,7 @@ attribute [rocq_alias bi_cofe] BI.toCOFE
 
 section PersistentlyDiscrete
 
-variable {PROP : Type _} [BIBase PROP] [COFE Nat PROP]
+variable {PROP : Type _} [BIBase PROP] [COFE SI PROP]
   (entails_refl : ∀ {P : PROP}, P ⊢ P)
   (entails_trans : ∀ {P Q R : PROP}, (P ⊢ Q) → (Q ⊢ R) → P ⊢ R)
   (equiv_iff : ∀ {P Q : PROP}, (P = Q) ↔ P ⊣⊢ Q)
@@ -208,16 +231,20 @@ variable {PROP : Type _} [BIBase PROP] [COFE Nat PROP]
   (later_mono : ∀ {P Q : PROP}, (P ⊢ Q) → ▷ P ⊢ ▷ Q)
   (later_intro : ∀ {P : PROP}, P ⊢ ▷ P)
   (later_sForall_2 : ∀ {Φ : PROP → Prop}, (∀ p, ⌜Φ p⌝ → ▷ p) ⊢ ▷ sForall Φ)
-  (later_sExists_false : ∀ {Φ : PROP → Prop},
+  (later_false_sExists : ∀ {Φ : PROP → Prop},
+    (▷ False → sExists Φ) ⊢ ∃ p, ⌜Φ p⌝ ∧ (▷ False → p))
+  (later_sExists_false : ∀ [SIdxFinite SI] {Φ : PROP → Prop},
     (▷ sExists Φ) ⊢ ▷ False ∨ ∃ p, ⌜Φ p⌝ ∧ ▷ p)
-  (later_sep : ∀ {P Q : PROP}, ▷ (P ∗ Q) ⊣⊢ ▷ P ∗ ▷ Q)
+  (later_false_sep : ∀ {P Q : PROP}, (▷ False → P ∗ Q) ⊢ (▷ False → P) ∗ (▷ False → Q))
+  (later_sep_1 : ∀ [SIdxFinite SI] {P Q : PROP}, ▷ (P ∗ Q) ⊢ ▷ P ∗ ▷ Q)
+  (later_sep_2 : ∀ {P Q : PROP}, ▷ P ∗ ▷ Q ⊢ ▷ (P ∗ Q))
   (later_persistently : ∀ {P : PROP}, ▷ <pers> P ⊣⊢ <pers> ▷ P)
   (later_false_em : ∀ {P : PROP}, ▷ P ⊢ ▷ False ∨ (▷ False → P))
-  (discrete : ∀ {n : Nat} {P Q : PROP}, P ≡{n}≡ Q → P = Q)
+  (discrete : ∀ {n : SI} {P Q : PROP}, P ≡{n}≡ Q → P = Q)
   (persistently_eq : ∀ P : PROP, iprop(<pers> P) = iprop(⌜emp ⊢ P⌝))
 
 @[reducible, rocq_alias bi_persistently_mixin_discrete]
-def ofPersistentlyDiscrete : BI PROP where
+def ofPersistentlyDiscrete : BI SI PROP where
   entails_refl := entails_refl
   entails_trans := entails_trans
   equiv_iff := equiv_iff
@@ -256,8 +283,11 @@ def ofPersistentlyDiscrete : BI PROP where
   later_mono := later_mono
   later_intro := later_intro
   later_sForall_2 := later_sForall_2
+  later_false_sExists := later_false_sExists
   later_sExists_false := later_sExists_false
-  later_sep := later_sep
+  later_false_sep := later_false_sep
+  later_sep_1 := later_sep_1
+  later_sep_2 := later_sep_2
   later_persistently := later_persistently
   later_false_em := later_false_em
   persistently_ne := ⟨fun {_ _ _} h => .of_eq (congrArg _ (discrete h))⟩
@@ -288,7 +318,7 @@ def ofPersistentlyDiscrete : BI PROP where
 
 variable (later_eq : ∀ P : PROP, iprop(▷ P) = iprop(True)) in
 @[reducible, rocq_alias bi_later_mixin_True]
-def ofPersistentlyDiscreteLaterTrue : BI PROP :=
+def ofPersistentlyDiscreteLaterTrue : BI SI PROP :=
   ofPersistentlyDiscrete entails_refl entails_trans equiv_iff pure_intro pure_elim'
     and_elim_l and_elim_r and_intro or_intro_l or_intro_r or_elim imp_intro imp_elim
     sForall_intro sForall_elim sExists_intro sExists_elim sep_mono emp_sep sep_symm
@@ -302,14 +332,28 @@ def ofPersistentlyDiscreteLaterTrue : BI PROP :=
     (later_sForall_2 := by
       intro _
       simp only [later_eq]; exact pure_intro trivial)
+    (later_false_sExists := by
+      intro Φ
+      simp only [later_eq]
+      refine entails_trans (entails_trans (and_intro entails_refl (pure_intro trivial))
+        (imp_elim entails_refl)) (sExists_elim fun p hp => ?_)
+      exact entails_trans (and_intro (pure_intro hp) (imp_intro and_elim_l))
+        (sExists_intro ⟨p, rfl⟩))
     (later_sExists_false := by
-      intro _
+      intro _ _
       simp only [later_eq]; exact or_intro_l)
-    (later_sep := by
+    (later_false_sep := by
       intro _ _
       simp only [later_eq]
-      exact ⟨entails_trans emp_sep.mpr (sep_mono (pure_intro trivial) entails_refl),
-             pure_intro trivial⟩)
+      exact entails_trans (entails_trans (and_intro entails_refl (pure_intro trivial))
+        (imp_elim entails_refl)) (sep_mono (imp_intro and_elim_l) (imp_intro and_elim_l)))
+    (later_sep_1 := by
+      intro _ _ _
+      simp only [later_eq]
+      exact entails_trans emp_sep.mpr (sep_mono (pure_intro trivial) entails_refl))
+    (later_sep_2 := by
+      intro _ _
+      simp only [later_eq]; exact pure_intro trivial)
     (later_persistently := by
       intro _
       simp only [later_eq, persistently_eq]

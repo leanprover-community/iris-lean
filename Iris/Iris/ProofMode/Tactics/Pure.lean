@@ -9,11 +9,14 @@ public import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
 
+variable {SI : Type _} [Iris.SIdx SI]
+
+
 public section
 open BI Iris.Std
 
 @[rocq_alias tac_pure]
-theorem pure_elim_spatial [BI PROP] {P P' A Q : PROP} {φ : Prop}
+theorem pure_elim_spatial [BI SI PROP] {P P' A Q : PROP} {φ : Prop}
     [hA : IntoPure A φ] [or : TCOr (Affine A) (Absorbing Q)]
     (h : P ⊣⊢ P' ∗ A) (h_entails : φ → P' ⊢ Q) : P ⊢ Q :=
   h.1.trans <| match or with
@@ -31,19 +34,19 @@ theorem pure_elim_spatial [BI PROP] {P P' A Q : PROP} {φ : Prop}
       _ ⊢ Q                          :=
           pure_elim_right fun hφ => (absorbingly_mono <| h_entails hφ).trans absorbing
 
-theorem pure_elim_intuitionistic [BI PROP] {P P' A Q : PROP} {φ : Prop}
+theorem pure_elim_intuitionistic [BI SI PROP] {P P' A Q : PROP} {φ : Prop}
     [inst : IntoPure A φ] (h : P ⊣⊢ P' ∗ □ A) (h' : φ → P' ⊢ Q) : P ⊢ Q :=
   have : IntoPure iprop(□ A) φ := ⟨intuitionistically_elim.trans inst.into_pure⟩
   pure_elim_spatial h h'
 
 @[rocq_alias tac_pure_intro]
-theorem pure_intro_affine [BI PROP] {Q : PROP} {φ : Prop}
+theorem pure_intro_affine [BI SI PROP] {Q : PROP} {φ : Prop}
     (h : FromPure true Q .out φ) [Affine P] (hφ : φ) : P ⊢ Q := calc
   _ ⊢ emp                 := affine
   _ ⊢@{PROP} <affine> ⌜φ⌝ := eq_true hφ ▸ affinely_true.mpr
   _ ⊢ Q                   := h.from_pure
 
-theorem pure_intro_spatial [BI PROP] {Q : PROP} {φ : Prop}
+theorem pure_intro_spatial [BI SI PROP] {Q : PROP} {φ : Prop}
     (h : FromPure false Q .out φ) (hφ : φ) : P ⊢ Q :=
   (pure_intro hφ).trans h.1
 
@@ -63,7 +66,7 @@ def iPureCases (ty : Q(Prop)) (pat : TSyntax `rcasesPat)
   for g in gs do g.withContext do g.assign (← k g)
   instantiateMVars m
 
-def iPureCore {prop : Q(Type u)} {bi : Q(BI $prop)}
+def iPureCore {prop : Q(Type u)} {si : Q(Type v)} {sidx : Q(SIdx $si)} {bi : Q(BI $si $prop)}
     (P : Q($prop)) {P' : Q($prop)} (hyps' : Hyps bi P') (p : Q(Bool))
     (A Q : Q($prop)) (purePat : TSyntax `rcasesPat)
     (pf : Q($P ⊣⊢ $P' ∗ □?$p $A))
@@ -86,7 +89,8 @@ def iPureCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     | throwIPMError "{A} is not affine and the goal not absorbing"
     return q(pure_elim_spatial (A := $A) $pf $f)
 
-def iPureIntroCore {u} {prop : Q(Type u)} (_bi : Q(BI $prop))
+def iPureIntroCore {u v} {prop : Q(Type u)}
+    {si : Q(Type v)} {sidx : Q(SIdx $si)} (_bi : Q(BI $si $prop))
     (e goal : Q($prop)) :
     ProofModeM <| Q($e ⊢ $goal) × MVarId := do
   let b : Q(Bool) ← mkFreshExprMVarQ q(Bool)

@@ -10,11 +10,14 @@ public import Iris.ProofMode.Tactics.HaveCore
 
 namespace Iris.ProofMode
 
+variable {SI : Type _} [Iris.SIdx SI]
+
+
 public section
 open BI
 
 @[rocq_alias tac_apply]
-theorem apply [BI PROP] {p} {P Q Q1 R : PROP}
+theorem apply [BI SI PROP] {p} {P Q Q1 R : PROP}
     (h1 : P ⊢ Q1)
     [h2 : IntoWand p false Q (.matching .result) Q1 R] : P ∗ □?p Q ⊢ R :=
   Entails.trans (sep_mono_left h1) (wand_elim_swap h2.into_wand)
@@ -23,12 +26,13 @@ public meta section
 open Lean Elab Tactic Meta Qq Iris.Std
 
 /--  Like `ProofMode.assumption`, but specialized for the `iapply` case. -/
-theorem apply_assumption [BI PROP] {p : Bool} {P A Q : PROP}
+theorem apply_assumption [BI SI PROP] {p : Bool} {P A Q : PROP}
     [inst : FromAssumption p .in A Q] [TCOr (Affine P) (Absorbing Q)] :
     P ∗ □?p A ⊢ Q :=
   (sep_mono_right inst.from_assumption).trans sep_elim_right
 
-private partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+private partial def iApplyCore {prop : Q(Type u)}
+    {si : Q(Type v)} {sidx : Q(SIdx $si)} {bi : Q(BI $si $prop)} {e}
     (hyps : Hyps bi e) (p : Q(Bool)) (A : Q($prop)) (goal : Q($prop)) :
     ProofModeM Q($e ∗ □?$p $A ⊢ $goal) := do
   let B ← mkFreshExprMVarQ q($prop)
@@ -46,7 +50,7 @@ private partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 
 
 /-- Apply a hypothesis `A` to the `goal` by eliminating the wands recursively. -/
-def iApply {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+def iApply {prop : Q(Type u)} {si : Q(Type v)} {sidx : Q(SIdx $si)} {bi : Q(BI $si $prop)} {e}
     (hyps : Hyps bi e) (p : Q(Bool)) (A : Q($prop)) (goal : Q($prop)) :
     ProofModeM Q($e ∗ □?$p $A ⊢ $goal) := do
   -- if `□?p A` directly matches goal, behave like `iexact`

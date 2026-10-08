@@ -14,7 +14,7 @@ public import Iris.BI.Telescopes
 namespace IrisTest
 open Iris BI ProofMode Std
 
-variable {PROP : Type} [inst : BI PROP] {TT : Tele.{0}}
+variable {PROP : Type} [inst : BI Nat PROP] {TT : Tele.{0}}
   (Φ Ψ : TT.Arg → PROP) (φ : TT.Arg → Prop) (a : TT.Arg)
 
 /- Delaboration of the telescope-aware lambda. -/
@@ -156,7 +156,7 @@ set_option pp.mvars false in
 #ipm_synth @IntoWand PROP _ false false iprop(∀.. x, Φ x -∗ Ψ x)
   (.matching .result) _ (Ψ a)
 
-example [BI PROP] {TT : Tele} (Φ Ψ : TT.Arg → PROP) :
+example [BI Nat PROP] {TT : Tele} (Φ Ψ : TT.Arg → PROP) :
     ⊢ (∀.. x, Φ x -∗ Ψ x) -∗ (∃.. x, Φ x) -∗ ∃.. x, Ψ x := by
   iintro Hwand ⟨%x, HΦ⟩
   iexists x
@@ -170,7 +170,7 @@ example [BI PROP] {TT : Tele} (Φ Ψ : TT.Arg → PROP) :
   ⊢ (∀.. x, Φ x) ∗ ∃.. x, Ψ x
 -/
 #guard_msgs (trace, substring := true) in
-example [BI PROP] {TT : Tele} (R : PROP) (Φ Ψ : TT.Arg → PROP) :
+example [BI Nat PROP] {TT : Tele} (R : PROP) (Φ Ψ : TT.Arg → PROP) :
     ⊢ iprop(□ R -∗ (∀.. x, Φ x) -∗ (∃.. y, Ψ y) -∗
             (∀.. x, R ∗ Φ x) ∗ (∃.. y, R ∗ Ψ y)) := by
   iintro #HR HΦ HΨ

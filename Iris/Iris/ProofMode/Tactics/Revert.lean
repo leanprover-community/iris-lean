@@ -10,6 +10,9 @@ public meta import Iris.ProofMode.Patterns.SelPattern
 
 namespace Iris.ProofMode
 
+variable {SI : Type _} [Iris.SIdx SI]
+
+
 public section
 open BI Iris.Std
 
@@ -19,17 +22,17 @@ syntax " generalizing " (ppSpace colGt selPat)* : generalizingSelPats
 syntax " generalizing! " (ppSpace colGt selPat)* : generalizingSelPats
 
 @[rocq_alias tac_revert]
-theorem wand_revert [BI PROP] {Δ Δ' P Q : PROP}
+theorem wand_revert [BI SI PROP] {Δ Δ' P Q : PROP}
     (h1 : Δ ⊣⊢ Δ' ∗ P) (h2 : Δ' ⊢ P -∗ Q) : Δ ⊢ Q :=
   h1.mp.trans (wand_elim h2)
 
 @[rocq_alias tac_forall_revert]
-theorem forall_revert {α} [BI PROP] {Δ : PROP} {Ψ : α → PROP}
+theorem forall_revert {α} [BI SI PROP] {Δ : PROP} {Ψ : α → PROP}
     (h : Δ ⊢ BI.forall Ψ) : ∀ x, Δ ⊢ Ψ x :=
   fun x => h.trans (forall_elim x)
 
 @[rocq_alias tac_pure_revert]
-theorem pure_revert [BI PROP] {Δ P Q : PROP} {φ : Prop}
+theorem pure_revert [BI SI PROP] {Δ P Q : PROP} {φ : Prop}
     [hA : MakeAffinely iprop(⌜φ⌝) P]
     (h : Δ ⊢ P -∗ Q) : φ → Δ ⊢ Q := by
   intro hp
@@ -49,7 +52,8 @@ open Lean Elab Tactic Meta Qq
   `reverted` collects lean variables already reverted. This is necessary for dependency checks
   since they are only cleared from the Lean context for the final goal.
 -/
-private structure RevertState {prop : Q(Type u)} {bi : Q(BI $prop)}
+private structure RevertState {prop : Q(Type u)}
+    {si : Q(Type v)} {sidx : Q(SIdx $si)} {bi : Q(BI $si $prop)}
   (origE origGoal : Q($prop)) where
   (e : Q($prop)) (hyps : Hyps bi e) (goal : Q($prop))
   (reverted : Array FVarId := #[])
@@ -57,8 +61,8 @@ private structure RevertState {prop : Q(Type u)} {bi : Q(BI $prop)}
 
 /-- Revert a proofmode hypothesis by turning it into a wand premise. -/
 private def RevertState.revertProofModeHyp
-    : @RevertState u prop bi origE origGoal → IVarId →
-      ProofModeM (@RevertState u prop bi origE origGoal)
+    : @RevertState u v prop si sidx bi origE origGoal → IVarId →
+      ProofModeM (@RevertState u v prop si sidx bi origE origGoal)
   | { hyps, goal, reverted, pf, .. }, ivar => do
     let ⟨e', hyps', out, _, _, _, hΔ⟩ := hyps.remove true ivar
     return { e := e', hyps := hyps', goal := q(wand $out $goal), reverted,
@@ -66,8 +70,8 @@ private def RevertState.revertProofModeHyp
 
 /-- Revert a Lean proposition by turning it into the `MakeAffinely` pure premise. -/
 private def RevertState.revertLeanPropHyp
-    (st : @RevertState u prop bi origE origGoal) (f : FVarId) (φ : Q(Prop)) :
-    ProofModeM (@RevertState u prop bi origE origGoal) := do
+    (st : @RevertState u v prop si sidx bi origE origGoal) (f : FVarId) (φ : Q(Prop)) :
+    ProofModeM (@RevertState u v prop si sidx bi origE origGoal) := do
   let { e, hyps, goal, reverted, pf } := st
   let P ← mkFreshExprMVarQ prop
   let some _ ← ProofModeM.trySynthInstanceQ q(MakeAffinely iprop(⌜$φ⌝) $P)
@@ -79,8 +83,8 @@ private def RevertState.revertLeanPropHyp
 
 /-- Revert a Lean non-`Prop` local by turning the current goal into a forall. -/
 private def RevertState.revertLeanForallHyp
-    (st : @RevertState u prop bi origE origGoal) (f : FVarId) (α : Q(Sort v)) :
-    ProofModeM (@RevertState u prop bi origE origGoal) := do
+    (st : @RevertState u v prop si sidx bi origE origGoal) (f : FVarId) {w : Level} (α : Q(Sort w)) :
+    ProofModeM (@RevertState u v prop si sidx bi origE origGoal) := do
   let { e, hyps, goal, reverted, pf } := st
   let x : Q($α) := mkFVar f
   -- abstract over x in the goal
@@ -97,18 +101,19 @@ private def RevertState.revertLeanForallHyp
 
 /-- Revert a Lean local after checking proofmode and local-context dependencies. -/
 private def RevertState.revertLeanHyp
-    (st : @RevertState u prop bi origE origGoal) (f : FVarId) :
-    ProofModeM (@RevertState u prop bi origE origGoal) := do
+    (st : @RevertState u v prop si sidx bi origE origGoal) (f : FVarId) :
+    ProofModeM (@RevertState u v prop si sidx bi origE origGoal) := do
   let ldecl ← st.hyps.checkRemovableFVar "irevert" f none st.reverted.contains
-  let v : Level ← Meta.getLevel ldecl.type
-  have α : Q(Sort v) := ldecl.type
+  let w : Level ← Meta.getLevel ldecl.type
+  have α : Q(Sort w) := ldecl.type
   if (← Meta.isProp α) && !st.goal.containsFVar f then
     have φ : Q(Prop) := α
     st.revertLeanPropHyp f φ
   else
     st.revertLeanForallHyp f α
 
-def getDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
+def getDependentHyps {u v} {prop : Q(Type $u)}
+    {si : Q(Type v)} {sidx : Q(SIdx $si)} {bi : Q(BI $si $prop)} {e : Q($prop)}
     (hyps : Hyps bi e)
     (explicitTargets : List SelTarget)
     (inductionTarget : Option FVarId)
@@ -175,7 +180,8 @@ def getCompleteSelTargets (explicitTargets : List SelTarget)
   The value `inductionTarget` can optionally be supplied. In this case,
   hypotheses dependent on it should also be generalised.
 -/
-def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
+def checkDependentHyps {u v} {prop : Q(Type $u)}
+    {si : Q(Type v)} {sidx : Q(SIdx $si)} {bi : Q(BI $si $prop)} {e : Q($prop)}
     (hyps : Hyps bi e)
     (explicitTargets : List SelTarget)
     (inductionTarget : Option FVarId)
@@ -237,8 +243,9 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
       the `generalizing` clause but are not themselves included:\
       \n{"\n".intercalate (leanLines ++ irisLines)}"
 
-def iRevertCore (targets : List SelTarget) {u : Level} {prop: Q(Type $u)}
-    {bi : Q(BI $prop)} {e : Q($prop)} (hyps : Hyps bi e) (goal: Q($prop))
+def iRevertCore (targets : List SelTarget) {u v : Level} {prop: Q(Type $u)}
+    {si : Q(Type v)} {sidx : Q(SIdx $si)}
+    {bi : Q(BI $si $prop)} {e : Q($prop)} (hyps : Hyps bi e) (goal: Q($prop))
     (k : ∀ {e : Q($prop)}, Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
     ProofModeM Q($e ⊢ $goal) := do
   let init : RevertState e goal := { e, hyps, goal, pf := q(id) }

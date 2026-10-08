@@ -12,6 +12,9 @@ import Iris.Std.TC
 
 public section
 
+
+variable {SI : Type _} [Iris.SIdx SI]
+
 namespace Iris.BI
 
 open Iris.Algebra BigOpL Iris.Std BIBase
@@ -25,7 +28,7 @@ private theorem list_split {A : Type _} {l : List A} {i : Nat} {x : A} (h : l[i]
   rw [List.take_succ_eq_append_getElem hi, hx, List.append_assoc] at this; exact this.symm
 
 namespace BigSepL
-variable {PROP : Type _} [BI PROP] {A : Type _}
+variable {PROP : Type _} [BI SI PROP] {A : Type _}
 
 @[simp, rocq_alias big_sepL_nil]
 theorem bigSepL_nil {Φ : Nat → A → PROP} :
@@ -73,7 +76,7 @@ theorem bigSepL_eq_of_forall_eq {Φ Ψ : Nat → A → PROP} {l : List A} (h : �
   bigOpL_eq_of_forall_eq h
 
 @[rocq_alias big_sepL_ne]
-theorem bigSepL_dist {Φ Ψ : Nat → A → PROP} {l : List A} {n : Nat}
+theorem bigSepL_dist {Φ Ψ : Nat → A → PROP} {l : List A} {n : SI}
     (h : ∀ {k x}, l[k]? = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([∗list] k ↦ x ∈ l, Φ k x) ≡{n}≡ [∗list] k ↦ x ∈ l, Ψ k x :=
   bigOpL_dist h
@@ -146,16 +149,16 @@ instance bigSepL_affine_inst {Φ : Nat → A → PROP} {l : List A} [∀ k x, Af
 instance bigSepL_timeless_id [Timeless (emp : PROP)] {Ps : List PROP}
     [hPs : TCForall Timeless Ps] :
     Timeless ([∗list] P ∈ Ps, P) where
-  timeless := bigOpL_closed (P := fun Q => ▷ Q ⊢ ◇ Q) Timeless.timeless
-    (fun hx hy => later_sep.1.trans ((sep_mono hx hy).trans except0_sep.2))
+  timeless := bigOpL_closed (P := fun Q => <only0> Q ⊢ Q) Timeless.timeless
+    (fun hx hy => only0_sep.mp.trans (sep_mono hx hy))
     (fun hget => forall_TCForall.mp hPs _ (List.mem_iff_getElem?.mpr ⟨_, hget⟩) |>.timeless)
 
 @[rocq_alias big_sepL_timeless]
 theorem bigSepL_timeless [Timeless (emp : PROP)] {Φ : Nat → A → PROP} {l : List A}
     (h : ∀ {k x}, l[k]? = some x → Timeless (Φ k x)) :
     Timeless ([∗list] k ↦ x ∈ l, Φ k x) where
-  timeless := bigOpL_closed (P := fun Q => ▷ Q ⊢ ◇ Q) Timeless.timeless
-    (fun hx hy => later_sep.1.trans ((sep_mono hx hy).trans except0_sep.2))
+  timeless := bigOpL_closed (P := fun Q => <only0> Q ⊢ Q) Timeless.timeless
+    (fun hx hy => only0_sep.mp.trans (sep_mono hx hy))
     (h ·|>.timeless)
 
 @[rocq_alias big_sepL_nil_timeless]
@@ -383,21 +386,21 @@ theorem bigSepL_lookup_acc_impl {Φ : Nat → A → PROP} {l : List A} {i : Nat}
 @[rocq_alias big_sepL_persistently]
 theorem bigSepL_persistently {Φ : Nat → A → PROP} {l : List A} [BIAffine PROP] :
     (<pers> [∗list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∗list] k ↦ x ∈ l, <pers> Φ k x :=
-  BiEntails.of_eq <| bigOpL_hom (SI := Nat) Φ l
+  BiEntails.of_eq <| bigOpL_hom (SI := SI) Φ l
 
 @[rocq_alias big_sepL_later]
-theorem bigSepL_later [BIAffine PROP] {Φ : Nat → A → PROP} {l : List A} :
+theorem bigSepL_later [SIdxFinite SI] [BIAffine PROP] {Φ : Nat → A → PROP} {l : List A} :
     (▷ [∗list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∗list] k ↦ x ∈ l, ▷ Φ k x :=
-  BiEntails.of_eq <| bigOpL_hom (SI := Nat) Φ l
+  BiEntails.of_eq <| bigOpL_hom (SI := SI) Φ l
 
 @[rocq_alias big_sepL_later_2]
 theorem bigSepL_later_2 {Φ : Nat → A → PROP} {l : List A} :
     ([∗list] k ↦ x ∈ l, ▷ Φ k x) ⊢ iprop(▷ [∗list] k ↦ x ∈ l, Φ k x) :=
   bigOpL_gen_proper (fun a b => a ⊢ ▷ b) later_intro
-    (fun h1 h2 => (sep_mono h1 h2).trans later_sep.2) (fun _ => .rfl)
+    (fun h1 h2 => (sep_mono h1 h2).trans later_sep_2) (fun _ => .rfl)
 
 @[rocq_alias big_sepL_laterN]
-theorem bigSepL_laterN [BIAffine PROP] {Φ : Nat → A → PROP} {l : List A} {n : Nat} :
+theorem bigSepL_laterN [SIdxFinite SI] [BIAffine PROP] {Φ : Nat → A → PROP} {l : List A} {n : Nat} :
     (▷^[n] [∗list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∗list] k ↦ x ∈ l, ▷^[n] Φ k x :=
   match n with | 0 => .rfl | _ + 1 => (later_congr bigSepL_laterN).trans bigSepL_later
 
@@ -510,7 +513,7 @@ end BigSepL
 /-! # Big Separating Conjunction over Two Lists -/
 namespace BigSepL2
 
-variable {PROP : Type _} [BI PROP] {A B : Type _}
+variable {PROP : Type _} [BI SI PROP] {A B : Type _}
 
 @[simp, rocq_alias big_sepL2_nil]
 theorem bigSepL2_nil {Φ : Nat → A → B → PROP} :
@@ -621,7 +624,7 @@ theorem bigSepL2_eqv_of_forall_eqv {Φ Ψ : Nat → A → B → PROP} {l1 : List
   bigSepL2_eqv fun _ _ => h
 
 @[rocq_alias big_sepL2_ne]
-theorem bigSepL2_dist {Φ Ψ : Nat → A → B → PROP} {l1 : List A} {l2 : List B} {n : Nat}
+theorem bigSepL2_dist {Φ Ψ : Nat → A → B → PROP} {l1 : List A} {l2 : List B} {n : SI}
     (h : ∀ {k x1 x2}, l1[k]? = some x1 → l2[k]? = some x2 → Φ k x1 x2 ≡{n}≡ Ψ k x1 x2) :
     ([∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) ≡{n}≡ ([∗list] k ↦ x1;x2 ∈ l1;l2, Ψ k x1 x2) :=
   match l1, l2 with
@@ -694,9 +697,9 @@ instance bigSepL2_nil_timeless [Timeless (emp : PROP)] {Φ : Nat → A → B →
 theorem bigSepL2_timeless [Timeless (emp : PROP)] {Φ : Nat → A → B → PROP} {l1 : List A}
     {l2 : List B} (h : ∀ k x1 x2, l1[k]? = some x1 → l2[k]? = some x2 → Timeless (Φ k x1 x2)) :
     Timeless ([∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) where
-  timeless := bigSepL2_closed (P := fun Q => ▷ Q ⊢ ◇ Q) Timeless.timeless
-    (or_intro_l (P := iprop(▷ False)).trans (or_mono (later_mono false_elim) false_elim))
-    (fun hx hy => later_sep.1.trans ((sep_mono hx hy).trans except0_sep.2))
+  timeless := bigSepL2_closed (P := fun Q => <only0> Q ⊢ Q) Timeless.timeless
+    Timeless.timeless
+    (fun hx hy => only0_sep.mp.trans (sep_mono hx hy))
     (fun h1 h2 => (h _ _ _ h1 h2).timeless)
 
 @[rocq_alias big_sepL2_timeless']
@@ -846,7 +849,7 @@ theorem bigSepL2_fst_snd {Φ : Nat → A → B → PROP} {l : List (A × B)} :
       [∗list] k ↦ p ∈ l, Φ k p.1 p.2 := by
   have h : (l.map Prod.fst).zip (l.map Prod.snd) = l := by
     induction l with | nil => rfl | cons _ _ ih => simp [ih]
-  exact bigSepL2_alt.trans <| by simp only [List.length_map, h]; exact true_and
+  exact bigSepL2_alt.trans <| by simp only [List.length_map, h]; exact true_and (SI := SI)
 
 @[rocq_alias big_sepL2_app_inv_l]
 theorem bigSepL2_app_inv_left {Φ : Nat → A → B → PROP} {l1' l1'' : List A} {l2 : List B} :
@@ -892,7 +895,7 @@ theorem bigSepL2_insert_acc {Φ : Nat → A → B → PROP} {l1 : List A} {l2 : 
   refine bigSepL2_alt.1.trans <| pure_elim_left fun hlen => ?_
   have hzip : (l1.zip l2)[i]? = some (x1, x2) := List.getElem?_zip_eq_some.mpr ⟨h1, h2⟩
   refine (BigSepL.bigSepL_insert_acc hzip).trans <| sep_mono_right <| forall_intro fun y1 =>
-    forall_intro fun y2 => (forall_elim (y1, y2)).trans <| wand_mono_right ?_
+    forall_intro fun y2 => (forall_elim (y1, y2)).trans <| wand_mono_right (SI := SI) ?_
   rw [zip_set hi1 hi2]; exact (and_intro (pure_intro (by simp [hlen])) .rfl).trans bigSepL2_alt.2
 
 @[rocq_alias big_sepL2_lookup_acc]
@@ -1021,11 +1024,7 @@ theorem bigSepL2_persistently [BIAffine PROP] {Φ : Nat → A → B → PROP} {l
   (bigSepL2_alt (Φ := fun k x1 x2 => iprop(<pers> Φ k x1 x2))).symm
 
 private theorem later_pure_except0 {φ : Prop} : (▷ ⌜φ⌝ : PROP) ⊢ ◇ ⌜φ⌝ :=
-  (later_mono <| (pure_mono (fun h => ⟨h, trivial⟩)).trans <| pure_exists.2.trans <|
-    exists_mono fun _ => (pure_true trivial).1).trans <|
-  later_exists_false.trans <| or_mono .rfl <|
-  (exists_mono fun _ => later_true.1.trans <| (pure_true trivial).2).trans <|
-  pure_exists.1.trans <| pure_mono fun ⟨h, _⟩ => h
+  Timeless.except0 inferInstance
 
 @[rocq_alias big_sepL2_later_2]
 theorem bigSepL2_later_2 {Φ : Nat → A → B → PROP} {l1 : List A} {l2 : List B} :
@@ -1040,14 +1039,14 @@ theorem bigSepL2_laterN_2 {Φ : Nat → A → B → PROP} {l1 : List A} {l2 : Li
   match n with | 0 => .rfl | _ + 1 => bigSepL2_later_2.trans <| later_mono bigSepL2_laterN_2
 
 @[rocq_alias big_sepL2_later_1]
-theorem bigSepL2_later_1 [BIAffine PROP] {Φ : Nat → A → B → PROP} {l1 : List A} {l2 : List B} :
+theorem bigSepL2_later_1 [SIdxFinite SI] [BIAffine PROP] {Φ : Nat → A → B → PROP} {l1 : List A} {l2 : List B} :
     (▷ [∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) ⊢ (◇ [∗list] k ↦ x1;x2 ∈ l1;l2, ▷ Φ k x1 x2) :=
   (later_mono bigSepL2_alt.1).trans <| later_and.1.trans <|
   (and_mono later_pure_except0 BigSepL.bigSepL_later.1).trans <|
   (and_mono .rfl except0_intro).trans <| except0_and.2.trans <|
   except0_mono (bigSepL2_alt (Φ := fun k x1 x2 => iprop(▷ Φ k x1 x2))).2
 
-theorem bigSepL2_later [BIAffine PROP] {Φ : Nat → A → B → PROP} {l1 : List A} {l2 : List B} :
+theorem bigSepL2_later [SIdxFinite SI] [BIAffine PROP] {Φ : Nat → A → B → PROP} {l1 : List A} {l2 : List B} :
     (▷ [∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) ⊣⊢ (◇ [∗list] k ↦ x1;x2 ∈ l1;l2, ▷ Φ k x1 x2) :=
   ⟨bigSepL2_later_1, (except0_mono bigSepL2_later_2).trans except0_later⟩
 
@@ -1085,7 +1084,7 @@ theorem bigSepL2_reverse {Φ : A → B → PROP} {l1 : List A} {l2 : List B} :
     ([∗list] _k ↦ x1;x2 ∈ l1.reverse;l2.reverse, Φ x1 x2) ⊣⊢
       ([∗list] _k ↦ x1;x2 ∈ l1;l2, Φ x1 x2) := by
   refine ⟨?_, bigSepL2_reverse_2⟩
-  have := bigSepL2_reverse_2 (Φ := Φ) (l1 := l1.reverse) (l2 := l2.reverse)
+  have := bigSepL2_reverse_2 (SI := SI) (Φ := Φ) (l1 := l1.reverse) (l2 := l2.reverse)
   simp only [List.reverse_reverse] at this; exact this
 
 @[rocq_alias big_sepL2_replicate_l]
@@ -1208,8 +1207,8 @@ theorem bigSepL2_lookup_acc_impl {Φ : Nat → A → B → PROP} {l1 : List A} {
       (and_intro (pure_intro hki) .rfl).trans imp_elim_right
 
 @[rocq_alias big_sepL2_ne_2]
-theorem bigSepL2_dist_2 [OFE Nat A] [OFE Nat B]
-    {Φ Ψ : Nat → A → B → PROP} {l1 l1' : List A} {l2 l2' : List B} {n : Nat}
+theorem bigSepL2_dist_2 [OFE SI A] [OFE SI B]
+    {Φ Ψ : Nat → A → B → PROP} {l1 l1' : List A} {l2 l2' : List B} {n : SI}
     (hl1 : l1.length = l1'.length) (hl2 : l2.length = l2'.length)
     (hel1 : ∀ {k : Nat} {x x' : A}, l1[k]? = some x → l1'[k]? = some x' → x ≡{n}≡ x')
     (hel2 : ∀ {k : Nat} {y y' : B}, l2[k]? = some y → l2'[k]? = some y' → y ≡{n}≡ y')
@@ -1225,7 +1224,7 @@ theorem bigSepL2_dist_2 [OFE Nat A] [OFE Nat B]
     (fun {k} => @hel1 (k + 1)) (fun {k} => @hel2 (k + 1)) (fun {k} => @hf (k + 1))
 
 @[rocq_alias big_sepL2_proper_2]
-theorem bigSepL2_proper_2 [OFE Nat A] [OFE Nat B]
+theorem bigSepL2_proper_2 [OFE SI A] [OFE SI B]
     {Φ Ψ : Nat → A → B → PROP} {l1 l1' : List A} {l2 l2' : List B}
     (hl1 : l1.length = l1'.length) (hl2 : l2.length = l2'.length)
     (hel1 : ∀ {k : Nat} {x x' : A}, l1[k]? = some x → l1'[k]? = some x' → x = x')

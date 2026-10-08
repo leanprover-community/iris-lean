@@ -9,11 +9,14 @@ public import Iris.ProofMode.Tactics.Cases
 
 namespace Iris.ProofMode
 
+variable {SI : Type _} [Iris.SIdx SI]
+
+
 public section
 open BI
 
 @[rocq_alias tac_inv_elim]
-theorem tac_inv_elim [BI PROP]
+theorem tac_inv_elim [BI SI PROP]
     {e e' e'' goal : PROP} {φ : Prop} {X : Type} {p close : Bool}
     {Pinv Pin : PROP} {mPclose : Option <| X → PROP} {Pout Q' : X → PROP}
     (inst : ElimInv φ X Pinv Pin Pout close mPclose goal Q')
@@ -58,7 +61,8 @@ private def reduceWandM (e : Expr) : ProofModeM Expr := do
   let simpContext ← Simp.mkContext {} #[simpThms] (← getSimpCongrTheorems)
   Lean.Meta.dsimp e simpContext <&> Prod.fst
 
-private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
+private def iInvCore {u v} {prop : Q(Type u)} {si : Q(Type v)} {sidx : Q(SIdx $si)}
+    {bi : Q(BI $si $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (ivar : IVarId) (specPat : Option SpecPat)
     (casesPat : iCasesPat) (closePat : Option iCasesPat) :
     ProofModeM Q($e ⊢ $goal) := do

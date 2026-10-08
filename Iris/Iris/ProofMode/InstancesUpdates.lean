@@ -14,13 +14,16 @@ public import Iris.ProofMode.Display
 
 @[expose] public section
 
+
+variable {SI : Type _} [Iris.SIdx SI]
+
 namespace Iris.ProofMode
 
 open Iris.BI Iris.Std BIFUpdate
 
 section BIBasicUpdate
 
-variable {PROP} [BI PROP] [BIUpdate PROP]
+variable {PROP} [BI SI PROP] [BIUpdate SI PROP]
 
 @[rocq_alias from_assumption_bupd]
 instance fromAssumption_bupd p ioP (P Q : PROP)
@@ -114,7 +117,7 @@ end BIBasicUpdate
 
 section SBIBasicUpdate
 
-variable {PROP} [Sbi PROP] [BIUpdate PROP] [BIBUpdateSbi PROP]
+variable {PROP} [Sbi SI PROP] [BIUpdate SI PROP] [BIBUpdateSbi SI PROP]
 
 @[ipm_backtrack, rocq_alias elim_modal_bupd_plain_goal]
 instance elimModal_bupd_plain_goal [BIAffine PROP] p io (P Q : PROP) [Plain Q] :
@@ -134,7 +137,7 @@ end SBIBasicUpdate
 
 section BIFancyUpdate
 
-variable {PROP} [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] [BIUpdateFUpdate PROP]
+variable {PROP} [BI SI PROP] [BIUpdate SI PROP] [BIFUpdate SI PROP] [BIUpdateFUpdate PROP]
 
 @[rocq_alias from_assumption_fupd]
 instance fromAssumption_fupd E p ioP (P Q : PROP)
@@ -303,7 +306,7 @@ end BIFancyUpdate
 
 section SBIFancyUpdate
 
-variable {PROP} [Sbi PROP] [BIFUpdate PROP] [BIFUpdateSbi PROP] [BIAffine PROP]
+variable {PROP} [Sbi SI PROP] [BIFUpdate SI PROP] [BIFUpdateSbi SI PROP] [BIAffine PROP]
 
 @[ipm_backtrack, rocq_alias from_forall_fupd]
 instance fromForall_fupd E1 E2 (P : PROP) {α : Type _} (Φ : α → PROP)

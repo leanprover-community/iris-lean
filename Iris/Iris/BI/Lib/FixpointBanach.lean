@@ -9,14 +9,17 @@ public import Iris.BI
 
 @[expose] public section
 
+
+variable {SI : Type _} [Iris.SIdx SI]
+
 namespace Iris
 open Iris.Std BI BI.BIBase OFE
 
 section Laws
 
 @[rocq_alias fixpoint_plain]
-theorem fixpoint_plain [Sbi PROP] {A : Type _} (F : (A → PROP) → A → PROP) [Contractive Nat F] :
-    (∀ Φ, (∀ x, Plain (Φ x)) → (∀ x, Plain (F Φ x))) → ∀ x, Plain (fixpoint (SI := Nat) F x) := by
+theorem fixpoint_plain [SIdxFinite SI] [Sbi SI PROP] {A : Type _} (F : (A → PROP) → A → PROP) [Contractive SI F] :
+    (∀ Φ, (∀ x, Plain (Φ x)) → (∀ x, Plain (F Φ x))) → ∀ x, Plain (fixpoint (SI := SI) F x) := by
   intro HΦ
   refine ContractiveHom.fixpoint_ind ⟨F, inferInstance⟩ (fun f => ∀ x, Plain (f x)) ?_
       (fun _ => iprop(emp)) inferInstance HΦ ?_
@@ -27,9 +30,9 @@ theorem fixpoint_plain [Sbi PROP] {A : Type _} (F : (A → PROP) → A → PROP)
     refine limitPreserving_plain (Φne := ⟨fun _ _ _ h => h _⟩)
 
 @[rocq_alias fixpoint_persistent]
-theorem fixpoint_persistent [BI PROP] {A : Type _} (F : (A → PROP) → A → PROP) [Contractive Nat F] :
+theorem fixpoint_persistent [SIdxFinite SI] [BI SI PROP] {A : Type _} (F : (A → PROP) → A → PROP) [Contractive SI F] :
     (∀ Φ, (∀ x, Persistent (Φ x)) → (∀ x, Persistent (F Φ x))) →
-    ∀ x, Persistent (fixpoint (SI := Nat) F x) := by
+    ∀ x, Persistent (fixpoint (SI := SI) F x) := by
   intro HΦ
   refine ContractiveHom.fixpoint_ind ⟨F, inferInstance⟩ (fun f => ∀ x, Persistent (f x)) ?_
       (fun _ => iprop(emp)) inferInstance HΦ ?_
@@ -40,9 +43,9 @@ theorem fixpoint_persistent [BI PROP] {A : Type _} (F : (A → PROP) → A → P
     exact limitPreserving_persistent _ (Φne := ⟨fun _ _ _ h => h _⟩)
 
 @[rocq_alias fixpoint_absorbing]
-theorem fixpoint_absorbing [BI PROP] {A : Type _} (F : (A → PROP) → A → PROP) [Contractive Nat F] :
+theorem fixpoint_absorbing [SIdxFinite SI] [BI SI PROP] {A : Type _} (F : (A → PROP) → A → PROP) [Contractive SI F] :
     (∀ Φ, (∀ x, Absorbing (Φ x)) → (∀ x, Absorbing (F Φ x))) →
-    ∀ x, Absorbing (fixpoint (SI := Nat) F x) := by
+    ∀ x, Absorbing (fixpoint (SI := SI) F x) := by
   intro HΦ
   refine ContractiveHom.fixpoint_ind ⟨F, inferInstance⟩ (fun f => ∀ x, Absorbing (f x)) ?_
       (fun _ => iprop(True)) inferInstance HΦ ?_
@@ -53,8 +56,8 @@ theorem fixpoint_absorbing [BI PROP] {A : Type _} (F : (A → PROP) → A → PR
     exact limitPreserving_absorbing _ (Φne := ⟨fun _ _ _ h => h _⟩)
 
 @[rocq_alias fixpoint_affine]
-theorem fixpoint_affine [BI PROP] {A : Type _} (F : (A → PROP) → A → PROP) [Contractive Nat F] :
-    (∀ Φ, (∀ x, Affine (Φ x)) → (∀ x, Affine (F Φ x))) → ∀ x, Affine (fixpoint (SI := Nat) F x) := by
+theorem fixpoint_affine [SIdxFinite SI] [BI SI PROP] {A : Type _} (F : (A → PROP) → A → PROP) [Contractive SI F] :
+    (∀ Φ, (∀ x, Affine (Φ x)) → (∀ x, Affine (F Φ x))) → ∀ x, Affine (fixpoint (SI := SI) F x) := by
   intro HΦ
   refine ContractiveHom.fixpoint_ind ⟨F, inferInstance⟩ (fun f => ∀ x, Affine (f x)) ?_
       (fun _ => iprop(emp)) inferInstance HΦ ?_
@@ -65,11 +68,11 @@ theorem fixpoint_affine [BI PROP] {A : Type _} (F : (A → PROP) → A → PROP)
 
 -- FIXME: typo in Iris-Rocq
 @[rocq_alias fixpoint_persistent_absoring]
-theorem fixpoint_persistent_absorbing [BI PROP] {A : Type _}
-    (F : (A → PROP) → A → PROP) [Contractive Nat F] :
+theorem fixpoint_persistent_absorbing [SIdxFinite SI] [BI SI PROP] {A : Type _}
+    (F : (A → PROP) → A → PROP) [Contractive SI F] :
     (∀ Φ, (∀ x, Persistent (Φ x)) → (∀ x, Absorbing (Φ x)) →
       (∀ x, Persistent (F Φ x) ∧ Absorbing (F Φ x))) →
-    ∀ x, Persistent (fixpoint (SI := Nat) F x) ∧ Absorbing (fixpoint (SI := Nat) F x) := by
+    ∀ x, Persistent (fixpoint (SI := SI) F x) ∧ Absorbing (fixpoint (SI := SI) F x) := by
   intro HΦ
   refine ContractiveHom.fixpoint_ind ⟨F, inferInstance⟩
       (fun f => ∀ x, Persistent (f x) ∧ Absorbing (f x)) ?_
@@ -87,11 +90,11 @@ theorem fixpoint_persistent_absorbing [BI PROP] {A : Type _}
     · exact limitPreserving_absorbing _ (Φne := ⟨fun _ _ _ h => h _⟩)
 
 @[rocq_alias fixpoint_persistent_affine]
-theorem fixpoint_persistent_affine [BI PROP] {A : Type _}
-    (F : (A → PROP) → A → PROP) [Contractive Nat F] :
+theorem fixpoint_persistent_affine [SIdxFinite SI] [BI SI PROP] {A : Type _}
+    (F : (A → PROP) → A → PROP) [Contractive SI F] :
     (∀ Φ, (∀ x, Persistent (Φ x)) → (∀ x, Affine (Φ x)) →
       (∀ x, Persistent (F Φ x) ∧ Affine (F Φ x))) →
-    ∀ x, Persistent (fixpoint (SI := Nat) F x) ∧ Affine (fixpoint (SI := Nat) F x) := by
+    ∀ x, Persistent (fixpoint (SI := SI) F x) ∧ Affine (fixpoint (SI := SI) F x) := by
   intro HΦ
   refine ContractiveHom.fixpoint_ind ⟨F, inferInstance⟩
       (fun f => ∀ x, Persistent (f x) ∧ Affine (f x)) ?_
@@ -109,11 +112,11 @@ theorem fixpoint_persistent_affine [BI PROP] {A : Type _}
 
 -- FIXME: typo in Iris-Rocq
 @[rocq_alias fixpoint_plain_absoring]
-theorem fixpoint_plain_absorbing [Sbi PROP] {A : Type _}
-    (F : (A → PROP) → A → PROP) [Contractive Nat F] :
+theorem fixpoint_plain_absorbing [SIdxFinite SI] [Sbi SI PROP] {A : Type _}
+    (F : (A → PROP) → A → PROP) [Contractive SI F] :
     (∀ Φ, (∀ x, Plain (Φ x)) → (∀ x, Absorbing (Φ x)) →
       (∀ x, Plain (F Φ x) ∧ Absorbing (F Φ x))) →
-    ∀ x, Plain (fixpoint (SI := Nat) F x) ∧ Absorbing (fixpoint (SI := Nat) F x) := by
+    ∀ x, Plain (fixpoint (SI := SI) F x) ∧ Absorbing (fixpoint (SI := SI) F x) := by
   intro HΦ
   refine ContractiveHom.fixpoint_ind ⟨F, inferInstance⟩
       (fun f => ∀ x, Plain (f x) ∧ Absorbing (f x)) ?_
@@ -131,11 +134,11 @@ theorem fixpoint_plain_absorbing [Sbi PROP] {A : Type _}
     · exact limitPreserving_absorbing _ (Φne := ⟨fun _ _ _ h => h _⟩)
 
 @[rocq_alias fixpoint_plain_affine]
-theorem fixpoint_plain_affine [Sbi PROP] {A : Type _}
-    (F : (A → PROP) → A → PROP) [Contractive Nat F] :
+theorem fixpoint_plain_affine [SIdxFinite SI] [Sbi SI PROP] {A : Type _}
+    (F : (A → PROP) → A → PROP) [Contractive SI F] :
     (∀ Φ, (∀ x, Plain (Φ x)) → (∀ x, Affine (Φ x)) →
       (∀ x, Plain (F Φ x) ∧ Affine (F Φ x))) →
-    ∀ x, Plain (fixpoint (SI := Nat) F x) ∧ Affine (fixpoint (SI := Nat) F x) := by
+    ∀ x, Plain (fixpoint (SI := SI) F x) ∧ Affine (fixpoint (SI := SI) F x) := by
   intro HΦ
   refine ContractiveHom.fixpoint_ind ⟨F, inferInstance⟩
       (fun f => ∀ x, Plain (f x) ∧ Affine (f x)) ?_

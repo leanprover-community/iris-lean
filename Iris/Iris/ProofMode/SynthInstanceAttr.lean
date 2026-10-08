@@ -11,6 +11,7 @@ public import Iris.BI.Notation
 public meta section
 
 namespace Iris.ProofMode
+
 open Lean Elab Tactic Meta Qq
 
 /--
@@ -90,7 +91,7 @@ structure ClassEntry where
   class FromModal (io : InOut)
       {PROP1 : semiOutParamIPM io (Type _)}
       {PROP2} {α : outParam <| uncheckedInParam <| Type _}
-      [semiOutParamIPM io (BI PROP1)] [BI PROP2]
+      [semiOutParamIPM io (BI PROP1)] [BI SI PROP2]
       (M : semiOutParamIPM io (Modality PROP1 PROP2))
       (φ : outParam Prop)
       (sel : outParam <| uncheckedInParam α) (P : PROP2) (Q : outParam PROP1) where

@@ -201,8 +201,8 @@ theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) = x :
 
 @[rocq_alias iProp_unfold_equivI]
 theorem IProp.unfold_equivI (P Q : IProp FF) :
-    (IProp.unfold FF P ≡ IProp.unfold FF Q) ⊢@{IProp FF} P ≡ Q := by
-  have h := BI.internalEq.of_internalEquiv_ne (PROP := IProp FF) (IProp.fold FF)
+    (IProp.unfold FF P ≡[Nat] IProp.unfold FF Q) ⊢@{IProp FF} P ≡[Nat] Q := by
+  have h := BI.internalEq.of_internalEquiv_ne (SI := Nat) (PROP := IProp FF) (IProp.fold FF)
     (x := IProp.unfold FF P) (y := IProp.unfold FF Q)
   rw [IProp.fold_unfold, IProp.fold_unfold] at h
   exact h
@@ -525,7 +525,7 @@ theorem iSingleton_op_alter {r : IResUR GF} {v : GF.api E.τ (IPre GF)}
 open BI in
 @[rocq_alias later_internal_eq_iRes_singleton]
 theorem later_internalEq_iSingleton {a : F.ap (IProp GF)} {r : IResUR GF} :
-    ▷ (r ≡ iSingleton F γ a) ⊢@{IProp GF} ◇ ∃ b r', r ≡ iSingleton F γ b • r' ∧ ▷ (a ≡ b) := by
+    ▷ (r ≡[Nat] iSingleton F γ a) ⊢@{IProp GF} ◇ ∃ b r', r ≡[Nat] iSingleton F γ b • r' ∧ ▷ (a ≡[Nat] b) := by
   refine (later_mono (internalEq.of_internalEquiv_ne fun r : IResUR GF => (r E.τ).car γ)).trans ?_
   rw [show (iSingleton F γ a E.τ).car γ = some (unfoldi (E.bundle a)) by
     simp [iSingleton, GenMap.singleton_map_in]]
@@ -620,7 +620,7 @@ instance iOwn_timeless {a : F.ap (IProp GF)} [OFE.DiscreteE Nat a] : BI.Timeless
   exact _root_.UPred.ownM_timeless (iSingleton F γ a)
 
 @[rocq_alias later_own]
-theorem later_iOwn {a : F.ap (IProp GF)} : ▷ iOwn γ a ⊢ ◇ ∃ b, iOwn γ b ∧ ▷ (a ≡ b) := by
+theorem later_iOwn {a : F.ap (IProp GF)} : ▷ iOwn γ a ⊢ ◇ ∃ b, iOwn γ b ∧ ▷ (a ≡[Nat] b) := by
   unfold iOwn
   iintro Hlater
   icases UPred.later_ownM _ $$ Hlater with ⟨%r, Hown, Heq⟩
@@ -691,8 +691,8 @@ theorem alloc_update_unit {f : GName → F.ap (IProp GF)} :
 theorem iOwn_alloc_dep (f : GName → F.ap (IProp GF)) (Ha : ∀ γ, ✓[Nat] (f γ)) :
     ⊢ |==> ∃ γ, iOwn γ (f γ) := by
   unfold iOwn
-  refine .trans (Q := iprop(|==> ∃ m, ⌜∃ γ, m = iSingleton F γ (f γ)⌝ ∧ UPred.ownM m)) ?_ (BIUpdate.mono ?_)
-  · refine .trans (@UPred.ownM_unit (IResUR GF) _ _ iprop(emp)) ?_
+  refine .trans (Q := iprop(|==> ∃ m, ⌜∃ γ, m = iSingleton F γ (f γ)⌝ ∧ UPred.ownM m)) ?_ (BIUpdate.mono (SI := Nat) ?_)
+  · refine .trans (UPred.ownM_unit iprop(emp)) ?_
     refine .trans intuitionistically_elim ?_
     apply UPred.bupd_ownM_updateP
     apply alloc_update_unit Ha
@@ -712,8 +712,8 @@ theorem iOwn_alloc_strong_dep (f : GName → F.ap (IProp GF)) (P : GName → Pro
     (Hf : ∀ γ, P γ → ✓[Nat] (f γ)) :
     ⊢ |==> ∃ γ, ⌜P γ⌝ ∗ iOwn γ (f γ) := by
   unfold iOwn
-  refine .trans (Q := iprop(|==> ∃ m, ⌜∃ γ, P γ ∧ m = iSingleton F γ (f γ)⌝ ∧ UPred.ownM m)) ?_ (BIUpdate.mono ?_)
-  · refine .trans (@UPred.ownM_unit (IResUR GF) _ _ iprop(emp)) ?_
+  refine .trans (Q := iprop(|==> ∃ m, ⌜∃ γ, P γ ∧ m = iSingleton F γ (f γ)⌝ ∧ UPred.ownM m)) ?_ (BIUpdate.mono (SI := Nat) ?_)
+  · refine .trans (UPred.ownM_unit iprop(emp)) ?_
     refine .trans intuitionistically_elim ?_
     apply UPred.bupd_ownM_updateP
     apply UpdateP.total.mpr
@@ -815,7 +815,7 @@ theorem iOwn_updateP {P γ a} (Hupd : a ~~>:[Nat] P) : iOwn γ a ⊢ |==> ∃ a'
 
 @[rocq_alias own_update]
 theorem iOwn_update {γ} {a a' : F.ap (IProp GF)} (Hupd : a ~~>[Nat] a') : iOwn γ a ⊢ |==> iOwn γ a' := by
-  refine (iOwn_updateP <| UpdateP.of_update Hupd).trans (BIUpdate.mono ?_)
+  refine (iOwn_updateP <| UpdateP.of_update Hupd).trans (BIUpdate.mono (SI := Nat) ?_)
   iintro ⟨%m, %hm, Hown⟩
   subst hm
   iexact Hown
@@ -852,7 +852,7 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit Nat ε] : ⊢ |==> i
     · have h_unit : IsUnit Nat (IProp.unfoldi (E.bundle ε)) := IProp.unfoldi_bundle_unit
       apply validN_ne h_unit.unit_left_id.dist.symm
       apply extract_frame_validN (Hv E.τ) h_at
-  · refine BIUpdate.mono ?_
+  · refine BIUpdate.mono (SI := Nat) ?_
     iintro ⟨%y, %hy, Hown⟩
     subst hy
     iexact Hown
@@ -1029,7 +1029,7 @@ theorem iResProject_ord_above {z : IResUR GF} {c : F.ap (IProp GF)} :
 
 @[rocq_alias iRes_project_above]
 theorem iResProject_above {z : IResUR GF} {c : F.ap (IProp GF)} :
-    iSingleton F γ c ≼ z ⊢@{IProp GF} some c ≼ iResProject F γ z := by
+    iSingleton F γ c ≼[Nat] z ⊢@{IProp GF} some c ≼[Nat] iResProject F γ z := by
   refine (internalCmraIncluded_map (iResProject F γ) iResProject_op).trans ?_
   rw [iResProject_iSingleton]
 
@@ -1041,7 +1041,7 @@ theorem iResProject_none_ord_false {z : IResUR GF} (a : F.ap (IProp GF))
 
 /-- Nothing is owned at `γ` when the projection there is `none`. -/
 theorem iResProject_none_incl_false {z : IResUR GF} (a : F.ap (IProp GF))
-    (hz : iResProject F γ z = none) : iSingleton F γ a ≼ z ⊢@{IProp GF} False := by
+    (hz : iResProject F γ z = none) : iSingleton F γ a ≼[Nat] z ⊢@{IProp GF} False := by
   refine iResProject_above.trans ?_
   rw [hz]
   exact option_includedI.mp
@@ -1134,41 +1134,41 @@ theorem iOwn_ord_and_discrete_total_false [ORA.Discrete Nat (F.ap (IProp GF))]
 @[rocq_alias own_forall]
 theorem iOwn_forall [OrdInc Nat (F.ap (IProp GF))] {B : Type _} [Inhabited B] (γ : GName)
     (f : B → F.ap (IProp GF)) :
-    (∀ b, iOwn γ (f b)) ⊢ ∃ c, iOwn γ c ∗ ∀ b, some (f b) ≼ some c :=
+    (∀ b, iOwn γ (f b)) ⊢ ∃ c, iOwn γ c ∗ ∀ b, some (f b) ≼[Nat] some c :=
   (iOwn_ord_forall γ f).trans <|
     exists_mono fun _ => sep_mono_right (forall_mono fun _ => internalCmraIncluded_of_ord)
 
 @[rocq_alias own_forall_total]
 theorem iOwn_forall_total [OrdInc Nat (F.ap (IProp GF))] [IsTotal (F.ap (IProp GF))] {B : Type _}
     [Inhabited B] (γ : GName) (f : B → F.ap (IProp GF)) :
-    (∀ b, iOwn γ (f b)) ⊢ ∃ c, iOwn γ c ∗ ∀ b, f b ≼ c :=
+    (∀ b, iOwn γ (f b)) ⊢ ∃ c, iOwn γ c ∗ ∀ b, f b ≼[Nat] c :=
   (iOwn_forall γ f).trans <|
     exists_mono fun _ => sep_mono_right (forall_mono fun _ => Some_included_totalI.mp)
 
 @[rocq_alias own_and]
 theorem iOwn_and [OrdInc Nat (F.ap (IProp GF))] {a1 a2 : F.ap (IProp GF)} :
-    (iOwn γ a1 ∧ iOwn γ a2) ⊢ ∃ c, iOwn γ c ∗ some a1 ≼ some c ∗ some a2 ≼ some c :=
+    (iOwn γ a1 ∧ iOwn γ a2) ⊢ ∃ c, iOwn γ c ∗ some a1 ≼[Nat] some c ∗ some a2 ≼[Nat] some c :=
   iOwn_ord_and.trans <| exists_mono fun _ =>
     sep_mono_right (sep_mono internalCmraIncluded_of_ord internalCmraIncluded_of_ord)
 
 @[rocq_alias own_and_total]
 theorem iOwn_and_total [OrdInc Nat (F.ap (IProp GF))] [IsTotal (F.ap (IProp GF))]
     {a1 a2 : F.ap (IProp GF)} :
-    (iOwn γ a1 ∧ iOwn γ a2) ⊢ ∃ c, iOwn γ c ∗ a1 ≼ c ∗ a2 ≼ c :=
+    (iOwn γ a1 ∧ iOwn γ a2) ⊢ ∃ c, iOwn γ c ∗ a1 ≼[Nat] c ∗ a2 ≼[Nat] c :=
   iOwn_and.trans <| exists_mono fun _ =>
     sep_mono_right (sep_mono Some_included_totalI.mp Some_included_totalI.mp)
 
 @[rocq_alias own_forall_pred]
 theorem iOwn_forall_pred [OrdInc Nat (F.ap (IProp GF))] {B : Type _} (γ : GName) (φ : B → Prop)
     [Inhabited (Subtype φ)] (f : B → F.ap (IProp GF)) :
-    (∀ b, ⌜φ b⌝ -∗ iOwn γ (f b)) ⊢ ∃ c, iOwn γ c ∗ ∀ b, ⌜φ b⌝ -∗ some (f b) ≼ some c :=
+    (∀ b, ⌜φ b⌝ -∗ iOwn γ (f b)) ⊢ ∃ c, iOwn γ c ∗ ∀ b, ⌜φ b⌝ -∗ some (f b) ≼[Nat] some c :=
   (iOwn_ord_forall_pred γ φ f).trans <| exists_mono fun _ =>
     sep_mono_right (forall_mono fun _ => wand_mono_right internalCmraIncluded_of_ord)
 
 @[rocq_alias own_forall_pred_total]
 theorem iOwn_forall_pred_total [OrdInc Nat (F.ap (IProp GF))] [IsTotal (F.ap (IProp GF))]
     {B : Type _} (γ : GName) (φ : B → Prop) [Inhabited (Subtype φ)] (f : B → F.ap (IProp GF)) :
-    (∀ b, ⌜φ b⌝ -∗ iOwn γ (f b)) ⊢ ∃ c, iOwn γ c ∗ ∀ b, ⌜φ b⌝ -∗ f b ≼ c :=
+    (∀ b, ⌜φ b⌝ -∗ iOwn γ (f b)) ⊢ ∃ c, iOwn γ c ∗ ∀ b, ⌜φ b⌝ -∗ f b ≼[Nat] c :=
   (iOwn_forall_pred γ φ f).trans <| exists_mono fun _ =>
     sep_mono_right (forall_mono fun _ => wand_mono_right Some_included_totalI.mp)
 

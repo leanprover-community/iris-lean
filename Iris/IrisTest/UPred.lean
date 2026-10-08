@@ -24,7 +24,7 @@ variable [UCMRA Nat M] (a b : M) (c : M) [CoreId c]
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth FromSep (ownM (a • b)) _ _
+#ipm_synth FromSep (ownM (SI := Nat) (a • b)) _ _
 
 /- Tests `intoSep_ownM`. -/
 /-- info:
@@ -32,7 +32,7 @@ variable [UCMRA Nat M] (a b : M) (c : M) [CoreId c]
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth IntoSep (ownM (a • b)) _ _
+#ipm_synth IntoSep (ownM (SI := Nat) (a • b)) _ _
 
 /- Tests `intoAnd_ownM` (which requires an affine algebra). -/
 /-- info:
@@ -41,7 +41,7 @@ variable [UCMRA Nat M] (a b : M) (c : M) [CoreId c]
 -/
 #guard_msgs (whitespace := lax) in
 variable (p : Bool) [ORA.Affine (SI := Nat) M] in
-#ipm_synth IntoAnd p (ownM (a • b)) _ _
+#ipm_synth IntoAnd p (ownM (SI := Nat) (a • b)) _ _
 
 /-
   Using `combineSepGives_ownM` along with `combineSepAs_intuitionistically`.
@@ -52,7 +52,7 @@ variable (p : Bool) [ORA.Affine (SI := Nat) M] in
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth CombineSepAs iprop(□ ownM a) iprop(□ ownM b) _
+#ipm_synth CombineSepAs iprop(□ ownM (SI := Nat) a) iprop(□ ownM b) _
 
 /- Tests `combineSepGives_ownM`. -/
 /-- info:
@@ -60,7 +60,7 @@ variable (p : Bool) [ORA.Affine (SI := Nat) M] in
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth CombineSepGives (ownM a) (ownM b) _
+#ipm_synth CombineSepGives (ownM (SI := Nat) a) (ownM b) _
 
 /- Using `combineSepGives_ownM` along with `combineSepGives_intuitionistically`. -/
 /-- info:
@@ -68,7 +68,7 @@ variable (p : Bool) [ORA.Affine (SI := Nat) M] in
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth CombineSepGives iprop(□ ownM a) iprop(□ ownM b) _
+#ipm_synth CombineSepGives iprop(□ ownM (SI := Nat) a) iprop(□ ownM b) _
 
 /-
   Tests `intoSep_ownM` with `CoreId c` (and thus `TCOr (CoreId a) (CoreId c)`),
@@ -79,8 +79,8 @@ variable (p : Bool) [ORA.Affine (SI := Nat) M] in
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth IntoSep (ownM ((a • b, c) : M × M)) _ _
--- expect: (ownM (a, c)) ∗ (ownM (b, c))   [isOp_pair_core_id_r]
+#ipm_synth IntoSep (ownM (SI := Nat) ((a • b, c) : M × M)) _ _
+-- expect: (ownM (SI := Nat) (a, c)) ∗ (ownM (b, c))   [isOp_pair_core_id_r]
 
 /- Tests `intoSep_ownM` along with `isOp_pair`. -/
 /-- info:
@@ -88,7 +88,7 @@ variable (p : Bool) [ORA.Affine (SI := Nat) M] in
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth IntoSep (ownM ((a • b, a • b) : M × M)) _ _
+#ipm_synth IntoSep (ownM (SI := Nat) ((a • b, a • b) : M × M)) _ _
 
 end
 

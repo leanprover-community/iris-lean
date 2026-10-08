@@ -14,7 +14,7 @@ import IrisTest.Instances
 namespace IrisTest
 open Lean Iris Qq BI ProofMode
 
-variable {PROP} [BI PROP] (P : PROP)
+variable {PROP} [BI Nat PROP] (P : PROP)
 
 /--
 info: tac_continue called with TacticTest iprop(∀ x, (emp ∗ P) ∗ P) ?_

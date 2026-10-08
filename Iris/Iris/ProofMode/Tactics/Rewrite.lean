@@ -10,26 +10,29 @@ public import Iris.ProofMode.Tactics.HaveCore
 
 namespace Iris.ProofMode
 
+variable {SI : Type _} [Iris.SIdx SI]
+
+
 public section
 open BI Iris.Std
 
-theorem rewrite_tac [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE Nat A] {a b : A} {p}
-    (Ψ : A → PROP) [ne : OFE.NonExpansive Nat Ψ] [heq : IntoInternalEq Q a b]
+theorem rewrite_tac [Sbi SI PROP] {P P' Q : PROP} {A : Type _} [OFE SI A] {a b : A} {p}
+    (Ψ : A → PROP) [ne : OFE.NonExpansive SI Ψ] [heq : IntoInternalEq SI Q a b]
     (h1 : P ⊢ P' ∗ □?p Q) : P ⊢ <pers> (Ψ a ∗-∗ Ψ b) := calc
-  P ⊢ P' ∗ a ≡ b := h1.trans (sep_mono_right (intuitionisticallyIf_elim.trans heq.1))
-  _ ⊢ a ≡ b := sep_elim_right
-  _ ⊢ Ψ a ≡ Ψ b := internalEq.of_internalEquiv_ne Ψ
-  _ ⊢ <pers> (Ψ a ≡ Ψ b) := persistent
-  _ ⊢ <pers> <affine> Ψ a ≡ Ψ b := persistently_affinely.2
+  P ⊢ P' ∗ a ≡[SI] b := h1.trans (sep_mono_right (intuitionisticallyIf_elim.trans heq.1))
+  _ ⊢ a ≡[SI] b := sep_elim_right
+  _ ⊢ Ψ a ≡[SI] Ψ b := internalEq.of_internalEquiv_ne Ψ
+  _ ⊢ <pers> (Ψ a ≡[SI] Ψ b) := persistent
+  _ ⊢ <pers> <affine> Ψ a ≡[SI] Ψ b := persistently_affinely.2
   _ ⊢ <pers> (Ψ a ∗-∗ Ψ b) := persistently_mono (affinely_internalEq_wandIff _ _)
 
-theorem rewrite_tac_symm [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE Nat A] {a b : A} {p}
-    (Ψ : A → PROP) [ne : OFE.NonExpansive Nat Ψ] [IntoInternalEq Q a b]
+theorem rewrite_tac_symm [Sbi SI PROP] {P P' Q : PROP} {A : Type _} [OFE SI A] {a b : A} {p}
+    (Ψ : A → PROP) [ne : OFE.NonExpansive SI Ψ] [IntoInternalEq SI Q a b]
     (h_eq : P ⊢ P' ∗ □?p Q) : P ⊢ <pers> (Ψ b ∗-∗ Ψ a) :=
   (rewrite_tac Ψ h_eq).trans (persistently_mono and_symm)
 
 @[rocq_alias tac_rewrite]
-theorem rewrite_tac_goal [BI PROP] {P Q Q' : PROP}
+theorem rewrite_tac_goal [BI SI PROP] {P Q Q' : PROP}
     (h1 : P ⊢ <pers> (Q ∗-∗ Q'))
     (h2 : P ⊢ Q') : P ⊢ Q :=
   calc
@@ -39,7 +42,7 @@ theorem rewrite_tac_goal [BI PROP] {P Q Q' : PROP}
     _ ⊢ Q := wand_elim_left
 
 @[rocq_alias tac_rewrite_in]
-theorem rewrite_tac_hyp [BI PROP] {P Q Q' : PROP}
+theorem rewrite_tac_hyp [BI SI PROP] {P Q Q' : PROP}
     (h1 : P ⊢ <pers> (Q ∗-∗ Q')) : P ⊢ <pers> (Q -∗ Q') :=
   h1.trans (persistently_mono and_elim_l)
 
@@ -102,7 +105,8 @@ end rule
 
 end IRewrite
 
-private def iRewriteCore {prop : Q(Type u)} {bi : Q(BI $prop)}
+private def iRewriteCore {prop : Q(Type u)}
+    {si : Q(Type v)} {sidx : Q(SIdx $si)} {bi : Q(BI $si $prop)}
     {e} (hyps : Hyps bi e) (rule : IRewrite.Rule)
     (target : Q($prop))
     (occs : Occurrences := Occurrences.all) :
@@ -114,19 +118,19 @@ private def iRewriteCore {prop : Q(Type u)} {bi : Q(BI $prop)}
   have : $g =Q iprop($e' ∗ □?$p $eq) := ⟨⟩
   let pf' : Q($e ⊢ $e' ∗ □?$p $eq) := q($pf .rfl)
 
-  let .some sbi ← trySynthInstanceQ q(Sbi $prop)
+  let .some sbi ← trySynthInstanceQ q(Sbi $si $prop)
     | throwIPMError "could not synthesize Sbi instance"
 
   -- we assume that the SBI instance has bi as its BI instance
   have : $bi =Q ($sbi).toBI := ⟨⟩
 
-  let v               ← mkFreshLevelMVar
-  let A   : Q(Type v) ← mkFreshExprMVarQ q(Type v)
+  let w               ← mkFreshLevelMVar
+  let A   : Q(Type w) ← mkFreshExprMVarQ q(Type w)
   let a   : Q($A)     ← mkFreshExprMVarQ q($A)
   let b   : Q($A)     ← mkFreshExprMVarQ q($A)
-  let _ofe : Q(OFE Nat $A) ← mkFreshExprMVarQ q(OFE Nat $A)
+  let _ofe : Q(OFE $si $A) ← mkFreshExprMVarQ q(OFE $si $A)
 
-  let .some _ ← ProofModeM.trySynthInstanceQ q(IntoInternalEq (PROP := $prop) $eq $a $b)
+  let .some _ ← ProofModeM.trySynthInstanceQ q(IntoInternalEq $si (PROP := $prop) $eq $a $b)
     | throwIPMError "{eq} is not an internal equality"
 
   let ⟨a, _⟩ ← instantiateMVarsQ' a
@@ -141,10 +145,10 @@ private def iRewriteCore {prop : Q(Type u)} {bi : Q(BI $prop)}
   have Ψ : Q($A → $prop) := mkLambda `x .default A goalAbstracted
 
   -- add OFE.NonExpansive to be solved by TC synthesis or left as a goal otherwise
-  let _ ← match ← trySynthInstanceQ q(OFE.NonExpansive Nat $Ψ) with
+  let _ ← match ← trySynthInstanceQ q(OFE.NonExpansive $si $Ψ) with
     | .some x => pure x
     | _ =>
-      let ne ← mkFreshExprMVarQ q(OFE.NonExpansive Nat $Ψ)
+      let ne ← mkFreshExprMVarQ q(OFE.NonExpansive $si $Ψ)
       addMVarGoal ne.mvarId!
       pure ne
 
@@ -156,7 +160,7 @@ private def iRewriteCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     have : $target =Q $Ψ $b := ⟨⟩
     return ⟨_, q(rewrite_tac_symm $Ψ $pf')⟩
 
-def iRewriteGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
+def iRewriteGoal {prop : Q(Type u)} {si : Q(Type v)} {sidx : Q(SIdx $si)} {bi : Q(BI $si $prop)}
     {e} (hyps : Hyps bi e) (rule : IRewrite.Rule) (goal : Q($prop))
     (occs : Occurrences := Occurrences.all) :
     ProofModeM Q($e ⊢ $goal) := do
@@ -164,7 +168,7 @@ def iRewriteGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
   let pf' ← addBIGoal hyps q($goal')
   return q(rewrite_tac_goal $pf $pf')
 
-def iRewriteHyp {prop : Q(Type u)} {bi : Q(BI $prop)}
+def iRewriteHyp {prop : Q(Type u)} {si : Q(Type v)} {sidx : Q(SIdx $si)} {bi : Q(BI $si $prop)}
     {e} (hyps : Hyps bi e) (rule : IRewrite.Rule)
     (ivar : IVarId)
     (occs : Occurrences := Occurrences.all) :

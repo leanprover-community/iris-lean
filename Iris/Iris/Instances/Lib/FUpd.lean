@@ -68,7 +68,8 @@ instance {E1 E2 : CoPset} : NonExpansive Nat (uPred_fupd (GF := GF) (hlc := hlc)
     refine sep_ne.ne .rfl ?_
     refine sep_ne.ne .rfl h
 
-instance uPred_fupd_instance : FUpd (IProp GF) where
+/-- `FUpd` data; only reachable globally through `BIFUpdate.toFUpd` (see `uPred_bi_fupd`). -/
+@[reducible] def uPred_fupd_instance : FUpd (IProp GF) where
   fupd := uPred_fupd
 
 end FUpd
@@ -79,8 +80,12 @@ open Std.LawfulSet
 
 #rocq_ignore uPred_fupd_mixin "The `BiFUpdMixin` laws are supplied directly when building `uPred_bi_fupd` below."
 
+section FUpdInstance
+
+attribute [local instance] uPred_fupd_instance
+
 @[rocq_alias uPred_bi_fupd]
-instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate (IProp GF) where
+instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate Nat (IProp GF) where
   fupd := uPred_fupd
   subset Hsub := by
     simp only [uPred_fupd]
@@ -131,6 +136,8 @@ instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate (I
     ihave Hupd := le_upd_frame_r $$ [$Hupd $HR]
     iapply le_upd_mono ?_ $$ Hupd
     iintro ⟨⟨$, $, $⟩, $⟩
+
+end FUpdInstance
 
 @[rocq_alias uPred_bi_bupd_fupd]
 instance {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIUpdateFUpdate (IProp GF) where
@@ -298,7 +305,7 @@ theorem fupd_finally_keep {E : CoPset} (P : IProp GF) {Q : IProp GF} [TCOr (TCEq
 
 @[rocq_alias uPred_bi_fupd_sbi_no_lc]
 instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .hasNoLC GF] :
-    BIFUpdateSbi (IProp GF) where
+    BIFUpdateSbi Nat (IProp GF) where
   fupd_keep_siPure E' Pi R := by
     iintro H
     iapply fupd_keep iprop(<si_pure> Pi)

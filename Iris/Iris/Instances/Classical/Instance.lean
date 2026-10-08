@@ -18,7 +18,10 @@ open Iris.BI Iris.Instances.Data Iris.Std
 
 abbrev HeapProp (Val : Type _) := State Val → Prop
 
-instance : BIBase (HeapProp Val) where
+section BIInstance
+
+/-- `BIBase` data; only reachable globally through `BI.toBIBase`. -/
+@[reducible] def instBIBaseHeapProp : BIBase (HeapProp Val) where
   Entails P Q      := ∀ σ, P σ → Q σ
   emp            σ := σ = ∅
   pure φ         _ := φ
@@ -30,7 +33,9 @@ instance : BIBase (HeapProp Val) where
   sep P Q        σ := ∃ σ1 σ2, σ = σ1 ∪ σ2 ∧ σ1 || σ2 ∧ P σ1 ∧ Q σ2
   wand P Q       σ := ∀ σ', σ || σ' → P σ' → Q (σ ∪ σ')
   persistently P _ := P ∅
-  later P        σ := P σ
+  later _        _ := True
+
+attribute [local instance] instBIBaseHeapProp
 
 instance heapPropPreorder : Std.IsPreorder (HeapProp Val) where
   le_refl := by
@@ -44,7 +49,8 @@ instance heapPropPreorder : Std.IsPreorder (HeapProp Val) where
 
 instance : COFE Nat (HeapProp Val) := COFE.ofDiscrete _
 
-instance : BI (HeapProp Val) where
+instance : BI Nat (HeapProp Val) where
+  toBIBase := instBIBaseHeapProp
   entails_refl := heapPropPreorder.le_refl _
   entails_trans := heapPropPreorder.le_trans _ _ _
   equiv_iff {P Q} := ⟨
@@ -58,7 +64,7 @@ instance : BI (HeapProp Val) where
   sep_ne          := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩
   wand_ne         := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩
   persistently_ne := ⟨by rintro _ _ _ h; exact (h : _ = _) ▸ rfl⟩
-  later_ne        := ⟨by rintro _ _ _ h; exact (h : _ = _) ▸ rfl⟩
+  later_ne        := ⟨fun _ _ _ _ => rfl⟩
   sForall_ne {_ P Q} h := (liftRel_eq.1 (h : liftRel Eq P Q)) ▸ rfl
   sExists_ne {_ P Q} h := (liftRel_eq.1 (h : liftRel Eq P Q)) ▸ rfl
 
@@ -252,14 +258,23 @@ instance : BI (HeapProp Val) where
     · exact h_P
     · exact h_Q
 
-  later_mono := id
-  later_intro _ := id
-  later_sForall_2 _ h _ hp := h _ ⟨_, rfl⟩ hp
-  later_sExists_false _ := fun ⟨p, hp⟩ => .inr ⟨_, ⟨_, rfl⟩, hp⟩
-  later_sep := ⟨fun _ => id, fun _ => id⟩
-  later_persistently := ⟨fun _ => id, fun _ => id⟩
-  later_false_em _ h := .inr fun _ => h
+  later_mono _ _ h := h
+  later_intro _ _ := trivial
+  later_sForall_2 _ _ := trivial
+  later_false_sExists _ h :=
+    let ⟨p, hΦ, hp⟩ := h trivial
+    ⟨_, ⟨p, rfl⟩, hΦ, fun _ => hp⟩
+  later_sExists_false _ _ := .inl trivial
+  later_false_sep _ h :=
+    let ⟨σ1, σ2, hu, hd, hP, hQ⟩ := h trivial
+    ⟨σ1, σ2, hu, hd, fun _ => hP, fun _ => hQ⟩
+  later_sep_1 σ _ := ⟨∅, σ, empty_union, empty_disjoint, trivial, trivial⟩
+  later_sep_2 _ _ := trivial
+  later_persistently := ⟨fun _ _ => trivial, fun _ _ => trivial⟩
+  later_false_em _ _ := .inl trivial
 
+
+end BIInstance
 end Classical
 
 end Instances

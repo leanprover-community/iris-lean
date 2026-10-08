@@ -10,45 +10,48 @@ public import Iris.ProofMode.Classes
 
 @[expose] public section
 
+
+variable {SI : Type _} [Iris.SIdx SI]
+
 open Iris BI ORA ProofMode Std
 
 namespace UPred
 
-variable [UORA Nat M]
+variable [UORA SI M] [UPred.OrdExtend0 SI M]
 
 @[rocq_alias from_sep_ownM]
-instance fromSep_ownM {a b1 b2 : M} [h : IsOp Nat .split a b1 b2] :
-    FromSep (ownM a) (ownM b1) (ownM b2) where
+instance fromSep_ownM {a b1 b2 : M} [h : IsOp SI .split a b1 b2] :
+    FromSep (ownM (SI := SI) a) (ownM b1) (ownM b2) where
   from_sep := by rw [h.is_op]; exact (ownM_op ..).mpr
 
 @[rocq_alias combine_sep_as_ownM]
-instance (priority := default - 15) combineSepAs_ownM {a b1 b2 : M} [h : IsOp Nat .merge a b1 b2] :
-    CombineSepAs (ownM b1) (ownM b2) (ownM a) where
+instance (priority := default - 15) combineSepAs_ownM {a b1 b2 : M} [h : IsOp SI .merge a b1 b2] :
+    CombineSepAs (ownM b1) (ownM b2) (ownM (SI := SI) a) where
   combine_sep_as := by rw [h.is_op]; exact (ownM_op ..).mpr
 
 @[rocq_alias combine_sep_gives_ownM]
 instance combineSepGives_ownM {b1 b2 : M} :
-    CombineSepGives (ownM b1) (ownM b2) iprop(✓[Nat] b1 • b2) where
+    CombineSepGives (ownM (SI := SI) b1) (ownM b2) iprop(✓[SI] b1 • b2) where
   combine_sep_gives := (ownM_op ..).mpr.trans (ownM_valid _)
 
 @[rocq_alias from_sep_ownM_core_id]
-instance fromAnd_ownM_coreId {a b1 b2 : M} [h : IsOp Nat .split a b1 b2]
-    [TCOr (CoreId b1) (CoreId b2)] : FromAnd (ownM a) (ownM b1) (ownM b2) where
+instance fromAnd_ownM_coreId {a b1 b2 : M} [h : IsOp SI .split a b1 b2]
+    [TCOr (CoreId b1) (CoreId b2)] : FromAnd (ownM (SI := SI) a) (ownM b1) (ownM b2) where
   from_and := by
     rw [h.is_op]
     refine .trans ?_ (ownM_op ..).mpr
     cases (inferInstance : TCOr (CoreId b1) (CoreId b2)) <;> exact persistent_and_sep_mp
 
 @[rocq_alias into_and_ownM]
-instance intoAnd_ownM (p : Bool) {a b1 b2 : M} [h : IsOp Nat .split a b1 b2] [Increasing Nat b1]
-    [Increasing Nat b2] : IntoAnd p (ownM a) (ownM b1) (ownM b2) where
+instance intoAnd_ownM (p : Bool) {a b1 b2 : M} [h : IsOp SI .split a b1 b2] [Increasing SI b1]
+    [Increasing SI b2] : IntoAnd p (ownM (SI := SI) a) (ownM b1) (ownM b2) where
   into_and := intuitionisticallyIf_mono <| by
     rw [h.is_op]
     exact fun _ _ hx => ⟨(ordN_op_left _ b1 b2).trans hx, (ordN_op_right _ b1 b2).trans hx⟩
 
 @[rocq_alias into_sep_ownM]
-instance intoSep_ownM {a b1 b2 : M} [h : IsOp Nat .split a b1 b2] :
-    IntoSep (ownM a) (ownM b1) (ownM b2) where
+instance intoSep_ownM {a b1 b2 : M} [h : IsOp SI .split a b1 b2] :
+    IntoSep (ownM (SI := SI) a) (ownM b1) (ownM b2) where
   into_sep := by rw [h.is_op]; exact (ownM_op ..).mp
 
 end UPred

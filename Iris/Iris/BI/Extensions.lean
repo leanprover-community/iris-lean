@@ -10,36 +10,39 @@ public import Iris.BI.BI
 
 @[expose] public section
 
+
+variable {SI : Type _} [Iris.SIdx SI]
+
 namespace Iris.BI
 
 /-- Require that a separation logic with the carrier type `PROP` is an affine separation logic. -/
 @[rocq_alias BiAffine]
-class BIAffine (PROP : Type _) [BI PROP] where
+class BIAffine (PROP : Type _) [BI.BIBase PROP] where
   affine (P : PROP) : Affine P
 
 attribute [instance (default + 100)] BIAffine.affine
 
 @[rocq_alias BiPositive]
-class BIPositive (PROP : Type _) [BI PROP] where
+class BIPositive (PROP : Type _) [BI.BIBase PROP] where
   affinely_sep_l {P Q : PROP} : <affine> (P ∗ Q) ⊢ <affine> P ∗ Q
 export BIPositive (affinely_sep_l)
 
 @[rocq_alias BiLöb]
-class BILoeb (PROP : Type _) [BI PROP] where
+class BILoeb (PROP : Type _) [BI.BIBase PROP] where
   loeb_weak {P : PROP} : (▷ P ⊢ P) → True ⊢ P
 export BILoeb (loeb_weak)
 
 @[rocq_alias BiLaterContractive]
-class BILaterContractive (PROP : Type _) [BI PROP] extends OFE.Contractive Nat later (α := PROP)
+class BILaterContractive (SI : Type _) [SIdx SI] (PROP : Type _) [BI SI PROP] extends OFE.Contractive SI later (α := PROP)
 
 #rocq_ignore BiPureForall "BIPureForall is provable for all BIs using classical logic, see pure_forall_2"
 
 @[rocq_alias BiPersistentlyForall]
-class BIPersistentlyForall (PROP : Type _) [BI PROP] where
+class BIPersistentlyForall (PROP : Type _) [BI.BIBase PROP] where
   persistently_sForall_2 (Ψ : PROP → Prop) : (∀ p, ⌜Ψ p⌝ → <pers> p) ⊢ <pers> (sForall Ψ)
 
 @[rocq_alias BiPersistentlyExist]
-class BIPersistentlyExist (PROP : Type _) [BI PROP] where
+class BIPersistentlyExist (PROP : Type _) [BI.BIBase PROP] where
   persistently_sExists_1 (Ψ : PROP → Prop) : <pers> (sExists Ψ) ⊢ ∃ p, ⌜Ψ p⌝ ∧ <pers> p
 
 section PersistentlyExistDiscrete
@@ -49,7 +52,7 @@ A discrete BI whose persistently modality is
 `<pers> P := ⌜emp ⊢ P⌝` validates `BIPersistentlyExist` as soon as it satisfies the
 "existential property" `(emp ⊢ ∃ x, Φ x) → ∃ x, emp ⊢ Φ x`.
 -/
-theorem BIPersistentlyExist.ofDiscrete {PROP : Type _} [BI PROP]
+theorem BIPersistentlyExist.ofDiscrete {PROP : Type _} [BI SI PROP]
     (existential : ∀ {Ψ : PROP → Prop}, (emp ⊢ sExists Ψ) → ∃ p, Ψ p ∧ (emp ⊢ p))
     (persistently_eq : ∀ P : PROP, iprop(<pers> P) = iprop(⌜emp ⊢ P⌝)) :
     BIPersistentlyExist PROP where

@@ -15,13 +15,16 @@ import Iris.Std.TC
 
 public section
 
+
+variable {SI : Type _} [Iris.SIdx SI]
+
 namespace Iris.BI
 
 open Iris.Algebra BigOpL BigOpMS BIBase Iris.Std BigSepL
 
 /-! # Big Separating Conjunction over Multisets -/
 
-variable {PROP : Type _} [BI PROP]
+variable {PROP : Type _} [BI SI PROP]
 variable {MS : Type _} {A : Type _} [LawfulFiniteMultiSet MS A]
 
 namespace BigSepMS
@@ -32,7 +35,7 @@ theorem bigSepMS_mono {Φ Ψ : A → PROP} {X : MS} (h : ∀ {x}, x ∈ X → Φ
   bigOpMS_gen_proper _ .rfl sep_mono h
 
 @[rocq_alias big_sepMS_ne]
-theorem bigSepMS_ne {Φ Ψ : A → PROP} {X : MS} {n : Nat} (h : ∀ {x}, x ∈ X → Φ x ≡{n}≡ Ψ x) :
+theorem bigSepMS_ne {Φ Ψ : A → PROP} {X : MS} {n : SI} (h : ∀ {x}, x ∈ X → Φ x ≡{n}≡ Ψ x) :
     ([∗mset] x ∈ X, Φ x) ≡{n}≡ ([∗mset] x ∈ X, Ψ x) :=
   bigOpMS_dist h
 
@@ -129,15 +132,14 @@ instance bigSepMS_empty_affine_inst {Φ : A → PROP} :
 @[rocq_alias big_sepMS_empty_timeless]
 instance bigSepMS_empty_timeless_inst [Timeless (emp : PROP)] {Φ : A → PROP} :
     Timeless ([∗mset] x ∈ (∅ : MS), Φ x) where
-  timeless := (later_congr bigSepMS_empty).1.trans <|
-    Timeless.timeless.trans <| except0_mono bigSepMS_empty.2
+  timeless := (only0_congr bigSepMS_empty).1.trans <| Timeless.timeless.trans bigSepMS_empty.2
 
 @[rocq_alias big_sepMS_timeless]
 theorem bigSepMS_timeless [Timeless (emp : PROP)] {Φ : A → PROP} {X : MS}
     (h : ∀ {x}, x ∈ X → Timeless (Φ x)) :
     Timeless ([∗mset] x ∈ X, Φ x) where
-  timeless := bigOpMS_closed (fun Q => ▷ Q ⊢ ◇ Q) Φ X Timeless.timeless
-    (fun hx hy => later_sep.1.trans <| (sep_mono hx hy).trans except0_sep.2)
+  timeless := bigOpMS_closed (fun Q => <only0> Q ⊢ Q) Φ X Timeless.timeless
+    (fun hx hy => only0_sep.mp.trans (sep_mono hx hy))
     (fun hm => (h hm).timeless)
 
 @[rocq_alias big_sepMS_timeless']
@@ -249,7 +251,7 @@ theorem bigSepMS_persistently [BIAffine PROP] {Φ : A → PROP} {X : MS} :
   BiEntails.of_eq <| BigOpMS.hom this Φ X
 
 @[rocq_alias big_sepMS_later]
-theorem bigSepMS_later [BIAffine PROP] {Φ : A → PROP} {X : MS} :
+theorem bigSepMS_later [SIdxFinite SI] [BIAffine PROP] {Φ : A → PROP} {X : MS} :
     (▷ [∗mset] y ∈ X, Φ y) ⊣⊢ [∗mset] y ∈ X, ▷ Φ y :=
   letI := MonoidHomomorphism.ofEq later_ne
     (BiEntails.to_eq later_sep) (BiEntails.to_eq later_emp)
@@ -261,7 +263,7 @@ theorem bigSepMS_later_2 {Φ : A → PROP} {X : MS} :
   bigSepMS_elements.1.trans <| bigSepL_later_2.trans <| later_mono bigSepMS_elements.2
 
 @[rocq_alias big_sepMS_laterN]
-theorem bigSepMS_laterN [BIAffine PROP] {Φ : A → PROP} {n : Nat} {X : MS} :
+theorem bigSepMS_laterN [SIdxFinite SI] [BIAffine PROP] {Φ : A → PROP} {n : Nat} {X : MS} :
     (▷^[n] [∗mset] y ∈ X, Φ y) ⊣⊢ [∗mset] y ∈ X, ▷^[n] Φ y :=
   match n with
   | 0 => .rfl

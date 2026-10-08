@@ -16,10 +16,13 @@ public import Iris.Std.TC
 
 @[expose] public section
 
+
+variable {SI : Type _} [Iris.SIdx SI]
+
 namespace Iris.BI
 open Iris.Std BI
 
-variable {PROP : Type _} [BI PROP]
+variable {PROP : Type _} [BI SI PROP]
 
 /-! # Later -/
 
@@ -61,7 +64,7 @@ theorem later_exists_mp {Φ : α → PROP} :
   exists_elim (later_mono <| exists_intro ·)
 
 @[rocq_alias bi.later_exist_false]
-theorem later_exists_false {Φ : α → PROP} :
+theorem later_exists_false [SIdxFinite SI] {Φ : α → PROP} :
     (▷ ∃ a, Φ a) ⊢ ▷ False ∨ ∃ a, ▷ Φ a := by
   apply later_sExists_false.trans
   apply or_elim
@@ -73,11 +76,11 @@ theorem later_exists_false {Φ : α → PROP} :
     exact imp_intro_swap <| and_elim_l.trans (exists_intro (Ψ := fun a => iprop(▷ Φ a)) a)
 
 @[rocq_alias bi.later_exist_except_0]
-theorem later_exists_except0 {Φ : α → PROP} :
+theorem later_exists_except0 [SIdxFinite SI] {Φ : α → PROP} :
     (▷ ∃ a, Φ a) ⊢ ◇ (∃ a, ▷ Φ a) := later_exists_false
 
 @[rocq_alias bi.later_exist]
-theorem later_exists [Inhabited α] {Φ : α → PROP} :
+theorem later_exists [SIdxFinite SI] [Inhabited α] {Φ : α → PROP} :
     (∃ a, ▷ Φ a) ⊣⊢ ▷ (∃ a, Φ a) := by
   refine ⟨later_exists_mp, later_exists_false.trans ?_⟩
   exact or_elim ((later_mono false_elim).trans (exists_intro (Ψ := fun a => iprop(▷ Φ a)) default)) .rfl
@@ -94,8 +97,12 @@ theorem later_and {P Q : PROP} : ▷ (P ∧ Q) ⊣⊢ ▷ P ∧ ▷ Q := by
     refine .trans (forall_mono ?_) later_forall.mpr
     exact (·.casesOn .rfl .rfl)
 
+@[rocq_alias bi.later_or_2]
+theorem later_or_2 {P Q : PROP} : ▷ P ∨ ▷ Q ⊢ ▷ (P ∨ Q) :=
+  or_elim (later_mono or_intro_l) (later_mono or_intro_r)
+
 @[rocq_alias bi.later_or]
-theorem later_or {P Q : PROP} : ▷ (P ∨ Q) ⊣⊢ ▷ P ∨ ▷ Q := by
+theorem later_or [SIdxFinite SI] {P Q : PROP} : ▷ (P ∨ Q) ⊣⊢ ▷ P ∨ ▷ Q := by
   constructor
   · refine (later_mono or_exists_ite.mp).trans ?_
     refine .trans ?_ or_exists_ite.mpr
@@ -107,7 +114,7 @@ theorem later_or {P Q : PROP} : ▷ (P ∨ Q) ⊣⊢ ▷ P ∨ ▷ Q := by
     exact (·.casesOn .rfl .rfl)
 
 @[rocq_alias bi.later_sep]
-theorem later_sep_alias {P Q : PROP} : ▷ (P ∗ Q) ⊣⊢ ▷ P ∗ ▷ Q := later_sep
+theorem later_sep_alias [SIdxFinite SI] {P Q : PROP} : ▷ (P ∗ Q) ⊣⊢ ▷ P ∗ ▷ Q := later_sep
 
 @[rocq_alias bi.later_persistently]
 theorem later_persistently_alias {P : PROP} : ▷ <pers> P ⊣⊢ <pers> ▷ P := later_persistently
@@ -118,7 +125,7 @@ theorem later_imp {P Q : PROP} : ▷ (P → Q) ⊢ ▷ P → ▷ Q :=
 
 @[rocq_alias bi.later_wand]
 theorem later_wand {P Q : PROP} : ▷ (P -∗ Q) ⊢ ▷ P -∗ ▷ Q :=
-  wand_intro_left <| later_sep.mpr.trans <| later_mono wand_elim_right
+  wand_intro_left <| later_sep_2.trans <| later_mono wand_elim_right
 
 @[rocq_alias bi.later_iff]
 theorem later_iff {P Q : PROP} : ▷ (P ↔ Q) ⊢ (▷ P ↔ ▷ Q) :=
@@ -140,9 +147,13 @@ theorem later_intuitionistically_2 {P : PROP} : □ ▷ P ⊢ ▷ □ P :=
 theorem later_intuitionisticallyIf_2 {P : PROP} : □?p ▷ P ⊢ ▷ □?p P :=
   p.casesOn .rfl later_intuitionistically_2
 
+@[rocq_alias bi.later_absorbingly_2]
+theorem later_absorbingly_2 {P : PROP} : <absorb> ▷ P ⊢ ▷ <absorb> P :=
+  (sep_mono_left later_intro).trans later_sep_2
+
 @[rocq_alias bi.later_absorbingly]
-theorem later_absorbingly {P : PROP} : ▷ <absorb> P ⊣⊢ <absorb> ▷ P :=
-  ⟨later_sep.mp.trans <| sep_mono_left true_intro, (sep_mono_left later_intro).trans later_sep.mpr⟩
+theorem later_absorbingly [SIdxFinite SI] {P : PROP} : ▷ <absorb> P ⊣⊢ <absorb> ▷ P :=
+  ⟨later_sep.mp.trans <| sep_mono_left true_intro, (sep_mono_left later_intro).trans later_sep_2⟩
 
 @[rocq_alias bi.later_affinely]
 theorem later_affinely [BIAffine PROP] {P : PROP} : <affine> ▷ P ⊣⊢ ▷ <affine> P := by
@@ -168,7 +179,7 @@ instance later_persistent {P : PROP} [Persistent P] : Persistent iprop(▷ P) wh
 
 @[rocq_alias bi.later_absorbing]
 instance later_absorbing {P : PROP} [Absorbing P] : Absorbing iprop(▷ P) where
-  absorbing := later_absorbingly.mpr.trans <| later_mono absorbing
+  absorbing := later_absorbingly_2.trans <| later_mono absorbing
 
 #rocq_ignore bi.laterN_iter "laterN in Lean is defined using Nat.repeat directly"
 
@@ -182,43 +193,43 @@ These instances ported from Rocq `bi_later_monoid_*` in
 
 @[rocq_alias bi.bi_later_monoid_and_homomorphism]
 instance bi_later_monoid_and_homomorphism :
-    Iris.Algebra.MonoidHomomorphism Nat (and (PROP := PROP)) and iprop(True) iprop(True) (· = ·) later :=
+    Iris.Algebra.MonoidHomomorphism SI (and (PROP := PROP)) and iprop(True) iprop(True) (· = ·) later :=
   MonoidHomomorphism.ofEq BI.later_ne
     later_and.to_eq later_true.to_eq
 
 @[rocq_alias bi.bi_later_monoid_or_homomorphism]
-instance bi_later_monoid_or_homomorphism :
-    Iris.Algebra.WeakMonoidHomomorphism Nat (or (PROP := PROP)) or iprop(False) iprop(False) (· = ·) later :=
+instance bi_later_monoid_or_homomorphism [SIdxFinite SI] :
+    Iris.Algebra.WeakMonoidHomomorphism SI (or (PROP := PROP)) or iprop(False) iprop(False) (· = ·) later :=
   WeakMonoidHomomorphism.ofEq BI.later_ne later_or.to_eq
 
 @[rocq_alias bi.bi_later_monoid_sep_weak_homomorphism]
-instance bi_later_monoid_sep_weak_homomorphism :
-    Iris.Algebra.WeakMonoidHomomorphism Nat (sep (PROP := PROP)) sep emp emp (· = ·) later :=
+instance bi_later_monoid_sep_weak_homomorphism [SIdxFinite SI] :
+    Iris.Algebra.WeakMonoidHomomorphism SI (sep (PROP := PROP)) sep emp emp (· = ·) later :=
   WeakMonoidHomomorphism.ofEq BI.later_ne later_sep.to_eq
 
 @[rocq_alias bi.bi_later_monoid_sep_homomorphism]
-instance bi_later_monoid_sep_homomorphism [BIAffine PROP] :
-    Iris.Algebra.MonoidHomomorphism Nat (sep (PROP := PROP)) sep emp emp (· = ·) later :=
+instance bi_later_monoid_sep_homomorphism [SIdxFinite SI] [BIAffine PROP] :
+    Iris.Algebra.MonoidHomomorphism SI (sep (PROP := PROP)) sep emp emp (· = ·) later :=
   MonoidHomomorphism.ofEq BI.later_ne
     later_sep.to_eq later_emp.to_eq
 
 @[rocq_alias bi.bi_later_monoid_sep_entails_weak_homomorphism]
 instance bi_later_monoid_sep_entails_weak_homomorphism :
-    Iris.Algebra.WeakMonoidHomomorphism Nat (sep (PROP := PROP)) sep emp emp (flip Entails) later where
+    Iris.Algebra.WeakMonoidHomomorphism SI (sep (PROP := PROP)) sep emp emp (flip Entails) later where
   rel_refl := .rfl
   rel_trans := flip .trans
   op_proper := sep_mono
   map_ne := BI.later_ne
-  map_op := later_sep.mpr
+  map_op := later_sep_2
 
 @[rocq_alias bi.bi_later_monoid_sep_entails_homomorphism]
 instance bi_later_monoid_sep_entails_homomorphism :
-    Iris.Algebra.MonoidHomomorphism Nat (sep (PROP := PROP)) sep emp emp (flip Entails) later where
+    Iris.Algebra.MonoidHomomorphism SI (sep (PROP := PROP)) sep emp emp (flip Entails) later where
   rel_refl := .rfl
   rel_trans := flip .trans
   op_proper := sep_mono
   map_ne := BI.later_ne
-  map_op := later_sep.mpr
+  map_op := later_sep_2
   map_unit := later_intro
 
 @[rocq_alias bi.löb]
@@ -258,10 +269,10 @@ theorem loeb_wand [BILoeb PROP] (P : PROP) : □ (▷ P -∗ P) ⊢ P :=
 
 open Iris BI OFE Contractive in
 @[rocq_alias bi.later_contractive_bi_löb]
-instance later_contractive_bi_loeb [BILaterContractive PROP] : BILoeb PROP where
+instance later_contractive_bi_loeb [BILaterContractive SI PROP] : BILoeb PROP where
   loeb_weak {P} HP := by
-    let Hc : Contractive Nat (fun Q => iprop((▷ Q) → P)) := ⟨fun H => imp_ne.ne (distLater_dist H) .rfl⟩
-    let Flöb : PROP -c>[Nat] PROP := { f := fun Q => iprop((▷ Q) → P), contractive := Hc }
+    let Hc : Contractive SI (fun Q => iprop((▷ Q) → P)) := ⟨fun H => imp_ne.ne (distLater_dist H) .rfl⟩
+    let Flöb : PROP -c>[SI] PROP := { f := fun Q => iprop((▷ Q) → P), contractive := Hc }
     suffices HP : iprop(▷ (fixpoint Flöb) ⊢ P) by
       refine entails_impl_true.mp HP |>.trans ?_
       refine (fixpoint_unfold Flöb).to_bi |>.mpr |>.trans ?_
@@ -312,7 +323,7 @@ theorem loeb_alt_wand [BIAffine PROP] :
 /-! # LaterN -/
 
 @[rocq_alias bi.laterN_ne]
-theorem laterN_ne (n : Nat) : OFE.NonExpansive Nat (BIBase.laterN (PROP:=PROP) n) where
+theorem laterN_ne (n : Nat) : OFE.NonExpansive SI (BIBase.laterN (PROP:=PROP) n) where
   ne := by
     induction n with
     | zero => exact fun _ _ _ h => h
@@ -385,7 +396,7 @@ theorem laterN_exists_mpr (n : Nat) {Φ : α → PROP} : (∃ a, ▷^[n] Φ a) �
   exists_elim fun a => laterN_mono n (exists_intro a)
 
 @[rocq_alias bi.laterN_exist]
-theorem laterN_exists [Inhabited α] (n : Nat) {Φ : α → PROP} :
+theorem laterN_exists [SIdxFinite SI] [Inhabited α] (n : Nat) {Φ : α → PROP} :
     ▷^[n] (∃ a, Φ a) ⊣⊢ (∃ a, ▷^[n] Φ a) := by
   induction n with
   | zero => exact .rfl
@@ -397,8 +408,12 @@ theorem laterN_and (n : Nat) {P Q : PROP} : ▷^[n] (P ∧ Q) ⊣⊢ ▷^[n] P �
   | zero => exact .rfl
   | succ n ih => exact (later_congr ih).trans later_and
 
+@[rocq_alias bi.laterN_or_2]
+theorem laterN_or_2 (n : Nat) {P Q : PROP} : ▷^[n] P ∨ ▷^[n] Q ⊢ ▷^[n] (P ∨ Q) :=
+  or_elim (laterN_mono n or_intro_l) (laterN_mono n or_intro_r)
+
 @[rocq_alias bi.laterN_or]
-theorem laterN_or (n : Nat) {P Q : PROP} : ▷^[n] (P ∨ Q) ⊣⊢ ▷^[n] P ∨ ▷^[n] Q := by
+theorem laterN_or [SIdxFinite SI] (n : Nat) {P Q : PROP} : ▷^[n] (P ∨ Q) ⊣⊢ ▷^[n] P ∨ ▷^[n] Q := by
   induction n with
   | zero => exact .rfl
   | succ n ih => exact (later_congr ih).trans later_or
@@ -407,15 +422,21 @@ theorem laterN_or (n : Nat) {P Q : PROP} : ▷^[n] (P ∨ Q) ⊣⊢ ▷^[n] P �
 theorem laterN_imp (n : Nat) {P Q : PROP} : ▷^[n] (P → Q) ⊢ ▷^[n] P → ▷^[n] Q :=
   imp_intro_swap <| (laterN_and n).2.trans <| laterN_mono n imp_elim_right
 
+@[rocq_alias bi.laterN_sep_2]
+theorem laterN_sep_2 (n : Nat) {P Q : PROP} : ▷^[n] P ∗ ▷^[n] Q ⊢ ▷^[n] (P ∗ Q) := by
+  induction n with
+  | zero => exact .rfl
+  | succ n ih => exact later_sep_2.trans (later_mono ih)
+
 @[rocq_alias bi.laterN_sep]
-theorem laterN_sep (n : Nat) {P Q : PROP} : ▷^[n] (P ∗ Q) ⊣⊢ ▷^[n] P ∗ ▷^[n] Q := by
+theorem laterN_sep [SIdxFinite SI] (n : Nat) {P Q : PROP} : ▷^[n] (P ∗ Q) ⊣⊢ ▷^[n] P ∗ ▷^[n] Q := by
   induction n with
   | zero => exact .rfl
   | succ n ih => exact (later_congr ih).trans later_sep
 
 @[rocq_alias bi.laterN_wand]
 theorem laterN_wand (n : Nat) {P Q : PROP} : ▷^[n] (P -∗ Q) ⊢ ▷^[n] P -∗ ▷^[n] Q :=
-  wand_intro_left <| (laterN_sep n).2.trans <| laterN_mono n wand_elim_right
+  wand_intro_left <| (laterN_sep_2 n).trans <| laterN_mono n wand_elim_right
 
 @[rocq_alias bi.laterN_iff]
 theorem laterN_iff (n : Nat) {P Q : PROP} : ▷^[n] (P ↔ Q) ⊢ (▷^[n] P ↔ ▷^[n] Q) :=
@@ -443,8 +464,12 @@ theorem laterN_intuitionisticallyIf (n : Nat) {p : Bool} {P : PROP} :
   | false => .rfl
   | true => laterN_intuitionistically n
 
+@[rocq_alias bi.laterN_absorbingly_2]
+theorem laterN_absorbingly_2 (n : Nat) {P : PROP} : <absorb> ▷^[n] P ⊢ ▷^[n] <absorb> P :=
+  (sep_mono_left (laterN_intro n)).trans (laterN_sep_2 n)
+
 @[rocq_alias bi.laterN_absorbingly]
-theorem laterN_absorbingly (n : Nat) {P : PROP} : ▷^[n] <absorb> P ⊣⊢ <absorb> ▷^[n] P :=
+theorem laterN_absorbingly [SIdxFinite SI] (n : Nat) {P : PROP} : ▷^[n] <absorb> P ⊣⊢ <absorb> ▷^[n] P :=
   (laterN_sep n).trans (sep_congr (laterN_true n) .rfl)
 
 @[rocq_alias bi.laterN_persistent]
@@ -469,55 +494,55 @@ instance laterN_absorbing (n : Nat) (P : PROP) [Absorbing P] :
 
 @[rocq_alias bi.bi_laterN_and_homomorphism]
 instance bi_laterN_and_homomorphism (n : Nat) :
-    Algebra.MonoidHomomorphism Nat (and (PROP := PROP)) and iprop(True) iprop(True) (· = ·)
+    Algebra.MonoidHomomorphism SI (and (PROP := PROP)) and iprop(True) iprop(True) (· = ·)
       (iprop(▷^[n] · )) :=
   MonoidHomomorphism.ofEq (laterN_ne n)
     (equiv_iff.mpr (laterN_and n)) (equiv_iff.mpr (laterN_true n))
 
 @[rocq_alias bi.bi_laterN_or_homomorphism]
-instance bi_laterN_or_homomorphism (n : Nat) :
-    Algebra.WeakMonoidHomomorphism Nat (or (PROP := PROP)) or iprop(False) iprop(False) (· = ·)
+instance bi_laterN_or_homomorphism [SIdxFinite SI] (n : Nat) :
+    Algebra.WeakMonoidHomomorphism SI (or (PROP := PROP)) or iprop(False) iprop(False) (· = ·)
       (iprop(▷^[n] · )) :=
   WeakMonoidHomomorphism.ofEq (laterN_ne n) (equiv_iff.mpr (laterN_or n))
 
 @[rocq_alias bi.bi_laterN_sep_weak_homomorphism]
-instance bi_laterN_sep_weak_homomorphism (n : Nat) :
-    Algebra.WeakMonoidHomomorphism Nat (sep (PROP := PROP)) sep emp emp (· = ·)
+instance bi_laterN_sep_weak_homomorphism [SIdxFinite SI] (n : Nat) :
+    Algebra.WeakMonoidHomomorphism SI (sep (PROP := PROP)) sep emp emp (· = ·)
       (iprop(▷^[n] · )) :=
   WeakMonoidHomomorphism.ofEq (laterN_ne n) (equiv_iff.mpr (laterN_sep n))
 
 @[rocq_alias bi.bi_laterN_sep_homomorphism]
-instance bi_laterN_sep_homomorphism [BIAffine PROP] (n : Nat) :
-    Algebra.MonoidHomomorphism Nat (sep (PROP := PROP)) sep emp emp (· = ·)
+instance bi_laterN_sep_homomorphism [SIdxFinite SI] [BIAffine PROP] (n : Nat) :
+    Algebra.MonoidHomomorphism SI (sep (PROP := PROP)) sep emp emp (· = ·)
       (iprop(▷^[n] · )) :=
   MonoidHomomorphism.ofEq (laterN_ne n)
     (equiv_iff.mpr (laterN_sep n)) (equiv_iff.mpr (laterN_emp n))
 
 @[rocq_alias bi.bi_laterN_sep_entails_weak_homomorphism]
 instance bi_laterN_sep_entails_weak_homomorphism (n : Nat) :
-    Algebra.WeakMonoidHomomorphism Nat (sep (PROP := PROP)) sep emp emp (flip Entails)
+    Algebra.WeakMonoidHomomorphism SI (sep (PROP := PROP)) sep emp emp (flip Entails)
       (iprop(▷^[n] · )) where
   rel_refl := .rfl
   rel_trans := flip .trans
   op_proper := sep_mono
   map_ne := laterN_ne n
-  map_op := (laterN_sep n).mpr
+  map_op := laterN_sep_2 n
 
 @[rocq_alias bi.bi_laterN_sep_entails_homomorphism]
 instance bi_laterN_sep_entails_homomorphism (n : Nat) :
-    Algebra.MonoidHomomorphism Nat (sep (PROP := PROP)) sep emp emp (flip Entails)
+    Algebra.MonoidHomomorphism SI (sep (PROP := PROP)) sep emp emp (flip Entails)
       (iprop(▷^[n] · )) where
   rel_refl := .rfl
   rel_trans := flip .trans
   op_proper := sep_mono
   map_ne := laterN_ne n
-  map_op := (laterN_sep n).mpr
+  map_op := laterN_sep_2 n
   map_unit := laterN_intro n
 
 /-! # Except0 -/
 
 @[rocq_alias bi.except_0_ne]
-theorem except0_ne : OFE.NonExpansive Nat (BIBase.except0 (PROP:=PROP)) where
+theorem except0_ne : OFE.NonExpansive SI (BIBase.except0 (PROP:=PROP)) where
   ne _ _ _ h := or_ne.ne .rfl h
 
 @[rw_mono_rule, rocq_alias bi.except_0_mono]
@@ -562,10 +587,7 @@ theorem except0_and {P Q : PROP} : ◇ (P ∧ Q) ⊣⊢ ◇ P ∧ ◇ Q :=
 theorem except0_sep {P Q : PROP} : ◇ (P ∗ Q) ⊣⊢ ◇ P ∗ ◇ Q := by
   constructor
   · apply or_elim
-    · apply Entails.trans _ (sep_mono or_intro_l or_intro_l)
-      apply Entails.trans _ (later_sep.1)
-      apply later_mono
-      apply false_elim
+    · exact persistent_sep_dup_mp.trans (sep_mono or_intro_l or_intro_l)
     · exact sep_mono or_intro_r or_intro_r
   · apply Entails.trans sep_or_right.1 _
     apply or_elim
@@ -660,14 +682,6 @@ theorem except0_frame_left {P Q : PROP} : P ∗ ◇ Q ⊢ ◇ (P ∗ Q) :=
 theorem except0_frame_right {P Q : PROP} : ◇ P ∗ Q ⊢ ◇ (P ∗ Q) :=
   (sep_mono_right except0_intro).trans except0_sep.2
 
-@[rocq_alias bi.later_affinely_1]
-theorem later_affinely_mp {P : PROP} [Timeless (PROP := PROP) emp] :
-    ▷ <affine> P ⊢ ◇ <affine> ▷ P := calc
-  _ ⊢ ▷ emp ∧ ▷ P    := later_and.mp
-  _ ⊢ ◇ emp ∧ ▷ P    := and_mono_left Timeless.timeless
-  _ ⊢ ◇ emp ∧ ◇ ▷ P := and_mono_right except0_intro
-  _ ⊢ ◇ (emp ∧ ▷ P)  := except0_and.mpr
-
 @[rocq_alias bi.except_0_persistent]
 instance except0_persistent (P : PROP) [Persistent P] : Persistent iprop(◇ P) :=
   inferInstanceAs (Persistent iprop(_ ∨ _))
@@ -680,33 +694,33 @@ instance except0_absorbing (P : PROP) [Absorbing P] : Absorbing iprop(◇ P) :=
 
 @[rocq_alias bi.bi_except_0_and_homomorphism]
 instance bi_except0_and_homomorphism :
-    Algebra.MonoidHomomorphism Nat (and (PROP := PROP)) and iprop(True) iprop(True) (· = ·)
+    Algebra.MonoidHomomorphism SI (and (PROP := PROP)) and iprop(True) iprop(True) (· = ·)
       (iprop(◇ ·)) :=
   MonoidHomomorphism.ofEq except0_ne
     (equiv_iff.mpr except0_and) (equiv_iff.mpr except0_true)
 
 @[rocq_alias bi.bi_except_0_or_homomorphism]
 instance bi_except0_or_homomorphism :
-    Algebra.WeakMonoidHomomorphism Nat (or (PROP := PROP)) or iprop(False) iprop(False) (· = ·)
+    Algebra.WeakMonoidHomomorphism SI (or (PROP := PROP)) or iprop(False) iprop(False) (· = ·)
       (iprop(◇ ·)) :=
   WeakMonoidHomomorphism.ofEq except0_ne (equiv_iff.mpr except0_or)
 
 @[rocq_alias bi.bi_except_0_sep_weak_homomorphism]
 instance bi_except0_sep_weak_homomorphism :
-    Algebra.WeakMonoidHomomorphism Nat (sep (PROP := PROP)) sep emp emp (· = ·)
+    Algebra.WeakMonoidHomomorphism SI (sep (PROP := PROP)) sep emp emp (· = ·)
       (iprop(◇ ·)) :=
   WeakMonoidHomomorphism.ofEq except0_ne (equiv_iff.mpr except0_sep)
 
 @[rocq_alias bi.bi_except_0_sep_homomorphism]
 instance bi_except0_sep_homomorphism [BIAffine PROP] :
-    Algebra.MonoidHomomorphism Nat (sep (PROP := PROP)) sep emp emp (· = ·)
+    Algebra.MonoidHomomorphism SI (sep (PROP := PROP)) sep emp emp (· = ·)
       (iprop(◇ ·)) :=
   MonoidHomomorphism.ofEq except0_ne
     (equiv_iff.mpr except0_sep) (equiv_iff.mpr except0_emp)
 
 @[rocq_alias bi.bi_except_0_sep_entails_weak_homomorphism]
 instance bi_except0_sep_entails_weak_homomorphism :
-    Algebra.WeakMonoidHomomorphism Nat (sep (PROP := PROP)) sep emp emp (flip Entails)
+    Algebra.WeakMonoidHomomorphism SI (sep (PROP := PROP)) sep emp emp (flip Entails)
       (iprop(◇ ·)) where
   rel_refl := .rfl
   rel_trans := flip .trans
@@ -716,7 +730,7 @@ instance bi_except0_sep_entails_weak_homomorphism :
 
 @[rocq_alias bi.bi_except_0_sep_entails_homomorphism]
 instance bi_except0_sep_entails_homomorphism :
-    Algebra.MonoidHomomorphism Nat (sep (PROP := PROP)) sep emp emp (flip Entails)
+    Algebra.MonoidHomomorphism SI (sep (PROP := PROP)) sep emp emp (flip Entails)
       (iprop(◇ ·)) where
   rel_refl := .rfl
   rel_trans := flip .trans
@@ -832,195 +846,42 @@ theorem only0_persistently_mpr {P : PROP} : <pers> <only0> P ⊢ <only0> <pers> 
 instance only0_absorbing (P : PROP) [Absorbing P] : Absorbing iprop(<only0> P) :=
   inferInstanceAs (Absorbing iprop(▷ False → P))
 
-@[rocq_alias bi.timeless_alt]
-theorem timeless_alt [BILoeb PROP] {P : PROP} : Timeless P ↔ (<only0> P ⊢ P) := by
-  refine ⟨fun _ => ?_, fun h => ⟨later_false_em.trans (or_mono_right h)⟩⟩
-  refine Entails.trans (imp_intro ?_) loeb
-  calc iprop(<only0> P ∧ ▷ P)
-    _ ⊢ <only0> P ∧ ◇ P := and_mono_right Timeless.timeless
-    _ ⊢ P                := except0_and_only0_self.mp
-
-@[rocq_alias bi.timeless_only_0]
-theorem timeless_only0 [BILoeb PROP] {P : PROP} [instTimeless : Timeless P] : <only0> P ⊣⊢ P := by
-  constructor
-  · exact timeless_alt.mp instTimeless
-  · exact only0_intro
-
-@[rocq_alias bi.only_0_elim_timeless]
-theorem only0_elim_timeless [BILoeb PROP] {P : PROP} [Timeless P] : <only0> P ⊢ P :=
-  timeless_only0.mp
-
-#rocq_ignore bi.Timeless_proper "Derivable from the BI structure; Timeless is preserved under ⊣⊢."
-
-@[rocq_alias bi.pure_timeless]
-instance pure_timeless (φ : Prop) : Timeless (PROP := PROP) (BIBase.pure φ) where
-  timeless :=
-    calc iprop(▷ ⌜φ⌝)
-      _ ⊢@{PROP} ▷ ∃ (_a : φ), True :=
-        later_mono (pure_elim' (true_intro.trans <| exists_intro (Ψ := fun _ => iprop(⌜True⌝)) ·))
-      _ ⊢ ▷ False ∨ ∃ (_a : φ), ▷ True :=
-        later_exists_false
-      _ ⊢ ◇ ⌜φ⌝ :=
-        or_mono_right (exists_elim ((later_true.1.trans true_intro).trans <| pure_intro ·))
-
-@[rocq_alias bi.exist_timeless]
-instance exists_timeless [BI PROP] {α : Type _} (Ψ : α → PROP) [∀ x, Timeless (Ψ x)] :
-    Timeless (PROP := PROP) (BIBase.exists Ψ) where
-  timeless := by
-    refine later_exists_false.trans ?_
-    refine or_elim or_intro_l ?_
-    refine exists_elim fun x => ?_
-    refine Timeless.timeless.trans ?_
-    exact except0_mono (exists_intro x)
-
-@[rocq_alias bi.emp_timeless]
-instance emp_timeless [BI PROP] [BIAffine PROP] : Timeless (PROP := PROP) emp where
-  timeless := later_emp.mp.trans except0_intro
-
-@[rocq_alias bi.and_timeless]
-instance and_timeless [BI PROP] {P Q : PROP} [Timeless P] [Timeless Q] :
-    Timeless (PROP := PROP) (BIBase.and P Q) where
-  timeless := calc iprop(▷ (P ∧ Q))
-      _ ⊢ ▷ P ∧ ▷ Q := later_and.mp
-      _ ⊢ ◇ P ∧ ◇ Q := and_mono Timeless.timeless Timeless.timeless
-      _ ⊢ ◇ (P ∧ Q)  := except0_and.mpr
-
-@[rocq_alias bi.or_timeless]
-instance or_timeless [BI PROP] {P Q : PROP} [Timeless P] [Timeless Q] :
-    Timeless (PROP := PROP) (BIBase.or P Q) where
-  timeless := calc iprop(▷ (P ∨ Q))
-      _ ⊢ ▷ P ∨ ▷ Q := later_or.mp
-      _ ⊢ ◇ P ∨ ◇ Q := or_mono Timeless.timeless Timeless.timeless
-      _ ⊢ ◇ (P ∨ Q)  := except0_or.mpr
-
-@[rocq_alias bi.impl_timeless]
-instance impl_timeless [BI PROP] [BILoeb PROP] {P Q : PROP} [Timeless Q] :
-    Timeless (PROP := PROP) (BIBase.imp P Q) :=
-  timeless_alt.mpr <| only0_imp.mp.trans (imp_mono only0_intro only0_elim_timeless)
-
-@[rocq_alias bi.sep_timeless]
-instance sep_timeless [BI PROP] {P Q : PROP} [Timeless P] [Timeless Q] :
-    Timeless (PROP := PROP) (BIBase.sep P Q) where
-  timeless :=
-    calc iprop(▷ (P ∗ Q))
-      _ ⊢ ▷ P ∗ ▷ Q := later_sep.mp
-      _ ⊢ ◇ P ∗ ◇ Q := sep_mono Timeless.timeless Timeless.timeless
-      _ ⊢ ◇ (P ∗ Q) := except0_sep.mpr
-
-@[rocq_alias bi.wand_timeless]
-instance wand_timeless [BI PROP] [BILoeb PROP] {P Q : PROP} [Timeless Q] :
-    Timeless (PROP := PROP) (BIBase.wand P Q) := timeless_alt.mpr <| only0_wand.trans (wand_mono only0_intro only0_elim_timeless)
-
-instance wandIff_timeless [BI PROP] [BILoeb PROP] {P Q : PROP} [Timeless P] [Timeless Q] :
-    Timeless (PROP := PROP) (wandIff P Q) :=
-  inferInstanceAs (Timeless (PROP := PROP) iprop((P -∗ Q) ∧ (Q -∗ P)))
-
-@[rocq_alias bi.forall_timeless]
-instance forall_timeless [BI PROP] {α : Type _} (Ψ : α → PROP) [∀ x, Timeless (Ψ x)] :
-    Timeless (PROP := PROP) (BIBase.forall Ψ) where
-  timeless := by
-    refine later_forall.mp.trans ?_
-    refine (forall_mono fun x => Timeless.timeless).trans ?_
-    exact except0_forall.mpr
-
-@[rocq_alias bi.persistently_timeless]
-instance persistently_timeless [BI PROP] [BIPersistentlyExist PROP] {P : PROP} [Timeless P] :
-    Timeless (PROP := PROP) iprop(<pers> P) where
-  timeless :=
-    calc iprop(▷ <pers> P)
-      _ ⊢ <pers> ▷ P := later_persistently.mp
-      _ ⊢ <pers> ◇ P := persistently_mono Timeless.timeless
-      _ ⊢ ◇ <pers> P := except0_persistently.mpr
-
-@[rocq_alias bi.affinely_timeless]
-instance affinely_timeless [BI PROP] [Timeless (PROP := PROP) emp] {P : PROP} [Timeless P] :
-    Timeless (PROP := PROP) iprop(<affine> P) := and_timeless
-
-@[rocq_alias bi.absorbingly_timeless]
-instance absorbingly_timeless [BI PROP] {P : PROP} [Timeless P] :
-    Timeless (PROP := PROP) iprop(<absorb> P) where
-  timeless :=
-    calc iprop(▷ <absorb> P)
-      _ ⊢ <absorb> ▷ P := later_absorbingly.mp
-      _ ⊢ <absorb> ◇ P := absorbingly_mono Timeless.timeless
-      _ ⊢ ◇ <absorb> P := except0_absorbingly.mpr
-
-@[rocq_alias bi.intuitionistically_timeless]
-instance intuitionistically_timeless [BI PROP] [BIPersistentlyExist PROP]
-    [Timeless (PROP := PROP) emp] {P : PROP} [Timeless P] : Timeless (PROP := PROP) iprop(□ P) :=
-  affinely_timeless
-
-@[rocq_alias bi.from_option_timeless]
-instance from_option_timeless [BI PROP] {α : Type _} {Ψ : α → PROP} {P : PROP}
-    [Timeless P] [∀ x, Timeless (Ψ x)] (mx : Option α) :
-    Timeless (Option.elim mx P Ψ) :=
-  match mx with
-  | none => inferInstanceAs (Timeless P)
-  | some x => inferInstanceAs (Timeless (Ψ x))
-
-@[rocq_alias bi.timeless_laterN]
-theorem timeless_laterN {P : PROP} [Timeless P] (n : Nat) :
-    (▷^[n] P) ⊢ (▷^[n] False ∨ P) := by
-  induction n with
-  | zero => exact or_intro_r
-  | succ n IH =>
-    calc
-      _ ⊢ ▷ (▷^[n] False ∨ P)                   := later_mono IH
-      _ ⊢ ▷ ▷^[n] False ∨ ▷ P                  := later_or.mp
-      _ ⊢ ▷ ▷^[n] False ∨ ◇ P                  := or_mono_right Timeless.timeless
-      _ ⊢ ▷ ▷^[n] False ∨ ▷ ▷^[n] False ∨ P   :=
-          or_mono_right <| or_mono_left <| later_mono <| laterN_intro n
-      _ ⊢ (▷ ▷^[n] False ∨ ▷ ▷^[n] False) ∨ P := or_assoc.mpr
-      _ ⊢ ▷^[n + 1] False ∨ P                    := or_mono_left or_self.mp
-
-@[rocq_alias bi.only_0_timeless]
-instance only0_timeless {P : PROP} : Timeless iprop(<only0> P) where
-  timeless := later_except0_only0.trans (except0_mono only0_idem.mp)
-
 @[rocq_alias bi.only_0_exist]
-theorem only0_exists [BILoeb PROP] {α : Type _} {Φ : α → PROP} :
+theorem only0_exists {α : Sort _} {Φ : α → PROP} :
     <only0> (∃ a, Φ a) ⊣⊢ ∃ a, <only0> Φ a := by
   constructor
-  · exact (only0_mono <| exists_mono fun _ => only0_intro).trans (timeless_alt.mp inferInstance)
+  · refine later_false_sExists.trans (exists_elim fun p => ?_)
+    refine imp_elim <| pure_elim' ?_
+    rintro ⟨a, rfl⟩
+    exact imp_intro_swap <| and_elim_l.trans (exists_intro (Ψ := fun a => iprop(<only0> Φ a)) a)
   · exact exists_elim fun a => only0_mono (exists_intro a)
 
 @[rocq_alias bi.only_0_or]
-theorem only0_or [BILoeb PROP] {P Q : PROP} : <only0> (P ∨ Q) ⊣⊢ <only0> P ∨ <only0> Q := by
+theorem only0_or {P Q : PROP} : <only0> (P ∨ Q) ⊣⊢ <only0> P ∨ <only0> Q := by
   constructor
-  · exact (only0_mono <| or_mono only0_intro only0_intro).trans (timeless_alt.mp inferInstance)
+  · refine (only0_mono or_exists_ite.mp).trans <| only0_exists.mp.trans ?_
+    refine .trans (exists_mono ?_) or_exists_ite.mpr
+    exact (·.casesOn .rfl .rfl)
   · exact or_elim (only0_mono or_intro_l) (only0_mono or_intro_r)
 
 @[rocq_alias bi.only_0_pure]
-theorem only0_pure [BILoeb PROP] {φ : Prop} : <only0> ⌜φ⌝ ⊣⊢@{PROP} ⌜φ⌝ := timeless_only0
-
-@[rocq_alias bi.only_0_emp]
-theorem only0_emp [BILoeb PROP] [Timeless (PROP := PROP) emp] :
-    <only0> emp ⊣⊢ (emp : PROP) := timeless_only0
+theorem only0_pure {φ : Prop} : <only0> ⌜φ⌝ ⊣⊢@{PROP} ⌜φ⌝ := by
+  refine ⟨?_, only0_intro⟩
+  refine (only0_mono (pure_alt φ).mp).trans <| only0_exists.mp.trans ?_
+  exact exists_elim fun h => pure_intro h
 
 @[rocq_alias bi.only_0_sep]
-theorem only0_sep [BILoeb PROP] {P Q : PROP} : <only0> (P ∗ Q) ⊣⊢ <only0> P ∗ <only0> Q := by
-  refine ⟨?_, imp_intro ?_⟩
-  · exact (only0_mono <| sep_mono only0_intro only0_intro).trans
-      (timeless_alt.mp inferInstance)
-  · calc iprop((<only0> P ∗ <only0> Q) ∧ ▷ False)
-      _ ⊢ ▷ False ∧ (<only0> P ∗ <only0> Q) := and_comm.mp
-      _ ⊢ (▷ False ∧ <only0> P) ∗ (▷ False ∧ <only0> Q) := persistent_and_sep_distrib
-      _ ⊢ P ∗ Q := sep_mono imp_elim_right imp_elim_right
+theorem only0_sep {P Q : PROP} : <only0> (P ∗ Q) ⊣⊢ <only0> P ∗ <only0> Q := by
+  refine ⟨later_false_sep, imp_intro ?_⟩
+  calc iprop((<only0> P ∗ <only0> Q) ∧ ▷ False)
+    _ ⊢ ▷ False ∧ (<only0> P ∗ <only0> Q) := and_comm.mp
+    _ ⊢ (▷ False ∧ <only0> P) ∗ (▷ False ∧ <only0> Q) := persistent_and_sep_distrib
+    _ ⊢ P ∗ Q := sep_mono imp_elim_right imp_elim_right
 
 @[rocq_alias bi.only_0_absorbingly]
-theorem only0_absorbingly [BILoeb PROP] {P : PROP} :
+theorem only0_absorbingly {P : PROP} :
     <only0> <absorb> P ⊣⊢ <absorb> <only0> P :=
   only0_sep.trans (sep_congr_left only0_pure)
-
-@[rocq_alias bi.only_0_affinely]
-theorem only0_affinely [BILoeb PROP] [Timeless (PROP := PROP) emp] {P : PROP} :
-    <only0> <affine> P ⊣⊢ <affine> <only0> P :=
-  only0_and.trans (and_congr_left only0_emp)
-
-@[rocq_alias bi.only_0_intuitionistically_2]
-theorem only0_intuitionistically_mpr [BILoeb PROP] [Timeless (PROP := PROP) emp] {P : PROP} :
-    □ <only0> P ⊢ <only0> □ P :=
-  (affinely_mono only0_persistently_mpr).trans only0_affinely.mpr
 
 @[rocq_alias bi.only_0_later]
 theorem only0_later {P : PROP} : <only0> ▷ P ⊣⊢ True := by
@@ -1029,10 +890,155 @@ theorem only0_later {P : PROP} : <only0> ▷ P ⊣⊢ True := by
   · exact imp_intro <| and_elim_r.trans (later_mono false_elim)
 
 @[rocq_alias bi.only_0_except_0]
-theorem only0_except0 [BILoeb PROP] {P : PROP} : <only0> ◇ P ⊣⊢ True := calc
+theorem only0_except0 {P : PROP} : <only0> ◇ P ⊣⊢ True := calc
   _ ⊣⊢ <only0> ▷ False ∨ <only0> P := only0_or
   _ ⊣⊢ True ∨ <only0> P             := or_congr_left only0_later
   _ ⊣⊢ True                         := true_or
+
+@[rocq_alias bi.timeless_only_0]
+theorem timeless_only0 {P : PROP} [Timeless P] : <only0> P ⊣⊢ P :=
+  ⟨Timeless.timeless, only0_intro⟩
+
+theorem only0_elim_timeless {P : PROP} [Timeless P] : <only0> P ⊢ P := Timeless.timeless
+
+@[rocq_alias bi.timeless_except_0]
+theorem timeless_except0 {P : PROP} [Timeless P] : ▷ P ⊣⊢ ◇ P :=
+  ⟨later_except0_only0.trans (except0_mono Timeless.timeless),
+   or_elim (later_mono false_elim) later_intro⟩
+
+/-- The `▷ P ⊢ ◇ P` direction of a `Timeless` instance, usable as `h.except0`. -/
+theorem Timeless.except0 {P : PROP} (h : Timeless P) : ▷ P ⊢ ◇ P := timeless_except0.mp
+
+/-- With Löb induction, `Timeless` is equivalent to the `▷ P ⊢ ◇ P` formulation. -/
+@[rocq_alias bi.timeless_alt]
+theorem timeless_alt [BILoeb PROP] {P : PROP} : Timeless P ↔ (▷ P ⊢ ◇ P) := by
+  refine ⟨fun _ => timeless_except0.mp, fun h => ⟨?_⟩⟩
+  refine Entails.trans (imp_intro ?_) loeb
+  calc iprop(<only0> P ∧ ▷ P)
+    _ ⊢ <only0> P ∧ ◇ P := and_mono_right h
+    _ ⊢ P                := except0_and_only0_self.mp
+
+/-- Build a `Timeless` instance from the `▷ P ⊢ ◇ P` formulation (needs Löb induction). -/
+theorem Timeless.of_later [BILoeb PROP] {P : PROP} (h : ▷ P ⊢ ◇ P) : Timeless P :=
+  timeless_alt.mpr h
+
+#rocq_ignore bi.Timeless_proper "Derivable from the BI structure; Timeless is preserved under ⊣⊢."
+
+@[rocq_alias bi.pure_timeless]
+instance pure_timeless (φ : Prop) : Timeless (PROP := PROP) (BIBase.pure φ) :=
+  ⟨only0_pure.mp⟩
+
+@[rocq_alias bi.emp_timeless]
+instance emp_timeless [BIAffine PROP] : Timeless (PROP := PROP) emp := ⟨affine⟩
+
+@[rocq_alias bi.and_timeless]
+instance and_timeless {P Q : PROP} [Timeless P] [Timeless Q] :
+    Timeless (PROP := PROP) (BIBase.and P Q) :=
+  ⟨only0_and.mp.trans (and_mono Timeless.timeless Timeless.timeless)⟩
+
+@[rocq_alias bi.or_timeless]
+instance or_timeless {P Q : PROP} [Timeless P] [Timeless Q] :
+    Timeless (PROP := PROP) (BIBase.or P Q) :=
+  ⟨only0_or.mp.trans (or_mono Timeless.timeless Timeless.timeless)⟩
+
+@[rocq_alias bi.impl_timeless]
+instance impl_timeless {P Q : PROP} [Timeless Q] : Timeless (PROP := PROP) (BIBase.imp P Q) :=
+  ⟨only0_imp.mp.trans (imp_mono only0_intro Timeless.timeless)⟩
+
+@[rocq_alias bi.sep_timeless]
+instance sep_timeless {P Q : PROP} [Timeless P] [Timeless Q] :
+    Timeless (PROP := PROP) (BIBase.sep P Q) :=
+  ⟨only0_sep.mp.trans (sep_mono Timeless.timeless Timeless.timeless)⟩
+
+@[rocq_alias bi.wand_timeless]
+instance wand_timeless {P Q : PROP} [Timeless Q] : Timeless (PROP := PROP) (BIBase.wand P Q) :=
+  ⟨only0_wand.trans (wand_mono only0_intro Timeless.timeless)⟩
+
+instance wandIff_timeless {P Q : PROP} [Timeless P] [Timeless Q] :
+    Timeless (PROP := PROP) (wandIff P Q) :=
+  inferInstanceAs (Timeless (PROP := PROP) iprop((P -∗ Q) ∧ (Q -∗ P)))
+
+@[rocq_alias bi.forall_timeless]
+instance forall_timeless {α : Sort _} (Ψ : α → PROP) [∀ x, Timeless (Ψ x)] :
+    Timeless (PROP := PROP) (BIBase.forall Ψ) :=
+  ⟨only0_forall.mp.trans (forall_mono fun _ => Timeless.timeless)⟩
+
+@[rocq_alias bi.exist_timeless]
+instance exists_timeless {α : Sort _} (Ψ : α → PROP) [∀ x, Timeless (Ψ x)] :
+    Timeless (PROP := PROP) (BIBase.exists Ψ) :=
+  ⟨only0_exists.mp.trans (exists_mono fun _ => Timeless.timeless)⟩
+
+/-- Upstream proves this in `sbi` via `persistently_impl_si_pure`; here we use Löb and
+`except0_persistently`. -/
+@[rocq_alias bi.persistently_timeless]
+instance persistently_timeless [BILoeb PROP] [BIPersistentlyExist PROP] {P : PROP} [Timeless P] :
+    Timeless (PROP := PROP) iprop(<pers> P) :=
+  .of_later <| calc iprop(▷ <pers> P)
+    _ ⊢ <pers> ▷ P := later_persistently.mp
+    _ ⊢ <pers> ◇ P := persistently_mono timeless_except0.mp
+    _ ⊢ ◇ <pers> P := except0_persistently.mpr
+
+@[rocq_alias bi.only_0_timeless]
+instance only0_timeless {P : PROP} : Timeless iprop(<only0> P) := ⟨only0_idem.mp⟩
+
+@[rocq_alias bi.affinely_timeless]
+instance affinely_timeless [Timeless (PROP := PROP) emp] {P : PROP} [Timeless P] :
+    Timeless (PROP := PROP) iprop(<affine> P) := and_timeless
+
+@[rocq_alias bi.absorbingly_timeless]
+instance absorbingly_timeless {P : PROP} [Timeless P] :
+    Timeless (PROP := PROP) iprop(<absorb> P) :=
+  ⟨only0_absorbingly.mp.trans (absorbingly_mono Timeless.timeless)⟩
+
+@[rocq_alias bi.intuitionistically_timeless]
+instance intuitionistically_timeless [BILoeb PROP] [BIPersistentlyExist PROP]
+    [Timeless (PROP := PROP) emp] {P : PROP} [Timeless P] : Timeless (PROP := PROP) iprop(□ P) :=
+  affinely_timeless
+
+@[rocq_alias bi.from_option_timeless]
+instance from_option_timeless {α : Type _} {Ψ : α → PROP} {P : PROP}
+    [Timeless P] [∀ x, Timeless (Ψ x)] (mx : Option α) :
+    Timeless (Option.elim mx P Ψ) :=
+  match mx with
+  | none => inferInstanceAs (Timeless P)
+  | some x => inferInstanceAs (Timeless (Ψ x))
+
+@[rocq_alias bi.later_affinely_1]
+theorem later_affinely_mp {P : PROP} [Timeless (PROP := PROP) emp] :
+    ▷ <affine> P ⊢ ◇ <affine> ▷ P := calc
+  _ ⊢ ▷ emp ∧ ▷ P    := later_and.mp
+  _ ⊢ ◇ emp ∧ ▷ P    := and_mono_left timeless_except0.mp
+  _ ⊢ ◇ emp ∧ ◇ ▷ P := and_mono_right except0_intro
+  _ ⊢ ◇ (emp ∧ ▷ P)  := except0_and.mpr
+
+@[rocq_alias bi.timeless_laterN]
+theorem timeless_laterN [SIdxFinite SI] {P : PROP} [Timeless P] (n : Nat) :
+    (▷^[n] P) ⊢ (▷^[n] False ∨ P) := by
+  induction n with
+  | zero => exact or_intro_r
+  | succ n IH =>
+    calc
+      _ ⊢ ▷ (▷^[n] False ∨ P)                   := later_mono IH
+      _ ⊢ ▷ ▷^[n] False ∨ ▷ P                  := later_or.mp
+      _ ⊢ ▷ ▷^[n] False ∨ ◇ P                  := or_mono_right timeless_except0.mp
+      _ ⊢ ▷ ▷^[n] False ∨ ▷ ▷^[n] False ∨ P   :=
+          or_mono_right <| or_mono_left <| later_mono <| laterN_intro n
+      _ ⊢ (▷ ▷^[n] False ∨ ▷ ▷^[n] False) ∨ P := or_assoc.mpr
+      _ ⊢ ▷^[n + 1] False ∨ P                    := or_mono_left or_self.mp
+
+@[rocq_alias bi.only_0_emp]
+theorem only0_emp [Timeless (PROP := PROP) emp] : <only0> emp ⊣⊢ (emp : PROP) := timeless_only0
+
+@[rocq_alias bi.only_0_affinely]
+theorem only0_affinely [Timeless (PROP := PROP) emp] {P : PROP} :
+    <only0> <affine> P ⊣⊢ <affine> <only0> P :=
+  only0_and.trans (and_congr_left only0_emp)
+
+@[rocq_alias bi.only_0_intuitionistically_2]
+theorem only0_intuitionistically_mpr [Timeless (PROP := PROP) emp] {P : PROP} :
+    □ <only0> P ⊢ <only0> □ P :=
+  (affinely_mono only0_persistently_mpr).trans only0_affinely.mpr
+
 
 end BI
 

@@ -56,7 +56,7 @@ def pre (X : List Expr → IProp GF) (t₁ : List Expr) : IProp GF := iprop%
       ∃ nt', ⌜κ = []⌝ ∗ stateInterp σ₂ (ns + 1) κs nt' ∗ X t₂
 
 @[rocq_alias twptp_pre_mono']
-instance pre_mono_inst : BIMonoPred (pre (ι := ι)) where
+instance pre_mono_inst : BIMonoPred Nat (pre (ι := ι)) where
   mono_pred := by
     intro X Y _ _
     iintro #HXY %t₁ Hpre
@@ -75,7 +75,7 @@ theorem pre_mono (X Y : List Expr → IProp GF) :
 /-- Total weakest precondition for a thread pool. -/
 @[rocq_alias twptp]
 def get (t : List Expr) : IProp GF :=
-  bi_least_fixpoint pre t
+  bi_least_fixpoint (SI := Nat) pre t
 
 instance get_ne : NonExpansive Nat (get (ι := ι)) := list_nonexpansive _
 
@@ -212,7 +212,7 @@ theorem twp_total {hlc : HasLC} {GF : BundledGFunctors}
           .mk (toStateInterp := ⟨stateI⟩) numLatersPerStep forkPost mono
         iprop% stateI σ n [] 0 ∗ (£ m -∗ WP e @ s ; ⊤ [{ Φ }])) :
     Relation.StronglyNormalizing ErasedStep ([e], σ) := by
-  refine pure_soundness (PROP := IProp GF) ?_
+  refine pure_soundness (SI := Nat) (PROP := IProp GF) ?_
   refine (fupd_finally_soundness hlc m ⊤ _ ?_)
   iintro %Hinv Hcred
   imod Hwp with ⟨%stateI, %numLatersPerStep, %forkPost, %mono, Hσ, Htwp⟩

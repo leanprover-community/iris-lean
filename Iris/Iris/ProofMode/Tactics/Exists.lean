@@ -11,11 +11,14 @@ public import Iris.ProofMode.ProofModeM
 
 namespace Iris.ProofMode
 
+variable {SI : Type _} [Iris.SIdx SI]
+
+
 public section
 open BI
 
 @[rocq_alias tac_exist]
-theorem from_exists_intro [BI PROP] {Φ : α → PROP} {P Q : PROP} [inst : FromExists P Φ]
+theorem from_exists_intro [BI SI PROP] {Φ : α → PROP} {P Q : PROP} [inst : FromExists P Φ]
     (a : α) (h : P ⊢ Q) : Φ a ⊢ Q := calc
   _ ⊢ ∃ a, Φ a := exists_intro a
   _ ⊢ P := inst.from_exists
@@ -38,8 +41,8 @@ elab "iexists " xs:term,+ : tactic => do
     for x in xs.getElems do
       have new_goal : Q($prop) := new_goal_and_pf.1
       let new_goal_pf : Q($new_goal ⊢ $goal) := new_goal_and_pf.2
-      let v ← mkFreshLevelMVar
-      let α ← mkFreshExprMVarQ q(Sort v)
+      let w ← mkFreshLevelMVar
+      let α ← mkFreshExprMVarQ q(Sort w)
       let Φ ← mkFreshExprMVarQ q($α → $prop)
       let some _ ← ProofModeM.trySynthInstanceQ q(FromExists $(new_goal) $Φ)
         | throwIPMError "cannot turn {new_goal} into an existential quantifier"

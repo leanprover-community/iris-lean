@@ -125,7 +125,7 @@ end StdTelescopes
 section BITelescopes
 open Iris.Std
 
-variable [BI PROP] {TT : Tele} (Ψt : TT.Arg → PROP) (Φt : TT.Arg → TT.Arg → PROP)
+variable [BI Nat PROP] {TT : Tele} (Ψt : TT.Arg → PROP) (Φt : TT.Arg → TT.Arg → PROP)
 
 /-- info: iprop(∀.. x, Ψt x) : PROP -/
 #guard_msgs in

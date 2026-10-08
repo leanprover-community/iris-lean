@@ -12,6 +12,7 @@ public import Iris.ProofMode.Classes
 public meta section
 
 namespace Iris.ProofMode
+
 open Lean Elab Tactic Meta Qq BI Iris.Std
 
 structure ProofModeM.Context where
@@ -80,16 +81,16 @@ instance : Inhabited (ProofModeM α) where
   default := throw default
 
 /-- Create a new BI goal without registering it in the proof mode state. -/
-def mkBIGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
+def mkBIGoal {prop : Q(Type u)} {si : Q(Type v)} {sidx : Q(SIdx $si)} {bi : Q(BI $si $prop)}
     {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous) :
     ProofModeM Q($e ⊢ $goal) := do
   let m : Q($e ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
-    IrisGoal.toExpr { prop, bi, hyps, goal, .. }
+    IrisGoal.toExpr { prop, si, sidx, bi, hyps, goal, .. }
   m.mvarId!.setUserName name
   pure m
 
 /-- Create a new BI goal with the given hypotheses and goal, and add it to the proof mode state. -/
-def addBIGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
+def addBIGoal {prop : Q(Type u)} {si : Q(Type v)} {sidx : Q(SIdx $si)} {bi : Q(BI $si $prop)}
     {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous) :
     ProofModeM Q($e ⊢ $goal) := do
   let m ← mkBIGoal hyps goal name
@@ -121,7 +122,8 @@ def withoutFVars {α : Q(Sort u)} (fvarIds : Array FVarId) (k : ProofModeM Q($α
   user of this function to check that the variables to clear can actually be
   cleared (e.g. using `Hyps.checkRemovableFVar`).
 -/
-def addBIGoalWithoutFVars {prop : Q(Type u)} {bi : Q(BI $prop)}
+def addBIGoalWithoutFVars {prop : Q(Type u)}
+    {si : Q(Type v)} {sidx : Q(SIdx $si)} {bi : Q(BI $si $prop)}
     {e} (hyps : Hyps bi e) (goal : Q($prop)) (toClear : Array FVarId)
     (name : Name := .anonymous) : ProofModeM Q($e ⊢ $goal) := do
   withoutFVars (u:=0) toClear (addBIGoal hyps goal name)
@@ -147,7 +149,8 @@ def addMVarGoal (m : MVarId) (name : Name := .anonymous) : ProofModeM Unit := do
   2. a Boolean value indicating whether the `firstTactic` solves all goals,
      `false` if `firstTactic` is `none`.
 -/
-def addBIGoalRunTactics {prop : Q(Type u)} {bi : Q(BI $prop)}
+def addBIGoalRunTactics {prop : Q(Type u)}
+    {si : Q(Type v)} {sidx : Q(SIdx $si)} {bi : Q(BI $si $prop)}
     {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous)
     (firstTactic : Option <| TSyntax `tactic)
     (tacticSeq : TSyntax `Lean.Parser.Tactic.tacticSeq) :
@@ -173,7 +176,27 @@ def ProofModeM.synthInstanceQ (α : Q(Sort v)) : ProofModeM Q($α) := do
   mvars.forM addMVarGoal
   return e
 
-/-- Initialize proof mode for a metavariable, converting it to an Iris goal. -/
+/--
+  Step-index candidates for proof-mode entry, in order: the SI `s` of every local instance
+  of type `BI s _` or `SIdx s` (in local-context order, without duplicates), then `Nat`.
+-/
+def siCandidates : MetaM (Array Expr) := do
+  let mut cands : Array Expr := #[]
+  for inst in ← getLocalInstances do
+    let ty ← instantiateMVars (← inferType inst.fvar)
+    let si? :=
+      if ty.isAppOfArity ``BI 3 || ty.isAppOfArity ``SIdx 1 then some ty.getAppArgs[0]!
+      else none
+    if let some si := si? then
+      unless cands.contains si do cands := cands.push si
+  unless cands.contains q(Nat) do cands := cands.push q(Nat)
+  return cands
+
+/--
+  Initialize proof mode for a metavariable, converting it to an Iris goal.
+  The step index is found by trying the candidates of `siCandidates` in order:
+  the first `s` for which `AsEmpValid .from goal io s PROP bi P` is found wins.
+-/
 def startProofMode (mvar : MVarId) (customProp : Option Expr := none)
     (tacName : Name := `istart): MetaM (MVarId × IrisGoal) := mvar.withContext do
   -- parse goal
@@ -196,23 +219,34 @@ def startProofMode (mvar : MVarId) (customProp : Option Expr := none)
     unless ← isDefEq prop customProp do
       throwError "{tacName}: {customProp} is not a valid BI instance type"
 
-  let P ← mkFreshExprMVarQ q($prop)
-  let bi ← mkFreshExprMVarQ q(BI $prop)
   let io : Q(InOut) := if customProp.isSome then q(.in) else q(.out)
-  let synthResult ← ProofMode.trySynthInstanceQ q(AsEmpValid .from $goal $io $prop $bi $P)
+  let cands ← siCandidates
+  let s ← saveState
+  for cand in cands do
+    let v ← getDecLevel cand
+    have si : Q(Type v) := cand
+    -- Candidate bookkeeping: keep it out of user-visible `synthInstance` traces.
+    let some sidx ← withOptions (·.setBool `trace.Meta.synthInstance false) <|
+      synthInstance? q(SIdx $si) | continue
+    have sidx : Q(SIdx $si) := sidx
+    let P ← mkFreshExprMVarQ q($prop)
+    let bi ← mkFreshExprMVarQ q(BI $si $prop)
+    match ← ProofMode.trySynthInstanceQ q(AsEmpValid .from $goal $io $si $prop $bi $P) with
+    | .some (inst, mvars) =>
+      if !mvars.isEmpty then throwError "{tacName} does not support creating mvars"
+      let irisGoal : IrisGoal := { u, v, prop, si, sidx, bi, hyps := .mkEmp bi, goal := P, .. }
+      let subgoal : Quoted q(⊢ $P) ←
+        mkFreshExprSyntheticOpaqueMVar (IrisGoal.toExpr irisGoal) (← mvar.getTag)
+      mvar.assign q(asEmpValid_2 $goal $inst $subgoal)
+      return (subgoal.mvarId!, irisGoal)
+    | _ => s.restore
 
-  match synthResult, customProp with
-  | .some (inst, mvars), _ =>
-    if !mvars.isEmpty then throwError "{tacName} does not support creating mvars"
-    let irisGoal := { u, prop, bi, hyps := .mkEmp bi, goal := P, .. }
-    let subgoal : Quoted q(⊢ $P) ←
-      mkFreshExprSyntheticOpaqueMVar (IrisGoal.toExpr irisGoal) (← mvar.getTag)
-    mvar.assign q(asEmpValid_2 $goal $inst $subgoal)
-    pure (subgoal.mvarId!, irisGoal)
-  | _, none =>
-    throwError "{tacName}: {goal} is not an emp valid"
-  | _, some _ =>
-    throwError "{tacName}: {goal} is not an emp valid in {customProp}"
+  match customProp with
+  | none =>
+    throwError "{tacName}: {goal} is not an emp valid (tried step indices {cands})"
+  | some _ =>
+    throwError "{tacName}: {goal} is not an emp valid in {customProp} \
+      (tried step indices {cands})"
 
 /--
   Run a ProofModeM computation on the main goal, ordering resulting goals with
