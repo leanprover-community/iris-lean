@@ -108,6 +108,12 @@ class BiEmbedSbi (SI : Type _) [SIdx SI] (PROP1 PROP2 : Type _) [BI PROP1] [BI P
   embed_siPure_1 : ∀ (Pi : SiProp SI),
     (embed (SiPure.siPure Pi : PROP1) : PROP2) ⊢ (SiPure.siPure Pi : PROP2)
 
+/-- SI-free: `⎡·⎤` commutes with `■` (cf. Iris ≤ 4.2 `BiEmbedPlainly`). For `Sbi`s whose `■` is
+coherent (`BIPlainlySbi`), follows from `BiEmbedSbi` (`BiEmbedPlainly.ofSbi`). -/
+class BiEmbedPlainly (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] [BIPlainly PROP1]
+    [BIPlainly PROP2] [Embed PROP1 PROP2] : Prop where
+  embed_plainly (P : PROP1) : (⎡■ P⎤ : PROP2) ⊣⊢ ■ ⎡P⎤
+
 /-! ## Projections -/
 
 section
@@ -435,8 +441,8 @@ end
 /-! ## Internal equality & plainly
 
 `si_pure` / `internal_eq` / `internal_inj` / `plainly` / `plainly_if` / `plain`. For an
-`Sbi`, `■ P` is by definition `<si_pure> <si_emp_valid> P` (instance `instPlainlySbi`),
-so the `plainly` laws reduce to `embed_si_pure` + `embed_si_emp_valid`. Uses fresh
+`Sbi` with coherent `■` (`BIPlainlySbi`), `■ P` is `<si_pure> <si_emp_valid> P`, so
+`BiEmbedPlainly` follows from `embed_si_pure` + `embed_si_emp_valid` (`BiEmbedPlainly.ofSbi`). Uses fresh
 `P1`/`P2`/`P3` so each `BI` instance comes solely from `Sbi` (no diamond with `[BI _]`). -/
 section
 variable {P1 P2 : Type _} [BI P1] [BIStepIndexed SI P1] [Sbi SI P1] [BI P2] [BIStepIndexed SI P2] [Sbi SI P2] [BiEmbed P1 P2] [BiEmbedSbi SI P1 P2]
@@ -452,24 +458,6 @@ theorem embed_siPure (Pi : SiProp SI) :
 theorem embed_internal_eq {A : Type _} [OFE SI A] (x y : A) :
     (embed (iprop(x ≡[SI] y) : P1) : P2) ⊣⊢ x ≡[SI] y :=
   embed_siPure (SiProp.internalEq x y)
-
-@[rocq_alias embed_plainly]
-theorem embed_plainly (P : P1) : (⎡■ P⎤ : P2) ⊣⊢ ■ ⎡P⎤ := by
-  change (embed (SiPure.siPure (SiEmpValid.siEmpValid P)) : P2)
-      ⊣⊢ SiPure.siPure (SiEmpValid.siEmpValid (embed P))
-  exact (embed_siPure _).trans
-    ⟨siPure_mono (BiEmbedSbi.embed_siEmpValid P).mpr,
-     siPure_mono (BiEmbedSbi.embed_siEmpValid P).mp⟩
-
-@[rocq_alias embed_plainly_if]
-theorem embed_plainly_if (p : Bool) (P : P1) :
-    (⎡■? p P⎤ : P2) ⊣⊢ ■? p ⎡P⎤ := by cases p <;> first | exact .rfl | exact embed_plainly P
-
-/-- `⎡·⎤` preserves `Plain`. Registered as a direct `instance` rather than a `Hint Extern`
-because Lean's instance resolver does not shelve the `BiEmbedSbi` premise. -/
-@[rocq_alias embed_plain]
-instance embed_plain (P : P1) [Plain P] : Plain (embed P : P2) where
-  plain := (embed_mono Plain.plain).trans (embed_plainly P).mp
 
 /-- `⎡·⎤` reflects internal equality. -/
 @[rocq_alias embed_internal_inj]
@@ -572,6 +560,36 @@ theorem embed_embed_fupd [BIFUpdate PA] [BIFUpdate PB] [BIFUpdate PC]
   { embed_fupd := fun E1 E2 P => (embed_congr (PROP1 := PB) (PROP2 := PC)
       (BiEmbedFUpd.embed_fupd (PROP1 := PA) (PROP2 := PB) E1 E2 P)).trans
       (BiEmbedFUpd.embed_fupd (PROP1 := PB) (PROP2 := PC) E1 E2 (embed (A := PA) (B := PB) P)) }
+
+end
+
+/-- `BiEmbedSbi` gives `BiEmbedPlainly` for coherent `■`. -/
+theorem BiEmbedPlainly.ofSbi (SI : Type _) [SIdx SI] {P1 P2 : Type _} [BI P1] [BIStepIndexed SI P1]
+    [Sbi SI P1] [BI P2] [BIStepIndexed SI P2] [Sbi SI P2] [BiEmbed P1 P2] [BiEmbedSbi SI P1 P2]
+    [BIPlainly P1] [BIPlainly P2] [BIPlainlySbi SI P1] [BIPlainlySbi SI P2] :
+    BiEmbedPlainly P1 P2 where
+  embed_plainly P := by
+    rw [plainly_eq_siPure_siEmpValid (SI := SI) (PROP := P1),
+      plainly_eq_siPure_siEmpValid (SI := SI) (PROP := P2)]
+    exact (embed_siPure _).trans
+      ⟨siPure_mono (BiEmbedSbi.embed_siEmpValid P).mpr,
+       siPure_mono (BiEmbedSbi.embed_siEmpValid P).mp⟩
+
+section
+variable {P1 P2 : Type _} [BI P1] [BI P2] [BIPlainly P1] [BIPlainly P2] [BiEmbed P1 P2]
+  [BiEmbedPlainly P1 P2]
+
+@[rocq_alias embed_plainly]
+theorem embed_plainly (P : P1) : (⎡■ P⎤ : P2) ⊣⊢ ■ ⎡P⎤ := BiEmbedPlainly.embed_plainly P
+
+@[rocq_alias embed_plainly_if]
+theorem embed_plainly_if (p : Bool) (P : P1) :
+    (⎡■? p P⎤ : P2) ⊣⊢ ■? p ⎡P⎤ := by cases p <;> first | exact .rfl | exact embed_plainly P
+
+/-- `⎡·⎤` preserves `Plain`. -/
+@[rocq_alias embed_plain]
+instance embed_plain (P : P1) [Plain P] : Plain (embed P : P2) where
+  plain := (embed_mono Plain.plain).trans (embed_plainly P).mp
 
 end
 

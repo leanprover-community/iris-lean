@@ -269,6 +269,8 @@ instance instBIStepIndexed : BIStepIndexed SI (SiProp SI) where
   later_ne.ne _ _ _ h _ hle :=
     ⟨fun hP k hk => (h (SIdx.le_trans (SIdx.lt_le_incl hk) hle)).mp (hP k hk),
      fun hQ k hk => (h (SIdx.le_trans (SIdx.lt_le_incl hk) hle)).mpr (hQ k hk)⟩
+
+instance instBILaterFinite [SIdxFinite SI] : BILaterFinite (SiProp SI) where
   later_sExists_false n h := by
     rcases SIdxFinite.finite_index n with rfl | ⟨m, rfl⟩
     · exact .inl fun k hk => absurd hk (SIdx.not_lt_zero k)

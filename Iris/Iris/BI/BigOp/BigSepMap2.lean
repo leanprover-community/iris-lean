@@ -530,10 +530,10 @@ theorem bigSepM2_lookup_acc_impl [DecidableEq K] {Φ : K → A → B → PROP}
   exact pure_imp_elim fun hki => hne hki.symm
 
 @[rocq_alias big_sepM2_later_1]
-theorem bigSepM2_later_1 [BIStepIndexed SI PROP] [SIdxFinite SI] [BIAffine PROP] {Φ : K → A → B → PROP} {m1 : M A} {m2 : M B} :
+theorem bigSepM2_later_1 [BILaterFinite PROP] [BIAffine PROP] {Φ : K → A → B → PROP} {m1 : M A} {m2 : M B} :
     (▷ [∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2) ⊢ ◇ [∗map] k ↦ x1;x2 ∈ m1;m2, ▷ Φ k x1 x2 := by
   refine (later_mono bigSepM2_alt.mp).trans <| later_and.1.trans ?_
-  refine (and_mono (Timeless.except0 inferInstance) (((bigSepM_later (SI := SI)).1).trans except0_intro)).trans ?_
+  refine (and_mono (Timeless.except0 inferInstance) (((bigSepM_later).1).trans except0_intro)).trans ?_
   exact except0_and.2.trans <| except0_mono (bigSepM2_alt (Φ := fun k x1 x2 => iprop(▷ Φ k x1 x2))).mpr
 
 @[rocq_alias big_sepM2_later_2]

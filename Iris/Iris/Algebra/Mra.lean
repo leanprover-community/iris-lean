@@ -225,7 +225,7 @@ theorem local_update_grow [hR : Trans R R R] (a : α) (x : Mra R) (b : α) (h : 
       exact .inr hcz
 
 @[rocq_alias mra_local_update_get_frag]
-theorem local_update_get_frag [Std.Refl R] [Trans R R R] (a b : α) (h : R b a) :
+theorem local_update_get_frag [Trans R R R] (a b : α) (h : R b a) :
     (toMra (R := R) a, unit) ~l~>[SI] (toMra a, toMra b) := by
   refine (local_update_unital_discrete ..).mpr fun z _ haz ↦ ⟨trivial, ?_⟩
   calc

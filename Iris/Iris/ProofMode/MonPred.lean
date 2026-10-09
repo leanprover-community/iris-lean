@@ -1085,7 +1085,7 @@ instance intoInternalEq_monPred_at {A} [OFE SI A] (x y : A)
 /-! ### FromForall -/
 
 @[rocq_alias from_forall_monPred_at_plainly]
-instance fromForall_monPred_at_plainly (P : MonPred I PROP) (Φ : I.car → PROP) (i : I.car)
+instance fromForall_monPred_at_plainly [BIPlainly PROP] (P : MonPred I PROP) (Φ : I.car → PROP) (i : I.car)
     [instMP : ∀ j, MakeMonPredAt .indexToProp j P (Φ j)] :
     FromForall (iprop(■ P).monPred_at i) (fun j => iprop(■ (Φ j))) where
   from_forall := (forall_mono fun j => plainly_mono (instMP j).make_monPred_at.mpr).trans
@@ -1094,7 +1094,7 @@ instance fromForall_monPred_at_plainly (P : MonPred I PROP) (Φ : I.car → PROP
 /-! ### IntoForall -/
 
 @[rocq_alias into_forall_monPred_at_plainly]
-instance intoForall_monPred_at_plainly (P : MonPred I PROP) (Φ : I.car → PROP) (i : I.car)
+instance intoForall_monPred_at_plainly [BIPlainly PROP] (P : MonPred I PROP) (Φ : I.car → PROP) (i : I.car)
     [instMP : ∀ j, MakeMonPredAt .indexToProp j P (Φ j)] :
     IntoForall (iprop(■ P).monPred_at i) (fun j => iprop(■ (Φ j))) where
   into_forall := (monPred_at_plainly i P).mp.trans

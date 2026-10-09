@@ -181,7 +181,7 @@ theorem incN_iff [OFE SI α] {x y : Excl α} (n : SI) : x ≼{n} y ↔ y = inval
   incN_iff_ordN.trans (ordN_iff n)
 
 @[rocq_alias Excl_inj]
-theorem excl_inj [OFE SI α] {a b : α} (h : (some (excl a) : Option (Excl α)) = some (excl b)) :
+theorem excl_inj {α : Type _} {a b : α} (h : (some (excl a) : Option (Excl α)) = some (excl b)) :
     a = b := Excl.excl.inj (Option.some.inj h)
 
 @[rocq_alias Excl_dist_inj]
@@ -251,7 +251,7 @@ theorem map_comp (f : α → β) (g : β → γ) :
   cases x <;> simp
 
 @[rocq_alias excl_map_ext]
-theorem map_ext [OFE SI α] [OFE SI β] (f g : α → β) (h : ∀ x, f x = g x) : map f x = map g x := by
+theorem map_ext {α β : Type _} {x : Excl α} (f g : α → β) (h : ∀ x, f x = g x) : map f x = map g x := by
   cases x <;> simp [h]
 
 @[rocq_alias excl_map_ne]

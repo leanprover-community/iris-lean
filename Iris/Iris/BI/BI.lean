@@ -96,11 +96,14 @@ class BIStepIndexed (SI : Type _) [SIdx SI] (PROP : Type _) [BI PROP] extends CO
   wand_ne : OFE.NonExpansive₂ SI (BI.BIBase.wand (PROP := PROP))
   persistently_ne : OFE.NonExpansive SI (BI.BIBase.persistently (PROP := PROP))
   later_ne : OFE.NonExpansive SI (BI.BIBase.later (PROP := PROP))
-  /-- Only valid for finite step indices (Iris !1256, `later_exist_false`). -/
-  later_sExists_false [SIdxFinite SI] {Φ : PROP → Prop} :
+
+/-- The BI laws that only hold for finite step indices (Iris !1256: `later_exist_false`, `later_sep_1`,
+stated there under `SIdxFinite SI`). SI-free: a model whose step index is finite declares it, e.g.
+`instance [SIdxFinite SI] : BILaterFinite (UPred SI M)`, so lemmas need no step index. -/
+class BILaterFinite (PROP : Type _) [BI PROP] : Prop where
+  later_sExists_false {Φ : PROP → Prop} :
     (▷ BI.BIBase.sExists Φ) ⊢ ▷ False ∨ ∃ p, ⌜Φ p⌝ ∧ ▷ p
-  /-- Only valid for finite step indices (Iris !1256, `later_sep_1`). -/
-  later_sep_1 [SIdxFinite SI] {P Q : PROP} : ▷ (P ∗ Q) ⊢ ▷ P ∗ ▷ Q
+  later_sep_1 {P Q : PROP} : ▷ (P ∗ Q) ⊢ ▷ P ∗ ▷ Q
 
 namespace BI
 
@@ -121,12 +124,12 @@ theorem wand_ne : OFE.NonExpansive₂ SI (BIBase.wand (PROP := PROP)) := BIStepI
 theorem persistently_ne : OFE.NonExpansive SI (BIBase.persistently (PROP := PROP)) :=
   BIStepIndexed.persistently_ne
 theorem later_ne : OFE.NonExpansive SI (BIBase.later (PROP := PROP)) := BIStepIndexed.later_ne
-theorem later_sExists_false [SIdxFinite SI] {Φ : PROP → Prop} :
-    (▷ BIBase.sExists Φ) ⊢ ▷ False ∨ ∃ p, ⌜Φ p⌝ ∧ ▷ p :=
-  BIStepIndexed.later_sExists_false (SI := SI)
-theorem later_sep_1 [SIdxFinite SI] {P Q : PROP} : ▷ (P ∗ Q) ⊢ ▷ P ∗ ▷ Q :=
-  BIStepIndexed.later_sep_1 (SI := SI)
 end StepIndexedForward
+
+theorem later_sExists_false {PROP : Type _} [BI PROP] [BILaterFinite PROP] {Φ : PROP → Prop} :
+    (▷ BIBase.sExists Φ) ⊢ ▷ False ∨ ∃ p, ⌜Φ p⌝ ∧ ▷ p := BILaterFinite.later_sExists_false
+theorem later_sep_1 {PROP : Type _} [BI PROP] [BILaterFinite PROP] {P Q : PROP} :
+    ▷ (P ∗ Q) ⊢ ▷ P ∗ ▷ Q := BILaterFinite.later_sep_1
 
 instance [BIBase PROP] : LE PROP where
   le := BIBase.Entails
@@ -218,8 +221,8 @@ attribute [rocq_alias bi.later_false_sep] BI.later_false_sep
 attribute [rocq_alias bi.later_false_exist] BI.later_false_sExists
 
 /-- `later_sep` as an equivalence; only for finite step indices. -/
-theorem later_sep [BI PROP] [BIStepIndexed SI PROP] [SIdxFinite SI] {P Q : PROP} : ▷ (P ∗ Q) ⊣⊢ ▷ P ∗ ▷ Q :=
-  ⟨later_sep_1 (SI := SI), later_sep_2⟩
+theorem later_sep [BI PROP] [BILaterFinite PROP] {P Q : PROP} : ▷ (P ∗ Q) ⊣⊢ ▷ P ∗ ▷ Q :=
+  ⟨later_sep_1, later_sep_2⟩
 attribute [rocq_alias bi.later_persistently_1,
            rocq_alias bi.later_persistently_2] BI.later_persistently
 attribute [rocq_alias bi.later_false_em] BI.later_false_em

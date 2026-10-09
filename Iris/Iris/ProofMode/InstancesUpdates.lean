@@ -117,9 +117,8 @@ end BIBasicUpdate
 
 section SBIBasicUpdate
 
-variable {PROP} [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [BIUpdate PROP] [BIBUpdateSbi SI PROP]
+variable {PROP} [BI PROP] [BIPlainly PROP] [BIUpdate PROP] [BIBUpdatePlainly PROP]
 
-set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias elim_modal_bupd_plain_goal]
 instance elimModal_bupd_plain_goal [BIAffine PROP] p io (P Q : PROP) [Plain Q] :
     ElimModal True p io false iprop(|==> P) P Q Q where
@@ -127,13 +126,12 @@ instance elimModal_bupd_plain_goal [BIAffine PROP] p io (P Q : PROP) [Plain Q] :
     _ ⊢ |==> P ∗ (P -∗ Q)   := sep_mono_left intuitionisticallyIf_elim
     _ ⊢ |==> (P ∗ (P -∗ Q)) := bupd_frame_right
     _ ⊢ |==> Q              := BIUpdate.mono wand_elim_right
-    _ ⊢ Q                   := bupd_elim (SI := SI)
+    _ ⊢ Q                   := bupd_elim
 
-set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias elim_modal_bupd_plain]
 instance elimModal_bupd_plain [BIAffine PROP] p io (P Q : PROP) [Plain P] :
     ElimModal True p io p iprop(|==> P) P Q Q where
-  elim_modal _ := (sep_mono_left (intuitionisticallyIf_mono (bupd_elim (SI := SI)))).trans wand_elim_right
+  elim_modal _ := (sep_mono_left (intuitionisticallyIf_mono (bupd_elim))).trans wand_elim_right
 
 end SBIBasicUpdate
 
@@ -308,23 +306,21 @@ end BIFancyUpdate
 
 section SBIFancyUpdate
 
-variable {PROP} [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [BIFUpdate PROP] [BIFUpdateSbi SI PROP] [BIAffine PROP]
+variable {PROP} [BI PROP] [BIPlainly PROP] [BIFUpdate PROP] [BIFUpdatePlainly PROP] [BIAffine PROP]
 
-set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias from_forall_fupd]
 instance fromForall_fupd E1 E2 (P : PROP) {α : Type _} (Φ : α → PROP)
     [inst : TCSideCondition (E2 ⊆ E1)]
     [h : FromForall P Φ] [∀ a, Plain (Φ a)] :
     FromForall iprop(|={E1,E2}=> P) (fun a => iprop(|={E1,E2}=> Φ a)) where
-  from_forall := (fupd_plain_forall (SI := SI) inst.sidecondition).mpr.trans (mono h.from_forall)
+  from_forall := (fupd_plain_forall inst.sidecondition).mpr.trans (mono h.from_forall)
 
-set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias from_forall_step_fupd]
 instance fromForall_stepFupd E1 E2 (P : PROP) (Φ : α → PROP)
     [inst : TCSideCondition (E2 ⊆ E1)]
     [h : FromForall P Φ] [∀ a, Plain (Φ a)] :
     FromForall iprop(|={E1}[E2]▷=> P) (fun a => iprop(|={E1}[E2]▷=> Φ a)) where
-  from_forall := (step_fupd_plain_forall (SI := SI) inst.sidecondition).mpr.trans (step_fupd_mono h.from_forall)
+  from_forall := (step_fupd_plain_forall inst.sidecondition).mpr.trans (step_fupd_mono h.from_forall)
 
 end SBIFancyUpdate
 

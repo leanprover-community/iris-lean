@@ -25,7 +25,7 @@ open OFE ORA DFrac
 
 namespace DFracAgree
 
-@[rocq_alias dfrac_agreeR]
+@[nolint unusedArguments, rocq_alias dfrac_agreeR]
 abbrev DFracAgreeR (A : Type _) [OFE SI A] := DFrac × Agree A
 
 @[rocq_alias to_dfrac_agree]
@@ -58,11 +58,11 @@ theorem mk_injN {n : SI} {d₁ d₂ : DFrac} {a₁ a₂ : A} (h : mk (SI := SI) 
 
 @[rocq_alias to_dfrac_agree_inj]
 theorem mk_inj {d₁ d₂ : DFrac} {a₁ a₂ : A} (h : mk (SI := SI) d₁ a₁ = mk d₂ a₂) : d₁ = d₂ ∧ a₁ = a₂ :=
-  ⟨congrArg Prod.fst h, Agree.toAgree_inj (SI := SI) (congrArg Prod.snd h)⟩
+  ⟨congrArg Prod.fst h, Agree.toAgree_inj (congrArg Prod.snd h)⟩
 
 @[rocq_alias dfrac_agree_op]
 theorem mk_op {d₁ d₂ : DFrac} {a : A} : mk (d₁ • d₂) a = mk (SI := SI) d₁ a • mk d₂ a :=
-  equiv_prod_ext (SI := SI) rfl Agree.idemp.symm
+  equiv_prod_ext rfl Agree.idemp.symm
 
 @[rocq_alias dfrac_agree_op_valid]
 theorem op_valid {d₁ d₂ : DFrac} {a₁ a₂ : A} : ✓[SI] (mk (SI := SI) d₁ a₁ • mk d₂ a₂) ↔ ✓[SI] (d₁ • d₂) ∧ a₁ = a₂ := by
@@ -177,7 +177,7 @@ end Frac
 /-! ## Functors -/
 
 @[rocq_alias dfrac_agreeRF]
-abbrev DFracAgreeRF (T : COFE.OFunctorPre SI) [COFE.OFunctor SI T] : COFE.OFunctorPre SI :=
+abbrev DFracAgreeRF (T : COFE.OFunctorPre SI) : COFE.OFunctorPre SI :=
   ProdOF (constOF (SI := SI) DFrac) (AgreeRF T)
 
 #rocq_ignore dfrac_agreeRF_contractive "Found by typeclass inference"

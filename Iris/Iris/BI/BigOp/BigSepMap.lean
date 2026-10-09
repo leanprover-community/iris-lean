@@ -180,7 +180,7 @@ instance bigSepM_absorbing_inst [BIAffine PROP] {Φ : K → V → PROP} {m : M V
     Absorbing ([∗map] k ↦ x ∈ m, Φ k x) :=
   bigSepM_absorbing fun _ => inferInstance
 
-theorem bigSepM_emp [DecidableEq K] {m : M V} :
+theorem bigSepM_emp {m : M V} :
     bigSepM (fun (_ : K) (_ : V) => (emp : PROP)) m ⊣⊢ emp :=
   BiEntails.of_eq <| bigOpM_const_unit_eq m
 
@@ -376,7 +376,7 @@ theorem bigSepM_persistently {Φ : K → V → PROP} {m : M V} [BIAffine PROP] :
   BiEntails.of_eq <| bigOpL_hom _ (toList m)
 
 @[rocq_alias big_sepM_later]
-theorem bigSepM_later [BIStepIndexed SI PROP] [SIdxFinite SI] {Φ : K → V → PROP} {m : M V} [BIAffine PROP] :
+theorem bigSepM_later [BILaterFinite PROP] {Φ : K → V → PROP} {m : M V} [BIAffine PROP] :
     (▷ [∗map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∗map] k ↦ x ∈ m, ▷ Φ k x :=
   BiEntails.of_eq <| bigOpL_hom _ <| toList m
 
@@ -387,11 +387,11 @@ theorem bigSepM_later_2 {Φ : K → V → PROP} {m : M V} :
     later_intro (fun h1 h2 => (sep_mono h1 h2).trans later_sep_2) (fun _ => .rfl)
 
 @[rocq_alias big_sepM_laterN]
-theorem bigSepM_laterN [BIStepIndexed SI PROP] [SIdxFinite SI] {Φ : K → V → PROP} {m : M V} {n : Nat} [BIAffine PROP] :
+theorem bigSepM_laterN [BILaterFinite PROP] {Φ : K → V → PROP} {m : M V} {n : Nat} [BIAffine PROP] :
     (▷^[n] [∗map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∗map] k ↦ x ∈ m, ▷^[n] Φ k x :=
   match n with
   | 0 => .rfl
-  | _ + 1 => (later_congr bigSepM_laterN).trans (bigSepM_later (SI := SI))
+  | _ + 1 => (later_congr bigSepM_laterN).trans (bigSepM_later)
 
 @[rocq_alias big_sepM_laterN_2]
 theorem bigSepM_laterN_2 {Φ : K → V → PROP} {m : M V} {n : Nat} :
@@ -430,12 +430,12 @@ theorem bigSepM_filter [BIAffine PROP] {Φ : K → V → PROP} {m : M V} (p : K 
     | true => simpa using equiv_iff.mpr true_imp.symm
 
 @[rocq_alias big_sepM_union]
-theorem bigSepM_union [DecidableEq K] {Φ : K → V → PROP} {m₁ m₂ : M V} (hdisj : m₁ ##ₘ m₂) :
+theorem bigSepM_union {Φ : K → V → PROP} {m₁ m₂ : M V} (hdisj : m₁ ##ₘ m₂) :
     ([∗map] k ↦ y ∈ m₁ ∪ m₂, Φ k y) ⊣⊢ ([∗map] k ↦ y ∈ m₁, Φ k y) ∗ [∗map] k ↦ y ∈ m₂, Φ k y :=
   BiEntails.of_eq <| bigOpM_union_eq Φ m₁ m₂ hdisj
 
 @[rocq_alias big_sepM_subseteq]
-theorem bigSepM_subseteq [DecidableEq K] {Φ : K → V → PROP} {m₁ m₂ : M V}
+theorem bigSepM_subseteq {Φ : K → V → PROP} {m₁ m₂ : M V}
     [∀ k v, Affine (Φ k v)] (h : m₂ ⊆ m₁) :
     ([∗map] k ↦ x ∈ m₁, Φ k x) ⊢ [∗map] k ↦ x ∈ m₂, Φ k x :=
   union_difference_cancel h ▸ (bigSepM_union disjoint_difference_right).1.trans sep_elim_left

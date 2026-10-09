@@ -82,22 +82,22 @@ open OFE
 
 variable [I : RFunctorContractive Nat F] [IA : RFunctorAffine Nat F]
 
-theorem ElemG.transpMap (E : ElemG GF F) T [OFE Nat T] : (GF E.τ).F = F := congrArg GFunctor.F E.transp
+theorem ElemG.transpMap (E : ElemG GF F) : (GF E.τ).F = F := congrArg GFunctor.F E.transp
 
-theorem ElemG.transpClass (E : ElemG GF F) T [OFE Nat T] : (GF E.τ).contractive ≍ I := by
+theorem ElemG.transpClass (E : ElemG GF F) : (GF E.τ).contractive ≍ I := by
   rw [E.transp]
 
 def ElemG.bundle (E : ElemG GF F) [COFE Nat T] : F.ap T → GF.api E.τ T :=
-  transpAp (E.transpMap T) |>.mpr
+  transpAp E.transpMap |>.mpr
 
 def ElemG.unbundle (E : ElemG GF F) [COFE Nat T] : GF.api E.τ T → F.ap T :=
-  transpAp (E.transpMap T) |>.mp
+  transpAp E.transpMap |>.mp
 
 def ElemG.bundleC (E : ElemG GF F) [COFE Nat T] : F.ap T -C>[Nat] GF.api E.τ T :=
-  OFE.transpApC (E.transpMap T).symm (E.transpClass T).symm
+  OFE.transpApC E.transpMap.symm E.transpClass.symm
 
 def ElemG.unbundleC (E : ElemG GF F) [COFE Nat T] : GF.api E.τ T -C>[Nat] F.ap T :=
-  OFE.transpApC (E.transpMap T) (E.transpClass T)
+  OFE.transpApC E.transpMap E.transpClass
 
 theorem ElemG.bundle_unbundle (E : ElemG GF F) [COFE Nat T] (x : GF.api E.τ T) :
     E.bundle (E.unbundle x) = x := by simp [bundle, unbundle]
@@ -107,11 +107,11 @@ theorem ElemG.unbundle_bundle (E : ElemG GF F) [COFE Nat T] (x : F.ap T) :
 
 instance ElemG.bundle.ne {E : ElemG GF F} [COFE Nat T] :
     OFE.NonExpansive Nat (E.bundle (T := T)) where
-  ne {_ _ _} := OFE.transpAp_eqv_mp (E.transpMap T).symm (E.transpClass T).symm
+  ne {_ _ _} := OFE.transpAp_eqv_mp E.transpMap.symm E.transpClass.symm
 
 instance ElemG.unbundle.ne {E : ElemG GF F} [COFE Nat T] :
     OFE.NonExpansive Nat (E.unbundle (T := T)) where
-  ne {_ _ _} H := OFE.transpAp_eqv_mp (E.transpMap T) (E.transpClass T) H
+  ne {_ _ _} H := OFE.transpAp_eqv_mp E.transpMap E.transpClass H
 
 theorem ElemG.bundle_discreteE {GF : BundledGFunctors} (E : ElemG GF F)
     {v : F.ap (IProp GF)} [DiscreteE Nat v] : DiscreteE Nat (E.bundle v) where
@@ -124,28 +124,28 @@ theorem bundle_op {GF : BundledGFunctors} [E : ElemG GF F] (a2 ac : F.ap (IProp 
   apply Eq.symm
   apply Eq.trans (ElemG.bundle_unbundle E _).symm
   refine congrArg E.bundle ?_
-  have h_fun := E.transpMap <| F.ap (IProp GF)
-  have h_inst := E.transpClass <| F.ap (IProp GF)
+  have h_fun := E.transpMap
+  have h_inst := E.transpClass
   apply Eq.trans (transpAp_op_mp h_fun h_inst)
   apply (congrArg (op · _) (ElemG.unbundle_bundle E a2)).trans
   apply congrArg (op _ ·) (ElemG.unbundle_bundle E ac)
 
 theorem unbundle_op {GF : BundledGFunctors} [E : ElemG GF F] (a2 ac : GF.api (ElemG.τ GF F) (IProp GF)) :
   E.unbundle (a2 • ac) = E.unbundle a2 • E.unbundle ac :=
-  OFE.transpAp_op_mp (E.transpMap ((GF (ElemG.τ GF F)).F.ap (IPre GF)))
-    (E.transpClass ((GF (ElemG.τ GF F)).F.ap (IPre GF)))
+  OFE.transpAp_op_mp E.transpMap
+    E.transpClass
 
 theorem ElemG.bundle_unit {GF} (E : ElemG GF F) {ε : F.ap (IProp GF)} [IsUnit Nat ε] :
     IsUnit Nat (E.bundle ε) := by
   refine { unit_valid := ?_, unit_left_id := ?_, pcore_unit := ?_ }
   · refine valid_iff_validN.mpr fun n => ?_
-    apply transpAp_validN_mp (E.transpMap <| F.ap (IProp GF)).symm (E.transpClass <| F.ap (IProp GF)).symm
+    apply transpAp_validN_mp E.transpMap.symm E.transpClass.symm
     apply IsUnit.unit_valid.validN
   · intro x
     have h1 : E.unbundle (E.bundle ε • x) = E.unbundle x := by
       calc E.unbundle (E.bundle ε • x)
         _ = E.unbundle (E.bundle ε) • E.unbundle x :=
-            transpAp_op_mp (E.transpMap <| F.ap (IProp GF)) (E.transpClass <| F.ap (IProp GF))
+            transpAp_op_mp E.transpMap E.transpClass
         _ = ε • E.unbundle x := congrArg (op · _) (ElemG.unbundle_bundle E ε)
         _ = E.unbundle x := IsUnit.unit_left_id
     calc E.bundle ε • x
@@ -155,12 +155,12 @@ theorem ElemG.bundle_unit {GF} (E : ElemG GF F) {ε : F.ap (IProp GF)} [IsUnit N
   · calc pcore (E.bundle ε)
        = (pcore ε).map E.bundle :=
              (transpAp_pcore_mp
-               (E.transpMap <| F.ap (IProp GF)).symm
-               (E.transpClass <| F.ap (IProp GF)).symm).symm
+               E.transpMap.symm
+               E.transpClass.symm).symm
      _ = Option.map E.bundle (some ε) := by
         have h_pcore := ‹IsUnit Nat ε›.pcore_unit
         rcases eqn : pcore ε with (_ | c)
-        · exact absurd (eqn ▸ h_pcore) (OFE.not_none_eqv_some (SI := Nat))
+        · exact absurd (eqn ▸ h_pcore) (OFE.not_none_eqv_some)
         · simp only [Option.map]
           exact congrArg (fun z => some (E.bundle z)) (Option.some.inj (eqn ▸ h_pcore))
      _ = E.bundle ε := by rfl
@@ -335,7 +335,7 @@ theorem unfoldi_bundle_coreId {a : F.ap (IProp GF)} [CoreId a] :
     constructor
     calc pcore (E.bundle a)
       = (pcore a).map E.bundle :=
-          (OFE.transpAp_pcore_mp (E.transpMap (F.ap (IProp GF))).symm (E.transpClass (F.ap (IProp GF))).symm).symm
+          (OFE.transpAp_pcore_mp E.transpMap.symm E.transpClass.symm).symm
     _ = (some a).map E.bundle := Option.map_forall₂ _ CoreId.core_id
     _ = some (E.bundle a) := by rfl
   calc pcore ((RFunctor.map (IProp.fold GF) (IProp.unfold GF)).toHom.f (E.bundle a))
@@ -362,11 +362,11 @@ instance {a : F.ap (IProp GF)} [CoreId a] : CoreId (iSingleton F γ a) where
 
 theorem ElemG.bundle_validN {n : Nat} {a : F.ap (IProp GF)} (H : ✓{n} a) :
     ✓{n} (E.bundle a) :=
-  transpAp_validN_mp (E.transpMap <| F.ap (IProp GF)).symm (E.transpClass <| F.ap (IProp GF)).symm H
+  transpAp_validN_mp E.transpMap.symm E.transpClass.symm H
 
 theorem ElemG.unbundle_validN {n : Nat} {a : GF.api (ElemG.τ GF F) (IProp GF)} (H : ✓{n} a) :
     ✓{n} (E.unbundle a) :=
-  transpAp_validN_mp (E.transpMap <| F.ap (IProp GF)) (E.transpClass <| F.ap (IProp GF)) H
+  transpAp_validN_mp E.transpMap E.transpClass H
 
 theorem IProp.unfoldi_bundle_validN {n : Nat} {a : F.ap (IProp GF)} (Hv : ✓{n} a) :
     ✓{n} (IProp.unfoldi (E.bundle a)) :=

@@ -378,7 +378,7 @@ theorem inv_combine_dup_l (N : Namespace) (P Q : IProp GF) :
   imodintro; iintro %E #Hsub
   imod HI1 $$ %E Hsub with ⟨HP, HI1⟩
   ihave ⟨HP1, HP2⟩ : ▷ P ∗ ▷ P $$ [HP]
-  · iapply (later_sep (SI := Nat)); inext; iapply HPP $$ HP
+  · iapply (later_sep); inext; iapply HPP $$ HP
   imod HI1 $$ HP2 with _
   imod HI2 $$ %E Hsub with ⟨HQ, HI2⟩
   imodintro

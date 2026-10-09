@@ -856,7 +856,7 @@ theorem singleton_inc_iff {m : M V} :
 theorem exclusive_singleton_inc_iff {m : M V} (He : Exclusive SI x) (Hv : ✓[SI] m) :
     (singleton i x) ≼ m ↔ (get? m i = some x) := by
   refine singleton_inc_iff.trans ⟨fun ⟨y, Hy, Hxy⟩ => ?_, fun _ => ?_⟩
-  · suffices x = y by exact Hy.trans <| (OFE.some_eqv_some (SI := SI)).mpr this.symm
+  · suffices x = y by exact Hy.trans <| (OFE.some_eqv_some).mpr this.symm
     exact Option.eqv_of_inc_exclusive Hxy <| valid_get?_valid Hv Hy
   · exact ⟨x, ‹_›, none, rfl⟩
 
@@ -1342,13 +1342,13 @@ def mapO [OFE SI α] [OFE SI β] (f : α -n>[SI] β) : OFE.Hom SI (H α) (H β) 
   ne := inferInstance
 
 @[rocq_alias gmap_fmap_ne_ext, rocq_alias gmapO_map_ne]
-theorem map_ne {n : SI} [OFE SI α] [OFE SI β] (f g : α -> β) {heq : f ≡{n}≡ g} : map H f m ≡{n}≡ map H g m := by
+theorem map_ne {n : SI} [OFE SI β] (f g : α -> β) {heq : f ≡{n}≡ g} : map H f m ≡{n}≡ map H g m := by
   simp [OFE.Dist, HasDist.dist, Option.Forall₂, map, get?_bindAlter]
   intro k
   cases get? m k <;> simp
   exact heq _
 
-theorem map_compose [OFE SI α] [OFE SI β] [OFE SI γ] (f : α -> β) (g : β -> γ) m :
+theorem map_compose [OFE SI γ] (f : α -> β) (g : β -> γ) m :
     map H (g.comp f) m = map H g (map H f m) := OFE.eq_dist_2 (SI := SI) <| by
   intro n k
   simp [map, get?_bindAlter]

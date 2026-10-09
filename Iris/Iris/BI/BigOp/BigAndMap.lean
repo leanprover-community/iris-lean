@@ -266,7 +266,7 @@ theorem bigAndM_filter {Φ : K → V → PROP} {m : M V} (p : K → V → Bool) 
     | true => simpa using true_imp.symm
 
 @[rocq_alias big_andM_union]
-theorem bigAndM_union [DecidableEq K] {Φ : K → V → PROP} {m₁ m₂ : M V} (hdisj : m₁ ##ₘ m₂) :
+theorem bigAndM_union {Φ : K → V → PROP} {m₁ m₂ : M V} (hdisj : m₁ ##ₘ m₂) :
     ([∧map] k ↦ y ∈ m₁ ∪ m₂, Φ k y) ⊣⊢
       ([∧map] k ↦ y ∈ m₁, Φ k y) ∧ [∧map] k ↦ y ∈ m₂, Φ k y :=
   BiEntails.of_eq <| bigOpM_union_eq Φ m₁ m₂ hdisj

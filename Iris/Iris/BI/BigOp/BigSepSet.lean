@@ -256,10 +256,10 @@ theorem bigSepS_persistently [BIAffine PROP] {Φ : A → PROP} {X : S} :
   BiEntails.of_eq <| BigOpS.hom this Φ X
 
 @[rocq_alias big_sepS_later]
-theorem bigSepS_later [BIStepIndexed SI PROP] [SIdxFinite SI] [BIAffine PROP] {Φ : A → PROP} {X : S} :
+theorem bigSepS_later [BILaterFinite PROP] [BIAffine PROP] {Φ : A → PROP} {X : S} :
     (▷ [∗set] y ∈ X, Φ y) ⊣⊢ [∗set] y ∈ X, ▷ Φ y :=
   letI := MonoidHomomorphism.ofEq
-    (BiEntails.to_eq (later_sep (SI := SI))) (BiEntails.to_eq later_emp)
+    (BiEntails.to_eq (later_sep)) (BiEntails.to_eq later_emp)
   BiEntails.of_eq <| BigOpS.hom this Φ X
 
 @[rocq_alias big_sepS_later_2]
@@ -268,11 +268,11 @@ theorem bigSepS_later_2 {Φ : A → PROP} {X : S} :
   bigSepS_elements.1.trans <| bigSepL_later_2.trans <| later_mono bigSepS_elements.2
 
 @[rocq_alias big_sepS_laterN]
-theorem bigSepS_laterN [BIStepIndexed SI PROP] [SIdxFinite SI] [BIAffine PROP] {Φ : A → PROP} {n : Nat} {X : S} :
+theorem bigSepS_laterN [BILaterFinite PROP] [BIAffine PROP] {Φ : A → PROP} {n : Nat} {X : S} :
     (▷^[n] [∗set] y ∈ X, Φ y) ⊣⊢ [∗set] y ∈ X, ▷^[n] Φ y :=
   match n with
   | 0 => .rfl
-  | _ + 1 => (later_congr bigSepS_laterN).trans (bigSepS_later (SI := SI))
+  | _ + 1 => (later_congr bigSepS_laterN).trans (bigSepS_later)
 
 @[rocq_alias big_sepS_laterN_2]
 theorem bigSepS_laterN_2 {Φ : A → PROP} {n : Nat} {X : S} :
@@ -397,14 +397,12 @@ theorem bigSepS_union_elim {Φ : A → PROP} {X Y : S} [∀ x, TCOr (Affine (Φ 
 
 @[rocq_alias big_sepS_insert_2]
 theorem bigSepS_insert_elim {Φ : A → PROP} {X : S} {x : A}
-    [TCOr (Affine (Φ x)) (Absorbing (Φ x))]
     [∀ y, TCOr (Affine (Φ y)) (Absorbing (Φ y))] :
     Φ x ⊢ ([∗set] y ∈ X, Φ y) -∗ ([∗set] y ∈ insert x X, Φ y) := by
   exact bigSepS_singleton.2.trans (wand_entails bigSepS_union_elim)
 
 @[rocq_alias big_sepS_insert_2']
 theorem bigSepS_insert_elim_wand {Φ : A → PROP} {X : S} {x : A}
-    [TCOr (Affine (Φ x)) (Absorbing (Φ x))]
     [∀ y, TCOr (Affine (Φ y)) (Absorbing (Φ y))] :
     ⊢ Φ x -∗ ([∗set] y ∈ X, Φ y) -∗ ([∗set] y ∈ X ∪ {x}, Φ y) := by
   rw [union_comm]

@@ -614,7 +614,7 @@ theorem tac_wp_heap_op [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' P P' : IProp GF}
   refine hlater.trans ?_
   refine .trans ?_ (wp_bind (ProgramLogic.fill K))
   refine (later_mono hsplit.1).trans ?_
-  refine (later_sep (SI := Nat)).1.trans ?_
+  refine (later_sep).1.trans ?_
   refine (sep_mono .rfl hwp).trans ?_
   refine (wp_frame_step_l' hval Std.LawfulSet.subset_refl).trans (wp_mono fun v' => ?_)
   iintro ⟨HΔ, %hv, HP⟩
@@ -656,7 +656,7 @@ public theorem tac_wp_load [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF} {p 
   refine .trans ?_ (wp_bind (ProgramLogic.fill K))
   iapply wand_apply (wand_entails ((wp_load (s := s) (E := E) (l := l)
     (q := q) (v := v)).trans (forall_elim _)))
-  refine .trans ?_ (later_sep (SI := Nat)).1
+  refine .trans ?_ (later_sep).1
   refine later_mono ?_
   exact (lookup_split hsplit).trans (sep_mono .rfl (wand_mono .rfl hcont))
 
@@ -672,7 +672,7 @@ public theorem tac_wp_store [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp GF}
   refine .trans ?_ (wp_bind (ProgramLogic.fill K))
   iapply wand_apply (wand_entails ((wp_store (s := s) (E := E) (l := l)
     (v := v') (v' := v)).trans (forall_elim _)))
-  refine .trans ?_ (later_sep (SI := Nat)).1
+  refine .trans ?_ (later_sep).1
   refine later_mono ?_
   refine hsplit.1.trans ?_
   refine .trans sep_comm.mp ?_
@@ -700,7 +700,7 @@ public theorem tac_wp_cmpXchg_fail [ι : HeapLangGS hlc GF] {Δ Δ' Δ'' : IProp
   refine hlater.trans ?_
   refine .trans ?_ (wp_bind (ProgramLogic.fill K))
   refine (later_mono ((lookup_split hsplit).trans sep_comm.1)).trans ?_
-  refine (later_sep (SI := Nat)).1.trans ?_
+  refine (later_sep).1.trans ?_
   refine (sep_mono .rfl (wp_exact_of_triple (wp_cmpXchg_fail (s := s) (E := E)
     (e1 := hl(v(&v1))) (e2 := hl(v(&v2))) rfl rfl hsafe (decide_eq_false hne)))).trans ?_
   refine (wp_frame_step_l' rfl Std.LawfulSet.subset_refl).trans (wp_mono fun _ => ?_)

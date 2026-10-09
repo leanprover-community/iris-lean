@@ -622,7 +622,7 @@ end ProofModeInstances
 
 section TCSideCondition
 
-variable [BI PROP] [BIStepIndexed Nat PROP] [Sbi Nat PROP] [BIFUpdate PROP] [BIFUpdateSbi Nat PROP] [BIAffine PROP]
+variable [BI PROP] [BIPlainly PROP] [BIFUpdate PROP] [BIFUpdatePlainly PROP] [BIAffine PROP]
 variable (E : CoPset) (Ψ : Nat → PROP) [∀ n, Plain (Ψ n)]
 
 /- Tests `TCSideCondition` with sidecondition that can be solved. -/

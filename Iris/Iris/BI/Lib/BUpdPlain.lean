@@ -35,10 +35,10 @@ section BupdPlainDef
 
 open OFE
 
-variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP]
+variable [BI PROP] [BIPlainly PROP]
 
 @[rocq_alias bupd_alt_ne]
-instance BUpdPlain_ne : NonExpansive SI (BUpdPlain (PROP := PROP)) where
+instance BUpdPlain_ne [BIStepIndexed SI PROP] : NonExpansive SI (BUpdPlain (PROP := PROP)) where
   ne _ _ _ H := forall_ne fun _ => wand_ne.ne (wand_ne.ne H .rfl) .rfl
 
 #rocq_ignore bupd_alt_proper "OFE is Leibniz; use equality"
@@ -89,7 +89,7 @@ theorem BUpdPlain_plainly {P : PROP} : BUpdPlain iprop(■ P) ⊢ (■ P) := by
 
 /- BiBUpdPlainly entails the alternative definition -/
 @[rocq_alias bupd_bupd_alt]
-theorem BUpd_BUpdPlain [BIUpdate PROP] [BIBUpdateSbi SI PROP] {P : PROP} : (|==> P) ⊢ BUpdPlain P :=
+theorem BUpd_BUpdPlain [BIUpdate PROP] [BIBUpdatePlainly PROP] {P : PROP} : (|==> P) ⊢ BUpdPlain P :=
   forall_intro fun _ => wand_intro <| bupd_frame_right.trans <|
     (BIUpdate.mono (wand_elim_right.trans plainly_idem.mpr)).trans bupd_plainly_elim
 

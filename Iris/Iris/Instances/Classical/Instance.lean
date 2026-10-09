@@ -271,6 +271,8 @@ instance : BIStepIndexed Nat (HeapProp Val) where
   later_ne        := ⟨fun _ _ _ _ => rfl⟩
   sForall_ne {_ P Q} h := (liftRel_eq.1 (h : liftRel Eq P Q)) ▸ rfl
   sExists_ne {_ P Q} h := (liftRel_eq.1 (h : liftRel Eq P Q)) ▸ rfl
+
+instance : BILaterFinite (HeapProp Val) where
   later_sExists_false _ _ := .inl trivial
   later_sep_1 σ _ := ⟨∅, σ, empty_union, empty_disjoint, trivial, trivial⟩
 

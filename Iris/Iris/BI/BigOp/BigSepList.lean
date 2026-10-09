@@ -389,7 +389,7 @@ theorem bigSepL_persistently {Φ : Nat → A → PROP} {l : List A} [BIAffine PR
   BiEntails.of_eq <| bigOpL_hom Φ l
 
 @[rocq_alias big_sepL_later]
-theorem bigSepL_later [BIStepIndexed SI PROP] [SIdxFinite SI] [BIAffine PROP] {Φ : Nat → A → PROP} {l : List A} :
+theorem bigSepL_later [BILaterFinite PROP] [BIAffine PROP] {Φ : Nat → A → PROP} {l : List A} :
     (▷ [∗list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∗list] k ↦ x ∈ l, ▷ Φ k x :=
   BiEntails.of_eq <| bigOpL_hom Φ l
 
@@ -400,9 +400,9 @@ theorem bigSepL_later_2 {Φ : Nat → A → PROP} {l : List A} :
     (fun h1 h2 => (sep_mono h1 h2).trans later_sep_2) (fun _ => .rfl)
 
 @[rocq_alias big_sepL_laterN]
-theorem bigSepL_laterN [BIStepIndexed SI PROP] [SIdxFinite SI] [BIAffine PROP] {Φ : Nat → A → PROP} {l : List A} {n : Nat} :
+theorem bigSepL_laterN [BILaterFinite PROP] [BIAffine PROP] {Φ : Nat → A → PROP} {l : List A} {n : Nat} :
     (▷^[n] [∗list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∗list] k ↦ x ∈ l, ▷^[n] Φ k x :=
-  match n with | 0 => .rfl | _ + 1 => (later_congr bigSepL_laterN).trans (bigSepL_later (SI := SI))
+  match n with | 0 => .rfl | _ + 1 => (later_congr bigSepL_laterN).trans (bigSepL_later)
 
 @[rocq_alias big_sepL_laterN_2]
 theorem bigSepL_laterN_2 {Φ : Nat → A → PROP} {l : List A} {n : Nat} :
@@ -1039,16 +1039,16 @@ theorem bigSepL2_laterN_2 {Φ : Nat → A → B → PROP} {l1 : List A} {l2 : Li
   match n with | 0 => .rfl | _ + 1 => bigSepL2_later_2.trans <| later_mono bigSepL2_laterN_2
 
 @[rocq_alias big_sepL2_later_1]
-theorem bigSepL2_later_1 [BIStepIndexed SI PROP] [SIdxFinite SI] [BIAffine PROP] {Φ : Nat → A → B → PROP} {l1 : List A} {l2 : List B} :
+theorem bigSepL2_later_1 [BILaterFinite PROP] [BIAffine PROP] {Φ : Nat → A → B → PROP} {l1 : List A} {l2 : List B} :
     (▷ [∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) ⊢ (◇ [∗list] k ↦ x1;x2 ∈ l1;l2, ▷ Φ k x1 x2) :=
   (later_mono bigSepL2_alt.1).trans <| later_and.1.trans <|
-  (and_mono later_pure_except0 (BigSepL.bigSepL_later (SI := SI)).1).trans <|
+  (and_mono later_pure_except0 (BigSepL.bigSepL_later).1).trans <|
   (and_mono .rfl except0_intro).trans <| except0_and.2.trans <|
   except0_mono (bigSepL2_alt (Φ := fun k x1 x2 => iprop(▷ Φ k x1 x2))).2
 
-theorem bigSepL2_later [BIStepIndexed SI PROP] [SIdxFinite SI] [BIAffine PROP] {Φ : Nat → A → B → PROP} {l1 : List A} {l2 : List B} :
+theorem bigSepL2_later [BILaterFinite PROP] [BIAffine PROP] {Φ : Nat → A → B → PROP} {l1 : List A} {l2 : List B} :
     (▷ [∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) ⊣⊢ (◇ [∗list] k ↦ x1;x2 ∈ l1;l2, ▷ Φ k x1 x2) :=
-  ⟨bigSepL2_later_1 (SI := SI), (except0_mono bigSepL2_later_2).trans except0_later⟩
+  ⟨bigSepL2_later_1, (except0_mono bigSepL2_later_2).trans except0_later⟩
 
 @[rocq_alias big_sepL2_sepL]
 theorem bigSepL2_sepL {Φ1 : Nat → A → PROP} {Φ2 : Nat → B → PROP} {l1 : List A} {l2 : List B} :

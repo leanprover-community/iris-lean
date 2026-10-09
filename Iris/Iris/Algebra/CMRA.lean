@@ -135,9 +135,11 @@ def OrderR (x y : α) : Prop := x = y ∨ x ≼ₒ[SI] y
 @[inherit_doc OrderR] notation:50 x " ≼ₒ*[" S "] " y:51 => OrderR (SI := S) x y
 
 theorem OrderN.ordNR {n : SI} {x y : α} : x ≼ₒ{n} y → x ≼ₒ*{n} y := .inr
+omit [OFE SI α] instSI in
 theorem Order.ordR {x y : α} : x ≼ₒ[SI] y → x ≼ₒ*[SI] y := .inr
 
 @[refl] theorem OrderNR.rfl {n : SI} {x : α} : x ≼ₒ*{n} x := .inl .rfl
+omit [OFE SI α] instSI in
 @[refl] theorem OrderR.rfl {x : α} : x ≼ₒ*[SI] x := .inl (Eq.refl x)
 
 variable [OrderedNE SI α]
@@ -160,11 +162,13 @@ theorem OrderNR.trans {n : SI} {x y z : α} : x ≼ₒ*{n} y → y ≼ₒ*{n} z 
   | .inr h₁, .inl e₂ => .inr (ordN_ne .rfl e₂ h₁)
   | .inr h₁, .inr h₂ => .inr (ordN_trans h₁ h₂)
 
+omit [OFE SI α] [OrderedNE SI α] instSI in
 theorem OrderR.trans {x y z : α} : x ≼ₒ*[SI] y → y ≼ₒ*[SI] z → x ≼ₒ*[SI] z
   | .inl e₁, h₂ => e₁ ▸ h₂
   | h₁, .inl e₂ => e₂ ▸ h₁
   | .inr h₁, .inr h₂ => .inr (ord_trans h₁ h₂)
 
+omit [OrderedNE SI α] in
 theorem OrderR.ordNR (n : SI) {x y : α} : x ≼ₒ*[SI] y → x ≼ₒ*{n} y
   | .inl e => .inl (e ▸ .rfl)
   | .inr h => .inr (ordN_of_ord n h)
@@ -262,8 +266,10 @@ theorem op_right_dist {n : SI} (x : α) {y z : α} (e : y ≡{n}≡ z) : x • y
   op_ne.ne e
 theorem _root_.Iris.OFE.Dist.op_r {n : SI} {x y z : α} : y ≡{n}≡ z → x • y ≡{n}≡ x • z := op_right_dist _
 
+omit [OpNE SI α] in
 theorem op_commN {n : SI} {x y : α} : x • y ≡{n}≡ y • x := Dist.of_eq comm
 
+omit [OpNE SI α] in
 theorem op_assocN {n : SI} {x y z : α} : x • (y • z) ≡{n}≡ (x • y) • z := Dist.of_eq assoc
 
 theorem op_left_dist {n : SI} {x y : α} (z : α) (e : x ≡{n}≡ y) : x • z ≡{n}≡ y • z :=
@@ -291,6 +297,7 @@ omit [OFE SI α] [OpNE SI α] in
 theorem op_opM_assoc (x y : α) (mz : Option α) : (x • y) •? mz = x • (y •? mz) := by
   unfold op?; cases mz <;> simp [assoc]
 
+omit [OpNE SI α] in
 theorem op_opM_assoc_dist {n : SI} (x y : α) (mz : Option α) : (x • y) •? mz ≡{n}≡ x • (y •? mz) := by
   unfold op?; cases mz <;> simp [op_assocN, Dist.symm]
 
@@ -309,6 +316,7 @@ theorem incN_of_dist_of_incN {n : SI} (e : (a : α) ≡{n}≡ b) (h : b ≼{n} c
 instance {n : SI} : Trans (Dist (α := α) n) (IncludedN n) (IncludedN n) where
   trans := incN_of_dist_of_incN
 
+omit [OpNE SI α] in
 @[rocq_alias cmra_included_includedN]
 theorem incN_of_inc (n : SI) {x y : α} : x ≼ y → x ≼{n} y
   | ⟨z, hz⟩ => ⟨z, hz.dist⟩
@@ -348,15 +356,19 @@ theorem incN_trans {n : SI} {x y z : α} : x ≼{n} y → y ≼{n} z → x ≼{n
 instance {n : SI} : Trans (IncludedN (α := α) n) (IncludedN n) (IncludedN n) where
   trans := incN_trans
 
+omit [OpNE SI α] in
 @[rocq_alias cmra_includedN_le]
 theorem incN_of_incN_le {n n' : SI} {x y : α} (l1 : n' ≤ n) : x ≼{n} y → x ≼{n'} y
   | ⟨z, hz⟩ => ⟨z, Dist.le hz l1⟩
+omit [OpNE SI α] in
 theorem inc0_of_incN {n : SI} {x y : α} : x ≼{n} y → x ≼{(0 : SI)} y := incN_of_incN_le SIdx.le_0_l
 
+omit [OpNE SI α] in
 @[rocq_alias cmra.cmra_includedN_S]
 theorem incN_of_incN_succ {n : SI} {x y : α} : x ≼{succᵢ n} y → x ≼{n} y :=
   incN_of_incN_le SIdx.le_succ_diag_r
 
+omit [OpNE SI α] in
 @[rocq_alias cmra_includedN_l]
 theorem incN_op_left (n : SI) (x y : α) : x ≼{n} x • y := ⟨y, Dist.rfl⟩
 
@@ -368,6 +380,7 @@ omit [OFE SI α] [OpNE SI α] in
 @[rocq_alias cmra_included_r]
 theorem inc_op_right (x y : α) : y ≼ x • y := ⟨x, comm⟩
 
+omit [OpNE SI α] in
 @[rocq_alias cmra_includedN_r]
 theorem incN_op_right (n : SI) (x y : α) : y ≼{n} x • y := ⟨x, op_commN⟩
 
@@ -878,16 +891,16 @@ open ORA
 
 /-- The frame law follows from monotonicity of the partial core along the extension inclusion,
 the form of the law in Iris-Rocq (`cmra_pcore_mono`). -/
-theorem pcore_op_mono_of_pcore_mono [OFE SI α] [Op α] [PCore α]
+theorem pcore_op_mono_of_pcore_mono [Op α] [PCore α]
     (h : ∀ {x y cx : α}, x ≼ y → pcore x = some cx → ∃ cy, pcore y = some cy ∧ cx ≼ cy)
     {x cx : α} (e : pcore x = some cx) (y) : ∃ cy : α, pcore (x • y) = some (cx • cy) :=
   let ⟨_, hcy, z, hz⟩ := h (inc_op_left _ y) e
   ⟨z, hcy.trans (congrArg some hz)⟩
 
-theorem pcore_op_mono_of_core_mono [OFE SI α] [Op α] [PCore α] [IsTotal α]
+theorem pcore_op_mono_of_core_mono [Op α] [PCore α] [IsTotal α]
     (h : ∀ x y : α, x ≼ y → core x ≼ core y)
     {x cx : α} (e : pcore x = some cx) (y) : ∃ cy : α, pcore (x • y) = some (cx • cy) :=
-  pcore_op_mono_of_pcore_mono (SI := SI) (fun {x y cx} hxy e =>
+  pcore_op_mono_of_pcore_mono (fun {x y cx} hxy e =>
     have hcx : cx = core x := Option.some.inj (e.symm.trans (pcore_eq_core x))
     ⟨core y, pcore_eq_core y, hcx ▸ h x y hxy⟩) e y
 
@@ -906,7 +919,7 @@ theorem pcore_mono {x y : α} :
     x ≼ y → pcore x = some cx → ∃ cy, pcore y = some cy ∧ cx ≼ cy
   | ⟨_, hw⟩, e =>
     have ⟨z, hz⟩ := pcore_op_mono e _
-    let ⟨t, ht, et⟩ := OFE.equiv_some (SI := SI) ((congrArg pcore hw).trans hz)
+    let ⟨t, ht, et⟩ := OFE.equiv_some ((congrArg pcore hw).trans hz)
     ⟨t, ht, z, et⟩
 
 theorem pcore_mono' {x y : α} {cx} (le : x ≼ y) (e : pcore x = some cx) :
@@ -1000,10 +1013,13 @@ section
 open ORA
 variable [OFE SI α] [Op α] [OpNE SI α]
 
+omit [OpNE SI α] in
 theorem Included.incN {n : SI} {x y : α} : x ≼ y → x ≼{n} y := incN_of_inc _
 theorem Included.trans : (x : α) ≼ y → y ≼ z → x ≼ z := inc_trans
 theorem IncludedN.trans {n : SI} : (x : α) ≼{n} y → y ≼{n} z → x ≼{n} z := incN_trans
+omit [OpNE SI α] in
 theorem IncludedN.le {n n' : SI} {x y : α} : n' ≤ n → x ≼{n} y → x ≼{n'} y := incN_of_incN_le
+omit [OpNE SI α] in
 theorem IncludedN.succ {n : SI} {x y : α} : x ≼{succᵢ n} y → x ≼{n} y := incN_of_incN_succ
 
 end
@@ -1111,6 +1127,7 @@ theorem ordN_of_dist_of_ordN {n : SI} (e : (a : α) ≡{n}≡ b) (h : b ≼ₒ{n
 instance {n : SI} : Trans (Dist (α := α) n) (OrderN n) (OrderN n) where
   trans := ordN_of_dist_of_ordN
 
+omit [OFE SI α] [OrderedNE SI α] instSI in
 theorem _root_.Iris.Ordered.Order.ordN {n : SI} {x y : α} : x ≼ₒ[SI] y → x ≼ₒ{n} y := ordN_of_ord _
 
 theorem ordN_iff_left {n : SI} (e : (a : α) ≡{n}≡ b) : a ≼ₒ{n} c ↔ b ≼ₒ{n} c :=
@@ -1126,11 +1143,13 @@ theorem ordN_dist_iff {n : SI} (ea : (a : α) ≡{n}≡ a') (eb : (b : α) ≡{n
 theorem _root_.Iris.OFE.Dist.ordN {n : SI} :
     (a : α) ≡{n}≡ a' → b ≡{n}≡ b' → (a ≼ₒ{n} b ↔ a' ≼ₒ{n} b') := ordN_dist_iff
 
+omit [OFE SI α] [OrderedNE SI α] instSI in
 theorem _root_.Iris.Ordered.Order.trans : (x : α) ≼ₒ[SI] y → y ≼ₒ[SI] z → x ≼ₒ[SI] z := ord_trans
 
 instance instTransOrder : Trans (Order (SI := SI) (α := α)) (Order (SI := SI)) (Order (SI := SI)) where
   trans := ord_trans
 
+omit [OFE SI α] [OrderedNE SI α] instSI in
 theorem _root_.Iris.Ordered.OrderN.trans {n : SI} : (x : α) ≼ₒ{n} y → y ≼ₒ{n} z → x ≼ₒ{n} z := ordN_trans
 
 instance instTransOrderN {n : SI} : Trans (OrderN (α := α) n) (OrderN n) (OrderN n) where
@@ -1150,8 +1169,11 @@ theorem _root_.Iris.Ordered.OrderN.succ {n : SI} {x y : α} : x ≼ₒ{succᵢ n
 section ordRefl
 variable [OrderRefl SI α]
 
+omit [OFE SI α] [OrderedNE SI α] in
 theorem ordN_refl {n : SI} (x : α) : x ≼ₒ{n} x := (ord_refl x).ordN
+omit [OFE SI α] [OrderedNE SI α] in
 @[refl] theorem _root_.Iris.Ordered.Order.rfl {x : α} : x ≼ₒ[SI] x := ord_refl x
+omit [OFE SI α] [OrderedNE SI α] in
 @[refl] theorem _root_.Iris.Ordered.OrderN.rfl {n : SI} {x : α} : x ≼ₒ{n} x := ordN_refl x
 
 theorem ordN_of_dist {n : SI} {x y : α} (h : x ≡{n}≡ y) : x ≼ₒ{n} y := ordN_ne .rfl h (ordN_refl x)
@@ -2059,7 +2081,7 @@ namespace DiscreteFun
 variable {α : Type _} {β : α → Type _}
 
 @[rocq_alias discrete_fun_lookup_op]
-theorem op_apply [∀ x, ORA SI (β x)] [∀ x, IsTotal (β x)] (f g : ∀ x, β x) (x : α) :
+theorem op_apply [∀ x, ORA SI (β x)] (f g : ∀ x, β x) (x : α) :
     (f • g) x = f x • g x := rfl
 
 @[rocq_alias discrete_fun_lookup_core]
@@ -2081,10 +2103,12 @@ theorem ord_iff {f g : ∀ x, β x} : f ≼ₒ[SI] g ↔ ∀ x, f x ≼ₒ[SI] g
 
 theorem ordN_iff {n : SI} {f g : ∀ x, β x} : f ≼ₒ{n} g ↔ ∀ x, f x ≼ₒ{n} g x := .rfl
 
+omit [∀ x, IsTotal (β x)] in
 @[rocq_alias discrete_fun_included_spec_1]
 theorem inc_apply {f g : ∀ x, β x} : f ≼ g → ∀ x, f x ≼ g x
   | ⟨h, hh⟩, x => ⟨h x, congrFun hh x⟩
 
+omit [∀ x, IsTotal (β x)] in
 /-- Note: The finiteness assumption from Iris-Rocq is removed using choice. -/
 @[rocq_alias discrete_fun_included_spec]
 theorem inc_iff {f g : ∀ x, β x} : f ≼ g ↔ ∀ x, f x ≼ g x := by
@@ -2092,9 +2116,11 @@ theorem inc_iff {f g : ∀ x, β x} : f ≼ g ↔ ∀ x, f x ≼ g x := by
   obtain ⟨z, hz⟩ := Classical.skolem.mp h
   exact ⟨z, funext hz⟩
 
+omit [∀ x, IsTotal (β x)] in
 theorem incN_apply {n : SI} {f g : ∀ x, β x} : f ≼{n} g → ∀ x, f x ≼{n} g x
   | ⟨h, hh⟩, x => ⟨h x, hh x⟩
 
+omit [∀ x, IsTotal (β x)] in
 /-- Note: The finiteness assumption from Iris-Rocq is removed using choice. -/
 theorem incN_iff {n : SI} {f g : ∀ x, β x} : f ≼{n} g ↔ ∀ x, f x ≼{n} g x :=
   ⟨incN_apply, Classical.skolem.mp⟩
@@ -3119,11 +3145,11 @@ instance cmraProd : ORA SI (α × β) where
   pcore_op_left h :=
     let ⟨_, ha, ho⟩ := Option.bind_eq_some_iff.mp h
     let ⟨_, hb, hh⟩ := Option.bind_eq_some_iff.mp ho
-    (Option.some.inj hh) ▸ (equiv_prod_ext (SI := SI) (pcore_op_left ha) (pcore_op_left hb))
+    (Option.some.inj hh) ▸ (equiv_prod_ext (pcore_op_left ha) (pcore_op_left hb))
   extend := fun ⟨vx₁, vx₂⟩ e =>
     let ⟨z₁, w₁, hx₁, hz₁, hw₁⟩ := extend vx₁ (OFE.dist_fst e)
     let ⟨z₂, w₂, hx₂, hz₂, hw₂⟩ := extend vx₂ (OFE.dist_snd e)
-    ⟨(z₁, z₂), (w₁, w₂), equiv_prod_ext (SI := SI) hx₁ hx₂, ⟨hz₁, hz₂⟩, ⟨hw₁, hw₂⟩⟩
+    ⟨(z₁, z₂), (w₁, w₂), equiv_prod_ext hx₁ hx₂, ⟨hz₁, hz₂⟩, ⟨hw₁, hw₂⟩⟩
   toOrdered := raOrdered
   op_monoN_left_ord z h := ⟨op_monoN_left_ord z.1 h.1, op_monoN_left_ord z.2 h.2⟩
   op_mono_left_ord z h := ⟨op_mono_left_ord z.1 h.1, op_mono_left_ord z.2 h.2⟩
@@ -3445,7 +3471,7 @@ def Prod.mapC (f : A -C>[SI] A') (g : B -C>[SI] B') : A × B -C>[SI] A' × B' wh
       cases _ : ORA.pcore (f.f x.fst) <;>
       cases _ : ORA.pcore (g.f x.snd) <;>
       simp_all
-  op x y := equiv_prod_ext (SI := SI) (f.op x.fst y.fst) (g.op x.snd y.snd)
+  op x y := equiv_prod_ext (f.op x.fst y.fst) (g.op x.snd y.snd)
   monoN_ord h := ⟨f.monoN_ord h.1, g.monoN_ord h.2⟩
   mono_ord h := ⟨f.mono_ord h.1, g.mono_ord h.2⟩
   increasing h :=
@@ -3462,9 +3488,9 @@ instance instRFunctorProdOF [RFunctor SI F1] [RFunctor SI F2] : RFunctor SI (Pro
   map f g := Prod.mapC (map f g) (map f g)
   map_ne.ne _ _ _ Hx _ _ Hy _ :=
     Prod.map_ne (fun _ => map_ne.ne Hx Hy _) (fun _ => map_ne.ne Hx Hy _)
-  map_id _ := equiv_prod_ext (SI := SI) (map_id _) (map_id _)
+  map_id _ := equiv_prod_ext (map_id _) (map_id _)
   map_comp _ _ _ _ _ :=
-    equiv_prod_ext (SI := SI) (map_comp _ _ _ _ _) (map_comp _ _ _ _ _)
+    equiv_prod_ext (map_comp _ _ _ _ _) (map_comp _ _ _ _ _)
 
 instance instRFunctorAffineProdOF [RFunctor SI F1] [RFunctor SI F2] [RFunctorAffine SI F1]
     [RFunctorAffine SI F2] : RFunctorAffine SI (ProdOF (SI := SI) F1 F2) where
@@ -3483,9 +3509,9 @@ instance instURFunctorProdOF [URFunctor SI F1] [URFunctor SI F2] : URFunctor SI 
   map f g := Prod.mapC (URFunctor.map f g) (URFunctor.map f g)
   map_ne.ne _ _ _ Hx _ _ Hy _ :=
     Prod.map_ne (fun _ => URFunctor.map_ne.ne Hx Hy _) (fun _ => URFunctor.map_ne.ne Hx Hy _)
-  map_id _ := equiv_prod_ext (SI := SI) (URFunctor.map_id _) (URFunctor.map_id _)
+  map_id _ := equiv_prod_ext (URFunctor.map_id _) (URFunctor.map_id _)
   map_comp _ _ _ _ _ :=
-    equiv_prod_ext (SI := SI) (URFunctor.map_comp _ _ _ _ _) (URFunctor.map_comp _ _ _ _ _)
+    equiv_prod_ext (URFunctor.map_comp _ _ _ _ _) (URFunctor.map_comp _ _ _ _ _)
 
 @[rocq_alias prodURF_contractive]
 instance instURFunctorContractiveProdOF

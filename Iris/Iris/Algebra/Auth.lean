@@ -66,7 +66,7 @@ theorem authViewRel_exists_iff {n : SI} {b : A} : (∃ a, AuthViewRel n a b) ↔
   ⟨fun ⟨_, h⟩ => IsViewRel.rel_validN _ _ _ h, (⟨b, ⟨unit, by rw [unit_right_id]⟩, ·⟩)⟩
 
 @[rocq_alias auth_view_rel_discrete]
-instance [OFE.Discrete SI A] [ORA.Discrete SI A] : IsViewRelDiscrete (AuthViewRel (SI := SI) (A := A)) where
+instance [ORA.Discrete SI A] : IsViewRelDiscrete (AuthViewRel (SI := SI) (A := A)) where
   discrete _ _ _ := fun ⟨⟨c, h⟩, hv⟩ =>
     ⟨⟨c, ordN_of_ord _ (discrete_ord h)⟩, (discrete_valid hv).validN⟩
 

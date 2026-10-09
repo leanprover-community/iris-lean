@@ -512,13 +512,15 @@ instance [BIStepIndexed SI PROP] [SIdxFinite SI] : BIStepIndexed SI (MonPred I P
     forall_ne fun j => imp_ne.ne Dist.rfl (wand_ne.ne (dist_at.mp h j) (dist_at.mp h' j))⟩
   persistently_ne := ⟨fun _ _ _ h => dist_at.mpr fun i => persistently_ne.ne (dist_at.mp h i)⟩
   later_ne := ⟨fun _ _ _ h => dist_at.mpr fun i => later_ne.ne (dist_at.mp h i)⟩
-  later_sExists_false := @fun _ Φ => entails_at.mpr fun i => by
-    refine (later_sExists_false (SI := SI)).trans (or_mono_right ?_)
+
+instance [BILaterFinite PROP] : BILaterFinite (MonPred I PROP) where
+  later_sExists_false := @fun Φ => entails_at.mpr fun i => by
+    refine later_sExists_false.trans (or_mono_right ?_)
     refine exists_elim fun p => pure_elim_left fun ⟨q, hΦ, hq⟩ => ?_
     subst hq
     exact (and_intro (pure_intro hΦ) BIBase.Entails.rfl).trans
       (MonPred.sExists_at_intro (q := iprop(⌜Φ q⌝ ∧ ▷ q)) i ⟨q, rfl⟩)
-  later_sep_1 := entails_at.mpr fun _ => later_sep_1 (SI := SI)
+  later_sep_1 := entails_at.mpr fun _ => later_sep_1
 
 end BIInstance
 #rocq_ignore monPred_unseal "Rocq unsealing command."
@@ -1627,6 +1629,140 @@ end MonPred
 
 namespace MonPred
 
+/-! ### The plainly modality on `MonPred` (SI-free) -/
+
+section Plainly
+variable {I : BiIndex} {PROP : Type _} [BI PROP] [BIPlainly PROP]
+
+/-- `■ P` on `MonPred` is the constant predicate `∀ j, ■ P j`. -/
+def plainly (P : MonPred I PROP) : MonPred I PROP where
+  monPred_at _ := iprop(∀ j, ■ P.monPred_at j)
+  monPred_mono _ := .rfl
+
+private theorem plainly_forall_plain (P : MonPred I PROP) :
+    iprop(■ (∀ j, P.monPred_at j)) ⊣⊢ ∀ j, ■ P.monPred_at j := BI.plainly_forall
+
+instance : BIPlainly (MonPred I PROP) where
+  plainly := MonPred.plainly
+  plainly_mono h := entails_at.mpr fun _ => forall_mono fun j => plainly_mono (entails_at.mp h j)
+  plainly_elim_persistently := entails_at.mpr fun i =>
+    (forall_elim i).trans plainly_elim_persistently
+  plainly_idem_mpr {P} := entails_at.mpr fun _ => forall_intro fun _ =>
+    (forall_mono fun _ => plainly_idem_mpr).trans BI.plainly_forall.mpr
+  plainly_sForall_2 {Φ} := entails_at.mpr fun i => by
+    refine (monPred_at_forall i (fun p : MonPred I PROP => iprop(⌜Φ p⌝ → MonPred.plainly p))).mp.trans ?_
+    refine forall_intro fun j => .trans ?_ BIPlainly.plainly_sForall_2
+    refine forall_intro fun q => imp_intro_swap <| pure_elim_left fun ⟨p, hp, hq⟩ => ?_
+    subst hq
+    exact (forall_elim p).trans <| (monPred_impl_force i iprop(⌜Φ p⌝) (MonPred.plainly p)).trans <|
+      (pure_imp_elim hp).trans (forall_elim j)
+  plainly_impl_plainly {P Q} := entails_at.mpr fun i => by
+    refine (monPred_impl_force i (MonPred.plainly P) (MonPred.plainly Q)).trans ?_
+    refine forall_intro fun k => ?_
+    calc iprop((∀ j, ■ P.monPred_at j) → ∀ j, ■ Q.monPred_at j)
+      _ ⊢ (■ (∀ j, P.monPred_at j) → ■ (∀ j, Q.monPred_at j)) :=
+          imp_mono (plainly_forall_plain P).mp (plainly_forall_plain Q).mpr
+      _ ⊢ ■ (■ (∀ j, P.monPred_at j) → ∀ j, Q.monPred_at j) := plainly_impl_plainly
+      _ ⊢ ■ (∀ l, ⌜I.rel.le k l⌝ → (∀ j, ■ P.monPred_at j) → Q.monPred_at l) :=
+          plainly_mono <| forall_intro fun l => imp_intro_swap <| pure_elim_left fun _ =>
+            (imp_mono (plainly_forall_plain P).mpr (forall_elim l))
+  plainly_emp_intro := entails_at.mpr fun _ => forall_intro fun _ => plainly_emp_intro
+  plainly_absorb := entails_at.mpr fun _ => forall_intro fun j =>
+    (sep_mono_left (forall_elim j)).trans plainly_absorb
+  later_plainly := ⟨entails_at.mpr fun _ => later_forall.mp.trans (forall_mono fun _ => later_plainly.mp),
+    entails_at.mpr fun _ => (forall_mono fun _ => later_plainly.mpr).trans later_forall.mpr⟩
+  persistently_impl_plainly {P Q} := entails_at.mpr fun i => by
+    refine (monPred_impl_force i (MonPred.plainly P) iprop(<pers> Q)).trans ?_
+    calc iprop((∀ j, ■ P.monPred_at j) → <pers> Q.monPred_at i)
+      _ ⊢ (■ (∀ j, P.monPred_at j) → <pers> Q.monPred_at i) :=
+          imp_mono_left (plainly_forall_plain P).mp
+      _ ⊢ <pers> (■ (∀ j, P.monPred_at j) → Q.monPred_at i) := persistently_impl_plainly
+      _ ⊢ <pers> (∀ l, ⌜I.rel.le i l⌝ → (∀ j, ■ P.monPred_at j) → Q.monPred_at l) :=
+          persistently_mono <| forall_intro fun l => imp_intro_swap <| pure_elim_left fun hil =>
+            imp_mono (plainly_forall_plain P).mpr (Q.monPred_mono hil)
+  except0_plainly_2 := entails_at.mpr fun _ =>
+    (forall_mono fun _ => BIPlainly.except0_plainly_2).trans except0_forall.mpr
+
+@[rocq_alias monPred_at_plainly]
+theorem monPred_at_plainly (i : I.car) (P : MonPred I PROP) :
+    iprop(■ P).monPred_at i ⊣⊢ ∀ j, ■ (P.monPred_at j) := .rfl
+
+instance : BiEmbedPlainly PROP (MonPred I PROP) where
+  embed_plainly _ := ⟨entails_at.mpr fun _ => forall_intro fun _ => .rfl,
+    entails_at.mpr fun _ => forall_elim (default : I.car)⟩
+
+/-- `■` on `MonPred` commutes with existentials when the index has a bottom element. -/
+theorem monPred_plainly_exists {bot : I.car} [BiIndexBottom I bot] [BIPlainlyExists PROP] :
+    BIPlainlyExists (MonPred I PROP) where
+  plainly_sExists_1 {Φ} := entails_at.mpr fun i => by
+    refine (forall_elim bot).trans <| BIPlainlyExists.plainly_sExists_1.trans ?_
+    refine exists_elim fun q => pure_elim_left fun ⟨p, hp, hq⟩ => ?_
+    subst hq
+    refine .trans ?_ (monPred_at_exist i (fun p : MonPred I PROP => iprop(⌜Φ p⌝ ∧ ■ p))).mpr
+    refine exists_intro_trans p (and_intro (pure_intro hp) ?_)
+    exact forall_intro fun k => plainly_mono (p.monPred_mono (BiIndexBottom.bot_le k))
+
+instance [BIUpdate PROP] [BIBUpdatePlainly PROP] : BIBUpdatePlainly (MonPred I PROP) where
+  bupd_plainly := entails_at.mpr fun _ => forall_intro fun j =>
+    (BIUpdate.mono (forall_elim j)).trans bupd_plainly
+
+instance [BIFUpdate PROP] [BIFUpdatePlainly PROP] : BIFUpdatePlainly (MonPred I PROP) where
+  fupd_keep_plainly E2' P R := entails_at.mpr fun i =>
+    (and_mono (BIFUpdate.mono (forall_elim i))
+      (monPred_wand_force i P iprop(|={_,_}=> R))).trans
+      (BIFUpdatePlainly.fupd_keep_plainly E2' (P.monPred_at i) (R.monPred_at i))
+  fupd_plainly_later E P := entails_at.mpr fun i =>
+    (later_mono (BIFUpdate.mono (forall_elim i))).trans
+      (BIFUpdatePlainly.fupd_plainly_later E (P.monPred_at i))
+  fupd_plainly_sForall_2 E Φ := entails_at.mpr fun i => by
+    refine (monPred_at_forall i
+      (fun p : MonPred I PROP => iprop(⌜Φ p⌝ → |={E}=> MonPred.plainly p))).mp.trans ?_
+    refine .trans ?_ (BIFUpdatePlainly.fupd_plainly_sForall_2 E _)
+    refine forall_intro fun q => imp_intro_swap <| pure_elim_left fun ⟨p, hp, hq⟩ => ?_
+    subst hq
+    exact (forall_elim p).trans <|
+      (monPred_impl_force i iprop(⌜Φ p⌝) iprop(|={E}=> MonPred.plainly p)).trans <|
+      (pure_imp_elim hp).trans (BIFUpdate.mono (forall_elim i))
+
+/-! ### Objective and plain instances -/
+
+@[rocq_alias plainly_objective]
+instance plainly_objective (P : MonPred I PROP) : Objective iprop(■ P) where
+  objective_at _ _ := .rfl
+
+@[rocq_alias plainly_if_objective]
+instance plainly_if_objective (p : Bool) (P : MonPred I PROP) [Objective P] :
+    Objective iprop(■?p P) := by
+  cases p
+  · assumption
+  · exact plainly_objective P
+
+@[rocq_alias monPred_at_plain]
+instance monPred_at_plain (P : MonPred I PROP) [Plain P] (i : I.car) :
+    Plain (P.monPred_at i) where
+  plain := calc
+    _ ⊢ iprop(■ P).monPred_at i := entails_at.mp Plain.plain i
+    _ ⊢ ∀ j, ■ P.monPred_at j   := (monPred_at_plainly i P).mp
+    _ ⊢ ■ P.monPred_at i        := forall_elim i
+
+@[rocq_alias monPred_objectively_plain]
+instance monPred_objectively_plain (P : MonPred I PROP) [Plain P] :
+    Plain iprop(<obj> P) where
+  plain := entails_at.mpr fun i => calc
+    _ ⊢ ■ ∀ j, P.monPred_at j         := Plain.plain
+    _ ⊢ ∀ _, ■ ∀ j, P.monPred_at j    := forall_intro fun _ => .rfl
+    _ ⊢ iprop(■ <obj> P).monPred_at i := (monPred_at_plainly i iprop(<obj> P)).mpr
+
+@[rocq_alias monPred_subjectively_plain]
+instance monPred_subjectively_plain (P : MonPred I PROP) [Plain P] :
+    Plain iprop(<subj> P) where
+  plain := entails_at.mpr fun i => calc
+    _ ⊢ ■ ∃ j, P.monPred_at j          := Plain.plain
+    _ ⊢ ∀ _, ■ ∃ j, P.monPred_at j     := forall_intro fun _ => .rfl
+    _ ⊢ iprop(■ <subj> P).monPred_at i := (monPred_at_plainly i iprop(<subj> P)).mpr
+
+end Plainly
+
 /-! ### Step-indexed (SBI) structure on `MonPred` -/
 
 section Sbi
@@ -1732,17 +1868,17 @@ theorem monPred_at_internal_eq {A : Type _} [OFE SI A] (i : I.car) (a b : A) :
     (iprop(a ≡[SI] b) : MonPred I PROP).monPred_at i ⊣⊢ a ≡[SI] b :=
   .rfl
 
-@[rocq_alias monPred_at_plainly]
-theorem monPred_at_plainly (i : I.car) (P : MonPred I PROP) :
-    iprop(■ P).monPred_at i ⊣⊢ ∀ j, ■ (P.monPred_at j) := by
-  change (SiPure.siPure (SiEmpValid.siEmpValid P) : MonPred I PROP).monPred_at i ⊣⊢
-    ∀ j, ■ (P.monPred_at j)
-  change iprop(<si_pure> (SiEmpValid.siEmpValid iprop(∀ j, P.monPred_at j))) ⊣⊢
-    ∀ j, ■ (P.monPred_at j)
-  calc iprop(<si_pure> (SiEmpValid.siEmpValid iprop(∀ j, P.monPred_at j)))
-    _ ⊣⊢ <si_pure> (∀ j, <si_emp_valid> P.monPred_at j) := siPure_mono_bi siEmpValid_forall
-    _ ⊣⊢ ∀ j, <si_pure> <si_emp_valid> P.monPred_at j := siPure_forall
-    _ ⊣⊢ ∀ j, ■ (P.monPred_at j) := .rfl
+instance [BIPlainly PROP] [BIPlainlySbi SI PROP] : BIPlainlySbi SI (MonPred I PROP) where
+  plainly_siPure_siEmpValid {P} := by
+    refine ⟨entails_at.mpr fun _ => ?_, entails_at.mpr fun _ => ?_⟩
+    · change iprop(∀ j, ■ (P.monPred_at j)) ⊢
+        <si_pure> (SiEmpValid.siEmpValid (SI := SI) iprop(∀ j, P.monPred_at j))
+      exact (forall_mono fun _ => BIPlainlySbi.plainly_siPure_siEmpValid.mp).trans <|
+        siPure_forall.mpr.trans (siPure_mono siEmpValid_forall.mpr)
+    · change iprop(<si_pure> (SiEmpValid.siEmpValid (SI := SI) iprop(∀ j, P.monPred_at j))) ⊢
+        ∀ j, ■ (P.monPred_at j)
+      exact (siPure_mono siEmpValid_forall.mp).trans <| siPure_forall.mp.trans <|
+        forall_mono fun _ => BIPlainlySbi.plainly_siPure_siEmpValid.mpr
 
 omit [Sbi SI PROP] [SIdxFinite SI] in
 @[rocq_alias monPred_equivI]
@@ -1768,41 +1904,6 @@ instance siPure_objective (Pi : SiProp SI) : Objective (iprop(<si_pure> Pi) : Mo
 instance internal_eq_objective {A : Type _} [OFE SI A] (x y : A) :
     Objective (iprop(x ≡[SI] y) : MonPred I PROP) where
   objective_at _ _ := .rfl
-
-@[rocq_alias plainly_objective]
-instance plainly_objective (P : MonPred I PROP) : Objective iprop(■ P) where
-  objective_at _ _ := .rfl
-
-@[rocq_alias plainly_if_objective]
-instance plainly_if_objective (p : Bool) (P : MonPred I PROP) [Objective P] :
-    Objective iprop(■?p P) := by
-  cases p
-  · assumption
-  · exact plainly_objective P
-
-@[rocq_alias monPred_at_plain]
-instance monPred_at_plain (P : MonPred I PROP) [Plain P] (i : I.car) :
-    Plain (P.monPred_at i) where
-  plain := calc
-    _ ⊢ iprop(■ P).monPred_at i := entails_at.mp Plain.plain i
-    _ ⊢ ∀ j, ■ P.monPred_at j   := (monPred_at_plainly i P).mp
-    _ ⊢ ■ P.monPred_at i        := forall_elim i
-
-@[rocq_alias monPred_objectively_plain]
-instance monPred_objectively_plain (P : MonPred I PROP) [Plain P] :
-    Plain iprop(<obj> P) where
-  plain := entails_at.mpr fun i => calc
-    _ ⊢ ■ ∀ j, P.monPred_at j         := Plain.plain
-    _ ⊢ ∀ _, ■ ∀ j, P.monPred_at j    := forall_intro fun _ => .rfl
-    _ ⊢ iprop(■ <obj> P).monPred_at i := (monPred_at_plainly i iprop(<obj> P)).mpr
-
-@[rocq_alias monPred_subjectively_plain]
-instance monPred_subjectively_plain (P : MonPred I PROP) [Plain P] :
-    Plain iprop(<subj> P) where
-  plain := entails_at.mpr fun i => calc
-    _ ⊢ ■ ∃ j, P.monPred_at j          := Plain.plain
-    _ ⊢ ∀ _, ■ ∃ j, P.monPred_at j     := forall_intro fun _ => .rfl
-    _ ⊢ iprop(■ <subj> P).monPred_at i := (monPred_at_plainly i iprop(<subj> P)).mpr
 
 /-! ### `SbiEmpValidExist` for `MonPred` -/
 

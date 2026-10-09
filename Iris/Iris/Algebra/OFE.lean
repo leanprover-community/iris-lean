@@ -483,20 +483,20 @@ instance [OFE SI α] [OFE.Discrete SI α] : OFE.Discrete SI (Option α) where
     | some _, none   => e.elim
     | some _, some _ => congrArg some (discrete_0 e)
 
-@[simp] theorem some_eqv_some [OFE SI α] {x y : α} : (some x = some y) ↔ x = y :=
+@[simp] theorem some_eqv_some {x y : α} : (some x = some y) ↔ x = y :=
   ⟨Option.some.inj, congrArg some⟩
-@[simp] theorem not_some_eqv_none [OFE SI α] {x : α} : ¬some x = none := Option.some_ne_none x
-@[simp] theorem not_none_eqv_some [OFE SI α] {x : α} : ¬none = some x := fun h => Option.some_ne_none x h.symm
+@[simp] theorem not_some_eqv_none {x : α} : ¬some x = none := Option.some_ne_none x
+@[simp] theorem not_none_eqv_some {x : α} : ¬none = some x := fun h => Option.some_ne_none x h.symm
 
 @[simp, rocq_alias dist_Some]
 theorem some_dist_some [OFE SI α] {n : SI} {x y : α} : (some x ≡{n}≡ some y) ↔ x ≡{n}≡ y := .rfl
 @[simp] theorem not_some_dist_none [OFE SI α] {n : SI} {x : α} : ¬some x ≡{n}≡ none := id
 @[simp] theorem not_none_dist_some [OFE SI α] {n : SI} {x : α} : ¬none ≡{n}≡ some x := id
 
-theorem equiv_some [OFE SI α] {o : Option α} {y : α} (e : o = some y) :
+theorem equiv_some {o : Option α} {y : α} (e : o = some y) :
     ∃ z, o = some z ∧ z = y := ⟨y, e, rfl⟩
 
-theorem equiv_none [OFE SI α] {o : Option α} : o = none ↔ o = none := Iff.rfl
+theorem equiv_none {o : Option α} : o = none ↔ o = none := Iff.rfl
 
 @[rocq_alias dist_None]
 theorem dist_none {n : SI} [OFE SI α] {o : Option α} : o ≡{n}≡ none ↔ o = none :=
@@ -539,7 +539,7 @@ theorem dist_some_inv_l' [OFE SI α] {n : SI} {my : Option α} {x} (h : some x �
 #rocq_ignore is_Some_ne "`Proper (dist n ==> iff)` setoid instance; not needed in Lean."
 
 @[rocq_alias fmap_Some_dist]
-theorem fmap_some_dist [OFE SI α] [OFE SI β] (f : α → β) {mx : Option α} {y : β} {n : SI} :
+theorem fmap_some_dist [OFE SI β] (f : α → β) {mx : Option α} {y : β} {n : SI} :
     (Option.map f mx ≡{n}≡ some y) ↔ ∃ x, mx = some x ∧ y ≡{n}≡ f x := by
   refine ⟨fun h => ?_, ?_⟩
   · match mx with
@@ -553,7 +553,7 @@ instance [OFE SI α] [Discrete SI α] : Discrete SI (Option α) where
   discrete_0 {x y} H :=
     match x, y with
     | none, none => rfl
-    | some _, some _ => (some_eqv_some (SI := SI)).mpr (discrete_0 H)
+    | some _, some _ => (some_eqv_some).mpr (discrete_0 H)
     | none, some _ => H.elim
     | some _, none => H.elim
 
@@ -589,12 +589,12 @@ instance Option.bind_fun_ne [OFE SI α] [OFE SI β] (f : α → Option β) [NonE
     | some _ => (dist_some Hx).choose_spec.left ▸ (NonExpansive.ne (f := f) (dist_some Hx).choose_spec.right.symm)
     | none => (dist_none.mp Hx).symm ▸ .rfl
 
-theorem Option.bind_dist {n : SI} [OFE SI α] [OFE SI β] {x : Option α} {f g : α → Option β} (H : ∀ x, f x ≡{n}≡ g x) : Option.bind x f ≡{n}≡ Option.bind x g :=
+theorem Option.bind_dist {n : SI} [OFE SI β] {x : Option α} {f g : α → Option β} (H : ∀ x, f x ≡{n}≡ g x) : Option.bind x f ≡{n}≡ Option.bind x g :=
   match x with
   | some _ => H _
   | none => .rfl
 
-theorem Option.bind_equiv [OFE SI α] [OFE SI β] {x : Option α} {f g : α → Option β} (H : ∀ x, f x = g x) : Option.bind x f = Option.bind x g :=
+theorem Option.bind_equiv {x : Option α} {f g : α → Option β} (H : ∀ x, f x = g x) : Option.bind x f = Option.bind x g :=
   match x with
   | some _ => H _
   | none => rfl
@@ -713,9 +713,9 @@ instance [OFE SI α] [OFE SI β] : OFE SI (α × β) where
 #rocq_ignore prodO "Use product type"
 #rocq_ignore prod_dist "Implicit in Prod OFE"
 
-theorem equiv_fst [OFE SI α] [OFE SI β] {x y : α × β} (h : x = y) : x.fst = y.fst := congrArg Prod.fst h
-theorem equiv_snd [OFE SI α] [OFE SI β] {x y : α × β} (h : x = y) : x.snd = y.snd := congrArg Prod.snd h
-theorem equiv_prod_ext [OFE SI α] [OFE SI β] {x₁ x₂ : α} {y₁ y₂ : β}
+theorem equiv_fst {x y : α × β} (h : x = y) : x.fst = y.fst := congrArg Prod.fst h
+theorem equiv_snd {x y : α × β} (h : x = y) : x.snd = y.snd := congrArg Prod.snd h
+theorem equiv_prod_ext {x₁ x₂ : α} {y₁ y₂ : β}
     (ex : x₁ = x₂) (ey : y₁ = y₂) : (x₁, y₁) = (x₂, y₂) := by subst ex; subst ey; rfl
 
 theorem dist_fst {n : SI} [OFE SI α] [OFE SI β] {x y : α × β} (h : x ≡{n}≡ y) : x.fst ≡{n}≡ y.fst := h.left
@@ -965,7 +965,7 @@ instance instDiscreteSigma {P : α → Type _} [∀ x, OFE SI (P x)] [∀ x, Dis
     | ⟨x, xH⟩, ⟨y, yH⟩, ⟨heq, H⟩ => by simp only at heq; subst heq; exact congrArg _ (discrete_0 H)
 
 @[rocq_alias sigT_equiv_eq_alt]
-theorem Sigma.equiv_eq_alt {P : α → Type _} [∀ x, OFE SI (P x)] {x1 x2 : Sigma P} :
+theorem Sigma.equiv_eq_alt {P : α → Type _} {x1 x2 : Sigma P} :
     x1 = x2 ↔ ∃ heq : x1.fst = x2.fst, heq ▸ x1.snd = x2.snd := by
   refine ⟨fun h => h ▸ ⟨rfl, rfl⟩, fun ⟨heq, h⟩ => ?_⟩
   obtain ⟨x1f, x1s⟩ := x1; obtain ⟨x2f, x2s⟩ := x2
@@ -984,7 +984,7 @@ theorem Sigma.dist_proj1 {P : α → Type _} [∀ x, OFE SI (P x)] {n : SI} {x y
     (h : x ≡{n}≡ y) : x.fst = y.fst := h.1
 
 @[rocq_alias sigT_equiv_proj1]
-theorem Sigma.equiv_proj1 {P : α → Type _} [∀ x, OFE SI (P x)] {x y : Sigma P}
+theorem Sigma.equiv_proj1 {P : α → Type _} {x y : Sigma P}
     (h : x = y) : x.fst = y.fst := congrArg Sigma.fst h
 
 @[rocq_alias projT1_ne]
@@ -1006,7 +1006,7 @@ theorem Sigma.dist_snd {P : α → Type _} [∀ x, IOFE SI (P x)] {n : SI} {x y 
     (h : x ≡{n}≡ y) : Sigma.dist_fst h ▸ x.snd ≡{n}≡ y.snd := h.2
 
 @[rocq_alias projT2_proper]
-theorem Sigma.equiv_snd {P : α → Type _} [∀ x, OFE SI (P x)] {x y : Sigma P}
+theorem Sigma.equiv_snd {P : α → Type _} {x y : Sigma P}
     (h : x = y) : congrArg Sigma.fst h ▸ x.snd = y.snd := by
   subst h; rfl
 
@@ -1016,7 +1016,7 @@ theorem Sigma.mk_dist {P : α → Type _} [∀ x, OFE SI (P x)] {n : SI} {i1 i2 
   ⟨heq, h⟩
 
 @[rocq_alias existT_proper]
-theorem Sigma.mk_equiv {P : α → Type _} [∀ x, OFE SI (P x)] {i1 i2 : α} {v1 : P i1} {v2 : P i2}
+theorem Sigma.mk_equiv {P : α → Type _} {i1 i2 : α} {v1 : P i1} {v2 : P i2}
     (heq : i1 = i2) (h : heq ▸ v1 = v2) : Sigma.mk i1 v1 = Sigma.mk i2 v2 := by
   subst heq; subst h; rfl
 
@@ -1392,7 +1392,7 @@ instance instIsCOFESum [OFE SI α] [OFE SI β] [IsCOFE SI α] [IsCOFE SI β] : I
 #rocq_ignore sum_compl "Local Compl definition; folded into Lean's IsCOFE instance."
 
 @[rocq_alias sigT_chain_const_proj1]
-theorem Sigma.chain_const_proj1 {P : α → Type _} [∀ x, OFE SI (P x)] [∀ x, IsCOFE SI (P x)]
+theorem Sigma.chain_const_proj1 {P : α → Type _} [∀ x, OFE SI (P x)]
     (c : Chain SI (Sigma P)) n : (c n).fst = (c 0).fst :=
   (c.cauchy SIdx.le_0_l).choose
 
@@ -1437,7 +1437,7 @@ theorem Sigma.cast_cast {P : α → Type _} {a b c : α} (h1 : a = b) (h2 : b = 
   subst h1; subst h2; rfl
 
 @[rocq_alias chain_map_snd]
-def Sigma.chain_map_snd {P : α → Type _} [∀ x, OFE SI (P x)] [∀ x, IsCOFE SI (P x)] (c : Chain SI (Sigma P)) :
+def Sigma.chain_map_snd {P : α → Type _} [∀ x, OFE SI (P x)] (c : Chain SI (Sigma P)) :
     Chain SI (P (c 0).fst) where
   chain n := Sigma.chain_const_proj1 c n ▸ (c n).snd
   cauchy {n : SI} {i} hle :=
@@ -1724,11 +1724,11 @@ instance oFunctorOption [OFunctor SI F] : OFunctor SI (OptionOF (SI := SI) F) wh
   map_id z := by
     cases z with
     | none => rfl
-    | some c => exact (some_eqv_some (SI := SI)).mpr (OFunctor.map_id (SI := SI) c)
+    | some c => exact (some_eqv_some).mpr (OFunctor.map_id (SI := SI) c)
   map_comp f g f' g' z := by
     cases z with
     | none => rfl
-    | some c => exact (some_eqv_some (SI := SI)).mpr (OFunctor.map_comp f g f' g' c)
+    | some c => exact (some_eqv_some).mpr (OFunctor.map_comp f g f' g' c)
 
 @[rocq_alias optionOF_contractive]
 instance [OFunctorContractive SI F] : OFunctorContractive SI (OptionOF (SI := SI) F) where
@@ -1781,8 +1781,8 @@ instance instOFunctorProdOF [OFunctor SI F1] [OFunctor SI F2] : OFunctor SI (Pro
   ofe := inferInstance
   map f g := Prod.mapO (map f g) (map f g)
   map_ne.ne _ _ _ Hx _ _ Hy _ := ⟨map_ne.ne Hx Hy _, map_ne.ne Hx Hy _⟩
-  map_id _ := equiv_prod_ext (SI := SI) (map_id _) (map_id _)
-  map_comp _ _ _ _ _ := equiv_prod_ext (SI := SI) (map_comp _ _ _ _ _) (map_comp _ _ _ _ _)
+  map_id _ := equiv_prod_ext (map_id _) (map_id _)
+  map_comp _ _ _ _ _ := equiv_prod_ext (map_comp _ _ _ _ _) (map_comp _ _ _ _ _)
 
 open OFunctorContractive in
 @[rocq_alias prodOF_contractive]
@@ -2292,7 +2292,7 @@ instance ne₂_of_contractive [OFE SI α] [OFE SI β] [OFE SI γ] (fB : α -c>[S
     apply fB.ne.ne Hx
 
 @[rocq_alias fixpoint_AB]
-def fixpointAB [COFE SI α] [COFE SI β] [Inhabited α] [Inhabited β] (fB : α -c>[SI] β -c>[SI] β) (x : α) : β := by
+def fixpointAB [COFE SI α] [COFE SI β] [Inhabited β] (fB : α -c>[SI] β -c>[SI] β) (x : α) : β := by
   let con_hom : β -c>[SI] β := {
     f := fB x,
     contractive := ⟨fB.f x |>.contractive.distLater_dist⟩
@@ -2300,7 +2300,7 @@ def fixpointAB [COFE SI α] [COFE SI β] [Inhabited α] [Inhabited β] (fB : α 
   exact con_hom.fixpoint
 
 @[rocq_alias fixpoint_AB_contractive]
-theorem fixpointAB_contractive [COFE SI α] [COFE SI β] [Inhabited α] [Inhabited β] (fB : α -c>[SI] β -c>[SI] β) :
+theorem fixpointAB_contractive [COFE SI α] [COFE SI β] [Inhabited β] (fB : α -c>[SI] β -c>[SI] β) :
     Contractive SI (fixpointAB fB) where
   distLater_dist {n : SI} {_ _} Dl := by
     apply ContractiveHom.fixpoint_ne.ne
@@ -2308,12 +2308,12 @@ theorem fixpointAB_contractive [COFE SI α] [COFE SI β] [Inhabited α] [Inhabit
     exact Dl
 
 @[rocq_alias fixpoint_AA]
-def fixpointAA [COFE SI α] [COFE SI β] [Inhabited α] [Inhabited β] (fA : α -c>[SI] β -n>[SI] α)
+def fixpointAA [COFE SI α] [COFE SI β] [Inhabited β] (fA : α -c>[SI] β -n>[SI] α)
     (fB : α -c>[SI] β -c>[SI] β) (x : α) : α :=
   fA x (fixpointAB fB x)
 
 @[rocq_alias fixpoint_AA_contractive]
-theorem fixpointAA_contractive [COFE SI α] [COFE SI β] [Inhabited α] [Inhabited β]
+theorem fixpointAA_contractive [COFE SI α] [COFE SI β] [Inhabited β]
     (fA : α -c>[SI] β -n>[SI] α) (fB : α -c>[SI] β -c>[SI] β) : Contractive SI (fixpointAA fA fB) where
   distLater_dist {_ _ x₂} Dl := by
     refine .trans ?_ ((fA.f x₂).ne.ne ((fixpointAB_contractive fB).distLater_dist Dl))

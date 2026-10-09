@@ -64,21 +64,21 @@ instance (priority := high) isOpSplit_op [ORA SI α] (a b : α) : IsOp SI .split
 instance isOp_pair [ORA SI α] {d : IsOp.Direction} (a b1 b2 : α) (a' b1' b2' : α)
     [h1 : IsOp SI d a b1 b2] [h2 : IsOp SI d a' b1' b2'] :
     IsOp SI d (a, a') (b1, b1') (b2, b2') where
-  is_op := OFE.equiv_prod_ext (SI := SI) h1.is_op h2.is_op
+  is_op := OFE.equiv_prod_ext h1.is_op h2.is_op
 
 set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias is_op_pair_core_id_l]
 instance isOp_pair_core_id_l [ORA SI α] [ORA SI β] {d : IsOp.Direction}
     (a : α) (a' b1' b2' : β) [h1 : CoreId a] [h2 : IsOp SI d a' b1' b2'] :
     IsOp SI d (a, a') (a, b1') (a, b2') where
-  is_op := OFE.equiv_prod_ext (SI := SI) (op_self a).symm h2.is_op
+  is_op := OFE.equiv_prod_ext (op_self a).symm h2.is_op
 
 set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias is_op_pair_core_id_r]
 instance isOp_pair_core_id_r [ORA SI α] [ORA SI β] {d : IsOp.Direction}
     (a b1 b2 : α) (a' : β) [h1 : CoreId a'] [h2 : IsOp SI d a b1 b2] :
     IsOp SI d (a, a') (b1, a') (b2, a') where
-  is_op := OFE.equiv_prod_ext (SI := SI) h2.is_op (op_self a').symm
+  is_op := OFE.equiv_prod_ext h2.is_op (op_self a').symm
 
 @[rocq_alias is_op_Some]
 instance isOp_some [ORA SI α] (a b1 b2 : α) {d : IsOp.Direction}

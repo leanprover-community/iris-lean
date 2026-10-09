@@ -170,17 +170,15 @@ instance intoAnd_except0 [BI PROP] [BIPersistentlyExist PROP]
 
 /-! ### IntoSep -/
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_sep_later]
-instance intoSep_later [BI PROP] [BIStepIndexed SI PROP] [SIdxFinite SI] (P Q1 Q2 : PROP)
+instance intoSep_later [BI PROP] [BILaterFinite PROP] (P Q1 Q2 : PROP)
     [h : IntoSep P Q1 Q2] : IntoSep iprop(▷ P) iprop(▷ Q1) iprop(▷ Q2) where
-  into_sep := (later_mono h.1).trans (later_sep (SI := SI)).1
+  into_sep := (later_mono h.1).trans (later_sep).1
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_sep_laterN]
-instance intoSep_laterN [BI PROP] [BIStepIndexed SI PROP] [SIdxFinite SI] (n : Nat) (P Q1 Q2 : PROP)
+instance intoSep_laterN [BI PROP] [BILaterFinite PROP] (n : Nat) (P Q1 Q2 : PROP)
     [h : IntoSep P Q1 Q2] : IntoSep iprop(▷^[n] P) iprop(▷^[n] Q1) iprop(▷^[n] Q2) where
-  into_sep := (laterN_mono n h.1).trans (laterN_sep (SI := SI) n).1
+  into_sep := (laterN_mono n h.1).trans (laterN_sep n).1
 
 @[rocq_alias into_sep_except_0]
 instance intoSep_except0 [BI PROP] (P Q1 Q2 : PROP)
@@ -188,9 +186,8 @@ instance intoSep_except0 [BI PROP] (P Q1 Q2 : PROP)
   into_sep := (except0_mono h.1).trans except0_sep.1
 
 /- FIXME: This instance is overly specific, generalize it. -/
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_sep_affinely_later]
-instance intoSep_affinely_later [BI PROP] [BIStepIndexed SI PROP] [SIdxFinite SI] [Timeless (emp : PROP)]
+instance intoSep_affinely_later [BI PROP] [BILaterFinite PROP] [Timeless (emp : PROP)]
     (P Q1 Q2 : PROP) [inst : IntoSep P Q1 Q2] [Affine Q1] [Affine Q2] :
     IntoSep iprop(<affine> ▷ P) iprop(<affine> ▷ Q1) iprop(<affine> ▷ Q2) where
   into_sep := by
@@ -198,7 +195,7 @@ instance intoSep_affinely_later [BI PROP] [BIStepIndexed SI PROP] [SIdxFinite SI
       (later_mono (affine_affinely Q).mpr).trans later_affinely_mp
     calc
       _ ⊢ <affine> ▷ (Q1 ∗ Q2)    := affinely_mono <| later_mono inst.into_sep
-      _ ⊢ <affine> (▷ Q1 ∗ ▷ Q2) := affinely_mono (later_sep (SI := SI)).mp
+      _ ⊢ <affine> (▷ Q1 ∗ ▷ Q2) := affinely_mono (later_sep).mp
       _ ⊢ <affine> (◇ <affine> ▷ Q1 ∗ ◇ <affine> ▷ Q2) :=
           affinely_mono <| sep_mono (step Q1) (step Q2)
       _ ⊢ <affine> ◇ (<affine> ▷ Q1 ∗ <affine> ▷ Q2) := affinely_mono except0_sep.mpr
@@ -229,17 +226,15 @@ instance fromOr_except0 [BI PROP] (P Q1 Q2 : PROP)
 
 /-! ### IntoOr -/
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_or_later]
-instance intoOr_later [BI PROP] [BIStepIndexed SI PROP] [SIdxFinite SI] (P Q1 Q2 : PROP)
+instance intoOr_later [BI PROP] [BILaterFinite PROP] (P Q1 Q2 : PROP)
     [h : IntoOr P Q1 Q2] : IntoOr iprop(▷ P) iprop(▷ Q1) iprop(▷ Q2) where
-  into_or := (later_mono h.1).trans (later_or (SI := SI)).1
+  into_or := (later_mono h.1).trans (later_or).1
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_or_laterN]
-instance intoOr_laterN [BI PROP] [BIStepIndexed SI PROP] [SIdxFinite SI] (n : Nat) (P Q1 Q2 : PROP)
+instance intoOr_laterN [BI PROP] [BILaterFinite PROP] (n : Nat) (P Q1 Q2 : PROP)
     [h : IntoOr P Q1 Q2] : IntoOr iprop(▷^[n] P) iprop(▷^[n] Q1) iprop(▷^[n] Q2) where
-  into_or := (laterN_mono n h.1).trans (laterN_or (SI := SI) n).1
+  into_or := (laterN_mono n h.1).trans (laterN_or n).1
 
 @[rocq_alias into_or_except_0]
 instance intoOr_except0 [BI PROP] (P Q1 Q2 : PROP)
@@ -265,17 +260,15 @@ instance fromExists_except0 [BI PROP] (P : PROP) (Φ : α → PROP)
 
 /-! ### IntoExists -/
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_exist_later]
-instance intoExists_later [BI PROP] [BIStepIndexed SI PROP] [SIdxFinite SI] [Inhabited α] (P : PROP) (Φ : α → PROP)
+instance intoExists_later [BI PROP] [BILaterFinite PROP] [Inhabited α] (P : PROP) (Φ : α → PROP)
     [h : IntoExists P Φ] : IntoExists iprop(▷ P) (fun a => iprop(▷ Φ a)) where
-  into_exists := (later_mono h.1).trans (later_exists (SI := SI)).2
+  into_exists := (later_mono h.1).trans (later_exists).2
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_exist_laterN]
-instance intoExists_laterN [BI PROP] [BIStepIndexed SI PROP] [SIdxFinite SI] [Inhabited α] (n : Nat) (P : PROP) (Φ : α → PROP)
+instance intoExists_laterN [BI PROP] [BILaterFinite PROP] [Inhabited α] (n : Nat) (P : PROP) (Φ : α → PROP)
     [h : IntoExists P Φ] : IntoExists iprop(▷^[n] P) (fun a => iprop(▷^[n] Φ a)) where
-  into_exists := (laterN_mono n h.1).trans (laterN_exists (SI := SI) n).1
+  into_exists := (laterN_mono n h.1).trans (laterN_exists n).1
 
 @[rocq_alias into_exist_except_0]
 instance intoExists_except0 [BI PROP] [Inhabited α] (P : PROP) (Φ : α → PROP)

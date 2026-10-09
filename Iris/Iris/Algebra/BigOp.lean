@@ -225,8 +225,9 @@ theorem bigOpL_gen_proper (R : M → M → Prop) {Φ Ψ : Nat → A → M} {l : 
 
 #rocq_ignore big_opL_ext "Merged into bigOpL_eq"
 
+omit [OFE SI M] in
 @[rocq_alias big_opL_proper_2]
-theorem bigOpL_proper_2 [OFE SI A] {Φ Ψ : Nat → A → M} {l₁ l₂ : List A} (hlen : l₁.length = l₂.length)
+theorem bigOpL_proper_2 {Φ Ψ : Nat → A → M} {l₁ l₂ : List A} (hlen : l₁.length = l₂.length)
     (hf : ∀ {k y₁ y₂}, l₁[k]? = some y₁ → l₂[k]? = some y₂ → Φ k y₁ = Ψ k y₂) :
     ([^ op list] k ↦ x ∈ l₁, Φ k x) = ([^ op list] k ↦ x ∈ l₂, Ψ k x) :=
   bigOpL_gen_proper_2 (· = ·) rfl (· ▸ · ▸ rfl) hlen hf
@@ -434,8 +435,9 @@ theorem bigOpM_eq {Φ Ψ : K → V → M} {m : M' V} (hf : ∀ {k x}, get? m k =
     ([^ op map] k ↦ x ∈ m, Φ k x) = ([^ op map] k ↦ x ∈ m, Ψ k x) :=
   bigOpM_gen_proper rfl (· ▸ · ▸ rfl) hf
 
+omit [OFE SI M] in
 @[rocq_alias big_opM_proper_2]
-theorem bigOpM_eq_strong [OFE SI A] {Φ Ψ : K → A → M} {m1 m2 : M' A} (hm : ∀ k, get? m1 k = get? m2 k)
+theorem bigOpM_eq_strong {Φ Ψ : K → A → M} {m1 m2 : M' A} (hm : ∀ k, get? m1 k = get? m2 k)
     (hf : ∀ {k y1 y2}, get? m1 k = some y1 → get? m2 k = some y2 → y1 = y2 → Φ k y1 = Ψ k y2) :
     ([^ op map] k ↦ x ∈ m1, Φ k x) = ([^ op map] k ↦ x ∈ m2, Ψ k x) :=
   bigOpM_gen_proper_2 id equivalence_eq (· ▸ · ▸ rfl) (fun k => by rw [hm k])
@@ -467,7 +469,7 @@ theorem bigOpM_singleton_eq (Φ : K → V → M) (i : K) (x : V) :
   simpa only [bigOpM_empty] using op_right_id
 
 @[rocq_alias big_opM_unit]
-theorem bigOpM_const_unit_eq [DecidableEq K] (m : M' V) :
+theorem bigOpM_const_unit_eq (m : M' V) :
     bigOpM op (fun _ _ => unit) m = unit :=
   bigOpL_const_unit_eq
 
@@ -525,7 +527,7 @@ theorem bigOpM_filter_eq (φ : K → V → Bool) (Φ : K → V → M) (m : M' V)
   (bigOpL_eq_of_perm _ LawfulFiniteMap.toList_filter).trans
     (bigOpL_filter_eq (fun (k, v) => φ k v) (fun (k, v) => Φ k v) _)
 
-theorem toList_union_perm [DecidableEq K] {m1 m2 : M' V} (hdisj : m1 ##ₘ m2) :
+theorem toList_union_perm {m1 m2 : M' V} (hdisj : m1 ##ₘ m2) :
     (toList (m1 ∪ m2)).Perm (toList m1 ++ toList m2) := by
   refine (List.perm_ext_iff_of_nodup LawfulFiniteMap.nodup_toList ?_).mpr fun ⟨k, v⟩ => ?_
   · refine List.nodup_append.mpr ⟨LawfulFiniteMap.nodup_toList, LawfulFiniteMap.nodup_toList, ?_⟩
@@ -550,7 +552,7 @@ theorem toList_union_perm [DecidableEq K] {m1 m2 : M' V} (hdisj : m1 ##ₘ m2) :
         · exact absurd (toList_get.mp h) (by simp [h1])
 
 @[rocq_alias big_opM_union]
-theorem bigOpM_union_eq [DecidableEq K] (Φ : K → V → M) (m1 m2 : M' V) (hdisj : m1 ##ₘ m2) :
+theorem bigOpM_union_eq (Φ : K → V → M) (m1 m2 : M' V) (hdisj : m1 ##ₘ m2) :
     ([^ op map] k ↦ x ∈ m1 ∪ m2, Φ k x) =
     op ([^ op map] k ↦ x ∈ m1, Φ k x) ([^ op map] k ↦ x ∈ m2, Φ k x) := by
   refine .trans (bigOpL_eq_of_perm _ (toList_union_perm hdisj)) ?_

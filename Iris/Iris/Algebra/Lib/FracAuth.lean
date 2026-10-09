@@ -225,7 +225,7 @@ theorem auth_op_validN {n : SI} {a b : A} (h : ✓{n} (●F a : FracAuth (SI := 
 theorem auth_dfrac_op_valid {dq1 dq2 : DFrac} {a b : A} (h : ✓[SI] (●F{dq1} a : FracAuth (SI := SI)) • ●F{dq2} b) :
     ✓[SI] (dq1 • dq2) ∧ a = b := by
   rw [Auth.auth_dfrac_op_valid] at h
-  exact ⟨h.1, (Prod.mk.injEq .. ▸ (OFE.some_eqv_some (SI := SI)).mp h.2.1).2⟩
+  exact ⟨h.1, (Prod.mk.injEq .. ▸ (OFE.some_eqv_some).mp h.2.1).2⟩
 
 @[rocq_alias frac_auth_auth_op_valid]
 theorem auth_op_valid {a b : A} (h : ✓[SI] (●F a : FracAuth (SI := SI)) • ●F b) : False :=

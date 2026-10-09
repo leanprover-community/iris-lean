@@ -334,7 +334,7 @@ instance intoForall_intuitionistically [BI PROP] (P : PROP) (Φ : α → PROP)
   into_forall := (intuitionistically_mono h.1).trans intuitionistically_forall
 
 @[rocq_alias into_forall_persistently]
-instance intoForall_persistently [BI PROP] [BIPersistentlyForall PROP]
+instance intoForall_persistently [BI PROP]
     (P : PROP) (Φ : α → PROP)
     [h : IntoForall P Φ] : IntoForall iprop(<pers> P) (fun a => iprop(<pers> (Φ a))) where
   into_forall := (persistently_mono h.1).trans persistently_forall_mp
@@ -948,7 +948,7 @@ instance (priority := default - 10) intoPersistently_persistent [BI PROP] (P : P
 
 /-! ### FromAffinely -/
 
-@[ipm_backtrack, rocq_alias from_affinely_affine]
+@[nolint unusedArguments, ipm_backtrack, rocq_alias from_affinely_affine]
 instance fromAffinely_affine [BI PROP] (P : PROP) [Affine P] : FromAffinely P P true where
   from_affinely := affinely_elim
 

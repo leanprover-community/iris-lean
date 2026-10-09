@@ -1964,7 +1964,7 @@ theorem affinelyIf_sep {p : Bool} [BI PROP] [BIPositive PROP] {P Q : PROP} :
   | false => .rfl
   | true => affinely_sep
 
-theorem affinelyIf_idem {p : Bool} [BI PROP] [BIPositive PROP] {P : PROP} :
+theorem affinelyIf_idem {p : Bool} [BI PROP] {P : PROP} :
     <affine>?p <affine>?p P ⊣⊢ <affine>?p P :=
   match p with
   | false => .rfl
@@ -2230,7 +2230,7 @@ theorem persistentlyIf_sep {p : Bool} [BI PROP] [BIPositive PROP] {P Q : PROP} :
   | false => .rfl
   | true => persistently_sep
 
-theorem persistentlyIf_idem {p : Bool} [BI PROP] [BIPositive PROP] {P : PROP} :
+theorem persistentlyIf_idem {p : Bool} [BI PROP] {P : PROP} :
     <pers>?p <pers>?p P ⊣⊢ <pers>?p P :=
   match p with
   | false => .rfl

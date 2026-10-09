@@ -85,7 +85,7 @@ theorem persistently_internalCmraValid {a : A} :
   persistently_siPure
 
 @[rocq_alias plainly_internal_cmra_valid]
-theorem plainly_internalCmraValid (a : A) :
+theorem plainly_internalCmraValid [BIPlainly PROP] [BIPlainlySbi SI PROP] (a : A) :
     ■ ✓[SI] a ⊣⊢@{PROP} ✓[SI] a :=
   plainly_siPure
 
@@ -111,7 +111,7 @@ instance internalCmraValid_absorbing (a : A) :
   siPure_absorbing _
 
 @[rocq_alias internal_cmra_valid_plain]
-instance internalCmraValid_plain (a : A) :
+instance internalCmraValid_plain [BIPlainly PROP] [BIPlainlySbi SI PROP] (a : A) :
     Plain (PROP := PROP) iprop(✓[SI] a) where
   plain := plainly_internalCmraValid a |>.mpr
 
@@ -195,7 +195,7 @@ theorem persistently_internalCmraIncluded {a b : A} :
   persistently_siPure
 
 @[rocq_alias plainly_internal_included]
-theorem plainly_internalCmraIncluded {a b : A} :
+theorem plainly_internalCmraIncluded [BIPlainly PROP] [BIPlainlySbi SI PROP] {a b : A} :
     ■ a ≼[SI] b ⊣⊢@{PROP} a ≼[SI] b :=
   plainly_siPure
 
@@ -249,7 +249,7 @@ instance internalCmraIncluded_timeless {a b : A} [ORA.Discrete SI A] :
   infer_instance
 
 @[rocq_alias internal_included_plain]
-instance internalCmraIncluded_plain {a b : A} :
+instance internalCmraIncluded_plain [BIPlainly PROP] [BIPlainlySbi SI PROP] {a b : A} :
     Plain (PROP := PROP) iprop(a ≼[SI] b) where
   plain := plainly_internalCmraIncluded.mpr
 
@@ -319,7 +319,7 @@ theorem siPure_internalCmraOrder {a b : A} : <si_pure> (iprop(a ≼ₒ[SI] b) : 
 theorem persistently_internalCmraOrder {a b : A} : <pers> a ≼ₒ[SI] b ⊣⊢@{PROP} a ≼ₒ[SI] b :=
   persistently_siPure
 
-theorem plainly_internalCmraOrder {a b : A} : ■ a ≼ₒ[SI] b ⊣⊢@{PROP} a ≼ₒ[SI] b := plainly_siPure
+theorem plainly_internalCmraOrder [BIPlainly PROP] [BIPlainlySbi SI PROP] {a b : A} : ■ a ≼ₒ[SI] b ⊣⊢@{PROP} a ≼ₒ[SI] b := plainly_siPure
 
 theorem intuitionistically_internalCmraOrder [BIAffine PROP] {a b : A} :
     □ a ≼ₒ[SI] b ⊣⊢@{PROP} a ≼ₒ[SI] b :=
@@ -354,7 +354,7 @@ instance internalCmraOrder_timeless {a b : A} [ORA.Discrete SI A] :
     Timeless (PROP := PROP) iprop(a ≼ₒ[SI] b) :=
   siPure_timeless _
 
-instance internalCmraOrder_plain {a b : A} : Plain (PROP := PROP) iprop(a ≼ₒ[SI] b) where
+instance internalCmraOrder_plain [BIPlainly PROP] [BIPlainlySbi SI PROP] {a b : A} : Plain (PROP := PROP) iprop(a ≼ₒ[SI] b) where
   plain := plainly_internalCmraOrder.mpr
 
 instance internalCmraOrder_persistent {a b : A} : Persistent (PROP := PROP) iprop(a ≼ₒ[SI] b) where

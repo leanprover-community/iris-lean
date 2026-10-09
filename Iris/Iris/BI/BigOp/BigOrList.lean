@@ -148,17 +148,17 @@ theorem bigOrL_persistently [BIPersistentlyExist PROP] {Φ : Nat → A → PROP}
   BiEntails.of_eq <| bigOpL_hom Φ l
 
 @[rocq_alias big_orL_later]
-theorem bigOrL_later [BIStepIndexed SI PROP] [SIdxFinite SI] {Φ : Nat → A → PROP} {l : List A} (hne : l ≠ []) :
+theorem bigOrL_later [BILaterFinite PROP] {Φ : Nat → A → PROP} {l : List A} (hne : l ≠ []) :
     (▷ [∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, ▷ Φ k x :=
-  letI := WeakMonoidHomomorphism.ofEq (PROP := PROP) (BiEntails.to_eq (later_or (SI := SI)))
+  letI := WeakMonoidHomomorphism.ofEq (PROP := PROP) (BiEntails.to_eq (later_or))
   BiEntails.of_eq <| bigOpL_hom_weak Φ hne
 
 @[rocq_alias big_orL_laterN]
-theorem bigOrL_laterN [BIStepIndexed SI PROP] [SIdxFinite SI] {Φ : Nat → A → PROP} {l : List A} {n : Nat} (hne : l ≠ []) :
+theorem bigOrL_laterN [BILaterFinite PROP] {Φ : Nat → A → PROP} {l : List A} {n : Nat} (hne : l ≠ []) :
     (▷^[n] [∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, ▷^[n] Φ k x :=
   match n with
   | 0 => .rfl
-  | _ + 1 => (later_congr <| bigOrL_laterN hne).trans <| bigOrL_later (SI := SI) hne
+  | _ + 1 => (later_congr <| bigOrL_laterN hne).trans <| bigOrL_later hne
 
 theorem bigOrL_perm {Φ : A → PROP} {l₁ l₂ : List A} (hp : l₁.Perm l₂) :
     ([∨list] x ∈ l₁, Φ x) = [∨list] x ∈ l₂, Φ x :=

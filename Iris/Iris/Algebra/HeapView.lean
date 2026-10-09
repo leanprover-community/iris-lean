@@ -403,10 +403,10 @@ instance [Hdq : CoreId dq] [Hv1 : CoreId v1] : CoreId (Frag (SI := SI) (H := H) 
     refine congrArg some (congrArg (View.mk _) (singleton_core_eq (SI := SI) ?_))
     simp [ORA.pcore, Prod.pcore]
     cases h : ORA.pcore v1
-    · exact OFE.not_none_eqv_some (SI := SI) (h ▸ Hv1.core_id) |>.elim
+    · exact OFE.not_none_eqv_some (h ▸ Hv1.core_id) |>.elim
     · simp only [Option.bind_some, H]
-      exact (OFE.some_eqv_some (SI := SI)).mpr
-        (congrArg (Prod.mk _) ((OFE.some_eqv_some (SI := SI)).mp (h ▸ Hv1.core_id)))
+      exact (OFE.some_eqv_some).mpr
+        (congrArg (Prod.mk _) ((OFE.some_eqv_some).mp (h ▸ Hv1.core_id)))
 
 @[rocq_alias gmap_view_frag_validN]
 nonrec theorem frag_validN_iff : ✓{n} Frag (SI := SI) (H := H) k dq v1 ↔ ✓[SI] dq ∧ ✓{n} v1 :=

@@ -517,7 +517,7 @@ theorem only0_persistently [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {P : 
   · exact only0_persistently_mpr
 
 @[rocq_alias only_0_intuitionistically]
-theorem only0_intuitionistically [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [BILoeb PROP] [Timeless (PROP := PROP) emp]
+theorem only0_intuitionistically [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [Timeless (PROP := PROP) emp]
     {P : PROP} : <only0> □ P ⊣⊢ □ <only0> P :=
   only0_affinely.trans (affinely_congr (only0_persistently (SI := SI)))
 
@@ -577,106 +577,5 @@ theorem laterN_soundness [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {P : PR
   match n with
   | .zero => h
   | .succ _ => laterN_soundness (later_soundness (SI := SI) h)
-
-/-! ## Plainly modality derived from Sbi -/
-
-set_option synthInstance.checkSynthOrder false in
-@[rocq_alias siProp_plain, rocq_alias plainly]
-instance instPlainlySbi [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] : BIBase.Plainly PROP where
-  plainly P := SiPure.siPure (SiEmpValid.siEmpValid (SI := SI) P)
-
-section PlainlyFromSbi
-variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP]
-
-@[rocq_alias plainly_ne]
-instance instPlainly_ne : OFE.NonExpansive SI (BIBase.plainly (PROP := PROP)) where
-  ne _ _ _ h := Sbi.siPure_ne.ne (Sbi.siEmpValid_ne.ne h)
-
-@[rocq_alias plainly_mono]
-theorem plainly_mono {P Q : PROP} (h : P ⊢ Q) : iprop(■ P ⊢ ■ Q) :=
-  siPure_mono (siEmpValid_mono h)
-
-@[rocq_alias plainly_elim_persistently]
-theorem plainly_elim_persistently {P : PROP} : iprop(■ P ⊢ <pers> P) :=
-  siPure_siEmpValid
-
-@[rocq_alias plainly_idemp_2]
-theorem plainly_idem_mpr {P : PROP} : iprop(■ P ⊢ ■ ■ P) :=
-  siPure_mono siEmpValid_siPure.mpr
-
-@[rocq_alias plainly_forall_2]
-theorem plainly_forall {A : Sort _} (Ψ : A → PROP) :
-    iprop((∀ a, ■ (Ψ a)) ⊢ ■ (∀ a, Ψ a)) := by
-  change iprop((∀ a, <si_pure> <si_emp_valid> Ψ a) ⊢ <si_pure> <si_emp_valid> (∀ a, Ψ a))
-  exact siPure_forall.mpr.trans <| siPure_mono siEmpValid_forall.mpr
-
-@[rocq_alias plainly_exist_1]
-theorem plainly_exist [SbiEmpValidExist SI PROP] {A : Type _} (Ψ : A → PROP) :
-    iprop(■ (∃ a, Ψ a) ⊢ ∃ a, ■ (Ψ a)) := by
-  change iprop(<si_pure> <si_emp_valid> (∃ a, Ψ a) ⊢ ∃ a, <si_pure> <si_emp_valid> (Ψ a))
-  exact (siPure_mono siEmpValid_exist.mp).trans siPure_exist.mp
-
-@[rocq_alias plainly_impl_plainly]
-theorem plainly_impl_plainly {P Q : PROP} :
-    iprop((■ P → ■ Q) ⊢ ■ (■ P → Q)) := by
-  change iprop((<si_pure> <si_emp_valid> P → <si_pure> <si_emp_valid> Q)
-    ⊢ <si_pure> <si_emp_valid> (<si_pure> <si_emp_valid> P → Q))
-  exact siPure_imp_mpr.trans <| siPure_mono <| siEmpValid_imp_siPure
-
-@[rocq_alias plainly_emp_intro]
-theorem plainly_emp_intro {P : PROP} : iprop(P ⊢ ■ emp) := by
-  change iprop(P ⊢ <si_pure> <si_emp_valid> emp)
-  exact true_intro.trans <|
-    siPure_pure.mpr.trans <|
-    siPure_mono siEmpValid_emp.mpr
-
-@[rocq_alias plainly_absorb]
-theorem plainly_absorb {P Q : PROP} : iprop(■ P ∗ Q ⊢ ■ P) := by
-  change iprop(<si_pure> <si_emp_valid> P ∗ Q ⊢ <si_pure> <si_emp_valid> P)
-  exact sep_elim_left
-
-@[rocq_alias later_plainly]
-theorem later_plainly {P : PROP} : iprop(▷ ■ P ⊣⊢ ■ ▷ P) := by
-  change iprop(▷ <si_pure> <si_emp_valid> P ⊣⊢ <si_pure> <si_emp_valid> (▷ P))
-  exact siPure_later.symm.trans
-    ⟨siPure_mono siEmpValid_later.mpr, siPure_mono siEmpValid_later.mp⟩
-
-@[rocq_alias persistently_impl_plainly]
-theorem persistently_impl_plainly {P Q : PROP} :
-    iprop((■ P → <pers> Q) ⊢ <pers> (■ P → Q)) :=
-  persistently_imp_siPure
-
--- TODO: re-evaluate whether plainly_sForall_2_sbi is needed once sForall infrastructure matures.
--- This is Lean-specific (no Rocq counterpart) since Rocq uses impredicative polymorphic ∀.
--- The proof requires an sForall-level version of siEmpValid_forall that doesn't exist yet.
-/-
-@[rocq_alias plainly_sForall_2]
-theorem plainly_sForall_2_sbi {Φ : PROP → Prop} :
-    iprop((∀ p, ⌜Φ p⌝ → ■ p) ⊢ ■ sForall Φ) := by
-  show iprop((∀ p, ⌜Φ p⌝ → <si_pure> <si_emp_valid> p) ⊢ <si_pure> <si_emp_valid> sForall Φ)
-  sorry
--/
-
-theorem plainly_sExists [SbiEmpValidExist SI PROP] {Φ : PROP → Prop} :
-    iprop(■ sExists Φ ⊢ ∃ p, ⌜Φ p⌝ ∧ ■ p) := by
-  change iprop(<si_pure> <si_emp_valid> sExists Φ ⊢ ∃ p, ⌜Φ p⌝ ∧ <si_pure> <si_emp_valid> p)
-  exact (siPure_mono (SbiEmpValidExist.siEmpValid_sExists_1 Φ)).trans <|
-    siPure_exist.mp.trans <|
-    exists_mono fun p => siPure_and.mp.trans (and_mono_left siPure_pure.mp)
-
-@[rocq_alias plainly_if_ne]
-instance instPlainlyIf_ne p : OFE.NonExpansive SI (BIBase.Plainly.plainlyIf (PROP := PROP) p) where
-  ne _ _ _ := fun h =>
-    match p with
-    | true => instPlainly_ne.ne h
-    | false => h
-
-@[rocq_alias plainly_if_mono]
-theorem plainly_if_mono p (P Q : PROP) : iprop(P ⊢ Q) → ■?p P ⊢ ■?p Q := fun h =>
-  match p with
-  | true => plainly_mono h
-  | false => h
-
-end PlainlyFromSbi
 
 end Iris

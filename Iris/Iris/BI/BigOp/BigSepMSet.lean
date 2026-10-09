@@ -251,10 +251,10 @@ theorem bigSepMS_persistently [BIAffine PROP] {Φ : A → PROP} {X : MS} :
   BiEntails.of_eq <| BigOpMS.hom this Φ X
 
 @[rocq_alias big_sepMS_later]
-theorem bigSepMS_later [BIStepIndexed SI PROP] [SIdxFinite SI] [BIAffine PROP] {Φ : A → PROP} {X : MS} :
+theorem bigSepMS_later [BILaterFinite PROP] [BIAffine PROP] {Φ : A → PROP} {X : MS} :
     (▷ [∗mset] y ∈ X, Φ y) ⊣⊢ [∗mset] y ∈ X, ▷ Φ y :=
   letI := MonoidHomomorphism.ofEq
-    (BiEntails.to_eq (later_sep (SI := SI))) (BiEntails.to_eq later_emp)
+    (BiEntails.to_eq (later_sep)) (BiEntails.to_eq later_emp)
   BiEntails.of_eq <| BigOpMS.hom this Φ X
 
 @[rocq_alias big_sepMS_later_2]
@@ -263,11 +263,11 @@ theorem bigSepMS_later_2 {Φ : A → PROP} {X : MS} :
   bigSepMS_elements.1.trans <| bigSepL_later_2.trans <| later_mono bigSepMS_elements.2
 
 @[rocq_alias big_sepMS_laterN]
-theorem bigSepMS_laterN [BIStepIndexed SI PROP] [SIdxFinite SI] [BIAffine PROP] {Φ : A → PROP} {n : Nat} {X : MS} :
+theorem bigSepMS_laterN [BILaterFinite PROP] [BIAffine PROP] {Φ : A → PROP} {n : Nat} {X : MS} :
     (▷^[n] [∗mset] y ∈ X, Φ y) ⊣⊢ [∗mset] y ∈ X, ▷^[n] Φ y :=
   match n with
   | 0 => .rfl
-  | _ + 1 => (later_congr bigSepMS_laterN).trans (bigSepMS_later (SI := SI))
+  | _ + 1 => (later_congr bigSepMS_laterN).trans (bigSepMS_later)
 
 @[rocq_alias big_sepMS_laterN_2]
 theorem bigSepMS_laterN_2 {Φ : A → PROP} {n : Nat} {X : MS} :

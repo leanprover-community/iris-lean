@@ -49,7 +49,7 @@ example (P Q R : PROP1) [Affine P] :
       iexact HR
 
 /-- Tests `imodintro` prefers `fromModal_embed` over `fromModal_plainly_embed`. -/
-example {P1 P2 : Type u} [BI P1] [BIStepIndexed Nat P1] [Sbi Nat P1] [BI P2] [BIStepIndexed Nat P2] [Sbi Nat P2] [BiEmbed P1 P2] [BiEmbedSbi Nat P1 P2]
+example {P1 P2 : Type u} [BI P1] [BIPlainly P1] [BI P2] [BIPlainly P2] [BiEmbed P1 P2] [BiEmbedPlainly P1 P2]
     (P : P1) [Plain P] : □ ⎡P⎤ ⊢@{P2} ⎡■ P⎤ := by
   iintro #HP
   imodintro _

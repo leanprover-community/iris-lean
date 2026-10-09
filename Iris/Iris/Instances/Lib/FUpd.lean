@@ -348,6 +348,9 @@ instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .h
     · iintro Hall
       iapply fupd_mask_intro_discard LawfulSet.subset_refl $$ Hall
 
+instance instBIFUpdatePlainlyNoLC {GF : BundledGFunctors} [INV : InvGS_gen .hasNoLC GF] :
+    BIFUpdatePlainly (IProp GF) := .ofSbi Nat
+
 @[rocq_alias fupd_finally_mask_mono]
 theorem fupd_finally_mask_mono (E1 E2 : CoPset) (P : IProp GF) (H : E1 ⊆ E2) :
     (|={E1|}=> P) ⊢ |={E2|}=> P := by
@@ -357,7 +360,7 @@ theorem fupd_finally_mask_mono (E1 E2 : CoPset) (P : IProp GF) (H : E1 ⊆ E2) :
 
 @[rocq_alias from_modal_fupd_finally]
 instance fromModal_fupd_finally (E : CoPset) io (P : IProp GF) :
-    FromModal io (modality_plainly (SI := Nat)) True iprop(|={E|}=> P) iprop(|={E|}=> P) P where
+    FromModal io modality_plainly True iprop(|={E|}=> P) iprop(|={E|}=> P) P where
   from_modal _ := fupd_finally_intro E P
 
 @[rocq_alias is_except_0_fupd_finally]

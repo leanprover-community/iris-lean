@@ -44,13 +44,13 @@ end Fix
 variable (SI) in
 open Iris OFE COFE in
 noncomputable abbrev Dom (Val : Type _) (Err : Type _) [OFE SI Val] [OFE SI Err] [IsCOFE SI Val]
-    [IsCOFE SI Err] [Inhabited Err] :=
+    [IsCOFE SI Err] :=
   OFunctor.Fix (DomF (SI := SI) (Val := Val) (Err := Err))
 
 namespace Dom
 open Iris OFE COFE
 
-variable [OFE SI V] [OFE SI E] [IsCOFE SI V] [IsCOFE SI E] [Inhabited E]
+variable [OFE SI V] [OFE SI E] [IsCOFE SI V] [IsCOFE SI E]
 
 noncomputable def fold :
     V ⊕ E ⊕ Later (Dom SI V E) ⊕ Later (Dom SI V E -n>[SI] Dom SI V E) -n>[SI] Dom SI V E :=

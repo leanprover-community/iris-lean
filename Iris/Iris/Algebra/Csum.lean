@@ -72,14 +72,14 @@ instance [OFE SI α] [OFE SI β] : NonExpansive SI (inr (α := α) (β := β)) w
 #rocq_ignore Cinr_proper "Derivable using NonExpansive.eqv"
 
 @[rocq_alias Cinl_inj]
-theorem inl_inj [OFE SI α] [OFE SI β] {a a' : α} (h : (inl (β := β) a) = inl a') : a = a' :=
+theorem inl_inj {a a' : α} (h : (inl (β := β) a) = inl a') : a = a' :=
   Csum.inl.inj h
 
 @[rocq_alias Cinl_inj_dist]
 theorem inl_injN [OFE SI α] [OFE SI β] {n : SI} {a a' : α} (h : inl (β := β) a ≡{n}≡ inl a') : a ≡{n}≡ a' := h
 
 @[rocq_alias Cinr_inj]
-theorem inr_inj [OFE SI α] [OFE SI β] {b b' : β} (h : (inr (α := α) b) = inr b') : b = b' :=
+theorem inr_inj {b b' : β} (h : (inr (α := α) b) = inr b') : b = b' :=
   Csum.inr.inj h
 
 @[rocq_alias Cinr_inj_dist]
@@ -649,7 +649,7 @@ theorem map_compose (f : α → α') (f' : α' → α'') (g : β → β') (g' : 
   cases x <;> simp
 
 @[rocq_alias csum_map_ext]
-theorem map_ext [OFE SI α] [OFE SI α'] [OFE SI β] [OFE SI β'] (f f' : α → α') (g g' : β → β')
+theorem map_ext (f f' : α → α') (g g' : β → β')
     (hf : ∀ x, f x = f' x) (hg : ∀ x, g x = g' x) (x : Csum α β) :
     map f g x = map f' g' x := by
   cases x <;> simp [hf, hg]

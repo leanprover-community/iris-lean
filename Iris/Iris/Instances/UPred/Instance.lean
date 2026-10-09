@@ -430,6 +430,8 @@ instance instBIStepIndexedUPred [OrdExtend0 SI M] : BIStepIndexed SI (UPred SI M
       exact ⟨p', Hp', (Hp'eq n' _ Hn' Hx').mp H⟩
     · let ⟨p', Hp', Hp'eq⟩ := HR2 p Hp
       exact ⟨p', Hp', (Hp'eq n' _ Hn' Hx').mpr H⟩
+
+instance instBILaterFiniteUPred [OrdExtend0 SI M] [SIdxFinite SI] : BILaterFinite (UPred SI M) where
   later_sExists_false n x H := by
     rcases SIdxFinite.finite_index n with rfl | ⟨m, rfl⟩
     · exact .inl fun k hk => absurd hk (SIdx.not_lt_zero k)
@@ -666,6 +668,10 @@ instance : SbiEmpValidExist SI (UPred SI M) where
 theorem uPredSiEmpValid_exist_mp {α : Type _} {P : α → UPred SI M} :
     (<si_emp_valid> (∃ x, P x) : SiProp SI) ⊢ ∃ x, <si_emp_valid> P x := siEmpValid_exist_mp
 
+instance : BIPlainly (UPred SI M) := .ofSbi SI
+instance : BIPlainlySbi SI (UPred SI M) := .ofSbi SI
+instance : BIPlainlyExists (UPred SI M) := .ofSbi SI
+
 /-- The Sbi-derived plainly on UPred unfolds to `UPred.plainly`. -/
 theorem plainly_eq_uPred_plainly (P : UPred SI M) : iprop(■ P) = UPred.plainly P := rfl
 
@@ -721,6 +727,8 @@ theorem bupd_siPure (Pi : SiProp SI) : (|==> <si_pure> Pi : UPred SI M) ⊢ <si_
 @[rocq_alias uPred_bi_bupd_sbi]
 instance : BIBUpdateSbi SI (UPred SI M) where
   bupd_siPure := bupd_siPure
+
+instance : BIBUpdatePlainly (UPred SI M) := .ofSbi SI
 
 @[rocq_alias uPred_primitive.ownM_valid, rocq_alias uPred.ownM_valid]
 theorem ownM_valid (m : M) : ownM (SI := SI) m ⊢ internalCmraValid (SI := SI) m := fun _ h hp => hp.validN h.property
@@ -892,7 +900,7 @@ private theorem Modality.denoteAll_plainly_laterN {P : UPred SI M} [Plain P] :
 theorem Modality.denoteAll_laterN [IncOrd SI M] {P : UPred SI M} [Plain P] :
     ∀ ms : List Modality, denoteAll ms P ⊢ ▷^[ms.length] P
   | [] => .rfl
-  | .bupd :: ms => (bupd_mono (denoteAll_laterN ms)).trans ((bupd_elim (SI := SI)).trans later_intro)
+  | .bupd :: ms => (bupd_mono (denoteAll_laterN ms)).trans (bupd_elim.trans later_intro)
   | .later :: ms => later_mono (denoteAll_laterN ms)
   | .persistently :: ms =>
     (persistently_mono (denoteAll_laterN ms)).trans (persistently_elim.trans later_intro)
@@ -972,7 +980,7 @@ theorem BUpdPlain_bupd [UORA SI M] [OrdExtend0 SI M] (P : UPred SI M) : BUpdPlai
 
 @[rocq_alias bupd_alt_bupd_iff]
 theorem BUpdPlain_bupd_iff [UORA SI M] [OrdExtend0 SI M] (P : UPred SI M) : BUpdPlain P ⊣⊢ |==> P :=
-  ⟨BUpdPlain_bupd P, BUpd_BUpdPlain (SI := SI) (PROP := UPred SI M)⟩
+  ⟨BUpdPlain_bupd P, BUpd_BUpdPlain (PROP := UPred SI M)⟩
 
 @[rocq_alias ownM_updateP]
 theorem ownM_updateP [UORA SI M] [OrdExtend0 SI M] {x : M} {R : UPred SI M} (Φ : M → Prop) (Hup : x ~~>:[SI] Φ) :

@@ -65,6 +65,7 @@ set_option synthInstance.checkSynthOrder false in
 class abbrev HasPointsToF1 (γ : GName) (GF : outParam _) := ElemG GF F1
 
 /- Define notation for the heap. -/
+@[nolint unusedArguments]
 def points_to (γ : GName) [HasPointsToF1 γ GF] (k : Nat) (v : String) : IProp GF :=
   iOwn (GF := GF) (F := F1) γ (Frag k (own one) (toAgree ⟨v⟩))
 

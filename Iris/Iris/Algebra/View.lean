@@ -20,6 +20,7 @@ variable {SI : Type _} [instSI : Iris.SIdx SI]
 
 open Iris
 
+@[nolint unusedArguments]
 abbrev ViewRel (SI A B : Type _) [SIdx SI] := SI → A → B → Prop
 
 @[rocq_alias view_rel]
@@ -146,11 +147,11 @@ theorem auth_eqv_inj [UORA SI B] {q1 q2 : DFrac} {a1 a2 : A}
   exact (auth_dist_inj H.dist).2
 
 @[rocq_alias view_frag_inj]
-theorem frag_eqv_inj [UORA SI B] {b1 b2 : B}
+theorem frag_eqv_inj {b1 b2 : B}
     (H : (◯V b1 : View R) = ◯V b2) : b1 = b2 := OFE.eq_dist_2 fun _ => H.dist (SI := SI).2
 
 @[rocq_alias view_frag_dist_inj]
-theorem dist_of_frag_dist [UORA SI B] {b1 b2 : B} {n : SI} (H : (◯V b1 : View R) ≡{n}≡ ◯V b2) :
+theorem dist_of_frag_dist {b1 b2 : B} {n : SI} (H : (◯V b1 : View R) ≡{n}≡ ◯V b2) :
     b1 ≡{n}≡ b2 := H.2
 
 @[rocq_alias view_auth_discrete]
@@ -160,7 +161,7 @@ instance auth_discrete [UORA SI B] {dq a} [Ha : DiscreteE SI a] [He : DiscreteE 
   infer_instance
 
 @[rocq_alias view_frag_discrete]
-instance frag_discrete [UORA SI B] [Hb : DiscreteE SI b] : DiscreteE SI (◯V b : View R) :=
+instance frag_discrete [Hb : DiscreteE SI b] : DiscreteE SI (◯V b : View R) :=
   discrete Option.none_is_discrete Hb
 
 end OFE
@@ -796,7 +797,7 @@ theorem auth_ord_auth_op_frag_iff [Increasing SI b] :
       (dq1 ≼ₒ[SI] dq2 ∨ dq1 = dq2) ∧ a1 = a2 := by
   refine ⟨fun ⟨ha, _⟩ => ?_, fun ⟨hd, ha⟩ => ⟨?_, ord_op_left _ b⟩⟩
   · rcases ha with e | ⟨o₁, o₂⟩
-    · exact ⟨.inr (congrArg Prod.fst e), Agree.toAgree_inj (SI := SI) (congrArg Prod.snd e)⟩
+    · exact ⟨.inr (congrArg Prod.fst e), Agree.toAgree_inj (congrArg Prod.snd e)⟩
     · exact ⟨.inl o₁, Agree.toAgree_ord.mp o₂⟩
   · subst ha
     rcases hd with o | rfl
@@ -851,7 +852,7 @@ theorem auth_op_frag_ord_auth_op_frag_iff :
   · refine ⟨?_, ?_, hb.mp h⟩ <;> rcases ha with e | ⟨o₁, o₂⟩
     · exact .inr (congrArg Prod.fst e)
     · exact .inl o₁
-    · exact Agree.toAgree_inj (SI := SI) (congrArg Prod.snd e)
+    · exact Agree.toAgree_inj (congrArg Prod.snd e)
     · exact Agree.toAgree_ord.mp o₂
   · subst ha
     rcases hd with o | rfl
@@ -1117,7 +1118,7 @@ def mapAuthC [OFE SI A] [OFE SI A'] (f : A -n>[SI] A') :
     Option ((DFrac) × Agree A) -C>[SI] Option ((DFrac) × Agree A') :=
   Option.mapC (Prod.mapC Hom.id (Agree.map f.f))
 
-theorem map_auth_eq [OFE SI A] [OFE SI B] [OFE SI A'] {R : ViewRel SI A B} {R' : ViewRel SI A' B'}
+theorem map_auth_eq [OFE SI A] [OFE SI A'] {R : ViewRel SI A B} {R' : ViewRel SI A' B'}
     (f : A -n>[SI] A') (g : B → B') (v : View R) :
     (map R' f.f g v).auth = (mapAuthC f).f v.auth := by
   rcases v with ⟨_|⟨fr, a⟩, b⟩ <;> rfl

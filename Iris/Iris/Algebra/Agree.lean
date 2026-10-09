@@ -560,8 +560,8 @@ theorem Agree.toAgree_injN {n : SI} {a b : α} : toAgree a ≡{n}≡ toAgree b �
   Raw.toAgree_injN
 
 @[rocq_alias to_agree_inj]
-theorem Agree.toAgree_inj [OFE SI α] {a b : α} : toAgree a = toAgree b → a = b :=
-  fun heq => OFE.eq_dist_2 (SI := SI) fun _ => toAgree_injN heq.dist
+theorem Agree.toAgree_inj {a b : α} : toAgree a = toAgree b → a = b :=
+  fun heq => List.mem_singleton.mp ((Agree.exact heq).1 a (List.mem_singleton_self a))
 
 @[simp] theorem Agree.toAgree_validN {n : SI} {a : α} : ✓{n} toAgree a := Raw.toAgree_validN (a := a) (n := n)
 
@@ -609,7 +609,7 @@ theorem toAgree_includedN {n : SI} {a b : α} : toAgree a ≼{n} toAgree b ↔ a
 @[simp]
 theorem toAgree_ord {a b : α} : toAgree a ≼ₒ[SI] toAgree b ↔ a = b := by
   refine ⟨?_, ?_⟩ <;> intro h
-  · exact toAgree_inj (SI := SI) (valid_ord (SI := SI) (fun _ => trivial) h)
+  · exact toAgree_inj (valid_ord (SI := SI) (fun _ => trivial) h)
   · exists toAgree a
     calc
       toAgree b = toAgree a := congrArg toAgree h.symm

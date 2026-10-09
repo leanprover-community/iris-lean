@@ -112,16 +112,19 @@ scoped instance instCancelable [LeftCancelAdd α] {a : α} : Cancelable SI a whe
 #rocq_ignore nat_cancelable "Use the (ℕ, +) Constant Core instance."
 #rocq_ignore Z_cancelable "Use the (ℤ, +) Constant Core instance."
 
+omit [Zero α] [LawfulLeftIdentity (α := α) (· + ·) zero] in
 @[rocq_alias nat_op, rocq_alias Z_op]
 theorem op_eq {x y : α} : x • y = x + y := rfl
 
 theorem ord_iff {x y : α} : x ≼ₒ[SI] y ↔ ∃ z, y = x + z := Iff.rfl
 
+omit [Zero α] [LawfulLeftIdentity (α := α) (· + ·) zero] in
 theorem included_iff {x y : α} : x ≼ y ↔ ∃ z, y = x + z := Iff.rfl
 
 theorem ord_iff_le [LE α] [LawfulAddLE α] {x y : α} : x ≼ₒ[SI] y ↔ x ≤ y :=
   ord_iff.trans LawfulAddLE.le_iff_exists_add.symm
 
+omit [Zero α] [LawfulLeftIdentity (α := α) (· + ·) zero] in
 @[rocq_alias nat_included]
 theorem inc_iff_le [LE α] [LawfulAddLE α] {x y : α} : x ≼ y ↔ x ≤ y :=
   included_iff.trans LawfulAddLE.le_iff_exists_add.symm
@@ -235,6 +238,7 @@ scoped instance instCancelable [LeftCancelAdd α] {a : α} : Cancelable SI a whe
   cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ discrete
 
 omit [Zero α] in
+omit [IdempotentOp (α := α) (· + ·)] in
 @[simp, grind =, rocq_alias max_nat_op, rocq_alias max_Z_op, rocq_alias min_nat_op_min]
 theorem op_eq {x y : α} : x • y = x + y := rfl
 

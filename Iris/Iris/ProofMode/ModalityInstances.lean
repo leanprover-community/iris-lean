@@ -57,7 +57,7 @@ def modality_intuitionistically [BI PROP] : Modality PROP PROP where
   sep := intuitionistically_sep_mpr
 
 @[rocq_alias modality_plainly, rocq_alias modality_plainly_mixin]
-def modality_plainly [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] : Modality PROP PROP where
+def modality_plainly [BI PROP] [BIPlainly PROP] : Modality PROP PROP where
   M := BIBase.Plainly.plainly
   action
   | true => .forall Plain

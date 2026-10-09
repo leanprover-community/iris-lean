@@ -287,9 +287,9 @@ theorem ghost_map_auth_valid_2 {γ} {dq1 dq2 : DFrac} {m1 m2 : H V} :
   simp only [LawfulPartialMap.get?_map, Option.map] at h
   cases h₁ : get? m1 k <;> cases h₂ : get? m2 k <;> simp only [h₁, h₂] at h
   · rfl
-  · exact (OFE.not_none_eqv_some (SI := Nat) h).elim
-  · exact (OFE.not_some_eqv_none (SI := Nat) h).elim
-  · exact congrArg some (DiscreteO.eqv_inj (Agree.toAgree_inj (SI := Nat) (Option.some.inj h)))
+  · exact (OFE.not_none_eqv_some h).elim
+  · exact (OFE.not_some_eqv_none h).elim
+  · exact congrArg some (DiscreteO.eqv_inj (Agree.toAgree_inj (Option.some.inj h)))
 
 @[rocq_alias ghost_map_auth_agree]
 theorem ghost_map_auth_agree γ (dq1 dq2 : DFrac) (m1 m2 : H V) :

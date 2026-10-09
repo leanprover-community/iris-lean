@@ -89,7 +89,7 @@ instance intoInternalEq_absorbingly [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PR
   into_internal_eq := (absorbingly_mono h.into_internal_eq).trans (absorbingly_internalEq x y).1
 
 @[rocq_alias into_internal_eq_plainly]
-instance intoInternalEq_plainly [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A] (x y : A) (P : PROP)
+instance intoInternalEq_plainly [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [BIPlainly PROP] [BIPlainlySbi SI PROP] [OFE SI A] (x y : A) (P : PROP)
     [h : IntoInternalEq SI P x y] :
     IntoInternalEq SI iprop(■ P) x y where
   into_internal_eq := (plainly_mono h.into_internal_eq).trans (plainly_internalEq).1

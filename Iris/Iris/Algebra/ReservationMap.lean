@@ -47,7 +47,7 @@ structure ReservationMap (A : Type) (H : Type → Type) where
   data : H A
   token : CoPsetDisjL
 
-def ReservationMap.mkData [LawfulPartialMap H Pos] (data : H A) :
+def ReservationMap.mkData (data : H A) :
     ReservationMap A H := .mk data ∅
 
 @[rocq_alias reservation_map_data]

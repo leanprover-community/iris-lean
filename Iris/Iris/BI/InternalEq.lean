@@ -443,7 +443,7 @@ theorem internalEq_soundness {A : Type _} [OFE SI A] (x y : A) :
   (SiProp.internalEq_soundness <| siPure_emp_valid.mp ·)
 
 @[rocq_alias only_0_internal_eq]
-theorem only0_internalEq [SIdxFinite SI] (P Q : PROP) :
+theorem only0_internalEq (P Q : PROP) :
     <only0> (P ≡[SI] Q) ⊣⊢@{PROP} iprop(<only0> P) ≡[SI] iprop(<only0> Q) := by
   change iprop(<only0> <si_pure> (SiProp.internalEq P Q))
     ⊣⊢@{PROP} <si_pure> (SiProp.internalEq iprop(<only0> P) iprop(<only0> Q))

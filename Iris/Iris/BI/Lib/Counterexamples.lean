@@ -551,9 +551,9 @@ end Linear
 -/
 namespace LaterCreditsPlain
 
-variable [instFin : SIdxFinite SI] [BI PROP] [BIStepIndexed SI PROP] [instSbi : Sbi SI PROP]
+variable [BI PROP] [BIStepIndexed SI PROP] [instFin : BILaterFinite PROP] [instSbi : Sbi SI PROP]
   [instPersExist : BIPersistentlyExist PROP]
-  [instBFupd : BIFUpdate PROP]
+  [instBFupd : BIFUpdate PROP] [instPl : BIPlainly PROP] [instPlSbi : BIPlainlySbi SI PROP]
 variable {lc : PROP}
 
 variable (lc_fupd_elim_later : ∀ E P, lc ∗ ▷ P ⊢ |={E}=> P)
@@ -572,16 +572,16 @@ theorem lc_fupd_elim_later_keep {E : CoPset} {P : PROP} [inst1 : Plain P] [inst2
   isplit
   · iapply lc_fupd_elim_later
     iintro {$Hlc} !>
-    exact Plain.plain
+    exact Plain.plain.trans BIPlainlySbi.plainly_siPure_siEmpValid.mp
   · iintro HP' !> {$Hlc} {HP}
     exact siPure_siEmpValid_elim
 
 include instFin in
-omit instBFupd instSbi in
+omit instBFupd instSbi instPl instPlSbi in
 @[rocq_alias later_credits_plain.laterN_False]
 theorem laterN_False [BILoeb PROP] : ⊢@{PROP} ∃ n, ▷^[n] False := by
   iloeb as IH
-  icases (later_exists (SI := SI)).2 $$ IH with ⟨%n, Hn⟩
+  icases later_exists.2 $$ IH with ⟨%n, Hn⟩
   iexists n + 1
   dsimp [BIBase.laterN, Nat.repeat]
   iassumption
@@ -592,7 +592,7 @@ theorem contradiction [BILoeb PROP] : False := by
   apply pure_soundness (SI := SI) (PROP := PROP)
   apply lc_soundness _ ⊤
   iintro Hlc
-  icases laterN_False (SI := SI) with ⟨%n, ∗Hfalse⟩
+  icases laterN_False with ⟨%n, ∗Hfalse⟩
   icases affinely_elim $$ Hfalse with Hfalse
   iinduction n with
   | zero =>

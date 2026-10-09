@@ -27,13 +27,13 @@ def biRtc [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A] (R : A → 
   bi_least_fixpoint (SI := SI) (biRtcPre (SI := SI) R x₂) x₁
 
 @[rocq_alias bi_tc_pre]
-def biTcPre [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A] (R : A → A → PROP) (x₂ : A) (rec : A → PROP) (x₁ : A) : PROP :=
+def biTcPre [BI PROP] (R : A → A → PROP) (x₂ : A) (rec : A → PROP) (x₁ : A) : PROP :=
   iprop% R x₁ x₂ ∨ ∃ x', R x₁ x' ∗ rec x'
 
 /-- The transitive closure. -/
 @[rocq_alias bi_tc]
-def biTc [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A] (R : A → A → PROP) (x₁ x₂ : A) : PROP :=
-  bi_least_fixpoint (SI := SI) (biTcPre (SI := SI) R x₂) x₁
+def biTc [BI PROP] [BIStepIndexed SI PROP] [OFE SI A] (R : A → A → PROP) (x₁ x₂ : A) : PROP :=
+  bi_least_fixpoint (SI := SI) (biTcPre R x₂) x₁
 
 /-- The assertion that two elements are related by exactly `n` steps. -/
 @[rocq_alias bi_nsteps]
@@ -69,8 +69,8 @@ instance bi_rtc_ne [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A] (R
 #rocq_ignore bi_rtc_proper "Subsumed by congruence"
 
 @[rocq_alias bi_tc_pre_mono]
-instance bi_tc_pre_mono [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A] (R : A → A → PROP) [NonExpansive₂ SI R]
-    (x : A) : BIMonoPred SI (biTcPre (SI := SI) R x) where
+instance bi_tc_pre_mono [BI PROP] [BIStepIndexed SI PROP] [OFE SI A] (R : A → A → PROP) [NonExpansive₂ SI R]
+    (x : A) : BIMonoPred SI (biTcPre R x) where
   mono_pred := by
     intro Φ Ψ hΦ hΨ
     iintro #Hmono %x₁ H
@@ -86,7 +86,7 @@ instance bi_tc_pre_mono [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI 
     (exists_ne fun _ : A => sep_ne.ne (NonExpansive₂.ne h .rfl) .rfl)⟩
 
 @[rocq_alias bi_tc_ne]
-instance bi_tc_ne [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A] (R : A → A → PROP) [NonExpansive₂ SI R] :
+instance bi_tc_ne [BI PROP] [BIStepIndexed SI PROP] [OFE SI A] (R : A → A → PROP) [NonExpansive₂ SI R] :
     NonExpansive₂ SI (biTc (SI := SI) R) where
   ne {_ _ _} hx {_ _} hy := by
     refine forall_ne fun _ => wand_ne.ne (intuitionistically_ne.ne ?_) (NonExpansive.ne hx)
@@ -115,6 +115,7 @@ theorem bi_rtc_ind_left (x₂ : A) (Φ : A → PROP) [NonExpansive SI Φ] :
       ∀ x₁, biRtc (SI := SI) R x₁ x₂ -∗ Φ x₁ :=
   least_fixpoint_iter (biRtcPre R x₂)
 
+omit [Sbi SI PROP] in
 @[rocq_alias bi_tc_ind_l]
 theorem bi_tc_ind_left (x₂ : A) (Φ : A → PROP) [NonExpansive SI Φ] :
     ⊢ □ (∀ x₁, R x₁ x₂ ∨ (∃ x', R x₁ x' ∗ Φ x') -∗ Φ x₁) -∗
@@ -237,11 +238,13 @@ instance bi_rtc_persistent [∀ x y, Persistent (R x y)] (x y : A) :
       iapply bi_rtc_refl
     · iapply bi_rtc_left $$ HR Hrtc
 
+omit [Sbi SI PROP] in
 @[rocq_alias bi_tc_unfold]
 theorem bi_tc_unfold (x₁ x₂ : A) :
-    biTc (SI := SI) R x₁ x₂ = biTcPre (SI := SI) R x₂ (fun x₁ => biTc (SI := SI) R x₁ x₂) x₁ :=
+    biTc (SI := SI) R x₁ x₂ = biTcPre R x₂ (fun x₁ => biTc (SI := SI) R x₁ x₂) x₁ :=
   least_fixpoint_unfold (biTcPre R x₂)
 
+omit [Sbi SI PROP] in
 @[rocq_alias bi_tc_strong_ind_l]
 theorem bi_tc_strong_ind_left (x₂ : A) (Φ : A → PROP) (hΦ : NonExpansive SI Φ) :
     ⊢ □ (∀ x₁, R x₁ x₂ ∨
@@ -249,6 +252,7 @@ theorem bi_tc_strong_ind_left (x₂ : A) (Φ : A → PROP) (hΦ : NonExpansive S
       ∀ x₁, biTc (SI := SI) R x₁ x₂ -∗ Φ x₁ :=
   least_fixpoint_ind (biTcPre R x₂) Φ
 
+omit [Sbi SI PROP] in
 @[rocq_alias bi_tc_l]
 theorem bi_tc_left (x₁ x₂ x₃ : A) :
     R x₁ x₂ -∗ biTc (SI := SI) R x₂ x₃ -∗ biTc (SI := SI) R x₁ x₃ := by
@@ -258,6 +262,7 @@ theorem bi_tc_left (x₁ x₂ x₃ : A) :
   iexists x₂
   iframe
 
+omit [Sbi SI PROP] in
 @[rocq_alias bi_tc_once]
 theorem bi_tc_once (x₁ x₂ : A) : R x₁ x₂ -∗ biTc (SI := SI) R x₁ x₂ := by
   iintro H
@@ -265,6 +270,7 @@ theorem bi_tc_once (x₁ x₂ : A) : R x₁ x₂ -∗ biTc (SI := SI) R x₁ x�
   ileft
   iexact H
 
+omit [Sbi SI PROP] in
 @[rocq_alias bi_tc_trans]
 theorem bi_tc_trans (x₁ x₂ x₃ : A) :
     biTc (SI := SI) R x₁ x₂ -∗ biTc (SI := SI) R x₂ x₃ -∗ biTc (SI := SI) R x₁ x₃ := by
@@ -277,6 +283,7 @@ theorem bi_tc_trans (x₁ x₂ x₃ : A) :
   · iapply bi_tc_left $$ HR
     iapply IH; itrivial
 
+omit [Sbi SI PROP] in
 @[rocq_alias bi_tc_r]
 theorem bi_tc_right (x y z : A) : biTc (SI := SI) R x y -∗ R y z -∗ biTc (SI := SI) R x z := by
   iintro Htc HR
