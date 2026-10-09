@@ -635,7 +635,7 @@ theorem bigSepM2_dist_2 [BIStepIndexed SI PROP] (A B : Type uV) [OFE SI A] [OFE 
       x1 ≡{n}≡ x1' → get? m2 k = some x2 → get? m2' k = some x2' → x2 ≡{n}≡ x2' →
       Φ k x1 x2 ≡{n}≡ Ψ k x1' x2') :
     ([∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2) ≡{n}≡ [∗map] k ↦ x1;x2 ∈ m1';m2', Ψ k x1 x2 := by
-  apply and_ne.ne (by rw [dom_eq_of_option_rel hm1, dom_eq_of_option_rel hm2] <;> exact .rfl)
+  apply and_ne.ne (by rw [dom_eq_of_option_rel hm1, dom_eq_of_option_rel hm2])
   apply bigOpM_gen_proper_2 (fun hEq => hEq ▸ .rfl) OFE.dist_equivalence
     (fun hΦ hΨ => sep_ne.ne hΦ hΨ) (isSome_zipWith_prod_congr hm1 hm2)
   rintro k ⟨x1, x2⟩ ⟨x1', x2'⟩ hxy hxy'

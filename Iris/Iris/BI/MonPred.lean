@@ -492,15 +492,15 @@ instance [BIStepIndexed SI PROP] [SIdxFinite SI] : BIStepIndexed SI (MonPred I P
   and_ne := ⟨fun _ _ _ h _ _ h' =>
     dist_at.mpr fun i => and_ne.ne (dist_at.mp h i) (dist_at.mp h' i)⟩
   or_ne := ⟨fun _ _ _ h _ _ h' => dist_at.mpr fun i => or_ne.ne (dist_at.mp h i) (dist_at.mp h' i)⟩
-  imp_ne := ⟨fun _ _ _ h _ _ h' => dist_at.mpr fun i =>
+  imp_ne := ⟨fun _ _ _ h _ _ h' => dist_at.mpr fun _ =>
     forall_ne fun j => imp_ne.ne Dist.rfl (imp_ne.ne (dist_at.mp h j) (dist_at.mp h' j))⟩
-  sForall_ne := fun {n : SI} {Ψ₁ Ψ₂} h => dist_at.mpr fun i =>
+  sForall_ne := fun {_ _ _} h => dist_at.mpr fun i =>
     Iris.BI.sForall_ne
       ⟨fun _ ⟨q, hq, hp⟩ =>
           let ⟨q', hq', hr⟩ := h.1 q hq; ⟨_, ⟨q', hq', rfl⟩, hp ▸ dist_at.mp hr i⟩,
        fun _ ⟨q, hq, hp⟩ =>
           let ⟨q', hq', hr⟩ := h.2 q hq; ⟨_, ⟨q', hq', rfl⟩, hp ▸ dist_at.mp hr i⟩⟩
-  sExists_ne := fun {n : SI} {Ψ₁ Ψ₂} h => dist_at.mpr fun i =>
+  sExists_ne := fun {_ _ _} h => dist_at.mpr fun i =>
     Iris.BI.sExists_ne
       ⟨fun _ ⟨q, hq, hp⟩ =>
           let ⟨q', hq', hr⟩ := h.1 q hq; ⟨_, ⟨q', hq', rfl⟩, hp ▸ dist_at.mp hr i⟩,
@@ -508,7 +508,7 @@ instance [BIStepIndexed SI PROP] [SIdxFinite SI] : BIStepIndexed SI (MonPred I P
           let ⟨q', hq', hr⟩ := h.2 q hq; ⟨_, ⟨q', hq', rfl⟩, hp ▸ dist_at.mp hr i⟩⟩
   sep_ne := ⟨fun _ _ _ h _ _ h' =>
     dist_at.mpr fun i => sep_ne.ne (dist_at.mp h i) (dist_at.mp h' i)⟩
-  wand_ne := ⟨fun _ _ _ h _ _ h' => dist_at.mpr fun i =>
+  wand_ne := ⟨fun _ _ _ h _ _ h' => dist_at.mpr fun _ =>
     forall_ne fun j => imp_ne.ne Dist.rfl (wand_ne.ne (dist_at.mp h j) (dist_at.mp h' j))⟩
   persistently_ne := ⟨fun _ _ _ h => dist_at.mpr fun i => persistently_ne.ne (dist_at.mp h i)⟩
   later_ne := ⟨fun _ _ _ h => dist_at.mpr fun i => later_ne.ne (dist_at.mp h i)⟩

@@ -138,7 +138,7 @@ instance instURA (R : α → α → Prop) : URA (Mra R) where
 @[reducible] def cmraData (R : α → α → Prop) : CMRAData SI (Mra R) where
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ h := by rw [h] <;> exact .rfl
+  op_ne.ne _ _ _ h := by rw [h]
   pcore_ne hxy h := ⟨_, (congrArg some hxy.symm).trans h, .rfl⟩
   validN_ne _ := id
   valid_iff_validN := by simp

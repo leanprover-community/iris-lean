@@ -80,7 +80,7 @@ theorem IsLimit.succ_mem (hP : P.IsLimit) {k sk : SI} (hs : IsSucc k sk) (hk : P
   exact P.down (SIdx.is_succ_gt_l hs h1) h2
 
 theorem below_isLimit {t : SI} (hl : SIdx.Limit t) : (below t).IsLimit :=
-  ⟨hl.limit_lt_0, fun {n} h => let ⟨sn, hs, hlt⟩ := hl.exists_succ_lt h; ⟨sn, hs.lt, hlt⟩⟩
+  ⟨hl.limit_lt_0, fun {_} h => let ⟨sn, hs, hlt⟩ := hl.exists_succ_lt h; ⟨sn, hs.lt, hlt⟩⟩
 
 theorem univ_isLimit [SIdxSucc SI] : (univ : Site SI).IsLimit :=
   ⟨trivial, fun {n} _ => ⟨succᵢ n, SIdx.lt_succ_self n, trivial⟩⟩

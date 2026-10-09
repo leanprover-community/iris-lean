@@ -1369,7 +1369,7 @@ instance instIsCOFESum [OFE SI α] [OFE SI β] [IsCOFE SI α] [IsCOFE SI β] : I
           have hp' := hc p hp
           cases e1 : c1.bchain p hp <;> cases e2 : c2.bchain p hp <;>
             rw [e1, e2] at hp' <;> first | exact hp' | exact hp'.elim | exact h0
-      | refine dist_inr (IsCOFE.lbcompl_ne hn _ _ (fun p hp => ?_)) <;>
+      | refine dist_inr (IsCOFE.lbcompl_ne hn _ _ (fun p hp => ?_))
         · simp only [BChain.map_apply]
           have hp' := hc p hp
           cases e1 : c1.bchain p hp <;> cases e2 : c2.bchain p hp <;>
@@ -1611,20 +1611,20 @@ variable [OFE SI α]
 def optionChain (c : Chain SI (Option α)) (x : α) : Chain SI α := by
   refine ⟨fun n => (c n).getD x, fun {n : SI} {i} H => ?_⟩
   have := c.cauchy H; revert this
-  cases c.chain i <;> cases c.chain n <;> simp [Dist, Option.Forall₂]
+  cases c.chain i <;> cases c.chain n <;> simp [Dist]
 
 @[rocq_alias option_bchain]
 def optionBChain {n : SI} (c : BChain SI (Option α) n) (x : α) : BChain SI α n := by
   refine ⟨fun m hm => (c.bchain m hm).getD x, fun {m : SI} {p} hm hp H => ?_⟩
   have := c.bcauchy hm hp H; revert this
-  cases c.bchain p hp <;> cases c.bchain m hm <;> simp [Dist, Option.Forall₂]
+  cases c.bchain p hp <;> cases c.bchain m hm <;> simp [Dist]
 
 @[rocq_alias option_cofe]
 instance isCOFE_option [IsCOFE SI α] : IsCOFE SI (Option α) where
   compl c := (c 0).map fun x => IsCOFE.compl (optionChain c x)
   conv_compl {n : SI} c := by
     have := c.cauchy (SIdx.le_0_l (n := n)); revert this
-    rcases c.chain 0 with _|x' <;> rcases e : c.chain n with _|y' <;> simp [Dist, Option.Forall₂]
+    rcases c.chain 0 with _|x' <;> rcases e : c.chain n with _|y' <;> simp [Dist]
     refine fun _ => OFE.dist_eqv.trans IsCOFE.conv_compl ?_
     simp [optionChain, e]
   lbcompl {n : SI} hn c :=
@@ -1632,7 +1632,7 @@ instance isCOFE_option [IsCOFE SI α] : IsCOFE SI (Option α) where
   conv_lbcompl {n : SI} hn c {m : SI} hm := by
     have := c.bcauchy hn.limit_lt_0 hm SIdx.le_0_l; revert this
     rcases c.bchain 0 hn.limit_lt_0 with _ | x' <;> rcases e : c.bchain m hm with _ | y' <;>
-      simp [Dist, Option.Forall₂]
+      simp [Dist]
     refine fun _ => OFE.dist_eqv.trans (IsCOFE.conv_lbcompl hn _ hm) ?_
     simp [optionBChain, e]
   lbcompl_ne {n : SI} hn c1 c2 {m : SI} hc := by
@@ -1640,7 +1640,7 @@ instance isCOFE_option [IsCOFE SI α] : IsCOFE SI (Option α) where
     revert h0
     rcases e1 : c1.bchain 0 hn.limit_lt_0 with _ | x1 <;>
       rcases e2 : c2.bchain 0 hn.limit_lt_0 with _ | x2 <;>
-      simp only [Option.map, Dist, Option.Forall₂] <;> intro h0
+      simp only [Option.map, Dist] <;> intro h0
     · trivial
     · exact h0.elim
     · exact h0.elim
@@ -1660,14 +1660,14 @@ instance isCOFE_option [IsCOFE SI α] : IsCOFE SI (Option α) where
 @[rocq_alias optionO_map]
 def optionMap {α β : Type _} [OFE SI α] [OFE SI β] (f : α -n>[SI] β) : Option α -n>[SI] Option β := by
   refine ⟨Option.map f, ⟨?_⟩⟩
-  rintro _ ⟨⟩ ⟨⟩ H <;> simp_all [Dist, Option.Forall₂]
+  rintro _ ⟨⟩ ⟨⟩ H <;> simp_all [Dist]
   exact f.ne.ne H
 
 @[rocq_alias option_fmap_ne]
 theorem Option.map_ne [OFE SI β] {f g : α → β} {x y : Option α} {n : SI} :
     (∀ x y, x ≡{n}≡ y → f x ≡{n}≡ g y) → x ≡{n}≡ y → Option.map f x ≡{n}≡ Option.map g y := by
   intro hf hxy
-  cases x <;> cases y <;> simp_all [Dist, Option.Forall₂]
+  cases x <;> cases y <;> simp_all [Dist]
 
 theorem Option.map_forall₂ {α β : Type _} (f : α → β)
     {o1 o2 : Option α} (h : o1 = o2) : o1.map f = o2.map f := congrArg (Option.map f) h
@@ -1680,17 +1680,17 @@ instance optionMap_ne [OFE SI β] : NonExpansive SI (optionMap (SI := SI) (α :=
 @[rocq_alias option_mbind_ne]
 theorem Option.bind_ne [OFE SI β] {f g : α → Option β} {x y : Option α} {n : SI}
     (hf : ∀ x y, x ≡{n}≡ y → f x ≡{n}≡ g y) (hxy : x ≡{n}≡ y) : x.bind f ≡{n}≡ y.bind g := by
-  cases x <;> cases y <;> simp_all [Dist, Option.Forall₂]
+  cases x <;> cases y <;> simp_all [Dist]
 
 @[rocq_alias option_mjoin_ne]
 theorem Option.join_ne {x y : Option (Option α)} {n : SI} (hxy : x ≡{n}≡ y) : x.join ≡{n}≡ y.join := by
-  cases x <;> cases y <;> simp_all [Dist, Option.Forall₂]
+  cases x <;> cases y <;> simp_all [Dist]
 
 @[rocq_alias from_option_ne]
 theorem Option.elim_ne {β : Type _} (R : β → β → Prop) {f g : α → β} {d d' : β}
     {x y : Option α} {n : SI} (hf : ∀ x y, x ≡{n}≡ y → R (f x) (g y)) (hd : R d d')
     (hxy : x ≡{n}≡ y) : R (x.elim d f) (y.elim d' g) := by
-  cases x <;> cases y <;> simp_all [Dist, Option.Forall₂]
+  cases x <;> cases y <;> simp_all [Dist]
 
 end Option
 
@@ -1707,7 +1707,7 @@ instance oFunctorOption [OFunctor SI F] : OFunctor SI (OptionOF (SI := SI) F) wh
   ofe := _
   map f g := optionMap (OFunctor.map f g)
   map_ne.ne _ _ _ Hx _ _ Hy z := by
-    cases z <;> simp [optionMap, Dist, Option.Forall₂]
+    cases z <;> simp [optionMap, Dist]
     exact OFunctor.map_ne.ne Hx Hy ..
   map_id z := by
     cases z with
@@ -2460,7 +2460,7 @@ instance isCOFE_later [OFE SI A] [IsCOFE SI A] : IsCOFE SI (Later A) where
 @[rocq_alias laterO_map]
 def laterMap [OFE SI A] [OFE SI B] (f : A -n>[SI] B) : Later A -n>[SI] Later B := by
   refine ⟨fun x => Later.next (f x.car), ⟨?_⟩⟩
-  rintro _ ⟨⟩ ⟨⟩ H; simp_all only [Dist, DistLater]
+  rintro _ ⟨⟩ ⟨⟩ H; simp_all only [Dist]
   intros m Hlt; exact f.ne.ne (H m Hlt)
 #rocq_ignore later_map "Underlying map of laterMap"
 

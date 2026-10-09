@@ -260,7 +260,7 @@ theorem raOrderedNE [RA α] [ORA SI α] [RA β] [ORA SI β] : OrderedNE SI (Csum
         | trivial | exact ex.elim | exact ey.elim | exact h.elim
         | exact ordN_ne (α := α) ex ey h | exact ordN_ne (α := β) ex ey h
   ordN_le {n n' : SI} {x y} h le := by
-    cases x <;> cases y <;> first | trivial | exact ordN_le (α := α) h le | exact ordN_le (α := β) h le | exact h
+    cases x <;> cases y <;> first | trivial | exact ordN_le (α := α) h le | exact ordN_le (α := β) h le
 
 section
 variable [RA α] [ORA SI α] [RA β] [ORA SI β]

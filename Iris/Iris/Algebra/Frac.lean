@@ -90,7 +90,7 @@ instance Qp.instRA : RA Qp where
 @[reducible] def Qp.cmraData : CMRAData SI Qp where
   ValidN _ x := x.val ≤ 1
   Valid x := x.val ≤ 1
-  op_ne.ne n x1 x2 H := by rw [(H : x1 = x2)] <;> exact .rfl
+  op_ne.ne n x1 x2 H := by rw [(H : x1 = x2)]
   pcore_ne _ H := by rcases H
   validN_ne H := by rw [(H : _ = _)]; exact id
   valid_iff_validN := .symm (forall_const _)

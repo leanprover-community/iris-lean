@@ -510,7 +510,7 @@ theorem ord {x y : Agree α} : x ≼ₒ[SI] y ↔ y = y • x :=
 @[rocq_alias agree_included]
 theorem included {x y : Agree α} : x ≼ y ↔ y = y • x :=
   ⟨fun ⟨z, hz⟩ => by
-    subst hz; show op x z = op (op x z) x; rw [op_comm (x := op x z), op_assoc, op_idemp],
+    subst hz; change op x z = op (op x z) x; rw [op_comm (x := op x z), op_assoc, op_idemp],
    fun h => ⟨y, h.trans op_comm⟩⟩
 
 theorem valid_ordN {n : SI} {x y : Agree α} : ✓{n} y → x ≼ₒ{n} y → x ≡{n}≡ y := by

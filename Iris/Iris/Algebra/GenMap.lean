@@ -264,7 +264,7 @@ theorem GenMap.increasing_of_car {x : GenMap β} (h : Increasing SI x.car) : Inc
 instance instORA_GenMap : ORA SI (GenMap β) where
   toValid := GenMap.raValid β
   op_ne {x} := ⟨fun n y₁ y₂ H => by
-    show (x.car • y₁.car) ≡{n}≡ (x.car • y₂.car)
+    change (x.car • y₁.car) ≡{n}≡ (x.car • y₂.car)
     exact (op_ne (x := x.car)).ne (n := n) (x₁ := y₁.car) (x₂ := y₂.car) H⟩
   pcore_ne {n : SI} {x y cx} H Hm := by
     refine ⟨⟨fun k => core (y.car k), ?_⟩, by simp [PCore.pcore, pcore_genmap], fun k => ?_⟩

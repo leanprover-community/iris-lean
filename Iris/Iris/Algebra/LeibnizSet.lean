@@ -111,7 +111,7 @@ instance instURA : URA (DisjointLeibnizSet S) where
 @[reducible] def cmraData : CMRAData SI (DisjointLeibnizSet S) where
   ValidN _ | valid _ => True | _ => False
   Valid | valid _ => True | _ => False
-  op_ne.ne _ _ _ H := by rw [(H : _ = _)] <;> exact .rfl
+  op_ne.ne _ _ _ H := by rw [(H : _ = _)]
   pcore_ne {_ _ _ cx} _ H := ⟨cx, H, .rfl⟩
   validN_ne H G := (H : _ = _) ▸ G
   valid_iff_validN := ⟨(fun _ => ·), (· 0)⟩
@@ -345,7 +345,7 @@ instance instURA : URA (LeibnizSet S) where
 @[reducible] def cmraData : CMRAData SI (LeibnizSet S) where
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ H := by rw [(H : _ = _)] <;> exact .rfl
+  op_ne.ne _ _ _ H := by rw [(H : _ = _)]
   pcore_ne {_ _ _} _ H1 H2 :=  ⟨_, rfl, .trans (.of_eq <| Option.some.injEq _ _ ▸ H2.symm) H1⟩
   validN_ne _ _ := by simp
   valid_iff_validN := by simp

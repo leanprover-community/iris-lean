@@ -147,7 +147,7 @@ def op [Op A] [Op CoPsetDisjL] (x y : DynReservationMap A H) : DynReservationMap
   pcore_idem {x cx} h := by
     cases Option.some_inj.mp h.symm
     rcases x with ⟨xd, xt⟩
-    show some (mk (PCore.core (PCore.core xd)) ∅) = some (mk (PCore.core xd) ∅)
+    change some (mk (PCore.core (PCore.core xd)) ∅) = some (mk (PCore.core xd) ∅)
     unfold PCore.core
     cases hd : PCore.pcore xd with
     | none => simp [hd]
@@ -262,7 +262,7 @@ theorem infinite_op_left {n : SI} {x y : DynReservationMap A H} (vt : ✓{n} (x.
       ht ▸ hy ▸ vt
     have hdisj : e₁ ## e₂ := (valid_op_iff_disj (SI := SI)).mp hv
     simp only [Infinite, ht] at ⊢
-    simp only [Infinite, op_token, op, ht, hy, ORA.op, hdisj, ↓reduceIte] at inf
+    simp only [Infinite, op, ht, hy, ORA.op, hdisj, ↓reduceIte] at inf
     exact setInfinite_mono
       (fun i hi => mem_diff.mpr ⟨(mem_diff.mp hi).left,
         fun hc => (mem_diff.mp hi).right (mem_union.mpr (.inl hc))⟩) inf

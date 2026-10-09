@@ -65,3 +65,5 @@ theorem Contractive.succNat [OFE Nat α] [OFE Nat β] (f : α → β) [Contracti
   Contractive.distLater_dist <| distLater_succ.mpr h
 
 end OFE
+
+end Iris

@@ -227,7 +227,7 @@ def listComplGo : List α → Chain SI (List α) → List α
 
 theorem listComplGo_conv_compl {n : SI} (c : Chain SI (List α)) :
     ∀ (c0 : List α), c0 ≡{(0 : SI)}≡ c n → listComplGo c0 c ≡{n}≡ c n
-  | [], H => by rw [nil_dist_eq.mp H.symm] <;> exact .rfl
+  | [], H => by rw [nil_dist_eq.mp H.symm]; exact .rfl
   | x :: c0, H => by
     obtain ⟨x', xs', _, hxs, hcn⟩ := cons_dist_eq H.symm
     rw [hcn]

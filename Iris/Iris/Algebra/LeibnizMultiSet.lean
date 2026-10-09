@@ -61,7 +61,7 @@ instance instURA : URA (LeibnizMultiSet MS) where
 @[reducible] def cmraData : CMRAData SI (LeibnizMultiSet MS) where
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ H := by rw [(H : _ = _)] <;> exact .rfl
+  op_ne.ne _ _ _ H := by rw [(H : _ = _)]
   pcore_ne {_ _ _ cx} _ H := ⟨cx, H, .rfl⟩
   validN_ne _ _ := trivial
   valid_iff_validN := by simp

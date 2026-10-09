@@ -60,7 +60,7 @@ instance instRA : RA UFrac where
 @[reducible] def cmraData : CMRAData SI UFrac where
   Valid _ := True
   ValidN _ _ := True
-  op_ne.ne _ _ _ H := by rw [H] <;> exact .rfl
+  op_ne.ne _ _ _ H := by rw [H]
   pcore_ne _ H := by rcases H
   validN_ne _ := id
   valid_iff_validN := ⟨fun _ _ => trivial, fun _ => trivial⟩

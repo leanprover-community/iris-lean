@@ -809,7 +809,7 @@ theorem step_fupdN_succ_r {n : Nat} {Eo Ei : CoPset} {P : PROP} :
 theorem step_fupdN_add {n m : Nat} {Eo Ei : CoPset} {P : PROP} :
     (|={Eo}[Ei]▷=>^[n + m] P) ⊣⊢ (|={Eo}[Ei]▷=>^[n] |={Eo}[Ei]▷=>^[m] P) := by
   induction n with
-  | zero => rw [Nat.zero_add] <;> exact .rfl
+  | zero => rw [Nat.zero_add]; exact .rfl
   | succ n IH =>
     rw [Nat.add_right_comm n 1 m]
     exact ⟨step_fupd_mono IH.1, step_fupd_mono IH.2⟩

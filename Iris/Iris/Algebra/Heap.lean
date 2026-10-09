@@ -299,7 +299,7 @@ instance instDiscreteEGet? [LawfulPartialMap M K] [OFE SI V] {m : M V} [Discrete
       · subst hk
         rw [get?_insert_eq rfl]
         exact h
-      · rw [get?_insert_ne hk] <;> exact .rfl
+      · rw [get?_insert_ne hk]
 
 open Classical in
 @[rocq_alias gmap_insert_discrete]
