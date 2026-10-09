@@ -141,7 +141,7 @@ theorem auth_dist_inj [URA B] {q1 q2 : DFrac} {a1 a2 : A} {n : SI}
   ⟨auth_inj_frac H, dist_of_auth_dist H⟩
 
 @[rocq_alias view_auth_inj]
-theorem auth_eqv_inj [URA B] [UORA SI B] {q1 q2 : DFrac} {a1 a2 : A}
+theorem auth_eqv_inj [URA B] {q1 q2 : DFrac} {a1 a2 : A}
     (H : (●V{q1} a1 : View R) = ●V{q2} a2) : q1 = q2 ∧ a1 = a2 := by
   refine ⟨(auth_dist_inj (n := 0) H.dist).1, OFE.eq_dist_2 (SI := SI) fun n => ?_⟩
   exact (auth_dist_inj H.dist).2
