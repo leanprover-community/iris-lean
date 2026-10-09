@@ -29,11 +29,11 @@ open OFE ORA UORA Auth Iris.Option Iris.OFE.Option UFrac
 /-! ## Definitions -/
 
 @[rocq_alias ufrac_authR, rocq_alias ufrac_authUR]
-abbrev UFracAuth [ORA SI A] := Auth (SI := SI) (Option (UFrac × A))
+abbrev UFracAuth [RA A] [ORA SI A] := Auth (SI := SI) (Option (UFrac × A))
 
 namespace UFracAuth
 
-variable [ORA SI A]
+variable [RA A] [ORA SI A]
 
 @[rocq_alias ufrac_auth_auth]
 nonrec abbrev auth (q : Qp) (a : A) : UFracAuth (SI := SI) (A := A) :=
@@ -185,7 +185,7 @@ theorem frag_op_valid {q1 q2 : Qp} {a b : A} : ✓[SI] ((◯U{q1} a : UFracAuth 
 
 @[rocq_alias ufrac_auth_is_op]
 instance isOp_ufrac_auth {q q1 q2 : Qp} {a1 a2 : A} {a : outParam A}
-    [h1 : IsOp SI io q q1 q2] [h2 : IsOp SI io a a1 a2] : IsOp SI io (◯U{q} a : UFracAuth (SI := SI)) (◯U{q1} a1) (◯U{q2} a2) where
+    [h1 : IsOp io q q1 q2] [h2 : IsOp io a a1 a2] : IsOp io (◯U{q} a : UFracAuth (SI := SI)) (◯U{q1} a1) (◯U{q2} a2) where
   is_op := calc
         ◯U{q} a
     _ = ◯U{q1 • q2} a := congrArg (frag · a) h1.is_op
@@ -193,8 +193,8 @@ instance isOp_ufrac_auth {q q1 q2 : Qp} {a1 a2 : A} {a : outParam A}
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias ufrac_auth_is_op_core_id]
-instance isOp_ufrac_auth_core_id {q q1 q2 : Qp} {a : A} [h1 : CoreId a] [h2 : IsOp SI io q q1 q2] :
-    IsOp SI io (◯U{q} a : UFracAuth (SI := SI)) (◯U{q1} a) (◯U{q2} a) where
+instance isOp_ufrac_auth_core_id {q q1 q2 : Qp} {a : A} [h1 : CoreId a] [h2 : IsOp io q q1 q2] :
+    IsOp io (◯U{q} a : UFracAuth (SI := SI)) (◯U{q1} a) (◯U{q2} a) where
   is_op := calc
         (◯U{q} a)
     _ = ◯U{q1 • q2} a := congrArg (frag · a) h2.is_op

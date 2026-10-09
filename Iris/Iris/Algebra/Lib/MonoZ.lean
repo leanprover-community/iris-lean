@@ -52,7 +52,7 @@ instance {l : MaxInt} : CoreId (●MZ□ l : MonoZ (SI := SI)) := by
 theorem auth_dfrac_op (dq1 dq2 : DFrac) (n : MaxInt) :
     (●MZ{dq1 • dq2} n : MonoZ (SI := SI)) = (●MZ{dq1} n) • (●MZ{dq2} n) := by
   unfold auth
-  rw [← assoc', op_core_right_of_inc (SI := SI) (inc_op_right ..), assoc', ← Auth.auth_dfrac_op]
+  rw [← assoc', op_core_right_of_inc (inc_op_right ..), assoc', ← Auth.auth_dfrac_op]
 
 @[rocq_alias mono_Z_lb_op]
 theorem lb_op (n1 n2 : MaxInt) : (◯MZ (n1 + n2) : MonoZ (SI := SI)) = ((◯MZ n1) • (◯MZ n2) : MonoZ) :=
@@ -60,7 +60,7 @@ theorem lb_op (n1 n2 : MaxInt) : (◯MZ (n1 + n2) : MonoZ (SI := SI)) = ((◯MZ 
 
 @[rocq_alias mono_Z_auth_lb_op]
 theorem auth_lb_op (dq : DFrac) (n : MaxInt) : (●MZ{dq} n : MonoZ (SI := SI)) = (●MZ{dq} n) • (◯MZ n) :=
-  (op_core_left_of_inc (SI := SI) (inc_op_right ..)).symm
+  (op_core_left_of_inc (inc_op_right ..)).symm
 
 @[rocq_alias mono_Z_lb_op_le_l]
 theorem lb_op_le_l (n n' : MaxInt) (h : n' ≤ n) :
@@ -132,13 +132,13 @@ theorem auth_unpersist (n : MaxInt) :
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias mono_Z_auth_dfrac_is_op]
-instance {dq dq1 dq2 : DFrac} {n : MaxInt} [h : IsOp SI d dq dq1 dq2] :
-    IsOp SI d (●MZ{dq} n : MonoZ (SI := SI)) (●MZ{dq1} n) (●MZ{dq2} n) where
+instance {dq dq1 dq2 : DFrac} {n : MaxInt} [h : IsOp d dq dq1 dq2] :
+    IsOp d (●MZ{dq} n : MonoZ (SI := SI)) (●MZ{dq1} n) (●MZ{dq2} n) where
   is_op := by rw [h.is_op]; exact auth_dfrac_op ..
 
 @[rocq_alias mono_Z_lb_max_is_op]
-instance {n n1 n2 : MaxInt} [h : IsOp SI d n n1 n2] :
-    IsOp SI d (◯MZ n : MonoZ (SI := SI)) (◯MZ n1) (◯MZ n2) where
+instance {n n1 n2 : MaxInt} [h : IsOp d n n1 n2] :
+    IsOp d (◯MZ n : MonoZ (SI := SI)) (◯MZ n1) (◯MZ n2) where
   is_op := by rw [h.is_op]; exact rfl
 
 end MonoZ

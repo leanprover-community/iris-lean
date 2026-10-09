@@ -357,7 +357,7 @@ instance raPCore [PCore V] : PCore (M V) where
     cases HY : PCore.pcore v; simp
     exact PCore.pcore_idem HY
 
-/-- SI-free `MonoidOps` for heaps: `ucmraMonoidOps` cannot infer `SI` from `op` alone. -/
+/-- `MonoidOps` for heaps over any `Op V` (`ucmraMonoidOps` would need `URA V`). -/
 instance instMonoidOps [Op V] : Algebra.MonoidOps (Op.op (α := M V)) ∅ where
   op_assoc := Op.assoc.symm
   op_comm := Op.comm
@@ -365,7 +365,51 @@ instance instMonoidOps [Op V] : Algebra.MonoidOps (Op.op (α := M V)) ∅ where
     simp only [Op.op, op, get?_merge, get?_empty]
     cases get? m k <;> rfl
 
-variable [ORA SI V]
+@[rocq_alias lookup_op]
+theorem get?_op [Op V] (x y : M V) : get? (x • y) i = get? x i • get? y i := by
+  simp only [ORA.op, op, get?_merge, Option.merge, optionOp]
+  grind
+
+@[rocq_alias lookup_core]
+theorem get?_core [PCore V] (m : M V) (i : K) : get? (core m) i = core (get? m i) := by
+  simp only [core, ORA.pcore, pcore, Option.getD_some, get?_bindAlter, optionCore]
+
+instance raRA [RA V] : RA (M V) where
+  pcore_op_left {x cx} H := LawfulPartialMap.equiv_iff_eq.mp fun k => by
+    simp only [← Option.getD_some (a := cx) (b := cx), ORA.op, op, get?_merge]
+    cases Hcx : get? cx k <;> cases hx : get? x k <;>
+      simp <;>
+      simp only [ORA.pcore, pcore, Option.some.injEq] at H
+    · rw [← H, get?_bindAlter, hx] at Hcx
+      cases Hcx
+    · refine pcore_op_left ?_
+      simp [← Hcx, ← H, get?_bindAlter, hx]
+
+instance raURA [RA V] : URA (M V) where
+  unit := unit
+  unit_left_id := LawfulPartialMap.equiv_iff_eq.mp fun k => by
+    simp [ORA.op, get?_merge, get?_empty]
+  pcore_unit := congrArg some <| LawfulPartialMap.equiv_iff_eq.mp fun k => by
+    simp [get?_bindAlter, get?_empty]
+  total _ := Option.isSome_iff_exists.mp rfl
+
+@[rocq_alias lookup_included]
+theorem lookup_inc [Op V] {m1 m2 : M V} :
+    (∃ (z : M V), m2 = op m1 z) ↔
+    ∀ i, (∃ z, (get? m2 i) = (get? m1 i) • z) := by
+  refine ⟨fun ⟨z, Hz⟩ i => ?_, fun H => ?_⟩
+  · refine ⟨get? z i, ?_⟩
+    refine .trans (congrArg (get? · i) Hz) ?_
+    simp only [ORA.op, op, get?_merge]
+    cases get? m1 i <;> cases get? z i <;> simp
+  · obtain ⟨f, Hf⟩ := Classical.axiomOfChoice H
+    exists bindAlter (fun k _ => f k) m2
+    refine LawfulPartialMap.equiv_iff_eq.mp fun i => (Hf i).trans ?_
+    specialize Hf i; revert Hf
+    simp [ORA.op, optionOp, get?_merge, get?_bindAlter]
+    cases get? m2 i <;> cases get? m1 i <;> cases f i <;> simp
+
+variable [RA V] [ORA SI V]
 @[simp, rocq_alias gmap_valid_instance]
 def valid (s : M V) : Prop := ∀ k, ✓[SI] get? s k
 @[simp, rocq_alias gmap_validN_instance]
@@ -385,22 +429,6 @@ theorem lookup_incN {n : SI} {m1 m2 : M V} :
     refine fun i => (Hf i).trans ?_
     specialize Hf i; revert Hf
     simp [ORA.op, get?_merge, get?_bindAlter]
-    cases get? m2 i <;> cases get? m1 i <;> cases f i <;> simp
-
-@[rocq_alias lookup_included]
-theorem lookup_inc {m1 m2 : M V} :
-    (∃ (z : M V), m2 = op m1 z) ↔
-    ∀ i, (∃ z, (get? m2 i) = (get? m1 i) • z) := by
-  refine ⟨fun ⟨z, Hz⟩ i => ?_, fun H => ?_⟩
-  · refine ⟨get? z i, ?_⟩
-    refine .trans (congrArg (get? · i) Hz) ?_
-    simp only [ORA.op, op, get?_merge]
-    cases get? m1 i <;> cases get? z i <;> simp
-  · obtain ⟨f, Hf⟩ := Classical.axiomOfChoice H
-    exists bindAlter (fun k _ => f k) m2
-    refine OFE.eq_dist_2 fun (n : SI) i => ((Hf i).trans ?_).dist
-    specialize Hf i; revert Hf
-    simp [ORA.op, optionOp, get?_merge, get?_bindAlter]
     cases get? m2 i <;> cases get? m1 i <;> cases f i <;> simp
 
 @[reducible]
@@ -426,15 +454,6 @@ theorem raOrderedNE : OrderedNE SI (M V) where
 section
 attribute [local instance] raValid raOrdered raOrderedNE
 
-@[rocq_alias lookup_op]
-theorem get?_op (x y : M V) : get? (x • y) i = get? x i • get? y i := by
-  simp only [ORA.op, op, get?_merge, Option.merge, optionOp]
-  grind
-
-@[rocq_alias lookup_core]
-theorem get?_core (m : M V) (i : K) : get? (core m) i = core (get? m i) := by
-  simp only [core, ORA.pcore, pcore, Option.getD_some, get?_bindAlter, optionCore]
-
 theorem increasing_get? {m : M V} (h : Increasing SI m) (k : K) : Increasing SI (get? m k) where
   increasing
     | none => by simpa [get?_op, get?_empty] using h.increasing unit k
@@ -446,8 +465,6 @@ theorem increasing_iff {m : M V} : Increasing SI m ↔ ∀ k, Increasing SI (get
 open OFE in
 @[rocq_alias gmapR, rocq_alias gmap_cmra_mixin]
 instance instStoreCMRA : ORA SI (M V) where
-  toOp := raOp
-  toPCore := raPCore
   toValid := raValid
   op_ne.ne _ x1 x2 H i := by
     rename_i x _
@@ -470,15 +487,6 @@ instance instStoreCMRA : ORA SI (M V) where
     specialize H k; revert H
     simp only [ORA.op, op, get?_merge, Option.merge]
     cases get? x1 k <;> cases get? x2 k <;> simp [optionOp]
-  pcore_op_left {x cx} H := eq_dist_2 fun (_ : SI) k => by
-    simp only [← Option.getD_some (a := cx) (b := cx), ORA.op, op, get?_merge]
-    cases Hcx : get? cx k <;> cases hx : get? x k <;>
-      simp <;>
-      simp only [ORA.pcore, pcore, Option.some.injEq] at H
-    · rw [← H, get?_bindAlter, hx] at Hcx
-      cases Hcx
-    · refine (pcore_op_left ?_).dist
-      simp [← Hcx, ← H, get?_bindAlter, hx]
   extend {n : SI} {x y1 y2} Hm Heq := by
     have Hslice i : get? x i ≡{n}≡ get? y1 i • get? y2 i := by
       refine (get?_ne i |>.ne Heq).trans ?_
@@ -522,7 +530,7 @@ instance instStoreCMRA : ORA SI (M V) where
     rw [(Option.some.inj e.symm : cx = core x), get?_core, get?_core, get?_op]
     exact core_op_mono_ord _ _⟩
   pcore_increasing {x cx} e := (Option.some.inj e.symm : cx = core x) ▸
-    increasing_iff.mpr fun k => (get?_core (SI := SI) x k).symm ▸ increasing_core _
+    increasing_iff.mpr fun k => (get?_core x k).symm ▸ increasing_core _
   increasing_closed h h' := increasing_iff.mpr fun k =>
       increasing_closed (increasing_get? h k) (h'.imp (fun e => (get?_ne k).ne e) (· k))
   ordN_extend {n : SI} {x y} v h :=
@@ -540,12 +548,7 @@ end
 @[rocq_alias gmap_ucmra_mixin, rocq_alias gmapUR]
 instance instStoreUCMRA : UORA SI (M V) where
   toORA := instStoreCMRA
-  unit := unit
-  unit_valid := by simp [ORA.Valid, get?_empty]
-  unit_left_id := OFE.eq_dist_2 fun (_ : SI) k => by simp [ORA.op, get?_merge, get?_empty]
-  pcore_unit := OFE.eq_dist_2 fun (_ : SI) => by
-    refine OFE.some_dist_some.mpr fun k => ?_
-    simp [get?_bindAlter, get?_empty]
+  unit_valid k := by rw [show get? (UnitOp.unit : M V) k = none from get?_empty k]; trivial
   ord_refl _ := fun _ => ord_refl _
 
 instance instIncOrd [IncOrd SI V] : IncOrd SI (M V) :=
@@ -564,13 +567,10 @@ theorem lookup_ordN {n : SI} {m1 m2 : M V} : m1 ≼ₒ{n} m2 ↔ ∀ i, get? m1 
 theorem lookup_ord {m1 m2 : M V} : m1 ≼ₒ[SI] m2 ↔ ∀ i, get? m1 i ≼ₒ[SI] get? m2 i := .rfl
 
 @[rocq_alias gmap_op_empty_l_L]
-theorem op_empty_left {m : M V} : (∅ : M V) • m = m := unit_left_id_L (SI := SI)
+theorem op_empty_left {m : M V} : (∅ : M V) • m = m := unit_left_id_L
 
 @[rocq_alias gmap_op_empty_r]
-theorem op_empty_right {m : M V} : m • (∅ : M V) = m := unit_right_id_L (SI := SI)
-
-instance instIsTotalHeap : IsTotal (M V) where
-  total _ := Option.isSome_iff_exists.mp rfl
+theorem op_empty_right {m : M V} : m • (∅ : M V) = m := unit_right_id_L
 
 end Heap
 end ORA
@@ -579,7 +579,7 @@ namespace Heap
 
 open PartialMap LawfulPartialMap
 
-variable {K V : Type _} [LawfulPartialMap M K] [ORA SI V]
+variable {K V : Type _} [LawfulPartialMap M K] [RA V] [ORA SI V]
 
 open ORA
 
@@ -590,10 +590,7 @@ theorem get?_opM (m : M V) (mm : Option (M V)) (i : K) :
   | none =>
     change get? m i = get? m i • none
     cases get? m i <;> rfl
-  | some m' => exact get?_op (SI := SI) m m'
-
-/-- `ucmraMonoidOps` cannot infer `SI` from `op` alone. -/
-local instance : Algebra.MonoidOps (ORA.op (α := Option V)) none := ucmraMonoidOps (SI := SI)
+  | some m' => exact get?_op m m'
 
 @[rocq_alias lookup_op_homomorphism]
 instance (i : K) : Algebra.MonoidHomomorphism (ORA.op (α := M V)) (ORA.op (α := Option V))
@@ -677,8 +674,8 @@ theorem insert_eq_singleton_op_singleton {m : M V} (Hemp : get? m i = none) :
     insert m i x = singleton i x • m :=
   equiv_iff_eq.mp (insert_equiv_singleton_op_singleton Hemp)
 
-theorem core_empty : core (∅ : M V) = ∅ := OFE.eq_dist_2 (SI := SI) <| by
-  intro n k
+theorem core_empty : core (∅ : M V) = ∅ := equiv_iff_eq.mp <| by
+  intro k
   simp [core, ORA.pcore, get?_empty, get?_bindAlter]
 
 open Classical in
@@ -710,15 +707,14 @@ theorem singleton_op_singleton {i : K} {x y : V} :
 open Classical in
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias singleton_is_op]
-instance {d : IsOp.Direction} {i : K} {x x₁ x₂ : V} [h : IsOp SI d x x₁ x₂] :
-    IsOp SI d (singleton i x : M V) (singleton i x₁ : M V) (singleton i x₂ : M V) where
+instance {d : IsOp.Direction} {i : K} {x x₁ x₂ : V} [h : IsOp d x x₁ x₂] :
+    IsOp d (singleton i x : M V) (singleton i x₁ : M V) (singleton i x₂ : M V) where
   is_op := by rw [h.is_op, ← singleton_op_singleton]
 
 open Classical in
 @[rocq_alias gmap_core_id]
 theorem coreId_of_get? {m : M V} (h : ∀ {i x}, get? m i = some x → CoreId x) : CoreId m where
-  core_id := OFE.eq_dist_2 fun (_ : SI) => by
-    refine OFE.some_dist_some.mpr fun k => ?_
+  core_id := congrArg some <| equiv_iff_eq.mp fun k => by
     rw [get?_bindAlter]
     rcases hk : get? m k with _ | v
     · simp
@@ -726,20 +722,18 @@ theorem coreId_of_get? {m : M V} (h : ∀ {i x}, get? m i = some x → CoreId x)
 
 @[rocq_alias gmap_core_id']
 instance {m : M V} [I : ∀ x : V, CoreId x] : CoreId m where
-  core_id := OFE.eq_dist_2 fun (_ : SI) => by
-    refine OFE.some_dist_some.mpr fun k => ?_
+  core_id := congrArg some <| equiv_iff_eq.mp fun k => by
     rw [get?_bindAlter]
     cases get? m k <;> simp
-    exact core_id.dist
+    exact core_id
 
 open Classical in
 @[rocq_alias gmap_singleton_core_id]
 instance [CoreId (x : V)] : CoreId (singleton i x : M V) where
-  core_id := OFE.eq_dist_2 fun (_ : SI) => by
-    refine OFE.some_dist_some.mpr fun k => ?_
+  core_id := congrArg some <| equiv_iff_eq.mp fun k => by
     simp [get?_bindAlter, get?_singleton]
     split <;> simp
-    exact core_id.dist
+    exact core_id
 
 open Classical in
 theorem singleton_ordN_singleton_iff {n : SI} :
@@ -833,22 +827,22 @@ theorem singleton_inc_iff {m : M V} :
       exists v
   · cases z
     · exists (PartialMap.delete m i)
-      refine OFE.eq_dist_2 fun (_ : SI) j => ?_
+      refine equiv_iff_eq.mp fun j => ?_
       simp [ORA.op, get?_merge, get?_singleton, get?_delete]
       split
       · rename_i h
         simp
-        refine ((h ▸ Hy).trans <| Hz.trans ?_).dist
+        refine (h ▸ Hy).trans <| Hz.trans ?_
         simp [ORA.op]
       · simp
     · rename_i z
       exists (PartialMap.insert m i z)
-      refine OFE.eq_dist_2 fun (_ : SI) j => ?_
+      refine equiv_iff_eq.mp fun j => ?_
       simp [ORA.op, get?_merge, get?_singleton, get?_insert]
       split
       · rename_i h
         simp
-        refine ((h ▸ Hy).trans <| Hz.trans ?_).dist
+        refine (h ▸ Hy).trans <| Hz.trans ?_
         simp [ORA.op]
       · simp
 
@@ -959,14 +953,14 @@ theorem inc_dom_inc {m1 m2 : M V} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (do
   revert Hz
   cases get? m1 i <;> cases get? m2 i <;> cases z <;> simp [ORA.op, optionOp]
 
-theorem map_mono_ord [ORA SI V'] [IncOrd SI V'] (f : V → V') (hf : ∀ x y : V, x ≼ₒ[SI] y → f x ≼ₒ[SI] f y)
+theorem map_mono_ord [RA V'] [ORA SI V'] [IncOrd SI V'] (f : V → V') (hf : ∀ x y : V, x ≼ₒ[SI] y → f x ≼ₒ[SI] f y)
     {m1 m2 : M V} (Hinc : m1 ≼ₒ[SI] m2) : PartialMap.map f m1 ≼ₒ[SI] PartialMap.map f m2 :=
   lookup_ord.mpr fun i => by rw [get?_map, get?_map]; exact Option.map_mono_ord f hf (Hinc i)
 
 @[rocq_alias gmap_fmap_mono]
-theorem map_mono [ORA SI V'] (f : V → V') (hf : ∀ x y : V, x ≼ y → f x ≼ f y) {m1 m2 : M V}
+theorem map_mono [RA V'] (f : V → V') (hf : ∀ x y : V, x ≼ y → f x ≼ f y) {m1 m2 : M V}
     (Hinc : m1 ≼ m2) : PartialMap.map f m1 ≼ PartialMap.map f m2 := by
-  refine (lookup_inc (SI := SI)).mpr fun i => ?_
+  refine lookup_inc.mpr fun i => ?_
   obtain ⟨z, hz⟩ := Option.map_mono f hf (lookup_inc.mp Hinc i)
   exact ⟨z, by rw [get?_map, get?_map, hz]⟩
 
@@ -974,7 +968,7 @@ open Iris.Algebra in
 open Classical in
 @[rocq_alias big_opM_singletons]
 theorem bigOpM_singletons {M' : Type _ → Type _} {K V : Type _}
-    [LawfulFiniteMap M' K] [ORA SI V] (m : M' V) :
+    [LawfulFiniteMap M' K] [RA V] (m : M' V) :
     ([^ ORA.op map] k ↦ x ∈ m, PartialMap.singleton k x) = m := by
   induction m using LawfulFiniteMap.induction_on with
   | hemp => exact BigOpM.bigOpM_empty _
@@ -986,7 +980,7 @@ open Iris.Algebra in
 open Classical in
 @[rocq_alias big_opS_gset_to_gmap, rocq_alias big_opS_gset_to_gmap_L]
 theorem bigOpS_ofSet {A S : Type _} [LawfulFiniteSet S A] {M' : Type _ → Type _}
-    {V : Type _} [LawfulFiniteMap M' A] [ORA SI V] (a : V) (s : S) :
+    {V : Type _} [LawfulFiniteMap M' A] [RA V] (a : V) (s : S) :
     ([^ ORA.op set] k ∈ s, (PartialMap.singleton k a : M' V)) = FiniteMap.ofSet a s := by
   induction s using FiniteSet.set_ind with
   | hemp =>
@@ -1074,7 +1068,7 @@ variable [LawfulFiniteMap M K]
 
 namespace Heap
 
-variable [ORA SI V]
+variable [RA V] [ORA SI V]
 
 open Classical in
 @[rocq_alias alloc_updateP_strong_dep]
@@ -1084,7 +1078,7 @@ theorem alloc_updateP_strong_dep {Q : M V → Prop} {I : K → Prop} {m : M V} {
   refine UpdateP.total.mpr fun n mf hv => ?_
   obtain ⟨i, hIi, hi⟩ := hI ((toList (m • mf)).map (·.1))
   obtain ⟨hmi, hmfi⟩ := (Option.op_none_iff _ _).mp (by
-    rw [← get?_op (SI := SI) m mf (i := i)]
+    rw [← get?_op m mf (i := i)]
     rcases hm : get? (m • mf) i with _ | v
     · rfl
     · exact absurd (List.mem_map_of_mem (toList_get.mpr hm)) hi)
@@ -1144,7 +1138,7 @@ section Properties
 
 open ORA PartialMap LawfulPartialMap
 
-variable [LawfulPartialMap M K] [ORA SI V]
+variable [LawfulPartialMap M K] [RA V] [ORA SI V]
 
 namespace Heap
 
@@ -1293,7 +1287,7 @@ section UnitalProperties
 
 open ORA PartialMap LawfulPartialMap
 
-variable [LawfulPartialMap M K] [UORA SI V]
+variable [LawfulPartialMap M K] [URA V] [UORA SI V]
 
 namespace Heap
 
@@ -1359,7 +1353,7 @@ theorem get?_map (f : α → β) (m : H α) (k : K) : get? (map H f m) k = (get?
   cases get? m k <;> rfl
 
 @[rocq_alias gmap_fmap_cmra_morphism]
-def mapC [ORA SI α] [ORA SI β] (f : α -C>[SI] β) : Hom SI (H α) (H β) where
+def mapC [RA α] [ORA SI α] [RA β] [ORA SI β] (f : α -C>[SI] β) : Hom SI (H α) (H β) where
   f := PartialMap.map H f
   ne := inferInstance
   validN {n : SI} {x} := by

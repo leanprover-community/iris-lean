@@ -28,13 +28,13 @@ open OFE ORA UORA View
 ## Definition of the view relation for the authoritative camera.
 -/
 @[rocq_alias auth_view_rel_raw]
-def AuthViewRel [UORA SI A] : ViewRel SI A A := fun n a b => (∃ c, b • c ≼ₒ{n} a) ∧ ✓{n} a
+def AuthViewRel [URA A] [UORA SI A] : ViewRel SI A A := fun n a b => (∃ c, b • c ≼ₒ{n} a) ∧ ✓{n} a
 
-def AuthViewRelInc [UORA SI A] : ViewRel SI A A := fun n a b => b ≼{n} a ∧ ✓{n} a
+def AuthViewRelInc [URA A] [UORA SI A] : ViewRel SI A A := fun n a b => b ≼{n} a ∧ ✓{n} a
 
 namespace AuthViewRel
 
-variable [UORA SI A]
+variable [URA A] [UORA SI A]
 
 @[rocq_alias auth_view_rel]
 instance instViewRel_authViewRel : IsViewRel (AuthViewRel (SI := SI) (A := A)) where
@@ -75,13 +75,15 @@ end AuthViewRel
 
 /-! ## Definition and operations on the authoritative camera -/
 
-abbrev Auth (A : Type _) [UORA SI A] :=
+abbrev Auth (A : Type _) [URA A] [UORA SI A] :=
   View (AuthViewRel (SI := SI) (A := A))
 
 namespace Auth
-variable [UORA SI A]
+variable [URA A] [UORA SI A]
 
 instance : OFE SI (Auth (SI := SI) A) := View.instOFE
+instance instRA : RA (Auth (SI := SI) A) := View.raRA
+instance instURA : URA (Auth (SI := SI) A) := View.raURA
 instance instORA : ORA SI (Auth (SI := SI) A) := View.instORA
 instance instUCMRA : UORA SI (Auth (SI := SI) A) := View.instUCMRA
 
@@ -148,8 +150,8 @@ nonrec theorem auth_dfrac_op {dq1 dq2 : DFrac} {a : A} :
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias auth_auth_dfrac_is_op]
-instance {dq dq1 dq2 : DFrac} {a : A} [h : IsOp SI d dq dq1 dq2] :
-    IsOp SI d (●{dq} a : Auth (SI := SI) A) (●{dq1} a) (●{dq2} a) where
+instance {dq dq1 dq2 : DFrac} {a : A} [h : IsOp d dq dq1 dq2] :
+    IsOp d (●{dq} a : Auth (SI := SI) A) (●{dq1} a) (●{dq2} a) where
   is_op := by
     rw [h.is_op]
     apply auth_dfrac_op
@@ -193,8 +195,8 @@ nonrec instance {a : A} {b : A} [CoreId b] :
   instCoreIdOpAuthDiscardFrag
 
 @[rocq_alias auth_frag_is_op]
-instance {a b1 b2 : A} [h : IsOp SI d a b1 b2] :
-    IsOp SI d (◯ a : Auth (SI := SI) A) (◯ b1) (◯ b2) where
+instance {a b1 b2 : A} [h : IsOp d a b1 b2] :
+    IsOp d (◯ a : Auth (SI := SI) A) (◯ b1) (◯ b2) where
   is_op := (congrArg frag h.is_op).trans frag_op
 
 #rocq_ignore auth_frag_sep_homomorphism "Found by typeclass inference from the View.Frag instance"
@@ -576,13 +578,13 @@ theorem auth_update [OrdInc SI A] {a b a' b' : A} (hup : (a, b) ~l~>[SI] (a', b'
 @[rocq_alias auth_update_alloc]
 theorem auth_update_alloc [OrdInc SI A] {a a' b' : A} (hup : (a, unit) ~l~>[SI] (a', b')) :
     (● a : Auth (SI := SI) A) ~~>[SI] (● a') • ◯ b' := by
-  rw [← unit_right_id (SI := SI) (x := (● a : Auth (SI := SI) A))]
+  rw [← unit_right_id (x := (● a : Auth (SI := SI) A))]
   exact auth_update hup
 
 @[rocq_alias auth_update_dealloc]
 theorem auth_update_dealloc [OrdInc SI A] {a b a' : A} (hup : (a, b) ~l~>[SI] (a', unit)) :
     ((● a : Auth (SI := SI) A) • ◯ b) ~~>[SI] ● a' := by
-  rw [← unit_right_id (SI := SI) (x := (● a' : Auth (SI := SI) A))]
+  rw [← unit_right_id (x := (● a' : Auth (SI := SI) A))]
   exact auth_update hup
 
 @[rocq_alias auth_update_auth]
@@ -631,7 +633,7 @@ theorem auth_local_update {a b0 b1 a' b0' b1' : A} (hup : (b0, b1) ~l~>[SI] (b0'
 /-! ## Functor -/
 
 /-- The AuthViewRel is preserved under ORA homomorphisms. -/
-theorem authViewRel_map [UORA SI A'] [UORA SI B']
+theorem authViewRel_map [URA A'] [UORA SI A'] [URA B'] [UORA SI B']
     (g : A' -C>[SI] B') (n : SI) (a : A')
     (b : A') : AuthViewRel n a b → AuthViewRel n (g a) (g b) :=
   fun ⟨⟨c, hinc⟩, hv⟩ => ⟨⟨g c, by rw [← g.op]; exact g.monoN_ord hinc⟩, g.validN hv⟩

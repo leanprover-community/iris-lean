@@ -168,7 +168,19 @@ theorem op_data [Op A] [Op CoPsetDisjL] (x y : ReservationMap A H) : (x • y).d
 @[simp]
 theorem op_token [Op A] [Op CoPsetDisjL] (x y : ReservationMap A H) : (x • y).token = x.token • y.token := rfl
 
-variable [ORA SI A]
+instance raRA [RA A] : RA (ReservationMap A H) where
+  pcore_op_left {x _} h := by
+    cases h
+    exact ReservationMap.ext (core_op x.data) (pcore_op_left' (x := x.token) rfl)
+
+instance raURA [RA A] : URA (ReservationMap A H) where
+  unit := mk ∅ ∅
+  unit_left_id {x} := ReservationMap.ext
+    (Algebra.MonoidOps.op_left_id : (∅ : H A) • x.data = x.data) (pcore_op_left' rfl)
+  pcore_unit := congrArg some (ReservationMap.ext Heap.core_empty rfl)
+  total _ := ⟨_, rfl⟩
+
+variable [RA A] [ORA SI A]
 
 @[rocq_alias reservation_map_validN_instance]
 def ValidN (n : SI) (x : ReservationMap A H) : Prop :=
@@ -285,8 +297,6 @@ theorem increasing_mk {v : ReservationMap A H}
 
 open ReservationMap in
 instance instORAReservationMap : ORA SI (ReservationMap A H) where
-  toOp := raOp
-  toPCore := raPCore
   toValid := raValid
   op_ne := ⟨fun _ _ _ h => ⟨Dist.op_r h.left, Dist.op_r h.right⟩⟩
   pcore_ne {n : SI} {x y cx} e pe := by
@@ -315,9 +325,6 @@ instance instORAReservationMap : ORA SI (ReservationMap A H) where
   toOrderedNE := raOrderedNE
   validN_op_left {_ x y} := validN_mono validN_op_left
     (fun _ h => Option.eq_none_of_op_eq_none_left ((Heap.get?_op _ _).symm.trans h)) ⟨y.token, rfl⟩
-  pcore_op_left {x _} h := by
-    cases h
-    exact ReservationMap.ext (core_op (SI := SI) x.data) (pcore_op_left' (SI := SI) (x := x.token) rfl)
   extend {n : SI} {x y₁ y₂} v exy := by
     obtain ⟨z₁, z₂, xzz, zy₁, zy₂⟩ := extend (validN_data_of_validN v) exy.left
     exact ⟨mk z₁ y₁.token, mk z₂ y₂.token, ReservationMap.ext xzz exy.right,
@@ -352,11 +359,7 @@ instance instIncOrd [IncOrd SI A] : IncOrd SI (ReservationMap A H) := IncOrd.of_
 @[rocq_alias reservation_mapUR]
 instance : UORA SI (ReservationMap A H) where
   toORA := instORAReservationMap
-  unit := mk ∅ ∅
   unit_valid := ⟨Heap.valid_empty, fun _ => .inr CoPset.mem_empty⟩
-  unit_left_id {x} := ReservationMap.ext
-    (Algebra.MonoidOps.op_left_id : (∅ : H A) • x.data = x.data) (pcore_op_left' rfl)
-  pcore_unit := congrArg some (ReservationMap.ext Heap.core_empty rfl)
   ord_refl x := ⟨ord_refl x.data, ord_refl x.token⟩
 
 @[rocq_alias reservation_map_included]
@@ -400,7 +403,7 @@ instance [ORA.Discrete SI A] : ORA.Discrete SI (ReservationMap A H) where
 @[rocq_alias reservation_map_data_core_id]
 instance instCoreIdSingleton {a : A} [CoreId a] : CoreId (singleton (H := H) k a) where
   core_id := congrArg some
-    (ReservationMap.ext (core_eqv_self (SI := SI) (PartialMap.singleton k a : H A)) rfl)
+    (ReservationMap.ext (core_eqv_self (PartialMap.singleton k a : H A)) rfl)
 
 theorem split_valid {x : ReservationMap A H} (vx : ✓[SI] x) :
     ∃ (d : H A) (t : CoPset), x = mkData d • mkToken t := by
@@ -411,8 +414,8 @@ theorem split_valid {x : ReservationMap A H} (vx : ✓[SI] x) :
     exact ((not_valid_invalid (S := CoPset)) (valid_token_of_valid vx)).elim
   | .valid t =>
     refine ⟨xd, t, ReservationMap.ext ?_ ?_⟩
-    · exact (Heap.op_empty_right (SI := SI)).symm
-    · exact (pcore_op_left' (SI := SI) rfl).symm
+    · exact (Heap.op_empty_right).symm
+    · exact (pcore_op_left' rfl).symm
 
 theorem split_validN {n : SI} {x : ReservationMap A H} (vx : ✓{n} x) :
     ∃ (d : H A) (t : CoPset), x = mkData d • mkToken t := by
@@ -422,8 +425,8 @@ theorem split_validN {n : SI} {x : ReservationMap A H} (vx : ✓{n} x) :
   | .error => subst hh; exact ((not_valid_invalid (SI := SI) (S := CoPset)) H).elim
   | .valid t =>
     refine ⟨xd, t, ReservationMap.ext ?_ ?_⟩
-    · exact (Heap.op_empty_right (SI := SI)).symm
-    · exact (pcore_op_left' (SI := SI) rfl).symm
+    · exact (Heap.op_empty_right).symm
+    · exact (pcore_op_left' rfl).symm
 
 theorem valid_data {d : H A} : ✓[SI] (mkData (H := H) d) ↔ ✓[SI] d :=
   ⟨valid_data_of_valid, fun h => valid_iff.mpr ⟨h, ⟨⟩, fun p => .inr (mem_empty p)⟩⟩
@@ -442,12 +445,8 @@ theorem validN_singleton {n : SI} (k : Pos) (a : A) : ✓{n} (singleton (H := H)
 theorem valid_token : ✓[SI] (mkToken (H := H) (A := A) e) :=
   ⟨Heap.valid_empty, fun i => .inl (get?_empty i)⟩
 
-theorem data_op (a b : H A) : mkData (a • b) = mkData a • mkData b := by
-  refine OFE.eq_dist_2 (SI := SI) ?_
-  refine fun n => ⟨?_, ?_⟩
-  · simp only [mkData, op_data]; exact .rfl
-  · simp only [mkData, op_token]
-    exact Dist.of_eq (pcore_op_left_L rfl).symm
+theorem data_op (a b : H A) : mkData (a • b) = mkData a • mkData b :=
+  ReservationMap.ext rfl (pcore_op_left_L rfl).symm
 
 @[rocq_alias reservation_map_data_op]
 theorem singleton_op k (a b : A) :
@@ -456,10 +455,9 @@ theorem singleton_op k (a b : A) :
 
 theorem token_op (a b : CoPset) (h : a ## b) :
     mkToken (H := H) (A := A) (a ∪ b) = mkToken (H := H) (A := A) a • mkToken b := by
-  refine OFE.eq_dist_2 (SI := SI) ?_
-  refine fun n => ⟨?_, ?_⟩
+  refine ReservationMap.ext ?_ ?_
   · simp only [mkToken, op_data]
-    exact Algebra.MonoidOps.op_left_id.symm.dist
+    exact Algebra.MonoidOps.op_left_id.symm
   · simp [mkToken, op, ORA.op, h]
 
 theorem disj_of_validN_data_op_token {n : SI} {a : H A} {b : CoPset} (h : ✓{n} mkData a • mkToken b) (i : Pos) :
@@ -470,9 +468,9 @@ theorem disj_of_validN_data_op_token {n : SI} {a : H A} {b : CoPset} (h : ✓{n}
     exact .inl <| Option.eq_none_of_op_eq_none_left h
   | inr h' =>
     simp only [mkData, mkToken, op_token] at h'
-    rw [mem_iff_of_valid_union, not_or] at h'
+    rw [mem_iff_of_valid_union (SI := SI), not_or] at h'
     · exact .inr <| h'.right
-    · exact ((pcore_op_left' (SI := SI) rfl).symm : (_ : DisjointLeibnizSet CoPset) = _) ▸ valid_set
+    · exact ((pcore_op_left' rfl).symm : (_ : DisjointLeibnizSet CoPset) = _) ▸ valid_set
 
 theorem disj_of_valid_data_op_token (a : H A) (b : CoPset) (h : ✓[SI] mkData a • mkToken b) (i : Pos) :
   get? a i = none ∨ i ∉ b := disj_of_validN_data_op_token (h.validN (n := 0)) i
@@ -515,16 +513,16 @@ theorem singleton_mono {k} {a b : A} (Hab : a ≼ b) :
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias reservation_map_data_is_op]
-instance {d : IsOp.Direction} {a b₁ b₂ : A} [hv : IsOp SI d a b₁ b₂] :
-    IsOp SI d (singleton (H := H) k a) (singleton k b₁) (singleton k b₂) where
+instance {d : IsOp.Direction} {a b₁ b₂ : A} [hv : IsOp d a b₁ b₂] :
+    IsOp d (singleton (H := H) k a) (singleton k b₁) (singleton k b₂) where
   is_op := (congrArg (singleton k) hv.is_op).trans (singleton_op k b₁ b₂)
 
 @[rocq_alias reservation_map_token_union]
 theorem token_union {e₁ e₂} (he : e₁ ## e₂) :
     mkToken (H := H) (A := A) (e₁ ∪ e₂) = mkToken (H := H) (A := A) e₁ • mkToken e₂ := by
-  refine OFE.eq_dist_2 (SI := SI) ?_
-  refine fun n => ⟨fun i => ?_, ?_⟩
-  · simpa only [mkToken, get?_empty, op_data, Heap.get?_op] using .rfl
+  refine ReservationMap.ext ?_ ?_
+  · simp only [mkToken, op_data]
+    exact Algebra.MonoidOps.op_left_id.symm
   · simp [mkToken, op, ORA.op, he]
 
 @[rocq_alias reservation_map_token_difference]
@@ -541,7 +539,7 @@ theorem valid_token_op_iff_disj {e₁ e₂} :
 
 theorem validN_token_op_iff_disj {n : SI} {e₁ e₂} :
     ✓{n} (mkToken (H := H) (A := A) e₁ • mkToken e₂) ↔ e₁ ## e₂ where
-  mp h := valid_op_iff_disj.mp (validN_token_of_validN h)
+  mp h := (valid_op_iff_disj (SI := SI)).mp (validN_token_of_validN h)
   mpr h := by
     refine validN_iff.mpr ⟨?_, ?_, fun i => ?_⟩
     · change ✓{n} ∅ • (∅ : H A)
@@ -563,7 +561,7 @@ theorem valid_op?_of_valid_singleton_op {n : SI} {a : A} {x : H A} (h : ✓{n} (
 
 theorem valid_singleton_op_of_valid_op? {n : SI} {a : A} {x : H A} (vx : ✓{n} x) (h : ✓{n} a •? get? x k) :
     ✓{n} singleton k a • mkData x := by
-  refine (data_op (SI := SI) (PartialMap.singleton k a) x) ▸ ?_
+  refine (data_op (PartialMap.singleton k a) x) ▸ ?_
   refine (validN_data).mpr fun i => ?_
   rw [Heap.get?_op]
   by_cases ki : k = i
@@ -585,9 +583,9 @@ theorem alloc {e k} {a : A} (hke : k ∈ e) (va : ✓[SI] a) :
           validN_op_left ((assoc' (x := mkToken e) (y := mkData d) (z := mkToken t)) ▸ vedt))
     change ✓{n} singleton k a • z
     rw [ze, assoc']
-    refine (data_op (SI := SI) (PartialMap.singleton k a) d) ▸ ?_
+    refine (data_op (PartialMap.singleton k a) d) ▸ ?_
     refine validN_data_op_token (PartialMap.singleton k a • d) t ?_ ?_
-    · refine (data_op (SI := SI) (PartialMap.singleton k a) d) ▸ ?_
+    · refine (data_op (PartialMap.singleton k a) d) ▸ ?_
       apply valid_singleton_op_of_valid_op?
       · exact validN_data.mp (validN_op_left ((comm' (x := mkToken e) (y := mkData d)) ▸
           validN_op_left ((assoc' (x := mkToken e) (y := mkData d) (z := mkToken t)) ▸ vedt)))
@@ -617,9 +615,9 @@ theorem updateP {P} {Q : ReservationMap A H → Prop} k a (ap : a ~~>:[SI] P)
     refine ⟨singleton k y, apq y py, ?_⟩
     simp only [ORA.op?] at vaz ⊢
     rw [ze, assoc']
-    refine (data_op (SI := SI) (PartialMap.singleton k y) d) ▸ ?_
+    refine (data_op (PartialMap.singleton k y) d) ▸ ?_
     refine validN_data_op_token _ _ ?_ ?_
-    · refine (data_op (SI := SI) (PartialMap.singleton k y) d) ▸ ?_
+    · refine (data_op (PartialMap.singleton k y) d) ▸ ?_
       refine valid_singleton_op_of_valid_op? ?_ vy
       refine validN_data.mp ?_
       exact validN_op_left <| ze ▸ validN_op_right vaz

@@ -411,6 +411,8 @@ theorem op_idemp {x : Agree α} : op x x = x :=
 /-- The operation and core as step-index-free data instances (Mathlib-style). -/
 instance instOp : Op (Agree α) := ⟨op, op_assoc, op_comm⟩
 instance instPCore : PCore (Agree α) := ⟨some, fun _ => rfl⟩
+instance instRA : RA (Agree α) where
+  pcore_op_left h := by obtain rfl := Option.some.inj h; exact op_idemp
 
 @[rocq_alias agree_validN_ne]
 theorem validN_ne {n : SI} {x y : Agree α} : x ≡{n}≡ y → validN n x → validN n y :=
@@ -440,8 +442,6 @@ theorem op_inv {x y : Agree α} : valid (SI := SI) (op x y) → x = y :=
   ind₂ (fun _ _ h => OFE.eq_dist_2 (SI := SI) (Raw.op_inv h)) x y
 
 @[instance_reducible] def cmraData : CMRAData SI (Agree α) where
-  toOp := instOp
-  toPCore := instPCore
   ValidN := validN
   Valid := valid (SI := SI)
   op_ne := op_ne
@@ -449,7 +449,6 @@ theorem op_inv {x y : Agree α} : valid (SI := SI) (op x y) → x = y :=
   validN_ne := validN_ne
   valid_iff_validN := fun {x} => x.ind fun _ => .rfl
   validN_le := validN_le
-  pcore_op_left := fun {x cx} h => by obtain rfl := Option.some.inj h; exact op_idemp
   validN_op_left := validN_op_left
   extend {n : SI} {x y₁ y₂ hval heq₁} := by
     have heq₂ := op_invN (validN_ne heq₁ hval)
@@ -506,7 +505,7 @@ theorem ordN {n : SI} {x y : Agree α} : x ≼ₒ{n} y ↔ y ≡{n}≡ y • x :
 theorem includedN {n : SI} {x y : Agree α} : x ≼{n} y ↔ y ≡{n}≡ y • x := incN_iff_ordN.trans ordN
 
 theorem ord {x y : Agree α} : x ≼ₒ[SI] y ↔ y = y • x :=
-  ⟨fun ⟨z, h⟩ => OFE.eq_dist_2 fun _ => ordN.mp ⟨z, h.dist⟩, fun h => ⟨y, h.trans op_comm⟩⟩
+  ⟨fun ⟨z, h⟩ => OFE.eq_dist_2 (SI := SI) fun _ => ordN.mp ⟨z, h.dist⟩, fun h => ⟨y, h.trans op_comm⟩⟩
 
 @[rocq_alias agree_included]
 theorem included {x y : Agree α} : x ≼ y ↔ y = y • x :=
@@ -535,7 +534,7 @@ theorem valid_included {x y : Agree α} : ✓[SI] y → x ≼ y → x = y :=
   fun hv h => valid_ord hv (inc_iff_ord.mp h)
 
 set_option synthInstance.checkSynthOrder false in
-instance {x : Agree α} : IsOp SI d x x x where
+instance {x : Agree α} : IsOp d x x x where
   is_op := idemp.symm
 
 end Agree

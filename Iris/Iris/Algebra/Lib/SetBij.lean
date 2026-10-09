@@ -69,7 +69,7 @@ instance : IsViewRel (viewRel (SI := SI) (S := S)) := .ofMonoOrd
   (mono := by
     intro _ x₁ y₁ n₂ x₂ y₂ h hx hy _
     obtain ⟨_⟩ := x₁; obtain ⟨_⟩ := y₁; obtain ⟨_⟩ := y₂; obtain rfl := (hx : _ = _)
-    refine ⟨subset_trans ((included_iff_subset (SI := SI) ..).mp ?_) h.1, h.2⟩
+    refine ⟨subset_trans ((included_iff_subset ..).mp ?_) h.1, h.2⟩
     exact (inc_iff_incN n₂).mpr hy)
   (rel_validN := fun _ _ _ _ => trivial)
   (rel_unit := fun _ => ⟨valid ∅, subset_refl, SetBijective.empty⟩)
@@ -148,7 +148,7 @@ theorem auth_one_op_auth_one_valid_iff :
 
 @[rocq_alias bij_both_dfrac_valid]
 theorem auth_op_elem_valid_iff : ✓[SI] (auth dq L • elem (SI := SI) a b) ↔ ✓[SI] dq ∧ SetBijective L ∧ (a, b) ∈ L := by
-  rw [auth, elem, ← assoc_L (SI := SI), frag_op_union, auth_op_frag_valid_iff]
+  rw [auth, elem, ← assoc_L, frag_op_union, auth_op_frag_valid_iff]
   exact and_congr_right fun _ =>
     ⟨fun h => ⟨(h 0).2, (h 0).1 _ (mem_union.mpr (.inr (mem_singleton.mpr rfl)))⟩,
      fun ⟨hbij, hmem⟩ _ =>

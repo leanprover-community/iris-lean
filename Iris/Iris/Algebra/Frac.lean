@@ -71,7 +71,6 @@ def Qp.threeQuarters : Qp := ⟨3 / 4, by grind⟩
 def Qp.divide_even (q : Qp) (n : Nat) (hn : 0 < n) : Qp :=
   ⟨q.val / n, Rat.div_pos q.2 (by exact_mod_cast hn)⟩
 
-set_option synthInstance.checkSynthOrder false in
 instance instCOFEQp : COFE SI Qp := COFE.ofDiscrete _
 
 /-- Fraction addition as a step-index-free data instance (Mathlib-style). -/
@@ -80,9 +79,15 @@ instance Qp.instOp : Op Qp where
   assoc := Subtype.ext (Rat.add_assoc ..).symm
   comm := Subtype.ext (Rat.add_comm ..)
 
-@[instance_reducible] def Qp.cmraData : CMRAData SI Qp where
-  toOp := Qp.instOp
+/-- Fractions have no core. -/
+instance Qp.instPCore : PCore Qp where
   pcore _ := none
+  pcore_idem H := by rcases H
+
+instance Qp.instRA : RA Qp where
+  pcore_op_left H := by rcases H
+
+@[instance_reducible] def Qp.cmraData : CMRAData SI Qp where
   ValidN _ x := x.val ≤ 1
   Valid x := x.val ≤ 1
   op_ne.ne n x1 x2 H := by rw [(H : x1 = x2)] <;> exact .rfl
@@ -94,13 +99,10 @@ instance Qp.instOp : Op Qp where
     show x.val ≤ 1
     have h' : x.val + y.val ≤ 1 := h
     grind
-  pcore_op_left H := by rcases H
-  pcore_idem H := by rcases H
   extend {_ x y z} := by
     rintro H He; exact ⟨y, z, He, .rfl, .rfl⟩
   pcore_op_mono H := by rcases H
 
-set_option synthInstance.checkSynthOrder false in
 instance instORAQp : CMRA SI Qp := ofCMRAData Qp.cmraData
 
 -- TODO: A different solution to having these bridge lemmas might be to internalize
@@ -198,12 +200,12 @@ theorem Frac.valid_iff {p : Qp} : ✓[SI] p ↔ p.val ≤ 1 := .rfl
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias frac_is_op]
 instance (priority := low) isOpFrac_merge (q1 q2 : Qp) :
-    IsOp SI .merge (q1 + q2) q1 q2 where
+    IsOp .merge (q1 + q2) q1 q2 where
   is_op := rfl
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_frac]
-instance isOpFrac_half d (q : Qp) : IsOp SI d q q.half q.half where
+instance isOpFrac_half d (q : Qp) : IsOp d q q.half q.half where
   is_op := by refine (q.ext ?_); grind
 
 set_option synthInstance.checkSynthOrder false in
@@ -213,13 +215,13 @@ set_option synthInstance.checkSynthOrder false in
   is required.
 -/
 instance (priority := high) isOpFrac_split (q1 q2 : Qp) :
-    IsOp SI .split (q1 + q2) q1 q2 where
+    IsOp .split (q1 + q2) q1 q2 where
   is_op := rfl
 
-instance (priority := default - 500) isOpFrac_quarters_left d : IsOp SI d instQpOne.one Qp.quarter Qp.threeQuarters where
+instance (priority := default - 500) isOpFrac_quarters_left d : IsOp d instQpOne.one Qp.quarter Qp.threeQuarters where
   is_op := by refine Qp.ext_iff.mpr ?_; grind [instQpOne]
 
-instance (priority := default - 500) isOpFrac_quarters_right d : IsOp SI d instQpOne.one Qp.threeQuarters Qp.quarter where
+instance (priority := default - 500) isOpFrac_quarters_right d : IsOp d instQpOne.one Qp.threeQuarters Qp.quarter where
   is_op := by refine Qp.ext_iff.mpr ?_; grind [instQpOne]
 
 end Iris

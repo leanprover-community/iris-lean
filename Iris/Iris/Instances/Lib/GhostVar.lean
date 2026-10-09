@@ -98,7 +98,7 @@ instance (γ : GName) (a1 : A) (dq1 : DFrac) (a2 : A) (dq2 : DFrac) :
 /-- Lower priority than the `Fractional` instance, which is used when `a1 = a2`. -/
 @[rocq_alias ghost_var_combine_as]
 instance (priority := default - 20) (γ : GName) (a1 : A) (dq1 : DFrac) (a2 : A) (dq2 : DFrac)
-    (dq : DFrac) [h : IsOp Nat .merge dq dq1 dq2] :
+    (dq : DFrac) [h : IsOp .merge dq dq1 dq2] :
     CombineSepAs (PROP := IProp GF) (γ ↪VAR{dq1} a1) (γ ↪VAR{dq2} a2) (γ ↪VAR{dq} a1) where
   combine_sep_as := by
     iintro ⟨H1, H2⟩

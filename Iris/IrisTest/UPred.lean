@@ -16,7 +16,7 @@ open Iris BI ProofMode ORA UPred
 
 section
 
-variable [UCMRA Nat M] (a b : M) (c : M) [CoreId c]
+variable [URA M] [UCMRA Nat M] (a b : M) (c : M) [CoreId c]
 
 /- Tests `fromSep_ownM`. -/
 /-- info:

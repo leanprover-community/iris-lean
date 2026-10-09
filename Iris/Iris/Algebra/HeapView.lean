@@ -40,7 +40,7 @@ open Iris
 section heapView
 open Std PartialMap Heap OFE ORA
 
-variable (K V : Type _) (H : Type _ → Type _) [LawfulPartialMap H K] [ORA SI V]
+variable (K V : Type _) (H : Type _ → Type _) [LawfulPartialMap H K] [RA V] [ORA SI V]
 
 #rocq_ignore gmap_view_fragUR "Inlined as the fragment type `H (DFrac × V)`"
 
@@ -169,7 +169,7 @@ namespace HeapView
 
 open Heap OFE View One DFrac ORA PartialMap Std LawfulPartialMap
 
-variable {K V : Type _} {H : Type _ → Type _} [LawfulPartialMap H K] [ORA SI V]
+variable {K V : Type _} {H : Type _ → Type _} [LawfulPartialMap H K] [RA V] [ORA SI V]
 
 /-- Authoritative (fractional) ownership over an entire heap. -/
 @[rocq_alias gmap_view_auth]
@@ -208,8 +208,8 @@ theorem auth_dfrac_op_eqv : Auth (dp • dq) m1 = Auth (SI := SI) dp m1 • Auth
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias gmap_view_auth_dfrac_is_op]
-instance [h : IsOp SI d dq dq1 dq2] :
-    IsOp SI d (Auth (H := H) dq m1) (Auth (SI := SI) dq1 m1) (Auth dq2 m1) where
+instance [h : IsOp d dq dq1 dq2] :
+    IsOp d (Auth (H := H) dq m1) (Auth (SI := SI) dq1 m1) (Auth dq2 m1) where
   is_op := by
     rw [h.is_op]
     exact auth_dfrac_op_eqv
@@ -262,14 +262,14 @@ nonrec theorem auth_one_op_auth_one_valid_iff :
 
 @[rocq_alias gmap_view_frag_op]
 theorem frag_op_eqv : Frag (H := H) k (dp • dq) (v1 • v2) = Frag (H := H) k dp v1 • Frag (SI := SI) k dq v2 :=
-  congrArg (◯V ·) (singleton_op_singleton (SI := SI) (x := (dp, v1)) (y := (dq, v2))).symm
+  congrArg (◯V ·) (singleton_op_singleton (x := (dp, v1)) (y := (dq, v2))).symm
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias gmap_view_frag_mut_is_op]
 instance
-  [hdp : IsOp SI d dp dp1 dp2]
-  [hv : IsOp SI d v v1 v2] :
-  IsOp SI d (Frag (SI := SI) k dp v) (Frag k dp1 v1) (Frag (H := H) k dp2 v2) where
+  [hdp : IsOp d dp dp1 dp2]
+  [hv : IsOp d v v1 v2] :
+  IsOp d (Frag (SI := SI) k dp v) (Frag k dp1 v1) (Frag (H := H) k dp2 v2) where
   is_op := by
     rw [hdp.is_op, hv.is_op]
     exact frag_op_eqv
@@ -379,7 +379,7 @@ theorem auth_op_frag_valid_total_discrete_iff [OrderRefl SI V] [ORA.Discrete SI 
     (H : ✓[SI] Auth (SI := SI) dp m1 • Frag k dq v1) :
     ∃ v', ✓[SI] dp ∧ ✓[SI] dq ∧ Std.PartialMap.get? m1 k = some v' ∧ ✓[SI] v' ∧ v1 ≼ v' := by
   obtain ⟨v', dq', Hdp, Hl, Hv, Hi⟩ := auth_op_frag_discrete_valid_iff (SI := SI) |>.mp H
-  have Hi := Option.eq_or_inc_of_some_inc_some (SI := SI) Hi
+  have Hi := Option.eq_or_inc_of_some_inc_some Hi
   exact ⟨v', Hdp, Hi.elim (fun e => (Prod.mk.inj e).1 ▸ Hv.1) (valid_of_inc · Hv |>.1), Hl, Hv.2,
     Hi.elim (fun e => (Prod.mk.inj e).2 ▸ ord_inc (ord_refl (SI := SI) v1))
       fun ⟨z, hz⟩ => ⟨z.2, congrArg Prod.snd hz⟩⟩
@@ -400,7 +400,7 @@ instance [Hdq : CoreId dq] [Hv1 : CoreId v1] : CoreId (Frag (SI := SI) (H := H) 
     obtain ⟨H⟩ := Hdq
     simp [ORA.pcore] at H
     simp only [ORA.pcore, View.Pcore]
-    refine congrArg some (congrArg (View.mk _) (singleton_core_eq (SI := SI) ?_))
+    refine congrArg some (congrArg (View.mk _) (singleton_core_eq ?_))
     simp [ORA.pcore, Prod.pcore]
     cases h : ORA.pcore v1
     · exact OFE.not_none_eqv_some (h ▸ Hv1.core_id) |>.elim
@@ -423,7 +423,7 @@ theorem frag_valid_iff : ✓[SI] Frag (SI := SI) (H := H) k dq v1 ↔ ✓[SI] dq
 theorem frag_op_validN_iff :
     ✓{n} Frag (H := H) k dp v1 • Frag (SI := SI) k dq v2 ↔ ✓[SI] (dp • dq) ∧ ✓{n} (v1 • v2) := by
   refine View.frag_validN_iff.trans <| (HeapR.exists_iff_validN ..).trans ?_
-  refine (validN_dist_iff (Dist.of_eq (singleton_op_singleton (SI := SI)))).trans ?_
+  refine (validN_dist_iff (Dist.of_eq (singleton_op_singleton))).trans ?_
   exact singleton_validN_iff
 
 @[rocq_alias gmap_view_frag_op_valid]
@@ -433,7 +433,7 @@ theorem frag_op_valid_iff :
   suffices (∀ (n : SI), ✓{n} dp • dq ∧ ✓{n} v1 • v2) ↔ ✓[SI] dp • dq ∧ ✓[SI] v1 • v2 by
     refine (forall_congr' (fun _ => ?_)).trans this
     refine (HeapR.exists_iff_validN ..).trans ?_
-    refine (validN_dist_iff (Dist.of_eq (singleton_op_singleton (SI := SI)))).trans ?_
+    refine (validN_dist_iff (Dist.of_eq (singleton_op_singleton))).trans ?_
     exact singleton_validN_iff
   refine ⟨fun H => ?_, fun ⟨Hp, Hv⟩ n => ?_⟩
   · exact ⟨valid_iff_validN.mpr (H · |>.1), valid_iff_validN.mpr (H · |>.2)⟩
@@ -492,25 +492,25 @@ theorem update_auth_op_frag_frame
     Auth (SI := SI) (.own one) m1 • Frag k dq v ~~>[SI]
     Auth (.own one) (Std.PartialMap.insert m1 k mv') • Frag k dq' v' := by
   have e (x : DFrac × V) (o c : Option (DFrac × V)) : some (x •? o) • c = some (x •? (o • c)) := by
-    rw [Option.some_op_opM (SI := SI), Option.opM_opM_assoc (SI := SI)]
+    rw [Option.some_op_opM, Option.opM_opM_assoc]
   refine auth_one_op_frag_update fun n bf Hrel j ⟨df, va⟩ Hj => ?_
-  rw [get?_op (SI := SI)] at Hj
+  rw [get?_op] at Hj
   by_cases h : k = j
   · subst h
     rw [get?_singleton_eq rfl] at Hj
     rw [get?_insert_eq rfl]
     have Hk : get? (PartialMap.singleton k (dq, v) • bf) k = some ((dq, v) •? get? bf k) := by
-      rw [get?_op (SI := SI), get?_singleton_eq rfl, Option.some_op_opM (SI := SI)]
+      rw [get?_op, get?_singleton_eq rfl, Option.some_op_opM]
     obtain ⟨mv0, mdf, Hlookup, Hval, c, Hincl⟩ := Hrel k _ Hk
     rw [e] at Hincl
     obtain ⟨dq₂, g, Hval₂, Hincl₂⟩ := Hup n mdf mv0 _ Hlookup Hval Hincl
     refine ⟨mv', dq₂, rfl, Hval₂, c • g, ?_⟩
-    rw [← Hj, Option.some_op_opM (SI := SI) (a := (dq', v')), assoc', e]
+    rw [← Hj, Option.some_op_opM (a := (dq', v')), assoc', e]
     exact Hincl₂
   · rw [get?_singleton_ne h] at Hj
     rw [get?_insert_ne h]
     refine Hrel j (df, va) ?_
-    rw [get?_op (SI := SI), get?_singleton_ne h]
+    rw [get?_op, get?_singleton_ne h]
     exact Hj
 
 theorem update_auth_op_frag_ord
@@ -537,14 +537,14 @@ theorem update_auth_op_frag [OrdInc SI V]
     intro x F; cases F <;> exact ⟨rfl, rfl⟩
   refine update_auth_op_frag_frame fun n dq₁ mv f Hl Hval Hincl => ?_
   obtain ⟨g, hg⟩ := Option.some_incN_some_iff_opM.mp (ordN_incN Hincl)
-  have hF : (dq₁, mv) ≡{n}≡ (dq, v) •? (f • g) := hg.trans (Option.opM_opM_assoc (SI := SI)).dist
+  have hF : (dq₁, mv) ≡{n}≡ (dq, v) •? (f • g) := hg.trans (Option.opM_opM_assoc).dist
   obtain ⟨Hv', He'⟩ := Hup n mv (f • g) Hl (hF.validN.mp Hval)
     (hF.2.trans (Dist.of_eq (key (dq, v) (f • g)).2))
   have hE : (dq' •? (Option.map Prod.fst (f • g)), mv') ≡{n}≡ (dq', v') •? (f • g) :=
     ⟨Dist.of_eq (key (dq', v') (f • g)).1.symm,
       He'.trans (Dist.of_eq (key (dq', v') (f • g)).2.symm)⟩
   refine ⟨dq' •? (Option.map Prod.fst (f • g)), g, validN_ne hE.symm Hv', ordN_of_dist ?_⟩
-  rw [Option.some_op_opM (SI := SI), Option.opM_opM_assoc (SI := SI)]
+  rw [Option.some_op_opM, Option.opM_opM_assoc]
   exact OFE.some_dist_some.mpr hE.symm
 
 @[rocq_alias gmap_view_update_local]
@@ -588,7 +588,7 @@ theorem update_of_dfrac_update P (Hdq : dq ~~>:[SI] P) :
       simp only [ORA.op, Heap.op, get?_merge, get?_singleton_eq rfl, op?]
       cases _ : Std.PartialMap.get? bf k <;> simp
     obtain ⟨v', dq', Hlookup, Hval, c, Hincl⟩ := Hrel'
-    rw [Option.some_op_opM (SI := SI), Option.opM_opM_assoc (SI := SI)] at Hincl
+    rw [Option.some_op_opM, Option.opM_opM_assoc] at Hincl
     -- Extract a fraction frame `w`, the updated fraction `dq''`, and the new authoritative
     -- pair — in each of the four frame/order cases (`bf k` absent or present × dist or
     -- order-inclusion).
@@ -618,7 +618,7 @@ theorem update_of_dfrac_update P (Hdq : dq ~~>:[SI] P) :
     · subst h
       simp only [ORA.op, Heap.op, get?_merge, get?_singleton_eq rfl] at Heq
       refine ⟨v', dq₀, Hlookup, Hv₀, c, ordN_of_dist_of_ordN (Dist.of_eq ?_) Hi₀⟩
-      rw [← Option.opM_opM_assoc (SI := SI), ← Option.some_op_opM (SI := SI), ← Heq]
+      rw [← Option.opM_opM_assoc, ← Option.some_op_opM, ← Heq]
       cases Std.PartialMap.get? bf k <;> rfl
     · apply Hrel
       simp [ORA.op, get?_merge, get?_singleton_ne h] at Heq ⊢
@@ -727,7 +727,7 @@ section FiniteHeapView
 open Std PartialMap Heap OFE ORA HeapView
 open One DFrac LawfulPartialMap Algebra
 
-variable {K V : Type _} {H : Type _ → Type _} [DecidableEq K] [LawfulFiniteMap H K] [ORA SI V]
+variable {K V : Type _} {H : Type _ → Type _} [DecidableEq K] [LawfulFiniteMap H K] [RA V] [ORA SI V]
 
 omit [DecidableEq K] in
 private theorem bigOpM_frag_empty (dq : DFrac) :

@@ -29,7 +29,7 @@ def discreteFunInsert {ι : Type _} [DecidableEq ι] {β : ι → Type _}
 
 @[rocq_alias discrete_fun_singleton]
 def discreteFunSingleton {ι : Type _} [DecidableEq ι] {β : ι → Type _}
-    [∀ i, UORA SI (β i)] (x : ι) (y : β x) : (a : ι) → β a :=
+    [∀ i, URA (β i)] (x : ι) (y : β x) : (a : ι) → β a :=
   discreteFunInsert x y fun _ => unit
 
 section insert
@@ -100,7 +100,7 @@ end OFE
 
 section ORA
 
-variable {ι : Type _} [DecidableEq ι] {β : ι → Type _} [∀ i, UORA SI (β i)]
+variable {ι : Type _} [DecidableEq ι] {β : ι → Type _} [∀ i, URA (β i)] [∀ i, UORA SI (β i)]
 
 @[rocq_alias discrete_funR_cmra_discrete]
 instance instDiscreteFunCmraDiscrete [∀ i, ORA.Discrete SI (β i)] : ORA.Discrete SI ((i : ι) → β i) where
@@ -109,32 +109,32 @@ instance instDiscreteFunCmraDiscrete [∀ i, ORA.Discrete SI (β i)] : ORA.Discr
 
 @[rocq_alias discrete_fun_singleton_ne]
 instance instDiscreteFunSingletonNonExpansive (x : ι) :
-    NonExpansive SI (discreteFunSingleton (SI := SI) (β := β) x) where
+    NonExpansive SI (discreteFunSingleton (β := β) x) where
   ne {_ _ _} h := instDiscreteFunInsertNonExpansive x |>.ne h .rfl
 
 #rocq_ignore discrete_fun_singleton_proper "Use NonExpansive instance instead."
 
 @[rocq_alias discrete_fun_lookup_singleton, simp]
 theorem discreteFunSingleton_self {x : ι} (y : β x) :
-    discreteFunSingleton (SI := SI) x y x = y := discreteFunInsert_self ..
+    discreteFunSingleton x y x = y := discreteFunInsert_self ..
 
 @[rocq_alias discrete_fun_lookup_singleton_ne, simp]
 theorem discreteFunSingleton_of_ne {x x' : ι} (y : β x) (h : x ≠ x') :
-    discreteFunSingleton (SI := SI) x y x' = unit :=
+    discreteFunSingleton x y x' = unit :=
   discreteFunInsert_of_ne (h := h) ..
 
 @[rocq_alias discrete_fun_singleton_discrete]
 instance instDiscreteFunSingletonDiscrete {x : ι} (y : β x)
     [∀ i, DiscreteE SI (unit : β i)] [DiscreteE SI y] :
-    DiscreteE SI (discreteFunSingleton (SI := SI) x y) :=
+    DiscreteE SI (discreteFunSingleton x y) :=
   haveI : DiscreteE SI fun i : ι => (unit : β i) := discreteE_pi fun _ => inferInstance
   instDiscreteFunInsertDiscrete (fun _ => unit) x y
 
 @[rocq_alias discrete_fun_singleton_validN]
 theorem discreteFunSingleton_validN_iff (n : SI) {x : ι} (y : β x) :
-    ✓{n} discreteFunSingleton (SI := SI) x y ↔ ✓{n} y := by
+    ✓{n} discreteFunSingleton x y ↔ ✓{n} y := by
   constructor
-  · exact fun h => discreteFunSingleton_self (SI := SI) y ▸ h x
+  · exact fun h => discreteFunSingleton_self y ▸ h x
   · intro hy x'
     by_cases h : x = x'
     · subst h
@@ -145,13 +145,13 @@ theorem discreteFunSingleton_validN_iff (n : SI) {x : ι} (y : β x) :
 
 @[rocq_alias discrete_fun_singleton_valid]
 theorem discreteFunSingleton_valid_iff {x : ι} (y : β x) :
-    ✓[SI] discreteFunSingleton (SI := SI) x y ↔ ✓[SI] y := by
+    ✓[SI] discreteFunSingleton x y ↔ ✓[SI] y := by
   rw [valid_iff_validN, valid_iff_validN]
   exact forall_congr' fun n => discreteFunSingleton_validN_iff ..
 
 @[rocq_alias discrete_fun_singleton_unit]
 theorem discreteFunSingleton_unit_eq (x : ι) :
-    discreteFunSingleton (SI := SI) x (unit : β x) = (unit : (a : ι) → β a) :=
+    discreteFunSingleton x (unit : β x) = (unit : (a : ι) → β a) :=
   funext fun x' => by
     by_cases h : x = x'
     · subst h
@@ -162,7 +162,7 @@ theorem discreteFunSingleton_unit_eq (x : ι) :
 
 @[rocq_alias discrete_fun_singleton_core]
 theorem discreteFunSingleton_core_eq {x : ι} (y : β x) :
-    core (discreteFunSingleton (SI := SI) x y) = discreteFunSingleton (SI := SI) x (core y) :=
+    core (discreteFunSingleton x y) = discreteFunSingleton x (core y) :=
   funext fun x' => by
     simp only [core, pcore, Option.getD_some]
     by_cases h : x = x'
@@ -173,14 +173,14 @@ theorem discreteFunSingleton_core_eq {x : ι} (y : β x) :
 
 @[rocq_alias discrete_fun_singleton_core_id]
 instance instDiscreteFunSingletonCoreId (x : ι) (y : β x) [CoreId y] :
-    CoreId (discreteFunSingleton (SI := SI) x y) :=
-  (coreId_iff_core_eqv_self (SI := SI)).mpr <| (discreteFunSingleton_core_eq y).trans
+    CoreId (discreteFunSingleton x y) :=
+  (coreId_iff_core_eqv_self).mpr <| (discreteFunSingleton_core_eq y).trans
     (congrArg (discreteFunSingleton x) (core_eqv_self y))
 
 @[rocq_alias discrete_fun_singleton_op]
 theorem discreteFunSingleton_op_eq {x : ι} (y₁ y₂ : β x) :
-    discreteFunSingleton (SI := SI) x y₁ • discreteFunSingleton (SI := SI) x y₂ =
-      discreteFunSingleton (SI := SI) x (y₁ • y₂) :=
+    discreteFunSingleton x y₁ • discreteFunSingleton x y₂ =
+      discreteFunSingleton x (y₁ • y₂) :=
   funext fun x' => by
     simp only [op]
     by_cases h : x = x'
@@ -194,7 +194,7 @@ theorem discreteFunSingleton_op_eq {x : ι} (y₁ y₂ : β x) :
 updated at `x` to `y'` recovers all of `f`. -/
 theorem discreteFunSingleton_op_insert {x : ι} {y y' : β x} {f : (a : ι) → β a}
     (h : y • y' = f x) :
-    discreteFunSingleton (SI := SI) x y • discreteFunInsert x y' f = f :=
+    discreteFunSingleton x y • discreteFunInsert x y' f = f :=
   funext fun x' => by
     by_cases hx : x = x'
     · subst hx; simpa only [DiscreteFun.op_apply, discreteFunSingleton_self,
@@ -231,36 +231,36 @@ theorem discreteFunInsert_update (g : (a : ι) → β a) {x : ι} {y₁ y₂ : �
 
 @[rocq_alias discrete_fun_singleton_updateP]
 theorem discreteFunSingleton_updateP {x : ι} {P : β x → Prop} (Q : ((a : ι) → β a) → Prop)
-    {y₁ : β x} (hy : y₁ ~~>:[SI] P) (hQ : ∀ y₂, P y₂ → Q (discreteFunSingleton (SI := SI) x y₂)) :
-    discreteFunSingleton (SI := SI) x y₁ ~~>:[SI] Q :=
+    {y₁ : β x} (hy : y₁ ~~>:[SI] P) (hQ : ∀ y₂, P y₂ → Q (discreteFunSingleton x y₂)) :
+    discreteFunSingleton x y₁ ~~>:[SI] Q :=
   discreteFunInsert_updateP hy hQ
 
 @[rocq_alias discrete_fun_singleton_updateP']
 theorem discreteFunSingleton_updateP' {x : ι} {P : β x → Prop}
     {y₁ : β x} (hy : y₁ ~~>:[SI] P) :
-    discreteFunSingleton (SI := SI) x y₁ ~~>:[SI] fun g => ∃ y₂, g = discreteFunSingleton (SI := SI) x y₂ ∧ P y₂ :=
+    discreteFunSingleton x y₁ ~~>:[SI] fun g => ∃ y₂, g = discreteFunSingleton x y₂ ∧ P y₂ :=
   discreteFunSingleton_updateP _ hy fun y₂ hy₂ => ⟨y₂, rfl, hy₂⟩
 
 @[rocq_alias discrete_fun_singleton_update]
 theorem discreteFunSingleton_update {x : ι} {y₁ y₂ : β x} (hy : y₁ ~~>[SI] y₂) :
-    discreteFunSingleton (SI := SI) x y₁ ~~>[SI] discreteFunSingleton (SI := SI) x y₂ :=
+    discreteFunSingleton x y₁ ~~>[SI] discreteFunSingleton x y₂ :=
   discreteFunInsert_update _ hy
 
 @[rocq_alias discrete_fun_singleton_updateP_empty]
 theorem discreteFunSingleton_updateP_unit {x : ι} {P : β x → Prop}
     {Q : ((a : ι) → β a) → Prop} (hy : unit ~~>:[SI] P)
-    (hQ : ∀ y₂, P y₂ → Q (discreteFunSingleton (SI := SI) x y₂)) : unit ~~>:[SI] Q :=
-  discreteFunSingleton_unit_eq (SI := SI) (β := β) x ▸ discreteFunSingleton_updateP Q hy hQ
+    (hQ : ∀ y₂, P y₂ → Q (discreteFunSingleton x y₂)) : unit ~~>:[SI] Q :=
+  discreteFunSingleton_unit_eq (β := β) x ▸ discreteFunSingleton_updateP Q hy hQ
 
 @[rocq_alias discrete_fun_singleton_updateP_empty']
 theorem discreteFunSingleton_updateP_unit' {x : ι} {P : β x → Prop}
     (hy : (unit : β x) ~~>:[SI] P) :
-    unit ~~>:[SI] fun g => ∃ y₂, g = discreteFunSingleton (SI := SI) x y₂ ∧ P y₂ :=
+    unit ~~>:[SI] fun g => ∃ y₂, g = discreteFunSingleton x y₂ ∧ P y₂ :=
   discreteFunSingleton_updateP_unit hy fun y₂ hy₂ => ⟨y₂, rfl, hy₂⟩
 
 @[rocq_alias discrete_fun_singleton_update_empty]
 theorem discreteFunSingleton_update_unit {x : ι} {y : β x} (hy : unit ~~>[SI] y) :
-    unit ~~>[SI] discreteFunSingleton (SI := SI) x y :=
+    unit ~~>[SI] discreteFunSingleton x y :=
   Update.of_updateP <|
     discreteFunSingleton_updateP_unit (UpdateP.of_update hy) <| fun _ hz => hz ▸ rfl
 
@@ -268,7 +268,7 @@ end ORA
 
 section ORA
 
-variable {ι : Type _} {β : ι → Type _} [∀ i, UORA SI (β i)]
+variable {ι : Type _} {β : ι → Type _} [∀ i, URA (β i)] [∀ i, UORA SI (β i)]
 
 @[rocq_alias discrete_fun_updateP]
 theorem discreteFun_updateP {f : (a : ι) → β a} {P : (a : ι) → β a → Prop}

@@ -27,7 +27,7 @@ open BI OFE SiProp ORA Sbi
 
 section CmraValid
 
-variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [ORA SI A]
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [RA A] [ORA SI A]
 
 @[rocq_alias internal_cmra_valid]
 def internalCmraValid (a : A) : PROP := siPure (cmraValid (SI := SI) a)
@@ -71,7 +71,7 @@ theorem internalCmraValid_weaken {a b : A} :
   siPure_mono cmraValid_weaken
 
 @[rocq_alias internal_cmra_valid_entails]
-theorem internalCmraValid_entails [ORA SI B] {a : A} {b : B} :
+theorem internalCmraValid_entails [RA B] [ORA SI B] {a : A} {b : B} :
     (✓[SI] a ⊢@{PROP} ✓[SI] b) ↔ ∀ (n : SI), ✓{n} a → ✓{n} b :=
   siPure_entails.trans cmraValid_entails_iff
 
@@ -124,7 +124,7 @@ end CmraValid
 
 section CmraOrder
 
-variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [ORA SI A]
+variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [RA A] [ORA SI A]
 
 /-! ### The internal extension inclusion -/
 
@@ -173,7 +173,7 @@ private theorem inc_holds {a b : A} {n : SI} :
     ((∃ c, iprop(b ≡[SI] (a • c))) : SiProp SI).holds n ↔ a ≼{n} b := SiProp.exists_holds
 
 /-- Two internal extension inclusions agree when they agree at every step index. -/
-theorem internalCmraIncluded_iff [ORA SI B] {a b : A} {a' b' : B}
+theorem internalCmraIncluded_iff [RA B] [ORA SI B] {a b : A} {a' b' : B}
     (h : ∀ (n : SI), a ≼{n} b ↔ a' ≼{n} b') : a ≼[SI] b ⊣⊢@{PROP} a' ≼[SI] b' :=
   siPure_mono_bi ⟨fun n hn => inc_holds.mpr ((h n).mp (inc_holds.mp hn)),
     fun n hn => inc_holds.mpr ((h n).mpr (inc_holds.mp hn))⟩
@@ -235,7 +235,7 @@ theorem internalCmraIncluded_trans {a b c : A} :
   exact and_intro and_elim_r (and_elim_left_trans (BI.internalEq_entails.mpr (fun n heq => op_left_dist _ heq)))
 
 /-- The internal `≼` is monotone under any nonexpansive map commuting with `•`. -/
-theorem internalCmraIncluded_map {B : Type _} [ORA SI B] (g : A → B) [NonExpansive SI g]
+theorem internalCmraIncluded_map {B : Type _} [RA B] [ORA SI B] (g : A → B) [NonExpansive SI g]
     (hg : ∀ x y : A, g (x • y) = g x • g y) {a b : A} :
     a ≼[SI] b ⊢@{PROP} g a ≼[SI] g b :=
   siPure_mono <| BI.exists_elim fun c => BI.exists_intro_trans (g c) <| by
@@ -303,7 +303,7 @@ theorem internalCmraOrder_intro {P : PROP} {a b : A} (h : a ≼ₒ[SI] b) : P �
     _ ⊢ a ≼ₒ[SI] b := siPure_mono fun n _ => ordN_of_ord n h
 
 /-- Two internal orders agree when they agree at every step index. -/
-theorem internalCmraOrder_iff [ORA SI B] {a b : A} {a' b' : B}
+theorem internalCmraOrder_iff [RA B] [ORA SI B] {a b : A} {a' b' : B}
     (h : ∀ (n : SI), a ≼ₒ{n} b ↔ a' ≼ₒ{n} b') : a ≼ₒ[SI] b ⊣⊢@{PROP} a' ≼ₒ[SI] b' :=
   siPure_mono_bi ⟨fun n => (h n).mp, fun n => (h n).mpr⟩
 
@@ -336,7 +336,7 @@ theorem internalCmraOrder_trans {a b c : A} : ⊢@{PROP} a ≼ₒ[SI] b -∗ b �
   BI.entails_wand <| BI.wand_intro <| siPure_and_sep.mpr.trans <|
     siPure_mono fun _ h => ordN_trans h.1 h.2
 
-theorem internalCmraOrder_map {B : Type _} [ORA SI B] (g : A -C>[SI] B) {a b : A} :
+theorem internalCmraOrder_map {B : Type _} [RA B] [ORA SI B] (g : A -C>[SI] B) {a b : A} :
     a ≼ₒ[SI] b ⊢@{PROP} g a ≼ₒ[SI] g b :=
   siPure_mono fun _ => g.monoN_ord
 

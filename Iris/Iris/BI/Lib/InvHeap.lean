@@ -56,7 +56,7 @@ private theorem singleton_inc_toInvHeap {h : H (V × (V → Prop))} {l : L} {I :
     {mv : Option (Excl (DiscreteO V))}
     (hinc : ({[l := (mv, toAgree ⟨I⟩)]} : InvHeapMapUR V H) ≼ toInvHeap h) :
     ∃ v, get? h l = some (v, I) ∧ mv ≼ some (excl ⟨v⟩) := by
-  obtain ⟨⟨_, _⟩, hy, hinc⟩ := (singleton_inc_iff (SI := Nat)).mp hinc
+  obtain ⟨⟨_, _⟩, hy, hinc⟩ := (singleton_inc_iff).mp hinc
   obtain ⟨v, I', rfl, rfl, hh⟩ := get?_toInvHeap_some hy
   obtain ⟨hv, hI⟩ := Prod.inc_def.mp (Option.some_inc_some_iff_is_total.mp hinc)
   cases DiscreteO.eqv_inj (toAgree_included.mp hI)
@@ -160,7 +160,7 @@ theorem invPointsToOwn_get?_some (l : L) (v : V) (h : H (V × (V → Prop))) (I 
 
 @[rocq_alias inv_pointsto_persistent]
 instance instPersistentInvPointsTo (l : L) (I : V → Prop) : Persistent (l ↦_I □) := by
-  haveI : CoreId (none : Option (Excl (DiscreteO V))) := unit_CoreId (SI := Nat)
+  haveI : CoreId (none : Option (Excl (DiscreteO V))) := unit_CoreId
   unfold invPointsTo
   infer_instance
 

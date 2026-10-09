@@ -63,17 +63,24 @@ scoped instance instOp : Op α where
   assoc {x y z} := (Associative.assoc (op := add) x y z).symm
   comm {x y} := Commutative.comm (op := add) x y
 
+/-- The constant core `zero`. -/
+scoped instance instPCore : PCore α where
+  pcore _ := some zero
+  pcore_idem h := h
+
+scoped instance instRA : RA α where
+  pcore_op_left h := Option.some.inj h ▸ left_id (op := add) _
+
+scoped instance instURA : URA α where
+  unit := zero
+  unit_left_id := left_id (op := add) _
+  pcore_unit := rfl
+  total _ := ⟨zero, rfl⟩
+
 scoped instance instCMRA : CMRA SI α :=
-  CMRA.ofDiscreteTotal (fun _ => zero) add (fun _ => True)
-    (fun x y z => (Associative.assoc (op := add) x y z).symm)
-    (Commutative.comm (op := add))
-    (fun _ => left_id (op := add) _)
-    (fun _ => rfl)
+  CMRA.ofDiscreteTotal (fun _ => True)
     (fun _ _ _ => trivial)
     (fun _ _ => ⟨zero, (left_id (op := add) zero).symm⟩)
-
-scoped instance instIsTotal : IsTotal α where
-  total _ := ⟨zero, rfl⟩
 
 #rocq_ignore natR "Use the (ℕ, +) Constant Core CMRA."
 #rocq_ignore nat_ra_mixin "Use the (ℕ, +) Constant Core CMRA."
@@ -94,11 +101,7 @@ scoped instance instDiscrete : ORA.Discrete SI α where
 #rocq_ignore nat_cmra_discrete "Use the (ℕ, +) Constant Core instance."
 #rocq_ignore Z_cmra_discrete "Use the (ℤ, +) Constant Core instance."
 
-scoped instance instUCMRA : UCMRA SI α := UORA.ofUCMRAData {
-  unit := zero
-  unit_valid := trivial
-  unit_left_id := pcore_op_left rfl
-  pcore_unit := rfl }
+scoped instance instUCMRA : UCMRA SI α := UORA.ofUCMRAData { unit_valid := trivial }
 
 #rocq_ignore natUR "Use the (ℕ, +) Constant Core UCMRA."
 #rocq_ignore nat_ucmra_mixin "Use the (ℕ, +) Constant Core UCMRA."
@@ -149,7 +152,7 @@ scoped instance instCoreIdZero : CoreId (α := α) 0 where
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias nat_is_op, rocq_alias Z_is_op]
-scoped instance instIsOp {x y : α} : IsOp SI d (x + y) x y where
+scoped instance instIsOp {x y : α} : IsOp d (x + y) x y where
   is_op := rfl
 
 end CommMonoidLike
@@ -172,17 +175,21 @@ scoped instance instOp : Op α where
   assoc {x y z} := (Associative.assoc (op := add) x y z).symm
   comm {x y} := Commutative.comm (op := add) x y
 
-scoped instance instCMRA : CMRA SI α :=
-  CMRA.ofDiscreteTotal id add (fun _ => True)
-    (fun x y z => (Associative.assoc (op := add) x y z).symm)
-    (Commutative.comm (op := add))
-    (fun _ => idempotent _)
-    (fun _ => rfl)
-    (fun _ _ _ => trivial)
-    (fun _ y => ⟨y, rfl⟩)
+/-- The universal core: every element is its own core. -/
+scoped instance instPCore : PCore α where
+  pcore := some
+  pcore_idem _ := rfl
+
+scoped instance instRA : RA α where
+  pcore_op_left h := Option.some.inj h ▸ idempotent _
 
 scoped instance instIsTotal : IsTotal α where
   total x := ⟨x, rfl⟩
+
+scoped instance instCMRA : CMRA SI α :=
+  CMRA.ofDiscreteTotal (fun _ => True)
+    (fun _ _ _ => trivial)
+    (fun _ y => ⟨y, rfl⟩)
 
 #rocq_ignore max_natO "Use the (ℕ, max) Universal Core CMRA."
 #rocq_ignore max_natR "Use the (ℕ, max) Universal Core CMRA."
@@ -223,12 +230,13 @@ scoped instance instCoreId (a : α) : CoreId a where
 #rocq_ignore max_Z_core_id "Use the (ℤ, max) Universal Core instance."
 #rocq_ignore min_nat_core_id "Use the (ℕ, min) Universal Core instance."
 
-scoped instance instUCMRA [LawfulLeftIdentity (α := α) (· + ·) zero] : UCMRA SI α :=
-  UORA.ofUCMRAData {
+scoped instance instURA [LawfulLeftIdentity (α := α) (· + ·) zero] : URA α where
   unit := zero
-  unit_valid := trivial
   unit_left_id := left_id _
-  pcore_unit := rfl }
+  pcore_unit := rfl
+
+scoped instance instUCMRA [LawfulLeftIdentity (α := α) (· + ·) zero] : UCMRA SI α :=
+  UORA.ofUCMRAData { unit_valid := trivial }
 
 #rocq_ignore max_natUR "Use the (ℕ, max) Universal Core instance."
 #rocq_ignore max_nat_ucmra_mixin "Use the (ℕ, max) Universal Core instance."
@@ -244,7 +252,7 @@ theorem op_eq {x y : α} : x • y = x + y := rfl
 
 omit [Zero α] in
 theorem ord_iff {x y : α} : x ≼ₒ[SI] y ↔ x • y = y :=
-  ⟨fun h => op_core_right_of_inc (SI := SI) (OrdInc.ord_inc h), fun h => IncOrd.inc_ord ⟨y, h.symm⟩⟩
+  ⟨fun h => op_core_right_of_inc (OrdInc.ord_inc h), fun h => IncOrd.inc_ord ⟨y, h.symm⟩⟩
 
 omit [Zero α] in
 theorem inc_iff {x y : α} : x ≼ y ↔ x • y = y :=
@@ -283,12 +291,16 @@ scoped instance instOp : Op α where
   assoc {x y z} := (Associative.assoc (op := add) x y z).symm
   comm {x y} := Commutative.comm (op := add) x y
 
+/-- No element has a core. -/
+scoped instance instPCore : PCore α where
+  pcore _ := none
+  pcore_idem h := by rcases h
+
+scoped instance instRA : RA α where
+  pcore_op_left h := by rcases h
+
 scoped instance instCMRA : CMRA SI α :=
-  CMRA.ofDiscrete (fun _ => none) add (fun _ => True)
-    (fun x y z => (Associative.assoc (op := add) x y z).symm)
-    (Commutative.comm (op := add))
-    (by rintro _ _ ⟨⟩)
-    (by rintro _ _ ⟨⟩)
+  CMRA.ofDiscrete (fun _ => True)
     (fun _ _ _ => trivial)
     (by rintro _ _ ⟨⟩)
 
@@ -328,7 +340,7 @@ theorem inc_iff_lt [LT α] [LawfulAddLT α] {x y : α} : x ≼ y ↔ x < y :=
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias pos_is_op]
-scoped instance instIsOp {x y : α} : IsOp SI d (x + y) x y where
+scoped instance instIsOp {x y : α} : IsOp d (x + y) x y where
   is_op := rfl
 
 end PosCommMonoidLike
@@ -386,9 +398,11 @@ scoped instance : Commutative (α := MaxNat) (· + ·) where comm := by grind
 scoped instance : LawfulLeftIdentity (α := MaxNat) (· + ·) (0 : MaxNat) where left_id a := by grind
 scoped instance : Std.IdempotentOp (α := MaxNat) (· + ·) where idempotent x := by grind
 scoped instance : Op MaxNat := OrdCommMonoidLike.instOp
+scoped instance : PCore MaxNat := OrdCommMonoidLike.instPCore
+scoped instance : RA MaxNat := OrdCommMonoidLike.instRA
+scoped instance : URA MaxNat := OrdCommMonoidLike.instURA
 scoped instance : COFE SI MaxNat := COFE.ofDiscrete _
 scoped instance : OFE.Discrete SI MaxNat := ⟨fun h => h⟩
-set_option synthInstance.checkSynthOrder false in
 scoped instance : UCMRA SI MaxNat := OrdCommMonoidLike.instUCMRA
 scoped instance : ORA.Discrete SI MaxNat := OrdCommMonoidLike.instDiscrete
 scoped instance : CoreId (a : MaxNat) := OrdCommMonoidLike.instCoreId _
@@ -409,7 +423,7 @@ theorem MaxNat.local_update {a b a' : MaxNat} (h : a ≤ a') : (a, b) ~l~>[SI] (
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias max_nat_is_op]
 instance {a b : Nat} :
-    IsOp SI d (MaxNat.ofNat (Nat.max a b)) (MaxNat.ofNat a) (MaxNat.ofNat b) where
+    IsOp d (MaxNat.ofNat (Nat.max a b)) (MaxNat.ofNat a) (MaxNat.ofNat b) where
   is_op := rfl
 
 end MaxNat
@@ -447,13 +461,14 @@ theorem MaxInt.eq_toInt (a b : MaxInt) : a = b ↔ a.toInt = b.toInt := by
 scoped instance : Associative (α := MaxInt) (· + ·) where assoc := by grind
 scoped instance : Commutative (α := MaxInt) (· + ·) where comm := by grind
 scoped instance : IdempotentOp (α := MaxInt) (· + ·) where idempotent x := by grind
+scoped instance : Op MaxInt := OrdCommMonoidLike.instOp
+scoped instance : PCore MaxInt := OrdCommMonoidLike.instPCore
+scoped instance : RA MaxInt := OrdCommMonoidLike.instRA
+scoped instance : IsTotal MaxInt := OrdCommMonoidLike.instIsTotal
 scoped instance : COFE SI MaxInt := COFE.ofDiscrete _
 scoped instance : OFE.Discrete SI MaxInt := ⟨fun h => h⟩
-set_option synthInstance.checkSynthOrder false in
 scoped instance : CMRA SI MaxInt := OrdCommMonoidLike.instCMRA
 scoped instance : ORA.Discrete SI MaxInt := OrdCommMonoidLike.instDiscrete
-set_option synthInstance.checkSynthOrder false in
-scoped instance : IsTotal MaxInt := OrdCommMonoidLike.instIsTotal
 scoped instance : CoreId (a : MaxInt) := OrdCommMonoidLike.instCoreId _
 
 theorem MaxInt.ord_iff {a b : MaxInt} : a ≼ₒ[SI] b ↔ a ≤ b := by
@@ -472,7 +487,7 @@ theorem MaxInt.local_update {a b a' : MaxInt} (h : a ≤ a') : (a, b) ~l~>[SI] (
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias max_Z_is_op]
 instance {a b : Int} :
-    IsOp SI d (MaxInt.ofInt (Max.max a b)) (MaxInt.ofInt a) (MaxInt.ofInt b) where
+    IsOp d (MaxInt.ofInt (Max.max a b)) (MaxInt.ofInt a) (MaxInt.ofInt b) where
   is_op := rfl
 
 end MaxInt
@@ -512,13 +527,14 @@ theorem MinNat.eq_toNat (a b : MinNat) : a = b ↔ a.toNat = b.toNat := by
 scoped instance : Associative (α := MinNat) (· + ·) where assoc := by grind
 scoped instance : Commutative (α := MinNat) (· + ·) where comm := by grind
 scoped instance : IdempotentOp (α := MinNat) (· + ·) where idempotent _ := by grind
+scoped instance : Op MinNat := OrdCommMonoidLike.instOp
+scoped instance : PCore MinNat := OrdCommMonoidLike.instPCore
+scoped instance : RA MinNat := OrdCommMonoidLike.instRA
+scoped instance : IsTotal MinNat := OrdCommMonoidLike.instIsTotal
 scoped instance : COFE SI MinNat := COFE.ofDiscrete _
 scoped instance : OFE.Discrete SI MinNat := ⟨fun h => h⟩
-set_option synthInstance.checkSynthOrder false in
 scoped instance : CMRA SI MinNat := OrdCommMonoidLike.instCMRA
 scoped instance : ORA.Discrete SI MinNat := OrdCommMonoidLike.instDiscrete
-set_option synthInstance.checkSynthOrder false in
-scoped instance : IsTotal MinNat := OrdCommMonoidLike.instIsTotal
 scoped instance : CoreId (a : MinNat) := OrdCommMonoidLike.instCoreId _
 
 theorem MinNat.ord_iff {a b : MinNat} : a ≼ₒ[SI] b ↔ b ≤ a := by
@@ -537,7 +553,7 @@ theorem MinNat.local_update {a b a' : MinNat} (h : a' ≤ a) : (a, b) ~l~>[SI] (
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias min_nat_is_op]
 instance {a b : Nat} :
-    IsOp SI d (MinNat.ofNat (Nat.min a b)) (MinNat.ofNat a) (MinNat.ofNat b) where
+    IsOp d (MinNat.ofNat (Nat.min a b)) (MinNat.ofNat a) (MinNat.ofNat b) where
   is_op := rfl
 
 end MinNat

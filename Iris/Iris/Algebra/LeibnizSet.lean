@@ -70,19 +70,11 @@ namespace DisjointLeibnizSet
 
 variable {S : Type _} [LawfulSet S A] [DecidableDisj S]
 
-@[instance_reducible] def cmraData : CMRAData SI (DisjointLeibnizSet S) where
+instance instRA : RA (DisjointLeibnizSet S) where
   pcore _ := some (.valid ∅)
   op
     | valid x, valid y => if x ## y then valid (x ∪ y) else error
     | _, _ => error
-  ValidN _ | valid _ => True | _ => False
-  Valid | valid _ => True | _ => False
-  op_ne.ne _ _ _ H := by rw [(H : _ = _)] <;> exact .rfl
-  pcore_ne {_ _ _ cx} _ H := ⟨cx, H, .rfl⟩
-  validN_ne H G := (H : _ = _) ▸ G
-  valid_iff_validN := ⟨(fun _ => ·), (· 0)⟩
-  validN_le := fun h _ => h
-  validN_op_left {_ x y} := by rcases x <;> rcases y <;> simp
   assoc {x y z} := by
     rcases x with (x|_) <;> rcases y with (y|_) <;> rcases z with (z|_) <;> (try · simp)
     by_cases hyz : y ## z <;> by_cases hxy : x ## y <;>
@@ -109,10 +101,25 @@ variable {S : Type _} [LawfulSet S A] [DecidableDisj S]
     rintro ⟨⟩
     simp [disjoint_empty_left]
   pcore_idem {x cx} := by grind only []
-  extend {_ _ y₁ y₂} _ h := ⟨y₁, y₂, ⟨h, .rfl, .rfl⟩⟩
-  pcore_op_mono h _ := ⟨.valid ∅, by cases h; simp [disjoint_empty_left]⟩
 
-set_option synthInstance.checkSynthOrder false in
+instance instURA : URA (DisjointLeibnizSet S) where
+  unit := .valid ∅
+  unit_left_id {x} := by rcases x <;> simp [disjoint_empty_left, op]
+  pcore_unit := by simp [pcore]
+  total _ := ⟨_, rfl⟩
+
+@[instance_reducible] def cmraData : CMRAData SI (DisjointLeibnizSet S) where
+  ValidN _ | valid _ => True | _ => False
+  Valid | valid _ => True | _ => False
+  op_ne.ne _ _ _ H := by rw [(H : _ = _)] <;> exact .rfl
+  pcore_ne {_ _ _ cx} _ H := ⟨cx, H, .rfl⟩
+  validN_ne H G := (H : _ = _) ▸ G
+  valid_iff_validN := ⟨(fun _ => ·), (· 0)⟩
+  validN_le := fun h _ => h
+  validN_op_left {_ x y} := by rcases x <;> rcases y <;> simp
+  extend {_ _ y₁ y₂} _ h := ⟨y₁, y₂, ⟨h, .rfl, .rfl⟩⟩
+  pcore_op_mono h _ := ⟨.valid ∅, by cases h; simp [PCore.pcore, Op.op, disjoint_empty_left]⟩
+
 instance : CMRA SI (DisjointLeibnizSet S) := ofCMRAData DisjointLeibnizSet.cmraData
 
 instance instDiscreteDisjointLeibnizSet : ORA.Discrete SI (DisjointLeibnizSet S) where
@@ -120,13 +127,9 @@ instance instDiscreteDisjointLeibnizSet : ORA.Discrete SI (DisjointLeibnizSet S)
   discrete_valid := id
   discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
 
-@[instance_reducible] def ucmraData : UCMRAData SI (DisjointLeibnizSet S) where
-  unit := .valid ∅
+theorem ucmraData : UCMRAData SI (DisjointLeibnizSet S) where
   unit_valid := trivial
-  unit_left_id {x} := by rcases x <;> simp [disjoint_empty_left, op]
-  pcore_unit := by simp [pcore]
 
-set_option synthInstance.checkSynthOrder false in
 instance instUCMRADisjointLeibnizSet : UCMRA SI (DisjointLeibnizSet S) := UORA.ofUCMRAData DisjointLeibnizSet.ucmraData
 
 theorem valid_set {s : S} : ✓[SI] valid s := ⟨⟩
@@ -147,9 +150,10 @@ theorem mem_iff_of_valid_union {x y : DisjointLeibnizSet S} (v : ✓[SI] x • y
     · simp only [op, h, ↓reduceIte] at v; exact v.elim
 
 theorem mem_iff_of_validN_union {n : SI} {x y : DisjointLeibnizSet S} (v : ✓{n} x • y) (a : A) :
-    a ∈ x • y ↔ a ∈ x ∨ a ∈ y := mem_iff_of_valid_union v a
+    a ∈ x • y ↔ a ∈ x ∨ a ∈ y := mem_iff_of_valid_union (SI := SI) v a
 
-theorem ord_iff_subset {X Y : S} : valid X ≼ₒ[SI] valid Y ↔ X ⊆ Y := by
+@[rocq_alias coPset_disj_included, rocq_alias gset_disj_included]
+theorem included_iff_subset {X Y : S} : valid X ≼ valid Y ↔ X ⊆ Y := by
   refine ⟨?_, ?_⟩
   · rintro ⟨(Z|_), HZ⟩
     · by_cases H : X ## Z
@@ -166,9 +170,8 @@ theorem ord_iff_subset {X Y : S} : valid X ≼ₒ[SI] valid Y ↔ X ⊆ Y := by
     ext p; rw [mem_union, mem_diff]
     refine ⟨by grind, (·.casesOn (Hsub _) (·.left))⟩
 
-@[rocq_alias coPset_disj_included, rocq_alias gset_disj_included]
-theorem included_iff_subset {X Y : S} : valid X ≼ valid Y ↔ X ⊆ Y :=
-  inc_iff_ord.trans (ord_iff_subset (SI := SI))
+theorem ord_iff_subset {X Y : S} : valid X ≼ₒ[SI] valid Y ↔ X ⊆ Y :=
+  inc_iff_ord.symm.trans included_iff_subset
 
 @[rocq_alias coPset_disj_union, rocq_alias gset_disj_union]
 theorem disj_op_union {X Y : S} (Hdisj : X ## Y) :
@@ -240,8 +243,8 @@ theorem localUpdate_op_r {X Y Z : S} (Hdisj : Z ## X) :
 theorem localUpdate_union_r_of_disj (X Y Z : S) (Hdisj : Z ## X) :
     (valid X, valid Y) ~l~>[SI] (valid (Z ∪ X), valid (Z ∪ Y)) := by
   refine LocalUpdate.total_valid fun vx vy le => ?_
-  have HdisjY : Z ## Y := fun a ⟨Hz, Hy⟩ => Hdisj a ⟨Hz, ord_iff_subset.mp le a Hy⟩
-  rw [←disj_op_union (SI := SI) Hdisj, ←disj_op_union (SI := SI) HdisjY]
+  have HdisjY : Z ## Y := fun a ⟨Hz, Hy⟩ => Hdisj a ⟨Hz, (ord_iff_subset (SI := SI)).mp le a Hy⟩
+  rw [←disj_op_union Hdisj, ←disj_op_union HdisjY]
   exact localUpdate_op_r Hdisj
 
 @[rocq_alias gset_disj_alloc_empty_local_update]
@@ -325,9 +328,21 @@ namespace LeibnizSet
 
 variable {S : Type _} [LawfulSet S A]
 
-@[instance_reducible] def cmraData : CMRAData SI (LeibnizSet S) where
+instance instRA : RA (LeibnizSet S) where
   pcore := some
   op | .valid x, valid y => valid (x ∪ y)
+  assoc := by simp [union_assoc]
+  comm := by simp [union_comm]
+  pcore_op_left {_ _} := by rintro ⟨rfl⟩; simp [union_idem]
+  pcore_idem := by simp
+
+instance instURA : URA (LeibnizSet S) where
+  unit := valid ∅
+  unit_left_id := by simp [op, union_empty_left]
+  pcore_unit := by simp [pcore, pcore]
+  total _ := ⟨_, rfl⟩
+
+@[instance_reducible] def cmraData : CMRAData SI (LeibnizSet S) where
   ValidN _ _ := True
   Valid _ := True
   op_ne.ne _ _ _ H := by rw [(H : _ = _)] <;> exact .rfl
@@ -336,23 +351,14 @@ variable {S : Type _} [LawfulSet S A]
   valid_iff_validN := by simp
   validN_le _ _ := by simp
   validN_op_left _ := by simp
-  assoc := by simp [union_assoc]
-  comm := by simp [union_comm]
-  pcore_op_left {_ _} := by rintro ⟨rfl⟩; simp [union_idem]
-  pcore_idem := by simp
   extend {_ _ _ _} _ h := ⟨_, _, h, .rfl, .rfl⟩
   pcore_op_mono {_ _} := by rintro ⟨rfl⟩ y; exists y
 
-set_option synthInstance.checkSynthOrder false in
 instance : CMRA SI (LeibnizSet S) := ofCMRAData LeibnizSet.cmraData
 
-@[instance_reducible] def ucmraData : UCMRAData SI (LeibnizSet S) where
-  unit := valid ∅
+theorem ucmraData : UCMRAData SI (LeibnizSet S) where
   unit_valid := trivial
-  unit_left_id := by simp [op, union_empty_left]
-  pcore_unit := by simp [pcore, pcore]
 
-set_option synthInstance.checkSynthOrder false in
 instance instUnital : UCMRA SI (LeibnizSet S) := UORA.ofUCMRAData LeibnizSet.ucmraData
 
 instance instDiscreteLeibnizSet : ORA.Discrete SI (LeibnizSet S) where
@@ -371,8 +377,9 @@ theorem core_equiv (X : LeibnizSet S) : core X = X := by
   change (pcore X).getD X = X
   simp [pcore]
 
-theorem ord_iff_subset (X Y : S) : valid X ≼ₒ[SI] valid Y ↔ X ⊆ Y := by
-  simp only [Order, Included, op]
+@[rocq_alias coPset_included, rocq_alias gset_included]
+theorem included_iff_subset (X Y : S) : valid X ≼ valid Y ↔ X ⊆ Y := by
+  simp only [Included, op]
   refine ⟨fun ⟨_, H⟩ => ?_, fun Hsub => ?_⟩
   · obtain ⟨rfl⟩ := H
     exact fun _ Hp => mem_union.mpr (.inl Hp)
@@ -384,9 +391,8 @@ theorem ord_iff_subset (X Y : S) : valid X ≼ₒ[SI] valid Y ↔ X ⊆ Y := by
     · exact .inl H
     · exact .inr ⟨H1, H⟩
 
-@[rocq_alias coPset_included, rocq_alias gset_included]
-theorem included_iff_subset (X Y : S) : valid X ≼ valid Y ↔ X ⊆ Y :=
-  inc_iff_ord.trans (ord_iff_subset (SI := SI) X Y)
+theorem ord_iff_subset (X Y : S) : valid X ≼ₒ[SI] valid Y ↔ X ⊆ Y :=
+  inc_iff_ord.symm.trans (included_iff_subset X Y)
 
 @[rocq_alias coPset_opM, rocq_alias gset_opM]
 theorem opM_union (X : LeibnizSet S) (mY : Option (LeibnizSet S)) :

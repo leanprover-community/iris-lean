@@ -24,7 +24,7 @@ open Iris OFE BI
 
 section fupd
 
-variable {M : Type u} [UORA Nat M]
+variable {M : Type u} [URA M] [UORA Nat M]
 variable (vs : CoPset → CoPset → UPred Nat M → UPred Nat M → UPred Nat M)
 
 @[rocq_alias fupd]

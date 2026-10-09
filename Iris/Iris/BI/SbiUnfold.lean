@@ -182,17 +182,17 @@ instance sbiUnfold_internalEq [OFE SI A] {a b : A} :
   .of_closed Dist.le <| siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
 @[rocq_alias sbi_unfold_internal_cmra_valid]
-instance sbiUnfold_cmraValid [ORA SI A] {a : A} :
+instance sbiUnfold_cmraValid [RA A] [ORA SI A] {a : A} :
     SbiUnfold SI clo (iprop(✓[SI] a) : PROP) (fun (n : SI) => ✓{n} a) :=
   .of_closed (fun h hm => validN_of_le hm h) <|
     siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
-instance sbiUnfold_included [ORA SI A] {a b : A} :
+instance sbiUnfold_included [RA A] [ORA SI A] {a b : A} :
     SbiUnfold SI clo (iprop(a ≼ₒ[SI] b) : PROP) (fun (n : SI) => a ≼ₒ{n} b) :=
   .of_closed (fun h hm => ordN_of_ordN_le hm h) <| siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
 @[rocq_alias sbi_unfold_internal_included]
-instance sbiUnfold_inc [ORA SI A] {a b : A} :
+instance sbiUnfold_inc [RA A] [ORA SI A] {a b : A} :
     SbiUnfold SI clo (iprop(a ≼[SI] b) : PROP) (fun (n : SI) => a ≼{n} b) :=
   .of_closed (fun h hm => incN_of_incN_le hm h) <|
     siPure_mono_bi <| biEntails_of_iff fun _ => exists_holds

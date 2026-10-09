@@ -30,11 +30,11 @@ extend a resource below `x` at step-index `0`, and need the result below `x` at 
 index. Rocq gets this from `cmra_extend` (exact equality); for an ordered RA the axiom
 `ordN_extend` only lifts one step (`n` to `succᵢ n`). The lift exists for finite step indices
 (iterate `ordN_extend`) and for the extension order (`IsInc`, via `extend`). -/
-class OrdExtend0 (SI : Type _) [SIdx SI] (M : Type _) [UORA SI M] : Prop where
+class OrdExtend0 (SI : Type _) [SIdx SI] (M : Type _) [URA M] [UORA SI M] : Prop where
   ordN_extend0 {n : SI} {x y : M} : ✓{n} x → y ≼ₒ{(0 : SI)} x →
     ∃ z, z ≼ₒ{n} x ∧ z ≡{(0 : SI)}≡ y
 
-instance OrdExtend0.of_finite [SIdxFinite SI] [UORA SI M] : OrdExtend0 SI M where
+instance OrdExtend0.of_finite [SIdxFinite SI] [URA M] [UORA SI M] : OrdExtend0 SI M where
   ordN_extend0 {n} {x y} := by
     refine SIdx.rec' (P := fun (n : SI) => ✓{n} x → y ≼ₒ{(0 : SI)} x →
       ∃ z, z ≼ₒ{n} x ∧ z ≡{(0 : SI)}≡ y) ?_ ?_ ?_ n
@@ -46,13 +46,13 @@ instance OrdExtend0.of_finite [SIdxFinite SI] [UORA SI M] : OrdExtend0 SI M wher
     · intro m hlim _
       exact absurd hlim (SIdx.limit_finite m)
 
-instance OrdExtend0.of_isInc [UORA SI M] [IsInc SI M] : OrdExtend0 SI M where
+instance OrdExtend0.of_isInc [URA M] [UORA SI M] [IsInc SI M] : OrdExtend0 SI M where
   ordN_extend0 {n} {x y} hv h := by
     obtain ⟨c, hc⟩ := OrdInc.ordN_incN h
     obtain ⟨z₁, z₂, hx, hz₁, -⟩ := extend (validN_of_le SIdx.le_0_l hv) hc
     exact ⟨z₁, (IncOrd.inc_ord (SI := SI) ⟨z₂, hx⟩).ordN, hz₁⟩
 
-variable [UORA SI M]
+variable [URA M] [UORA SI M]
 
 section bidefs
 
@@ -182,7 +182,7 @@ def ownM (m : M) : UPred SI M where
 #rocq_ignore uPred_ownM_def "`UPred.ownM` is defined directly without `seal`/`unseal`."
 #rocq_ignore uPred_ownM_aux "`UPred.ownM` is defined directly without `seal`/`unseal`."
 
-def cmraValid {A} [ORA SI A] (a : A) : UPred SI M where
+def cmraValid {A} [RA A] [ORA SI A] (a : A) : UPred SI M where
   holds n _ := ✓{n} a
   mono hv _ le := validN_of_le le hv
 
@@ -217,7 +217,7 @@ instance later_contractive : OFE.Contractive SI UPred.later (α := UPred SI M) w
 instance ownM_ne : OFE.NonExpansive SI (ownM : M → UPred SI M) where
   ne _ _ _ H _ _ Hn _ := OFE.Dist.ordN (OFE.Dist.le H Hn) .rfl
 
-instance {A} [ORA SI A] : OFE.NonExpansive SI (cmraValid : A → UPred SI M) where
+instance {A} [RA A] [ORA SI A] : OFE.NonExpansive SI (cmraValid : A → UPred SI M) where
   ne _ _ _ H _ _ Hn _ := (H.le Hn).validN
 
 @[rocq_alias uPred_primitive.bupd_ne]
@@ -676,7 +676,7 @@ instance : BIPlainlyExists (UPred SI M) := .ofSbi SI
 theorem plainly_eq_uPred_plainly (P : UPred SI M) : iprop(■ P) = UPred.plainly P := rfl
 
 /-- The Sbi-derived `internalCmraValid` on UPred unfolds to `UPred.cmraValid`. -/
-theorem internalCmraValid_eq_uPred_cmraValid [ORA SI A] (a : A) :
+theorem internalCmraValid_eq_uPred_cmraValid [RA A] [ORA SI A] (a : A) :
     iprop(✓[SI] a : UPred SI M) = UPred.cmraValid a := rfl
 
 section BUpdInstance
@@ -817,7 +817,7 @@ section derived
 @[rocq_alias uPred.intuitionistically_ownM]
 theorem intuitionistically_ownM (a : M) [CoreId a] : □ ownM (SI := SI) a ⊣⊢ ownM a :=
   ⟨intuitionistically_elim, fun _ _ h =>
-    ⟨ordN_trans (ordN_unit (x := a)) h, core_eqv_self (SI := SI) a ▸ core_ordN_core h⟩⟩
+    ⟨ordN_trans (ordN_unit (x := a)) h, core_eqv_self a ▸ core_ordN_core h⟩⟩
 
 @[rocq_alias uPred.ownM_invalid]
 theorem ownM_invalid (a : M) (hnv : ¬ ✓{(0 : SI)} a) : ownM (SI := SI) a ⊢ False :=
@@ -918,38 +918,38 @@ theorem consistency : ¬ (⊢@{UPred SI M} False) := pure_soundness
 
 end derived
 
-theorem plainly_valid_mpr [ORA SI A] (a : A) :
+theorem plainly_valid_mpr [RA A] [ORA SI A] (a : A) :
     internalCmraValid (SI := SI) a ⊢@{UPred SI M} ■ internalCmraValid (SI := SI) a :=
   fun _ _ hv => hv
 
-theorem persistently_valid_mpr [ORA SI A] (a : A) :
+theorem persistently_valid_mpr [RA A] [ORA SI A] (a : A) :
     internalCmraValid (SI := SI) a ⊢@{UPred SI M} <pers> internalCmraValid (SI := SI) a :=
   (plainly_valid_mpr a).trans plainly_elim_persistently
 
-theorem plainly_valid [ORA SI A] (a : A) :
+theorem plainly_valid [RA A] [ORA SI A] (a : A) :
     ■ internalCmraValid (SI := SI) a ⊣⊢@{UPred SI M} internalCmraValid (SI := SI) a :=
   ⟨plainly_elim, plainly_valid_mpr a⟩
 
-theorem intuitionistically_valid [IncOrd SI M] {A} [ORA SI A] (a : A) :
+theorem intuitionistically_valid [IncOrd SI M] {A} [RA A] [ORA SI A] (a : A) :
     □ internalCmraValid (SI := SI) a ⊣⊢@{UPred SI M} internalCmraValid (SI := SI) a := by
   constructor
   · exact intuitionistically_elim
   · exact (persistently_valid_mpr a).trans intuitionistically_iff_persistently.mpr
 
-theorem discrete_valid [ORA SI A] [Discrete SI A] (a : A) :
+theorem discrete_valid [RA A] [ORA SI A] [Discrete SI A] (a : A) :
     internalCmraValid (SI := SI) a ⊣⊢@{UPred SI M} ⌜✓[SI] a⌝ :=
   ⟨fun n _ hv => (valid_iff_validN' n).mpr hv, fun _ _ hv => hv.validN⟩
 
-instance valid_timeless [ORA SI A] [Discrete SI A] {a : A} :
+instance valid_timeless [RA A] [ORA SI A] [Discrete SI A] {a : A} :
     Timeless (internalCmraValid (SI := SI) a : UPred SI M) where
   timeless := by
     refine (only0_mono (discrete_valid a).mp).trans ?_
     exact Timeless.timeless.trans (discrete_valid a).mpr
 
-instance valid_plain [ORA SI A] {a : A} : Plain (internalCmraValid (SI := SI) a : UPred SI M) where
+instance valid_plain [RA A] [ORA SI A] {a : A} : Plain (internalCmraValid (SI := SI) a : UPred SI M) where
   plain := plainly_valid_mpr a
 
-instance valid_persistent [ORA SI A] {a : A} : Persistent (internalCmraValid (SI := SI) a : UPred SI M) where
+instance valid_persistent [RA A] [ORA SI A] {a : A} : Persistent (internalCmraValid (SI := SI) a : UPred SI M) where
   persistent := persistently_valid_mpr a
 
 end UPred
@@ -962,14 +962,14 @@ open BUpdPlain ORA UPred
 ## Compatibility between the UPred model of BUpd and the BUpd construction for generic Sbi instances
 -/
 
-def BUpdPlain_pred [UORA SI M] (P : UPred SI M) (y : M) : UPred SI M where
+def BUpdPlain_pred [URA M] [UORA SI M] (P : UPred SI M) (y : M) : UPred SI M where
   holds k _ := ∃ x'', ∃ H : ✓{k} (x'' • y), P k ⟨x'', validN_op_left H⟩
   mono {_ _ _ _} := fun ⟨z, Hz1, Hz2⟩ _ Hn =>
     ⟨z, validN_of_le Hn Hz1, P.mono Hz2 (ordN_refl z) Hn⟩
 
 /-- The alternative definition entails the ordinary basic update -/
 @[rocq_alias bupd_alt_bupd]
-theorem BUpdPlain_bupd [UORA SI M] [OrdExtend0 SI M] (P : UPred SI M) : BUpdPlain P ⊢ |==> P := by
+theorem BUpdPlain_bupd [URA M] [UORA SI M] [OrdExtend0 SI M] (P : UPred SI M) : BUpdPlain P ⊢ |==> P := by
   intro _ _ H k y Hkn Hxy
   have := (H _ ⟨BUpdPlain_pred P y, rfl⟩) k y Hkn Hxy ?_
   · rw [plainly_eq_uPred_plainly] at this
@@ -979,11 +979,11 @@ theorem BUpdPlain_bupd [UORA SI M] [OrdExtend0 SI M] (P : UPred SI M) : BUpdPlai
     refine ⟨z, validN_ne op_commN Hvyz, HP⟩
 
 @[rocq_alias bupd_alt_bupd_iff]
-theorem BUpdPlain_bupd_iff [UORA SI M] [OrdExtend0 SI M] (P : UPred SI M) : BUpdPlain P ⊣⊢ |==> P :=
+theorem BUpdPlain_bupd_iff [URA M] [UORA SI M] [OrdExtend0 SI M] (P : UPred SI M) : BUpdPlain P ⊣⊢ |==> P :=
   ⟨BUpdPlain_bupd P, BUpd_BUpdPlain (PROP := UPred SI M)⟩
 
 @[rocq_alias ownM_updateP]
-theorem ownM_updateP [UORA SI M] [OrdExtend0 SI M] {x : M} {R : UPred SI M} (Φ : M → Prop) (Hup : x ~~>:[SI] Φ) :
+theorem ownM_updateP [URA M] [UORA SI M] [OrdExtend0 SI M] {x : M} {R : UPred SI M} (Φ : M → Prop) (Hup : x ~~>:[SI] Φ) :
     iprop(ownM x ∗ ∀ y, ⌜Φ y⌝ -∗ ownM y -∗ ■ R) ⊢ ■ R := by
   rw [plainly_eq_uPred_plainly]
   intro n z ⟨x1, z2, Hx, Hx1, HR⟩

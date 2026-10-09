@@ -94,7 +94,7 @@ example (h : ∀ (n : Nat), (∀ y, ∀ m ≤ n, x ≡{m}≡ y → y ≡{m}≡ z
 end RocqTests
 
 section LeanTests
-variable [BI PROP] [BIStepIndexed Nat PROP] [Sbi Nat PROP] [ORA Nat A] [OFE Nat B]
+variable [BI PROP] [BIStepIndexed Nat PROP] [Sbi Nat PROP] [RA A] [ORA Nat A] [OFE Nat B]
 
 /- `prod_validI`. -/
 example (x : A × A) (h : ∀ (n : Nat), ✓{n} x ↔ ✓{n} x.1 ∧ ✓{n} x.2) :

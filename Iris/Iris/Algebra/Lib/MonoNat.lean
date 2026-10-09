@@ -56,7 +56,7 @@ instance {l : MaxNat} : CoreId (●MN□ l : MonoNat (SI := SI)) := by
 theorem auth_dfrac_op (dq1 dq2 : DFrac) (n : MaxNat) :
   (●MN{dq1 • dq2} n : MonoNat (SI := SI)) = (●MN{dq1} n) • (●MN{dq2} n) := by
   unfold auth
-  rw [← assoc', op_core_right_of_inc (SI := SI) (inc_op_right ..), assoc', ← Auth.auth_dfrac_op]
+  rw [← assoc', op_core_right_of_inc (inc_op_right ..), assoc', ← Auth.auth_dfrac_op]
 
 @[rocq_alias mono_nat_lb_op]
 theorem lb_op (n1 n2 : MaxNat) :
@@ -66,7 +66,7 @@ theorem lb_op (n1 n2 : MaxNat) :
 @[rocq_alias mono_nat_auth_lb_op]
 theorem auth_lb_op (dq : DFrac) (n : MaxNat) :
   (●MN{dq} n : MonoNat (SI := SI)) = (●MN{dq} n) • (◯MN n) :=
-  (op_core_left_of_inc (SI := SI) (inc_op_right ..)).symm
+  (op_core_left_of_inc (inc_op_right ..)).symm
 
 @[rocq_alias mono_nat_lb_op_le_l]
 theorem lb_op_le_l (n n' : MaxNat) (h : n' ≤ n) :
@@ -147,14 +147,14 @@ theorem auth_unpersist (n : MaxNat) :
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias mono_nat_auth_dfrac_is_op]
 instance {dq dq1 dq2 : DFrac} {n : MaxNat}
-    [h : IsOp SI d dq dq1 dq2] :
-    IsOp SI d (●MN{dq} n : MonoNat (SI := SI)) (●MN{dq1} n) (●MN{dq2} n) where
+    [h : IsOp d dq dq1 dq2] :
+    IsOp d (●MN{dq} n : MonoNat (SI := SI)) (●MN{dq1} n) (●MN{dq2} n) where
   is_op := by rw [h.is_op]; exact auth_dfrac_op ..
 
 @[rocq_alias mono_nat_lb_max_is_op]
 instance {n n1 n2 : MaxNat}
-    [h : IsOp SI d n n1 n2] :
-    IsOp SI d (◯MN n : MonoNat (SI := SI)) (◯MN n1) (◯MN n2) where
+    [h : IsOp d n n1 n2] :
+    IsOp d (◯MN n : MonoNat (SI := SI)) (◯MN n1) (◯MN n2) where
   is_op := by rw [h.is_op]; exact rfl
 
 end MonoNat

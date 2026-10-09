@@ -27,11 +27,11 @@ open Iris OFE ORA UORA Auth Option OrdInc
 /-! ## Definitions -/
 
 @[rocq_alias frac_authR, rocq_alias frac_authUR]
-abbrev FracAuth [ORA SI A] := Auth (SI := SI) (Option (Qp × A))
+abbrev FracAuth [RA A] [ORA SI A] := Auth (SI := SI) (Option (Qp × A))
 
 namespace FracAuth
 
-variable [ORA SI A]
+variable [RA A] [ORA SI A]
 
 @[rocq_alias frac_auth_auth]
 abbrev auth (dq : DFrac) (a : A) : FracAuth (SI := SI) (A := A) := Auth.auth dq (some (1, a))
@@ -249,8 +249,8 @@ theorem frag_op_valid {q1 q2 : Qp} {a b : A} :
 
 @[rocq_alias frac_auth_is_op]
 instance isOp_frac_auth {q q1 q2 : Qp} {a1 a2 : A} {a : outParam A}
-    [h1 : IsOp SI d q q1 q2] [h2 : IsOp SI d a a1 a2] :
-    IsOp SI d (◯F{q} a : FracAuth (SI := SI)) (◯F{q1} a1) (◯F{q2} a2) where
+    [h1 : IsOp d q q1 q2] [h2 : IsOp d a a1 a2] :
+    IsOp d (◯F{q} a : FracAuth (SI := SI)) (◯F{q1} a1) (◯F{q2} a2) where
   is_op :=
     (congrArg (frag · a) h1.is_op).trans <|
       (congrArg (frag (q1 • q2)) h2.is_op).trans frag_op
@@ -258,8 +258,8 @@ instance isOp_frac_auth {q q1 q2 : Qp} {a1 a2 : A} {a : outParam A}
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias frac_auth_is_op_core_id]
 instance isOp_frac_auth_core_id {q q1 q2 : Qp} {a : A}
-    [h1 : CoreId a] [h2 : IsOp SI d q q1 q2] :
-    IsOp SI d (◯F{q} a : FracAuth (SI := SI)) (◯F{q1} a) (◯F{q2} a) where
+    [h1 : CoreId a] [h2 : IsOp d q q1 q2] :
+    IsOp d (◯F{q} a : FracAuth (SI := SI)) (◯F{q1} a) (◯F{q2} a) where
   is_op :=
     (congrArg (frag · a) h2.is_op).trans <|
       (congrArg (frag (q1 • q2)) (op_self a).symm).trans frag_op

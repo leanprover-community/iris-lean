@@ -50,9 +50,14 @@ instance instOp : Op UFrac where
   assoc := ext_iff.mpr <| Subtype.ext (Rat.add_assoc ..).symm
   comm := ext_iff.mpr <| Subtype.ext (Rat.add_comm ..)
 
-@[instance_reducible] def cmraData : CMRAData SI UFrac where
-  toOp := instOp
+instance instPCore : PCore UFrac where
   pcore _ := none
+  pcore_idem H := by rcases H
+
+instance instRA : RA UFrac where
+  pcore_op_left H := by rcases H
+
+@[instance_reducible] def cmraData : CMRAData SI UFrac where
   Valid _ := True
   ValidN _ _ := True
   op_ne.ne _ _ _ H := by rw [H] <;> exact .rfl
@@ -61,12 +66,9 @@ instance instOp : Op UFrac where
   valid_iff_validN := ⟨fun _ _ => trivial, fun _ => trivial⟩
   validN_le := fun h _ => h
   validN_op_left _ := trivial
-  pcore_op_left H := by rcases H
-  pcore_idem H := by rcases H
   extend {_ x y z} := by rintro _ rfl; exists y; exists z
   pcore_op_mono H := by rcases H
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias ufracR]
 instance : CMRA SI UFrac := ofCMRAData UFrac.cmraData
 
@@ -115,7 +117,7 @@ instance {q : UFrac} : IdFree SI q where
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_ufrac]
-instance (q : UFrac) : IsOp SI d q ⟨q.frac.half⟩ ⟨q.frac.half⟩ where
+instance (q : UFrac) : IsOp d q ⟨q.frac.half⟩ ⟨q.frac.half⟩ where
   is_op := ext_iff.mpr (Qp.half_add_half q.frac).symm
 
 end UFrac

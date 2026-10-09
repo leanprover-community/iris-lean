@@ -23,6 +23,7 @@ namespace Algebra.TimeReceipt
 
 scoped instance : COFE SI Nat := COFE.ofDiscrete _
 scoped instance : OFE.Discrete SI Nat := ⟨fun h => h⟩
+scoped instance : URA Nat := CommMonoidLike.instURA
 set_option synthInstance.checkSynthOrder false in
 scoped instance : UCMRA SI Nat := CommMonoidLike.instUCMRA
 scoped instance : ORA.Discrete SI Nat := CommMonoidLike.instDiscrete
@@ -75,6 +76,8 @@ abbrev _root_.Iris.Algebra.TimeReceipt := View viewRel (SI := SI)
 /- The `Nat` camera instances are scoped, so these are needed outside `namespace TimeReceipt`. -/
 @[rocq_alias time_receiptO]
 instance : OFE SI (TimeReceipt (SI := SI)) := View.instOFE
+instance : RA (TimeReceipt (SI := SI)) := inferInstance
+instance : URA (TimeReceipt (SI := SI)) := inferInstance
 @[rocq_alias time_receiptR]
 instance : CMRA SI (TimeReceipt (SI := SI)) := inferInstance
 @[rocq_alias time_receiptUR]
@@ -105,13 +108,13 @@ theorem fragExcl_op (n₁ n₂ : Nat) : fragExcl (n₁ + n₂) = fragExcl (SI :=
 theorem fragPers_op (n₁ n₂ : Nat) : fragPers (max n₁ n₂) = fragPers (SI := SI) n₁ • fragPers n₂ := rfl
 
 @[rocq_alias time_receipt_frag_excl_is_op]
-instance {n n₁ n₂ : Nat} [h : IsOp SI d n n₁ n₂] :
-    IsOp SI d (fragExcl (SI := SI) n) (fragExcl n₁) (fragExcl n₂) where
+instance {n n₁ n₂ : Nat} [h : IsOp d n n₁ n₂] :
+    IsOp d (fragExcl (SI := SI) n) (fragExcl n₁) (fragExcl n₂) where
   is_op := congrArg fragExcl h.is_op
 
 @[rocq_alias time_receipt_frag_pers_is_op]
-instance {n n₁ n₂ : Nat} [h : IsOp SI d (MaxNat.ofNat n) (MaxNat.ofNat n₁) (MaxNat.ofNat n₂)] :
-    IsOp SI d (fragPers (SI := SI) n) (fragPers n₁) (fragPers n₂) where
+instance {n n₁ n₂ : Nat} [h : IsOp d (MaxNat.ofNat n) (MaxNat.ofNat n₁) (MaxNat.ofNat n₂)] :
+    IsOp d (fragPers (SI := SI) n) (fragPers n₁) (fragPers n₂) where
   is_op := congrArg (fragPers ·.toNat) h.is_op
 
 @[rocq_alias time_receipt_frag_excl_valid]
@@ -155,7 +158,7 @@ theorem fragExcl_get_pers (n : Nat) : fragExcl (SI := SI) n ~~>[SI] fragExcl n �
 @[rocq_alias time_receipt_auth_incr]
 theorem auth_incr (m n k : Nat) :
     auth (SI := SI) m • fragPers n ~~>[SI] (auth (m + k + k) • fragPers (n + k)) • fragExcl k := by
-  rw [← assoc_L (SI := SI), auth, auth, fragPers, fragPers, fragExcl, ← frag_op_eq]
+  rw [← assoc_L, auth, auth, fragPers, fragPers, fragExcl, ← frag_op_eq]
   refine auth_one_op_frag_update fun _ ⟨_, _⟩ ⟨a, b, h⟩ => ⟨a + k, b + k, ?_⟩
   simp only [Prod.mk_op_mk, CommMonoidLike.op_eq, MaxNat.toNat_add, Nat.max_eq_max] at h ⊢
   omega

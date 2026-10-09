@@ -15,12 +15,12 @@ variable {SI : Type _} [instSI : SIdx SI]
 
 variable (SI) in
 @[rocq_alias cmra_updateP]
-def UpdateP [ORA SI α] (x : α) (P : α → Prop) := ∀ (n : SI) mz, ✓{n} (x •? mz) → ∃ y, P y ∧ ✓{n} (y •? mz)
+def UpdateP [RA α] [ORA SI α] (x : α) (P : α → Prop) := ∀ (n : SI) mz, ✓{n} (x •? mz) → ∃ y, P y ∧ ✓{n} (y •? mz)
 notation:50 x:51 " ~~>:[" SI "] " y:50 => Iris.UpdateP SI x y
 
 variable (SI) in
 @[rocq_alias cmra_update]
-def Update [ORA SI α] (x y : α) := ∀ (n : SI) mz, ✓{n} (x •? mz) → ✓{n} (y •? mz)
+def Update [RA α] [ORA SI α] (x y : α) := ∀ (n : SI) mz, ✓{n} (x •? mz) → ✓{n} (y •? mz)
 notation:50 x:51 " ~~>[" SI "] " y:50 => Iris.Update SI x y
 
 #rocq_ignore cmra_update_rewrite_relation "Not needed"
@@ -28,7 +28,7 @@ notation:50 x:51 " ~~>[" SI "] " y:50 => Iris.Update SI x y
 section Updates
 open ORA
 
-variable [ORA SI α] [ORA SI β] (f : α → β) (g : β → α)
+variable [RA α] [ORA SI α] [RA β] [ORA SI β] (f : α → β) (g : β → α)
 
 #rocq_ignore cmra_updateP_proper "OFE is Leibniz; use equality"
 #rocq_ignore cmra_update_proper "OFE is Leibniz; use equality"
@@ -66,13 +66,13 @@ theorem UpdateP.weaken {x : α} (uxp : x ~~>:[SI] P) (pq : ∀ y, P y → Q y) :
 theorem Update.exclusive {x y : α} [Exclusive SI x] (vy : ✓[SI] y) : x ~~>[SI] y :=
   fun _ _ P => none_of_excl_valid_op P ▸ vy.validN
 
-instance [ORA SI α] : Std.Refl (Update SI (α := α)) where
+instance [RA α] [ORA SI α] : Std.Refl (Update SI (α := α)) where
   refl _ := Update.id
 
-instance [ORA SI α] : Trans (Update SI (α := α)) (Update SI) (Update SI) where
+instance [RA α] [ORA SI α] : Trans (Update SI (α := α)) (Update SI) (Update SI) where
   trans := Update.trans
 
-instance [ORA SI α] : Trans (Update SI (α := α)) (UpdateP SI) (UpdateP SI) where
+instance [RA α] [ORA SI α] : Trans (Update SI (α := α)) (UpdateP SI) (UpdateP SI) where
   trans := Update.transP
 
 #rocq_ignore cmra_update_preorder "Split into the Std.Refl and Trans instances above"

@@ -99,27 +99,29 @@ instance instOp : Op DFrac where
   assoc := by rintro ⟨⟩ ⟨⟩ ⟨⟩ <;> grind [op]
   comm := by rintro ⟨⟩ ⟨⟩ <;> grind [op]
 
-@[instance_reducible] def cmraData : CMRAData SI DFrac where
-  toOp := instOp
+instance instPCore : PCore DFrac where
   pcore := pcore
+  pcore_idem := by rintro ⟨⟩ ⟨⟩ <;> simp [DFrac.pcore]
+
+instance instRA : RA DFrac where
+  pcore_op_left := by rintro ⟨⟩ ⟨⟩ <;> simp [Op.op, op, PCore.pcore, DFrac.pcore]
+
+@[instance_reducible] def cmraData : CMRAData SI DFrac where
   Valid := valid
   ValidN _ := valid
   op_ne := { ne _ _ _ := congrArg (op _) }
-  pcore_ne {_} := by rintro ⟨⟩ ⟨⟩ <;> simp [pcore] <;> nofun
+  pcore_ne {_} := by rintro ⟨⟩ ⟨⟩ <;> simp [PCore.pcore, DFrac.pcore] <;> nofun
   validN_ne H := H ▸ id
   valid_iff_validN := ⟨fun x _ => x, fun x => x 0⟩
   validN_le := fun h _ => h
   validN_op_left {_} := by rintro ⟨⟩ ⟨⟩ <;> simp [valid, Op.op, op] <;> grind
-  pcore_op_left := by rintro ⟨⟩ ⟨⟩ <;> simp [Op.op, op, pcore]
-  pcore_idem := by rintro ⟨⟩ ⟨⟩ <;> simp [pcore]
   extend _ Hxyz := ⟨_, _, discrete Hxyz, .rfl, .rfl⟩
   pcore_op_mono := by
-    rintro ⟨⟩ ⟨⟩ <;> simp [pcore] <;>
+    rintro ⟨⟩ ⟨⟩ <;> simp [PCore.pcore, DFrac.pcore] <;>
     · intro z
       exists discard
       rcases z with z|_|z <;> simp [Op.op, op]
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias dfracR]
 instance instORADFrac : CMRA SI DFrac := ofCMRAData DFrac.cmraData
 
@@ -130,13 +132,13 @@ instance own_whole_exclusive : Exclusive SI (α := DFrac) (own 1) where
     simp only [ValidN, valid, ORA.op, op] <;>
     grind
 
-instance one_exclusive_left [ORA SI V] {v : V} : Exclusive SI (own (One.one : Qp), v) where
+instance one_exclusive_left [RA V] [ORA SI V] {v : V} : Exclusive SI (own (One.one : Qp), v) where
   exclusive0_l := by
     refine fun ⟨y1, _⟩ ⟨Hv1, _⟩ => ?_
     have h1 : (One.one : Qp).val = 1 := rfl
     rcases y1 with (y|_|y) <;> simp only [ValidN, ORA.op, op, valid] at Hv1 <;> grind
 
-instance one_exclusive_right [ORA SI V] {v : V} : Exclusive SI (v, own (One.one : Qp)) where
+instance one_exclusive_right [RA V] [ORA SI V] {v : V} : Exclusive SI (v, own (One.one : Qp)) where
   exclusive0_l := by
     refine fun ⟨_, y2⟩ ⟨_, Hv2⟩ => ?_
     have h1 : (One.one : Qp).val = 1 := rfl
@@ -261,8 +263,8 @@ theorem own_included {p q : Qp} : own p ≼ own q ↔ ∃ r, q = p + r := by
   exact ⟨r, Qp.ext_iff.mpr hz⟩
 
 @[rocq_alias dfrac_is_op]
-instance isOp_dfrac_own {q q1 q2 : Qp} [h : IsOp SI d q q1 q2] :
-    IsOp SI d (own q) (own q1) (own q2) where
+instance isOp_dfrac_own {q q1 q2 : Qp} [h : IsOp d q q1 q2] :
+    IsOp d (own q) (own q1) (own q2) where
   is_op := by rw [h.is_op]; rfl
 
 end DFrac

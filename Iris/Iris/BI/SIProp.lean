@@ -475,11 +475,11 @@ theorem later_equiv_internalEq_mpr [OFE SI A] (x y : A) :
 /-! ## ORA validity -/
 
 @[rocq_alias siProp_cmra_valid]
-def cmraValid [ORA SI A] (a : A) : SiProp SI where
+def cmraValid [RA A] [ORA SI A] (a : A) : SiProp SI where
   holds n := ✓{n} a
   closed h hle := validN_of_le hle h
 
-@[simp] theorem cmraValid_holds [ORA SI A] {a : A} {n : SI} :
+@[simp] theorem cmraValid_holds [RA A] [ORA SI A] {a : A} {n : SI} :
     (cmraValid a).holds n ↔ ✓{n} a := .rfl
 
 #rocq_ignore siProp_cmra_valid_def "Not needed in Lean."
@@ -487,28 +487,28 @@ def cmraValid [ORA SI A] (a : A) : SiProp SI where
 #rocq_ignore siProp_cmra_valid_unseal "Not needed in Lean."
 
 @[rocq_alias siProp_primitive.cmra_valid_ne]
-instance instNonExpansiveCmraValid [ORA SI A] : NonExpansive SI (cmraValid (SI := SI) (A := A)) where
+instance instNonExpansiveCmraValid [RA A] [ORA SI A] : NonExpansive SI (cmraValid (SI := SI) (A := A)) where
   ne _ _ _ h _ hle := ⟨validN_ne (Dist.le h hle), validN_ne (Dist.le h hle).symm⟩
 
 @[rocq_alias siProp_primitive.cmra_valid_intro]
-theorem cmraValid_intro [ORA SI A] {P : SiProp SI} {a : A} (h : ✓[SI] a) :
+theorem cmraValid_intro [RA A] [ORA SI A] {P : SiProp SI} {a : A} (h : ✓[SI] a) :
     P ⊢ cmraValid a :=
   fun n _ => (valid_iff_validN.mp h) n
 
 @[rocq_alias siProp_primitive.cmra_valid_elim]
-theorem cmraValid_elim [ORA SI A] {a : A} : cmraValid (SI := SI) a ⊢ ⌜✓{(0 : SI)} a⌝ :=
+theorem cmraValid_elim [RA A] [ORA SI A] {a : A} : cmraValid (SI := SI) a ⊢ ⌜✓{(0 : SI)} a⌝ :=
   fun _ => validN_of_le SIdx.le_0_l
 
 @[rocq_alias siProp_primitive.cmra_valid_weaken]
-theorem cmraValid_weaken [ORA SI A] {a b : A} : cmraValid (SI := SI) (a • b) ⊢ cmraValid a :=
+theorem cmraValid_weaken [RA A] [ORA SI A] {a b : A} : cmraValid (SI := SI) (a • b) ⊢ cmraValid a :=
   fun _ => validN_op_left
 
 @[rocq_alias siProp_primitive.valid_entails]
-theorem cmraValid_entails_iff [ORA SI A] [ORA SI B] {a : A} {b : B} :
+theorem cmraValid_entails_iff [RA A] [ORA SI A] [RA B] [ORA SI B] {a : A} {b : B} :
     (cmraValid (SI := SI) a ⊢ cmraValid b) ↔ ∀ (n : SI), ✓{n} a → ✓{n} b :=
   .rfl
 
-instance cmraValid_timeless [ORA SI A] [ORA.Discrete SI A] {a : A} :
+instance cmraValid_timeless [RA A] [ORA SI A] [ORA.Discrete SI A] {a : A} :
     Timeless (cmraValid a : SiProp SI) where
   timeless := fun _ h =>
     (discrete_valid (h 0 SIdx.le_0_l fun k hk => absurd hk (SIdx.not_lt_zero k))).validN

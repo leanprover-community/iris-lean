@@ -17,11 +17,11 @@ open ORA
 
 open OFE Iris.Std
 
-variable [ORA SI M]
+variable [RA M] [ORA SI M]
 
 /-- SI-free `MonoidOps` for `Option M`: `ucmraMonoidOps` cannot infer `SI` from `op` alone. -/
 instance Option.instMonoidOps : MonoidOps (op (α := Option M)) none :=
-  ucmraMonoidOps (SI := SI)
+  ucmraMonoidOps
 
 @[rocq_alias big_opL_None]
 theorem bigOpL_none {f : Nat → A → Option M} {l : List A} :

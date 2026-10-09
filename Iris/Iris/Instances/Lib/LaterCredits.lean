@@ -41,6 +41,7 @@ scoped instance : LeftCancelAdd Credit := ⟨Nat.add_left_cancel⟩
 
 scoped instance : COFE Nat Credit := COFE.ofDiscrete _
 scoped instance : OFE.Discrete Nat Credit := ⟨fun h => h⟩
+scoped instance : URA Credit := CommMonoidLike.instURA
 scoped instance : UCMRA Nat Credit := CommMonoidLike.instUCMRA
 scoped instance instIncOrdCredit : IncOrd Nat Credit := inferInstance
 scoped instance : ORA.Discrete Nat Credit := CommMonoidLike.instDiscrete

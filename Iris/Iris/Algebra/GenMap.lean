@@ -179,13 +179,26 @@ def pcore_genmap (x : GenMap β) : Option (GenMap β) := some ⟨fun k => core (
     · simp [PCore.pcore_idem h]
 end
 
+instance GenMap.instRA (β : Type _) [RA β] : RA (GenMap β) where
+  pcore_op_left {x _} H := by
+    obtain rfl := Option.some.inj H
+    exact GenMap.ext (funext fun k => ORA.core_op (x.car k))
+
+instance GenMap.instURA (β : Type _) [RA β] : URA (GenMap β) where
+  unit := GenMap.empty
+  unit_left_id {x} := GenMap.ext <| funext fun k => by
+    change optionOp none (x.car k) = x.car k
+    cases x.car k <;> rfl
+  pcore_unit := rfl
+  total _ := ⟨_, rfl⟩
+
 end RAData
 
 section ORA
 open ORA GenMap
 
 
-variable (β : Type _) [ORA SI β]
+variable (β : Type _) [RA β] [ORA SI β]
 
 theorem pcore_bound (x : GenMap β) (cx : Nat → Option β)
     (hpc : pcore x.car = some cx) :
@@ -240,7 +253,7 @@ attribute [local instance] GenMap.raValid GenMap.raOrdered
 theorem GenMap.increasing_apply {x : GenMap β} (h : Increasing SI x) (k : Nat) :
     Increasing SI (x.car k) where
   increasing b := by
-    simpa [alter, Iris.alter, DiscreteFun.op_apply (SI := SI)] using h.increasing (empty.alter k b) k
+    simpa [alter, Iris.alter, DiscreteFun.op_apply] using h.increasing (empty.alter k b) k
 
 theorem GenMap.increasing_car {x : GenMap β} (h : Increasing SI x) : Increasing SI x.car :=
   DiscreteFun.increasing_iff.mpr (increasing_apply β h)
@@ -249,8 +262,6 @@ theorem GenMap.increasing_of_car {x : GenMap β} (h : Increasing SI x.car) : Inc
   increasing z := h.increasing z.car
 
 instance instORA_GenMap : ORA SI (GenMap β) where
-  toOp := GenMap.raOp β
-  toPCore := GenMap.raPCore β
   toValid := GenMap.raValid β
   op_ne {x} := ⟨fun n y₁ y₂ H => by
     show (x.car • y₁.car) ≡{n}≡ (x.car • y₂.car)
@@ -266,9 +277,6 @@ instance instORA_GenMap : ORA SI (GenMap β) where
   validN_le {n n' : SI} {x} := validN_le (n := n) (n' := n') (x := x.car)
   toOrderedNE := GenMap.raOrderedNE β
   validN_op_left {n : SI} {x y} h := validN_op_left (n := n) (x := x.car) (y := y.car) h
-  pcore_op_left {x _} H := by
-    obtain rfl := Option.some.inj H
-    exact GenMap.ext (funext fun k => core_op (SI := SI) (x.car k))
   extend {n : SI} {x y1 y2} := by
     intro Hv H
     have eb := extend_bound β Hv H
@@ -301,15 +309,8 @@ end
 
 instance instUCMRA_GenMap : UORA SI (GenMap β) where
   toORA := instORA_GenMap β
-  unit := GenMap.empty
   unit_valid := show ✓[SI] (GenMap.empty (β := β)).car from fun _ => trivial
-  unit_left_id {x} := GenMap.ext <| funext fun k => by
-    show optionOp none (x.car k) = x.car k
-    cases x.car k <;> rfl
-  pcore_unit := rfl
   ord_refl x := show x.car ≼ₒ[SI] x.car from fun k => OrderRefl.ord_refl (SI := SI) (x.car k)
-
-instance : IsTotal (GenMap β) := unit_total (SI := SI) (α := GenMap β)
 
 instance instIncOrdGenMap [IncOrd SI β] : IncOrd SI (GenMap β) :=
   IncOrd.of_increasing fun x => GenMap.increasing_of_car β (IncOrd.increasing x.car)
@@ -374,8 +375,7 @@ theorem GenMap.validN_singleton_map_in (x : Nat) (y : β) (n : SI) :
 theorem GenMap.op_singleton_comm {mf : GenMap β} {x : Nat} (y : β)
     (H_free : IsFree mf.car x) :
     GenMap.singleton x y • mf = mf.alter x (some y) := by
-  refine OFE.eq_dist_2 (SI := SI) ?_
-  intro n k
+  refine GenMap.ext (funext fun k => ?_)
   simp only [IsFree] at H_free
   by_cases heq : k = x
   · subst heq

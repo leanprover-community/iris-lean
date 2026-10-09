@@ -105,8 +105,8 @@ theorem update₂ {d₁ d₂ : DFrac} {a₁ a₂ a' : A} (hd : d₁ • d₂ = .
   calc
     _ = (own (1 : Qp), toAgree a₁ • toAgree a₂) := hd ▸ rfl
     _ ~~>[SI] mk d₁ a' • mk d₂ a' :=
-      @Update.exclusive _ _ _ _ _ _ one_exclusive_left
-        (op_valid.mpr ⟨hd ▸ valid_own_one, rfl⟩)
+      have := one_exclusive_left (SI := SI) (v := toAgree a₁ • toAgree a₂)
+      Update.exclusive (op_valid.mpr ⟨hd ▸ valid_own_one, rfl⟩)
 
 @[rocq_alias dfrac_agree_persist]
 theorem persist {d : DFrac} {a : A} : mk (SI := SI) d a ~~>[SI] mk .discard a := by

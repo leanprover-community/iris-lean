@@ -147,7 +147,7 @@ theorem ElemG.bundle_unit {GF} (E : ElemG GF F) {ε : F.ap (IProp GF)} [IsUnit N
         _ = E.unbundle (E.bundle ε) • E.unbundle x :=
             transpAp_op_mp E.transpMap E.transpClass
         _ = ε • E.unbundle x := congrArg (op · _) (ElemG.unbundle_bundle E ε)
-        _ = E.unbundle x := IsUnit.unit_left_id
+        _ = E.unbundle x := IsUnit.unit_left_id Nat
     calc E.bundle ε • x
        = E.bundle (E.unbundle (E.bundle ε • x)) := (ElemG.bundle_unbundle E _).symm
      _ = E.bundle (E.unbundle x) := congrArg E.bundle h1
@@ -241,7 +241,7 @@ theorem IProp.unfoldi_unit {τ : GType} {x : FF.api τ (IProp FF)} [IsUnit Nat x
       calc foldi (unfoldi x • y)
         _ = foldi (unfoldi x) • foldi y := foldi_op _ _
         _ = x • foldi y := congrArg (op · _) (foldi_unfoldi x)
-        _ = foldi y := IsUnit.unit_left_id
+        _ = foldi y := IsUnit.unit_left_id Nat
     calc unfoldi x • y
       _ = unfoldi (foldi (unfoldi x • y)) := (IProp.unfoldi_foldi _).symm
       _ = unfoldi (foldi y) := congrArg unfoldi.f h
@@ -250,7 +250,7 @@ theorem IProp.unfoldi_unit {τ : GType} {x : FF.api τ (IProp FF)} [IsUnit Nat x
     calc pcore (unfoldi.f x)
       _ = (pcore x).map unfoldi.f := ((RFunctor.map (IProp.fold FF) (IProp.unfold FF)).pcore x).symm
       _ = (some x).map unfoldi.f :=
-        Option.map_forall₂ _ IsUnit.pcore_unit
+        Option.map_forall₂ _ (IsUnit.pcore_unit Nat)
       _ = some (unfoldi.f x) := by
         simp [Option.map]
 
@@ -509,7 +509,7 @@ instance iSingleton_discreteE {v : F.ap (IProp GF)} [inst : OFE.DiscreteE Nat v]
       exact (Option.none_is_discrete.discrete Hk).dist
 
 theorem iSingleton_eq_discreteFunSingleton {v : F.ap (IProp GF)} :
-    iSingleton F γ v = discreteFunSingleton (SI := Nat) E.τ (GenMap.singleton γ (unfoldi (E.bundle v))) :=
+    iSingleton F γ v = discreteFunSingleton E.τ (GenMap.singleton γ (unfoldi (E.bundle v))) :=
   funext fun τ' => by
     by_cases h : τ' = E.τ
     · subst h; simp only [iSingleton, ↓reduceDIte, discreteFunSingleton_self]
@@ -859,13 +859,13 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit Nat ε] : ⊢ |==> i
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_sep_own]
-instance intoSep_own {γ} {a : F.ap (IProp GF)} [h : IsOp Nat .split a b1 b2] :
+instance intoSep_own {γ} {a : F.ap (IProp GF)} [h : IsOp .split a b1 b2] :
     IntoSep (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
   into_sep := by rw [h.is_op]; exact iOwn_op.mp
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_and_own]
-instance intoAnd_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp Nat .split a b1 b2] :
+instance intoAnd_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp .split a b1 b2] :
     IntoAnd false (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
   into_and := by
     rw [h.is_op]
@@ -873,13 +873,13 @@ instance intoAnd_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp Nat .split a b1 
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias from_sep_own]
-instance fromSep_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp Nat .split a b1 b2] :
+instance fromSep_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp .split a b1 b2] :
     FromSep (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
   from_sep := by rw [h.is_op]; exact iOwn_op.mpr
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias combine_sep_as_own]
-instance combineSepAs_iOwn {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp Nat .merge a b1 b2] :
+instance combineSepAs_iOwn {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp .merge a b1 b2] :
     CombineSepAs (iOwn γ b1) (iOwn γ b2) (iOwn γ a) where
   combine_sep_as := by rw [h.is_op]; exact iOwn_op.mpr
 
@@ -890,7 +890,7 @@ instance combineSepGives_iOwn {γ} {a1 a2 : F.ap (IProp GF)} :
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias from_and_own_persistent]
-instance fromAndOwn_persistent {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp Nat .split a b1 b2]
+instance fromAndOwn_persistent {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp .split a b1 b2]
     [TCOr (CoreId b1) (CoreId b2)] : FromAnd (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
   from_and := by
     -- Infer from `CoreId b1` that `iOwn γ b1` is persistent, likewise for `b2`

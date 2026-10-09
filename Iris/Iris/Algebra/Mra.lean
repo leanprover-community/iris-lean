@@ -113,17 +113,9 @@ theorem append_idem (x : Mra R) : append x x = x := by
 #rocq_ignore mra_op "Replaced by the `op` field of the CMRA instance."
 #rocq_ignore mra_pcore "Replaced by the `pcore` field of the CMRA instance."
 
-@[instance_reducible] def cmraData (R : α → α → Prop) : CMRAData SI (Mra R) where
+instance instRA (R : α → α → Prop) : RA (Mra R) where
   pcore := some
   op := append
-  ValidN _ _ := True
-  Valid _ := True
-  op_ne.ne _ _ _ h := by rw [h] <;> exact .rfl
-  pcore_ne hxy h := ⟨_, (congrArg some hxy.symm).trans h, .rfl⟩
-  validN_ne _ := id
-  valid_iff_validN := by simp
-  validN_le := fun h _ => h
-  validN_op_left _ := trivial
   assoc {x y z} := by
     induction x, y, z using ind₃ with
     | mk xs ys zs => exact congrArg mk (List.append_assoc xs ys zs).symm
@@ -133,20 +125,33 @@ theorem append_idem (x : Mra R) : append x x = x := by
   pcore_op_left h :=
     (congrArg (append · _) (Option.some.inj h).symm).trans (append_idem _)
   pcore_idem _ := rfl
+
+@[rocq_alias mra_cmra_total]
+instance instURA (R : α → α → Prop) : URA (Mra R) where
+  unit := mk []
+  unit_left_id {x} := by
+    induction x using ind with
+    | mk xs => rfl
+  pcore_unit := rfl
+  total x := ⟨x, rfl⟩
+
+@[instance_reducible] def cmraData (R : α → α → Prop) : CMRAData SI (Mra R) where
+  ValidN _ _ := True
+  Valid _ := True
+  op_ne.ne _ _ _ h := by rw [h] <;> exact .rfl
+  pcore_ne hxy h := ⟨_, (congrArg some hxy.symm).trans h, .rfl⟩
+  validN_ne _ := id
+  valid_iff_validN := by simp
+  validN_le := fun h _ => h
+  validN_op_left _ := trivial
   extend _ h := ⟨_, _, h, .rfl, .rfl⟩
   pcore_op_mono h y :=
     ⟨y, congrArg (fun z ↦ some (append z y)) (Option.some.inj h)⟩
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias mra_cmra_mixin]
 instance (R : α → α → Prop) : CMRA SI (Mra R) := ofCMRAData (Mra.cmraData R)
 
 #rocq_ignore mraR "Use Mra."
-
-set_option synthInstance.checkSynthOrder false in
-@[rocq_alias mra_cmra_total]
-instance : IsTotal (Mra R) where
-  total x := ⟨x, rfl⟩
 
 @[rocq_alias mra_core_id]
 instance (x : Mra R) : CoreId x where
@@ -161,15 +166,9 @@ instance : ORA.Discrete SI (Mra R) where
 #rocq_ignore mra_unit "Replaced by the `unit` field of UCMRA instance."
 #rocq_ignore mraUR "Use Mra."
 
-@[instance_reducible] def ucmraData (R : α → α → Prop) : UCMRAData SI (Mra R) where
-  unit := mk []
+theorem ucmraData (R : α → α → Prop) : UCMRAData SI (Mra R) where
   unit_valid := trivial
-  unit_left_id {x} := by
-    induction x using ind with
-    | mk xs => rfl
-  pcore_unit := rfl
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias mra_ucmra_mixin]
 instance instUnital (R : α → α → Prop) : UCMRA SI (Mra R) := UORA.ofUCMRAData (Mra.ucmraData R)
 
@@ -188,7 +187,8 @@ theorem ord_iff (x y : Mra R) : x ≼ₒ[SI] y ↔ y = x • y :=
   ⟨fun h ↦ (op_core_right_of_inc (inc_iff_ord.mpr h)).symm, fun h ↦ inc_iff_ord.mp ⟨y, h⟩⟩
 
 @[rocq_alias mra_included]
-theorem inc_iff (x y : Mra R) : x ≼ y ↔ y = x • y := inc_iff_ord.trans (ord_iff x y)
+theorem inc_iff (x y : Mra R) : x ≼ y ↔ y = x • y :=
+  ⟨fun h ↦ (op_core_right_of_inc h).symm, fun h ↦ ⟨y, h⟩⟩
 
 @[rocq_alias to_mra_R_op]
 theorem toMra_op_of_rel [hR : Trans R R R] (a b : α) (h : R a b) :
@@ -207,8 +207,12 @@ theorem toMra_ord_iff [Std.Refl R] [Trans R R R] (a b : α) :
 
 @[rocq_alias to_mra_included]
 theorem toMra_inc_iff [Std.Refl R] [Trans R R R] (a b : α) :
-    toMra (R := R) a ≼ toMra b ↔ R a b :=
-  inc_iff_ord.trans (toMra_ord_iff (SI := SI) a b)
+    toMra (R := R) a ≼ toMra b ↔ R a b := by
+  constructor
+  · rintro ⟨z, hz⟩
+    rw [← below_toMra (R := R) a b, hz, below_op]
+    exact .inl ((below_toMra a a).mpr (Std.Refl.refl a))
+  · exact fun h ↦ ⟨toMra b, (toMra_op_of_rel a b h).symm⟩
 
 @[rocq_alias mra_local_update_grow]
 theorem local_update_grow [hR : Trans R R R] (a : α) (x : Mra R) (b : α) (h : R a b) :

@@ -25,6 +25,8 @@ variable {α : Type _} [OFE Nat α]
 def MonoList (α : Type _) [OFE Nat α] := Auth (SI := Nat) (MaxPrefixList α)
 
 instance : OFE Nat (MonoList α) := Auth.instOFE
+instance : RA (MonoList α) := inferInstanceAs (RA (Auth (SI := Nat) (MaxPrefixList α)))
+instance : URA (MonoList α) := inferInstanceAs (URA (Auth (SI := Nat) (MaxPrefixList α)))
 instance : ORA Nat (MonoList α) := Auth.instORA
 instance : UORA Nat (MonoList α) := Auth.instUCMRA
 
@@ -121,8 +123,8 @@ theorem auth_lb_op (dq : DFrac) (l : List α) : ●ML{dq} l = ●ML{dq} l • �
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias mono_list_auth_dfrac_is_op]
-instance {dq dq1 dq2 : DFrac} {l : List α} [h : IsOp Nat d dq dq1 dq2] :
-    IsOp Nat d (●ML{dq} l) (●ML{dq1} l) (●ML{dq2} l) where
+instance {dq dq1 dq2 : DFrac} {l : List α} [h : IsOp d dq dq1 dq2] :
+    IsOp d (●ML{dq} l) (●ML{dq1} l) (●ML{dq2} l) where
   is_op := by
     rw [h.is_op]
     exact auth_dfrac_op ..

@@ -20,37 +20,37 @@ open ORA
 -- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Bi-entailment.20and.20generalized.20rewriting/with/565019365
 variable (SI) in
 @[ext]
-structure ValidAt (M : Type _) [UORA SI M] (n : SI) where
+structure ValidAt (M : Type _) [URA M] [UORA SI M] (n : SI) where
   val : M
   property : ✓{n} val
 
-instance {M : Type _} [UORA SI M] {n : SI} : CoeOut (ValidAt SI M n) M where
+instance {M : Type _} [URA M] [UORA SI M] {n : SI} : CoeOut (ValidAt SI M n) M where
   coe := (·.val)
 
-def ValidAt.le {M : Type _} [UORA SI M] {n m : SI} (Hle : m ≤ n) : ValidAt SI M n → ValidAt SI M m :=
+def ValidAt.le {M : Type _} [URA M] [UORA SI M] {n m : SI} (Hle : m ≤ n) : ValidAt SI M n → ValidAt SI M m :=
   fun v => ⟨v.val, validN_of_le Hle v.property⟩
 
 @[simp]
-theorem ValidAt.le_val {M : Type _} [UORA SI M] {n m : SI} {Hle : m ≤ n} {v : ValidAt SI M n} :
+theorem ValidAt.le_val {M : Type _} [URA M] [UORA SI M] {n m : SI} {Hle : m ≤ n} {v : ValidAt SI M n} :
   (v.le Hle).val = v.val := by rfl
 
 @[simp]
-theorem ValidAt.le_rfl {M : Type _} [UORA SI M] {n : SI} {Hle : n ≤ n} {v : ValidAt SI M n} :
+theorem ValidAt.le_rfl {M : Type _} [URA M] [UORA SI M] {n : SI} {Hle : n ≤ n} {v : ValidAt SI M n} :
   v.le Hle = v := by rfl
 
 variable (SI) in
 /-- The data of a UPred object is an indexed proposition over M (Bundled version) -/
 @[ext, rocq_alias uPred]
-structure UPred (M : Type _) [UORA SI M] where
+structure UPred (M : Type _) [URA M] [UORA SI M] where
   holds : (n : SI) → ValidAt SI M n → Prop
   mono {n1 n2 : SI} {x1 : ValidAt SI M n1} {x2 : ValidAt SI M n2} :
     holds n1 x1 → (x1 : M) ≼ₒ{n2} (x2 : M) → (Hle : n2 ≤ n1) → holds n2 x2
 
-def UPred.holds_unpacked {M : Type _} [UORA SI M] (P : UPred SI M) (n : SI) (x : M) (Hx : ✓{n} x) :
+def UPred.holds_unpacked {M : Type _} [URA M] [UORA SI M] (P : UPred SI M) (n : SI) (x : M) (Hx : ✓{n} x) :
     Prop :=
   P.holds n ⟨x, Hx⟩
 
-theorem UPred.mono_unpacked {M : Type _} [UORA SI M] (P : UPred SI M) {n1 n2 : SI} {x1 x2 : M}
+theorem UPred.mono_unpacked {M : Type _} [URA M] [UORA SI M] (P : UPred SI M) {n1 n2 : SI} {x1 x2 : M}
     (Hx1 : ✓{n1} x1) (Hx2 : ✓{n2} x2) (HP : P.holds_unpacked n1 x1 Hx1) (Hxle : x1 ≼ₒ{n2} x2)
     (Hle : n2 ≤ n1) : P.holds_unpacked n2 x2 Hx2 :=
   P.mono HP Hxle Hle
@@ -58,7 +58,7 @@ theorem UPred.mono_unpacked {M : Type _} [UORA SI M] (P : UPred SI M) {n1 n2 : S
 /-- The definition of UPred is equivalent to separately proving pointwise down-closure,
 non-expansivity, and monotonicity. -/
 @[rocq_alias uPred_alt]
-theorem uPred_alt {M : Type _} [UORA SI M] (P : SI → M → Prop) :
+theorem uPred_alt {M : Type _} [URA M] [UORA SI M] (P : SI → M → Prop) :
     (∀ {n1 n2 : SI} {x1 x2 : M}, P n1 x1 → x1 ≼ₒ{n1} x2 → n2 ≤ n1 → P n2 x2) ↔
     ((∀ {x : M} {n1 n2 : SI}, n2 ≤ n1 → P n1 x → P n2 x) ∧
      (∀ {n : SI} {x1 x2 : M}, x1 ≡{n}≡ x2 → ∀ (m : SI), m ≤ n → (P m x1 ↔ P m x2)) ∧
@@ -73,14 +73,14 @@ theorem uPred_alt {M : Type _} [UORA SI M] (P : SI → M → Prop) :
   · refine fun ⟨Hdc, _, Hmono⟩ n1 n2 x1 x2 HP Hinc Hle => ?_
     exact Hmono (ordN_of_ordN_le Hle Hinc) n2 SIdx.le_refl (Hdc Hle HP)
 
-instance [UORA SI M] : Inhabited (UPred SI M) := ⟨fun _ _ => True, fun _ _ _ => ⟨⟩⟩
+instance [URA M] [UORA SI M] : Inhabited (UPred SI M) := ⟨fun _ _ => True, fun _ _ _ => ⟨⟩⟩
 
-instance [UORA SI M] : CoeFun (UPred SI M) (fun _ => (n : SI) → ValidAt SI M n → Prop) where
+instance [URA M] [UORA SI M] : CoeFun (UPred SI M) (fun _ => (n : SI) → ValidAt SI M n → Prop) where
   coe x := x.holds
 
 section UPred
 
-variable [UORA SI M]
+variable [URA M] [UORA SI M]
 
 open UPred
 
@@ -170,7 +170,7 @@ abbrev UPredOF (F : COFE.OFunctorPre SI) [URFunctor SI F] : COFE.OFunctorPre SI 
   fun A B _ _ => UPred SI (F B A)
 
 @[rocq_alias uPredO_map]
-def uPred_map [UORA SI α] [UORA SI β] (f : β -C>[SI] α) : UPred SI α -n>[SI] UPred SI β := by
+def uPred_map [URA α] [UORA SI α] [URA β] [UORA SI β] (f : β -C>[SI] α) : UPred SI α -n>[SI] UPred SI β := by
   refine ⟨fun P => ⟨fun n x => P n ⟨(f x.val), f.validN x.property⟩, ?_⟩, ⟨?_⟩⟩
   · intro n1 n2 x1 x2 HP Hm Hn
     exact P.mono HP (f.monoN_ord Hm) Hn

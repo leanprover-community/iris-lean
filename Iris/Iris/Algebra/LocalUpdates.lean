@@ -15,7 +15,7 @@ variable {SI : Type _} [instSI : SIdx SI]
 
 variable (SI) in
 @[rocq_alias local_update]
-def LocalUpdate [ORA SI α] (x y : α × α) : Prop :=
+def LocalUpdate [RA α] [ORA SI α] (x y : α × α) : Prop :=
   ∀ (n : SI) mz, ✓{n} x.1 → x.1 ≡{n}≡ x.2 •? mz → ✓{n} y.1 ∧ y.1 ≡{n}≡ y.2 •? mz
 
 notation:50 x:51 " ~l~>[" SI "] " y:50 => Iris.LocalUpdate SI x y
@@ -25,7 +25,7 @@ open ORA
 
 section ORA
 
-variable [ORA SI α]
+variable [RA α] [ORA SI α]
 
 @[refl]
 theorem LocalUpdate.id (x : α × α) : x ~l~>[SI] x := fun _ _ vx e => ⟨vx, e⟩
@@ -134,7 +134,7 @@ end ORA
 
 section UORA
 
-variable [UORA SI α]
+variable [URA α] [UORA SI α]
 
 @[rocq_alias local_update_unital]
 theorem local_update_unital {x y x' y' : α} :
@@ -178,7 +178,7 @@ end UORA
 theorem LocalUpdate.unit {x y x' y' : Unit} : (x, y) ~l~>[SI] (x', y') := .id ((), ())
 
 @[rocq_alias discrete_fun_local_update]
-theorem LocalUpdate.discrete_fun {β : α → Type _} [∀ x, UORA SI (β x)]
+theorem LocalUpdate.discrete_fun {β : α → Type _} [∀ x, URA (β x)] [∀ x, UORA SI (β x)]
     {f g f' g' : ∀ x, β x} (h : ∀ x : α, (f x, g x) ~l~>[SI] (f' x, g' x)) :
     (f, g) ~l~>[SI] (f', g') := by
   refine fun n mz vx e => ⟨fun x => ?_, fun x => ?_⟩
@@ -189,7 +189,7 @@ theorem LocalUpdate.discrete_fun {β : α → Type _} [∀ x, UORA SI (β x)]
     | none => exact (h x n none (vx x) (e x)).right
     | some z => exact (h x n (some (z x)) (vx x) (e x)).right
 
-variable [ORA SI α] [ORA SI β]
+variable [RA α] [ORA SI α] [RA β] [ORA SI β]
 
 @[rocq_alias prod_local_update]
 theorem LocalUpdate.prod {x y x' y' : α × β}
@@ -231,7 +231,7 @@ theorem LocalUpdate.option {x y x' y' : α}
   | some (some z) => exact h n (some z)
 
 @[rocq_alias option_local_update_None]
-theorem LocalUpdate.option_none {α} [UORA SI α] {x x' y' : α}
+theorem LocalUpdate.option_none {α} [URA α] [UORA SI α] {x x' y' : α}
     (h : (x, UnitOp.unit) ~l~>[SI] (x', y')) : (some x, none) ~l~>[SI] (some x', some y') := by
   intro n mz vx e
   let .some (some z) := mz
