@@ -308,14 +308,17 @@ meta def delabLaterN : Delab := whenPPOption getPPNotation <| withOverApp 4 do
     `(iprop(▷^[$n] $P))
 
 /-
-  The four conditional modalities below are `match`es (not `if`s) with the kernel's `abbrev` reducibility
-  hints but the elaborator's default (semireducible) transparency.  The proof mode stores every hypothesis as
-  `□?p P` and its lemmas mention both `□?false P` and `P`, so the kernel checks `□?false P =?= P` all the time.
-  With an `if` body and `regular` hints the kernel's lazy delta reduction unfolds the side with the greater
-  height first -- `P`, when `P` is a concrete user definition -- possibly all the way down (a `[∗list]` over a
-  literal range, a cell whose `if` branches the kernel then compares argument by argument), before it ever
-  unfolds the wrapper.  `abbrev` hints make the wrapper unfold first and the `match` on a literal `p` then
-  iota-reduces away, so the check is `P =?= P`.
+  We need to be careful about the transparency of the four conditional modalities below:
+  One the one hand, Kernel typechecking should unfold them early such that `□?false P` is reduced to
+  `P` without first unfolding `P`, otherwise there can be large slowdowns in big proofs, see
+  https://github.com/leanprover-community/iris-lean/pull/712
+  On the other hand, we want to write instances for these modalities and thus they should be opaque
+  for typeclass synthesis and the discrimination tree.
+  We can achieve both by first declaring the definition using `abbrev`, which tells the kernel to
+  unfold this definition before other definitions (see
+  https://github.com/leanprover/lean4/blob/0bb12a87a8347e45560bc4b4f21c9abd83bbca0a/src/Lean/Declaration.lean#L17)
+  and then setting the reducibility to `semireducible`, to make the definition opaque for
+  typeclass synthesis.
 -/
 /--
   Conditional persistently modality:

@@ -12,6 +12,9 @@ public import Iris.Instances.UPred
 /-!
 # Kernel cost of the conditional modalities (`□?p P` and friends)
 
+Regression test for https://github.com/leanprover-community/iris-lean/pull/712
+Building this file should be fast (sub 1s), see explanation of the test below.
+
 The proof mode stores every hypothesis as `□?p P`, so `iintro`/`iexact` leave the kernel the check
 `□?false P =?= P`.  While `intuitionisticallyIf` was a `def` with an `if` body, the kernel unfolded the user's `P`
 first; for `P := cellRes …` below (an `if` on a decided width) both sides become `ite`s, and the kernel compares the
@@ -57,13 +60,14 @@ def cell (va : BitVec 64) (n : Nat) (w : BitVec (8 * n)) : UPred M :=
 def cellRes (c : Cell) : UPred M :=
   if c.w8 then cell hist win c.addr 8 c.val else cell hist win c.addr 4 (BitVec.extractLsb' 0 32 c.val)
 
-/-- `iexact` leaves the kernel the check `□?false (cellRes …) =?= cellRes …`. -/
+/- `iexact` leaves the kernel the check `□?false (cellRes …) =?= cellRes …`.
+Kernel typechecking should be fast. -/
 example (a w : BitVec 64) (Q : UPred M) :
     cellRes hist win ⟨a, true, w⟩ ∗ Q ⊢ cellRes hist win ⟨a, true, w⟩ := by
   iintro ⟨H, _⟩
   iexact H
 
-/-- The same on the right of the `∗`. -/
+/- The same on the right of the `∗`. Kernel typechecking should also be fast. -/
 example (a w : BitVec 64) (Q : UPred M) :
     Q ∗ cellRes hist win ⟨a, true, w⟩ ⊢ cellRes hist win ⟨a, true, w⟩ := by
   iintro ⟨_, H⟩
