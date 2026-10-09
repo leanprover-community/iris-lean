@@ -17,7 +17,7 @@ open BI ExclAuth Language Language.Notation Std.LawfulSet Iris.ProgramLogic.Prim
 
 @[expose] public section
 
-abbrev ownPRF (State : Type) : COFE.OFunctorPre Nat := constOF (ExclAuthR (SI := Nat) (A := stateO State))
+abbrev ownPRF (State : Type) : COFE.OFunctorPre Nat := constOF _ (ExclAuthR Nat (A := stateO State))
 
 @[rocq_alias ownPGS]
 class OwnPGS (State : Type) (GF : BundledGFunctors) where

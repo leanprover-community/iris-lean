@@ -383,7 +383,6 @@ class IntoAcc [BI.BIBase PROP] {X : outParam Type} (Pacc : PROP)
     (mγ : outParam <| X → Option PROP) where
   into_acc : φ → Pacc -∗ Pin -∗ accessor M1 M2 α β mγ
 
-set_option synthInstance.checkSynthOrder false in
 /-- The type class used for the `iinv` tactic. -/
 @[ipm_class, rocq_alias ElimInv]
 class ElimInv [BI.BIBase PROP] (φ : outParam Prop) (X : outParam Type)

@@ -18,6 +18,9 @@ open OFE Iris.COFE
 
 variable {SI : Type v} [SIdx SI]
 
+/- The solver needs a successor operation (see `Enriched`); Iris-Rocq's solver does not. -/
+variable [SIdxSucc SI]
+
 namespace COFE
 
 def PointsDetermined (K : LimitCut SI) (A : Type _) [OFE SI A] : Prop :=
@@ -49,12 +52,14 @@ open COFE
 
 abbrev EnrichedCat.Hom.toOFEHom {A B : CofeObj.{v, w} SI} (f : Hom SI A B) : A.1 -n>[SI] B.1 := f
 
+omit [SIdxSucc SI] in
 theorem Determined.points {K : LimitCut SI} {Y : CofeObj.{v, w} SI} (h : Determined K Y) :
     PointsDetermined K Y.1 := fun x y hxy =>
   congrArg (fun g : Hom SI (HasTerminal.one SI) Y => g.toOFEHom ⟨()⟩)
     (h (⟨fun _ => x, ⟨fun _ _ _ _ => .rfl⟩⟩ : Hom SI (HasTerminal.one SI) Y)
       ⟨fun _ => y, ⟨fun _ _ _ _ => .rfl⟩⟩ fun m hm _ => hxy m hm)
 
+omit [SIdxSucc SI] in
 theorem Determined.of_points {K : LimitCut SI} {Y : CofeObj.{v, w} SI}
     (h : PointsDetermined K Y.1) : Determined K Y :=
   fun _ _ hg => OFE.Hom.ext (funext fun z => h _ _ fun m hm => hg m hm z)
@@ -192,6 +197,7 @@ namespace Truncation
 
 variable {K : LimitCut SI} {A : Type _} [COFE SI A] (t : Truncation K A)
 
+omit [SIdxSucc SI] in
 theorem truncate_truncate (x : A) : t.truncate (t.truncate x) = t.truncate x :=
   t.truncated _ _ fun m hm => t.conv x m hm
 
@@ -218,6 +224,7 @@ instance : IsCOFE SI t.Fixed where
   lbcompl_ne hl _ _ _ hc :=
     (Fixed.proj t).ne.ne (IsCOFE.lbcompl_ne hl _ _ fun p hp => hc p hp)
 
+omit [SIdxSucc SI] in
 theorem Fixed.determined : PointsDetermined K t.Fixed := fun x y h =>
   Subtype.ext (x.2 ▸ y.2 ▸ t.truncated _ _ h)
 
@@ -229,9 +236,11 @@ variable (K : LimitCut SI) {A : Type _} [COFE SI A]
 
 noncomputable def classicalRep (x : A) : A := @Classical.epsilon A ⟨x⟩ fun y => K.dist x y
 
+omit [SIdxSucc SI] in
 theorem classicalRep_spec (x : A) : K.dist x (classicalRep K x) :=
   @Classical.epsilon_spec A (fun y => K.dist x y) ⟨x, fun _ _ => .rfl⟩
 
+omit [SIdxSucc SI] in
 theorem classicalRep_congr {x y : A} (h : K.dist x y) : classicalRep K x = classicalRep K y := by
   unfold classicalRep
   congr 1
@@ -259,7 +268,7 @@ variable (F : ∀ (α β : Type (max v w)) [COFE SI α] [COFE SI β], Type (max 
 
 def oFunctorObj (A B : CofeObj.{v, w} SI) : CofeObj.{v, w} SI := ⟨F A.1 B.1, inferInstance⟩
 
-instance instEFunctor : EFunctor SI (oFunctorObj (SI := SI) F) where
+instance instEFunctor : EFunctor SI (oFunctorObj F) where
   map f g := (OFunctor.map (F := F) f g : _ -n>[SI] _)
   map_contractive := OFunctorContractive.map_contractive.distLater_dist
   map_id _ _ := OFE.Hom.ext (funext fun x => OFunctor.map_id (F := F) x)
@@ -267,7 +276,7 @@ instance instEFunctor : EFunctor SI (oFunctorObj (SI := SI) F) where
 
 @[reducible] def truncatableOfTruncations
     (t : ∀ (K : LimitCut SI) (A : CofeObj.{v, w} SI), Determined K A → Truncation K (F A.1 A.1)) :
-    Truncatable SI (oFunctorObj (SI := SI) F) where
+    Truncatable SI (oFunctorObj F) where
   trunc K A hA := ⟨(t K A hA).Fixed, inferInstance⟩
   proj K A hA := Truncation.Fixed.proj (t K A hA)
   rep K A hA := Truncation.Fixed.inclusion (t K A hA)
@@ -278,11 +287,11 @@ instance instEFunctor : EFunctor SI (oFunctorObj (SI := SI) F) where
 /-- Truncations by choice for every functor. Not an instance, so that using choice is explicit:
 enable it with `attribute [local instance] classicalOFunctorTruncatable`. -/
 @[reducible] noncomputable def classicalOFunctorTruncatable :
-    Truncatable SI (oFunctorObj (SI := SI) F) :=
+    Truncatable SI (oFunctorObj F) :=
   truncatableOfTruncations F fun K _ _ => classicalTruncation K
 
 instance instHasSeed [Inhabited (F (ULift.{max v w} Unit) (ULift.{max v w} Unit))] :
-    HasSeed SI (oFunctorObj (SI := SI) F) where
+    HasSeed SI (oFunctorObj F) where
   seed := (⟨fun _ => default, ⟨fun _ _ _ _ => .rfl⟩⟩ :
     _ -n>[SI] F (ULift.{max v w} Unit) (ULift.{max v w} Unit))
 
@@ -296,12 +305,12 @@ namespace Iris.COFE.OFunctor
 
 open OFE Iris.Enriched Iris.Enriched.COFE
 
-variable {SI : Type v} [SIdx SI]
+variable {SI : Type v} [SIdx SI] [SIdxSucc SI]
 variable (F : ∀ (α β : Type (max v w)) [COFE SI α] [COFE SI β], Type (max v w))
   [OFunctorContractive SI F]
   [∀ (α β : Type (max v w)) [COFE SI α] [COFE SI β], IsCOFE SI (F α β)]
   [Inhabited (F (ULift.{max v w} Unit) (ULift.{max v w} Unit))]
-  [Truncatable SI (oFunctorObj (SI := SI) F)]
+  [Truncatable SI (oFunctorObj F)]
 
 #rocq_ignore solution "Use OFE.Iso + Inhabited + COFE"
 #rocq_ignore solver.A' "Internal to the old nat-indexed solver; see Enriched.lean"
@@ -335,13 +344,13 @@ variable (F : ∀ (α β : Type (max v w)) [COFE SI α] [COFE SI β], Type (max 
 #rocq_ignore solver.result "Use `Fix F` with Inhabited + COFE instances and Fix.iso"
 
 @[rocq_alias solver.T]
-def Fix : Type (max v w) := (Enriched.Fix (SI := SI) (oFunctorObj (SI := SI) F)).1
+def Fix : Type (max v w) := (Enriched.Fix SI (oFunctorObj F)).1
 
-instance instCOFEFix : COFE SI (Fix F) := (Enriched.Fix (SI := SI) (oFunctorObj (SI := SI) F)).2
+instance instCOFEFix : COFE SI (Fix F) := (Enriched.Fix SI (oFunctorObj F)).2
 
 #rocq_ignore solver.tower_inhabited "Implicit in Lean's Inhabited (Fix F) instance"
 instance : Inhabited (Fix F) :=
-  ⟨(Enriched.Fix.point (SI := SI) (oFunctorObj (SI := SI) F)).toOFEHom ⟨()⟩⟩
+  ⟨(Enriched.Fix.point (oFunctorObj F)).toOFEHom ⟨()⟩⟩
 
 variable {F}
 
@@ -351,7 +360,7 @@ def Fix.iso : OFE.Iso SI (F (Fix F) (Fix F)) (Fix F) where
   hom_inv := congrArg (fun g : EnrichedCat.Hom SI _ _ => g.toOFEHom _)
     (Enriched.Fix.fold_comp_unfold (F := oFunctorObj (SI := SI) F))
   inv_hom := congrArg (fun g : EnrichedCat.Hom SI _ _ => g.toOFEHom _)
-    (Enriched.Fix.unfold_comp_fold (F := oFunctorObj (SI := SI) F))
+    (Enriched.Fix.unfold_comp_fold (F := oFunctorObj F))
 
 @[rocq_alias solver.fold]
 def Fix.fold : F (Fix F) (Fix F) -n>[SI] Fix F := Fix.iso.hom

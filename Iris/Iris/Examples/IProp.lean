@@ -18,7 +18,7 @@ open Iris.BI COFE
 
 section Example1
 
-abbrev F0 : OFunctorPre Nat := constOF (Agree (DiscreteO String))
+abbrev F0 : OFunctorPre Nat := constOF _ (Agree (DiscreteO String))
 
 variable {GF} [E0 : ElemG GF F0]
 
@@ -53,7 +53,7 @@ open HeapView One DFrac Agree DiscreteO
 
 /- Define an OFunctor for the heap. Fractions are concretely `Qp`. -/
 abbrev F1 : OFunctorPre Nat :=
-  constOF <| HeapView (SI := Nat) Nat (Agree (DiscreteO String)) (Std.ExtTreeMap Nat · compare)
+  constOF _ <| HeapView Nat Nat (Agree (DiscreteO String)) (Std.ExtTreeMap Nat · compare)
 
 /- Our OFunctor is present in the global list of OFunctors. -/
 variable {GF} [ElemG GF F1]
@@ -135,7 +135,7 @@ instance wp_F_contractive : Contractive Nat (@wp_F Expr State Value _ GF _) wher
     exact HL m Hm v Φ
 
 def wp {Expr State Value : Type _} [@Ex3WP Expr State Value GF] (e : Expr) (Φ : Value → IProp GF) : IProp GF :=
-  (fixpoint (SI := Nat) <| @wp_F Expr State Value _ GF _) e Φ
+  (fixpoint Nat <| @wp_F Expr State Value _ GF _) e Φ
 
 theorem wp_unfold (e : Expr) (Φ : Value → IProp GF) :
     wp e Φ = iprop(

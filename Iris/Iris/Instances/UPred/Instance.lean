@@ -28,7 +28,7 @@ namespace UPred
 The transfinite laws `later_false_sep` and the timelessness of `ownM` (Iris !1256) split or
 extend a resource below `x` at step-index `0`, and need the result below `x` at the current
 index. Rocq gets this from `cmra_extend` (exact equality); for an ordered RA the axiom
-`ordN_extend` only lifts one step (`n` to `succᵢ n`). The lift exists for finite step indices
+`ordN_extend` only lifts one step (from `n` to its successor). The lift exists for finite step indices
 (iterate `ordN_extend`) and for the extension order (`IsInc`, via `extend`). -/
 class OrdExtend0 (SI : Type _) [SIdx SI] (M : Type _) [URA M] [UORA SI M] : Prop where
   ordN_extend0 {n : SI} {x y : M} : ✓{n} x → y ≼ₒ{(0 : SI)} x →
@@ -36,15 +36,15 @@ class OrdExtend0 (SI : Type _) [SIdx SI] (M : Type _) [URA M] [UORA SI M] : Prop
 
 instance OrdExtend0.of_finite [SIdxFinite SI] [URA M] [UORA SI M] : OrdExtend0 SI M where
   ordN_extend0 {n} {x y} := by
-    refine SIdx.rec' (P := fun (n : SI) => ✓{n} x → y ≼ₒ{(0 : SI)} x →
-      ∃ z, z ≼ₒ{n} x ∧ z ≡{(0 : SI)}≡ y) ?_ ?_ ?_ n
-    · exact fun _ h => ⟨y, h, .rfl⟩
-    · intro m ih hv h
-      obtain ⟨z, hz, ez⟩ := ih (validN_succ hv) h
-      obtain ⟨w, hw, ew⟩ := ordN_extend (validN_succ hv) hz
-      exact ⟨w, hw, (ew.le SIdx.le_0_l).trans ez⟩
-    · intro m hlim _
-      exact absurd hlim (SIdx.limit_finite m)
+    induction n using (SIdx.lt_wf (I := SI)).induction with
+    | _ n ih =>
+      intro hv h
+      rcases SIdxFinite.finite_index n with rfl | ⟨m, hm⟩
+      · exact ⟨y, h, .rfl⟩
+      · have hv' := validN_of_le (SIdx.lt_le_incl hm.lt) hv
+        obtain ⟨z, hz, ez⟩ := ih m hm.lt hv' h
+        obtain ⟨w, hw, ew⟩ := ordN_extend hm hv' hz
+        exact ⟨w, hw, (ew.le SIdx.le_0_l).trans ez⟩
 
 instance OrdExtend0.of_isInc [URA M] [UORA SI M] [IsInc SI M] : OrdExtend0 SI M where
   ordN_extend0 {n} {x y} hv h := by
@@ -173,6 +173,7 @@ protected def later (P : UPred SI M) : UPred SI M where
 #rocq_ignore uPred_later_def "`UPred.later` is defined directly without `seal`/`unseal`."
 #rocq_ignore uPred_later_aux "`UPred.later` is defined directly without `seal`/`unseal`."
 
+variable (SI) in
 @[rocq_alias uPred_ownM]
 def ownM (m : M) : UPred SI M where
   holds n x := m ≼ₒ{n} x
@@ -199,7 +200,7 @@ def bupd (Q : UPred SI M) : UPred SI M where
 
 /-- `emp` holds at exactly the resources above the unit, i.e. `emp = ownM unit`. -/
 @[rocq_alias uPred_emp]
-protected def emp : UPred SI M := ownM unit
+protected def emp : UPred SI M := ownM _ unit
 
 end bidefs
 
@@ -214,7 +215,7 @@ instance later_contractive : OFE.Contractive SI UPred.later (α := UPred SI M) w
      fun H m Hm => (Hl m (SIdx.lt_le_trans Hm Hn') m z SIdx.le_refl _).mpr (H m Hm)⟩
 
 @[rocq_alias uPred_primitive.ownM_ne, rocq_alias uPred.ownM_ne]
-instance ownM_ne : OFE.NonExpansive SI (ownM : M → UPred SI M) where
+instance ownM_ne : OFE.NonExpansive SI (ownM _ : M → UPred SI M) where
   ne _ _ _ H _ _ Hn _ := OFE.Dist.ordN (OFE.Dist.le H Hn) .rfl
 
 instance {A} [RA A] [ORA SI A] : OFE.NonExpansive SI (cmraValid : A → UPred SI M) where
@@ -433,19 +434,19 @@ instance instBIStepIndexedUPred [OrdExtend0 SI M] : BIStepIndexed SI (UPred SI M
 
 instance instBILaterFiniteUPred [OrdExtend0 SI M] [SIdxFinite SI] : BILaterFinite (UPred SI M) where
   later_sExists_false n x H := by
-    rcases SIdxFinite.finite_index n with rfl | ⟨m, rfl⟩
+    rcases SIdxFinite.finite_index n with rfl | ⟨m, hm⟩
     · exact .inl fun k hk => absurd hk (SIdx.not_lt_zero k)
-    · obtain ⟨p, hΦ, hp⟩ := H m (SIdx.lt_succ_self m)
-      exact .inr ⟨_, ⟨p, rfl⟩, hΦ, fun k hk => p.mono hp (ordN_refl _) (SIdx.lt_succ_r.mp hk)⟩
+    · obtain ⟨p, hΦ, hp⟩ := H m hm.lt
+      exact .inr ⟨_, ⟨p, rfl⟩, hΦ, fun k hk => p.mono hp (ordN_refl _) (hm.le_of_lt hk)⟩
   later_sep_1 n x H := by
-    rcases SIdxFinite.finite_index n with rfl | ⟨m, rfl⟩
+    rcases SIdxFinite.finite_index n with rfl | ⟨m, hm⟩
     · exact ⟨unit, x, unit_left_id.dist.to_ordN,
         fun k hk => absurd hk (SIdx.not_lt_zero k), fun k hk => absurd hk (SIdx.not_lt_zero k)⟩
-    · obtain ⟨x1, x2, H1, H2, H3⟩ := H m (SIdx.lt_succ_self m)
-      obtain ⟨y1, y2, H1', E1, E2⟩ := op_extend_ord (validN_succ x.property) H1
+    · obtain ⟨x1, x2, H1, H2, H3⟩ := H m hm.lt
+      obtain ⟨y1, y2, H1', E1, E2⟩ := op_extend_ord hm (validN_of_le (SIdx.lt_le_incl hm.lt) x.property) H1
       refine ⟨y1, y2, H1', fun k hk => ?_, fun k hk => ?_⟩
-      · exact UPred.mono _ H2 (E1.symm.le (SIdx.lt_succ_r.mp hk)).to_ordN (SIdx.lt_succ_r.mp hk)
-      · exact UPred.mono _ H3 (E2.symm.le (SIdx.lt_succ_r.mp hk)).to_ordN (SIdx.lt_succ_r.mp hk)
+      · exact UPred.mono _ H2 (E1.symm.le (hm.le_of_lt hk)).to_ordN (hm.le_of_lt hk)
+      · exact UPred.mono _ H3 (E2.symm.le (hm.le_of_lt hk)).to_ordN (hm.le_of_lt hk)
 
 end BIInstance
 
@@ -731,77 +732,77 @@ instance : BIBUpdateSbi SI (UPred SI M) where
 instance : BIBUpdatePlainly (UPred SI M) := .ofSbi SI
 
 @[rocq_alias uPred_primitive.ownM_valid, rocq_alias uPred.ownM_valid]
-theorem ownM_valid (m : M) : ownM (SI := SI) m ⊢ internalCmraValid (SI := SI) m := fun _ h hp => hp.validN h.property
+theorem ownM_valid (m : M) : ownM SI m ⊢ internalCmraValid SI m := fun _ h hp => hp.validN h.property
 
 @[rocq_alias uPred_primitive.ownM_op, rocq_alias uPred.ownM_op]
-theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM (SI := SI) m1 ∗ ownM m2 :=
+theorem ownM_op (m1 m2 : M) : ownM _ (m1 • m2) ⊣⊢ ownM SI m1 ∗ ownM _ m2 :=
   ⟨fun _ _ H => ⟨m1, m2, H, ordN_refl m1, ordN_refl m2⟩,
    fun _ _ ⟨_, _, H, H1, H2⟩ => (op_monoN_ord H1 H2).trans H⟩
 
-theorem ownM_always_invalid_elim (m : M) (H : ∀ (n : SI), ¬✓{n} m) : internalCmraValid (SI := SI) m ⊢@{UPred SI M} False :=
+theorem ownM_always_invalid_elim (m : M) (H : ∀ (n : SI), ¬✓{n} m) : internalCmraValid SI m ⊢@{UPred SI M} False :=
   fun n _ => H n
 
 @[rocq_alias uPred.ownM_unit, rocq_alias uPred_primitive.ownM_unit]
-theorem ownM_unit [IncOrd SI M] P : P ⊢ □ ownM (SI := SI) (unit : M) :=
+theorem ownM_unit [IncOrd SI M] P : P ⊢ □ ownM SI (unit : M) :=
   fun _ x _ => ⟨ordN_unit, unit_ordN_core x.val⟩
 
 @[rocq_alias uPred.persistently_ownM_core, rocq_alias uPred_primitive.persistently_ownM_core]
-theorem persistently_ownM_core (a : M) : ownM (SI := SI) a ⊢ <pers> ownM (core a) := fun _ _ => core_ordN_core
+theorem persistently_ownM_core (a : M) : ownM SI a ⊢ <pers> ownM _ (core a) := fun _ _ => core_ordN_core
 
-theorem intuitionistically_ownM_core [IncOrd SI M] (m : M) : ownM (SI := SI) m ⊢ □ ownM (core m) :=
+theorem intuitionistically_ownM_core [IncOrd SI M] (m : M) : ownM SI m ⊢ □ ownM _ (core m) :=
   fun _ _ h => ⟨ordN_unit, core_ordN_core h⟩
 
-instance {a : M} : Persistent (ownM (SI := SI) (core a)) where
+instance {a : M} : Persistent (ownM SI (core a)) where
   persistent := by
     refine .trans (persistently_ownM_core _) ?_
     refine persistently_mono ?_
-    exact (congrArg ownM (core_idem a)).to_bi.mp
+    exact (congrArg (ownM _) (core_idem a)).to_bi.mp
 
 @[rocq_alias uPred.bupd_ownM_updateP, rocq_alias uPred_primitive.bupd_ownM_updateP]
 theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
-  (x ~~>:[SI] Φ) → ownM (SI := SI) x ⊢ |==> ∃ y, ⌜Φ y⌝ ∧ ownM y := by
+  (x ~~>:[SI] Φ) → ownM SI x ⊢ |==> ∃ y, ⌜Φ y⌝ ∧ ownM _ y := by
   intro Hup _ _ Hx k yf Hk Hyf
   let ⟨y, HΦy, Hyv⟩ := Hup k (some yf) (validN_of_ordN (op_monoN_left_ord yf (Hx.le Hk)) Hyf)
-  exact ⟨y, Hyv, iprop(⌜Φ y⌝ ∧ ownM y), ⟨y, rfl⟩, HΦy, ordN_refl y⟩
+  exact ⟨y, Hyv, iprop(⌜Φ y⌝ ∧ ownM _ y), ⟨y, rfl⟩, HΦy, ordN_refl y⟩
 
 /-- The inclusion in the conclusion is the internal order; on classical CMRAs it coincides
 with Rocq's extension inclusion. -/
-theorem ownM_ord_forall (f : A → M) : (∀ a, ownM (f a)) ⊢ ∃ z, ownM (SI := SI) z ∧ (∀ a, f a ≼ₒ[SI] z) := by
+theorem ownM_ord_forall (f : A → M) : (∀ a, ownM _ (f a)) ⊢ ∃ z, ownM SI z ∧ (∀ a, f a ≼ₒ[SI] z) := by
   intro _ x Hf
-  refine ⟨iprop(ownM x ∧ ∀ a, f a ≼ₒ[SI] x.val), ⟨x, rfl⟩, ordN_refl x.val, ?_⟩
+  refine ⟨iprop(ownM _ x ∧ ∀ a, f a ≼ₒ[SI] x.val), ⟨x, rfl⟩, ordN_refl x.val, ?_⟩
   rintro p ⟨a, rfl⟩
-  exact Hf (ownM (f a)) ⟨a, rfl⟩
+  exact Hf (ownM _ (f a)) ⟨a, rfl⟩
 
 @[rocq_alias uPred.ownM_forall, rocq_alias uPred_primitive.ownM_forall]
 theorem ownM_forall [OrdInc SI M] (f : A → M) :
-    (∀ a, ownM (f a)) ⊢ ∃ z, ownM (SI := SI) z ∧ (∀ a, ∃ xf, z ≡[SI] f a • xf) := by
+    (∀ a, ownM _ (f a)) ⊢ ∃ z, ownM SI z ∧ (∀ a, ∃ xf, z ≡[SI] f a • xf) := by
   intro _ x Hf
-  refine ⟨iprop(ownM x ∧ ∀ a, ∃ xf, x.val ≡[SI] f a • xf), ⟨x, rfl⟩, ordN_refl x.val, ?_⟩
+  refine ⟨iprop(ownM _ x ∧ ∀ a, ∃ xf, x.val ≡[SI] f a • xf), ⟨x, rfl⟩, ordN_refl x.val, ?_⟩
   rintro p ⟨a, rfl⟩
-  rcases OrdInc.ordN_incN (Hf (ownM (f a)) ⟨a, rfl⟩) with ⟨xf, Hxf⟩
+  rcases OrdInc.ordN_incN (Hf (ownM _ (f a)) ⟨a, rfl⟩) with ⟨xf, Hxf⟩
   exact ⟨iprop(x.val ≡[SI] f a • xf), ⟨xf, rfl⟩, Hxf⟩
 
 @[rocq_alias uPred.later_ownM, rocq_alias uPred_primitive.later_ownM]
-theorem later_ownM [SIdxFinite SI] (a : M) : ▷ ownM (SI := SI) a ⊢ ∃ b, ownM b ∧ ▷ (a ≡[SI] b) := by
+theorem later_ownM [SIdxFinite SI] (a : M) : ▷ ownM SI a ⊢ ∃ b, ownM _ b ∧ ▷ (a ≡[SI] b) := by
   intro n x hx
-  rcases SIdxFinite.finite_index n with rfl | ⟨m, rfl⟩
-  · exact ⟨iprop(ownM x.val ∧ ▷ (a ≡[SI] x.val)), ⟨x.val, rfl⟩, ordN_refl x.val,
+  rcases SIdxFinite.finite_index n with rfl | ⟨m, hm⟩
+  · exact ⟨iprop(ownM _ x.val ∧ ▷ (a ≡[SI] x.val)), ⟨x.val, rfl⟩, ordN_refl x.val,
       fun k hk => absurd hk (SIdx.not_lt_zero k)⟩
-  · obtain ⟨b, hb, hab⟩ := ordN_extend (validN_succ x.property) (hx m (SIdx.lt_succ_self m))
-    exact ⟨iprop(ownM b ∧ ▷ (a ≡[SI] b)), ⟨b, rfl⟩, hb,
-      fun k hk => (hab.le (SIdx.lt_succ_r.mp hk)).symm⟩
+  · obtain ⟨b, hb, hab⟩ := ordN_extend hm (validN_of_le (SIdx.lt_le_incl hm.lt) x.property) (hx m hm.lt)
+    exact ⟨iprop(ownM _ b ∧ ▷ (a ≡[SI] b)), ⟨b, rfl⟩, hb,
+      fun k hk => (hab.le (hm.le_of_lt hk)).symm⟩
 
 @[rocq_alias uPred_primitive.later_false_ownM]
-theorem later_false_ownM (a : M) : (▷ False → ownM (SI := SI) a) ⊢ ∃ b, ownM b ∧ (▷ False → a ≡[SI] b) := by
+theorem later_false_ownM (a : M) : (▷ False → ownM SI a) ⊢ ∃ b, ownM _ b ∧ (▷ False → a ≡[SI] b) := by
   intro _ x H
   obtain ⟨b, hb, hba⟩ := OrdExtend0.ordN_extend0 x.property
     (H (x.le SIdx.le_0_l) (ordN_refl _) SIdx.le_0_l fun k hk => absurd hk (SIdx.not_lt_zero k))
-  refine ⟨iprop(ownM b ∧ (▷ False → a ≡[SI] b)), ⟨b, rfl⟩, hb, fun {n'} _ _ _ hF => ?_⟩
+  refine ⟨iprop(ownM _ b ∧ (▷ False → a ≡[SI] b)), ⟨b, rfl⟩, hb, fun {n'} _ _ _ hF => ?_⟩
   exact hba.symm.le (SIdx.le_ngt.mpr fun hlt => hF _ hlt)
 
 theorem pure_soundness : (⊢ (⌜P⌝ : UPred SI M)) → P := (· (0 : SI) ⟨unit, unit_validN⟩ (ordN_refl unit))
 
-theorem later_soundness : (⊢ ▷ P) → ⊢@{UPred SI M} P :=
+theorem later_soundness [SIdxSucc SI] : (⊢ ▷ P) → ⊢@{UPred SI M} P :=
   fun HP n _ H =>
     P.mono (HP (SIdx.succ n) ⟨unit, unit_validN⟩ (ordN_refl unit) n (SIdx.lt_succ_self n)) H
       SIdx.le_refl
@@ -815,38 +816,38 @@ section derived
 #rocq_ignore uPred.ownM_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias uPred.intuitionistically_ownM]
-theorem intuitionistically_ownM (a : M) [CoreId a] : □ ownM (SI := SI) a ⊣⊢ ownM a :=
+theorem intuitionistically_ownM (a : M) [CoreId a] : □ ownM SI a ⊣⊢ ownM _ a :=
   ⟨intuitionistically_elim, fun _ _ h =>
     ⟨ordN_trans (ordN_unit (x := a)) h, core_eqv_self a ▸ core_ordN_core h⟩⟩
 
 @[rocq_alias uPred.ownM_invalid]
-theorem ownM_invalid (a : M) (hnv : ¬ ✓{(0 : SI)} a) : ownM (SI := SI) a ⊢ False :=
+theorem ownM_invalid (a : M) (hnv : ¬ ✓{(0 : SI)} a) : ownM SI a ⊢ False :=
   (ownM_valid a).trans (internalCmraValid_elim a) |>.trans (pure_mono hnv)
 
-theorem ownM_ord_mono {a b : M} (hinc : b ≼ₒ[SI] a) : ownM (SI := SI) a ⊢ ownM b :=
+theorem ownM_ord_mono {a b : M} (hinc : b ≼ₒ[SI] a) : ownM SI a ⊢ ownM _ b :=
   fun n _ ha => ordN_trans (ordN_of_ord n hinc) ha
 
 @[rocq_alias uPred.ownM_mono]
-theorem ownM_mono [IncOrd SI M] {a b : M} (hinc : b ≼ a) : ownM (SI := SI) a ⊢ ownM b :=
+theorem ownM_mono [IncOrd SI M] {a b : M} (hinc : b ≼ a) : ownM SI a ⊢ ownM _ b :=
   ownM_ord_mono (IncOrd.inc_ord hinc)
 
 @[rocq_alias uPred.ownM_unit']
-theorem ownM_unit' : ownM unit ⊣⊢@{UPred SI M} emp := .rfl
+theorem ownM_unit' : ownM _ unit ⊣⊢@{UPred SI M} emp := .rfl
 
 @[rocq_alias uPred.bupd_ownM_update]
-theorem bupd_ownM_update {x y : M} (hupd : x ~~>[SI] y) : ownM (SI := SI) x ⊢ |==> ownM y := by
+theorem bupd_ownM_update {x y : M} (hupd : x ~~>[SI] y) : ownM SI x ⊢ |==> ownM _ y := by
   refine (bupd_ownM_updateP x (y = ·) (UpdateP.of_update hupd)).trans ?_
   exact BIUpdate.mono (exists_elim fun z => pure_elim_left fun hyz => hyz ▸ .rfl)
 
 @[rocq_alias uPred.ownM_timeless]
-instance ownM_timeless (a : M) [OFE.DiscreteE SI a] : BI.Timeless (ownM (SI := SI) a) where
+instance ownM_timeless (a : M) [OFE.DiscreteE SI a] : BI.Timeless (ownM SI a) where
   timeless _ x H := by
     obtain ⟨_, hb, hba⟩ := OrdExtend0.ordN_extend0 x.property
       (H (x.le SIdx.le_0_l) (ordN_refl _) SIdx.le_0_l fun k hk => absurd hk (SIdx.not_lt_zero k))
     exact OFE.DiscreteE.discrete hba.symm ▸ hb
 
 @[rocq_alias uPred.ownM_persistent]
-instance ownM_persistent (a : M) [CoreId a] : Persistent (ownM (SI := SI) a) where
+instance ownM_persistent (a : M) [CoreId a] : Persistent (ownM SI a) where
   persistent := by
     refine (persistently_ownM_core a).trans ?_
     refine persistently_mono ?_
@@ -854,7 +855,7 @@ instance ownM_persistent (a : M) [CoreId a] : Persistent (ownM (SI := SI) a) whe
 
 @[rocq_alias uPred.uPred_ownM_sep_homomorphism]
 instance ownM_sep_homomorphism :
-    Algebra.MonoidHomomorphism op sep (unit : M) (emp : UPred SI M) (· = ·) ownM where
+    Algebra.MonoidHomomorphism op sep (unit : M) (emp : UPred SI M) (· = ·) (ownM _) where
   rel_refl := rfl
   rel_trans := Eq.trans
   op_proper ha hb := ha ▸ hb ▸ rfl
@@ -908,7 +909,7 @@ theorem Modality.denoteAll_laterN [IncOrd SI M] {P : UPred SI M} [Plain P] :
 
 /-- Soundness under an arbitrary nesting of modalities, for plain propositions. -/
 @[rocq_alias uPred.modal_soundness]
-theorem modal_soundness {P : UPred SI M} [Plain P] (ms : List Modality)
+theorem modal_soundness [SIdxSucc SI] {P : UPred SI M} [Plain P] (ms : List Modality)
     (h : ⊢ Modality.denoteAll ms P) : ⊢ P :=
   laterN_soundness (SI := SI) <| (and_intro .rfl ((h.trans (Modality.denoteAll_plainly_laterN ms)).trans
     plainly_elim_persistently)).trans persistently_and_emp_elim
@@ -919,37 +920,37 @@ theorem consistency : ¬ (⊢@{UPred SI M} False) := pure_soundness
 end derived
 
 theorem plainly_valid_mpr [RA A] [ORA SI A] (a : A) :
-    internalCmraValid (SI := SI) a ⊢@{UPred SI M} ■ internalCmraValid (SI := SI) a :=
+    internalCmraValid SI a ⊢@{UPred SI M} ■ internalCmraValid SI a :=
   fun _ _ hv => hv
 
 theorem persistently_valid_mpr [RA A] [ORA SI A] (a : A) :
-    internalCmraValid (SI := SI) a ⊢@{UPred SI M} <pers> internalCmraValid (SI := SI) a :=
+    internalCmraValid SI a ⊢@{UPred SI M} <pers> internalCmraValid SI a :=
   (plainly_valid_mpr a).trans plainly_elim_persistently
 
 theorem plainly_valid [RA A] [ORA SI A] (a : A) :
-    ■ internalCmraValid (SI := SI) a ⊣⊢@{UPred SI M} internalCmraValid (SI := SI) a :=
+    ■ internalCmraValid SI a ⊣⊢@{UPred SI M} internalCmraValid SI a :=
   ⟨plainly_elim, plainly_valid_mpr a⟩
 
 theorem intuitionistically_valid [IncOrd SI M] {A} [RA A] [ORA SI A] (a : A) :
-    □ internalCmraValid (SI := SI) a ⊣⊢@{UPred SI M} internalCmraValid (SI := SI) a := by
+    □ internalCmraValid SI a ⊣⊢@{UPred SI M} internalCmraValid SI a := by
   constructor
   · exact intuitionistically_elim
   · exact (persistently_valid_mpr a).trans intuitionistically_iff_persistently.mpr
 
 theorem discrete_valid [RA A] [ORA SI A] [Discrete SI A] (a : A) :
-    internalCmraValid (SI := SI) a ⊣⊢@{UPred SI M} ⌜✓[SI] a⌝ :=
+    internalCmraValid SI a ⊣⊢@{UPred SI M} ⌜✓[SI] a⌝ :=
   ⟨fun n _ hv => (valid_iff_validN' n).mpr hv, fun _ _ hv => hv.validN⟩
 
 instance valid_timeless [RA A] [ORA SI A] [Discrete SI A] {a : A} :
-    Timeless (internalCmraValid (SI := SI) a : UPred SI M) where
+    Timeless (internalCmraValid SI a : UPred SI M) where
   timeless := by
     refine (only0_mono (discrete_valid a).mp).trans ?_
     exact Timeless.timeless.trans (discrete_valid a).mpr
 
-instance valid_plain [RA A] [ORA SI A] {a : A} : Plain (internalCmraValid (SI := SI) a : UPred SI M) where
+instance valid_plain [RA A] [ORA SI A] {a : A} : Plain (internalCmraValid SI a : UPred SI M) where
   plain := plainly_valid_mpr a
 
-instance valid_persistent [RA A] [ORA SI A] {a : A} : Persistent (internalCmraValid (SI := SI) a : UPred SI M) where
+instance valid_persistent [RA A] [ORA SI A] {a : A} : Persistent (internalCmraValid SI a : UPred SI M) where
   persistent := persistently_valid_mpr a
 
 end UPred
@@ -984,13 +985,13 @@ theorem BUpdPlain_bupd_iff [URA M] [UORA SI M] [OrdExtend0 SI M] (P : UPred SI M
 
 @[rocq_alias ownM_updateP]
 theorem ownM_updateP [URA M] [UORA SI M] [OrdExtend0 SI M] {x : M} {R : UPred SI M} (Φ : M → Prop) (Hup : x ~~>:[SI] Φ) :
-    iprop(ownM x ∗ ∀ y, ⌜Φ y⌝ -∗ ownM y -∗ ■ R) ⊢ ■ R := by
+    iprop(ownM _ x ∗ ∀ y, ⌜Φ y⌝ -∗ ownM _ y -∗ ■ R) ⊢ ■ R := by
   rw [plainly_eq_uPred_plainly]
   intro n z ⟨x1, z2, Hx, Hx1, HR⟩
   have Hvalid : ✓{n} (x •? some z2) :=
     validN_of_ordN ((op_monoN_left_ord z2 Hx1).trans Hx) z.property
   have ⟨y, HΦy, Hvalid_y⟩ := Hup n (some z2) Hvalid
-  have Hp := HR (iprop(⌜Φ y⌝ -∗ (UPred.ownM y -∗ UPred.plainly R))) ⟨y, rfl⟩
+  have Hp := HR (iprop(⌜Φ y⌝ -∗ (UPred.ownM _ y -∗ UPred.plainly R))) ⟨y, rfl⟩
   exact Hp n unit SIdx.le_refl (validN_ne (unit_right_id_dist z2).symm (validN_op_right Hvalid)) HΦy n y
     SIdx.le_refl (validN_ne (comm.dist.trans (unit_right_id_dist z2).symm.op_l) Hvalid_y) (ordN_refl y)
 

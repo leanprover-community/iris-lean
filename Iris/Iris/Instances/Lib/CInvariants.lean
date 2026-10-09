@@ -26,7 +26,7 @@ open BI ORA OFE Iris Iris.Std LawfulSet Excl COFE ProofMode
 /-! # Cancelable Invariants -/
 
 abbrev CInvF : OFunctorPre Nat :=
-  ProdOF (constOF (Option (Excl Unit))) (constOF (Option DFrac))
+  ProdOF (constOF _ (Option (Excl Unit))) (constOF _ (Option DFrac))
 
 @[rocq_alias cinvG]
 class CInvG (GF : BundledGFunctors) where

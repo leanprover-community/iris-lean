@@ -80,6 +80,7 @@ instance : IsViewRelDiscrete (viewRel (SI := SI) (S := S)) where
 
 end SetBij
 
+variable (SI) in
 /-- The RA of monotone partial bijections over a set `S` of pairs. -/
 @[rocq_alias gset_bij, rocq_alias gset_bijO, rocq_alias gset_bijR, rocq_alias gset_bijUR]
 abbrev SetBij (S : Type _) [LawfulSet S (A × B)] := View (SetBij.viewRel (SI := SI) (S := S))
@@ -87,45 +88,45 @@ abbrev SetBij (S : Type _) [LawfulSet S (A × B)] := View (SetBij.viewRel (SI :=
 namespace SetBij
 
 @[rocq_alias gset_bij_auth]
-def auth (dq : DFrac) (L : S) : SetBij (SI := SI) S := (●V{dq} valid L) • ◯V valid L
+def auth (dq : DFrac) (L : S) : SetBij SI S := (●V{dq} valid L) • ◯V valid L
 
 @[rocq_alias gset_bij_elem]
-def elem (a : A) (b : B) : SetBij (SI := SI) S := ◯V valid {(a, b)}
+def elem (a : A) (b : B) : SetBij SI S := ◯V valid {(a, b)}
 
 @[rocq_alias gset_bij_elem_core_id]
-instance : CoreId (elem (SI := SI) a b : SetBij S) := inferInstanceAs (CoreId (◯V _))
+instance : CoreId (elem (SI := SI) a b : SetBij _ S) := inferInstanceAs (CoreId (◯V _))
 
-theorem frag_op_union : ((◯V valid L₁ : SetBij (SI := SI) S) • ◯V valid L₂) = ◯V valid (L₁ ∪ L₂) := by
+theorem frag_op_union : ((◯V valid L₁ : SetBij SI S) • ◯V valid L₂) = ◯V valid (L₁ ∪ L₂) := by
   rw [← frag_op_eq, op_union]
 
 /-- The authoritative and fragment parts of two `auth`s, regrouped. -/
-theorem auth_op_auth_eq : ((auth dq₁ L₁ : SetBij (SI := SI) S) • auth dq₂ L₂)
-    = ((●V{dq₁} valid L₁ : SetBij S) • ●V{dq₂} valid L₂) • ◯V valid (L₁ ∪ L₂) := by
+theorem auth_op_auth_eq : ((auth dq₁ L₁ : SetBij SI S) • auth dq₂ L₂)
+    = ((●V{dq₁} valid L₁ : SetBij _ S) • ●V{dq₂} valid L₂) • ◯V valid (L₁ ∪ L₂) := by
   rw [auth, auth, ← frag_op_union]
   exact Algebra.MonoidOps.op_op_op_comm
 attribute [local grind =] auth_op_auth_eq
 
 @[rocq_alias gset_bij_auth_dfrac_op]
-theorem auth_op_auth : ((auth dq₁ L : SetBij (SI := SI) S) • auth dq₂ L) = auth (dq₁ • dq₂) L := by
+theorem auth_op_auth : ((auth dq₁ L : SetBij SI S) • auth dq₂ L) = auth (dq₁ • dq₂) L := by
   rw [auth_op_auth_eq, union_idem, ← View.auth_op_auth_eqv]; rfl
 attribute [local grind =] auth_op_auth
 
 @[rocq_alias gset_bij_auth_dfrac_valid]
-theorem auth_valid_iff : ✓[SI] (auth dq L : SetBij (SI := SI) S) ↔ ✓[SI] dq ∧ SetBijective L := by
+theorem auth_valid_iff : ✓[SI] (auth dq L : SetBij SI S) ↔ ✓[SI] dq ∧ SetBijective L := by
   rw [auth, auth_op_frag_valid_iff]
   exact and_congr_right fun _ => ⟨fun h => (h 0).2, fun h _ => ⟨subset_refl, h⟩⟩
 attribute [local grind =] auth_valid_iff
 
 @[rocq_alias gset_bij_auth_valid]
-theorem auth_one_valid_iff : ✓[SI] (auth (.own 1) L : SetBij (SI := SI) S) ↔ SetBijective L := by
+theorem auth_one_valid_iff : ✓[SI] (auth (.own 1) L : SetBij SI S) ↔ SetBijective L := by
   rw [auth_valid_iff]; exact and_iff_right DFrac.valid_own_one
 
 @[rocq_alias gset_bij_auth_empty_dfrac_valid]
-theorem auth_empty_valid_iff : ✓[SI] (auth dq (∅ : S) : SetBij (SI := SI) S) ↔ ✓[SI] dq := by
+theorem auth_empty_valid_iff : ✓[SI] (auth dq (∅ : S) : SetBij SI S) ↔ ✓[SI] dq := by
   grind [SetBijective.empty]
 
 @[rocq_alias gset_bij_auth_empty_valid]
-theorem auth_one_empty_valid : ✓[SI] (auth (.own 1) (∅ : S) : SetBij (SI := SI) S) := by
+theorem auth_one_empty_valid : ✓[SI] (auth (.own 1) (∅ : S) : SetBij SI S) := by
   exact auth_empty_valid_iff.mpr DFrac.valid_own_one
 
 @[rocq_alias gset_bij_auth_dfrac_op_valid]
@@ -142,7 +143,7 @@ theorem auth_op_auth_valid_iff : ✓[SI] (auth (SI := SI) dq₁ L₁ • auth dq
 
 @[rocq_alias gset_bij_auth_op_valid]
 theorem auth_one_op_auth_one_valid_iff :
-    ✓[SI] ((auth (.own 1) L₁ : SetBij (SI := SI) S) • auth (.own 1) L₂) ↔ False := by
+    ✓[SI] ((auth (.own 1) L₁ : SetBij SI S) • auth (.own 1) L₂) ↔ False := by
   rw [auth_op_auth_eq]
   exact ⟨fun h => View.auth_one_op_auth_one_valid_iff.mp (valid_op_left h), False.elim⟩
 
@@ -159,14 +160,14 @@ theorem auth_one_op_elem_valid_iff : ✓[SI] (auth (.own 1) L • elem (SI := SI
   rw [auth_op_elem_valid_iff]; exact and_iff_right DFrac.valid_own_one
 
 @[rocq_alias gset_bij_elem_agree]
-theorem elem_agree (h : ✓[SI] ((elem a₁ b₁ • elem a₂ b₂) : SetBij (SI := SI) S)) : a₁ = a₂ ↔ b₁ = b₂ := by
+theorem elem_agree (h : ✓[SI] ((elem a₁ b₁ • elem a₂ b₂) : SetBij SI S)) : a₁ = a₂ ↔ b₁ = b₂ := by
   rw [elem, elem, frag_op_union, frag_valid_iff] at h
   obtain ⟨⟨_⟩, hsub, hbij⟩ := h 0
   exact SetBijective.eq_iff (hbij.mono hsub) (mem_union.mpr (.inl (mem_singleton.mpr rfl)))
     (mem_union.mpr (.inr (mem_singleton.mpr rfl)))
 
 theorem elem_ord_auth (h : (a, b) ∈ L) : elem (SI := SI) a b ≼ₒ[SI] auth dq L :=
-  Ordered.ord_trans (y := (◯V valid L : SetBij S))
+  Ordered.ord_trans (y := (◯V valid L : SetBij _ S))
     (frag_ord_of_ord <| (ord_iff_subset ..).mpr fun _ hx => mem_singleton.mp hx ▸ h)
     (ord_op_right ..)
 

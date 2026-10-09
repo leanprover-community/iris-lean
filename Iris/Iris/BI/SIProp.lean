@@ -272,10 +272,10 @@ instance instBIStepIndexed : BIStepIndexed SI (SiProp SI) where
 
 instance instBILaterFinite [SIdxFinite SI] : BILaterFinite (SiProp SI) where
   later_sExists_false n h := by
-    rcases SIdxFinite.finite_index n with rfl | ⟨m, rfl⟩
+    rcases SIdxFinite.finite_index n with rfl | ⟨m, hm⟩
     · exact .inl fun k hk => absurd hk (SIdx.not_lt_zero k)
-    · obtain ⟨P, hΦP, hPm⟩ := h m (SIdx.lt_succ_self m)
-      exact .inr ⟨_, ⟨P, rfl⟩, hΦP, fun _ hk => P.closed hPm (SIdx.lt_succ_r.mp hk)⟩
+    · obtain ⟨P, hΦP, hPm⟩ := h m hm.lt
+      exact .inr ⟨_, ⟨P, rfl⟩, hΦP, fun _ hk => P.closed hPm (hm.le_of_lt hk)⟩
   later_sep_1 _ h := ⟨fun k hk => (h k hk).1, fun k hk => (h k hk).2⟩
 
 end BIInstance
@@ -305,7 +305,11 @@ theorem later_holds {P : SiProp SI} {n : SI} :
 @[simp] theorem later_holds_zero {P : SiProp SI} : (iprop(▷ P) : SiProp SI).holds (0 : SI) ↔ True :=
   ⟨fun _ => trivial, fun _ k hk => absurd hk (SIdx.not_lt_zero k)⟩
 
-@[simp] theorem later_holds_succ {P : SiProp SI} {n : SI} :
+/-- Without step-indexing (`SIdxZero`), `▷ P` always holds: no index lies below `0`. -/
+theorem later_holds_of_zero [SIdxZero SI] {P : SiProp SI} {n : SI} : (iprop(▷ P) : SiProp SI).holds n :=
+  fun m hm => absurd (SIdxZero.all_0 n ▸ hm) (SIdx.not_lt_zero m)
+
+@[simp] theorem later_holds_succ [SIdxSucc SI] {P : SiProp SI} {n : SI} :
     (iprop(▷ P) : SiProp SI).holds (SIdx.succ n) ↔ P.holds n :=
   ⟨fun h => h n (SIdx.lt_succ_self n), fun h _ hk => P.closed h (SIdx.lt_succ_r.mp hk)⟩
 
@@ -463,12 +467,12 @@ theorem discrete_eq_internalEq [OFE SI A] (a b : A) [Idisc : Std.TCOr (DiscreteE
   | r => exact fun _ hab => (DiscreteE.discrete (hab.le SIdx.le_0_l).symm).symm
 
 @[rocq_alias siProp_primitive.later_equivI_1]
-theorem later_equiv_internalEq_mp [OFE SI A] (x y : A) :
+theorem later_equiv_internalEq_mp [SIdxSucc SI] [OFE SI A] (x y : A) :
     internalEq (SI := SI) (Later.next x) (Later.next y) ⊢ ▷ internalEq x y :=
   fun _ h => h
 
 @[rocq_alias siProp_primitive.later_equivI_2]
-theorem later_equiv_internalEq_mpr [OFE SI A] (x y : A) :
+theorem later_equiv_internalEq_mpr [SIdxSucc SI] [OFE SI A] (x y : A) :
     ▷ internalEq (SI := SI) x y ⊢ internalEq (Later.next x) (Later.next y) :=
   fun _ h => h
 
@@ -518,12 +522,18 @@ instance cmraValid_timeless [RA A] [ORA SI A] [ORA.Discrete SI A] {a : A} :
 @[rocq_alias siProp_primitive.pure_soundness]
 theorem pure_soundness {φ : Prop} (h : True ⊢@{SiProp SI} ⌜φ⌝) : φ := h (0 : SI) trivial
 
+@[rocq_alias siProp_primitive.exist_soundness]
+theorem exist_soundness [SIdxZero SI] {A : Sort _} {Φ : A → SiProp SI}
+    (h : True ⊢@{SiProp SI} ∃ x, Φ x) : ∃ x, True ⊢@{SiProp SI} Φ x :=
+  have ⟨x, hx⟩ := exists_holds.mp (h (0 : SI) trivial)
+  ⟨x, fun n _ => SIdxZero.all_0 n ▸ hx⟩
+
 @[rocq_alias siProp_primitive.internal_eq_soundness]
 theorem internalEq_soundness [OFE SI A] {x y : A} (h : True ⊢@{SiProp SI} internalEq x y) : x = y :=
   OFE.eq_dist_2 fun n => h n trivial
 
 @[rocq_alias siProp_primitive.later_soundness]
-theorem later_soundness {P : SiProp SI} (h : True ⊢ ▷ P) : True ⊢ P :=
+theorem later_soundness [SIdxSucc SI] {P : SiProp SI} (h : True ⊢ ▷ P) : True ⊢ P :=
   fun n _ => h (SIdx.succ n) trivial n (SIdx.lt_succ_self n)
 
 end SiProp

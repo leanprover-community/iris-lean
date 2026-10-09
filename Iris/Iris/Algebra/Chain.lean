@@ -202,7 +202,7 @@ theorem map_mk {β : Type v} [OFE SI β] (f : α -n>[SI] β) (c : Chain SI α) :
 #rocq_ignore chain_map_ne "Implicit in the type of `Completion.map`."
 
 @[rocq_alias chain_map_id]
-theorem map_id (x : Completion SI α) : map (SI := SI) OFE.Hom.id x = x := by
+theorem map_id (x : Completion SI α) : map OFE.Hom.id x = x := by
   induction x using ind with
   | mk c => simp only [map_mk, Chain.map_id]
 
@@ -244,7 +244,7 @@ instance instOFunctorCompletionOF (F : COFE.OFunctorPre SI) [COFE.OFunctor SI F]
   map_ne.ne _ _ _ hf _ _ hg :=
     NonExpansive.ne (f := Completion.map) (COFE.OFunctor.map_ne.ne hf hg)
   map_id x :=
-    (Completion.map_ext _ _ x fun y => COFE.OFunctor.map_id (SI := SI) y).trans (Completion.map_id x)
+    (Completion.map_ext _ _ x fun y => COFE.OFunctor.map_id y).trans (Completion.map_id x)
   map_comp f g f' g' x :=
     (Completion.map_ext _ _ x fun y => COFE.OFunctor.map_comp f g f' g' y).trans
       (Completion.map_comp _ _ x)

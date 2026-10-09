@@ -20,7 +20,7 @@ namespace Iris
 open BI ORA OFE Iris Iris.Std LawfulSet DisjointLeibnizSet COFE ProofMode
 
 abbrev NaInvF : OFunctorPre Nat :=
-  ProdOF (constOF CoPsetDisjL) (constOF (DisjointLeibnizSet PosSet))
+  ProdOF (constOF _ CoPsetDisjL) (constOF _ (DisjointLeibnizSet PosSet))
 
 @[rocq_alias na_invG]
 class NaInvG (GF : BundledGFunctors) where
@@ -40,10 +40,12 @@ instance instNaInvF_discreteE {α β : Type _} (x : DisjointLeibnizSet α) (y : 
 instance coreId_valid_empty_empty : CoreId ((valid (∅ : CoPset), valid (∅ : PosSet))) where
   core_id := by rfl
 
-instance isUnit_valid_empty_empty : IsUnit Nat ((valid (∅ : CoPset), valid (∅ : PosSet))) where
-  unit_valid := ⟨trivial, trivial⟩
+instance isRAUnit_valid_empty_empty : IsRAUnit ((valid (∅ : CoPset), valid (∅ : PosSet))) where
   unit_left_id := Prod.ext ucmra_unit_left_id ucmra_unit_left_id
   pcore_unit := coreId_valid_empty_empty.core_id
+
+instance isUnit_valid_empty_empty : IsUnit Nat ((valid (∅ : CoPset), valid (∅ : PosSet))) where
+  unit_valid := ⟨trivial, trivial⟩
 
 namespace NonAtomicInvariant
 

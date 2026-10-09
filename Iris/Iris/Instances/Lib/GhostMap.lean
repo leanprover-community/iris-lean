@@ -20,7 +20,7 @@ open Iris.Std HeapView PartialMap Iris.Algebra ORA BI ProofMode
 class GhostMapG (GF : BundledGFunctors)
     (K V : Type _) (H : outParam <| Type _ → Type _)
     [LawfulFiniteMap H K] where
-  elem : ElemG GF (constOF (HeapView (SI := Nat) K (Agree (DiscreteO V)) H))
+  elem : ElemG GF (constOF _ (HeapView Nat K (Agree (DiscreteO V)) H))
 
 attribute [reducible, instance] GhostMapG.elem
 

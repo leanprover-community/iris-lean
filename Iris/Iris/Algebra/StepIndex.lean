@@ -11,32 +11,51 @@ public import Iris.Std.Classes
 
 namespace Iris
 
+/-- `sn` is the successor of `n`: the least element above `n`. -/
+@[rocq_alias is_succ]
+structure IsSucc {I : Type u} [LT I] (n sn : I) : Prop where
+  lt : n < sn
+  least : ¬∃ p, n < p ∧ p < sn
+
 @[rocq_alias sidx, rocq_alias SIdxMixin]
 class SIdx (I : Type u) extends LT I, LE I, Zero I where
-  succ : I → I
   lt_trans : ∀ {n m p : I}, n < m → m < p → n < p
   lt_wf : WellFounded ((· < ·) : I → I → Prop)
   lt_trichotomyT : ∀ n m : I, n < m ⊕' n = m ⊕' m < n
   le_lteq : ∀ {m n : I}, n ≤ m ↔ n < m ∨ n = m
   not_lt_zero : ∀ n : I, ¬n < 0
-  lt_succ_self : ∀ n : I, n < succ n
-  succ_le_of_lt : ∀ {n m : I}, n < m → succ n ≤ m
-  weak_case : ∀ n : I, (Σ' m : I, n = succ m) ⊕' ∀ m : I, m < n → succ m < n
+  weak_case : ∀ n : I, (Σ' m : I, IsSucc m n) ⊕' ∀ m sm : I, m < n → IsSucc m sm → sm < n
+
+/-- There is no step-indexing: `0` is the only index. -/
+@[rocq_alias SIdxZero]
+class SIdxZero (I : Type u) [SIdx I] : Prop where
+  all_0 : ∀ n : I, n = 0
+
+/-- Finite step-indexing: no limit indices. Still allows no step-indexing (`SIdxZero`). -/
+@[rocq_alias SIdxFinite]
+class SIdxFinite (I : Type u) [SIdx I] : Prop where
+  finite_index : ∀ n : I, n = 0 ∨ ∃ m, IsSucc m n
+
+/-- A successor operation, so step-indexing is non-trivial. -/
+@[rocq_alias SIdxSucc]
+class SIdxSucc (I : Type u) [SIdx I] where
+  succ : I → I
+  succ_isSucc : ∀ n : I, IsSucc n (succ n)
 
 /-- The step-indexing successor operator. -/
+@[reducible] def SIdx.succ {I : Type u} [SIdx I] [SIdxSucc I] : I → I := SIdxSucc.succ
+
 scoped prefix:max "succᵢ" => SIdx.succ
 
-@[rocq_alias SIdxFinite]
-class SIdxFinite (I : Type u) [SIdx I] where
-  finite_index : ∀ n : I, n = 0 ∨ ∃ m, n = succᵢ m
+@[rocq_alias SIdx.zero_finite]
+instance (priority := low) SIdxZero.toFinite {I : Type u} [SIdx I] [SIdxZero I] : SIdxFinite I where
+  finite_index n := .inl (SIdxZero.all_0 n)
 
 #rocq_ignore SIdx.lt_trans "Lifting of mixin properties not required as they are part of the type class SIdx"
 #rocq_ignore SIdx.lt_wf "Lifting of mixin properties not required as they are part of the type class SIdx"
 #rocq_ignore SIdx.lt_trichotomy "Lifting of mixin properties not required as they are part of the type class SIdx"
 #rocq_ignore SIdx.le_lteq "Lifting of mixin properties not required as they are part of the type class SIdx"
 #rocq_ignore SIdx.nlt_0_r "Lifting of mixin properties not required as they are part of the type class SIdx"
-#rocq_ignore SIdx.lt_succ_diag_r "Lifting of mixin properties not required as they are part of the type class SIdx"
-#rocq_ignore SIdx.le_succ_l_2 "Lifting of mixin properties not required as they are part of the type class SIdx"
 #rocq_ignore SIdx.weak_case "Lifting of mixin properties not required as they are part of the type class SIdx"
 
 namespace SIdx
@@ -45,10 +64,6 @@ open Iris Iris.Std
 
 variable {I : Type u} [inst : SIdx I] {m n p : I}
 
-@[rocq_alias SIdx.lt_succ_diag_r']
-theorem lt_succ_diag_r' (h : n = succᵢ m) : m < n := by
-  subst h
-  exact inst.lt_succ_self m
 
 @[rocq_alias SIdx.inhabited]
 instance inhabited : Inhabited I where
@@ -147,10 +162,6 @@ theorem le_lt_trans (h1 : n ≤ m) (h2 : m < p) : n < p := by
 instance : Trans (· ≤ ·) (· < ·) ((· < ·) : I → I → Prop) where
   trans := le_lt_trans
 
-@[rocq_alias SIdx.le_succ_diag_r]
-theorem le_succ_diag_r : n ≤ succᵢ n := by
-  apply lt_le_incl
-  apply inst.lt_succ_self
 
 @[rocq_alias SIdx.le_ngt]
 theorem le_ngt : n ≤ m ↔ ¬ m < n := by
@@ -178,38 +189,6 @@ theorem le_neq : n < m ↔ n ≤ m ∧ n ≠ m := by
     apply h2
     exact le_antisymm h1 h3
 
-@[rocq_alias SIdx.le_succ_l]
-theorem le_succ_l : succᵢ n ≤ m ↔ n < m := by
-  constructor <;> intro h
-  · exact lt_le_trans (lt_succ_self n) h
-  · exact succ_le_of_lt h
-
-@[rocq_alias SIdx.lt_succ_r]
-theorem lt_succ_r : n < succᵢ m ↔ n ≤ m := by
-  constructor <;> intro h
-  · refine le_ngt.mpr ?_
-    intro h1
-    apply lt_irrefl n
-    apply lt_le_trans h
-    exact succ_le_of_lt h1
-  · exact le_lt_trans h <| inst.lt_succ_self m
-
-@[rocq_alias SIdx.succ_le_mono]
-theorem succ_le_mono : n ≤ m ↔ succᵢ n ≤ succᵢ m := by
-  rewrite [le_succ_l, lt_succ_r]; rfl
-
-@[rocq_alias SIdx.succ_lt_mono]
-theorem succ_lt_mono : n < m ↔ succᵢ n < succᵢ m := by
-  rewrite [lt_succ_r, le_succ_l]; rfl
-
-@[rocq_alias SIdx.succ_inj]
-theorem succ_inj (h : succᵢ n = succᵢ m) : n = m := by
-  apply le_antisymm <;> apply succ_le_mono.mpr <;> rw [h]
-
-@[rocq_alias SIdx.nlt_succ_r]
-theorem nlt_succ_r : ¬ m < succᵢ n ↔ n < m := by
-  rw [lt_succ_r, lt_nge]
-
 @[rocq_alias SIdx.le_0_l]
 theorem le_0_l : 0 ≤ n := le_ngt.mpr <| inst.not_lt_zero n
 
@@ -231,15 +210,6 @@ theorem neq_0_lt_0 : n ≠ 0 ↔ 0 < n := by
   · rintro h rfl
     exact inst.not_lt_zero 0 h
 
-@[rocq_alias SIdx.neq_succ_0]
-theorem neq_succ_0 : succᵢ n ≠ 0 := neq_0_lt_0.mpr <| lt_succ_r.mpr le_0_l
-
-@[rocq_alias SIdx.succ_neq]
-theorem succ_neq : n ≠ succᵢ n := by
-  intro h
-  have hlt := inst.lt_succ_self n
-  rw [← h] at hlt
-  exact lt_irrefl n hlt
 
 @[rocq_alias SIdx.eq_dec]
 instance (priority := low) eqDec : DecidableEq I := fun n m =>
@@ -282,9 +252,46 @@ instance (priority := low) (n m : I) : Decidable (n ≤ m) :=
     intro h'
     exact lt_irrefl m <| lt_le_trans h h'
 
+/-! ## Successors -/
+
+@[rocq_alias SIdx.is_succ_lt]
+theorem is_succ_lt {n sn : I} (h : IsSucc n sn) : n < sn := h.1
+
+@[rocq_alias SIdx.is_succ_0]
+theorem is_succ_0 {n : I} : ¬IsSucc n (0 : I) := fun h => inst.not_lt_zero n h.1
+
+@[rocq_alias SIdx.is_succ_gt_l]
+theorem is_succ_gt_l {n sn m : I} (h : IsSucc n sn) (hm : n < m) : sn ≤ m :=
+  le_ngt.mpr fun h' => h.2 ⟨m, hm, h'⟩
+
+@[rocq_alias SIdx.is_succ_lt_r]
+theorem is_succ_lt_r {n sn m : I} (h : IsSucc n sn) (hm : m < sn) : m ≤ n :=
+  le_ngt.mpr fun h' => h.2 ⟨m, h', hm⟩
+
+theorem _root_.Iris.IsSucc.le_of_lt {n sn m : I} (h : IsSucc n sn) (hm : m < sn) : m ≤ n := is_succ_lt_r h hm
+
+@[rocq_alias SIdx.is_succ_unique_l]
+theorem is_succ_unique_l {n sn₁ sn₂ : I} (h₁ : IsSucc n sn₁) (h₂ : IsSucc n sn₂) : sn₁ = sn₂ :=
+  le_antisymm (is_succ_gt_l h₁ h₂.1) (is_succ_gt_l h₂ h₁.1)
+
+@[rocq_alias SIdx.is_succ_unique_r]
+theorem is_succ_unique_r {n₁ n₂ sn : I} (h₁ : IsSucc n₁ sn) (h₂ : IsSucc n₂ sn) : n₁ = n₂ :=
+  le_antisymm (is_succ_lt_r h₂ h₁.1) (is_succ_lt_r h₁ h₂.1)
+
+/-- Every index below some other index has a successor (the least index above it). -/
+theorem exists_isSucc_of_lt {m n : I} (h : m < n) : ∃ sm, IsSucc m sm := by
+  induction n using inst.lt_wf.induction with
+  | h k ih =>
+    by_cases hp : ∃ p, m < p ∧ p < k
+    · obtain ⟨p, hmp, hpk⟩ := hp
+      exact ih p hpk hmp
+    · exact ⟨k, h, hp⟩
+
+/-! ## Limit indices -/
+
 @[rocq_alias SIdx.limit]
-structure Limit (n : I) [SIdx I] where
-  succ_lt : ∀ m, m < n → succᵢ m < n
+structure Limit (n : I) [SIdx I] : Prop where
+  gt_succ : ∀ m sm, m < n → IsSucc m sm → sm < n
   ne_zero : n ≠ 0
 
 @[simp, rocq_alias SIdx.limit_0]
@@ -295,31 +302,112 @@ theorem limit_0 : ¬Limit (0 : I) := by
 @[rocq_alias SIdx.limit_lt_0]
 theorem Limit.limit_lt_0 (h : Limit n) : 0 < n := neq_0_lt_0.mp h.ne_zero
 
-@[simp, rocq_alias SIdx.limit_S]
-theorem limit_S (n : I) : ¬Limit (succᵢ n) := by
-  intro h
-  apply lt_irrefl (succᵢ n)
-  apply h.succ_lt n
-  exact lt_succ_self n
+/-- Below a limit index, every index has a successor that is still below the limit. -/
+theorem Limit.exists_succ_lt (h : Limit n) (hm : m < n) : ∃ sm, IsSucc m sm ∧ sm < n :=
+  let ⟨sm, hs⟩ := exists_isSucc_of_lt hm
+  ⟨sm, hs, h.gt_succ m sm hm hs⟩
+
+@[rocq_alias SIdx.limit_is_succ]
+theorem limit_is_succ {n sn : I} (hs : IsSucc n sn) : ¬Limit sn :=
+  fun h => lt_irrefl sn (h.gt_succ n sn hs.1 hs)
 
 @[rocq_alias SIdx.limit_finite]
-theorem limit_finite [inst : SIdxFinite I] (n : I) : ¬Limit n := by
+theorem limit_finite [SIdxFinite I] (n : I) : ¬Limit n := by
   intro h
-  rcases SIdxFinite.finite_index n with (h0 | h0)
+  rcases SIdxFinite.finite_index n with h0 | ⟨m, hm⟩
   · exact h.ne_zero h0
-  · rcases h0 with ⟨m, hm⟩
-    apply limit_S m
-    subst hm
-    assumption
+  · exact limit_is_succ hm h
 
 @[rocq_alias SIdx.case]
-def case (n : I) : (n = 0) ⊕' (Σ' m, n = succᵢ m) ⊕' Limit n :=
+def case (n : I) : (n = 0) ⊕' (Σ' m, IsSucc m n) ⊕' Limit n :=
   if h : n = 0 then .inl h
   else
     match inst.weak_case n with
     | .inl ⟨m, hm⟩ => .inr <| .inl ⟨m, hm⟩
     | .inr hlim => .inr <| .inr ⟨hlim, h⟩
 
+/-! ## Step indices with a successor operation -/
+
+section succ
+variable [SIdxSucc I]
+
+@[rocq_alias SIdx.lt_succ_diag_r]
+theorem lt_succ_self (n : I) : n < succᵢ n := (SIdxSucc.succ_isSucc n).1
+
+@[rocq_alias SIdx.le_succ_l_2]
+theorem succ_le_of_lt {n m : I} (h : n < m) : succᵢ n ≤ m := is_succ_gt_l (SIdxSucc.succ_isSucc n) h
+
+@[rocq_alias SIdx.is_succ_S]
+theorem is_succ_S {n sn : I} : IsSucc n sn ↔ sn = succᵢ n :=
+  ⟨fun h => is_succ_unique_l h (SIdxSucc.succ_isSucc n), fun h => h ▸ SIdxSucc.succ_isSucc n⟩
+
+@[rocq_alias SIdx.lt_succ_diag_r']
+theorem lt_succ_diag_r' (h : n = succᵢ m) : m < n := by
+  subst h
+  exact lt_succ_self m
+@[rocq_alias SIdx.le_succ_diag_r]
+theorem le_succ_diag_r : n ≤ succᵢ n := by
+  apply lt_le_incl
+  apply lt_succ_self
+@[rocq_alias SIdx.le_succ_l]
+theorem le_succ_l : succᵢ n ≤ m ↔ n < m := by
+  constructor <;> intro h
+  · exact lt_le_trans (lt_succ_self n) h
+  · exact succ_le_of_lt h
+
+@[rocq_alias SIdx.lt_succ_r]
+theorem lt_succ_r : n < succᵢ m ↔ n ≤ m := by
+  constructor <;> intro h
+  · refine le_ngt.mpr ?_
+    intro h1
+    apply lt_irrefl n
+    apply lt_le_trans h
+    exact succ_le_of_lt h1
+  · exact le_lt_trans h <| lt_succ_self m
+
+@[rocq_alias SIdx.succ_le_mono]
+theorem succ_le_mono : n ≤ m ↔ succᵢ n ≤ succᵢ m := by
+  rewrite [le_succ_l, lt_succ_r]; rfl
+
+@[rocq_alias SIdx.succ_lt_mono]
+theorem succ_lt_mono : n < m ↔ succᵢ n < succᵢ m := by
+  rewrite [lt_succ_r, le_succ_l]; rfl
+
+@[rocq_alias SIdx.succ_inj]
+theorem succ_inj (h : succᵢ n = succᵢ m) : n = m := by
+  apply le_antisymm <;> apply succ_le_mono.mpr <;> rw [h]
+
+@[rocq_alias SIdx.nlt_succ_r]
+theorem nlt_succ_r : ¬ m < succᵢ n ↔ n < m := by
+  rw [lt_succ_r, lt_nge]
+
+@[rocq_alias SIdx.neq_succ_0]
+theorem neq_succ_0 : succᵢ n ≠ 0 := neq_0_lt_0.mpr <| lt_succ_r.mpr le_0_l
+@[rocq_alias SIdx.succ_neq]
+theorem succ_neq : n ≠ succᵢ n := by
+  intro h
+  have hlt := lt_succ_self n
+  rw [← h] at hlt
+  exact lt_irrefl n hlt
+
+
+@[rocq_alias SIdx.limit_alt]
+theorem limit_alt : Limit n ↔ (∀ m, m < n → succᵢ m < n) ∧ n ≠ 0 :=
+  ⟨fun h => ⟨fun m hm => h.gt_succ m _ hm (SIdxSucc.succ_isSucc m), h.ne_zero⟩,
+   fun ⟨h, h0⟩ => ⟨fun m _ hm hs => is_succ_S.mp hs ▸ h m hm, h0⟩⟩
+
+theorem Limit.succ_lt (h : Limit n) : ∀ m, m < n → succᵢ m < n :=
+  (limit_alt.mp h).1
+
+@[simp, rocq_alias SIdx.limit_succ]
+theorem limit_S (n : I) : ¬Limit (succᵢ n) := limit_is_succ (SIdxSucc.succ_isSucc n)
+
+@[rocq_alias SIdx.case_succ]
+def case_succ (n : I) : (n = 0) ⊕' (Σ' m, n = succᵢ m) ⊕' Limit n :=
+  match case n with
+  | .inl h => .inl h
+  | .inr (.inl ⟨m, hm⟩) => .inr (.inl ⟨m, is_succ_S.mp hm⟩)
+  | .inr (.inr h) => .inr (.inr h)
 @[rocq_alias SIdx.rec]
 def rec' {P : I → Sort v}
     (s : P 0)
@@ -327,7 +415,7 @@ def rec' {P : I → Sort v}
     (lim : ∀ n, Limit n → (∀ m, m < n → P m) → P n) :
     ∀ n, P n :=
   WellFounded.fix inst.lt_wf fun n IH =>
-    match SIdx.case n with
+    match SIdx.case_succ n with
     | .inl EQ => EQ ▸ s
     | .inr <| .inl ⟨m, EQ⟩ => EQ ▸ f m (IH m (lt_succ_diag_r' EQ))
     | .inr <| .inr Hlim => lim n Hlim IH
@@ -336,7 +424,7 @@ def rec' {P : I → Sort v}
 theorem rec_unfold {P : I → Sort v} (s : P 0) (f : ∀ n, P n → P (succᵢ n))
     (lim : ∀ n, Limit n → (∀ m, m < n → P m) → P n) (n : I) :
     rec' s f lim n =
-      match SIdx.case n with
+      match SIdx.case_succ n with
       | .inl EQ => EQ ▸ s
       | .inr (.inl ⟨m, EQ⟩) => EQ ▸ f m (rec' s f lim m)
       | .inr (.inr Hlim) => lim n Hlim (fun m _ => rec' s f lim m) :=
@@ -347,7 +435,7 @@ theorem rec_zero {P : I → Sort v} (s : P 0) (f : ∀ n, P n → P (succᵢ n))
     (lim : ∀ n, Limit n → (∀ m, m < n → P m) → P n) :
     rec' s f lim 0 = s := by
   rw [rec_unfold s f lim 0]
-  cases SIdx.case (0 : I) with
+  cases SIdx.case_succ (0 : I) with
   | inl EQ => rfl
   | inr h =>
     cases h with
@@ -361,7 +449,7 @@ theorem rec_succ {P : I → Sort v} (s : P 0) (f : ∀ n, P n → P (succᵢ n))
     (lim : ∀ n, Limit n → (∀ m, m < n → P m) → P n) (n : I) :
     rec' s f lim (succᵢ n) = f n (rec' s f lim n) := by
   rw [rec_unfold s f lim (succᵢ n)]
-  cases SIdx.case (succᵢ n) with
+  cases SIdx.case_succ (succᵢ n) with
   | inl EQ => exact absurd EQ neq_succ_0
   | inr h =>
     cases h with
@@ -376,7 +464,7 @@ theorem rec_lim {P : I → Sort v} (s : P 0) (f : ∀ n, P n → P (succᵢ n))
     (lim : ∀ n, Limit n → (∀ m, m < n → P m) → P n) (n : I) (Hn : Limit n) :
     rec' s f lim n = lim n Hn (fun m _ => rec' s f lim m) := by
   rw [rec_unfold s f lim n]
-  cases SIdx.case n with
+  cases SIdx.case_succ n with
   | inl EQ => exact absurd EQ Hn.ne_zero
   | inr h =>
     cases h with
@@ -384,6 +472,9 @@ theorem rec_lim {P : I → Sort v} (s : P 0) (f : ∀ n, P n → P (succᵢ n))
       obtain ⟨m, EQ⟩ := h
       exact absurd (EQ ▸ Hn) (limit_S m)
     | inr Hlim => rfl
+
+
+end succ
 
 #rocq_ignore SIdx.rec_lim_ext
   "Proof irrelevance already handled automatically by Lean for the theorems \

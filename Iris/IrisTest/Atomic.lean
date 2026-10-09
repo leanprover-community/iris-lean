@@ -189,7 +189,7 @@ variable {Eo Ei : CoPset} {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → 
   Tests `iauintro` for reducing `atomic_update Eo Ei α β β` to `atomic_acc Eo Ei α (α x) β β`.
   Tests `iaaccintro` with `α x` for abort and `β x y` for commit.
 -/
-example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_update (SI := Nat) Eo Ei α β β := by
+example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_update Nat Eo Ei α β β := by
   iintro Hα
   iauintro
   iaaccintro Hα

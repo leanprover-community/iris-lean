@@ -998,7 +998,7 @@ instance internalEq_plain [BIStepIndexed SI PROP] [Sbi SI PROP] [BIPlainlySbi SI
 
 @[rocq_alias prop_ext]
 theorem prop_ext [BIStepIndexed SI PROP] [Sbi SI PROP] [BIPlainlySbi SI PROP] (P Q : PROP) : iprop(P ≡[SI] Q ⊣⊢ ■ (P ∗-∗ Q)) :=
-  have ⟨mp, mpr⟩:= prop_ext_siEmpValid_equiv (SI := SI) P Q
+  have ⟨mp, mpr⟩:= prop_ext_siEmpValid_equiv P Q
   plainly_eq_siPure_siEmpValid (SI := SI) (PROP := PROP) ▸ ⟨siPure_mono mp, siPure_mono mpr⟩
 
 #rocq_ignore prop_ext_2 "Subsumed by `prop_ext_symm`"

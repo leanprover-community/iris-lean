@@ -345,34 +345,34 @@ instance internalEq_persistent {A : Type _} [OFE SI A] (a b : A) :
 /-! ## Equality under a later -/
 
 @[rocq_alias later_equivI_1]
-theorem later_equivI_mp {A : Type _} [OFE SI A] (x y : A) :
+theorem later_equivI_mp [SIdxSucc SI] {A : Type _} [OFE SI A] (x y : A) :
     Later.next x ≡[SI] Later.next y ⊢@{PROP} ▷ x ≡[SI] y :=
   (siPure_mono (SiProp.later_equiv_internalEq_mp x y)).trans siPure_later.mp
 
 @[rocq_alias later_equivI_2]
-theorem later_equivI_mpr {A : Type _} [OFE SI A] (x y : A) :
+theorem later_equivI_mpr [SIdxSucc SI] {A : Type _} [OFE SI A] (x y : A) :
     ▷ x ≡[SI] y ⊢@{PROP} Later.next x ≡[SI] Later.next y :=
   siPure_later.mpr.trans (siPure_mono (SiProp.later_equiv_internalEq_mpr x y))
 
 @[rocq_alias later_equivI]
-theorem later_equivI {A : Type _} [OFE SI A] (x y : A) :
+theorem later_equivI [SIdxSucc SI] {A : Type _} [OFE SI A] (x y : A) :
     Later.next x ≡[SI] Later.next y ⊣⊢@{PROP} ▷ x ≡[SI] y :=
   ⟨later_equivI_mp x y, later_equivI_mpr x y⟩
 
 @[rocq_alias f_equivI_contractive]
-theorem f_equivI_contractive {A B : Type _} [OFE SI A] [OFE SI B] (f : A → B) [hf : Contractive SI f]
+theorem f_equivI_contractive [SIdxSucc SI] {A B : Type _} [OFE SI A] [OFE SI B] (f : A → B) [hf : Contractive SI f]
     (x y : A) : ▷ x ≡[SI] y ⊢@{PROP} f x ≡[SI] f y := by
   letI _ : NonExpansive SI (f ∘ Later.car) := ⟨fun {_ _ _} h => hf.distLater_dist h⟩
   exact (later_equivI_mpr x y).trans <| of_internalEquiv_ne (f ∘ Later.car)
 
 @[rocq_alias internal_eq_rewrite_contractive]
-theorem internalEq_rewrite_contractive {A : Type _} [OFE SI A] (a b : A) (Ψ : A → PROP)
+theorem internalEq_rewrite_contractive [SIdxSucc SI] {A : Type _} [OFE SI A] (a b : A) (Ψ : A → PROP)
     [Contractive SI Ψ] :
     ▷ a ≡[SI] b ⊢ Ψ a → Ψ b :=
   (f_equivI_contractive Ψ a b).trans (rewrite id)
 
 @[rocq_alias internal_eq_rewrite_contractive']
-theorem internalEq_rewrite_contractive' {A : Type _} [OFE SI A] (a b : A) (Ψ : A → PROP)
+theorem internalEq_rewrite_contractive' [SIdxSucc SI] {A : Type _} [OFE SI A] (a b : A) (Ψ : A → PROP)
     [Contractive SI Ψ] (Heq : P ⊢ ▷ a ≡[SI] b) (HΨa : P ⊢ Ψ a) : P ⊢ Ψ b :=
   (and_intro .rfl HΨa).trans <|
     (and_mono_left Heq).trans <| imp_elim (internalEq_rewrite_contractive a b Ψ)
@@ -484,13 +484,13 @@ theorem ne_2_internalEq {A B C : Type _} [OFE SI A] [OFE SI B] [OFE SI C] (f : A
       internalEq_entails.mp (prod_equivI _ _ |>.1 |>.trans (hf ..)) _ (dist_prod_ext hx hy)⟩
 
 @[rocq_alias contractive_internal_eq]
-theorem contractive_internalEq {A B : Type _} [OFE SI A] [OFE SI B] (f : A → B) :
+theorem contractive_internalEq [SIdxSucc SI] {A B : Type _} [OFE SI A] [OFE SI B] (f : A → B) :
     Contractive SI f ↔ (∀ x₁ x₂, ▷ (x₁ ≡[SI] x₂) ⊢@{PROP} f x₁ ≡[SI] f x₂) :=
   ⟨fun _ x₁ x₂ => f_equivI_contractive f x₁ x₂,
    fun hf => ⟨fun {n : SI} {x y} h => internalEq_entails.mp ((later_equivI_mp x y).trans (hf x y)) n h⟩⟩
 
 @[rocq_alias sbi_later_contractive]
-instance sbi_later_contractive : BILaterContractive SI PROP where
+instance sbi_later_contractive [SIdxSucc SI] : BILaterContractive SI PROP where
   toContractive := (contractive_internalEq (PROP := PROP) BIBase.later).mpr
     (fun P Q => later_equivI_prop_mpr P Q)
 

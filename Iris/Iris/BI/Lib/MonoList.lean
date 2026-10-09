@@ -28,7 +28,7 @@ open BI MonoList
 
 @[rocq_alias mono_listG]
 class MonoListG (GF : BundledGFunctors) (α : Type _) where
-  elem : ElemG GF (constOF (MonoList (DiscreteO α)))
+  elem : ElemG GF (constOF _ (MonoList (DiscreteO α)))
 
 attribute [reducible, instance] MonoListG.elem
 
@@ -235,7 +235,7 @@ theorem idx_own_get (γ : GName) {l : List α} (i : Nat) (a : α) (h : l[i]? = s
 theorem own_alloc (l : List α) :
     ⊢@{IProp GF} |==> ∃ γ, (γ ↪●ML l) ∗ (γ ↪◯ML l) := by
   unfold auth_own lb_own
-  imod iOwn_alloc (F := constOF (MonoList (DiscreteO α)))
+  imod iOwn_alloc (F := constOF _ (MonoList (DiscreteO α)))
       (●ML (l.map DiscreteO.mk) • ◯ML (l.map DiscreteO.mk)) with ⟨%γ, H⟩
   · exact (both_valid ..).mpr List.prefix_rfl
   imodintro

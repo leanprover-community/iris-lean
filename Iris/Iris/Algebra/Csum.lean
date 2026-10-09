@@ -374,13 +374,13 @@ instance instORA : ORA SI (Csum α β) where
       exact increasing_inr_iff.mpr ((increasing_inr_iff.mp h).of_ordNR (ordNR_inr h'))
     | inl _, inr _, h' | inr _, inl _, h' | invalid, inl _, h' | invalid, inr _, h' =>
       exact h'.elim (·.elim) (·.elim)
-  ordN_extend {n : SI} {x y} v h := by
+  ordN_extend {n : SI} {sn} {x y} hs v h := by
     match x, y, h with
     | inl _, inl _, h =>
-      obtain ⟨z, hz, ez⟩ := ordN_extend v h
+      obtain ⟨z, hz, ez⟩ := ordN_extend hs v h
       exact ⟨inl z, hz, ez⟩
     | inr _, inr _, h =>
-      obtain ⟨z, hz, ez⟩ := ordN_extend v h
+      obtain ⟨z, hz, ez⟩ := ordN_extend hs v h
       exact ⟨inr z, hz, ez⟩
     | _, invalid, _ => exact v.elim
     | inl _, inr _, h | inr _, inl _, h | invalid, inl _, h | invalid, inr _, h => exact h.elim

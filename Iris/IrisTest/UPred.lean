@@ -19,76 +19,52 @@ section
 variable [URA M] [UCMRA Nat M] (a b : M) (c : M) [CoreId c]
 
 /- Tests `fromSep_ownM`. -/
-/-- info:
-  solution: FromSep (ownM (a • b)) (ownM a) (ownM b),
-  new goals: []
--/
+/-- info: solution: FromSep (ownM Nat (a • b)) (ownM Nat a) (ownM Nat b), new goals: [] -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth FromSep (ownM (SI := Nat) (a • b)) _ _
+#ipm_synth FromSep (ownM Nat (a • b)) _ _
 
 /- Tests `intoSep_ownM`. -/
-/-- info:
-  solution: IntoSep (ownM (a • b)) (ownM a) (ownM b),
-  new goals: []
--/
+/-- info: solution: IntoSep (ownM Nat (a • b)) (ownM Nat a) (ownM Nat b), new goals: [] -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth IntoSep (ownM (SI := Nat) (a • b)) _ _
+#ipm_synth IntoSep (ownM Nat (a • b)) _ _
 
 /- Tests `intoAnd_ownM` (which requires an affine algebra). -/
-/-- info:
-  solution: IntoAnd p (ownM (a • b)) (ownM a) (ownM b),
-  new goals: []
--/
+/-- info: solution: IntoAnd p (ownM Nat (a • b)) (ownM Nat a) (ownM Nat b), new goals: [] -/
 #guard_msgs (whitespace := lax) in
-variable (p : Bool) [ORA.Affine (SI := Nat) M] in
-#ipm_synth IntoAnd p (ownM (SI := Nat) (a • b)) _ _
+variable (p : Bool) [ORA.Affine Nat M] in
+#ipm_synth IntoAnd p (ownM Nat (a • b)) _ _
 
 /-
   Using `combineSepGives_ownM` along with `combineSepAs_intuitionistically`.
   The instance `combineSepAs_ownM` has a higher priority than `combineSepAs_default`.
 -/
-/-- info:
-  solution: CombineSepAs iprop(□ ownM a) iprop(□ ownM b) iprop(□ ownM (a • b)),
-  new goals: []
--/
+/-- info: solution: CombineSepAs iprop(□ ownM Nat a) iprop(□ ownM Nat b) iprop(□ ownM Nat (a • b)), new goals: [] -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth CombineSepAs iprop(□ ownM (SI := Nat) a) iprop(□ ownM b) _
+#ipm_synth CombineSepAs iprop(□ ownM Nat a) iprop(□ ownM _ b) _
 
 /- Tests `combineSepGives_ownM`. -/
-/-- info:
-  solution: CombineSepGives (ownM a) (ownM b) iprop(✓[Nat] a • b),
-  new goals: []
--/
+/-- info: solution: CombineSepGives (ownM Nat a) (ownM Nat b) iprop(✓[Nat] a • b), new goals: [] -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth CombineSepGives (ownM (SI := Nat) a) (ownM b) _
+#ipm_synth CombineSepGives (ownM Nat a) (ownM _ b) _
 
 /- Using `combineSepGives_ownM` along with `combineSepGives_intuitionistically`. -/
-/-- info:
-  solution: CombineSepGives iprop(□ ownM a) iprop(□ ownM b) iprop(✓[Nat] a • b),
-  new goals: []
--/
+/-- info: solution: CombineSepGives iprop(□ ownM Nat a) iprop(□ ownM Nat b) iprop(✓[Nat] a • b), new goals: [] -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth CombineSepGives iprop(□ ownM (SI := Nat) a) iprop(□ ownM b) _
+#ipm_synth CombineSepGives iprop(□ ownM Nat a) iprop(□ ownM _ b) _
 
 /-
   Tests `intoSep_ownM` with `CoreId c` (and thus `TCOr (CoreId a) (CoreId c)`),
   along with `isOp_pair_core_id_r`.
 -/
-/-- info:
-  solution: IntoSep (ownM (a • b, c)) (ownM (a, c)) (ownM (b, c)),
-  new goals: []
--/
+/-- info: solution: IntoSep (ownM Nat (a • b, c)) (ownM Nat (a, c)) (ownM Nat (b, c)), new goals: [] -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth IntoSep (ownM (SI := Nat) ((a • b, c) : M × M)) _ _
--- expect: (ownM (SI := Nat) (a, c)) ∗ (ownM (b, c))   [isOp_pair_core_id_r]
+#ipm_synth IntoSep (ownM Nat ((a • b, c) : M × M)) _ _
+-- expect: (ownM (a, c)) ∗ (ownM (b, c))   [isOp_pair_core_id_r]
 
 /- Tests `intoSep_ownM` along with `isOp_pair`. -/
-/-- info:
-  solution: IntoSep (ownM (a • b, a • b)) (ownM (a, a)) (ownM (b, b)),
-  new goals: []
--/
+/-- info: solution: IntoSep (ownM Nat (a • b, a • b)) (ownM Nat (a, a)) (ownM Nat (b, b)), new goals: [] -/
 #guard_msgs (whitespace := lax) in
-#ipm_synth IntoSep (ownM (SI := Nat) ((a • b, a • b) : M × M)) _ _
+#ipm_synth IntoSep (ownM Nat ((a • b, a • b) : M × M)) _ _
 
 end
 

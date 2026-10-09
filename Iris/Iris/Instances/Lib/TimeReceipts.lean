@@ -19,7 +19,7 @@ open BI ProofMode Algebra
 
 @[rocq_alias time_receiptGpreS]
 class TimeReceiptGpreS (GF : BundledGFunctors) where
-  elem : ElemG GF (constOF (TimeReceipt (SI := Nat)))
+  elem : ElemG GF (constOF _ (TimeReceipt Nat))
 
 attribute [reducible, instance] TimeReceiptGpreS.elem
 
@@ -41,7 +41,7 @@ variable {GF : BundledGFunctors} [TR : TimeReceiptGS GF]
 /-- Ownership of `n` exclusive time receipts. Use it through the notation `⧖+ n`. -/
 @[rocq_alias time_receipt_excl]
 def excl (n : Nat) : IProp GF :=
-  iOwn (E := TR.elem) TR.name (fragExcl n)
+  iOwn (E := TR.elem) TR.name (fragExcl _ n)
 
 #rocq_ignore time_receipt_excl_def "Not needed"
 #rocq_ignore time_receipt_excl_aux "Not needed"
@@ -50,7 +50,7 @@ def excl (n : Nat) : IProp GF :=
 /-- Ownership of a persistent time receipt for `n`. Use it through the notation `⧖□ n`. -/
 @[rocq_alias time_receipt_pers]
 def pers (n : Nat) : IProp GF :=
-  iOwn (E := TR.elem) TR.name (fragPers n)
+  iOwn (E := TR.elem) TR.name (fragPers _ n)
 
 #rocq_ignore time_receipt_pers_def "Not needed"
 #rocq_ignore time_receipt_pers_aux "Not needed"
@@ -86,11 +86,11 @@ instance {n : Nat} : Persistent (PROP := IProp GF) (⧖□ n) :=
 
 @[rocq_alias time_receipt_excl_split]
 theorem excl_split (n₁ n₂ : Nat) : ⧖+ (n₁ + n₂) ⊣⊢@{IProp GF} ⧖+ n₁ ∗ ⧖+ n₂ :=
-  iOwn_op (E := TR.elem) (a1 := fragExcl n₁) (a2 := fragExcl n₂)
+  iOwn_op (E := TR.elem) (a1 := fragExcl _ n₁) (a2 := fragExcl _ n₂)
 
 @[rocq_alias time_receipt_pers_split]
 theorem pers_split (n₁ n₂ : Nat) : ⧖□ (max n₁ n₂) ⊣⊢@{IProp GF} ⧖□ n₁ ∗ ⧖□ n₂ :=
-  iOwn_op (E := TR.elem) (a1 := fragPers n₁) (a2 := fragPers n₂)
+  iOwn_op (E := TR.elem) (a1 := fragPers _ n₁) (a2 := fragPers _ n₂)
 
 @[rocq_alias time_receipt_excl_zero]
 theorem excl_zero : ⊢@{IProp GF} |==> ⧖+ 0 :=

@@ -25,7 +25,7 @@ open Iris.Std ORA BI ProofMode BigSepS LawfulSet SetBij
 @[rocq_alias gset_bijG]
 class SetBijG (GF : BundledGFunctors) (A B : Type _) (S : outParam (Type _))
     [LawfulSet S (A × B)] where
-  elem : ElemG GF (constOF (SetBij (SI := Nat) S))
+  elem : ElemG GF (constOF _ (SetBij Nat S))
 
 attribute [reducible, instance] SetBijG.elem
 
@@ -90,7 +90,7 @@ instance (q : Qp) : AsFractional (PROP := IProp GF) (γ ↪●BIJ{.own q} L)
   as_fractional_fractional := inferInstance
 
 /-- Turn the internal validity of a composite `SetBij` resource into a pure fact. -/
-private theorem cmraValid_op_pure {a₁ a₂ : SetBij S} {φ : Prop} (h : ✓[Nat] (a₁ • a₂) → φ) :
+private theorem cmraValid_op_pure {a₁ a₂ : SetBij _ S} {φ : Prop} (h : ✓[Nat] (a₁ • a₂) → φ) :
     iOwn (E := SetBijG.elem) γ a₁ ∗ iOwn (E := SetBijG.elem) γ a₂ ⊢@{IProp GF} ⌜φ⌝ := by
   iintro H
   icases iOwn_cmraValid_op $$ H with %Hv

@@ -33,6 +33,8 @@ section BIInstance
   sep P Q        σ := ∃ σ1 σ2, σ = σ1 ∪ σ2 ∧ σ1 || σ2 ∧ P σ1 ∧ Q σ2
   wand P Q       σ := ∀ σ', σ || σ' → P σ' → Q (σ ∪ σ')
   persistently P _ := P ∅
+  -- The step index is `Unit` (no step-indexing): there is no index below `0`, so `▷ P` is `True`,
+  -- exactly as in `SiProp Unit` (`SiProp.later_holds_of_zero`).
   later _        _ := True
 
 attribute [local instance] instBIBaseHeapProp
@@ -47,7 +49,7 @@ instance heapPropPreorder : Std.IsPreorder (HeapProp Val) where
     apply h_xy σ
     exact h_x
 
-instance : COFE Nat (HeapProp Val) := COFE.ofDiscrete _
+instance : COFE Unit (HeapProp Val) := COFE.ofDiscrete _
 
 instance : BI (HeapProp Val) where
   toBIBase := instBIBaseHeapProp
@@ -261,7 +263,7 @@ instance : BI (HeapProp Val) where
   later_persistently := ⟨fun _ _ => trivial, fun _ _ => trivial⟩
   later_false_em _ _ := .inl trivial
 
-instance : BIStepIndexed Nat (HeapProp Val) where
+instance : BIStepIndexed Unit (HeapProp Val) where
   and_ne          := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩
   or_ne           := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩
   imp_ne          := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩

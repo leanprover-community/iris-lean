@@ -50,7 +50,7 @@ class genHeapPreS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _
     [Std.LawfulFiniteMap H L] where
   heap : GhostMapG GF L V H
   metaInfo : GhostMapG GF L GName H
-  metaData : ElemG GF (constOF MetaUR)
+  metaData : ElemG GF (constOF _ MetaUR)
 
 attribute [reducible, instance] genHeapPreS.heap
 attribute [reducible, instance] genHeapPreS.metaInfo

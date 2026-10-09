@@ -25,11 +25,12 @@ open OFE ORA DFrac
 
 namespace DFracAgree
 
+variable (SI) in
 @[nolint unusedArguments, rocq_alias dfrac_agreeR]
 abbrev DFracAgreeR (A : Type _) [OFE SI A] := DFrac × Agree A
 
 @[rocq_alias to_dfrac_agree]
-def mk [OFE SI A] (d : DFrac) (a : A) : DFracAgreeR (SI := SI) A := (d, toAgree a)
+def mk [OFE SI A] (d : DFrac) (a : A) : DFracAgreeR SI A := (d, toAgree a)
 
 variable {A : Type _} [OFE SI A]
 
@@ -37,7 +38,7 @@ instance mk_discarded_coreId {a : A} : CoreId (mk (SI := SI) .discard a) :=
   inferInstanceAs (CoreId (DFrac.discard, toAgree a))
 
 @[rocq_alias to_dfrac_agree_ne]
-instance mk_ne {d : DFrac} : NonExpansive SI (mk (SI := SI) d : A → DFracAgreeR A) where
+instance mk_ne {d : DFrac} : NonExpansive SI (mk (SI := SI) d : A → DFracAgreeR _ A) where
   ne _ _ _ h := ⟨.rfl, NonExpansive.ne (f := toAgree) h⟩
 
 #rocq_ignore to_dfrac_agree_proper "Derivable from mk_ne with NonExpansive.eqv"
@@ -132,7 +133,7 @@ theorem unpersist {a : A} :
 namespace Frac
 
 @[rocq_alias to_frac_agree]
-def mk [OFE SI A] (q : Qp) (a : A) : DFracAgreeR (SI := SI) A := DFracAgree.mk (.own q) a
+def mk [OFE SI A] (q : Qp) (a : A) : DFracAgreeR SI A := DFracAgree.mk (.own q) a
 
 variable {A : Type _} [OFE SI A]
 
@@ -178,7 +179,7 @@ end Frac
 
 @[rocq_alias dfrac_agreeRF]
 abbrev DFracAgreeRF (T : COFE.OFunctorPre SI) : COFE.OFunctorPre SI :=
-  ProdOF (constOF (SI := SI) DFrac) (AgreeRF T)
+  ProdOF (constOF SI DFrac) (AgreeRF T)
 
 #rocq_ignore dfrac_agreeRF_contractive "Found by typeclass inference"
 

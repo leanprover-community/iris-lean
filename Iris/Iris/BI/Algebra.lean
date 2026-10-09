@@ -54,7 +54,7 @@ open BI Iris.Std BIBase.BiEntails
 
 @[rocq_alias option_validI]
 theorem option_validI [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [RA A] [ORA SI A] {mx : Option A} :
-  ✓[SI] mx ⊣⊢@{PROP} mx.elim iprop(True) (internalCmraValid (SI := SI)) := by
+  ✓[SI] mx ⊣⊢@{PROP} mx.elim iprop(True) (internalCmraValid SI) := by
   cases mx <;> simp only [Option.elim] <;> sbi_unfold <;> intro _ <;> exact .rfl
 
 theorem option_ordI [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [RA A] [ORA SI A] {mx my : Option A} :
@@ -220,43 +220,43 @@ variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [URA A] [UORA SI A]
 
 @[rocq_alias auth_auth_dfrac_validI]
 theorem auth_dfrac_validI (dq : DFrac) (a : A) :
-    ✓[SI] (●{dq} a : Auth (SI := SI) A) ⊣⊢@{PROP} ⌜✓[SI] dq⌝ ∧ ✓[SI] a := by
+    ✓[SI] (●{dq} a : Auth SI A) ⊣⊢@{PROP} ⌜✓[SI] dq⌝ ∧ ✓[SI] a := by
   sbi_unfold; intro _; exact auth_dfrac_validN
 
 @[rocq_alias auth_auth_validI]
-theorem auth_validI (a : A) : ✓[SI] (● a : Auth (SI := SI) A) ⊣⊢@{PROP} ✓[SI] a := by
+theorem auth_validI (a : A) : ✓[SI] (● a : Auth SI A) ⊣⊢@{PROP} ✓[SI] a := by
   sbi_unfold; intro _; exact auth_validN
 
 @[rocq_alias auth_auth_dfrac_op_validI]
 theorem auth_dfrac_op_validI (dq1 dq2 : DFrac) (a1 a2 : A) :
-    ✓[SI] ((●{dq1} a1 : Auth (SI := SI) A) • (●{dq2} a2)) ⊣⊢@{PROP}
+    ✓[SI] ((●{dq1} a1 : Auth SI A) • (●{dq2} a2)) ⊣⊢@{PROP}
       ⌜✓[SI] (dq1 • dq2)⌝ ∧ a1 ≡[SI] a2 ∧ ✓[SI] a1 := by
   sbi_unfold; intro _; exact auth_dfrac_op_validN
 
 @[rocq_alias auth_frag_validI]
 theorem frag_validI (a : A) :
-    ✓[SI] (◯ a : Auth (SI := SI) A) ⊣⊢@{PROP} ✓[SI] a := by
+    ✓[SI] (◯ a : Auth SI A) ⊣⊢@{PROP} ✓[SI] a := by
   sbi_unfold; intro _; exact frag_validN
 
 theorem both_dfrac_validI_ord [IncOrd SI A] (dq : DFrac) (a b : A) :
-    ✓[SI] ((●{dq} a : Auth (SI := SI) A) • ◯ b) ⊣⊢@{PROP}
+    ✓[SI] ((●{dq} a : Auth SI A) • ◯ b) ⊣⊢@{PROP}
     ⌜✓[SI] dq⌝ ∧ b ≼ₒ[SI] a ∧ ✓[SI] a := by
   sbi_unfold; intro _; exact both_dfrac_validN_ord
 
 @[rocq_alias auth_both_dfrac_validI]
 theorem both_dfrac_validI [OrdInc SI A] (dq : DFrac) (a b : A) :
-    ✓[SI] ((●{dq} a : Auth (SI := SI) A) • ◯ b) ⊣⊢@{PROP}
+    ✓[SI] ((●{dq} a : Auth SI A) • ◯ b) ⊣⊢@{PROP}
     ⌜✓[SI] dq⌝ ∧ b ≼[SI] a ∧ ✓[SI] a := by
   sbi_unfold; intro _; exact both_dfrac_validN
 
 theorem auth_both_validI_ord [IncOrd SI A] (a b : A) :
-    ✓[SI] ((● a : Auth (SI := SI) A) • ◯ b) ⊣⊢@{PROP}
+    ✓[SI] ((● a : Auth SI A) • ◯ b) ⊣⊢@{PROP}
       b ≼ₒ[SI] a ∧ ✓[SI] a := by
   sbi_unfold; intro _; exact both_validN_ord
 
 @[rocq_alias auth_both_validI]
 theorem auth_both_validI [OrdInc SI A] (a b : A) :
-    ✓[SI] ((● a : Auth (SI := SI) A) • ◯ b) ⊣⊢@{PROP}
+    ✓[SI] ((● a : Auth SI A) • ◯ b) ⊣⊢@{PROP}
       b ≼[SI] a ∧ ✓[SI] a := by
   sbi_unfold; intro _; exact both_validN
 
@@ -326,25 +326,25 @@ theorem cmra_later_opI [SIdxFinite SI] [RA A] [ORA SI A] (x y1 y2 : A) :
     ▷ (✓[SI] x ∧ x ≡[SI] y1 • y2) ⊢@{PROP}
       ◇ ∃ z1 z2, x ≡[SI] z1 • z2 ∧ ▷ (z1 ≡[SI] y1) ∧ ▷ (z2 ≡[SI] y2) := by
   unfold BIBase.except0; sbi_unfold; intro n h
-  rcases SIdxFinite.finite_index n with rfl | ⟨m, rfl⟩
+  rcases SIdxFinite.finite_index n with rfl | ⟨m, hm⟩
   · exact .inl fun _ hm => (SIdx.not_lt_zero _ hm).elim
-  · have ⟨hv, he⟩ := h m (SIdx.lt_succ_self m)
+  · have ⟨hv, he⟩ := h m hm.lt
     have ⟨z1, z2, hx, hz1, hz2⟩ := extend' hv he
-    exact .inr ⟨z1, z2, Dist.of_eq hx, fun _ hk => hz1.le (SIdx.lt_succ_r.mp hk),
-      fun _ hk => hz2.le (SIdx.lt_succ_r.mp hk)⟩
+    exact .inr ⟨z1, z2, Dist.of_eq hx, fun _ hk => hz1.le (hm.le_of_lt hk),
+      fun _ hk => hz2.le (hm.le_of_lt hk)⟩
 
 @[rocq_alias cmra_later_opI_total]
 theorem cmra_later_opI_total [SIdxFinite SI] [RA A] [ORA SI A] [IsTotal A] (x y1 y2 : A) :
     ▷ (✓[SI] x ∧ x ≡[SI] y1 • y2) ⊢@{PROP}
       ∃ z1 z2, x ≡[SI] z1 • z2 ∧ ▷ (z1 ≡[SI] y1) ∧ ▷ (z2 ≡[SI] y2) := by
   sbi_unfold; intro n h
-  rcases SIdxFinite.finite_index n with rfl | ⟨m, rfl⟩
+  rcases SIdxFinite.finite_index n with rfl | ⟨m, hm⟩
   · exact ⟨x, core x, (op_core_dist x).symm, fun _ hm => (SIdx.not_lt_zero _ hm).elim,
       fun _ hm => (SIdx.not_lt_zero _ hm).elim⟩
-  · have ⟨hv, he⟩ := h m (SIdx.lt_succ_self m)
+  · have ⟨hv, he⟩ := h m hm.lt
     have ⟨z1, z2, hx, hz1, hz2⟩ := extend' hv he
-    exact ⟨z1, z2, Dist.of_eq hx, fun _ hk => hz1.le (SIdx.lt_succ_r.mp hk),
-      fun _ hk => hz2.le (SIdx.lt_succ_r.mp hk)⟩
+    exact ⟨z1, z2, Dist.of_eq hx, fun _ hk => hz1.le (hm.le_of_lt hk),
+      fun _ hk => hz2.le (hm.le_of_lt hk)⟩
 
 end generic
 
@@ -546,7 +546,7 @@ variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A]
 
 @[rocq_alias excl_auth_agreeI]
 theorem excl_auth_agreeI (a b : A) :
-    ✓[SI] ((●E a : ExclAuthR (SI := SI) (A := A)) • (◯E b)) ⊢@{PROP} a ≡[SI] b :=
+    ✓[SI] ((●E a : ExclAuthR SI (A := A)) • (◯E b)) ⊢@{PROP} a ≡[SI] b :=
   siPure_mono fun _ h => agreeN h
 
 end excl_auth

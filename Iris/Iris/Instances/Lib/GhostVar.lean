@@ -17,7 +17,7 @@ open BI DFrac DFracAgree ProofMode
 
 /-! ## Ghost variable -/
 
-abbrev GhostVarF (A : Type) : COFE.OFunctorPre Nat := constOF (DFracAgreeR (SI := Nat) (DiscreteO A))
+abbrev GhostVarF (A : Type) : COFE.OFunctorPre Nat := constOF _ (DFracAgreeR Nat (DiscreteO A))
 
 @[rocq_alias ghost_varG]
 class GhostVarG (GF : BundledGFunctors) (A : Type) where [elemG : ElemG GF (GhostVarF A)]

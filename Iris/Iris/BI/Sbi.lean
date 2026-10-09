@@ -567,13 +567,13 @@ theorem pure_soundness [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {φ : Pro
   exact h.trans siPure_pure.mpr
 
 @[rocq_alias later_soundness]
-theorem later_soundness [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {P : PROP} (h : emp ⊢ ▷ P) : emp ⊢ P := by
+theorem later_soundness [SIdxSucc SI] [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {P : PROP} (h : emp ⊢ ▷ P) : emp ⊢ P := by
   refine (siEmpValid_emp_valid (SI := SI)).mp ?_
   refine SiProp.later_soundness ?_
   exact (siEmpValid_emp_valid.mpr h).trans siEmpValid_later.mp
 
 @[rocq_alias laterN_soundness]
-theorem laterN_soundness [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {P : PROP} {n : Nat} (h : emp ⊢ ▷^[n] P) : emp ⊢ P :=
+theorem laterN_soundness [SIdxSucc SI] [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {P : PROP} {n : Nat} (h : emp ⊢ ▷^[n] P) : emp ⊢ P :=
   match n with
   | .zero => h
   | .succ _ => laterN_soundness (later_soundness (SI := SI) h)

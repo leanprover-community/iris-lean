@@ -70,8 +70,8 @@ instance [LawfulPartialMap M K] [OFE SI V] (k : K) : NonExpansive₂ SI (insert 
     · simp [get?_insert_eq h, Ht]
     · simp [get?_insert_ne h, Hv k']
 
-theorem eqv_of_Equiv [OFE SI V] [LawfulPartialMap M K] {t1 t2 : M V} (H : PartialMap.equiv t1 t2) : t1 = t2 :=
-  eq_dist_2 fun (_ : SI) k => Dist.of_eq (H k)
+theorem eqv_of_Equiv [LawfulPartialMap M K] {t1 t2 : M V} (H : PartialMap.equiv t1 t2) : t1 = t2 :=
+  LawfulPartialMap.equiv_iff_eq.mp H
 
 instance [LawfulPartialMap M K] [OFE SI V] (op : K → V → V → V) [∀ k, NonExpansive₂ SI (op k)] :
     NonExpansive₂ SI (merge (M := M) op) where
@@ -533,8 +533,8 @@ instance instStoreCMRA : ORA SI (M V) where
     increasing_iff.mpr fun k => (get?_core x k).symm ▸ increasing_core _
   increasing_closed h h' := increasing_iff.mpr fun k =>
       increasing_closed (increasing_get? h k) (h'.imp (fun e => (get?_ne k).ne e) (· k))
-  ordN_extend {n : SI} {x y} v h :=
-    let ⟨f, hf⟩ := Classical.axiomOfChoice fun k => ordN_extend (v k) (h k)
+  ordN_extend {n : SI} {sn} {x y} hs v h :=
+    let ⟨f, hf⟩ := Classical.axiomOfChoice fun k => ordN_extend hs (v k) (h k)
     have hfx : ∀ k, get? (bindAlter (fun k _ => f k) x) k = f k := fun k => by
       rw [get?_bindAlter]
       cases hx : get? x k
@@ -1185,7 +1185,7 @@ theorem alloc_unit_singleton_update {u : V} {i : K} {y : V}
 theorem local_update {m1 m2 m1' m2' : M V}
     (h : ∀ i, (get? m1 i, get? m2 i) ~l~>[SI] (get? m1' i, get? m2' i)) :
     ((m1, m2) : M V × M V) ~l~>[SI] (m1', m2') := by
-  refine (local_update_unital (SI := SI)).mpr fun n z hv he => ?_
+  refine (local_update_unital).mpr fun n z hv he => ?_
   have he' i : get? m1 i ≡{n}≡ get? m2 i •? some (get? z i) :=
     (he i).trans (.of_eq (get?_op m2 z))
   exact ⟨fun i => (h i n _ (hv i) (he' i)).1,
@@ -1324,9 +1324,9 @@ instance [OFE SI α] [OFE SI β] {f : α → β} [hne : OFE.NonExpansive SI f] :
     cases get? m1 k <;> cases get? m2 k <;> simp
     apply OFE.NonExpansive.ne
 
-theorem map_id [OFE SI α] (a : H α) :
-    PartialMap.map H id a = a := OFE.eq_dist_2 (SI := SI) <| by
-  intro n x
+theorem map_id (a : H α) :
+    PartialMap.map H id a = a := LawfulPartialMap.equiv_iff_eq.mp <| by
+  intro x
   simp [PartialMap.map, get?_bindAlter, Option.bind]
   rcases get? a x <;> simp
 
@@ -1342,9 +1342,9 @@ theorem map_ne {n : SI} [OFE SI β] (f g : α -> β) {heq : f ≡{n}≡ g} : map
   cases get? m k <;> simp
   exact heq _
 
-theorem map_compose [OFE SI γ] (f : α -> β) (g : β -> γ) m :
-    map H (g.comp f) m = map H g (map H f m) := OFE.eq_dist_2 (SI := SI) <| by
-  intro n k
+theorem map_compose (f : α -> β) (g : β -> γ) m :
+    map H (g.comp f) m = map H g (map H f m) := LawfulPartialMap.equiv_iff_eq.mp <| by
+  intro k
   simp [map, get?_bindAlter]
   cases get? m k <;> simp
 
@@ -1395,7 +1395,7 @@ instance {F} [COFE.OFunctor SI F] : COFE.OFunctor SI (PartialMapOF H F) where
     apply map_ne
     apply COFE.OFunctor.map_ne.ne <;> simp_all
   map_id x := by
-    refine .trans ?_ (map_id (SI := SI) H x)
+    refine .trans ?_ (map_id H x)
     exact congrArg (map H · x) (funext fun a => COFE.OFunctor.map_id (F := F) a)
   map_comp f g f' g' m := OFE.eq_dist_2 (SI := SI) <| by
     simp [mapO, map]
@@ -1419,7 +1419,7 @@ instance {F} [RFunctor SI F] : URFunctor SI (PartialMapOF H F) where
     apply map_ne
     apply RFunctor.map_ne.ne <;> simp_all
   map_id x := by
-    refine .trans ?_ (map_id (SI := SI) H x)
+    refine .trans ?_ (map_id H x)
     exact congrArg (map H · x) (funext fun a => RFunctor.map_id (F := F) a)
   map_comp f g f' g' m := OFE.eq_dist_2 (SI := SI) <| by
     simp [mapC, map]

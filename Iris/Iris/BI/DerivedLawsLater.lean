@@ -273,12 +273,12 @@ determine `SI`; models declare `instance : BILoeb X := .ofLaterContractive SI`. 
   loeb_weak {P} HP := by
     let Hc : Contractive SI (fun Q => iprop((▷ Q) → P)) := ⟨fun H => imp_ne.ne (distLater_dist H) .rfl⟩
     let Flöb : PROP -c>[SI] PROP := { f := fun Q => iprop((▷ Q) → P), contractive := Hc }
-    suffices HP : iprop(▷ (fixpoint Flöb) ⊢ P) by
+    suffices HP : iprop(▷ (fixpoint _ Flöb) ⊢ P) by
       refine entails_impl_true.mp HP |>.trans ?_
       refine (fixpoint_unfold Flöb).to_bi |>.mpr |>.trans ?_
       exact later_intro.trans HP
     refine .trans ?_ ((later_mono HP).trans HP)
-    suffices Hcut : later (fixpoint Flöb) ⊢ later (later (later (fixpoint Flöb))) → later (later P) by
+    suffices Hcut : later (fixpoint _ Flöb) ⊢ later (later (later (fixpoint _ Flöb))) → later (later P) by
       exact and_intro (later_intro.trans later_intro) Hcut |>.trans imp_elim_right
     refine .trans (later_mono ?_) later_imp
     refine .trans ?_ later_imp

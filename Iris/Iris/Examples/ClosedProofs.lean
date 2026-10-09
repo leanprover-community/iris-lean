@@ -39,10 +39,10 @@ section proof
 noncomputable def GF : BundledGFunctors := fun n =>
   match n with
   | 0  => ⟨InvMapF⟩
-  | 1  => ⟨constOF CoPsetDisjL⟩
-  | 2  => ⟨constOF (DisjointLeibnizSet PosSet)⟩
-  | 3  => ⟨AuthURF (constOF Credit)⟩
-  | _  => ⟨constOF Unit⟩
+  | 1  => ⟨constOF _ CoPsetDisjL⟩
+  | 2  => ⟨constOF _ (DisjointLeibnizSet PosSet)⟩
+  | 3  => ⟨AuthURF (constOF _ Credit)⟩
+  | _  => ⟨constOF _ Unit⟩
 
 instance : WsatGpreS GF where
   inv := { τ := 0, transp := by unfold GF; rfl }

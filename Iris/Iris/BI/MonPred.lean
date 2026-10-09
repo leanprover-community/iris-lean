@@ -148,7 +148,7 @@ instance [SIdxFinite SI] : IsCOFE SI (MonPred I PROP) where
     let cf := c.map ((⟨Subtype.val, inferInstance⟩ : _ -n>[SI] (I.car → PROP)).comp MonPred.toSig)
     { monPred_at := fun i => COFE.compl cf i
       monPred_mono := fun {i j} h =>
-        (LimitPreserving.entails (applyHom (SI := SI) i) (applyHom (SI := SI) j)).compl cf (fun n => (c n).monPred_mono h) }
+        (LimitPreserving.entails (applyHom SI i) (applyHom SI j)).compl cf (fun n => (c n).monPred_mono h) }
   conv_compl {n : SI} {c} :=
     IsCOFE.conv_compl (n := n)
       (c := c.map ((⟨Subtype.val, inferInstance⟩ : _ -n>[SI] (I.car → PROP)).comp MonPred.toSig))

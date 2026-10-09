@@ -44,7 +44,7 @@ theorem MyR_always_invalid (S₁ S₂ : String) (Hne : S₁ ≠ S₂) (n : Nat) 
   simp only [ValidN, op, MyAg, optionValidN, optionOp]
   exact (Hne <| DiscreteO.dist_inj <| Agree.toAgree_op_validN_iff_dist.mp ·)
 
-def AgreeString (S : String) : UPred Nat (Option (Agree (DiscreteO String))) := UPred.ownM (MyAg S)
+def AgreeString (S : String) : UPred Nat (Option (Agree (DiscreteO String))) := UPred.ownM _ (MyAg S)
 
 example : AgreeString "I <3 iris-lean!" ⊢ (AgreeString "I don't :<" -∗ False) := by
   iintro H H2

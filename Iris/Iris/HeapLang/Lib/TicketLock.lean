@@ -51,9 +51,9 @@ def release : Val := hl_val%
 abbrev Tickets := Std.ExtTreeSet Nat compare
 
 /-- The ticket now being served, together with the set of tickets handed out so far. -/
-abbrev TicketR := Auth (SI := Nat) (Option (Excl Unit) × DisjointLeibnizSet Tickets)
+abbrev TicketR := Auth Nat (Option (Excl Unit) × DisjointLeibnizSet Tickets)
 
-abbrev TicketLockF : COFE.OFunctorPre Nat := constOF TicketR
+abbrev TicketLockF : COFE.OFunctorPre Nat := constOF _ TicketR
 
 instance : RFunctorAffine Nat TicketLockF where affine := inferInstance
 
@@ -118,7 +118,7 @@ private theorem own_op_valid {γ : GName} {a₁ a₂ : TicketR} :
 /-- Only one thread at a time holds the right to enter the critical section. -/
 private theorem own_owner_exclusive {γ : GName} :
     own (GF := GF) γ owner ∗ own γ owner ⊢ False :=
-  pure_elim _ own_op_valid fun h => ((Auth.frag_op_valid (SI := Nat)).mp h).1.elim
+  pure_elim _ own_op_valid fun h => ((Auth.frag_op_valid).mp h).1.elim
 
 /-- A ticket is handed out at most once. -/
 private theorem own_ticket_exclusive {γ : GName} {x : Nat} :

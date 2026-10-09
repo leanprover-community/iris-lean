@@ -60,12 +60,12 @@ instance (α : SI) : HasCompl.{v, _} (below α) where
   compl c :=
     match SIdx.case α with
     | .inl _ => default
-    | .inr (.inl ⟨β, h⟩) => c.val β (SIdx.lt_succ_diag_r' h)
+    | .inr (.inl ⟨β, h⟩) => c.val β h.lt
     | .inr (.inr hl) => IsCOFE.lbcompl hl ⟨c.val, c.cauchy⟩
   conv_compl c n hn :=
     match SIdx.case α with
     | .inl h => absurd (h ▸ hn) (SIdx.not_lt_zero n)
-    | .inr (.inl ⟨_, h⟩) => c.cauchy hn _ (SIdx.lt_succ_r.mp (h ▸ hn))
+    | .inr (.inl ⟨_, h⟩) => c.cauchy hn _ (h.le_of_lt hn)
     | .inr (.inr hl) => IsCOFE.conv_lbcompl hl _ hn
 
 instance : HasCompl.{v, _} (univ : Site SI) where
@@ -75,14 +75,14 @@ instance : HasCompl.{v, _} (univ : Site SI) where
 def IsLimit (P : Site SI) : Prop :=
   P.mem (0 : SI) ∧ ∀ {n : SI}, P.mem n → ∃ (m : SI), n < m ∧ P.mem m
 
-theorem IsLimit.succ_mem (hP : P.IsLimit) {k : SI} (hk : P.mem k) : P.mem (succᵢ k) := by
+theorem IsLimit.succ_mem (hP : P.IsLimit) {k sk : SI} (hs : IsSucc k sk) (hk : P.mem k) : P.mem sk := by
   obtain ⟨m, h1, h2⟩ := hP.2 hk
-  exact P.down (SIdx.le_succ_l.mpr h1) h2
+  exact P.down (SIdx.is_succ_gt_l hs h1) h2
 
 theorem below_isLimit {t : SI} (hl : SIdx.Limit t) : (below t).IsLimit :=
-  ⟨hl.limit_lt_0, fun {n} h => ⟨succᵢ n, SIdx.lt_succ_self n, hl.succ_lt _ h⟩⟩
+  ⟨hl.limit_lt_0, fun {n} h => let ⟨sn, hs, hlt⟩ := hl.exists_succ_lt h; ⟨sn, hs.lt, hlt⟩⟩
 
-theorem univ_isLimit : (univ : Site SI).IsLimit :=
+theorem univ_isLimit [SIdxSucc SI] : (univ : Site SI).IsLimit :=
   ⟨trivial, fun {n} _ => ⟨succᵢ n, SIdx.lt_succ_self n, trivial⟩⟩
 
 end Site
@@ -148,16 +148,17 @@ def dist (K : LimitCut SI) {A : Type _} [OFE SI A] (x y : A) : Prop :=
 theorem mem_of_finite [SIdxFinite SI] (K : LimitCut SI) (n : SI) : K.mem n := by
   induction n using (SIdx.lt_wf (I := SI)).induction with
   | _ n ih =>
-    rcases SIdxFinite.finite_index n with rfl | ⟨m, rfl⟩
+    rcases SIdxFinite.finite_index n with rfl | ⟨m, hm⟩
     · exact K.zero
-    · obtain ⟨k, hmk, hk⟩ := K.unbounded (ih m (SIdx.lt_succ_self m))
-      exact K.down (SIdx.succ_le_of_lt hmk) hk
+    · obtain ⟨k, hmk, hk⟩ := K.unbounded (ih m hm.lt)
+      exact K.down (SIdx.is_succ_gt_l hm hmk) hk
 
 end LimitCut
 
 def Site.cut (P : Site SI) (hP : P.IsLimit) : LimitCut SI := ⟨P.mem, hP.1, hP.2, P.down⟩
 
-def seg (c : SI) : LimitCut SI where
+/-- Needs a successor operation: `seg c` needs an index above every index. -/
+def seg [SIdxSucc SI] (c : SI) : LimitCut SI where
   mem n := ¬ ∃ l, SIdx.Limit l ∧ c < l ∧ l ≤ n
   zero := fun ⟨l, hl, _, h⟩ => SIdx.limit_0 (SIdx.le_0_r.mp h ▸ hl)
   unbounded {n} h := ⟨succᵢ n, SIdx.lt_succ_self n, fun ⟨l, hl, h1, h2⟩ => by
@@ -166,13 +167,13 @@ def seg (c : SI) : LimitCut SI where
     · exact SIdx.limit_S n hl⟩
   down hab h := fun ⟨l, hl, h1, h2⟩ => h ⟨l, hl, h1, SIdx.le_trans h2 hab⟩
 
-theorem mem_seg_of_le {c m : SI} (h : m ≤ c) : (seg c).mem m :=
+theorem mem_seg_of_le [SIdxSucc SI] {c m : SI} (h : m ≤ c) : (seg c).mem m :=
   fun ⟨_, _, h1, h2⟩ => SIdx.lt_irrefl _ (SIdx.lt_le_trans h1 (SIdx.le_trans h2 h))
 
-theorem mem_seg_mono {a b m : SI} (hab : a ≤ b) (h : (seg a).mem m) : (seg b).mem m :=
+theorem mem_seg_mono [SIdxSucc SI] {a b m : SI} (hab : a ≤ b) (h : (seg a).mem m) : (seg b).mem m :=
   fun ⟨l, hl, h1, h2⟩ => h ⟨l, hl, SIdx.le_lt_trans hab h1, h2⟩
 
-theorem LimitCut.mem_of_mem_seg (K : LimitCut SI) {c : SI} (hc : K.mem c) :
+theorem LimitCut.mem_of_mem_seg [SIdxSucc SI] (K : LimitCut SI) {c : SI} (hc : K.mem c) :
     ∀ (m : SI), (seg c).mem m → K.mem m := by
   intro m
   induction m using (SIdx.lt_wf (I := SI)).induction with
@@ -183,10 +184,9 @@ theorem LimitCut.mem_of_mem_seg (K : LimitCut SI) {c : SI} (hc : K.mem c) :
     · match SIdx.case m with
       | .inl h0 => exact h0 ▸ K.zero
       | .inr (.inl ⟨k, hk⟩) =>
-        subst hk
         obtain ⟨m', h1, h2⟩ :=
-          K.unbounded (ih k (SIdx.lt_succ_self k) ((seg c).down SIdx.le_succ_diag_r hm))
-        exact K.down (SIdx.le_succ_l.mpr h1) h2
+          K.unbounded (ih k hk.lt ((seg c).down (SIdx.lt_le_incl hk.lt) hm))
+        exact K.down (SIdx.is_succ_gt_l hk h1) h2
       | .inr (.inr hl) =>
         rcases SIdx.le_lteq.mp h with h | rfl
         · exact absurd ⟨m, hl, h, SIdx.le_refl⟩ hm
@@ -204,6 +204,10 @@ theorem Determined.mono {K K' : LimitCut SI} (h : ∀ (m : SI), K.mem m → K'.m
   fun g g' hg => hY g g' fun m hm => hg m (h m hm)
 
 end Determined
+
+/-! From here on the solver needs a successor operation (`Tower.Lawful` uses `seg`). Iris-Rocq's
+solver is built differently and does not. -/
+variable [SIdxSucc SI]
 
 section
 
@@ -236,6 +240,7 @@ def hom (β n : SI) (hβ : P.mem β) (hn : P.mem n) : Hom SI (T.X n hn) (T.X β 
   | .inr (.inl h) => h ▸ EnrichedCat.id _
   | .inr (.inr h) => T.emb n β hn hβ h
 
+omit [SIdxSucc SI] in
 theorem hom_lt {β n : SI} (hβ : P.mem β) (hn : P.mem n) (h : β < n) :
     T.hom β n hβ hn = T.proj β n hβ hn h := by
   unfold hom
@@ -244,6 +249,7 @@ theorem hom_lt {β n : SI} (hβ : P.mem β) (hn : P.mem n) (h : β < n) :
   | .inr (.inl h') => absurd (h' ▸ h) (SIdx.lt_irrefl _)
   | .inr (.inr h') => absurd (SIdx.lt_trans h h') (SIdx.lt_irrefl _)
 
+omit [SIdxSucc SI] in
 theorem hom_self {β : SI} (hβ hβ' : P.mem β) : T.hom β β hβ hβ' = EnrichedCat.id _ := by
   unfold hom
   exact match SIdx.lt_trichotomyT β β with
@@ -251,6 +257,7 @@ theorem hom_self {β : SI} (hβ hβ' : P.mem β) : T.hom β β hβ hβ' = Enrich
   | .inr (.inl _) => rfl
   | .inr (.inr h) => absurd h (SIdx.lt_irrefl _)
 
+omit [SIdxSucc SI] in
 theorem hom_gt {β n : SI} (hβ : P.mem β) (hn : P.mem n) (h : n < β) :
     T.hom β n hβ hn = T.emb n β hn hβ h := by
   unfold hom
@@ -714,17 +721,17 @@ theorem lim_determined {K : LimitCut SI}
     hf.determined c hc _ _ fun n hn => comp_dist_r _ (h n (hK c hc n hn))
 
 def limChain : Site.Chain (Hom SI (limObj f hf) (F (limObj f hf) (limObj f hf))) P where
-  val k hk := chainAt f hf (succᵢ k) (hP.succ_mem hk)
+  val k hk := chainAt f hf (succᵢ k) (hP.succ_mem (SIdxSucc.succ_isSucc _) hk)
   cauchy {m _} _ _ h := chainAt_dist f hf _ _ (SIdx.succ_le_mono.mp h) m (SIdx.lt_succ_self m)
 
 variable [Site.HasCompl.{v, w} P]
 
 def limUnfold : Hom SI (limObj f hf) (F (limObj f hf) (limObj f hf)) :=
-  @Site.HasCompl.compl _ _ P _ _ _ ⟨chainAt f hf _ (hP.succ_mem hP.1)⟩ (limChain hP f hf)
+  @Site.HasCompl.compl _ _ P _ _ _ ⟨chainAt f hf _ (hP.succ_mem (SIdxSucc.succ_isSucc _) hP.1)⟩ (limChain hP f hf)
 
 theorem limUnfold_dist {k : SI} (hk : P.mem k) :
-    limUnfold hP f hf ≡{k}≡ chainAt f hf (succᵢ k) (hP.succ_mem hk) :=
-  @Site.HasCompl.conv_compl _ _ P _ _ _ ⟨chainAt f hf _ (hP.succ_mem hP.1)⟩ _ _ hk
+    limUnfold hP f hf ≡{k}≡ chainAt f hf (succᵢ k) (hP.succ_mem (SIdxSucc.succ_isSucc _) hk) :=
+  @Site.HasCompl.conv_compl _ _ P _ _ _ ⟨chainAt f hf _ (hP.succ_mem (SIdxSucc.succ_isSucc _) hP.1)⟩ _ _ hk
 
 theorem limFold_comp_limUnfold : limFold f hf ⊚ limUnfold hP f hf = EnrichedCat.id _ :=
   InvLim.ext hf.tower _ _ fun c hc => hf.determined c hc _ _ fun n hn => by
@@ -854,7 +861,7 @@ section Recursion
 variable [HasTerminal SI Obj] [HasSeed SI F] [Truncatable SI F] [HasTowerLimits SI Obj]
 
 def closeTop (α : SI) (f : PartialSol F (Site.below α)) (hf : f.Lawful) : Extension f :=
-  match SIdx.case α with
+  match SIdx.case_succ α with
   | .inl h0 => zeroTop h0 f
   | .inr (.inl ⟨_, hm⟩) => succTop hm hf
   | .inr (.inr hl) => limitTop hl f hf
@@ -862,7 +869,7 @@ def closeTop (α : SI) (f : PartialSol F (Site.below α)) (hf : f.Lawful) : Exte
 theorem closeTop_lawful (α : SI) (f : PartialSol F (Site.below α)) (hf : f.Lawful) :
     (closeTop α f hf).Lawful := by
   unfold closeTop
-  exact match SIdx.case α with
+  exact match SIdx.case_succ α with
   | .inl h0 => zeroTop_lawful h0 f
   | .inr (.inl ⟨_, hm⟩) => succTop_lawful hm hf
   | .inr (.inr hl) => limitTop_lawful hl f hf
@@ -870,7 +877,7 @@ theorem closeTop_lawful (α : SI) (f : PartialSol F (Site.below α)) (hf : f.Law
 def zeroPoint (f : PartialSol F (Site.below (0 : SI))) (hf : f.Lawful) :
     Hom SI (HasTerminal.one SI) (closeTop 0 f hf).X := by
   unfold closeTop
-  exact match SIdx.case (0 : SI) with
+  exact match SIdx.case_succ (0 : SI) with
   | .inl _ => EnrichedCat.id _
   | .inr (.inl ⟨_, hm⟩) => absurd hm.symm SIdx.neq_succ_0
   | .inr (.inr hl) => absurd hl SIdx.limit_0
@@ -937,21 +944,23 @@ end ClosedSol
 
 variable (F)
 
+variable (SI) in
 def globalSol : PartialSol F (Site.univ : Site SI) :=
   glue (fun γ _ => (ClosedSol.canonical F γ).1) fun hγδ _ =>
     ClosedSol.graph_restrict hγδ (ClosedSol.canonical F _).2 (ClosedSol.canonical F _).2
 
-theorem globalSol_lawful : (globalSol (SI := SI) F).Lawful :=
+theorem globalSol_lawful : (globalSol SI F).Lawful :=
   glue_lawful (fun γ _ => (ClosedSol.canonical F γ).1) fun hγδ _ =>
     ClosedSol.graph_restrict hγδ (ClosedSol.canonical F _).2 (ClosedSol.canonical F _).2
 
-def Fix : Obj := limObj (globalSol (SI := SI) F) (globalSol_lawful F)
+variable (SI) in
+def Fix : Obj := limObj (globalSol SI F) (globalSol_lawful F)
 
-def Fix.fold : Hom SI (F (Fix (SI := SI) F) (Fix (SI := SI) F)) (Fix (SI := SI) F) :=
-  limFold (globalSol (SI := SI) F) (globalSol_lawful F)
+def Fix.fold : Hom SI (F (Fix SI F) (Fix SI F)) (Fix SI F) :=
+  limFold (globalSol SI F) (globalSol_lawful F)
 
-def Fix.unfold : Hom SI (Fix (SI := SI) F) (F (Fix (SI := SI) F) (Fix (SI := SI) F)) :=
-  limUnfold Site.univ_isLimit (globalSol (SI := SI) F) (globalSol_lawful F)
+def Fix.unfold : Hom SI (Fix SI F) (F (Fix SI F) (Fix SI F)) :=
+  limUnfold Site.univ_isLimit (globalSol SI F) (globalSol_lawful F)
 
 theorem Fix.fold_comp_unfold : Fix.fold (SI := SI) F ⊚ Fix.unfold F = EnrichedCat.id _ :=
   limFold_comp_limUnfold _ _ _
@@ -959,8 +968,8 @@ theorem Fix.fold_comp_unfold : Fix.fold (SI := SI) F ⊚ Fix.unfold F = Enriched
 theorem Fix.unfold_comp_fold : Fix.unfold (SI := SI) F ⊚ Fix.fold F = EnrichedCat.id _ :=
   OFE.eq_dist.mpr fun _ => limUnfold_comp_limFold _ _ _ trivial
 
-def Fix.point : Hom SI (HasTerminal.one SI) (Fix (SI := SI) F) :=
-  InvLim.emb (globalSol_lawful (SI := SI) F).tower (0 : SI) trivial ⊚
+def Fix.point : Hom SI (HasTerminal.one SI) (Fix SI F) :=
+  InvLim.emb (globalSol_lawful F).tower (0 : SI) trivial ⊚
     (ClosedSol.canonical_eq F (0 : SI) ▸ zeroPoint _ _ :
       Hom SI _ (ClosedSol.canonical F (0 : SI)).1.top.X)
 
@@ -987,6 +996,7 @@ def bifreeStep : (Hom SI B A × Hom SI A B) -c>[SI] (Hom SI B A × Hom SI A B) w
 variable {i j} (hij : i ⊚ j = EnrichedCat.id _) (hji : j ⊚ i = EnrichedCat.id _)
 include hij hji
 
+omit [SIdxSucc SI] in
 theorem bifree_iff {k : Hom SI B A} {h : Hom SI A B} :
     Bifree i j f g k h ↔ (k, h) = bifreeStep i j f g (k, h) := by
   refine ⟨fun ⟨hk, hh⟩ => Prod.ext ?_ ?_, fun e => ⟨?_, ?_⟩⟩
@@ -999,21 +1009,25 @@ theorem bifree_iff {k : Hom SI B A} {h : Hom SI A B} :
   · calc h ⊚ i = (f ⊚ EFunctor.map k h ⊚ j) ⊚ i := congrArg (· ⊚ i) (congrArg Prod.snd e)
       _ = f ⊚ EFunctor.map k h := by rw [EnrichedCat.assoc, EnrichedCat.assoc, hji, EnrichedCat.comp_id]
 
+omit [SIdxSucc SI] in
 theorem bifree_unique [Inhabited (Hom SI B A)] [Inhabited (Hom SI A B)] {k k' : Hom SI B A}
     {h h' : Hom SI A B} (h₁ : Bifree i j f g k h) (h₂ : Bifree i j f g k' h') : k = k' ∧ h = h' :=
   Prod.ext_iff.mp ((fixpoint_unique ((bifree_iff f g hij hji).mp h₁)).trans
     (fixpoint_unique ((bifree_iff f g hij hji).mp h₂)).symm)
 
+omit [SIdxSucc SI] in
 theorem bifree_exists [Inhabited (Hom SI B A)] [Inhabited (Hom SI A B)] :
-    Bifree i j f g (fixpoint (SI := SI) (bifreeStep i j f g)).1
-      (fixpoint (SI := SI) (bifreeStep i j f g)).2 :=
+    Bifree i j f g (fixpoint SI (bifreeStep i j f g)).1
+      (fixpoint SI (bifreeStep i j f g)).2 :=
   (bifree_iff f g hij hji).mpr (fixpoint_unfold (bifreeStep i j f g))
 
 omit hij hji in
+omit [SIdxSucc SI] in
 theorem bifree_id : Bifree i j i j (EnrichedCat.id A) (EnrichedCat.id A) := by
   constructor <;> simp [EFunctor.map_id]
 
 omit hij hji in
+omit [SIdxSucc SI] in
 theorem bifree_comp {i' : Hom SI (F B B) B} {j' : Hom SI B (F B B)} {k : Hom SI B A}
     {h : Hom SI A B} {k' : Hom SI A B} {h' : Hom SI B A} (e : Bifree i j i' j' k h)
     (e' : Bifree i' j' i j k' h') :
@@ -1023,15 +1037,16 @@ theorem bifree_comp {i' : Hom SI (F B B) B} {j' : Hom SI B (F B B)} {k : Hom SI 
   · rw [EnrichedCat.assoc, e.2, ← EnrichedCat.assoc, e'.2, EnrichedCat.assoc, ← EFunctor.map_comp]
 
 omit f g in
+omit [SIdxSucc SI] in
 theorem solution_unique {i' : Hom SI (F B B) B} {j' : Hom SI B (F B B)}
     (hij' : i' ⊚ j' = EnrichedCat.id _) (hji' : j' ⊚ i' = EnrichedCat.id _) [Inhabited (Hom SI B A)]
     [Inhabited (Hom SI A B)] :
     ∃ (u : Hom SI A B) (v : Hom SI B A), u ⊚ v = EnrichedCat.id _ ∧ v ⊚ u = EnrichedCat.id _ := by
   haveI : ∀ C : Obj, Inhabited (Hom SI C C) := fun C => ⟨EnrichedCat.id C⟩
   exact ⟨_, _, (bifree_unique i' j' hij' hji'
-      (bifree_comp (bifree_exists (SI := SI) i j hij' hji') (bifree_exists (SI := SI) i' j' hij hji)) bifree_id).1,
+      (bifree_comp (bifree_exists i j hij' hji') (bifree_exists i' j' hij hji)) bifree_id).1,
     (bifree_unique i j hij hji
-      (bifree_comp (bifree_exists (SI := SI) i' j' hij hji) (bifree_exists (SI := SI) i j hij' hji')) bifree_id).1⟩
+      (bifree_comp (bifree_exists i' j' hij hji) (bifree_exists i j hij' hji')) bifree_id).1⟩
 
 end Bifree
 

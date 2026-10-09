@@ -117,7 +117,7 @@ instance wp.pre.contractive s : OFE.Contractive Nat (wp.pre s (ι := ι)) where
 
 @[rocq_alias wp_def]
 instance wp.def : Wp (IProp GF) (Expr) (Val) Stuckness where
-  wp s := fixpoint (SI := Nat) (wp.pre s)
+  wp s := fixpoint Nat (wp.pre s)
 
 #rocq_ignore wp_aux "We do not use Iris' custom seal/unseal visibility control"
 #rocq_ignore wp' "We do not use Iris' custom seal/unseal visibility control"

@@ -159,6 +159,7 @@ end HeapR
 #rocq_ignore gmap_viewUR "Use `HeapView`; the UCMRA instance is found by typeclass inference"
 #rocq_ignore gmap_view_cmra_discrete "Found by typeclass inference"
 
+variable (SI) in
 /-- A view of a Heap, that gives element-wise ownership. -/
 @[rocq_alias gmap_viewR]
 abbrev HeapView := View (HeapR (SI := SI) K V H)
@@ -173,23 +174,23 @@ variable {K V : Type _} {H : Type _ → Type _} [LawfulPartialMap H K] [RA V] [O
 
 /-- Authoritative (fractional) ownership over an entire heap. -/
 @[rocq_alias gmap_view_auth]
-def Auth (dq : DFrac) (m : H V) : HeapView (SI := SI) K V H := ●V{dq} m
+def Auth (dq : DFrac) (m : H V) : HeapView SI K V H := ●V{dq} m
 
 /-- Fragmental (fractional) ownership over an allocated element in the heap. -/
 @[rocq_alias gmap_view_frag]
-def Frag (k : K) (dq : DFrac) (v : V) : HeapView (SI := SI) K V H := ◯V (Std.PartialMap.singleton k (dq, v))
+def Frag (k : K) (dq : DFrac) (v : V) : HeapView SI K V H := ◯V (Std.PartialMap.singleton k (dq, v))
 
 /-- Fragmental (fractional) ownership over an element in the heap. -/
-def Elem (k : K) (v : DFrac × V) : HeapView (SI := SI) K V H := ◯V (Std.PartialMap.singleton k v)
+def Elem (k : K) (v : DFrac × V) : HeapView SI K V H := ◯V (Std.PartialMap.singleton k v)
 
 -- TODO: Do we need this?
 @[rocq_alias gmap_view_auth_ne]
-instance : NonExpansive SI (Auth (SI := SI) dq : _ → HeapView K V H) := View.auth_ne
+instance : NonExpansive SI (Auth (SI := SI) dq : _ → HeapView _ K V H) := View.auth_ne
 
 #rocq_ignore gmap_view_auth_proper "OFE is Leibniz; use `congrArg`"
 
 @[rocq_alias gmap_view_frag_ne]
-instance : NonExpansive SI (Frag (SI := SI) k dq : _ → HeapView K V H) where
+instance : NonExpansive SI (Frag (SI := SI) k dq : _ → HeapView _ K V H) where
   ne _ _ _ Hx := by
     refine frag_ne.ne (fun k' => ?_)
     by_cases h : k = k'
@@ -632,7 +633,7 @@ theorem update_frag_discard : Frag (H := H) k dq v1 ~~>[SI] Frag (SI := SI) k .d
 
 @[rocq_alias gmap_view_frag_unpersist]
 theorem update_frag_acquire :
-    (Frag k .discard v1 : HeapView (SI := SI) K V H) ~~>:[SI] fun a => ∃ q, a = Frag k (.own q) v1 := by
+    (Frag k .discard v1 : HeapView SI K V H) ~~>:[SI] fun a => ∃ q, a = Frag k (.own q) v1 := by
   apply UpdateP.weaken (update_of_dfrac_update _ DFrac.update_acquire)
   rintro y ⟨q, rfl, ⟨q1, rfl⟩⟩
   exists q1
@@ -668,7 +669,7 @@ theorem heapR_map_eq [COFE SI A] [COFE SI B] [COFE SI A'] [COFE SI B'] [RFunctor
 
 @[rocq_alias gmap_viewURF]
 abbrev HeapViewURF T [RFunctor SI T] : COFE.OFunctorPre SI :=
-  fun A B _ _ => HeapView (SI := SI) K (T A B) H
+  fun A B _ _ => HeapView SI K (T A B) H
 
 instance {T} [RFunctor SI T] :
     URFunctor SI (HeapViewURF (H := H) T) where
@@ -689,7 +690,7 @@ instance {T} [RFunctor SI T] :
     rw (config := { occs := .pos [2] }) [<- (View.map_id x)]
     refine OFE.eq_dist_2 (fun n => View.map_ne x (fun a => ?_) (fun b => ?_))
     · exact (COFE.OFunctor.map_id (F := PartialMapOF H T) a).dist
-    · refine OFE.Dist.trans ?_ (map_id (SI := SI) _ b).dist
+    · refine OFE.Dist.trans ?_ (map_id _ b).dist
       apply PartialMap.map_ne
       exact fun _ => ⟨rfl, (RFunctor.map_id _).dist⟩
   map_comp f g f' g' x := by
@@ -698,7 +699,7 @@ instance {T} [RFunctor SI T] :
     refine OFE.eq_dist_2 (fun n => View.map_ne x (fun a => (?_ : _ = _).dist) (fun b => (?_ : _ = _).dist))
     · exact (inferInstance : URFunctor SI (PartialMapOF H T)).map_comp _ _ _ _ a
     · simp only [Prod.mapC, ORA.Hom.id, PartialMap.mapC]
-      refine .trans ?_ (PartialMap.map_compose (SI := SI) _ _ _ _)
+      refine .trans ?_ (PartialMap.map_compose _ _ _ _)
       refine congrArg (PartialMap.map _ · _) ?_
       rw [Prod.map_comp_map]
       refine funext fun p => ?_
@@ -731,23 +732,23 @@ variable {K V : Type _} {H : Type _ → Type _} [DecidableEq K] [LawfulFiniteMap
 
 omit [DecidableEq K] in
 private theorem bigOpM_frag_empty (dq : DFrac) :
-    bigOpM (M := HeapView (SI := SI) K V H) op (fun k x => Frag k dq x) (∅ : H V) = UnitOp.unit :=
-  BigOpM.bigOpM_empty (M := HeapView (SI := SI) K V H) (M' := H) (K := K) (op := op) (V := V) _
+    bigOpM (M := HeapView SI K V H) op (fun k x => Frag k dq x) (∅ : H V) = UnitOp.unit :=
+  BigOpM.bigOpM_empty (M := HeapView SI K V H) (M' := H) (K := K) (op := op) (V := V) _
 
 @[rocq_alias gmap_view_delete_big]
 theorem update_big_delete (m m' : H V) :
-  Auth (.own one) m • (bigOpM (M := HeapView (SI := SI) K V H) op (fun k v => Frag k (.own one) v) m') ~~>[SI]
+  Auth (.own one) m • (bigOpM (M := HeapView SI K V H) op (fun k v => Frag k (.own one) v) m') ~~>[SI]
   Auth (.own one) (m \ m') := by
   induction m' using LawfulFiniteMap.induction_on with
   | hemp =>
     suffices h : (m \ ∅ : H V) = m by
       rw [bigOpM_frag_empty, unit_right_id, h]
-    exact eqv_of_Equiv (SI := SI) fun j => by simp [get?_difference, get?_empty]
+    exact eqv_of_Equiv fun j => by simp [get?_difference, get?_empty]
   | hins k v m2 Hm2 IH =>
     suffices h : (m \ Std.insert m2 k v) = delete (m \ m2) k by
       rw [BigOpM.bigOpM_insert_eq _ _ Hm2, comm' (x := Frag k (.own one) v), assoc', h]
       exact (Update.op IH .id).trans update_one_delete
-    exact eqv_of_Equiv (SI := SI) fun j => by
+    exact eqv_of_Equiv fun j => by
       by_cases hjk : k = j
         <;> simp [get?_difference, get?_delete_eq, get?_delete_ne, get?_insert_eq,
               get?_insert_ne, hjk]
@@ -756,8 +757,8 @@ theorem update_big_delete (m m' : H V) :
 theorem update_big_replace (m m0 m1 : H V)
   (Hdom : dom m0 = dom m1)
   (Hall : all (fun _ v => ✓[SI] v) m1) :
-  Auth (.own one) m • (bigOpM (M := HeapView (SI := SI) K V H) op (fun k v => Frag k (.own one) v) m0) ~~>[SI]
-  Auth (.own one) (m1 ∪ m) • (bigOpM (M := HeapView (SI := SI) K V H) op (fun k v => Frag k (.own one) v) m1) := by
+  Auth (.own one) m • (bigOpM (M := HeapView SI K V H) op (fun k v => Frag k (.own one) v) m0) ~~>[SI]
+  Auth (.own one) (m1 ∪ m) • (bigOpM (M := HeapView SI K V H) op (fun k v => Frag k (.own one) v) m1) := by
   revert m1 Hdom
   induction m0 using LawfulFiniteMap.induction_on with
   | hemp =>
@@ -778,7 +779,7 @@ theorem update_big_replace (m m0 m1 : H V)
       · simp [dom, ← hjk, Hm2, get?_delete_eq rfl]
       · simpa [dom, get?_delete_ne hjk, get?_insert_ne hjk] using congrFun Hdom j
     have hunion : (m1 ∪ m) = Std.insert (delete m1 k ∪ m) k v' :=
-      eqv_of_Equiv (SI := SI) fun j => by
+      eqv_of_Equiv fun j => by
         change get? (PartialMap.union m1 m) j
           = get? (Std.insert (PartialMap.union (delete m1 k) m) k v') j
         by_cases hjk : k = j
@@ -800,7 +801,7 @@ theorem update_big_alloc (m1 m2 : H V) dq
   (Hall : all (fun _ v => ✓[SI] v) m2) :
   Auth (.own one) m1 ~~>[SI]
     Auth (.own one) (m2 ∪ m1)
-    • bigOpM (M := HeapView (SI := SI) K V H) op (fun k v => Frag k dq v) m2 := by
+    • bigOpM (M := HeapView SI K V H) op (fun k v => Frag k dq v) m2 := by
     induction m2 using LawfulFiniteMap.induction_on generalizing m1 with
     | hemp =>
       rw [bigOpM_frag_empty]

@@ -119,10 +119,11 @@ instance atomic_update_pre_mono {Eo Ei : CoPset} {α : TA.Arg → PROP}
     · iintro %_ %_ $
   mono_pred_ne := ⟨fun _ _ _ _ => .rfl⟩
 
+variable (SI) in
 @[rocq_alias atomic_update]
 def atomic_update (Eo Ei : CoPset) (α : TA.Arg → PROP)
     (β Φ : TA.Arg → TB.Arg → PROP) : PROP :=
-  bi_greatest_fixpoint (SI := SI) (atomic_update_pre Eo Ei α β Φ) ()
+  bi_greatest_fixpoint SI (atomic_update_pre Eo Ei α β Φ) ()
 
 #rocq_ignore atomic_update_def "Rocq sealing auxiliary; folded into `atomic_update` (no sealing in Lean)."
 #rocq_ignore atomic_update_aux "Rocq sealing auxiliary."
@@ -175,7 +176,7 @@ def auArgs (xs : Option (TSyntax ``auExBinders)) (ys : Option (TSyntax ``auAllBi
 macro_rules
   | `(iprop(AU%$tk <{ $[$xs]? $α }> @ $Eo, $Ei <{ $[$ys]? $β, COMM $Φ }>)) => do
     let (TA, TB, α, β, Φ) ← auArgs xs ys α β Φ
-    ``($(wrapIprop tk ``atomic_update) (TA := $TA) (TB := $TB) $Eo $Ei $α $β $Φ)
+    ``($(wrapIprop tk ``atomic_update) _ (TA := $TA) (TB := $TB) $Eo $Ei $α $β $Φ)
   | `(iprop(AACC%$tk <{ $[$xs]? $α, ABORT $P }> @ $Eo, $Ei
         <{ $[$ys]? $β, COMM $Φ }>)) => do
     let (TA, TB, α, β, Φ) ← auArgs xs ys α β Φ
@@ -252,30 +253,30 @@ theorem atomic_acc_ne [FUpdNE SI PROP] {Eo Ei : CoPset} {n : SI} {α1 α2 : TA.A
 theorem atomic_update_ne [FUpdNE SI PROP] {Eo Ei : CoPset} {n : SI} {α1 α2 : TA.Arg → PROP}
     {β1 β2 Φ1 Φ2 : TA.Arg → TB.Arg → PROP} (hα : ∀ x, α1 x ≡{n}≡ α2 x)
     (hβ : ∀ x y, β1 x y ≡{n}≡ β2 x y) (hΦ : ∀ x y, Φ1 x y ≡{n}≡ Φ2 x y) :
-    atomic_update (SI := SI) Eo Ei α1 β1 Φ1 ≡{n}≡ atomic_update (SI := SI) Eo Ei α2 β2 Φ2 := by
+    atomic_update SI Eo Ei α1 β1 Φ1 ≡{n}≡ atomic_update SI Eo Ei α2 β2 Φ2 := by
   unfold atomic_update bi_greatest_fixpoint atomic_update_pre
   refine exists_ne fun Ψ => sep_ne.ne (intuitionistically_ne.ne (forall_ne fun _ => ?_)) .rfl
   exact wand_ne.ne .rfl (atomic_acc_ne hα .rfl hβ hΦ)
 
 @[rocq_alias aupd_unfold]
 theorem aupd_unfold {Eo Ei : CoPset} {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP} :
-    atomic_update (SI := SI) Eo Ei α β Φ ⊣⊢ atomic_acc Eo Ei α (atomic_update (SI := SI) Eo Ei α β Φ) β Φ := by
+    atomic_update SI Eo Ei α β Φ ⊣⊢ atomic_acc Eo Ei α (atomic_update SI Eo Ei α β Φ) β Φ := by
   unfold atomic_update
   exact (greatest_fixpoint_unfold (atomic_update_pre Eo Ei α β Φ)).to_bi
 
 @[rocq_alias aupd_aacc]
 theorem aupd_aacc {Eo Ei : CoPset} {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP} :
-    atomic_update (SI := SI) Eo Ei α β Φ ⊢ atomic_acc Eo Ei α (atomic_update (SI := SI) Eo Ei α β Φ) β Φ :=
+    atomic_update SI Eo Ei α β Φ ⊢ atomic_acc Eo Ei α (atomic_update SI Eo Ei α β Φ) β Φ :=
   aupd_unfold.mp
 
 @[rocq_alias atomic_update_mask_weaken]
 theorem atomic_update_mask_weaken {Eo1 Eo2 Ei : CoPset} {α : TA.Arg → PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} (HE : Eo1 ⊆ Eo2) :
-    atomic_update (SI := SI) Eo1 Ei α β Φ ⊢ atomic_update (SI := SI) Eo2 Ei α β Φ := by
-  change atomic_update Eo1 Ei α β Φ ⊢ bi_greatest_fixpoint (SI := SI) (atomic_update_pre Eo2 Ei α β Φ) ()
+    atomic_update SI Eo1 Ei α β Φ ⊢ atomic_update SI Eo2 Ei α β Φ := by
+  change atomic_update _ Eo1 Ei α β Φ ⊢ bi_greatest_fixpoint SI (atomic_update_pre Eo2 Ei α β Φ) ()
   iintro HAU
   iapply greatest_fixpoint_coiter (atomic_update_pre Eo2 Ei α β Φ)
-    (fun _ => atomic_update (SI := SI) Eo1 Ei α β Φ) $$ [] HAU
+    (fun _ => atomic_update SI Eo1 Ei α β Φ) $$ [] HAU
   iintro !> %_ H
   unfold atomic_update_pre
   iapply atomic_acc_mask_weaken HE
@@ -286,13 +287,13 @@ set_option synthInstance.checkSynthOrder false in
 instance elim_mod_aupd {φ} {io : InOut} {Eo Ei E : CoPset} {α : TA.Arg → PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} {Q Q' : PROP}
     [H : ∀ R, ElimModal φ false .in false iprop(|={E,Ei}=> R) R Q Q'] :
-    ElimModal (φ ∧ Eo ⊆ E) false io false (atomic_update (SI := SI) Eo Ei α β Φ)
-      iprop(∃.. x, α x ∗ ((α x ={Ei,E}=∗ atomic_update (SI := SI) Eo Ei α β Φ) ∧
+    ElimModal (φ ∧ Eo ⊆ E) false io false (atomic_update SI Eo Ei α β Φ)
+      iprop(∃.. x, α x ∗ ((α x ={Ei,E}=∗ atomic_update SI Eo Ei α β Φ) ∧
         (∀.. y, β x y ={Ei,E}=∗ Φ x y))) Q Q' where
   elim_modal := by
     rintro ⟨hφ, hsub⟩
     iintro ⟨AU, Hcont⟩
-    ihave AC : atomic_acc E Ei α (atomic_update Eo Ei α β Φ) β Φ $$ [AU]
+    ihave AC : atomic_acc E Ei α (atomic_update _ Eo Ei α β Φ) β Φ $$ [AU]
     · iapply atomic_acc_mask_weaken hsub
       iapply aupd_aacc $$ AU
     iunfold atomic_acc at AC
@@ -303,8 +304,8 @@ instance elim_mod_aupd {φ} {io : InOut} {Eo Ei E : CoPset} {α : TA.Arg → PRO
 theorem aupd_intro {Eo Ei : CoPset} {P Q : PROP} {α : TA.Arg → PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} [Absorbing P] [Persistent P]
     (HAU : P ∧ Q ⊢ atomic_acc Eo Ei α Q β Φ) :
-    P ∧ Q ⊢ atomic_update (SI := SI) Eo Ei α β Φ := by
-  change iprop(P ∧ Q) ⊢ bi_greatest_fixpoint (atomic_update_pre Eo Ei α β Φ) ()
+    P ∧ Q ⊢ atomic_update SI Eo Ei α β Φ := by
+  change iprop(P ∧ Q) ⊢ bi_greatest_fixpoint _ (atomic_update_pre Eo Ei α β Φ) ()
   iintro ⟨#HP, HQ⟩
   iapply greatest_fixpoint_coiter (atomic_update_pre Eo Ei α β Φ) (fun _ => Q) $$ [] HQ
   iintro !> %_ HQ
@@ -415,10 +416,10 @@ theorem aacc_aacc {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
 theorem aacc_aupd {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP}
     {α' : TA'.Arg → PROP} {P' : PROP} {β' Φ' : TA'.Arg → TB'.Arg → PROP} (HE : E1' ⊆ E1) :
-    atomic_update (SI := SI) E1' E2 α β Φ -∗
+    atomic_update SI E1' E2 α β Φ -∗
     (∀.. x, α x -∗ atomic_acc E2 E3 α'
-      iprop(α x ∗ (atomic_update (SI := SI) E1' E2 α β Φ ={E1}=∗ P')) β'
-      (λ.. x' y', iprop((α x ∗ (atomic_update (SI := SI) E1' E2 α β Φ ={E1}=∗ Φ' x' y'))
+      iprop(α x ∗ (atomic_update SI E1' E2 α β Φ ={E1}=∗ P')) β'
+      (λ.. x' y', iprop((α x ∗ (atomic_update SI E1' E2 α β Φ ={E1}=∗ Φ' x' y'))
         ∨ ∃.. y, β x y ∗ (Φ x y ={E1}=∗ Φ' x' y')))) -∗
       atomic_acc E1 E3 α' P' β' Φ' := by
   iintro Hupd Hstep
@@ -429,9 +430,9 @@ theorem aacc_aupd {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
 theorem aacc_aupd_commit {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP}
     {α' : TA'.Arg → PROP} {P' : PROP} {β' Φ' : TA'.Arg → TB'.Arg → PROP} (HE : E1' ⊆ E1) :
-    atomic_update (SI := SI) E1' E2 α β Φ ⊢
+    atomic_update SI E1' E2 α β Φ ⊢
     (∀.. x, α x -∗ atomic_acc E2 E3 α'
-      iprop(α x ∗ (atomic_update (SI := SI) E1' E2 α β Φ ={E1}=∗ P')) β'
+      iprop(α x ∗ (atomic_update SI E1' E2 α β Φ ={E1}=∗ P')) β'
       (λ.. x' y', iprop(∃.. y, β x y ∗ (Φ x y ={E1}=∗ Φ' x' y')))) -∗
       atomic_acc E1 E3 α' P' β' Φ' := by
   iintro Hupd Hstep
@@ -449,10 +450,10 @@ theorem aacc_aupd_commit {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
 theorem aacc_aupd_abort {TA' TB' : Tele} {E1 E1' E2 E3 : CoPset}
     {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP}
     {α' : TA'.Arg → PROP} {P' : PROP} {β' Φ' : TA'.Arg → TB'.Arg → PROP} (HE : E1' ⊆ E1) :
-    atomic_update (SI := SI) E1' E2 α β Φ ⊢
+    atomic_update SI E1' E2 α β Φ ⊢
     (∀.. x, α x -∗ atomic_acc E2 E3 α'
-      iprop(α x ∗ (atomic_update (SI := SI) E1' E2 α β Φ ={E1}=∗ P')) β'
-      (λ.. x' y', iprop(α x ∗ (atomic_update (SI := SI) E1' E2 α β Φ ={E1}=∗ Φ' x' y')))) -∗
+      iprop(α x ∗ (atomic_update SI E1' E2 α β Φ ={E1}=∗ P')) β'
+      (λ.. x' y', iprop(α x ∗ (atomic_update SI E1' E2 α β Φ ={E1}=∗ Φ' x' y')))) -∗
       atomic_acc E1 E3 α' P' β' Φ' := by
   iintro Hupd Hstep
   iapply aacc_aupd HE $$ Hupd
@@ -475,7 +476,7 @@ variable [BI PROP] [BIStepIndexed SI PROP] [BIFUpdate PROP] {TA TB : Tele}
 theorem tac_aupd_intro {e eI eS : PROP} {Eo Ei : CoPset} {α : TA.Arg → PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} (hsplit : e ⊣⊢ eI ∗ eS) (hI : eI ⊢ □ eI)
     (H : e ⊢ atomic_acc Eo Ei α eS β Φ) :
-    e ⊢ atomic_update (SI := SI) Eo Ei α β Φ := by
+    e ⊢ atomic_update SI Eo Ei α β Φ := by
   have h : e ⊣⊢ <pers> eI ∧ eS := calc
     _ ⊣⊢ eI ∗ eS        := hsplit
     _ ⊣⊢ □ eI ∗ eS      := sep_congr_left ⟨hI, intuitionistically_elim⟩

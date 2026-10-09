@@ -22,18 +22,18 @@ open OFE ORA UORA
 variable {α : Type _} [OFE Nat α]
 
 @[rocq_alias mono_listR, rocq_alias mono_listUR, implicit_reducible]
-def MonoList (α : Type _) [OFE Nat α] := Auth (SI := Nat) (MaxPrefixList α)
+def MonoList (α : Type _) [OFE Nat α] := Auth Nat (MaxPrefixList α)
 
 instance : OFE Nat (MonoList α) := Auth.instOFE
-instance : RA (MonoList α) := inferInstanceAs (RA (Auth (SI := Nat) (MaxPrefixList α)))
-instance : URA (MonoList α) := inferInstanceAs (URA (Auth (SI := Nat) (MaxPrefixList α)))
+instance : RA (MonoList α) := inferInstanceAs (RA (Auth Nat (MaxPrefixList α)))
+instance : URA (MonoList α) := inferInstanceAs (URA (Auth Nat (MaxPrefixList α)))
 instance : ORA Nat (MonoList α) := Auth.instORA
 instance : UORA Nat (MonoList α) := Auth.instUCMRA
 
-instance instIsIncMonoList : IsInc Nat (MonoList α) := inferInstanceAs (IsInc Nat (Auth (SI := Nat) (MaxPrefixList α)))
+instance instIsIncMonoList : IsInc Nat (MonoList α) := inferInstanceAs (IsInc Nat (Auth Nat (MaxPrefixList α)))
 
 instance instDiscrete [OFE.Discrete Nat α] : ORA.Discrete Nat (MonoList α) :=
-  inferInstanceAs (ORA.Discrete Nat (Auth (SI := Nat) (MaxPrefixList α)))
+  inferInstanceAs (ORA.Discrete Nat (Auth Nat (MaxPrefixList α)))
 
 namespace MonoList
 
@@ -94,15 +94,18 @@ theorem lb_nil : ◯ML ([] : List α) = unit := by
   rw [toMaxPrefixList_nil]
   rfl
 
-instance : IsUnit Nat (◯ML ([] : List α)) := by
+instance : IsRAUnit (◯ML ([] : List α)) := by
   rw [lb_nil]
   infer_instance
+
+instance : IsUnit Nat (◯ML ([] : List α)) where
+  unit_valid := lb_nil (α := α) ▸ ORA.unit_valid
 
 @[rocq_alias mono_list_auth_dfrac_op]
 theorem auth_dfrac_op (dq1 dq2 : DFrac) (l : List α) :
     ●ML{dq1 • dq2} l = ●ML{dq1} l • ●ML{dq2} l := by
   unfold auth MonoList
-  rw [Algebra.MonoidOps.op_op_op_comm (M := Auth (MaxPrefixList α))
+  rw [Algebra.MonoidOps.op_op_op_comm (M := Auth Nat (MaxPrefixList α))
       (op := Op.op) (unit := UnitOp.unit),
     ← Auth.frag_op, op_self, Auth.auth_dfrac_op]
 
@@ -156,7 +159,7 @@ theorem auth_dfrac_op_validN {n : Nat} (dq1 dq2 : DFrac) (l1 l2 : List α) :
     ✓{n} (●ML{dq1} l1 • ●ML{dq2} l2) ↔ ✓[Nat] (dq1 • dq2) ∧ l1 ≡{n}≡ l2 := by
   refine ⟨fun h => ?_, fun ⟨hdq, hl⟩ => ?_⟩
   · unfold auth MonoList at h
-    rw [Algebra.MonoidOps.op_op_op_comm (M := Auth (MaxPrefixList α))
+    rw [Algebra.MonoidOps.op_op_op_comm (M := Auth Nat (MaxPrefixList α))
       (op := Op.op) (unit := UnitOp.unit)] at h
     have ⟨hdq, ha, _⟩ := Auth.auth_dfrac_op_validN.mp (validN_op_left h)
     exact ⟨hdq, toMaxPrefixList_dist_inj ha⟩

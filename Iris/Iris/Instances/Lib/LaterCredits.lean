@@ -50,7 +50,7 @@ scoped instance {a : Credit} : Cancelable Nat a := inferInstance
 /-- Later credits inclusion typeclass (`GF` contains the necessary functors for later credits) -/
 @[rocq_alias lcGpreS]
 class LcGpreS (GF : BundledGFunctors) where
-  lc_elem : ElemG GF (AuthURF (constOF Credit))
+  lc_elem : ElemG GF (AuthURF (constOF _ Credit))
 
 attribute [reducible, instance] LcGpreS.lc_elem
 
@@ -200,7 +200,7 @@ instance {P : IProp GF} : Contractive Nat (le_upd_pre P) where
 #rocq_ignore le_upd.le_upd_unseal "`le_upd` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias le_upd.le_upd]
-def le_upd (P : IProp GF) : IProp GF := fixpoint (SI := Nat) (le_upd_pre P)
+def le_upd (P : IProp GF) : IProp GF := fixpoint Nat (le_upd_pre P)
 
 syntax:max "|==£> " term:40 : term
 

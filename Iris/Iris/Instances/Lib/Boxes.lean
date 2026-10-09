@@ -24,7 +24,7 @@ abbrev BoolO := DiscreteO Bool
 variable (GF : BundledGFunctors)
 
 abbrev BoxF : OFunctorPre Nat :=
-  ProdOF (AuthURF (OptionOF (ExclOF (constOF BoolO))))
+  ProdOF (AuthURF (OptionOF (ExclOF (constOF _ BoolO))))
     (OptionOF (AgreeRF (LaterOF IdOF)))
 
 @[rocq_alias boxG]
@@ -42,10 +42,10 @@ variable {GF : BundledGFunctors} [InvGS_gen hlc GF] [BoxG GF]
 abbrev SliceName := GName
 
 @[rocq_alias box_own_auth]
-def box_own_auth (γ : SliceName) (a : Auth (SI := Nat) (Option (Excl BoolO))) : IProp GF :=
+def box_own_auth (γ : SliceName) (a : Auth Nat (Option (Excl BoolO))) : IProp GF :=
   iOwn (F := BoxF) γ (a, none)
 
-instance box_own_auth_timeless (γ : SliceName) (a : Auth (Option (Excl BoolO))) :
+instance box_own_auth_timeless (γ : SliceName) (a : Auth _ (Option (Excl BoolO))) :
     BI.Timeless (box_own_auth (GF := GF) γ a) :=
   iOwn_timeless (F := BoxF) (a := ((a, none) : BoxF.ap (IProp GF)))
 

@@ -756,7 +756,6 @@ attribute [instance, ipm_backtrack] AndIntoSep.affinely
 @[rocq_alias into_sep_sep]
 instance intoSep_sep [BI PROP] (P Q : PROP) : IntoSep iprop(P ∗ Q) P Q := ⟨.rfl⟩
 
-set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias into_sep_and_persistent_l]
 instance intoSep_and_persistent_left [BI PROP] (P Q P' Q' : PROP) [Persistent P]
     [inst : AndIntoSep P P' Q Q'] : IntoSep iprop(P ∧ Q) P' Q' where
@@ -770,7 +769,6 @@ instance intoSep_and_persistent_left [BI PROP] (P Q P' Q' : PROP) [Persistent P]
         _ ⊢ P ∗ Q'                  := sep_mono (affine_affinely _).mp h.from_affinely
     | _, AndIntoSep.affinely .. => persistent_and_affinely_sep_left_mp
 
-set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias into_sep_and_persistent_r]
 instance intoSep_and_persistent_right [BI PROP] (P Q P' Q' : PROP) [Persistent Q]
     [inst : AndIntoSep Q Q' P P'] : IntoSep iprop(P ∧ Q) P' Q' where
@@ -1039,7 +1037,6 @@ instance (priority := default + 20) fromAssumption_affinely_left (p : Bool) [BI 
     (P Q : PROP) [h : FromAssumption p .in P Q] : FromAssumption p .in iprop(<affine> P) Q where
   from_assumption := (intuitionisticallyIf_mono affinely_elim).trans h.1
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias from_assumption_forall]
 instance (priority := default + 10) fromAssumption_forall (p : Bool) [BI PROP]
     (Φ : α → PROP) (x : α) (Q : PROP) [h : FromAssumption p .in (Φ x) Q] :

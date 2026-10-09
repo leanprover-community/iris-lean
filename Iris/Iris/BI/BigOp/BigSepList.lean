@@ -1223,8 +1223,17 @@ theorem bigSepL2_dist_2 [BIStepIndexed SI PROP] [OFE SI A] [OFE SI B]
     bigSepL2_dist_2 (by simpa using hl1) (by simpa using hl2)
     (fun {k} => @hel1 (k + 1)) (fun {k} => @hel2 (k + 1)) (fun {k} => @hf (k + 1))
 
+private theorem list_eq_of_getElem? {C : Type _} {m m' : List C} (hl : m.length = m'.length)
+    (he : ∀ {k : Nat} {x x' : C}, m[k]? = some x → m'[k]? = some x' → x = x') : m = m' :=
+  List.ext_getElem? fun k => by
+    rcases h : m[k]? with _ | x <;> rcases h' : m'[k]? with _ | x'
+    · rfl
+    · have := List.getElem?_eq_none_iff.mp h; have := (List.getElem?_eq_some_iff.mp h').1; omega
+    · have := List.getElem?_eq_none_iff.mp h'; have := (List.getElem?_eq_some_iff.mp h).1; omega
+    · exact congrArg some (he h h')
+
 @[rocq_alias big_sepL2_proper_2]
-theorem bigSepL2_proper_2 [BIStepIndexed SI PROP] [OFE SI A] [OFE SI B]
+theorem bigSepL2_proper_2
     {Φ Ψ : Nat → A → B → PROP} {l1 l1' : List A} {l2 l2' : List B}
     (hl1 : l1.length = l1'.length) (hl2 : l2.length = l2'.length)
     (hel1 : ∀ {k : Nat} {x x' : A}, l1[k]? = some x → l1'[k]? = some x' → x = x')
@@ -1233,11 +1242,11 @@ theorem bigSepL2_proper_2 [BIStepIndexed SI PROP] [OFE SI A] [OFE SI B]
       l2[k]? = some y2 → l2'[k]? = some y2' → y2 = y2' →
       Φ k y1 y2 ⊣⊢ Ψ k y1' y2') :
     ([∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) ⊣⊢
-      ([∗list] k ↦ x1;x2 ∈ l1';l2', Ψ k x1 x2) :=
-  equiv_iff.mp <| OFE.eq_dist_2 fun _ =>
-    bigSepL2_dist_2 hl1 hl2 (fun h1 h2 => OFE.Dist.of_eq (SI := SI) (hel1 h1 h2))
-      (fun h1 h2 => OFE.Dist.of_eq (hel2 h1 h2))
-      (fun h1 h2 _ h3 h4 _ => (equiv_iff.mpr (hf h1 h2 (hel1 h1 h2) h3 h4 (hel2 h3 h4))).dist)
+      ([∗list] k ↦ x1;x2 ∈ l1';l2', Ψ k x1 x2) := by
+  obtain rfl := list_eq_of_getElem? hl1 hel1
+  obtain rfl := list_eq_of_getElem? hl2 hel2
+  exact ⟨bigSepL2_mono fun h1 h2 => (hf h1 h1 rfl h2 h2 rfl).1,
+    bigSepL2_mono fun h1 h2 => (hf h1 h1 rfl h2 h2 rfl).2⟩
 
 @[rocq_alias big_sepL_sepL2_diag]
 theorem bigSepL_sepL2_diag {Φ : Nat → A → A → PROP} {l : List A} :

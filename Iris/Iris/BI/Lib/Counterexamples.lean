@@ -71,7 +71,7 @@ theorem later_anything [BI PROP] [BIPersistentlyExist PROP]
     iassumption
 
 @[rocq_alias löb_em.later_inconsistent]
-theorem later_inconsistent [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [BIPersistentlyExist PROP]
+theorem later_inconsistent [SIdxSucc SI] [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [BIPersistentlyExist PROP]
     (em : ∀ P : PROP, ⊢ P ∨ ¬P) : ⊢@{PROP} False := by
   haveI : BILoeb PROP := .ofLaterContractive SI
   apply later_soundness (SI := SI) (PROP := PROP) (P := iprop(False))

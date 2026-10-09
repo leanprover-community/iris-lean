@@ -37,8 +37,8 @@ abbrev InvMapF := HeapViewURF (H := InvMap) (AgreeRF (LaterOF IdOF (SI := Nat)))
 @[rocq_alias wsatGS.wsatGpreS]
 class WsatGpreS (GF : BundledGFunctors) where
   inv : ElemG GF InvMapF
-  enabled : ElemG GF (constOF CoPsetDisjL)
-  disabled : ElemG GF (constOF (DisjointLeibnizSet PosSet))
+  enabled : ElemG GF (constOF _ CoPsetDisjL)
+  disabled : ElemG GF (constOF _ (DisjointLeibnizSet PosSet))
 
 attribute [reducible, instance] WsatGpreS.inv
 attribute [reducible, instance] WsatGpreS.enabled

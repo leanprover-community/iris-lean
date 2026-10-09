@@ -83,7 +83,7 @@ end toInvHeap
 @[rocq_alias inv_heapGpreS]
 class invHeapPreS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ → Type _)
     [LawfulFiniteMap H L] where
-  invHeap : ElemG GF (constOF (Auth (SI := Nat) (InvHeapMapUR V H)))
+  invHeap : ElemG GF (constOF _ (Auth Nat (InvHeapMapUR V H)))
 
 attribute [reducible, instance] invHeapPreS.invHeap
 

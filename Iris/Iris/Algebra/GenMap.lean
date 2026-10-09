@@ -265,7 +265,7 @@ instance instORA_GenMap : ORA SI (GenMap β) where
   toValid := GenMap.raValid β
   op_ne {x} := ⟨fun n y₁ y₂ H => by
     show (x.car • y₁.car) ≡{n}≡ (x.car • y₂.car)
-    exact (op_ne (SI := SI) (x := x.car)).ne (n := n) (x₁ := y₁.car) (x₂ := y₂.car) H⟩
+    exact (op_ne (x := x.car)).ne (n := n) (x₁ := y₁.car) (x₂ := y₂.car) H⟩
   pcore_ne {n : SI} {x y cx} H Hm := by
     refine ⟨⟨fun k => core (y.car k), ?_⟩, by simp [PCore.pcore, pcore_genmap], fun k => ?_⟩
     · obtain ⟨N, hN⟩ := y.bound
@@ -300,8 +300,8 @@ instance instORA_GenMap : ORA SI (GenMap β) where
     obtain rfl := Option.some.inj e
     exact increasing_of_car β (inferInstance : Increasing SI (core x.car))
   increasing_closed h h' := increasing_of_car β (increasing_closed (increasing_car β h) h')
-  ordN_extend {n : SI} {x y} v h :=
-    let ⟨z, hz, ez⟩ := ordN_extend (α := Nat → Option β) (n := n) (x := x.car) (y := y.car) v h
+  ordN_extend {n : SI} {sn} {x y} hs v h :=
+    let ⟨z, hz, ez⟩ := ordN_extend (α := Nat → Option β) (n := n) (x := x.car) (y := y.car) hs v h
     let ⟨N, hN⟩ := x.bound
     ⟨⟨z, N, fun k hk => dist_none.mp (hN k hk ▸ ez k)⟩, hz, ez⟩
 
@@ -449,7 +449,7 @@ instance instURFunctor_GenMapOF (F : COFE.OFunctorPre SI) [RFunctor SI F] :
       | none => simp [Option.map, h, ValidN, optionValidN]
       | some v =>
         simp only [Option.map, ValidN, optionValidN, h]
-        have Hvalid := @(URFunctor.map (F := OptionOF (SI := SI) F) f g).validN n v
+        have Hvalid := @(URFunctor.map (F := OptionOF F) f g).validN n v
         simp only [ValidN, optionValidN, URFunctor.map] at Hvalid
         have hv' := hv z
         simp only [h, ValidN, optionValidN] at hv'
@@ -488,7 +488,7 @@ instance instURFunctorContractive_GenMapOF (F : COFE.OFunctorPre SI) [RFunctorCo
     URFunctorContractive SI (GenMapOF F) where
   map_contractive.1 h x γ := by
     next n x' y' =>
-    have Heqv := @(URFunctorContractive.map_contractive (F := OptionOF (SI := SI) F)).1 _ x' y' h (x.car γ)
+    have Heqv := @(URFunctorContractive.map_contractive (F := OptionOF F)).1 _ x' y' h (x.car γ)
     simp only [Function.uncurry, URFunctor.map, Option.map] at Heqv ⊢
     cases hc : x.car γ <;> simp [OFE.Dist]
     rw [hc] at Heqv

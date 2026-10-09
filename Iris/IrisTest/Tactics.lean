@@ -3638,17 +3638,17 @@ example {F GF} [RFunctorContractive Nat F] [RFunctorAffine Nat F] [ElemG GF F] {
 
 /-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
     instances for `DFrac` and `Frac`. -/
-example {GF} [ElemG GF (constOF DFrac)]
-    [ElemG GF (constOF Qp)] {γ}
+example {GF} [ElemG GF (constOF _ DFrac)]
+    [ElemG GF (constOF _ Qp)] {γ}
     {a1 a2 a3 b c : Qp} [IsOp .merge b a2 a3] [IsOp .merge c a1 b] :
     ⊢@{IProp GF}
-      iOwn (F := constOF DFrac) γ (own a1) -∗
-      iOwn (F := constOF DFrac) γ (own a2) -∗
-      iOwn (F := constOF DFrac) γ (own a3) -∗
-      iOwn (F := constOF Qp) γ a1 -∗
-      iOwn (F := constOF Qp) γ a2 -∗
-      iOwn (F := constOF Qp) γ a3 -∗
-      iOwn (F := constOF DFrac) γ (own c) ∗ iOwn (F := constOF Qp) γ c := by
+      iOwn (F := constOF _ DFrac) γ (own a1) -∗
+      iOwn (F := constOF _ DFrac) γ (own a2) -∗
+      iOwn (F := constOF _ DFrac) γ (own a3) -∗
+      iOwn (F := constOF _ Qp) γ a1 -∗
+      iOwn (F := constOF _ Qp) γ a2 -∗
+      iOwn (F := constOF _ Qp) γ a3 -∗
+      iOwn (F := constOF _ DFrac) γ (own c) ∗ iOwn (F := constOF _ Qp) γ c := by
   iintro H1 H2 H3 H4 H5 H6
   icombine H1 H2 H3 as Hnew1
   icombine H4 H5 H6 as Hnew2
@@ -3658,19 +3658,19 @@ example {GF} [ElemG GF (constOF DFrac)]
 
 /-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
     instances for the authoritative ORA. -/
-example {GF A} [URA A] [UCMRA Nat A] [ORA.Affine (SI := Nat) A] [ElemG GF (constOF (Auth (SI := Nat) A))] {γ}
+example {GF A} [URA A] [UCMRA Nat A] [ORA.Affine Nat A] [ElemG GF (constOF _ (Auth Nat A))] {γ}
     {a1 a2 a3 b c : A} {q1 q2 : Qp} {dq'' dq3 dq4 : DFrac}
     [IsOp .merge b a2 a3] [IsOp .merge c a1 b]
     [IsOp .merge dq'' dq3 dq4] :
     ⊢@{IProp GF}
-      iOwn (F := constOF (Auth (SI := Nat) A)) γ (◯ a1) -∗
-      iOwn (F := constOF (Auth (SI := Nat) A)) γ (◯ a2) -∗
-      iOwn (F := constOF (Auth (SI := Nat) A)) γ (◯ a3) -∗
-      iOwn (F := constOF (Auth (SI := Nat) A)) γ (●{own q1} a1) -∗
-      iOwn (F := constOF (Auth (SI := Nat) A)) γ (●{own q2} a1) -∗
-      iOwn (F := constOF (Auth (SI := Nat) A)) γ (●{dq3} a1) -∗
-      iOwn (F := constOF (Auth (SI := Nat) A)) γ (●{dq4} a1) -∗
-      iOwn (F := constOF (Auth (SI := Nat) A)) γ ((◯ c) • ●{(own (q1 + q2)) • dq''} a1) := by
+      iOwn (F := constOF _ (Auth Nat A)) γ (◯ a1) -∗
+      iOwn (F := constOF _ (Auth Nat A)) γ (◯ a2) -∗
+      iOwn (F := constOF _ (Auth Nat A)) γ (◯ a3) -∗
+      iOwn (F := constOF _ (Auth Nat A)) γ (●{own q1} a1) -∗
+      iOwn (F := constOF _ (Auth Nat A)) γ (●{own q2} a1) -∗
+      iOwn (F := constOF _ (Auth Nat A)) γ (●{dq3} a1) -∗
+      iOwn (F := constOF _ (Auth Nat A)) γ (●{dq4} a1) -∗
+      iOwn (F := constOF _ (Auth Nat A)) γ ((◯ c) • ●{(own (q1 + q2)) • dq''} a1) := by
   iintro H1 H2 H3 H4 H5 H6 H7
   icombine H1 H2 H3 as HNew1
   icombine H4 H5 as HNew2
@@ -3682,13 +3682,13 @@ example {GF A} [URA A] [UCMRA Nat A] [ORA.Affine (SI := Nat) A] [ElemG GF (const
     merging of `a1`, `a2` and `a3` using `+` instead of `•`, as well as
     to eliminate splits (`IsHalfFraction`). -/
 example {GF}
-    [ElemG GF (constOF Qp)] {γ} {a1 a2 a3 : Qp} :
+    [ElemG GF (constOF _ Qp)] {γ} {a1 a2 a3 : Qp} :
     ⊢@{IProp GF}
-      iOwn (F := constOF Qp) γ a1 -∗
-      iOwn (F := constOF Qp) γ a2 -∗
-      iOwn (F := constOF Qp) γ (a3.half) -∗
-      iOwn (F := constOF Qp) γ (a3.half) -∗
-      iOwn (F := constOF Qp) γ (a1.half + (a1.half + (a2 + a3))) := by
+      iOwn (F := constOF _ Qp) γ a1 -∗
+      iOwn (F := constOF _ Qp) γ a2 -∗
+      iOwn (F := constOF _ Qp) γ (a3.half) -∗
+      iOwn (F := constOF _ Qp) γ (a3.half) -∗
+      iOwn (F := constOF _ Qp) γ (a1.half + (a1.half + (a2 + a3))) := by
   iintro H1 H2 H3a H3b
   icases H1 with ⟨H1a, H1b⟩
   icombine H1a H1b H2 H3a H3b as Hnew

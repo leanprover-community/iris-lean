@@ -75,7 +75,7 @@ theorem pre_mono (X Y : List Expr → IProp GF) :
 /-- Total weakest precondition for a thread pool. -/
 @[rocq_alias twptp]
 def get (t : List Expr) : IProp GF :=
-  bi_least_fixpoint (SI := Nat) pre t
+  bi_least_fixpoint Nat pre t
 
 instance get_ne : NonExpansive Nat (get (ι := ι)) := list_nonexpansive _
 

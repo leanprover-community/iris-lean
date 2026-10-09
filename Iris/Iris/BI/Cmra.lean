@@ -29,6 +29,7 @@ section CmraValid
 
 variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [RA A] [ORA SI A]
 
+variable (SI) in
 @[rocq_alias internal_cmra_valid]
 def internalCmraValid (a : A) : PROP := siPure (cmraValid (SI := SI) a)
 
@@ -46,7 +47,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
     `(iprop(✓[$si] $a))
 
 @[rocq_alias internal_cmra_valid_ne]
-instance internalCmraValid_ne : NonExpansive SI (internalCmraValid (SI := SI) (PROP := PROP) (A := A)) where
+instance internalCmraValid_ne : NonExpansive SI (internalCmraValid SI (PROP := PROP) (A := A)) where
   ne _ _ _ h := siPure_ne.ne (instNonExpansiveCmraValid.ne h)
 
 #rocq_ignore internal_cmra_valid_proper "Derivable from internalCmraValid_ne with NonExpansive.eqv"
@@ -265,18 +266,19 @@ instance internalCmraIncluded_absorbing {a b : A} :
 
 /-! ### The internal order -/
 
+variable (SI) in
 def _root_.SiProp.cmraOrder (a b : A) : SiProp SI where
   holds n := a ≼ₒ{n} b
   closed h hle := h.le hle
 
 instance _root_.SiProp.cmraOrder_timeless [ORA.Discrete SI A] {a b : A} :
-    Timeless (SiProp.cmraOrder (SI := SI) a b) where
+    Timeless (SiProp.cmraOrder SI a b) where
   timeless := fun _ h =>
     ordN_of_ord _ (discrete_ord (h 0 SIdx.le_0_l fun k hk => absurd hk (SIdx.not_lt_zero k)))
 
 /-- The internal order `a ≼ₒ b`, holding at step index `n` when `a ≼ₒ{n} b`; ownership is
 monotone along it (`ownM_mono`). -/
-def internalCmraOrder (a b : A) : PROP := siPure (SiProp.cmraOrder (SI := SI) a b)
+def internalCmraOrder (a b : A) : PROP := siPure (SiProp.cmraOrder SI a b)
 
 macro_rules
   | `(iprop($a ≼ₒ[%$tk $si] $b)) => ``($(wrapIprop tk ``internalCmraOrder) (SI := $si) $a $b)

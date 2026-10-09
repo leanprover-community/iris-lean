@@ -368,18 +368,18 @@ instance instORADynReservationMap : ORA SI (DynReservationMap A H) where
   pcore_mono_ord | h, rfl => ⟨_, rfl, core_mono_ord h.1, core_mono_ord h.2⟩
   pcore_order_op {x _} e y := by
     cases Option.some_inj.mp e
-    exact ⟨_, rfl, core_op_mono_ord (SI := SI) x.data y.data, core_op_mono_ord (SI := SI) x.token y.token⟩
+    exact ⟨_, rfl, core_op_mono_ord x.data y.data, core_op_mono_ord x.token y.token⟩
   pcore_increasing {x _} e := by
     cases Option.some_inj.mp e
-    exact increasing_mk (v := mk _ ∅) (increasing_core (SI := SI) x.data)
+    exact increasing_mk (v := mk _ ∅) (increasing_core x.data)
       (increasing_core (SI := SI) x.token)
   increasing_closed {n : SI} {x y} h h' :=
     increasing_mk
       (increasing_closed (increasing_data h) (Or.imp (·.1) (·.1) h'))
       (increasing_closed (increasing_token h) (Or.imp (·.2) (·.2) h'))
-  ordN_extend {n : SI} {x y} v h := by
-    obtain ⟨zd, hzd, ed⟩ := ordN_extend (validN_data_of_validN v) h.1
-    obtain ⟨zt, hzt, et⟩ := ordN_extend (validN_token_of_validN v) h.2
+  ordN_extend {n : SI} {sn} {x y} hs v h := by
+    obtain ⟨zd, hzd, ed⟩ := ordN_extend hs (validN_data_of_validN v) h.1
+    obtain ⟨zt, hzt, et⟩ := ordN_extend hs (validN_token_of_validN v) h.2
     exact ⟨mk zd zt, ⟨hzd, hzt⟩, ed, et⟩
 
 end

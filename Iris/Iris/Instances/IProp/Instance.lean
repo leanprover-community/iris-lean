@@ -135,19 +135,16 @@ theorem unbundle_op {GF : BundledGFunctors} [E : ElemG GF F] (a2 ac : GF.api (El
   OFE.transpAp_op_mp E.transpMap
     E.transpClass
 
-theorem ElemG.bundle_unit {GF} (E : ElemG GF F) {ε : F.ap (IProp GF)} [IsUnit Nat ε] :
-    IsUnit Nat (E.bundle ε) := by
-  refine { unit_valid := ?_, unit_left_id := ?_, pcore_unit := ?_ }
-  · refine valid_iff_validN.mpr fun n => ?_
-    apply transpAp_validN_mp E.transpMap.symm E.transpClass.symm
-    apply IsUnit.unit_valid.validN
+theorem ElemG.bundle_raUnit {GF} (E : ElemG GF F) {ε : F.ap (IProp GF)} [IsRAUnit ε] :
+    IsRAUnit (E.bundle ε) := by
+  refine { unit_left_id := ?_, pcore_unit := ?_ }
   · intro x
     have h1 : E.unbundle (E.bundle ε • x) = E.unbundle x := by
       calc E.unbundle (E.bundle ε • x)
         _ = E.unbundle (E.bundle ε) • E.unbundle x :=
             transpAp_op_mp E.transpMap E.transpClass
         _ = ε • E.unbundle x := congrArg (op · _) (ElemG.unbundle_bundle E ε)
-        _ = E.unbundle x := IsUnit.unit_left_id Nat
+        _ = E.unbundle x := IsRAUnit.unit_left_id
     calc E.bundle ε • x
        = E.bundle (E.unbundle (E.bundle ε • x)) := (ElemG.bundle_unbundle E _).symm
      _ = E.bundle (E.unbundle x) := congrArg E.bundle h1
@@ -158,7 +155,7 @@ theorem ElemG.bundle_unit {GF} (E : ElemG GF F) {ε : F.ap (IProp GF)} [IsUnit N
                E.transpMap.symm
                E.transpClass.symm).symm
      _ = Option.map E.bundle (some ε) := by
-        have h_pcore := ‹IsUnit Nat ε›.pcore_unit
+        have h_pcore := ‹IsRAUnit ε›.pcore_unit
         rcases eqn : pcore ε with (_ | c)
         · exact absurd (eqn ▸ h_pcore) (OFE.not_none_eqv_some)
         · simp only [Option.map]
@@ -232,16 +229,15 @@ theorem IProp.validN_unfoldi {n : Nat} (x : FF.api τ (IProp FF)) : ✓{n} (unfo
   ⟨IProp.validN_unfoldi_mp x,IProp.unfoldi_validN x⟩
 
 /-- unfoldi preserves unit structure -/
-theorem IProp.unfoldi_unit {τ : GType} {x : FF.api τ (IProp FF)} [IsUnit Nat x] :
-    IsUnit Nat (unfoldi x) := by
-  refine { unit_valid := ?_, unit_left_id := ?_, pcore_unit := ?_ }
-  · exact valid_iff_validN.mpr fun n => IProp.unfoldi_validN x IsUnit.unit_valid.validN
+theorem IProp.unfoldi_raUnit {τ : GType} {x : FF.api τ (IProp FF)} [IsRAUnit x] :
+    IsRAUnit (unfoldi x) := by
+  refine { unit_left_id := ?_, pcore_unit := ?_ }
   · intro y
     have h : foldi (unfoldi x • y) = foldi y := by
       calc foldi (unfoldi x • y)
         _ = foldi (unfoldi x) • foldi y := foldi_op _ _
         _ = x • foldi y := congrArg (op · _) (foldi_unfoldi x)
-        _ = foldi y := IsUnit.unit_left_id Nat
+        _ = foldi y := IsRAUnit.unit_left_id
     calc unfoldi x • y
       _ = unfoldi (foldi (unfoldi x • y)) := (IProp.unfoldi_foldi _).symm
       _ = unfoldi (foldi y) := congrArg unfoldi.f h
@@ -250,7 +246,7 @@ theorem IProp.unfoldi_unit {τ : GType} {x : FF.api τ (IProp FF)} [IsUnit Nat x
     calc pcore (unfoldi.f x)
       _ = (pcore x).map unfoldi.f := ((RFunctor.map (IProp.fold FF) (IProp.unfold FF)).pcore x).symm
       _ = (some x).map unfoldi.f :=
-        Option.map_forall₂ _ (IsUnit.pcore_unit Nat)
+        Option.map_forall₂ _ IsRAUnit.pcore_unit
       _ = some (unfoldi.f x) := by
         simp [Option.map]
 
@@ -372,10 +368,10 @@ theorem IProp.unfoldi_bundle_validN {n : Nat} {a : F.ap (IProp GF)} (Hv : ✓{n}
     ✓{n} (IProp.unfoldi (E.bundle a)) :=
   unfoldi_validN _ (ElemG.bundle_validN Hv)
 
-theorem IProp.unfoldi_bundle_unit {ε : F.ap (IProp GF)} [IsUnit Nat ε] :
-    IsUnit Nat (IProp.unfoldi (E.bundle ε)) :=
-  letI : IsUnit Nat (E.bundle ε) := ElemG.bundle_unit E
-  IProp.unfoldi_unit
+theorem IProp.unfoldi_bundle_raUnit {ε : F.ap (IProp GF)} [IsRAUnit ε] :
+    IsRAUnit (IProp.unfoldi (E.bundle ε)) :=
+  haveI := ElemG.bundle_raUnit E (ε := ε)
+  IProp.unfoldi_raUnit
 
 theorem validN_of_iSingleton {n : Nat} {a : F.ap (IProp GF)} (Hv : ✓{n} iSingleton F γ a) : ✓{n} a := by
   have h_at_gamma : ✓{n} (((iSingleton F γ a) E.τ).car γ) := Hv E.τ γ
@@ -546,7 +542,7 @@ end iSingleton
 @[rocq_alias own, irreducible]
 def iOwn {GF F} [RFunctorContractive Nat F] [RFunctorAffine Nat F] [E : ElemG GF F] (γ : GName)
     (v : F.ap (IProp GF)) : IProp GF :=
-  UPred.ownM <| iSingleton F γ v
+  UPred.ownM _ <| iSingleton F γ v
 
 #rocq_ignore own_def "`iOwn` is defined directly without `seal`/`unseal`."
 #rocq_ignore own_aux "`iOwn` is defined directly without `seal`/`unseal`."
@@ -691,7 +687,7 @@ theorem alloc_update_unit {f : GName → F.ap (IProp GF)} :
 theorem iOwn_alloc_dep (f : GName → F.ap (IProp GF)) (Ha : ∀ γ, ✓[Nat] (f γ)) :
     ⊢ |==> ∃ γ, iOwn γ (f γ) := by
   unfold iOwn
-  refine .trans (Q := iprop(|==> ∃ m, ⌜∃ γ, m = iSingleton F γ (f γ)⌝ ∧ UPred.ownM m)) ?_ (BIUpdate.mono ?_)
+  refine .trans (Q := iprop(|==> ∃ m, ⌜∃ γ, m = iSingleton F γ (f γ)⌝ ∧ UPred.ownM _ m)) ?_ (BIUpdate.mono ?_)
   · refine .trans (UPred.ownM_unit iprop(emp)) ?_
     refine .trans intuitionistically_elim ?_
     apply UPred.bupd_ownM_updateP
@@ -712,7 +708,7 @@ theorem iOwn_alloc_strong_dep (f : GName → F.ap (IProp GF)) (P : GName → Pro
     (Hf : ∀ γ, P γ → ✓[Nat] (f γ)) :
     ⊢ |==> ∃ γ, ⌜P γ⌝ ∗ iOwn γ (f γ) := by
   unfold iOwn
-  refine .trans (Q := iprop(|==> ∃ m, ⌜∃ γ, P γ ∧ m = iSingleton F γ (f γ)⌝ ∧ UPred.ownM m)) ?_ (BIUpdate.mono ?_)
+  refine .trans (Q := iprop(|==> ∃ m, ⌜∃ γ, P γ ∧ m = iSingleton F γ (f γ)⌝ ∧ UPred.ownM _ m)) ?_ (BIUpdate.mono ?_)
   · refine .trans (UPred.ownM_unit iprop(emp)) ?_
     refine .trans intuitionistically_elim ?_
     apply UPred.bupd_ownM_updateP
@@ -806,7 +802,7 @@ theorem singleton_updateP {a : F.ap (IProp GF)} (Hupd : a ~~>:[Nat] P) :
 @[rocq_alias own.own_updateP]
 theorem iOwn_updateP {P γ a} (Hupd : a ~~>:[Nat] P) : iOwn γ a ⊢ |==> ∃ a' : F.ap (IProp GF), ⌜P a'⌝ ∗ iOwn γ a' := by
   unfold iOwn
-  refine .trans (Q := iprop(|==> ∃ m, ⌜ ∃ a', m = (iSingleton F γ a') ∧ P a' ⌝ ∧ UPred.ownM m)) ?_ ?_
+  refine .trans (Q := iprop(|==> ∃ m, ⌜ ∃ a', m = (iSingleton F γ a') ∧ P a' ⌝ ∧ UPred.ownM _ m)) ?_ ?_
   · apply UPred.bupd_ownM_updateP
     apply singleton_updateP Hupd
   · refine BIUpdate.mono (BI.exists_elim (fun m => BI.pure_elim_left (fun ⟨a', Hm, HP⟩ => ?_)))
@@ -836,7 +832,7 @@ theorem iOwn_update_op_op {γ} {a1 a2 a3 a' : F.ap (IProp GF)} (Hupd : (a1 • a
   BI.sep_assoc.symm.1.trans ((BI.sep_mono_left iOwn_op.mpr).trans (iOwn_update_op Hupd))
 
 @[rocq_alias own_unit]
-theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit Nat ε] : ⊢ |==> iOwn γ ε := by
+theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [IsRAUnit ε] [Hε : IsUnit Nat ε] : ⊢ |==> iOwn γ ε := by
   unfold iOwn
   apply (UPred.ownM_unit _).trans
   apply BI.intuitionistically_elim.trans
@@ -849,7 +845,7 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit Nat ε] : ⊢ |==> i
     unfold iSingleton; simp [ValidN, op, GenMap.singleton_map_in]
     rcases h_at : (mf E.τ).car γ with (⟨⟩ | v) <;> simp
     · exact IProp.unfoldi_bundle_validN Hε.unit_valid.validN
-    · have h_unit : IsUnit Nat (IProp.unfoldi (E.bundle ε)) := IProp.unfoldi_bundle_unit
+    · have h_unit : IsRAUnit (IProp.unfoldi (E.bundle ε)) := IProp.unfoldi_bundle_raUnit
       apply validN_ne h_unit.unit_left_id.dist.symm
       apply extract_frame_validN (Hv E.τ) h_at
   · refine BIUpdate.mono ?_
@@ -857,13 +853,11 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit Nat ε] : ⊢ |==> i
     subst hy
     iexact Hown
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_sep_own]
 instance intoSep_own {γ} {a : F.ap (IProp GF)} [h : IsOp .split a b1 b2] :
     IntoSep (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
   into_sep := by rw [h.is_op]; exact iOwn_op.mp
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_and_own]
 instance intoAnd_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp .split a b1 b2] :
     IntoAnd false (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
@@ -871,13 +865,11 @@ instance intoAnd_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp .split a b1 b2] 
     rw [h.is_op]
     exact and_intro (iOwn_mono ⟨b2, rfl⟩) (iOwn_mono ⟨b1, comm⟩)
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias from_sep_own]
 instance fromSep_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp .split a b1 b2] :
     FromSep (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
   from_sep := by rw [h.is_op]; exact iOwn_op.mpr
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias combine_sep_as_own]
 instance combineSepAs_iOwn {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp .merge a b1 b2] :
     CombineSepAs (iOwn γ b1) (iOwn γ b2) (iOwn γ a) where
@@ -888,7 +880,6 @@ instance combineSepGives_iOwn {γ} {a1 a2 : F.ap (IProp GF)} :
     CombineSepGives (iOwn γ a1) (iOwn γ a2) iprop(✓[Nat] a1 • a2) where
   combine_sep_gives := iOwn_cmraValid_op
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias from_and_own_persistent]
 instance fromAndOwn_persistent {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp .split a b1 b2]
     [TCOr (CoreId b1) (CoreId b2)] : FromAnd (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
@@ -1046,8 +1037,8 @@ theorem iResProject_none_incl_false {z : IResUR GF} (a : F.ap (IProp GF))
 
 theorem iOwn_ord_forall {B : Type _} [Inhabited B] (γ : GName) (f : B → F.ap (IProp GF)) :
     (∀ b, iOwn γ (f b)) ⊢ ∃ c, iOwn γ c ∗ ∀ b, some (f b) ≼ₒ[Nat] some c := by
-  have hforall : (∀ b, UPred.ownM (iSingleton F γ (f b))) ⊢@{IProp GF}
-      ∃ z, UPred.ownM z ∧ ∀ b, iSingleton F γ (f b) ≼ₒ[Nat] z :=
+  have hforall : (∀ b, UPred.ownM _ (iSingleton F γ (f b))) ⊢@{IProp GF}
+      ∃ z, UPred.ownM _ z ∧ ∀ b, iSingleton F γ (f b) ≼ₒ[Nat] z :=
     UPred.ownM_ord_forall _
   unfold iOwn
   iintro Hown

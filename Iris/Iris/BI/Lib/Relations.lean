@@ -17,24 +17,28 @@ variable {SI : Type _} [Iris.SIdx SI]
 namespace Iris
 open Iris.Std BI OFE
 
+variable (SI) in
 @[rocq_alias bi_rtc_pre]
 def biRtcPre [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A] (R : A → A → PROP) (x₂ : A) (rec : A → PROP) (x₁ : A) : PROP :=
   iprop% <affine> (x₁ ≡[SI] x₂) ∨ ∃ x', R x₁ x' ∗ rec x'
 
+variable (SI) in
 /-- The reflexive-transitive closure. -/
 @[rocq_alias bi_rtc]
 def biRtc [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A] (R : A → A → PROP) (x₁ x₂ : A) : PROP :=
-  bi_least_fixpoint (SI := SI) (biRtcPre (SI := SI) R x₂) x₁
+  bi_least_fixpoint SI (biRtcPre SI R x₂) x₁
 
 @[rocq_alias bi_tc_pre]
 def biTcPre [BI PROP] (R : A → A → PROP) (x₂ : A) (rec : A → PROP) (x₁ : A) : PROP :=
   iprop% R x₁ x₂ ∨ ∃ x', R x₁ x' ∗ rec x'
 
+variable (SI) in
 /-- The transitive closure. -/
 @[rocq_alias bi_tc]
 def biTc [BI PROP] [BIStepIndexed SI PROP] [OFE SI A] (R : A → A → PROP) (x₁ x₂ : A) : PROP :=
-  bi_least_fixpoint (SI := SI) (biTcPre R x₂) x₁
+  bi_least_fixpoint SI (biTcPre R x₂) x₁
 
+variable (SI) in
 /-- The assertion that two elements are related by exactly `n` steps. -/
 @[rocq_alias bi_nsteps]
 def biNsteps [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A] (R : A → A → PROP) : Nat → A → A → PROP
@@ -43,7 +47,7 @@ def biNsteps [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A] (R : A �
 
 @[rocq_alias bi_rtc_pre_mono]
 local instance bi_rtc_pre_mono [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A] (R : A → A → PROP) [NonExpansive₂ SI R]
-    (x : A) : BIMonoPred SI (biRtcPre (SI := SI) R x) where
+    (x : A) : BIMonoPred SI (biRtcPre SI R x) where
   mono_pred := by
     intro Φ Ψ hΦ hΨ
     iintro #Hmono %x₁ H
@@ -59,7 +63,7 @@ local instance bi_rtc_pre_mono [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [
     (exists_ne fun _ : A => sep_ne.ne (NonExpansive₂.ne h .rfl) .rfl)⟩
 
 @[rocq_alias bi_rtc_ne]
-instance bi_rtc_ne [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A] (R : A → A → PROP) : NonExpansive₂ SI (biRtc (SI := SI) R) where
+instance bi_rtc_ne [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A] (R : A → A → PROP) : NonExpansive₂ SI (biRtc SI R) where
   ne {_ _ _} hx {_ _} hy := by
     refine forall_ne fun Φ => wand_ne.ne
       (intuitionistically_ne.ne <| forall_ne (fun z => ?_)) (NonExpansive.ne hx)
@@ -87,7 +91,7 @@ instance bi_tc_pre_mono [BI PROP] [BIStepIndexed SI PROP] [OFE SI A] (R : A → 
 
 @[rocq_alias bi_tc_ne]
 instance bi_tc_ne [BI PROP] [BIStepIndexed SI PROP] [OFE SI A] (R : A → A → PROP) [NonExpansive₂ SI R] :
-    NonExpansive₂ SI (biTc (SI := SI) R) where
+    NonExpansive₂ SI (biTc SI R) where
   ne {_ _ _} hx {_ _} hy := by
     refine forall_ne fun _ => wand_ne.ne (intuitionistically_ne.ne ?_) (NonExpansive.ne hx)
     exact forall_ne fun _ => wand_ne.ne (or_ne.ne (NonExpansive₂.ne .rfl hy) .rfl) .rfl
@@ -96,7 +100,7 @@ instance bi_tc_ne [BI PROP] [BIStepIndexed SI PROP] [OFE SI A] (R : A → A → 
 
 @[rocq_alias bi_nsteps_ne]
 instance bi_nsteps_ne [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A] (R : A → A → PROP) [NonExpansive₂ SI R]
-    (n : Nat) : NonExpansive₂ SI (biNsteps (SI := SI) R n) := by
+    (n : Nat) : NonExpansive₂ SI (biNsteps SI R n) := by
   induction n with
   | zero => exact ⟨fun {_ _ _} hx {_ _} hy =>
       affinely_ne.ne (NonExpansive₂.ne hx hy)⟩
@@ -112,37 +116,37 @@ variable [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A] (R : A → A
 @[rocq_alias bi_rtc_ind_l]
 theorem bi_rtc_ind_left (x₂ : A) (Φ : A → PROP) [NonExpansive SI Φ] :
     ⊢ □ (∀ x₁, <affine> (x₁ ≡[SI] x₂) ∨ (∃ x', R x₁ x' ∗ Φ x') -∗ Φ x₁) -∗
-      ∀ x₁, biRtc (SI := SI) R x₁ x₂ -∗ Φ x₁ :=
-  least_fixpoint_iter (biRtcPre R x₂)
+      ∀ x₁, biRtc SI R x₁ x₂ -∗ Φ x₁ :=
+  least_fixpoint_iter (biRtcPre _ R x₂)
 
 omit [Sbi SI PROP] in
 @[rocq_alias bi_tc_ind_l]
 theorem bi_tc_ind_left (x₂ : A) (Φ : A → PROP) [NonExpansive SI Φ] :
     ⊢ □ (∀ x₁, R x₁ x₂ ∨ (∃ x', R x₁ x' ∗ Φ x') -∗ Φ x₁) -∗
-      ∀ x₁, biTc (SI := SI) R x₁ x₂ -∗ Φ x₁ :=
+      ∀ x₁, biTc SI R x₁ x₂ -∗ Φ x₁ :=
   least_fixpoint_iter (biTcPre R x₂)
 
 @[rocq_alias bi_nsteps_l]
 theorem bi_nsteps_left (n : Nat) (x y z : A) :
-    R x y -∗ biNsteps (SI := SI) R n y z -∗ biNsteps (SI := SI) R (n + 1) x z := by
+    R x y -∗ biNsteps SI R n y z -∗ biNsteps SI R (n + 1) x z := by
   iintro HR Hn
   iunfold biNsteps
   iexists y
   iframe
 
 @[rocq_alias bi_nsteps_O]
-theorem bi_nsteps_zero (x : A) : ⊢ biNsteps (SI := SI) R 0 x x :=
+theorem bi_nsteps_zero (x : A) : ⊢ biNsteps SI R 0 x x :=
   affinely_intro internalEq.refl
 
 @[rocq_alias bi_nsteps_once]
-theorem bi_nsteps_once (x y : A) : R x y -∗ biNsteps (SI := SI) R 1 x y := by
+theorem bi_nsteps_once (x y : A) : R x y -∗ biNsteps SI R 1 x y := by
   iintro H
   iapply bi_nsteps_left $$ H
   iapply bi_nsteps_zero
 
 @[rocq_alias bi_nsteps_add_inv]
 theorem bi_nsteps_add_inv (n m : Nat) (x z : A) :
-    biNsteps (SI := SI) R (n + m) x z ⊢ ∃ y, biNsteps (SI := SI) R n x y ∗ biNsteps (SI := SI) R m y z := by
+    biNsteps SI R (n + m) x z ⊢ ∃ y, biNsteps SI R n x y ∗ biNsteps SI R m y z := by
   iinduction n generalizing %x with
   | zero =>
     simp only [Nat.zero_add]
@@ -164,22 +168,22 @@ variable [NonExpansive₂ SI R]
 
 @[rocq_alias bi_rtc_unfold]
 theorem bi_rtc_unfold (x₁ x₂ : A) :
-    biRtc (SI := SI) R x₁ x₂ = biRtcPre (SI := SI) R x₂ (fun x₁ => biRtc (SI := SI) R x₁ x₂) x₁ :=
-  least_fixpoint_unfold (biRtcPre R x₂)
+    biRtc SI R x₁ x₂ = biRtcPre SI R x₂ (fun x₁ => biRtc SI R x₁ x₂) x₁ :=
+  least_fixpoint_unfold (biRtcPre _ R x₂)
 
 @[rocq_alias bi_rtc_strong_ind_l]
 theorem bi_rtc_strong_ind_left (x₂ : A) (Φ : A → PROP) [NonExpansive SI Φ] :
-    ⊢ □ (∀ x₁, <affine> (x₁ ≡[SI] x₂) ∨ (∃ x', R x₁ x' ∗ (Φ x' ∧ biRtc (SI := SI) R x' x₂)) -∗ Φ x₁) -∗
-      ∀ x₁, biRtc (SI := SI) R x₁ x₂ -∗ Φ x₁ :=
-  least_fixpoint_ind (biRtcPre R x₂) Φ
+    ⊢ □ (∀ x₁, <affine> (x₁ ≡[SI] x₂) ∨ (∃ x', R x₁ x' ∗ (Φ x' ∧ biRtc SI R x' x₂)) -∗ Φ x₁) -∗
+      ∀ x₁, biRtc SI R x₁ x₂ -∗ Φ x₁ :=
+  least_fixpoint_ind (biRtcPre _ R x₂) Φ
 
 @[rocq_alias bi_rtc_refl]
-theorem bi_rtc_refl (x : A) : ⊢ biRtc (SI := SI) R x x :=
+theorem bi_rtc_refl (x : A) : ⊢ biRtc SI R x x :=
   (bi_rtc_unfold (SI := SI) R x x).symm ▸ or_intro_left_trans (affinely_intro internalEq.refl)
 
 @[rocq_alias bi_rtc_l]
 theorem bi_rtc_left (x₁ x₂ x₃ : A) :
-    R x₁ x₂ -∗ biRtc (SI := SI) R x₂ x₃ -∗ biRtc (SI := SI) R x₁ x₃ := by
+    R x₁ x₂ -∗ biRtc SI R x₂ x₃ -∗ biRtc SI R x₁ x₃ := by
   iintro H₁ H₂
   rw [bi_rtc_unfold R x₁ x₃, biRtcPre]
   iright
@@ -187,19 +191,19 @@ theorem bi_rtc_left (x₁ x₂ x₃ : A) :
   iframe
 
 @[rocq_alias bi_rtc_once]
-theorem bi_rtc_once (x₁ x₂ : A) : R x₁ x₂ -∗ biRtc (SI := SI) R x₁ x₂ := by
+theorem bi_rtc_once (x₁ x₂ : A) : R x₁ x₂ -∗ biRtc SI R x₁ x₂ := by
   iintro H
   iapply bi_rtc_left $$ H
   iapply bi_rtc_refl
 
-local instance : NonExpansive SI (fun x => biRtc (SI := SI) R x y) := NonExpansive₂.ne_left (biRtc R) y
-local instance : NonExpansive SI (fun y => biTc (SI := SI) R x y) := NonExpansive₂.ne_right (biTc R) x
+local instance : NonExpansive SI (fun x => biRtc SI R x y) := NonExpansive₂.ne_left (biRtc _ R) y
+local instance : NonExpansive SI (fun y => biTc SI R x y) := NonExpansive₂.ne_right (biTc _ R) x
 
 @[rocq_alias bi_rtc_trans]
 theorem bi_rtc_trans (x₁ x₂ x₃ : A) :
-    biRtc (SI := SI) R x₁ x₂ -∗ biRtc (SI := SI) R x₂ x₃ -∗ biRtc (SI := SI) R x₁ x₃ := by
+    biRtc SI R x₁ x₂ -∗ biRtc SI R x₂ x₃ -∗ biRtc SI R x₁ x₃ := by
   irevert %x₁
-  letI : NonExpansive SI (fun x => iprop(biRtc (SI := SI) R x₂ x₃ -∗ biRtc (SI := SI) R x x₃)) :=
+  letI : NonExpansive SI (fun x => iprop(biRtc SI R x₂ x₃ -∗ biRtc SI R x x₃)) :=
     ⟨fun _ _ _ h => wand_ne.ne .rfl (NonExpansive₂.ne h .rfl)⟩
   iapply bi_rtc_ind_left
   iintro !> %x₁ ⟨Heq|⟨%x', HR, IH⟩⟩ H₂
@@ -208,28 +212,28 @@ theorem bi_rtc_trans (x₁ x₂ x₃ : A) :
     iapply IH; itrivial
 
 @[rocq_alias bi_rtc_r]
-theorem bi_rtc_right (x y z : A) : biRtc (SI := SI) R x y -∗ R y z -∗ biRtc (SI := SI) R x z := by
+theorem bi_rtc_right (x y z : A) : biRtc SI R x y -∗ R y z -∗ biRtc SI R x z := by
   iintro Hrtc HR
   iapply bi_rtc_trans $$ Hrtc
   iapply bi_rtc_once $$ HR
 
 @[rocq_alias bi_rtc_inv]
 theorem bi_rtc_inv (x z : A) :
-    biRtc (SI := SI) R x z -∗ <affine> (x ≡[SI] z) ∨ ∃ y, R x y ∗ biRtc (SI := SI) R y z :=
+    biRtc SI R x z -∗ <affine> (x ≡[SI] z) ∨ ∃ y, R x y ∗ biRtc SI R y z :=
   (bi_rtc_unfold (SI := SI) R x z) ▸ wand_rfl
 
 @[rocq_alias bi_rtc_affine]
 instance bi_rtc_affine [∀ x y, Affine (R x y)] (x y : A) :
-    Affine (biRtc (SI := SI) R x y) := by
+    Affine (biRtc SI R x y) := by
   unfold biRtc
   unfold biRtcPre
   infer_instance
 
 @[rocq_alias bi_rtc_persistent]
 instance bi_rtc_persistent [∀ x y, Persistent (R x y)] (x y : A) :
-    Persistent (biRtc (SI := SI) R x y) where
+    Persistent (biRtc SI R x y) where
   persistent := by
-    letI : NonExpansive SI (fun x => iprop(<pers> biRtc (SI := SI) R x y)) := by
+    letI : NonExpansive SI (fun x => iprop(<pers> biRtc SI R x y)) := by
       exact ⟨fun _ _ _ h => persistently_ne.ne (NonExpansive₂.ne h .rfl)⟩
     irevert %x
     iapply bi_rtc_ind_left
@@ -241,21 +245,21 @@ instance bi_rtc_persistent [∀ x y, Persistent (R x y)] (x y : A) :
 omit [Sbi SI PROP] in
 @[rocq_alias bi_tc_unfold]
 theorem bi_tc_unfold (x₁ x₂ : A) :
-    biTc (SI := SI) R x₁ x₂ = biTcPre R x₂ (fun x₁ => biTc (SI := SI) R x₁ x₂) x₁ :=
+    biTc SI R x₁ x₂ = biTcPre R x₂ (fun x₁ => biTc SI R x₁ x₂) x₁ :=
   least_fixpoint_unfold (biTcPre R x₂)
 
 omit [Sbi SI PROP] in
 @[rocq_alias bi_tc_strong_ind_l]
 theorem bi_tc_strong_ind_left (x₂ : A) (Φ : A → PROP) (hΦ : NonExpansive SI Φ) :
     ⊢ □ (∀ x₁, R x₁ x₂ ∨
-        (∃ x', R x₁ x' ∗ (Φ x' ∧ biTc (SI := SI) R x' x₂)) -∗ Φ x₁) -∗
-      ∀ x₁, biTc (SI := SI) R x₁ x₂ -∗ Φ x₁ :=
+        (∃ x', R x₁ x' ∗ (Φ x' ∧ biTc SI R x' x₂)) -∗ Φ x₁) -∗
+      ∀ x₁, biTc SI R x₁ x₂ -∗ Φ x₁ :=
   least_fixpoint_ind (biTcPre R x₂) Φ
 
 omit [Sbi SI PROP] in
 @[rocq_alias bi_tc_l]
 theorem bi_tc_left (x₁ x₂ x₃ : A) :
-    R x₁ x₂ -∗ biTc (SI := SI) R x₂ x₃ -∗ biTc (SI := SI) R x₁ x₃ := by
+    R x₁ x₂ -∗ biTc SI R x₂ x₃ -∗ biTc SI R x₁ x₃ := by
   iintro H₁ H₂
   rw [bi_tc_unfold R x₁ x₃, biTcPre]
   iright
@@ -264,7 +268,7 @@ theorem bi_tc_left (x₁ x₂ x₃ : A) :
 
 omit [Sbi SI PROP] in
 @[rocq_alias bi_tc_once]
-theorem bi_tc_once (x₁ x₂ : A) : R x₁ x₂ -∗ biTc (SI := SI) R x₁ x₂ := by
+theorem bi_tc_once (x₁ x₂ : A) : R x₁ x₂ -∗ biTc SI R x₁ x₂ := by
   iintro H
   rw [bi_tc_unfold R x₁ x₂, biTcPre]
   ileft
@@ -273,8 +277,8 @@ theorem bi_tc_once (x₁ x₂ : A) : R x₁ x₂ -∗ biTc (SI := SI) R x₁ x�
 omit [Sbi SI PROP] in
 @[rocq_alias bi_tc_trans]
 theorem bi_tc_trans (x₁ x₂ x₃ : A) :
-    biTc (SI := SI) R x₁ x₂ -∗ biTc (SI := SI) R x₂ x₃ -∗ biTc (SI := SI) R x₁ x₃ := by
-  letI : NonExpansive SI (fun x => iprop(biTc (SI := SI) R x₂ x₃ -∗ biTc (SI := SI) R x x₃)) :=
+    biTc SI R x₁ x₂ -∗ biTc SI R x₂ x₃ -∗ biTc SI R x₁ x₃ := by
+  letI : NonExpansive SI (fun x => iprop(biTc SI R x₂ x₃ -∗ biTc SI R x x₃)) :=
     ⟨fun _ _ _ h => wand_ne.ne .rfl (NonExpansive.ne h)⟩
   irevert %x₁
   iapply bi_tc_ind_left
@@ -285,27 +289,27 @@ theorem bi_tc_trans (x₁ x₂ x₃ : A) :
 
 omit [Sbi SI PROP] in
 @[rocq_alias bi_tc_r]
-theorem bi_tc_right (x y z : A) : biTc (SI := SI) R x y -∗ R y z -∗ biTc (SI := SI) R x z := by
+theorem bi_tc_right (x y z : A) : biTc SI R x y -∗ R y z -∗ biTc SI R x z := by
   iintro Htc HR
   iapply bi_tc_trans $$ Htc
   iapply bi_tc_once; itrivial
 
 @[rocq_alias bi_tc_rtc_l]
-theorem bi_tc_rtc_left (x y z : A) : biRtc (SI := SI) R x y -∗ biTc (SI := SI) R y z -∗ biTc (SI := SI) R x z := by
-  letI : NonExpansive SI (fun x => iprop(biTc (SI := SI) R y z -∗ biTc (SI := SI) R x z)) :=
+theorem bi_tc_rtc_left (x y z : A) : biRtc SI R x y -∗ biTc SI R y z -∗ biTc SI R x z := by
+  letI : NonExpansive SI (fun x => iprop(biTc SI R y z -∗ biTc SI R x z)) :=
     ⟨fun _ _ _ h => wand_ne.ne .rfl (NonExpansive.ne h)⟩
   irevert %x
   iapply bi_rtc_ind_left
   iintro !> %x ⟨Heq | ⟨%x', HR, IH⟩⟩ Hyz
   · irewrite [Heq]
-    · exact NonExpansive₂.ne_left (biTc R) z
+    · exact NonExpansive₂.ne_left (biTc _ R) z
     itrivial
   · iapply bi_tc_left $$ HR
     iapply IH; itrivial
 
 @[rocq_alias bi_tc_rtc_r]
-theorem bi_tc_rtc_right (x y z : A) : biTc (SI := SI) R x y -∗ biRtc (SI := SI) R y z -∗ biTc (SI := SI) R x z := by
-  letI : NonExpansive SI (fun y => iprop(∀ x, biTc (SI := SI) R x y -∗ biTc (SI := SI) R x z)) :=
+theorem bi_tc_rtc_right (x y z : A) : biTc SI R x y -∗ biRtc SI R y z -∗ biTc SI R x z := by
+  letI : NonExpansive SI (fun y => iprop(∀ x, biTc SI R x y -∗ biTc SI R x z)) :=
     ⟨fun _ _ _ h => forall_ne fun x => wand_ne.ne (NonExpansive.ne h) .rfl⟩
   iintro Hxy Hyz
   irevert %x Hxy
@@ -317,8 +321,8 @@ theorem bi_tc_rtc_right (x y z : A) : biTc (SI := SI) R x y -∗ biRtc (SI := SI
     iapply bi_tc_right $$ Hxy HR
 
 @[rocq_alias bi_tc_rtc]
-theorem bi_tc_rtc (x y : A) : biTc (SI := SI) R x y -∗ biRtc (SI := SI) R x y := by
-  letI : NonExpansive SI (fun x => biRtc R x y) := NonExpansive₂.ne_left (biRtc (SI := SI) R) y
+theorem bi_tc_rtc (x y : A) : biTc SI R x y -∗ biRtc SI R x y := by
+  letI : NonExpansive SI (fun x => biRtc _ R x y) := NonExpansive₂.ne_left (biRtc SI R) y
   irevert %x
   iapply bi_tc_ind_left
   iintro !> %x ⟨H | ⟨%x', HR, IH⟩⟩
@@ -327,22 +331,22 @@ theorem bi_tc_rtc (x y : A) : biTc (SI := SI) R x y -∗ biRtc (SI := SI) R x y 
 
 @[rocq_alias bi_tc_affine]
 instance bi_tc_affine [∀ x y, Affine (R x y)] (x y : A) :
-    Affine (biTc (SI := SI) R x y) := by
+    Affine (biTc SI R x y) := by
   unfold biTc
   unfold biTcPre
   infer_instance
 
 @[rocq_alias bi_tc_absorbing]
 instance bi_tc_absorbing [∀ x y, Absorbing (R x y)] (x y : A) :
-    Absorbing (biTc (SI := SI) R x y) :=
+    Absorbing (biTc SI R x y) :=
     @least_fixpoint_absorbing _ _ _ _ _ _ _ (biTcPre R y) inferInstance
       (fun _ _ _ => by unfold biTcPre; infer_instance) x
 
 @[rocq_alias bi_tc_persistent]
 instance bi_tc_persistent [∀ x y, Persistent (R x y)] (x y : A) :
-    Persistent (biTc (SI := SI) R x y) where
+    Persistent (biTc SI R x y) where
   persistent := by
-    letI : NonExpansive SI (fun x => iprop(<pers> biTc (SI := SI) R x y)) :=
+    letI : NonExpansive SI (fun x => iprop(<pers> biTc SI R x y)) :=
       ⟨fun _ _ _ h => persistently_ne.ne (NonExpansive₂.ne h .rfl)⟩
     irevert %x
     iapply bi_tc_ind_left
@@ -351,7 +355,7 @@ instance bi_tc_persistent [∀ x y, Persistent (R x y)] (x y : A) :
     · iapply bi_tc_left <;> itrivial
 
 @[rocq_alias bi_nsteps_once_inv]
-theorem bi_nsteps_once_inv (x y : A) : biNsteps (SI := SI) R 1 x y -∗ R x y := by
+theorem bi_nsteps_once_inv (x y : A) : biNsteps SI R 1 x y -∗ R x y := by
   iintro Hn
   iunfold biNsteps at Hn
   icases Hn with ⟨%x', H, Heq⟩
@@ -362,7 +366,7 @@ theorem bi_nsteps_once_inv (x y : A) : biNsteps (SI := SI) R 1 x y -∗ R x y :=
 
 @[rocq_alias bi_nsteps_trans]
 theorem bi_nsteps_trans (n m : Nat) (x y z : A) :
-    biNsteps (SI := SI) R n x y -∗ biNsteps (SI := SI) R m y z -∗ biNsteps (SI := SI) R (n + m) x z := by
+    biNsteps SI R n x y -∗ biNsteps SI R m y z -∗ biNsteps SI R (n + m) x z := by
   iinduction n generalizing %x with
   | zero =>
       iintro Heq
@@ -382,14 +386,14 @@ theorem bi_nsteps_trans (n m : Nat) (x y z : A) :
 
 @[rocq_alias bi_nsteps_r]
 theorem bi_nsteps_right (n : Nat) (x y z : A) :
-    biNsteps (SI := SI) R n x y -∗ R y z -∗ biNsteps (SI := SI) R (n + 1) x z := by
+    biNsteps SI R n x y -∗ R y z -∗ biNsteps SI R (n + 1) x z := by
   iintro Hn HR
   iapply bi_nsteps_trans $$ Hn
   iapply bi_nsteps_once $$ HR
 
 @[rocq_alias bi_nsteps_inv_r]
 theorem bi_nsteps_inv_right (n : Nat) (x z : A) :
-    biNsteps (SI := SI) R (n + 1) x z ⊢ ∃ y, biNsteps (SI := SI) R n x y ∗ R y z := by
+    biNsteps SI R (n + 1) x z ⊢ ∃ y, biNsteps SI R n x y ∗ R y z := by
   iintro H
   icases bi_nsteps_add_inv $$ H with ⟨%y, Hn, H1⟩
   iexists y
@@ -397,10 +401,10 @@ theorem bi_nsteps_inv_right (n : Nat) (x z : A) :
   iapply bi_nsteps_once_inv $$ H1
 
 @[rocq_alias bi_rtc_tc]
-theorem bi_rtc_tc (x y : A) : biRtc (SI := SI) R x y ⊣⊢ <affine> (x ≡[SI] y) ∨ biTc (SI := SI) R x y := by
+theorem bi_rtc_tc (x y : A) : biRtc SI R x y ⊣⊢ <affine> (x ≡[SI] y) ∨ biTc SI R x y := by
   isplit
   · irevert %x
-    letI : NonExpansive SI (fun x => iprop(<affine> (x ≡[SI] y) ∨ biTc (SI := SI) R x y)) :=
+    letI : NonExpansive SI (fun x => iprop(<affine> (x ≡[SI] y) ∨ biTc SI R x y)) :=
       ⟨fun _ _ _ h => or_ne.ne (affinely_ne.ne ((internalEq.ne_l y).ne h)) (NonExpansive₂.ne h .rfl)⟩
     iapply bi_rtc_ind_left
     iintro !> %x ⟨Heq | ⟨%x', HR, IH⟩⟩
@@ -418,10 +422,10 @@ theorem bi_rtc_tc (x y : A) : biRtc (SI := SI) R x y ⊣⊢ <affine> (x ≡[SI] 
 
 @[rocq_alias bi_tc_nsteps]
 theorem bi_tc_nsteps (x y : A) :
-    biTc (SI := SI) R x y ⊣⊢ ∃ n, <affine> ⌜0 < n⌝ ∗ biNsteps (SI := SI) R n x y := by
+    biTc SI R x y ⊣⊢ ∃ n, <affine> ⌜0 < n⌝ ∗ biNsteps SI R n x y := by
   isplit
   · irevert %x
-    letI : NonExpansive SI (fun x => iprop(∃ n, <affine> ⌜0 < n⌝ ∗ biNsteps (SI := SI) R n x y)) :=
+    letI : NonExpansive SI (fun x => iprop(∃ n, <affine> ⌜0 < n⌝ ∗ biNsteps SI R n x y)) :=
       ⟨fun _ _ _ h => exists_ne fun _ => sep_ne.ne .rfl (NonExpansive₂.ne h .rfl)⟩
     iapply bi_tc_ind_left
     iintro !> %x ⟨Hxy | ⟨%x', HR, IH⟩⟩
@@ -450,16 +454,16 @@ theorem bi_tc_nsteps (x y : A) :
             iapply ih $$ [//] Hprev
 
 @[rocq_alias bi_rtc_nsteps]
-theorem bi_rtc_nsteps (x y : A) : biRtc (SI := SI) R x y ⊣⊢ ∃ n, biNsteps (SI := SI) R n x y := by
+theorem bi_rtc_nsteps (x y : A) : biRtc SI R x y ⊣⊢ ∃ n, biNsteps SI R n x y := by
   isplit
-  · letI : NonExpansive SI (fun x => iprop(∃ n, biNsteps (SI := SI) R n x y)) :=
+  · letI : NonExpansive SI (fun x => iprop(∃ n, biNsteps SI R n x y)) :=
       ⟨fun _ _ _ h => exists_ne fun n => NonExpansive₂.ne h .rfl⟩
     irevert %x
     iapply bi_rtc_ind_left
     iintro !> %x ⟨Heq | ⟨%x', HR, IH⟩⟩
     · iexists 0
       irewrite [Heq]
-      · exact NonExpansive₂.ne_left (biNsteps R 0) y
+      · exact NonExpansive₂.ne_left (biNsteps _ R 0) y
       iapply bi_nsteps_zero
     · icases IH with ⟨%n, Hn⟩
       iexists n + 1
@@ -486,18 +490,18 @@ variable [NonExpansive₂ SI R]
 
 @[rocq_alias bi_nsteps_timeless]
 instance bi_nsteps_timeless (n : Nat) [∀ x y, Timeless (R x y)] (x y : A) :
-    Timeless (biNsteps (SI := SI) R n x y) := by
+    Timeless (biNsteps SI R n x y) := by
   induction n generalizing x y <;>
     unfold biNsteps <;> infer_instance
 
 @[rocq_alias bi_rtc_timeless]
 instance bi_rtc_timeless [∀ x y, Timeless (R x y)] (x y : A) :
-    Timeless (biRtc (SI := SI) R x y) :=
+    Timeless (biRtc SI R x y) :=
       (equiv_iff.mpr (bi_rtc_nsteps (SI := SI) R x y)) ▸ inferInstance
 
 @[rocq_alias bi_tc_timeless]
 instance bi_tc_timeless [∀ x y, Timeless (R x y)] (x y : A) :
-    Timeless (biTc (SI := SI) R x y) :=
+    Timeless (biTc SI R x y) :=
       (equiv_iff.mpr (bi_tc_nsteps (SI := SI) R x y)) ▸ inferInstance
 
 end Timeless

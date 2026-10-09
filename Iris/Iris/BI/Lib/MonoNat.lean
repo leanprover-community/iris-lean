@@ -18,7 +18,7 @@ namespace Iris
 open Auth BI MonoNat
 
 abbrev MonoNatRF : COFE.OFunctorPre Nat :=
-  AuthURF (constOF MaxNat)
+  AuthURF (constOF _ MaxNat)
 
 @[rocq_alias mono_natG]
 class MonoNatG (GF : BundledGFunctors) where
@@ -76,7 +76,10 @@ instance : Persistent (PROP := IProp GF) (γ ↪◯MN n) := by
   unfold lb_own
   infer_instance
 
-instance : IsUnit Nat (◯MN 0 : MonoNat (SI := Nat)) := by
+instance : IsRAUnit (◯MN 0 : MonoNat Nat) := by
+  infer_instance
+
+instance : IsUnit Nat (◯MN 0 : MonoNat Nat) := by
   infer_instance
 
 @[rocq_alias mono_nat_auth_own_fractional]

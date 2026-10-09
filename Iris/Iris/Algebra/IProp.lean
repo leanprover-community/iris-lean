@@ -33,7 +33,7 @@ set_option linter.checkUnivs false in
 @[rocq_alias gFunctors]
 def BundledGFunctors := GType → GFunctor
 
-def BundledGFunctors.default : BundledGFunctors := fun _ => ⟨constOF Unit⟩
+def BundledGFunctors.default : BundledGFunctors := fun _ => ⟨constOF _ Unit⟩
 
 def BundledGFunctors.set (GF : BundledGFunctors) (i : Nat) (FB : GFunctor) :
     BundledGFunctors :=
