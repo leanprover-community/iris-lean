@@ -106,7 +106,7 @@ instance instPCore : PCore DFrac where
 instance instRA : RA DFrac where
   pcore_op_left := by rintro ⟨⟩ ⟨⟩ <;> simp [Op.op, op, PCore.pcore, DFrac.pcore]
 
-@[instance_reducible] def cmraData : CMRAData SI DFrac where
+@[reducible] def cmraData : CMRAData SI DFrac where
   Valid := valid
   ValidN _ := valid
   op_ne := { ne _ _ _ := congrArg (op _) }

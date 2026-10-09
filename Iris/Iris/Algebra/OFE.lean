@@ -28,9 +28,6 @@ class OFE (SI : Type _) [SIdx SI] (α : Type _) extends HasDist SI α where
 /-- The step-indexed distance (`HasDist.Dist`), under its traditional name. -/
 abbrev OFE.Dist {SI : Type _} {α : Type _} [HasDist SI α] : SI → α → α → Prop := HasDist.dist
 
-/-- Thin abbreviation for `OFE α`. -/
-class abbrev IOFE (SI : Type _) [SIdx SI] (α : Type _) := OFE SI α
-
 #rocq_ignore OfeMixin "Use the OFE type class"
 #rocq_ignore ofe_mixin_of' "Not needed"
 #rocq_ignore Dist "Use OFE.Dist"
@@ -45,12 +42,12 @@ scoped notation:40 x " ≡{" n "}≡ " y:41 => OFE.Dist n x y
 
 -- `OFE.eq_dist` is `OFE.eq_dist'` with fixed implicit annotations
 @[rocq_alias equiv_dist]
-theorem OFE.eq_dist {SI} [SIdx SI] {α} [self : IOFE SI α] {x y : α} :
+theorem OFE.eq_dist {SI} [SIdx SI] {α} [self : OFE SI α] {x y : α} :
   x = y ↔ ∀ n, OFE.Dist (SI:=SI) n x y := OFE.eq_dist'
 
-theorem OFE.eq_dist_1 {SI} [SIdx SI] {α} [self : IOFE SI α] {x y : α} :
+theorem OFE.eq_dist_1 {SI} [SIdx SI] {α} [self : OFE SI α] {x y : α} :
   x = y → ∀ n, OFE.Dist (SI:=SI) n x y := OFE.eq_dist.mp
-theorem OFE.eq_dist_2 {SI} [SIdx SI] {α} [self : IOFE SI α] {x y : α} :
+theorem OFE.eq_dist_2 {SI} [SIdx SI] {α} [self : OFE SI α] {x y : α} :
   (∀ n, OFE.Dist (SI:=SI) n x y) → x = y := OFE.eq_dist.mpr
 
 variable {SI : Type _} [instSI : SIdx SI]
@@ -997,11 +994,11 @@ instance Sigma.fst_ne {P : α → Type _} [OFE SI α] [∀ x, OFE SI (P x)] :
 Split out of `Sigma.dist_snd` so that the projection happens in a body rather than in a statement:
 in a statement the `OFE (Sigma P)` instance argument is still an unsolved metavariable, so `h`'s
 type cannot be reduced to the `∃ heq, ..` of `instOFESigma` to project out of. -/
-theorem Sigma.dist_fst {P : α → Type _} [∀ x, IOFE SI (P x)] {n : SI} {x y : Sigma P}
+theorem Sigma.dist_fst {P : α → Type _} [∀ x, OFE SI (P x)] {n : SI} {x y : Sigma P}
     (h : x ≡{n}≡ y) : x.fst = y.fst := h.1
 
 @[rocq_alias projT2_ne]
-theorem Sigma.dist_snd {P : α → Type _} [∀ x, IOFE SI (P x)] {n : SI} {x y : Sigma P}
+theorem Sigma.dist_snd {P : α → Type _} [∀ x, OFE SI (P x)] {n : SI} {x y : Sigma P}
     (h : x ≡{n}≡ y) : Sigma.dist_fst h ▸ x.snd ≡{n}≡ y.snd := h.2
 
 @[rocq_alias projT2_proper]
@@ -1107,11 +1104,11 @@ end OFE
 
 /-- A chain in an OFE is a `Nat`-indexed sequence of elements that is upward-closed in terms of
 `n`-equivalence. -/
-@[rocq_alias chain] structure Chain (SI : Type _) [SIdx SI] (α : Type _) [IOFE SI α] where
+@[rocq_alias chain] structure Chain (SI : Type _) [SIdx SI] (α : Type _) [OFE SI α] where
   chain : SI → α
   cauchy {n i : SI} : n ≤ i → chain i ≡{n}≡ chain n
 
-instance [SIdx SI] [IOFE SI α] : CoeFun (Chain SI α) (fun _ => SI → α) := ⟨Chain.chain⟩
+instance [SIdx SI] [OFE SI α] : CoeFun (Chain SI α) (fun _ => SI → α) := ⟨Chain.chain⟩
 
 namespace Chain
 
@@ -1140,7 +1137,7 @@ theorem map_comp [OFE SI α] [OFE SI β] [OFE SI γ] {f : α -n>[SI] β} {g : β
   simp [map]
 
 /-- If a chain of Option is ever none, is the constant none chain. -/
-theorem chain_none_const [IOFE SI V] {c : Chain SI (Option V)} (H : c n = none) :
+theorem chain_none_const [OFE SI V] {c : Chain SI (Option V)} (H : c n = none) :
     c = Chain.const none := by
   rcases c with ⟨c, Hc⟩
   congr 1; refine funext (fun k => ?_)
@@ -1177,7 +1174,7 @@ end Chain
 
 variable (SI) in
 @[rocq_alias bchain]
-structure BChain (α : Type _) [SIdx SI] [IOFE SI α] (n : SI) where
+structure BChain (α : Type _) [SIdx SI] [OFE SI α] (n : SI) where
   bchain m : m < n → α
   bcauchy {m : SI} {p} (hm : m < n) (hp : p < n) (h : m ≤ p) : bchain p hp ≡{m}≡ bchain m hm
 
@@ -1209,7 +1206,7 @@ end BChain
 
 /-- Complete ordered family of equivalences -/
 @[rocq_alias Cofe]
-class IsCOFE (SI : Type _) (α : Type _) [SIdx SI] [IOFE SI α] where
+class IsCOFE (SI : Type _) (α : Type _) [SIdx SI] [OFE SI α] where
   compl {SI} : Chain SI α → α
   conv_compl {SI} {c : Chain SI α} : compl c ≡{n}≡ c n
   lbcompl {SI} {n : SI} : SIdx.Limit n → BChain SI α n → α
@@ -1219,14 +1216,8 @@ class IsCOFE (SI : Type _) (α : Type _) [SIdx SI] [IOFE SI α] where
     (∀ p (Hp : p < n), c1.bchain p Hp ≡{m}≡ c2.bchain p Hp) →
     lbcompl hn c1 ≡{m}≡ lbcompl hn c2
 
-class abbrev IsICOFE (SI : Type _) (α : Type _) [SIdx SI] [IOFE SI α] :=
-  IsCOFE SI α
-
 /-- Complete ordered family of equivalences -/
-class abbrev COFE (SI : Type _) [SIdx SI] (α : Type _) := IOFE SI α, IsICOFE SI α
-
-/-- Complete ordered family of equivalences -/
-class abbrev ICOFE (SI : Type _) [SIdx SI] (α : Type _) := COFE SI α
+class abbrev COFE (SI : Type _) [SIdx SI] (α : Type _) := OFE SI α, IsCOFE SI α
 
 namespace COFE
 export IsCOFE (compl conv_compl)

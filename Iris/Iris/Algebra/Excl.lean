@@ -145,7 +145,7 @@ instance {α : Type _} : RA (Excl α) where
   pcore_op_left := nofun
   pcore_idem := nofun
 
-@[instance_reducible] def cmraData [OFE SI α] : CMRAData SI (Excl α) where
+@[reducible] def cmraData [OFE SI α] : CMRAData SI (Excl α) where
   ValidN _ := Valid
   Valid
   op_ne.ne _ _ _ _ := trivial

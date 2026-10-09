@@ -57,7 +57,7 @@ instance instPCore : PCore UFrac where
 instance instRA : RA UFrac where
   pcore_op_left H := by rcases H
 
-@[instance_reducible] def cmraData : CMRAData SI UFrac where
+@[reducible] def cmraData : CMRAData SI UFrac where
   Valid _ := True
   ValidN _ _ := True
   op_ne.ne _ _ _ H := by rw [H] <;> exact .rfl

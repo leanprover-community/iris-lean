@@ -922,7 +922,7 @@ relating them, and the monotonicity of the partial core along frames. It is not 
 ordered resource algebra; `ORA.ofCMRAData` makes one of it, taking the order to be the extension
 inclusion. -/
 @[rocq_alias CmraMixin]
-class CMRAData (SI : Type _) [instSI : SIdx SI] (α : Type _) [OFE SI α] [RA α]
+structure CMRAData (SI : Type _) [instSI : SIdx SI] (α : Type _) [OFE SI α] [RA α]
     extends Valid SI α, OpNE SI α, PCoreNE SI α, ValidNE SI α where
   validN_op_left {SI} {n : SI} {x y : α} : ✓{n} (x • y) → ✓{n} x
   extend {SI} {n : SI} {x y₁ y₂ : α} : ✓{n} x → x ≡{n}≡ y₁ • y₂ →
@@ -966,68 +966,76 @@ theorem core_mono_of_pcore_op_mono [Op α] [PCore α] [IsTotal α]
     {x y : α} : x ≼ y → core x ≼ core y
   | ⟨z, hz⟩ => hz ▸ core_op_mono_of_pcore_op_mono h x z
 
-variable [OFE SI α] [RA α] [CMRAData SI α]
+/-! The constructions below take the laws of a `CMRAData` record as hypotheses, so they need no instance
+of it (Mathlib-style constructors); `ORA.ofCMRAData` instantiates them. -/
 
+section build
+variable [OFE SI α] [RA α] [Valid SI α] [OpNE SI α] [PCoreNE SI α] [ValidNE SI α]
+variable (hv : ∀ {n : SI} {x y : α}, ✓{n} (x • y) → ✓{n} x)
+variable (hpm : ∀ {x cx : α}, pcore x = some cx → ∀ y, ∃ cy : α, pcore (x • y) = some (cx • cy))
+
+omit [OpNE SI α] [PCoreNE SI α] in
+include hv in
 theorem validN_of_incN {n : SI} {x y : α} : x ≼{n} y → ✓{n} y → ✓{n} x
-  | ⟨_, hz⟩, v => validN_op_left (validN_ne hz v)
+  | ⟨_, hz⟩, v => hv (validN_ne hz v)
 
-theorem incN_extend {n sn : SI} {x y : α} (_ : IsSucc n sn) (v : ✓{n} y) :
+omit [OpNE SI α] [PCoreNE SI α] [ValidNE SI α] in
+theorem incN_extend
+    (he : ∀ {n : SI} {x y₁ y₂ : α}, ✓{n} x → x ≡{n}≡ y₁ • y₂ →
+      Σ' z₁ z₂ : α, x = z₁ • z₂ ∧ z₁ ≡{n}≡ y₁ ∧ z₂ ≡{n}≡ y₂)
+    {n sn : SI} {x y : α} (_ : IsSucc n sn) (v : ✓{n} y) :
     x ≼{n} y → ∃ z, z ≼{sn} y ∧ z ≡{n}≡ x
   | ⟨_, hw⟩ =>
-    let ⟨z₁, z₂, hy, hz₁, _⟩ := extend v hw
+    let ⟨z₁, z₂, hy, hz₁, _⟩ := he v hw
     ⟨z₁, ⟨z₂, hy.dist⟩, hz₁⟩
 
+omit [Valid SI α] [ValidNE SI α] in
+include hpm in
 theorem pcore_monoN' {n : SI} {x y : α} {cx} :
     x ≼{n} y → pcore x ≡{n}≡ some cx → ∃ cy, pcore y = some cy ∧ cx ≼{n} cy
   | ⟨z, hz⟩, e =>
     let ⟨_, hw, ew⟩ := OFE.dist_some e
-    let ⟨t, ht⟩ := pcore_op_mono (SI := SI) hw z
+    let ⟨t, ht⟩ := hpm hw z
     let ⟨r, hr, er⟩ := PCoreNE.pcore_ne hz.symm ht
     ⟨r, hr, incN_ne ew.symm er (incN_op_left n _ t)⟩
 
+omit [Valid SI α] [ValidNE SI α] in
+include hpm in
 theorem pcore_monoN {n : SI} {x y : α} {cx} (h : x ≼{n} y) (e : pcore x = some cx) :
     ∃ cy, pcore y = some cy ∧ cx ≼{n} cy :=
-  pcore_monoN' h (Dist.of_eq e)
+  pcore_monoN' hpm h (Dist.of_eq e)
 
-section total
-variable [IsTotal α]
-
-theorem core_incN_core {n : SI} {x y : α} (le : x ≼{n} y) : core x ≼{n} core y :=
-  let ⟨_, hcy, icy⟩ := pcore_monoN' le (Dist.of_eq (pcore_eq_core x))
-  Option.some.inj ((pcore_eq_core y).symm.trans hcy) ▸ icy
-
-theorem inc_refl (x : α) : x ≼ x := ⟨core x, (Op.comm.trans (pcore_op_left (pcore_eq_core x))).symm⟩
-
-end total
+end build
 
 section extOrder
 attribute [local instance] extOrdered
 
-theorem increasing (x : α) : Increasing SI x where
+theorem increasing [OFE SI α] [Op α] [OpNE SI α] (x : α) : Increasing SI x where
   increasing y := inc_op_right x y
 
-instance instOrderRefl [IsTotal α] : OrderRefl SI α where
-  ord_refl := inc_refl
-
-@[reducible] def toORA : ORA SI α where
-  toOrdered := extOrdered
-  toOrderedNE := extOrderedNE
-  validN_op_left := validN_op_left
-  extend := extend
-  op_monoN_left_ord := op_monoN_left
+/-- The ordered resource algebra of a `CMRAData` record: the order is the extension inclusion. -/
+@[reducible] def toORA [OFE SI α] [RA α] (d : CMRAData SI α) : ORA SI α where
+  toValid := d.toValid
+  toOpNE := d.toOpNE
+  toPCoreNE := d.toPCoreNE
+  toValidNE := d.toValidNE
+  toOrdered := letI := d.toOpNE; extOrdered (SI := SI) (α := α)
+  toOrderedNE := letI := d.toOpNE; extOrderedNE (SI := SI) (α := α)
+  validN_op_left := d.validN_op_left
+  extend := d.extend
+  op_monoN_left_ord := letI := d.toOpNE; op_monoN_left (SI := SI)
   op_mono_left_ord := op_mono_left
-  validN_of_ordN := validN_of_incN
-  pcore_monoN_ord := pcore_monoN
-  pcore_mono_ord := pcore_mono_of_pcore_op_mono (pcore_op_mono (SI := SI))
-  pcore_order_op {_ cx} e y :=
-    let ⟨cy, hcy⟩ := pcore_op_mono (SI := SI) e y
+  validN_of_ordN := letI := d.toValid; letI := d.toOpNE; letI := d.toPCoreNE; letI := d.toValidNE
+    validN_of_incN d.validN_op_left
+  pcore_monoN_ord := letI := d.toOpNE; letI := d.toPCoreNE; pcore_monoN d.pcore_op_mono
+  pcore_mono_ord := pcore_mono_of_pcore_op_mono d.pcore_op_mono
+  pcore_order_op := fun {_ cx} e y =>
+    let ⟨cy, hcy⟩ := d.pcore_op_mono e y
     ⟨cx • cy, hcy, inc_op_left cx cy⟩
-  pcore_increasing _ := increasing _
-  increasing_closed _ _ := increasing _
-  ordN_extend := incN_extend
-
-theorem isInc : letI := toORA (SI := SI) (α := α); IsInc SI α :=
-  { inc_ord := id, ord_inc := id, ordN_incN := id }
+  pcore_increasing := fun _ => letI := d.toOpNE; increasing (SI := SI) _
+  increasing_closed := fun _ _ => letI := d.toOpNE; increasing (SI := SI) _
+  ordN_extend := letI := d.toValid; letI := d.toOpNE; letI := d.toPCoreNE; letI := d.toValidNE
+    incN_extend d.extend
 
 end extOrder
 
@@ -1038,9 +1046,8 @@ class CMRA (SI : Type _) [instSI : SIdx SI] (α : Type _) [RA α] extends ORA SI
 instance (priority := low) CMRA.ofIsInc [RA α] [ORA SI α] [IsInc SI α] : CMRA SI α := {}
 
 @[reducible] def ORA.ofCMRAData [OFE SI α] [RA α] (d : CMRAData SI α) : CMRA SI α :=
-  letI := d
-  letI := CMRAData.toORA (SI := SI) (α := α)
-  { toIsInc := CMRAData.isInc (SI := SI) (α := α) }
+  letI := CMRAData.toORA d
+  { inc_ord := id, ord_inc := id, ordN_incN := id }
 
 namespace CMRA
 open ORA
@@ -1108,7 +1115,7 @@ class UORA (SI : Type _) [instSI : SIdx SI] (α : Type _) [URA α]
 /-- The validity of the unit of a classical unital resource algebra; the input of
 `UORA.ofUCMRAData` (the unit and its SI-free laws live in `URA α`). -/
 @[rocq_alias UcmraMixin]
-class UCMRAData (SI : Type _) [instSI : SIdx SI] (α : Type _) [URA α] [CMRA SI α] : Prop where
+structure UCMRAData (SI : Type _) [instSI : SIdx SI] (α : Type _) [URA α] [CMRA SI α] : Prop where
   unit_valid {SI} : ✓[SI] (UnitOp.unit : α)
 
 @[rocq_alias ucmra]
@@ -3009,7 +3016,7 @@ instance Unit.instURA : URA Unit where
   pcore_unit := rfl
   total _ := ⟨(), rfl⟩
 
-@[instance_reducible] def Unit.cmraData : CMRAData SI Unit where
+@[reducible] def Unit.cmraData : CMRAData SI Unit where
   ValidN _ _ := True
   Valid _ := True
   op_ne.ne _ _ _ := id
@@ -3057,7 +3064,7 @@ instance Empty.instRA : RA Empty where
   pcore_op_left {x} := x.elim
   pcore_idem {x} := x.elim
 
-@[instance_reducible] def Empty.cmraData : CMRAData SI Empty where
+@[reducible] def Empty.cmraData : CMRAData SI Empty where
   ValidN _ _ := False
   Valid _ := False
   op_ne.ne _ _ _ _ := .rfl

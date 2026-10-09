@@ -87,7 +87,7 @@ instance Qp.instPCore : PCore Qp where
 instance Qp.instRA : RA Qp where
   pcore_op_left H := by rcases H
 
-@[instance_reducible] def Qp.cmraData : CMRAData SI Qp where
+@[reducible] def Qp.cmraData : CMRAData SI Qp where
   ValidN _ x := x.val ≤ 1
   Valid x := x.val ≤ 1
   op_ne.ne n x1 x2 H := by rw [(H : x1 = x2)] <;> exact .rfl

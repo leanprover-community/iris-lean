@@ -108,7 +108,8 @@ theorem both_dfrac_valid (dq : DFrac) (n m : MaxNat) :
   (✓[SI] ((●MN{dq} n) • (◯MN m) : MonoNat SI)) ↔ ✓[SI] dq ∧ m ≤ n := by
   unfold auth lb
   rw [assoc'.symm, ← Auth.frag_op, Auth.both_dfrac_valid_discrete, MaxNat.inc_iff]
-  exact ⟨fun ⟨hdq, hle, _⟩ => ⟨hdq, by grind⟩, fun ⟨hdq, hle⟩ => ⟨hdq, by grind, trivial⟩⟩
+  exact ⟨fun ⟨hdq, hle, _⟩ => ⟨hdq, by grind [MaxNat.toNat_op]⟩,
+    fun ⟨hdq, hle⟩ => ⟨hdq, by grind [MaxNat.toNat_op], trivial⟩⟩
 
 @[rocq_alias mono_nat_both_valid]
 theorem both_valid (n m : MaxNat) :

@@ -24,11 +24,11 @@ variable {α : Type _} [OFE Nat α]
 @[rocq_alias mono_listR, rocq_alias mono_listUR, implicit_reducible]
 def MonoList (α : Type _) [OFE Nat α] := Auth Nat (MaxPrefixList α)
 
-instance : OFE Nat (MonoList α) := Auth.instOFE
+instance : OFE Nat (MonoList α) := inferInstanceAs (OFE Nat (Auth Nat (MaxPrefixList α)))
 instance : RA (MonoList α) := inferInstanceAs (RA (Auth Nat (MaxPrefixList α)))
 instance : URA (MonoList α) := inferInstanceAs (URA (Auth Nat (MaxPrefixList α)))
-instance : ORA Nat (MonoList α) := Auth.instORA
-instance : UORA Nat (MonoList α) := Auth.instUCMRA
+instance : ORA Nat (MonoList α) := inferInstanceAs (ORA Nat (Auth Nat (MaxPrefixList α)))
+instance : UORA Nat (MonoList α) := inferInstanceAs (UORA Nat (Auth Nat (MaxPrefixList α)))
 
 instance instIsIncMonoList : IsInc Nat (MonoList α) := inferInstanceAs (IsInc Nat (Auth Nat (MaxPrefixList α)))
 

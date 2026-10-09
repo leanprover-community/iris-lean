@@ -26,6 +26,11 @@ class SIdx (I : Type u) extends LT I, LE I, Zero I where
   not_lt_zero : ∀ n : I, ¬n < 0
   weak_case : ∀ n : I, (Σ' m : I, IsSucc m n) ⊕' ∀ m sm : I, m < n → IsSucc m sm → sm < n
 
+/- `SIdx` carries `<`, `≤` and `0`, but index types usually have them already (`Nat`). Low priority on the
+parent projections, so the type's own instances win (otherwise `Zero Nat` resolves to `natSIdx.toZero`,
+which `omega`/`simp` do not recognise). -/
+attribute [instance 50] SIdx.toLT SIdx.toLE SIdx.toZero
+
 /-- There is no step-indexing: `0` is the only index. -/
 @[rocq_alias SIdxZero]
 class SIdxZero (I : Type u) [SIdx I] : Prop where
@@ -66,7 +71,7 @@ variable {I : Type u} [inst : SIdx I] {m n p : I}
 
 
 @[rocq_alias SIdx.inhabited]
-instance inhabited : Inhabited I where
+instance (priority := low) inhabited : Inhabited I where
   default := 0
 
 theorem lt_irrefl (n : I) : ¬n < n := by

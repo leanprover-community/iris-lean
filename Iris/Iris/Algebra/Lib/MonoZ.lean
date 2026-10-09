@@ -99,6 +99,7 @@ theorem both_dfrac_valid (dq : DFrac) (n m : MaxInt) :
   unfold auth lb
   rw [assoc'.symm, ← Auth.frag_op, Auth.both_dfrac_valid_discrete, ← Option.some_op,
     Option.some_inc_some_iff_is_total, MaxInt.inc_iff]
+  have hop : (n • m).toInt = max n.toInt m.toInt := rfl
   exact ⟨fun ⟨hdq, hle, _⟩ => ⟨hdq, by grind⟩, fun ⟨hdq, hle⟩ => ⟨hdq, by grind, trivial⟩⟩
 
 @[rocq_alias mono_Z_both_valid]

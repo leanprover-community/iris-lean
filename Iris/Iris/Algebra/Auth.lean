@@ -82,11 +82,8 @@ abbrev Auth (A : Type _) [URA A] [UORA SI A] :=
 namespace Auth
 variable [URA A] [UORA SI A]
 
-instance : OFE SI (Auth SI A) := View.instOFE
-instance instRA : RA (Auth SI A) := View.raRA
-instance instURA : URA (Auth SI A) := View.raURA
-instance instORA : ORA SI (Auth SI A) := View.instORA
-instance instUCMRA : UORA SI (Auth SI A) := View.instUCMRA
+/- `Auth` is a transparent synonym (`abbrev`) for a view: it has no instances of its own, the `View`
+instances apply directly. -/
 
 #rocq_ignore authO "Use the Auth type and View.instOFE typeclass"
 #rocq_ignore authR "Use the Auth type and View.instORA typeclass"

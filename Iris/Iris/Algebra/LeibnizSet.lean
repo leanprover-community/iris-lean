@@ -108,7 +108,7 @@ instance instURA : URA (DisjointLeibnizSet S) where
   pcore_unit := by simp [pcore]
   total _ := ⟨_, rfl⟩
 
-@[instance_reducible] def cmraData : CMRAData SI (DisjointLeibnizSet S) where
+@[reducible] def cmraData : CMRAData SI (DisjointLeibnizSet S) where
   ValidN _ | valid _ => True | _ => False
   Valid | valid _ => True | _ => False
   op_ne.ne _ _ _ H := by rw [(H : _ = _)] <;> exact .rfl
@@ -342,7 +342,7 @@ instance instURA : URA (LeibnizSet S) where
   pcore_unit := by simp [pcore, pcore]
   total _ := ⟨_, rfl⟩
 
-@[instance_reducible] def cmraData : CMRAData SI (LeibnizSet S) where
+@[reducible] def cmraData : CMRAData SI (LeibnizSet S) where
   ValidN _ _ := True
   Valid _ := True
   op_ne.ne _ _ _ H := by rw [(H : _ = _)] <;> exact .rfl

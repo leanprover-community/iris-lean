@@ -135,7 +135,7 @@ instance instURA (R : α → α → Prop) : URA (Mra R) where
   pcore_unit := rfl
   total x := ⟨x, rfl⟩
 
-@[instance_reducible] def cmraData (R : α → α → Prop) : CMRAData SI (Mra R) where
+@[reducible] def cmraData (R : α → α → Prop) : CMRAData SI (Mra R) where
   ValidN _ _ := True
   Valid _ := True
   op_ne.ne _ _ _ h := by rw [h] <;> exact .rfl

@@ -58,7 +58,7 @@ instance instURA : URA (LeibnizMultiSet MS) where
   pcore_unit := rfl
   total _ := ⟨.ofSet ∅, rfl⟩
 
-@[instance_reducible] def cmraData : CMRAData SI (LeibnizMultiSet MS) where
+@[reducible] def cmraData : CMRAData SI (LeibnizMultiSet MS) where
   ValidN _ _ := True
   Valid _ := True
   op_ne.ne _ _ _ H := by rw [(H : _ = _)] <;> exact .rfl

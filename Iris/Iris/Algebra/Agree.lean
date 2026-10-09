@@ -441,7 +441,7 @@ theorem op_invN {n : SI} {x y : Agree α} : validN n (op x y) → x ≡{n}≡ y 
 theorem op_inv {x y : Agree α} : valid (SI := SI) (op x y) → x = y :=
   ind₂ (fun _ _ h => OFE.eq_dist_2 (SI := SI) (Raw.op_inv h)) x y
 
-@[instance_reducible] def cmraData : CMRAData SI (Agree α) where
+@[reducible] def cmraData : CMRAData SI (Agree α) where
   ValidN := validN
   Valid := valid (SI := SI)
   op_ne := op_ne
