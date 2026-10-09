@@ -19,7 +19,7 @@ convenience definitions and lemmas.
 
 namespace Iris
 
-open OFE CMRA DFrac
+open OFE ORA DFrac
 
 namespace DFracAgree
 
@@ -64,7 +64,7 @@ theorem mk_op {d₁ d₂ : DFrac} {a : A} : mk (d₁ • d₂) a = mk d₁ a •
 
 @[rocq_alias dfrac_agree_op_valid]
 theorem op_valid {d₁ d₂ : DFrac} {a₁ a₂ : A} : ✓ (mk d₁ a₁ • mk d₂ a₂) ↔ ✓ (d₁ • d₂) ∧ a₁ = a₂ := by
-  simp only [Valid, Prod.Valid, Prod.op, CMRA.op, mk]
+  simp only [Prod.op, ORA.op, mk]
   exact and_congr_right fun _ => toAgree_op_valid_iff_eq
 
 #rocq_ignore dfrac_agree_op_valid_L "Use op_valid"
@@ -77,30 +77,25 @@ theorem op_validN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
   rw [Agree.toAgree_op_validN_iff_dist]
   exact and_congr_left' (valid_iff_validN' (α := DFrac) n)
 
+theorem ord {d₁ d₂ : DFrac} {a₁ a₂ : A} :
+    mk d₁ a₁ ≼ₒ mk d₂ a₂ ↔ (d₁ ≼ₒ d₂) ∧ a₁ = a₂ :=
+  and_congr_right' Agree.toAgree_ord
+
 @[rocq_alias dfrac_agree_included]
 theorem included {d₁ d₂ : DFrac} {a₁ a₂ : A} :
-    mk d₁ a₁ ≼ mk d₂ a₂ ↔ (d₁ ≼ d₂) ∧ a₁ = a₂ := by
-  simp only [mk, Included]
-  constructor
-  · rintro ⟨⟨zd, za⟩, H⟩
-    exact ⟨⟨zd, congrArg Prod.fst H⟩,
-      Agree.toAgree_included.mp ⟨za, congrArg Prod.snd H⟩⟩
-  · rintro ⟨⟨zd, hd⟩, ha⟩
-    refine ⟨(zd, toAgree a₁), equiv_prod_ext hd ?_⟩
-    exact (congrArg toAgree ha.symm).trans Agree.idemp.symm
+    mk d₁ a₁ ≼ mk d₂ a₂ ↔ (d₁ ≼ d₂) ∧ a₁ = a₂ :=
+  inc_iff_ord.trans ord
 
 #rocq_ignore dfrac_agree_included_L "Use included"
 
+theorem ordN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
+    mk d₁ a₁ ≼ₒ{n} mk d₂ a₂ ↔ (d₁ ≼ₒ d₂) ∧ a₁ ≡{n}≡ a₂ :=
+  and_congr (ord_iff_ordN (α := DFrac) n).symm Agree.toAgree_ordN
+
 @[rocq_alias dfrac_agree_includedN]
 theorem includedN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
-    mk d₁ a₁ ≼{n} mk d₂ a₂ ↔ (d₁ ≼ d₂) ∧ a₁ ≡{n}≡ a₂ := by
-  simp only [mk, IncludedN]
-  constructor
-  · rintro ⟨⟨zd, za⟩, hd, ha⟩
-    exact ⟨(inc_iff_incN (α := DFrac) n).mpr ⟨zd, hd⟩, Agree.toAgree_includedN.mp ⟨za, ha⟩⟩
-  · rintro ⟨hdinc, ha⟩
-    obtain ⟨zd, hd⟩ := (inc_iff_incN (α := DFrac) n).mp hdinc
-    exact ⟨(zd, toAgree a₁), hd, (toAgree.ne.ne ha.symm).trans Agree.idemp.symm.dist⟩
+    mk d₁ a₁ ≼{n} mk d₂ a₂ ↔ (d₁ ≼ d₂) ∧ a₁ ≡{n}≡ a₂ :=
+  incN_iff_ordN.trans ordN
 
 @[rocq_alias dfrac_agree_update_2]
 theorem update₂ {d₁ d₂ : DFrac} {a₁ a₂ a' : A} (hd : d₁ • d₂ = .own 1) :
@@ -154,11 +149,17 @@ theorem op_validN {q₁ q₂ : Qp} {a₁ a₂ : A} :
     ✓{n} (mk q₁ a₁ • mk q₂ a₂) ↔ (q₁ + q₂).val ≤ 1 ∧ a₁ ≡{n}≡ a₂ :=
   DFracAgree.op_validN
 
+theorem ord {q₁ q₂ : Qp} {a₁ a₂ : A} :
+    mk q₁ a₁ ≼ₒ mk q₂ a₂ ↔ (own q₁ ≼ₒ own q₂) ∧ a₁ = a₂ := DFracAgree.ord
+
 @[rocq_alias frac_agree_included]
 theorem included {q₁ q₂ : Qp} {a₁ a₂ : A} :
     mk q₁ a₁ ≼ mk q₂ a₂ ↔ (own q₁ ≼ own q₂) ∧ a₁ = a₂ := DFracAgree.included
 
 #rocq_ignore frac_agree_included_L "Use included"
+
+theorem ordN {q₁ q₂ : Qp} {a₁ a₂ : A} :
+    mk q₁ a₁ ≼ₒ{n} mk q₂ a₂ ↔ (own q₁ ≼ₒ own q₂) ∧ a₁ ≡{n}≡ a₂ := DFracAgree.ordN
 
 @[rocq_alias frac_agree_includedN]
 theorem includedN {q₁ q₂ : Qp} {a₁ a₂ : A} :

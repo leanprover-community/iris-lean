@@ -16,7 +16,7 @@ meta import Iris.Std.RocqPorting
 
 namespace Iris
 
-open Iris.Std CMRA OFE LawfulSet LeibnizSet View
+open Iris.Std ORA OFE LawfulSet LeibnizSet View
 
 variable {S A B : Type _} [LawfulSet S (A × B)]
 variable {a a₁ a₂ : A} {b b₁ b₂ : B} {L L' L₁ L₂ : S} {dq dq₁ dq₂ : DFrac}
@@ -63,12 +63,14 @@ theorem viewRel_iff {n} : viewRel n (valid L') (valid L) ↔ L ⊆ L' ∧ SetBij
 
 @[rocq_alias gset_bij_view_rel_raw_mono, rocq_alias gset_bij_view_rel_raw_valid,
   rocq_alias gset_bij_view_rel_raw_unit]
-instance : IsViewRel (viewRel (S := S)) where
-  mono {_ x₁ y₁ n₂ x₂ y₂} h hx hy _ := by
+instance : IsViewRel (viewRel (S := S)) := .ofMonoOrd
+  (mono := by
+    intro _ x₁ y₁ n₂ x₂ y₂ h hx hy _
     obtain ⟨_⟩ := x₁; obtain ⟨_⟩ := y₁; obtain ⟨_⟩ := y₂; obtain rfl := (hx : _ = _)
-    exact ⟨subset_trans ((included_iff_subset ..).mp ((inc_iff_incN n₂).mpr hy)) h.1, h.2⟩
-  rel_validN _ _ _ _ := trivial
-  rel_unit _ := ⟨valid ∅, subset_refl, SetBijective.empty⟩
+    refine ⟨subset_trans ((included_iff_subset ..).mp ?_) h.1, h.2⟩
+    exact (inc_iff_incN n₂).mpr hy)
+  (rel_validN := fun _ _ _ _ => trivial)
+  (rel_unit := fun _ => ⟨valid ∅, subset_refl, SetBijective.empty⟩)
 
 @[rocq_alias gset_bij_view_rel_discrete]
 instance : IsViewRelDiscrete (viewRel (S := S)) where
@@ -153,10 +155,13 @@ theorem elem_agree (h : ✓ ((elem a₁ b₁ • elem a₂ b₂) : SetBij S)) : 
   exact SetBijective.eq_iff (hbij.mono hsub) (mem_union.mpr (.inl (mem_singleton.mpr rfl)))
     (mem_union.mpr (.inr (mem_singleton.mpr rfl)))
 
+theorem elem_ord_auth (h : (a, b) ∈ L) : elem a b ≼ₒ auth dq L :=
+  Ordered.ord_trans (y := (◯V valid L : SetBij S))
+    (frag_ord_of_ord <| (ord_iff_subset ..).mpr fun _ hx => mem_singleton.mp hx ▸ h)
+    (ord_op_right ..)
+
 @[rocq_alias bij_view_included]
-theorem elem_inc_auth (h : (a, b) ∈ L) : elem a b ≼ auth dq L :=
-  inc_trans (frag_inc_of_inc <| (included_iff_subset ..).mpr fun _ hx => mem_singleton.mp hx ▸ h)
-    (inc_op_right ..)
+theorem elem_inc_auth (h : (a, b) ∈ L) : elem a b ≼ auth dq L := inc_iff_ord.mpr (elem_ord_auth h)
 
 @[rocq_alias gset_bij_auth_extend]
 theorem auth_extend (ha : ∀ b', (a, b') ∉ L) (hb : ∀ a', (a', b) ∉ L) :

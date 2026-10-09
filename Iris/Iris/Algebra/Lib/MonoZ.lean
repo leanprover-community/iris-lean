@@ -12,7 +12,7 @@ public import Iris.Algebra.Numbers
 @[expose] public section
 
 /-!
-# Authoritative CMRA over `MaxInt`
+# Authoritative ORA over `MaxInt`
 -/
 
 namespace Iris
@@ -24,6 +24,7 @@ abbrev MonoZ := Auth (Option MaxInt)
 #rocq_ignore mono_ZUR "Use the MonoZ type and View.instUCMRA typeclass"
 
 namespace MonoZ
+open ORA
 
 @[rocq_alias mono_Z_auth]
 def auth (dq : DFrac) (n : MaxInt) : MonoZ := (●{dq} some n) • (◯ some n)
@@ -36,12 +37,12 @@ notation "●MZ□ " n => auth DFrac.discard n
 notation "◯MZ " n => lb n
 
 @[rocq_alias mono_Z_lb_core_id]
-instance {n : MaxInt} : CMRA.CoreId (◯MZ n : MonoZ) := by
+instance {n : MaxInt} : CoreId (◯MZ n : MonoZ) := by
   unfold lb
   infer_instance
 
 @[rocq_alias mono_Z_auth_core_id]
-instance {l : MaxInt} : CMRA.CoreId (●MZ□ l : MonoZ) := by
+instance {l : MaxInt} : CoreId (●MZ□ l : MonoZ) := by
   unfold auth
   infer_instance
 
@@ -49,8 +50,7 @@ instance {l : MaxInt} : CMRA.CoreId (●MZ□ l : MonoZ) := by
 theorem auth_dfrac_op (dq1 dq2 : DFrac) (n : MaxInt) :
     (●MZ{dq1 • dq2} n : MonoZ) = (●MZ{dq1} n) • (●MZ{dq2} n) := by
   unfold auth
-  rw [← CMRA.assoc', CMRA.op_core_right_of_inc (CMRA.inc_op_right ..), CMRA.assoc',
-    ← Auth.auth_dfrac_op]
+  rw [← assoc', op_core_right_of_inc (inc_op_right ..), assoc', ← Auth.auth_dfrac_op]
 
 @[rocq_alias mono_Z_lb_op]
 theorem lb_op (n1 n2 : MaxInt) : (◯MZ (n1 + n2) : MonoZ) = ((◯MZ n1) • (◯MZ n2) : MonoZ) :=
@@ -58,7 +58,7 @@ theorem lb_op (n1 n2 : MaxInt) : (◯MZ (n1 + n2) : MonoZ) = ((◯MZ n1) • (�
 
 @[rocq_alias mono_Z_auth_lb_op]
 theorem auth_lb_op (dq : DFrac) (n : MaxInt) : (●MZ{dq} n : MonoZ) = (●MZ{dq} n) • (◯MZ n) :=
-  (CMRA.op_core_left_of_inc (CMRA.inc_op_right ..)).symm
+  (op_core_left_of_inc (inc_op_right ..)).symm
 
 @[rocq_alias mono_Z_lb_op_le_l]
 theorem lb_op_le_l (n n' : MaxInt) (h : n' ≤ n) :
@@ -67,7 +67,7 @@ theorem lb_op_le_l (n n' : MaxInt) (h : n' ≤ n) :
 
 @[rocq_alias mono_Z_auth_dfrac_valid]
 theorem auth_dfrac_valid (dq : DFrac) (n : MaxInt) : (✓ (●MZ{dq} n : MonoZ)) ↔ ✓ dq :=
-  Auth.both_dfrac_valid_discrete.trans ⟨And.left, fun h => ⟨h, CMRA.inc_refl _, trivial⟩⟩
+  Auth.both_dfrac_valid_discrete.trans ⟨And.left, fun h => ⟨h, inc_refl _, trivial⟩⟩
 
 @[rocq_alias mono_Z_auth_valid]
 theorem auth_valid (n : MaxInt) : ✓ (●MZ n : MonoZ) :=
@@ -80,7 +80,7 @@ theorem auth_dfrac_op_valid (dq1 dq2 : DFrac) (n1 n2 : MaxInt) :
   · intro h
     unfold auth at h
     have ⟨hdq, heq, _⟩ := Auth.auth_dfrac_op_valid.mp <|
-      CMRA.valid_of_inc (CMRA.op_mono (CMRA.inc_op_left ..) (CMRA.inc_op_left ..)) h
+      valid_of_inc (op_mono (inc_op_left ..) (inc_op_left ..)) h
     exact ⟨hdq, Option.some_inj.mp heq⟩
   · rintro ⟨hdq, rfl⟩
     exact auth_dfrac_op dq1 dq2 n1 ▸ (auth_dfrac_valid _ n1).mpr hdq
@@ -94,7 +94,7 @@ theorem auth_op_valid (n1 n2 : MaxInt) : (✓ ((●MZ n1) • (●MZ n2) : MonoZ
 theorem both_dfrac_valid (dq : DFrac) (n m : MaxInt) :
     (✓ ((●MZ{dq} n) • (◯MZ m) : MonoZ)) ↔ ✓ dq ∧ m ≤ n := by
   unfold auth lb
-  rw [CMRA.assoc'.symm, ← Auth.frag_op, Auth.both_dfrac_valid_discrete, ← Option.some_op,
+  rw [assoc'.symm, ← Auth.frag_op, Auth.both_dfrac_valid_discrete, ← Option.some_op,
     Option.some_inc_some_iff_is_total, MaxInt.inc_iff]
   exact ⟨fun ⟨hdq, hle, _⟩ => ⟨hdq, by grind⟩, fun ⟨hdq, hle⟩ => ⟨hdq, by grind, trivial⟩⟩
 
@@ -102,13 +102,18 @@ theorem both_dfrac_valid (dq : DFrac) (n m : MaxInt) :
 theorem both_valid (n m : MaxInt) : (✓ ((●MZ n) • (◯MZ m) : MonoZ)) ↔ m ≤ n :=
   (both_dfrac_valid ..).trans ⟨And.right, fun h => ⟨DFrac.valid_own_one, h⟩⟩
 
+theorem lb_mono_ord (n1 n2 : MaxInt) (h : n1 ≤ n2) : (◯MZ n1 : MonoZ) ≼ₒ ◯MZ n2 :=
+  Auth.frag_ord_of_ord <| Option.some_ord_some_of_ord <| MaxInt.ord_iff.mpr h
+
 @[rocq_alias mono_Z_lb_mono]
 theorem lb_mono (n1 n2 : MaxInt) (h : n1 ≤ n2) : (◯MZ n1 : MonoZ) ≼ ◯MZ n2 :=
-  Auth.frag_inc_of_inc <| Option.some_inc_some_iff_is_total.mpr <| MaxInt.inc_iff.mpr h
+  inc_iff_ord.mpr (lb_mono_ord n1 n2 h)
+
+theorem ord (dq : DFrac) (n : MaxInt) : (◯MZ n : MonoZ) ≼ₒ ●MZ{dq} n := ord_op_right ..
 
 @[rocq_alias mono_Z_included]
 theorem included (dq : DFrac) (n : MaxInt) : (◯MZ n : MonoZ) ≼ ●MZ{dq} n :=
-  CMRA.inc_op_right ..
+  inc_iff_ord.mpr (ord dq n)
 
 @[rocq_alias mono_Z_update]
 theorem update {n : MaxInt} (n' : MaxInt) (h : n ≤ n') : (●MZ n : MonoZ) ~~> ●MZ n' :=

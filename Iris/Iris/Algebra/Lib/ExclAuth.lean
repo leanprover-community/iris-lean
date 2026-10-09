@@ -11,16 +11,16 @@ public import Iris.Algebra.Excl
 public section
 
 /-!
-# Exclusive Authoritative CMRA
+# Exclusive Authoritative ORA
 
-Authoritative CMRA where the fragment is exclusively owned.
+Authoritative ORA where the fragment is exclusively owned.
 This is effectively a single "ghost variable" with two views, the fragment `◯E a`
 and the authority `●E a`.
 -/
 
 namespace Iris
 
-open OFE CMRA Auth Excl Iris.Option Iris.OFE.Option
+open OFE ORA Auth Excl Iris.Option Iris.OFE.Option
 
 namespace ExclAuth
 

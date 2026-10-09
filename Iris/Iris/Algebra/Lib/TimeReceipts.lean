@@ -15,14 +15,14 @@ public import Iris.Algebra.IsOp
 
 namespace Iris
 
-open OFE CMRA View
+open OFE ORA View
 
 namespace Algebra.TimeReceipt
 
 scoped instance : COFE Nat := COFE.ofDiscrete _
 scoped instance : OFE.Discrete Nat := ⟨fun h => h⟩
 scoped instance : UCMRA Nat := CommMonoidLike.instUCMRA
-scoped instance : CMRA.Discrete Nat := CommMonoidLike.instDiscrete
+scoped instance : ORA.Discrete Nat := CommMonoidLike.instDiscrete
 scoped instance : CoreId (0 : Nat) := CommMonoidLike.instCoreIdZero
 
 /-- The fragments: a lower bound on the additive and on the persistent partition. -/
@@ -36,15 +36,15 @@ def viewRel : ViewRel Nat frag := fun _ a f =>
   ∃ a₁ a₂, a = a₁ + a₂ ∧ a₁ ≤ a₂ ∧ f.1 ≤ a₁ ∧ f.2.toNat ≤ a₂
 
 @[rocq_alias time_receipt_view_rel]
-private instance : IsViewRel viewRel where
-  mono := fun {n₁ _} f₁ n₂ _ f₂ h ha hf hn => by
+private instance : IsViewRel viewRel := .ofMonoOrd
+  (fun {n₁ _} f₁ n₂ _ f₂ h ha hf hn => by
     obtain ⟨b₁, b₂, rfl, hb, h₁, h₂⟩ := h
     obtain rfl := (ha : _ = _)
-    obtain ⟨⟨z, hz : f₁.1 = f₂.1 + z⟩, hf₂⟩ := Prod.incN_def.mp hf
+    obtain ⟨⟨z, hz : f₁.1 = f₂.1 + z⟩, hf₂⟩ := Prod.incN_def.mp (OrdInc.ordN_incN hf)
     have hle : f₂.2.toNat ≤ f₁.2.toNat := MaxNat.inc_iff.mp <| (inc_iff_incN n₂).mpr hf₂
-    exact ⟨b₁, b₂, rfl, hb, by omega, by omega⟩
-  rel_validN _ _ _ _ := ⟨trivial, trivial⟩
-  rel_unit _ := ⟨0, 0, 0, rfl, Nat.le_refl _, Nat.le_refl _, Nat.le_refl _⟩
+    exact ⟨b₁, b₂, rfl, hb, by omega, by omega⟩)
+  (fun _ _ _ _ => ⟨trivial, trivial⟩)
+  (fun _ => ⟨0, 0, 0, rfl, Nat.le_refl _, Nat.le_refl _, Nat.le_refl _⟩)
 
 #rocq_ignore time_receipt_view_rel_raw_mono "Defined in the IsViewRel instance"
 #rocq_ignore time_receipt_view_rel_raw_valid "Defined in the IsViewRel instance"
@@ -57,7 +57,7 @@ theorem viewRel_exists_iff : (∃ a, viewRel n a f) ↔ ✓{n} f :=
      Nat.le_max_right ..⟩⟩
 
 @[rocq_alias time_receipt_view_rel_unit]
-theorem viewRel_unit_iff : viewRel n a UCMRA.unit ↔ ✓{n} a :=
+theorem viewRel_unit_iff : viewRel n a UORA.unit ↔ ✓{n} a :=
   ⟨fun _ => trivial,
    fun _ => ⟨0, a, (Nat.zero_add a).symm, Nat.zero_le _, Nat.le_refl _,
      Nat.zero_le _⟩⟩
@@ -73,9 +73,9 @@ abbrev _root_.Iris.Algebra.TimeReceipt := View viewRel
 @[rocq_alias time_receiptO]
 instance : OFE TimeReceipt := View.instOFE
 @[rocq_alias time_receiptR]
-instance : CMRA TimeReceipt := View.instCMRA
+instance : CMRA TimeReceipt := inferInstance
 @[rocq_alias time_receiptUR]
-instance : UCMRA TimeReceipt := View.instUCMRA
+instance : UCMRA TimeReceipt := inferInstance
 
 /-- The authoritative total amount of time receipts. -/
 @[rocq_alias time_receipt_auth]
@@ -132,21 +132,21 @@ theorem le_of_auth_op_frag_valid {m n₁ n₂ : Nat}
     (h : ✓ (auth m • (fragExcl n₁ • fragPers n₂))) : n₁ + n₂ ≤ m := by
   rw [auth, fragExcl, fragPers, ← frag_op_eq, auth_one_op_frag_valid_iff] at h
   obtain ⟨_, _, rfl, _, h₁, h₂⟩ := h 0
-  simp only [Prod.mk_op_mk, CommMonoidLike.op_eq, MaxNat.toNat_op] at h₁ h₂
+  simp only [Prod.mk_op_mk, CommMonoidLike.op_eq, MaxNat.toNat_add, Nat.max_eq_max] at h₁ h₂
   omega
 
 @[rocq_alias time_receipt_frag_excl_persist]
 theorem fragExcl_persist (n₁ n₂ : Nat) : fragExcl n₁ • fragPers n₂ ~~> fragPers (n₁ + n₂) := by
   rw [fragExcl, fragPers, ← frag_op_eq]
   refine frag_update fun _ _ ⟨_, _⟩ ⟨a, b, h⟩ => ⟨a - n₁, b + n₁, ?_⟩
-  simp only [Prod.mk_op_mk, CommMonoidLike.op_eq, MaxNat.toNat_op] at h ⊢
+  simp only [Prod.mk_op_mk, CommMonoidLike.op_eq, MaxNat.toNat_add, Nat.max_eq_max] at h ⊢
   omega
 
 @[rocq_alias time_receipt_frag_excl_get_pers]
 theorem fragExcl_get_pers (n : Nat) : fragExcl n ~~> fragExcl n • fragPers n := by
   rw [fragExcl, fragPers, ← frag_op_eq]
   refine frag_update fun _ _ ⟨_, _⟩ ⟨a, b, h⟩ => ⟨a, b, ?_⟩
-  simp only [Prod.mk_op_mk, CommMonoidLike.op_eq, MaxNat.toNat_op] at h ⊢
+  simp only [Prod.mk_op_mk, CommMonoidLike.op_eq, MaxNat.toNat_add, Nat.max_eq_max] at h ⊢
   omega
 
 @[rocq_alias time_receipt_auth_incr]
@@ -154,7 +154,7 @@ theorem auth_incr (m n k : Nat) :
     auth m • fragPers n ~~> (auth (m + k + k) • fragPers (n + k)) • fragExcl k := by
   rw [← assoc_L, auth, auth, fragPers, fragPers, fragExcl, ← frag_op_eq]
   refine auth_one_op_frag_update fun _ ⟨_, _⟩ ⟨a, b, h⟩ => ⟨a + k, b + k, ?_⟩
-  simp only [Prod.mk_op_mk, CommMonoidLike.op_eq, MaxNat.toNat_op] at h ⊢
+  simp only [Prod.mk_op_mk, CommMonoidLike.op_eq, MaxNat.toNat_add, Nat.max_eq_max] at h ⊢
   omega
 
 end Algebra.TimeReceipt

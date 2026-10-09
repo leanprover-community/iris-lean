@@ -12,7 +12,7 @@ public import Iris.Instances.UPred
 @[expose] public section
 
 namespace IrisTest
-open Iris BI ProofMode CMRA UPred
+open Iris BI ProofMode ORA UPred
 
 section
 
@@ -34,13 +34,13 @@ variable [UCMRA M] (a b : M) (c : M) [CoreId c]
 #guard_msgs (whitespace := lax) in
 #ipm_synth IntoSep (ownM (a • b)) _ _
 
-/- Tests `intoAnd_ownM`. -/
+/- Tests `intoAnd_ownM` (which requires an affine algebra). -/
 /-- info:
   solution: IntoAnd p (ownM (a • b)) (ownM a) (ownM b),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-variable (p : Bool) in
+variable (p : Bool) [ORA.Affine M] in
 #ipm_synth IntoAnd p (ownM (a • b)) _ _
 
 /-

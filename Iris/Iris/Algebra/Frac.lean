@@ -11,9 +11,9 @@ public import Iris.Algebra.IsOp
 public import Iris.Std.Positives
 
 /-!
-# The Frac CMRA
+# The Frac ORA
 
-This CMRA captures the notion of fractional ownership of another resource.
+This ORA captures the notion of fractional ownership of another resource.
 This version follows Iris Rocq in fixing the underlying type of fractions to be `ℚ ∩ (0, 1]`
 -/
 
@@ -32,6 +32,7 @@ theorem mul_div_cancel_left {a b : Rat} (ha : a ≠ 0) : a * (b / a) = b := by
 end Rat
 
 namespace Iris
+open ORA
 
 /-- The type of positive rational numbers, used as fractions -/
 @[rocq_alias fracO, rocq_alias fracR]
@@ -70,7 +71,7 @@ def Qp.divide_even (q : Qp) (n : Nat) (hn : 0 < n) : Qp :=
 
 instance instCOFEQp : COFE Qp := COFE.ofDiscrete _
 
-instance instCMRAQp : CMRA Qp where
+@[instance_reducible] def Qp.cmraData : CMRAData Qp where
   pcore _ := none
   op x y := x + y
   ValidN _ x := x.val ≤ 1
@@ -88,13 +89,15 @@ instance instCMRAQp : CMRA Qp where
   comm := Subtype.ext (Rat.add_comm ..)
   pcore_op_left H := by rcases H
   pcore_idem H := by rcases H
-  pcore_op_mono H := by rcases H
   extend {_ x y z} := by
     rintro H He; exact ⟨y, z, He, .rfl, .rfl⟩
+  pcore_op_mono H := by rcases H
+
+instance instORAQp : CMRA Qp := ofCMRAData Qp.cmraData
 
 -- TODO: A different solution to having these bridge lemmas might be to internalize
--- positivity into the CMRA's validity predicate, removing the sybtype, and having Qp
--- become just a Leibniz CMRA over Rat. This admits two-way coercions to Rat for the automation.
+-- positivity into the ORA's validity predicate, removing the sybtype, and having Qp
+-- become just a Leibniz ORA over Rat. This admits two-way coercions to Rat for the automation.
 
 @[simp, grind =] theorem Qp.val_add (x y : Qp) : (x + y).val = x.val + y.val := rfl
 @[simp, grind =] theorem Qp.val_one : (1 : Qp).val = 1 := rfl
@@ -141,32 +144,37 @@ instance : Pos.Countable Qp where
 #rocq_ignore frac_valid_instance "Use CMRA instance"
 #rocq_ignore frac_ra_mixin "Use CMRA instance"
 
-@[rocq_alias frac_included]
-theorem Frac.inc_iff {p q : Qp} : p ≼ q ↔ p < q := by
+theorem Frac.ord_iff {p q : Qp} : p ≼ₒ q ↔ p < q := by
   refine ⟨fun ⟨r, Hr⟩ => ?_, fun H => ?_⟩
   · have := r.2; simp only [Qp.lt_iff, Qp.ext_iff, Qp.val_op] at *; grind
   · exact ⟨⟨q.val - p.val, by grind⟩, by simp only [Qp.ext_iff, Qp.val_op]; grind⟩
 
+@[rocq_alias frac_included]
+theorem Frac.inc_iff {p q : Qp} : p ≼ q ↔ p < q := inc_iff_ord.trans ord_iff
+
+theorem Frac.le_of_ord {p q : Qp} (H : p ≼ₒ q) : p ≤ q := by
+  have := ord_iff.mp H; grind
+
 @[rocq_alias frac_included_weak]
-theorem Frac.le_of_inc {p q : Qp} (H : p ≼ q) : p ≤ q := by
-  have := inc_iff.mp H; grind
+theorem Frac.le_of_inc {p q : Qp} (H : p ≼ q) : p ≤ q := le_of_ord (inc_iff_ord.mp H)
 
 @[rocq_alias frac_cmra_discrete]
-instance instDiscreteQp : CMRA.Discrete Qp where
+instance instDiscreteQp : Discrete Qp where
   discrete_0 := fun h => h
   discrete_valid := id
+  discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
 
 @[rocq_alias frac_full_exclusive]
-instance instExclusiveQp1 : CMRA.Exclusive (α := Qp) 1 where
+instance instExclusiveQp1 : Exclusive (α := Qp) 1 where
   exclusive0_l x := by have := x.2; grind
 
 @[rocq_alias frac_cancelable]
-instance instCancelableQp {a : Qp} : CMRA.Cancelable (α := Qp) a where
+instance instCancelableQp {a : Qp} : Cancelable (α := Qp) a where
   cancelableN {n x y} _ (H : a • x = a • y) := by
     simp only [Qp.dist_iff, Qp.ext_iff, Qp.val_op] at *; grind
 
 @[rocq_alias frac_id_free]
-instance instIdFreeQp {a : Qp} : CMRA.IdFree a where
+instance instIdFreeQp {a : Qp} : IdFree a where
   id_free0_r b _ H := by
     have := b.2; simp only [Qp.dist_iff, Qp.val_op] at H; grind
 
@@ -189,7 +197,7 @@ instance isOpFrac_half d (q : Qp) : IsOp d q q.half q.half where
 
 set_option synthInstance.checkSynthOrder false in
 /--
-  The sum operator `+` is not automatically unfolded as the CMRA operator (`•`).
+  The sum operator `+` is not automatically unfolded as the ORA operator (`•`).
   As a result, `isOpSplit_op` does not automatically apply, and this instance
   is required.
 -/

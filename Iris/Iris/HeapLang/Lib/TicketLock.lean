@@ -17,7 +17,7 @@ public import Iris.Std.Namespaces
 
 namespace Iris.HeapLang
 
-open BI Iris.Std CMRA Excl DisjointLeibnizSet LawfulSet
+open BI Iris.Std ORA Excl DisjointLeibnizSet LawfulSet
 
 @[expose] public section
 
@@ -54,6 +54,8 @@ abbrev Tickets := Std.ExtTreeSet Nat compare
 abbrev TicketR := Auth (Option (Excl Unit) × DisjointLeibnizSet Tickets)
 
 abbrev TicketLockF : COFE.OFunctorPre := constOF TicketR
+
+instance : RFunctorAffine TicketLockF where affine := inferInstance
 
 @[rocq_alias heap_lang.tlockG]
 class TicketLockG (GF : BundledGFunctors) where [elemG : ElemG GF TicketLockF]

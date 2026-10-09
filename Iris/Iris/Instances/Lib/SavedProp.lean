@@ -16,7 +16,7 @@ public import Iris.ProofMode
 
 namespace Iris
 
-open BI CMRA Agree OFE Iris.UPred IProp Iris.Std ProofMode COFE
+open BI ORA Agree OFE Iris.UPred IProp Iris.Std ProofMode COFE
 
 /-! ## Saved anything -/
 

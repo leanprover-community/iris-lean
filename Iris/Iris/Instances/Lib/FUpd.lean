@@ -147,7 +147,7 @@ instance uPred_bi_bupd_lc {GF : BundledGFunctors} [LcGS hlc GF] : BIBUpdLaterCre
     rw [uPred_lc_unseal]
     cases hlc with
     | hasNoLC => simp only [uPred_lc]; itrivial
-    | hasLC => exact iOwn_unit (ε := UCMRA.unit)
+    | hasLC => exact iOwn_unit (ε := UORA.unit)
 
 end Instances
 

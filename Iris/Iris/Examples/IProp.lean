@@ -99,6 +99,7 @@ variable (Expr State Value : Type _) [OperationalSemantics Expr State Value]
 /- Let's say that we are also given two OFunctors, and an interpretation of the state into
    state using these resources. -/
 variable (F3 F4 : OFunctorPre) [RFunctorContractive F3] [RFunctorContractive F4]
+variable [RFunctorAffine F3] [RFunctorAffine F4]
 variable {GF} [ElemG GF F3] [ElemG GF F4]
 class StateInterpretation (State : Type _) (GF : BundledGFunctors) where
   state_interp : State → IProp GF

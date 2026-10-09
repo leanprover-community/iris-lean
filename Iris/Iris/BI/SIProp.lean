@@ -30,6 +30,7 @@ structure SiProp where
   closed : holds n₁ → n₂ ≤ n₁ → holds n₂
 
 namespace SiProp
+open ORA
 
 /-! ## Connective definitions -/
 
@@ -433,14 +434,14 @@ theorem later_equiv_internalEq_mpr [OFE A] (x y : A) :
   | zero => omega
   | succ n => exact .le hP (Nat.le_of_lt_succ hlt)
 
-/-! ## CMRA validity -/
+/-! ## ORA validity -/
 
 @[rocq_alias siProp_cmra_valid]
-def cmraValid [CMRA A] (a : A) : SiProp where
+def cmraValid [ORA A] (a : A) : SiProp where
   holds n := ✓{n} a
-  closed h hle := CMRA.validN_of_le hle h
+  closed h hle := validN_of_le hle h
 
-@[simp] theorem cmraValid_holds [CMRA A] {a : A} {n} :
+@[simp] theorem cmraValid_holds [ORA A] {a : A} {n} :
     (cmraValid a).holds n ↔ ✓{n} a := .rfl
 
 #rocq_ignore siProp_cmra_valid_def "Not needed in Lean."
@@ -448,35 +449,34 @@ def cmraValid [CMRA A] (a : A) : SiProp where
 #rocq_ignore siProp_cmra_valid_unseal "Not needed in Lean."
 
 @[rocq_alias siProp_primitive.cmra_valid_ne]
-instance instNonExpansiveCmraValid [CMRA A] : NonExpansive (cmraValid (A := A)) where
-  ne _ _ _ h _ hle := ⟨CMRA.validN_ne (Dist.le h hle), CMRA.validN_ne (Dist.le h hle).symm⟩
+instance instNonExpansiveCmraValid [ORA A] : NonExpansive (cmraValid (A := A)) where
+  ne _ _ _ h _ hle := ⟨validN_ne (Dist.le h hle), validN_ne (Dist.le h hle).symm⟩
 
 @[rocq_alias siProp_primitive.cmra_valid_intro]
-theorem cmraValid_intro [CMRA A] {P : SiProp} {a : A} (h : CMRA.Valid a) :
+theorem cmraValid_intro [ORA A] {P : SiProp} {a : A} (h : ORA.Valid a) :
     P ⊢ cmraValid a :=
-  fun n _ => (CMRA.valid_iff_validN.mp h) n
+  fun n _ => (valid_iff_validN.mp h) n
 
 @[rocq_alias siProp_primitive.cmra_valid_elim]
-theorem cmraValid_elim [CMRA A] {a : A} : cmraValid a ⊢ ⌜✓{0} a⌝ :=
-  fun _ => CMRA.validN_of_le (Nat.zero_le _)
+theorem cmraValid_elim [ORA A] {a : A} : cmraValid a ⊢ ⌜✓{0} a⌝ :=
+  fun _ => validN_of_le (Nat.zero_le _)
 
 @[rocq_alias siProp_primitive.cmra_valid_weaken]
-theorem cmraValid_weaken [CMRA A] {a b : A} : cmraValid (a • b) ⊢ cmraValid a :=
-  fun _ => CMRA.validN_op_left
+theorem cmraValid_weaken [ORA A] {a b : A} : cmraValid (a • b) ⊢ cmraValid a :=
+  fun _ => validN_op_left
 
 @[rocq_alias siProp_primitive.valid_entails]
-theorem cmraValid_entails_iff [CMRA A] [CMRA B] {a : A} {b : B} :
+theorem cmraValid_entails_iff [ORA A] [ORA B] {a : A} {b : B} :
     (cmraValid a ⊢ cmraValid b) ↔ ∀ n, ✓{n} a → ✓{n} b :=
   .rfl
 
-instance cmraValid_timeless [CMRA A] [CMRA.Discrete A] {a : A} :
-    Timeless (cmraValid a : SiProp) where
+instance cmraValid_timeless [ORA A] [ORA.Discrete A] {a : A} : Timeless (cmraValid a : SiProp) where
   timeless := fun n h => by
     cases n with
     | zero => left; trivial
     | succ n =>
       right
-      exact (CMRA.discrete_valid (CMRA.validN_of_le (Nat.zero_le n) h)).validN
+      exact (discrete_valid (validN_of_le (Nat.zero_le n) h)).validN
 
 /-! ## Soundness lemmas -/
 
