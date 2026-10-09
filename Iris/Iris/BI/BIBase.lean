@@ -307,30 +307,60 @@ meta def delabLaterN : Delab := whenPPOption getPPNotation <| withOverApp 4 do
     let n ← withNaryArg 2 delab
     `(iprop(▷^[$n] $P))
 
+/-
+  The four conditional modalities below are `match`es (not `if`s) with the kernel's `abbrev` reducibility
+  hints but the elaborator's default (semireducible) transparency.  The proof mode stores every hypothesis as
+  `□?p P` and its lemmas mention both `□?false P` and `P`, so the kernel checks `□?false P =?= P` all the time.
+  With an `if` body and `regular` hints the kernel's lazy delta reduction unfolds the side with the greater
+  height first -- `P`, when `P` is a concrete user definition -- possibly all the way down (a `[∗list]` over a
+  literal range, a cell whose `if` branches the kernel then compares argument by argument), before it ever
+  unfolds the wrapper.  `abbrev` hints make the wrapper unfold first and the `match` on a literal `p` then
+  iota-reduces away, so the check is `P =?= P`.
+-/
 /--
   Conditional persistently modality:
   `<pers>?p P` is equivalent to `<pers> P` when `p` is `true`, otherwise equivalent to `P`.
 -/
 @[rocq_alias bi_persistently_if]
-def persistentlyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <pers> P else P)
+abbrev persistentlyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP :=
+  match p with
+  | true => iprop(<pers> P)
+  | false => P
+set_option allowUnsafeReducibility true in
+attribute [semireducible] persistentlyIf
 /--
   Conditional affinely modality:
   `<affine>?p P` is equivalent to `<affine> P` when `p` is `true`, otherwise equivalent to `P`.
 -/
 @[rocq_alias bi_affinely_if]
-def affinelyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <affine> P else P)
+abbrev affinelyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP :=
+  match p with
+  | true => iprop(<affine> P)
+  | false => P
+set_option allowUnsafeReducibility true in
+attribute [semireducible] affinelyIf
 /--
   Conditional absorbingly modality:
   `<absorb>?p P` is equivalent to `<absorb> P` when `p` is `true`, otherwise equivalent to `P`.
 -/
 @[rocq_alias bi_absorbingly_if]
-def absorbinglyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <absorb> P else P)
+abbrev absorbinglyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP :=
+  match p with
+  | true => iprop(<absorb> P)
+  | false => P
+set_option allowUnsafeReducibility true in
+attribute [semireducible] absorbinglyIf
 /--
   Conditional intuitionistically modality:
   `□?p P` is equivalent to `□ P` when `p` is `true`, otherwise equivalent to `P`.
 -/
 @[rocq_alias bi_intuitionistically_if]
-def intuitionisticallyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then □ P else P)
+abbrev intuitionisticallyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP :=
+  match p with
+  | true => iprop(□ P)
+  | false => P
+set_option allowUnsafeReducibility true in
+attribute [semireducible] intuitionisticallyIf
 
 syntax:max "<pers>?" term:max ppHardSpace term:40 : term
 syntax:max "<affine>?" term:max ppHardSpace term:40 : term
