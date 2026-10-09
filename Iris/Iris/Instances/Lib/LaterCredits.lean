@@ -16,6 +16,8 @@ public import Iris.Instances.IProp
 
 @[expose] public section
 
+local stepindex Nat
+
 /-! ## Later credits -/
 
 namespace Iris
@@ -47,22 +49,22 @@ instance : LeftIdentity (α := Credit) (· + ·) Zero.zero := ⟨⟩
 instance : LawfulLeftIdentity (α := Credit) (· + ·) Zero.zero := ⟨Nat.zero_add⟩
 instance : LeftCancelAdd Credit := ⟨Nat.add_left_cancel⟩
 
-instance : COFE Nat Credit := COFE.ofDiscrete _
-instance : OFE.Discrete Nat Credit := ⟨fun h => h⟩
+instance : COFE Credit := COFE.ofDiscrete _
+instance : OFE.Discrete Credit := ⟨fun h => h⟩
 instance : Op Credit := CommMonoidLike.instOp
 instance : PCore Credit := CommMonoidLike.instPCore
 instance : RA Credit := CommMonoidLike.instRA
 instance : URA Credit := CommMonoidLike.instURA
-instance : UCMRA Nat Credit := CommMonoidLike.instUCMRA
-instance instIncOrdCredit : IncOrd Nat Credit := inferInstance
-instance : ORA.Discrete Nat Credit := CommMonoidLike.instDiscrete
-instance {a : Credit} : Cancelable Nat a := CommMonoidLike.instCancelable
+instance : UCMRA Credit := CommMonoidLike.instUCMRA
+instance instIncOrdCredit : IncOrd Credit := inferInstance
+instance : ORA.Discrete Credit := CommMonoidLike.instDiscrete
+instance {a : Credit} : Cancelable a := CommMonoidLike.instCancelable
 instance : CoreId (Credit.ofNat 0) := CommMonoidLike.instCoreIdZero
 
 /-- Later credits inclusion typeclass (`GF` contains the necessary functors for later credits) -/
 @[rocq_alias lcGpreS]
 class LcGpreS (GF : BundledGFunctors) where
-  lc_elem : ElemG GF (AuthURF (constOF _ Credit))
+  lc_elem : ElemG GF (AuthURF (constOF Credit))
 
 attribute [reducible, instance] LcGpreS.lc_elem
 
@@ -194,7 +196,7 @@ def le_upd_pre (P le_upd : IProp GF) : IProp GF :=
     (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ le_upd))
 
 @[rocq_alias le_upd.le_upd_pre_contractive]
-instance {P : IProp GF} : Contractive Nat (le_upd_pre P) where
+instance {P : IProp GF} : Contractive (le_upd_pre P) where
   distLater_dist {n : Nat} {x y} H := by
     simp only [le_upd_pre]
     refine forall_ne (fun i => ?_)
@@ -215,7 +217,7 @@ instance {P : IProp GF} : Contractive Nat (le_upd_pre P) where
 #rocq_ignore le_upd.le_upd_unseal "`le_upd` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias le_upd.le_upd]
-def le_upd (P : IProp GF) : IProp GF := fixpoint Nat (le_upd_pre P)
+def le_upd (P : IProp GF) : IProp GF := fixpoint (le_upd_pre P)
 
 syntax:max "|==£> " term:40 : term
 
@@ -233,7 +235,7 @@ theorem le_upd_unfold {P : IProp GF} :
     (fixpoint_unfold ⟨le_upd_pre P, inferInstance⟩).to_bi.trans .rfl
 
 @[rocq_alias le_upd.le_upd_ne]
-instance : NonExpansive Nat (le_upd (GF := GF)) where
+instance : NonExpansive (le_upd (GF := GF)) where
   ne {n : Nat} := by
     apply WellFounded.induction Nat.lt_wfRel.wf n
     intro m IH P Q H
@@ -495,7 +497,7 @@ section le_upd_finally_rules
 variable {hlc : HasLC} [LcGS hlc GF]
 
 @[rocq_alias le_upd.le_upd_finally_ne]
-instance le_upd_finally_ne : NonExpansive Nat (le_upd_finally (GF := GF)) where
+instance le_upd_finally_ne : NonExpansive (le_upd_finally (GF := GF)) where
   ne _ _ _ H := by
     simp only [le_upd_finally]
     refine forall_ne (fun m => ?_)
@@ -632,7 +634,7 @@ theorem le_upd_finally_soundness (hlc : HasLC) [LcGpreS GF] n (P : IProp GF) :
   intro HP
   cases hlc with
   | hasLC =>
-    apply laterN_soundness (SI := Nat) (n := n.succ)
+    apply laterN_soundness (n := n.succ)
     iintro _
     iapply (laterN_succ_right _).mpr
     iapply (laterN_mono _ except0_into_later)
@@ -641,7 +643,7 @@ theorem le_upd_finally_soundness (hlc : HasLC) [LcGpreS GF] n (P : IProp GF) :
     have HP' : £ n ⊢ iprop(∀ m, lc_supply m -∗ ▷^[m] ◇ ■ P) := HP
     iapply HP' $$ Hl Hlc
   | hasNoLC =>
-    apply laterN_soundness (SI := Nat) (n := 1)
+    apply laterN_soundness (n := 1)
     iintro _
     iapply (laterN_succ_right 0).mpr
     iapply laterN_0.mpr

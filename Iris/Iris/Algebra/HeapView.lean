@@ -33,7 +33,7 @@ It provides authoritative and fragmental ownership over heap elements with fract
 
 @[expose] public section
 
-variable {SI : Type _} [instSI : Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [instSI : Iris.SIdx SI]
 
 open Iris
 
@@ -161,7 +161,7 @@ end HeapR
 
 variable (SI) in
 /-- A view of a Heap, that gives element-wise ownership. -/
-@[rocq_alias gmap_viewR]
+@[indexed, rocq_alias gmap_viewR]
 abbrev HeapView := View (HeapR (SI := SI) K V H)
 
 end heapView

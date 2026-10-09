@@ -15,6 +15,8 @@ open Language Language.Notation
 
 @[expose] public section
 
+local stepindex Nat
+
 /-! ## Total adequacy -/
 
 section ThreadPool
@@ -23,10 +25,10 @@ variable {Expr State Obs Val : Type _} [Λ : Language Expr State Obs Val]
 variable {hlc : HasLC} {GF : BundledGFunctors}
 variable [ι : IrisGS_gen hlc Expr GF]
 
-local instance : OFE Nat (List Expr) := OFE.ofDiscrete _
-local instance list_nonexpansive (Ψ : List Expr → IProp GF) : NonExpansive Nat Ψ :=
+local instance : OFE (List Expr) := OFE.ofDiscrete _
+local instance list_nonexpansive (Ψ : List Expr → IProp GF) : NonExpansive Ψ :=
   ⟨fun _ _ _ hxy => hxy ▸ .rfl⟩
-local instance (priority := low) : OFE Nat Val := OFE.ofDiscrete _
+local instance (priority := low) : OFE Val := OFE.ofDiscrete _
 
 namespace twptp
 
@@ -56,7 +58,7 @@ def pre (X : List Expr → IProp GF) (t₁ : List Expr) : IProp GF := iprop%
       ∃ nt', ⌜κ = []⌝ ∗ stateInterp σ₂ (ns + 1) κs nt' ∗ X t₂
 
 @[rocq_alias twptp_pre_mono']
-instance pre_mono_inst : BIMonoPred Nat (pre (ι := ι)) where
+instance pre_mono_inst : BIMonoPred (pre (ι := ι)) where
   mono_pred := by
     intro X Y _ _
     iintro #HXY %t₁ Hpre
@@ -75,9 +77,9 @@ theorem pre_mono (X Y : List Expr → IProp GF) :
 /-- Total weakest precondition for a thread pool. -/
 @[rocq_alias twptp]
 def get (t : List Expr) : IProp GF :=
-  bi_least_fixpoint Nat pre t
+  bi_least_fixpoint pre t
 
-instance get_ne : NonExpansive Nat (get (ι := ι)) := list_nonexpansive _
+instance get_ne : NonExpansive (get (ι := ι)) := list_nonexpansive _
 
 @[rocq_alias twptp_unfold]
 theorem unfold (t : List Expr) :
@@ -144,7 +146,7 @@ private theorem get_nil : ⊢ get (ι := ι) ([] : List Expr) := by
 theorem of_twp (s : Stuckness) (e : Expr) (Φ : Val → IProp GF) :
     WP e @ s ; ⊤ [{ Φ }] ⊢ get [e] := by
   let Ψ := fun (E : CoPset) (e : Expr) (_ : Val → IProp GF) => iprop(⌜E = ⊤⌝ -∗ get (ι := ι) [e])
-  letI : NonExpansive Nat
+  letI : NonExpansive
       (fun x : twp.Internal.Args Expr Val GF => Ψ x.1 x.2.1 x.2.2) :=
     ⟨fun _ _ _ ⟨hE, he, _⟩ => hE ▸ he ▸ .rfl⟩
   iintro He
@@ -212,7 +214,7 @@ theorem twp_total {hlc : HasLC} {GF : BundledGFunctors}
           .mk (toStateInterp := ⟨stateI⟩) numLatersPerStep forkPost mono
         iprop% stateI σ n [] 0 ∗ (£ m -∗ WP e @ s ; ⊤ [{ Φ }])) :
     Relation.StronglyNormalizing ErasedStep ([e], σ) := by
-  refine pure_soundness (SI := Nat) (PROP := IProp GF) ?_
+  refine pure_soundness (PROP := IProp GF) ?_
   refine (fupd_finally_soundness hlc m ⊤ _ ?_)
   iintro %Hinv Hcred
   imod Hwp with ⟨%stateI, %numLatersPerStep, %forkPost, %mono, Hσ, Htwp⟩

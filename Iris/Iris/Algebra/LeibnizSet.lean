@@ -16,7 +16,7 @@ public import Iris.Std.CoPset
 
 @[expose] public section
 
-variable {SI : Type _} [instSI : Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [instSI : Iris.SIdx SI]
 
 /-! ## Leibniz Set algebras
 This file defines generic set algebras.

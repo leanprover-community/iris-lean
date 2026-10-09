@@ -21,7 +21,7 @@ fragment's resource to its payload.
 
 @[expose] public section
 
-variable {SI : Type _} [instSI : Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [instSI : Iris.SIdx SI]
 
 namespace Iris
 open OFE ORA UORA Auth Iris.Option Iris.OFE.Option UFrac
@@ -29,7 +29,7 @@ open OFE ORA UORA Auth Iris.Option Iris.OFE.Option UFrac
 /-! ## Definitions -/
 
 variable (SI) in
-@[rocq_alias ufrac_authR, rocq_alias ufrac_authUR]
+@[indexed, rocq_alias ufrac_authR, rocq_alias ufrac_authUR]
 abbrev UFracAuth [RA A] [ORA SI A] := Auth SI (Option (UFrac × A))
 
 namespace UFracAuth

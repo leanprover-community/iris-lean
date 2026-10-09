@@ -18,7 +18,7 @@ The authoritative camera has 2 types of elements:
 
 @[expose] public section
 
-variable {SI : Type _} [instSI : Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [instSI : Iris.SIdx SI]
 
 open Iris
 
@@ -76,6 +76,7 @@ end AuthViewRel
 /-! ## Definition and operations on the authoritative camera -/
 
 variable (SI) in
+@[indexed]
 abbrev Auth (A : Type _) [URA A] [UORA SI A] :=
   View (AuthViewRel (SI := SI) (A := A))
 

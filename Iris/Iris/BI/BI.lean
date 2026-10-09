@@ -12,7 +12,7 @@ public import Iris.BI.BIBase
 @[expose] public section
 
 
-variable {SI : Type _} [Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
 
 namespace Iris
 open Iris.Std OFE
@@ -83,8 +83,8 @@ class BI (PROP : Type _) extends BI.BIBase PROP where
 connectives, and the laws that only hold for finite step indices. All other BI laws are SI-free and
 live in `BI PROP`. This mixin takes `BI PROP` as a parameter: an SI-indexed class never extends an
 SI-free one, so no projection out of it has an undetermined step index. -/
-@[rocq_alias bi_cofe]
-class BIStepIndexed (SI : Type _) [SIdx SI] (PROP : Type _) [BI PROP] extends COFE SI PROP where
+@[indexed, rocq_alias bi_cofe]
+class BIStepIndexed (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] extends COFE SI PROP where
   and_ne : OFE.NonExpansive₂ SI (BI.BIBase.and (PROP := PROP))
   or_ne : OFE.NonExpansive₂ SI (BI.BIBase.or (PROP := PROP))
   imp_ne : OFE.NonExpansive₂ SI (BI.BIBase.imp (PROP := PROP))

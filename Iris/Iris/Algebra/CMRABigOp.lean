@@ -12,7 +12,7 @@ public import Iris.Algebra.CMRA
 
 namespace Iris.Algebra
 
-variable {SI : Type _} [instSI : SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 open ORA
 
 open OFE Iris.Std

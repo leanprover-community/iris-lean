@@ -21,6 +21,8 @@ open BI Iris.Std ORA Excl DisjointLeibnizSet LawfulSet
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace TicketLock
 
 @[rocq_alias heap_lang.wait_loop]
@@ -51,11 +53,11 @@ def release : Val := hl_val%
 abbrev Tickets := Std.ExtTreeSet Nat compare
 
 /-- The ticket now being served, together with the set of tickets handed out so far. -/
-abbrev TicketR := Auth Nat (Option (Excl Unit) × DisjointLeibnizSet Tickets)
+abbrev TicketR := Auth (Option (Excl Unit) × DisjointLeibnizSet Tickets)
 
-abbrev TicketLockF : COFE.OFunctorPre Nat := constOF _ TicketR
+abbrev TicketLockF : COFE.OFunctorPre := constOF TicketR
 
-instance : RFunctorAffine Nat TicketLockF where affine := inferInstance
+instance : RFunctorAffine TicketLockF where affine := inferInstance
 
 @[rocq_alias heap_lang.tlockG]
 class TicketLockG (GF : BundledGFunctors) where [elemG : ElemG GF TicketLockF]
@@ -112,19 +114,19 @@ instance instLockedTimeless (γ : GName) : Timeless (locked (GF := GF) γ) := by
 
 /-- Owning two fragments at once exposes the validity of their composition. -/
 private theorem own_op_valid {γ : GName} {a₁ a₂ : TicketR} :
-    own (GF := GF) γ a₁ ∗ own γ a₂ ⊢ ⌜✓[Nat] (a₁ • a₂)⌝ :=
+    own (GF := GF) γ a₁ ∗ own γ a₂ ⊢ ⌜✓ (a₁ • a₂)⌝ :=
   iOwn_cmraValid_op.trans (internalCmraValid_discrete (A := TicketR)).mp
 
 /-- Only one thread at a time holds the right to enter the critical section. -/
 private theorem own_owner_exclusive {γ : GName} :
     own (GF := GF) γ owner ∗ own γ owner ⊢ False :=
-  pure_elim _ own_op_valid fun h => ((Auth.frag_op_valid).mp h).1.elim
+  pure_elim _ own_op_valid fun h => (Auth.frag_op_valid.mp h).1.elim
 
 /-- A ticket is handed out at most once. -/
 private theorem own_ticket_exclusive {γ : GName} {x : Nat} :
     own (GF := GF) γ (ticket x) ∗ own γ (ticket x) ⊢ False :=
   pure_elim _ own_op_valid fun h => (disjoint_singleton_left.mp
-    (valid_op_iff_disj.mp (Auth.frag_op_valid.mp h).2) ((mem_singleton).mpr rfl)).elim
+    (valid_op_iff_disj.mp (Auth.frag_op_valid.mp h).2) (mem_singleton.mpr rfl)).elim
 
 @[rocq_alias heap_lang.ticket_lock.locked_exclusive]
 theorem locked_exclusive (γ : GName) : locked γ ∗ locked γ ⊢@{IProp GF} False := by

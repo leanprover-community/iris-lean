@@ -13,7 +13,7 @@ public import Iris.Algebra.LocalUpdates
 
 namespace Iris
 
-variable {SI : Type _} [instSI : SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 
 @[rocq_alias csum]
 inductive Csum (α β : Type _) where

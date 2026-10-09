@@ -11,7 +11,7 @@ public meta import Lean.Elab.Tactic
 @[expose] public section
 
 
-variable {SI : Type _} [Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
 
 /-!
 # `sbi_unfold`
@@ -75,8 +75,8 @@ inductive SbiUnfoldClosure where
 /-- `SbiUnfold SI clo P Pi` states that the plain proposition `P` is the `<si_pure>`
 embedding of the down closure of `Pi`, and that `Pi` is downwards closed whenever
 `clo` demands it. -/
-@[rocq_alias SbiUnfold]
-class SbiUnfold (SI : Type _) [SIdx SI] {PROP : Type _} [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] (clo : SbiUnfoldClosure) (P : PROP)
+@[indexed, rocq_alias SbiUnfold]
+class SbiUnfold (SI : stepindex (Type _)) [SIdx SI] {PROP : Type _} [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] (clo : SbiUnfoldClosure) (P : PROP)
     (Pi : outParam (SI → Prop)) where
   closed {n₁ n₂ : SI} : clo = .downClosed → Pi n₁ → n₂ ≤ n₁ → Pi n₂
   as_siPure : P ⊣⊢ iprop(<si_pure> downClose Pi)

@@ -15,7 +15,7 @@ public import Iris.BI.Lib.BUpdPlain
 @[expose] public section
 
 
-variable {SI : Type _} [Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
 
 section UPredInstance
 
@@ -30,7 +30,8 @@ extend a resource below `x` at step-index `0`, and need the result below `x` at 
 index. Rocq gets this from `cmra_extend` (exact equality); for an ordered RA the axiom
 `ordN_extend` only lifts one step (from `n` to its successor). The lift exists for finite step indices
 (iterate `ordN_extend`) and for the extension order (`IsInc`, via `extend`). -/
-class OrdExtend0 (SI : Type _) [SIdx SI] (M : Type _) [URA M] [UORA SI M] : Prop where
+@[indexed]
+class OrdExtend0 (SI : stepindex (Type _)) [SIdx SI] (M : Type _) [URA M] [UORA SI M] : Prop where
   ordN_extend0 {n : SI} {x y : M} : ✓{n} x → y ≼ₒ{(0 : SI)} x →
     ∃ z, z ≼ₒ{n} x ∧ z ≡{(0 : SI)}≡ y
 
@@ -174,7 +175,7 @@ protected def later (P : UPred SI M) : UPred SI M where
 #rocq_ignore uPred_later_aux "`UPred.later` is defined directly without `seal`/`unseal`."
 
 variable (SI) in
-@[rocq_alias uPred_ownM]
+@[indexed, rocq_alias uPred_ownM]
 def ownM (m : M) : UPred SI M where
   holds n x := m ≼ₒ{n} x
   mono H Hle Hn := (H.le Hn).trans Hle
@@ -800,6 +801,7 @@ theorem later_false_ownM (a : M) : (▷ False → ownM SI a) ⊢ ∃ b, ownM _ b
   refine ⟨iprop(ownM _ b ∧ (▷ False → a ≡[SI] b)), ⟨b, rfl⟩, hb, fun {n'} _ _ _ hF => ?_⟩
   exact hba.symm.le (SIdx.le_ngt.mpr fun hlt => hF _ hlt)
 
+@[indexed]
 theorem pure_soundness : (⊢ (⌜P⌝ : UPred SI M)) → P := (· (0 : SI) ⟨unit, unit_validN⟩ (ordN_refl unit))
 
 theorem later_soundness [SIdxSucc SI] : (⊢ ▷ P) → ⊢@{UPred SI M} P :=

@@ -14,7 +14,7 @@ public import Iris.Algebra.CMRA
 @[expose] public section
 
 
-variable {SI : Type _} [Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
 
 /-!
 # Step-Indexed Propositions (siProp)
@@ -27,8 +27,8 @@ namespace Iris
 open OFE BI
 
 /-- Step-indexed proposition, downward closed in the step index. -/
-@[rocq_alias siProp]
-structure SiProp (SI : Type _) [SIdx SI] where
+@[indexed, rocq_alias siProp]
+structure SiProp (SI : stepindex (Type _)) [SIdx SI] where
   holds : SI → Prop
   closed {n₁ n₂ : SI} : holds n₁ → n₂ ≤ n₁ → holds n₂
 
@@ -413,7 +413,7 @@ instance instPersistentlyExist : BIPersistentlyExist (SiProp SI) where
 
 /-! ## Internal equality -/
 
-@[rocq_alias siProp_internal_eq]
+@[indexed, rocq_alias siProp_internal_eq]
 def internalEq [OFE SI A] (a₁ a₂ : A) : SiProp SI where
   holds n := a₁ ≡{n}≡ a₂
   closed h hle := Dist.le h hle
@@ -519,7 +519,7 @@ instance cmraValid_timeless [RA A] [ORA SI A] [ORA.Discrete SI A] {a : A} :
 
 /-! ## Soundness lemmas -/
 
-@[rocq_alias siProp_primitive.pure_soundness]
+@[indexed, rocq_alias siProp_primitive.pure_soundness]
 theorem pure_soundness {φ : Prop} (h : True ⊢@{SiProp SI} ⌜φ⌝) : φ := h (0 : SI) trivial
 
 @[rocq_alias siProp_primitive.exist_soundness]

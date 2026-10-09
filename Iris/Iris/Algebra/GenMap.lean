@@ -13,7 +13,7 @@ public import Iris.Algebra.Updates
 
 namespace Iris
 
-variable {SI : Type _} [instSI : SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 open OFE
 
 section GenMap

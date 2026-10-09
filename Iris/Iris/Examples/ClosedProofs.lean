@@ -17,6 +17,8 @@ public import Iris.Std.HeapInstances
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris.Examples.ClosedProofs
 open Iris.BI COFE HeapView Auth Std.LawfulSet
 
@@ -39,10 +41,10 @@ section proof
 noncomputable def GF : BundledGFunctors := fun n =>
   match n with
   | 0  => ⟨InvMapF⟩
-  | 1  => ⟨constOF _ CoPsetDisjL⟩
-  | 2  => ⟨constOF _ (DisjointLeibnizSet PosSet)⟩
-  | 3  => ⟨AuthURF (constOF _ Credit)⟩
-  | _  => ⟨constOF _ Unit⟩
+  | 1  => ⟨constOF CoPsetDisjL⟩
+  | 2  => ⟨constOF (DisjointLeibnizSet PosSet)⟩
+  | 3  => ⟨AuthURF (constOF Credit)⟩
+  | _  => ⟨constOF Unit⟩
 
 instance : WsatGpreS GF where
   inv := { τ := 0, transp := by unfold GF; rfl }
@@ -57,7 +59,7 @@ instance : InvGpreS GF where
   toLcGpreS := inferInstance
 
 example : True := by
-  apply pure_soundness (SI := Nat) (PROP := IProp GF)
+  apply pure_soundness (PROP := IProp GF)
   iapply step_fupdN_soundness_close (hlc := .hasNoLC) (m := 0) (n := 1)
   iintro %_ _
   simp only [step_fupdN]

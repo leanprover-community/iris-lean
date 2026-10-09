@@ -15,6 +15,8 @@ public import Iris.Std.Namespaces
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open BI ORA Agree OFE Iris.UPred IProp Iris.Std ProofMode COFE Auth ExclAuth Excl PartialMap BigSepM
@@ -23,8 +25,8 @@ abbrev BoolO := DiscreteO Bool
 
 variable (GF : BundledGFunctors)
 
-abbrev BoxF : OFunctorPre Nat :=
-  ProdOF (AuthURF (OptionOF (ExclOF (constOF _ BoolO))))
+abbrev BoxF : OFunctorPre :=
+  ProdOF (AuthURF (OptionOF (ExclOF (constOF BoolO))))
     (OptionOF (AgreeRF (LaterOF IdOF)))
 
 @[rocq_alias boxG]
@@ -42,10 +44,10 @@ variable {GF : BundledGFunctors} [InvGS_gen hlc GF] [BoxG GF]
 abbrev SliceName := GName
 
 @[rocq_alias box_own_auth]
-def box_own_auth (γ : SliceName) (a : Auth Nat (Option (Excl BoolO))) : IProp GF :=
+def box_own_auth (γ : SliceName) (a : Auth (Option (Excl BoolO))) : IProp GF :=
   iOwn (F := BoxF) γ (a, none)
 
-instance box_own_auth_timeless (γ : SliceName) (a : Auth _ (Option (Excl BoolO))) :
+instance box_own_auth_timeless (γ : SliceName) (a : Auth (Option (Excl BoolO))) :
     BI.Timeless (box_own_auth (GF := GF) γ a) :=
   iOwn_timeless (F := BoxF) (a := ((a, none) : BoxF.ap (IProp GF)))
 
@@ -58,12 +60,12 @@ instance box_own_prop_persistent (γ : SliceName) (P : IProp GF) :
   unfold box_own_prop; infer_instance
 
 @[rocq_alias box_own_prop_contractive]
-instance box_own_prop_contractive (γ : SliceName) : Contractive Nat (box_own_prop (GF := GF) γ) :=
+instance box_own_prop_contractive (γ : SliceName) : Contractive (box_own_prop (GF := GF) γ) :=
   ⟨fun {_ _ _} h => iOwn_ne.ne <|
     dist_prod_ext Dist.rfl (toAgree.ne.ne (NextContractive.distLater_dist h))⟩
 
 @[rocq_alias box_own_prop_ne]
-instance box_own_prop_ne (γ : SliceName) : NonExpansive Nat (box_own_prop (GF := GF) γ) := ne_of_contractive _
+instance box_own_prop_ne (γ : SliceName) : NonExpansive (box_own_prop (GF := GF) γ) := ne_of_contractive _
 
 @[rocq_alias slice_inv]
 def slice_inv (γ : SliceName) (P : IProp GF) : IProp GF :=
@@ -77,21 +79,21 @@ def slice (N : Namespace) (γ : SliceName) (P : IProp GF) : IProp GF :=
 def box {M : Type _ → Type _} [LawfulFiniteMap M SliceName] (N : Namespace) (f : M Bool)
   (P : IProp GF) : IProp GF :=
   iprop% ∃ Φ : SliceName → IProp GF,
-    ▷ (P ≡[Nat] ([∗map] γ ↦ _x ∈ f, Φ γ)) ∗
+    ▷ (P ≡ ([∗map] γ ↦ _x ∈ f, Φ γ)) ∗
     [∗map] γ ↦ b ∈ f, box_own_auth γ (◯E (⟨b⟩ : BoolO)) ∗ box_own_prop γ (Φ γ) ∗ inv N (slice_inv γ (Φ γ))
 
 @[rocq_alias box_inv_ne]
-instance slice_inv_ne (γ : SliceName) : NonExpansive Nat (slice_inv (GF := GF) γ) :=
+instance slice_inv_ne (γ : SliceName) : NonExpansive (slice_inv (GF := GF) γ) :=
   ⟨fun _ _ _ h => exists_ne (fun b => sep_ne.ne Dist.rfl (b.casesOn Dist.rfl h))⟩
 
 @[rocq_alias slice_ne]
-instance slice_ne (N : Namespace) (γ : SliceName) : NonExpansive Nat (slice (GF := GF) N γ) :=
+instance slice_ne (N : Namespace) (γ : SliceName) : NonExpansive (slice (GF := GF) N γ) :=
   ⟨fun {_ _ _} h => sep_ne.ne ((box_own_prop_ne γ).ne h) ((inv_ne N).ne ((slice_inv_ne γ).ne h))⟩
 
 #rocq_ignore slice_proper "Subsumed by the NonExpansive instance `slice_ne`."
 
 @[rocq_alias slice_contractive]
-instance slice_contractive (N : Namespace) (γ : SliceName) : Contractive Nat (slice (GF := GF) N γ) :=
+instance slice_contractive (N : Namespace) (γ : SliceName) : Contractive (slice (GF := GF) N γ) :=
   ⟨fun {_ _ _} h => sep_ne.ne ((box_own_prop_contractive γ).distLater_dist h)
     ((inv_contractive N).distLater_dist (fun m hm => (slice_inv_ne γ).ne (h m hm)))⟩
 
@@ -102,13 +104,13 @@ instance slice_persistent (N : Namespace) (γ : SliceName) (P : IProp GF) :
 
 @[rocq_alias box_contractive]
 instance box_contractive {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
-    (N : Namespace) (f : M Bool) : Contractive Nat (box (GF := GF) N f) :=
+    (N : Namespace) (f : M Bool) : Contractive (box (GF := GF) N f) :=
   ⟨fun {_ _ _} h => exists_ne fun _ => sep_ne.ne
     (Contractive.distLater_dist fun _ hm => (internalEq.ne_l _).ne (h _ hm)) Dist.rfl⟩
 
 @[rocq_alias box_ne]
 instance box_ne {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
-  (N : Namespace) (f : M Bool) : NonExpansive Nat (box (GF := GF) N f) := ne_of_contractive _
+  (N : Namespace) (f : M Bool) : NonExpansive (box (GF := GF) N f) := ne_of_contractive _
 
 #rocq_ignore box_proper "Subsumed by the NonExpansive instance `box_ne`."
 
@@ -130,7 +132,7 @@ theorem box_own_auth_update {γ : SliceName} {b1 b2 : Bool} (b3 : Bool) :
 
 @[rocq_alias box_own_agree]
 theorem box_own_agree (γ : SliceName) (Q1 Q2 : IProp GF) :
-    box_own_prop γ Q1 ∗ box_own_prop γ Q2 ⊢ ▷ (Q1 ≡[Nat] Q2) := by
+    box_own_prop γ Q1 ∗ box_own_prop γ Q2 ⊢ ▷ (Q1 ≡ Q2) := by
   simp only [box_own_prop, ←iOwn_op.to_eq]
   iintro H
   icases iOwn_cmraValid $$ H with H
@@ -186,7 +188,7 @@ theorem slice_delete_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     {γ : SliceName} {N : Namespace}
     (Hf : get? f γ = some false) :
     slice N γ Q ∗ ▷?q box N f P ⊢
-    |={E}=> ∃ P', ▷?q (▷ (P ≡[Nat] iprop(Q ∗ P'))) ∗ ▷?q (box N (delete f γ) P') := by
+    |={E}=> ∃ P', ▷?q (▷ (P ≡ iprop(Q ∗ P'))) ∗ ▷?q (box N (delete f γ) P') := by
   unfold slice box
   iintro ⟨⟨#Hprop, #Hinv⟩, %Φ, #Heq, Hbig⟩
   iexists iprop([∗map] γ' ↦ _x ∈ delete f γ, Φ γ')
@@ -287,7 +289,7 @@ theorem slice_delete_full {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     (HE : ↑N ⊆ E) (Hf : PartialMap.get? f γ = some true) :
     slice N γ Q ∗ (▷?q box N f P) ⊢
     |={E}=> ∃ P', ▷ Q ∗
-      (▷?q ▷ (P ≡[Nat] iprop(Q ∗ P'))) ∗ (▷?q box N (delete f γ) P') := by
+      (▷?q ▷ (P ≡ iprop(Q ∗ P'))) ∗ (▷?q box N (delete f γ) P') := by
   iintro ⟨#Hslice, Hbox⟩
   imod slice_empty HE Hf $$ [$Hslice $Hbox] with ⟨HQ, Hbox⟩
   imod slice_delete_empty (get?_insert_eq rfl) $$ [$Hslice $Hbox] with ⟨%P', #Heq, Hbox⟩
@@ -432,7 +434,7 @@ theorem slice_split {M : Type _ → Type _} [LawfulFiniteMap M SliceName] [Decid
     iexists γ1, γ2
     iframe %Hfresh1 %Hfresh2 %Hne Hslice1 Hslice2
     inext
-    iapply (internalEq_rewrite_contractive (SI := Nat) iprop(Q2 ∗ Q1 ∗ Pold) P (box N _))
+    iapply (internalEq_rewrite_contractive iprop(Q2 ∗ Q1 ∗ Pold) P (box N _))
     · inext
       iapply internalEq.symm
       irewrite [HeqP]
@@ -449,7 +451,7 @@ theorem slice_split {M : Type _ → Type _} [LawfulFiniteMap M SliceName] [Decid
     iexists γ1, γ2
     iframe %Hfresh1 %Hfresh2 %Hne Hslice1 Hslice2
     inext
-    iapply (internalEq_rewrite_contractive (SI := Nat) iprop(Q2 ∗ Q1 ∗ Pold) P (box N _))
+    iapply (internalEq_rewrite_contractive iprop(Q2 ∗ Q1 ∗ Pold) P (box N _))
     · inext
       iapply internalEq.symm
       irewrite [HeqP]
@@ -477,7 +479,7 @@ theorem slice_combine {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     iexists γ
     iframe %Hfresh Hslice
     inext
-    iapply (internalEq_rewrite_contractive (SI := Nat) iprop((Q1 ∗ Q2) ∗ Pold2) P (box N _))
+    iapply (internalEq_rewrite_contractive iprop((Q1 ∗ Q2) ∗ Pold2) P (box N _))
     · inext
       iapply internalEq.symm
       irewrite [HeqP1]
@@ -496,7 +498,7 @@ theorem slice_combine {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     iexists γ
     iframe %Hfresh Hslice
     inext
-    iapply (internalEq_rewrite_contractive (SI := Nat) iprop((Q1 ∗ Q2) ∗ Pold2) P (box N _))
+    iapply (internalEq_rewrite_contractive iprop((Q1 ∗ Q2) ∗ Pold2) P (box N _))
     · inext
       iapply internalEq.symm
       irewrite [HeqP1]

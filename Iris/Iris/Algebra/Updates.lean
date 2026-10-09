@@ -11,15 +11,15 @@ public import Iris.Algebra.CMRA
 
 namespace Iris
 
-variable {SI : Type _} [instSI : SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 
 variable (SI) in
-@[rocq_alias cmra_updateP]
+@[indexed, rocq_alias cmra_updateP]
 def UpdateP [RA α] [ORA SI α] (x : α) (P : α → Prop) := ∀ (n : SI) mz, ✓{n} (x •? mz) → ∃ y, P y ∧ ✓{n} (y •? mz)
 notation:50 x:51 " ~~>:[" SI "] " y:50 => Iris.UpdateP SI x y
 
 variable (SI) in
-@[rocq_alias cmra_update]
+@[indexed, rocq_alias cmra_update]
 def Update [RA α] [ORA SI α] (x y : α) := ∀ (n : SI) mz, ✓{n} (x •? mz) → ✓{n} (y •? mz)
 notation:50 x:51 " ~~>[" SI "] " y:50 => Iris.Update SI x y
 
@@ -271,3 +271,21 @@ theorem Update.option (x y : α) (uxy : x ~~>[SI] y) : some x ~~>[SI] some y :=
 end Updates
 
 end Iris
+
+
+/-! Step-index-free spellings for `local stepindex` sections (see `Iris.Algebra.StepIndex`). -/
+namespace Iris.StepIndexSugar
+
+@[inherit_doc Iris.UpdateP]
+scoped notation:50 x:51 " ~~>: " y:50 => Iris.UpdateP stepindex% x y
+@[inherit_doc Iris.Update]
+scoped notation:50 x:51 " ~~> " y:50 => Iris.Update stepindex% x y
+
+@[scoped app_unexpander Iris.UpdateP] meta def unexpandUpdateP : Lean.PrettyPrinter.Unexpander
+  | `($_ $_ $x $y) => `($x ~~>: $y)
+  | _ => throw ()
+@[scoped app_unexpander Iris.Update] meta def unexpandUpdate : Lean.PrettyPrinter.Unexpander
+  | `($_ $_ $x $y) => `($x ~~> $y)
+  | _ => throw ()
+
+end Iris.StepIndexSugar

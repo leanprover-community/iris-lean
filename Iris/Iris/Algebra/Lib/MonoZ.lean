@@ -17,10 +17,10 @@ public import Iris.Algebra.Numbers
 
 namespace Iris
 
-variable {SI : Type _} [instSI : SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 
 variable (SI) in
-@[rocq_alias mono_Z]
+@[indexed, rocq_alias mono_Z]
 abbrev MonoZ := Auth SI (Option MaxInt)
 
 #rocq_ignore mono_ZR "Use the MonoZ type and View.instCMRA typeclass"

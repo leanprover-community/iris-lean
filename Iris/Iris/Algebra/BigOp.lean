@@ -17,7 +17,7 @@ public import Iris.Std.Equivalence
 
 namespace Iris.Algebra
 
-variable {SI : Type _} [instSI : SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 
 /-! # Big Operators
 

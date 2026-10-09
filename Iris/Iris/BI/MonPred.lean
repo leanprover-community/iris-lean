@@ -25,7 +25,7 @@ public import Iris.BI.BigOp.BigSepSet
 @[expose] public section
 
 
-variable {SI : Type _} [Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
 
 namespace Iris.BI
 open Iris Iris.Std OFE

@@ -19,7 +19,7 @@ meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
-variable {SI : Type _} [instSI : Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [instSI : Iris.SIdx SI]
 
 open Iris Std
 

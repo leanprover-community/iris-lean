@@ -13,13 +13,13 @@ public import Iris.Algebra.COFESolver
 
 namespace Iris
 
-variable {SI : Type _} [instSI : SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 open ORA
 
 -- EXPERIMENT: UPred Leibniz by construction
 -- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Bi-entailment.20and.20generalized.20rewriting/with/565019365
 variable (SI) in
-@[ext]
+@[indexed, ext]
 structure ValidAt (M : Type _) [URA M] [UORA SI M] (n : SI) where
   val : M
   property : ✓{n} val
@@ -40,7 +40,7 @@ theorem ValidAt.le_rfl {M : Type _} [URA M] [UORA SI M] {n : SI} {Hle : n ≤ n}
 
 variable (SI) in
 /-- The data of a UPred object is an indexed proposition over M (Bundled version) -/
-@[ext, rocq_alias uPred]
+@[indexed, ext, rocq_alias uPred]
 structure UPred (M : Type _) [URA M] [UORA SI M] where
   holds : (n : SI) → ValidAt SI M n → Prop
   mono {n1 n2 : SI} {x1 : ValidAt SI M n1} {x2 : ValidAt SI M n2} :

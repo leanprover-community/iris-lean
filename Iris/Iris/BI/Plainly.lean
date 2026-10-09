@@ -19,7 +19,7 @@ public import Iris.Std.Positives
 @[expose] public section
 
 
-variable {SI : Type _} [Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
 
 namespace Iris
 open BI
@@ -55,7 +55,8 @@ class BIPlainlyExists (PROP : Type _) [BI PROP] [BIPlainly PROP] : Prop where
   plainly_sExists_1 {Φ : PROP → Prop} : ■ BIBase.sExists Φ ⊢ ∃ p, ⌜Φ p⌝ ∧ ■ p
 
 /-- Coherence of `■` with the `Sbi` structure: `■ P` is `<si_pure> <si_emp_valid> P`. -/
-class BIPlainlySbi (SI : Type _) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed SI PROP]
+@[indexed]
+class BIPlainlySbi (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed SI PROP]
     [Sbi SI PROP] [BIPlainly PROP] : Prop where
   plainly_siPure_siEmpValid {P : PROP} :
     ■ P ⊣⊢ SiPure.siPure (SiEmpValid.siEmpValid (SI := SI) P)
@@ -65,7 +66,7 @@ variable (SI) [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP]
 
 /-- The plainly modality of an `Sbi`: `■ P := <si_pure> <si_emp_valid> P`. Not an instance: the
 statement does not determine `SI`. -/
-@[reducible, rocq_alias siProp_plain, rocq_alias plainly]
+@[indexed, reducible, rocq_alias siProp_plain, rocq_alias plainly]
 def BIPlainly.ofSbi : BIPlainly PROP where
   plainly P := SiPure.siPure (SiEmpValid.siEmpValid (SI := SI) P)
   plainly_mono h := siPure_mono (siEmpValid_mono h)
@@ -154,7 +155,7 @@ theorem plainly_if_mono p (P Q : PROP) : iprop(P ⊢ Q) → ■?p P ⊢ ■?p Q 
 end PlainlyForward
 
 /-- `SbiEmpValidExist` gives `BIPlainlyExists` for a coherent `■`. -/
-theorem BIPlainlyExists.ofSbi (SI : Type _) [SIdx SI] [BI PROP] [BIStepIndexed SI PROP]
+theorem BIPlainlyExists.ofSbi (SI : stepindex (Type _)) [SIdx SI] [BI PROP] [BIStepIndexed SI PROP]
     [Sbi SI PROP] [SbiEmpValidExist SI PROP] [BIPlainly PROP] [BIPlainlySbi SI PROP] :
     BIPlainlyExists PROP where
   plainly_sExists_1 {Φ} := by

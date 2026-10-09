@@ -17,7 +17,7 @@ public import Iris.Std.CoPset
 @[expose] public section
 
 
-variable {SI : Type _} [Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
 
 namespace Iris
 open Iris.Std BI
@@ -212,13 +212,15 @@ class BIFUpdate (PROP : Type _) [BI PROP] extends FUpd PROP where
 #rocq_ignore BiFUpdMixin "Included in BIFUpdate typeclass."
 
 /-- Non-expansiveness of the basic update (step-indexed mixin; the update laws are SI-free). -/
-class BUpdNE (SI : Type _) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed SI PROP] [BUpd PROP] :
+@[indexed]
+class BUpdNE (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed SI PROP] [BUpd PROP] :
     Prop where
   bupd_ne : OFE.NonExpansive SI (BUpd.bupd (PROP := PROP))
 attribute [instance] BUpdNE.bupd_ne
 
 /-- Non-expansiveness of the fancy update (step-indexed mixin; the update laws are SI-free). -/
-class FUpdNE (SI : Type _) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed SI PROP] [FUpd PROP] :
+@[indexed]
+class FUpdNE (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed SI PROP] [FUpd PROP] :
     Prop where
   fupd_ne {E1 E2 : CoPset} : OFE.NonExpansive SI (iprop(|={E1,E2}=> · : PROP))
 attribute [instance] FUpdNE.fupd_ne
@@ -227,8 +229,8 @@ attribute [instance] FUpdNE.fupd_ne
 class BIUpdateFUpdate (PROP : Type _) [BI.BIBase PROP] [BUpd PROP] [FUpd PROP] where
   fupd_of_bupd {P : PROP} {E : CoPset} : (|==> P) ⊢ |={E}=> P
 
-@[rocq_alias BiFUpdSbi]
-class BIFUpdateSbi (SI : Type _) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed SI PROP]
+@[indexed, rocq_alias BiFUpdSbi]
+class BIFUpdateSbi (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed SI PROP]
     [Sbi SI PROP] [FUpd PROP] where
   fupd_keep_siPure {E} E' (Pi : SiProp SI) (R : PROP) :
     (|={E,E'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E}=∗ R) ⊢ |={E}=> R
@@ -237,8 +239,8 @@ class BIFUpdateSbi (SI : Type _) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepInde
   fupd_siPure_sForall_2 (E : CoPset) (Ψi : SiProp SI → Prop) :
     (∀ q, ⌜Ψi q⌝ → |={E}=> <si_pure> q) ⊢@{PROP} |={E}=> <si_pure> (sForall Ψi)
 
-@[rocq_alias BiBUpdSbi]
-class BIBUpdateSbi (SI : Type _) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed SI PROP]
+@[indexed, rocq_alias BiBUpdSbi]
+class BIBUpdateSbi (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed SI PROP]
     [Sbi SI PROP] [BUpd PROP] where
   bupd_siPure (Pi : SiProp SI) : iprop(|==> <si_pure> Pi ⊢@{PROP} <si_pure> Pi)
 
@@ -379,7 +381,7 @@ theorem BigSepMS.bigSepMS_bupd [LawfulFiniteMultiSet MS A] (Φ : A → PROP) (X 
 
 end BUpdLaws
 
-theorem BIBUpdatePlainly.ofSbi (SI : Type _) [SIdx SI] [BI PROP] [BIStepIndexed SI PROP]
+theorem BIBUpdatePlainly.ofSbi (SI : stepindex (Type _)) [SIdx SI] [BI PROP] [BIStepIndexed SI PROP]
     [Sbi SI PROP] [BIPlainly PROP] [BIPlainlySbi SI PROP] [BUpd PROP] [BIBUpdateSbi SI PROP] :
     BIBUpdatePlainly PROP where
   bupd_plainly {P} := by
@@ -878,7 +880,7 @@ theorem fupd_siPure_forall_2 {E : CoPset} {A : Sort _} {Φi : A → SiProp SI} :
 end FUpdSbiLaws
 
 /-- The plain fancy-update laws of an affine `Sbi` with `BIFUpdateSbi`. -/
-theorem BIFUpdatePlainly.ofSbi (SI : Type _) [SIdx SI] [BI PROP] [BIAffine PROP]
+theorem BIFUpdatePlainly.ofSbi (SI : stepindex (Type _)) [SIdx SI] [BI PROP] [BIAffine PROP]
     [BIStepIndexed SI PROP] [Sbi SI PROP] [BIPlainly PROP] [BIPlainlySbi SI PROP]
     [BIFUpdate PROP] [BIFUpdateSbi SI PROP] : BIFUpdatePlainly PROP where
   fupd_keep_plainly E2' P R := by

@@ -19,14 +19,16 @@ public import Iris.Std.List
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open BI ORA OFE Iris Iris.Std LawfulSet Excl COFE ProofMode
 
 /-! # Cancelable Invariants -/
 
-abbrev CInvF : OFunctorPre Nat :=
-  ProdOF (constOF _ (Option (Excl Unit))) (constOF _ (Option DFrac))
+abbrev CInvF : OFunctorPre :=
+  ProdOF (constOF (Option (Excl Unit))) (constOF (Option DFrac))
 
 @[rocq_alias cinvG]
 class CInvG (GF : BundledGFunctors) where
@@ -62,14 +64,14 @@ instance instTimelessExcl (γ : GName) : Timeless (excl (GF := GF) γ) :=
 
 @[rocq_alias cinv_contractive]
 instance instContractiveCinv (N : Namespace) (γ : GName) :
-    Contractive Nat (cinv (GF := GF) N γ) where
+    Contractive (cinv (GF := GF) N γ) where
   distLater_dist {n : Nat} {x y} H := by
     unfold cinv
     refine Contractive.distLater_dist fun m hm => or_ne.ne (sep_ne.ne (H _ hm) .rfl) .rfl
 
 @[rocq_alias cinv_ne]
 instance instNonExpansiveCinv (N : Namespace) (γ : GName) :
-    NonExpansive Nat (cinv (GF := GF) N γ) :=
+    NonExpansive (cinv (GF := GF) N γ) :=
   ne_of_contractive _
 
 #rocq_ignore cinv_proper "Subsumed by instNonExpansiveCinv"
@@ -109,7 +111,7 @@ theorem own_excl_alloc (P : GName → Prop) (HP : PredInfinite P) :
   imod iOwn_alloc_strong (E := W.inv)
     ((some (Excl.excl ()), none) • (none, some (DFrac.own 1)) :
       CInvF (IProp GF) (IProp GF)) P ?_
-    (by exact ⟨trivial, DFrac.valid_own_one (SI := Nat)⟩) with ⟨%γ, %HPγ, Hown⟩
+    (by exact ⟨trivial, DFrac.valid_own_one⟩) with ⟨%γ, %HPγ, Hown⟩
   · exact HP.exists_ge
   · imodintro
     iexists γ

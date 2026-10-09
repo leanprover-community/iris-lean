@@ -13,10 +13,10 @@ public import Iris.Algebra.Numbers
 
 namespace Iris
 
-variable {SI : Type _} [instSI : SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 
 variable (SI) in
-@[rocq_alias mono_nat]
+@[indexed, rocq_alias mono_nat]
 abbrev MonoNat := Auth SI MaxNat
 
 #rocq_ignore mono_natR "Use the MonoNat type and View.instCMRA typeclass"

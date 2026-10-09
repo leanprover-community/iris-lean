@@ -20,14 +20,14 @@ fraction) and `◯F{q} a` (fragment with fraction). Splitting works differently 
 
 @[expose] public section
 
-variable {SI : Type _} [instSI : Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [instSI : Iris.SIdx SI]
 
 open Iris OFE ORA UORA Auth Option OrdInc
 
 /-! ## Definitions -/
 
 variable (SI) in
-@[rocq_alias frac_authR, rocq_alias frac_authUR]
+@[indexed, rocq_alias frac_authR, rocq_alias frac_authUR]
 abbrev FracAuth [RA A] [ORA SI A] := Auth SI (Option (Qp × A))
 
 namespace FracAuth

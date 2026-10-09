@@ -11,10 +11,10 @@ public import Iris.Algebra.CMRA
 
 namespace Iris
 
-variable {SI : Type _} [instSI : SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 
 variable (SI) in
-@[rocq_alias local_update]
+@[indexed, rocq_alias local_update]
 def LocalUpdate [RA α] [ORA SI α] (x y : α × α) : Prop :=
   ∀ (n : SI) mz, ✓{n} x.1 → x.1 ≡{n}≡ x.2 •? mz → ✓{n} y.1 ∧ y.1 ≡{n}≡ y.2 •? mz
 
@@ -267,3 +267,16 @@ theorem LocalUpdate.delete_option_cancelable
 end LocalUpdate
 
 end Iris
+
+
+/-! Step-index-free spellings for `local stepindex` sections (see `Iris.Algebra.StepIndex`). -/
+namespace Iris.StepIndexSugar
+
+@[inherit_doc Iris.LocalUpdate]
+scoped notation:50 x:51 " ~l~> " y:50 => Iris.LocalUpdate stepindex% x y
+
+@[scoped app_unexpander Iris.LocalUpdate] meta def unexpandLocalUpdate : Lean.PrettyPrinter.Unexpander
+  | `($_ $_ $x $y) => `($x ~l~> $y)
+  | _ => throw ()
+
+end Iris.StepIndexSugar

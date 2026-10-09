@@ -14,26 +14,28 @@ meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 
 open OFE ORA UORA
 
-variable {α : Type _} [OFE Nat α]
+variable {α : Type _} [OFE α]
 
 @[rocq_alias mono_listR, rocq_alias mono_listUR, implicit_reducible]
-def MonoList (α : Type _) [OFE Nat α] := Auth Nat (MaxPrefixList α)
+def MonoList (α : Type _) [OFE α] := Auth (MaxPrefixList α)
 
-instance : OFE Nat (MonoList α) := inferInstanceAs (OFE Nat (Auth Nat (MaxPrefixList α)))
-instance : RA (MonoList α) := inferInstanceAs (RA (Auth Nat (MaxPrefixList α)))
-instance : URA (MonoList α) := inferInstanceAs (URA (Auth Nat (MaxPrefixList α)))
-instance : ORA Nat (MonoList α) := inferInstanceAs (ORA Nat (Auth Nat (MaxPrefixList α)))
-instance : UORA Nat (MonoList α) := inferInstanceAs (UORA Nat (Auth Nat (MaxPrefixList α)))
+instance : OFE (MonoList α) := inferInstanceAs (OFE (Auth (MaxPrefixList α)))
+instance : RA (MonoList α) := inferInstanceAs (RA (Auth (MaxPrefixList α)))
+instance : URA (MonoList α) := inferInstanceAs (URA (Auth (MaxPrefixList α)))
+instance : ORA (MonoList α) := inferInstanceAs (ORA (Auth (MaxPrefixList α)))
+instance : UORA (MonoList α) := inferInstanceAs (UORA (Auth (MaxPrefixList α)))
 
-instance instIsIncMonoList : IsInc Nat (MonoList α) := inferInstanceAs (IsInc Nat (Auth Nat (MaxPrefixList α)))
+instance instIsIncMonoList : IsInc (MonoList α) := inferInstanceAs (IsInc (Auth (MaxPrefixList α)))
 
-instance instDiscrete [OFE.Discrete Nat α] : ORA.Discrete Nat (MonoList α) :=
-  inferInstanceAs (ORA.Discrete Nat (Auth Nat (MaxPrefixList α)))
+instance instDiscrete [OFE.Discrete α] : ORA.Discrete (MonoList α) :=
+  inferInstanceAs (ORA.Discrete (Auth (MaxPrefixList α)))
 
 namespace MonoList
 
@@ -58,12 +60,12 @@ theorem op_op_op_comm (x y z w : MonoList α) : (x • y) • (z • w) = (x •
 /-! ## Setoid properties -/
 
 @[rocq_alias mono_list_auth_ne]
-instance auth_ne {dq : DFrac} : NonExpansive Nat (auth dq : List α → MonoList α) where
+instance auth_ne {dq : DFrac} : NonExpansive (auth dq : List α → MonoList α) where
   ne _ _ _ h :=
     (Auth.auth_ne.ne (toMaxPrefixList_ne.ne h)).op (Auth.frag_ne.ne (toMaxPrefixList_ne.ne h))
 
 @[rocq_alias mono_list_lb_ne]
-instance lb_ne : NonExpansive Nat (lb : List α → MonoList α) where
+instance lb_ne : NonExpansive (lb : List α → MonoList α) where
   ne _ _ _ h := Auth.frag_ne.ne (toMaxPrefixList_ne.ne h)
 
 #rocq_ignore mono_list_auth_proper "OFE is Leibniz; use equality"
@@ -98,14 +100,14 @@ instance : IsRAUnit (◯ML ([] : List α)) := by
   rw [lb_nil]
   infer_instance
 
-instance : IsUnit Nat (◯ML ([] : List α)) where
+instance : IsUnit (◯ML ([] : List α)) where
   unit_valid := lb_nil (α := α) ▸ ORA.unit_valid
 
 @[rocq_alias mono_list_auth_dfrac_op]
 theorem auth_dfrac_op (dq1 dq2 : DFrac) (l : List α) :
     ●ML{dq1 • dq2} l = ●ML{dq1} l • ●ML{dq2} l := by
   unfold auth MonoList
-  rw [Algebra.MonoidOps.op_op_op_comm (M := Auth Nat (MaxPrefixList α))
+  rw [Algebra.MonoidOps.op_op_op_comm (M := Auth (MaxPrefixList α))
       (op := Op.op) (unit := UnitOp.unit),
     ← Auth.frag_op, op_self, Auth.auth_dfrac_op]
 
@@ -135,7 +137,7 @@ instance {dq dq1 dq2 : DFrac} {l : List α} [h : IsOp d dq dq1 dq2] :
 /-! ## Validity -/
 
 @[rocq_alias mono_list_auth_dfrac_validN]
-theorem auth_dfrac_validN {n : Nat} (dq : DFrac) (l : List α) : ✓{n} (●ML{dq} l) ↔ ✓[Nat] dq := by
+theorem auth_dfrac_validN {n : Nat} (dq : DFrac) (l : List α) : ✓{n} (●ML{dq} l) ↔ ✓ dq := by
   unfold auth MonoList
   rw [Auth.both_dfrac_validN]
   exact ⟨fun h => h.1, fun h => ⟨h, incN_refl _, toMaxPrefixList_validN _⟩⟩
@@ -145,21 +147,21 @@ theorem auth_validN {n : Nat} (l : List α) : ✓{n} (●ML l) :=
   (auth_dfrac_validN ..).mpr DFrac.valid_own_one
 
 @[rocq_alias mono_list_auth_dfrac_valid]
-theorem auth_dfrac_valid (dq : DFrac) (l : List α) : ✓[Nat] (●ML{dq} l) ↔ ✓[Nat] dq := by
+theorem auth_dfrac_valid (dq : DFrac) (l : List α) : ✓ (●ML{dq} l) ↔ ✓ dq := by
   unfold auth MonoList
   rw [Auth.both_dfrac_valid]
   exact ⟨fun h => h.1, fun h => ⟨h, fun _ => incN_refl _, toMaxPrefixList_valid _⟩⟩
 
 @[rocq_alias mono_list_auth_valid]
-theorem auth_valid (l : List α) : ✓[Nat] (●ML l) :=
+theorem auth_valid (l : List α) : ✓ (●ML l) :=
   (auth_dfrac_valid ..).mpr DFrac.valid_own_one
 
 @[rocq_alias mono_list_auth_dfrac_op_validN]
 theorem auth_dfrac_op_validN {n : Nat} (dq1 dq2 : DFrac) (l1 l2 : List α) :
-    ✓{n} (●ML{dq1} l1 • ●ML{dq2} l2) ↔ ✓[Nat] (dq1 • dq2) ∧ l1 ≡{n}≡ l2 := by
+    ✓{n} (●ML{dq1} l1 • ●ML{dq2} l2) ↔ ✓ (dq1 • dq2) ∧ l1 ≡{n}≡ l2 := by
   refine ⟨fun h => ?_, fun ⟨hdq, hl⟩ => ?_⟩
   · unfold auth MonoList at h
-    rw [Algebra.MonoidOps.op_op_op_comm (M := Auth Nat (MaxPrefixList α))
+    rw [Algebra.MonoidOps.op_op_op_comm (M := Auth (MaxPrefixList α))
       (op := Op.op) (unit := UnitOp.unit)] at h
     have ⟨hdq, ha, _⟩ := Auth.auth_dfrac_op_validN.mp (validN_op_left h)
     exact ⟨hdq, toMaxPrefixList_dist_inj ha⟩
@@ -174,12 +176,12 @@ theorem auth_op_validN {n : Nat} (l1 l2 : List α) : ✓{n} (●ML l1 • ●ML 
 
 @[rocq_alias mono_list_auth_dfrac_op_valid]
 theorem auth_dfrac_op_valid (dq1 dq2 : DFrac) (l1 l2 : List α) :
-    ✓[Nat] (●ML{dq1} l1 • ●ML{dq2} l2) ↔ ✓[Nat] (dq1 • dq2) ∧ l1 = l2 := by
+    ✓ (●ML{dq1} l1 • ●ML{dq2} l2) ↔ ✓ (dq1 • dq2) ∧ l1 = l2 := by
   simp only [valid_iff_validN, eq_dist (SI := Nat), auth_dfrac_op_validN]
   exact ⟨fun h => ⟨(h 0).1, fun n => (h n).2⟩, fun ⟨hdq, hl⟩ n => ⟨hdq, hl n⟩⟩
 
 @[rocq_alias mono_list_auth_op_valid]
-theorem auth_op_valid (l1 l2 : List α) : ✓[Nat] (●ML l1 • ●ML l2) ↔ False := by
+theorem auth_op_valid (l1 l2 : List α) : ✓ (●ML l1 • ●ML l2) ↔ False := by
   refine (auth_dfrac_op_valid ..).trans ⟨fun ⟨h, _⟩ => ?_, False.elim⟩
   exact DFrac.own_whole_exclusive.exclusive0_l _ h.validN
 
@@ -187,7 +189,7 @@ theorem auth_op_valid (l1 l2 : List α) : ✓[Nat] (●ML l1 • ●ML l2) ↔ F
 
 @[rocq_alias mono_list_both_dfrac_validN]
 theorem both_dfrac_validN {n : Nat} (dq : DFrac) (l1 l2 : List α) :
-    ✓{n} (●ML{dq} l1 • ◯ML l2) ↔ ✓[Nat] dq ∧ ∃ l, l1 ≡{n}≡ l2 ++ l := by
+    ✓{n} (●ML{dq} l1 • ◯ML l2) ↔ ✓ dq ∧ ∃ l, l1 ≡{n}≡ l2 ++ l := by
   unfold auth lb MonoList
   rw [← assoc', ← Auth.frag_op, Auth.both_dfrac_validN]
   refine ⟨fun ⟨hdq, hinc, _⟩ => ⟨hdq, ?_⟩, fun ⟨hdq, hl⟩ => ⟨hdq, ?_, ?_⟩⟩
@@ -204,7 +206,7 @@ theorem both_validN {n : Nat} (l1 l2 : List α) :
 
 @[rocq_alias mono_list_both_dfrac_valid]
 theorem both_dfrac_valid (dq : DFrac) (l1 l2 : List α) :
-    ✓[Nat] (●ML{dq} l1 • ◯ML l2) ↔ ✓[Nat] dq ∧ l2 <+: l1 := by
+    ✓ (●ML{dq} l1 • ◯ML l2) ↔ ✓ dq ∧ l2 <+: l1 := by
   unfold auth lb MonoList
   rw [← assoc', ← Auth.frag_op, Auth.both_dfrac_valid, ← inc_iff_forall_incN]
   refine ⟨fun ⟨hdq, hinc, _⟩ => ⟨hdq, ?_⟩, fun ⟨hdq, hl⟩ => ⟨hdq, ?_, ?_⟩⟩
@@ -216,7 +218,7 @@ theorem both_dfrac_valid (dq : DFrac) (l1 l2 : List α) :
 #rocq_ignore mono_list_both_dfrac_valid_L "Use both_dfrac_valid"
 
 @[rocq_alias mono_list_both_valid]
-theorem both_valid (l1 l2 : List α) : ✓[Nat] (●ML l1 • ◯ML l2) ↔ l2 <+: l1 := by
+theorem both_valid (l1 l2 : List α) : ✓ (●ML l1 • ◯ML l2) ↔ l2 <+: l1 := by
   rw [both_dfrac_valid]
   exact ⟨fun h => h.2, fun h => ⟨DFrac.valid_own_one, h⟩⟩
 
@@ -230,7 +232,7 @@ theorem lb_op_validN {n : Nat} (l1 l2 : List α) :
 
 @[rocq_alias mono_list_lb_op_valid]
 theorem lb_op_valid (l1 l2 : List α) :
-    ✓[Nat] (◯ML l1 • ◯ML l2) ↔ l1 <+: l2 ∨ l2 <+: l1 := by
+    ✓ (◯ML l1 • ◯ML l2) ↔ l1 <+: l2 ∨ l2 <+: l1 := by
   unfold lb MonoList
   rw [Auth.frag_op_valid, toMaxPrefixList_op_valid]
 
@@ -238,14 +240,14 @@ theorem lb_op_valid (l1 l2 : List α) :
 #rocq_ignore mono_list_lb_op_valid_1_L "Use lb_op_valid.mp"
 #rocq_ignore mono_list_lb_op_valid_2_L "Use lb_op_valid.mpr"
 
-theorem lb_mono_ord {l1 l2 : List α} (h : l1 <+: l2) : ◯ML l1 ≼ₒ[Nat] ◯ML l2 :=
+theorem lb_mono_ord {l1 l2 : List α} (h : l1 <+: l2) : ◯ML l1 ≼ₒ ◯ML l2 :=
   lb_op_left h ▸ ord_op_left _ _
 
 @[rocq_alias mono_list_lb_mono]
 theorem lb_mono {l1 l2 : List α} (h : l1 <+: l2) : ◯ML l1 ≼ ◯ML l2 :=
   inc_iff_ord.mpr (lb_mono_ord h)
 
-theorem ord (dq : DFrac) (l : List α) : ◯ML l ≼ₒ[Nat] ●ML{dq} l := ord_op_right ..
+theorem ord (dq : DFrac) (l : List α) : ◯ML l ≼ₒ ●ML{dq} l := ord_op_right ..
 
 @[rocq_alias mono_list_included]
 theorem included (dq : DFrac) (l : List α) : ◯ML l ≼ ●ML{dq} l := inc_iff_ord.mpr (ord dq l)
@@ -253,15 +255,15 @@ theorem included (dq : DFrac) (l : List α) : ◯ML l ≼ ●ML{dq} l := inc_iff
 /-! ## Updates -/
 
 @[rocq_alias mono_list_update]
-theorem update {l1 : List α} (l2 : List α) (h : l1 <+: l2) : ●ML l1 ~~>[Nat] ●ML l2 :=
+theorem update {l1 : List α} (l2 : List α) (h : l1 <+: l2) : ●ML l1 ~~> ●ML l2 :=
   Auth.auth_update (local_update h)
 
 @[rocq_alias mono_list_auth_persist]
-theorem auth_persist (dq : DFrac) (l : List α) : ●ML{dq} l ~~>[Nat] ●ML□ l :=
+theorem auth_persist (dq : DFrac) (l : List α) : ●ML{dq} l ~~> ●ML□ l :=
   Update.op Auth.auth_update_auth_persist fun _ _ h => h
 
 @[rocq_alias mono_list_auth_unpersist]
-theorem auth_unpersist (l : List α) : ●ML□ l ~~>:[Nat] fun k => ∃ q, k = ●ML{DFrac.own q} l :=
+theorem auth_unpersist (l : List α) : ●ML□ l ~~>: fun k => ∃ q, k = ●ML{DFrac.own q} l :=
   Auth.auth_updateP_both_unpersist
 
 end MonoList
@@ -269,13 +271,13 @@ end MonoList
 /-! ## Functors -/
 
 @[rocq_alias mono_listURF]
-abbrev MonoListURF (F : COFE.OFunctorPre Nat) [COFE.OFunctor Nat F] : COFE.OFunctorPre Nat :=
+abbrev MonoListURF (F : COFE.OFunctorPre) [COFE.OFunctor F] : COFE.OFunctorPre :=
   Auth.AuthURF (MaxPrefixListURF F)
 
 #rocq_ignore mono_listURF_contractive "Found by typeclass inference"
 
 @[rocq_alias mono_listRF]
-abbrev MonoListRF (F : COFE.OFunctorPre Nat) [COFE.OFunctor Nat F] : COFE.OFunctorPre Nat :=
+abbrev MonoListRF (F : COFE.OFunctorPre) [COFE.OFunctor F] : COFE.OFunctorPre :=
   Auth.AuthRF (MaxPrefixListURF F)
 
 #rocq_ignore mono_listRF_contractive "Found by typeclass inference"

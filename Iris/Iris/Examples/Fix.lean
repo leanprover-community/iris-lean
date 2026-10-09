@@ -10,7 +10,7 @@ public import Iris.Algebra.COFESolver
 
 @[expose] public section
 
-variable {SI : Type _} [Iris.SIdx SI] [Iris.SIdxSucc SI]
+variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI] [Iris.SIdxSucc SI]
 
 attribute [local instance] Iris.Enriched.COFE.classicalOFunctorTruncatable
 
@@ -34,6 +34,7 @@ open Iris OFE COFE
 variable [OFE SI Val] [OFE SI Err] [IsCOFE SI Val] [IsCOFE SI Err] [Inhabited Err]
 
 variable (SI) in
+@[indexed]
 abbrev DomF : OFunctorPre SI :=
   SumOF (constOF _ Val) (SumOF (constOF _ Err) (SumOF (LaterOF IdOF) (LaterOF (HomOF IdOF IdOF))))
 
@@ -44,6 +45,7 @@ end Fix
 
 variable (SI) in
 open Iris OFE COFE in
+@[indexed]
 noncomputable abbrev Dom (Val : Type _) (Err : Type _) [OFE SI Val] [OFE SI Err] [IsCOFE SI Val]
     [IsCOFE SI Err] :=
   OFunctor.Fix (DomF SI (Val := Val) (Err := Err))

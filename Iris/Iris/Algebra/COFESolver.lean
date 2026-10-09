@@ -16,7 +16,7 @@ namespace Iris.Enriched
 
 open OFE Iris.COFE
 
-variable {SI : Type v} [SIdx SI]
+variable {SI : stepindex (Type v)} [SIdx SI]
 
 /- The solver needs a successor operation (see `Enriched`); Iris-Rocq's solver does not. -/
 variable [SIdxSucc SI]
@@ -305,7 +305,7 @@ namespace Iris.COFE.OFunctor
 
 open OFE Iris.Enriched Iris.Enriched.COFE
 
-variable {SI : Type v} [SIdx SI] [SIdxSucc SI]
+variable {SI : stepindex (Type v)} [SIdx SI] [SIdxSucc SI]
 variable (F : ∀ (α β : Type (max v w)) [COFE SI α] [COFE SI β], Type (max v w))
   [OFunctorContractive SI F]
   [∀ (α β : Type (max v w)) [COFE SI α] [COFE SI β], IsCOFE SI (F α β)]

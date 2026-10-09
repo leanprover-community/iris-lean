@@ -22,7 +22,7 @@ public import Iris.Algebra.Monoid
 @[expose] public section
 
 
-variable {SI : Type _} [Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
 
 namespace Iris.BI
 open Iris Iris.Std OFE Iris.Algebra Iris.Algebra.BigOpL Iris.Algebra.BigOpM
@@ -71,7 +71,8 @@ class BiEmbed (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] extends Embed PROP1 P
   persistently   : ∀ (P : PROP1), (⎡<pers> P⎤ : PROP2) ⊣⊢ <pers> ⎡P⎤
 
 /-- Non-expansiveness of an embedding (step-indexed mixin; the embedding laws are SI-free). -/
-class EmbedNE (SI : Type _) [SIdx SI] (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2]
+@[indexed]
+class EmbedNE (SI : stepindex (Type _)) [SIdx SI] (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2]
     [BIStepIndexed SI PROP1] [BIStepIndexed SI PROP2] [Embed PROP1 PROP2] : Prop where
   embed_ne : OFE.NonExpansive SI (embed (A := PROP1) (B := PROP2))
 attribute [instance] EmbedNE.embed_ne
@@ -99,8 +100,8 @@ class BiEmbedFUpd (PROP1 PROP2 : Type _) [BI.BIBase PROP1] [BI.BIBase PROP2] [Em
   embed_fupd : ∀ (E1 E2 : CoPset) (P : PROP1), (⎡|={E1,E2}=> P⎤ : PROP2) ⊣⊢ |={E1,E2}=> ⎡P⎤
 
 /-- The `Sbi` (internal-equality / plainly) embedding laws. -/
-@[rocq_alias BiEmbedSbi]
-class BiEmbedSbi (SI : Type _) [SIdx SI] (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2]
+@[indexed, rocq_alias BiEmbedSbi]
+class BiEmbedSbi (SI : stepindex (Type _)) [SIdx SI] (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2]
     [BIStepIndexed SI PROP1] [BIStepIndexed SI PROP2] [Embed PROP1 PROP2]
     [Sbi SI PROP1] [Sbi SI PROP2] where
   embed_siEmpValid : ∀ (P : PROP1),
@@ -564,7 +565,7 @@ theorem embed_embed_fupd [BIFUpdate PA] [BIFUpdate PB] [BIFUpdate PC]
 end
 
 /-- `BiEmbedSbi` gives `BiEmbedPlainly` for coherent `■`. -/
-theorem BiEmbedPlainly.ofSbi (SI : Type _) [SIdx SI] {P1 P2 : Type _} [BI P1] [BIStepIndexed SI P1]
+theorem BiEmbedPlainly.ofSbi (SI : stepindex (Type _)) [SIdx SI] {P1 P2 : Type _} [BI P1] [BIStepIndexed SI P1]
     [Sbi SI P1] [BI P2] [BIStepIndexed SI P2] [Sbi SI P2] [BiEmbed P1 P2] [BiEmbedSbi SI P1 P2]
     [BIPlainly P1] [BIPlainly P2] [BIPlainlySbi SI P1] [BIPlainlySbi SI P2] :
     BiEmbedPlainly P1 P2 where

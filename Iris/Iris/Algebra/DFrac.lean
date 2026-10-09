@@ -16,7 +16,7 @@ public import Iris.Algebra.IsOp
 
 namespace Iris
 
-variable {SI : Type _} [instSI : SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 
 /-- Knowledge about a discardable fraction. -/
 @[rocq_alias dfrac]
@@ -163,7 +163,7 @@ instance {f : Qp} : IdFree SI (own f) where
       any_goals have Hxyz' := discrete Hxyz; simp at Hxyz'
     exact absurd Hxyz' (by have := y.2; grind)
 
-@[rocq_alias dfrac_valid_own_1]
+@[indexed, rocq_alias dfrac_valid_own_1]
 theorem valid_own_one : ✓[SI] own (1 : Qp) := by change (1 : Qp).val ≤ 1; grind
 
 @[rocq_alias dfrac_valid_own_r]

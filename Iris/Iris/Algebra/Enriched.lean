@@ -15,9 +15,9 @@ namespace Iris.Enriched
 
 open OFE
 
-variable {SI : Type w} [SIdx SI]
+variable {SI : stepindex (Type w)} [SIdx SI]
 
-structure Site (SI : Type w) [SIdx SI] where
+structure Site (SI : stepindex (Type w)) [SIdx SI] where
   mem : SI → Prop
   down : ∀ {a b : SI}, a ≤ b → mem b → mem a
   dec : ∀ (m : SI), Decidable (mem m)
@@ -87,7 +87,7 @@ theorem univ_isLimit [SIdxSucc SI] : (univ : Site SI).IsLimit :=
 
 end Site
 
-class EnrichedCat (SI : Type w) [SIdx SI] (Obj : Type u) where
+class EnrichedCat (SI : stepindex (Type w)) [SIdx SI] (Obj : Type u) where
   Hom : Obj → Obj → Type v
   [cofe : ∀ a b, COFE SI (Hom a b)]
   id : ∀ a, Hom a a
@@ -120,7 +120,7 @@ theorem comp_dist_r {n : SI} (g : Hom SI b c) {f f' : Hom SI a b} (h : f ≡{n}�
 
 end EnrichedCat
 
-class EFunctor (SI : Type w) [SIdx SI] {Obj : Type u} [EnrichedCat SI Obj]
+class EFunctor (SI : stepindex (Type w)) [SIdx SI] {Obj : Type u} [EnrichedCat SI Obj]
     (F : Obj → Obj → Obj) where
   map : ∀ {a a' b b' : Obj}, Hom SI a' a → Hom SI b b' → Hom SI (F a b) (F a' b')
   map_contractive : ∀ {a a' b b' : Obj} {n : SI} {f f' : Hom SI a' a} {g g' : Hom SI b b'},
@@ -134,7 +134,7 @@ theorem map_dist {Obj : Type u} [EnrichedCat SI Obj] (F : Obj → Obj → Obj) [
     (hg : g ≡{n}≡ g') : EFunctor.map (F := F) f g ≡{n}≡ EFunctor.map f' g' :=
   EFunctor.map_contractive fun _ hm => ⟨hf.lt hm, hg.lt hm⟩
 
-structure LimitCut (SI : Type w) [SIdx SI] where
+structure LimitCut (SI : stepindex (Type w)) [SIdx SI] where
   mem : SI → Prop
   zero : mem (0 : SI)
   unbounded : ∀ {n : SI}, mem n → ∃ (m : SI), n < m ∧ mem m

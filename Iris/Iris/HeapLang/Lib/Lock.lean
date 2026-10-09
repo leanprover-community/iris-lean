@@ -14,6 +14,8 @@ open BI
 
 @[expose] public section
 
+local stepindex Nat
+
 @[rocq_alias heap_lang.lock]
 class Lock (GF : BundledGFunctors) [IrisGS_gen hlc Exp GF] where
   newlock : Val
@@ -54,7 +56,7 @@ instance instTimelessLockLocked γ : Timeless (lk.locked N γ) :=
   lk.locked_timeless γ
 
 @[rocq_alias heap_lang.is_lock_contractive]
-theorem isLock_contractive γ v : OFE.Contractive Nat (lk.isLock N γ v) := by
+theorem isLock_contractive γ v : OFE.Contractive (lk.isLock N γ v) := by
   rw [contractive_internalEq (PROP := IProp GF)]
   iintro %x₁ %x₂ #HEQ
   iapply prop_ext
@@ -73,7 +75,7 @@ theorem isLock_contractive γ v : OFE.Contractive Nat (lk.isLock N γ v) := by
     · exact ⟨fun _ _ _ h => wandIff_ne.ne .rfl h⟩
     · iapply equiv_wandIff; exact .rfl
 
-instance is_lock_ne γ v : OFE.NonExpansive Nat (lk.isLock N γ v) :=
+instance is_lock_ne γ v : OFE.NonExpansive (lk.isLock N γ v) :=
   letI _ := isLock_contractive N γ v
   OFE.ne_of_contractive _
 

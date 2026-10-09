@@ -24,7 +24,7 @@ This file provides introduction rules (BI entailments) for (some) ORA operations
 @[expose] public section
 
 
-variable {SI : Type _} [Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
 
 namespace Iris
 

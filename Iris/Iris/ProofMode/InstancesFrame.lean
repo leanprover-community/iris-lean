@@ -264,7 +264,7 @@ instance (priority := default - 1) frame_pure_embed
 
 @[ipm_backtrack, rocq_alias frame_eq_embed]
 instance (priority := default - 1) frame_eq_embed
-    {SI : Type _} [SIdx SI]
+    {SI : stepindex (Type _)} [SIdx SI]
     [BI P1] [BIStepIndexed SI P1] [Sbi SI P1] [BI P2] [BIStepIndexed SI P2] [Sbi SI P2]
     [BiEmbed P1 P2] [BiEmbedSbi SI P1 P2]
     (p : Bool) {A : Type _} [OFE SI A] (a b : A) (P Q : P1) (Q' : P2)

@@ -18,26 +18,28 @@ public import Iris.BI.Plainly
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open Iris OFE BI
 
 section fupd
 
-variable {M : Type u} [URA M] [UORA Nat M]
-variable (vs : CoPset → CoPset → UPred Nat M → UPred Nat M → UPred Nat M)
+variable {M : Type u} [URA M] [UORA M]
+variable (vs : CoPset → CoPset → UPred M → UPred M → UPred M)
 
 @[rocq_alias fupd]
-abbrev fupd_vs (E1 E2 : CoPset) (P : UPred Nat M) : UPred Nat M :=
+abbrev fupd_vs (E1 E2 : CoPset) (P : UPred M) : UPred M :=
   iprop(∃ R, R ∗ vs E1 E2 R P)
 
 @[rocq_alias fancy_updates_from_vs.fupd_ne]
-instance fupd_vs_ne (E1 E2 : CoPset) [vs_ne : ∀ E1 E2, NonExpansive₂ Nat (vs E1 E2)] :
-    NonExpansive Nat (fupd_vs vs E1 E2) where
+instance fupd_vs_ne (E1 E2 : CoPset) [vs_ne : ∀ E1 E2, NonExpansive₂ (vs E1 E2)] :
+    NonExpansive (fupd_vs vs E1 E2) where
   ne {_ _ _} h := exists_ne fun _ => sep_ne.ne .rfl ((vs_ne E1 E2).ne .rfl h)
 
 @[rocq_alias fancy_updates_from_vs.fupd_intro]
-theorem fupd_vs_intro (E : CoPset) (P : UPred Nat M)
+theorem fupd_vs_intro (E : CoPset) (P : UPred M)
     (vs_impl : ∀ E P Q, iprop(□ (P → Q)) ⊢ vs E E P Q) :
     P ⊢ fupd_vs vs E E P := by
   iintro HP
@@ -48,7 +50,7 @@ theorem fupd_vs_intro (E : CoPset) (P : UPred Nat M)
   iintro !> $
 
 @[rocq_alias fancy_updates_from_vs.fupd_mono]
-theorem fupd_vs_mono [IncOrd Nat M] {E1 E2 : CoPset} {P Q : UPred Nat M} (HPQ : P ⊢ Q)
+theorem fupd_vs_mono [IncOrd M] {E1 E2 : CoPset} {P Q : UPred M} (HPQ : P ⊢ Q)
     (vs_trans : ∀ E1 E2 E3 P Q R, iprop(vs E1 E2 P Q ∧ vs E2 E3 Q R) ⊢ vs E1 E3 P R)
     (vs_impl : ∀ E P Q, iprop(□ (P → Q)) ⊢ vs E E P Q) :
     fupd_vs vs E1 E2 P ⊢ fupd_vs vs E1 E2 Q := by
@@ -62,10 +64,10 @@ theorem fupd_vs_mono [IncOrd Nat M] {E1 E2 : CoPset} {P Q : UPred Nat M} (HPQ : 
   iapply HPQ $$ HP
 
 @[rocq_alias fancy_updates_from_vs.fupd_trans]
-theorem fupd_vs_trans [IncOrd Nat M] {E1 E2 E3 : CoPset} {P : UPred Nat M}
+theorem fupd_vs_trans [IncOrd M] {E1 E2 E3 : CoPset} {P : UPred M}
     [∀ {E1 E2 P Q}, Persistent (vs E1 E2 P Q)]
     (vs_trans : ∀ E1 E2 E3 P Q R, iprop(vs E1 E2 P Q ∧ vs E2 E3 Q R) ⊢ vs E1 E3 P R)
-    (vs_exists : ∀ {A : Type u} E1 E2 (Φ : A → UPred Nat M) Q, (∀ x, vs E1 E2 (Φ x) Q) ⊢ vs E1 E2 iprop(∃ x, Φ x) Q)
+    (vs_exists : ∀ {A : Type u} E1 E2 (Φ : A → UPred M) Q, (∀ x, vs E1 E2 (Φ x) Q) ⊢ vs E1 E2 iprop(∃ x, Φ x) Q)
     (vs_persistent_intro_r : ∀ E1 E2 P Q R, [Persistent R] → iprop(R -∗ vs E1 E2 P Q) ⊢ vs E1 E2 iprop(P ∗ R) Q)
     (vs_impl : ∀ E P Q, iprop(□ (P → Q)) ⊢ vs E E P Q) :
     fupd_vs vs E1 E2 (fupd_vs vs E2 E3 P) ⊢ fupd_vs vs E1 E3 P := by
@@ -84,7 +86,7 @@ theorem fupd_vs_trans [IncOrd Nat M] {E1 E2 E3 : CoPset} {P : UPred Nat M}
   iintro !> $
 
 @[rocq_alias fancy_updates_from_vs.fupd_mask_frame_r]
-theorem fupd_vs_mask_frame_r {E1 E2 Ef : CoPset} {P : UPred Nat M} (HE : E1 ## Ef)
+theorem fupd_vs_mask_frame_r {E1 E2 Ef : CoPset} {P : UPred M} (HE : E1 ## Ef)
     (vs_mask_frame_r : ∀ E1 E2 Ef P Q, E1 ## Ef → vs E1 E2 P Q ⊢ vs (E1 ∪ Ef) (E2 ∪ Ef) P Q) :
     fupd_vs vs E1 E2 P ⊢ fupd_vs vs (E1 ∪ Ef) (E2 ∪ Ef) P := by
   simp only [fupd_vs]
@@ -95,7 +97,7 @@ theorem fupd_vs_mask_frame_r {E1 E2 Ef : CoPset} {P : UPred Nat M} (HE : E1 ## E
   trivial
 
 @[rocq_alias fancy_updates_from_vs.fupd_frame_r]
-theorem fupd_vs_frame_r {E1 E2 : CoPset} {P Q : UPred Nat M}
+theorem fupd_vs_frame_r {E1 E2 : CoPset} {P Q : UPred M}
     (vs_frame_r : ∀ E1 E2 P Q R, vs E1 E2 P Q ⊢ vs E1 E2 iprop(P ∗ R) iprop(Q ∗ R)) :
     iprop(fupd_vs vs E1 E2 P ∗ Q) ⊢ fupd_vs vs E1 E2 iprop(P ∗ Q) := by
   simp only [fupd_vs]

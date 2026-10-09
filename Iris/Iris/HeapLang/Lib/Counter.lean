@@ -19,6 +19,8 @@ open BI Iris ProgramLogic ORA OFE Auth
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Counter
 
 @[rocq_alias heap_lang.newcounter]
@@ -98,7 +100,7 @@ end CounterProof
 
 /-! ## Monotone counter -/
 
-abbrev MCounterRF : COFE.OFunctorPre Nat := constOF _ (Auth Nat MaxNat)
+abbrev MCounterRF : COFE.OFunctorPre := constOF (Auth MaxNat)
 
 @[rocq_alias heap_lang.mcounterG]
 class MCounterG (GF : BundledGFunctors) where [elemG : ElemG GF MCounterRF]
@@ -136,7 +138,7 @@ theorem newcounter_mono_spec :
   wp_lam
   wp_alloc l with Hl
   imod iOwn_alloc (F := MCounterRF)
-    (((● MaxNat.ofNat 0) • (◯ MaxNat.ofNat 0)) : Auth _ MaxNat) with ⟨%γ, Hγ, Hγ'⟩
+    (((● MaxNat.ofNat 0) • (◯ MaxNat.ofNat 0)) : Auth MaxNat) with ⟨%γ, Hγ, Hγ'⟩
   · exact auth_both_valid_2 trivial (MaxNat.inc_iff.mpr (by simp))
   imod inv_alloc N _ (mcounterInv γ l) $$ [Hl Hγ] with #Hinv
   · iexists 0; iframe
@@ -154,7 +156,7 @@ theorem incr_mono_spec (l : Loc) (n : Nat) :
   · iintro %c ⟨Hγ, Hγf⟩
     icombine Hγ Hγf gives %Hv
     imod iOwn_update_op
-      (a' := (((● MaxNat.ofNat (c + 1)) • (◯ MaxNat.ofNat (c + 1))) : Auth _ MaxNat)) $$
+      (a' := (((● MaxNat.ofNat (c + 1)) • (◯ MaxNat.ofNat (c + 1))) : Auth MaxNat)) $$
       [$Hγ $Hγf] with ⟨Hγ, Hγf⟩
     · exact auth_update (MaxNat.local_update (by grind))
     imodintro
@@ -177,7 +179,7 @@ theorem read_mono_spec (l : Loc) (j : Nat) :
   · iintro %c ⟨Hγ, Hγf⟩
     icombine Hγ Hγf gives %Hv
     imod iOwn_update_op
-      (a' := (((● MaxNat.ofNat c) • (◯ MaxNat.ofNat c)) : Auth _ MaxNat)) $$ [$Hγ $Hγf] with ⟨Hγ, Hγf⟩
+      (a' := (((● MaxNat.ofNat c) • (◯ MaxNat.ofNat c)) : Auth MaxNat)) $$ [$Hγ $Hγf] with ⟨Hγ, Hγf⟩
     · exact auth_update (MaxNat.local_update (by simp))
     imodintro
     iframe Hγ Hγf
@@ -193,7 +195,7 @@ end MonoProof
 
 /-! ## Counter with contributions -/
 
-abbrev CCounterRF : COFE.OFunctorPre Nat := constOF _ (FracAuth Nat (A := Nat))
+abbrev CCounterRF : COFE.OFunctorPre := constOF (FracAuth (A := Nat))
 
 @[rocq_alias heap_lang.ccounterG]
 class CCounterG (GF : BundledGFunctors) where [elemG : ElemG GF CCounterRF]

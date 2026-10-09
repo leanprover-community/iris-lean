@@ -19,6 +19,8 @@ open Language.Notation
 
 @[expose] public section
 
+local stepindex Nat
+
 variable {hlc : HasLC} {Expr State Obs Val : Type _}
 variable [Language Expr State Obs Val]
 variable {GF : BundledGFunctors} [iG : IrisGS_gen hlc Expr GF]
@@ -190,8 +192,8 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness) (es : List Expr) (�
             |={⊤,∅}=> ⌜φ⌝)))
     (Hsteps : (es, σ1) -<κs>->ₜₚ^[n] (t2, σ2)) :
     φ := by
-  apply pure_soundness (SI := Nat) (PROP := IProp GF)
-  apply laterN_soundness (SI := Nat) (n := steps_sum numLaters 0 n + 1)
+  apply pure_soundness (PROP := IProp GF)
+  apply laterN_soundness (n := steps_sum numLaters 0 n + 1)
   rw [(laterN_succ_right _).to_eq]
   refine Entails.trans ?_ (laterN_mono _ except0_into_later)
   apply fupd_finally_soundness hlc (steps_sum numLaters 0 n) ⊤

@@ -15,7 +15,7 @@ public import Iris.Algebra.IsOp
 
 namespace Iris
 
-variable {SI : Type _} [instSI : SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 
 open OFE ORA View
 open _root_.Std (Associative Commutative LeftIdentity LawfulLeftIdentity)
@@ -98,7 +98,7 @@ instance : IsViewRelDiscrete viewRel (SI := SI) where
 
 variable (SI) in
 /-- Time receipts. A `def` (not an `abbrev`), so clients see only the instances below. -/
-@[rocq_alias time_receipt]
+@[indexed, rocq_alias time_receipt]
 def _root_.Iris.Algebra.TimeReceipt := View viewRel (SI := SI)
 
 @[rocq_alias time_receiptO]
@@ -127,12 +127,12 @@ def auth (m : Nat) : TimeReceipt SI := ofView (●V Count.ofNat m)
 
 variable (SI) in
 /-- An exclusive lower bound on the additive partition. -/
-@[rocq_alias time_receipt_frag_excl]
+@[indexed, rocq_alias time_receipt_frag_excl]
 def fragExcl (n : Nat) : TimeReceipt SI := ofView (◯V (Count.ofNat n, MaxNat.ofNat 0))
 
 variable (SI) in
 /-- A persistent lower bound on the persistent partition. -/
-@[rocq_alias time_receipt_frag_pers]
+@[indexed, rocq_alias time_receipt_frag_pers]
 def fragPers (n : Nat) : TimeReceipt SI := ofView (◯V (Count.ofNat 0, MaxNat.ofNat n))
 
 @[rocq_alias time_receipt_frag_pers_core_id]

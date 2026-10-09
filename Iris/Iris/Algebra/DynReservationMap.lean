@@ -16,7 +16,7 @@ public import Iris.Algebra.LeibnizSet
 
 namespace Iris
 
-variable {SI : Type _} [instSI : SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 
 @[expose] public section
 

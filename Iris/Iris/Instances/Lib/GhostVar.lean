@@ -11,13 +11,15 @@ public import Iris.ProofMode
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open BI DFrac DFracAgree ProofMode
 
 /-! ## Ghost variable -/
 
-abbrev GhostVarF (A : Type) : COFE.OFunctorPre Nat := constOF _ (DFracAgreeR Nat (DiscreteO A))
+abbrev GhostVarF (A : Type) : COFE.OFunctorPre := constOF (DFracAgreeR (DiscreteO A))
 
 @[rocq_alias ghost_varG]
 class GhostVarG (GF : BundledGFunctors) (A : Type) where [elemG : ElemG GF (GhostVarF A)]
@@ -31,7 +33,7 @@ variable {GF : BundledGFunctors} {A : Type} [GhostVarG GF A]
 
 @[rocq_alias ghost_var]
 def ghost_var (γ : GName) (dq : DFrac) (a : A) : IProp GF :=
-  iOwn (F := GhostVarF A) γ (mk (SI := Nat) dq ⟨a⟩)
+  iOwn (F := GhostVarF A) γ (mk dq ⟨a⟩)
 
 #rocq_ignore ghost_var_def "`ghost_var` is defined directly without `seal`/`unseal`."
 #rocq_ignore ghost_var_aux "`ghost_var` is defined directly without `seal`/`unseal`."
@@ -72,7 +74,7 @@ theorem ghost_var_alloc (a : A) : ⊢@{IProp GF} |==> ∃ γ, γ ↪VAR a :=
 
 @[rocq_alias ghost_var_valid_2]
 theorem ghost_var_valid_2 (γ : GName) (a1 : A) (dq1 : DFrac) (a2 : A) (dq2 : DFrac) :
-    ⊢@{IProp GF} (γ ↪VAR{dq1} a1) -∗ (γ ↪VAR{dq2} a2) -∗ ⌜✓[Nat] (dq1 • dq2) ∧ a1 = a2⌝ := by
+    ⊢@{IProp GF} (γ ↪VAR{dq1} a1) -∗ (γ ↪VAR{dq2} a2) -∗ ⌜✓ (dq1 • dq2) ∧ a1 = a2⌝ := by
   unfold ghost_var
   iintro Hvar1 Hvar2
   icombine Hvar1 Hvar2 gives %H
@@ -89,7 +91,7 @@ theorem ghost_var_agree (γ : GName) (a1 : A) (dq1 : DFrac) (a2 : A) (dq2 : DFra
 @[rocq_alias ghost_var_combine_gives]
 instance (γ : GName) (a1 : A) (dq1 : DFrac) (a2 : A) (dq2 : DFrac) :
     CombineSepGives (PROP := IProp GF) (γ ↪VAR{dq1} a1) (γ ↪VAR{dq2} a2)
-      iprop(⌜✓[Nat] (dq1 • dq2) ∧ a1 = a2⌝) where
+      iprop(⌜✓ (dq1 • dq2) ∧ a1 = a2⌝) where
   combine_sep_gives := by
     iintro ⟨H1, H2⟩
     icases ghost_var_valid_2 $$ H1 H2 with %H

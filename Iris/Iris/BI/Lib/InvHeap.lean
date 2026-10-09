@@ -13,6 +13,8 @@ public import Iris.Instances.Lib.Invariants
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open Iris.Std Std.PartialMap Std.LawfulPartialMap Iris.Algebra ORA BI ProofMode
@@ -63,7 +65,7 @@ private theorem singleton_inc_toInvHeap {h : H (V × (V → Prop))} {l : L} {I :
   exact ⟨v, hh, hv⟩
 
 @[rocq_alias to_inv_heap_valid]
-theorem toInvHeap_valid (h : H (V × (V → Prop))) : ✓[Nat] toInvHeap h := fun l => by
+theorem toInvHeap_valid (h : H (V × (V → Prop))) : ✓ toInvHeap h := fun l => by
   rcases hh : get? h l with _ | ⟨v, I⟩
   · rw [get?_toInvHeap_none hh]; trivial
   · exact get?_heap_some_toInvHeap hh ▸ ⟨trivial, toAgree_valid⟩
@@ -83,7 +85,7 @@ end toInvHeap
 @[rocq_alias inv_heapGpreS]
 class invHeapPreS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ → Type _)
     [LawfulFiniteMap H L] where
-  invHeap : ElemG GF (constOF _ (Auth Nat (InvHeapMapUR V H)))
+  invHeap : ElemG GF (constOF (Auth (InvHeapMapUR V H)))
 
 attribute [reducible, instance] invHeapPreS.invHeap
 

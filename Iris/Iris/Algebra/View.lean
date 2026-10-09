@@ -16,12 +16,12 @@ public import Iris.Algebra.LocalUpdates
 
 @[expose] public section
 
-variable {SI : Type _} [instSI : Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [instSI : Iris.SIdx SI]
 
 open Iris
 
-@[nolint unusedArguments]
-abbrev ViewRel (SI A B : Type _) [SIdx SI] := SI → A → B → Prop
+@[indexed, nolint unusedArguments]
+abbrev ViewRel (SI : stepindex (Type _)) (A B : Type _) [SIdx SI] := SI → A → B → Prop
 
 @[rocq_alias view_rel]
 class IsViewRel [OFE SI A] [URA B] [UORA SI B] (R : ViewRel SI A B) where

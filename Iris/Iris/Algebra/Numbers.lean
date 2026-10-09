@@ -24,7 +24,7 @@ These are newtyped to avoid clashing with the normal mathematical operations.
 
 @[expose] public section
 
-variable {SI : Type _} [instSI : Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [instSI : Iris.SIdx SI]
 
 open Std
 
@@ -396,7 +396,7 @@ the `max` algebra lives on the wrapper `MaxNat`. -/
 section NatAdd
 open _root_.Std (Associative Commutative LeftIdentity LawfulLeftIdentity)
 open OFE ORA
-variable {SI : Type _} [SIdx SI]
+variable {SI : stepindex (Type _)} [SIdx SI]
 
 instance : Associative (α := Nat) (· + ·) := ⟨Nat.add_assoc⟩
 instance : Commutative (α := Nat) (· + ·) := ⟨Nat.add_comm⟩

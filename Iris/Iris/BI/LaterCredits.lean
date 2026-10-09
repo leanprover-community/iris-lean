@@ -14,7 +14,7 @@ public import Iris.BI.Updates
 @[expose] public section
 
 
-variable {SI : Type _} [Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
 
 /-! # Later credits -/
 

@@ -15,12 +15,14 @@ public import Iris.Std.CoPset
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open BI ORA OFE Iris Iris.Std LawfulSet DisjointLeibnizSet COFE ProofMode
 
-abbrev NaInvF : OFunctorPre Nat :=
-  ProdOF (constOF _ CoPsetDisjL) (constOF _ (DisjointLeibnizSet PosSet))
+abbrev NaInvF : OFunctorPre :=
+  ProdOF (constOF CoPsetDisjL) (constOF (DisjointLeibnizSet PosSet))
 
 @[rocq_alias na_invG]
 class NaInvG (GF : BundledGFunctors) where
@@ -35,7 +37,7 @@ attribute [reducible, instance] NaInvG.inv
 abbrev NaInvPoolName := GName
 
 instance instNaInvF_discreteE {α β : Type _} (x : DisjointLeibnizSet α) (y : DisjointLeibnizSet β) :
-    DiscreteE Nat (x, y) := by infer_instance
+    DiscreteE (x, y) := by infer_instance
 
 instance coreId_valid_empty_empty : CoreId ((valid (∅ : CoPset), valid (∅ : PosSet))) where
   core_id := by rfl
@@ -44,7 +46,7 @@ instance isRAUnit_valid_empty_empty : IsRAUnit ((valid (∅ : CoPset), valid (�
   unit_left_id := Prod.ext ucmra_unit_left_id ucmra_unit_left_id
   pcore_unit := coreId_valid_empty_empty.core_id
 
-instance isUnit_valid_empty_empty : IsUnit Nat ((valid (∅ : CoPset), valid (∅ : PosSet))) where
+instance isUnit_valid_empty_empty : IsUnit ((valid (∅ : CoPset), valid (∅ : PosSet))) where
   unit_valid := ⟨trivial, trivial⟩
 
 namespace NonAtomicInvariant
@@ -66,14 +68,14 @@ instance instTimeless_own (p : NaInvPoolName) (E : CoPset) : Timeless (own (GF :
 
 @[rocq_alias na_inv_contractive]
 instance instContractive_inv (p : NaInvPoolName) (N : Namespace) :
-    Contractive Nat (inv (GF := GF) p N) where
+    Contractive (inv (GF := GF) p N) where
   distLater_dist {n : Nat} {x y} H := by
     refine exists_ne fun i => and_ne.ne .rfl ?_
     refine Contractive.distLater_dist fun m hm => ?_
     exact or_ne.ne (sep_ne.ne (H _ hm) .rfl) .rfl
 
 @[rocq_alias na_inv_ne]
-instance instNonExpansive_inv (p : NaInvPoolName) (N : Namespace) : NonExpansive Nat (inv (GF := GF) p N) :=
+instance instNonExpansive_inv (p : NaInvPoolName) (N : Namespace) : NonExpansive (inv (GF := GF) p N) :=
   ne_of_contractive _
 
 #rocq_ignore na_inv_proper "Subsumed by the NonExpansive instance `na_inv_ne`."
@@ -155,7 +157,7 @@ nonrec theorem inv_alloc {p : NaInvPoolName} {E : CoPset} {N : Namespace} {P : I
     ⊢ ▷ P ={E}=∗ inv p N P := by
   iintro HP
   imod (iOwn_unit (E := W.inv) (γ := p) (ε := (.valid ∅, .valid ∅))) with Hempty
-  have Hupd : (.valid (∅ : CoPset), .valid (∅ : PosSet)) ~~>:[Nat]
+  have Hupd : (.valid (∅ : CoPset), .valid (∅ : PosSet)) ~~>:
       fun y : NaInvF.ap (IProp GF) => ∃ i, y = (.valid ∅, .valid {i}) ∧ i ∈ (↑N : CoPset) :=
     .prod (P := (· = .valid ∅)) (.id rfl) (alloc_empty_updateP_strong' (fresh_name · N))
       (fun a b ha ⟨i, hb, hi⟩ => ⟨i, Prod.ext ha hb, hi⟩)

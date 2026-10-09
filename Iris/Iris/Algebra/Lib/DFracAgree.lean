@@ -19,17 +19,17 @@ convenience definitions and lemmas.
 
 namespace Iris
 
-variable {SI : Type _} [instSI : SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 
 open OFE ORA DFrac
 
 namespace DFracAgree
 
 variable (SI) in
-@[nolint unusedArguments, rocq_alias dfrac_agreeR]
+@[indexed, nolint unusedArguments, rocq_alias dfrac_agreeR]
 abbrev DFracAgreeR (A : Type _) [OFE SI A] := DFrac × Agree A
 
-@[rocq_alias to_dfrac_agree]
+@[indexed, rocq_alias to_dfrac_agree]
 def mk [OFE SI A] (d : DFrac) (a : A) : DFracAgreeR SI A := (d, toAgree a)
 
 variable {A : Type _} [OFE SI A]
@@ -132,7 +132,7 @@ theorem unpersist {a : A} :
 
 namespace Frac
 
-@[rocq_alias to_frac_agree]
+@[indexed, rocq_alias to_frac_agree]
 def mk [OFE SI A] (q : Qp) (a : A) : DFracAgreeR SI A := DFracAgree.mk (.own q) a
 
 variable {A : Type _} [OFE SI A]

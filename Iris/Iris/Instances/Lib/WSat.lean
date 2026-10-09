@@ -16,6 +16,8 @@ public import Iris.Instances.IProp
 
 @[expose] public section
 
+local stepindex Nat
+
 /-! ## World satisfaction
 This file defines the world satisfaction (wsat) predicate for Iris.
 -/
@@ -31,14 +33,14 @@ abbrev PosSet := Std.ExtTreeSet Pos compare
 
 abbrev InvMap (x : Type _) := Std.ExtTreeMap Pos x compare
 
-abbrev InvMapF := HeapViewURF (H := InvMap) (AgreeRF (LaterOF IdOF (SI := Nat)))
+abbrev InvMapF := HeapViewURF (H := InvMap) (AgreeRF (LaterOF IdOF))
 
 /-- Wsat inclusion typeclass (`GF` contains the necessary functors for wsat) -/
 @[rocq_alias wsatGS.wsatGpreS]
 class WsatGpreS (GF : BundledGFunctors) where
   inv : ElemG GF InvMapF
-  enabled : ElemG GF (constOF _ CoPsetDisjL)
-  disabled : ElemG GF (constOF _ (DisjointLeibnizSet PosSet))
+  enabled : ElemG GF (constOF CoPsetDisjL)
+  disabled : ElemG GF (constOF (DisjointLeibnizSet PosSet))
 
 attribute [reducible, instance] WsatGpreS.inv
 attribute [reducible, instance] WsatGpreS.enabled
@@ -89,7 +91,7 @@ def wsat : IProp GF := iprop(
 #rocq_ignore invariant_unfold_contractive "Only needed for ownI_contractive which is proved directly"
 
 @[rocq_alias ownI_contractive]
-instance (i : Pos) : Contractive Nat (ownI (W := W) i) where
+instance (i : Pos) : Contractive (ownI (W := W) i) where
   distLater_dist h := by
     unfold ownI
     refine NonExpansive.ne ?_
@@ -199,7 +201,7 @@ variable {GF : BundledGFunctors} [W : WsatGS GF]
 @[rocq_alias invariant_lookup]
 theorem invariant_lookup (I : InvMap (IProp GF)) (i : Pos) (P : IProp GF) :
     iOwn (E := W.inv) W.invariant_name (invMap I) ∗ ownI i P
-    ⊢@{IProp GF} ∃ Q, ⌜get? I i = .some Q⌝ ∗ ▷ (Q ≡[Nat] P) := by
+    ⊢@{IProp GF} ∃ Q, ⌜get? I i = .some Q⌝ ∗ ▷ (Q ≡ P) := by
   unfold ownI
   iintro H
   ihave H := iOwn_cmraValid_op $$ H

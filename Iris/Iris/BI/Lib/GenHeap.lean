@@ -13,6 +13,8 @@ public import Iris.Std.Namespaces
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open Iris.Std Iris.Algebra ORA BI ProofMode
@@ -50,7 +52,7 @@ class genHeapPreS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _
     [Std.LawfulFiniteMap H L] where
   heap : GhostMapG GF L V H
   metaInfo : GhostMapG GF L GName H
-  metaData : ElemG GF (constOF _ MetaUR)
+  metaData : ElemG GF (constOF MetaUR)
 
 attribute [reducible, instance] genHeapPreS.heap
 attribute [reducible, instance] genHeapPreS.metaInfo
@@ -142,7 +144,7 @@ instance instAsFractionalPointsTo : AsFractional (l ↦{.own q} v) ioΦ (l ↦{.
     (AsFractional (heapName ↪◯MAP[l]{.own q} v) ioΦ (heapName ↪◯MAP[l]{.own ·} v) ioq q)
 
 @[rocq_alias pointsto_valid]
-theorem pointsTo_cmraValid : l ↦{dq} v ⊢@{IProp GF} ⌜✓[Nat] dq⌝ := by
+theorem pointsTo_cmraValid : l ↦{dq} v ⊢@{IProp GF} ⌜✓ dq⌝ := by
   unfold pointsTo
   iintro H
   ihave %_ := ghost_map_elem_valid $$ H
@@ -150,7 +152,7 @@ theorem pointsTo_cmraValid : l ↦{dq} v ⊢@{IProp GF} ⌜✓[Nat] dq⌝ := by
 
 @[rocq_alias pointsto_valid_2]
 theorem pointsTo_op_cmraValid :
-    l ↦{dq₁} v₁ ∗ l ↦{dq₂} v₂ ⊢@{IProp GF} ⌜✓[Nat] (dq₁ • dq₂)⌝ ∧ ⌜v₁ = v₂⌝ := by
+    l ↦{dq₁} v₁ ∗ l ↦{dq₂} v₂ ⊢@{IProp GF} ⌜✓ (dq₁ • dq₂)⌝ ∧ ⌜v₁ = v₂⌝ := by
   unfold pointsTo
   iintro H
   ihave %_ := ghost_map_elem_valid_2 $$ H
@@ -163,7 +165,7 @@ theorem pointsTo_agree : l ↦{dq₁} v₁ ∗ l ↦{dq₂} v₂ ⊢@{IProp GF} 
 
 @[rocq_alias pointsto_combine_sep_gives]
 instance instCombineSepGivesPointsTo (l : L) (dq₁ dq₂ : DFrac) (v₁ v₂ : V) :
-    CombineSepGives (l ↦{dq₁} v₁) (l ↦{dq₂} v₂) iprop(⌜✓[Nat] (dq₁ • dq₂) ∧ v₁ = v₂⌝) :=
+    CombineSepGives (l ↦{dq₁} v₁) (l ↦{dq₂} v₂) iprop(⌜✓ (dq₁ • dq₂) ∧ v₁ = v₂⌝) :=
   inferInstanceAs (CombineSepGives (heapName ↪◯MAP[l]{dq₁} v₁) (heapName ↪◯MAP[l]{dq₂} v₂) _)
 
 @[rocq_alias pointsto_combine]
@@ -182,7 +184,7 @@ instance (priority := default - 15) instCombineSepAsPointsTo
 
 @[rocq_alias pointsto_frac_ne]
 theorem pointsTo_frac_ne {l₁ l₂ : L} {dq₁ dq₂ : DFrac} {v₁ v₂ : V}
-    (Hk : ¬ ✓[Nat] (dq₁ • dq₂)) :
+    (Hk : ¬ ✓ (dq₁ • dq₂)) :
     ⊢@{IProp GF} l₁ ↦{dq₁} v₁ -∗ l₂ ↦{dq₂} v₂ -∗ ⌜l₁ ≠ l₂⌝ := by
   unfold pointsTo
   iapply ghost_map_elem_frac_ne (Hk := Hk)

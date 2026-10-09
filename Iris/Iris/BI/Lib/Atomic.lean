@@ -14,7 +14,7 @@ public meta import Iris.Std.RocqPorting
 @[expose] public section
 
 
-variable {SI : Type _} [Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
 
 namespace Iris
 open Iris.Std Iris.ProofMode BI OFE
@@ -120,7 +120,7 @@ instance atomic_update_pre_mono {Eo Ei : CoPset} {α : TA.Arg → PROP}
   mono_pred_ne := ⟨fun _ _ _ _ => .rfl⟩
 
 variable (SI) in
-@[rocq_alias atomic_update]
+@[indexed, rocq_alias atomic_update]
 def atomic_update (Eo Ei : CoPset) (α : TA.Arg → PROP)
     (β Φ : TA.Arg → TB.Arg → PROP) : PROP :=
   bi_greatest_fixpoint SI (atomic_update_pre Eo Ei α β Φ) ()

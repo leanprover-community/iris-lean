@@ -9,6 +9,8 @@ public import Iris.BI.Lib.MonoNat
 
 @[expose] public section
 
+local stepindex Nat
+
 /-! # Ghost state for a monotonically increasing non-negative integer -/
 
 namespace Iris
@@ -86,7 +88,7 @@ instance {γ n} (q : Qp) : AsFractional (PROP := IProp GF) (γ ↪●MZ{.own q} 
 
 @[rocq_alias mono_Z_auth_own_agree]
 theorem auth_own_agree (γ : GName) (dq1 dq2 : DFrac) (n1 n2 : Int) :
-    ⊢@{IProp GF} (γ ↪●MZ{dq1} n1) -∗ (γ ↪●MZ{dq2} n2) -∗ ⌜✓[Nat] (dq1 • dq2) ∧ n1 = n2⌝ := by
+    ⊢@{IProp GF} (γ ↪●MZ{dq1} n1) -∗ (γ ↪●MZ{dq2} n2) -∗ ⌜✓ (dq1 • dq2) ∧ n1 = n2⌝ := by
   unfold auth_own
   iintro ⟨%Hn1, H1⟩ ⟨%Hn2, H2⟩
   icases MonoNat.auth_own_agree $$ H1 H2 with %⟨Hdq, Heq⟩
@@ -104,7 +106,7 @@ theorem auth_own_exclusive (γ : GName) (n1 n2 : Int) :
 
 @[rocq_alias mono_Z_auth_lb_own_valid]
 theorem auth_lb_own_valid (γ : GName) (dq : DFrac) (n m : Int) :
-    ⊢@{IProp GF} (γ ↪●MZ{dq} n) -∗ (γ ↪◯MZ m) -∗ ⌜✓[Nat] dq ∧ m ≤ n⌝ := by
+    ⊢@{IProp GF} (γ ↪●MZ{dq} n) -∗ (γ ↪◯MZ m) -∗ ⌜✓ dq ∧ m ≤ n⌝ := by
   unfold auth_own lb_own
   iintro ⟨%Hn, Hauth⟩ ⟨%Hm, Hlb⟩
   icases MonoNat.auth_lb_own_valid $$ Hauth Hlb with %⟨Hdq, Hle⟩

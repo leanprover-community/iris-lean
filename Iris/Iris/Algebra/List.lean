@@ -13,7 +13,7 @@ public import Iris.Std.List
 
 namespace Iris
 
-variable {SI : Type _} [instSI : SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 
 open OFE COFE Iris.Algebra
 

@@ -12,7 +12,7 @@ public section
 
 namespace Iris.Algebra
 
-variable {SI : Type _} [instSI : SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 
 /-! # Monoids for Big Operators
 

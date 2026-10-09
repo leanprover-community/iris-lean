@@ -20,7 +20,7 @@ and the authority `●E a`.
 
 namespace Iris
 
-variable {SI : Type _} [instSI : SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 
 open OFE ORA Auth Excl Iris.Option Iris.OFE.Option
 
@@ -29,7 +29,7 @@ namespace ExclAuth
 variable [OFE SI A]
 
 variable (SI) in
-@[rocq_alias excl_authR]
+@[indexed, rocq_alias excl_authR]
 abbrev ExclAuthR := Auth SI (Option (Excl A))
 
 @[rocq_alias excl_authUR]

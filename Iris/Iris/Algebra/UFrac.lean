@@ -20,7 +20,7 @@ A variant of the Frac ORA with unbounded validity (>1).
 
 namespace Iris
 
-variable {SI : Type _} [instSI : SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 
 @[rocq_alias ufrac]
 structure UFrac where

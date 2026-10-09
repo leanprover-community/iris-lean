@@ -19,6 +19,8 @@ public import Iris.Std
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open Iris OFE COFE BI Auth
@@ -60,11 +62,11 @@ variable {GF : BundledGFunctors} {hlc : HasLC} [InvGS_gen hlc GF]
 def uPred_fupd (E1 E2 : CoPset) (P : IProp GF) : IProp GF :=
   iprop(wsat ∗ ownE E1 -∗ |==£> (wsat ∗ ownE E2 ∗ P))
 
-instance {E1 E2 : CoPset} : NonExpansive Nat (uPred_fupd (GF := GF) (hlc := hlc) E1 E2) where
+instance {E1 E2 : CoPset} : NonExpansive (uPred_fupd (GF := GF) (hlc := hlc) E1 E2) where
   ne {_ _ _} h := by
     simp only [uPred_fupd]
     refine wand_ne.ne .rfl ?_
-    refine (inferInstance : NonExpansive Nat le_upd).ne ?_
+    refine (inferInstance : NonExpansive le_upd).ne ?_
     refine sep_ne.ne .rfl ?_
     refine sep_ne.ne .rfl h
 
@@ -139,8 +141,8 @@ instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate (I
 
 end FUpdInstance
 
-instance {GF : BundledGFunctors} [InvGS_gen hlc GF] : FUpdNE Nat (IProp GF) where
-  fupd_ne {E1 E2} := (inferInstance : NonExpansive Nat (uPred_fupd (GF := GF) (hlc := hlc) E1 E2))
+instance {GF : BundledGFunctors} [InvGS_gen hlc GF] : FUpdNE (IProp GF) where
+  fupd_ne {E1 E2} := (inferInstance : NonExpansive (uPred_fupd (GF := GF) (hlc := hlc) E1 E2))
 
 @[rocq_alias uPred_bi_bupd_fupd]
 instance {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIUpdateFUpdate (IProp GF) where
@@ -216,7 +218,7 @@ open ProofMode Iris.Std
 variable {GF : BundledGFunctors} {hlc : HasLC} [InvGS_gen hlc GF]
 
 @[rocq_alias fupd_finally_ne]
-instance fupd_finally_ne (E : CoPset) : NonExpansive Nat (fupd_finally (GF := GF) (hlc := hlc) E) where
+instance fupd_finally_ne (E : CoPset) : NonExpansive (fupd_finally (GF := GF) (hlc := hlc) E) where
   ne {_ _ _} h := by
     simp only [fupd_finally]
     refine wand_ne.ne .rfl ?_
@@ -308,7 +310,7 @@ theorem fupd_finally_keep {E : CoPset} (P : IProp GF) {Q : IProp GF} [TCOr (TCEq
 
 @[rocq_alias uPred_bi_fupd_sbi_no_lc]
 instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .hasNoLC GF] :
-    BIFUpdateSbi Nat (IProp GF) where
+    BIFUpdateSbi (IProp GF) where
   fupd_keep_siPure E' Pi R := by
     iintro H
     iapply fupd_keep iprop(<si_pure> Pi)
@@ -527,7 +529,7 @@ variable {GF : BundledGFunctors}
 theorem step_fupdN_soundness [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain P] :
     (∀ (_ : InvGS_gen hlc GF), ⊢ £ m -∗ |={⊤,∅}=> |={∅}▷=>^[n] P) → ⊢ P := by
   intros HP
-  apply laterN_soundness (SI := Nat) (n := n + 1)
+  apply laterN_soundness (n := n + 1)
   apply fupd_finally_soundness hlc (n := m) (E := ⊤)
   iintro %Hinv Hc
   imod HP $$ Hc with HP
@@ -542,7 +544,7 @@ theorem step_fupdN_soundness [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain P] 
 theorem step_fupdN_soundness_close [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain P] :
     (∀ (_ : InvGS_gen hlc GF), ⊢ £ m -∗ |={⊤}[∅]▷=>^[n] P) → ⊢ P := by
   intros HP
-  apply laterN_soundness (SI := Nat) (n := n + 1)
+  apply laterN_soundness (n := n + 1)
   apply fupd_finally_soundness hlc (n := m) (E := ⊤)
   iintro %Hinv Hc
   ihave HP := HP $$ Hc

@@ -13,12 +13,14 @@ public import Iris.Std.HeapInstances
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris.Examples
 open Iris.BI COFE
 
 section Example1
 
-abbrev F0 : OFunctorPre Nat := constOF _ (Agree (DiscreteO String))
+abbrev F0 : OFunctorPre := constOF (Agree (DiscreteO String))
 
 variable {GF} [E0 : ElemG GF F0]
 
@@ -52,8 +54,8 @@ section Example2
 open HeapView One DFrac Agree DiscreteO
 
 /- Define an OFunctor for the heap. Fractions are concretely `Qp`. -/
-abbrev F1 : OFunctorPre Nat :=
-  constOF _ <| HeapView Nat Nat (Agree (DiscreteO String)) (Std.ExtTreeMap Nat · compare)
+abbrev F1 : OFunctorPre :=
+  constOF <| HeapView Nat (Agree (DiscreteO String)) (Std.ExtTreeMap Nat · compare)
 
 /- Our OFunctor is present in the global list of OFunctors. -/
 variable {GF} [ElemG GF F1]
@@ -99,8 +101,8 @@ variable (Expr State Value : Type _) [OperationalSemantics Expr State Value]
 
 /- Let's say that we are also given two OFunctors, and an interpretation of the state into
    state using these resources. -/
-variable (F3 F4 : OFunctorPre Nat) [RFunctorContractive Nat F3] [RFunctorContractive Nat F4]
-variable [RFunctorAffine Nat F3] [RFunctorAffine Nat F4]
+variable (F3 F4 : OFunctorPre) [RFunctorContractive F3] [RFunctorContractive F4]
+variable [RFunctorAffine F3] [RFunctorAffine F4]
 variable {GF} [ElemG GF F3] [ElemG GF F4]
 class StateInterpretation (State : Type _) (GF : BundledGFunctors) where
   state_interp : State → IProp GF
@@ -121,7 +123,7 @@ def wp_F (wp : Expr → (Value → IProp GF) → IProp GF) (e : Expr) (Φ : Valu
   ∀ s, @state_interp State _ _ s -∗
     ∃ e' s', ⌜@step _ _ Value _ (e, s) = (e', s') ⌝ ∗ ▷ |==> (@state_interp _ _ _  s' ∗ wp e' Φ))
 
-instance wp_F_contractive : Contractive Nat (@wp_F Expr State Value _ GF _) where
+instance wp_F_contractive : Contractive (@wp_F Expr State Value _ GF _) where
   distLater_dist {n : Nat} {x y HL} e Φ := by
     refine or_ne.ne (.of_eq rfl) ?_
     refine forall_ne (fun _ => ?_)
@@ -135,7 +137,7 @@ instance wp_F_contractive : Contractive Nat (@wp_F Expr State Value _ GF _) wher
     exact HL m Hm v Φ
 
 def wp {Expr State Value : Type _} [@Ex3WP Expr State Value GF] (e : Expr) (Φ : Value → IProp GF) : IProp GF :=
-  (fixpoint Nat <| @wp_F Expr State Value _ GF _) e Φ
+  (fixpoint <| @wp_F Expr State Value _ GF _) e Φ
 
 theorem wp_unfold (e : Expr) (Φ : Value → IProp GF) :
     wp e Φ = iprop(

@@ -12,7 +12,7 @@ public import Iris.Algebra.Excl
 @[expose] public section
 
 
-variable {SI : Type _} [Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
 
 namespace Iris
 open BI OFE Iris.Std
@@ -21,7 +21,7 @@ open BI OFE Iris.Std
   Internal equality in a BI with step-indexed structure, where `a ≡[SI] b` is
   defined as `siPure (SiProp.internalEq a b)`.
 -/
-@[rocq_alias internal_eq]
+@[indexed, rocq_alias internal_eq]
 def internalEq [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {A : Type _} [OFE SI A] (a b : A) : PROP :=
   iprop(<si_pure> (SiProp.internalEq (SI := SI) a b))
 
@@ -30,6 +30,15 @@ syntax:40 term:40 " ≡[" term "] " term:41 : term
 macro_rules
   | `(iprop($a ≡[%$tk $si] $b)) => ``($(wrapIprop tk ``internalEq) (SI := $si) $a $b)
 
+namespace StepIndexSugar
+/-- Internal equality `a ≡ b` inside `iprop(…)`, at the step index of the section
+(`local stepindex`). -/
+scoped syntax:40 term:40 " ≡ " term:41 : term
+scoped macro_rules
+  | `(iprop($a ≡%$tk $b)) => ``($(wrapIprop tk ``internalEq) (SI := stepindex%) $a $b)
+end StepIndexSugar
+
+open scoped Iris.StepIndexSugar in
 open Lean PrettyPrinter Delaborator SubExpr in
 /-- Print `internalEq` as `iprop(a ≡[SI] b)`, recovering the step index argument. -/
 @[app_delab internalEq] meta def delabInternalEq : Delab :=
@@ -39,7 +48,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
     let si ← withNaryArg 0 delab
     let a ← withNaryArg (e.getAppNumArgs - 2) delab
     let b ← withNaryArg (e.getAppNumArgs - 1) delab
-    `(iprop($a ≡[$si] $b))
+    if ← StepIndexSugar.isSectionSI si then `(iprop($a ≡ $b)) else `(iprop($a ≡[$si] $b))
 
 namespace BI
 
@@ -116,7 +125,7 @@ theorem trans {A : Type _} [OFE SI A] {a b c : A} :
   letI _ := ne_l (SI := SI) (PROP := PROP) c
   rewrite' (internalEq · c) (and_elim_l.trans symm) and_elim_r
 
-@[rocq_alias f_equivI]
+@[indexed, rocq_alias f_equivI]
 theorem of_internalEquiv_ne {A B : Type _} [OFE SI A] [OFE SI B] (f : A → B) [hf : NonExpansive SI f] {x y : A} :
     x ≡[SI] y ⊢@{PROP} f x ≡[SI] f y :=
   letI _ : NonExpansive SI (fun y => (iprop(f x ≡[SI] f y) : PROP)) := (ne_r (f x)).comp hf
@@ -365,13 +374,13 @@ theorem f_equivI_contractive [SIdxSucc SI] {A B : Type _} [OFE SI A] [OFE SI B] 
   letI _ : NonExpansive SI (f ∘ Later.car) := ⟨fun {_ _ _} h => hf.distLater_dist h⟩
   exact (later_equivI_mpr x y).trans <| of_internalEquiv_ne (f ∘ Later.car)
 
-@[rocq_alias internal_eq_rewrite_contractive]
+@[indexed, rocq_alias internal_eq_rewrite_contractive]
 theorem internalEq_rewrite_contractive [SIdxSucc SI] {A : Type _} [OFE SI A] (a b : A) (Ψ : A → PROP)
     [Contractive SI Ψ] :
     ▷ a ≡[SI] b ⊢ Ψ a → Ψ b :=
   (f_equivI_contractive Ψ a b).trans (rewrite id)
 
-@[rocq_alias internal_eq_rewrite_contractive']
+@[indexed, rocq_alias internal_eq_rewrite_contractive']
 theorem internalEq_rewrite_contractive' [SIdxSucc SI] {A : Type _} [OFE SI A] (a b : A) (Ψ : A → PROP)
     [Contractive SI Ψ] (Heq : P ⊢ ▷ a ≡[SI] b) (HΨa : P ⊢ Ψ a) : P ⊢ Ψ b :=
   (and_intro .rfl HΨa).trans <|

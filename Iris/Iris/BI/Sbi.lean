@@ -15,7 +15,7 @@ public import Iris.BI.SIProp
 
 
 
-variable {SI : Type _} [Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
 
 /-!
 # Step-indexed BI (SBI)
@@ -30,16 +30,16 @@ namespace Iris
 open OFE BI Iris.BI.BIBase
 
 /-- Embedding of step-indexed propositions into a BI. -/
-@[rocq_alias SiPure]
-class SiPure (SI : Type _) [SIdx SI] (PROP : Type _) where
+@[indexed, rocq_alias SiPure]
+class SiPure (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) where
   siPure : SiProp SI → PROP
 export SiPure (siPure)
 
 attribute [inherit_doc SiPure] SiPure.siPure
 
 /-- Step-indexed validity of BI propositions. -/
-@[rocq_alias SiEmpValid]
-class SiEmpValid (SI : Type _) [SIdx SI] (PROP : Type _) where
+@[indexed, rocq_alias SiEmpValid]
+class SiEmpValid (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) where
   siEmpValid : PROP → SiProp SI
 export SiEmpValid (siEmpValid)
 
@@ -63,8 +63,8 @@ delab_rule SiEmpValid.siEmpValid
 end Notation
 
 /-- The `Sbi` class: a BI with step-indexed structure. -/
-@[rocq_alias Sbi]
-class Sbi (SI : Type _) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed SI PROP]
+@[indexed, rocq_alias Sbi]
+class Sbi (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed SI PROP]
     extends SiPure SI PROP, SiEmpValid SI PROP where
   siPure_ne : NonExpansive SI (α := SiProp SI) (β := PROP) SiPure.siPure
   siEmpValid_ne : NonExpansive SI (α := PROP) (β := SiProp SI) SiEmpValid.siEmpValid
@@ -101,8 +101,8 @@ theorem siEmpValid_affinely_2 [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {P
   Sbi.siEmpValid_affinely_mpr
 
 /-- `SbiEmpValidExist` generalizes that plainly commutes with existentials and disjunction. -/
-@[rocq_alias SbiEmpValidExist]
-class SbiEmpValidExist (SI : Type _) [SIdx SI] (PROP : Type _) [BI PROP] [SiEmpValid SI PROP] where
+@[indexed, rocq_alias SbiEmpValidExist]
+class SbiEmpValidExist (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] [SiEmpValid SI PROP] where
   siEmpValid_sExists_1 (Ψ : PROP → Prop) :
     iprop(<si_emp_valid> sExists Ψ ⊢@{SiProp SI} ∃ p, ⌜Ψ p⌝ ∧ <si_emp_valid> p)
 export SbiEmpValidExist (siEmpValid_sExists_1)
@@ -523,7 +523,7 @@ theorem only0_intuitionistically [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP]
 
 /-- Not an instance: `Persistent (<only0> P)` does not determine `SI`. -/
 @[rocq_alias only_0_persistent]
-theorem only0_persistent (SI : Type _) [SIdx SI] [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP]
+theorem only0_persistent (SI : stepindex (Type _)) [SIdx SI] [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP]
     (P : PROP) [Persistent P] : Persistent iprop(<only0> P) where
   persistent := (only0_mono persistently_intro).trans (only0_persistently (SI := SI)).mp
 
@@ -560,7 +560,7 @@ theorem siPure_inj [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {Pi Qi : SiPr
     Pi ⊣⊢ Qi :=
   ⟨siPure_entails.mp h.mp, siPure_entails.mp h.mpr⟩
 
-@[rocq_alias pure_soundness]
+@[indexed, rocq_alias pure_soundness]
 theorem pure_soundness [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {φ : Prop} (h : emp ⊢@{PROP} ⌜φ⌝) : φ := by
   refine SiProp.pure_soundness (SI := SI) ?_
   refine (siPure_emp_valid (PROP := PROP)).mp ?_
@@ -572,7 +572,7 @@ theorem later_soundness [SIdxSucc SI] [BI PROP] [BIStepIndexed SI PROP] [Sbi SI 
   refine SiProp.later_soundness ?_
   exact (siEmpValid_emp_valid.mpr h).trans siEmpValid_later.mp
 
-@[rocq_alias laterN_soundness]
+@[indexed, rocq_alias laterN_soundness]
 theorem laterN_soundness [SIdxSucc SI] [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {P : PROP} {n : Nat} (h : emp ⊢ ▷^[n] P) : emp ⊢ P :=
   match n with
   | .zero => h

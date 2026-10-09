@@ -16,6 +16,8 @@ open BI OFE
 
 @[expose] public section
 
+local stepindex Nat
+
 /-- A general interface for a reader-writer lock. -/
 @[rocq_alias heap_lang.rwlock]
 structure RwLock (GF : BundledGFunctors) [IrisGS_gen hlc Exp GF] where
@@ -70,10 +72,10 @@ instance instTimelessWriterLocked γ : Timeless (rw.writerLocked L γ) :=
   rw.writerLocked_timeless γ
 
 @[rocq_alias heap_lang.is_rw_lock_contractive]
-instance isRwLock_contractive γ lk : Contractive Nat (rw.isRwLock L γ lk) := by
+instance isRwLock_contractive γ lk : Contractive (rw.isRwLock L γ lk) := by
   rw [contractive_internalEq (PROP := IProp GF)]
   iintro %Φ₁ %Φ₂ #HEQ
-  ihave #HΦ : ▷ ∀ q, Φ₁ q ≡[Nat] Φ₂ q $$ [HEQ]
+  ihave #HΦ : ▷ ∀ q, Φ₁ q ≡ Φ₂ q $$ [HEQ]
   · inext
     iapply (discreteFun_equivI Φ₁ Φ₂).mp $$ [$]
   iapply prop_ext

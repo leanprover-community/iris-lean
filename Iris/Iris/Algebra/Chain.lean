@@ -13,7 +13,7 @@ meta import Iris.Std.RocqPorting
 
 namespace Iris
 
-variable {SI : Type _} [instSI : SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 
 open OFE COFE
 
@@ -59,6 +59,7 @@ instance instInhabited [OFE SI α] [Inhabited α] : Inhabited (Chain SI α) :=
 end Chain
 
 variable (SI) in
+@[indexed]
 def Completion (α : Type u) [OFE SI α] :=
   Quotient (Completion.Raw.quotientSetoid (SI := SI) (α := α))
 

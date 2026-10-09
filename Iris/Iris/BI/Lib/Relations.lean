@@ -10,7 +10,7 @@ public import Iris.BI.Lib.Fixpoint
 @[expose] public section
 
 
-variable {SI : Type _} [Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
 
 /-!  # Logical Relation Closures -/
 
@@ -18,13 +18,13 @@ namespace Iris
 open Iris.Std BI OFE
 
 variable (SI) in
-@[rocq_alias bi_rtc_pre]
+@[indexed, rocq_alias bi_rtc_pre]
 def biRtcPre [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A] (R : A → A → PROP) (x₂ : A) (rec : A → PROP) (x₁ : A) : PROP :=
   iprop% <affine> (x₁ ≡[SI] x₂) ∨ ∃ x', R x₁ x' ∗ rec x'
 
 variable (SI) in
 /-- The reflexive-transitive closure. -/
-@[rocq_alias bi_rtc]
+@[indexed, rocq_alias bi_rtc]
 def biRtc [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A] (R : A → A → PROP) (x₁ x₂ : A) : PROP :=
   bi_least_fixpoint SI (biRtcPre SI R x₂) x₁
 
@@ -34,13 +34,13 @@ def biTcPre [BI PROP] (R : A → A → PROP) (x₂ : A) (rec : A → PROP) (x₁
 
 variable (SI) in
 /-- The transitive closure. -/
-@[rocq_alias bi_tc]
+@[indexed, rocq_alias bi_tc]
 def biTc [BI PROP] [BIStepIndexed SI PROP] [OFE SI A] (R : A → A → PROP) (x₁ x₂ : A) : PROP :=
   bi_least_fixpoint SI (biTcPre R x₂) x₁
 
 variable (SI) in
 /-- The assertion that two elements are related by exactly `n` steps. -/
-@[rocq_alias bi_nsteps]
+@[indexed, rocq_alias bi_nsteps]
 def biNsteps [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [OFE SI A] (R : A → A → PROP) : Nat → A → A → PROP
   | 0, x₁, x₂ => iprop% <affine> (x₁ ≡[SI] x₂)
   | n + 1, x₁, x₂ => iprop% ∃ x', R x₁ x' ∗ biNsteps R n x' x₂

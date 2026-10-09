@@ -12,7 +12,7 @@ public import Iris.ProofMode.ModalityInstances
 @[expose] public section
 
 
-variable {SI : Type _} [Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
 
 namespace Iris.ProofMode
 open BI

@@ -22,13 +22,15 @@ Wraps the `MonoList` RA, providing three assertions:
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open BI MonoList
 
 @[rocq_alias mono_listG]
 class MonoListG (GF : BundledGFunctors) (α : Type _) where
-  elem : ElemG GF (constOF _ (MonoList (DiscreteO α)))
+  elem : ElemG GF (constOF (MonoList (DiscreteO α)))
 
 attribute [reducible, instance] MonoListG.elem
 
@@ -140,7 +142,7 @@ instance {γ} {l : List α} q :
 @[rocq_alias mono_list_auth_own_agree]
 theorem auth_own_agree (γ : GName) (dq1 dq2 : DFrac) (l1 l2 : List α) :
     ⊢@{IProp GF} (γ ↪●ML{dq1} l1) -∗ (γ ↪●ML{dq2} l2) -∗
-      ⌜✓[Nat] (dq1 • dq2) ∧ l1 = l2⌝ := by
+      ⌜✓ (dq1 • dq2) ∧ l1 = l2⌝ := by
   unfold auth_own
   iintro H1 H2
   icases iOwn_cmraValid_op $$ [$H1 $H2] with %Hvalid
@@ -159,7 +161,7 @@ theorem auth_own_exclusive (γ : GName) (l1 l2 : List α) :
 
 @[rocq_alias mono_list_auth_lb_own_valid]
 theorem auth_lb_own_valid (γ : GName) (dq : DFrac) (l1 l2 : List α) :
-    ⊢@{IProp GF} (γ ↪●ML{dq} l1) -∗ (γ ↪◯ML l2) -∗ ⌜✓[Nat] dq ∧ l2 <+: l1⌝ := by
+    ⊢@{IProp GF} (γ ↪●ML{dq} l1) -∗ (γ ↪◯ML l2) -∗ ⌜✓ dq ∧ l2 <+: l1⌝ := by
   unfold auth_own lb_own
   iintro H1 H2
   icases iOwn_cmraValid_op $$ [$H1 $H2] with %Hvalid
@@ -235,7 +237,7 @@ theorem idx_own_get (γ : GName) {l : List α} (i : Nat) (a : α) (h : l[i]? = s
 theorem own_alloc (l : List α) :
     ⊢@{IProp GF} |==> ∃ γ, (γ ↪●ML l) ∗ (γ ↪◯ML l) := by
   unfold auth_own lb_own
-  imod iOwn_alloc (F := constOF _ (MonoList (DiscreteO α)))
+  imod iOwn_alloc (F := constOF (MonoList (DiscreteO α)))
       (●ML (l.map DiscreteO.mk) • ◯ML (l.map DiscreteO.mk)) with ⟨%γ, H⟩
   · exact (both_valid ..).mpr List.prefix_rfl
   imodintro

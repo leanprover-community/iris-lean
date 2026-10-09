@@ -11,14 +11,14 @@ public import Iris.ProofMode
 @[expose] public section
 
 
-variable {SI : Type _} [Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
 
 namespace Iris
 open Iris.Std BI OFE
 
 
-@[rocq_alias BiMonoPred]
-class BIMonoPred (SI : Type _) [SIdx SI] [BI PROP] [BIStepIndexed SI PROP] [OFE SI A] (F : (A → PROP) → (A → PROP)) where
+@[indexed, rocq_alias BiMonoPred]
+class BIMonoPred (SI : stepindex (Type _)) [SIdx SI] [BI PROP] [BIStepIndexed SI PROP] [OFE SI A] (F : (A → PROP) → (A → PROP)) where
   mono_pred {Φ Ψ : A → PROP} [NonExpansive SI Φ] [NonExpansive SI Ψ] :
     ⊢ □ (∀ x, Φ x -∗ Ψ x) -∗ ∀ x, F Φ x -∗ F Ψ x
   mono_pred_ne {Φ : A → PROP} [NonExpansive SI Φ] : NonExpansive SI (F Φ)
@@ -27,12 +27,12 @@ attribute [instance] mono_pred_ne
 
 -- PORTING NOTE: This is an `abbrev` because of typeclass inference
 variable (SI) in
-@[rocq_alias bi_least_fixpoint]
+@[indexed, rocq_alias bi_least_fixpoint]
 abbrev bi_least_fixpoint [BI PROP] [BIStepIndexed SI PROP] [OFE SI A] (F : (A → PROP) → (A → PROP)) (x : A) : PROP :=
   iprop(∀ (Φ : A -n>[SI] PROP), □ (∀ x, F Φ x -∗ Φ x) -∗ Φ x)
 
 variable (SI) in
-@[rocq_alias bi_greatest_fixpoint]
+@[indexed, rocq_alias bi_greatest_fixpoint]
 abbrev bi_greatest_fixpoint [BI PROP] [BIStepIndexed SI PROP] [OFE SI A] (F : (A → PROP) → (A → PROP)) (x : A) : PROP :=
   iprop(∃ (Φ : A -n>[SI] PROP), □ (∀ x, Φ x -∗ F Φ x) ∗ Φ x)
 

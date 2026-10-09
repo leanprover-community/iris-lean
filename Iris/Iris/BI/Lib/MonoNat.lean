@@ -14,11 +14,13 @@ public import Iris.Instances.IProp
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 open Auth BI MonoNat
 
-abbrev MonoNatRF : COFE.OFunctorPre Nat :=
-  AuthURF (constOF _ MaxNat)
+abbrev MonoNatRF : COFE.OFunctorPre :=
+  AuthURF (constOF MaxNat)
 
 @[rocq_alias mono_natG]
 class MonoNatG (GF : BundledGFunctors) where
@@ -76,10 +78,10 @@ instance : Persistent (PROP := IProp GF) (γ ↪◯MN n) := by
   unfold lb_own
   infer_instance
 
-instance : IsRAUnit (◯MN 0 : MonoNat Nat) := by
+instance : IsRAUnit (◯MN 0 : MonoNat) := by
   infer_instance
 
-instance : IsUnit Nat (◯MN 0 : MonoNat Nat) := by
+instance : IsUnit (◯MN 0 : MonoNat) := by
   infer_instance
 
 @[rocq_alias mono_nat_auth_own_fractional]
@@ -97,7 +99,7 @@ instance {γ n} (q : Qp) :
 
 @[rocq_alias mono_nat_auth_own_agree]
 theorem auth_own_agree (γ : GName) (dq1 dq2 : DFrac) (n1 n2 : MaxNat) :
-  ⊢@{IProp GF} (γ ↪●MN{dq1} n1) -∗ (γ ↪●MN{dq2} n2) -∗ ⌜✓[Nat] (dq1 • dq2) ∧ n1 = n2⌝ := by
+  ⊢@{IProp GF} (γ ↪●MN{dq1} n1) -∗ (γ ↪●MN{dq2} n2) -∗ ⌜✓ (dq1 • dq2) ∧ n1 = n2⌝ := by
   unfold auth_own
   iintro H1 H2
   icases iOwn_cmraValid_op $$ [$H1 $H2] with %Hvalid
@@ -115,7 +117,7 @@ theorem auth_own_exclusive (γ : GName) (n1 n2 : MaxNat) :
 
 @[rocq_alias mono_nat_auth_lb_own_valid]
 theorem auth_lb_own_valid (γ : GName) (dq : DFrac) (n m : MaxNat) :
-  ⊢@{IProp GF} (γ ↪●MN{dq} n) -∗ (γ ↪◯MN m) -∗ ⌜✓[Nat] dq ∧ m ≤ n⌝ := by
+  ⊢@{IProp GF} (γ ↪●MN{dq} n) -∗ (γ ↪◯MN m) -∗ ⌜✓ dq ∧ m ≤ n⌝ := by
   unfold auth_own lb_own
   iintro H1 H2
   icases iOwn_cmraValid_op $$ [$H1 $H2] with %Hvalid

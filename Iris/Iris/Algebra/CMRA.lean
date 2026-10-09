@@ -41,7 +41,7 @@ pins are needed for SI-free laws.
 namespace Iris
 open OFE
 
-variable {SI : Type _} [instSI : SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 
 /-- The underlying operation of a resource. -/
 @[rocq_alias Op]
@@ -67,7 +67,8 @@ def op? (x : α) : Option α → α
 end Op
 
 /-- Non-expansiveness of the operation (Prop mixin; the data class `Op` carries no step index). -/
-class OpNE (SI : Type _) [SIdx SI] (α : Type _) [OFE SI α] [Op α] : Prop where
+@[indexed]
+class OpNE (SI : stepindex (Type _)) [SIdx SI] (α : Type _) [OFE SI α] [Op α] : Prop where
   op_ne {x : α} : OFE.NonExpansive SI (Op.op x)
 export OpNE (op_ne)
 
@@ -87,7 +88,8 @@ def core (x : α) := (pcore x).getD x
 end PCore
 
 /-- Non-expansiveness of the partial core (Prop mixin). -/
-class PCoreNE (SI : Type _) [SIdx SI] (α : Type _) [OFE SI α] [PCore α] : Prop where
+@[indexed]
+class PCoreNE (SI : stepindex (Type _)) [SIdx SI] (α : Type _) [OFE SI α] [PCore α] : Prop where
   pcore_ne {n : SI} {x y cx : α} : x ≡{n}≡ y → PCore.pcore x = some cx → ∃ cy, PCore.pcore y = some cy ∧ cx ≡{n}≡ cy
 export PCoreNE (pcore_ne)
 
@@ -121,7 +123,7 @@ class URA (α : Type _) extends RA α, UnitOp α, IsTotal α where
 set_option linter.iris.dupNamespace false in
 /-- The validity predicates of a resource algebra.  -/
 @[rocq_alias Valid]
-class Valid (SI : Type _) (α : Type _) where
+class Valid (SI : stepindex (Type _)) (α : Type _) where
   /-- The step-indexed validity predicate. -/
   ValidN : SI → α → Prop
   /-- The validity predicate. -/
@@ -138,13 +140,14 @@ namespace Valid
 end Valid
 
 /-- Non-expansiveness and downward closure of validity (Prop mixin). -/
-class ValidNE (SI : Type _) [SIdx SI] (α : Type _) [OFE SI α] [Valid SI α] : Prop where
+@[indexed]
+class ValidNE (SI : stepindex (Type _)) [SIdx SI] (α : Type _) [OFE SI α] [Valid SI α] : Prop where
   validN_ne {n : SI} {x y : α} : x ≡{n}≡ y → Valid.ValidN n x → Valid.ValidN n y
   validN_le {n n' : SI} {x : α} : Valid.ValidN n x → n' ≤ n → Valid.ValidN n' x
 export ValidNE (validN_ne validN_le)
 
 /-- The ordering predicate on a resource algebra. -/
-class Ordered (SI : Type _) (α : Type _) where
+class Ordered (SI : stepindex (Type _)) (α : Type _) where
   /-- The indexed ordering predicate. This is the generic ORA order predicate; if your ORA is
   `OrdInc`, the lemma `ordN_incN` converts it to the extension order typical of Iris CMRAs. -/
   OrderN : SI → α → α → Prop
@@ -156,7 +159,8 @@ class Ordered (SI : Type _) (α : Type _) where
   ordN_of_ord {x y : α} (n) : Order x y → OrderN n x y
 
 /-- Non-expansiveness and downward closure of the order (Prop mixin). -/
-class OrderedNE (SI : Type _) [SIdx SI] (α : Type _) [OFE SI α] [Ordered SI α] : Prop where
+@[indexed]
+class OrderedNE (SI : stepindex (Type _)) [SIdx SI] (α : Type _) [OFE SI α] [Ordered SI α] : Prop where
   ordN_ne {n : SI} {x x' y y' : α} : x ≡{n}≡ x' → y ≡{n}≡ y' → Ordered.OrderN n x y →
     Ordered.OrderN n x' y'
   ordN_le {n n' : SI} {x y : α} : Ordered.OrderN n x y → n' ≤ n → Ordered.OrderN n' x y
@@ -220,12 +224,14 @@ end Ordered
 
 /-- Reflexivity of the order: the order law of unital algebras (`UORA`), also enjoyed by
 total algebras under their extension inclusion. -/
-class OrderRefl (SI : Type _) [SIdx SI] (α : Type _) [Ordered SI α] : Prop where
+@[indexed]
+class OrderRefl (SI : stepindex (Type _)) [SIdx SI] (α : Type _) [Ordered SI α] : Prop where
   ord_refl (x : α) : x ≼ₒ[SI] x
 
 /-- An element `x` is increasing if composing with it never shrinks a resource. Cores and units
 are increasing; in an affine algebra every element is. -/
-class Increasing (SI : Type _) [SIdx SI] {α : Type _} [Op α] [Ordered SI α] (x : α) : Prop where
+@[indexed]
+class Increasing (SI : stepindex (Type _)) [SIdx SI] {α : Type _} [Op α] [Ordered SI α] (x : α) : Prop where
   increasing (y : α) : y ≼ₒ[SI] x • y
 
 /-- The step-indexed extension inclusion: `y` is `x` composed with some frame. This is the
@@ -240,19 +246,22 @@ def Included {α : Type _} [Op α] (x y : α) : Prop := ∃ z : α, y = x • z
 @[inherit_doc Included] infix:50 " ≼ " => Included
 
 /-- The extension inclusion is contained in the order: every element is increasing. -/
-class IncOrd (SI : Type _) [SIdx SI] (α : Type _) [HasDist SI α] [Op α] [Ordered SI α] : Prop where
+@[indexed]
+class IncOrd (SI : stepindex (Type _)) [SIdx SI] (α : Type _) [HasDist SI α] [Op α] [Ordered SI α] : Prop where
   inc_ord {x y : α} : x ≼ y → x ≼ₒ[SI] y
 
 variable (SI) in
-@[reducible] def ORA.Affine (α : Type _) [HasDist SI α] [Op α] [Ordered SI α] : Prop := IncOrd SI α
+@[indexed, reducible] def ORA.Affine (α : Type _) [HasDist SI α] [Op α] [Ordered SI α] : Prop := IncOrd SI α
 
 /-- The order is contained in the extension inclusion: every ordered pair has a frame. -/
-class OrdInc (SI : Type _) [SIdx SI] (α : Type _) [HasDist SI α] [Op α] [Ordered SI α] : Prop where
+@[indexed]
+class OrdInc (SI : stepindex (Type _)) [SIdx SI] (α : Type _) [HasDist SI α] [Op α] [Ordered SI α] : Prop where
   ord_inc {x y : α} : x ≼ₒ[SI] y → x ≼ y
   ordN_incN {n : SI} {x y : α} : x ≼ₒ{n} y → x ≼{n} y
 
 /-- The order is the extension inclusion. -/
-class IsInc (SI : Type _) [SIdx SI] (α : Type _) [HasDist SI α] [Op α] [Ordered SI α] : Prop
+@[indexed]
+class IsInc (SI : stepindex (Type _)) [SIdx SI] (α : Type _) [HasDist SI α] [Op α] [Ordered SI α] : Prop
     extends IncOrd SI α, OrdInc SI α
 
 section
@@ -516,7 +525,8 @@ end ORA
 validity together with the laws relating it to composition and core, and a step-indexed order
 that they respect. The order is neither required to be reflexive
 (`OrderRefl`) nor to contain the extension inclusion (`IncOrd`). -/
-class ORA (SI : Type _) [instSI : SIdx SI] (α : Type _) [RA α]
+@[indexed]
+class ORA (SI : stepindex (Type _)) [instSI : SIdx SI] (α : Type _) [RA α]
     extends OFE SI α, Valid SI α, Ordered SI α,
       OpNE SI α, PCoreNE SI α, ValidNE SI α, OrderedNE SI α where
   validN_op_left {SI} {n : SI} {x y : α} : ✓{n} (x • y) → ✓{n} x
@@ -549,20 +559,20 @@ class CoreId {α : Type _} [PCore α] (x : α) where
 export CoreId (core_id)
 
 variable (SI) in
-@[rocq_alias Exclusive]
+@[indexed, rocq_alias Exclusive]
 class Exclusive (x : α) where
   exclusive0_l y : ¬✓{(0 : SI)} x • y
 export Exclusive (exclusive0_l)
 
 variable (SI) in
-@[rocq_alias Cancelable]
+@[indexed, rocq_alias Cancelable]
 class Cancelable (x : α) where
   cancelableN {n : SI} {y z : α} : ✓{n} x • y → x • y ≡{n}≡ x • z → y ≡{n}≡ z
 export Cancelable (cancelableN)
 #rocq_ignore Cancelable_proper "Derived from nonexpansivity"
 
 variable (SI) in
-@[rocq_alias IdFree]
+@[indexed, rocq_alias IdFree]
 class IdFree (x : α) where
   id_free0_r y : ✓{(0 : SI)} x → ¬x • y ≡{(0 : SI)}≡ x
 export IdFree (id_free0_r)
@@ -921,8 +931,8 @@ end ORA
 relating them, and the monotonicity of the partial core along frames. It is not itself an
 ordered resource algebra; `ORA.ofCMRAData` makes one of it, taking the order to be the extension
 inclusion. -/
-@[rocq_alias CmraMixin]
-structure CMRAData (SI : Type _) [instSI : SIdx SI] (α : Type _) [OFE SI α] [RA α]
+@[indexed, rocq_alias CmraMixin]
+structure CMRAData (SI : stepindex (Type _)) [instSI : SIdx SI] (α : Type _) [OFE SI α] [RA α]
     extends Valid SI α, OpNE SI α, PCoreNE SI α, ValidNE SI α where
   validN_op_left {SI} {n : SI} {x y : α} : ✓{n} (x • y) → ✓{n} x
   extend {SI} {n : SI} {x y₁ y₂ : α} : ✓{n} x → x ≡{n}≡ y₁ • y₂ →
@@ -1041,8 +1051,8 @@ end extOrder
 
 end CMRAData
 
-@[rocq_alias cmra]
-class CMRA (SI : Type _) [instSI : SIdx SI] (α : Type _) [RA α] extends ORA SI α, IsInc SI α
+@[indexed, rocq_alias cmra]
+class CMRA (SI : stepindex (Type _)) [instSI : SIdx SI] (α : Type _) [RA α] extends ORA SI α, IsInc SI α
 instance (priority := low) CMRA.ofIsInc [RA α] [ORA SI α] [IsInc SI α] : CMRA SI α := {}
 
 @[reducible] def ORA.ofCMRAData [OFE SI α] [RA α] (d : CMRAData SI α) : CMRA SI α :=
@@ -1093,7 +1103,7 @@ namespace ORA
 variable [RA α] [ORA SI α]
 
 variable (SI) in
-@[rocq_alias CmraDiscrete]
+@[indexed, rocq_alias CmraDiscrete]
 class Discrete (α : Type _) [RA α] [ORA SI α] extends OFE.Discrete SI α where
   discrete_valid {x : α} : ✓{(0 : SI)} x → ✓[SI] x
   discrete_ord {x y : α} : x ≼ₒ{(0 : SI)} y → x ≼ₒ[SI] y
@@ -1105,7 +1115,8 @@ end ORA
 /-! ## Unital algebras -/
 
 /-- An ordered unital resource algebra: the step-indexed mixin over `URA α`. -/
-class UORA (SI : Type _) [instSI : SIdx SI] (α : Type _) [URA α]
+@[indexed]
+class UORA (SI : stepindex (Type _)) [instSI : SIdx SI] (α : Type _) [URA α]
     extends ORA SI α, OrderRefl SI α where
   unit_valid {SI} : ✓[SI] (UnitOp.unit : α)
 #rocq_ignore Unit "Lean uses the UCMRA.unit field; no separate class needed."
@@ -1114,12 +1125,12 @@ class UORA (SI : Type _) [instSI : SIdx SI] (α : Type _) [URA α]
 
 /-- The validity of the unit of a classical unital resource algebra; the input of
 `UORA.ofUCMRAData` (the unit and its SI-free laws live in `URA α`). -/
-@[rocq_alias UcmraMixin]
-structure UCMRAData (SI : Type _) [instSI : SIdx SI] (α : Type _) [URA α] [CMRA SI α] : Prop where
+@[indexed, rocq_alias UcmraMixin]
+structure UCMRAData (SI : stepindex (Type _)) [instSI : SIdx SI] (α : Type _) [URA α] [CMRA SI α] : Prop where
   unit_valid {SI} : ✓[SI] (UnitOp.unit : α)
 
-@[rocq_alias ucmra]
-class UCMRA (SI : Type _) [instSI : SIdx SI] (α : Type _) [URA α] extends CMRA SI α, UORA SI α
+@[indexed, rocq_alias ucmra]
+class UCMRA (SI : stepindex (Type _)) [instSI : SIdx SI] (α : Type _) [URA α] extends CMRA SI α, UORA SI α
 instance (priority := low) UCMRA.ofIsInc [URA α] [UORA SI α] [IsInc SI α] : UCMRA SI α := {}
 
 @[reducible] def UORA.ofUCMRAData [URA α] [CMRA SI α] (d : UCMRAData SI α) : UCMRA SI α where
@@ -1133,6 +1144,7 @@ class IsRAUnit [RA α] (ε : α) : Prop where
 
 variable (SI) in
 /-- `ε` is a valid unit: `IsRAUnit ε` plus validity, which is step-indexed. -/
+@[indexed]
 class IsUnit [RA α] [ORA SI α] (ε : α) [IsRAUnit ε] : Prop where
   unit_valid : ✓[SI] ε
 
@@ -1671,7 +1683,7 @@ end ORA
 variable (SI) in
 /-- A morphism between CMRAs is defined to be a non-expansive function which
 preserves `validN`, `pcore` and `op`. -/
-@[rocq_alias CmraMorphism]
+@[indexed, rocq_alias CmraMorphism]
 structure CMRA.Hom (α β : Type _) [OFE SI α] [Op α] [PCore α] [Valid SI α]
     [OFE SI β] [Op β] [PCore β] [Valid SI β] extends OFE.Hom SI α β where
   protected validN {n : SI} {x} : ✓{n} x → ✓{n} (f x)
@@ -1686,7 +1698,7 @@ section Hom
 variable (SI) in
 /-- A morphism between ORAs, written `α -C> β`, is defined to be a non-expansive function which
 preserves `validN`, `pcore`, `op`, the order and increasing elements. -/
-@[ext]
+@[indexed, ext]
 structure Hom (α β : Type _) [RA α] [ORA SI α] [RA β] [ORA SI β] extends toCMRAHom : CMRA.Hom SI α β where
   protected monoN_ord {n : SI} {x₁ x₂} : x₁ ≼ₒ{n} x₂ → f x₁ ≼ₒ{n} f x₂
   protected mono_ord {x₁ x₂} : x₁ ≼ₒ[SI] x₂ → f x₁ ≼ₒ[SI] f x₂
@@ -1769,7 +1781,7 @@ end HomExt
 section rFunctor
 
 variable (SI) in
-@[rocq_alias rFunctor]
+@[indexed, rocq_alias rFunctor]
 class RFunctor (F : COFE.OFunctorPre SI) where
   [ra [COFE SI α] [COFE SI β] : RA (F α β)]
   [cmra [COFE SI α] [COFE SI β] : ORA SI (F α β)]
@@ -1783,7 +1795,7 @@ class RFunctor (F : COFE.OFunctorPre SI) where
     map (f.comp g) (g'.comp f') x = map g g' (map f f' x)
 
 variable (SI) in
-@[rocq_alias rFunctorContractive]
+@[indexed, rocq_alias rFunctorContractive]
 class RFunctorContractive (F : COFE.OFunctorPre SI) extends (RFunctor SI F) where
   map_contractive [COFE SI α₁] [COFE SI α₂] [COFE SI β₁] [COFE SI β₂] :
     Contractive SI (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
@@ -1811,7 +1823,7 @@ section urFunctor
 open ORA
 
 variable (SI) in
-@[rocq_alias urFunctor]
+@[indexed, rocq_alias urFunctor]
 class URFunctor (F : COFE.OFunctorPre SI) where
   [ura [COFE SI α] [COFE SI β] : URA (F α β)]
   [cmra [COFE SI α] [COFE SI β] : UORA SI (F α β)]
@@ -1825,7 +1837,7 @@ class URFunctor (F : COFE.OFunctorPre SI) where
     map (f.comp g) (g'.comp f') x = map g g' (map f f' x)
 
 variable (SI) in
-@[rocq_alias urFunctorContractive]
+@[indexed, rocq_alias urFunctorContractive]
 class URFunctorContractive (F : COFE.OFunctorPre SI) extends URFunctor SI F where
   map_contractive [COFE SI α₁] [COFE SI α₂] [COFE SI β₁] [COFE SI β₂] :
     Contractive SI (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
@@ -1835,6 +1847,7 @@ attribute [reducible, instance] URFunctor.ura URFunctor.cmra
 #rocq_ignore urFunctor_apply "Just apply the underlying `OFunctorPre`"
 
 variable (SI) in
+@[indexed]
 class RFunctorAffine (F : COFE.OFunctorPre SI) [RFunctor SI F] : Prop where
   affine [COFE SI α] [COFE SI β] : IncOrd SI (F α β)
 
@@ -3823,3 +3836,28 @@ so only the latter are asked for. -/
 end ORA
 end CmraMixin
 end Iris
+
+
+/-! Step-index-free spellings for `local stepindex` sections (see `Iris.Algebra.StepIndex`). -/
+namespace Iris.StepIndexSugar
+
+@[inherit_doc Valid.Valid] scoped notation:50 "✓ " x:50 => Valid.Valid (SI := stepindex%) x
+@[inherit_doc Ordered.Order] scoped notation:50 x:51 " ≼ₒ " y:51 => Ordered.Order (SI := stepindex%) x y
+@[inherit_doc Ordered.OrderR] scoped notation:50 x:51 " ≼ₒ* " y:51 => Ordered.OrderR (SI := stepindex%) x y
+@[inherit_doc Iris.ORA.Hom]
+scoped notation:25 α:26 " -C> " β:25 => Iris.ORA.Hom stepindex% α β
+
+@[scoped app_unexpander Valid.Valid] meta def unexpandValid : Lean.PrettyPrinter.Unexpander
+  | `($_ $x) => `(✓ $x)
+  | _ => throw ()
+@[scoped app_unexpander Ordered.Order] meta def unexpandOrder : Lean.PrettyPrinter.Unexpander
+  | `($_ $x $y) => `($x ≼ₒ $y)
+  | _ => throw ()
+@[scoped app_unexpander Ordered.OrderR] meta def unexpandOrderR : Lean.PrettyPrinter.Unexpander
+  | `($_ $x $y) => `($x ≼ₒ* $y)
+  | _ => throw ()
+@[scoped app_unexpander Iris.ORA.Hom] meta def unexpandORAHom : Lean.PrettyPrinter.Unexpander
+  | `($_ $_ $a $b) => `($a -C> $b)
+  | _ => throw ()
+
+end Iris.StepIndexSugar

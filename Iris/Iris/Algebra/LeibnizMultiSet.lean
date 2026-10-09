@@ -13,7 +13,7 @@ public import Iris.Std.GenMultiSets
 
 @[expose] public section
 
-variable {SI : Type _} [instSI : Iris.SIdx SI]
+variable {SI : Iris.stepindex (Type _)} [instSI : Iris.SIdx SI]
 
 /-! ## The multiset union ORA -/
 
@@ -117,12 +117,12 @@ theorem localUpdate {X Y X' Y' : MS} (h : X ⊎ Y' = X' ⊎ Y) :
   refine congrArg ofSet (LawfulMultiSet.ext fun a => ?_)
   grind [multiplicity_disjUnion]
 
-@[rocq_alias gmultiset_local_update_alloc]
+@[indexed, rocq_alias gmultiset_local_update_alloc]
 theorem localUpdate_alloc {X Y X' : MS} :
     (ofSet X, ofSet Y) ~l~>[SI] (ofSet (X ⊎ X'), ofSet (Y ⊎ X')) :=
   localUpdate <| LawfulMultiSet.ext fun _ => by simp only [multiplicity_disjUnion]; omega
 
-@[rocq_alias gmultiset_local_update_dealloc]
+@[indexed, rocq_alias gmultiset_local_update_dealloc]
 theorem localUpdate_dealloc {X Y X' : MS} (h : X' ⊆ Y) :
     (ofSet X, ofSet Y) ~l~>[SI] (ofSet (X \ X'), ofSet (Y \ X')) := by
   refine LocalUpdate.total_valid fun _ _ le => localUpdate (LawfulMultiSet.ext fun a => ?_)

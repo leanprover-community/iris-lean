@@ -13,7 +13,7 @@ namespace Iris.ProofMode
 public section
 open BI Iris.Std
 
-theorem rewrite_tac {SI : Type _} [SIdx SI] [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP]
+theorem rewrite_tac {SI : stepindex (Type _)} [SIdx SI] [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP]
     {P P' Q : PROP} {A : Type _} [OFE SI A] {a b : A} {p}
     (Ψ : A → PROP) [ne : OFE.NonExpansive SI Ψ] [heq : IntoInternalEq SI Q a b]
     (h1 : P ⊢ P' ∗ □?p Q) : P ⊢ <pers> (Ψ a ∗-∗ Ψ b) := calc
@@ -24,7 +24,7 @@ theorem rewrite_tac {SI : Type _} [SIdx SI] [BI PROP] [BIStepIndexed SI PROP] [S
   _ ⊢ <pers> <affine> Ψ a ≡[SI] Ψ b := persistently_affinely.2
   _ ⊢ <pers> (Ψ a ∗-∗ Ψ b) := persistently_mono (affinely_internalEq_wandIff _ _)
 
-theorem rewrite_tac_symm {SI : Type _} [SIdx SI] [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP]
+theorem rewrite_tac_symm {SI : stepindex (Type _)} [SIdx SI] [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP]
     {P P' Q : PROP} {A : Type _} [OFE SI A] {a b : A} {p}
     (Ψ : A → PROP) [ne : OFE.NonExpansive SI Ψ] [IntoInternalEq SI Q a b]
     (h_eq : P ⊢ P' ∗ □?p Q) : P ⊢ <pers> (Ψ b ∗-∗ Ψ a) :=

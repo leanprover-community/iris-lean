@@ -16,7 +16,7 @@ meta import Iris.Std.RocqPorting
 
 namespace Iris
 
-variable {SI : Type _} [instSI : SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 
 open Iris.Std ORA OFE LawfulSet LeibnizSet View
 
@@ -82,7 +82,7 @@ end SetBij
 
 variable (SI) in
 /-- The RA of monotone partial bijections over a set `S` of pairs. -/
-@[rocq_alias gset_bij, rocq_alias gset_bijO, rocq_alias gset_bijR, rocq_alias gset_bijUR]
+@[indexed, rocq_alias gset_bij, rocq_alias gset_bijO, rocq_alias gset_bijR, rocq_alias gset_bijUR]
 abbrev SetBij (S : Type _) [LawfulSet S (A × B)] := View (SetBij.viewRel (SI := SI) (S := S))
 
 namespace SetBij
