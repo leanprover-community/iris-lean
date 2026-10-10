@@ -33,7 +33,7 @@ It provides authoritative and fragmental ownership over heap elements with fract
 
 @[expose] public section
 
-variable {SI : Iris.stepindex (Type _)} [instSI : Iris.SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : Iris.SIdx SI]
 local stepindex SI
 
 open Iris

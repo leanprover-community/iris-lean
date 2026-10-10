@@ -18,7 +18,7 @@ The authoritative camera has 2 types of elements:
 
 @[expose] public section
 
-variable {SI : Iris.stepindex (Type _)} [instSI : Iris.SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : Iris.SIdx SI]
 local stepindex SI
 
 open Iris

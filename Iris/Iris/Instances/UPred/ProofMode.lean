@@ -11,7 +11,7 @@ public import Iris.ProofMode.Classes
 @[expose] public section
 
 
-variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
 local stepindex SI
 
 open Iris BI ORA ProofMode Std

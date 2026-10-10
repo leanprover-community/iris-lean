@@ -14,7 +14,7 @@ public meta import Iris.Std.RocqPorting
 @[expose] public section
 
 
-variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
 local stepindex SI
 
 namespace Iris

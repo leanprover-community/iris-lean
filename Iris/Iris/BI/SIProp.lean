@@ -14,7 +14,7 @@ public import Iris.Algebra.CMRA
 @[expose] public section
 
 
-variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
 local stepindex SI
 
 /-!

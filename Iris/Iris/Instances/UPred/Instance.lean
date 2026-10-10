@@ -15,7 +15,7 @@ public import Iris.BI.Lib.BUpdPlain
 @[expose] public section
 
 
-variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
 local stepindex SI
 
 section UPredInstance
@@ -48,7 +48,9 @@ instance OrdExtend0.of_finite [SIdxFinite SI] [URA M] [UORA M] : OrdExtend0 M wh
         obtain ⟨w, hw, ew⟩ := ordN_extend hm hv' hz
         exact ⟨w, hw, (ew.le SIdx.le_0_l).trans ez⟩
 
-instance OrdExtend0.of_isInc [URA M] [UORA M] [IsInc M] : OrdExtend0 M where
+/-- Tried after `of_finite`: for a finite step index `SIdxFinite` is found at once, while a failing
+`IsInc` search (an ORA that is not a CMRA, e.g. `IResUR`) explores the CMRA hierarchy first. -/
+instance (priority := low) OrdExtend0.of_isInc [URA M] [UORA M] [IsInc M] : OrdExtend0 M where
   ordN_extend0 {n} {x y} hv h := by
     obtain ⟨c, hc⟩ := OrdInc.ordN_incN h
     obtain ⟨z₁, z₂, hx, hz₁, -⟩ := extend (validN_of_le SIdx.le_0_l hv) hc

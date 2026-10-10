@@ -13,7 +13,7 @@ public import Iris.Std.GenMultiSets
 
 @[expose] public section
 
-variable {SI : Iris.stepindex (Type _)} [instSI : Iris.SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : Iris.SIdx SI]
 local stepindex SI
 
 /-! ## The multiset union ORA -/

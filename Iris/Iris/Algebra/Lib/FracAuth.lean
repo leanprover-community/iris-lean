@@ -20,7 +20,7 @@ fraction) and `◯F{q} a` (fragment with fraction). Splitting works differently 
 
 @[expose] public section
 
-variable {SI : Iris.stepindex (Type _)} [instSI : Iris.SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : Iris.SIdx SI]
 local stepindex SI
 
 open Iris OFE ORA UORA Auth Option OrdInc

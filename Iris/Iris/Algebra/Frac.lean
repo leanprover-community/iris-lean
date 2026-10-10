@@ -19,7 +19,7 @@ This version follows Iris Rocq in fixing the underlying type of fractions to be 
 
 @[expose] public section
 
-variable {SI : Iris.stepindex (Type _)} [instSI : Iris.SIdx SI]
+variable {SI : stepindex (Type _)} [instSI : Iris.SIdx SI]
 local stepindex SI
 
 namespace Rat

@@ -10,7 +10,7 @@ public import Iris.BI
 @[expose] public section
 
 
-variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
 local stepindex SI
 
 namespace Iris

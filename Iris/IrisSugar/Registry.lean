@@ -5,8 +5,9 @@ Authors: Markus de Medeiros
 -/
 module
 
-public meta import Lean
-public import Iris.Init
+public meta import Lean.ScopedEnvExtension
+public meta import Lean.Elab.Command
+public meta import Lean.Elab.Term
 
 /-!
 # Step Index Registry
@@ -39,6 +40,20 @@ It elaborates to a hole when no step index is set.
   match siExt.getState (← getEnv) with
   | .anonymous => Term.elabTerm (← `(_)) expectedType?
   | n => Term.elabTerm (mkIdent n) expectedType?
+
+/--
+`SI : stepindex (Type _)` marks `SI` as a step index binder, like `outParam` marks an output:
+`@[indexed]` declarations take theirs from the `local stepindex` section. It elaborates to its
+argument with a metadata marker (no constant to unfold), so it costs nothing in unification.
+-/
+@[expose] elab "stepindex " t:term:max : term => do
+  let e ← Term.elabType t
+  return .mdata (KVMap.empty.insert `iris.stepindex (.ofBool true)) e
+
+/-- Whether a binder type carries the `stepindex` marker. -/
+public meta def isStepIndexBinder : Expr → Bool
+  | .mdata m _ => m.getBool `iris.stepindex
+  | _ => false
 
 /-- Where an `@[indexed]` declaration takes its step index: the binder whose type is
 `stepindex (Type _)`. -/
@@ -89,7 +104,7 @@ meta initialize registerBuiltinAttribute {
       let mut r : Option IndexedInfo := none
       for i in [:xs.size] do
         let d ← xs[i]!.fvarId!.getDecl
-        if r.isNone && d.type.isAppOfArity `Iris.stepindex 1 then
+        if r.isNone && isStepIndexBinder d.type then
           r := some { name := d.userName, argIdx := i, arity := 0,
                       explicitPos := if d.binderInfo.isExplicit then some expl else none }
         if d.binderInfo.isExplicit then expl := expl + 1

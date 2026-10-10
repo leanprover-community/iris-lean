@@ -15,7 +15,7 @@ public import Iris.BI.SIProp
 
 
 
-variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
 local stepindex SI
 
 /-!

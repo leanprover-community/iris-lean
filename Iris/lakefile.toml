@@ -13,6 +13,13 @@ name = "batteries"
 scope = "leanprover-community"
 rev = "v4.34.0"
 
+# The meta code of `local stepindex` runs on every application and identifier of a sugared
+# section; precompiled, it runs natively instead of in the interpreter.
+[[lean_lib]]
+name = "IrisSugar"
+roots = ["IrisSugar.Registry", "IrisSugar.Elab"]
+precompileModules = true
+
 [[lean_lib]]
 name = "Iris"
 
