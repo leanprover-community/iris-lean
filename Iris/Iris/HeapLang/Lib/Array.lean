@@ -14,6 +14,8 @@ open BI Iris ProgramLogic
 
 @[expose] public section
 
+local stepindex Nat
+
 @[rocq_alias heap_lang.array_free]
 def arrayFree : Val := hl_val%
   rec freeN ptr n :=

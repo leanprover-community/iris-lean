@@ -13,6 +13,10 @@ import Iris.Std.TC
 
 public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 namespace Iris.BI
 
 open Iris.Algebra BigOpL BigOpS BIBase Iris.Std BigSepL LawfulSet
@@ -30,7 +34,7 @@ theorem bigSepS_mono {Φ Ψ : A → PROP} {X : S} (h : ∀ {x}, x ∈ X → Φ x
   bigOpS_gen_proper _ .rfl sep_mono fun hy => h hy
 
 @[rocq_alias big_sepS_ne]
-theorem bigSepS_ne {Φ Ψ : A → PROP} {X : S} {n : Nat} (h : ∀ {x}, x ∈ X → Φ x ≡{n}≡ Ψ x) :
+theorem bigSepS_ne [BIStepIndexed PROP] {Φ Ψ : A → PROP} {X : S} {n} (h : ∀ {x}, x ∈ X → Φ x ≡{n}≡ Ψ x) :
     ([∗set] x ∈ X, Φ x) ≡{n}≡ ([∗set] x ∈ X, Ψ x) :=
   bigOpS_dist fun hy => h hy
 
@@ -132,15 +136,14 @@ instance bigSepS_empty_affine_inst {Φ : A → PROP} :
 @[rocq_alias big_sepS_empty_timeless]
 instance bigSepS_empty_timeless_inst [Timeless (emp : PROP)] {Φ : A → PROP} :
     Timeless ([∗set] x ∈ (∅ : S), Φ x) where
-  timeless := (later_congr bigSepS_empty).1.trans <|
-  Timeless.timeless.trans <| except0_mono bigSepS_empty.2
+  timeless := (only0_congr bigSepS_empty).1.trans <| Timeless.timeless.trans bigSepS_empty.2
 
 @[rocq_alias big_sepS_timeless]
 theorem bigSepS_timeless [Timeless (emp : PROP)] {Φ : A → PROP} {X : S}
     (h : ∀ {x}, x ∈ X → Timeless (Φ x)) :
     Timeless ([∗set] x ∈ X, Φ x) where
-  timeless := bigOpS_closed (fun Q => ▷ Q ⊢ ◇ Q) Φ X Timeless.timeless
-    (fun hx hy => later_sep.1.trans <| (sep_mono hx hy).trans except0_sep.2)
+  timeless := bigOpS_closed (fun Q => <only0> Q ⊢ Q) Φ X Timeless.timeless
+    (fun hx hy => only0_sep.mp.trans (sep_mono hx hy))
     (fun hm => (h hm).timeless)
 
 @[rocq_alias big_sepS_timeless']
@@ -249,15 +252,15 @@ theorem bigSepS_elem_of_acc_impl {Φ : A → PROP} {X : S} {x : A} (h : x ∈ X)
 @[rocq_alias big_sepS_persistently]
 theorem bigSepS_persistently [BIAffine PROP] {Φ : A → PROP} {X : S} :
     (<pers> ([∗set] y ∈ X, Φ y)) ⊣⊢ [∗set] y ∈ X, <pers> (Φ y) :=
-  letI := MonoidHomomorphism.ofEq persistently_ne
+  letI := MonoidHomomorphism.ofEq
     (BiEntails.to_eq persistently_sep) (BiEntails.to_eq persistently_emp_affine)
   BiEntails.of_eq <| BigOpS.hom this Φ X
 
 @[rocq_alias big_sepS_later]
-theorem bigSepS_later [BIAffine PROP] {Φ : A → PROP} {X : S} :
+theorem bigSepS_later [BILaterFinite PROP] [BIAffine PROP] {Φ : A → PROP} {X : S} :
     (▷ [∗set] y ∈ X, Φ y) ⊣⊢ [∗set] y ∈ X, ▷ Φ y :=
-  letI := MonoidHomomorphism.ofEq later_ne
-    (BiEntails.to_eq later_sep) (BiEntails.to_eq later_emp)
+  letI := MonoidHomomorphism.ofEq
+    (BiEntails.to_eq (later_sep)) (BiEntails.to_eq later_emp)
   BiEntails.of_eq <| BigOpS.hom this Φ X
 
 @[rocq_alias big_sepS_later_2]
@@ -266,11 +269,11 @@ theorem bigSepS_later_2 {Φ : A → PROP} {X : S} :
   bigSepS_elements.1.trans <| bigSepL_later_2.trans <| later_mono bigSepS_elements.2
 
 @[rocq_alias big_sepS_laterN]
-theorem bigSepS_laterN [BIAffine PROP] {Φ : A → PROP} {n : Nat} {X : S} :
+theorem bigSepS_laterN [BILaterFinite PROP] [BIAffine PROP] {Φ : A → PROP} {n : Nat} {X : S} :
     (▷^[n] [∗set] y ∈ X, Φ y) ⊣⊢ [∗set] y ∈ X, ▷^[n] Φ y :=
   match n with
   | 0 => .rfl
-  | _ + 1 => (later_congr bigSepS_laterN).trans bigSepS_later
+  | _ + 1 => (later_congr bigSepS_laterN).trans (bigSepS_later)
 
 @[rocq_alias big_sepS_laterN_2]
 theorem bigSepS_laterN_2 {Φ : A → PROP} {n : Nat} {X : S} :
@@ -395,14 +398,12 @@ theorem bigSepS_union_elim {Φ : A → PROP} {X Y : S} [∀ x, TCOr (Affine (Φ 
 
 @[rocq_alias big_sepS_insert_2]
 theorem bigSepS_insert_elim {Φ : A → PROP} {X : S} {x : A}
-    [TCOr (Affine (Φ x)) (Absorbing (Φ x))]
     [∀ y, TCOr (Affine (Φ y)) (Absorbing (Φ y))] :
     Φ x ⊢ ([∗set] y ∈ X, Φ y) -∗ ([∗set] y ∈ insert x X, Φ y) := by
   exact bigSepS_singleton.2.trans (wand_entails bigSepS_union_elim)
 
 @[rocq_alias big_sepS_insert_2']
 theorem bigSepS_insert_elim_wand {Φ : A → PROP} {X : S} {x : A}
-    [TCOr (Affine (Φ x)) (Absorbing (Φ x))]
     [∀ y, TCOr (Affine (Φ y)) (Absorbing (Φ y))] :
     ⊢ Φ x -∗ ([∗set] y ∈ X, Φ y) -∗ ([∗set] y ∈ X ∪ {x}, Φ y) := by
   rw [union_comm]

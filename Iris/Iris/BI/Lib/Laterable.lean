@@ -12,6 +12,10 @@ public import Iris.Std.TC
 
 @[expose] public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 namespace Iris
 
 section Laterable
@@ -19,11 +23,11 @@ open BI OFE Iris.Std ProofMode
 
 /-- Require that the proposition `P` is laterable. -/
 @[rocq_alias Laterable]
-class Laterable [BI PROP] (P : PROP) where
+class Laterable [BI.BIBase PROP] (P : PROP) where
   laterable : P ⊢ ∃ Q, ▷ Q ∗ □ (▷ Q -∗ ◇ P)
 
 @[rocq_alias IntoLaterable]
-class IntoLaterable [BI PROP] (P : PROP) (Q : outParam PROP) where
+class IntoLaterable [BI.BIBase PROP] (P : PROP) (Q : outParam PROP) where
   into_laterable : P ⊢ Q
   into_laterable_result_laterable : Laterable Q
 
@@ -57,7 +61,7 @@ instance persistent_laterable [BI PROP] [BIAffine PROP] (P : PROP) [Persistent P
     Laterable P := intuitionistic_laterable _
 
 @[rocq_alias sep_laterable]
-instance sep_laterable [BI PROP] (P Q : PROP) [instP : Laterable P] [instQ : Laterable Q] :
+instance sep_laterable [BI PROP] [BILaterFinite PROP] (P Q : PROP) [instP : Laterable P] [instQ : Laterable Q] :
     Laterable iprop(P ∗ Q) where
   laterable := by
     iintro ⟨HP, HQ⟩
@@ -66,7 +70,8 @@ instance sep_laterable [BI PROP] (P Q : PROP) [instP : Laterable P] [instQ : Lat
     iexists iprop(P' ∗ Q')
     isplitl
     · iframe
-    · iintro !> ⟨HP', HQ'⟩
+    · iintro !> HPQ'
+      icases later_sep.1 $$ HPQ' with ⟨HP', HQ'⟩
       isplitl [HP']
       · iapply HP; iassumption
       · iapply HQ; iassumption
@@ -96,7 +101,7 @@ theorem laterable_congr [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) (inst : Laterabl
     exact except0_mono h.mp
 
 @[rocq_alias big_sep_sepL_laterable]
-theorem big_sep_sepL_laterable [BI PROP] (Q : PROP) (Ps : List PROP)
+theorem big_sep_sepL_laterable [BI PROP] [BILaterFinite PROP] (Q : PROP) (Ps : List PROP)
     (instQ : Laterable Q) (instPs : ∀ P ∈ (Ps : List PROP), Laterable P) :
     Laterable iprop(Q ∗ [∗] Ps) := by
   induction Ps generalizing Q instQ with
@@ -110,7 +115,7 @@ theorem big_sep_sepL_laterable [BI PROP] (Q : PROP) (Ps : List PROP)
     exact ih _ (sep_laterable Q P) (fun R hR => instPs R (.tail _ hR))
 
 @[rocq_alias big_sepL_laterable]
-instance big_sepL_laterable [BI PROP] (Ps : List PROP)
+instance big_sepL_laterable [BI PROP] [BILaterFinite PROP] (Ps : List PROP)
     [instEmp : Laterable (emp : PROP)] [instPs : TCForall Laterable Ps] :
     Laterable iprop([∗] Ps) := by
   apply laterable_congr emp_sep
@@ -118,11 +123,11 @@ instance big_sepL_laterable [BI PROP] (Ps : List PROP)
   exact forall_TCForall.mp instPs
 
 @[rocq_alias make_laterable]
-def make_laterable [BI PROP] (Q : PROP) : PROP :=
+def make_laterable [BI.BIBase PROP] (Q : PROP) : PROP :=
   iprop(∃ P, ▷ P ∗ □ (▷ P -∗ ◇ Q))
 
 @[rocq_alias make_laterable_ne]
-instance make_laterable_ne [BI PROP] : NonExpansive <| make_laterable (PROP := PROP) where
+instance make_laterable_ne [BI PROP] [BIStepIndexed PROP] : NonExpansive <| make_laterable (PROP := PROP) where
   ne := by
     intro n P Q HPQ
     unfold make_laterable
@@ -151,20 +156,21 @@ theorem make_laterable_except_0 [BI PROP] {Q : PROP} :
   iassumption
 
 @[rocq_alias make_laterable_sep]
-theorem make_laterable_sep [BI PROP] {Q1 Q2 : PROP} :
+theorem make_laterable_sep [BI PROP] [BILaterFinite PROP] {Q1 Q2 : PROP} :
     make_laterable Q1 ∗ make_laterable Q2 ⊢ make_laterable iprop(Q1 ∗ Q2) := by
   iintro ⟨HQ1, HQ2⟩
   unfold make_laterable
   icases HQ1 with ⟨%P1, HP1, #HQ1⟩
   icases HQ2 with ⟨%P2, HP2, #HQ2⟩
   icombine HP1 HP2 as HP
-  iintro {$HP} !> ⟨HP1, HP2⟩
+  iintro {$HP} !> HP
+  icases later_sep.1 $$ HP with ⟨HP1, HP2⟩
   icases HQ1 $$ HP1 with >$
   icases HQ2 $$ HP2 with >$
   itrivial
 
 @[rocq_alias make_laterable_wand]
-theorem make_laterable_wand [BI PROP] {Q1 Q2 : PROP} :
+theorem make_laterable_wand [BI PROP] [BILaterFinite PROP] {Q1 Q2 : PROP} :
     make_laterable iprop(Q1 -∗ Q2) ⊢ make_laterable Q1 -∗ make_laterable Q2 := by
   iintro HQ HQ1
   icases make_laterable_sep $$ [$HQ $HQ1 //] with HQ
@@ -244,7 +250,7 @@ instance (priority := default - 100) into_laterable_fallback [BI PROP] {P : PROP
   into_laterable_result_laterable := later_laterable P
 
 @[rocq_alias modality_make_laterable, rocq_alias modality_make_laterable_mixin]
-def modality_make_laterable [BI PROP] [Timeless (emp : PROP)] : Modality PROP PROP where
+def modality_make_laterable [BI PROP] [BILaterFinite PROP] [Timeless (emp : PROP)] : Modality PROP PROP where
   M := make_laterable
   action
   | true => .id
@@ -260,8 +266,8 @@ def modality_make_laterable [BI PROP] [Timeless (emp : PROP)] : Modality PROP PR
   sep := make_laterable_sep
 
 @[rocq_alias from_modal_make_laterable]
-instance fromModal_make_laterable [BI PROP] [Timeless (emp : PROP)] io (P : PROP) :
-    FromModal io modality_make_laterable True
+instance fromModal_make_laterable [BI PROP] [BILaterFinite PROP] [Timeless (emp : PROP)] io (P : PROP) :
+    FromModal io (modality_make_laterable) True
       (make_laterable P) (make_laterable P) P where
   from_modal := by
     iintro %_ HP

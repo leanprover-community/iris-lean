@@ -13,6 +13,8 @@ namespace Iris.HeapLang
 
 public section
 
+local stepindex Nat
+
 variable [HeapLangGS hlc GF]
 
 @[rocq_alias heap_lang.nondet_bool]

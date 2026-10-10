@@ -79,7 +79,7 @@ private def RevertState.revertLeanPropHyp
 
 /-- Revert a Lean non-`Prop` local by turning the current goal into a forall. -/
 private def RevertState.revertLeanForallHyp
-    (st : @RevertState u prop bi origE origGoal) (f : FVarId) (α : Q(Sort v)) :
+    (st : @RevertState u prop bi origE origGoal) (f : FVarId) {w : Level} (α : Q(Sort w)) :
     ProofModeM (@RevertState u prop bi origE origGoal) := do
   let { e, hyps, goal, reverted, pf } := st
   let x : Q($α) := mkFVar f
@@ -100,8 +100,8 @@ private def RevertState.revertLeanHyp
     (st : @RevertState u prop bi origE origGoal) (f : FVarId) :
     ProofModeM (@RevertState u prop bi origE origGoal) := do
   let ldecl ← st.hyps.checkRemovableFVar "irevert" f none st.reverted.contains
-  let v : Level ← Meta.getLevel ldecl.type
-  have α : Q(Sort v) := ldecl.type
+  let w : Level ← Meta.getLevel ldecl.type
+  have α : Q(Sort w) := ldecl.type
   if (← Meta.isProp α) && !st.goal.containsFVar f then
     have φ : Q(Prop) := α
     st.revertLeanPropHyp f φ

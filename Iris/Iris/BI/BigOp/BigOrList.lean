@@ -9,6 +9,10 @@ public import Iris.BI.BigOp.BigOp
 import Iris.BI.DerivedLawsLater
 
 public section
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 namespace Iris.BI
 
 open Iris.Algebra BigOpL BIBase
@@ -60,7 +64,7 @@ theorem bigOrL_eq_of_forall_eq {Φ Ψ : Nat → A → PROP} {l : List A} (h : �
   bigOpL_eq_of_forall_eq h
 
 @[rocq_alias big_orL_ne]
-theorem bigOrL_dist {Φ Ψ : Nat → A → PROP} {l : List A} {n : Nat}
+theorem bigOrL_dist [BIStepIndexed PROP] {Φ Ψ : Nat → A → PROP} {l : List A} {n}
     (h : ∀ {k x}, l[k]? = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([∨list] k ↦ x ∈ l, Φ k x) ≡{n}≡ [∨list] k ↦ x ∈ l, Ψ k x :=
   bigOpL_dist h
@@ -140,18 +144,18 @@ theorem bigOrL_flatMap {B : Type _} (f : A → List B) {Φ : B → PROP} {l : Li
 @[rocq_alias big_orL_persistently]
 theorem bigOrL_persistently [BIPersistentlyExist PROP] {Φ : Nat → A → PROP} {l : List A} :
     (<pers> [∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, <pers> Φ k x :=
-  letI := MonoidHomomorphism.ofEq (PROP := PROP) persistently_ne
+  letI := MonoidHomomorphism.ofEq (PROP := PROP)
     (BiEntails.to_eq persistently_or) (BiEntails.to_eq ⟨persistently_elim, false_elim⟩)
   BiEntails.of_eq <| bigOpL_hom Φ l
 
 @[rocq_alias big_orL_later]
-theorem bigOrL_later {Φ : Nat → A → PROP} {l : List A} (hne : l ≠ []) :
+theorem bigOrL_later [BILaterFinite PROP] {Φ : Nat → A → PROP} {l : List A} (hne : l ≠ []) :
     (▷ [∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, ▷ Φ k x :=
-  letI := WeakMonoidHomomorphism.ofEq (PROP := PROP) later_ne (BiEntails.to_eq later_or)
+  letI := WeakMonoidHomomorphism.ofEq (PROP := PROP) (BiEntails.to_eq (later_or))
   BiEntails.of_eq <| bigOpL_hom_weak Φ hne
 
 @[rocq_alias big_orL_laterN]
-theorem bigOrL_laterN {Φ : Nat → A → PROP} {l : List A} {n : Nat} (hne : l ≠ []) :
+theorem bigOrL_laterN [BILaterFinite PROP] {Φ : Nat → A → PROP} {l : List A} {n : Nat} (hne : l ≠ []) :
     (▷^[n] [∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, ▷^[n] Φ k x :=
   match n with
   | 0 => .rfl
@@ -199,14 +203,14 @@ instance bigOrL_persistent_inst {Φ : Nat → A → PROP} {l : List A} [∀ k x,
 @[rocq_alias big_orL_nil_timeless]
 instance bigOrL_nil_timeless {Φ : Nat → A → PROP} :
     Timeless ([∨list] k ↦ x ∈ ([] : List A), Φ k x) where
-  timeless := by simpa only [bigOpL, except0] using or_intro_l
+  timeless := by simpa only [bigOpL] using (Timeless.timeless (P := (iprop(False) : PROP)))
 
 @[rocq_alias big_orL_timeless]
 theorem bigOrL_timeless {Φ : Nat → A → PROP} {l : List A}
     (h : ∀ {k x}, l[k]? = some x → Timeless (Φ k x)) :
     Timeless ([∨list] k ↦ x ∈ l, Φ k x) where
-  timeless := bigOpL_closed (P := fun Q => ▷ Q ⊢ ◇ Q) or_intro_l
-    (later_or.1.trans <| or_mono · ·|>.trans except0_or.2) (h ·|>.timeless)
+  timeless := bigOpL_closed (P := fun Q => <only0> Q ⊢ Q) Timeless.timeless
+    (only0_or.mp.trans <| or_mono · ·) (h ·|>.timeless)
 
 @[rocq_alias big_orL_timeless']
 instance bigOrL_timeless_inst {Φ : Nat → A → PROP} {l : List A} [∀ k x, Timeless (Φ k x)] :

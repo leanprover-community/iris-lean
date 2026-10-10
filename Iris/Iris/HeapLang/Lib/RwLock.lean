@@ -16,6 +16,8 @@ open BI OFE
 
 @[expose] public section
 
+local stepindex Nat
+
 /-- A general interface for a reader-writer lock. -/
 @[rocq_alias heap_lang.rwlock]
 structure RwLock (GF : BundledGFunctors) [IrisGS_gen hlc Exp GF] where

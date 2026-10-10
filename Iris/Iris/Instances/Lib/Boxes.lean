@@ -15,9 +15,11 @@ public import Iris.Std.Namespaces
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
-open BI CMRA Agree OFE Iris.UPred IProp Iris.Std ProofMode COFE Auth ExclAuth Excl PartialMap BigSepM
+open BI ORA Agree OFE Iris.UPred IProp Iris.Std ProofMode COFE Auth ExclAuth Excl PartialMap BigSepM
 
 abbrev BoolO := DiscreteO Bool
 
@@ -51,7 +53,7 @@ instance box_own_auth_timeless (γ : SliceName) (a : Auth (Option (Excl BoolO)))
 
 @[rocq_alias box_own_prop]
 def box_own_prop (γ : SliceName) (P : IProp GF) : IProp GF :=
-  iOwn (F := BoxF) γ (UCMRA.unit, some (toAgree (Later.next P)))
+  iOwn (F := BoxF) γ (unit, some (toAgree (Later.next P)))
 
 instance box_own_prop_persistent (γ : SliceName) (P : IProp GF) :
     Persistent (box_own_prop γ P) := by
@@ -154,7 +156,7 @@ theorem slice_insert_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   unfold box
   iintro ⟨%Φ, #Heq, H⟩
   imod (iOwn_alloc_cofinite (F := BoxF) ((((●E (⟨false⟩ : BoolO)), none) • ((◯E (⟨false⟩ : BoolO)), none)) •
-        (UCMRA.unit, some (toAgree (Later.next Q)))) ((toList f).map Prod.fst)) with ⟨%γ, %Hγ, Hown⟩
+        (unit, some (toAgree (Later.next Q)))) ((toList f).map Prod.fst)) with ⟨%γ, %Hγ, Hown⟩
   · exact ⟨ExclAuth.valid, Agree.toAgree_valid⟩
   have hfresh : get? f γ = none := by
     rw [Option.eq_none_iff_forall_not_mem]
@@ -190,7 +192,7 @@ theorem slice_delete_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   unfold slice box
   iintro ⟨⟨#Hprop, #Hinv⟩, %Φ, #Heq, Hbig⟩
   iexists iprop([∗map] γ' ↦ _x ∈ delete f γ, Φ γ')
-  icases bigSepM_laterN $$ Hbig with Hbig
+  icases (bigSepM_laterN) $$ Hbig with Hbig
   icases bigSepM_delete Hf $$ Hbig with ⟨⟨Hfrag, #Hprop', #Hsliceinv⟩, Hbig⟩
   imodintro
   rw [← (laterN_sep _).to_eq]
@@ -218,7 +220,7 @@ theorem slice_fill {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     |={E}=> ▷?q box N (insert f γ true) P := by
   unfold slice box
   iintro ⟨⟨#Hprop, #Hinv⟩, HQ, %Φ, #Heq, Hbig⟩
-  icases bigSepM_laterN $$ Hbig with Hbig
+  icases (bigSepM_laterN) $$ Hbig with Hbig
   icases bigSepM_delete Hf $$ Hbig with ⟨⟨Hfrag, Hprop', Hsliceinv⟩, Hbig⟩
   imod inv_acc HE $$ Hinv with ⟨Hsinv, Hclose⟩
   unfold slice_inv; icases Hsinv with ⟨%b, >Hauth, Hb⟩
@@ -227,7 +229,7 @@ theorem slice_fill {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   imod Hclose $$ [Hauth HQ] with ⟨-⟩
   · inext; iexists true; simp only [ite_true]; iframe
   imodintro
-  icases bigSepM_laterN $$ Hbig with Hbig
+  icases (bigSepM_laterN) $$ Hbig with Hbig
   inext
   iexists Φ
   rw [(bigSepM_insert_delete.trans (bigSepM_delete (Φ := fun k _ => Φ k) Hf).symm).to_eq]
@@ -244,7 +246,7 @@ theorem slice_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     |={E}=> ▷ Q ∗ (▷?q box N (insert f γ false) P) := by
   unfold slice box
   iintro ⟨⟨#Hprop, #Hinv⟩, %Φ, #Heq, Hbig⟩
-  simp only [bigSepM_laterN.to_eq]
+  simp only [(bigSepM_laterN).to_eq]
   icases bigSepM_delete Hf $$ Hbig with ⟨⟨Hfrag, Hprop', Hsliceinv⟩, Hbig⟩
   imod inv_acc HE $$ Hinv with ⟨Hsinv, Hclose⟩
   unfold slice_inv
@@ -257,7 +259,7 @@ theorem slice_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   imodintro
   simp only [ite_true]; iframe Hb
   iexists Φ
-  icases bigSepM_laterN $$ Hbig with Hbig
+  icases (bigSepM_laterN) $$ Hbig with Hbig
   inext
   rw [(bigSepM_insert_delete.trans (bigSepM_delete (Φ := fun k _ => Φ k) Hf).symm).to_eq]
   iframe Heq
@@ -315,7 +317,7 @@ theorem box_fill {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     · inext; iapply internalEq_iff $$ Heq
     icases later_iff $$ Hiff with ⟨Hif, -⟩
     icases Hif $$ HP with HP
-    icases bigSepM_later $$ HP with HP
+    icases (bigSepM_later) $$ HP with HP
     icombine Hbig HP as Hbig
     icases bigSepM_sep_eq $$ Hbig with Hbig
     rw [bigSepM_map (f := fun x => true)]
@@ -357,7 +359,7 @@ theorem box_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     simp only [ite_true]; iframe Hb HγΦ Hfrag Hinv
   · imodintro
     isplitl [HΦ]
-    · icases bigSepM_later $$ HΦ with HΦ
+    · icases (bigSepM_later) $$ HΦ with HΦ
       inext
       icases internalEq_iff $$ Heq with ⟨-, Himpl⟩
       iapply Himpl $$ HΦ

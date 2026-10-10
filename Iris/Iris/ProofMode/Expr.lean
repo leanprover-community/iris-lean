@@ -216,9 +216,9 @@ inductive HypsOrder where
   | topToBottom
   | bottomToTop
 
-partial def Hyps.spatialIVarIds {u prop bi} {s} (hyps : @Hyps u prop bi s) (ord : HypsOrder) :
+partial def Hyps.spatialIVarIds {u prop bi} {s} (hyps : @Hyps u prop bi s) (le : HypsOrder) :
     List IVarId :=
-  spatialIVarIdsAux hyps ord []
+  spatialIVarIdsAux hyps le []
 where
   spatialIVarIdsAux : ∀ {s}, @Hyps u prop bi s → HypsOrder → List IVarId → List IVarId
   | _, .emp _, _, acc => acc
@@ -229,8 +229,8 @@ where
     spatialIVarIdsAux rhs .bottomToTop (spatialIVarIdsAux lhs .bottomToTop acc)
 
 partial def Hyps.intuitionisticIVarIds {u prop bi} {s} (hyps : @Hyps u prop bi s)
-    (ord : HypsOrder) : List IVarId :=
-  intuitionisticIVarIdsAux hyps ord []
+    (le : HypsOrder) : List IVarId :=
+  intuitionisticIVarIdsAux hyps le []
 where
   intuitionisticIVarIdsAux : ∀ {s}, @Hyps u prop bi s → HypsOrder → List IVarId → List IVarId
   | _, .emp _, _, acc => acc
@@ -604,6 +604,17 @@ structure IrisGoal where
   e : Q($prop)
   hyps : Hyps bi e
   goal : Q($prop)
+
+/-- Recover the `BI` instance behind a `BIBase` instance (as found in the proof-mode classes,
+which only take `BIBase`): either it is syntactically `BI.toBIBase bi`, or a `BI` instance
+is synthesized and checked to project to it. -/
+def parseBIBase? (biBase : Expr) : MetaM (Option Expr) := do
+  let biBase ← instantiateMVars biBase
+  if biBase.isAppOfArity ``BI.toBIBase 2 then return some biBase.appArg!
+  let_expr BI.BIBase prop ← (← whnfR (← inferType biBase)) | return none
+  let some bi ← synthInstance? (← mkAppM ``BI #[prop]) | return none
+  unless ← isDefEq (← mkAppOptM ``BI.toBIBase #[prop, bi]) biBase do return none
+  return some bi
 
 def isIrisGoal (expr : Expr) : Bool := isAppOfArity expr ``Entails' 4
 

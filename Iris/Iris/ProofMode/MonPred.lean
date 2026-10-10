@@ -12,12 +12,16 @@ public import Iris.ProofMode.SynthInstance
 
 @[expose] public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 namespace Iris.ProofMode
 open BI Iris.Std MonPred
 
 section Classes
 
-variable {I : BiIndex} {PROP : Type _} [bi : BI PROP]
+variable {I : BiIndex} {PROP : Type _} [BI.BIBase PROP]
 
 inductive MakeMonPredAt.Kind where
   -- Known index `i`, and the proposition `𝓟` is computed by evaluating `P` at `i`
@@ -69,6 +73,12 @@ class FrameMonPredAt (p : Bool) (i : I.car) (𝓡 : PROP) (P : MonPred I PROP)
   frame_monPred_at : □?p 𝓡 ∗ 𝓠 ⊢ P.monPred_at i
 export FrameMonPredAt (frame_monPred_at)
 
+end Classes
+
+section ModalityObjectively
+
+variable {I : BiIndex} {PROP : Type _} [BI PROP]
+
 /-! ### Modality -/
 
 @[rocq_alias modality_objectively, rocq_alias modality_objectively_mixin]
@@ -80,7 +90,7 @@ def modality_objectively : Modality (MonPred I PROP) (MonPred I PROP) where
   mono := monPred_objectively_mono
   sep := monPred_objectively_sep_2 _ _
 
-end Classes
+end ModalityObjectively
 
 section BIInstances
 
@@ -1063,7 +1073,7 @@ end BIInstances
 
 section SbiInstances
 
-variable {I : BiIndex} {PROP : Type _} [Sbi PROP]
+variable {I : BiIndex} {PROP : Type _} [BI PROP] [BIStepIndexed PROP] [Sbi PROP] [SIdxFinite SI]
 
 /-! ### IntoInternalEq -/
 
@@ -1076,7 +1086,7 @@ instance intoInternalEq_monPred_at {A} [OFE A] (x y : A)
 /-! ### FromForall -/
 
 @[rocq_alias from_forall_monPred_at_plainly]
-instance fromForall_monPred_at_plainly (P : MonPred I PROP) (Φ : I.car → PROP) (i : I.car)
+instance fromForall_monPred_at_plainly [BIPlainly PROP] (P : MonPred I PROP) (Φ : I.car → PROP) (i : I.car)
     [instMP : ∀ j, MakeMonPredAt .indexToProp j P (Φ j)] :
     FromForall (iprop(■ P).monPred_at i) (fun j => iprop(■ (Φ j))) where
   from_forall := (forall_mono fun j => plainly_mono (instMP j).make_monPred_at.mpr).trans
@@ -1085,7 +1095,7 @@ instance fromForall_monPred_at_plainly (P : MonPred I PROP) (Φ : I.car → PROP
 /-! ### IntoForall -/
 
 @[rocq_alias into_forall_monPred_at_plainly]
-instance intoForall_monPred_at_plainly (P : MonPred I PROP) (Φ : I.car → PROP) (i : I.car)
+instance intoForall_monPred_at_plainly [BIPlainly PROP] (P : MonPred I PROP) (Φ : I.car → PROP) (i : I.car)
     [instMP : ∀ j, MakeMonPredAt .indexToProp j P (Φ j)] :
     IntoForall (iprop(■ P).monPred_at i) (fun j => iprop(■ (Φ j))) where
   into_forall := (monPred_at_plainly i P).mp.trans

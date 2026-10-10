@@ -6,11 +6,15 @@ Authors: Sergei Stepanenko
 module
 
 public import Iris.Algebra.OFE
+public import Iris.Algebra.StepIndexFinite
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
 namespace Iris
+
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
 
 open OFE COFE
 
@@ -18,7 +22,7 @@ namespace Completion.Raw
 
 variable {α : Type u} [OFE α]
 
-@[rocq_alias chain_equiv]
+@[indexed, rocq_alias chain_equiv]
 def Equiv (x y : Chain α) : Prop :=
   ∀ n, x n ≡{n}≡ y n
 
@@ -27,10 +31,11 @@ theorem equiv_equivalence : Equivalence (Equiv (α := α)) where
   symm h _ := (h _).symm
   trans h₁ h₂ _ := (h₁ _).trans (h₂ _)
 
+@[indexed]
 def quotientSetoid : Setoid (Chain α) := ⟨Equiv, equiv_equivalence⟩
 
-@[rocq_alias chain_dist]
-def dist (n : Nat) (x y : Chain α) : Prop :=
+@[indexed, rocq_alias chain_dist]
+def dist (n : SI) (x y : Chain α) : Prop :=
   ∀ m, m ≤ n → x m ≡{m}≡ y m
 
 theorem dist_equivalence : Equivalence (dist (α := α) n) where
@@ -38,12 +43,12 @@ theorem dist_equivalence : Equivalence (dist (α := α) n) where
   symm h _ hm := (h _ hm).symm
   trans h₁ h₂ _ hm := (h₁ _ hm).trans (h₂ _ hm)
 
-theorem dist_lt {n m : Nat} {x y : Chain α} (h : dist n x y) (hlt : m < n) :
+theorem dist_lt {n m} {x y : Chain α} (h : dist n x y) (hlt : m < n) :
     dist m x y :=
-  fun k hk => h k (Nat.le_trans hk (Nat.le_of_lt hlt))
+  fun k hk => h k (SIdx.le_trans hk (SIdx.lt_le_incl hlt))
 
 theorem equiv_iff_dist (x y : Chain α) : Equiv x y ↔ ∀ n, dist n x y :=
-  ⟨fun h _ _ _ => h _, fun h n => h n n (Nat.le_refl n)⟩
+  ⟨fun h _ _ _ => h _, fun h n => h n n SIdx.le_refl⟩
 
 end Completion.Raw
 
@@ -55,6 +60,7 @@ instance instInhabited [OFE α] [Inhabited α] : Inhabited (Chain α) :=
 
 end Chain
 
+@[indexed]
 def Completion (α : Type u) [OFE α] :=
   Quotient (Completion.Raw.quotientSetoid (α := α))
 
@@ -105,6 +111,7 @@ theorem dist_mk {n} {x y : Chain α} :
     mk x ≡{n}≡ mk y ↔ Raw.dist n x y :=
   Iff.rfl
 
+@[indexed]
 def unit : α -n> Completion α where
   f a := mk (Chain.const a)
   ne.ne _ _ _ h := dist_mk.mpr fun _ hm => h.le hm
@@ -116,16 +123,16 @@ instance [Inhabited α] : Inhabited (Completion α) := ⟨unit default⟩
 
 theorem exists_limit (c : Chain (Completion α)) :
   ∃ x : Completion α, ∀ n, x ≡{n}≡ c n := by
-  have hrep (n : Nat) : ∃ d : Chain α, mk d = c n :=
+  have hrep (n) : ∃ d : Chain α, mk d = c n :=
     ind (fun d => ⟨d, rfl⟩) (c n)
-  let d (n : Nat) : Chain α := Classical.choose (hrep n)
-  have hd (n : Nat) : mk (d n) = c n := Classical.choose_spec (hrep n)
+  let d (n) : Chain α := Classical.choose (hrep n)
+  have hd (n) : mk (d n) = c n := Classical.choose_spec (hrep n)
   let diagonal : Chain α := {
     chain := fun n => d n n
     cauchy := by
       intro n i hni
       refine (d i).cauchy hni |>.trans ?_
-      refine dist_mk.mp ?_ n (Nat.le_refl n)
+      refine dist_mk.mp ?_ n SIdx.le_refl
       rw [hd i, hd n]
       exact c.cauchy hni
   }
@@ -133,7 +140,7 @@ theorem exists_limit (c : Chain (Completion α)) :
   rw [← hd n]
   refine dist_mk.mpr fun m hmn => ?_
   change d m m ≡{m}≡ d n m
-  refine (dist_mk.mp ?_ m (Nat.le_refl m)).symm
+  refine (dist_mk.mp ?_ m SIdx.le_refl).symm
   rw [hd n, hd m]
   exact c.cauchy hmn
 
@@ -142,18 +149,22 @@ noncomputable def diagonal (c : Chain (Completion α)) : Completion α :=
   Classical.choose (exists_limit c)
 
 @[rocq_alias chain_cofe]
-noncomputable instance instIsCOFE : IsCOFE (Completion α) where
+noncomputable instance instIsCOFE [SIdxFinite] : IsCOFE (Completion α) where
   compl := diagonal
-  conv_compl {n c} := Classical.choose_spec (exists_limit c) n
+  conv_compl {n} {c} := Classical.choose_spec (exists_limit c) n
+  lbcompl := (·.elim)
+  conv_lbcompl := (·.elim)
+  lbcompl_ne := (·.elim)
 
+@[indexed]
 def complete [IsCOFE α] : Completion α -n> α where
   f := lift COFE.compl fun x y h => OFE.eq_dist_2 fun n =>
     (COFE.conv_compl (c := x)).trans ((h n).trans (COFE.conv_compl (c := y)).symm)
-  ne.ne {n x y} h := by
+  ne.ne {n} {x y} h := by
     induction x, y using ind₂ with
     | mk c d =>
       exact (COFE.conv_compl (c := c)).trans
-        ((dist_mk.mp h n (Nat.le_refl n)).trans (COFE.conv_compl (c := d)).symm)
+        ((dist_mk.mp h n SIdx.le_refl).trans (COFE.conv_compl (c := d)).symm)
 
 @[simp]
 theorem complete_mk [IsCOFE α] (c : Chain α) : complete (mk c) = COFE.compl c :=
@@ -177,11 +188,11 @@ def idemp [IsCOFE α] : OFE.Iso α (Completion α) where
     intro x
     exact COFE.compl_const x
 
-@[rocq_alias chainO_map]
+@[indexed, rocq_alias chainO_map]
 def map {β : Type v} [OFE β] (f : α -n> β) : Completion α -n> Completion β where
   f := OFE.ofQuotient.map (s := Raw.quotientSetoid) (s' := Raw.quotientSetoid)
     (Chain.map f) fun _ _ h n => f.ne.ne (h n)
-  ne.ne {n x y} h := by
+  ne.ne {n} {x y} h := by
     induction x, y using ind₂ with
     | mk c d =>
       refine dist_mk.mpr fun m hm => ?_
@@ -211,14 +222,13 @@ theorem map_ext_ne {β : Type v} [OFE β] (f g : α -n> β) (x : Completion α) 
     (h : ∀ a, f a ≡{n}≡ g a) : map f x ≡{n}≡ map g x := by
   induction x using ind with
   | mk c =>
-    refine dist_mk.mpr fun m hm => ?_
+    refine (dist_mk).mpr fun m hm => ?_
     exact (h (c m)).le hm
 
 @[rocq_alias chain_map_ext]
 theorem map_ext {β : Type v} [OFE β] (f g : α -n> β) (x : Completion α)
     (h : ∀ a, f a = g a) : map f x = map g x := by
-  apply OFE.eq_dist_2
-  intro n
+  refine OFE.eq_dist_2 fun n => ?_
   exact map_ext_ne f g x fun a => (h a).dist
 
 @[rocq_alias chainO_map_ne]

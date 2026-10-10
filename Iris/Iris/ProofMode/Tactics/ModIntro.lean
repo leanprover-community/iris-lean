@@ -182,17 +182,24 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop))
   (k : ∀ {prop' bi' P}, @Hyps u prop' bi' P → ∀ Q : Q($prop'), ProofModeM Q($P ⊢ $Q) := addBIGoal)
    : ProofModeM (Q($e ⊢ $goal)) := do
     let prop' : Q(Type u) ← mkFreshExprMVarQ q(Type u)
-    let bi' ← mkFreshExprMVarQ q(BI $prop')
+    -- the `BIBase` instance of the source of the modality is an output of `FromModal`
+    let biBase' : Q(BI.BIBase $prop') ← mkFreshExprMVarQ q(BI.BIBase $prop')
     let Φ ← mkFreshExprMVarQ q(Prop)
-    let M ← mkFreshExprMVarQ q(Modality $prop' $prop)
+    let M ← mkFreshExprMVarQ q(@Modality $prop' $prop $biBase' (@BI.toBIBase $prop $bi))
     let α : Q(Type u) ← mkFreshExprMVarQ q(Type u)
     let sel ← elabTermEnsuringTypeQ (← `(term | iprop($sel))) α
     let Q ← mkFreshExprMVarQ q($prop')
     -- `M Q ⊢ goal`
     let .some _ ←
-      ProofModeM.trySynthInstanceQ q(@FromModal .out $prop' $prop $α $bi' $bi $M $Φ $sel $goal $Q)
+      ProofModeM.trySynthInstanceQ q(@FromModal .out $prop' $prop $α
+        $biBase' (@BI.toBIBase $prop $bi) $M $Φ $sel $goal $Q)
       | throwIPMError "{goal} is not a \
           modality{if sel.isMVar then m!"" else m!" matching {sel}"}"
+    -- recover the `BI` instance of the source
+    let some bi' ← parseBIBase? biBase'
+      | throwIPMError "the source {prop'} of the modality is not a BI"
+    have bi' : Q(BI $prop') := bi'
+    have : $biBase' =Q @BI.toBIBase $prop' $bi' := ⟨⟩
     -- show the side condition
     let hΦ ← iSolveSidecondition q($Φ)
     -- perform modality actions, get transformed context `hyps'` and `pf : hyps ⊢ M hyps'`

@@ -1,346 +1,383 @@
 /-
 Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mario Carneiro, Sebastian Graf
+Authors: Mario Carneiro, Sebastian Graf, Sergei Stepanenko
 -/
 module
 
-public import Iris.Algebra.OFE
+public import Iris.Algebra.Enriched
+public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
-#rocq_ignore solution "Use OFE.iso + Inhabited + COFE"
+universe v w
 
-namespace Iris.COFE.OFunctor
-open OFE
+namespace Iris.Enriched
 
+open OFE Iris.COFE
 
-variable {F : ∀ α β [COFE α] [COFE β], Type u} [OFunctorContractive F]
-variable [∀ α [COFE α], IsCOFE (F α α)]
-variable [inh : Inhabited (F (ULift Unit) (ULift Unit))]
+variable {SI : stepindex (Type v)} [SIdx SI]
+local stepindex SI
 
-namespace Fix.Impl
+/- The solver needs a successor operation (see `Enriched`); Iris-Rocq's solver does not. -/
+variable [SIdxSucc]
 
-variable (F) in
-@[rocq_alias solver.A']
-def A' : Nat → Σ α : Type u, COFE α
-  | 0 => ⟨ULift Unit, inferInstance⟩
-  | n+1 => let ⟨A, _⟩ := A' n; ⟨F A A, inferInstance⟩
+namespace COFE
 
-variable (F) in
-@[implicit_reducible] def A (n : Nat) : Type u := (A' F n).1
+def PointsDetermined (K : LimitCut) (A : Type _) [OFE A] : Prop :=
+  ∀ (x y : A), K.dist x y → x = y
 
-instance instA' (n) : COFE (A' F n).1 := (A' F n).2
-instance instA (n) : COFE (A F n) := (A' F n).2
-#rocq_ignore solver.A_cofe "Inference succeeds automatically via `instA`/`instA'`"
+variable (SI) in
+@[indexed]
+abbrev CofeObj := (A : Type (max v w)) × COFE A
 
-variable (F) in
-/-- The section/retraction pair at every level, computed by a single recursion so
-that evaluating either component at level `k` costs `O(k)` (the naive mutual
-recursion recomputes both branches at every level, which is `2^k`). -/
-def updown : ∀ k, (A F k -n> A F (k+1)) × (A F (k+1) -n> A F k)
-  | 0 => (⟨fun _ => inh.default, ⟨fun _ _ _ _ => .rfl⟩⟩, ⟨fun _ => ⟨()⟩, ⟨fun _ _ _ _ => .rfl⟩⟩)
-  | k+1 => let (u, d) := updown k; (map d u, map u d)
+instance (A : CofeObj.{v, w}) : COFE A.1 := A.2
 
-variable (F) in
-@[rocq_alias solver.f]
-def up (k : Nat) : A F k -n> A F (k+1) := (updown F k).1
+instance instEnrichedCat : EnrichedCat (CofeObj.{v, w}) where
+  Hom A B := A.1 -n> B.1
+  cofe _ _ := inferInstance
+  id _ := OFE.Hom.id
+  comp g f := g.comp f
+  comp_ne {_ _ _ _ _ g' _ _} hg hf := fun x => (hg _).trans (g'.ne.ne (hf x))
+  id_comp _ := rfl
+  comp_id _ := rfl
+  assoc _ _ _ := rfl
 
-variable (F) in
-@[rocq_alias solver.g]
-def down (k : Nat) : A F (k+1) -n> A F k := (updown F k).2
+instance instHasTerminal : HasTerminal (CofeObj.{v, w}) where
+  one := ⟨ULift.{max v w} Unit, inferInstance⟩
+  toOne _ := (⟨fun _ => ⟨()⟩, ⟨fun _ _ _ _ => .rfl⟩⟩ : _ -n> ULift.{max v w} Unit)
+  toOne_unique _ := OFE.Hom.ext (funext fun _ => rfl)
 
-#rocq_ignore solver.f_S "Not needed"
-#rocq_ignore solver.g_S "Not needed"
+end COFE
 
-@[rocq_alias solver.gf]
-theorem down_up : ∀ {k} x, down F k (up F k x) = x
-  | 0, ⟨()⟩ => rfl
-  | _+1, x => OFE.eq_dist_2 fun _ => (map_comp _ _ _ _ _).dist.symm.trans <|
-    Dist.trans
-      (map_ne.ne (fun y => (down_up y).dist) (fun y => (down_up y).dist) x)
-      (map_id _).dist
+open COFE
 
-@[rocq_alias solver.fg]
-theorem up_down {k} (x) : up F (k+1) (down F (k+1) x) ≡{k}≡ x := by
-  refine (map_comp _ _ _ _ _).dist.symm.trans <| .trans ?_ (map_id _).dist
-  open OFunctorContractive in exact match k with
-  | 0 => map_contractive.zero (x := (_, _)) (y := (_, _)) _ _
-  | k+1 => map_contractive.succ (x := (_, _)) (y := (_, _)) _ ⟨up_down, up_down⟩ _
+abbrev EnrichedCat.Hom.toOFEHom {A B : CofeObj.{v, w}} (f : Hom A B) : A.1 -n> B.1 := f
 
-variable (F) in
+omit [SIdxSucc] in
+theorem Determined.points {K : LimitCut} {Y : CofeObj.{v, w}} (h : Determined K Y) :
+    PointsDetermined K Y.1 := fun x y hxy =>
+  congrArg (fun g : Hom (HasTerminal.one) Y => g.toOFEHom ⟨()⟩)
+    (h (⟨fun _ => x, ⟨fun _ _ _ _ => .rfl⟩⟩ : Hom (HasTerminal.one) Y)
+      ⟨fun _ => y, ⟨fun _ _ _ _ => .rfl⟩⟩ fun m hm _ => hxy m hm)
+
+omit [SIdxSucc] in
+theorem Determined.of_points {K : LimitCut} {Y : CofeObj.{v, w}}
+    (h : PointsDetermined K Y.1) : Determined K Y :=
+  fun _ _ hg => OFE.Hom.ext (funext fun z => h _ _ fun m hm => hg m hm z)
+
+namespace COFE
+
+section TowerLimit
+
+variable {P : Site SI} (T : Tower (CofeObj.{v, w}) P) (hT : T.Lawful)
+
 @[ext, rocq_alias solver.tower]
-structure Tower : Type u where
-  val k : A F k
-  protected down {k} : down F k (val (k+1)) = val k
+structure TowerLimit (hT : T.Lawful) where
+  π : ∀ β (hβ : P.mem β), (T.X β hβ).1
+  proj_π : ∀ β δ hβ hδ (h : β < δ), (T.proj β δ hβ hδ h).toOFEHom (π δ hδ) = π β hβ
 
-instance : CoeFun (Tower F) (fun _ => ∀ k, A F k) := ⟨Tower.val⟩
-
-@[rocq_alias solver.T]
-instance : OFE (Tower F) where
-  Dist n f g := ∀ k, f k ≡{n}≡ g k
+instance : OFE (TowerLimit T hT) where
+  dist n x y := ∀ β hβ, x.π β hβ ≡{n}≡ y.π β hβ
   dist_eqv := {
-    refl _ _ := dist_eqv.refl _
-    symm h _ := dist_eqv.symm (h _)
-    trans h1 h2 _ := dist_eqv.trans (h1 _) (h2 _)
+    refl _ _ _ := .rfl
+    symm h β hβ := (h β hβ).symm
+    trans h h' β hβ := (h β hβ).trans (h' β hβ)
   }
-  eq_dist' {_ _} := by rw [Tower.ext_iff, funext_iff]; simpa only [eq_dist] using forall_comm
-  dist_lt h1 h2 _ := dist_lt (h1 _) h2
+  eq_dist' := ⟨fun h => h ▸ fun _ _ _ => .rfl,
+    fun h => TowerLimit.ext (funext fun β => funext fun hβ => OFE.eq_dist.mpr fun n => h n β hβ)⟩
+  dist_lt h hlt β hβ := (h β hβ).lt hlt
 
-#rocq_ignore solver.tower_equiv "Included in OFE (Tower F) instance"
-#rocq_ignore solver.tower_dist "Included in OFE (Tower F) instance"
-#rocq_ignore solver.tower_ofe_mixin "Not needed"
-
-@[rocq_alias solver.tower_chain]
-def towerChain (c : Chain (Tower F)) (k : Nat) : Chain (A F k) where
-  chain i := c.1 i k
-  cauchy h := c.cauchy h k
-
-instance : COFE (Tower F) where
-  compl c := by
-    refine ⟨fun k => compl ⟨fun i => c.1 i k, fun h => c.cauchy h k⟩, ?_⟩
-    refine OFE.eq_dist_2 (fun n => ?_)
-    refine ((down ..).ne.1 conv_compl).trans <| .trans ?_ conv_compl.symm
-    exact (c.chain n).down.dist
-  conv_compl _ := conv_compl
-
-#rocq_ignore solver.tower_cofe "Use IsCOFE instance"
-#rocq_ignore solver.tower_compl "Use IsCOFE instance"
-#rocq_ignore solver.tower_car_ne "Use NonExpansive instance"
-
-variable (F) in
-@[rocq_alias solver.ff]
-def upN {k} : ∀ n, A F k -n> A F (k + n)
-  | 0 => .id
-  | n+1 => (up F (k + n)).comp (upN n)
-
-variable (F) in
-@[rocq_alias solver.gg]
-def downN {k} : ∀ n, A F (k + n) -n> A F k
-  | 0 => .id
-  | n+1 => (downN n).comp (down F (k + n))
-
-@[rocq_alias solver.ggff]
-theorem downN_upN {k} (x : A F k) : ∀ {i}, downN F i (upN F i x) = x
-  | 0 => rfl
-  | n+1 => (congrArg (fun a => (downN F n) a) (down_up _)).trans (downN_upN _)
-
-@[rocq_alias solver.f_tower]
-protected theorem Tower.up (X : Tower F) : up F (k+1) (X (k+1)) ≡{k}≡ X (k+2) :=
-  ((up ..).ne.1 X.down.symm.dist).trans <| up_down _
-
-@[rocq_alias solver.ff_tower]
-protected theorem Tower.upN (X : Tower F) : ∀ i, upN F i (X (k+1)) ≡{k}≡ X (k+1+i)
-  | 0 => .rfl
-  | n+1 => by
-    have : ∀ j, k+n+1 = j → up F j (X j) ≡{k}≡ X (j+1) := by
-      rintro _ rfl; exact X.up.le (Nat.le_add_right ..)
-    exact ((up ..).ne.1 (X.upN _)).trans <| this _ (Nat.add_right_comm ..)
-
-@[rocq_alias solver.gg_tower]
-protected theorem Tower.downN (X : Tower F) : ∀ i, downN F i (X (k+i)) = X k
-  | 0 => rfl
-  | _+1 => (congrArg (fun a => (downN ..) a) X.down).trans (X.downN _)
-
-instance (k : Nat) : NonExpansive (fun X : Tower F => X.val k) := ⟨fun _ _ _ => (· _)⟩
+namespace TowerLimit
 
 @[rocq_alias solver.project]
-def Tower.proj (k) : Tower F -n> A F k := ⟨(· k), ⟨fun _ _ _ => (· _)⟩⟩
+def proj β hβ : TowerLimit T hT -n> (T.X β hβ).1 :=
+  ⟨fun x => x.π β hβ, ⟨fun _ _ _ h => h β hβ⟩⟩
 
-@[rocq_alias solver.coerce]
-def eqToHom (e : i = k) : A F i -n> A F k := e ▸ .id
-
-@[rocq_alias solver.coerce_f]
-theorem eqToHom_up {k k'} {x : A F k} (e : k = k') :
-    eqToHom (congrArg Nat.succ e) (up F k x) = up F k' (eqToHom e x) := by
-  cases e; rfl
-
-@[rocq_alias solver.g_coerce]
-theorem down_eqToHom {k k'} {x : A F (k + 1)} (e : k = k') :
-    down F k' (eqToHom (congrArg Nat.succ e) x) = eqToHom e (down F k x) := by
-  cases e; rfl
-
-@[rocq_alias solver.embed_coerce]
-def embed : A F k -n> A F i :=
-  if h : k ≤ i then (eqToHom (Nat.add_sub_cancel' h)).comp (upN ..)
-  else (downN ..).comp (eqToHom (Nat.add_sub_cancel' (Nat.le_of_not_ge h)).symm)
-
-#rocq_ignore solver.coerce_id "Not needed"
-#rocq_ignore solver.coerce_proper "Inlined in embed"
-#rocq_ignore solver.embed_ne "Implicit in embed"
-#rocq_ignore solver.gg_gg "Inlined in Tower.embed"
-#rocq_ignore solver.ff_ff "Inlined in Tower.embed_up"
+include hT in
+theorem proj_hom_apply (n) (hn : P.mem n) β δ hβ hδ (hlt : β < δ) x :
+    (T.proj β δ hβ hδ hlt).toOFEHom ((T.hom δ n hδ hn).toOFEHom x) =
+      (T.hom β n hβ hn).toOFEHom x :=
+  congrArg (fun g : Hom _ _ => g.toOFEHom x) (Tower.proj_comp_hom hT n hn β δ hβ hδ hlt)
 
 @[rocq_alias solver.embed]
-protected def Tower.embed (k) : A F k -n> Tower F := by
-  refine ⟨fun n => ⟨fun _ => embed n, fun {i} => ?_⟩, ⟨fun _ _ _ h _ => embed.ne.1 h⟩⟩
-  dsimp [embed]; split <;> rename_i h₁
-  · split <;> rename_i h₂
-    · suffices ∀ a b (e₁ : k+a = i+1) (e₂ : k+b = i),
-        down F i (eqToHom e₁ (upN F a n)) = eqToHom e₂ (upN F b n) from this _ _ _ _
-      rintro a _ eq rfl
-      rw [Nat.add_assoc, Nat.add_left_cancel_iff] at eq; subst a
-      exact down_up _
-    · cases (Nat.lt_or_eq_of_le h₁).resolve_left (h₂ ∘ Nat.lt_succ_iff.1)
-      have {a b} (e₁ : i+1+a = i+1) (e₂ : i+1 = i+b) :
-          down F i (eqToHom e₁ (upN F a n)) = downN F b (eqToHom e₂ n) := by
-        cases Nat.add_left_cancel (k := 0) e₁; cases Nat.add_left_cancel e₂
-        rfl
-      apply this
-  · rw [dite_eq_right (mt Nat.le_succ_of_le h₁)]
-    suffices ∀ k a b (e₁ : k = i+1+a) (e₂ : k = i+b) (n : A F k),
-        down F i (downN F a (eqToHom e₁ n)) = downN F b (eqToHom e₂ n) from this _ _ _ _ _ _
-    rintro k a b eq rfl n
-    rw [Nat.add_assoc, Nat.add_left_cancel_iff, Nat.add_comm] at eq; subst eq
-    change _ = downN F a (down F (i+a) n)
-    induction a with
-    | zero => rfl
-    | succ a ih =>
-      dsimp [downN, Hom.comp]
-      rw [down_eqToHom (Nat.add_right_comm i a 1)]
-      apply ih
-
-#rocq_ignore solver.embed' "Lean's Tower.embed is already a bundled non-expansive map"
-#rocq_ignore solver.g_embed_coerce "Inlined in Tower.embed, as its well-definedness obligation"
-
-@[rocq_alias solver.embed_f]
-theorem Tower.embed_up (x : A F k) :
-    Tower.embed (k+1) (up F k x) = Tower.embed k x := by
-  refine OFE.eq_dist_2 (fun (n : Nat) i => ?_)
-  dsimp [Tower.embed, embed]; split <;> rename_i h₁
-  · simp [Nat.le_of_succ_le h₁]
-    suffices ∀ a b (e₁ : k + 1 + a = i) (e₂ : k+b = i),
-      eqToHom e₁ (upN F a (up F k x)) = eqToHom e₂ (upN F b x) from this .. ▸ .rfl
-    rintro a b eq rfl
-    rw [Nat.add_right_comm, Nat.add_assoc, Nat.add_left_cancel_iff] at eq; subst b
-    change _ = up F (k + a) (upN F a x); clear h₁
-    induction a with
-    | zero => rfl
-    | succ a ih =>
-      dsimp [upN, Hom.comp]
-      rw [eqToHom_up (by omega : k + 1 + a = k + (a + 1))]; congr 1; apply ih
-  · split <;> rename_i h₂
-    · cases Nat.le_antisymm h₂ (Nat.not_lt.1 h₁)
-      have {a b} {e₁ : k+1 = k+a} {e₂ : k+b = k+0} :
-        downN F a (eqToHom e₁ (up F k x)) ≡{n}≡ eqToHom e₂ (upN F b x) := by
-        cases Nat.add_left_cancel e₁; cases Nat.add_left_cancel e₂
-        exact (down_up _).dist
-      exact this
-    · dsimp [Hom.comp]
-      suffices ∀ a b (e₁ : k + 1 = i + a) (e₂ : k = i + b),
-        downN F a (eqToHom e₁ (up F k x)) ≡{n}≡
-        downN F b (eqToHom e₂ x) from this ..
-      rintro a b eq rfl; cases Nat.add_left_cancel (m := b+1) eq
-      exact (downN ..).ne.1 (down_up x).dist
+def emb (n) (hn : P.mem n) : (T.X n hn).1 -n> TowerLimit T hT where
+  f x := ⟨fun β hβ => (T.hom β n hβ hn).toOFEHom x, fun β δ hβ hδ hlt =>
+    proj_hom_apply T hT n hn β δ hβ hδ hlt x⟩
+  ne := ⟨fun _ _ _ h β hβ => (T.hom β n hβ hn).toOFEHom.ne.ne h⟩
 
 @[rocq_alias solver.embed_tower]
-theorem Tower.embed_self (X : Tower F) :
-    Tower.embed (k+1) (X (k+1)) ≡{k}≡ X := by
-  refine fun i => ?_
-  dsimp [Tower.embed, embed]; split <;> rename_i h₁
-  · refine ((eqToHom _).ne.1 (X.upN _)).trans ?_
-    suffices ∀ a e, eqToHom e (X a) = X i from this .. ▸ .rfl
-    rintro _ rfl; rfl
-  · suffices ∀ a e, downN F a (eqToHom e (X (k + 1))) ≡{k}≡ X i from this ..
-    rintro (_|a) eq
-    · cases show k+1=i from eq; exact .rfl
-    · cases show k=i+a from Nat.succ.inj eq
-      exact (X.downN _).dist
+theorem emb_π_dist (n) (hn : P.mem n) (x : TowerLimit T hT) (m)
+    (hm : m < n) :
+    emb T hT n hn (x.π n hn) ≡{m}≡ x := by
+  intro β hβ
+  change (T.hom β n hβ hn).toOFEHom (x.π n hn) ≡{m}≡ x.π β hβ
+  rcases SIdx.lt_trichotomyT β n with h | rfl | h
+  · rw [T.hom_lt hβ hn h]
+    exact .of_eq (x.proj_π β n hβ hn h)
+  · rw [T.hom_self hβ hn]
+    exact .rfl
+  · rw [T.hom_gt hβ hn h, ← x.proj_π n β hn hβ h]
+    exact hT.emb_comp_proj n β hn hβ h m hm (x.π β hβ)
 
-instance : Inhabited (Tower F) := ⟨Tower.embed 0 ⟨()⟩⟩
-#rocq_ignore solver.tower_inhabited "Implicit in Lean's Inhabited (Tower F) instance"
+theorem lt_of_mem_seg {n a m} (hl : SIdx.Limit n) (ha : a < n) (hm : (seg a).mem m) :
+    m < n := by
+  rcases SIdx.lt_ge_cases n m with h | h
+  · exact h
+  · exact absurd ⟨n, hl, ha, h⟩ hm
 
-@[rocq_alias solver.unfold_chain]
-def unfoldChain (X : Tower F) : Chain (F (Tower F) (Tower F)) where
-  chain n := map (Tower.proj _) (Tower.embed _) (X (n+1))
-  cauchy {n i} h := by
-    obtain ⟨k, rfl⟩ := Nat.exists_eq_add_of_le h; clear h
-    induction k with
-    | zero => exact .rfl
-    | succ k ih =>
-      exact (((map ..).ne.1 X.up).le (Nat.le_add_right ..)).symm.trans <|
-        (map_comp _ _ _ _ _).dist.symm.trans <|
-        (map_ne.ne (·.down.dist) (fun Y => (Tower.embed_up Y).dist) _).trans ih
+def diag {n} (hn : SIdx.Limit n) (hnP : ¬ P.mem n) (c : BChain (TowerLimit T hT) n) :
+    TowerLimit T hT where
+  π β hβ := IsCOFE.lbcompl hn (c.map (proj T hT β hβ))
+  proj_π β δ hβ hδ hlt := Determined.points (hT.determined β hβ) _ _ fun m hm => by
+    have hmn := lt_of_mem_seg hn (Site.lt_of_not_mem hnP hβ) hm
+    refine ((T.proj β δ hβ hδ hlt).toOFEHom.ne.ne (IsCOFE.conv_lbcompl hn _ hmn)).trans ?_
+    refine (Dist.of_eq ((c.bchain m hmn).proj_π β δ hβ hδ hlt)).trans ?_
+    exact (IsCOFE.conv_lbcompl hn (c.map (proj T hT β hβ)) hmn).symm
 
-def Tower.isoAux : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
-  hom.f X := {
-    val n := (down F n).comp (map (Tower.embed _) (Tower.proj _)) X
-    down {n} := OFE.eq_dist_2 fun m => (down ..).ne.1 <|
-      (map_comp _ _ _ _ _).dist.symm.trans <|
-        map_ne.ne (fun Y => (Tower.embed_up Y).dist) (fun Y => Y.down.dist) _
-  }
-  hom.ne.1 _ _ _ h _ := by dsimp only; exact (Hom.ne _).1 h
-  inv.f X := compl (unfoldChain X)
-  inv.ne.1 n _ _ h := by
-    refine conv_compl.trans <| .trans ?_ conv_compl.symm
-    exact (map ..).ne.1 (h (n+1))
-  hom_inv {X} := OFE.eq_dist_2 fun n => by
-    intro k
-    refine ((down ..).ne.1 (.trans ?_ (X.downN n).dist)).trans X.down.dist
-    refine ((map ..).ne.1 (conv_compl.trans
-      ((unfoldChain ..).cauchy (show n ≤ k+n+1 by omega)).symm)).trans ?_
-    refine (((map ..).comp _).ne.1 (X.up.le (Nat.le_add_left ..)).symm).trans ?_
-    refine ((map_comp _ _ _ _ _).trans
-      (congrArg (fun a => (map ..) a) (map_comp _ _ _ _ _))).symm.dist.trans ?_
-    refine .trans (y := map (upN F n) (downN F n) (X (k+n+1))) ?_ ?_
-    · refine map_ne.ne (fun Y => ?_) (fun Y => ?_) _
-      · simp [Hom.comp, Tower.embed, Tower.proj, embed, (by omega : k ≤ k+n+1)]
-        have {a e} : down F (k + n) (eqToHom e (upN F a Y)) = upN F n Y := by
-          cases Nat.add_left_cancel (k := n+1) e; exact down_up _
-        exact this.dist
-      · simp [Hom.comp, Tower.embed, Tower.proj, embed, show ¬k+n+1 ≤ k by omega]
-        have {a e} : downN F a (eqToHom e (up F (k + n) Y)) = downN F n Y := by
-          cases Nat.add_left_cancel (m := n+1) e; exact congrArg (fun a => (downN ..) a) (down_up _)
-        exact this.dist
-    · have e : k+n+1 = k+1+n := by omega
-      suffices ∀ x y, eqToHom e x = y → ∀ m, map (upN F n) (downN F n) x ≡{m}≡ downN F n y by
-        refine this _ _ ?_ n
-        clear this; revert e; generalize k+1+n = a; rintro rfl; rfl
-      rintro x _ rfl m
-      induction n with
-      | zero => exact (map_id _).dist
-      | succ n ih =>
-        refine (map_comp _ _ _ _ _).dist.trans <|
-          (ih (Nat.succ.inj e) _).trans (congrArg (fun a => (downN ..) a) ?_).dist
-        exact (down_eqToHom _).symm
-  inv_hom := OFE.eq_dist_2 fun n => by
-    refine (conv_compl' n.le_succ).trans ?_
-    dsimp [unfoldChain]; rw [down]
-    refine ((map_comp _ _ _ _ _).trans
-      (congrArg (fun a => (map ..) a) (map_comp _ _ _ _ _))).dist.symm.trans ?_
-    refine (map_ne.ne (fun Y => ?_) (fun Y => ?_) _).trans (map_id _).dist
-    · exact ((Tower.embed _).ne.1 Y.up).trans (Y.embed_self.le (by omega))
-    · exact ((Tower.embed _).ne.1 Y.down.dist).trans Y.embed_self
+end TowerLimit
 
-opaque Tower.iso : OFE.Iso (F (Tower F) (Tower F)) (Tower F) := Tower.isoAux
+open TowerLimit in
+instance : IsCOFE (TowerLimit T hT) where
+  compl c := ⟨fun β hβ => COFE.compl (c.map (proj T hT β hβ)), fun β δ hβ hδ hlt => by
+    change (T.proj β δ hβ hδ hlt).toOFEHom (COFE.compl _) = _
+    rw [← COFE.compl_map, ← Chain.map_comp]
+    congr 2
+    exact OFE.Hom.ext (funext fun (x : TowerLimit T hT) => x.proj_π β δ hβ hδ hlt)⟩
+  conv_compl _ _ := COFE.conv_compl
+  lbcompl {n} hn c :=
+    if h : P.mem n then emb T hT n h (IsCOFE.lbcompl hn (c.map (proj T hT n h)))
+    else diag T hT hn h c
+  conv_lbcompl {n} hn c m hm := by
+    by_cases h : P.mem n
+    · rw [dite_eq_left h]
+      exact ((emb T hT n h).ne.1 (IsCOFE.conv_lbcompl hn _ hm)).trans
+        (emb_π_dist T hT n h _ m hm)
+    · rw [dite_eq_right h]
+      exact fun β hβ => IsCOFE.conv_lbcompl hn (c.map (proj T hT β hβ)) hm
+  lbcompl_ne {n} hn c1 c2 m hc := by
+    by_cases h : P.mem n
+    · simp only [dite_eq_left h]
+      exact (emb T hT n h).ne.1
+        (IsCOFE.lbcompl_ne hn _ _ fun p hp => (proj T hT n h).ne.1 (hc p hp))
+    · simp only [dite_eq_right h]
+      exact fun β hβ => IsCOFE.lbcompl_ne hn _ _ fun p hp => hc p hp β hβ
 
-end Fix.Impl
-open Fix.Impl
+#rocq_ignore solver.tower_equiv "Included in the OFE (TowerLimit T hT) instance"
+#rocq_ignore solver.tower_dist "Included in the OFE (TowerLimit T hT) instance"
+#rocq_ignore solver.tower_ofe_mixin "Included in the OFE (TowerLimit T hT) instance"
+#rocq_ignore solver.tower_cofe "Use the IsCOFE SI (TowerLimit T hT) instance"
+#rocq_ignore solver.tower_compl "Use the IsCOFE SI (TowerLimit T hT) instance"
+#rocq_ignore solver.tower_car_ne "Implicit in TowerLimit.proj"
 
+def TowerLimit.cofeObj : CofeObj.{v, w} := ⟨TowerLimit T hT, inferInstance⟩
+
+def TowerLimit.lift {Y : CofeObj.{v, w}} (g : ∀ β hβ, Hom Y (T.X β hβ))
+    (hg : ∀ β δ hβ hδ (h : β < δ), T.proj β δ hβ hδ h ⊚ g δ hδ = g β hβ) :
+    Hom Y (TowerLimit.cofeObj T hT) :=
+  (⟨fun y => ⟨fun β hβ => (g β hβ).toOFEHom y, fun β δ hβ hδ h =>
+      congrArg (fun k : Hom Y (T.X β hβ) => k.toOFEHom y) (hg β δ hβ hδ h)⟩,
+    ⟨fun _ _ _ h β hβ => (g β hβ).toOFEHom.ne.ne h⟩⟩ : Y.1 -n> TowerLimit T hT)
+
+end TowerLimit
+
+instance instHasTowerLimits : HasTowerLimits (CofeObj.{v, w}) where
+  lim T hT := TowerLimit.cofeObj T hT
+  π T hT β hβ := TowerLimit.proj T hT β hβ
+  proj_comp_π T hT β δ hβ hδ h :=
+    OFE.Hom.ext (funext fun (x : TowerLimit T hT) => x.proj_π β δ hβ hδ h)
+  lift T hT _ g hg := TowerLimit.lift T hT g hg
+  π_comp_lift _ _ _ _ _ _ _ := rfl
+  ext_dist _ _ _ _ _ _ h := fun y β hβ => h β hβ y
+
+structure Truncation (K : LimitCut) (A : Type _) [OFE A] where
+  truncate : A -n> A
+  conv : ∀ x (m), K.mem m → truncate x ≡{m}≡ x
+  truncated : ∀ x y, K.dist x y → truncate x = truncate y
+
+namespace Truncation
+
+variable {K : LimitCut SI} {A : Type _} [COFE A] (t : Truncation K A)
+
+omit [SIdxSucc] in
+theorem truncate_truncate (x : A) : t.truncate (t.truncate x) = t.truncate x :=
+  t.truncated _ _ fun m hm => t.conv x m hm
+
+def Fixed : Type _ := {x : A // t.truncate x = x}
+
+instance : OFE t.Fixed := inferInstanceAs (OFE {x : A // t.truncate x = x})
+
+def Fixed.proj : A -n> t.Fixed :=
+  ⟨fun x => ⟨t.truncate x, t.truncate_truncate x⟩, ⟨fun _ _ _ h => t.truncate.ne.ne h⟩⟩
+
+def Fixed.inclusion : t.Fixed -n> A := ⟨Subtype.val, ⟨fun _ _ _ h => h⟩⟩
+
+instance : IsCOFE t.Fixed where
+  compl c := Fixed.proj t (COFE.compl (c.map (Fixed.inclusion t)))
+  conv_compl {n c} := by
+    change t.truncate (COFE.compl (c.map (Fixed.inclusion t))) ≡{n}≡ (c n).val
+    rw [← (c n).2]
+    exact (Fixed.proj t).ne.ne (COFE.conv_compl (c := c.map (Fixed.inclusion t)))
+  lbcompl hl c := Fixed.proj t (IsCOFE.lbcompl hl (c.map (Fixed.inclusion t)))
+  conv_lbcompl hl c m hm := by
+    change t.truncate (IsCOFE.lbcompl hl (c.map (Fixed.inclusion t))) ≡{m}≡ (c.bchain m hm).val
+    rw [← (c.bchain m hm).2]
+    exact (Fixed.proj t).ne.ne (IsCOFE.conv_lbcompl hl (c.map (Fixed.inclusion t)) hm)
+  lbcompl_ne hl _ _ _ hc :=
+    (Fixed.proj t).ne.ne (IsCOFE.lbcompl_ne hl _ _ fun p hp => hc p hp)
+
+omit [SIdxSucc] in
+theorem Fixed.determined : PointsDetermined K t.Fixed := fun x y h =>
+  Subtype.ext (x.2 ▸ y.2 ▸ t.truncated _ _ h)
+
+end Truncation
+
+section Classical
+
+variable (K : LimitCut SI) {A : Type _} [COFE A]
+
+noncomputable def classicalRep (x : A) : A := @Classical.epsilon A ⟨x⟩ fun y => K.dist x y
+
+omit [SIdxSucc] in
+theorem classicalRep_spec (x : A) : K.dist x (classicalRep K x) :=
+  @Classical.epsilon_spec A (fun y => K.dist x y) ⟨x, fun _ _ => .rfl⟩
+
+omit [SIdxSucc] in
+theorem classicalRep_congr {x y : A} (h : K.dist x y) : classicalRep K x = classicalRep K y := by
+  unfold classicalRep
+  congr 1
+  exact funext fun _ => propext ⟨fun hz n hn => (h n hn).symm.trans (hz n hn),
+    fun hz n hn => (h n hn).trans (hz n hn)⟩
+
+noncomputable def classicalTruncation : Truncation K A where
+  truncate := ⟨classicalRep K, ⟨fun m x y h => by
+    by_cases hm : K.mem m
+    · exact (classicalRep_spec K x m hm).symm.trans (h.trans (classicalRep_spec K y m hm))
+    · refine .of_eq (classicalRep_congr K fun n hn => h.le ?_)
+      rcases SIdx.le_total (n := n) (m := m) with h' | h'
+      · exact h'
+      · exact absurd (K.down h' hn) hm⟩⟩
+  conv x m hm := (classicalRep_spec K x m hm).symm
+  truncated _ _ h := classicalRep_congr K h
+
+end Classical
+
+section Solution
+
+variable (F : ∀ (α β : Type (max v w)) [COFE α] [COFE β], Type (max v w))
+  [OFunctorContractive F]
+  [∀ (α β : Type (max v w)) [COFE α] [COFE β], IsCOFE (F α β)]
+
+@[indexed]
+def oFunctorObj (A B : CofeObj.{v, w}) : CofeObj.{v, w} := ⟨F A.1 B.1, inferInstance⟩
+
+instance instEFunctor : EFunctor (oFunctorObj F) where
+  map f g := (OFunctor.map (F := F) f g : _ -n> _)
+  map_contractive := OFunctorContractive.map_contractive.distLater_dist
+  map_id _ _ := OFE.Hom.ext (funext fun x => OFunctor.map_id (F := F) x)
+  map_comp f g f' g' := OFE.Hom.ext (funext fun x => OFunctor.map_comp (F := F) f g f' g' x)
+
+@[reducible] def truncatableOfTruncations
+    (t : ∀ (K : LimitCut) (A : CofeObj.{v, w}), Determined K A → Truncation K (F A.1 A.1)) :
+    Truncatable (oFunctorObj F) where
+  trunc K A hA := ⟨(t K A hA).Fixed, inferInstance⟩
+  proj K A hA := Truncation.Fixed.proj (t K A hA)
+  rep K A hA := Truncation.Fixed.inclusion (t K A hA)
+  proj_rep _ _ _ := OFE.Hom.ext (funext fun y => Subtype.ext y.2)
+  rep_proj K A hA m hm := fun x => (t K A hA).conv x m hm
+  determined _ _ _ := Determined.of_points (Truncation.Fixed.determined _)
+
+/-- Truncations by choice for every functor. Not an instance, so that using choice is explicit:
+enable it with `attribute [local instance] classicalOFunctorTruncatable`. -/
+@[reducible] noncomputable def classicalOFunctorTruncatable :
+    Truncatable (oFunctorObj F) :=
+  truncatableOfTruncations F fun K _ _ => classicalTruncation K
+
+instance instHasSeed [Inhabited (F (ULift.{max v w} Unit) (ULift.{max v w} Unit))] :
+    HasSeed (oFunctorObj F) where
+  seed := (⟨fun _ => default, ⟨fun _ _ _ _ => .rfl⟩⟩ :
+    _ -n> F (ULift.{max v w} Unit) (ULift.{max v w} Unit))
+
+end Solution
+
+end COFE
+
+end Iris.Enriched
+
+namespace Iris.COFE.OFunctor
+
+open OFE Iris.Enriched Iris.Enriched.COFE
+
+variable {SI : stepindex (Type v)} [SIdx SI] [SIdxSucc SI]
+local stepindex SI
+variable (F : ∀ (α β : Type (max v w)) [COFE α] [COFE β], Type (max v w))
+  [OFunctorContractive F]
+  [∀ (α β : Type (max v w)) [COFE α] [COFE β], IsCOFE (F α β)]
+  [Inhabited (F (ULift.{max v w} Unit) (ULift.{max v w} Unit))]
+  [Truncatable (oFunctorObj F)]
+
+#rocq_ignore solution "Use OFE.Iso + Inhabited + COFE"
+#rocq_ignore solver.A' "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.A_cofe "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.f "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.g "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.f_S "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.g_S "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.gf "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.fg "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.ff "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.gg "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.ggff "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.f_tower "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.ff_tower "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.gg_tower "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.coerce "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.coerce_id "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.coerce_proper "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.coerce_f "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.g_coerce "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.embed_coerce "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.embed' "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.embed_ne "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.g_embed_coerce "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.gg_gg "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.ff_ff "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.embed_f "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.tower_chain "Internal to the old nat-indexed solver; see Enriched.lean"
+#rocq_ignore solver.unfold_chain "Internal to the old nat-indexed solver; see Enriched.lean"
 #rocq_ignore solver.result "Use `Fix F` with Inhabited + COFE instances and Fix.iso"
 
-variable (F) in
-def Fix : Type u := Tower F
+@[rocq_alias solver.T]
+def Fix : Type (max v w) := (Enriched.Fix (oFunctorObj F)).1
 
-instance : Inhabited (Fix F) := inferInstanceAs (Inhabited (Tower F))
-instance : COFE (Fix F) := inferInstanceAs (COFE (Tower F))
+instance instCOFEFix : COFE (Fix F) := (Enriched.Fix (oFunctorObj F)).2
 
-def Fix.iso : OFE.Iso (F (Fix F) (Fix F)) (Fix F) := Tower.iso
+#rocq_ignore solver.tower_inhabited "Implicit in Lean's Inhabited (Fix F) instance"
+instance : Inhabited (Fix F) :=
+  ⟨(Enriched.Fix.point (oFunctorObj F)).toOFEHom ⟨()⟩⟩
+
+variable {F}
+
+def Fix.iso : OFE.Iso (F (Fix F) (Fix F)) (Fix F) where
+  hom := Enriched.Fix.fold (oFunctorObj F)
+  inv := Enriched.Fix.unfold (oFunctorObj F)
+  hom_inv := congrArg (fun g : EnrichedCat.Hom _ _ => g.toOFEHom _)
+    (Enriched.Fix.fold_comp_unfold (F := oFunctorObj F))
+  inv_hom := congrArg (fun g : EnrichedCat.Hom _ _ => g.toOFEHom _)
+    (Enriched.Fix.unfold_comp_fold (F := oFunctorObj F))
 
 @[rocq_alias solver.fold]
 def Fix.fold : F (Fix F) (Fix F) -n> Fix F := Fix.iso.hom
 #rocq_ignore solver.fold_ne "Implicit in the OFE.Iso structure"
+
 @[rocq_alias solver.unfold]
 def Fix.unfold : Fix F -n> F (Fix F) (Fix F) := Fix.iso.inv
 #rocq_ignore solver.unfold_ne "Implicit in the OFE.Iso structure"
+
 theorem Fix.fold_unfold (X : Fix F) : Fix.fold (Fix.unfold X) = X := Fix.iso.hom_inv
-theorem Fix.unfold_fold (X : F (Fix F) (Fix F)) : Fix.unfold (Fix.fold X) = X :=
-  Fix.iso.inv_hom
 
-attribute [irreducible] Fix Fix.fold Fix.unfold Fix.iso
+theorem Fix.unfold_fold (X : F (Fix F) (Fix F)) : Fix.unfold (Fix.fold X) = X := Fix.iso.inv_hom
 
-end OFunctor
+attribute [irreducible] Fix instCOFEFix Fix.fold Fix.unfold Fix.iso
 
-end COFE
-
-end Iris
+end Iris.COFE.OFunctor

@@ -14,6 +14,10 @@ public import Iris.ProofMode.Display
 
 @[expose] public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 namespace Iris.ProofMode
 
 open Iris.BI Iris.Std BIFUpdate
@@ -114,7 +118,7 @@ end BIBasicUpdate
 
 section SBIBasicUpdate
 
-variable {PROP} [Sbi PROP] [BIUpdate PROP] [BIBUpdateSbi PROP]
+variable {PROP} [BI PROP] [BIPlainly PROP] [BIUpdate PROP] [BIBUpdatePlainly PROP]
 
 @[ipm_backtrack, rocq_alias elim_modal_bupd_plain_goal]
 instance elimModal_bupd_plain_goal [BIAffine PROP] p io (P Q : PROP) [Plain Q] :
@@ -128,7 +132,7 @@ instance elimModal_bupd_plain_goal [BIAffine PROP] p io (P Q : PROP) [Plain Q] :
 @[ipm_backtrack, rocq_alias elim_modal_bupd_plain]
 instance elimModal_bupd_plain [BIAffine PROP] p io (P Q : PROP) [Plain P] :
     ElimModal True p io p iprop(|==> P) P Q Q where
-  elim_modal _ := (sep_mono_left (intuitionisticallyIf_mono bupd_elim)).trans wand_elim_right
+  elim_modal _ := (sep_mono_left (intuitionisticallyIf_mono (bupd_elim))).trans wand_elim_right
 
 end SBIBasicUpdate
 
@@ -303,7 +307,7 @@ end BIFancyUpdate
 
 section SBIFancyUpdate
 
-variable {PROP} [Sbi PROP] [BIFUpdate PROP] [BIFUpdateSbi PROP] [BIAffine PROP]
+variable {PROP} [BI PROP] [BIPlainly PROP] [BIFUpdate PROP] [BIFUpdatePlainly PROP] [BIAffine PROP]
 
 @[ipm_backtrack, rocq_alias from_forall_fupd]
 instance fromForall_fupd E1 E2 (P : PROP) {α : Type _} (Φ : α → PROP)

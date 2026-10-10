@@ -17,6 +17,8 @@ open BI Iris ProgramLogic
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Assert
 
 section Spec

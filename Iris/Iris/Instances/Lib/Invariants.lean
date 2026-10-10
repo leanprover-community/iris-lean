@@ -16,6 +16,8 @@ import Iris.Instances.Lib.WSat
 
 @[expose] public section
 
+local stepindex Nat
+
 /-! ## Invariants -/
 
 namespace Iris
@@ -48,7 +50,7 @@ variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
 @[rocq_alias inv_contractive]
 instance inv_contractive (N : Namespace) : Contractive (inv (GF := GF) N) where
-  distLater_dist {n x y} H := by
+  distLater_dist {n : Nat} {x y} H := by
     simp only [inv]
     refine intuitionistically_ne.ne ?_
     refine forall_ne (fun i => ?_)
@@ -378,7 +380,7 @@ theorem inv_combine_dup_l (N : Namespace) (P Q : IProp GF) :
   imodintro; iintro %E #Hsub
   imod HI1 $$ %E Hsub with ⟨HP, HI1⟩
   ihave ⟨HP1, HP2⟩ : ▷ P ∗ ▷ P $$ [HP]
-  · iapply later_sep; inext; iapply HPP $$ HP
+  · iapply (later_sep); inext; iapply HPP $$ HP
   imod HI1 $$ HP2 with _
   imod HI2 $$ %E Hsub with ⟨HQ, HI2⟩
   imodintro

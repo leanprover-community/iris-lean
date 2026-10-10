@@ -17,6 +17,8 @@ open BI ExclAuth Language Language.Notation Std.LawfulSet Iris.ProgramLogic.Prim
 
 @[expose] public section
 
+local stepindex Nat
+
 abbrev ownPRF (State : Type) : COFE.OFunctorPre := constOF (ExclAuthR (A := stateO State))
 
 @[rocq_alias ownPGS]

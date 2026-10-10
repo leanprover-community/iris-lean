@@ -13,7 +13,14 @@ namespace Iris.ProofMode
 public section
 open BI Iris.Std
 
-theorem rewrite_tac [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p}
+section
+-- `PROP` first: it precedes the step index in the signatures below
+variable {PROP : Type _} {SI : stepindex (Type _)} [SIdx SI]
+local stepindex SI
+
+@[indexed]
+theorem rewrite_tac [BI PROP] [BIStepIndexed PROP] [Sbi PROP]
+    {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p}
     (Ψ : A → PROP) [ne : OFE.NonExpansive Ψ] [heq : IntoInternalEq Q a b]
     (h1 : P ⊢ P' ∗ □?p Q) : P ⊢ <pers> (Ψ a ∗-∗ Ψ b) := calc
   P ⊢ P' ∗ a ≡ b := h1.trans (sep_mono_right (intuitionisticallyIf_elim.trans heq.1))
@@ -23,10 +30,14 @@ theorem rewrite_tac [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p
   _ ⊢ <pers> <affine> Ψ a ≡ Ψ b := persistently_affinely.2
   _ ⊢ <pers> (Ψ a ∗-∗ Ψ b) := persistently_mono (affinely_internalEq_wandIff _ _)
 
-theorem rewrite_tac_symm [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p}
+@[indexed]
+theorem rewrite_tac_symm [BI PROP] [BIStepIndexed PROP] [Sbi PROP]
+    {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p}
     (Ψ : A → PROP) [ne : OFE.NonExpansive Ψ] [IntoInternalEq Q a b]
     (h_eq : P ⊢ P' ∗ □?p Q) : P ⊢ <pers> (Ψ b ∗-∗ Ψ a) :=
   (rewrite_tac Ψ h_eq).trans (persistently_mono and_symm)
+
+end
 
 @[rocq_alias tac_rewrite]
 theorem rewrite_tac_goal [BI PROP] {P Q Q' : PROP}
@@ -102,32 +113,53 @@ end rule
 
 end IRewrite
 
-private def iRewriteCore {prop : Q(Type u)} {bi : Q(BI $prop)}
-    {e} (hyps : Hyps bi e) (rule : IRewrite.Rule)
-    (target : Q($prop))
-    (occs : Occurrences := Occurrences.all) :
-    ProofModeM ((target' : Q($prop)) × Q($e ⊢ <pers> ($target ∗-∗ $target'))) := do
-  let g : Q($prop) ← mkFreshExprMVarQ q($prop)
-  let ⟨e', _, p, eq, pf⟩ ← iHave hyps g rule.term true
-  unless ← isDefEq g q(iprop($e' ∗ □?$p $eq)) do
-    throwIPMError "could not pin the equality goal"
-  have : $g =Q iprop($e' ∗ □?$p $eq) := ⟨⟩
-  let pf' : Q($e ⊢ $e' ∗ □?$p $eq) := q($pf .rfl)
+/-- Step-index candidates for `irewrite`: the `SI` of every `SIdx SI` instance occurring in the
+equality `eq`, then of every local `SIdx SI` / `BIStepIndexed SI _` instance, then `Nat`. -/
+private def rewriteSICandidates (eq : Expr) : MetaM (Array Expr) := do
+  let mut cands : Array Expr := #[]
+  let push (cands : Array Expr) (ty : Expr) : Array Expr :=
+    let si? :=
+      if ty.isAppOfArity ``SIdx 1 || ty.isAppOfArity ``BIStepIndexed 4 then some ty.getAppArgs[0]!
+      else none
+    match si? with
+    | some si => if cands.contains si then cands else cands.push si
+    | none => cands
+  let mut todo : Array Expr := #[eq]
+  let mut seen : Std.HashSet Expr := {}
+  while h : todo.size > 0 do
+    let t := todo[todo.size - 1]
+    todo := todo.pop
+    if seen.contains t then continue
+    seen := seen.insert t
+    if !t.hasLooseBVars && (t.isApp || t.isConst || t.isFVar) then
+      try cands := push cands (← whnfR (← inferType t)) catch _ => pure ()
+    match t with
+    | .app f x => todo := (todo.push f).push x
+    | .mdata _ b => todo := todo.push b
+    | .lam _ ty b _ | .forallE _ ty b _ => todo := (todo.push ty).push b
+    | .letE _ ty v b _ => todo := ((todo.push ty).push v).push b
+    | .proj _ _ b => todo := todo.push b
+    | _ => pure ()
+  for inst in ← getLocalInstances do
+    cands := push cands (← instantiateMVars (← inferType inst.fvar))
+  unless cands.contains q(Nat) do cands := cands.push q(Nat)
+  return cands
 
-  let .some sbi ← trySynthInstanceQ q(Sbi $prop)
-    | throwIPMError "could not synthesize Sbi instance"
-
-  -- we assume that the SBI instance has bi as its BI instance
-  have : $bi =Q ($sbi).toBI := ⟨⟩
-
-  let v               ← mkFreshLevelMVar
-  let A   : Q(Type v) ← mkFreshExprMVarQ q(Type v)
+/-- `irewrite` at the step index `si`: fails (returns `none`) if `eq` is not an internal equality
+over `si`. -/
+private def iRewriteCoreAt {prop : Q(Type u)} {bi : Q(BI $prop)} {v : Level} (si : Q(Type v))
+    (_sidx : Q(SIdx $si)) (_bsi : Q(BIStepIndexed $si $prop)) (_sbi : Q(Sbi $si $prop))
+    {e e' : Q($prop)} (p : Q(Bool)) (eq : Q($prop)) (pf' : Q($e ⊢ $e' ∗ □?$p $eq))
+    (rule : IRewrite.Rule) (target : Q($prop)) (occs : Occurrences) :
+    ProofModeM (Option ((target' : Q($prop)) × Q($e ⊢ <pers> ($target ∗-∗ $target')))) := do
+  let w               ← mkFreshLevelMVar
+  let A   : Q(Type w) ← mkFreshExprMVarQ q(Type w)
   let a   : Q($A)     ← mkFreshExprMVarQ q($A)
   let b   : Q($A)     ← mkFreshExprMVarQ q($A)
-  let _ofe : Q(OFE $A) ← mkFreshExprMVarQ q(OFE $A)
+  let _ofe : Q(OFE $si $A) ← mkFreshExprMVarQ q(OFE $si $A)
 
-  let .some _ ← ProofModeM.trySynthInstanceQ q(IntoInternalEq (PROP := $prop) $eq $a $b)
-    | throwIPMError "{eq} is not an internal equality"
+  let .some _ ← ProofModeM.trySynthInstanceQ q(IntoInternalEq $si (PROP := $prop) $eq $a $b)
+    | return none
 
   let ⟨a, _⟩ ← instantiateMVarsQ' a
   let ⟨b, _⟩ ← instantiateMVarsQ' b
@@ -141,20 +173,47 @@ private def iRewriteCore {prop : Q(Type u)} {bi : Q(BI $prop)}
   have Ψ : Q($A → $prop) := mkLambda `x .default A goalAbstracted
 
   -- add OFE.NonExpansive to be solved by TC synthesis or left as a goal otherwise
-  let _ ← match ← trySynthInstanceQ q(OFE.NonExpansive $Ψ) with
+  let _ ← match ← trySynthInstanceQ q(OFE.NonExpansive $si $Ψ) with
     | .some x => pure x
     | _ =>
-      let ne ← mkFreshExprMVarQ q(OFE.NonExpansive $Ψ)
+      let ne ← mkFreshExprMVarQ q(OFE.NonExpansive $si $Ψ)
       addMVarGoal ne.mvarId!
       pure ne
 
   match rule.direction with
   | .forward =>
     have : $target =Q $Ψ $a := ⟨⟩
-    return ⟨_, q(rewrite_tac $Ψ $pf')⟩
+    return some ⟨_, q(rewrite_tac (SI := $si) $Ψ $pf')⟩
   | .backward => do
     have : $target =Q $Ψ $b := ⟨⟩
-    return ⟨_, q(rewrite_tac_symm $Ψ $pf')⟩
+    return some ⟨_, q(rewrite_tac_symm (SI := $si) $Ψ $pf')⟩
+
+private def iRewriteCore {prop : Q(Type u)} {bi : Q(BI $prop)}
+    {e} (hyps : Hyps bi e) (rule : IRewrite.Rule)
+    (target : Q($prop))
+    (occs : Occurrences := Occurrences.all) :
+    ProofModeM ((target' : Q($prop)) × Q($e ⊢ <pers> ($target ∗-∗ $target'))) := do
+  let g : Q($prop) ← mkFreshExprMVarQ q($prop)
+  let ⟨e', _, p, eq, pf⟩ ← iHave hyps g rule.term true
+  unless ← isDefEq g q(iprop($e' ∗ □?$p $eq)) do
+    throwIPMError "could not pin the equality goal"
+  have : $g =Q iprop($e' ∗ □?$p $eq) := ⟨⟩
+  let pf' : Q($e ⊢ $e' ∗ □?$p $eq) := q($pf .rfl)
+
+  -- The step index is genuinely needed here: it is the one of the internal equality `eq`.
+  for cand in ← rewriteSICandidates (← instantiateMVars eq) do
+    let v ← getDecLevel cand
+    have si : Q(Type v) := cand
+    let some sidx ← synthInstance? q(SIdx $si) | continue
+    have sidx : Q(SIdx $si) := sidx
+    let some bsi ← synthInstance? q(BIStepIndexed $si $prop) | continue
+    have bsi : Q(BIStepIndexed $si $prop) := bsi
+    let some sbi ← synthInstance? q(Sbi $si $prop) | continue
+    let s ← saveState
+    if let some res ← iRewriteCoreAt si sidx bsi sbi p eq pf' rule target occs then
+      return res
+    s.restore
+  throwIPMError "{eq} is not an internal equality"
 
 def iRewriteGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
     {e} (hyps : Hyps bi e) (rule : IRewrite.Rule) (goal : Q($prop))

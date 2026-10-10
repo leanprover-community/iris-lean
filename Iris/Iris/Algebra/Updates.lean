@@ -11,21 +11,27 @@ public import Iris.Algebra.CMRA
 
 namespace Iris
 
-@[rocq_alias cmra_updateP]
-def UpdateP [CMRA α] (x : α) (P : α → Prop) := ∀ n mz,
-  ✓{n} (x •? mz) → ∃ y, P y ∧ ✓{n} (y •? mz)
-infixr:50 " ~~>: " => UpdateP
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
 
-@[rocq_alias cmra_update]
-def Update [CMRA α] (x y : α) := ∀ n mz,
-  ✓{n} (x •? mz) → ✓{n} (y •? mz)
-infixr:50 " ~~> " => Update
+@[indexed, rocq_alias cmra_updateP]
+def UpdateP [RA α] [ORA α] (x : α) (P : α → Prop) := ∀ (n) mz, ✓{n} (x •? mz) → ∃ y, P y ∧ ✓{n} (y •? mz)
+notation:50 x:51 " ~~>:[" S "] " y:50 => Iris.UpdateP (SI := S) x y
+@[inherit_doc Iris.UpdateP]
+notation:50 x:51 " ~~>: " y:50 => Iris.UpdateP (SI := stepindex%) x y
+
+@[indexed, rocq_alias cmra_update]
+def Update [RA α] [ORA α] (x y : α) := ∀ (n) mz, ✓{n} (x •? mz) → ✓{n} (y •? mz)
+notation:50 x:51 " ~~>[" S "] " y:50 => Iris.Update (SI := S) x y
+@[inherit_doc Iris.Update]
+notation:50 x:51 " ~~> " y:50 => Iris.Update (SI := stepindex%) x y
 
 #rocq_ignore cmra_update_rewrite_relation "Not needed"
 
 section Updates
+open ORA
 
-variable [CMRA α] [CMRA β] (f : α → β) (g : β → α)
+variable [RA α] [ORA α] [RA β] [ORA β] (f : α → β) (g : β → α)
 
 #rocq_ignore cmra_updateP_proper "OFE is Leibniz; use equality"
 #rocq_ignore cmra_update_proper "OFE is Leibniz; use equality"
@@ -60,16 +66,16 @@ theorem UpdateP.weaken {x : α} (uxp : x ~~>: P) (pq : ∀ y, P y → Q y) : x ~
   fun n mz v => let ⟨y, py, vy⟩ := uxp n mz v; ⟨y, pq y py, vy⟩
 
 @[rocq_alias cmra_update_exclusive]
-theorem Update.exclusive {x y : α} [CMRA.Exclusive x] (vy : ✓ y) : x ~~> y :=
-  fun _ _ P => CMRA.none_of_excl_valid_op P ▸ vy.validN
+theorem Update.exclusive {x y : α} [Exclusive x] (vy : ✓ y) : x ~~> y :=
+  fun _ _ P => none_of_excl_valid_op P ▸ vy.validN
 
-instance [CMRA α] : Std.Refl (Update (α := α)) where
+instance [RA α] [ORA α] : Std.Refl (Update (α := α)) where
   refl _ := Update.id
 
-instance [CMRA α] : Trans Update Update Update (α := α) where
+instance [RA α] [ORA α] : Trans (Update (α := α)) (Update) (Update) where
   trans := Update.trans
 
-instance [CMRA α] : Trans Update UpdateP UpdateP (α := α) where
+instance [RA α] [ORA α] : Trans (Update (α := α)) (UpdateP) (UpdateP) where
   trans := Update.transP
 
 #rocq_ignore cmra_update_preorder "Split into the Std.Refl and Trans instances above"
@@ -81,14 +87,14 @@ theorem UpdateP.op {P Q R : α → Prop} {x y}
     (uxp : x ~~>: P) (uyq : y ~~>: Q) (pqr : ∀ z w, P z → Q w → R (z • w)) : x • y ~~>: R := by
   intro n mz v
   have e₁ : (x • y) •? mz ≡{n}≡ y •? some (x •? mz) :=
-    (CMRA.opM_left_dist mz CMRA.op_commN).trans (CMRA.op_opM_assoc_dist _ _ mz)
-  let ⟨w, pw, vw⟩ := uyq n (some (x •? mz)) (CMRA.validN_ne e₁ v)
+    (opM_left_dist mz op_commN).trans (op_opM_assoc_dist _ _ mz)
+  let ⟨w, pw, vw⟩ := uyq n (some (x •? mz)) (validN_ne e₁ v)
   have e₂ : w •? some (x •? mz) ≡{n}≡ x •? some (w •? mz) := calc
-    w •? some (x •? mz) ≡{n}≡ (w • x) •? mz       := (CMRA.op_opM_assoc_dist w x mz).symm
-    _                   ≡{n}≡ (x • w) •? mz       := (CMRA.opM_left_dist mz CMRA.op_commN)
-    _                   ≡{n}≡ x •? some (w •? mz) := CMRA.op_opM_assoc_dist x w mz
-  let ⟨z, pz, vz⟩ := uxp n (some (w •? mz)) (CMRA.validN_ne e₂ vw)
-  exact ⟨z • w, pqr z w pz pw, CMRA.validN_ne (CMRA.op_opM_assoc_dist z w mz).symm vz⟩
+    w •? some (x •? mz) ≡{n}≡ (w • x) •? mz       := (op_opM_assoc_dist w x mz).symm
+    _                   ≡{n}≡ (x • w) •? mz       := (opM_left_dist mz op_commN)
+    _                   ≡{n}≡ x •? some (w •? mz) := op_opM_assoc_dist x w mz
+  let ⟨z, pz, vz⟩ := uxp n (some (w •? mz)) (validN_ne e₂ vw)
+  exact ⟨z • w, pqr z w pz pw, validN_ne (op_opM_assoc_dist z w mz).symm vz⟩
 
 @[rocq_alias cmra_updateP_op']
 theorem UpdateP.op' {P Q : α → Prop} {x y : α} (uxp : x ~~>: P) (uyq : y ~~>: Q) :
@@ -103,10 +109,12 @@ theorem Update.op {x₁ x₂ y₁ y₂ : α} (xy₁ : x₁ ~~> y₁) (xy₂ : x�
 #rocq_ignore cmra_update_op_flip_proper "Rocq setoid-rewriting instance; use Update.op"
 
 @[rocq_alias cmra_update_op_l]
-theorem Update.op_l {x y : α} : x • y ~~> x := fun _ _ => CMRA.validN_op_opM_left
+theorem Update.op_l {x y : α} : x • y ~~> x := fun _ _ => validN_op_opM_left
 
 @[rocq_alias cmra_update_op_r]
-theorem Update.op_r {x y : α} : x • y ~~> y := fun _ _ => CMRA.validN_op_opM_right
+theorem Update.op_r {x y : α} : x • y ~~> y := fun _ _ => validN_op_opM_right
+
+theorem Update.ord {x y : α} (h : x ≼ₒ y) : y ~~> x := fun _ mz => (op?_mono_left_ord mz h).validN
 
 @[rocq_alias cmra_update_included]
 theorem Update.included {x y : α} : x ≼ y → y ~~> x :=
@@ -114,67 +122,66 @@ theorem Update.included {x y : α} : x ≼ y → y ~~> x :=
 
 @[rocq_alias cmra_update_valid0]
 theorem Update.valid0 {x y : α} : (✓{0} x → x ~~> y) → x ~~> y :=
-  fun h n mz v => h (CMRA.valid0_of_validN (CMRA.validN_opM v)) n mz v
+  fun h n mz v => h (valid0_of_validN (validN_opM v)) n mz v
 
 /-! ## Frame preserving updates for total and discete CMRAs -/
 
 @[rocq_alias cmra_total_updateP]
-theorem UpdateP.total [CMRA.IsTotal α] :
-    x ~~>: P ↔ ∀ (n : Nat) (z : α), ✓{n} (x • z) → ∃ y, P y ∧ ✓{n} (y • z) where
+theorem UpdateP.total [IsTotal α] :
+    x ~~>: P ↔ ∀ (n) (z : α), ✓{n} (x • z) → ∃ y, P y ∧ ✓{n} (y • z) where
   mp uxp := fun n z v => uxp n (some z) v
   mpr h := fun n mz v =>
     match mz with
     | none =>
-      let ⟨y, py, vy⟩ := h n (CMRA.core x) (CMRA.validN_ne (CMRA.op_core_dist x).symm v)
-      ⟨y, py, CMRA.validN_op_opM_left vy⟩
+      let ⟨y, py, vy⟩ := h n (core x) (validN_ne (op_core_dist x).symm v)
+      ⟨y, py, validN_op_opM_left vy⟩
     | some z => h n z v
 
 @[rocq_alias cmra_total_update]
-theorem Update.total [CMRA.IsTotal α] :
-    x ~~> y ↔ ∀ (n : Nat) (z : α), ✓{n} (x • z) → ✓{n} (y • z) where
+theorem Update.total [IsTotal α] : x ~~> y ↔ ∀ (n) (z : α), ✓{n} (x • z) → ✓{n} (y • z) where
   mp uxy := fun n z v => uxy n (some z) v
   mpr h := fun n mz v =>
     match mz with
     | none =>
-      CMRA.validN_op_opM_left <| h n (CMRA.core x) (CMRA.validN_ne (CMRA.op_core_dist x).symm v)
+      validN_op_opM_left <| h n (core x) (validN_ne (op_core_dist x).symm v)
     | some z => h n z v
 
 @[rocq_alias cmra_discrete_updateP]
-theorem UpdateP.discrete [CMRA.Discrete α] :
+theorem UpdateP.discrete [Discrete α] :
     x ~~>: P ↔ ∀ (mz : Option α), ✓ (x •? mz) → ∃ y, P y ∧ ✓ (y •? mz) where
   mp uxp := fun mz v =>
-    let ⟨y, py, vy⟩ := uxp 0 mz (CMRA.Valid.validN v)
-    ⟨y, py, CMRA.discrete_valid vy⟩
+    let ⟨y, py, vy⟩ := uxp 0 mz (Valid.validN v)
+    ⟨y, py, discrete_valid vy⟩
   mpr h := fun n mz v =>
-    let ⟨y, py, vy⟩ := h mz ((CMRA.valid_iff_validN' n).mpr v)
-    ⟨y, py, CMRA.Valid.validN vy⟩
+    let ⟨y, py, vy⟩ := h mz ((valid_iff_validN' n).mpr v)
+    ⟨y, py, Valid.validN vy⟩
 
 @[rocq_alias cmra_discrete_update]
-theorem Update.discrete [CMRA.Discrete α] {x y : α} :
+theorem Update.discrete [Discrete α] {x y : α} :
     x ~~> y ↔ ∀ (mz : Option α), ✓ (x •? mz) → ✓ (y •? mz) where
-  mp uxp := fun mz v => CMRA.discrete_valid <| uxp 0 mz (CMRA.Valid.validN v)
-  mpr h := fun n mz v => CMRA.Valid.validN <| h mz ((CMRA.valid_iff_validN' n).mpr v)
+  mp uxp := fun mz v => discrete_valid <| uxp 0 mz (Valid.validN v)
+  mpr h := fun n mz v => Valid.validN <| h mz ((valid_iff_validN' n).mpr v)
 
 @[rocq_alias cmra_discrete_total_updateP]
-theorem UpdateP.discrete_total [CMRA.Discrete α] [CMRA.IsTotal α] :
+theorem UpdateP.discrete_total [Discrete α] [IsTotal α] :
     x ~~>: P ↔ ∀ (z : α), ✓ (x • z) → ∃ y, P y ∧ ✓ (y • z) where
   mp uxp := fun z vz =>
-    let ⟨y, py, vy⟩ := UpdateP.total.mp uxp 0 z (CMRA.Valid.validN vz)
-    ⟨y, py, CMRA.discrete_valid vy⟩
+    let ⟨y, py, vy⟩ := UpdateP.total.mp uxp 0 z (Valid.validN vz)
+    ⟨y, py, discrete_valid vy⟩
   mpr h :=
     UpdateP.total.mpr fun n z v =>
-      let ⟨y, py, vy⟩ := h z ((CMRA.valid_iff_validN' n).mpr v)
-      ⟨y, py, CMRA.Valid.validN vy⟩
+      let ⟨y, py, vy⟩ := h z ((valid_iff_validN' n).mpr v)
+      ⟨y, py, Valid.validN vy⟩
 
 @[rocq_alias cmra_discrete_total_update]
-theorem Update.discrete_total [CMRA.Discrete α] [CMRA.IsTotal α] :
+theorem Update.discrete_total [Discrete α] [IsTotal α] :
     x ~~> y ↔ ∀ (z : α), ✓ (x • z) → ✓ (y • z) where
   mp uxp := fun z vz =>
-    CMRA.discrete_valid <| Update.total.mp uxp 0 z (CMRA.Valid.validN vz)
-  mpr h := Update.total.mpr fun n z v => (h z ((CMRA.valid_iff_validN' n).mpr v)).validN
+    discrete_valid <| Update.total.mp uxp 0 z (Valid.validN vz)
+  mpr h := Update.total.mpr fun n z v => (h z ((valid_iff_validN' n).mpr v)).validN
 
 -- (** * Transport *)
--- `cmra_transport` itself is ignored (see `CMRA.lean`): equality `A = B` between CMRAs is
+-- `cmra_transport` itself is ignored (see `ORA.lean`): equality `A = B` between CMRAs is
 -- transported by `transpAp`, so these update lemmas are subsumed by rewriting along the
 -- equality and using the plain `updateP` API.
 #rocq_ignore cmra_transport_updateP "Use `transpAp`; transport of updates along `A = B` is handled by rewriting"
@@ -185,7 +192,7 @@ theorem Update.discrete_total [CMRA.Discrete α] [CMRA.IsTotal α] :
 theorem UpdateP.iso
     (gf : ∀ x, g (f x) = x)
     (g_op : ∀ y1 y2, g (y1 • y2) = g y1 • g y2)
-    (g_validN : ∀ n y, ✓{n} (g y) ↔ ✓{n} y)
+    (g_validN : ∀ (n) y, ✓{n} (g y) ↔ ✓{n} y)
     (uyp : y ~~>: P)
     (pq : ∀ y', P y' → Q (g y')) :
     g y ~~>: Q := by
@@ -195,19 +202,19 @@ theorem UpdateP.iso
     | none => (g_validN n _).mp v
     | some z =>
       have : g y • z = g (y • f z) := by rw [g_op, gf]
-      (g_validN n _).mp (CMRA.validN_ne this.dist v)
+      (g_validN n _).mp (validN_ne this.dist v)
   have ⟨x, px, vx⟩ := uyp n (mz.map f) this
   have : g (x •? Option.map f mz) = g x •? mz :=
     match mz with
     | none => rfl
-    | some z => by simp only [Option.map_some, CMRA.op?, g_op, gf]
-  exact ⟨g x, pq x px, CMRA.validN_ne this.dist ((g_validN n _).mpr vx)⟩
+    | some z => by simp only [Option.map_some, op?, g_op, gf]
+  exact ⟨g x, pq x px, validN_ne this.dist ((g_validN n _).mpr vx)⟩
 
 @[rocq_alias iso_cmra_updateP']
 theorem UpdateP.iso'
     (gf : ∀ x, g (f x) = x)
     (g_op : ∀ y1 y2, g (y1 • y2) = g y1 • g y2)
-    (g_validN : ∀ n y, ✓{n} (g y) ↔ ✓{n} y)
+    (g_validN : ∀ (n) y, ✓{n} (g y) ↔ ✓{n} y)
     (uyp : y ~~>: P) :
     g y ~~>: fun x ↦ ∃ y, x = g y ∧ P y :=
   .iso f g gf g_op g_validN uyp fun z pz => ⟨z, rfl, pz⟩
@@ -267,3 +274,17 @@ theorem Update.option (x y : α) (uxy : x ~~> y) : some x ~~> some y :=
 end Updates
 
 end Iris
+
+
+/-! Printing of the step-index-free notations (see `Iris.Algebra.StepIndex`). -/
+namespace Iris.StepIndexSugar
+
+
+@[app_unexpander Iris.UpdateP] meta def unexpandUpdateP : Lean.PrettyPrinter.Unexpander
+  | `($_ $x $y) => `($x ~~>: $y)
+  | _ => throw ()
+@[app_unexpander Iris.Update] meta def unexpandUpdate : Lean.PrettyPrinter.Unexpander
+  | `($_ $x $y) => `($x ~~> $y)
+  | _ => throw ()
+
+end Iris.StepIndexSugar

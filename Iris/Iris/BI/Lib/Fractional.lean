@@ -11,17 +11,21 @@ public import Iris.ProofMode
 
 @[expose] public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 namespace Iris
 open Iris.Std BI OFE ProofMode
 
 @[rocq_alias Fractional]
-class Fractional [BI PROP] (Φ : Qp → PROP) where
+class Fractional [BI.BIBase PROP] (Φ : Qp → PROP) where
   fractional p q : Φ (p + q) ⊣⊢ Φ p ∗ Φ q
 
 #rocq_ignore Fractional_proper "OFE equivalence is Lean equality; use `congrArg`."
 
 @[ipm_class, rocq_alias AsFractional]
-class AsFractional {PROP : Type u} [BI PROP] (P : PROP) (ioΦ : InOut)
+class AsFractional {PROP : Type u} [BI.BIBase PROP] (P : PROP) (ioΦ : InOut)
     (Φ : semiOutParamIPM ioΦ (Qp → PROP)) (ioq : InOut)
     (q : semiOutParamIPM ioq Qp) where
   as_fractional : P ⊣⊢ Φ q
@@ -245,7 +249,7 @@ variable {PROP : Type _} [BI PROP] {Φ Ψ : Qp → PROP}
 def internalFractional (Φ : Qp → PROP) : PROP := iprop(□ ∀ p q, Φ (p + q) ∗-∗ Φ p ∗ Φ q)
 
 @[rocq_alias internal_fractional_ne]
-instance internalFractional_ne : NonExpansive (internalFractional (PROP := PROP)) where
+instance internalFractional_ne [BIStepIndexed PROP] : NonExpansive (internalFractional (PROP := PROP)) where
   ne _ _ _ h := intuitionistically_ne.ne <|
     forall_ne fun p => forall_ne fun q => wandIff_ne.ne (h _) (sep_ne.ne (h p) (h q))
 

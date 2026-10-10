@@ -15,6 +15,10 @@ import Batteries.Data.List.Perm
 
 public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 namespace Iris.BI
 
 open Iris.Algebra BigOpL BigOpM BIBase Iris.Std BigSepL LawfulPartialMap PartialMap
@@ -86,7 +90,7 @@ theorem bigSepM_eq_of_forall_eq {Φ Ψ : K → V → PROP} {m : M V}
   bigOpM_eq_of_forall_eq m h
 
 @[rocq_alias big_sepM_ne]
-theorem bigSepM_dist {Φ Ψ : K → V → PROP} {m : M V} {n : Nat}
+theorem bigSepM_dist [BIStepIndexed PROP] {Φ Ψ : K → V → PROP} {m : M V} {n}
     (h : ∀ {k x}, get? m k = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([∗map] k ↦ x ∈ m, Φ k x) ≡{n}≡ [∗map] k ↦ x ∈ m, Ψ k x :=
   bigOpM_dist h
@@ -145,14 +149,14 @@ instance bigSepM_affine_biaffine_inst {Φ : K → V → PROP} {m : M V} [BIAffin
 @[rocq_alias big_sepM_empty_timeless]
 instance bigSepM_nil_timeless_inst [Timeless (emp : PROP)] {Φ : K → V → PROP} :
     Timeless ([∗map] k ↦ x ∈ (∅ : M V), Φ k x) where
-  timeless := (later_congr bigSepM_empty).1.trans (Timeless.timeless.trans (except0_mono bigSepM_empty.2))
+  timeless := (only0_congr bigSepM_empty).1.trans <| Timeless.timeless.trans bigSepM_empty.2
 
 @[rocq_alias big_sepM_timeless]
 theorem bigSepM_timeless [Timeless (emp : PROP)] {Φ : K → V → PROP} {m : M V}
     (h : ∀ {k x}, get? m k = some x → Timeless (Φ k x)) :
     Timeless ([∗map] k ↦ x ∈ m, Φ k x) where
-  timeless := bigOpM_closed (P := fun Q => ▷ Q ⊢ ◇ Q) Timeless.timeless
-    (fun hx hy => later_sep.1.trans <| (sep_mono hx hy).trans except0_sep.2)
+  timeless := bigOpM_closed (P := fun Q => <only0> Q ⊢ Q) Timeless.timeless
+    (fun hx hy => only0_sep.mp.trans (sep_mono hx hy))
     (h · |>.timeless)
 
 @[rocq_alias big_sepM_timeless']
@@ -177,7 +181,7 @@ instance bigSepM_absorbing_inst [BIAffine PROP] {Φ : K → V → PROP} {m : M V
     Absorbing ([∗map] k ↦ x ∈ m, Φ k x) :=
   bigSepM_absorbing fun _ => inferInstance
 
-theorem bigSepM_emp [DecidableEq K] {m : M V} :
+theorem bigSepM_emp {m : M V} :
     bigSepM (fun (_ : K) (_ : V) => (emp : PROP)) m ⊣⊢ emp :=
   BiEntails.of_eq <| bigOpM_const_unit_eq m
 
@@ -373,7 +377,7 @@ theorem bigSepM_persistently {Φ : K → V → PROP} {m : M V} [BIAffine PROP] :
   BiEntails.of_eq <| bigOpL_hom _ (toList m)
 
 @[rocq_alias big_sepM_later]
-theorem bigSepM_later {Φ : K → V → PROP} {m : M V} [BIAffine PROP] :
+theorem bigSepM_later [BILaterFinite PROP] {Φ : K → V → PROP} {m : M V} [BIAffine PROP] :
     (▷ [∗map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∗map] k ↦ x ∈ m, ▷ Φ k x :=
   BiEntails.of_eq <| bigOpL_hom _ <| toList m
 
@@ -381,14 +385,14 @@ theorem bigSepM_later {Φ : K → V → PROP} {m : M V} [BIAffine PROP] :
 theorem bigSepM_later_2 {Φ : K → V → PROP} {m : M V} :
     ([∗map] k ↦ x ∈ m, ▷ Φ k x) ⊢ iprop(▷ [∗map] k ↦ x ∈ m, Φ k x) :=
   bigOpM_gen_proper (R := fun a b => a ⊢ later b)
-    later_intro (fun h1 h2 => (sep_mono h1 h2).trans later_sep.2) (fun _ => .rfl)
+    later_intro (fun h1 h2 => (sep_mono h1 h2).trans later_sep_2) (fun _ => .rfl)
 
 @[rocq_alias big_sepM_laterN]
-theorem bigSepM_laterN {Φ : K → V → PROP} {m : M V} {n : Nat} [BIAffine PROP] :
+theorem bigSepM_laterN [BILaterFinite PROP] {Φ : K → V → PROP} {m : M V} {n : Nat} [BIAffine PROP] :
     (▷^[n] [∗map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∗map] k ↦ x ∈ m, ▷^[n] Φ k x :=
   match n with
   | 0 => .rfl
-  | _ + 1 => (later_congr bigSepM_laterN).trans bigSepM_later
+  | _ + 1 => (later_congr bigSepM_laterN).trans (bigSepM_later)
 
 @[rocq_alias big_sepM_laterN_2]
 theorem bigSepM_laterN_2 {Φ : K → V → PROP} {m : M V} {n : Nat} :
@@ -427,12 +431,12 @@ theorem bigSepM_filter [BIAffine PROP] {Φ : K → V → PROP} {m : M V} (p : K 
     | true => simpa using equiv_iff.mpr true_imp.symm
 
 @[rocq_alias big_sepM_union]
-theorem bigSepM_union [DecidableEq K] {Φ : K → V → PROP} {m₁ m₂ : M V} (hdisj : m₁ ##ₘ m₂) :
+theorem bigSepM_union {Φ : K → V → PROP} {m₁ m₂ : M V} (hdisj : m₁ ##ₘ m₂) :
     ([∗map] k ↦ y ∈ m₁ ∪ m₂, Φ k y) ⊣⊢ ([∗map] k ↦ y ∈ m₁, Φ k y) ∗ [∗map] k ↦ y ∈ m₂, Φ k y :=
   BiEntails.of_eq <| bigOpM_union_eq Φ m₁ m₂ hdisj
 
 @[rocq_alias big_sepM_subseteq]
-theorem bigSepM_subseteq [DecidableEq K] {Φ : K → V → PROP} {m₁ m₂ : M V}
+theorem bigSepM_subseteq {Φ : K → V → PROP} {m₁ m₂ : M V}
     [∀ k v, Affine (Φ k v)] (h : m₂ ⊆ m₁) :
     ([∗map] k ↦ x ∈ m₁, Φ k x) ⊢ [∗map] k ↦ x ∈ m₂, Φ k x :=
   union_difference_cancel h ▸ (bigSepM_union disjoint_difference_right).1.trans sep_elim_left

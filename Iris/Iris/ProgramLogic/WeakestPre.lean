@@ -20,6 +20,8 @@ open ProgramLogic Language.Notation Iris.Std Iris.BI
 
 @[expose] public section
 
+local stepindex Nat
+
 /-!
 TODO: AddModal, ElimAcc instances
 -/
@@ -98,18 +100,18 @@ instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
       refine BI.forall_ne (fun obs' => ?_)
       refine BI.forall_ne (fun nt => ?_)
       refine BI.wand_ne.ne .rfl ?_
-      refine BIFUpdate.ne.ne ?_
+      refine FUpdNE.fupd_ne.ne ?_
       refine BI.sep_ne.ne .rfl ?_
       refine BI.forall_ne (fun e₂  => ?_)
       refine BI.forall_ne (fun σ₂ => ?_)
       refine BI.forall_ne (fun eₜ => ?_)
       refine BI.wand_ne.ne .rfl ?_
       refine BI.wand_ne.ne .rfl ?_
-      refine BIFUpdate.ne.ne ?_
+      refine FUpdNE.fupd_ne.ne ?_
       refine OFE.Contractive.distLater_dist fun m m_n => ?_
-      refine BIFUpdate.ne.ne ?_
+      refine FUpdNE.fupd_ne.ne ?_
       refine step_fupdN_ne.ne ?_
-      refine BIFUpdate.ne.ne ?_
+      refine FUpdNE.fupd_ne.ne ?_
       refine BI.sep_ne.ne .rfl ?_
       refine BI.sep_ne.ne ?_ ?_
       · exact Hwp m m_n _ _ _
@@ -129,18 +131,18 @@ section Wp
 theorem wp_unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E {{ Φ }} ⊣⊢ wp.pre s (Wp.wp (PROP := IProp GF) s) E e Φ :=
   BI.equiv_iff.1 <| OFE.eq_dist_2 <|
-    fun _n => (fixpoint_unfold (f := (wp.pre s).toContractiveHom)).dist E e Φ
+    fun _n => (fixpoint_unfold (f := (wp.pre s).toContractiveHom)).dist (SI := Nat) E e Φ
 
 @[rocq_alias wp_ne]
 instance wp_ne {s : Stuckness} {E} {e : Expr} :
     OFE.NonExpansive (Wp.wp (PROP := IProp GF) s E e) where
-  ne {n Φ₁ Φ₂} HΦ := by
+  ne {n : Nat} {Φ₁ Φ₂} HΦ := by
     induction n using Nat.strongRecOn generalizing e E Φ₁ Φ₂ with | ind n IH =>
     simp only [wp_unfold.to_eq]
     dsimp only [wp.pre]
     cases toVal e
     case some v =>
-      exact BIFUpdate.ne.ne <| HΦ v
+      exact FUpdNE.fupd_ne.ne <| HΦ v
     case none =>
       refine BI.forall_ne fun σ₁ => ?_
       refine BI.forall_ne fun ns => ?_
@@ -148,7 +150,7 @@ instance wp_ne {s : Stuckness} {E} {e : Expr} :
       refine BI.forall_ne fun obs' => ?_
       refine BI.forall_ne fun nt => ?_
       refine BI.wand_ne.ne .rfl ?_
-      refine BIFUpdate.ne.ne ?_
+      refine FUpdNE.fupd_ne.ne ?_
       refine BI.sep_ne.ne .rfl ?_
       refine BI.forall_ne fun e₂  => ?_
       refine BI.forall_ne fun σ₂ => ?_
@@ -156,7 +158,7 @@ instance wp_ne {s : Stuckness} {E} {e : Expr} :
       refine BI.wand_ne.ne .rfl ?_
       refine BI.wand_ne.ne .rfl ?_
       refine step_fupdN_contractive.distLater_dist fun m n_m => ?_
-      refine BIFUpdate.ne.ne ?_
+      refine FUpdNE.fupd_ne.ne ?_
       refine BI.sep_ne.ne .rfl ?_
       refine BI.sep_ne.ne ?_ .rfl
       exact IH m n_m <| OFE.dist_lt HΦ n_m
@@ -166,7 +168,7 @@ instance wp_ne {s : Stuckness} {E} {e : Expr} :
 @[rocq_alias wp_contractive]
 theorem wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
     OFE.Contractive (Wp.wp (PROP := IProp GF) s E e) where
-  distLater_dist {n Φ₁ Φ₂} HΦ := by
+  distLater_dist {n : Nat} {Φ₁ Φ₂} HΦ := by
     simp only [wp_unfold.to_eq]
     simp only [wp.pre, h]
     refine BI.forall_ne fun σ₁ => ?_
@@ -175,7 +177,7 @@ theorem wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
     refine BI.forall_ne fun obs' => ?_
     refine BI.forall_ne fun nt => ?_
     refine BI.wand_ne.ne .rfl ?_
-    refine BIFUpdate.ne.ne ?_
+    refine FUpdNE.fupd_ne.ne ?_
     refine BI.sep_ne.ne .rfl ?_
     refine BI.forall_ne fun e₂  => ?_
     refine BI.forall_ne fun σ₂ => ?_
@@ -183,7 +185,7 @@ theorem wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
     refine BI.wand_ne.ne .rfl ?_
     refine BI.wand_ne.ne .rfl ?_
     refine step_fupdN_contractive.distLater_dist fun m n_m => ?_
-    refine BIFUpdate.ne.ne ?_
+    refine FUpdNE.fupd_ne.ne ?_
     refine BI.sep_ne.ne .rfl ?_
     refine BI.sep_ne.ne ?_ .rfl
     refine wp_ne.ne ?_
@@ -338,15 +340,15 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P : IProp
   · simp [lc_split.to_eq]; itrivial
   iapply step_fupd_wand $$ Hwp; iintro Hwp
   iapply step_fupdN_le (n := ι.numLatersPerStep m) (by grind only) LawfulSet.subset_refl
-  iapply step_fupdN_wand $$ Hwp; iintro >⟨SI, Hwp, $⟩
-  icases Hpost $$ Hk SI with >⟨$, HP⟩
+  iapply step_fupdN_wand $$ Hwp; iintro >⟨Hσ, Hwp, $⟩
+  icases Hpost $$ Hk Hσ with >⟨$, HP⟩
   imodintro
   iapply wp_strong_mono (Std.IsPreorder.le_refl s) (LawfulSet.subset_refl) $$ Hwp
   iintro %v HΦ
   iapply HΦ $$ HP
 
 @[rocq_alias wp_step_fupdN_strong]
-theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IProp GF} {Φ} {n}
+theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IProp GF} {Φ} {n : Nat}
     (toVal_e : toVal e = none) (E2_E1 : E2 ⊆ E1) :
     (∀ (σ : State) ns obs nt, stateInterp σ ns obs nt ={E1, ∅}=∗ ⌜n ≤ ι.numLatersPerStep ns + 1⌝)
     ∧ ((|={E1,E2}=> |={∅}▷=>^[n] |={E2,E1}=> P)

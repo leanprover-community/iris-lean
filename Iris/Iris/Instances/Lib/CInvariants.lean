@@ -19,9 +19,11 @@ public import Iris.Std.List
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
-open BI CMRA OFE Iris Iris.Std LawfulSet Excl COFE ProofMode
+open BI ORA OFE Iris Iris.Std LawfulSet Excl COFE ProofMode
 
 /-! # Cancelable Invariants -/
 
@@ -63,7 +65,7 @@ instance instTimelessExcl (γ : GName) : Timeless (excl (GF := GF) γ) :=
 @[rocq_alias cinv_contractive]
 instance instContractiveCinv (N : Namespace) (γ : GName) :
     Contractive (cinv (GF := GF) N γ) where
-  distLater_dist {n x y} H := by
+  distLater_dist {n : Nat} {x y} H := by
     unfold cinv
     refine Contractive.distLater_dist fun m hm => or_ne.ne (sep_ne.ne (H _ hm) .rfl) .rfl
 
@@ -109,7 +111,7 @@ theorem own_excl_alloc (P : GName → Prop) (HP : PredInfinite P) :
   imod iOwn_alloc_strong (E := W.inv)
     ((some (Excl.excl ()), none) • (none, some (DFrac.own 1)) :
       CInvF (IProp GF) (IProp GF)) P ?_
-    ⟨trivial, DFrac.valid_own_one⟩ with ⟨%γ, %HPγ, Hown⟩
+    (by exact ⟨trivial, DFrac.valid_own_one⟩) with ⟨%γ, %HPγ, Hown⟩
   · exact HP.exists_ge
   · imodintro
     iexists γ

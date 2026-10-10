@@ -11,6 +11,10 @@ public import Iris.ProofMode.ModalityInstances
 
 @[expose] public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 namespace Iris.ProofMode
 open BI
 
@@ -69,8 +73,7 @@ instance intoEmbed_embed (P : PROP1) : IntoEmbed (PROP1 := PROP1) (PROP2 := PROP
   into_embed := .rfl
 
 @[rocq_alias into_embed_affinely]
-instance intoEmbed_affinely [BIUpdate PROP1] [BIUpdate PROP2]
-    [BiEmbedBUpd PROP1 PROP2] (P : PROP2) (Q : PROP1) [inst : IntoEmbed P Q] :
+instance intoEmbed_affinely (P : PROP2) (Q : PROP1) [inst : IntoEmbed P Q] :
     IntoEmbed iprop(<affine> P) iprop(<affine> Q) where
   into_embed := (affinely_mono inst.into_embed).trans <| embed_affinely_2 Q
 
@@ -259,7 +262,7 @@ instance fromForall_embed {α : Sort _} (P : PROP1) (Ψ : α → PROP1) [inst : 
 
 /-! ### IntoInv -/
 
-@[rocq_alias into_inv_embed]
+@[nolint unusedArguments, rocq_alias into_inv_embed]
 instance intoInv_embed (P : PROP1) (N : Namespace) [IntoInv P N] :
     IntoInv (PROP := PROP2) iprop(⎡P⎤) N := {}
 
@@ -296,15 +299,22 @@ instance intoLater_embed [BiEmbedLater PROP1 PROP2] (n : Nat) (P Q : PROP1) prog
 
 end BiEmbed
 
-section SbiEmbed
+section PlainlyEmbed
 
-variable [Sbi P1] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
+variable [BI P1] [BI P2] [BIPlainly P1] [BIPlainly P2] [BiEmbed P1 P2] [BiEmbedPlainly P1 P2]
 
 @[ipm_backtrack, rocq_alias from_modal_plainly_embed]
 instance (priority := low) fromModal_plainly_embed {α} φ io (sel : α)
-    (P Q : P1) [inst : FromModal .in modality_plainly φ sel P Q] :
-    FromModal io modality_plainly φ sel iprop(⎡P⎤ : P2) iprop(⎡Q⎤) where
+    (P Q : P1) [inst : FromModal .in (modality_plainly) φ sel P Q] :
+    FromModal io (modality_plainly) φ sel iprop(⎡P⎤ : P2) iprop(⎡Q⎤) where
   from_modal h := (embed_plainly Q).mpr.trans (embed_mono <| inst.from_modal h)
+
+end PlainlyEmbed
+
+section SbiEmbed
+
+variable [BI P1] [BIStepIndexed P1] [Sbi P1] [BI P2] [BIStepIndexed P2] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
+
 
 @[rocq_alias into_internal_eq_embed]
 instance intoInternalEq_embed {A} [OFE A] (x y : A) (P : P1)

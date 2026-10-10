@@ -8,6 +8,8 @@ module
 public import Iris.BI
 public import Iris.ProofMode
 
+local stepindex Nat
+
 @[expose] public section
 
 namespace IrisTest
@@ -49,7 +51,7 @@ example (P Q R : PROP1) [Affine P] :
       iexact HR
 
 /-- Tests `imodintro` prefers `fromModal_embed` over `fromModal_plainly_embed`. -/
-example {P1 P2 : Type u} [Sbi P1] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
+example {P1 P2 : Type u} [BI P1] [BIPlainly P1] [BI P2] [BIPlainly P2] [BiEmbed P1 P2] [BiEmbedPlainly P1 P2]
     (P : P1) [Plain P] : □ ⎡P⎤ ⊢@{P2} ⎡■ P⎤ := by
   iintro #HP
   imodintro _
@@ -285,7 +287,7 @@ end Frame
 
 section
 
-variable [Sbi PROP1] [Sbi PROP2]
+variable [BI PROP1] [BIStepIndexed PROP1] [Sbi PROP1] [BI PROP2] [BIStepIndexed PROP2] [Sbi PROP2]
   [BiEmbed PROP1 PROP2] [BiEmbedSbi PROP1 PROP2]
 
 /- The instance `frame_eq_embed` is used. -/

@@ -13,6 +13,10 @@ public import Iris.BI.Updates
 
 @[expose] public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 /-! # Later credits -/
 
 namespace Iris
@@ -28,7 +32,7 @@ attribute [inherit_doc LaterCredits] LaterCredits.lc
 notation:max "£ " i:40 => LaterCredits.lc i
 
 @[rocq_alias BiLaterCredits]
-class BILaterCredits (PROP : Type _) [BI PROP] extends LaterCredits PROP where
+class BILaterCredits (PROP : Type _) [BI.BIBase PROP] extends LaterCredits PROP where
   lc_split {n m : Nat} : £ (n + m) ⊣⊢@{PROP} £ n ∗ £ m
   lc_timeless (n : Nat) : Timeless (PROP := PROP) (£ n)
   lc_0_persistent : Persistent (PROP := PROP) (£ 0)
@@ -39,12 +43,12 @@ attribute [instance] lc_timeless lc_0_persistent lc_affine
 #rocq_ignore BiLaterCreditsMixin "Included in BILaterCredits typeclass."
 
 @[rocq_alias BiBUpdLaterCredits]
-class BIBUpdLaterCredits (PROP : Type _) [BI PROP] [BILaterCredits PROP] [BIUpdate PROP] where
+class BIBUpdLaterCredits (PROP : Type _) [BI.BIBase PROP] [LaterCredits PROP] [BUpd PROP] where
   lc_zero : ⊢@{PROP} |==> £ 0
 export BIBUpdLaterCredits (lc_zero)
 
 @[rocq_alias BiFUpdLaterCredits]
-class BIFUpdLaterCredits (PROP : Type _) [BI PROP] [BILaterCredits PROP] [BIFUpdate PROP] where
+class BIFUpdLaterCredits (PROP : Type _) [BI.BIBase PROP] [LaterCredits PROP] [FUpd PROP] where
   lc_fupd_elim_later {E : CoPset} {P : PROP} : £ 1 -∗ (▷ P) -∗ |={E}=> P
 export BIFUpdLaterCredits (lc_fupd_elim_later)
 
@@ -89,7 +93,7 @@ theorem lc_fupd_add_laterN (n : Nat) {E1 E2 : CoPset} {P : PROP} :
     calc
       _ ⊢ £ 1 ∗ £ n ∗ ▷ ▷^[n] |={E1,E2}=> P := (sep_mono_left lc_succ.mp).trans sep_assoc.mp
       _ ⊢ £ 1 ∗ ▷ (£ n ∗ ▷^[n] |={E1,E2}=> P) :=
-        sep_mono_right <| (sep_mono_left later_intro).trans later_sep.mpr
+        sep_mono_right <| (sep_mono_left later_intro).trans later_sep_2
       _ ⊢ £ 1 ∗ ▷ |={E1,E2}=> P := sep_mono_right <| later_mono IH
       _ ⊢ |={E1,E2}=> P := wand_elim (wand_entails lc_fupd_add_later)
 

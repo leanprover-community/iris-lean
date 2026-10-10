@@ -13,6 +13,9 @@ public import Iris.Std.List
 
 namespace Iris
 
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
+
 open OFE COFE Iris.Algebra
 
 /-! ## The pointwise list OFE -/
@@ -20,6 +23,7 @@ open OFE COFE Iris.Algebra
 section ofe
 variable [OFE α]
 
+@[indexed]
 theorem forall₂_eq_of_forall₂_dist : ∀ {l k : List α},
     (∀ n, List.Forall₂ (· ≡{n}≡ ·) l k) → l = k
   | [], [], _ => rfl
@@ -31,7 +35,7 @@ theorem forall₂_eq_of_forall₂_dist : ∀ {l k : List α},
 
 @[rocq_alias list_ofe_mixin]
 instance : OFE (List α) where
-  Dist n := List.Forall₂ (Dist n)
+  dist n := List.Forall₂ (Dist n)
   dist_eqv := List.Forall₂.equivalence dist_eqv
   eq_dist' := ⟨fun h _ => h ▸ (List.Forall₂.rfl .refl), forall₂_eq_of_forall₂_dist⟩
   dist_lt h hlt := h.imp fun hab => hab.lt hlt
@@ -203,6 +207,7 @@ variable [COFE α]
 
 /-- Head of a chain of lists, defaulting to `x` on the empty list; used to project a chain of lists
 onto a chain of its first elements. -/
+@[indexed]
 def headGetDHom (x : α) : List α -n> α where
   f l := l.head?.getD x
   ne := ⟨fun _ _ _ h => match h with | .nil => .rfl | .cons hh _ => hh⟩
@@ -210,6 +215,7 @@ def headGetDHom (x : α) : List α -n> α where
 @[simp] theorem headGetDHom_apply {x : α} {l : List α} : headGetDHom x l = l.head?.getD x := rfl
 
 /-- Tail of a list as a nonexpansive map, used to project a chain of lists onto a chain of tails. -/
+@[indexed]
 def tailHom : List α -n> List α where
   f := List.tail
   ne := ⟨fun _ _ _ h => match h with | .nil => .nil | .cons _ t => t⟩
@@ -223,7 +229,7 @@ def listComplGo : List α → Chain (List α) → List α
   | [], _ => []
   | x :: c0, c => compl (c.map (headGetDHom x)) :: listComplGo c0 (c.map tailHom)
 
-theorem listComplGo_conv_compl {n : Nat} (c : Chain (List α)) :
+theorem listComplGo_conv_compl {n} (c : Chain (List α)) :
     ∀ (c0 : List α), c0 ≡{0}≡ c n → listComplGo c0 c ≡{n}≡ c n
   | [], H => by rw [nil_dist_eq.mp H.symm]; exact .rfl
   | x :: c0, H => by
@@ -239,9 +245,12 @@ theorem listComplGo_conv_compl {n : Nat} (c : Chain (List α)) :
       · simp [Chain.map_apply, tailHom_apply, hcn]
 
 @[rocq_alias list.list_cofe]
-instance : IsCOFE (List α) where
+instance [SIdxFinite] : IsCOFE (List α) where
   compl c := listComplGo (c 0) c
-  conv_compl {n c} := listComplGo_conv_compl c (c 0) (c.cauchy (Nat.zero_le n)).symm
+  conv_compl {_ c} := listComplGo_conv_compl c (c 0) (c.cauchy SIdx.le_0_l).symm
+  lbcompl := (·.elim)
+  conv_lbcompl := (·.elim)
+  lbcompl_ne := (·.elim)
 
 end cofe
 
@@ -325,7 +334,8 @@ end higher_order
 
 @[rocq_alias big_opL_ne_2]
 theorem bigOpL_dist_2 {M α : Type _} [OFE M] [OFE α] {op : M → M → M} {unit : M} [MonoidOps op unit]
-    {n : Nat} {l1 l2 : List α} (hl : l1 ≡{n}≡ l2) : ∀ {f g : Nat → α → M},
+    [NonExpansive₂ op]
+    {n} {l1 l2 : List α} (hl : l1 ≡{n}≡ l2) : ∀ {f g : Nat → α → M},
     (∀ {k : Nat} {y1 y2}, l1[k]? = some y1 → l2[k]? = some y2 → y1 ≡{n}≡ y2 → f k y1 ≡{n}≡ g k y2) →
     bigOpL op f l1 ≡{n}≡ bigOpL op g l2 := by
   induction hl with
@@ -341,7 +351,7 @@ section functor
 open COFE
 
 /-- The list functor's action on morphisms: postcompose with `List.map`. -/
-@[rocq_alias listO_map]
+@[indexed, rocq_alias listO_map]
 def listMap [OFE α] [OFE β] (f : α -n> β) : List α -n> List β where
   f := List.map f
   ne := ⟨fun _ _ _ h => h.map (fun hab => f.ne.ne hab)⟩

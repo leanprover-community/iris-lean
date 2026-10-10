@@ -14,13 +14,15 @@ meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
+local stepindex Nat
+
 /-!
 # Propositions for reasoning about monotone partial bijections
 -/
 
 namespace Iris
 
-open Iris.Std CMRA BI ProofMode BigSepS LawfulSet SetBij
+open Iris.Std ORA BI ProofMode BigSepS LawfulSet SetBij
 
 @[rocq_alias gset_bijG]
 class SetBijG (GF : BundledGFunctors) (A B : Type _) (S : outParam (Type _))
@@ -117,7 +119,7 @@ theorem set_bij_own_elem_agree {a a' : A} {b b' : B} :
 @[rocq_alias gset_bij_own_elem_get]
 theorem set_bij_own_elem_get (a : A) (b : B) (h : (a, b) ∈ L) :
     (γ ↪●BIJ{dq} L) ⊢@{IProp GF} γ ↪◯BIJ⟨a, b⟩ :=
-  iOwn_mono (elem_inc_auth h)
+  iOwn_ord_mono (elem_ord_auth h)
 
 @[rocq_alias gset_bij_elem_of]
 theorem set_bij_elem_of (a : A) (b : B) :

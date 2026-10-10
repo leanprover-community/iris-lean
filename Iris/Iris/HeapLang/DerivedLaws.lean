@@ -10,6 +10,8 @@ public import Iris.HeapLang.PrimitiveLaws
 /-! # Derived HeapLang laws -/
 
 @[expose] public section
+
+local stepindex Nat
 namespace Iris.HeapLang
 
 open Iris BI ProofMode ProgramLogic Iris.Std
