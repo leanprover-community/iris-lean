@@ -46,7 +46,7 @@ instance (priority := default + 10) intoPure_internalEq_leibniz [BI PROP] [BISte
 /-! ### FromModal -/
 
 @[rocq_alias from_modal_Next]
-instance fromModal_internalEq_next [SIdxSucc SI] [BI PROP] [BIStepIndexed PROP] [Sbi PROP] [OFE A] io (x y : A) :
+instance fromModal_internalEq_next [SIdxSucc] [BI PROP] [BIStepIndexed PROP] [Sbi PROP] [OFE A] io (x y : A) :
     FromModal (PROP1 := PROP) (PROP2 := PROP) io (modality_laterN 1) True
       iprop(▷ (x ≡ y) : PROP) iprop(Later.next x ≡ Later.next y) iprop(x ≡ y) where
   from_modal _ := later_equivI_mpr x y
@@ -54,7 +54,7 @@ instance fromModal_internalEq_next [SIdxSucc SI] [BI PROP] [BIStepIndexed PROP] 
 /-! ### IntoLaterN -/
 
 @[ipm_backtrack, rocq_alias into_laterN_Next]
-instance intoLaterN_internalEq_next [SIdxSucc SI] [BI PROP] [BIStepIndexed PROP] [Sbi PROP] [OFE A] (x y : A)
+instance intoLaterN_internalEq_next [SIdxSucc] [BI PROP] [BIStepIndexed PROP] [Sbi PROP] [OFE A] (x y : A)
     progress stuck only_head n n' [h : NatCancel n 1 n' 0 stuck] :
     IntoLaterN progress (PROP := PROP) only_head n
       iprop(Later.next x ≡ Later.next y) iprop(x ≡ y) where

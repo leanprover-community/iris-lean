@@ -105,7 +105,7 @@ example (AU AACC : Nat) : Nat := AU + AACC
 
 /-! The notation elaborates to exactly the terms the lemmas about `atomic_update` and
 `atomic_acc` are stated with. -/
-example := (aupd_aacc (SI := Nat) : (AU <{ ∃∃ x, α x }> @ Eo, Ei <{ ∀∀ y, β x y, COMM Ψ x y }>) ⊢
+example := (aupd_aacc : (AU <{ ∃∃ x, α x }> @ Eo, Ei <{ ∀∀ y, β x y, COMM Ψ x y }>) ⊢
     AACC <{ ∃∃ x, α x,
         ABORT AU <{ ∃∃ x, α x }> @ Eo, Ei <{ ∀∀ y, β x y, COMM Ψ x y }> }>
       @ Eo, Ei <{ ∀∀ y, β x y, COMM Ψ x y }>)

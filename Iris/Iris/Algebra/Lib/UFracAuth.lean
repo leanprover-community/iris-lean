@@ -75,7 +75,7 @@ instance frag_discrete {q : Qp} {a : A} [DiscreteE a] : DiscreteE (◯U{q} a : U
 /-! ## Validity -/
 
 @[rocq_alias ufrac_auth_validN]
-theorem validN {n : SI} {a : A} {p : Qp} (ha : ✓{n} a) : ✓{n} (●U{p} a : UFracAuth) • ◯U{p} a :=
+theorem validN {n} {a : A} {p : Qp} (ha : ✓{n} a) : ✓{n} (●U{p} a : UFracAuth) • ◯U{p} a :=
   both_validN_frame.mpr ⟨⟨none, ordN_refl _⟩, trivial, ha⟩
 
 @[rocq_alias ufrac_auth_valid]
@@ -85,7 +85,7 @@ theorem valid {p : Qp} {a : A} (ha : ✓ a) : ✓ (●U{p} a : UFracAuth) • �
 /-! ## Agreement -/
 
 @[rocq_alias ufrac_auth_agreeN]
-theorem agreeN {n : SI} {p : Qp} {a b : A} (h : ✓{n} (●U{p} a : UFracAuth) • ◯U{p} b) : a ≡{n}≡ b := by
+theorem agreeN {n} {p : Qp} {a b : A} (h : ✓{n} (●U{p} a : UFracAuth) • ◯U{p} b) : a ≡{n}≡ b := by
   obtain ⟨⟨c, hc⟩, _⟩ := both_validN_frame.mp h
   rcases c with _ | ⟨r, _⟩ <;> rcases hc with e | ⟨⟨s, e⟩, _⟩
   · exact e.2.symm
@@ -101,17 +101,17 @@ theorem agree {p : Qp} {a b : A} (h : ✓ (●U{p} a : UFracAuth) • ◯U{p} b)
 
 /-! ## Inclusion -/
 
-theorem ordN_frame {n : SI} {p q : Qp} {a b : A} (h : ✓{n} (●U{p} a : UFracAuth) • ◯U{q} b) :
+theorem ordN_frame {n} {p q : Qp} {a b : A} (h : ✓{n} (●U{p} a : UFracAuth) • ◯U{q} b) :
     ∃ c, some b • c ≼ₒ{n} some a := by
   obtain ⟨⟨c, hc⟩, _⟩ := both_validN_frame.mp h
   exact ⟨c.map Prod.snd, by cases c <;> exact hc.imp (·.2) (·.2)⟩
 
-theorem ordN [IncOrd A] {n : SI} {p q : Qp} {a b : A}
+theorem ordN [IncOrd A] {n} {p q : Qp} {a b : A}
     (h : ✓{n} (●U{p} a : UFracAuth) • ◯U{q} b) : some b ≼ₒ{n} some a :=
   exists_op_ordN_iff_ordN.mp (ordN_frame h)
 
 @[rocq_alias ufrac_auth_includedN]
-theorem includedN [OrdInc A] {n : SI} {p q : Qp} {a b : A}
+theorem includedN [OrdInc A] {n} {p q : Qp} {a b : A}
     (h : ✓{n} (●U{p} a : UFracAuth) • ◯U{q} b) : some b ≼{n} some a :=
   exists_op_ordN_iff_incN.mp (ordN_frame h)
 
@@ -128,12 +128,12 @@ theorem included [ORA.Discrete A] [OrdInc A] {q p : Qp} {a b : A}
     (h : ✓ (●U{p} a : UFracAuth) • ◯U{q} b) : some b ≼ some a :=
   exists_op_ord_iff_inc.mp (ord_frame h)
 
-theorem ordN_total [OrderRefl A] [IncOrd A] {n : SI} {q p : Qp} {a b : A}
+theorem ordN_total [OrderRefl A] [IncOrd A] {n} {q p : Qp} {a b : A}
     (h : ✓{n} (●U{p} a : UFracAuth) • ◯U{q} b) : b ≼ₒ{n} a :=
   some_ordN_some_iff_orderRefl.mp (ordN h)
 
 @[rocq_alias ufrac_auth_includedN_total]
-theorem includedN_total [OrderRefl A] [OrdInc A] {n : SI} {q p : Qp} {a b : A}
+theorem includedN_total [OrderRefl A] [OrdInc A] {n} {q p : Qp} {a b : A}
     (h : ✓{n} (●U{p} a : UFracAuth) • ◯U{q} b) : b ≼{n} a :=
   (dist_or_incN_of_some_incN_some (includedN h)).elim (OrdInc.ordN_incN ·.to_ordN) id
 
@@ -149,7 +149,7 @@ theorem included_total [ORA.Discrete A] [OrderRefl A] [OrdInc A] {q p : Qp} {a b
 /-! ## Auth-only validity -/
 
 @[rocq_alias ufrac_auth_auth_validN]
-theorem auth_validN {n : SI} {q : Qp} {a : A} : (✓{n} (●U{q} a : UFracAuth)) ↔ ✓{n} a := by
+theorem auth_validN {n} {q : Qp} {a : A} : (✓{n} (●U{q} a : UFracAuth)) ↔ ✓{n} a := by
   rw [Auth.auth_validN]
   exact ⟨(·.2), (⟨trivial, ·⟩)⟩
 
@@ -161,7 +161,7 @@ theorem auth_valid {q : Qp} {a : A} : (✓ (●U{q} a : UFracAuth)) ↔ ✓ a :=
 /-! ## Fragment-only validity -/
 
 @[rocq_alias ufrac_auth_frag_validN]
-theorem frag_validN {n : SI} {q : Qp} {a : A} : (✓{n} (◯U{q} a : UFracAuth)) ↔ ✓{n} a := by
+theorem frag_validN {n} {q : Qp} {a : A} : (✓{n} (◯U{q} a : UFracAuth)) ↔ ✓{n} a := by
   rw [Auth.frag_validN]
   exact ⟨(·.2), (⟨trivial, ·⟩)⟩
 
@@ -176,7 +176,7 @@ theorem frag_valid {q : Qp} {a : A} : (✓ (◯U{q} a : UFracAuth)) ↔ ✓ a :=
 theorem frag_op {q1 q2 : Qp} {a1 a2 : A} : (◯U{q1 + q2} (a1 • a2) : UFracAuth) = (◯U{q1} a1) • ◯U{q2} a2 := rfl
 
 @[rocq_alias ufrac_auth_frag_op_validN]
-theorem frag_op_validN {n : SI} {q1 q2 : Qp} {a b : A} :
+theorem frag_op_validN {n} {q1 q2 : Qp} {a b : A} :
     (✓{n} (◯U{q1} a : UFracAuth) • ◯U{q2} b) ↔ ✓{n} (a • b) := frag_validN
 
 @[rocq_alias ufrac_auth_frag_op_valid]

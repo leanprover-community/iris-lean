@@ -340,8 +340,8 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P : IProp
   · simp [lc_split.to_eq]; itrivial
   iapply step_fupd_wand $$ Hwp; iintro Hwp
   iapply step_fupdN_le (n := ι.numLatersPerStep m) (by grind only) LawfulSet.subset_refl
-  iapply step_fupdN_wand $$ Hwp; iintro >⟨SI, Hwp, $⟩
-  icases Hpost $$ Hk SI with >⟨$, HP⟩
+  iapply step_fupdN_wand $$ Hwp; iintro >⟨Hσ, Hwp, $⟩
+  icases Hpost $$ Hk Hσ with >⟨$, HP⟩
   imodintro
   iapply wp_strong_mono (Std.IsPreorder.le_refl s) (LawfulSet.subset_refl) $$ Hwp
   iintro %v HΦ

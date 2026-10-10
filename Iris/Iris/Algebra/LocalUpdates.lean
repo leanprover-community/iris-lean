@@ -16,7 +16,7 @@ local stepindex SI
 
 @[indexed, rocq_alias local_update]
 def LocalUpdate [RA α] [ORA α] (x y : α × α) : Prop :=
-  ∀ (n : SI) mz, ✓{n} x.1 → x.1 ≡{n}≡ x.2 •? mz → ✓{n} y.1 ∧ y.1 ≡{n}≡ y.2 •? mz
+  ∀ (n) mz, ✓{n} x.1 → x.1 ≡{n}≡ x.2 •? mz → ✓{n} y.1 ∧ y.1 ≡{n}≡ y.2 •? mz
 
 notation:50 x:51 " ~l~>[" S "] " y:50 => Iris.LocalUpdate (SI := S) x y
 @[inherit_doc Iris.LocalUpdate]
@@ -50,7 +50,7 @@ theorem LocalUpdate.exclusive [Exclusive y] {x x' : α}
 
 @[rocq_alias op_local_update]
 theorem LocalUpdate.op {x y z : α}
-    (h : ∀ (n : SI), ✓{n} x → ✓{n} (z • x)) : (x, y) ~l~> (z • x, z • y) := by
+    (h : ∀ n, ✓{n} x → ✓{n} (z • x)) : (x, y) ~l~> (z • x, z • y) := by
   refine fun n mz vx e => ⟨h n vx, ?_⟩
   calc
     (z • x) ≡{n}≡ z • (y •? mz) := e.op_r
@@ -109,11 +109,11 @@ theorem LocalUpdate.discrete [Discrete α] (x y x' y' : α) :
 
 @[rocq_alias local_update_valid0]
 theorem LocalUpdate.valid0 {x y x' y' : α}
-    (h : ✓{(0 : SI)} x → ✓{(0 : SI)} y → some y ≼{(0 : SI)} some x → (x, y) ~l~> (x', y')) :
+    (h : ✓{0} x → ✓{0} y → some y ≼{0} some x → (x, y) ~l~> (x', y')) :
     (x, y) ~l~> (x', y') := by
   intro n mz vx e
-  have v0y : ✓{(0 : SI)} y := valid0_of_validN <| validN_opM ((OFE.Dist.validN e).mp vx)
-  have : some y ≼{(0 : SI)} some x := inc0_of_incN (Option.some_inc_some_of_dist_opM e)
+  have v0y : ✓{0} y := valid0_of_validN <| validN_opM ((OFE.Dist.validN e).mp vx)
+  have : some y ≼{0} some x := inc0_of_incN (Option.some_inc_some_of_dist_opM e)
   exact h (valid0_of_validN vx) v0y this n mz vx e
 
 @[rocq_alias local_update_valid]
@@ -124,7 +124,7 @@ theorem LocalUpdate.valid [Discrete α] {x y x' y' : α}
 
 @[rocq_alias local_update_total_valid0]
 theorem LocalUpdate.total_valid0 [IsTotal α] {x y x' y' : α}
-    (h : ✓{(0 : SI)} x → ✓{(0 : SI)} y → y ≼{(0 : SI)} x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
+    (h : ✓{0} x → ✓{0} y → y ≼{0} x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
   .valid0 fun vx0 vy0 mz => h vx0 vy0 (Option.some_incN_some_iff_is_total.mp mz)
 
 @[rocq_alias local_update_total_valid]
@@ -140,7 +140,7 @@ variable [URA α] [UORA α]
 
 @[rocq_alias local_update_unital]
 theorem local_update_unital {x y x' y' : α} :
-    (x, y) ~l~> (x', y') ↔ ∀ (n : SI) z, ✓{n} x → x ≡{n}≡ y • z → (✓{n} x' ∧ x' ≡{n}≡ y' • z) where
+    (x, y) ~l~> (x', y') ↔ ∀ (n) z, ✓{n} x → x ≡{n}≡ y • z → (✓{n} x' ∧ x' ≡{n}≡ y' • z) where
   mp h n z := h n (some z)
   mpr h n mz vx e :=
     match mz with

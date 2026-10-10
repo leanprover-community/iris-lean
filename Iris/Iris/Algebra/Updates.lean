@@ -15,13 +15,13 @@ variable {SI : stepindex (Type _)} [instSI : SIdx SI]
 local stepindex SI
 
 @[indexed, rocq_alias cmra_updateP]
-def UpdateP [RA α] [ORA α] (x : α) (P : α → Prop) := ∀ (n : SI) mz, ✓{n} (x •? mz) → ∃ y, P y ∧ ✓{n} (y •? mz)
+def UpdateP [RA α] [ORA α] (x : α) (P : α → Prop) := ∀ (n) mz, ✓{n} (x •? mz) → ∃ y, P y ∧ ✓{n} (y •? mz)
 notation:50 x:51 " ~~>:[" S "] " y:50 => Iris.UpdateP (SI := S) x y
 @[inherit_doc Iris.UpdateP]
 notation:50 x:51 " ~~>: " y:50 => Iris.UpdateP (SI := stepindex%) x y
 
 @[indexed, rocq_alias cmra_update]
-def Update [RA α] [ORA α] (x y : α) := ∀ (n : SI) mz, ✓{n} (x •? mz) → ✓{n} (y •? mz)
+def Update [RA α] [ORA α] (x y : α) := ∀ (n) mz, ✓{n} (x •? mz) → ✓{n} (y •? mz)
 notation:50 x:51 " ~~>[" S "] " y:50 => Iris.Update (SI := S) x y
 @[inherit_doc Iris.Update]
 notation:50 x:51 " ~~> " y:50 => Iris.Update (SI := stepindex%) x y
@@ -121,14 +121,14 @@ theorem Update.included {x y : α} : x ≼ y → y ~~> x :=
   fun ⟨_, ez⟩ => ez.symm ▸ Update.op_l
 
 @[rocq_alias cmra_update_valid0]
-theorem Update.valid0 {x y : α} : (✓{(0 : SI)} x → x ~~> y) → x ~~> y :=
+theorem Update.valid0 {x y : α} : (✓{0} x → x ~~> y) → x ~~> y :=
   fun h n mz v => h (valid0_of_validN (validN_opM v)) n mz v
 
 /-! ## Frame preserving updates for total and discete CMRAs -/
 
 @[rocq_alias cmra_total_updateP]
 theorem UpdateP.total [IsTotal α] :
-    x ~~>: P ↔ ∀ (n : SI) (z : α), ✓{n} (x • z) → ∃ y, P y ∧ ✓{n} (y • z) where
+    x ~~>: P ↔ ∀ (n) (z : α), ✓{n} (x • z) → ∃ y, P y ∧ ✓{n} (y • z) where
   mp uxp := fun n z v => uxp n (some z) v
   mpr h := fun n mz v =>
     match mz with
@@ -138,7 +138,7 @@ theorem UpdateP.total [IsTotal α] :
     | some z => h n z v
 
 @[rocq_alias cmra_total_update]
-theorem Update.total [IsTotal α] : x ~~> y ↔ ∀ (n : SI) (z : α), ✓{n} (x • z) → ✓{n} (y • z) where
+theorem Update.total [IsTotal α] : x ~~> y ↔ ∀ (n) (z : α), ✓{n} (x • z) → ✓{n} (y • z) where
   mp uxy := fun n z v => uxy n (some z) v
   mpr h := fun n mz v =>
     match mz with
@@ -192,7 +192,7 @@ theorem Update.discrete_total [Discrete α] [IsTotal α] :
 theorem UpdateP.iso
     (gf : ∀ x, g (f x) = x)
     (g_op : ∀ y1 y2, g (y1 • y2) = g y1 • g y2)
-    (g_validN : ∀ (n : SI) y, ✓{n} (g y) ↔ ✓{n} y)
+    (g_validN : ∀ (n) y, ✓{n} (g y) ↔ ✓{n} y)
     (uyp : y ~~>: P)
     (pq : ∀ y', P y' → Q (g y')) :
     g y ~~>: Q := by
@@ -214,7 +214,7 @@ theorem UpdateP.iso
 theorem UpdateP.iso'
     (gf : ∀ x, g (f x) = x)
     (g_op : ∀ y1 y2, g (y1 • y2) = g y1 • g y2)
-    (g_validN : ∀ (n : SI) y, ✓{n} (g y) ↔ ✓{n} y)
+    (g_validN : ∀ (n) y, ✓{n} (g y) ↔ ✓{n} y)
     (uyp : y ~~>: P) :
     g y ~~>: fun x ↦ ∃ y, x = g y ∧ P y :=
   .iso f g gf g_op g_validN uyp fun z pz => ⟨z, rfl, pz⟩

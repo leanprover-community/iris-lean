@@ -210,7 +210,7 @@ theorem pcore_bound (x : GenMap β) (cx : Nat → Option β)
   rw [hcx]
   simp [core, pcore, optionCore, hN k hk]
 
-theorem extend_bound {n : SI} {x : GenMap β}
+theorem extend_bound {n} {x : GenMap β}
     {y1 y2 : Nat → Option β} (Hv : ✓{n} x.car) (He : x.car ≡{n}≡ y1 • y2) :
     let F k := extend (Hv k) (He k)
     (∃ N, ∀ k, N ≤ k → (fun k => (F k).1) k = none) ∧
@@ -227,12 +227,12 @@ theorem extend_bound {n : SI} {x : GenMap β}
   · exact ⟨N, fun k hk => (aux k hk _ _ (extend (Hv k) (He k)).2.2.1).1⟩
   · exact ⟨N, fun k hk => (aux k hk _ _ (extend (Hv k) (He k)).2.2.1).2⟩
 
-@[reducible] def GenMap.raValid : _root_.Iris.Valid SI (GenMap β) where
+@[reducible] def GenMap.raValid : _root_.Iris.Valid (GenMap β) where
   ValidN n x := ✓{n} x.car
   Valid x := ✓ x.car
   valid_iff_validN {_x} := ⟨fun Hv _ => Hv.validN, fun H => valid_iff_validN.mpr (H ·)⟩
 
-@[reducible] def GenMap.raOrdered : Ordered SI (GenMap β) where
+@[reducible] def GenMap.raOrdered : Ordered (GenMap β) where
   OrderN n x y := x.car ≼ₒ{n} y.car
   Order x y := x.car ≼ₒ y.car
   ordN_trans := ordN_trans
@@ -267,41 +267,41 @@ instance instORA_GenMap : ORA (GenMap β) where
   op_ne {x} := ⟨fun n y₁ y₂ H => by
     change (x.car • y₁.car) ≡{n}≡ (x.car • y₂.car)
     exact (op_ne (x := x.car)).ne (n := n) (x₁ := y₁.car) (x₂ := y₂.car) H⟩
-  pcore_ne {n : SI} {x y cx} H Hm := by
+  pcore_ne {n} {x y cx} H Hm := by
     refine ⟨⟨fun k => core (y.car k), ?_⟩, by simp [PCore.pcore, pcore_genmap], fun k => ?_⟩
     · obtain ⟨N, hN⟩ := y.bound
       exact ⟨N, fun k hk => by simp [core, pcore, optionCore, hN k hk]⟩
     · suffices hcx : cx.car = fun k => core (x.car k) by rw [hcx]; exact (H k).core
       simp only [PCore.pcore, pcore_genmap, Option.some.injEq] at Hm
       exact (congrArg GenMap.car Hm).symm
-  validN_ne {n : SI} {x y} H := (Dist.validN (n := n) (x := x.car) (y := y.car) H).mp
-  validN_le {n n' : SI} {x} := validN_le (n := n) (n' := n') (x := x.car)
+  validN_ne {n} {x y} H := (Dist.validN (n := n) (x := x.car) (y := y.car) H).mp
+  validN_le {n n'} {x} := validN_le (n := n) (n' := n') (x := x.car)
   toOrderedNE := GenMap.raOrderedNE β
-  validN_op_left {n : SI} {x y} h := validN_op_left (n := n) (x := x.car) (y := y.car) h
-  extend {n : SI} {x y1 y2} := by
+  validN_op_left {n} {x y} h := validN_op_left (n := n) (x := x.car) (y := y.car) h
+  extend {n} {x y1 y2} := by
     intro Hv H
     have eb := extend_bound β Hv H
     let F k := extend (Hv k) (H k)
     exact ⟨⟨fun k => (F k).1, eb.1⟩, ⟨fun k => (F k).2.1, eb.2⟩,
       OFE.eq_dist_2 fun _ k => ((F k).2.2.1).dist, fun k => (F k).2.2.2.1, fun k => (F k).2.2.2.2⟩
   toOrdered := GenMap.raOrdered β
-  op_monoN_left_ord {n : SI} {x y} z h := op_monoN_left_ord (n := n) (x := x.car) (y := y.car) z.car h
-  op_mono_left_ord z h := op_mono_left_ord (SI := SI) z.car h
-  validN_of_ordN {n : SI} {x y} h v := validN_of_ordN (n := n) (x := x.car) (y := y.car) h v
+  op_monoN_left_ord {n} {x y} z h := op_monoN_left_ord (n := n) (x := x.car) (y := y.car) z.car h
+  op_mono_left_ord z h := op_mono_left_ord z.car h
+  validN_of_ordN {n} {x y} h v := validN_of_ordN (n := n) (x := x.car) (y := y.car) h v
   pcore_monoN_ord {_ x y _} h e := by
     obtain rfl := Option.some.inj e
-    exact ⟨_, rfl, core_ordN_core (SI := SI) (x := x.car) (y := y.car) h⟩
+    exact ⟨_, rfl, core_ordN_core (x := x.car) (y := y.car) h⟩
   pcore_mono_ord {x y _} h e := by
     obtain rfl := Option.some.inj e
-    exact ⟨_, rfl, core_mono_ord (SI := SI) (x := x.car) (y := y.car) h⟩
+    exact ⟨_, rfl, core_mono_ord (x := x.car) (y := y.car) h⟩
   pcore_order_op {x _} e y := by
     obtain rfl := Option.some.inj e
-    exact ⟨_, rfl, core_op_mono_ord (SI := SI) x.car y.car⟩
+    exact ⟨_, rfl, core_op_mono_ord x.car y.car⟩
   pcore_increasing {x _} e := by
     obtain rfl := Option.some.inj e
     exact increasing_of_car β (inferInstance : Increasing (core x.car))
   increasing_closed h h' := increasing_of_car β (increasing_closed (increasing_car β h) h')
-  ordN_extend {n : SI} {sn} {x y} hs v h :=
+  ordN_extend {n} {sn} {x y} hs v h :=
     let ⟨z, hz, ez⟩ := ordN_extend (α := Nat → Option β) (n := n) (x := x.car) (y := y.car) hs v h
     let ⟨N, hN⟩ := x.bound
     ⟨⟨z, N, fun k hk => dist_none.mp (hN k hk ▸ ez k)⟩, hz, ez⟩
@@ -310,21 +310,21 @@ end
 
 instance instUCMRA_GenMap : UORA (GenMap β) where
   toORA := instORA_GenMap β
-  unit_valid := show ✓[SI] (GenMap.empty (β := β)).car from fun _ => trivial
-  ord_refl x := show x.car ≼ₒ[SI] x.car from fun k => OrderRefl.ord_refl (SI := SI) (x.car k)
+  unit_valid := show ✓ (GenMap.empty (β := β)).car from fun _ => trivial
+  ord_refl x := show x.car ≼ₒ x.car from fun k => OrderRefl.ord_refl (x.car k)
 
-instance instIncOrdGenMap [IncOrd SI β] : IncOrd SI (GenMap β) :=
+instance instIncOrdGenMap [IncOrd β] : IncOrd (GenMap β) :=
   IncOrd.of_increasing fun x => GenMap.increasing_of_car β (IncOrd.increasing x.car)
 
-instance instOrdIncGenMap [OrdInc SI β] : OrdInc SI (GenMap β) where
+instance instOrdIncGenMap [OrdInc β] : OrdInc (GenMap β) where
   ord_inc {x y} h := by
-    obtain ⟨z, hz⟩ := (inferInstance : OrdInc SI (Nat → Option β)).ord_inc
+    obtain ⟨z, hz⟩ := (inferInstance : OrdInc (Nat → Option β)).ord_inc
       (x := x.car) (y := y.car) h
     obtain ⟨N, hN⟩ := y.bound
     exact ⟨⟨z, N, fun k hk => Option.eq_none_of_op_eq_none_right ((congrFun hz k).symm.trans (hN k hk))⟩,
       GenMap.ext hz⟩
-  ordN_incN {n : SI} {x y} h :=
-    let ⟨z, hz⟩ := (inferInstance : OrdInc SI (Nat → Option β)).ordN_incN
+  ordN_incN {n} {x y} h :=
+    let ⟨z, hz⟩ := (inferInstance : OrdInc (Nat → Option β)).ordN_incN
       (n := n) (x := x.car) (y := y.car) h
     let ⟨N, hN⟩ := y.bound
     ⟨⟨z, N, fun k hk =>
@@ -332,13 +332,13 @@ instance instOrdIncGenMap [OrdInc SI β] : OrdInc SI (GenMap β) where
 
 instance instIsIncGenMap [IsInc β] : IsInc (GenMap β) := {}
 
-theorem GenMap.singleton_ord_mono {x : Nat} {y y' : β} (h : y ≼ₒ[SI] y') :
-    (singleton x y : GenMap β) ≼ₒ[SI] singleton x y' := fun x' => by
+theorem GenMap.singleton_ord_mono {x : Nat} {y y' : β} (h : y ≼ₒ y') :
+    (singleton x y : GenMap β) ≼ₒ singleton x y' := fun x' => by
   by_cases hx : x' = x
   · subst hx; rw [singleton_map_in, singleton_map_in]; exact .inr h
   · rw [singleton_map_none hx, singleton_map_none hx]
 
-theorem GenMap.alter_valid {n : SI} {g : GenMap β} (Hb : ✓{n} b) (Hg : ✓{n} g) :
+theorem GenMap.alter_valid {n} {g : GenMap β} (Hb : ✓{n} b) (Hg : ✓{n} g) :
     ✓{n} g.alter a b := by
   intro k
   simp only [GenMap.alter, Iris.alter]
@@ -346,7 +346,7 @@ theorem GenMap.alter_valid {n : SI} {g : GenMap β} (Hb : ✓{n} b) (Hg : ✓{n}
   · exact Hb
   · exact Hg k
 
-theorem GenMap.valid_exists_fresh {n : SI} {g : GenMap β} (_Hv : ✓{n} g) : ∃ a : Nat, g.car a = none :=
+theorem GenMap.valid_exists_fresh {n} {g : GenMap β} (_Hv : ✓{n} g) : ∃ a : Nat, g.car a = none :=
   g.exists_fresh
 
 theorem GenMap.singleton_map_op (x : Nat) (y1 y2 : β) :
@@ -368,7 +368,7 @@ theorem GenMap.singleton_map_pcore (x : Nat) (y : β) (γ : Nat) :
     simp [singleton_map_in]
   · simp_all [singleton_map_none h]
 
-theorem GenMap.validN_singleton_map_in (x : Nat) (y : β) (n : SI) :
+theorem GenMap.validN_singleton_map_in (x : Nat) (y : β) (n) :
     ✓{n} (singleton x y).car x → ✓{n} y := by
   rw [singleton_map_in]
   simp [ValidN, optionValidN]
@@ -391,7 +391,7 @@ theorem GenMap.singleton_op_alter_none {g : GenMap β} {x : Nat} {y : β} (h : g
   rw [op_singleton_comm _ y (by simp [IsFree, alter, Iris.alter]), alter_alter,
     alter_of_lookup h]
 
-theorem GenMap.validN_op_comm {n : SI} {m mf : GenMap β} (x : Nat) (y : β) (H : IsFree mf.car x) :
+theorem GenMap.validN_op_comm {n} {m mf : GenMap β} (x : Nat) (y : β) (H : IsFree mf.car x) :
     ✓{n} m.alter x (some y) • mf ↔ ✓{n} (m • mf).alter x (some y) := by
   apply Dist.validN
   intro k
@@ -418,7 +418,7 @@ abbrev GenMap.lift [OFE α] [OFE β] (f : α -n> β) : GenMap α -n> GenMap β w
   f g := ⟨fun t => Option.map f (g.car t), by
     obtain ⟨N, hN⟩ := g.bound
     exact ⟨N, fun k hk => by simp [Option.map, hN k hk]⟩⟩
-  ne.ne {n : SI} {x1 x2} H γ := by
+  ne.ne {n} {x1 x2} H γ := by
     specialize H γ
     simp [Option.map]
     split <;> split <;> simp_all
@@ -428,7 +428,7 @@ instance instOFunctor_GenMapOF (F : OFunctorPre) [OFunctor F] :
     OFunctor (GenMapOF F) where
   ofe {A B _ _} := instOFE_GenMap (F A B)
   map f₁ f₂ := GenMap.lift <| OFunctor.map (F := F) f₁ f₂
-  map_ne.ne {n : SI} {x1 x2} Hx {y1 y2} Hy k γ := by
+  map_ne.ne {n} {x1 x2} Hx {y1 y2} Hy k γ := by
     simp only [OFE.Dist, Option.map]
     cases _ : k.car γ <;> simp
     exact OFunctor.map_ne.ne Hx Hy _
@@ -441,11 +441,11 @@ instance instOFunctor_GenMapOF (F : OFunctorPre) [OFunctor F] :
     simp only [Option.map]; cases _ : x.car γ <;> simp
     exact (OFunctor.map_comp _ _ _ _ _).dist
 
-instance instURFunctor_GenMapOF (F : COFE.OFunctorPre (SI := SI)) [RFunctor SI F] :
-    URFunctor SI (GenMapOF F) where
+instance instURFunctor_GenMapOF (F : COFE.OFunctorPre) [RFunctor F] :
+    URFunctor (GenMapOF F) where
   map f g := {
     toHom := GenMap.lift <| OFunctor.map f g
-    validN {n : SI} {x} hv z := by
+    validN {n} {x} hv z := by
       cases h : x.car z with
       | none => simp [Option.map, h, ValidN, optionValidN]
       | some v =>
@@ -455,9 +455,9 @@ instance instURFunctor_GenMapOF (F : COFE.OFunctorPre (SI := SI)) [RFunctor SI F
         have hv' := hv z
         simp only [h, ValidN, optionValidN] at hv'
         exact Hvalid hv'
-    pcore x := OFE.eq_dist_2 (SI := SI) <| by
+    pcore x := OFE.eq_dist_2 <| by
       intro _ γ
-      have Hcore := @(URFunctor.map (F := OptionOF (SI := SI) F) f g).pcore (x.car γ)
+      have Hcore := @(URFunctor.map (F := OptionOF F) f g).pcore (x.car γ)
       simp only [pcore, optionCore, Option.bind, Option.map, URFunctor.map,
                  OFunctor.map, core] at Hcore ⊢
       cases h : x.car γ with
@@ -466,27 +466,27 @@ instance instURFunctor_GenMapOF (F : COFE.OFunctorPre (SI := SI)) [RFunctor SI F
         revert Hcore
         cases h' : pcore v <;> cases h'' : pcore ((OFunctor.map f g).f v) <;>
           simp_all [Option.mapC, optionMap]
-    op z x := OFE.eq_dist_2 (SI := SI) <| by
+    op z x := OFE.eq_dist_2 <| by
       intro _ γ
-      have Hop := @(URFunctor.map (F := OptionOF (SI := SI) F) f g).op (z.car γ) (x.car γ)
+      have Hop := @(URFunctor.map (F := OptionOF F) f g).op (z.car γ) (x.car γ)
       simp only [Option.map, op, optionOp, URFunctor.map] at Hop ⊢
       cases h : z.car γ <;> cases h' : x.car γ <;> simp_all [OFunctor.map]
       exact ((RFunctor.map f g).op _ _).dist
-    monoN_ord h t := (URFunctor.map (F := OptionOF (SI := SI) F) f g).monoN_ord (h t)
-    mono_ord h t := (URFunctor.map (F := OptionOF (SI := SI) F) f g).mono_ord (h t)
+    monoN_ord h t := (URFunctor.map (F := OptionOF F) f g).monoN_ord (h t)
+    mono_ord h t := (URFunctor.map (F := OptionOF F) f g).mono_ord (h t)
     increasing h := GenMap.increasing_of_car _ <| DiscreteFun.increasing_iff.mpr fun t =>
-        (URFunctor.map (F := OptionOF (SI := SI) F) f g).increasing (GenMap.increasing_apply _ h t)
+        (URFunctor.map (F := OptionOF F) f g).increasing (GenMap.increasing_apply _ h t)
   }
   map_ne.ne := OFunctor.map_ne.ne
   map_id x := OFunctor.map_id x
   map_comp f g f' g' x := OFunctor.map_comp f g f' g' x
 
-instance instRFunctorAffineGenMapOF (F : COFE.OFunctorPre (SI := SI)) [RFunctor SI F] [RFunctorAffine SI F] :
-    RFunctorAffine SI (GenMapOF F) where
+instance instRFunctorAffineGenMapOF (F : COFE.OFunctorPre) [RFunctor F] [RFunctorAffine F] :
+    RFunctorAffine (GenMapOF F) where
   affine := inferInstance
 
-instance instURFunctorContractive_GenMapOF (F : COFE.OFunctorPre (SI := SI)) [RFunctorContractive SI F] :
-    URFunctorContractive SI (GenMapOF F) where
+instance instURFunctorContractive_GenMapOF (F : COFE.OFunctorPre) [RFunctorContractive F] :
+    URFunctorContractive (GenMapOF F) where
   map_contractive.1 h x γ := by
     next n x' y' =>
     have Heqv := @(URFunctorContractive.map_contractive (F := OptionOF F)).1 _ x' y' h (x.car γ)

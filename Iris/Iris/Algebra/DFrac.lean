@@ -126,13 +126,14 @@ instance instRA : RA DFrac where
 @[rocq_alias dfracR]
 instance instORADFrac : CMRA DFrac := ofCMRAData DFrac.cmraData
 
-@[rocq_alias dfrac_full_exclusive]
+@[indexed, rocq_alias dfrac_full_exclusive]
 instance own_whole_exclusive : Exclusive (α := DFrac) (own 1) where
   exclusive0_l := by
     rintro (y|_|y) <;>
     simp only [ValidN, valid, ORA.op, op] <;>
     grind
 
+@[indexed]
 instance one_exclusive_left [RA V] [ORA V] {v : V} : Exclusive (own (One.one : Qp), v) where
   exclusive0_l := by
     refine fun ⟨y1, _⟩ ⟨Hv1, _⟩ => ?_
@@ -171,7 +172,7 @@ theorem valid_own_one : ✓ own (1 : Qp) := by change (1 : Qp).val ≤ 1; grind
 theorem valid_op_own {dq : DFrac} {q : Qp} : ✓ dq • own q → q.val < 1 := by
   obtain y|_|y := dq <;> simp only [ORA.Valid, ORA.op, op, valid] <;> grind
 
-@[rocq_alias dfrac_valid_own_l]
+@[indexed, rocq_alias dfrac_valid_own_l]
 theorem valid_own_op {dq : DFrac} {q : Qp} : ✓ own q • dq → q.val < 1 :=
   fun h => valid_op_own (comm' (y := dq) ▸ h)
 

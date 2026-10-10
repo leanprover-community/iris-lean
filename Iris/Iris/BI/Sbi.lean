@@ -30,17 +30,19 @@ step-index, and `siEmpValid : PROP → SiProp` that expresses that a proposition
 namespace Iris
 open OFE BI Iris.BI.BIBase
 
+variable (SI) in
 /-- Embedding of step-indexed propositions into a BI. -/
 @[indexed, rocq_alias SiPure]
-class SiPure (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) where
+class SiPure (PROP : Type _) where
   siPure : SiProp → PROP
 export SiPure (siPure)
 
 attribute [inherit_doc SiPure] SiPure.siPure
 
+variable (SI) in
 /-- Step-indexed validity of BI propositions. -/
 @[indexed, rocq_alias SiEmpValid]
-class SiEmpValid (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) where
+class SiEmpValid (PROP : Type _) where
   siEmpValid : PROP → SiProp
 export SiEmpValid (siEmpValid)
 attribute [indexed] Iris.SiEmpValid.siEmpValid
@@ -64,9 +66,10 @@ delab_rule SiEmpValid.siEmpValid
 
 end Notation
 
+variable (SI) in
 /-- The `Sbi` class: a BI with step-indexed structure. -/
 @[indexed, rocq_alias Sbi]
-class Sbi (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed PROP]
+class Sbi (PROP : Type _) [BI PROP] [BIStepIndexed PROP]
     extends SiPure PROP, SiEmpValid PROP where
   siPure_ne : NonExpansive (α := SiProp) (β := PROP) SiPure.siPure
   siEmpValid_ne : NonExpansive (α := PROP) (β := SiProp) SiEmpValid.siEmpValid
@@ -102,9 +105,10 @@ theorem siEmpValid_affinely_2 [BI PROP] [BIStepIndexed PROP] [Sbi PROP] {P : PRO
     <si_emp_valid> P ⊢@{SiProp} <si_emp_valid> (<affine> P) :=
   Sbi.siEmpValid_affinely_mpr
 
+variable (SI) in
 /-- `SbiEmpValidExist` generalizes that plainly commutes with existentials and disjunction. -/
 @[indexed, rocq_alias SbiEmpValidExist]
-class SbiEmpValidExist (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] [SiEmpValid PROP] where
+class SbiEmpValidExist (PROP : Type _) [BI PROP] [SiEmpValid PROP] where
   siEmpValid_sExists_1 (Ψ : PROP → Prop) :
     iprop(<si_emp_valid> sExists Ψ ⊢@{SiProp} ∃ p, ⌜Ψ p⌝ ∧ <si_emp_valid> p)
 export SbiEmpValidExist (siEmpValid_sExists_1)
@@ -144,9 +148,9 @@ instance instSbiEmpValidExistSiProp : SbiEmpValidExist (SiProp) where
       exists_intro_trans p (and_intro (pure_intro hp) (Entails.rfl))
 
 /-- `SiProp` validates Löb (later is contractive); see `BILoeb.ofLaterContractive`. -/
-instance : BILoeb (SiProp) := .ofLaterContractive SI
+instance : BILoeb (SiProp) := BILoeb.ofLaterContractive
 
-@[simp] theorem siPure_holds {Pi : SiProp} {n : SI} :
+@[simp] theorem siPure_holds {Pi : SiProp} {n} :
     (iprop(<si_pure> Pi) : SiProp).holds n ↔ Pi.holds n := .rfl
 
 @[rocq_alias si_pure_persistent]
@@ -272,6 +276,7 @@ theorem siPure_laterN [BI PROP] [BIStepIndexed PROP] [Sbi PROP] {n : Nat} {Pi : 
     <si_pure> (▷^[n] Pi) ⊣⊢@{PROP} ▷^[n] <si_pure> Pi :=
   n.casesOn .rfl (fun _ => siPure_later.trans <| later_congr siPure_laterN)
 
+@[indexed]
 theorem siPure_later_false [BI PROP] [BIStepIndexed PROP] [Sbi PROP] :
     iprop(<si_pure> (▷ (False : SiProp)) ⊣⊢@{PROP} ▷ False) :=
   siPure_later.trans (later_congr siPure_pure)
@@ -509,11 +514,11 @@ instance siEmpValid_timeless [BI PROP] [BIStepIndexed PROP] [Sbi PROP] (P : PROP
     Timeless iprop(<si_emp_valid> P : SiProp) where
   timeless := siEmpValid_only0.mpr.trans (siEmpValid_mono Timeless.timeless)
 
-@[rocq_alias only_0_persistently]
+@[indexed, rocq_alias only_0_persistently]
 theorem only0_persistently [BI PROP] [BIStepIndexed PROP] [Sbi PROP] {P : PROP} : <only0> <pers> P ⊣⊢ <pers> <only0> P := by
   constructor
   · calc iprop(<only0> <pers> P)
-      _ ⊢ (<si_pure> (▷ False) → <pers> P) := imp_mono_left (siPure_later_false (SI := SI)).mp
+      _ ⊢ (<si_pure> (▷ False) → <pers> P) := imp_mono_left (siPure_later_false).mp
       _ ⊢ <pers> (<si_pure> (▷ False) → P) := persistently_imp_siPure
       _ ⊢ <pers> <only0> P := persistently_mono <| imp_mono_left siPure_later_false.mpr
   · exact only0_persistently_mpr
@@ -521,15 +526,15 @@ theorem only0_persistently [BI PROP] [BIStepIndexed PROP] [Sbi PROP] {P : PROP} 
 @[rocq_alias only_0_intuitionistically]
 theorem only0_intuitionistically [BI PROP] [BIStepIndexed PROP] [Sbi PROP] [Timeless (PROP := PROP) emp]
     {P : PROP} : <only0> □ P ⊣⊢ □ <only0> P :=
-  only0_affinely.trans (affinely_congr (only0_persistently (SI := SI)))
+  only0_affinely.trans (affinely_congr (only0_persistently))
 
 /-- Not an instance: `Persistent (<only0> P)` does not determine `SI`. -/
-@[rocq_alias only_0_persistent]
+@[indexed, rocq_alias only_0_persistent]
 theorem only0_persistent (SI : stepindex (Type _)) [SIdx SI] [BI PROP] [BIStepIndexed PROP] [Sbi PROP]
     (P : PROP) [Persistent P] : Persistent iprop(<only0> P) where
-  persistent := (only0_mono persistently_intro).trans (only0_persistently (SI := SI)).mp
+  persistent := (only0_mono persistently_intro).trans (only0_persistently).mp
 
-@[rocq_alias si_emp_valid_emp_valid]
+@[indexed, rocq_alias si_emp_valid_emp_valid]
 theorem siEmpValid_emp_valid [BI PROP] [BIStepIndexed PROP] [Sbi PROP] {P : PROP} :
     (emp ⊢@{SiProp} <si_emp_valid> P) ↔ (emp ⊢ P) := by
   refine ⟨fun h => ?_, (siEmpValid_emp.mpr.trans <| siEmpValid_mono ·)⟩
@@ -568,16 +573,16 @@ theorem pure_soundness [BI PROP] [BIStepIndexed PROP] [Sbi PROP] {φ : Prop} (h 
   refine (siPure_emp_valid (PROP := PROP)).mp ?_
   exact h.trans siPure_pure.mpr
 
-@[rocq_alias later_soundness]
-theorem later_soundness [SIdxSucc SI] [BI PROP] [BIStepIndexed PROP] [Sbi PROP] {P : PROP} (h : emp ⊢ ▷ P) : emp ⊢ P := by
-  refine (siEmpValid_emp_valid (SI := SI)).mp ?_
+@[indexed, rocq_alias later_soundness]
+theorem later_soundness [SIdxSucc] [BI PROP] [BIStepIndexed PROP] [Sbi PROP] {P : PROP} (h : emp ⊢ ▷ P) : emp ⊢ P := by
+  refine (siEmpValid_emp_valid).mp ?_
   refine SiProp.later_soundness ?_
   exact (siEmpValid_emp_valid.mpr h).trans siEmpValid_later.mp
 
 @[indexed, rocq_alias laterN_soundness]
-theorem laterN_soundness [SIdxSucc SI] [BI PROP] [BIStepIndexed PROP] [Sbi PROP] {P : PROP} {n : Nat} (h : emp ⊢ ▷^[n] P) : emp ⊢ P :=
+theorem laterN_soundness [SIdxSucc] [BI PROP] [BIStepIndexed PROP] [Sbi PROP] {P : PROP} {n : Nat} (h : emp ⊢ ▷^[n] P) : emp ⊢ P :=
   match n with
   | .zero => h
-  | .succ _ => laterN_soundness (later_soundness (SI := SI) h)
+  | .succ _ => laterN_soundness (later_soundness h)
 
 end Iris

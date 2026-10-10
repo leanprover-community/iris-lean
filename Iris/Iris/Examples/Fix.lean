@@ -38,7 +38,7 @@ variable [OFE Val] [OFE Err] [IsCOFE Val] [IsCOFE Err] [Inhabited Err]
 abbrev DomF : OFunctorPre :=
   SumOF (constOF Val) (SumOF (constOF Err) (SumOF (LaterOF IdOF) (LaterOF (HomOF IdOF IdOF))))
 
-instance : Inhabited (DomF (SI := SI) (Val := Val) (Err := Err) (ULift Unit) (ULift Unit)) :=
+instance : Inhabited (DomF (Val := Val) (Err := Err) (ULift Unit) (ULift Unit)) :=
   ⟨.inr (.inr (.inr ⟨id, inferInstance⟩))⟩
 
 end Fix
@@ -47,7 +47,7 @@ open Iris OFE COFE in
 @[indexed]
 noncomputable abbrev Dom (Val : Type _) (Err : Type _) [OFE Val] [OFE Err] [IsCOFE Val]
     [IsCOFE Err] :=
-  OFunctor.Fix (DomF (SI := SI) (Val := Val) (Err := Err))
+  OFunctor.Fix (DomF (Val := Val) (Err := Err))
 
 namespace Dom
 open Iris OFE COFE
@@ -55,18 +55,18 @@ open Iris OFE COFE
 variable [OFE V] [OFE E] [IsCOFE V] [IsCOFE E]
 
 noncomputable def fold :
-    V ⊕ E ⊕ Later (Dom (SI := SI) V E) ⊕ Later (Dom (SI := SI) V E -n>[SI] Dom (SI := SI) V E) -n>[SI] Dom (SI := SI) V E :=
-  OFunctor.Fix.fold (F := DomF (SI := SI) (Val := V) (Err := E))
+    V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom V E) -n> Dom V E :=
+  OFunctor.Fix.fold (F := DomF (Val := V) (Err := E))
 
 noncomputable def unfold :
-    Dom (SI := SI) V E -n>[SI] V ⊕ E ⊕ Later (Dom (SI := SI) V E) ⊕ Later (Dom (SI := SI) V E -n>[SI] Dom (SI := SI) V E) :=
-  OFunctor.Fix.unfold (F := DomF (SI := SI) (Val := V) (Err := E))
+    Dom V E -n> V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom V E) :=
+  OFunctor.Fix.unfold (F := DomF (Val := V) (Err := E))
 
-theorem unfold_fold {x : V ⊕ E ⊕ Later (Dom (SI := SI) V E) ⊕ Later (Dom (SI := SI) V E -n>[SI] Dom (SI := SI) V E)} :
+theorem unfold_fold {x : V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom V E)} :
     unfold (fold x) = x :=
-  OFunctor.Fix.unfold_fold (F := DomF (SI := SI) (Val := V) (Err := E)) x
+  OFunctor.Fix.unfold_fold (F := DomF (Val := V) (Err := E)) x
 
 theorem fold_unfold {x : Dom V E} : fold (unfold x) = x :=
-  OFunctor.Fix.fold_unfold (F := DomF (SI := SI) (Val := V) (Err := E)) x
+  OFunctor.Fix.fold_unfold (F := DomF (Val := V) (Err := E)) x
 
 end Dom

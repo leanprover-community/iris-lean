@@ -66,6 +66,7 @@ instance instInternalEq_ne (A : Type _) [OFE A] :
 
 #rocq_ignore internal_eq_proper "Derivable from internal_eq_ne with NonExpansive.eqv"
 
+@[indexed]
 theorem ne_l {A : Type _} [OFE A] (a : A) :
     NonExpansive (internalEq (PROP := PROP) · a) :=
   NonExpansive₂.ne_left internalEq a
@@ -89,7 +90,7 @@ theorem of_equiv {A : Type _} [OFE A] {P : PROP} {a b : A} (h : a = b) :
 theorem of_pure {A : Type _} [OFE A] {x y : A} : ⌜x = y⌝ ⊢@{PROP} iprop(x ≡ y) :=
   pure_elim' of_equiv
 
-@[rocq_alias internal_eq_rewrite]
+@[indexed, rocq_alias internal_eq_rewrite]
 theorem rewrite {A : Type _} [OFE A] {a b : A} (Ψ : A → PROP) [hΨ : NonExpansive Ψ] :
     a ≡ b ⊢ Ψ a → Ψ b := by
   let Φ : A → SiProp := fun a' => iprop(<si_emp_valid> (True -∗ Ψ a → Ψ a'))
@@ -117,13 +118,13 @@ theorem rewrite' {A : Type _} [OFE A] {a b : A} (Ψ : A → PROP) [NonExpansive 
 
 @[rocq_alias internal_eq_sym]
 theorem symm {A : Type _} [OFE A] {a b : A} : a ≡ b ⊢@{PROP} b ≡ a :=
-  letI _ := ne_l (SI := SI) (PROP := PROP) a
+  letI _ := ne_l (PROP := PROP) a
   rewrite' (internalEq · a) .rfl refl
 
 @[rocq_alias internal_eq_trans]
 theorem trans {A : Type _} [OFE A] {a b c : A} :
     a ≡ b ∧ b ≡ c ⊢@{PROP} a ≡ c :=
-  letI _ := ne_l (SI := SI) (PROP := PROP) c
+  letI _ := ne_l (PROP := PROP) c
   rewrite' (internalEq · c) (and_elim_l.trans symm) and_elim_r
 
 @[indexed, rocq_alias f_equivI]
@@ -177,7 +178,7 @@ theorem sum_equivI {A B : Type _} [OFE A] [OFE B] (x y : A ⊕ B) :
       | .inr b, .inr b' => iprop(b ≡ b')
       | _, _ => iprop(⌜False⌝)
     have : NonExpansive Ψ := by
-      refine ⟨fun {n : SI} {x' y'} h => ?_⟩
+      refine ⟨fun {n} {x' y'} h => ?_⟩
       cases x <;> cases x' <;> cases y' <;> first
         | exact (ne_r _).ne h
         | exact Dist.rfl
@@ -286,7 +287,7 @@ theorem csum_equivI {A B : Type _} [OFE A] [OFE B] (sx sy : Csum A B) :
       | .invalid, .invalid => iprop(⌜True⌝)
       | _, _ => iprop(⌜False⌝)
     have : NonExpansive Ψ := by
-      refine ⟨fun {n : SI} {x' y'} (h : Csum.Dist n x' y') => ?_⟩
+      refine ⟨fun {n} {x' y'} (h : Csum.Dist n x' y') => ?_⟩
       cases sx <;> cases x' <;> cases y' <;> first
         | exact (ne_r _).ne h
         | exact Dist.rfl
@@ -355,34 +356,34 @@ instance internalEq_persistent {A : Type _} [OFE A] (a b : A) :
 /-! ## Equality under a later -/
 
 @[rocq_alias later_equivI_1]
-theorem later_equivI_mp [SIdxSucc SI] {A : Type _} [OFE A] (x y : A) :
+theorem later_equivI_mp [SIdxSucc] {A : Type _} [OFE A] (x y : A) :
     Later.next x ≡ Later.next y ⊢@{PROP} ▷ x ≡ y :=
   (siPure_mono (SiProp.later_equiv_internalEq_mp x y)).trans siPure_later.mp
 
 @[rocq_alias later_equivI_2]
-theorem later_equivI_mpr [SIdxSucc SI] {A : Type _} [OFE A] (x y : A) :
+theorem later_equivI_mpr [SIdxSucc] {A : Type _} [OFE A] (x y : A) :
     ▷ x ≡ y ⊢@{PROP} Later.next x ≡ Later.next y :=
   siPure_later.mpr.trans (siPure_mono (SiProp.later_equiv_internalEq_mpr x y))
 
 @[rocq_alias later_equivI]
-theorem later_equivI [SIdxSucc SI] {A : Type _} [OFE A] (x y : A) :
+theorem later_equivI [SIdxSucc] {A : Type _} [OFE A] (x y : A) :
     Later.next x ≡ Later.next y ⊣⊢@{PROP} ▷ x ≡ y :=
   ⟨later_equivI_mp x y, later_equivI_mpr x y⟩
 
 @[rocq_alias f_equivI_contractive]
-theorem f_equivI_contractive [SIdxSucc SI] {A B : Type _} [OFE A] [OFE B] (f : A → B) [hf : Contractive f]
+theorem f_equivI_contractive [SIdxSucc] {A B : Type _} [OFE A] [OFE B] (f : A → B) [hf : Contractive f]
     (x y : A) : ▷ x ≡ y ⊢@{PROP} f x ≡ f y := by
   letI _ : NonExpansive (f ∘ Later.car) := ⟨fun {_ _ _} h => hf.distLater_dist h⟩
   exact (later_equivI_mpr x y).trans <| of_internalEquiv_ne (f ∘ Later.car)
 
 @[indexed, rocq_alias internal_eq_rewrite_contractive]
-theorem internalEq_rewrite_contractive [SIdxSucc SI] {A : Type _} [OFE A] (a b : A) (Ψ : A → PROP)
+theorem internalEq_rewrite_contractive [SIdxSucc] {A : Type _} [OFE A] (a b : A) (Ψ : A → PROP)
     [Contractive Ψ] :
     ▷ a ≡ b ⊢ Ψ a → Ψ b :=
   (f_equivI_contractive Ψ a b).trans (rewrite id)
 
 @[indexed, rocq_alias internal_eq_rewrite_contractive']
-theorem internalEq_rewrite_contractive' [SIdxSucc SI] {A : Type _} [OFE A] (a b : A) (Ψ : A → PROP)
+theorem internalEq_rewrite_contractive' [SIdxSucc] {A : Type _} [OFE A] (a b : A) (Ψ : A → PROP)
     [Contractive Ψ] (Heq : P ⊢ ▷ a ≡ b) (HΨa : P ⊢ Ψ a) : P ⊢ Ψ b :=
   (and_intro .rfl HΨa).trans <|
     (and_mono_left Heq).trans <| imp_elim (internalEq_rewrite_contractive a b Ψ)
@@ -400,12 +401,12 @@ instance eq_timeless {A : Type _} [OFE A] (a b : A) [TCOr (DiscreteE a) (Discret
 
 @[rocq_alias internal_eq_iff]
 theorem internalEq_iff (P Q : PROP) : P ≡ Q ⊢ iprop(P ↔ Q) :=
-  letI _ := NonExpansive₂.ne_right (SI := SI) (BIBase.iff (PROP := PROP)) P
+  letI _ := NonExpansive₂.ne_right (BIBase.iff (PROP := PROP)) P
   rewrite' (BIBase.iff P) .rfl (and_intro (imp_intro and_elim_r) (imp_intro and_elim_r))
 
 @[rocq_alias affinely_internal_eq_wand_iff]
 theorem affinely_internalEq_wandIff (P Q : PROP) : <affine> (P ≡ Q) ⊢ P ∗-∗ Q :=
-  letI _ := NonExpansive₂.ne_right (SI := SI) (wandIff (PROP := PROP)) P
+  letI _ := NonExpansive₂.ne_right (wandIff (PROP := PROP)) P
   rewrite' (wandIff P) (affinely_elim.trans .rfl) (affinely_elim_emp.trans wandIff_refl)
 
 @[rocq_alias internal_eq_wand_iff]
@@ -472,7 +473,7 @@ theorem only0_internalEq (P Q : PROP) :
 
 @[rocq_alias internal_eq_entails]
 theorem internalEq_entails {A B : Type _} [OFE A] [OFE B] {a₁ a₂ : A} {b₁ b₂ : B} :
-    (a₁ ≡ a₂ ⊢@{PROP} b₁ ≡ b₂) ↔ (∀ (n : SI), a₁ ≡{n}≡ a₂ → b₁ ≡{n}≡ b₂) :=
+    (a₁ ≡ a₂ ⊢@{PROP} b₁ ≡ b₂) ↔ (∀ n, a₁ ≡{n}≡ a₂ → b₁ ≡{n}≡ b₂) :=
   siPure_entails.trans (SiProp.internalEq_entails ..)
 
 @[rocq_alias ne_internal_eq]
@@ -494,13 +495,13 @@ theorem ne_2_internalEq {A B C : Type _} [OFE A] [OFE B] [OFE C] (f : A → B �
       internalEq_entails.mp (prod_equivI _ _ |>.1 |>.trans (hf ..)) _ (dist_prod_ext hx hy)⟩
 
 @[rocq_alias contractive_internal_eq]
-theorem contractive_internalEq [SIdxSucc SI] {A B : Type _} [OFE A] [OFE B] (f : A → B) :
+theorem contractive_internalEq [SIdxSucc] {A B : Type _} [OFE A] [OFE B] (f : A → B) :
     Contractive f ↔ (∀ x₁ x₂, ▷ (x₁ ≡ x₂) ⊢@{PROP} f x₁ ≡ f x₂) :=
   ⟨fun _ x₁ x₂ => f_equivI_contractive f x₁ x₂,
-   fun hf => ⟨fun {n : SI} {x y} h => internalEq_entails.mp ((later_equivI_mp x y).trans (hf x y)) n h⟩⟩
+   fun hf => ⟨fun {n} {x y} h => internalEq_entails.mp ((later_equivI_mp x y).trans (hf x y)) n h⟩⟩
 
 @[rocq_alias sbi_later_contractive]
-instance sbi_later_contractive [SIdxSucc SI] : BILaterContractive PROP where
+instance sbi_later_contractive [SIdxSucc] : BILaterContractive PROP where
   toContractive := (contractive_internalEq (PROP := PROP) BIBase.later).mpr
     (fun P Q => later_equivI_prop_mpr P Q)
 

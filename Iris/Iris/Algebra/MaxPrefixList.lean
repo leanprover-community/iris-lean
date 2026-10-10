@@ -179,7 +179,7 @@ theorem toMaxPrefixList_validN {n : Nat} (l : List α) : ✓{n} toMaxPrefixList 
 @[rocq_alias max_prefix_list_included_includedN]
 theorem inc_iff_forall_incN {ml1 ml2 : MaxPrefixList α} :
     ml1 ≼ ml2 ↔ ∀ (n : Nat), ml1 ≼{n} ml2 := by
-  refine ⟨fun h n => incN_of_inc n h, fun h => ⟨ml2, eq_dist_2 (SI := Nat) fun n => ?_⟩⟩
+  refine ⟨fun h n => incN_of_inc n h, fun h => ⟨ml2, eq_dist_2 fun n => ?_⟩⟩
   obtain ⟨l, hl⟩ := h n
   calc ml2 ≡{n}≡ ml1 • l := hl
     _ ≡{n}≡ (ml1 • ml1) • l := (congrArg (· • l) (op_self ml1)).symm.dist

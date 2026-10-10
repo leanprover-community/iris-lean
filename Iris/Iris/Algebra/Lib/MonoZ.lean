@@ -49,7 +49,7 @@ instance {l : MaxInt} : CoreId (●MZ□ l : MonoZ) := by
   unfold auth
   infer_instance
 
-@[rocq_alias mono_Z_auth_dfrac_op]
+@[indexed, rocq_alias mono_Z_auth_dfrac_op]
 theorem auth_dfrac_op (dq1 dq2 : DFrac) (n : MaxInt) :
     (●MZ{dq1 • dq2} n : MonoZ) = (●MZ{dq1} n) • (●MZ{dq2} n) := by
   unfold auth
@@ -86,7 +86,7 @@ theorem auth_dfrac_op_valid (dq1 dq2 : DFrac) (n1 n2 : MaxInt) :
       valid_of_inc (op_mono (inc_op_left ..) (inc_op_left ..)) h
     exact ⟨hdq, Option.some_inj.mp heq⟩
   · rintro ⟨hdq, rfl⟩
-    exact auth_dfrac_op (SI := SI) dq1 dq2 n1 ▸ (auth_dfrac_valid _ n1).mpr hdq
+    exact auth_dfrac_op dq1 dq2 n1 ▸ (auth_dfrac_valid _ n1).mpr hdq
 
 @[rocq_alias mono_Z_auth_op_valid]
 theorem auth_op_valid (n1 n2 : MaxInt) : (✓ ((●MZ n1) • (●MZ n2) : MonoZ)) ↔ False :=

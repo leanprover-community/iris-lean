@@ -174,7 +174,7 @@ instance raURA [RA A] : URA (DynReservationMap A H) where
 
 variable [RA A] [ORA A]
 
-@[rocq_alias dyn_reservation_map_validN_instance]
+@[indexed, rocq_alias dyn_reservation_map_validN_instance]
 def ValidN (n : SI) (x : DynReservationMap A H) : Prop :=
   match x.token with
   | .valid e => ✓{n} x.data ∧ setInfinite (⊤ \ e) ∧ ∀ i, get? x.data i = none ∨ i ∉ e
@@ -196,7 +196,7 @@ def Infinite (x : DynReservationMap A H) : Prop :=
   | .valid e => setInfinite ((⊤ : CoPset) \ e)
   | .error => True
 
-theorem validN_iff {n : SI} {x : DynReservationMap A H} :
+theorem validN_iff {n} {x : DynReservationMap A H} :
     x.ValidN n ↔ ✓{n} x.data ∧ ✓{n} x.token ∧ x.Infinite ∧
       ∀ i, get? x.data i = none ∨ i ∉ x.token := by
   refine ⟨fun h => ?_, fun ⟨vd, vt, inf, disj⟩ => ?_⟩
@@ -210,10 +210,10 @@ theorem validN_iff {n : SI} {x : DynReservationMap A H} :
     cases h : x.token
     · simp only [h, Infinite] at disj inf
       exact ⟨vd, inf, disj⟩
-    · exact ((h ▸ not_valid_invalid (SI := SI) (S := CoPset)) vt)
+    · exact ((h ▸ not_valid_invalid (S := CoPset)) vt)
 
 theorem valid_iff {x : DynReservationMap A H} :
-    x.Valid (SI := SI) ↔ ✓[SI] x.data ∧ ✓[SI] x.token ∧ x.Infinite ∧
+    Valid x ↔ ✓ x.data ∧ ✓ x.token ∧ x.Infinite ∧
       ∀ i, get? x.data i = none ∨ i ∉ x.token := by
   refine ⟨fun h => ?_, fun ⟨vd, vt, inf, disj⟩ => ?_⟩
   · simp only [Valid, Infinite] at h ⊢
@@ -228,32 +228,32 @@ theorem valid_iff {x : DynReservationMap A H} :
       exact ⟨vd, inf, disj⟩
     · exact ((h ▸ not_valid_invalid (S := CoPset)) vt)
 
-theorem validN_data_of_validN {n : SI} {x : DynReservationMap A H} (h : x.ValidN n) :
+theorem validN_data_of_validN {n} {x : DynReservationMap A H} (h : x.ValidN n) :
     ✓{n} x.data := (validN_iff.mp h).left
 
-theorem validN_token_of_validN {n : SI} {x : DynReservationMap A H} (h : x.ValidN n) :
+theorem validN_token_of_validN {n} {x : DynReservationMap A H} (h : x.ValidN n) :
     ✓{n} x.token := (validN_iff.mp h).right.left
 
-theorem validN_infinite {n : SI} {x : DynReservationMap A H} (h : x.ValidN n) :
+theorem validN_infinite {n} {x : DynReservationMap A H} (h : ValidN n x) :
     x.Infinite := (validN_iff.mp h).right.right.left
 
-theorem validN_disj {n : SI} {x : DynReservationMap A H} (h : x.ValidN n) (i : Pos) :
+theorem validN_disj {n} {x : DynReservationMap A H} (h : ValidN n x) (i : Pos) :
     get? x.data i = none ∨ i ∉ x.token := (validN_iff.mp h).right.right.right i
 
-theorem valid_data_of_valid {x : DynReservationMap A H} (h : x.Valid (SI := SI)) :
+theorem valid_data_of_valid {x : DynReservationMap A H} (h : Valid x) :
     ✓ x.data := (valid_iff.mp h).left
 
-theorem valid_token_of_valid {x : DynReservationMap A H} (h : x.Valid (SI := SI)) :
+theorem valid_token_of_valid {x : DynReservationMap A H} (h : Valid x) :
     ✓ x.token := (valid_iff.mp h).right.left
 
-theorem valid_infinite {x : DynReservationMap A H} (h : x.Valid (SI := SI)) :
+theorem valid_infinite {x : DynReservationMap A H} (h : Valid x) :
     x.Infinite := (valid_iff.mp h).right.right.left
 
-theorem valid_disj {x : DynReservationMap A H} (h : x.Valid (SI := SI)) (i : Pos) :
+theorem valid_disj {x : DynReservationMap A H} (h : Valid x) (i : Pos) :
     get? x.data i = none ∨ i ∉ x.token := (valid_iff.mp h).right.right.right i
 
 omit [ORA A] in
-theorem infinite_op_left {n : SI} {x y : DynReservationMap A H} (vt : ✓{n} (x.token • y.token))
+theorem infinite_op_left {n} {x y : DynReservationMap A H} (vt : ✓{n} (x.token • y.token))
     (inf : (x • y).Infinite) : x.Infinite := by
   match ht : x.token, hy : y.token with
   | .error, _ => exact (not_validN_invalid (ht ▸ validN_op_left vt)).elim
@@ -261,14 +261,14 @@ theorem infinite_op_left {n : SI} {x y : DynReservationMap A H} (vt : ✓{n} (x.
   | .valid e₁, .valid e₂ =>
     have hv : ✓{n} (DisjointLeibnizSet.valid e₁ • DisjointLeibnizSet.valid e₂) :=
       ht ▸ hy ▸ vt
-    have hdisj : e₁ ## e₂ := (valid_op_iff_disj (SI := SI)).mp hv
+    have hdisj : e₁ ## e₂ := (valid_op_iff_disj).mp hv
     simp only [Infinite, ht] at ⊢
     simp only [Infinite, op, ht, hy, ORA.op, hdisj, ↓reduceIte] at inf
     exact setInfinite_mono
       (fun i hi => mem_diff.mpr ⟨(mem_diff.mp hi).left,
         fun hc => (mem_diff.mp hi).right (mem_union.mpr (.inl hc))⟩) inf
 
-theorem validN_mono {n : SI} {x y : DynReservationMap A H} (hd : ✓{n} y.data → ✓{n} x.data)
+theorem validN_mono {n} {x y : DynReservationMap A H} (hd : ✓{n} y.data → ✓{n} x.data)
     (hdom : ∀ i, get? y.data i = none → get? x.data i = none) (ht : ∃ w, y.token = x.token • w)
     (v : y.ValidN n) : x.ValidN n := by
   obtain ⟨w, hw⟩ := ht
@@ -283,8 +283,8 @@ theorem validN_mono {n : SI} {x y : DynReservationMap A H} (hd : ✓{n} y.data �
 #rocq_ignore dyn_reservation_mapR "Derivable using UCMRA"
 #rocq_ignore dyn_reservation_map_empty_instance "Part of UCMRA instance"
 
-@[reducible] def raValid : _root_.Iris.Valid SI (DynReservationMap A H) where
-  Valid := Valid (SI := SI)
+@[reducible] def raValid : _root_.Iris.Valid (DynReservationMap A H) where
+  Valid := Valid
   ValidN := ValidN
   valid_iff_validN {x} := by
     refine ⟨fun h n => ?_, fun v => ?_⟩
@@ -299,7 +299,7 @@ theorem validN_mono {n : SI} {x y : DynReservationMap A H} (hd : ✓{n} y.data �
       · exact validN_infinite (v 0)
       · exact validN_disj (v 0)
 
-@[reducible] def raOrdered : Ordered SI (DynReservationMap A H) where
+@[reducible] def raOrdered : Ordered (DynReservationMap A H) where
   OrderN n x y := x.data ≼ₒ{n} y.data ∧ x.token ≼ₒ{n} y.token
   Order x y := x.data ≼ₒ y.data ∧ x.token ≼ₒ y.token
   ordN_trans h1 h2 := ⟨ordN_trans h1.1 h2.1, ordN_trans h1.2 h2.2⟩
@@ -327,11 +327,11 @@ theorem increasing_mk {v : DynReservationMap A H}
 instance instORADynReservationMap : ORA (DynReservationMap A H) where
   toValid := raValid
   op_ne := ⟨fun _ _ _ h => ⟨Dist.op_r h.left, Dist.op_r h.right⟩⟩
-  pcore_ne {n : SI} {x y cx} e pe := by
+  pcore_ne {n} {x y cx} e pe := by
     cases Option.some_inj.mp pe.symm
     refine ⟨_, rfl, ?_, .rfl⟩
     simp [Dist.core e.left]
-  validN_ne {n : SI} {x y} h v := by
+  validN_ne {n} {x y} h v := by
     refine validN_iff.mpr ⟨?_, ?_, ?_, fun i => ?_⟩
     · exact (Dist.validN h.left).mp (validN_data_of_validN v)
     · exact (Dist.validN h.right).mp (validN_token_of_validN v)
@@ -347,7 +347,7 @@ instance instORADynReservationMap : ORA (DynReservationMap A H) where
         refine .inr fun hc => ni ?_
         rw [congrFun ((congrArg Membership.mem h.right)) i]
         exact hc
-  validN_le {n n' : SI} {x} v hle := by
+  validN_le {n n'} {x} v hle := by
     refine validN_iff.mpr ⟨?_, ?_, ?_, ?_⟩
     · exact validN_le (validN_data_of_validN v) hle
     · exact (valid_0_iff_validN n').mp ((valid_0_iff_validN n).mpr (validN_token_of_validN v))
@@ -356,7 +356,7 @@ instance instORADynReservationMap : ORA (DynReservationMap A H) where
   toOrderedNE := raOrderedNE
   validN_op_left {_ x y} := validN_mono validN_op_left
     (fun _ h => Option.eq_none_of_op_eq_none_left ((Heap.get?_op _ _).symm.trans h)) ⟨y.token, rfl⟩
-  extend {n : SI} {x y₁ y₂} v exy := by
+  extend {n} {x y₁ y₂} v exy := by
     obtain ⟨z₁, z₂, xzz, zy₁, zy₂⟩ := extend (validN_data_of_validN v) exy.left
     exact ⟨mk z₁ y₁.token, mk z₂ y₂.token, DynReservationMap.ext xzz exy.right,
       And.intro zy₁ rfl, And.intro zy₂ rfl⟩
@@ -374,11 +374,11 @@ instance instORADynReservationMap : ORA (DynReservationMap A H) where
     cases Option.some_inj.mp e
     exact increasing_mk (v := mk _ ∅) (increasing_core x.data)
       (increasing_core x.token)
-  increasing_closed {n : SI} {x y} h h' :=
+  increasing_closed {n} {x y} h h' :=
     increasing_mk
       (increasing_closed (increasing_data h) (Or.imp (·.1) (·.1) h'))
       (increasing_closed (increasing_token h) (Or.imp (·.2) (·.2) h'))
-  ordN_extend {n : SI} {sn} {x y} hs v h := by
+  ordN_extend {n} {sn} {x y} hs v h := by
     obtain ⟨zd, hzd, ed⟩ := ordN_extend hs (validN_data_of_validN v) h.1
     obtain ⟨zt, hzt, et⟩ := ordN_extend hs (validN_token_of_validN v) h.2
     exact ⟨mk zd zt, ⟨hzd, hzt⟩, ed, et⟩
@@ -389,7 +389,7 @@ instance instIncOrd [IncOrd A] : IncOrd (DynReservationMap A H) := IncOrd.of_inc
     increasing_mk (IncOrd.increasing v.data) (IncOrd.increasing v.token)
 
 @[rocq_alias dyn_reservation_mapUR]
-instance instUCMRADynReservationMap : UORA SI (DynReservationMap A H) where
+instance instUCMRADynReservationMap : UORA (DynReservationMap A H) where
   toORA := instORADynReservationMap
   unit_valid := valid_iff.mpr ⟨Heap.valid_empty, valid_set,
     show setInfinite ((⊤ : CoPset) \ ∅) by rw [diff_empty]; exact top_infinite,
@@ -407,7 +407,7 @@ theorem inc_iff {x y : DynReservationMap A H} :
 theorem ord_iff {x y : DynReservationMap A H} :
     x ≼ₒ y ↔ x.data ≼ₒ y.data ∧ x.token ≼ₒ y.token := .rfl
 
-theorem ordN_iff {n : SI} {x y : DynReservationMap A H} :
+theorem ordN_iff {n} {x y : DynReservationMap A H} :
     x ≼ₒ{n} y ↔ x.data ≼ₒ{n} y.data ∧ x.token ≼ₒ{n} y.token := .rfl
 
 instance instOrdInc [OrdInc A] : OrdInc (DynReservationMap A H) where
@@ -420,15 +420,15 @@ instance instOrdInc [OrdInc A] : OrdInc (DynReservationMap A H) where
 instance instIsInc [IsInc A] : IsInc (DynReservationMap A H) := {}
 
 @[rocq_alias dyn_reservation_map_data_proj_validN]
-theorem data_proj_validN {n : SI} {x : DynReservationMap A H} (h : ✓{n} x) : ✓{n} x.data :=
+theorem data_proj_validN {n} {x : DynReservationMap A H} (h : ✓{n} x) : ✓{n} x.data :=
   validN_data_of_validN h
 
 @[rocq_alias dyn_reservation_map_token_proj_validN]
-theorem token_proj_validN {n : SI} {x : DynReservationMap A H} (h : ✓{n} x) : ✓{n} x.token :=
+theorem token_proj_validN {n} {x : DynReservationMap A H} (h : ✓{n} x) : ✓{n} x.token :=
   validN_token_of_validN h
 
 @[rocq_alias dyn_reservation_map_cmra_discrete]
-instance [ORA.Discrete SI A] : ORA.Discrete SI (DynReservationMap A H) where
+instance [ORA.Discrete A] : ORA.Discrete (DynReservationMap A H) where
   discrete_valid {_} v := valid_iff.mpr ⟨discrete_valid (validN_data_of_validN v),
     validN_token_of_validN v, validN_infinite v, validN_disj v⟩
   discrete_ord h := ⟨fun k => discrete_ord (h.1 k), discrete_ord h.2⟩
@@ -438,7 +438,7 @@ instance instCoreIdSingleton {a : A} [CoreId a] : CoreId (mkData (H := H) k a) w
   core_id := congrArg some <| congrArg (mk (token := ∅))
     (core_eqv_self (PartialMap.singleton k a : H A))
 
-theorem split_validN {n : SI} {x : DynReservationMap A H} (vx : ✓{n} x) :
+theorem split_validN {n} {x : DynReservationMap A H} (vx : ✓{n} x) :
     ∃ (d : H A) (t : CoPset), x = mk d ∅ • mkToken t := by
   rcases x with ⟨xd, xt⟩
   cases xt with
@@ -447,11 +447,11 @@ theorem split_validN {n : SI} {x : DynReservationMap A H} (vx : ✓{n} x) :
     exact ⟨xd, t, DynReservationMap.ext
       (Algebra.MonoidOps.op_right_id : xd • (∅ : H A) = xd).symm (pcore_op_left' rfl).symm⟩
 
-theorem valid_mkData_singleton : ✓[SI] (mkData (H := H) k a) ↔ ✓[SI] ({[k := a]} : H A) :=
+theorem valid_mkData_singleton : ✓ (mkData (H := H) k a) ↔ ✓ ({[k := a]} : H A) :=
   ⟨valid_data_of_valid, fun h => valid_iff.mpr ⟨h, valid_set, top_infinite,
     fun p => .inr (mem_empty p)⟩⟩
 
-theorem validN_mkData_singleton {n : SI} : ✓{n} (mkData (H := H) k a) ↔ ✓{n} ({[k := a]} : H A) :=
+theorem validN_mkData_singleton {n} : ✓{n} (mkData (H := H) k a) ↔ ✓{n} ({[k := a]} : H A) :=
   ⟨validN_data_of_validN, fun h => validN_iff.mpr ⟨h, validN_set, top_infinite,
     fun p => .inr (mem_empty p)⟩⟩
 
@@ -459,12 +459,12 @@ theorem validN_mkData_singleton {n : SI} : ✓{n} (mkData (H := H) k a) ↔ ✓{
 theorem valid_mkData (k : Pos) (a : A) : ✓ (mkData (H := H) k a) ↔ ✓ a :=
   valid_mkData_singleton.trans Heap.singleton_valid_iff
 
-theorem validN_mkData {n : SI} (k : Pos) (a : A) : ✓{n} (mkData (H := H) k a) ↔ ✓{n} a :=
+theorem validN_mkData {n} (k : Pos) (a : A) : ✓{n} (mkData (H := H) k a) ↔ ✓{n} a :=
   validN_mkData_singleton.trans Heap.singleton_validN_iff
 
 @[rocq_alias dyn_reservation_map_token_valid]
 theorem valid_token {e : CoPset} :
-    ✓[SI] (mkToken (H := H) (A := A) e) ↔ setInfinite ((⊤ : CoPset) \ e) :=
+    ✓ (mkToken (H := H) (A := A) e) ↔ setInfinite ((⊤ : CoPset) \ e) :=
   ⟨valid_infinite, fun hinf => valid_iff.mpr
     ⟨Heap.valid_empty, valid_set, hinf, fun i => .inl (get?_empty i)⟩⟩
 
@@ -501,7 +501,7 @@ theorem token_difference {e₁ e₂} (he : e₁ ⊆ e₂) :
   refine .trans ?_ (token_union LawfulSet.disjoint_diff_right)
   rw [LawfulSet.subset_union_diff he]
 
-theorem disj_of_validN_data_op_token {n : SI} {a : H A} {b : CoPset}
+theorem disj_of_validN_data_op_token {n} {a : H A} {b : CoPset}
     (h : ✓{n} mk a ∅ • mkToken b) (i : Pos) : get? a i = none ∨ i ∉ b := by
   cases validN_disj h i with
   | inl h =>
@@ -509,16 +509,16 @@ theorem disj_of_validN_data_op_token {n : SI} {a : H A} {b : CoPset}
     exact .inl <| Option.eq_none_of_op_eq_none_left h
   | inr h' =>
     simp only [mkToken, op_token] at h'
-    rw [mem_iff_of_valid_union (SI := SI), not_or] at h'
+    rw [mem_iff_of_valid_union, not_or] at h'
     · exact .inr h'.right
     · exact ((pcore_op_left' rfl).symm : (_ : DisjointLeibnizSet CoPset) = _) ▸ valid_set
 
-theorem infinite_data_op_token {n : SI} {a : H A} {b : CoPset} (h : ✓{n} mk a ∅ • mkToken b) :
+theorem infinite_data_op_token {n} {a : H A} {b : CoPset} (h : ✓{n} mk a ∅ • mkToken b) :
     setInfinite ((⊤ : CoPset) \ b) := by
   simpa only [Infinite, show (mk a ∅ • mkToken b).token = .valid b from
     pcore_op_left_L rfl] using validN_infinite h
 
-theorem validN_data_op_token {n : SI} {a : H A} {b : CoPset} (vd : ✓{n} a)
+theorem validN_data_op_token {n} {a : H A} {b : CoPset} (vd : ✓{n} a)
     (inf : setInfinite ((⊤ : CoPset) \ b)) (disj : ∀ i, get? a i = none ∨ i ∉ b) :
     ✓{n} mk a ∅ • mkToken b := by
   have abdp : (mk a ∅ • mkToken b).data = a :=
@@ -534,7 +534,7 @@ theorem validN_data_op_token {n : SI} {a : H A} {b : CoPset} (vd : ✓{n} a)
     | inl h => simpa [h] using .inl rfl
     | inr h => simpa [eo] using .inr h
 
-theorem valid_op?_of_valid_mkData_op_data {n : SI} {a : A} {x : H A}
+theorem valid_op?_of_valid_mkData_op_data {n} {a : A} {x : H A}
     (h : ✓{n} (mkData k a • mk x ∅)) : ✓{n} a •? get? x k := by
   match h' : get? x k with
   | none => simpa [op?] using (validN_mkData (H := H) k a).mp (validN_op_left h)
@@ -544,7 +544,7 @@ theorem valid_op?_of_valid_mkData_op_data {n : SI} {a : A} {x : H A}
     simpa only [ORA.op, op, mkData, op_data, Heap.op, get?_merge, Option.merge,
       LawfulPartialMap.get?_singleton, ↓reduceIte, h'] using (validN_data_of_validN h) k
 
-theorem valid_mkData_op_data_of_valid_op? {n : SI} {a : A} {x : H A} (vx : ✓{n} x)
+theorem valid_mkData_op_data_of_valid_op? {n} {a : A} {x : H A} (vx : ✓{n} x)
     (h : ✓{n} a •? get? x k) : ✓{n} mkData k a • mk x ∅ := by
   have htok : (mkData k a • mk x ∅).token = .valid (∅ : CoPset) := pcore_op_left_L rfl
   refine validN_iff.mpr ⟨?_, ?_, ?_, ?_⟩
@@ -561,13 +561,13 @@ theorem valid_mkData_op_data_of_valid_op? {n : SI} {a : A} {x : H A} (vx : ✓{n
     exact top_infinite
   · exact fun i => .inr (htok.symm ▸ mem_empty i)
 
-theorem validN_token_op_iff_disj {n : SI} {e₁ e₂} :
+theorem validN_token_op_iff_disj {n} {e₁ e₂} :
     ✓{n} (mkToken (H := H) (A := A) e₁ • mkToken e₂) ↔
       e₁ ## e₂ ∧ setInfinite ((⊤ : CoPset) \ (e₁ ∪ e₂)) := by
-  refine ⟨fun h => ⟨(valid_op_iff_disj (SI := SI)).mp (validN_token_of_validN h), ?_⟩,
+  refine ⟨fun h => ⟨(valid_op_iff_disj).mp (validN_token_of_validN h), ?_⟩,
     fun ⟨hdisj, hinf⟩ => by
       rw [← token_union hdisj]; exact (valid_token.mpr hinf).validN⟩
-  have hdisj := (valid_op_iff_disj (SI := SI)).mp (validN_token_of_validN h)
+  have hdisj := (valid_op_iff_disj).mp (validN_token_of_validN h)
   simpa only [Infinite, op_token, op, mkToken, ORA.op, hdisj, ↓reduceIte] using validN_infinite h
 
 @[rocq_alias dyn_reservation_map_token_valid_op]

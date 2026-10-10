@@ -34,7 +34,7 @@ instance : OFE (Vector α n) where
 #rocq_ignore vec_equiv "OFE is Leibniz; use equality"
 #rocq_ignore vec_dist "Local Dist instance; folded into Lean's OFE (Vector α n) instance."
 
-theorem vec_dist_toList {k : SI} {u v : Vector α n} : u ≡{k}≡ v ↔ u.toList ≡{k}≡ v.toList := .rfl
+theorem vec_dist_toList {k} {u v : Vector α n} : u ≡{k}≡ v ↔ u.toList ≡{k}≡ v.toList := .rfl
 
 @[rocq_alias vec_ofe_discrete]
 instance vec_ofe_discrete [Discrete α] : Discrete (Vector α n) where
@@ -71,7 +71,7 @@ def vecToListHom : Vector α n -n> List α where
   f := Vector.toList
   ne := ⟨fun _ _ _ h => h⟩
 
-omit [SIdxFinite SI] in
+omit [SIdxFinite] in
 @[simp] theorem vecToListHom_apply {v : Vector α n} : vecToListHom v = v.toList := rfl
 
 theorem length_compl_vecToListHom (c : Chain (Vector α n)) :
@@ -125,13 +125,13 @@ section functor
 #rocq_ignore vec_map "Use Vector.map"
 
 @[rocq_alias vec_map_ext_ne]
-theorem vec_map_ext_ne [OFE α] [OFE β] {k : SI} {f g : α → β} {v : Vector α n}
+theorem vec_map_ext_ne [OFE α] [OFE β] {k} {f g : α → β} {v : Vector α n}
     (Hf : ∀ x, f x ≡{k}≡ g x) : v.map f ≡{k}≡ v.map g := by
   simp only [vec_dist_toList, Vector.toList_map]
   exact list_fmap_ext_ne Hf
 
 @[rocq_alias vec_map_ne]
-theorem vec_map_ne [OFE α] [OFE β] {k : SI} {f g : α → β}
+theorem vec_map_ne [OFE α] [OFE β] {k} {f g : α → β}
     (Hf : ∀ {a b}, a ≡{k}≡ b → f a ≡{k}≡ g b) {u v : Vector α n} (h : u ≡{k}≡ v) :
     u.map f ≡{k}≡ v.map g := by
   simp only [vec_dist_toList, Vector.toList_map]

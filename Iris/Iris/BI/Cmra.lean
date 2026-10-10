@@ -67,10 +67,10 @@ theorem internalCmraValid_intro {P : PROP} {a : A} (h : ✓ a) :
     _ ⊢ ✓ a := siPure_mono (cmraValid_intro h)
 
 @[rocq_alias internal_cmra_valid_elim]
-theorem internalCmraValid_elim (a : A) : ✓ a ⊢@{PROP} ⌜✓{(0 : SI)} a⌝ :=
+theorem internalCmraValid_elim (a : A) : ✓ a ⊢@{PROP} ⌜✓{0} a⌝ :=
   calc iprop(✓ a)
-    _ ⊢ <si_pure> ⌜✓{(0 : SI)} a⌝ := siPure_mono cmraValid_elim
-    _ ⊢ ⌜✓{(0 : SI)} a⌝ := siPure_pure.mp
+    _ ⊢ <si_pure> ⌜✓{0} a⌝ := siPure_mono cmraValid_elim
+    _ ⊢ ⌜✓{0} a⌝ := siPure_pure.mp
 
 @[rocq_alias internal_cmra_valid_weaken]
 theorem internalCmraValid_weaken {a b : A} :
@@ -79,7 +79,7 @@ theorem internalCmraValid_weaken {a b : A} :
 
 @[rocq_alias internal_cmra_valid_entails]
 theorem internalCmraValid_entails [RA B] [ORA B] {a : A} {b : B} :
-    (✓ a ⊢@{PROP} ✓ b) ↔ ∀ (n : SI), ✓{n} a → ✓{n} b :=
+    (✓ a ⊢@{PROP} ✓ b) ↔ ∀ n, ✓{n} a → ✓{n} b :=
   siPure_entails.trans cmraValid_entails_iff
 
 @[rocq_alias si_pure_internal_cmra_valid]
@@ -182,17 +182,17 @@ theorem internalCmraIncluded_intro {P : PROP} {a b : A} (h : a ≼ b) :
     _ ⊢ a ≼ b := siPure_mono (BI.exists_intro_trans c (internalEq.of_equiv hc))
 
 /-- The `SiProp` underlying the internal `≼` holds at `n` exactly when `a ≼{n} b`. -/
-private theorem inc_holds {a b : A} {n : SI} :
+private theorem inc_holds {a b : A} {n} :
     ((∃ c, iprop(b ≡ (a • c))) : SiProp).holds n ↔ a ≼{n} b := SiProp.exists_holds
 
 /-- Two internal extension inclusions agree when they agree at every step index. -/
 theorem internalCmraIncluded_iff [RA B] [ORA B] {a b : A} {a' b' : B}
-    (h : ∀ (n : SI), a ≼{n} b ↔ a' ≼{n} b') : a ≼ b ⊣⊢@{PROP} a' ≼ b' :=
+    (h : ∀ n, a ≼{n} b ↔ a' ≼{n} b') : a ≼ b ⊣⊢@{PROP} a' ≼ b' :=
   siPure_mono_bi ⟨fun n hn => inc_holds.mpr ((h n).mp (inc_holds.mp hn)),
     fun n hn => inc_holds.mpr ((h n).mpr (inc_holds.mp hn))⟩
 
 /-- An internal extension inclusion that is step-index independent is a pure proposition. -/
-theorem internalCmraIncluded_pure {a b : A} {φ : Prop} (h : ∀ (n : SI), a ≼{n} b ↔ φ) :
+theorem internalCmraIncluded_pure {a b : A} {φ : Prop} (h : ∀ n, a ≼{n} b ↔ φ) :
     a ≼ b ⊣⊢@{PROP} ⌜φ⌝ :=
   ⟨.trans (siPure_mono fun n hn => (h n).mp (inc_holds.mp hn)) siPure_pure.mp,
    .trans siPure_pure.mpr (siPure_mono fun n hφ => inc_holds.mpr ((h n).mpr hφ))⟩
@@ -325,11 +325,11 @@ theorem internalCmraOrder_intro {P : PROP} {a b : A} (h : a ≼ₒ b) : P ⊢ a 
 
 /-- Two internal orders agree when they agree at every step index. -/
 theorem internalCmraOrder_iff [RA B] [ORA B] {a b : A} {a' b' : B}
-    (h : ∀ (n : SI), a ≼ₒ{n} b ↔ a' ≼ₒ{n} b') : a ≼ₒ b ⊣⊢@{PROP} a' ≼ₒ b' :=
+    (h : ∀ n, a ≼ₒ{n} b ↔ a' ≼ₒ{n} b') : a ≼ₒ b ⊣⊢@{PROP} a' ≼ₒ b' :=
   siPure_mono_bi ⟨fun n => (h n).mp, fun n => (h n).mpr⟩
 
 /-- An internal order that is step-index independent is a pure proposition. -/
-theorem internalCmraOrder_pure {a b : A} {φ : Prop} (h : ∀ (n : SI), a ≼ₒ{n} b ↔ φ) :
+theorem internalCmraOrder_pure {a b : A} {φ : Prop} (h : ∀ n, a ≼ₒ{n} b ↔ φ) :
     a ≼ₒ b ⊣⊢@{PROP} ⌜φ⌝ :=
   ⟨.trans (siPure_mono (Qi := SiProp.pure φ) fun n => (h n).mp) siPure_pure.mp,
    .trans siPure_pure.mpr (siPure_mono (Pi := SiProp.pure φ) fun n => (h n).mpr)⟩

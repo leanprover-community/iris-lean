@@ -33,8 +33,9 @@ class BILoeb (PROP : Type _) [BI.BIBase PROP] where
   loeb_weak {P : PROP} : (▷ P ⊢ P) → True ⊢ P
 export BILoeb (loeb_weak)
 
+variable (SI) in
 @[indexed, rocq_alias BiLaterContractive]
-class BILaterContractive (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed PROP] extends OFE.Contractive later (α := PROP)
+class BILaterContractive (PROP : Type _) [BI PROP] [BIStepIndexed PROP] extends OFE.Contractive later (α := PROP)
 
 #rocq_ignore BiPureForall "BIPureForall is provable for all BIs using classical logic, see pure_forall_2"
 

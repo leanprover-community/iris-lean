@@ -32,6 +32,10 @@ meta def indexedHeads (f : Ident) : TermElabM (List (Name × Option IndexedInfo)
   let .str _ last := f.getId.eraseMacroScopes | return []
   unless table.lasts.contains (.mkSimple last) do return []
   if (← isLocalIdent? f).isSome then return []
+  -- an identifier from a notation or macro comes pre-resolved (its own name is hygienic)
+  if let .ident _ _ _ pre := f.raw then
+    let ns := pre.filterMap fun | .decl n [] => some n | _ => none
+    unless ns.isEmpty do return ns.map fun n => (n, table.decls.find? n)
   return (← resolveGlobalName f.getId).filterMap fun (n, fields) =>
     if fields.isEmpty then some (n, table.decls.find? n) else none
 
@@ -39,15 +43,17 @@ meta def indexedHeads (f : Ident) : TermElabM (List (Name × Option IndexedInfo)
 or by name) or not reached by a partial application. -/
 meta def fillSI (i : IndexedInfo) (f : Syntax) (args : Array Syntax) : TermElabM (Option Syntax) := do
   let isNamed (a : Syntax) := a.isOfKind ``Parser.Term.namedArgument
-  if args.any fun a => isNamed a && a[1].getId == i.name then return none
+  if args.any fun a => isNamed a && a[1].getId.eraseMacroScopes == i.name then return none
   -- filled in already (this is an alternative of an overloaded `C args` coming back)
   if args.any fun a => a.getAtomVal == "stepindex%" || a[0].getAtomVal == "stepindex%" then
     return none
   let si ← `(stepindex%)
+  -- arguments go before a trailing `..`
+  let ell := args.findIdx? (·.isOfKind ``Parser.Term.ellipsis) |>.getD args.size
   match i.explicitPos with
   | none =>
     let named ← `(Parser.Term.namedArgument| ($(mkIdent i.name) := $si))
-    return some (Syntax.mkApp ⟨f⟩ (args.push named |>.map (⟨·⟩)))
+    return some (Syntax.mkApp ⟨f⟩ (args.insertIdx! ell named |>.map (⟨·⟩)))
   | some p =>
     let posIdx := (List.range args.size).filter fun j =>
       !(isNamed args[j]! || args[j]!.isOfKind ``Parser.Term.ellipsis)
@@ -60,7 +66,7 @@ meta def fillSI (i : IndexedInfo) (f : Syntax) (args : Array Syntax) : TermElabM
     if h : p < posIdx.length ∧ ((← getLCtx).findFromUserName? secSI).isSome then
       let a := args[posIdx[p]]!
       if a.isIdent && a.getId == secSI then return none
-    let k := if h : p < posIdx.length then posIdx[p] else args.size
+    let k := if h : p < posIdx.length then posIdx[p] else ell
     return some (Syntax.mkApp ⟨f⟩ ((args.insertIdx! k si.raw).map (⟨·⟩)))
 
 /-- The identifier of a head `C` or `C.{u, …}`. -/

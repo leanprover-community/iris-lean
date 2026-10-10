@@ -13,22 +13,31 @@ namespace Iris.ProofMode
 public section
 open BI Iris.Std
 
-theorem rewrite_tac {SI : stepindex (Type _)} [SIdx SI] [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP]
-    {P P' Q : PROP} {A : Type _} [OFE SI A] {a b : A} {p}
-    (Ψ : A → PROP) [ne : OFE.NonExpansive SI Ψ] [heq : IntoInternalEq SI Q a b]
+section
+-- `PROP` first: it precedes the step index in the signatures below
+variable {PROP : Type _} {SI : stepindex (Type _)} [SIdx SI]
+local stepindex SI
+
+@[indexed]
+theorem rewrite_tac [BI PROP] [BIStepIndexed PROP] [Sbi PROP]
+    {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p}
+    (Ψ : A → PROP) [ne : OFE.NonExpansive Ψ] [heq : IntoInternalEq Q a b]
     (h1 : P ⊢ P' ∗ □?p Q) : P ⊢ <pers> (Ψ a ∗-∗ Ψ b) := calc
-  P ⊢ P' ∗ a ≡[SI] b := h1.trans (sep_mono_right (intuitionisticallyIf_elim.trans heq.1))
-  _ ⊢ a ≡[SI] b := sep_elim_right
-  _ ⊢ Ψ a ≡[SI] Ψ b := internalEq.of_internalEquiv_ne Ψ
-  _ ⊢ <pers> (Ψ a ≡[SI] Ψ b) := persistent
-  _ ⊢ <pers> <affine> Ψ a ≡[SI] Ψ b := persistently_affinely.2
+  P ⊢ P' ∗ a ≡ b := h1.trans (sep_mono_right (intuitionisticallyIf_elim.trans heq.1))
+  _ ⊢ a ≡ b := sep_elim_right
+  _ ⊢ Ψ a ≡ Ψ b := internalEq.of_internalEquiv_ne Ψ
+  _ ⊢ <pers> (Ψ a ≡ Ψ b) := persistent
+  _ ⊢ <pers> <affine> Ψ a ≡ Ψ b := persistently_affinely.2
   _ ⊢ <pers> (Ψ a ∗-∗ Ψ b) := persistently_mono (affinely_internalEq_wandIff _ _)
 
-theorem rewrite_tac_symm {SI : stepindex (Type _)} [SIdx SI] [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP]
-    {P P' Q : PROP} {A : Type _} [OFE SI A] {a b : A} {p}
-    (Ψ : A → PROP) [ne : OFE.NonExpansive SI Ψ] [IntoInternalEq SI Q a b]
+@[indexed]
+theorem rewrite_tac_symm [BI PROP] [BIStepIndexed PROP] [Sbi PROP]
+    {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p}
+    (Ψ : A → PROP) [ne : OFE.NonExpansive Ψ] [IntoInternalEq Q a b]
     (h_eq : P ⊢ P' ∗ □?p Q) : P ⊢ <pers> (Ψ b ∗-∗ Ψ a) :=
-  (rewrite_tac (SI := SI) Ψ h_eq).trans (persistently_mono and_symm)
+  (rewrite_tac Ψ h_eq).trans (persistently_mono and_symm)
+
+end
 
 @[rocq_alias tac_rewrite]
 theorem rewrite_tac_goal [BI PROP] {P Q Q' : PROP}

@@ -62,7 +62,7 @@ def viewRel : ViewRel (LeibnizSet S) (LeibnizSet S)
   | _, valid bijL, valid L => L ⊆ bijL ∧ SetBijective bijL
 
 @[rocq_alias gset_bij_view_rel_iff]
-theorem viewRel_iff {n : SI} : viewRel n (valid L') (valid L) ↔ L ⊆ L' ∧ SetBijective L' := .rfl
+theorem viewRel_iff {n} : viewRel n (valid L') (valid L) ↔ L ⊆ L' ∧ SetBijective L' := .rfl
 
 @[rocq_alias gset_bij_view_rel_raw_mono, rocq_alias gset_bij_view_rel_raw_valid,
   rocq_alias gset_bij_view_rel_raw_unit]

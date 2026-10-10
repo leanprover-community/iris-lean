@@ -74,7 +74,7 @@ instance : IsViewRel (HeapR K V H) where
       refine ⟨v'', dq, Hm2, ⟨Hvval, validN_ne Hv (validN_of_le Hn Hdqval)⟩, c, ?_⟩
       refine ordN_of_ordN_of_dist (b := some (dq, v)) ?_ (OFE.some_dist_some.mpr ⟨rfl, Hv⟩)
       exact (op_monoN_left_ord c (h ▸ Hf')).trans (ordN_of_ordN_le Hn Hvincl)
-  op_left {n : SI} {m f g} Hrel k fv Hk := by
+  op_left {n} {m f g} Hrel k fv Hk := by
     have e : some fv • get? g k = some (fv •? get? g k) := by cases get? g k <;> rfl
     obtain ⟨v, dq, Hm, Hv, c, Hc⟩ := Hrel k _ ((get?_op f g).trans (Hk ▸ e))
     refine ⟨v, dq, Hm, Hv, get? g k • c, ?_⟩
@@ -92,20 +92,20 @@ instance : IsViewRel (HeapR K V H) where
 
 namespace HeapR
 
-theorem of_inc {n : SI} {m f} (h : HeapRInc K V H n m f) : HeapR K V H n m f := fun k fv hk =>
+theorem of_inc {n} {m f} (h : HeapRInc K V H n m f) : HeapR K V H n m f := fun k fv hk =>
   let ⟨v, dq, hm, hv, c, hc⟩ := h k fv hk
   ⟨v, dq, hm, hv, c, ordN_of_dist hc.symm⟩
 
-theorem iff_inc [OrdInc V] {n : SI} {m f} : HeapR K V H n m f ↔ HeapRInc K V H n m f :=
+theorem iff_inc [OrdInc V] {n} {m f} : HeapR K V H n m f ↔ HeapRInc K V H n m f :=
   forall₂_congr fun _ _ => imp_congr_right fun _ => exists₂_congr fun _ _ =>
     and_congr_right fun _ => and_congr_right fun _ => exists_op_ordN_iff_incN
 
 @[rocq_alias gmap_view_rel_unit]
-theorem unit {n : SI} {m : H V} : HeapR K V H n m UnitOp.unit := by
+theorem unit {n} {m : H V} : HeapR K V H n m UnitOp.unit := by
   simp [HeapR, UnitOp.unit, Heap.unit, get?_empty]
 
 @[rocq_alias gmap_view_rel_exists]
-theorem exists_iff_validN {n : SI} {f} : (∃ m, HeapR K V H n m f) ↔ ✓{n} f := by
+theorem exists_iff_validN {n} {f} : (∃ m, HeapR K V H n m f) ↔ ✓{n} f := by
   refine ⟨fun ⟨m, Hrel⟩ => IsViewRel.rel_validN _ _ _ Hrel, fun Hv => ?_⟩
   let FF : K → (DFrac × V) → Option V := fun k _ => get? f k |>.bind (·.2)
   refine ⟨bindAlter FF f, fun k => ?_⟩
@@ -117,7 +117,7 @@ theorem exists_iff_validN {n : SI} {f} : (∃ m, HeapR K V H n m f) ↔ ✓{n} f
   simp only [get?_bindAlter, h, Option.bind_some, true_and, FF]
   exact ⟨dq, (h ▸ Hv k : ✓{n} some (dq, v)), none, ordN_refl _⟩
 
-theorem singleton_get_iff_frame (n : SI) m k dq v :
+theorem singleton_get_iff_frame (n) m k dq v :
     HeapR K V H n m (PartialMap.singleton k (dq, v)) ↔
       ∃ (v' : V) (dq' : DFrac),
         get? m k = some v' ∧ ✓{n} (dq', v') ∧ ∃ c, some (dq, v) • c ≼ₒ{n} some (dq', v') := by
@@ -132,7 +132,7 @@ theorem singleton_get_iff_frame (n : SI) m k dq v :
     · rw [PartialMap.singleton, get?_insert_ne h, get?_empty] at Hfv
       cases Hfv
 
-theorem singleton_get_iff_ord [IncOrd V] (n : SI) m k dq v :
+theorem singleton_get_iff_ord [IncOrd V] (n) m k dq v :
     HeapR K V H n m (PartialMap.singleton k (dq, v)) ↔
       ∃ (v' : V) (dq' : DFrac),
         get? m k = some v' ∧ ✓{n} (dq', v') ∧ some (dq, v) ≼ₒ{n} some (dq', v') :=
@@ -140,7 +140,7 @@ theorem singleton_get_iff_ord [IncOrd V] (n : SI) m k dq v :
     and_congr_right fun _ => and_congr_right fun _ => exists_op_ordN_iff_ordN
 
 @[rocq_alias gmap_view_rel_lookup]
-theorem singleton_get_iff [OrdInc V] (n : SI) m k dq v :
+theorem singleton_get_iff [OrdInc V] (n) m k dq v :
     HeapR K V H n m (PartialMap.singleton k (dq, v)) ↔
       ∃ (v' : V) (dq' : DFrac),
         get? m k = some v' ∧ ✓{n} (dq', v') ∧ some (dq, v) ≼{n} some (dq', v') :=
@@ -431,7 +431,7 @@ theorem frag_op_validN_iff :
 theorem frag_op_valid_iff :
     ✓ (Frag (H := H) k dp v1 • Frag k dq v2) ↔
     ✓ (dp • dq) ∧ ✓ (v1 • v2) := by
-  suffices (∀ (n : SI), ✓{n} dp • dq ∧ ✓{n} v1 • v2) ↔ ✓ dp • dq ∧ ✓ v1 • v2 by
+  suffices (∀ n, ✓{n} dp • dq ∧ ✓{n} v1 • v2) ↔ ✓ dp • dq ∧ ✓ v1 • v2 by
     refine (forall_congr' (fun _ => ?_)).trans this
     refine (HeapR.exists_iff_validN ..).trans ?_
     refine (validN_dist_iff (Dist.of_eq (singleton_op_singleton))).trans ?_
@@ -485,7 +485,7 @@ theorem update_one_delete :
       exact ⟨v, q, H.symm ▸ get?_delete_ne h, H'⟩
 
 theorem update_auth_op_frag_frame
-    (Hup : ∀ (n : SI) (dq₁ : DFrac) (mv : V) (f : Option ((DFrac) × V)),
+    (Hup : ∀ (n) (dq₁ : DFrac) (mv : V) (f : Option ((DFrac) × V)),
       Std.PartialMap.get? m1 k = some mv → ✓{n} (dq₁, mv) →
       some ((dq, v) •? f) ≼ₒ{n} some (dq₁, mv) →
       ∃ (dq₂ : DFrac) (g : Option (DFrac × V)), ✓{n} (dq₂, mv') ∧
@@ -515,7 +515,7 @@ theorem update_auth_op_frag_frame
     exact Hj
 
 theorem update_auth_op_frag_ord
-    (Hup : ∀ (n : SI) (dq₁ : DFrac) (mv : V) (f : Option ((DFrac) × V)),
+    (Hup : ∀ (n) (dq₁ : DFrac) (mv : V) (f : Option ((DFrac) × V)),
       Std.PartialMap.get? m1 k = some mv → ✓{n} (dq₁, mv) →
       some ((dq, v) •? f) ≼ₒ{n} some (dq₁, mv) →
       ∃ dq₂, ✓{n} (dq₂, mv') ∧ some ((dq', v') •? f) ≼ₒ{n} some (dq₂, mv')) :
@@ -528,7 +528,7 @@ theorem update_auth_op_frag_ord
 @[rocq_alias gmap_view_update]
 theorem update_auth_op_frag [OrdInc V]
     (Hup :
-      ∀ (n : SI) (mv : V) (f : Option (DFrac × V)), (Std.PartialMap.get? m1 k = some mv) →
+      ∀ (n) (mv : V) (f : Option (DFrac × V)), (Std.PartialMap.get? m1 k = some mv) →
       ✓{n} ((dq, v) •? f) → (mv ≡{n}≡ ((v : V) •? (Prod.snd <$> f))) →
       ✓{n} ((dq', v') •? f) ∧ (mv' ≡{n}≡ v' •? (Prod.snd <$> f))) :
     Auth (.own one) m1 • Frag k dq v ~~>
@@ -645,7 +645,7 @@ section heapViewFunctor
 open Iris.Std PartialMap
 
 theorem heapR_map_eq [COFE A] [COFE B] [COFE A'] [COFE B'] [RFunctor T] (f : A' -n> A) (g : B -n> B')
-    (n : SI) (m : H (T A B)) (mv : H (DFrac × T A B)) :
+    (n) (m : H (T A B)) (mv : H (DFrac × T A B)) :
     HeapR K (T A B) H n m mv →
     HeapR K (T A' B') H n
       ((mapO H (RFunctor.map f g).toHom).f m)

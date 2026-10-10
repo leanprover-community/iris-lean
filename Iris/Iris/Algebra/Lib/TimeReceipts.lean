@@ -68,7 +68,7 @@ def viewRel : ViewRel Count frag := fun _ a f =>
 
 @[rocq_alias time_receipt_view_rel]
 private instance : IsViewRel viewRel := .ofMonoOrd
-  (fun {n₁ : SI} {_} f₁ n₂ _ f₂ h ha hf hn => by
+  (fun {n₁} {_} f₁ n₂ _ f₂ h ha hf hn => by
     obtain ⟨b₁, b₂, hb₀, hb, h₁, h₂⟩ := h
     obtain rfl := (ha : _ = _)
     obtain ⟨⟨z, hz : f₁.1.toNat = f₂.1.toNat + z.toNat⟩, hf₂⟩ := Prod.incN_def.mp (ordN_incN hf)
@@ -82,13 +82,13 @@ private instance : IsViewRel viewRel := .ofMonoOrd
 #rocq_ignore time_receipt_view_rel_raw_unit "Defined in the IsViewRel instance"
 
 @[rocq_alias time_receipt_view_rel_exists]
-theorem viewRel_exists_iff {n : SI} : (∃ a, viewRel n a f) ↔ ✓{n} f :=
+theorem viewRel_exists_iff {n} : (∃ a, viewRel n a f) ↔ ✓{n} f :=
   ⟨fun _ => ⟨trivial, trivial⟩,
    fun _ => ⟨Count.ofNat (f.1.toNat + max f.1.toNat f.2.toNat), f.1.toNat, max f.1.toNat f.2.toNat,
      rfl, Nat.le_max_left .., Nat.le_refl _, Nat.le_max_right ..⟩⟩
 
 @[rocq_alias time_receipt_view_rel_unit]
-theorem viewRel_unit_iff {n : SI} : viewRel n a UnitOp.unit ↔ ✓{n} a :=
+theorem viewRel_unit_iff {n} : viewRel n a UnitOp.unit ↔ ✓{n} a :=
   ⟨fun _ => trivial,
    fun _ => ⟨0, a.toNat, (Nat.zero_add _).symm, Nat.zero_le _, Nat.le_refl _,
      Nat.zero_le _⟩⟩

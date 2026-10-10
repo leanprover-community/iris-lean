@@ -86,12 +86,12 @@ instance frag_discrete {q : Qp} {a : A} [ha : DiscreteE a] : DiscreteE (◯F{q} 
 /-! ## Validity -/
 
 @[rocq_alias frac_auth_dfrac_validN]
-theorem dfrac_validN {dq : DFrac} {n : SI} {a : A} (hdq : ✓ dq) (ha : ✓{n} a) :
+theorem dfrac_validN {dq : DFrac} {n} {a : A} (hdq : ✓ dq) (ha : ✓{n} a) :
     ✓{n} (●F{dq} a : FracAuth) • ◯F a :=
   both_dfrac_validN_frame.mpr ⟨hdq, ⟨none, ordN_refl _⟩, Qp.valid_one, ha⟩
 
 @[rocq_alias frac_auth_validN]
-theorem validN {n : SI} {a : A} (ha : ✓{n} a) : ✓{n} (●F a : FracAuth) • ◯F a :=
+theorem validN {n} {a : A} (ha : ✓{n} a) : ✓{n} (●F a : FracAuth) • ◯F a :=
   dfrac_validN DFrac.valid_own_one ha
 
 @[rocq_alias frac_auth_dfrac_valid]
@@ -105,7 +105,7 @@ theorem valid {a : A} (ha : ✓ a) : ✓ (●F a : FracAuth) • ◯F a :=
 /-! ## Agreement -/
 
 @[rocq_alias frac_auth_agreeN]
-theorem agreeN {n : SI} {dq : DFrac} {a b : A} (h : ✓{n} (●F{dq} a : FracAuth) • ◯F b) : a ≡{n}≡ b := by
+theorem agreeN {n} {dq : DFrac} {a b : A} (h : ✓{n} (●F{dq} a : FracAuth) • ◯F b) : a ≡{n}≡ b := by
   obtain ⟨_, ⟨c, hc⟩, hv⟩ := both_dfrac_validN_frame.mp h
   cases c with
   | none => exact hc.elim (·.2.symm) (absurd hv.1 <| not_valid_of_exclN_inc (x := (1 : Qp)) ·.1)
@@ -119,17 +119,17 @@ theorem agree {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a : FracAuth) • ◯F b
 
 /-! ## Inclusion -/
 
-theorem ordN_frame {n : SI} {dq : DFrac} {q : Qp} {a b : A} (h : ✓{n} (●F{dq} a : FracAuth) • ◯F{q} b) :
+theorem ordN_frame {n} {dq : DFrac} {q : Qp} {a b : A} (h : ✓{n} (●F{dq} a : FracAuth) • ◯F{q} b) :
     ∃ c, some b • c ≼ₒ{n} some a := by
   obtain ⟨_, ⟨c, hc⟩, _⟩ := both_dfrac_validN_frame.mp h
   exact ⟨c.map Prod.snd, by cases c <;> exact hc.imp (·.2) (·.2)⟩
 
-theorem ordN [IncOrd A] {n : SI} {dq : DFrac} {q : Qp} {a b : A}
+theorem ordN [IncOrd A] {n} {dq : DFrac} {q : Qp} {a b : A}
     (h : ✓{n} (●F{dq} a : FracAuth) • ◯F{q} b) : some b ≼ₒ{n} some a :=
   exists_op_ordN_iff_ordN.mp (ordN_frame h)
 
 @[rocq_alias frac_auth_includedN]
-theorem includedN [OrdInc A] {n : SI} {dq : DFrac} {q : Qp} {a b : A}
+theorem includedN [OrdInc A] {n} {dq : DFrac} {q : Qp} {a b : A}
     (h : ✓{n} (●F{dq} a : FracAuth) • ◯F{q} b) : some b ≼{n} some a :=
   exists_op_ordN_iff_incN.mp (ordN_frame h)
 
@@ -146,12 +146,12 @@ theorem included [ORA.Discrete A] [OrdInc A] {dq : DFrac} {a b : A}
     (h : ✓ (●F{dq} a : FracAuth) • ◯F{q} b) : some b ≼ some a :=
   exists_op_ord_iff_inc.mp (ord_frame h)
 
-theorem ordN_total {n : SI} [OrderRefl A] [IncOrd A] {dq : DFrac} {a b : A}
+theorem ordN_total {n} [OrderRefl A] [IncOrd A] {dq : DFrac} {a b : A}
     (h : ✓{n} (●F{dq} a : FracAuth) • ◯F{q} b) : b ≼ₒ{n} a :=
   some_ordN_some_iff_orderRefl.mp (ordN h)
 
 @[rocq_alias frac_auth_includedN_total]
-theorem includedN_total {n : SI} [OrderRefl A] [OrdInc A] {dq : DFrac} {a b : A}
+theorem includedN_total {n} [OrderRefl A] [OrdInc A] {dq : DFrac} {a b : A}
     (h : ✓{n} (●F{dq} a : FracAuth) • ◯F{q} b) : b ≼{n} a :=
   (dist_or_incN_of_some_incN_some (includedN h)).elim (Iris.ordN_incN ·.to_ordN) id
 
@@ -167,12 +167,12 @@ theorem included_total [ORA.Discrete A] [OrderRefl A] [OrdInc A] {dq : DFrac} {a
 /-! ## Auth-only validity -/
 
 @[rocq_alias frac_auth_auth_dfrac_validN]
-theorem auth_dfrac_validN {n : SI} {dq : DFrac} {a : A} : (✓{n} (●F{dq} a : FracAuth)) ↔ ✓ dq ∧ ✓{n} a := by
+theorem auth_dfrac_validN {n} {dq : DFrac} {a : A} : (✓{n} (●F{dq} a : FracAuth)) ↔ ✓ dq ∧ ✓{n} a := by
   rw [Auth.auth_dfrac_validN]
   exact ⟨fun ⟨hdq, ha⟩ => ⟨hdq, ha.2⟩, fun ⟨hdq, ha⟩ => ⟨hdq, Qp.valid_one, ha⟩⟩
 
 @[rocq_alias frac_auth_auth_validN]
-theorem auth_validN {n : SI} {a : A} : (✓{n} (●F a : FracAuth)) ↔ ✓{n} a := by
+theorem auth_validN {n} {a : A} : (✓{n} (●F a : FracAuth)) ↔ ✓{n} a := by
   rw [auth_dfrac_validN]
   exact ⟨(·.2), (⟨DFrac.valid_own_one, ·⟩)⟩
 
@@ -191,7 +191,7 @@ theorem auth_valid {a : A} : (✓ (●F a : FracAuth)) ↔ ✓ a := by
 /-! ## Fragment-only validity -/
 
 @[rocq_alias frac_auth_frag_validN]
-theorem frag_validN {n : SI} {q : Qp} {a : A} : (✓{n} (◯F{q} a : FracAuth)) ↔ q.val ≤ 1 ∧ ✓{n} a := by
+theorem frag_validN {n} {q : Qp} {a : A} : (✓{n} (◯F{q} a : FracAuth)) ↔ q.val ≤ 1 ∧ ✓{n} a := by
   rw [Auth.frag_validN]; rfl
 
 @[rocq_alias frac_auth_frag_valid]
@@ -214,13 +214,13 @@ theorem frag_op {q1 q2 : Qp} {a1 a2 : A} : (◯F{q1 + q2} (a1 • a2)) = (◯F{q
 /-! ## Auth-auth op validity -/
 
 @[rocq_alias frac_auth_auth_dfrac_op_validN]
-theorem auth_dfrac_op_validN {n : SI} {dq1 dq2 : DFrac} {a b : A} (h : ✓{n} (●F{dq1} a : FracAuth) • ●F{dq2} b) :
+theorem auth_dfrac_op_validN {n} {dq1 dq2 : DFrac} {a b : A} (h : ✓{n} (●F{dq1} a : FracAuth) • ●F{dq2} b) :
     ✓ (dq1 • dq2) ∧ a ≡{n}≡ b := by
   rw [Auth.auth_dfrac_op_validN] at h
   exact ⟨h.1, h.2.1.2⟩
 
 @[rocq_alias frac_auth_auth_op_validN]
-theorem auth_op_validN {n : SI} {a b : A} (h : ✓{n} (●F a : FracAuth) • ●F b) : False :=
+theorem auth_op_validN {n} {a b : A} (h : ✓{n} (●F a : FracAuth) • ●F b) : False :=
   Auth.auth_op_validN.mp h
 
 @[rocq_alias frac_auth_auth_dfrac_op_valid]
@@ -236,7 +236,7 @@ theorem auth_op_valid {a b : A} (h : ✓ (●F a : FracAuth) • ●F b) : False
 /-! ## Fragment-fragment op validity -/
 
 @[rocq_alias frac_auth_frag_op_validN]
-theorem frag_op_validN {n : SI} {q1 q2 : Qp} {a b : A} :
+theorem frag_op_validN {n} {q1 q2 : Qp} {a b : A} :
     (✓{n} (◯F{q1} a : FracAuth) • ◯F{q2} b) ↔ (q1 + q2).val ≤ 1 ∧ ✓{n} (a • b) := by
   change ✓{n} (◯F{q1 + q2} (a • b)) ↔ _
   exact frag_validN

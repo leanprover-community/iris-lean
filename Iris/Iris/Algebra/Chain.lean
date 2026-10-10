@@ -24,7 +24,7 @@ variable {α : Type u} [OFE α]
 
 @[indexed, rocq_alias chain_equiv]
 def Equiv (x y : Chain α) : Prop :=
-  ∀ (n : SI), x n ≡{n}≡ y n
+  ∀ n, x n ≡{n}≡ y n
 
 theorem equiv_equivalence : Equivalence (Equiv (α := α)) where
   refl _ _ := .rfl
@@ -36,14 +36,14 @@ def quotientSetoid : Setoid (Chain α) := ⟨Equiv, equiv_equivalence⟩
 
 @[indexed, rocq_alias chain_dist]
 def dist (n : SI) (x y : Chain α) : Prop :=
-  ∀ (m : SI), m ≤ n → x m ≡{m}≡ y m
+  ∀ m, m ≤ n → x m ≡{m}≡ y m
 
 theorem dist_equivalence : Equivalence (dist (α := α) n) where
   refl _ _ _ := .rfl
   symm h _ hm := (h _ hm).symm
   trans h₁ h₂ _ hm := (h₁ _ hm).trans (h₂ _ hm)
 
-theorem dist_lt {n m : SI} {x y : Chain α} (h : dist n x y) (hlt : m < n) :
+theorem dist_lt {n m} {x y : Chain α} (h : dist n x y) (hlt : m < n) :
     dist m x y :=
   fun k hk => h k (SIdx.le_trans hk (SIdx.lt_le_incl hlt))
 
@@ -107,7 +107,7 @@ instance instOFE : OFE (Completion α) :=
     Raw.equiv_iff_dist
 
 @[simp]
-theorem dist_mk {n : SI} {x y : Chain α} :
+theorem dist_mk {n} {x y : Chain α} :
     mk x ≡{n}≡ mk y ↔ Raw.dist n x y :=
   Iff.rfl
 
@@ -122,11 +122,11 @@ def unit : α -n> Completion α where
 instance [Inhabited α] : Inhabited (Completion α) := ⟨unit default⟩
 
 theorem exists_limit (c : Chain (Completion α)) :
-  ∃ x : Completion α, ∀ (n : SI), x ≡{n}≡ c n := by
-  have hrep (n : SI) : ∃ d : Chain α, mk d = c n :=
+  ∃ x : Completion α, ∀ n, x ≡{n}≡ c n := by
+  have hrep (n) : ∃ d : Chain α, mk d = c n :=
     ind (fun d => ⟨d, rfl⟩) (c n)
-  let d (n : SI) : Chain α := Classical.choose (hrep n)
-  have hd (n : SI) : mk (d n) = c n := Classical.choose_spec (hrep n)
+  let d (n) : Chain α := Classical.choose (hrep n)
+  have hd (n) : mk (d n) = c n := Classical.choose_spec (hrep n)
   let diagonal : Chain α := {
     chain := fun n => d n n
     cauchy := by
@@ -149,9 +149,9 @@ noncomputable def diagonal (c : Chain (Completion α)) : Completion α :=
   Classical.choose (exists_limit c)
 
 @[rocq_alias chain_cofe]
-noncomputable instance instIsCOFE [SIdxFinite SI] : IsCOFE (Completion α) where
+noncomputable instance instIsCOFE [SIdxFinite] : IsCOFE (Completion α) where
   compl := diagonal
-  conv_compl {n : SI} {c} := Classical.choose_spec (exists_limit c) n
+  conv_compl {n} {c} := Classical.choose_spec (exists_limit c) n
   lbcompl := (·.elim)
   conv_lbcompl := (·.elim)
   lbcompl_ne := (·.elim)
@@ -160,7 +160,7 @@ noncomputable instance instIsCOFE [SIdxFinite SI] : IsCOFE (Completion α) where
 def complete [IsCOFE α] : Completion α -n> α where
   f := lift COFE.compl fun x y h => OFE.eq_dist_2 fun n =>
     (COFE.conv_compl (c := x)).trans ((h n).trans (COFE.conv_compl (c := y)).symm)
-  ne.ne {n : SI} {x y} h := by
+  ne.ne {n} {x y} h := by
     induction x, y using ind₂ with
     | mk c d =>
       exact (COFE.conv_compl (c := c)).trans
@@ -192,7 +192,7 @@ def idemp [IsCOFE α] : OFE.Iso α (Completion α) where
 def map {β : Type v} [OFE β] (f : α -n> β) : Completion α -n> Completion β where
   f := OFE.ofQuotient.map (s := Raw.quotientSetoid) (s' := Raw.quotientSetoid)
     (Chain.map f) fun _ _ h n => f.ne.ne (h n)
-  ne.ne {n : SI} {x y} h := by
+  ne.ne {n} {x y} h := by
     induction x, y using ind₂ with
     | mk c d =>
       refine dist_mk.mpr fun m hm => ?_
@@ -218,7 +218,7 @@ theorem map_comp {β : Type v} {γ : Type w} [OFE β] [OFE γ]
   | mk c => simp only [map_mk, Chain.map_comp]
 
 @[rocq_alias chain_map_ext_ne]
-theorem map_ext_ne {β : Type v} [OFE β] (f g : α -n> β) (x : Completion α) {n : SI}
+theorem map_ext_ne {β : Type v} [OFE β] (f g : α -n> β) (x : Completion α) {n}
     (h : ∀ a, f a ≡{n}≡ g a) : map f x ≡{n}≡ map g x := by
   induction x using ind with
   | mk c =>
@@ -228,7 +228,7 @@ theorem map_ext_ne {β : Type v} [OFE β] (f g : α -n> β) (x : Completion α) 
 @[rocq_alias chain_map_ext]
 theorem map_ext {β : Type v} [OFE β] (f g : α -n> β) (x : Completion α)
     (h : ∀ a, f a = g a) : map f x = map g x := by
-  refine OFE.eq_dist_2 fun (n : SI) => ?_
+  refine OFE.eq_dist_2 fun n => ?_
   exact map_ext_ne f g x fun a => (h a).dist
 
 @[rocq_alias chainO_map_ne]

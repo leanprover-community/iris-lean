@@ -262,16 +262,23 @@ instance (priority := default - 1) frame_pure_embed
   frame := (sep_mono_left <| intuitionisticallyIf_mono (embed_pure φ).mpr).trans
     (frame_embed_core h1 h2)
 
+section
+-- `P1 P2` (and their universes) first: they precede the step index in the signature below
+universe u v
+variable {P1 : Type u} {P2 : Type v} {SI : stepindex (Type _)} [SIdx SI]
+local stepindex SI
+
 @[ipm_backtrack, rocq_alias frame_eq_embed]
 instance (priority := default - 1) frame_eq_embed
-    {SI : stepindex (Type _)} [SIdx SI]
-    [BI P1] [BIStepIndexed SI P1] [Sbi SI P1] [BI P2] [BIStepIndexed SI P2] [Sbi SI P2]
-    [BiEmbed P1 P2] [BiEmbedSbi SI P1 P2]
-    (p : Bool) {A : Type _} [OFE SI A] (a b : A) (P Q : P1) (Q' : P2)
-    [h1 : Frame p iprop(a ≡[SI] b) P Q] [h2 : MakeEmbed Q Q'] :
-    Frame p iprop(a ≡[SI] b) iprop(⎡P⎤) Q' where
+    [BI P1] [BIStepIndexed P1] [Sbi P1] [BI P2] [BIStepIndexed P2] [Sbi P2]
+    [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
+    (p : Bool) {A : Type _} [OFE A] (a b : A) (P Q : P1) (Q' : P2)
+    [h1 : Frame p iprop(a ≡ b) P Q] [h2 : MakeEmbed Q Q'] :
+    Frame p iprop(a ≡ b) iprop(⎡P⎤) Q' where
   frame := (sep_mono_left <| intuitionisticallyIf_mono (embed_internal_eq a b).mpr).trans
     (frame_embed_core h1 h2)
+
+end
 
 @[ipm_backtrack, rocq_alias frame_texist]
 instance frame_texist {TT : Tele} [BI PROP] p (R : PROP) (Φ Ψ : TT.Arg → PROP)

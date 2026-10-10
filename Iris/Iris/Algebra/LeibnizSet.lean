@@ -134,11 +134,13 @@ theorem ucmraData : UCMRAData (DisjointLeibnizSet S) where
 instance instUCMRADisjointLeibnizSet : UCMRA (DisjointLeibnizSet S) := UORA.ofUCMRAData DisjointLeibnizSet.ucmraData
 
 theorem valid_set {s : S} : ✓ valid s := ⟨⟩
-theorem validN_set {n : SI} {s : S} : ✓{n} valid s := ⟨⟩
+theorem validN_set {n} {s : S} : ✓{n} valid s := ⟨⟩
 
+@[indexed]
 theorem not_valid_invalid : ¬ ✓ (error : DisjointLeibnizSet S) := False.elim
-theorem not_validN_invalid {n : SI} : ¬ ✓{n} (error : DisjointLeibnizSet S) := False.elim
+theorem not_validN_invalid {n} : ¬ ✓{n} (error : DisjointLeibnizSet S) := False.elim
 
+@[indexed]
 theorem mem_iff_of_valid_union {x y : DisjointLeibnizSet S} (v : ✓ x • y) (a : A) :
     a ∈ x • y ↔ a ∈ x ∨ a ∈ y := by
   match x, y with
@@ -150,8 +152,8 @@ theorem mem_iff_of_valid_union {x y : DisjointLeibnizSet S} (v : ✓ x • y) (a
       exact mem_union
     · simp only [op, h, ↓reduceIte] at v; exact v.elim
 
-theorem mem_iff_of_validN_union {n : SI} {x y : DisjointLeibnizSet S} (v : ✓{n} x • y) (a : A) :
-    a ∈ x • y ↔ a ∈ x ∨ a ∈ y := mem_iff_of_valid_union (SI := SI) v a
+theorem mem_iff_of_validN_union {n} {x y : DisjointLeibnizSet S} (v : ✓{n} x • y) (a : A) :
+    a ∈ x • y ↔ a ∈ x ∨ a ∈ y := mem_iff_of_valid_union v a
 
 @[rocq_alias coPset_disj_included, rocq_alias gset_disj_included]
 theorem included_iff_subset {X Y : S} : valid X ≼ valid Y ↔ X ⊆ Y := by
@@ -171,6 +173,7 @@ theorem included_iff_subset {X Y : S} : valid X ≼ valid Y ↔ X ⊆ Y := by
     ext p; rw [mem_union, mem_diff]
     refine ⟨by grind, (·.casesOn (Hsub _) (·.left))⟩
 
+@[indexed]
 theorem ord_iff_subset {X Y : S} : valid X ≼ₒ valid Y ↔ X ⊆ Y :=
   inc_iff_ord.symm.trans included_iff_subset
 
@@ -179,7 +182,7 @@ theorem disj_op_union {X Y : S} (Hdisj : X ## Y) :
     (valid X) • (valid Y) = valid (X ∪ Y) := by
   simp [op, Hdisj]
 
-@[rocq_alias coPset_disj_valid_op, rocq_alias gset_disj_valid_op]
+@[indexed, rocq_alias coPset_disj_valid_op, rocq_alias gset_disj_valid_op]
 theorem valid_op_iff_disj {X Y : S} : ✓ ((valid X) • (valid Y)) ↔ X ## Y := by
   by_cases H : X ## Y <;> simp [H, op, ORA.Valid]
 
@@ -244,7 +247,7 @@ theorem localUpdate_op_r {X Y Z : S} (Hdisj : Z ## X) :
 theorem localUpdate_union_r_of_disj (X Y Z : S) (Hdisj : Z ## X) :
     (valid X, valid Y) ~l~> (valid (Z ∪ X), valid (Z ∪ Y)) := by
   refine LocalUpdate.total_valid fun vx vy le => ?_
-  have HdisjY : Z ## Y := fun a ⟨Hz, Hy⟩ => Hdisj a ⟨Hz, (ord_iff_subset (SI := SI)).mp le a Hy⟩
+  have HdisjY : Z ## Y := fun a ⟨Hz, Hy⟩ => Hdisj a ⟨Hz, (ord_iff_subset).mp le a Hy⟩
   rw [←disj_op_union Hdisj, ←disj_op_union HdisjY]
   exact localUpdate_op_r Hdisj
 
@@ -392,6 +395,7 @@ theorem included_iff_subset (X Y : S) : valid X ≼ valid Y ↔ X ⊆ Y := by
     · exact .inl H
     · exact .inr ⟨H1, H⟩
 
+@[indexed]
 theorem ord_iff_subset (X Y : S) : valid X ≼ₒ valid Y ↔ X ⊆ Y :=
   inc_iff_ord.symm.trans (included_iff_subset X Y)
 

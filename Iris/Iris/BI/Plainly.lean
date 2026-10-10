@@ -55,12 +55,14 @@ class BIPlainly (PROP : Type _) [BI PROP] extends BIBase.Plainly PROP where
 class BIPlainlyExists (PROP : Type _) [BI PROP] [BIPlainly PROP] : Prop where
   plainly_sExists_1 {Φ : PROP → Prop} : ■ BIBase.sExists Φ ⊢ ∃ p, ⌜Φ p⌝ ∧ ■ p
 
+variable (SI) in
 /-- Coherence of `■` with the `Sbi` structure: `■ P` is `<si_pure> <si_emp_valid> P`. -/
 @[indexed]
-class BIPlainlySbi (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed PROP]
+class BIPlainlySbi (PROP : Type _) [BI PROP] [BIStepIndexed PROP]
     [Sbi PROP] [BIPlainly PROP] : Prop where
   plainly_siPure_siEmpValid {P : PROP} :
     ■ P ⊣⊢ SiPure.siPure (SiEmpValid.siEmpValid P)
+attribute [indexed] BIPlainlySbi.plainly_siPure_siEmpValid
 
 section PlainlyFromSbi
 variable (SI) [BI PROP] [BIStepIndexed PROP] [Sbi PROP]
@@ -94,13 +96,14 @@ def BIPlainly.ofSbi : BIPlainly PROP where
   except0_plainly_2 := (siPure_mono siEmpValid_except0.mp).trans siPure_except0.mp
 
 /-- `BIPlainly.ofSbi` is coherent with the `Sbi` structure. -/
-theorem BIPlainlySbi.ofSbi : @BIPlainlySbi SI _ PROP _ _ _ (BIPlainly.ofSbi) :=
-  @BIPlainlySbi.mk SI _ PROP _ _ _ (BIPlainly.ofSbi) .rfl
+@[indexed]
+theorem BIPlainlySbi.ofSbi : letI : BIPlainly PROP := BIPlainly.ofSbi; BIPlainlySbi PROP :=
+  letI : BIPlainly PROP := BIPlainly.ofSbi; ⟨.rfl⟩
 
 end PlainlyFromSbi
 
-instance : BIPlainly (SiProp) := .ofSbi SI
-instance : BIPlainlySbi (SiProp) := .ofSbi SI
+instance : BIPlainly (SiProp) := BIPlainly.ofSbi
+instance : BIPlainlySbi (SiProp) := BIPlainlySbi.ofSbi
 
 section PlainlyForward
 variable [BI PROP] [BIPlainly PROP]
@@ -156,11 +159,12 @@ theorem plainly_if_mono p (P Q : PROP) : iprop(P ⊢ Q) → ■?p P ⊢ ■?p Q 
 end PlainlyForward
 
 /-- `SbiEmpValidExist` gives `BIPlainlyExists` for a coherent `■`. -/
+@[indexed]
 theorem BIPlainlyExists.ofSbi (SI : stepindex (Type _)) [SIdx SI] [BI PROP] [BIStepIndexed PROP]
     [Sbi PROP] [SbiEmpValidExist PROP] [BIPlainly PROP] [BIPlainlySbi PROP] :
     BIPlainlyExists PROP where
   plainly_sExists_1 {Φ} := by
-    refine (BIPlainlySbi.plainly_siPure_siEmpValid (SI := SI)).mp.trans ?_
+    refine (BIPlainlySbi.plainly_siPure_siEmpValid).mp.trans ?_
     refine (siPure_mono (SbiEmpValidExist.siEmpValid_sExists_1 Φ)).trans <|
       siPure_exist.mp.trans <| exists_mono fun p => siPure_and.mp.trans ?_
     exact and_mono siPure_pure.mp (BIPlainlySbi.plainly_siPure_siEmpValid).mpr
@@ -168,13 +172,14 @@ theorem BIPlainlyExists.ofSbi (SI : stepindex (Type _)) [SIdx SI] [BI PROP] [BIS
 section PlainlySbi
 variable [BI PROP] [BIStepIndexed PROP] [Sbi PROP] [BIPlainly PROP] [BIPlainlySbi PROP]
 
+@[indexed]
 theorem plainly_eq_siPure_siEmpValid :
     (BIBase.plainly : PROP → PROP) = fun P => SiPure.siPure (SiEmpValid.siEmpValid P) :=
   funext fun _ => BIPlainlySbi.plainly_siPure_siEmpValid.to_eq
 
 @[rocq_alias plainly_ne]
 instance instPlainly_ne : OFE.NonExpansive (BIBase.plainly (PROP := PROP)) := by
-  rw [plainly_eq_siPure_siEmpValid (SI := SI)]
+  rw [plainly_eq_siPure_siEmpValid]
   exact ⟨fun _ _ _ h => Sbi.siPure_ne.ne (Sbi.siEmpValid_ne.ne h)⟩
 
 @[rocq_alias plainly_if_ne]
@@ -186,7 +191,7 @@ instance instPlainlyIf_ne p : OFE.NonExpansive (BIBase.Plainly.plainlyIf (PROP :
 
 end PlainlySbi
 
-instance : BIPlainlyExists (SiProp) := .ofSbi SI
+instance : BIPlainlyExists (SiProp) := BIPlainlyExists.ofSbi
 
 namespace BI
 open Iris.Std
@@ -505,7 +510,7 @@ instance plainly_absorbing (P : PROP) : Absorbing iprop(■ P) where
 @[rocq_alias plainly_si_pure]
 theorem plainly_siPure [BIStepIndexed PROP] [Sbi PROP] [BIPlainlySbi PROP] {Pi : SiProp} :
     iprop(■ (<si_pure> Pi : PROP) ⊣⊢ <si_pure> Pi) := by
-  rw [plainly_eq_siPure_siEmpValid (SI := SI)]
+  rw [plainly_eq_siPure_siEmpValid]
   exact ⟨siPure_mono siEmpValid_siPure.mp, siPure_mono siEmpValid_siPure.mpr⟩
 
 @[rocq_alias only_0_plainly]
@@ -626,7 +631,7 @@ instance wand_persistent [Plain P] [Persistent Q] [Absorbing Q] :
     _ ⊢ <pers> (P -∗ Q)   := persistently_mono (wand_mono_left plain)
 
 @[rocq_alias limit_preserving_Plain]
-theorem limitPreserving_plain [BIStepIndexed PROP] [Sbi PROP] [BIPlainlySbi PROP] [SIdxFinite SI] {A} [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
+theorem limitPreserving_plain [BIStepIndexed PROP] [Sbi PROP] [BIPlainlySbi PROP] [SIdxFinite] {A} [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
   LimitPreserving (fun x => Plain (Φ x)) := by
     letI _ : OFE.NonExpansive fun x => iprop(■ Φ x) := .comp inferInstance Φne
     refine ⟨fun c h => ⟨?_⟩, fun hn _ _ => absurd hn (SIdx.limit_finite _)⟩
@@ -987,7 +992,7 @@ theorem plainly_internalEq [BIStepIndexed PROP] [Sbi PROP] [BIPlainlySbi PROP] {
   have : OFE.NonExpansive (β := PROP) (fun x ↦ iprop(■ (a ≡ x))) :=  {
     ne n x x' xx' := instPlainly_ne.ne ((internalEq.ne_r a).ne xx')
   }
-  refine .trans ?_ (imp_elim <| internalEq.rewrite (SI := SI) (a := a) (fun x ↦ iprop(■ a ≡[SI] x)))
+  refine .trans ?_ (imp_elim <| internalEq.rewrite (a := a) (fun x ↦ iprop(■ a ≡ x)))
   refine and_intro .rfl ?_
   calc iprop(a ≡ b)
     _ ⊢ True := true_intro
@@ -1001,7 +1006,7 @@ instance internalEq_plain [BIStepIndexed PROP] [Sbi PROP] [BIPlainlySbi PROP] {A
 @[rocq_alias prop_ext]
 theorem prop_ext [BIStepIndexed PROP] [Sbi PROP] [BIPlainlySbi PROP] (P Q : PROP) : iprop(P ≡ Q ⊣⊢ ■ (P ∗-∗ Q)) :=
   have ⟨mp, mpr⟩:= prop_ext_siEmpValid_equiv P Q
-  plainly_eq_siPure_siEmpValid (SI := SI) (PROP := PROP) ▸ ⟨siPure_mono mp, siPure_mono mpr⟩
+  plainly_eq_siPure_siEmpValid (PROP := PROP) ▸ ⟨siPure_mono mp, siPure_mono mpr⟩
 
 #rocq_ignore prop_ext_2 "Subsumed by `prop_ext_symm`"
 

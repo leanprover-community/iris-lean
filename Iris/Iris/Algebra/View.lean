@@ -32,8 +32,8 @@ class IsViewRel [OFE A] [URA B] [UORA B] (R : ViewRel A B) where
   rel_unit n : ∃ a, R n a UnitOp.unit
 
 theorem IsViewRel.ofMonoOrd [OFE A] [URA B] [UORA B] [IncOrd B] {R : ViewRel A B}
-    (mono : ∀ {n1 : SI} {a1 b1 n2 a2 b2}, R n1 a1 b1 → a1 ≡{n2}≡ a2 → b2 ≼ₒ{n2} b1 → n2 ≤ n1 → R n2 a2 b2)
-    (rel_validN : ∀ (n : SI) a b, R n a b → ✓{n} b)
+    (mono : ∀ {n1} {a1 b1 n2 a2 b2}, R n1 a1 b1 → a1 ≡{n2}≡ a2 → b2 ≼ₒ{n2} b1 → n2 ≤ n1 → R n2 a2 b2)
+    (rel_validN : ∀ (n) a b, R n a b → ✓{n} b)
     (rel_unit : ∀ n, ∃ a, R n a UnitOp.unit) : IsViewRel R where
   mono := mono
   op_left h := mono h .rfl (IncOrd.incN_ordN (ORA.incN_op_left _ _ _)) SIdx.le_refl
@@ -129,15 +129,15 @@ instance [Discrete A] [Discrete B] : Discrete (View R) where
     exact ⟨discrete_0 H.1, discrete_0 H.2⟩
 
 -- view_auth_dist_inj
-theorem auth_inj_frac [URA B] {q1 q2 : DFrac} {a1 a2 : A} {n : SI} (H : (●V{q1} a1 : View R) ≡{n}≡ ●V{q2} a2) :
+theorem auth_inj_frac [URA B] {q1 q2 : DFrac} {a1 a2 : A} {n} (H : (●V{q1} a1 : View R) ≡{n}≡ ●V{q2} a2) :
     q1 = q2 := H.1.1
 
 -- view_auth_dist_inj
-theorem dist_of_auth_dist [URA B] {q1 q2 : DFrac} {a1 a2 : A} {n : SI} (H : (●V{q1} a1 : View R) ≡{n}≡ ●V{q2} a2) :
+theorem dist_of_auth_dist [URA B] {q1 q2 : DFrac} {a1 a2 : A} {n} (H : (●V{q1} a1 : View R) ≡{n}≡ ●V{q2} a2) :
     a1 ≡{n}≡ a2 := toAgree.inj H.1.2
 
 @[rocq_alias view_auth_dist_inj]
-theorem auth_dist_inj [URA B] {q1 q2 : DFrac} {a1 a2 : A} {n : SI}
+theorem auth_dist_inj [URA B] {q1 q2 : DFrac} {a1 a2 : A} {n}
     (H : (●V{q1} a1 : View R) ≡{n}≡ ●V{q2} a2) : q1 = q2 ∧ a1 ≡{n}≡ a2 :=
   ⟨auth_inj_frac H, dist_of_auth_dist H⟩
 
@@ -147,13 +147,13 @@ theorem auth_eqv_inj [URA B] {q1 q2 : DFrac} {a1 a2 : A}
   refine ⟨(auth_dist_inj (n := 0) H.dist).1, OFE.eq_dist_2 fun n => ?_⟩
   exact (auth_dist_inj H.dist).2
 
+@[rocq_alias view_frag_dist_inj]
+theorem dist_of_frag_dist {b1 b2 : B} {n} (H : (◯V b1 : View R) ≡{n}≡ ◯V b2) :
+    b1 ≡{n}≡ b2 := H.2
+
 @[rocq_alias view_frag_inj]
 theorem frag_eqv_inj {b1 b2 : B}
-    (H : (◯V b1 : View R) = ◯V b2) : b1 = b2 := OFE.eq_dist_2 fun _ => H.dist (SI := SI).2
-
-@[rocq_alias view_frag_dist_inj]
-theorem dist_of_frag_dist {b1 b2 : B} {n : SI} (H : (◯V b1 : View R) ≡{n}≡ ◯V b2) :
-    b1 ≡{n}≡ b2 := H.2
+    (H : (◯V b1 : View R) = ◯V b2) : b1 = b2 := OFE.eq_dist_2 fun _ => dist_of_frag_dist H.dist
 
 @[rocq_alias view_auth_discrete]
 instance auth_discrete [URA B] {dq a} [Ha : DiscreteE a] [He : DiscreteE (unit : B)] :
@@ -255,7 +255,7 @@ instance frag_ne : NonExpansive (Frag : B → View R) where
 @[simp]
 def Valid (v : View R) : Prop :=
   match v.auth with
-  | some (dq, ag) => ✓ dq ∧ (∀ (n : SI), ∃ a, ag ≡{n}≡ toAgree a ∧ R n a (frag v))
+  | some (dq, ag) => ✓ dq ∧ (∀ n, ∃ a, ag ≡{n}≡ toAgree a ∧ R n a (frag v))
   | none => ∀ n, ∃ a, R n a (frag v)
 
 @[simp]
@@ -264,7 +264,7 @@ def ValidN (n : SI) (v : View R) : Prop :=
   | some (dq, ag) => ✓{n} dq ∧ (∃ a, ag ≡{n}≡ toAgree a ∧ R n a (frag v))
   | none => ∃ a, R n a (frag v)
 
-theorem ValidN.pair {n : SI} {x : View R} (Hv : ValidN n x) :
+theorem ValidN.pair {n} {x : View R} (Hv : ValidN n x) :
     ✓{n} ((x.auth, x.frag) : Option ((DFrac) × Agree A) × B) := by
   rcases x with ⟨_|⟨q, ag⟩, b⟩
   · obtain ⟨a, Ha⟩ := Hv
@@ -272,7 +272,7 @@ theorem ValidN.pair {n : SI} {x : View R} (Hv : ValidN n x) :
   · obtain ⟨Hq, a, Ha1, Ha2⟩ := Hv
     exact ⟨⟨Hq, Agree.validN_ne Ha1.symm trivial⟩, IsViewRel.rel_validN _ _ _ Ha2⟩
 
-@[reducible] def raValid : _root_.Iris.Valid SI (View R) where
+@[reducible] def raValid : _root_.Iris.Valid (View R) where
   ValidN := ValidN
   Valid := Valid
   valid_iff_validN {x} := by
@@ -280,7 +280,7 @@ theorem ValidN.pair {n : SI} {x : View R} (Hv : ValidN n x) :
     · exact ⟨fun H n => ⟨H.1, H.2 n⟩, fun H => ⟨(H 0).1, fun n => (H n).2⟩⟩
     · exact Eq.to_iff rfl
 
-@[reducible] def raOrdered : Ordered SI (View R) where
+@[reducible] def raOrdered : Ordered (View R) where
   OrderN n x y := x.auth ≼ₒ{n} y.auth ∧ x.frag ≼ₒ{n} y.frag
   Order x y := x.auth ≼ₒ y.auth ∧ x.frag ≼ₒ y.frag
   ordN_trans h1 h2 := ⟨ordN_trans h1.1 h2.1, ordN_trans h1.2 h2.2⟩
@@ -316,12 +316,12 @@ instance instORA : ORA (View R) where
     refine mk.ne.ne ?_ ?_
     · exact cmraOption.op_ne.ne <| NonExpansive.ne H
     · exact op_ne.ne  <| NonExpansive.ne H
-  pcore_ne {n : SI} {x y cx} H := by
+  pcore_ne {n} {x y cx} H := by
     simp only [PCore.pcore, Pcore, Option.some.injEq]
     rintro ⟨rfl⟩
     exists ⟨core y.auth, core y.frag⟩
     exact ⟨rfl, OFE.Dist.core H.1, OFE.Dist.core H.2⟩
-  validN_ne {n : SI} {x1 x2} := by
+  validN_ne {n} {x1 x2} := by
     rintro ⟨Hl, Hr⟩
     rcases x1 with ⟨_|⟨q1, ag1⟩, b1⟩ <;>
     rcases x2 with ⟨_|⟨q2, ag2⟩, b2⟩ <;>
@@ -332,7 +332,7 @@ instance instORA : ORA (View R) where
     refine ⟨a, ?_⟩
     refine ⟨Hl.2.symm.trans Hag, ?_⟩
     exact mono_inc HR .rfl Hr.symm.to_incN SIdx.le_refl
-  validN_le {n n' : SI} {x} := by
+  validN_le {n n'} {x} := by
     simp only [Valid.ValidN, ValidN]
     split
     · refine fun H hle => ⟨H.1, ?_⟩
@@ -341,19 +341,19 @@ instance instORA : ORA (View R) where
       exact mono_inc Ha.2 .rfl (incN_refl x.frag) hle
     · exact fun ⟨z, HR⟩ hle => ⟨z, mono_inc HR .rfl (incN_refl _) hle⟩
   toOrderedNE := raOrderedNE
-  validN_op_left {n : SI} {x y} := by
+  validN_op_left {n} {x y} := by
     rcases x with ⟨_|⟨q1, ag1⟩, b1⟩ <;>
     rcases y with ⟨_|⟨q2, ag2⟩, b2⟩ <;>
     simp [ORA.op, ORA.ValidN, View.Op, View.ValidN, optionOp]
     · exact fun a Hr => ⟨a, mono_inc Hr .rfl (incN_op_left n b1 b2) SIdx.le_refl⟩
     · exact fun _ a _ Hr => ⟨a, mono_inc Hr .rfl (incN_op_left n b1 b2) SIdx.le_refl⟩
     · exact fun Hq a H Hr => ⟨Hq, ⟨a, ⟨H, mono_inc Hr .rfl (incN_op_left n b1 b2) SIdx.le_refl⟩⟩⟩
-    · refine fun Hq a H Hr => ⟨valid_op_left (SI := SI) (x := q1) (y := q2) Hq, ⟨a, ?_, ?_⟩⟩
+    · refine fun Hq a H Hr => ⟨valid_op_left (x := q1) (y := q2) Hq, ⟨a, ?_, ?_⟩⟩
       · refine .trans ?_ H
         refine .trans Agree.idemp.symm.dist ?_
         exact op_ne.ne <| Agree.op_invN (Agree.validN_ne H.symm trivial)
       · exact mono_inc Hr .rfl (incN_op_left n b1 b2) SIdx.le_refl
-  extend {n : SI} {x y1 y2} Hv He := by
+  extend {n} {x y1 y2} Hv He := by
     rcases extend (y₁ := ((y1.auth, y1.frag) : _ × B)) (y₂ := (y2.auth, y2.frag)) Hv.pair He
       with ⟨z1, z2, Hze, Hz1, Hz2⟩
     refine ⟨⟨z1.1, z1.2⟩, ⟨z2.1, z2.2⟩, ?_, Hz1, Hz2⟩
@@ -361,7 +361,7 @@ instance instORA : ORA (View R) where
   toOrdered := View.raOrdered
   op_monoN_left_ord z h := ⟨op_monoN_left_ord z.auth h.1, op_monoN_left_ord z.frag h.2⟩
   op_mono_left_ord z h := ⟨op_mono_left_ord z.auth h.1, op_mono_left_ord z.frag h.2⟩
-  validN_of_ordN {n : SI} {x y} h v := by
+  validN_of_ordN {n} {x y} h v := by
     rcases x with ⟨_|⟨q1, ag1⟩, b1⟩ <;> rcases y with ⟨_|⟨q2, ag2⟩, b2⟩
     · obtain ⟨a, Ha⟩ := v
       exact ⟨a, mono Ha .rfl h.2 SIdx.le_refl⟩
@@ -385,11 +385,11 @@ instance instORA : ORA (View R) where
   pcore_increasing {x _} e := by
     obtain rfl := Option.some.inj e
     exact increasing_mk inferInstance inferInstance
-  increasing_closed {n : SI} {x y} h h' :=
+  increasing_closed {n} {x y} h h' :=
     increasing_mk
       (increasing_closed (increasing_auth h) (Or.imp (·.1) (·.1) h'))
       (increasing_closed (increasing_frag h) (Or.imp (·.2) (·.2) h'))
-  ordN_extend {n : SI} {sn} {x y} hs v h := by
+  ordN_extend {n} {sn} {x y} hs v h := by
     obtain ⟨za, hza, ea⟩ := ordN_extend hs v.pair.1 h.1
     obtain ⟨zf, hzf, ef⟩ := ordN_extend hs v.pair.2 h.2
     exact ⟨⟨za, zf⟩, ⟨hza, hzf⟩, ea, ef⟩
@@ -548,7 +548,7 @@ theorem bigOpMS_frag [LawfulFiniteMultiSet MS' C] (g : C → B) (X : MS') :
 end BigOp
 
 @[rocq_alias view_auth_dfrac_op_invN]
-theorem dist_of_validN_auth {n : SI} (H : ✓{n} ((●V{dq1} a1 : View R) • ●V{dq2} a2)) : a1 ≡{n}≡ a2 := by
+theorem dist_of_validN_auth {n} (H : ✓{n} ((●V{dq1} a1 : View R) • ●V{dq2} a2)) : a1 ≡{n}≡ a2 := by
   rcases H with ⟨_, _, H, _⟩
   refine toAgree.inj (Agree.op_invN ?_)
   exact Agree.validN_ne H.symm trivial
@@ -561,15 +561,15 @@ theorem eq_of_valid_auth
   OFE.eq_dist_2 fun _ => dist_of_validN_auth H.validN
 
 @[rocq_alias view_auth_dfrac_validN]
-theorem auth_validN_iff {n : SI} : ✓{n} (●V{dq} a : View R) ↔ ✓{n} dq ∧ R n a unit :=
+theorem auth_validN_iff {n} : ✓{n} (●V{dq} a : View R) ↔ ✓{n} dq ∧ R n a unit :=
   and_congr_right fun _ => IsViewRel.of_agree_dist_iff .rfl
 
 @[rocq_alias view_auth_validN]
-theorem auth_one_validN_iff (n : SI) a : ✓{n} (●V a : View R) ↔ R n a unit :=
+theorem auth_one_validN_iff (n) a : ✓{n} (●V a : View R) ↔ R n a unit :=
   ⟨(auth_validN_iff.mp · |>.2), (auth_validN_iff.mpr ⟨valid_own_one, ·⟩)⟩
 
 @[rocq_alias view_auth_dfrac_op_validN]
-theorem auth_op_auth_validN_iff {n : SI} :
+theorem auth_op_auth_validN_iff {n} :
     ✓{n} ((●V{dq1} a1 : View R) • ●V{dq2} a2) ↔ ✓ (dq1 • dq2) ∧ a1 ≡{n}≡ a2 ∧ R n a1 unit := by
   refine ⟨fun H => ?_, fun H => ?_⟩
   · let Ha' : a1 ≡{n}≡ a2 := dist_of_validN_auth H
@@ -587,7 +587,7 @@ theorem auth_op_auth_validN_iff {n : SI} :
       exact OFE.Dist.to_incN <| unit_left_id_dist unit
 
 @[rocq_alias view_auth_op_validN]
-theorem auth_one_op_auth_one_validN_iff {n : SI} : ✓{n} ((●V a1 : View R) • ●V a2) ↔ False := by
+theorem auth_one_op_auth_one_validN_iff {n} : ✓{n} ((●V a1 : View R) • ●V a2) ↔ False := by
   refine auth_op_auth_validN_iff.trans ?_
   simp only [iff_false, not_and]
   intro h
@@ -595,14 +595,14 @@ theorem auth_one_op_auth_one_validN_iff {n : SI} : ✓{n} ((●V a1 : View R) �
   grind
 
 @[rocq_alias view_frag_validN]
-theorem frag_validN_iff {n : SI} : ✓{n} (◯V b : View R) ↔ ∃ a, R n a b := by rfl
+theorem frag_validN_iff {n} : ✓{n} (◯V b : View R) ↔ ∃ a, R n a b := by rfl
 
 @[rocq_alias view_both_dfrac_validN]
-theorem auth_op_frag_validN_iff {n : SI} : ✓{n} ((●V{dq} a : View R) • ◯V b) ↔ ✓ dq ∧ R n a b :=
+theorem auth_op_frag_validN_iff {n} : ✓{n} ((●V{dq} a : View R) • ◯V b) ↔ ✓ dq ∧ R n a b :=
   and_congr_right (fun _ => IsViewRel.of_agree_dist_iff <| unit_left_id_dist b)
 
 @[rocq_alias view_both_validN]
-theorem auth_one_op_frag_validN_iff {n : SI} : ✓{n} ((●V a : View R) • ◯V b) ↔ R n a b :=
+theorem auth_one_op_frag_validN_iff {n} : ✓{n} ((●V a : View R) • ◯V b) ↔ R n a b :=
   auth_op_frag_validN_iff.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
 
 @[rocq_alias view_auth_dfrac_valid]
@@ -645,7 +645,7 @@ theorem auth_one_op_frag_valid_iff : ✓ ((●V a : View R) • ◯V b) ↔ ∀ 
 
 open ORA in
 @[rocq_alias view_auth_dfrac_includedN]
-theorem auth_incN_auth_op_frag_iff {n : SI} :
+theorem auth_incN_auth_op_frag_iff {n} :
     (●V{dq1} a1 : View R) ≼{n} ((●V{dq2} a2) • ◯V b) ↔
       (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 := by
   refine ⟨?_, fun H => ?_⟩
@@ -674,7 +674,7 @@ theorem auth_inc_auth_op_frag_iff :
     ((●V{dq1} a1 : View R) ≼ (●V{dq2} a2 : View R) • ◯V b) ↔
       (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 = a2 := by
   refine ⟨fun H => ⟨?_, ?_⟩, fun H => ?_⟩
-  · exact auth_incN_auth_op_frag_iff (n := (0 : SI)) |>.mp (incN_of_inc _ H) |>.1
+  · exact auth_incN_auth_op_frag_iff (n := 0) |>.mp (incN_of_inc _ H) |>.1
   · refine OFE.eq_dist_2 (fun n => ?_)
     exact auth_incN_auth_op_frag_iff |>.mp (incN_of_inc _ H) |>.2
   · rcases H with ⟨(⟨q, Hq⟩|Hq), Ha⟩
@@ -688,7 +688,7 @@ theorem auth_inc_auth_op_frag_iff :
       rw [Hq, Ha]
 
 @[rocq_alias view_auth_includedN]
-theorem auth_one_incN_auth_one_op_frag_iff {n : SI} :
+theorem auth_one_incN_auth_one_op_frag_iff {n} :
     (●V a1 : View R) ≼{n} ((●V a2) • ◯V b) ↔ a1 ≡{n}≡ a2 :=
   auth_incN_auth_op_frag_iff.trans <| and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
 
@@ -699,7 +699,7 @@ theorem auth_one_inc_auth_one_op_frag_iff :
 
 open ORA in
 @[rocq_alias view_frag_includedN]
-theorem frag_incN_auth_op_frag_iff {n : SI} :
+theorem frag_incN_auth_op_frag_iff {n} :
     (◯V b1 : View R) ≼{n} ((●V{p} a) • ◯V b2) ↔ b1 ≼{n} b2 := by
   refine ⟨?_, ?_⟩
   · rintro ⟨xf, ⟨_, Hb⟩⟩
@@ -735,7 +735,7 @@ theorem frag_inc_auth_op_frag_iff :
 
 open ORA in
 @[rocq_alias view_both_dfrac_includedN]
-theorem auth_op_frag_incN_auth_op_frag_iff {n : SI} :
+theorem auth_op_frag_incN_auth_op_frag_iff {n} :
     ((●V{dq1} a1 : View R) • ◯V b1) ≼{n} ((●V{dq2} a2) • ◯V b2) ↔
       (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 ∧ b1 ≼{n} b2 := by
   refine ⟨fun H => ?_, fun ⟨H0, H1, ⟨bf, H2⟩⟩ => ?_⟩
@@ -772,7 +772,7 @@ theorem auth_op_frag_inc_auth_op_frag_iff :
          _ ≼ ((●V{dq2} a2) • ◯V b2 : View R) := by rw [← H2.trans comm]
 
 @[rocq_alias view_both_includedN]
-theorem auth_one_op_frag_incN_auth_one_op_frag_iff {n : SI} :
+theorem auth_one_op_frag_incN_auth_one_op_frag_iff {n} :
     ((●V a1 : View R) • ◯V b1) ≼{n} ((●V a2) • ◯V b2) ↔ (a1 ≡{n}≡ a2 ∧ b1 ≼{n} b2) :=
   auth_op_frag_incN_auth_op_frag_iff.trans <| and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
 
@@ -782,7 +782,7 @@ theorem auth_one_op_frag_inc_auth_one_op_frag_iff :
   auth_op_frag_inc_auth_op_frag_iff.trans <| and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
 
 open ORA in
-theorem auth_ordN_auth_op_frag_iff {n : SI} [Increasing b] :
+theorem auth_ordN_auth_op_frag_iff {n} [Increasing b] :
     (●V{dq1} a1 : View R) ≼ₒ{n} ((●V{dq2} a2) • ◯V b) ↔
       (dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 := by
   refine ⟨fun ⟨ha, _⟩ => ?_, fun ⟨hd, ha⟩ => ⟨?_, ordN_op_left _ _ b⟩⟩
@@ -806,7 +806,7 @@ theorem auth_ord_auth_op_frag_iff [Increasing b] :
     · exact .inr ⟨o, Agree.toAgree_ord.mpr rfl⟩
     · exact .inl rfl
 
-theorem auth_one_ordN_auth_one_op_frag_iff {n : SI} [Increasing b] :
+theorem auth_one_ordN_auth_one_op_frag_iff {n} [Increasing b] :
     (●V a1 : View R) ≼ₒ{n} ((●V a2) • ◯V b) ↔ a1 ≡{n}≡ a2 :=
   auth_ordN_auth_op_frag_iff.trans <| and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
 
@@ -815,7 +815,7 @@ theorem auth_one_ord_auth_one_op_frag_iff [Increasing b] :
   auth_ord_auth_op_frag_iff.trans <| and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
 
 open ORA in
-theorem frag_ordN_auth_op_frag_iff {n : SI} :
+theorem frag_ordN_auth_op_frag_iff {n} :
     (◯V b1 : View R) ≼ₒ{n} ((●V{p} a) • ◯V b2) ↔ b1 ≼ₒ{n} b2 :=
   ⟨fun ⟨_, h⟩ => ordN_ne .rfl ucmra_unit_left_id.dist h,
    fun h => ⟨IncOrd.increasing _, ordN_ne .rfl ucmra_unit_left_id.dist.symm h⟩⟩
@@ -827,7 +827,7 @@ theorem frag_ord_auth_op_frag_iff :
      change b1 ≼ₒ (unit • b2); rw [ucmra_unit_left_id]; exact h⟩⟩
 
 open ORA in
-theorem auth_op_frag_ordN_auth_op_frag_iff {n : SI} :
+theorem auth_op_frag_ordN_auth_op_frag_iff {n} :
     ((●V{dq1} a1 : View R) • ◯V b1) ≼ₒ{n} ((●V{dq2} a2) • ◯V b2) ↔
       (dq1 ≼ₒ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 ∧ b1 ≼ₒ{n} b2 := by
   refine ⟨fun ⟨ha, hb⟩ => ?_, fun ⟨hd, ha, hb⟩ => ⟨?_, ?_⟩⟩
@@ -865,7 +865,7 @@ theorem auth_one_op_frag_ord_auth_one_op_frag_iff :
     ((●V a1 : View R) • ◯V b1) ≼ₒ ((●V a2) • ◯V b2) ↔ a1 = a2 ∧ b1 ≼ₒ b2 :=
   auth_op_frag_ord_auth_op_frag_iff.trans <| and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
 
-theorem auth_one_op_frag_ordN_auth_one_op_frag_iff {n : SI} :
+theorem auth_one_op_frag_ordN_auth_one_op_frag_iff {n} :
     ((●V a1 : View R) • ◯V b1) ≼ₒ{n} ((●V a2) • ◯V b2) ↔ (a1 ≡{n}≡ a2 ∧ b1 ≼ₒ{n} b2) :=
   auth_op_frag_ordN_auth_op_frag_iff.trans <| and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
 
@@ -907,7 +907,7 @@ theorem auth_one_op_frag_updateP {Pab : A → B → Prop}
       apply Iris.OFE.Dist.to_incN
       refine comm.dist.trans (.trans ?_ comm.dist)
       refine op_ne.ne <| unit_left_id_dist b'
-  · letI _ := own_whole_exclusive (SI := SI)
+  · letI _ := own_whole_exclusive
     exact (not_valid_exclN_op_left ·.1 |>.elim)
 
 @[rocq_alias view_update]
@@ -1047,7 +1047,7 @@ theorem view_local_update {a a' : A} {b0 b1 b0' b1' : B}
     refine unit_left_id_dist b0' |>.trans ?_
     refine (local_update_unital.mp Hup _ _ (IsViewRel.rel_validN _ _ _ Hv) ?_).2
     exact (unit_left_id_dist b0).symm.trans Heq.2 |>.trans (unit_left_id_dist b1).op_l
-  · refine absurd (DFrac.valid_own_op (SI := SI) (validN_ne Heq ?_).1)
+  · refine absurd (DFrac.valid_own_op (validN_ne Heq ?_).1)
       (by have : (1 : Qp).val = 1 := rfl; grind)
     exact auth_one_op_frag_validN_iff.mpr Hv
 
@@ -1086,7 +1086,7 @@ theorem map_compose' [OFE A''] [OFE B''] {R'' : ViewRel A'' B''}
 #rocq_ignore view_map_ext "OFE is Leibniz; use equality"
 
 omit [OFE B] in
-theorem map_ne {n : SI} {f1 f2 : A → A'} {g1 g2 : B → B'} [OFE.NonExpansive f1] [OFE.NonExpansive f2]
+theorem map_ne {n} {f1 f2 : A → A'} {g1 g2 : B → B'} [OFE.NonExpansive f1] [OFE.NonExpansive f2]
     (v : View R) (h1 : ∀ a, f1 a ≡{n}≡ f2 a) (h2 : ∀ b, g1 b ≡{n}≡ g2 b) :
     View.map R' f1 g1 v ≡{n}≡ View.map R' f2 g2 v := by
   refine ⟨?_, h2 _⟩
@@ -1132,7 +1132,7 @@ def mapC [OFE A] [URA B] [UORA B] [OFE A'] [URA B'] [UORA B']
     View R -C> View R' where
   f := View.map R' f g
   ne := inferInstance
-  validN {n : SI} {x} hval := by
+  validN {n} {x} hval := by
     simp [ORA.ValidN, map] at *
     rcases x with ⟨_ | ⟨fr,a⟩, b⟩ <;> simp_all
     · obtain ⟨a, hr⟩ := hval
@@ -1157,7 +1157,7 @@ def mapC [OFE A] [URA B] [UORA B] [OFE A'] [URA B'] [UORA B']
     · cases xa <;> cases ya <;> simp [ORA.op, optionOp, Prod.op]
       exact (Agree.map f.f).op _ _
     · exact g.op xf yf
-  monoN_ord {n : SI} {x y} h := by
+  monoN_ord {n} {x y} h := by
     refine ⟨?_, g.monoN_ord h.2⟩
     rw [map_auth_eq, map_auth_eq]
     exact (mapAuthC f).monoN_ord h.1

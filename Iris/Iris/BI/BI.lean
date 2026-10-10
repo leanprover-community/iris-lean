@@ -80,18 +80,19 @@ class BI (PROP : Type _) extends BI.BIBase PROP where
   later_persistently {P : PROP} : ▷ <pers> P ⊣⊢ <pers> ▷ P
   later_false_em {P : PROP} : ▷ P ⊢ ▷ False ∨ (▷ False → P)
 
+variable (SI) in
 /-- The step-indexed structure of a BI: the OFE/COFE on propositions, non-expansiveness of the
 connectives, and the laws that only hold for finite step indices. All other BI laws are SI-free and
 live in `BI PROP`. This mixin takes `BI PROP` as a parameter: an SI-indexed class never extends an
 SI-free one, so no projection out of it has an undetermined step index. -/
 @[indexed, rocq_alias bi_cofe]
-class BIStepIndexed (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] extends COFE PROP where
+class BIStepIndexed (PROP : Type _) [BI PROP] extends COFE PROP where
   and_ne : OFE.NonExpansive₂ (BI.BIBase.and (PROP := PROP))
   or_ne : OFE.NonExpansive₂ (BI.BIBase.or (PROP := PROP))
   imp_ne : OFE.NonExpansive₂ (BI.BIBase.imp (PROP := PROP))
-  sForall_ne {n : SI} {P₁ P₂ : PROP → Prop} :
+  sForall_ne {n} {P₁ P₂ : PROP → Prop} :
     liftRel (· ≡{n}≡ ·) P₁ P₂ → BI.BIBase.sForall P₁ ≡{n}≡ BI.BIBase.sForall P₂
-  sExists_ne {n : SI} {P₁ P₂ : PROP → Prop} :
+  sExists_ne {n} {P₁ P₂ : PROP → Prop} :
     liftRel (· ≡{n}≡ ·) P₁ P₂ → BI.BIBase.sExists P₁ ≡{n}≡ BI.BIBase.sExists P₂
   sep_ne : OFE.NonExpansive₂ (BI.BIBase.sep (PROP := PROP))
   wand_ne : OFE.NonExpansive₂ (BI.BIBase.wand (PROP := PROP))
@@ -114,10 +115,10 @@ variable {PROP : Type _} [BI PROP] [BIStepIndexed PROP]
 theorem and_ne : OFE.NonExpansive₂ (BIBase.and (PROP := PROP)) := BIStepIndexed.and_ne
 theorem or_ne : OFE.NonExpansive₂ (BIBase.or (PROP := PROP)) := BIStepIndexed.or_ne
 theorem imp_ne : OFE.NonExpansive₂ (BIBase.imp (PROP := PROP)) := BIStepIndexed.imp_ne
-theorem sForall_ne {n : SI} {P₁ P₂ : PROP → Prop} :
+theorem sForall_ne {n} {P₁ P₂ : PROP → Prop} :
     liftRel (· ≡{n}≡ ·) P₁ P₂ → BIBase.sForall P₁ ≡{n}≡ BIBase.sForall P₂ :=
   BIStepIndexed.sForall_ne
-theorem sExists_ne {n : SI} {P₁ P₂ : PROP → Prop} :
+theorem sExists_ne {n} {P₁ P₂ : PROP → Prop} :
     liftRel (· ≡{n}≡ ·) P₁ P₂ → BIBase.sExists P₁ ≡{n}≡ BIBase.sExists P₂ :=
   BIStepIndexed.sExists_ne
 theorem sep_ne : OFE.NonExpansive₂ (BIBase.sep (PROP := PROP)) := BIStepIndexed.sep_ne
@@ -264,14 +265,14 @@ variable {PROP : Type _} [BIBase PROP] [COFE PROP]
   (later_sForall_2 : ∀ {Φ : PROP → Prop}, (∀ p, ⌜Φ p⌝ → ▷ p) ⊢ ▷ sForall Φ)
   (later_false_sExists : ∀ {Φ : PROP → Prop},
     (▷ False → sExists Φ) ⊢ ∃ p, ⌜Φ p⌝ ∧ (▷ False → p))
-  (later_sExists_false : ∀ [SIdxFinite SI] {Φ : PROP → Prop},
+  (later_sExists_false : ∀ [SIdxFinite] {Φ : PROP → Prop},
     (▷ sExists Φ) ⊢ ▷ False ∨ ∃ p, ⌜Φ p⌝ ∧ ▷ p)
   (later_false_sep : ∀ {P Q : PROP}, (▷ False → P ∗ Q) ⊢ (▷ False → P) ∗ (▷ False → Q))
-  (later_sep_1 : ∀ [SIdxFinite SI] {P Q : PROP}, ▷ (P ∗ Q) ⊢ ▷ P ∗ ▷ Q)
+  (later_sep_1 : ∀ [SIdxFinite] {P Q : PROP}, ▷ (P ∗ Q) ⊢ ▷ P ∗ ▷ Q)
   (later_sep_2 : ∀ {P Q : PROP}, ▷ P ∗ ▷ Q ⊢ ▷ (P ∗ Q))
   (later_persistently : ∀ {P : PROP}, ▷ <pers> P ⊣⊢ <pers> ▷ P)
   (later_false_em : ∀ {P : PROP}, ▷ P ⊢ ▷ False ∨ (▷ False → P))
-  (discrete : ∀ {n : SI} {P Q : PROP}, P ≡{n}≡ Q → P = Q)
+  (discrete : ∀ {n} {P Q : PROP}, P ≡{n}≡ Q → P = Q)
   (persistently_eq : ∀ P : PROP, iprop(<pers> P) = iprop(⌜emp ⊢ P⌝))
 
 @[reducible, rocq_alias bi_persistently_mixin_discrete]

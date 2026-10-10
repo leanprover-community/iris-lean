@@ -182,7 +182,7 @@ theorem bigAndL_submseteq {Φ : A → PROP} {l₁ l₂ l : List A} (h : (l₁ ++
   bigAndL_append.1.trans and_elim_l
 
 @[rocq_alias big_andL_ne]
-theorem bigAndL_dist [BIStepIndexed PROP] {Φ Ψ : Nat → A → PROP} {l : List A} {n : SI}
+theorem bigAndL_dist [BIStepIndexed PROP] {Φ Ψ : Nat → A → PROP} {l : List A} {n}
     (h : ∀ {k x}, l[k]? = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([∧list] k ↦ x ∈ l, Φ k x) ≡{n}≡ [∧list] k ↦ x ∈ l, Ψ k x :=
   bigOpL_dist h

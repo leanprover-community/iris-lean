@@ -187,8 +187,9 @@ class IntoOr {PROP} [BI.BIBase PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   into_or : P ⊢ Q1 ∨ Q2
 export IntoOr (into_or)
 
+variable (SI) in
 @[indexed, ipm_class, rocq_alias IntoInternalEq]
-class IntoInternalEq (SI : stepindex (Type _)) [SIdx SI] {PROP} [BI PROP] [BIStepIndexed PROP] [Sbi PROP] {A : outParam <| Type _}
+class IntoInternalEq {PROP} [BI PROP] [BIStepIndexed PROP] [Sbi PROP] {A : outParam <| Type _}
     [ofe : outParam <| OFE A] (P : PROP) (x y : outParam A) where
   into_internal_eq : P ⊢@{PROP} x ≡ y
 export IntoInternalEq (into_internal_eq)

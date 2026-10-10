@@ -67,7 +67,7 @@ instance frag_discrete {a : A} [DiscreteE a] : DiscreteE (◯E a : ExclAuthR) :=
   by infer_instance
 
 @[rocq_alias excl_auth_validN]
-theorem validN {n : SI} {a : A} : ✓{n} (●E a : ExclAuthR) • ◯E a :=
+theorem validN {n} {a : A} : ✓{n} (●E a : ExclAuthR) • ◯E a :=
   Auth.both_validN.mpr ⟨.rfl, trivial⟩
 
 @[rocq_alias excl_auth_valid]
@@ -75,7 +75,7 @@ theorem valid {a : A} : ✓ (●E a : ExclAuthR) • ◯E a :=
   Auth.auth_both_valid_2 trivial .rfl
 
 @[rocq_alias excl_auth_agreeN]
-theorem agreeN {n : SI} {a b : A} (h : ✓{n} (●E a : ExclAuthR) • ◯E b) : a ≡{n}≡ b :=
+theorem agreeN {n} {a b : A} (h : ✓{n} (●E a : ExclAuthR) • ◯E b) : a ≡{n}≡ b :=
   dist_of_inc_exclusive (Auth.both_validN.mp h).1 trivial |>.symm
 
 @[rocq_alias excl_auth_agree]
@@ -85,7 +85,7 @@ theorem agree {a b : A} (h : ✓ (●E a : ExclAuthR) • ◯E b) : a = b :=
 #rocq_ignore excl_auth_agree_L "Use agree"
 
 @[rocq_alias excl_auth_auth_op_validN]
-theorem auth_op_validN {n : SI} {a b : A} : (✓{n} (●E a : ExclAuthR) • ●E b) ↔ False :=
+theorem auth_op_validN {n} {a b : A} : (✓{n} (●E a : ExclAuthR) • ●E b) ↔ False :=
   Auth.auth_op_validN
 
 @[rocq_alias excl_auth_auth_op_valid]
@@ -93,7 +93,7 @@ theorem auth_op_valid {a b : A} : (✓ (●E a : ExclAuthR) • ●E b) ↔ Fals
   Auth.auth_op_valid
 
 @[rocq_alias excl_auth_frag_op_validN]
-theorem frag_op_validN {n : SI} {a b : A} : (✓{n} (◯E a : ExclAuthR) • ◯E b) ↔ False := by
+theorem frag_op_validN {n} {a b : A} : (✓{n} (◯E a : ExclAuthR) • ◯E b) ↔ False := by
   suffices H : ✓{n} some (excl a) • some (excl b) ↔ False by rwa [Auth.frag_op.symm, Auth.frag_validN]
   exact ⟨not_valid_some_exclN_op_left, False.elim⟩
 

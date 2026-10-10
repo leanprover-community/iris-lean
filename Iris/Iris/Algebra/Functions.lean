@@ -66,7 +66,7 @@ theorem discreteE_pi {f : (a : ι) → β a} (hf : ∀ i, DiscreteE (f i)) : Dis
 @[rocq_alias discrete_fun_insert_ne]
 instance instDiscreteFunInsertNonExpansive (x : ι) :
     NonExpansive₂ (discreteFunInsert (β := β) x) where
-  ne {n : SI} {y₁ y₂} hy {f₁ f₂} hf x' := by
+  ne {n} {y₁ y₂} hy {f₁ f₂} hf x' := by
     by_cases h : x = x'
     · subst h
       simpa using hy
@@ -79,7 +79,7 @@ instance instDiscreteFunInsertNonExpansive (x : ι) :
 theorem discreteE_apply {f : (a : ι) → β a} (hf : DiscreteE f) (x : ι) :
     DiscreteE (f x) where
   discrete {y} h := by
-    have hfun : f ≡{(0 : SI)}≡ discreteFunInsert x y f := fun x' => by
+    have hfun : f ≡{0}≡ discreteFunInsert x y f := fun x' => by
       by_cases hxx' : x = x'
       · subst hxx'
         simpa using h
@@ -132,7 +132,7 @@ instance instDiscreteFunSingletonDiscrete {x : ι} (y : β x)
   instDiscreteFunInsertDiscrete (fun _ => unit) x y
 
 @[rocq_alias discrete_fun_singleton_validN]
-theorem discreteFunSingleton_validN_iff (n : SI) {x : ι} (y : β x) :
+theorem discreteFunSingleton_validN_iff (n) {x : ι} (y : β x) :
     ✓{n} discreteFunSingleton x y ↔ ✓{n} y := by
   constructor
   · exact fun h => discreteFunSingleton_self y ▸ h x

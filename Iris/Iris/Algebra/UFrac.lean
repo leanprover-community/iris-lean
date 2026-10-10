@@ -42,7 +42,7 @@ open ORA
 @[simp] instance : COFE UFrac := COFE.ofDiscrete _
 instance : OFE.Discrete UFrac := ⟨fun h => h⟩
 
-@[simp] theorem dist_iff {n : SI} {x y : UFrac} : x ≡{n}≡ y ↔ x = y := Iff.rfl
+@[simp] theorem dist_iff {n} {x y : UFrac} : x ≡{n}≡ y ↔ x = y := Iff.rfl
 
 #rocq_ignore ufrac_ra_mixin "Use CMRA instance"
 
@@ -75,7 +75,7 @@ instance : CMRA UFrac := ofCMRAData UFrac.cmraData
 
 @[simp, grind =] theorem frac_op (x y : UFrac) : (x • y).frac = x.frac + y.frac := rfl
 @[simp, grind =] theorem valid_iff {x : UFrac} : ✓ x ↔ True := Iff.rfl
-@[simp, grind =] theorem validN_iff {n : SI} {x : UFrac} : ✓{n} x ↔ True := Iff.rfl
+@[simp, grind =] theorem validN_iff {n} {x : UFrac} : ✓{n} x ↔ True := Iff.rfl
 
 @[rocq_alias ufrac_op]
 theorem op_eq (p q : UFrac) : p • q = ⟨p.frac + q.frac⟩ := rfl
@@ -108,7 +108,7 @@ instance : Discrete UFrac where
 
 @[rocq_alias ufrac_cancelable]
 instance {q : UFrac} : Cancelable q where
-  cancelableN {n : SI} {x y} _ (H : q • x = q • y) := by
+  cancelableN {n} {x y} _ (H : q • x = q • y) := by
     simp only [dist_iff, ext_iff, frac_op] at *; grind
 
 @[rocq_alias ufrac_id_free]

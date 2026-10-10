@@ -71,9 +71,10 @@ class BiEmbed (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] extends Embed PROP1 P
   wand_2         : ∀ (P Q : PROP1), (⎡P⎤ -∗ ⎡Q⎤) ⊢ (⎡P -∗ Q⎤ : PROP2)
   persistently   : ∀ (P : PROP1), (⎡<pers> P⎤ : PROP2) ⊣⊢ <pers> ⎡P⎤
 
+variable (SI) in
 /-- Non-expansiveness of an embedding (step-indexed mixin; the embedding laws are SI-free). -/
 @[indexed]
-class EmbedNE (SI : stepindex (Type _)) [SIdx SI] (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2]
+class EmbedNE (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2]
     [BIStepIndexed PROP1] [BIStepIndexed PROP2] [Embed PROP1 PROP2] : Prop where
   embed_ne : OFE.NonExpansive (embed (A := PROP1) (B := PROP2))
 attribute [instance] EmbedNE.embed_ne
@@ -100,9 +101,10 @@ class BiEmbedFUpd (PROP1 PROP2 : Type _) [BI.BIBase PROP1] [BI.BIBase PROP2] [Em
     [FUpd PROP1] [FUpd PROP2] where
   embed_fupd : ∀ (E1 E2 : CoPset) (P : PROP1), (⎡|={E1,E2}=> P⎤ : PROP2) ⊣⊢ |={E1,E2}=> ⎡P⎤
 
+variable (SI) in
 /-- The `Sbi` (internal-equality / plainly) embedding laws. -/
 @[indexed, rocq_alias BiEmbedSbi]
-class BiEmbedSbi (SI : stepindex (Type _)) [SIdx SI] (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2]
+class BiEmbedSbi (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2]
     [BIStepIndexed PROP1] [BIStepIndexed PROP2] [Embed PROP1 PROP2]
     [Sbi PROP1] [Sbi PROP2] where
   embed_siEmpValid : ∀ (P : PROP1),
@@ -566,13 +568,14 @@ theorem embed_embed_fupd [BIFUpdate PA] [BIFUpdate PB] [BIFUpdate PC]
 end
 
 /-- `BiEmbedSbi` gives `BiEmbedPlainly` for coherent `■`. -/
+@[indexed]
 theorem BiEmbedPlainly.ofSbi (SI : stepindex (Type _)) [SIdx SI] {P1 P2 : Type _} [BI P1] [BIStepIndexed P1]
     [Sbi P1] [BI P2] [BIStepIndexed P2] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
     [BIPlainly P1] [BIPlainly P2] [BIPlainlySbi P1] [BIPlainlySbi P2] :
     BiEmbedPlainly P1 P2 where
   embed_plainly P := by
-    rw [plainly_eq_siPure_siEmpValid (SI := SI) (PROP := P1),
-      plainly_eq_siPure_siEmpValid (SI := SI) (PROP := P2)]
+    rw [plainly_eq_siPure_siEmpValid (PROP := P1),
+      plainly_eq_siPure_siEmpValid (PROP := P2)]
     exact (embed_siPure _).trans
       ⟨siPure_mono (BiEmbedSbi.embed_siEmpValid P).mpr,
        siPure_mono (BiEmbedSbi.embed_siEmpValid P).mp⟩
@@ -602,7 +605,7 @@ variable {QA QB QC : Type _} [BI QA] [BIStepIndexed QA] [Sbi QA] [BI QB] [BIStep
   [BiEmbed QA QB] [BiEmbed QB QC] [BiEmbedSbi QA QB] [BiEmbedSbi QB QC]
 
 @[rocq_alias embed_embed_sbi]
-theorem embed_embed_sbi : @BiEmbedSbi SI _ QA QC _ _ _ _ (embedBiEmbed QB).toEmbed _ _ :=
+theorem embed_embed_sbi : letI : BiEmbed QA QC := embedBiEmbed QB; BiEmbedSbi QA QC :=
   letI : BiEmbed QA QC := embedBiEmbed QB
   { embed_siEmpValid := fun P =>
       (BiEmbedSbi.embed_siEmpValid (PROP1 := QB) (PROP2 := QC) (embed (A := QA) (B := QB) P)).trans

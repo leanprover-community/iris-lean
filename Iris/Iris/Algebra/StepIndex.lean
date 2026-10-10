@@ -20,7 +20,7 @@ structure IsSucc {I : Type u} [LT I] (n sn : I) : Prop where
   least : ¬∃ p, n < p ∧ p < sn
 
 @[rocq_alias sidx, rocq_alias SIdxMixin]
-class SIdx (I : Type u) extends LT I, LE I, Zero I where
+class SIdx (I : stepindex (Type u)) extends LT I, LE I, Zero I where
   lt_trans : ∀ {n m p : I}, n < m → m < p → n < p
   lt_wf : WellFounded ((· < ·) : I → I → Prop)
   lt_trichotomyT : ∀ n m : I, n < m ⊕' n = m ⊕' m < n
@@ -32,20 +32,21 @@ class SIdx (I : Type u) extends LT I, LE I, Zero I where
 parent projections, so the type's own instances win (otherwise `Zero Nat` resolves to `natSIdx.toZero`,
 which `omega`/`simp` do not recognise). -/
 attribute [instance 50] SIdx.toLT SIdx.toLE SIdx.toZero
+attribute [indexed] SIdx.lt_wf
 
 /-- There is no step-indexing: `0` is the only index. -/
-@[rocq_alias SIdxZero]
-class SIdxZero (I : Type u) [SIdx I] : Prop where
+@[indexed, rocq_alias SIdxZero]
+class SIdxZero (I : stepindex (Type u)) [SIdx I] : Prop where
   all_0 : ∀ n : I, n = 0
 
 /-- Finite step-indexing: no limit indices. Still allows no step-indexing (`SIdxZero`). -/
-@[rocq_alias SIdxFinite]
-class SIdxFinite (I : Type u) [SIdx I] : Prop where
+@[indexed, rocq_alias SIdxFinite]
+class SIdxFinite (I : stepindex (Type u)) [SIdx I] : Prop where
   finite_index : ∀ n : I, n = 0 ∨ ∃ m, IsSucc m n
 
 /-- A successor operation, so step-indexing is non-trivial. -/
-@[rocq_alias SIdxSucc]
-class SIdxSucc (I : Type u) [SIdx I] where
+@[indexed, rocq_alias SIdxSucc]
+class SIdxSucc (I : stepindex (Type u)) [SIdx I] where
   succ : I → I
   succ_isSucc : ∀ n : I, IsSucc n (succ n)
 

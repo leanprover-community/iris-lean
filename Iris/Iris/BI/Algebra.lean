@@ -303,7 +303,7 @@ theorem cmra_morphism_validI [RA A] [ORA A] [RA B] [ORA B] (f : A -C> B) (x : A)
 
 @[rocq_alias f_homom_includedI]
 theorem f_homom_includedI [RA A] [ORA A] [RA B] [ORA B] (x y : A) (f : A → B) [NonExpansive f]
-    (Hf : ∀ c (n : SI), f x • f c ≡{n}≡ f (x • c)) :
+    (Hf : ∀ c (n), f x • f c ≡{n}≡ f (x • c)) :
     x ≼ y ⊢@{PROP} f x ≼ f y :=
   siPure_mono <| BI.exists_elim fun c => BI.exists_intro_trans (f c) <|
     internalEq_entails.mpr fun n heq => (NonExpansive.ne heq).trans (Hf c n).symm
@@ -323,7 +323,7 @@ theorem id_freeI_l [RA A] [ORA A] (x y : A) [IdFree x] :
   exact wand_intro_left (wand_intro_left ((sep_mono_right sep_emp.mp).trans H))
 
 @[rocq_alias cmra_later_opI]
-theorem cmra_later_opI [SIdxFinite SI] [RA A] [ORA A] (x y1 y2 : A) :
+theorem cmra_later_opI [SIdxFinite] [RA A] [ORA A] (x y1 y2 : A) :
     ▷ (✓ x ∧ x ≡ y1 • y2) ⊢@{PROP}
       ◇ ∃ z1 z2, x ≡ z1 • z2 ∧ ▷ (z1 ≡ y1) ∧ ▷ (z2 ≡ y2) := by
   unfold BIBase.except0; sbi_unfold; intro n h
@@ -335,7 +335,7 @@ theorem cmra_later_opI [SIdxFinite SI] [RA A] [ORA A] (x y1 y2 : A) :
       fun _ hk => hz2.le (hm.le_of_lt hk)⟩
 
 @[rocq_alias cmra_later_opI_total]
-theorem cmra_later_opI_total [SIdxFinite SI] [RA A] [ORA A] [IsTotal A] (x y1 y2 : A) :
+theorem cmra_later_opI_total [SIdxFinite] [RA A] [ORA A] [IsTotal A] (x y1 y2 : A) :
     ▷ (✓ x ∧ x ≡ y1 • y2) ⊢@{PROP}
       ∃ z1 z2, x ≡ z1 • z2 ∧ ▷ (z1 ≡ y1) ∧ ▷ (z2 ≡ y2) := by
   sbi_unfold; intro n h
@@ -480,46 +480,46 @@ variable [BI PROP] [BIStepIndexed PROP] [Sbi PROP] [OFE A] [URA B] [UORA B] {R :
 
 @[rocq_alias view_both_dfrac_validI_1]
 theorem view_both_dfrac_validI_1 (relI : SiProp) (dq : DFrac) (a : A) (b : B)
-    (H : ∀ (n : SI), R n a b → relI.holds n) :
+    (H : ∀ n, R n a b → relI.holds n) :
     ✓ ((●V{dq} a : View R) • ◯V b) ⊢@{PROP} ⌜✓ dq⌝ ∧ <si_pure> relI := by
   sbi_unfold; intro _
   exact fun hn => ⟨(auth_op_frag_validN_iff.mp hn).1, H _ (auth_op_frag_validN_iff.mp hn).2⟩
 
 @[rocq_alias view_both_dfrac_validI_2]
 theorem view_both_dfrac_validI_2 (relI : SiProp) (dq : DFrac) (a : A) (b : B)
-    (H : ∀ (n : SI), relI.holds n → R n a b) :
+    (H : ∀ n, relI.holds n → R n a b) :
     ⌜✓ dq⌝ ∧ <si_pure> relI ⊢@{PROP} ✓ ((●V{dq} a : View R) • ◯V b) := by
   sbi_unfold; intro _; exact fun hn => auth_op_frag_validN_iff.mpr ⟨hn.1, H _ hn.2⟩
 
 @[rocq_alias view_both_dfrac_validI]
 theorem view_both_dfrac_validI (relI : SiProp) (dq : DFrac) (a : A) (b : B)
-    (H : ∀ (n : SI), R n a b ↔ relI.holds n) :
+    (H : ∀ n, R n a b ↔ relI.holds n) :
     ✓ ((●V{dq} a : View R) • ◯V b) ⊣⊢@{PROP} ⌜✓ dq⌝ ∧ <si_pure> relI :=
   ⟨view_both_dfrac_validI_1 relI dq a b (fun n => (H n).mp),
    view_both_dfrac_validI_2 relI dq a b (fun n => (H n).mpr)⟩
 
 @[rocq_alias view_both_validI_1]
 theorem view_both_validI_1 (relI : SiProp) (a : A) (b : B)
-    (H : ∀ (n : SI), R n a b → relI.holds n) :
+    (H : ∀ n, R n a b → relI.holds n) :
     ✓ ((●V a : View R) • ◯V b) ⊢@{PROP} <si_pure> relI :=
   siPure_mono fun n hn => H n (auth_one_op_frag_validN_iff.mp hn)
 
 @[rocq_alias view_both_validI_2]
 theorem view_both_validI_2 (relI : SiProp) (a : A) (b : B)
-    (H : ∀ (n : SI), relI.holds n → R n a b) :
+    (H : ∀ n, relI.holds n → R n a b) :
     <si_pure> relI ⊢@{PROP} ✓ ((●V a : View R) • ◯V b) :=
   siPure_mono fun n hn => auth_one_op_frag_validN_iff.mpr (H n hn)
 
 @[rocq_alias view_both_validI]
 theorem view_both_validI (relI : SiProp) (a : A) (b : B)
-    (H : ∀ (n : SI), R n a b ↔ relI.holds n) :
+    (H : ∀ n, R n a b ↔ relI.holds n) :
     ✓ ((●V a : View R) • ◯V b) ⊣⊢@{PROP} <si_pure> relI :=
   ⟨view_both_validI_1 relI a b (fun n => (H n).mp),
    view_both_validI_2 relI a b (fun n => (H n).mpr)⟩
 
 @[rocq_alias view_auth_dfrac_validI]
 theorem view_auth_dfrac_validI (relI : SiProp) (dq : DFrac) (a : A)
-    (H : ∀ (n : SI), relI.holds n ↔ R n a unit) :
+    (H : ∀ n, relI.holds n ↔ R n a unit) :
     ✓ (●V{dq} a : View R) ⊣⊢@{PROP} ⌜✓ dq⌝ ∧ <si_pure> relI := by
   sbi_unfold; intro _
   exact ⟨fun hn => ⟨(auth_validN_iff.mp hn).1, (H _).mpr (auth_validN_iff.mp hn).2⟩,
@@ -527,14 +527,14 @@ theorem view_auth_dfrac_validI (relI : SiProp) (dq : DFrac) (a : A)
 
 @[rocq_alias view_auth_validI]
 theorem view_auth_validI (relI : SiProp) (a : A)
-    (H : ∀ (n : SI), relI.holds n ↔ R n a unit) :
+    (H : ∀ n, relI.holds n ↔ R n a unit) :
     ✓ (●V a : View R) ⊣⊢@{PROP} <si_pure> relI :=
   ⟨siPure_mono fun n hn => (H n).mpr ((auth_one_validN_iff n a).mp hn),
    siPure_mono fun n hn => (auth_one_validN_iff n a).mpr ((H n).mp hn)⟩
 
 @[rocq_alias view_frag_validI]
 theorem view_frag_validI (relI : SiProp) (b : B)
-    (H : ∀ (n : SI), relI.holds n ↔ ∃ a, R n a b) :
+    (H : ∀ n, relI.holds n ↔ ∃ a, R n a b) :
     ✓ (◯V b : View R) ⊣⊢@{PROP} <si_pure> relI :=
   ⟨siPure_mono fun n hn => (H n).mpr (frag_validN_iff.mp hn),
    siPure_mono fun n hn => frag_validN_iff.mpr ((H n).mp hn)⟩

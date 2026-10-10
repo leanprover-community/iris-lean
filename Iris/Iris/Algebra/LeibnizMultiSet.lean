@@ -102,6 +102,7 @@ theorem included_iff_subset {X Y : MS} : ofSet X ≼ ofSet Y ↔ X ⊆ Y where
   mp | ⟨_, h⟩ => ofSet.inj h ▸ disjUnion_subset_left
   mpr h := ⟨ofSet (Y \ X), congrArg ofSet (disjUnion_difference_of_subseteq h)⟩
 
+@[indexed]
 theorem ord_iff_subset {X Y : MS} : ofSet X ≼ₒ ofSet Y ↔ X ⊆ Y :=
   inc_iff_ord.symm.trans included_iff_subset
 
@@ -128,7 +129,7 @@ theorem localUpdate_dealloc {X Y X' : MS} (h : X' ⊆ Y) :
     (ofSet X, ofSet Y) ~l~> (ofSet (X \ X'), ofSet (Y \ X')) := by
   refine LocalUpdate.total_valid fun _ _ le => localUpdate (LawfulMultiSet.ext fun a => ?_)
   simp only [multiplicity_disjUnion, multiplicity_difference]
-  grind [subset_iff, (ord_iff_subset (SI := SI)).mp le]
+  grind [subset_iff, (ord_iff_subset).mp le]
 
 end LeibnizMultiSet
 

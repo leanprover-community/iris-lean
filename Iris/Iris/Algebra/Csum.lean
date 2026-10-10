@@ -33,13 +33,13 @@ namespace Csum
 
 #rocq_ignore csum_equiv "OFE is Leibniz; use equality"
 
-@[simp, rocq_alias csum_dist] def Dist [OFE α] [OFE β] (n : SI) : Csum α β → Csum α β → Prop
+@[indexed, simp, rocq_alias csum_dist] def Dist [OFE α] [OFE β] (n : SI) : Csum α β → Csum α β → Prop
   | inl a, inl a' => a ≡{n}≡ a'
   | inr b, inr b' => b ≡{n}≡ b'
   | invalid, invalid => True
   | _, _ => False
 
-theorem dist_eqv [OFE α] [OFE β] {n : SI} : Equivalence (Csum.Dist (α := α) (β := β) n) where
+theorem dist_eqv [OFE α] [OFE β] {n} : Equivalence (Csum.Dist (α := α) (β := β) n) where
   refl {x} := by cases x with
     | inl => exact Dist.rfl
     | inr => exact Dist.rfl
@@ -50,12 +50,12 @@ theorem dist_eqv [OFE α] [OFE β] {n : SI} : Equivalence (Csum.Dist (α := α) 
       first | trivial | exact h₁.trans h₂
 
 @[rocq_alias csumO]
-instance [OFE SI α] [OFE SI β] : OFE SI (Csum α β) where
+instance [OFE α] [OFE β] : OFE (Csum α β) where
   dist := Csum.Dist
   dist_eqv := dist_eqv
   eq_dist' {x y} := by
     cases x <;> cases y <;> simp [Csum.Dist, eq_dist (SI := SI)]
-  dist_lt {n : SI} {x y m} hn hlt := by
+  dist_lt {n} {x y m} hn hlt := by
     cases x <;> cases y <;> first | exact OFE.Dist.lt hn hlt | exact hn.elim | trivial
 
 #rocq_ignore csum_ofe_mixin "Not needed"
@@ -77,14 +77,14 @@ theorem inl_inj {a a' : α} (h : (inl (β := β) a) = inl a') : a = a' :=
   Csum.inl.inj h
 
 @[rocq_alias Cinl_inj_dist]
-theorem inl_injN [OFE α] [OFE β] {n : SI} {a a' : α} (h : inl (β := β) a ≡{n}≡ inl a') : a ≡{n}≡ a' := h
+theorem inl_injN [OFE α] [OFE β] {n} {a a' : α} (h : inl (β := β) a ≡{n}≡ inl a') : a ≡{n}≡ a' := h
 
 @[rocq_alias Cinr_inj]
 theorem inr_inj {b b' : β} (h : (inr (α := α) b) = inr b') : b = b' :=
   Csum.inr.inj h
 
 @[rocq_alias Cinr_inj_dist]
-theorem inr_injN [OFE α] [OFE β] {n : SI} {b b' : β} (h : inr (α := α) b ≡{n}≡ inr b') : b ≡{n}≡ b' := h
+theorem inr_injN [OFE α] [OFE β] {n} {b b' : β} (h : inr (α := α) b ≡{n}≡ inr b') : b ≡{n}≡ b' := h
 
 @[rocq_alias csum_ofe_discrete]
 instance [OFE α] [OFE β] [OFE.Discrete α] [OFE.Discrete β] : OFE.Discrete (Csum α β) where
@@ -130,25 +130,25 @@ instance [OFE α] [OFE β] : DiscreteE (@invalid α β) where
 @[rocq_alias csum_chain_l]
 def chainL [OFE α] [OFE β] (c : Chain (Csum α β)) (a : α) : Chain α where
   chain n := (c n).getInlD a
-  cauchy {n : SI} {i} h := by
+  cauchy {n} {i} h := by
     have hc := c.cauchy h; revert hc
     cases c.chain i <;> cases c.chain n <;> simp [OFE.Dist, HasDist.dist]
 
 @[rocq_alias csum_chain_r]
 def chainR [OFE α] [OFE β] (c : Chain (Csum α β)) (b : β) : Chain β where
   chain n := (c n).getInrD b
-  cauchy {n : SI} {i} h := by
+  cauchy {n} {i} h := by
     have hc := c.cauchy h; revert hc
     cases c.chain i <;> cases c.chain n <;> simp [OFE.Dist, HasDist.dist]
 
 @[rocq_alias csum_cofe]
-instance [SIdxFinite SI] [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where
+instance [SIdxFinite] [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where
   compl c :=
     match c 0 with
     | inl a => inl (IsCOFE.compl (chainL c a))
     | inr b => inr (IsCOFE.compl (chainR c b))
     | invalid => invalid
-  conv_compl {n : SI} {c} := by
+  conv_compl {n} {c} := by
     have h0n := c.cauchy (i := n) SIdx.le_0_l
     revert h0n
     rcases e0 : c.chain 0 with a|b|_ <;> rcases en : c.chain n with a'|b'|_ <;> try (· exact id)
@@ -242,26 +242,26 @@ instance raOp [Op α] [Op β] : Op (Csum α β) where
     | inr b => obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx; exact congrArg _ (pcore_op_left hpb)
     | invalid => exact (Option.some.inj hpx) ▸ rfl
 
-@[reducible] def raValid [RA α] [ORA α] [RA β] [ORA β] : _root_.Iris.Valid SI (Csum α β) where
+@[reducible] def raValid [RA α] [ORA α] [RA β] [ORA β] : _root_.Iris.Valid (Csum α β) where
   Valid := Csum.valid
   ValidN := Csum.validN
   valid_iff_validN {x} := by cases x <;> simp [valid_iff_validN]
 
-@[reducible] def raOrdered [RA α] [ORA α] [RA β] [ORA β] : Ordered SI (Csum α β) where
+@[reducible] def raOrdered [RA α] [ORA α] [RA β] [ORA β] : Ordered (Csum α β) where
   OrderN := OrderN
   Order := Order
-  ordN_trans {n : SI} {x y z} h₁ h₂ := by grind [Ordered.ordN_trans]
+  ordN_trans {n} {x y z} h₁ h₂ := by grind [Ordered.ordN_trans]
   ord_trans {x y z} h₁ h₂ := by grind [Ordered.ord_trans]
   ordN_of_ord {x y} n h := by grind [Ordered.ordN_of_ord]
 
 attribute [local instance] raOrdered in
 theorem raOrderedNE [RA α] [ORA α] [RA β] [ORA β] : OrderedNE (Csum α β) where
-  ordN_ne {n : SI} {x x' y y'} ex ey h := by
+  ordN_ne {n} {x x' y y'} ex ey h := by
     cases x <;> cases x' <;> cases y <;> cases y' <;>
       first
         | trivial | exact ex.elim | exact ey.elim | exact h.elim
         | exact ordN_ne (α := α) ex ey h | exact ordN_ne (α := β) ex ey h
-  ordN_le {n n' : SI} {x y} h le := by
+  ordN_le {n n'} {x y} h le := by
     cases x <;> cases y <;> first | trivial | exact ordN_le (α := α) h le | exact ordN_le (α := β) h le
 
 section
@@ -278,14 +278,14 @@ theorem increasing_inr_iff {b : β} : Increasing (inr (α := α) b) ↔ Increasi
 
 instance instIncreasingInvalid : Increasing (invalid : Csum α β) := ⟨fun _ => trivial⟩
 
-theorem ordNR_inl {n : SI} {a a' : α} (h : inl (β := β) a ≼ₒ*{n} inl a') : a ≼ₒ*{n} a' := h.imp id id
-theorem ordNR_inr {n : SI} {b b' : β} (h : inr (α := α) b ≼ₒ*{n} inr b') : b ≼ₒ*{n} b' := h.imp id id
+theorem ordNR_inl {n} {a a' : α} (h : inl (β := β) a ≼ₒ*{n} inl a') : a ≼ₒ*{n} a' := h.imp id id
+theorem ordNR_inr {n} {b b' : β} (h : inr (α := α) b ≼ₒ*{n} inr b') : b ≼ₒ*{n} b' := h.imp id id
 
-instance instORA : ORA SI (Csum α β) where
+instance instORA : ORA (Csum α β) where
   toValid := raValid
-  op_ne {x} := ⟨fun {n : SI} {y₁ y₂} hy => by cases x <;> cases y₁ <;> cases y₂ <;>
+  op_ne {x} := ⟨fun {n} {y₁ y₂} hy => by cases x <;> cases y₁ <;> cases y₂ <;>
     first | exact OFE.Dist.op_r (α := α) hy | exact OFE.Dist.op_r (α := β) hy | exact hy | trivial⟩
-  pcore_ne {n : SI} {x y cx} hxy hpx := by
+  pcore_ne {n} {x y cx} hxy hpx := by
     cases x <;> cases y <;> try exact hxy.elim
     · obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq hpx
       obtain ⟨cy, hcy, ecy⟩ := pcore_ne (cx := ca) hxy hpa
@@ -295,19 +295,19 @@ instance instORA : ORA SI (Csum α β) where
       exact ⟨inr cy, by simp [PCore.pcore, Csum.pcore, hcy], ecy⟩
     · simp only [PCore.pcore, Csum.pcore, Option.some.injEq] at hpx
       exact ⟨invalid, rfl, hpx ▸ .rfl⟩
-  validN_ne {n : SI} {x y} h hv := by
+  validN_ne {n} {x y} h hv := by
     cases x <;> cases y <;> first
       | exact h.elim | exact hv.elim
       | exact validN_ne (α := α) h hv | exact validN_ne (α := β) h hv
-  validN_le {n n' : SI} {x} h le := by
+  validN_le {n n'} {x} h le := by
     cases x with
     | inl => exact validN_le (α := α) h le
     | inr => exact validN_le (α := β) h le
     | invalid => exact h
   toOrderedNE := raOrderedNE
-  validN_op_left {n : SI} {x y} h := by
+  validN_op_left {n} {x y} h := by
     cases x <;> cases y <;> first | exact validN_op_left h | exact h.elim
-  extend {n : SI} {x y₁ y₂} hv he := by
+  extend {n} {x y₁ y₂} hv he := by
     cases x <;> cases y₁ <;> cases y₂ <;> first
       | exact he.elim
       | exact hv.elim
@@ -316,13 +316,13 @@ instance instORA : ORA SI (Csum α β) where
       | (obtain ⟨z₁, z₂, hz, hz₁, hz₂⟩ := extend hv he
          exact ⟨inr z₁, inr z₂, congrArg _ hz, hz₁, hz₂⟩)
   toOrdered := raOrdered
-  op_monoN_left_ord {n : SI} {x y} z h := by
+  op_monoN_left_ord {n} {x y} z h := by
     cases x <;> cases y <;> cases z <;> first | trivial | exact h.elim | exact op_monoN_left_ord _ h
   op_mono_left_ord {x y} z h := by
     cases x <;> cases y <;> cases z <;> first | trivial | exact h.elim | exact op_mono_left_ord _ h
-  validN_of_ordN {n : SI} {x y} h v := by
+  validN_of_ordN {n} {x y} h v := by
     cases x <;> cases y <;> first | trivial | exact h.elim | exact v.elim | exact validN_of_ordN h v
-  pcore_monoN_ord {n : SI} {x y cx} h e := by
+  pcore_monoN_ord {n} {x y cx} h e := by
     match x, y, h with
     | inl _, inl _, h =>
       obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq e
@@ -350,11 +350,11 @@ instance instORA : ORA SI (Csum α β) where
     match x, y with
     | inl _, inl a' =>
       obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq e
-      let ⟨c, hc, hi⟩ := pcore_order_op (SI := SI) hpa a'
+      let ⟨c, hc, hi⟩ := pcore_order_op hpa a'
       exact ⟨inl c, Option.map_forall₂ inl hc, hi⟩
     | inr _, inr b' =>
       obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq e
-      let ⟨c, hc, hi⟩ := pcore_order_op (SI := SI) hpb b'
+      let ⟨c, hc, hi⟩ := pcore_order_op hpb b'
       exact ⟨inr c, Option.map_forall₂ inr hc, hi⟩
     | inl _, inr _ | inl _, invalid | inr _, inl _ | inr _, invalid
     | invalid, inl _ | invalid, inr _ | invalid, invalid => exact ⟨invalid, rfl, trivial⟩
@@ -367,7 +367,7 @@ instance instORA : ORA SI (Csum α β) where
       obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq e
       exact increasing_inr_iff.mpr (pcore_increasing hpb)
     | invalid => cases e; exact inferInstance
-  increasing_closed {n : SI} {x y} h h' := by
+  increasing_closed {n} {x y} h h' := by
     match x, y, h' with
     | _, invalid, _ => exact inferInstance
     | inl _, inl _, h' =>
@@ -376,7 +376,7 @@ instance instORA : ORA SI (Csum α β) where
       exact increasing_inr_iff.mpr ((increasing_inr_iff.mp h).of_ordNR (ordNR_inr h'))
     | inl _, inr _, h' | inr _, inl _, h' | invalid, inl _, h' | invalid, inr _, h' =>
       exact h'.elim (·.elim) (·.elim)
-  ordN_extend {n : SI} {sn} {x y} hs v h := by
+  ordN_extend {n} {sn} {x y} hs v h := by
     match x, y, h with
     | inl _, inl _, h =>
       obtain ⟨z, hz, ez⟩ := ordN_extend hs v h
@@ -446,14 +446,14 @@ instance [RA α] [ORA α] [RA β] [ORA β] {b : β} [Exclusive b] : Exclusive (i
 
 @[rocq_alias Cinl_cancelable]
 instance [RA α] [ORA α] [RA β] [ORA β] {a : α} [Cancelable a] : Cancelable (inl (β := β) a) where
-  cancelableN {n : SI} {y z} hv he := by
+  cancelableN {n} {y z} hv he := by
     cases y with
     | inl => cases z with | inl => exact cancelableN (x := a) hv he | _ => exact he
     | _ => trivial
 
 @[rocq_alias Cinr_cancelable]
 instance [RA α] [ORA α] [RA β] [ORA β] {b : β} [Cancelable b] : Cancelable (inr (α := α) b) where
-  cancelableN {n : SI} {y z} hv he := by
+  cancelableN {n} {y z} hv he := by
     cases y with
     | inr => cases z with | inr => exact cancelableN (x := b) hv he | _ => exact he
     | _ => trivial
@@ -483,7 +483,7 @@ theorem inr_ord [RA α] [ORA α] [RA β] [ORA β] {b b' : β} : (inr (α := α) 
 
 theorem invalid_ord [RA α] [ORA α] [RA β] [ORA β] (x : Csum α β) : x ≼ₒ invalid := by cases x <;> trivial
 
-theorem ordN [RA α] [ORA α] [RA β] [ORA β] {n : SI} {x y : Csum α β} :
+theorem ordN [RA α] [ORA α] [RA β] [ORA β] {n} {x y : Csum α β} :
     x ≼ₒ{n} y ↔ y = invalid ∨
       (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼ₒ{n} a') ∨
       (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼ₒ{n} b') := by
@@ -498,7 +498,7 @@ theorem some_ord [RA α] [ORA α] [RA β] [ORA β] {x y : Csum α β} :
   change _ ∨ Csum.Order x y ↔ _
   cases x <;> cases y <;> simp [Csum.Order, Option.some_ord_some_iff]
 
-theorem some_ordN [RA α] [ORA α] [RA β] [ORA β] {n : SI} {x y : Csum α β} :
+theorem some_ordN [RA α] [ORA α] [RA β] [ORA β] {n} {x y : Csum α β} :
     some x ≼ₒ{n} some y ↔ y = invalid ∨
       (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼ₒ{n} some a') ∨
       (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ₒ{n} some b') := by
@@ -535,7 +535,7 @@ theorem invalid_included [RA α] [RA β] (x : Csum α β) : x ≼ invalid :=
   ⟨invalid, by cases x <;> rfl⟩
 
 @[rocq_alias csum_includedN]
-theorem includedN [RA α] [ORA α] [RA β] [ORA β] {n : SI} {x y : Csum α β} :
+theorem includedN [RA α] [ORA α] [RA β] [ORA β] {n} {x y : Csum α β} :
     x ≼{n} y ↔ y = invalid ∨
       (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼{n} a') ∨
       (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼{n} b') := by
@@ -554,7 +554,7 @@ theorem some_included [RA α] [RA β] {x y : Csum α β} :
   cases x <;> cases y <;> simp [Option.some_inc_some_iff]
 
 @[rocq_alias Some_csum_includedN]
-theorem some_includedN [RA α] [ORA α] [RA β] [ORA β] {n : SI} {x y : Csum α β} :
+theorem some_includedN [RA α] [ORA α] [RA β] [ORA β] {n} {x y : Csum α β} :
     some x ≼{n} some y ↔ y = invalid ∨
       (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼{n} some a') ∨
       (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼{n} some b') := by
@@ -657,7 +657,7 @@ theorem map_ext (f f' : α → α') (g g' : β → β')
   cases x <;> simp [hf, hg]
 
 @[rocq_alias csum_map_cmra_ne]
-theorem map_ne [OFE α] [OFE α'] [OFE β] [OFE β'] {n : SI}
+theorem map_ne [OFE α] [OFE α'] [OFE β] [OFE β'] {n}
     {f f' : α → α'} (hf : ∀ ⦃x₁ x₂⦄, x₁ ≡{n}≡ x₂ → f x₁ ≡{n}≡ f' x₂)
     {g g' : β → β'} (hg : ∀ ⦃x₁ x₂⦄, x₁ ≡{n}≡ x₂ → g x₁ ≡{n}≡ g' x₂)
     {x y : Csum α β} (hxy : x ≡{n}≡ y) :
@@ -692,7 +692,7 @@ def cMap [RA α] [ORA α] [RA α'] [ORA α'] [RA β] [ORA β] [RA β'] [ORA β']
     (fa : α -C> α') (fb : β -C> β') : Csum α β -C> Csum α' β' where
   f := map fa fb
   ne := (oMap fa.toHom fb.toHom).ne
-  validN {n : SI} {x} hv := by cases x with
+  validN {n} {x} hv := by cases x with
     | inl a => exact fa.validN hv
     | inr b => exact fb.validN hv
     | invalid => exact hv
@@ -715,7 +715,7 @@ def cMap [RA α] [ORA α] [RA α'] [ORA α'] [RA β] [ORA β] [RA β'] [ORA β']
     | invalid => trivial
   op x y := by cases x <;> cases y <;>
     first | exact congrArg _ (fa.op _ _) | exact congrArg _ (fb.op _ _) | trivial
-  monoN_ord {n : SI} {x y} h := by
+  monoN_ord {n} {x y} h := by
     cases x <;> cases y <;> first | trivial | exact h.elim | exact fa.monoN_ord h | exact fb.monoN_ord h
   mono_ord {x y} h := by
     cases x <;> cases y <;> first | trivial | exact h.elim | exact fa.mono_ord h | exact fb.mono_ord h
@@ -740,7 +740,7 @@ instance instRFunctorAffine {Fa Fb} [RFunctor Fa] [RFunctor Fb] [RFunctorAffine 
 @[rocq_alias csumRF_contractive]
 instance {Fa Fb} [RFunctorContractive Fa] [RFunctorContractive Fb] :
     RFunctorContractive (OF Fa Fb) where
-  map_contractive.1 {n : SI} {x y} hKL z := by
+  map_contractive.1 {n} {x y} hKL z := by
     cases z <;> first | exact RFunctorContractive.map_contractive.1 hKL _ | trivial
 
 end Csum

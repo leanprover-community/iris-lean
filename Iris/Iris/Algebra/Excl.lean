@@ -30,12 +30,12 @@ open OFE ORA
 
 #rocq_ignore excl_equiv "OFE is Leibniz; use equality"
 
-@[simp, rocq_alias excl_dist] protected def Dist [OFE α] (n : SI) : Excl α → Excl α → Prop
+@[indexed, simp, rocq_alias excl_dist] protected def Dist [OFE α] (n : SI) : Excl α → Excl α → Prop
   | excl a, excl b => a ≡{n}≡ b
   | invalid, invalid => True
   | _, _ => False
 
-theorem dist_eqv [OFE α] {n : SI} : Equivalence (Excl.Dist (α := α) n) where
+theorem dist_eqv [OFE α] {n} : Equivalence (Excl.Dist (α := α) n) where
   refl {x} := by
     cases x with
     | excl a => exact Dist.of_eq rfl
@@ -50,12 +50,12 @@ theorem dist_eqv [OFE α] {n : SI} : Equivalence (Excl.Dist (α := α) n) where
 #rocq_ignore excl_ofe_mixin "Not needed"
 
 @[rocq_alias exclO]
-instance [OFE SI α] : OFE SI (Excl α) where
+instance [OFE α] : OFE (Excl α) where
   dist := Excl.Dist
   dist_eqv
   eq_dist' {x y} := by
     cases x <;> cases y <;> simp [Excl.Dist, eq_dist (SI := SI)]
-  dist_lt {n : SI} {x y m} hn hlt := by
+  dist_lt {n} {x y m} hn hlt := by
     cases x <;> cases y <;> simp at *
     exact Dist.lt hn hlt
 
@@ -67,7 +67,7 @@ instance [OFE α] : NonExpansive excl (α := α) where
 theorem ne_match [OFE α] {B : Type _} [OFE B]
     (f : α → B) (hf : NonExpansive f) (g : B) :
     NonExpansive (fun x : Excl α => match x with | .excl a => f a | .invalid => g) :=
-  ⟨fun {n : SI} {x' y'} (h : Excl.Dist n x' y') =>
+  ⟨fun {n} {x' y'} (h : Excl.Dist n x' y') =>
     match x', y', h with
     | .excl _, .excl _, h => hf.ne h
     | .excl _, .invalid, h => h.elim
@@ -111,14 +111,14 @@ instance [OFE α] : DiscreteE (@invalid α) where
   | invalid => invalid
 
 def exclChain [OFE α] (c : Chain (Excl α)) (a : α) : Chain α := by
-  refine ⟨fun n => (c n).getD a, fun {n : SI} {i} H => ?_⟩
+  refine ⟨fun n => (c n).getD a, fun {n} {i} H => ?_⟩
   dsimp; have := c.cauchy H; revert this
   cases c.chain i <;> cases c.chain n <;> simp [Dist, HasDist.dist]
 
 @[rocq_alias excl_cofe]
-instance [SIdxFinite SI] [OFE α] [IsCOFE α] : IsCOFE (Excl α) where
+instance [SIdxFinite] [OFE α] [IsCOFE α] : IsCOFE (Excl α) where
   compl c := (c 0).map fun x => IsCOFE.compl (exclChain c x)
-  conv_compl {n : SI} c := by
+  conv_compl {n} c := by
     have := c.cauchy (i := n) SIdx.le_0_l; revert this
     obtain _|x' := c.chain 0 <;> rcases e : c.chain n with _|y' <;> simp [Dist, HasDist.dist]
     refine fun _ => Dist.trans IsCOFE.conv_compl ?_
@@ -151,14 +151,14 @@ instance {α : Type _} : RA (Excl α) where
   Valid
   op_ne.ne _ _ _ _ := trivial
   pcore_ne := by simp [PCore.pcore]
-  validN_ne {n : SI} {x y} h₁ h₂ := by cases x <;> cases y <;> trivial
+  validN_ne {n} {x y} h₁ h₂ := by cases x <;> cases y <;> trivial
   valid_iff_validN {x} := by
     constructor
     · intro h n; cases x <;> trivial
     · intro h; cases x <;> simp_all
-  validN_le {n n' : SI} {x} h _ := by cases x <;> trivial
+  validN_le {n n'} {x} h _ := by cases x <;> trivial
   validN_op_left := by simp [Op.op]
-  extend {n : SI} {x y₁ y₂} h₁ h₂ := by cases x <;> trivial
+  extend {n} {x y₁ y₂} h₁ h₂ := by cases x <;> trivial
   pcore_op_mono := by simp [PCore.pcore]
 
 @[rocq_alias exclR]
@@ -175,13 +175,13 @@ theorem ord_iff [OFE α] {x y : Excl α} : x ≼ₒ y ↔ y = invalid := by
 theorem inc_iff {x y : Excl α} : x ≼ y ↔ y = invalid :=
   ⟨fun ⟨_, hz⟩ => hz, fun h => ⟨invalid, h⟩⟩
 
-theorem ordN_iff [OFE α] {x y : Excl α} (n : SI) : x ≼ₒ{n} y ↔ y = invalid := by
+theorem ordN_iff [OFE α] {x y : Excl α} (n) : x ≼ₒ{n} y ↔ y = invalid := by
   constructor
   · intro ⟨z, hz⟩; cases x <;> cases y <;> first | rfl | exact hz.elim
   · rintro rfl; exists invalid
 
 @[rocq_alias excl_includedN]
-theorem incN_iff [OFE α] {x y : Excl α} (n : SI) : x ≼{n} y ↔ y = invalid :=
+theorem incN_iff [OFE α] {x y : Excl α} (n) : x ≼{n} y ↔ y = invalid :=
   incN_iff_ordN.trans (ordN_iff n)
 
 @[rocq_alias Excl_inj]
@@ -189,7 +189,7 @@ theorem excl_inj {α : Type _} {a b : α} (h : (some (excl a) : Option (Excl α)
     a = b := Excl.excl.inj (Option.some.inj h)
 
 @[rocq_alias Excl_dist_inj]
-theorem excl_dist_inj [OFE α] {a b : α} {n : SI}
+theorem excl_dist_inj [OFE α] {a b : α} {n}
     (h : (some (excl a) : Option (Excl α)) ≡{n}≡ some (excl b)) : a ≡{n}≡ b :=
   OFE.some_dist_some.mp h
 
@@ -208,7 +208,7 @@ theorem excl_included {a b : α} :
   | none => exact (excl.inj (Option.some.inj hz)).symm
   | some _ => cases hz
 
-theorem excl_ordN [OFE α] {a b : α} {n : SI} :
+theorem excl_ordN [OFE α] {a b : α} {n} :
     (some (excl a) : Option (Excl α)) ≼ₒ{n} some (excl b) ↔ a ≡{n}≡ b := by
   refine ⟨fun h => ?_, fun h => Or.inl h⟩
   rcases h with h | ⟨_, hz⟩
@@ -216,19 +216,19 @@ theorem excl_ordN [OFE α] {a b : α} {n : SI} :
   · exact (hz : excl b ≡{n}≡ invalid).elim
 
 @[rocq_alias Excl_includedN]
-theorem excl_includedN [OFE α] {a b : α} {n : SI} :
+theorem excl_includedN [OFE α] {a b : α} {n} :
     (some (excl a) : Option (Excl α)) ≼{n} some (excl b) ↔ a ≡{n}≡ b :=
   incN_iff_ordN.trans excl_ordN
 
 @[rocq_alias excl_validN_inv_l]
-theorem validN_inv_some_l [OFE α] {n : SI} {mx : Option (Excl α)} {a : α}
+theorem validN_inv_some_l [OFE α] {n} {mx : Option (Excl α)} {a : α}
     (h : ✓{n} (some (excl a) • mx)) : mx = none := by
   cases mx with
   | none => rfl
   | some _ => exact h.elim
 
 @[rocq_alias excl_validN_inv_r]
-theorem validN_inv_some_r [OFE α] {n : SI} {mx : Option (Excl α)} {a : α}
+theorem validN_inv_some_r [OFE α] {n} {mx : Option (Excl α)} {a : α}
     (h : ✓{n} (mx • some (excl a))) : mx = none := by
   cases mx with
   | none => rfl
@@ -315,7 +315,7 @@ instance instRFunctorAffine {F} [COFE.OFunctor F] : RFunctorAffine (ExclOF F) wh
 
 @[rocq_alias exclRF_contractive]
 instance {F} [COFE.OFunctorContractive F] : RFunctorContractive (ExclOF F) where
-  map_contractive.1 {n : SI} {x y} HKL z := by
+  map_contractive.1 {n} {x y} HKL z := by
     rewrite [RFunctor.map]
     cases z
     · apply COFE.OFunctorContractive.map_contractive.1

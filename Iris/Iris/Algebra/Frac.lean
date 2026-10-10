@@ -96,7 +96,7 @@ instance Qp.instRA : RA Qp where
   validN_ne H := by rw [(H : _ = _)]; exact id
   valid_iff_validN := .symm (forall_const _)
   validN_le := fun h _ => h
-  validN_op_left {n : SI} {x y} h := by
+  validN_op_left {n} {x y} h := by
     show x.val ≤ 1
     have h' : x.val + y.val ≤ 1 := h
     grind
@@ -119,12 +119,12 @@ instance instORAQp : CMRA Qp := ofCMRAData Qp.cmraData
 @[simp, grind =] theorem Qp.val_divide_even (q : Qp) (n : Nat) (hn : 0 < n) :
     (q.divide_even n hn).val = q.val / n := rfl
 @[simp, grind =] theorem Qp.val_op (x y : Qp) : (x • y).val = x.val + y.val := rfl
-@[simp, grind =] theorem Qp.validN_iff {n : SI} {x : Qp} : ✓{n} x ↔ x.val ≤ 1 := Iff.rfl
+@[simp, grind =] theorem Qp.validN_iff {n} {x : Qp} : ✓{n} x ↔ x.val ≤ 1 := Iff.rfl
 @[simp, grind =] theorem Qp.valid_iff {x : Qp} : ✓ x ↔ x.val ≤ 1 := Iff.rfl
 @[simp, grind =] theorem Qp.le_iff {x y : Qp} : x ≤ y ↔ x.val ≤ y.val := Iff.rfl
 @[simp, grind =] theorem Qp.lt_iff {x y : Qp} : x < y ↔ x.val < y.val := Iff.rfl
 @[simp] theorem Qp.ext_iff {x y : Qp} : x = y ↔ x.val = y.val := Subtype.ext_iff
-@[simp] theorem Qp.dist_iff {n : SI} {x y : Qp} : x ≡{n}≡ y ↔ x.val = y.val := Subtype.ext_iff
+@[simp] theorem Qp.dist_iff {n} {x y : Qp} : x ≡{n}≡ y ↔ x.val = y.val := Subtype.ext_iff
 @[indexed, simp, rocq_alias frac_valid_1] theorem Qp.valid_one : ✓ (1 : Qp) := by grind
 @[simp, grind =] theorem Qp.half_add_half (q : Qp) : q.half + q.half = q := Subtype.ext (by grind)
 @[grind =] theorem Qp.add_left_comm (x y z : Qp) : x + (y + z) = y + (x + z) := by grind
@@ -184,7 +184,7 @@ instance instExclusiveQp1 : Exclusive (α := Qp) 1 where
 
 @[rocq_alias frac_cancelable]
 instance instCancelableQp {a : Qp} : Cancelable (α := Qp) a where
-  cancelableN {n : SI} {x y} _ (H : a • x = a • y) := by
+  cancelableN {n} {x y} _ (H : a • x = a • y) := by
     simp only [Qp.dist_iff, Qp.ext_iff, Qp.val_op] at *; grind
 
 @[rocq_alias frac_id_free]

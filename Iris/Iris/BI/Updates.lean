@@ -212,16 +212,18 @@ class BIFUpdate (PROP : Type _) [BI PROP] extends FUpd PROP where
 
 #rocq_ignore BiFUpdMixin "Included in BIFUpdate typeclass."
 
+variable (SI) in
 /-- Non-expansiveness of the basic update (step-indexed mixin; the update laws are SI-free). -/
 @[indexed]
-class BUpdNE (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed PROP] [BUpd PROP] :
+class BUpdNE (PROP : Type _) [BI PROP] [BIStepIndexed PROP] [BUpd PROP] :
     Prop where
   bupd_ne : OFE.NonExpansive (BUpd.bupd (PROP := PROP))
 attribute [instance] BUpdNE.bupd_ne
 
+variable (SI) in
 /-- Non-expansiveness of the fancy update (step-indexed mixin; the update laws are SI-free). -/
 @[indexed]
-class FUpdNE (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed PROP] [FUpd PROP] :
+class FUpdNE (PROP : Type _) [BI PROP] [BIStepIndexed PROP] [FUpd PROP] :
     Prop where
   fupd_ne {E1 E2 : CoPset} : OFE.NonExpansive (iprop(|={E1,E2}=> · : PROP))
 attribute [instance] FUpdNE.fupd_ne
@@ -230,8 +232,9 @@ attribute [instance] FUpdNE.fupd_ne
 class BIUpdateFUpdate (PROP : Type _) [BI.BIBase PROP] [BUpd PROP] [FUpd PROP] where
   fupd_of_bupd {P : PROP} {E : CoPset} : (|==> P) ⊢ |={E}=> P
 
+variable (SI) in
 @[indexed, rocq_alias BiFUpdSbi]
-class BIFUpdateSbi (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed PROP]
+class BIFUpdateSbi (PROP : Type _) [BI PROP] [BIStepIndexed PROP]
     [Sbi PROP] [FUpd PROP] where
   fupd_keep_siPure {E} E' (Pi : SiProp) (R : PROP) :
     (|={E,E'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E}=∗ R) ⊢ |={E}=> R
@@ -240,8 +243,9 @@ class BIFUpdateSbi (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP]
   fupd_siPure_sForall_2 (E : CoPset) (Ψi : SiProp → Prop) :
     (∀ q, ⌜Ψi q⌝ → |={E}=> <si_pure> q) ⊢@{PROP} |={E}=> <si_pure> (sForall Ψi)
 
+variable (SI) in
 @[indexed, rocq_alias BiBUpdSbi]
-class BIBUpdateSbi (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed PROP]
+class BIBUpdateSbi (PROP : Type _) [BI PROP] [BIStepIndexed PROP]
     [Sbi PROP] [BUpd PROP] where
   bupd_siPure (Pi : SiProp) : iprop(|==> <si_pure> Pi ⊢@{PROP} <si_pure> Pi)
 
@@ -382,11 +386,12 @@ theorem BigSepMS.bigSepMS_bupd [LawfulFiniteMultiSet MS A] (Φ : A → PROP) (X 
 
 end BUpdLaws
 
+@[indexed]
 theorem BIBUpdatePlainly.ofSbi (SI : stepindex (Type _)) [SIdx SI] [BI PROP] [BIStepIndexed PROP]
     [Sbi PROP] [BIPlainly PROP] [BIPlainlySbi PROP] [BUpd PROP] [BIBUpdateSbi PROP] :
     BIBUpdatePlainly PROP where
   bupd_plainly {P} := by
-    rw [plainly_eq_siPure_siEmpValid (SI := SI)]
+    rw [plainly_eq_siPure_siEmpValid]
     exact BIBUpdateSbi.bupd_siPure (SiEmpValid.siEmpValid P)
 
 section BUpdPlainlyLaws
@@ -881,23 +886,24 @@ theorem fupd_siPure_forall_2 {E : CoPset} {A : Sort _} {Φi : A → SiProp} :
 end FUpdSbiLaws
 
 /-- The plain fancy-update laws of an affine `Sbi` with `BIFUpdateSbi`. -/
+@[indexed]
 theorem BIFUpdatePlainly.ofSbi (SI : stepindex (Type _)) [SIdx SI] [BI PROP] [BIAffine PROP]
-    [BIStepIndexed SI PROP] [Sbi SI PROP] [BIPlainly PROP] [BIPlainlySbi SI PROP]
-    [BIFUpdate PROP] [BIFUpdateSbi SI PROP] : BIFUpdatePlainly PROP where
+    [BIStepIndexed PROP] [Sbi PROP] [BIPlainly PROP] [BIPlainlySbi PROP]
+    [BIFUpdate PROP] [BIFUpdateSbi PROP] : BIFUpdatePlainly PROP where
   fupd_keep_plainly E2' P R := by
-    rw [plainly_eq_siPure_siEmpValid (SI := SI)]
+    rw [plainly_eq_siPure_siEmpValid]
     exact (and_mono_right (wand_mono_left siPure_siEmpValid_elim)).trans <|
       fupd_keep_siPure E2' (SiEmpValid.siEmpValid P)
   fupd_plainly_later E P := by
-    rw [plainly_eq_siPure_siEmpValid (SI := SI)]
+    rw [plainly_eq_siPure_siEmpValid]
     exact (BIFUpdateSbi.fupd_siPure_later E iprop(<si_emp_valid> P)).trans <|
       BIFUpdate.mono <| later_mono <| except0_mono siPure_siEmpValid_elim
   fupd_plainly_sForall_2 E Φ := by
-    rw [plainly_eq_siPure_siEmpValid (SI := SI)]
-    calc iprop(∀ p, ⌜Φ p⌝ → |={E}=> <si_pure> (<si_emp_valid> p : SiProp (SI := SI)))
-      _ ⊢ ∀ x : {p : PROP // Φ p}, |={E}=> <si_pure> (<si_emp_valid> x.1 : SiProp (SI := SI)) :=
+    rw [plainly_eq_siPure_siEmpValid]
+    calc iprop(∀ p, ⌜Φ p⌝ → |={E}=> <si_pure> (<si_emp_valid> p : SiProp))
+      _ ⊢ ∀ x : {p : PROP // Φ p}, |={E}=> <si_pure> (<si_emp_valid> x.1 : SiProp) :=
           forall_intro fun x => (forall_elim x.1).trans (pure_imp_elim x.2)
-      _ ⊢ |={E}=> ∀ x : {p : PROP // Φ p}, <si_pure> (<si_emp_valid> x.1 : SiProp (SI := SI)) :=
+      _ ⊢ |={E}=> ∀ x : {p : PROP // Φ p}, <si_pure> (<si_emp_valid> x.1 : SiProp) :=
           fupd_siPure_forall_2
       _ ⊢ |={E}=> sForall Φ := BIFUpdate.mono <| sForall_intro fun p hp =>
           (forall_elim (⟨p, hp⟩ : {p // Φ p})).trans siPure_siEmpValid_elim

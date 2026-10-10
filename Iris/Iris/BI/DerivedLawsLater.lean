@@ -269,7 +269,7 @@ theorem loeb_wand [BILoeb PROP] (P : PROP) : □ (▷ P -∗ P) ⊢ P :=
 open Iris BI OFE Contractive in
 /-- Löb from contractiveness of later. Not an instance: its conclusion `BILoeb PROP` does not
 determine `SI`; models declare `instance : BILoeb X := .ofLaterContractive SI`. -/
-@[rocq_alias bi.later_contractive_bi_löb] theorem BILoeb.ofLaterContractive (SI : stepindex (Type _)) [SIdx SI] [BIStepIndexed PROP]
+@[indexed, rocq_alias bi.later_contractive_bi_löb] theorem BILoeb.ofLaterContractive (SI : stepindex (Type _)) [SIdx SI] [BIStepIndexed PROP]
     [BILaterContractive PROP] : BILoeb PROP where
   loeb_weak {P} HP := by
     let Hc : Contractive (fun Q => iprop((▷ Q) → P)) := ⟨fun H => imp_ne.ne (distLater_dist H) .rfl⟩
