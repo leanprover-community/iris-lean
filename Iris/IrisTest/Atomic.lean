@@ -7,6 +7,8 @@ module
 
 public import Iris.ProgramLogic.Atomic
 
+local stepindex Nat
+
 @[expose] public section
 
 namespace IrisTest
@@ -17,7 +19,7 @@ telescopes parses, elaborates to the corresponding `atomic_update`/`atomic_acc` 
 prints back in notation form. -/
 
 section atomicNotation
-variable {PROP : Type} [BI PROP] [BIStepIndexed Nat PROP] [BIFUpdate PROP] (Eo Ei : CoPset) (P Q : PROP)
+variable {PROP : Type} [BI PROP] [BIStepIndexed PROP] [BIFUpdate PROP] (Eo Ei : CoPset) (P Q : PROP)
   (α : Nat → PROP) (β : Nat → Bool → PROP) (Ψ : Nat → Bool → PROP)
 
 /-! Both telescopes non-empty. -/
@@ -182,14 +184,14 @@ example : (<<{ ∀∀ x, α x }>> e @ E <<{ ∃∃ y, β x y | RET w }>>) ⊢
 end atomicWpNotation
 section ProofModeTactics
 
-variable {PROP : Type u} [instBI : BI PROP] [BIStepIndexed Nat PROP] [instBIFUpd : BIFUpdate PROP] {TA TB : Tele}
+variable {PROP : Type u} [instBI : BI PROP] [BIStepIndexed PROP] [instBIFUpd : BIFUpdate PROP] {TA TB : Tele}
 variable {Eo Ei : CoPset} {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP}
 
 /--
   Tests `iauintro` for reducing `atomic_update Eo Ei α β β` to `atomic_acc Eo Ei α (α x) β β`.
   Tests `iaaccintro` with `α x` for abort and `β x y` for commit.
 -/
-example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_update Nat Eo Ei α β β := by
+example (HEi : Ei ⊆ Eo) (x : TA.Arg) : α x ⊢ atomic_update Eo Ei α β β := by
   iintro Hα
   iauintro
   iaaccintro Hα

@@ -13,6 +13,7 @@ public import Iris.ProofMode
 
 
 variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris
 
@@ -53,8 +54,8 @@ instance coreP_affine (P : PROP) [Affine P] : Affine (coreP P) where
     iapply HC <;> iintro !> !> _ //
 
 @[rocq_alias coreP_ne]
-instance coreP_ne [BIStepIndexed SI PROP] [Sbi SI PROP] [BIPlainlySbi SI PROP] :
-    NonExpansive SI (coreP (PROP := PROP)) where
+instance coreP_ne [BIStepIndexed PROP] [Sbi PROP] [BIPlainlySbi PROP] :
+    NonExpansive (coreP (PROP := PROP)) where
   ne _ _ _ H :=
     forall_ne fun _ => wand_ne.ne .rfl (wand_ne.ne
       (affinely_ne.ne (instPlainly_ne.ne (wand_ne.ne H .rfl))) .rfl)

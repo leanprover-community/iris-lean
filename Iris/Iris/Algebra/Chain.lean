@@ -14,38 +14,40 @@ meta import Iris.Std.RocqPorting
 namespace Iris
 
 variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
 
 open OFE COFE
 
 namespace Completion.Raw
 
-variable {α : Type u} [OFE SI α]
+variable {α : Type u} [OFE α]
 
-@[rocq_alias chain_equiv]
-def Equiv (x y : Chain SI α) : Prop :=
+@[indexed, rocq_alias chain_equiv]
+def Equiv (x y : Chain α) : Prop :=
   ∀ (n : SI), x n ≡{n}≡ y n
 
-theorem equiv_equivalence : Equivalence (Equiv (SI := SI) (α := α)) where
+theorem equiv_equivalence : Equivalence (Equiv (α := α)) where
   refl _ _ := .rfl
   symm h _ := (h _).symm
   trans h₁ h₂ _ := (h₁ _).trans (h₂ _)
 
-def quotientSetoid : Setoid (Chain SI α) := ⟨Equiv, equiv_equivalence⟩
+@[indexed]
+def quotientSetoid : Setoid (Chain α) := ⟨Equiv, equiv_equivalence⟩
 
-@[rocq_alias chain_dist]
-def dist (n : SI) (x y : Chain SI α) : Prop :=
+@[indexed, rocq_alias chain_dist]
+def dist (n : SI) (x y : Chain α) : Prop :=
   ∀ (m : SI), m ≤ n → x m ≡{m}≡ y m
 
-theorem dist_equivalence : Equivalence (dist (SI := SI) (α := α) n) where
+theorem dist_equivalence : Equivalence (dist (α := α) n) where
   refl _ _ _ := .rfl
   symm h _ hm := (h _ hm).symm
   trans h₁ h₂ _ hm := (h₁ _ hm).trans (h₂ _ hm)
 
-theorem dist_lt {n m : SI} {x y : Chain SI α} (h : dist n x y) (hlt : m < n) :
+theorem dist_lt {n m : SI} {x y : Chain α} (h : dist n x y) (hlt : m < n) :
     dist m x y :=
   fun k hk => h k (SIdx.le_trans hk (SIdx.lt_le_incl hlt))
 
-theorem equiv_iff_dist (x y : Chain SI α) : Equiv x y ↔ ∀ n, dist n x y :=
+theorem equiv_iff_dist (x y : Chain α) : Equiv x y ↔ ∀ n, dist n x y :=
   ⟨fun h _ _ _ => h _, fun h n => h n n SIdx.le_refl⟩
 
 end Completion.Raw
@@ -53,79 +55,79 @@ end Completion.Raw
 namespace Chain
 
 @[rocq_alias chain_inhabited]
-instance instInhabited [OFE SI α] [Inhabited α] : Inhabited (Chain SI α) :=
+instance instInhabited [OFE α] [Inhabited α] : Inhabited (Chain α) :=
   ⟨Chain.const default⟩
 
 end Chain
 
-variable (SI) in
 @[indexed]
-def Completion (α : Type u) [OFE SI α] :=
-  Quotient (Completion.Raw.quotientSetoid (SI := SI) (α := α))
+def Completion (α : Type u) [OFE α] :=
+  Quotient (Completion.Raw.quotientSetoid (α := α))
 
 namespace Completion
 
-variable {α : Type u} [OFE SI α]
+variable {α : Type u} [OFE α]
 
-def mk (c : Chain SI α) : Completion SI α := OFE.ofQuotient.mk Raw.quotientSetoid c
+def mk (c : Chain α) : Completion α := OFE.ofQuotient.mk Raw.quotientSetoid c
 
 @[elab_as_elim, induction_eliminator]
-theorem ind {motive : Completion SI α → Prop} (mk : ∀ c : Chain SI α, motive (Completion.mk c))
-    (x : Completion SI α) : motive x :=
+theorem ind {motive : Completion α → Prop} (mk : ∀ c : Chain α, motive (Completion.mk c))
+    (x : Completion α) : motive x :=
   OFE.ofQuotient.ind mk x
 
 @[elab_as_elim]
-theorem ind₂ {motive : Completion SI α → Completion SI α → Prop}
-    (mk : ∀ c d : Chain SI α, motive (Completion.mk c) (Completion.mk d))
-    (x y : Completion SI α) : motive x y :=
+theorem ind₂ {motive : Completion α → Completion α → Prop}
+    (mk : ∀ c d : Chain α, motive (Completion.mk c) (Completion.mk d))
+    (x y : Completion α) : motive x y :=
   OFE.ofQuotient.ind₂ mk x y
 
-theorem sound {x y : Chain SI α} (h : Raw.Equiv x y) : mk x = mk y :=
+theorem sound {x y : Chain α} (h : Raw.Equiv x y) : mk x = mk y :=
   OFE.ofQuotient.sound h
 
-theorem exact {x y : Chain SI α} (h : mk x = mk y) : Raw.Equiv x y :=
+theorem exact {x y : Chain α} (h : mk x = mk y) : Raw.Equiv x y :=
   OFE.ofQuotient.exact h
 
-theorem mk_eq {x y : Chain SI α} : mk x = mk y ↔ Raw.Equiv x y :=
+theorem mk_eq {x y : Chain α} : mk x = mk y ↔ Raw.Equiv x y :=
   OFE.ofQuotient.mk_eq
 
-def lift {β : Sort v} (f : Chain SI α → β)
-    (resp : ∀ x y, Raw.Equiv x y → f x = f y) : Completion SI α → β :=
+def lift {β : Sort v} (f : Chain α → β)
+    (resp : ∀ x y, Raw.Equiv x y → f x = f y) : Completion α → β :=
   OFE.ofQuotient.lift f resp
 
 @[simp]
-theorem lift_mk {β : Sort v} (f : Chain SI α → β) (resp) (c : Chain SI α) :
+theorem lift_mk {β : Sort v} (f : Chain α → β) (resp) (c : Chain α) :
     lift f resp (mk c) = f c :=
   rfl
 
 #rocq_ignore chain_ofe_mixin "Non needed."
 
 @[rocq_alias chainO]
-instance instOFE : OFE SI (Completion SI α) :=
+instance instOFE : OFE (Completion α) :=
   OFE.ofQuotient (s := Raw.quotientSetoid) Raw.dist Raw.dist_equivalence Raw.dist_lt
     Raw.equiv_iff_dist
 
 @[simp]
-theorem dist_mk {n : SI} {x y : Chain SI α} :
+theorem dist_mk {n : SI} {x y : Chain α} :
     mk x ≡{n}≡ mk y ↔ Raw.dist n x y :=
   Iff.rfl
 
-def unit : α -n>[SI] Completion SI α where
+@[indexed]
+def unit : α -n> Completion α where
   f a := mk (Chain.const a)
   ne.ne _ _ _ h := dist_mk.mpr fun _ hm => h.le hm
 
 #rocq_ignore chain_const_ne "Implicit in the type of `Completion.unit`."
 #rocq_ignore chain_const_proper "OFE equality is Leibniz equality."
 
-instance [Inhabited α] : Inhabited (Completion SI α) := ⟨unit (SI := SI) default⟩
+instance [Inhabited α] : Inhabited (Completion α) := ⟨unit default⟩
 
-theorem exists_limit (c : Chain SI (Completion SI α)) :
-  ∃ x : Completion SI α, ∀ (n : SI), x ≡{n}≡ c n := by
-  have hrep (n : SI) : ∃ d : Chain SI α, mk d = c n :=
+theorem exists_limit (c : Chain (Completion α)) :
+  ∃ x : Completion α, ∀ (n : SI), x ≡{n}≡ c n := by
+  have hrep (n : SI) : ∃ d : Chain α, mk d = c n :=
     ind (fun d => ⟨d, rfl⟩) (c n)
-  let d (n : SI) : Chain SI α := Classical.choose (hrep n)
+  let d (n : SI) : Chain α := Classical.choose (hrep n)
   have hd (n : SI) : mk (d n) = c n := Classical.choose_spec (hrep n)
-  let diagonal : Chain SI α := {
+  let diagonal : Chain α := {
     chain := fun n => d n n
     cauchy := by
       intro n i hni
@@ -143,18 +145,19 @@ theorem exists_limit (c : Chain SI (Completion SI α)) :
   exact c.cauchy hmn
 
 @[rocq_alias chain_compl]
-noncomputable def diagonal (c : Chain SI (Completion SI α)) : Completion SI α :=
+noncomputable def diagonal (c : Chain (Completion α)) : Completion α :=
   Classical.choose (exists_limit c)
 
 @[rocq_alias chain_cofe]
-noncomputable instance instIsCOFE [SIdxFinite SI] : IsCOFE SI (Completion SI α) where
+noncomputable instance instIsCOFE [SIdxFinite SI] : IsCOFE (Completion α) where
   compl := diagonal
   conv_compl {n : SI} {c} := Classical.choose_spec (exists_limit c) n
   lbcompl := (·.elim)
   conv_lbcompl := (·.elim)
   lbcompl_ne := (·.elim)
 
-def complete [IsCOFE SI α] : Completion SI α -n>[SI] α where
+@[indexed]
+def complete [IsCOFE α] : Completion α -n> α where
   f := lift COFE.compl fun x y h => OFE.eq_dist_2 fun n =>
     (COFE.conv_compl (c := x)).trans ((h n).trans (COFE.conv_compl (c := y)).symm)
   ne.ne {n : SI} {x y} h := by
@@ -164,14 +167,14 @@ def complete [IsCOFE SI α] : Completion SI α -n>[SI] α where
         ((dist_mk.mp h n SIdx.le_refl).trans (COFE.conv_compl (c := d)).symm)
 
 @[simp]
-theorem complete_mk [IsCOFE SI α] (c : Chain SI α) : complete (SI := SI) (mk c) = COFE.compl c :=
+theorem complete_mk [IsCOFE α] (c : Chain α) : complete (mk c) = COFE.compl c :=
   rfl
 
 #rocq_ignore compl_ne "Implicit in the type of `Completion.complete`."
 #rocq_ignore compl_proper "OFE equality is Leibniz equality."
 
 @[rocq_alias chain_iso]
-def idemp [IsCOFE SI α] : OFE.Iso SI α (Completion SI α) where
+def idemp [IsCOFE α] : OFE.Iso α (Completion α) where
   hom := unit
   inv := complete
   hom_inv := by
@@ -180,13 +183,13 @@ def idemp [IsCOFE SI α] : OFE.Iso SI α (Completion SI α) where
     | mk c =>
       apply sound
       intro n
-      exact COFE.conv_compl (SI := SI)
+      exact COFE.conv_compl
   inv_hom := by
     intro x
     exact COFE.compl_const x
 
-@[rocq_alias chainO_map]
-def map {β : Type v} [OFE SI β] (f : α -n>[SI] β) : Completion SI α -n>[SI] Completion SI β where
+@[indexed, rocq_alias chainO_map]
+def map {β : Type v} [OFE β] (f : α -n> β) : Completion α -n> Completion β where
   f := OFE.ofQuotient.map (s := Raw.quotientSetoid) (s' := Raw.quotientSetoid)
     (Chain.map f) fun _ _ h n => f.ne.ne (h n)
   ne.ne {n : SI} {x y} h := by
@@ -196,50 +199,50 @@ def map {β : Type v} [OFE SI β] (f : α -n>[SI] β) : Completion SI α -n>[SI]
       exact f.ne.ne (dist_mk.mp h m hm)
 
 @[simp]
-theorem map_mk {β : Type v} [OFE SI β] (f : α -n>[SI] β) (c : Chain SI α) :
+theorem map_mk {β : Type v} [OFE β] (f : α -n> β) (c : Chain α) :
     map f (mk c) = mk (Chain.map f c) :=
   rfl
 
 #rocq_ignore chain_map_ne "Implicit in the type of `Completion.map`."
 
 @[rocq_alias chain_map_id]
-theorem map_id (x : Completion SI α) : map OFE.Hom.id x = x := by
+theorem map_id (x : Completion α) : map OFE.Hom.id x = x := by
   induction x using ind with
   | mk c => simp only [map_mk, Chain.map_id]
 
 @[rocq_alias chain_map_compose]
-theorem map_comp {β : Type v} {γ : Type w} [OFE SI β] [OFE SI γ]
-    (f : β -n>[SI] γ) (g : α -n>[SI] β) (x : Completion SI α) :
+theorem map_comp {β : Type v} {γ : Type w} [OFE β] [OFE γ]
+    (f : β -n> γ) (g : α -n> β) (x : Completion α) :
     map (f.comp g) x = map f (map g x) := by
   induction x using ind with
   | mk c => simp only [map_mk, Chain.map_comp]
 
 @[rocq_alias chain_map_ext_ne]
-theorem map_ext_ne {β : Type v} [OFE SI β] (f g : α -n>[SI] β) (x : Completion SI α) {n : SI}
+theorem map_ext_ne {β : Type v} [OFE β] (f g : α -n> β) (x : Completion α) {n : SI}
     (h : ∀ a, f a ≡{n}≡ g a) : map f x ≡{n}≡ map g x := by
   induction x using ind with
   | mk c =>
-    refine (dist_mk (SI := SI)).mpr fun m hm => ?_
+    refine (dist_mk).mpr fun m hm => ?_
     exact (h (c m)).le hm
 
 @[rocq_alias chain_map_ext]
-theorem map_ext {β : Type v} [OFE SI β] (f g : α -n>[SI] β) (x : Completion SI α)
+theorem map_ext {β : Type v} [OFE β] (f g : α -n> β) (x : Completion α)
     (h : ∀ a, f a = g a) : map f x = map g x := by
   refine OFE.eq_dist_2 fun (n : SI) => ?_
   exact map_ext_ne f g x fun a => (h a).dist
 
 @[rocq_alias chainO_map_ne]
-instance map_ne {β : Type v} [OFE SI β] : NonExpansive SI (map (SI := SI) (α := α) (β := β)) where
+instance map_ne {β : Type v} [OFE β] : NonExpansive (map (α := α) (β := β)) where
   ne {_ f g} h x := map_ext_ne f g x fun a => h a
 
 end Completion
 
-abbrev CompletionOF (F : COFE.OFunctorPre SI) [COFE.OFunctor SI F] : COFE.OFunctorPre SI :=
-  fun α β _ _ => Completion SI (F α β)
+abbrev CompletionOF (F : COFE.OFunctorPre) [COFE.OFunctor F] : COFE.OFunctorPre :=
+  fun α β _ _ => Completion (F α β)
 
 @[rocq_alias chainOF]
-instance instOFunctorCompletionOF (F : COFE.OFunctorPre SI) [COFE.OFunctor SI F] :
-    COFE.OFunctor SI (CompletionOF F) where
+instance instOFunctorCompletionOF (F : COFE.OFunctorPre) [COFE.OFunctor F] :
+    COFE.OFunctor (CompletionOF F) where
   ofe := inferInstance
   map f g := Completion.map (COFE.OFunctor.map f g)
   map_ne.ne _ _ _ hf _ _ hg :=
@@ -251,10 +254,10 @@ instance instOFunctorCompletionOF (F : COFE.OFunctorPre SI) [COFE.OFunctor SI F]
       (Completion.map_comp _ _ x)
 
 @[rocq_alias chainOF_contractive]
-instance instOFunctorContractiveCompletionOF (F : COFE.OFunctorPre SI)
-    [COFE.OFunctorContractive SI F] : COFE.OFunctorContractive SI (CompletionOF F) where
+instance instOFunctorContractiveCompletionOF (F : COFE.OFunctorPre)
+    [COFE.OFunctorContractive F] : COFE.OFunctorContractive (CompletionOF F) where
   map_contractive.1 h :=
-    NonExpansive.ne (SI := SI) (f := Completion.map) (COFE.OFunctorContractive.map_contractive.1 h)
+    NonExpansive.ne (f := Completion.map) (COFE.OFunctorContractive.map_contractive.1 h)
 
 end Iris
 

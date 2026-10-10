@@ -20,6 +20,8 @@ the List type itself. However, there is an embedding of Lists in to this data st
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 
@@ -274,7 +276,7 @@ theorem toMaxPrefixList_op_valid {l1 l2 : List α} :
 
 @[rocq_alias max_prefix_list_local_update]
 theorem local_update {l1 l2 : List α} (h : l1 <+: l2) :
-    (toMaxPrefixList l1, toMaxPrefixList l1) ~l~>[Nat] (toMaxPrefixList l2, toMaxPrefixList l2) := by
+    (toMaxPrefixList l1, toMaxPrefixList l1) ~l~> (toMaxPrefixList l2, toMaxPrefixList l2) := by
   grind [LocalUpdate.op, comm']
 
 end MaxPrefixList
@@ -282,11 +284,11 @@ end MaxPrefixList
 /-! ## Functors -/
 
 @[rocq_alias max_prefix_listURF]
-abbrev MaxPrefixListURF (F : COFE.OFunctorPre Nat) : COFE.OFunctorPre Nat :=
+abbrev MaxPrefixListURF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
   PartialMap.PartialMapOF MaxPrefixListMap (AgreeRF F)
 
 @[rocq_alias max_prefix_listRF]
-abbrev MaxPrefixListRF (F : COFE.OFunctorPre Nat) : COFE.OFunctorPre Nat := MaxPrefixListURF F
+abbrev MaxPrefixListRF (F : COFE.OFunctorPre) : COFE.OFunctorPre := MaxPrefixListURF F
 
 #rocq_ignore max_prefix_listURF_contractive "Found by typeclass inference"
 #rocq_ignore max_prefix_listRF_contractive "Found by typeclass inference"

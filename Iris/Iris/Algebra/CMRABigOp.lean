@@ -13,11 +13,12 @@ public import Iris.Algebra.CMRA
 namespace Iris.Algebra
 
 variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
 open ORA
 
 open OFE Iris.Std
 
-variable [RA M] [ORA SI M]
+variable [RA M] [ORA M]
 
 /-- SI-free `MonoidOps` for `Option M`: `ucmraMonoidOps` cannot infer `SI` from `op` alone. -/
 instance Option.instMonoidOps : MonoidOps (op (α := Option M)) none :=

@@ -18,6 +18,7 @@ public import Iris.Std.TC
 
 
 variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris.BI
 open Iris.Std BI
@@ -268,17 +269,17 @@ theorem loeb_wand [BILoeb PROP] (P : PROP) : □ (▷ P -∗ P) ⊢ P :=
 open Iris BI OFE Contractive in
 /-- Löb from contractiveness of later. Not an instance: its conclusion `BILoeb PROP` does not
 determine `SI`; models declare `instance : BILoeb X := .ofLaterContractive SI`. -/
-@[rocq_alias bi.later_contractive_bi_löb] theorem BILoeb.ofLaterContractive (SI : stepindex (Type _)) [SIdx SI] [BIStepIndexed SI PROP]
-    [BILaterContractive SI PROP] : BILoeb PROP where
+@[rocq_alias bi.later_contractive_bi_löb] theorem BILoeb.ofLaterContractive (SI : stepindex (Type _)) [SIdx SI] [BIStepIndexed PROP]
+    [BILaterContractive PROP] : BILoeb PROP where
   loeb_weak {P} HP := by
-    let Hc : Contractive SI (fun Q => iprop((▷ Q) → P)) := ⟨fun H => imp_ne.ne (distLater_dist H) .rfl⟩
-    let Flöb : PROP -c>[SI] PROP := { f := fun Q => iprop((▷ Q) → P), contractive := Hc }
-    suffices HP : iprop(▷ (fixpoint _ Flöb) ⊢ P) by
+    let Hc : Contractive (fun Q => iprop((▷ Q) → P)) := ⟨fun H => imp_ne.ne (distLater_dist H) .rfl⟩
+    let Flöb : PROP -c> PROP := { f := fun Q => iprop((▷ Q) → P), contractive := Hc }
+    suffices HP : iprop(▷ (fixpoint Flöb) ⊢ P) by
       refine entails_impl_true.mp HP |>.trans ?_
       refine (fixpoint_unfold Flöb).to_bi |>.mpr |>.trans ?_
       exact later_intro.trans HP
     refine .trans ?_ ((later_mono HP).trans HP)
-    suffices Hcut : later (fixpoint _ Flöb) ⊢ later (later (later (fixpoint _ Flöb))) → later (later P) by
+    suffices Hcut : later (fixpoint Flöb) ⊢ later (later (later (fixpoint Flöb))) → later (later P) by
       exact and_intro (later_intro.trans later_intro) Hcut |>.trans imp_elim_right
     refine .trans (later_mono ?_) later_imp
     refine .trans ?_ later_imp
@@ -323,7 +324,7 @@ theorem loeb_alt_wand [BIAffine PROP] :
 /-! # LaterN -/
 
 @[rocq_alias bi.laterN_ne]
-theorem laterN_ne [BIStepIndexed SI PROP] (n : Nat) : OFE.NonExpansive SI (BIBase.laterN (PROP:=PROP) n) where
+theorem laterN_ne [BIStepIndexed PROP] (n : Nat) : OFE.NonExpansive (BIBase.laterN (PROP:=PROP) n) where
   ne := by
     induction n with
     | zero => exact fun _ _ _ h => h
@@ -540,7 +541,7 @@ instance bi_laterN_sep_entails_homomorphism (n : Nat) :
 /-! # Except0 -/
 
 @[rocq_alias bi.except_0_ne]
-theorem except0_ne [BIStepIndexed SI PROP] : OFE.NonExpansive SI (BIBase.except0 (PROP:=PROP)) where
+theorem except0_ne [BIStepIndexed PROP] : OFE.NonExpansive (BIBase.except0 (PROP:=PROP)) where
   ne _ _ _ h := or_ne.ne .rfl h
 
 @[rw_mono_rule, rocq_alias bi.except_0_mono]

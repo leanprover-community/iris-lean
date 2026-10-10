@@ -16,6 +16,7 @@ public import Iris.Algebra.LeibnizSet
 namespace Iris
 
 variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
 
 @[expose] public section
 
@@ -62,14 +63,14 @@ section OFE
 
 open OFE
 
-variable [LawfulPartialMap H Pos] [OFE SI A]
+variable [LawfulPartialMap H Pos] [OFE A]
 
 #rocq_ignore reservation_map_ofe_mixin "Not needed"
 #rocq_ignore reservation_map_equiv "Part of OFE instance"
 #rocq_ignore reservation_map_dist "Part of OFE instance"
 
 @[rocq_alias reservation_mapO]
-instance : OFE SI (ReservationMap A H) where
+instance : OFE (ReservationMap A H) where
   dist n x y := x.data ≡{n}≡ y.data ∧ x.token ≡{n}≡ y.token
   dist_eqv := {
     refl _ := And.intro .rfl rfl,
@@ -84,21 +85,21 @@ instance : OFE SI (ReservationMap A H) where
   dist_lt h lt := ⟨dist_lt h.left lt, dist_lt h.right lt⟩
 
 @[rocq_alias reservation_map_ofe_discrete]
-instance instDiscreteReservationMap [Discrete SI A] : Discrete SI (ReservationMap A H) where
+instance instDiscreteReservationMap [Discrete A] : Discrete (ReservationMap A H) where
   discrete_0 h := ReservationMap.ext (discrete_0 h.left) (discrete_0 h.right)
 
 instance instNonExpansiveReservationMapData :
-    NonExpansive SI (ReservationMap.mkData (H := H) (A := A)) where
+    NonExpansive (ReservationMap.mkData (H := H) (A := A)) where
   ne _ _ _ h := ⟨h, rfl⟩
 
 @[rocq_alias ReservationMap_ne]
 instance instNonExpansive₂ReservationMapMk :
-    NonExpansive₂ SI (ReservationMap.mk (H := H) (A := A)) where
+    NonExpansive₂ (ReservationMap.mk (H := H) (A := A)) where
   ne _ _ _ hd _ _ ht := ⟨hd, ht⟩
 
 @[rocq_alias reservation_map_data_proj_ne]
 instance instNonExpansiveReservationMapDataProj :
-    NonExpansive SI (ReservationMap.data (H := H) (A := A)) where
+    NonExpansive (ReservationMap.data (H := H) (A := A)) where
   ne _ _ _ h := h.left
 
 #rocq_ignore ReservationMap_proper "Derivable using NonExpansive.eqv"
@@ -108,22 +109,22 @@ instance instNonExpansiveReservationMapDataProj :
 
 @[rocq_alias reservation_map_data_ne]
 instance instNonExpansiveReservationMapSingleton :
-    NonExpansive SI (ReservationMap.singleton (H := H) (A := A) k) where
+    NonExpansive (ReservationMap.singleton (H := H) (A := A) k) where
   ne _ _ _ h := ⟨singleton_dist h k, rfl⟩
 
 @[rocq_alias ReservationMap_discrete]
-instance instDiscreteEReservationMapMk {a : H A} [DiscreteE SI a] :
-    DiscreteE SI (ReservationMap.mk a b) where
+instance instDiscreteEReservationMapMk {a : H A} [DiscreteE a] :
+    DiscreteE (ReservationMap.mk a b) where
   discrete h := ReservationMap.ext (DiscreteE.discrete h.1) (DiscreteE.discrete h.2)
 
 @[rocq_alias reservation_map_data_discrete]
-instance instDiscreteEReservationMapSingleton {a : A} [DiscreteE SI a] :
-    DiscreteE SI (ReservationMap.singleton (H := H) k a) :=
+instance instDiscreteEReservationMapSingleton {a : A} [DiscreteE a] :
+    DiscreteE (ReservationMap.singleton (H := H) k a) :=
   by unfold ReservationMap.singleton ReservationMap.mkData;  infer_instance
 
 @[rocq_alias reservation_map_token_discrete]
 instance instDiscreteEReservationMapToken :
-    DiscreteE SI (ReservationMap.mkToken (H := H) (A := A) e) :=
+    DiscreteE (ReservationMap.mkToken (H := H) (A := A) e) :=
   by unfold ReservationMap.mkToken; infer_instance
 
 end OFE
@@ -180,7 +181,7 @@ instance raURA [RA A] : URA (ReservationMap A H) where
   pcore_unit := congrArg some (ReservationMap.ext Heap.core_empty rfl)
   total _ := ⟨_, rfl⟩
 
-variable [RA A] [ORA SI A]
+variable [RA A] [ORA A]
 
 @[rocq_alias reservation_map_validN_instance]
 def ValidN (n : SI) (x : ReservationMap A H) : Prop :=
@@ -188,10 +189,10 @@ def ValidN (n : SI) (x : ReservationMap A H) : Prop :=
   | .valid e => ✓{n} x.data ∧ ∀i, get? x.data i = none ∨ i ∉ e
   | .error => False
 
-@[rocq_alias reservation_map_valid_instance]
+@[indexed, rocq_alias reservation_map_valid_instance]
 def Valid (x : ReservationMap A H) : Prop :=
   match x.token with
-  | .valid e => ✓[SI] x.data ∧ ∀i, get? x.data i = none ∨ i ∉ e
+  | .valid e => ✓ x.data ∧ ∀i, get? x.data i = none ∨ i ∉ e
   | .error => False
 
 #rocq_ignore reservation_map_valid_eq "Definitional unfolding of Valid"
@@ -235,10 +236,10 @@ theorem validN_disj {n : SI} {x : ReservationMap A H} (h : x.ValidN n) (i : Pos)
     get? x.data i = none ∨ i ∉ x.token := (validN_iff.mp h).right.right i
 
 theorem valid_data_of_valid {x : ReservationMap A H} (h : x.Valid (SI := SI)) :
-    ✓[SI] x.data := (valid_iff.mp h).left
+    ✓ x.data := (valid_iff.mp h).left
 
 theorem valid_token_of_valid {x : ReservationMap A H} (h : x.Valid (SI := SI)) :
-    ✓[SI] x.token := (valid_iff.mp h).right.left
+    ✓ x.token := (valid_iff.mp h).right.left
 
 theorem valid_disj {x : ReservationMap A H} (h : x.Valid (SI := SI)) (i : Pos) :
     get? x.data i = none ∨ i ∉ x.token := (valid_iff.mp h).right.right i
@@ -272,31 +273,31 @@ theorem validN_mono {n : SI} {x y : ReservationMap A H} (hd : ✓{n} y.data → 
 
 @[reducible] def raOrdered : Ordered SI (ReservationMap A H) where
   OrderN n x y := x.data ≼ₒ{n} y.data ∧ x.token ≼ₒ{n} y.token
-  Order x y := x.data ≼ₒ[SI] y.data ∧ x.token ≼ₒ[SI] y.token
+  Order x y := x.data ≼ₒ y.data ∧ x.token ≼ₒ y.token
   ordN_trans h1 h2 := ⟨ordN_trans h1.1 h2.1, ordN_trans h1.2 h2.2⟩
   ord_trans h1 h2 := ⟨ord_trans h1.1 h2.1, ord_trans h1.2 h2.2⟩
   ordN_of_ord n h := ⟨ordN_of_ord n h.1, ordN_of_ord n h.2⟩
 
 attribute [local instance] raOrdered in
-theorem raOrderedNE : OrderedNE SI (ReservationMap A H) where
+theorem raOrderedNE : OrderedNE (ReservationMap A H) where
   ordN_ne ex ey h := ⟨ordN_ne ex.1 ey.1 h.1, ordN_ne ex.2 ey.2 h.2⟩
   ordN_le h le := ⟨ordN_le h.1 le, ordN_le h.2 le⟩
 
 section
 attribute [local instance] raOrdered raValid raOrderedNE
 
-theorem increasing_data {v : ReservationMap A H} (h : Increasing SI v) : Increasing SI v.data where
+theorem increasing_data {v : ReservationMap A H} (h : Increasing v) : Increasing v.data where
   increasing w := (h.increasing (mk w ∅)).1
 
-theorem increasing_token {v : ReservationMap A H} (h : Increasing SI v) : Increasing SI v.token where
+theorem increasing_token {v : ReservationMap A H} (h : Increasing v) : Increasing v.token where
   increasing w := (h.increasing (mk ∅ w)).2
 
 theorem increasing_mk {v : ReservationMap A H}
-    (hd : Increasing SI v.data) (ht : Increasing SI v.token) : Increasing SI v where
+    (hd : Increasing v.data) (ht : Increasing v.token) : Increasing v where
   increasing w := ⟨hd.increasing w.data, ht.increasing w.token⟩
 
 open ReservationMap in
-instance instORAReservationMap : ORA SI (ReservationMap A H) where
+instance instORAReservationMap : ORA (ReservationMap A H) where
   toValid := raValid
   op_ne := ⟨fun _ _ _ h => ⟨Dist.op_r h.left, Dist.op_r h.right⟩⟩
   pcore_ne {n : SI} {x y cx} e pe := by
@@ -341,7 +342,7 @@ instance instORAReservationMap : ORA SI (ReservationMap A H) where
     exact ⟨_, rfl, core_op_mono_ord x.data y.data, core_op_mono_ord x.token y.token⟩
   pcore_increasing {x _} e := by
     cases Option.some_inj.mp e
-    exact increasing_mk (v := x.core) (increasing_core x.data) (increasing_core (SI := SI) x.token)
+    exact increasing_mk (v := x.core) (increasing_core x.data) (increasing_core x.token)
   increasing_closed {n : SI} {x y} h h' :=
     increasing_mk
       (increasing_closed (increasing_data h) (Or.imp (·.1) (·.1) h'))
@@ -353,11 +354,11 @@ instance instORAReservationMap : ORA SI (ReservationMap A H) where
 
 end
 
-instance instIncOrd [IncOrd SI A] : IncOrd SI (ReservationMap A H) := IncOrd.of_increasing fun v =>
+instance instIncOrd [IncOrd A] : IncOrd (ReservationMap A H) := IncOrd.of_increasing fun v =>
     increasing_mk (IncOrd.increasing v.data) (IncOrd.increasing v.token)
 
 @[rocq_alias reservation_mapUR]
-instance : UORA SI (ReservationMap A H) where
+instance : UORA (ReservationMap A H) where
   toORA := instORAReservationMap
   unit_valid := ⟨Heap.valid_empty, fun _ => .inr CoPset.mem_empty⟩
   ord_refl x := ⟨ord_refl x.data, ord_refl x.token⟩
@@ -372,22 +373,22 @@ theorem inc_iff {x y : ReservationMap A H} :
     exact ⟨mk z₁ z₂, rfl⟩
 
 theorem ord_iff {x y : ReservationMap A H} :
-    x ≼ₒ[SI] y ↔ x.data ≼ₒ[SI] y.data ∧ x.token ≼ₒ[SI] y.token := .rfl
+    x ≼ₒ y ↔ x.data ≼ₒ y.data ∧ x.token ≼ₒ y.token := .rfl
 
 theorem ordN_iff {n : SI} {x y : ReservationMap A H} :
     x ≼ₒ{n} y ↔ x.data ≼ₒ{n} y.data ∧ x.token ≼ₒ{n} y.token := .rfl
 
-instance instOrdInc [OrdInc SI A] : OrdInc SI (ReservationMap A H) where
+instance instOrdInc [OrdInc A] : OrdInc (ReservationMap A H) where
   ord_inc h :=
-    have : OrdInc SI (H A) := inferInstance
-    inc_iff.mpr ⟨Iris.ord_inc (SI := SI) h.1, Iris.ord_inc (SI := SI) h.2⟩
+    have : OrdInc (H A) := inferInstance
+    inc_iff.mpr ⟨Iris.ord_inc h.1, Iris.ord_inc h.2⟩
   ordN_incN h :=
-    have : OrdInc SI (H A) := inferInstance
-    let ⟨z₁, h₁⟩ := Iris.ordN_incN (SI := SI) h.1
-    let ⟨z₂, h₂⟩ := Iris.ordN_incN (SI := SI) h.2
+    have : OrdInc (H A) := inferInstance
+    let ⟨z₁, h₁⟩ := Iris.ordN_incN h.1
+    let ⟨z₂, h₂⟩ := Iris.ordN_incN h.2
     ⟨mk z₁ z₂, h₁, h₂⟩
 
-instance instIsInc [IsInc SI A] : IsInc SI (ReservationMap A H) := {}
+instance instIsInc [IsInc A] : IsInc (ReservationMap A H) := {}
 
 @[rocq_alias reservation_map_cmra_discrete]
 instance [ORA.Discrete SI A] : ORA.Discrete SI (ReservationMap A H) where
@@ -435,14 +436,14 @@ theorem validN_data {n : SI} {d : H A} : ✓{n} (mkData (H := H) d) ↔ ✓{n} d
   ⟨validN_data_of_validN, fun h => validN_iff.mpr ⟨h, ⟨⟩, (fun p => .inr (mem_empty p))⟩⟩
 
 @[rocq_alias reservation_map_data_valid]
-theorem valid_singleton (k : Pos) (a : A) : ✓[SI] (singleton (H := H) k a) ↔ ✓[SI] a :=
+theorem valid_singleton (k : Pos) (a : A) : ✓ (singleton (H := H) k a) ↔ ✓ a :=
   (valid_data).trans Heap.singleton_valid_iff
 
 theorem validN_singleton {n : SI} (k : Pos) (a : A) : ✓{n} (singleton (H := H) k a) ↔ ✓{n} a :=
   (validN_data).trans Heap.singleton_validN_iff
 
 @[rocq_alias reservation_map_token_valid]
-theorem valid_token : ✓[SI] (mkToken (H := H) (A := A) e) :=
+theorem valid_token : ✓ (mkToken (H := H) (A := A) e) :=
   ⟨Heap.valid_empty, fun i => .inl (get?_empty i)⟩
 
 theorem data_op (a b : H A) : mkData (a • b) = mkData a • mkData b :=
@@ -472,7 +473,7 @@ theorem disj_of_validN_data_op_token {n : SI} {a : H A} {b : CoPset} (h : ✓{n}
     · exact .inr <| h'.right
     · exact ((pcore_op_left' rfl).symm : (_ : DisjointLeibnizSet CoPset) = _) ▸ valid_set
 
-theorem disj_of_valid_data_op_token (a : H A) (b : CoPset) (h : ✓[SI] mkData a • mkToken b) (i : Pos) :
+theorem disj_of_valid_data_op_token (a : H A) (b : CoPset) (h : ✓ mkData a • mkToken b) (i : Pos) :
   get? a i = none ∨ i ∉ b := disj_of_validN_data_op_token (h.validN (n := 0)) i
 
 theorem validN_data_op_token {n : SI} (a : H A) (b : CoPset) (vd : ✓{n} mkData a)
@@ -501,8 +502,8 @@ theorem valid_data_op_token (a : H A) (b : CoPset) (vd : ✓[SI] mkData a)
     | inl h => simpa only [h] using .inl <| rfl
     | inr h => simpa only [eo] using .inr h
 
-theorem singleton_mono_ord {k} {a b : A} (Hab : a ≼ₒ[SI] b) :
-    singleton (H := H) k a ≼ₒ[SI] singleton k b :=
+theorem singleton_mono_ord {k} {a b : A} (Hab : a ≼ₒ b) :
+    singleton (H := H) k a ≼ₒ singleton k b :=
   ⟨Heap.singleton_ord_singleton_mono Hab, ord_refl _⟩
 
 @[rocq_alias reservation_map_data_mono]
@@ -569,8 +570,8 @@ theorem valid_singleton_op_of_valid_op? {n : SI} {a : A} {x : H A} (vx : ✓{n} 
   · simp only [LawfulPartialMap.get?_singleton, ki, ↓reduceIte]; exact Heap.validN_get? vx
 
 @[rocq_alias reservation_map_alloc]
-theorem alloc {e k} {a : A} (hke : k ∈ e) (va : ✓[SI] a) :
-    mkToken (H := H) e ~~>[SI] singleton k a := by
+theorem alloc {e k} {a : A} (hke : k ∈ e) (va : ✓ a) :
+    mkToken (H := H) e ~~> singleton k a := by
   intro n mz vo
   match mz with
   | none => exact Valid.validN <| (valid_singleton k a).mpr va
@@ -599,8 +600,8 @@ theorem alloc {e k} {a : A} (hke : k ∈ e) (va : ✓[SI] a) :
             (comm' (x := mkToken e) (y := mkData d • mkToken t)) ▸ vedt)) i]
 
 @[rocq_alias reservation_map_updateP]
-theorem updateP {P} {Q : ReservationMap A H → Prop} k a (ap : a ~~>:[SI] P)
-    (apq : ∀ a', P a' → Q (singleton k a')) : singleton k a ~~>:[SI] Q := by
+theorem updateP {P} {Q : ReservationMap A H → Prop} k a (ap : a ~~>: P)
+    (apq : ∀ a', P a' → Q (singleton k a')) : singleton k a ~~>: Q := by
   intro n mz vaz
   match mz with
   | none =>
@@ -633,8 +634,8 @@ theorem updateP {P} {Q : ReservationMap A H → Prop} k a (ap : a ~~>:[SI] P)
       grind
 
 @[rocq_alias reservation_map_update]
-theorem reservation_map_update {k} {a b : A} (uab : a ~~>[SI] b) :
-    singleton (H := H) k a ~~>[SI] singleton k b :=
+theorem reservation_map_update {k} {a b : A} (uab : a ~~> b) :
+    singleton (H := H) k a ~~> singleton k b :=
   Update.of_updateP <| updateP k a (.of_update uab) fun _ => congrArg (singleton k)
 
 end ReservationMap

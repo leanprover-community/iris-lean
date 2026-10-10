@@ -17,6 +17,7 @@ public section
 
 
 variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris.BI
 
@@ -89,7 +90,7 @@ theorem bigSepM_eq_of_forall_eq {Φ Ψ : K → V → PROP} {m : M V}
   bigOpM_eq_of_forall_eq m h
 
 @[rocq_alias big_sepM_ne]
-theorem bigSepM_dist [BIStepIndexed SI PROP] {Φ Ψ : K → V → PROP} {m : M V} {n : SI}
+theorem bigSepM_dist [BIStepIndexed PROP] {Φ Ψ : K → V → PROP} {m : M V} {n : SI}
     (h : ∀ {k x}, get? m k = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([∗map] k ↦ x ∈ m, Φ k x) ≡{n}≡ [∗map] k ↦ x ∈ m, Ψ k x :=
   bigOpM_dist h

@@ -21,6 +21,7 @@ A variant of the Frac ORA with unbounded validity (>1).
 namespace Iris
 
 variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
 
 @[rocq_alias ufrac]
 structure UFrac where
@@ -38,8 +39,8 @@ open ORA
 #rocq_ignore ufrac_pcore_instance "Use CMRA instance"
 #rocq_ignore ufrac_valid_instance "Use CMRA instance"
 
-@[simp] instance : COFE SI UFrac := COFE.ofDiscrete _
-instance : OFE.Discrete SI UFrac := ⟨fun h => h⟩
+@[simp] instance : COFE UFrac := COFE.ofDiscrete _
+instance : OFE.Discrete UFrac := ⟨fun h => h⟩
 
 @[simp] theorem dist_iff {n : SI} {x y : UFrac} : x ≡{n}≡ y ↔ x = y := Iff.rfl
 
@@ -57,7 +58,7 @@ instance instPCore : PCore UFrac where
 instance instRA : RA UFrac where
   pcore_op_left H := by rcases H
 
-@[reducible] def cmraData : CMRAData SI UFrac where
+@[reducible] def cmraData : CMRAData UFrac where
   Valid _ := True
   ValidN _ _ := True
   op_ne.ne _ _ _ H := by rw [H]
@@ -70,16 +71,16 @@ instance instRA : RA UFrac where
   pcore_op_mono H := by rcases H
 
 @[rocq_alias ufracR]
-instance : CMRA SI UFrac := ofCMRAData UFrac.cmraData
+instance : CMRA UFrac := ofCMRAData UFrac.cmraData
 
 @[simp, grind =] theorem frac_op (x y : UFrac) : (x • y).frac = x.frac + y.frac := rfl
-@[simp, grind =] theorem valid_iff {x : UFrac} : ✓[SI] x ↔ True := Iff.rfl
+@[simp, grind =] theorem valid_iff {x : UFrac} : ✓ x ↔ True := Iff.rfl
 @[simp, grind =] theorem validN_iff {n : SI} {x : UFrac} : ✓{n} x ↔ True := Iff.rfl
 
 @[rocq_alias ufrac_op]
 theorem op_eq (p q : UFrac) : p • q = ⟨p.frac + q.frac⟩ := rfl
 
-theorem ord_iff {x y : UFrac} : x ≼ₒ[SI] y ↔ x.frac < y.frac := by
+theorem ord_iff {x y : UFrac} : x ≼ₒ y ↔ x.frac < y.frac := by
   refine ⟨fun ⟨r, Hr⟩ => ?_, fun H => ?_⟩
   · have := r.frac.2; simp only [ext_iff, frac_op] at Hr; grind
   · refine ⟨⟨⟨y.frac.val - x.frac.val, by grind⟩⟩, ?_⟩
@@ -92,7 +93,7 @@ theorem inc_iff {x y : UFrac} : x ≼ y ↔ x.frac < y.frac := by
   · refine ⟨⟨⟨y.frac.val - x.frac.val, by grind⟩⟩, ?_⟩
     simp only [ext_iff, frac_op]; grind
 
-theorem le_of_ord {x y : UFrac} (H : x ≼ₒ[SI] y) : x.frac ≤ y.frac := by
+theorem le_of_ord {x y : UFrac} (H : x ≼ₒ y) : x.frac ≤ y.frac := by
   have := ord_iff.mp H; grind
 
 @[rocq_alias ufrac_included_weak]
@@ -100,18 +101,18 @@ theorem le_of_inc {x y : UFrac} (H : x ≼ y) : x.frac ≤ y.frac := by
   have := inc_iff.mp H; grind
 
 @[rocq_alias ufrac_cmra_discrete]
-instance : Discrete SI UFrac where
+instance : Discrete UFrac where
   discrete_0 := fun h => h
   discrete_valid := id
   discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
 
 @[rocq_alias ufrac_cancelable]
-instance {q : UFrac} : Cancelable SI q where
+instance {q : UFrac} : Cancelable q where
   cancelableN {n : SI} {x y} _ (H : q • x = q • y) := by
     simp only [dist_iff, ext_iff, frac_op] at *; grind
 
 @[rocq_alias ufrac_id_free]
-instance {q : UFrac} : IdFree SI q where
+instance {q : UFrac} : IdFree q where
   id_free0_r b _ H := by
     have := b.frac.2; simp only [dist_iff, ext_iff, frac_op] at H; grind
 

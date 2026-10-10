@@ -53,12 +53,23 @@ public structure IndexedInfo where
   arity : Nat
   deriving Inhabited, Repr
 
+/-- The `@[indexed]` declarations, and the last components of their names (a fast check that an
+identifier cannot name one). -/
+public meta structure IndexedTable where
+  decls : NameMap IndexedInfo := {}
+  lasts : NameSet := {}
+  deriving Inhabited
+
+/-- Add an `@[indexed]` declaration to the table. -/
+public meta def IndexedTable.insert (t : IndexedTable) (n : Name) (i : IndexedInfo) : IndexedTable :=
+  { decls := t.decls.insert n i, lasts := t.lasts.insert (.mkSimple n.getString!) }
+
 /-- The `@[indexed]` declarations. -/
 public meta initialize indexedExt :
-    SimplePersistentEnvExtension (Name × IndexedInfo) (NameMap IndexedInfo) ←
+    SimplePersistentEnvExtension (Name × IndexedInfo) IndexedTable ←
   registerSimplePersistentEnvExtension {
-    addEntryFn := fun m (n, i) => m.insert n i
-    addImportedFn := fun as => as.foldl (fun m a => a.foldl (fun m (n, i) => m.insert n i) m) {}
+    addEntryFn := fun t (n, i) => t.insert n i
+    addImportedFn := fun as => as.foldl (fun t a => a.foldl (fun t (n, i) => t.insert n i) t) {}
   }
 
 /--

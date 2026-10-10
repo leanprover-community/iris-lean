@@ -13,6 +13,7 @@ public import Iris.ProofMode.ModalityInstances
 
 
 variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris.ProofMode
 open BI
@@ -312,12 +313,12 @@ end PlainlyEmbed
 
 section SbiEmbed
 
-variable [BI P1] [BIStepIndexed SI P1] [Sbi SI P1] [BI P2] [BIStepIndexed SI P2] [Sbi SI P2] [BiEmbed P1 P2] [BiEmbedSbi SI P1 P2]
+variable [BI P1] [BIStepIndexed P1] [Sbi P1] [BI P2] [BIStepIndexed P2] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
 
 
 @[rocq_alias into_internal_eq_embed]
-instance intoInternalEq_embed {A} [OFE SI A] (x y : A) (P : P1)
-    [inst : IntoInternalEq SI P x y] : IntoInternalEq SI iprop(⎡P⎤ : P2) x y where
+instance intoInternalEq_embed {A} [OFE A] (x y : A) (P : P1)
+    [inst : IntoInternalEq P x y] : IntoInternalEq iprop(⎡P⎤ : P2) x y where
   into_internal_eq := (embed_mono inst.into_internal_eq).trans (embed_internal_eq x y).mp
 
 end SbiEmbed

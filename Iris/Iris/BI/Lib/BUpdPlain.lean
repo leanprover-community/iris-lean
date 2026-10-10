@@ -13,6 +13,7 @@ public import Iris.ProofMode
 
 
 variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris
 open Iris.Std BI
@@ -38,7 +39,7 @@ open OFE
 variable [BI PROP] [BIPlainly PROP]
 
 @[rocq_alias bupd_alt_ne]
-instance BUpdPlain_ne [BIStepIndexed SI PROP] : NonExpansive SI (BUpdPlain (PROP := PROP)) where
+instance BUpdPlain_ne [BIStepIndexed PROP] : NonExpansive (BUpdPlain (PROP := PROP)) where
   ne _ _ _ H := forall_ne fun _ => wand_ne.ne (wand_ne.ne H .rfl) .rfl
 
 #rocq_ignore bupd_alt_proper "OFE is Leibniz; use equality"
@@ -96,10 +97,10 @@ theorem BUpd_BUpdPlain [BIUpdate PROP] [BIBUpdatePlainly PROP] {P : PROP} : (|==
 /-- We get the usual rule for frame preserving updates if we have an `own`
 connective satisfying the following rule w.r.t. interaction with plainly. -/
 @[rocq_alias bupd_alt.own_updateP]
-theorem own_updateP [URA M] [UORA SI M] {own : M → PROP} {x : M} {Φ : M → Prop}
+theorem own_updateP [URA M] [UORA M] {own : M → PROP} {x : M} {Φ : M → Prop}
   (own_updateP_plainly : ∀ (x : M) (Φ : M → Prop) (R : PROP),
-    (x ~~>:[SI] Φ) → iprop(own x ∗ ∀ y, ⌜Φ y⌝ -∗ own y -∗ ■ R) ⊢ ■ R)
-  (Hup : x ~~>:[SI] Φ) :
+    (x ~~>: Φ) → iprop(own x ∗ ∀ y, ⌜Φ y⌝ -∗ own y -∗ ■ R) ⊢ ■ R)
+  (Hup : x ~~>: Φ) :
     own x ⊢ BUpdPlain iprop(∃ y, ⌜Φ y⌝ ∧ own y) := by
   iintro Hx
   unfold BUpdPlain

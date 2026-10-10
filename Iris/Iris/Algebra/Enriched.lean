@@ -16,6 +16,7 @@ namespace Iris.Enriched
 open OFE
 
 variable {SI : stepindex (Type w)} [SIdx SI]
+local stepindex SI
 
 structure Site (SI : stepindex (Type w)) [SIdx SI] where
   mem : SI → Prop
@@ -47,13 +48,13 @@ theorem below_le_of_mem {γ : SI} (h : P.mem γ) : below γ ≤ P :=
 theorem below_le_below {γ δ : SI} (h : γ ≤ δ) : below γ ≤ below δ :=
   fun _ hm => SIdx.lt_le_trans hm h
 
-structure Chain (A : Type v) [OFE SI A] (P : Site SI) where
+structure Chain (A : Type v) [OFE A] (P : Site SI) where
   val : ∀ (β : SI), P.mem β → A
   cauchy : ∀ {m p : SI} (hm : P.mem m) (hp : P.mem p), m ≤ p → val p hp ≡{m}≡ val m hm
 
 class HasCompl (P : Site SI) where
-  compl : ∀ {A : Type v} [COFE SI A] [Inhabited A], Site.Chain A P → A
-  conv_compl : ∀ {A : Type v} [COFE SI A] [Inhabited A] (c : Site.Chain A P) {n : SI}
+  compl : ∀ {A : Type v} [COFE A] [Inhabited A], Site.Chain A P → A
+  conv_compl : ∀ {A : Type v} [COFE A] [Inhabited A] (c : Site.Chain A P) {n : SI}
     (hn : P.mem n), compl c ≡{n}≡ c.val n hn
 
 instance (α : SI) : HasCompl.{v, _} (below α) where
@@ -89,7 +90,7 @@ end Site
 
 class EnrichedCat (SI : stepindex (Type w)) [SIdx SI] (Obj : Type u) where
   Hom : Obj → Obj → Type v
-  [cofe : ∀ a b, COFE SI (Hom a b)]
+  [cofe : ∀ a b, COFE (Hom a b)]
   id : ∀ a, Hom a a
   comp : ∀ {a b c : Obj}, Hom b c → Hom a b → Hom a c
   comp_ne : ∀ {a b c : Obj} {n : SI} {g g' : Hom b c} {f f' : Hom a b},
@@ -142,7 +143,7 @@ structure LimitCut (SI : stepindex (Type w)) [SIdx SI] where
 
 namespace LimitCut
 
-def dist (K : LimitCut SI) {A : Type _} [OFE SI A] (x y : A) : Prop :=
+def dist (K : LimitCut SI) {A : Type _} [OFE A] (x y : A) : Prop :=
   ∀ (m : SI), K.mem m → x ≡{m}≡ y
 
 theorem mem_of_finite [SIdxFinite SI] (K : LimitCut SI) (n : SI) : K.mem n := by
@@ -353,6 +354,7 @@ class HasTerminal (Obj : Type u) [EnrichedCat SI Obj] where
   one : Obj
   toOne : ∀ a, Hom SI a one
   toOne_unique : ∀ {a} (f : Hom SI a one), f = toOne a
+attribute [indexed] Iris.Enriched.HasTerminal.one
 
 variable (SI) in
 class HasSeed {Obj : Type u} [EnrichedCat SI Obj] [HasTerminal SI Obj] (F : Obj → Obj → Obj) where
@@ -956,9 +958,11 @@ theorem globalSol_lawful : (globalSol SI F).Lawful :=
 variable (SI) in
 def Fix : Obj := limObj (globalSol SI F) (globalSol_lawful F)
 
+@[indexed]
 def Fix.fold : Hom SI (F (Fix SI F) (Fix SI F)) (Fix SI F) :=
   limFold (globalSol SI F) (globalSol_lawful F)
 
+@[indexed]
 def Fix.unfold : Hom SI (Fix SI F) (F (Fix SI F) (Fix SI F)) :=
   limUnfold Site.univ_isLimit (globalSol SI F) (globalSol_lawful F)
 
@@ -1017,8 +1021,8 @@ theorem bifree_unique [Inhabited (Hom SI B A)] [Inhabited (Hom SI A B)] {k k' : 
 
 omit [SIdxSucc SI] in
 theorem bifree_exists [Inhabited (Hom SI B A)] [Inhabited (Hom SI A B)] :
-    Bifree i j f g (fixpoint SI (bifreeStep i j f g)).1
-      (fixpoint SI (bifreeStep i j f g)).2 :=
+    Bifree i j f g (fixpoint (SI := SI) (bifreeStep i j f g)).1
+      (fixpoint (SI := SI) (bifreeStep i j f g)).2 :=
   (bifree_iff f g hij hji).mpr (fixpoint_unfold (bifreeStep i j f g))
 
 omit hij hji in

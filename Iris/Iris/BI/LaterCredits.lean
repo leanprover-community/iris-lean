@@ -15,6 +15,7 @@ public import Iris.BI.Updates
 
 
 variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
 
 /-! # Later credits -/
 

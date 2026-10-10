@@ -16,6 +16,7 @@ public import Iris.ProofMode.Display
 
 
 variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris.ProofMode
 

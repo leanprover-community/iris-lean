@@ -12,6 +12,7 @@ public import Iris.ProofMode
 
 
 variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris
 
@@ -71,7 +72,7 @@ theorem later_anything [BI PROP] [BIPersistentlyExist PROP]
     iassumption
 
 @[rocq_alias löb_em.later_inconsistent]
-theorem later_inconsistent [SIdxSucc SI] [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [BIPersistentlyExist PROP]
+theorem later_inconsistent [SIdxSucc SI] [BI PROP] [BIStepIndexed PROP] [Sbi PROP] [BIPersistentlyExist PROP]
     (em : ∀ P : PROP, ⊢ P ∨ ¬P) : ⊢@{PROP} False := by
   haveI : BILoeb PROP := .ofLaterContractive SI
   apply later_soundness (SI := SI) (PROP := PROP) (P := iprop(False))
@@ -551,15 +552,15 @@ end Linear
 -/
 namespace LaterCreditsPlain
 
-variable [BI PROP] [BIStepIndexed SI PROP] [instFin : BILaterFinite PROP] [instSbi : Sbi SI PROP]
+variable [BI PROP] [BIStepIndexed PROP] [instFin : BILaterFinite PROP] [instSbi : Sbi PROP]
   [instPersExist : BIPersistentlyExist PROP]
-  [instBFupd : BIFUpdate PROP] [instPl : BIPlainly PROP] [instPlSbi : BIPlainlySbi SI PROP]
+  [instBFupd : BIFUpdate PROP] [instPl : BIPlainly PROP] [instPlSbi : BIPlainlySbi PROP]
 variable {lc : PROP}
 
 variable (lc_fupd_elim_later : ∀ E P, lc ∗ ▷ P ⊢ |={E}=> P)
 variable (lc_soundness : ∀ P [Plain P] E, (lc ⊢ |={E}=> P) → ⊢ P)
 
-variable (fupd_keep_si_pure' : ∀ {E : CoPset} (E' : CoPset) (Pi : SiProp SI) (R : PROP),
+variable (fupd_keep_si_pure' : ∀ {E : CoPset} (E' : CoPset) (Pi : SiProp) (R : PROP),
   (|={E,E'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E}=∗ R) ⊢ |={E}=> R)
 
 include lc_fupd_elim_later fupd_keep_si_pure' in
@@ -589,7 +590,7 @@ theorem laterN_False [BILoeb PROP] : ⊢@{PROP} ∃ n, ▷^[n] False := by
 include lc_fupd_elim_later lc_soundness fupd_keep_si_pure' in
 @[rocq_alias later_credits_plain.contradiction]
 theorem contradiction [BILoeb PROP] : False := by
-  apply pure_soundness (SI := SI) (PROP := PROP)
+  apply pure_soundness (PROP := PROP)
   apply lc_soundness _ ⊤
   iintro Hlc
   icases laterN_False with ⟨%n, ∗Hfalse⟩

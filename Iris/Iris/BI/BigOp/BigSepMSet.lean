@@ -17,6 +17,7 @@ public section
 
 
 variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris.BI
 
@@ -35,7 +36,7 @@ theorem bigSepMS_mono {Φ Ψ : A → PROP} {X : MS} (h : ∀ {x}, x ∈ X → Φ
   bigOpMS_gen_proper _ .rfl sep_mono h
 
 @[rocq_alias big_sepMS_ne]
-theorem bigSepMS_ne [BIStepIndexed SI PROP] {Φ Ψ : A → PROP} {X : MS} {n : SI} (h : ∀ {x}, x ∈ X → Φ x ≡{n}≡ Ψ x) :
+theorem bigSepMS_ne [BIStepIndexed PROP] {Φ Ψ : A → PROP} {X : MS} {n : SI} (h : ∀ {x}, x ∈ X → Φ x ≡{n}≡ Ψ x) :
     ([∗mset] x ∈ X, Φ x) ≡{n}≡ ([∗mset] x ∈ X, Ψ x) :=
   bigOpMS_dist h
 

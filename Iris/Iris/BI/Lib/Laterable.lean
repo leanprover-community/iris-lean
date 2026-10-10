@@ -14,6 +14,7 @@ public import Iris.Std.TC
 
 
 variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris
 
@@ -126,7 +127,7 @@ def make_laterable [BI.BIBase PROP] (Q : PROP) : PROP :=
   iprop(∃ P, ▷ P ∗ □ (▷ P -∗ ◇ Q))
 
 @[rocq_alias make_laterable_ne]
-instance make_laterable_ne [BI PROP] [BIStepIndexed SI PROP] : NonExpansive SI <| make_laterable (PROP := PROP) where
+instance make_laterable_ne [BI PROP] [BIStepIndexed PROP] : NonExpansive <| make_laterable (PROP := PROP) where
   ne := by
     intro n P Q HPQ
     unfold make_laterable

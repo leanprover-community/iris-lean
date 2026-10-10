@@ -14,43 +14,42 @@ public import Iris.Algebra.COFESolver
 namespace Iris
 
 variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
 open ORA
 
 -- EXPERIMENT: UPred Leibniz by construction
 -- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Bi-entailment.20and.20generalized.20rewriting/with/565019365
-variable (SI) in
 @[indexed, ext]
-structure ValidAt (M : Type _) [URA M] [UORA SI M] (n : SI) where
+structure ValidAt (M : Type _) [URA M] [UORA M] (n : SI) where
   val : M
   property : ✓{n} val
 
-instance {M : Type _} [URA M] [UORA SI M] {n : SI} : CoeOut (ValidAt SI M n) M where
+instance {M : Type _} [URA M] [UORA M] {n : SI} : CoeOut (ValidAt M n) M where
   coe := (·.val)
 
-def ValidAt.le {M : Type _} [URA M] [UORA SI M] {n m : SI} (Hle : m ≤ n) : ValidAt SI M n → ValidAt SI M m :=
+def ValidAt.le {M : Type _} [URA M] [UORA M] {n m : SI} (Hle : m ≤ n) : ValidAt M n → ValidAt M m :=
   fun v => ⟨v.val, validN_of_le Hle v.property⟩
 
 @[simp]
-theorem ValidAt.le_val {M : Type _} [URA M] [UORA SI M] {n m : SI} {Hle : m ≤ n} {v : ValidAt SI M n} :
+theorem ValidAt.le_val {M : Type _} [URA M] [UORA M] {n m : SI} {Hle : m ≤ n} {v : ValidAt M n} :
   (v.le Hle).val = v.val := by rfl
 
 @[simp]
-theorem ValidAt.le_rfl {M : Type _} [URA M] [UORA SI M] {n : SI} {Hle : n ≤ n} {v : ValidAt SI M n} :
+theorem ValidAt.le_rfl {M : Type _} [URA M] [UORA M] {n : SI} {Hle : n ≤ n} {v : ValidAt M n} :
   v.le Hle = v := by rfl
 
-variable (SI) in
 /-- The data of a UPred object is an indexed proposition over M (Bundled version) -/
 @[indexed, ext, rocq_alias uPred]
-structure UPred (M : Type _) [URA M] [UORA SI M] where
-  holds : (n : SI) → ValidAt SI M n → Prop
-  mono {n1 n2 : SI} {x1 : ValidAt SI M n1} {x2 : ValidAt SI M n2} :
+structure UPred (M : Type _) [URA M] [UORA M] where
+  holds : (n : SI) → ValidAt M n → Prop
+  mono {n1 n2 : SI} {x1 : ValidAt M n1} {x2 : ValidAt M n2} :
     holds n1 x1 → (x1 : M) ≼ₒ{n2} (x2 : M) → (Hle : n2 ≤ n1) → holds n2 x2
 
-def UPred.holds_unpacked {M : Type _} [URA M] [UORA SI M] (P : UPred SI M) (n : SI) (x : M) (Hx : ✓{n} x) :
+def UPred.holds_unpacked {M : Type _} [URA M] [UORA M] (P : UPred M) (n : SI) (x : M) (Hx : ✓{n} x) :
     Prop :=
   P.holds n ⟨x, Hx⟩
 
-theorem UPred.mono_unpacked {M : Type _} [URA M] [UORA SI M] (P : UPred SI M) {n1 n2 : SI} {x1 x2 : M}
+theorem UPred.mono_unpacked {M : Type _} [URA M] [UORA M] (P : UPred M) {n1 n2 : SI} {x1 x2 : M}
     (Hx1 : ✓{n1} x1) (Hx2 : ✓{n2} x2) (HP : P.holds_unpacked n1 x1 Hx1) (Hxle : x1 ≼ₒ{n2} x2)
     (Hle : n2 ≤ n1) : P.holds_unpacked n2 x2 Hx2 :=
   P.mono HP Hxle Hle
@@ -58,7 +57,7 @@ theorem UPred.mono_unpacked {M : Type _} [URA M] [UORA SI M] (P : UPred SI M) {n
 /-- The definition of UPred is equivalent to separately proving pointwise down-closure,
 non-expansivity, and monotonicity. -/
 @[rocq_alias uPred_alt]
-theorem uPred_alt {M : Type _} [URA M] [UORA SI M] (P : SI → M → Prop) :
+theorem uPred_alt {M : Type _} [URA M] [UORA M] (P : SI → M → Prop) :
     (∀ {n1 n2 : SI} {x1 x2 : M}, P n1 x1 → x1 ≼ₒ{n1} x2 → n2 ≤ n1 → P n2 x2) ↔
     ((∀ {x : M} {n1 n2 : SI}, n2 ≤ n1 → P n1 x → P n2 x) ∧
      (∀ {n : SI} {x1 x2 : M}, x1 ≡{n}≡ x2 → ∀ (m : SI), m ≤ n → (P m x1 ↔ P m x2)) ∧
@@ -73,19 +72,19 @@ theorem uPred_alt {M : Type _} [URA M] [UORA SI M] (P : SI → M → Prop) :
   · refine fun ⟨Hdc, _, Hmono⟩ n1 n2 x1 x2 HP Hinc Hle => ?_
     exact Hmono (ordN_of_ordN_le Hle Hinc) n2 SIdx.le_refl (Hdc Hle HP)
 
-instance [URA M] [UORA SI M] : Inhabited (UPred SI M) := ⟨fun _ _ => True, fun _ _ _ => ⟨⟩⟩
+instance [URA M] [UORA M] : Inhabited (UPred M) := ⟨fun _ _ => True, fun _ _ _ => ⟨⟩⟩
 
-instance [URA M] [UORA SI M] : CoeFun (UPred SI M) (fun _ => (n : SI) → ValidAt SI M n → Prop) where
+instance [URA M] [UORA M] : CoeFun (UPred M) (fun _ => (n : SI) → ValidAt M n → Prop) where
   coe x := x.holds
 
 section UPred
 
-variable [URA M] [UORA SI M]
+variable [URA M] [UORA M]
 
 open UPred
 
 @[rocq_alias uPredO]
-instance : OFE SI (UPred SI M) where
+instance : OFE (UPred M) where
   dist n P Q := ∀ (n' : SI) (x : M), n' ≤ n → (p : ✓{n'} x) → (P n' ⟨x, p⟩ ↔ Q n' ⟨x, p⟩)
   dist_eqv := {
     refl _ _ _ _ _ := .rfl
@@ -106,18 +105,18 @@ instance : OFE SI (UPred SI M) where
 
 
 @[rocq_alias uPred_ne]
-theorem uPred_ne {P : UPred SI M} {n : SI} {m₁ m₂ : ValidAt SI M n} (H : (m₁ : M) ≡{n}≡ (m₂ : M)) : P n m₁ ↔ P n m₂ :=
+theorem uPred_ne {P : UPred M} {n : SI} {m₁ m₂ : ValidAt M n} (H : (m₁ : M) ≡{n}≡ (m₂ : M)) : P n m₁ ↔ P n m₂ :=
   ⟨fun H' => P.mono H' H.to_ordN SIdx.le_refl, fun H' => P.mono H' H.symm.to_ordN SIdx.le_refl⟩
 
 #rocq_ignore uPred_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias uPred_holds_ne]
-theorem uPred_holds_ne {P Q : UPred SI M} {n₁ n₂ : SI} {x : M}
+theorem uPred_holds_ne {P Q : UPred M} {n₁ n₂ : SI} {x : M}
     (HPQ : P ≡{n₂}≡ Q) (Hn : n₂ ≤ n₁) (Hx : ✓{n₂} x) (Hx' : ✓{n₁} x) (HQ : Q n₁ ⟨x, Hx'⟩) : P n₂ ⟨x, Hx⟩ :=
   (HPQ _ _ SIdx.le_refl Hx).mpr (Q.mono HQ .rfl Hn)
 
 @[rocq_alias uPred_cofe]
-instance : IsCOFE SI (UPred SI M) where
+instance : IsCOFE (UPred M) where
   compl c := {
     holds n x := ∀ n', (Hle : n' ≤ n) → (c n') n' (x.le Hle)
     mono {n1 n2 : SI} {x1 x2 HP Hx12 Hn12 n3 Hn23} := by
@@ -146,7 +145,7 @@ instance : IsCOFE SI (UPred SI M) where
 
 #rocq_ignore uPred_compl "Inlined in the `IsCOFE` construction"
 
-def UPred.truncate (K : Enriched.LimitCut SI) : UPred SI M -n>[SI] UPred SI M where
+def UPred.truncate (K : Enriched.LimitCut SI) : UPred M -n> UPred M where
   f P := {
     holds n x := ∀ (m : SI), K.mem m → (Hle : m ≤ n) → P m (x.le Hle)
     mono {n1 n2 : SI} {x1 x2 HP Hx12 Hn12 m Hm Hle} := by
@@ -157,7 +156,7 @@ def UPred.truncate (K : Enriched.LimitCut SI) : UPred SI M -n>[SI] UPred SI M wh
     forall_congr' fun m => forall_congr' fun _ => forall_congr' fun Hle =>
       HPQ m x (SIdx.le_trans Hle Hn) _
 
-def UPred.truncation (K : Enriched.LimitCut SI) : Enriched.COFE.Truncation K (UPred SI M) where
+def UPred.truncation (K : Enriched.LimitCut SI) : Enriched.COFE.Truncation K (UPred M) where
   truncate := UPred.truncate K
   conv P _ HK (n : SI) _ Hn _ :=
     ⟨fun H => H n (K.down Hn HK) SIdx.le_refl, fun H _ _ Hle => P.mono H .rfl Hle⟩
@@ -166,11 +165,11 @@ def UPred.truncation (K : Enriched.LimitCut SI) : Enriched.COFE.Truncation K (UP
     exact forall_congr' fun m => forall_congr' fun Hm => forall_congr' fun _ =>
       HPQ m Hm m _ SIdx.le_refl _
 
-abbrev UPredOF (F : COFE.OFunctorPre SI) [URFunctor SI F] : COFE.OFunctorPre SI :=
-  fun A B _ _ => UPred SI (F B A)
+abbrev UPredOF (F : COFE.OFunctorPre) [URFunctor F] : COFE.OFunctorPre :=
+  fun A B _ _ => UPred (F B A)
 
 @[rocq_alias uPredO_map]
-def uPred_map [URA α] [UORA SI α] [URA β] [UORA SI β] (f : β -C>[SI] α) : UPred SI α -n>[SI] UPred SI β := by
+def uPred_map [URA α] [UORA α] [URA β] [UORA β] (f : β -C> α) : UPred α -n> UPred β := by
   refine ⟨fun P => ⟨fun n x => P n ⟨(f x.val), f.validN x.property⟩, ?_⟩, ⟨?_⟩⟩
   · intro n1 n2 x1 x2 HP Hm Hn
     exact P.mono HP (f.monoN_ord Hm) Hn
@@ -181,17 +180,17 @@ def uPred_map [URA α] [UORA SI α] [URA β] [UORA SI β] (f : β -C>[SI] α) : 
 #rocq_ignore uPred_map_ne "Inlined in the bundled `-n>` of `uPred_map`."
 
 @[rocq_alias uPredOF]
-instance [URFunctor SI F] : COFE.OFunctor SI (UPredOF F) where
+instance [URFunctor F] : COFE.OFunctor (UPredOF F) where
   ofe := inferInstance
   map f g := uPred_map (URFunctor.map (F := F) g f)
   map_ne.ne _ _ _ Hx _ _ Hy _ _ z2 Hn _ := by
     simp only [uPred_map]
     exact uPred_ne <| URFunctor.map_ne.ne (Hy.le Hn) (Hx.le Hn) z2
-  map_id x := OFE.eq_dist_2 (SI := SI) <| by
+  map_id x := OFE.eq_dist_2 <| by
     intro (_ : SI) _ z _ _
     simp only [uPred_map]
     simp only [URFunctor.map_id]
-  map_comp f g f' g' x := OFE.eq_dist_2 (SI := SI) <| by
+  map_comp f g f' g' x := OFE.eq_dist_2 <| by
     intro (_ : SI) _ H _ _
     simp only [uPred_map]
     simp only [URFunctor.map_comp]
@@ -202,15 +201,15 @@ instance [URFunctor SI F] : COFE.OFunctor SI (UPredOF F) where
 #rocq_ignore uPred_map_ext "Inlined as the `map_ne` field of the `COFE.OFunctor (UPredOF F)` instance."
 
 @[rocq_alias uPredOF_contractive]
-instance instUPredOFunctorContractive [URFunctorContractive SI F] : COFE.OFunctorContractive SI (UPredOF F) where
+instance instUPredOFunctorContractive [URFunctorContractive F] : COFE.OFunctorContractive (UPredOF F) where
   map_contractive.1 {n : SI} {x y} HKL := by
     intro P (m : SI) a Hmn Ha
     refine uPred_ne (P := P) <|
       ((URFunctorContractive.map_contractive.1 (x := (x.snd, x.fst)) (y := (y.snd, y.fst))) ?_ a).le Hmn
     exact fun m Hm => ⟨(HKL m Hm).2, (HKL m Hm).1⟩
 
-instance instUPredOFTruncatable [URFunctorContractive SI F] :
-    Enriched.Truncatable SI (Enriched.COFE.oFunctorObj (SI := SI) (UPredOF F)) :=
+instance instUPredOFTruncatable [URFunctorContractive F] :
+    Enriched.Truncatable SI (Enriched.COFE.oFunctorObj (UPredOF F)) :=
   Enriched.COFE.truncatableOfTruncations _ fun K _ _ => UPred.truncation K
 
 end UPred

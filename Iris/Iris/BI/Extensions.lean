@@ -12,6 +12,7 @@ public import Iris.BI.BI
 
 
 variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris.BI
 
@@ -33,7 +34,7 @@ class BILoeb (PROP : Type _) [BI.BIBase PROP] where
 export BILoeb (loeb_weak)
 
 @[indexed, rocq_alias BiLaterContractive]
-class BILaterContractive (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed SI PROP] extends OFE.Contractive SI later (α := PROP)
+class BILaterContractive (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] [BIStepIndexed PROP] extends OFE.Contractive later (α := PROP)
 
 #rocq_ignore BiPureForall "BIPureForall is provable for all BIs using classical logic, see pure_forall_2"
 

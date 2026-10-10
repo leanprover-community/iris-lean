@@ -14,13 +14,14 @@ public import Iris.Std.List
 namespace Iris
 
 variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
 
 open OFE COFE Iris.Algebra
 
 /-! ## The pointwise list OFE -/
 
 section ofe
-variable [OFE SI α]
+variable [OFE α]
 
 theorem forall₂_eq_of_forall₂_dist : ∀ {l k : List α},
     (∀ (n : SI), List.Forall₂ (· ≡{n}≡ ·) l k) → l = k
@@ -32,7 +33,7 @@ theorem forall₂_eq_of_forall₂_dist : ∀ {l k : List α},
      forall₂_eq_of_forall₂_dist fun n => (List.forall₂_cons.mp (h n)).2⟩
 
 @[rocq_alias list_ofe_mixin]
-instance : OFE SI (List α) where
+instance : OFE (List α) where
   dist n := List.Forall₂ (Dist n)
   dist_eqv := List.Forall₂.equivalence dist_eqv
   eq_dist' := ⟨fun h _ => h ▸ (List.Forall₂.rfl .refl), forall₂_eq_of_forall₂_dist⟩
@@ -48,38 +49,38 @@ theorem list_dist_lookup {n : SI} {l k : List α} : l ≡{n}≡ k ↔ ∀ (i : N
   ⟨fun h i => h.getElem? i, List.Forall₂.of_getElem?⟩
 
 @[rocq_alias cons_ne]
-instance cons_ne : NonExpansive₂ SI (α := α) List.cons where
+instance cons_ne : NonExpansive₂ (α := α) List.cons where
   ne _ _ _ hx _ _ hl := .cons hx hl
 
 @[rocq_alias app_ne]
-instance app_ne : NonExpansive₂ SI (α := List α) (· ++ ·) where
+instance app_ne : NonExpansive₂ (α := List α) (· ++ ·) where
   ne _ _ _ h1 _ _ h2 := h1.append h2
 
 @[rocq_alias length_ne]
 theorem length_dist {n : SI} {l k : List α} (h : l ≡{n}≡ k) : l.length = k.length := h.length_eq
 
 @[rocq_alias tail_ne]
-instance tail_ne : NonExpansive SI (List.tail (α := α)) where
+instance tail_ne : NonExpansive (List.tail (α := α)) where
   ne _ _ _ h := match h with | .nil => .nil | .cons _ t => t
 
 @[rocq_alias take_ne]
-instance take_ne (m : Nat) : NonExpansive SI (List.take m (α := α)) where
+instance take_ne (m : Nat) : NonExpansive (List.take m (α := α)) where
   ne _ _ _ h := h.take m
 
 @[rocq_alias drop_ne]
-instance drop_ne (m : Nat) : NonExpansive SI (List.drop m (α := α)) where
+instance drop_ne (m : Nat) : NonExpansive (List.drop m (α := α)) where
   ne _ _ _ h := h.drop m
 
 @[rocq_alias head_ne]
-instance head_ne : NonExpansive SI (List.head? (α := α)) where
+instance head_ne : NonExpansive (List.head? (α := α)) where
   ne _ _ _ h := match h with | .nil => trivial | .cons hh _ => hh
 
 @[rocq_alias list_lookup_ne]
-instance getElem?_ne (i : Nat) : NonExpansive SI (fun l : List α => l[i]?) where
+instance getElem?_ne (i : Nat) : NonExpansive (fun l : List α => l[i]?) where
   ne _ _ _ h := h.getElem? i
 
 @[rocq_alias list_lookup_total_ne]
-instance getD_ne (i : Nat) : NonExpansive₂ SI (fun (l : List α) (d : α) => l.getD i d) where
+instance getD_ne (i : Nat) : NonExpansive₂ (fun (l : List α) (d : α) => l.getD i d) where
   ne _ _ _ hl _ _ hd := hl.getD hd i
 
 @[rocq_alias list_alter_ne]
@@ -88,31 +89,31 @@ theorem modify_ne {n : SI} {f g : α → α} (Hf : ∀ a b, a ≡{n}≡ b → f 
   h.modify (fun hab => Hf _ _ hab) i
 
 @[rocq_alias list_insert_ne]
-instance set_ne (i : Nat) : NonExpansive₂ SI (fun (a : α) (l : List α) => l.set i a) where
+instance set_ne (i : Nat) : NonExpansive₂ (fun (a : α) (l : List α) => l.set i a) where
   ne _ _ _ ha _ _ hl := hl.set ha i
 
 @[rocq_alias list_inserts_ne]
-instance inserts_ne (i : Nat) : NonExpansive₂ SI (fun (k l : List α) => List.inserts i k l) where
+instance inserts_ne (i : Nat) : NonExpansive₂ (fun (k l : List α) => List.inserts i k l) where
   ne _ _ _ hk _ _ hl := hk.inserts hl i
 
 @[rocq_alias list_delete_ne]
-instance eraseIdx_ne (i : Nat) : NonExpansive SI (fun l : List α => l.eraseIdx i) where
+instance eraseIdx_ne (i : Nat) : NonExpansive (fun l : List α => l.eraseIdx i) where
   ne _ _ _ h := h.eraseIdx i
 
 @[rocq_alias replicate_ne]
-instance replicate_ne (m : Nat) : NonExpansive SI (List.replicate m (α := α)) where
+instance replicate_ne (m : Nat) : NonExpansive (List.replicate m (α := α)) where
   ne _ _ _ h := .replicate h m
 
 @[rocq_alias reverse_ne]
-instance reverse_ne : NonExpansive SI (List.reverse (α := α)) where
+instance reverse_ne : NonExpansive (List.reverse (α := α)) where
   ne _ _ _ h := h.reverse
 
 @[rocq_alias last_ne]
-instance getLast?_ne : NonExpansive SI (List.getLast? (α := α)) where
+instance getLast?_ne : NonExpansive (List.getLast? (α := α)) where
   ne _ _ _ h := h.getLast?
 
 @[rocq_alias option_list_ne]
-instance optionToList_ne : NonExpansive SI (Option.toList (α := α)) where
+instance optionToList_ne : NonExpansive (Option.toList (α := α)) where
   ne _ o o' h := by
     cases o with
     | none => cases o' with | none => exact .nil | some _ => exact h.elim
@@ -124,7 +125,7 @@ theorem filter_ne {n : SI} {p : α → Bool} (Hp : ∀ a b, a ≡{n}≡ b → p 
   h.filter (fun hab => Hp _ _ hab)
 
 @[rocq_alias resize_ne]
-instance takeD_ne (m : Nat) : NonExpansive₂ SI (fun (l : List α) (d : α) => List.takeD m l d) where
+instance takeD_ne (m : Nat) : NonExpansive₂ (fun (l : List α) (d : α) => List.takeD m l d) where
   ne _ _ _ hl _ _ hd := hl.takeD hd m
 
 @[rocq_alias cons_dist_inj]
@@ -163,20 +164,20 @@ theorem list_singleton_dist_eq {n : SI} {l : List α} {x : α} :
     exact .cons hx .nil
 
 @[rocq_alias list_ofe_discrete]
-instance list_ofe_discrete [Discrete SI α] : Discrete SI (List α) where
+instance list_ofe_discrete [Discrete α] : Discrete (List α) where
   discrete_0 h := forall₂_eq_of_forall₂_dist (SI := SI) fun _ => h.imp (discrete_0 · ▸ .rfl)
 
 @[rocq_alias nil_discrete]
-instance nil_discrete : DiscreteE SI ([] : List α) where
+instance nil_discrete : DiscreteE ([] : List α) where
   discrete h := by cases h; rfl
 
 @[rocq_alias cons_discrete]
-instance cons_discrete (x : α) (l : List α) [DiscreteE SI x] [DiscreteE SI l] :
-    DiscreteE SI (x :: l) where
+instance cons_discrete (x : α) (l : List α) [DiscreteE x] [DiscreteE l] :
+    DiscreteE (x :: l) where
   discrete h := by
     cases h with
     | cons hx hl =>
-      exact List.cons_eq_cons.mpr ⟨‹DiscreteE SI x›.discrete hx, ‹DiscreteE SI l›.discrete hl⟩
+      exact List.cons_eq_cons.mpr ⟨‹DiscreteE x›.discrete hx, ‹DiscreteE l›.discrete hl⟩
 
 @[rocq_alias dist_Permutation]
 theorem dist_Permutation {n : SI} {l1 l2 l3 : List α} (hd : l1 ≡{n}≡ l2) (hp : l2.Perm l3) :
@@ -201,31 +202,33 @@ end ofe
 /-! ## COFE structure -/
 
 section cofe
-variable [COFE SI α]
+variable [COFE α]
 
 /-- Head of a chain of lists, defaulting to `x` on the empty list; used to project a chain of lists
 onto a chain of its first elements. -/
-def headGetDHom (x : α) : List α -n>[SI] α where
+@[indexed]
+def headGetDHom (x : α) : List α -n> α where
   f l := l.head?.getD x
   ne := ⟨fun _ _ _ h => match h with | .nil => .rfl | .cons hh _ => hh⟩
 
-@[simp] theorem headGetDHom_apply {x : α} {l : List α} : headGetDHom (SI := SI) x l = l.head?.getD x := rfl
+@[simp] theorem headGetDHom_apply {x : α} {l : List α} : headGetDHom x l = l.head?.getD x := rfl
 
 /-- Tail of a list as a nonexpansive map, used to project a chain of lists onto a chain of tails. -/
-def tailHom : List α -n>[SI] List α where
+@[indexed]
+def tailHom : List α -n> List α where
   f := List.tail
   ne := ⟨fun _ _ _ h => match h with | .nil => .nil | .cons _ t => t⟩
 
-@[simp] theorem tailHom_apply {l : List α} : tailHom (SI := SI) l = l.tail := rfl
+@[simp] theorem tailHom_apply {l : List α} : tailHom l = l.tail := rfl
 
 /-- The shape of the chain is fixed by its first list `c0`; the completion takes the pointwise
 completion of the first elements and recurses on the tails. -/
 @[rocq_alias list_compl_go]
-def listComplGo : List α → Chain SI (List α) → List α
+def listComplGo : List α → Chain (List α) → List α
   | [], _ => []
   | x :: c0, c => compl (c.map (headGetDHom x)) :: listComplGo c0 (c.map tailHom)
 
-theorem listComplGo_conv_compl {n : SI} (c : Chain SI (List α)) :
+theorem listComplGo_conv_compl {n : SI} (c : Chain (List α)) :
     ∀ (c0 : List α), c0 ≡{(0 : SI)}≡ c n → listComplGo c0 c ≡{n}≡ c n
   | [], H => by rw [nil_dist_eq.mp H.symm]; exact .rfl
   | x :: c0, H => by
@@ -241,7 +244,7 @@ theorem listComplGo_conv_compl {n : SI} (c : Chain SI (List α)) :
       · simp [Chain.map_apply, tailHom_apply, hcn]
 
 @[rocq_alias list.list_cofe]
-instance [SIdxFinite SI] : IsCOFE SI (List α) where
+instance [SIdxFinite SI] : IsCOFE (List α) where
   compl c := listComplGo (c 0) c
   conv_compl {_ c} := listComplGo_conv_compl c (c 0) (c.cauchy SIdx.le_0_l).symm
   lbcompl := (·.elim)
@@ -255,18 +258,18 @@ end cofe
 section higher_order
 
 @[rocq_alias list_fmap_ne]
-theorem list_fmap_ne [OFE SI α] [OFE SI β] {n : SI} {f g : α → β}
+theorem list_fmap_ne [OFE α] [OFE β] {n : SI} {f g : α → β}
     (Hf : ∀ {a b}, a ≡{n}≡ b → f a ≡{n}≡ g b) {l k : List α} (h : l ≡{n}≡ k) :
     l.map f ≡{n}≡ k.map g :=
   h.map (Hf ·)
 
 @[rocq_alias list_fmap_ext_ne]
-theorem list_fmap_ext_ne [OFE SI α] [OFE SI β] {n : SI} {f g : α → β} {l : List α}
+theorem list_fmap_ext_ne [OFE α] [OFE β] {n : SI} {f g : α → β} {l : List α}
     (Hf : ∀ x, f x ≡{n}≡ g x) : l.map f ≡{n}≡ l.map g :=
   match l with | [] => .nil | a :: _ => .cons (Hf a) (list_fmap_ext_ne Hf)
 
 @[rocq_alias list_fmap_dist_inj]
-theorem list_fmap_dist_inj [OFE SI α] [OFE SI β] {n : SI} {f : α → β}
+theorem list_fmap_dist_inj [OFE α] [OFE β] {n : SI} {f : α → β}
     (hf : ∀ {a b}, f a ≡{n}≡ f b → a ≡{n}≡ b) : ∀ {l k : List α},
     l.map f ≡{n}≡ k.map f → l ≡{n}≡ k
   | [], [], _ => .nil
@@ -276,7 +279,7 @@ theorem list_fmap_dist_inj [OFE SI α] [OFE SI β] {n : SI} {f : α → β}
       cases h with | cons hab ht => exact .cons (hf hab) (list_fmap_dist_inj hf ht)
 
 @[rocq_alias list_omap_ne]
-theorem list_omap_ne [OFE SI α] [OFE SI β] {n : SI} {f g : α → Option β}
+theorem list_omap_ne [OFE α] [OFE β] {n : SI} {f g : α → Option β}
     (Hf : ∀ {a b}, a ≡{n}≡ b → f a ≡{n}≡ g b) {l k : List α} (h : l ≡{n}≡ k) :
     l.filterMap f ≡{n}≡ k.filterMap g := by
   induction h with
@@ -292,7 +295,7 @@ theorem list_omap_ne [OFE SI α] [OFE SI β] {n : SI} {f g : α → Option β}
     · exact .cons ho ih
 
 @[rocq_alias imap_ne]
-theorem mapIdx_ne [OFE SI α] [OFE SI β] {n : SI} : ∀ {f g : Nat → α → β},
+theorem mapIdx_ne [OFE α] [OFE β] {n : SI} : ∀ {f g : Nat → α → β},
     (∀ i a b, a ≡{n}≡ b → f i a ≡{n}≡ g i b) → ∀ {l k : List α}, l ≡{n}≡ k →
       l.mapIdx f ≡{n}≡ k.mapIdx g
   | _, _, _, _, _, .nil => .nil
@@ -301,7 +304,7 @@ theorem mapIdx_ne [OFE SI α] [OFE SI β] {n : SI} : ∀ {f g : Nat → α → �
       exact .cons (Hf 0 _ _ hab) (mapIdx_ne (fun i a b h => Hf (i + 1) a b h) t)
 
 @[rocq_alias list_bind_ne]
-theorem list_flatMap_ne [OFE SI α] [OFE SI β] {n : SI} {f g : α → List β}
+theorem list_flatMap_ne [OFE α] [OFE β] {n : SI} {f g : α → List β}
     (Hf : ∀ a b, a ≡{n}≡ b → f a ≡{n}≡ g b) {l k : List α} (h : l ≡{n}≡ k) :
     l.flatMap f ≡{n}≡ k.flatMap g := by
   induction h with
@@ -309,14 +312,14 @@ theorem list_flatMap_ne [OFE SI α] [OFE SI β] {n : SI} {f g : α → List β}
   | cons hab _ ih => exact (Hf _ _ hab).append ih
 
 @[rocq_alias list_join_ne]
-theorem list_flatten_ne [OFE SI α] {n : SI} {l k : List (List α)} (h : l ≡{n}≡ k) :
+theorem list_flatten_ne [OFE α] {n : SI} {l k : List (List α)} (h : l ≡{n}≡ k) :
     l.flatten ≡{n}≡ k.flatten :=
   match h with
   | .nil => .nil
   | .cons hab h => hab.append (list_flatten_ne h)
 
 @[rocq_alias zip_with_ne]
-theorem zipWith_ne [OFE SI α] [OFE SI β] [OFE SI γ] {n : SI} {f g : α → β → γ}
+theorem zipWith_ne [OFE α] [OFE β] [OFE γ] {n : SI} {f g : α → β → γ}
     (Hf : ∀ {a b c d}, a ≡{n}≡ b → c ≡{n}≡ d → f a c ≡{n}≡ g b d) :
     ∀ {l1 l2 : List α} {k1 k2 : List β}, l1 ≡{n}≡ l2 → k1 ≡{n}≡ k2 →
       List.zipWith f l1 k1 ≡{n}≡ List.zipWith g l2 k2
@@ -329,8 +332,8 @@ end higher_order
 /-! ## Big operators -/
 
 @[rocq_alias big_opL_ne_2]
-theorem bigOpL_dist_2 {M α : Type _} [OFE SI M] [OFE SI α] {op : M → M → M} {unit : M} [MonoidOps op unit]
-    [NonExpansive₂ SI op]
+theorem bigOpL_dist_2 {M α : Type _} [OFE M] [OFE α] {op : M → M → M} {unit : M} [MonoidOps op unit]
+    [NonExpansive₂ op]
     {n : SI} {l1 l2 : List α} (hl : l1 ≡{n}≡ l2) : ∀ {f g : Nat → α → M},
     (∀ {k : Nat} {y1 y2}, l1[k]? = some y1 → l2[k]? = some y2 → y1 ≡{n}≡ y2 → f k y1 ≡{n}≡ g k y2) →
     bigOpL op f l1 ≡{n}≡ bigOpL op g l2 := by
@@ -347,24 +350,24 @@ section functor
 open COFE
 
 /-- The list functor's action on morphisms: postcompose with `List.map`. -/
-@[rocq_alias listO_map]
-def listMap [OFE SI α] [OFE SI β] (f : α -n>[SI] β) : List α -n>[SI] List β where
+@[indexed, rocq_alias listO_map]
+def listMap [OFE α] [OFE β] (f : α -n> β) : List α -n> List β where
   f := List.map f
   ne := ⟨fun _ _ _ h => h.map (fun hab => f.ne.ne hab)⟩
 
-@[simp] theorem listMap_apply [OFE SI α] [OFE SI β] {f : α -n>[SI] β} {l : List α} :
+@[simp] theorem listMap_apply [OFE α] [OFE β] {f : α -n> β} {l : List α} :
     listMap f l = l.map f := rfl
 
 @[rocq_alias listO_map_ne]
-instance listMap_ne [OFE SI α] [OFE SI β] : NonExpansive SI (listMap (SI := SI) (α := α) (β := β)) where
+instance listMap_ne [OFE α] [OFE β] : NonExpansive (listMap (α := α) (β := β)) where
   ne _ _ _ h _ := list_fmap_ext_ne fun x => h x
 
-abbrev ListOF (F : OFunctorPre SI) : OFunctorPre SI := fun A B _ _ => List (F A B)
+abbrev ListOF (F : OFunctorPre) : OFunctorPre := fun A B _ _ => List (F A B)
 
-variable (F : OFunctorPre SI)
+variable (F : OFunctorPre)
 
 @[rocq_alias listOF]
-instance oFunctorList [OFunctor SI F] : OFunctor SI (ListOF F) where
+instance oFunctorList [OFunctor F] : OFunctor (ListOF F) where
   ofe := _
   map f g := listMap (OFunctor.map f g)
   map_ne.ne _ _ _ Hx _ _ Hy z :=
@@ -379,7 +382,7 @@ instance oFunctorList [OFunctor SI F] : OFunctor SI (ListOF F) where
     | cons a _ ih => exact List.cons_eq_cons.mpr ⟨OFunctor.map_comp f g f' g' a, ih⟩
 
 @[rocq_alias listOF_contractive]
-instance [OFunctorContractive SI F] : OFunctorContractive SI (ListOF F) where
+instance [OFunctorContractive F] : OFunctorContractive (ListOF F) where
   map_contractive.1 H z := by
     have h := (OFunctorContractive.map_contractive (F := F)).distLater_dist H
     induction z with

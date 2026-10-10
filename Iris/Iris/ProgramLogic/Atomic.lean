@@ -10,6 +10,8 @@ public import Iris.ProgramLogic.WeakestPre
 
 @[expose] public section
 
+local stepindex Nat
+
 /-!  # Logically atomic Hoare triples -/
 
 namespace Iris
@@ -35,7 +37,7 @@ most of them). -/
 def atomic_wp (e : Expr) (E : CoPset) (α : TA.Arg → IProp GF)
     (β : TA.Arg → TB.Arg → IProp GF) (POST : TA.Arg → TB.Arg → TP.Arg → Option (IProp GF))
     (f : TA.Arg → TB.Arg → TP.Arg → Val) : IProp GF :=
-  iprop(∀ Φ, atomic_update Nat (⊤ \ E) ∅ α β
+  iprop(∀ Φ, atomic_update (⊤ \ E) ∅ α β
     (λ.. x y, iprop(∀.. z, POST x y z -∗? Φ (f x y z))) -∗ WP e {{ Φ }})
 
 end definition

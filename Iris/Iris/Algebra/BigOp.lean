@@ -18,6 +18,7 @@ public import Iris.Std.Equivalence
 namespace Iris.Algebra
 
 variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
 
 /-! # Big Operators
 
@@ -85,7 +86,7 @@ scoped macro_rules
 public section
 namespace BigOpL
 
-variable {M : Type _} {A : Type _} [OFE SI M] {op : M → M → M} {unit : M} [MonoidOps op unit]
+variable {M : Type _} {A : Type _} [OFE M] {op : M → M → M} {unit : M} [MonoidOps op unit]
 
 open MonoidOps
 
@@ -108,7 +109,7 @@ theorem bigOpL_eq {Φ Ψ : Nat → A → M} {l : List A} (h : ∀ {i x}, l[i]? =
   | .cons _ _ => (congrArg (op · _) (h rfl)).trans (congrArg (op _) (bigOpL_eq (h ·)))
 
 @[rocq_alias big_opL_ne]
-theorem bigOpL_dist [NonExpansive₂ SI op] {Φ Ψ : Nat → A → M} {l : List A} {n : SI}
+theorem bigOpL_dist [NonExpansive₂ op] {Φ Ψ : Nat → A → M} {l : List A} {n : SI}
     (h : ∀ {i x}, l[i]? = some x → Φ i x ≡{n}≡ Ψ i x) :
     ([^ op list] k ↦ x ∈ l, Φ k x) ≡{n}≡ ([^ op list] k ↦ x ∈ l, Ψ k x) :=
   match l with | .nil => .rfl | .cons _ _ => op_dist (h rfl) (bigOpL_dist (h ·))
@@ -225,7 +226,7 @@ theorem bigOpL_gen_proper (R : M → M → Prop) {Φ Ψ : Nat → A → M} {l : 
 
 #rocq_ignore big_opL_ext "Merged into bigOpL_eq"
 
-omit [OFE SI M] in
+omit [OFE M] in
 @[rocq_alias big_opL_proper_2]
 theorem bigOpL_proper_2 {Φ Ψ : Nat → A → M} {l₁ l₂ : List A} (hlen : l₁.length = l₂.length)
     (hf : ∀ {k y₁ y₂}, l₁[k]? = some y₁ → l₂[k]? = some y₂ → Φ k y₁ = Ψ k y₂) :
@@ -322,7 +323,7 @@ theorem bigOpL_comm_mset {B MS : Type _} [FiniteMultiSet MS B]
 
 section Hom
 
-variable {M₁ : Type u} {M₂ : Type v} [OFE SI M₁] [OFE SI M₂]
+variable {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M₂]
 variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
 variable [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
 variable {B : Type w} {R : M₂ → M₂ → Prop} {f : M₁ → M₂}
@@ -354,7 +355,7 @@ namespace BigOpM
 
 open scoped PartialMap
 
-variable {M : Type u} [OFE SI M] {op : M → M → M} {unit : M} [MonoidOps op unit]
+variable {M : Type u} [OFE M] {op : M → M → M} {unit : M} [MonoidOps op unit]
 variable {M' : Type _ → Type _} {K : Type _} {V : Type _}
 variable [LawfulFiniteMap M' K]
 
@@ -425,7 +426,7 @@ theorem bigOpM_gen_proper {R : M → M → Prop} {Φ Ψ : K → V → M} {m : M'
 #rocq_ignore big_opM_ext "Merged into bigOpM_eq"
 
 @[rocq_alias big_opM_ne]
-theorem bigOpM_dist {n : SI} [NonExpansive₂ SI op] {Φ Ψ : K → V → M} {m : M' V}
+theorem bigOpM_dist {n : SI} [NonExpansive₂ op] {Φ Ψ : K → V → M} {m : M' V}
     (hf : ∀ {k x}, get? m k = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([^ op map] k ↦ x ∈ m, Φ k x) ≡{n}≡ ([^ op map] k ↦ x ∈ m, Ψ k x) :=
   bigOpM_gen_proper .rfl op_dist hf
@@ -435,7 +436,7 @@ theorem bigOpM_eq {Φ Ψ : K → V → M} {m : M' V} (hf : ∀ {k x}, get? m k =
     ([^ op map] k ↦ x ∈ m, Φ k x) = ([^ op map] k ↦ x ∈ m, Ψ k x) :=
   bigOpM_gen_proper rfl (· ▸ · ▸ rfl) hf
 
-omit [OFE SI M] in
+omit [OFE M] in
 @[rocq_alias big_opM_proper_2]
 theorem bigOpM_eq_strong {Φ Ψ : K → A → M} {m1 m2 : M' A} (hm : ∀ k, get? m1 k = get? m2 k)
     (hf : ∀ {k y1 y2}, get? m1 k = some y1 → get? m2 k = some y2 → y1 = y2 → Φ k y1 = Ψ k y2) :
@@ -443,7 +444,7 @@ theorem bigOpM_eq_strong {Φ Ψ : K → A → M} {m1 m2 : M' A} (hm : ∀ k, get
   bigOpM_gen_proper_2 id equivalence_eq (· ▸ · ▸ rfl) (fun k => by rw [hm k])
     fun h1 h2 => hf h1 h2 (by rw [hm _] at h1; exact Option.some.inj (h1.symm.trans h2))
 
-theorem bigOpM_dist_pointwise [NonExpansive₂ SI op] {Φ Ψ : K → V → M} {n : SI} (m : M' V)
+theorem bigOpM_dist_pointwise [NonExpansive₂ op] {Φ Ψ : K → V → M} {n : SI} (m : M' V)
     (hf : ∀ {k x}, Φ k x ≡{n}≡ Ψ k x) :
     ([^ op map] k ↦ x ∈ m, Φ k x) ≡{n}≡ ([^ op map] k ↦ x ∈ m, Ψ k x) :=
   bigOpM_dist fun _ => hf
@@ -665,8 +666,8 @@ theorem bigOpM_comm_mset {B MS : Type _} [FiniteMultiSet MS B]
     ([^ op mset] y ∈ X, [^ op map] k ↦ x ∈ m, Φ k x y) :=
   bigOpL_comm (fun _ (kx : K × V) _ y => Φ kx.1 kx.2 y) (toList m) (toList X)
 
-variable {M₁} [OFE SI M₁]
-variable {M₂} [OFE SI M₂]
+variable {M₁} [OFE M₁]
+variable {M₂} [OFE M₂]
 variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
 variable [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
 
@@ -694,7 +695,7 @@ end BigOpM
 
 namespace BigOpS
 
-variable {M : Type _} {A : Type _} {S : Type _} [OFE SI M] {op : M → M → M} {unit : M}
+variable {M : Type _} {A : Type _} {S : Type _} [OFE M] {op : M → M → M} {unit : M}
   [MonoidOps op unit] [LawfulFiniteSet S A]
 
 open BigOpL MonoidOps LawfulSet FiniteSet
@@ -744,7 +745,7 @@ theorem bigOpS_eq_of_forall_eq {Φ Ψ : A → M} {s : S} (h : ∀ {x}, Φ x = Ψ
   bigOpL_eq_of_forall_eq h
 
 @[rocq_alias big_opS_ne]
-theorem bigOpS_dist [NonExpansive₂ SI op] {Φ Ψ : A → M} {s : S} {n : SI} (h : ∀ {x}, x ∈ s → Φ x ≡{n}≡ Ψ x) :
+theorem bigOpS_dist [NonExpansive₂ op] {Φ Ψ : A → M} {s : S} {n : SI} (h : ∀ {x}, x ∈ s → Φ x ≡{n}≡ Ψ x) :
     ([^ op set] x ∈ s, Φ x) ≡{n}≡ ([^ op set] x ∈ s, Ψ x) := by
   refine bigOpL_dist (fun {i _} _ => h ?_)
   rw [←Std.mem_toList, List.mem_iff_getElem?]
@@ -858,7 +859,7 @@ theorem bigOpS_comm_mset {B MS : Type _} [FiniteMultiSet MS B] (Φ : A → B →
 
 section Homomorphism
 
-variable {M₁ : Type u} {M₂ : Type v} [OFE SI M₁] [OFE SI M₂]
+variable {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M₂]
 variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
 variable [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
 
@@ -888,7 +889,7 @@ end BigOpS
 
 namespace BigOpMS
 
-variable {M : Type _} {A : Type _} {MS : Type _} [OFE SI M] {op : M → M → M} {unit : M}
+variable {M : Type _} {A : Type _} {MS : Type _} [OFE M] {op : M → M → M} {unit : M}
   [MonoidOps op unit] [LawfulFiniteMultiSet MS A]
 
 open BigOpL MonoidOps
@@ -932,7 +933,7 @@ theorem bigOpMS_eq_of_forall_eq {Φ Ψ : A → M} {X : MS} (h : ∀ {x}, Φ x = 
   bigOpL_eq_of_forall_eq h
 
 @[rocq_alias big_opMS_ne]
-theorem bigOpMS_dist [NonExpansive₂ SI op] {Φ Ψ : A → M} {X : MS} {n : SI} (h : ∀ {x}, x ∈ X → Φ x ≡{n}≡ Ψ x) :
+theorem bigOpMS_dist [NonExpansive₂ op] {Φ Ψ : A → M} {X : MS} {n : SI} (h : ∀ {x}, x ∈ X → Φ x ≡{n}≡ Ψ x) :
     ([^ op mset] x ∈ X, Φ x) ≡{n}≡ ([^ op mset] x ∈ X, Ψ x) := by
   refine bigOpL_dist (fun {i _} hi => h ?_)
   rw [← LawfulFiniteMultiSet.mem_toList, List.mem_iff_getElem?]
@@ -983,7 +984,7 @@ theorem bigOpMS_gen_proper (R : M → M → Prop) {Φ Ψ : A → M} {X : MS}
 
 section Homomorphism
 
-variable {M₁ : Type u} {M₂ : Type v} [OFE SI M₁] [OFE SI M₂]
+variable {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M₂]
 variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
 variable [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
 

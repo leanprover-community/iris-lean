@@ -14,6 +14,7 @@ public import Iris.Algebra.LocalUpdates
 namespace Iris
 
 variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
 
 @[rocq_alias csum]
 inductive Csum (α β : Type _) where
@@ -32,13 +33,13 @@ namespace Csum
 
 #rocq_ignore csum_equiv "OFE is Leibniz; use equality"
 
-@[simp, rocq_alias csum_dist] def Dist [OFE SI α] [OFE SI β] (n : SI) : Csum α β → Csum α β → Prop
+@[simp, rocq_alias csum_dist] def Dist [OFE α] [OFE β] (n : SI) : Csum α β → Csum α β → Prop
   | inl a, inl a' => a ≡{n}≡ a'
   | inr b, inr b' => b ≡{n}≡ b'
   | invalid, invalid => True
   | _, _ => False
 
-theorem dist_eqv [OFE SI α] [OFE SI β] {n : SI} : Equivalence (Csum.Dist (α := α) (β := β) n) where
+theorem dist_eqv [OFE α] [OFE β] {n : SI} : Equivalence (Csum.Dist (α := α) (β := β) n) where
   refl {x} := by cases x with
     | inl => exact Dist.rfl
     | inr => exact Dist.rfl
@@ -60,13 +61,13 @@ instance [OFE SI α] [OFE SI β] : OFE SI (Csum α β) where
 #rocq_ignore csum_ofe_mixin "Not needed"
 
 @[rocq_alias Cinl_ne]
-instance [OFE SI α] [OFE SI β] : NonExpansive SI (inl (α := α) (β := β)) where
+instance [OFE α] [OFE β] : NonExpansive (inl (α := α) (β := β)) where
   ne _ _ _ := id
 
 #rocq_ignore Cinl_proper "Derivable using NonExpansive.eqv"
 
 @[rocq_alias Cinr_ne]
-instance [OFE SI α] [OFE SI β] : NonExpansive SI (inr (α := α) (β := β)) where
+instance [OFE α] [OFE β] : NonExpansive (inr (α := α) (β := β)) where
   ne _ _ _ := id
 
 #rocq_ignore Cinr_proper "Derivable using NonExpansive.eqv"
@@ -76,17 +77,17 @@ theorem inl_inj {a a' : α} (h : (inl (β := β) a) = inl a') : a = a' :=
   Csum.inl.inj h
 
 @[rocq_alias Cinl_inj_dist]
-theorem inl_injN [OFE SI α] [OFE SI β] {n : SI} {a a' : α} (h : inl (β := β) a ≡{n}≡ inl a') : a ≡{n}≡ a' := h
+theorem inl_injN [OFE α] [OFE β] {n : SI} {a a' : α} (h : inl (β := β) a ≡{n}≡ inl a') : a ≡{n}≡ a' := h
 
 @[rocq_alias Cinr_inj]
 theorem inr_inj {b b' : β} (h : (inr (α := α) b) = inr b') : b = b' :=
   Csum.inr.inj h
 
 @[rocq_alias Cinr_inj_dist]
-theorem inr_injN [OFE SI α] [OFE SI β] {n : SI} {b b' : β} (h : inr (α := α) b ≡{n}≡ inr b') : b ≡{n}≡ b' := h
+theorem inr_injN [OFE α] [OFE β] {n : SI} {b b' : β} (h : inr (α := α) b ≡{n}≡ inr b') : b ≡{n}≡ b' := h
 
 @[rocq_alias csum_ofe_discrete]
-instance [OFE SI α] [OFE SI β] [OFE.Discrete SI α] [OFE.Discrete SI β] : OFE.Discrete SI (Csum α β) where
+instance [OFE α] [OFE β] [OFE.Discrete α] [OFE.Discrete β] : OFE.Discrete (Csum α β) where
   discrete_0 {x y} h := by cases x <;> cases y <;>
     first
       | exact congrArg inl (discrete_0 (α := α) h)
@@ -96,7 +97,7 @@ instance [OFE SI α] [OFE SI β] [OFE.Discrete SI α] [OFE.Discrete SI β] : OFE
 #rocq_ignore csum_leibniz "Not needed"
 
 @[rocq_alias Cinl_discrete]
-instance [OFE SI α] [OFE SI β] {a : α} [DiscreteE SI a] : DiscreteE SI (inl (β := β) a) where
+instance [OFE α] [OFE β] {a : α} [DiscreteE a] : DiscreteE (inl (β := β) a) where
   discrete {x} h := by
     cases x with
     | inl => exact congrArg inl (DiscreteE.discrete (x := a) h)
@@ -104,14 +105,14 @@ instance [OFE SI α] [OFE SI β] {a : α} [DiscreteE SI a] : DiscreteE SI (inl (
     | invalid => exact h.elim
 
 @[rocq_alias Cinr_discrete]
-instance [OFE SI α] [OFE SI β] {b : β} [DiscreteE SI b] : DiscreteE SI (inr (α := α) b) where
+instance [OFE α] [OFE β] {b : β} [DiscreteE b] : DiscreteE (inr (α := α) b) where
   discrete {x} h := by
     cases x with
     | inl => exact h.elim
     | inr => exact congrArg inr (DiscreteE.discrete (x := b) h)
     | invalid => exact h.elim
 
-instance [OFE SI α] [OFE SI β] : DiscreteE SI (@invalid α β) where
+instance [OFE α] [OFE β] : DiscreteE (@invalid α β) where
   discrete {x} h := by
     cases x with
     | inl => exact h.elim
@@ -127,21 +128,21 @@ instance [OFE SI α] [OFE SI β] : DiscreteE SI (@invalid α β) where
   match x with | inr b => b | _ => d
 
 @[rocq_alias csum_chain_l]
-def chainL [OFE SI α] [OFE SI β] (c : Chain SI (Csum α β)) (a : α) : Chain SI α where
+def chainL [OFE α] [OFE β] (c : Chain (Csum α β)) (a : α) : Chain α where
   chain n := (c n).getInlD a
   cauchy {n : SI} {i} h := by
     have hc := c.cauchy h; revert hc
     cases c.chain i <;> cases c.chain n <;> simp [OFE.Dist, HasDist.dist]
 
 @[rocq_alias csum_chain_r]
-def chainR [OFE SI α] [OFE SI β] (c : Chain SI (Csum α β)) (b : β) : Chain SI β where
+def chainR [OFE α] [OFE β] (c : Chain (Csum α β)) (b : β) : Chain β where
   chain n := (c n).getInrD b
   cauchy {n : SI} {i} h := by
     have hc := c.cauchy h; revert hc
     cases c.chain i <;> cases c.chain n <;> simp [OFE.Dist, HasDist.dist]
 
 @[rocq_alias csum_cofe]
-instance [SIdxFinite SI] [OFE SI α] [OFE SI β] [IsCOFE SI α] [IsCOFE SI β] : IsCOFE SI (Csum α β) where
+instance [SIdxFinite SI] [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where
   compl c :=
     match c 0 with
     | inl a => inl (IsCOFE.compl (chainL c a))
@@ -167,12 +168,12 @@ instance [SIdxFinite SI] [OFE SI α] [OFE SI β] [IsCOFE SI α] [IsCOFE SI β] :
 
 /-! ## ORA -/
 
-@[simp] abbrev valid [RA α] [ORA SI α] [RA β] [ORA SI β] : Csum α β → Prop
-  | inl a => ✓[SI] a
-  | inr b => ✓[SI] b
+@[indexed, simp] abbrev valid [RA α] [ORA α] [RA β] [ORA β] : Csum α β → Prop
+  | inl a => ✓ a
+  | inr b => ✓ b
   | invalid => False
 
-@[simp] abbrev validN [RA α] [ORA SI α] [RA β] [ORA SI β] (n : SI) : Csum α β → Prop
+@[simp] abbrev validN [RA α] [ORA α] [RA β] [ORA β] (n : SI) : Csum α β → Prop
   | inl a => ✓{n} a
   | inr b => ✓{n} b
   | invalid => False
@@ -205,16 +206,17 @@ private theorem pcore_map_inr_eq [PCore β] {b : β} {cx : Csum α β}
     ∃ cb, PCore.pcore b = some cb ∧ cx = inr cb := by
   cases _ : PCore.pcore b <;> simp_all
 
-abbrev OrderN [RA α] [ORA SI α] [RA β] [ORA SI β] (n : SI) : Csum α β → Csum α β → Prop
+abbrev OrderN [RA α] [ORA α] [RA β] [ORA β] (n : SI) : Csum α β → Csum α β → Prop
   | _, invalid => True
   | inl a, inl a' => a ≼ₒ{n} a'
   | inr b, inr b' => b ≼ₒ{n} b'
   | _, _ => False
 
-abbrev Order [RA α] [ORA SI α] [RA β] [ORA SI β] : Csum α β → Csum α β → Prop
+@[indexed]
+abbrev Order [RA α] [ORA α] [RA β] [ORA β] : Csum α β → Csum α β → Prop
   | _, invalid => True
-  | inl a, inl a' => a ≼ₒ[SI] a'
-  | inr b, inr b' => b ≼ₒ[SI] b'
+  | inl a, inl a' => a ≼ₒ a'
+  | inr b, inr b' => b ≼ₒ b'
   | _, _ => False
 
 @[reducible, rocq_alias csum_cmra_mixin]
@@ -240,20 +242,20 @@ instance raOp [Op α] [Op β] : Op (Csum α β) where
     | inr b => obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx; exact congrArg _ (pcore_op_left hpb)
     | invalid => exact (Option.some.inj hpx) ▸ rfl
 
-@[reducible] def raValid [RA α] [ORA SI α] [RA β] [ORA SI β] : _root_.Iris.Valid SI (Csum α β) where
-  Valid := Csum.valid (SI := SI)
+@[reducible] def raValid [RA α] [ORA α] [RA β] [ORA β] : _root_.Iris.Valid SI (Csum α β) where
+  Valid := Csum.valid
   ValidN := Csum.validN
-  valid_iff_validN {x} := by cases x <;> simp [valid_iff_validN (SI := SI)]
+  valid_iff_validN {x} := by cases x <;> simp [valid_iff_validN]
 
-@[reducible] def raOrdered [RA α] [ORA SI α] [RA β] [ORA SI β] : Ordered SI (Csum α β) where
+@[reducible] def raOrdered [RA α] [ORA α] [RA β] [ORA β] : Ordered SI (Csum α β) where
   OrderN := OrderN
-  Order := Order (SI := SI)
+  Order := Order
   ordN_trans {n : SI} {x y z} h₁ h₂ := by grind [Ordered.ordN_trans]
   ord_trans {x y z} h₁ h₂ := by grind [Ordered.ord_trans]
   ordN_of_ord {x y} n h := by grind [Ordered.ordN_of_ord]
 
 attribute [local instance] raOrdered in
-theorem raOrderedNE [RA α] [ORA SI α] [RA β] [ORA SI β] : OrderedNE SI (Csum α β) where
+theorem raOrderedNE [RA α] [ORA α] [RA β] [ORA β] : OrderedNE (Csum α β) where
   ordN_ne {n : SI} {x x' y y'} ex ey h := by
     cases x <;> cases x' <;> cases y <;> cases y' <;>
       first
@@ -263,18 +265,18 @@ theorem raOrderedNE [RA α] [ORA SI α] [RA β] [ORA SI β] : OrderedNE SI (Csum
     cases x <;> cases y <;> first | trivial | exact ordN_le (α := α) h le | exact ordN_le (α := β) h le
 
 section
-variable [RA α] [ORA SI α] [RA β] [ORA SI β]
+variable [RA α] [ORA α] [RA β] [ORA β]
 attribute [local instance] raValid raOrdered raOrderedNE
 
-theorem increasing_inl_iff {a : α} : Increasing SI (inl (β := β) a) ↔ Increasing SI a where
+theorem increasing_inl_iff {a : α} : Increasing (inl (β := β) a) ↔ Increasing a where
   mp h := ⟨fun a' => h.increasing (inl a')⟩
   mpr h := ⟨fun | inl a' => h.increasing a' | inr _ | invalid => trivial⟩
 
-theorem increasing_inr_iff {b : β} : Increasing SI (inr (α := α) b) ↔ Increasing SI b where
+theorem increasing_inr_iff {b : β} : Increasing (inr (α := α) b) ↔ Increasing b where
   mp h := ⟨fun b' => h.increasing (inr b')⟩
   mpr h := ⟨fun | inr b' => h.increasing b' | inl _ | invalid => trivial⟩
 
-instance instIncreasingInvalid : Increasing SI (invalid : Csum α β) := ⟨fun _ => trivial⟩
+instance instIncreasingInvalid : Increasing (invalid : Csum α β) := ⟨fun _ => trivial⟩
 
 theorem ordNR_inl {n : SI} {a a' : α} (h : inl (β := β) a ≼ₒ*{n} inl a') : a ≼ₒ*{n} a' := h.imp id id
 theorem ordNR_inr {n : SI} {b b' : β} (h : inr (α := α) b ≼ₒ*{n} inr b') : b ≼ₒ*{n} b' := h.imp id id
@@ -387,10 +389,10 @@ instance instORA : ORA SI (Csum α β) where
 
 end
 
-instance instOrderRefl [RA α] [ORA SI α] [RA β] [ORA SI β] [OrderRefl SI α] [OrderRefl SI β] : OrderRefl SI (Csum α β) where
+instance instOrderRefl [RA α] [ORA α] [RA β] [ORA β] [OrderRefl α] [OrderRefl β] : OrderRefl (Csum α β) where
   ord_refl | inl a => ord_refl a | inr b => ord_refl b | invalid => trivial
 
-instance instIncOrd [RA α] [ORA SI α] [RA β] [ORA SI β] [IncOrd SI α] [IncOrd SI β] : IncOrd SI (Csum α β) :=
+instance instIncOrd [RA α] [ORA α] [RA β] [ORA β] [IncOrd α] [IncOrd β] : IncOrd (Csum α β) :=
   IncOrd.of_increasing fun
     | inl a => increasing_inl_iff.mpr (IncOrd.increasing a)
     | inr b => increasing_inr_iff.mpr (IncOrd.increasing b)
@@ -403,15 +405,15 @@ instance instIncOrd [RA α] [ORA SI α] [RA β] [ORA SI β] [IncOrd SI α] [IncO
 #rocq_ignore csum_valid_instance "Use ORA instance"
 
 @[rocq_alias Cinl_valid]
-theorem inl_valid [RA α] [ORA SI α] [RA β] [ORA SI β] {a : α} : ✓[SI] (inl (β := β) a) ↔ ✓[SI] a := .rfl
+theorem inl_valid [RA α] [ORA α] [RA β] [ORA β] {a : α} : ✓ (inl (β := β) a) ↔ ✓ a := .rfl
 
 @[rocq_alias Cinr_valid]
-theorem inr_valid [RA α] [ORA SI α] [RA β] [ORA SI β] {b : β} : ✓[SI] (inr (α := α) b) ↔ ✓[SI] b := .rfl
+theorem inr_valid [RA α] [ORA α] [RA β] [ORA β] {b : β} : ✓ (inr (α := α) b) ↔ ✓ b := .rfl
 
 /-! ## ORA Discrete -/
 
 @[rocq_alias csum_cmra_discrete]
-instance [RA α] [ORA SI α] [RA β] [ORA SI β] [ORA.Discrete SI α] [ORA.Discrete SI β] : ORA.Discrete SI (Csum α β) where
+instance [RA α] [ORA α] [RA β] [ORA β] [ORA.Discrete α] [ORA.Discrete β] : ORA.Discrete (Csum α β) where
   discrete_valid {x} hv :=
     match x with
     | inl a => discrete_valid (x := a) hv
@@ -433,24 +435,24 @@ instance [RA α] [RA β] {b : β} [CoreId b] : CoreId (inr (α := α) b) where
 /-! ## Exclusive -/
 
 @[rocq_alias Cinl_exclusive]
-instance [RA α] [ORA SI α] [RA β] [ORA SI β] {a : α} [Exclusive SI a] : Exclusive SI (inl (β := β) a) where
+instance [RA α] [ORA α] [RA β] [ORA β] {a : α} [Exclusive a] : Exclusive (inl (β := β) a) where
   exclusive0_l | inl a' => Exclusive.exclusive0_l a' | inr _ | invalid => id
 
 @[rocq_alias Cinr_exclusive]
-instance [RA α] [ORA SI α] [RA β] [ORA SI β] {b : β} [Exclusive SI b] : Exclusive SI (inr (α := α) b) where
+instance [RA α] [ORA α] [RA β] [ORA β] {b : β} [Exclusive b] : Exclusive (inr (α := α) b) where
   exclusive0_l | inr b' => Exclusive.exclusive0_l b' | inl _ | invalid => id
 
 /-! ## Cancelable -/
 
 @[rocq_alias Cinl_cancelable]
-instance [RA α] [ORA SI α] [RA β] [ORA SI β] {a : α} [Cancelable SI a] : Cancelable SI (inl (β := β) a) where
+instance [RA α] [ORA α] [RA β] [ORA β] {a : α} [Cancelable a] : Cancelable (inl (β := β) a) where
   cancelableN {n : SI} {y z} hv he := by
     cases y with
     | inl => cases z with | inl => exact cancelableN (x := a) hv he | _ => exact he
     | _ => trivial
 
 @[rocq_alias Cinr_cancelable]
-instance [RA α] [ORA SI α] [RA β] [ORA SI β] {b : β} [Cancelable SI b] : Cancelable SI (inr (α := α) b) where
+instance [RA α] [ORA α] [RA β] [ORA β] {b : β} [Cancelable b] : Cancelable (inr (α := α) b) where
   cancelableN {n : SI} {y z} hv he := by
     cases y with
     | inr => cases z with | inr => exact cancelableN (x := b) hv he | _ => exact he
@@ -459,44 +461,44 @@ instance [RA α] [ORA SI α] [RA β] [ORA SI β] {b : β} [Cancelable SI b] : Ca
 /-! ## IdFree -/
 
 @[rocq_alias Cinl_id_free]
-instance [RA α] [ORA SI α] [RA β] [ORA SI β] {a : α} [IdFree SI a] : IdFree SI (inl (β := β) a) where
+instance [RA α] [ORA α] [RA β] [ORA β] {a : α} [IdFree a] : IdFree (inl (β := β) a) where
   id_free0_r y hv he := by cases y with | inl a' => exact id_free0_r (x := a) _ hv he | _ => trivial
 
 @[rocq_alias Cinr_id_free]
-instance [RA α] [ORA SI α] [RA β] [ORA SI β] {b : β} [IdFree SI b] : IdFree SI (inr (α := α) b) where
+instance [RA α] [ORA α] [RA β] [ORA β] {b : β} [IdFree b] : IdFree (inr (α := α) b) where
   id_free0_r y hv he := by cases y with | inr b' => exact id_free0_r (x := b) _ hv he | _ => trivial
 
 /-! ## Order -/
 
-theorem ord [RA α] [ORA SI α] [RA β] [ORA SI β] {x y : Csum α β} :
-    x ≼ₒ[SI] y ↔ y = invalid ∨
-      (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼ₒ[SI] a') ∨
-      (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼ₒ[SI] b') := by
+theorem ord [RA α] [ORA α] [RA β] [ORA β] {x y : Csum α β} :
+    x ≼ₒ y ↔ y = invalid ∨
+      (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼ₒ a') ∨
+      (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼ₒ b') := by
   change Csum.Order x y ↔ _
   cases x <;> cases y <;> simp [Csum.Order]
 
-theorem inl_ord [RA α] [ORA SI α] [RA β] [ORA SI β] {a a' : α} : (inl (β := β) a) ≼ₒ[SI] inl a' ↔ a ≼ₒ[SI] a' := .rfl
+theorem inl_ord [RA α] [ORA α] [RA β] [ORA β] {a a' : α} : (inl (β := β) a) ≼ₒ inl a' ↔ a ≼ₒ a' := .rfl
 
-theorem inr_ord [RA α] [ORA SI α] [RA β] [ORA SI β] {b b' : β} : (inr (α := α) b) ≼ₒ[SI] inr b' ↔ b ≼ₒ[SI] b' := .rfl
+theorem inr_ord [RA α] [ORA α] [RA β] [ORA β] {b b' : β} : (inr (α := α) b) ≼ₒ inr b' ↔ b ≼ₒ b' := .rfl
 
-theorem invalid_ord [RA α] [ORA SI α] [RA β] [ORA SI β] (x : Csum α β) : x ≼ₒ[SI] invalid := by cases x <;> trivial
+theorem invalid_ord [RA α] [ORA α] [RA β] [ORA β] (x : Csum α β) : x ≼ₒ invalid := by cases x <;> trivial
 
-theorem ordN [RA α] [ORA SI α] [RA β] [ORA SI β] {n : SI} {x y : Csum α β} :
+theorem ordN [RA α] [ORA α] [RA β] [ORA β] {n : SI} {x y : Csum α β} :
     x ≼ₒ{n} y ↔ y = invalid ∨
       (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼ₒ{n} a') ∨
       (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼ₒ{n} b') := by
   change Csum.OrderN n x y ↔ _
   cases x <;> cases y <;> simp [Csum.OrderN]
 
-theorem some_ord [RA α] [ORA SI α] [RA β] [ORA SI β] {x y : Csum α β} :
-    some x ≼ₒ[SI] some y ↔ y = invalid ∨
-      (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼ₒ[SI] some a') ∨
-      (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ₒ[SI] some b') := by
+theorem some_ord [RA α] [ORA α] [RA β] [ORA β] {x y : Csum α β} :
+    some x ≼ₒ some y ↔ y = invalid ∨
+      (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼ₒ some a') ∨
+      (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ₒ some b') := by
   rw [Option.some_ord_some_iff]
   change _ ∨ Csum.Order x y ↔ _
   cases x <;> cases y <;> simp [Csum.Order, Option.some_ord_some_iff]
 
-theorem some_ordN [RA α] [ORA SI α] [RA β] [ORA SI β] {n : SI} {x y : Csum α β} :
+theorem some_ordN [RA α] [ORA α] [RA β] [ORA β] {n : SI} {x y : Csum α β} :
     some x ≼ₒ{n} some y ↔ y = invalid ∨
       (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼ₒ{n} some a') ∨
       (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ₒ{n} some b') := by
@@ -533,7 +535,7 @@ theorem invalid_included [RA α] [RA β] (x : Csum α β) : x ≼ invalid :=
   ⟨invalid, by cases x <;> rfl⟩
 
 @[rocq_alias csum_includedN]
-theorem includedN [RA α] [ORA SI α] [RA β] [ORA SI β] {n : SI} {x y : Csum α β} :
+theorem includedN [RA α] [ORA α] [RA β] [ORA β] {n : SI} {x y : Csum α β} :
     x ≼{n} y ↔ y = invalid ∨
       (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼{n} a') ∨
       (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼{n} b') := by
@@ -552,7 +554,7 @@ theorem some_included [RA α] [RA β] {x y : Csum α β} :
   cases x <;> cases y <;> simp [Option.some_inc_some_iff]
 
 @[rocq_alias Some_csum_includedN]
-theorem some_includedN [RA α] [ORA SI α] [RA β] [ORA SI β] {n : SI} {x y : Csum α β} :
+theorem some_includedN [RA α] [ORA α] [RA β] [ORA β] {n : SI} {x y : Csum α β} :
     some x ≼{n} some y ↔ y = invalid ∨
       (∃ a a', x = inl a ∧ y = inl a' ∧ some a ≼{n} some a') ∨
       (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼{n} some b') := by
@@ -562,7 +564,7 @@ theorem some_includedN [RA α] [ORA SI α] [RA β] [ORA SI β] {n : SI} {x y : C
 
 /-! ## Updates -/
 
-instance instOrdInc [RA α] [ORA SI α] [RA β] [ORA SI β] [OrdInc SI α] [OrdInc SI β] : OrdInc SI (Csum α β) where
+instance instOrdInc [RA α] [ORA α] [RA β] [ORA β] [OrdInc α] [OrdInc β] : OrdInc (Csum α β) where
   ord_inc h := included.mpr <| (ord.mp h).imp id fun h => h.imp
     (fun ⟨a, a', e₁, e₂, h⟩ => ⟨a, a', e₁, e₂, OrdInc.ord_inc h⟩)
     (fun ⟨b, b', e₁, e₂, h⟩ => ⟨b, b', e₁, e₂, OrdInc.ord_inc h⟩)
@@ -570,25 +572,25 @@ instance instOrdInc [RA α] [ORA SI α] [RA β] [ORA SI β] [OrdInc SI α] [OrdI
     (fun ⟨a, a', e₁, e₂, h⟩ => ⟨a, a', e₁, e₂, OrdInc.ordN_incN h⟩)
     (fun ⟨b, b', e₁, e₂, h⟩ => ⟨b, b', e₁, e₂, OrdInc.ordN_incN h⟩)
 
-instance instIsInc [RA α] [ORA SI α] [RA β] [ORA SI β] [IsInc SI α] [IsInc SI β] : IsInc SI (Csum α β) := {}
+instance instIsInc [RA α] [ORA α] [RA β] [ORA β] [IsInc α] [IsInc β] : IsInc (Csum α β) := {}
 
 @[rocq_alias csum_update_l]
-theorem update_l [RA α] [ORA SI α] [RA β] [ORA SI β] {a₁ a₂ : α}
-    (h : a₁ ~~>[SI] a₂) : (inl (β := β) a₁) ~~>[SI] inl a₂ := by
+theorem update_l [RA α] [ORA α] [RA β] [ORA β] {a₁ a₂ : α}
+    (h : a₁ ~~> a₂) : (inl (β := β) a₁) ~~> inl a₂ := by
   intro n mz hv; cases mz with
   | none => exact h n none hv
   | some z => cases z with | inl a' => exact h n (some a') hv | _ => exact hv.elim
 
 @[rocq_alias csum_update_r]
-theorem update_r [RA α] [ORA SI α] [RA β] [ORA SI β] {b₁ b₂ : β}
-    (h : b₁ ~~>[SI] b₂) : (inr (α := α) b₁) ~~>[SI] inr b₂ := by
+theorem update_r [RA α] [ORA α] [RA β] [ORA β] {b₁ b₂ : β}
+    (h : b₁ ~~> b₂) : (inr (α := α) b₁) ~~> inr b₂ := by
   intro n mz hv; cases mz with
   | none => exact h n none hv
   | some z => cases z with | inr b' => exact h n (some b') hv | _ => exact hv.elim
 
 @[rocq_alias csum_updateP_l]
-theorem updateP_l [RA α] [ORA SI α] [RA β] [ORA SI β] {P : α → Prop} {Q : Csum α β → Prop} {a : α}
-    (h : a ~~>:[SI] P) (hPQ : ∀ a', P a' → Q (inl a')) : (inl (β := β) a) ~~>:[SI] Q := by
+theorem updateP_l [RA α] [ORA α] [RA β] [ORA β] {P : α → Prop} {Q : Csum α β → Prop} {a : α}
+    (h : a ~~>: P) (hPQ : ∀ a', P a' → Q (inl a')) : (inl (β := β) a) ~~>: Q := by
   intro n mz hv; cases mz with
   | none => obtain ⟨c, hc, hvc⟩ := h n none hv; exact ⟨inl c, hPQ c hc, hvc⟩
   | some z => cases z with
@@ -596,8 +598,8 @@ theorem updateP_l [RA α] [ORA SI α] [RA β] [ORA SI β] {P : α → Prop} {Q :
     | _ => exact hv.elim
 
 @[rocq_alias csum_updateP_r]
-theorem updateP_r [RA α] [ORA SI α] [RA β] [ORA SI β] {P : β → Prop} {Q : Csum α β → Prop} {b : β}
-    (h : b ~~>:[SI] P) (hPQ : ∀ b', P b' → Q (inr b')) : (inr (α := α) b) ~~>:[SI] Q := by
+theorem updateP_r [RA α] [ORA α] [RA β] [ORA β] {P : β → Prop} {Q : Csum α β → Prop} {b : β}
+    (h : b ~~>: P) (hPQ : ∀ b', P b' → Q (inr b')) : (inr (α := α) b) ~~>: Q := by
   intro n mz hv; cases mz with
   | none => obtain ⟨c, hc, hvc⟩ := h n none hv; exact ⟨inr c, hPQ c hc, hvc⟩
   | some z => cases z with
@@ -605,29 +607,29 @@ theorem updateP_r [RA α] [ORA SI α] [RA β] [ORA SI β] {P : β → Prop} {Q :
     | _ => exact hv.elim
 
 @[rocq_alias csum_updateP'_l]
-theorem updateP'_l [RA α] [ORA SI α] [RA β] [ORA SI β] {P : α → Prop} {a : α}
-    (h : a ~~>:[SI] P) : (inl (β := β) a) ~~>:[SI] fun m' => ∃ a', m' = inl a' ∧ P a' :=
+theorem updateP'_l [RA α] [ORA α] [RA β] [ORA β] {P : α → Prop} {a : α}
+    (h : a ~~>: P) : (inl (β := β) a) ~~>: fun m' => ∃ a', m' = inl a' ∧ P a' :=
   updateP_l h fun a' ha' => ⟨a', rfl, ha'⟩
 
 @[rocq_alias csum_updateP'_r]
-theorem updateP'_r [RA α] [ORA SI α] [RA β] [ORA SI β] {P : β → Prop} {b : β}
-    (h : b ~~>:[SI] P) : (inr (α := α) b) ~~>:[SI] fun m' => ∃ b', m' = inr b' ∧ P b' :=
+theorem updateP'_r [RA α] [ORA α] [RA β] [ORA β] {P : β → Prop} {b : β}
+    (h : b ~~>: P) : (inr (α := α) b) ~~>: fun m' => ∃ b', m' = inr b' ∧ P b' :=
   updateP_r h fun b' hb' => ⟨b', rfl, hb'⟩
 
 /-! ## Local Updates -/
 
 @[rocq_alias csum_local_update_l]
-theorem local_update_l [RA α] [ORA SI α] [RA β] [ORA SI β] {a₁ a₂ a₁' a₂' : α}
-    (h : (a₁, a₂) ~l~>[SI] (a₁', a₂')) :
-    ((inl (β := β) a₁, inl a₂) ~l~>[SI] (inl a₁', inl a₂')) := by
+theorem local_update_l [RA α] [ORA α] [RA β] [ORA β] {a₁ a₂ a₁' a₂' : α}
+    (h : (a₁, a₂) ~l~> (a₁', a₂')) :
+    ((inl (β := β) a₁, inl a₂) ~l~> (inl a₁', inl a₂')) := by
   intro n mf hv he; cases mf with
   | none => exact h n none hv he
   | some z => cases z with | inl a' => exact h n (some a') hv he | _ => exact he.elim
 
 @[rocq_alias csum_local_update_r]
-theorem local_update_r [RA α] [ORA SI α] [RA β] [ORA SI β] {b₁ b₂ b₁' b₂' : β}
-    (h : (b₁, b₂) ~l~>[SI] (b₁', b₂')) :
-    ((inr (α := α) b₁, inr b₂) ~l~>[SI] (inr b₁', inr b₂')) := by
+theorem local_update_r [RA α] [ORA α] [RA β] [ORA β] {b₁ b₂ b₁' b₂' : β}
+    (h : (b₁, b₂) ~l~> (b₁', b₂')) :
+    ((inr (α := α) b₁, inr b₂) ~l~> (inr b₁', inr b₂')) := by
   intro n mf hv he; cases mf with
   | none => exact h n none hv he
   | some z => cases z with | inr b' => exact h n (some b') hv he | _ => exact he.elim
@@ -655,7 +657,7 @@ theorem map_ext (f f' : α → α') (g g' : β → β')
   cases x <;> simp [hf, hg]
 
 @[rocq_alias csum_map_cmra_ne]
-theorem map_ne [OFE SI α] [OFE SI α'] [OFE SI β] [OFE SI β'] {n : SI}
+theorem map_ne [OFE α] [OFE α'] [OFE β] [OFE β'] {n : SI}
     {f f' : α → α'} (hf : ∀ ⦃x₁ x₂⦄, x₁ ≡{n}≡ x₂ → f x₁ ≡{n}≡ f' x₂)
     {g g' : β → β'} (hg : ∀ ⦃x₁ x₂⦄, x₁ ≡{n}≡ x₂ → g x₁ ≡{n}≡ g' x₂)
     {x y : Csum α β} (hxy : x ≡{n}≡ y) :
@@ -665,16 +667,16 @@ theorem map_ne [OFE SI α] [OFE SI α'] [OFE SI β] [OFE SI β'] {n : SI}
   | inr => cases y with | inr => simp [map]; exact hg hxy | _ => exact hxy
   | invalid => cases y with | invalid => trivial | _ => exact hxy
 
-@[rocq_alias csumO_map]
-def oMap [OFE SI α] [OFE SI α'] [OFE SI β] [OFE SI β'] (f : α -n>[SI] α') (g : β -n>[SI] β') :
-    Csum α β -n>[SI] Csum α' β' where
+@[indexed, rocq_alias csumO_map]
+def oMap [OFE α] [OFE α'] [OFE β] [OFE β'] (f : α -n> α') (g : β -n> β') :
+    Csum α β -n> Csum α' β' where
   f := map f g
   ne := ⟨fun {_n} {_x₁} {_x₂} hxy =>
     map_ne (fun _ _ h => f.ne.1 h) (fun _ _ h => g.ne.1 h) hxy⟩
 
 @[rocq_alias csumO_map_ne]
-theorem oMap_ne [OFE SI α] [OFE SI α'] [OFE SI β] [OFE SI β'] :
-    NonExpansive₂ SI (oMap (SI := SI) (α := α) (α' := α') (β := β) (β' := β')) where
+theorem oMap_ne [OFE α] [OFE α'] [OFE β] [OFE β'] :
+    NonExpansive₂ (oMap (α := α) (α' := α') (β := β) (β' := β')) where
   ne _ _ _ hf _ _ hg x := by
     cases x with
     | inl => simp [oMap, map]; exact hf _
@@ -682,12 +684,12 @@ theorem oMap_ne [OFE SI α] [OFE SI α'] [OFE SI β] [OFE SI β'] :
     | invalid => trivial
 
 @[rocq_alias csumRF]
-abbrev OF (Fa Fb : COFE.OFunctorPre SI) : COFE.OFunctorPre SI :=
+abbrev OF (Fa Fb : COFE.OFunctorPre) : COFE.OFunctorPre :=
   fun A B _ _ => Csum (Fa A B) (Fb A B)
 
 @[rocq_alias csum_map_cmra_morphism]
-def cMap [RA α] [ORA SI α] [RA α'] [ORA SI α'] [RA β] [ORA SI β] [RA β'] [ORA SI β']
-    (fa : α -C>[SI] α') (fb : β -C>[SI] β') : Csum α β -C>[SI] Csum α' β' where
+def cMap [RA α] [ORA α] [RA α'] [ORA α'] [RA β] [ORA β] [RA β'] [ORA β']
+    (fa : α -C> α') (fb : β -C> β') : Csum α β -C> Csum α' β' where
   f := map fa fb
   ne := (oMap fa.toHom fb.toHom).ne
   validN {n : SI} {x} hv := by cases x with
@@ -721,9 +723,9 @@ def cMap [RA α] [ORA SI α] [RA α'] [ORA SI α'] [RA β] [ORA SI β] [RA β'] 
     cases x with
     | inl a => exact increasing_inl_iff.mpr (fa.increasing (increasing_inl_iff.mp h))
     | inr b => exact increasing_inr_iff.mpr (fb.increasing (increasing_inr_iff.mp h))
-    | invalid => exact (inferInstance : Increasing SI (invalid : Csum α' β'))
+    | invalid => exact (inferInstance : Increasing (invalid : Csum α' β'))
 
-instance {Fa Fb} [RFunctor SI Fa] [RFunctor SI Fb] : RFunctor SI (OF Fa Fb) where
+instance {Fa Fb} [RFunctor Fa] [RFunctor Fb] : RFunctor (OF Fa Fb) where
   map f g := cMap (RFunctor.map f g) (RFunctor.map f g)
   map_ne.ne _ _ _ hf _ _ hg x := by
     cases x <;> simp [cMap, map] <;> exact RFunctor.map_ne.ne hf hg _
@@ -731,13 +733,13 @@ instance {Fa Fb} [RFunctor SI Fa] [RFunctor SI Fb] : RFunctor SI (OF Fa Fb) wher
   map_comp f g f' g' x := by
     cases x <;> simp [cMap, map] <;> exact RFunctor.map_comp f g f' g' _
 
-instance instRFunctorAffine {Fa Fb} [RFunctor SI Fa] [RFunctor SI Fb] [RFunctorAffine SI Fa] [RFunctorAffine SI Fb] :
-    RFunctorAffine SI (OF Fa Fb) where
+instance instRFunctorAffine {Fa Fb} [RFunctor Fa] [RFunctor Fb] [RFunctorAffine Fa] [RFunctorAffine Fb] :
+    RFunctorAffine (OF Fa Fb) where
   affine := inferInstance
 
 @[rocq_alias csumRF_contractive]
-instance {Fa Fb} [RFunctorContractive SI Fa] [RFunctorContractive SI Fb] :
-    RFunctorContractive SI (OF Fa Fb) where
+instance {Fa Fb} [RFunctorContractive Fa] [RFunctorContractive Fb] :
+    RFunctorContractive (OF Fa Fb) where
   map_contractive.1 {n : SI} {x y} hKL z := by
     cases z <;> first | exact RFunctorContractive.map_contractive.1 hKL _ | trivial
 

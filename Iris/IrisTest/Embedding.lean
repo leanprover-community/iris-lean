@@ -8,6 +8,8 @@ module
 public import Iris.BI
 public import Iris.ProofMode
 
+local stepindex Nat
+
 @[expose] public section
 
 namespace IrisTest
@@ -285,20 +287,20 @@ end Frame
 
 section
 
-variable [BI PROP1] [BIStepIndexed Nat PROP1] [Sbi Nat PROP1] [BI PROP2] [BIStepIndexed Nat PROP2] [Sbi Nat PROP2]
-  [BiEmbed PROP1 PROP2] [BiEmbedSbi Nat PROP1 PROP2]
+variable [BI PROP1] [BIStepIndexed PROP1] [Sbi PROP1] [BI PROP2] [BIStepIndexed PROP2] [Sbi PROP2]
+  [BiEmbed PROP1 PROP2] [BiEmbedSbi PROP1 PROP2]
 
 /- The instance `frame_eq_embed` is used. -/
 /-- info:
-  solution: Frame false iprop(a ≡[Nat] b) ⎡a ≡[Nat] b ∗ P⎤ ⎡P⎤,
+  solution: Frame false iprop(a ≡ b) ⎡a ≡ b ∗ P⎤ ⎡P⎤,
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
-variable [OFE Nat A] (a b : A) (P : PROP1) in
-#ipm_synth Frame (PROP := PROP2) false iprop(a ≡[Nat] b) iprop(⎡(a ≡[Nat] b) ∗ P⎤) _
+variable [OFE A] (a b : A) (P : PROP1) in
+#ipm_synth Frame (PROP := PROP2) false iprop(a ≡ b) iprop(⎡(a ≡ b) ∗ P⎤) _
 
-example {A : Type _} [OFE Nat A] (x y : A) (P Q : PROP1) (φ ψ : Prop) (hψ : ψ) :
-    □ ⎡P⎤ ∗ ⌜φ⌝ ∗ (x ≡[Nat] y) ∗ ⎡Q⎤ ⊢@{PROP2} ⎡□ P⎤ ∗ ⎡(⌜φ⌝ ∗ ⌜ψ⌝ : PROP1)⎤ ∗ ⎡(x ≡[Nat] y) ∗ Q⎤ := by
+example {A : Type _} [OFE A] (x y : A) (P Q : PROP1) (φ ψ : Prop) (hψ : ψ) :
+    □ ⎡P⎤ ∗ ⌜φ⌝ ∗ (x ≡ y) ∗ ⎡Q⎤ ⊢@{PROP2} ⎡□ P⎤ ∗ ⎡(⌜φ⌝ ∗ ⌜ψ⌝ : PROP1)⎤ ∗ ⎡(x ≡ y) ∗ Q⎤ := by
   iintro ⟨#H1, H2, H3, H4⟩
   -- `frame_embed`: cancelling `⎡P⎤` against `⎡□ P⎤`
   iframe H1

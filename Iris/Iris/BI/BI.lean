@@ -13,6 +13,7 @@ public import Iris.BI.BIBase
 
 
 variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris
 open Iris.Std OFE
@@ -84,22 +85,22 @@ connectives, and the laws that only hold for finite step indices. All other BI l
 live in `BI PROP`. This mixin takes `BI PROP` as a parameter: an SI-indexed class never extends an
 SI-free one, so no projection out of it has an undetermined step index. -/
 @[indexed, rocq_alias bi_cofe]
-class BIStepIndexed (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] extends COFE SI PROP where
-  and_ne : OFE.NonExpansive₂ SI (BI.BIBase.and (PROP := PROP))
-  or_ne : OFE.NonExpansive₂ SI (BI.BIBase.or (PROP := PROP))
-  imp_ne : OFE.NonExpansive₂ SI (BI.BIBase.imp (PROP := PROP))
+class BIStepIndexed (SI : stepindex (Type _)) [SIdx SI] (PROP : Type _) [BI PROP] extends COFE PROP where
+  and_ne : OFE.NonExpansive₂ (BI.BIBase.and (PROP := PROP))
+  or_ne : OFE.NonExpansive₂ (BI.BIBase.or (PROP := PROP))
+  imp_ne : OFE.NonExpansive₂ (BI.BIBase.imp (PROP := PROP))
   sForall_ne {n : SI} {P₁ P₂ : PROP → Prop} :
     liftRel (· ≡{n}≡ ·) P₁ P₂ → BI.BIBase.sForall P₁ ≡{n}≡ BI.BIBase.sForall P₂
   sExists_ne {n : SI} {P₁ P₂ : PROP → Prop} :
     liftRel (· ≡{n}≡ ·) P₁ P₂ → BI.BIBase.sExists P₁ ≡{n}≡ BI.BIBase.sExists P₂
-  sep_ne : OFE.NonExpansive₂ SI (BI.BIBase.sep (PROP := PROP))
-  wand_ne : OFE.NonExpansive₂ SI (BI.BIBase.wand (PROP := PROP))
-  persistently_ne : OFE.NonExpansive SI (BI.BIBase.persistently (PROP := PROP))
-  later_ne : OFE.NonExpansive SI (BI.BIBase.later (PROP := PROP))
+  sep_ne : OFE.NonExpansive₂ (BI.BIBase.sep (PROP := PROP))
+  wand_ne : OFE.NonExpansive₂ (BI.BIBase.wand (PROP := PROP))
+  persistently_ne : OFE.NonExpansive (BI.BIBase.persistently (PROP := PROP))
+  later_ne : OFE.NonExpansive (BI.BIBase.later (PROP := PROP))
 
 /-- The BI laws that only hold for finite step indices (Iris !1256: `later_exist_false`, `later_sep_1`,
 stated there under `SIdxFinite SI`). SI-free: a model whose step index is finite declares it, e.g.
-`instance [SIdxFinite SI] : BILaterFinite (UPred SI M)`, so lemmas need no step index. -/
+`instance [SIdxFinite SI] : BILaterFinite (UPred M)`, so lemmas need no step index. -/
 class BILaterFinite (PROP : Type _) [BI PROP] : Prop where
   later_sExists_false {Φ : PROP → Prop} :
     (▷ BI.BIBase.sExists Φ) ⊢ ▷ False ∨ ∃ p, ⌜Φ p⌝ ∧ ▷ p
@@ -109,21 +110,21 @@ namespace BI
 
 /-! Forwarders, so that `BI.and_ne`, `BI.later_sep_1`, … keep their names. -/
 section StepIndexedForward
-variable {PROP : Type _} [BI PROP] [BIStepIndexed SI PROP]
-theorem and_ne : OFE.NonExpansive₂ SI (BIBase.and (PROP := PROP)) := BIStepIndexed.and_ne
-theorem or_ne : OFE.NonExpansive₂ SI (BIBase.or (PROP := PROP)) := BIStepIndexed.or_ne
-theorem imp_ne : OFE.NonExpansive₂ SI (BIBase.imp (PROP := PROP)) := BIStepIndexed.imp_ne
+variable {PROP : Type _} [BI PROP] [BIStepIndexed PROP]
+theorem and_ne : OFE.NonExpansive₂ (BIBase.and (PROP := PROP)) := BIStepIndexed.and_ne
+theorem or_ne : OFE.NonExpansive₂ (BIBase.or (PROP := PROP)) := BIStepIndexed.or_ne
+theorem imp_ne : OFE.NonExpansive₂ (BIBase.imp (PROP := PROP)) := BIStepIndexed.imp_ne
 theorem sForall_ne {n : SI} {P₁ P₂ : PROP → Prop} :
     liftRel (· ≡{n}≡ ·) P₁ P₂ → BIBase.sForall P₁ ≡{n}≡ BIBase.sForall P₂ :=
   BIStepIndexed.sForall_ne
 theorem sExists_ne {n : SI} {P₁ P₂ : PROP → Prop} :
     liftRel (· ≡{n}≡ ·) P₁ P₂ → BIBase.sExists P₁ ≡{n}≡ BIBase.sExists P₂ :=
   BIStepIndexed.sExists_ne
-theorem sep_ne : OFE.NonExpansive₂ SI (BIBase.sep (PROP := PROP)) := BIStepIndexed.sep_ne
-theorem wand_ne : OFE.NonExpansive₂ SI (BIBase.wand (PROP := PROP)) := BIStepIndexed.wand_ne
-theorem persistently_ne : OFE.NonExpansive SI (BIBase.persistently (PROP := PROP)) :=
+theorem sep_ne : OFE.NonExpansive₂ (BIBase.sep (PROP := PROP)) := BIStepIndexed.sep_ne
+theorem wand_ne : OFE.NonExpansive₂ (BIBase.wand (PROP := PROP)) := BIStepIndexed.wand_ne
+theorem persistently_ne : OFE.NonExpansive (BIBase.persistently (PROP := PROP)) :=
   BIStepIndexed.persistently_ne
-theorem later_ne : OFE.NonExpansive SI (BIBase.later (PROP := PROP)) := BIStepIndexed.later_ne
+theorem later_ne : OFE.NonExpansive (BIBase.later (PROP := PROP)) := BIStepIndexed.later_ne
 end StepIndexedForward
 
 theorem later_sExists_false {PROP : Type _} [BI PROP] [BILaterFinite PROP] {Φ : PROP → Prop} :
@@ -234,7 +235,7 @@ attribute [rocq_alias bi.later_false_em] BI.later_false_em
 
 section PersistentlyDiscrete
 
-variable {PROP : Type _} [BIBase PROP] [COFE SI PROP]
+variable {PROP : Type _} [BIBase PROP] [COFE PROP]
   (entails_refl : ∀ {P : PROP}, P ⊢ P)
   (entails_trans : ∀ {P Q R : PROP}, (P ⊢ Q) → (Q ⊢ R) → P ⊢ R)
   (equiv_iff : ∀ {P Q : PROP}, (P = Q) ↔ P ⊣⊢ Q)

@@ -14,6 +14,7 @@ public section
 
 
 variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris.BI
 
@@ -76,7 +77,7 @@ theorem bigSepL_eq_of_forall_eq {Φ Ψ : Nat → A → PROP} {l : List A} (h : �
   bigOpL_eq_of_forall_eq h
 
 @[rocq_alias big_sepL_ne]
-theorem bigSepL_dist [BIStepIndexed SI PROP] {Φ Ψ : Nat → A → PROP} {l : List A} {n : SI}
+theorem bigSepL_dist [BIStepIndexed PROP] {Φ Ψ : Nat → A → PROP} {l : List A} {n : SI}
     (h : ∀ {k x}, l[k]? = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([∗list] k ↦ x ∈ l, Φ k x) ≡{n}≡ [∗list] k ↦ x ∈ l, Ψ k x :=
   bigOpL_dist h
@@ -624,7 +625,7 @@ theorem bigSepL2_eqv_of_forall_eqv {Φ Ψ : Nat → A → B → PROP} {l1 : List
   bigSepL2_eqv fun _ _ => h
 
 @[rocq_alias big_sepL2_ne]
-theorem bigSepL2_dist [BIStepIndexed SI PROP] {Φ Ψ : Nat → A → B → PROP} {l1 : List A} {l2 : List B} {n : SI}
+theorem bigSepL2_dist [BIStepIndexed PROP] {Φ Ψ : Nat → A → B → PROP} {l1 : List A} {l2 : List B} {n : SI}
     (h : ∀ {k x1 x2}, l1[k]? = some x1 → l2[k]? = some x2 → Φ k x1 x2 ≡{n}≡ Ψ k x1 x2) :
     ([∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) ≡{n}≡ ([∗list] k ↦ x1;x2 ∈ l1;l2, Ψ k x1 x2) :=
   match l1, l2 with
@@ -1207,7 +1208,7 @@ theorem bigSepL2_lookup_acc_impl {Φ : Nat → A → B → PROP} {l1 : List A} {
       (and_intro (pure_intro hki) .rfl).trans imp_elim_right
 
 @[rocq_alias big_sepL2_ne_2]
-theorem bigSepL2_dist_2 [BIStepIndexed SI PROP] [OFE SI A] [OFE SI B]
+theorem bigSepL2_dist_2 [BIStepIndexed PROP] [OFE A] [OFE B]
     {Φ Ψ : Nat → A → B → PROP} {l1 l1' : List A} {l2 l2' : List B} {n : SI}
     (hl1 : l1.length = l1'.length) (hl2 : l2.length = l2'.length)
     (hel1 : ∀ {k : Nat} {x x' : A}, l1[k]? = some x → l1'[k]? = some x' → x ≡{n}≡ x')

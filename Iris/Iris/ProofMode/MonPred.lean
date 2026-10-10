@@ -14,6 +14,7 @@ public import Iris.ProofMode.SynthInstance
 
 
 variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris.ProofMode
 open BI Iris.Std MonPred
@@ -1072,14 +1073,14 @@ end BIInstances
 
 section SbiInstances
 
-variable {I : BiIndex} {PROP : Type _} [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] [SIdxFinite SI]
+variable {I : BiIndex} {PROP : Type _} [BI PROP] [BIStepIndexed PROP] [Sbi PROP] [SIdxFinite SI]
 
 /-! ### IntoInternalEq -/
 
 @[rocq_alias into_internal_eq_monPred_at]
-instance intoInternalEq_monPred_at {A} [OFE SI A] (x y : A)
-    (P : MonPred I PROP) (i : I.car) [h : IntoInternalEq SI P x y] :
-    IntoInternalEq SI (P.monPred_at i) x y where
+instance intoInternalEq_monPred_at {A} [OFE A] (x y : A)
+    (P : MonPred I PROP) (i : I.car) [h : IntoInternalEq P x y] :
+    IntoInternalEq (P.monPred_at i) x y where
   into_internal_eq := (entails_at.mp h.into_internal_eq i).trans (monPred_at_internal_eq i x y).mp
 
 /-! ### FromForall -/
@@ -1104,9 +1105,9 @@ instance intoForall_monPred_at_plainly [BIPlainly PROP] (P : MonPred I PROP) (Φ
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias make_monPred_at_internal_eq]
-instance makeMonPredAt_internalEq {A} [OFE SI A] (d : MakeMonPredAt.Kind)
+instance makeMonPredAt_internalEq {A} [OFE A] (d : MakeMonPredAt.Kind)
     (i : I.car) (x y : A) :
-    MakeMonPredAt (PROP := PROP) d i iprop(x ≡[SI] y) iprop(x ≡[SI] y) where
+    MakeMonPredAt (PROP := PROP) d i iprop(x ≡ y) iprop(x ≡ y) where
   make_monPred_at := monPred_at_internal_eq i x y
 
 end SbiInstances

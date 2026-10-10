@@ -13,6 +13,7 @@ public import Iris.ProofMode
 
 
 variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris
 open Iris.Std BI OFE ProofMode
@@ -248,7 +249,7 @@ variable {PROP : Type _} [BI PROP] {Φ Ψ : Qp → PROP}
 def internalFractional (Φ : Qp → PROP) : PROP := iprop(□ ∀ p q, Φ (p + q) ∗-∗ Φ p ∗ Φ q)
 
 @[rocq_alias internal_fractional_ne]
-instance internalFractional_ne [BIStepIndexed SI PROP] : NonExpansive SI (internalFractional (PROP := PROP)) where
+instance internalFractional_ne [BIStepIndexed PROP] : NonExpansive (internalFractional (PROP := PROP)) where
   ne _ _ _ h := intuitionistically_ne.ne <|
     forall_ne fun p => forall_ne fun q => wandIff_ne.ne (h _) (sep_ne.ne (h p) (h q))
 

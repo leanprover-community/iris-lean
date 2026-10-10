@@ -13,6 +13,7 @@ public import Iris.BI.Notation
 namespace Iris.BI
 
 variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
 
 
 public section List
@@ -37,9 +38,9 @@ instance orMonoidOps [BI PROP] : MonoidOps (or (PROP := PROP)) iprop(False) wher
   op_left_id := (BiEntails.to_eq false_or)
 
 /-! Non-expansiveness of the connectives as instances (`MonoidOps` carries no step index). -/
-instance sep_ne_inst [BI PROP] [BIStepIndexed SI PROP] : NonExpansive₂ SI (sep (PROP := PROP)) := BI.sep_ne
-instance and_ne_inst [BI PROP] [BIStepIndexed SI PROP] : NonExpansive₂ SI (and (PROP := PROP)) := BI.and_ne
-instance or_ne_inst [BI PROP] [BIStepIndexed SI PROP] : NonExpansive₂ SI (or (PROP := PROP)) := BI.or_ne
+instance sep_ne_inst [BI PROP] [BIStepIndexed PROP] : NonExpansive₂ (sep (PROP := PROP)) := BI.sep_ne
+instance and_ne_inst [BI PROP] [BIStepIndexed PROP] : NonExpansive₂ (and (PROP := PROP)) := BI.and_ne
+instance or_ne_inst [BI PROP] [BIStepIndexed PROP] : NonExpansive₂ (or (PROP := PROP)) := BI.or_ne
 
 /-! ## Homomorphism helpers for OFE equivalence -/
 

@@ -11,6 +11,7 @@ public import Iris.ProofMode.Classes
 
 
 variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris.ProofMode
 open Iris.BI

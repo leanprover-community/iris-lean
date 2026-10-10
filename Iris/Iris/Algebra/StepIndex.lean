@@ -506,31 +506,44 @@ end Iris
 Code that works at one fixed step index type (e.g. HeapLang at `Nat`) writes `local stepindex Nat`
 once, and then uses the step-index-free API: `CMRA α`, `Auth α`, `✓ x`, `α -n> β`, … . The command
 records `T` as the step index of the current section (read by `stepindex%`) and opens the scope
-`Iris.StepIndexSugar`, in which
-* every `@[indexed]` declaration gets its step index (the binder of type `stepindex (Type _)`) filled
-  in with `stepindex%` when it is not given, and prints back without it;
-* the step-index-free notations (`✓ x`, `x ≼ₒ y`, `α -n> β`, `iprop(a ≡ b)`, …) are available.
-Both last until the end of the current section. -/
+`Iris.StepIndexSugar`, in which every `@[indexed]` declaration gets its step index (the binder of
+type `stepindex (Type _)`) filled in with `stepindex%` when it is not given, and prints back
+without it. Both last until the end of the current section.
+
+The step-index-free notations (`✓ x`, `x ≼ₒ y`, `α -n> β`, `x ~~> y`, `iprop(a ≡ b)`, …) are
+available everywhere, next to their `[SI]` forms: they expand to `stepindex%`, which is the step
+index of the section, or a hole (to be found by unification) outside a `local stepindex` section.
+
+Rules of thumb:
+* every definition, structure or constructor that takes a step index and is used without it is
+  `@[indexed]`; lemmas only when nothing else determines their step index (`have h := lemma`);
+* in a sugared section a positional step index counts as given only in a full application, or when
+  it is the section's own step index variable (`bi_least_fixpoint SI F`);
+* the sugar does not reach `simp [lemma]` lists, dot calls on locals (`h.lemma`) or `@C`: write the
+  step index there. -/
 
 namespace Iris.StepIndexSugar
 
 open Lean Elab Term
 
-/-- The `@[indexed]` declaration that `f` names, unless `f` is a local variable. -/
-meta def indexedHead? (f : Ident) : TermElabM (Option IndexedInfo) := do
-  if (← isLocalIdent? f).isSome then return none
+/-- The constants that `f` names (unless `f` is a local variable), with their `@[indexed]` data. -/
+meta def indexedHeads (f : Ident) : TermElabM (List (Name × Option IndexedInfo)) := do
   let table := indexedExt.getState (← getEnv)
-  let cands := (← resolveGlobalName f.getId).filterMap fun (n, fields) =>
-    if fields.isEmpty then table.find? n else none
-  match cands with
-  | [i] => return some i
-  | _ => return none
+  -- fast path: no `@[indexed]` declaration has this last name component
+  let .str _ last := f.getId.eraseMacroScopes | return []
+  unless table.lasts.contains (.mkSimple last) do return []
+  if (← isLocalIdent? f).isSome then return []
+  return (← resolveGlobalName f.getId).filterMap fun (n, fields) =>
+    if fields.isEmpty then some (n, table.decls.find? n) else none
 
 /-- `f args` with the step index of the section filled in, or `none` when it is given (positionally
 or by name) or not reached by a partial application. -/
 meta def fillSI (i : IndexedInfo) (f : Syntax) (args : Array Syntax) : TermElabM (Option Syntax) := do
   let isNamed (a : Syntax) := a.isOfKind ``Parser.Term.namedArgument
   if args.any fun a => isNamed a && a[1].getId == i.name then return none
+  -- filled in already (this is an alternative of an overloaded `C args` coming back)
+  if args.any fun a => a.getAtomVal == "stepindex%" || a[0].getAtomVal == "stepindex%" then
+    return none
   let si ← `(stepindex%)
   match i.explicitPos with
   | none =>
@@ -542,6 +555,12 @@ meta def fillSI (i : IndexedInfo) (f : Syntax) (args : Array Syntax) : TermElabM
     -- fewer positional arguments than reach the step index: a partial application before it;
     -- as many as all explicit arguments: the step index is given
     unless p ≤ posIdx.length && posIdx.length < i.arity do return none
+    -- in a generic section, its step index variable written in place (`C SI F` partially applied):
+    -- given. (Not for a constant like `Nat`, which may well be an ordinary argument.)
+    let secSI := siExt.getState (← getEnv)
+    if h : p < posIdx.length ∧ ((← getLCtx).findFromUserName? secSI).isSome then
+      let a := args[posIdx[p]]!
+      if a.isIdent && a.getId == secSI then return none
     let k := if h : p < posIdx.length then posIdx[p] else args.size
     return some (Syntax.mkApp ⟨f⟩ ((args.insertIdx! k si.raw).map (⟨·⟩)))
 
@@ -552,15 +571,30 @@ meta def headIdent? (f : Syntax) : Option Ident :=
   else none
 
 /-- `stx` (`C args`, `C` or `C.{u, …}`) with the step index of the section filled in, when `C` is
-`@[indexed]`. -/
+`@[indexed]`. When `C` is overloaded, each reading becomes an alternative (with the step index filled
+in for the `@[indexed]` ones), and overload resolution picks among them as usual. -/
 meta def elabIndexed (stx : Syntax) (head : Syntax) (args : Array Syntax)
     (expectedType? : Option Expr) : TermElabM Expr := do
   let some f := headIdent? head | throwUnsupportedSyntax
-  let some i ← indexedHead? f | throwUnsupportedSyntax
-  let some stx' ← fillSI i head args | throwUnsupportedSyntax
-  -- the default application elaborator, not `elabTerm`: the result is again `C args`, and must not
+  let heads ← indexedHeads f
+  unless heads.any (·.2.isSome) do throwUnsupportedSyntax
+  -- the head, naming the constant `n` unambiguously
+  let headFor (n : Name) : Syntax :=
+    let c := mkCIdentFrom f n
+    if head.isIdent then c else head.setArg 0 c
+  let mut alts : Array Syntax := #[]
+  for (n, i?) in heads do
+    let h := if heads.length == 1 then head else headFor n
+    match i? with
+    | some i =>
+      let some s ← fillSI i h args | throwUnsupportedSyntax
+      alts := alts.push s
+    | none => alts := alts.push (if args.isEmpty then h else Syntax.mkApp ⟨h⟩ (args.map (⟨·⟩)))
+  let stx' := if h : alts.size = 1 then alts[0] else mkNode choiceKind alts
+  -- the default elaborators, not `elabTerm` on `C args`: the result is again `C args`, and must not
   -- come back here (a partial application would get a second step index)
-  withMacroExpansion stx stx' <| Lean.Elab.Term.elabApp stx' expectedType?
+  withMacroExpansion stx stx' <|
+    if stx'.isOfKind choiceKind then elabTerm stx' expectedType? else Lean.Elab.Term.elabApp stx' expectedType?
 
 /-- In a `local stepindex` section, `C args` for an `@[indexed]` `C` elaborates with the step index
 filled in (see `Iris.Algebra.StepIndex`). -/
@@ -586,7 +620,7 @@ prints as `C args` when `SI` is the step index of the section. -/
 @[scoped delab app] meta def delabIndexedApp : Delab := whenPPOption getPPNotation do
   let e ← getExpr
   let some c := e.getAppFn.constName? | failure
-  let some i := (indexedExt.getState (← getEnv)).find? c | failure
+  let some i := (indexedExt.getState (← getEnv)).decls.find? c | failure
   let some p := i.explicitPos | failure
   guard (e.getAppNumArgs > i.argIdx)
   unless ← isSectionSI (← withNaryArg i.argIdx delab) do failure
@@ -602,8 +636,8 @@ namespace Iris
 
 open Lean Parser in
 /-- `local stepindex T` makes `T` the step index of the current section: the `@[indexed]`
-declarations take it when their step index is not given, and the step-index-free notations of
-`Iris.StepIndexSugar` are available (see the module docs of `Iris.Algebra.StepIndex`).
+declarations take it when their step index is not given, and print without it (see the module docs
+of `Iris.Algebra.StepIndex`).
 
 ```
 local stepindex Nat

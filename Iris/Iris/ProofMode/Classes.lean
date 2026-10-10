@@ -12,6 +12,7 @@ public import Iris.ProofMode.Modalities
 
 
 variable {SI : Iris.stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
 
 namespace Iris.ProofMode
 open Iris.BI Iris.Std
@@ -187,9 +188,9 @@ class IntoOr {PROP} [BI.BIBase PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
 export IntoOr (into_or)
 
 @[indexed, ipm_class, rocq_alias IntoInternalEq]
-class IntoInternalEq (SI : stepindex (Type _)) [SIdx SI] {PROP} [BI PROP] [BIStepIndexed SI PROP] [Sbi SI PROP] {A : outParam <| Type _}
-    [ofe : outParam <| OFE SI A] (P : PROP) (x y : outParam A) where
-  into_internal_eq : P ⊢@{PROP} x ≡[SI] y
+class IntoInternalEq (SI : stepindex (Type _)) [SIdx SI] {PROP} [BI PROP] [BIStepIndexed PROP] [Sbi PROP] {A : outParam <| Type _}
+    [ofe : outParam <| OFE A] (P : PROP) (x y : outParam A) where
+  into_internal_eq : P ⊢@{PROP} x ≡ y
 export IntoInternalEq (into_internal_eq)
 
 @[ipm_class, rocq_alias IntoPersistent]

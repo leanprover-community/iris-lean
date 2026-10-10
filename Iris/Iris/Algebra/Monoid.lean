@@ -13,6 +13,7 @@ public section
 namespace Iris.Algebra
 
 variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
 
 /-! # Monoids for Big Operators
 
@@ -67,7 +68,7 @@ theorem op_left_comm [MonoidOps op unit] {a b c : M} :
       _ = op b (op a c) := op_assoc
 
 /-- Non-expansiveness for dist. -/
-theorem op_dist {n : SI} [OFE SI M] [NonExpansive₂ SI op] (ha : a ≡{n}≡ a') (hb : b ≡{n}≡ b') :
+theorem op_dist {n : SI} [OFE M] [NonExpansive₂ op] (ha : a ≡{n}≡ a') (hb : b ≡{n}≡ b') :
     op a b ≡{n}≡ op a' b' := NonExpansive₂.ne ha hb
 
 end MonoidOps

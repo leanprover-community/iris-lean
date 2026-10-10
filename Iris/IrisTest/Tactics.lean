@@ -20,6 +20,8 @@ public import Iris.Instances.Lib.NaInvariants
 public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.WeakestPre
 
+local stepindex Nat
+
 @[expose] public section
 
 namespace IrisTest
@@ -3008,34 +3010,34 @@ end timeReceipts
 
 section irewrite
 
-variable {PROP : Type _} [BI PROP] [BIStepIndexed Nat PROP] [Sbi Nat PROP]
-variable {A B : Type _} [OFE Nat A] [OFE Nat B]
+variable {PROP : Type _} [BI PROP] [BIStepIndexed PROP] [Sbi PROP]
+variable {A B : Type _} [OFE A] [OFE B]
 
 /- Tests `irewrite` rewriting in goal. -/
-example (a b : A) (P : A → PROP) [OFE.NonExpansive Nat P] [Absorbing (P a)] :
-    b ≡[Nat] a ∗ P a ⊢ P b := by
+example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P a)] :
+    b ≡ a ∗ P a ⊢ P b := by
   iintro ⟨Heq, Ha⟩
   irewrite [Heq]
   iexact Ha
 
 /- Tests `irewrite` rewriting in goal explicitly. -/
-example (a b : A) (P : A → PROP) [OFE.NonExpansive Nat P] [Absorbing (P a)] :
-    b ≡[Nat] a ∗ P a ⊢ P b := by
+example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P a)] :
+    b ≡ a ∗ P a ⊢ P b := by
   iintro ⟨Heq, Ha⟩
   irewrite [Heq] at ⊢
   iexact Ha
 
 /- Tests `irewrite` rewriting in goal in backward direction. -/
-example (a b : A) (P : A → PROP) [OFE.NonExpansive Nat P] [Absorbing (P b)] :
-    b ≡[Nat] a ∗ P b ⊢ P a := by
+example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P b)] :
+    b ≡ a ∗ P b ⊢ P a := by
   iintro ⟨Heq, Hb⟩
   irewrite [← Heq]
   iexact Hb
 
 /- Tests `irewrite` rewriting in hypothesis. -/
 example (a b : A) (P Q R : A → PROP)
-    [OFE.NonExpansive Nat P] [OFE.NonExpansive Nat Q] [OFE.NonExpansive Nat R] [Absorbing iprop(P b ∗ Q b ∗ R b)] :
-    a ≡[Nat] b ∗ (P a ∗ Q a ∗ R a) ⊢ P b ∗ Q b ∗ R b := by
+    [OFE.NonExpansive P] [OFE.NonExpansive Q] [OFE.NonExpansive R] [Absorbing iprop(P b ∗ Q b ∗ R b)] :
+    a ≡ b ∗ (P a ∗ Q a ∗ R a) ⊢ P b ∗ Q b ∗ R b := by
   iintro ⟨Heq, H⟩
   irewrite [Heq] at H
   · refine ⟨fun _ _ _ h => ?_⟩
@@ -3045,31 +3047,31 @@ example (a b : A) (P Q R : A → PROP)
   · iexact H
 
 /- Tests `irewrite` rewriting in same hypothesis. -/
-example (a b : A) (P : A → PROP) [OFE.NonExpansive Nat P] [Absorbing (P b)] :
-    b ≡[Nat] a ⊢@{PROP} a ≡[Nat] a := by
+example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P b)] :
+    b ≡ a ⊢@{PROP} a ≡ a := by
   iintro Heq
   irewrite [Heq] at Heq
   · apply internalEq.ne_l
   iexact Heq
 
 /- Tests `irewrite` with proof mode terms. -/
-example (a b : A) (P Q : A → PROP) [OFE.NonExpansive Nat P] [OFE.NonExpansive Nat Q] [Absorbing (P a)] :
-    (∀ c, a ≡[Nat] c) ∗ P a ∗ (P b -∗ Q b) ⊢ Q b := by
+example (a b : A) (P Q : A → PROP) [OFE.NonExpansive P] [OFE.NonExpansive Q] [Absorbing (P a)] :
+    (∀ c, a ≡ c) ∗ P a ∗ (P b -∗ Q b) ⊢ Q b := by
   iintro ⟨Heq, Ha, Himpl⟩
   iapply Himpl
   irewrite [← Heq $$ %b, ← Heq $$ %a]
   iexact Ha
 
 /- Tests `irewrite` with multiple rewrites. -/
-example (a b c : A) (P : A → PROP) [OFE.NonExpansive Nat P] [Absorbing (P a)] :
-    a ≡[Nat] b ∗ b ≡[Nat] c ∗ P a ⊢ P c := by
+example (a b c : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P a)] :
+    a ≡ b ∗ b ≡ c ∗ P a ⊢ P c := by
   iintro ⟨Hab, Hbc, Ha⟩
   irewrite [←Hbc, ←Hab]
   iexact Ha
 
 /- Tests `irewrite` with manual nonexpansive proof. -/
-example (f : A → B) [OFE.NonExpansive Nat f] (a b : A) (P : B → PROP) [OFE.NonExpansive Nat P] [Absorbing (P (f a))] :
-    a ≡[Nat] b ∗ P (f a) ⊢ P (f b) := by
+example (f : A → B) [OFE.NonExpansive f] (a b : A) (P : B → PROP) [OFE.NonExpansive P] [Absorbing (P (f a))] :
+    a ≡ b ∗ P (f a) ⊢ P (f b) := by
   iintro ⟨Heq, Ha⟩
   irewrite [←Heq]
   · exact (OFE.NonExpansive.comp (g := P) (f := f) inferInstance inferInstance)
@@ -3077,8 +3079,8 @@ example (f : A → B) [OFE.NonExpansive Nat f] (a b : A) (P : B → PROP) [OFE.N
 
 /- Tests `irewrite` under separating conjunction. -/
 example (a b : A) (P Q R : A → PROP)
-    [OFE.NonExpansive Nat P] [OFE.NonExpansive Nat Q] [OFE.NonExpansive Nat R] [Absorbing (P a)] :
-    a ≡[Nat] b ∗ (P a ∗ Q a ∗ R a) ⊢ P b ∗ Q b ∗ R b := by
+    [OFE.NonExpansive P] [OFE.NonExpansive Q] [OFE.NonExpansive R] [Absorbing (P a)] :
+    a ≡ b ∗ (P a ∗ Q a ∗ R a) ⊢ P b ∗ Q b ∗ R b := by
   iintro ⟨Heq, H⟩
   irewrite [←Heq]
   · refine ⟨fun _ _ _ h => ?_⟩
@@ -3089,7 +3091,7 @@ example (a b : A) (P Q R : A → PROP)
 
 /- Tests `irewrite` under more connectives. -/
 example (x y : A) P :
-    ⊢@{PROP} □ (∀ z, P -∗ <affine> (z ≡[Nat] y)) -∗ (P -∗ P ∧ ((x, x) ≡[Nat] (y, x))) := by
+    ⊢@{PROP} □ (∀ z, P -∗ <affine> (z ≡ y)) -∗ (P -∗ P ∧ ((x, x) ≡ (y, x))) := by
   iintro #H1 H2
   irewrite [H1 $$ %x H2]
   · refine ⟨fun _ _ _ h => and_ne.ne .rfl ?_⟩
@@ -3100,8 +3102,8 @@ example (x y : A) P :
     · apply internalEq.refl
 
 /- Tests `irewrite` with Later.next. -/
-example (f : A -n>[Nat] A) x y :
-    ⊢@{PROP} (Later.next x ≡[Nat] Later.next y) -∗ (Later.next (f x) ≡[Nat] Later.next (f y)) := by
+example (f : A -n> A) x y :
+    ⊢@{PROP} (Later.next x ≡ Later.next y) -∗ (Later.next (f x) ≡ Later.next (f y)) := by
   iintro H
   -- FIXME: inext
   iapply later_equivI_mpr
@@ -3113,7 +3115,7 @@ example (f : A -n>[Nat] A) x y :
 
 /- Tests `irewrite` under affine and later. -/
 example (P Q : PROP) :
-    <affine> ▷ (Q ≡[Nat] P) -∗ <affine> ▷ Q -∗ <affine> ▷ P := by
+    <affine> ▷ (Q ≡ P) -∗ <affine> ▷ Q -∗ <affine> ▷ P := by
   iintro #HPQ HQ !>
   inext
   irewrite [HPQ] at HQ
@@ -3122,7 +3124,7 @@ example (P Q : PROP) :
 
 /- Tests `irewrite` under affine and later backwards. -/
 example (P Q : PROP) :
-    <affine> ▷ (Q ≡[Nat] P) -∗ <affine> ▷ P -∗ <affine> ▷ Q := by
+    <affine> ▷ (Q ≡ P) -∗ <affine> ▷ P -∗ <affine> ▷ Q := by
   iintro #HPQ HQ !>
   inext
   irewrite [←HPQ] at HQ
@@ -3138,19 +3140,19 @@ in the target expression
 -/
 #guard_msgs in
 example (P Q : PROP) :
-    P ≡[Nat] Q -∗ Q := by
+    P ≡ Q -∗ Q := by
   iintro HPQ
   irewrite [HPQ]
 
 /- Tests `irewrite` with terms that are convertible but not syntactically equal. -/
-example (l : List A) : l ≡[Nat] ([] : List A) ⊢@{PROP} l ≡[Nat] ([] : List (id A)) := by
+example (l : List A) : l ≡ ([] : List A) ⊢@{PROP} l ≡ ([] : List (id A)) := by
   iintro H
   irewrite [← H]
   · exact internalEq.ne_r l
   exact internalEq.refl
 
 /- Tests that `irewrite` does not fail if the rewritten term occurs in the Lean context. -/
-example (x y : A) (φ : A → Prop) (hφ : φ x) : x ≡[Nat] y ⊢@{PROP} x ≡[Nat] y := by
+example (x y : A) (φ : A → Prop) (hφ : φ x) : x ≡ y ⊢@{PROP} x ≡ y := by
   iintro H
   irewrite [H]
   · exact internalEq.ne_l y
@@ -3624,10 +3626,10 @@ example [BI PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ □ R -∗ R ∗ P ∗ Q :=
     `a2` and `a3` can be combined as `b` instead of `a2 • a3` as
     the former takes higher precedence. Likewise, `a1` and `b` is merged
     as `c` instead of `a1 • b`. -/
-example {F GF} [RFunctorContractive Nat F] [RFunctorAffine Nat F] [ElemG GF F] {γ}
+example {F GF} [RFunctorContractive F] [RFunctorAffine F] [ElemG GF F] {γ}
     {a1 a2 a3 b c : F.ap (IProp GF)} [IsOp .merge b a2 a3] [IsOp .merge c a1 b] :
     ⊢ iOwn γ a1 -∗ iOwn γ a2 -∗ iOwn γ a3 -∗
-      iOwn γ c ∗ ✓[Nat] (a2 • a3) ∗ ✓[Nat] (a1 • b) := by
+      iOwn γ c ∗ ✓ (a2 • a3) ∗ ✓ (a1 • b) := by
   iintro H1 H2 H3
   icombine H1 H2 H3 as Hnew1 gives ⟨Hnew2, Hnew3⟩
   isplitl
@@ -3638,17 +3640,17 @@ example {F GF} [RFunctorContractive Nat F] [RFunctorAffine Nat F] [ElemG GF F] {
 
 /-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
     instances for `DFrac` and `Frac`. -/
-example {GF} [ElemG GF (constOF _ DFrac)]
-    [ElemG GF (constOF _ Qp)] {γ}
+example {GF} [ElemG GF (constOF DFrac)]
+    [ElemG GF (constOF Qp)] {γ}
     {a1 a2 a3 b c : Qp} [IsOp .merge b a2 a3] [IsOp .merge c a1 b] :
     ⊢@{IProp GF}
-      iOwn (F := constOF _ DFrac) γ (own a1) -∗
-      iOwn (F := constOF _ DFrac) γ (own a2) -∗
-      iOwn (F := constOF _ DFrac) γ (own a3) -∗
-      iOwn (F := constOF _ Qp) γ a1 -∗
-      iOwn (F := constOF _ Qp) γ a2 -∗
-      iOwn (F := constOF _ Qp) γ a3 -∗
-      iOwn (F := constOF _ DFrac) γ (own c) ∗ iOwn (F := constOF _ Qp) γ c := by
+      iOwn (F := constOF DFrac) γ (own a1) -∗
+      iOwn (F := constOF DFrac) γ (own a2) -∗
+      iOwn (F := constOF DFrac) γ (own a3) -∗
+      iOwn (F := constOF Qp) γ a1 -∗
+      iOwn (F := constOF Qp) γ a2 -∗
+      iOwn (F := constOF Qp) γ a3 -∗
+      iOwn (F := constOF DFrac) γ (own c) ∗ iOwn (F := constOF Qp) γ c := by
   iintro H1 H2 H3 H4 H5 H6
   icombine H1 H2 H3 as Hnew1
   icombine H4 H5 H6 as Hnew2
@@ -3658,19 +3660,19 @@ example {GF} [ElemG GF (constOF _ DFrac)]
 
 /-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
     instances for the authoritative ORA. -/
-example {GF A} [URA A] [UCMRA Nat A] [ORA.Affine Nat A] [ElemG GF (constOF _ (Auth Nat A))] {γ}
+example {GF A} [URA A] [UCMRA A] [ORA.Affine A] [ElemG GF (constOF (Auth A))] {γ}
     {a1 a2 a3 b c : A} {q1 q2 : Qp} {dq'' dq3 dq4 : DFrac}
     [IsOp .merge b a2 a3] [IsOp .merge c a1 b]
     [IsOp .merge dq'' dq3 dq4] :
     ⊢@{IProp GF}
-      iOwn (F := constOF _ (Auth Nat A)) γ (◯ a1) -∗
-      iOwn (F := constOF _ (Auth Nat A)) γ (◯ a2) -∗
-      iOwn (F := constOF _ (Auth Nat A)) γ (◯ a3) -∗
-      iOwn (F := constOF _ (Auth Nat A)) γ (●{own q1} a1) -∗
-      iOwn (F := constOF _ (Auth Nat A)) γ (●{own q2} a1) -∗
-      iOwn (F := constOF _ (Auth Nat A)) γ (●{dq3} a1) -∗
-      iOwn (F := constOF _ (Auth Nat A)) γ (●{dq4} a1) -∗
-      iOwn (F := constOF _ (Auth Nat A)) γ ((◯ c) • ●{(own (q1 + q2)) • dq''} a1) := by
+      iOwn (F := constOF (Auth A)) γ (◯ a1) -∗
+      iOwn (F := constOF (Auth A)) γ (◯ a2) -∗
+      iOwn (F := constOF (Auth A)) γ (◯ a3) -∗
+      iOwn (F := constOF (Auth A)) γ (●{own q1} a1) -∗
+      iOwn (F := constOF (Auth A)) γ (●{own q2} a1) -∗
+      iOwn (F := constOF (Auth A)) γ (●{dq3} a1) -∗
+      iOwn (F := constOF (Auth A)) γ (●{dq4} a1) -∗
+      iOwn (F := constOF (Auth A)) γ ((◯ c) • ●{(own (q1 + q2)) • dq''} a1) := by
   iintro H1 H2 H3 H4 H5 H6 H7
   icombine H1 H2 H3 as HNew1
   icombine H4 H5 as HNew2
@@ -3682,13 +3684,13 @@ example {GF A} [URA A] [UCMRA Nat A] [ORA.Affine Nat A] [ElemG GF (constOF _ (Au
     merging of `a1`, `a2` and `a3` using `+` instead of `•`, as well as
     to eliminate splits (`IsHalfFraction`). -/
 example {GF}
-    [ElemG GF (constOF _ Qp)] {γ} {a1 a2 a3 : Qp} :
+    [ElemG GF (constOF Qp)] {γ} {a1 a2 a3 : Qp} :
     ⊢@{IProp GF}
-      iOwn (F := constOF _ Qp) γ a1 -∗
-      iOwn (F := constOF _ Qp) γ a2 -∗
-      iOwn (F := constOF _ Qp) γ (a3.half) -∗
-      iOwn (F := constOF _ Qp) γ (a3.half) -∗
-      iOwn (F := constOF _ Qp) γ (a1.half + (a1.half + (a2 + a3))) := by
+      iOwn (F := constOF Qp) γ a1 -∗
+      iOwn (F := constOF Qp) γ a2 -∗
+      iOwn (F := constOF Qp) γ (a3.half) -∗
+      iOwn (F := constOF Qp) γ (a3.half) -∗
+      iOwn (F := constOF Qp) γ (a1.half + (a1.half + (a2 + a3))) := by
   iintro H1 H2 H3a H3b
   icases H1 with ⟨H1a, H1b⟩
   icombine H1a H1b H2 H3a H3b as Hnew
