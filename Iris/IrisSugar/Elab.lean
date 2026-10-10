@@ -16,9 +16,9 @@ public import IrisSugar.Registry
 
 The meta code behind `local stepindex T` (see the module docs of `Iris.Algebra.StepIndex`): the
 `stepindex` command, and the scoped elaborator and delaborator of `Iris.StepIndexSugar` that fill in
-and hide the step index of `@[indexed]` declarations. This module depends only on Lean, so that it
-can be precompiled (the `IrisSugar` library, outside the `Iris` namespace so that it is not part of the `Iris` library): the elaborator runs on every application and identifier
-of a sugared section.
+and hide the step index of `@[indexed]` declarations. The elaborator runs on every application and
+identifier of a sugared section, so its common path (an identifier that cannot name an `@[indexed]`
+declaration) is a single name-set lookup.
 -/
 
 namespace Iris.StepIndexSugar
