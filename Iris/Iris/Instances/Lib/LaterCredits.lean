@@ -16,33 +16,50 @@ public import Iris.Instances.IProp
 
 @[expose] public section
 
+local stepindex Nat
+
 /-! ## Later credits -/
 
 namespace Iris
 
 open _root_.Std (Associative Commutative LeftIdentity LawfulLeftIdentity)
-open Iris OFE COFE BI Auth CommMonoidLike Iris.Std
+open Iris OFE COFE BI Auth Iris.Std
 
 section LcGS
+open ORA
 
-abbrev Credit := Nat
+/-- Later credits: natural numbers with `+` as the resource operation. A `def` (not an `abbrev`), so
+its algebra does not leak to `Nat`. -/
+def Credit := Nat
+
+/-- The credit for `n` (cf. Mathlib's `Multiplicative.ofAdd`). -/
+def Credit.ofNat (n : Nat) : Credit := n
 
 @[rocq_alias has_lc]
 inductive HasLC where
 | hasNoLC
 | hasLC
 
-scoped instance : Associative (Add.add (α := Credit)) := ⟨Nat.add_assoc⟩
-scoped instance : Commutative (Add.add (α := Credit)) := ⟨Nat.add_comm⟩
-scoped instance : LeftIdentity (Add.add (α := Credit)) (0 : Credit) where
-scoped instance : LawfulLeftIdentity (Add.add (α := Credit)) (0 : Credit) := ⟨Nat.zero_add⟩
-scoped instance : LeftCancelAdd Credit := ⟨Nat.add_left_cancel⟩
+instance : Add Credit := inferInstanceAs (Add Nat)
+instance : Zero Credit := ⟨(0 : Nat)⟩
+instance : OfNat Credit n := ⟨(n : Nat)⟩
+instance : Associative (α := Credit) (· + ·) := ⟨Nat.add_assoc⟩
+instance : Commutative (α := Credit) (· + ·) := ⟨Nat.add_comm⟩
+instance : LeftIdentity (α := Credit) (· + ·) Zero.zero := ⟨⟩
+instance : LawfulLeftIdentity (α := Credit) (· + ·) Zero.zero := ⟨Nat.zero_add⟩
+instance : LeftCancelAdd Credit := ⟨Nat.add_left_cancel⟩
 
-scoped instance : COFE Credit := COFE.ofDiscrete _
-scoped instance : Discrete Credit := ⟨fun h => h⟩
-scoped instance : UCMRA Credit := CommMonoidLike.instUCMRA
-scoped instance : CMRA.Discrete Credit := CommMonoidLike.instDiscrete
-scoped instance {a : Credit} : CMRA.Cancelable a := inferInstance
+instance : COFE Credit := COFE.ofDiscrete _
+instance : OFE.Discrete Credit := ⟨fun h => h⟩
+instance : Op Credit := CommMonoidLike.instOp
+instance : PCore Credit := CommMonoidLike.instPCore
+instance : RA Credit := CommMonoidLike.instRA
+instance : URA Credit := CommMonoidLike.instURA
+instance : UCMRA Credit := CommMonoidLike.instUCMRA
+instance instIncOrdCredit : IncOrd Credit := inferInstance
+instance : ORA.Discrete Credit := CommMonoidLike.instDiscrete
+instance {a : Credit} : Cancelable a := CommMonoidLike.instCancelable
+instance : CoreId (Credit.ofNat 0) := CommMonoidLike.instCoreIdZero
 
 /-- Later credits inclusion typeclass (`GF` contains the necessary functors for later credits) -/
 @[rocq_alias lcGpreS]
@@ -69,9 +86,9 @@ variable {GF : BundledGFunctors} {hlc : HasLC} [LC : LcGS hlc GF]
 
 /-- The user-facing credit resource. Use it through the generic notation `£ i`. -/
 @[rocq_alias uPred_lc]
-def uPred_lc (i : Credit) : IProp GF :=
+def uPred_lc (i : Nat) : IProp GF :=
   match hlc with
-  | .hasLC => iOwn (E := LC.lc_elem) LC.lc_name (◯ i)
+  | .hasLC => iOwn (E := LC.lc_elem) LC.lc_name (◯ Credit.ofNat i)
   | .hasNoLC => iprop(True)
 
 #rocq_ignore lc_supply_def "`lc_supply` is defined directly without `seal`/`unseal`."
@@ -79,9 +96,9 @@ def uPred_lc (i : Credit) : IProp GF :=
 #rocq_ignore lc_supply_unseal "`lc_supply` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias lc_supply]
-def lc_supply (i : Credit) : IProp GF :=
+def lc_supply (i : Nat) : IProp GF :=
   match hlc with
-  | .hasLC => iOwn (E := LC.lc_elem) LC.lc_name (● i)
+  | .hasLC => iOwn (E := LC.lc_elem) LC.lc_name (● Credit.ofNat i)
   | .hasNoLC => iprop(⌜i = 0⌝)
 
 end Definitions
@@ -93,7 +110,7 @@ variable {GF : BundledGFunctors} {hlc : HasLC} [LC : LcGS hlc GF]
 @[rocq_alias uPred_bi_lc]
 instance uPred_bi_lc : BILaterCredits (IProp GF) where
   lc := uPred_lc
-  lc_split {n m} := by
+  lc_split {n m : Nat} := by
     cases hlc with
     | hasNoLC => exact (true_sep (P := iprop(True))).symm
     | hasLC =>
@@ -113,36 +130,38 @@ instance uPred_bi_lc : BILaterCredits (IProp GF) where
 #rocq_ignore uPred_lc_mixin "Included in the `uPred_bi_lc` instance."
 
 @[rocq_alias uPred_lc_unseal]
-theorem uPred_lc_unseal {n : Credit} : (£ n : IProp GF) = uPred_lc n := rfl
+theorem uPred_lc_unseal {n : Nat} : (£ n : IProp GF) = uPred_lc n := rfl
 
 @[rocq_alias lc_no_lc]
-theorem lc_no_lc [LcGS .hasNoLC GF] (n : Credit) : £ n ⊣⊢@{IProp GF} iprop(True) := .rfl
+theorem lc_no_lc [LcGS .hasNoLC GF] (n : Nat) : £ n ⊣⊢@{IProp GF} iprop(True) := .rfl
 
 @[rocq_alias lc_supply_no_lc]
-theorem lc_supply_no_lc [LcGS .hasNoLC GF] (n : Credit) :
+theorem lc_supply_no_lc [LcGS .hasNoLC GF] (n : Nat) :
     lc_supply n ⊣⊢@{IProp GF} iprop(⌜n = 0⌝) := .rfl
 
 section LcSupplyRules
 variable [LC : LcGS .hasLC GF]
 
 @[rocq_alias lc_supply_bound]
-theorem lc_supply_bound {n m} : ⊢@{IProp GF} lc_supply m -∗ £ n -∗ ⌜n ≤ m⌝ := by
+theorem lc_supply_bound {n m : Nat} : ⊢@{IProp GF} lc_supply m -∗ £ n -∗ ⌜n ≤ m⌝ := by
   iintro Hsupp Hcred
   icases iOwn_op $$ [Hsupp Hcred] with H
   · rw [uPred_lc_unseal]; unfold uPred_lc lc_supply
     isplitl [Hsupp] <;> iassumption
   ihave H := iOwn_cmraValid $$ H
-  ihave ⟨%H, H2⟩ := auth_both_validI m n $$ H
+  ihave ⟨%H, H2⟩ := auth_both_validI (Credit.ofNat m) (Credit.ofNat n) $$ H
   ipureintro
   obtain ⟨k, hk⟩ := H
+  have hk : m = Nat.add n k := hk
   rw [hk]
   exact n.le_add_right k
 
 @[rocq_alias lc_decrease_supply]
-theorem lc_decrease_supply {n m} : ⊢@{IProp GF} lc_supply (n + m) -∗ £ n -∗ |==> lc_supply m := by
+theorem lc_decrease_supply {n m : Nat} : ⊢@{IProp GF} lc_supply (n + m) -∗ £ n -∗ |==> lc_supply m := by
   iintro H1 H2
   imod iOwn_update_op (E := LC.lc_elem)
-    (auth_update (leftCancelAdd_local_update ((Nat.add_assoc n m 0).trans (Nat.add_comm n m))))
+    (auth_update (CommMonoidLike.leftCancelAdd_local_update (x := Credit.ofNat (n + m))
+      (y := Credit.ofNat n) (x' := Credit.ofNat m) (y' := 0) ((Nat.add_assoc n m 0).trans (Nat.add_comm n m))))
     $$ [H1 H2] with H
   · rw [uPred_lc_unseal]; unfold uPred_lc lc_supply
     isplitl [H1] <;> iassumption
@@ -155,7 +174,9 @@ theorem lc_increase_supply n m : lc_supply m ⊢@{IProp GF} |==> (lc_supply (n +
   rw [uPred_lc_unseal]; unfold uPred_lc lc_supply
   iintro H
   imod iOwn_update $$ H with Hown
-  · exact auth_update_alloc (leftCancelAdd_local_update (y := 0) (x' := (n + m)) (y' := n) (by grind))
+  · exact auth_update_alloc
+      (CommMonoidLike.leftCancelAdd_local_update (x := Credit.ofNat m) (y := 0)
+        (x' := Credit.ofNat (n + m)) (y' := Credit.ofNat n) (Nat.add_comm m n))
   icases iOwn_op $$ Hown with ⟨Hm, _⟩
   iframe
 
@@ -176,7 +197,7 @@ def le_upd_pre (P le_upd : IProp GF) : IProp GF :=
 
 @[rocq_alias le_upd.le_upd_pre_contractive]
 instance {P : IProp GF} : Contractive (le_upd_pre P) where
-  distLater_dist {n x y} H := by
+  distLater_dist {n : Nat} {x y} H := by
     simp only [le_upd_pre]
     refine forall_ne (fun i => ?_)
     refine wand_ne.ne .rfl ?_
@@ -215,7 +236,7 @@ theorem le_upd_unfold {P : IProp GF} :
 
 @[rocq_alias le_upd.le_upd_ne]
 instance : NonExpansive (le_upd (GF := GF)) where
-  ne {n} := by
+  ne {n : Nat} := by
     apply WellFounded.induction Nat.lt_wfRel.wf n
     intro m IH P Q H
     refine ((equiv_iff.mpr le_upd_unfold).dist).trans ?_
@@ -314,7 +335,7 @@ theorem le_upd_later_elim [LcGS .hasLC GF] {P : IProp GF} : ⊢ £ 1 -∗ (▷ |
   cases n with
   | zero => exfalso; cases H
   | succ n =>
-    rw [show n.succ = 1 + n by omega]
+    rw [show n + 1 = 1 + n by omega]
     imod lc_decrease_supply $$ Hsupp Hcr with Hsupp
     imodintro
     iright; iright
@@ -439,7 +460,7 @@ end Internal
 
 @[rocq_alias le_upd.lc_alloc]
 theorem lc_alloc [H : LcGpreS GF] n : ⊢@{IProp GF} |==> ∃ _ : LcGS .hasLC GF, lc_supply n ∗ £ n := by
-  imod (iOwn_alloc (E := H.lc_elem) ((● n) • (◯ n)) (auth_both_valid.mpr ⟨fun _ => .rfl, ⟨⟩⟩))
+  imod (iOwn_alloc (E := H.lc_elem) ((● Credit.ofNat n) • (◯ Credit.ofNat n)) (auth_both_valid.mpr ⟨fun _ => .rfl, ⟨⟩⟩))
     with ⟨%γLC, HOwn⟩
   icases iOwn_op $$ HOwn with ⟨HAuth, HFrag⟩
   let LC : LcGS .hasLC GF := { lc_elem := H.lc_elem, lc_name := γLC }

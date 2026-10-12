@@ -13,6 +13,8 @@ public import Iris.Std.HeapInstances
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris.Examples
 open Iris.BI COFE
 
@@ -65,6 +67,7 @@ set_option synthInstance.checkSynthOrder false in
 class abbrev HasPointsToF1 (γ : GName) (GF : outParam _) := ElemG GF F1
 
 /- Define notation for the heap. -/
+@[nolint unusedArguments]
 def points_to (γ : GName) [HasPointsToF1 γ GF] (k : Nat) (v : String) : IProp GF :=
   iOwn (GF := GF) (F := F1) γ (Frag k (own one) (toAgree ⟨v⟩))
 
@@ -99,6 +102,7 @@ variable (Expr State Value : Type _) [OperationalSemantics Expr State Value]
 /- Let's say that we are also given two OFunctors, and an interpretation of the state into
    state using these resources. -/
 variable (F3 F4 : OFunctorPre) [RFunctorContractive F3] [RFunctorContractive F4]
+variable [RFunctorAffine F3] [RFunctorAffine F4]
 variable {GF} [ElemG GF F3] [ElemG GF F4]
 class StateInterpretation (State : Type _) (GF : BundledGFunctors) where
   state_interp : State → IProp GF
@@ -120,7 +124,7 @@ def wp_F (wp : Expr → (Value → IProp GF) → IProp GF) (e : Expr) (Φ : Valu
     ∃ e' s', ⌜@step _ _ Value _ (e, s) = (e', s') ⌝ ∗ ▷ |==> (@state_interp _ _ _  s' ∗ wp e' Φ))
 
 instance wp_F_contractive : Contractive (@wp_F Expr State Value _ GF _) where
-  distLater_dist {n x y HL} e Φ := by
+  distLater_dist {n : Nat} {x y HL} e Φ := by
     refine or_ne.ne (.of_eq rfl) ?_
     refine forall_ne (fun _ => ?_)
     refine wand_ne.ne (.of_eq rfl) ?_
@@ -128,7 +132,7 @@ instance wp_F_contractive : Contractive (@wp_F Expr State Value _ GF _) where
     refine exists_ne (fun _ => ?_)
     refine sep_ne.ne (.of_eq rfl) ?_
     refine Contractive.distLater_dist fun m Hm => ?_
-    refine BIUpdate.bupd_ne.ne ?_
+    refine BUpdNE.bupd_ne.ne ?_
     refine sep_ne.ne (.of_eq rfl) ?_
     exact HL m Hm v Φ
 
@@ -142,7 +146,7 @@ theorem wp_unfold (e : Expr) (Φ : Value → IProp GF) :
           ∃ e' s', ⌜@step _ _ Value _ (e, s) = (e', s') ⌝ ∗
           ▷ |==> (@state_interp _ _ _  s' ∗ wp e' Φ)) := by
   exact OFE.eq_dist_2 fun _n => (fixpoint_unfold (f := ⟨(@wp_F Expr State Value _ GF _),
-                                @OFE.ne_of_contractive _ _ _ _ (@wp_F Expr State Value _ GF _) _⟩)).dist e Φ
+                                @OFE.ne_of_contractive _ _ _ _ _ _ (@wp_F Expr State Value _ GF _) _⟩)).dist (SI := Nat) e Φ
 
 /- Now, we can derive some example proof rules. First let's prove a rule for pure deterministic steps: -/
 example (e e' : Expr) Φ (Hstep : ∀ {s : State}, @step _ _ Value _ (e, s) = (e', s)) :

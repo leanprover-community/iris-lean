@@ -10,11 +10,15 @@ public import Iris.ProofMode.Classes
 
 @[expose] public section
 
-open Iris BI CMRA ProofMode Std
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
+open Iris BI ORA ProofMode Std
 
 namespace UPred
 
-variable [UCMRA M]
+variable [URA M] [UORA M] [UPred.OrdExtend0 M]
 
 @[rocq_alias from_sep_ownM]
 instance fromSep_ownM {a b1 b2 : M} [h : IsOp .split a b1 b2] :
@@ -37,12 +41,14 @@ instance fromAnd_ownM_coreId {a b1 b2 : M} [h : IsOp .split a b1 b2]
   from_and := by
     rw [h.is_op]
     refine .trans ?_ (ownM_op ..).mpr
-    cases (inferInstance : TCOr (CoreId b1) (CoreId b2)) <;> exact persistent_and_sep.mp
+    cases (inferInstance : TCOr (CoreId b1) (CoreId b2)) <;> exact persistent_and_sep_mp
 
 @[rocq_alias into_and_ownM]
-instance intoAnd_ownM (p : Bool) {a b1 b2 : M} [h : IsOp .split a b1 b2] :
-    IntoAnd p (ownM a) (ownM b1) (ownM b2) where
-  into_and := intuitionisticallyIf_mono <| by rw [h.is_op]; exact (ownM_op ..).mp.trans sep_and
+instance intoAnd_ownM (p : Bool) {a b1 b2 : M} [h : IsOp .split a b1 b2] [Increasing b1]
+    [Increasing b2] : IntoAnd p (ownM a) (ownM b1) (ownM b2) where
+  into_and := intuitionisticallyIf_mono <| by
+    rw [h.is_op]
+    exact fun _ _ hx => ⟨(ordN_op_left _ b1 b2).trans hx, (ordN_op_right _ b1 b2).trans hx⟩
 
 @[rocq_alias into_sep_ownM]
 instance intoSep_ownM {a b1 b2 : M} [h : IsOp .split a b1 b2] :

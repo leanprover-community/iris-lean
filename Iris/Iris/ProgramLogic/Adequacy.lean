@@ -19,6 +19,8 @@ open Language.Notation
 
 @[expose] public section
 
+local stepindex Nat
+
 variable {hlc : HasLC} {Expr State Obs Val : Type _}
 variable [Language Expr State Obs Val]
 variable {GF : BundledGFunctors} [iG : IrisGS_gen hlc Expr GF]
@@ -166,7 +168,7 @@ theorem wptp_postconditions (Φs : List (Val → IProp GF)) (s : Stuckness) (es 
   cases hv : toVal x1
   · imodintro; apply true_intro
   · simp only [Option.elim_some]
-    iapply wp_value_fupd $$ Hwp
+    iapply (wp_value_fupd ?_).mp $$ Hwp
     constructor; grind
 
 omit iG in

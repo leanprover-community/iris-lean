@@ -10,6 +10,10 @@ public import Iris.ProofMode
 
 @[expose] public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 namespace Iris
 
 open Iris.Std BI ProofMode
@@ -68,8 +72,9 @@ theorem later_anything [BI PROP] [BIPersistentlyExist PROP]
     iassumption
 
 @[rocq_alias löb_em.later_inconsistent]
-theorem later_inconsistent [Sbi PROP] [BIPersistentlyExist PROP]
+theorem later_inconsistent [SIdxSucc] [BI PROP] [BIStepIndexed PROP] [Sbi PROP] [BIPersistentlyExist PROP]
     (em : ∀ P : PROP, ⊢ P ∨ ¬P) : ⊢@{PROP} False := by
+  haveI : BILoeb PROP := BILoeb.ofLaterContractive
   apply later_soundness (PROP := PROP) (P := iprop(False))
   apply later_anything
   assumption
@@ -547,9 +552,9 @@ end Linear
 -/
 namespace LaterCreditsPlain
 
-variable [instSbi : Sbi PROP]
+variable [BI PROP] [BIStepIndexed PROP] [instFin : BILaterFinite PROP] [instSbi : Sbi PROP]
   [instPersExist : BIPersistentlyExist PROP]
-  [instBFupd : BIFUpdate PROP]
+  [instBFupd : BIFUpdate PROP] [instPl : BIPlainly PROP] [instPlSbi : BIPlainlySbi PROP]
 variable {lc : PROP}
 
 variable (lc_fupd_elim_later : ∀ E P, lc ∗ ▷ P ⊢ |={E}=> P)
@@ -559,7 +564,7 @@ variable (fupd_keep_si_pure' : ∀ {E : CoPset} (E' : CoPset) (Pi : SiProp) (R :
   (|={E,E'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E}=∗ R) ⊢ |={E}=> R)
 
 include lc_fupd_elim_later fupd_keep_si_pure' in
-omit instPersExist in
+omit instFin instPersExist in
 @[rocq_alias later_credits_plain.lc_fupd_elim_later_keep]
 theorem lc_fupd_elim_later_keep {E : CoPset} {P : PROP} [inst1 : Plain P] [inst2 : Absorbing P] :
     ⊢ lc -∗ ▷ P ={E}=∗ lc ∗ P := by
@@ -568,15 +573,16 @@ theorem lc_fupd_elim_later_keep {E : CoPset} {P : PROP} [inst1 : Plain P] [inst2
   isplit
   · iapply lc_fupd_elim_later
     iintro {$Hlc} !>
-    exact Plain.plain
+    exact Plain.plain.trans BIPlainlySbi.plainly_siPure_siEmpValid.mp
   · iintro HP' !> {$Hlc} {HP}
     exact siPure_siEmpValid_elim
 
-omit instBFupd in
+include instFin in
+omit instBFupd instSbi instPl instPlSbi in
 @[rocq_alias later_credits_plain.laterN_False]
 theorem laterN_False [BILoeb PROP] : ⊢@{PROP} ∃ n, ▷^[n] False := by
   iloeb as IH
-  icases IH with ⟨%n, Hn⟩
+  icases later_exists.2 $$ IH with ⟨%n, Hn⟩
   iexists n + 1
   dsimp [BIBase.laterN, Nat.repeat]
   iassumption

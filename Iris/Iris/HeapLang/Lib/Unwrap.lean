@@ -18,6 +18,8 @@ open BI Iris ProgramLogic
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Unwrap
 
 /-- `unwrap o` unsafely asserts that `o` is `some v` and returns `v`. The

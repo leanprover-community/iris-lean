@@ -16,6 +16,10 @@ public import Iris.ProofMode.Display
 
 @[expose] public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 namespace Iris.ProofMode
 open Iris.BI Iris.Std
 
@@ -331,7 +335,7 @@ instance intoForall_intuitionistically [BI PROP] (P : PROP) (Φ : α → PROP)
   into_forall := (intuitionistically_mono h.1).trans intuitionistically_forall
 
 @[rocq_alias into_forall_persistently]
-instance intoForall_persistently [BI PROP] [BIPersistentlyForall PROP]
+instance intoForall_persistently [BI PROP]
     (P : PROP) (Φ : α → PROP)
     [h : IntoForall P Φ] : IntoForall iprop(<pers> P) (fun a => iprop(<pers> (Φ a))) where
   into_forall := (persistently_mono h.1).trans persistently_forall_mp
@@ -741,7 +745,7 @@ instance (priority := default + 20) fromSep_bigSepMS_disjUnion [BI PROP] {MS A :
 /-! ### AndIntoSep -/
 
 @[ipm_class, rocq_alias AndIntoSep]
-class inductive AndIntoSep {PROP} [BI PROP] : PROP → outParam PROP → PROP → outParam PROP → Prop
+class inductive AndIntoSep {PROP} [BI.BIBase PROP] : PROP → outParam PROP → PROP → outParam PROP → Prop
   | affine (P Q Q' : PROP) [Affine P] [h : FromAffinely Q' Q] : AndIntoSep P P Q Q'
   | affinely (P Q : PROP) : AndIntoSep P iprop(<affine> P) Q Q
 
@@ -753,7 +757,6 @@ attribute [instance, ipm_backtrack] AndIntoSep.affinely
 @[rocq_alias into_sep_sep]
 instance intoSep_sep [BI PROP] (P Q : PROP) : IntoSep iprop(P ∗ Q) P Q := ⟨.rfl⟩
 
-set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias into_sep_and_persistent_l]
 instance intoSep_and_persistent_left [BI PROP] (P Q P' Q' : PROP) [Persistent P]
     [inst : AndIntoSep P P' Q Q'] : IntoSep iprop(P ∧ Q) P' Q' where
@@ -767,7 +770,6 @@ instance intoSep_and_persistent_left [BI PROP] (P Q P' Q' : PROP) [Persistent P]
         _ ⊢ P ∗ Q'                  := sep_mono (affine_affinely _).mp h.from_affinely
     | _, AndIntoSep.affinely .. => persistent_and_affinely_sep_left_mp
 
-set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias into_sep_and_persistent_r]
 instance intoSep_and_persistent_right [BI PROP] (P Q P' Q' : PROP) [Persistent Q]
     [inst : AndIntoSep Q Q' P P'] : IntoSep iprop(P ∧ Q) P' Q' where
@@ -945,7 +947,7 @@ instance (priority := default - 10) intoPersistently_persistent [BI PROP] (P : P
 
 /-! ### FromAffinely -/
 
-@[ipm_backtrack, rocq_alias from_affinely_affine]
+@[nolint unusedArguments, ipm_backtrack, rocq_alias from_affinely_affine]
 instance fromAffinely_affine [BI PROP] (P : PROP) [Affine P] : FromAffinely P P true where
   from_affinely := affinely_elim
 
@@ -1036,7 +1038,6 @@ instance (priority := default + 20) fromAssumption_affinely_left (p : Bool) [BI 
     (P Q : PROP) [h : FromAssumption p .in P Q] : FromAssumption p .in iprop(<affine> P) Q where
   from_assumption := (intuitionisticallyIf_mono affinely_elim).trans h.1
 
-set_option synthInstance.checkSynthOrder false in
 @[rocq_alias from_assumption_forall]
 instance (priority := default + 10) fromAssumption_forall (p : Bool) [BI PROP]
     (Φ : α → PROP) (x : α) (Q : PROP) [h : FromAssumption p .in (Φ x) Q] :

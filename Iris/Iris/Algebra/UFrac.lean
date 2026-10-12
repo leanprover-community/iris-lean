@@ -11,14 +11,17 @@ public import Iris.Algebra.Frac
 public import Iris.Algebra.IsOp
 
 /-!
-# The UFrac CMRA
+# The UFrac ORA
 
-A variant of the Frac CMRA with unbounded validity (>1).
+A variant of the Frac ORA with unbounded validity (>1).
 -/
 
 @[expose] public section
 
 namespace Iris
+
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
 
 @[rocq_alias ufrac]
 structure UFrac where
@@ -27,6 +30,7 @@ structure UFrac where
 #rocq_ignore ufracO "Use UFrac type with typeclass inference"
 
 namespace UFrac
+open ORA
 
 @[simp] theorem ext_iff {x y : UFrac} : x = y ↔ x.frac = y.frac := by
   cases x; cases y; simp
@@ -42,24 +46,32 @@ instance : OFE.Discrete UFrac := ⟨fun h => h⟩
 
 #rocq_ignore ufrac_ra_mixin "Use CMRA instance"
 
-@[rocq_alias ufracR]
-instance : CMRA UFrac where
-  pcore _ := none
+instance instOp : Op UFrac where
   op x y := ⟨x.frac + y.frac⟩
+  assoc := ext_iff.mpr <| Subtype.ext (Rat.add_assoc ..).symm
+  comm := ext_iff.mpr <| Subtype.ext (Rat.add_comm ..)
+
+instance instPCore : PCore UFrac where
+  pcore _ := none
+  pcore_idem H := by rcases H
+
+instance instRA : RA UFrac where
+  pcore_op_left H := by rcases H
+
+@[reducible] def cmraData : CMRAData UFrac where
   Valid _ := True
   ValidN _ _ := True
   op_ne.ne _ _ _ H := by rw [H]
   pcore_ne _ H := by rcases H
   validN_ne _ := id
   valid_iff_validN := ⟨fun _ _ => trivial, fun _ => trivial⟩
-  validN_succ := id
+  validN_le := fun h _ => h
   validN_op_left _ := trivial
-  assoc := ext_iff.mpr <| Subtype.ext (Rat.add_assoc ..).symm
-  comm := ext_iff.mpr <| Subtype.ext (Rat.add_comm ..)
-  pcore_op_left H := by rcases H
-  pcore_idem H := by rcases H
-  pcore_op_mono H := by rcases H
   extend {_ x y z} := by rintro _ rfl; exists y; exists z
+  pcore_op_mono H := by rcases H
+
+@[rocq_alias ufracR]
+instance : CMRA UFrac := ofCMRAData UFrac.cmraData
 
 @[simp, grind =] theorem frac_op (x y : UFrac) : (x • y).frac = x.frac + y.frac := rfl
 @[simp, grind =] theorem valid_iff {x : UFrac} : ✓ x ↔ True := Iff.rfl
@@ -68,6 +80,12 @@ instance : CMRA UFrac where
 @[rocq_alias ufrac_op]
 theorem op_eq (p q : UFrac) : p • q = ⟨p.frac + q.frac⟩ := rfl
 
+theorem ord_iff {x y : UFrac} : x ≼ₒ y ↔ x.frac < y.frac := by
+  refine ⟨fun ⟨r, Hr⟩ => ?_, fun H => ?_⟩
+  · have := r.frac.2; simp only [ext_iff, frac_op] at Hr; grind
+  · refine ⟨⟨⟨y.frac.val - x.frac.val, by grind⟩⟩, ?_⟩
+    simp only [ext_iff, frac_op]; grind
+
 @[rocq_alias ufrac_included]
 theorem inc_iff {x y : UFrac} : x ≼ y ↔ x.frac < y.frac := by
   refine ⟨fun ⟨r, Hr⟩ => ?_, fun H => ?_⟩
@@ -75,22 +93,26 @@ theorem inc_iff {x y : UFrac} : x ≼ y ↔ x.frac < y.frac := by
   · refine ⟨⟨⟨y.frac.val - x.frac.val, by grind⟩⟩, ?_⟩
     simp only [ext_iff, frac_op]; grind
 
+theorem le_of_ord {x y : UFrac} (H : x ≼ₒ y) : x.frac ≤ y.frac := by
+  have := ord_iff.mp H; grind
+
 @[rocq_alias ufrac_included_weak]
 theorem le_of_inc {x y : UFrac} (H : x ≼ y) : x.frac ≤ y.frac := by
   have := inc_iff.mp H; grind
 
 @[rocq_alias ufrac_cmra_discrete]
-instance : CMRA.Discrete UFrac where
+instance : Discrete UFrac where
   discrete_0 := fun h => h
   discrete_valid := id
+  discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
 
 @[rocq_alias ufrac_cancelable]
-instance {q : UFrac} : CMRA.Cancelable q where
-  cancelableN {n x y} _ (H : q • x = q • y) := by
+instance {q : UFrac} : Cancelable q where
+  cancelableN {n} {x y} _ (H : q • x = q • y) := by
     simp only [dist_iff, ext_iff, frac_op] at *; grind
 
 @[rocq_alias ufrac_id_free]
-instance {q : UFrac} : CMRA.IdFree q where
+instance {q : UFrac} : IdFree q where
   id_free0_r b _ H := by
     have := b.frac.2; simp only [dist_iff, ext_iff, frac_op] at H; grind
 

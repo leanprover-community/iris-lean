@@ -111,23 +111,37 @@ trace: [Meta.synthInstance] ✅️ IPM: FromAssumption false InOut.out P1 P1
     [Meta.synthInstance.instances] #[@fromAssumption_exact]
     [Meta.synthInstance] ✅️ apply @fromAssumption_exact to FromAssumption false InOut.out ?_ P1
       [Meta.synthInstance.tryResolve] ✅️ FromAssumption false InOut.out P1 P1 ≟ FromAssumption false InOut.out P1 P1
+        [Meta.synthInstance] ✅️ BI PROP
+          [Meta.synthInstance] ✅️ new goal BI PROP
+            [Meta.synthInstance.instances] #[inst✝]
+          [Meta.synthInstance.apply] ✅️ apply inst✝ to BI PROP
+            [Meta.synthInstance.tryResolve] ✅️ BI PROP ≟ BI PROP
+            [Meta.synthInstance.answer] ✅️ BI PROP
+          [Meta.synthInstance] result inst✝
       [Meta.synthInstance] ✅️ switch to normal synthInstance
         [Meta.synthInstance] ✅️ BI PROP
           [Meta.synthInstance] ✅️ new goal BI PROP
-            [Meta.synthInstance.instances] #[@Sbi.toBI, inst✝]
+            [Meta.synthInstance.instances] #[inst✝]
           [Meta.synthInstance.apply] ✅️ apply inst✝ to BI PROP
             [Meta.synthInstance.tryResolve] ✅️ BI PROP ≟ BI PROP
             [Meta.synthInstance.answer] ✅️ BI PROP
           [Meta.synthInstance] result inst✝
   [Meta.synthInstance] result fromAssumption_exact false InOut.out P1
 ---
-trace: [Meta.synthInstance] ✅️ BI PROP
-  [Meta.synthInstance] ✅️ new goal BI PROP
-    [Meta.synthInstance.instances] #[@Sbi.toBI, inst✝]
+trace: [Meta.synthInstance] ✅️ BIBase PROP
+  [Meta.synthInstance] ✅️ new goal BIBase PROP
+    [Meta.synthInstance.instances] #[@toBIBase]
+  [Meta.synthInstance.apply] ✅️ apply @toBIBase to BIBase PROP
+    [Meta.synthInstance.tryResolve] ✅️ BIBase PROP ≟ BIBase PROP
+    [Meta.synthInstance] ✅️ new goal BI PROP
+      [Meta.synthInstance.instances] #[inst✝]
   [Meta.synthInstance.apply] ✅️ apply inst✝ to BI PROP
     [Meta.synthInstance.tryResolve] ✅️ BI PROP ≟ BI PROP
     [Meta.synthInstance.answer] ✅️ BI PROP
-  [Meta.synthInstance] result inst✝
+  [Meta.synthInstance.resume] ✅️ propagating BI PROP to subgoal BI PROP of BIBase PROP
+    [Meta.synthInstance.resume] size: 1
+    [Meta.synthInstance.answer] ✅️ BIBase PROP
+  [Meta.synthInstance] result inst✝.toBIBase
 -/
 #guard_msgs in
 set_option trace.Meta.synthInstance true in
@@ -257,7 +271,7 @@ trace: [Meta.synthInstance] ✅️ IPM: TacticTest iprop(∀ a, (emp ∗ ⌜a = 
       [Meta.synthInstance] ✅️ switch to normal synthInstance
         [Meta.synthInstance] ✅️ BI PROP
           [Meta.synthInstance] ✅️ new goal BI PROP
-            [Meta.synthInstance.instances] #[@Sbi.toBI, inst✝]
+            [Meta.synthInstance.instances] #[inst✝]
           [Meta.synthInstance.apply] ✅️ apply inst✝ to BI PROP
             [Meta.synthInstance.tryResolve] ✅️ BI PROP ≟ BI PROP
             [Meta.synthInstance.answer] ✅️ BI PROP
@@ -405,7 +419,7 @@ variable (m n p q : Nat)
 end NatCancel
 
 section IsOp
-open Iris CMRA ProofMode
+open Iris ORA ProofMode
 
 variable (q q1 q2 : Qp)
 
@@ -417,7 +431,7 @@ variable (q q1 q2 : Qp)
 #guard_msgs (whitespace := lax) in
 #ipm_synth IsOp .split (q1 + q2 : Qp) _ _
 
-/- Splitting a CMRA operation: `isOpFrac_split` is used instead of `isOpFrac_half`. -/
+/- Splitting a ORA operation: `isOpFrac_split` is used instead of `isOpFrac_half`. -/
 /-- info:
   solution: IsOp IsOp.Direction.split (q1 • q2) q1 q2,
   new goals: []
@@ -608,7 +622,7 @@ end ProofModeInstances
 
 section TCSideCondition
 
-variable [Sbi PROP] [BIFUpdate PROP] [BIFUpdateSbi PROP] [BIAffine PROP]
+variable [BI PROP] [BIPlainly PROP] [BIFUpdate PROP] [BIFUpdatePlainly PROP] [BIAffine PROP]
 variable (E : CoPset) (Ψ : Nat → PROP) [∀ n, Plain (Ψ n)]
 
 /- Tests `TCSideCondition` with sidecondition that can be solved. -/

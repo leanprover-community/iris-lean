@@ -13,9 +13,12 @@ public import Iris.Std.GenMultiSets
 
 @[expose] public section
 
-/-! ## The multiset union CMRA -/
+variable {SI : stepindex (Type _)} [instSI : Iris.SIdx SI]
+local stepindex SI
 
-open Iris Std CMRA OFE
+/-! ## The multiset union ORA -/
+
+open Iris Std ORA OFE
 
 @[grind!, rocq_alias gmultisetO, rocq_alias gmultisetR, rocq_alias gmultisetUR]
 inductive LeibnizMultiSet (MS : Type _) where
@@ -37,40 +40,50 @@ variable {MS : Type _} [LawfulMultiSet MS A]
 
 open MultiSet
 
-instance : CMRA (LeibnizMultiSet MS) where
-  pcore _ := some (ofSet ∅)
+/-- The operation and core as step-index-free data instances (Mathlib-style). -/
+instance : Op (LeibnizMultiSet MS) where
   op | ofSet X, ofSet Y => ofSet (X ⊎ Y)
+  assoc := by grind
+  comm := by grind
+
+instance : PCore (LeibnizMultiSet MS) where
+  pcore _ := some (ofSet ∅)
+  pcore_idem := id
+
+instance instRA : RA (LeibnizMultiSet MS) where
+  pcore_op_left {_ X} := by cases X; rintro ⟨rfl⟩; exact congrArg ofSet disjUnion_empty_left
+
+instance instURA : URA (LeibnizMultiSet MS) where
+  unit := .ofSet ∅
+  unit_left_id {X} := by cases X; exact congrArg ofSet disjUnion_empty_left
+  pcore_unit := rfl
+  total _ := ⟨.ofSet ∅, rfl⟩
+
+@[reducible] def cmraData : CMRAData (LeibnizMultiSet MS) where
   ValidN _ _ := True
   Valid _ := True
   op_ne.ne _ _ _ H := by rw [(H : _ = _)]
   pcore_ne {_ _ _ cx} _ H := ⟨cx, H, .rfl⟩
   validN_ne _ _ := trivial
   valid_iff_validN := by simp
-  validN_succ _ := trivial
+  validN_le _ _ := trivial
   validN_op_left _ := trivial
-  assoc := by grind
-  comm := by grind
-  pcore_op_left {_ X} := by cases X; rintro ⟨rfl⟩; exact congrArg ofSet disjUnion_empty_left
-  pcore_idem := id
-  pcore_op_mono {_ X} := by
-    rintro ⟨rfl⟩ _
-    exists .ofSet ∅
-    grind
   extend {_ _ _ _} _ h := ⟨_, _, h, .rfl, .rfl⟩
+  pcore_op_mono h _ :=
+    ⟨.ofSet ∅, by cases h; exact congrArg (some ∘ ofSet) disjUnion_empty_left.symm⟩
 
-instance : UCMRA (LeibnizMultiSet MS) where
-  unit := .ofSet ∅
+instance : CMRA (LeibnizMultiSet MS) := ofCMRAData LeibnizMultiSet.cmraData
+
+theorem ucmraData : UCMRAData (LeibnizMultiSet MS) where
   unit_valid := trivial
-  unit_left_id {X} := by cases X; exact congrArg ofSet disjUnion_empty_left
-  pcore_unit := rfl
+
+instance instUnital : UCMRA (LeibnizMultiSet MS) := UORA.ofUCMRAData LeibnizMultiSet.ucmraData
 
 @[rocq_alias gmultiset_cmra_discrete]
-instance : CMRA.Discrete (LeibnizMultiSet MS) where
+instance : ORA.Discrete (LeibnizMultiSet MS) where
   discrete_0 h := h
   discrete_valid := id
-
-instance : CMRA.IsTotal (LeibnizMultiSet MS) where
-  total _ := ⟨.ofSet ∅, rfl⟩
+  discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
 
 @[rocq_alias gmultiset_op]
 theorem op_disjUnion (X Y : MS) : (ofSet X) • (ofSet Y) = ofSet (X ⊎ Y) := rfl
@@ -89,9 +102,12 @@ theorem included_iff_subset {X Y : MS} : ofSet X ≼ ofSet Y ↔ X ⊆ Y where
   mp | ⟨_, h⟩ => ofSet.inj h ▸ disjUnion_subset_left
   mpr h := ⟨ofSet (Y \ X), congrArg ofSet (disjUnion_difference_of_subseteq h)⟩
 
+@[indexed]
+theorem ord_iff_subset {X Y : MS} : ofSet X ≼ₒ ofSet Y ↔ X ⊆ Y :=
+  inc_iff_ord.symm.trans included_iff_subset
+
 @[rocq_alias gmultiset_cancelable]
-instance (X : LeibnizMultiSet MS) : CMRA.Cancelable X :=
-  discrete_cancelable fun {Y Z} _ h => by grind
+instance (X : LeibnizMultiSet MS) : Cancelable X := discrete_cancelable fun {Y Z} _ h => by grind
 
 @[rocq_alias gmultiset_update]
 theorem update (X Y : MS) : ofSet X ~~> ofSet Y := fun _ _ _ => trivial
@@ -103,17 +119,17 @@ theorem localUpdate {X Y X' Y' : MS} (h : X ⊎ Y' = X' ⊎ Y) :
   refine congrArg ofSet (LawfulMultiSet.ext fun a => ?_)
   grind [multiplicity_disjUnion]
 
-@[rocq_alias gmultiset_local_update_alloc]
+@[indexed, rocq_alias gmultiset_local_update_alloc]
 theorem localUpdate_alloc {X Y X' : MS} :
     (ofSet X, ofSet Y) ~l~> (ofSet (X ⊎ X'), ofSet (Y ⊎ X')) :=
   localUpdate <| LawfulMultiSet.ext fun _ => by simp only [multiplicity_disjUnion]; omega
 
-@[rocq_alias gmultiset_local_update_dealloc]
+@[indexed, rocq_alias gmultiset_local_update_dealloc]
 theorem localUpdate_dealloc {X Y X' : MS} (h : X' ⊆ Y) :
     (ofSet X, ofSet Y) ~l~> (ofSet (X \ X'), ofSet (Y \ X')) := by
-  refine LocalUpdate.total_valid fun _ _ inc => localUpdate (LawfulMultiSet.ext fun a => ?_)
+  refine LocalUpdate.total_valid fun _ _ le => localUpdate (LawfulMultiSet.ext fun a => ?_)
   simp only [multiplicity_disjUnion, multiplicity_difference]
-  grind [subset_iff, included_iff_subset]
+  grind [subset_iff, (ord_iff_subset).mp le]
 
 end LeibnizMultiSet
 
@@ -124,7 +140,7 @@ variable {MS : Type _} [LawfulFiniteMultiSet MS A]
 
 @[rocq_alias big_opMS_singletons]
 theorem bigOpMS_singletons (X : MS) :
-    ([^ CMRA.op mset] x ∈ X, (ofSet {x} : LeibnizMultiSet MS)) = ofSet X := by
+    ([^ op mset] x ∈ X, (ofSet {x} : LeibnizMultiSet MS)) = ofSet X := by
   induction X using multiset_ind with
   | empty => exact BigOpMS.bigOpMS_empty
   | disjUnion_singleton a X ih => rw [BigOpMS.bigOpMS_insert, ih, op_disjUnion]

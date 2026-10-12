@@ -9,6 +9,10 @@ public import Iris.ProofMode.Classes
 
 @[expose] public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 namespace Iris.ProofMode
 open Iris.BI
 
@@ -54,7 +58,7 @@ def modality_intuitionistically [BI PROP] : Modality PROP PROP where
   sep := intuitionistically_sep_mpr
 
 @[rocq_alias modality_plainly, rocq_alias modality_plainly_mixin]
-def modality_plainly [Sbi PROP] : Modality PROP PROP where
+def modality_plainly [BI PROP] [BIPlainly PROP] : Modality PROP PROP where
   M := BIBase.Plainly.plainly
   action
   | true => .forall Plain
@@ -74,7 +78,7 @@ def modality_laterN (n : Nat) [BI PROP] : Modality PROP PROP where
     (intuitionisticallyIf_mono (h.into_laterN)).trans (laterN_intuitionisticallyIf n)
   emp := laterN_intro n
   mono := (laterN_mono n ·)
-  sep := (laterN_sep n).2
+  sep := laterN_sep_2 n
 
 @[rocq_alias modality_embed, rocq_alias modality_embed_mixin]
 def modality_embed [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2] : Modality PROP1 PROP2 where

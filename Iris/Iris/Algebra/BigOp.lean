@@ -17,6 +17,9 @@ public import Iris.Std.Equivalence
 
 namespace Iris.Algebra
 
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
+
 /-! # Big Operators
 
 This file defines big operators (fold operations) at the abstract OFE level.
@@ -25,13 +28,13 @@ These are parameterized by a monoid operation and include theorems about their p
 
 open OFE Iris.Std
 
-@[rocq_alias big_opL, expose] public def bigOpL {M : Type u} {A : Type v} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
+@[rocq_alias big_opL, expose] public def bigOpL {M : Type u} {A : Type v} (op : M → M → M) {unit : M} [MonoidOps op unit]
     (Φ : Nat → A → M) (l : List A) : M :=
   match l with
   | [] => unit
   | x :: xs => op (Φ 0 x) (bigOpL op (fun n => Φ (n + 1)) xs)
 
-@[rocq_alias big_opM, expose] public def bigOpM {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit] {K : Type _}
+@[rocq_alias big_opM, expose] public def bigOpM {M : Type u} (op : M → M → M) {unit : M} [MonoidOps op unit] {K : Type _}
     {V : Type _} (Φ : K → V → M) {M' : Type _ → Type _} [LawfulFiniteMap M' K] (m : M' V) : M :=
   bigOpL op (fun _ kv => Φ kv.1 kv.2) (toList m)
 
@@ -39,7 +42,7 @@ open OFE Iris.Std
 #rocq_ignore big_opM_def "Not needed"
 #rocq_ignore big_opM_unseal "Not needed"
 
-@[rocq_alias big_opS, expose] public def bigOpS {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
+@[rocq_alias big_opS, expose] public def bigOpS {M : Type u} (op : M → M → M) {unit : M} [MonoidOps op unit]
     {A : Type _} {S : Type _} [FiniteSet S A] (Φ : A → M) (m : S) : M :=
   bigOpL op (fun _ x => Φ x) (toList m)
 
@@ -47,7 +50,7 @@ open OFE Iris.Std
 #rocq_ignore big_opS_def "Not needed"
 #rocq_ignore big_opS_unseal "Not needed"
 
-@[rocq_alias big_opMS, expose] public def bigOpMS {M : Type u} [OFE M] (op : M → M → M)
+@[rocq_alias big_opMS, expose] public def bigOpMS {M : Type u} (op : M → M → M)
     {unit : M} [MonoidOps op unit] {A : Type _} {MS : Type _} [FiniteMultiSet MS A]
     (Φ : A → M) (X : MS) : M :=
   bigOpL op (fun _ x => Φ x) (FiniteMultiSet.toList X)
@@ -106,7 +109,7 @@ theorem bigOpL_eq {Φ Ψ : Nat → A → M} {l : List A} (h : ∀ {i x}, l[i]? =
   | .cons _ _ => (congrArg (op · _) (h rfl)).trans (congrArg (op _) (bigOpL_eq (h ·)))
 
 @[rocq_alias big_opL_ne]
-theorem bigOpL_dist {Φ Ψ : Nat → A → M} {l : List A} {n : Nat}
+theorem bigOpL_dist [NonExpansive₂ op] {Φ Ψ : Nat → A → M} {l : List A} {n}
     (h : ∀ {i x}, l[i]? = some x → Φ i x ≡{n}≡ Ψ i x) :
     ([^ op list] k ↦ x ∈ l, Φ k x) ≡{n}≡ ([^ op list] k ↦ x ∈ l, Ψ k x) :=
   match l with | .nil => .rfl | .cons _ _ => op_dist (h rfl) (bigOpL_dist (h ·))
@@ -223,8 +226,9 @@ theorem bigOpL_gen_proper (R : M → M → Prop) {Φ Ψ : Nat → A → M} {l : 
 
 #rocq_ignore big_opL_ext "Merged into bigOpL_eq"
 
+omit [OFE M] in
 @[rocq_alias big_opL_proper_2]
-theorem bigOpL_proper_2 [OFE A] {Φ Ψ : Nat → A → M} {l₁ l₂ : List A} (hlen : l₁.length = l₂.length)
+theorem bigOpL_proper_2 {Φ Ψ : Nat → A → M} {l₁ l₂ : List A} (hlen : l₁.length = l₂.length)
     (hf : ∀ {k y₁ y₂}, l₁[k]? = some y₁ → l₂[k]? = some y₂ → Φ k y₁ = Ψ k y₂) :
     ([^ op list] k ↦ x ∈ l₁, Φ k x) = ([^ op list] k ↦ x ∈ l₂, Ψ k x) :=
   bigOpL_gen_proper_2 (· = ·) rfl (· ▸ · ▸ rfl) hlen hf
@@ -422,7 +426,7 @@ theorem bigOpM_gen_proper {R : M → M → Prop} {Φ Ψ : K → V → M} {m : M'
 #rocq_ignore big_opM_ext "Merged into bigOpM_eq"
 
 @[rocq_alias big_opM_ne]
-theorem bigOpM_dist {Φ Ψ : K → V → M} {m : M' V}
+theorem bigOpM_dist {n} [NonExpansive₂ op] {Φ Ψ : K → V → M} {m : M' V}
     (hf : ∀ {k x}, get? m k = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([^ op map] k ↦ x ∈ m, Φ k x) ≡{n}≡ ([^ op map] k ↦ x ∈ m, Ψ k x) :=
   bigOpM_gen_proper .rfl op_dist hf
@@ -432,14 +436,15 @@ theorem bigOpM_eq {Φ Ψ : K → V → M} {m : M' V} (hf : ∀ {k x}, get? m k =
     ([^ op map] k ↦ x ∈ m, Φ k x) = ([^ op map] k ↦ x ∈ m, Ψ k x) :=
   bigOpM_gen_proper rfl (· ▸ · ▸ rfl) hf
 
+omit [OFE M] in
 @[rocq_alias big_opM_proper_2]
-theorem bigOpM_eq_strong [OFE A] {Φ Ψ : K → A → M} {m1 m2 : M' A} (hm : ∀ k, get? m1 k = get? m2 k)
+theorem bigOpM_eq_strong {Φ Ψ : K → A → M} {m1 m2 : M' A} (hm : ∀ k, get? m1 k = get? m2 k)
     (hf : ∀ {k y1 y2}, get? m1 k = some y1 → get? m2 k = some y2 → y1 = y2 → Φ k y1 = Ψ k y2) :
     ([^ op map] k ↦ x ∈ m1, Φ k x) = ([^ op map] k ↦ x ∈ m2, Ψ k x) :=
   bigOpM_gen_proper_2 id equivalence_eq (· ▸ · ▸ rfl) (fun k => by rw [hm k])
     fun h1 h2 => hf h1 h2 (by rw [hm _] at h1; exact Option.some.inj (h1.symm.trans h2))
 
-theorem bigOpM_dist_pointwise {Φ Ψ : K → V → M} {n : Nat} (m : M' V)
+theorem bigOpM_dist_pointwise [NonExpansive₂ op] {Φ Ψ : K → V → M} {n} (m : M' V)
     (hf : ∀ {k x}, Φ k x ≡{n}≡ Ψ k x) :
     ([^ op map] k ↦ x ∈ m, Φ k x) ≡{n}≡ ([^ op map] k ↦ x ∈ m, Ψ k x) :=
   bigOpM_dist fun _ => hf
@@ -465,7 +470,7 @@ theorem bigOpM_singleton_eq (Φ : K → V → M) (i : K) (x : V) :
   simpa only [bigOpM_empty] using op_right_id
 
 @[rocq_alias big_opM_unit]
-theorem bigOpM_const_unit_eq [DecidableEq K] (m : M' V) :
+theorem bigOpM_const_unit_eq (m : M' V) :
     bigOpM op (fun _ _ => unit) m = unit :=
   bigOpL_const_unit_eq
 
@@ -523,7 +528,7 @@ theorem bigOpM_filter_eq (φ : K → V → Bool) (Φ : K → V → M) (m : M' V)
   (bigOpL_eq_of_perm _ LawfulFiniteMap.toList_filter).trans
     (bigOpL_filter_eq (fun (k, v) => φ k v) (fun (k, v) => Φ k v) _)
 
-theorem toList_union_perm [DecidableEq K] {m1 m2 : M' V} (hdisj : m1 ##ₘ m2) :
+theorem toList_union_perm {m1 m2 : M' V} (hdisj : m1 ##ₘ m2) :
     (toList (m1 ∪ m2)).Perm (toList m1 ++ toList m2) := by
   refine (List.perm_ext_iff_of_nodup LawfulFiniteMap.nodup_toList ?_).mpr fun ⟨k, v⟩ => ?_
   · refine List.nodup_append.mpr ⟨LawfulFiniteMap.nodup_toList, LawfulFiniteMap.nodup_toList, ?_⟩
@@ -548,7 +553,7 @@ theorem toList_union_perm [DecidableEq K] {m1 m2 : M' V} (hdisj : m1 ##ₘ m2) :
         · exact absurd (toList_get.mp h) (by simp [h1])
 
 @[rocq_alias big_opM_union]
-theorem bigOpM_union_eq [DecidableEq K] (Φ : K → V → M) (m1 m2 : M' V) (hdisj : m1 ##ₘ m2) :
+theorem bigOpM_union_eq (Φ : K → V → M) (m1 m2 : M' V) (hdisj : m1 ##ₘ m2) :
     ([^ op map] k ↦ x ∈ m1 ∪ m2, Φ k x) =
     op ([^ op map] k ↦ x ∈ m1, Φ k x) ([^ op map] k ↦ x ∈ m2, Φ k x) := by
   refine .trans (bigOpL_eq_of_perm _ (toList_union_perm hdisj)) ?_
@@ -740,7 +745,7 @@ theorem bigOpS_eq_of_forall_eq {Φ Ψ : A → M} {s : S} (h : ∀ {x}, Φ x = Ψ
   bigOpL_eq_of_forall_eq h
 
 @[rocq_alias big_opS_ne]
-theorem bigOpS_dist {Φ Ψ : A → M} {s : S} {n : Nat} (h : ∀ {x}, x ∈ s → Φ x ≡{n}≡ Ψ x) :
+theorem bigOpS_dist [NonExpansive₂ op] {Φ Ψ : A → M} {s : S} {n} (h : ∀ {x}, x ∈ s → Φ x ≡{n}≡ Ψ x) :
     ([^ op set] x ∈ s, Φ x) ≡{n}≡ ([^ op set] x ∈ s, Ψ x) := by
   refine bigOpL_dist (fun {i _} _ => h ?_)
   rw [←Std.mem_toList, List.mem_iff_getElem?]
@@ -928,7 +933,7 @@ theorem bigOpMS_eq_of_forall_eq {Φ Ψ : A → M} {X : MS} (h : ∀ {x}, Φ x = 
   bigOpL_eq_of_forall_eq h
 
 @[rocq_alias big_opMS_ne]
-theorem bigOpMS_dist {Φ Ψ : A → M} {X : MS} {n : Nat} (h : ∀ {x}, x ∈ X → Φ x ≡{n}≡ Ψ x) :
+theorem bigOpMS_dist [NonExpansive₂ op] {Φ Ψ : A → M} {X : MS} {n} (h : ∀ {x}, x ∈ X → Φ x ≡{n}≡ Ψ x) :
     ([^ op mset] x ∈ X, Φ x) ≡{n}≡ ([^ op mset] x ∈ X, Ψ x) := by
   refine bigOpL_dist (fun {i _} hi => h ?_)
   rw [← LawfulFiniteMultiSet.mem_toList, List.mem_iff_getElem?]

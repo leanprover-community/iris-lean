@@ -20,10 +20,12 @@ public import Iris.Instances.Lib.NaInvariants
 public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.WeakestPre
 
+local stepindex Nat
+
 @[expose] public section
 
 namespace IrisTest
-open Iris BI CMRA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic
+open Iris BI ORA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic
 
 /- This file contains tests with various scenarios for all available tactics. -/
 
@@ -2353,7 +2355,7 @@ example [BI PROP] (P : PROP) : □ P ∗ <affine> P ⊢ <affine> P := by
   iexact HP2
 
 /- Tests `imodintro` for affinely (intuitionistic: id, spatial: forall Affine) failing. -/
-/-- error: imodintro: hypothesis HP2: P does not satisfy Affine -/
+/-- error: imodintro: hypothesis HP2: P does not satisfy BI.Affine -/
 #guard_msgs in
 example [BI PROP] (P : PROP) : □ P ∗ P ⊢ <affine> P := by
   iintro ⟨#HP1, HP2⟩
@@ -2373,7 +2375,7 @@ example [BI PROP] (P : PROP) : □ P ∗ □ P ⊢ □ P := by
   imodintro
 
 /-- Tests `imodintro` for plain (intuitionistic: .forall Plain, spatial: clear). -/
-example [Sbi PROP] (P : PROP) [Plain P] : □ P ∗ P ⊢ ■ P := by
+example [BI PROP] [BIPlainly PROP] (P : PROP) [Plain P] : □ P ∗ P ⊢ ■ P := by
   iintro ⟨#HP1, HP2⟩
   imodintro
   iexact HP1
@@ -3008,7 +3010,7 @@ end timeReceipts
 
 section irewrite
 
-variable {PROP : Type _} [Sbi PROP]
+variable {PROP : Type _} [BI PROP] [BIStepIndexed PROP] [Sbi PROP]
 variable {A B : Type _} [OFE A] [OFE B]
 
 /- Tests `irewrite` rewriting in goal. -/
@@ -3624,7 +3626,7 @@ example [BI PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ □ R -∗ R ∗ P ∗ Q :=
     `a2` and `a3` can be combined as `b` instead of `a2 • a3` as
     the former takes higher precedence. Likewise, `a1` and `b` is merged
     as `c` instead of `a1 • b`. -/
-example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
+example {F GF} [RFunctorContractive F] [RFunctorAffine F] [ElemG GF F] {γ}
     {a1 a2 a3 b c : F.ap (IProp GF)} [IsOp .merge b a2 a3] [IsOp .merge c a1 b] :
     ⊢ iOwn γ a1 -∗ iOwn γ a2 -∗ iOwn γ a3 -∗
       iOwn γ c ∗ ✓ (a2 • a3) ∗ ✓ (a1 • b) := by
@@ -3657,8 +3659,8 @@ example {GF} [ElemG GF (constOF DFrac)]
   · iexact Hnew2
 
 /-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
-    instances for the authoritative CMRA. -/
-example {GF A} [UCMRA A] [ElemG GF (constOF (Auth A))] {γ}
+    instances for the authoritative ORA. -/
+example {GF A} [URA A] [UCMRA A] [ORA.Affine A] [ElemG GF (constOF (Auth A))] {γ}
     {a1 a2 a3 b c : A} {q1 q2 : Qp} {dq'' dq3 dq4 : DFrac}
     [IsOp .merge b a2 a3] [IsOp .merge c a1 b]
     [IsOp .merge dq'' dq3 dq4] :

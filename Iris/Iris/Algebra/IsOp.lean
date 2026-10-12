@@ -12,7 +12,7 @@ public import Iris.ProofMode.SynthInstanceAttr
 
 namespace Iris
 
-open CMRA ProofMode
+open ORA ProofMode
 
 section IsOp
 
@@ -33,7 +33,7 @@ end
   to split `a` into `b1` and `b2`.
 -/
 @[ipm_class, rocq_alias IsOp, rocq_alias IsOp', rocq_alias IsOp'LR]
-class IsOp [CMRA α]
+class IsOp [RA α]
     (d : IsOp.Direction) (a : semiOutParamIPM d.toInOut α)
     (b1 : semiOutParamIPM d.toInOut.negate α)
     (b2 : semiOutParamIPM d.toInOut.negate α) where
@@ -42,15 +42,13 @@ class IsOp [CMRA α]
 set_option synthInstance.checkSynthOrder false in
 /-- Merging with `•` should have the lowest priority. -/
 @[rocq_alias is_op_op]
-instance (priority := low) isOpMerge_op [CMRA α] (a b : α) :
-    IsOp .merge (a • b) a b where
+instance (priority := low) isOpMerge_op [RA α] (a b : α) : IsOp .merge (a • b) a b where
   is_op := rfl
 
 set_option synthInstance.checkSynthOrder false in
 /-- Splitting with `•` should have the highest priority. -/
 @[rocq_alias is_op_lr_op]
-instance (priority := high) isOpSplit_op [CMRA α] (a b : α) :
-    IsOp .split (a • b) a b where
+instance (priority := high) isOpSplit_op [RA α] (a b : α) : IsOp .split (a • b) a b where
   is_op := rfl
 
 /-
@@ -60,27 +58,27 @@ instance (priority := high) isOpSplit_op [CMRA α] (a b : α) :
 -/
 
 @[rocq_alias is_op_pair]
-instance isOp_pair [CMRA α] {d : IsOp.Direction} (a b1 b2 : α) (a' b1' b2' : α)
+instance isOp_pair [RA α] {d : IsOp.Direction} (a b1 b2 : α) (a' b1' b2' : α)
     [h1 : IsOp d a b1 b2] [h2 : IsOp d a' b1' b2'] :
     IsOp d (a, a') (b1, b1') (b2, b2') where
   is_op := OFE.equiv_prod_ext h1.is_op h2.is_op
 
 set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias is_op_pair_core_id_l]
-instance isOp_pair_core_id_l [CMRA α] [CMRA β] {d : IsOp.Direction}
+instance isOp_pair_core_id_l [RA α] [RA β] {d : IsOp.Direction}
     (a : α) (a' b1' b2' : β) [h1 : CoreId a] [h2 : IsOp d a' b1' b2'] :
     IsOp d (a, a') (a, b1') (a, b2') where
   is_op := OFE.equiv_prod_ext (op_self a).symm h2.is_op
 
 set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack, rocq_alias is_op_pair_core_id_r]
-instance isOp_pair_core_id_r [CMRA α] [CMRA β] {d : IsOp.Direction}
+instance isOp_pair_core_id_r [RA α] [RA β] {d : IsOp.Direction}
     (a b1 b2 : α) (a' : β) [h1 : CoreId a'] [h2 : IsOp d a b1 b2] :
     IsOp d (a, a') (b1, a') (b2, a') where
   is_op := OFE.equiv_prod_ext h2.is_op (op_self a').symm
 
 @[rocq_alias is_op_Some]
-instance isOp_some [CMRA α] (a b1 b2 : α) {d : IsOp.Direction}
+instance isOp_some [RA α] (a b1 b2 : α) {d : IsOp.Direction}
     [h : IsOp d a b1 b2] : IsOp d (some a) (some b1) (some b2) where
   is_op := congrArg some h.is_op
 

@@ -15,6 +15,8 @@ open ProgramLogic Language Language.Notation Iris.Std OFE BI
 
 @[expose] public section
 
+local stepindex Nat
+
 /-!
 # Total weakest preconditions
 
@@ -34,8 +36,8 @@ abbrev Stuckness.MaybeReducibleNoObs : Stuckness → Expr × State → Prop
 namespace twp
 
 local instance : OFE CoPset := OFE.ofDiscrete _
-local instance : OFE Expr := OFE.ofDiscrete _
-local instance : OFE Val := OFE.ofDiscrete _
+local instance (priority := low) : OFE Expr := OFE.ofDiscrete _
+local instance (priority := low) : OFE Val := OFE.ofDiscrete _
 
 namespace Internal
 
@@ -98,17 +100,17 @@ instance pre'_mono (s : Stuckness) : BIMonoPred (pre' (ι := ι) s) where
     iapply pre_mono $$ [] [$]
     iintro !> %E %e %Φ H
     iapply HXY $$ H
-  mono_pred_ne.ne {n} := fun ⟨E₁, e₁, Φ₁⟩ ⟨E₂, e₂, Φ₂⟩ ⟨hE, he, hΦ⟩ => by
+  mono_pred_ne.ne {n : Nat} := fun ⟨E₁, e₁, Φ₁⟩ ⟨E₂, e₂, Φ₂⟩ ⟨hE, he, hΦ⟩ => by
     obtain rfl := show E₁ = E₂ from hE
     obtain rfl := show e₁ = e₂ from he
     simp only [pre', pre]
     match toVal e₁ with
-    | some v => exact BIFUpdate.ne.ne (hΦ v)
+    | some v => exact FUpdNE.fupd_ne.ne (hΦ v)
     | none =>
       refine forall_ne fun _ => forall_ne fun _ => forall_ne fun _ => forall_ne fun _ => ?_
-      refine wand_ne.ne .rfl <| BIFUpdate.ne.ne <| sep_ne.ne .rfl ?_
+      refine wand_ne.ne .rfl <| FUpdNE.fupd_ne.ne <| sep_ne.ne .rfl ?_
       refine forall_ne fun _ => forall_ne fun e => forall_ne fun _ => forall_ne fun _ => ?_
-      refine wand_ne.ne .rfl <| BIFUpdate.ne.ne <| sep_ne.ne .rfl <| sep_ne.ne .rfl <| sep_ne.ne ?_ .rfl
+      refine wand_ne.ne .rfl <| FUpdNE.fupd_ne.ne <| sep_ne.ne .rfl <| sep_ne.ne .rfl <| sep_ne.ne ?_ .rfl
       refine NonExpansive.ne ?_
       exact ⟨.rfl, .rfl, hΦ⟩
 
@@ -147,7 +149,7 @@ theorem induction (s : Stuckness) (Ψ : CoPset → Expr → (Val → IProp GF) �
 @[rocq_alias twp_ne]
 instance ne {s : Stuckness} {E} {e : Expr} :
     NonExpansive (TotalWp.totalWp (PROP := IProp GF) s E e) where
-  ne {n Φ₁ Φ₂} HΦ := by
+  ne {n : Nat} {Φ₁ Φ₂} HΦ := by
     refine NonExpansive.ne (f := bi_least_fixpoint (Internal.pre' s)) ?_
     exact ⟨.rfl, .rfl, HΦ⟩
 

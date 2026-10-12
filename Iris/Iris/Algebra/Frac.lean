@@ -11,13 +11,16 @@ public import Iris.Algebra.IsOp
 public import Iris.Std.Positives
 
 /-!
-# The Frac CMRA
+# The Frac ORA
 
-This CMRA captures the notion of fractional ownership of another resource.
+This ORA captures the notion of fractional ownership of another resource.
 This version follows Iris Rocq in fixing the underlying type of fractions to be `ℚ ∩ (0, 1]`
 -/
 
 @[expose] public section
+
+variable {SI : stepindex (Type _)} [instSI : Iris.SIdx SI]
+local stepindex SI
 
 namespace Rat
 
@@ -32,6 +35,7 @@ theorem mul_div_cancel_left {a b : Rat} (ha : a ≠ 0) : a * (b / a) = b := by
 end Rat
 
 namespace Iris
+open ORA
 
 /-- The type of positive rational numbers, used as fractions -/
 @[rocq_alias fracO, rocq_alias fracR]
@@ -70,31 +74,41 @@ def Qp.divide_even (q : Qp) (n : Nat) (hn : 0 < n) : Qp :=
 
 instance instCOFEQp : COFE Qp := COFE.ofDiscrete _
 
-instance instCMRAQp : CMRA Qp where
-  pcore _ := none
+/-- Fraction addition as a step-index-free data instance (Mathlib-style). -/
+instance Qp.instOp : Op Qp where
   op x y := x + y
+  assoc := Subtype.ext (Rat.add_assoc ..).symm
+  comm := Subtype.ext (Rat.add_comm ..)
+
+/-- Fractions have no core. -/
+instance Qp.instPCore : PCore Qp where
+  pcore _ := none
+  pcore_idem H := by rcases H
+
+instance Qp.instRA : RA Qp where
+  pcore_op_left H := by rcases H
+
+@[reducible] def Qp.cmraData : CMRAData Qp where
   ValidN _ x := x.val ≤ 1
   Valid x := x.val ≤ 1
   op_ne.ne n x1 x2 H := by rw [(H : x1 = x2)]
   pcore_ne _ H := by rcases H
   validN_ne H := by rw [(H : _ = _)]; exact id
   valid_iff_validN := .symm (forall_const _)
-  validN_succ := id
-  validN_op_left {n x y} h := by
+  validN_le := fun h _ => h
+  validN_op_left {n} {x y} h := by
     show x.val ≤ 1
     have h' : x.val + y.val ≤ 1 := h
     grind
-  assoc := Subtype.ext (Rat.add_assoc ..).symm
-  comm := Subtype.ext (Rat.add_comm ..)
-  pcore_op_left H := by rcases H
-  pcore_idem H := by rcases H
-  pcore_op_mono H := by rcases H
   extend {_ x y z} := by
     rintro H He; exact ⟨y, z, He, .rfl, .rfl⟩
+  pcore_op_mono H := by rcases H
+
+instance instORAQp : CMRA Qp := ofCMRAData Qp.cmraData
 
 -- TODO: A different solution to having these bridge lemmas might be to internalize
--- positivity into the CMRA's validity predicate, removing the sybtype, and having Qp
--- become just a Leibniz CMRA over Rat. This admits two-way coercions to Rat for the automation.
+-- positivity into the ORA's validity predicate, removing the sybtype, and having Qp
+-- become just a Leibniz ORA over Rat. This admits two-way coercions to Rat for the automation.
 
 @[simp, grind =] theorem Qp.val_add (x y : Qp) : (x + y).val = x.val + y.val := rfl
 @[simp, grind =] theorem Qp.val_one : (1 : Qp).val = 1 := rfl
@@ -111,7 +125,7 @@ instance instCMRAQp : CMRA Qp where
 @[simp, grind =] theorem Qp.lt_iff {x y : Qp} : x < y ↔ x.val < y.val := Iff.rfl
 @[simp] theorem Qp.ext_iff {x y : Qp} : x = y ↔ x.val = y.val := Subtype.ext_iff
 @[simp] theorem Qp.dist_iff {n} {x y : Qp} : x ≡{n}≡ y ↔ x.val = y.val := Subtype.ext_iff
-@[simp, rocq_alias frac_valid_1] theorem Qp.valid_one : ✓ (1 : Qp) := by grind
+@[indexed, simp, rocq_alias frac_valid_1] theorem Qp.valid_one : ✓ (1 : Qp) := by grind
 @[simp, grind =] theorem Qp.half_add_half (q : Qp) : q.half + q.half = q := Subtype.ext (by grind)
 @[grind =] theorem Qp.add_left_comm (x y z : Qp) : x + (y + z) = y + (x + z) := by grind
 @[simp, grind =] theorem Qp.quarter_add_threeQuarters : Qp.quarter + Qp.threeQuarters = 1 := by
@@ -141,32 +155,40 @@ instance : Pos.Countable Qp where
 #rocq_ignore frac_valid_instance "Use CMRA instance"
 #rocq_ignore frac_ra_mixin "Use CMRA instance"
 
-@[rocq_alias frac_included]
-theorem Frac.inc_iff {p q : Qp} : p ≼ q ↔ p < q := by
+theorem Frac.ord_iff {p q : Qp} : p ≼ₒ q ↔ p < q := by
   refine ⟨fun ⟨r, Hr⟩ => ?_, fun H => ?_⟩
   · have := r.2; simp only [Qp.lt_iff, Qp.ext_iff, Qp.val_op] at *; grind
   · exact ⟨⟨q.val - p.val, by grind⟩, by simp only [Qp.ext_iff, Qp.val_op]; grind⟩
 
+@[rocq_alias frac_included]
+theorem Frac.inc_iff {p q : Qp} : p ≼ q ↔ p < q :=
+  ⟨fun ⟨r, h⟩ => Qp.lt_iff_exists_add.mpr ⟨r, h.symm⟩,
+   fun h => let ⟨c, hc⟩ := Qp.lt_iff_exists_add.mp h; ⟨c, hc.symm⟩⟩
+
+theorem Frac.le_of_ord {p q : Qp} (H : p ≼ₒ q) : p ≤ q := by
+  have := ord_iff.mp H; grind
+
 @[rocq_alias frac_included_weak]
 theorem Frac.le_of_inc {p q : Qp} (H : p ≼ q) : p ≤ q := by
-  have := inc_iff.mp H; grind
+  have := Frac.inc_iff.mp H; simp only [Qp.lt_iff, Qp.le_iff] at *; grind
 
 @[rocq_alias frac_cmra_discrete]
-instance instDiscreteQp : CMRA.Discrete Qp where
+instance instDiscreteQp : Discrete Qp where
   discrete_0 := fun h => h
   discrete_valid := id
+  discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
 
 @[rocq_alias frac_full_exclusive]
-instance instExclusiveQp1 : CMRA.Exclusive (α := Qp) 1 where
+instance instExclusiveQp1 : Exclusive (α := Qp) 1 where
   exclusive0_l x := by have := x.2; grind
 
 @[rocq_alias frac_cancelable]
-instance instCancelableQp {a : Qp} : CMRA.Cancelable (α := Qp) a where
-  cancelableN {n x y} _ (H : a • x = a • y) := by
+instance instCancelableQp {a : Qp} : Cancelable (α := Qp) a where
+  cancelableN {n} {x y} _ (H : a • x = a • y) := by
     simp only [Qp.dist_iff, Qp.ext_iff, Qp.val_op] at *; grind
 
 @[rocq_alias frac_id_free]
-instance instIdFreeQp {a : Qp} : CMRA.IdFree a where
+instance instIdFreeQp {a : Qp} : IdFree a where
   id_free0_r b _ H := by
     have := b.2; simp only [Qp.dist_iff, Qp.val_op] at H; grind
 
@@ -189,7 +211,7 @@ instance isOpFrac_half d (q : Qp) : IsOp d q q.half q.half where
 
 set_option synthInstance.checkSynthOrder false in
 /--
-  The sum operator `+` is not automatically unfolded as the CMRA operator (`•`).
+  The sum operator `+` is not automatically unfolded as the ORA operator (`•`).
   As a result, `isOpSplit_op` does not automatically apply, and this instance
   is required.
 -/

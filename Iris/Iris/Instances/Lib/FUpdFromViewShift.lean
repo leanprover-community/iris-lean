@@ -18,13 +18,16 @@ public import Iris.BI.Plainly
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open Iris OFE BI
 
 section fupd
 
-variable {M : Type u} [UCMRA M] (vs : CoPset → CoPset → UPred M → UPred M → UPred M)
+variable {M : Type u} [URA M] [UORA M]
+variable (vs : CoPset → CoPset → UPred M → UPred M → UPred M)
 
 @[rocq_alias fupd]
 abbrev fupd_vs (E1 E2 : CoPset) (P : UPred M) : UPred M :=
@@ -47,7 +50,7 @@ theorem fupd_vs_intro (E : CoPset) (P : UPred M)
   iintro !> $
 
 @[rocq_alias fancy_updates_from_vs.fupd_mono]
-theorem fupd_vs_mono {E1 E2 : CoPset} {P Q : UPred M} (HPQ : P ⊢ Q)
+theorem fupd_vs_mono [IncOrd M] {E1 E2 : CoPset} {P Q : UPred M} (HPQ : P ⊢ Q)
     (vs_trans : ∀ E1 E2 E3 P Q R, iprop(vs E1 E2 P Q ∧ vs E2 E3 Q R) ⊢ vs E1 E3 P R)
     (vs_impl : ∀ E P Q, iprop(□ (P → Q)) ⊢ vs E E P Q) :
     fupd_vs vs E1 E2 P ⊢ fupd_vs vs E1 E2 Q := by
@@ -61,7 +64,8 @@ theorem fupd_vs_mono {E1 E2 : CoPset} {P Q : UPred M} (HPQ : P ⊢ Q)
   iapply HPQ $$ HP
 
 @[rocq_alias fancy_updates_from_vs.fupd_trans]
-theorem fupd_vs_trans {E1 E2 E3 : CoPset} {P : UPred M} [∀ {E1 E2 P Q}, Persistent (vs E1 E2 P Q)]
+theorem fupd_vs_trans [IncOrd M] {E1 E2 E3 : CoPset} {P : UPred M}
+    [∀ {E1 E2 P Q}, Persistent (vs E1 E2 P Q)]
     (vs_trans : ∀ E1 E2 E3 P Q R, iprop(vs E1 E2 P Q ∧ vs E2 E3 Q R) ⊢ vs E1 E3 P R)
     (vs_exists : ∀ {A : Type u} E1 E2 (Φ : A → UPred M) Q, (∀ x, vs E1 E2 (Φ x) Q) ⊢ vs E1 E2 iprop(∃ x, Φ x) Q)
     (vs_persistent_intro_r : ∀ E1 E2 P Q R, [Persistent R] → iprop(R -∗ vs E1 E2 P Q) ⊢ vs E1 E2 iprop(P ∗ R) Q)

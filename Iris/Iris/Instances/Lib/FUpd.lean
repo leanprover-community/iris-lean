@@ -19,6 +19,8 @@ public import Iris.Std
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open Iris OFE COFE BI Auth
@@ -68,7 +70,8 @@ instance {E1 E2 : CoPset} : NonExpansive (uPred_fupd (GF := GF) (hlc := hlc) E1 
     refine sep_ne.ne .rfl ?_
     refine sep_ne.ne .rfl h
 
-instance uPred_fupd_instance : FUpd (IProp GF) where
+/-- `FUpd` data; only reachable globally through `BIFUpdate.toFUpd` (see `uPred_bi_fupd`). -/
+@[reducible] def uPred_fupd_instance : FUpd (IProp GF) where
   fupd := uPred_fupd
 
 end FUpd
@@ -78,6 +81,10 @@ section Instances
 open Std.LawfulSet
 
 #rocq_ignore uPred_fupd_mixin "The `BiFUpdMixin` laws are supplied directly when building `uPred_bi_fupd` below."
+
+section FUpdInstance
+
+attribute [local instance] uPred_fupd_instance
 
 @[rocq_alias uPred_bi_fupd]
 instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate (IProp GF) where
@@ -132,6 +139,11 @@ instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate (I
     iapply le_upd_mono ?_ $$ Hupd
     iintro ⟨⟨$, $, $⟩, $⟩
 
+end FUpdInstance
+
+instance {GF : BundledGFunctors} [InvGS_gen hlc GF] : FUpdNE (IProp GF) where
+  fupd_ne {E1 E2} := (inferInstance : NonExpansive (uPred_fupd (GF := GF) (hlc := hlc) E1 E2))
+
 @[rocq_alias uPred_bi_bupd_fupd]
 instance {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIUpdateFUpdate (IProp GF) where
   fupd_of_bupd {_ _} := by
@@ -147,7 +159,7 @@ instance uPred_bi_bupd_lc {GF : BundledGFunctors} [LcGS hlc GF] : BIBUpdLaterCre
     rw [uPred_lc_unseal]
     cases hlc with
     | hasNoLC => simp only [uPred_lc]; itrivial
-    | hasLC => exact iOwn_unit (ε := UCMRA.unit)
+    | hasLC => exact iOwn_unit (ε := UnitOp.unit)
 
 end Instances
 
@@ -337,6 +349,9 @@ instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .h
       iintro !> //
     · iintro Hall
       iapply fupd_mask_intro_discard LawfulSet.subset_refl $$ Hall
+
+instance instBIFUpdatePlainlyNoLC {GF : BundledGFunctors} [INV : InvGS_gen .hasNoLC GF] :
+    BIFUpdatePlainly (IProp GF) := .ofSbi Nat
 
 @[rocq_alias fupd_finally_mask_mono]
 theorem fupd_finally_mask_mono (E1 E2 : CoPset) (P : IProp GF) (H : E1 ⊆ E2) :

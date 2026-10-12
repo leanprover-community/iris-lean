@@ -10,6 +10,10 @@ import Iris.BI.DerivedLawsLater
 
 public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 namespace Iris.BI
 
 open Iris.Algebra BigOpL BigOpM BIBase Iris.Std
@@ -73,7 +77,7 @@ theorem bigAndM_eq_of_forall_eq {Φ Ψ : K → V → PROP} {m : M V}
   bigOpM_eq_of_forall_eq m h
 
 @[rocq_alias big_andM_ne]
-theorem bigAndM_dist {Φ Ψ : K → V → PROP} {m : M V} {n : Nat}
+theorem bigAndM_dist [BIStepIndexed PROP] {Φ Ψ : K → V → PROP} {m : M V} {n}
     (h : ∀ {k x}, get? m k = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([∧map] k ↦ x ∈ m, Φ k x) ≡{n}≡ [∧map] k ↦ x ∈ m, Ψ k x :=
   bigOpM_dist h
@@ -124,16 +128,15 @@ instance bigAndM_absorbing_inst {Φ : K → V → PROP} {m : M V} [∀ k x, Abso
 @[rocq_alias big_andM_empty_timeless]
 instance bigAndM_nil_timeless_inst {Φ : K → V → PROP} :
     Timeless ([∧map] k ↦ x ∈ (∅ : M V), Φ k x) where
-  timeless := (later_congr bigAndM_empty).1.trans <| (later_true.1.trans except0_true.2).trans <|
-    except0_mono bigAndM_empty.2
+  timeless := (only0_congr bigAndM_empty).1.trans <| Timeless.timeless.trans bigAndM_empty.2
 
 @[rocq_alias big_andM_timeless]
 theorem bigAndM_timeless {Φ : K → V → PROP} {m : M V}
     (h : ∀ {k x}, get? m k = some x → Timeless (Φ k x)) :
     Timeless ([∧map] k ↦ x ∈ m, Φ k x) where
-  timeless := bigOpM_closed (P := fun Q => ▷ Q ⊢ ◇ Q)
-    (later_true.1.trans except0_true.2)
-    (later_and.1.trans <| and_mono · · |>.trans except0_and.2)
+  timeless := bigOpM_closed (P := fun Q => <only0> Q ⊢ Q)
+    Timeless.timeless
+    (only0_and.mp.trans <| and_mono · ·)
     (h · |>.timeless)
 
 @[rocq_alias big_andM_timeless']
@@ -197,7 +200,7 @@ theorem bigAndM_and_eq {Φ Ψ : K → V → PROP} {m : M V} :
 @[rocq_alias big_andM_persistently]
 theorem bigAndM_persistently {Φ : K → V → PROP} {m : M V} :
     (<pers> [∧map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∧map] k ↦ x ∈ m, <pers> Φ k x :=
-  letI := MonoidHomomorphism.ofEq (PROP := PROP) persistently_ne
+  letI := MonoidHomomorphism.ofEq (PROP := PROP)
        (BiEntails.to_eq persistently_and) (BiEntails.to_eq persistently_true)
   BiEntails.of_eq <| bigOpL_hom _ <| toList m
 
@@ -221,7 +224,7 @@ theorem bigAndM_pure {φ : K → V → Prop} {m : M V} :
 @[rocq_alias big_andM_later]
 theorem bigAndM_later {Φ : K → V → PROP} {m : M V} :
     (▷ [∧map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∧map] k ↦ x ∈ m, (▷ Φ k x) :=
-  letI := MonoidHomomorphism.ofEq (PROP := PROP) later_ne
+  letI := MonoidHomomorphism.ofEq (PROP := PROP)
     (BiEntails.to_eq later_and) (BiEntails.to_eq later_true)
   BiEntails.of_eq <| bigOpL_hom _ <| toList m
 
@@ -264,7 +267,7 @@ theorem bigAndM_filter {Φ : K → V → PROP} {m : M V} (p : K → V → Bool) 
     | true => simpa using true_imp.symm
 
 @[rocq_alias big_andM_union]
-theorem bigAndM_union [DecidableEq K] {Φ : K → V → PROP} {m₁ m₂ : M V} (hdisj : m₁ ##ₘ m₂) :
+theorem bigAndM_union {Φ : K → V → PROP} {m₁ m₂ : M V} (hdisj : m₁ ##ₘ m₂) :
     ([∧map] k ↦ y ∈ m₁ ∪ m₂, Φ k y) ⊣⊢
       ([∧map] k ↦ y ∈ m₁, Φ k y) ∧ [∧map] k ↦ y ∈ m₂, Φ k y :=
   BiEntails.of_eq <| bigOpM_union_eq Φ m₁ m₂ hdisj

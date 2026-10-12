@@ -10,6 +10,11 @@ public import Iris.Algebra.COFESolver
 
 @[expose] public section
 
+variable {SI : stepindex (Type _)} [Iris.SIdx SI] [Iris.SIdxSucc SI]
+local stepindex SI
+
+attribute [local instance] Iris.Enriched.COFE.classicalOFunctorTruncatable
+
 /-!
 Every OFE is Leibniz, so the fold/unfold isomorphisms of the recursive domain equation solver's
 fixed point can be stated as propositional equalities rather than OFE equivalences.
@@ -17,8 +22,9 @@ See `Dom.unfold_fold` and `Dom.fold_unfold`.
 
 `DomF` is a concrete example: a domain for a simple language with values, errors,
 delayed computations, and function values. Its fixed point `Dom V E` satisfies
-`Dom V E ≅ V ⊕ E ⊕ Later(Dom V E) ⊕ Later(Dom V E -n> Dom V E)` up to propositional equality,
-for any OFEs `V` and `E`.
+`Dom V E ≅ V ⊕ E ⊕ Later(Dom V E) ⊕ Later(Dom V E -n> Dom V E)`
+up to propositional equality, for any OFEs `V` and `E`, over any step-index type `SI`,
+using the classical truncations.
 
 This should provide better support for rewriting by relying on the default Lean
 tactics for simplification/rewriting.
@@ -28,6 +34,7 @@ open Iris OFE COFE
 
 variable [OFE Val] [OFE Err] [IsCOFE Val] [IsCOFE Err] [Inhabited Err]
 
+@[indexed]
 abbrev DomF : OFunctorPre :=
   SumOF (constOF Val) (SumOF (constOF Err) (SumOF (LaterOF IdOF) (LaterOF (HomOF IdOF IdOF))))
 
@@ -37,18 +44,22 @@ instance : Inhabited (DomF (Val := Val) (Err := Err) (ULift Unit) (ULift Unit)) 
 end Fix
 
 open Iris OFE COFE in
-abbrev Dom (Val : Type _) (Err : Type _) [OFE Val] [OFE Err] [IsCOFE Val] [IsCOFE Err] [Inhabited Err] :=
+@[indexed]
+noncomputable abbrev Dom (Val : Type _) (Err : Type _) [OFE Val] [OFE Err] [IsCOFE Val]
+    [IsCOFE Err] :=
   OFunctor.Fix (DomF (Val := Val) (Err := Err))
 
 namespace Dom
 open Iris OFE COFE
 
-variable [OFE V] [OFE E] [IsCOFE V] [IsCOFE E] [Inhabited E]
+variable [OFE V] [OFE E] [IsCOFE V] [IsCOFE E]
 
-def fold : V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom V E) -n> Dom V E :=
+noncomputable def fold :
+    V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom V E) -n> Dom V E :=
   OFunctor.Fix.fold (F := DomF (Val := V) (Err := E))
 
-def unfold : Dom V E -n> V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom V E) :=
+noncomputable def unfold :
+    Dom V E -n> V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom V E) :=
   OFunctor.Fix.unfold (F := DomF (Val := V) (Err := E))
 
 theorem unfold_fold {x : V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom V E)} :

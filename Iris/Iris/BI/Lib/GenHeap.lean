@@ -13,9 +13,11 @@ public import Iris.Std.Namespaces
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
-open Iris.Std Iris.Algebra CMRA BI ProofMode
+open Iris.Std Iris.Algebra ORA BI ProofMode
 
 /-! This file provides a generic mechanism for a language-level points-to
 connective `l ↦{dq} v` reflecting the physical heap.  This library is designed
@@ -42,7 +44,7 @@ Following the convention from `WSat`, we fix the representation to extensional
 tree maps over positives. -/
 abbrev MetaResMap (x : Sort _) : Sort _ := Std.ExtTreeMap Pos x compare
 
-/-- The CMRA used to store the meta-data attached to a single location. -/
+/-- The ORA used to store the meta-data attached to a single location. -/
 abbrev MetaUR : Sort _ := ReservationMap (Agree (DiscreteO Pos)) MetaResMap
 
 @[rocq_alias gen_heapGpreS]

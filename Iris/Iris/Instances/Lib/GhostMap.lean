@@ -12,9 +12,11 @@ public import Iris.ProofMode
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
-open Iris.Std HeapView PartialMap Iris.Algebra CMRA BI ProofMode
+open Iris.Std HeapView PartialMap Iris.Algebra ORA BI ProofMode
 
 @[rocq_alias ghost_mapG]
 class GhostMapG (GF : BundledGFunctors)
@@ -228,7 +230,7 @@ theorem ghost_map_alloc_strong_empty [DecidableEq K] (P : GName → Prop)
 theorem ghost_map_alloc [DecidableEq K] (m : H V) :
     ⊢@{IProp GF} |==> ∃ γ, (γ ↪●MAP m) ∗ [∗map] k ↦ v ∈ m, γ ↪◯MAP[k] v := by
   imod (ghost_map_alloc_strong (fun _ => True) m) with ⟨%γ, -, H1, H2⟩
-  · intro N; exists N; simp
+  · intro N; exists N
   · iexists γ
     iframe H1 H2
 
@@ -284,7 +286,7 @@ theorem ghost_map_auth_valid_2 {γ} {dq1 dq2 : DFrac} {m1 m2 : H V} :
   have ⟨h₁, h₂⟩ := auth_op_auth_valid_iff.mp G
   refine ⟨h₁, equiv_iff_eq.mp fun k => ?_⟩
   have h : _ = _ := congrArg (fun m => get? m k) h₂
-  simp only [get?_map, Option.map] at h
+  simp only [LawfulPartialMap.get?_map, Option.map] at h
   cases h₁ : get? m1 k <;> cases h₂ : get? m2 k <;> simp only [h₁, h₂] at h
   · rfl
   · exact (OFE.not_none_eqv_some h).elim
@@ -323,7 +325,7 @@ theorem ghost_map_lookup {γ dq} {m : H V} {k : K} {dq' v} :
   icombine H1 H2 gives %G
   ipureintro
   have ⟨av', _, _, h_av', _, h⟩ := auth_op_frag_valid_total_discrete_iff G
-  cases h₂ : get? m k <;> grind [get?_map,Agree.toAgree_included]
+  cases h₂ : get? m k <;> grind [LawfulPartialMap.get?_map,Agree.toAgree_included]
 
 @[rocq_alias ghost_map_lookup_combine_gives_1]
 instance ghost_map_lookup_combine_gives_1 γ (m : H V) (k : K) (dq1 dq2 : DFrac) (v : V) :
@@ -351,13 +353,13 @@ theorem ghost_map_insert {γ} {m : H V} (k : K) (v : V) (Heq : get? m k = .none)
   unfold ghost_map_auth ghost_map_elem
   iintro H
   imod iOwn_update (update_one_alloc (k := k) (v1 := toAgree ⟨v⟩)
-    (by simp [get?_map, Heq])
+    (by simp [LawfulPartialMap.get?_map, Heq])
     DFrac.valid_own_one
     Agree.toAgree_valid) $$ H with H
   icases H with ⟨H, $⟩
   imodintro
-  iapply iOwn_mono $$ H
-  exact auth_inc_of_map_eq _ map_insert
+  iapply iOwn_ord_mono $$ H
+  exact auth_ord_of_map_eq _ map_insert
 
 @[rocq_alias ghost_map_insert_persist]
 theorem ghost_map_insert_persist {γ} {m : H V} (k : K) (v : V) (Heq : get? m k = .none) :
@@ -373,8 +375,8 @@ theorem ghost_map_delete {γ} {m : H V} (k : K) (v : V) :
   iintro H1 H2
   icombine H1 H2 as G
   imod iOwn_update (update_one_delete (k := k) (v1 := toAgree (⟨v⟩ : DiscreteO V))) $$ G with G
-  iapply iOwn_mono $$ G
-  exact auth_inc_of_map_eq _ map_delete
+  iapply iOwn_ord_mono $$ G
+  exact auth_ord_of_map_eq _ map_delete
 
 @[rocq_alias ghost_map_update]
 theorem ghost_map_update {γ} {m : H V} {k : K} {v : V} (w : V) :
@@ -384,8 +386,8 @@ theorem ghost_map_update {γ} {m : H V} {k : K} {v : V} (w : V) :
   ihave >⟨aux, $⟩ := ghost_map_insert _ w (get?_delete_eq rfl) $$ aux
   imodintro
   unfold ghost_map_auth
-  iapply iOwn_mono $$ aux
-  exact auth_inc_of_map_eq _ (map_equiv insert_delete.symm)
+  iapply iOwn_ord_mono $$ aux
+  exact auth_ord_of_map_eq _ (map_equiv insert_delete.symm)
 
 /-! ### Big-op versions of the above lemmas -/
 
@@ -406,8 +408,8 @@ theorem ghost_map_insert_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ
   by_cases h : m' = ∅
   · imodintro
     isplitl [H]
-    · iapply iOwn_mono $$ H
-      exact auth_inc_of_map_eq _ (map_equiv ((union_equiv h rfl).trans union_empty_left))
+    · iapply iOwn_ord_mono $$ H
+      exact auth_ord_of_map_eq _ (map_equiv ((union_equiv h rfl).trans union_empty_left))
     · iapply (BigSepM.bigSepM_eqv_empty h).mpr; itrivial
   · rw [←(bigOpM_iOwn γ _ _ h).to_eq, ←iOwn_op.to_eq]
     imod iOwn_update (E := GhostMapG.elem) (update_big_alloc _
@@ -417,10 +419,11 @@ theorem ghost_map_insert_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ
     icases H with ⟨H1, H2⟩
     imodintro
     isplitl [H1]
-    · iapply iOwn_mono $$ H1
-      exact auth_inc_of_map_eq _ map_union
-    · iapply iOwn_mono $$ H2
+    · iapply iOwn_ord_mono $$ H1
+      exact auth_ord_of_map_eq _ map_union
+    · iapply iOwn_ord_mono $$ H2
       rw [BigOpM.bigOpM_map_eq]
+      try exact ord_refl _
 
 @[rocq_alias ghost_map_insert_persist_big]
 theorem ghost_map_insert_persist_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ m) :
@@ -439,7 +442,7 @@ theorem ghost_map_delete_big [DecidableEq K] {γ m} (m0 : H V) :
   imod ghost_map_elems_unseal $$ H2 with H2
   unfold ghost_map_auth
   iapply iOwn_update_op $$ [$H1 $H2]
-  rw [← congrArg (CMRA.op _) (BigOpM.bigOpM_map_eq _ _ m0)]
+  rw [← congrArg (op _) (BigOpM.bigOpM_map_eq _ _ m0)]
   refine (update_big_delete _ _).trans ?_
   rw [map_difference_map]
   exact Update.id
@@ -454,14 +457,14 @@ theorem ghost_map_update_big [DecidableEq K] {γ m} (m0 m1 : H V) (Heq : dom m0 
   · imodintro
     isplitl [H1]
     · unfold ghost_map_auth
-      iapply iOwn_mono $$ H1
-      exact auth_inc_of_map_eq _ (map_equiv ((union_equiv h rfl).trans union_empty_left))
+      iapply iOwn_ord_mono $$ H1
+      exact auth_ord_of_map_eq _ (map_equiv ((union_equiv h rfl).trans union_empty_left))
     · iapply (BigSepM.bigSepM_eqv_empty h).mpr; itrivial
   · unfold ghost_map_elem ghost_map_auth
     icombine H1 H2 as H
     rw [←(bigOpM_iOwn γ _ _ h).to_eq, ←iOwn_op.to_eq]
     iapply iOwn_update $$ H
-    rw [← congrArg (CMRA.op _) (BigOpM.bigOpM_map_eq _ _ m0)]
+    rw [← congrArg (op _) (BigOpM.bigOpM_map_eq _ _ m0)]
     have Heq' : dom (Std.PartialMap.map (fun x : V => toAgree (DiscreteO.mk x)) m0) =
         dom (Std.PartialMap.map (fun x : V => toAgree (DiscreteO.mk x)) m1) := by
       rw [dom_map, dom_map, Heq]

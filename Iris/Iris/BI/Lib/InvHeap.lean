@@ -13,9 +13,11 @@ public import Iris.Instances.Lib.Invariants
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
-open Iris.Std Std.PartialMap Std.LawfulPartialMap Iris.Algebra CMRA BI ProofMode
+open Iris.Std Std.PartialMap Std.LawfulPartialMap Iris.Algebra ORA BI ProofMode
 open Agree Auth BigSepM Excl Heap
 
 @[rocq_alias inv_heapN]
@@ -56,7 +58,7 @@ private theorem singleton_inc_toInvHeap {h : H (V × (V → Prop))} {l : L} {I :
     {mv : Option (Excl (DiscreteO V))}
     (hinc : ({[l := (mv, toAgree ⟨I⟩)]} : InvHeapMapUR V H) ≼ toInvHeap h) :
     ∃ v, get? h l = some (v, I) ∧ mv ≼ some (excl ⟨v⟩) := by
-  obtain ⟨⟨_, _⟩, hy, hinc⟩ := singleton_inc_iff.mp hinc
+  obtain ⟨⟨_, _⟩, hy, hinc⟩ := (singleton_inc_iff).mp hinc
   obtain ⟨v, I', rfl, rfl, hh⟩ := get?_toInvHeap_some hy
   obtain ⟨hv, hI⟩ := Prod.inc_def.mp (Option.some_inc_some_iff_is_total.mp hinc)
   cases DiscreteO.eqv_inj (toAgree_included.mp hI)
@@ -69,12 +71,12 @@ theorem toInvHeap_valid (h : H (V × (V → Prop))) : ✓ toInvHeap h := fun l =
   · exact get?_heap_some_toInvHeap hh ▸ ⟨trivial, toAgree_valid⟩
 
 @[rocq_alias to_inv_heap_singleton]
-theorem toInvHeap_singleton [DecidableEq L] (l : L) (v : V) (I : V → Prop) :
+theorem toInvHeap_singleton (l : L) (v : V) (I : V → Prop) :
     toInvHeap (H := H) {[l := (v, I)]} = {[l := (some (.excl ⟨v⟩), toAgree ⟨I⟩)]} := by
   rw [PartialMap.singleton, toInvHeap, map_insert, map_empty]; rfl
 
 @[rocq_alias to_inv_heap_insert]
-theorem toInvHeap_insert [DecidableEq L] (l : L) (v : V) (I : V → Prop) (h : H (V × (V → Prop))) :
+theorem toInvHeap_insert (l : L) (v : V) (I : V → Prop) (h : H (V × (V → Prop))) :
     toInvHeap (insert h l (v, I)) = insert (toInvHeap h) l (some (.excl ⟨v⟩), toAgree ⟨I⟩) :=
   map_insert
 
@@ -185,9 +187,9 @@ theorem invPointsToOwn_inv (l : L) (v : V) (I : V → Prop) :
     l ↦_I v -∗ l ↦_I □ := by
   iintro Hl
   unfold invPointsToOwn invPointsTo
-  iapply iOwn_mono $$ Hl
-  refine (frag_inc_of_inc (singleton_inc_singleton_mono ?_))
-  exact ⟨(some (.excl ⟨v⟩), toAgree ⟨I⟩), Prod.ext rfl Agree.idemp.symm⟩
+  iapply iOwn_ord_mono $$ Hl
+  refine frag_ord_of_ord (singleton_ord_singleton_mono ?_)
+  exact ⟨IncOrd.increasing _, ord_refl _⟩
 
 variable [genHeapGS L V GF H]
 
@@ -217,6 +219,7 @@ theorem invPointsTo_acc {E : CoPset} {l : L} {I : V → Prop} (hN : ↑invHeapN 
 
 variable [DecidableEq L]
 
+omit [DecidableEq L] in
 @[rocq_alias make_inv_pointsto]
 theorem make_invPointsTo {l : L} {v : V} {I : V → Prop} {E : CoPset} (hN : ↑invHeapN ⊆ E)
     (hI : I v) : invHeapInv -∗ l ↦ v ={E}=∗ l ↦_I v := by
@@ -228,7 +231,7 @@ theorem make_invPointsTo {l : L} {v : V} {I : V → Prop} {E : CoPset} (hN : ↑
   · imod iOwn_update (auth_update_alloc (alloc_singleton_local_update
       (x := ((some (.excl ⟨v⟩), toAgree ⟨I⟩) :
         Option (Excl (DiscreteO V)) × Agree (DiscreteO (V → Prop))))
-      (get?_toInvHeap_none hlk) ⟨trivial, toAgree_valid⟩)) $$ Hauth with ⟨Hauth, Hfrag⟩
+      (get?_toInvHeap_none hlk) ((Prod.mk_valid _ _).mpr ⟨trivial, toAgree_valid⟩))) $$ Hauth with ⟨Hauth, Hfrag⟩
     imod Hclose $$ [Hauth HsepM Hl] with -
     · iexists insert h l (v, I)
       rw [toInvHeap_insert]
@@ -242,6 +245,7 @@ theorem make_invPointsTo {l : L} {v : V} {I : V → Prop} {E : CoPset} (hN : ↑
     icases pointsTo_ne $$ Hl Hl' with %hne
     exact absurd rfl hne
 
+omit [DecidableEq L] in
 @[rocq_alias inv_pointsto_own_acc_strong]
 theorem invPointsToOwn_acc_strong {E : CoPset} (hN : (↑invHeapN : CoPset) ⊆ E) :
     invHeapInv ={E, E \ ↑invHeapN}=∗ ∀ (l : L) (v : V) (I : V → Prop), l ↦_I v -∗
@@ -269,6 +273,7 @@ theorem invPointsToOwn_acc_strong {E : CoPset} (hN : (↑invHeapN : CoPset) ⊆ 
   iapply bigSepM_insert_delete
   iframe Hl HsepM %hIw
 
+omit [DecidableEq L] in
 @[rocq_alias inv_pointsto_own_acc]
 theorem invPointsToOwn_acc {E : CoPset} {l : L} {v : V} {I : V → Prop} (hN : (↑invHeapN : CoPset) ⊆ E) :
     invHeapInv -∗ l ↦_I v ={E, E \ ↑invHeapN}=∗
@@ -284,7 +289,7 @@ end lemmas
 
 @[rocq_alias inv_heap_init]
 theorem invHeap_init (L V : Type _) {GF : BundledGFunctors} {H : Type _ → Type _}
-    [LawfulFiniteMap H L] [DecidableEq L] [InvGS_gen hlc GF] [genHeapGS L V GF H]
+    [LawfulFiniteMap H L] [InvGS_gen hlc GF] [genHeapGS L V GF H]
     [invHeapPreS L V GF H] (E : CoPset) :
     ⊢ |==> ∃ _ : invHeapGS L V GF H, |={E}=> invHeapInv := by
   imod (iOwn_alloc (E := invHeapPreS.invHeap)

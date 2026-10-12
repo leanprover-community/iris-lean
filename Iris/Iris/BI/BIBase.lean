@@ -14,6 +14,7 @@ public import Iris.Std.Notation
 
 @[expose] public section
 
+
 namespace Iris.BI
 open Iris.Std
 open Lean
@@ -439,7 +440,7 @@ delab_rule Plainly.plainly
   `■?p P` is equivalent to `■ P` when `p` is `true`, otherwise `P`.
 -/
 @[rocq_alias plainly_if]
-def Plainly.plainlyIf [BIBase PROP] [Plainly PROP] (p : Bool) (P : PROP) : PROP :=
+def Plainly.plainlyIf [Plainly PROP] (p : Bool) (P : PROP) : PROP :=
   iprop(if p then ■ P else P)
 
 syntax:max "■?" term:max ppHardSpace term:40 : term

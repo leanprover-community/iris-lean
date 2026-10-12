@@ -17,6 +17,8 @@ public import Iris.Std.HeapInstances
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris.Examples.ClosedProofs
 open Iris.BI COFE HeapView Auth Std.LawfulSet
 
@@ -38,11 +40,11 @@ section proof
 
 noncomputable def GF : BundledGFunctors := fun n =>
   match n with
-  | 0  => ⟨InvMapF, by infer_instance⟩
-  | 1  => ⟨constOF CoPsetDisjL, by infer_instance⟩
-  | 2  => ⟨constOF (DisjointLeibnizSet PosSet), by infer_instance⟩
-  | 3  => ⟨AuthURF (constOF Credit), by infer_instance⟩
-  | _  => ⟨constOF Unit, by infer_instance⟩
+  | 0  => ⟨InvMapF⟩
+  | 1  => ⟨constOF CoPsetDisjL⟩
+  | 2  => ⟨constOF (DisjointLeibnizSet PosSet)⟩
+  | 3  => ⟨AuthURF (constOF Credit)⟩
+  | _  => ⟨constOF Unit⟩
 
 instance : WsatGpreS GF where
   inv := { τ := 0, transp := by unfold GF; rfl }
