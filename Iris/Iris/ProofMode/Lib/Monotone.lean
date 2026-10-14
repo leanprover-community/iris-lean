@@ -5,7 +5,7 @@ Authors: Oliver Soeser
 -/
 module
 
-public meta import Iris.Instances.Lib.Monotone
+public meta import Iris.BI.Lib.Monotone
 public meta import Iris.ProofMode
 meta import Lean.Meta.Tactic.Split
 meta import Lean.Meta.Tactic.Repeat
