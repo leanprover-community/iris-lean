@@ -3612,69 +3612,71 @@ instance ofDiscrete_discrete [OFE α] [OFE.Discrete α] (pcore : α → Option �
 end OfDiscrete
 end CMRA
 
+/-- Smart constructor for discrete ORA instances. -/
+class DiscreteORAData (α : Type _) where
+  pcore : α → Option α
+  op : α → α → α
+  Valid : α → Prop
+  Order : α → α → Prop
+  assoc : ∀ x y z : α, op x (op y z) = op (op x y) z
+  comm : ∀ x y : α, op x y = op y x
+  pcore_op_left : ∀ x cx : α, pcore x = some cx → op cx x = x
+  pcore_idem : ∀ x cx : α, pcore x = some cx → pcore cx = some cx
+  valid_op_left : ∀ x y : α, Valid (op x y) → Valid x
+  ord_trans : ∀ x y z : α, Order x y → Order y z → Order x z
+  op_mono_left : ∀ x y z : α, Order x y → Order (op x z) (op y z)
+  valid_of_ord : ∀ x y : α, Order x y → Valid y → Valid x
+  pcore_mono : ∀ x y cx : α, Order x y → pcore x = some cx →
+    ∃ cy, pcore y = some cy ∧ Order cx cy
+  pcore_order_op : ∀ x cx : α, pcore x = some cx →
+    ∀ y, ∃ cxy, pcore (op x y) = some cxy ∧ Order cx cxy
+  pcore_increasing : ∀ x cx : α, pcore x = some cx → ∀ y, Order y (op cx y)
+  increasing_closed : ∀ x y : α, (∀ z, Order z (op x z)) → Order x y → ∀ z, Order z (op y z)
+
 namespace ORA
 
-/-- Constructing an ordered resource algebra on a discrete OFE. Because the OFE is discrete the
-step-indexed laws follow from their plain counterparts, so only the latter are asked for. -/
-@[reducible] def ofDiscrete [OFE α] [OFE.Discrete α]
-    (pcore : α → Option α) (op : α → α → α) (Valid : α → Prop) (Order : α → α → Prop)
-    (assoc : ∀ x y z : α, op x (op y z) = op (op x y) z)
-    (comm : ∀ x y : α, op x y = op y x)
-    (pcore_op_left : ∀ x cx : α, pcore x = some cx → op cx x = x)
-    (pcore_idem : ∀ x cx : α, pcore x = some cx → pcore cx = some cx)
-    (valid_op_left : ∀ x y : α, Valid (op x y) → Valid x)
-    (ord_trans : ∀ x y z : α, Order x y → Order y z → Order x z)
-    (op_mono_left : ∀ x y z : α, Order x y → Order (op x z) (op y z))
-    (valid_of_ord : ∀ x y : α, Order x y → Valid y → Valid x)
-    (pcore_mono : ∀ x y cx : α, Order x y → pcore x = some cx →
-      ∃ cy, pcore y = some cy ∧ Order cx cy)
-    (pcore_order_op : ∀ x cx : α, pcore x = some cx →
-      ∀ y, ∃ cxy, pcore (op x y) = some cxy ∧ Order cx cxy)
-    (pcore_increasing : ∀ x cx : α, pcore x = some cx → ∀ y, Order y (op cx y))
-    (increasing_closed : ∀ x y : α, (∀ z, Order z (op x z)) → Order x y → ∀ z, Order z (op y z)) :
-    ORA α :=
+@[reducible] def ofDiscreteORAData [OFE α] [OFE.Discrete α] (d : DiscreteORAData α) : ORA α :=
   letI : Op α :=
-    { op
-      op_ne.ne _ _ _ h := (congrArg (op _) (OFE.discrete h)).dist
-      assoc := assoc ..
-      comm := comm .. }
+    { op := d.op
+      op_ne.ne _ _ _ h := (congrArg (d.op _) (OFE.discrete h)).dist
+      assoc := d.assoc ..
+      comm := d.comm .. }
   letI : PCore α :=
-    { pcore
+    { pcore := d.pcore
       pcore_ne h hcx := ⟨_, (OFE.discrete h) ▸ hcx, .rfl⟩
-      pcore_idem := pcore_idem _ _ }
+      pcore_idem := d.pcore_idem _ _ }
   letI : _root_.Iris.Valid α :=
-    { Valid
-      ValidN _ := Valid
+    { Valid := d.Valid
+      ValidN _ := d.Valid
       validN_ne h hv := (OFE.discrete h) ▸ hv
       valid_iff_validN := (forall_const Nat).symm
       validN_succ := id }
   letI : Ordered α :=
-    { Order
-      OrderN _ := Order
+    { Order := d.Order
+      OrderN _ := d.Order
       ordN_ne ex ey h := (OFE.discrete ex) ▸ (OFE.discrete ey) ▸ h
       ordN_succ := id
-      ordN_trans := ord_trans _ _ _
-      ord_trans := ord_trans _ _ _
+      ordN_trans := d.ord_trans _ _ _
+      ord_trans := d.ord_trans _ _ _
       ordN_of_ord _ := id }
-  { validN_op_left := valid_op_left _ _
-    pcore_op_left := pcore_op_left _ _
+  { validN_op_left := d.valid_op_left _ _
+    pcore_op_left := d.pcore_op_left _ _
     extend _ h := ⟨_, _, OFE.discrete h, .rfl, .rfl⟩
-    op_monoN_left_ord z h := op_mono_left _ _ z h
-    op_mono_left_ord z h := op_mono_left _ _ z h
-    validN_of_ordN := valid_of_ord _ _
-    pcore_monoN_ord h e := pcore_mono _ _ _ h e
-    pcore_mono_ord h e := pcore_mono _ _ _ h e
-    pcore_order_op e y := pcore_order_op _ _ e y
-    pcore_increasing e := ⟨pcore_increasing _ _ e⟩
+    op_monoN_left_ord z h := d.op_mono_left _ _ z h
+    op_mono_left_ord z h := d.op_mono_left _ _ z h
+    validN_of_ordN := d.valid_of_ord _ _
+    pcore_monoN_ord h e := d.pcore_mono _ _ _ h e
+    pcore_mono_ord h e := d.pcore_mono _ _ _ h e
+    pcore_order_op e y := d.pcore_order_op _ _ e y
+    pcore_increasing e := ⟨d.pcore_increasing _ _ e⟩
     increasing_closed {_ x y} hx h := ⟨fun z => match h with
         | .inl e => (OFE.discrete e) ▸ hx.increasing z
-        | .inr ho => increasing_closed x y (fun w => hx.increasing w) ho z⟩
+        | .inr ho => d.increasing_closed x y (fun w => hx.increasing w) ho z⟩
     ordN_extend _ h := ⟨_, h, .rfl⟩ }
 
-instance ofDiscrete_discrete [OFE α] [OFE.Discrete α] (pcore : α → Option α) (op : α → α → α)
-    (Valid : α → Prop) (Order : α → α → Prop) h₁ h₂ h₃ h₄ h₅ h₆ h₇ h₈ h₉ h₁₀ h₁₁ h₁₂ :
-    @Discrete α (ofDiscrete pcore op Valid Order h₁ h₂ h₃ h₄ h₅ h₆ h₇ h₈ h₉ h₁₀ h₁₁ h₁₂) :=
-  letI := ofDiscrete pcore op Valid Order h₁ h₂ h₃ h₄ h₅ h₆ h₇ h₈ h₉ h₁₀ h₁₁ h₁₂
+instance ofDiscreteORAData_discrete [OFE α] [OFE.Discrete α] (d : DiscreteORAData α) :
+    @Discrete α (ofDiscreteORAData d) :=
+  letI := ofDiscreteORAData d
   { discrete_valid := id, discrete_ord := id }
 
 end ORA
