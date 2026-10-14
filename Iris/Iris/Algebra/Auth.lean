@@ -81,11 +81,11 @@ variable [UORA A]
 
 instance : OFE (Auth A) := View.instOFE
 instance instORA : ORA (Auth A) := View.instORA
-instance instUCMRA : UORA (Auth A) := View.instUCMRA
+instance instUORA : UORA (Auth A) := View.instUORA
 
 #rocq_ignore authO "Use the Auth type and View.instOFE typeclass"
 #rocq_ignore authR "Use the Auth type and View.instORA typeclass"
-#rocq_ignore authUR "Use the Auth type and View.instUCMRA typeclass"
+#rocq_ignore authUR "Use the Auth type and View.instUORA typeclass"
 
 #rocq_ignore auth_cmra_discrete "Inference succeeds automatically"
 #rocq_ignore auth_ofe_discrete "Inference succeeds automatically"

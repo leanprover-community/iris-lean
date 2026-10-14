@@ -81,7 +81,6 @@ scoped instance instIsTotal : IsTotal α where
 
 scoped instance instDiscrete : ORA.Discrete α where
   discrete_valid := id
-  discrete_ord := CMRA.ord_of_ord0
 #rocq_ignore nat_cmra_discrete "Use the (ℕ, +) Constant Core instance."
 #rocq_ignore Z_cmra_discrete "Use the (ℤ, +) Constant Core instance."
 
@@ -190,7 +189,6 @@ scoped instance instIsTotal : IsTotal α where
 
 scoped instance : ORA.Discrete α where
   discrete_valid := id
-  discrete_ord := CMRA.ord_of_ord0
 #rocq_ignore max_nat_cmra_discrete "Use the (ℕ, max) Universal Core instance."
 #rocq_ignore max_Z_cmra_discrete "Use the (ℤ, max) Universal Core instance."
 #rocq_ignore min_nat_cmra_discrete "Use the (ℕ, min) Universal Core instance."
@@ -272,7 +270,6 @@ scoped instance instCMRA : CMRA α :=
 
 scoped instance instDiscrete : ORA.Discrete α where
   discrete_valid := id
-  discrete_ord := CMRA.ord_of_ord0
 #rocq_ignore pos_cmra_discrete "Use (PNat, +) No Core instance."
 
 scoped instance instCancelable [LeftCancelAdd α] {a : α} : Cancelable a where

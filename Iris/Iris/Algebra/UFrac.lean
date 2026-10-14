@@ -90,8 +90,6 @@ theorem le_of_inc {x y : UFrac} (H : x ≼ y) : x.frac ≤ y.frac := le_of_ord (
 instance : Discrete UFrac where
   discrete_0 := fun h => h
   discrete_valid := id
-  discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
-
 @[rocq_alias ufrac_cancelable]
 instance {q : UFrac} : Cancelable q where
   cancelableN {n x y} _ (H : q • x = q • y) := by

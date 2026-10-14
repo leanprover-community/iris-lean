@@ -212,7 +212,7 @@ abbrev Order [ORA α] [ORA β] : Csum α β → Csum α β → Prop
   | inr b, inr b' => b ≼ₒ b'
   | _, _ => False
 
-@[reducible, rocq_alias csum_cmra_mixin]
+@[reducible, rocq_alias csum_op_instance]
 def raOp [ORA α] [ORA β] : Op (Csum α β) where
   op := Csum.op
   op_ne {x} := ⟨fun {n y₁ y₂} hy => by cases x <;> cases y₁ <;> cases y₂ <;>
@@ -276,6 +276,7 @@ instance instIncreasingInvalid : Increasing (invalid : Csum α β) := ⟨fun _ =
 theorem ordNR_inl {n} {a a' : α} (h : inl (β := β) a ≼ₒ*{n} inl a') : a ≼ₒ*{n} a' := h.imp id id
 theorem ordNR_inr {n} {b b' : β} (h : inr (α := α) b ≼ₒ*{n} inr b') : b ≼ₒ*{n} b' := h.imp id id
 
+@[rocq_alias csum_cmra_mixin]
 instance instORA : ORA (Csum α β) where
   toOp := raOp
   toPCore := raPCore
@@ -378,7 +379,6 @@ instance instIncOrd [ORA α] [ORA β] [IncOrd α] [IncOrd β] : IncOrd (Csum α 
     | invalid => inferInstance
 
 #rocq_ignore csumR "Use Csum type with typeclass inference"
-#rocq_ignore csum_op_instance "Use ORA instance"
 #rocq_ignore csum_pcore_instance "Use ORA instance"
 #rocq_ignore csum_validN_instance "Use ORA instance"
 #rocq_ignore csum_valid_instance "Use ORA instance"

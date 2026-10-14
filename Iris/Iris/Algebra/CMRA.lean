@@ -963,7 +963,8 @@ variable [ORA α]
 @[rocq_alias CmraDiscrete]
 class Discrete (α : Type _) [ORA α] extends OFE.Discrete α where
   discrete_valid {x : α} : ✓{0} x → ✓ x
-  discrete_ord {x y : α} : x ≼ₒ{0} y → x ≼ₒ y
+  discrete_ord {x y : α} : x ≼ₒ{0} y → x ≼ₒ y := by
+    first | exact CMRA.ord_of_ord0 | exact fun ⟨z, hz⟩ => ⟨z, hz⟩
 export Discrete (discrete_valid discrete_ord)
 #rocq_ignore discrete_validN_instance "Use CMRA instance"
 
@@ -979,7 +980,7 @@ class UORA (α : Type _) extends ORA α, OrderRefl α where
   unit_left_id : unit • x = x
   pcore_unit : pcore unit = some unit
 
-#rocq_ignore Unit "Lean uses the UCMRA.unit field; no separate class needed."
+#rocq_ignore Unit "Lean uses the UORA.unit field; no separate class needed."
 #rocq_ignore ucmra_cmraR "Folded into Lean's UCMRA extends CMRA."
 #rocq_ignore ucmra_ofeO "Folded into Lean's UCMRA → OFE."
 
@@ -2869,7 +2870,6 @@ instance ucmraUnit : UCMRA Unit := UORA.ofUCMRAData Unit.ucmraData
 @[rocq_alias unit_cmra_discrete]
 instance : ORA.Discrete Unit where
   discrete_valid _ := ⟨⟩
-  discrete_ord _ := ⟨(), rfl⟩
 
 end unit
 
@@ -2906,7 +2906,6 @@ instance cmraEmpty : CMRA Empty := ofCMRAData Empty.cmraData
 @[rocq_alias Empty_set_cmra_discrete]
 instance : ORA.Discrete Empty where
   discrete_valid := id
-  discrete_ord {x} := x.elim
 
 @[rocq_alias Empty_set_core_id]
 instance (x : Empty) : CoreId x where
@@ -3218,6 +3217,10 @@ theorem some_mk_ord_left {a₁ a₂ : α} {b₁ b₂ : β} (h : some (a₁, b₁
 
 theorem some_mk_ord_right {a₁ a₂ : α} {b₁ b₂ : β} (h : some (a₁, b₁) ≼ₒ some (a₂, b₂)) :
     some b₁ ≼ₒ some b₂ := (some_mk_ord h).2
+
+theorem some_op_ordN_snd {n} {x y : α × β} {c : Option (α × β)} (h : some x • c ≼ₒ{n} some y) :
+    some x.2 • c.map Prod.snd ≼ₒ{n} some y.2 := by
+  cases c <;> exact h.imp (·.2) (·.2)
 
 @[rocq_alias Some_pair_includedN]
 theorem some_mk_incN {n} {a₁ a₂ : α} {b₁ b₂ : β}
@@ -3604,8 +3607,7 @@ instance ofDiscrete_discrete [OFE α] [OFE.Discrete α] (pcore : α → Option �
     (op : α → α → α) (Valid : α → Prop) h₁ h₂ h₃ h₄ h₅ h₆ :
     @Discrete α (ofDiscrete pcore op Valid h₁ h₂ h₃ h₄ h₅ h₆).toORA :=
   letI := ofDiscrete pcore op Valid h₁ h₂ h₃ h₄ h₅ h₆
-  { discrete_valid := id
-    discrete_ord := CMRA.ord_of_ord0 }
+  { discrete_valid := id }
 
 end OfDiscrete
 end CMRA
@@ -3668,6 +3670,12 @@ step-indexed laws follow from their plain counterparts, so only the latter are a
         | .inl e => (OFE.discrete e) ▸ hx.increasing z
         | .inr ho => increasing_closed x y (fun w => hx.increasing w) ho z⟩
     ordN_extend _ h := ⟨_, h, .rfl⟩ }
+
+instance ofDiscrete_discrete [OFE α] [OFE.Discrete α] (pcore : α → Option α) (op : α → α → α)
+    (Valid : α → Prop) (Order : α → α → Prop) h₁ h₂ h₃ h₄ h₅ h₆ h₇ h₈ h₉ h₁₀ h₁₁ h₁₂ :
+    @Discrete α (ofDiscrete pcore op Valid Order h₁ h₂ h₃ h₄ h₅ h₆ h₇ h₈ h₉ h₁₀ h₁₁ h₁₂) :=
+  letI := ofDiscrete pcore op Valid Order h₁ h₂ h₃ h₄ h₅ h₆ h₇ h₈ h₉ h₁₀ h₁₁ h₁₂
+  { discrete_valid := id, discrete_ord := id }
 
 end ORA
 end CmraMixin

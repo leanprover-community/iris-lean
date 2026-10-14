@@ -118,7 +118,7 @@ theorem agree {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F b) : a = b :
 theorem ordN_frame {n : Nat} {dq : DFrac} {q : Qp} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F{q} b) :
     ∃ c, some b • c ≼ₒ{n} some a := by
   obtain ⟨_, ⟨c, hc⟩, _⟩ := both_dfrac_validN_frame.mp h
-  exact ⟨c.map Prod.snd, by cases c <;> exact hc.imp (·.2) (·.2)⟩
+  exact ⟨c.map Prod.snd, Option.some_op_ordN_snd hc⟩
 
 theorem ordN [IncOrd A] {n : Nat} {dq : DFrac} {q : Qp} {a b : A}
     (h : ✓{n} (●F{dq} a) • ◯F{q} b) : some b ≼ₒ{n} some a :=

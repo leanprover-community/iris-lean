@@ -70,8 +70,6 @@ instance instUnital : UCMRA (LeibnizMultiSet MS) := UORA.ofUCMRAData LeibnizMult
 instance : ORA.Discrete (LeibnizMultiSet MS) where
   discrete_0 h := h
   discrete_valid := id
-  discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
-
 instance : IsTotal (LeibnizMultiSet MS) where
   total _ := ⟨.ofSet ∅, rfl⟩
 

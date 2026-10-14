@@ -63,7 +63,7 @@ theorem viewRel_iff {n} : viewRel n (valid L') (valid L) ↔ L ⊆ L' ∧ SetBij
 
 @[rocq_alias gset_bij_view_rel_raw_mono, rocq_alias gset_bij_view_rel_raw_valid,
   rocq_alias gset_bij_view_rel_raw_unit]
-instance : IsViewRel (viewRel (S := S)) := .ofMonoOrd
+instance : IsViewRel (viewRel (S := S)) := .ofMonoInc
   (mono := by
     intro _ x₁ y₁ n₂ x₂ y₂ h hx hy _
     obtain ⟨_⟩ := x₁; obtain ⟨_⟩ := y₁; obtain ⟨_⟩ := y₂; obtain rfl := (hx : _ = _)

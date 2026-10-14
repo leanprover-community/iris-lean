@@ -115,8 +115,6 @@ instance : CMRA (DisjointLeibnizSet S) := ofCMRAData DisjointLeibnizSet.cmraData
 instance instDiscreteDisjointLeibnizSet : ORA.Discrete (DisjointLeibnizSet S) where
   discrete_0 := fun h => h
   discrete_valid := id
-  discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
-
 @[instance_reducible] def ucmraData : UCMRAData (DisjointLeibnizSet S) where
   unit := .valid ∅
   unit_valid := trivial
@@ -352,8 +350,6 @@ instance instUnital : UCMRA (LeibnizSet S) := UORA.ofUCMRAData LeibnizSet.ucmraD
 instance instDiscreteLeibnizSet : ORA.Discrete (LeibnizSet S) where
   discrete_0 := fun h => h
   discrete_valid := id
-  discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
-
 @[rocq_alias gset_core_id]
 instance instCoreIdLeibnizSet (X : LeibnizSet S) : CoreId X := ⟨rfl⟩
 
@@ -431,7 +427,7 @@ abbrev CoPsetL := LeibnizSet CoPset
 #rocq_ignore coPset_op_instance "Provided by the `CMRA (LeibnizSet S)` instance."
 #rocq_ignore coPset_pcore_instance "Provided by the `CMRA (LeibnizSet S)` instance."
 #rocq_ignore coPset_ra_mixin "Provided by the `CMRA (LeibnizSet S)` instance."
-#rocq_ignore coPset_cmra_discrete "Provided by the generic `CMRA.Discrete (LeibnizSet S)` instance."
+#rocq_ignore coPset_cmra_discrete "Provided by the generic `ORA.Discrete (LeibnizSet S)` instance."
 #rocq_ignore coPset_ucmra_mixin "Provided by the `UCMRA (LeibnizSet S)` instance."
 
 /-- The disjoint union ORA over `CoPset`: composition of two sets is valid only when they are
@@ -444,7 +440,7 @@ abbrev CoPsetDisjL := DisjointLeibnizSet CoPset
 #rocq_ignore coPset_disj_op_instance "Provided by the `CMRA (DisjointLeibnizSet S)` instance."
 #rocq_ignore coPset_disj_pcore_instance "Provided by the `CMRA (DisjointLeibnizSet S)` instance."
 #rocq_ignore coPset_disj_ra_mixin "Provided by the `CMRA (DisjointLeibnizSet S)` instance."
-#rocq_ignore coPset_disj_cmra_discrete "Provided by `CMRA.Discrete (DisjointLeibnizSet S)`."
+#rocq_ignore coPset_disj_cmra_discrete "Provided by `ORA.Discrete (DisjointLeibnizSet S)`."
 #rocq_ignore coPset_disj_ucmra_mixin "Provided by the `UCMRA (DisjointLeibnizSet S)` instance."
 
 /-! ## The Gset CMRAs
@@ -461,7 +457,7 @@ below, and the `gset` typeclass instances / mixins are provided by the generic i
 #rocq_ignore gset_op_instance "Provided by the `CMRA (LeibnizSet S)` instance."
 #rocq_ignore gset_pcore_instance "Provided by the `CMRA (LeibnizSet S)` instance."
 #rocq_ignore gset_ra_mixin "Provided by the `CMRA (LeibnizSet S)` instance."
-#rocq_ignore gset_cmra_discrete "Provided by the generic `CMRA.Discrete (LeibnizSet S)` instance."
+#rocq_ignore gset_cmra_discrete "Provided by the generic `ORA.Discrete (LeibnizSet S)` instance."
 #rocq_ignore gset_ucmra_mixin "Provided by the `UCMRA (LeibnizSet S)` instance."
 
 #rocq_ignore gset_disj "Use `[LawfulSet S A] → DisjointLeibnizSet S`."
@@ -473,5 +469,5 @@ below, and the `gset` typeclass instances / mixins are provided by the generic i
 #rocq_ignore gset_disj_op_instance "Provided by the `CMRA (DisjointLeibnizSet S)` instance."
 #rocq_ignore gset_disj_pcore_instance "Provided by the `CMRA (DisjointLeibnizSet S)` instance."
 #rocq_ignore gset_disj_ra_mixin "Provided by the `CMRA (DisjointLeibnizSet S)` instance."
-#rocq_ignore gset_disj_cmra_discrete "Provided by `CMRA.Discrete (DisjointLeibnizSet S)`."
+#rocq_ignore gset_disj_cmra_discrete "Provided by `ORA.Discrete (DisjointLeibnizSet S)`."
 #rocq_ignore gset_disj_ucmra_mixin "Provided by the `UCMRA (DisjointLeibnizSet S)` instance."

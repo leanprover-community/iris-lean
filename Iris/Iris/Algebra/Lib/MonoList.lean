@@ -25,7 +25,7 @@ def MonoList (α : Type _) [OFE α] := Auth (MaxPrefixList α)
 
 instance : OFE (MonoList α) := Auth.instOFE
 instance : ORA (MonoList α) := Auth.instORA
-instance : UORA (MonoList α) := Auth.instUCMRA
+instance : UORA (MonoList α) := Auth.instUORA
 
 instance instIsIncMonoList : IsInc (MonoList α) := inferInstanceAs (IsInc (Auth (MaxPrefixList α)))
 

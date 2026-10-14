@@ -366,7 +366,7 @@ instance instIncOrd [IncOrd A] : IncOrd (DynReservationMap A H) := IncOrd.of_inc
     increasing_mk (IncOrd.increasing v.data) (IncOrd.increasing v.token)
 
 @[rocq_alias dyn_reservation_mapUR]
-instance instUCMRADynReservationMap : UORA (DynReservationMap A H) where
+instance instUORADynReservationMap : UORA (DynReservationMap A H) where
   toORA := instORADynReservationMap
   unit := mk ∅ ∅
   unit_valid := valid_iff.mpr ⟨Heap.valid_empty, valid_set,

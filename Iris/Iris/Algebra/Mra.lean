@@ -152,8 +152,6 @@ instance (x : Mra R) : CoreId x where
 instance : ORA.Discrete (Mra R) where
   discrete_0 := id
   discrete_valid := id
-  discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
-
 #rocq_ignore mra_unit "Replaced by the `unit` field of UCMRA instance."
 #rocq_ignore mraUR "Use Mra."
 

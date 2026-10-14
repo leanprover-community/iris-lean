@@ -174,7 +174,7 @@ theorem Update.discrete_total [Discrete α] [IsTotal α] :
   mpr h := Update.total.mpr fun n z v => (h z ((valid_iff_validN' n).mpr v)).validN
 
 -- (** * Transport *)
--- `cmra_transport` itself is ignored (see `ORA.lean`): equality `A = B` between CMRAs is
+-- `cmra_transport` itself is ignored (see `CMRA.lean`): equality `A = B` between CMRAs is
 -- transported by `transpAp`, so these update lemmas are subsumed by rewriting along the
 -- equality and using the plain `updateP` API.
 #rocq_ignore cmra_transport_updateP "Use `transpAp`; transport of updates along `A = B` is handled by rewriting"

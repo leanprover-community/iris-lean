@@ -45,11 +45,11 @@ instance instOFE : OFE (MaxPrefixList α) :=
 
 /-- ORA instance on [MaxPrefixList], inherited from the ORA on the underlying map. -/
 instance instORA : ORA (MaxPrefixList α) :=
-  Heap.instStoreCMRA (M:= MaxPrefixListMap) (V := Agree α)
+  Heap.instStoreORA (M:= MaxPrefixListMap) (V := Agree α)
 
 /-- UORA instance on `MaxPrefixList`, inherited from the UORA on the underlying map. -/
-instance instUCMRA : UORA (MaxPrefixList α) :=
-  Heap.instStoreUCMRA  (M:= MaxPrefixListMap) (V := Agree α)
+instance instUORA : UORA (MaxPrefixList α) :=
+  Heap.instStoreUORA  (M:= MaxPrefixListMap) (V := Agree α)
 
 instance instIsInc : IsInc (MaxPrefixList α) := inferInstanceAs (IsInc (MaxPrefixListMap (Agree α)))
 
@@ -60,7 +60,6 @@ instance instDiscrete [OFE.Discrete α] : ORA.Discrete (MaxPrefixList α) where
   discrete_0 := OFE.discrete_0 (α := MaxPrefixListMap (Agree α))
   discrete_valid := discrete_valid (α := MaxPrefixListMap (Agree α))
   discrete_ord := discrete_ord (α := MaxPrefixListMap (Agree α))
-
 end Instances
 
 /-! ## Embedding of lists into MaxPrefixList -/

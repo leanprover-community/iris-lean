@@ -276,7 +276,7 @@ instance instORA_GenMap : ORA (GenMap β) where
 
 end
 
-instance instUCMRA_GenMap : UORA (GenMap β) where
+instance instUORA_GenMap : UORA (GenMap β) where
   toORA := instORA_GenMap β
   unit := GenMap.empty
   unit_valid _ := trivial

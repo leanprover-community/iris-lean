@@ -101,7 +101,7 @@ theorem agree {p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{p} b) : a = b :=
 theorem ordN_frame {n : Nat} {p q : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{q} b) :
     ∃ c, some b • c ≼ₒ{n} some a := by
   obtain ⟨⟨c, hc⟩, _⟩ := both_validN_frame.mp h
-  exact ⟨c.map Prod.snd, by cases c <;> exact hc.imp (·.2) (·.2)⟩
+  exact ⟨c.map Prod.snd, Option.some_op_ordN_snd hc⟩
 
 theorem ordN [IncOrd A] {n : Nat} {p q : Qp} {a b : A}
     (h : ✓{n} (●U{p} a) • ◯U{q} b) : some b ≼ₒ{n} some a :=

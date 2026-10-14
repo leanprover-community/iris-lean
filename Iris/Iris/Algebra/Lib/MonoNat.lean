@@ -17,7 +17,7 @@ namespace Iris
 abbrev MonoNat := Auth MaxNat
 
 #rocq_ignore mono_natR "Use the MonoNat type and View.instCMRA typeclass"
-#rocq_ignore mono_natUR "Use the MonoNat type and View.instUCMRA typeclass"
+#rocq_ignore mono_natUR "Use the MonoNat type and View.instUORA typeclass"
 
 namespace MonoNat
 open ORA
