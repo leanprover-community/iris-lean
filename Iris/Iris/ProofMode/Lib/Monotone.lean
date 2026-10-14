@@ -87,3 +87,5 @@ elab "monotone" : tactic => do
 
   -- get the goal in the right form and use typeclass search
   evalTactic <| ← `(tactic|all_goals (irevert $H' %$x; apply MonoInstances.MonotonePred.monotone))
+
+end Iris

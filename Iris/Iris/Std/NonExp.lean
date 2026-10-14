@@ -16,12 +16,15 @@ open Lean Meta
 meta initialize nonexpExt :
     SimpleScopedEnvExtension Name (Array Name) ←
   registerSimpleScopedEnvExtension {
-    addEntry := λ arr n => arr.push n
+    addEntry := fun arr n => arr.push n
     initial := #[]
   }
 
 meta initialize registerBuiltinAttribute {
   name := `non_exp
   descr := "Non-expansiveness lemmas to be used by the non-expansiveness and contractiveness solvers"
-  add := λ decl _ kind => nonexpExt.add decl kind
+  add := fun decl _ kind => nonexpExt.add decl kind
 }
+
+end Std
+end Iris

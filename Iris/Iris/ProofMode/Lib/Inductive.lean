@@ -52,7 +52,7 @@ meta def iinductiveAppArgs (t : Term) : Array Term :=
   | _ => #[]
 
 -- Helper function to avoid additional `⌜False⌝`/`emp` terms from naive folding
-private meta def combine (default : Term) (f : Term → Term → CommandElabM Term) (ts : Array Term) : CommandElabM Term :=
+meta def combine (default : Term) (f : Term → Term → CommandElabM Term) (ts : Array Term) : CommandElabM Term :=
   if ts.isEmpty then return default
   else ts.foldlM f ts[0]! (start := 1)
 
@@ -163,3 +163,5 @@ elab mods:declModifiers "iinductive " name:ident binders:fixpointBinder*
     monoPf:(fixpointMonotoneClause)? nePf:(fixpointNonexpClause)?
     " : " type:term " where " ctors:iinductiveConstructor* : command =>
   elabIInductiveDef mods name binders type ctors monoPf nePf
+
+end Iris
