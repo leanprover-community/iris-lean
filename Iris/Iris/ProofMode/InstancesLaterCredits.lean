@@ -75,10 +75,10 @@ theorem tac_lc_add_laterN_split {PROP : Type u} [BI PROP] [BILaterCredits PROP]
   · icases lc_split.mp $$ Hcred with ⟨Hn, Hm⟩
     icombine HP Hm as H
     ihave H := (hR.mp.trans h2) $$ H
-    simp only [BIBase.intuitionisticallyIf, Bool.false_eq_true, ↓reduceIte]
+    simp only [BIBase.intuitionisticallyIf]
     iapply lc_fupd_add_laterN n $$ Hn
     iapply laterN_mono n (h3.trans fupd_intro) $$ H
-  · simp only [BIBase.intuitionisticallyIf, Bool.false_eq_true, ↓reduceIte]
+  · simp only [BIBase.intuitionisticallyIf]
     iintro _ //
 
 theorem tac_lc_add_laterN_full {PROP : Type u} [BI PROP] [BILaterCredits PROP]
