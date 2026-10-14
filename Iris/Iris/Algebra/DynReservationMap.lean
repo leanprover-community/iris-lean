@@ -18,7 +18,7 @@ namespace Iris
 
 @[expose] public section
 
-open Std PartialMap
+open Iris.Std PartialMap
 
 universe u v
 
@@ -482,7 +482,7 @@ theorem valid_mkData_op_data_of_valid_op? {a : A} {x : H A} (vx : ✓{n} x)
     (h : ✓{n} a •? get? x k) : ✓{n} mkData k a • mk x ∅ := by
   have htok : (mkData k a • mk x ∅).token = .valid (∅ : CoPset) := pcore_op_left_L rfl
   refine validN_iff.mpr ⟨?_, ?_, ?_, ?_⟩
-  · show ✓{n} ({[k := a]} : H A) • x
+  · change ✓{n} ({[k := a]} : H A) • x
     intro i
     rw [Heap.get?_op]
     by_cases ki : k = i
@@ -674,3 +674,7 @@ end
 end DynReservationMap
 
 end CMRA
+
+end
+
+end Iris

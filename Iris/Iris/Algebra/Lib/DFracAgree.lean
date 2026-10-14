@@ -72,7 +72,7 @@ theorem op_valid {d₁ d₂ : DFrac} {a₁ a₂ : A} : ✓ (mk d₁ a₁ • mk 
 @[rocq_alias dfrac_agree_op_validN]
 theorem op_validN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
     ✓{n} (mk d₁ a₁ • mk d₂ a₂) ↔ ✓ (d₁ • d₂) ∧ a₁ ≡{n}≡ a₂ := by
-  show Prod.ValidN n (Prod.op (mk d₁ a₁) (mk d₂ a₂)) ↔ _
+  change Prod.ValidN n (Prod.op (mk d₁ a₁) (mk d₂ a₂)) ↔ _
   simp only [Prod.ValidN, mk]
   rw [Agree.toAgree_op_validN_iff_dist]
   exact and_congr_left' (valid_iff_validN' (α := DFrac) n)

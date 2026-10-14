@@ -43,3 +43,7 @@ instance intuitionistically_intuitionistic [BI PROP] (P : PROP) : Intuitionistic
 
 instance intuitionisticallyIf_true_intuitionistic [BI PROP] (P : PROP) : Intuitionistic iprop(□?true P)
   := inferInstanceAs (Intuitionistic iprop(□ P))
+
+end BI
+
+end Iris

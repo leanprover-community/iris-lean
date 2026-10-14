@@ -25,19 +25,19 @@ open Iris OFE CMRA UCMRA Auth Option
 /-! ## Definitions -/
 
 @[rocq_alias frac_authR, rocq_alias frac_authUR]
-public abbrev FracAuth [CMRA A] := Auth (Option (Qp × A))
+abbrev FracAuth [CMRA A] := Auth (Option (Qp × A))
 
 namespace FracAuth
 
 variable [CMRA A]
 
 @[rocq_alias frac_auth_auth]
-public abbrev auth (dq : DFrac) (a : A) : FracAuth (A := A) := Auth.auth dq (some (1, a))
+abbrev auth (dq : DFrac) (a : A) : FracAuth (A := A) := Auth.auth dq (some (1, a))
 
 @[rocq_alias frac_auth_frag]
-public abbrev frag (q : Qp) (a : A) : FracAuth (A := A) := Auth.frag (some (q, a))
+abbrev frag (q : Qp) (a : A) : FracAuth (A := A) := Auth.frag (some (q, a))
 
-public abbrev fragFull (a : A) : FracAuth (A := A) := frag 1 a
+abbrev fragFull (a : A) : FracAuth (A := A) := frag 1 a
 
 notation "●F{" dq "} " a => auth dq a
 notation "●F " a => auth (DFrac.own 1) a
@@ -215,13 +215,13 @@ theorem auth_op_valid {a b : A} (h : ✓ (●F a : FracAuth) • ●F b) : False
 @[rocq_alias frac_auth_frag_op_validN]
 theorem frag_op_validN {q1 q2 : Qp} {a b : A} :
     (✓{n} (◯F{q1} a) • ◯F{q2} b) ↔ (q1 + q2).val ≤ 1 ∧ ✓{n} (a • b) := by
-  show ✓{n} (◯F{q1 + q2} (a • b)) ↔ _
+  change ✓{n} (◯F{q1 + q2} (a • b)) ↔ _
   exact frag_validN
 
 @[rocq_alias frac_auth_frag_op_valid]
 theorem frag_op_valid {q1 q2 : Qp} {a b : A} :
     (✓ (◯F{q1} a) • ◯F{q2} b) ↔ (q1 + q2).val ≤ 1 ∧ ✓ (a • b) := by
-  show ✓ (◯F{q1 + q2} (a • b)) ↔ _
+  change ✓ (◯F{q1 + q2} (a • b)) ↔ _
   exact frag_valid
 
 /-! ## IsOp type class instances -/

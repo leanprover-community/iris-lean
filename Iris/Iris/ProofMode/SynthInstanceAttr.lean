@@ -145,7 +145,7 @@ def semiOutParamCore (_io : InOut) (α : Sort u) : Sort u := α
   This should be used instead of `semiOutParam` for any type class with
   the annotation `[ipm_class]`.
 -/
-macro "semiOutParamIPM" io:term:max α:term:max : term =>
+macro "semiOutParamIPM " io:term:max ppSpace α:term:max : term =>
   `(semiOutParam (semiOutParamCore $io $α))
 
 private def parseInOutParam (d : Expr) : Option Expr := do
@@ -349,7 +349,7 @@ unsafe initialize registerBuiltinAttribute {
       let prio := if stx[1][1].isMissing then some default_prio else stx[1][1].isNatLit?
       let .some prio := prio | throwError "unknown priority: {stx[1][1]}"
 
-      let pats ← stx[2].getSepArgs.mapM λ stx => do
+      let pats ← stx[2].getSepArgs.mapM fun stx => do
         let stx ← `(iprop($(TSyntax.mk stx)))
         Term.elabTerm stx none
 
@@ -363,3 +363,7 @@ end IPMTactic
 
 initialize
   registerTraceClass `Meta.synthInstance.ipmParamKinds (inherited := true)
+
+end ProofMode
+
+end Iris

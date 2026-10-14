@@ -336,6 +336,8 @@ scoped instance : UCMRA MaxNat := OrdCommMonoidLike.instUCMRA
 scoped instance : CMRA.Discrete MaxNat := OrdCommMonoidLike.instDiscrete
 scoped instance : CMRA.CoreId (a : MaxNat) := OrdCommMonoidLike.instCoreId _
 
+theorem MaxNat.toNat_op (a b : MaxNat) : (a • b).toNat = Max.max a.toNat b.toNat := rfl
+
 @[rocq_alias max_nat_included]
 theorem MaxNat.inc_iff {a b : MaxNat} : a ≼ b ↔ a ≤ b := by
   grind [OrdCommMonoidLike.inc_iff, eq_toNat]

@@ -170,3 +170,5 @@ instance instUPredOFunctorContractive [URFunctorContractive F] : COFE.OFunctorCo
     exact fun m Hm => ⟨(HKL m Hm).2, (HKL m Hm).1⟩
 
 end UPred
+
+end Iris

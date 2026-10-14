@@ -17,7 +17,7 @@ open BI
 theorem ihave_assert [BI PROP] {A B C : PROP}
     (h1 : A ∗ □ (B -∗ B) ⊢ C) : A ⊢ C := calc
   _ ⊢ A ∧ <pers> (B -∗ B) :=
-      and_intro .rfl <| persistently_emp_intro.trans <| persistently_mono $ wand_intro emp_sep.1
+      and_intro .rfl <| persistently_emp_intro.trans <| persistently_mono <| wand_intro emp_sep.1
   _ ⊢ A ∗ □ (B -∗ B)      := persistently_and_intuitionistically_sep_right.1
   _ ⊢ C                   := h1
 
@@ -38,10 +38,18 @@ macro "ihave " colGt pat:icasesPat " := " pmt:pmTerm : tactic =>
 elab "ihave " colGt pat:icasesPat " : " P:term " $$ " spat:specPat : tactic => do
   let spat ← liftMacroM <| SpecPat.parse spat
   let pat ← liftMacroM <| iCasesPat.parse pat
-  ProofModeM.runTactic `ihave λ mvar { prop, hyps, goal, .. } => do
+  ProofModeM.runTactic `ihave fun mvar { prop, hyps, goal, .. } => do
   let P ← elabTermEnsuringTypeQ (← `(iprop($P))) prop
   -- Establish `P` with `spat`
   let ⟨_, hyps', p, A, pf⟩ ← iSpecializeCore hyps q(true) q(iprop($P -∗ $P))
     goal [spat] (try_dup_context := pat.should_try_dup_context)
   let pf2 ← iCasesCore hyps' goal pat p A
   mvar.assign q(ihave_assert ($pf $pf2))
+
+end
+
+end
+
+end ProofMode
+
+end Iris

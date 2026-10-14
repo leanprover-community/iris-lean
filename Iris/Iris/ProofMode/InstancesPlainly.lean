@@ -80,7 +80,7 @@ instance fromSep_plainly [Sbi PROP] (P Q1 Q2 : PROP)
 instance intoAnd_plainly [Sbi PROP] (p : Bool) (P Q1 Q2 : PROP)
     [h : IntoAnd p P Q1 Q2] : IntoAnd p iprop(■ P) iprop(■ Q1) iprop(■ Q2) where
   into_and := by
-    cases p <;> simp only [intuitionisticallyIf, Bool.false_eq_true, ↓reduceIte]
+    cases p <;> simp only [intuitionisticallyIf]
     · exact (plainly_mono h.1).trans plainly_and.1
     · refine (intuitionistically_idem).2.trans <| intuitionistically_mono ?_
       calc

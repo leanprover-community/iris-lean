@@ -20,7 +20,7 @@ open Lean Elab Tactic Qq
   `irename H => H'` renames the hypothesis `H` as `H'`.
 -/
 elab "irename " colGt nameFrom:ident " => " colGt nameTo:ident : tactic => do
-  ProofModeM.runTactic `irename λ mvar { prop, bi, hyps, goal, .. } => do
+  ProofModeM.runTactic `irename fun mvar { prop, bi, hyps, goal, .. } => do
 
   -- find hypothesis index
   let some (ivar, ty) := hyps.find? nameFrom.getId | throwIPMError "unknown hypothesis"
@@ -40,7 +40,7 @@ elab "irename" " : " colGt ty:term " => " colGt nameTo:ident : tactic => do
     throwUnsupportedSyntax
 
   -- find hypothesis index
-  ProofModeM.runTactic `irename λ mvar { prop, bi, hyps, goal, .. } => do
+  ProofModeM.runTactic `irename fun mvar { prop, bi, hyps, goal, .. } => do
 
   let ty ← elabTerm ty prop
   let (ivar, _, ty) ← try Hyps.select ty hyps catch _ => throwIPMError "unknown hypothesis"
@@ -49,3 +49,11 @@ elab "irename" " : " colGt ty:term " => " colGt nameTo:ident : tactic => do
 
   mvar.setType (IrisGoal.toExpr { prop, bi, hyps := hyps', goal, .. })
   addMVarGoal mvar
+
+end
+
+end
+
+end ProofMode
+
+end Iris

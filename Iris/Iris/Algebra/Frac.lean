@@ -124,7 +124,7 @@ theorem Qp.lt_iff_exists_add {a b : Qp} : a < b ↔ ∃ c : Qp, a + c = b := by
 /-- Recover a `Qp` from a rational, keeping it only when the rational is positive. -/
 def Qp.ofRat? (r : Rat) : Option Qp := if h : 0 < r then some ⟨r, h⟩ else none
 
-@[simp] theorem Qp.ofRat?_val (q : Qp) : Qp.ofRat? q.val = some q := dif_pos q.2
+@[simp] theorem Qp.ofRat?_val (q : Qp) : Qp.ofRat? q.val = some q := dite_eq_left q.2
 
 instance : Pos.Countable Qp where
   encode q := Pos.Countable.encode ([q.val.num.toNat, q.val.den] : List Nat)
@@ -202,3 +202,5 @@ instance (priority := default - 500) isOpFrac_quarters_left d : IsOp d instQpOne
 
 instance (priority := default - 500) isOpFrac_quarters_right d : IsOp d instQpOne.one Qp.threeQuarters Qp.quarter where
   is_op := by refine Qp.ext_iff.mpr ?_; grind [instQpOne]
+
+end Iris

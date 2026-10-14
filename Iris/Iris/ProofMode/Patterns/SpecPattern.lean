@@ -208,3 +208,7 @@ where
     return ← spats.toList.mapM (SpecPat.parse ·.raw)
 
 end
+
+end ProofMode
+
+end Iris

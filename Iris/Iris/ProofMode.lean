@@ -14,6 +14,7 @@ public import Iris.ProofMode.InstancesEmbedding
 public import Iris.ProofMode.InstancesFrame
 public import Iris.ProofMode.InstancesInternalEq
 public import Iris.ProofMode.InstancesLater
+public import Iris.ProofMode.InstancesLaterCredits
 public import Iris.ProofMode.InstancesMake
 public import Iris.ProofMode.InstancesPlainly
 public import Iris.ProofMode.InstancesUpdates

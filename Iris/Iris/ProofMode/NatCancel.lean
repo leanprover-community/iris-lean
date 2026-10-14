@@ -74,7 +74,7 @@ partial def natCancel (n m : Q(Nat)) : MetaM <| Q(Nat) × Q(Nat) × Expr := do
 end
 
 @[ipm_tactic_instance NatCancel _ _ _ _ _]
-def instNatCancel : SynthTactic := λ e => do
+def instNatCancel : SynthTactic := fun e => do
   let_expr NatCancel n m _ _ _ := e | return .continue
   let ⟨m, n⟩ : Q(Nat) × Q(Nat) := (m, n)
   let ⟨n', m', (pf : Q($n' + $m = $n + $m'))⟩ ← natCancel n m

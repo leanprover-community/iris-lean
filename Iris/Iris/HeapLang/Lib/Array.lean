@@ -252,4 +252,7 @@ end ArrayInitFmap
 end Proof
 
 end
-end Iris.HeapLang
+
+end HeapLang
+
+end Iris

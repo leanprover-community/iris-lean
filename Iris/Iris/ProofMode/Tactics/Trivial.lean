@@ -12,7 +12,7 @@ public import Iris.ProofMode.Tactics.Basic
 namespace Iris.ProofMode
 
 public meta section
-open BI Lean Elab Tactic Meta Qq Std
+open BI Lean Elab Tactic Meta Qq Iris.Std
 
 /--
 Try to solve the provided goal using `itrivial`.
@@ -29,3 +29,9 @@ def iTrivial {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps : Hyps bi e)
     return none
   -- itrivial succeed, but did not fully solve the goal. This should not happen.
   throwIPMError "itrivial should not make partial progress"
+
+end
+
+end ProofMode
+
+end Iris

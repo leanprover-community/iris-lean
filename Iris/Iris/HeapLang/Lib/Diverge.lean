@@ -37,4 +37,9 @@ theorem wp_diverge (s : Stuckness) (E : CoPset) (Φ : Val → IProp GF) (v : Val
 end Spec
 
 end Diverge
+
 end
+
+end HeapLang
+
+end Iris

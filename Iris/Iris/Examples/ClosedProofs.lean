@@ -60,7 +60,7 @@ example : True := by
   apply pure_soundness (PROP := IProp GF)
   iapply step_fupdN_soundness_close (hlc := .hasNoLC) (m := 0) (n := 1)
   iintro %_ _
-  simp only [Nat.repeat]
+  simp only [step_fupdN]
   icases inv_alloc nroot ⊤ iprop(True) $$ [] with >#Hinv
   · itrivial
   imod inv_acc $$ Hinv with ⟨HP, Hcl⟩

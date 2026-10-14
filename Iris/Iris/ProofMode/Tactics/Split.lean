@@ -34,7 +34,7 @@ open Lean Elab Tactic Meta Qq
   both keeping the entire context.
 -/
 elab "isplit " : tactic => do
-  ProofModeM.runTactic `isplit λ mvar { prop, hyps, goal, .. } => do
+  ProofModeM.runTactic `isplit fun mvar { prop, hyps, goal, .. } => do
 
   let A1 ← mkFreshExprMVarQ prop
   let A2 ← mkFreshExprMVarQ prop
@@ -53,7 +53,7 @@ private def isplitCore (side : splitSide) (names : Array (TSyntax `ident)) : Tac
     | .splitRight => true
 
   -- extract environment
-  ProofModeM.runTactic `isplit λ mvar { prop, bi, hyps, goal, .. } => do
+  ProofModeM.runTactic `isplit fun mvar { prop, bi, hyps, goal, .. } => do
 
   let mut ivars : IVarIdSet := {}
   for name in names do
@@ -104,3 +104,11 @@ macro "isplitl" : tactic => `(tactic| isplitr [])
   instead.
 -/
 macro "isplitr" : tactic => `(tactic| isplitl [])
+
+end
+
+end
+
+end ProofMode
+
+end Iris

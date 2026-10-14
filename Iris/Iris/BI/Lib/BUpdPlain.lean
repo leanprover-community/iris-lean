@@ -22,11 +22,11 @@ which can be used to instantiate BUpd for any Sbi BI.
 cf. https://gitlab.mpi-sws.org/iris/iris/merge_requests/211
 -/
 
-namespace BUpdPlain
-
 @[rocq_alias bupd_alt]
 def BUpdPlain [BIBase PROP] [BIBase.Plainly PROP] (P : PROP) : PROP :=
   iprop(∀ R, (P -∗ ■ R) -∗ ■ R)
+
+namespace BUpdPlain
 
 section BupdPlainDef
 
@@ -111,4 +111,7 @@ theorem own_updateP [UCMRA M] {own : M → PROP} {x : M} {Φ : M → Prop}
   iframe %HΦ Hy
 
 end BupdPlainDef
+
 end BUpdPlain
+
+end Iris

@@ -13,7 +13,7 @@ public import Iris.Std.FromMathlib
 
 namespace Iris.ProgramLogic
 
-open Iris OFE COFE BI Iris.BI Iris.Algebra Std FromMathlib LawfulSet
+open Iris OFE COFE BI Iris.BI Iris.Algebra Iris.Std FromMathlib LawfulSet
 open Iris.ProgramLogic.PrimStep
 open Language.Notation
 
@@ -126,7 +126,7 @@ theorem wptp_preservation (s : Stuckness) (n : Nat) (es1 es2 : List Expr)
   induction Hsteps generalizing nt κs' Φs ns es1 σ1 es2 σ2 with
   | refl ρ =>
     cases hρ1; cases hρ2
-    simp only [Nat.zero_add, List.nil_append, steps_sum, Nat.repeat]
+    simp only [Nat.zero_add, List.nil_append, steps_sum, step_fupdN]
     iintro Hσ _ Hwptp
     iapply fupd_mask_intro empty_subset
     iintro Hcl; imod Hcl; imodintro
@@ -139,7 +139,7 @@ theorem wptp_preservation (s : Stuckness) (n : Nat) (es1 es2 : List Expr)
     cases ρ_mid with | mk e_mid σ_mid =>
     rw [List.append_assoc obs obs' κs']
     dsimp only [steps_sum]
-    rw [Nat.repeat_add]
+    rw [step_fupdN_add.to_eq]
     iintro Hσ ⟨Hcred1, Hcred2⟩ Hwptp
     icases wptp_step s es1 e_mid obs (obs' ++ κs') σ1 σ_mid ns Φs nt hstep
             $$ Hσ Hcred1 Hwptp with ⟨%nt'_step, >Hwptp_step⟩
@@ -157,7 +157,7 @@ theorem wptp_preservation (s : Stuckness) (n : Nat) (es1 es2 : List Expr)
     iframe HSI' Hwptp'
 
 @[rocq_alias wptp_postconditions]
-theorem wptp_postconditions (Φs : List (Val → IProp GF)) (s : Stuckness) (es : List Expr):
+theorem wptp_postconditions (Φs : List (Val → IProp GF)) (s : Stuckness) (es : List Expr) :
     wptp s es Φs ={⊤}=∗ [∗list] e;Φ ∈ es;Φs, (toVal e).elim iprop(True) Φ := by
   iintro Ht
   iapply BigSepL2.bigSepL2_fupd
@@ -315,7 +315,7 @@ theorem wp_adequacy_gen [InvGpreS GF] (s : Stuckness) (e : Expr) (σ : State) (�
   apply wp_strong_adequacy_gen (GF := GF) (hlc := hlc) s (Hsteps := hsteps) (numLaters := fun _ => 0)
   iintro %Hinv
   imod Hwp κs with ⟨%Hst, %Hfork, ⟨Hst, Hwp⟩⟩
-  iexists (λ σ _ κs _ => Hst σ κs), [(λ v => iprop(⌜φ v⌝))], Hfork, (fun _ _ _ _ => fupd_intro)
+  iexists (fun σ _ κs _ => Hst σ κs), [(fun v => iprop(⌜φ v⌝))], Hfork, (fun _ _ _ _ => fupd_intro)
   dsimp only
   imodintro
   iframe
@@ -354,7 +354,7 @@ theorem wp_invariance_gen [InvGpreS GF] (s : Stuckness) (e1 : Expr) (σ1 σ2 : S
   apply wp_strong_adequacy_gen (GF := GF) (hlc := hlc) s (Hsteps := hsteps) (numLaters := fun _ => 0)
   iintro %Hinv
   imod Hwp κs with ⟨%Hst, %Hfork, ⟨Hst, Hwp, Hcont⟩⟩
-  iexists ((λ σ _ => Hst σ)), [(λ _ => iprop(True))], Hfork, (fun _ _ _ _ => fupd_intro)
+  iexists ((fun σ _ => Hst σ)), [(fun _ => iprop(True))], Hfork, (fun _ _ _ _ => fupd_intro)
   dsimp only
   imodintro
   iframe Hst

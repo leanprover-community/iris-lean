@@ -11,7 +11,7 @@ public import Iris.ProofMode
 
 namespace Iris
 
-open ProgramLogic Language Language.Notation Std OFE BI
+open ProgramLogic Language Language.Notation Iris.Std OFE BI
 
 @[expose] public section
 
@@ -360,7 +360,7 @@ theorem to_wp_fupdN_strong {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : 
     iapply to_wp
     iapply strong_mono (Std.IsPreorder.le_refl _) HSub $$ Hwp
     iintro %v HΦ
-    dsimp only [Nat.repeat]
+    dsimp only [step_fupdN]
     imod Hp
     imod lc_zero with Hlc
     imod Hp $$ Hlc with Hp
@@ -377,7 +377,7 @@ theorem to_wp_fupdN_strong {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : 
         grind
       iintro %e₂ %σ₂ %eₜ %Hstep Hcred
       ispecialize Hwp $$ %obs %e₂ %σ₂ %eₜ %Hstep
-      dsimp only [Nat.repeat]
+      dsimp only [step_fupdN]
       imod Hp $$ [Hcred] with Hp
       · iapply lc_weaken (n + 1) (Nat.succ_le_succ Hn) $$ Hcred
       iintro !> !>
@@ -488,7 +488,7 @@ theorem frame_wand {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} {R : I
   iapply HΦ $$ [$]
 
 @[rocq_alias twp_wp_step]
-theorem wp_step {s : Stuckness} {E} {e: Expr} P {Φ : Val → IProp GF} (toVal_e : toVal e = none) :
+theorem wp_step {s : Stuckness} {E} {e : Expr} P {Φ : Val → IProp GF} (toVal_e : toVal e = none) :
     ▷ P -∗ WP e @ s; E [{ v, P ={E}=∗ Φ v }] -∗ WP e @ s; E {{ Φ }} := by
  iintro HP Hwp
  iapply wp_step_fupd toVal_e LawfulSet.subset_refl $$ [$HP]

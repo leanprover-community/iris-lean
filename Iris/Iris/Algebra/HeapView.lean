@@ -63,7 +63,7 @@ instance : IsViewRel (HeapR K V H) where
     | some ⟨dq', v'⟩ =>
       obtain ⟨v, dq, Hm1, ⟨Hvval, Hdqval⟩, Hvincl⟩ := Hrel k ⟨dq', v'⟩ h
       obtain ⟨v', Hm2, Hv⟩ : ∃ y : V, get? m2 k = some y ∧ v ≡{n2}≡ y := by
-        have Hmm := Hm1 ▸ Hm k <;> revert Hmm
+        have Hmm := Hm1 ▸ Hm k; revert Hmm
         cases get? m2 k <;> simp
       exists v', dq
       refine ⟨Hm2, ⟨Hvval, validN_ne Hv (validN_of_le Hn Hdqval)⟩, ?_⟩
@@ -702,7 +702,7 @@ theorem update_big_replace (m m0 m1 : H V)
       · simpa [dom, get?_delete_ne hjk, get?_insert_ne hjk] using congrFun Hdom j
     have hunion : (m1 ∪ m) = Std.insert (delete m1 k ∪ m) k v' :=
       eqv_of_Equiv fun j => by
-        show get? (PartialMap.union m1 m) j
+        change get? (PartialMap.union m1 m) j
           = get? (Std.insert (PartialMap.union (delete m1 k) m) k v') j
         by_cases hjk : k = j
         · rw [← hjk, get?_insert_eq rfl]

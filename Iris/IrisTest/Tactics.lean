@@ -9,6 +9,7 @@ public import Iris.BI
 public import Iris.ProofMode
 public import Iris.Instances.IProp
 public import Iris.Instances.Lib.LaterCredits
+public import Iris.Instances.Lib.TimeReceipts
 public import Iris.Instances.Lib.Token
 public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.WeakestPre
@@ -799,7 +800,7 @@ example [BI PROP] (Q : PROP) (H : 0 = 0 → ⊢ Q) : ⊢ Q := by
 example [BI PROP] : ⊢@{PROP} ⌜1 = 1⌝ := by
   istart
   iapply (pure_intro (P:=emp))
-  . rfl
+  · rfl
   iempintro
 
 /-- Tests `iapply` with entailment as Lean hypothesis. -/
@@ -816,7 +817,7 @@ example [BI PROP] (P Q : PROP) (H : P -∗ Q) (HP : ⊢ P) : ⊢ Q := by
 example [BI PROP] (P Q : PROP) (H1 : P ⊢ Q) (H2 : Q ⊢ R) : P ⊢ R := by
   iintro HP
   iapply (wand_intro (emp_sep.mp.trans H2))
-  . itrivial
+  · itrivial
   iapply H1 $$ HP
 
 /-- Tests `iapply` with Lean wand entailment and subgoal. -/
@@ -913,8 +914,8 @@ example [BI PROP] (P Q : Nat → PROP) :
   (P 1 -∗ P 2 -∗ Q 1) ⊢ □ P 1 -∗ P 2 -∗ Q 1 := by
   iintro H #HP1 HP2
   iapply H
-  . iexact HP1
-  . iexact HP2
+  · iexact HP1
+  · iexact HP2
 
 /-- Tests `iapply` selecting left conjunct. -/
 example [BI PROP] (P Q : Nat → PROP) :
@@ -1077,7 +1078,7 @@ example [BI PROP] (Q : Nat → PROP) (H : ∀ x, ⊢ Q x) : ⊢ Q 1 := by
 example [BI PROP] (Q : Nat → PROP) (H : ∀ (P : PROP) [Persistent P], ⊢ P) : ⊢ Q 1 := by
   ihave HQ := H
   rotate_right 1; exact iprop(□ Q 1)
-  . apply inferInstance
+  · apply inferInstance
   iexact HQ
 
 /-- Tests `ihave` with typeclass argument (successful search). -/
@@ -1119,7 +1120,7 @@ example [BI PROP] {α} (P Q : α → PROP) (a b : α) (H : ⊢ □ ∀ x, ∀ y,
 example [BI PROP] {α} (P Q : α → PROP) (a b : α) : (□ ∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
   ihave H' := H $$ %a %b [HP]
-  . iexact HP
+  · iexact HP
   iexact H'
 
 /-- Tests `ihave` with cases pattern. -/
@@ -1140,9 +1141,9 @@ example [BI PROP] [BIAffine PROP] (Q : PROP) :
 example [BI PROP] (P Q : PROP) : P -∗ (P -∗ Q) -∗ Q := by
   iintro HP Hwand
   ihave ⟨HQ, _⟩ : (Q ∗ emp) $$ [Hwand HP]
-  . isplit
-    . iapply Hwand $$ HP
-    . itrivial
+  · isplit
+    · iapply Hwand $$ HP
+    · itrivial
   iexact HQ
 
 /-- Tests `ihave` assert duplicating the context. -/
@@ -1396,7 +1397,7 @@ example [BI PROP] (P Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
 example [BI PROP] (P Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
   iintro HP HPQ
   ispecialize HPQ $$ [HP]
-  . iexact HP
+  · iexact HP
   iexact HPQ
 
 /-- Tests `ispecialize` with subgoal and `//`. -/
@@ -1427,40 +1428,40 @@ example [BI PROP] (P Q : PROP) : P ⊢ (⌜True⌝ -∗ P -∗ ⌜True⌝ -∗ Q
 example [BI PROP] (P Q R : PROP) : P ⊢ R -∗ (P -∗ R -∗ Q) -∗ Q := by
   iintro HP HR HPQ
   ispecialize HPQ $$ [- HR] [-]
-  . iexact HP
-  . iexact HR
+  · iexact HP
+  · iexact HR
   iexact HPQ
 
 /-- Tests `ispecialize` with framing subgoal. -/
 example [BI PROP] (P Q R : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
   iintro HP1 HP2 HR HPQ
   ispecialize HPQ $$ [$HP1 HP2] [-]
-  . iexact HP2
-  . iexact HR
+  · iexact HP2
+  · iexact HR
   iexact HPQ
 
 /-- Tests `ispecialize` with framing subgoal (different argument order). -/
 example [BI PROP] (P Q R : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
   iintro HP1 HP2 HR HPQ
   ispecialize HPQ $$ [HP1 $HP2] [-]
-  . iexact HP1
-  . iexact HR
+  · iexact HP1
+  · iexact HR
   iexact HPQ
 
 /-- Tests `ispecialize` with negated framing subgoal. -/
 example [BI PROP] (P Q R : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
   iintro HP1 HP2 HR HPQ
   ispecialize HPQ $$ [- $HP1 HR] [-]
-  . iexact HP2
-  . iexact HR
+  · iexact HP2
+  · iexact HR
   iexact HPQ
 
 /-- Tests `ispecialize` with negated framing subgoal (different argument order). -/
 example [BI PROP] (P Q R : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
   iintro HP1 HP2 HR HPQ
   ispecialize HPQ $$ [- HR $HP2] [-]
-  . iexact HP1
-  . iexact HR
+  · iexact HP1
+  · iexact HR
   iexact HPQ
 
 /- Tests `ispecialize` with autoframe. -/
@@ -1492,7 +1493,7 @@ example [BI PROP] (P Q : PROP) : □ P ⊢ □ (P -∗ Q) -∗ □ Q := by
 example [BI PROP] (P Q : PROP) : □ P ⊢ □ (P -∗ Q) -∗ Q := by
   iintro #HP #HPQ
   ispecialize HPQ $$ []
-  . iexact HP
+  · iexact HP
   iexact HPQ
 
 /-- Tests `ispecialize` with intuitionistic wand requiring intuitionistic argument. -/
@@ -1529,8 +1530,8 @@ example [BI PROP] (P1 P2 Q : PROP) : P1 -∗ P2 -∗ (P1 -∗ P2 -∗ Q) -∗ Q 
 example [BI PROP] (P1 P2 Q : PROP) : P1 -∗ P2 -∗ (P1 -∗ P2 -∗ Q) -∗ Q := by
   iintro HP1 HP2 HPQ
   ispecialize HPQ $$ [HP1] [HP2]
-  . iexact HP1
-  . iexact HP2
+  · iexact HP1
+  · iexact HP2
   iexact HPQ
 
 /-- Tests `ispecialize` with multiple intuitionistic arguments. -/
@@ -2317,8 +2318,8 @@ example [BI PROP] (a b c1 c2 c3 : Prop) (P : Prop → Prop) :
     ⊢@{PROP} □ ⌜((a = b ∧ (b ∨ (c1 ∧ c2 ∧ c3))) ∧ ∃ x, P x)⌝ -∗ ⌜a ∨ c1⌝ ∗ ⌜∃ x, P x⌝ := by
   iintro Hpure
   icases Hpure with %⟨⟨rfl, ((hb : a) | ⟨hc, _, -⟩)⟩, @⟨d : Prop, hd⟩⟩
-  · ipureintro <;> grind
-  · ipureintro <;> grind
+  · ipureintro; grind
+  · ipureintro; grind
 
 /-- Tests `icases` with a case destruction pattern involving substitution (`%rfl`). -/
 example [BI PROP] n (P : Nat → PROP) : (<affine> ⌜n = 0⌝ ∗ P 0) ⊢ P n := by
@@ -2761,10 +2762,12 @@ example [BI PROP] (p : Bool) (P Q R : PROP)
   inext
   iapply h $$ HPQ1 HPQ2 HPQ3
 
-variable {GF : BundledGFunctors} [InvGS GF]
+section LaterCredits
+
+variable {PROP : Type _} [BI PROP] [BILaterCredits PROP] [BIFUpdate PROP] [BIFUpdLaterCredits PROP]
 
 /- Tests `inext` with later credits consumption. -/
-example (E : CoPset) (P : IProp GF) : ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+example (E : CoPset) (P : PROP) : ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
   iintro Hcred HP
   -- No later credits consumed, equivalent to a no-op
   inext 0 credit: Hcred
@@ -2775,12 +2778,12 @@ example (E : CoPset) (P : IProp GF) : ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=>
 /- Tests `inext` with insufficient credits. -/
 /-- error: inext: insufficient credits -/
 #guard_msgs in
-example (E : CoPset) (P : IProp GF) : ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+example (E : CoPset) (P : PROP) : ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
   iintro Hcred HP
   inext 2 credit: Hcred
 
 /- Tests `inext` with multiple credits consumed. -/
-example (E : CoPset) (P : IProp GF) :
+example (E : CoPset) (P : PROP) :
     ⊢ £ (m + n + 6) -∗ ▷^[m + n + 6] (|={E}=> P) -∗ |={E}=> P := by
   iintro Hcred HP
   inext 3 credit: Hcred
@@ -2791,7 +2794,7 @@ example (E : CoPset) (P : IProp GF) :
   iassumption
 
 /- Tests `inext` for later credits with later modalities expressed in terms of `Nat` variables. -/
-example (m n p q : Nat) (E : CoPset) (P : IProp GF) :
+example (m n p q : Nat) (E : CoPset) (P : PROP) :
     ⊢ £ (1 + m + n + p + q + 3) -∗ ▷^[n + m + 4 + p + q] (|={E}=> P) -∗ |={E}=> P := by
   iintro Hcred HP
   inext (m + q) credit: Hcred
@@ -2800,33 +2803,154 @@ example (m n p q : Nat) (E : CoPset) (P : IProp GF) :
   iassumption
 
 /- Tests `inext` where `intoLaterN_later` should not apply and `intoLaterN_laterN_bool` applies instead -/
-example (p : Bool) (P : IProp GF) (E : CoPset) :
+example (p : Bool) (P : PROP) (E : CoPset) :
     ⊢ £ 1 -∗ ▷?p P -∗ ▷ (|={E}=> P) -∗ |={E}=> (P ∗ P) := by
   iintro Hcred H HQ
   inext credit: Hcred
+  imod HQ; imodintro
   isplitl [HQ] <;> iassumption
 
 /- Tests `inext` for later credits with an invalid hypothesis choice. -/
 /-- error: inext: Hcred is not a spatial later credit hypothesis -/
 #guard_msgs in
-example (E : CoPset) (P Q : IProp GF) : ⊢ Q -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+example (E : CoPset) (P Q : PROP) : ⊢ Q -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
   iintro Hcred HP
   inext credit: Hcred
 
 /- Tests `inext` for later credits with the hypothesis not in the spatial context. -/
 /-- error: inext: Hcred is not in the spatial context -/
 #guard_msgs in
-example (E : CoPset) (P : IProp GF) : ⊢ □ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
+example (E : CoPset) (P : PROP) : ⊢ □ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
   iintro #Hcred HP
   inext credit: Hcred
 
-/- Tests `inext` with an `IProp GF` entailment where `InvGS GF` is not available. -/
-/-- error: inext: requires an InvGS (HasLC) context -/
+/- Tests `inext` discarding the used up later credit hypothesis. -/
+/--
+trace: PROP : Type u_1
+inst✝³ : BI PROP
+inst✝² : BILaterCredits PROP
+inst✝¹ : BIFUpdate PROP
+inst✝ : BIFUpdLaterCredits PROP
+E : CoPset
+P : PROP
+⊢
+  ∗HP : P
+  ⊢ |={E}=> P
+-/
+#guard_msgs (whitespace := lax) in
+example (E : CoPset) (P : PROP) : ⊢ £ 1 -∗ ▷ P ={E}=∗ P := by
+  iintro Hcred HP
+  inext credit: Hcred
+  trace_state
+  imodintro; iexact HP
+
+/- Tests `inext` keeping the residual later credits. -/
+/--
+trace: PROP : Type u_1
+inst✝³ : BI PROP
+inst✝² : BILaterCredits PROP
+inst✝¹ : BIFUpdate PROP
+inst✝ : BIFUpdLaterCredits PROP
+n : Nat
+E : CoPset
+P : PROP
+⊢
+  ∗HP : P
+  ∗Hcred : £ n
+  ⊢ |={E}=> P
+-/
+#guard_msgs (whitespace := lax) in
+example (n : Nat) (E : CoPset) (P : PROP) : ⊢ £ (n + 1) -∗ ▷ P ={E}=∗ P := by
+  iintro Hcred HP
+  inext credit: Hcred
+  trace_state
+  imodintro; iexact HP
+
+/- Tests `inext` eliminating two laters at once. -/
+example (E : CoPset) (P : PROP) : ⊢ £ 2 -∗ ▷ ▷ P ={E}=∗ P := by
+  iintro Hcred HP
+  inext 2 credit: Hcred
+  imodintro; iexact HP
+
+/- Tests that splitting `£ (n + 1 + m)` prefers the rule for `+` over the one for `.succ`. -/
+example (n m : Nat) : £ (n + 1 + m) ⊢@{PROP} £ (n + 1) := by
+  iintro ⟨Hlc1, _⟩
+  iexact Hlc1
+
+/- Tests that splitting `£ (m + (n + 1))` uses the rule for `+`, not the one for `.succ` that
+would unfold `Nat.add` (Iris issue #470). -/
+example (n m : Nat) : £ (m + (n + 1)) ⊢@{PROP} £ (n + 1) := by
+  iintro ⟨_, Hlc⟩
+  iexact Hlc
+
+/- Tests that `isplitl` on `£ (n + 1 + m)` splits using the rule for `+`. -/
+example (n m : Nat) : £ (n + 1) ⊢@{PROP} £ m -∗ £ (n + 1 + m) := by
+  iintro Hlc1 Hlc2
+  isplitl [Hlc1]
+  · iexact Hlc1
+  · iexact Hlc2
+
+/- Tests that combining `£ n` and `£ 1` gives `£ (n + 1)`. -/
+example (n : Nat) : £ 1 ⊢@{PROP} £ n -∗ £ (n + 1) := by
+  iintro Hlc1 Hlc2
+  icombine Hlc2 Hlc1 as Hlc
+  iexact Hlc
+
+end LaterCredits
+
+/- Tests `inext` without a `BIFUpdLaterCredits` instance. -/
+/-- error: inext: Missing `BIFUpdLaterCredits` instance -/
 #guard_msgs in
-example [InvGS_gen .hasNoLC GF] (E : CoPset) (P : IProp GF) :
+example {PROP : Type _} [BI PROP] [BILaterCredits PROP] [BIFUpdate PROP] (E : CoPset) (P : PROP) :
     ⊢ £ 1 -∗ ▷ (|={E}=> P) -∗ |={E}=> P := by
   iintro Hcred HP
   inext credit: Hcred
+
+section IPropLaterCredits
+
+variable {GF : BundledGFunctors}
+
+section Generic
+
+variable {hlc : HasLC} [LcGS hlc GF]
+
+/- Tests that a literal amount splits off one credit via the `.succ` rule. -/
+example : £ 3 ⊢@{IProp GF} £ 1 ∗ £ 2 := by
+  iintro ⟨H1, H2⟩
+  isplitl [H1]
+  · iexact H1
+  · iexact H2
+
+/- Tests `lc_weaken` on `IProp`. -/
+example (n : Nat) : £ (n + 3) ⊢@{IProp GF} £ 2 := by
+  iintro H
+  iapply lc_weaken 2 (by omega) $$ H
+
+/- Tests that later credits are timeless. -/
+example (n : Nat) : ▷ £ n ⊢@{IProp GF} ◇ £ n := by
+  iintro >H
+  iexact H
+
+/- Tests that zero later credits are persistent. -/
+example : £ 0 ⊢@{IProp GF} □ £ 0 := by
+  iintro #H
+  imodintro
+  iexact H
+
+end Generic
+
+section FUpd
+
+variable [InvGS GF]
+
+/- Tests `lc_fupd_elim_later` on `IProp`. -/
+example (E : CoPset) (P : IProp GF) : ⊢ £ 1 -∗ ▷ P ={E}=∗ P := by
+  iintro Hc HP
+  iapply lc_fupd_elim_later $$ Hc HP
+
+end FUpd
+
+end IPropLaterCredits
 
 variable {Expr State Obs Val} [Λ : Language Expr State Obs Val]
 variable {GF : BundledGFunctors}
@@ -2840,6 +2964,49 @@ example : £ 1 ∗ ▷ WP e @ E {{ Φ }} ⊢ WP e @ E {{ Φ }} := by
   iassumption
 
 end inext
+
+section timeReceipts
+
+open TimeReceipt
+
+variable {GF : BundledGFunctors}
+
+section Rules
+
+variable [TimeReceiptGS GF]
+
+/- Tests that exclusive time receipts split along the `+`. -/
+example (n : Nat) : ⧖+ (n + 2) ⊢@{IProp GF} ⧖+ 2 ∗ ⧖+ n := by
+  iintro ⟨Hn, H2⟩
+  isplitl [H2]
+  · iexact H2
+  · iexact Hn
+
+/- Tests combining exclusive time receipts with `icombine`. -/
+example (n m : Nat) : ⧖+ n ∗ ⧖+ m ⊢@{IProp GF} ⧖+ (n + m) := by
+  iintro ⟨Hn, Hm⟩
+  icombine Hn Hm as H
+  iexact H
+
+/- Tests combining persistent time receipts with `icombine`. -/
+example (n m : Nat) : ⧖□ n ∗ ⧖□ m ⊢@{IProp GF} ⧖□ (max n m) := by
+  iintro ⟨Hn, Hm⟩
+  icombine Hn Hm as H
+  iexact H
+
+/- Tests that persistent time receipts are persistent and can be duplicated. -/
+example (n : Nat) : ⧖□ n ⊢@{IProp GF} ⧖□ n ∗ ⧖□ n := by
+  iintro #H
+  isplitl <;> iexact H
+
+/- Tests that time receipts are timeless. -/
+example (n m : Nat) : ▷ ⧖+ n ∗ ▷ ⧖□ m ⊢@{IProp GF} ◇ (⧖+ n ∗ ⧖□ m) := by
+  iintro ⟨>H1, >H2⟩
+  iframe
+
+end Rules
+
+end timeReceipts
 
 section irewrite
 
@@ -2974,6 +3141,21 @@ example (P Q : PROP) :
     P ≡ Q -∗ Q := by
   iintro HPQ
   irewrite [HPQ]
+
+/- Tests `irewrite` with terms that are convertible but not syntactically equal. -/
+example (l : List A) : l ≡ ([] : List A) ⊢@{PROP} l ≡ ([] : List (id A)) := by
+  iintro H
+  irewrite [← H]
+  · exact internalEq.ne_r l
+  exact internalEq.refl
+
+/- Tests that `irewrite` does not fail if the rewritten term occurs in the Lean context. -/
+example (x y : A) (φ : A → Prop) (hφ : φ x) : x ≡ y ⊢@{PROP} x ≡ y := by
+  iintro H
+  irewrite [H]
+  · exact internalEq.ne_l y
+  have _ := hφ
+  exact internalEq.refl
 
 end irewrite
 
@@ -3488,7 +3670,7 @@ example {GF A} [UCMRA A] [ElemG GF (constOF (Auth A))] {γ}
       iOwn (F := constOF (Auth A)) γ (●{own q2} a1) -∗
       iOwn (F := constOF (Auth A)) γ (●{dq3} a1) -∗
       iOwn (F := constOF (Auth A)) γ (●{dq4} a1) -∗
-      iOwn (F := constOF (Auth A)) γ ((◯ c) • ●{(own $ q1 + q2) • dq''} a1) := by
+      iOwn (F := constOF (Auth A)) γ ((◯ c) • ●{(own (q1 + q2)) • dq''} a1) := by
   iintro H1 H2 H3 H4 H5 H6 H7
   icombine H1 H2 H3 as HNew1
   icombine H4 H5 as HNew2
@@ -3787,7 +3969,7 @@ example {E : CoPset} {P : IProp GF} : □ P ={E}=∗ ▷ P := by
   iinv HP with #H
 
 /-- Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and `intoAcc_cinv`. -/
-example [CInvG GF]  {γ : GName} {p : Qp} :
+example [CInvG GF] {γ : GName} {p : Qp} :
     cinv N γ iprop(<pers> P) ∗ own γ p ⊢@{IProp GF} |={⊤}=> own γ p ∗ ▷ P := by
   iintro ⟨#Hinv, H⟩
   iinv Hinv with ⟨#HP, Hown⟩
@@ -4002,7 +4184,7 @@ example [BI PROP] (P Q R1 R2 S T : PROP) :
   iexists ?_
   isplit
   · iaccu
-  · ipureintro <;> rfl
+  · ipureintro; rfl
 
 /-- Tests `iaccu` where there is no spatial hypothesis in the context. -/
 example [BI PROP] (P Q R : PROP) :
@@ -4011,7 +4193,7 @@ example [BI PROP] (P Q R : PROP) :
   iexists ?_
   isplit
   · iaccu
-  · ipureintro <;> rfl
+  · ipureintro; rfl
 
 /- Tests `iaccu` where the proof goal is not a metavariable. -/
 /-- error: iaccu: R is not a metavariable -/
@@ -4096,8 +4278,8 @@ inductive NTree (α : Type)
 theorem NTree.induction_principle {α} (p : NTree α → Prop) (h_leaf : p leaf)
   (h_node : (x : α) → (ts : List (NTree α)) → (ih : ∀ t ∈ ts, p t) → p (node x ts)) :
   ∀ t : NTree α, p t :=
-  @NTree.rec α p (λ ts => ∀ t ∈ ts, p t) h_leaf h_node (List.forall_mem_nil p)
-    (λ _ _ h_head h_tail => List.forall_mem_cons.mpr (And.intro h_head h_tail))
+  @NTree.rec α p (fun ts => ∀ t ∈ ts, p t) h_leaf h_node (List.forall_mem_nil p)
+    (fun _ _ h_head h_tail => List.forall_mem_cons.mpr (And.intro h_head h_tail))
 
 def NTree.id : NTree α → NTree α
   | .leaf => .leaf
@@ -4452,3 +4634,4 @@ example : MonoInstances.MonotonePred (PROP := PROP) (A := α × (α ⊕ α)) cho
   monotone := by monotone
 
 end monotone
+end IrisTest

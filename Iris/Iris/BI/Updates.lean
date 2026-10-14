@@ -69,7 +69,7 @@ class FUpd (PROP : Type _) where
 export FUpd (fupd)
 
 attribute [inherit_doc FUpd] FUpd.fupd
-syntax "|={" term ", " term "}=> " term : term
+syntax "|={" term "," term "}=> " term : term
 syntax:25 term:26 " ={" term "," term "}=∗ " term:25 : term
 syntax "|={" term "}=> " term : term
 syntax:25 term:26 " ={" term "}=∗ " term:25 : term
@@ -159,40 +159,27 @@ syntax:25 term:26 " ={" term "}[" term "]▷=∗^[" term "] " term:25 : term
 syntax "|={" term "}▷=>^[" term "] " term : term
 syntax:25 term:26 " ={" term "}▷=∗^[" term "] " term:25 : term
 
+/-- Iterated step-taking fancy update `|={Eo}[Ei]▷=>^[n] P`. -/
+@[rocq_alias step_fupdN]
+def step_fupdN {PROP : Type _} [BIBase PROP] [FUpd PROP] (Eo Ei : CoPset) : Nat → PROP → PROP
+  | 0, P => P
+  | n + 1, P => iprop(|={Eo}[Ei]▷=> step_fupdN Eo Ei n P)
+
 macro_rules
   | `(iprop(|={%$tk $E1 }[ $E2 ]▷=>^[ $n ] $P))   =>
-      ``(Nat.repeat (fun Q => iprop(|={%$tk $E1 }[ $E2 ]▷=> Q)) $n iprop($P))
+      ``($(wrapIprop tk ``step_fupdN) $E1 $E2 $n iprop($P))
   | `(iprop($P ={%$tk $E1 }[ $E2 ]▷=∗^[ $n ] $Q)) =>
-      ``(BIBase.wand iprop($P)
-         (Nat.repeat (fun Q => iprop(|={%$tk $E1 }[ $E2 ]▷=> Q)) $n iprop($Q)))
+      ``(BIBase.wand iprop($P) ($(wrapIprop tk ``step_fupdN) $E1 $E2 $n iprop($Q)))
   | `(iprop(|={%$tk $E1 }▷=>^[ $n ] $P))          =>
-      ``(Nat.repeat (fun Q => iprop(|={%$tk $E1 }[ $E1 ]▷=> Q)) $n iprop($P))
+      ``($(wrapIprop tk ``step_fupdN) $E1 $E1 $n iprop($P))
   | `(iprop($P ={%$tk $E1 }▷=∗^[ $n ] $Q))        =>
-      ``(BIBase.wand iprop($P)
-         (Nat.repeat (fun Q => iprop(|={%$tk $E1 }[ $E1 ]▷=> Q)) $n iprop($Q)))
+      ``(BIBase.wand iprop($P) ($(wrapIprop tk ``step_fupdN) $E1 $E1 $n iprop($Q)))
 
-open Lean.PrettyPrinter.Delaborator SubExpr in
-@[app_delab Nat.repeat]
-meta def delabStepFUpdN : Delab :=  do
-  let_expr Nat.repeat _ lam _ _ := ←getExpr | unreachable!
-  let n ← withNaryArg 2 delab
-  let P ← withNaryArg 3 delab
-  guard <| lam.isLambda
-  let lamBody ← withNaryArg 1 do
-    withBindingBody' `_ Pure.pure fun arg => do
-    guard <| (←getExpr).getAppFn.constName! == ``FUpd.fupd
-    withNaryArg 4 do
-      guard <| (←getExpr).getAppFn.constName! == ``BIBase.later
-      withNaryArg 2 do
-      guard <| (←getExpr).getAppFn.constName! == ``FUpd.fupd
-      withNaryArg 4 do
-      let body ← getExpr
-      guard (←Lean.Meta.isDefEq arg body)
-    delab
-  match lamBody with
-  | `(iprop(|={$E₁}▷=> $_)) => `(iprop(|={$E₁}▷=>^[$n] $P))
-  | `(iprop(|={$E₁}[$E₂]▷=> $_)) => `(iprop(|={$E₁}[$E₂]▷=>^[$n] $P))
-  | _ => failure
+delab_rule step_fupdN
+  | `($_ $E₁ $E₂ $n $P) => do
+      let P ← unpackIprop P
+      if E₁ == E₂ then ``(iprop(|={$E₁}▷=>^[$n] $P))
+      else ``(iprop(|={$E₁}[$E₂]▷=>^[$n] $P))
 
 delab_rule BIBase.wand
   | `($_ $Q iprop(|={$E₁}[$E₂]▷=>^[$n] $P)) => do
@@ -291,7 +278,7 @@ theorem bupd_idem {P : PROP} : (|==> |==> P) ⊣⊢ |==> P :=
   ⟨BIUpdate.trans, BIUpdate.intro⟩
 
 @[rocq_alias bupd_or]
-theorem bupd_or {P Q: PROP} : (|==> P) ∨ (|==> Q) ⊢ |==> (P ∨ Q) :=
+theorem bupd_or {P Q : PROP} : (|==> P) ∨ (|==> Q) ⊢ |==> (P ∨ Q) :=
   or_elim (mono or_intro_l) (mono or_intro_r)
 
 @[rocq_alias bupd_and]
@@ -435,7 +422,7 @@ theorem fupd_mask_frame_right_strong {E1 E2 Ef : CoPset} {P : PROP} :
 
 @[rocq_alias updates.fupd_intro]
 theorem fupd_intro {E : CoPset} {P : PROP} : P ⊢ |={E}=> P :=
-  (fupd_mask_intro_subseteq λ _ => id).trans trans
+  (fupd_mask_intro_subseteq fun _ => id).trans trans
 
 @[rocq_alias fupd_mask_intro]
 theorem fupd_mask_intro {E1 E2 : CoPset} {P : PROP} (h : E2 ⊆ E1) :
@@ -509,7 +496,7 @@ theorem fupd_exist {E1 E2 : CoPset} {Φ : A → PROP} : (∃ a : A, |={E1,E2}=> 
 
 @[rocq_alias fupd_forall]
 theorem fupd_forall {E1 E2 : CoPset} {Φ : A → PROP} :
-    (|={E1,E2}=> «forall» λ a : A => Φ a) ⊢ «forall» λ a : A => iprop(|={E1,E2}=> Φ a) :=
+    (|={E1,E2}=> «forall» fun a : A => Φ a) ⊢ «forall» fun a : A => iprop(|={E1,E2}=> Φ a) :=
   forall_intro (mono <| forall_elim ·)
 
 @[rocq_alias except_0_fupd]
@@ -529,28 +516,28 @@ instance {E1 E2 : CoPset} {P : PROP} [Absorbing P] : Absorbing iprop(|={E1,E2}=>
 @[rocq_alias updates.fupd_mask_frame_r]
 theorem fupd_mask_frame_right {E1 E2 Ef : CoPset} {P : PROP} :
     E1 ## Ef → (|={E1,E2}=> P) ⊢ |={E1 ∪ Ef,E2 ∪ Ef}=> P :=
-  λ h => (mono <| imp_intro_swap and_elim_r).trans <| mask_frame_right_strong h
+  fun h => (mono <| imp_intro_swap and_elim_r).trans <| mask_frame_right_strong h
 
 @[rocq_alias fupd_mask_mono]
 theorem fupd_mask_mono {E1 E2 : CoPset} {P : PROP} :
     E1 ⊆ E2 → (|={E1}=> P) ⊢ |={E2}=> P :=
-  λ h => by simpa [subset_union_diff h] using
+  fun h => by simpa [subset_union_diff h] using
     (fupd_mask_frame_right (E2 := E1) (Ef := E2 \ E1) disjoint_diff_right)
 
 @[rocq_alias fupd_mask_frame]
 theorem fupd_mask_frame {E E' E1 E2 : CoPset} {P : PROP} :
     E1 ⊆ E → (|={E1,E2}=> |={E2 ∪ (E \ E1),E'}=> P) ⊢ |={E,E'}=> P :=
-  λ h => by simpa [subset_union_diff h] using
+  fun h => by simpa [subset_union_diff h] using
     ((fupd_mask_frame_right (P := iprop(|={E2 ∪ (E \ E1),E'}=> P)) disjoint_diff_right).trans trans)
 
 /-- A variant of [fupd_mask_frame] that works well for accessors:
   Tailored to eliminate updates of the form [|={E1,E1∖E2}=> Q] and provides a way to transform the
   closing view shift instead of letting you prove the same side-conditions twice. -/
 @[rocq_alias fupd_mask_frame_acc]
-theorem fupd_mask_frame_acc {E E' E1 E2 : CoPset} {P Q : PROP}:
+theorem fupd_mask_frame_acc {E E' E1 E2 : CoPset} {P Q : PROP} :
     E1 ⊆ E → (|={E1,E1 \ E2}=> Q) ⊢
-    (Q -∗ |={E \ E2,E'}=> (∀ R, (|={E1 \ E2,E1}=> R) -∗ |={E \ E2,E}=> R) -∗  P) -∗
-    (|={E,E'}=> P) := λ hE => by
+    (Q -∗ |={E \ E2,E'}=> (∀ R, (|={E1 \ E2,E1}=> R) -∗ |={E \ E2,E}=> R) -∗ P) -∗
+    (|={E,E'}=> P) := fun hE => by
   have hmask : E \ E2 ⊆ (E1 \ E2) ∪ (E \ E1) := by
     intro x hx; rw [mem_diff] at hx
     by_cases hx1 : x ∈ E1
@@ -563,7 +550,7 @@ theorem fupd_mask_frame_acc {E E' E1 E2 : CoPset} {P Q : PROP}:
   refine fupd_frame_left.trans <| (BIFUpdate.mono frame_right).trans <| fupd_elim ?_
   refine BIFUpdate.mono <| sep_symm.trans ?_
   refine (sep_mono_left ?_).trans wand_elim_right
-  refine forall_intro λ R => wand_intro <| frame_right.trans <| fupd_elim ?_
+  refine forall_intro fun R => wand_intro <| frame_right.trans <| fupd_elim ?_
   exact emp_sep.1.trans <| (fupd_mask_frame_right hdisj).trans <| by simp [subset_union_diff hE]
 
 @[rocq_alias fupd_mask_subseteq_emptyset_difference]
@@ -663,12 +650,15 @@ instance step_fupdN_contractive {E1 E2 : CoPset} {n : Nat} [ι : BILaterContract
     | zero => exact ne.ne (ι.distLater_dist (ne.ne <| xy_i · ·))
     | succ n IH => exact ne.ne (later_ne.ne (ne.ne IH))
 
+@[rocq_alias step_fupdN_ne]
 instance step_fupdN_ne {E1 E2 : CoPset} {n : Nat} :
     OFE.NonExpansive (iprop(|={E1}[E2]▷=>^[n] · : PROP)) where
   ne {i x y} xy_i := by
     induction n with
-    | zero => simp [Nat.repeat, xy_i]
+    | zero => exact xy_i
     | succ n IH => exact ne.ne (later_ne.ne (ne.ne IH))
+
+#rocq_ignore step_fupdN_proper "Derivable from step_fupdN_ne with NonExpansive.eqv"
 
 theorem step_fupd_mono {Eo Ei : CoPset} {P Q : PROP} :
     (Q ⊢ P) → (|={Eo}[Ei]▷=> Q) ⊢ |={Eo}[Ei]▷=> P :=
@@ -736,8 +726,7 @@ theorem step_fupdN_intro {Ei Eo : CoPset} {P : PROP} (Ei_Eo : Ei ⊆ Eo) :
     ▷^[n] P ⊢ |={Eo}[Ei]▷=>^[n] P :=
   match n with
   | 0 => .rfl
-  | n+1 => by
-    simp only [Nat.repeat]
+  | n+1 =>
     calc
       _ ⊢ ▷ ▷^[n] P                         := (laterN_succ_left n).mp
       _ ⊢ |={Eo}[Ei]▷=> ▷^[n] P             := step_fupd_intro Ei_Eo
@@ -764,12 +753,43 @@ theorem step_fupdN_mono {n : Nat} {Eo Ei : CoPset} {P Q : PROP} (H : P ⊢ Q) :
   | zero => exact H
   | succ k IH => exact step_fupd_mono IH
 
+#rocq_ignore step_fupdN_mono' "Use step_fupdN_mono."
+#rocq_ignore step_fupdN_flip_mono "Use step_fupdN_mono."
+
+@[rocq_alias step_fupdN_0]
+theorem step_fupdN_0 {Eo Ei : CoPset} {P : PROP} : (|={Eo}[Ei]▷=>^[0] P) ⊣⊢ P := .rfl
+
+@[rocq_alias step_fupdN_1]
+theorem step_fupdN_1 {Eo Ei : CoPset} {P : PROP} : (|={Eo}[Ei]▷=>^[1] P) ⊣⊢ |={Eo}[Ei]▷=> P := .rfl
+
+@[rocq_alias step_fupdN_succ_l]
+theorem step_fupdN_succ_l {n : Nat} {Eo Ei : CoPset} {P : PROP} :
+    (|={Eo}[Ei]▷=>^[n + 1] P) ⊣⊢ |={Eo}[Ei]▷=> |={Eo}[Ei]▷=>^[n] P := .rfl
+
+@[rocq_alias step_fupdN_succ_r]
+theorem step_fupdN_succ_r {n : Nat} {Eo Ei : CoPset} {P : PROP} :
+    (|={Eo}[Ei]▷=>^[n + 1] P) ⊣⊢ |={Eo}[Ei]▷=>^[n] |={Eo}[Ei]▷=> P := by
+  induction n with
+  | zero => exact .rfl
+  | succ n IH => exact ⟨step_fupd_mono IH.1, step_fupd_mono IH.2⟩
+
+@[rocq_alias step_fupdN_add]
+theorem step_fupdN_add {n m : Nat} {Eo Ei : CoPset} {P : PROP} :
+    (|={Eo}[Ei]▷=>^[n + m] P) ⊣⊢ (|={Eo}[Ei]▷=>^[n] |={Eo}[Ei]▷=>^[m] P) := by
+  induction n with
+  | zero => rw [Nat.zero_add]; exact .rfl
+  | succ n IH =>
+    rw [Nat.add_right_comm n 1 m]
+    exact ⟨step_fupd_mono IH.1, step_fupd_mono IH.2⟩
+
 @[rocq_alias step_fupdN_S_fupd]
 theorem step_fupdN_S_fupd {n : Nat} {E : CoPset} {P : PROP} :
-    (|={E}[∅]▷=>^[n + 1] P) ⊣⊢ (|={E}[∅]▷=>^[n + 1] |={E}=> P) := by
-  refine ⟨step_fupd_mono <| step_fupdN_mono fupd_intro, ?_⟩
-  simp only [Nat.repeat_add]
-  exact step_fupdN_mono step_fupd_fupd.mpr
+    (|={E}[∅]▷=>^[n + 1] P) ⊣⊢ (|={E}[∅]▷=>^[n + 1] |={E}=> P) :=
+  calc
+    _ ⊣⊢ |={E}[∅]▷=>^[n] |={E}[∅]▷=> P := step_fupdN_succ_r
+    _ ⊣⊢ |={E}[∅]▷=>^[n] |={E}[∅]▷=> |={E}=> P :=
+      ⟨step_fupdN_mono step_fupd_fupd.1, step_fupdN_mono step_fupd_fupd.2⟩
+    _ ⊣⊢ _ := step_fupdN_succ_r.symm
 
 @[rocq_alias step_fupd_frame_l]
 theorem step_fupd_frame_left {Eo Ei : CoPset} {R Q : PROP} :
@@ -779,15 +799,6 @@ theorem step_fupd_frame_left {Eo Ei : CoPset} {R Q : PROP} :
     _ ⊢ ▷ R ∗ ▷ |={Ei,Eo}=> Q := sep_mono_left later_intro
     _ ⊢ ▷ (R ∗ |={Ei,Eo}=> Q)  := later_sep.mpr
     _ ⊢ ▷ |={Ei,Eo}=> R ∗ Q    := later_mono fupd_frame_left
-
-@[rocq_alias step_fupdN_add]
-theorem step_fupdN_add {n m : Nat} {Eo Ei : CoPset} {P : PROP} :
-    (|={Eo}[Ei]▷=>^[n + m] P) ⊣⊢ (|={Eo}[Ei]▷=>^[n] |={Eo}[Ei]▷=>^[m] P) := by
-  induction n with
-  | zero => rw [Nat.zero_add]; exact .rfl
-  | succ n IH =>
-    rw [Nat.add_right_comm n 1 m]
-    exact ⟨mono <| later_mono <| mono IH.1, mono <| later_mono <| mono IH.2⟩
 
 @[rocq_alias step_fupdN_frame_l]
 theorem step_fupdN_frame_left {Eo Ei : CoPset} {n : Nat} {R Q : PROP} :
@@ -956,3 +967,5 @@ theorem step_fupd_plain_forall [BIAffine PROP] {Eo Ei : CoPset} {Φ : α → PRO
       _ ⊢ |={Eo}[Ei]▷=> ∀ a, Φ a     := mono <| later_mono fupd_except0
 
 end StepFUpdPlainlyLaws
+
+end Iris

@@ -11,7 +11,7 @@ public import Iris.ProofMode.Modalities
 @[expose] public section
 
 namespace Iris.ProofMode
-open Iris.BI Std
+open Iris.BI Iris.Std
 
 /--
 [PMError] is used as precondition on "failing" instances of typeclasses that
@@ -47,7 +47,7 @@ theorem asEmpValid_1 {PROP} [bi : BI PROP] {φ : Prop} (P : PROP) {io}
   inst.as_emp_valid.left rfl
 
 @[rocq_alias as_emp_valid_2]
-theorem asEmpValid_2 {PROP} [bi : BI PROP] {P: PROP} (φ : Prop) {io}
+theorem asEmpValid_2 {PROP} [bi : BI PROP] {P : PROP} (φ : Prop) {io}
     (inst : AsEmpValid .from φ io PROP bi P) : (⊢ P) → φ :=
   inst.as_emp_valid.right rfl
 
@@ -184,8 +184,8 @@ class IntoOr {PROP} [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
 export IntoOr (into_or)
 
 @[ipm_class, rocq_alias IntoInternalEq]
-class IntoInternalEq {PROP} [BI PROP] [Sbi PROP] {A : outParam $ Type _}
-    [ofe : outParam $ OFE A] (P : PROP) (x y : outParam A) where
+class IntoInternalEq {PROP} [BI PROP] [Sbi PROP] {A : outParam <| Type _}
+    [ofe : outParam <| OFE A] (P : PROP) (x y : outParam A) where
   into_internal_eq : P ⊢@{PROP} x ≡ y
 export IntoInternalEq (into_internal_eq)
 
@@ -219,7 +219,7 @@ export IntoPure (into_pure)
 #rocq_ignore into_pureT_hint "IntoPureT is not necessary in Lean"
 
 @[ipm_class, rocq_alias FromPure, rocq_alias FromPureT]
-class FromPure {PROP} [BI PROP] (a : outParam $ Bool) (P : PROP) (ioφ : InOut)
+class FromPure {PROP} [BI PROP] (a : outParam Bool) (P : PROP) (ioφ : InOut)
     (φ : semiOutParamIPM ioφ Prop) where
   from_pure : <affine>?a ⌜φ⌝ ⊢ P
 export FromPure (from_pure)
@@ -365,7 +365,7 @@ class IntoInv [BI PROP] (P : PROP) (N : Namespace)
 
 @[rocq_alias accessor]
 def accessor [BI PROP] {X : Type} (M1 M2 : PROP → PROP) (α β : X → PROP)
-    (mγ : X → Option  PROP) : PROP :=
+    (mγ : X → Option PROP) : PROP :=
   M1 iprop(∃ x, α x ∗ (β x -∗ M2 (mγ x |>.getD emp)))
 
 @[ipm_class, rocq_alias ElimAcc]
@@ -387,7 +387,7 @@ class ElimInv [BI PROP] (φ : outParam Prop) (X : outParam Type)
     (Pinv : PROP) (Pin : outParam PROP) (Pout : outParam <| X → PROP)
     (close : Bool) (mPclose : outParam <| Option <| X → PROP)
     (Q : PROP) (Q' : outParam <| X → PROP) where
-  elim_inv : φ → Pinv ∗ Pin ∗ (∀ x, Pout x ∗ mPclose.getD (λ _ => emp) x -∗ Q' x) ⊢ Q
+  elim_inv : φ → Pinv ∗ Pin ∗ (∀ x, Pout x ∗ mPclose.getD (fun _ => emp) x -∗ Q' x) ⊢ Q
 export ElimInv (elim_inv)
 
 /-

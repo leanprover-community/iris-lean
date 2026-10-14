@@ -106,3 +106,9 @@ theorem readCoin.spec (cp : Val) (b : Bool) :
     simp only [prophecyToBool_of_bool]
     iapply K
     iframe; itrivial
+
+end Proofs
+
+end HeapLang
+
+end Iris

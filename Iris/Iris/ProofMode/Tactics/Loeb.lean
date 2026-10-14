@@ -77,3 +77,11 @@ elab_rules : tactic
 
       let expr ← iLoebCore hyps goal targets IH
       mvid.assign expr
+
+end
+
+end
+
+end ProofMode
+
+end Iris

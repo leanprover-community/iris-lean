@@ -28,3 +28,5 @@ info: solution: TacticTest iprop(∀ a, (emp ∗ P) ∗ P) iprop(∀ a, P ∗ P)
 #guard_msgs in
 set_option pp.mvars false in
 #ipm_synth (TacticTest iprop(∀ (_ : Nat), (emp ∗ P) ∗ P) _)
+
+end IrisTest

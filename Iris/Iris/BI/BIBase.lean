@@ -71,7 +71,7 @@ def «exists» [BIBase PROP] {α : Sort _} (P : α → PROP) : PROP := sExists f
 macro:25 P:term:29 " ⊢ " Q:term:25 : term => ``(BIBase.Entails iprop($P) iprop($Q))
 
 @[inherit_doc BIBase.Entails]
-macro:25 P:term:29 " ⊢@{ " PROP:term "} " Q:term:25 : term =>
+macro:25 P:term:29 " ⊢@{" PROP:term "} " Q:term:25 : term =>
   ``(BIBase.Entails (PROP:=$PROP) iprop($P) iprop($Q))
 
 delab_rule BIBase.Entails
@@ -227,7 +227,7 @@ delab_rule wandM
 
 /-- Affine modality: `<affine> P` is equivalent to `emp ∧ P`. -/
 @[rocq_alias bi_affinely]
-def affinely    [BIBase PROP] (P : PROP) : PROP := iprop(emp ∧ P)
+def affinely [BIBase PROP] (P : PROP) : PROP := iprop(emp ∧ P)
 /-- Absorbingly modality: `<absorb> P` is equivalent to `True ∗ P`. -/
 @[rocq_alias bi_absorbingly]
 def absorbingly [BIBase PROP] (P : PROP) : PROP := iprop(True ∗ P)
@@ -245,10 +245,10 @@ structure BiEntails [BIBase PROP] (P Q : PROP) where
 def EmpValid [BIBase PROP] (P : PROP) : Prop := emp ⊢ P
 
 macro:25 "⊢ " P:term:25 : term => ``(EmpValid iprop($P))
-macro:25 "⊢@{ " PROP:term " } " P:term:25 : term =>
+macro:25 "⊢@{" PROP:term "} " P:term:25 : term =>
   ``(EmpValid (PROP:=$PROP) iprop($P))
 macro:25 P:term:29 " ⊣⊢ " Q:term:29 : term => ``(BiEntails iprop($P) iprop($Q))
-macro:25 P:term:29 " ⊣⊢@{ " PROP:term " } " Q:term:29 : term =>
+macro:25 P:term:29 " ⊣⊢@{" PROP:term "} " Q:term:29 : term =>
   ``(BiEntails (PROP:=$PROP) iprop($P) iprop($Q))
 
 macro_rules
@@ -307,30 +307,63 @@ meta def delabLaterN : Delab := whenPPOption getPPNotation <| withOverApp 4 do
     let n ← withNaryArg 2 delab
     `(iprop(▷^[$n] $P))
 
+/-
+  We need to be careful about the transparency of the four conditional modalities below:
+  One the one hand, Kernel typechecking should unfold them early such that `□?false P` is reduced to
+  `P` without first unfolding `P`, otherwise there can be large slowdowns in big proofs, see
+  https://github.com/leanprover-community/iris-lean/pull/712
+  On the other hand, we want to write instances for these modalities and thus they should be opaque
+  for typeclass synthesis and the discrimination tree.
+  We can achieve both by first declaring the definition using `abbrev`, which tells the kernel to
+  unfold this definition before other definitions (see
+  https://github.com/leanprover/lean4/blob/0bb12a87a8347e45560bc4b4f21c9abd83bbca0a/src/Lean/Declaration.lean#L17)
+  and then setting the reducibility to `semireducible`, to make the definition opaque for
+  typeclass synthesis.
+-/
 /--
   Conditional persistently modality:
   `<pers>?p P` is equivalent to `<pers> P` when `p` is `true`, otherwise equivalent to `P`.
 -/
 @[rocq_alias bi_persistently_if]
-def persistentlyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <pers> P else P)
+abbrev persistentlyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP :=
+  match p with
+  | true => iprop(<pers> P)
+  | false => P
+set_option allowUnsafeReducibility true in
+attribute [semireducible] persistentlyIf
 /--
   Conditional affinely modality:
   `<affine>?p P` is equivalent to `<affine> P` when `p` is `true`, otherwise equivalent to `P`.
 -/
 @[rocq_alias bi_affinely_if]
-def affinelyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <affine> P else P)
+abbrev affinelyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP :=
+  match p with
+  | true => iprop(<affine> P)
+  | false => P
+set_option allowUnsafeReducibility true in
+attribute [semireducible] affinelyIf
 /--
   Conditional absorbingly modality:
   `<absorb>?p P` is equivalent to `<absorb> P` when `p` is `true`, otherwise equivalent to `P`.
 -/
 @[rocq_alias bi_absorbingly_if]
-def absorbinglyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <absorb> P else P)
+abbrev absorbinglyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP :=
+  match p with
+  | true => iprop(<absorb> P)
+  | false => P
+set_option allowUnsafeReducibility true in
+attribute [semireducible] absorbinglyIf
 /--
   Conditional intuitionistically modality:
   `□?p P` is equivalent to `□ P` when `p` is `true`, otherwise equivalent to `P`.
 -/
 @[rocq_alias bi_intuitionistically_if]
-def intuitionisticallyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then □ P else P)
+abbrev intuitionisticallyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP :=
+  match p with
+  | true => iprop(□ P)
+  | false => P
+set_option allowUnsafeReducibility true in
+attribute [semireducible] intuitionisticallyIf
 
 syntax:max "<pers>?" term:max ppHardSpace term:40 : term
 syntax:max "<affine>?" term:max ppHardSpace term:40 : term
@@ -416,3 +449,9 @@ macro_rules
 
 delab_rule Plainly.plainlyIf
   | `($_ $p $P) => do ``(iprop(■? $p $(← Iris.BI.unpackIprop P)))
+
+end BIBase
+
+end BI
+
+end Iris

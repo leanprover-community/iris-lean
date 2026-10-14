@@ -144,7 +144,7 @@ theorem Exp.isClosed_weaken_empty {X : StringSet} {e : Exp} (h : e.isClosed ∅)
 theorem Exp.isClosed_substStr {X : StringSet} {x : String} {v : Val} {e : Exp}
     (hv : v.isClosed) (he : e.isClosed ({x} ∪ X)) : (e.substStr x v).isClosed X := by
   induction e using substStr.induct (x := x) generalizing X <;>
-    (try · simp_all [substStr, isClosed]) <;>
+    (try · simp_all [substStr, isClosed]);
     (try · grind [substStr, isClosed])
   case case4 ih =>
     simp only [substStr, isClosed] at he ⊢
@@ -192,7 +192,6 @@ theorem Exp.subst_subst {b : Binder} {v v' : Val} {e : Exp} :
 theorem Exp.substStr_substStr_ne {x y : String} {v v' : Val} {e : Exp} (h : x ≠ y) :
     (e.substStr y v').substStr x v = (e.substStr x v).substStr y v' := by
   induction e using substStr.induct (x := x) <;> (try · grind [substStr])
-  all_goals split <;> simp_all
 
 @[rocq_alias heap_lang.subst_subst_ne']
 theorem Exp.subst_subst_ne {b₁ b₂ : Binder} {v v' : Val} {e : Exp} (h : b₁ ≠ b₂) :
@@ -298,13 +297,13 @@ theorem Binder.deleteMap_empty {b : Binder} : b.deleteMap (∅ : M V) = ∅ :=
 theorem Binder.deleteMap_delete_comm {b : Binder} {vs : M V} {x : String} :
     b.deleteMap (PartialMap.delete vs x) = PartialMap.delete (b.deleteMap vs) x :=
   equiv_iff_eq.mp fun _ => by
-    simp only [get?_deleteMap, LawfulPartialMap.get?_delete] <;> grind
+    simp only [get?_deleteMap, LawfulPartialMap.get?_delete]; grind
 
 theorem Binder.deleteMap_insert_of_ne {b : Binder} {vs : M V} {x : String} {v : V}
     (h : named x ≠ b) :
     b.deleteMap (PartialMap.insert vs x v) = PartialMap.insert (b.deleteMap vs) x v :=
   equiv_iff_eq.mp fun _ => by
-    simp only [get?_deleteMap, LawfulPartialMap.get?_insert] <;> grind
+    simp only [get?_deleteMap, LawfulPartialMap.get?_insert]; grind
 
 /-- A map that binds no variable acts as the identity substitution. The Rocq proof of
 `subst_map_empty` inlines this argument. -/

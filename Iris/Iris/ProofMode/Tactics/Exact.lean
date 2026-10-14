@@ -10,13 +10,13 @@ public import Iris.ProofMode.Tactics.Assumption
 namespace Iris.ProofMode
 
 public meta section
-open Lean Elab Tactic Meta Qq BI Std
+open Lean Elab Tactic Meta Qq BI Iris.Std
 
 /--
   `iexact H` solves the goal by matching it with the hypothesis `H`.
 -/
 elab "iexact " colGt hyp:ident : tactic => do
-  ProofModeM.runTactic `iexact λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic `iexact fun mvar { hyps, goal, .. } => do
   let ivar ← hyps.findWithInfo hyp
   let ⟨e', _, _, out, p, _, pf⟩ := hyps.remove true ivar
 
@@ -26,3 +26,9 @@ elab "iexact " colGt hyp:ident : tactic => do
     | throwIPMError "context is not affine or goal is not absorbing"
 
   mvar.assign q(assumption (Q := $goal) $pf)
+
+end
+
+end ProofMode
+
+end Iris

@@ -667,7 +667,7 @@ variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit
 variable [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
 
 @[rocq_alias big_opM_commute]
-theorem bigOpM_hom  [ι : MonoidHomomorphism op₁ op₂ unit₁ unit₂ R h] (f : K → A → M₁) (m : M' A) :
+theorem bigOpM_hom [ι : MonoidHomomorphism op₁ op₂ unit₁ unit₂ R h] (f : K → A → M₁) (m : M' A) :
     R (h ([^op₁ map] k↦x ∈ m, f k x)) ([^op₂ map] k↦x ∈ m, h (f k x)) := by
   exact bigOpL_hom (H := ι) _ _
 
@@ -892,7 +892,7 @@ open BigOpL MonoidOps
 @[rocq_alias big_opMS_empty, simp]
 theorem bigOpMS_empty {Φ : A → M} :
     ([^ op mset] x ∈ (∅ : MS), Φ x) = unit := by
-  show bigOpL op (fun _ x => Φ x) (FiniteMultiSet.toList (∅ : MS)) = unit
+  change bigOpL op (fun _ x => Φ x) (FiniteMultiSet.toList (∅ : MS)) = unit
   rw [LawfulFiniteMultiSet.toList_empty]; rfl
 
 @[rocq_alias big_opMS_elements]
@@ -901,7 +901,7 @@ theorem bigOpMS_bigOpL {Φ : A → M} {X : MS} :
 
 @[rocq_alias big_opMS_singleton]
 theorem bigOpMS_singleton {Φ : A → M} {a : A} : ([^ op mset] x ∈ ({a} : MS), Φ x) = Φ a := by
-  show bigOpL op (fun _ x => Φ x) (FiniteMultiSet.toList ({a} : MS)) = Φ a
+  change bigOpL op (fun _ x => Φ x) (FiniteMultiSet.toList ({a} : MS)) = Φ a
   rw [LawfulFiniteMultiSet.toList_singleton]
   exact bigOpL_singleton_eq (fun _ x => Φ x) a
 

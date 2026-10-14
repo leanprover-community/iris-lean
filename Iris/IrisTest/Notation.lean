@@ -22,63 +22,88 @@ variable [inst : BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → N
 /-! ## Interface -/
 
 /-- info: P ⊢ Q : Prop -/
-#guard_msgs in #check P ⊢ Q
+#guard_msgs in
+#check P ⊢ Q
 
 /-- info: iprop(emp) : ?m.2 -/
-#guard_msgs in #check iprop(emp)
+#guard_msgs in
+#check iprop(emp)
 
 /-- info: iprop(⌜φ⌝) : ?m.2 -/
-#guard_msgs in #check iprop(⌜φ⌝)
+#guard_msgs in
+#check iprop(⌜φ⌝)
 
 /-- info: iprop(P ∧ Q) : PROP -/
-#guard_msgs in #check iprop(P ∧ Q)
+#guard_msgs in
+#check iprop(P ∧ Q)
 /-- info: iprop(P ∧ Q ∧ R) : PROP -/
-#guard_msgs in #check iprop(P ∧ (Q ∧ R))
+#guard_msgs in
+#check iprop(P ∧ (Q ∧ R))
 
 /-- info: iprop(P ∨ Q) : PROP -/
-#guard_msgs in #check iprop(P ∨ Q)
+#guard_msgs in
+#check iprop(P ∨ Q)
 /-- info: iprop(P ∨ Q ∨ R) : PROP -/
-#guard_msgs in #check iprop(P ∨ (Q ∨ R))
+#guard_msgs in
+#check iprop(P ∨ (Q ∨ R))
 
 /-- info: iprop(P → Q) : PROP -/
-#guard_msgs in #check iprop(P → Q)
+#guard_msgs in
+#check iprop(P → Q)
 /-- info: iprop(P → Q → R) : PROP -/
-#guard_msgs in #check iprop(P → (Q → R))
+#guard_msgs in
+#check iprop(P → (Q → R))
 /-- info: iprop(P ∧ Q → R) : PROP -/
-#guard_msgs in #check iprop((P ∧ Q) → R)
+#guard_msgs in
+#check iprop((P ∧ Q) → R)
 /-- info: iprop(P → Q ∧ R) : PROP -/
-#guard_msgs in #check iprop(P → (Q ∧ R))
+#guard_msgs in
+#check iprop(P → (Q ∧ R))
 
 /-- info: «forall» Ψ : PROP -/
-#guard_msgs in #check iprop(BIBase.forall Ψ)
+#guard_msgs in
+#check iprop(BIBase.forall Ψ)
 /-- info: iprop(∀ x, Ψ x) : PROP -/
-#guard_msgs in #check iprop(∀ x, Ψ x)
+#guard_msgs in
+#check iprop(∀ x, Ψ x)
 /-- info: iprop(∀ x, Ψ x) : PROP -/
-#guard_msgs in #check iprop(∀ (x : Nat), Ψ x)
+#guard_msgs in
+#check iprop(∀ (x : Nat), Ψ x)
 /-- info: iprop(∀ x y, Φ x y) : PROP -/
-#guard_msgs in #check iprop(∀ x y, Φ x y)
+#guard_msgs in
+#check iprop(∀ x y, Φ x y)
 /-- info: iprop(∀ x y, Φ x y) : PROP -/
-#guard_msgs in #check iprop(∀ (x : Nat) (y : Nat), Φ x y)
+#guard_msgs in
+#check iprop(∀ (x : Nat) (y : Nat), Φ x y)
 /-- info: iprop(∀ x y, Φ x y) : PROP -/
-#guard_msgs in #check iprop(∀ (x y : Nat), Φ x y)
+#guard_msgs in
+#check iprop(∀ (x y : Nat), Φ x y)
 
 /-- info: «exists» Ψ : PROP -/
-#guard_msgs in #check iprop(BIBase.exists Ψ)
+#guard_msgs in
+#check iprop(BIBase.exists Ψ)
 /-- info: iprop(∃ x, Ψ x) : PROP -/
-#guard_msgs in #check iprop(∃ x, Ψ x)
+#guard_msgs in
+#check iprop(∃ x, Ψ x)
 /-- info: iprop(∃ x, Ψ x) : PROP -/
-#guard_msgs in #check iprop(∃ (x : Nat), Ψ x)
+#guard_msgs in
+#check iprop(∃ (x : Nat), Ψ x)
 /-- info: iprop(∃ x y, Φ x y) : PROP -/
-#guard_msgs in #check iprop(∃ x y, Φ x y)
+#guard_msgs in
+#check iprop(∃ x y, Φ x y)
 /-- info: iprop(∃ x y, Φ x y) : PROP -/
-#guard_msgs in #check iprop(∃ (x : Nat) (y : Nat), Φ x y)
+#guard_msgs in
+#check iprop(∃ (x : Nat) (y : Nat), Φ x y)
 /-- info: iprop(∃ x y, Φ x y) : PROP -/
-#guard_msgs in #check iprop(∃ (x y : Nat), Φ x y)
+#guard_msgs in
+#check iprop(∃ (x y : Nat), Φ x y)
 
 /-- info: iprop(P ∗ Q) : PROP -/
-#guard_msgs in #check iprop(P ∗ Q)
+#guard_msgs in
+#check iprop(P ∗ Q)
 /-- info: iprop(P ∗ Q ∗ R) : PROP -/
-#guard_msgs in #check iprop(P ∗ (Q ∗ R))
+#guard_msgs in
+#check iprop(P ∗ (Q ∗ R))
 
 section StdTelescopes
 open Iris.Std
@@ -86,11 +111,14 @@ open Iris.Std
 variable {TT : Tele} (P : TT.Arg → TT.Arg → TT.Arg → TT.Arg → Prop) (Q : TT.Arg → Prop)
 
 /-- info: ∀.. x y, ∃.. a b, P x y a b : Prop -/
-#guard_msgs in #check ∀.. x, ∀.. y, ∃.. a, ∃.. b, P x y a b
+#guard_msgs in
+#check ∀.. x, ∀.. y, ∃.. a, ∃.. b, P x y a b
 /-- info: Tele.tforall Q : Prop -/
-#guard_msgs in #check (Std.Tele.tforall Q)
+#guard_msgs in
+#check (Std.Tele.tforall Q)
 /-- info: Tele.texist Q : Prop -/
-#guard_msgs in #check (Std.Tele.texist Q)
+#guard_msgs in
+#check (Std.Tele.texist Q)
 
 end StdTelescopes
 
@@ -100,64 +128,86 @@ open Iris.Std
 variable [BI PROP] {TT : Tele} (Ψt : TT.Arg → PROP) (Φt : TT.Arg → TT.Arg → PROP)
 
 /-- info: iprop(∀.. x, Ψt x) : PROP -/
-#guard_msgs in #check iprop(∀.. x, Ψt x)
+#guard_msgs in
+#check iprop(∀.. x, Ψt x)
 /-- info: iprop(∀.. x y, Φt x y) : PROP -/
-#guard_msgs in #check iprop(∀.. x y, Φt x y)
+#guard_msgs in
+#check iprop(∀.. x y, Φt x y)
 /-- info: iprop(∃.. x, Ψt x) : PROP -/
-#guard_msgs in #check iprop(∃.. x, Ψt x)
+#guard_msgs in
+#check iprop(∃.. x, Ψt x)
 /-- info: iprop(∃.. x y, Φt x y) : PROP -/
-#guard_msgs in #check iprop(∃.. x y, Φt x y)
+#guard_msgs in
+#check iprop(∃.. x y, Φt x y)
 /-- info: iprop((∀.. x, Ψt x) ∗ ∃.. y, Ψt y) : PROP -/
-#guard_msgs in #check iprop((∀.. x, Ψt x) ∗ ∃.. y, Ψt y)
+#guard_msgs in
+#check iprop((∀.. x, Ψt x) ∗ ∃.. y, Ψt y)
 
 end BITelescopes
 
 /-- info: iprop(P -∗ Q) : PROP -/
-#guard_msgs in #check iprop(P -∗ Q)
+#guard_msgs in
+#check iprop(P -∗ Q)
 /-- info: iprop(P -∗ Q -∗ R) : PROP -/
-#guard_msgs in #check iprop(P -∗ (Q -∗ R))
+#guard_msgs in
+#check iprop(P -∗ (Q -∗ R))
 /-- info: iprop(P ∗ Q -∗ R) : PROP -/
-#guard_msgs in #check iprop((P ∗ Q) -∗ R)
+#guard_msgs in
+#check iprop((P ∗ Q) -∗ R)
 /-- info: iprop(P -∗ Q ∗ R) : PROP -/
-#guard_msgs in #check iprop(P -∗ (Q ∗ R))
+#guard_msgs in
+#check iprop(P -∗ (Q ∗ R))
 
 /-- info: iprop(<pers> P) : PROP -/
-#guard_msgs in #check iprop(<pers> P)
+#guard_msgs in
+#check iprop(<pers> P)
 /-- info: iprop(<pers> P ∧ Q) : PROP -/
-#guard_msgs in #check iprop((<pers> P) ∧ Q)
+#guard_msgs in
+#check iprop((<pers> P) ∧ Q)
 /-- info: iprop(P ∗ <pers> Q) : PROP -/
-#guard_msgs in #check iprop(P ∗ (<pers> Q))
+#guard_msgs in
+#check iprop(P ∗ (<pers> Q))
 
 /-- info: iprop(True) : ?m.2 -/
-#guard_msgs in #check iprop(True)
+#guard_msgs in
+#check iprop(True)
 /-- info: iprop(False) : ?m.2 -/
-#guard_msgs in #check iprop(False)
+#guard_msgs in
+#check iprop(False)
 
 /-- info: iprop(¬P) : PROP -/
-#guard_msgs in #check iprop(¬P)
+#guard_msgs in
+#check iprop(¬P)
 /-- info: iprop(¬P ∧ Q) : PROP -/
-#guard_msgs in #check iprop((¬P) ∧ Q)
+#guard_msgs in
+#check iprop((¬P) ∧ Q)
 
 /-! ## Term -/
 
 /-- info: if true = true then Ψ 1 else iprop(False) : PROP -/
-#guard_msgs in #check iprop(if true then term(Ψ 1) else False)
+#guard_msgs in
+#check iprop(if true then term(Ψ 1) else False)
 /-- info: Ψ (1 + 1) : PROP -/
-#guard_msgs in #check iprop(Ψ (1 + 1))
+#guard_msgs in
+#check iprop(Ψ (1 + 1))
 
 /-- info: if p = true then iprop(□ P) else P : PROP -/
-#guard_msgs in #check iprop(if p then □ P else P)
+#guard_msgs in
+#check iprop(if p then □ P else P)
 /-- info: iprop((if p = true then □ P else P) ∗ Q) : PROP -/
-#guard_msgs in #check iprop((if p then □ P else P) ∗ Q)
+#guard_msgs in
+#check iprop((if p then □ P else P) ∗ Q)
 /-- info: iprop(□ P) : PROP -/
-#guard_msgs in #check iprop((□ P : PROP))
+#guard_msgs in
+#check iprop((□ P : PROP))
 
 /--
 info: match p with
 | true => Ψ 1
 | false => iprop(False) : PROP
 -/
-#guard_msgs in #check iprop(match p with
+#guard_msgs in
+#check iprop(match p with
   | true => term(Ψ 1)
   | false => False)
 
@@ -167,7 +217,8 @@ info: iprop(□
     | true => Ψ 1
     | false => False) : PROP
 -/
-#guard_msgs in #check iprop(□ match p with
+#guard_msgs in
+#check iprop(□ match p with
   | true => term(Ψ 1)
   | false => False)
 
@@ -176,84 +227,115 @@ info: match true with
 | true => iprop(P ∗ Q)
 | false => iprop(P ∗ Q) : PROP
 -/
-#guard_msgs in #check iprop(match (generalizing := false) (motive := Bool → PROP) true with
+#guard_msgs in
+#check iprop(match (generalizing := false) (motive := Bool → PROP) true with
   | true | false => P ∗ Q
 )
 
 /-! ## Derived Connectives -/
 
 /-- info: ⊢ P : Prop -/
-#guard_msgs in #check ⊢ P
+#guard_msgs in
+#check ⊢ P
 /-- info: P ⊣⊢ Q : Prop -/
-#guard_msgs in #check P ⊣⊢ Q
+#guard_msgs in
+#check P ⊣⊢ Q
 
 /-- info: iprop(P ↔ Q) : PROP -/
-#guard_msgs in #check iprop(P ↔ Q)
+#guard_msgs in
+#check iprop(P ↔ Q)
 /-- info: iprop(P ∧ Q ↔ Q ∧ P) : PROP -/
-#guard_msgs in #check iprop((P ∧ Q) ↔ (Q ∧ P))
+#guard_msgs in
+#check iprop((P ∧ Q) ↔ (Q ∧ P))
 
 /-- info: iprop(P ∗-∗ Q) : PROP -/
-#guard_msgs in #check iprop(P ∗-∗ Q)
+#guard_msgs in
+#check iprop(P ∗-∗ Q)
 /-- info: iprop(P ∗ Q ∗-∗ Q ∗ P) : PROP -/
-#guard_msgs in #check iprop((P ∗ Q) ∗-∗ (Q ∗ P))
+#guard_msgs in
+#check iprop((P ∗ Q) ∗-∗ (Q ∗ P))
 
 /-- info: iprop(<affine> P) : PROP -/
-#guard_msgs in #check iprop(<affine> P)
+#guard_msgs in
+#check iprop(<affine> P)
 /-- info: iprop(<affine> P ∧ Q) : PROP -/
-#guard_msgs in #check iprop((<affine> P) ∧ Q)
+#guard_msgs in
+#check iprop((<affine> P) ∧ Q)
 /-- info: iprop(P ∗ <affine> Q) : PROP -/
-#guard_msgs in #check iprop(P ∗ (<affine> Q))
+#guard_msgs in
+#check iprop(P ∗ (<affine> Q))
 
 /-- info: iprop(<absorb> P) : PROP -/
-#guard_msgs in #check iprop(<absorb> P)
+#guard_msgs in
+#check iprop(<absorb> P)
 /-- info: iprop(<absorb> P ∧ Q) : PROP -/
-#guard_msgs in #check iprop((<absorb> P) ∧ Q)
+#guard_msgs in
+#check iprop((<absorb> P) ∧ Q)
 /-- info: iprop(P ∗ <absorb> Q) : PROP -/
-#guard_msgs in #check iprop(P ∗ (<absorb> Q))
+#guard_msgs in
+#check iprop(P ∗ (<absorb> Q))
 
 /-- info: iprop(□ P) : PROP -/
-#guard_msgs in #check iprop(□ P)
+#guard_msgs in
+#check iprop(□ P)
 /-- info: iprop(□ P ∧ Q) : PROP -/
-#guard_msgs in #check iprop((□ P) ∧ Q)
+#guard_msgs in
+#check iprop((□ P) ∧ Q)
 /-- info: iprop(P ∗ □ Q) : PROP -/
-#guard_msgs in #check iprop(P ∗ (□ Q))
+#guard_msgs in
+#check iprop(P ∗ (□ Q))
 
 /-- info: iprop(<pers>?p P) : PROP -/
-#guard_msgs in #check iprop(<pers>?p P)
+#guard_msgs in
+#check iprop(<pers>?p P)
 /-- info: iprop(<pers>?p P ∧ Q) : PROP -/
-#guard_msgs in #check iprop((<pers>?p P) ∧ Q)
+#guard_msgs in
+#check iprop((<pers>?p P) ∧ Q)
 /-- info: iprop(P ∗ <pers>?p Q) : PROP -/
-#guard_msgs in #check iprop(P ∗ (<pers>?p Q))
+#guard_msgs in
+#check iprop(P ∗ (<pers>?p Q))
 
 /-- info: iprop(<affine>?p P) : PROP -/
-#guard_msgs in #check iprop(<affine>?p P)
+#guard_msgs in
+#check iprop(<affine>?p P)
 /-- info: iprop(<affine>?p P ∧ Q) : PROP -/
-#guard_msgs in #check iprop((<affine>?p P) ∧ Q)
+#guard_msgs in
+#check iprop((<affine>?p P) ∧ Q)
 /-- info: iprop(P ∗ <affine>?p Q) : PROP -/
-#guard_msgs in #check iprop(P ∗ (<affine>?p Q))
+#guard_msgs in
+#check iprop(P ∗ (<affine>?p Q))
 
 /-- info: iprop(<absorb>?p P) : PROP -/
-#guard_msgs in #check iprop(<absorb>?p P)
+#guard_msgs in
+#check iprop(<absorb>?p P)
 /-- info: iprop(<absorb>?p P ∧ Q) : PROP -/
-#guard_msgs in #check iprop((<absorb>?p P) ∧ Q)
+#guard_msgs in
+#check iprop((<absorb>?p P) ∧ Q)
 /-- info: iprop(P ∗ <absorb>?p Q) : PROP -/
-#guard_msgs in #check iprop(P ∗ (<absorb>?p Q))
+#guard_msgs in
+#check iprop(P ∗ (<absorb>?p Q))
 
 /-- info: iprop(□?p P) : PROP -/
-#guard_msgs in #check iprop(□?p P)
+#guard_msgs in
+#check iprop(□?p P)
 /-- info: iprop(□?p P ∧ Q) : PROP -/
-#guard_msgs in #check iprop((□?p P) ∧ Q)
+#guard_msgs in
+#check iprop((□?p P) ∧ Q)
 /-- info: iprop(P ∗ □?p Q) : PROP -/
-#guard_msgs in #check iprop(P ∗ (□?p Q))
+#guard_msgs in
+#check iprop(P ∗ (□?p Q))
 
 /-! ## Paren-less form -/
 
 /-- info: iprop(P ∧ Q) : PROP -/
-#guard_msgs in #check iprop% P ∧ Q
+#guard_msgs in
+#check iprop% P ∧ Q
 /-- info: iprop(P ∗ Q) : PROP -/
-#guard_msgs in #check iprop% P ∗ Q
+#guard_msgs in
+#check iprop% P ∗ Q
 /-- info: iprop(∀ x, Ψ x) : PROP -/
-#guard_msgs in #check iprop% ∀ x, Ψ x
+#guard_msgs in
+#check iprop% ∀ x, Ψ x
 
 /-! ### Paren-less MWE
 

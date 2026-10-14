@@ -26,6 +26,11 @@ NOTE: Hypothesis are assumed to have a specific shape so they can be displayed c
 In particular, hypothesis must have name annotations so they may be displayed appropiately.
 -/
 
+register_option pp.iris.goal : Bool := {
+  defValue := true
+  descr := "(pretty printer) display Iris proof mode goals in proof mode notation"
+}
+
 syntax irisHyp := ("□" <|> "∗") ident " : " term
 
 syntax irisGoalStx := ppDedent(ppLine irisHyp)* ppDedent(ppLine "⊢ " term)
@@ -41,10 +46,13 @@ def withHypType {α} [Inhabited α] (persistent : Bool) (d : DelabM α) : DelabM
   if persistent then withNaryArg 2 d else d
 
 @[delab app.Iris.ProofMode.IrisHyp]
-def delabIrisHyp : Delab := withAppArg delab
+def delabIrisHyp : Delab := do
+  unless pp.iris.goal.get (← getOptions) do failure
+  withAppArg delab
 
 @[delab app.Iris.ProofMode.Entails']
 def delabIrisGoal : Delab := do
+  unless pp.iris.goal.get (← getOptions) do failure
   let some { hyps, goal, .. } := parseIrisGoal? (← instantiateMVars (← getExpr)) | failure
   -- Delaboration for the hypotheses
   let ⟨_, hypStxs⟩ ← withNaryArg 2 <| delabHypotheses hyps ({}, #[])
@@ -93,3 +101,7 @@ where
 
 @[delab app.Iris.ProofMode.HypMarker]
 def delabHypMarker : Delab := do unpackIprop (← withAppArg delab)
+
+end ProofMode
+
+end Iris

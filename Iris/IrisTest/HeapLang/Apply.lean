@@ -81,7 +81,7 @@ example {l : Loc} {v : Val} : ⊢@{IProp GF}
   itrivial
 
 -- plain wp_apply fails when a pure step is needed
-/-- error: wp_apply: cannot apply iprop(▷ (l ↦ some v -∗ ?_ v) -∗ WP hl(!#l) @ ?_ ; ?_ {{ ?_ }} ) -/
+/-- error: wp_apply: cannot apply iprop(▷ (l ↦ some v -∗ ?_ v) -∗ WP hl(!#l) @ ?_ ; ?_ {{ ?_ }}) -/
 #guard_msgs (whitespace := lax) in
 example {l : Loc} {v : Val} : ⊢@{IProp GF}
     l ↦ some v -∗ WP hl(if #true then !v(#l) else #42) {{ w, ⌜w = v⌝ }} := by
@@ -89,7 +89,7 @@ example {l : Loc} {v : Val} : ⊢@{IProp GF}
   wp_apply wp_load $$ Hpt
 
 -- wp_apply fails when the lemma matches no evaluation context
-/-- error: wp_apply: cannot apply iprop(▷ (l ↦ some v -∗ ?_ v) -∗ WP hl(!#l) @ ?_ ; ?_ {{ ?_ }} ) -/
+/-- error: wp_apply: cannot apply iprop(▷ (l ↦ some v -∗ ?_ v) -∗ WP hl(!#l) @ ?_ ; ?_ {{ ?_ }}) -/
 #guard_msgs (whitespace := lax) in
 example {l : Loc} {v : Val} : ⊢@{IProp GF}
     l ↦ some v -∗ WP hl(#1 + #2) {{ w, ⌜w = v⌝ }} := by
@@ -174,7 +174,7 @@ example {P : IProp GF} {Φ : Val → IProp GF}
 
 -- out of pure steps: the error is about the original goal, not a mid-reduction one
 /--
-error: wp_smart_apply: cannot apply iprop(▷ (l ↦ some v -∗ ?_ v) -∗ WP hl(!#l) @ ?_ ; ?_ {{ ?_ }} )
+error: wp_smart_apply: cannot apply iprop(▷ (l ↦ some v -∗ ?_ v) -∗ WP hl(!#l) @ ?_ ; ?_ {{ ?_ }})
 -/
 #guard_msgs (whitespace := lax) in
 example {l : Loc} {v : Val} : ⊢@{IProp GF}
@@ -383,3 +383,7 @@ example {Φ : Val → IProp GF} {v : Val} : ⊢@{IProp GF}
     WP hl(v(&v)) {{ Φ }} -∗ WP hl(v(&v)) {{ Φ }} := by
   iintro H
   wp_apply H with Hx
+
+end HeapLang
+
+end Iris

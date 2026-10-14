@@ -36,3 +36,9 @@ def delabQuant
       match collapseFunction body with
       | some (y, ys, Ψ) => termCreator ⟨x⟩ (#[y] ++ ys) Ψ
       | none            => termCreator ⟨x⟩ #[] body
+
+end
+
+end Std
+
+end Iris

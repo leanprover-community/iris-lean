@@ -153,7 +153,7 @@ end
 /-! ### Thread-pool ghost-state invariant -/
 
 section ghost
-open Iris CMRA Std
+open Iris CMRA Iris.Std
 
 variable {GF : BundledGFunctors}
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]
@@ -207,7 +207,7 @@ public theorem tpInv_new_threads (efs tp : List Expr) :
     rw [PartialMap.disjoint_iff]
     intro k
     rcases Nat.lt_or_ge k tp.length with h | h
-    · left; rw [LawfulFiniteMap.get?_map_seq, if_neg (by omega)]
+    · left; rw [LawfulFiniteMap.get?_map_seq, ite_eq_right (by omega)]
     · right; rw [He k, List.getElem?_eq_none h]
   imod ghost_map_insert_big (FiniteMap.map_seq tp.length efs) Hdisj $$ Hauth
     with ⟨Hauth, Hlist⟩
@@ -220,8 +220,8 @@ public theorem tpInv_new_threads (efs tp : List Expr) :
     show get? (FiniteMap.map_seq tp.length efs ∪ m) n = (tp ++ efs)[n]?
     rw [LawfulPartialMap.get?_union, LawfulFiniteMap.get?_map_seq, He n]
     rcases Nat.lt_or_ge n tp.length with h | h
-    · rw [if_neg (by omega), List.getElem?_append_left h]; rfl
-    · rw [if_pos h, List.getElem?_append_right h, List.getElem?_eq_none h]
+    · rw [ite_eq_right (by omega), List.getElem?_append_left h]; rfl
+    · rw [ite_eq_left h, List.getElem?_append_right h, List.getElem?_eq_none h]
       cases efs[n - tp.length]? <;> rfl
   · iapply (Iris.BI.BigSepM.bigSepM_map_seq) $$ Hlist
 
@@ -243,7 +243,7 @@ end ghost
 /-! ### Allocation -/
 
 section alloc
-open Iris CMRA Std
+open Iris CMRA Iris.Std
 
 variable {GF : BundledGFunctors}
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]

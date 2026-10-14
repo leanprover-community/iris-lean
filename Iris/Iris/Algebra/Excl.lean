@@ -289,3 +289,9 @@ instance {F} [COFE.OFunctorContractive F] : RFunctorContractive (ExclOF F) where
     · apply COFE.OFunctorContractive.map_contractive.1
       exact HKL
     · trivial
+
+end Excl
+
+end excl
+
+end Iris

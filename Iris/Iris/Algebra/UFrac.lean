@@ -100,3 +100,5 @@ instance (q : UFrac) : IsOp d q ⟨q.frac.half⟩ ⟨q.frac.half⟩ where
   is_op := ext_iff.mpr (Qp.half_add_half q.frac).symm
 
 end UFrac
+
+end Iris

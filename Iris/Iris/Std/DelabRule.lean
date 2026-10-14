@@ -37,3 +37,7 @@ macro_rules
         meta def unexpand : Lean.PrettyPrinter.Unexpander
           $[| $p => $s]*
           | _ => throw ())
+
+end Std
+
+end Iris

@@ -361,8 +361,7 @@ theorem lookup_inc {m1 m2 : M V} :
     refine OFE.eq_dist_2 fun n i => ((Hf i).trans ?_).dist
     specialize Hf i; revert Hf
     simp [CMRA.op, optionOp, get?_merge, get?_bindAlter]
-    cases get? m2 i <;> cases get? m1 i <;> cases f i <;> simp <;>
-      exact fun h => (OFE.not_none_eqv_some h).elim
+    cases get? m2 i <;> cases get? m1 i <;> cases f i <;> simp
 
 open OFE in
 @[rocq_alias gmap_cmra_mixin, rocq_alias gmapR]
@@ -509,7 +508,7 @@ theorem get?_opM (m : M V) (mm : Option (M V)) (i : K) :
     get? (m •? mm) i = get? m i • mm.bind (get? · i) := by
   cases mm with
   | none =>
-    show get? m i = get? m i • none
+    change get? m i = get? m i • none
     cases get? m i <;> rfl
   | some m' => exact get?_op m m'
 
@@ -830,8 +829,7 @@ theorem inc_dom_inc {m1 m2 : M V} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (do
   unfold dom
   rcases lookup_inc.mp Hinc i with ⟨z, Hz⟩
   revert Hz
-  cases get? m1 i <;> cases get? m2 i <;> cases z <;> simp [CMRA.op, optionOp] <;>
-    exact fun h => (OFE.not_none_eqv_some h).elim
+  cases get? m1 i <;> cases get? m2 i <;> cases z <;> simp [CMRA.op, optionOp]
 
 @[rocq_alias gmap_fmap_mono]
 theorem map_mono [CMRA V'] (f : V → V') (hf : ∀ x y : V, x ≼ y → f x ≼ f y) {m1 m2 : M V}
@@ -1030,7 +1028,7 @@ theorem alloc_unit_singleton_updateP {P : V → Prop} {Q : M V → Prop} {u : V}
     rcases hgf : get? gf i with _ | z
     · exact hu.validN
     · rw [hgf] at hvi
-      show ✓{n} (u • z)
+      change ✓{n} (u • z)
       rw [hid z]
       exact hvi
   obtain ⟨y, hy, hvy⟩ := hx n (get? gf i) hi

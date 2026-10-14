@@ -124,7 +124,7 @@ instance instUCMRADisjointLeibnizSet : UCMRA (DisjointLeibnizSet S) where
   pcore_unit := by simp [pcore]
 
 theorem valid_set {s : S} : ✓ valid s := ⟨⟩
-theorem validN_set {s : S}: ✓{n} valid s := ⟨⟩
+theorem validN_set {s : S} : ✓{n} valid s := ⟨⟩
 
 theorem not_valid_invalid : ¬ ✓ (error : DisjointLeibnizSet S) := False.elim
 theorem not_validN_invalid : ¬ ✓{n} (error : DisjointLeibnizSet S) := False.elim

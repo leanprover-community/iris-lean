@@ -58,15 +58,18 @@ variable [BI PROP] (P1 P2 Q : PROP) [FromAssumption p .in P1 Q] [FromAssumption 
 left conjuncts, because `fromAssumption_and_r` is declared after `fromAssumption_and_l`.
 This is the same behavior as regular typeclass search. -/
 /-- info: solution: FromAssumption p InOut.in iprop(P1 ∧ P2) Q, new goals: [] -/
-#guard_msgs in #ipm_synth (FromAssumption p .in iprop(P1 ∧ P2) Q)
+#guard_msgs in
+#ipm_synth (FromAssumption p .in iprop(P1 ∧ P2) Q)
 
 /- Test backtracking picking the left conjunct. -/
 /-- info: solution: FromAssumption p InOut.in iprop(P1 ∧ P2) P1, new goals: [] -/
-#guard_msgs in #ipm_synth (FromAssumption p .in iprop(P1 ∧ P2) P1)
+#guard_msgs in
+#ipm_synth (FromAssumption p .in iprop(P1 ∧ P2) P1)
 
 /- Test backtracking picking the right conjunct. -/
 /-- info: solution: FromAssumption p InOut.in iprop(P1 ∧ P2) P2, new goals: [] -/
-#guard_msgs in #ipm_synth (FromAssumption p .in iprop(P1 ∧ P2) P2)
+#guard_msgs in
+#ipm_synth (FromAssumption p .in iprop(P1 ∧ P2) P2)
 
 end backtracking
 
@@ -78,17 +81,20 @@ variable [BI PROP] (P1 P2 : Nat → PROP)
 /- Test creation of mvars -/
 set_option pp.mvars false in
 /-- info: solution: IntoWand false false iprop(∀ x, P1 x -∗ P2 x) WandMode.unknown (P1 ?_) (P2 ?_), new goals: [?_: Nat] -/
-#guard_msgs in #ipm_synth (IntoWand false false iprop(∀ a, P1 a -∗ P2 a) .unknown _ _)
+#guard_msgs in
+#ipm_synth (IntoWand false false iprop(∀ a, P1 a -∗ P2 a) .unknown _ _)
 
 /- Test instantiation of forall quantifier -/
 /-- info: solution: IntoWand false false iprop(∀ x, P1 x -∗ P2 x) (WandMode.matching WandMode.Side.argument) (P1 1)
   (P2 1), new goals: [] -/
-#guard_msgs in #ipm_synth (IntoWand false false iprop(∀ a, P1 a -∗ P2 a) (.matching .argument) (P1 1) _)
+#guard_msgs in
+#ipm_synth (IntoWand false false iprop(∀ a, P1 a -∗ P2 a) (.matching .argument) (P1 1) _)
 
 /- Test instantiation of mvar created outside ipm_synth -/
 /-- info: solution: IntoWand false false iprop(P1 1 -∗ P2 1) (WandMode.matching WandMode.Side.argument) (P1 1)
   (P2 1), new goals: [] -/
-#guard_msgs in #ipm_synth (IntoWand false false iprop(P1 _ -∗ P2 1) (.matching .argument) (P1 1) _)
+#guard_msgs in
+#ipm_synth (IntoWand false false iprop(P1 _ -∗ P2 1) (.matching .argument) (P1 1) _)
 
 end mvars
 
@@ -137,14 +143,14 @@ class TacticTest [BI PROP] (P : PROP) (Q : outParam PROP) where
   tactic_test : P ⊢ Q
 
 @[ipm_tactic_instance:high TacticTest _ _]
-def tac_continue : SynthTactic := λ e => do
+def tac_continue : SynthTactic := fun e => do
   logInfo m!"tac_continue called with {e}"
   return .continue
 
 theorem tactic_test_emp [BI PROP] (P : PROP) : TacticTest iprop(emp ∗ P) P := ⟨sep_elim_right⟩
 
 @[ipm_tactic_instance TacticTest iprop(emp ∗ _) _]
-def tac_emp : SynthTactic := λ e => do
+def tac_emp : SynthTactic := fun e => do
   let_expr TacticTest prop bi P _ := e | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
@@ -156,10 +162,10 @@ def tac_emp : SynthTactic := λ e => do
 
 theorem tactic_test_sep [BI PROP] (P P' Q : PROP) :
   TacticTest P P' →
-  TacticTest iprop(P ∗ Q) iprop(P' ∗ Q) := λ h => ⟨sep_mono h.1 .rfl⟩
+  TacticTest iprop(P ∗ Q) iprop(P' ∗ Q) := fun h => ⟨sep_mono h.1 .rfl⟩
 
 @[ipm_tactic_instance TacticTest iprop(_ ∗ _) _]
-def tac_sep : SynthTactic := λ e => do
+def tac_sep : SynthTactic := fun e => do
   let_expr TacticTest prop bi S _ := e | return .continue
   have u := e.getAppFn.constLevels![0]!
   have prop : Q(Type u) := prop
@@ -174,11 +180,11 @@ def tac_sep : SynthTactic := λ e => do
 instance tactic_test_all {α} [BI PROP] (P P' : α → PROP)
   [h : ∀ a, TacticTest (P a) (P' a)] :
   TacticTest iprop(∀ a, P a) iprop(∀ a, P' a) :=
-  ⟨forall_mono (λ a => (h a).1)⟩
+  ⟨forall_mono (fun a => (h a).1)⟩
 
 -- Tests failing and multiple patterns
 @[ipm_tactic_instance:low TacticTest iprop(False) _, TacticTest iprop(True) _]
-def tac_fail : SynthTactic := λ _ => return .fail
+def tac_fail : SynthTactic := fun _ => return .fail
 
 variable {PROP} [BI PROP] (P : PROP)
 
@@ -634,7 +640,7 @@ set_option pp.mvars false in
 
 /- Tests `fromForall_fupd` with the side condition `E ⊆ ⊤` discharged. -/
 /-- info:
-  solution: FromForall iprop(|={⊤, E}=> ∀ x, Ψ x) fun a => iprop(|={⊤, E}=> Ψ a),
+  solution: FromForall iprop(|={⊤,E}=> ∀ x, Ψ x) fun a => iprop(|={⊤,E}=> Ψ a),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
@@ -642,7 +648,7 @@ set_option pp.mvars false in
 
 /- Tests `fromForall_fupd` with the side condition `∅ ⊆ E` discharged. -/
 /-- info:
-  solution: FromForall iprop(|={E, ∅}=> ∀ x, Ψ x) fun a => iprop(|={E, ∅}=> Ψ a),
+  solution: FromForall iprop(|={E,∅}=> ∀ x, Ψ x) fun a => iprop(|={E,∅}=> Ψ a),
   new goals: []
 -/
 #guard_msgs (whitespace := lax) in
@@ -655,3 +661,5 @@ set_option pp.mvars false in
 #ipm_synth @FromForall PROP _ iprop(|={E,_}=> ∀ x, Ψ x) (_ : Type) _
 
 end TCSideCondition
+
+end IrisTest

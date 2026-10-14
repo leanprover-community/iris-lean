@@ -63,8 +63,7 @@ end FunPartialMap
 /-! ## (Noncomputable) Allocation in an infinite function type -/
 noncomputable section ClassicalAllocHeap
 
-open Classical
-
+open Classical in
 instance instClassicalAllocHeap : Heap (K → Option ·) K where
   notFull f := infinite <| cosupport f
   fresh := choose ∘ coinfinite_exists_next
@@ -250,7 +249,7 @@ instance : PartialMap (ExtTreeMap K · compare) K where
 @[simp]
 theorem getElem?_mergeWith' {t₁ t₂ : ExtTreeMap K V compare} :
     (t₁.mergeWith f t₂)[k]? = merge (f k) t₁[k]? t₂[k]? := by
-  show
+  change
     Const.get? (Const.mergeWith f t₁.inner t₂.inner) k =
     merge (f k) (Const.get? t₁.inner k) (Const.get? t₂.inner k)
   obtain ⟨q₁⟩ := t₁.inner
