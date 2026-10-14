@@ -15,7 +15,7 @@ public import Iris.Instances.Lib.Invariants
 
 namespace Iris
 
-open Iris.Std Std.PartialMap Std.LawfulPartialMap Iris.Algebra CMRA BI ProofMode
+open Iris.Std Std.PartialMap Std.LawfulPartialMap Iris.Algebra ORA BI ProofMode
 open Agree Auth BigSepM Excl Heap
 
 @[rocq_alias inv_heapN]
@@ -185,9 +185,9 @@ theorem invPointsToOwn_inv (l : L) (v : V) (I : V → Prop) :
     l ↦_I v -∗ l ↦_I □ := by
   iintro Hl
   unfold invPointsToOwn invPointsTo
-  iapply iOwn_mono $$ Hl
-  refine (frag_inc_of_inc (singleton_inc_singleton_mono ?_))
-  exact ⟨(some (.excl ⟨v⟩), toAgree ⟨I⟩), Prod.ext rfl Agree.idemp.symm⟩
+  iapply iOwn_ord_mono $$ Hl
+  refine frag_ord_of_ord (singleton_ord_singleton_mono ?_)
+  exact ⟨IncOrd.increasing _, ord_refl _⟩
 
 variable [genHeapGS L V GF H]
 

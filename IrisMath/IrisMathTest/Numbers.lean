@@ -19,15 +19,15 @@ open scoped CommMonoidLike
 
 /-- info: CommMonoidLike.instDiscrete -/
 #guard_msgs in
-#synth CMRA.Discrete ℝ
+#synth ORA.Discrete ℝ
 
 /-- info: fun x ↦ CommMonoidLike.instCancelable -/
 #guard_msgs in
-#synth ∀ x : ℝ, CMRA.Cancelable x
+#synth ∀ x : ℝ, ORA.Cancelable x
 
 /-- info: CommMonoidLike.instCoreIdZero -/
 #guard_msgs in
-#synth CMRA.CoreId (0 : ℝ)
+#synth ORA.CoreId (0 : ℝ)
 
 end Real
 
@@ -42,10 +42,10 @@ open scoped CommMonoidLike
 
 /-- info: CommMonoidLike.instDiscrete -/
 #guard_msgs in
-#synth CMRA.Discrete ℝ≥0∞
+#synth ORA.Discrete ℝ≥0∞
 
 /-- info: CommMonoidLike.instCoreIdZero -/
 #guard_msgs in
-#synth CMRA.CoreId (0 : ℝ≥0∞)
+#synth ORA.CoreId (0 : ℝ≥0∞)
 
 end ENNReal

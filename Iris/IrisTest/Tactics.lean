@@ -25,7 +25,7 @@ public meta import Iris.ProofMode.Lib.Monotone
 @[expose] public section
 
 namespace IrisTest
-open Iris BI CMRA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic
+open Iris BI ORA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic
 
 /- This file contains tests with various scenarios for all available tactics. -/
 
@@ -2355,7 +2355,7 @@ example [BI PROP] (P : PROP) : □ P ∗ <affine> P ⊢ <affine> P := by
   iexact HP2
 
 /- Tests `imodintro` for affinely (intuitionistic: id, spatial: forall Affine) failing. -/
-/-- error: imodintro: hypothesis HP2: P does not satisfy Affine -/
+/-- error: imodintro: hypothesis HP2: P does not satisfy BI.Affine -/
 #guard_msgs in
 example [BI PROP] (P : PROP) : □ P ∗ P ⊢ <affine> P := by
   iintro ⟨#HP1, HP2⟩
@@ -3657,7 +3657,7 @@ example {GF} [ElemG GF (constOF DFrac)]
   · iexact Hnew2
 
 /-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
-    instances for the authoritative CMRA. -/
+    instances for the authoritative ORA. -/
 example {GF A} [UCMRA A] [ElemG GF (constOF (Auth A))] {γ}
     {a1 a2 a3 b c : A} {q1 q2 : Qp} {dq'' dq3 dq4 : DFrac}
     [IsOp .merge b a2 a3] [IsOp .merge c a1 b]

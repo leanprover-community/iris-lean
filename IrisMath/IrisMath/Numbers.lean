@@ -35,7 +35,7 @@ scoped instance : OFE.Discrete ℝ := ⟨fun h => h⟩
 
 scoped instance : LeftCancelAdd ℝ := ⟨add_left_cancel⟩
 
-theorem op_eq {x y : ℝ} : CMRA.op x y = x + y := rfl
+theorem op_eq {x y : ℝ} : Op.op x y = x + y := rfl
 
 theorem inc (x y : ℝ) : x ≼ y := CommMonoidLike.included_iff.mpr ⟨y - x, by ring⟩
 
@@ -57,7 +57,7 @@ scoped instance : OFE.Discrete ℝ≥0∞ := ⟨fun h => h⟩
 
 scoped instance : LawfulAddLE ℝ≥0∞ := ⟨le_iff_exists_add⟩
 
-theorem op_eq {x y : ℝ≥0∞} : CMRA.op x y = x + y := rfl
+theorem op_eq {x y : ℝ≥0∞} : Op.op x y = x + y := rfl
 
 theorem inc_iff {x y : ℝ≥0∞} : x ≼ y ↔ x ≤ y := CommMonoidLike.inc_iff_le
 
