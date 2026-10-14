@@ -196,13 +196,6 @@ theorem atomic_seq_wp_atomic [Atomic .WeaklyAtomic e] :
     atomic_wp e E α β POST f := by
   iunfold atomic_wp
   iintro Hwp %Φ AU
-  set_option pp.explicit true in
-  set_option trace.Meta.synthInstance true in
-  set_option trace.Meta.isDefEq true in
-  -- setting the following option makes the search work.
-  -- The problem seems to be that the new defeq behavior is triggered from the assignment of the Atomic typeclass
-  -- to the sidecondition
-  -- set_option backward.isDefEq.respectTransparency.instanceSearchTypes false in
   imod AU with ⟨%x, Hα, -, Hclose⟩
   iapply Hwp $$ Hα
   iintro %y Hβ %z Hpost
