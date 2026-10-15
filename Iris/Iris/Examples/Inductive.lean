@@ -1,0 +1,41 @@
+/-
+Copyright (c) The Iris-Lean Contributors
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Oliver Soeser
+-/
+module
+
+public import Iris.HeapLang
+public import Iris.BI.Lib.Fixpoint
+public import Iris.ProofMode.Lib.Inductive
+
+@[expose] public section
+namespace Iris.Examples.Inductive
+
+open Iris Iris.HeapLang
+
+instance : COFE Loc := .ofDiscrete _
+instance : OFE.Discrete Loc := ⟨id⟩
+
+instance : COFE Val := .ofDiscrete _
+instance : OFE.Discrete Val := ⟨id⟩
+
+def NIL : Val := hl_val(none())
+def DEL (l : Loc) : Val := hl_val(some(#l))
+def CONS (v : Val) (l : Loc) : Val := hl_val(some((&v, #l)))
+
+variable [inst : HeapLangGS hlc GF]
+
+iinductive isList : Loc → List Val → IProp GF where
+  | nil (l : Loc) : l ↦ NIL -∗ isList l []
+  | cons (l tl : Loc) (v : Val) (vs : List Val) :
+      l ↦ CONS v tl -∗ isList tl vs -∗ isList l (v :: vs)
+
+iinductive isDelList : Loc → List Val → IProp GF where
+  | nil (l : Loc) : l ↦ NIL -∗ isDelList l []
+  | cons (l tl : Loc) (v : Val) (vs : List Val) :
+      l ↦ CONS v tl -∗ isDelList tl vs -∗ isDelList l (v :: vs)
+  | del (l tl : Loc) (vs : List Val) :
+      l ↦ DEL tl -∗ isDelList tl vs -∗ isDelList l vs
+
+end Iris.Examples.Inductive

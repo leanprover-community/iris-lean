@@ -72,7 +72,7 @@ theorem bigSepL_eq_of_forall_eq {Φ Ψ : Nat → A → PROP} {l : List A} (h : �
     ([∗list] k ↦ x ∈ l, Φ k x) = [∗list] k ↦ x ∈ l, Ψ k x :=
   bigOpL_eq_of_forall_eq h
 
-@[rocq_alias big_sepL_ne]
+@[rocq_alias big_sepL_ne, non_exp]
 theorem bigSepL_dist {Φ Ψ : Nat → A → PROP} {l : List A} {n : Nat}
     (h : ∀ {k x}, l[k]? = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([∗list] k ↦ x ∈ l, Φ k x) ≡{n}≡ [∗list] k ↦ x ∈ l, Ψ k x :=

@@ -22,6 +22,7 @@ public import Iris.Std.List
 public import Iris.Std.Linter
 public import Iris.Std.Namespaces
 public import Iris.Std.Nat
+public import Iris.Std.NonExp
 public import Iris.Std.Notation
 public import Iris.Std.Option
 public import Iris.Std.PartialMap
