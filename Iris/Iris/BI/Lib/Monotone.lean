@@ -25,20 +25,20 @@ class AntitonePred [BI PROP] [OFE A]
 
 section const
 
-instance monotone_const [BI PROP] [OFE A] : MonotonePred (fun _ : A → PROP => Ω) := by
+instance monotone_constant [BI PROP] [OFE A] : MonotonePred (fun _ : A → PROP => Ω) := by
   constructor
   intros
   iintro #H1 %x H2
   iexact H2
 
-instance monotone_const' [BI PROP] [OFE A] (y : A) : MonotonePred (fun Φ : A → PROP => fun _ : A => Φ y) := by
+instance monotone_constant' [BI PROP] [OFE A] (y : A) : MonotonePred (fun Φ : A → PROP => fun _ : A => Φ y) := by
   constructor
   intros Φ Ψ
   iintro #H1 %x H2
   iapply H1
   iexact H2
 
-instance antitone_const [BI PROP] [OFE A] : AntitonePred (fun _ : A → PROP => Ω) := by
+instance antitone_constant [BI PROP] [OFE A] : AntitonePred (fun _ : A → PROP => Ω) := by
   constructor
   intros
   iintro #H1 %x H2
