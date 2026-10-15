@@ -41,9 +41,10 @@ meta def guardedMkExplicitBinder (i : Ident) (t : Term)
     : CommandElabM (TSyntax ``Lean.Parser.Term.bracketedBinder) :=
   `(bracketedBinder| ($i : $t))
 
-/-- Recursive definition via the guarded fixpoint. -/
-elab mods:declModifiers "iguarded " name:ident binders:guardedExplicitBinder*
-    " : " ty:term " := " body:term contractiveBy:(guardedContractiveClause)? : command => do
+meta def elabGuardedDef (mods : TSyntax ``Lean.Parser.Command.declModifiers)
+    (name : Ident) (binders : Array (TSyntax `guardedExplicitBinder))
+    (ty : Term) (body : Term) (contractiveBy : Option (TSyntax `guardedContractiveClause))
+    (logCmds : Bool)  : CommandElabM Unit := do do
   let mut names : Array Ident := #[]
   let mut types : Array Term := #[]
   for b in binders do
@@ -78,6 +79,7 @@ elab mods:declModifiers "iguarded " name:ident binders:guardedExplicitBinder*
   let declPre ← `(command|
     def $preName:ident $prefixBinders* $selfBinder $suffixBinders* : $ty := $body)
   elabCommand declPre
+  if logCmds then logInfo declPre
 
   let preFullName := (← getCurrNamespace) ++ preName.getId
   let some preInfo := (← getEnv).find? preFullName
@@ -101,12 +103,14 @@ elab mods:declModifiers "iguarded " name:ident binders:guardedExplicitBinder*
   let declContr ← `(command| instance $contractiveName:ident $prefixBinders* :
                   OFE.Contractive $preApp where distLater_dist := by $contractiveTac)
   elabCommand declContr
+  if logCmds then logInfo declContr
 
   -- definition: fixpoint of the pre-definition
   let defName := mkIdentFrom name (name.getId)
   let declDef ← `(command|
     $mods:declModifiers def $defName:ident $prefixBinders* : $selfType := fixpoint $preApp)
   elabCommand declDef
+  if logCmds then logInfo declDef
 
   -- unfolding lemma
   let unfoldName := mkIdentFrom name (name.getId ++ `unfold)
@@ -114,5 +118,16 @@ elab mods:declModifiers "iguarded " name:ident binders:guardedExplicitBinder*
     theorem $unfoldName:ident $prefixBinders* : $defName $prefixArgs* = $preApp ($defName $prefixArgs*) :=
     fixpoint_unfold (f := ($preApp).toContractiveHom))
   elabCommand declUnfold
+  if logCmds then logInfo declUnfold
+
+/-- Recursive definition via the guarded fixpoint. -/
+elab mods:declModifiers "iguarded " name:ident binders:guardedExplicitBinder*
+    " : " ty:term " := " body:term contractiveBy:(guardedContractiveClause)? : command =>
+  elabGuardedDef mods name binders ty body contractiveBy false
+
+/-- Like `iguarded`, but logs the generated Lean code. -/
+elab mods:declModifiers "iguarded? " name:ident binders:guardedExplicitBinder*
+    " : " ty:term " := " body:term contractiveBy:(guardedContractiveClause)? : command =>
+  elabGuardedDef mods name binders ty body contractiveBy true
 
 end Iris

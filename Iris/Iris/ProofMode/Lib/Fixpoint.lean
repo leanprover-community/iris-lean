@@ -52,7 +52,7 @@ meta def fixpointMkExplicitBinder (i : Ident) (t : Term)
 meta def elabFixpointDef (fixpoint : Name) (unfolding : Name) (mods : TSyntax ``Lean.Parser.Command.declModifiers)
     (name : Ident) (binders : Array (TSyntax `fixpointBinder))
     (ty : Term) (body : Term) (monoBy : Option (TSyntax `fixpointMonotoneClause))
-    (neBy : Option (TSyntax `fixpointNonexpClause))
+    (neBy : Option (TSyntax `fixpointNonexpClause)) (logCmds : Bool)
     : CommandElabM Unit := do
   let mut names : Array Ident := #[]
   let mut types : Array Term := #[]
@@ -102,6 +102,7 @@ meta def elabFixpointDef (fixpoint : Name) (unfolding : Name) (mods : TSyntax ``
   let declPre ← `(command|
     def $preName:ident $prefixBinders* $selfBinder $suffixBinders* : $ty := $body)
   elabCommand declPre
+  if logCmds then logInfo declPre
 
   let preFullName := (← getCurrNamespace) ++ preName.getId
   let some preInfo := (← getEnv).find? preFullName
@@ -129,6 +130,7 @@ meta def elabFixpointDef (fixpoint : Name) (unfolding : Name) (mods : TSyntax ``
   let declPre' ← `(command|
     def $pre'Name:ident $prefixBinders* $selfParamBinder := $pre'Body)
   elabCommand declPre'
+  if logCmds then logInfo declPre'
 
   -- monotonicity instance
   let monoTac ← match monoBy with
@@ -150,6 +152,7 @@ meta def elabFixpointDef (fixpoint : Name) (unfolding : Name) (mods : TSyntax ``
       mono_pred := by $monoTac
       mono_pred_ne := by $neTac)
   elabCommand declMono
+  if logCmds then logInfo declMono
 
   -- definition: fixpoint of the uncurried pre-definition
   let defName := mkIdentFrom name (name.getId)
@@ -172,12 +175,24 @@ meta def elabFixpointDef (fixpoint : Name) (unfolding : Name) (mods : TSyntax ``
 elab mods:declModifiers "ifix " name:ident binders:fixpointBinder*
     " : " ty:term " := " body:term
     monoPf:(fixpointMonotoneClause)? nePf:(fixpointNonexpClause)? : command =>
-  elabFixpointDef ``bi_least_fixpoint ``least_fixpoint_unfold mods name binders ty body monoPf nePf
+  elabFixpointDef ``bi_least_fixpoint ``least_fixpoint_unfold mods name binders ty body monoPf nePf false
+
+/-- Like `ifix`, but logs the generated Lean code. -/
+elab mods:declModifiers "ifix? " name:ident binders:fixpointBinder*
+    " : " ty:term " := " body:term
+    monoPf:(fixpointMonotoneClause)? nePf:(fixpointNonexpClause)? : command =>
+  elabFixpointDef ``bi_least_fixpoint ``least_fixpoint_unfold mods name binders ty body monoPf nePf true
 
 /-- Recursive definition via the greatest fixpoint. -/
 elab mods:declModifiers "icofix " name:ident binders:fixpointBinder*
     " : " ty:term " := " body:term
     monoPf:(fixpointMonotoneClause)? nePf:(fixpointNonexpClause)? : command =>
-  elabFixpointDef ``bi_greatest_fixpoint ``greatest_fixpoint_unfold mods name binders ty body monoPf nePf
+  elabFixpointDef ``bi_greatest_fixpoint ``greatest_fixpoint_unfold mods name binders ty body monoPf nePf false
+
+/-- Like `icofix`, but logs the generated Lean code. -/
+elab mods:declModifiers "icofix? " name:ident binders:fixpointBinder*
+    " : " ty:term " := " body:term
+    monoPf:(fixpointMonotoneClause)? nePf:(fixpointNonexpClause)? : command =>
+  elabFixpointDef ``bi_greatest_fixpoint ``greatest_fixpoint_unfold mods name binders ty body monoPf nePf true
 
 end Iris

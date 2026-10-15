@@ -58,7 +58,7 @@ meta def combine (default : Term) (f : Term → Term → CommandElabM Term) (ts 
 
 meta def elabIInductiveDef (mods : TSyntax ``Lean.Parser.Command.declModifiers) (name : Ident)
     (binders : Array (TSyntax `fixpointBinder)) (type : Term) (ctors : Array (TSyntax `iinductiveConstructor))
-    (monoBy : Option (TSyntax `fixpointMonotoneClause)) (neBy : Option (TSyntax `fixpointNonexpClause))
+    (monoBy : Option (TSyntax `fixpointMonotoneClause)) (neBy : Option (TSyntax `fixpointNonexpClause)) (logCmds : Bool)
     : CommandElabM Unit := do
   let (args, iProp) := iinductivePeelArrows type
 
@@ -103,8 +103,11 @@ meta def elabIInductiveDef (mods : TSyntax ``Lean.Parser.Command.declModifiers) 
   let defBody ← `(iprop($disjunction))
   let defBinders := binders ++ argBinders
 
-  let declDef ← `(command|
+  let declDef ← if logCmds then `(command|
+    $mods:declModifiers ifix? $name:ident $defBinders* : $iProp := $defBody $[$monoBy]? $[$neBy]?)
+  else `(command|
     $mods:declModifiers ifix $name:ident $defBinders* : $iProp := $defBody $[$monoBy]? $[$neBy]?)
+  if logCmds then logInfo declDef
   elabCommand declDef
 
   let mut selector : Array (TSyntax `tactic) := #[]
@@ -152,6 +155,7 @@ meta def elabIInductiveDef (mods : TSyntax ``Lean.Parser.Command.declModifiers) 
     let ctorDef ← `(command|
       $cMods:declModifiers theorem $ctorName:ident $ctorBinds* : $cTy := by $tac)
     elabCommand ctorDef
+    if logCmds then logInfo ctorDef
 
     if selector.toList.getLast! == (← `(tactic| iright)) then
       selector := selector.pop.pop.push (← `(tactic| iright))
@@ -162,6 +166,12 @@ meta def elabIInductiveDef (mods : TSyntax ``Lean.Parser.Command.declModifiers) 
 elab mods:declModifiers "iinductive " name:ident binders:fixpointBinder*
     monoPf:(fixpointMonotoneClause)? nePf:(fixpointNonexpClause)?
     " : " type:term " where " ctors:iinductiveConstructor* : command =>
-  elabIInductiveDef mods name binders type ctors monoPf nePf
+  elabIInductiveDef mods name binders type ctors monoPf nePf false
+
+/-- Like `iinductive`, but logs the generated Lean code. . -/
+elab mods:declModifiers "iinductive? " name:ident binders:fixpointBinder*
+    monoPf:(fixpointMonotoneClause)? nePf:(fixpointNonexpClause)?
+    " : " type:term " where " ctors:iinductiveConstructor* : command =>
+  elabIInductiveDef mods name binders type ctors monoPf nePf true
 
 end Iris
