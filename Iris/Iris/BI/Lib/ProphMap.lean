@@ -172,7 +172,7 @@ theorem resolve_proph [DecidableEq P] (p : P) (v : V) (pvs : ProphValList P V) (
       ==∗ (∃ vs', ⌜vs = v :: vs'⌝ ∗ prophMapInterp pvs ps ∗ proph p vs') := by
   unfold prophMapInterp proph
   iintro ⟨⟨%R, ⟨%Hres, %Hdom⟩, Hauth⟩, Hp⟩
-  ihave %HR := ghost_map_lookup $$ Hauth Hp
+  icombine Hauth Hp gives %HR
   have Hvs : vs = v :: prophListResolves pvs p := by
     rw [Hres p vs HR, prophListResolves, ite_eq_left rfl]
   subst Hvs
@@ -202,7 +202,7 @@ theorem agree [DecidableEq P] (pvs : ProphValList P V) (ps : S) (p : P) (vs : Li
       -∗ ⌜p ∈ ps ∧ vs = prophListResolves pvs p⌝ := by
   unfold prophMapInterp proph
   iintro ⟨⟨%R, ⟨%Hres, %Hdom⟩, Hauth⟩, Hp⟩
-  ihave %Hlookup := ghost_map_lookup $$ Hauth Hp
+  icombine Hauth Hp gives %Hlookup
   ipureintro
   exact ⟨Hdom p (by simp [dom, Hlookup]), Hres p vs Hlookup⟩
 

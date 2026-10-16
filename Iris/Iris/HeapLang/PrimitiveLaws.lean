@@ -707,15 +707,15 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
     icases (stateInterp_split σ₂ (ns + 1) ((p, (v_inner, w)) :: obs') (nt + eₜ.length)).mp
       $$ Hσ_post with ⟨Hheap_e, Hpmap_e⟩
     imod wp_value_fupd'.mp $$ HWPval with ⟨%pvs', Hele, HΦ⟩
-    imod (ProphMap.resolve_proph p (v_inner, w) obs' σ₂.usedProphId pvs') $$ [Hpmap_e Hele]
+    icombine Hpmap_e Hele as Hcomb
+    imod (ProphMap.resolve_proph p (v_inner, w) obs' σ₂.usedProphId pvs') $$ Hcomb
       with ⟨%pvs'', %hpvs'_eq, Hpmap_e, Hele⟩
-    · iframe
-    · imodintro
-      iframe
-      isplitl [Hheap_e Hpmap_e]
-      · iapply (stateInterp_split σ₂ (ns + 1) obs' (nt + eₜ.length)).mpr $$ [$]
-      iapply wp_value'
-      iapply HΦ $$ %pvs'' %hpvs'_eq Hele
+    imodintro
+    iframe
+    isplitl [Hheap_e Hpmap_e]
+    · iapply (stateInterp_split σ₂ (ns + 1) obs' (nt + eₜ.length)).mpr $$ [$]
+    iapply wp_value'
+    iapply HΦ $$ %pvs'' %hpvs'_eq Hele
 
 @[rocq_alias heap_lang.wp_resolve]
 theorem wp_resolve {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × Val)}
